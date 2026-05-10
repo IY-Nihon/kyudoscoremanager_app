@@ -1,4 +1,4 @@
-{
+﻿{
   "expo": {
     "name": "RecordAppExpo",
     "slug": "RecordAppExpo",
@@ -27,7 +27,7 @@
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro",
-      "output": "static"
+      "output": "single"
     },
     "plugins": [
       [

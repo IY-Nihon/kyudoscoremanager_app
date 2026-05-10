@@ -1,7 +1,7 @@
 {
   "name": "recordappexpo",
   "version": "1.0.0",
-  "main": "expo-router/entry",
+  "main": "node_modules/expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
@@ -30,13 +30,11 @@
     "expo-haptics": "~55.0.14",
     "expo-linking": "~55.0.12",
     "expo-modules-core": "~55.0.22",
-    "expo-router": "~55.0.12",
     "expo-sharing": "~55.0.18",
     "expo-status-bar": "~55.0.5",
     "file-saver": "^2.0.5",
     "firebase": "9.23.0",
     "lucide-react-native": "^1.8.0",
-    "nativewind": "^4.2.3",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-native": "0.83.4",
@@ -53,7 +51,6 @@
     "@react-native-community/cli": "^15.0.1",
     "@react-native/metro-config": "^0.85.0",
     "babel-preset-expo": "~55.0.17",
-    "tailwindcss": "^3.4.17",
     "typescript": "~5.9.2"
   },
   "private": true

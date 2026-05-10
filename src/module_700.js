@@ -1,0 +1,14 @@
+/**
+ * Module ID: 700
+ */
+"use strict";
+
+const g = (typeof global !== "undefined" ? global : typeof window !== "undefined" ? window : this);
+const r = require;
+const i = (typeof metroImport !== 'undefined' ? metroImport : undefined);
+const a = (typeof id !== 'undefined' ? id : 700);
+const m = module;
+const e = exports;
+const d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
+
+"use strict";Object.defineProperty(e,'__esModule',{value:!0}),Object.defineProperty(e,"daysInWeek",{enumerable:!0,get:function(){return n}}),Object.defineProperty(e,"daysInYear",{enumerable:!0,get:function(){return t}}),Object.defineProperty(e,"maxTime",{enumerable:!0,get:function(){return u}}),Object.defineProperty(e,"minTime",{enumerable:!0,get:function(){return o}}),Object.defineProperty(e,"millisecondsInWeek",{enumerable:!0,get:function(){return c}}),Object.defineProperty(e,"millisecondsInDay",{enumerable:!0,get:function(){return b}}),Object.defineProperty(e,"millisecondsInMinute",{enumerable:!0,get:function(){return f}}),Object.defineProperty(e,"millisecondsInHour",{enumerable:!0,get:function(){return s}}),Object.defineProperty(e,"millisecondsInSecond",{enumerable:!0,get:function(){return l}}),Object.defineProperty(e,"minutesInYear",{enumerable:!0,get:function(){return y}}),Object.defineProperty(e,"minutesInMonth",{enumerable:!0,get:function(){return p}}),Object.defineProperty(e,"minutesInDay",{enumerable:!0,get:function(){return j}}),Object.defineProperty(e,"minutesInHour",{enumerable:!0,get:function(){return O}}),Object.defineProperty(e,"monthsInQuarter",{enumerable:!0,get:function(){return P}}),Object.defineProperty(e,"monthsInYear",{enumerable:!0,get:function(){return I}}),Object.defineProperty(e,"quartersInYear",{enumerable:!0,get:function(){return M}}),Object.defineProperty(e,"secondsInHour",{enumerable:!0,get:function(){return h}}),Object.defineProperty(e,"secondsInMinute",{enumerable:!0,get:function(){return Y}}),Object.defineProperty(e,"secondsInDay",{enumerable:!0,get:function(){return D}}),Object.defineProperty(e,"secondsInWeek",{enumerable:!0,get:function(){return _}}),Object.defineProperty(e,"secondsInYear",{enumerable:!0,get:function(){return k}}),Object.defineProperty(e,"secondsInMonth",{enumerable:!0,get:function(){return H}}),Object.defineProperty(e,"secondsInQuarter",{enumerable:!0,get:function(){return S}}),Object.defineProperty(e,"constructFromSymbol",{enumerable:!0,get:function(){return W}});const n=7,t=365.2425,u=24*Math.pow(10,8)*60*60*1e3,o=-864e13,c=6048e5,b=864e5,f=6e4,s=36e5,l=1e3,y=525600,p=43200,j=1440,O=60,P=3,I=12,M=4,h=3600,Y=60,D=86400,_=604800,k=31556952,H=2629746,S=7889238,W=Symbol.for("constructDateFrom")
