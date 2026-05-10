@@ -1,0 +1,362 @@
+name: Build Unsigned IPA for SideStore
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master, main ]
+
+jobs:
+  build:
+    runs-on: macos-14
+    env:
+      NATIVEWIND_SKIP_CACHE: '1'
+      CI: 'true'
+      NODE_OPTIONS: "--max-old-space-size=8192"
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "false"
+
+    steps:
+      - name: 🏗 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # - name: 🧹 Clean runner disk space
+      #   run: |
+      #     sudo rm -rf /Applications/Xcode_15.2.app || true
+      #     sudo rm -rf /Applications/Xcode_15.1.app || true
+      #     df -h
+
+      - name: 🛠 Select Xcode 16
+        run: |
+          # Try to find any Xcode 16 version
+          ls /Applications/ | grep Xcode_16 || true
+          sudo xcode-select -s /Applications/Xcode_16.2.app || sudo xcode-select -s /Applications/Xcode_16.1.app || sudo xcode-select -s /Applications/Xcode_16.0.app || sudo xcode-select -s /Applications/Xcode_16.app || true
+          xcodebuild -version
+
+      - name: 💾 Check Disk Space (Start)
+        run: df -h
+
+      - name: 🛠 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: package.json
+
+      - name: 📦 Install Dependencies
+        run: |
+          npm install --legacy-peer-deps
+          
+          # Safely patch expo packages to remove ESM fields preventing prebuild in Node 18
+          # Use a safer loop to avoid potential find/exec hangs
+          for pkg in node_modules/expo-*; do
+            if [ -f "$pkg/package.json" ]; then
+              node -e "
+                const fs = require('fs');
+                const file = '$pkg/package.json';
+                try {
+                  const pkg = JSON.parse(fs.readFileSync(file, 'utf8'));
+                  let changed = false;
+                  if (pkg.type === 'module') { delete pkg.type; changed = true; }
+                  if (pkg.exports) { delete pkg.exports; changed = true; }
+                  if (changed) {
+                    fs.writeFileSync(file, JSON.stringify(pkg, null, 2));
+                    console.log('✅ Adjusted: ' + file);
+                  }
+                } catch (e) {}
+              "
+            fi
+          done
+          
+      - name: 🛠 Apply Native Module Patches
+        run: node patch_node_modules.mjs
+
+      - name: 🏗 Generate Native Code (Prebuild)
+        run: npx expo prebuild --platform ios --no-install
+        env:
+          NATIVEWIND_SKIP_CACHE: 1
+          NODE_OPTIONS: "--max-old-space-size=8192"
+
+      - name: 🔍 Debug Podfile
+        run: |
+          if [ -f ios/Podfile ]; then
+            echo "--- Podfile Start ---"
+            cat ios/Podfile
+            echo "--- Podfile End ---"
+          fi
+
+      - name: 📦 CocoaPods Install
+        working-directory: ios
+        run: |
+          # 1. Create Xcode 16 compatibility helper
+          cat << 'EOF' > patch_xcode16.rb
+          def add_setting(config, key, value)
+            current = config.build_settings[key]
+            if current.is_a?(Array)
+              config.build_settings[key] << value unless config.build_settings[key].include?(value)
+            elsif current.is_a?(String)
+              unless (current || "").include?(value || "")
+                config.build_settings[key] = "#{current} #{value}".strip
+              end
+            else
+              config.build_settings[key] = "$(inherited) #{value}"
+            end
+          end
+
+          def apply_xcode16_patches(installer)
+            installer.pods_project.targets.each do |target|
+              target.build_configurations.each do |config|
+                # Base performance and compatibility settings
+                config.build_settings["CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES"] = "YES"
+                config.build_settings["SWIFT_STRICT_CONCURRENCY"] = "minimal"
+                config.build_settings["GCC_C_LANGUAGE_STANDARD"] = "gnu11"
+
+                # Apply libc++ rescue flag to ALL targets for broad compatibility
+                defs = config.build_settings["GCC_PREPROCESSOR_DEFINITIONS"] || ["$(inherited)"]
+                defs << "_LIBCPP_ENABLE_CXX20_REMOVED_TYPE_TRAITS"
+                config.build_settings["GCC_PREPROCESSOR_DEFINITIONS"] = defs.uniq
+
+                # Surgical C++ Standard and Headermap Management
+                # gRPC/BoringSSL: use C++14, keep headermaps ON for modulemap resolution
+                # The -GCC_WARN_INHIBIT_ALL_WARNINGS flag is stripped from source files
+                # and xcconfig files in separate steps to avoid the -G parse error
+                if target.name.include?("gRPC") || target.name.include?("BoringSSL")
+                  config.build_settings["CLANG_CXX_LANGUAGE_STANDARD"] = "gnu++14"
+                  add_setting(config, "HEADER_SEARCH_PATHS", "$(PODS_TARGET_SRCROOT)/include")
+                  add_setting(config, "HEADER_SEARCH_PATHS", "$(PODS_TARGET_SRCROOT)/src/core")
+                  # Prevent gRPC-C++ from searching for gRPC-Core.modulemap which doesn't exist
+                  if target.name.include?("gRPC-C++")
+                    config.build_settings.delete("MODULEMAP_FILE")
+                    config.build_settings["DEFINES_MODULE"] = "NO"
+                  end
+                elsif target.name == "React-RCTText"
+                  config.build_settings["CLANG_CXX_LANGUAGE_STANDARD"] = "gnu++20"
+                  add_setting(config, "HEADER_SEARCH_PATHS", "$(PODS_ROOT)/Headers/Public/React-Core")
+                  add_setting(config, "HEADER_SEARCH_PATHS", "$(PODS_TARGET_SRCROOT)/Text")
+                else
+                  config.build_settings["CLANG_CXX_LANGUAGE_STANDARD"] = "gnu++20"
+                end
+              end
+
+              # Surgical fix for clang: error: unsupported option '-G' 
+              # gRPC/BoringSSL pods inject '-GCC_WARN_INHIBIT_ALL_WARNINGS' via podspec's compiler_flags
+              if target.name.include?('BoringSSL') || target.name.include?('gRPC')
+                target.source_build_phase.files.each do |file|
+                  if file.settings && file.settings['COMPILER_FLAGS']
+                    flags = file.settings['COMPILER_FLAGS'].split
+                    flags.reject! { |flag| flag == '-GCC_WARN_INHIBIT_ALL_WARNINGS' }
+                    file.settings['COMPILER_FLAGS'] = flags.join(' ')
+                  end
+                end
+              end
+            end
+          end
+          EOF
+          
+          # 2. Inject helper and selective modular headers into Podfile
+          node -e '
+            const fs = require("fs");
+            let content = fs.readFileSync("Podfile", "utf8");
+            
+            // Remove global use_modular_headers! (causes ReactCommon redefinition errors)
+            content = content.replace(/^use_modular_headers!\n?/gm, "");
+            
+            // Add pre_install hook for selective modular headers (Firebase Swift pods need these)
+            const preInstall = `
+              pre_install do |installer|
+                installer.pod_targets.each do |pod|
+                  modular_pods = %w[
+                    GoogleUtilities FirebaseCore FirebaseCoreExtension FirebaseAppCheckInterop
+                    FirebaseCoreInternal FirebaseFirestoreInternal leveldb-library
+                    FirebaseAuth FirebaseAuthInterop FirebaseDatabase
+                    GoogleDataTransport nanopb FirebaseFirestore
+                    RecaptchaInterop GTMSessionFetcher FirebaseMessaging
+                    GoogleAppMeasurement GoogleUtilities-Reachability GoogleUtilities-Environment
+                    GoogleUtilities-UserDefaults GoogleUtilities-Network
+                  ]
+                  if modular_pods.include?(pod.name) || pod.name.start_with?("Firebase") || pod.name.start_with?("Google")
+                    def pod.build_type
+                      Pod::BuildType.static_framework
+                    end
+                  end
+                end
+              end
+            `;
+            // Insert pre_install before the first target block
+            if (!content.includes("pre_install do")) {
+              content = content.replace(/(target\s)/, preInstall + "\n$1");
+            }
+            
+            const requireLine = "require_relative \"patch_xcode16.rb\"\n";
+            const hookCall = "  apply_xcode16_patches(installer)\n";
+            
+            if (!content.includes("patch_xcode16.rb")) {
+              content = requireLine + content;
+            }
+            
+            if (content.includes("post_install do |installer|")) {
+              if (!content.includes("apply_xcode16_patches(installer)")) {
+                content = content.replace("post_install do |installer|", "post_install do |installer|\n" + hookCall);
+              }
+            } else {
+              content += "\npost_install do |installer|\n" + hookCall + "end\n";
+            }
+            
+            fs.writeFileSync("Podfile", content);
+          '
+          
+          echo "Checking patched Podfile:"
+          cat Podfile
+          
+          pod install
+          
+      - name: 🛠 Physical Patch Pods (Remove faulty flags + fix gRPC modulemap)
+        working-directory: ios
+        run: |
+          # 1. Recursively find all xcconfig files and remove the problematic flag
+          echo "Cleaning up faulty flags from Pods xcconfigs..."
+          find Pods -name "*.xcconfig" -type f -exec sed -i '' 's/-GCC_WARN_INHIBIT_ALL_WARNINGS//g' {} +
+          grep -r "GCC_WARN_INHIBIT_ALL_WARNINGS" Pods || echo "Flag cleared from Pods."
+          
+          # 2. Create missing gRPC-Core.modulemap at the expected path
+          echo "Creating gRPC-Core.modulemap..."
+          mkdir -p Pods/Headers/Private/grpc
+          cat > Pods/Headers/Private/grpc/gRPC-Core.modulemap << 'MODMAP'
+          framework module grpc {
+            umbrella "."
+            export *
+            module * { export * }
+          }
+          MODMAP
+          echo "gRPC-Core.modulemap created at Pods/Headers/Private/grpc/gRPC-Core.modulemap"
+          ls -la Pods/Headers/Private/grpc/
+
+      - name: 💾 Check Disk Space (Pre-build)
+        run: df -h
+
+      - name: 🏗 Build Native (SKIP_BUNDLING)
+        timeout-minutes: 60
+        run: |
+          cd ios
+          rm -rf build_data
+          xcodebuild build \
+            -workspace RecordAppExpo.xcworkspace \
+            -scheme RecordAppExpo \
+            -sdk iphoneos \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build_data \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            ENTITLEMENTS_REQUIRED=NO \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            SKIP_BUNDLING=1
+
+
+      - name: 🔍 Check Dependencies Consistency
+        run: npx expo install --check || echo "Dependency check flagged issues, but proceeding as native build passed."
+
+      - name: Bundle JS and Embed into App
+        shell: bash
+        env:
+          DEBUG: "metro:*" # More verbose logging for metro
+        run: |
+          set -e
+          APP_PATH=$(find ios/build_data/Build/Products/Release-iphoneos -name "*.app" | head -n 1)
+          if [ -z "$APP_PATH" ]; then
+            echo "FATAL: .app file not found"
+            exit 1
+          fi
+
+          echo "› Fixing potentially mismatched dependencies via expo install --fix..."
+          npx expo install --fix --non-interactive || echo "Fix failed, proceeding..."
+          
+          echo "Running Expo Doctor to check environment..."
+          npx expo-doctor || echo "Doctor found issues, proceeding anyway..."
+          
+          # 出力ディレクトリ作成
+          rm -rf dist
+          mkdir -p dist
+          
+          echo "› Starting bundle process..."
+          
+          # キャッシュを徹底的に削除
+          rm -rf .expo node_modules/.cache/metro
+          rm -rf node_modules/.cache/babel-loader
+
+          # expo export:embed が失敗した場合は react-native bundle にフォールバック
+          echo "› Attempting expo export:embed..."
+          # 出力形式を明示的に指定し、失敗しても続行して後続のチェックを行う
+          NODE_ENV=production npx expo export:embed \
+            --platform ios \
+            --dev false \
+            --bundle-output "$(pwd)/dist/main.jsbundle" \
+            --assets-dest "$(pwd)/dist" \
+            --max-workers 1 2>&1 || echo "⚠️ expo export:embed command exited with error"
+
+          # バンドルファイルが生成されていない場合はフォールバック
+          if [ ! -f "dist/main.jsbundle" ] || [ ! -s "dist/main.jsbundle" ]; then
+            echo "⚠️ main.jsbundle is missing or empty. Attempting direct React Native bundle fallback..."
+            
+            # エントリーポイントの動的判定
+            ENTRY_FILE=""
+            if [ -f "index.js" ]; then
+              ENTRY_FILE="index.js"
+            elif [ -d "app" ]; then
+              ENTRY_FILE="node_modules/expo-router/entry.js"
+            elif [ -f "App.tsx" ] || [ -f "App.js" ]; then
+              ENTRY_FILE="node_modules/expo/AppEntry.js"
+            elif [ -f "node_modules/expo-router/entry.js" ]; then
+              ENTRY_FILE="node_modules/expo-router/entry.js"
+            else
+              ENTRY_FILE="node_modules/expo/AppEntry.js"
+            fi
+            
+            echo "› Using entry file fallback: $ENTRY_FILE"
+            
+            # Metroキャッシュをクリアして再試行
+            NODE_ENV=production npx react-native bundle \
+              --platform ios \
+              --dev false \
+              --entry-file "$ENTRY_FILE" \
+              --bundle-output "$(pwd)/dist/main.jsbundle" \
+              --assets-dest "$(pwd)/dist" \
+              --reset-cache --max-workers 1 2>&1
+          fi
+
+          echo "=== Copying bundle to App path ==="
+          ABS_APP_PATH="$(pwd)/$APP_PATH"
+          mkdir -p "$ABS_APP_PATH"
+          
+          if [ -f "dist/main.jsbundle" ] && [ -s "dist/main.jsbundle" ]; then
+            cp "dist/main.jsbundle" "$ABS_APP_PATH/main.jsbundle"
+            echo "Bundle copied to target path. Size: $(du -h dist/main.jsbundle | cut -f1)"
+          else
+            echo "ERROR: Bundle process finished but main.jsbundle was NOT found or is empty in dist/."
+            ls -R dist/
+            exit 1
+          fi
+
+          echo "=== Final bundle check ==="
+          if [ -s "$ABS_APP_PATH/main.jsbundle" ]; then
+            ls -lh "$ABS_APP_PATH/main.jsbundle"
+            echo "Bundle success! Size is valid."
+          else
+            echo "ERROR: main.jsbundle is missing or empty in target path."
+            exit 1
+          fi
+
+      - name: 💾 Check Disk Space (Post-build)
+        run: df -h
+
+      - name: Create Unsigned IPA
+        run: |
+          mkdir -p build/Payload
+          cp -R ios/build_data/Build/Products/Release-iphoneos/RecordAppExpo.app build/Payload/
+          cd build && zip -r RecordApp-Unsigned.ipa Payload
+
+      - name: Upload Unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: RecordApp-Unsigned-IPA
+          path: build/RecordApp-Unsigned.ipa
