@@ -1,0 +1,61 @@
+diff --git a/node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios/ReactCommon/RCTTurboModule.mm b/node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios/ReactCommon/RCTTurboModule.mm
+index 6646570..4e35272 100644
+--- a/node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios/ReactCommon/RCTTurboModule.mm
++++ b/node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios/ReactCommon/RCTTurboModule.mm
+@@ -399,8 +399,28 @@ id ObjCTurboModule::performMethodInvocation(
+     }
+ 
+     @try {
++      /* === TurboModule Crash Interceptor (Pre-invocation Logging) === */
++      {
++        NSString *mName = [NSString stringWithUTF8String:moduleName];
++        NSString *methName = [NSString stringWithUTF8String:methodNameStr.c_str()];
++        NSString *callInfo = [NSString stringWithFormat:@"%@.%@", mName, methName];
++        NSLog(@"[TMDebug] INVOKING: %@", callInfo);
++        
++        [[NSUserDefaults standardUserDefaults] setObject:callInfo forKey:@"tmd_last_call"];
++        [[NSUserDefaults standardUserDefaults] synchronize];
++      }
+       [inv invokeWithTarget:strongModule];
++      {
++        [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"tmd_last_call"];
++        [[NSUserDefaults standardUserDefaults] synchronize];
++      }
++      /* === End Interceptor === */
+     } @catch (NSException *exception) {
++      NSString *crashInfo = [NSString stringWithFormat:@"[EXCEP] %@", exception.reason];
++      NSLog(@"[TMDebug] ObjC Exception: %@", crashInfo);
++      [[NSUserDefaults standardUserDefaults] setObject:crashInfo forKey: @"tmd_crash_v2"];
++      [[NSUserDefaults standardUserDefaults] synchronize];
++
+       if (isSync) {
+         // We can only convert NSException to JSError in sync method calls.
+         // See https://github.com/reactwg/react-native-new-architecture/discussions/276#discussioncomment-12567155
+@@ -468,8 +488,27 @@ void ObjCTurboModule::performVoidMethodInvocation(
+     }
+ 
+     @try {
++      /* === TurboModule Crash Interceptor (Pre-invocation Logging) === */
++      {
++        NSString *mName = [NSString stringWithUTF8String:moduleName];
++        NSString *methName = [NSString stringWithUTF8String:methodNameStr.c_str()];
++        NSString *callInfo = [NSString stringWithFormat:@"%@.%@", mName, methName];
++        NSLog(@"[TMDebug] INVOKING: %@", callInfo);
++        
++        [[NSUserDefaults standardUserDefaults] setObject:callInfo forKey:@"tmd_last_call"];
++        [[NSUserDefaults standardUserDefaults] synchronize];
++      }
+       [inv invokeWithTarget:strongModule];
++      {
++        [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"tmd_last_call"];
++        [[NSUserDefaults standardUserDefaults] synchronize];
++      }
++      /* === End Interceptor === */
+     } @catch (NSException *exception) {
++      NSString *crashInfo = [NSString stringWithFormat:@"[EXCEP] %@", exception.reason];
++      NSLog(@"[TMDebug] ObjC Exception: %@", crashInfo);
++      [[NSUserDefaults standardUserDefaults] setObject:crashInfo forKey: @"tmd_crash_v2"];
++      [[NSUserDefaults standardUserDefaults] synchronize];
+       throw convertNSExceptionToJSError(runtime, exception, std::string{moduleName}, methodNameStr);
+     } @finally {
+       [retainedObjectsForInvocation removeAllObjects];

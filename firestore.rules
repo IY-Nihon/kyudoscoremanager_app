@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ユーザー関数: 管理者かどうか
+    function isAdmin() {
+      return request.auth != null && 
+             request.auth.token.email in [
+               'admin@kyudo-club.com', 
+               '1234@kyudo-club.com',
+               'admin@nitidai.app',
+               'nihonu.kouka@gmail.com',
+               'nihondaigakukouka@gmail.com'
+             ];
+    }
+    
+    // 練習記録データ
+    match /sessions/{sessionId} {
+      allow read, write: if isAdmin();
+      allow read: if request.auth != null && resource.data.archerNames.hasAny([request.auth.token.name]);
+      allow write: if false;
+    }
+
+    // 部員名簿データ
+    match /members/{memberId} {
+      allow read, write: if isAdmin();
+      allow read: if request.auth != null;
+    }
+
+    // 卒業生リストデータ
+    match /alumni/{alumniId} {
+      allow read, write: if isAdmin();
+      allow read: if request.auth != null;
+    }
+
+    // ゴミ箱データ
+    match /trash/{trashId} {
+      allow read, write: if isAdmin();
+    }
+
+    // 設定データ
+    match /config/{configId} {
+      allow read, write: if isAdmin();
+      allow read: if request.auth != null;
+    }
+  }
+}

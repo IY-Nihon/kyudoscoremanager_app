@@ -1,0 +1,593 @@
+diff --git a/node_modules/expo-modules-core/ios/Core/AppContext.swift b/node_modules/expo-modules-core/ios/Core/AppContext.swift
+index f7e5264..42d572e 100644
+--- a/node_modules/expo-modules-core/ios/Core/AppContext.swift
++++ b/node_modules/expo-modules-core/ios/Core/AppContext.swift
+@@ -326,6 +326,7 @@ public final class AppContext: NSObject, @unchecked Sendable {
+    Returns view modules wrapped by the base `ViewModuleWrapper` class.
+    */
+   @objc
++  @MainActor
+   public func getViewManagers() -> [Any] {
+     var result: [Any] = []
+     for holder in moduleRegistry {
+diff --git a/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicRawType.swift b/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicRawType.swift
+index 8fe764a..09ae681 100644
+--- a/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicRawType.swift
++++ b/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicRawType.swift
+@@ -35,8 +35,9 @@ internal struct DynamicRawType<InnerType>: AnyDynamicType {
+     // TODO: Definitions and JS object builders should have its own dynamic type.
+     // We use `DynamicRawType` for this only temporarily.
+     if let objectBuilder = result as? JavaScriptObjectBuilder {
++      let box = ExpoUncheckedSendable(value: objectBuilder)
+       return try JavaScriptActor.assumeIsolated {
+-        return try objectBuilder.build(appContext: appContext)
++        return try box.value.build(appContext: appContext)
+       } as Any
+     }
+     return result
+diff --git a/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicSharedObjectType.swift b/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicSharedObjectType.swift
+index e789dd6..14af134 100644
+--- a/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicSharedObjectType.swift
++++ b/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicSharedObjectType.swift
+@@ -1,10 +1,12 @@
+ // Copyright 2022-present 650 Industries. All rights reserved.
++@preconcurrency import Foundation
++
+ 
+ /**
+  A dynamic type representing the `SharedObject` type and its subclasses.
+  */
+-internal struct DynamicSharedObjectType: AnyDynamicType {
+-  let innerType: AnySharedObject.Type
++public struct DynamicSharedObjectType: AnyDynamicType, @unchecked Sendable {
++  public let innerType: AnySharedObject.Type
+ 
+   /**
+    A unique identifier of the wrapped type.
+@@ -13,22 +15,22 @@ internal struct DynamicSharedObjectType: AnyDynamicType {
+     return ObjectIdentifier(innerType)
+   }
+ 
+-  init(innerType: AnySharedObject.Type) {
++  public init(innerType: AnySharedObject.Type) {
+     self.innerType = innerType
+   }
+ 
+-  func wraps<InnerType>(_ type: InnerType.Type) -> Bool {
++  public func wraps<InnerType>(_ type: InnerType.Type) -> Bool {
+     return innerType == InnerType.self
+   }
+ 
+-  func equals(_ type: AnyDynamicType) -> Bool {
++  public func equals(_ type: AnyDynamicType) -> Bool {
+     if let sharedObjectType = type as? Self {
+       return sharedObjectType.innerType == innerType
+     }
+     return false
+   }
+ 
+-  func cast<ValueType>(_ value: ValueType, appContext: AppContext) throws -> Any {
++  public func cast<ValueType>(_ value: ValueType, appContext: AppContext) throws -> Any {
+     if let value = value as? SharedObject {
+       // Given value is a shared object already
+       return value
+@@ -42,7 +44,7 @@ internal struct DynamicSharedObjectType: AnyDynamicType {
+     throw NativeSharedObjectNotFoundException()
+   }
+ 
+-  func cast(jsValue: JavaScriptValue, appContext: AppContext) throws -> Any {
++  public func cast(jsValue: JavaScriptValue, appContext: AppContext) throws -> Any {
+     if jsValue.kind == .number {
+       let sharedObjectId = jsValue.getInt() as SharedObjectId
+ 
+@@ -58,7 +60,7 @@ internal struct DynamicSharedObjectType: AnyDynamicType {
+     throw NativeSharedObjectNotFoundException()
+   }
+ 
+-  func convertResult<ResultType>(_ result: ResultType, appContext: AppContext) throws -> Any {
++  public func convertResult<ResultType>(_ result: ResultType, appContext: AppContext) throws -> Any {
+     // Postpone object creation to execute on the JS thread.
+     JavaScriptObjectBinding.init {
+       // If the result is a native shared object, create its JS representation and add the pair to the registry of shared objects.
+@@ -82,11 +84,11 @@ internal struct DynamicSharedObjectType: AnyDynamicType {
+     }
+   }
+ 
+-  var description: String {
++  public var description: String {
+     return "SharedObject<\(innerType)>"
+   }
+ 
+-  func castToJS<ValueType>(_ value: ValueType, appContext: AppContext) throws -> JavaScriptValue {
++  public func castToJS<ValueType>(_ value: ValueType, appContext: AppContext) throws -> JavaScriptValue {
+     if let value = value as? JavaScriptObjectBinding {
+       return try JavaScriptValue.from(value.get(), runtime: appContext.runtime)
+     }
+@@ -107,7 +109,7 @@ private func newBaseSharedObject(_ appContext: AppContext, nativeType: AnyShared
+   return try appContext.runtime.createObject(withPrototype: prototype)
+ }
+ 
+-internal final class NativeSharedObjectNotFoundException: Exception {
++internal final class NativeSharedObjectNotFoundException: Exception, @unchecked Sendable {
+   override var reason: String {
+     "Unable to find the native shared object associated with given JavaScript object"
+   }
+diff --git a/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicTypedArrayType.swift b/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicTypedArrayType.swift
+index f9708f3..89c0c06 100644
+--- a/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicTypedArrayType.swift
++++ b/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicTypedArrayType.swift
+@@ -44,13 +44,13 @@ internal struct DynamicTypedArrayType: AnyDynamicType {
+   }
+ }
+ 
+-internal final class ArrayTypeMismatchException: GenericException<(received: Any.Type, expected: Any.Type)> {
++internal final class ArrayTypeMismatchException: GenericException<(received: Any.Type, expected: Any.Type)>, @unchecked Sendable {
+   override var reason: String {
+     "Received a typed array of type \(param.received), expected \(param.expected)"
+   }
+ }
+ 
+-internal final class NotTypedArrayException: GenericException<AnyTypedArray.Type> {
++internal final class NotTypedArrayException: GenericException<AnyTypedArray.Type>, @unchecked Sendable {
+   override var reason: String {
+     "Given argument is not an instance of \(param)"
+   }
+diff --git a/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift b/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift
+index 5ddcbb6..c978ae4 100644
+--- a/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift
++++ b/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift
+@@ -2,8 +2,8 @@
+ 
+ import Foundation
+ 
+-public typealias PersistentFileLogFilter = (String) -> Bool
+-public typealias PersistentFileLogCompletionHandler = (Error?) -> Void
++public typealias PersistentFileLogFilter = @Sendable (String) -> Bool
++public typealias PersistentFileLogCompletionHandler = @Sendable (Error?) -> Void
+ 
+ /**
+  * A thread-safe class for reading and writing line-separated strings to a flat file.
+diff --git a/node_modules/expo-modules-core/ios/Core/SharedObjects/SharedObject.swift b/node_modules/expo-modules-core/ios/Core/SharedObjects/SharedObject.swift
+index 3e81f83..b550127 100644
+--- a/node_modules/expo-modules-core/ios/Core/SharedObjects/SharedObject.swift
++++ b/node_modules/expo-modules-core/ios/Core/SharedObjects/SharedObject.swift
+@@ -1,16 +1,33 @@
+-// Copyright 2022-present 650 Industries. All rights reserved.
++#if canImport(React)
++internal import React
++#endif
++
++public struct ExpoUncheckedSendable<T>: @unchecked Sendable {
++  public let value: T
++  public init(value: T) {
++    self.value = value
++  }
++}
++
++/**
++ A Sendable wrapper for RCTPropBlockAlias to bypass Swift 6 strict concurrency checks
++ when transferring non-Sendable closures across MainActor boundaries.
++ */
++internal struct EXPropBlockWrapper: @unchecked Sendable {
++  let block: (Any?) -> Void
++}
+ 
+ public protocol AnySharedObject: AnyArgument, AnyObject {
+   var sharedObjectId: SharedObjectId { get }
+ }
+ 
+ extension AnySharedObject {
+-  public static func getDynamicType() -> AnyDynamicType {
++  nonisolated public static func getDynamicType() -> AnyDynamicType {
+     return DynamicSharedObjectType(innerType: Self.self)
+   }
+ }
+ 
+-open class SharedObject: AnySharedObject {
++open class SharedObject: AnySharedObject, @unchecked Sendable {
+   /**
+    An identifier of the native shared object that maps to the JavaScript object.
+    When the object is not linked with any JavaScript object, its value is 0.
+diff --git a/node_modules/expo-modules-core/ios/Core/SharedObjects/SharedRef.swift b/node_modules/expo-modules-core/ios/Core/SharedObjects/SharedRef.swift
+index 99dca74..8378a7e 100644
+--- a/node_modules/expo-modules-core/ios/Core/SharedObjects/SharedRef.swift
++++ b/node_modules/expo-modules-core/ios/Core/SharedObjects/SharedRef.swift
+@@ -9,7 +9,7 @@ public protocol AnySharedRef {
+  Shared object that holds a reference to any native object. Allows passing references
+  to native instances among different independent libraries.
+  */
+-open class SharedRef<RefType>: SharedObject, AnySharedRef {
++open class SharedRef<RefType>: SharedObject, AnySharedRef, @unchecked Sendable {
+   public var ref: RefType
+ 
+   open var nativeRefType: String {
+diff --git a/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift b/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift
+index d4ff7a9..da7a198 100644
+--- a/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift
++++ b/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift
+@@ -6,9 +6,9 @@ import SwiftUI
+  A type-erased protocol that hosting views must conform to.
+  */
+ internal protocol AnyExpoSwiftUIHostingView {
+-  func updateProps(_ rawProps: [String: Any])
+-  func getContentView() -> any ExpoSwiftUI.View
+-  func getProps() -> ExpoSwiftUI.ViewProps
++  nonisolated func updateProps(_ rawProps: [String: Any])
++  nonisolated func getContentView() -> any ExpoSwiftUI.View
++  nonisolated func getProps() -> ExpoSwiftUI.ViewProps
+ }
+ 
+ extension ExpoSwiftUI {
+@@ -42,7 +42,8 @@ extension ExpoSwiftUI {
+   /**
+    A hosting view that renders a SwiftUI view inside the UIKit view hierarchy.
+    */
+-  public final class HostingView<Props: ViewProps, ContentView: View<Props>>: ExpoView, @MainActor AnyExpoSwiftUIHostingView {
++  @MainActor
++  public final class HostingView<Props: ViewProps, ContentView: View<Props>>: ExpoView, AnyExpoSwiftUIHostingView {
+     /**
+      Props object that stores all the props for this particular view.
+      It's an environment object that is observed by the content view.
+@@ -110,37 +111,37 @@ extension ExpoSwiftUI {
+     /**
+      Updates the environment object with props, based on the given dictionary with raw props.
+      */
+-    public override func updateProps(_ rawProps: [String: Any]) {
+-      guard let appContext else {
+-        log.error("AppContext is not available, view props cannot be updated for \(ContentView.self)")
+-        return
+-      }
+-      do {
+-        try props.updateRawProps(rawProps, appContext: appContext)
+-      } catch let error {
+-        log.error("Updating props for \(ContentView.self) has failed: \(error.localizedDescription)")
+-      }
+-
+-      if !hasSafeAreaBeenConfigured,
+-         let safeAreaProps = props as? SafeAreaControllable,
+-         let ignoreSafeArea = safeAreaProps.ignoreSafeArea {
+-        hostingController.disableSafeArea(ignoreSafeArea)
+-        hasSafeAreaBeenConfigured = true
++    nonisolated public override func updateProps(_ rawProps: [String: Any]) {
++      let box = ExpoUncheckedSendable(value: rawProps)
++      MainActor.assumeIsolated {
++        guard let appContext = self.appContext else { return }
++        try? self.props.updateRawProps(box.value, appContext: appContext)
++        
++        if !self.hasSafeAreaBeenConfigured,
++           let safeAreaProps = self.props as? SafeAreaControllable,
++           let ignoreSafeArea = safeAreaProps.ignoreSafeArea {
++          self.hostingController.disableSafeArea(ignoreSafeArea)
++          self.hasSafeAreaBeenConfigured = true
++        }
+       }
+     }
+ 
+     /**
+      Returns inner SwiftUI view.
+      */
+-    public func getContentView() -> any ExpoSwiftUI.View {
+-      return contentView
++    nonisolated public func getContentView() -> any ExpoSwiftUI.View {
++      return MainActor.assumeIsolated {
++        return self.contentView
++      }
+     }
+ 
+     /**
+      Returns the view's props
+      */
+-    public func getProps() -> ExpoSwiftUI.ViewProps {
+-      return props
++    nonisolated public func getProps() -> ExpoSwiftUI.ViewProps {
++      return MainActor.assumeIsolated {
++        return self.props
++      }
+     }
+ 
+     /**
+diff --git a/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift b/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift
+index 6d65323..c1c41b5 100644
+--- a/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift
++++ b/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift
+@@ -7,6 +7,7 @@ extension ExpoSwiftUI {
+    An NSObject acting as a fake UIView for RCTMountingManager to represent a SwiftUI view.
+    This class is the Swift component of SwiftUIVirtualView, as referenced in ExpoFabricView.swift.
+    */
++  @MainActor
+   final class SwiftUIVirtualView<Props: ViewProps, ContentView: View<Props>>: SwiftUIVirtualViewObjC, ExpoSwiftUIView {
+     var uiView: UIView?
+     
+@@ -71,8 +72,10 @@ extension ExpoSwiftUI {
+       contentView
+     }
+ 
+-    var id: ObjectIdentifier {
+-      ObjectIdentifier(self)
++    nonisolated var id: ObjectIdentifier {
++      return MainActor.assumeIsolated {
++        return ObjectIdentifier(self)
++      }
+     }
+ 
+     // MARK: - SwiftUIVirtualViewObjC implementations
+@@ -80,23 +83,28 @@ extension ExpoSwiftUI {
+     /**
+      Updates the environment object with props, based on the given dictionary with raw props.
+      */
+-    override func updateProps(_ rawProps: [String: Any]) {
+-      guard let appContext else {
+-        log.error("AppContext is not available, view props cannot be updated for \(self)")
+-        return
+-      }
+-      do {
+-        try props.updateRawProps(rawProps, appContext: appContext)
+-      } catch let error {
+-        log.error("Updating props for \(self) has failed: \(error.localizedDescription)")
++    nonisolated override func updateProps(_ rawProps: [String: Any]) {
++      let box = ExpoUncheckedSendable(value: rawProps)
++      MainActor.assumeIsolated {
++        guard let appContext = self.appContext else {
++          log.error("AppContext is not available, view props cannot be updated for \(self)")
++          return
++        }
++        do {
++          try props.updateRawProps(box.value, appContext: appContext)
++        } catch let error {
++          log.error("Updating props for \(self) has failed: \(error.localizedDescription)")
++        }
+       }
+     }
+ 
+     /**
+      Returns the view's props
+      */
+-    func getProps() -> ExpoSwiftUI.ViewProps {
+-      return props
++    nonisolated func getProps() -> ExpoSwiftUI.ViewProps {
++      return MainActor.assumeIsolated {
++        return self.props
++      }
+     }
+ 
+     /**
+@@ -145,7 +153,9 @@ extension ExpoSwiftUI {
+      */
+     override func unmountChildComponentView(_ childComponentView: UIView, index: Int) {
+       // Make sure the view has no superview, React Native asserts against this.
+-      childComponentView.removeFromSuperview()
++      MainActor.assumeIsolated {
++        childComponentView.removeFromSuperview()
++      }
+ 
+       let childViewId: ObjectIdentifier
+       if let child = childComponentView as AnyObject as? (any AnyChild) {
+@@ -165,13 +175,15 @@ extension ExpoSwiftUI {
+ 
+     // MARK: - Privates
+ 
+-    override func removeFromSuperview() {
+-      // When the view is unmounted, the focus on TextFieldView stays active and it causes a crash, so we blur it here
+-      // UIView does something similar to resign the first responder in removeFromSuperview, so we do the same for our virtual view
+-      if let focusableView = contentView as? any ExpoSwiftUI.FocusableView {
+-        focusableView.forceResignFirstResponder()
++    nonisolated override func removeFromSuperview() {
++      MainActor.assumeIsolated {
++        // When the view is unmounted, the focus on TextFieldView stays active and it causes a crash, so we blur it here
++        // UIView does something similar to resign the first responder in removeFromSuperview, so we do the same for our virtual view
++        if let focusableView = self.contentView as? any ExpoSwiftUI.FocusableView {
++          focusableView.forceResignFirstResponder()
++        }
++        super.removeFromSuperview()
+       }
+-      super.removeFromSuperview()
+     }
+ 
+     /**
+@@ -193,7 +205,8 @@ extension ExpoSwiftUI {
+ 
+ // MARK: - ViewWrapper
+ 
+-extension ExpoSwiftUI.SwiftUIVirtualView: @MainActor ExpoSwiftUI.ViewWrapper {
++@MainActor
++extension ExpoSwiftUI.SwiftUIVirtualView: ExpoSwiftUI.ViewWrapper {
+   func getWrappedView() -> Any {
+     if let wrapper = contentView as? ExpoSwiftUI.ViewWrapper {
+       return wrapper.getWrappedView()
+diff --git a/node_modules/expo-modules-core/ios/Core/Views/ViewDefinition.swift b/node_modules/expo-modules-core/ios/Core/Views/ViewDefinition.swift
+index 5dc73e3..a42b771 100644
+--- a/node_modules/expo-modules-core/ios/Core/Views/ViewDefinition.swift
++++ b/node_modules/expo-modules-core/ios/Core/Views/ViewDefinition.swift
+@@ -118,7 +118,7 @@ extension ConcurrentFunctionDefinition: ViewDefinitionFunctionElement {
+   public typealias ViewType = FirstArgType
+ }
+ 
+-extension UIView: @MainActor AnyArgument {
++extension UIView: @unchecked Sendable, AnyArgument {
+   public static func getDynamicType() -> AnyDynamicType {
+     return DynamicViewType(innerType: Self.self)
+   }
+diff --git a/node_modules/expo-modules-core/ios/Core/Views/ViewModuleWrapper.swift b/node_modules/expo-modules-core/ios/Core/Views/ViewModuleWrapper.swift
+index 7a82fd8..2f80dec 100644
+--- a/node_modules/expo-modules-core/ios/Core/Views/ViewModuleWrapper.swift
++++ b/node_modules/expo-modules-core/ios/Core/Views/ViewModuleWrapper.swift
+@@ -22,6 +22,7 @@ protocol DynamicModuleWrapperProtocol {
+    Renaming the class or these methods will break those call sites silently at runtime.
+  */
+ @objc(EXViewModuleWrapper)
++@MainActor
+ public final class ViewModuleWrapper: NSObject, DynamicModuleWrapperProtocol {
+   /**
+    A reference to the module holder that stores the module definition.
+diff --git a/node_modules/expo-modules-core/ios/DevTools/URLSessionSessionDelegateProxy.swift b/node_modules/expo-modules-core/ios/DevTools/URLSessionSessionDelegateProxy.swift
+index dbc5b65..1f2c962 100644
+--- a/node_modules/expo-modules-core/ios/DevTools/URLSessionSessionDelegateProxy.swift
++++ b/node_modules/expo-modules-core/ios/DevTools/URLSessionSessionDelegateProxy.swift
+@@ -3,7 +3,7 @@
+ /**
+  Shared URLSessionDelegate instance and delete calls back to ExpoRequestInterceptorProtocol instances.
+  */
+-public final class URLSessionSessionDelegateProxy: NSObject, URLSessionDataDelegate {
++public final class URLSessionSessionDelegateProxy: NSObject, URLSessionDataDelegate, @unchecked Sendable {
+   private let dispatchQueue: DispatchQueue
+   private var delegateMap: [AnyHashable: URLSessionDataDelegate] = [:]
+ 
+diff --git a/node_modules/expo-modules-core/ios/Fabric/ExpoFabricView.swift b/node_modules/expo-modules-core/ios/Fabric/ExpoFabricView.swift
+index ce2b19c..efe54fb 100644
+--- a/node_modules/expo-modules-core/ios/Fabric/ExpoFabricView.swift
++++ b/node_modules/expo-modules-core/ios/Fabric/ExpoFabricView.swift
+@@ -80,10 +80,16 @@ open class ExpoFabricView: ExpoFabricViewObjC, AnyExpoView {
+     fatalError("init(coder:) has not been implemented")
+   }
+ 
++
++  // MARK: - AnyExpoView protocol
++  public func updateProps(_ props: [String: Any]) {
++    self.expoUpdateProps(props)
++  }
++
+   // MARK: - ExpoFabricViewInterface
+ 
+   @MainActor
+-  public override func updateProps(_ props: [String: Any]) {
++  public override func expoUpdateProps(_ props: [String: Any]) {
+     guard let context = appContext, let propsDict = viewManagerPropDict else {
+       return
+     }
+diff --git a/node_modules/expo-modules-core/ios/Fabric/ExpoFabricViewObjC.h b/node_modules/expo-modules-core/ios/Fabric/ExpoFabricViewObjC.h
+index a5651e8..3dae955 100644
+--- a/node_modules/expo-modules-core/ios/Fabric/ExpoFabricViewObjC.h
++++ b/node_modules/expo-modules-core/ios/Fabric/ExpoFabricViewObjC.h
+@@ -42,7 +42,7 @@
+ 
+ - (void)dispatchEvent:(nonnull NSString *)eventName payload:(nullable id)payload;
+ 
+-- (void)updateProps:(nonnull NSDictionary<NSString *, id> *)props;
++- (void)expoUpdateProps:(nonnull NSDictionary<NSString *, id> *)props;
+ 
+ - (void)viewDidUpdateProps NS_SWIFT_UI_ACTOR;
+ 
+diff --git a/node_modules/expo-modules-core/ios/Fabric/ExpoFabricViewObjC.mm b/node_modules/expo-modules-core/ios/Fabric/ExpoFabricViewObjC.mm
+index bddc298..71582ec 100644
+--- a/node_modules/expo-modules-core/ios/Fabric/ExpoFabricViewObjC.mm
++++ b/node_modules/expo-modules-core/ios/Fabric/ExpoFabricViewObjC.mm
+@@ -133,7 +133,7 @@ static std::unordered_map<std::string, ExpoViewComponentDescriptor::Flavor> _com
+       }
+     }
+ 
+-    [self updateProps:propsMap];
++    [self expoUpdateProps:propsMap];
+     [self viewDidUpdateProps];
+   }
+ }
+@@ -154,7 +154,7 @@ static std::unordered_map<std::string, ExpoViewComponentDescriptor::Flavor> _com
+ 
+ #pragma mark - Methods to override in Swift
+ 
+-- (void)updateProps:(nonnull NSDictionary<NSString *, id> *)props
++- (void)expoUpdateProps:(nonnull NSDictionary<NSString *, id> *)props
+ {
+   // Implemented in `ExpoFabricView.swift`
+ }
+diff --git a/node_modules/expo-modules-core/ios/Interfaces/FileSystem/EXFilePermissionModuleInterface.h b/node_modules/expo-modules-core/ios/Interfaces/FileSystem/EXFilePermissionModuleInterface.h
+index e5d8be7..baf5c12 100644
+--- a/node_modules/expo-modules-core/ios/Interfaces/FileSystem/EXFilePermissionModuleInterface.h
++++ b/node_modules/expo-modules-core/ios/Interfaces/FileSystem/EXFilePermissionModuleInterface.h
+@@ -2,9 +2,13 @@
+ 
+ #import <ExpoModulesCore/EXFileSystemInterface.h>
+ 
++NS_ASSUME_NONNULL_BEGIN
++
+ @protocol EXFilePermissionModuleInterface
+ 
+ - (EXFileSystemPermissionFlags)getPathPermissions:(NSString *)path;
+ 
+ @end
+ 
++NS_ASSUME_NONNULL_END
++
+diff --git a/node_modules/expo-modules-core/ios/Interfaces/FileSystem/EXFileSystemInterface.h b/node_modules/expo-modules-core/ios/Interfaces/FileSystem/EXFileSystemInterface.h
+index fca4649..6ee538a 100644
+--- a/node_modules/expo-modules-core/ios/Interfaces/FileSystem/EXFileSystemInterface.h
++++ b/node_modules/expo-modules-core/ios/Interfaces/FileSystem/EXFileSystemInterface.h
+@@ -2,6 +2,8 @@
+ 
+ #import <Foundation/Foundation.h>
+ 
++NS_ASSUME_NONNULL_BEGIN
++
+ typedef NS_OPTIONS(unsigned int, EXFileSystemPermissionFlags) {
+   EXFileSystemPermissionNone = 0,
+   EXFileSystemPermissionRead = 1 << 1,
+@@ -17,7 +19,9 @@ typedef NS_OPTIONS(unsigned int, EXFileSystemPermissionFlags) {
+ 
+ // TODO: Move permissionsForURI to EXFileSystemManagerInterface
+ - (EXFileSystemPermissionFlags)permissionsForURI:(NSURL *)uri;
+-- (nonnull NSString *)generatePathInDirectory:(NSString *)directory withExtension:(NSString *)extension;
++- (NSString *)generatePathInDirectory:(NSString *)directory withExtension:(NSString *)extension;
+ - (BOOL)ensureDirExistsWithPath:(NSString *)path;
+ 
+ @end
++
++NS_ASSUME_NONNULL_END
+diff --git a/node_modules/expo-modules-core/ios/JSI/EXJavaScriptRuntime.mm b/node_modules/expo-modules-core/ios/JSI/EXJavaScriptRuntime.mm
+index e0202fd..91ca399 100644
+--- a/node_modules/expo-modules-core/ios/JSI/EXJavaScriptRuntime.mm
++++ b/node_modules/expo-modules-core/ios/JSI/EXJavaScriptRuntime.mm
+@@ -9,6 +9,7 @@
+ #import <jsi/jsi.h>
+ #import <hermes/hermes.h>
+ #import <ReactCommon/SchedulerPriority.h>
++#import <react/renderer/runtimescheduler/RuntimeSchedulerCallInvoker.h>
+ 
+ @implementation EXJavaScriptRuntime {
+   std::shared_ptr<jsi::Runtime> _runtime;
+@@ -53,7 +54,7 @@
+     // See explanation for constructor (8): https://en.cppreference.com/w/cpp/memory/shared_ptr/shared_ptr
+     _runtime = std::shared_ptr<jsi::Runtime>(std::shared_ptr<jsi::Runtime>(), &runtime);
+     _runtimeScheduler = expo::runtimeSchedulerFromRuntime(runtime);
+-    _jsCallInvoker = std::make_shared<RuntimeSchedulerCallInvoker>(_runtimeScheduler);
++    _jsCallInvoker = std::make_shared<react::RuntimeSchedulerCallInvoker>(_runtimeScheduler);
+   }
+   return self;
+ }
+diff --git a/node_modules/expo-modules-core/ios/ReactDelegates/ExpoReactDelegate.swift b/node_modules/expo-modules-core/ios/ReactDelegates/ExpoReactDelegate.swift
+index 81871a0..b84570a 100644
+--- a/node_modules/expo-modules-core/ios/ReactDelegates/ExpoReactDelegate.swift
++++ b/node_modules/expo-modules-core/ios/ReactDelegates/ExpoReactDelegate.swift
+@@ -4,6 +4,7 @@
+  An extensible react instance creation delegate. This class will loop through each `ExpoReactDelegateHandler` to determine the winner to create the instance.
+  */
+ @objc(EXReactDelegate)
++@MainActor
+ public class ExpoReactDelegate: NSObject {
+   private let handlers: [ExpoReactDelegateHandler]
+   public let reactNativeFactory: ExpoReactNativeFactoryProtocol
+@@ -13,18 +14,19 @@ public class ExpoReactDelegate: NSObject {
+     self.reactNativeFactory = reactNativeFactory
+   }
+ 
+-  @objc
+   public func createReactRootView(
+     moduleName: String,
+     initialProperties: [AnyHashable: Any]?,
+     launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+   ) -> UIView {
+-    return self.handlers
+-      .compactMap { $0.createReactRootView(reactDelegate: self, moduleName: moduleName, initialProperties: initialProperties, launchOptions: launchOptions) }
+-      .first(where: { _ in true })
+-      ?? {
+-      return reactNativeFactory.recreateRootView(withBundleURL: nil, moduleName: moduleName, initialProps: initialProperties, launchOptions: launchOptions)
+-    }()
++    MainActor.assumeIsolated {
++      return self.handlers
++        .compactMap { $0.createReactRootView(reactDelegate: self, moduleName: moduleName, initialProperties: initialProperties, launchOptions: launchOptions) }
++        .first(where: { _ in true })
++        ?? {
++        return reactNativeFactory.recreateRootView(withBundleURL: nil, moduleName: moduleName, initialProps: initialProperties, launchOptions: launchOptions)
++      }()
++    }
+   }
+ 
+   @objc

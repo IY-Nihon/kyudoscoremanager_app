@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "RecordAppExpo",
+    "slug": "RecordAppExpo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nitidaikouka.RecordAppExpo",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "16.0",
+            "useModularHeaders": true
+          }
+        }
+      ],
+      "./scripts/withSwift5.js"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "a6bbd2cc-271f-41aa-9cf7-54a4b538de91"
+      }
+    }
+  }
+}

@@ -1,0 +1,68 @@
+name: Build iOS Unsigned Simulator (Diagnostic)
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: 🏗 Checkout
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 📦 Install Dependencies
+        run: npm install
+
+      - name: 🔨 Prebuild Native Folder (Clean)
+        run: npx expo prebuild --platform ios --no-install --clean
+
+      - name: 📂 Check Native Folder
+        working-directory: ios
+        run: |
+          ls -F
+          xcodebuild -list -workspace RecordAppExpo.xcworkspace || xcodebuild -list
+
+
+      - name: 🛠 CocoaPods Install
+        working-directory: ios
+        run: |
+          pod install
+          # Fix FOLLY_HAS_COROUTINES for Xcode 16 directly in Headers if necessary
+          find Pods -type f -name "*.h" -exec sed -i '' -E 's/#define[[:space:]]+FOLLY_HAS_COROUTINES[[:space:]]+1/#define FOLLY_HAS_COROUTINES 0/g' {} + || true
+
+      - name: 🏗 Build App for SIMULATOR (Diagnostic)
+        working-directory: ios
+        run: |
+          xcodebuild build \
+            -workspace RecordAppExpo.xcworkspace \
+            -scheme RecordAppExpo \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -derivedDataPath build_sim \
+            -arch arm64 \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
+
+      - name: 🕵️‍♂️ Automated Simulator Diagnostic Run
+        run: |
+          chmod +x scripts/simulator_debug.sh
+          # Run the debug script with the path to the simulator build
+          ./scripts/simulator_debug.sh ios/build_sim/Build/Products/Release-iphonesimulator/RecordAppExpo.app
+
+      - name: 📤 Upload Simulator Logs & Crash Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulator-diagnostic-results
+          path: |
+            simulator_system_logs_recent.log
+            simulator_app_output.log
+            ~/Library/Logs/DiagnosticReports/*.crash
+            ~/Library/Logs/DiagnosticReports/*.ips

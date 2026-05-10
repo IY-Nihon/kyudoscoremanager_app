@@ -1,0 +1,10 @@
+- [x] `task.md` の作成
+- [x] 設定画面の同期 ([JP_SettingsScreen_1023.js](file:///C:/Users/yutoi/Documents/%E5%BE%A9%E5%85%83%E3%82%A2%E3%83%97%E3%83%AA/AppBase/src/JP_SettingsScreen_1023.js))
+    - [x] 管理者モードトグルの表示条件緩和
+    - [x] サポートボタン（運用ガイド・ヘルプ）の追加
+    - [x] タグ入力プレースホルダーの統一（「新しいタグを追加」）
+- [x] メンバー管理画面の同期 ([JP_MemberScreen_1022.js](file:///C:/Users/yutoi/Documents/%E5%BE%A9%E5%85%83%E3%82%A2%E3%83%97%E3%83%AA/AppBase/src/JP_MemberScreen_1022.js))
+    - [x] ソートロジックの復元（性別ソートの再追加）
+- [x] 分析画面の整合性確認 ([JP_AnalysisScreen_1000.js](file:///C:/Users/yutoi/Documents/%E5%BE%A9%E5%85%83%E3%82%A2%E3%83%97%E3%83%AA/AppBase/src/JP_AnalysisScreen_1000.js))
+    - [x] 卒業生表示トグルのロジック確認
+- [x] 最終動作確認
