@@ -1,0 +1,14 @@
+/**
+ * Module ID: 794
+ */
+"use strict";
+
+const g = (typeof global !== "undefined" ? global : typeof window !== "undefined" ? window : this);
+const r = require;
+const i = (typeof metroImport !== 'undefined' ? metroImport : undefined);
+const a = (typeof id !== 'undefined' ? id : 794);
+const m = module;
+const e = exports;
+const d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
+
+"use strict";Object.defineProperty(e,'__esModule',{value:!0}),Object.defineProperty(e,"localize",{enumerable:!0,get:function(){return t}});var n=require("./module_795");const t={ordinalNumber:(n,t)=>{const o=Number(n),u=o%100;if(u>20||u<10)switch(u%10){case 1:return o+"st";case 2:return o+"nd";case 3:return o+"rd"}return o+"th"},era:(0,n.buildLocalizeFn)({values:{narrow:["B","A"],abbreviated:["BC","AD"],wide:["Before Christ","Anno Domini"]},defaultWidth:"wide"}),quarter:(0,n.buildLocalizeFn)({values:{narrow:["1","2","3","4"],abbreviated:["Q1","Q2","Q3","Q4"],wide:["1st quarter","2nd quarter","3rd quarter","4th quarter"]},defaultWidth:"wide",argumentCallback:n=>n-1}),month:(0,n.buildLocalizeFn)({values:{narrow:["J","F","M","A","M","J","J","A","S","O","N","D"],abbreviated:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],wide:["January","February","March","April","May","June","July","August","September","October","November","December"]},defaultWidth:"wide"}),day:(0,n.buildLocalizeFn)({values:{narrow:["S","M","T","W","T","F","S"],short:["Su","Mo","Tu","We","Th","Fr","Sa"],abbreviated:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],wide:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]},defaultWidth:"wide"}),dayPeriod:(0,n.buildLocalizeFn)({values:{narrow:{am:"a",pm:"p",midnight:"mi",noon:"n",morning:"morning",afternoon:"afternoon",evening:"evening",night:"night"},abbreviated:{am:"AM",pm:"PM",midnight:"midnight",noon:"noon",morning:"morning",afternoon:"afternoon",evening:"evening",night:"night"},wide:{am:"a.m.",pm:"p.m.",midnight:"midnight",noon:"noon",morning:"morning",afternoon:"afternoon",evening:"evening",night:"night"}},defaultWidth:"wide",formattingValues:{narrow:{am:"a",pm:"p",midnight:"mi",noon:"n",morning:"in the morning",afternoon:"in the afternoon",evening:"in the evening",night:"at night"},abbreviated:{am:"AM",pm:"PM",midnight:"midnight",noon:"noon",morning:"in the morning",afternoon:"in the afternoon",evening:"in the evening",night:"at night"},wide:{am:"a.m.",pm:"p.m.",midnight:"midnight",noon:"noon",morning:"in the morning",afternoon:"in the afternoon",evening:"in the evening",night:"at night"}},defaultFormattingWidth:"wide"})}

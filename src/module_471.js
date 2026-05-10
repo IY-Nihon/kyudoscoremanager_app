@@ -1,0 +1,14 @@
+/**
+ * Module ID: 471
+ */
+"use strict";
+
+const g = (typeof global !== "undefined" ? global : typeof window !== "undefined" ? window : this);
+const _r = require;
+const i = (typeof metroImport !== 'undefined' ? metroImport : undefined);
+const a = (typeof id !== 'undefined' ? id : 471);
+const m = module;
+const _e = exports;
+const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
+
+"use strict";Object.defineProperty(_e,'__esModule',{value:!0}),_e.SceneView=function({screen:d,route:v,navigation:p,routeState:f,getState:k,setState:y,options:C,clearOptions:h}){const b=e.useRef(void 0),j=e.useCallback(()=>b.current,[]),{addOptionsGetter:O}=(0,c.useOptionsGetters)({key:v.key,options:C,navigation:p}),S=e.useCallback(e=>{b.current=e},[]),x=e.useCallback(()=>{const e=k().routes.find(e=>e.key===v.key);return e?e.state:void 0},[k,v.key]),P=e.useCallback(e=>{const t=k(),n=t.routes.map(t=>t.key===v.key&&t.state!==e?Object.assign({},t,{state:e}):t);(0,r.isArrayEqual)(t.routes,n)||y(Object.assign({},t,{routes:n}))},[k,v.key,y]),M=e.useRef(!0);e.useEffect(()=>{M.current=!1}),e.useEffect(()=>h,[]);const _=e.useCallback(()=>M.current,[]),E=e.useContext(s.NavigationFocusedRouteStateContext),[N,R]=e.useState(null),w=e.useMemo(()=>({isConsumed:e=>!!N&&N.has(e),setConsumed:e=>{R(t=>{if(t&&t.has(e))return t;const n=new WeakMap;return n.set(e,!0),n})}}),[N]),G=e.useMemo(()=>{const e={routes:[{key:v.key,name:v.name,params:v.params,path:v.path}]},t=n=>{const r=n?.routes[0];return r?{routes:[Object.assign({},r,{state:t(r.state)})]}:e};return t(E)},[E,v.key,v.name,v.params,v.path]),F=e.useMemo(()=>({state:f,getState:x,setState:P,getKey:j,setKey:S,getIsInitial:_,addOptionsGetter:O}),[f,x,P,j,S,_,O]),I=d.getComponent?d.getComponent():d.component;return(0,l.jsx)(t.ConsumedParamsContext.Provider,{value:w,children:(0,l.jsx)(o.NavigationStateContext.Provider,{value:F,children:(0,l.jsx)(s.NavigationFocusedRouteStateContext.Provider,{value:G,children:(0,l.jsx)(n.EnsureSingleNavigator,{children:(0,l.jsx)(u.StaticContainer,{name:d.name,render:I||d.children,navigation:p,route:v,children:void 0!==I?(0,l.jsx)(I,{navigation:p,route:v}):void 0!==d.children?d.children({navigation:p,route:v}):null})})})})})};var e=(function(e){if(e&&e.__esModule)return e;var t={};return e&&Object.keys(e).forEach(function(n){var r=Object.getOwnPropertyDescriptor(e,n);Object.defineProperty(t,n,r.get?r:{enumerable:!0,get:function(){return e[n]}})}),t.default=e,t})(require("./module_37")),t=require("./ConsumedParamsContext_466"),n=require("./SingleNavigatorContext_253"),r=require("./module_455"),s=require("./NavigationFocusedRouteStateContext_472"),o=require("./NavigationStateContext_260"),u=require("./StaticContainer_473"),c=require("./module_268"),l=require("./module_254")
