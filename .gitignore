@@ -33,6 +33,7 @@ yarn-error.*
 
 # APIキーを含むファイル（セキュリティ対策）
 src/IS_WEB_199.js
+src/db_178.js
 
 # typescript
 *.tsbuildinfo
