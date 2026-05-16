@@ -45,7 +45,7 @@ const CustomTabBar = ({ state, descriptors, navigation }: any) => {
 
             return (
               <TouchableOpacity
-                key={index}
+                key={route.key}
                 onPress={onPress}
                 style={[styles.tabButton, isFocused && styles.tabButtonActive]}
               >

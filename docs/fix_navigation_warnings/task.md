@@ -1,0 +1,4 @@
+- [ ] ナビゲーションコンポーネントの修正 (src/JP_MainNavigator_216.js)
+- [ ] 履歴画面のキー重複警告の修正 (src/JP_HistoryScreen_692.js)
+- [ ] 出欠画面のキー重複警告の修正 (src/AttendanceScreen.js)
+- [ ] 動作確認（警告が解消されたか確認）

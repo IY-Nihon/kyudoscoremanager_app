@@ -17,8 +17,13 @@ var F = require("./module_592");
 var j = require("./module_427");
 var db = require("./db_178");
 var firestore = require("./module_188");
-var docPicker = require("expo-document-picker");
-var fs = require("expo-file-system");
+// Web-safe lazy imports to prevent null.default crash on web
+var _docPickerModule = null;
+var _fsModule = null;
+try { _docPickerModule = require("expo-document-picker"); } catch(e) {}
+try { _fsModule = require("expo-file-system"); } catch(e) {}
+var docPicker = _docPickerModule || { getDocumentAsync: async () => ({ canceled: true, assets: [] }) };
+var fs = _fsModule || { readAsStringAsync: async () => '', EncodingType: { Base64: 'base64' } };
 
 const AttendanceScreen = () => {
   const { members, sessions, activeGroupId } = (0, b.useScoreStore)();
@@ -295,11 +300,11 @@ const AttendanceScreen = () => {
         (0, j.jsxs)(o.View, { style: styles.tabRow, children: [(0, j.jsx)(o.TouchableOpacity, { style: [styles.tab, tab === 'stats' && styles.tabActive], onPress: () => setTab('stats'), children: (0, j.jsx)(o.Text, { style: [styles.tabText, tab === 'stats' && styles.tabTextActive], children: "出席統計" }) }), (0, j.jsx)(o.TouchableOpacity, { style: [styles.tab, tab === 'days' && styles.tabActive], onPress: () => setTab('days'), children: (0, j.jsx)(o.Text, { style: [styles.tabText, tab === 'days' && styles.tabTextActive], children: "練習日設定" }) })] })
       ] }),
       tab === 'stats' && (0, j.jsxs)(o.View, { style: styles.rangeSelector, children: [(0, j.jsx)(o.TouchableOpacity, { style: [styles.rangeBtn, rangeType === 'month' && styles.rangeBtnActive], onPress: () => setRangeType('month'), children: (0, j.jsx)(o.Text, { style: [styles.rangeBtnText, rangeType === 'month' && styles.rangeBtnTextActive], children: "月間" }) }), (0, j.jsx)(o.TouchableOpacity, { style: [styles.rangeBtn, rangeType === 'year' && styles.rangeBtnActive], onPress: () => setRangeType('year'), children: (0, j.jsx)(o.Text, { style: [styles.rangeBtnText, rangeType === 'year' && styles.rangeBtnTextActive], children: "年度" }) }), (0, j.jsx)(o.TouchableOpacity, { style: [styles.rangeBtn, rangeType === 'all' && styles.rangeBtnActive], onPress: () => setRangeType('all'), children: (0, j.jsx)(o.Text, { style: [styles.rangeBtnText, rangeType === 'all' && styles.rangeBtnTextActive], children: "すべて" }) })] }),
-      (tab === 'days' || rangeType !== 'all') && (0, j.jsxs)(o.View, { style: styles.monthNav, children: [(0, j.jsx)(o.TouchableOpacity, { onPress: () => (tab === 'days' || rangeType === 'month') ? changeMonth(-1) : changeYear(-1), children: (0, j.jsx)(m.Ionicons, { name: "chevron-back", size: 24, color: "#007AFF" }) }), (0, j.jsxs)(o.Text, { style: styles.monthText, children: (tab === 'days' || rangeType === 'month') ? [`${selectedYear}年 ${selectedMonth}月`] : [`${currentFiscalYear}年度`] }), (0, j.jsx)(o.TouchableOpacity, { onPress: () => (tab === 'days' || rangeType === 'month') ? changeMonth(1) : changeYear(1), children: (0, j.jsx)(m.Ionicons, { name: "chevron-forward", size: 24, color: "#007AFF" }) })] }),
+      (tab === 'days' || rangeType !== 'all') && (0, j.jsxs)(o.View, { style: styles.monthNav, children: [(0, j.jsx)(o.TouchableOpacity, { onPress: () => (tab === 'days' || rangeType === 'month') ? changeMonth(-1) : changeYear(-1), children: (0, j.jsx)(m.Ionicons, { name: "chevron-back", size: 24, color: "#007AFF" }) }), (0, j.jsxs)(o.Text, { style: styles.monthText, children: (tab === 'days' || rangeType === 'month') ? `${selectedYear}年 ${selectedMonth}月` : `${currentFiscalYear}年度` }), (0, j.jsx)(o.TouchableOpacity, { onPress: () => (tab === 'days' || rangeType === 'month') ? changeMonth(1) : changeYear(1), children: (0, j.jsx)(m.Ionicons, { name: "chevron-forward", size: 24, color: "#007AFF" }) })] }),
       tab === 'stats' ? (
         (0, j.jsxs)(o.View, { style: { flex: 1 }, children: [
           (0, j.jsx)(o.FlatList, {
-            data: stats, keyExtractor: i => i.id, contentContainerStyle: styles.listContent,
+            data: stats, keyExtractor: (i, idx) => i.id && typeof i.id === 'string' ? i.id : `attendance-member-${idx}`, contentContainerStyle: styles.listContent,
             renderItem: ({ item: s }) => (0, j.jsxs)(o.TouchableOpacity, {
               style: styles.memberCard, onPress: () => setSelectedMember(s),
               children: [
@@ -362,7 +367,7 @@ const AttendanceScreen = () => {
             (0, j.jsxs)(o.View, { style: styles.modalStatItem, children: [(0, j.jsx)(o.Text, { style: [styles.modalStatVal, { color: '#FF3B30' }], children: selectedMember.absentCount }), (0, j.jsx)(o.Text, { style: styles.modalStatLab, children: "欠席" })] })
           ] }),
           (0, j.jsx)(o.FlatList, { 
-            data: filteredPracticeDays, 
+            data: filteredPracticeDays, keyExtractor: d => String(d), 
             contentContainerStyle: { paddingBottom: 30 },
             renderItem: ({ item: d }) => { 
               const s = getAttendanceStatus(d, selectedMember.id); 
@@ -438,7 +443,7 @@ const styles = o.StyleSheet.create({
   summaryTitle: { fontSize: 13, color: '#8E8E93' },
   summaryValue: { fontSize: 20, fontWeight: 'bold' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { backgroundColor: '#FFF', width: '95%', padding: 20, borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 10 },
+  modalContent: Object.assign({ backgroundColor: '#FFF', width: '95%', padding: 20, borderRadius: 20 }, (0, F.getShadowStyle)({ shadowColor: '#000', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 10 })),
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
   modalTitle: { fontSize: 22, fontWeight: 'bold', color: '#1C1C1E' },
   modalStatRow: { flexDirection: 'row', backgroundColor: '#F2F2F7', borderRadius: 12, padding: 15, marginBottom: 20, justifyContent: 'space-around' },

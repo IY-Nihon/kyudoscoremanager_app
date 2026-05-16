@@ -1,0 +1,6 @@
+- [x] `JP_HistoryScreen_692.js` のタグレンダリング key 修正
+- [x] `JP_AnalysisScreen_1000.js` のランキング・タグ・グラフ key 修正
+- [x] `JP_RecordScreen_593.js` のアーチャーリスト・フッター key 修正
+- [x] `JP_SettingsScreen_1023.js` のタグテンプレート・エクスポート設定 key 修正
+- [x] `JP_CustomCalendarModal_695.js` のホイールピッカー key 修正
+- [x] ブラウザコンソールでの警告解消確認 (手動)

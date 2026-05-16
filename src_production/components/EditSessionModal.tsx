@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SessionRecord, Mark } from '../models/types';
 import * as Haptics from 'expo-haptics';
 import { CustomCalendarModal } from './CustomCalendarModal';
+import { useScoreStore } from '../stores/useScoreStore';
 
 interface EditSessionModalProps {
   visible: boolean;
@@ -26,8 +27,10 @@ export const EditSessionModal: React.FC<EditSessionModalProps> = ({
   const [includeInStats, setIncludeInStats] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarVisible, setCalendarVisible] = useState(false);
-  
   const [confirmVisible, setConfirmVisible] = useState(false);
+  const [attendanceEdit, setAttendanceEdit] = useState<Record<string, 'present' | 'absent'>>({});
+
+  const { isAdminMode, members: allMembers } = useScoreStore();
 
   useEffect(() => {
     if (session) {
@@ -36,6 +39,7 @@ export const EditSessionModal: React.FC<EditSessionModalProps> = ({
       setShotCount(session.shotCount || 8);
       setIncludeInStats(session.includeInStats);
       setSelectedDate(new Date(session.date));
+      setAttendanceEdit(session.attendance ? { ...session.attendance } : {});
     }
   }, [session, visible]);
 
@@ -56,6 +60,10 @@ export const EditSessionModal: React.FC<EditSessionModalProps> = ({
       includeInStats,
       shotCount
     };
+
+    if (isAdminMode) {
+      updates.attendance = attendanceEdit;
+    }
 
     // If shotCount changed, we might need to truncate marks for each archer
     if (session && shotCount !== session.shotCount) {
@@ -137,6 +145,70 @@ export const EditSessionModal: React.FC<EditSessionModalProps> = ({
               </View>
             </View>
           </View>
+
+          {/* 出席管理セクション（管理者モード時のみ） */}
+          {isAdminMode && allMembers.length > 0 && (
+            <>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <Text style={styles.label}>出席管理</Text>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TouchableOpacity
+                    style={{ paddingVertical: 4, paddingHorizontal: 10, backgroundColor: '#E8F5E9', borderRadius: 8 }}
+                    onPress={() => setAttendanceEdit(prev => {
+                      const next = { ...prev };
+                      allMembers.forEach(m => { next[m.id] = 'present'; });
+                      return next;
+                    })}
+                  >
+                    <Text style={{ color: '#34C759', fontSize: 12, fontWeight: 'bold' }}>全員出席</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{ paddingVertical: 4, paddingHorizontal: 10, backgroundColor: '#F2F2F7', borderRadius: 8 }}
+                    onPress={() => setAttendanceEdit(prev => {
+                      const next = { ...prev };
+                      allMembers.forEach(m => { next[m.id] = 'absent'; });
+                      return next;
+                    })}
+                  >
+                    <Text style={{ color: '#8E8E93', fontSize: 12, fontWeight: 'bold' }}>全員欠席</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              <View style={{ borderWidth: 1, borderColor: '#E5E5EA', borderRadius: 10, marginBottom: 16, overflow: 'hidden' }}>
+                {allMembers.map((member, idx) => (
+                  <TouchableOpacity
+                    key={member.id}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingVertical: 10,
+                      paddingHorizontal: 14,
+                      backgroundColor: idx % 2 === 0 ? '#FAFAFA' : '#FFF',
+                      borderBottomWidth: idx < allMembers.length - 1 ? StyleSheet.hairlineWidth : 0,
+                      borderBottomColor: '#E5E5EA',
+                    }}
+                    onPress={() => setAttendanceEdit(prev => {
+                      const cur = prev[member.id] || 'absent';
+                      return { ...prev, [member.id]: cur === 'present' ? 'absent' : 'present' };
+                    })}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Ionicons
+                        name={attendanceEdit[member.id] === 'present' ? 'checkmark-circle' : 'ellipse-outline'}
+                        size={22}
+                        color={attendanceEdit[member.id] === 'present' ? '#34C759' : '#C7C7CC'}
+                      />
+                      <Text style={{ fontSize: 15, color: '#1C1C1E' }}>{member.name || member.id}</Text>
+                    </View>
+                    <Text style={{ fontSize: 13, fontWeight: 'bold', color: attendanceEdit[member.id] === 'present' ? '#34C759' : '#8E8E93' }}>
+                      {attendanceEdit[member.id] === 'present' ? '出席' : '欠席'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
 
           <TouchableOpacity style={styles.saveButton} onPress={handleSaveAttempt}>
             <Text style={styles.saveButtonText}>変更を保存</Text>
