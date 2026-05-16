@@ -1,0 +1,4 @@
+- [x] `src/JP_EditSessionModal_694.js` に `ScrollView` (`default_297`) のインポートを追加
+- [x] モーダル内のコンテンツを `ScrollView` でラップするように修正
+- [ ] 動作確認 (スクロールができるか検証)
+- [ ] `walkthrough.md` の作成

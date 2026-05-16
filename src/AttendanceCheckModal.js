@@ -80,7 +80,7 @@ const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
       (0, j.jsxs)(o.View, {
         style: styles.statusGroup,
         children: [
-          (0, j.jsx)(StatusButton, { memberId: m.id, status: "present", current: attendance[m.id], label: "\u901a\u5e38", color: "#34C759" }),
+          (0, j.jsx)(StatusButton, { memberId: m.id, status: "present", current: attendance[m.id], label: "\u51fa\u5e2d", color: "#34C759" }),
           (0, j.jsx)(StatusButton, { memberId: m.id, status: "late", current: attendance[m.id], label: "\u9045\u523b", color: "#FF9500" }),
           (0, j.jsx)(StatusButton, { memberId: m.id, status: "early", current: attendance[m.id], label: "\u65e9\u9000", color: "#5856D6" }),
           (0, j.jsx)(StatusButton, { memberId: m.id, status: "absent", current: attendance[m.id], label: "\u6b20\u5e2d", color: "#8E8E93" })

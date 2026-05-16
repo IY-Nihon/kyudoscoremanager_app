@@ -1,0 +1,7 @@
+- [x] JP_MainNavigator_216.js の key 修正
+- [x] JP_RecordScreen_593.js の key 修正
+- [x] JP_HistoryScreen_692.js の key 修正
+- [x] JP_MemberScreen_1022.js の key 修正
+- [x] JP_EditSessionModal_694.js の key 修正
+- [x] JP_AIChatBot_1034.js の key 修正
+- [x] 修正内容のドキュメント化
