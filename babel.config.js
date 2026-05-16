@@ -5,5 +5,11 @@ module.exports = function(api) {
     plugins: [
       "react-native-reanimated/plugin",
     ],
+    overrides: [
+      {
+        test: /\/src\/JP_.*\.js$/,
+        sourceType: 'script',
+      },
+    ],
   };
 };

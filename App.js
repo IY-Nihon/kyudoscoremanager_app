@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { ErrorBoundary } from './src/JP_ErrorBoundary_1041';
 import { OfflineIndicator } from './src/JP_OfflineIndicator_1042';
+import { getShadowStyle } from './src/module_592';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -87,10 +88,12 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: IS_WEB ? 1000 : undefined,
     backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: IS_WEB ? 0.1 : 0,
-    shadowRadius: 12,
-    elevation: 5
+    ...getShadowStyle({
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: IS_WEB ? 0.1 : 0,
+      shadowRadius: 12,
+      elevation: 5
+    })
   }
 });

@@ -1,0 +1,5 @@
+- `[x]` 画像ファイルを `assets/icon.png` に上書き
+- `[x]` 画像ファイルを `assets/favicon.png` に上書き
+- `[x]` `public/` フォルダを作成し、画像を `kyudo_icon.png` として配置
+- `[x]` `package.json` の `deploy:web` スクリプトを修正して OGPタグを挿入
+- `[x]` デプロイを実行して反映を確認

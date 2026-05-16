@@ -160,7 +160,12 @@ export const ArcherColumnView: React.FC<ArcherColumnViewProps> = React.memo(({
                 }
                 return (
                   <Text style={[styles.hitCountSub, { fontSize: 8 * viewScale }]}>
-                    {segments.map((s, i) => <Text key={i}>{s.name} {s.hits}{i < segments.length - 1 ? ', ' : ''}</Text>)}
+                    {segments.map((s, i) => (
+                      <React.Fragment key={`seg-${i}-${s.name}`}>
+                        <Text>{s.name} {s.hits}</Text>
+                        {i < segments.length - 1 ? <Text>{', '}</Text> : null}
+                      </React.Fragment>
+                    ))}
                   </Text>
                 );
               }
@@ -228,10 +233,9 @@ export const ArcherColumnView: React.FC<ArcherColumnViewProps> = React.memo(({
                 const isLocked = (isReadOnly && !isAdminMode) ? false : (archer.lockedBlocks?.[blockIdx] || false);
 
                 return (
-                  <View key={index} style={{ width: columnWidth, height: UIConfig.cellHeight * viewScale }}>
+                  <View key={`total-wrap-${index}`} style={{ width: columnWidth, height: UIConfig.cellHeight * viewScale }}>
 
                     <ScoreCell
-                      key={`${archer.id}-${index}`}
                       archerId={archer.id}
                       index={index}
                       mark={archer.marks?.[index]}
