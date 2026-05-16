@@ -118,7 +118,12 @@ const AttendanceScreen = () => {
       }
     }
     
-    if (status === 'none' && practiceDays[dateStr]) return isFuture ? "none" : "absent";
+    if (status === 'none' && practiceDays[dateStr]) {
+      // 現役生のみ、記録がない場合に「欠席」とする
+      const member = members.find(m => String(m.id) === String(memberId));
+      if (member && (member.grade || 0) < 5) return "absent";
+      return "none";
+    }
     return status;
   };
 
@@ -145,9 +150,28 @@ const AttendanceScreen = () => {
       else if (status === 'early') { presentCount++; earlyCount++; }
       else if (status === 'absent') absentCount++;
     });
-    const totalOfficial = pastPracticeDays.length;
+
+    // その年度に現役だったか判定（留年等も考慮）
+    let isActiveInYear = (m.grade || 0) < 5; // 現在現役なら基本真
+    if (m.grade === 5) {
+      if (m.graduationYear) {
+        // 卒業年度が記録されていれば、表示年度がそれ以前なら現役扱い
+        isActiveInYear = currentFiscalYear <= m.graduationYear;
+      } else if (m.termKi) {
+        // 記録がない場合の救済：期から推測 (現在の1年生の期から逆算)
+        // 卒業年度 ≒ (現在の年度) + (卒業代の期 - 現在の1年生の期)
+        const currentFreshmanTerm = b.useScoreStore.getState().currentFreshmanTerm;
+        const gradYear = currentFiscalYear + (currentFreshmanTerm - 3 - m.termKi);
+        isActiveInYear = currentFiscalYear <= gradYear;
+      }
+    }
+
+    const totalOfficial = isActiveInYear ? pastPracticeDays.length : (presentCount + absentCount);
     const rate = totalOfficial > 0 ? (presentCount / totalOfficial) * 100 : 0;
     return { ...m, rate, presentCount, lateCount, earlyCount, absentCount };
+  }).filter(m => {
+    // 現役生、またはその期間内に一度でも出席実績がある卒業生を表示
+    return (m.grade || 0) < 5 || m.presentCount > 0;
   }).sort((e, t) => {
     // 出席率順は維持
     if (Math.abs(t.rate - e.rate) > 0.001) return t.rate - e.rate;
