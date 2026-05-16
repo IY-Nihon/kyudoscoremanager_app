@@ -148,11 +148,20 @@ const AttendanceScreen = () => {
     const totalOfficial = pastPracticeDays.length;
     const rate = totalOfficial > 0 ? (presentCount / totalOfficial) * 100 : 0;
     return { ...m, rate, presentCount, lateCount, earlyCount, absentCount };
-  }).sort((a, b) => {
-    if (b.rate !== a.rate) return b.rate - a.rate;
-    if (a.grade !== b.grade) return a.grade - b.grade;
-    if (a.gender !== b.gender) return a.gender === '男子' ? -1 : 1;
-    return a.name.localeCompare(b.name, 'ja');
+  }).sort((e, t) => {
+    // 出席率順は維持
+    if (Math.abs(t.rate - e.rate) > 0.001) return t.rate - e.rate;
+
+    // 出席率が同じ場合の基本の並び順（メンバー管理画面と一致）
+    const n_grade = void 0 === e.grade || null === e.grade ? 99 : Number(e.grade),
+      l_grade = void 0 === t.grade || null === t.grade ? 99 : Number(t.grade),
+      s_idx = 0 === n_grade ? 99 : n_grade,
+      a_idx = 0 === l_grade ? 99 : l_grade;
+    if (s_idx !== a_idx) return s_idx - a_idx;
+
+    const c_func = g_val => { const t_gen = (g_val || '').trim(); return '\u7537\u5b50' === t_gen ? 0 : '\u5973\u5b50' === t_gen ? 1 : 2 },
+      u_val = c_func(e.gender) - c_func(t.gender);
+    return 0 !== u_val ? u_val : (e.name || '').localeCompare(t.name || '', 'ja');
   });
 
 
@@ -181,9 +190,10 @@ const AttendanceScreen = () => {
 
   const handlePickPDF = async () => {
     try {
-      const res = await docPicker.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true });
+      const res = await docPicker.getDocumentAsync({ type: ['application/pdf', 'image/*'], copyToCacheDirectory: true });
       if (res.canceled) return;
       const asset = res.assets[0];
+      const mimeType = asset.mimeType || (asset.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
       
       setLoading(true);
       setLoadingMsg("予定表を読み込み中...");
@@ -235,7 +245,7 @@ const AttendanceScreen = () => {
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' }, 
         body: JSON.stringify({
-          contents: [{ parts: [{ text: `添付されたPDFから練習日を抽出し、以下の純粋なJSON形式のみで回答してください。解説は不要です。\n現在は${selectedYear}年${selectedMonth}月付近の予定を解析しています。PDFに年や月の記載が不十分な場合は、この年月を基準にして補完してください。\n[{"date":"YYYY-MM-DD", "reason":"練習"}]` }, { inline_data: { mime_type: "application/pdf", data: base64 } }] }],
+          contents: [{ parts: [{ text: `添付されたファイルから練習日を抽出し、以下の純粋なJSON形式のみで回答してください。解説は不要です。\n現在は${selectedYear}年${selectedMonth}月付近の予定を解析しています。ファイルに年や月の記載が不十分な場合は、この年月を基準にして補完してください。\n[{"date":"YYYY-MM-DD", "reason":"練習"}]` }, { inline_data: { mime_type: mimeType, data: base64 } }] }],
           generationConfig: { temperature: 0.1 }
         })
       });
@@ -308,7 +318,7 @@ const AttendanceScreen = () => {
             renderItem: ({ item: s }) => (0, j.jsxs)(o.TouchableOpacity, {
               style: styles.memberCard, onPress: () => setSelectedMember(s),
               children: [
-                (0, j.jsxs)(o.View, { style: styles.memberInfoMain, children: [(0, j.jsxs)(o.View, { style: styles.nameRow, children: [(0, j.jsx)(o.Text, { style: [styles.genderDot, { color: s.gender === '男子' ? '#007AFF' : s.gender === '女子' ? '#FF2D55' : '#8E8E93' }], children: "●" }), (0, j.jsx)(o.Text, { style: styles.memberName, children: s.name })] }), (0, j.jsxs)(o.Text, { style: styles.memberSub, children: [`${s.termKi ? s.termKi + '期 / ' : ''}${s.gender} / ${s.grade > 0 ? s.grade + '年' : '卒業生'}`] })] }),
+                (0, j.jsxs)(o.View, { style: styles.memberInfoMain, children: [(0, j.jsxs)(o.View, { style: styles.nameRow, children: [(0, j.jsx)(o.Text, { style: [styles.genderDot, { color: s.gender === '男子' ? '#007AFF' : s.gender === '女子' ? '#FF2D55' : '#8E8E93' }], children: "●" }), (0, j.jsx)(o.Text, { style: styles.memberName, children: s.name })] }), (0, j.jsxs)(o.Text, { style: styles.memberSub, children: [`${s.termKi ? s.termKi + '期 / ' : ''}${s.gender} / ${s.grade === 5 ? '卒業生' : s.grade === 0 ? 'その他' : s.grade + '年'}`] })] }),
                 (0, j.jsxs)(o.View, { style: styles.statInfo, children: [(0, j.jsxs)(o.Text, { style: styles.rateText, children: [s.rate.toFixed(1), "%"] }), (0, j.jsxs)(o.Text, { style: styles.countsText, children: [s.presentCount, "/", filteredPracticeDays.length] })] }),
                 (0, j.jsx)(m.Ionicons, { name: "chevron-forward", size: 16, color: "#C7C7CC", style: { marginLeft: 8 } })
               ]
@@ -321,8 +331,8 @@ const AttendanceScreen = () => {
           children: [
             (0, j.jsxs)(o.View, { style: styles.aiSection, children: [
               (0, j.jsxs)(o.View, { style: styles.aiTextContainer, children: [
-                (0, j.jsx)(o.Text, { style: styles.aiTitle, children: "PDFから予定を自動入力" }),
-                (0, j.jsx)(o.Text, { style: styles.aiDescription, children: "練習予定表を選択して解析します。" })
+                (0, j.jsx)(o.Text, { style: styles.aiTitle, children: "AIで予定表をスキャンして自動入力" }),
+                (0, j.jsx)(o.Text, { style: styles.aiDescription, children: "練習予定表（PDF/画像）をAIが解析し、カレンダーへ自動的に登録します。" })
               ] }),
               (0, j.jsx)(o.TouchableOpacity, { 
                 style: styles.aiActionBtn, 
@@ -355,7 +365,7 @@ const AttendanceScreen = () => {
           (0, j.jsxs)(o.View, { style: styles.modalHeader, children: [
             (0, j.jsxs)(o.View, { children: [
               (0, j.jsx)(o.Text, { style: styles.modalTitle, children: selectedMember.name }),
-              (0, j.jsxs)(o.Text, { style: styles.memberSub, children: [`${selectedMember.gender} / ${selectedMember.grade > 0 ? selectedMember.grade + '年' : '卒業生'}`] })
+              (0, j.jsxs)(o.Text, { style: styles.memberSub, children: [`${selectedMember.gender} / ${selectedMember.grade === 5 ? '卒業生' : selectedMember.grade === 0 ? 'その他' : selectedMember.grade + '年'}`] })
             ] }),
             (0, j.jsx)(o.TouchableOpacity, { style: styles.closeBtn, onPress: () => setSelectedMember(null), children: (0, j.jsx)(m.Ionicons, { name: "close", size: 24, color: "#8E8E93" }) })
           ] }),
@@ -425,13 +435,13 @@ const styles = o.StyleSheet.create({
   aiDescription: { fontSize: 12, color: '#8E8E93' },
   aiActionBtn: { backgroundColor: '#5856D6', marginTop: 10, padding: 10, borderRadius: 8, alignItems: 'center' },
   aiActionBtnText: { color: '#FFF', fontWeight: 'bold' },
-  calendarContainer: { backgroundColor: '#FFF', marginHorizontal: 15, borderRadius: 10, padding: 10 },
-  dowRow: { flexDirection: 'row' },
+  calendarContainer: { backgroundColor: '#FFF', marginHorizontal: 15, borderRadius: 10, padding: 10, maxWidth: 500, alignSelf: 'center', width: '92%' },
+  dowRow: { flexDirection: 'row', marginBottom: 5 },
   dowCell: { flex: 1, alignItems: 'center' },
   dowText: { fontSize: 12, color: '#8E8E93' },
   calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  calendarCell: { width: '14.28%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center' },
-  calendarCellEmpty: { width: '14.28%', aspectRatio: 1 },
+  calendarCell: { width: '14.28%', height: 48, justifyContent: 'center', alignItems: 'center' },
+  calendarCellEmpty: { width: '14.28%', height: 48 },
   calendarCellActive: { backgroundColor: '#E1F0FF', borderRadius: 5 },
   calendarCellText: { fontSize: 14 },
   calendarCellTextActive: { color: '#007AFF', fontWeight: 'bold' },
