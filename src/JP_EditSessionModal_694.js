@@ -60,8 +60,10 @@ const C = ({
     const [y, F] = (0, t.useState)(''), [S, T] = (0, t.useState)(''), [B, k] = (0, t.useState)(8), [A, I] = (0, t.useState)(!0), [w, v] = (0, t.useState)(new Date), [z, W] = (0, t.useState)(!1), [D, R] = (0, t.useState)([]), [P, M] = (0, t.useState)(''), [_, O] = (0, t.useState)(!1), [attendanceEdit, setAttendanceEdit] = (0, t.useState)({}), {
         isAdminMode: E,
         tagTemplates: V = [],
-        members: allMembers = []
+        members: membersState = [],
+        alumni: alumniState = []
     } = (0, p.useScoreStore)();
+    const allMembers = (0, t.useMemo)(() => [...membersState, ...alumniState], [membersState, alumniState]);
     (0, t.useEffect)(() => {
         if (l) {
             F(l.title || '');
@@ -427,13 +429,19 @@ const C = ({
                                                 borderBottomWidth: idx < allMembers.length - 1 ? 1 : 0,
                                                 borderBottomColor: '#E5E5EA'
                                             },
-                                            children: [(0, b.jsx)(s.default, {
+                                            children: [(0, b.jsxs)(s.default, {
                                                 style: {
                                                     fontSize: 14,
                                                     color: '#1C1C1E',
                                                     flex: 1
                                                 },
-                                                children: member.name || member.personalId || member.id
+                                                children: [
+                                                    member.name || member.personalId || member.id,
+                                                    (0, b.jsx)(s.default, {
+                                                        style: { fontSize: 11, color: '#8E8E93', marginLeft: 4 },
+                                                        children: ["(", member.grade === 5 ? '卒業生' : member.grade === 0 ? 'その他' : `${member.grade}年`, ")"]
+                                                    })
+                                                ]
                                             }), (0, b.jsxs)(o.default, {
                                                 style: {
                                                     flexDirection: 'row',
