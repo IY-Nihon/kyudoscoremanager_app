@@ -2,9 +2,9 @@
 
 ロード画面の表記とビジュアル改善タスクの進行状況を管理するリストです。
 
-- [x] `JP_LoadingScreen_1037.js` の表記を "Archery Record" から "弓道的中管理" に変更
+- [x] `JP_LoadingScreen_1037.js` の表記を "Archery Record" から "弓道的中管理アプリ" に変更
 - [x] `JP_LoadingScreen_1037.js` で青い四角形の代わりにアプリアイコン画像（`kyudo_icon.png`）を表示するように修正
 - [x] ロード中のスマートなブルーインジケーターを下部へ美しく配置
-- [ ] ローカルでのエクスポート・ビルドテストの実行
-- [ ] 変更内容をGitコミット
-- [ ] Firebase Hostingへ本番デプロイ
+- [x] ローカルでのエクスポート・ビルドテストの実行
+- [x] 変更内容をGitコミット
+- [x] Firebase Hostingへ本番デプロイ
