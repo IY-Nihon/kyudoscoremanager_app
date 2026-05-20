@@ -176,7 +176,7 @@ const AIChatBot = () => {
         functionDeclarations: [
           {
             name: "getDetailedMemberStats",
-            description: "指定した選手の過去の詳細な成績データを取得します。初矢の成績や立順ごとの成績などを分析する際に呼び出してください。",
+            description: "指定した選手の過去の詳細な成績データを取得します。初矢から4本目（留矢）まで何本目の矢が当たりやすいか、また大前や落など立順ごとの成績などを分析する際に呼び出してください。",
             parameters: {
               type: "OBJECT",
               properties: {
@@ -206,73 +206,104 @@ const AIChatBot = () => {
       let response = await result.response;
       
       // Function Calling の処理ループ
-      const calls = response.functionCalls ? response.functionCalls() : [];
-      if (calls && calls.length > 0) {
-        const call = calls[0];
-        console.log('[AIChatBot] Function Called:', call.name, call.args);
+      let calls = response.functionCalls ? response.functionCalls() : [];
+      let loopCount = 0;
+      
+      while (calls && calls.length > 0 && loopCount < 5) {
+        loopCount++;
+        const functionResponses = [];
         
-        if (call.name === "getDetailedMemberStats") {
-          const targetName = call.args.memberName;
-          const targetMember = members.find(m => m.name.includes(targetName));
-          let statsData = { error: "選手が見つかりませんでした。" };
+        for (const call of calls) {
+          console.log('[AIChatBot] Function Called:', call.name, call.args);
           
-          if (targetMember) {
-            let firstShotTotal = 0, firstShotHit = 0;
-            let omaeTotal = 0, omaeHit = 0;
-            let ochiTotal = 0, ochiHit = 0;
+          if (call.name === "getDetailedMemberStats") {
+            const targetName = call.args.memberName;
+            const targetMember = members.find(m => m.name.includes(targetName));
+            let statsData = { error: "選手が見つかりませんでした。" };
             
-            sessions.forEach(session => {
-              const archerIdx = session.archers.findIndex(a => a.memberId === targetMember.id || a.name === targetMember.name);
-              if (archerIdx !== -1) {
-                const archer = session.archers[archerIdx];
-                if (archer.marks && archer.marks.length > 0) {
-                  // 初矢
-                  if (archer.marks[0] === '○' || archer.marks[0] === '×') {
-                    firstShotTotal++;
-                    if (archer.marks[0] === '○') firstShotHit++;
-                  }
-                  // 大前 (1番目)
-                  if (archerIdx === 0) {
-                    archer.marks.forEach(m => {
+            if (targetMember) {
+              let shotTotals = [0, 0, 0, 0];
+              let shotHits = [0, 0, 0, 0];
+              let omaeTotal = 0, omaeHit = 0;
+              let ochiTotal = 0, ochiHit = 0;
+              
+              sessions.forEach(session => {
+                const archerIdx = session.archers.findIndex(a => a.memberId === targetMember.id || a.name === targetMember.name);
+                if (archerIdx !== -1) {
+                  const archer = session.archers[archerIdx];
+                  if (archer.marks && archer.marks.length > 0) {
+                    // 各矢の的中 (1本目, 2本目, 3本目, 4本目)
+                    archer.marks.forEach((m, idx) => {
                       if (m === '○' || m === '×') {
-                        omaeTotal++;
-                        if (m === '○') omaeHit++;
+                        const arrowPos = idx % 4; // 0, 1, 2, 3
+                        shotTotals[arrowPos]++;
+                        if (m === '○') shotHits[arrowPos]++;
                       }
                     });
-                  }
-                  // 落 (最後、3人以上の場合)
-                  if (session.archers.length >= 3 && archerIdx === session.archers.length - 1) {
-                    archer.marks.forEach(m => {
-                      if (m === '○' || m === '×') {
-                        ochiTotal++;
-                        if (m === '○') ochiHit++;
-                      }
-                    });
+                    
+                    // 大前 (1番目)
+                    if (archerIdx === 0) {
+                      archer.marks.forEach(m => {
+                        if (m === '○' || m === '×') {
+                          omaeTotal++;
+                          if (m === '○') omaeHit++;
+                        }
+                      });
+                    }
+                    // 落 (最後、3人以上の場合)
+                    if (session.archers.length >= 3 && archerIdx === session.archers.length - 1) {
+                      archer.marks.forEach(m => {
+                        if (m === '○' || m === '×') {
+                          ochiTotal++;
+                          if (m === '○') ochiHit++;
+                        }
+                      });
+                    }
                   }
                 }
+              });
+              
+              statsData = {
+                name: targetMember.name,
+                firstShotHitRate: shotTotals[0] > 0 ? ((shotHits[0] / shotTotals[0]) * 100).toFixed(1) + "%" : "データなし",
+                secondShotHitRate: shotTotals[1] > 0 ? ((shotHits[1] / shotTotals[1]) * 100).toFixed(1) + "%" : "データなし",
+                thirdShotHitRate: shotTotals[2] > 0 ? ((shotHits[2] / shotTotals[2]) * 100).toFixed(1) + "%" : "データなし",
+                fourthShotHitRate: shotTotals[3] > 0 ? ((shotHits[3] / shotTotals[3]) * 100).toFixed(1) + "%" : "データなし",
+                omaeHitRate: omaeTotal > 0 ? ((omaeHit / omaeTotal) * 100).toFixed(1) + "%" : "データなし",
+                ochiHitRate: ochiTotal > 0 ? ((ochiHit / ochiTotal) * 100).toFixed(1) + "%" : "データなし"
+              };
+            }
+            
+            functionResponses.push({
+              functionResponse: {
+                name: call.name,
+                response: statsData
               }
             });
-            
-            statsData = {
-              name: targetMember.name,
-              firstShotHitRate: firstShotTotal > 0 ? ((firstShotHit / firstShotTotal) * 100).toFixed(1) + "%" : "データなし",
-              omaeHitRate: omaeTotal > 0 ? ((omaeHit / omaeTotal) * 100).toFixed(1) + "%" : "データなし",
-              ochiHitRate: ochiTotal > 0 ? ((ochiHit / ochiTotal) * 100).toFixed(1) + "%" : "データなし"
-            };
           }
-          
+        }
+        
+        if (functionResponses.length > 0) {
           // 関数実行結果をモデルに返す
-          result = await chat.sendMessage([{
-            functionResponse: {
-              name: "getDetailedMemberStats",
-              response: statsData
-            }
-          }]);
+          result = await chat.sendMessage(functionResponses);
           response = await result.response;
+          calls = response.functionCalls ? response.functionCalls() : [];
+        } else {
+          break;
         }
       }
 
-      const responseText = response.text();
+      let responseText = "";
+      try {
+        responseText = response.text();
+      } catch (e) {
+        console.warn("[AIChatBot] Text extraction failed:", e);
+      }
+      
+      if (!responseText || responseText.trim() === "") {
+        responseText = "（回答を生成できませんでした。もう一度お試しください）";
+      }
+
       setMessages([...newMessages, { role: "model", text: responseText }]);
 
     } catch (error) {

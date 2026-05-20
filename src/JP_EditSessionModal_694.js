@@ -51,6 +51,11 @@ var t = require("./module_37"),
     x = require("./JP_CustomCalendarModal_695"),
     p = require("./JP_useScoreStore_174"),
     b = require("./module_427");
+const normalizeTag = e => {
+    if ('string' != typeof e) return '';
+    let t = e.trim().replace(/^[#＃\s]+/, '');
+    return t = t.replace(/＃/g, '#'), t ? `#${t}` : ''
+};
 const C = ({
     visible: e,
     session: l,
@@ -71,7 +76,8 @@ const C = ({
             k(l.shotCount || 8);
             I(l.includeInStats);
             v(new Date(l.date));
-            R([...l.tags || []]);
+            const cleanedTags = Array.from(new Set((l.tags || []).map(normalizeTag).filter(Boolean)));
+            R(cleanedTags);
             let initialAtt = l.attendance ? Object.assign({}, l.attendance) : {};
             if (l.archers && Object.keys(initialAtt).length === 0) {
                 l.archers.forEach(archer => {
@@ -239,14 +245,22 @@ const C = ({
                                             onChangeText: M,
                                             placeholder: "\u65b0\u898f\u8ffd\u52a0",
                                             onSubmitEditing: () => {
-                                                const e = P.trim();
-                                                e && !D.includes(e) && R([...D, e.startsWith('#') ? e : '#' + e]), M('')
+                                                const e = normalizeTag(P);
+                                                if (e) {
+                                                    const normalizedD = D.map(normalizeTag).filter(Boolean);
+                                                    normalizedD.includes(e) || R([...D, e]);
+                                                }
+                                                M('')
                                             }
                                         }), (0, b.jsx)(i.default, {
                                             style: j.tagAddButton,
                                             onPress: () => {
-                                                const e = P.trim();
-                                                e && !D.includes(e) && R([...D, e.startsWith('#') ? e : '#' + e]), M('')
+                                                const e = normalizeTag(P);
+                                                if (e) {
+                                                    const normalizedD = D.map(normalizeTag).filter(Boolean);
+                                                    normalizedD.includes(e) || R([...D, e]);
+                                                }
+                                                M('')
                                             },
                                             children: (0, b.jsx)(s.default, {
                                                 style: j.tagAddButtonText,
@@ -263,7 +277,11 @@ const C = ({
                                         children: V.map(e => (0, b.jsx)(i.default, {
                                             style: j.templateTagChip,
                                             onPress: () => {
-                                                D.includes(e) || R([...D, e])
+                                                const t = normalizeTag(e);
+                                                if (t) {
+                                                    const normalizedD = D.map(normalizeTag).filter(Boolean);
+                                                    normalizedD.includes(t) || R([...D, t]);
+                                                }
                                             },
                                             children: (0, b.jsx)(s.default, {
                                                 style: j.templateTagText,
