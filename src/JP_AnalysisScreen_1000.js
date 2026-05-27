@@ -108,7 +108,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
       const t = e.getFullYear();
       return (e.getMonth() + 1 >= 4 ? t : t - 1) === _;
     }
-    if ('\u6701\u9593\u6307\u5b9a' === R) {
+    if ('\u671f\u9593\u6307\u5b9a' === R) {
       const e = new Date(o);
       e.setHours(0, 0, 0, 0);
       const t = new Date(q);
