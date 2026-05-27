@@ -32,63 +32,42 @@ return M
 }
 });
 var s=require("./module_175"),_t_orig=require("./db_178"),o=require("./module_191"),a=require("./module_188"),i=require("./module_186"),n=e(require("./module_198")),c=require("./IS_WEB_199"),l=require("./module_200"),d=require("./combine_201"),u=e(require("./useAsyncStorage_202")),m=e(require("./default_208"));
-const fb = {
+const t = {
   dbInstance: null,
-  authInstance: null,
   get db() {
-    if (fb.dbInstance) return fb.dbInstance;
+    if (t.dbInstance) return t.dbInstance;
     const res = require("./db_178");
-    if (res && res.db) {
-      fb.dbInstance = res.db;
+    console.log('[Debug Store] require("./db_178") exports:', Object.keys(res), res);
+    if (res.db) {
+      t.dbInstance = res.db;
       return res.db;
     }
-    try {
-      const fbApp = require("./module_179").getApp();
-      const firestore = require("./module_188").getFirestore(fbApp);
-      if (firestore) {
-         fb.dbInstance = firestore;
-         return firestore;
-      }
-    } catch(e) {}
     return undefined;
   },
   get auth() {
-    if (fb.authInstance) return fb.authInstance;
-    const res = require("./db_178");
-    if (res && res.auth) {
-      fb.authInstance = res.auth;
-      return res.auth;
-    }
-    try {
-      const fbApp = require("./module_179").getApp();
-      const auth = require("./module_191").getAuth(fbApp);
-      if (auth) {
-         fb.authInstance = auth;
-         return auth;
-      }
-    } catch(e) {}
-    return undefined;
-  },
-  get rtdb() {
-    return require("./db_178").rtdb;
-  },
-  get ADMIN_EMAIL() {
-    return require("./db_178").ADMIN_EMAIL;
-  },
-  get ADMIN_PASSWORD() {
-    return require("./db_178").ADMIN_PASSWORD;
-  }
+    return require("./db_178").auth;
+ 
+}, get rtdb() {
+ return require("./db_178").rtdb;
+ 
+}, get ADMIN_EMAIL() {
+ return require("./db_178").ADMIN_EMAIL;
+ 
+}, get ADMIN_PASSWORD() {
+ return require("./db_178").ADMIN_PASSWORD;
+ 
+} 
 };
 
 const waitForDb = async () => {
   const mod = require("./db_178");
   if (mod.dbReady) {
     const dbInst = await mod.dbReady;
-    fb.dbInstance = dbInst;
+    t.dbInstance = dbInst;
     return dbInst;
   }
   if (mod.db) {
-    fb.dbInstance = mod.db;
+    t.dbInstance = mod.db;
     return mod.db;
   }
   return undefined;
@@ -162,8 +141,8 @@ lastModified:e.lastModified.toMillis()
 }):e)
 },v=(e,s,o)=>{
 const a=Date.now(),n=M.getState().activeGroupId;
-if(!fb.rtdb||!n)return;
-const c=(0,i.ref)(fb.rtdb,`live_sessions/${
+if(!t.rtdb||!n)return;
+const c=(0,i.ref)(t.rtdb,`live_sessions/${
 n
 }/${
 e
@@ -187,8 +166,8 @@ lastPushedTimestamp:a
 }),(0,i.update)(c,m).catch(e=>console.error('[Store] pushLiveAll Error:',e))
 },T=(e,s,o,a,n)=>{
 const c=Date.now(),l=M.getState().activeGroupId;
-if(!fb.rtdb||!l)return;
-const d=(0,i.ref)(fb.rtdb,`live_sessions/${
+if(!t.rtdb||!l)return;
+const d=(0,i.ref)(t.rtdb,`live_sessions/${
 l
 }/${
 e
@@ -295,7 +274,7 @@ const{
 activeGroupId:d,isFirebaseConnected:u
 }=s();
 if(u&&d)try{
-await(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
+await(0,a.setDoc)((0,a.doc)(t.db,`groups/${
 d
 }/config`,'app_settings'),{
 analysisRankingSettings:l,lastModified:(0,a.serverTimestamp)()
@@ -335,7 +314,7 @@ const{
 activeGroupId:n,isFirebaseConnected:c
 }=s();
 if(c&&n)try{
-await(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
+await(0,a.setDoc)((0,a.doc)(t.db,`groups/${
 n
 }/config`,'app_settings'),{
 tagTemplates:r,currentFreshmanTerm:s().currentFreshmanTerm,lastModified:(0,a.serverTimestamp)()
@@ -357,7 +336,7 @@ const{
 activeGroupId:l,isFirebaseConnected:d
 }=s();
 if(d&&l)try{
-await(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
+await(0,a.setDoc)((0,a.doc)(t.db,`groups/${
 l
 }/config`,'app_settings'),{
 tagTemplates:c,currentFreshmanTerm:s().currentFreshmanTerm,lastModified:(0,a.serverTimestamp)()
@@ -377,7 +356,7 @@ const{
 activeGroupId:c,isFirebaseConnected:l
 }=s();
 if(l&&c)try{
-await(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
+await(0,a.setDoc)((0,a.doc)(t.db,`groups/${
 c
 }/config`,'app_settings'),{
 tagTemplates:n,currentFreshmanTerm:s().currentFreshmanTerm,lastModified:(0,a.serverTimestamp)()
@@ -458,7 +437,7 @@ marks:s,lastModified:l
 }return e
 });
 e({
-archers:d,historyStack:[...s().historyStack,i],redoStack:[],lastLocalChange:l
+archers:d,lastLocalChange:l
 }),n&&c&&T(c,t,o,a,l)
 },toggleMark:(t,o)=>{
 const{
@@ -476,7 +455,7 @@ marks:s,lastModified:c
 }return e
 });
 e({
-archers:d,historyStack:[...s().historyStack,a],redoStack:[],lastLocalChange:c
+archers:d,lastLocalChange:c
 }),i&&n&&T(n,t,o,l,c)
 },clearArcherMarks:t=>{
 const o=Array.isArray(s().archers)?s().archers:[],a=Date.now(),i=o.map(e=>e&&e.id===t?Object.assign({
@@ -516,7 +495,7 @@ lockedBlocks:s,lastModified:u
 }return e
 });
 e({
-historyStack:[...s().historyStack,i],redoStack:[],lastLocalChange:u,archers:m
+lastLocalChange:u,archers:m
 });
 const{
 isLiveActive:p,liveSessionName:h,shotsPerRound:f
@@ -529,7 +508,7 @@ const a=Array.isArray(s().archers)?s().archers:[],i=o?.equipments?.length?[...o.
 name:o?o.name:'',gender:o?o.gender:'\u672a\u8a2d\u5b9a',grade:o?o.grade:1,memberId:o?o.id:void 0,isGuest:!1,bowWeight:i||e.bowWeight,lastModified:Date.now()
 }):e);
 e({
-historyStack:[...s().historyStack,a],redoStack:[],lastLocalChange:Date.now(),archers:n
+lastLocalChange:Date.now(),archers:n
 });
 const{
 isLiveActive:c,liveSessionName:l,shotsPerRound:d
@@ -555,7 +534,7 @@ const a=(Array.isArray(s().archers)?s().archers:[]).map(e=>e&&e.id===t?Object.as
 name:o,isGuest:!0,gender:'\u672a\u8a2d\u5b9a',memberId:void 0,lastModified:Date.now()
 }):e);
 e({
-historyStack:[...s().historyStack,(Array.isArray(s().archers)?s().archers:[])],redoStack:[],lastLocalChange:Date.now(),archers:a
+lastLocalChange:Date.now(),archers:a
 });
 const{
 isLiveActive:i,liveSessionName:n,shotsPerRound:c
@@ -613,7 +592,7 @@ const o=Object.assign({
 },m,{
 lastModified:(0,a.serverTimestamp)(),syncStatus:'\u540c\u671f\u6e08\u307f'
 });
-(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
+(0,a.setDoc)((0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/members`,m.id),o).then(()=>{
 e(e=>({
@@ -693,12 +672,12 @@ newList:m,changed:p
 if((u||p)&&(e({
 sessions:d,trash:m,lastLocalChange:Date.now()
 }),s().activeGroupId)){
-const e=(0,a.writeBatch)(fb.db);
+const e=(0,a.writeBatch)(t.db);
 let o=0;
 u&&d.forEach((i,n)=>{
 if(i.lastModified!==c[n].lastModified){
 const n=JSON.parse(JSON.stringify(i));
-n.lastModified=(0,a.serverTimestamp)(),e.set((0,a.doc)(fb.db,`groups/${
+n.lastModified=(0,a.serverTimestamp)(),e.set((0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/sessions`,i.id),n,{
 merge:!0
@@ -707,7 +686,7 @@ merge:!0
 }),p&&m.forEach((i,n)=>{
 if(i.lastModified!==l[n].lastModified){
 const n=JSON.parse(JSON.stringify(i));
-n.lastModified=(0,a.serverTimestamp)(),e.set((0,a.doc)(fb.db,`groups/${
+n.lastModified=(0,a.serverTimestamp)(),e.set((0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/trash`,i.id),n,{
 merge:!0
@@ -723,7 +702,7 @@ const n=Object.assign({
 },i,{
 lastModified:(0,a.serverTimestamp)(),syncStatus:'\u540c\u671f\u6e08\u307f'
 });
-(0,a.updateDoc)((0,a.doc)(fb.db,`groups/${
+(0,a.updateDoc)((0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/members`,o),n).then(()=>{
 console.log(`[Store] Debounced Member Sync Success: ${
@@ -743,7 +722,7 @@ console.error('Update Member Sync Error:',e),delete p[o]
 },deleteMember:o=>{
 s().activeGroupId?(e({
 members:s().members.filter(e=>e.id!==o),lastLocalChange:Date.now()
-}),s().activeGroupId&&(0,a.deleteDoc)((0,a.doc)(fb.db,`groups/${
+}),s().activeGroupId&&(0,a.deleteDoc)((0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/members`,o)).catch(e=>console.error('Delete Member Sync Error:',e))):n.default.alert('\u6a29\u9650\u30a8\u30e9\u30fc','\u30e1\u30f3\u30d0\u30fc\u306e\u524a\u9664\u306f\u56e3\u4f53\u30ed\u30b0\u30a4\u30f3\u6642\u306e\u307f\u53ef\u80fd\u3067\u3059\u3002')
 },ensurePersonalIds:async()=>{
@@ -764,7 +743,7 @@ do{
 s=Math.floor(1e3+9e3*Math.random()).toString(),t++
 }while(e.includes(s)&&t<5e3);
 return s
-},h=(0,a.writeBatch)(fb.db);
+},h=(0,a.writeBatch)(t.db);
 let f=0;
 for(let e=0;
 e<c.length;
@@ -774,7 +753,7 @@ c[e]=Object.assign({
 
 },c[e],{
 personalId:p(s),lastModified:o,syncStatus:'\u540c\u671f\u6e08\u307f'
-}),h.set((0,a.doc)(fb.db,`groups/${
+}),h.set((0,a.doc)(t.db,`groups/${
 n
 }/members`,c[e].id),Object.assign({
 
@@ -789,7 +768,7 @@ l[e]=Object.assign({
 
 },l[e],{
 personalId:p(s),lastModified:o,syncStatus:'\u540c\u671f\u6e08\u307f'
-}),h.set((0,a.doc)(fb.db,`groups/${
+}),h.set((0,a.doc)(t.db,`groups/${
 n
 }/alumni`,l[e].id),Object.assign({
 
@@ -829,7 +808,7 @@ const i=Object.assign({
 },m,{
 lastModified:(0,a.serverTimestamp)(),syncStatus:'\u540c\u671f\u6e08\u307f'
 });
-(0,a.updateDoc)((0,a.doc)(fb.db,`groups/${
+(0,a.updateDoc)((0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/members`,o),i).then(()=>{
 e(e=>({
@@ -863,7 +842,7 @@ const i=Object.assign({
 },d,{
 lastModified:(0,a.serverTimestamp)(),syncStatus:'\u540c\u671f\u6e08\u307f'
 });
-(0,a.updateDoc)((0,a.doc)(fb.db,`groups/${
+(0,a.updateDoc)((0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/members`,o),i).then(()=>{
 e(e=>({
@@ -882,13 +861,13 @@ archers:h,shotsPerRound:f,activeGroupId:S,activeRole:b,myMemberId:y
 id:p,date:Date.now(),title:o,note:d,archers:JSON.parse(JSON.stringify(v)),archerNames:Array.from(new Set(v.map(e=>e&&e.name?e.name.trim():'').filter(Boolean))),shotCount:f||8,includeInStats:u,tags:m,attendance:attendanceData,syncStatus:'\u672a\u540c\u671f',lastModified:Date.now()
 };
 try{
-if(s().liveSessionName&&fb.rtdb){
-const e=(0,i.ref)(fb.rtdb,`live_sessions/${
+if(s().liveSessionName&&t.rtdb){
+const e=(0,i.ref)(t.rtdb,`live_sessions/${
 S
 }/${
 s().liveSessionName
 }`);
-await(0,i.update)((0,i.ref)(fb.rtdb,`live_sessions/${
+await(0,i.update)((0,i.ref)(t.rtdb,`live_sessions/${
 S
 }/${
 s().liveSessionName
@@ -905,7 +884,7 @@ await(0,i.remove)(e)
 isLiveActive:!1,isHost:!1,liveSessionName:null
 }),S){
 if('member'===b){
-const e=(0,a.doc)(fb.db,`groups/${
+const e=(0,a.doc)(t.db,`groups/${
 S
 }/sessions`,p);
 if((await(0,a.getDoc)(e)).exists()){
@@ -913,7 +892,7 @@ const e='\u3053\u306e\u8a18\u9332\u306f\u65e2\u306b\u30af\u30e9\u30a6\u30c9\u306
 throw c.IS_WEB?window.alert(e):n.default.alert('\u4fdd\u5b58\u5236\u9650',e),new Error('Overwriting cloud data from personal mode is prohibited.')
 }
 }const e=JSON.parse(JSON.stringify(T));
-e.syncStatus='\u540c\u671f\u6e08\u307f',e.lastModified=(0,a.serverTimestamp)(),await(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
+e.syncStatus='\u540c\u671f\u6e08\u307f',e.lastModified=(0,a.serverTimestamp)(),await(0,a.setDoc)((0,a.doc)(t.db,`groups/${
 S
 }/sessions`,p),e,{
 merge:!0
@@ -946,8 +925,8 @@ syncStatus:'trashed'
 sessions:c
 });
 try{
-const e=(0,a.writeBatch)(fb.db);
-if(e.delete((0,a.doc)(fb.db,`groups/${
+const e=(0,a.writeBatch)(t.db);
+if(e.delete((0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/sessions`,o)),n){
 const i=JSON.parse(JSON.stringify(Object.assign({
@@ -955,7 +934,7 @@ const i=JSON.parse(JSON.stringify(Object.assign({
 },n,{
 syncStatus:'trashed'
 })));
-i.lastModified=(0,a.serverTimestamp)(),e.set((0,a.doc)(fb.db,`groups/${
+i.lastModified=(0,a.serverTimestamp)(),e.set((0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/trash`,o),i)
 }await e.commit()
@@ -971,9 +950,9 @@ const c=o.map(e=>e.id);
 if(console.log('[Store] Emptying trash:',c.length,'items'),e({
 trash:[]
 }),i&&n)try{
-const e=(0,a.writeBatch)(fb.db);
+const e=(0,a.writeBatch)(t.db);
 c.forEach(s=>{
-e.delete((0,a.doc)(fb.db,`groups/${
+e.delete((0,a.doc)(t.db,`groups/${
 n
 }/trash`,s))
 }),await e.commit(),console.log('[Store] Cloud trash emptied')
@@ -992,10 +971,10 @@ const l=(i||[]).filter(e=>e&&!o.includes(e.id));
 if(e({
 trash:l
 }),n&&c){
-const e=(0,a.writeBatch)(fb.db);
+const e=(0,a.writeBatch)(t.db);
 let s=0;
 o.forEach(o=>{
-o&&(e.delete((0,a.doc)(fb.db,`groups/${
+o&&(e.delete((0,a.doc)(t.db,`groups/${
 c
 }/trash`,o)),s++)
 }),s>0&&(await e.commit(),console.log('[Store] Successfully deleted trash items from cloud'))
@@ -1015,8 +994,8 @@ syncStatus:'trashed'
 }))]
 });
 try{
-const e=(0,a.writeBatch)(fb.db);
-o.forEach(o=>e.delete((0,a.doc)(fb.db,`groups/${
+const e=(0,a.writeBatch)(t.db);
+o.forEach(o=>e.delete((0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/sessions`,o))),i.forEach(o=>{
 const i=JSON.parse(JSON.stringify(Object.assign({
@@ -1024,7 +1003,7 @@ const i=JSON.parse(JSON.stringify(Object.assign({
 },o,{
 syncStatus:'trashed'
 })));
-i.lastModified=(0,a.serverTimestamp)(),i.deletedAt=(0,a.serverTimestamp)(),e.set((0,a.doc)(fb.db,`groups/${
+i.lastModified=(0,a.serverTimestamp)(),i.deletedAt=(0,a.serverTimestamp)(),e.set((0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/trash`,o.id),i)
 }),await e.commit()
@@ -1043,12 +1022,12 @@ e({
 trash:i.filter(e=>e&&e.id!==o),sessions:[c,...l]
 });
 try{
-const e=(0,a.writeBatch)(fb.db);
-e.delete((0,a.doc)(fb.db,`groups/${
+const e=(0,a.writeBatch)(t.db);
+e.delete((0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/trash`,o));
 const i=JSON.parse(JSON.stringify(c));
-i.lastModified=(0,a.serverTimestamp)(),e.set((0,a.doc)(fb.db,`groups/${
+i.lastModified=(0,a.serverTimestamp)(),e.set((0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/sessions`,o),i),await e.commit()
 }catch(e){
@@ -1065,12 +1044,12 @@ e({
 trash:c,sessions:[...l,...s().sessions]
 });
 try{
-const e=(0,a.writeBatch)(fb.db);
-o.forEach(o=>e.delete((0,a.doc)(fb.db,`groups/${
+const e=(0,a.writeBatch)(t.db);
+o.forEach(o=>e.delete((0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/trash`,o))),l.forEach(o=>{
 const i=JSON.parse(JSON.stringify(o));
-i.lastModified=(0,a.serverTimestamp)(),e.set((0,a.doc)(fb.db,`groups/${
+i.lastModified=(0,a.serverTimestamp)(),e.set((0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/sessions`,o.id),i)
 }),await e.commit()
@@ -1100,7 +1079,7 @@ try{
 const e=s().sessions.find(e=>e&&e.id===o);
 if(e){
 const s=JSON.parse(JSON.stringify(e));
-s.lastModified=(0,a.serverTimestamp)(),await(0,a.updateDoc)((0,a.doc)(fb.db,`groups/${
+s.lastModified=(0,a.serverTimestamp)(),await(0,a.updateDoc)((0,a.doc)(t.db,`groups/${
 m
 }/sessions`,o),s),console.log(`[Store] Debounced sync finished for ${
 o
@@ -1249,14 +1228,14 @@ const l=[];
 i.forEach(e=>{
 const s=e.id.toString();
 h.has(s)&&l.push({
-deleteRef:(0,a.doc)(fb.db,`groups/${
+deleteRef:(0,a.doc)(t.db,`groups/${
 o
 }/members`,s)
 })
 }),S.forEach(e=>{
 const s=JSON.parse(JSON.stringify(e));
 l.push({
-setRef:(0,a.doc)(fb.db,`groups/${
+setRef:(0,a.doc)(t.db,`groups/${
 o
 }/members`,e.id),data:Object.assign({
 
@@ -1267,14 +1246,14 @@ lastModified:(0,a.serverTimestamp)()
 }),c.forEach(e=>{
 const s=e.id.toString();
 h.has(s)&&l.push({
-deleteRef:(0,a.doc)(fb.db,`groups/${
+deleteRef:(0,a.doc)(t.db,`groups/${
 o
 }/alumni`,s)
 })
 }),b.forEach(e=>{
 const s=JSON.parse(JSON.stringify(e));
 l.push({
-setRef:(0,a.doc)(fb.db,`groups/${
+setRef:(0,a.doc)(t.db,`groups/${
 o
 }/alumni`,e.id),data:Object.assign({
 
@@ -1285,14 +1264,14 @@ lastModified:(0,a.serverTimestamp)()
 }),d.forEach(e=>{
 const s=e.id.toString();
 f.has(s)&&l.push({
-deleteRef:(0,a.doc)(fb.db,`groups/${
+deleteRef:(0,a.doc)(t.db,`groups/${
 o
 }/sessions`,s)
 })
 }),v.forEach(e=>{
 const s=JSON.parse(JSON.stringify(e));
 l.push({
-setRef:(0,a.doc)(fb.db,`groups/${
+setRef:(0,a.doc)(t.db,`groups/${
 o
 }/sessions`,e.id),data:Object.assign({
 
@@ -1303,14 +1282,14 @@ lastModified:(0,a.serverTimestamp)()
 }),u.forEach(e=>{
 const s=e.id.toString();
 f.has(s)&&l.push({
-deleteRef:(0,a.doc)(fb.db,`groups/${
+deleteRef:(0,a.doc)(t.db,`groups/${
 o
 }/trash`,s)
 })
 }),T.forEach(e=>{
 const s=JSON.parse(JSON.stringify(e));
 l.push({
-setRef:(0,a.doc)(fb.db,`groups/${
+setRef:(0,a.doc)(t.db,`groups/${
 o
 }/trash`,e.id),data:Object.assign({
 
@@ -1322,7 +1301,7 @@ lastModified:(0,a.serverTimestamp)()
 for(let e=0;
 e<l.length;
 e+=400){
-const s=l.slice(e,e+400),o=(0,a.writeBatch)(fb.db);
+const s=l.slice(e,e+400),o=(0,a.writeBatch)(t.db);
 s.forEach(e=>{
 e.deleteRef&&o.delete(e.deleteRef),e.setRef&&o.set(e.setRef,e.data)
 }),await o.commit()
@@ -1336,19 +1315,19 @@ console.error('Migration Error:',e),n.default.alert('\u30a8\u30e9\u30fc','\u79fb
 const{
 activeUserEmail:i,activeGroupId:n,publicGroupId:c
 }=s();
-let l=i||fb.auth.currentUser?.email;
+let l=i||t.auth.currentUser?.email;
 if(!l&&(n||c)){
 console.log('[Store] Fetching group email for password verification...');
 const e=c||n;
 try{
-const s=(0,a.doc)(fb.db,'group_accounts',e.toUpperCase()),o=await(0,a.getDoc)(s);
+const s=(0,a.doc)(t.db,'group_accounts',e.toUpperCase()),o=await(0,a.getDoc)(s);
 o.exists()&&(l=o.data().email)
 }catch(e){
 console.error('[Store] Failed to fetch group email:',e)
 }
 }if(!l)return console.warn('[Store] verifyGroupPassword: No email found to verify.'),!1;
 try{
-return await(0,o.signInWithEmailAndPassword)(fb.auth,l,e),!0
+return await(0,o.signInWithEmailAndPassword)(t.auth,l,e),!0
 }catch(e){
 return console.error('[Store] verifyGroupPassword error:',e),!1
 }
@@ -1363,7 +1342,7 @@ e({
 activeGroupName:o
 });
 try{
-await(0,a.updateDoc)((0,a.doc)(fb.db,'groups',i),{
+await(0,a.updateDoc)((0,a.doc)(t.db,'groups',i),{
 groupName:o
 })
 }catch(e){
@@ -1379,7 +1358,7 @@ e({
 autoPromotionEnabled:o
 });
 try{
-await(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
+await(0,a.setDoc)((0,a.doc)(t.db,`groups/${
 i
 }/config`,'app_settings'),{
 autoPromotionEnabled:o
@@ -1403,7 +1382,7 @@ if(e({
 isLiveActive:o
 }),o){
 const e=s().activeSessionID||'live-current',o=s().liveSessionName||e,a=s().archers||[];
-fb.rtdb&&s().activeGroupId&&(0,i.set)((0,i.ref)(fb.rtdb,`live_sessions/${
+t.rtdb&&s().activeGroupId&&(0,i.set)((0,i.ref)(t.rtdb,`live_sessions/${
 s().activeGroupId
 }/${
 o
@@ -1419,7 +1398,7 @@ if(!o)return;
 const i=new Date,n=i.getFullYear(),c=i.getMonth()+1,l=i.getDate(),d=c>4||4===c&&l>=1;
 try{
 console.log('[AutoPromotion] Fetching latest app_settings...');
-const s=await(0,a.getDoc)((0,a.doc)(fb.db,`groups/${
+const s=await(0,a.getDoc)((0,a.doc)(t.db,`groups/${
 o
 }/config`,'app_settings'));
 if(s.exists()){
@@ -1462,13 +1441,13 @@ o?new Date(o).toLocaleString():'\u306a\u3057'
 syncStatus:'\u540c\u671f\u4e2d'
 });
 try{
-const i=(0,a.collection)(fb.db,`groups/${
+const i=(0,a.collection)(t.db,`groups/${
 s().activeGroupId
-}/sessions`),n=(0,a.collection)(fb.db,`groups/${
+}/sessions`),n=(0,a.collection)(t.db,`groups/${
 s().activeGroupId
-}/members`),c=(0,a.collection)(fb.db,`groups/${
+}/members`),c=(0,a.collection)(t.db,`groups/${
 s().activeGroupId
-}/trash`),l=(0,a.collection)(fb.db,`groups/${
+}/trash`),l=(0,a.collection)(t.db,`groups/${
 s().activeGroupId
 }/alumni`);
 let d,u,m,p;
@@ -1482,8 +1461,8 @@ d.forEach(e=>{
 const s=e.data(),t=f(s.lastModified);
 t>h&&(h=t);
 const cleanedTags=s.tags&&Array.isArray(s.tags)?Array.from(new Set(s.tags.map(normalizeTag).filter(Boolean))):[],originalTags=s.tags||[],isModified=cleanedTags.length!==originalTags.length||cleanedTags.some((e,t)=>e!==originalTags[t]);
-if(isModified&&fb.db){
-const s=(0,a.doc)(fb.db,`groups/${
+if(isModified&&t.db){
+const s=(0,a.doc)(t.db,`groups/${
 M.getState().activeGroupId
 }/sessions`,e.id);
 (0,a.updateDoc)(s,{
@@ -1541,14 +1520,14 @@ if(P.length>0){
 console.log(`[syncSessions] Syncing ${
 P.length
 } pending sessions...`);
-const e=(0,a.writeBatch)(fb.db),o=Date.now();
+const e=(0,a.writeBatch)(t.db),o=Date.now();
 P.forEach(i=>{
 const n=JSON.parse(JSON.stringify(Object.assign({
 
 },i,{
 syncStatus:'\u540c\u671f\u6e08\u307f',lastModified:o
 })));
-e.set((0,a.doc)(fb.db,`groups/${
+e.set((0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/sessions`,i.id),Object.assign({
 
@@ -1592,7 +1571,7 @@ const n=Object.assign({
 lastModified:Date.now()
 });
 i.push({
-type:'set',ref:(0,a.doc)(fb.db,`groups/${
+type:'set',ref:(0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/members`,e.id),data:o(n)
 })
@@ -1605,7 +1584,7 @@ const n=Object.assign({
 lastModified:Date.now()
 });
 i.push({
-type:'set',ref:(0,a.doc)(fb.db,`groups/${
+type:'set',ref:(0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/alumni`,e.id),data:o(n)
 })
@@ -1618,7 +1597,7 @@ const n=o(Object.assign({
 syncStatus:'\u540c\u671f\u6e08\u307f',lastModified:Date.now()
 }));
 i.push({
-type:'set',ref:(0,a.doc)(fb.db,`groups/${
+type:'set',ref:(0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/sessions`,e.id),data:n
 })
@@ -1631,13 +1610,13 @@ const n=Object.assign({
 lastModified:Date.now()
 });
 i.push({
-type:'set',ref:(0,a.doc)(fb.db,`groups/${
+type:'set',ref:(0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/trash`,e.id),data:o(n)
 })
 }
 }),i.push({
-type:'set',ref:(0,a.doc)(fb.db,`groups/${
+type:'set',ref:(0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/config`,'app_settings'),data:{
 currentFreshmanTerm:s().currentFreshmanTerm,tagTemplates:s().tagTemplates,lastPromotionYear:s().lastPromotionYear,lastModified:Date.now()
@@ -1647,7 +1626,7 @@ const n=400;
 for(let e=0;
 e<i.length;
 e+=n){
-const s=i.slice(e,e+n),o=(0,a.writeBatch)(fb.db);
+const s=i.slice(e,e+n),o=(0,a.writeBatch)(t.db);
 s.forEach(e=>{
 'set'===e.type?o.set(e.ref,e.data):'delete'===e.type&&o.delete(e.ref)
 }),await o.commit()
@@ -1686,20 +1665,20 @@ syncStatus:'\u540c\u671f\u30a8\u30e9\u30fc'
 return;
 
 }try{
-const o=await(0,a.getDocs)((0,a.collection)(fb.db,`groups/${
+const o=await(0,a.getDocs)((0,a.collection)(t.db,`groups/${
 s().activeGroupId
 }/members`));
 let n=[];
 o.forEach(e=>n.push(e.data()));
-const c=await(0,a.getDocs)((0,a.collection)(fb.db,`groups/${
+const c=await(0,a.getDocs)((0,a.collection)(t.db,`groups/${
 s().activeGroupId
 }/sessions`));
 let l=[];
 if(c.forEach(e=>l.push(e.data())),console.log('[Store] Loading:',`\u30bb\u30c3\u30b7\u30e7\u30f3 ${
 l.length
 }\u4ef6\u3092\u53d6\u5f97\u3057\u307e\u3057\u305f`),0===l.length&&0===n.length){
-if(!fb.rtdb)return;
-const o=await(0,i.get)((0,i.ref)(fb.rtdb,'appData'));
+if(!t.rtdb)return;
+const o=await(0,i.get)((0,i.ref)(t.rtdb,'appData'));
 if(o.exists()){
 const i=o.val();
 if(i){
@@ -1715,13 +1694,13 @@ const o=Array.isArray(i.members)?i.members.filter(Boolean):Object.values(i.membe
 
 });
 n=o,l=c;
-const p=e=>JSON.parse(JSON.stringify(e)),h=(0,a.writeBatch)(fb.db);
+const p=e=>JSON.parse(JSON.stringify(e)),h=(0,a.writeBatch)(t.db);
 n.forEach(e=>{
-e&&e.id&&h.set((0,a.doc)(fb.db,`groups/${
+e&&e.id&&h.set((0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/members`,e.id),p(e))
 }),l.forEach(e=>{
-e&&e.id&&h.set((0,a.doc)(fb.db,`groups/${
+e&&e.id&&h.set((0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/sessions`,e.id),p(e))
 }),await h.commit(),e({
@@ -1734,13 +1713,13 @@ if(o){
 const i=JSON.parse(o).state;
 if(i){
 n=i.members||[],l=i.sessions||[];
-const o=i.archers||[],c=i.activeSessionID||null,d=i.shotsPerRound||8,u=i.history||[],m=i.trash||[],p=i.alumni||[],h=(0,a.writeBatch)(fb.db);
+const o=i.archers||[],c=i.activeSessionID||null,d=i.shotsPerRound||8,u=i.history||[],m=i.trash||[],p=i.alumni||[],h=(0,a.writeBatch)(t.db);
 n.forEach(e=>{
-e&&e.id&&h.set((0,a.doc)(fb.db,`groups/${
+e&&e.id&&h.set((0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/members`,e.id),e)
 }),l.forEach(e=>{
-e&&e.id&&h.set((0,a.doc)(fb.db,`groups/${
+e&&e.id&&h.set((0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/sessions`,e.id),e)
 }),await h.commit(),e({
@@ -1749,17 +1728,17 @@ archers:o,activeSessionID:c,shotsPerRound:d,history:u,trash:m,alumni:p
 }
 }
 }
-}const d=await(0,a.getDocs)((0,a.collection)(fb.db,`groups/${
+}const d=await(0,a.getDocs)((0,a.collection)(t.db,`groups/${
 s().activeGroupId
 }/trash`));
 let u=[];
 d.forEach(e=>u.push(e.data()));
-const m=await(0,a.getDocs)((0,a.collection)(fb.db,`groups/${
+const m=await(0,a.getDocs)((0,a.collection)(t.db,`groups/${
 s().activeGroupId
 }/alumni`));
 let p=[];
 m.forEach(e=>p.push(e.data()));
-const h=await(0,a.getDoc)((0,a.doc)(fb.db,`groups/${
+const h=await(0,a.getDoc)((0,a.doc)(t.db,`groups/${
 s().activeGroupId
 }/config`,'app_settings'));
 let f=s().currentFreshmanTerm,S=s().tagTemplates,b=s().lastPromotionYear;
@@ -1776,9 +1755,9 @@ syncStatus:'\u540c\u671f\u30a8\u30e9\u30fc'
 })
 }
 },startLiveSync:async o=>{
-if(!fb.rtdb)return!1;
+if(!t.rtdb)return!1;
 try{
-const e=(0,i.ref)(fb.rtdb,`live_sessions/${
+const e=(0,i.ref)(t.rtdb,`live_sessions/${
 s().activeGroupId
 }/${
 o
@@ -1790,8 +1769,8 @@ console.error('Session Name Check Error:',e)
 isLiveActive:!0,isHost:!0,liveSessionName:o,isIncomingLiveSync:!1,lastLocalChange:Date.now()
 });
 const a=s();
-if(!fb.rtdb)return!1;
-const n=(0,i.ref)(fb.rtdb,`live_sessions/${
+if(!t.rtdb)return!1;
+const n=(0,i.ref)(t.rtdb,`live_sessions/${
 s().activeGroupId
 }/${
 o
@@ -1801,7 +1780,7 @@ return v(o,l,a.shotsPerRound),c.IS_WEB&&console.log('\u30e9\u30a4\u30d6\u3092\u9
 const a=o.val();
 if(!a){
 const o=s().liveSessionName;
-return o&&fb.rtdb&&(0,i.off)((0,i.ref)(fb.rtdb,`live_sessions/${
+return o&&t.rtdb&&(0,i.off)((0,i.ref)(t.rtdb,`live_sessions/${
 s().activeGroupId
 }/${
 o
@@ -1811,7 +1790,7 @@ isLiveActive:!1,isHost:!1,liveSessionName:null
 }if(a.timestamp!==s().lastPushedTimestamp){
 if('finished'===a.status){
 const o=s().liveSessionName;
-return o&&fb.rtdb&&(0,i.off)((0,i.ref)(fb.rtdb,`live_sessions/${
+return o&&t.rtdb&&(0,i.off)((0,i.ref)(t.rtdb,`live_sessions/${
 s().activeGroupId
 }/${
 o
@@ -1860,8 +1839,8 @@ return console.error('Start Live Sync Error:',e),!1
 },joinLiveSync:o=>{
 if(s().stopLiveSync(!0),e({
 isLiveActive:!0,isHost:!1,liveSessionName:o,isIncomingLiveSync:!1,lastLocalChange:0
-}),!fb.rtdb)return;
-const a=(0,i.ref)(fb.rtdb,`live_sessions/${
+}),!t.rtdb)return;
+const a=(0,i.ref)(t.rtdb,`live_sessions/${
 s().activeGroupId
 }/${
 o
@@ -1870,7 +1849,7 @@ o
 const a=o.val();
 if(!a){
 const o=s().liveSessionName;
-return o&&fb.rtdb&&(0,i.off)((0,i.ref)(fb.rtdb,`live_sessions/${
+return o&&t.rtdb&&(0,i.off)((0,i.ref)(t.rtdb,`live_sessions/${
 s().activeGroupId
 }/${
 o
@@ -1879,7 +1858,7 @@ isLiveActive:!1,isHost:!1,liveSessionName:null
 })
 }if('finished'===a.status){
 const o=s().liveSessionName;
-return o&&fb.rtdb&&(0,i.off)((0,i.ref)(fb.rtdb,`live_sessions/${
+return o&&t.rtdb&&(0,i.off)((0,i.ref)(t.rtdb,`live_sessions/${
 s().activeGroupId
 }/${
 o
@@ -1927,7 +1906,7 @@ archers:l,shotsPerRound:o
 }),c.IS_WEB&&console.log('\u30e9\u30a4\u30d6\u306b\u53c2\u52a0\u3057\u307e\u3057\u305f: '+o)
 },stopLiveSync:(o=!1)=>{
 const a=s();
-a.liveSessionName&&fb.rtdb&&(0,i.off)((0,i.ref)(fb.rtdb,`live_sessions/${
+a.liveSessionName&&t.rtdb&&(0,i.off)((0,i.ref)(t.rtdb,`live_sessions/${
 a.activeGroupId
 }/${
 a.liveSessionName
@@ -1935,8 +1914,8 @@ a.liveSessionName
 isLiveActive:!1,isHost:!1,liveSessionName:null
 })
 },fetchActiveLiveSessions:async()=>{
-if(!fb.rtdb)return;
-const o=(0,i.ref)(fb.rtdb,`live_sessions/${
+if(!t.rtdb)return;
+const o=(0,i.ref)(t.rtdb,`live_sessions/${
 s().activeGroupId
 }`);
 try{
@@ -1958,10 +1937,10 @@ liveSessionsList:[]
 console.error('Fetch live sessions error:',e)
 }
 },listenToLiveSessions:()=>{
-if(!fb.rtdb)return()=>{
+if(!t.rtdb)return()=>{
 
 };
-const o=(0,i.ref)(fb.rtdb,`live_sessions/${
+const o=(0,i.ref)(t.rtdb,`live_sessions/${
 s().activeGroupId
 }`);
 return(0,i.onValue)(o,s=>{
@@ -1982,8 +1961,8 @@ liveSessionsList:[]
 console.error('Listen to live sessions error:',e)
 })
 },deleteLiveSession:async o=>{
-if(fb.rtdb)try{
-const a=(0,i.ref)(fb.rtdb,`live_sessions/${
+if(t.rtdb)try{
+const a=(0,i.ref)(t.rtdb,`live_sessions/${
 s().activeGroupId
 }/${
 o
@@ -2005,14 +1984,14 @@ console.warn('[Store] listenToSessions: db still undefined after await, aborting
 return;
 
 }s().stopListeningToSessions(),console.log('[Store] Starting real-time session listener');
-const l=(0,a.collection)(fb.db,`groups/${
+const l=(0,a.collection)(t.db,`groups/${
 o
 }/sessions`),m_30=(Date.now()-2592000000),d=(0,a.query)(l,(0,a.where)('date','>',m_30),(0,a.orderBy)('date','desc'),(0,a.limit)(100)),u=(0,a.onSnapshot)(d,t=>{
 const o=[];
 t.forEach(e=>{
 const s=e.data(),cleanedTags=s.tags&&Array.isArray(s.tags)?Array.from(new Set(s.tags.map(normalizeTag).filter(Boolean))):[],originalTags=s.tags||[],isModified=cleanedTags.length!==originalTags.length||cleanedTags.some((e,t)=>e!==originalTags[t]);
-if(isModified&&fb.db&&fb.db._delegate&&'member'!==i){
-const s=(0,a.doc)(fb.db,`groups/${
+if(isModified&&t.db&&t.db._delegate&&'member'!==i){
+const s=(0,a.doc)(t.db,`groups/${
 M.getState().activeGroupId
 }/sessions`,e.id);
 (0,a.updateDoc)(s,{
@@ -2064,7 +2043,7 @@ console.warn('[Store] listenToTrash: db still undefined after await, aborting');
 return;
 
 }s().stopListeningToTrash(),console.log('[Store] Starting real-time trash listener');
-const i=(0,a.collection)(fb.db,`groups/${
+const i=(0,a.collection)(t.db,`groups/${
 o
 }/trash`),n=(0,a.query)(i,(0,a.orderBy)('deletedAt','desc'),(0,a.limit)(50)),c=(0,a.onSnapshot)(n,t=>{
 const o=[];
@@ -2106,7 +2085,7 @@ console.warn('[Store] listenToMembers: db still undefined after await, aborting'
 return;
 
 }s().stopListeningToMembers(),console.log('[Store] Starting real-time member listener');
-const i=(0,a.collection)(fb.db,`groups/${
+const i=(0,a.collection)(t.db,`groups/${
 o
 }/members`),n=(0,a.onSnapshot)(i,t=>{
 const o=[];
@@ -2148,7 +2127,7 @@ console.warn('[Store] listenToAlumni: db still undefined after await, aborting')
 return;
 
 }s().stopListeningToAlumni(),console.log('[Store] Starting real-time alumni listener');
-const i=(0,a.collection)(fb.db,`groups/${
+const i=(0,a.collection)(t.db,`groups/${
 o
 }/alumni`),n=(0,a.onSnapshot)(i,t=>{
 const o=[];
@@ -2207,7 +2186,7 @@ activeGroupId:o,members:i,alumni:c,currentFreshmanTerm:l,isFirebaseConnected:d
 if(!o)return;
 const u=Date.now(),m=(new Date).getFullYear();
 if(d)try{
-const s=await(0,a.getDoc)((0,a.doc)(fb.db,`groups/${
+const s=await(0,a.getDoc)((0,a.doc)(t.db,`groups/${
 o
 }/config`,'app_settings'));
 if(s.exists()){
@@ -2245,7 +2224,7 @@ if(d)try{
 const e=[];
 p.forEach(s=>{
 e.push({
-type:'set',ref:(0,a.doc)(fb.db,`groups/${
+type:'set',ref:(0,a.doc)(t.db,`groups/${
 o
 }/members`,s.id),data:Object.assign({
 
@@ -2254,7 +2233,7 @@ lastModified:(0,a.serverTimestamp)()
 })
 })
 }),e.push({
-type:'set',ref:(0,a.doc)(fb.db,`groups/${
+type:'set',ref:(0,a.doc)(t.db,`groups/${
 o
 }/config`,'app_settings'),data:{
 currentFreshmanTerm:f,lastPromotionYear:m,lastModified:(0,a.serverTimestamp)()
@@ -2263,7 +2242,7 @@ currentFreshmanTerm:f,lastPromotionYear:m,lastModified:(0,a.serverTimestamp)()
 for(let s=0;
 s<e.length;
 s+=400){
-const o=e.slice(s,s+400),i=(0,a.writeBatch)(fb.db);
+const o=e.slice(s,s+400),i=(0,a.writeBatch)(t.db);
 o.forEach(e=>{
 'set'===e.type?i.set(e.ref,e.data,{
 merge:!0
@@ -2283,7 +2262,7 @@ activeGroupId:i,autoPromotionEnabled:n,tagTemplates:c,lastPromotionYear:l,isFire
 if(e({
 currentFreshmanTerm:o,lastLocalChange:Date.now()
 }),d&&i)try{
-await(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
+await(0,a.setDoc)((0,a.doc)(t.db,`groups/${
 i
 }/config`,'app_settings'),{
 currentFreshmanTerm:o,autoPromotionEnabled:n,tagTemplates:c,lastPromotionYear:l,lastModified:(0,a.serverTimestamp)()
@@ -2305,8 +2284,8 @@ archers:[],historyStack:[],redoStack:[],activeSessionID:null,currentSessionTags:
 const{
 isLiveActive:n,liveSessionName:c
 }=s();
-if(o&&n&&c&&fb.rtdb){
-const s=(0,i.ref)(fb.rtdb,`live_sessions/${
+if(o&&n&&c&&t.rtdb){
+const s=(0,i.ref)(t.rtdb,`live_sessions/${
 M.getState().activeGroupId
 }/${
 c
@@ -2329,26 +2308,26 @@ console.log('[Store] Loading:','\u53e4\u3044\u30c7\u30fc\u30bf\u304b\u3089\u306e
 try{
 const s=['members','sessions','alumni','trash'];
 for(const o of s){
-const s=(0,a.collection)(fb.db,`groups/${
+const s=(0,a.collection)(t.db,`groups/${
 e
 }/${
 o
 }`),i=await(0,a.getDocs)(s);
 if(!i.empty){
-const s=(0,a.writeBatch)(fb.db);
+const s=(0,a.writeBatch)(t.db);
 i.forEach(i=>{
 const n=i.data();
-s.set((0,a.doc)(fb.db,`groups/${
+s.set((0,a.doc)(t.db,`groups/${
 e
 }/${
 o
 }`,i.id),n)
 }),await s.commit()
 }
-}const o=(0,a.doc)(fb.db,`groups/${
+}const o=(0,a.doc)(t.db,`groups/${
 e
 }/config/term`),i=await(0,a.getDoc)(o);
-return i.exists()&&await(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
+return i.exists()&&await(0,a.setDoc)((0,a.doc)(t.db,`groups/${
 e
 }/config/term`),i.data()),console.log('[Store] Loading:','\u79fb\u884c\u304c\u5b8c\u4e86\u3057\u307e\u3057\u305f'),console.log('[Migration] Successfully checked/migrated groups/'),{
 success:!0
@@ -2363,7 +2342,7 @@ if(!s().isFirebaseConnected)return{
 success:!1,error:'\u30aa\u30d5\u30e9\u30a4\u30f3\u306e\u305f\u3081\u5b9f\u884c\u3067\u304d\u307e\u305b\u3093'
 };
 try{
-return await(0,o.sendPasswordResetEmail)(fb.auth,e),console.log('Password reset email sent to:',e),{
+return await(0,o.sendPasswordResetEmail)(t.auth,e),console.log('Password reset email sent to:',e),{
 success:!0
 }
 }catch(e){
@@ -2382,7 +2361,7 @@ console.warn('[Store] listenToConfig: db still undefined after await, aborting')
 return;
 
 }try{
-const i=await(0,a.getDoc)((0,a.doc)(fb.db,`groups/${
+const i=await(0,a.getDoc)((0,a.doc)(t.db,`groups/${
 o
 }/config`,'app_settings'));
 if(i.exists()){
@@ -2390,7 +2369,7 @@ const t=i.data();
 console.log('[Store] Config initial fetch from cloud:',t),e({
 autoPromotionEnabled:!1!==t.autoPromotionEnabled,currentFreshmanTerm:t.currentFreshmanTerm||s().currentFreshmanTerm,tagTemplates:t.tagTemplates||s().tagTemplates,lastPromotionYear:t.lastPromotionYear||s().lastPromotionYear
 })
-}const n=await(0,a.getDoc)((0,a.doc)(fb.db,'groups',o));
+}const n=await(0,a.getDoc)((0,a.doc)(t.db,'groups',o));
 if(n.exists()){
 const s=n.data();
 s.groupName&&e({
@@ -2399,7 +2378,7 @@ activeGroupName:s.groupName
 }
 }catch(e){
 console.warn('[Store] Initial config fetch failed (offline?), falling back to local.',e)
-}const i=(0,a.onSnapshot)((0,a.doc)(fb.db,`groups/${
+}const i=(0,a.onSnapshot)((0,a.doc)(t.db,`groups/${
 o
 }/config`,'app_settings'),t=>{
 if(t.exists()){
@@ -2408,7 +2387,7 @@ console.log('[Store] Config updated from cloud (snapshot):',o),e({
 autoPromotionEnabled:!1!==o.autoPromotionEnabled,currentFreshmanTerm:o.currentFreshmanTerm||s().currentFreshmanTerm,tagTemplates:o.tagTemplates||s().tagTemplates,lastPromotionYear:o.lastPromotionYear||s().lastPromotionYear,analysisRankingSettings:o.analysisRankingSettings||s().analysisRankingSettings
 })
 }
-}),n=(0,a.onSnapshot)((0,a.doc)(fb.db,'groups',o),s=>{
+}),n=(0,a.onSnapshot)((0,a.doc)(t.db,'groups',o),s=>{
 if(s.exists()){
 const t=s.data();
 t.groupName&&e({
