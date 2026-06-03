@@ -11,7 +11,7 @@ const _m = module;
 const _e = exports;
 const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
 
-"use strict";function e(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(_e,'__esModule',{value:!0}),Object.defineProperty(_e,"AnalysisScreen",{enumerable:!0,get:function(){return j}});var t=require("./module_37"),n=e(t),o=e(require("./default_144")),l=e(require("./default_217")),a=e(require("./default_45")),r=e(require("./default_297")),s=e(require("./default_382")),i=e(require("./default_386")),d=e(require("./default_398"));require("./module_98");var c=require("./IS_WEB_199");require("./module_420");var u=require("./JP_useScoreStore_174"),h=require("./AntDesign_600"),f=require("./JP_CustomCalendarModal_695"),m=require("./module_592"),x=require("./default_1001"),b=e(x),y=require("./module_427");const j = () => {
+"use strict";function e(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(_e,'__esModule',{value:!0}),Object.defineProperty(_e,"AnalysisScreen",{enumerable:!0,get:function(){return j}});var t=require("./module_37"),n=e(t),o=e(require("./default_144")),l=e(require("./default_217")),a=e(require("./default_45")),r=e(require("./default_297")),s=e(require("./default_382")),i=e(require("./default_386")),d=e(require("./default_398"));require("./module_98");var c=require("./IS_WEB_199");require("./module_420");var u=require("./JP_useScoreStore_174"),h=require("./AntDesign_600"),f=require("./JP_CustomCalendarModal_695"),m=require("./module_592"),x=require("./default_1001"),b=e(x),y=require("./module_427"),{ArrowLocationView}=require("./ArrowLocationView");const j = () => {
   const {
     analysisSelectedTags: e = [],
     analysisTagLogic: a = "AND",
@@ -29,11 +29,59 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
     shotsPerRound: T = 8,
     showAlumniInAnalysis: v,
     setShowAlumniInAnalysis: setAlumni,
-    isHydrated: z
+    isHydrated: z,
+    arrowTargetType
   } = (0, u.useScoreStore)();
 
   const D = (0, u.useScoreStore)(e => e.myMemberName) || '';
   if (!z) return null;
+
+  const gatherAllArrowLocations = (memberId, name, selectedLabel) => {
+    const locations = [];
+    me.forEach(session => {
+      if (!session || !session.archers) return;
+
+      // グラフのデータポイントが選択されている場合、セッションをフィルタリング
+      if (selectedLabel) {
+        const l = new Date(session.date);
+        let sessionLabel = "";
+        if (selectedLabel.endsWith('\u5e74\u5ea6')) { // "年度"
+          sessionLabel = `${l.getMonth() + 1 >= 4 ? l.getFullYear() : l.getFullYear() - 1}\u5e74\u5ea6`;
+        } else if (selectedLabel.includes('/') && selectedLabel.split('/').length === 2) {
+          sessionLabel = `${l.getFullYear()}/${l.getMonth() + 1}`;
+        } else {
+          sessionLabel = `${l.getFullYear()}/${l.getMonth() + 1}/${l.getDate()}`;
+        }
+        if (sessionLabel !== selectedLabel) return;
+      }
+
+      session.archers.forEach(archer => {
+        const substitutions = archer.substitutions || {};
+        const subIdxs = Object.keys(substitutions).map(Number).sort((e, t) => e - t);
+        const subIds = archer.substitutionIds || {};
+        
+        const archerLocations = archer.arrowLocations || [];
+        archerLocations.forEach((loc, idx) => {
+          if (!loc) return;
+          let cId = archer.memberId;
+          let cName = archer.name || '';
+          for (const sIdx of subIdxs) {
+            if (!(sIdx <= idx)) break;
+            cId = subIds[sIdx] || void 0;
+            cName = substitutions[sIdx];
+          }
+          if (memberId ? cId === memberId : cName === name) {
+            const mark = archer.marks ? archer.marks[idx] : undefined;
+            // 的中/外れのマークが登録されている射のみを対象とする
+            if (mark === '○' || mark === '\u25cb' || mark === '×' || mark === '\xd7') {
+              locations.push(Object.assign({}, loc, { mark: mark, shotIndex: idx }));
+            }
+          }
+        });
+      });
+    });
+    return locations;
+  };
 
   const [R, I] = (0, t.useState)('\u3059\u3079\u3066');
   const [W, L] = (0, t.useState)('\u5168\u54e1');
@@ -52,6 +100,31 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
   const [ae, re] = (0, t.useState)(null);
   const [se, ie] = (0, t.useState)('');
   const [de, ce] = (0, t.useState)('');
+  
+  // 的の種類切り替え用ステート
+  const [myTargetType, setMyTargetType] = (0, t.useState)(arrowTargetType || 'kasumi36');
+  const [modalTargetType, setModalTargetType] = (0, t.useState)(arrowTargetType || 'kasumi36');
+
+  // グラフタップ時の選択ラベルステート
+  const [selectedTrendLabel, setSelectedTrendLabel] = (0, t.useState)(null);
+  const [selectedModalTrendLabel, setSelectedModalTrendLabel] = (0, t.useState)(null);
+
+  // 期間・集計単位・射手が変更されたらグラフの選択を解除する
+  n.default.useEffect(() => {
+    setSelectedTrendLabel(null);
+  }, [R, J, W, O, B]);
+
+  // モーダル対象が切り替わったら選択を解除する
+  n.default.useEffect(() => {
+    setSelectedModalTrendLabel(null);
+  }, [ae]);
+
+  // モーダル表示時に的の選択肢を現在のデフォルトに同期
+  n.default.useEffect(() => {
+    if (ae) {
+      setModalTargetType(arrowTargetType || 'kasumi36');
+    }
+  }, [ae, arrowTargetType]);
 
   const ue = e => {
     ne(e);
@@ -75,9 +148,13 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
     G(t => t + e);
   };
 
+  // memberロール時は自分が参加しているセッションのタグのみを収集する
   const ge = n.default.useMemo(() => {
     const t = new Set();
-    E.forEach(e => {
+    const src = 'member' === k && B
+      ? E.filter(s => s && s.archers && (s.archers.some(a => a && (a.memberId === B || (a.substitutionIds && Object.values(a.substitutionIds).includes(B))))))
+      : E;
+    src.forEach(e => {
       e && e.tags && e.tags.forEach(e => t.add(e));
     });
     return Array.from(t).filter(Boolean).sort((t, n) => {
@@ -85,7 +162,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
       const l = e.includes(n);
       return o && !l ? -1 : !o && l ? 1 : t.localeCompare(n);
     });
-  }, [E, e]);
+  }, [E, e, k, B]);
 
   const me = E.filter(t => {
     if (!t) return !1;
@@ -326,8 +403,17 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
   const ke = n.default.useMemo(() => 'member' === k && B ? Se(B, D) : [], [k, B, D, Se]);
   const Be = n.default.useMemo(() => ae ? Se(ae.id, ae.name) : [], [ae, Se]);
 
-  const Ee = ({ data: e }) => {
-    const [a, i] = (0, t.useState)(null);
+  const Ee = ({ data: e, selectedLabel, onSelectLabel }) => {
+    const a = selectedLabel ? e.findIndex(item => item.label === selectedLabel) : null;
+    const i = (index) => {
+      if (null === index) {
+        if (onSelectLabel) onSelectLabel(null);
+      } else {
+        const item = e[index];
+        if (onSelectLabel && item) onSelectLabel(item.label);
+      }
+    };
+
     if (0 === e.length) {
       return (0, y.jsx)(o.default, {
         style: F.noDataGraph,
@@ -463,12 +549,12 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                           (0, y.jsx)(s.default, {
                             onPress: () => p('AND'),
                             style: [{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }, 'AND' === a && { backgroundColor: '#FFF' }],
-                            children: (0, y.jsx)(l.default, { style: { fontSize: 10, fontWeight: 'bold', color: 'AND' === a ? '#007AFF' : '#8E8E93' }, children: "AND" })
+                            children: (0, y.jsx)(l.default, { style: { fontSize: 11, fontWeight: 'bold', color: 'AND' === a ? '#007AFF' : '#8E8E93' }, children: "\u3059\u3079\u3066\u542b\u3080" })
                           }),
                           (0, y.jsx)(s.default, {
                             onPress: () => p('OR'),
                             style: [{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }, 'OR' === a && { backgroundColor: '#FFF' }],
-                            children: (0, y.jsx)(l.default, { style: { fontSize: 10, fontWeight: 'bold', color: 'OR' === a ? '#007AFF' : '#8E8E93' }, children: "OR" })
+                            children: (0, y.jsx)(l.default, { style: { fontSize: 11, fontWeight: 'bold', color: 'OR' === a ? '#007AFF' : '#8E8E93' }, children: "\u3044\u305a\u308c\u304b\u542b\u3080" })
                           })
                         ]
                       })
@@ -592,7 +678,27 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                   })
                 ]
               }),
-              (0, y.jsx)(Ee, { data: ke }),
+              (0, y.jsx)(Ee, { data: ke, selectedLabel: selectedTrendLabel, onSelectLabel: setSelectedTrendLabel }),
+              (0, y.jsxs)(o.default, {
+                style: { marginTop: 20, alignItems: 'center' },
+                children: [
+                  (0, y.jsx)(l.default, { style: [F.sectionSubTitle, { alignSelf: 'flex-start' }], children: selectedTrendLabel ? `\u77e2\u6240\u306e\u50be\u5411 (${selectedTrendLabel})` : "\u77e2\u6240\u306e\u50be\u5411 (\u96c6\u8a08)" }),
+                  (0, y.jsx)(o.default, {
+                    style: { width: '100%', marginBottom: 12 },
+                    children: (0, y.jsx)(we, {
+                      options: [
+                        { label: '霞的(尺二寸)', value: 'kasumi36' },
+                        { label: '星的(尺二寸)', value: 'hoshi36' },
+                        { label: '星的(八寸)', value: 'hoshi24' }
+                      ],
+                      selected: myTargetType,
+                      onSelect: setMyTargetType,
+                      isWrap: !0
+                    })
+                  }),
+                  (0, y.jsx)(ArrowLocationView, { arrowLocations: gatherAllArrowLocations(B, D, selectedTrendLabel), size: 200, targetType: myTargetType, hideNumbers: !0 })
+                ]
+              }),
               (0, y.jsxs)(o.default, {
                 style: { marginTop: 20 },
                 children: [
@@ -738,11 +844,31 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
               children: [
                 (0, y.jsxs)(l.default, { style: F.modalTitle, children: [ae.name, "\u306e\u5206\u6790\u8a73\u7d30"] }),
                 (0, y.jsxs)(l.default, { style: F.modalDesc, children: [R, "\u306e\u6210\u7e3e (", ae.hits, "/", ae.shots, ") ", ae.rate.toFixed(1), "%"] }),
-                (0, y.jsx)(o.default, { style: { marginBottom: 20 }, children: (0, y.jsx)(Ee, { data: Be }) }),
-                (0, y.jsxs)(o.default, {
-                  style: { marginBottom: 16 },
-                  children: [
-                    (0, y.jsx)(l.default, { style: { fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 8 }, children: "\u7acb\u3061\u9806\u5225\u306e\u7684\u4e2d\u7387 (1-4\u5c04\u76ee)" }),
+                 (0, y.jsx)(o.default, { style: { marginBottom: 20 }, children: (0, y.jsx)(Ee, { data: Be, selectedLabel: selectedModalTrendLabel, onSelectLabel: setSelectedModalTrendLabel }) }),
+                 (0, y.jsxs)(o.default, {
+                   style: { marginBottom: 20, alignItems: 'center' },
+                   children: [
+                     (0, y.jsx)(l.default, { style: [{ fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 8, alignSelf: 'flex-start' }], children: selectedModalTrendLabel ? `\u77e2\u6240\u306e\u50be\u5411 (${selectedModalTrendLabel})` : "\u77e2\u6240\u306e\u50be\u5411 (\u96c6\u8a08)" }),
+                     (0, y.jsx)(o.default, {
+                       style: { width: '100%', marginBottom: 12 },
+                       children: (0, y.jsx)(we, {
+                         options: [
+                           { label: '霞的(尺二寸)', value: 'kasumi36' },
+                           { label: '星的(尺二寸)', value: 'hoshi36' },
+                           { label: '星的(八寸)', value: 'hoshi24' }
+                         ],
+                         selected: modalTargetType,
+                         onSelect: setModalTargetType,
+                         isWrap: !0
+                       })
+                     }),
+                     (0, y.jsx)(ArrowLocationView, { arrowLocations: gatherAllArrowLocations(ae.id, ae.name, selectedModalTrendLabel), size: 200, targetType: modalTargetType, hideNumbers: !0 })
+                   ]
+                 }),
+                 (0, y.jsxs)(o.default, {
+                   style: { marginBottom: 16 },
+                   children: [
+                     (0, y.jsx)(l.default, { style: { fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 8 }, children: "\u7acb\u3061\u9806\u5225\u306e\u7684\u4e2d\u7387 (1-4\u5c04\u76ee)" }),
                     (0, y.jsx)(o.default, {
                       style: F.statsGrid,
                       children: Array.from({ length: 4 }).map((e, t) => {

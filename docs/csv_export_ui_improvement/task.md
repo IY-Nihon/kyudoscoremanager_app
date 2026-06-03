@@ -1,0 +1,21 @@
+# CSV書き出しモーダルのUI/UX改善 タスクリスト
+
+- [x] JP_SettingsScreen_1023.js のコード修正
+  - [x] 状態変数 (showTitleSuggestions, showMemberSuggestions) の追加
+  - [x] 候補データの抽出 (titleSuggestions, memberSuggestions) の実装
+- [x] JP_SettingsScreen_1023.js のコード修正
+  - [x] 状態変数 (showTitleSuggestions, showMemberSuggestions) の追加
+  - [x] 候補データの抽出 (titleSuggestions, memberSuggestions) の実装
+  - [x] AND/ORトグル表記を日本語に変更
+  - [x] キーワード・メンバー名入力欄に suggestions UI を配置
+  - [x] スタイルシート D に tagChip, suggestions 関連スタイルを追加
+- [x] 他のタグフィルターのAND/OR日本語化
+  - [x] JP_HistoryScreen_692.js のトグル日本語化
+  - [x] JP_AnalysisScreen_1000.js のトグル日本語化
+- [x] 複数選択・PCスクロールの対応
+  - [x] JP_SettingsScreen_1023.js に selectedKeywords / selectedMembers ステートを追加
+  - [x] チップのトグル選択およびアクティブ表示の実装
+  - [x] 複数選択時のCSVフィルタリングロジックの修正
+  - [x] ScrollView に overflowX: 'auto' などのPCスクロール用スタイル適用
+- [x] ビルド検証と動作確認
+- [x] walkthrough.md の更新

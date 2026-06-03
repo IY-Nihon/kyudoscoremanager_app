@@ -35,6 +35,27 @@ const systemInstructionBase = `あなたは「Kyudo Score Manager」専用の、
 3. [Web検索] 弓道のルールや一般知識など、アプリの仕様外の質問に対しては、Google検索ツールを積極的に活用して最新情報を回答してください。
 【※超重要※】アプリの操作や仕様について回答する際は、必ず以下のQ&Aの内容にのみ基づいて回答してください。「三本線のメニュー」など一般的なアプリの仕様を勝手に推測・創作（ハルシネーション）して答えることは固く禁じます。
 
+【弓道用語の正確な表現と読み仮名に関する厳重指示】
+・以下の弓道用語を出力する際、または読み仮名やルビをふる場合は、誤った読み方（「おまえ」「にまと」「みさん」「らく」など）を決して使用せず、以下の正しい表記と読み方を使用してください：
+  - 大前：おおまえ（「おまえ」は誤り）
+  - 二的：にてき（「にまと」は誤り）
+  - 三的：さんてき（「みさん」は誤り）
+  - 中：なか
+  - 落前：おちまえ
+  - 落：おち（「らく」は誤り）
+  - 留矢：とめや
+  - 甲矢：はや
+  - 乙矢：おとや
+  - 皆中：かいちゅう
+・立ち順（ポジション）の表現について：
+  - 立ちの人数（1人〜多人数）に応じて、弓道で一般的に用いられる正しい立ち順の名称（大前（おおまえ）、二的（にてき）、三的（さんてき）、中（なか）、落前（おちまえ）、落（おち）など）を使い分けてください。
+  - 「三的」は4人立ち以上で3番目の的やポジションを指す際に実在する用語ですので、人数構成に合わせて正しく使用してください。
+  - 的の数や立ち順を表現する際、漢字の読み仮名を勝手に「にまと」「みさん」「おまえ」「らく」などと創作することは厳禁です。必ず正しい弓道の読み方に統一してください。
+
+【Function Calling（ツール使用）に関する超重要指示】
+・新しいメンバー（部員）を追加する場合は、絶対にテキストで「登録しました」などと先に回答しないでください。必ず \`addMember\` ツールを呼び出してください。ツールを呼び出すことで、画面上にユーザーが承認・キャンセルするための「認証ボタン（承認カード）」が表示されます。
+・ツールを呼び出す際は、余計なテキスト出力（擬似コードや解説など）を同時に行わず、ツール呼び出し（Function Call）のみを行ってください。
+
 【回答スタイルに関する重要指示】
 ・回答に「**」や「*」などのMarkdown記号を一切使用しないでください。
 ・強調したい場合は、記号ではなく言葉や適切な改行、または「」などの括弧を使ってください。
@@ -157,7 +178,14 @@ const AIChatBot = () => {
     if (isApproved) {
       if (targetMsg.actionType === 'addMember') {
         const { name, grade, gender } = targetMsg.args;
-        addMember(name, gender, grade);
+        // 性別の値をアプリの定義（男子・女子・未設定）にマッピング変換
+        let finalGender = '未設定';
+        if (gender === 'male' || gender === '男子') {
+          finalGender = '男子';
+        } else if (gender === 'female' || gender === '女子') {
+          finalGender = '女子';
+        }
+        addMember(name, finalGender, grade);
         updatedMessages.push({ role: 'model', text: `${name}さんをメンバーに追加しました。` });
       }
     } else {
@@ -197,13 +225,24 @@ const AIChatBot = () => {
       const qaSection = relevantQA
         ? `\n\n【アプリ操作・仕様Q&A（関連する項目のみ）】\n${relevantQA}`
         : '';
-      const fullInstruction = `${systemInstructionBase}${qaSection}\n\n[今日の日付: ${todayStr} / 昨日: ${yesterdayStr}]\n[部員一覧（計${members.length}名）]\n${memberList}\n\n※成績データは getDetailedMemberStats ツールで取得してください。`;
+      const fullInstruction = `${systemInstructionBase}${qaSection}\n\n[今日の日付: ${todayStr} / 昨日: ${yesterdayStr}]\n[部員一覧（計${members.length}名）]\n${memberList}\n\n※全員の成績データやランキングを取得する場合は getAllMembersStats ツールを、特定の選手一人の過去の詳細成績（本数ごとの的中や大前・落など）を取得する場合は getDetailedMemberStats ツールを使用してください。`;
 
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       
       // Function Calling の宣言
       const tools = [{
         functionDeclarations: [
+          {
+            name: "getAllMembersStats",
+            description: "全部員の的中率や統計情報（総射数、総的中数、的中率）を取得します。「全員の5月の的中率を教えて」「部員のランキングを見せて」などの、部員全体の統計を求める質問に使います。",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                dateFrom: { type: "STRING", description: "集計対象期間の開始日 (YYYY-MM-DD形式)。例: '2026-05-01'" },
+                dateTo: { type: "STRING", description: "集計対象期間の終了日 (YYYY-MM-DD形式)。例: '2026-05-31'" }
+              }
+            }
+          },
           {
             name: "getSessionsByDate",
             description: "日付や期間を指定して練習記録を取得します。「昨日の記録」「今週の練習」「5月の記録」「直近3回」などの質問に使います。dateとdateFrom/dateToとrecentCountはいずれか一つを指定してください。",
@@ -284,7 +323,61 @@ const AIChatBot = () => {
         for (const call of calls) {
           console.log('[AIChatBot] Function Called:', call.name, call.args);
           
-          if (call.name === "getDetailedMemberStats") {
+          if (call.name === "getAllMembersStats") {
+            const { dateFrom, dateTo } = call.args;
+            const from = dateFrom ? new Date(dateFrom).getTime() : 0;
+            const to = dateTo ? new Date(dateTo).getTime() + 86400000 : Infinity;
+            
+            const targetSessions = sessions.filter(s => (s.date || 0) >= from && (s.date || 0) <= to);
+            
+            const rows = members.map(m => {
+              let hits = 0, total = 0;
+              targetSessions.forEach(s => {
+                s.archers.forEach(a => {
+                  if (!a || !a.marks) return;
+                  const subs = a.substitutions || {};
+                  const subIds = a.substitutionIds || {};
+                  const subIndices = Object.keys(subs).map(Number).sort((e, t) => e - t);
+                  
+                  a.marks.forEach((mk, shotIdx) => {
+                    if (mk !== '○' && mk !== '×') return;
+                    
+                    let currentId = a.memberId;
+                    let currentName = a.name || '';
+                    for (const subIdx of subIndices) {
+                      if (subIdx <= shotIdx) {
+                        currentId = subIds[subIdx] || undefined;
+                        currentName = subs[subIdx] || '';
+                      } else {
+                        break;
+                      }
+                    }
+                    
+                    const isM = (m.id && currentId === m.id) || 
+                                (currentName && m.name && currentName.replace(/\s/g,'') === m.name.replace(/\s/g,''));
+                                
+                    if (isM) {
+                      if (mk === '○') { hits++; total++; }
+                      else if (mk === '×') { total++; }
+                    }
+                  });
+                });
+              });
+              const rate = total > 0 ? ((hits / total) * 100).toFixed(1) : '-';
+              return `${m.name}|${rate}|${hits}/${total}`;
+            });
+
+            functionResponses.push({
+              functionResponse: {
+                name: call.name,
+                response: {
+                  count: rows.length,
+                  stats: rows.join('\n'),
+                  message: "集計が完了しました。フォーマット: 名前|的中率|的中数/総射数"
+                }
+              }
+            });
+          } else if (call.name === "getDetailedMemberStats") {
             const targetName = call.args.memberName;
             const targetMember = members.find(m => m.name.includes(targetName));
             let statsData = { error: "選手が見つかりませんでした。" };
@@ -300,50 +393,92 @@ const AIChatBot = () => {
               
               const sortedSessions = [...sessions].sort((a, b) => b.created - a.created);
               sortedSessions.forEach((session, sessionIdx) => {
-                const archerIdx = session.archers.findIndex(a => a.memberId === targetMember.id || a.name === targetMember.name);
-                if (archerIdx !== -1) {
-                  totalSessions++;
-                  const archer = session.archers[archerIdx];
-                  if (archer.marks && archer.marks.length > 0) {
-                    // 各矢の的中 (1本目, 2本目, 3本目, 4本目)
-                    archer.marks.forEach((m, idx) => {
-                      if (m === '○' || m === '×') {
-                        const arrowPos = idx % 4;
-                        shotTotals[arrowPos]++;
-                        if (m === '○') shotHits[arrowPos]++;
-                        totalMarks++;
-                        if (m === '○') hitMarks++;
-                        if (sessionIdx < 10) {
-                          recentTotal++;
-                          if (m === '○') recentHit++;
-                        }
+                let participatedInSession = false;
+                session.archers.forEach((archer, archerIdx) => {
+                  if (!archer || !archer.marks) return;
+                  const subs = archer.substitutions || {};
+                  const subIds = archer.substitutionIds || {};
+                  const subIndices = Object.keys(subs).map(Number).sort((e, t) => e - t);
+                  
+                  archer.marks.forEach((m, idx) => {
+                    if (m !== '○' && m !== '×') return;
+                    
+                    let currentId = archer.memberId;
+                    let currentName = archer.name || '';
+                    for (const subIdx of subIndices) {
+                      if (subIdx <= idx) {
+                        currentId = subIds[subIdx] || undefined;
+                        currentName = subs[subIdx] || '';
+                      } else {
+                        break;
                       }
-                    });
-                    // 皆中判定
-                    for (let i = 0; i < Math.floor(archer.marks.length / 4); i++) {
-                      const group = archer.marks.slice(4 * i, 4 * (i + 1));
-                      if (group.length === 4 && group.every(m => m === '○')) kaichu++;
                     }
                     
-                    // 大前 (1番目)
-                    if (archerIdx === 0) {
-                      archer.marks.forEach(m => {
-                        if (m === '○' || m === '×') {
-                          omaeTotal++;
-                          if (m === '○') omaeHit++;
-                        }
-                      });
+                    const isTarget = (targetMember.id && currentId === targetMember.id) ||
+                                     (currentName && targetMember.name && currentName.replace(/\s/g,'') === targetMember.name.replace(/\s/g,''));
+                                     
+                    if (isTarget) {
+                      participatedInSession = true;
+                      const arrowPos = idx % 4;
+                      shotTotals[arrowPos]++;
+                      if (m === '○') shotHits[arrowPos]++;
+                      totalMarks++;
+                      if (m === '○') hitMarks++;
+                      if (sessionIdx < 10) {
+                        recentTotal++;
+                        if (m === '○') recentHit++;
+                      }
+                      
+                      // 大前 (1番目)
+                      if (archerIdx === 0) {
+                        omaeTotal++;
+                        if (m === '○') omaeHit++;
+                      }
+                      // 落 (最後、3人以上の場合)
+                      if (session.archers.length >= 3 && archerIdx === session.archers.length - 1) {
+                        ochiTotal++;
+                        if (m === '○') ochiHit++;
+                      }
                     }
-                    // 落 (最後、3人以上の場合)
-                    if (session.archers.length >= 3 && archerIdx === session.archers.length - 1) {
-                      archer.marks.forEach(m => {
-                        if (m === '○' || m === '×') {
-                          ochiTotal++;
-                          if (m === '○') ochiHit++;
+                  });
+                  
+                  // 皆中判定
+                  for (let i = 0; i < Math.floor(archer.marks.length / 4); i++) {
+                    let isBlockAllTarget = true;
+                    let isBlockAllHit = true;
+                    for (let l = 0; l < 4; l++) {
+                      const shotIdx = 4 * i + l;
+                      const mark = archer.marks[shotIdx];
+                      
+                      let currentId = archer.memberId;
+                      let currentName = archer.name || '';
+                      for (const subIdx of subIndices) {
+                        if (subIdx <= shotIdx) {
+                          currentId = subIds[subIdx] || undefined; // 交代後の正しいIDを使用
+                          currentName = subs[subIdx] || '';        // 交代後の正しい名前を使用
+                        } else {
+                          break;
                         }
-                      });
+                      }
+                      
+                      const isTarget = (targetMember.id && currentId === targetMember.id) ||
+                                       (currentName && targetMember.name && currentName.replace(/\s/g,'') === targetMember.name.replace(/\s/g,''));
+                      
+                      if (!isTarget) {
+                        isBlockAllTarget = false;
+                        break;
+                      }
+                      if (mark !== '○') {
+                        isBlockAllHit = false;
+                      }
+                    }
+                    if (isBlockAllTarget && isBlockAllHit) {
+                      kaichu++;
                     }
                   }
+                });
+                if (participatedInSession) {
+                  totalSessions++;
                 }
               });
               
@@ -397,10 +532,40 @@ const AIChatBot = () => {
               const total = allMarks.filter(m => m === '○' || m === '×').length;
               const hits = allMarks.filter(m => m === '○').length;
               const hitRate = total > 0 ? ((hits / total) * 100).toFixed(1) + '%' : 'データなし';
-              const archerList = s.archers.map(a => {
-                const aTotal = (a.marks || []).filter(m => m === '○' || m === '×').length;
-                const aHits = (a.marks || []).filter(m => m === '○').length;
-                return `${a.name}:${(a.marks||[]).join('')}(${aHits}/${aTotal})`;
+              const memberStatsMap = new Map(); // メンバーごとの集計マップ
+              s.archers.forEach(a => {
+                if (!a || !a.marks) return;
+                const subs = a.substitutions || {};
+                const subIndices = Object.keys(subs).map(Number).sort((e, t) => e - t);
+                
+                a.marks.forEach((mk, shotIdx) => {
+                  let currentName = a.name || 'ゲスト';
+                  for (const subIdx of subIndices) {
+                    if (subIdx <= shotIdx) {
+                      currentName = subs[subIdx] || '';
+                    } else {
+                      break;
+                    }
+                  }
+                  currentName = currentName.trim();
+                  if (!currentName) currentName = 'ゲスト';
+
+                  if (!memberStatsMap.has(currentName)) {
+                    memberStatsMap.set(currentName, { marks: [], hits: 0, total: 0 });
+                  }
+                  const stat = memberStatsMap.get(currentName);
+                  stat.marks.push(mk);
+                  if (mk === '○') {
+                    stat.hits++;
+                    stat.total++;
+                  } else if (mk === '×') {
+                    stat.total++;
+                  }
+                });
+              });
+
+              const archerList = Array.from(memberStatsMap.entries()).map(([name, stat]) => {
+                return `${name}:${stat.marks.join('')}(${stat.hits}/${stat.total})`;
               }).join(', ');
               return { date: dateStr, title: s.title || '無題', hitRate, totalArrows: total, archers: archerList };
             });
