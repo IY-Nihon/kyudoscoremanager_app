@@ -58,8 +58,28 @@ const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
     });
   };
 
-  const attendingMembers = members.filter(m => attendance[m.id] !== "absent");
-  const absentMembers = members.filter(m => attendance[m.id] === "absent");
+  const sortMembers = (a, b) => {
+    // 1. 学年順 (1→4年、卒業生は末尾)
+    const gradeA = (a.grade === undefined || a.grade === null) ? 99 : Number(a.grade);
+    const gradeB = (b.grade === undefined || b.grade === null) ? 99 : Number(b.grade);
+    const gA = gradeA === 0 ? 99 : gradeA;
+    const gB = gradeB === 0 ? 99 : gradeB;
+    if (gA !== gB) return gA - gB;
+    // 2. 男女順 (男子→女子→未設定)
+    const genderOrder = (g) => {
+      const s = (g || '').trim();
+      if (s === '男子') return 0;
+      if (s === '女子') return 1;
+      return 2;
+    };
+    const genderDiff = genderOrder(a.gender) - genderOrder(b.gender);
+    if (genderDiff !== 0) return genderDiff;
+    // 3. あいうえお順
+    return (a.name || '').localeCompare(b.name || '', 'ja');
+  };
+
+  const attendingMembers = members.filter(m => attendance[m.id] !== "absent").sort(sortMembers);
+  const absentMembers = members.filter(m => attendance[m.id] === "absent").sort(sortMembers);
 
   const renderMemberItem = (m) => (0, j.jsxs)(o.View, {
     style: styles.memberRow,
