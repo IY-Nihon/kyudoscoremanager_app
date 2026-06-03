@@ -125,7 +125,7 @@ id:e.id||'',name:e.name||'',gender:e.gender||'\u672a\u8a2d\u5b9a',grade:'number'
 
 },substitutionIds:e.substitutionIds||{
 
-},bowWeight:e.bowWeight||void 0,lastModified:e.lastModified||0
+},bowWeight:e.bowWeight||void 0,lastModified:e.lastModified||0,arrowLocations:Array.isArray(e.arrowLocations)?e.arrowLocations:Array(e.isSeparator?0:s||8).fill(null)
 }:null,b=(e,s)=>JSON.parse(JSON.stringify(e.map(e=>({
 id:e.id,name:e.name||'',gender:e.gender||'\u672a\u8a2d\u5b9a',grade:e.grade||0,isSeparator:e.isSeparator||!1,isTotalCalculator:e.isTotalCalculator||!1,isGuest:e.isGuest||!1,memberId:e.memberId||null,lockedBlocks:e.lockedBlocks||{
 
@@ -236,7 +236,7 @@ let i='function'==typeof o?o(s()):o;
 i&&(i.sessions&&(i.sessions=cleanUpSessions(i.sessions)),i.trash&&(i.trash=cleanUpSessions(i.trash))),t(i)
 };
 return{
-activeGroupId:null,activeGroupName:null,publicGroupId:null,activeRole:null,myMemberId:null,myMemberName:null,activeUserEmail:null,archers:[],members:[],alumni:[],history:[],sessions:[],trash:[],shotsPerRound:8,activeSessionID:null,historyStack:[],redoStack:[],viewScale:1,syncStatus:'\u672a\u540c\u671f',lastSyncTime:null,isFirebaseConnected:!0,isAdminMode:!1,autoPromotionEnabled:!0,_pendingUpdateTimers:{
+enableArrowLocation:!1,arrowTargetType:'kasumi36',activeArrowLocationEdit:null,activeGroupId:null,activeGroupName:null,publicGroupId:null,activeRole:null,myMemberId:null,myMemberName:null,activeUserEmail:null,archers:[],members:[],alumni:[],history:[],sessions:[],trash:[],shotsPerRound:8,activeSessionID:null,historyStack:[],redoStack:[],viewScale:1,syncStatus:'\u672a\u540c\u671f',lastSyncTime:null,isFirebaseConnected:!0,isAdminMode:!1,autoPromotionEnabled:!0,_pendingUpdateTimers:{
 
 },showSyncErrorPopups:!0,includeInStats:!0,lastLocalChange:0,lastResetHandled:0,lastPushedTimestamp:0,showTrash:!1,sessionUnsubscribe:null,trashUnsubscribe:null,memberUnsubscribe:null,alumniUnsubscribe:null,configUnsubscribe:null,showAlumniInAnalysis:!1,showAlumniInPicker:!1,currentFreshmanTerm:1,historyViewMode:'list',selectedHistorySessionId:null,isAdminModePending:!1,isLiveActive:!1,isHost:!1,liveSessionName:null,isIncomingLiveSync:!1,liveSessionsList:[],analysisSelectedTags:[],analysisTagLogic:'AND',historySelectedTags:[],historyTagLogic:'AND',currentSessionTags:[],tagTemplates:['#\u7acb','#\u7df4\u7fd2\u8a66\u5408','#\u5927\u4f1a','#\u81ea\u4e3b\u7df4\u7fd2','#\u5408\u5bbf'],initializationLogs:[],syncIntervalId:null,lastPromotionYear:null,_pendingMemberTimers:{
 
@@ -395,7 +395,7 @@ showAlumniInPicker:s
 includeInStats:s
 }),addArcher:(t,o)=>{
 const a=Array.isArray(s().archers)?s().archers:[],i={
-id:(0,l.generateUUID)(),name:'',marks:Array(s().shotsPerRound||8).fill(''),gender:o||'\u672a\u8a2d\u5b9a',grade:1,isGuest:!1,isSeparator:!1,isTotalCalculator:!1,lockedBlocks:{
+id:(0,l.generateUUID)(),name:'',marks:Array(s().shotsPerRound||8).fill(''),arrowLocations:Array(s().shotsPerRound||8).fill(null),gender:o||'\u672a\u8a2d\u5b9a',grade:1,isGuest:!1,isSeparator:!1,isTotalCalculator:!1,lockedBlocks:{
 
 },lastModified:Date.now()
 },n='number'!=typeof t||isNaN(t)?[...a,i]:[...a];
@@ -424,7 +424,7 @@ isLiveActive:n,liveSessionName:c,shotsPerRound:d
 n&&c&&v(c,i,d)
 },addTotalCalculator:t=>{
 const o=Array.isArray(s().archers)?s().archers:[],a={
-id:'total-'+(0,l.generateUUID)(),name:'\u8a08',marks:Array(s().shotsPerRound||8).fill(''),isTotalCalculator:!0,gender:'\u672a\u8a2d\u5b9a',grade:0,isGuest:!1,isSeparator:!1,lockedBlocks:{
+id:'total-'+(0,l.generateUUID)(),name:'\u8a08',marks:Array(s().shotsPerRound||8).fill(''),arrowLocations:Array(s().shotsPerRound||8).fill(null),isTotalCalculator:!0,gender:'\u672a\u8a2d\u5b9a',grade:0,isGuest:!1,isSeparator:!1,lockedBlocks:{
 
 },lastModified:Date.now()
 },i='number'==typeof t?[...o]:[...o,a];
@@ -444,6 +444,28 @@ const{
 isLiveActive:n,liveSessionName:c,shotsPerRound:l
 }=s();
 n&&c&&v(c,a,l)
+},setEnableArrowLocation:t=>e({
+enableArrowLocation:t
+}),setArrowTargetType:t=>e({
+arrowTargetType:t
+}),setActiveArrowLocationEdit:t=>e({
+activeArrowLocationEdit:t
+}),updateArrowLocation:(t,o,a)=>{
+const{
+archers:i
+}=s(),n=Date.now(),c=(i||[]).map(e=>{
+if(e.id===t){
+const s=[...e.arrowLocations||[]];
+return s[o]=a,Object.assign({
+
+},e,{
+arrowLocations:s,lastModified:n
+})
+}return e
+});
+e({
+archers:c,historyStack:[...s().historyStack,i],redoStack:[],lastLocalChange:n
+})
 },updateMark:(t,o,a)=>{
 const{
 archers:i,isLiveActive:n,liveSessionName:c
@@ -1560,7 +1582,8 @@ lastModified:(0,a.serverTimestamp)()
 },e,{
 syncStatus:'\u540c\u671f\u6e08\u307f',lastModified:o
 }):e)
-}e({
+}
+e({
 sessions:k,members:O,trash:M,alumni:G,syncStatus:'\u540c\u671f\u6e08\u307f',lastSyncTime:h
 }),console.log(`[syncSessions] Finished. New lastSyncTime: ${
 h
@@ -2026,15 +2049,8 @@ id:e.id,tags:cleanedTags,syncStatus:'\u540c\u671f\u6e08\u307f'
 });
 const a=s().sessions,c=new Set(o.map(e=>e.id)),l=a.filter(e=>!c.has(e.id)&&!e.hasOwnProperty('serverCreatedTime')),d=[...o,...l];
 d.sort((e,s)=>(s.date||0)-(e.date||0));
-let u=d;
-'member'===i&&n&&(u=d.filter(e=>e.archers?.some(e=>e.memberId===n)||Object.values(e.substitutionIds||{
-
-}).includes(n)),console.log(`[Store] Member Mode: Filtered sessions from ${
-d.length
-} to ${
-u.length
-}`)),e({
-sessions:u,syncStatus:'\u540c\u671f\u6e08\u307f',lastSyncTime:Date.now()
+e({
+sessions:d,syncStatus:'\u540c\u671f\u6e08\u307f',lastSyncTime:Date.now()
 }),console.log(`[Store] Real-time session update received: ${
 o.length
 } items (reflected deletions)`)
@@ -2425,7 +2441,7 @@ i(),n()
 }
 },{
 name:'archery-score-storage',storage:(0,d.createJSONStorage)(()=>u.default),partialize:e=>({
-archers:e.archers,members:e.members,sessions:e.sessions,history:e.history,alumni:e.alumni,trash:e.trash,shotsPerRound:e.shotsPerRound,activeSessionID:e.activeSessionID,viewScale:e.viewScale,includeInStats:e.includeInStats,lastSessionTags:e.tagTemplates,currentSessionTags:e.currentSessionTags,activeGroupId:e.activeGroupId,activeGroupName:e.activeGroupName,publicGroupId:e.publicGroupId,activeRole:e.activeRole,activeUserEmail:e.activeUserEmail,myMemberId:e.myMemberId,myMemberName:e.myMemberName,analysisSelectedTags:e.analysisSelectedTags,analysisTagLogic:e.analysisTagLogic,historySelectedTags:e.historySelectedTags,historyTagLogic:e.historyTagLogic,tagTemplates:e.tagTemplates,currentFreshmanTerm:e.currentFreshmanTerm,lastPromotionYear:e.lastPromotionYear,lastSyncTime:e.lastSyncTime,isAdminMode:e.isAdminMode,autoPromotionEnabled:e.autoPromotionEnabled,analysisRankingSettings:e.analysisRankingSettings
+archers:e.archers,members:e.members,sessions:e.sessions,history:e.history,alumni:e.alumni,trash:e.trash,shotsPerRound:e.shotsPerRound,activeSessionID:e.activeSessionID,viewScale:e.viewScale,includeInStats:e.includeInStats,lastSessionTags:e.tagTemplates,currentSessionTags:e.currentSessionTags,activeGroupId:e.activeGroupId,activeGroupName:e.activeGroupName,publicGroupId:e.publicGroupId,activeRole:e.activeRole,activeUserEmail:e.activeUserEmail,myMemberId:e.myMemberId,myMemberName:e.myMemberName,analysisSelectedTags:e.analysisSelectedTags,analysisTagLogic:e.analysisTagLogic,historySelectedTags:e.historySelectedTags,historyTagLogic:e.historyTagLogic,tagTemplates:e.tagTemplates,currentFreshmanTerm:e.currentFreshmanTerm,lastPromotionYear:e.lastPromotionYear,lastSyncTime:e.lastSyncTime,isAdminMode:e.isAdminMode,autoPromotionEnabled:e.autoPromotionEnabled,analysisRankingSettings:e.analysisRankingSettings,enableArrowLocation:e.enableArrowLocation,arrowTargetType:e.arrowTargetType
 }),onRehydrateStorage:()=>{
 console.log('[Store] Hydration starting...');
 const e=Date.now();
