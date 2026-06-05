@@ -1,24 +1,19 @@
 // scripts/backup-firestore.mjs
-// Firestore + RTDB の全データを Google Drive に毎日バックアップするスクリプト
-// 保存期間: 直近365日分（366日以上前のファイルは自動削除）
+// Firestore + RTDB の全データを GitHub Artifacts に毎日バックアップするスクリプト
+// 保存期間: 365日（GitHub Actionsのretention-days設定で管理）
 
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { getDatabase } from 'firebase-admin/database';
-import { google } from 'googleapis';
 import { createGzip } from 'zlib';
-import { Readable } from 'stream';
+import { mkdirSync, writeFileSync } from 'fs';
 
 // ─────────────────────────────────────────
-// 環境変数チェック（起動時に全部まとめて確認）
+// 環境変数チェック
 // ─────────────────────────────────────────
 
-const REQUIRED_ENV = [
-  'FIREBASE_SERVICE_ACCOUNT_JSON',
-  'GDRIVE_SERVICE_ACCOUNT_JSON',
-  'GDRIVE_FOLDER_ID',
-];
+const REQUIRED_ENV = ['FIREBASE_SERVICE_ACCOUNT_JSON'];
 const missingEnv = REQUIRED_ENV.filter(k => !process.env[k]);
 if (missingEnv.length > 0) {
   console.error(`❌ 以下の環境変数（GitHub Secrets）が未設定です:\n  ${missingEnv.join('\n  ')}`);
@@ -27,7 +22,6 @@ if (missingEnv.length > 0) {
 
 // ─────────────────────────────────────────
 // JSON.parse を try-catch で囲む
-// 壊れたJSONの場合にどのSecretが原因かを明示する
 // ─────────────────────────────────────────
 
 let firebaseServiceAccount;
@@ -35,14 +29,6 @@ try {
   firebaseServiceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
 } catch {
   console.error('❌ FIREBASE_SERVICE_ACCOUNT_JSON が不正なJSONです。GitHub Secretsの登録内容を確認してください。');
-  process.exit(1);
-}
-
-let gdriveServiceAccount;
-try {
-  gdriveServiceAccount = JSON.parse(process.env.GDRIVE_SERVICE_ACCOUNT_JSON);
-} catch {
-  console.error('❌ GDRIVE_SERVICE_ACCOUNT_JSON が不正なJSONです。GitHub Secretsの登録内容を確認してください。');
   process.exit(1);
 }
 
@@ -64,16 +50,7 @@ try {
   process.exit(1);
 }
 
-// Google Drive への認証
-// フォルダ共有で編集者権限のみ付与済みのためバックアップフォルダ以外には影響なし
-const driveAuth = new google.auth.GoogleAuth({
-  credentials: gdriveServiceAccount,
-  scopes: ['https://www.googleapis.com/auth/drive'],
-});
-const drive = google.drive({ version: 'v3', auth: driveAuth });
-
-const FOLDER_ID = process.env.GDRIVE_FOLDER_ID;
-const RETENTION_DAYS = 365;
+const OUTPUT_DIR = './backup-output';
 
 // ファイル名に JST の日時を含める（同日複数実行でも区別できる）
 const nowUtc = new Date();
@@ -106,24 +83,6 @@ function gzipBuffer(jsonString) {
     gz.write(jsonString);
     gz.end();
   });
-}
-
-async function withRetry(fn, maxRetries = 3, delayMs = 30000) {
-  const NO_RETRY_STATUS = [401, 403, 404];
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (err) {
-      const status = err?.response?.status;
-      if (NO_RETRY_STATUS.includes(status)) {
-        console.error(`❌ リトライ不要なエラー (HTTP ${status})。処理を中断します。`);
-        throw err;
-      }
-      if (attempt === maxRetries) throw err;
-      console.warn(`⚠️  試行 ${attempt}/${maxRetries} 失敗。${delayMs / 1000}秒後にリトライします... (${err.message})`);
-      await new Promise(resolve => setTimeout(resolve, delayMs));
-    }
-  }
 }
 
 // ─────────────────────────────────────────
@@ -177,12 +136,12 @@ async function main() {
     backupData = {
       exportedAt: nowUtc.toISOString(),
       projectId: 'kyudoscoremanager',
-      retentionDays: RETENTION_DAYS,
       firestore: {},
       rtdb: null,
       auth: {},
     };
 
+    // Firestore を動的検出・全階層再帰取得
     console.log('📁 Firestore コレクションを検出中...');
     const topCollections = await db.listCollections();
     const topColIds = topCollections.map(c => c.id);
@@ -196,6 +155,7 @@ async function main() {
       console.log(`✅ ${colId}: ${docs.length}件\n`);
     }
 
+    // RTDB 全件取得（未保存ライブセッション含む）
     console.log('⚡ RTDB データを取得中...');
     const rtdbSnap = await rtdb.ref('/').once('value');
     const rtdbData = rtdbSnap.val() ?? {};
@@ -220,6 +180,7 @@ async function main() {
     backupData.rtdb = rtdbData;
     console.log('');
 
+    // Firebase Auth ユーザー一覧を取得
     console.log('👤 Firebase Auth ユーザーを取得中...');
     const authUsers = [];
     let pageToken;
@@ -237,10 +198,11 @@ async function main() {
     console.log(`✅ Auth ユーザー: ${authUsers.length}件\n`);
 
   } catch (err) {
-    console.error('❌ データ取得中にエラーが発生しました。アップロードをスキップします。');
+    console.error('❌ データ取得中にエラーが発生しました。保存をスキップします。');
     throw err;
   }
 
+  // gzip 圧縮してローカルに保存（GitHub Artifacts がアップロードする）
   const jsonString = JSON.stringify(backupData, null, 2);
   const sizeKB = Math.round(Buffer.byteLength(jsonString) / 1024);
   console.log(`📄 JSON サイズ: ${sizeKB} KB`);
@@ -249,33 +211,9 @@ async function main() {
   const compressedKB = Math.round(compressed.length / 1024);
   console.log(`📦 圧縮後サイズ: ${compressedKB} KB`);
 
-  console.log(`☁️  Google Drive へアップロード中...`);
-  await withRetry(() => drive.files.create({
-    requestBody: { name: BACKUP_FILENAME, parents: [FOLDER_ID] },
-    media: { mimeType: 'application/gzip', body: Readable.from(compressed) },
-  }));
-  console.log(`✅ アップロード完了: ${BACKUP_FILENAME}`);
-
-  const cutoff = new Date(nowUtc);
-  cutoff.setDate(cutoff.getDate() - RETENTION_DAYS);
-  const cutoffISO = cutoff.toISOString();
-
-  const oldFiles = await withRetry(() => drive.files.list({
-    q: `'${FOLDER_ID}' in parents and createdTime < '${cutoffISO}' and trashed = false`,
-    fields: 'files(id, name, createdTime)',
-    pageSize: 1000,
-  }));
-
-  const toDelete = oldFiles.data.files || [];
-  if (toDelete.length === 0) {
-    console.log('🗑️  削除対象の古いファイルなし');
-  } else {
-    for (const file of toDelete) {
-      await withRetry(() => drive.files.delete({ fileId: file.id }));
-      console.log(`🗑️  削除: ${file.name}`);
-    }
-  }
-
+  mkdirSync(OUTPUT_DIR, { recursive: true });
+  writeFileSync(`${OUTPUT_DIR}/${BACKUP_FILENAME}`, compressed);
+  console.log(`✅ ファイル保存完了: ${OUTPUT_DIR}/${BACKUP_FILENAME}`);
   console.log('\n✅ バックアップ完了！\n');
 }
 
