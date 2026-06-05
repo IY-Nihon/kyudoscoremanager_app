@@ -30,17 +30,22 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-backup-firebase-admin-12-googleapis-140
+          key: ${{ runner.os }}-backup-firebase-admin-12
           restore-keys: |
             ${{ runner.os }}-backup-
 
       # バージョンを固定して予期しないアップデートを防ぐ
       - name: 📦 Install backup dependencies
-        run: npm install --no-save firebase-admin@12 googleapis@140
+        run: npm install --no-save firebase-admin@12
 
       - name: 🔥 Run Firestore backup
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-          GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
-          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
         run: node scripts/backup-firestore.mjs
+
+      - name: ☁️ Upload to GitHub Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-${{ github.run_number }}
+          path: backup-output/
+          retention-days: 365
