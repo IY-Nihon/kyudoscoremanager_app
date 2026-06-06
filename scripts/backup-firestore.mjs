@@ -215,9 +215,14 @@ async function main() {
   writeFileSync(`${OUTPUT_DIR}/${BACKUP_FILENAME}`, compressed);
   console.log(`✅ ファイル保存完了: ${OUTPUT_DIR}/${BACKUP_FILENAME}`);
   console.log('\n✅ バックアップ完了！\n');
+
+  // Firebase の接続（Firestore gRPC・RTDB WebSocket）を明示的に閉じる
+  // これがないと Node.js プロセスがハングして timeout に達するまで終了しない
+  await app.delete();
 }
 
-main().catch(err => {
+main().catch(async err => {
   console.error('\n❌ バックアップ失敗:', err);
+  await app.delete().catch(() => {});
   process.exit(1);
 });
