@@ -114,11 +114,13 @@ async function backupDocument(docRef, depth = 0) {
 }
 
 async function backupCollection(colRef, depth = 0) {
-  const snap = await colRef.get();
+  // listDocuments() を使うことで、フィールドなしでサブコレクションのみ存在する
+  // 「幽霊ドキュメント」も含めて全件取得できる（get() では取得不可）
+  const docRefs = await colRef.listDocuments();
   const results = await Promise.all(
-    snap.docs.map(async docSnap => {
-      const data = await backupDocument(docSnap.ref, depth);
-      return { id: docSnap.id, ...data };
+    docRefs.map(async docRef => {
+      const data = await backupDocument(docRef, depth);
+      return { id: docRef.id, ...data };
     })
   );
   return results;
