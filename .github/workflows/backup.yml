@@ -45,6 +45,11 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
         run: node scripts/backup-firestore.mjs
 
+      - name: 🔍 Verify backup integrity
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: node scripts/verify-exact.mjs
+
       - name: ☁️ Upload to GitHub Artifacts
         uses: actions/upload-artifact@v4
         with:
