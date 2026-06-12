@@ -61,4 +61,6 @@ auth_test_result.txt
 users.csv*
 *.txt
 diagnostic_*
-patch_node_modules_*
+patch_node_modules_*  
+# backup files  
+backup-output/ 
