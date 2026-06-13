@@ -11,17 +11,39 @@ import { gunzipSync } from 'zlib';
 import { resolve } from 'path';
 
 // ─────────────────────────────────────────
+// ① 環境変数チェック・JSON.parse を try-catch で保護
+// ─────────────────────────────────────────
+
+if (!process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+  console.error('❌ FIREBASE_SERVICE_ACCOUNT_JSON が未設定です。');
+  process.exit(1);
+}
+
+let firebaseServiceAccount;
+try {
+  firebaseServiceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+} catch {
+  console.error('❌ FIREBASE_SERVICE_ACCOUNT_JSON が不正なJSONです。');
+  process.exit(1);
+}
+
+// ─────────────────────────────────────────
 // 初期化
 // ─────────────────────────────────────────
 
-const firebaseServiceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-const app = initializeApp({
-  credential: cert(firebaseServiceAccount),
-  databaseURL: 'https://kyudoscoremanager-default-rtdb.firebaseio.com',
-});
-const db = getFirestore();
-const auth = getAuth();
-const rtdb = getDatabase(app);
+let app, db, auth, rtdb;
+try {
+  app = initializeApp({
+    credential: cert(firebaseServiceAccount),
+    databaseURL: 'https://kyudoscoremanager-default-rtdb.firebaseio.com',
+  });
+  db = getFirestore();
+  auth = getAuth();
+  rtdb = getDatabase(app);
+} catch {
+  console.error('❌ Firebase初期化に失敗しました。FIREBASE_SERVICE_ACCOUNT_JSONを確認してください。');
+  process.exit(1);
+}
 
 // ─────────────────────────────────────────
 // バックアップ読み込み
@@ -42,7 +64,6 @@ function loadBackup() {
 
 function normalize(value) {
   if (value === null || value === undefined) return null;
-  // Firestore Timestamp → 数値（ミリ秒）
   if (typeof value?.toDate === 'function') return value.toDate().getTime();
   if (Array.isArray(value)) return value.map(normalize);
   if (typeof value === 'object') {
@@ -54,10 +75,9 @@ function normalize(value) {
   return value;
 }
 
-// バックアップ値の正規化（ISOString → 数値）
+// バックアップ値の正規化（ISOString → ミリ秒数値）
 function normalizeBk(value) {
   if (value === null || value === undefined) return null;
-  // ISOString → 数値（sanitize でタイムスタンプを文字列化したものを戻す）
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
     return new Date(value).getTime();
   }
@@ -75,53 +95,48 @@ function normalizeBk(value) {
 // 差分検出
 // ─────────────────────────────────────────
 
-function diff(fbVal, bkVal, path, diffs) {
-  const fb = normalize(fbVal);
-  const bk = normalizeBk(bkVal);
-  const fbStr = JSON.stringify(fb);
-  const bkStr = JSON.stringify(bk);
-  if (fbStr !== bkStr) {
-    diffs.push({ path, fb: fbStr?.slice(0, 100), bk: bkStr?.slice(0, 100) });
-  }
-}
-
 function diffObjects(fbData, bkData, prefix, diffs) {
   const allKeys = new Set([...Object.keys(fbData || {}), ...Object.keys(bkData || {})]);
   for (const key of allKeys) {
-    diff(fbData?.[key], bkData?.[key], `${prefix}.${key}`, diffs);
+    const fb = JSON.stringify(normalize(fbData?.[key]));
+    const bk = JSON.stringify(normalizeBk(bkData?.[key]));
+    if (fb !== bk) {
+      diffs.push({ path: `${prefix}.${key}`, fb: fb?.slice(0, 100), bk: bk?.slice(0, 100) });
+    }
   }
 }
 
 // ─────────────────────────────────────────
-// コレクション照合
+// コレクション照合（③ 動的サブコレクション検出）
 // ─────────────────────────────────────────
 
 async function verifyCollection(colRef, bkDocs, label) {
+  // listDocuments() で幽霊ドキュメントも含めて全件取得
   const docRefs = await colRef.listDocuments();
   const bkMap = Object.fromEntries((bkDocs || []).map(d => [d.id, d._fields || {}]));
   const fbIds = docRefs.map(r => r.id);
-  const bkIds = Object.keys(bkMap);
+  const fbIdSet = new Set(fbIds);
+  const bkIdSet = new Set(Object.keys(bkMap));
 
   let errors = 0;
 
-  // 件数チェック
-  if (fbIds.length !== bkIds.length) {
-    console.log(`  ❌ ${label}: 件数不一致 Firebase=${fbIds.length} BK=${bkIds.length}`);
-    const missingInBk = fbIds.filter(id => !bkMap[id]);
-    const extraInBk = bkIds.filter(id => !fbIds.includes(id));
+  // 件数・ID一致チェック
+  const missingInBk = fbIds.filter(id => !bkIdSet.has(id));
+  const extraInBk = [...bkIdSet].filter(id => !fbIdSet.has(id));
+  if (missingInBk.length || extraInBk.length) {
+    console.log(`  ❌ ${label}: 件数不一致 Firebase=${fbIds.length} BK=${bkMap ? Object.keys(bkMap).length : 0}`);
     if (missingInBk.length) console.log(`     BK未収録ID: ${missingInBk.slice(0, 5).join(', ')}`);
     if (extraInBk.length) console.log(`     BK余分ID:   ${extraInBk.slice(0, 5).join(', ')}`);
     errors++;
   }
 
-  // 中身チェック
+  // フィールド中身チェック
   let fieldDiffs = 0;
   for (const docRef of docRefs) {
+    if (!bkIdSet.has(docRef.id)) continue; // 件数差は上で報告済み
     const snap = await docRef.get();
     const fbFields = snap.exists ? snap.data() : {};
-    const bkFields = bkMap[docRef.id];
-    if (!bkFields) continue;
-
+    const bkFields = bkMap[docRef.id] || {};
     const diffs = [];
     diffObjects(fbFields, bkFields, docRef.id, diffs);
     if (diffs.length > 0) {
@@ -131,13 +146,14 @@ async function verifyCollection(colRef, bkDocs, label) {
         console.log(`       Firebase:  ${d.fb}`);
         console.log(`       バックアップ: ${d.bk}`);
       }
+      if (diffs.length > 2) console.log(`     ... 他 ${diffs.length - 2} 件`);
     }
   }
 
   if (fieldDiffs > 0) {
     console.log(`  ❌ ${label}: フィールド差分 ${fieldDiffs} 箇所`);
     errors++;
-  } else if (fbIds.length === bkIds.length) {
+  } else if (!missingInBk.length && !extraInBk.length) {
     console.log(`  ✅ ${label}: ${fbIds.length}件 完全一致`);
   }
 
@@ -154,19 +170,19 @@ async function main() {
   const backup = loadBackup();
   const bFirestore = backup.firestore || {};
   const bkGroups = bFirestore.groups || [];
-
   let totalErrors = 0;
 
   // ① group_accounts
   console.log('=== group_accounts ===');
-  const gaRef = db.collection('group_accounts');
-  totalErrors += await verifyCollection(gaRef, bFirestore.group_accounts, 'group_accounts');
+  const gaColRef = db.collection('group_accounts');
+  totalErrors += await verifyCollection(gaColRef, bFirestore.group_accounts, 'group_accounts');
 
-  // ② 各グループのサブコレクション
-  const gaDocs = await gaRef.listDocuments();
-  for (const gaRef of gaDocs) {
-    const gid = gaRef.id;
-    const gaSnap = await gaRef.get();
+  // ② 各グループのサブコレクション（③ 動的検出）
+  // ④ 変数名を gaDocRef に変更（gaColRef との衝突を回避）
+  const gaDocs = await gaColRef.listDocuments();
+  for (const gaDocRef of gaDocs) {
+    const gid = gaDocRef.id;
+    const gaSnap = await gaDocRef.get();
     const name = gaSnap.exists ? (gaSnap.data().name || '不明') : '不明';
     console.log(`\n=== グループ ${gid} (${name}) ===`);
 
@@ -178,27 +194,46 @@ async function main() {
     }
 
     const bkCols = bkGroup._collections || {};
-    for (const col of ['sessions', 'members', 'config', 'trash', 'officialPracticeDays']) {
-      const colRef = db.collection('groups').doc(gid).collection(col);
-      totalErrors += await verifyCollection(colRef, bkCols[col], col);
+
+    // ③ Firestoreの実際のサブコレクションを動的に取得（固定リストではなく）
+    const groupDocRef = db.collection('groups').doc(gid);
+    const actualSubcols = await groupDocRef.listCollections();
+    const actualSubcolIds = actualSubcols.map(c => c.id);
+
+    // バックアップに含まれているがFirestoreに存在しないサブコレクション
+    const bkOnlyCols = Object.keys(bkCols).filter(id => !actualSubcolIds.includes(id));
+    if (bkOnlyCols.length) {
+      console.log(`  ⚠️ BKのみに存在するサブコレクション: ${bkOnlyCols.join(', ')}`);
+      totalErrors++;
+    }
+
+    for (const subColRef of actualSubcols) {
+      const colRef = groupDocRef.collection(subColRef.id);
+      totalErrors += await verifyCollection(colRef, bkCols[subColRef.id], subColRef.id);
     }
   }
 
-  // ③ RTDB
-  console.log('\n=== RTDB live_sessions ===');
-  const rtdbSnap = await rtdb.ref('/live_sessions').once('value');
+  // ③ RTDB 全体照合（live_sessions だけでなく全パスを比較）
+  console.log('\n=== RTDB（全パス）===');
+  const rtdbSnap = await rtdb.ref('/').once('value');
   const fbRtdb = rtdbSnap.val() || {};
-  const bkRtdb = (backup.rtdb || {}).live_sessions || {};
-  const fbJson = JSON.stringify(normalize(fbRtdb));
-  const bkJson = JSON.stringify(normalizeBk(bkRtdb));
-  if (fbJson === bkJson) {
-    console.log(`  ✅ RTDB live_sessions: 完全一致`);
+  const bkRtdb = backup.rtdb || {};
+  const fbRtdbJson = JSON.stringify(normalize(fbRtdb));
+  const bkRtdbJson = JSON.stringify(normalizeBk(bkRtdb));
+  if (fbRtdbJson === bkRtdbJson) {
+    console.log(`  ✅ RTDB 全データ: 完全一致`);
   } else {
-    console.log(`  ❌ RTDB live_sessions: 差分あり`);
+    console.log(`  ❌ RTDB: 差分あり`);
+    // どのパスが違うか特定
+    for (const key of new Set([...Object.keys(fbRtdb), ...Object.keys(bkRtdb)])) {
+      const fb = JSON.stringify(normalize(fbRtdb[key]));
+      const bk = JSON.stringify(normalizeBk(bkRtdb[key]));
+      if (fb !== bk) console.log(`     差分パス: /${key}`);
+    }
     totalErrors++;
   }
 
-  // ④ Firebase Auth
+  // ⑤ Firebase Auth 中身照合（件数 + 各ユーザーのuid・email・createdAt）
   console.log('\n=== Firebase Auth ===');
   const authUsers = [];
   let pageToken;
@@ -207,12 +242,42 @@ async function main() {
     authUsers.push(...result.users);
     pageToken = result.pageToken;
   } while (pageToken);
-  const bkUsers = backup.auth?.users || [];
-  const authOk = authUsers.length === bkUsers.length;
-  console.log(`  ${authOk ? '✅' : '❌'} Auth: Firebase=${authUsers.length}件 BK=${bkUsers.length}件${authOk ? ' 完全一致' : ' 件数不一致'}`);
-  if (!authOk) totalErrors++;
 
-  // ─ 結果
+  const bkUsers = backup.auth?.users || [];
+  const fbUidMap = Object.fromEntries(authUsers.map(u => [u.uid, u]));
+  const bkUidMap = Object.fromEntries(bkUsers.map(u => [u.uid, u]));
+
+  const missingUids = authUsers.map(u => u.uid).filter(uid => !bkUidMap[uid]);
+  const extraUids = bkUsers.map(u => u.uid).filter(uid => !fbUidMap[uid]);
+  let authDiffs = 0;
+
+  if (missingUids.length || extraUids.length) {
+    console.log(`  ❌ Auth: 件数不一致 Firebase=${authUsers.length} BK=${bkUsers.length}`);
+    if (missingUids.length) console.log(`     BK未収録UID: ${missingUids.slice(0, 3).join(', ')}`);
+    if (extraUids.length) console.log(`     BK余分UID:   ${extraUids.slice(0, 3).join(', ')}`);
+    totalErrors++;
+  } else {
+    // 各ユーザーの中身を比較
+    for (const fbUser of authUsers) {
+      const bkUser = bkUidMap[fbUser.uid];
+      if (!bkUser) continue;
+      if (fbUser.email !== bkUser.email) {
+        console.log(`     差分 uid=${fbUser.uid} email: FB=${fbUser.email} BK=${bkUser.email}`);
+        authDiffs++;
+      }
+      if (fbUser.metadata?.creationTime !== bkUser.createdAt) {
+        authDiffs++;
+      }
+    }
+    if (authDiffs > 0) {
+      console.log(`  ❌ Auth: フィールド差分 ${authDiffs} 箇所`);
+      totalErrors++;
+    } else {
+      console.log(`  ✅ Auth: ${authUsers.length}件 完全一致（uid・email・createdAt）`);
+    }
+  }
+
+  // 結果
   console.log('\n' + '='.repeat(50));
   if (totalErrors === 0) {
     console.log('✅ 全データが完全に一致しています（1文字の差異もなし）');
