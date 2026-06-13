@@ -29,12 +29,14 @@ export default function App() {
   useEffect(() => {
     if (isHydrated && activeGroupId) {
       console.log('[App] Initializing data for group:', activeGroupId);
-      try {
-        fetchAndOverwriteFromCloud();
-        startPeriodicSync();
-      } catch (e) {
-        console.error('[App] Initial data fetch error:', e);
-      }
+      (async () => {
+        try {
+          await fetchAndOverwriteFromCloud();
+          startPeriodicSync();
+        } catch (e) {
+          console.error('[App] Initial data fetch error:', e);
+        }
+      })();
     } else {
       console.log('[App] Waiting for:', { isHydrated, activeGroupId });
     }

@@ -599,8 +599,6 @@ const T = () => {
                             const { email: n, id: o } = l.data();
                             await (0, C.signInWithEmailAndPassword)(b.auth, n, L);
                             e(o || D.toUpperCase(), 'group', null, n, D.toUpperCase());
-                            await p();
-                            I();
                           } catch (e) {
                             s.default.alert('ログイン失敗', Q(e));
                           } finally {
@@ -630,8 +628,6 @@ const T = () => {
                             const h = u.docs[0];
                             const f = h.data();
                             e(o || t, 'member', h.id, null, t, null, f.name);
-                            await p();
-                            I();
                           } catch (e) {
                             s.default.alert('ログイン失敗', Q(e));
                           } finally {
