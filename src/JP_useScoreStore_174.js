@@ -2415,7 +2415,13 @@ activeGroupName:s.groupName
 }
 }catch(e){
 console.warn('[Store] Initial config fetch failed (offline?), falling back to local.',e)
-}const i=(0,a.onSnapshot)((0,a.doc)(fb.db,`groups/${
+}const _existing=s().configUnsubscribe;
+if(_existing){
+_existing();
+e({configUnsubscribe:null});
+console.log('[Store] listenToConfig: stopped existing listener');
+}
+const i=(0,a.onSnapshot)((0,a.doc)(fb.db,`groups/${
 o
 }/config`,'app_settings'),t=>{
 if(t.exists()){

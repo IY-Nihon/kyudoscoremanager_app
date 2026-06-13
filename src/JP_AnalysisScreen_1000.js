@@ -327,71 +327,78 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
         };
       }
 
-      const r = o.archers.find(n => (e && n.memberId === e) || (t && n.name === t));
-      if (!r || !r.marks) return;
+      let sessionHits = 0;
+      let sessionShots = 0;
 
-      let s = 0;
-      let i = 0;
-      const d = Object.keys(r.substitutions || {}).map(Number).sort((e, t) => e - t);
+      o.archers.forEach(r => {
+        if (!r || !r.marks) return;
 
-      r.marks.forEach((o, l) => {
-        if ('\u25cb' !== o && '\xd7' !== o) return;
-        let c = r.memberId;
-        let u = r.name;
-        for (const e of d) {
-          if (!(e <= l)) break;
-          c = r.substitutionIds && r.substitutionIds[e] || void 0;
-          u = r.substitutions[e];
-        }
-        if ((e && c === e) || (t && u === t)) {
-          n[a].shots++;
-          i++;
-          if ('\u25cb' === o) {
-            n[a].hits++;
-            s++;
+        let s = 0;
+        let i = 0;
+        const d = Object.keys(r.substitutions || {}).map(Number).sort((e, t) => e - t);
+
+        r.marks.forEach((oVal, lVal) => {
+          if ('\u25cb' !== oVal && '\xd7' !== oVal) return;
+          let c = r.memberId;
+          let u = r.name;
+          for (const e of d) {
+            if (!(e <= lVal)) break;
+            c = r.substitutionIds && r.substitutionIds[e] || void 0;
+            u = r.substitutions[e];
+          }
+          if ((e && c === e) || (t && u === t)) {
+            n[a].shots++;
+            i++;
+            if ('\u25cb' === oVal) {
+              n[a].hits++;
+              s++;
+            }
+          }
+        });
+
+        sessionHits += s;
+        sessionShots += i;
+
+        const c = Math.floor(r.marks.length / 4);
+        for (let oIdx = 0; oIdx < c; oIdx++) {
+          let lCount = 0;
+          let sAllMine = !0;
+          for (let nIdx = 0; nIdx < 4; nIdx++) {
+            const aIdx = 4 * oIdx + nIdx;
+            const iVal = r.marks[aIdx];
+            if ('\u25cb' !== iVal && '\xd7' !== iVal) {
+              sAllMine = !1;
+              break;
+            }
+            let c = r.memberId;
+            let u = r.name;
+            for (const e of d) {
+              if (!(e <= aIdx)) break;
+              c = r.substitutionIds && r.substitutionIds[e] || void 0;
+              u = r.substitutions[e];
+            }
+            if (!((e && c === e) || (t && u === t))) {
+              sAllMine = !1;
+              break;
+            }
+            if ('\u25cb' === iVal) lCount++;
+          }
+          if (sAllMine) {
+            if (4 === lCount) n[a].patterns.kaichu++;
+            else if (3 === lCount) n[a].patterns.sanchu++;
+            else if (2 === lCount) n[a].patterns.hake++;
+            else if (1 === lCount) n[a].patterns.icchu++;
+            else n[a].patterns.zannen++;
           }
         }
       });
 
-      if (i > 0) {
+      if (sessionShots > 0) {
         n[a].details.push({
           date: l.toLocaleDateString('ja-JP'),
           title: o.title || '\u7121\u984c\u306e\u7df4\u7fd2',
-          stats: `${s}/${i} (${(s / i * 100).toFixed(0)}%)`
+          stats: `${sessionHits}/${sessionShots} (${(sessionHits / sessionShots * 100).toFixed(0)}%)`
         });
-      }
-
-      const c = Math.floor(r.marks.length / 4);
-      for (let o = 0; o < c; o++) {
-        let l = 0;
-        let s = !0;
-        for (let n = 0; n < 4; n++) {
-          const a = 4 * o + n;
-          const i = r.marks[a];
-          if ('\u25cb' !== i && '\xd7' !== i) {
-            s = !1;
-            break;
-          }
-          let c = r.memberId;
-          let u = r.name;
-          for (const e of d) {
-            if (!(e <= a)) break;
-            c = r.substitutionIds && r.substitutionIds[e] || void 0;
-            u = r.substitutions[e];
-          }
-          if (!((e && c === e) || (t && u === t))) {
-            s = !1;
-            break;
-          }
-          if ('\u25cb' === i) l++;
-        }
-        if (s) {
-          if (4 === l) n[a].patterns.kaichu++;
-          else if (3 === l) n[a].patterns.sanchu++;
-          else if (2 === l) n[a].patterns.hake++;
-          else if (1 === l) n[a].patterns.icchu++;
-          else n[a].patterns.zannen++;
-        }
       }
     });
 
