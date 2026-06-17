@@ -48,6 +48,9 @@ jobs:
       - name: 🔍 Verify backup integrity
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        # ① verify が失敗してもアップロードは必ず実行する（continue-on-error）
+        # バックアップファイルが消えるのを防ぐ
+        continue-on-error: true
         run: node scripts/verify-exact.mjs
 
       - name: ☁️ Upload to GitHub Artifacts

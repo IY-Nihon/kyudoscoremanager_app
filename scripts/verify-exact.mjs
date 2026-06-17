@@ -124,7 +124,7 @@ async function verifyCollection(colRef, bkDocs, label) {
   const missingInBk = fbIds.filter(id => !bkIdSet.has(id));
   const extraInBk = [...bkIdSet].filter(id => !fbIdSet.has(id));
   if (missingInBk.length || extraInBk.length) {
-    console.log(`  ❌ ${label}: 件数不一致 Firebase=${fbIds.length} BK=${bkMap ? Object.keys(bkMap).length : 0}`);
+    console.log(`  ❌ ${label}: 件数不一致 Firebase=${fbIds.length} BK=${Object.keys(bkMap).length}`);
     if (missingInBk.length) console.log(`     BK未収録ID: ${missingInBk.slice(0, 5).join(', ')}`);
     if (extraInBk.length) console.log(`     BK余分ID:   ${extraInBk.slice(0, 5).join(', ')}`);
     errors++;
@@ -188,8 +188,9 @@ async function main() {
 
     const bkGroup = bkGroups.find(g => g.id === gid);
     if (!bkGroup) {
-      console.log(`  ❌ バックアップに存在しない`);
-      totalErrors++;
+      // ② groups にデータがない新規グループは警告のみ（エラー扱いしない）
+      // 登録直後でまだ sessions/members 等がない団体の false positive を防ぐ
+      console.log(`  ⚠️ groups にデータなし（新規グループの可能性）: ${gid}`);
       continue;
     }
 
@@ -200,11 +201,11 @@ async function main() {
     const actualSubcols = await groupDocRef.listCollections();
     const actualSubcolIds = actualSubcols.map(c => c.id);
 
-    // バックアップに含まれているがFirestoreに存在しないサブコレクション
+    // ③ バックアップにあってFirestoreにないサブコレクションは警告のみ（エラー扱いしない）
+    // バックアップ後にドキュメントが全削除されコレクション自体が消えた場合の false positive を防ぐ
     const bkOnlyCols = Object.keys(bkCols).filter(id => !actualSubcolIds.includes(id));
     if (bkOnlyCols.length) {
-      console.log(`  ⚠️ BKのみに存在するサブコレクション: ${bkOnlyCols.join(', ')}`);
-      totalErrors++;
+      console.log(`  ⚠️ BKのみに存在するサブコレクション（バックアップ後に削除された可能性）: ${bkOnlyCols.join(', ')}`);
     }
 
     for (const subColRef of actualSubcols) {
