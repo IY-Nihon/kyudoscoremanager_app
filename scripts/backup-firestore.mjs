@@ -98,11 +98,13 @@ async function backupDocument(docRef, depth = 0) {
 
   const subcollections = await docRef.listCollections();
   await Promise.all(subcollections.map(async subColRef => {
-    const subDocs = await subColRef.get();
+    // listDocuments() を使い、幽霊ドキュメントも漏れなく取得する
+    // （get() では幽霊ドキュメントが取得できないため）
+    const docRefs = await subColRef.listDocuments();
     const subResults = await Promise.all(
-      subDocs.docs.map(async subDoc => {
-        const subData = await backupDocument(subDoc.ref, depth + 1);
-        return { id: subDoc.id, ...subData };
+      docRefs.map(async docRef => {
+        const subData = await backupDocument(docRef, depth + 1);
+        return { id: docRef.id, ...subData };
       })
     );
     result._collections[subColRef.id] = subResults;
