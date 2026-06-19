@@ -267,6 +267,7 @@ async function main() {
         authDiffs++;
       }
       if (fbUser.metadata?.creationTime !== bkUser.createdAt) {
+        console.log(`     差分 uid=${fbUser.uid} createdAt: FB=${fbUser.metadata?.creationTime} BK=${bkUser.createdAt}`);
         authDiffs++;
       }
     }
