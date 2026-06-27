@@ -41,21 +41,29 @@ jobs:
         run: npm install --no-save firebase-admin@12
 
       - name: 🔥 Run Firestore backup
+        id: backup
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
         run: node scripts/backup-firestore.mjs
 
       - name: 🔍 Verify backup integrity
+        id: verify
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-        # ① verify が失敗してもアップロードは必ず実行する（continue-on-error）
-        # バックアップファイルが消えるのを防ぐ
         continue-on-error: true
         run: node scripts/verify-exact.mjs
 
       - name: ☁️ Upload to GitHub Artifacts
+        if: steps.backup.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: backup-${{ github.run_number }}
           path: backup-output/
           retention-days: 365
+
+      # verify が差異を検出した場合、アップロード後にジョブを失敗させてメール通知を送る
+      - name: ❌ Fail if verify found issues
+        if: steps.verify.outcome == 'failure'
+        run: |
+          echo "❌ バックアップ照合で差異が検出されました。上記のログを確認してください。"
+          exit 1
