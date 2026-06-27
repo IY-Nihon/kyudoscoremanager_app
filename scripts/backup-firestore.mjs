@@ -54,9 +54,10 @@ const OUTPUT_DIR = './backup-output';
 
 // ファイル名に JST の日時を含める（同日複数実行でも区別できる）
 const nowUtc = new Date();
-const jstNow = new Date(nowUtc.getTime() + 9 * 60 * 60 * 1000);
-const jstDate = jstNow.toISOString().slice(0, 10);
-const jstTime = jstNow.toISOString().slice(11, 19).replace(/:/g, '-');
+const jstNow  = new Date(nowUtc.getTime() + 9 * 60 * 60 * 1000);
+const jstISO  = jstNow.toISOString();
+const jstDate = jstISO.slice(0, 10);
+const jstTime = jstISO.slice(11, 19).replace(/:/g, '-');
 const BACKUP_FILENAME = `backup-${jstDate}_${jstTime}.json.gz`;
 
 // ─────────────────────────────────────────
