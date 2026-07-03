@@ -32,9 +32,7 @@ yarn-error.*
 .env
 .env*.local
 
-# APIキーを含むファイル（セキュリティ対策）
-src/IS_WEB_199.js
-src/db_178.js
+
 
 # typescript
 *.tsbuildinfo
@@ -64,3 +62,6 @@ diagnostic_*
 patch_node_modules_*  
 # backup files  
 backup-output/ 
+backup-output-old/
+restore-test/
+restore-*.mjs
