@@ -100,6 +100,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
   const [ae, re] = (0, t.useState)(null);
   const [se, ie] = (0, t.useState)('');
   const [de, ce] = (0, t.useState)('');
+  const [customShotsInput, setCustomShotsInput] = (0, t.useState)('');
   
   // 的の種類切り替え用ステート
   const [myTargetType, setMyTargetType] = (0, t.useState)(arrowTargetType || 'kasumi36');
@@ -125,6 +126,15 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
       setModalTargetType(arrowTargetType || 'kasumi36');
     }
   }, [ae, arrowTargetType]);
+
+  // カスタム射数入力の同期
+  n.default.useEffect(() => {
+    if (C[R]?.type === 'count') {
+      setCustomShotsInput(String(C[R]?.value));
+    } else {
+      setCustomShotsInput('');
+    }
+  }, [R, C]);
 
   const ue = e => {
     ne(e);
@@ -284,9 +294,10 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
       return !(oe && !e.name.toLowerCase().includes(oe.toLowerCase()));
     })
     .sort((e, t) => Math.abs(t.rate - e.rate) > 0.01 ? t.rate - e.rate : t.shots - e.shots);
-  const be = ('ratio' === C[R]?.type ? C[R]?.value : 0) ?? 0;
+  const rankingConfig = C[R] || { type: 'ratio', value: 0 };
+  const be = 'ratio' === rankingConfig.type ? rankingConfig.value : 0;
   const ye = Math.max(...xe.map(e => e.shots), 0);
-  const je = Math.floor(ye * be);
+  const je = 'count' === rankingConfig.type ? rankingConfig.value : Math.floor(ye * be);
   const Fe = xe.filter(e => e.shots >= je);
   const pe = xe.filter(e => e.shots < je);
 
@@ -635,6 +646,33 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                       children: (0, y.jsx)(l.default, { style: [F.ratioBtnText, Math.abs(be - e.val) < .01 && F.ratioBtnTextActive], children: e.label })
                     }, `ratio-${e.val}`))
                   }),
+                  (0, y.jsxs)(o.default, {
+                    style: F.customShotsRow,
+                    children: [
+                      (0, y.jsx)(d.default, {
+                        style: F.customShotsInput,
+                        value: customShotsInput,
+                        onChangeText: setCustomShotsInput,
+                        placeholder: '\u4F8B: 20',
+                        keyboardType: 'numeric',
+                        placeholderTextColor: '#C7C7CC'
+                      }),
+                      (0, y.jsx)(l.default, { style: F.customShotsUnit, children: '\u5C04\u4EE5\u4E0A' }),
+                      (0, y.jsx)(s.default, {
+                        style: [F.customShotsBtn, customShotsInput.trim() !== '' && F.customShotsBtnActive],
+                        onPress: () => {
+                          const v = parseInt(customShotsInput, 10);
+                          if (!isNaN(v) && v > 0) {
+                            S(R, { type: 'count', value: v });
+                          } else {
+                            setCustomShotsInput('');
+                            S(R, { type: 'ratio', value: 0 });
+                          }
+                        },
+                        children: (0, y.jsx)(l.default, { style: [F.customShotsBtnText, customShotsInput.trim() !== '' && F.customShotsBtnTextActive], children: '\u7D5E\u308A\u8FBC\u3080' })
+                      })
+                    ]
+                  }),
                   ye > 0 && (0, y.jsx)(l.default, { style: F.ratioHintText, children: je > 0 ? `\u73fe\u5728\u3001${je}\u5c04\u4ee5\u4e0a\u304c\u30e9\u30f3\u30ad\u30f3\u30b0\u5bfe\u8c61\u3067\u3059\uff08\u6700\u591a: ${ye}\u5c04\uff09` : '\u5168\u30e1\u30f3\u30d0\u30fc\u304c\u30e9\u30f3\u30ad\u30f3\u30b0\u5bfe\u8c61\u3067\u3059' })
                 ]
               }),
@@ -952,6 +990,13 @@ const F = a.default.create({
   ratioBtnText: { fontSize: 11, color: '#8E8E93', fontWeight: 'bold' },
   ratioBtnTextActive: { color: '#FFF' },
   ratioHintText: { fontSize: 10, color: '#8E8E93', marginTop: 8, textAlign: 'center' },
+  customShotsRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 6 },
+  customShotsInput: { flex: 1, height: 32, backgroundColor: '#FFF', borderRadius: 8, borderWidth: 1, borderColor: '#E5E5EA', paddingHorizontal: 10, fontSize: 13, color: '#1C1C1E' },
+  customShotsUnit: { fontSize: 12, color: '#8E8E93', fontWeight: '600' },
+  customShotsBtn: { paddingHorizontal: 14, paddingVertical: 6, backgroundColor: '#E5E5EA', borderRadius: 8 },
+  customShotsBtnActive: { backgroundColor: '#007AFF' },
+  customShotsBtnText: { fontSize: 12, fontWeight: 'bold', color: '#8E8E93' },
+  customShotsBtnTextActive: { color: '#FFF' },
   filterDivider: { height: 1, backgroundColor: '#F2F2F7', marginVertical: 4 },
   toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 },
   toggleLabel: { fontSize: 13, color: '#1C1C1E', fontWeight: '600' },

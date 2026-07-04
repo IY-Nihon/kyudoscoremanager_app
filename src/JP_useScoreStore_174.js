@@ -2047,7 +2047,16 @@ tags:cleanedTags
 id:e.id,tags:cleanedTags,syncStatus:'\u540c\u671f\u6e08\u307f'
 }))
 });
-const a=s().sessions,c=new Set(o.map(e=>e.id)),l=a.filter(e=>!c.has(e.id)&&!e.hasOwnProperty('serverCreatedTime')),d=[...o,...l];
+const a=s().sessions,c=new Set(o.map(e=>e.id));
+const merged=o.map(cloudSession=>{
+const pendingTimer=s()._pendingUpdateTimers[cloudSession.id];
+if(pendingTimer){
+const localSession=a.find(ls=>ls&&ls.id===cloudSession.id);
+if(localSession)return localSession
+}
+return cloudSession
+});
+const l=a.filter(e=>!c.has(e.id)&&!e.hasOwnProperty('serverCreatedTime')),d=[...merged,...l];
 d.sort((e,s)=>(s.date||0)-(e.date||0));
 e({
 sessions:d,syncStatus:'\u540c\u671f\u6e08\u307f',lastSyncTime:Date.now()

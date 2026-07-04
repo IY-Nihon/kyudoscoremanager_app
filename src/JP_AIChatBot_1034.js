@@ -16,6 +16,8 @@ const _ScrollView = RN.ScrollView;
 const _ActivityIndicator = RN.ActivityIndicator;
 const _KeyboardAvoidingView = RN.KeyboardAvoidingView;
 const _Dimensions = RN.Dimensions;
+const _Animated = RN.Animated;
+const _PanResponder = RN.PanResponder;
 
 const { Ionicons } = require("./AntDesign_600");
 const { GoogleGenerativeAI } = require("./h_1035");
@@ -164,6 +166,103 @@ const AIChatBot = () => {
   useEffect(() => { saveChatHistory(messages); }, [messages]);
   const scrollViewRef = useRef(null);
 
+  const [layoutWidth, setLayoutWidth] = useState(_Dimensions.get("window").width);
+  const [layoutHeight, setLayoutHeight] = useState(_Dimensions.get("window").height);
+  
+  const onLayout = (event) => {
+    const { width, height } = event.nativeEvent.layout;
+    setLayoutWidth(width);
+    setLayoutHeight(height);
+  };
+
+  // --- ドラッグ移動用のステート ＆ 追従ロジック ---
+  const pan = useRef(new _Animated.ValueXY()).current;
+  const currentPos = useRef({ x: 0, y: 0 });
+  const snapXRef = useRef("right");
+  const snapYRef = useRef("bottom");
+  const isDragging = useRef(false);
+
+  // 画面リサイズ時に現在のスナップ状態を維持したまま正しい位置へ追従
+  useEffect(() => {
+    const initX = layoutWidth - 20 - 60;
+    const initY = layoutHeight - 20 - 60;
+    
+    const targetX = snapXRef.current === "left" ? 20 - initX : 0;
+    const targetY = snapYRef.current === "top" ? 60 - initY : 0;
+    
+    currentPos.current = { x: targetX, y: targetY };
+    pan.setValue({ x: targetX, y: targetY });
+  }, [layoutWidth, layoutHeight]);
+
+  const panResponder = useRef(
+    _PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 5 || Math.abs(g.dy) > 5,
+      onPanResponderGrant: () => {
+        isDragging.current = false;
+        pan.setOffset({ x: currentPos.current.x, y: currentPos.current.y });
+        pan.setValue({ x: 0, y: 0 });
+      },
+      onPanResponderMove: (_, g) => {
+        if (Math.abs(g.dx) > 5 || Math.abs(g.dy) > 5) {
+          isDragging.current = true;
+        }
+        
+        const initX = layoutWidth - 20 - 60;
+        const initY = layoutHeight - 20 - 60;
+        
+        const offsetX = currentPos.current.x;
+        const offsetY = currentPos.current.y;
+        
+        let absX = initX + offsetX + g.dx;
+        let absY = initY + offsetY + g.dy;
+        
+        const minAbsX = 20;
+        const maxAbsX = layoutWidth - 20 - 60;
+        const minAbsY = 60;
+        const maxAbsY = layoutHeight - 20 - 60;
+        
+        if (absX < minAbsX) absX = minAbsX;
+        if (absX > maxAbsX) absX = maxAbsX;
+        if (absY < minAbsY) absY = minAbsY;
+        if (absY > maxAbsY) absY = maxAbsY;
+        
+        const nextX = absX - initX - offsetX;
+        const nextY = absY - initY - offsetY;
+        
+        pan.setValue({ x: nextX, y: nextY });
+        currentPos.current = { x: offsetX + nextX, y: offsetY + nextY };
+      },
+      onPanResponderRelease: (_, g) => {
+        pan.flattenOffset();
+        if (!isDragging.current) {
+          setModalVisible(true);
+        } else {
+          const initX = layoutWidth - 20 - 60;
+          const initY = layoutHeight - 20 - 60;
+          
+          const isLeft = Math.abs(g.vx) > 0.2 ? g.vx < 0 : g.dx < 0;
+          const isTop = Math.abs(g.vy) > 0.2 ? g.vy < 0 : g.dy < 0;
+          
+          snapXRef.current = isLeft ? "left" : "right";
+          snapYRef.current = isTop ? "top" : "bottom";
+          
+          const snapTopY = 60;
+          
+          const targetX = isLeft ? 20 - initX : 0;
+          const targetY = isTop ? snapTopY - initY : 0;
+          
+          currentPos.current = { x: targetX, y: targetY };
+          
+          _Animated.spring(pan, {
+            toValue: { x: targetX, y: targetY },
+            useNativeDriver: false
+          }).start();
+        }
+      }
+    })
+  ).current;
+
   if (activeRole !== "group" || currentRouteName === "記録") {
     return null;
   }
@@ -225,7 +324,7 @@ const AIChatBot = () => {
       const qaSection = relevantQA
         ? `\n\n【アプリ操作・仕様Q&A（関連する項目のみ）】\n${relevantQA}`
         : '';
-      const fullInstruction = `${systemInstructionBase}${qaSection}\n\n[今日の日付: ${todayStr} / 昨日: ${yesterdayStr}]\n[部員一覧（計${members.length}名）]\n${memberList}\n\n※全員の成績データやランキングを取得する場合は getAllMembersStats ツールを、特定の選手一人の過去の詳細成績（本数ごとの的中や大前・落など）を取得する場合は getDetailedMemberStats ツールを使用してください。`;
+      const fullInstruction = `${systemInstructionBase}${qaSection}\n\n[今日の日付: ${todayStr} / 昨日: ${yesterdayStr}]\n[部員一覧（計${members.length}名）]\n${memberList}\n\n※全員の成績データやランキングを取得する場合は getAllMembersStats ツールを、特定の選手一人の過去の詳細成績（本数ごとの的中や大前・落など）を取得する場合は getDetailedMemberStats ツールを使用してください。部員一覧にいない選手であっても、過去のセッション記録（ゲスト等）に登録されている場合があるため、特定の選手の成績を問われた場合は「見当たらない」と自己判断して回答せず、必ず getDetailedMemberStats ツールを呼び出して成績を確認してください。`;
 
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       
@@ -319,6 +418,7 @@ const AIChatBot = () => {
         loopCount++;
         const functionResponses = [];
         let hasPendingAction = false;
+        const pendingActionCards = [];
         
         for (const call of calls) {
           console.log('[AIChatBot] Function Called:', call.name, call.args);
@@ -379,10 +479,32 @@ const AIChatBot = () => {
             });
           } else if (call.name === "getDetailedMemberStats") {
             const targetName = call.args.memberName;
-            const targetMember = members.find(m => m.name.includes(targetName));
+            const cleanTargetName = targetName.replace(/\s/g, '');
+            
+            let targetMember = members.find(m => {
+              const cleanMName = m.name.replace(/\s/g, '');
+              return cleanMName.includes(cleanTargetName) || cleanTargetName.includes(cleanMName);
+            });
+            
+            let targetId = targetMember ? targetMember.id : null;
+            let finalTargetName = targetMember ? targetMember.name : targetName;
+            
+            const hasRecord = sessions.some(s => s.archers.some(a => {
+              if (a.name) {
+                const cleanAName = a.name.replace(/\s/g, '');
+                if (cleanAName.includes(cleanTargetName) || cleanTargetName.includes(cleanAName)) return true;
+              }
+              const subs = a.substitutions || {};
+              return Object.values(subs).some(subName => {
+                if (!subName) return false;
+                const cleanSubName = subName.replace(/\s/g, '');
+                return cleanSubName.includes(cleanTargetName) || cleanTargetName.includes(cleanSubName);
+              });
+            }));
+            
             let statsData = { error: "選手が見つかりませんでした。" };
             
-            if (targetMember) {
+            if (targetMember || hasRecord) {
               let shotTotals = [0, 0, 0, 0];
               let shotHits = [0, 0, 0, 0];
               let omaeTotal = 0, omaeHit = 0;
@@ -414,8 +536,12 @@ const AIChatBot = () => {
                       }
                     }
                     
-                    const isTarget = (targetMember.id && currentId === targetMember.id) ||
-                                     (currentName && targetMember.name && currentName.replace(/\s/g,'') === targetMember.name.replace(/\s/g,''));
+                    const cleanCurrentName = currentName.replace(/\s/g, '');
+                    const cleanFinalTargetName = finalTargetName.replace(/\s/g, '');
+                    
+                    const isTarget = (targetId && currentId === targetId) ||
+                                     (cleanCurrentName && cleanFinalTargetName && 
+                                      (cleanCurrentName.includes(cleanFinalTargetName) || cleanFinalTargetName.includes(cleanCurrentName)));
                                      
                     if (isTarget) {
                       participatedInSession = true;
@@ -461,8 +587,12 @@ const AIChatBot = () => {
                         }
                       }
                       
-                      const isTarget = (targetMember.id && currentId === targetMember.id) ||
-                                       (currentName && targetMember.name && currentName.replace(/\s/g,'') === targetMember.name.replace(/\s/g,''));
+                      const cleanCurrentName = currentName.replace(/\s/g, '');
+                      const cleanFinalTargetName = finalTargetName.replace(/\s/g, '');
+                      
+                      const isTarget = (targetId && currentId === targetId) ||
+                                       (cleanCurrentName && cleanFinalTargetName && 
+                                        (cleanCurrentName.includes(cleanFinalTargetName) || cleanFinalTargetName.includes(cleanCurrentName)));
                       
                       if (!isTarget) {
                         isBlockAllTarget = false;
@@ -482,8 +612,74 @@ const AIChatBot = () => {
                 }
               });
               
+              const recentSessionsDetail = [];
+              sortedSessions.forEach(session => {
+                if (recentSessionsDetail.length >= 5) return;
+                
+                let archerIndex = -1;
+                let foundArcher = null;
+                
+                session.archers.forEach((archer, idx) => {
+                  if (!archer || !archer.marks) return;
+                  const subs = archer.substitutions || {};
+                  const subIds = archer.substitutionIds || {};
+                  const subIndices = Object.keys(subs).map(Number).sort((e, t) => e - t);
+                  
+                  let hasParticipation = false;
+                  archer.marks.forEach((m, shotIdx) => {
+                    if (m !== '○' && m !== '×') return;
+                    
+                    let currentId = archer.memberId;
+                    let currentName = archer.name || '';
+                    for (const subIdx of subIndices) {
+                      if (subIdx <= shotIdx) {
+                        currentId = subIds[subIdx] || undefined;
+                        currentName = subs[subIdx] || '';
+                      } else {
+                        break;
+                      }
+                    }
+                    
+                    const cleanCurrentName = currentName.replace(/\s/g, '');
+                    const cleanFinalTargetName = finalTargetName.replace(/\s/g, '');
+                    
+                    if ((targetId && currentId === targetId) ||
+                        (cleanCurrentName && cleanFinalTargetName && 
+                         (cleanCurrentName.includes(cleanFinalTargetName) || cleanFinalTargetName.includes(cleanCurrentName)))) {
+                      hasParticipation = true;
+                    }
+                  });
+                  
+                  if (hasParticipation) {
+                    archerIndex = idx;
+                    foundArcher = archer;
+                  }
+                });
+                
+                if (foundArcher) {
+                  const d = new Date(session.date || 0);
+                  const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                  
+                  let positionName = `${archerIndex + 1}番目`;
+                  if (archerIndex === 0) positionName = "大前";
+                  else if (session.archers.length >= 3 && archerIndex === session.archers.length - 1) positionName = "落";
+                  
+                  const marksStr = foundArcher.marks.filter(m => m === '○' || m === '×').join('');
+                  const hits = foundArcher.marks.filter(m => m === '○').length;
+                  const total = foundArcher.marks.filter(m => m === '○' || m === '×').length;
+                  
+                  recentSessionsDetail.push({
+                    date: dateStr,
+                    title: session.title || "無題",
+                    position: positionName,
+                    marks: marksStr,
+                    result: `${hits}/${total}`
+                  });
+                }
+              });
+              
               statsData = {
-                name: targetMember.name,
+                name: finalTargetName,
                 totalSessions: totalSessions,
                 totalHitRate: totalMarks > 0 ? ((hitMarks / totalMarks) * 100).toFixed(1) + "%" : "データなし",
                 totalArrows: totalMarks,
@@ -494,7 +690,8 @@ const AIChatBot = () => {
                 thirdShotHitRate: shotTotals[2] > 0 ? ((shotHits[2] / shotTotals[2]) * 100).toFixed(1) + "%" : "データなし",
                 fourthShotHitRate: shotTotals[3] > 0 ? ((shotHits[3] / shotTotals[3]) * 100).toFixed(1) + "%" : "データなし",
                 omaeHitRate: omaeTotal > 0 ? ((omaeHit / omaeTotal) * 100).toFixed(1) + "%" : "データなし",
-                ochiHitRate: ochiTotal > 0 ? ((ochiHit / ochiTotal) * 100).toFixed(1) + "%" : "データなし"
+                ochiHitRate: ochiTotal > 0 ? ((ochiHit / ochiTotal) * 100).toFixed(1) + "%" : "データなし",
+                recentSessionsDetail: recentSessionsDetail
               };
             }
             
@@ -612,12 +809,14 @@ const AIChatBot = () => {
                status: "pending",
                callName: call.name
             };
-            setMessages(prev => [...prev, newMsg]);
+            pendingActionCards.push(newMsg);
             hasPendingAction = true;
           }
         }
         
+        // 複数の addMember カードをまとめて追加
         if (hasPendingAction) {
+          setMessages(prev => [...prev, ...pendingActionCards]);
           setIsLoading(false);
           setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
           return;
@@ -697,21 +896,20 @@ const AIChatBot = () => {
     setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
-  const { width: winW, height: winH } = _Dimensions.get("window");
-  const modalW = Math.min(0.9 * winW, 450);
-  const modalH = Math.min(0.8 * winH, 600);
+  const modalW = Math.min(0.9 * layoutWidth, 450);
+  const modalH = Math.min(0.8 * layoutHeight, 600);
 
   return (
-    <Fragment>
-      <_TouchableOpacity
-        style={[styles.floatingButton, getShadowStyle({ shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 })]}
-        onPress={() => setModalVisible(true)}
+    <_View style={_StyleSheet.absoluteFill} pointerEvents="box-none" onLayout={onLayout}>
+      <_Animated.View
+        style={[styles.floatingButton, getShadowStyle({ shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 }), { transform: pan.getTranslateTransform() }]}
+        {...panResponder.panHandlers}
       >
         <Ionicons name="chatbubble-ellipses" size={30} color="#FFF" />
         <_View style={styles.badge}>
           <_Text style={styles.badgeText}>AI</_Text>
         </_View>
-      </_TouchableOpacity>
+      </_Animated.View>
 
       <_Modal visible={modalVisible} animationType="slide" transparent={true}>
         <_KeyboardAvoidingView behavior="height" style={styles.modalOverlay}>
@@ -803,7 +1001,7 @@ const AIChatBot = () => {
           </_View>
         </_KeyboardAvoidingView>
       </_Modal>
-    </Fragment>
+    </_View>
   );
 };
 
