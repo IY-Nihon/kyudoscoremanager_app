@@ -101,7 +101,7 @@ const C = ({
         };
         E && (t.attendance = attendanceEdit);
         l && B !== l.shotCount && (t.archers = l.archers.map(e => {
-            if (e.isSeparator) return e;
+            if (e.isSeparator || e.isTotalCalculator) return e;
             const t = [...e.marks];
             return B > e.marks.length ? t.push(...Array(B - e.marks.length).fill('')) : t.splice(B), Object.assign({}, e, {
                 marks: t
@@ -515,6 +515,52 @@ const C = ({
                 v(e);
             },
             onClose: () => W(!1)
+        }), (0, b.jsx)(n.default, {
+            visible: _,
+            transparent: !0,
+            animationType: "fade",
+            children: (0, b.jsx)(o.default, {
+                style: j.confirmBackdrop,
+                children: (0, b.jsxs)(o.default, {
+                    style: j.confirmBox,
+                    children: [(0, b.jsx)(s.default, {
+                        style: j.confirmTitle,
+                        children: "\u5c04\u6570\u306e\u5909\u66f4"
+                    }), (0, b.jsx)(s.default, {
+                        style: j.confirmMessage,
+                        children: "\u5c04\u6570\u3092\u6e1b\u3089\u3059\u3068\u3001\u6e1b\u3089\u3057\u305f\u5206\u306e\u25cb\u2573\u8a18\u9332\u304c\u524a\u9664\u3055\u308c\u307e\u3059\u3002\u3088\u308d\u3057\u3044\u3067\u3059\u304b\uff1f"
+                    }), (0, b.jsxs)(o.default, {
+                        style: j.confirmButtons,
+                        children: [(0, b.jsx)(i.default, {
+                            style: [j.confirmBtn, {
+                                backgroundColor: "#F2F2F7"
+                            }],
+                            onPress: () => O(!1),
+                            children: (0, b.jsx)(s.default, {
+                                style: {
+                                    color: "#007AFF",
+                                    fontWeight: "bold"
+                                },
+                                children: "\u30ad\u30e3\u30f3\u30bb\u30eb"
+                            })
+                        }), (0, b.jsx)(i.default, {
+                            style: [j.confirmBtn, {
+                                backgroundColor: "#FF3B30"
+                            }],
+                            onPress: () => {
+                                O(!1), H(w.getTime())
+                            },
+                            children: (0, b.jsx)(s.default, {
+                                style: {
+                                    color: "#FFF",
+                                    fontWeight: "bold"
+                                },
+                                children: "\u5909\u66f4\u3059\u308b"
+                            })
+                        })]
+                    })]
+                })
+            })
         })]
     })
 }, j = l.default.create({
