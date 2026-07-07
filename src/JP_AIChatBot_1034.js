@@ -56,6 +56,7 @@ const systemInstructionBase = `あなたは「Kyudo Score Manager」専用の、
 
 【Function Calling（ツール使用）に関する超重要指示】
 ・新しいメンバー（部員）を追加する場合は、絶対にテキストで「登録しました」などと先に回答しないでください。必ず \`addMember\` ツールを呼び出してください。ツールを呼び出すことで、画面上にユーザーが承認・キャンセルするための「認証ボタン（承認カード）」が表示されます。
+・複数のメンバーを同時に登録するように依頼された場合は、\`addMember\` ツールを複数回同時に（Parallel Function Callingとして）呼び出してください。一回の応答で複数人の追加カードを表示することが可能です。
 ・ツールを呼び出す際は、余計なテキスト出力（擬似コードや解説など）を同時に行わず、ツール呼び出し（Function Call）のみを行ってください。
 
 【回答スタイルに関する重要指示】
@@ -132,13 +133,19 @@ const selectQAs = (userMsg) => {
   return scored.map(qa => qa.t).join('\n');
 };
 
+const generateMsgId = () => Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
 const CHAT_HISTORY_KEY = 'aiChatMessages_v1';
 const MAX_SAVED_MESSAGES = 50;
 
 const loadChatHistory = () => {
   try {
     const saved = typeof localStorage !== 'undefined' && localStorage.getItem(CHAT_HISTORY_KEY);
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        return parsed.map(msg => msg.id ? msg : { ...msg, id: generateMsgId() });
+      }
+    }
   } catch(e) {}
   return null;
 };
@@ -158,7 +165,7 @@ const AIChatBot = () => {
   const navigation = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
   const [inputText, setInputText] = useState("");
-  const defaultMessages = [{ role: "model", text: "こんにちは！弓道スコア管理AIアシスタントです。選手選びの相談や、的中傾向の分析、アプリの使い方など、何でも聞いてください。" }];
+  const defaultMessages = [{ id: "default-msg", role: "model", text: "こんにちは！弓道スコア管理AIアシスタントです。選手選びの相談や、的中傾向の分析、アプリの使い方など、何でも聞いてください。" }];
   const [messages, setMessages] = useState(() => loadChatHistory() || defaultMessages);
   const [isLoading, setIsLoading] = useState(false);
   const [retryCountdown, setRetryCountdown] = useState(0);
@@ -197,14 +204,14 @@ const AIChatBot = () => {
   const panResponder = useRef(
     _PanResponder.create({
       onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 5 || Math.abs(g.dy) > 5,
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 2 || Math.abs(g.dy) > 2,
       onPanResponderGrant: () => {
         isDragging.current = false;
         pan.setOffset({ x: currentPos.current.x, y: currentPos.current.y });
         pan.setValue({ x: 0, y: 0 });
       },
       onPanResponderMove: (_, g) => {
-        if (Math.abs(g.dx) > 5 || Math.abs(g.dy) > 5) {
+        if (Math.abs(g.dx) > 2 || Math.abs(g.dy) > 2) {
           isDragging.current = true;
         }
         
@@ -267,12 +274,14 @@ const AIChatBot = () => {
     return null;
   }
 
-  const handleActionResponse = (msgIndex, isApproved) => {
-    const targetMsg = messages[msgIndex];
+  const handleActionResponse = (msgId, isApproved) => {
+    const targetMsgIndex = messages.findIndex(m => m.id === msgId);
+    if (targetMsgIndex === -1) return;
+    const targetMsg = messages[targetMsgIndex];
     if (!targetMsg || targetMsg.status !== 'pending') return;
     
     const updatedMessages = [...messages];
-    updatedMessages[msgIndex] = { ...targetMsg, status: isApproved ? 'approved' : 'rejected' };
+    updatedMessages[targetMsgIndex] = { ...targetMsg, status: isApproved ? 'approved' : 'rejected' };
     
     if (isApproved) {
       if (targetMsg.actionType === 'addMember') {
@@ -285,10 +294,10 @@ const AIChatBot = () => {
           finalGender = '女子';
         }
         addMember(name, finalGender, grade);
-        updatedMessages.push({ role: 'model', text: `${name}さんをメンバーに追加しました。` });
+        updatedMessages.push({ id: generateMsgId(), role: 'model', text: `${name}さんをメンバーに追加しました。` });
       }
     } else {
-      updatedMessages.push({ role: 'model', text: `操作をキャンセルしました。` });
+      updatedMessages.push({ id: generateMsgId(), role: 'model', text: `操作をキャンセルしました。` });
     }
     
     setMessages(updatedMessages);
@@ -300,7 +309,7 @@ const AIChatBot = () => {
     const userMsg = inputText.trim();
     setInputText("");
     
-    const newMessages = [...messages, { role: "user", text: userMsg }];
+    const newMessages = [...messages, { id: generateMsgId(), role: "user", text: userMsg }];
     setMessages(newMessages);
     setIsLoading(true);
 
@@ -803,6 +812,7 @@ const AIChatBot = () => {
             });
           } else if (call.name === "addMember") {
             const newMsg = {
+               id: generateMsgId(),
                role: "actionCard",
                actionType: "addMember",
                args: call.args,
@@ -843,7 +853,7 @@ const AIChatBot = () => {
         responseText = "（回答を生成できませんでした。もう一度お試しください）";
       }
 
-      setMessages([...newMessages, { role: "model", text: responseText }]);
+      setMessages([...newMessages, { id: generateMsgId(), role: "model", text: responseText }]);
       break; // 成功
 
     } catch (error) {
@@ -886,7 +896,7 @@ const AIChatBot = () => {
       } else {
         errorMsg = `エラー: ${error.message}`;
       }
-      setMessages([...newMessages, { role: "model", text: errorMsg }]);
+      setMessages([...newMessages, { id: generateMsgId(), role: "model", text: errorMsg }]);
       break;
     }
     } // end while
@@ -948,10 +958,10 @@ const AIChatBot = () => {
                     </_Text>
                     {msg.status === 'pending' ? (
                       <_View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12, gap: 8 }}>
-                        <_TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#FF3B30' }]} onPress={() => handleActionResponse(idx, false)}>
+                        <_TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#FF3B30' }]} onPress={() => handleActionResponse(msg.id, false)}>
                           <_Text style={styles.actionBtnText}>キャンセル</_Text>
                         </_TouchableOpacity>
-                        <_TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#34C759' }]} onPress={() => handleActionResponse(idx, true)}>
+                        <_TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#34C759' }]} onPress={() => handleActionResponse(msg.id, true)}>
                           <_Text style={styles.actionBtnText}>承認</_Text>
                         </_TouchableOpacity>
                       </_View>

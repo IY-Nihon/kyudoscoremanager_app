@@ -34,6 +34,8 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
   } = (0, u.useScoreStore)();
 
   const D = (0, u.useScoreStore)(e => e.myMemberName) || '';
+  const [compareMembers, setCompareMembers] = (0, t.useState)([]);
+  const [isSelectingCompareTarget, setIsSelectingCompareTarget] = (0, t.useState)(false);
   if (!z) return null;
 
   const gatherAllArrowLocations = (memberId, name, selectedLabel) => {
@@ -70,7 +72,8 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
             cId = subIds[sIdx] || void 0;
             cName = substitutions[sIdx];
           }
-          if (memberId ? cId === memberId : cName === name) {
+          const isMatch = memberId ? String(cId) === String(memberId) : (cName && name && cName.replace(/\s/g, '') === name.replace(/\s/g, ''));
+          if (isMatch) {
             const mark = archer.marks ? archer.marks[idx] : undefined;
             // 的中/外れのマークが登録されている射のみを対象とする
             if (mark === '○' || mark === '\u25cb' || mark === '×' || mark === '\xd7') {
@@ -351,13 +354,14 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
         r.marks.forEach((oVal, lVal) => {
           if ('\u25cb' !== oVal && '\xd7' !== oVal) return;
           let c = r.memberId;
-          let u = r.name;
-          for (const e of d) {
-            if (!(e <= lVal)) break;
-            c = r.substitutionIds && r.substitutionIds[e] || void 0;
-            u = r.substitutions[e];
+          let u = r.name || '';
+          for (const subIdx of d) {
+            if (!(subIdx <= lVal)) break;
+            c = r.substitutionIds && r.substitutionIds[subIdx] || void 0;
+            u = r.substitutions[subIdx] || '';
           }
-          if ((e && c === e) || (t && u === t)) {
+          const isMatch = (e && String(c) === String(e)) || (t && u.replace(/\s/g, '') === t.replace(/\s/g, ''));
+          if (isMatch) {
             n[a].shots++;
             i++;
             if ('\u25cb' === oVal) {
@@ -382,13 +386,14 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
               break;
             }
             let c = r.memberId;
-            let u = r.name;
-            for (const e of d) {
-              if (!(e <= aIdx)) break;
-              c = r.substitutionIds && r.substitutionIds[e] || void 0;
-              u = r.substitutions[e];
+            let u = r.name || '';
+            for (const subIdx of d) {
+              if (!(subIdx <= aIdx)) break;
+              c = r.substitutionIds && r.substitutionIds[subIdx] || void 0;
+              u = r.substitutions[subIdx] || '';
             }
-            if (!((e && c === e) || (t && u === t))) {
+            const isMatch = (e && String(c) === String(e)) || (t && u.replace(/\s/g, '') === t.replace(/\s/g, ''));
+            if (!isMatch) {
               sAllMine = !1;
               break;
             }
@@ -406,6 +411,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
 
       if (sessionShots > 0) {
         n[a].details.push({
+          sessionId: o.id,
           date: l.toLocaleDateString('ja-JP'),
           title: o.title || '\u7121\u984c\u306e\u7df4\u7fd2',
           stats: `${sessionHits}/${sessionShots} (${(sessionHits / sessionShots * 100).toFixed(0)}%)`
@@ -420,6 +426,119 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
 
   const ke = n.default.useMemo(() => 'member' === k && B ? Se(B, D) : [], [k, B, D, Se]);
   const Be = n.default.useMemo(() => ae ? Se(ae.id, ae.name) : [], [ae, Se]);
+
+  const CompareGraph = ({ baseData, baseName, compareTargets }) => {
+    const COLORS = ['#FF2D55', '#34C759', '#FF9500', '#AF52DE', '#32ADE6', '#5856D6', '#FFCC00'];
+    const allDataSets = [
+      { name: baseName, data: baseData, color: '#007AFF', isBase: true },
+      ...compareTargets.map((target, idx) => ({
+        name: target.name,
+        data: target.data,
+        color: COLORS[idx % COLORS.length],
+        isBase: false
+      }))
+    ];
+
+    const allLabels = Array.from(new Set(
+      allDataSets.flatMap(set => set.data.map(d => d.label))
+    )).sort((a, b) => {
+      const aDate = new Date(a.replace('\u5e74\u5ea6', '/4/1'));
+      const bDate = new Date(b.replace('\u5e74\u5ea6', '/4/1'));
+      return aDate - bDate;
+    });
+
+    if (allLabels.length === 0) {
+      return (0, y.jsx)(o.default, {
+        style: F.noDataGraph,
+        children: (0, y.jsx)(l.default, {
+          style: { color: '#8E8E93' },
+          children: "\u6bd4\u8f03\u3059\u308b\u30c7\u30fc\u30bf\u304c\u3042\u308a\u307e\u305b\u3093"
+        })
+      });
+    }
+
+    const hHeight = 150;
+    const paddingX = 25;
+    const paddingY = 20;
+    const usableHeight = 110;
+    const usableWidth = 250;
+
+    const datasetsWithPoints = allDataSets.map(dataset => {
+      const points = [];
+      allLabels.forEach((label, idx) => {
+        const xVal = paddingX + (idx / (allLabels.length > 1 ? allLabels.length - 1 : 1)) * usableWidth;
+        const item = dataset.data.find(d => d.label === label);
+        if (item) {
+          points.push({
+            x: xVal,
+            y: hHeight - (paddingY + (item.rate / 100) * usableHeight),
+            rate: item.rate,
+            label
+          });
+        }
+      });
+
+      let path = "";
+      points.forEach((pt, idx) => {
+        path += idx === 0 ? `M ${pt.x} ${pt.y}` : ` L ${pt.x} ${pt.y}`;
+      });
+
+      return { ...dataset, points, path };
+    });
+
+    return (0, y.jsxs)(o.default, {
+      style: F.graphContainer,
+      children: [
+        (0, y.jsxs)(o.default, {
+          style: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12, alignItems: 'center' },
+          children: [
+            (0, y.jsx)(l.default, { style: F.graphTitle, children: "\u7684\u4e2d\u7387\u63a8\u79fb\u306e\u6bd4\u8f03 (%)" }),
+            (0, y.jsx)(o.default, {
+              style: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, maxWidth: '75%', justifyContent: 'flex-end' },
+              children: datasetsWithPoints.map((ds, idx) => (
+                (0, y.jsxs)(o.default, { 
+                  style: { flexDirection: 'row', alignItems: 'center', marginRight: 4 }, 
+                  children: [
+                    (0, y.jsx)(o.default, { style: { width: 8, height: 8, backgroundColor: ds.color, borderRadius: 4, marginRight: 4 } }),
+                    (0, y.jsx)(l.default, { style: { fontSize: 9, color: '#3C3C43' }, children: ds.name })
+                  ] 
+                }, `legend-${idx}`)
+              ))
+            })
+          ]
+        }),
+        (0, y.jsxs)(b.default, {
+          width: "100%",
+          height: hHeight,
+          viewBox: "0 0 300 150",
+          children: [
+            [0, 25, 50, 75, 100].map(e => (0, y.jsxs)(n.default.Fragment, {
+              children: [
+                (0, y.jsx)(x.Line, { x1: paddingX, y1: hHeight - (paddingY + (e / 100) * usableHeight), x2: 280, y2: hHeight - (paddingY + (e / 100) * usableHeight), stroke: "#E5E5EA", strokeWidth: "1" }),
+                (0, y.jsx)(x.Text, { x: 20, y: hHeight - (paddingY + (e / 100) * usableHeight) + 3, fontSize: "8", fill: "#8E8E93", textAnchor: "end", children: e })
+              ]
+            }, `grid-compare-${e}`)),
+            datasetsWithPoints.map((ds, idx) => (
+              (0, y.jsx)(x.Path, { 
+                d: ds.path, 
+                fill: "none", 
+                stroke: ds.color, 
+                strokeWidth: ds.isBase ? "2.5" : "2.0", 
+                strokeLinecap: "round", 
+                strokeLinejoin: "round" 
+              }, `path-${idx}`)
+            )),
+            datasetsWithPoints.flatMap((ds, dsIdx) => 
+              ds.points.map((pt, idx) => (
+                (0, y.jsx)(x.Circle, { cx: pt.x, cy: pt.y, r: ds.isBase ? "3.5" : "3.0", fill: ds.color }, `pt-${dsIdx}-${idx}`)
+              ))
+            )
+          ]
+        })
+      ]
+    });
+  };
+
 
   const Ee = ({ data: e, selectedLabel, onSelectLabel }) => {
     const a = selectedLabel ? e.findIndex(item => item.label === selectedLabel) : null;
@@ -887,73 +1006,241 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
             children: ae && (0, y.jsxs)(r.default, {
               showsVerticalScrollIndicator: !1,
               children: [
-                (0, y.jsxs)(l.default, { style: F.modalTitle, children: [ae.name, "\u306e\u5206\u6790\u8a73\u7d30"] }),
-                (0, y.jsxs)(l.default, { style: F.modalDesc, children: [R, "\u306e\u6210\u7e3e (", ae.hits, "/", ae.shots, ") ", ae.rate.toFixed(1), "%"] }),
-                 (0, y.jsx)(o.default, { style: { marginBottom: 20 }, children: (0, y.jsx)(Ee, { data: Be, selectedLabel: selectedModalTrendLabel, onSelectLabel: setSelectedModalTrendLabel }) }),
-                 (0, y.jsxs)(o.default, {
-                   style: { marginBottom: 20, alignItems: 'center' },
-                   children: [
-                     (0, y.jsx)(l.default, { style: [{ fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 8, alignSelf: 'flex-start' }], children: selectedModalTrendLabel ? `\u77e2\u6240\u306e\u50be\u5411 (${selectedModalTrendLabel})` : "\u77e2\u6240\u306e\u50be\u5411 (\u96c6\u8a08)" }),
-                     (0, y.jsx)(o.default, {
-                       style: { width: '100%', marginBottom: 12 },
-                       children: (0, y.jsx)(we, {
-                         options: [
-                           { label: '霞的(尺二寸)', value: 'kasumi36' },
-                           { label: '星的(尺二寸)', value: 'hoshi36' },
-                           { label: '星的(八寸)', value: 'hoshi24' }
-                         ],
-                         selected: modalTargetType,
-                         onSelect: setModalTargetType,
-                         isWrap: !0
-                       })
-                     }),
-                     (0, y.jsx)(ArrowLocationView, { arrowLocations: gatherAllArrowLocations(ae.id, ae.name, selectedModalTrendLabel), size: 200, targetType: modalTargetType, hideNumbers: !0 })
-                   ]
-                 }),
-                 (0, y.jsxs)(o.default, {
-                   style: { marginBottom: 16 },
-                   children: [
-                     (0, y.jsx)(l.default, { style: { fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 8 }, children: "\u7acb\u3061\u9806\u5225\u306e\u7684\u4e2d\u7387 (1-4\u5c04\u76ee)" }),
-                    (0, y.jsx)(o.default, {
-                      style: F.statsGrid,
-                      children: Array.from({ length: 4 }).map((e, t) => {
-                        const n = ae.perShotStats[t] || { shots: 0, hits: 0 };
-                        const a = n.shots > 0 ? n.hits / n.shots * 100 : 0;
-                        return (0, y.jsxs)(o.default, {
-                          style: F.statBox,
-                          children: [
-                            (0, y.jsxs)(l.default, { style: F.statBoxTitle, children: [t + 1, "\u5c04\u76ee"] }),
-                            (0, y.jsxs)(l.default, { style: F.statBoxRate, children: [a.toFixed(0), "%"] }),
-                            (0, y.jsxs)(l.default, { style: F.statBoxCounts, children: [n.hits, "/", n.shots] })
-                          ]
-                        }, `per-shot-modal-${t}`);
+                compareMembers.length > 0 ? (0, y.jsxs)(l.default, { style: F.modalTitle, children: [ae.name, " vs ", compareMembers.map(m => m.name).join(", "), " \u306e\u6bd4\u8f03"] }) : (0, y.jsxs)(l.default, { style: F.modalTitle, children: [ae.name, "\u306e\u5206\u6790\u8a73\u7d30"] }),
+                compareMembers.length > 0 ? (0, y.jsxs)(l.default, { style: F.modalDesc, children: [R, " \u306e\u7684\u4e2d\u6210\u7e3e\u6bd4\u8f03 (", ae.name, ": ", ae.hits, "/", ae.shots, " ", ae.rate.toFixed(1), "%)"] }) : (0, y.jsxs)(l.default, { style: F.modalDesc, children: [R, "\u306e\u6210\u7e3e (", ae.hits, "/", ae.shots, ") ", ae.rate.toFixed(1), "%"] }),
+                
+                (0, y.jsx)(o.default, {
+                  style: { marginVertical: 12 },
+                  children: compareMembers.length > 0 ? (0, y.jsxs)(o.default, {
+                    style: { flexDirection: 'row', gap: 8 },
+                    children: [
+                      (0, y.jsx)(s.default, {
+                        onPress: () => { setCompareMembers([]); setIsSelectingCompareTarget(false); },
+                        style: { paddingVertical: 6, paddingHorizontal: 12, backgroundColor: '#E5E5EA', borderRadius: 8 },
+                        children: (0, y.jsx)(l.default, { style: { color: '#8E8E93', fontSize: 13, fontWeight: 'bold' }, children: "\u6bd4\u8f03\u3092\u3059\u3079\u3066\u89e3\u9664" })
+                      }),
+                      (0, y.jsx)(s.default, {
+                        onPress: () => setIsSelectingCompareTarget(true),
+                        style: { paddingVertical: 6, paddingHorizontal: 12, backgroundColor: '#E1F0FF', borderRadius: 8 },
+                        children: (0, y.jsx)(l.default, { style: { color: '#007AFF', fontSize: 13, fontWeight: 'bold' }, children: "\u6bd4\u8f03\u30e1\u30f3\u30d0\u30fc\u3092\u8ffd\u52a0" })
                       })
-                    })
-                  ]
+                    ]
+                  }) : (0, y.jsx)(s.default, {
+                    onPress: () => setIsSelectingCompareTarget(true),
+                    style: { alignSelf: 'flex-start', paddingVertical: 6, paddingHorizontal: 12, backgroundColor: '#E1F0FF', borderRadius: 8 },
+                    children: (0, y.jsx)(l.default, { style: { color: '#007AFF', fontSize: 13, fontWeight: 'bold' }, children: "\u4ed6\u306e\u30e1\u30f3\u30d0\u30fc\u3068\u6bd4\u8f03" })
+                  })
                 }),
-                (0, y.jsxs)(o.default, {
-                  style: { marginBottom: 24 },
+
+                isSelectingCompareTarget ? (0, y.jsxs)(o.default, {
+                  style: { padding: 12, backgroundColor: '#FFF', borderRadius: 12, borderWidth: 1, borderColor: '#E5E5EA', marginBottom: 16 },
                   children: [
-                    (0, y.jsx)(l.default, { style: { fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 12 }, children: "\u7acb\u306e\u7d50\u679c\u5206\u5e03 (4\u5c04\u5358\u4f4d)" }),
-                    (0, y.jsx)(o.default, {
-                      style: F.patternsCard,
-                      children: [{ label: '皆中', key: 'kaichu', color: '#FF9500' }, { label: '三中', key: 'sanchu', color: '#34C759' }, { label: '羽分', key: 'hake', color: '#007AFF' }, { label: '一中', key: 'icchu', color: '#5856D6' }, { label: '残念', key: 'zannen', color: '#FF3B30' }].map(e => {
-                        const t = ae.patterns[e.key] || 0;
-                        const n = Object.values(ae.patterns).reduce((e, t) => e + t, 0);
-                        const a = n > 0 ? t / n * 100 : 0;
-                        return (0, y.jsxs)(o.default, {
-                          style: F.patternLine,
+                    (0, y.jsxs)(o.default, {
+                      style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+                      children: [
+                        (0, y.jsx)(l.default, { style: { fontSize: 14, fontWeight: 'bold', color: '#1C1C1E' }, children: "\u6bd4\u8f03\u3059\u308b\u30e1\u30f3\u30d0\u30fc\u3092\u9078\u629e" }),
+                        (0, y.jsx)(s.default, { onPress: () => setIsSelectingCompareTarget(false), children: (0, y.jsx)(l.default, { style: { color: '#007AFF', fontSize: 13, fontWeight: 'bold' }, children: "\u5b8c\u4e86" }) })
+                      ]
+                    }),
+                    (0, y.jsx)(r.default, {
+                      style: { maxHeight: 150 },
+                      children: [...w, ...A].filter(item => item.id !== ae.id).map(item => {
+                        const isSelected = compareMembers.some(m => m.id === item.id);
+                        return (0, y.jsxs)(s.default, {
+                          onPress: () => {
+                            setCompareMembers(prev => {
+                              if (prev.some(m => m.id === item.id)) {
+                                return prev.filter(m => m.id !== item.id);
+                              } else {
+                                return [...prev, item];
+                              }
+                            });
+                          },
+                          style: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F2F2F7', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
                           children: [
-                            (0, y.jsx)(o.default, { style: { width: 45 }, children: (0, y.jsx)(l.default, { style: F.patternLabelText, children: e.label }) }),
-                            (0, y.jsx)(o.default, { style: { flex: 1 }, children: (0, y.jsx)(o.default, { style: F.barContainer, children: (0, y.jsx)(o.default, { style: [F.barFill, { width: `${Math.max(a, t > 0 ? 3 : 0)}%`, backgroundColor: e.color }] }) }) }),
-                            (0, y.jsx)(o.default, { style: { width: 50, alignItems: 'flex-end' }, children: (0, y.jsxs)(l.default, { style: F.patternValueText, children: [t, "\u56de"] }) })
+                            (0, y.jsx)(l.default, { style: { fontSize: 14, color: isSelected ? '#007AFF' : '#1C1C1E', fontWeight: isSelected ? 'bold' : 'normal' }, children: item.name }),
+                            isSelected && (0, y.jsx)(l.default, { style: { color: '#007AFF', fontSize: 14, fontWeight: 'bold' }, children: "\u2713" })
                           ]
-                        }, e.key);
+                        }, `select-${item.id}`);
                       })
                     })
                   ]
+                }) : null,
+
+                compareMembers.length > 0 ? (0, y.jsxs)(o.default, {
+                  children: [
+                    (0, y.jsx)(CompareGraph, {
+                      baseData: Be,
+                      baseName: ae.name,
+                      compareTargets: compareMembers.map(cm => ({
+                        id: cm.id,
+                        name: cm.name,
+                        data: Se(cm.id, cm.name)
+                      }))
+                    }),
+                    (0, y.jsxs)(o.default, {
+                      style: { marginBottom: 20, marginTop: 20, alignItems: 'center' },
+                      children: [
+                        (0, y.jsx)(l.default, { style: { fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 8, alignSelf: 'flex-start' }, children: "\u77e2\u6240\u306e\u6a2a\u4e26\u3079\u6bd4\u8f03" }),
+                        (0, y.jsx)(o.default, {
+                          style: { width: '100%', marginBottom: 12 },
+                          children: (0, y.jsx)(we, {
+                            options: [
+                              { label: '\u970e\u7684(\u5c3a\u4e8c\u5bf8)', value: 'kasumi36' },
+                              { label: '\u661f\u7684(\u5c3a\u4e8c\u5bf8)', value: 'hoshi36' },
+                              { label: '\u661f\u7684(\u516b\u5bf8)', value: 'hoshi24' }
+                            ],
+                            selected: modalTargetType,
+                            onSelect: setModalTargetType,
+                            isWrap: !0
+                          })
+                        }),
+                        (0, y.jsx)(o.default, {
+                          style: { flexDirection: 'row', overflowX: 'auto', overflowY: 'hidden', paddingVertical: 4, gap: 16, width: '100%' },
+                          children: [
+                            (0, y.jsxs)(o.default, {
+                              style: { alignItems: 'center', minWidth: 110, width: 110 },
+                              children: [
+                                (0, y.jsx)(l.default, { style: { fontSize: 10, fontWeight: 'bold', marginBottom: 4, color: '#3C3C43', textAlign: 'center' }, numberOfLines: 1, children: ae.name }),
+                                (0, y.jsx)(ArrowLocationView, { arrowLocations: gatherAllArrowLocations(ae.id, ae.name, selectedModalTrendLabel), size: 100, targetType: modalTargetType, hideNumbers: !0 })
+                              ]
+                            }),
+                            ...compareMembers.map((cm, cmIdx) => {
+                              const COLORS = ['#FF2D55', '#34C759', '#FF9500', '#AF52DE', '#32ADE6', '#5856D6', '#FFCC00'];
+                              const dsColor = COLORS[cmIdx % COLORS.length];
+                              return (0, y.jsxs)(o.default, {
+                                style: { alignItems: 'center', minWidth: 110, width: 110 },
+                                children: [
+                                  (0, y.jsx)(l.default, { style: { fontSize: 10, fontWeight: 'bold', marginBottom: 4, color: dsColor, textAlign: 'center' }, numberOfLines: 1, children: cm.name }),
+                                  (0, y.jsx)(ArrowLocationView, { arrowLocations: gatherAllArrowLocations(cm.id, cm.name, selectedModalTrendLabel), size: 100, targetType: modalTargetType, hideNumbers: !0 })
+                                ]
+                              }, `arrow-compare-${cm.id}`);
+                            })
+                          ]
+                        })
+                      ]
+                    }),
+                    (0, y.jsxs)(o.default, {
+                      style: { marginBottom: 20 },
+                      children: [
+                        (0, y.jsx)(l.default, { style: { fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 8 }, children: "\u7acb\u3061\u9806\u5225\u306e\u7684\u4e2d\u7387" }),
+                        (0, y.jsx)(o.default, {
+                          children: Array.from({ length: 4 }).map((_, t) => {
+                            const baseStat = ae.perShotStats[t] || { shots: 0, hits: 0 };
+                            const baseRate = baseStat.shots > 0 ? (baseStat.hits / baseStat.shots) * 100 : 0;
+                            const COLORS = ['#FF2D55', '#34C759', '#FF9500', '#AF52DE', '#32ADE6', '#5856D6', '#FFCC00'];
+
+                            return (0, y.jsxs)(o.default, {
+                              style: { marginBottom: 12, padding: 8, backgroundColor: '#F9F9F9', borderRadius: 8 },
+                              children: [
+                                (0, y.jsxs)(l.default, { style: { fontSize: 11, fontWeight: 'bold', color: '#3C3C43', marginBottom: 6 }, children: [t + 1, "\u5c04\u76ee"] }),
+                                (0, y.jsxs)(o.default, {
+                                  style: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+                                  children: [
+                                    (0, y.jsx)(l.default, { style: { width: 70, fontSize: 10, color: '#3A3A3C' }, children: ae.name }),
+                                    (0, y.jsx)(o.default, { style: { flex: 1, height: 8, backgroundColor: '#E5E5EA', borderRadius: 4, marginRight: 8, overflow: 'hidden' }, children: (0, y.jsx)(o.default, { style: { width: `${baseRate}%`, height: '100%', backgroundColor: '#007AFF', borderRadius: 4 } }) }),
+                                    (0, y.jsxs)(l.default, { style: { width: 80, fontSize: 10, textAlign: 'right', fontWeight: 'bold' }, children: [baseRate.toFixed(0), "% (", baseStat.hits, "/", baseStat.shots, ")"] })
+                                  ]
+                                }),
+                                ...compareMembers.map((cm, cmIdx) => {
+                                  const cmAnalyzed = xe.find(x => x.id === cm.id) || {};
+                                  const cmStat = cmAnalyzed.perShotStats && cmAnalyzed.perShotStats[t] || { shots: 0, hits: 0 };
+                                  const cmRate = cmStat.shots > 0 ? (cmStat.hits / cmStat.shots) * 100 : 0;
+                                  const dsColor = COLORS[cmIdx % COLORS.length];
+
+                                  return (0, y.jsxs)(o.default, {
+                                    style: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+                                    children: [
+                                      (0, y.jsx)(l.default, { style: { width: 70, fontSize: 10, color: dsColor }, children: cm.name }),
+                                      (0, y.jsx)(o.default, { style: { flex: 1, height: 8, backgroundColor: '#E5E5EA', borderRadius: 4, marginRight: 8, overflow: 'hidden' }, children: (0, y.jsx)(o.default, { style: { width: `${cmRate}%`, height: '100%', backgroundColor: dsColor, borderRadius: 4 } }) }),
+                                      (0, y.jsxs)(l.default, { style: { width: 80, fontSize: 10, textAlign: 'right', fontWeight: 'bold' }, children: [cmRate.toFixed(0), "% (", cmStat.hits, "/", cmStat.shots, ")"] })
+                                    ]
+                                  }, `compare-per-shot-${t}-${cm.id}`);
+                                })
+                              ]
+                            }, `compare-per-shot-${t}`);
+                          })
+                        })
+                      ]
+                    })
+                  ]
+                }) : (0, y.jsxs)(o.default, {
+                  children: [
+                    (0, y.jsx)(o.default, { style: { marginBottom: 20 }, children: (0, y.jsx)(Ee, { data: Be, selectedLabel: selectedModalTrendLabel, onSelectLabel: setSelectedModalTrendLabel }) }),
+                    (0, y.jsxs)(o.default, {
+                      style: { marginBottom: 20, alignItems: 'center' },
+                      children: [
+                        (0, y.jsx)(l.default, { style: [{ fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 8, alignSelf: 'flex-start' }], children: selectedModalTrendLabel ? `\u77e2\u6240\u306e\u50be\u5411 (${selectedModalTrendLabel})` : "\u77e2\u6240\u306e\u50be\u5411 (\u96c6\u8a08)" }),
+                        (0, y.jsx)(o.default, {
+                          style: { width: '100%', marginBottom: 12 },
+                          children: (0, y.jsx)(we, {
+                            options: [
+                              { label: '\u970e\u7684(\u5c3a\u4e8c\u5bf8)', value: 'kasumi36' },
+                              { label: '\u661f\u7684(\u5c3a\u4e8c\u5bf8)', value: 'hoshi36' },
+                              { label: '\u661f\u7684(\u516b\u5bf8)', value: 'hoshi24' }
+                            ],
+                            selected: modalTargetType,
+                            onSelect: setModalTargetType,
+                            isWrap: !0
+                          })
+                        }),
+                        (0, y.jsx)(ArrowLocationView, { arrowLocations: gatherAllArrowLocations(ae.id, ae.name, selectedModalTrendLabel), size: 200, targetType: modalTargetType, hideNumbers: !0 })
+                      ]
+                    }),
+                    (0, y.jsxs)(o.default, {
+                      style: { marginBottom: 16 },
+                      children: [
+                        (0, y.jsx)(l.default, { style: { fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 8 }, children: "\u7acb\u3061\u9806\u5225\u306e\u7684\u4e2d\u7387 (1-4\u5c04\u76ee)" }),
+                        (0, y.jsx)(o.default, {
+                          style: F.statsGrid,
+                          children: Array.from({ length: 4 }).map((e, t) => {
+                            const n = ae.perShotStats[t] || { shots: 0, hits: 0 };
+                            const a = n.shots > 0 ? n.hits / n.shots * 100 : 0;
+                            return (0, y.jsxs)(o.default, {
+                              style: F.statBox,
+                              children: [
+                                (0, y.jsxs)(l.default, { style: F.statBoxTitle, children: [t + 1, "\u5c04\u76ee"] }),
+                                (0, y.jsxs)(l.default, { style: F.statBoxRate, children: [a.toFixed(0), "%"] }),
+                                (0, y.jsxs)(l.default, { style: F.statBoxCounts, children: [n.hits, "/", n.shots] })
+                              ]
+                            }, `per-shot-modal-${t}`);
+                          })
+                        })
+                      ]
+                    }),
+                    (0, y.jsxs)(o.default, {
+                      style: { marginBottom: 24 },
+                      children: [
+                        (0, y.jsx)(l.default, { style: { fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 12 }, children: "\u7acb\u306e\u7d50\u679c\u5206\u5e03 (4\u5c04\u5358\u4f4d)" }),
+                        (0, y.jsx)(o.default, {
+                          style: F.patternsCard,
+                          children: [{ label: '\u7686\u4e2d', key: 'kaichu', color: '#FF9500' }, { label: '\u4e09\u4e2d', key: 'sanchu', color: '#34C759' }, { label: '\u7fbd\u5206', key: 'hake', color: '#007AFF' }, { label: '\u4e00\u4e2d', key: 'icchu', color: '#5856D6' }, { label: '\u6b8b\u5ff5', key: 'zannen', color: '#FF3B30' }].map(e => {
+                            const t = ae.patterns[e.key] || 0;
+                            const n = Object.values(ae.patterns).reduce((e, t) => e + t, 0);
+                            const a = n > 0 ? t / n * 100 : 0;
+                            return (0, y.jsxs)(o.default, {
+                              style: F.patternLine,
+                              children: [
+                                (0, y.jsx)(o.default, { style: { width: 45 }, children: (0, y.jsx)(l.default, { style: F.patternLabelText, children: e.label }) }),
+                                (0, y.jsx)(o.default, { style: { flex: 1 }, children: (0, y.jsx)(o.default, { style: F.barContainer, children: (0, y.jsx)(o.default, { style: [F.barFill, { width: `${Math.max(a, t > 0 ? 3 : 0)}%`, backgroundColor: e.color }] }) }) }),
+                                (0, y.jsx)(o.default, { style: { width: 50, alignItems: 'flex-end' }, children: (0, y.jsxs)(l.default, { style: F.patternValueText, children: [t, "\u56de"] }) })
+                              ]
+                            }, e.key);
+                          })
+                        })
+                      ]
+                    })
+                  ]
                 }),
-                (0, y.jsx)(s.default, { style: F.closeBtn, onPress: () => re(null), children: (0, y.jsx)(l.default, { style: F.closeBtnText, children: "\u9589\u3058\u308b" }) })
+                (0, y.jsx)(s.default, { 
+                  style: F.closeBtn, 
+                  onPress: () => {
+                    re(null);
+                    setCompareMembers([]);
+                    setIsSelectingCompareTarget(false);
+                  }, 
+                  children: (0, y.jsx)(l.default, { style: F.closeBtnText, children: "\u9589\u3058\u308b" }) 
+                })
               ]
             })
           })

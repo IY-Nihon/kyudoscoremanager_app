@@ -252,13 +252,15 @@ type:'ratio',value:0
 },'\u3059\u3079\u3066':{
 type:'ratio',value:0
 }
-},currentRouteName:null,updateLoadingLog:t=>{
+},focusedMemberId:null,currentRouteName:null,updateLoadingLog:t=>{
 const o=s().initializationLogs||[];
 e({
 initializationLogs:[...o,t]
 }),console.log('[Store] Loading:',t)
 },setCurrentRouteName:s=>e({
 currentRouteName:s
+}),setFocusedMemberId:s=>e({
+focusedMemberId:s
 }),setShowSyncErrorPopups:s=>e({
 showSyncErrorPopups:s
 }),setAuth:(t,o,a,i=null,n=null,c=null,l=null)=>{
