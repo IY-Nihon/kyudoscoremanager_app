@@ -8,7 +8,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.OCRRecordModal = void 0;
 
 const React = require("react");
-const { useState, useRef } = React;
+const { useState, useMemo } = React;
 const RN = require("react-native");
 const _View = RN.View;
 const _Text = RN.Text;
@@ -55,8 +55,32 @@ function splitName(fullName) {
   const parts = fullName.trim().split(/[\s\u3000]+/);
   return { sei: parts[0] || "", mei: parts.length > 1 ? parts.slice(1).join("") : "" };
 }
+
 function normalize(s) {
   return (s || "").replace(/[\s\u3000]+/g, "");
+}
+
+// ─────────────────────────────────────────
+// 編集距離（Levenshtein Distance）の計算
+// ─────────────────────────────────────────
+function getLevenshteinDistance(a, b) {
+  const tmp = [];
+  for (let i = 0; i <= a.length; i++) {
+    tmp[i] = [i];
+  }
+  for (let j = 0; j <= b.length; j++) {
+    tmp[0][j] = j;
+  }
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      tmp[i][j] = Math.min(
+        tmp[i - 1][j] + 1,
+        tmp[i][j - 1] + 1,
+        tmp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+      );
+    }
+  }
+  return tmp[a.length][b.length];
 }
 
 // ─────────────────────────────────────────
@@ -106,7 +130,27 @@ function matchArcherName(rawText, candidates) {
   });
   if (partial.length === 1) return { status: "matched", match: partial[0], fuzzy: true };
 
-  // 5. 一致なし → ゲスト扱い
+  // 5. 編集距離（Levenshtein Distance）による漢字書き間違い救済
+  let bestFuzzyMatches = [];
+  let minDistance = 3; // 最大許容距離は2まで
+  candidates.forEach(c => {
+    const cn = normalize(c.name);
+    const dist = getLevenshteinDistance(text, cn);
+    if (dist < minDistance) {
+      minDistance = dist;
+      bestFuzzyMatches = [c];
+    } else if (dist === minDistance) {
+      bestFuzzyMatches.push(c);
+    }
+  });
+
+  if (bestFuzzyMatches.length === 1 && minDistance <= 2) {
+    return { status: "matched", match: bestFuzzyMatches[0], fuzzy: true };
+  } else if (bestFuzzyMatches.length > 1 && minDistance <= 2) {
+    return { status: "ambiguous", options: bestFuzzyMatches };
+  }
+
+  // 6. 一致なし → ゲスト扱い
   return { status: "guest", rawText: rawText.trim() };
 }
 
@@ -119,6 +163,8 @@ const OCRRecordModal = ({ visible, onClose, members = [], alumni = [], shotsPerR
   const [errorMsg, setErrorMsg] = useState("");
   const [pickerTarget, setPickerTarget] = useState(null); // {tachiIdx, seatIdx}
   const [pickerSearch, setPickerSearch] = useState("");
+  const [expandedActiveGrades, setExpandedActiveGrades] = useState(new Set(["1", "2", "3", "4", "0"]));
+  const [expandedTerms, setExpandedTerms] = useState(new Set());
 
   const resetAll = () => {
     setStep("pick");
@@ -127,6 +173,8 @@ const OCRRecordModal = ({ visible, onClose, members = [], alumni = [], shotsPerR
     setErrorMsg("");
     setPickerTarget(null);
     setPickerSearch("");
+    setExpandedActiveGrades(new Set(["1", "2", "3", "4", "0"]));
+    setExpandedTerms(new Set());
   };
 
   const handleClose = () => {
@@ -134,10 +182,10 @@ const OCRRecordModal = ({ visible, onClose, members = [], alumni = [], shotsPerR
     onClose && onClose();
   };
 
-  const allCandidates = [
+  const allCandidates = useMemo(() => [
     ...members.map(m => ({ ...m, isAlumni: false })),
     ...alumni.map(a => ({ ...a, isAlumni: true })),
-  ];
+  ], [members, alumni]);
 
   // ─────────────────────────────────────────
   // 画像選択（追加撮影で複数枚対応）
@@ -286,12 +334,19 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
   };
 
   // ─────────────────────────────────────────
-  // 記録表への反映（archers配列を構築してonApplyへ）
+  // 記録表への反映（空セルのスキップと、無駄な空セパレータ防止）
   // ─────────────────────────────────────────
   const buildArchersArray = () => {
-    const result = [];
-    tachiList.forEach((tachi, tIdx) => {
+    const activeTachiLists = [];
+
+    tachiList.forEach(tachi => {
+      const listForThisTachi = [];
       tachi.seats.forEach(seat => {
+        // 空欄（statusがempty、または名前がない）は追加せず無視（何も入れない）
+        if (seat.status === "empty" || !seat.rawText || seat.rawText.trim() === "") {
+          return;
+        }
+
         const base = {
           id: generateUUID(),
           name: "",
@@ -305,8 +360,9 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
           lockedBlocks: {},
           lastModified: Date.now(),
         };
+
         if (seat.status === "matched" && seat.match) {
-          result.push({
+          listForThisTachi.push({
             ...base,
             name: seat.match.name,
             gender: seat.match.gender || "未設定",
@@ -314,13 +370,20 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
             memberId: seat.match.id,
             isGuest: false,
           });
-        } else if (seat.status === "guest" && seat.rawText) {
-          result.push({ ...base, name: seat.rawText, isGuest: true });
-        } else {
-          result.push(base); // 空欄（選択）はそのまま保持
+        } else if ((seat.status === "guest" || seat.status === "ambiguous") && seat.rawText) {
+          listForThisTachi.push({ ...base, name: seat.rawText, isGuest: true });
         }
       });
-      if (tIdx < tachiList.length - 1) {
+      activeTachiLists.push(listForThisTachi);
+    });
+
+    const result = [];
+    // 有効なメンバーが入っている立ちのみを処理し、その間にセパレータを入れる
+    const nonTransientTachi = activeTachiLists.filter(list => list.length > 0);
+
+    nonTransientTachi.forEach((list, idx) => {
+      result.push(...list);
+      if (idx < nonTransientTachi.length - 1) {
         result.push({
           id: "sep-" + generateUUID(),
           name: "---",
@@ -335,6 +398,7 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
         });
       }
     });
+
     return result;
   };
 
@@ -367,10 +431,74 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
     return "選択";
   };
 
-  const pickerCandidates = allCandidates.filter(c => {
-    if (!pickerSearch.trim()) return true;
-    return normalize(c.name).includes(normalize(pickerSearch));
-  });
+  // メンバーピッカー（アコーディオン表示用）
+  const activeMembersSorted = useMemo(() => {
+    return members
+      .filter(m => (m.grade || 0) < 5)
+      .filter(m => !pickerSearch.trim() || normalize(m.name).includes(normalize(pickerSearch)))
+      .sort((a, b) => {
+        const gradeA = void 0 === a.grade || null === a.grade ? 99 : Number(a.grade);
+        const gradeB = void 0 === b.grade || null === b.grade ? 99 : Number(b.grade);
+        const gA = gradeA === 0 ? 99 : gradeA;
+        const gB = gradeB === 0 ? 99 : gradeB;
+        if (gA !== gB) return gA - gB;
+        const genderVal = g => ('男子' === g ? 0 : '女子' === g ? 1 : 2);
+        const genDiff = genderVal(a.gender) - genderVal(b.gender);
+        return 0 !== genDiff ? genDiff : (a.name || '').localeCompare(b.name || '', 'ja');
+      });
+  }, [members, pickerSearch]);
+
+  const activeGroups = useMemo(() => {
+    const groups = {};
+    activeMembersSorted.forEach(m => {
+      const g = void 0 === m.grade || null === m.grade ? 0 : Number(m.grade);
+      groups[g] || (groups[g] = []);
+      groups[g].push(m);
+    });
+    const sortedGrades = Object.keys(groups).map(Number).sort((a, b) => {
+      if (a === 0) return 1;
+      if (b === 0) return -1;
+      return a - b;
+    });
+    return sortedGrades.map(g => ({
+      grade: g,
+      title: g === 0 ? "その他/ゲスト" : `${g}年生`,
+      members: groups[g],
+    }));
+  }, [activeMembersSorted]);
+
+  const alumniByTerm = useMemo(() => {
+    const list = alumni
+      .filter(a => !pickerSearch.trim() || normalize(a.name).includes(normalize(pickerSearch)));
+    const termMap = {};
+    list.forEach(a => {
+      const term = a.termKi || 999;
+      termMap[term] || (termMap[term] = []);
+      termMap[term].push(a);
+    });
+    return Object.keys(termMap)
+      .sort((a, b) => Number(b) - Number(a))
+      .map(term => ({
+        term,
+        members: termMap[term].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ja')),
+      }));
+  }, [alumni, pickerSearch]);
+
+  const toggleActiveGrade = (gStr) => {
+    setExpandedActiveGrades(prev => {
+      const next = new Set(prev);
+      next.has(gStr) ? next.delete(gStr) : next.add(gStr);
+      return next;
+    });
+  };
+
+  const toggleTerm = (termStr) => {
+    setExpandedTerms(prev => {
+      const next = new Set(prev);
+      next.has(termStr) ? next.delete(termStr) : next.add(termStr);
+      return next;
+    });
+  };
 
   return (
     <_Modal visible={visible} animationType="slide" transparent={true} onRequestClose={handleClose}>
@@ -506,18 +634,67 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
                   <_Text style={styles.pickerRowTextMuted}>（空欄にする）</_Text>
                 </_TouchableOpacity>
 
-                {pickerCandidates.map(c => (
-                  <_TouchableOpacity
-                    key={c.id}
-                    style={styles.pickerRow}
-                    onPress={() => assignSeat(pickerTarget.tachiIdx, pickerTarget.seatIdx, c)}
-                  >
-                    <_Text style={styles.pickerRowText}>
-                      {c.name}
-                      {c.isAlumni ? "（卒業生）" : `（${c.grade}年）`}
-                    </_Text>
-                  </_TouchableOpacity>
-                ))}
+                {/* 現役生グループアコーディオン */}
+                {activeGroups.map(group => {
+                  const gStr = group.grade.toString();
+                  const isOpen = expandedActiveGrades.has(gStr);
+                  return (
+                    <React.Fragment key={`grade-${gStr}`}>
+                      <_TouchableOpacity
+                        style={styles.accordionHeader}
+                        onPress={() => toggleActiveGrade(gStr)}
+                      >
+                        <_Text style={styles.accordionTitle}>
+                          {group.title} ({group.members.length}人)
+                        </_Text>
+                        <Ionicons name={isOpen ? "chevron-up" : "chevron-down"} size={16} color="#8E8E93" />
+                      </_TouchableOpacity>
+                      {isOpen && group.members.map(m => (
+                        <_TouchableOpacity
+                          key={m.id}
+                          style={styles.pickerRowIndent}
+                          onPress={() => assignSeat(pickerTarget.tachiIdx, pickerTarget.seatIdx, m)}
+                        >
+                          <_Text style={styles.pickerRowText}>{m.name}</_Text>
+                        </_TouchableOpacity>
+                      ))}
+                    </React.Fragment>
+                  );
+                })}
+
+                {/* 卒業生グループ期別アコーディオン */}
+                {alumniByTerm.length > 0 && (
+                  <_View style={{ marginTop: 12 }}>
+                    <_Text style={styles.sectionDividerText}>卒業生</_Text>
+                    {alumniByTerm.map(group => {
+                      const tStr = group.term.toString();
+                      const isOpen = expandedTerms.has(tStr);
+                      return (
+                        <React.Fragment key={`term-${tStr}`}>
+                          <_TouchableOpacity
+                            style={styles.accordionHeader}
+                            onPress={() => toggleTerm(tStr)}
+                          >
+                            <_Text style={styles.accordionTitle}>
+                              {tStr === "999" ? "期生不明" : `${tStr}期`} ({group.members.length}人)
+                            </_Text>
+                            <Ionicons name={isOpen ? "chevron-up" : "chevron-down"} size={16} color="#8E8E93" />
+                          </_TouchableOpacity>
+                          {isOpen && group.members.map(a => (
+                            <_TouchableOpacity
+                              key={a.id}
+                              style={styles.pickerRowIndent}
+                              onPress={() => assignSeat(pickerTarget.tachiIdx, pickerTarget.seatIdx, a)}
+                            >
+                              <_Text style={styles.pickerRowText}>{a.name}</_Text>
+                            </_TouchableOpacity>
+                          ))}
+                        </React.Fragment>
+                      );
+                    })}
+                  </_View>
+                )}
+
                 {!!pickerSearch.trim() && (
                   <_TouchableOpacity
                     style={styles.pickerRow}
@@ -588,9 +765,13 @@ const styles = _StyleSheet.create({
   pickerSearchInput: { borderWidth: 1, borderColor: "#DDD", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, fontSize: 14, marginBottom: 10 },
   pickerList: { maxHeight: 320 },
   pickerRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
+  pickerRowIndent: { paddingVertical: 12, paddingLeft: 16, borderBottomWidth: 1, borderBottomColor: "#F5F5F5" },
   pickerRowText: { fontSize: 14, color: "#1C1C1E" },
   pickerRowTextMuted: { fontSize: 14, color: "#999" },
   pickerRowTextGuest: { fontSize: 14, color: "#FF9500", fontWeight: "600" },
   pickerCloseBtn: { marginTop: 10, paddingVertical: 10, alignItems: "center" },
   pickerCloseBtnText: { color: "#8E8E93", fontSize: 14 },
+  accordionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#EEEEEE" },
+  accordionTitle: { fontSize: 13, fontWeight: "600", color: "#666" },
+  sectionDividerText: { fontSize: 12, fontWeight: "bold", color: "#8E8E93", marginTop: 8, marginBottom: 4 },
 });
