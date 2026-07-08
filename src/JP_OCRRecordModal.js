@@ -56,10 +56,6 @@ function splitName(fullName) {
   return { sei: parts[0] || "", mei: parts.length > 1 ? parts.slice(1).join("") : "" };
 }
 
-function normalize(s) {
-  return (s || "").replace(/[\s\u3000]+/g, "");
-}
-
 // ─────────────────────────────────────────
 // 編集距離（Levenshtein Distance）の計算
 // ─────────────────────────────────────────
@@ -81,6 +77,10 @@ function getLevenshteinDistance(a, b) {
     }
   }
   return tmp[a.length][b.length];
+}
+
+function normalize(s) {
+  return (s || "").replace(/[\s\u3000]+/g, "");
 }
 
 // ─────────────────────────────────────────
@@ -114,8 +114,15 @@ function matchArcherName(rawText, candidates) {
     if (bySei.length > 0) return { status: "ambiguous", options: bySei };
   }
 
-  // 3. 姓のみ一致（現役生を優先、複数該当なら曖昧扱い）
-  const bySeiOnly = candidates.filter(c => splitName(c.name).sei === text);
+  // 3. 姓のみ一致（現役生を優先、前方一致やスペース無しも強力にマッチ）
+  const bySeiOnly = candidates.filter(c => {
+    const sName = splitName(c.name);
+    if (sName.sei === text) return true;
+    const cn = normalize(c.name);
+    // 部員名が「渋川航大」で、読み取ったテキストが「渋川」などの場合（前方一致で長さ2以上）
+    if (text.length >= 2 && cn.startsWith(text) && cn.length > text.length) return true;
+    return false;
+  });
   if (bySeiOnly.length === 1) return { status: "matched", match: bySeiOnly[0] };
   if (bySeiOnly.length > 1) {
     const activeOnly = bySeiOnly.filter(c => !c.isAlumni);
@@ -165,6 +172,10 @@ const OCRRecordModal = ({ visible, onClose, members = [], alumni = [], shotsPerR
   const [pickerSearch, setPickerSearch] = useState("");
   const [expandedActiveGrades, setExpandedActiveGrades] = useState(new Set(["1", "2", "3", "4", "0"]));
   const [expandedTerms, setExpandedTerms] = useState(new Set());
+  
+  // ゲスト入力用ステート
+  const [isEnteringGuest, setIsEnteringGuest] = useState(false);
+  const [guestNameInput, setGuestNameInput] = useState("");
 
   const resetAll = () => {
     setStep("pick");
@@ -175,6 +186,8 @@ const OCRRecordModal = ({ visible, onClose, members = [], alumni = [], shotsPerR
     setPickerSearch("");
     setExpandedActiveGrades(new Set(["1", "2", "3", "4", "0"]));
     setExpandedTerms(new Set());
+    setIsEnteringGuest(false);
+    setGuestNameInput("");
   };
 
   const handleClose = () => {
@@ -186,6 +199,19 @@ const OCRRecordModal = ({ visible, onClose, members = [], alumni = [], shotsPerR
     ...members.map(m => ({ ...m, isAlumni: false })),
     ...alumni.map(a => ({ ...a, isAlumni: true })),
   ], [members, alumni]);
+
+  // すでに選択されているメンバーIDのSet（ピッカーでのスタイル同期用）
+  const selectedMemberIds = useMemo(() => {
+    const ids = new Set();
+    tachiList.forEach(tachi => {
+      tachi.seats.forEach(seat => {
+        if (seat.status === "matched" && seat.match?.id) {
+          ids.add(seat.match.id);
+        }
+      });
+    });
+    return ids;
+  }, [tachiList]);
 
   // ─────────────────────────────────────────
   // 画像選択（追加撮影で複数枚対応）
@@ -321,6 +347,8 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
     });
     setPickerTarget(null);
     setPickerSearch("");
+    setIsEnteringGuest(false);
+    setGuestNameInput("");
   };
 
   const setSeatAsGuest = (tachiIdx, seatIdx, name) => {
@@ -331,6 +359,8 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
     });
     setPickerTarget(null);
     setPickerSearch("");
+    setIsEnteringGuest(false);
+    setGuestNameInput("");
   };
 
   // ─────────────────────────────────────────
@@ -500,6 +530,13 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
     });
   };
 
+  const submitGuest = () => {
+    const name = guestNameInput.trim();
+    if (name && pickerTarget) {
+      setSeatAsGuest(pickerTarget.tachiIdx, pickerTarget.seatIdx, name);
+    }
+  };
+
   return (
     <_Modal visible={visible} animationType="slide" transparent={true} onRequestClose={handleClose}>
       <_View style={styles.overlay}>
@@ -578,26 +615,35 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
                   <_View style={styles.legendItem}><_View style={[styles.legendDot, { backgroundColor: "#F0F0F0" }]} /><_Text style={styles.legendText}>ゲスト</_Text></_View>
                 </_View>
 
-                {tachiList.map((tachi, tIdx) => (
-                  <_View key={tIdx} style={styles.tachiBlock}>
-                    <_Text style={styles.tachiLabel}>
-                      {SHOT_LABELS[tIdx] || `${tIdx + 1}立目`}
-                    </_Text>
-                    <_View style={styles.seatRow}>
-                      {tachi.seats.map((seat, sIdx) => (
-                        <_TouchableOpacity
-                          key={sIdx}
-                          style={[styles.seatChip, { backgroundColor: seatColor(seat) }]}
-                          onPress={() => { setPickerTarget({ tachiIdx: tIdx, seatIdx: sIdx }); setPickerSearch(""); }}
-                        >
-                          <_Text style={styles.seatChipText} numberOfLines={2}>
-                            {seatLabel(seat)}
-                          </_Text>
-                        </_TouchableOpacity>
-                      ))}
+                {tachiList.map((tachi, tIdx) => {
+                  // 空欄（status === "empty"）のセルを除外した有効な的のみをカウント
+                  const activeSeats = tachi.seats.filter(seat => seat.status !== "empty");
+                  if (activeSeats.length === 0) return null; // 有効な的が1つもなければこの立ち自体を描画しない
+
+                  return (
+                    <_View key={tIdx} style={styles.tachiBlock}>
+                      <_Text style={styles.tachiLabel}>
+                        {SHOT_LABELS[tIdx] || `${tIdx + 1}立目`}
+                      </_Text>
+                      <_View style={styles.seatRow}>
+                        {tachi.seats.map((seat, sIdx) => {
+                          if (seat.status === "empty") return null; // 空欄の的はプレビュー画面にも何も入れない（表示しない）
+                          return (
+                            <_TouchableOpacity
+                              key={sIdx}
+                              style={[styles.seatChip, { backgroundColor: seatColor(seat) }]}
+                              onPress={() => { setPickerTarget({ tachiIdx: tIdx, seatIdx: sIdx }); setPickerSearch(""); }}
+                            >
+                              <_Text style={styles.seatChipText} numberOfLines={2}>
+                                {seatLabel(seat)}
+                              </_Text>
+                            </_TouchableOpacity>
+                          );
+                        })}
+                      </_View>
                     </_View>
-                  </_View>
-                ))}
+                  );
+                })}
               </_ScrollView>
 
               <_View style={styles.previewFooter}>
@@ -619,13 +665,44 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
             <_TouchableOpacity style={_StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setPickerTarget(null)} />
             <_View style={styles.pickerBox}>
               <_Text style={styles.pickerTitle}>メンバーを選択</_Text>
-              <_TextInput
-                style={styles.pickerSearchInput}
-                placeholder="名前で検索"
-                value={pickerSearch}
-                onChangeText={setPickerSearch}
-                autoFocus={true}
-              />
+              
+              {/* ゲスト登録切り替えエリア */}
+              {isEnteringGuest ? (
+                <_View style={styles.guestInputRow}>
+                  <_TextInput
+                    style={styles.guestInput}
+                    placeholder="ゲスト名を入力"
+                    value={guestNameInput}
+                    onChangeText={setGuestNameInput}
+                    autoFocus={true}
+                    onSubmitEditing={submitGuest}
+                  />
+                  <_TouchableOpacity onPress={submitGuest} style={styles.guestSubmitBtn}>
+                    <_Text style={styles.guestSubmitBtnText}>決定</_Text>
+                  </_TouchableOpacity>
+                  <_TouchableOpacity onPress={() => { setIsEnteringGuest(false); setGuestNameInput(""); }} style={{ marginLeft: 8 }}>
+                    <Ionicons name="close" size={24} color="#8E8E93" />
+                  </_TouchableOpacity>
+                </_View>
+              ) : (
+                <_View style={styles.pickerToolbarRow}>
+                  <_TextInput
+                    style={[styles.pickerSearchInput, { flex: 1, marginBottom: 0 }]}
+                    placeholder="名前で検索"
+                    value={pickerSearch}
+                    onChangeText={setPickerSearch}
+                    autoFocus={true}
+                  />
+                  <_TouchableOpacity
+                    style={styles.guestToggleBtn}
+                    onPress={() => setIsEnteringGuest(true)}
+                  >
+                    <Ionicons name="person-add-outline" size={18} color="#5856D6" />
+                    <_Text style={styles.guestToggleBtnText}>ゲスト</_Text>
+                  </_TouchableOpacity>
+                </_View>
+              )}
+
               <_ScrollView style={styles.pickerList}>
                 <_TouchableOpacity
                   style={styles.pickerRow}
@@ -649,15 +726,21 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
                         </_Text>
                         <Ionicons name={isOpen ? "chevron-up" : "chevron-down"} size={16} color="#8E8E93" />
                       </_TouchableOpacity>
-                      {isOpen && group.members.map(m => (
-                        <_TouchableOpacity
-                          key={m.id}
-                          style={styles.pickerRowIndent}
-                          onPress={() => assignSeat(pickerTarget.tachiIdx, pickerTarget.seatIdx, m)}
-                        >
-                          <_Text style={styles.pickerRowText}>{m.name}</_Text>
-                        </_TouchableOpacity>
-                      ))}
+                      {isOpen && group.members.map(m => {
+                        const isSelected = selectedMemberIds.has(m.id);
+                        return (
+                          <_TouchableOpacity
+                            key={m.id}
+                            style={[
+                              styles.pickerRowIndent,
+                              isSelected && { backgroundColor: "#F0F0F5", opacity: 0.8 }
+                            ]}
+                            onPress={() => assignSeat(pickerTarget.tachiIdx, pickerTarget.seatIdx, m)}
+                          >
+                            <_Text style={[styles.pickerRowText, isSelected && { color: "#8E8E93" }]}>{m.name}</_Text>
+                          </_TouchableOpacity>
+                        );
+                      })}
                     </React.Fragment>
                   );
                 })}
@@ -680,15 +763,21 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
                             </_Text>
                             <Ionicons name={isOpen ? "chevron-up" : "chevron-down"} size={16} color="#8E8E93" />
                           </_TouchableOpacity>
-                          {isOpen && group.members.map(a => (
-                            <_TouchableOpacity
-                              key={a.id}
-                              style={styles.pickerRowIndent}
-                              onPress={() => assignSeat(pickerTarget.tachiIdx, pickerTarget.seatIdx, a)}
-                            >
-                              <_Text style={styles.pickerRowText}>{a.name}</_Text>
-                            </_TouchableOpacity>
-                          ))}
+                          {isOpen && group.members.map(a => {
+                            const isSelected = selectedMemberIds.has(a.id);
+                            return (
+                              <_TouchableOpacity
+                                key={a.id}
+                                style={[
+                                  styles.pickerRowIndent,
+                                  isSelected && { backgroundColor: "#F0F0F5", opacity: 0.8 }
+                                ]}
+                                onPress={() => assignSeat(pickerTarget.tachiIdx, pickerTarget.seatIdx, a)}
+                              >
+                                <_Text style={[styles.pickerRowText, isSelected && { color: "#8E8E93" }]}>{a.name}</_Text>
+                              </_TouchableOpacity>
+                            );
+                          })}
                         </React.Fragment>
                       );
                     })}
@@ -774,4 +863,13 @@ const styles = _StyleSheet.create({
   accordionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#EEEEEE" },
   accordionTitle: { fontSize: 13, fontWeight: "600", color: "#666" },
   sectionDividerText: { fontSize: 12, fontWeight: "bold", color: "#8E8E93", marginTop: 8, marginBottom: 4 },
+  
+  // ゲスト追加用新規スタイル
+  pickerToolbarRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
+  guestToggleBtn: { flexDirection: "row", alignItems: "center", gap: 4, borderWidth: 1, borderColor: "#5856D6", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, height: 40 },
+  guestToggleBtnText: { color: "#5856D6", fontSize: 12, fontWeight: "600" },
+  guestInputRow: { flexDirection: "row", alignItems: "center", marginBottom: 10, gap: 8 },
+  guestInput: { flex: 1, borderWidth: 1, borderColor: "#5856D6", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, fontSize: 14 },
+  guestSubmitBtn: { backgroundColor: "#5856D6", borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8, height: 40, justifyContent: "center" },
+  guestSubmitBtnText: { color: "#FFF", fontSize: 14, fontWeight: "bold" }
 });
