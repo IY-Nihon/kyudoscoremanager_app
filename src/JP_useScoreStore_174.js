@@ -446,6 +446,15 @@ const{
 isLiveActive:n,liveSessionName:c,shotsPerRound:l
 }=s();
 n&&c&&v(c,a,l)
+},applyOCRResult:t=>{
+const o=Array.isArray(s().archers)?s().archers:[],i=Date.now();
+e({
+archers:t,historyStack:[...s().historyStack,o],redoStack:[],lastLocalChange:i
+});
+const{
+isLiveActive:n,liveSessionName:c,shotsPerRound:l
+}=s();
+n&&c&&v(c,t,l)
 },setEnableArrowLocation:t=>e({
 enableArrowLocation:t
 }),setArrowTargetType:t=>e({
