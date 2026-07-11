@@ -11,7 +11,7 @@ const _m = module;
 const _e = exports;
 const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
 
-"use strict";function e(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(_e,'__esModule',{value:!0}),Object.defineProperty(_e,"AnalysisScreen",{enumerable:!0,get:function(){return j}});var t=require("./module_37"),n=e(t),o=e(require("./default_144")),l=e(require("./default_217")),a=e(require("./default_45")),r=e(require("./default_297")),s=e(require("./default_382")),i=e(require("./default_386")),d=e(require("./default_398"));require("./module_98");var c=require("./IS_WEB_199");require("./module_420");var u=require("./JP_useScoreStore_174"),h=require("./AntDesign_600"),f=require("./JP_CustomCalendarModal_695"),m=require("./module_592"),x=require("./default_1001"),b=e(x),y=require("./module_427"),{ArrowLocationView}=require("./ArrowLocationView");const j = () => {
+"use strict";function e(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(_e,'__esModule',{value:!0}),Object.defineProperty(_e,"AnalysisScreen",{enumerable:!0,get:function(){return j}});var t=require("./module_37"),n=e(t),o=e(require("./default_144")),l=e(require("./default_217")),a=e(require("./default_45")),r=e(require("./default_297")),s=e(require("./default_382")),i=e(require("./default_386")),d=e(require("./default_398"));require("./module_98");var c=require("./IS_WEB_199");require("./module_420");var u=require("./JP_useScoreStore_174"),h=require("./AntDesign_600"),f=require("./JP_CustomCalendarModal_695"),m=require("./module_592"),x=require("./default_1001"),b=e(x),y=require("./module_427"),{ArrowLocationView}=require("./ArrowLocationView");const j = ({ navigation }) => {
   const {
     analysisSelectedTags: e = [],
     analysisTagLogic: a = "AND",
@@ -30,12 +30,27 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
     showAlumniInAnalysis: v,
     setShowAlumniInAnalysis: setAlumni,
     isHydrated: z,
-    arrowTargetType
+    arrowTargetType,
+    setSelectedHistorySessionId,
+    setHistoryViewMode,
+    setFocusedMemberId
   } = (0, u.useScoreStore)();
 
   const D = (0, u.useScoreStore)(e => e.myMemberName) || '';
   const [compareMembers, setCompareMembers] = (0, t.useState)([]);
   const [isSelectingCompareTarget, setIsSelectingCompareTarget] = (0, t.useState)(false);
+
+  // 分析グラフの点タップ→履歴一覧の該当セッション詳細に飛び、対象者の列までスクロールする
+  const goToHistoryRecord = (sessionId, memberId) => {
+    if (!sessionId) return;
+    setSelectedHistorySessionId(sessionId);
+    setHistoryViewMode('detail');
+    if (memberId) setFocusedMemberId(memberId);
+    if (navigation && typeof navigation.navigate === 'function') {
+      navigation.navigate('履歴');
+    }
+  };
+
   if (!z) return null;
 
   const gatherAllArrowLocations = (memberId, name, selectedLabel) => {
@@ -540,7 +555,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
   };
 
 
-  const Ee = ({ data: e, selectedLabel, onSelectLabel }) => {
+  const Ee = ({ data: e, selectedLabel, onSelectLabel, onJumpToRecord }) => {
     const a = selectedLabel ? e.findIndex(item => item.label === selectedLabel) : null;
     const i = (index) => {
       if (null === index) {
@@ -622,11 +637,19 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
             (0, y.jsx)(r.default, {
               style: { maxHeight: 120 },
               showsVerticalScrollIndicator: !0,
-              children: e[a].details.map((t, n) => (0, y.jsxs)(o.default, {
-                style: [F.detailRow, n < e[a].details.length - 1 && { borderBottomWidth: 1, borderBottomColor: '#F2F2F7', paddingBottom: 6, marginBottom: 6 }],
+              children: e[a].details.map((t, n) => (0, y.jsxs)(s.default, {
+                onPress: () => { i(null); onJumpToRecord && onJumpToRecord(t.sessionId); },
+                activeOpacity: 0.5,
+                style: [
+                  F.detailRow,
+                  n < e[a].details.length - 1 && { borderBottomWidth: 1, borderBottomColor: '#F2F2F7', paddingBottom: 6, marginBottom: 6 }
+                ],
                 children: [
                   (0, y.jsxs)(l.default, { style: F.detailText, children: [t.date, " ", t.title] }),
-                  (0, y.jsx)(l.default, { style: F.detailStats, children: t.stats })
+                  (0, y.jsxs)(o.default, { style: { flexDirection: 'row', alignItems: 'center', gap: 4 }, children: [
+                    (0, y.jsx)(l.default, { style: F.detailStats, children: t.stats }),
+                    (0, y.jsx)(h.Ionicons, { name: "chevron-forward", size: 14, color: "#C7C7CC" })
+                  ] })
                 ]
               }, `detail-${n}-${t.date}`))
             })
@@ -842,7 +865,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                   })
                 ]
               }),
-              (0, y.jsx)(Ee, { data: ke, selectedLabel: selectedTrendLabel, onSelectLabel: setSelectedTrendLabel }),
+              (0, y.jsx)(Ee, { data: ke, selectedLabel: selectedTrendLabel, onSelectLabel: setSelectedTrendLabel, onJumpToRecord: (sessionId) => goToHistoryRecord(sessionId, B) }),
               (0, y.jsxs)(o.default, {
                 style: { marginTop: 20, alignItems: 'center' },
                 children: [
@@ -1166,7 +1189,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                   ]
                 }) : (0, y.jsxs)(o.default, {
                   children: [
-                    (0, y.jsx)(o.default, { style: { marginBottom: 20 }, children: (0, y.jsx)(Ee, { data: Be, selectedLabel: selectedModalTrendLabel, onSelectLabel: setSelectedModalTrendLabel }) }),
+                    (0, y.jsx)(o.default, { style: { marginBottom: 20 }, children: (0, y.jsx)(Ee, { data: Be, selectedLabel: selectedModalTrendLabel, onSelectLabel: setSelectedModalTrendLabel, onJumpToRecord: (sessionId) => { re(null); goToHistoryRecord(sessionId, ae?.id); } }) }),
                     (0, y.jsxs)(o.default, {
                       style: { marginBottom: 20, alignItems: 'center' },
                       children: [

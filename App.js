@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { ErrorBoundary } from './src/JP_ErrorBoundary_1041';
 import { OfflineIndicator } from './src/JP_OfflineIndicator_1042';
+import { WhatsNewModal } from './src/JP_WhatsNewModal';
 import { getShadowStyle } from './src/module_592';
 
 const IS_WEB = Platform.OS === 'web';
@@ -67,6 +68,7 @@ export default function App() {
               <>
                 <MainNavigator />
                 <OfflineIndicator />
+                <WhatsNewModal />
               </>
             ) : (
               <LoginScreen />

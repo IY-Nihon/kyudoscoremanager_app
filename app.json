@@ -39,7 +39,14 @@
           }
         }
       ],
-      "./scripts/withSwift5.js"
+      "./scripts/withSwift5.js",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "ホワイトボードの立ち順写真をライブラリから選択するために使用します。",
+          "cameraPermission": "ホワイトボードの立ち順を撮影するためにカメラを使用します。"
+        }
+      ]
     ],
     "extra": {
       "eas": {
