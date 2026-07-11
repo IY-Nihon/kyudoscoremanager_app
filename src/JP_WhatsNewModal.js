@@ -1,0 +1,175 @@
+/**
+ * Module ID: WhatsNewModal (hand-written, not bundler-generated)
+ * アプリ起動時に最近の変更点をお知らせするモーダル
+ */
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.WhatsNewModal = void 0;
+
+const React = require("react");
+const { useState, useEffect } = React;
+const RN = require("react-native");
+const _View = RN.View;
+const _Text = RN.Text;
+const _StyleSheet = RN.StyleSheet;
+const _TouchableOpacity = RN.TouchableOpacity;
+const _Modal = RN.Modal;
+const _ScrollView = RN.ScrollView;
+
+const AsyncStorage = require("@react-native-async-storage/async-storage").default;
+const { Ionicons } = require("./AntDesign_600");
+const { getShadowStyle } = require("./module_592");
+
+// ─────────────────────────────────────────
+// お知らせバージョン
+// 新しいお知らせを追加・変更したら、このバージョン文字列を必ず更新してください。
+// 「次のお知らせが来るまで表示しない」を選んだ端末でも、この値が変わると再度表示されます。
+// ─────────────────────────────────────────
+const NOTICE_VERSION = "2026-07-11-01";
+const STORAGE_KEY = "whatsNewDismissedVersion";
+
+const NOTICE_ITEMS = [
+  {
+    date: "2026/07/11",
+    title: "",
+    points: [
+      "分析画面のグラフの点をタップすると表示される記録一覧から、その記録・その人の履歴詳細へ直接ジャンプできるようになりました。",
+    ],
+  },
+  {
+    date: "2026/07/10",
+    title: "",
+    points: [
+      "記録画面の矢所入力を改善：PCではマウスに追従するプレビュー表示、スマホではドラッグして指を離した位置に登録できるようになりました。",
+    ],
+  },
+  {
+    date: "2026/07/08",
+    title: "画像から立ち順を自動登録できるようになりました(デモ)※機能改善のために立ち順の黒板の画像などがあればお問い合わせから送っていただけると幸いです。",
+    points: [
+      "ホワイトボードの立ち順表を撮影・選択するだけで、AIが読み取って記録表に反映できます。",
+      "「撮影する」ボタンからその場でカメラ起動、「画像を選択」からは既存の写真も使えます。",
+    ],
+  },
+  {
+    date: "2026/07/04",
+    title: "",
+    boldPoints: true,
+    points: [
+      "分析画面で複数人を比較できるようになりました。",
+      "設定にお問い合わせフォームを追加しました。",
+    ],
+  },
+];
+
+const WhatsNewModal = () => {
+  const [visible, setVisible] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
+  const [checkedStorage, setCheckedStorage] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const dismissedVersion = await AsyncStorage.getItem(STORAGE_KEY);
+        if (dismissedVersion !== NOTICE_VERSION) {
+          setVisible(true);
+        }
+      } catch (e) {
+        console.error("[WhatsNewModal] Failed to read storage:", e);
+        // 読み込み失敗時は安全側に倒して表示する
+        setVisible(true);
+      } finally {
+        setCheckedStorage(true);
+      }
+    })();
+  }, []);
+
+  const handleClose = async () => {
+    setVisible(false);
+    if (dontShowAgain) {
+      try {
+        await AsyncStorage.setItem(STORAGE_KEY, NOTICE_VERSION);
+      } catch (e) {
+        console.error("[WhatsNewModal] Failed to save dismissal:", e);
+      }
+    }
+  };
+
+  if (!checkedStorage || !visible) return null;
+
+  return (
+    <_Modal visible={true} animationType="fade" transparent={true} onRequestClose={handleClose}>
+      <_View style={styles.overlay}>
+        <_View style={[styles.container, getShadowStyle({ shadowOpacity: 0.2, shadowRadius: 16, elevation: 16 })]}>
+          <_View style={styles.header}>
+            <_View style={styles.headerTitleRow}>
+              <Ionicons name="megaphone-outline" size={20} color="#007AFF" />
+              <_Text style={styles.headerTitle}>お知らせ</_Text>
+            </_View>
+            <_TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
+              <Ionicons name="close" size={24} color="#8E8E93" />
+            </_TouchableOpacity>
+          </_View>
+
+          <_ScrollView style={styles.body} contentContainerStyle={{ padding: 16 }}>
+            {NOTICE_ITEMS.map((section, idx) => (
+              <_View key={idx} style={styles.section}>
+                <_Text style={styles.sectionDate}>{section.date}</_Text>
+                {!!section.title && <_Text style={styles.sectionTitle}>{section.title}</_Text>}
+                {section.points.map((p, pIdx) => (
+                  <_View key={pIdx} style={styles.pointRow}>
+                    <_Text style={styles.pointBullet}>・</_Text>
+                    <_Text style={[styles.pointText, section.boldPoints && styles.pointTextBold]}>{p}</_Text>
+                  </_View>
+                ))}
+              </_View>
+            ))}
+          </_ScrollView>
+
+          <_View style={styles.footer}>
+            <_TouchableOpacity
+              style={styles.checkboxRow}
+              onPress={() => setDontShowAgain(prev => !prev)}
+            >
+              <_View style={[styles.checkbox, dontShowAgain && styles.checkboxChecked]}>
+                {dontShowAgain && <Ionicons name="checkmark" size={14} color="#FFF" />}
+              </_View>
+              <_Text style={styles.checkboxLabel}>次のお知らせが来るまで表示しない</_Text>
+            </_TouchableOpacity>
+
+            <_TouchableOpacity style={styles.closeFooterBtn} onPress={handleClose}>
+              <_Text style={styles.closeFooterBtnText}>閉じる</_Text>
+            </_TouchableOpacity>
+          </_View>
+        </_View>
+      </_View>
+    </_Modal>
+  );
+};
+
+exports.WhatsNewModal = WhatsNewModal;
+
+const styles = _StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center" },
+  container: { width: "90%", maxWidth: 420, maxHeight: "80%", backgroundColor: "#FFF", borderRadius: 16 },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "#EEE" },
+  headerTitleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  headerTitle: { fontSize: 16, fontWeight: "bold", color: "#1C1C1E" },
+  closeBtn: { padding: 4 },
+  body: { flexGrow: 0 },
+  section: { marginBottom: 20 },
+  sectionDate: { fontSize: 11, color: "#8E8E93", fontWeight: "600", marginBottom: 2 },
+  sectionTitle: { fontSize: 14, fontWeight: "bold", color: "#1C1C1E", marginBottom: 8 },
+  pointRow: { flexDirection: "row", marginBottom: 4, paddingLeft: 4 },
+  pointBullet: { fontSize: 13, color: "#007AFF", marginRight: 4 },
+  pointText: { fontSize: 13, color: "#3C3C43", flex: 1, lineHeight: 19 },
+  pointTextBold: { fontWeight: "bold", color: "#1C1C1E" },
+  footer: { padding: 16, borderTopWidth: 1, borderTopColor: "#EEE" },
+  checkboxRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
+  checkbox: { width: 20, height: 20, borderRadius: 5, borderWidth: 1.5, borderColor: "#C7C7CC", alignItems: "center", justifyContent: "center", marginRight: 8 },
+  checkboxChecked: { backgroundColor: "#007AFF", borderColor: "#007AFF" },
+  checkboxLabel: { fontSize: 13, color: "#3C3C43" },
+  closeFooterBtn: { backgroundColor: "#007AFF", borderRadius: 10, paddingVertical: 12, alignItems: "center" },
+  closeFooterBtnText: { color: "#FFF", fontSize: 15, fontWeight: "bold" },
+});

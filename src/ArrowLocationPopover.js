@@ -1,7 +1,7 @@
 /**
  * 矢所記録入力用ポップアップモーダルコンポーネント
  */
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -46,68 +46,67 @@ export const ArrowLocationPopover = ({
   const targetSize = isHoshi24 ? 160 : 240;
   const targetRadius = targetSize / 2;
 
-  // タッチイベントの座標を正規化して保存
-  const handleTargetPress = (event) => {
-    // 親コンテナ (touchArea) の絶対座標を基準に正確なタップ相対位置を割り出します
-    const touchAreaNode = touchAreaRef.current;
-    let posX = undefined;
-    let posY = undefined;
+  // プレビュー中（マウスホバー／指のドラッグ中）の未確定位置
+  const [previewPos, setPreviewPos] = useState(null);
+  // タッチ操作中はマウスの合成イベント（ゴーストクリック等）を無視するためのフラグ
+  const isTouchDraggingRef = useRef(false);
 
-    if (touchAreaNode && typeof touchAreaNode.getBoundingClientRect === 'function') {
-      const rect = touchAreaNode.getBoundingClientRect();
-      const pageX = event.nativeEvent.pageX ?? (event.nativeEvent.touches && event.nativeEvent.touches[0] ? event.nativeEvent.touches[0].pageX : undefined);
-      const pageY = event.nativeEvent.pageY ?? (event.nativeEvent.touches && event.nativeEvent.touches[0] ? event.nativeEvent.touches[0].pageY : undefined);
-
-      if (pageX !== undefined && pageY !== undefined) {
-        const scrollX = window.scrollX ?? window.pageXOffset ?? document.documentElement.scrollLeft ?? document.body.scrollLeft ?? 0;
-        const scrollY = window.scrollY ?? window.pageYOffset ?? document.documentElement.scrollTop ?? document.body.scrollTop ?? 0;
-        
-        const elemAbsoluteX = rect.left + scrollX;
-        const elemAbsoluteY = rect.top + scrollY;
-        
-        posX = pageX - elemAbsoluteX;
-        posY = pageY - elemAbsoluteY;
-      } else {
-        const clientX = event.nativeEvent.clientX ?? (event.nativeEvent.touches && event.nativeEvent.touches[0] ? event.nativeEvent.touches[0].clientX : undefined);
-        const clientY = event.nativeEvent.clientY ?? (event.nativeEvent.touches && event.nativeEvent.touches[0] ? event.nativeEvent.touches[0].clientY : undefined);
-        if (clientX !== undefined && clientY !== undefined) {
-          posX = clientX - rect.left;
-          posY = clientY - rect.top;
-        }
+  // イベントから pageX / pageY を取り出す（マウス・タッチ・touchend共通）
+  const extractPageCoords = (event) => {
+    const ne = event.nativeEvent || event;
+    const touch = (ne.touches && ne.touches[0]) || (ne.changedTouches && ne.changedTouches[0]);
+    let pageX = ne.pageX ?? (touch ? touch.pageX : undefined);
+    let pageY = ne.pageY ?? (touch ? touch.pageY : undefined);
+    if (pageX === undefined || pageY === undefined) {
+      const clientX = ne.clientX ?? (touch ? touch.clientX : undefined);
+      const clientY = ne.clientY ?? (touch ? touch.clientY : undefined);
+      if (clientX !== undefined && clientY !== undefined) {
+        const scrollX = window.scrollX ?? window.pageXOffset ?? 0;
+        const scrollY = window.scrollY ?? window.pageYOffset ?? 0;
+        pageX = clientX + scrollX;
+        pageY = clientY + scrollY;
       }
     }
+    return { pageX, pageY };
+  };
 
-    // ネイティブアプリ等のフォールバック
-    if (posX === undefined || isNaN(posX)) {
-      posX = event.nativeEvent.locationX ?? event.nativeEvent.offsetX ?? touchAreaRadius;
-    }
-    if (posY === undefined || isNaN(posY)) {
-      posY = event.nativeEvent.locationY ?? event.nativeEvent.offsetY ?? touchAreaRadius;
-    }
+  // pageX/pageY を「的の中心を(0,0)、半径を1.0」とした正規化座標に変換する
+  const getNormalizedPosition = (pageX, pageY) => {
+    const touchAreaNode = touchAreaRef.current;
+    if (!touchAreaNode || typeof touchAreaNode.getBoundingClientRect !== 'function') return null;
+    if (pageX === undefined || pageY === undefined || isNaN(pageX) || isNaN(pageY)) return null;
 
-    // タッチエリアの中心 (160, 160) からの相対座標に変換
+    const rect = touchAreaNode.getBoundingClientRect();
+    const scrollX = window.scrollX ?? window.pageXOffset ?? document.documentElement.scrollLeft ?? document.body.scrollLeft ?? 0;
+    const scrollY = window.scrollY ?? window.pageYOffset ?? document.documentElement.scrollTop ?? document.body.scrollTop ?? 0;
+
+    const elemAbsoluteX = rect.left + scrollX;
+    const elemAbsoluteY = rect.top + scrollY;
+
+    const posX = pageX - elemAbsoluteX;
+    const posY = pageY - elemAbsoluteY;
+
     const relativeX = posX - touchAreaRadius;
     const relativeY = posY - touchAreaRadius;
-    
-    // 的の半径 (120px または 80px) を1.0とした正規化座標
+
     const normalizedX = relativeX / targetRadius;
     const normalizedY = relativeY / targetRadius;
-    
-    // 的の中心からの距離
+
     const distance = Math.sqrt(normalizedX ** 2 + normalizedY ** 2);
     const isInside = distance <= 1.0;
 
-    console.log('[ArrowLocation] Accurate Tap:', { posX, posY, relativeX, relativeY, normalizedX, normalizedY, distance, isInside, currentMark });
+    return { normalizedX, normalizedY, isInside };
+  };
 
+  // 実際にその位置で矢所を確定・保存する（バリデーション込み）
+  const commitPosition = (normalizedX, normalizedY, isInside) => {
     // バリデーション制限
     if (currentMark === '○' && !isInside) {
-      console.warn('[ArrowLocation] validation failed for ○ (outside)');
-      Alert.alert('入力エラー', '的中(○)の場合は、的の内側をタップしてください。');
+      Alert.alert('入力エラー', '的中(○)の場合は、的の内側で離してください。');
       return;
     }
     if (currentMark === '×' && isInside) {
-      console.warn('[ArrowLocation] validation failed for × (inside)');
-      Alert.alert('入力エラー', '外れ(×)の場合は、的の外側をタップしてください。');
+      Alert.alert('入力エラー', '外れ(×)の場合は、的の外側で離してください。');
       return;
     }
 
@@ -117,6 +116,51 @@ export const ArrowLocationPopover = ({
     if (onSave) {
       onSave(locationData);
     }
+  };
+
+  // --- マウス操作: 動かすたびに追従プレビュー、マウスを離した位置で確定 ---
+  const handleMouseMove = (event) => {
+    if (isTouchDraggingRef.current) return; // タッチ操作中はマウスの合成イベントを無視
+    const { pageX, pageY } = extractPageCoords(event);
+    const result = getNormalizedPosition(pageX, pageY);
+    if (result) setPreviewPos(result);
+  };
+
+  const handleMouseLeave = () => {
+    if (isTouchDraggingRef.current) return;
+    setPreviewPos(null);
+  };
+
+  const handleMouseUp = (event) => {
+    if (isTouchDraggingRef.current) return;
+    const { pageX, pageY } = extractPageCoords(event);
+    const result = getNormalizedPosition(pageX, pageY);
+    if (!result) return;
+    commitPosition(result.normalizedX, result.normalizedY, result.isInside);
+  };
+
+  // --- タッチ操作: ドラッグ中は追従プレビュー（色も一致）、指を離した位置で確定 ---
+  const handleTouchStart = (event) => {
+    isTouchDraggingRef.current = true;
+    const { pageX, pageY } = extractPageCoords(event);
+    const result = getNormalizedPosition(pageX, pageY);
+    if (result) setPreviewPos(result);
+  };
+
+  const handleTouchMove = (event) => {
+    const { pageX, pageY } = extractPageCoords(event);
+    const result = getNormalizedPosition(pageX, pageY);
+    if (result) setPreviewPos(result);
+  };
+
+  const handleTouchEnd = (event) => {
+    const { pageX, pageY } = extractPageCoords(event);
+    const result = getNormalizedPosition(pageX, pageY);
+    if (result) {
+      commitPosition(result.normalizedX, result.normalizedY, result.isInside);
+    }
+    setPreviewPos(null);
+    isTouchDraggingRef.current = false;
   };
 
   // 的のレンダリング
@@ -204,7 +248,16 @@ export const ArrowLocationPopover = ({
           {/* 的と入力エリア */}
           <View style={styles.targetWrapper}>
             {/* タッチ可能な入力コンテナ (的より広い領域をタップ可能にする) */}
-            <Pressable ref={touchAreaRef} style={styles.touchArea} onPress={handleTargetPress}>
+            <View
+              ref={touchAreaRef}
+              style={styles.touchArea}
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
+              onMouseUp={handleMouseUp}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
               {/* 的グラフィック */}
               {renderTargetVisual()}
 
@@ -256,7 +309,23 @@ export const ArrowLocationPopover = ({
                   </View>
                 );
               })}
-            </Pressable>
+
+              {/* ドラッグ／ホバー中のプレビュー矢所（未確定・色で的中/外れ判定が分かる） */}
+              {previewPos && (
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.previewMarker,
+                    {
+                      left: touchAreaRadius + previewPos.normalizedX * targetRadius - 14,
+                      top: touchAreaRadius + previewPos.normalizedY * targetRadius - 14,
+                      backgroundColor: previewPos.isInside ? 'rgba(52, 199, 89, 0.55)' : 'rgba(255, 59, 48, 0.55)',
+                      borderColor: previewPos.isInside ? '#34C759' : '#FF3B30'
+                    }
+                  ]}
+                />
+              )}
+            </View>
           </View>
 
           {/* フッター操作ボタン */}
@@ -391,6 +460,19 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 11,
     fontWeight: 'bold',
+  },
+  previewMarker: {
+    position: 'absolute',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    zIndex: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 6,
   },
   footer: {
     flexDirection: 'row',

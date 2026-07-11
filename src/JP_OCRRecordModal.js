@@ -22,6 +22,7 @@ const _Image = RN.Image;
 const _Alert = RN.Alert;
 
 const DocumentPicker = require("expo-document-picker");
+const ImagePicker = require("expo-image-picker");
 const { Ionicons } = require("./AntDesign_600");
 const { GoogleGenerativeAI } = require("./h_1035");
 const { GEMINI_API_KEY, IS_WEB } = require("./IS_WEB_199");
@@ -56,6 +57,39 @@ function splitName(fullName) {
   return { sei: parts[0] || "", mei: parts.length > 1 ? parts.slice(1).join("") : "" };
 }
 
+// 異体字正規化は行わず、空白の除去のみ行う（表記そのものの完全一致を判定するためのヘルパー）
+function stripSpace(s) {
+  if (!s) return "";
+  return s.replace(/[\s\u3000]+/g, "");
+}
+
+// 代表的な異体字・旧字体を新字体・常用漢字に正規化してマッチング精度を飛躍的に高める
+function normalize(s) {
+  if (!s) return "";
+  let nStr = s.replace(/[\s\u3000]+/g, "");
+  const mapping = {
+    "澁": "渋",
+    "眞": "真",
+    "邉": "辺",
+    "邊": "辺",
+    "齋": "斉",
+    "齊": "斉",
+    "廣": "広",
+    "澤": "沢",
+    "嶋": "島",
+    "嶌": "島",
+    "栁": "柳",
+    "國": "国",
+    "櫻": "桜",
+    "髙": "高",
+    "﨑": "崎"
+  };
+  for (const [oldChar, newChar] of Object.entries(mapping)) {
+    nStr = nStr.replace(new RegExp(oldChar, "g"), newChar);
+  }
+  return nStr;
+}
+
 // ─────────────────────────────────────────
 // 編集距離（Levenshtein Distance）の計算
 // ─────────────────────────────────────────
@@ -79,10 +113,6 @@ function getLevenshteinDistance(a, b) {
   return tmp[a.length][b.length];
 }
 
-function normalize(s) {
-  return (s || "").replace(/[\s\u3000]+/g, "");
-}
-
 // ─────────────────────────────────────────
 // 名前マッチング（要件定義 3.3 名寄せロジック）
 // candidates: [{id, name, gender, grade, isAlumni}]
@@ -101,6 +131,11 @@ function matchArcherName(rawText, candidates) {
   const exact = candidates.filter(c => normalize(c.name) === text);
   if (exact.length === 1) return { status: "matched", match: exact[0] };
   if (exact.length > 1) {
+    // 異体字正規化により複数候補が同居した場合、まずは「変換なしの表記そのもの」が
+    // 完全一致する候補を優先する（例：渡辺/渡邉/渡邊が同居する場合、書かれた文字通りの「渡辺」を優先）
+    const rawExact = exact.filter(c => stripSpace(c.name) === stripSpace(rawText));
+    if (rawExact.length === 1) return { status: "matched", match: rawExact[0] };
+
     const active = exact.filter(c => !c.isAlumni);
     if (active.length === 1) return { status: "matched", match: active[0] };
     return { status: "ambiguous", options: exact };
@@ -117,17 +152,48 @@ function matchArcherName(rawText, candidates) {
   // 3. 姓のみ一致（現役生を優先、前方一致やスペース無しも強力にマッチ）
   const bySeiOnly = candidates.filter(c => {
     const sName = splitName(c.name);
-    if (sName.sei === text) return true;
+    if (normalize(sName.sei) === text) return true;
     const cn = normalize(c.name);
-    // 部員名が「渋川航大」で、読み取ったテキストが「渋川」などの場合（前方一致で長さ2以上）
+    // 部員名が「澁川航大」（正規化で「渋川航大」）で、読み取ったテキストが「渋川」などの場合（前方一致で長さ2以上）
     if (text.length >= 2 && cn.startsWith(text) && cn.length > text.length) return true;
     return false;
   });
   if (bySeiOnly.length === 1) return { status: "matched", match: bySeiOnly[0] };
   if (bySeiOnly.length > 1) {
+    // 異体字正規化により複数候補が同居した場合、まずは「変換なしの表記そのもの」の姓が
+    // 完全一致する候補を優先する（例：渡辺/渡邉/渡邊のうち、書かれた文字通りの「渡辺」姓を優先）
+    const rawSeiExact = bySeiOnly.filter(c => stripSpace(splitName(c.name).sei) === stripSpace(rawText));
+    if (rawSeiExact.length === 1) return { status: "matched", match: rawSeiExact[0] };
+
     const activeOnly = bySeiOnly.filter(c => !c.isAlumni);
     if (activeOnly.length === 1) return { status: "matched", match: activeOnly[0] };
     return { status: "ambiguous", options: bySeiOnly };
+  }
+
+  // 3.5. 姓のみの編集距離救済（OCRが名前部分を読み落とし／姓自体を誤読した場合）
+  // 例：候補「渋川航大」に対し、OCRが名前部分を読み落として姓のみ「渋川」と読み取った上に
+  //     さらに1文字を誤読して「渋谷」となったケース。姓（2〜3文字程度）同士の編集距離で救済する。
+  if (text.length >= 2 && text.length <= 4) {
+    let minSeiDistance = 2; // 姓は短いので許容距離は最大1まで
+    let seiFuzzyMatches = [];
+    candidates.forEach(c => {
+      const sei = normalize(splitName(c.name).sei);
+      if (!sei || sei.length > 4) return; // 姓が極端に長い（＝姓名を分割できていない）データは対象外
+      const dist = getLevenshteinDistance(text, sei);
+      if (dist < minSeiDistance) {
+        minSeiDistance = dist;
+        seiFuzzyMatches = [c];
+      } else if (dist === minSeiDistance) {
+        seiFuzzyMatches.push(c);
+      }
+    });
+    if (seiFuzzyMatches.length === 1 && minSeiDistance <= 1) {
+      return { status: "matched", match: seiFuzzyMatches[0], fuzzy: true };
+    } else if (seiFuzzyMatches.length > 1 && minSeiDistance <= 1) {
+      const activeSeiFuzzy = seiFuzzyMatches.filter(c => !c.isAlumni);
+      if (activeSeiFuzzy.length === 1) return { status: "matched", match: activeSeiFuzzy[0], fuzzy: true };
+      return { status: "ambiguous", options: seiFuzzyMatches };
+    }
   }
 
   // 4. 部分一致（手書き誤字・略字の緩やかな救済）
@@ -195,12 +261,27 @@ const OCRRecordModal = ({ visible, onClose, members = [], alumni = [], shotsPerR
     onClose && onClose();
   };
 
-  const allCandidates = useMemo(() => [
-    ...members.map(m => ({ ...m, isAlumni: false })),
-    ...alumni.map(a => ({ ...a, isAlumni: true })),
-  ], [members, alumni]);
+  // Realtime同期の反映タイミング等で同一IDのメンバーが重複して配列に含まれるケースがあるため、
+  // ID単位で重複除去してから名寄せ候補として使う（重複していると完全一致でも「要確認」に落ちてしまうため）
+  const allCandidates = useMemo(() => {
+    const raw = [
+      ...members.map(m => ({ ...m, isAlumni: false })),
+      ...alumni.map(a => ({ ...a, isAlumni: true })),
+    ];
+    const dedupMap = new Map();
+    raw.forEach(c => {
+      const key = c.id != null ? `${c.isAlumni ? "a" : "m"}:${c.id}` : null;
+      if (key) {
+        dedupMap.set(key, c);
+      } else {
+        // idが無い異常データは念のため残す（除外すると登録漏れになるため）
+        dedupMap.set(`no-id:${dedupMap.size}`, c);
+      }
+    });
+    return Array.from(dedupMap.values());
+  }, [members, alumni]);
 
-  // すでに選択されているメンバーIDのSet（ピッカーでのスタイル同期用）
+  // すでに選択されているメンバーID of Set（ピッカーでのスタイル同期用）
   const selectedMemberIds = useMemo(() => {
     const ids = new Set();
     tachiList.forEach(tachi => {
@@ -233,9 +314,35 @@ const OCRRecordModal = ({ visible, onClose, members = [], alumni = [], shotsPerR
     }
   };
 
+  // ─────────────────────────────────────────
+  // カメラ撮影（その場でホワイトボードを撮影して直接追加）
+  // ─────────────────────────────────────────
+  const captureImage = async () => {
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        setErrorMsg("カメラの利用が許可されていません。端末の設定からカメラへのアクセスを許可してください。");
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions ? ImagePicker.MediaTypeOptions.Images : ["images"],
+        quality: 0.8,
+        allowsEditing: false,
+      });
+      if (result.canceled || !result.assets || result.assets.length === 0) return;
+      const asset = result.assets[0];
+      const base64 = asset.base64 ? asset.base64 : await uriToBase64(asset.uri);
+      setImages(prev => [...prev, { uri: asset.uri, base64 }]);
+    } catch (e) {
+      console.error("[OCRRecordModal] Camera capture error:", e);
+      setErrorMsg("カメラの起動に失敗しました。");
+    }
+  };
+
   const removeImage = (idx) => {
     setImages(prev => prev.filter((_, i) => i !== idx));
   };
+
 
   // ─────────────────────────────────────────
   // Gemini による画像解析
@@ -301,7 +408,7 @@ const OCRRecordModal = ({ visible, onClose, members = [], alumni = [], shotsPerR
 添付された${images.length}枚の画像は、同じ記録表の続き（1枚目の続きが2枚目...）です。すべてを1つの記録として結合してください。
 
 【読み取り対象】
-ホワイトボード上の「立ち順表」のグリッド部分のみを対象とします。矢取りの図やメモ書き、磁石の跡など、グリッド外の要素は完全に無視してください。
+ホワイトボード上の「立ち順表」のグリッド部分のみを対象とします。矢取りの図やメモ書き、磁石 of 跡など、グリッド外の要素は完全に無視してください。
 
 【グリッド構造】
 ・縦方向が「立」（壱之立、弐之立、参之立...）、横方向が「的」（一的〜、右から左へ並ぶ）です。
@@ -571,12 +678,18 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
                 </_View>
               )}
 
-              <_TouchableOpacity style={styles.pickBtn} onPress={pickImage}>
-                <Ionicons name="add-circle-outline" size={22} color="#007AFF" />
-                <_Text style={styles.pickBtnText}>
-                  {images.length === 0 ? "画像を選択" : "写真を追加する"}
-                </_Text>
-              </_TouchableOpacity>
+              <_View style={styles.pickBtnRow}>
+                <_TouchableOpacity style={[styles.pickBtn, { flex: 1 }]} onPress={captureImage}>
+                  <Ionicons name="camera-outline" size={22} color="#007AFF" />
+                  <_Text style={styles.pickBtnText}>撮影する</_Text>
+                </_TouchableOpacity>
+                <_TouchableOpacity style={[styles.pickBtn, { flex: 1 }]} onPress={pickImage}>
+                  <Ionicons name="images-outline" size={22} color="#007AFF" />
+                  <_Text style={styles.pickBtnText}>
+                    {images.length === 0 ? "画像を選択" : "写真を追加する"}
+                  </_Text>
+                </_TouchableOpacity>
+              </_View>
 
               {!!errorMsg && (
                 <_View style={styles.errorBox}>
@@ -632,7 +745,12 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
                             <_TouchableOpacity
                               key={sIdx}
                               style={[styles.seatChip, { backgroundColor: seatColor(seat) }]}
-                              onPress={() => { setPickerTarget({ tachiIdx: tIdx, seatIdx: sIdx }); setPickerSearch(""); }}
+                              onPress={() => {
+                                setPickerTarget({ tachiIdx: tIdx, seatIdx: sIdx });
+                                // 要確認・ゲストのセルは、OCRが読み取った文字列をそのまま検索欄に入れて
+                                // 候補（例：渡辺姓の複数人）をすぐ絞り込んだ状態で開く
+                                setPickerSearch((seat.status === "ambiguous" || seat.status === "guest") ? (seat.rawText || "") : "");
+                              }}
                             >
                               <_Text style={styles.seatChipText} numberOfLines={2}>
                                 {seatLabel(seat)}
@@ -714,7 +832,8 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
                 {/* 現役生グループアコーディオン */}
                 {activeGroups.map(group => {
                   const gStr = group.grade.toString();
-                  const isOpen = expandedActiveGrades.has(gStr);
+                  // 検索中（要確認セルからの自動絞り込み含む）は、折りたたみ状態に関わらず候補を表示する
+                  const isOpen = pickerSearch.trim() ? true : expandedActiveGrades.has(gStr);
                   return (
                     <React.Fragment key={`grade-${gStr}`}>
                       <_TouchableOpacity
@@ -728,6 +847,9 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
                       </_TouchableOpacity>
                       {isOpen && group.members.map(m => {
                         const isSelected = selectedMemberIds.has(m.id);
+                        const isMale = m.gender === "男子";
+                        const isFemale = m.gender === "女子";
+                        const textColor = isMale ? "#007AFF" : isFemale ? "#FF2D55" : "#1C1C1E";
                         return (
                           <_TouchableOpacity
                             key={m.id}
@@ -737,7 +859,21 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
                             ]}
                             onPress={() => assignSeat(pickerTarget.tachiIdx, pickerTarget.seatIdx, m)}
                           >
-                            <_Text style={[styles.pickerRowText, isSelected && { color: "#8E8E93" }]}>{m.name}</_Text>
+                            <_View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                              <_Text style={[
+                                styles.pickerRowText,
+                                { color: textColor },
+                                isSelected && { opacity: 0.5 }
+                              ]}>
+                                {m.name}
+                                {m.termKi ? ` (${m.termKi}期)` : ""}
+                              </_Text>
+                              {isSelected && (
+                                <_View style={styles.selectedBadge}>
+                                  <_Text style={styles.selectedBadgeText}>選択済</_Text>
+                                </_View>
+                              )}
+                            </_View>
                           </_TouchableOpacity>
                         );
                       })}
@@ -751,7 +887,7 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
                     <_Text style={styles.sectionDividerText}>卒業生</_Text>
                     {alumniByTerm.map(group => {
                       const tStr = group.term.toString();
-                      const isOpen = expandedTerms.has(tStr);
+                      const isOpen = pickerSearch.trim() ? true : expandedTerms.has(tStr);
                       return (
                         <React.Fragment key={`term-${tStr}`}>
                           <_TouchableOpacity
@@ -765,6 +901,9 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
                           </_TouchableOpacity>
                           {isOpen && group.members.map(a => {
                             const isSelected = selectedMemberIds.has(a.id);
+                            const isMale = a.gender === "男子";
+                            const isFemale = a.gender === "女子";
+                            const textColor = isMale ? "#007AFF" : isFemale ? "#FF2D55" : "#1C1C1E";
                             return (
                               <_TouchableOpacity
                                 key={a.id}
@@ -774,7 +913,20 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
                                 ]}
                                 onPress={() => assignSeat(pickerTarget.tachiIdx, pickerTarget.seatIdx, a)}
                               >
-                                <_Text style={[styles.pickerRowText, isSelected && { color: "#8E8E93" }]}>{a.name}</_Text>
+                                <_View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                                  <_Text style={[
+                                    styles.pickerRowText,
+                                    { color: textColor },
+                                    isSelected && { opacity: 0.5 }
+                                  ]}>
+                                    {a.name}
+                                  </_Text>
+                                  {isSelected && (
+                                    <_View style={styles.selectedBadge}>
+                                      <_Text style={styles.selectedBadgeText}>選択済</_Text>
+                                    </_View>
+                                  )}
+                                </_View>
                               </_TouchableOpacity>
                             );
                           })}
@@ -823,7 +975,8 @@ const styles = _StyleSheet.create({
   thumb: { width: 80, height: 80, borderRadius: 8, backgroundColor: "#EEE" },
   thumbRemove: { position: "absolute", top: -6, right: -6, backgroundColor: "#FFF", borderRadius: 10 },
   thumbLabel: { fontSize: 10, color: "#888", marginTop: 2 },
-  pickBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderWidth: 1, borderColor: "#007AFF", borderStyle: "dashed", borderRadius: 10, paddingVertical: 14, marginBottom: 16 },
+  pickBtnRow: { flexDirection: "row", gap: 10, marginBottom: 16 },
+  pickBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderWidth: 1, borderColor: "#007AFF", borderStyle: "dashed", borderRadius: 10, paddingVertical: 14 },
   pickBtnText: { color: "#007AFF", fontSize: 15, fontWeight: "600" },
   errorBox: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#FFF0F0", borderRadius: 8, padding: 10, marginBottom: 12 },
   errorText: { color: "#FF3B30", fontSize: 13, flex: 1 },
@@ -871,5 +1024,8 @@ const styles = _StyleSheet.create({
   guestInputRow: { flexDirection: "row", alignItems: "center", marginBottom: 10, gap: 8 },
   guestInput: { flex: 1, borderWidth: 1, borderColor: "#5856D6", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, fontSize: 14 },
   guestSubmitBtn: { backgroundColor: "#5856D6", borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8, height: 40, justifyContent: "center" },
-  guestSubmitBtnText: { color: "#FFF", fontSize: 14, fontWeight: "bold" }
+  guestSubmitBtnText: { color: "#FFF", fontSize: 14, fontWeight: "bold" },
+  
+  selectedBadge: { backgroundColor: "#8E8E93", borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, marginRight: 8 },
+  selectedBadgeText: { color: "#FFF", fontSize: 10, fontWeight: "bold" }
 });
