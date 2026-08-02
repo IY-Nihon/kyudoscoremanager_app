@@ -42,13 +42,16 @@
 - 展開されていた npm ライブラリは順次「ライブラリブリッジ」
   （`module.exports = require('npm-package')` の1行ファイル）へ置き換え済みです
 
-現在の `src/` は **149ファイル**で、内訳は以下の通りです。
+現在の `src/` は **78ファイル**で、内訳は以下の通りです。
 
 | 区分 | 件数 | 容量 |
 |---|---|---|
 | 自作コード | 37 | 608KB |
-| ライブラリブリッジ | 37 | 13KB |
-| ライブラリ残（小粒な内部モジュール群） | 75 | 71KB |
+| ライブラリブリッジ | 39 | 15KB |
+| ライブラリ残 | 2 | 1KB |
+
+ライブラリ残の2件（`module_37` / `module_196`）は、それぞれ react・firebase/app-check の
+ブリッジへ1段挟まっているだけの再エクスポート用ファイルです。
 
 ### ブリッジ済みのライブラリ
 
@@ -56,17 +59,26 @@ date-fns / @expo/vector-icons / react-native（View・Text・StyleSheet 等18種
 react-native-svg / expo-haptics / expo-file-system(legacy) / zustand(middleware) /
 @react-native-async-storage/async-storage / firebase(app・auth・firestore・database・app-check) /
 @react-navigation(native・bottom-tabs) / react-native-safe-area-context /
-@react-native-community/netinfo / @google/generative-ai
+@react-native-community/netinfo / @google/generative-ai / expo-sharing /
+zustand / react / react/jsx-runtime
 
 かつて package.json に無い「隠れ依存」だった netinfo と generative-ai は、
 正式な依存として追加済みです（`@react-native-community/netinfo@11.5.2` は
 `npx expo install` で SDK55 互換版を取得）。
 
-なお `react/jsx-runtime`（`src/module_427.js`）は非標準の `createInteropElement` を
-持つため、削減効果（2KB）に対してリスクが見合わず意図的に据え置いています。
-残る「ライブラリ残」75ファイルは expo-modules-core の EventEmitter や
-react-native-svg の Web シム等、1〜4KB の小粒な内部モジュールで、
-個別にブリッジを書く手間に対して効果が乏しいため据え置いています。
+### NativeWind ランタイムの除去について
+
+`src/module_427.js`（全画面の JSX が経由するランタイム）の実体は
+**react-native-css-interop = NativeWind のランタイム**でした。しかし
+
+- `package.json` に nativewind / react-native-css-interop / tailwindcss が無い
+- `babel.config.js` にもプリセットが無い
+- 自作コードでの `className` 使用が 0 件
+- interop 本体も no-op（`maybeHijackSafeAreaProvider` は恒等関数、
+  `interopComponents` が空のため要素差し替えも発生しない）
+
+という状態で、全 JSX 呼び出しに挟まるだけの死荷重になっていたため、
+`react/jsx-runtime` へ置き換えました（19ファイル削減）。
 
 ### 自作コード（編集対象になるファイル）
 
