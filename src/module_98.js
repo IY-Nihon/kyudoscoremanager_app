@@ -1,14 +1,15 @@
 /**
- * Module ID: 98
+ * Library Bridge: module_98.js (react-native / Platform)
+ *
+ * 元はソースマップから復元された react-native の Platform 実装。
+ * Web ビルドでは Metro が react-native-web へ解決する（両方に Platform が存在することを確認済み）。
+ *
+ * 利用側は default import（`X.default`）で参照するため、__esModule + default を明示する。
  */
 "use strict";
 
-const g = (typeof global !== "undefined" ? global : typeof window !== "undefined" ? window : this);
-const r = require;
-const i = (typeof metroImport !== 'undefined' ? metroImport : undefined);
-const a = (typeof id !== 'undefined' ? id : 98);
-const m = module;
-const e = exports;
-const d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
+const { Platform } = require('react-native');
 
-"use strict";Object.defineProperty(e,'__esModule',{value:!0}),Object.defineProperty(e,"default",{enumerable:!0,get:function(){return t}});var t={OS:'web',select:t=>'web'in t?t.web:t.default,get isTesting(){return!1},get Version(){return'0.0.0'}}
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.default = Platform;
+module.exports.Platform = Platform;

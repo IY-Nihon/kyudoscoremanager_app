@@ -1,14 +1,15 @@
 /**
- * Module ID: 286
+ * Library Bridge: default_286.js (react-native / Animated)
+ *
+ * 元はソースマップから復元された react-native の Animated 実装。
+ * Web ビルドでは Metro が react-native-web へ解決する（両方に Animated が存在することを確認済み）。
+ *
+ * 利用側は default import（`X.default`）で参照するため、__esModule + default を明示する。
  */
 "use strict";
 
-const g = (typeof global !== "undefined" ? global : typeof window !== "undefined" ? window : this);
-const r = require;
-const i = (typeof metroImport !== 'undefined' ? metroImport : undefined);
-const a = (typeof id !== 'undefined' ? id : 286);
-const m = module;
-const _e = exports;
-const d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
+const { Animated } = require('react-native');
 
-"use strict";Object.defineProperty(_e,'__esModule',{value:!0}),Object.defineProperty(_e,"default",{enumerable:!0,get:function(){return u}});var e,t=require("./default_287"),u=((e=t)&&e.__esModule?e:{default:e}).default
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.default = Animated;
+module.exports.Animated = Animated;
