@@ -5,13 +5,14 @@ import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   Modal,
   TouchableOpacity,
   Pressable,
   Alert,
   Dimensions
 } from 'react-native';
+// テーマ変換（ダークモード）を通すため StyleSheet はブリッジ経由で取得する
+import StyleSheet from './default_45';
 import { Ionicons } from '@expo/vector-icons';
 import { useScoreStore } from './JP_useScoreStore_174';
 
