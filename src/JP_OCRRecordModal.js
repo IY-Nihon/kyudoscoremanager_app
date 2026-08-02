@@ -229,10 +229,48 @@ function matchArcherName(rawText, candidates) {
 
 const SHOT_LABELS = ["壱之立", "弐之立", "参之立", "四之立", "伍之立", "六之立", "七之立", "八之立", "九之立", "拾之立"];
 
+// ─────────────────────────────────────────
+// 的中マークの正規化
+//
+// アプリ内部の marks は '○'（的中）/ '×'（外れ）/ ''（未記録）の3値。
+// 紙の記録は書き手によって表記が揺れるため（丸なら ○◯〇●、
+// バツなら ×✕✖x、罰点として / や ＼ を使う流儀もある）、
+// AI が読み取った文字を内部表現へ寄せる。
+// ─────────────────────────────────────────
+const HIT_CHARS = new Set(["○", "◯", "〇", "●", "◎", "o", "O", "0", "丸", "当", "中"]);
+const MISS_CHARS = new Set(["×", "✕", "✖", "x", "X", "・", "･", "/", "／", "\\", "＼", "-", "ー", "バツ", "外"]);
+
+function normalizeMark(raw) {
+  if (raw == null) return "";
+  const s = String(raw).trim();
+  if (s === "") return "";
+  if (HIT_CHARS.has(s)) return "○";
+  if (MISS_CHARS.has(s)) return "×";
+  // 「○」「×」が他の文字と混ざって返ってきた場合の保険
+  const firstHit = [...s].find(c => HIT_CHARS.has(c));
+  const firstMiss = [...s].find(c => MISS_CHARS.has(c));
+  if (firstHit && !firstMiss) return "○";
+  if (firstMiss && !firstHit) return "×";
+  return "";
+}
+
+/** AI が返した marks 配列を shotsPerRound の長さに正規化する */
+function normalizeMarks(rawMarks, shotsPerRound) {
+  const src = Array.isArray(rawMarks) ? rawMarks : [];
+  const out = Array(shotsPerRound).fill("");
+  for (let i = 0; i < shotsPerRound; i++) out[i] = normalizeMark(src[i]);
+  return out;
+}
+
 const OCRRecordModal = ({ visible, onClose, members = [], alumni = [], shotsPerRound = 8, onApply }) => {
   const [step, setStep] = useState("pick"); // pick | analyzing | preview
+  // lineup: ホワイトボードの立ち順表（名前のみ）
+  // record: 紙に取った的中記録（名前＋各射の○×）
+  const [mode, setMode] = useState("lineup");
   const [images, setImages] = useState([]); // [{uri, base64}]
   const [tachiList, setTachiList] = useState([]); // [{seats:[{rawText,status,match,options}]}]
+  // record モード用: [{rawText, status, match, options, marks:['○','×','',...]}]
+  const [recordRows, setRecordRows] = useState([]);
   const [errorMsg, setErrorMsg] = useState("");
   const [pickerTarget, setPickerTarget] = useState(null); // {tachiIdx, seatIdx}
   const [pickerSearch, setPickerSearch] = useState("");
@@ -245,8 +283,10 @@ const OCRRecordModal = ({ visible, onClose, members = [], alumni = [], shotsPerR
 
   const resetAll = () => {
     setStep("pick");
+    setMode("lineup");
     setImages([]);
     setTachiList([]);
+    setRecordRows([]);
     setErrorMsg("");
     setPickerTarget(null);
     setPickerSearch("");
@@ -375,8 +415,24 @@ const OCRRecordModal = ({ visible, onClose, members = [], alumni = [], shotsPerR
       const result = await model.generateContent(parts);
       const raw = result.response.text();
       const parsed = JSON.parse(raw);
-      const rawTachi = Array.isArray(parsed.tachi) ? parsed.tachi : [];
 
+      if (mode === "record") {
+        const rawRows = Array.isArray(parsed.rows) ? parsed.rows : [];
+        // 氏名も的中も空の行は表の余白なので落とす
+        const rows = rawRows.filter(
+          r => (r && String(r.name || "").trim() !== "") ||
+               (Array.isArray(r?.marks) && r.marks.some(m => normalizeMark(m) !== ""))
+        );
+        if (rows.length === 0) {
+          setErrorMsg("記録表を検出できませんでした。表全体が入るように撮り直してください。");
+          setStep("pick");
+          return;
+        }
+        applyRecordMatching(rows);
+        return;
+      }
+
+      const rawTachi = Array.isArray(parsed.tachi) ? parsed.tachi : [];
       if (rawTachi.length === 0) {
         setErrorMsg("立ち順表を検出できませんでした。写真を撮り直してください。");
         setStep("pick");
@@ -401,7 +457,39 @@ const OCRRecordModal = ({ visible, onClose, members = [], alumni = [], shotsPerR
   // ─────────────────────────────────────────
   // プロンプト構築
   // ─────────────────────────────────────────
-  const buildPrompt = () => {
+  const buildPrompt = () => (mode === "record" ? buildRecordPrompt() : buildLineupPrompt());
+
+  // 紙の的中記録用プロンプト
+  const buildRecordPrompt = () => {
+    return `あなたは弓道の「的中記録表」（紙に手書きされたもの）を読み取るOCRアシスタントです。
+添付された${images.length}枚の画像は、同じ記録表の続き（1枚目の続きが2枚目...）です。すべてを1つの記録として結合してください。
+
+【読み取り対象】
+・1行が1人の射手で、行の先頭付近に氏名が書かれています。
+・氏名の右側に、1射ごとの結果が横に並んでいます（左から1射目、2射目...の順）。
+・合計欄・的中数・％などの集計列は結果ではありません。読み飛ばしてください。
+・表の外側のメモ書き、日付、署名などは無視してください。
+
+【的中記号の読み取り】
+・的中（当たり）は ○ ◯ 〇 ● ◎ などの丸印で書かれます。→ "○" として出力
+・外れは × ✕ ✖ ／ ＼ ・ などで書かれます。→ "×" として出力
+・まだ引いていない・空欄のマスは "" （空文字列）として出力
+・判読できない場合は無理に推測せず "" にしてください。
+・大切なのは「位置」です。空欄があっても詰めず、左から順に位置を保ったまま出力してください。
+
+【射数】
+・このアプリの設定では1人あたり${shotsPerRound}射です。
+・表の列数が${shotsPerRound}と違う場合は、実際に表に見える列数のぶんだけ出力してください（こちらで調整します）。
+
+【出力形式】
+以下のJSON形式のみを出力してください（説明文やMarkdownは一切不要）:
+{"rows":[{"name":"氏名","marks":["○","×","",...]}]}
+rows は表の上から順に、marks は左（1射目）から順に並べてください。
+氏名が読み取れない行は name を "" にし、marks はそのまま出力してください。`;
+  };
+
+  // ホワイトボードの立ち順表用プロンプト
+  const buildLineupPrompt = () => {
     const memberNames = members.map(m => formatMemberName(m.name, members)).join("、");
     const alumniNames = alumni.map(a => formatMemberName(a.name, alumni)).join("、");
     return `あなたは弓道の立ち順表（ホワイトボード）を読み取るOCRアシスタントです。
@@ -440,6 +528,59 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
   };
 
   // ─────────────────────────────────────────
+  // 紙の記録：認識結果へのメンバー名寄せ適用
+  // ─────────────────────────────────────────
+  const applyRecordMatching = (rawRows) => {
+    const rows = rawRows.map(r => {
+      const rawText = String(r?.name || "");
+      const m = matchArcherName(rawText, allCandidates);
+      return {
+        rawText,
+        ...m,
+        marks: normalizeMarks(r?.marks, shotsPerRound),
+        // AI が読み取った実際の列数。設定と食い違う場合に警告を出すため保持する
+        detectedShots: Array.isArray(r?.marks) ? r.marks.length : 0,
+      };
+    });
+    setRecordRows(rows);
+    setStep("preview");
+  };
+
+  // 設定の射数と、実際に読み取れた列数が食い違っていないか
+  const shotsMismatch = useMemo(() => {
+    if (mode !== "record" || recordRows.length === 0) return null;
+    const counts = recordRows.map(r => r.detectedShots).filter(n => n > 0);
+    if (counts.length === 0) return null;
+    const max = Math.max(...counts);
+    return max !== shotsPerRound ? max : null;
+  }, [mode, recordRows, shotsPerRound]);
+
+  /** プレビュー上で ○ → × → 未記録 を切り替える */
+  const toggleRecordMark = (rowIdx, markIdx) => {
+    setRecordRows(prev => prev.map((row, i) => {
+      if (i !== rowIdx) return row;
+      const marks = [...row.marks];
+      marks[markIdx] = marks[markIdx] === "" ? "○" : marks[markIdx] === "○" ? "×" : "";
+      return { ...row, marks };
+    }));
+  };
+
+  const removeRecordRow = (rowIdx) => {
+    setRecordRows(prev => prev.filter((_, i) => i !== rowIdx));
+  };
+
+  /** 記録モードで氏名セルにメンバー／ゲストを割り当てる */
+  const assignRecordRow = (rowIdx, candidateOrNull) => {
+    setRecordRows(prev => prev.map((row, i) => {
+      if (i !== rowIdx) return row;
+      if (candidateOrNull) {
+        return { ...row, status: "matched", match: candidateOrNull, rawText: candidateOrNull.name, fuzzy: false };
+      }
+      return { ...row, status: "guest", match: null };
+    }));
+  };
+
+  // ─────────────────────────────────────────
   // プレビュー画面でのセル手動修正
   // ─────────────────────────────────────────
   const assignSeat = (tachiIdx, seatIdx, candidateOrNull) => {
@@ -473,6 +614,41 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
   // ─────────────────────────────────────────
   // 記録表への反映（空セルのスキップと、無駄な空セパレータ防止）
   // ─────────────────────────────────────────
+  /**
+   * 紙の記録から射手配列を作る。
+   * 立ち順モードと違い「立」の概念がないため、セパレータは挟まず読み取った順に並べる。
+   */
+  const buildRecordArchersArray = () => {
+    return recordRows
+      .filter(row => row.status === "matched" || (row.rawText && row.rawText.trim() !== ""))
+      .map(row => {
+        const base = {
+          id: generateUUID(),
+          name: "",
+          marks: normalizeMarks(row.marks, shotsPerRound),
+          arrowLocations: Array(shotsPerRound).fill(null),
+          gender: "未設定",
+          grade: 1,
+          isGuest: false,
+          isSeparator: false,
+          isTotalCalculator: false,
+          lockedBlocks: {},
+          lastModified: Date.now(),
+        };
+        if (row.status === "matched" && row.match) {
+          return {
+            ...base,
+            name: row.match.name,
+            gender: row.match.gender || "未設定",
+            grade: typeof row.match.grade === "number" ? row.match.grade : 1,
+            memberId: row.match.id,
+            isGuest: false,
+          };
+        }
+        return { ...base, name: row.rawText, isGuest: true };
+      });
+  };
+
   const buildArchersArray = () => {
     const activeTachiLists = [];
 
@@ -540,6 +716,21 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
   };
 
   const handleApply = () => {
+    if (mode === "record") {
+      if (recordRows.some(r => r.status === "ambiguous")) {
+        _Alert.alert("確認が必要です", "候補が複数ある名前が残っています。該当の氏名をタップして選択してください。");
+        return;
+      }
+      const archers = buildRecordArchersArray();
+      if (archers.length === 0) {
+        _Alert.alert("反映できません", "読み取れた射手がいません。写真を撮り直してください。");
+        return;
+      }
+      onApply && onApply(archers);
+      handleClose();
+      return;
+    }
+
     const hasAmbiguous = tachiList.some(t => t.seats.some(s => s.status === "ambiguous"));
     if (hasAmbiguous) {
       _Alert.alert("確認が必要です", "候補が複数ある名前が残っています。該当のセルをタップして選択してください。");
@@ -637,11 +828,37 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
     });
   };
 
+  // ピッカーは立ち順モード（{tachiIdx, seatIdx}）と記録モード（{rowIdx}）で
+  // 対象の指し方が違うため、ここで振り分ける
+  const pickAssign = (candidateOrNull) => {
+    if (!pickerTarget) return;
+    if (pickerTarget.rowIdx != null) {
+      assignRecordRow(pickerTarget.rowIdx, candidateOrNull);
+      setPickerTarget(null);
+      setPickerSearch("");
+      return;
+    }
+    assignSeat(pickerTarget.tachiIdx, pickerTarget.seatIdx, candidateOrNull);
+  };
+
+  const pickAssignGuest = (name) => {
+    if (!pickerTarget || !name) return;
+    if (pickerTarget.rowIdx != null) {
+      setRecordRows(prev => prev.map((row, i) =>
+        i === pickerTarget.rowIdx ? { ...row, status: "guest", match: null, rawText: name } : row
+      ));
+      setPickerTarget(null);
+      setPickerSearch("");
+      setIsEnteringGuest(false);
+      setGuestNameInput("");
+      return;
+    }
+    setSeatAsGuest(pickerTarget.tachiIdx, pickerTarget.seatIdx, name);
+  };
+
   const submitGuest = () => {
     const name = guestNameInput.trim();
-    if (name && pickerTarget) {
-      setSeatAsGuest(pickerTarget.tachiIdx, pickerTarget.seatIdx, name);
-    }
+    if (name && pickerTarget) pickAssignGuest(name);
   };
 
   return (
@@ -651,7 +868,9 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
           <_View style={styles.header}>
             <_View style={styles.headerTitleRow}>
               <Ionicons name="camera" size={20} color="#007AFF" />
-              <_Text style={styles.headerTitle}>画像から立ち順を登録</_Text>
+              <_Text style={styles.headerTitle}>
+                {mode === "record" ? "画像から記録を読み取る" : "画像から立ち順を登録"}
+              </_Text>
             </_View>
             <_TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
               <Ionicons name="close" size={24} color="#8E8E93" />
@@ -660,8 +879,25 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
 
           {step === "pick" && (
             <_ScrollView style={styles.body} contentContainerStyle={{ padding: 16 }}>
+              <_View style={styles.modeRow}>
+                <_TouchableOpacity
+                  style={[styles.modeBtn, mode === "lineup" && styles.modeBtnActive]}
+                  onPress={() => { setMode("lineup"); setErrorMsg(""); }}
+                >
+                  <_Text style={[styles.modeBtnText, mode === "lineup" && styles.modeBtnTextActive]}>立ち順表</_Text>
+                </_TouchableOpacity>
+                <_TouchableOpacity
+                  style={[styles.modeBtn, mode === "record" && styles.modeBtnActive]}
+                  onPress={() => { setMode("record"); setErrorMsg(""); }}
+                >
+                  <_Text style={[styles.modeBtnText, mode === "record" && styles.modeBtnTextActive]}>紙の記録</_Text>
+                </_TouchableOpacity>
+              </_View>
+
               <_Text style={styles.hint}>
-                ホワイトボードの立ち順表を撮影・選択してください。1枚に収まらない場合は続けて追加できます。
+                {mode === "record"
+                  ? `紙に取った的中記録を撮影・選択してください。氏名と1射ごとの○×を読み取ります（1人${shotsPerRound}射の設定）。1枚に収まらない場合は続けて追加できます。`
+                  : "ホワイトボードの立ち順表を撮影・選択してください。1枚に収まらない場合は続けて追加できます。"}
               </_Text>
 
               {images.length > 0 && (
@@ -712,11 +948,97 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
           {step === "analyzing" && (
             <_View style={styles.centerBox}>
               <_ActivityIndicator size="large" color="#007AFF" />
-              <_Text style={styles.centerText}>AIが立ち順表を読み取っています...</_Text>
+              <_Text style={styles.centerText}>
+                {mode === "record" ? "AIが記録表を読み取っています..." : "AIが立ち順表を読み取っています..."}
+              </_Text>
             </_View>
           )}
 
-          {step === "preview" && (
+          {step === "preview" && mode === "record" && (
+            <>
+              <_ScrollView style={styles.body} contentContainerStyle={{ padding: 16 }}>
+                <_Text style={styles.hint}>
+                  内容を確認してください。氏名をタップすると変更、○×のマスをタップすると
+                  「○ → × → 未記録」の順で切り替わります。
+                </_Text>
+
+                {shotsMismatch != null && (
+                  <_View style={styles.errorBox}>
+                    <Ionicons name="warning" size={16} color="#FF9500" />
+                    <_Text style={styles.errorText}>
+                      表からは{shotsMismatch}射ぶん読み取れましたが、アプリの設定は{shotsPerRound}射です。
+                      {shotsMismatch > shotsPerRound
+                        ? `${shotsPerRound}射目までを取り込みます。`
+                        : "足りない分は未記録になります。"}
+                      必要なら閉じてから設定の射数を変更してください。
+                    </_Text>
+                  </_View>
+                )}
+
+                <_View style={styles.legendRow}>
+                  <_View style={styles.legendItem}><_View style={[styles.legendDot, { backgroundColor: "#E5F1FF" }]} /><_Text style={styles.legendText}>一致</_Text></_View>
+                  <_View style={styles.legendItem}><_View style={[styles.legendDot, { backgroundColor: "#FFE5E5" }]} /><_Text style={styles.legendText}>要確認</_Text></_View>
+                  <_View style={styles.legendItem}><_View style={[styles.legendDot, { backgroundColor: "#F0F0F0" }]} /><_Text style={styles.legendText}>ゲスト</_Text></_View>
+                </_View>
+
+                {recordRows.map((row, rIdx) => {
+                  const hits = row.marks.filter(m => m === "○").length;
+                  const shots = row.marks.filter(m => m !== "").length;
+                  return (
+                    <_View key={rIdx} style={styles.recordRow}>
+                      <_View style={styles.recordRowHeader}>
+                        <_TouchableOpacity
+                          style={[styles.recordNameChip, { backgroundColor: seatColor(row) }]}
+                          onPress={() => {
+                            setPickerTarget({ rowIdx: rIdx });
+                            setPickerSearch(
+                              (row.status === "ambiguous" || row.status === "guest") ? (row.rawText || "") : ""
+                            );
+                          }}
+                        >
+                          <_Text style={styles.recordNameText} numberOfLines={1}>{seatLabel(row)}</_Text>
+                        </_TouchableOpacity>
+                        <_Text style={styles.recordScoreText}>{hits}/{shots || shotsPerRound}</_Text>
+                        <_TouchableOpacity onPress={() => removeRecordRow(rIdx)} style={styles.recordRemoveBtn}>
+                          <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+                        </_TouchableOpacity>
+                      </_View>
+                      <_View style={styles.markRow}>
+                        {row.marks.map((mk, mIdx) => (
+                          <_TouchableOpacity
+                            key={mIdx}
+                            style={[
+                              styles.markCell,
+                              mk === "○" && styles.markCellHit,
+                              mk === "×" && styles.markCellMiss,
+                            ]}
+                            onPress={() => toggleRecordMark(rIdx, mIdx)}
+                          >
+                            <_Text style={[
+                              styles.markCellText,
+                              mk === "○" && styles.markCellTextHit,
+                              mk === "×" && styles.markCellTextMiss,
+                            ]}>{mk || "－"}</_Text>
+                          </_TouchableOpacity>
+                        ))}
+                      </_View>
+                    </_View>
+                  );
+                })}
+              </_ScrollView>
+
+              <_View style={styles.previewFooter}>
+                <_TouchableOpacity style={styles.footerBtnSecondary} onPress={() => setStep("pick")}>
+                  <_Text style={styles.footerBtnSecondaryText}>撮り直す</_Text>
+                </_TouchableOpacity>
+                <_TouchableOpacity style={styles.footerBtnPrimary} onPress={handleApply}>
+                  <_Text style={styles.footerBtnPrimaryText}>記録表に反映する</_Text>
+                </_TouchableOpacity>
+              </_View>
+            </>
+          )}
+
+          {step === "preview" && mode !== "record" && (
             <>
               <_ScrollView style={styles.body} contentContainerStyle={{ padding: 16 }}>
                 <_Text style={styles.hint}>
@@ -824,7 +1146,7 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
               <_ScrollView style={styles.pickerList}>
                 <_TouchableOpacity
                   style={styles.pickerRow}
-                  onPress={() => assignSeat(pickerTarget.tachiIdx, pickerTarget.seatIdx, null)}
+                  onPress={() => pickAssign(null)}
                 >
                   <_Text style={styles.pickerRowTextMuted}>（空欄にする）</_Text>
                 </_TouchableOpacity>
@@ -857,7 +1179,7 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
                               styles.pickerRowIndent,
                               isSelected && { backgroundColor: "#F0F0F5", opacity: 0.8 }
                             ]}
-                            onPress={() => assignSeat(pickerTarget.tachiIdx, pickerTarget.seatIdx, m)}
+                            onPress={() => pickAssign(m)}
                           >
                             <_View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
                               <_Text style={[
@@ -911,7 +1233,7 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
                                   styles.pickerRowIndent,
                                   isSelected && { backgroundColor: "#F0F0F5", opacity: 0.8 }
                                 ]}
-                                onPress={() => assignSeat(pickerTarget.tachiIdx, pickerTarget.seatIdx, a)}
+                                onPress={() => pickAssign(a)}
                               >
                                 <_View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
                                   <_Text style={[
@@ -939,7 +1261,7 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
                 {!!pickerSearch.trim() && (
                   <_TouchableOpacity
                     style={styles.pickerRow}
-                    onPress={() => setSeatAsGuest(pickerTarget.tachiIdx, pickerTarget.seatIdx, pickerSearch.trim())}
+                    onPress={() => pickAssignGuest(pickerSearch.trim())}
                   >
                     <_Text style={styles.pickerRowTextGuest}>
                       「{pickerSearch.trim()}」をゲストとして登録
@@ -995,6 +1317,28 @@ const styles = _StyleSheet.create({
   seatRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   seatChip: { minWidth: 64, paddingHorizontal: 10, paddingVertical: 10, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   seatChipText: { fontSize: 12, color: "#1C1C1E", textAlign: "center" },
+
+  // 読み取りモード切替（立ち順表 / 紙の記録）
+  modeRow: { flexDirection: "row", backgroundColor: "#F2F2F7", borderRadius: 10, padding: 3, marginBottom: 12 },
+  modeBtn: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: "center" },
+  modeBtnActive: { backgroundColor: "#FFFFFF" },
+  modeBtnText: { fontSize: 14, color: "#8E8E93", fontWeight: "600" },
+  modeBtnTextActive: { color: "#007AFF", fontWeight: "bold" },
+
+  // 紙の記録のプレビュー（1行＝1人）
+  recordRow: { marginBottom: 14, padding: 10, backgroundColor: "#F9F9F9", borderRadius: 10 },
+  recordRowHeader: { flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 8 },
+  recordNameChip: { flex: 1, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8, justifyContent: "center" },
+  recordNameText: { fontSize: 14, color: "#1C1C1E", fontWeight: "600" },
+  recordScoreText: { fontSize: 13, color: "#8E8E93", fontWeight: "bold", minWidth: 42, textAlign: "right" },
+  recordRemoveBtn: { padding: 4 },
+  markRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  markCell: { width: 36, height: 36, borderRadius: 8, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E5E5EA", alignItems: "center", justifyContent: "center" },
+  markCellHit: { backgroundColor: "#E5F1FF", borderColor: "#007AFF" },
+  markCellMiss: { backgroundColor: "#FFE5E5", borderColor: "#FF3B30" },
+  markCellText: { fontSize: 16, color: "#C7C7CC", fontWeight: "bold" },
+  markCellTextHit: { color: "#007AFF" },
+  markCellTextMiss: { color: "#FF3B30" },
 
   previewFooter: { flexDirection: "row", gap: 10, padding: 16, borderTopWidth: 1, borderTopColor: "#EEE" },
   footerBtnSecondary: { flex: 1, paddingVertical: 12, borderRadius: 8, backgroundColor: "#F2F2F7", alignItems: "center" },
