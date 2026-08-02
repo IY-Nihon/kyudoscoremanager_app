@@ -1,14 +1,17 @@
 /**
- * Module ID: 1024
+ * Library Bridge: module_1024.js (expo-file-system/legacy)
+ *
+ * 元はソースマップから復元された expo-file-system の index で、
+ * documentDirectory_1025（本体）と module_1028（型定義：FileSystemSessionType /
+ * FileSystemUploadType / EncodingType 等）をまとめて再エクスポートしていた。
+ *
+ * Expo SDK 55 では旧APIが expo-file-system/legacy へ移動しており、
+ * legacy/index.ts が FileSystem と FileSystem.types の両方を re-export するため、
+ * この1ファイルで元の合成と同じ内容になる。
+ *
+ * 利用箇所: JP_SettingsScreen_1023（CSVエクスポート）
+ * 使用API : cacheDirectory, writeAsStringAsync, EncodingType.UTF8
  */
 "use strict";
 
-const g = (typeof global !== "undefined" ? global : typeof window !== "undefined" ? window : this);
-const r = require;
-const i = (typeof metroImport !== 'undefined' ? metroImport : undefined);
-const a = (typeof id !== 'undefined' ? id : 1024);
-const m = module;
-const e = exports;
-const d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
-
-"use strict";Object.defineProperty(e,'__esModule',{value:!0});var t=require("./documentDirectory_1025");Object.keys(t).forEach(function(n){'default'===n||Object.prototype.hasOwnProperty.call(e,n)||Object.defineProperty(e,n,{enumerable:!0,get:function(){return t[n]}})});var n=require("./module_1028");Object.keys(n).forEach(function(t){'default'===t||Object.prototype.hasOwnProperty.call(e,t)||Object.defineProperty(e,t,{enumerable:!0,get:function(){return n[t]}})})
+module.exports = require('expo-file-system/legacy');
