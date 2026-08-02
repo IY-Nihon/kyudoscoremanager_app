@@ -2,7 +2,9 @@
  * 矢所を的の上にプロットして表示する読み取り専用コンポーネント
  */
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
+import ThemedStyleSheet from './default_45'; // テーマ変換を通すためブリッジ経由
+const StyleSheet = ThemedStyleSheet;
 import { useScoreStore } from './JP_useScoreStore_174';
 
 const CIRCLED_NUMBERS = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳'];
