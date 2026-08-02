@@ -1,14 +1,29 @@
 /**
- * Module ID: 427
+ * Library Bridge: module_427.js (react/jsx-runtime)
+ *
+ * 元は react-native-css-interop（NativeWind のランタイム）の JSX ランタイムだった。
+ * しかし NativeWind は依存から外れており（package.json に nativewind /
+ * react-native-css-interop / tailwindcss いずれも無し、babel.config.js にも
+ * プリセット無し）、自作コードでの className 使用も 0 件だったため、
+ * この層は全 JSX 呼び出しに挟まるだけの死荷重になっていた。
+ *
+ * interop の実体も no-op であることを確認済み:
+ *   - maybeHijackSafeAreaProvider は `function (t) { return t }`（恒等関数）
+ *   - interopComponents は空のため `get(o) ?? o` も恒等
+ *
+ * 自作コードが使うのは jsx / jsxs / Fragment のみで、react/jsx-runtime と一致する。
+ * createElement / createInteropElement は現状どこからも使われていないが、
+ * 元モジュールが公開していたため保険として react から補っておく。
  */
 "use strict";
 
-const g = (typeof global !== "undefined" ? global : typeof window !== "undefined" ? window : this);
-const r = require;
-const i = (typeof metroImport !== 'undefined' ? metroImport : undefined);
-const a = (typeof id !== 'undefined' ? id : 427);
-const m = module;
-const e = exports;
-const d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
+const jsxRuntime = require('react/jsx-runtime');
+const { createElement } = require('react');
 
-"use strict";var t=this&&this.__importDefault||function(t){return t&&t.__esModule?t:{default:t}};Object.defineProperty(e,"__esModule",{value:!0}),e.createElement=e.createInteropElement=e.jsxDEV=e.jsx=e.jsxs=e.Fragment=void 0;const n=require("./module_37"),l=t(require("./module_254")),s=t(require("./module_273"));var u=require("./module_37");Object.defineProperty(e,"Fragment",{enumerable:!0,get:function(){return u.Fragment}}),e.jsxs=(0,s.default)(l.default.jsxs),e.jsx=(0,s.default)(l.default.jsx),e.jsxDEV=(0,s.default)(l.default.jsxDEV),e.createInteropElement=(0,s.default)(n.createElement),e.createElement=n.createElement
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.jsx = jsxRuntime.jsx;
+exports.jsxs = jsxRuntime.jsxs;
+exports.jsxDEV = jsxRuntime.jsxDEV || jsxRuntime.jsx;
+exports.Fragment = jsxRuntime.Fragment;
+exports.createElement = createElement;
+exports.createInteropElement = createElement;

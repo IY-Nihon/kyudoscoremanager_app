@@ -1,14 +1,12 @@
 /**
- * Module ID: 175
+ * Library Bridge: module_175.js (zustand)
+ *
+ * 元はソースマップから復元された zustand 本体（createStore / create / useStore）。
+ * package.json に zustand@^5.0.12 があるため npm パッケージへ委譲する。
+ *
+ * 利用箇所: JP_useScoreStore_174（create でストアを生成）
+ * ミドルウェア側は src/combine_201.js が zustand/middleware へ委譲済み。
  */
 "use strict";
 
-const g = (typeof global !== "undefined" ? global : typeof window !== "undefined" ? window : this);
-const r = require;
-const i = (typeof metroImport !== 'undefined' ? metroImport : undefined);
-const a = (typeof id !== 'undefined' ? id : 175);
-const m = module;
-const e = exports;
-const d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
-
-"use strict";Object.defineProperty(e,'__esModule',{value:!0});var t=require("./module_176");Object.keys(t).forEach(function(n){'default'===n||Object.prototype.hasOwnProperty.call(e,n)||Object.defineProperty(e,n,{enumerable:!0,get:function(){return t[n]}})});var n=require("./create_177");Object.keys(n).forEach(function(t){'default'===t||Object.prototype.hasOwnProperty.call(e,t)||Object.defineProperty(e,t,{enumerable:!0,get:function(){return n[t]}})})
+module.exports = require('zustand');
