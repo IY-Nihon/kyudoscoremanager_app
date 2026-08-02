@@ -7,7 +7,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "deploy:web": "expo export --platform web && powershell -Command \"(gc dist/index.html) -replace '<script src=', '<script type=\\\"module\\\" src=' -replace '</head>', '<meta property=\\\"og:title\\\" content=\\\"弓道的中管理アプリ\\\"><meta property=\\\"og:image\\\" content=\\\"https://kyudoscoremanager.web.app/kyudo_icon.png\\\"><meta property=\\\"og:description\\\" content=\\\"団体弓道の的中記録と出欠を管理するアプリです。\\\"></head>' | Out-File -encoding utf8 dist/index.html\" && firebase deploy --only hosting"
+    "deploy:web": "expo export --platform web && powershell -ExecutionPolicy Bypass -File scripts/deploy-web.ps1 && firebase deploy --only hosting"
   },
   "dependencies": {
     "@babel/runtime": "^7.26.9",
