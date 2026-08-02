@@ -39,11 +39,38 @@
 
 - ファイル名が `JP_RecordScreen_593.js` のように **モジュールID付き** になっています
 - 中身の多くは **minify されたまま**（変数名が `e`, `t`, `n` 等）です
-- `module_*.js` / `default_*.js` の大半は **npm ライブラリをバンドルから展開したもの**で、
-  自作コードではありません（例: `module_671.js` 186KB はアイコン定義データ）
-- `*_225.js` など一部は `module.exports = require('npm-package')` のブリッジになっています
+- 展開されていた npm ライブラリは順次「ライブラリブリッジ」
+  （`module.exports = require('npm-package')` の1行ファイル）へ置き換え済みです
 
-エントリポイント `App.js` から到達可能なのは **772ファイル**、そのうち**自作コードは約30ファイル**です。
+現在の `src/` は **156ファイル**で、内訳は以下の通りです。
+
+| 区分 | 件数 | 容量 |
+|---|---|---|
+| 自作コード | 37 | 608KB |
+| ライブラリブリッジ | 35 | 12KB |
+| ライブラリ残（下記の理由で置換不可） | 84 | 115KB |
+
+### ブリッジ済みのライブラリ
+
+date-fns / @expo/vector-icons / react-native（View・Text・StyleSheet 等18種）/
+react-native-svg / expo-haptics / expo-file-system(legacy) / zustand(middleware) /
+@react-native-async-storage/async-storage / firebase(app・auth・firestore・database・app-check) /
+@react-navigation(native・bottom-tabs) / react-native-safe-area-context
+
+### ⚠️ 置き換えられない2つの「隠れ依存」
+
+以下の2ライブラリは **package.json にも node_modules にも存在せず**、
+ソースマップから復元されたコードだけが実体です。**削除するとアプリが壊れます。**
+
+| ライブラリ | 実体 | 用途 |
+|---|---|---|
+| `@react-native-community/netinfo` | `src/default_208.js` ほか | オフライン検知（`setupNetworkListener`） |
+| `@google/generative-ai` | `src/h_1035.js` | AIチャットボット・OCR |
+
+将来的にこれらを整理する場合は、先に `npm install` で正式に依存へ追加してください。
+
+なお `react/jsx-runtime`（`src/module_427.js`）は非標準の `createInteropElement` を
+持つため、削減効果（2KB）に対してリスクが見合わず意図的に据え置いています。
 
 ### 自作コード（編集対象になるファイル）
 
@@ -118,3 +145,5 @@ _archive/              過去のデバッグ資材（Git管理外・削除して
   本番バンドルに含まれています。
 - **`src/` が読みにくい**: 復元コードのため minify されたまま。
   可読なソースへ戻す場合は段階的なリファクタが必要です。
+- **隠れ依存が2件**: 上記の netinfo / generative-ai を package.json へ正式に追加すると、
+  `src/` の「ライブラリ残」84ファイルのうち大半を削減できます。

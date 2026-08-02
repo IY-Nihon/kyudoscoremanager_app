@@ -1,14 +1,12 @@
 /**
- * Module ID: 597
+ * Library Bridge: NotificationFeedbackType_597.js (expo-haptics)
+ *
+ * 元はソースマップから復元された expo-haptics の実装。
+ * package.json に expo-haptics@~55.0.14 があるため npm パッケージへ委譲する。
+ *
+ * 利用箇所: JP_RecordScreen_593 / JP_ScoreCell_596 / JP_HistoryScreen_692 / JP_EditSessionModal_694
+ * 使用API : impactAsync, notificationAsync, ImpactFeedbackStyle, NotificationFeedbackType
  */
 "use strict";
 
-const g = (typeof global !== "undefined" ? global : typeof window !== "undefined" ? window : this);
-const r = require;
-const i = (typeof metroImport !== 'undefined' ? metroImport : undefined);
-const a = (typeof id !== 'undefined' ? id : 597);
-const m = module;
-const _e = exports;
-const d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
-
-"use strict";Object.defineProperty(_e,'__esModule',{value:!0}),_e.notificationAsync=async function(e=o.NotificationFeedbackType.Success){if(!c.default?.notificationAsync)throw new t.UnavailabilityError('Haptics','notificationAsync');await c.default.notificationAsync(e)},_e.impactAsync=async function(e=o.ImpactFeedbackStyle.Medium){if(!c.default?.impactAsync)throw new t.UnavailabilityError('Haptic','impactAsync');await c.default.impactAsync(e)},_e.selectionAsync=async function(){if(!c.default?.selectionAsync)throw new t.UnavailabilityError('Haptic','selectionAsync');await c.default.selectionAsync()},_e.performAndroidHapticsAsync=async function(e){return},Object.defineProperty(_e,"NotificationFeedbackType",{enumerable:!0,get:function(){return o.NotificationFeedbackType}}),Object.defineProperty(_e,"ImpactFeedbackStyle",{enumerable:!0,get:function(){return o.ImpactFeedbackStyle}}),Object.defineProperty(_e,"AndroidHaptics",{enumerable:!0,get:function(){return o.AndroidHaptics}});var e,t=require("./EventEmitter_100"),n=require("./module_598"),c=(e=n)&&e.__esModule?e:{default:e},o=require("./module_599")
+module.exports = require('expo-haptics');
