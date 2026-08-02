@@ -71,12 +71,6 @@ const fb = {
   },
   get rtdb() {
     return require("./db_178").rtdb;
-  },
-  get ADMIN_EMAIL() {
-    return require("./db_178").ADMIN_EMAIL;
-  },
-  get ADMIN_PASSWORD() {
-    return require("./db_178").ADMIN_PASSWORD;
   }
 };
 

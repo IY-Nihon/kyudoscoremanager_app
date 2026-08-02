@@ -1,67 +1,59 @@
-# dependencies
+# ── 依存パッケージ ──
 node_modules/
 
-# Expo
+# ── ビルド成果物 ──
 .expo/
 dist/
 web-build/
 expo-env.d.ts
+.firebase/
+*.tsbuildinfo
 
-# Native
+# ── ネイティブ（自動生成 / 署名ファイル） ──
+/ios
+/android
 .kotlin/
 *.orig.*
 *.jks
 *.p8
 *.p12
 *.key
+*.pem
 *.mobileprovision
 
-# Metro
+# ── Metro ──
 .metro-health-check*
 
-# debug
+# ── ログ・診断 ──
+*.log
+*.heapsnapshot
+*.trace
 npm-debug.*
 yarn-debug.*
 yarn-error.*
-
-# macOS
-.DS_Store
-*.pem
-
-# local env files
-.env
-.env*.local
-
-
-
-# typescript
-*.tsbuildinfo
-
-# generated native folders
-/ios
-/android
-
-# Diagnostic results and logs
-diagnostic_results_*
-build_log.txt
+diagnostic_*
 prebuild_log.txt
 RecordAppExpo
-*.log
-*.heapsnapshot
-*.json.gz
-*.trace
-*.mp4
-*.webp
+
+# ── 機密情報（絶対にコミットしない） ──
+.env
+.env*.local
+users.csv
 users.json
-global.css
-test_auth.*
 auth_test_result.txt
-users.csv*
-*.txt
-diagnostic_*
-patch_node_modules_*  
-# backup files  
-backup-output/ 
+test_auth.*
+
+# ── バックアップ / リストア検証（ローカル作業用） ──
+backup-output/
 backup-output-old/
 restore-test/
 restore-*.mjs
+*.json.gz
+
+# ── 過去のデバッグ資材を退避した場所（Git管理外） ──
+_archive/
+scratch/
+
+# ── OS / エディタ ──
+.DS_Store
+Thumbs.db

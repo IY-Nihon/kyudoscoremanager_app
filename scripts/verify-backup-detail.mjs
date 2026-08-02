@@ -137,7 +137,14 @@ async function checkCollection(gid, colName, bkDocs) {
 
 async function main() {
   console.log('🔐 Firebaseにログイン中...');
-  await signInWithEmailAndPassword(auth, 'admin@nitidai.app', '123400');
+  const adminEmail = process.env.KSM_ADMIN_EMAIL;
+  const adminPassword = process.env.KSM_ADMIN_PASSWORD;
+  if (!adminEmail || !adminPassword) {
+    console.error('❌ 環境変数 KSM_ADMIN_EMAIL / KSM_ADMIN_PASSWORD を設定してください。');
+    console.error('   例: $env:KSM_ADMIN_EMAIL="..."; $env:KSM_ADMIN_PASSWORD="..."; node scripts/verify-backup-detail.mjs');
+    process.exit(1);
+  }
+  await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
   console.log('✅ ログイン成功\n');
 
   const backup = loadBackup();

@@ -15,15 +15,13 @@ const d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
 const storageInstance = (()=>{try{return (0, st.getStorage)(p)}catch(e){console.warn('[Firebase] Storage initialization failed:', e); return null}})();
 
 const b = (0, u.getAuth)(p);
-const l=(()=>{try{return c.databaseURL?(0,t.getDatabase)(p):null}catch(e){return console.warn('[Firebase] RTDB initialization failed:',e),null}})(),f=process.env.EXPO_PUBLIC_ADMIN_EMAIL||"admin@nitidai.app",y=process.env.EXPO_PUBLIC_ADMIN_PASSWORD||"123400";
+const l=(()=>{try{return c.databaseURL?(0,t.getDatabase)(p):null}catch(e){return console.warn('[Firebase] RTDB initialization failed:',e),null}})();
 
 // db/auth/rtdb を先に exports に設定してから、永続化を非同期で行う
 _e.db = s;
 _e.auth = b;
 _e.rtdb = l;
 _e.storage = storageInstance;
-_e.ADMIN_EMAIL = f;
-_e.ADMIN_PASSWORD = y;
 console.log('[db_178] exports.db set:', _e.db ? 'OK' : 'FAILED');
 
 // Firestore オフライン永続化の有効化（exports設定後に非同期実行）
