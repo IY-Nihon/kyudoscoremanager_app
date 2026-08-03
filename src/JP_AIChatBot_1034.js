@@ -1035,7 +1035,10 @@ const styles = _StyleSheet.create({
   headerTitleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   headerTitle: { fontSize: 17, fontWeight: "bold", color: "#1C1C1E" },
   closeBtn: { padding: 4 },
-  messageArea: { flex: 1, backgroundColor: "#F8F8F8" },
+  // 背景は #F8F8F8 ではなくアプリ標準の #F2F2F7 を使う。
+  // #F8F8F8 はダーク時に #2C2C2E へ変換され、AI側の吹き出し(#E5E5EA→#2C2C2E)と
+  // 同色になって吹き出しの輪郭が消えてしまうため。
+  messageArea: { flex: 1, backgroundColor: "#F2F2F7" },
   messageBubble: { maxWidth: "85%", padding: 12, borderRadius: 18, marginBottom: 12 },
   userBubble: { alignSelf: "flex-end", backgroundColor: "#007AFF", borderBottomRightRadius: 4 },
   modelBubble: { alignSelf: "flex-start", backgroundColor: "#E5E5EA", borderBottomLeftRadius: 4 },
