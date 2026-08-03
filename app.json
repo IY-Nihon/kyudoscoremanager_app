@@ -1,4 +1,4 @@
-﻿{
+{
   "expo": {
     "name": "RecordAppExpo",
     "slug": "RecordAppExpo",
@@ -46,7 +46,9 @@
           "photosPermission": "ホワイトボードの立ち順写真をライブラリから選択するために使用します。",
           "cameraPermission": "ホワイトボードの立ち順を撮影するためにカメラを使用します。"
         }
-      ]
+      ],
+      "expo-font",
+      "expo-sharing"
     ],
     "extra": {
       "eas": {
