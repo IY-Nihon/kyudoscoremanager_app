@@ -147,9 +147,7 @@ const T = () => {
                 'register' !== T && 'none' === R && (0, E.jsxs)(u.default, {
                   style: S.tabContainer,
                   children: [
-                    (0, E.jsx)(c.default, {
-                      key: "tab-group",
-                      style: function(state) {
+                    (0, E.jsx)(c.default, { style: function(state) {
                         return [
                           S.tab,
                           'login_group' === T && S.activeTab,
@@ -161,10 +159,8 @@ const T = () => {
                         style: [S.tabText, 'login_group' === T && S.activeTabText],
                         children: "団体"
                       })
-                    }),
-                    (0, E.jsx)(c.default, {
-                      key: "tab-member",
-                      style: function(state) {
+                    }, "tab-group"),
+                    (0, E.jsx)(c.default, { style: function(state) {
                         return [
                           S.tab,
                           'login_member' === T && S.activeTab,
@@ -176,7 +172,7 @@ const T = () => {
                         style: [S.tabText, 'login_member' === T && S.activeTabText],
                         children: "個人"
                       })
-                    })
+                    }, "tab-member")
                   ]
                 }),
                 (0, E.jsxs)(u.default, {
@@ -648,9 +644,7 @@ const T = () => {
                     'login_group' === T && (0, E.jsxs)(u.default, {
                       style: S.helpLinks,
                       children: [
-                        (0, E.jsx)(c.default, {
-                          key: "email",
-                          onPress: () => U('email'),
+                        (0, E.jsx)(c.default, { onPress: () => U('email'),
                           children: function(state) {
                             return (0, E.jsx)(h.default, {
                               style: [
@@ -660,10 +654,8 @@ const T = () => {
                               children: "メールアドレスを忘れた"
                             });
                           }
-                        }),
-                        (0, E.jsx)(c.default, {
-                          key: "groupid",
-                          onPress: () => s.default.alert('通知', '団体IDは、アカウント登録時のメールに記載されています。見当たらない場合は管理者にお問い合わせください。'),
+                        }, "email"),
+                        (0, E.jsx)(c.default, { onPress: () => s.default.alert('通知', '団体IDは、アカウント登録時のメールに記載されています。見当たらない場合は管理者にお問い合わせください。'),
                           children: function(state) {
                             return (0, E.jsx)(h.default, {
                               style: [
@@ -673,10 +665,8 @@ const T = () => {
                               children: "団体IDを忘れた"
                             });
                           }
-                        }),
-                        (0, E.jsx)(c.default, {
-                          key: "password",
-                          onPress: () => U('password'),
+                        }, "groupid"),
+                        (0, E.jsx)(c.default, { onPress: () => U('password'),
                           children: function(state) {
                             return (0, E.jsx)(h.default, {
                               style: [
@@ -686,7 +676,7 @@ const T = () => {
                               children: "パスワードを忘れた"
                             });
                           }
-                        })
+                        }, "password")
                       ]
                     })
                   ]

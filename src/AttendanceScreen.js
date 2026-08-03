@@ -372,10 +372,10 @@ const AttendanceScreen = () => {
             ] }),
             aiPreviewItems && (0, j.jsxs)(o.View, { style: [styles.aiSection, { backgroundColor: '#F0F0FF', borderLeftWidth: 4, borderLeftColor: '#5856D6' }], children: [
               (0, j.jsx)(o.Text, { style: [styles.aiTitle, { color: '#5856D6', marginBottom: 10 }], children: "解析結果プレビュー" }),
-              aiPreviewItems.map((item, idx) => (0, j.jsxs)(o.View, { key: idx, style: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: 0.5, borderBottomColor: '#CCC' }, children: [
+              aiPreviewItems.map((item, idx) => (0, j.jsxs)(o.View, { style: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: 0.5, borderBottomColor: '#CCC' }, children: [
                 (0, j.jsx)(o.Text, { style: { fontSize: 13 }, children: item.date }),
                 (0, j.jsx)(o.Text, { style: { fontSize: 13, color: '#666' }, children: item.reason || '練習日' })
-              ] })),
+              ] }, idx)),
               (0, j.jsxs)(o.View, { style: { flexDirection: 'row', gap: 10, marginTop: 15 }, children: [
                 (0, j.jsx)(o.TouchableOpacity, { style: [styles.aiActionBtn, { flex: 1, backgroundColor: '#5856D6' }], onPress: saveAiDates, children: (0, j.jsx)(o.Text, { style: styles.aiActionBtnText, children: "これらを保存する" }) }),
                 (0, j.jsx)(o.TouchableOpacity, { style: [styles.aiActionBtn, { flex: 1, backgroundColor: '#8E8E93' }], onPress: () => setAiPreviewItems(null), children: (0, j.jsx)(o.Text, { style: styles.aiActionBtnText, children: "キャンセル" }) })
