@@ -260,9 +260,7 @@ const j = ({
                                     sVal && (0, F.jsx)(n.default, { style: y.selectedBadge, children: (0, F.jsx)(l.default, { style: y.selectedBadgeText, children: "\u9078\u629e\u6e08" }) })
                                   ]
                                 })
-                              ],
-                              key: e.id
-                            });
+                              ]}, e.id);
                           })
                         ]
                       }, `group-${group.grade}`);
@@ -303,9 +301,7 @@ const j = ({
                               sVal && (0, F.jsx)(n.default, { style: y.selectedBadge, children: (0, F.jsx)(l.default, { style: y.selectedBadgeText, children: "\u9078\u629e\u6e08" }) })
                             ]
                           })
-                        ],
-                        key: e.id
-                      });
+                        ]}, e.id);
                     })
                   ]
                 }, e.term))
