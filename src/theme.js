@@ -140,9 +140,14 @@ const KEY_KIND = {
   borderRightColor: 'border',
   borderStartColor: 'border',
   borderEndColor: 'border',
+
+  // react-native-svg（分析画面のグラフ）
+  stroke: 'border', // 罫線・折れ線
+  fill: 'text',     // 点や塗り。'none' などの非色は mapColor が素通しする
+  stopColor: 'bg',
 };
 
-// jsx の props のうち色を受け取るもの（style 以外）
+// jsx の props のうち、値が色文字列そのものであるもの（style 以外）
 const COLOR_PROPS = new Set([
   'color',
   'tintColor',
@@ -153,7 +158,13 @@ const COLOR_PROPS = new Set([
   'borderColor',
   'thumbColor',
   'activeOutlineColor',
+  'stroke',
+  'fill',
 ]);
+
+// 値が「色文字列を持つオブジェクト」である props。
+// 例: Switch の trackColor={{ false: '#D1D1D6', true: '#34C759' }}
+const COLOR_MAP_PROPS = { trackColor: 'bg' };
 
 const STORAGE_KEY = '@kyudo/themeMode';
 
@@ -292,6 +303,24 @@ function mapProps(props) {
       const nv = mapColor(props[p], KEY_KIND[p] || 'text');
       if (nv !== props[p]) {
         patch[p] = nv;
+        changed = true;
+      }
+    }
+  }
+
+  // trackColor のように、色文字列を値に持つオブジェクト形式の props
+  for (const p in COLOR_MAP_PROPS) {
+    const obj = props[p];
+    if (obj && typeof obj === 'object') {
+      let objChanged = false;
+      const next = {};
+      for (const k in obj) {
+        const nv = typeof obj[k] === 'string' ? mapColor(obj[k], COLOR_MAP_PROPS[p]) : obj[k];
+        if (nv !== obj[k]) objChanged = true;
+        next[k] = nv;
+      }
+      if (objChanged) {
+        patch[p] = next;
         changed = true;
       }
     }
