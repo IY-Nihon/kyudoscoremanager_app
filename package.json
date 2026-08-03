@@ -37,6 +37,7 @@
     "expo-modules-core": "~55.0.22",
     "expo-sharing": "~55.0.22",
     "expo-status-bar": "~55.0.6",
+    "fflate": "^0.8.3",
     "file-saver": "^2.0.5",
     "firebase": "9.23.0",
     "lucide-react-native": "^1.8.0",
