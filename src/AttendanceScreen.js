@@ -9,7 +9,11 @@ Object.defineProperty(_e, '__esModule', { value: true });
 Object.defineProperty(_e, "AttendanceScreen", { enumerable: true, get: function() { return AttendanceScreen; } });
 
 var t = require("react");
-var o = require("react-native");
+// Text と StyleSheet はダークモードのテーマ変換を通すためブリッジ経由で差し替える
+var o = Object.assign({}, require("react-native"), {
+  Text: require("./default_217").default,
+  StyleSheet: require("./default_45").default,
+});
 var m = require("./AntDesign_600");
 var b = require("./JP_useScoreStore_174");
 var x = require("./IS_WEB_199");
