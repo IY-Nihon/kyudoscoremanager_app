@@ -50,22 +50,50 @@ const BG_MAP = Object.assign({}, ACCENT, {
   '#fafafa': '#2c2c2e',
   '#f0f0f5': '#2c2c2e',
   '#e5e5ea': '#2c2c2e', // 塗り分け面 (systemGray5)
-  '#e1f0ff': '#0a2a4a', // 選択中の淡い青背景
   '#c6c6c8': '#38383a',
   '#c7c7cc': '#3a3a3c',
   '#d1d1d6': '#48484a',
+  '#e0e0e0': '#3a3a3c',
+  '#eeeeee': '#2c2c2e',
+  '#f0f0f0': '#2c2c2e',
+  '#f8f8f8': '#2c2c2e',
+  '#f9f9fb': '#2c2c2e',
+  '#f8f9ff': '#2c2c2e',
+  '#f0f0ff': '#2c2c2e',
+
+  // 状態を示す淡い色付き背景（そのままだとダーク画面に白いカードが浮く）
+  '#e1f0ff': '#0a2a4a', // 選択中・情報（淡い青）
+  '#e5f1ff': '#0a2a4a', // 一致（淡い青）
+  '#e3f2fd': '#0a2a4a',
+  '#a2c8f2': '#1d3f63', // やや濃い青の塗り
+  '#ffe5e5': '#3a1416', // 要確認（淡い赤）
+  '#fff0f0': '#3a1416',
+  '#e8f5e9': '#12301a', // 成功（淡い緑）
+  '#fff9e6': '#3a2f10', // 警告（淡い黄）
+  '#fff3cd': '#3a2f10',
+
   '#000000': '#000000', // 既に暗い背景はそのまま（二重変換の防止）
   '#1c1c1e': '#1c1c1e',
+  '#2c2c2e': '#2c2c2e',
 });
 
 // 文字
 const TEXT_MAP = Object.assign({}, ACCENT, {
   '#000000': '#ffffff', // 主要テキスト (label)
   '#1c1c1e': '#ffffff',
+  '#1a1a1a': '#ffffff',
+  '#333333': '#ebebf5',
   '#3c3c43': '#ebebf5', // 副次テキスト (secondaryLabel)
   '#3a3a3c': '#d1d1d6',
+  // 中間グレーの文字は暗い面の上で沈むため、systemGray2 相当まで持ち上げる
+  '#636366': '#aeaeb2',
+  '#666666': '#aeaeb2',
+  '#555555': '#aeaeb2',
+  '#444444': '#d1d1d6',
   '#ffffff': '#ffffff', // 色付きボタン上の白文字は白のまま
   '#f2f2f7': '#ffffff',
+  // systemIndigo はダーク面で 3.0 を下回るため、文字用途のみ明るめにする
+  '#5856d6': '#7d7aff',
 });
 
 // 罫線・区切り
@@ -164,7 +192,12 @@ function mapColor(value, kind) {
   const table = TABLES[kind] || BG_MAP;
   const key = value.trim().toLowerCase();
 
-  const normalized = ALIASES[key] || key;
+  // 3桁HEXの省略記法（#333）を6桁へ展開してから引く。
+  // 展開しないと #333 や #eee が対応表に当たらず素通りしてしまう。
+  const expand = (h) =>
+    /^#[0-9a-f]{3}$/.test(h) ? '#' + h[1] + h[1] + h[2] + h[2] + h[3] + h[3] : h;
+
+  const normalized = ALIASES[key] || expand(key);
   const direct = table[normalized];
   if (direct) return direct;
 
