@@ -49,7 +49,10 @@ const BG_MAP = Object.assign({}, ACCENT, {
   '#f9f9f9': '#2c2c2e', // 一段沈んだ面
   '#fafafa': '#2c2c2e',
   '#f0f0f5': '#2c2c2e',
-  '#e5e5ea': '#2c2c2e', // 塗り分け面 (systemGray5)
+  // 塗り分け面 (systemGray5)。Apple のダーク定義は #2C2C2E だが、この値は
+  // 「ほぼ白の面」(#F8F8F8/#F9F9F9 等) の変換先と同じで、その上に置くと
+  // 完全に同色になって要素が消える。一段明るい systemGray4 相当を使う。
+  '#e5e5ea': '#3a3a3c',
   '#c6c6c8': '#38383a',
   '#c7c7cc': '#3a3a3c',
   '#d1d1d6': '#48484a',
