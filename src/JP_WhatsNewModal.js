@@ -97,21 +97,32 @@ const NOTICE_ITEMS = [
   },
 ];
 
+// 起動から一度でも表示したかを覚えておく。
+// テーマを切り替えると App 側が key を変えて配下を作り直すため、
+// この目印が無いと閉じたお知らせが切り替えのたびに出てきてしまう。
+let shownThisSession = false;
+
 const WhatsNewModal = () => {
   const [visible, setVisible] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [checkedStorage, setCheckedStorage] = useState(false);
 
   useEffect(() => {
+    if (shownThisSession) {
+      setCheckedStorage(true);
+      return;
+    }
     (async () => {
       try {
         const dismissedVersion = await AsyncStorage.getItem(STORAGE_KEY);
         if (dismissedVersion !== NOTICE_VERSION) {
+          shownThisSession = true;
           setVisible(true);
         }
       } catch (e) {
         console.error("[WhatsNewModal] Failed to read storage:", e);
         // 読み込み失敗時は安全側に倒して表示する
+        shownThisSession = true;
         setVisible(true);
       } finally {
         setCheckedStorage(true);
