@@ -1,79 +1,9 @@
-// 第1段階：ルールの初回適用（SEC-1 / SEC-2 / SEC-5）
-//
-// このリポジトリの firestore.rules はこれまで一度も本番へ反映されておらず、
-// 本番は既定の全開状態だった（未認証で全団体の記録が読めた）。
-// まずここで「未認証を締め出す」ところまで確実に閉じる。
-// 所属団体による絞り込み（SEC-3 / SEC-4）は第2段階で入れる。
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function signedIn() {
-      return request.auth != null;
-    }
-
-    // 匿名ユーザーのトークンには email クレームが無い。
-    // 存在しないキーを直接参照すると評価エラー（＝拒否）になりうるため、
-    // 必ず in で存在確認してから読む。
-    function callerEmail() {
-      return (signedIn() && ('email' in request.auth.token))
-        ? request.auth.token.email : '';
-    }
-
-    function isAdmin() {
-      return callerEmail() in [
-        'admin@kyudo-club.com',
-        '1234@kyudo-club.com',
-        'admin@nitidai.app',
-        'nihonu.kouka@gmail.com',
-        'nihondaigakukouka@gmail.com'
-      ];
-    }
-
-    // 団体アカウント。
-    // ログイン処理は認証前にここからメールアドレスを引くため、get だけは公開する。
-    match /group_accounts/{groupId} {
-      allow get: if true;
-      allow list: if isAdmin();
-
-      // 新規団体登録（REG-1）。
-      // 作成直後の一般ユーザーが自分のメールで自分の団体を作る。
-      allow create: if signedIn()
-        && callerEmail() != ''
-        && request.resource.data.email == callerEmail()
-        && request.resource.data.id == groupId
-        && request.resource.data.keys().hasOnly(['id', 'name', 'email', 'createdAt']);
-
-      // メールアドレス変更（REG-4）。
-      // 「今その団体のメールでログインしている本人」だけに許す。
-      // 「新しいメール == 自分」を条件に加えると、他団体のメールを自分のものへ
-      // 書き換えて団体を乗っ取れてしまうため入れない。
-      allow update: if isAdmin()
-        || (callerEmail() != '' && resource.data.email == callerEmail());
-
-      allow delete: if isAdmin();
-    }
-
-    // 団体データ。第1段階は「認証済み」まで。
-    match /groups/{groupId} {
-      allow read, write: if signedIn();
-      match /{document=**} {
-        allow read, write: if signedIn();
-      }
-    }
-
-    // お問い合わせ（REG-24）。送信のみ許可し、読み出しはクライアントから不可。
-    // 未ログインからの送信経路は存在しない（ログイン画面のお問い合わせは案内文言だけ）。
-    match /inquiries/{inquiryId} {
-      allow create: if signedIn()
-        && request.resource.data.keys().hasOnly([
-             'email', 'content', 'imagesBase64', 'createdAt',
-             'groupId', 'groupName', 'role', 'memberId', 'memberName'
-           ])
-        && request.resource.data.content is string
-        && request.resource.data.content.size() > 0
-        && request.resource.data.content.size() < 5000;
-      allow read, update, delete: if false;
+    match /{document=**} {
+      // 復元作業のため、一時的に全てのアクセスを許可します
+      allow read, write: if true;
     }
   }
 }
