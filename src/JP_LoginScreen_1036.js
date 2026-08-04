@@ -69,8 +69,17 @@ const Q = (e) => {
   return e.message || '予期しないエラーが発生しました。時間を置いて再試行してください';
 };
 
+// 部員の認証方式の版。所属クレームを使う方式に切り替えたので 2。
+// 起動時にこの値が古い端末はログアウトさせ、個人IDで入り直してもらう。
+const MEMBER_AUTH_VERSION = 2;
+
 const T = () => {
-  const { setAuth: e, fetchAndOverwriteFromCloud: p, startPeriodicSync: I } = (0, x.useScoreStore)();
+  const {
+    setAuth: e,
+    fetchAndOverwriteFromCloud: p,
+    startPeriodicSync: I,
+    setMemberAuthVersion: se,
+  } = (0, x.useScoreStore)();
   const [T, F] = (0, t.useState)('login_group');
   const [_, v] = (0, t.useState)(false);
   const [D, k] = (0, t.useState)('');
@@ -273,8 +282,19 @@ const T = () => {
                                 const { email: n } = l.data();
                                 const o = await (0, C.signInWithEmailAndPassword)(b.auth, n, L);
                                 if (o.user) {
-                                  await (0, C.updateEmail)(o.user, M);
+                                  // Firestore を先に書く。updateEmail は ID トークンの
+                                  // メールアドレスを更新してしまい、その後だと
+                                  // 「本人だけが変更できる」ルールに引っかかるため。
                                   await (0, j.setDoc)(t, { email: M }, { merge: true });
+                                  try {
+                                    await (0, C.updateEmail)(o.user, M);
+                                  } catch (err) {
+                                    // 認証側が変わらなかったときは保存済みの値を戻す。
+                                    // 放置すると保存メールと認証アカウントが食い違い、
+                                    // その団体がログインできなくなる。
+                                    await (0, j.setDoc)(t, { email: n }, { merge: true });
+                                    throw err;
+                                  }
                                   s.default.alert('完了', "メールアドレスを変更しました。今後は新しいメールアドレスでログインできます。\n\n◆セキュリティ保護のため、古いメールアドレス宛に変更を通知するメールが自動送信されています。身に覚えのない変更だった場合は、そのメール内のリンクから変更を取り消すことができます。");
                                   U('none');
                                 }
@@ -615,15 +635,30 @@ const T = () => {
                             }
                             const { id: o } = n.data();
                             await (0, C.signInAnonymously)(b.auth);
-                            const s = (0, j.collection)(b.db, `groups/${o}/members`);
-                            const c = (0, j.query)(s, (0, j.where)("personalId", "==", W));
-                            const u = await (0, j.getDocs)(c);
-                            if (u.empty) {
+
+                            // 個人IDから1件だけ直接取得する。
+                            // 一覧(list)を使わないため、他団体の名簿は引けない。
+                            const lk = await (0, j.getDoc)(
+                              (0, j.doc)(b.db, `groups/${o}/member_lookup`, W)
+                            );
+                            if (!lk.exists()) {
                               throw new Error('団体IDまたは個人IDが正しくありません');
                             }
-                            const h = u.docs[0];
-                            const f = h.data();
-                            e(o || t, 'member', h.id, null, t, null, f.name);
+                            const memberId = lk.data().memberId;
+
+                            // 所属を宣言する。ルール側が逆引き表と突き合わせて検証するため、
+                            // 正しい個人IDを知っている場合しか作れない。
+                            await (0, j.setDoc)(
+                              (0, j.doc)(b.db, 'member_claims', b.auth.currentUser.uid),
+                              { groupId: o, memberId: memberId, personalId: W, claimedAt: Date.now() }
+                            );
+
+                            const md = await (0, j.getDoc)(
+                              (0, j.doc)(b.db, `groups/${o}/members`, memberId)
+                            );
+                            const f = md.data() || {};
+                            e(o || t, 'member', memberId, null, t, null, f.name);
+                            se(MEMBER_AUTH_VERSION);
                           } catch (e) {
                             s.default.alert('ログイン失敗', Q(e));
                           } finally {

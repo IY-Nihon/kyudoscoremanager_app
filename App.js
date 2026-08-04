@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Platform } from 'react-native';
+import { View, Platform, Alert } from 'react-native';
 // StyleSheet はテーマ変換を通すためブリッジ経由で取得する
 import StyleSheet from './src/default_45';
 import { useScoreStore } from './src/JP_useScoreStore_174';
@@ -13,8 +13,14 @@ import { OfflineIndicator } from './src/JP_OfflineIndicator_1042';
 import { WhatsNewModal } from './src/JP_WhatsNewModal';
 import { getShadowStyle } from './src/module_592';
 import { initTheme, useThemeMode } from './src/theme';
+import { auth } from './src/db_178';
+import { onAuthStateChanged } from './src/module_191';
 
 const IS_WEB = Platform.OS === 'web';
+
+// 部員の認証方式の版。JP_LoginScreen_1036.js の同名の定数と必ず揃えること。
+// 値を上げると、古い方式でログイン中の部員は次回起動時にログアウトされる。
+const MEMBER_AUTH_VERSION = 2;
 
 // 保存済みのテーマと OS 配色の追従を、最初の描画前に開始しておく
 initTheme();
@@ -24,10 +30,14 @@ export default function App() {
   const { theme } = useThemeMode();
   const isHydrated = useScoreStore(e => e.isHydrated);
   const activeGroupId = useScoreStore(e => e.activeGroupId);
+  const activeRole = useScoreStore(e => e.activeRole);
+  const memberAuthVersion = useScoreStore(e => e.memberAuthVersion);
+  const setAuth = useScoreStore(e => e.setAuth);
   const startPeriodicSync = useScoreStore(e => e.startPeriodicSync);
   const fetchAndOverwriteFromCloud = useScoreStore(e => e.fetchAndOverwriteFromCloud);
   const setupNetworkListener = useScoreStore(e => e.setupNetworkListener);
   const [hasMounted, setHasMounted] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     setHasMounted(true);
@@ -35,8 +45,31 @@ export default function App() {
     return () => cleanup();
   }, []);
 
+  // ログイン情報は端末に保存されており起動直後に復元されるが、Firebase Auth の
+  // セッション復元は非同期で、こちらの方が遅い。待たずにクラウドへ問い合わせると
+  // 未認証のまま送られて拒否される。最初の認証状態が確定してから読み書きを始める。
   useEffect(() => {
-    if (isHydrated && activeGroupId) {
+    if (!auth) { setAuthReady(true); return; }
+    const unsub = onAuthStateChanged(auth, () => setAuthReady(true));
+    return () => unsub();
+  }, []);
+
+  // 部員の認証方式を変更したため、古い方式でログイン中の端末は一度だけ入り直してもらう。
+  // 端末に個人IDを保存していない＝所属を証明できないため、そのままでは全ての
+  // 読み書きが拒否される。黙って失敗させず、明示的にログイン画面へ戻す。
+  useEffect(() => {
+    if (!isHydrated) return;
+    if (activeRole === 'member' && memberAuthVersion !== MEMBER_AUTH_VERSION) {
+      console.log('[App] 部員の認証方式が更新されたため再ログインを求めます');
+      setAuth(null, null, null, null);
+      const msg = 'セキュリティ強化のため、お手数ですが個人IDで再度ログインしてください。';
+      if (IS_WEB) window.alert(msg);
+      else Alert.alert('再ログインのお願い', msg);
+    }
+  }, [isHydrated]);
+
+  useEffect(() => {
+    if (isHydrated && activeGroupId && authReady) {
       console.log('[App] Initializing data for group:', activeGroupId);
       (async () => {
         try {
@@ -49,7 +82,7 @@ export default function App() {
     } else {
       console.log('[App] Waiting for:', { isHydrated, activeGroupId });
     }
-  }, [isHydrated, activeGroupId]);
+  }, [isHydrated, activeGroupId, authReady]);
 
   console.log(`[App] Rendering. hasMounted: ${hasMounted}, isHydrated: ${isHydrated}, activeGroupId: ${activeGroupId}`);
 
