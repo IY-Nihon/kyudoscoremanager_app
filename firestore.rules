@@ -1,9 +1,119 @@
+// 第2段階：匿名セッションを団体に紐づける（SEC-3 / SEC-4 / SEC-6 / SEC-7）
+//
+// 部員は signInAnonymously でログインする。匿名認証は公開APIキーだけで誰でも
+// 実行できるため、request.auth != null だけでは「誰でも」とほぼ同じ。
+// そこで member_lookup（個人ID→memberId の逆引き）を直接 get させ、
+// その結果と一致する member_claims を作らせることで所属を証明させる。
+//
+// match /{document=**} は使わない。ルールは OR で合成されるため、再帰ワイルド
+// カードを残すと member_lookup の list 禁止を後から引き算できないため。
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      // 復元作業のため、一時的に全てのアクセスを許可します
-      allow read, write: if true;
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // 匿名ユーザーには email クレームが無いので、存在確認してから読む
+    function callerEmail() {
+      return (signedIn() && ('email' in request.auth.token))
+        ? request.auth.token.email : '';
+    }
+
+    function isAdmin() {
+      return callerEmail() in [
+        'admin@kyudo-club.com',
+        '1234@kyudo-club.com',
+        'admin@nitidai.app',
+        'nihonu.kouka@gmail.com',
+        'nihondaigakukouka@gmail.com'
+      ];
+    }
+
+    // 団体アカウント本人か（SEC-3）
+    function isGroupOwner(groupId) {
+      return callerEmail() != ''
+        && get(/databases/$(database)/documents/group_accounts/$(groupId)).data.email == callerEmail();
+    }
+
+    // 所属クレーム。存在しない場合 get() は null を返す
+    function claim() {
+      return get(/databases/$(database)/documents/member_claims/$(request.auth.uid));
+    }
+
+    // 所属を証明済みの部員か（SEC-4）。
+    // members に今も居ることを確認することで、退部・削除された部員のクレームを
+    // 失効させる（SEC-7）。
+    function isClaimedMember(groupId) {
+      return signedIn()
+        && claim() != null
+        && claim().data.groupId == groupId
+        && exists(/databases/$(database)/documents/groups/$(groupId)/members/$(claim().data.memberId));
+    }
+
+    function canAccess(groupId) {
+      return isGroupOwner(groupId) || isClaimedMember(groupId);
+    }
+
+    match /group_accounts/{groupId} {
+      allow get: if true;                        // ログインは認証前に参照する
+      allow list: if isAdmin();
+
+      allow create: if signedIn()
+        && callerEmail() != ''
+        && request.resource.data.email == callerEmail()
+        && request.resource.data.id == groupId
+        && request.resource.data.keys().hasOnly(['id', 'name', 'email', 'createdAt']);
+
+      allow update: if isAdmin()
+        || (callerEmail() != '' && resource.data.email == callerEmail());
+
+      allow delete: if isAdmin();
+    }
+
+    // 所属クレーム。逆引き表と memberId が一致する場合だけ作れる。
+    // つまり正しい個人IDを知っていることが条件になる。
+    match /member_claims/{uid} {
+      allow get, delete: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['groupId', 'memberId', 'personalId', 'claimedAt'])
+        && get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)/member_lookup/$(request.resource.data.personalId)).data.memberId
+             == request.resource.data.memberId;
+    }
+
+    match /groups/{groupId} {
+      allow get: if canAccess(groupId);
+      allow create, update: if canAccess(groupId);
+      allow delete: if isGroupOwner(groupId);
+      // list は書かない。団体の一覧化を防ぐ（SEC-5）
+
+      // 個人ID→memberId の逆引き。
+      // get だけ許して list は禁止する。名簿を引けないようにするため（SEC-6）。
+      match /member_lookup/{personalId} {
+        allow get: if signedIn();
+        allow list, write: if isGroupOwner(groupId);
+      }
+
+      match /sessions/{docId}             { allow read, write: if canAccess(groupId); }
+      match /members/{docId}              { allow read, write: if canAccess(groupId); }
+      match /alumni/{docId}               { allow read, write: if canAccess(groupId); }
+      match /trash/{docId}                { allow read, write: if canAccess(groupId); }
+      match /config/{docId}               { allow read, write: if canAccess(groupId); }
+      match /officialPracticeDays/{docId} { allow read, write: if canAccess(groupId); }
+    }
+
+    match /inquiries/{inquiryId} {
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+             'email', 'content', 'imagesBase64', 'createdAt',
+             'groupId', 'groupName', 'role', 'memberId', 'memberName'
+           ])
+        && request.resource.data.content is string
+        && request.resource.data.content.size() > 0
+        && request.resource.data.content.size() < 5000;
+      allow read, update, delete: if false;
     }
   }
 }
