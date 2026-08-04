@@ -230,7 +230,7 @@ let i='function'==typeof o?o(s()):o;
 i&&(i.sessions&&(i.sessions=cleanUpSessions(i.sessions)),i.trash&&(i.trash=cleanUpSessions(i.trash))),t(i)
 };
 return{
-enableArrowLocation:!1,arrowTargetType:'kasumi36',activeArrowLocationEdit:null,activeGroupId:null,activeGroupName:null,publicGroupId:null,activeRole:null,myMemberId:null,myMemberName:null,activeUserEmail:null,archers:[],members:[],alumni:[],history:[],sessions:[],trash:[],shotsPerRound:8,activeSessionID:null,historyStack:[],redoStack:[],viewScale:1,syncStatus:'\u672a\u540c\u671f',lastSyncTime:null,isFirebaseConnected:!0,isAdminMode:!1,autoPromotionEnabled:!0,_pendingUpdateTimers:{
+enableArrowLocation:!1,arrowTargetType:'kasumi36',activeArrowLocationEdit:null,activeGroupId:null,activeGroupName:null,publicGroupId:null,activeRole:null,myMemberId:null,myMemberName:null,activeUserEmail:null,memberAuthVersion:0,archers:[],members:[],alumni:[],history:[],sessions:[],trash:[],shotsPerRound:8,activeSessionID:null,historyStack:[],redoStack:[],viewScale:1,syncStatus:'\u672a\u540c\u671f',lastSyncTime:null,isFirebaseConnected:!0,isAdminMode:!1,autoPromotionEnabled:!0,_pendingUpdateTimers:{
 
 },showSyncErrorPopups:!0,includeInStats:!0,lastLocalChange:0,lastResetHandled:0,lastPushedTimestamp:0,showTrash:!1,sessionUnsubscribe:null,trashUnsubscribe:null,memberUnsubscribe:null,alumniUnsubscribe:null,configUnsubscribe:null,showAlumniInAnalysis:!1,showAlumniInPicker:!1,currentFreshmanTerm:1,historyViewMode:'list',selectedHistorySessionId:null,isAdminModePending:!1,isLiveActive:!1,isHost:!1,liveSessionName:null,isIncomingLiveSync:!1,liveSessionsList:[],analysisSelectedTags:[],analysisTagLogic:'AND',historySelectedTags:[],historyTagLogic:'AND',currentSessionTags:[],tagTemplates:['#\u7acb','#\u7df4\u7fd2\u8a66\u5408','#\u5927\u4f1a','#\u81ea\u4e3b\u7df4\u7fd2','#\u5408\u5bbf'],initializationLogs:[],syncIntervalId:null,lastPromotionYear:null,_pendingMemberTimers:{
 
@@ -253,7 +253,7 @@ initializationLogs:[...o,t]
 }),console.log('[Store] Loading:',t)
 },setCurrentRouteName:s=>e({
 currentRouteName:s
-}),setFocusedMemberId:s=>e({
+}),setMemberAuthVersion:s=>e({memberAuthVersion:s}),setFocusedMemberId:s=>e({
 focusedMemberId:s
 }),setShowSyncErrorPopups:s=>e({
 showSyncErrorPopups:s
@@ -642,7 +642,7 @@ lastModified:(0,a.serverTimestamp)(),syncStatus:'\u540c\u671f\u6e08\u307f'
 });
 (0,a.setDoc)((0,a.doc)(fb.db,`groups/${
 s().activeGroupId
-}/members`,m.id),o).then(()=>{
+}/members`,m.id),o).then(()=>{s().syncMemberLookup();
 e(e=>({
 members:e.members.map(e=>e.id===m.id?Object.assign({
 
@@ -772,8 +772,8 @@ s().activeGroupId?(e({
 members:s().members.filter(e=>e.id!==o),lastLocalChange:Date.now()
 }),s().activeGroupId&&(0,a.deleteDoc)((0,a.doc)(fb.db,`groups/${
 s().activeGroupId
-}/members`,o)).catch(e=>console.error('Delete Member Sync Error:',e))):n.default.alert('\u6a29\u9650\u30a8\u30e9\u30fc','\u30e1\u30f3\u30d0\u30fc\u306e\u524a\u9664\u306f\u56e3\u4f53\u30ed\u30b0\u30a4\u30f3\u6642\u306e\u307f\u53ef\u80fd\u3067\u3059\u3002')
-},ensurePersonalIds:async()=>{
+}/members`,o)).then(()=>s().syncMemberLookup()).catch(e=>console.error('Delete Member Sync Error:',e))):n.default.alert('\u6a29\u9650\u30a8\u30e9\u30fc','\u30e1\u30f3\u30d0\u30fc\u306e\u524a\u9664\u306f\u56e3\u4f53\u30ed\u30b0\u30a4\u30f3\u6642\u306e\u307f\u53ef\u80fd\u3067\u3059\u3002')
+},syncMemberLookup:async()=>{const{activeGroupId:g,activeRole:r,members:ms}=s();if(!g||'group'!==r||!fb.db)return;try{const col=(0,a.collection)(fb.db,`groups/${g}/member_lookup`);const snap=await(0,a.getDocs)(col);const want=new Map;(ms||[]).forEach(m=>{if(m&&m.id&&/^\d{4}$/.test(m.personalId||''))want.set(m.personalId,m.id)});const batch=(0,a.writeBatch)(fb.db);let n=0;snap.forEach(d=>{const w=want.get(d.id);if(!w){batch.delete(d.ref);n++}else if(d.data().memberId===w){want.delete(d.id)}});want.forEach((memberId,pid)=>{batch.set((0,a.doc)(fb.db,`groups/${g}/member_lookup`,pid),{memberId:memberId,updatedAt:Date.now()});n++});if(n>0){await batch.commit();console.log('[Store] member_lookup synced:',n)}}catch(e){console.error('[Store] syncMemberLookup error:',e)}},ensurePersonalIds:async()=>{
 const{
 members:o,alumni:i,activeGroupId:n
 }=s();
@@ -827,7 +827,7 @@ lastModified:(0,a.serverTimestamp)()
 members:c,alumni:l,lastLocalChange:Date.now()
 }),f>0&&await h.commit(),console.log(`Ensured personal IDs: Updated ${
 f
-} non-compliant IDs.`))
+} non-compliant IDs.`)),await s().syncMemberLookup()
 },recoverEmail:async(e,s,t)=>(console.log('Recover email request:',{
 groupId:e,newEmail:t
 }),{
@@ -2461,7 +2461,7 @@ i(),n()
 }
 },{
 name:'archery-score-storage',storage:(0,d.createJSONStorage)(()=>u.default),partialize:e=>({
-archers:e.archers,members:e.members,sessions:e.sessions,history:e.history,alumni:e.alumni,trash:e.trash,shotsPerRound:e.shotsPerRound,activeSessionID:e.activeSessionID,viewScale:e.viewScale,includeInStats:e.includeInStats,lastSessionTags:e.tagTemplates,currentSessionTags:e.currentSessionTags,activeGroupId:e.activeGroupId,activeGroupName:e.activeGroupName,publicGroupId:e.publicGroupId,activeRole:e.activeRole,activeUserEmail:e.activeUserEmail,myMemberId:e.myMemberId,myMemberName:e.myMemberName,analysisSelectedTags:e.analysisSelectedTags,analysisTagLogic:e.analysisTagLogic,historySelectedTags:e.historySelectedTags,historyTagLogic:e.historyTagLogic,tagTemplates:e.tagTemplates,currentFreshmanTerm:e.currentFreshmanTerm,lastPromotionYear:e.lastPromotionYear,lastSyncTime:e.lastSyncTime,isAdminMode:e.isAdminMode,autoPromotionEnabled:e.autoPromotionEnabled,analysisRankingSettings:e.analysisRankingSettings,enableArrowLocation:e.enableArrowLocation,arrowTargetType:e.arrowTargetType
+archers:e.archers,members:e.members,sessions:e.sessions,history:e.history,alumni:e.alumni,trash:e.trash,shotsPerRound:e.shotsPerRound,activeSessionID:e.activeSessionID,viewScale:e.viewScale,includeInStats:e.includeInStats,lastSessionTags:e.tagTemplates,currentSessionTags:e.currentSessionTags,activeGroupId:e.activeGroupId,activeGroupName:e.activeGroupName,publicGroupId:e.publicGroupId,activeRole:e.activeRole,activeUserEmail:e.activeUserEmail,myMemberId:e.myMemberId,myMemberName:e.myMemberName,memberAuthVersion:e.memberAuthVersion,analysisSelectedTags:e.analysisSelectedTags,analysisTagLogic:e.analysisTagLogic,historySelectedTags:e.historySelectedTags,historyTagLogic:e.historyTagLogic,tagTemplates:e.tagTemplates,currentFreshmanTerm:e.currentFreshmanTerm,lastPromotionYear:e.lastPromotionYear,lastSyncTime:e.lastSyncTime,isAdminMode:e.isAdminMode,autoPromotionEnabled:e.autoPromotionEnabled,analysisRankingSettings:e.analysisRankingSettings,enableArrowLocation:e.enableArrowLocation,arrowTargetType:e.arrowTargetType
 }),onRehydrateStorage:()=>{
 console.log('[Store] Hydration starting...');
 const e=Date.now();
