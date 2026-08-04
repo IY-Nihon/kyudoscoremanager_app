@@ -1,6 +1,7 @@
 {
   "projects": {
-    "default": "kyudoscoremanager"
+    "default": "kyudoscoremanager",
+    "stg": "kyudoscoremanager-stg"
   },
   "targets": {},
   "etags": {}
