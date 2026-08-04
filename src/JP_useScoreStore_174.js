@@ -628,7 +628,7 @@ isLiveActive:i,liveSessionName:n,shotsPerRound:c
 }=s();
 i&&n&&v(n,a,c)
 },addMember:(o,i,c,d)=>{
-if(!s().activeGroupId)return void n.default.alert('\u6a29\u9650\u30a8\u30e9\u30fc','\u30e1\u30f3\u30d0\u30fc\u306e\u8ffd\u52a0\u306f\u56e3\u4f53\u30ed\u30b0\u30a4\u30f3\u3001\u304b\u3064\u7ba1\u7406\u8005\u306e\u307f\u53ef\u80fd\u3067\u3059\u3002');
+if(!s().activeGroupId||'group'!==s().activeRole)return void n.default.alert('\u6a29\u9650\u30a8\u30e9\u30fc','\u30e1\u30f3\u30d0\u30fc\u306e\u8ffd\u52a0\u306f\u56e3\u4f53\u30ed\u30b0\u30a4\u30f3\u3001\u304b\u3064\u7ba1\u7406\u8005\u306e\u307f\u53ef\u80fd\u3067\u3059\u3002');
 const u=o?o.trim():'',m={
 id:(0,l.generateUUID)(),personalId:h(s().members,s().alumni),name:u,gender:i,grade:c,termKi:d||s().currentFreshmanTerm-(c-1),lastModified:Date.now(),syncStatus:'\u672a\u540c\u671f'
 };
@@ -653,7 +653,7 @@ syncStatus:'\u540c\u671f\u6e08\u307f'
 }).catch(e=>console.error('Add Member Sync Error:',e))
 }
 },updateMember:(o,i)=>{
-if(!s().activeGroupId)return void n.default.alert('\u6a29\u9650\u30a8\u30e9\u30fc','\u30e1\u30f3\u30d0\u30fc\u306e\u7de8\u96c6\u306f\u56e3\u4f53\u30ed\u30b0\u30a4\u30f3\u6642\u306e\u307f\u53ef\u80fd\u3067\u3059\u3002');
+if(!s().activeGroupId||'group'!==s().activeRole)return void n.default.alert('\u6a29\u9650\u30a8\u30e9\u30fc','\u30e1\u30f3\u30d0\u30fc\u306e\u7de8\u96c6\u306f\u56e3\u4f53\u30ed\u30b0\u30a4\u30f3\u6642\u306e\u307f\u53ef\u80fd\u3067\u3059\u3002');
 if(void 0!==i.grade){
 const e=new Date,s=e.getFullYear(),t=e.getMonth()+1,o=t>=4?s:s-1;
 5===Number(i.grade)?i.graduationYear=o:i.graduationYear=null
@@ -768,7 +768,7 @@ console.error('Update Member Sync Error:',e),delete p[o]
 }
 },300))
 },deleteMember:o=>{
-s().activeGroupId?(e({
+s().activeGroupId&&'group'===s().activeRole?(e({
 members:s().members.filter(e=>e.id!==o),lastLocalChange:Date.now()
 }),s().activeGroupId&&(0,a.deleteDoc)((0,a.doc)(fb.db,`groups/${
 s().activeGroupId
@@ -833,7 +833,7 @@ groupId:e,newEmail:t
 }),{
 success:!1,error:'Not implemented'
 }),addEquipment:(o,i)=>{
-if(!s().activeGroupId)return void n.default.alert('\u6a29\u9650\u30a8\u30e9\u30fc','\u9053\u5177\u7ba1\u7406\u306f\u56e3\u4f53\u30ed\u30b0\u30a4\u30f3\u6642\u306e\u307f\u53ef\u80fd\u3067\u3059\u3002');
+if(!s().activeGroupId||'group'!==s().activeRole)return void n.default.alert('\u6a29\u9650\u30a8\u30e9\u30fc','\u9053\u5177\u7ba1\u7406\u306f\u56e3\u4f53\u30ed\u30b0\u30a4\u30f3\u6642\u306e\u307f\u53ef\u80fd\u3067\u3059\u3002');
 const c=Date.now(),d=Object.assign({
 id:(0,l.generateUUID)()
 },i),u=s().members.map(e=>{
@@ -869,7 +869,7 @@ syncStatus:'\u540c\u671f\u6e08\u307f'
 }).catch(e=>console.error('Add Equipment Sync Error:',e))
 }
 },deleteEquipment:(o,i)=>{
-if(!s().activeGroupId)return void n.default.alert('\u6a29\u9650\u30a8\u30e9\u30fc','\u9053\u5177\u7ba1\u7406\u306f\u56e3\u4f53\u30ed\u30b0\u30a4\u30f3\u6642\u306e\u307f\u53ef\u80fd\u3067\u3059\u3002');
+if(!s().activeGroupId||'group'!==s().activeRole)return void n.default.alert('\u6a29\u9650\u30a8\u30e9\u30fc','\u9053\u5177\u7ba1\u7406\u306f\u56e3\u4f53\u30ed\u30b0\u30a4\u30f3\u6642\u306e\u307f\u53ef\u80fd\u3067\u3059\u3002');
 const c=Date.now(),l=s().members.map(e=>{
 if(e.id===o){
 const s=e.equipments||[];
