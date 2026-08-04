@@ -1,16 +1,18 @@
 {
   "rules": {
     "live_sessions": {
-      ".read": "true",
-      ".write": "true"
+      "$groupId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
     },
     "appData": {
       ".read": "auth != null",
       ".write": "auth != null"
     },
     "users": {
-        ".read": "auth != null",
-        ".write": "auth != null"
+      ".read": "auth != null",
+      ".write": "auth != null"
     }
   }
 }
