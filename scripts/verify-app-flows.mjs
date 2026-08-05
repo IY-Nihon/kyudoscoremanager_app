@@ -107,8 +107,15 @@ const accGet = await req(projectId, `/group_accounts/${G1}`, { token: tokG1 });
 check('REG-23', '管理者モードの照合用 get', 200, accGet.status);
 
 // ── REG-9 全体同期（複数コレクションへの一括書き込み） ────────
+// members への書き込みは updateMask を付けて特定フィールドだけ触る。
+// マスク無しの書き込みはドキュメント全体を置き換えるため、絞って読んだ
+// データをそのまま書き戻すと grade や termKi が消えてしまう。
 const batch = await Promise.all([
-  setDoc(projectId, `/groups/${G1}/members/${m0.id}`, m0.data, tokG1),
+  req(projectId, `/groups/${G1}/members/${m0.id}`, {
+    token: tokG1, method: 'PATCH',
+    body: { fields: { lastModified: { integerValue: String(stamp) } } },
+    query: '?updateMask.fieldPaths=lastModified',
+  }),
   setDoc(projectId, `/groups/${G1}/sessions/${sid}`, { id: sid, title: '一括同期', date: stamp, archers: [] }, tokG1),
 ]);
 check('REG-9', '全体同期（members と sessions へ一括）', 200, Math.max(...batch.map((b) => b.status)));
