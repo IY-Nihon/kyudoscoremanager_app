@@ -272,7 +272,7 @@ activeGroupId:null,activeGroupName:null,publicGroupId:null,activeRole:null,myMem
 configUnsubscribe:null
 }))):(e({
 activeGroupId:t,activeGroupName:c||s().activeGroupName,activeRole:o,myMemberId:a,myMemberName:l||s().myMemberName,activeUserEmail:i,publicGroupId:n||('group'===o?t:s().publicGroupId),isAdminMode:!1,isAdminModePending:!1
-}),s().listenToConfig(),s().listenToSessions(),s().listenToMembers(),s().listenToAlumni(),s().listenToTrash(),s().checkAndAutoIncrementGrades())
+}),s().listenToConfig(),s().listenToSessions(),s().listenToMembers(),s().listenToAlumni(),s().listenToTrash())
 },setAnalysisSelectedTags:s=>e({
 analysisSelectedTags:s
 }),toggleAnalysisTag:t=>{
@@ -1452,6 +1452,7 @@ activeGroupId:o
 }=s();
 if(!o)return;
 const i=new Date,n=i.getFullYear(),c=i.getMonth()+1,l=i.getDate(),d=c>4||4===c&&l>=1;
+let hasPromotionRecord=!1;
 try{
 console.log('[AutoPromotion] Fetching latest app_settings...');
 const s=await(0,a.getDoc)((0,a.doc)(fb.db,`groups/${
@@ -1461,14 +1462,33 @@ if(s.exists()){
 const t=s.data(),o={
 
 };
-'number'==typeof t.currentFreshmanTerm&&(o.currentFreshmanTerm=t.currentFreshmanTerm),Array.isArray(t.tagTemplates)&&(o.tagTemplates=t.tagTemplates),'number'==typeof t.lastPromotionYear&&(o.lastPromotionYear=t.lastPromotionYear),'boolean'==typeof t.autoPromotionEnabled&&(o.autoPromotionEnabled=t.autoPromotionEnabled),e(o)
+'number'==typeof t.currentFreshmanTerm&&(o.currentFreshmanTerm=t.currentFreshmanTerm),Array.isArray(t.tagTemplates)&&(o.tagTemplates=t.tagTemplates),'number'==typeof t.lastPromotionYear&&(hasPromotionRecord=!0,o.lastPromotionYear=t.lastPromotionYear),'boolean'==typeof t.autoPromotionEnabled&&(o.autoPromotionEnabled=t.autoPromotionEnabled),e(o)
 }
 }catch(e){
-console.error('[AutoPromotion] Failed to fetch config:',e)
+return void console.error('[AutoPromotion] Failed to fetch config:',e)
+}if(!hasPromotionRecord){
+const base=d?n:n-1;
+console.log(`[AutoPromotion] No record yet. Storing baseline year ${
+base
+} without promoting.`);
+e({
+lastPromotionYear:base
+});
+try{
+await(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
+o
+}/config`,'app_settings'),{
+lastPromotionYear:base,lastModified:(0,a.serverTimestamp)()
+},{
+merge:!0
+})
+}catch(e){
+console.error('[AutoPromotion] Failed to store baseline year:',e)
+}return
 }const{
 autoPromotionEnabled:u,lastPromotionYear:m
 }=s();
-if(u&&d&&(null===m||m<n)){
+if(u&&d&&m<n){
 console.log(`[AutoPromotion] Performing annual promotion for year ${
 n
 }...`);
