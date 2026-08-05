@@ -26,10 +26,17 @@ const { getShadowStyle } = require("./module_592");
 // 新しいお知らせを追加・変更したら、このバージョン文字列を必ず更新してください。
 // 「次のお知らせが来るまで表示しない」を選んだ端末でも、この値が変わると再度表示されます。
 // ─────────────────────────────────────────
-const NOTICE_VERSION = "2026-08-03-01";
+const NOTICE_VERSION = "2026-08-06-01";
 const STORAGE_KEY = "whatsNewDismissedVersion";
 
 const NOTICE_ITEMS = [
+  {
+    date: "2026/08/06",
+    title: "",
+    points: [
+      "不具合の修正やセキュリティの強化など、その他諸々の修正を行いました。",
+    ],
+  },
   {
     date: "2026/08/03",
     title: "ダークモードに対応しました",
