@@ -113,9 +113,17 @@
   }
 
   // ── 実行 ──────────────────────────────────────────────────────
+  // 測れなかったものは飛ばさずに「未測定」として残す。
+  // 黙って飛ばすと、部員側を1項目も見ていないのに合格と表示されてしまう。
   const results = [];
   for (const c of cases) {
-    if (c.token === null && c.name.startsWith('部員')) { continue; }   // 匿名トークンが無い場合
+    if (c.token === null && c.name.startsWith('部員')) {
+      results.push({
+        確認内容: c.name, 期待: c.expect.join(' か '), 実際: '-',
+        判定: '未測定', 備考: '匿名トークンを用意できませんでした',
+      });
+      continue;
+    }
     const status = await call(c.path, { token: c.token });
     results.push({
       確認内容: c.name,
@@ -127,6 +135,14 @@
   }
 
   // ── 書き込みの確認（拒否されるはずのものだけ。通ったら消す） ────
+  // 書き込み先の名前を __ で囲まないこと。Firestore の予約名にあたり、
+  // ルールを評価する前に 400 で弾かれて確認にならない。
+  if (STAGE === 2 && !anonToken) {
+    results.push({ 確認内容: '部員(所属未証明)：記録を書き込む', 期待: '403', 実際: '-',
+      判定: '未測定', 備考: '匿名トークンを用意できませんでした' });
+    results.push({ 確認内容: '部員：別人の memberId で所属を名乗る', 期待: '403', 実際: '-',
+      判定: '未測定', 備考: '匿名トークンを用意できませんでした' });
+  }
   if (STAGE === 2 && anonToken) {
     const probe = `/groups/${MY_GROUP}/sessions/zzz-verify-probe`;
     const st = await call(probe, {
@@ -163,6 +179,13 @@
 
   console.table(results);
   const ng = results.filter((r) => r.判定 === 'NG');
-  if (ng.length === 0) console.log(`合格：${results.length} 項目すべて想定どおりです（第${STAGE}段階）`);
-  else { console.error(`不合格：${ng.length} 項目が想定と違います`); console.table(ng); }
+  const 未測定 = results.filter((r) => r.判定 === '未測定');
+  if (ng.length) { console.error(`不合格：${ng.length} 項目が想定と違います`); console.table(ng); }
+  if (未測定.length) {
+    console.error(`測れなかった項目が ${未測定.length} 件あります。合格とは言えません。`);
+    console.table(未測定);
+  }
+  if (!ng.length && !未測定.length) {
+    console.log(`合格：${results.length} 項目すべて想定どおりです（第${STAGE}段階）`);
+  }
 })();
