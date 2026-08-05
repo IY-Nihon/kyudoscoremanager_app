@@ -2261,11 +2261,12 @@ isFirebaseConnected:a
 })
 },incrementAllGrades:async()=>{
 const{
-activeGroupId:o,members:i,alumni:c,currentFreshmanTerm:l,isFirebaseConnected:d
+activeGroupId:o,alumni:c,currentFreshmanTerm:l,isFirebaseConnected:d
 }=s();
 if(!o)return;
 const u=Date.now(),m=(new Date).getFullYear();
-if(d)try{
+if(!d)return void console.warn('[incrementAllGrades] Offline. Skipping promotion until online.');
+try{
 const s=await(0,a.getDoc)((0,a.doc)(fb.db,`groups/${
 o
 }/config`,'app_settings'));
@@ -2279,7 +2280,21 @@ lastPromotionYear:t.lastPromotionYear
 }
 }catch(e){
 return void console.error('[incrementAllGrades] Failed to re-verify settings:',e)
-}console.log('[Store] incrementAllGrades: Starting atomic promotion process...');
+}let i;
+try{
+const t=await(0,a.getDocs)((0,a.collection)(fb.db,`groups/${
+o
+}/members`));
+i=[],t.forEach(e=>i.push(Object.assign({
+
+},e.data(),{
+id:e.id
+})))
+}catch(e){
+return void console.error('[incrementAllGrades] Failed to fetch members:',e)
+}console.log(`[Store] incrementAllGrades: Starting atomic promotion process... (${
+i.length
+} members from cloud)`);
 const dropUndefined=o=>{const t={};for(const k in o)void 0!==o[k]&&(t[k]=o[k]);return t};
 const gradeOf=e=>{
 const v=e?e.grade:null;
