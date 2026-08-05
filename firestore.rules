@@ -1,9 +1,12 @@
-// 第1段階：ルールの初回適用（SEC-1 / SEC-2 / SEC-5）
+// 第2段階：匿名セッションを団体に紐づける（SEC-3 / SEC-4 / SEC-6 / SEC-7）
 //
-// このリポジトリの firestore.rules はこれまで一度も本番へ反映されておらず、
-// 本番は既定の全開状態だった（未認証で全団体の記録が読めた）。
-// まずここで「未認証を締め出す」ところまで確実に閉じる。
-// 所属団体による絞り込み（SEC-3 / SEC-4）は第2段階で入れる。
+// 部員は signInAnonymously でログインする。匿名認証は公開APIキーだけで誰でも
+// 実行できるため、request.auth != null だけでは「誰でも」とほぼ同じ。
+// そこで member_lookup（個人ID→memberId の逆引き）を直接 get させ、
+// その結果と一致する member_claims を作らせることで所属を証明させる。
+//
+// match /{document=**} は使わない。ルールは OR で合成されるため、再帰ワイルド
+// カードを残すと member_lookup の list 禁止を後から引き算できないため。
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -12,9 +15,7 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // 匿名ユーザーのトークンには email クレームが無い。
-    // 存在しないキーを直接参照すると評価エラー（＝拒否）になりうるため、
-    // 必ず in で存在確認してから読む。
+    // 匿名ユーザーには email クレームが無いので、存在確認してから読む
     function callerEmail() {
       return (signedIn() && ('email' in request.auth.token))
         ? request.auth.token.email : '';
@@ -30,49 +31,79 @@ service cloud.firestore {
       ];
     }
 
-    // 団体アカウント。
-    // ログイン処理は認証前にここからメールアドレスを引くため、get だけは公開する。
+    // 団体アカウント本人か（SEC-3）
+    function isGroupOwner(groupId) {
+      return callerEmail() != ''
+        && get(/databases/$(database)/documents/group_accounts/$(groupId)).data.email == callerEmail();
+    }
+
+    // 所属クレーム。存在しない場合 get() は null を返す
+    function claim() {
+      return get(/databases/$(database)/documents/member_claims/$(request.auth.uid));
+    }
+
+    // 所属を証明済みの部員か（SEC-4）。
+    // members に今も居ることを確認することで、退部・削除された部員のクレームを
+    // 失効させる（SEC-7）。
+    function isClaimedMember(groupId) {
+      return signedIn()
+        && claim() != null
+        && claim().data.groupId == groupId
+        && exists(/databases/$(database)/documents/groups/$(groupId)/members/$(claim().data.memberId));
+    }
+
+    function canAccess(groupId) {
+      return isGroupOwner(groupId) || isClaimedMember(groupId);
+    }
+
     match /group_accounts/{groupId} {
-      allow get: if true;
+      allow get: if true;                        // ログインは認証前に参照する
       allow list: if isAdmin();
 
-      // 新規団体登録（REG-1）。
-      // 作成直後の一般ユーザーが自分のメールで自分の団体を作る。
       allow create: if signedIn()
         && callerEmail() != ''
         && request.resource.data.email == callerEmail()
         && request.resource.data.id == groupId
         && request.resource.data.keys().hasOnly(['id', 'name', 'email', 'createdAt']);
 
-      // メールアドレス変更（REG-4）。
-      // 「今その団体のメールでログインしている本人」だけに許す。
-      // 「新しいメール == 自分」を条件に加えると、他団体のメールを自分のものへ
-      // 書き換えて団体を乗っ取れてしまうため入れない。
       allow update: if isAdmin()
         || (callerEmail() != '' && resource.data.email == callerEmail());
 
       allow delete: if isAdmin();
     }
 
-    // 団体データ。第1段階は「認証済み」まで。
-    match /groups/{groupId} {
-      allow read, write: if signedIn();
-      match /{document=**} {
-        allow read, write: if signedIn();
-      }
-    }
-
-    // 所属クレーム。第2段階で本格的に使うが、ここでも通しておく必要がある。
-    // 新しい部員ログインはログインの途中でこれを作るため、塞いだままだと
-    // 部員がログインできない。第1段階は第2段階の戻し先でもあるので、
-    // ここが通らないと戻した瞬間に部員が締め出される。
-    // 第1段階では中身の検証まではせず、本人のものだけに限る。
+    // 所属クレーム。逆引き表と memberId が一致する場合だけ作れる。
+    // つまり正しい個人IDを知っていることが条件になる。
     match /member_claims/{uid} {
-      allow read, write: if signedIn() && request.auth.uid == uid;
+      allow get, delete: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['groupId', 'memberId', 'personalId', 'claimedAt'])
+        && get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)/member_lookup/$(request.resource.data.personalId)).data.memberId
+             == request.resource.data.memberId;
     }
 
-    // お問い合わせ（REG-24）。送信のみ許可し、読み出しはクライアントから不可。
-    // 未ログインからの送信経路は存在しない（ログイン画面のお問い合わせは案内文言だけ）。
+    match /groups/{groupId} {
+      allow get: if canAccess(groupId);
+      allow create, update: if canAccess(groupId);
+      allow delete: if isGroupOwner(groupId);
+      // list は書かない。団体の一覧化を防ぐ（SEC-5）
+
+      // 個人ID→memberId の逆引き。
+      // get だけ許して list は禁止する。名簿を引けないようにするため（SEC-6）。
+      match /member_lookup/{personalId} {
+        allow get: if signedIn();
+        allow list, write: if isGroupOwner(groupId);
+      }
+
+      match /sessions/{docId}             { allow read, write: if canAccess(groupId); }
+      match /members/{docId}              { allow read, write: if canAccess(groupId); }
+      match /alumni/{docId}               { allow read, write: if canAccess(groupId); }
+      match /trash/{docId}                { allow read, write: if canAccess(groupId); }
+      match /config/{docId}               { allow read, write: if canAccess(groupId); }
+      match /officialPracticeDays/{docId} { allow read, write: if canAccess(groupId); }
+    }
+
     match /inquiries/{inquiryId} {
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly([
