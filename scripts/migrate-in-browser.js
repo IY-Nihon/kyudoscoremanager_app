@@ -15,8 +15,8 @@
  */
 (async () => {
   const PROJECT = 'kyudoscoremanager';
-  const GROUPS = ['265294', '897977', '910280'];   // 本番の3団体
   const DRY_RUN = true;                             // ← 実行するときは false にする
+  // 団体は group_accounts から取る。書き並べると、あとから増えた団体を取りこぼす。
 
   const base = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents`;
 
@@ -61,6 +61,18 @@
   const summary = [];
   let blocked = false;
   let written = 0;
+
+  // 団体の一覧を取る。第1段階のルールでは list が管理者のみなので、
+  // 取れない場合は groups の親ドキュメントから拾う。
+  let GROUPS = [];
+  try {
+    GROUPS = (await listAll('/group_accounts', ['id'])).map((d) => d.id);
+  } catch {
+    console.warn('group_accounts の一覧を取得できませんでした。groups から拾います。');
+    GROUPS = (await listAll('/groups', [])).map((d) => d.id);
+  }
+  if (!GROUPS.length) { console.error('団体が1件も見つかりません。中断します。'); return; }
+  console.log(`対象の団体（${GROUPS.length}件）: ${GROUPS.join(', ')}`);
 
   for (const gid of GROUPS) {
     const members = await listAll(`/groups/${gid}/members`, ['personalId']);
