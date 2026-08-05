@@ -213,6 +213,14 @@ return t?(!e.isSeparator&&o[e.id]&&(t.marks=f(o[e.id],s),t.lastModified=Math.max
 }
 };
 let I=!1;
+const trashedAtMillis=e=>{
+const v=e&&(e.deletedAt||e.lastModified||e.date);
+if(!v)return 0;
+if('function'==typeof v.toMillis)return v.toMillis();
+if('object'==typeof v&&null!=v.seconds)return 1e3*Number(v.seconds);
+const n=Number(v);
+return isNaN(n)?Date.parse(v)||0:n
+};
 const normalizeTag=e=>{
 if('string'!=typeof e)return'';
 let t=e.trim().replace(/^[#＃\s]+/,'');
@@ -982,7 +990,7 @@ const i=JSON.parse(JSON.stringify(Object.assign({
 },n,{
 syncStatus:'trashed'
 })));
-i.lastModified=(0,a.serverTimestamp)(),e.set((0,a.doc)(fb.db,`groups/${
+i.lastModified=(0,a.serverTimestamp)(),i.deletedAt=(0,a.serverTimestamp)(),e.set((0,a.doc)(fb.db,`groups/${
 s().activeGroupId
 }/trash`,o),i)
 }await e.commit()
@@ -2096,7 +2104,7 @@ return;
 }s().stopListeningToTrash(),console.log('[Store] Starting real-time trash listener');
 const i=(0,a.collection)(fb.db,`groups/${
 o
-}/trash`),n=(0,a.query)(i,(0,a.orderBy)('deletedAt','desc'),(0,a.limit)(50)),c=(0,a.onSnapshot)(n,t=>{
+}/trash`),n=(0,a.query)(i,(0,a.limit)(200)),c=(0,a.onSnapshot)(n,t=>{
 const o=[];
 t.forEach(e=>{
 const s=e.data();
@@ -2106,6 +2114,7 @@ o.push(Object.assign({
 id:e.id,syncStatus:'\u540c\u671f\u6e08\u307f'
 }))
 });
+o.sort((e,s)=>trashedAtMillis(s)-trashedAtMillis(e));
 const a=new Set(o.map(e=>e.id)),i=s().sessions.filter(e=>!a.has(e.id));
 e({
 trash:o,sessions:i
