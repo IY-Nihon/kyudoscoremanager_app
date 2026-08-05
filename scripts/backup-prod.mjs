@@ -144,6 +144,33 @@ for (const f of ['firestore.rules', 'database.rules.json', 'storage.rules', 'fir
   console.log(`  ${f} … 控えました`);
 }
 
+// ── 利用者アカウントと、実際に効いているインデックス ─────────────
+// ここだけは Firebase CLI が要る（REST では取れない）。
+// users.json にはパスワードのハッシュと salt が入る。取り扱いに注意。
+console.log('\n■ 利用者アカウントとインデックス');
+const { execSync } = await import('node:child_process');
+const projectFlag = TARGET === 'stg' ? 'kyudoscoremanager-stg' : PID;
+let 利用者数 = null;
+fs.mkdirSync(path.join(OUT, 'auth'), { recursive: true });
+try {
+  execSync(`npx firebase auth:export "${path.join(OUT, 'auth', 'users.json')}" --format=json --project ${projectFlag}`,
+    { stdio: 'pipe' });
+  利用者数 = (JSON.parse(fs.readFileSync(path.join(OUT, 'auth', 'users.json'), 'utf8')).users || []).length;
+  console.log(`  利用者 … ${利用者数}件（パスワードのハッシュを含むため取り扱い注意）`);
+} catch (e) {
+  失敗.push({ パス: 'auth:export', 理由: 'Firebase CLI にログインしていない可能性' });
+  console.log('  利用者 … 取得できませんでした（npx firebase login を確認してください）');
+}
+try {
+  const out = execSync(`npx firebase firestore:indexes --project ${projectFlag}`, { stdio: 'pipe' }).toString();
+  fs.writeFileSync(path.join(OUT, 'rules', 'firestore.indexes.ACTUAL.json'), out);
+  const n = (JSON.parse(out).indexes || []).length;
+  console.log(`  インデックス … ${n}件（リポジトリの firestore.indexes.json は雛形のままなので、こちらが実体）`);
+} catch {
+  失敗.push({ パス: 'firestore:indexes', 理由: '取得できませんでした' });
+  console.log('  インデックス … 取得できませんでした');
+}
+
 // ── 目録 ─────────────────────────────────────────────────────────
 const manifest = {
   取得日時: new Date().toISOString(),
@@ -151,6 +178,7 @@ const manifest = {
   Firestore: 統計,
   RTDB: Object.fromEntries(Object.entries(rtdb.live_sessions || {})
     .map(([g, v]) => [`live_sessions/${g}`, v === null ? 0 : Object.keys(v).length])),
+  利用者: 利用者数,
   失敗,
   注意: '本番のルールは全開のため未認証でも読める状態。書き戻しは同じ形を PATCH する。',
 };
