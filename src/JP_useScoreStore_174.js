@@ -2281,12 +2281,18 @@ lastPromotionYear:t.lastPromotionYear
 return void console.error('[incrementAllGrades] Failed to re-verify settings:',e)
 }console.log('[Store] incrementAllGrades: Starting atomic promotion process...');
 const dropUndefined=o=>{const t={};for(const k in o)void 0!==o[k]&&(t[k]=o[k]);return t};
-const skippedGrades=i.filter(e=>isNaN(Number(e.grade))).map(e=>e.name||e.id);
+const gradeOf=e=>{
+const v=e?e.grade:null;
+if(null==v||''===v)return NaN;
+const n=Number(v);
+return isNaN(n)?NaN:n
+};
+const skippedGrades=i.filter(e=>isNaN(gradeOf(e))).map(e=>e.name||e.id);
 if(skippedGrades.length)console.warn('[incrementAllGrades] 学年が未設定のため据え置いたメンバー:',skippedGrades);
 const p=[],h=[];
 i.forEach(e=>{
-const s=Number(e.grade);
-if(s>=5)p.push(Object.assign({
+const s=gradeOf(e);
+if(isNaN(s)||s<1||s>=5)p.push(Object.assign({
 
 },e,{
 lastModified:u,syncStatus:'\u540c\u671f\u6e08\u307f'
@@ -2299,7 +2305,7 @@ grade:5,lastModified:u,syncStatus:'\u540c\u671f\u6e08\u307f'
 else p.push(Object.assign({
 
 },e,{
-...(isNaN(s)?{}:{grade:s+1}),lastModified:u,syncStatus:'\u540c\u671f\u6e08\u307f'
+grade:s+1,lastModified:u,syncStatus:'\u540c\u671f\u6e08\u307f'
 }))
 });
 const f=(l||0)+1;
