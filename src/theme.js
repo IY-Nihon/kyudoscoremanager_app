@@ -230,8 +230,28 @@ function mapColor(value, kind) {
 let cache = new WeakMap();
 const MAPPED = Symbol('themeMapped');
 
+// 入れ子をたどる深さの上限。
+// スタイルの入れ子は shadowOffset や transform でも数段しかない。
+// これを超えるものはスタイルではない別種のオブジェクトなので、そのまま返す。
+const MAX_DEPTH = 8;
+
+/**
+ * 素のスタイルオブジェクトかどうか。
+ *
+ * style には Animated.Value のような「見た目の値ではないオブジェクト」も入る。
+ * Animated の内部は _parent と _children で相互参照しており、
+ * 何も考えずに再帰すると循環をたどり続けてスタックを使い切る
+ * （実際に外観の切替時に RangeError で画面が落ちた）。
+ * クラスのインスタンスは変換対象ではないので、素のオブジェクトだけをたどる。
+ */
+function isPlainObject(v) {
+  if (v === null || typeof v !== 'object') return false;
+  const proto = Object.getPrototypeOf(v);
+  return proto === Object.prototype || proto === null;
+}
+
 /** style（オブジェクト/配列/入れ子）を再帰的に変換する */
-function mapStyle(style) {
+function mapStyle(style, depth = 0) {
   if (!isDark() || style == null) return style;
   if (typeof style !== 'object') return style; // 登録済みIDなど
 
@@ -239,15 +259,21 @@ function mapStyle(style) {
   const hit = cache.get(style);
   if (hit) return hit;
 
+  // 想定より深い入れ子はスタイルではないとみなし、触らずに返す
+  if (depth > MAX_DEPTH) return style;
+
   let out;
   if (Array.isArray(style)) {
     let changed = false;
     const arr = style.map((s) => {
-      const m = mapStyle(s);
+      const m = mapStyle(s, depth + 1);
       if (m !== s) changed = true;
       return m;
     });
     out = changed ? arr : style;
+  } else if (!isPlainObject(style)) {
+    // Animated.Value などクラスのインスタンスは変換せずそのまま使う
+    return style;
   } else {
     let changed = false;
     const obj = {};
@@ -255,7 +281,7 @@ function mapStyle(style) {
       const v = style[k];
       let nv = v;
       if (KEY_KIND[k]) nv = mapColor(v, KEY_KIND[k]);
-      else if (v && typeof v === 'object') nv = mapStyle(v);
+      else if (Array.isArray(v) || isPlainObject(v)) nv = mapStyle(v, depth + 1);
       if (nv !== v) changed = true;
       obj[k] = nv;
     }
