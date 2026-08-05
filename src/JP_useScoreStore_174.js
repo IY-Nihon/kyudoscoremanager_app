@@ -836,46 +836,6 @@ members:c,alumni:l,lastLocalChange:Date.now()
 }),f>0&&await h.commit(),console.log(`Ensured personal IDs: Updated ${
 f
 } non-compliant IDs.`)),await s().syncMemberLookup()
-},recoverEmail:async(e,s,t)=>(console.log('Recover email request:',{
-groupId:e,newEmail:t
-}),{
-success:!1,error:'Not implemented'
-}),addEquipment:(o,i)=>{
-if(!s().activeGroupId||'group'!==s().activeRole)return void n.default.alert('\u6a29\u9650\u30a8\u30e9\u30fc','\u9053\u5177\u7ba1\u7406\u306f\u56e3\u4f53\u30ed\u30b0\u30a4\u30f3\u6642\u306e\u307f\u53ef\u80fd\u3067\u3059\u3002');
-const c=Date.now(),d=Object.assign({
-id:(0,l.generateUUID)()
-},i),u=s().members.map(e=>{
-if(e.id===o){
-const s=e.equipments||[];
-return Object.assign({
-
-},e,{
-equipments:[...s,d],lastModified:c,syncStatus:'\u672a\u540c\u671f'
-})
-}return e
-});
-e({
-members:u,lastLocalChange:c
-});
-const m=u.find(e=>e.id===o);
-if(m&&s().activeGroupId){
-const i=Object.assign({
-
-},m,{
-lastModified:(0,a.serverTimestamp)(),syncStatus:'\u540c\u671f\u6e08\u307f'
-});
-(0,a.updateDoc)((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/members`,o),i).then(()=>{
-e(e=>({
-members:e.members.map(e=>e.id===o?Object.assign({
-
-},e,{
-syncStatus:'\u540c\u671f\u6e08\u307f'
-}):e)
-}))
-}).catch(e=>console.error('Add Equipment Sync Error:',e))
-}
 },deleteEquipment:(o,i)=>{
 if(!s().activeGroupId||'group'!==s().activeRole)return void n.default.alert('\u6a29\u9650\u30a8\u30e9\u30fc','\u9053\u5177\u7ba1\u7406\u306f\u56e3\u4f53\u30ed\u30b0\u30a4\u30f3\u6642\u306e\u307f\u53ef\u80fd\u3067\u3059\u3002');
 const c=Date.now(),l=s().members.map(e=>{
@@ -1225,149 +1185,7 @@ a&&i&&v(i,o,t)
 s().syncSessions()
 },clearAllData:()=>e({
 sessions:[],members:[],history:[],alumni:[],trash:[],archers:[],activeSessionID:null
-}),importData:async t=>{
-e({
-sessions:t?.sessions||s().sessions||[],members:t?.members||s().members||[],history:t?.history||s().history||[],alumni:t?.alumni||s().alumni||[],trash:t?.trash||s().trash||[],shotsPerRound:t?.shotsPerRound||s().shotsPerRound||8
-})
-},migrateToUUIDs:async()=>{
-const{
-activeGroupId:o,members:i,alumni:c,sessions:d,trash:u,history:m
-}=s();
-if(!o)return void n.default.alert('\u30a8\u30e9\u30fc','\u56e3\u4f53\u306b\u30ed\u30b0\u30a4\u30f3\u3057\u3066\u3044\u307e\u305b\u3093\u3002');
-s().updateLoadingLog('\u30c7\u30fc\u30bf\u79fb\u884c\u3092\u958b\u59cb\u3057\u307e\u3059...');
-const p=e=>/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(e),h=new Map,f=new Map,S=i.map(e=>{
-if(!p(e.id)){
-const s=(0,l.generateUUID)();
-return h.set(e.id.toString(),s),Object.assign({
-
-},e,{
-id:s,lastModified:Date.now()
-})
-}return e
-}),b=c.map(e=>{
-if(!p(e.id)){
-const s=(0,l.generateUUID)();
-return h.set(e.id.toString(),s),Object.assign({
-
-},e,{
-id:s,lastModified:Date.now()
-})
-}return e
-}),y=e=>{
-let s=e.id;
-p(e.id)||(s=(0,l.generateUUID)(),f.set(e.id.toString(),s));
-const t=(e.archers||[]).map(e=>{
-let s=Object.assign({
-
-},e);
-return e.memberId&&h.has(e.memberId.toString())&&(s.memberId=h.get(e.memberId.toString())),p(e.id)||(s.id=(0,l.generateUUID)()),s
-});
-return Object.assign({
-
-},e,{
-id:s,archers:t,lastModified:Date.now()
-})
-},v=d.map(y),T=u.map(y),w=(m||[]).map(e=>{
-const s=(e.entries||[]).map(e=>e.memberId&&h.has(e.memberId.toString())?Object.assign({
-
-},e,{
-memberId:h.get(e.memberId.toString())
-}):e);
-return Object.assign({
-
-},e,{
-entries:s
-})
-});
-try{
-const l=[];
-i.forEach(e=>{
-const s=e.id.toString();
-h.has(s)&&l.push({
-deleteRef:(0,a.doc)(fb.db,`groups/${
-o
-}/members`,s)
-})
-}),S.forEach(e=>{
-const s=JSON.parse(JSON.stringify(e));
-l.push({
-setRef:(0,a.doc)(fb.db,`groups/${
-o
-}/members`,e.id),data:Object.assign({
-
-},s,{
-lastModified:(0,a.serverTimestamp)()
-})
-})
-}),c.forEach(e=>{
-const s=e.id.toString();
-h.has(s)&&l.push({
-deleteRef:(0,a.doc)(fb.db,`groups/${
-o
-}/alumni`,s)
-})
-}),b.forEach(e=>{
-const s=JSON.parse(JSON.stringify(e));
-l.push({
-setRef:(0,a.doc)(fb.db,`groups/${
-o
-}/alumni`,e.id),data:Object.assign({
-
-},s,{
-lastModified:(0,a.serverTimestamp)()
-})
-})
-}),d.forEach(e=>{
-const s=e.id.toString();
-f.has(s)&&l.push({
-deleteRef:(0,a.doc)(fb.db,`groups/${
-o
-}/sessions`,s)
-})
-}),v.forEach(e=>{
-const s=JSON.parse(JSON.stringify(e));
-l.push({
-setRef:(0,a.doc)(fb.db,`groups/${
-o
-}/sessions`,e.id),data:Object.assign({
-
-},s,{
-lastModified:(0,a.serverTimestamp)()
-})
-})
-}),u.forEach(e=>{
-const s=e.id.toString();
-f.has(s)&&l.push({
-deleteRef:(0,a.doc)(fb.db,`groups/${
-o
-}/trash`,s)
-})
-}),T.forEach(e=>{
-const s=JSON.parse(JSON.stringify(e));
-l.push({
-setRef:(0,a.doc)(fb.db,`groups/${
-o
-}/trash`,e.id),data:Object.assign({
-
-},s,{
-lastModified:(0,a.serverTimestamp)()
-})
-})
-});
-for(let e=0;
-e<l.length;
-e+=400){
-const s=l.slice(e,e+400),o=(0,a.writeBatch)(fb.db);
-s.forEach(e=>{
-e.deleteRef&&o.delete(e.deleteRef),e.setRef&&o.set(e.setRef,e.data)
-}),await o.commit()
-}e({
-members:S,alumni:b,sessions:v,trash:T,history:w,lastLocalChange:Date.now(),syncStatus:'\u540c\u671f\u6e08\u307f'
-}),s().updateLoadingLog('\u79fb\u884c\u304c\u5b8c\u4e86\u3057\u307e\u3057\u305f\u3002'),n.default.alert('\u5b8c\u4e86','\u3059\u3079\u3066\u306e\u30c7\u30fc\u30bf\u3092UUID\u306b\u79fb\u884c\u3057\u307e\u3057\u305f\u3002')
-}catch(e){
-console.error('Migration Error:',e),n.default.alert('\u30a8\u30e9\u30fc','\u79fb\u884c\u4e2d\u306b\u554f\u984c\u304c\u767a\u751f\u3057\u307e\u3057\u305f\u3002')
-}
-},verifyGroupPassword:async e=>{
+}),verifyGroupPassword:async e=>{
 const{
 activeUserEmail:i,activeGroupId:n,publicGroupId:c
 }=s();
@@ -1398,8 +1216,10 @@ e({
 activeGroupName:o
 });
 try{
-await(0,a.updateDoc)((0,a.doc)(fb.db,'groups',i),{
+await(0,a.setDoc)((0,a.doc)(fb.db,'groups',i),{
 groupName:o
+},{
+merge:!0
 })
 }catch(e){
 console.error('[Store] updateGroupName error:',e)
@@ -1751,61 +1571,10 @@ const c=await(0,a.getDocs)((0,a.collection)(fb.db,`groups/${
 s().activeGroupId
 }/sessions`));
 let l=[];
-if(c.forEach(e=>l.push(e.data())),console.log('[Store] Loading:',`\u30bb\u30c3\u30b7\u30e7\u30f3 ${
+c.forEach(e=>l.push(e.data())),console.log('[Store] Loading:',`\u30bb\u30c3\u30b7\u30e7\u30f3 ${
 l.length
-}\u4ef6\u3092\u53d6\u5f97\u3057\u307e\u3057\u305f`),0===l.length&&0===n.length){
-if(!fb.rtdb)return;
-const o=await(0,i.get)((0,i.ref)(fb.rtdb,'appData'));
-if(o.exists()){
-const i=o.val();
-if(i){
-const o=Array.isArray(i.members)?i.members.filter(Boolean):Object.values(i.members||{
-
-}),c=Array.isArray(i.sessions)?i.sessions.filter(Boolean):Object.values(i.sessions||{
-
-}),d=Array.isArray(i.history)?i.history.filter(Boolean):Object.values(i.history||{
-
-}),u=Array.isArray(i.alumni)?i.alumni.filter(Boolean):Object.values(i.alumni||{
-
-}),m=Array.isArray(i.trash)?i.trash.filter(Boolean):Object.values(i.trash||{
-
-});
-n=o,l=c;
-const p=e=>JSON.parse(JSON.stringify(e)),h=(0,a.writeBatch)(fb.db);
-n.forEach(e=>{
-e&&e.id&&h.set((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/members`,e.id),p(e))
-}),l.forEach(e=>{
-e&&e.id&&h.set((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/sessions`,e.id),p(e))
-}),await h.commit(),e({
-history:d,alumni:u,trash:m,shotsPerRound:i.shotsPerRound||8
-}),console.log("Migrated successfully from RTDB (Swift dataset)!")
-}
-}else if('undefined'!=typeof localStorage){
-const o=localStorage.getItem('archery-score-storage');
-if(o){
-const i=JSON.parse(o).state;
-if(i){
-n=i.members||[],l=i.sessions||[];
-const o=i.archers||[],c=i.activeSessionID||null,d=i.shotsPerRound||8,u=i.history||[],m=i.trash||[],p=i.alumni||[],h=(0,a.writeBatch)(fb.db);
-n.forEach(e=>{
-e&&e.id&&h.set((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/members`,e.id),e)
-}),l.forEach(e=>{
-e&&e.id&&h.set((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/sessions`,e.id),e)
-}),await h.commit(),e({
-archers:o,activeSessionID:c,shotsPerRound:d,history:u,trash:m,alumni:p
-}),console.log("Migrated successfully from localStorage!")
-}
-}
-}
-}const d=await(0,a.getDocs)((0,a.collection)(fb.db,`groups/${
+}\u4ef6\u3092\u53d6\u5f97\u3057\u307e\u3057\u305f`);
+const d=await(0,a.getDocs)((0,a.collection)(fb.db,`groups/${
 s().activeGroupId
 }/trash`));
 let u=[];
@@ -2304,7 +2073,7 @@ return isNaN(n)?NaN:n
 };
 const skippedGrades=i.filter(e=>isNaN(gradeOf(e))).map(e=>e.name||e.id);
 if(skippedGrades.length)console.warn('[incrementAllGrades] 学年が未設定のため据え置いたメンバー:',skippedGrades);
-const p=[],h=[];
+const p=[];
 i.forEach(e=>{
 const s=gradeOf(e);
 if(isNaN(s)||s<1||s>=5)p.push(Object.assign({
@@ -2355,7 +2124,7 @@ merge:!0
 }console.log('[Store] incrementAllGrades: Cloud sync successful.')
 }catch(e){
 return console.error('[incrementAllGrades] Cloud sync failed:',e),void n.default.alert('\u9032\u7d1a\u51e6\u7406\u30a8\u30e9\u30fc','\u30af\u30e9\u30a6\u30c9\u3068\u306e\u540c\u671f\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002\u6642\u9593\u3092\u304a\u3044\u3066\u518d\u5ea6\u304a\u8a66\u3057\u304f\u3060\u3055\u3044\u3002')
-}const S=[...c,...h];
+}const S=c;
 e({
 members:p,alumni:S,currentFreshmanTerm:f,lastPromotionYear:m,lastLocalChange:u,lastSyncTime:u
 }),console.log('[Store] incrementAllGrades: Promotion process completed.')
@@ -2403,43 +2172,6 @@ archers:[],marks_by_id:{
 }).catch(e=>console.error('Reset Live Sync Error:',e)),e({
 lastPushedTimestamp:a
 })
-}
-},migrateToGroup:async e=>{
-if(!s().isFirebaseConnected)return{
-success:!1,error:'\u30aa\u30d5\u30e9\u30a4\u30f3\u306e\u305f\u3081\u5b9f\u884c\u3067\u304d\u307e\u305b\u3093'
-};
-console.log('[Store] Loading:','\u53e4\u3044\u30c7\u30fc\u30bf\u304b\u3089\u306e\u79fb\u884c\u3092\u958b\u59cb...');
-try{
-const s=['members','sessions','alumni','trash'];
-for(const o of s){
-const s=(0,a.collection)(fb.db,`groups/${
-e
-}/${
-o
-}`),i=await(0,a.getDocs)(s);
-if(!i.empty){
-const s=(0,a.writeBatch)(fb.db);
-i.forEach(i=>{
-const n=i.data();
-s.set((0,a.doc)(fb.db,`groups/${
-e
-}/${
-o
-}`,i.id),n)
-}),await s.commit()
-}
-}const o=(0,a.doc)(fb.db,`groups/${
-e
-}/config/term`),i=await(0,a.getDoc)(o);
-return i.exists()&&await(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
-e
-}/config/term`),i.data()),console.log('[Store] Loading:','\u79fb\u884c\u304c\u5b8c\u4e86\u3057\u307e\u3057\u305f'),console.log('[Migration] Successfully checked/migrated groups/'),{
-success:!0
-}
-}catch(e){
-return console.error('Migration Error:',e),{
-success:!1,error:e.message||'\u30c7\u30fc\u30bf\u79fb\u884c\u306b\u5931\u6557\u3057\u307e\u3057\u305f'
-}
 }
 },recoverPassword:async e=>{
 if(!s().isFirebaseConnected)return{
