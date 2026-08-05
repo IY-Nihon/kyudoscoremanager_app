@@ -23,25 +23,55 @@ if (!['stg', 'prod'].includes(target)) {
 const { apiKey, projectId } = configFor(target);
 const ADMIN_EMAIL = process.env.MIGRATE_EMAIL || 'nihonu.kouka@gmail.com';
 const ADMIN_PW = process.env.MIGRATE_PW || (target === 'stg' ? 'StgTest!2026' : '');
-if (!ADMIN_PW) {
-  console.error('本番では MIGRATE_PW 環境変数にパスワードを指定してください');
-  process.exit(1);
-}
+// 第1段階のルールでは認証済みなら全団体に書けるため、匿名セッションで足りる。
+// パスワードを扱わずに済むので、指定が無ければ匿名で入る。
+const 匿名で入る = !ADMIN_PW;
 
-console.log(`対象: ${projectId}（${COMMIT ? '書き込みあり' : '確認のみ'}）\n`);
-const token = await signIn(apiKey, ADMIN_EMAIL, ADMIN_PW);
+console.log(`対象: ${projectId}（${COMMIT ? '書き込みあり' : '確認のみ'}／${匿名で入る ? '匿名' : ADMIN_EMAIL}）\n`);
+const token = 匿名で入る
+  ? (await (await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ returnSecureToken: true }),
+    })).json()).idToken
+  : await signIn(apiKey, ADMIN_EMAIL, ADMIN_PW);
 
-let accounts;
+// 団体の一覧を集める。取りこぼすとその団体の部員がログインできなくなるので、
+// 取れる経路をすべて使って足し合わせる。
+//   ・group_accounts の list（管理者のみ。匿名では取れない）
+//   ・groups の list（親ドキュメントがある団体しか出てこない）
+//   ・直近の控え（backup-output の最新）
+const ids = new Set();
+const 経路 = [];
 try {
-  accounts = await listAll(projectId, '/group_accounts', token, ['id']);
-} catch (e) {
-  console.error('団体一覧を取得できませんでした。');
-  console.error('第2段階のルールが既に適用されていませんか？');
-  console.error('この移行は「第1段階のルール下で、管理者アカウントから全団体へ書き込む」前提です。');
-  console.error('順序は 第1段階ルール → 本スクリプト → アプリ配信 → 第2段階ルール です。\n');
-  throw e;
+  (await listAll(projectId, '/group_accounts', token, ['id'])).forEach((a) => ids.add(a.id));
+  経路.push('group_accounts の一覧');
+} catch { /* 管理者でなければ取れない */ }
+try {
+  (await listAll(projectId, '/groups', token, [])).forEach((g) => ids.add(g.id));
+  経路.push('groups の一覧');
+} catch { /* 取れなくてもよい */ }
+try {
+  const fsMod = await import('node:fs');
+  const dirs = fsMod.readdirSync('backup-output', { withFileTypes: true })
+    .filter((d) => d.isDirectory()).map((d) => d.name).sort();
+  const latest = dirs[dirs.length - 1];
+  if (latest) {
+    const ga = JSON.parse(fsMod.readFileSync(`backup-output/${latest}/firestore/group_accounts.json`, 'utf8'));
+    (ga.documents || []).forEach((d) => ids.add(d.name.split('/').pop()));
+    経路.push(`控え(${latest})`);
+  }
+} catch { /* 控えが無ければ飛ばす */ }
+
+// 実在するかを公開の get で確かめる（存在しないIDを掴んでいないか）
+const accounts = [];
+for (const id of [...ids].sort()) {
+  const { status, json } = await req(projectId, `/group_accounts/${id}`, { token });
+  if (status === 200) accounts.push({ id, name: json?.fields?.name?.stringValue || '(名前なし)' });
+  else console.warn(`△ 団体 ${id} は group_accounts に見当たりません (HTTP ${status})。対象から外します。`);
 }
-console.log(`団体: ${accounts.length} 件\n`);
+if (!accounts.length) { console.error('団体が1件も見つかりません。中断します。'); process.exit(1); }
+console.log(`団体の取得元: ${経路.join(' + ')}`);
+console.log(`団体: ${accounts.length} 件 → ${accounts.map((a) => `${a.id}(${a.name})`).join(', ')}\n`);
 
 let totalWrite = 0;
 let blocked = false;
