@@ -2251,6 +2251,9 @@ lastPromotionYear:t.lastPromotionYear
 }catch(e){
 return void console.error('[incrementAllGrades] Failed to re-verify settings:',e)
 }console.log('[Store] incrementAllGrades: Starting atomic promotion process...');
+const dropUndefined=o=>{const t={};for(const k in o)void 0!==o[k]&&(t[k]=o[k]);return t};
+const skippedGrades=i.filter(e=>isNaN(Number(e.grade))).map(e=>e.name||e.id);
+if(skippedGrades.length)console.warn('[incrementAllGrades] 学年が未設定のため据え置いたメンバー:',skippedGrades);
 const p=[],h=[];
 i.forEach(e=>{
 const s=Number(e.grade);
@@ -2267,7 +2270,7 @@ grade:5,lastModified:u,syncStatus:'\u540c\u671f\u6e08\u307f'
 else p.push(Object.assign({
 
 },e,{
-grade:isNaN(s)?e.grade:s+1,lastModified:u,syncStatus:'\u540c\u671f\u6e08\u307f'
+...(isNaN(s)?{}:{grade:s+1}),lastModified:u,syncStatus:'\u540c\u671f\u6e08\u307f'
 }))
 });
 const f=(l||0)+1;
@@ -2277,11 +2280,11 @@ p.forEach(s=>{
 e.push({
 type:'set',ref:(0,a.doc)(fb.db,`groups/${
 o
-}/members`,s.id),data:Object.assign({
+}/members`,s.id),data:dropUndefined(Object.assign({
 
 },s,{
 lastModified:(0,a.serverTimestamp)()
-})
+}))
 })
 }),e.push({
 type:'set',ref:(0,a.doc)(fb.db,`groups/${
