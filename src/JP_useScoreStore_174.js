@@ -213,6 +213,16 @@ return t?(!e.isSeparator&&o[e.id]&&(t.marks=f(o[e.id],s),t.lastModified=Math.max
 }
 };
 let I=!1;
+// Firestore は undefined を受け付けないので、書き込む前に取り除く。
+// 日時が入れ物の形にならないよう、JSON を経由しないで写す。
+const dropUndefinedDeep=e=>{
+if(Array.isArray(e))return e.map(dropUndefinedDeep);
+if(e&&'object'==typeof e&&Object.getPrototypeOf(e)===Object.prototype){
+const s={};
+for(const t in e)void 0!==e[t]&&(s[t]=dropUndefinedDeep(e[t]));
+return s
+}return e
+};
 const trashedAtMillis=e=>{
 const v=e&&(e.deletedAt||e.lastModified||e.date);
 if(!v)return 0;
@@ -238,7 +248,7 @@ let i='function'==typeof o?o(s()):o;
 i&&(i.sessions&&(i.sessions=cleanUpSessions(i.sessions)),i.trash&&(i.trash=cleanUpSessions(i.trash))),t(i)
 };
 return{
-enableArrowLocation:!1,arrowTargetType:'kasumi36',activeArrowLocationEdit:null,activeGroupId:null,activeGroupName:null,publicGroupId:null,activeRole:null,myMemberId:null,myMemberName:null,activeUserEmail:null,memberAuthVersion:0,archers:[],members:[],alumni:[],history:[],sessions:[],trash:[],shotsPerRound:8,activeSessionID:null,historyStack:[],redoStack:[],viewScale:1,syncStatus:'\u672a\u540c\u671f',lastSyncTime:null,isFirebaseConnected:!0,isAdminMode:!1,autoPromotionEnabled:!0,_pendingUpdateTimers:{
+enableArrowLocation:!1,arrowTargetType:'kasumi36',activeArrowLocationEdit:null,activeGroupId:null,activeGroupName:null,publicGroupId:null,activeRole:null,myMemberId:null,myMemberName:null,activeUserEmail:null,memberAuthVersion:0,archers:[],members:[],alumni:[],history:[],sessions:[],trash:[],shotsPerRound:8,activeSessionID:null,historyStack:[],redoStack:[],viewScale:1,syncStatus:'\u672a\u540c\u671f',lastSyncTime:null,offlineSaveWarning:null,isFirebaseConnected:!0,isAdminMode:!1,autoPromotionEnabled:!0,_pendingUpdateTimers:{
 
 },showSyncErrorPopups:!0,includeInStats:!0,lastLocalChange:0,lastResetHandled:0,lastPushedTimestamp:0,showTrash:!1,sessionUnsubscribe:null,trashUnsubscribe:null,memberUnsubscribe:null,alumniUnsubscribe:null,configUnsubscribe:null,showAlumniInAnalysis:!1,showAlumniInPicker:!1,currentFreshmanTerm:1,historyViewMode:'list',selectedHistorySessionId:null,isAdminModePending:!1,isLiveActive:!1,isHost:!1,liveSessionName:null,isIncomingLiveSync:!1,liveSessionsList:[],analysisSelectedTags:[],analysisTagLogic:'AND',historySelectedTags:[],historyTagLogic:'AND',currentSessionTags:[],tagTemplates:['#\u7acb','#\u7df4\u7fd2\u8a66\u5408','#\u5927\u4f1a','#\u81ea\u4e3b\u7df4\u7fd2','#\u5408\u5bbf'],initializationLogs:[],syncIntervalId:null,lastPromotionYear:null,_pendingMemberTimers:{
 
@@ -945,11 +955,14 @@ archers:o.archers,shotsPerRound:o.shotCount,activeSessionID:o.id,historyStack:[]
 })
 },deleteSession:async o=>{
 const i=Array.isArray(s().sessions)?s().sessions:[],n=i.find(e=>e&&e.id===o),c=i.filter(e=>e&&e.id!==o);
+// 送信が済むまでは「未同期」にしておく。こうしないと、通信できない
+// ときに削除がクラウドへ届かないまま消し込まれ、次の全件取得で
+// 記録が復活しゴミ箱からも消えてしまう。
 e(n?{
 sessions:c,trash:[...s().trash,Object.assign({
 
 },n,{
-syncStatus:'trashed'
+syncStatus:'未同期'
 })]
 }:{
 sessions:c
@@ -1020,7 +1033,7 @@ e({
 sessions:n,trash:[...s().trash,...i.map(e=>Object.assign({
 
 },e,{
-syncStatus:'trashed'
+syncStatus:'未同期'
 }))]
 });
 try{
@@ -1046,7 +1059,10 @@ if(!n)return;
 const c=Object.assign({
 
 },n,{
-syncStatus:'synced'
+// 送信が済むまでは「未同期」にしておく。こうしないと、通信できない
+// ときに復元がクラウドへ届かないまま同期済み扱いになり、次の全件取得
+// でゴミ箱へ戻ってしまう。
+syncStatus:'未同期'
 }),l=Array.isArray(s().sessions)?s().sessions:[];
 e({
 trash:i.filter(e=>e&&e.id!==o),sessions:[c,...l]
@@ -1068,7 +1084,7 @@ if(!o||0===o.length)return;
 const i=s().trash||[],n=i.filter(e=>o.includes(e.id)),c=i.filter(e=>!o.includes(e.id)),l=n.map(e=>Object.assign({
 
 },e,{
-syncStatus:'synced'
+syncStatus:'未同期'
 }));
 e({
 trash:c,sessions:[...l,...s().sessions]
@@ -1196,7 +1212,27 @@ isLiveActive:a,liveSessionName:i
 }=s();
 a&&i&&v(i,o,t)
 },loadData:()=>{
-s().syncSessions()
+s().checkOfflineSave(),s().syncSessions()
+},
+// オフライン保存が効いているかを確かめ、効いていなければ画面に出す文言を持たせる。
+// 効いていない状態で電波の無い場所で保存すると、画面を閉じた時点で
+// 送信待ちごと記録が失われるため、黙って進ませない。
+checkOfflineSave:async()=>{
+try{
+await waitForDb();
+const o=require("./db_178").persistence||{
+
+};
+if('ok'===o.state||'pending'===o.state)return void(s().offlineSaveWarning&&e({
+offlineSaveWarning:null
+}));
+const i='multipleTabs'===o.state?'この記録画面が複数のタブで開かれているため、電波の無い場所での保存が保護されません。他のタブを閉じて開き直してください。':'このブラウザでは電波の無い場所での保存が保護されません。通信できる場所で保存してください。';
+console.warn('[Store] オフライン保存が無効です:',o),e({
+offlineSaveWarning:i
+})
+}catch(o){
+console.warn('[Store] オフライン保存の確認に失敗:',o)
+}
 },clearAllData:()=>e({
 sessions:[],members:[],history:[],alumni:[],trash:[],archers:[],activeSessionID:null
 }),verifyGroupPassword:async e=>{
@@ -1424,7 +1460,10 @@ w.sort((e,s)=>{
 const t=e.date?new Date(e.date).getTime():0;
 return(s.date?new Date(s.date).getTime():0)-t
 });
-const $=new Set(M.map(e=>e.id)),N=w.filter(e=>!$.has(e.id)),P=N.filter(e=>'\u672a\u540c\u671f'===e.syncStatus);
+// \u623b\u3057\u305f\u8a18\u9332\u304c\u307e\u3060\u30af\u30e9\u30a6\u30c9\u3078\u5c4a\u3044\u3066\u3044\u306a\u3044\u3068\u304d\u306f\u3001\u30af\u30e9\u30a6\u30c9\u5074\u306e\u30b4\u30df\u7bb1\u306e
+// \u5199\u3057\u3067\u6d88\u3057\u8fbc\u307e\u306a\u3044\u3002\u5c4a\u304f\u307e\u3067\u306f\u624b\u5143\u306e\u300c\u623b\u3057\u305f\u300d\u72b6\u614b\u3092\u512a\u5148\u3059\u308b\u3002
+const \u5fa9\u5143\u5f85\u3061=new Set(w.filter(e=>e&&'\u672a\u540c\u671f'===e.syncStatus).map(e=>e.id)),\u3054\u307f\u7bb1=M.filter(e=>e&&!\u5fa9\u5143\u5f85\u3061.has(e.id));
+const $=new Set(\u3054\u307f\u7bb1.map(e=>e.id)),N=w.filter(e=>!$.has(e.id)),P=N.filter(e=>'\u672a\u540c\u671f'===e.syncStatus);
 let k=N;
 if(P.length>0){
 console.log(`[syncSessions] Syncing ${
@@ -1443,15 +1482,52 @@ s().activeGroupId
 
 },n,{
 lastModified:(0,a.serverTimestamp)()
-}))
+})),
+// 戻した記録なら、クラウドのゴミ箱からも取り下げる。存在しない場合は
+// 何も起きないので、新規の記録に対しても安全。
+e.delete((0,a.doc)(fb.db,`groups/${
+s().activeGroupId
+}/trash`,i.id))
 }),await e.commit(),k=k.map(e=>P.find(s=>s.id===e.id)?Object.assign({
 
 },e,{
 syncStatus:'\u540c\u671f\u6e08\u307f',lastModified:o
 }):e)
 }
+// \u9001\u4fe1\u304c\u6e08\u3093\u3067\u3044\u306a\u3044\u524a\u9664\u3092\u9001\u308a\u76f4\u3059\u3002\u901a\u4fe1\u3067\u304d\u306a\u3044\u3068\u304d\u306b\u524a\u9664\u3057\u305f\u5834\u5408\u3001
+// \u5f85\u3061\u884c\u5217\u3054\u3068\u5931\u308f\u308c\u308b\u3053\u3068\u304c\u3042\u308a\u3001\u305d\u306e\u307e\u307e\u3060\u3068\u6b21\u306e\u5168\u4ef6\u53d6\u5f97\u3067\u8a18\u9332\u304c
+// \u5fa9\u6d3b\u3057\u3066\u3057\u307e\u3046\u3002
+let Z=\u3054\u307f\u7bb1;
+const Y=\u3054\u307f\u7bb1.filter(e=>e&&e.id&&'\u672a\u540c\u671f'===e.syncStatus);
+if(Y.length>0){
+console.log(`[syncSessions] Syncing ${
+Y.length
+} pending deletions...`);
+try{
+const e=(0,a.writeBatch)(fb.db),o=Date.now();
+Y.forEach(t=>{
+e.delete((0,a.doc)(fb.db,`groups/${
+s().activeGroupId
+}/sessions`,t.id));
+const i=dropUndefinedDeep(Object.assign({
+
+},t,{
+syncStatus:'trashed'
+}));
+i.lastModified=(0,a.serverTimestamp)(),i.deletedAt=i.deletedAt||(0,a.serverTimestamp)(),e.set((0,a.doc)(fb.db,`groups/${
+s().activeGroupId
+}/trash`,t.id),i)
+}),await e.commit(),Z=M.map(e=>Y.find(s=>s.id===e.id)?Object.assign({
+
+},e,{
+syncStatus:'\u540c\u671f\u6e08\u307f'
+}):e)
+}catch(t){
+console.error('[syncSessions] \u524a\u9664\u306e\u9001\u308a\u76f4\u3057\u306b\u5931\u6557:',t)
+}
+}
 e({
-sessions:k,members:O,trash:M,alumni:G,syncStatus:'\u540c\u671f\u6e08\u307f',lastSyncTime:h
+sessions:k,members:O,trash:Z,alumni:G,syncStatus:'\u540c\u671f\u6e08\u307f',lastSyncTime:h
 }),console.log(`[syncSessions] Finished. New lastSyncTime: ${
 h
 }`),setTimeout(()=>{
@@ -1606,8 +1682,13 @@ if(h.exists()){
 const e=h.data();
 e&&(void 0!==e.currentFreshmanTerm&&(f=e.currentFreshmanTerm),void 0!==e.tagTemplates&&(S=e.tagTemplates),void 0!==e.lastPromotionYear&&(b=e.lastPromotionYear))
 }const v=y(s().sessions,l,!1,!0),T=y(s().members,n,!1,!0),w=y(s().trash,u,!1,!0);
+// ゴミ箱に入っているものは履歴に出さない。削除がまだクラウドへ届いて
+// いないとき、ここで書き戻すと記録が復活してしまう。
+// 逆に、戻したばかりでまだ送信できていない記録は、クラウドのゴミ箱の
+// 写しがあってもゴミ箱に入れ直さない。
+const 復元待ち=new Set(v.filter(e=>e&&'未同期'===e.syncStatus).map(e=>e.id)),ごみ箱=w.filter(e=>e&&!復元待ち.has(e.id)),I=new Set(ごみ箱.map(e=>e.id)),M=v.filter(e=>e&&!I.has(e.id));
 e({
-members:T,sessions:v,trash:w,alumni:y(s().alumni,p,!1,!0),currentFreshmanTerm:f,tagTemplates:S,lastPromotionYear:b,syncStatus:'\u540c\u671f\u6e08\u307f',lastSyncTime:Date.now()
+members:T,sessions:M,trash:ごみ箱,alumni:y(s().alumni,p,!1,!0),currentFreshmanTerm:f,tagTemplates:S,lastPromotionYear:b,syncStatus:'\u540c\u671f\u6e08\u307f',lastSyncTime:Date.now()
 }),console.log('[Store] Loading:','\u540c\u671f\u304c\u5b8c\u4e86\u3057\u307e\u3057\u305f')
 }catch(s){
 console.error('Fetch Overwrite Error:',s),e({
@@ -1914,7 +1995,7 @@ const s=e.data();
 o.push(Object.assign({
 
 },s,{
-id:e.id,syncStatus:'\u540c\u671f\u6e08\u307f'
+id:e.id,syncStatus:e.metadata&&e.metadata.hasPendingWrites?'\u672a\u540c\u671f':'\u540c\u671f\u6e08\u307f'
 }))
 });
 o.sort((e,s)=>trashedAtMillis(s)-trashedAtMillis(e));
