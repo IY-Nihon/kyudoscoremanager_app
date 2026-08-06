@@ -22,18 +22,32 @@ _e.auth = b;
 _e.rtdb = l;
 console.log('[db_178] exports.db set:', _e.db ? 'OK' : 'FAILED');
 
+// オフライン保存が効いているか。効いていないと、電波の無い場所で保存した
+// 記録は、画面を閉じた時点で送信待ちごと失われる。画面に出すために持つ。
+// 'ok' / 'multipleTabs' / 'unsupported' / 'error' のいずれか。
+_e.persistence = { state: 'pending', code: null };
+
 // Firestore オフライン永続化の有効化（exports設定後に非同期実行）
 _e.dbReady = (async () => {
   if (typeof window !== 'undefined') {
     try {
       await (0, n.enableIndexedDbPersistence)(s);
+      _e.persistence = { state: 'ok', code: null };
     } catch (err) {
-      if (err.code == 'failed-precondition') {
+      const code = err && err.code;
+      if (code == 'failed-precondition') {
         console.warn('[Firestore] Persistence failed: Multiple tabs open');
-      } else if (err.code == 'unimplemented') {
+        _e.persistence = { state: 'multipleTabs', code };
+      } else if (code == 'unimplemented') {
         console.warn('[Firestore] Persistence unimplemented in this browser');
+        _e.persistence = { state: 'unsupported', code };
+      } else {
+        console.warn('[Firestore] Persistence failed:', err);
+        _e.persistence = { state: 'error', code: code || null };
       }
     }
+  } else {
+    _e.persistence = { state: 'ok', code: null };
   }
   return s;
 })();
