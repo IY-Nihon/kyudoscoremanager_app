@@ -248,7 +248,7 @@ let i='function'==typeof o?o(s()):o;
 i&&(i.sessions&&(i.sessions=cleanUpSessions(i.sessions)),i.trash&&(i.trash=cleanUpSessions(i.trash))),t(i)
 };
 return{
-enableArrowLocation:!1,arrowTargetType:'kasumi36',activeArrowLocationEdit:null,activeGroupId:null,activeGroupName:null,publicGroupId:null,activeRole:null,myMemberId:null,myMemberName:null,activeUserEmail:null,memberAuthVersion:0,archers:[],members:[],alumni:[],history:[],sessions:[],trash:[],shotsPerRound:8,activeSessionID:null,historyStack:[],redoStack:[],viewScale:1,syncStatus:'\u672a\u540c\u671f',lastSyncTime:null,offlineSaveWarning:null,isFirebaseConnected:!0,isAdminMode:!1,autoPromotionEnabled:!0,_pendingUpdateTimers:{
+enableArrowLocation:!1,arrowTargetType:'kasumi36',activeArrowLocationEdit:null,activeGroupId:null,activeGroupName:null,publicGroupId:null,activeRole:null,myMemberId:null,myMemberName:null,activeUserEmail:null,memberAuthVersion:0,archers:[],members:[],alumni:[],history:[],sessions:[],trash:[],shotsPerRound:8,activeSessionID:null,historyStack:[],redoStack:[],viewScale:1,syncStatus:'\u672a\u540c\u671f',lastSyncTime:null,offlineSaveWarning:null,isNetworkOnline:!0,isAdminMode:!1,autoPromotionEnabled:!0,_pendingUpdateTimers:{
 
 },showSyncErrorPopups:!0,includeInStats:!0,lastLocalChange:0,lastResetHandled:0,lastPushedTimestamp:0,showTrash:!1,sessionUnsubscribe:null,trashUnsubscribe:null,memberUnsubscribe:null,alumniUnsubscribe:null,configUnsubscribe:null,showAlumniInAnalysis:!1,showAlumniInPicker:!1,currentFreshmanTerm:1,historyViewMode:'list',selectedHistorySessionId:null,isAdminModePending:!1,isLiveActive:!1,isHost:!1,liveSessionName:null,isIncomingLiveSync:!1,liveSessionsList:[],analysisSelectedTags:[],analysisTagLogic:'AND',historySelectedTags:[],historyTagLogic:'AND',currentSessionTags:[],tagTemplates:['#\u7acb','#\u7df4\u7fd2\u8a66\u5408','#\u5927\u4f1a','#\u81ea\u4e3b\u7df4\u7fd2','#\u5408\u5bbf'],initializationLogs:[],syncIntervalId:null,lastPromotionYear:null,_pendingMemberTimers:{
 
@@ -306,7 +306,7 @@ e({
 analysisRankingSettings:l,lastLocalChange:n
 });
 const{
-activeGroupId:d,isFirebaseConnected:u
+activeGroupId:d,isNetworkOnline:u
 }=s();
 if(u&&d)try{
 await(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
@@ -346,7 +346,7 @@ e({
 tagTemplates:r,lastLocalChange:i
 });
 const{
-activeGroupId:n,isFirebaseConnected:c
+activeGroupId:n,isNetworkOnline:c
 }=s();
 if(c&&n)try{
 await(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
@@ -368,7 +368,7 @@ e({
 tagTemplates:c,lastLocalChange:n
 });
 const{
-activeGroupId:l,isFirebaseConnected:d
+activeGroupId:l,isNetworkOnline:d
 }=s();
 if(d&&l)try{
 await(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
@@ -388,7 +388,7 @@ e({
 tagTemplates:n,lastLocalChange:i
 });
 const{
-activeGroupId:c,isFirebaseConnected:l
+activeGroupId:c,isNetworkOnline:l
 }=s();
 if(l&&c)try{
 await(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
@@ -986,13 +986,16 @@ console.error('Delete Session Error:',e)
 }
 },emptyTrash:async()=>{
 const{
-trash:o,isFirebaseConnected:i,activeGroupId:n
+trash:o,activeGroupId:n
 }=s();
 if(!o||0===o.length)return;
 const c=o.map(e=>e.id);
+// 通信できるかで送信を止めない。止めると手元からだけ消えて、クラウドの
+// ゴミ箱は残り、次の全件取得で消したはずのものが戻ってきてしまう。
+// 通信できないときは Firestore の待ち行列に入り、つながった時点で送られる。
 if(console.log('[Store] Emptying trash:',c.length,'items'),e({
 trash:[]
-}),i&&n)try{
+}),n)try{
 const e=(0,a.writeBatch)(fb.db);
 c.forEach(s=>{
 e.delete((0,a.doc)(fb.db,`groups/${
@@ -1005,15 +1008,16 @@ console.error('[Store] Error emptying cloud trash:',e)
 },deleteTrashItems:async o=>{
 if(o&&0!==o.length)try{
 const{
-trash:i,isFirebaseConnected:n,activeGroupId:c
+trash:i,activeGroupId:c
 }=s();
 console.log('[Store] Deleting trash items:',o),c&&console.log(`[Store] Target Firestore path: groups/${
 c
 }/trash/`);
 const l=(i||[]).filter(e=>e&&!o.includes(e.id));
+// emptyTrash と同じ理由で、通信できるかでは止めない
 if(e({
 trash:l
-}),n&&c){
+}),c){
 const e=(0,a.writeBatch)(fb.db);
 let s=0;
 o.forEach(o=>{
@@ -1021,9 +1025,7 @@ o&&(e.delete((0,a.doc)(fb.db,`groups/${
 c
 }/trash`,o)),s++)
 }),s>0&&(await e.commit(),console.log('[Store] Successfully deleted trash items from cloud'))
-}else console.warn('[Store] Skipping cloud deletion:',{
-isFirebaseConnected:n,activeGroupId:c
-})
+}else console.warn('[Store] Skipping cloud deletion: activeGroupId が無い')
 }catch(e){
 console.error('[Store] Delete trash items error:',e)
 }else console.warn('[Store] deleteTrashItems called with no IDs')
@@ -1109,31 +1111,23 @@ const n=s().sessions||[],c=n.findIndex(e=>e&&e.id===o);
 if(-1===c)return;
 const l=n[c];
 if('member'===s().activeRole&&i.archers&&i.archers.length<l.archers.length)return void console.warn('[updateSession] Prevented accidental data stripping in member mode');
+// 送信が済むまでは「未同期」にしておく。こうしないと、通信できない
+// ときに編集がクラウドへ届かないまま同期済み扱いになり、他の記録が
+// 更新された拍子にクラウドの古い写しで上書きされて編集が消える。
 const d=Object.assign({
 
 },n[c],i,{
-lastModified:Date.now()
+lastModified:Date.now(),syncStatus:'未同期'
 }),u=[...n];
 u[c]=d,e({
 sessions:u
 });
 const m=s().activeGroupId;
-if(!m||!s().isFirebaseConnected)return;
+if(!m)return;
 s()._pendingUpdateTimers[o]&&clearTimeout(s()._pendingUpdateTimers[o]);
-const p=setTimeout(async()=>{
-try{
-const e=s().sessions.find(e=>e&&e.id===o);
-if(e){
-const s=JSON.parse(JSON.stringify(e));
-s.lastModified=(0,a.serverTimestamp)(),await(0,a.updateDoc)((0,a.doc)(fb.db,`groups/${
-m
-}/sessions`,o),s),console.log(`[Store] Debounced sync finished for ${
-o
-}`)
-}
-}catch(e){
-console.error('Update Session Sync Error:',e)
-}finally{
+const p=setTimeout(()=>{
+// タイマーの控えは先に片付ける。通信できないと送信は終わらないので、
+// 送信の完了を待って片付けると残り続けてしまう。
 e(e=>{
 const s=Object.assign({
 
@@ -1141,8 +1135,27 @@ const s=Object.assign({
 return delete s[o],{
 _pendingUpdateTimers:s
 }
+});
+const t=s().sessions.find(e=>e&&e.id===o);
+if(!t)return;
+const n=JSON.parse(JSON.stringify(t));
+// 送信の完了は待たない。通信できないときは Firestore の待ち行列に
+// 入り、つながった時点で送られる。
+n.lastModified=(0,a.serverTimestamp)(),(0,a.updateDoc)((0,a.doc)(fb.db,`groups/${
+m
+}/sessions`,o),n).then(()=>{
+console.log(`[Store] Debounced sync finished for ${
+o
+}`),e(e=>({
+sessions:e.sessions.map(e=>e&&e.id===o?Object.assign({
+
+},e,{
+syncStatus:'同期済み'
+}):e)
+}))
+}).catch(e=>{
+console.error('Update Session Sync Error:',e)
 })
-}
 },800);
 e(e=>({
 _pendingUpdateTimers:Object.assign({
@@ -1387,6 +1400,10 @@ o?new Date(o).toLocaleString():'\u306a\u3057'
 syncStatus:'\u540c\u671f\u4e2d'
 });
 try{
+// この関数の後ろで局所的な M を宣言しているため、下の forEach の中で
+// M.getState() を呼ぶと「初期化前の参照」で例外になり、同期が丸ごと
+// 止まる。団体IDはここで控えておく。
+const 団体ID=s().activeGroupId;
 const i=(0,a.collection)(fb.db,`groups/${
 s().activeGroupId
 }/sessions`),n=(0,a.collection)(fb.db,`groups/${
@@ -1407,9 +1424,9 @@ d.forEach(e=>{
 const s=e.data(),t=f(s.lastModified);
 t>h&&(h=t);
 const cleanedTags=s.tags&&Array.isArray(s.tags)?Array.from(new Set(s.tags.map(normalizeTag).filter(Boolean))):[],originalTags=s.tags||[],isModified=cleanedTags.length!==originalTags.length||cleanedTags.some((e,t)=>e!==originalTags[t]);
-if(isModified&&fb.db){
+if(isModified&&fb.db&&団体ID){
 const s=(0,a.doc)(fb.db,`groups/${
-M.getState().activeGroupId
+団体ID
 }/sessions`,e.id);
 (0,a.updateDoc)(s,{
 tags:cleanedTags
@@ -1517,7 +1534,7 @@ syncStatus:'trashed'
 i.lastModified=(0,a.serverTimestamp)(),i.deletedAt=i.deletedAt||(0,a.serverTimestamp)(),e.set((0,a.doc)(fb.db,`groups/${
 s().activeGroupId
 }/trash`,t.id),i)
-}),await e.commit(),Z=M.map(e=>Y.find(s=>s.id===e.id)?Object.assign({
+}),await e.commit(),Z=ごみ箱.map(e=>Y.find(s=>s.id===e.id)?Object.assign({
 
 },e,{
 syncStatus:'\u540c\u671f\u6e08\u307f'
@@ -1542,7 +1559,7 @@ I=!1
 }
 },syncAllToCloud:async()=>{
 const{
-activeGroupId:o,activeRole:i,isFirebaseConnected:n
+activeGroupId:o,activeRole:i,isNetworkOnline:n
 }=s();
 if(o&&n)if('member'!==i){
 console.log('[Store] Loading:','\u30af\u30e9\u30a6\u30c9\u3078\u306e\u540c\u671f\u3092\u958b\u59cb...'),e({
@@ -1947,10 +1964,10 @@ id:e.id,tags:cleanedTags,syncStatus:e.metadata&&e.metadata.hasPendingWrites?'\u6
 const a=s().sessions,c=new Set(o.map(e=>e.id));
 const merged=o.map(cloudSession=>{
 const pendingTimer=s()._pendingUpdateTimers[cloudSession.id];
-if(pendingTimer){
 const localSession=a.find(ls=>ls&&ls.id===cloudSession.id);
-if(localSession)return localSession
-}
+// 送信待ちの編集は、クラウドの古い写しで上書きしない。タイマーが動いて
+// いる 800ms の間だけでなく、送信が済むまで（「未同期」の間）守る。
+if(localSession&&(pendingTimer||'未同期'===localSession.syncStatus))return localSession;
 return cloudSession
 });
 const l=a.filter(e=>!c.has(e.id)&&!e.hasOwnProperty('serverCreatedTime')),d=[...merged,...l];
@@ -2118,14 +2135,14 @@ syncIntervalId:null
 },setupNetworkListener:()=>{
 console.log('[Store] Setting up network listener');
 return m.default.addEventListener(t=>{
-const o=s().isFirebaseConnected,a=!(!t.isConnected||!1===t.isInternetReachable);
+const o=s().isNetworkOnline,a=!(!t.isConnected||!1===t.isInternetReachable);
 a!==o&&(console.log("[Store] Network state changed: "+(a?'Online':'Offline')),e({
-isFirebaseConnected:a
+isNetworkOnline:a
 }),a&&!o&&(console.log('[Store] Connection restored. Triggering auto-sync...'),s().syncSessions().catch(e=>console.error('[Store] Auto-sync failed:',e))))
 })
 },incrementAllGrades:async()=>{
 const{
-activeGroupId:o,alumni:c,currentFreshmanTerm:l,isFirebaseConnected:d
+activeGroupId:o,alumni:c,currentFreshmanTerm:l,isNetworkOnline:d
 }=s();
 if(!o)return;
 const u=Date.now(),m=(new Date).getFullYear();
@@ -2225,7 +2242,7 @@ members:p,alumni:S,currentFreshmanTerm:f,lastPromotionYear:m,lastLocalChange:u,l
 }),console.log('[Store] incrementAllGrades: Promotion process completed.')
 },updateCurrentFreshmanTerm:async o=>{
 const{
-activeGroupId:i,autoPromotionEnabled:n,tagTemplates:c,lastPromotionYear:l,isFirebaseConnected:d
+activeGroupId:i,autoPromotionEnabled:n,tagTemplates:c,lastPromotionYear:l,isNetworkOnline:d
 }=s();
 if(e({
 currentFreshmanTerm:o,lastLocalChange:Date.now()
@@ -2269,7 +2286,7 @@ lastPushedTimestamp:a
 })
 }
 },recoverPassword:async e=>{
-if(!s().isFirebaseConnected)return{
+if(!s().isNetworkOnline)return{
 success:!1,error:'\u30aa\u30d5\u30e9\u30a4\u30f3\u306e\u305f\u3081\u5b9f\u884c\u3067\u304d\u307e\u305b\u3093'
 };
 try{
