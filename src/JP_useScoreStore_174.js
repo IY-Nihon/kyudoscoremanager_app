@@ -876,53 +876,67 @@ archers:h,shotsPerRound:f,activeGroupId:S,activeRole:b,myMemberId:y
 }=s(),v=Array.isArray(h)?h:[],T={
 id:p,date:Date.now(),title:o,note:d,archers:JSON.parse(JSON.stringify(v)),archerNames:Array.from(new Set(v.map(e=>e&&e.name?e.name.trim():'').filter(Boolean))),shotCount:f||8,includeInStats:u,tags:m,attendance:attendanceData,syncStatus:'\u672a\u540c\u671f',lastModified:Date.now()
 };
-try{
-if(s().liveSessionName&&fb.rtdb){
+// \u500b\u4eba\u30e2\u30fc\u30c9\u3067\u306e\u4e0a\u66f8\u304d\u306f\u3001\u624b\u5143\u306b\u78ba\u5b9a\u3059\u308b\u524d\u306b\u6b62\u3081\u308b
+if(S&&'member'===b)try{
+if((await(0,a.getDoc)((0,a.doc)(fb.db,`groups/${
+S
+}/sessions`,p))).exists()){
+const e='\u3053\u306e\u8a18\u9332\u306f\u65e2\u306b\u30af\u30e9\u30a6\u30c9\u306b\u5b58\u5728\u3059\u308b\u305f\u3081\u3001\u500b\u4eba\u30e2\u30fc\u30c9\u304b\u3089\u306f\u66f4\u65b0\u3067\u304d\u307e\u305b\u3093\u3002';
+return void(c.IS_WEB?window.alert(e):n.default.alert('\u4fdd\u5b58\u5236\u9650',e))
+}
+}catch(e){
+console.warn('[Store] \u65e2\u5b58\u78ba\u8a8d\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002\u4fdd\u5b58\u306f\u7d9a\u884c\u3057\u307e\u3059:',e)
+}
+// \u307e\u305a\u624b\u5143\u306b\u78ba\u5b9a\u3059\u308b\u3002\u30af\u30e9\u30a6\u30c9\u306e\u5fdc\u7b54\u306f\u5f85\u305f\u306a\u3044\u3002
+// \u5f85\u3064\u3068\u3001\u901a\u4fe1\u3067\u304d\u306a\u3044\u3068\u304d\u306b\u5c04\u624b\u304c\u6d88\u3048\u305a\u5c65\u6b74\u306b\u3082\u51fa\u306a\u3044\u3046\u3048\u3001
+// \u753b\u9762\u306b\u306f\u4f55\u3082\u77e5\u3089\u3055\u308c\u306a\u3044\u307e\u307e\u306b\u306a\u308b\u3002
+const \u5143\u306e\u30e9\u30a4\u30d6\u540d=s().liveSessionName;
+s().stopLiveSync(!0),e(e=>({
+sessions:[T,...e.sessions.filter(e=>e.id!==p)],activeSessionID:null,archers:[],isLiveActive:!1,isHost:!1,liveSessionName:null,lastLocalChange:Date.now(),syncStatus:'\u672a\u540c\u671f'
+}));
+// \u30e9\u30a4\u30d6\u8a18\u9332\u306e\u5f8c\u59cb\u672b\u3002\u5c4a\u304b\u306a\u304f\u3066\u3082\u4fdd\u5b58\u306b\u306f\u5f71\u97ff\u3055\u305b\u306a\u3044
+if(\u5143\u306e\u30e9\u30a4\u30d6\u540d&&fb.rtdb){
 const e=(0,i.ref)(fb.rtdb,`live_sessions/${
 S
 }/${
-s().liveSessionName
+\u5143\u306e\u30e9\u30a4\u30d6\u540d
 }`);
-await(0,i.update)((0,i.ref)(fb.rtdb,`live_sessions/${
+(0,i.update)((0,i.ref)(fb.rtdb,`live_sessions/${
 S
 }/${
-s().liveSessionName
+\u5143\u306e\u30e9\u30a4\u30d6\u540d
 }/state`),{
 status:'finished',timestamp:(0,i.serverTimestamp)()
-}),setTimeout(async()=>{
-try{
-await(0,i.remove)(e)
-}catch(e){
+}).catch(()=>{
 
-}
+}),setTimeout(()=>{
+(0,i.remove)(e).catch(()=>{
+
+})
 },2e3)
-}if(s().stopLiveSync(!0),e({
-isLiveActive:!1,isHost:!1,liveSessionName:null
-}),S){
-if('member'===b){
-const e=(0,a.doc)(fb.db,`groups/${
-S
-}/sessions`,p);
-if((await(0,a.getDoc)(e)).exists()){
-const e='\u3053\u306e\u8a18\u9332\u306f\u65e2\u306b\u30af\u30e9\u30a6\u30c9\u306b\u5b58\u5728\u3059\u308b\u305f\u3081\u3001\u500b\u4eba\u30e2\u30fc\u30c9\u304b\u3089\u306f\u66f4\u65b0\u3067\u304d\u307e\u305b\u3093\u3002';
-throw c.IS_WEB?window.alert(e):n.default.alert('\u4fdd\u5b58\u5236\u9650',e),new Error('Overwriting cloud data from personal mode is prohibited.')
 }
-}const e=JSON.parse(JSON.stringify(T));
-e.syncStatus='\u540c\u671f\u6e08\u307f',e.lastModified=(0,a.serverTimestamp)(),await(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
+// \u30af\u30e9\u30a6\u30c9\u3078\u9001\u308b\u3002\u3053\u3053\u3082\u5f85\u305f\u306a\u3044\u3002
+// \u5c4a\u304f\u307e\u3067\u306f\u300c\u672a\u540c\u671f\u300d\u306e\u307e\u307e\u306b\u3057\u3066\u304a\u304f\u3002\u305d\u3046\u3059\u308c\u3070 syncSessions \u306e
+// \u518d\u9001\u3067\u62fe\u308f\u308c\u3001\u901a\u4fe1\u304c\u623b\u3063\u305f\u3068\u304d\u306b\u81ea\u52d5\u3067\u9001\u3089\u308c\u308b\u3002
+if(S){
+const o=JSON.parse(JSON.stringify(T));
+o.syncStatus='\u540c\u671f\u6e08\u307f',o.lastModified=(0,a.serverTimestamp)(),(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
 S
-}/sessions`,p),e,{
+}/sessions`,p),o,{
 merge:!0
-}),T.syncStatus='\u540c\u671f\u6e08\u307f'
-}
-}catch(e){
-console.error('Save Session Cloud Error:',e),T.syncStatus='\u540c\u671f\u30a8\u30e9\u30fc'
-}if(e(e=>({
-sessions:[T,...e.sessions.filter(e=>e.id!==p)],activeSessionID:null,archers:[],lastLocalChange:Date.now(),syncStatus:'\u540c\u671f\u6e08\u307f'===T.syncStatus?'\u540c\u671f\u6e08\u307f':'\u540c\u671f\u30a8\u30e9\u30fc'
-})),'\u540c\u671f\u30a8\u30e9\u30fc'===T.syncStatus&&s().showSyncErrorPopups){
-const e='\u30af\u30e9\u30a6\u30c9\u3078\u306e\u4fdd\u5b58\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002\u30aa\u30d5\u30e9\u30a4\u30f3\u30c7\u30fc\u30bf\u3068\u3057\u3066\u4fdd\u5b58\u3055\u308c\u307e\u3057\u305f\u3002';
-c.IS_WEB?window.alert(`\u540c\u671f\u30a8\u30e9\u30fc: ${
-e
-}`):n.default.alert('\u540c\u671f\u30a8\u30e9\u30fc',e)
+}).then(()=>{
+e(e=>({
+sessions:e.sessions.map(e=>e&&e.id===p?Object.assign({
+
+},e,{
+syncStatus:'\u540c\u671f\u6e08\u307f'
+}):e),syncStatus:'\u540c\u671f\u6e08\u307f'
+}))
+}).catch(t=>{
+console.error('Save Session Cloud Error:',t),e({
+syncStatus:'\u540c\u671f\u30a8\u30e9\u30fc'
+})
+})
 }
 },loadSession:t=>{
 const o=(Array.isArray(s().sessions)?s().sessions:[]).find(e=>e&&e.id===t);
@@ -1846,7 +1860,7 @@ tags:cleanedTags
 }o.push(Object.assign({
 
 },s,{
-id:e.id,tags:cleanedTags,syncStatus:'\u540c\u671f\u6e08\u307f'
+id:e.id,tags:cleanedTags,syncStatus:e.metadata&&e.metadata.hasPendingWrites?'\u672a\u540c\u671f':'\u540c\u671f\u6e08\u307f'
 }))
 });
 const a=s().sessions,c=new Set(o.map(e=>e.id));
