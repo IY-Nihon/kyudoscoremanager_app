@@ -2136,6 +2136,42 @@ const M = (0, s.create)()(
                 console.error('[syncSessions] 削除の送り直しの組み立てに失敗:', t);
               }
             }
+            // 送信が済んでいないメンバーを送り直す。記録やゴミ箱と同じで、
+            // 通信できないときの変更は待ち行列ごと失われることがあり、
+            // そのままだと手元にしかない氏名や学年が永久に届かない。
+            // 名簿を書けるのは団体アカウントだけなので、部員では試みない。
+            const 未送信のメンバー =
+              'group' === s().activeRole ? O.filter((e) => e && e.id && '未同期' === e.syncStatus) : [];
+            if (未送信のメンバー.length > 0) {
+              console.log(`[syncSessions] Syncing ${未送信のメンバー.length} pending members...`);
+              try {
+                const e = (0, a.writeBatch)(fb.db);
+                const 送ったメンバー = new Map(未送信のメンバー.map((x) => [x.id, x.lastModified]));
+                (未送信のメンバー.forEach((t) => {
+                  const i = dropUndefinedDeep(Object.assign({}, t, { syncStatus: '同期済み' }));
+                  ((i.lastModified = (0, a.serverTimestamp)()),
+                    e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/members`, t.id), i));
+                }),
+                  // 完了は待たない（記録・ゴミ箱と同じ理由）
+                  e
+                    .commit()
+                    .then(() => {
+                      (反映((t) => ({
+                        members: t.members.map((t) =>
+                          t && 送ったメンバー.has(t.id) && t.lastModified === 送ったメンバー.get(t.id)
+                            ? Object.assign({}, t, { syncStatus: '同期済み' })
+                            : t
+                        ),
+                      })),
+                        s().syncMemberLookup());
+                    })
+                    .catch((t) => {
+                      console.error('[syncSessions] メンバーの送り直しに失敗:', t);
+                    }));
+              } catch (t) {
+                console.error('[syncSessions] メンバーの送り直しの組み立てに失敗:', t);
+              }
+            }
             (e({
               sessions: k,
               members: O,
