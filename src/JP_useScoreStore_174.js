@@ -1597,6 +1597,9 @@ const M = (0, s.create)()(
             });
             const t = s().sessions.find((e) => e && e.id === o);
             if (!t) return;
+            // 送った版の目印。送信中にもう一度編集された場合、その新しい内容を
+            // 「同期済み」と書いてしまわないよう、戻ってきたときに突き合わせる。
+            const 送った版 = t.lastModified;
             const n = JSON.parse(JSON.stringify(t));
             // 送信の完了は待たない。通信できないときは Firestore の待ち行列に
             // 入り、つながった時点で送られる。
@@ -1606,7 +1609,7 @@ const M = (0, s.create)()(
                   (console.log(`[Store] Debounced sync finished for ${o}`),
                     e((e) => ({
                       sessions: e.sessions.map((e) =>
-                        e && e.id === o
+                        e && e.id === o && e.lastModified === 送った版
                           ? Object.assign({}, e, {
                               syncStatus: '同期済み',
                             })
@@ -2025,6 +2028,9 @@ const M = (0, s.create)()(
               N = w.filter((e) => !$.has(e.id)),
               P = N.filter((e) => '未同期' === e.syncStatus);
             let k = N;
+            // 下のブロックでは e が一括送信の入れ物に隠れるので、状態の更新役を
+            // ここで控えておく（ブロックの中から外の e は参照できない）。
+            const 反映 = e;
             if (P.length > 0) {
               console.log(`[syncSessions] Syncing ${P.length} pending sessions...`);
               const e = (0, a.writeBatch)(fb.db),
@@ -2048,26 +2054,35 @@ const M = (0, s.create)()(
                   // 何も起きないので、新規の記録に対しても安全。
                   e.delete((0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, i.id)));
               }),
-                await e.commit(),
-                (k = k.map((e) =>
-                  P.find((s) => s.id === e.id)
-                    ? Object.assign({}, e, {
-                        syncStatus: '同期済み',
-                        lastModified: o,
-                      })
-                    : e
-                )));
+                // 送信の完了は待たない。通信できないと一括送信は終わらないため、
+                // 待つとこの関数自体が返らず、同期中の目印が立ったままになって
+                // 以後の同期がすべて飛ばされる。届いた時点で印を付け替える。
+                e
+                  .commit()
+                  .then(() => {
+                    反映((t) => ({
+                      sessions: t.sessions.map((t) =>
+                        P.find((s) => s.id === t.id)
+                          ? Object.assign({}, t, {
+                              syncStatus: '同期済み',
+                              lastModified: o,
+                            })
+                          : t
+                      ),
+                    }));
+                  })
+                  .catch((t) => {
+                    console.error('[syncSessions] 記録の送信に失敗:', t);
+                  }));
             }
             // 送信が済んでいない削除を送り直す。通信できないときに削除した場合、
             // 待ち行列ごと失われることがあり、そのままだと次の全件取得で記録が
             // 復活してしまう。
-            let Z = ごみ箱;
             const Y = ごみ箱.filter((e) => e && e.id && '未同期' === e.syncStatus);
             if (Y.length > 0) {
               console.log(`[syncSessions] Syncing ${Y.length} pending deletions...`);
               try {
-                const e = (0, a.writeBatch)(fb.db),
-                  o = Date.now();
+                const e = (0, a.writeBatch)(fb.db);
                 (Y.forEach((t) => {
                   e.delete((0, a.doc)(fb.db, `groups/${s().activeGroupId}/sessions`, t.id));
                   const i = dropUndefinedDeep(
@@ -2079,22 +2094,31 @@ const M = (0, s.create)()(
                     (i.deletedAt = i.deletedAt || (0, a.serverTimestamp)()),
                     e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, t.id), i));
                 }),
-                  await e.commit(),
-                  (Z = ごみ箱.map((e) =>
-                    Y.find((s) => s.id === e.id)
-                      ? Object.assign({}, e, {
-                          syncStatus: '同期済み',
-                        })
-                      : e
-                  )));
+                  // 記録の送信と同じ理由で完了は待たない
+                  e
+                    .commit()
+                    .then(() => {
+                      反映((t) => ({
+                        trash: t.trash.map((t) =>
+                          Y.find((s) => s.id === t.id)
+                            ? Object.assign({}, t, {
+                                syncStatus: '同期済み',
+                              })
+                            : t
+                        ),
+                      }));
+                    })
+                    .catch((t) => {
+                      console.error('[syncSessions] 削除の送り直しに失敗:', t);
+                    }));
               } catch (t) {
-                console.error('[syncSessions] 削除の送り直しに失敗:', t);
+                console.error('[syncSessions] 削除の送り直しの組み立てに失敗:', t);
               }
             }
             (e({
               sessions: k,
               members: O,
-              trash: Z,
+              trash: ごみ箱,
               alumni: G,
               syncStatus: '同期済み',
               lastSyncTime: h,
