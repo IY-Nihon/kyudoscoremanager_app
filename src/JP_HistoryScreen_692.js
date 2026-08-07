@@ -1173,10 +1173,12 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                               style: { flexDirection: 'row', gap: 16 },
                               children: [
                                 (0, k.jsx)(s.default, {
-                                  onPress: async () => {
+                                  onPress: () => {
                                     if (0 === ye.size) return;
-                                    const e = Array.from(ye);
-                                    for (const t of e) await y.useScoreStore.getState().restoreSession(t);
+                                    // まとめて戻す。1件ずつ待つと、通信できないときに
+                                    // 1件目の送信が終わらず、残りが戻らないまま画面も
+                                    // 反応しなくなる。
+                                    y.useScoreStore.getState().restoreTrashItems(Array.from(ye));
                                     (be(new Set()), xe(!1));
                                   },
                                   children: (0, k.jsx)(n.default, {
