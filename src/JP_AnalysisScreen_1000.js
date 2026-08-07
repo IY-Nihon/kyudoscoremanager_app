@@ -62,8 +62,8 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
       if (selectedLabel) {
         const l = new Date(session.date);
         let sessionLabel = "";
-        if (selectedLabel.endsWith('\u5e74\u5ea6')) { // "年度"
-          sessionLabel = `${l.getMonth() + 1 >= 4 ? l.getFullYear() : l.getFullYear() - 1}\u5e74\u5ea6`;
+        if (selectedLabel.endsWith('年度')) { // "年度"
+          sessionLabel = `${l.getMonth() + 1 >= 4 ? l.getFullYear() : l.getFullYear() - 1}年度`;
         } else if (selectedLabel.includes('/') && selectedLabel.split('/').length === 2) {
           sessionLabel = `${l.getFullYear()}/${l.getMonth() + 1}`;
         } else {
@@ -91,7 +91,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
           if (isMatch) {
             const mark = archer.marks ? archer.marks[idx] : undefined;
             // 的中/外れのマークが登録されている射のみを対象とする
-            if (mark === '○' || mark === '\u25cb' || mark === '×' || mark === '\xd7') {
+            if (mark === '○' || mark === '○' || mark === '×' || mark === '\xd7') {
               locations.push(Object.assign({}, loc, { mark: mark, shotIndex: idx }));
             }
           }
@@ -101,9 +101,9 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
     return locations;
   };
 
-  const [R, I] = (0, t.useState)('\u3059\u3079\u3066');
-  const [W, L] = (0, t.useState)('\u5168\u54e1');
-  const [O, P] = (0, t.useState)('\u5168\u5b66\u5e74');
+  const [R, I] = (0, t.useState)('すべて');
+  const [W, L] = (0, t.useState)('全員');
+  const [O, P] = (0, t.useState)('全学年');
   const M = new Date();
   const N = M.getMonth() + 1 >= 4 ? M.getFullYear() : M.getFullYear() - 1;
   const [$, H] = (0, t.useState)(M.getFullYear());
@@ -160,7 +160,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
   };
 
   n.default.useEffect(() => {
-    ('\u6708\u3054\u3068' === R || '\u76f4\u8fd130\u65e5' === R) ? U('day') : ('\u5e74\u5ea6' === R && 'year' === J) && U('month');
+    ('月ごと' === R || '直近30日' === R) ? U('day') : ('年度' === R && 'year' === J) && U('month');
   }, [R, J]);
 
   const he = e => {
@@ -203,17 +203,17 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
     }
     const n = Date.now();
     const o = t.date;
-    if ('\u76f4\u8fd130\u65e5' === R) return n - o <= 2592e6;
-    if ('\u6708\u3054\u3068' === R) {
+    if ('直近30日' === R) return n - o <= 2592e6;
+    if ('月ごと' === R) {
       const e = new Date(o);
       return e.getFullYear() === $ && e.getMonth() + 1 === V;
     }
-    if ('\u5e74\u5ea6' === R) {
+    if ('年度' === R) {
       const e = new Date(o);
       const t = e.getFullYear();
       return (e.getMonth() + 1 >= 4 ? t : t - 1) === _;
     }
-    if ('\u671f\u9593\u6307\u5b9a' === R) {
+    if ('期間指定' === R) {
       const e = new Date(o);
       e.setHours(0, 0, 0, 0);
       const t = new Date(q);
@@ -223,7 +223,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
     }
     return !0;
   });
-  const xe = [...(w || []).filter(e => v || (e.grade || 0) < 5), ...((O === '\u5352\u696d\u751f' || v) && A || [])]
+  const xe = [...(w || []).filter(e => v || (e.grade || 0) < 5), ...((O === '卒業生' || v) && A || [])]
     .filter(e => !!e)
     .filter(e => k !== 'member' || !B || e.id === B)
     .map(e => {
@@ -241,7 +241,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
           const i = a.substitutionIds || {};
 
           a.marks.forEach((l, d) => {
-            if ('\u25cb' !== l && '\xd7' !== l) return;
+            if ('○' !== l && '\xd7' !== l) return;
             let c = a.memberId;
             let u = a.name || '';
             for (const e of s) {
@@ -251,11 +251,11 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
             }
             if (c ? c === e.id : u === e.name) {
               t++;
-              '\u25cb' === l && n++;
+              '○' === l && n++;
               const e = d % 4;
               if (o[e]) {
                 o[e].shots++;
-                '\u25cb' === l && o[e].hits++;
+                '○' === l && o[e].hits++;
               }
             }
           });
@@ -267,7 +267,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
             for (let l = 0; l < 4; l++) {
               const d = 4 * t + l;
               const c = a.marks[d];
-              if ('\u25cb' !== c && '\xd7' !== c) {
+              if ('○' !== c && '\xd7' !== c) {
                 o = !1;
                 break;
               }
@@ -285,7 +285,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
               n.push(c);
             }
             if (o && 4 === n.length) {
-              const e = n.filter(e => '\u25cb' === e).length;
+              const e = n.filter(e => '○' === e).length;
               if (4 === e) l.kaichu++;
               else if (3 === e) l.sanchu++;
               else if (2 === e) l.hake++;
@@ -302,11 +302,11 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
     .filter(e => {
       if (0 === e.shots) return !1;
       if (k === 'group') {
-        if (W !== '\u5168\u54e1' && e.gender !== W) return !1;
-        if (O !== '\u5168\u5b66\u5e74') {
-          if (O === '\u5352\u696d\u751f') {
+        if (W !== '全員' && e.gender !== W) return !1;
+        if (O !== '全学年') {
+          if (O === '卒業生') {
             if (!(5 === e.grade || e.graduationYear || e.isAlumni)) return !1;
-          } else if (`${e.grade}\u5e74` !== O) return !1;
+          } else if (`${e.grade}年` !== O) return !1;
         }
       }
       return !(oe && !e.name.toLowerCase().includes(oe.toLowerCase()));
@@ -343,7 +343,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
       } else if ('month' === J) {
         a = `${l.getFullYear()}/${l.getMonth() + 1}`;
       } else {
-        a = `${l.getMonth() + 1 >= 4 ? l.getFullYear() : l.getFullYear() - 1}\u5e74\u5ea6`;
+        a = `${l.getMonth() + 1 >= 4 ? l.getFullYear() : l.getFullYear() - 1}年度`;
       }
 
       if (!n[a]) {
@@ -367,7 +367,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
         const d = Object.keys(r.substitutions || {}).map(Number).sort((e, t) => e - t);
 
         r.marks.forEach((oVal, lVal) => {
-          if ('\u25cb' !== oVal && '\xd7' !== oVal) return;
+          if ('○' !== oVal && '\xd7' !== oVal) return;
           let c = r.memberId;
           let u = r.name || '';
           for (const subIdx of d) {
@@ -379,7 +379,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
           if (isMatch) {
             n[a].shots++;
             i++;
-            if ('\u25cb' === oVal) {
+            if ('○' === oVal) {
               n[a].hits++;
               s++;
             }
@@ -396,7 +396,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
           for (let nIdx = 0; nIdx < 4; nIdx++) {
             const aIdx = 4 * oIdx + nIdx;
             const iVal = r.marks[aIdx];
-            if ('\u25cb' !== iVal && '\xd7' !== iVal) {
+            if ('○' !== iVal && '\xd7' !== iVal) {
               sAllMine = !1;
               break;
             }
@@ -412,7 +412,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
               sAllMine = !1;
               break;
             }
-            if ('\u25cb' === iVal) lCount++;
+            if ('○' === iVal) lCount++;
           }
           if (sAllMine) {
             if (4 === lCount) n[a].patterns.kaichu++;
@@ -428,7 +428,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
         n[a].details.push({
           sessionId: o.id,
           date: l.toLocaleDateString('ja-JP'),
-          title: o.title || '\u7121\u984c\u306e\u7df4\u7fd2',
+          title: o.title || '無題の練習',
           stats: `${sessionHits}/${sessionShots} (${(sessionHits / sessionShots * 100).toFixed(0)}%)`
         });
       }
@@ -457,8 +457,8 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
     const allLabels = Array.from(new Set(
       allDataSets.flatMap(set => set.data.map(d => d.label))
     )).sort((a, b) => {
-      const aDate = new Date(a.replace('\u5e74\u5ea6', '/4/1'));
-      const bDate = new Date(b.replace('\u5e74\u5ea6', '/4/1'));
+      const aDate = new Date(a.replace('年度', '/4/1'));
+      const bDate = new Date(b.replace('年度', '/4/1'));
       return aDate - bDate;
     });
 
@@ -467,7 +467,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
         style: F.noDataGraph,
         children: (0, y.jsx)(l.default, {
           style: { color: '#8E8E93' },
-          children: "\u6bd4\u8f03\u3059\u308b\u30c7\u30fc\u30bf\u304c\u3042\u308a\u307e\u305b\u3093"
+          children: "比較するデータがありません"
         })
       });
     }
@@ -507,7 +507,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
         (0, y.jsxs)(o.default, {
           style: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12, alignItems: 'center' },
           children: [
-            (0, y.jsx)(l.default, { style: F.graphTitle, children: "\u7684\u4e2d\u7387\u63a8\u79fb\u306e\u6bd4\u8f03 (%)" }),
+            (0, y.jsx)(l.default, { style: F.graphTitle, children: "的中率推移の比較 (%)" }),
             (0, y.jsx)(o.default, {
               style: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, maxWidth: '75%', justifyContent: 'flex-end' },
               children: datasetsWithPoints.map((ds, idx) => (
@@ -571,7 +571,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
         style: F.noDataGraph,
         children: (0, y.jsx)(l.default, {
           style: { color: '#8E8E93' },
-          children: "\u30c7\u30fc\u30bf\u304c\u8db3\u308a\u307e\u305b\u3093"
+          children: "データが足りません"
         })
       });
     }
@@ -595,15 +595,15 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
         (0, y.jsxs)(o.default, {
           style: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12, alignItems: 'center' },
           children: [
-            (0, y.jsx)(l.default, { style: F.graphTitle, children: "\u7684\u4e2d\u7387\u63a8\u79fb (%)" }),
-            !('\u6708\u3054\u3068' === R || '\u76f4\u8fd130\u65e5' === R) && (0, y.jsx)(o.default, {
+            (0, y.jsx)(l.default, { style: F.graphTitle, children: "的中率推移 (%)" }),
+            !('月ごと' === R || '直近30日' === R) && (0, y.jsx)(o.default, {
               style: F.trendUnitSelector,
-              children: ['day', 'month', 'year'].filter(e => '\u5e74\u5ea6' !== R || 'year' !== e).map(e => (0, y.jsx)(s.default, {
+              children: ['day', 'month', 'year'].filter(e => '年度' !== R || 'year' !== e).map(e => (0, y.jsx)(s.default, {
                 onPress: () => { U(e); i(null); },
                 style: [F.unitBtn, J === e && F.unitBtnActive],
                 children: (0, y.jsx)(l.default, {
                   style: [F.unitBtnText, J === e && F.unitBtnTextActive],
-                  children: 'day' === e ? '\u65e5' : 'month' === e ? '\u6708' : '\u5e74\u5ea6'
+                  children: 'day' === e ? '日' : 'month' === e ? '月' : '年度'
                 })
               }, `unit-${e}`))
             })
@@ -630,7 +630,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
             (0, y.jsxs)(o.default, {
               style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
               children: [
-                (0, y.jsxs)(l.default, { style: F.detailLabel, children: [e[a].label, " \u306e\u8a73\u7d30"] }),
+                (0, y.jsxs)(l.default, { style: F.detailLabel, children: [e[a].label, " の詳細"] }),
                 (0, y.jsx)(s.default, { onPress: () => i(null), children: (0, y.jsx)(h.Ionicons, { name: "close-circle", size: 20, color: "#C7C7CC" }) })
               ]
             }),
@@ -688,7 +688,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
     children: [
       (0, y.jsx)(o.default, {
         style: F.header,
-        children: (0, y.jsx)(l.default, { style: F.title, children: "\u7684\u4e2d\u5206\u6790" })
+        children: (0, y.jsx)(l.default, { style: F.title, children: "的中分析" })
       }),
       (0, y.jsxs)(r.default, {
         contentContainerStyle: F.content,
@@ -702,19 +702,19 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                   (0, y.jsxs)(o.default, {
                     style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
                     children: [
-                      (0, y.jsx)(l.default, { style: [F.segmentLabel, { width: 'auto', marginRight: 0 }], children: "\u30bf\u30b0\u30d5\u30a3\u30eb\u30bf\u30fc" }),
+                      (0, y.jsx)(l.default, { style: [F.segmentLabel, { width: 'auto', marginRight: 0 }], children: "タグフィルター" }),
                       (0, y.jsxs)(o.default, {
                         style: { flexDirection: 'row', backgroundColor: '#E5E5EA', borderRadius: 8, padding: 2 },
                         children: [
                           (0, y.jsx)(s.default, {
                             onPress: () => p('AND'),
                             style: [{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }, 'AND' === a && { backgroundColor: '#FFF' }],
-                            children: (0, y.jsx)(l.default, { style: { fontSize: 11, fontWeight: 'bold', color: 'AND' === a ? '#007AFF' : '#8E8E93' }, children: "\u3059\u3079\u3066\u542b\u3080" })
+                            children: (0, y.jsx)(l.default, { style: { fontSize: 11, fontWeight: 'bold', color: 'AND' === a ? '#007AFF' : '#8E8E93' }, children: "すべて含む" })
                           }),
                           (0, y.jsx)(s.default, {
                             onPress: () => p('OR'),
                             style: [{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }, 'OR' === a && { backgroundColor: '#FFF' }],
-                            children: (0, y.jsx)(l.default, { style: { fontSize: 11, fontWeight: 'bold', color: 'OR' === a ? '#007AFF' : '#8E8E93' }, children: "\u3044\u305a\u308c\u304b\u542b\u3080" })
+                            children: (0, y.jsx)(l.default, { style: { fontSize: 11, fontWeight: 'bold', color: 'OR' === a ? '#007AFF' : '#8E8E93' }, children: "いずれか含む" })
                           })
                         ]
                       })
@@ -729,7 +729,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                       (0, y.jsx)(s.default, {
                         style: [F.tagChip, 0 === e.length && F.tagChipActive, { backgroundColor: 0 === e.length ? '#007AFF' : '#E5E5EA' }],
                         onPress: () => m([]),
-                        children: (0, y.jsx)(l.default, { style: [F.tagChipText, 0 === e.length && { color: '#FFF' }], children: "\u3059\u3079\u3066\u89e3\u9664" })
+                        children: (0, y.jsx)(l.default, { style: [F.tagChipText, 0 === e.length && { color: '#FFF' }], children: "すべて解除" })
                       }),
                       ge.map(t => {
                         const n = e.includes(t);
@@ -746,40 +746,40 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
               (0, y.jsx)(o.default, {
                 style: { marginBottom: 12 },
                 children: (0, y.jsx)(we, {
-                  options: ['\u6708\u3054\u3068', '\u5e74\u5ea6', '\u671f\u9593\u6307\u5b9a', '\u76f4\u8fd130\u65e5', '\u3059\u3079\u3066'],
+                  options: ['月ごと', '年度', '期間指定', '直近30日', 'すべて'],
                   selected: R,
                   onSelect: I,
                   isWrap: !0
                 })
               }),
-              '\u671f\u9593\u6307\u5b9a' === R && (0, y.jsxs)(o.default, {
+              '期間指定' === R && (0, y.jsxs)(o.default, {
                 style: F.customRangeContainer,
                 children: [
-                  (0, y.jsx)(s.default, { style: F.dateBtn, onPress: () => ue('start'), children: (0, y.jsxs)(l.default, { style: F.dateLabel, children: ["\u958b\u59cb: ", q.toLocaleDateString('ja-JP')] }) }),
+                  (0, y.jsx)(s.default, { style: F.dateBtn, onPress: () => ue('start'), children: (0, y.jsxs)(l.default, { style: F.dateLabel, children: ["開始: ", q.toLocaleDateString('ja-JP')] }) }),
                   (0, y.jsx)(h.Ionicons, { name: "arrow-forward", size: 16, color: "#8E8E93" }),
-                  (0, y.jsx)(s.default, { style: F.dateBtn, onPress: () => ue('end'), children: (0, y.jsxs)(l.default, { style: F.dateLabel, children: ["\u7d42\u4e86: ", Q.toLocaleDateString('ja-JP')] }) })
+                  (0, y.jsx)(s.default, { style: F.dateBtn, onPress: () => ue('end'), children: (0, y.jsxs)(l.default, { style: F.dateLabel, children: ["終了: ", Q.toLocaleDateString('ja-JP')] }) })
                 ]
               }),
-              '\u6708\u3054\u3068' === R && (0, y.jsxs)(o.default, {
+              '月ごと' === R && (0, y.jsxs)(o.default, {
                 style: F.monthNav,
                 children: [
                   (0, y.jsx)(s.default, { style: F.monthNavBtn, onPress: () => he(-1), children: (0, y.jsx)(h.Ionicons, { name: "chevron-back", size: 20, color: "#007AFF" }) }),
-                  (0, y.jsxs)(l.default, { style: F.monthNavText, children: [V >= 4 ? `${$}\u5e74\u5ea6` : $ - 1 + "\u5e74\u5ea6", " ", V, "\u6708"] }),
+                  (0, y.jsxs)(l.default, { style: F.monthNavText, children: [V >= 4 ? `${$}年度` : $ - 1 + "年度", " ", V, "月"] }),
                   (0, y.jsx)(s.default, { style: F.monthNavBtn, onPress: () => he(1), children: (0, y.jsx)(h.Ionicons, { name: "chevron-forward", size: 20, color: "#007AFF" }) })
                 ]
               }),
-              '\u5e74\u5ea6' === R && (0, y.jsxs)(o.default, {
+              '年度' === R && (0, y.jsxs)(o.default, {
                 style: F.monthNav,
                 children: [
                   (0, y.jsx)(s.default, { style: F.monthNavBtn, onPress: () => fe(-1), children: (0, y.jsx)(h.Ionicons, { name: "chevron-back", size: 20, color: "#007AFF" }) }),
-                  (0, y.jsxs)(l.default, { style: F.monthNavText, children: [_ , "\u5e74\u5ea6"] }),
+                  (0, y.jsxs)(l.default, { style: F.monthNavText, children: [_ , "年度"] }),
                   (0, y.jsx)(s.default, { style: F.monthNavBtn, onPress: () => fe(1), children: (0, y.jsx)(h.Ionicons, { name: "chevron-forward", size: 20, color: "#007AFF" }) })
                 ]
               }),
               'member' !== k && (0, y.jsxs)(o.default, {
                 style: F.rankingSettingsContainer,
                 children: [
-                  (0, y.jsx)(l.default, { style: F.rankingSettingsLabel, children: "\u30e9\u30f3\u30ad\u30f3\u30b0\u5bfe\u8c61\u306e\u57fa\u6e96 (\u6700\u591a\u6bd4)" }),
+                  (0, y.jsx)(l.default, { style: F.rankingSettingsLabel, children: "ランキング対象の基準 (最多比)" }),
                   (0, y.jsx)(o.default, {
                     style: F.ratioButtonRow,
                     children: [{ label: '1/2 (50%)', val: .5 }, { label: '1/3 (33%)', val: .33 }, { label: '1/4 (25%)', val: .25 }].map(e => (0, y.jsx)(s.default, {
@@ -795,11 +795,11 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                         style: F.customShotsInput,
                         value: customShotsInput,
                         onChangeText: setCustomShotsInput,
-                        placeholder: '\u4F8B: 20',
+                        placeholder: '例: 20',
                         keyboardType: 'numeric',
                         placeholderTextColor: '#C7C7CC'
                       }),
-                      (0, y.jsx)(l.default, { style: F.customShotsUnit, children: '\u5C04\u4EE5\u4E0A' }),
+                      (0, y.jsx)(l.default, { style: F.customShotsUnit, children: '射以上' }),
                       (0, y.jsx)(s.default, {
                         style: [F.customShotsBtn, customShotsInput.trim() !== '' && F.customShotsBtnActive],
                         onPress: () => {
@@ -811,24 +811,24 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                             S(R, { type: 'ratio', value: 0 });
                           }
                         },
-                        children: (0, y.jsx)(l.default, { style: [F.customShotsBtnText, customShotsInput.trim() !== '' && F.customShotsBtnTextActive], children: '\u7D5E\u308A\u8FBC\u3080' })
+                        children: (0, y.jsx)(l.default, { style: [F.customShotsBtnText, customShotsInput.trim() !== '' && F.customShotsBtnTextActive], children: '絞り込む' })
                       })
                     ]
                   }),
-                  ye > 0 && (0, y.jsx)(l.default, { style: F.ratioHintText, children: je > 0 ? `\u73fe\u5728\u3001${je}\u5c04\u4ee5\u4e0a\u304c\u30e9\u30f3\u30ad\u30f3\u30b0\u5bfe\u8c61\u3067\u3059\uff08\u6700\u591a: ${ye}\u5c04\uff09` : '\u5168\u30e1\u30f3\u30d0\u30fc\u304c\u30e9\u30f3\u30ad\u30f3\u30b0\u5bfe\u8c61\u3067\u3059' })
+                  ye > 0 && (0, y.jsx)(l.default, { style: F.ratioHintText, children: je > 0 ? `現在、${je}射以上がランキング対象です（最多: ${ye}射）` : '全メンバーがランキング対象です' })
                 ]
               }),
               'member' !== k && (0, y.jsxs)(y.Fragment, {
                 children: [
                   (0, y.jsx)(o.default, { style: F.filterDivider }),
-                  (0, y.jsx)(we, { label: "\u6027\u5225:", options: ['\u5168\u54e1', '\u7537\u5b50', '\u5973\u5b50'], selected: W, onSelect: L }),
+                  (0, y.jsx)(we, { label: "性別:", options: ['全員', '男子', '女子'], selected: W, onSelect: L }),
                   (0, y.jsx)(o.default, { style: F.filterDivider }),
-                  (0, y.jsx)(we, { label: "\u5b66\u5e74:", options: ['\u5168\u5b66\u5e74', '1\u5e74', '2\u5e74', '3\u5e74', '4\u5e74'], selected: O, onSelect: P }),
+                  (0, y.jsx)(we, { label: "学年:", options: ['全学年', '1年', '2年', '3年', '4年'], selected: O, onSelect: P }),
                   (0, y.jsx)(o.default, { style: F.filterDivider }),
                   (0, y.jsxs)(o.default, {
                     style: F.toggleRow,
                     children: [
-                      (0, y.jsx)(l.default, { style: F.toggleLabel, children: "\u5352\u696d\u751f\u3092\u8868\u793a" }),
+                      (0, y.jsx)(l.default, { style: F.toggleLabel, children: "卒業生を表示" }),
                       (0, y.jsx)(s.default, { style: [F.miniBtn, v && F.miniBtnActive], onPress: () => setAlumni(!v), children: (0, y.jsx)(l.default, { style: [F.miniBtnText, v && F.miniBtnTextActive], children: v ? 'ON' : 'OFF' }) })
                     ]
                   })
@@ -842,7 +842,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
               (0, y.jsxs)(o.default, {
                 style: F.dashboardHeader,
                 children: [
-                  (0, y.jsx)(l.default, { style: F.dashboardTitle, children: "\u30de\u30a4\u30fb\u30d1\u30d5\u30a9\u30fc\u30de\u30f3\u30b9\u7d71\u8a08" }),
+                  (0, y.jsx)(l.default, { style: F.dashboardTitle, children: "マイ・パフォーマンス統計" }),
                   (0, y.jsx)(l.default, { style: F.dashboardPeriod, children: R })
                 ]
               }),
@@ -852,14 +852,14 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                   (0, y.jsxs)(o.default, {
                     style: F.mainStatItem,
                     children: [
-                      (0, y.jsx)(l.default, { style: F.mainStatLabel, children: "\u7684\u4e2d\u7387" }),
+                      (0, y.jsx)(l.default, { style: F.mainStatLabel, children: "的中率" }),
                       (0, y.jsxs)(l.default, { style: F.mainStatValue, children: [Ce[0].rate.toFixed(1), (0, y.jsx)(l.default, { style: { fontSize: 16 }, children: "%" })] })
                     ]
                   }),
                   (0, y.jsxs)(o.default, {
                     style: F.mainStatItem,
                     children: [
-                      (0, y.jsx)(l.default, { style: F.mainStatLabel, children: "\u7684\u4e2d/\u5c04\u6570" }),
+                      (0, y.jsx)(l.default, { style: F.mainStatLabel, children: "的中/射数" }),
                       (0, y.jsxs)(l.default, { style: F.mainStatValue, children: [Ce[0].hits, (0, y.jsxs)(l.default, { style: { fontSize: 16, color: '#8E8E93' }, children: [" / ", Ce[0].shots] })] })
                     ]
                   })
@@ -869,7 +869,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
               (0, y.jsxs)(o.default, {
                 style: { marginTop: 20, alignItems: 'center' },
                 children: [
-                  (0, y.jsx)(l.default, { style: [F.sectionSubTitle, { alignSelf: 'flex-start' }], children: selectedTrendLabel ? `\u77e2\u6240\u306e\u50be\u5411 (${selectedTrendLabel})` : "\u77e2\u6240\u306e\u50be\u5411 (\u96c6\u8a08)" }),
+                  (0, y.jsx)(l.default, { style: [F.sectionSubTitle, { alignSelf: 'flex-start' }], children: selectedTrendLabel ? `矢所の傾向 (${selectedTrendLabel})` : "矢所の傾向 (集計)" }),
                   (0, y.jsx)(o.default, {
                     style: { width: '100%', marginBottom: 12 },
                     children: (0, y.jsx)(we, {
@@ -889,7 +889,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
               (0, y.jsxs)(o.default, {
                 style: { marginTop: 20 },
                 children: [
-                  (0, y.jsx)(l.default, { style: F.sectionSubTitle, children: "\u7acb\u3061\u9806\u5225\u306e\u7684\u4e2d\u7387 (1-4\u5c04\u76ee)" }),
+                  (0, y.jsx)(l.default, { style: F.sectionSubTitle, children: "立ち順別の的中率 (1-4射目)" }),
                   (0, y.jsx)(o.default, {
                     style: F.statsGrid,
                     children: Array.from({ length: 4 }).map((e, t) => {
@@ -898,7 +898,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                       return (0, y.jsxs)(o.default, {
                         style: F.statBox,
                         children: [
-                          (0, y.jsxs)(l.default, { style: F.statBoxTitle, children: [t + 1, "\u5c04\u76ee"] }),
+                          (0, y.jsxs)(l.default, { style: F.statBoxTitle, children: [t + 1, "射目"] }),
                           (0, y.jsxs)(l.default, { style: F.statBoxRateDash, children: [a.toFixed(0), (0, y.jsx)(l.default, { style: { fontSize: 10 }, children: "%" })] }),
                           (0, y.jsxs)(l.default, { style: F.statBoxCounts, children: [n.hits, "/", n.shots] })
                         ]
@@ -910,10 +910,10 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
               (0, y.jsxs)(o.default, {
                 style: { marginTop: 24 },
                 children: [
-                  (0, y.jsx)(l.default, { style: F.sectionSubTitle, children: "\u7acb\u306e\u7d50\u679c\u5206\u5e03 (4\u5c04\u5358\u4f4d)" }),
+                  (0, y.jsx)(l.default, { style: F.sectionSubTitle, children: "立の結果分布 (4射単位)" }),
                   (0, y.jsx)(o.default, {
                     style: F.patternsCardDash,
-                    children: [{ label: '\u7686\u4e2d', key: 'kaichu', color: '#FF9500' }, { label: '\u4e09\u4e2d', key: 'sanchu', color: '#34C759' }, { label: '\u7fbd\u5206', key: 'hake', color: '#007AFF' }, { label: '\u4e00\u4e2d', key: 'icchu', color: '#5856D6' }, { label: '\u6b8b\u5ff5', key: 'zannen', color: '#FF3B30' }].map(e => {
+                    children: [{ label: '皆中', key: 'kaichu', color: '#FF9500' }, { label: '三中', key: 'sanchu', color: '#34C759' }, { label: '羽分', key: 'hake', color: '#007AFF' }, { label: '一中', key: 'icchu', color: '#5856D6' }, { label: '残念', key: 'zannen', color: '#FF3B30' }].map(e => {
                       const t = Ce[0].patterns[e.key] || 0;
                       const n = Object.values(Ce[0].patterns).reduce((e, t) => e + t, 0);
                       const a = n > 0 ? t / n * 100 : 0;
@@ -922,7 +922,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                         children: [
                           (0, y.jsx)(o.default, { style: { width: 45 }, children: (0, y.jsx)(l.default, { style: F.patternLabelText, children: e.label }) }),
                           (0, y.jsx)(o.default, { style: { flex: 1 }, children: (0, y.jsx)(o.default, { style: F.barContainer, children: (0, y.jsx)(o.default, { style: [F.barFill, { width: `${Math.max(a, t > 0 ? 3 : 0)}%`, backgroundColor: e.color }] }) }) }),
-                          (0, y.jsx)(o.default, { style: { width: 50, alignItems: 'flex-end' }, children: (0, y.jsxs)(l.default, { style: F.patternValueText, children: [t, "\u56de"] }) })
+                          (0, y.jsx)(o.default, { style: { width: 50, alignItems: 'flex-end' }, children: (0, y.jsxs)(l.default, { style: F.patternValueText, children: [t, "回"] }) })
                         ]
                       }, e.key);
                     })
@@ -937,7 +937,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
               style: F.searchBar,
               children: [
                 (0, y.jsx)(h.Ionicons, { name: "search", size: 18, color: "#007AFF", style: F.searchIcon }),
-                (0, y.jsx)(d.default, { style: F.searchInput, placeholder: "\u30e1\u30f3\u30d0\u30fc\u540d\u3092\u691c\u7d22...", placeholderTextColor: "#8E8E93", value: oe, onChangeText: le }),
+                (0, y.jsx)(d.default, { style: F.searchInput, placeholder: "メンバー名を検索...", placeholderTextColor: "#8E8E93", value: oe, onChangeText: le }),
                 !!oe && (0, y.jsx)(s.default, { onPress: () => le(''), style: { padding: 4 }, children: (0, y.jsx)(h.Ionicons, { name: "close-circle", size: 18, color: "#C7C7CC" }) })
               ]
             })
@@ -957,7 +957,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                         style: F.nameContainer,
                         children: [
                           (0, y.jsx)(l.default, { style: [F.memberName, { color: '#000' }], children: e.name }),
-                          (0, y.jsxs)(l.default, { style: F.memberSub, children: ['group' === k && (e.termKi ? `${e.termKi}\u671f / ` : ''), 'group' === k && (e.grade === 5 || e.graduationYear ? '\u5352\u696d\u751f' : e.grade === 0 ? '\u305d\u306e\u4ed6' : `${e.grade}\u5e74`), " / ", 'group' === k && `${e.gender}`] })
+                          (0, y.jsxs)(l.default, { style: F.memberSub, children: ['group' === k && (e.termKi ? `${e.termKi}期 / ` : ''), 'group' === k && (e.grade === 5 || e.graduationYear ? '卒業生' : e.grade === 0 ? 'その他' : `${e.grade}年`), " / ", 'group' === k && `${e.gender}`] })
                         ]
                       })
                     ]
@@ -978,7 +978,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                     style: { padding: 10, backgroundColor: '#F2F2F7', borderRadius: 8, marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
                     children: [
                       (0, y.jsx)(h.Ionicons, { name: "information-circle-outline", size: 14, color: "#8E8E93", style: { marginRight: 6 } }),
-                      (0, y.jsxs)(l.default, { style: { fontSize: 11, color: '#8E8E93', fontWeight: 'bold' }, children: ["\u30e9\u30f3\u30ad\u30f3\u30b0\u9078\u5916 (", je, "\u5c04\u672a\u6e80)"] })
+                      (0, y.jsxs)(l.default, { style: { fontSize: 11, color: '#8E8E93', fontWeight: 'bold' }, children: ["ランキング選外 (", je, "射未満)"] })
                     ]
                   }),
                   pe.map(e => (0, y.jsxs)(s.default, {
@@ -991,7 +991,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                           style: F.nameContainer,
                           children: [
                             (0, y.jsx)(l.default, { style: [F.memberName, { color: '#000' }], children: e.name }),
-                            (0, y.jsxs)(l.default, { style: F.memberSub, children: ['group' === k && (e.termKi ? `${e.termKi}\u671f / ` : ''), 'group' === k && (e.grade === 5 || e.graduationYear ? '\u5352\u696d\u751f' : e.grade === 0 ? '\u305d\u306e\u4ed6' : `${e.grade}\u5e74`), " / ", 'group' === k && `${e.gender}`] })
+                            (0, y.jsxs)(l.default, { style: F.memberSub, children: ['group' === k && (e.termKi ? `${e.termKi}期 / ` : ''), 'group' === k && (e.grade === 5 || e.graduationYear ? '卒業生' : e.grade === 0 ? 'その他' : `${e.grade}年`), " / ", 'group' === k && `${e.gender}`] })
                           ]
                         })
                       }),
@@ -1006,7 +1006,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                   }, typeof e.id === 'string' ? e.id : `low-member-${e.name}`))
                 ]
               }),
-              0 === Fe.length && (0, y.jsx)(l.default, { style: F.noDataText, children: "\u6761\u4ef6\u306b\u4e00\u81f4\u3059\u308b\u30e1\u30f3\u30d0\u30fc\u304c\u3044\u307e\u305b\u3093" })
+              0 === Fe.length && (0, y.jsx)(l.default, { style: F.noDataText, children: "条件に一致するメンバーがいません" })
             ]
           })
         ]
@@ -1016,7 +1016,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
         onClose: () => ee(!1),
         selectedDate: 'start' === te ? q : Q,
         onSelectDate: e => { 'start' === te ? K(e) : X(e), ee(!1); },
-        title: 'start' === te ? '\u958b\u59cb\u65e5\u3092\u9078\u629e' : '\u7d42\u4e86\u65e5\u3092\u9078\u629e'
+        title: 'start' === te ? '開始日を選択' : '終了日を選択'
       }),
       (0, y.jsx)(i.default, {
         visible: !!ae,
@@ -1029,8 +1029,8 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
             children: ae && (0, y.jsxs)(r.default, {
               showsVerticalScrollIndicator: !1,
               children: [
-                compareMembers.length > 0 ? (0, y.jsxs)(l.default, { style: F.modalTitle, children: [ae.name, " vs ", compareMembers.map(m => m.name).join(", "), " \u306e\u6bd4\u8f03"] }) : (0, y.jsxs)(l.default, { style: F.modalTitle, children: [ae.name, "\u306e\u5206\u6790\u8a73\u7d30"] }),
-                compareMembers.length > 0 ? (0, y.jsxs)(l.default, { style: F.modalDesc, children: [R, " \u306e\u7684\u4e2d\u6210\u7e3e\u6bd4\u8f03 (", ae.name, ": ", ae.hits, "/", ae.shots, " ", ae.rate.toFixed(1), "%)"] }) : (0, y.jsxs)(l.default, { style: F.modalDesc, children: [R, "\u306e\u6210\u7e3e (", ae.hits, "/", ae.shots, ") ", ae.rate.toFixed(1), "%"] }),
+                compareMembers.length > 0 ? (0, y.jsxs)(l.default, { style: F.modalTitle, children: [ae.name, " vs ", compareMembers.map(m => m.name).join(", "), " の比較"] }) : (0, y.jsxs)(l.default, { style: F.modalTitle, children: [ae.name, "の分析詳細"] }),
+                compareMembers.length > 0 ? (0, y.jsxs)(l.default, { style: F.modalDesc, children: [R, " の的中成績比較 (", ae.name, ": ", ae.hits, "/", ae.shots, " ", ae.rate.toFixed(1), "%)"] }) : (0, y.jsxs)(l.default, { style: F.modalDesc, children: [R, "の成績 (", ae.hits, "/", ae.shots, ") ", ae.rate.toFixed(1), "%"] }),
                 
                 (0, y.jsx)(o.default, {
                   style: { marginVertical: 12 },
@@ -1040,18 +1040,18 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                       (0, y.jsx)(s.default, {
                         onPress: () => { setCompareMembers([]); setIsSelectingCompareTarget(false); },
                         style: { paddingVertical: 6, paddingHorizontal: 12, backgroundColor: '#E5E5EA', borderRadius: 8 },
-                        children: (0, y.jsx)(l.default, { style: { color: '#8E8E93', fontSize: 13, fontWeight: 'bold' }, children: "\u6bd4\u8f03\u3092\u3059\u3079\u3066\u89e3\u9664" })
+                        children: (0, y.jsx)(l.default, { style: { color: '#8E8E93', fontSize: 13, fontWeight: 'bold' }, children: "比較をすべて解除" })
                       }),
                       (0, y.jsx)(s.default, {
                         onPress: () => setIsSelectingCompareTarget(true),
                         style: { paddingVertical: 6, paddingHorizontal: 12, backgroundColor: '#E1F0FF', borderRadius: 8 },
-                        children: (0, y.jsx)(l.default, { style: { color: '#007AFF', fontSize: 13, fontWeight: 'bold' }, children: "\u6bd4\u8f03\u30e1\u30f3\u30d0\u30fc\u3092\u8ffd\u52a0" })
+                        children: (0, y.jsx)(l.default, { style: { color: '#007AFF', fontSize: 13, fontWeight: 'bold' }, children: "比較メンバーを追加" })
                       })
                     ]
                   }) : (0, y.jsx)(s.default, {
                     onPress: () => setIsSelectingCompareTarget(true),
                     style: { alignSelf: 'flex-start', paddingVertical: 6, paddingHorizontal: 12, backgroundColor: '#E1F0FF', borderRadius: 8 },
-                    children: (0, y.jsx)(l.default, { style: { color: '#007AFF', fontSize: 13, fontWeight: 'bold' }, children: "\u4ed6\u306e\u30e1\u30f3\u30d0\u30fc\u3068\u6bd4\u8f03" })
+                    children: (0, y.jsx)(l.default, { style: { color: '#007AFF', fontSize: 13, fontWeight: 'bold' }, children: "他のメンバーと比較" })
                   })
                 }),
 
@@ -1061,8 +1061,8 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                     (0, y.jsxs)(o.default, {
                       style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
                       children: [
-                        (0, y.jsx)(l.default, { style: { fontSize: 14, fontWeight: 'bold', color: '#1C1C1E' }, children: "\u6bd4\u8f03\u3059\u308b\u30e1\u30f3\u30d0\u30fc\u3092\u9078\u629e" }),
-                        (0, y.jsx)(s.default, { onPress: () => setIsSelectingCompareTarget(false), children: (0, y.jsx)(l.default, { style: { color: '#007AFF', fontSize: 13, fontWeight: 'bold' }, children: "\u5b8c\u4e86" }) })
+                        (0, y.jsx)(l.default, { style: { fontSize: 14, fontWeight: 'bold', color: '#1C1C1E' }, children: "比較するメンバーを選択" }),
+                        (0, y.jsx)(s.default, { onPress: () => setIsSelectingCompareTarget(false), children: (0, y.jsx)(l.default, { style: { color: '#007AFF', fontSize: 13, fontWeight: 'bold' }, children: "完了" }) })
                       ]
                     }),
                     (0, y.jsx)(r.default, {
@@ -1104,14 +1104,14 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                     (0, y.jsxs)(o.default, {
                       style: { marginBottom: 20, marginTop: 20, alignItems: 'center' },
                       children: [
-                        (0, y.jsx)(l.default, { style: { fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 8, alignSelf: 'flex-start' }, children: "\u77e2\u6240\u306e\u6a2a\u4e26\u3079\u6bd4\u8f03" }),
+                        (0, y.jsx)(l.default, { style: { fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 8, alignSelf: 'flex-start' }, children: "矢所の横並べ比較" }),
                         (0, y.jsx)(o.default, {
                           style: { width: '100%', marginBottom: 12 },
                           children: (0, y.jsx)(we, {
                             options: [
-                              { label: '\u970e\u7684(\u5c3a\u4e8c\u5bf8)', value: 'kasumi36' },
-                              { label: '\u661f\u7684(\u5c3a\u4e8c\u5bf8)', value: 'hoshi36' },
-                              { label: '\u661f\u7684(\u516b\u5bf8)', value: 'hoshi24' }
+                              { label: '霎的(尺二寸)', value: 'kasumi36' },
+                              { label: '星的(尺二寸)', value: 'hoshi36' },
+                              { label: '星的(八寸)', value: 'hoshi24' }
                             ],
                             selected: modalTargetType,
                             onSelect: setModalTargetType,
@@ -1146,7 +1146,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                     (0, y.jsxs)(o.default, {
                       style: { marginBottom: 20 },
                       children: [
-                        (0, y.jsx)(l.default, { style: { fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 8 }, children: "\u7acb\u3061\u9806\u5225\u306e\u7684\u4e2d\u7387" }),
+                        (0, y.jsx)(l.default, { style: { fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 8 }, children: "立ち順別の的中率" }),
                         (0, y.jsx)(o.default, {
                           children: Array.from({ length: 4 }).map((_, t) => {
                             const baseStat = ae.perShotStats[t] || { shots: 0, hits: 0 };
@@ -1156,7 +1156,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                             return (0, y.jsxs)(o.default, {
                               style: { marginBottom: 12, padding: 8, backgroundColor: '#F9F9F9', borderRadius: 8 },
                               children: [
-                                (0, y.jsxs)(l.default, { style: { fontSize: 11, fontWeight: 'bold', color: '#3C3C43', marginBottom: 6 }, children: [t + 1, "\u5c04\u76ee"] }),
+                                (0, y.jsxs)(l.default, { style: { fontSize: 11, fontWeight: 'bold', color: '#3C3C43', marginBottom: 6 }, children: [t + 1, "射目"] }),
                                 (0, y.jsxs)(o.default, {
                                   style: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
                                   children: [
@@ -1193,14 +1193,14 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                     (0, y.jsxs)(o.default, {
                       style: { marginBottom: 20, alignItems: 'center' },
                       children: [
-                        (0, y.jsx)(l.default, { style: [{ fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 8, alignSelf: 'flex-start' }], children: selectedModalTrendLabel ? `\u77e2\u6240\u306e\u50be\u5411 (${selectedModalTrendLabel})` : "\u77e2\u6240\u306e\u50be\u5411 (\u96c6\u8a08)" }),
+                        (0, y.jsx)(l.default, { style: [{ fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 8, alignSelf: 'flex-start' }], children: selectedModalTrendLabel ? `矢所の傾向 (${selectedModalTrendLabel})` : "矢所の傾向 (集計)" }),
                         (0, y.jsx)(o.default, {
                           style: { width: '100%', marginBottom: 12 },
                           children: (0, y.jsx)(we, {
                             options: [
-                              { label: '\u970e\u7684(\u5c3a\u4e8c\u5bf8)', value: 'kasumi36' },
-                              { label: '\u661f\u7684(\u5c3a\u4e8c\u5bf8)', value: 'hoshi36' },
-                              { label: '\u661f\u7684(\u516b\u5bf8)', value: 'hoshi24' }
+                              { label: '霎的(尺二寸)', value: 'kasumi36' },
+                              { label: '星的(尺二寸)', value: 'hoshi36' },
+                              { label: '星的(八寸)', value: 'hoshi24' }
                             ],
                             selected: modalTargetType,
                             onSelect: setModalTargetType,
@@ -1213,7 +1213,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                     (0, y.jsxs)(o.default, {
                       style: { marginBottom: 16 },
                       children: [
-                        (0, y.jsx)(l.default, { style: { fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 8 }, children: "\u7acb\u3061\u9806\u5225\u306e\u7684\u4e2d\u7387 (1-4\u5c04\u76ee)" }),
+                        (0, y.jsx)(l.default, { style: { fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 8 }, children: "立ち順別の的中率 (1-4射目)" }),
                         (0, y.jsx)(o.default, {
                           style: F.statsGrid,
                           children: Array.from({ length: 4 }).map((e, t) => {
@@ -1222,7 +1222,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                             return (0, y.jsxs)(o.default, {
                               style: F.statBox,
                               children: [
-                                (0, y.jsxs)(l.default, { style: F.statBoxTitle, children: [t + 1, "\u5c04\u76ee"] }),
+                                (0, y.jsxs)(l.default, { style: F.statBoxTitle, children: [t + 1, "射目"] }),
                                 (0, y.jsxs)(l.default, { style: F.statBoxRate, children: [a.toFixed(0), "%"] }),
                                 (0, y.jsxs)(l.default, { style: F.statBoxCounts, children: [n.hits, "/", n.shots] })
                               ]
@@ -1234,10 +1234,10 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                     (0, y.jsxs)(o.default, {
                       style: { marginBottom: 24 },
                       children: [
-                        (0, y.jsx)(l.default, { style: { fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 12 }, children: "\u7acb\u306e\u7d50\u679c\u5206\u5e03 (4\u5c04\u5358\u4f4d)" }),
+                        (0, y.jsx)(l.default, { style: { fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 12 }, children: "立の結果分布 (4射単位)" }),
                         (0, y.jsx)(o.default, {
                           style: F.patternsCard,
-                          children: [{ label: '\u7686\u4e2d', key: 'kaichu', color: '#FF9500' }, { label: '\u4e09\u4e2d', key: 'sanchu', color: '#34C759' }, { label: '\u7fbd\u5206', key: 'hake', color: '#007AFF' }, { label: '\u4e00\u4e2d', key: 'icchu', color: '#5856D6' }, { label: '\u6b8b\u5ff5', key: 'zannen', color: '#FF3B30' }].map(e => {
+                          children: [{ label: '皆中', key: 'kaichu', color: '#FF9500' }, { label: '三中', key: 'sanchu', color: '#34C759' }, { label: '羽分', key: 'hake', color: '#007AFF' }, { label: '一中', key: 'icchu', color: '#5856D6' }, { label: '残念', key: 'zannen', color: '#FF3B30' }].map(e => {
                             const t = ae.patterns[e.key] || 0;
                             const n = Object.values(ae.patterns).reduce((e, t) => e + t, 0);
                             const a = n > 0 ? t / n * 100 : 0;
@@ -1246,7 +1246,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                               children: [
                                 (0, y.jsx)(o.default, { style: { width: 45 }, children: (0, y.jsx)(l.default, { style: F.patternLabelText, children: e.label }) }),
                                 (0, y.jsx)(o.default, { style: { flex: 1 }, children: (0, y.jsx)(o.default, { style: F.barContainer, children: (0, y.jsx)(o.default, { style: [F.barFill, { width: `${Math.max(a, t > 0 ? 3 : 0)}%`, backgroundColor: e.color }] }) }) }),
-                                (0, y.jsx)(o.default, { style: { width: 50, alignItems: 'flex-end' }, children: (0, y.jsxs)(l.default, { style: F.patternValueText, children: [t, "\u56de"] }) })
+                                (0, y.jsx)(o.default, { style: { width: 50, alignItems: 'flex-end' }, children: (0, y.jsxs)(l.default, { style: F.patternValueText, children: [t, "回"] }) })
                               ]
                             }, e.key);
                           })
@@ -1262,7 +1262,7 @@ const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
                     setCompareMembers([]);
                     setIsSelectingCompareTarget(false);
                   }, 
-                  children: (0, y.jsx)(l.default, { style: F.closeBtnText, children: "\u9589\u3058\u308b" }) 
+                  children: (0, y.jsx)(l.default, { style: F.closeBtnText, children: "閉じる" }) 
                 })
               ]
             })

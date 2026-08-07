@@ -272,7 +272,7 @@ export const ArrowLocationPopover = ({
                 if (locTargetType !== arrowTargetType) return null;
 
                 const mark = archerMarks[idx];
-                const isHit = mark === '○' || mark === '\u25cb'; // 的中
+                const isHit = mark === '○' || mark === '○'; // 的中
                 const isCurrent = idx === shotIndex;
                 
                 // 正規化座標からピクセル座標へ逆変換
