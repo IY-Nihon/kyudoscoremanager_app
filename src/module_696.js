@@ -8,6 +8,6 @@
  * 利用箇所: src/JP_CustomCalendarModal_695.js
  * 使用API : getDate, getDaysInMonth, getMonth, getYear, setDate, setMonth, setYear
  */
-"use strict";
+'use strict';
 
 module.exports = require('date-fns');

@@ -1,6 +1,6 @@
 /**
  * Library Bridge: module_38.js
  */
-"use strict";
+'use strict';
 
 module.exports = require('react');

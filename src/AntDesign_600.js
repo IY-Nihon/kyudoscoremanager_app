@@ -9,6 +9,6 @@
  * 使用API : Ionicons, MaterialCommunityIcons のみ
  *           （src/ArrowLocationPopover.js は既に直接 import しており動作実績あり）
  */
-"use strict";
+'use strict';
 
 module.exports = require('@expo/vector-icons');

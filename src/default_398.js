@@ -14,7 +14,7 @@
  * placeholderTextColor も未指定だとブラウザ既定の濃いグレーになり
  * 暗い背景で沈むため、既定値を与えている。
  */
-"use strict";
+'use strict';
 
 const React = require('react');
 const { TextInput } = require('react-native');

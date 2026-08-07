@@ -20,7 +20,7 @@
  * ログイン画面は元から独自のダーク基調（#030508 + 金 #E5C184/#B8965A）で
  * 設計されており、下表のライト色を使っていないため自動的に対象外になる。
  */
-"use strict";
+'use strict';
 
 /**
  * ■ 変換表を用途別に分けている理由
@@ -146,7 +146,7 @@ const KEY_KIND = {
 
   // react-native-svg（分析画面のグラフ）
   stroke: 'border', // 罫線・折れ線
-  fill: 'text',     // 点や塗り。'none' などの非色は mapColor が素通しする
+  fill: 'text', // 点や塗り。'none' などの非色は mapColor が素通しする
   stopColor: 'bg',
 };
 
@@ -208,8 +208,7 @@ function mapColor(value, kind) {
 
   // 3桁HEXの省略記法（#333）を6桁へ展開してから引く。
   // 展開しないと #333 や #eee が対応表に当たらず素通りしてしまう。
-  const expand = (h) =>
-    /^#[0-9a-f]{3}$/.test(h) ? '#' + h[1] + h[1] + h[2] + h[2] + h[3] + h[3] : h;
+  const expand = (h) => (/^#[0-9a-f]{3}$/.test(h) ? '#' + h[1] + h[1] + h[2] + h[2] + h[3] + h[3] : h);
 
   const normalized = ALIASES[key] || expand(key);
   const direct = table[normalized];
