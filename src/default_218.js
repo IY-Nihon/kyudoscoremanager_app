@@ -6,7 +6,7 @@
  *
  * 利用側は default import（`X.default`）で参照するため、__esModule + default を明示する。
  */
-"use strict";
+'use strict';
 
 const { Pressable } = require('react-native');
 

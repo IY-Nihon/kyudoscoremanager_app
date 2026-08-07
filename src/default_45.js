@@ -15,7 +15,7 @@
  * ライトモード時は theme.mapStyle が即座に原オブジェクトを返すため
  * 追加コストはほぼ無い。
  */
-"use strict";
+'use strict';
 
 const { StyleSheet } = require('react-native');
 const theme = require('./theme');

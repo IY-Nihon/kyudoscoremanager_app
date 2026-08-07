@@ -1,18 +1,262 @@
 /**
  * Module ID: 690
  */
-"use strict";
+'use strict';
 
-const g = (typeof global !== "undefined" ? global : typeof window !== "undefined" ? window : this);
+const g = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : this;
 const r = require;
-const i = (typeof metroImport !== 'undefined' ? metroImport : undefined);
-const a = (typeof id !== 'undefined' ? id : 690);
+const i = typeof metroImport !== 'undefined' ? metroImport : undefined;
+const a = typeof id !== 'undefined' ? id : 690;
 const m = module;
 const _e = exports;
-const d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
+const d = typeof dependencyMap !== 'undefined' ? dependencyMap : [];
 
-"use strict";function e(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(_e,'__esModule',{value:!0}),Object.defineProperty(_e,"SaveSessionModal",{enumerable:!0,get:function(){return b}});var t=require("./module_37"),n=e(t),l=e(require("./default_144")),o=e(require("./default_217")),s=e(require("./default_45")),c=e(require("./default_386")),u=e(require("./default_398")),f=e(require("./default_382")),h=e(require("./default_385")),x=e(require("./default_371")),p=e(require("./default_297")),y=require("./JP_useScoreStore_174"),T=require("./IS_WEB_199"),C=require("./module_592"),j=require("./module_427");const normalizeTag = e => {
-    if ('string' != typeof e) return '';
-    let t = e.trim().replace(/^[#＃\s]+/, '');
-    return t = t.replace(/＃/g, '#'), t ? `#${t}` : '';
-};const S=['練習試合','正規練習','大会','自主稽古','アリーナ','屋外','晴れ','曇り','雨天','強風'],b=({visible:e,onClose:C,onSave:b})=>{const{includeInStats:v,setIncludeInStats:B,tagTemplates:A=[],currentSessionTags:z=[],setCurrentSessionTags:k,toggleCurrentSessionTag:I}=(0,y.useScoreStore)(),W=A.length>0?A:S,[E,P]=(0,t.useState)(''),[R,w]=(0,t.useState)(''),[_,O]=(0,t.useState)(z.join(' ')),[V,H]=(0,t.useState)(!1);n.default.useEffect(()=>{O(z.join(' '))},[z,e]);const K=e=>{e?(B(!0),b(E.trim(),R.trim(),!0,z.join(' ')),P(''),w('')):H(!0)};return(0,j.jsx)(c.default,{visible:e,transparent:!0,animationType:"fade",children:(0,j.jsxs)(l.default,{style:F.overlay,children:[(0,j.jsx)(f.default,{style:s.default.absoluteFill,activeOpacity:1,onPress:x.default.dismiss}),(0,j.jsx)(h.default,{behavior:T.IS_IOS?'padding':void 0,style:F.container,children:V?(0,j.jsxs)(l.default,{children:[(0,j.jsx)(o.default,{style:F.headerTitle,children:"統計の除外確認"}),(0,j.jsxs)(o.default,{style:F.subTitle,children:["この記録を統計（分析画面）に含めずに保存しますか？",'\n',"（特定の練習などを除外したい場合に利用します）"]}),(0,j.jsx)(l.default,{style:F.separator}),(0,j.jsx)(f.default,{style:[F.mainSaveBtn,{backgroundColor:'#FF3B30'}],onPress:()=>{B(!1),b(E.trim(),R.trim(),!1,z.join(' ')),P(''),w(''),H(!1)},children:(0,j.jsx)(o.default,{style:F.mainSaveTxt,children:"統計に含めず保存"})}),(0,j.jsx)(f.default,{style:F.cancelBtn,onPress:()=>H(!1),children:(0,j.jsx)(o.default,{style:F.cancelTxt,children:"戻る"})})]}):(0,j.jsxs)(l.default,{children:[(0,j.jsx)(o.default,{style:F.headerTitle,children:"練習記録の保存"}),(0,j.jsx)(o.default,{style:F.subTitle,children:"保存内容を入力してください。"}),(0,j.jsx)(l.default,{style:F.inputContainer,children:(0,j.jsx)(u.default,{style:F.input,placeholder:"大会名・練習名（例: ○○大会）",placeholderTextColor:"#C7C7CC",value:E,onChangeText:P,returnKeyType:"next"})}),(0,j.jsx)(l.default,{style:F.inputContainer,children:(0,j.jsx)(u.default,{style:F.input,placeholder:"練習メモ（例: 合宿1日目）",placeholderTextColor:"#C7C7CC",value:R,onChangeText:w,returnKeyType:"done"})}),(0,j.jsxs)(l.default,{style:F.tagsAreaContainer,children:[(0,j.jsx)(u.default,{style:F.input,placeholder:"タグ（例: #審査前, #雨天）",placeholderTextColor:"#C7C7CC",value:_,onChangeText:e=>{O(e);const t=e.split(/[\s,\u3001]+/).map(normalizeTag).filter(Boolean);k(t)},returnKeyType:"done"}),(0,j.jsx)(p.default,{horizontal:!0,showsHorizontalScrollIndicator:!1,style:F.presetTagsScroll,contentContainerStyle:F.presetTagsContainer,children:W.map(e=>{const t=normalizeTag(e),n=z.map(normalizeTag).includes(t);return(0,j.jsx)(f.default,{ style:[F.presetTagBtn,n&&F.presetTagBtnActive],onPress:()=>{I(t)},children:(0,j.jsx)(o.default,{style:[F.presetTagTxt,n&&F.presetTagTxtActive],children:t})}, e)})})]}),(0,j.jsx)(l.default,{style:F.separator}),(0,j.jsx)(f.default,{style:F.mainSaveBtn,onPress:()=>K(!0),children:(0,j.jsx)(o.default,{style:F.mainSaveTxt,children:"保存"})}),(0,j.jsx)(f.default,{style:F.secondaryBtn,onPress:()=>K(!1),children:(0,j.jsx)(o.default,{style:F.secondaryTxt,children:"統計に含めないで保存"})}),(0,j.jsx)(f.default,{style:F.cancelBtn,onPress:()=>{P(''),w(''),O(''),H(!1),C()},children:(0,j.jsx)(o.default,{style:F.cancelTxt,children:"キャンセル"})})]})})]})})},F=s.default.create({overlay:{flex:1,backgroundColor:'rgba(0,0,0,0.4)',justifyContent:'center',alignItems:'center',padding:20},container:Object.assign({width:'100%',maxWidth:400,backgroundColor:'#FFF',borderRadius:14,padding:20},(0,C.getShadowStyle)({shadowColor:'#000',shadowOpacity:.15,shadowRadius:20,elevation:10})),headerTitle:{fontSize:17,fontWeight:'bold',textAlign:'center',marginBottom:4},subTitle:{fontSize:13,color:'#8E8E93',textAlign:'center',marginBottom:16},inputContainer:{marginBottom:10},tagsAreaContainer:{marginBottom:8},input:{backgroundColor:'#F2F2F7',borderRadius:10,paddingHorizontal:16,paddingVertical:14,fontSize:16,color:'#000'},presetTagsScroll:{marginTop:8},presetTagsContainer:{paddingRight:10,gap:8,flexDirection:'row'},presetTagBtn:{backgroundColor:'#F2F2F7',paddingHorizontal:12,paddingVertical:6,borderRadius:16,borderWidth:1,borderColor:'#E5E5EA'},presetTagBtnActive:{backgroundColor:'#007AFF',borderColor:'#007AFF'},presetTagTxt:{fontSize:13,color:'#666'},presetTagTxtActive:{color:'#FFF',fontWeight:'bold'},separator:{height:s.default.hairlineWidth,backgroundColor:'#E5E5EA',marginVertical:10},mainSaveBtn:{paddingVertical:14,alignItems:'center',borderRadius:10,backgroundColor:'#007AFF',marginBottom:8},mainSaveTxt:{color:'#FFF',fontWeight:'bold',fontSize:16},secondaryBtn:{paddingVertical:14,alignItems:'center',borderRadius:10,backgroundColor:'#F2F2F7',marginBottom:8},secondaryTxt:{color:'#FF3B30',fontWeight:'600',fontSize:15},cancelBtn:{paddingVertical:14,alignItems:'center',borderRadius:10,backgroundColor:'#F2F2F7'},cancelTxt:{color:'#007AFF',fontWeight:'600',fontSize:16}})
+('use strict');
+function e(e) {
+  return e && e.__esModule ? e : { default: e };
+}
+(Object.defineProperty(_e, '__esModule', { value: !0 }),
+  Object.defineProperty(_e, 'SaveSessionModal', {
+    enumerable: !0,
+    get: function () {
+      return b;
+    },
+  }));
+var t = require('./module_37'),
+  n = e(t),
+  l = e(require('./default_144')),
+  o = e(require('./default_217')),
+  s = e(require('./default_45')),
+  c = e(require('./default_386')),
+  u = e(require('./default_398')),
+  f = e(require('./default_382')),
+  h = e(require('./default_385')),
+  x = e(require('./default_371')),
+  p = e(require('./default_297')),
+  y = require('./JP_useScoreStore_174'),
+  T = require('./IS_WEB_199'),
+  C = require('./module_592'),
+  j = require('./module_427');
+const normalizeTag = (e) => {
+  if ('string' != typeof e) return '';
+  let t = e.trim().replace(/^[#＃\s]+/, '');
+  return ((t = t.replace(/＃/g, '#')), t ? `#${t}` : '');
+};
+const S = ['練習試合', '正規練習', '大会', '自主稽古', 'アリーナ', '屋外', '晴れ', '曇り', '雨天', '強風'],
+  b = ({ visible: e, onClose: C, onSave: b }) => {
+    const {
+        includeInStats: v,
+        setIncludeInStats: B,
+        tagTemplates: A = [],
+        currentSessionTags: z = [],
+        setCurrentSessionTags: k,
+        toggleCurrentSessionTag: I,
+      } = (0, y.useScoreStore)(),
+      W = A.length > 0 ? A : S,
+      [E, P] = (0, t.useState)(''),
+      [R, w] = (0, t.useState)(''),
+      [_, O] = (0, t.useState)(z.join(' ')),
+      [V, H] = (0, t.useState)(!1);
+    n.default.useEffect(() => {
+      O(z.join(' '));
+    }, [z, e]);
+    const K = (e) => {
+      e ? (B(!0), b(E.trim(), R.trim(), !0, z.join(' ')), P(''), w('')) : H(!0);
+    };
+    return (0, j.jsx)(c.default, {
+      visible: e,
+      transparent: !0,
+      animationType: 'fade',
+      children: (0, j.jsxs)(l.default, {
+        style: F.overlay,
+        children: [
+          (0, j.jsx)(f.default, {
+            style: s.default.absoluteFill,
+            activeOpacity: 1,
+            onPress: x.default.dismiss,
+          }),
+          (0, j.jsx)(h.default, {
+            behavior: T.IS_IOS ? 'padding' : void 0,
+            style: F.container,
+            children: V
+              ? (0, j.jsxs)(l.default, {
+                  children: [
+                    (0, j.jsx)(o.default, { style: F.headerTitle, children: '統計の除外確認' }),
+                    (0, j.jsxs)(o.default, {
+                      style: F.subTitle,
+                      children: [
+                        'この記録を統計（分析画面）に含めずに保存しますか？',
+                        '\n',
+                        '（特定の練習などを除外したい場合に利用します）',
+                      ],
+                    }),
+                    (0, j.jsx)(l.default, { style: F.separator }),
+                    (0, j.jsx)(f.default, {
+                      style: [F.mainSaveBtn, { backgroundColor: '#FF3B30' }],
+                      onPress: () => {
+                        (B(!1), b(E.trim(), R.trim(), !1, z.join(' ')), P(''), w(''), H(!1));
+                      },
+                      children: (0, j.jsx)(o.default, { style: F.mainSaveTxt, children: '統計に含めず保存' }),
+                    }),
+                    (0, j.jsx)(f.default, {
+                      style: F.cancelBtn,
+                      onPress: () => H(!1),
+                      children: (0, j.jsx)(o.default, { style: F.cancelTxt, children: '戻る' }),
+                    }),
+                  ],
+                })
+              : (0, j.jsxs)(l.default, {
+                  children: [
+                    (0, j.jsx)(o.default, { style: F.headerTitle, children: '練習記録の保存' }),
+                    (0, j.jsx)(o.default, { style: F.subTitle, children: '保存内容を入力してください。' }),
+                    (0, j.jsx)(l.default, {
+                      style: F.inputContainer,
+                      children: (0, j.jsx)(u.default, {
+                        style: F.input,
+                        placeholder: '大会名・練習名（例: ○○大会）',
+                        placeholderTextColor: '#C7C7CC',
+                        value: E,
+                        onChangeText: P,
+                        returnKeyType: 'next',
+                      }),
+                    }),
+                    (0, j.jsx)(l.default, {
+                      style: F.inputContainer,
+                      children: (0, j.jsx)(u.default, {
+                        style: F.input,
+                        placeholder: '練習メモ（例: 合宿1日目）',
+                        placeholderTextColor: '#C7C7CC',
+                        value: R,
+                        onChangeText: w,
+                        returnKeyType: 'done',
+                      }),
+                    }),
+                    (0, j.jsxs)(l.default, {
+                      style: F.tagsAreaContainer,
+                      children: [
+                        (0, j.jsx)(u.default, {
+                          style: F.input,
+                          placeholder: 'タグ（例: #審査前, #雨天）',
+                          placeholderTextColor: '#C7C7CC',
+                          value: _,
+                          onChangeText: (e) => {
+                            O(e);
+                            const t = e
+                              .split(/[\s,\u3001]+/)
+                              .map(normalizeTag)
+                              .filter(Boolean);
+                            k(t);
+                          },
+                          returnKeyType: 'done',
+                        }),
+                        (0, j.jsx)(p.default, {
+                          horizontal: !0,
+                          showsHorizontalScrollIndicator: !1,
+                          style: F.presetTagsScroll,
+                          contentContainerStyle: F.presetTagsContainer,
+                          children: W.map((e) => {
+                            const t = normalizeTag(e),
+                              n = z.map(normalizeTag).includes(t);
+                            return (0, j.jsx)(
+                              f.default,
+                              {
+                                style: [F.presetTagBtn, n && F.presetTagBtnActive],
+                                onPress: () => {
+                                  I(t);
+                                },
+                                children: (0, j.jsx)(o.default, {
+                                  style: [F.presetTagTxt, n && F.presetTagTxtActive],
+                                  children: t,
+                                }),
+                              },
+                              e
+                            );
+                          }),
+                        }),
+                      ],
+                    }),
+                    (0, j.jsx)(l.default, { style: F.separator }),
+                    (0, j.jsx)(f.default, {
+                      style: F.mainSaveBtn,
+                      onPress: () => K(!0),
+                      children: (0, j.jsx)(o.default, { style: F.mainSaveTxt, children: '保存' }),
+                    }),
+                    (0, j.jsx)(f.default, {
+                      style: F.secondaryBtn,
+                      onPress: () => K(!1),
+                      children: (0, j.jsx)(o.default, {
+                        style: F.secondaryTxt,
+                        children: '統計に含めないで保存',
+                      }),
+                    }),
+                    (0, j.jsx)(f.default, {
+                      style: F.cancelBtn,
+                      onPress: () => {
+                        (P(''), w(''), O(''), H(!1), C());
+                      },
+                      children: (0, j.jsx)(o.default, { style: F.cancelTxt, children: 'キャンセル' }),
+                    }),
+                  ],
+                }),
+          }),
+        ],
+      }),
+    });
+  },
+  F = s.default.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.4)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    container: Object.assign(
+      { width: '100%', maxWidth: 400, backgroundColor: '#FFF', borderRadius: 14, padding: 20 },
+      (0, C.getShadowStyle)({ shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, elevation: 10 })
+    ),
+    headerTitle: { fontSize: 17, fontWeight: 'bold', textAlign: 'center', marginBottom: 4 },
+    subTitle: { fontSize: 13, color: '#8E8E93', textAlign: 'center', marginBottom: 16 },
+    inputContainer: { marginBottom: 10 },
+    tagsAreaContainer: { marginBottom: 8 },
+    input: {
+      backgroundColor: '#F2F2F7',
+      borderRadius: 10,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      fontSize: 16,
+      color: '#000',
+    },
+    presetTagsScroll: { marginTop: 8 },
+    presetTagsContainer: { paddingRight: 10, gap: 8, flexDirection: 'row' },
+    presetTagBtn: {
+      backgroundColor: '#F2F2F7',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: '#E5E5EA',
+    },
+    presetTagBtnActive: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
+    presetTagTxt: { fontSize: 13, color: '#666' },
+    presetTagTxtActive: { color: '#FFF', fontWeight: 'bold' },
+    separator: { height: s.default.hairlineWidth, backgroundColor: '#E5E5EA', marginVertical: 10 },
+    mainSaveBtn: {
+      paddingVertical: 14,
+      alignItems: 'center',
+      borderRadius: 10,
+      backgroundColor: '#007AFF',
+      marginBottom: 8,
+    },
+    mainSaveTxt: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
+    secondaryBtn: {
+      paddingVertical: 14,
+      alignItems: 'center',
+      borderRadius: 10,
+      backgroundColor: '#F2F2F7',
+      marginBottom: 8,
+    },
+    secondaryTxt: { color: '#FF3B30', fontWeight: '600', fontSize: 15 },
+    cancelBtn: { paddingVertical: 14, alignItems: 'center', borderRadius: 10, backgroundColor: '#F2F2F7' },
+    cancelTxt: { color: '#007AFF', fontWeight: '600', fontSize: 16 },
+  });

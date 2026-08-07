@@ -1,14 +1,1472 @@
 /**
  * Module ID: 593
  */
-"use strict";
+'use strict';
 
-const g = (typeof global !== "undefined" ? global : typeof window !== "undefined" ? window : this);
+const g = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : this;
 const r = require;
-const i = (typeof metroImport !== 'undefined' ? metroImport : undefined);
-const _a = (typeof id !== 'undefined' ? id : 593);
+const i = typeof metroImport !== 'undefined' ? metroImport : undefined;
+const _a = typeof id !== 'undefined' ? id : 593;
 const _m = module;
 const _e = exports;
-const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
+const _d = typeof dependencyMap !== 'undefined' ? dependencyMap : [];
 
-"use strict";function e(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(_e,'__esModule',{value:!0}),Object.defineProperty(_e,"RecordScreen",{enumerable:!0,get:function(){return k}});var t=require("./module_37"),o=e(t),l=e(require("./default_144")),n=e(require("./default_297")),s=e(require("./default_45")),a=e(require("./default_217")),d=e(require("./default_386")),c=e(require("./default_398")),u=e(require("./module_198")),f=e(require("./default_218"));require("./module_98");var h=e(require("./default_382")),m=require("./IS_WEB_199");require("./module_420");var x=require("./JP_useScoreStore_174"),y=require("./JP_ArcherColumnView_594"),b=require("./JP_LabelColumn_688"),F=require("./module_595"),j=(function(e){if(e&&e.__esModule)return e;var t={};return e&&Object.keys(e).forEach(function(o){var l=Object.getOwnPropertyDescriptor(e,o);Object.defineProperty(t,o,l.get?l:{enumerable:!0,get:function(){return e[o]}})}),t.default=e,t})(require("./NotificationFeedbackType_597")),S=require("./JP_ArcherActionModal_689"),p=require("./AntDesign_600"),C=require("./JP_SaveSessionModal_690"),AttendanceCheckModal=require("./AttendanceCheckModal").AttendanceCheckModal,I=require("./JP_ManualSubstitutionModal_691"),v=require("./JP_module_687"),B=require("./module_592"),A=require("./module_427"),{ArrowLocationPopover}=require("./ArrowLocationPopover"),{OCRRecordModal}=require("./JP_OCRRecordModal");const k=()=>{const{activeSessionID:e,isAdminMode:B=!1,archers:k=[],shotsPerRound:T=8,syncStatus:z="IDLE",lastSyncTime:w,isNetworkOnline:E=!0,offlineSaveWarning:オフライン保存の警告=null,addArcher:R,addSeparator:P,addTotalCalculator:L,undo:D,redo:H,historyStack:_=[],redoStack:O=[],deleteArcher:M,clearArcherMarks:N,setArcherMember:V,saveSession:U,setShotsPerRound:G,showSyncErrorPopups:$=!0,viewScale:q=1,setViewScale:J,isLiveActive:K=!1,setIsLiveActive:Q,isHost:X=!1,liveSessionName:Y,includeInStats:Z=!0,setIncludeInStats:ee,resetCurrentSession:te,members:oe=[],isHydrated:re,lastResetHandled:le,activeGroupId:ne,publicGroupId:ie,activeArrowLocationEdit,setActiveArrowLocationEdit}=(0,x.useScoreStore)(),se='number'==typeof q&&!isNaN(q)&&q>0?q:1;if(!re)return null;const ae=(0,x.useScoreStore)(e=>e.liveSessionsList),[de,ce]=(0,t.useState)(!1),[ue,fe]=(0,t.useState)(null),[he,ge]=(0,t.useState)(0),[me,xe]=(0,t.useState)(!1),[ye,be]=(0,t.useState)(!1),[Fe,je]=(0,t.useState)(null),[警告を閉じた,警告を閉じる]=(0,t.useState)(!1),Se=o.default.useRef(0),[pe,Ce]=(0,t.useState)(!1),[Ie,ve]=(0,t.useState)(!1),[Be,Ae]=(0,t.useState)(8),[ke,We]=(0,t.useState)(!1),[Te,ze]=(0,t.useState)(''),[we,Ee]=(0,t.useState)(!1),[Re,Pe]=(0,t.useState)(null),[Le,De]=(0,t.useState)(''),[He,Oe]=(0,t.useState)(!1),[Me,Ne]=(0,t.useState)(null),[showAttendance,setShowAttendance]=(0,t.useState)(!1),[tempAttendance,setTempAttendance]=(0,t.useState)(null),[showOCRModal,setShowOCRModal]=(0,t.useState)(!1),Ve=o.default.useRef(null),Ue=o.default.useRef(null),Ge=e=>{je(e),setTimeout(()=>je(null),1500)};o.default.useEffect(()=>{'同期エラー'===z&&$&&je('同期エラー: クラウドとの同期に失敗しました')},[z,$]),o.default.useEffect(()=>{if(le>0&&Se.current<le){const e=le===x.useScoreStore.getState().lastPushedTimestamp;Se.current=le,e||(Ge('リセットしました。'),j.notificationAsync(j.NotificationFeedbackType.Warning))}},[le]),o.default.useEffect(()=>{x.useScoreStore.getState().loadData()},[]),o.default.useEffect(()=>{let e;return He&&'join'===Re&&(x.useScoreStore.getState().fetchActiveLiveSessions(),e=x.useScoreStore.getState().listenToLiveSessions()),()=>{e&&e()}},[He,Re]);(new Date).toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit'});const $e=!1,qe=(e,t,o)=>{j.impactAsync(j.ImpactFeedbackStyle.Medium);k.find(t=>t.id===e)&&(fe(e),ge(o),ce(!0))},[Je,Ke]=(0,t.useState)(!1),Qe=()=>Ke(!1),Xe=e=>{e<T&&k.some(t=>t&&Array.isArray(t.marks)&&t.marks.slice(e).some(e=>''!==e))?(Ae(e),ve(!0)):(G(e),j.impactAsync(j.ImpactFeedbackStyle.Medium))},Ye=()=>{const e=parseInt(Te,10);!isNaN(e)&&e>=1&&e<=500?(We(!1),Xe(e)):(je('1〜500までの数字を入力してください'),setTimeout(()=>je(null),1500))},Ze=e=>{Ee(!1),Pe(e),De(''),setTimeout(()=>{Oe(!0)},100)},et=l.default;return(0,A.jsxs)(et,{style:W.safeArea,edges:['top','left','right','bottom'],children:[オフライン保存の警告&&!警告を閉じた?(0,A.jsx)(h.default,{style:{backgroundColor:'#B00020',paddingVertical:8,paddingHorizontal:12},onPress:()=>警告を閉じる(!0),children:(0,A.jsx)(a.default,{style:{color:'#FFF',fontSize:12,lineHeight:17,textAlign:'center'},children:`${オフライン保存の警告}（タップで閉じる）`})}):null,K&&Y?(0,A.jsxs)(l.default,{style:[W.liveStatusHeader,W.liveActiveHeader,{marginHorizontal:8,borderRadius:8}],children:[(0,A.jsx)(p.Ionicons,{name:"radio-outline",size:12,color:"#FFF"}),(0,A.jsxs)(a.default,{style:W.liveStatusText,numberOfLines:1,children:["ライブ中: ",Y]})]}):null,(0,A.jsxs)(l.default,{style:[W.navBar,{zIndex:1e4}],children:[(0,A.jsxs)(l.default,{style:W.navLeft,children:[(0,A.jsx)(f.default,{onPress:()=>{Ce(!0)},hitSlop:{top:20,bottom:20,left:20,right:20},style:({hovered:e})=>[W.resetBtn,e&&m.IS_WEB&&{opacity:.8}],children:(0,A.jsx)(a.default,{style:W.resetBtnText,children:'リセット'})}),(0,A.jsxs)(l.default,{style:W.syncContainer,children:[E&&'同期エラー'!==z?'同期中'===z?(0,A.jsx)(p.Ionicons,{name:"cloud-upload-outline",size:14,color:"#007AFF"}):'同期済み'===z?(0,A.jsx)(p.Ionicons,{name:"cloud-done-outline",size:14,color:"#34C759"}):(0,A.jsx)(p.Ionicons,{name:"cloud-outline",size:14,color:"#8E8E93"}):(0,A.jsx)(p.Ionicons,{name:"cloud-offline-outline",size:14,color:"#FF3B30"}),!1]}),ie||ne?(0,A.jsxs)(l.default,{style:[W.groupBadge,m.IS_WEB&&W.groupBadgeWeb],children:[(0,A.jsx)(p.Ionicons,{name:"business",size:10,color:m.IS_WEB?"#007AFF":"#8E8E93",style:{marginRight:2}}),(0,A.jsx)(a.default,{style:[{fontSize:10,fontWeight:'bold'},{color:m.IS_WEB?"#007AFF":"#8E8E93"}],children:String(ie||ne)})]}):null]}),(0,A.jsxs)(l.default,{style:W.navRight,children:[(0,A.jsxs)(h.default,{onPress:()=>{K?(x.useScoreStore.getState().stopLiveSync(),j.notificationAsync(j.NotificationFeedbackType.Warning)):Ee(!0)},style:[W.liveBtn,K&&W.liveBtnActive],children:[(0,A.jsx)(p.Ionicons,{name:"radio-outline",size:16,color:K?"#FFF":"#007AFF"}),(0,A.jsx)(a.default,{style:[W.liveBtnText,K&&W.liveBtnTextActive],children:K?X?'停止':'退出':'ライブ'})]}),(0,A.jsxs)(l.default,{style:W.zoomContainer,children:[(0,A.jsx)(h.default,{onPress:()=>{J(se-.1),j.impactAsync(j.ImpactFeedbackStyle.Light)},style:W.zoomBtn,children:(0,A.jsx)(p.Ionicons,{name:"remove-circle-outline",size:22,color:"#007AFF"})}),(0,A.jsx)(h.default,{onPress:()=>{J(se+.1),j.impactAsync(j.ImpactFeedbackStyle.Light)},style:W.zoomBtn,children:(0,A.jsx)(p.Ionicons,{name:"add-circle-outline",size:22,color:"#007AFF"})})]}),(0,A.jsx)(h.default,{onPress:()=>Ke(!0),style:W.shotsToggle,children:(0,A.jsxs)(a.default,{style:W.shotsText,children:[T,"射"]})})]})]}),(0,A.jsx)(d.default,{visible:Je,transparent:!0,animationType:"fade",onRequestClose:Qe,children:(0,A.jsxs)(f.default,{style:{flex:1,backgroundColor:'rgba(0,0,0,0.4)',justifyContent:'flex-end',alignItems:'center',paddingBottom:40},onPress:Qe,children:[(0,A.jsxs)(l.default,{style:{width:'90%',maxWidth:400,backgroundColor:'#FFF',borderRadius:14,overflow:'hidden'},children:[(0,A.jsx)(l.default,{style:{padding:16,borderBottomWidth:s.default.hairlineWidth,borderBottomColor:'#C6C6C8',alignItems:'center'},children:(0,A.jsx)(a.default,{style:{fontSize:13,color:'#8E8E93',fontWeight:'600'},children:"射数の設定"})}),[4,8,12,16,20].map(e=>(0,A.jsx)(f.default,{style:({hovered:e})=>[{padding:18,alignItems:'center',borderBottomWidth:s.default.hairlineWidth,borderBottomColor:'#C6C6C8'},e&&m.IS_WEB&&{backgroundColor:'#F2F2F7'}],onPress:()=>{Xe(e),Qe()},children:(0,A.jsxs)(a.default,{style:{fontSize:20,color:'#007AFF'},children:[e,"射"]})},`shot-option-${e}`)),(0,A.jsx)(f.default,{style:({hovered:e})=>[{padding:18,alignItems:'center'},e&&m.IS_WEB&&{backgroundColor:'#F2F2F7'}],onPress:()=>{Qe(),setTimeout(()=>{ze(String(T)),We(!0)},100)},children:(0,A.jsx)(a.default,{style:{fontSize:20,color:'#007AFF'},children:"任意..."})})]}),(0,A.jsx)(f.default,{style:({hovered:e})=>[{width:'90%',maxWidth:400,backgroundColor:'#FFF',borderRadius:14,marginTop:8,padding:18,alignItems:'center'},e&&m.IS_WEB&&{opacity:.8}],onPress:Qe,children:(0,A.jsx)(a.default,{style:{fontSize:20,color:'#007AFF',fontWeight:'bold'},children:"キャンセル"})})]})}),(0,A.jsx)(d.default,{visible:we,transparent:!0,animationType:"fade",onRequestClose:()=>Ee(!1),children:(0,A.jsxs)(h.default,{style:{flex:1,backgroundColor:'rgba(0,0,0,0.4)',justifyContent:'flex-end',alignItems:'center',paddingBottom:40},activeOpacity:1,onPress:()=>Ee(!1),children:[(0,A.jsxs)(l.default,{style:{width:'90%',maxWidth:400,backgroundColor:'#FFF',borderRadius:14,overflow:'hidden'},children:[(0,A.jsx)(h.default,{style:{padding:18,alignItems:'center',borderBottomWidth:s.default.hairlineWidth,borderBottomColor:'#C6C6C8'},onPress:()=>Ze('host'),children:(0,A.jsx)(a.default,{style:{fontSize:20,color:'#007AFF'},children:"ライブ記録を開始"})}),(0,A.jsx)(h.default,{style:{padding:18,alignItems:'center'},onPress:()=>Ze('join'),children:(0,A.jsx)(a.default,{style:{fontSize:20,color:'#007AFF'},children:"ライブ記録に参加"})})]}),(0,A.jsx)(h.default,{style:{width:'90%',maxWidth:400,backgroundColor:'#FFF',borderRadius:14,marginTop:8,padding:18,alignItems:'center'},onPress:()=>Ee(!1),children:(0,A.jsx)(a.default,{style:{fontSize:20,color:'#007AFF',fontWeight:'bold'},children:"キャンセル"})})]})}),(0,A.jsx)(d.default,{visible:He,transparent:!0,animationType:"fade",children:(0,A.jsx)(l.default,{style:{flex:1,backgroundColor:'rgba(0,0,0,0.4)',justifyContent:'center',alignItems:'center'},children:(0,A.jsxs)(l.default,{style:{width:300,backgroundColor:'#FFF',borderRadius:12,padding:20,alignItems:'center',maxHeight:'80%'},children:[(0,A.jsx)(a.default,{style:{fontSize:18,fontWeight:'bold',marginBottom:12},children:'host'===Re?'ライブを開始':'ライブに参加'}),'host'===Re?(0,A.jsxs)(A.Fragment,{children:[(0,A.jsx)(a.default,{style:{fontSize:14,color:'#666',marginBottom:16},children:"セッション名を入力してください"}),(0,A.jsx)(c.default,{style:{width:'100%',borderWidth:1,borderColor:'#CCC',borderRadius:8,padding:12,fontSize:16,marginBottom:20},value:Le,onChangeText:De,placeholder:"session_name_123",autoCapitalize:"none",autoCorrect:!1,autoFocus:!0}),Me&&(0,A.jsx)(a.default,{style:{color:'#FF3B30',fontSize:13,textAlign:'center',marginBottom:12,fontWeight:'bold'},children:Me})]}):(0,A.jsxs)(l.default,{style:{width:'100%'},children:[(0,A.jsxs)(l.default,{style:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:12},children:[(0,A.jsx)(a.default,{style:{fontSize:14,color:'#666'},children:"アクティブなセッション一覧"}),(0,A.jsx)(h.default,{onPress:()=>{x.useScoreStore.getState().fetchActiveLiveSessions(),Ge('更新しました')},children:(0,A.jsx)(p.Ionicons,{name:"refresh",size:20,color:"#007AFF"})})]}),(0,A.jsx)(n.default,{style:{width:'100%',maxHeight:300,marginBottom:20},children:Array.isArray(ae)&&0!==ae.length?ae.map(e=>(0,A.jsxs)(l.default,{style:{flexDirection:'row',alignItems:'center',borderBottomWidth:1,borderBottomColor:'#EEE',backgroundColor:Le===e?'#E5F1FF':'#FFF'},children:[(0,A.jsx)(h.default,{style:{flex:1,padding:16},onPress:()=>De(e),children:(0,A.jsx)(a.default,{style:{fontSize:16,color:'#333'},children:e})}),(0,A.jsx)(h.default,{style:{padding:16},onPress:()=>{m.IS_WEB?window.confirm(`セッション「${e}」を完全に削除しますか？`)&&x.useScoreStore.getState().deleteLiveSession(e):u.default.alert('セッション削除',`セッション「${e}」を完全に削除しますか？`,[{text:'キャンセル',style:'cancel'},{text:'削除',style:'destructive',onPress:()=>x.useScoreStore.getState().deleteLiveSession(e)}])},children:(0,A.jsx)(p.Ionicons,{name:"trash-outline",size:20,color:"#FF3B30"})})]},`live-session-${e}`)):(0,A.jsx)(a.default,{style:{textAlign:'center',color:'#888',padding:20},children:"現在アクティブな記録はありません"})})]}),(0,A.jsxs)(l.default,{style:{flexDirection:'row',gap:12},children:[(0,A.jsx)(h.default,{style:{flex:1,padding:12,borderRadius:8,backgroundColor:'#F2F2F7',alignItems:'center'},onPress:()=>Oe(!1),children:(0,A.jsx)(a.default,{style:{fontSize:16,color:'#007AFF',fontWeight:'bold'},children:"キャンセル"})}),(0,A.jsx)(h.default,{style:{flex:1,padding:12,borderRadius:8,backgroundColor:Le.trim()?'#007AFF':'#CCC',alignItems:'center'},onPress:async()=>{if(!Le.trim())return;const e=Le.trim();if(Ne(null),'host'===Re){Ge('ライブを開始しています...');return void(await x.useScoreStore.getState().startLiveSync(e)?(Oe(!1),j.notificationAsync(j.NotificationFeedbackType.Success)):(Ne(`'${e}' は既に使用されています。別の名前を入力してください。`),j.impactAsync(j.ImpactFeedbackStyle.Heavy)))}if('join'===Re){if(!x.useScoreStore.getState().liveSessionsList.includes(e))return void Ne(`'${e}' というセッションは見つかりませんでした。`);const t=()=>{Ge('ライブに参加しています...'),Oe(!1),x.useScoreStore.getState().joinLiveSync(e),j.notificationAsync(j.NotificationFeedbackType.Success)};if(k.length>0){const e='手元の記録が消去され、ライブ参加データで上書きされます。よろしいですか？';m.IS_WEB?window.confirm(e)&&t():u.default.alert('確認',e,[{text:'キャンセル',style:'cancel'},{text:'OK',onPress:t}])}else t()}},disabled:!Le.trim(),children:(0,A.jsx)(a.default,{style:{fontSize:16,color:'#FFF',fontWeight:'bold'},children:"決定"})})]})]})})}),(0,A.jsxs)(l.default,{style:[W.gridArea,{justifyContent:'center',alignItems:'center'}],children:[(0,A.jsxs)(l.default,{style:{maxHeight:'100%',flexDirection:'column',maxWidth:'100%'},children:[(0,A.jsx)(n.default,{showsVerticalScrollIndicator:!1,bounces:!1,style:{flexGrow:0},children:(0,A.jsxs)(l.default,{style:{flexDirection:'row-reverse',minWidth:'100%'},children:[(0,A.jsx)(l.default,{style:{backgroundColor:'#F2F2F7',zIndex:10},children:(0,A.jsx)(b.LabelColumn,{shots:T,showFooter:!1})}),(0,A.jsx)(n.default,{horizontal:!0,showsHorizontalScrollIndicator:!0,style:{flexGrow:0,flexShrink:1},ref:Ve,onScroll:e=>{const t=e.nativeEvent.contentOffset.x;Ue.current?.scrollTo({x:t,animated:!1})},scrollEventThrottle:16,children:(0,A.jsx)(l.default,{style:[W.gridRow,{flexDirection:'row-reverse'}],children:(Array.isArray(k)?k:[]).filter(e=>!!e).map((e,t)=>(0,A.jsx)(y.ArcherColumnView,{archer:e,shots:T,allArchers:Array.isArray(k)?k:[],indexInList:t,showFooter:!1,isReadOnly:$e,onPressName:()=>qe(e.id,e.name,t),onDelete:()=>M(e.id)},typeof e.id === 'string' ? e.id : `archer-${t}`))})})]})}),(0,A.jsxs)(l.default,{style:{height:F.UIConfig.footerHeight*se,flexDirection:'row-reverse',borderTopWidth:1.5,borderTopColor:'#000'},children:[(0,A.jsx)(l.default,{style:{width:F.UIConfig.headerWidth*se,justifyContent:'center',alignItems:'center',backgroundColor:'#F2F2F7',borderLeftWidth:1.5,borderLeftColor:'#000',borderRightWidth:1.5,borderRightColor:'#000'},children:(0,A.jsx)(a.default,{style:{fontSize:10*se,fontWeight:'bold',color:'#3C3C43'},children:"名"})}),(0,A.jsx)(n.default,{horizontal:!0,showsHorizontalScrollIndicator:!1,style:{flexGrow:0,flexShrink:1},ref:Ue,onScroll:e=>{const t=e.nativeEvent.contentOffset.x;Ve.current?.scrollTo({x:t,animated:!1})},scrollEventThrottle:16,children:(0,A.jsx)(l.default,{style:[W.gridRow,{flexDirection:'row-reverse'}],children:(Array.isArray(k)?k:[]).filter(e=>!!e).map((e,t)=>{return(0,A.jsx)(l.default,{style:{width:(e.isSeparator?F.UIConfig.separatorWidth:F.UIConfig.cellWidth)*se,height:F.UIConfig.footerHeight*se,backgroundColor:e.isTotalCalculator?'rgba(0,122,255,0.05)':'#F2F2F7',borderRightWidth:e.isSeparator||e.isTotalCalculator?1.5:1,borderRightColor:'#000',borderLeftWidth:e.isSeparator||e.isTotalCalculator?1.5:0,borderLeftColor:'#000',padding:4,justifyContent:'center',alignItems:'center'},children:e.isSeparator?(0,A.jsx)(h.default,{style:{alignItems:'center',width:'100%',height:'100%',justifyContent:'center'},onPress:()=>M(e.id),disabled:$e,children:(0,A.jsx)(p.Ionicons,{name:"close-circle",size:24*se,color:"#8E8E93"})}):(0,A.jsxs)(h.default,{style:{alignItems:'center',width:'100%',height:'100%',justifyContent:'center'},onPress:()=>qe(e.id,e.name,t),children:[(0,A.jsx)(a.default,{style:[W.footerName,{color:e.name?'#000':'#8E8E93',fontSize:14*se}],numberOfLines:2,children:e.isTotalCalculator?'合計':e.name?(o=e.name,(0,v.formatMemberName)(o,oe)):'選択'}),!!e.isGuest&&(0,A.jsx)(a.default,{style:[W.guestLabel,{fontSize:9*se}],children:"(ゲスト)"}),!e.isTotalCalculator&&''!==e.name?(0,A.jsx)(l.default,{style:{marginTop:2,paddingHorizontal:4,paddingVertical:2,borderRadius:10,backgroundColor:e.isGuest||!e.gender||e.gender==='枣設定'||!['男子','女子'].includes(e.gender)?'#8E8E93':'男子'===e.gender?'#007AFF':'#FF2D55'},children:(0,A.jsx)(p.Ionicons,{name:"person",size:10*se,color:"#FFF"})}):null]})},typeof e.id === 'string' ? `footer-${e.id}` : `footer-${t}`);var o})})})]})]}),0===k.length&&(0,A.jsxs)(l.default,{style:W.emptyOverlay,children:[(0,A.jsx)(a.default,{style:W.emptyTitle,children:"記録を始めましょう"}),(0,A.jsx)(a.default,{style:W.emptyHint,children:"下の「人」ボタンで射手を追加"})]})]}),(0,A.jsx)(l.default,{style:W.toolbar,children:(0,A.jsxs)(A.Fragment,{children:[(0,A.jsxs)(l.default,{style:W.historyBtns,children:[(0,A.jsx)(f.default,{style:({hovered:e})=>[W.historyBtn,{opacity:_.length>0?1:.3},e&&_.length>0&&m.IS_WEB&&{backgroundColor:'#F2F2F7'}],onPress:()=>{_.length>0&&(D(),Ge('元に戻しました'),j.impactAsync(j.ImpactFeedbackStyle.Light))},disabled:0===_.length,children:(0,A.jsx)(p.Ionicons,{name:"arrow-undo",size:24,color:"#8E8E93"})}),(0,A.jsx)(f.default,{style:({hovered:e})=>[W.historyBtn,{opacity:O.length>0?1:.3},e&&O.length>0&&m.IS_WEB&&{backgroundColor:'#F2F2F7'}],onPress:()=>{O.length>0&&(H(),Ge('やり直しました'),j.impactAsync(j.ImpactFeedbackStyle.Light))},disabled:0===O.length,children:(0,A.jsx)(p.Ionicons,{name:"arrow-redo",size:24,color:"#8E8E93"})})]}),(0,A.jsxs)(l.default,{style:W.addBtns,children:[(0,A.jsxs)(f.default,{style:({hovered:e})=>[W.addBtn,{backgroundColor:'rgba(0,122,255,0.1)'},e&&m.IS_WEB&&{backgroundColor:'rgba(0,122,255,0.2)'}],onPress:()=>{j.impactAsync(j.ImpactFeedbackStyle.Medium),R()},children:[(0,A.jsx)(p.Ionicons,{name:"person-add",size:24,color:"#007AFF"}),(0,A.jsx)(a.default,{style:[W.addLabel,{color:'#007AFF'}],children:"人"})]}),(0,A.jsxs)(f.default,{style:({hovered:e})=>[W.addBtn,{backgroundColor:'rgba(255,149,0,0.1)'},e&&m.IS_WEB&&{backgroundColor:'rgba(255,149,0,0.2)'}],onPress:()=>{j.impactAsync(j.ImpactFeedbackStyle.Light),P()},children:[(0,A.jsx)(p.Ionicons,{name:"pause",size:24,color:"#FF9500"}),(0,A.jsx)(a.default,{style:[W.addLabel,{color:'#FF9500'}],children:"間隔"})]}),(0,A.jsxs)(f.default,{style:({hovered:e})=>[W.addBtn,{backgroundColor:'rgba(52,199,89,0.1)'},e&&m.IS_WEB&&{backgroundColor:'rgba(52,199,89,0.2)'}],onPress:()=>{j.impactAsync(j.ImpactFeedbackStyle.Light),L()},children:[(0,A.jsx)(a.default,{style:{fontSize:22,fontWeight:'bold',color:'#34C759'},children:"\u03a3"}),(0,A.jsx)(a.default,{style:[W.addLabel,{color:'#34C759'}],children:"計"})]}),(0,A.jsxs)(f.default,{style:({hovered:e})=>[W.addBtn,{backgroundColor:'rgba(142,142,147,0.1)'},e&&m.IS_WEB&&{backgroundColor:'rgba(142,142,147,0.2)'}],onPress:()=>{j.impactAsync(j.ImpactFeedbackStyle.Medium),setShowOCRModal(!0)},children:[(0,A.jsx)(p.Ionicons,{name:"camera",size:24,color:"#8E8E93"}),(0,A.jsx)(a.default,{style:[W.addLabel,{color:'#8E8E93'}],children:"画像"})]})]}),(0,A.jsx)(f.default,{style:({hovered:e})=>[W.saveBtn,e&&m.IS_WEB&&{opacity:.9,transform:[{scale:1.02}]}],onPress:()=>{0!==k.length&&setShowAttendance(!0)},children:(0,A.jsx)(a.default,{style:W.saveBtnText,children:"終了・保存"})})]})}),(0,A.jsx)(S.ArcherActionModal,{visible:de,archerId:ue||'',archerOrigIdx:he,isSeparator:(Array.isArray(k)?k:[]).find(e=>e&&e.id===ue)?.isSeparator||!1,isTotalCalculator:(Array.isArray(k)?k:[]).find(e=>e&&e.id===ue)?.isTotalCalculator||!1,onClose:()=>ce(!1),onSubstitution:()=>be(!0)}),(0,A.jsx)(AttendanceCheckModal,{visible:showAttendance,onClose:()=>setShowAttendance(!1),onConfirm:(attendance)=>{setTempAttendance(attendance),setShowAttendance(!1),xe(!0)},members:oe,activeArchers:k}),(0,A.jsx)(C.SaveSessionModal,{visible:me,onClose:()=>xe(!1),onSave:(e,t,o,l)=>{xe(!1),j.notificationAsync(j.NotificationFeedbackType.Success);const n=l.split(/[,\u3001\s]+/).map(e=>e.startsWith('#')?e:`#${e}`).map(e=>e.trim()).filter(e=>'#'!==e);U(e,t,o,n,tempAttendance),x.useScoreStore.getState().setCurrentSessionTags([]),Ge('保存しました')}}),(0,A.jsx)(I.ManualSubstitutionModal,{visible:ye,archerId:ue,onClose:()=>be(!1)}),(0,A.jsx)(d.default,{visible:pe,transparent:!0,animationType:"fade",onRequestClose:()=>Ce(!1),children:(0,A.jsxs)(l.default,{style:W.modalBackdrop,children:[(0,A.jsx)(h.default,{style:s.default.absoluteFill,activeOpacity:1,onPress:()=>Ce(!1)}),(0,A.jsxs)(l.default,{style:W.modalContent,children:[(0,A.jsx)(a.default,{style:W.modalTitle,children:"すべての記録をリセット"}),(0,A.jsx)(a.default,{style:W.modalMessage,children:"現在入力されている全ての的中記録と交代設定、および全てのデータが削除されます。リセットしてよろしいですか？"}),(0,A.jsxs)(l.default,{style:W.modalButtonsRow,children:[(0,A.jsx)(f.default,{style:({hovered:e})=>[W.modalBtn,{backgroundColor:'#F2F2F7',flex:1,marginRight:5},e&&m.IS_WEB&&{backgroundColor:'#E5E5EA'}],onPress:()=>Ce(!1),children:(0,A.jsx)(a.default,{style:[W.modalBtnText,{color:'#007AFF'}],children:"キャンセル"})}),(0,A.jsx)(f.default,{style:({hovered:e})=>[W.modalBtn,{backgroundColor:'#FF3B30',flex:1,marginLeft:5},e&&m.IS_WEB&&{opacity:.8}],onPress:()=>{Ce(!1),te(),j.notificationAsync(j.NotificationFeedbackType.Warning),Ge('リセットしました。')},children:(0,A.jsx)(a.default,{style:[W.modalBtnText,{color:'#FFF'}],children:"リセット"})})]})]})]})}),(0,A.jsx)(d.default,{visible:Ie,transparent:!0,animationType:"fade",onRequestClose:()=>ve(!1),children:(0,A.jsxs)(l.default,{style:W.modalBackdrop,children:[(0,A.jsx)(h.default,{style:s.default.absoluteFill,activeOpacity:1,onPress:()=>ve(!1)}),(0,A.jsxs)(l.default,{style:W.modalContent,children:[(0,A.jsx)(a.default,{style:W.modalTitle,children:"射数を減らしますか？"}),(0,A.jsxs)(a.default,{style:W.modalMessage,children:["射数を",Be,"射に減らすと、後ろの入力済みデータが全て削除されます。よろしいですか？"]}),(0,A.jsxs)(l.default,{style:W.modalButtonsRow,children:[(0,A.jsx)(h.default,{style:[W.modalBtn,{backgroundColor:'#F2F2F7',flex:1,marginRight:5}],onPress:()=>ve(!1),children:(0,A.jsx)(a.default,{style:[W.modalBtnText,{color:'#007AFF'}],children:"キャンセル"})}),(0,A.jsx)(h.default,{style:[W.modalBtn,{backgroundColor:'#FF3B30',flex:1,marginLeft:5}],onPress:()=>{ve(!1),G(Be),j.impactAsync(j.ImpactFeedbackStyle.Medium)},children:(0,A.jsx)(a.default,{style:[W.modalBtnText,{color:'#FFF'}],children:"削除して変更"})})]})]})]})}),(0,A.jsx)(d.default,{visible:ke,transparent:!0,animationType:"fade",onRequestClose:()=>We(!1),children:(0,A.jsxs)(l.default,{style:W.modalBackdrop,children:[(0,A.jsx)(h.default,{style:s.default.absoluteFill,activeOpacity:1,onPress:()=>We(!1)}),(0,A.jsxs)(l.default,{style:W.modalContent,children:[(0,A.jsx)(a.default,{style:W.modalTitle,children:"射数の詳細設定"}),(0,A.jsx)(a.default,{style:W.modalMessage,children:"1〜500本の間で入力してください"}),(0,A.jsx)(c.default,{style:W.modalInput,keyboardType:"number-pad",value:Te,onChangeText:ze,onSubmitEditing:Ye,autoFocus:!0}),(0,A.jsxs)(l.default,{style:W.modalButtonsRow,children:[(0,A.jsx)(f.default,{style:({hovered:e})=>[W.modalBtn,{backgroundColor:'#F2F2F7',flex:1,marginRight:5},e&&m.IS_WEB&&{backgroundColor:'#E5E5EA'}],onPress:()=>We(!1),children:(0,A.jsx)(a.default,{style:[W.modalBtnText,{color:'#007AFF'}],children:"キャンセル"})}),(0,A.jsx)(f.default,{style:({hovered:e})=>[W.modalBtn,{backgroundColor:'#007AFF',flex:1,marginLeft:5},e&&m.IS_WEB&&{opacity:.8}],onPress:Ye,children:(0,A.jsx)(a.default,{style:[W.modalBtnText,{color:'#FFF'}],children:"決定"})})]})]})]})}),Fe?(0,A.jsx)(l.default,{style:W.feedbackOverlay,children:(0,A.jsx)(a.default,{style:W.feedbackText,children:Fe})}):null,(0,A.jsx)(OCRRecordModal,{visible:showOCRModal,onClose:()=>setShowOCRModal(!1),members:oe,alumni:(0,x.useScoreStore)(e=>e.alumni)||[],shotsPerRound:T,onApply:(newArchers)=>{const store=x.useScoreStore.getState();store.historyStack&&store.historyStack.length>=0&&x.useScoreStore.setState({historyStack:[...store.historyStack,{archers:[...k],activeSessionID:e}],redoStack:[]});x.useScoreStore.setState({archers:newArchers});Ge('画像から立ち順を登録しました');j.notificationAsync(j.NotificationFeedbackType.Success)}}),(0,A.jsx)(ArrowLocationPopover,{visible:!!activeArrowLocationEdit,onClose:()=>setActiveArrowLocationEdit(null),archerId:activeArrowLocationEdit?.archerId,shotIndex:activeArrowLocationEdit?.shotIndex,currentMark:activeArrowLocationEdit?.currentMark,arrowLocations:activeArrowLocationEdit?.arrowLocations,onSave:()=>setActiveArrowLocationEdit(null)})]})},W=s.default.create({safeArea:{flex:1,backgroundColor:'#FFF',paddingTop:m.IS_WEB?m.WEB_TOP_PADDING:m.SAFE_TOP_PADDING},navBar:{minHeight:48,backgroundColor:'#FFF',flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:12,paddingVertical:6,borderBottomWidth:1,borderBottomColor:'#E5E5EA'},navLeft:{flexDirection:'row',alignItems:'center',gap:4},syncContainer:{flexDirection:'row',alignItems:'center'},syncTimeText:{fontSize:9,color:'#8E8E93'},navRight:{flexDirection:'row',alignItems:'center',gap:6},resetBtn:{zIndex:10001,backgroundColor:'#FF3B30',paddingHorizontal:8,paddingVertical:6,borderRadius:6,marginRight:2},resetBtnText:{color:'#FFF',fontWeight:'bold',fontSize:12},groupBadge:{marginLeft:4,flexDirection:'row',alignItems:'center',backgroundColor:'#F2F2F7',paddingHorizontal:6,paddingVertical:2,borderRadius:4},groupBadgeWeb:Object.assign({backgroundColor:'rgba(0,122,255,0.1)',borderColor:'rgba(0,122,255,0.2)',borderWidth:1,paddingHorizontal:10,paddingVertical:5,borderRadius:8},(0,B.getShadowStyle)({shadowColor:'#007AFF',shadowOffset:{width:0,height:4},shadowOpacity:.15,shadowRadius:12,elevation:8})),liveBtn:{flexDirection:'row',alignItems:'center',backgroundColor:'rgba(0,122,255,0.1)',paddingHorizontal:6,paddingVertical:4,borderRadius:6,gap:3},liveBtnActive:{backgroundColor:'#FF3B30'},liveBtnText:{fontSize:12,color:'#007AFF',fontWeight:'bold'},liveBtnTextActive:{color:'#FFF'},zoomContainer:{flexDirection:'row',alignItems:'center',gap:2},zoomBtn:{padding:2},shotsToggle:{padding:4,zIndex:10001},shotsText:{fontSize:13,color:'#5856D6',fontWeight:'bold'},liveStatusHeader:{height:24,flexDirection:'row',alignItems:'center',justifyContent:'center',backgroundColor:'#8E8E93',gap:6},liveHostHeader:{backgroundColor:'#007AFF'},liveJoinHeader:{backgroundColor:'#007AFF'},liveActiveHeader:{backgroundColor:'#007AFF'},liveStatusText:{color:'#FFF',fontSize:11,fontWeight:'bold'},gridArea:{flex:1,backgroundColor:'#FFF'},tallWrapper:{flex:1,flexDirection:'column'},gridRow:{flexDirection:'row',alignItems:'flex-start',justifyContent:'center',minWidth:'100%'},fixedFooter:{flexDirection:'row',height:F.UIConfig.footerHeight,backgroundColor:'#F2F2F7',borderTopWidth:1,borderTopColor:'#C6C6C8'},footerLabelCell:{width:F.UIConfig.headerWidth,height:F.UIConfig.footerHeight,justifyContent:'center',alignItems:'center',backgroundColor:'#F2F2F7',borderRightWidth:1,borderRightColor:'#000'},footerLabelText:{fontSize:10,fontWeight:'bold',color:'#3C3C43'},footerNameCell:{height:F.UIConfig.footerHeight,justifyContent:'center',alignItems:'center',borderRightWidth:1,borderRightColor:'#000',borderBottomWidth:1,borderBottomColor:'#000',padding:4},footerName:{fontSize:14,fontWeight:'bold',textAlign:'center'},guestLabel:{fontSize:9,color:'#8E8E93'},emptyOverlay:Object.assign({},s.default.absoluteFillObject,{justifyContent:'center',alignItems:'center',backgroundColor:'#FFF'}),emptyTitle:{fontSize:20,fontWeight:'bold',marginBottom:8},emptyHint:{fontSize:14,color:'#8E8E93'},toolbar:{height:m.IS_WEB?70:80,backgroundColor:'#FFF',borderTopWidth:s.default.hairlineWidth,borderTopColor:'#C6C6C8',flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:8,paddingVertical:8},addBtns:{flexDirection:'row',gap:4,flex:1,justifyContent:'center',minWidth:0},addBtn:{flex:1,minWidth:44,maxWidth:62,height:56,borderRadius:10,justifyContent:'center',alignItems:'center'},addLabel:{fontSize:10,marginTop:4,fontWeight:'bold'},historyBtns:{flexDirection:'row',gap:2},historyBtn:{padding:4},saveBtn:{backgroundColor:'#FF3B30',paddingHorizontal:8,paddingVertical:10,borderRadius:8,minWidth:64,justifyContent:'center',flexShrink:0},saveBtnText:{color:'#FFF',fontSize:13,fontWeight:'bold',textAlign:'center'},feedbackOverlay:{position:'absolute',bottom:100,alignSelf:'center',backgroundColor:'rgba(0,0,0,0.7)',paddingHorizontal:16,paddingVertical:8,borderRadius:8},feedbackText:{color:'#FFF',fontSize:14,fontWeight:'bold'},modalBackdrop:{flex:1,backgroundColor:'rgba(0,0,0,0.4)',justifyContent:'center',alignItems:'center'},modalContent:{width:'85%',maxWidth:350,backgroundColor:'#FFF',borderRadius:14,padding:20,alignItems:'center'},modalTitle:{fontSize:18,fontWeight:'bold',marginBottom:8},modalMessage:{fontSize:14,color:'#3C3C43',textAlign:'center',marginBottom:20},modalInput:{width:'100%',height:44,borderWidth:1,borderColor:'#C6C6C8',borderRadius:8,paddingHorizontal:12,fontSize:18,marginBottom:20,textAlign:'center'},modalButtonsRow:{flexDirection:'row',width:'100%'},modalBtn:{paddingVertical:12,borderRadius:8,alignItems:'center',justifyContent:'center'},modalBtnText:{fontSize:16,fontWeight:'bold'}})
+('use strict');
+function e(e) {
+  return e && e.__esModule ? e : { default: e };
+}
+(Object.defineProperty(_e, '__esModule', { value: !0 }),
+  Object.defineProperty(_e, 'RecordScreen', {
+    enumerable: !0,
+    get: function () {
+      return k;
+    },
+  }));
+var t = require('./module_37'),
+  o = e(t),
+  l = e(require('./default_144')),
+  n = e(require('./default_297')),
+  s = e(require('./default_45')),
+  a = e(require('./default_217')),
+  d = e(require('./default_386')),
+  c = e(require('./default_398')),
+  u = e(require('./module_198')),
+  f = e(require('./default_218'));
+require('./module_98');
+var h = e(require('./default_382')),
+  m = require('./IS_WEB_199');
+require('./module_420');
+var x = require('./JP_useScoreStore_174'),
+  y = require('./JP_ArcherColumnView_594'),
+  b = require('./JP_LabelColumn_688'),
+  F = require('./module_595'),
+  j = (function (e) {
+    if (e && e.__esModule) return e;
+    var t = {};
+    return (
+      e &&
+        Object.keys(e).forEach(function (o) {
+          var l = Object.getOwnPropertyDescriptor(e, o);
+          Object.defineProperty(
+            t,
+            o,
+            l.get
+              ? l
+              : {
+                  enumerable: !0,
+                  get: function () {
+                    return e[o];
+                  },
+                }
+          );
+        }),
+      (t.default = e),
+      t
+    );
+  })(require('./NotificationFeedbackType_597')),
+  S = require('./JP_ArcherActionModal_689'),
+  p = require('./AntDesign_600'),
+  C = require('./JP_SaveSessionModal_690'),
+  AttendanceCheckModal = require('./AttendanceCheckModal').AttendanceCheckModal,
+  I = require('./JP_ManualSubstitutionModal_691'),
+  v = require('./JP_module_687'),
+  B = require('./module_592'),
+  A = require('./module_427'),
+  { ArrowLocationPopover } = require('./ArrowLocationPopover'),
+  { OCRRecordModal } = require('./JP_OCRRecordModal');
+const k = () => {
+    const {
+        activeSessionID: e,
+        isAdminMode: B = !1,
+        archers: k = [],
+        shotsPerRound: T = 8,
+        syncStatus: z = 'IDLE',
+        lastSyncTime: w,
+        isNetworkOnline: E = !0,
+        offlineSaveWarning: オフライン保存の警告 = null,
+        addArcher: R,
+        addSeparator: P,
+        addTotalCalculator: L,
+        undo: D,
+        redo: H,
+        historyStack: _ = [],
+        redoStack: O = [],
+        deleteArcher: M,
+        clearArcherMarks: N,
+        setArcherMember: V,
+        saveSession: U,
+        setShotsPerRound: G,
+        showSyncErrorPopups: $ = !0,
+        viewScale: q = 1,
+        setViewScale: J,
+        isLiveActive: K = !1,
+        setIsLiveActive: Q,
+        isHost: X = !1,
+        liveSessionName: Y,
+        includeInStats: Z = !0,
+        setIncludeInStats: ee,
+        resetCurrentSession: te,
+        members: oe = [],
+        isHydrated: re,
+        lastResetHandled: le,
+        activeGroupId: ne,
+        publicGroupId: ie,
+        activeArrowLocationEdit,
+        setActiveArrowLocationEdit,
+      } = (0, x.useScoreStore)(),
+      se = 'number' == typeof q && !isNaN(q) && q > 0 ? q : 1;
+    if (!re) return null;
+    const ae = (0, x.useScoreStore)((e) => e.liveSessionsList),
+      [de, ce] = (0, t.useState)(!1),
+      [ue, fe] = (0, t.useState)(null),
+      [he, ge] = (0, t.useState)(0),
+      [me, xe] = (0, t.useState)(!1),
+      [ye, be] = (0, t.useState)(!1),
+      [Fe, je] = (0, t.useState)(null),
+      [警告を閉じた, 警告を閉じる] = (0, t.useState)(!1),
+      Se = o.default.useRef(0),
+      [pe, Ce] = (0, t.useState)(!1),
+      [Ie, ve] = (0, t.useState)(!1),
+      [Be, Ae] = (0, t.useState)(8),
+      [ke, We] = (0, t.useState)(!1),
+      [Te, ze] = (0, t.useState)(''),
+      [we, Ee] = (0, t.useState)(!1),
+      [Re, Pe] = (0, t.useState)(null),
+      [Le, De] = (0, t.useState)(''),
+      [He, Oe] = (0, t.useState)(!1),
+      [Me, Ne] = (0, t.useState)(null),
+      [showAttendance, setShowAttendance] = (0, t.useState)(!1),
+      [tempAttendance, setTempAttendance] = (0, t.useState)(null),
+      [showOCRModal, setShowOCRModal] = (0, t.useState)(!1),
+      Ve = o.default.useRef(null),
+      Ue = o.default.useRef(null),
+      Ge = (e) => {
+        (je(e), setTimeout(() => je(null), 1500));
+      };
+    (o.default.useEffect(() => {
+      '同期エラー' === z && $ && je('同期エラー: クラウドとの同期に失敗しました');
+    }, [z, $]),
+      o.default.useEffect(() => {
+        if (le > 0 && Se.current < le) {
+          const e = le === x.useScoreStore.getState().lastPushedTimestamp;
+          ((Se.current = le),
+            e || (Ge('リセットしました。'), j.notificationAsync(j.NotificationFeedbackType.Warning)));
+        }
+      }, [le]),
+      o.default.useEffect(() => {
+        x.useScoreStore.getState().loadData();
+      }, []),
+      o.default.useEffect(() => {
+        let e;
+        return (
+          He &&
+            'join' === Re &&
+            (x.useScoreStore.getState().fetchActiveLiveSessions(),
+            (e = x.useScoreStore.getState().listenToLiveSessions())),
+          () => {
+            e && e();
+          }
+        );
+      }, [He, Re]));
+    new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const $e = !1,
+      qe = (e, t, o) => {
+        j.impactAsync(j.ImpactFeedbackStyle.Medium);
+        k.find((t) => t.id === e) && (fe(e), ge(o), ce(!0));
+      },
+      [Je, Ke] = (0, t.useState)(!1),
+      Qe = () => Ke(!1),
+      Xe = (e) => {
+        e < T && k.some((t) => t && Array.isArray(t.marks) && t.marks.slice(e).some((e) => '' !== e))
+          ? (Ae(e), ve(!0))
+          : (G(e), j.impactAsync(j.ImpactFeedbackStyle.Medium));
+      },
+      Ye = () => {
+        const e = parseInt(Te, 10);
+        !isNaN(e) && e >= 1 && e <= 500
+          ? (We(!1), Xe(e))
+          : (je('1〜500までの数字を入力してください'), setTimeout(() => je(null), 1500));
+      },
+      Ze = (e) => {
+        (Ee(!1),
+          Pe(e),
+          De(''),
+          setTimeout(() => {
+            Oe(!0);
+          }, 100));
+      },
+      et = l.default;
+    return (0, A.jsxs)(et, {
+      style: W.safeArea,
+      edges: ['top', 'left', 'right', 'bottom'],
+      children: [
+        オフライン保存の警告 && !警告を閉じた
+          ? (0, A.jsx)(h.default, {
+              style: { backgroundColor: '#B00020', paddingVertical: 8, paddingHorizontal: 12 },
+              onPress: () => 警告を閉じる(!0),
+              children: (0, A.jsx)(a.default, {
+                style: { color: '#FFF', fontSize: 12, lineHeight: 17, textAlign: 'center' },
+                children: `${オフライン保存の警告}（タップで閉じる）`,
+              }),
+            })
+          : null,
+        K && Y
+          ? (0, A.jsxs)(l.default, {
+              style: [W.liveStatusHeader, W.liveActiveHeader, { marginHorizontal: 8, borderRadius: 8 }],
+              children: [
+                (0, A.jsx)(p.Ionicons, { name: 'radio-outline', size: 12, color: '#FFF' }),
+                (0, A.jsxs)(a.default, {
+                  style: W.liveStatusText,
+                  numberOfLines: 1,
+                  children: ['ライブ中: ', Y],
+                }),
+              ],
+            })
+          : null,
+        (0, A.jsxs)(l.default, {
+          style: [W.navBar, { zIndex: 1e4 }],
+          children: [
+            (0, A.jsxs)(l.default, {
+              style: W.navLeft,
+              children: [
+                (0, A.jsx)(f.default, {
+                  onPress: () => {
+                    Ce(!0);
+                  },
+                  hitSlop: { top: 20, bottom: 20, left: 20, right: 20 },
+                  style: ({ hovered: e }) => [W.resetBtn, e && m.IS_WEB && { opacity: 0.8 }],
+                  children: (0, A.jsx)(a.default, { style: W.resetBtnText, children: 'リセット' }),
+                }),
+                (0, A.jsxs)(l.default, {
+                  style: W.syncContainer,
+                  children: [
+                    E && '同期エラー' !== z
+                      ? '同期中' === z
+                        ? (0, A.jsx)(p.Ionicons, { name: 'cloud-upload-outline', size: 14, color: '#007AFF' })
+                        : '同期済み' === z
+                          ? (0, A.jsx)(p.Ionicons, { name: 'cloud-done-outline', size: 14, color: '#34C759' })
+                          : (0, A.jsx)(p.Ionicons, { name: 'cloud-outline', size: 14, color: '#8E8E93' })
+                      : (0, A.jsx)(p.Ionicons, { name: 'cloud-offline-outline', size: 14, color: '#FF3B30' }),
+                    !1,
+                  ],
+                }),
+                ie || ne
+                  ? (0, A.jsxs)(l.default, {
+                      style: [W.groupBadge, m.IS_WEB && W.groupBadgeWeb],
+                      children: [
+                        (0, A.jsx)(p.Ionicons, {
+                          name: 'business',
+                          size: 10,
+                          color: m.IS_WEB ? '#007AFF' : '#8E8E93',
+                          style: { marginRight: 2 },
+                        }),
+                        (0, A.jsx)(a.default, {
+                          style: [
+                            { fontSize: 10, fontWeight: 'bold' },
+                            { color: m.IS_WEB ? '#007AFF' : '#8E8E93' },
+                          ],
+                          children: String(ie || ne),
+                        }),
+                      ],
+                    })
+                  : null,
+              ],
+            }),
+            (0, A.jsxs)(l.default, {
+              style: W.navRight,
+              children: [
+                (0, A.jsxs)(h.default, {
+                  onPress: () => {
+                    K
+                      ? (x.useScoreStore.getState().stopLiveSync(),
+                        j.notificationAsync(j.NotificationFeedbackType.Warning))
+                      : Ee(!0);
+                  },
+                  style: [W.liveBtn, K && W.liveBtnActive],
+                  children: [
+                    (0, A.jsx)(p.Ionicons, {
+                      name: 'radio-outline',
+                      size: 16,
+                      color: K ? '#FFF' : '#007AFF',
+                    }),
+                    (0, A.jsx)(a.default, {
+                      style: [W.liveBtnText, K && W.liveBtnTextActive],
+                      children: K ? (X ? '停止' : '退出') : 'ライブ',
+                    }),
+                  ],
+                }),
+                (0, A.jsxs)(l.default, {
+                  style: W.zoomContainer,
+                  children: [
+                    (0, A.jsx)(h.default, {
+                      onPress: () => {
+                        (J(se - 0.1), j.impactAsync(j.ImpactFeedbackStyle.Light));
+                      },
+                      style: W.zoomBtn,
+                      children: (0, A.jsx)(p.Ionicons, {
+                        name: 'remove-circle-outline',
+                        size: 22,
+                        color: '#007AFF',
+                      }),
+                    }),
+                    (0, A.jsx)(h.default, {
+                      onPress: () => {
+                        (J(se + 0.1), j.impactAsync(j.ImpactFeedbackStyle.Light));
+                      },
+                      style: W.zoomBtn,
+                      children: (0, A.jsx)(p.Ionicons, {
+                        name: 'add-circle-outline',
+                        size: 22,
+                        color: '#007AFF',
+                      }),
+                    }),
+                  ],
+                }),
+                (0, A.jsx)(h.default, {
+                  onPress: () => Ke(!0),
+                  style: W.shotsToggle,
+                  children: (0, A.jsxs)(a.default, { style: W.shotsText, children: [T, '射'] }),
+                }),
+              ],
+            }),
+          ],
+        }),
+        (0, A.jsx)(d.default, {
+          visible: Je,
+          transparent: !0,
+          animationType: 'fade',
+          onRequestClose: Qe,
+          children: (0, A.jsxs)(f.default, {
+            style: {
+              flex: 1,
+              backgroundColor: 'rgba(0,0,0,0.4)',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              paddingBottom: 40,
+            },
+            onPress: Qe,
+            children: [
+              (0, A.jsxs)(l.default, {
+                style: {
+                  width: '90%',
+                  maxWidth: 400,
+                  backgroundColor: '#FFF',
+                  borderRadius: 14,
+                  overflow: 'hidden',
+                },
+                children: [
+                  (0, A.jsx)(l.default, {
+                    style: {
+                      padding: 16,
+                      borderBottomWidth: s.default.hairlineWidth,
+                      borderBottomColor: '#C6C6C8',
+                      alignItems: 'center',
+                    },
+                    children: (0, A.jsx)(a.default, {
+                      style: { fontSize: 13, color: '#8E8E93', fontWeight: '600' },
+                      children: '射数の設定',
+                    }),
+                  }),
+                  [4, 8, 12, 16, 20].map((e) =>
+                    (0, A.jsx)(
+                      f.default,
+                      {
+                        style: ({ hovered: e }) => [
+                          {
+                            padding: 18,
+                            alignItems: 'center',
+                            borderBottomWidth: s.default.hairlineWidth,
+                            borderBottomColor: '#C6C6C8',
+                          },
+                          e && m.IS_WEB && { backgroundColor: '#F2F2F7' },
+                        ],
+                        onPress: () => {
+                          (Xe(e), Qe());
+                        },
+                        children: (0, A.jsxs)(a.default, {
+                          style: { fontSize: 20, color: '#007AFF' },
+                          children: [e, '射'],
+                        }),
+                      },
+                      `shot-option-${e}`
+                    )
+                  ),
+                  (0, A.jsx)(f.default, {
+                    style: ({ hovered: e }) => [
+                      { padding: 18, alignItems: 'center' },
+                      e && m.IS_WEB && { backgroundColor: '#F2F2F7' },
+                    ],
+                    onPress: () => {
+                      (Qe(),
+                        setTimeout(() => {
+                          (ze(String(T)), We(!0));
+                        }, 100));
+                    },
+                    children: (0, A.jsx)(a.default, {
+                      style: { fontSize: 20, color: '#007AFF' },
+                      children: '任意...',
+                    }),
+                  }),
+                ],
+              }),
+              (0, A.jsx)(f.default, {
+                style: ({ hovered: e }) => [
+                  {
+                    width: '90%',
+                    maxWidth: 400,
+                    backgroundColor: '#FFF',
+                    borderRadius: 14,
+                    marginTop: 8,
+                    padding: 18,
+                    alignItems: 'center',
+                  },
+                  e && m.IS_WEB && { opacity: 0.8 },
+                ],
+                onPress: Qe,
+                children: (0, A.jsx)(a.default, {
+                  style: { fontSize: 20, color: '#007AFF', fontWeight: 'bold' },
+                  children: 'キャンセル',
+                }),
+              }),
+            ],
+          }),
+        }),
+        (0, A.jsx)(d.default, {
+          visible: we,
+          transparent: !0,
+          animationType: 'fade',
+          onRequestClose: () => Ee(!1),
+          children: (0, A.jsxs)(h.default, {
+            style: {
+              flex: 1,
+              backgroundColor: 'rgba(0,0,0,0.4)',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              paddingBottom: 40,
+            },
+            activeOpacity: 1,
+            onPress: () => Ee(!1),
+            children: [
+              (0, A.jsxs)(l.default, {
+                style: {
+                  width: '90%',
+                  maxWidth: 400,
+                  backgroundColor: '#FFF',
+                  borderRadius: 14,
+                  overflow: 'hidden',
+                },
+                children: [
+                  (0, A.jsx)(h.default, {
+                    style: {
+                      padding: 18,
+                      alignItems: 'center',
+                      borderBottomWidth: s.default.hairlineWidth,
+                      borderBottomColor: '#C6C6C8',
+                    },
+                    onPress: () => Ze('host'),
+                    children: (0, A.jsx)(a.default, {
+                      style: { fontSize: 20, color: '#007AFF' },
+                      children: 'ライブ記録を開始',
+                    }),
+                  }),
+                  (0, A.jsx)(h.default, {
+                    style: { padding: 18, alignItems: 'center' },
+                    onPress: () => Ze('join'),
+                    children: (0, A.jsx)(a.default, {
+                      style: { fontSize: 20, color: '#007AFF' },
+                      children: 'ライブ記録に参加',
+                    }),
+                  }),
+                ],
+              }),
+              (0, A.jsx)(h.default, {
+                style: {
+                  width: '90%',
+                  maxWidth: 400,
+                  backgroundColor: '#FFF',
+                  borderRadius: 14,
+                  marginTop: 8,
+                  padding: 18,
+                  alignItems: 'center',
+                },
+                onPress: () => Ee(!1),
+                children: (0, A.jsx)(a.default, {
+                  style: { fontSize: 20, color: '#007AFF', fontWeight: 'bold' },
+                  children: 'キャンセル',
+                }),
+              }),
+            ],
+          }),
+        }),
+        (0, A.jsx)(d.default, {
+          visible: He,
+          transparent: !0,
+          animationType: 'fade',
+          children: (0, A.jsx)(l.default, {
+            style: {
+              flex: 1,
+              backgroundColor: 'rgba(0,0,0,0.4)',
+              justifyContent: 'center',
+              alignItems: 'center',
+            },
+            children: (0, A.jsxs)(l.default, {
+              style: {
+                width: 300,
+                backgroundColor: '#FFF',
+                borderRadius: 12,
+                padding: 20,
+                alignItems: 'center',
+                maxHeight: '80%',
+              },
+              children: [
+                (0, A.jsx)(a.default, {
+                  style: { fontSize: 18, fontWeight: 'bold', marginBottom: 12 },
+                  children: 'host' === Re ? 'ライブを開始' : 'ライブに参加',
+                }),
+                'host' === Re
+                  ? (0, A.jsxs)(A.Fragment, {
+                      children: [
+                        (0, A.jsx)(a.default, {
+                          style: { fontSize: 14, color: '#666', marginBottom: 16 },
+                          children: 'セッション名を入力してください',
+                        }),
+                        (0, A.jsx)(c.default, {
+                          style: {
+                            width: '100%',
+                            borderWidth: 1,
+                            borderColor: '#CCC',
+                            borderRadius: 8,
+                            padding: 12,
+                            fontSize: 16,
+                            marginBottom: 20,
+                          },
+                          value: Le,
+                          onChangeText: De,
+                          placeholder: 'session_name_123',
+                          autoCapitalize: 'none',
+                          autoCorrect: !1,
+                          autoFocus: !0,
+                        }),
+                        Me &&
+                          (0, A.jsx)(a.default, {
+                            style: {
+                              color: '#FF3B30',
+                              fontSize: 13,
+                              textAlign: 'center',
+                              marginBottom: 12,
+                              fontWeight: 'bold',
+                            },
+                            children: Me,
+                          }),
+                      ],
+                    })
+                  : (0, A.jsxs)(l.default, {
+                      style: { width: '100%' },
+                      children: [
+                        (0, A.jsxs)(l.default, {
+                          style: {
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: 12,
+                          },
+                          children: [
+                            (0, A.jsx)(a.default, {
+                              style: { fontSize: 14, color: '#666' },
+                              children: 'アクティブなセッション一覧',
+                            }),
+                            (0, A.jsx)(h.default, {
+                              onPress: () => {
+                                (x.useScoreStore.getState().fetchActiveLiveSessions(), Ge('更新しました'));
+                              },
+                              children: (0, A.jsx)(p.Ionicons, {
+                                name: 'refresh',
+                                size: 20,
+                                color: '#007AFF',
+                              }),
+                            }),
+                          ],
+                        }),
+                        (0, A.jsx)(n.default, {
+                          style: { width: '100%', maxHeight: 300, marginBottom: 20 },
+                          children:
+                            Array.isArray(ae) && 0 !== ae.length
+                              ? ae.map((e) =>
+                                  (0, A.jsxs)(
+                                    l.default,
+                                    {
+                                      style: {
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        borderBottomWidth: 1,
+                                        borderBottomColor: '#EEE',
+                                        backgroundColor: Le === e ? '#E5F1FF' : '#FFF',
+                                      },
+                                      children: [
+                                        (0, A.jsx)(h.default, {
+                                          style: { flex: 1, padding: 16 },
+                                          onPress: () => De(e),
+                                          children: (0, A.jsx)(a.default, {
+                                            style: { fontSize: 16, color: '#333' },
+                                            children: e,
+                                          }),
+                                        }),
+                                        (0, A.jsx)(h.default, {
+                                          style: { padding: 16 },
+                                          onPress: () => {
+                                            m.IS_WEB
+                                              ? window.confirm(`セッション「${e}」を完全に削除しますか？`) &&
+                                                x.useScoreStore.getState().deleteLiveSession(e)
+                                              : u.default.alert(
+                                                  'セッション削除',
+                                                  `セッション「${e}」を完全に削除しますか？`,
+                                                  [
+                                                    { text: 'キャンセル', style: 'cancel' },
+                                                    {
+                                                      text: '削除',
+                                                      style: 'destructive',
+                                                      onPress: () =>
+                                                        x.useScoreStore.getState().deleteLiveSession(e),
+                                                    },
+                                                  ]
+                                                );
+                                          },
+                                          children: (0, A.jsx)(p.Ionicons, {
+                                            name: 'trash-outline',
+                                            size: 20,
+                                            color: '#FF3B30',
+                                          }),
+                                        }),
+                                      ],
+                                    },
+                                    `live-session-${e}`
+                                  )
+                                )
+                              : (0, A.jsx)(a.default, {
+                                  style: { textAlign: 'center', color: '#888', padding: 20 },
+                                  children: '現在アクティブな記録はありません',
+                                }),
+                        }),
+                      ],
+                    }),
+                (0, A.jsxs)(l.default, {
+                  style: { flexDirection: 'row', gap: 12 },
+                  children: [
+                    (0, A.jsx)(h.default, {
+                      style: {
+                        flex: 1,
+                        padding: 12,
+                        borderRadius: 8,
+                        backgroundColor: '#F2F2F7',
+                        alignItems: 'center',
+                      },
+                      onPress: () => Oe(!1),
+                      children: (0, A.jsx)(a.default, {
+                        style: { fontSize: 16, color: '#007AFF', fontWeight: 'bold' },
+                        children: 'キャンセル',
+                      }),
+                    }),
+                    (0, A.jsx)(h.default, {
+                      style: {
+                        flex: 1,
+                        padding: 12,
+                        borderRadius: 8,
+                        backgroundColor: Le.trim() ? '#007AFF' : '#CCC',
+                        alignItems: 'center',
+                      },
+                      onPress: async () => {
+                        if (!Le.trim()) return;
+                        const e = Le.trim();
+                        if ((Ne(null), 'host' === Re)) {
+                          Ge('ライブを開始しています...');
+                          return void ((await x.useScoreStore.getState().startLiveSync(e))
+                            ? (Oe(!1), j.notificationAsync(j.NotificationFeedbackType.Success))
+                            : (Ne(`'${e}' は既に使用されています。別の名前を入力してください。`),
+                              j.impactAsync(j.ImpactFeedbackStyle.Heavy)));
+                        }
+                        if ('join' === Re) {
+                          if (!x.useScoreStore.getState().liveSessionsList.includes(e))
+                            return void Ne(`'${e}' というセッションは見つかりませんでした。`);
+                          const t = () => {
+                            (Ge('ライブに参加しています...'),
+                              Oe(!1),
+                              x.useScoreStore.getState().joinLiveSync(e),
+                              j.notificationAsync(j.NotificationFeedbackType.Success));
+                          };
+                          if (k.length > 0) {
+                            const e =
+                              '手元の記録が消去され、ライブ参加データで上書きされます。よろしいですか？';
+                            m.IS_WEB
+                              ? window.confirm(e) && t()
+                              : u.default.alert('確認', e, [
+                                  { text: 'キャンセル', style: 'cancel' },
+                                  { text: 'OK', onPress: t },
+                                ]);
+                          } else t();
+                        }
+                      },
+                      disabled: !Le.trim(),
+                      children: (0, A.jsx)(a.default, {
+                        style: { fontSize: 16, color: '#FFF', fontWeight: 'bold' },
+                        children: '決定',
+                      }),
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          }),
+        }),
+        (0, A.jsxs)(l.default, {
+          style: [W.gridArea, { justifyContent: 'center', alignItems: 'center' }],
+          children: [
+            (0, A.jsxs)(l.default, {
+              style: { maxHeight: '100%', flexDirection: 'column', maxWidth: '100%' },
+              children: [
+                (0, A.jsx)(n.default, {
+                  showsVerticalScrollIndicator: !1,
+                  bounces: !1,
+                  style: { flexGrow: 0 },
+                  children: (0, A.jsxs)(l.default, {
+                    style: { flexDirection: 'row-reverse', minWidth: '100%' },
+                    children: [
+                      (0, A.jsx)(l.default, {
+                        style: { backgroundColor: '#F2F2F7', zIndex: 10 },
+                        children: (0, A.jsx)(b.LabelColumn, { shots: T, showFooter: !1 }),
+                      }),
+                      (0, A.jsx)(n.default, {
+                        horizontal: !0,
+                        showsHorizontalScrollIndicator: !0,
+                        style: { flexGrow: 0, flexShrink: 1 },
+                        ref: Ve,
+                        onScroll: (e) => {
+                          const t = e.nativeEvent.contentOffset.x;
+                          Ue.current?.scrollTo({ x: t, animated: !1 });
+                        },
+                        scrollEventThrottle: 16,
+                        children: (0, A.jsx)(l.default, {
+                          style: [W.gridRow, { flexDirection: 'row-reverse' }],
+                          children: (Array.isArray(k) ? k : [])
+                            .filter((e) => !!e)
+                            .map((e, t) =>
+                              (0, A.jsx)(
+                                y.ArcherColumnView,
+                                {
+                                  archer: e,
+                                  shots: T,
+                                  allArchers: Array.isArray(k) ? k : [],
+                                  indexInList: t,
+                                  showFooter: !1,
+                                  isReadOnly: $e,
+                                  onPressName: () => qe(e.id, e.name, t),
+                                  onDelete: () => M(e.id),
+                                },
+                                typeof e.id === 'string' ? e.id : `archer-${t}`
+                              )
+                            ),
+                        }),
+                      }),
+                    ],
+                  }),
+                }),
+                (0, A.jsxs)(l.default, {
+                  style: {
+                    height: F.UIConfig.footerHeight * se,
+                    flexDirection: 'row-reverse',
+                    borderTopWidth: 1.5,
+                    borderTopColor: '#000',
+                  },
+                  children: [
+                    (0, A.jsx)(l.default, {
+                      style: {
+                        width: F.UIConfig.headerWidth * se,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        backgroundColor: '#F2F2F7',
+                        borderLeftWidth: 1.5,
+                        borderLeftColor: '#000',
+                        borderRightWidth: 1.5,
+                        borderRightColor: '#000',
+                      },
+                      children: (0, A.jsx)(a.default, {
+                        style: { fontSize: 10 * se, fontWeight: 'bold', color: '#3C3C43' },
+                        children: '名',
+                      }),
+                    }),
+                    (0, A.jsx)(n.default, {
+                      horizontal: !0,
+                      showsHorizontalScrollIndicator: !1,
+                      style: { flexGrow: 0, flexShrink: 1 },
+                      ref: Ue,
+                      onScroll: (e) => {
+                        const t = e.nativeEvent.contentOffset.x;
+                        Ve.current?.scrollTo({ x: t, animated: !1 });
+                      },
+                      scrollEventThrottle: 16,
+                      children: (0, A.jsx)(l.default, {
+                        style: [W.gridRow, { flexDirection: 'row-reverse' }],
+                        children: (Array.isArray(k) ? k : [])
+                          .filter((e) => !!e)
+                          .map((e, t) => {
+                            return (0, A.jsx)(
+                              l.default,
+                              {
+                                style: {
+                                  width:
+                                    (e.isSeparator ? F.UIConfig.separatorWidth : F.UIConfig.cellWidth) * se,
+                                  height: F.UIConfig.footerHeight * se,
+                                  backgroundColor: e.isTotalCalculator ? 'rgba(0,122,255,0.05)' : '#F2F2F7',
+                                  borderRightWidth: e.isSeparator || e.isTotalCalculator ? 1.5 : 1,
+                                  borderRightColor: '#000',
+                                  borderLeftWidth: e.isSeparator || e.isTotalCalculator ? 1.5 : 0,
+                                  borderLeftColor: '#000',
+                                  padding: 4,
+                                  justifyContent: 'center',
+                                  alignItems: 'center',
+                                },
+                                children: e.isSeparator
+                                  ? (0, A.jsx)(h.default, {
+                                      style: {
+                                        alignItems: 'center',
+                                        width: '100%',
+                                        height: '100%',
+                                        justifyContent: 'center',
+                                      },
+                                      onPress: () => M(e.id),
+                                      disabled: $e,
+                                      children: (0, A.jsx)(p.Ionicons, {
+                                        name: 'close-circle',
+                                        size: 24 * se,
+                                        color: '#8E8E93',
+                                      }),
+                                    })
+                                  : (0, A.jsxs)(h.default, {
+                                      style: {
+                                        alignItems: 'center',
+                                        width: '100%',
+                                        height: '100%',
+                                        justifyContent: 'center',
+                                      },
+                                      onPress: () => qe(e.id, e.name, t),
+                                      children: [
+                                        (0, A.jsx)(a.default, {
+                                          style: [
+                                            W.footerName,
+                                            { color: e.name ? '#000' : '#8E8E93', fontSize: 14 * se },
+                                          ],
+                                          numberOfLines: 2,
+                                          children: e.isTotalCalculator
+                                            ? '合計'
+                                            : e.name
+                                              ? ((o = e.name), (0, v.formatMemberName)(o, oe))
+                                              : '選択',
+                                        }),
+                                        !!e.isGuest &&
+                                          (0, A.jsx)(a.default, {
+                                            style: [W.guestLabel, { fontSize: 9 * se }],
+                                            children: '(ゲスト)',
+                                          }),
+                                        !e.isTotalCalculator && '' !== e.name
+                                          ? (0, A.jsx)(l.default, {
+                                              style: {
+                                                marginTop: 2,
+                                                paddingHorizontal: 4,
+                                                paddingVertical: 2,
+                                                borderRadius: 10,
+                                                backgroundColor:
+                                                  e.isGuest ||
+                                                  !e.gender ||
+                                                  e.gender === '枣設定' ||
+                                                  !['男子', '女子'].includes(e.gender)
+                                                    ? '#8E8E93'
+                                                    : '男子' === e.gender
+                                                      ? '#007AFF'
+                                                      : '#FF2D55',
+                                              },
+                                              children: (0, A.jsx)(p.Ionicons, {
+                                                name: 'person',
+                                                size: 10 * se,
+                                                color: '#FFF',
+                                              }),
+                                            })
+                                          : null,
+                                      ],
+                                    }),
+                              },
+                              typeof e.id === 'string' ? `footer-${e.id}` : `footer-${t}`
+                            );
+                            var o;
+                          }),
+                      }),
+                    }),
+                  ],
+                }),
+              ],
+            }),
+            0 === k.length &&
+              (0, A.jsxs)(l.default, {
+                style: W.emptyOverlay,
+                children: [
+                  (0, A.jsx)(a.default, { style: W.emptyTitle, children: '記録を始めましょう' }),
+                  (0, A.jsx)(a.default, { style: W.emptyHint, children: '下の「人」ボタンで射手を追加' }),
+                ],
+              }),
+          ],
+        }),
+        (0, A.jsx)(l.default, {
+          style: W.toolbar,
+          children: (0, A.jsxs)(A.Fragment, {
+            children: [
+              (0, A.jsxs)(l.default, {
+                style: W.historyBtns,
+                children: [
+                  (0, A.jsx)(f.default, {
+                    style: ({ hovered: e }) => [
+                      W.historyBtn,
+                      { opacity: _.length > 0 ? 1 : 0.3 },
+                      e && _.length > 0 && m.IS_WEB && { backgroundColor: '#F2F2F7' },
+                    ],
+                    onPress: () => {
+                      _.length > 0 && (D(), Ge('元に戻しました'), j.impactAsync(j.ImpactFeedbackStyle.Light));
+                    },
+                    disabled: 0 === _.length,
+                    children: (0, A.jsx)(p.Ionicons, { name: 'arrow-undo', size: 24, color: '#8E8E93' }),
+                  }),
+                  (0, A.jsx)(f.default, {
+                    style: ({ hovered: e }) => [
+                      W.historyBtn,
+                      { opacity: O.length > 0 ? 1 : 0.3 },
+                      e && O.length > 0 && m.IS_WEB && { backgroundColor: '#F2F2F7' },
+                    ],
+                    onPress: () => {
+                      O.length > 0 && (H(), Ge('やり直しました'), j.impactAsync(j.ImpactFeedbackStyle.Light));
+                    },
+                    disabled: 0 === O.length,
+                    children: (0, A.jsx)(p.Ionicons, { name: 'arrow-redo', size: 24, color: '#8E8E93' }),
+                  }),
+                ],
+              }),
+              (0, A.jsxs)(l.default, {
+                style: W.addBtns,
+                children: [
+                  (0, A.jsxs)(f.default, {
+                    style: ({ hovered: e }) => [
+                      W.addBtn,
+                      { backgroundColor: 'rgba(0,122,255,0.1)' },
+                      e && m.IS_WEB && { backgroundColor: 'rgba(0,122,255,0.2)' },
+                    ],
+                    onPress: () => {
+                      (j.impactAsync(j.ImpactFeedbackStyle.Medium), R());
+                    },
+                    children: [
+                      (0, A.jsx)(p.Ionicons, { name: 'person-add', size: 24, color: '#007AFF' }),
+                      (0, A.jsx)(a.default, { style: [W.addLabel, { color: '#007AFF' }], children: '人' }),
+                    ],
+                  }),
+                  (0, A.jsxs)(f.default, {
+                    style: ({ hovered: e }) => [
+                      W.addBtn,
+                      { backgroundColor: 'rgba(255,149,0,0.1)' },
+                      e && m.IS_WEB && { backgroundColor: 'rgba(255,149,0,0.2)' },
+                    ],
+                    onPress: () => {
+                      (j.impactAsync(j.ImpactFeedbackStyle.Light), P());
+                    },
+                    children: [
+                      (0, A.jsx)(p.Ionicons, { name: 'pause', size: 24, color: '#FF9500' }),
+                      (0, A.jsx)(a.default, { style: [W.addLabel, { color: '#FF9500' }], children: '間隔' }),
+                    ],
+                  }),
+                  (0, A.jsxs)(f.default, {
+                    style: ({ hovered: e }) => [
+                      W.addBtn,
+                      { backgroundColor: 'rgba(52,199,89,0.1)' },
+                      e && m.IS_WEB && { backgroundColor: 'rgba(52,199,89,0.2)' },
+                    ],
+                    onPress: () => {
+                      (j.impactAsync(j.ImpactFeedbackStyle.Light), L());
+                    },
+                    children: [
+                      (0, A.jsx)(a.default, {
+                        style: { fontSize: 22, fontWeight: 'bold', color: '#34C759' },
+                        children: '\u03a3',
+                      }),
+                      (0, A.jsx)(a.default, { style: [W.addLabel, { color: '#34C759' }], children: '計' }),
+                    ],
+                  }),
+                  (0, A.jsxs)(f.default, {
+                    style: ({ hovered: e }) => [
+                      W.addBtn,
+                      { backgroundColor: 'rgba(142,142,147,0.1)' },
+                      e && m.IS_WEB && { backgroundColor: 'rgba(142,142,147,0.2)' },
+                    ],
+                    onPress: () => {
+                      (j.impactAsync(j.ImpactFeedbackStyle.Medium), setShowOCRModal(!0));
+                    },
+                    children: [
+                      (0, A.jsx)(p.Ionicons, { name: 'camera', size: 24, color: '#8E8E93' }),
+                      (0, A.jsx)(a.default, { style: [W.addLabel, { color: '#8E8E93' }], children: '画像' }),
+                    ],
+                  }),
+                ],
+              }),
+              (0, A.jsx)(f.default, {
+                style: ({ hovered: e }) => [
+                  W.saveBtn,
+                  e && m.IS_WEB && { opacity: 0.9, transform: [{ scale: 1.02 }] },
+                ],
+                onPress: () => {
+                  0 !== k.length && setShowAttendance(!0);
+                },
+                children: (0, A.jsx)(a.default, { style: W.saveBtnText, children: '終了・保存' }),
+              }),
+            ],
+          }),
+        }),
+        (0, A.jsx)(S.ArcherActionModal, {
+          visible: de,
+          archerId: ue || '',
+          archerOrigIdx: he,
+          isSeparator: (Array.isArray(k) ? k : []).find((e) => e && e.id === ue)?.isSeparator || !1,
+          isTotalCalculator:
+            (Array.isArray(k) ? k : []).find((e) => e && e.id === ue)?.isTotalCalculator || !1,
+          onClose: () => ce(!1),
+          onSubstitution: () => be(!0),
+        }),
+        (0, A.jsx)(AttendanceCheckModal, {
+          visible: showAttendance,
+          onClose: () => setShowAttendance(!1),
+          onConfirm: (attendance) => {
+            (setTempAttendance(attendance), setShowAttendance(!1), xe(!0));
+          },
+          members: oe,
+          activeArchers: k,
+        }),
+        (0, A.jsx)(C.SaveSessionModal, {
+          visible: me,
+          onClose: () => xe(!1),
+          onSave: (e, t, o, l) => {
+            (xe(!1), j.notificationAsync(j.NotificationFeedbackType.Success));
+            const n = l
+              .split(/[,\u3001\s]+/)
+              .map((e) => (e.startsWith('#') ? e : `#${e}`))
+              .map((e) => e.trim())
+              .filter((e) => '#' !== e);
+            (U(e, t, o, n, tempAttendance),
+              x.useScoreStore.getState().setCurrentSessionTags([]),
+              Ge('保存しました'));
+          },
+        }),
+        (0, A.jsx)(I.ManualSubstitutionModal, { visible: ye, archerId: ue, onClose: () => be(!1) }),
+        (0, A.jsx)(d.default, {
+          visible: pe,
+          transparent: !0,
+          animationType: 'fade',
+          onRequestClose: () => Ce(!1),
+          children: (0, A.jsxs)(l.default, {
+            style: W.modalBackdrop,
+            children: [
+              (0, A.jsx)(h.default, {
+                style: s.default.absoluteFill,
+                activeOpacity: 1,
+                onPress: () => Ce(!1),
+              }),
+              (0, A.jsxs)(l.default, {
+                style: W.modalContent,
+                children: [
+                  (0, A.jsx)(a.default, { style: W.modalTitle, children: 'すべての記録をリセット' }),
+                  (0, A.jsx)(a.default, {
+                    style: W.modalMessage,
+                    children:
+                      '現在入力されている全ての的中記録と交代設定、および全てのデータが削除されます。リセットしてよろしいですか？',
+                  }),
+                  (0, A.jsxs)(l.default, {
+                    style: W.modalButtonsRow,
+                    children: [
+                      (0, A.jsx)(f.default, {
+                        style: ({ hovered: e }) => [
+                          W.modalBtn,
+                          { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
+                          e && m.IS_WEB && { backgroundColor: '#E5E5EA' },
+                        ],
+                        onPress: () => Ce(!1),
+                        children: (0, A.jsx)(a.default, {
+                          style: [W.modalBtnText, { color: '#007AFF' }],
+                          children: 'キャンセル',
+                        }),
+                      }),
+                      (0, A.jsx)(f.default, {
+                        style: ({ hovered: e }) => [
+                          W.modalBtn,
+                          { backgroundColor: '#FF3B30', flex: 1, marginLeft: 5 },
+                          e && m.IS_WEB && { opacity: 0.8 },
+                        ],
+                        onPress: () => {
+                          (Ce(!1),
+                            te(),
+                            j.notificationAsync(j.NotificationFeedbackType.Warning),
+                            Ge('リセットしました。'));
+                        },
+                        children: (0, A.jsx)(a.default, {
+                          style: [W.modalBtnText, { color: '#FFF' }],
+                          children: 'リセット',
+                        }),
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+            ],
+          }),
+        }),
+        (0, A.jsx)(d.default, {
+          visible: Ie,
+          transparent: !0,
+          animationType: 'fade',
+          onRequestClose: () => ve(!1),
+          children: (0, A.jsxs)(l.default, {
+            style: W.modalBackdrop,
+            children: [
+              (0, A.jsx)(h.default, {
+                style: s.default.absoluteFill,
+                activeOpacity: 1,
+                onPress: () => ve(!1),
+              }),
+              (0, A.jsxs)(l.default, {
+                style: W.modalContent,
+                children: [
+                  (0, A.jsx)(a.default, { style: W.modalTitle, children: '射数を減らしますか？' }),
+                  (0, A.jsxs)(a.default, {
+                    style: W.modalMessage,
+                    children: [
+                      '射数を',
+                      Be,
+                      '射に減らすと、後ろの入力済みデータが全て削除されます。よろしいですか？',
+                    ],
+                  }),
+                  (0, A.jsxs)(l.default, {
+                    style: W.modalButtonsRow,
+                    children: [
+                      (0, A.jsx)(h.default, {
+                        style: [W.modalBtn, { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 }],
+                        onPress: () => ve(!1),
+                        children: (0, A.jsx)(a.default, {
+                          style: [W.modalBtnText, { color: '#007AFF' }],
+                          children: 'キャンセル',
+                        }),
+                      }),
+                      (0, A.jsx)(h.default, {
+                        style: [W.modalBtn, { backgroundColor: '#FF3B30', flex: 1, marginLeft: 5 }],
+                        onPress: () => {
+                          (ve(!1), G(Be), j.impactAsync(j.ImpactFeedbackStyle.Medium));
+                        },
+                        children: (0, A.jsx)(a.default, {
+                          style: [W.modalBtnText, { color: '#FFF' }],
+                          children: '削除して変更',
+                        }),
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+            ],
+          }),
+        }),
+        (0, A.jsx)(d.default, {
+          visible: ke,
+          transparent: !0,
+          animationType: 'fade',
+          onRequestClose: () => We(!1),
+          children: (0, A.jsxs)(l.default, {
+            style: W.modalBackdrop,
+            children: [
+              (0, A.jsx)(h.default, {
+                style: s.default.absoluteFill,
+                activeOpacity: 1,
+                onPress: () => We(!1),
+              }),
+              (0, A.jsxs)(l.default, {
+                style: W.modalContent,
+                children: [
+                  (0, A.jsx)(a.default, { style: W.modalTitle, children: '射数の詳細設定' }),
+                  (0, A.jsx)(a.default, {
+                    style: W.modalMessage,
+                    children: '1〜500本の間で入力してください',
+                  }),
+                  (0, A.jsx)(c.default, {
+                    style: W.modalInput,
+                    keyboardType: 'number-pad',
+                    value: Te,
+                    onChangeText: ze,
+                    onSubmitEditing: Ye,
+                    autoFocus: !0,
+                  }),
+                  (0, A.jsxs)(l.default, {
+                    style: W.modalButtonsRow,
+                    children: [
+                      (0, A.jsx)(f.default, {
+                        style: ({ hovered: e }) => [
+                          W.modalBtn,
+                          { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
+                          e && m.IS_WEB && { backgroundColor: '#E5E5EA' },
+                        ],
+                        onPress: () => We(!1),
+                        children: (0, A.jsx)(a.default, {
+                          style: [W.modalBtnText, { color: '#007AFF' }],
+                          children: 'キャンセル',
+                        }),
+                      }),
+                      (0, A.jsx)(f.default, {
+                        style: ({ hovered: e }) => [
+                          W.modalBtn,
+                          { backgroundColor: '#007AFF', flex: 1, marginLeft: 5 },
+                          e && m.IS_WEB && { opacity: 0.8 },
+                        ],
+                        onPress: Ye,
+                        children: (0, A.jsx)(a.default, {
+                          style: [W.modalBtnText, { color: '#FFF' }],
+                          children: '決定',
+                        }),
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+            ],
+          }),
+        }),
+        Fe
+          ? (0, A.jsx)(l.default, {
+              style: W.feedbackOverlay,
+              children: (0, A.jsx)(a.default, { style: W.feedbackText, children: Fe }),
+            })
+          : null,
+        (0, A.jsx)(OCRRecordModal, {
+          visible: showOCRModal,
+          onClose: () => setShowOCRModal(!1),
+          members: oe,
+          alumni: (0, x.useScoreStore)((e) => e.alumni) || [],
+          shotsPerRound: T,
+          onApply: (newArchers) => {
+            const store = x.useScoreStore.getState();
+            store.historyStack &&
+              store.historyStack.length >= 0 &&
+              x.useScoreStore.setState({
+                historyStack: [...store.historyStack, { archers: [...k], activeSessionID: e }],
+                redoStack: [],
+              });
+            x.useScoreStore.setState({ archers: newArchers });
+            Ge('画像から立ち順を登録しました');
+            j.notificationAsync(j.NotificationFeedbackType.Success);
+          },
+        }),
+        (0, A.jsx)(ArrowLocationPopover, {
+          visible: !!activeArrowLocationEdit,
+          onClose: () => setActiveArrowLocationEdit(null),
+          archerId: activeArrowLocationEdit?.archerId,
+          shotIndex: activeArrowLocationEdit?.shotIndex,
+          currentMark: activeArrowLocationEdit?.currentMark,
+          arrowLocations: activeArrowLocationEdit?.arrowLocations,
+          onSave: () => setActiveArrowLocationEdit(null),
+        }),
+      ],
+    });
+  },
+  W = s.default.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: '#FFF',
+      paddingTop: m.IS_WEB ? m.WEB_TOP_PADDING : m.SAFE_TOP_PADDING,
+    },
+    navBar: {
+      minHeight: 48,
+      backgroundColor: '#FFF',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderBottomWidth: 1,
+      borderBottomColor: '#E5E5EA',
+    },
+    navLeft: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    syncContainer: { flexDirection: 'row', alignItems: 'center' },
+    syncTimeText: { fontSize: 9, color: '#8E8E93' },
+    navRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    resetBtn: {
+      zIndex: 10001,
+      backgroundColor: '#FF3B30',
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+      borderRadius: 6,
+      marginRight: 2,
+    },
+    resetBtnText: { color: '#FFF', fontWeight: 'bold', fontSize: 12 },
+    groupBadge: {
+      marginLeft: 4,
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#F2F2F7',
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+    },
+    groupBadgeWeb: Object.assign(
+      {
+        backgroundColor: 'rgba(0,122,255,0.1)',
+        borderColor: 'rgba(0,122,255,0.2)',
+        borderWidth: 1,
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 8,
+      },
+      (0, B.getShadowStyle)({
+        shadowColor: '#007AFF',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 8,
+      })
+    ),
+    liveBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0,122,255,0.1)',
+      paddingHorizontal: 6,
+      paddingVertical: 4,
+      borderRadius: 6,
+      gap: 3,
+    },
+    liveBtnActive: { backgroundColor: '#FF3B30' },
+    liveBtnText: { fontSize: 12, color: '#007AFF', fontWeight: 'bold' },
+    liveBtnTextActive: { color: '#FFF' },
+    zoomContainer: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+    zoomBtn: { padding: 2 },
+    shotsToggle: { padding: 4, zIndex: 10001 },
+    shotsText: { fontSize: 13, color: '#5856D6', fontWeight: 'bold' },
+    liveStatusHeader: {
+      height: 24,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#8E8E93',
+      gap: 6,
+    },
+    liveHostHeader: { backgroundColor: '#007AFF' },
+    liveJoinHeader: { backgroundColor: '#007AFF' },
+    liveActiveHeader: { backgroundColor: '#007AFF' },
+    liveStatusText: { color: '#FFF', fontSize: 11, fontWeight: 'bold' },
+    gridArea: { flex: 1, backgroundColor: '#FFF' },
+    tallWrapper: { flex: 1, flexDirection: 'column' },
+    gridRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', minWidth: '100%' },
+    fixedFooter: {
+      flexDirection: 'row',
+      height: F.UIConfig.footerHeight,
+      backgroundColor: '#F2F2F7',
+      borderTopWidth: 1,
+      borderTopColor: '#C6C6C8',
+    },
+    footerLabelCell: {
+      width: F.UIConfig.headerWidth,
+      height: F.UIConfig.footerHeight,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: '#F2F2F7',
+      borderRightWidth: 1,
+      borderRightColor: '#000',
+    },
+    footerLabelText: { fontSize: 10, fontWeight: 'bold', color: '#3C3C43' },
+    footerNameCell: {
+      height: F.UIConfig.footerHeight,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRightWidth: 1,
+      borderRightColor: '#000',
+      borderBottomWidth: 1,
+      borderBottomColor: '#000',
+      padding: 4,
+    },
+    footerName: { fontSize: 14, fontWeight: 'bold', textAlign: 'center' },
+    guestLabel: { fontSize: 9, color: '#8E8E93' },
+    emptyOverlay: Object.assign({}, s.default.absoluteFillObject, {
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: '#FFF',
+    }),
+    emptyTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
+    emptyHint: { fontSize: 14, color: '#8E8E93' },
+    toolbar: {
+      height: m.IS_WEB ? 70 : 80,
+      backgroundColor: '#FFF',
+      borderTopWidth: s.default.hairlineWidth,
+      borderTopColor: '#C6C6C8',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 8,
+      paddingVertical: 8,
+    },
+    addBtns: { flexDirection: 'row', gap: 4, flex: 1, justifyContent: 'center', minWidth: 0 },
+    addBtn: {
+      flex: 1,
+      minWidth: 44,
+      maxWidth: 62,
+      height: 56,
+      borderRadius: 10,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    addLabel: { fontSize: 10, marginTop: 4, fontWeight: 'bold' },
+    historyBtns: { flexDirection: 'row', gap: 2 },
+    historyBtn: { padding: 4 },
+    saveBtn: {
+      backgroundColor: '#FF3B30',
+      paddingHorizontal: 8,
+      paddingVertical: 10,
+      borderRadius: 8,
+      minWidth: 64,
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    saveBtnText: { color: '#FFF', fontSize: 13, fontWeight: 'bold', textAlign: 'center' },
+    feedbackOverlay: {
+      position: 'absolute',
+      bottom: 100,
+      alignSelf: 'center',
+      backgroundColor: 'rgba(0,0,0,0.7)',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 8,
+    },
+    feedbackText: { color: '#FFF', fontSize: 14, fontWeight: 'bold' },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.4)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalContent: {
+      width: '85%',
+      maxWidth: 350,
+      backgroundColor: '#FFF',
+      borderRadius: 14,
+      padding: 20,
+      alignItems: 'center',
+    },
+    modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 8 },
+    modalMessage: { fontSize: 14, color: '#3C3C43', textAlign: 'center', marginBottom: 20 },
+    modalInput: {
+      width: '100%',
+      height: 44,
+      borderWidth: 1,
+      borderColor: '#C6C6C8',
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      fontSize: 18,
+      marginBottom: 20,
+      textAlign: 'center',
+    },
+    modalButtonsRow: { flexDirection: 'row', width: '100%' },
+    modalBtn: { paddingVertical: 12, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+    modalBtnText: { fontSize: 16, fontWeight: 'bold' },
+  });

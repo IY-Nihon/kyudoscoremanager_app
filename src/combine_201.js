@@ -7,6 +7,6 @@
  * 利用箇所: JP_useScoreStore_174
  * 使用API : persist, createJSONStorage
  */
-"use strict";
+'use strict';
 
 module.exports = require('zustand/middleware');

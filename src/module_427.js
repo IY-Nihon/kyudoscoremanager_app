@@ -18,7 +18,7 @@
  *
  * ライトモード時は theme.mapProps が引数をそのまま返すので実質ノーコスト。
  */
-"use strict";
+'use strict';
 
 const jsxRuntime = require('react/jsx-runtime');
 const { createElement } = require('react');

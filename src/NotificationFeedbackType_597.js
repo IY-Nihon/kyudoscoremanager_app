@@ -7,6 +7,6 @@
  * 利用箇所: JP_RecordScreen_593 / JP_ScoreCell_596 / JP_HistoryScreen_692 / JP_EditSessionModal_694
  * 使用API : impactAsync, notificationAsync, ImpactFeedbackStyle, NotificationFeedbackType
  */
-"use strict";
+'use strict';
 
 module.exports = require('expo-haptics');

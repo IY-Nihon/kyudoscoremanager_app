@@ -1,6 +1,6 @@
 /**
  * Library Bridge: module_179.js
  */
-"use strict";
+'use strict';
 
 module.exports = require('firebase/app');

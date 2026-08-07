@@ -28,7 +28,7 @@ if (Platform.OS === 'web') {
             antialias: true,
           });
         } catch (e) {
-          console.warn("WebGL initialization failed in background: ", e);
+          console.warn('WebGL initialization failed in background: ', e);
           return;
         }
 
@@ -246,7 +246,14 @@ if (Platform.OS === 'web') {
   const Svg = require('react-native-svg').default;
   const { Circle, G, Path, Line } = require('react-native-svg');
   const Animated = require('react-native-reanimated').default;
-  const { useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence, Easing } = require('react-native-reanimated');
+  const {
+    useSharedValue,
+    useAnimatedStyle,
+    withRepeat,
+    withTiming,
+    withSequence,
+    Easing,
+  } = require('react-native-reanimated');
 
   KyudoBackgroundAnimation = () => {
     const rotation = useSharedValue(0);
@@ -254,11 +261,7 @@ if (Platform.OS === 'web') {
 
     useEffect(() => {
       // 的と全体のゆっくりとした回転
-      rotation.value = withRepeat(
-        withTiming(360, { duration: 35000, easing: Easing.linear }),
-        -1,
-        false
-      );
+      rotation.value = withRepeat(withTiming(360, { duration: 35000, easing: Easing.linear }), -1, false);
 
       // 上下の緩やかな浮遊モーション
       translateY.value = withRepeat(
@@ -273,10 +276,7 @@ if (Platform.OS === 'web') {
 
     const animatedStyle = useAnimatedStyle(() => {
       return {
-        transform: [
-          { rotate: `${rotation.value}deg` },
-          { translateY: translateY.value }
-        ],
+        transform: [{ rotate: `${rotation.value}deg` }, { translateY: translateY.value }],
       };
     });
 
@@ -304,7 +304,12 @@ if (Platform.OS === 'web') {
               {/* シャフト */}
               <Line x1="0" y1="-120" x2="0" y2="120" stroke="#e5c184" strokeWidth="1.8" strokeOpacity="0.9" />
               {/* 筈 */}
-              <Path d="M-2.5,-120 L-2.5,-126 L0,-123 L2.5,-126 L2.5,-120" stroke="#e5c184" strokeWidth="1.5" fill="none" />
+              <Path
+                d="M-2.5,-120 L-2.5,-126 L0,-123 L2.5,-126 L2.5,-120"
+                stroke="#e5c184"
+                strokeWidth="1.5"
+                fill="none"
+              />
               {/* 矢尻 */}
               <Path d="M0,120 L-4,112 L4,112 Z" fill="#e5c184" />
               {/* 矧糸 */}
@@ -315,15 +320,36 @@ if (Platform.OS === 'web') {
               <Path d="M0,-100 L-12,-115 L-8,-117 L0,-120" fill="#e5c184" fillOpacity="0.85" />
               {/* 羽軸 */}
               <Line x1="1" y1="-100" x2="1" y2="-119" stroke="#b8965a" strokeWidth="1" strokeOpacity="0.5" />
-              <Line x1="-1" y1="-100" x2="-1" y2="-119" stroke="#b8965a" strokeWidth="1" strokeOpacity="0.5" />
+              <Line
+                x1="-1"
+                y1="-100"
+                x2="-1"
+                y2="-119"
+                stroke="#b8965a"
+                strokeWidth="1"
+                strokeOpacity="0.5"
+              />
             </G>
 
             {/* Vector Arrow 2 (奥の矢) */}
             <G transform="translate(255, 220) rotate(-35)" opacity="0.6">
               {/* シャフト */}
-              <Line x1="0" y1="-120" x2="0" y2="120" stroke="#b8965a" strokeWidth="1.5" strokeOpacity="0.75" />
+              <Line
+                x1="0"
+                y1="-120"
+                x2="0"
+                y2="120"
+                stroke="#b8965a"
+                strokeWidth="1.5"
+                strokeOpacity="0.75"
+              />
               {/* 筈 */}
-              <Path d="M-2,-120 L-2,-126 L0,-123 L2,-126 L2,-120" stroke="#b8965a" strokeWidth="1.2" fill="none" />
+              <Path
+                d="M-2,-120 L-2,-126 L0,-123 L2,-126 L2,-120"
+                stroke="#b8965a"
+                strokeWidth="1.2"
+                fill="none"
+              />
               {/* 矢尻 */}
               <Path d="M0,120 L-3,112 L3,112 Z" fill="#b8965a" />
               {/* 矢羽根 */}

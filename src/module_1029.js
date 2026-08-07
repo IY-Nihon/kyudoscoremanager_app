@@ -10,6 +10,6 @@
  *
  * 利用箇所: JP_SettingsScreen_1023（CSVエクスポートの共有）
  */
-"use strict";
+'use strict';
 
 module.exports = require('expo-sharing');

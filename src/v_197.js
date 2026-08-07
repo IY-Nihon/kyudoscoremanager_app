@@ -8,6 +8,6 @@
  * 利用箇所: module_196 経由で setupAppCheck_195 が require（副作用のみ）。
  *           setupAppCheck 自体は ReCAPTCHA キー未設定のため無効化されている。
  */
-"use strict";
+'use strict';
 
 module.exports = require('firebase/app-check');

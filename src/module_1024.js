@@ -12,6 +12,6 @@
  * 利用箇所: JP_SettingsScreen_1023（CSVエクスポート）
  * 使用API : cacheDirectory, writeAsStringAsync, EncodingType.UTF8
  */
-"use strict";
+'use strict';
 
 module.exports = require('expo-file-system/legacy');

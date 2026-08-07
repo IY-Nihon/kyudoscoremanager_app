@@ -1,81 +1,94 @@
 /**
  * Module ID: 174
  */
-"use strict";
+'use strict';
 
-
-const g = (typeof global !== "undefined" ? global : typeof window !== "undefined" ? window : this);
+const g = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : this;
 
 const r = require;
 
-const _i = (typeof metroImport !== 'undefined' ? metroImport : undefined);
+const _i = typeof metroImport !== 'undefined' ? metroImport : undefined;
 
-const _a = (typeof id !== 'undefined' ? id : 174);
+const _a = typeof id !== 'undefined' ? id : 174;
 
 const _m = module;
 
 const _e = exports;
 
-const _d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
+const _d = typeof dependencyMap !== 'undefined' ? dependencyMap : [];
 
-
-"use strict";
-function e(e){
-return e&&e.__esModule?e:{
-default:e
+('use strict');
+function e(e) {
+  return e && e.__esModule
+    ? e
+    : {
+        default: e,
+      };
 }
-}Object.defineProperty(_e,'__esModule',{
-value:!0
-}),Object.defineProperty(_e,"useScoreStore",{
-enumerable:!0,get:function(){
-return M
-}
-});
-var s=require("./module_175"),_t_orig=require("./db_178"),o=require("./module_191"),a=require("./module_188"),i=require("./module_186"),n=e(require("./module_198")),c=require("./IS_WEB_199"),l=require("./module_200"),d=require("./combine_201"),u=e(require("./useAsyncStorage_202")),m=e(require("./default_208"));
+(Object.defineProperty(_e, '__esModule', {
+  value: !0,
+}),
+  Object.defineProperty(_e, 'useScoreStore', {
+    enumerable: !0,
+    get: function () {
+      return M;
+    },
+  }));
+var s = require('./module_175'),
+  _t_orig = require('./db_178'),
+  o = require('./module_191'),
+  a = require('./module_188'),
+  i = require('./module_186'),
+  n = e(require('./module_198')),
+  c = require('./IS_WEB_199'),
+  l = require('./module_200'),
+  d = require('./combine_201'),
+  u = e(require('./useAsyncStorage_202')),
+  m = e(require('./default_208'));
 const fb = {
   dbInstance: null,
   authInstance: null,
   get db() {
     if (fb.dbInstance) return fb.dbInstance;
-    const res = require("./db_178");
+    const res = require('./db_178');
     if (res && res.db) {
       fb.dbInstance = res.db;
       return res.db;
     }
     try {
-      const fbApp = require("./module_179").getApp();
-      const firestore = require("./module_188").getFirestore(fbApp);
+      const fbApp = require('./module_179').getApp();
+      const firestore = require('./module_188').getFirestore(fbApp);
       if (firestore) {
-         fb.dbInstance = firestore;
-         return firestore;
+        fb.dbInstance = firestore;
+        return firestore;
       }
-    } catch(e) {}
+    } catch (e) {}
     return undefined;
   },
   get auth() {
     if (fb.authInstance) return fb.authInstance;
-    const res = require("./db_178");
+    const res = require('./db_178');
     if (res && res.auth) {
       fb.authInstance = res.auth;
       return res.auth;
     }
     try {
-      const fbApp = require("./module_179").getApp();
-      const auth = require("./module_191").getAuth(fbApp);
+      const fbApp = require('./module_179').getApp();
+      const auth = require('./module_191').getAuth(fbApp);
       if (auth) {
-         fb.authInstance = auth;
-         return auth;
+        fb.authInstance = auth;
+        return auth;
       }
-    } catch(e) {}
+    } catch (e) {}
     return undefined;
   },
   get rtdb() {
-    return require("./db_178").rtdb;
-  }
+    return require('./db_178').rtdb;
+  },
 };
 
 const waitForDb = async () => {
-  const mod = require("./db_178");
+  const mod = require('./db_178');
   if (mod.dbReady) {
     const dbInst = await mod.dbReady;
     fb.dbInstance = dbInst;
@@ -87,2282 +100,3149 @@ const waitForDb = async () => {
   }
   return undefined;
 };
-let p={
-
-};
+let p = {};
 // 同期の判断に使う純粋な関数は syncRules.js へ移した。中身は変えていない。
 // 呼び出し側の書き換えを避けるため、従来の1文字の名前に割り当て直す。
-const 同期規則=require("./syncRules");
-const h=同期規則.generateUniquePersonalId,y=同期規則.mergeById,dropUndefinedDeep=同期規則.dropUndefinedDeep,trashedAtMillis=同期規則.trashedAtMillis,normalizeTag=同期規則.normalizeTag,cleanUpTagsArray=同期規則.cleanUpTagsArray,cleanUpSessions=同期規則.cleanUpSessions;
-const f=(e,s)=>{
-if(!e)return s?Array(s).fill(''):[];
-if(Array.isArray(e)){
-const t=e.map(e=>null==e?'':e);
-return s&&t.length<s?[...t,...Array(s-t.length).fill('')]:t
-}if('object'==typeof e){
-const t=Object.keys(e);
-if(t.length>0&&t.every(e=>!isNaN(Number(e)))){
-const o=Math.max(...t.map(Number)),a=s?Math.max(s,o+1):o+1,i=Array(a).fill('');
-return t.forEach(s=>{
-const t=Number(s);
-i[t]=null===e[s]||void 0===e[s]?'':e[s]
-}),i
-}return Object.values(e)
-}return[]
-},S=(e,s)=>e&&'object'==typeof e?{
-id:e.id||'',name:e.name||'',gender:e.gender||'未設定',grade:'number'==typeof e.grade?e.grade:1,marks:f(e.marks,e.isSeparator?0:s),isSeparator:!0===e.isSeparator,isTotalCalculator:!0===e.isTotalCalculator,isGuest:!0===e.isGuest,memberId:e.memberId||void 0,lockedBlocks:e.lockedBlocks||{
-
-},substitutions:e.substitutions||{
-
-},substitutionIds:e.substitutionIds||{
-
-},bowWeight:e.bowWeight||void 0,lastModified:e.lastModified||0,arrowLocations:Array.isArray(e.arrowLocations)?e.arrowLocations:Array(e.isSeparator?0:s||8).fill(null)
-}:null,b=(e,s)=>JSON.parse(JSON.stringify(e.map(e=>({
-id:e.id,name:e.name||'',gender:e.gender||'未設定',grade:e.grade||0,isSeparator:e.isSeparator||!1,isTotalCalculator:e.isTotalCalculator||!1,isGuest:e.isGuest||!1,memberId:e.memberId||null,lockedBlocks:e.lockedBlocks||{
-
-},substitutions:e.substitutions||{
-
-},lastModified:e.lastModified||0,substitutionIds:e.substitutionIds||{
-
-},bowWeight:e.bowWeight||null
-}))));
-const v=(e,s,o)=>{
-const a=Date.now(),n=M.getState().activeGroupId;
-if(!fb.rtdb||!n)return;
-const c=(0,i.ref)(fb.rtdb,`live_sessions/${
-n
-}/${
-e
-}/state`),l=b(s),d={
-
-};
-s.forEach(e=>{
-e&&e.id&&(d[e.id]=e.lastModified||0)
-});
-const u={
-
-};
-s.forEach(e=>{
-e&&e.id&&!e.isSeparator&&(u[e.id]=e.marks||[])
-});
-const m={
-archers:l,marks_by_id:u,archer_timestamps:d,shotsPerRound:o,timestamp:a,status:'active'
-};
-console.log('[Store] pushLiveAll state updated, lastPushedTimestamp:',a),M.getState().updateState({
-lastPushedTimestamp:a
-}),(0,i.update)(c,m).catch(e=>console.error('[Store] pushLiveAll Error:',e))
-},T=(e,s,o,a,n)=>{
-const c=Date.now(),l=M.getState().activeGroupId;
-if(!fb.rtdb||!l)return;
-const d=(0,i.ref)(fb.rtdb,`live_sessions/${
-l
-}/${
-e
-}/state`),u={
-[`marks_by_id/${
-s
-}/${
-o
-}`]:a,[`archer_timestamps/${
-s
-}`]:n,timestamp:c
-};
-M.getState().updateState({
-lastPushedTimestamp:c
-}),(0,i.update)(d,u).catch(e=>console.error('pushLiveMark Error:',e))
-},w=e=>{
-const s='number'==typeof e.shotsPerRound?e.shotsPerRound:8,t=f(e.archers),o=e.marks_by_id||{
-
-},a=e.archer_timestamps||{
-
-};
-return{
-archers:t.map(e=>{
-if(!e)return null;
-const t=S(e,s);
-return t?(!e.isSeparator&&o[e.id]&&(t.marks=f(o[e.id],s),t.lastModified=Math.max(t.lastModified||0,a[e.id]||0)),t):null
-}).filter(Boolean),shotsPerRound:s
-}
-};
-let I=!1;
-const M=(0,s.create)()((0,d.persist)((t,s)=>{
-const e=o=>{
-let i='function'==typeof o?o(s()):o;
-i&&(i.sessions&&(i.sessions=cleanUpSessions(i.sessions)),i.trash&&(i.trash=cleanUpSessions(i.trash))),t(i)
-};
-return{
-enableArrowLocation:!1,arrowTargetType:'kasumi36',activeArrowLocationEdit:null,activeGroupId:null,activeGroupName:null,publicGroupId:null,activeRole:null,myMemberId:null,myMemberName:null,activeUserEmail:null,memberAuthVersion:0,archers:[],members:[],alumni:[],history:[],sessions:[],trash:[],shotsPerRound:8,activeSessionID:null,historyStack:[],redoStack:[],viewScale:1,syncStatus:'未同期',lastSyncTime:null,offlineSaveWarning:null,isNetworkOnline:!0,isAdminMode:!1,autoPromotionEnabled:!0,_pendingUpdateTimers:{
-
-},showSyncErrorPopups:!0,includeInStats:!0,lastLocalChange:0,lastResetHandled:0,lastPushedTimestamp:0,showTrash:!1,sessionUnsubscribe:null,trashUnsubscribe:null,memberUnsubscribe:null,alumniUnsubscribe:null,configUnsubscribe:null,showAlumniInAnalysis:!1,showAlumniInPicker:!1,currentFreshmanTerm:1,historyViewMode:'list',selectedHistorySessionId:null,isAdminModePending:!1,isLiveActive:!1,isHost:!1,liveSessionName:null,isIncomingLiveSync:!1,liveSessionsList:[],analysisSelectedTags:[],analysisTagLogic:'AND',historySelectedTags:[],historyTagLogic:'AND',currentSessionTags:[],tagTemplates:['#立','#練習試合','#大会','#自主練習','#合宿'],initializationLogs:[],syncIntervalId:null,lastPromotionYear:null,_pendingMemberTimers:{
-
-},isHydrated:!1,analysisRankingSettings:{
-'月ごと':{
-type:'ratio',value:0
-},'期間指定':{
-type:'ratio',value:0
-},'直近30日':{
-type:'ratio',value:0
-},'今年度':{
-type:'ratio',value:0
-},'すべて':{
-type:'ratio',value:0
-}
-},focusedMemberId:null,currentRouteName:null,updateLoadingLog:t=>{
-const o=s().initializationLogs||[];
-e({
-initializationLogs:[...o,t]
-}),console.log('[Store] Loading:',t)
-},setCurrentRouteName:s=>e({
-currentRouteName:s
-}),setMemberAuthVersion:s=>e({memberAuthVersion:s}),setFocusedMemberId:s=>e({
-focusedMemberId:s
-}),setShowSyncErrorPopups:s=>e({
-showSyncErrorPopups:s
-}),setAuth:(t,o,a,i=null,n=null,c=null,l=null)=>{
-null===t?(e({
-activeGroupId:null,activeGroupName:null,publicGroupId:null,activeRole:null,myMemberId:null,myMemberName:null,activeUserEmail:null,sessions:[],members:[],history:[],alumni:[],trash:[],archers:[],activeSessionID:null,analysisSelectedTags:[],historySelectedTags:[],historyTagLogic:'AND',tagTemplates:['立','練習試合','大会','自主練習','合宿'],initializationLogs:[],isAdminMode:!1,isAdminModePending:!1
-}),s().stopPeriodicSync(),s().stopListeningToSessions(),s().stopListeningToMembers(),s().stopListeningToAlumni(),s().stopListeningToTrash(),s().configUnsubscribe&&(s().configUnsubscribe(),e({
-configUnsubscribe:null
-}))):(e({
-activeGroupId:t,activeGroupName:c||s().activeGroupName,activeRole:o,myMemberId:a,myMemberName:l||s().myMemberName,activeUserEmail:i,publicGroupId:n||('group'===o?t:s().publicGroupId),isAdminMode:!1,isAdminModePending:!1
-}),s().listenToConfig(),s().listenToSessions(),s().listenToMembers(),s().listenToAlumni(),s().listenToTrash())
-},setAnalysisSelectedTags:s=>e({
-analysisSelectedTags:s
-}),toggleAnalysisTag:t=>{
-const o=s().analysisSelectedTags||[];
-o.includes(t)?e({
-analysisSelectedTags:o.filter(e=>e!==t)
-}):e({
-analysisSelectedTags:[...o,t]
-})
-},setAnalysisTagLogic:s=>e({
-analysisTagLogic:s
-}),setAnalysisRankingSetting:async(o,i)=>{
-const n=Date.now(),c=s().analysisRankingSettings||{
-
-},l=Object.assign({
-
-},c,{
-[o]:i
-});
-e({
-analysisRankingSettings:l,lastLocalChange:n
-});
-const{
-activeGroupId:d,isNetworkOnline:u
-}=s();
-if(u&&d)try{
-await(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
-d
-}/config`,'app_settings'),{
-analysisRankingSettings:l,lastModified:(0,a.serverTimestamp)()
-},{
-merge:!0
-})
-}catch(e){
-console.error('[Store] setAnalysisRankingSetting sync error:',e)
-}
-},setHistorySelectedTags:s=>e({
-historySelectedTags:s
-}),toggleHistoryTag:t=>{
-const o=s().historySelectedTags||[];
-o.includes(t)?e({
-historySelectedTags:o.filter(e=>e!==t)
-}):e({
-historySelectedTags:[...o,t]
-})
-},setHistoryTagLogic:s=>e({
-historyTagLogic:s
-}),setCurrentSessionTags:s=>e({
-currentSessionTags:s
-}),toggleCurrentSessionTag:t=>{
-const o=s().currentSessionTags||[];
-o.includes(t)?e({
-currentSessionTags:o.filter(e=>e!==t)
-}):e({
-currentSessionTags:[...o,t]
-})
-},setTagTemplates:async o=>{
-const i=Date.now();
-const r=Array.from(new Set((o||[]).map(normalizeTag).filter(Boolean)));
-e({
-tagTemplates:r,lastLocalChange:i
-});
-const{
-activeGroupId:n,isNetworkOnline:c
-}=s();
-if(c&&n)try{
-await(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
-n
-}/config`,'app_settings'),{
-tagTemplates:r,currentFreshmanTerm:s().currentFreshmanTerm,lastModified:(0,a.serverTimestamp)()
-},{
-merge:!0
-})
-}catch(e){
-console.error('[Store] setTagTemplates sync error:',e)
-}
-},addTagTemplate:async o=>{
-const i=s().tagTemplates||[];
-const r=normalizeTag(o);
-if(r&&!i.includes(r)){
-const n=Date.now(),c=[...i,r];
-e({
-tagTemplates:c,lastLocalChange:n
-});
-const{
-activeGroupId:l,isNetworkOnline:d
-}=s();
-if(d&&l)try{
-await(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
-l
-}/config`,'app_settings'),{
-tagTemplates:c,currentFreshmanTerm:s().currentFreshmanTerm,lastModified:(0,a.serverTimestamp)()
-},{
-merge:!0
-})
-}catch(e){
-console.error('[Store] addTagTemplate sync error:',e)
-}
-}
-},removeTagTemplate:async o=>{
-const i=Date.now(),n=(s().tagTemplates||[]).filter(e=>e!==o);
-e({
-tagTemplates:n,lastLocalChange:i
-});
-const{
-activeGroupId:c,isNetworkOnline:l
-}=s();
-if(l&&c)try{
-await(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
-c
-}/config`,'app_settings'),{
-tagTemplates:n,currentFreshmanTerm:s().currentFreshmanTerm,lastModified:(0,a.serverTimestamp)()
-},{
-merge:!0
-})
-}catch(e){
-console.error('[Store] removeTagTemplate sync error:',e)
-}
-},setShowAlumniInAnalysis:s=>e({
-showAlumniInAnalysis:s
-}),setShowAlumniInPicker:s=>e({
-showAlumniInPicker:s
-}),setIncludeInStats:s=>e({
-includeInStats:s
-}),addArcher:(t,o)=>{
-const a=Array.isArray(s().archers)?s().archers:[],i={
-id:(0,l.generateUUID)(),name:'',marks:Array(s().shotsPerRound||8).fill(''),arrowLocations:Array(s().shotsPerRound||8).fill(null),gender:o||'未設定',grade:1,isGuest:!1,isSeparator:!1,isTotalCalculator:!1,lockedBlocks:{
-
-},lastModified:Date.now()
-},n='number'!=typeof t||isNaN(t)?[...a,i]:[...a];
-if('number'==typeof t&&!isNaN(t)){
-const e=Math.max(0,Math.min(t,n.length));
-n.splice(e,0,i)
-}e({
-archers:n,historyStack:[...s().historyStack,a],redoStack:[],lastLocalChange:Date.now()
-});
-const{
-isLiveActive:c,liveSessionName:d,shotsPerRound:u
-}=s();
-c&&d&&v(d,n,u)
-},addSeparator:t=>{
-const o=Array.isArray(s().archers)?s().archers:[],a={
-id:'sep-'+(0,l.generateUUID)(),name:'---',marks:[],isSeparator:!0,gender:'未設定',grade:0,isGuest:!1,isTotalCalculator:!1,lockedBlocks:{
-
-},lastModified:Date.now()
-},i='number'==typeof t?[...o]:[...o,a];
-'number'==typeof t&&i.splice(t,0,a),e({
-archers:i,historyStack:[...s().historyStack,o],redoStack:[],lastLocalChange:Date.now()
-});
-const{
-isLiveActive:n,liveSessionName:c,shotsPerRound:d
-}=s();
-n&&c&&v(c,i,d)
-},addTotalCalculator:t=>{
-const o=Array.isArray(s().archers)?s().archers:[],a={
-id:'total-'+(0,l.generateUUID)(),name:'計',marks:Array(s().shotsPerRound||8).fill(''),arrowLocations:Array(s().shotsPerRound||8).fill(null),isTotalCalculator:!0,gender:'未設定',grade:0,isGuest:!1,isSeparator:!1,lockedBlocks:{
-
-},lastModified:Date.now()
-},i='number'==typeof t?[...o]:[...o,a];
-'number'==typeof t&&i.splice(t,0,a),e({
-archers:i,historyStack:[...s().historyStack,o],redoStack:[],lastLocalChange:Date.now()
-});
-const{
-isLiveActive:n,liveSessionName:c,shotsPerRound:d
-}=s();
-n&&c&&v(c,i,d)
-},deleteArcher:t=>{
-const o=Array.isArray(s().archers)?s().archers:[],a=o.filter(e=>e&&e.id!==t),i=Date.now();
-e({
-historyStack:[...s().historyStack,o],redoStack:[],archers:a,lastLocalChange:i
-});
-const{
-isLiveActive:n,liveSessionName:c,shotsPerRound:l
-}=s();
-n&&c&&v(c,a,l)
-},applyOCRResult:t=>{
-const o=Array.isArray(s().archers)?s().archers:[],i=Date.now();
-e({
-archers:t,historyStack:[...s().historyStack,o],redoStack:[],lastLocalChange:i
-});
-const{
-isLiveActive:n,liveSessionName:c,shotsPerRound:l
-}=s();
-n&&c&&v(c,t,l)
-},setEnableArrowLocation:t=>e({
-enableArrowLocation:t
-}),setArrowTargetType:t=>e({
-arrowTargetType:t
-}),setActiveArrowLocationEdit:t=>e({
-activeArrowLocationEdit:t
-}),updateArrowLocation:(t,o,a)=>{
-const{
-archers:i
-}=s(),n=Date.now(),c=(i||[]).map(e=>{
-if(e.id===t){
-const s=[...e.arrowLocations||[]];
-return s[o]=a,Object.assign({
-
-},e,{
-arrowLocations:s,lastModified:n
-})
-}return e
-});
-e({
-archers:c,historyStack:[...s().historyStack,i],redoStack:[],lastLocalChange:n
-})
-},updateMark:(t,o,a)=>{
-const{
-archers:i,isLiveActive:n,liveSessionName:c
-}=s(),l=Date.now(),d=(i||[]).map(e=>{
-if(e.id===t){
-const s=[...e.marks||[]];
-return s[o]=a,Object.assign({
-
-},e,{
-marks:s,lastModified:l
-})
-}return e
-});
-e({
-archers:d,historyStack:[...s().historyStack,i],redoStack:[],lastLocalChange:l
-}),n&&c&&T(c,t,o,a,l)
-},toggleMark:(t,o)=>{
-const{
-archers:a,isLiveActive:i,liveSessionName:n
-}=s(),c=Date.now();
-let l='';
-const d=(a||[]).map(e=>{
-if(e.id===t){
-const s=[...e.marks||[]],t=s[o],a=''===t?'○':'○'===t?'\xd7':'';
-return s[o]=a,l=a,Object.assign({
-
-},e,{
-marks:s,lastModified:c
-})
-}return e
-});
-e({
-archers:d,historyStack:[...s().historyStack,a],redoStack:[],lastLocalChange:c
-}),i&&n&&T(n,t,o,l,c)
-},clearArcherMarks:t=>{
-const o=Array.isArray(s().archers)?s().archers:[],a=Date.now(),i=o.map(e=>e&&e.id===t?Object.assign({
-
-},e,{
-marks:Array(s().shotsPerRound).fill(''),lastModified:a
-}):e);
-e({
-historyStack:[...s().historyStack,o],redoStack:[],lastLocalChange:a,archers:i
-});
-const{
-isLiveActive:n,liveSessionName:c,shotsPerRound:l
-}=s();
-n&&c&&v(c,i,l)
-},toggleLock:(t,o)=>{
-const{
-archers:a
-}=s(),i=Array.isArray(a)?a:[],n=i.findIndex(e=>e&&e.id===t);
-if(-1===n)return;
-const c=i[n],l=!c.lockedBlocks?.[o];
-let d=n;
-for(;
-d>0&&i[d-1]&&!i[d-1].isSeparator&&!i[d-1].isTotalCalculator;
-)d--;
-const u=Date.now(),m=i.map((e,s)=>{
-if(e&&s>=d&&s<=n){
-const s=Object.assign({
-
-},e.lockedBlocks||{
-
-});
-return s[o]=l,Object.assign({
-
-},e,{
-lockedBlocks:s,lastModified:u
-})
-}return e
-});
-e({
-historyStack:[...s().historyStack,i],redoStack:[],lastLocalChange:u,archers:m
-});
-const{
-isLiveActive:p,liveSessionName:h,shotsPerRound:f
-}=s();
-p&&h&&v(h,m,f)
-},setArcherMember:(t,o)=>{
-const a=Array.isArray(s().archers)?s().archers:[],i=o?.equipments?.length?[...o.equipments].sort((e,s)=>s.date-e.date)[0]?.weight:void 0,n=a.map(e=>e&&e.id===t?Object.assign({
-
-},e,{
-name:o?o.name:'',gender:o?o.gender:'未設定',grade:o?o.grade:1,memberId:o?o.id:void 0,isGuest:!1,bowWeight:i||e.bowWeight,lastModified:Date.now()
-}):e);
-e({
-historyStack:[...s().historyStack,a],redoStack:[],lastLocalChange:Date.now(),archers:n
-});
-const{
-isLiveActive:c,liveSessionName:l,shotsPerRound:d
-}=s();
-c&&l&&v(l,n,d)
-},setArcherBowWeight:(t,o)=>{
-const a=(Array.isArray(s().archers)?s().archers:[]).map(e=>e&&e.id===t?Object.assign({
-
-},e,{
-bowWeight:o,lastModified:Date.now()
-}):e);
-e({
-lastLocalChange:Date.now(),archers:a
-});
-const{
-isLiveActive:i,liveSessionName:n,shotsPerRound:c
-}=s();
-i&&n&&v(n,a,c)
-},setArcherGuestName:(t,o)=>{
-const a=(Array.isArray(s().archers)?s().archers:[]).map(e=>e&&e.id===t?Object.assign({
-
-},e,{
-name:o,isGuest:!0,gender:'未設定',memberId:void 0,lastModified:Date.now()
-}):e);
-e({
-historyStack:[...s().historyStack,(Array.isArray(s().archers)?s().archers:[])],redoStack:[],lastLocalChange:Date.now(),archers:a
-});
-const{
-isLiveActive:i,liveSessionName:n,shotsPerRound:c
-}=s();
-i&&n&&v(n,a,c)
-},setArcherGender:(t,o)=>{
-const a=(Array.isArray(s().archers)?s().archers:[]).map(e=>e&&e.id===t?Object.assign({
-
-},e,{
-gender:o,lastModified:Date.now()
-}):e);
-e({
-lastLocalChange:Date.now(),archers:a
-});
-const{
-isLiveActive:i,liveSessionName:n,shotsPerRound:c
-}=s();
-i&&n&&v(n,a,c)
-},undo:()=>{
-const{
-historyStack:t,archers:o
-}=s();
-if(0===t.length)return;
-const a=t[t.length-1];
-e({
-historyStack:t.slice(0,-1),redoStack:[...s().redoStack,o],archers:a,lastLocalChange:Date.now()
-});
-const{
-isLiveActive:i,liveSessionName:n,shotsPerRound:c
-}=s();
-i&&n&&v(n,a,c)
-},redo:()=>{
-const{
-redoStack:t,archers:o
-}=s();
-if(0===t.length)return;
-const a=t[t.length-1];
-e({
-redoStack:t.slice(0,-1),historyStack:[...s().historyStack,o],archers:a,lastLocalChange:Date.now()
-});
-const{
-isLiveActive:i,liveSessionName:n,shotsPerRound:c
-}=s();
-i&&n&&v(n,a,c)
-},addMember:(o,i,c,d)=>{
-if(!s().activeGroupId||'group'!==s().activeRole)return void n.default.alert('権限エラー','メンバーの追加は団体ログイン、かつ管理者のみ可能です。');
-const u=o?o.trim():'',m={
-id:(0,l.generateUUID)(),personalId:h(s().members,s().alumni),name:u,gender:i,grade:c,termKi:d||s().currentFreshmanTerm-(c-1),lastModified:Date.now(),syncStatus:'未同期'
-};
-if(e({
-members:[...s().members,m],lastLocalChange:Date.now()
-}),s().activeGroupId){
-const o=Object.assign({
-
-},m,{
-lastModified:(0,a.serverTimestamp)(),syncStatus:'同期済み'
-});
-(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/members`,m.id),o).then(()=>{s().syncMemberLookup();
-e(e=>({
-members:e.members.map(e=>e.id===m.id?Object.assign({
-
-},e,{
-syncStatus:'同期済み'
-}):e)
-}))
-}).catch(e=>console.error('Add Member Sync Error:',e))
-}
-},updateMember:(o,i)=>{
-if(!s().activeGroupId||'group'!==s().activeRole)return void n.default.alert('権限エラー','メンバーの編集は団体ログイン時のみ可能です。');
-if(void 0!==i.grade){
-const e=new Date,s=e.getFullYear(),t=e.getMonth()+1,o=t>=4?s:s-1;
-5===Number(i.grade)?i.graduationYear=o:i.graduationYear=null
-}s().members.find(e=>e.id===o);
-let c=Object.assign({
-
-},i);
-if(void 0!==i.grade&&void 0===i.termKi){
-const e=s().currentFreshmanTerm-(i.grade-1);
-c.termKi=e
-}const l=s().members.map(e=>e.id===o?Object.assign({
-
-},e,c,{
-lastModified:Date.now(),syncStatus:'未同期'
-}):e);
-e({
-members:l,lastLocalChange:Date.now()
-});
-if(void 0!==i.name||void 0!==i.gender||void 0!==i.grade){
-const n=e=>{
-let s=!1;
-return{
-newList:e.map(e=>{
-if(!e||!e.archers)return e;
-let t=!1;
-const a=e.archers.map(e=>e.memberId===o?(t=!0,Object.assign({
-
-},e,{
-name:void 0!==i.name?i.name:e.name,gender:void 0!==i.gender?i.gender:e.gender,grade:void 0!==i.grade?i.grade:e.grade,lastModified:Date.now()
-})):e).map(e=>{
-if(e.substitutionIds){
-let s=!1;
-const a=Object.assign({
-
-},e.substitutions||{
-
-});
-if(Object.entries(e.substitutionIds).forEach(([e,t])=>{
-const n=Number(e);
-t===o&&void 0!==i.name&&(a[n]=i.name,s=!0)
-}),s)return t=!0,Object.assign({
-
-},e,{
-substitutions:a,lastModified:Date.now()
-})
-}return e
-});
-if(t){
-s=!0;
-const t=Array.from(new Set(a.map(e=>e&&e.name?e.name.trim():'').filter(Boolean)));
-return Object.assign({
-
-},e,{
-archers:a,archerNames:t,lastModified:Date.now()
-})
-}return e
-}),changed:s
-}
-},c=s().sessions,l=s().trash,{
-newList:d,changed:u
-}=n(c),{
-newList:m,changed:p
-}=n(l);
-if((u||p)&&(e({
-sessions:d,trash:m,lastLocalChange:Date.now()
-}),s().activeGroupId)){
-const e=(0,a.writeBatch)(fb.db);
-let o=0;
-u&&d.forEach((i,n)=>{
-if(i.lastModified!==c[n].lastModified){
-const n=JSON.parse(JSON.stringify(i));
-n.lastModified=(0,a.serverTimestamp)(),e.set((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/sessions`,i.id),n,{
-merge:!0
-}),o++
-}
-}),p&&m.forEach((i,n)=>{
-if(i.lastModified!==l[n].lastModified){
-const n=JSON.parse(JSON.stringify(i));
-n.lastModified=(0,a.serverTimestamp)(),e.set((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/trash`,i.id),n,{
-merge:!0
-}),o++
-}
-}),o>0&&e.commit().catch(e=>console.error('Member Linkage Sync Error:',e))
-}
-}s().activeGroupId&&(p[o]&&clearTimeout(p[o]),p[o]=setTimeout(async()=>{
-const i=s().members.find(e=>e.id===o);
-if(i){
-const n=Object.assign({
-
-},i,{
-lastModified:(0,a.serverTimestamp)(),syncStatus:'同期済み'
-});
-(0,a.updateDoc)((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/members`,o),n).then(()=>{
-console.log(`[Store] Debounced Member Sync Success: ${
-i.name
-}`),e(e=>({
-members:e.members.map(e=>e.id===o?Object.assign({
-
-},e,{
-syncStatus:'同期済み'
-}):e)
-})),delete p[o]
-}).catch(e=>{
-console.error('Update Member Sync Error:',e),delete p[o]
-})
-}
-},300))
-},deleteMember:o=>{
-s().activeGroupId&&'group'===s().activeRole?(e({
-members:s().members.filter(e=>e.id!==o),lastLocalChange:Date.now()
-}),s().activeGroupId&&(0,a.deleteDoc)((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/members`,o)).then(()=>s().syncMemberLookup()).catch(e=>console.error('Delete Member Sync Error:',e))):n.default.alert('権限エラー','メンバーの削除は団体ログイン時のみ可能です。')
-},syncMemberLookup:async()=>{const{activeGroupId:g,activeRole:r,members:ms}=s();if(!g||'group'!==r||!fb.db)return;try{const col=(0,a.collection)(fb.db,`groups/${g}/member_lookup`);const snap=await(0,a.getDocs)(col);const want=new Map;(ms||[]).forEach(m=>{if(m&&m.id&&/^\d{4}$/.test(m.personalId||''))want.set(m.personalId,m.id)});const batch=(0,a.writeBatch)(fb.db);let n=0;snap.forEach(d=>{const w=want.get(d.id);if(!w){batch.delete(d.ref);n++}else if(d.data().memberId===w){want.delete(d.id)}});want.forEach((memberId,pid)=>{batch.set((0,a.doc)(fb.db,`groups/${g}/member_lookup`,pid),{memberId:memberId,updatedAt:Date.now()});n++});if(n>0){await batch.commit();console.log('[Store] member_lookup synced:',n)}}catch(e){console.error('[Store] syncMemberLookup error:',e)}},ensurePersonalIds:async()=>{
-const{
-members:o,alumni:i,activeGroupId:n
-}=s();
-if(!n)return;
-const _ensureDb=await waitForDb();
-if(!_ensureDb){
-console.warn('[Store] ensurePersonalIds: db still undefined after await, aborting');
-return;
-
-}const c=[...o],l=[...i];
-let d=!1;
-const u=()=>[...c.map(e=>e.personalId),...l.map(e=>e.personalId)].filter(e=>!!e),m=e=>!!e&&/^\d{4}$/.test(e),p=e=>{
-let s='',t=0;
-do{
-s=Math.floor(1e3+9e3*Math.random()).toString(),t++
-}while(e.includes(s)&&t<5e3);
-return s
-},h=(0,a.writeBatch)(fb.db);
-let f=0;
-for(let e=0;
-e<c.length;
-e++)if(!m(c[e].personalId)){
-const s=u(),o=Date.now();
-c[e]=Object.assign({
-
-},c[e],{
-personalId:p(s),lastModified:o,syncStatus:'同期済み'
-}),h.set((0,a.doc)(fb.db,`groups/${
-n
-}/members`,c[e].id),Object.assign({
-
-},c[e],{
-lastModified:(0,a.serverTimestamp)()
-})),f++,d=!0
-}for(let e=0;
-e<l.length;
-e++)if(!m(l[e].personalId)){
-const s=u(),o=Date.now();
-l[e]=Object.assign({
-
-},l[e],{
-personalId:p(s),lastModified:o,syncStatus:'同期済み'
-}),h.set((0,a.doc)(fb.db,`groups/${
-n
-}/alumni`,l[e].id),Object.assign({
-
-},l[e],{
-lastModified:(0,a.serverTimestamp)()
-})),f++,d=!0
-}d&&(e({
-members:c,alumni:l,lastLocalChange:Date.now()
-}),f>0&&await h.commit(),console.log(`Ensured personal IDs: Updated ${
-f
-} non-compliant IDs.`)),await s().syncMemberLookup()
-},deleteEquipment:(o,i)=>{
-if(!s().activeGroupId||'group'!==s().activeRole)return void n.default.alert('権限エラー','道具管理は団体ログイン時のみ可能です。');
-const c=Date.now(),l=s().members.map(e=>{
-if(e.id===o){
-const s=e.equipments||[];
-return Object.assign({
-
-},e,{
-equipments:s.filter(e=>e.id!==i),lastModified:c,syncStatus:'未同期'
-})
-}return e
-});
-e({
-members:l,lastLocalChange:c
-});
-const d=l.find(e=>e.id===o);
-if(d&&s().activeGroupId){
-const i=Object.assign({
-
-},d,{
-lastModified:(0,a.serverTimestamp)(),syncStatus:'同期済み'
-});
-(0,a.updateDoc)((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/members`,o),i).then(()=>{
-e(e=>({
-members:e.members.map(e=>e.id===o?Object.assign({
-
-},e,{
-syncStatus:'同期済み'
-}):e)
-}))
-}).catch(e=>console.error('Delete Equipment Sync Error:',e))
-}
-},saveSession:async(o,d,u,m,attendanceData)=>{
-const p=s().activeSessionID||(0,l.generateUUID)(),{
-archers:h,shotsPerRound:f,activeGroupId:S,activeRole:b,myMemberId:y
-}=s(),v=Array.isArray(h)?h:[],T={
-id:p,date:Date.now(),title:o,note:d,archers:JSON.parse(JSON.stringify(v)),archerNames:Array.from(new Set(v.map(e=>e&&e.name?e.name.trim():'').filter(Boolean))),shotCount:f||8,includeInStats:u,tags:m,attendance:attendanceData,syncStatus:'未同期',lastModified:Date.now()
-};
-// 個人モードでの上書きは、手元に確定する前に止める
-if(S&&'member'===b)try{
-if((await(0,a.getDoc)((0,a.doc)(fb.db,`groups/${
-S
-}/sessions`,p))).exists()){
-const e='この記録は既にクラウドに存在するため、個人モードからは更新できません。';
-return void(c.IS_WEB?window.alert(e):n.default.alert('保存制限',e))
-}
-}catch(e){
-console.warn('[Store] 既存確認に失敗しました。保存は続行します:',e)
-}
-// まず手元に確定する。クラウドの応答は待たない。
-// 待つと、通信できないときに射手が消えず履歴にも出ないうえ、
-// 画面には何も知らされないままになる。
-const 元のライブ名=s().liveSessionName;
-s().stopLiveSync(!0),e(e=>({
-sessions:[T,...e.sessions.filter(e=>e.id!==p)],activeSessionID:null,archers:[],isLiveActive:!1,isHost:!1,liveSessionName:null,lastLocalChange:Date.now(),syncStatus:'未同期'
-}));
-// ライブ記録の後始末。届かなくても保存には影響させない
-if(元のライブ名&&fb.rtdb){
-const e=(0,i.ref)(fb.rtdb,`live_sessions/${
-S
-}/${
-元のライブ名
-}`);
-(0,i.update)((0,i.ref)(fb.rtdb,`live_sessions/${
-S
-}/${
-元のライブ名
-}/state`),{
-status:'finished',timestamp:(0,i.serverTimestamp)()
-}).catch(()=>{
-
-}),setTimeout(()=>{
-(0,i.remove)(e).catch(()=>{
-
-})
-},2e3)
-}
-// クラウドへ送る。ここも待たない。
-// 届くまでは「未同期」のままにしておく。そうすれば syncSessions の
-// 再送で拾われ、通信が戻ったときに自動で送られる。
-if(S){
-const o=JSON.parse(JSON.stringify(T));
-o.syncStatus='同期済み',o.lastModified=(0,a.serverTimestamp)(),(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
-S
-}/sessions`,p),o,{
-merge:!0
-}).then(()=>{
-e(e=>({
-sessions:e.sessions.map(e=>e&&e.id===p?Object.assign({
-
-},e,{
-syncStatus:'同期済み'
-}):e),syncStatus:'同期済み'
-}))
-}).catch(t=>{
-console.error('Save Session Cloud Error:',t),e({
-syncStatus:'同期エラー'
-})
-})
-}
-},loadSession:t=>{
-const o=(Array.isArray(s().sessions)?s().sessions:[]).find(e=>e&&e.id===t);
-o&&e({
-archers:o.archers,shotsPerRound:o.shotCount,activeSessionID:o.id,historyStack:[],redoStack:[]
-})
-},deleteSession:async o=>{
-const i=Array.isArray(s().sessions)?s().sessions:[],n=i.find(e=>e&&e.id===o),c=i.filter(e=>e&&e.id!==o);
-// 送信が済むまでは「未同期」にしておく。こうしないと、通信できない
-// ときに削除がクラウドへ届かないまま消し込まれ、次の全件取得で
-// 記録が復活しゴミ箱からも消えてしまう。
-e(n?{
-sessions:c,trash:[...s().trash,Object.assign({
-
-},n,{
-syncStatus:'未同期'
-})]
-}:{
-sessions:c
-});
-try{
-const e=(0,a.writeBatch)(fb.db);
-if(e.delete((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/sessions`,o)),n){
-const i=JSON.parse(JSON.stringify(Object.assign({
-
-},n,{
-syncStatus:'trashed'
-})));
-i.lastModified=(0,a.serverTimestamp)(),i.deletedAt=(0,a.serverTimestamp)(),e.set((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/trash`,o),i)
-}await e.commit()
-}catch(e){
-console.error('Delete Session Error:',e)
-}
-},emptyTrash:async()=>{
-const{
-trash:o,activeGroupId:n
-}=s();
-if(!o||0===o.length)return;
-const c=o.map(e=>e.id);
-// 通信できるかで送信を止めない。止めると手元からだけ消えて、クラウドの
-// ゴミ箱は残り、次の全件取得で消したはずのものが戻ってきてしまう。
-// 通信できないときは Firestore の待ち行列に入り、つながった時点で送られる。
-if(console.log('[Store] Emptying trash:',c.length,'items'),e({
-trash:[]
-}),n)try{
-const e=(0,a.writeBatch)(fb.db);
-c.forEach(s=>{
-e.delete((0,a.doc)(fb.db,`groups/${
-n
-}/trash`,s))
-}),await e.commit(),console.log('[Store] Cloud trash emptied')
-}catch(e){
-console.error('[Store] Error emptying cloud trash:',e)
-}
-},deleteTrashItems:async o=>{
-if(o&&0!==o.length)try{
-const{
-trash:i,activeGroupId:c
-}=s();
-console.log('[Store] Deleting trash items:',o),c&&console.log(`[Store] Target Firestore path: groups/${
-c
-}/trash/`);
-const l=(i||[]).filter(e=>e&&!o.includes(e.id));
-// emptyTrash と同じ理由で、通信できるかでは止めない
-if(e({
-trash:l
-}),c){
-const e=(0,a.writeBatch)(fb.db);
-let s=0;
-o.forEach(o=>{
-o&&(e.delete((0,a.doc)(fb.db,`groups/${
-c
-}/trash`,o)),s++)
-}),s>0&&(await e.commit(),console.log('[Store] Successfully deleted trash items from cloud'))
-}else console.warn('[Store] Skipping cloud deletion: activeGroupId が無い')
-}catch(e){
-console.error('[Store] Delete trash items error:',e)
-}else console.warn('[Store] deleteTrashItems called with no IDs')
-},deleteMultipleSessions:async o=>{
-const i=s().sessions.filter(e=>o.includes(e.id)),n=s().sessions.filter(e=>!o.includes(e.id));
-e({
-sessions:n,trash:[...s().trash,...i.map(e=>Object.assign({
-
-},e,{
-syncStatus:'未同期'
-}))]
-});
-try{
-const e=(0,a.writeBatch)(fb.db);
-o.forEach(o=>e.delete((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/sessions`,o))),i.forEach(o=>{
-const i=JSON.parse(JSON.stringify(Object.assign({
-
-},o,{
-syncStatus:'trashed'
-})));
-i.lastModified=(0,a.serverTimestamp)(),i.deletedAt=(0,a.serverTimestamp)(),e.set((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/trash`,o.id),i)
-}),await e.commit()
-}catch(e){
-console.error('Batch Delete Error:',e)
-}
-},restoreSession:async o=>{
-const i=Array.isArray(s().trash)?s().trash:[],n=i.find(e=>e&&e.id===o);
-if(!n)return;
-const c=Object.assign({
-
-},n,{
-// 送信が済むまでは「未同期」にしておく。こうしないと、通信できない
-// ときに復元がクラウドへ届かないまま同期済み扱いになり、次の全件取得
-// でゴミ箱へ戻ってしまう。
-syncStatus:'未同期'
-}),l=Array.isArray(s().sessions)?s().sessions:[];
-e({
-trash:i.filter(e=>e&&e.id!==o),sessions:[c,...l]
-});
-try{
-const e=(0,a.writeBatch)(fb.db);
-e.delete((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/trash`,o));
-const i=JSON.parse(JSON.stringify(c));
-i.lastModified=(0,a.serverTimestamp)(),e.set((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/sessions`,o),i),await e.commit()
-}catch(e){
-console.error('Restore Session Error:',e)
-}
-},restoreTrashItems:async o=>{
-if(!o||0===o.length)return;
-const i=s().trash||[],n=i.filter(e=>o.includes(e.id)),c=i.filter(e=>!o.includes(e.id)),l=n.map(e=>Object.assign({
-
-},e,{
-syncStatus:'未同期'
-}));
-e({
-trash:c,sessions:[...l,...s().sessions]
-});
-try{
-const e=(0,a.writeBatch)(fb.db);
-o.forEach(o=>e.delete((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/trash`,o))),l.forEach(o=>{
-const i=JSON.parse(JSON.stringify(o));
-i.lastModified=(0,a.serverTimestamp)(),e.set((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/sessions`,o.id),i)
-}),await e.commit()
-}catch(e){
-console.error('Restore Trash Items Error:',e)
-}
-},updateState:s=>{
-e(s)
-},updateSession:async(o,i)=>{
-const n=s().sessions||[],c=n.findIndex(e=>e&&e.id===o);
-if(-1===c)return;
-const l=n[c];
-if('member'===s().activeRole&&i.archers&&i.archers.length<l.archers.length)return void console.warn('[updateSession] Prevented accidental data stripping in member mode');
-// 送信が済むまでは「未同期」にしておく。こうしないと、通信できない
-// ときに編集がクラウドへ届かないまま同期済み扱いになり、他の記録が
-// 更新された拍子にクラウドの古い写しで上書きされて編集が消える。
-const d=Object.assign({
-
-},n[c],i,{
-lastModified:Date.now(),syncStatus:'未同期'
-}),u=[...n];
-u[c]=d,e({
-sessions:u
-});
-const m=s().activeGroupId;
-if(!m)return;
-s()._pendingUpdateTimers[o]&&clearTimeout(s()._pendingUpdateTimers[o]);
-const p=setTimeout(()=>{
-// タイマーの控えは先に片付ける。通信できないと送信は終わらないので、
-// 送信の完了を待って片付けると残り続けてしまう。
-e(e=>{
-const s=Object.assign({
-
-},e._pendingUpdateTimers);
-return delete s[o],{
-_pendingUpdateTimers:s
-}
-});
-const t=s().sessions.find(e=>e&&e.id===o);
-if(!t)return;
-const n=JSON.parse(JSON.stringify(t));
-// 送信の完了は待たない。通信できないときは Firestore の待ち行列に
-// 入り、つながった時点で送られる。
-n.lastModified=(0,a.serverTimestamp)(),(0,a.updateDoc)((0,a.doc)(fb.db,`groups/${
-m
-}/sessions`,o),n).then(()=>{
-console.log(`[Store] Debounced sync finished for ${
-o
-}`),e(e=>({
-sessions:e.sessions.map(e=>e&&e.id===o?Object.assign({
-
-},e,{
-syncStatus:'同期済み'
-}):e)
-}))
-}).catch(e=>{
-console.error('Update Session Sync Error:',e)
-})
-},800);
-e(e=>({
-_pendingUpdateTimers:Object.assign({
-
-},e._pendingUpdateTimers,{
-[o]:p
-})
-}))
-},setSubstitution:(t,o,a,i)=>{
-const n=(Array.isArray(s().archers)?s().archers:[]).map(e=>{
-if(e&&e.id===t){
-const s=Object.assign({
-
-},e.substitutions||{
-
-});
-if(''!==a){
-s[o]=a;
-const t=Object.assign({
-
-},e.substitutionIds||{
-
-});
-return i?t[o]=i:delete t[o],Object.assign({
-
-},e,{
-substitutions:s,substitutionIds:t,lastModified:Date.now()
-})
-}if(delete s[o],e.substitutionIds){
-const t=Object.assign({
-
-},e.substitutionIds);
-return delete t[o],Object.assign({
-
-},e,{
-substitutions:s,substitutionIds:t,lastModified:Date.now()
-})
-}return Object.assign({
-
-},e,{
-substitutions:s,lastModified:Date.now()
-})
-}return e
-});
-e({
-archers:n,lastLocalChange:Date.now()
-});
-const{
-isLiveActive:c,liveSessionName:l,shotsPerRound:d
-}=s();
-c&&l&&v(l,n,d)
-},setShotsPerRound:t=>{
-const o=(Array.isArray(s().archers)?s().archers:[]).map(e=>{
-if(!e||e.isSeparator)return e;
-const s=Array.isArray(e.marks)?e.marks:[],o=[...s];
-return t>s.length?o.push(...Array(t-s.length).fill('')):o.splice(t),Object.assign({
-
-},e,{
-marks:o,lastModified:Date.now()
-})
-});
-e({
-shotsPerRound:t,archers:o,lastLocalChange:Date.now()
-});
-const{
-isLiveActive:a,liveSessionName:i
-}=s();
-a&&i&&v(i,o,t)
-},loadData:()=>{
-s().checkOfflineSave(),s().syncSessions()
-},
-// オフライン保存が効いているかを確かめ、効いていなければ画面に出す文言を持たせる。
-// 効いていない状態で電波の無い場所で保存すると、画面を閉じた時点で
-// 送信待ちごと記録が失われるため、黙って進ませない。
-checkOfflineSave:async()=>{
-try{
-await waitForDb();
-const o=require("./db_178").persistence||{
-
-};
-if('ok'===o.state||'pending'===o.state)return void(s().offlineSaveWarning&&e({
-offlineSaveWarning:null
-}));
-const i='multipleTabs'===o.state?'この記録画面が複数のタブで開かれているため、電波の無い場所での保存が保護されません。他のタブを閉じて開き直してください。':'このブラウザでは電波の無い場所での保存が保護されません。通信できる場所で保存してください。';
-console.warn('[Store] オフライン保存が無効です:',o),e({
-offlineSaveWarning:i
-})
-}catch(o){
-console.warn('[Store] オフライン保存の確認に失敗:',o)
-}
-},clearAllData:()=>e({
-sessions:[],members:[],history:[],alumni:[],trash:[],archers:[],activeSessionID:null
-}),verifyGroupPassword:async e=>{
-const{
-activeUserEmail:i,activeGroupId:n,publicGroupId:c
-}=s();
-let l=i||fb.auth.currentUser?.email;
-if(!l&&(n||c)){
-console.log('[Store] Fetching group email for password verification...');
-const e=c||n;
-try{
-const s=(0,a.doc)(fb.db,'group_accounts',e.toUpperCase()),o=await(0,a.getDoc)(s);
-o.exists()&&(l=o.data().email)
-}catch(e){
-console.error('[Store] Failed to fetch group email:',e)
-}
-}if(!l)return console.warn('[Store] verifyGroupPassword: No email found to verify.'),!1;
-try{
-return await(0,o.signInWithEmailAndPassword)(fb.auth,l,e),!0
-}catch(e){
-return console.error('[Store] verifyGroupPassword error:',e),!1
-}
-},setAdminMode:s=>e({
-isAdminMode:s,isAdminModePending:!1
-}),updateGroupName:async o=>{
-const{
-activeGroupId:i
-}=s();
-if(i){
-e({
-activeGroupName:o
-});
-try{
-await(0,a.setDoc)((0,a.doc)(fb.db,'groups',i),{
-groupName:o
-},{
-merge:!0
-})
-}catch(e){
-console.error('[Store] updateGroupName error:',e)
-}
-}
-},setAutoPromotionEnabled:async o=>{
-const{
-activeGroupId:i
-}=s();
-if(i){
-e({
-autoPromotionEnabled:o
-});
-try{
-await(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
-i
-}/config`,'app_settings'),{
-autoPromotionEnabled:o
-},{
-merge:!0
-})
-}catch(e){
-console.error('[Store] setAutoPromotionEnabled error:',e)
-}
-}
-},setIsAdminModePending:s=>e({
-isAdminModePending:s
-}),setHistoryViewMode:s=>e({
-historyViewMode:s
-}),setSelectedHistorySessionId:s=>e({
-selectedHistorySessionId:s
-}),setViewScale:s=>e({
-viewScale:Math.max(.5,Math.min(2,s))
-}),setIsLiveActive:o=>{
-if(e({
-isLiveActive:o
-}),o){
-const e=s().activeSessionID||'live-current',o=s().liveSessionName||e,a=s().archers||[];
-fb.rtdb&&s().activeGroupId&&(0,i.set)((0,i.ref)(fb.rtdb,`live_sessions/${
-s().activeGroupId
-}/${
-o
-}/state`),JSON.parse(JSON.stringify({
-archers:Array.isArray(a)?a:[],shotsPerRound:s().shotsPerRound,timestamp:Date.now()
-}))).catch(e=>console.error('Live Sync Error:',e))
-}
-},checkAndAutoIncrementGrades:async()=>{
-const{
-activeGroupId:o
-}=s();
-if(!o)return;
-const i=new Date,n=i.getFullYear(),c=i.getMonth()+1,l=i.getDate(),d=c>4||4===c&&l>=1;
-let hasPromotionRecord=!1;
-try{
-console.log('[AutoPromotion] Fetching latest app_settings...');
-const s=await(0,a.getDoc)((0,a.doc)(fb.db,`groups/${
-o
-}/config`,'app_settings'));
-if(s.exists()){
-const t=s.data(),o={
-
-};
-'number'==typeof t.currentFreshmanTerm&&(o.currentFreshmanTerm=t.currentFreshmanTerm),Array.isArray(t.tagTemplates)&&(o.tagTemplates=t.tagTemplates),'number'==typeof t.lastPromotionYear&&(hasPromotionRecord=!0,o.lastPromotionYear=t.lastPromotionYear),'boolean'==typeof t.autoPromotionEnabled&&(o.autoPromotionEnabled=t.autoPromotionEnabled),e(o)
-}
-}catch(e){
-return void console.error('[AutoPromotion] Failed to fetch config:',e)
-}if(!hasPromotionRecord){
-const base=d?n:n-1;
-console.log(`[AutoPromotion] No record yet. Storing baseline year ${
-base
-} without promoting.`);
-e({
-lastPromotionYear:base
-});
-try{
-await(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
-o
-}/config`,'app_settings'),{
-lastPromotionYear:base,lastModified:(0,a.serverTimestamp)()
-},{
-merge:!0
-})
-}catch(e){
-console.error('[AutoPromotion] Failed to store baseline year:',e)
-}return
-}const{
-autoPromotionEnabled:u,lastPromotionYear:m
-}=s();
-if(u&&d&&m<n){
-console.log(`[AutoPromotion] Performing annual promotion for year ${
-n
-}...`);
-try{
-await s().incrementAllGrades()
-}catch(e){
-console.error('[AutoPromotion] Failed:',e)
-}
-}
-},syncSessions:async()=>{
-if(!s().activeGroupId)return;
-const _syncDb=await waitForDb();
-if(!_syncDb){
-console.warn('[Store] syncSessions: db still undefined after await, aborting');
-e({
-syncStatus:'同期エラー'
-});
-return;
-
-}if(await s().checkAndAutoIncrementGrades(),I)return void console.log('[syncSessions] Already syncing, skipping...');
-I=!0;
-const o=s().lastSyncTime||0;
-console.log('[Store] Syncing:',`同期を開始中 (前回基準時刻: ${
-o?new Date(o).toLocaleString():'なし'
-})...`),e({
-syncStatus:'同期中'
-});
-try{
-// この関数の後ろで局所的な M を宣言しているため、下の forEach の中で
-// M.getState() を呼ぶと「初期化前の参照」で例外になり、同期が丸ごと
-// 止まる。団体IDはここで控えておく。
-const 団体ID=s().activeGroupId;
-const i=(0,a.collection)(fb.db,`groups/${
-s().activeGroupId
-}/sessions`),n=(0,a.collection)(fb.db,`groups/${
-s().activeGroupId
-}/members`),c=(0,a.collection)(fb.db,`groups/${
-s().activeGroupId
-}/trash`),l=(0,a.collection)(fb.db,`groups/${
-s().activeGroupId
-}/alumni`);
-let d,u,m,p;
-if(o>0&&s().sessions.length>0){
-const e=Math.max(0,o-1e4);
-d=await(0,a.getDocs)((0,a.query)(i,(0,a.where)('lastModified','>',e))),u=await(0,a.getDocs)((0,a.query)(n,(0,a.where)('lastModified','>',e))),m=await(0,a.getDocs)((0,a.query)(c,(0,a.where)('lastModified','>',e))),p=await(0,a.getDocs)((0,a.query)(l,(0,a.where)('lastModified','>',e)))
-}else d=await(0,a.getDocs)((0,a.query)(i,(0,a.orderBy)('date','desc'),(0,a.limit)(100))),u=await(0,a.getDocs)(n),m=await(0,a.getDocs)(c),p=await(0,a.getDocs)(l);
-let h=o;
-const f=e=>e?.toMillis?e.toMillis():e||0,S=[];
-d.forEach(e=>{
-const s=e.data(),t=f(s.lastModified);
-t>h&&(h=t);
-const cleanedTags=s.tags&&Array.isArray(s.tags)?Array.from(new Set(s.tags.map(normalizeTag).filter(Boolean))):[],originalTags=s.tags||[],isModified=cleanedTags.length!==originalTags.length||cleanedTags.some((e,t)=>e!==originalTags[t]);
-if(isModified&&fb.db&&団体ID){
-const s=(0,a.doc)(fb.db,`groups/${
-団体ID
-}/sessions`,e.id);
-(0,a.updateDoc)(s,{
-tags:cleanedTags
-}).catch(e=>console.error('[Store] syncSessions Auto cleanup failed:',e))
-}S.push(Object.assign({
-
-},s,{
-id:e.id,tags:cleanedTags,lastModified:t,syncStatus:'同期済み'
-}))
-});
-const b=[];
-u.forEach(e=>{
-const s=e.data(),t=f(s.lastModified);
-t>h&&(h=t),b.push(Object.assign({
-
-},s,{
-id:e.id,lastModified:t,syncStatus:'同期済み'
-}))
-});
-const v=[];
-m.forEach(e=>{
-const s=e.data(),t=f(s.lastModified);
-t>h&&(h=t),v.push(Object.assign({
-
-},s,{
-id:e.id,lastModified:t,syncStatus:'同期済み'
-}))
-});
-const T=[];
-p.forEach(e=>{
-const s=e.data(),t=f(s.lastModified);
-t>h&&(h=t),T.push(Object.assign({
-
-},s,{
-id:e.id,lastModified:t,syncStatus:'同期済み'
-}))
-}),console.log(`[syncSessions] Fetched counts: S=${
-S.length
-}, M=${
-b.length
-}, T=${
-v.length
-}, A=${
-T.length
-}`);
-const w=y(s().sessions,S,!1,!1),I=y(s().members,b,!1,!1),M=y(s().trash,v,!1,!1),A=y(s().alumni,T,!1,!1),D=new Set(A.map(e=>e.id)),O=I.filter(e=>!D.has(e.id)),L=new Set(O.map(e=>e.id)),G=A.filter(e=>!L.has(e.id));
-w.sort((e,s)=>{
-const t=e.date?new Date(e.date).getTime():0;
-return(s.date?new Date(s.date).getTime():0)-t
-});
-// 戻した記録がまだクラウドへ届いていないときは、クラウド側のゴミ箱の
-// 写しで消し込まない。届くまでは手元の「戻した」状態を優先する。
-const 復元待ち=new Set(w.filter(e=>e&&'未同期'===e.syncStatus).map(e=>e.id)),ごみ箱=M.filter(e=>e&&!復元待ち.has(e.id));
-const $=new Set(ごみ箱.map(e=>e.id)),N=w.filter(e=>!$.has(e.id)),P=N.filter(e=>'未同期'===e.syncStatus);
-let k=N;
-if(P.length>0){
-console.log(`[syncSessions] Syncing ${
-P.length
-} pending sessions...`);
-const e=(0,a.writeBatch)(fb.db),o=Date.now();
-P.forEach(i=>{
-const n=JSON.parse(JSON.stringify(Object.assign({
-
-},i,{
-syncStatus:'同期済み',lastModified:o
-})));
-e.set((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/sessions`,i.id),Object.assign({
-
-},n,{
-lastModified:(0,a.serverTimestamp)()
-})),
-// 戻した記録なら、クラウドのゴミ箱からも取り下げる。存在しない場合は
-// 何も起きないので、新規の記録に対しても安全。
-e.delete((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/trash`,i.id))
-}),await e.commit(),k=k.map(e=>P.find(s=>s.id===e.id)?Object.assign({
-
-},e,{
-syncStatus:'同期済み',lastModified:o
-}):e)
-}
-// 送信が済んでいない削除を送り直す。通信できないときに削除した場合、
-// 待ち行列ごと失われることがあり、そのままだと次の全件取得で記録が
-// 復活してしまう。
-let Z=ごみ箱;
-const Y=ごみ箱.filter(e=>e&&e.id&&'未同期'===e.syncStatus);
-if(Y.length>0){
-console.log(`[syncSessions] Syncing ${
-Y.length
-} pending deletions...`);
-try{
-const e=(0,a.writeBatch)(fb.db),o=Date.now();
-Y.forEach(t=>{
-e.delete((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/sessions`,t.id));
-const i=dropUndefinedDeep(Object.assign({
-
-},t,{
-syncStatus:'trashed'
-}));
-i.lastModified=(0,a.serverTimestamp)(),i.deletedAt=i.deletedAt||(0,a.serverTimestamp)(),e.set((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/trash`,t.id),i)
-}),await e.commit(),Z=ごみ箱.map(e=>Y.find(s=>s.id===e.id)?Object.assign({
-
-},e,{
-syncStatus:'同期済み'
-}):e)
-}catch(t){
-console.error('[syncSessions] 削除の送り直しに失敗:',t)
-}
-}
-e({
-sessions:k,members:O,trash:Z,alumni:G,syncStatus:'同期済み',lastSyncTime:h
-}),console.log(`[syncSessions] Finished. New lastSyncTime: ${
-h
-}`),setTimeout(()=>{
-s().ensurePersonalIds()
-},500)
-}catch(s){
-console.error('[syncSessions] Error:',s),e({
-syncStatus:'同期エラー'
-})
-}finally{
-I=!1
-}
-},syncAllToCloud:async()=>{
-const{
-activeGroupId:o,activeRole:i,isNetworkOnline:n
-}=s();
-if(o&&n)if('member'!==i){
-console.log('[Store] Loading:','クラウドへの同期を開始...'),e({
-syncStatus:'同期中'
-});
-try{
-const o=e=>JSON.parse(JSON.stringify(e)),i=[];
-s().members.forEach(e=>{
-if(e&&e.id){
-const n=Object.assign({
-
-},e,{
-lastModified:Date.now()
-});
-i.push({
-type:'set',ref:(0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/members`,e.id),data:o(n)
-})
-}
-}),s().alumni.forEach(e=>{
-if(e&&e.id){
-const n=Object.assign({
-
-},e,{
-lastModified:Date.now()
-});
-i.push({
-type:'set',ref:(0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/alumni`,e.id),data:o(n)
-})
-}
-}),s().sessions.forEach(e=>{
-if(e&&e.id){
-const n=o(Object.assign({
-
-},e,{
-syncStatus:'同期済み',lastModified:Date.now()
-}));
-i.push({
-type:'set',ref:(0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/sessions`,e.id),data:n
-})
-}
-}),s().trash.forEach(e=>{
-if(e&&e.id){
-const n=Object.assign({
-
-},e,{
-lastModified:Date.now()
-});
-i.push({
-type:'set',ref:(0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/trash`,e.id),data:o(n)
-})
-}
-}),i.push({
-type:'set',ref:(0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/config`,'app_settings'),data:{
-currentFreshmanTerm:s().currentFreshmanTerm,tagTemplates:s().tagTemplates,lastPromotionYear:s().lastPromotionYear,lastModified:Date.now()
-}
-});
-const n=400;
-for(let e=0;
-e<i.length;
-e+=n){
-const s=i.slice(e,e+n),o=(0,a.writeBatch)(fb.db);
-s.forEach(e=>{
-'set'===e.type?o.set(e.ref,e.data):'delete'===e.type&&o.delete(e.ref)
-}),await o.commit()
-}const c=s().sessions.map(e=>Object.assign({
-
-},e,{
-syncStatus:'同期済み'
-})),l=s().members.map(e=>Object.assign({
-
-},e,{
-syncStatus:'同期済み'
-})),d=s().alumni.map(e=>Object.assign({
-
-},e,{
-syncStatus:'同期済み'
-}));
-e({
-sessions:c,members:l,alumni:d,syncStatus:'同期済み',lastSyncTime:Date.now()
-}),console.log('[Store] Loading:','クラウドへの送信が完了しました')
-}catch(s){
-console.error('Full Sync Error:',s?.message||s),e({
-syncStatus:'同期エラー'
-})
-}
-}else console.log('[Store] Member role: syncAllToCloud is strictly restricted.')
-},fetchAndOverwriteFromCloud:async()=>{
-console.log('[Store] Loading:','クラウドからの取得を開始...'),e({
-syncStatus:'同期中'
-});
-const _fetchDb=await waitForDb();
-if(!_fetchDb){
-console.warn('[Store] fetchAndOverwriteFromCloud: db still undefined after await, aborting');
-e({
-syncStatus:'同期エラー'
-});
-return;
-
-}try{
-const o=await(0,a.getDocs)((0,a.collection)(fb.db,`groups/${
-s().activeGroupId
-}/members`));
-let n=[];
-o.forEach(e=>n.push(e.data()));
-const c=await(0,a.getDocs)((0,a.collection)(fb.db,`groups/${
-s().activeGroupId
-}/sessions`));
-let l=[];
-c.forEach(e=>l.push(e.data())),console.log('[Store] Loading:',`セッション ${
-l.length
-}件を取得しました`);
-const d=await(0,a.getDocs)((0,a.collection)(fb.db,`groups/${
-s().activeGroupId
-}/trash`));
-let u=[];
-d.forEach(e=>u.push(e.data()));
-const m=await(0,a.getDocs)((0,a.collection)(fb.db,`groups/${
-s().activeGroupId
-}/alumni`));
-let p=[];
-m.forEach(e=>p.push(e.data()));
-const h=await(0,a.getDoc)((0,a.doc)(fb.db,`groups/${
-s().activeGroupId
-}/config`,'app_settings'));
-let f=s().currentFreshmanTerm,S=s().tagTemplates,b=s().lastPromotionYear;
-if(h.exists()){
-const e=h.data();
-e&&(void 0!==e.currentFreshmanTerm&&(f=e.currentFreshmanTerm),void 0!==e.tagTemplates&&(S=e.tagTemplates),void 0!==e.lastPromotionYear&&(b=e.lastPromotionYear))
-}const v=y(s().sessions,l,!1,!0),T=y(s().members,n,!1,!0),w=y(s().trash,u,!1,!0);
-// ゴミ箱に入っているものは履歴に出さない。削除がまだクラウドへ届いて
-// いないとき、ここで書き戻すと記録が復活してしまう。
-// 逆に、戻したばかりでまだ送信できていない記録は、クラウドのゴミ箱の
-// 写しがあってもゴミ箱に入れ直さない。
-const 復元待ち=new Set(v.filter(e=>e&&'未同期'===e.syncStatus).map(e=>e.id)),ごみ箱=w.filter(e=>e&&!復元待ち.has(e.id)),I=new Set(ごみ箱.map(e=>e.id)),M=v.filter(e=>e&&!I.has(e.id));
-e({
-members:T,sessions:M,trash:ごみ箱,alumni:y(s().alumni,p,!1,!0),currentFreshmanTerm:f,tagTemplates:S,lastPromotionYear:b,syncStatus:'同期済み',lastSyncTime:Date.now()
-}),console.log('[Store] Loading:','同期が完了しました')
-}catch(s){
-console.error('Fetch Overwrite Error:',s),e({
-syncStatus:'同期エラー'
-})
-}
-},startLiveSync:async o=>{
-if(!fb.rtdb)return!1;
-try{
-const e=(0,i.ref)(fb.rtdb,`live_sessions/${
-s().activeGroupId
-}/${
-o
-}`);
-if((await(0,i.get)(e)).exists())return!1
-}catch(e){
-console.error('Session Name Check Error:',e)
-}s().stopLiveSync(!0),e({
-isLiveActive:!0,isHost:!0,liveSessionName:o,isIncomingLiveSync:!1,lastLocalChange:Date.now()
-});
-const a=s();
-if(!fb.rtdb)return!1;
-const n=(0,i.ref)(fb.rtdb,`live_sessions/${
-s().activeGroupId
-}/${
-o
-}/state`),l=Array.isArray(a.archers)?a.archers:[];
-try{
-return v(o,l,a.shotsPerRound),c.IS_WEB&&console.log('ライブを開始しました: '+o),(0,i.onValue)(n,o=>{
-const a=o.val();
-if(!a){
-const o=s().liveSessionName;
-return o&&fb.rtdb&&(0,i.off)((0,i.ref)(fb.rtdb,`live_sessions/${
-s().activeGroupId
-}/${
-o
-}/state`)),void e({
-isLiveActive:!1,isHost:!1,liveSessionName:null
-})
-}if(a.timestamp!==s().lastPushedTimestamp){
-if('finished'===a.status){
-const o=s().liveSessionName;
-return o&&fb.rtdb&&(0,i.off)((0,i.ref)(fb.rtdb,`live_sessions/${
-s().activeGroupId
-}/${
-o
-}/state`)),void e({
-isLiveActive:!1,isHost:!1,liveSessionName:null
-})
-}if(a.reset_at&&a.reset_at>(s().lastResetHandled||0))return e({
-lastResetHandled:a.reset_at
-}),void s().resetCurrentSession();
-if(a.archers||Array.isArray(a.archers)){
-const{
-archers:t,shotsPerRound:o
-}=w(a),i=s().archers,n=new Map(i.map(e=>[e.id,e]));
-let c=t.length!==i.length||o!==s().shotsPerRound;
-const l=t.map(e=>{
-const s=n.get(e.id);
-if(!s)return c=!0,e;
-const t=(e.lastModified||0)>=(s.lastModified||0),o=t?e.marks:s.marks,a=t?e.lockedBlocks||{
-
-}:s.lockedBlocks||{
-
-};
-return!c&&t&&(e.name!==s.name||e.gender!==s.gender||e.grade!==s.grade||e.isSeparator!==s.isSeparator||e.isTotalCalculator!==s.isTotalCalculator||e.isGuest!==s.isGuest||e.memberId!==s.memberId||JSON.stringify(a)!==JSON.stringify(s.lockedBlocks||{
-
-})||JSON.stringify(e.substitutions||{
-
-})!==JSON.stringify(s.substitutions||{
-
-})||o.some((e,t)=>e!==(s.marks[t]??'')))&&(c=!0),Object.assign({
-
-},e,{
-marks:o,lockedBlocks:a,substitutions:e.substitutions||{
-
-}
-})
-});
-c&&e({
-archers:l,shotsPerRound:o
-})
-}
-}
-}),!0
-}catch(e){
-return console.error('Start Live Sync Error:',e),!1
-}
-},joinLiveSync:o=>{
-if(s().stopLiveSync(!0),e({
-isLiveActive:!0,isHost:!1,liveSessionName:o,isIncomingLiveSync:!1,lastLocalChange:0
-}),!fb.rtdb)return;
-const a=(0,i.ref)(fb.rtdb,`live_sessions/${
-s().activeGroupId
-}/${
-o
-}/state`);
-(0,i.onValue)(a,o=>{
-const a=o.val();
-if(!a){
-const o=s().liveSessionName;
-return o&&fb.rtdb&&(0,i.off)((0,i.ref)(fb.rtdb,`live_sessions/${
-s().activeGroupId
-}/${
-o
-}/state`)),void e({
-isLiveActive:!1,isHost:!1,liveSessionName:null
-})
-}if('finished'===a.status){
-const o=s().liveSessionName;
-return o&&fb.rtdb&&(0,i.off)((0,i.ref)(fb.rtdb,`live_sessions/${
-s().activeGroupId
-}/${
-o
-}/state`)),s().resetCurrentSession(),void e({
-isLiveActive:!1,isHost:!1,liveSessionName:null
-})
-}if(a.reset_at&&a.reset_at>(s().lastResetHandled||0)){
-const t=0===s().lastResetHandled;
-e({
-lastResetHandled:a.reset_at
-}),t&&e({
-lastPushedTimestamp:a.timestamp||0
-}),s().resetCurrentSession(!1)
-}if(a.archers||Array.isArray(a.archers)){
-const{
-archers:t,shotsPerRound:o
-}=w(a),i=s().archers,n=new Map(i.map(e=>[e.id,e]));
-let c=t.length!==i.length||o!==s().shotsPerRound;
-const l=t.map(e=>{
-const s=n.get(e.id);
-if(!s)return c=!0,e;
-const t=(e.lastModified||0)>=(s.lastModified||0),o=t?e.marks:s.marks,a=t?e.lockedBlocks||{
-
-}:s.lockedBlocks||{
-
-};
-return!c&&t&&(e.name!==s.name||e.gender!==s.gender||e.grade!==s.grade||e.isSeparator!==s.isSeparator||e.isTotalCalculator!==s.isTotalCalculator||e.isGuest!==s.isGuest||e.memberId!==s.memberId||JSON.stringify(a)!==JSON.stringify(s.lockedBlocks||{
-
-})||JSON.stringify(e.substitutions||{
-
-})!==JSON.stringify(s.substitutions||{
-
-})||o.some((e,t)=>e!==(s.marks[t]??'')))&&(c=!0),Object.assign({
-
-},e,{
-marks:o,lockedBlocks:a,substitutions:e.substitutions||{
-
-}
-})
-});
-c&&e({
-archers:l,shotsPerRound:o
-})
-}
-}),c.IS_WEB&&console.log('ライブに参加しました: '+o)
-},stopLiveSync:(o=!1)=>{
-const a=s();
-a.liveSessionName&&fb.rtdb&&(0,i.off)((0,i.ref)(fb.rtdb,`live_sessions/${
-a.activeGroupId
-}/${
-a.liveSessionName
-}/state`)),o||s().resetCurrentSession(!1),e({
-isLiveActive:!1,isHost:!1,liveSessionName:null
-})
-},fetchActiveLiveSessions:async()=>{
-if(!fb.rtdb)return;
-const o=(0,i.ref)(fb.rtdb,`live_sessions/${
-s().activeGroupId
-}`);
-try{
-const s=await(0,i.get)(o);
-if(s.exists()){
-const t=s.val();
-if(t){
-const s=Object.keys(t).filter(e=>t[e]&&t[e].state);
-e({
-liveSessionsList:s
-})
-}else e({
-liveSessionsList:[]
-})
-}else e({
-liveSessionsList:[]
-})
-}catch(e){
-console.error('Fetch live sessions error:',e)
-}
-},listenToLiveSessions:()=>{
-if(!fb.rtdb)return()=>{
-
-};
-const o=(0,i.ref)(fb.rtdb,`live_sessions/${
-s().activeGroupId
-}`);
-return(0,i.onValue)(o,s=>{
-if(s.exists()){
-const t=s.val();
-if(t){
-const s=Object.keys(t).filter(e=>t[e]&&t[e].state);
-e({
-liveSessionsList:s
-})
-}else e({
-liveSessionsList:[]
-})
-}else e({
-liveSessionsList:[]
-})
-},e=>{
-console.error('Listen to live sessions error:',e)
-})
-},deleteLiveSession:async o=>{
-if(fb.rtdb)try{
-const a=(0,i.ref)(fb.rtdb,`live_sessions/${
-s().activeGroupId
-}/${
-o
-}`);
-await(0,i.set)(a,null),e({
-liveSessionsList:s().liveSessionsList.filter(e=>e!==o)
-})
-}catch(e){
-console.error('Delete live session error:',e)
-}
-},listenToSessions:async()=>{
-const{
-activeGroupId:o,activeRole:i,myMemberId:n,myMemberName:c
-}=s();
-if(!o)return;
-const _sessDb=await waitForDb();
-if(!_sessDb){
-console.warn('[Store] listenToSessions: db still undefined after await, aborting');
-return;
-
-}s().stopListeningToSessions(),console.log('[Store] Starting real-time session listener');
-const l=(0,a.collection)(fb.db,`groups/${
-o
-}/sessions`),m_30=(Date.now()-2592000000),d=(0,a.query)(l,(0,a.where)('date','>',m_30),(0,a.orderBy)('date','desc'),(0,a.limit)(100)),u=(0,a.onSnapshot)(d,t=>{
-const o=[];
-t.forEach(e=>{
-const s=e.data(),cleanedTags=s.tags&&Array.isArray(s.tags)?Array.from(new Set(s.tags.map(normalizeTag).filter(Boolean))):[],originalTags=s.tags||[],isModified=cleanedTags.length!==originalTags.length||cleanedTags.some((e,t)=>e!==originalTags[t]);
-if(isModified&&fb.db&&fb.db._delegate&&'member'!==i){
-const s=(0,a.doc)(fb.db,`groups/${
-M.getState().activeGroupId
-}/sessions`,e.id);
-(0,a.updateDoc)(s,{
-tags:cleanedTags
-}).catch(e=>console.error('[Store] Auto cleanup sync failed:',e))
-}o.push(Object.assign({
-
-},s,{
-id:e.id,tags:cleanedTags,syncStatus:e.metadata&&e.metadata.hasPendingWrites?'未同期':'同期済み'
-}))
-});
-const a=s().sessions,c=new Set(o.map(e=>e.id));
-const merged=o.map(cloudSession=>{
-const pendingTimer=s()._pendingUpdateTimers[cloudSession.id];
-const localSession=a.find(ls=>ls&&ls.id===cloudSession.id);
-// 送信待ちの編集は、クラウドの古い写しで上書きしない。タイマーが動いて
-// いる 800ms の間だけでなく、送信が済むまで（「未同期」の間）守る。
-if(localSession&&(pendingTimer||'未同期'===localSession.syncStatus))return localSession;
-return cloudSession
-});
-const l=a.filter(e=>!c.has(e.id)&&!e.hasOwnProperty('serverCreatedTime')),d=[...merged,...l];
-d.sort((e,s)=>(s.date||0)-(e.date||0));
-e({
-sessions:d,syncStatus:'同期済み',lastSyncTime:Date.now()
-}),console.log(`[Store] Real-time session update received: ${
-o.length
-} items (reflected deletions)`)
-},s=>{
-console.error('[Store] Real-time session listener error:',s),e({
-syncStatus:'同期エラー'
-})
-});
-e({
-sessionUnsubscribe:u
-})
-},stopListeningToSessions:()=>{
-const{
-sessionUnsubscribe:t
-}=s();
-t&&(console.log('[Store] Stopping real-time session listener'),t(),e({
-sessionUnsubscribe:null
-}))
-},listenToTrash:async()=>{
-const{
-activeGroupId:o
-}=s();
-if(!o)return;
-const _trashDb=await waitForDb();
-if(!_trashDb){
-console.warn('[Store] listenToTrash: db still undefined after await, aborting');
-return;
-
-}s().stopListeningToTrash(),console.log('[Store] Starting real-time trash listener');
-const i=(0,a.collection)(fb.db,`groups/${
-o
-}/trash`),n=(0,a.query)(i,(0,a.limit)(200)),c=(0,a.onSnapshot)(n,t=>{
-const o=[];
-t.forEach(e=>{
-const s=e.data();
-o.push(Object.assign({
-
-},s,{
-id:e.id,syncStatus:e.metadata&&e.metadata.hasPendingWrites?'未同期':'同期済み'
-}))
-});
-o.sort((e,s)=>trashedAtMillis(s)-trashedAtMillis(e));
-const a=new Set(o.map(e=>e.id)),i=s().sessions.filter(e=>!a.has(e.id));
-e({
-trash:o,sessions:i
-}),console.log(`[Store] Real-time trash update received: ${
-o.length
-} items (purged from sessions)`)
-},e=>{
-console.error('[Store] Real-time trash listener error:',e)
-});
-e({
-trashUnsubscribe:c
-})
-},stopListeningToTrash:()=>{
-const{
-trashUnsubscribe:t
-}=s();
-t&&(console.log('[Store] Stopping real-time trash listener'),t(),e({
-trashUnsubscribe:null
-}))
-},listenToMembers:async()=>{
-const{
-activeGroupId:o
-}=s();
-if(!o)return;
-const _membDb=await waitForDb();
-if(!_membDb){
-console.warn('[Store] listenToMembers: db still undefined after await, aborting');
-return;
-
-}s().stopListeningToMembers(),console.log('[Store] Starting real-time member listener');
-const i=(0,a.collection)(fb.db,`groups/${
-o
-}/members`),n=(0,a.onSnapshot)(i,t=>{
-const o=[];
-t.forEach(e=>{
-const s=e.data();
-o.push(Object.assign({
-
-},s,{
-id:e.id,syncStatus:'同期済み'
-}))
-});
-const a=y(s().members,o,!1,!0);
-e({
-members:a,lastSyncTime:Date.now()
-}),console.log(`[Store] Real-time member update received: ${
-o.length
-} items`)
-},e=>{
-console.error('[Store] Real-time member listener error:',e)
-});
-e({
-memberUnsubscribe:n
-})
-},stopListeningToMembers:()=>{
-const{
-memberUnsubscribe:t
-}=s();
-t&&(console.log('[Store] Stopping real-time member listener'),t(),e({
-memberUnsubscribe:null
-}))
-},listenToAlumni:async()=>{
-const{
-activeGroupId:o
-}=s();
-if(!o)return;
-const _alumDb=await waitForDb();
-if(!_alumDb){
-console.warn('[Store] listenToAlumni: db still undefined after await, aborting');
-return;
-
-}s().stopListeningToAlumni(),console.log('[Store] Starting real-time alumni listener');
-const i=(0,a.collection)(fb.db,`groups/${
-o
-}/alumni`),n=(0,a.onSnapshot)(i,t=>{
-const o=[];
-t.forEach(e=>{
-const s=e.data();
-o.push(Object.assign({
-
-},s,{
-id:e.id,syncStatus:'同期済み'
-}))
-});
-const a=y(s().alumni,o,!1,!0);
-e({
-alumni:a,lastSyncTime:Date.now()
-}),console.log(`[Store] Real-time alumni update received: ${
-o.length
-} items`)
-},e=>{
-console.error('[Store] Real-time alumni listener error:',e)
-});
-e({
-alumniUnsubscribe:n
-})
-},stopListeningToAlumni:()=>{
-const{
-alumniUnsubscribe:t
-}=s();
-t&&(console.log('[Store] Stopping real-time alumni listener'),t(),e({
-alumniUnsubscribe:null
-}))
-},startPeriodicSync:()=>{
-s().stopPeriodicSync(),console.log('[Store] Starting sync (Real-time listeners + 5min config sync)'),s().listenToConfig(),s().listenToSessions(),s().listenToTrash(),s().listenToMembers(),s().listenToAlumni(),s().syncSessions();
-const t=setInterval(()=>{
-s().syncSessions()
-},3e5);
-e({
-syncIntervalId:t
-})
-},stopPeriodicSync:()=>{
-const t=s().syncIntervalId;
-t&&(console.log('[Store] Stopping periodic sync'),clearInterval(t),e({
-syncIntervalId:null
-})),s().stopListeningToSessions(),s().stopListeningToTrash(),s().stopListeningToMembers(),s().stopListeningToAlumni()
-},setupNetworkListener:()=>{
-console.log('[Store] Setting up network listener');
-return m.default.addEventListener(t=>{
-const o=s().isNetworkOnline,a=!(!t.isConnected||!1===t.isInternetReachable);
-a!==o&&(console.log("[Store] Network state changed: "+(a?'Online':'Offline')),e({
-isNetworkOnline:a
-}),a&&!o&&(console.log('[Store] Connection restored. Triggering auto-sync...'),s().syncSessions().catch(e=>console.error('[Store] Auto-sync failed:',e))))
-})
-},incrementAllGrades:async()=>{
-const{
-activeGroupId:o,alumni:c,currentFreshmanTerm:l,isNetworkOnline:d
-}=s();
-if(!o)return;
-const u=Date.now(),m=(new Date).getFullYear();
-if(!d)return void console.warn('[incrementAllGrades] Offline. Skipping promotion until online.');
-try{
-const s=await(0,a.getDoc)((0,a.doc)(fb.db,`groups/${
-o
-}/config`,'app_settings'));
-if(s.exists()){
-const t=s.data();
-if(t.lastPromotionYear&&t.lastPromotionYear>=m)return console.log(`[incrementAllGrades] Skipped: Promotion for year ${
-m
-} already completed according to Firestore.`),void e({
-lastPromotionYear:t.lastPromotionYear
-})
-}
-}catch(e){
-return void console.error('[incrementAllGrades] Failed to re-verify settings:',e)
-}let i;
-try{
-const t=await(0,a.getDocs)((0,a.collection)(fb.db,`groups/${
-o
-}/members`));
-i=[],t.forEach(e=>i.push(Object.assign({
-
-},e.data(),{
-id:e.id
-})))
-}catch(e){
-return void console.error('[incrementAllGrades] Failed to fetch members:',e)
-}console.log(`[Store] incrementAllGrades: Starting atomic promotion process... (${
-i.length
-} members from cloud)`);
-const dropUndefined=o=>{const t={};for(const k in o)void 0!==o[k]&&(t[k]=o[k]);return t};
-const gradeOf=e=>{
-const v=e?e.grade:null;
-if(null==v||''===v)return NaN;
-const n=Number(v);
-return isNaN(n)?NaN:n
-};
-const skippedGrades=i.filter(e=>isNaN(gradeOf(e))).map(e=>e.name||e.id);
-if(skippedGrades.length)console.warn('[incrementAllGrades] 学年が未設定のため据え置いたメンバー:',skippedGrades);
-const p=[];
-i.forEach(e=>{
-const s=gradeOf(e);
-if(isNaN(s)||s<1||s>=5)p.push(Object.assign({
-
-},e,{
-lastModified:u,syncStatus:'同期済み'
-}));
-else if(s>=4)p.push(Object.assign({
-
-},e,{
-grade:5,lastModified:u,syncStatus:'同期済み'
-}));
-else p.push(Object.assign({
-
-},e,{
-grade:s+1,lastModified:u,syncStatus:'同期済み'
-}))
-});
-const f=(l||0)+1;
-if(d)try{
-const e=[];
-p.forEach(s=>{
-e.push({
-type:'set',ref:(0,a.doc)(fb.db,`groups/${
-o
-}/members`,s.id),data:dropUndefined(Object.assign({
-
-},s,{
-lastModified:(0,a.serverTimestamp)()
-}))
-})
-}),e.push({
-type:'set',ref:(0,a.doc)(fb.db,`groups/${
-o
-}/config`,'app_settings'),data:{
-currentFreshmanTerm:f,lastPromotionYear:m,lastModified:(0,a.serverTimestamp)()
-}
-});
-for(let s=0;
-s<e.length;
-s+=400){
-const o=e.slice(s,s+400),i=(0,a.writeBatch)(fb.db);
-o.forEach(e=>{
-'set'===e.type?i.set(e.ref,e.data,{
-merge:!0
-}):'delete'===e.type&&i.delete(e.ref)
-}),await i.commit()
-}console.log('[Store] incrementAllGrades: Cloud sync successful.')
-}catch(e){
-return console.error('[incrementAllGrades] Cloud sync failed:',e),void n.default.alert('進級処理エラー','クラウドとの同期に失敗しました。時間をおいて再度お試しください。')
-}const S=c;
-e({
-members:p,alumni:S,currentFreshmanTerm:f,lastPromotionYear:m,lastLocalChange:u,lastSyncTime:u
-}),console.log('[Store] incrementAllGrades: Promotion process completed.')
-},updateCurrentFreshmanTerm:async o=>{
-const{
-activeGroupId:i,autoPromotionEnabled:n,tagTemplates:c,lastPromotionYear:l,isNetworkOnline:d
-}=s();
-if(e({
-currentFreshmanTerm:o,lastLocalChange:Date.now()
-}),d&&i)try{
-await(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
-i
-}/config`,'app_settings'),{
-currentFreshmanTerm:o,autoPromotionEnabled:n,tagTemplates:c,lastPromotionYear:l,lastModified:(0,a.serverTimestamp)()
-},{
-merge:!0
-}),e({
-syncStatus:'同期済み',lastSyncTime:Date.now()
-})
-}catch(s){
-console.error('Update Term Sync Error:',s),e({
-syncStatus:'同期エラー'
-})
-}
-},resetCurrentSession:(o=!0)=>{
-const a=Date.now();
-e({
-archers:[],historyStack:[],redoStack:[],activeSessionID:null,currentSessionTags:[],lastLocalChange:a,lastResetHandled:o?a:s().lastResetHandled
-});
-const{
-isLiveActive:n,liveSessionName:c
-}=s();
-if(o&&n&&c&&fb.rtdb){
-const s=(0,i.ref)(fb.rtdb,`live_sessions/${
-M.getState().activeGroupId
-}/${
-c
-}/state`);
-(0,i.update)(s,{
-archers:[],marks_by_id:{
-
-},archer_timestamps:{
-
-},reset_at:a,timestamp:a
-}).catch(e=>console.error('Reset Live Sync Error:',e)),e({
-lastPushedTimestamp:a
-})
-}
-},recoverPassword:async e=>{
-if(!s().isNetworkOnline)return{
-success:!1,error:'オフラインのため実行できません'
-};
-try{
-return await(0,o.sendPasswordResetEmail)(fb.auth,e),console.log('Password reset email sent to:',e),{
-success:!0
-}
-}catch(e){
-return console.error('Password Recovery Error:',e),{
-success:!1,error:e.message||'パスワードリセットメールの送信に失敗しました'
-}
-}
-},listenToConfig:async()=>{
-const{
-activeGroupId:o
-}=s();
-if(!o)return;
-const _cfgDb=await waitForDb();
-if(!_cfgDb){
-console.warn('[Store] listenToConfig: db still undefined after await, aborting');
-return;
-
-}try{
-const i=await(0,a.getDoc)((0,a.doc)(fb.db,`groups/${
-o
-}/config`,'app_settings'));
-if(i.exists()){
-const t=i.data();
-console.log('[Store] Config initial fetch from cloud:',t),e({
-autoPromotionEnabled:!1!==t.autoPromotionEnabled,currentFreshmanTerm:t.currentFreshmanTerm||s().currentFreshmanTerm,tagTemplates:t.tagTemplates||s().tagTemplates,lastPromotionYear:t.lastPromotionYear||s().lastPromotionYear
-})
-}const n=await(0,a.getDoc)((0,a.doc)(fb.db,'groups',o));
-if(n.exists()){
-const s=n.data();
-s.groupName&&e({
-activeGroupName:s.groupName
-})
-}
-}catch(e){
-console.warn('[Store] Initial config fetch failed (offline?), falling back to local.',e)
-}const _existing=s().configUnsubscribe;
-if(_existing){
-_existing();
-e({configUnsubscribe:null});
-console.log('[Store] listenToConfig: stopped existing listener');
-}
-const i=(0,a.onSnapshot)((0,a.doc)(fb.db,`groups/${
-o
-}/config`,'app_settings'),t=>{
-if(t.exists()){
-const o=t.data();
-console.log('[Store] Config updated from cloud (snapshot):',o),e({
-autoPromotionEnabled:!1!==o.autoPromotionEnabled,currentFreshmanTerm:o.currentFreshmanTerm||s().currentFreshmanTerm,tagTemplates:o.tagTemplates||s().tagTemplates,lastPromotionYear:o.lastPromotionYear||s().lastPromotionYear,analysisRankingSettings:o.analysisRankingSettings||s().analysisRankingSettings
-})
-}
-}),n=(0,a.onSnapshot)((0,a.doc)(fb.db,'groups',o),s=>{
-if(s.exists()){
-const t=s.data();
-t.groupName&&e({
-activeGroupName:t.groupName
-})
-}
-});
-e({
-configUnsubscribe:()=>{
-i(),n()
-}
-})
-}
-}
-},{
-name:'archery-score-storage',storage:(0,d.createJSONStorage)(()=>u.default),partialize:e=>({
-archers:e.archers,members:e.members,sessions:e.sessions,history:e.history,alumni:e.alumni,trash:e.trash,shotsPerRound:e.shotsPerRound,activeSessionID:e.activeSessionID,viewScale:e.viewScale,includeInStats:e.includeInStats,lastSessionTags:e.tagTemplates,currentSessionTags:e.currentSessionTags,activeGroupId:e.activeGroupId,activeGroupName:e.activeGroupName,publicGroupId:e.publicGroupId,activeRole:e.activeRole,activeUserEmail:e.activeUserEmail,myMemberId:e.myMemberId,myMemberName:e.myMemberName,memberAuthVersion:e.memberAuthVersion,analysisSelectedTags:e.analysisSelectedTags,analysisTagLogic:e.analysisTagLogic,historySelectedTags:e.historySelectedTags,historyTagLogic:e.historyTagLogic,tagTemplates:e.tagTemplates,currentFreshmanTerm:e.currentFreshmanTerm,lastPromotionYear:e.lastPromotionYear,lastSyncTime:e.lastSyncTime,isAdminMode:e.isAdminMode,autoPromotionEnabled:e.autoPromotionEnabled,analysisRankingSettings:e.analysisRankingSettings,enableArrowLocation:e.enableArrowLocation,arrowTargetType:e.arrowTargetType
-}),onRehydrateStorage:()=>{
-console.log('[Store] Hydration starting...');
-const e=Date.now();
-return(s,t)=>{
-const o=Date.now()-e;
-if(t)console.error(`[Store] Hydration error (after ${
-o
-}ms):`,t);
-else if(s){
-console.log(`[Store] Hydration finished successfully (Duration: ${
-o
-}ms)`);
-const updates={
-isHydrated:!0
-};
-if(s.sessions){
-updates.sessions=cleanUpSessions(s.sessions);
-
-}if(s.trash){
-updates.trash=cleanUpSessions(s.trash);
-
-}if(s.historySelectedTags){
-updates.historySelectedTags=cleanUpTagsArray(s.historySelectedTags);
-
-}if(s.analysisSelectedTags){
-updates.analysisSelectedTags=cleanUpTagsArray(s.analysisSelectedTags);
-
-}if(s.currentSessionTags){
-updates.currentSessionTags=cleanUpTagsArray(s.currentSessionTags);
-
-}if(s.tagTemplates){
-updates.tagTemplates=cleanUpTagsArray(s.tagTemplates);
-
-}if(!Array.isArray(s.archers)){
-console.warn('[Store] archers was not an array, recovering...');
-updates.archers=[];
-
-}if('number'!=typeof s.viewScale||isNaN(s.viewScale)||s.viewScale<=0){
-console.warn('[Store] Invalid viewScale detected during hydration, resetting to 1.0');
-updates.viewScale=1;
-
-}if('function'==typeof s.updateState){
-s.updateState(updates);
-
-}if('function'==typeof s.ensurePersonalIds){
-s.ensurePersonalIds();
-
-}
-}else{
-console.warn(`[Store] Hydration yielded empty state (after ${
-o
-}ms)`);
-const e=M.getState();
-if(e&&!1===e.isHydrated&&'function'==typeof e.updateState){
-console.log('[Store] Forcing isHydrated: true even for empty state');
-e.updateState({
-isHydrated:!0
-});
-
-}
-}
-}
-}
-}))
+const 同期規則 = require('./syncRules');
+const h = 同期規則.generateUniquePersonalId,
+  y = 同期規則.mergeById,
+  dropUndefinedDeep = 同期規則.dropUndefinedDeep,
+  trashedAtMillis = 同期規則.trashedAtMillis,
+  normalizeTag = 同期規則.normalizeTag,
+  cleanUpTagsArray = 同期規則.cleanUpTagsArray,
+  cleanUpSessions = 同期規則.cleanUpSessions;
+const f = (e, s) => {
+    if (!e) return s ? Array(s).fill('') : [];
+    if (Array.isArray(e)) {
+      const t = e.map((e) => (null == e ? '' : e));
+      return s && t.length < s ? [...t, ...Array(s - t.length).fill('')] : t;
+    }
+    if ('object' == typeof e) {
+      const t = Object.keys(e);
+      if (t.length > 0 && t.every((e) => !isNaN(Number(e)))) {
+        const o = Math.max(...t.map(Number)),
+          a = s ? Math.max(s, o + 1) : o + 1,
+          i = Array(a).fill('');
+        return (
+          t.forEach((s) => {
+            const t = Number(s);
+            i[t] = null === e[s] || void 0 === e[s] ? '' : e[s];
+          }),
+          i
+        );
+      }
+      return Object.values(e);
+    }
+    return [];
+  },
+  S = (e, s) =>
+    e && 'object' == typeof e
+      ? {
+          id: e.id || '',
+          name: e.name || '',
+          gender: e.gender || '未設定',
+          grade: 'number' == typeof e.grade ? e.grade : 1,
+          marks: f(e.marks, e.isSeparator ? 0 : s),
+          isSeparator: !0 === e.isSeparator,
+          isTotalCalculator: !0 === e.isTotalCalculator,
+          isGuest: !0 === e.isGuest,
+          memberId: e.memberId || void 0,
+          lockedBlocks: e.lockedBlocks || {},
+          substitutions: e.substitutions || {},
+          substitutionIds: e.substitutionIds || {},
+          bowWeight: e.bowWeight || void 0,
+          lastModified: e.lastModified || 0,
+          arrowLocations: Array.isArray(e.arrowLocations)
+            ? e.arrowLocations
+            : Array(e.isSeparator ? 0 : s || 8).fill(null),
+        }
+      : null,
+  b = (e, s) =>
+    JSON.parse(
+      JSON.stringify(
+        e.map((e) => ({
+          id: e.id,
+          name: e.name || '',
+          gender: e.gender || '未設定',
+          grade: e.grade || 0,
+          isSeparator: e.isSeparator || !1,
+          isTotalCalculator: e.isTotalCalculator || !1,
+          isGuest: e.isGuest || !1,
+          memberId: e.memberId || null,
+          lockedBlocks: e.lockedBlocks || {},
+          substitutions: e.substitutions || {},
+          lastModified: e.lastModified || 0,
+          substitutionIds: e.substitutionIds || {},
+          bowWeight: e.bowWeight || null,
+        }))
+      )
+    );
+const v = (e, s, o) => {
+    const a = Date.now(),
+      n = M.getState().activeGroupId;
+    if (!fb.rtdb || !n) return;
+    const c = (0, i.ref)(fb.rtdb, `live_sessions/${n}/${e}/state`),
+      l = b(s),
+      d = {};
+    s.forEach((e) => {
+      e && e.id && (d[e.id] = e.lastModified || 0);
+    });
+    const u = {};
+    s.forEach((e) => {
+      e && e.id && !e.isSeparator && (u[e.id] = e.marks || []);
+    });
+    const m = {
+      archers: l,
+      marks_by_id: u,
+      archer_timestamps: d,
+      shotsPerRound: o,
+      timestamp: a,
+      status: 'active',
+    };
+    (console.log('[Store] pushLiveAll state updated, lastPushedTimestamp:', a),
+      M.getState().updateState({
+        lastPushedTimestamp: a,
+      }),
+      (0, i.update)(c, m).catch((e) => console.error('[Store] pushLiveAll Error:', e)));
+  },
+  T = (e, s, o, a, n) => {
+    const c = Date.now(),
+      l = M.getState().activeGroupId;
+    if (!fb.rtdb || !l) return;
+    const d = (0, i.ref)(fb.rtdb, `live_sessions/${l}/${e}/state`),
+      u = {
+        [`marks_by_id/${s}/${o}`]: a,
+        [`archer_timestamps/${s}`]: n,
+        timestamp: c,
+      };
+    (M.getState().updateState({
+      lastPushedTimestamp: c,
+    }),
+      (0, i.update)(d, u).catch((e) => console.error('pushLiveMark Error:', e)));
+  },
+  w = (e) => {
+    const s = 'number' == typeof e.shotsPerRound ? e.shotsPerRound : 8,
+      t = f(e.archers),
+      o = e.marks_by_id || {},
+      a = e.archer_timestamps || {};
+    return {
+      archers: t
+        .map((e) => {
+          if (!e) return null;
+          const t = S(e, s);
+          return t
+            ? (!e.isSeparator &&
+                o[e.id] &&
+                ((t.marks = f(o[e.id], s)), (t.lastModified = Math.max(t.lastModified || 0, a[e.id] || 0))),
+              t)
+            : null;
+        })
+        .filter(Boolean),
+      shotsPerRound: s,
+    };
+  };
+let I = !1;
+const M = (0, s.create)()(
+  (0, d.persist)(
+    (t, s) => {
+      const e = (o) => {
+        let i = 'function' == typeof o ? o(s()) : o;
+        (i &&
+          (i.sessions && (i.sessions = cleanUpSessions(i.sessions)),
+          i.trash && (i.trash = cleanUpSessions(i.trash))),
+          t(i));
+      };
+      return {
+        enableArrowLocation: !1,
+        arrowTargetType: 'kasumi36',
+        activeArrowLocationEdit: null,
+        activeGroupId: null,
+        activeGroupName: null,
+        publicGroupId: null,
+        activeRole: null,
+        myMemberId: null,
+        myMemberName: null,
+        activeUserEmail: null,
+        memberAuthVersion: 0,
+        archers: [],
+        members: [],
+        alumni: [],
+        history: [],
+        sessions: [],
+        trash: [],
+        shotsPerRound: 8,
+        activeSessionID: null,
+        historyStack: [],
+        redoStack: [],
+        viewScale: 1,
+        syncStatus: '未同期',
+        lastSyncTime: null,
+        offlineSaveWarning: null,
+        isNetworkOnline: !0,
+        isAdminMode: !1,
+        autoPromotionEnabled: !0,
+        _pendingUpdateTimers: {},
+        showSyncErrorPopups: !0,
+        includeInStats: !0,
+        lastLocalChange: 0,
+        lastResetHandled: 0,
+        lastPushedTimestamp: 0,
+        showTrash: !1,
+        sessionUnsubscribe: null,
+        trashUnsubscribe: null,
+        memberUnsubscribe: null,
+        alumniUnsubscribe: null,
+        configUnsubscribe: null,
+        showAlumniInAnalysis: !1,
+        showAlumniInPicker: !1,
+        currentFreshmanTerm: 1,
+        historyViewMode: 'list',
+        selectedHistorySessionId: null,
+        isAdminModePending: !1,
+        isLiveActive: !1,
+        isHost: !1,
+        liveSessionName: null,
+        isIncomingLiveSync: !1,
+        liveSessionsList: [],
+        analysisSelectedTags: [],
+        analysisTagLogic: 'AND',
+        historySelectedTags: [],
+        historyTagLogic: 'AND',
+        currentSessionTags: [],
+        tagTemplates: ['#立', '#練習試合', '#大会', '#自主練習', '#合宿'],
+        initializationLogs: [],
+        syncIntervalId: null,
+        lastPromotionYear: null,
+        _pendingMemberTimers: {},
+        isHydrated: !1,
+        analysisRankingSettings: {
+          '月ごと': {
+            type: 'ratio',
+            value: 0,
+          },
+          '期間指定': {
+            type: 'ratio',
+            value: 0,
+          },
+          '直近30日': {
+            type: 'ratio',
+            value: 0,
+          },
+          '今年度': {
+            type: 'ratio',
+            value: 0,
+          },
+          'すべて': {
+            type: 'ratio',
+            value: 0,
+          },
+        },
+        focusedMemberId: null,
+        currentRouteName: null,
+        updateLoadingLog: (t) => {
+          const o = s().initializationLogs || [];
+          (e({
+            initializationLogs: [...o, t],
+          }),
+            console.log('[Store] Loading:', t));
+        },
+        setCurrentRouteName: (s) =>
+          e({
+            currentRouteName: s,
+          }),
+        setMemberAuthVersion: (s) => e({ memberAuthVersion: s }),
+        setFocusedMemberId: (s) =>
+          e({
+            focusedMemberId: s,
+          }),
+        setShowSyncErrorPopups: (s) =>
+          e({
+            showSyncErrorPopups: s,
+          }),
+        setAuth: (t, o, a, i = null, n = null, c = null, l = null) => {
+          null === t
+            ? (e({
+                activeGroupId: null,
+                activeGroupName: null,
+                publicGroupId: null,
+                activeRole: null,
+                myMemberId: null,
+                myMemberName: null,
+                activeUserEmail: null,
+                sessions: [],
+                members: [],
+                history: [],
+                alumni: [],
+                trash: [],
+                archers: [],
+                activeSessionID: null,
+                analysisSelectedTags: [],
+                historySelectedTags: [],
+                historyTagLogic: 'AND',
+                tagTemplates: ['立', '練習試合', '大会', '自主練習', '合宿'],
+                initializationLogs: [],
+                isAdminMode: !1,
+                isAdminModePending: !1,
+              }),
+              s().stopPeriodicSync(),
+              s().stopListeningToSessions(),
+              s().stopListeningToMembers(),
+              s().stopListeningToAlumni(),
+              s().stopListeningToTrash(),
+              s().configUnsubscribe &&
+                (s().configUnsubscribe(),
+                e({
+                  configUnsubscribe: null,
+                })))
+            : (e({
+                activeGroupId: t,
+                activeGroupName: c || s().activeGroupName,
+                activeRole: o,
+                myMemberId: a,
+                myMemberName: l || s().myMemberName,
+                activeUserEmail: i,
+                publicGroupId: n || ('group' === o ? t : s().publicGroupId),
+                isAdminMode: !1,
+                isAdminModePending: !1,
+              }),
+              s().listenToConfig(),
+              s().listenToSessions(),
+              s().listenToMembers(),
+              s().listenToAlumni(),
+              s().listenToTrash());
+        },
+        setAnalysisSelectedTags: (s) =>
+          e({
+            analysisSelectedTags: s,
+          }),
+        toggleAnalysisTag: (t) => {
+          const o = s().analysisSelectedTags || [];
+          o.includes(t)
+            ? e({
+                analysisSelectedTags: o.filter((e) => e !== t),
+              })
+            : e({
+                analysisSelectedTags: [...o, t],
+              });
+        },
+        setAnalysisTagLogic: (s) =>
+          e({
+            analysisTagLogic: s,
+          }),
+        setAnalysisRankingSetting: async (o, i) => {
+          const n = Date.now(),
+            c = s().analysisRankingSettings || {},
+            l = Object.assign({}, c, {
+              [o]: i,
+            });
+          e({
+            analysisRankingSettings: l,
+            lastLocalChange: n,
+          });
+          const { activeGroupId: d, isNetworkOnline: u } = s();
+          if (u && d)
+            try {
+              await (0, a.setDoc)(
+                (0, a.doc)(fb.db, `groups/${d}/config`, 'app_settings'),
+                {
+                  analysisRankingSettings: l,
+                  lastModified: (0, a.serverTimestamp)(),
+                },
+                {
+                  merge: !0,
+                }
+              );
+            } catch (e) {
+              console.error('[Store] setAnalysisRankingSetting sync error:', e);
+            }
+        },
+        setHistorySelectedTags: (s) =>
+          e({
+            historySelectedTags: s,
+          }),
+        toggleHistoryTag: (t) => {
+          const o = s().historySelectedTags || [];
+          o.includes(t)
+            ? e({
+                historySelectedTags: o.filter((e) => e !== t),
+              })
+            : e({
+                historySelectedTags: [...o, t],
+              });
+        },
+        setHistoryTagLogic: (s) =>
+          e({
+            historyTagLogic: s,
+          }),
+        setCurrentSessionTags: (s) =>
+          e({
+            currentSessionTags: s,
+          }),
+        toggleCurrentSessionTag: (t) => {
+          const o = s().currentSessionTags || [];
+          o.includes(t)
+            ? e({
+                currentSessionTags: o.filter((e) => e !== t),
+              })
+            : e({
+                currentSessionTags: [...o, t],
+              });
+        },
+        setTagTemplates: async (o) => {
+          const i = Date.now();
+          const r = Array.from(new Set((o || []).map(normalizeTag).filter(Boolean)));
+          e({
+            tagTemplates: r,
+            lastLocalChange: i,
+          });
+          const { activeGroupId: n, isNetworkOnline: c } = s();
+          if (c && n)
+            try {
+              await (0, a.setDoc)(
+                (0, a.doc)(fb.db, `groups/${n}/config`, 'app_settings'),
+                {
+                  tagTemplates: r,
+                  currentFreshmanTerm: s().currentFreshmanTerm,
+                  lastModified: (0, a.serverTimestamp)(),
+                },
+                {
+                  merge: !0,
+                }
+              );
+            } catch (e) {
+              console.error('[Store] setTagTemplates sync error:', e);
+            }
+        },
+        addTagTemplate: async (o) => {
+          const i = s().tagTemplates || [];
+          const r = normalizeTag(o);
+          if (r && !i.includes(r)) {
+            const n = Date.now(),
+              c = [...i, r];
+            e({
+              tagTemplates: c,
+              lastLocalChange: n,
+            });
+            const { activeGroupId: l, isNetworkOnline: d } = s();
+            if (d && l)
+              try {
+                await (0, a.setDoc)(
+                  (0, a.doc)(fb.db, `groups/${l}/config`, 'app_settings'),
+                  {
+                    tagTemplates: c,
+                    currentFreshmanTerm: s().currentFreshmanTerm,
+                    lastModified: (0, a.serverTimestamp)(),
+                  },
+                  {
+                    merge: !0,
+                  }
+                );
+              } catch (e) {
+                console.error('[Store] addTagTemplate sync error:', e);
+              }
+          }
+        },
+        removeTagTemplate: async (o) => {
+          const i = Date.now(),
+            n = (s().tagTemplates || []).filter((e) => e !== o);
+          e({
+            tagTemplates: n,
+            lastLocalChange: i,
+          });
+          const { activeGroupId: c, isNetworkOnline: l } = s();
+          if (l && c)
+            try {
+              await (0, a.setDoc)(
+                (0, a.doc)(fb.db, `groups/${c}/config`, 'app_settings'),
+                {
+                  tagTemplates: n,
+                  currentFreshmanTerm: s().currentFreshmanTerm,
+                  lastModified: (0, a.serverTimestamp)(),
+                },
+                {
+                  merge: !0,
+                }
+              );
+            } catch (e) {
+              console.error('[Store] removeTagTemplate sync error:', e);
+            }
+        },
+        setShowAlumniInAnalysis: (s) =>
+          e({
+            showAlumniInAnalysis: s,
+          }),
+        setShowAlumniInPicker: (s) =>
+          e({
+            showAlumniInPicker: s,
+          }),
+        setIncludeInStats: (s) =>
+          e({
+            includeInStats: s,
+          }),
+        addArcher: (t, o) => {
+          const a = Array.isArray(s().archers) ? s().archers : [],
+            i = {
+              id: (0, l.generateUUID)(),
+              name: '',
+              marks: Array(s().shotsPerRound || 8).fill(''),
+              arrowLocations: Array(s().shotsPerRound || 8).fill(null),
+              gender: o || '未設定',
+              grade: 1,
+              isGuest: !1,
+              isSeparator: !1,
+              isTotalCalculator: !1,
+              lockedBlocks: {},
+              lastModified: Date.now(),
+            },
+            n = 'number' != typeof t || isNaN(t) ? [...a, i] : [...a];
+          if ('number' == typeof t && !isNaN(t)) {
+            const e = Math.max(0, Math.min(t, n.length));
+            n.splice(e, 0, i);
+          }
+          e({
+            archers: n,
+            historyStack: [...s().historyStack, a],
+            redoStack: [],
+            lastLocalChange: Date.now(),
+          });
+          const { isLiveActive: c, liveSessionName: d, shotsPerRound: u } = s();
+          c && d && v(d, n, u);
+        },
+        addSeparator: (t) => {
+          const o = Array.isArray(s().archers) ? s().archers : [],
+            a = {
+              id: 'sep-' + (0, l.generateUUID)(),
+              name: '---',
+              marks: [],
+              isSeparator: !0,
+              gender: '未設定',
+              grade: 0,
+              isGuest: !1,
+              isTotalCalculator: !1,
+              lockedBlocks: {},
+              lastModified: Date.now(),
+            },
+            i = 'number' == typeof t ? [...o] : [...o, a];
+          ('number' == typeof t && i.splice(t, 0, a),
+            e({
+              archers: i,
+              historyStack: [...s().historyStack, o],
+              redoStack: [],
+              lastLocalChange: Date.now(),
+            }));
+          const { isLiveActive: n, liveSessionName: c, shotsPerRound: d } = s();
+          n && c && v(c, i, d);
+        },
+        addTotalCalculator: (t) => {
+          const o = Array.isArray(s().archers) ? s().archers : [],
+            a = {
+              id: 'total-' + (0, l.generateUUID)(),
+              name: '計',
+              marks: Array(s().shotsPerRound || 8).fill(''),
+              arrowLocations: Array(s().shotsPerRound || 8).fill(null),
+              isTotalCalculator: !0,
+              gender: '未設定',
+              grade: 0,
+              isGuest: !1,
+              isSeparator: !1,
+              lockedBlocks: {},
+              lastModified: Date.now(),
+            },
+            i = 'number' == typeof t ? [...o] : [...o, a];
+          ('number' == typeof t && i.splice(t, 0, a),
+            e({
+              archers: i,
+              historyStack: [...s().historyStack, o],
+              redoStack: [],
+              lastLocalChange: Date.now(),
+            }));
+          const { isLiveActive: n, liveSessionName: c, shotsPerRound: d } = s();
+          n && c && v(c, i, d);
+        },
+        deleteArcher: (t) => {
+          const o = Array.isArray(s().archers) ? s().archers : [],
+            a = o.filter((e) => e && e.id !== t),
+            i = Date.now();
+          e({
+            historyStack: [...s().historyStack, o],
+            redoStack: [],
+            archers: a,
+            lastLocalChange: i,
+          });
+          const { isLiveActive: n, liveSessionName: c, shotsPerRound: l } = s();
+          n && c && v(c, a, l);
+        },
+        applyOCRResult: (t) => {
+          const o = Array.isArray(s().archers) ? s().archers : [],
+            i = Date.now();
+          e({
+            archers: t,
+            historyStack: [...s().historyStack, o],
+            redoStack: [],
+            lastLocalChange: i,
+          });
+          const { isLiveActive: n, liveSessionName: c, shotsPerRound: l } = s();
+          n && c && v(c, t, l);
+        },
+        setEnableArrowLocation: (t) =>
+          e({
+            enableArrowLocation: t,
+          }),
+        setArrowTargetType: (t) =>
+          e({
+            arrowTargetType: t,
+          }),
+        setActiveArrowLocationEdit: (t) =>
+          e({
+            activeArrowLocationEdit: t,
+          }),
+        updateArrowLocation: (t, o, a) => {
+          const { archers: i } = s(),
+            n = Date.now(),
+            c = (i || []).map((e) => {
+              if (e.id === t) {
+                const s = [...(e.arrowLocations || [])];
+                return (
+                  (s[o] = a),
+                  Object.assign({}, e, {
+                    arrowLocations: s,
+                    lastModified: n,
+                  })
+                );
+              }
+              return e;
+            });
+          e({
+            archers: c,
+            historyStack: [...s().historyStack, i],
+            redoStack: [],
+            lastLocalChange: n,
+          });
+        },
+        updateMark: (t, o, a) => {
+          const { archers: i, isLiveActive: n, liveSessionName: c } = s(),
+            l = Date.now(),
+            d = (i || []).map((e) => {
+              if (e.id === t) {
+                const s = [...(e.marks || [])];
+                return (
+                  (s[o] = a),
+                  Object.assign({}, e, {
+                    marks: s,
+                    lastModified: l,
+                  })
+                );
+              }
+              return e;
+            });
+          (e({
+            archers: d,
+            historyStack: [...s().historyStack, i],
+            redoStack: [],
+            lastLocalChange: l,
+          }),
+            n && c && T(c, t, o, a, l));
+        },
+        toggleMark: (t, o) => {
+          const { archers: a, isLiveActive: i, liveSessionName: n } = s(),
+            c = Date.now();
+          let l = '';
+          const d = (a || []).map((e) => {
+            if (e.id === t) {
+              const s = [...(e.marks || [])],
+                t = s[o],
+                a = '' === t ? '○' : '○' === t ? '\xd7' : '';
+              return (
+                (s[o] = a),
+                (l = a),
+                Object.assign({}, e, {
+                  marks: s,
+                  lastModified: c,
+                })
+              );
+            }
+            return e;
+          });
+          (e({
+            archers: d,
+            historyStack: [...s().historyStack, a],
+            redoStack: [],
+            lastLocalChange: c,
+          }),
+            i && n && T(n, t, o, l, c));
+        },
+        clearArcherMarks: (t) => {
+          const o = Array.isArray(s().archers) ? s().archers : [],
+            a = Date.now(),
+            i = o.map((e) =>
+              e && e.id === t
+                ? Object.assign({}, e, {
+                    marks: Array(s().shotsPerRound).fill(''),
+                    lastModified: a,
+                  })
+                : e
+            );
+          e({
+            historyStack: [...s().historyStack, o],
+            redoStack: [],
+            lastLocalChange: a,
+            archers: i,
+          });
+          const { isLiveActive: n, liveSessionName: c, shotsPerRound: l } = s();
+          n && c && v(c, i, l);
+        },
+        toggleLock: (t, o) => {
+          const { archers: a } = s(),
+            i = Array.isArray(a) ? a : [],
+            n = i.findIndex((e) => e && e.id === t);
+          if (-1 === n) return;
+          const c = i[n],
+            l = !c.lockedBlocks?.[o];
+          let d = n;
+          for (; d > 0 && i[d - 1] && !i[d - 1].isSeparator && !i[d - 1].isTotalCalculator;) d--;
+          const u = Date.now(),
+            m = i.map((e, s) => {
+              if (e && s >= d && s <= n) {
+                const s = Object.assign({}, e.lockedBlocks || {});
+                return (
+                  (s[o] = l),
+                  Object.assign({}, e, {
+                    lockedBlocks: s,
+                    lastModified: u,
+                  })
+                );
+              }
+              return e;
+            });
+          e({
+            historyStack: [...s().historyStack, i],
+            redoStack: [],
+            lastLocalChange: u,
+            archers: m,
+          });
+          const { isLiveActive: p, liveSessionName: h, shotsPerRound: f } = s();
+          p && h && v(h, m, f);
+        },
+        setArcherMember: (t, o) => {
+          const a = Array.isArray(s().archers) ? s().archers : [],
+            i = o?.equipments?.length ? [...o.equipments].sort((e, s) => s.date - e.date)[0]?.weight : void 0,
+            n = a.map((e) =>
+              e && e.id === t
+                ? Object.assign({}, e, {
+                    name: o ? o.name : '',
+                    gender: o ? o.gender : '未設定',
+                    grade: o ? o.grade : 1,
+                    memberId: o ? o.id : void 0,
+                    isGuest: !1,
+                    bowWeight: i || e.bowWeight,
+                    lastModified: Date.now(),
+                  })
+                : e
+            );
+          e({
+            historyStack: [...s().historyStack, a],
+            redoStack: [],
+            lastLocalChange: Date.now(),
+            archers: n,
+          });
+          const { isLiveActive: c, liveSessionName: l, shotsPerRound: d } = s();
+          c && l && v(l, n, d);
+        },
+        setArcherBowWeight: (t, o) => {
+          const a = (Array.isArray(s().archers) ? s().archers : []).map((e) =>
+            e && e.id === t
+              ? Object.assign({}, e, {
+                  bowWeight: o,
+                  lastModified: Date.now(),
+                })
+              : e
+          );
+          e({
+            lastLocalChange: Date.now(),
+            archers: a,
+          });
+          const { isLiveActive: i, liveSessionName: n, shotsPerRound: c } = s();
+          i && n && v(n, a, c);
+        },
+        setArcherGuestName: (t, o) => {
+          const a = (Array.isArray(s().archers) ? s().archers : []).map((e) =>
+            e && e.id === t
+              ? Object.assign({}, e, {
+                  name: o,
+                  isGuest: !0,
+                  gender: '未設定',
+                  memberId: void 0,
+                  lastModified: Date.now(),
+                })
+              : e
+          );
+          e({
+            historyStack: [...s().historyStack, Array.isArray(s().archers) ? s().archers : []],
+            redoStack: [],
+            lastLocalChange: Date.now(),
+            archers: a,
+          });
+          const { isLiveActive: i, liveSessionName: n, shotsPerRound: c } = s();
+          i && n && v(n, a, c);
+        },
+        setArcherGender: (t, o) => {
+          const a = (Array.isArray(s().archers) ? s().archers : []).map((e) =>
+            e && e.id === t
+              ? Object.assign({}, e, {
+                  gender: o,
+                  lastModified: Date.now(),
+                })
+              : e
+          );
+          e({
+            lastLocalChange: Date.now(),
+            archers: a,
+          });
+          const { isLiveActive: i, liveSessionName: n, shotsPerRound: c } = s();
+          i && n && v(n, a, c);
+        },
+        undo: () => {
+          const { historyStack: t, archers: o } = s();
+          if (0 === t.length) return;
+          const a = t[t.length - 1];
+          e({
+            historyStack: t.slice(0, -1),
+            redoStack: [...s().redoStack, o],
+            archers: a,
+            lastLocalChange: Date.now(),
+          });
+          const { isLiveActive: i, liveSessionName: n, shotsPerRound: c } = s();
+          i && n && v(n, a, c);
+        },
+        redo: () => {
+          const { redoStack: t, archers: o } = s();
+          if (0 === t.length) return;
+          const a = t[t.length - 1];
+          e({
+            redoStack: t.slice(0, -1),
+            historyStack: [...s().historyStack, o],
+            archers: a,
+            lastLocalChange: Date.now(),
+          });
+          const { isLiveActive: i, liveSessionName: n, shotsPerRound: c } = s();
+          i && n && v(n, a, c);
+        },
+        addMember: (o, i, c, d) => {
+          if (!s().activeGroupId || 'group' !== s().activeRole)
+            return void n.default.alert(
+              '権限エラー',
+              'メンバーの追加は団体ログイン、かつ管理者のみ可能です。'
+            );
+          const u = o ? o.trim() : '',
+            m = {
+              id: (0, l.generateUUID)(),
+              personalId: h(s().members, s().alumni),
+              name: u,
+              gender: i,
+              grade: c,
+              termKi: d || s().currentFreshmanTerm - (c - 1),
+              lastModified: Date.now(),
+              syncStatus: '未同期',
+            };
+          if (
+            (e({
+              members: [...s().members, m],
+              lastLocalChange: Date.now(),
+            }),
+            s().activeGroupId)
+          ) {
+            const o = Object.assign({}, m, {
+              lastModified: (0, a.serverTimestamp)(),
+              syncStatus: '同期済み',
+            });
+            (0, a.setDoc)((0, a.doc)(fb.db, `groups/${s().activeGroupId}/members`, m.id), o)
+              .then(() => {
+                s().syncMemberLookup();
+                e((e) => ({
+                  members: e.members.map((e) =>
+                    e.id === m.id
+                      ? Object.assign({}, e, {
+                          syncStatus: '同期済み',
+                        })
+                      : e
+                  ),
+                }));
+              })
+              .catch((e) => console.error('Add Member Sync Error:', e));
+          }
+        },
+        updateMember: (o, i) => {
+          if (!s().activeGroupId || 'group' !== s().activeRole)
+            return void n.default.alert('権限エラー', 'メンバーの編集は団体ログイン時のみ可能です。');
+          if (void 0 !== i.grade) {
+            const e = new Date(),
+              s = e.getFullYear(),
+              t = e.getMonth() + 1,
+              o = t >= 4 ? s : s - 1;
+            5 === Number(i.grade) ? (i.graduationYear = o) : (i.graduationYear = null);
+          }
+          s().members.find((e) => e.id === o);
+          let c = Object.assign({}, i);
+          if (void 0 !== i.grade && void 0 === i.termKi) {
+            const e = s().currentFreshmanTerm - (i.grade - 1);
+            c.termKi = e;
+          }
+          const l = s().members.map((e) =>
+            e.id === o
+              ? Object.assign({}, e, c, {
+                  lastModified: Date.now(),
+                  syncStatus: '未同期',
+                })
+              : e
+          );
+          e({
+            members: l,
+            lastLocalChange: Date.now(),
+          });
+          if (void 0 !== i.name || void 0 !== i.gender || void 0 !== i.grade) {
+            const n = (e) => {
+                let s = !1;
+                return {
+                  newList: e.map((e) => {
+                    if (!e || !e.archers) return e;
+                    let t = !1;
+                    const a = e.archers
+                      .map((e) =>
+                        e.memberId === o
+                          ? ((t = !0),
+                            Object.assign({}, e, {
+                              name: void 0 !== i.name ? i.name : e.name,
+                              gender: void 0 !== i.gender ? i.gender : e.gender,
+                              grade: void 0 !== i.grade ? i.grade : e.grade,
+                              lastModified: Date.now(),
+                            }))
+                          : e
+                      )
+                      .map((e) => {
+                        if (e.substitutionIds) {
+                          let s = !1;
+                          const a = Object.assign({}, e.substitutions || {});
+                          if (
+                            (Object.entries(e.substitutionIds).forEach(([e, t]) => {
+                              const n = Number(e);
+                              t === o && void 0 !== i.name && ((a[n] = i.name), (s = !0));
+                            }),
+                            s)
+                          )
+                            return (
+                              (t = !0),
+                              Object.assign({}, e, {
+                                substitutions: a,
+                                lastModified: Date.now(),
+                              })
+                            );
+                        }
+                        return e;
+                      });
+                    if (t) {
+                      s = !0;
+                      const t = Array.from(
+                        new Set(a.map((e) => (e && e.name ? e.name.trim() : '')).filter(Boolean))
+                      );
+                      return Object.assign({}, e, {
+                        archers: a,
+                        archerNames: t,
+                        lastModified: Date.now(),
+                      });
+                    }
+                    return e;
+                  }),
+                  changed: s,
+                };
+              },
+              c = s().sessions,
+              l = s().trash,
+              { newList: d, changed: u } = n(c),
+              { newList: m, changed: p } = n(l);
+            if (
+              (u || p) &&
+              (e({
+                sessions: d,
+                trash: m,
+                lastLocalChange: Date.now(),
+              }),
+              s().activeGroupId)
+            ) {
+              const e = (0, a.writeBatch)(fb.db);
+              let o = 0;
+              (u &&
+                d.forEach((i, n) => {
+                  if (i.lastModified !== c[n].lastModified) {
+                    const n = JSON.parse(JSON.stringify(i));
+                    ((n.lastModified = (0, a.serverTimestamp)()),
+                      e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/sessions`, i.id), n, {
+                        merge: !0,
+                      }),
+                      o++);
+                  }
+                }),
+                p &&
+                  m.forEach((i, n) => {
+                    if (i.lastModified !== l[n].lastModified) {
+                      const n = JSON.parse(JSON.stringify(i));
+                      ((n.lastModified = (0, a.serverTimestamp)()),
+                        e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, i.id), n, {
+                          merge: !0,
+                        }),
+                        o++);
+                    }
+                  }),
+                o > 0 && e.commit().catch((e) => console.error('Member Linkage Sync Error:', e)));
+            }
+          }
+          s().activeGroupId &&
+            (p[o] && clearTimeout(p[o]),
+            (p[o] = setTimeout(async () => {
+              const i = s().members.find((e) => e.id === o);
+              if (i) {
+                const n = Object.assign({}, i, {
+                  lastModified: (0, a.serverTimestamp)(),
+                  syncStatus: '同期済み',
+                });
+                (0, a.updateDoc)((0, a.doc)(fb.db, `groups/${s().activeGroupId}/members`, o), n)
+                  .then(() => {
+                    (console.log(`[Store] Debounced Member Sync Success: ${i.name}`),
+                      e((e) => ({
+                        members: e.members.map((e) =>
+                          e.id === o
+                            ? Object.assign({}, e, {
+                                syncStatus: '同期済み',
+                              })
+                            : e
+                        ),
+                      })),
+                      delete p[o]);
+                  })
+                  .catch((e) => {
+                    (console.error('Update Member Sync Error:', e), delete p[o]);
+                  });
+              }
+            }, 300)));
+        },
+        deleteMember: (o) => {
+          s().activeGroupId && 'group' === s().activeRole
+            ? (e({
+                members: s().members.filter((e) => e.id !== o),
+                lastLocalChange: Date.now(),
+              }),
+              s().activeGroupId &&
+                (0, a.deleteDoc)((0, a.doc)(fb.db, `groups/${s().activeGroupId}/members`, o))
+                  .then(() => s().syncMemberLookup())
+                  .catch((e) => console.error('Delete Member Sync Error:', e)))
+            : n.default.alert('権限エラー', 'メンバーの削除は団体ログイン時のみ可能です。');
+        },
+        syncMemberLookup: async () => {
+          const { activeGroupId: g, activeRole: r, members: ms } = s();
+          if (!g || 'group' !== r || !fb.db) return;
+          try {
+            const col = (0, a.collection)(fb.db, `groups/${g}/member_lookup`);
+            const snap = await (0, a.getDocs)(col);
+            const want = new Map();
+            (ms || []).forEach((m) => {
+              if (m && m.id && /^\d{4}$/.test(m.personalId || '')) want.set(m.personalId, m.id);
+            });
+            const batch = (0, a.writeBatch)(fb.db);
+            let n = 0;
+            snap.forEach((d) => {
+              const w = want.get(d.id);
+              if (!w) {
+                batch.delete(d.ref);
+                n++;
+              } else if (d.data().memberId === w) {
+                want.delete(d.id);
+              }
+            });
+            want.forEach((memberId, pid) => {
+              batch.set((0, a.doc)(fb.db, `groups/${g}/member_lookup`, pid), {
+                memberId: memberId,
+                updatedAt: Date.now(),
+              });
+              n++;
+            });
+            if (n > 0) {
+              await batch.commit();
+              console.log('[Store] member_lookup synced:', n);
+            }
+          } catch (e) {
+            console.error('[Store] syncMemberLookup error:', e);
+          }
+        },
+        ensurePersonalIds: async () => {
+          const { members: o, alumni: i, activeGroupId: n } = s();
+          if (!n) return;
+          const _ensureDb = await waitForDb();
+          if (!_ensureDb) {
+            console.warn('[Store] ensurePersonalIds: db still undefined after await, aborting');
+            return;
+          }
+          const c = [...o],
+            l = [...i];
+          let d = !1;
+          const u = () => [...c.map((e) => e.personalId), ...l.map((e) => e.personalId)].filter((e) => !!e),
+            m = (e) => !!e && /^\d{4}$/.test(e),
+            p = (e) => {
+              let s = '',
+                t = 0;
+              do {
+                ((s = Math.floor(1e3 + 9e3 * Math.random()).toString()), t++);
+              } while (e.includes(s) && t < 5e3);
+              return s;
+            },
+            h = (0, a.writeBatch)(fb.db);
+          let f = 0;
+          for (let e = 0; e < c.length; e++)
+            if (!m(c[e].personalId)) {
+              const s = u(),
+                o = Date.now();
+              ((c[e] = Object.assign({}, c[e], {
+                personalId: p(s),
+                lastModified: o,
+                syncStatus: '同期済み',
+              })),
+                h.set(
+                  (0, a.doc)(fb.db, `groups/${n}/members`, c[e].id),
+                  Object.assign({}, c[e], {
+                    lastModified: (0, a.serverTimestamp)(),
+                  })
+                ),
+                f++,
+                (d = !0));
+            }
+          for (let e = 0; e < l.length; e++)
+            if (!m(l[e].personalId)) {
+              const s = u(),
+                o = Date.now();
+              ((l[e] = Object.assign({}, l[e], {
+                personalId: p(s),
+                lastModified: o,
+                syncStatus: '同期済み',
+              })),
+                h.set(
+                  (0, a.doc)(fb.db, `groups/${n}/alumni`, l[e].id),
+                  Object.assign({}, l[e], {
+                    lastModified: (0, a.serverTimestamp)(),
+                  })
+                ),
+                f++,
+                (d = !0));
+            }
+          (d &&
+            (e({
+              members: c,
+              alumni: l,
+              lastLocalChange: Date.now(),
+            }),
+            f > 0 && (await h.commit()),
+            console.log(`Ensured personal IDs: Updated ${f} non-compliant IDs.`)),
+            await s().syncMemberLookup());
+        },
+        deleteEquipment: (o, i) => {
+          if (!s().activeGroupId || 'group' !== s().activeRole)
+            return void n.default.alert('権限エラー', '道具管理は団体ログイン時のみ可能です。');
+          const c = Date.now(),
+            l = s().members.map((e) => {
+              if (e.id === o) {
+                const s = e.equipments || [];
+                return Object.assign({}, e, {
+                  equipments: s.filter((e) => e.id !== i),
+                  lastModified: c,
+                  syncStatus: '未同期',
+                });
+              }
+              return e;
+            });
+          e({
+            members: l,
+            lastLocalChange: c,
+          });
+          const d = l.find((e) => e.id === o);
+          if (d && s().activeGroupId) {
+            const i = Object.assign({}, d, {
+              lastModified: (0, a.serverTimestamp)(),
+              syncStatus: '同期済み',
+            });
+            (0, a.updateDoc)((0, a.doc)(fb.db, `groups/${s().activeGroupId}/members`, o), i)
+              .then(() => {
+                e((e) => ({
+                  members: e.members.map((e) =>
+                    e.id === o
+                      ? Object.assign({}, e, {
+                          syncStatus: '同期済み',
+                        })
+                      : e
+                  ),
+                }));
+              })
+              .catch((e) => console.error('Delete Equipment Sync Error:', e));
+          }
+        },
+        saveSession: async (o, d, u, m, attendanceData) => {
+          const p = s().activeSessionID || (0, l.generateUUID)(),
+            { archers: h, shotsPerRound: f, activeGroupId: S, activeRole: b, myMemberId: y } = s(),
+            v = Array.isArray(h) ? h : [],
+            T = {
+              id: p,
+              date: Date.now(),
+              title: o,
+              note: d,
+              archers: JSON.parse(JSON.stringify(v)),
+              archerNames: Array.from(
+                new Set(v.map((e) => (e && e.name ? e.name.trim() : '')).filter(Boolean))
+              ),
+              shotCount: f || 8,
+              includeInStats: u,
+              tags: m,
+              attendance: attendanceData,
+              syncStatus: '未同期',
+              lastModified: Date.now(),
+            };
+          // 個人モードでの上書きは、手元に確定する前に止める
+          if (S && 'member' === b)
+            try {
+              if ((await (0, a.getDoc)((0, a.doc)(fb.db, `groups/${S}/sessions`, p))).exists()) {
+                const e = 'この記録は既にクラウドに存在するため、個人モードからは更新できません。';
+                return void (c.IS_WEB ? window.alert(e) : n.default.alert('保存制限', e));
+              }
+            } catch (e) {
+              console.warn('[Store] 既存確認に失敗しました。保存は続行します:', e);
+            }
+          // まず手元に確定する。クラウドの応答は待たない。
+          // 待つと、通信できないときに射手が消えず履歴にも出ないうえ、
+          // 画面には何も知らされないままになる。
+          const 元のライブ名 = s().liveSessionName;
+          (s().stopLiveSync(!0),
+            e((e) => ({
+              sessions: [T, ...e.sessions.filter((e) => e.id !== p)],
+              activeSessionID: null,
+              archers: [],
+              isLiveActive: !1,
+              isHost: !1,
+              liveSessionName: null,
+              lastLocalChange: Date.now(),
+              syncStatus: '未同期',
+            })));
+          // ライブ記録の後始末。届かなくても保存には影響させない
+          if (元のライブ名 && fb.rtdb) {
+            const e = (0, i.ref)(fb.rtdb, `live_sessions/${S}/${元のライブ名}`);
+            ((0, i.update)((0, i.ref)(fb.rtdb, `live_sessions/${S}/${元のライブ名}/state`), {
+              status: 'finished',
+              timestamp: (0, i.serverTimestamp)(),
+            }).catch(() => {}),
+              setTimeout(() => {
+                (0, i.remove)(e).catch(() => {});
+              }, 2e3));
+          }
+          // クラウドへ送る。ここも待たない。
+          // 届くまでは「未同期」のままにしておく。そうすれば syncSessions の
+          // 再送で拾われ、通信が戻ったときに自動で送られる。
+          if (S) {
+            const o = JSON.parse(JSON.stringify(T));
+            ((o.syncStatus = '同期済み'),
+              (o.lastModified = (0, a.serverTimestamp)()),
+              (0, a.setDoc)((0, a.doc)(fb.db, `groups/${S}/sessions`, p), o, {
+                merge: !0,
+              })
+                .then(() => {
+                  e((e) => ({
+                    sessions: e.sessions.map((e) =>
+                      e && e.id === p
+                        ? Object.assign({}, e, {
+                            syncStatus: '同期済み',
+                          })
+                        : e
+                    ),
+                    syncStatus: '同期済み',
+                  }));
+                })
+                .catch((t) => {
+                  (console.error('Save Session Cloud Error:', t),
+                    e({
+                      syncStatus: '同期エラー',
+                    }));
+                }));
+          }
+        },
+        loadSession: (t) => {
+          const o = (Array.isArray(s().sessions) ? s().sessions : []).find((e) => e && e.id === t);
+          o &&
+            e({
+              archers: o.archers,
+              shotsPerRound: o.shotCount,
+              activeSessionID: o.id,
+              historyStack: [],
+              redoStack: [],
+            });
+        },
+        deleteSession: async (o) => {
+          const i = Array.isArray(s().sessions) ? s().sessions : [],
+            n = i.find((e) => e && e.id === o),
+            c = i.filter((e) => e && e.id !== o);
+          // 送信が済むまでは「未同期」にしておく。こうしないと、通信できない
+          // ときに削除がクラウドへ届かないまま消し込まれ、次の全件取得で
+          // 記録が復活しゴミ箱からも消えてしまう。
+          e(
+            n
+              ? {
+                  sessions: c,
+                  trash: [
+                    ...s().trash,
+                    Object.assign({}, n, {
+                      syncStatus: '未同期',
+                    }),
+                  ],
+                }
+              : {
+                  sessions: c,
+                }
+          );
+          try {
+            const e = (0, a.writeBatch)(fb.db);
+            if ((e.delete((0, a.doc)(fb.db, `groups/${s().activeGroupId}/sessions`, o)), n)) {
+              const i = JSON.parse(
+                JSON.stringify(
+                  Object.assign({}, n, {
+                    syncStatus: 'trashed',
+                  })
+                )
+              );
+              ((i.lastModified = (0, a.serverTimestamp)()),
+                (i.deletedAt = (0, a.serverTimestamp)()),
+                e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, o), i));
+            }
+            await e.commit();
+          } catch (e) {
+            console.error('Delete Session Error:', e);
+          }
+        },
+        emptyTrash: async () => {
+          const { trash: o, activeGroupId: n } = s();
+          if (!o || 0 === o.length) return;
+          const c = o.map((e) => e.id);
+          // 通信できるかで送信を止めない。止めると手元からだけ消えて、クラウドの
+          // ゴミ箱は残り、次の全件取得で消したはずのものが戻ってきてしまう。
+          // 通信できないときは Firestore の待ち行列に入り、つながった時点で送られる。
+          if (
+            (console.log('[Store] Emptying trash:', c.length, 'items'),
+            e({
+              trash: [],
+            }),
+            n)
+          )
+            try {
+              const e = (0, a.writeBatch)(fb.db);
+              (c.forEach((s) => {
+                e.delete((0, a.doc)(fb.db, `groups/${n}/trash`, s));
+              }),
+                await e.commit(),
+                console.log('[Store] Cloud trash emptied'));
+            } catch (e) {
+              console.error('[Store] Error emptying cloud trash:', e);
+            }
+        },
+        deleteTrashItems: async (o) => {
+          if (o && 0 !== o.length)
+            try {
+              const { trash: i, activeGroupId: c } = s();
+              (console.log('[Store] Deleting trash items:', o),
+                c && console.log(`[Store] Target Firestore path: groups/${c}/trash/`));
+              const l = (i || []).filter((e) => e && !o.includes(e.id));
+              // emptyTrash と同じ理由で、通信できるかでは止めない
+              if (
+                (e({
+                  trash: l,
+                }),
+                c)
+              ) {
+                const e = (0, a.writeBatch)(fb.db);
+                let s = 0;
+                (o.forEach((o) => {
+                  o && (e.delete((0, a.doc)(fb.db, `groups/${c}/trash`, o)), s++);
+                }),
+                  s > 0 &&
+                    (await e.commit(), console.log('[Store] Successfully deleted trash items from cloud')));
+              } else console.warn('[Store] Skipping cloud deletion: activeGroupId が無い');
+            } catch (e) {
+              console.error('[Store] Delete trash items error:', e);
+            }
+          else console.warn('[Store] deleteTrashItems called with no IDs');
+        },
+        deleteMultipleSessions: async (o) => {
+          const i = s().sessions.filter((e) => o.includes(e.id)),
+            n = s().sessions.filter((e) => !o.includes(e.id));
+          e({
+            sessions: n,
+            trash: [
+              ...s().trash,
+              ...i.map((e) =>
+                Object.assign({}, e, {
+                  syncStatus: '未同期',
+                })
+              ),
+            ],
+          });
+          try {
+            const e = (0, a.writeBatch)(fb.db);
+            (o.forEach((o) => e.delete((0, a.doc)(fb.db, `groups/${s().activeGroupId}/sessions`, o))),
+              i.forEach((o) => {
+                const i = JSON.parse(
+                  JSON.stringify(
+                    Object.assign({}, o, {
+                      syncStatus: 'trashed',
+                    })
+                  )
+                );
+                ((i.lastModified = (0, a.serverTimestamp)()),
+                  (i.deletedAt = (0, a.serverTimestamp)()),
+                  e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, o.id), i));
+              }),
+              await e.commit());
+          } catch (e) {
+            console.error('Batch Delete Error:', e);
+          }
+        },
+        restoreSession: async (o) => {
+          const i = Array.isArray(s().trash) ? s().trash : [],
+            n = i.find((e) => e && e.id === o);
+          if (!n) return;
+          const c = Object.assign({}, n, {
+              // 送信が済むまでは「未同期」にしておく。こうしないと、通信できない
+              // ときに復元がクラウドへ届かないまま同期済み扱いになり、次の全件取得
+              // でゴミ箱へ戻ってしまう。
+              syncStatus: '未同期',
+            }),
+            l = Array.isArray(s().sessions) ? s().sessions : [];
+          e({
+            trash: i.filter((e) => e && e.id !== o),
+            sessions: [c, ...l],
+          });
+          try {
+            const e = (0, a.writeBatch)(fb.db);
+            e.delete((0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, o));
+            const i = JSON.parse(JSON.stringify(c));
+            ((i.lastModified = (0, a.serverTimestamp)()),
+              e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/sessions`, o), i),
+              await e.commit());
+          } catch (e) {
+            console.error('Restore Session Error:', e);
+          }
+        },
+        restoreTrashItems: async (o) => {
+          if (!o || 0 === o.length) return;
+          const i = s().trash || [],
+            n = i.filter((e) => o.includes(e.id)),
+            c = i.filter((e) => !o.includes(e.id)),
+            l = n.map((e) =>
+              Object.assign({}, e, {
+                syncStatus: '未同期',
+              })
+            );
+          e({
+            trash: c,
+            sessions: [...l, ...s().sessions],
+          });
+          try {
+            const e = (0, a.writeBatch)(fb.db);
+            (o.forEach((o) => e.delete((0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, o))),
+              l.forEach((o) => {
+                const i = JSON.parse(JSON.stringify(o));
+                ((i.lastModified = (0, a.serverTimestamp)()),
+                  e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/sessions`, o.id), i));
+              }),
+              await e.commit());
+          } catch (e) {
+            console.error('Restore Trash Items Error:', e);
+          }
+        },
+        updateState: (s) => {
+          e(s);
+        },
+        updateSession: async (o, i) => {
+          const n = s().sessions || [],
+            c = n.findIndex((e) => e && e.id === o);
+          if (-1 === c) return;
+          const l = n[c];
+          if ('member' === s().activeRole && i.archers && i.archers.length < l.archers.length)
+            return void console.warn('[updateSession] Prevented accidental data stripping in member mode');
+          // 送信が済むまでは「未同期」にしておく。こうしないと、通信できない
+          // ときに編集がクラウドへ届かないまま同期済み扱いになり、他の記録が
+          // 更新された拍子にクラウドの古い写しで上書きされて編集が消える。
+          const d = Object.assign({}, n[c], i, {
+              lastModified: Date.now(),
+              syncStatus: '未同期',
+            }),
+            u = [...n];
+          ((u[c] = d),
+            e({
+              sessions: u,
+            }));
+          const m = s().activeGroupId;
+          if (!m) return;
+          s()._pendingUpdateTimers[o] && clearTimeout(s()._pendingUpdateTimers[o]);
+          const p = setTimeout(() => {
+            // タイマーの控えは先に片付ける。通信できないと送信は終わらないので、
+            // 送信の完了を待って片付けると残り続けてしまう。
+            e((e) => {
+              const s = Object.assign({}, e._pendingUpdateTimers);
+              return (
+                delete s[o],
+                {
+                  _pendingUpdateTimers: s,
+                }
+              );
+            });
+            const t = s().sessions.find((e) => e && e.id === o);
+            if (!t) return;
+            const n = JSON.parse(JSON.stringify(t));
+            // 送信の完了は待たない。通信できないときは Firestore の待ち行列に
+            // 入り、つながった時点で送られる。
+            ((n.lastModified = (0, a.serverTimestamp)()),
+              (0, a.updateDoc)((0, a.doc)(fb.db, `groups/${m}/sessions`, o), n)
+                .then(() => {
+                  (console.log(`[Store] Debounced sync finished for ${o}`),
+                    e((e) => ({
+                      sessions: e.sessions.map((e) =>
+                        e && e.id === o
+                          ? Object.assign({}, e, {
+                              syncStatus: '同期済み',
+                            })
+                          : e
+                      ),
+                    })));
+                })
+                .catch((e) => {
+                  console.error('Update Session Sync Error:', e);
+                }));
+          }, 800);
+          e((e) => ({
+            _pendingUpdateTimers: Object.assign({}, e._pendingUpdateTimers, {
+              [o]: p,
+            }),
+          }));
+        },
+        setSubstitution: (t, o, a, i) => {
+          const n = (Array.isArray(s().archers) ? s().archers : []).map((e) => {
+            if (e && e.id === t) {
+              const s = Object.assign({}, e.substitutions || {});
+              if ('' !== a) {
+                s[o] = a;
+                const t = Object.assign({}, e.substitutionIds || {});
+                return (
+                  i ? (t[o] = i) : delete t[o],
+                  Object.assign({}, e, {
+                    substitutions: s,
+                    substitutionIds: t,
+                    lastModified: Date.now(),
+                  })
+                );
+              }
+              if ((delete s[o], e.substitutionIds)) {
+                const t = Object.assign({}, e.substitutionIds);
+                return (
+                  delete t[o],
+                  Object.assign({}, e, {
+                    substitutions: s,
+                    substitutionIds: t,
+                    lastModified: Date.now(),
+                  })
+                );
+              }
+              return Object.assign({}, e, {
+                substitutions: s,
+                lastModified: Date.now(),
+              });
+            }
+            return e;
+          });
+          e({
+            archers: n,
+            lastLocalChange: Date.now(),
+          });
+          const { isLiveActive: c, liveSessionName: l, shotsPerRound: d } = s();
+          c && l && v(l, n, d);
+        },
+        setShotsPerRound: (t) => {
+          const o = (Array.isArray(s().archers) ? s().archers : []).map((e) => {
+            if (!e || e.isSeparator) return e;
+            const s = Array.isArray(e.marks) ? e.marks : [],
+              o = [...s];
+            return (
+              t > s.length ? o.push(...Array(t - s.length).fill('')) : o.splice(t),
+              Object.assign({}, e, {
+                marks: o,
+                lastModified: Date.now(),
+              })
+            );
+          });
+          e({
+            shotsPerRound: t,
+            archers: o,
+            lastLocalChange: Date.now(),
+          });
+          const { isLiveActive: a, liveSessionName: i } = s();
+          a && i && v(i, o, t);
+        },
+        loadData: () => {
+          (s().checkOfflineSave(), s().syncSessions());
+        },
+        // オフライン保存が効いているかを確かめ、効いていなければ画面に出す文言を持たせる。
+        // 効いていない状態で電波の無い場所で保存すると、画面を閉じた時点で
+        // 送信待ちごと記録が失われるため、黙って進ませない。
+        checkOfflineSave: async () => {
+          try {
+            await waitForDb();
+            const o = require('./db_178').persistence || {};
+            if ('ok' === o.state || 'pending' === o.state)
+              return void (
+                s().offlineSaveWarning &&
+                e({
+                  offlineSaveWarning: null,
+                })
+              );
+            const i =
+              'multipleTabs' === o.state
+                ? 'この記録画面が複数のタブで開かれているため、電波の無い場所での保存が保護されません。他のタブを閉じて開き直してください。'
+                : 'このブラウザでは電波の無い場所での保存が保護されません。通信できる場所で保存してください。';
+            (console.warn('[Store] オフライン保存が無効です:', o),
+              e({
+                offlineSaveWarning: i,
+              }));
+          } catch (o) {
+            console.warn('[Store] オフライン保存の確認に失敗:', o);
+          }
+        },
+        clearAllData: () =>
+          e({
+            sessions: [],
+            members: [],
+            history: [],
+            alumni: [],
+            trash: [],
+            archers: [],
+            activeSessionID: null,
+          }),
+        verifyGroupPassword: async (e) => {
+          const { activeUserEmail: i, activeGroupId: n, publicGroupId: c } = s();
+          let l = i || fb.auth.currentUser?.email;
+          if (!l && (n || c)) {
+            console.log('[Store] Fetching group email for password verification...');
+            const e = c || n;
+            try {
+              const s = (0, a.doc)(fb.db, 'group_accounts', e.toUpperCase()),
+                o = await (0, a.getDoc)(s);
+              o.exists() && (l = o.data().email);
+            } catch (e) {
+              console.error('[Store] Failed to fetch group email:', e);
+            }
+          }
+          if (!l) return (console.warn('[Store] verifyGroupPassword: No email found to verify.'), !1);
+          try {
+            return (await (0, o.signInWithEmailAndPassword)(fb.auth, l, e), !0);
+          } catch (e) {
+            return (console.error('[Store] verifyGroupPassword error:', e), !1);
+          }
+        },
+        setAdminMode: (s) =>
+          e({
+            isAdminMode: s,
+            isAdminModePending: !1,
+          }),
+        updateGroupName: async (o) => {
+          const { activeGroupId: i } = s();
+          if (i) {
+            e({
+              activeGroupName: o,
+            });
+            try {
+              await (0, a.setDoc)(
+                (0, a.doc)(fb.db, 'groups', i),
+                {
+                  groupName: o,
+                },
+                {
+                  merge: !0,
+                }
+              );
+            } catch (e) {
+              console.error('[Store] updateGroupName error:', e);
+            }
+          }
+        },
+        setAutoPromotionEnabled: async (o) => {
+          const { activeGroupId: i } = s();
+          if (i) {
+            e({
+              autoPromotionEnabled: o,
+            });
+            try {
+              await (0, a.setDoc)(
+                (0, a.doc)(fb.db, `groups/${i}/config`, 'app_settings'),
+                {
+                  autoPromotionEnabled: o,
+                },
+                {
+                  merge: !0,
+                }
+              );
+            } catch (e) {
+              console.error('[Store] setAutoPromotionEnabled error:', e);
+            }
+          }
+        },
+        setIsAdminModePending: (s) =>
+          e({
+            isAdminModePending: s,
+          }),
+        setHistoryViewMode: (s) =>
+          e({
+            historyViewMode: s,
+          }),
+        setSelectedHistorySessionId: (s) =>
+          e({
+            selectedHistorySessionId: s,
+          }),
+        setViewScale: (s) =>
+          e({
+            viewScale: Math.max(0.5, Math.min(2, s)),
+          }),
+        setIsLiveActive: (o) => {
+          if (
+            (e({
+              isLiveActive: o,
+            }),
+            o)
+          ) {
+            const e = s().activeSessionID || 'live-current',
+              o = s().liveSessionName || e,
+              a = s().archers || [];
+            fb.rtdb &&
+              s().activeGroupId &&
+              (0, i.set)(
+                (0, i.ref)(fb.rtdb, `live_sessions/${s().activeGroupId}/${o}/state`),
+                JSON.parse(
+                  JSON.stringify({
+                    archers: Array.isArray(a) ? a : [],
+                    shotsPerRound: s().shotsPerRound,
+                    timestamp: Date.now(),
+                  })
+                )
+              ).catch((e) => console.error('Live Sync Error:', e));
+          }
+        },
+        checkAndAutoIncrementGrades: async () => {
+          const { activeGroupId: o } = s();
+          if (!o) return;
+          const i = new Date(),
+            n = i.getFullYear(),
+            c = i.getMonth() + 1,
+            l = i.getDate(),
+            d = c > 4 || (4 === c && l >= 1);
+          let hasPromotionRecord = !1;
+          try {
+            console.log('[AutoPromotion] Fetching latest app_settings...');
+            const s = await (0, a.getDoc)((0, a.doc)(fb.db, `groups/${o}/config`, 'app_settings'));
+            if (s.exists()) {
+              const t = s.data(),
+                o = {};
+              ('number' == typeof t.currentFreshmanTerm && (o.currentFreshmanTerm = t.currentFreshmanTerm),
+                Array.isArray(t.tagTemplates) && (o.tagTemplates = t.tagTemplates),
+                'number' == typeof t.lastPromotionYear &&
+                  ((hasPromotionRecord = !0), (o.lastPromotionYear = t.lastPromotionYear)),
+                'boolean' == typeof t.autoPromotionEnabled &&
+                  (o.autoPromotionEnabled = t.autoPromotionEnabled),
+                e(o));
+            }
+          } catch (e) {
+            return void console.error('[AutoPromotion] Failed to fetch config:', e);
+          }
+          if (!hasPromotionRecord) {
+            const base = d ? n : n - 1;
+            console.log(`[AutoPromotion] No record yet. Storing baseline year ${base} without promoting.`);
+            e({
+              lastPromotionYear: base,
+            });
+            try {
+              await (0, a.setDoc)(
+                (0, a.doc)(fb.db, `groups/${o}/config`, 'app_settings'),
+                {
+                  lastPromotionYear: base,
+                  lastModified: (0, a.serverTimestamp)(),
+                },
+                {
+                  merge: !0,
+                }
+              );
+            } catch (e) {
+              console.error('[AutoPromotion] Failed to store baseline year:', e);
+            }
+            return;
+          }
+          const { autoPromotionEnabled: u, lastPromotionYear: m } = s();
+          if (u && d && m < n) {
+            console.log(`[AutoPromotion] Performing annual promotion for year ${n}...`);
+            try {
+              await s().incrementAllGrades();
+            } catch (e) {
+              console.error('[AutoPromotion] Failed:', e);
+            }
+          }
+        },
+        syncSessions: async () => {
+          if (!s().activeGroupId) return;
+          const _syncDb = await waitForDb();
+          if (!_syncDb) {
+            console.warn('[Store] syncSessions: db still undefined after await, aborting');
+            e({
+              syncStatus: '同期エラー',
+            });
+            return;
+          }
+          if ((await s().checkAndAutoIncrementGrades(), I))
+            return void console.log('[syncSessions] Already syncing, skipping...');
+          I = !0;
+          const o = s().lastSyncTime || 0;
+          (console.log(
+            '[Store] Syncing:',
+            `同期を開始中 (前回基準時刻: ${o ? new Date(o).toLocaleString() : 'なし'})...`
+          ),
+            e({
+              syncStatus: '同期中',
+            }));
+          try {
+            // この関数の後ろで局所的な M を宣言しているため、下の forEach の中で
+            // M.getState() を呼ぶと「初期化前の参照」で例外になり、同期が丸ごと
+            // 止まる。団体IDはここで控えておく。
+            const 団体ID = s().activeGroupId;
+            const i = (0, a.collection)(fb.db, `groups/${s().activeGroupId}/sessions`),
+              n = (0, a.collection)(fb.db, `groups/${s().activeGroupId}/members`),
+              c = (0, a.collection)(fb.db, `groups/${s().activeGroupId}/trash`),
+              l = (0, a.collection)(fb.db, `groups/${s().activeGroupId}/alumni`);
+            let d, u, m, p;
+            if (o > 0 && s().sessions.length > 0) {
+              const e = Math.max(0, o - 1e4);
+              ((d = await (0, a.getDocs)((0, a.query)(i, (0, a.where)('lastModified', '>', e)))),
+                (u = await (0, a.getDocs)((0, a.query)(n, (0, a.where)('lastModified', '>', e)))),
+                (m = await (0, a.getDocs)((0, a.query)(c, (0, a.where)('lastModified', '>', e)))),
+                (p = await (0, a.getDocs)((0, a.query)(l, (0, a.where)('lastModified', '>', e)))));
+            } else
+              ((d = await (0, a.getDocs)((0, a.query)(i, (0, a.orderBy)('date', 'desc'), (0, a.limit)(100)))),
+                (u = await (0, a.getDocs)(n)),
+                (m = await (0, a.getDocs)(c)),
+                (p = await (0, a.getDocs)(l)));
+            let h = o;
+            const f = (e) => (e?.toMillis ? e.toMillis() : e || 0),
+              S = [];
+            d.forEach((e) => {
+              const s = e.data(),
+                t = f(s.lastModified);
+              t > h && (h = t);
+              const cleanedTags =
+                  s.tags && Array.isArray(s.tags)
+                    ? Array.from(new Set(s.tags.map(normalizeTag).filter(Boolean)))
+                    : [],
+                originalTags = s.tags || [],
+                isModified =
+                  cleanedTags.length !== originalTags.length ||
+                  cleanedTags.some((e, t) => e !== originalTags[t]);
+              if (isModified && fb.db && 団体ID) {
+                const s = (0, a.doc)(fb.db, `groups/${団体ID}/sessions`, e.id);
+                (0, a.updateDoc)(s, {
+                  tags: cleanedTags,
+                }).catch((e) => console.error('[Store] syncSessions Auto cleanup failed:', e));
+              }
+              S.push(
+                Object.assign({}, s, {
+                  id: e.id,
+                  tags: cleanedTags,
+                  lastModified: t,
+                  syncStatus: '同期済み',
+                })
+              );
+            });
+            const b = [];
+            u.forEach((e) => {
+              const s = e.data(),
+                t = f(s.lastModified);
+              (t > h && (h = t),
+                b.push(
+                  Object.assign({}, s, {
+                    id: e.id,
+                    lastModified: t,
+                    syncStatus: '同期済み',
+                  })
+                ));
+            });
+            const v = [];
+            m.forEach((e) => {
+              const s = e.data(),
+                t = f(s.lastModified);
+              (t > h && (h = t),
+                v.push(
+                  Object.assign({}, s, {
+                    id: e.id,
+                    lastModified: t,
+                    syncStatus: '同期済み',
+                  })
+                ));
+            });
+            const T = [];
+            (p.forEach((e) => {
+              const s = e.data(),
+                t = f(s.lastModified);
+              (t > h && (h = t),
+                T.push(
+                  Object.assign({}, s, {
+                    id: e.id,
+                    lastModified: t,
+                    syncStatus: '同期済み',
+                  })
+                ));
+            }),
+              console.log(
+                `[syncSessions] Fetched counts: S=${S.length}, M=${b.length}, T=${v.length}, A=${T.length}`
+              ));
+            const w = y(s().sessions, S, !1, !1),
+              I = y(s().members, b, !1, !1),
+              M = y(s().trash, v, !1, !1),
+              A = y(s().alumni, T, !1, !1),
+              D = new Set(A.map((e) => e.id)),
+              O = I.filter((e) => !D.has(e.id)),
+              L = new Set(O.map((e) => e.id)),
+              G = A.filter((e) => !L.has(e.id));
+            w.sort((e, s) => {
+              const t = e.date ? new Date(e.date).getTime() : 0;
+              return (s.date ? new Date(s.date).getTime() : 0) - t;
+            });
+            // 戻した記録がまだクラウドへ届いていないときは、クラウド側のゴミ箱の
+            // 写しで消し込まない。届くまでは手元の「戻した」状態を優先する。
+            const 復元待ち = new Set(w.filter((e) => e && '未同期' === e.syncStatus).map((e) => e.id)),
+              ごみ箱 = M.filter((e) => e && !復元待ち.has(e.id));
+            const $ = new Set(ごみ箱.map((e) => e.id)),
+              N = w.filter((e) => !$.has(e.id)),
+              P = N.filter((e) => '未同期' === e.syncStatus);
+            let k = N;
+            if (P.length > 0) {
+              console.log(`[syncSessions] Syncing ${P.length} pending sessions...`);
+              const e = (0, a.writeBatch)(fb.db),
+                o = Date.now();
+              (P.forEach((i) => {
+                const n = JSON.parse(
+                  JSON.stringify(
+                    Object.assign({}, i, {
+                      syncStatus: '同期済み',
+                      lastModified: o,
+                    })
+                  )
+                );
+                (e.set(
+                  (0, a.doc)(fb.db, `groups/${s().activeGroupId}/sessions`, i.id),
+                  Object.assign({}, n, {
+                    lastModified: (0, a.serverTimestamp)(),
+                  })
+                ),
+                  // 戻した記録なら、クラウドのゴミ箱からも取り下げる。存在しない場合は
+                  // 何も起きないので、新規の記録に対しても安全。
+                  e.delete((0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, i.id)));
+              }),
+                await e.commit(),
+                (k = k.map((e) =>
+                  P.find((s) => s.id === e.id)
+                    ? Object.assign({}, e, {
+                        syncStatus: '同期済み',
+                        lastModified: o,
+                      })
+                    : e
+                )));
+            }
+            // 送信が済んでいない削除を送り直す。通信できないときに削除した場合、
+            // 待ち行列ごと失われることがあり、そのままだと次の全件取得で記録が
+            // 復活してしまう。
+            let Z = ごみ箱;
+            const Y = ごみ箱.filter((e) => e && e.id && '未同期' === e.syncStatus);
+            if (Y.length > 0) {
+              console.log(`[syncSessions] Syncing ${Y.length} pending deletions...`);
+              try {
+                const e = (0, a.writeBatch)(fb.db),
+                  o = Date.now();
+                (Y.forEach((t) => {
+                  e.delete((0, a.doc)(fb.db, `groups/${s().activeGroupId}/sessions`, t.id));
+                  const i = dropUndefinedDeep(
+                    Object.assign({}, t, {
+                      syncStatus: 'trashed',
+                    })
+                  );
+                  ((i.lastModified = (0, a.serverTimestamp)()),
+                    (i.deletedAt = i.deletedAt || (0, a.serverTimestamp)()),
+                    e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, t.id), i));
+                }),
+                  await e.commit(),
+                  (Z = ごみ箱.map((e) =>
+                    Y.find((s) => s.id === e.id)
+                      ? Object.assign({}, e, {
+                          syncStatus: '同期済み',
+                        })
+                      : e
+                  )));
+              } catch (t) {
+                console.error('[syncSessions] 削除の送り直しに失敗:', t);
+              }
+            }
+            (e({
+              sessions: k,
+              members: O,
+              trash: Z,
+              alumni: G,
+              syncStatus: '同期済み',
+              lastSyncTime: h,
+            }),
+              console.log(`[syncSessions] Finished. New lastSyncTime: ${h}`),
+              setTimeout(() => {
+                s().ensurePersonalIds();
+              }, 500));
+          } catch (s) {
+            (console.error('[syncSessions] Error:', s),
+              e({
+                syncStatus: '同期エラー',
+              }));
+          } finally {
+            I = !1;
+          }
+        },
+        syncAllToCloud: async () => {
+          const { activeGroupId: o, activeRole: i, isNetworkOnline: n } = s();
+          if (o && n)
+            if ('member' !== i) {
+              (console.log('[Store] Loading:', 'クラウドへの同期を開始...'),
+                e({
+                  syncStatus: '同期中',
+                }));
+              try {
+                const o = (e) => JSON.parse(JSON.stringify(e)),
+                  i = [];
+                (s().members.forEach((e) => {
+                  if (e && e.id) {
+                    const n = Object.assign({}, e, {
+                      lastModified: Date.now(),
+                    });
+                    i.push({
+                      type: 'set',
+                      ref: (0, a.doc)(fb.db, `groups/${s().activeGroupId}/members`, e.id),
+                      data: o(n),
+                    });
+                  }
+                }),
+                  s().alumni.forEach((e) => {
+                    if (e && e.id) {
+                      const n = Object.assign({}, e, {
+                        lastModified: Date.now(),
+                      });
+                      i.push({
+                        type: 'set',
+                        ref: (0, a.doc)(fb.db, `groups/${s().activeGroupId}/alumni`, e.id),
+                        data: o(n),
+                      });
+                    }
+                  }),
+                  s().sessions.forEach((e) => {
+                    if (e && e.id) {
+                      const n = o(
+                        Object.assign({}, e, {
+                          syncStatus: '同期済み',
+                          lastModified: Date.now(),
+                        })
+                      );
+                      i.push({
+                        type: 'set',
+                        ref: (0, a.doc)(fb.db, `groups/${s().activeGroupId}/sessions`, e.id),
+                        data: n,
+                      });
+                    }
+                  }),
+                  s().trash.forEach((e) => {
+                    if (e && e.id) {
+                      const n = Object.assign({}, e, {
+                        lastModified: Date.now(),
+                      });
+                      i.push({
+                        type: 'set',
+                        ref: (0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, e.id),
+                        data: o(n),
+                      });
+                    }
+                  }),
+                  i.push({
+                    type: 'set',
+                    ref: (0, a.doc)(fb.db, `groups/${s().activeGroupId}/config`, 'app_settings'),
+                    data: {
+                      currentFreshmanTerm: s().currentFreshmanTerm,
+                      tagTemplates: s().tagTemplates,
+                      lastPromotionYear: s().lastPromotionYear,
+                      lastModified: Date.now(),
+                    },
+                  }));
+                const n = 400;
+                for (let e = 0; e < i.length; e += n) {
+                  const s = i.slice(e, e + n),
+                    o = (0, a.writeBatch)(fb.db);
+                  (s.forEach((e) => {
+                    'set' === e.type ? o.set(e.ref, e.data) : 'delete' === e.type && o.delete(e.ref);
+                  }),
+                    await o.commit());
+                }
+                const c = s().sessions.map((e) =>
+                    Object.assign({}, e, {
+                      syncStatus: '同期済み',
+                    })
+                  ),
+                  l = s().members.map((e) =>
+                    Object.assign({}, e, {
+                      syncStatus: '同期済み',
+                    })
+                  ),
+                  d = s().alumni.map((e) =>
+                    Object.assign({}, e, {
+                      syncStatus: '同期済み',
+                    })
+                  );
+                (e({
+                  sessions: c,
+                  members: l,
+                  alumni: d,
+                  syncStatus: '同期済み',
+                  lastSyncTime: Date.now(),
+                }),
+                  console.log('[Store] Loading:', 'クラウドへの送信が完了しました'));
+              } catch (s) {
+                (console.error('Full Sync Error:', s?.message || s),
+                  e({
+                    syncStatus: '同期エラー',
+                  }));
+              }
+            } else console.log('[Store] Member role: syncAllToCloud is strictly restricted.');
+        },
+        fetchAndOverwriteFromCloud: async () => {
+          (console.log('[Store] Loading:', 'クラウドからの取得を開始...'),
+            e({
+              syncStatus: '同期中',
+            }));
+          const _fetchDb = await waitForDb();
+          if (!_fetchDb) {
+            console.warn('[Store] fetchAndOverwriteFromCloud: db still undefined after await, aborting');
+            e({
+              syncStatus: '同期エラー',
+            });
+            return;
+          }
+          try {
+            const o = await (0, a.getDocs)((0, a.collection)(fb.db, `groups/${s().activeGroupId}/members`));
+            let n = [];
+            o.forEach((e) => n.push(e.data()));
+            const c = await (0, a.getDocs)((0, a.collection)(fb.db, `groups/${s().activeGroupId}/sessions`));
+            let l = [];
+            (c.forEach((e) => l.push(e.data())),
+              console.log('[Store] Loading:', `セッション ${l.length}件を取得しました`));
+            const d = await (0, a.getDocs)((0, a.collection)(fb.db, `groups/${s().activeGroupId}/trash`));
+            let u = [];
+            d.forEach((e) => u.push(e.data()));
+            const m = await (0, a.getDocs)((0, a.collection)(fb.db, `groups/${s().activeGroupId}/alumni`));
+            let p = [];
+            m.forEach((e) => p.push(e.data()));
+            const h = await (0, a.getDoc)(
+              (0, a.doc)(fb.db, `groups/${s().activeGroupId}/config`, 'app_settings')
+            );
+            let f = s().currentFreshmanTerm,
+              S = s().tagTemplates,
+              b = s().lastPromotionYear;
+            if (h.exists()) {
+              const e = h.data();
+              e &&
+                (void 0 !== e.currentFreshmanTerm && (f = e.currentFreshmanTerm),
+                void 0 !== e.tagTemplates && (S = e.tagTemplates),
+                void 0 !== e.lastPromotionYear && (b = e.lastPromotionYear));
+            }
+            const v = y(s().sessions, l, !1, !0),
+              T = y(s().members, n, !1, !0),
+              w = y(s().trash, u, !1, !0);
+            // ゴミ箱に入っているものは履歴に出さない。削除がまだクラウドへ届いて
+            // いないとき、ここで書き戻すと記録が復活してしまう。
+            // 逆に、戻したばかりでまだ送信できていない記録は、クラウドのゴミ箱の
+            // 写しがあってもゴミ箱に入れ直さない。
+            const 復元待ち = new Set(v.filter((e) => e && '未同期' === e.syncStatus).map((e) => e.id)),
+              ごみ箱 = w.filter((e) => e && !復元待ち.has(e.id)),
+              I = new Set(ごみ箱.map((e) => e.id)),
+              M = v.filter((e) => e && !I.has(e.id));
+            (e({
+              members: T,
+              sessions: M,
+              trash: ごみ箱,
+              alumni: y(s().alumni, p, !1, !0),
+              currentFreshmanTerm: f,
+              tagTemplates: S,
+              lastPromotionYear: b,
+              syncStatus: '同期済み',
+              lastSyncTime: Date.now(),
+            }),
+              console.log('[Store] Loading:', '同期が完了しました'));
+          } catch (s) {
+            (console.error('Fetch Overwrite Error:', s),
+              e({
+                syncStatus: '同期エラー',
+              }));
+          }
+        },
+        startLiveSync: async (o) => {
+          if (!fb.rtdb) return !1;
+          try {
+            const e = (0, i.ref)(fb.rtdb, `live_sessions/${s().activeGroupId}/${o}`);
+            if ((await (0, i.get)(e)).exists()) return !1;
+          } catch (e) {
+            console.error('Session Name Check Error:', e);
+          }
+          (s().stopLiveSync(!0),
+            e({
+              isLiveActive: !0,
+              isHost: !0,
+              liveSessionName: o,
+              isIncomingLiveSync: !1,
+              lastLocalChange: Date.now(),
+            }));
+          const a = s();
+          if (!fb.rtdb) return !1;
+          const n = (0, i.ref)(fb.rtdb, `live_sessions/${s().activeGroupId}/${o}/state`),
+            l = Array.isArray(a.archers) ? a.archers : [];
+          try {
+            return (
+              v(o, l, a.shotsPerRound),
+              c.IS_WEB && console.log('ライブを開始しました: ' + o),
+              (0, i.onValue)(n, (o) => {
+                const a = o.val();
+                if (!a) {
+                  const o = s().liveSessionName;
+                  return (
+                    o &&
+                      fb.rtdb &&
+                      (0, i.off)((0, i.ref)(fb.rtdb, `live_sessions/${s().activeGroupId}/${o}/state`)),
+                    void e({
+                      isLiveActive: !1,
+                      isHost: !1,
+                      liveSessionName: null,
+                    })
+                  );
+                }
+                if (a.timestamp !== s().lastPushedTimestamp) {
+                  if ('finished' === a.status) {
+                    const o = s().liveSessionName;
+                    return (
+                      o &&
+                        fb.rtdb &&
+                        (0, i.off)((0, i.ref)(fb.rtdb, `live_sessions/${s().activeGroupId}/${o}/state`)),
+                      void e({
+                        isLiveActive: !1,
+                        isHost: !1,
+                        liveSessionName: null,
+                      })
+                    );
+                  }
+                  if (a.reset_at && a.reset_at > (s().lastResetHandled || 0))
+                    return (
+                      e({
+                        lastResetHandled: a.reset_at,
+                      }),
+                      void s().resetCurrentSession()
+                    );
+                  if (a.archers || Array.isArray(a.archers)) {
+                    const { archers: t, shotsPerRound: o } = w(a),
+                      i = s().archers,
+                      n = new Map(i.map((e) => [e.id, e]));
+                    let c = t.length !== i.length || o !== s().shotsPerRound;
+                    const l = t.map((e) => {
+                      const s = n.get(e.id);
+                      if (!s) return ((c = !0), e);
+                      const t = (e.lastModified || 0) >= (s.lastModified || 0),
+                        o = t ? e.marks : s.marks,
+                        a = t ? e.lockedBlocks || {} : s.lockedBlocks || {};
+                      return (
+                        !c &&
+                          t &&
+                          (e.name !== s.name ||
+                            e.gender !== s.gender ||
+                            e.grade !== s.grade ||
+                            e.isSeparator !== s.isSeparator ||
+                            e.isTotalCalculator !== s.isTotalCalculator ||
+                            e.isGuest !== s.isGuest ||
+                            e.memberId !== s.memberId ||
+                            JSON.stringify(a) !== JSON.stringify(s.lockedBlocks || {}) ||
+                            JSON.stringify(e.substitutions || {}) !== JSON.stringify(s.substitutions || {}) ||
+                            o.some((e, t) => e !== (s.marks[t] ?? ''))) &&
+                          (c = !0),
+                        Object.assign({}, e, {
+                          marks: o,
+                          lockedBlocks: a,
+                          substitutions: e.substitutions || {},
+                        })
+                      );
+                    });
+                    c &&
+                      e({
+                        archers: l,
+                        shotsPerRound: o,
+                      });
+                  }
+                }
+              }),
+              !0
+            );
+          } catch (e) {
+            return (console.error('Start Live Sync Error:', e), !1);
+          }
+        },
+        joinLiveSync: (o) => {
+          if (
+            (s().stopLiveSync(!0),
+            e({
+              isLiveActive: !0,
+              isHost: !1,
+              liveSessionName: o,
+              isIncomingLiveSync: !1,
+              lastLocalChange: 0,
+            }),
+            !fb.rtdb)
+          )
+            return;
+          const a = (0, i.ref)(fb.rtdb, `live_sessions/${s().activeGroupId}/${o}/state`);
+          ((0, i.onValue)(a, (o) => {
+            const a = o.val();
+            if (!a) {
+              const o = s().liveSessionName;
+              return (
+                o &&
+                  fb.rtdb &&
+                  (0, i.off)((0, i.ref)(fb.rtdb, `live_sessions/${s().activeGroupId}/${o}/state`)),
+                void e({
+                  isLiveActive: !1,
+                  isHost: !1,
+                  liveSessionName: null,
+                })
+              );
+            }
+            if ('finished' === a.status) {
+              const o = s().liveSessionName;
+              return (
+                o &&
+                  fb.rtdb &&
+                  (0, i.off)((0, i.ref)(fb.rtdb, `live_sessions/${s().activeGroupId}/${o}/state`)),
+                s().resetCurrentSession(),
+                void e({
+                  isLiveActive: !1,
+                  isHost: !1,
+                  liveSessionName: null,
+                })
+              );
+            }
+            if (a.reset_at && a.reset_at > (s().lastResetHandled || 0)) {
+              const t = 0 === s().lastResetHandled;
+              (e({
+                lastResetHandled: a.reset_at,
+              }),
+                t &&
+                  e({
+                    lastPushedTimestamp: a.timestamp || 0,
+                  }),
+                s().resetCurrentSession(!1));
+            }
+            if (a.archers || Array.isArray(a.archers)) {
+              const { archers: t, shotsPerRound: o } = w(a),
+                i = s().archers,
+                n = new Map(i.map((e) => [e.id, e]));
+              let c = t.length !== i.length || o !== s().shotsPerRound;
+              const l = t.map((e) => {
+                const s = n.get(e.id);
+                if (!s) return ((c = !0), e);
+                const t = (e.lastModified || 0) >= (s.lastModified || 0),
+                  o = t ? e.marks : s.marks,
+                  a = t ? e.lockedBlocks || {} : s.lockedBlocks || {};
+                return (
+                  !c &&
+                    t &&
+                    (e.name !== s.name ||
+                      e.gender !== s.gender ||
+                      e.grade !== s.grade ||
+                      e.isSeparator !== s.isSeparator ||
+                      e.isTotalCalculator !== s.isTotalCalculator ||
+                      e.isGuest !== s.isGuest ||
+                      e.memberId !== s.memberId ||
+                      JSON.stringify(a) !== JSON.stringify(s.lockedBlocks || {}) ||
+                      JSON.stringify(e.substitutions || {}) !== JSON.stringify(s.substitutions || {}) ||
+                      o.some((e, t) => e !== (s.marks[t] ?? ''))) &&
+                    (c = !0),
+                  Object.assign({}, e, {
+                    marks: o,
+                    lockedBlocks: a,
+                    substitutions: e.substitutions || {},
+                  })
+                );
+              });
+              c &&
+                e({
+                  archers: l,
+                  shotsPerRound: o,
+                });
+            }
+          }),
+            c.IS_WEB && console.log('ライブに参加しました: ' + o));
+        },
+        stopLiveSync: (o = !1) => {
+          const a = s();
+          (a.liveSessionName &&
+            fb.rtdb &&
+            (0, i.off)((0, i.ref)(fb.rtdb, `live_sessions/${a.activeGroupId}/${a.liveSessionName}/state`)),
+            o || s().resetCurrentSession(!1),
+            e({
+              isLiveActive: !1,
+              isHost: !1,
+              liveSessionName: null,
+            }));
+        },
+        fetchActiveLiveSessions: async () => {
+          if (!fb.rtdb) return;
+          const o = (0, i.ref)(fb.rtdb, `live_sessions/${s().activeGroupId}`);
+          try {
+            const s = await (0, i.get)(o);
+            if (s.exists()) {
+              const t = s.val();
+              if (t) {
+                const s = Object.keys(t).filter((e) => t[e] && t[e].state);
+                e({
+                  liveSessionsList: s,
+                });
+              } else
+                e({
+                  liveSessionsList: [],
+                });
+            } else
+              e({
+                liveSessionsList: [],
+              });
+          } catch (e) {
+            console.error('Fetch live sessions error:', e);
+          }
+        },
+        listenToLiveSessions: () => {
+          if (!fb.rtdb) return () => {};
+          const o = (0, i.ref)(fb.rtdb, `live_sessions/${s().activeGroupId}`);
+          return (0, i.onValue)(
+            o,
+            (s) => {
+              if (s.exists()) {
+                const t = s.val();
+                if (t) {
+                  const s = Object.keys(t).filter((e) => t[e] && t[e].state);
+                  e({
+                    liveSessionsList: s,
+                  });
+                } else
+                  e({
+                    liveSessionsList: [],
+                  });
+              } else
+                e({
+                  liveSessionsList: [],
+                });
+            },
+            (e) => {
+              console.error('Listen to live sessions error:', e);
+            }
+          );
+        },
+        deleteLiveSession: async (o) => {
+          if (fb.rtdb)
+            try {
+              const a = (0, i.ref)(fb.rtdb, `live_sessions/${s().activeGroupId}/${o}`);
+              (await (0, i.set)(a, null),
+                e({
+                  liveSessionsList: s().liveSessionsList.filter((e) => e !== o),
+                }));
+            } catch (e) {
+              console.error('Delete live session error:', e);
+            }
+        },
+        listenToSessions: async () => {
+          const { activeGroupId: o, activeRole: i, myMemberId: n, myMemberName: c } = s();
+          if (!o) return;
+          const _sessDb = await waitForDb();
+          if (!_sessDb) {
+            console.warn('[Store] listenToSessions: db still undefined after await, aborting');
+            return;
+          }
+          (s().stopListeningToSessions(), console.log('[Store] Starting real-time session listener'));
+          const l = (0, a.collection)(fb.db, `groups/${o}/sessions`),
+            m_30 = Date.now() - 2592000000,
+            d = (0, a.query)(
+              l,
+              (0, a.where)('date', '>', m_30),
+              (0, a.orderBy)('date', 'desc'),
+              (0, a.limit)(100)
+            ),
+            u = (0, a.onSnapshot)(
+              d,
+              (t) => {
+                const o = [];
+                t.forEach((e) => {
+                  const s = e.data(),
+                    cleanedTags =
+                      s.tags && Array.isArray(s.tags)
+                        ? Array.from(new Set(s.tags.map(normalizeTag).filter(Boolean)))
+                        : [],
+                    originalTags = s.tags || [],
+                    isModified =
+                      cleanedTags.length !== originalTags.length ||
+                      cleanedTags.some((e, t) => e !== originalTags[t]);
+                  if (isModified && fb.db && fb.db._delegate && 'member' !== i) {
+                    const s = (0, a.doc)(fb.db, `groups/${M.getState().activeGroupId}/sessions`, e.id);
+                    (0, a.updateDoc)(s, {
+                      tags: cleanedTags,
+                    }).catch((e) => console.error('[Store] Auto cleanup sync failed:', e));
+                  }
+                  o.push(
+                    Object.assign({}, s, {
+                      id: e.id,
+                      tags: cleanedTags,
+                      syncStatus: e.metadata && e.metadata.hasPendingWrites ? '未同期' : '同期済み',
+                    })
+                  );
+                });
+                const a = s().sessions,
+                  c = new Set(o.map((e) => e.id));
+                const merged = o.map((cloudSession) => {
+                  const pendingTimer = s()._pendingUpdateTimers[cloudSession.id];
+                  const localSession = a.find((ls) => ls && ls.id === cloudSession.id);
+                  // 送信待ちの編集は、クラウドの古い写しで上書きしない。タイマーが動いて
+                  // いる 800ms の間だけでなく、送信が済むまで（「未同期」の間）守る。
+                  if (localSession && (pendingTimer || '未同期' === localSession.syncStatus))
+                    return localSession;
+                  return cloudSession;
+                });
+                const l = a.filter((e) => !c.has(e.id) && !e.hasOwnProperty('serverCreatedTime')),
+                  d = [...merged, ...l];
+                d.sort((e, s) => (s.date || 0) - (e.date || 0));
+                (e({
+                  sessions: d,
+                  syncStatus: '同期済み',
+                  lastSyncTime: Date.now(),
+                }),
+                  console.log(
+                    `[Store] Real-time session update received: ${o.length} items (reflected deletions)`
+                  ));
+              },
+              (s) => {
+                (console.error('[Store] Real-time session listener error:', s),
+                  e({
+                    syncStatus: '同期エラー',
+                  }));
+              }
+            );
+          e({
+            sessionUnsubscribe: u,
+          });
+        },
+        stopListeningToSessions: () => {
+          const { sessionUnsubscribe: t } = s();
+          t &&
+            (console.log('[Store] Stopping real-time session listener'),
+            t(),
+            e({
+              sessionUnsubscribe: null,
+            }));
+        },
+        listenToTrash: async () => {
+          const { activeGroupId: o } = s();
+          if (!o) return;
+          const _trashDb = await waitForDb();
+          if (!_trashDb) {
+            console.warn('[Store] listenToTrash: db still undefined after await, aborting');
+            return;
+          }
+          (s().stopListeningToTrash(), console.log('[Store] Starting real-time trash listener'));
+          const i = (0, a.collection)(fb.db, `groups/${o}/trash`),
+            n = (0, a.query)(i, (0, a.limit)(200)),
+            c = (0, a.onSnapshot)(
+              n,
+              (t) => {
+                const o = [];
+                t.forEach((e) => {
+                  const s = e.data();
+                  o.push(
+                    Object.assign({}, s, {
+                      id: e.id,
+                      syncStatus: e.metadata && e.metadata.hasPendingWrites ? '未同期' : '同期済み',
+                    })
+                  );
+                });
+                o.sort((e, s) => trashedAtMillis(s) - trashedAtMillis(e));
+                const a = new Set(o.map((e) => e.id)),
+                  i = s().sessions.filter((e) => !a.has(e.id));
+                (e({
+                  trash: o,
+                  sessions: i,
+                }),
+                  console.log(
+                    `[Store] Real-time trash update received: ${o.length} items (purged from sessions)`
+                  ));
+              },
+              (e) => {
+                console.error('[Store] Real-time trash listener error:', e);
+              }
+            );
+          e({
+            trashUnsubscribe: c,
+          });
+        },
+        stopListeningToTrash: () => {
+          const { trashUnsubscribe: t } = s();
+          t &&
+            (console.log('[Store] Stopping real-time trash listener'),
+            t(),
+            e({
+              trashUnsubscribe: null,
+            }));
+        },
+        listenToMembers: async () => {
+          const { activeGroupId: o } = s();
+          if (!o) return;
+          const _membDb = await waitForDb();
+          if (!_membDb) {
+            console.warn('[Store] listenToMembers: db still undefined after await, aborting');
+            return;
+          }
+          (s().stopListeningToMembers(), console.log('[Store] Starting real-time member listener'));
+          const i = (0, a.collection)(fb.db, `groups/${o}/members`),
+            n = (0, a.onSnapshot)(
+              i,
+              (t) => {
+                const o = [];
+                t.forEach((e) => {
+                  const s = e.data();
+                  o.push(
+                    Object.assign({}, s, {
+                      id: e.id,
+                      syncStatus: '同期済み',
+                    })
+                  );
+                });
+                const a = y(s().members, o, !1, !0);
+                (e({
+                  members: a,
+                  lastSyncTime: Date.now(),
+                }),
+                  console.log(`[Store] Real-time member update received: ${o.length} items`));
+              },
+              (e) => {
+                console.error('[Store] Real-time member listener error:', e);
+              }
+            );
+          e({
+            memberUnsubscribe: n,
+          });
+        },
+        stopListeningToMembers: () => {
+          const { memberUnsubscribe: t } = s();
+          t &&
+            (console.log('[Store] Stopping real-time member listener'),
+            t(),
+            e({
+              memberUnsubscribe: null,
+            }));
+        },
+        listenToAlumni: async () => {
+          const { activeGroupId: o } = s();
+          if (!o) return;
+          const _alumDb = await waitForDb();
+          if (!_alumDb) {
+            console.warn('[Store] listenToAlumni: db still undefined after await, aborting');
+            return;
+          }
+          (s().stopListeningToAlumni(), console.log('[Store] Starting real-time alumni listener'));
+          const i = (0, a.collection)(fb.db, `groups/${o}/alumni`),
+            n = (0, a.onSnapshot)(
+              i,
+              (t) => {
+                const o = [];
+                t.forEach((e) => {
+                  const s = e.data();
+                  o.push(
+                    Object.assign({}, s, {
+                      id: e.id,
+                      syncStatus: '同期済み',
+                    })
+                  );
+                });
+                const a = y(s().alumni, o, !1, !0);
+                (e({
+                  alumni: a,
+                  lastSyncTime: Date.now(),
+                }),
+                  console.log(`[Store] Real-time alumni update received: ${o.length} items`));
+              },
+              (e) => {
+                console.error('[Store] Real-time alumni listener error:', e);
+              }
+            );
+          e({
+            alumniUnsubscribe: n,
+          });
+        },
+        stopListeningToAlumni: () => {
+          const { alumniUnsubscribe: t } = s();
+          t &&
+            (console.log('[Store] Stopping real-time alumni listener'),
+            t(),
+            e({
+              alumniUnsubscribe: null,
+            }));
+        },
+        startPeriodicSync: () => {
+          (s().stopPeriodicSync(),
+            console.log('[Store] Starting sync (Real-time listeners + 5min config sync)'),
+            s().listenToConfig(),
+            s().listenToSessions(),
+            s().listenToTrash(),
+            s().listenToMembers(),
+            s().listenToAlumni(),
+            s().syncSessions());
+          const t = setInterval(() => {
+            s().syncSessions();
+          }, 3e5);
+          e({
+            syncIntervalId: t,
+          });
+        },
+        stopPeriodicSync: () => {
+          const t = s().syncIntervalId;
+          (t &&
+            (console.log('[Store] Stopping periodic sync'),
+            clearInterval(t),
+            e({
+              syncIntervalId: null,
+            })),
+            s().stopListeningToSessions(),
+            s().stopListeningToTrash(),
+            s().stopListeningToMembers(),
+            s().stopListeningToAlumni());
+        },
+        setupNetworkListener: () => {
+          console.log('[Store] Setting up network listener');
+          return m.default.addEventListener((t) => {
+            const o = s().isNetworkOnline,
+              a = !(!t.isConnected || !1 === t.isInternetReachable);
+            a !== o &&
+              (console.log('[Store] Network state changed: ' + (a ? 'Online' : 'Offline')),
+              e({
+                isNetworkOnline: a,
+              }),
+              a &&
+                !o &&
+                (console.log('[Store] Connection restored. Triggering auto-sync...'),
+                s()
+                  .syncSessions()
+                  .catch((e) => console.error('[Store] Auto-sync failed:', e))));
+          });
+        },
+        incrementAllGrades: async () => {
+          const { activeGroupId: o, alumni: c, currentFreshmanTerm: l, isNetworkOnline: d } = s();
+          if (!o) return;
+          const u = Date.now(),
+            m = new Date().getFullYear();
+          if (!d) return void console.warn('[incrementAllGrades] Offline. Skipping promotion until online.');
+          try {
+            const s = await (0, a.getDoc)((0, a.doc)(fb.db, `groups/${o}/config`, 'app_settings'));
+            if (s.exists()) {
+              const t = s.data();
+              if (t.lastPromotionYear && t.lastPromotionYear >= m)
+                return (
+                  console.log(
+                    `[incrementAllGrades] Skipped: Promotion for year ${
+                      m
+                    } already completed according to Firestore.`
+                  ),
+                  void e({
+                    lastPromotionYear: t.lastPromotionYear,
+                  })
+                );
+            }
+          } catch (e) {
+            return void console.error('[incrementAllGrades] Failed to re-verify settings:', e);
+          }
+          let i;
+          try {
+            const t = await (0, a.getDocs)((0, a.collection)(fb.db, `groups/${o}/members`));
+            ((i = []),
+              t.forEach((e) =>
+                i.push(
+                  Object.assign({}, e.data(), {
+                    id: e.id,
+                  })
+                )
+              ));
+          } catch (e) {
+            return void console.error('[incrementAllGrades] Failed to fetch members:', e);
+          }
+          console.log(
+            `[Store] incrementAllGrades: Starting atomic promotion process... (${
+              i.length
+            } members from cloud)`
+          );
+          const dropUndefined = (o) => {
+            const t = {};
+            for (const k in o) void 0 !== o[k] && (t[k] = o[k]);
+            return t;
+          };
+          const gradeOf = (e) => {
+            const v = e ? e.grade : null;
+            if (null == v || '' === v) return NaN;
+            const n = Number(v);
+            return isNaN(n) ? NaN : n;
+          };
+          const skippedGrades = i.filter((e) => isNaN(gradeOf(e))).map((e) => e.name || e.id);
+          if (skippedGrades.length)
+            console.warn('[incrementAllGrades] 学年が未設定のため据え置いたメンバー:', skippedGrades);
+          const p = [];
+          i.forEach((e) => {
+            const s = gradeOf(e);
+            if (isNaN(s) || s < 1 || s >= 5)
+              p.push(
+                Object.assign({}, e, {
+                  lastModified: u,
+                  syncStatus: '同期済み',
+                })
+              );
+            else if (s >= 4)
+              p.push(
+                Object.assign({}, e, {
+                  grade: 5,
+                  lastModified: u,
+                  syncStatus: '同期済み',
+                })
+              );
+            else
+              p.push(
+                Object.assign({}, e, {
+                  grade: s + 1,
+                  lastModified: u,
+                  syncStatus: '同期済み',
+                })
+              );
+          });
+          const f = (l || 0) + 1;
+          if (d)
+            try {
+              const e = [];
+              (p.forEach((s) => {
+                e.push({
+                  type: 'set',
+                  ref: (0, a.doc)(fb.db, `groups/${o}/members`, s.id),
+                  data: dropUndefined(
+                    Object.assign({}, s, {
+                      lastModified: (0, a.serverTimestamp)(),
+                    })
+                  ),
+                });
+              }),
+                e.push({
+                  type: 'set',
+                  ref: (0, a.doc)(fb.db, `groups/${o}/config`, 'app_settings'),
+                  data: {
+                    currentFreshmanTerm: f,
+                    lastPromotionYear: m,
+                    lastModified: (0, a.serverTimestamp)(),
+                  },
+                }));
+              for (let s = 0; s < e.length; s += 400) {
+                const o = e.slice(s, s + 400),
+                  i = (0, a.writeBatch)(fb.db);
+                (o.forEach((e) => {
+                  'set' === e.type
+                    ? i.set(e.ref, e.data, {
+                        merge: !0,
+                      })
+                    : 'delete' === e.type && i.delete(e.ref);
+                }),
+                  await i.commit());
+              }
+              console.log('[Store] incrementAllGrades: Cloud sync successful.');
+            } catch (e) {
+              return (
+                console.error('[incrementAllGrades] Cloud sync failed:', e),
+                void n.default.alert(
+                  '進級処理エラー',
+                  'クラウドとの同期に失敗しました。時間をおいて再度お試しください。'
+                )
+              );
+            }
+          const S = c;
+          (e({
+            members: p,
+            alumni: S,
+            currentFreshmanTerm: f,
+            lastPromotionYear: m,
+            lastLocalChange: u,
+            lastSyncTime: u,
+          }),
+            console.log('[Store] incrementAllGrades: Promotion process completed.'));
+        },
+        updateCurrentFreshmanTerm: async (o) => {
+          const {
+            activeGroupId: i,
+            autoPromotionEnabled: n,
+            tagTemplates: c,
+            lastPromotionYear: l,
+            isNetworkOnline: d,
+          } = s();
+          if (
+            (e({
+              currentFreshmanTerm: o,
+              lastLocalChange: Date.now(),
+            }),
+            d && i)
+          )
+            try {
+              (await (0, a.setDoc)(
+                (0, a.doc)(fb.db, `groups/${i}/config`, 'app_settings'),
+                {
+                  currentFreshmanTerm: o,
+                  autoPromotionEnabled: n,
+                  tagTemplates: c,
+                  lastPromotionYear: l,
+                  lastModified: (0, a.serverTimestamp)(),
+                },
+                {
+                  merge: !0,
+                }
+              ),
+                e({
+                  syncStatus: '同期済み',
+                  lastSyncTime: Date.now(),
+                }));
+            } catch (s) {
+              (console.error('Update Term Sync Error:', s),
+                e({
+                  syncStatus: '同期エラー',
+                }));
+            }
+        },
+        resetCurrentSession: (o = !0) => {
+          const a = Date.now();
+          e({
+            archers: [],
+            historyStack: [],
+            redoStack: [],
+            activeSessionID: null,
+            currentSessionTags: [],
+            lastLocalChange: a,
+            lastResetHandled: o ? a : s().lastResetHandled,
+          });
+          const { isLiveActive: n, liveSessionName: c } = s();
+          if (o && n && c && fb.rtdb) {
+            const s = (0, i.ref)(fb.rtdb, `live_sessions/${M.getState().activeGroupId}/${c}/state`);
+            ((0, i.update)(s, {
+              archers: [],
+              marks_by_id: {},
+              archer_timestamps: {},
+              reset_at: a,
+              timestamp: a,
+            }).catch((e) => console.error('Reset Live Sync Error:', e)),
+              e({
+                lastPushedTimestamp: a,
+              }));
+          }
+        },
+        recoverPassword: async (e) => {
+          if (!s().isNetworkOnline)
+            return {
+              success: !1,
+              error: 'オフラインのため実行できません',
+            };
+          try {
+            return (
+              await (0, o.sendPasswordResetEmail)(fb.auth, e),
+              console.log('Password reset email sent to:', e),
+              {
+                success: !0,
+              }
+            );
+          } catch (e) {
+            return (
+              console.error('Password Recovery Error:', e),
+              {
+                success: !1,
+                error: e.message || 'パスワードリセットメールの送信に失敗しました',
+              }
+            );
+          }
+        },
+        listenToConfig: async () => {
+          const { activeGroupId: o } = s();
+          if (!o) return;
+          const _cfgDb = await waitForDb();
+          if (!_cfgDb) {
+            console.warn('[Store] listenToConfig: db still undefined after await, aborting');
+            return;
+          }
+          try {
+            const i = await (0, a.getDoc)((0, a.doc)(fb.db, `groups/${o}/config`, 'app_settings'));
+            if (i.exists()) {
+              const t = i.data();
+              (console.log('[Store] Config initial fetch from cloud:', t),
+                e({
+                  autoPromotionEnabled: !1 !== t.autoPromotionEnabled,
+                  currentFreshmanTerm: t.currentFreshmanTerm || s().currentFreshmanTerm,
+                  tagTemplates: t.tagTemplates || s().tagTemplates,
+                  lastPromotionYear: t.lastPromotionYear || s().lastPromotionYear,
+                }));
+            }
+            const n = await (0, a.getDoc)((0, a.doc)(fb.db, 'groups', o));
+            if (n.exists()) {
+              const s = n.data();
+              s.groupName &&
+                e({
+                  activeGroupName: s.groupName,
+                });
+            }
+          } catch (e) {
+            console.warn('[Store] Initial config fetch failed (offline?), falling back to local.', e);
+          }
+          const _existing = s().configUnsubscribe;
+          if (_existing) {
+            _existing();
+            e({ configUnsubscribe: null });
+            console.log('[Store] listenToConfig: stopped existing listener');
+          }
+          const i = (0, a.onSnapshot)((0, a.doc)(fb.db, `groups/${o}/config`, 'app_settings'), (t) => {
+              if (t.exists()) {
+                const o = t.data();
+                (console.log('[Store] Config updated from cloud (snapshot):', o),
+                  e({
+                    autoPromotionEnabled: !1 !== o.autoPromotionEnabled,
+                    currentFreshmanTerm: o.currentFreshmanTerm || s().currentFreshmanTerm,
+                    tagTemplates: o.tagTemplates || s().tagTemplates,
+                    lastPromotionYear: o.lastPromotionYear || s().lastPromotionYear,
+                    analysisRankingSettings: o.analysisRankingSettings || s().analysisRankingSettings,
+                  }));
+              }
+            }),
+            n = (0, a.onSnapshot)((0, a.doc)(fb.db, 'groups', o), (s) => {
+              if (s.exists()) {
+                const t = s.data();
+                t.groupName &&
+                  e({
+                    activeGroupName: t.groupName,
+                  });
+              }
+            });
+          e({
+            configUnsubscribe: () => {
+              (i(), n());
+            },
+          });
+        },
+      };
+    },
+    {
+      name: 'archery-score-storage',
+      storage: (0, d.createJSONStorage)(() => u.default),
+      partialize: (e) => ({
+        archers: e.archers,
+        members: e.members,
+        sessions: e.sessions,
+        history: e.history,
+        alumni: e.alumni,
+        trash: e.trash,
+        shotsPerRound: e.shotsPerRound,
+        activeSessionID: e.activeSessionID,
+        viewScale: e.viewScale,
+        includeInStats: e.includeInStats,
+        lastSessionTags: e.tagTemplates,
+        currentSessionTags: e.currentSessionTags,
+        activeGroupId: e.activeGroupId,
+        activeGroupName: e.activeGroupName,
+        publicGroupId: e.publicGroupId,
+        activeRole: e.activeRole,
+        activeUserEmail: e.activeUserEmail,
+        myMemberId: e.myMemberId,
+        myMemberName: e.myMemberName,
+        memberAuthVersion: e.memberAuthVersion,
+        analysisSelectedTags: e.analysisSelectedTags,
+        analysisTagLogic: e.analysisTagLogic,
+        historySelectedTags: e.historySelectedTags,
+        historyTagLogic: e.historyTagLogic,
+        tagTemplates: e.tagTemplates,
+        currentFreshmanTerm: e.currentFreshmanTerm,
+        lastPromotionYear: e.lastPromotionYear,
+        lastSyncTime: e.lastSyncTime,
+        isAdminMode: e.isAdminMode,
+        autoPromotionEnabled: e.autoPromotionEnabled,
+        analysisRankingSettings: e.analysisRankingSettings,
+        enableArrowLocation: e.enableArrowLocation,
+        arrowTargetType: e.arrowTargetType,
+      }),
+      onRehydrateStorage: () => {
+        console.log('[Store] Hydration starting...');
+        const e = Date.now();
+        return (s, t) => {
+          const o = Date.now() - e;
+          if (t) console.error(`[Store] Hydration error (after ${o}ms):`, t);
+          else if (s) {
+            console.log(`[Store] Hydration finished successfully (Duration: ${o}ms)`);
+            const updates = {
+              isHydrated: !0,
+            };
+            if (s.sessions) {
+              updates.sessions = cleanUpSessions(s.sessions);
+            }
+            if (s.trash) {
+              updates.trash = cleanUpSessions(s.trash);
+            }
+            if (s.historySelectedTags) {
+              updates.historySelectedTags = cleanUpTagsArray(s.historySelectedTags);
+            }
+            if (s.analysisSelectedTags) {
+              updates.analysisSelectedTags = cleanUpTagsArray(s.analysisSelectedTags);
+            }
+            if (s.currentSessionTags) {
+              updates.currentSessionTags = cleanUpTagsArray(s.currentSessionTags);
+            }
+            if (s.tagTemplates) {
+              updates.tagTemplates = cleanUpTagsArray(s.tagTemplates);
+            }
+            if (!Array.isArray(s.archers)) {
+              console.warn('[Store] archers was not an array, recovering...');
+              updates.archers = [];
+            }
+            if ('number' != typeof s.viewScale || isNaN(s.viewScale) || s.viewScale <= 0) {
+              console.warn('[Store] Invalid viewScale detected during hydration, resetting to 1.0');
+              updates.viewScale = 1;
+            }
+            if ('function' == typeof s.updateState) {
+              s.updateState(updates);
+            }
+            if ('function' == typeof s.ensurePersonalIds) {
+              s.ensurePersonalIds();
+            }
+          } else {
+            console.warn(`[Store] Hydration yielded empty state (after ${o}ms)`);
+            const e = M.getState();
+            if (e && !1 === e.isHydrated && 'function' == typeof e.updateState) {
+              console.log('[Store] Forcing isHydrated: true even for empty state');
+              e.updateState({
+                isHydrated: !0,
+              });
+            }
+          }
+        };
+      },
+    }
+  )
+);
