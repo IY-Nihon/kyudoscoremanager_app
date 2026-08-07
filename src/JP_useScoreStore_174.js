@@ -1348,9 +1348,11 @@ const M = (0, s.create)()(
                 merge: !0,
               })
                 .then(() => {
+                  // 印を付けるのは送った版だけ。送信中に編集されると更新日時が
+                  // 変わるので、一致する場合に限る（updateSession と同じ考え方）。
                   e((e) => ({
                     sessions: e.sessions.map((e) =>
-                      e && e.id === p
+                      e && e.id === p && e.lastModified === T.lastModified
                         ? Object.assign({}, e, {
                             syncStatus: '同期済み',
                           })
@@ -1597,8 +1599,13 @@ const M = (0, s.create)()(
             });
             const t = s().sessions.find((e) => e && e.id === o);
             if (!t) return;
-            // 送った版の目印。送信中にもう一度編集された場合、その新しい内容を
-            // 「同期済み」と書いてしまわないよう、戻ってきたときに突き合わせる。
+            // 送った版の更新日時を控える。送信中にもう一度編集されると
+            // 更新日時が変わるので、戻ってきたときに一致する場合だけ印を付ける。
+            // これをしないと、まだ届いていない新しい内容が「同期済み」に見え、
+            // 次の突き合わせでクラウドの古い写しに負けて編集が消える。
+            //
+            // 「同じ物を指しているか」では駄目。リスナーが中身はそのままに
+            // 記録を作り直すことがあり、変わっていなくても別物になる。
             const 送った版 = t.lastModified;
             const n = JSON.parse(JSON.stringify(t));
             // 送信の完了は待たない。通信できないときは Firestore の待ち行列に
@@ -2035,6 +2042,7 @@ const M = (0, s.create)()(
               console.log(`[syncSessions] Syncing ${P.length} pending sessions...`);
               const e = (0, a.writeBatch)(fb.db),
                 o = Date.now();
+              const 送った版 = new Map(P.map((x) => [x.id, x.lastModified]));
               (P.forEach((i) => {
                 const n = JSON.parse(
                   JSON.stringify(
@@ -2057,12 +2065,17 @@ const M = (0, s.create)()(
                 // 送信の完了は待たない。通信できないと一括送信は終わらないため、
                 // 待つとこの関数自体が返らず、同期中の目印が立ったままになって
                 // 以後の同期がすべて飛ばされる。届いた時点で印を付け替える。
+                //
+                // 印を付けるのは送った版だけ。送信中に編集されると更新日時が
+                // 変わるので、一致する場合に限る。これをしないと、まだ届いて
+                // いない新しい内容が同期済みに見え、次の突き合わせでクラウドの
+                // 古い写しに負けて編集が消える。
                 e
                   .commit()
                   .then(() => {
                     反映((t) => ({
                       sessions: t.sessions.map((t) =>
-                        P.find((s) => s.id === t.id)
+                        t && 送った版.has(t.id) && t.lastModified === 送った版.get(t.id)
                           ? Object.assign({}, t, {
                               syncStatus: '同期済み',
                               lastModified: o,
@@ -2083,6 +2096,7 @@ const M = (0, s.create)()(
               console.log(`[syncSessions] Syncing ${Y.length} pending deletions...`);
               try {
                 const e = (0, a.writeBatch)(fb.db);
+                const 送った削除 = new Map(Y.map((x) => [x.id, x.lastModified]));
                 (Y.forEach((t) => {
                   e.delete((0, a.doc)(fb.db, `groups/${s().activeGroupId}/sessions`, t.id));
                   const i = dropUndefinedDeep(
@@ -2094,13 +2108,14 @@ const M = (0, s.create)()(
                     (i.deletedAt = i.deletedAt || (0, a.serverTimestamp)()),
                     e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, t.id), i));
                 }),
-                  // 記録の送信と同じ理由で完了は待たない
+                  // 記録の送信と同じ理由で完了は待たない。印を付けるのも
+                  // 送った版だけにする。
                   e
                     .commit()
                     .then(() => {
                       反映((t) => ({
                         trash: t.trash.map((t) =>
-                          Y.find((s) => s.id === t.id)
+                          t && 送った削除.has(t.id) && t.lastModified === 送った削除.get(t.id)
                             ? Object.assign({}, t, {
                                 syncStatus: '同期済み',
                               })
@@ -2706,12 +2721,23 @@ const M = (0, s.create)()(
                     })
                   );
                 });
-                o.sort((e, s) => trashedAtMillis(s) - trashedAtMillis(e));
-                const a = new Set(o.map((e) => e.id)),
-                  i = s().sessions.filter((e) => !a.has(e.id));
+                // まだ送れていない削除は、クラウドの写しに無くても残す。ここで
+                // 消すと送り直しの対象から外れ、次の全件取得で記録が復活する。
+                const クラウドのid = new Set(o.map((e) => e.id));
+                const 未送信の削除 = (s().trash || []).filter(
+                  (e) => e && e.id && '未同期' === e.syncStatus && !クラウドのid.has(e.id)
+                );
+                const 新しいゴミ箱 = 未送信の削除.length > 0 ? [...o, ...未送信の削除] : o;
+                新しいゴミ箱.sort((e, s) => trashedAtMillis(s) - trashedAtMillis(e));
+                // 戻したばかりでまだ送れていない記録は、クラウドのゴミ箱に写しが
+                // あっても履歴から外さない。外すと復元が取り消されて見える。
+                const 捨てたid = new Set(新しいゴミ箱.map((e) => e.id));
+                const 残す = s().sessions.filter(
+                  (e) => e && (!捨てたid.has(e.id) || '未同期' === e.syncStatus)
+                );
                 (e({
-                  trash: o,
-                  sessions: i,
+                  trash: 新しいゴミ箱,
+                  sessions: 残す,
                 }),
                   console.log(
                     `[Store] Real-time trash update received: ${o.length} items (purged from sessions)`
