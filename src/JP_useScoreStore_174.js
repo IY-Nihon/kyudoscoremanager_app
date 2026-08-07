@@ -958,9 +958,11 @@ const M = (0, s.create)()(
             (0, a.setDoc)((0, a.doc)(fb.db, `groups/${s().activeGroupId}/members`, m.id), o)
               .then(() => {
                 s().syncMemberLookup();
+                // 印を付けるのは送った版だけ。送信中に編集されると更新日時が
+                // 変わるので、一致する場合に限る（記録側と同じ考え方）。
                 e((e) => ({
                   members: e.members.map((e) =>
-                    e.id === m.id
+                    e && e.id === m.id && e.lastModified === m.lastModified
                       ? Object.assign({}, e, {
                           syncStatus: '同期済み',
                         })
@@ -1100,6 +1102,9 @@ const M = (0, s.create)()(
             (p[o] = setTimeout(async () => {
               const i = s().members.find((e) => e.id === o);
               if (i) {
+                // 送った版の更新日時。送信中にもう一度編集された場合、その
+                // 新しい内容に「同期済み」を付けないための目印。
+                const 送った版 = i.lastModified;
                 const n = Object.assign({}, i, {
                   lastModified: (0, a.serverTimestamp)(),
                   syncStatus: '同期済み',
@@ -1109,7 +1114,7 @@ const M = (0, s.create)()(
                     (console.log(`[Store] Debounced Member Sync Success: ${i.name}`),
                       e((e) => ({
                         members: e.members.map((e) =>
-                          e.id === o
+                          e && e.id === o && e.lastModified === 送った版
                             ? Object.assign({}, e, {
                                 syncStatus: '同期済み',
                               })
@@ -1268,9 +1273,10 @@ const M = (0, s.create)()(
             });
             (0, a.updateDoc)((0, a.doc)(fb.db, `groups/${s().activeGroupId}/members`, o), i)
               .then(() => {
+                // 印を付けるのは送った版だけ（記録側と同じ考え方）
                 e((e) => ({
                   members: e.members.map((e) =>
-                    e.id === o
+                    e && e.id === o && e.lastModified === d.lastModified
                       ? Object.assign({}, e, {
                           syncStatus: '同期済み',
                         })
