@@ -90,7 +90,7 @@ export const ArrowLocationView = ({ arrowLocations = [], size = 200, targetType,
         const posY = radius + loc.y * targetRadius;
 
         const mark = loc.mark;
-        const isHit = mark === '○' || mark === '\u25cb'; // 的中
+        const isHit = mark === '○' || mark === '○'; // 的中
         const shotIndex = loc.shotIndex !== undefined ? loc.shotIndex : idx;
 
         if (useDot) {

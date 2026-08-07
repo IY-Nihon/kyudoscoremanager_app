@@ -187,7 +187,7 @@ const AttendanceScreen = () => {
       a_idx = 0 === l_grade ? 99 : l_grade;
     if (s_idx !== a_idx) return s_idx - a_idx;
 
-    const c_func = g_val => { const t_gen = (g_val || '').trim(); return '\u7537\u5b50' === t_gen ? 0 : '\u5973\u5b50' === t_gen ? 1 : 2 },
+    const c_func = g_val => { const t_gen = (g_val || '').trim(); return '男子' === t_gen ? 0 : '女子' === t_gen ? 1 : 2 },
       u_val = c_func(e.gender) - c_func(t.gender);
     return 0 !== u_val ? u_val : (e.name || '').localeCompare(t.name || '', 'ja');
   });
