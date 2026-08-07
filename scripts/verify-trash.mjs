@@ -5,11 +5,12 @@
  *
  * ストアと同じ操作（単体削除・複数選択削除・復元・個別完全削除・すべて削除）を
  * 実データに対して行い、そのたびにリスナーが何を受け取るかを見る。
- * 並べ替えの関数はソースから抜き出して使うので、実装と食い違わない。
+ * 並べ替えの関数は実装（src/syncRules.js）をそのまま使うので食い違わない。
  *
  * 既定は検証環境。本番を指定しても読み取りしかしない。
  */
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import {
@@ -30,10 +31,10 @@ const EMAIL = 'nihonu.kouka@gmail.com';
 const PW = 'StgTest!2026';
 
 // ── 実装から並べ替え関数をそのまま持ってくる ────────────────
+// 以前はストアの本文から正規表現で切り出していたが、純粋な関数を
+// src/syncRules.js へ移したので、そのまま読み込む。
 const src = fs.readFileSync('src/JP_useScoreStore_174.js', 'utf8');
-const m = src.match(/const trashedAtMillis=[\s\S]*?\n\};/);
-if (!m) { console.error('trashedAtMillis をソースから取り出せませんでした'); process.exit(1); }
-const trashedAtMillis = new Function(`${m[0]}\nreturn trashedAtMillis;`)();
+const { trashedAtMillis } = createRequire(import.meta.url)('../src/syncRules.js');
 
 // ── 実装のクエリが想定どおりか確かめる ──────────────────────
 const 修正済み = /\}\/trash`\),n=\(0,a\.query\)\(i,\(0,a\.limit\)\(200\)\)/.test(src);

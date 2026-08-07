@@ -90,14 +90,11 @@ const waitForDb = async () => {
 let p={
 
 };
-const h=(e,s)=>{
-let t;
-const o=new Set([...e.map(e=>e.personalId),...s.map(e=>e.personalId)].filter(e=>e));
-do{
-t=Math.floor(1e3+9e3*Math.random()).toString()
-}while(o.has(t));
-return t
-},f=(e,s)=>{
+// 同期の判断に使う純粋な関数は syncRules.js へ移した。中身は変えていない。
+// 呼び出し側の書き換えを避けるため、従来の1文字の名前に割り当て直す。
+const 同期規則=require("./syncRules");
+const h=同期規則.generateUniquePersonalId,y=同期規則.mergeById,dropUndefinedDeep=同期規則.dropUndefinedDeep,trashedAtMillis=同期規則.trashedAtMillis,normalizeTag=同期規則.normalizeTag,cleanUpTagsArray=同期規則.cleanUpTagsArray,cleanUpSessions=同期規則.cleanUpSessions;
+const f=(e,s)=>{
 if(!e)return s?Array(s).fill(''):[];
 if(Array.isArray(e)){
 const t=e.map(e=>null==e?'':e);
@@ -128,33 +125,8 @@ id:e.id,name:e.name||'',gender:e.gender||'\u672a\u8a2d\u5b9a',grade:e.grade||0,i
 },lastModified:e.lastModified||0,substitutionIds:e.substitutionIds||{
 
 },bowWeight:e.bowWeight||null
-})))),y=(e,s,t=!1,o=!1)=>{
-const a=new Map;
-(e||[]).forEach(e=>{
-e&&e.id&&a.set(e.id,e)
-});
-const i=new Set;
-if((s||[]).forEach(e=>{
-if(!e||!e.id)return;
-i.add(e.id);
-const s=a.get(e.id);
-if(s){
-const o=e.lastModified?.toMillis?e.lastModified.toMillis():e.lastModified||0,i=s.lastModified||0,n=o>i+1e3,c='\u540c\u671f\u6e08\u307f'===s.syncStatus||!s.syncStatus,l=Math.abs(o-i)<3e5;
-(t||n||c&&l)&&a.set(e.id,e)
-}else a.set(e.id,e)
-}),o)for(const[e,s]of a.entries()){
-const t='\u672a\u540c\u671f'!==s.syncStatus,o=!i.has(e);
-t&&o&&(console.log(`[Store] Purging local item deleted in cloud: ${
-e
-} (${
-s.name||'unknown'
-})`),a.delete(e))
-}return Array.from(a.values()).map(e=>e.lastModified&&'function'==typeof e.lastModified.toMillis?Object.assign({
-
-},e,{
-lastModified:e.lastModified.toMillis()
-}):e)
-},v=(e,s,o)=>{
+}))));
+const v=(e,s,o)=>{
 const a=Date.now(),n=M.getState().activeGroupId;
 if(!fb.rtdb||!n)return;
 const c=(0,i.ref)(fb.rtdb,`live_sessions/${
@@ -213,35 +185,6 @@ return t?(!e.isSeparator&&o[e.id]&&(t.marks=f(o[e.id],s),t.lastModified=Math.max
 }
 };
 let I=!1;
-// Firestore は undefined を受け付けないので、書き込む前に取り除く。
-// 日時が入れ物の形にならないよう、JSON を経由しないで写す。
-const dropUndefinedDeep=e=>{
-if(Array.isArray(e))return e.map(dropUndefinedDeep);
-if(e&&'object'==typeof e&&Object.getPrototypeOf(e)===Object.prototype){
-const s={};
-for(const t in e)void 0!==e[t]&&(s[t]=dropUndefinedDeep(e[t]));
-return s
-}return e
-};
-const trashedAtMillis=e=>{
-const v=e&&(e.deletedAt||e.lastModified||e.date);
-if(!v)return 0;
-if('function'==typeof v.toMillis)return v.toMillis();
-if('object'==typeof v&&null!=v.seconds)return 1e3*Number(v.seconds);
-const n=Number(v);
-return isNaN(n)?Date.parse(v)||0:n
-};
-const normalizeTag=e=>{
-if('string'!=typeof e)return'';
-let t=e.trim().replace(/^[#＃\s]+/,'');
-return t=t.replace(/＃/g,'#'),t?`#${
-t
-}`:''
-},cleanUpTagsArray=e=>Array.isArray(e)?Array.from(new Set(e.map(normalizeTag).filter(Boolean))):e,cleanUpSessions=e=>Array.isArray(e)?e.map(e=>e&&e.tags&&Array.isArray(e.tags)?Object.assign({
-
-},e,{
-tags:cleanUpTagsArray(e.tags)
-}):e):e;
 const M=(0,s.create)()((0,d.persist)((t,s)=>{
 const e=o=>{
 let i='function'==typeof o?o(s()):o;
