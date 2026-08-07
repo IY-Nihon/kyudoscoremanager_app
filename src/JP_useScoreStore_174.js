@@ -1393,6 +1393,11 @@ const M = (0, s.create)()(
           // 送信が済むまでは「未同期」にしておく。こうしないと、通信できない
           // ときに削除がクラウドへ届かないまま消し込まれ、次の全件取得で
           // 記録が復活しゴミ箱からも消えてしまう。
+          //
+          // pendingDelete は「この端末で捨てて、まだ送れていない」という印。
+          // クラウドの写しを読み込んだだけの項目と区別するために要る。これが
+          // ないと、ゴミ箱を空にした直後に写しを読み込んだ項目まで送り直しの
+          // 対象になり、空にしたはずのものが戻ってしまう。
           e(
             n
               ? {
@@ -1401,6 +1406,7 @@ const M = (0, s.create)()(
                     ...s().trash,
                     Object.assign({}, n, {
                       syncStatus: '未同期',
+                      pendingDelete: !0,
                     }),
                   ],
                 }
@@ -1422,7 +1428,9 @@ const M = (0, s.create)()(
                 (i.deletedAt = (0, a.serverTimestamp)()),
                 e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, o), i));
             }
-            await e.commit();
+            // 完了は待たない。通信できないと終わらないため、呼び出し側が
+            // 待つと画面が反応しなくなる。送信は待ち行列に任せる。
+            e.commit().catch((e) => console.error('Delete Session Error:', e));
           } catch (e) {
             console.error('Delete Session Error:', e);
           }
@@ -1446,8 +1454,11 @@ const M = (0, s.create)()(
               (c.forEach((s) => {
                 e.delete((0, a.doc)(fb.db, `groups/${n}/trash`, s));
               }),
-                await e.commit(),
-                console.log('[Store] Cloud trash emptied'));
+                // 完了は待たない（deleteSession と同じ理由）
+                e
+                  .commit()
+                  .then(() => console.log('[Store] Cloud trash emptied'))
+                  .catch((e) => console.error('[Store] Error emptying cloud trash:', e)));
             } catch (e) {
               console.error('[Store] Error emptying cloud trash:', e);
             }
@@ -1472,7 +1483,10 @@ const M = (0, s.create)()(
                   o && (e.delete((0, a.doc)(fb.db, `groups/${c}/trash`, o)), s++);
                 }),
                   s > 0 &&
-                    (await e.commit(), console.log('[Store] Successfully deleted trash items from cloud')));
+                    e
+                      .commit()
+                      .then(() => console.log('[Store] Successfully deleted trash items from cloud'))
+                      .catch((e) => console.error('[Store] Delete trash items error:', e)));
               } else console.warn('[Store] Skipping cloud deletion: activeGroupId が無い');
             } catch (e) {
               console.error('[Store] Delete trash items error:', e);
@@ -1489,6 +1503,7 @@ const M = (0, s.create)()(
               ...i.map((e) =>
                 Object.assign({}, e, {
                   syncStatus: '未同期',
+                  pendingDelete: !0,
                 })
               ),
             ],
@@ -1508,7 +1523,7 @@ const M = (0, s.create)()(
                   (i.deletedAt = (0, a.serverTimestamp)()),
                   e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, o.id), i));
               }),
-              await e.commit());
+              e.commit().catch((e) => console.error('Batch Delete Error:', e)));
           } catch (e) {
             console.error('Batch Delete Error:', e);
           }
@@ -1522,6 +1537,8 @@ const M = (0, s.create)()(
               // ときに復元がクラウドへ届かないまま同期済み扱いになり、次の全件取得
               // でゴミ箱へ戻ってしまう。
               syncStatus: '未同期',
+              // ゴミ箱側の印は記録に持ち込まない
+              pendingDelete: void 0,
             }),
             l = Array.isArray(s().sessions) ? s().sessions : [];
           e({
@@ -1534,7 +1551,7 @@ const M = (0, s.create)()(
             const i = JSON.parse(JSON.stringify(c));
             ((i.lastModified = (0, a.serverTimestamp)()),
               e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/sessions`, o), i),
-              await e.commit());
+              e.commit().catch((e) => console.error('Restore Session Error:', e)));
           } catch (e) {
             console.error('Restore Session Error:', e);
           }
@@ -1547,6 +1564,8 @@ const M = (0, s.create)()(
             l = n.map((e) =>
               Object.assign({}, e, {
                 syncStatus: '未同期',
+                // ゴミ箱側の印は記録に持ち込まない
+                pendingDelete: void 0,
               })
             );
           e({
@@ -1561,7 +1580,7 @@ const M = (0, s.create)()(
                 ((i.lastModified = (0, a.serverTimestamp)()),
                   e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/sessions`, o.id), i));
               }),
-              await e.commit());
+              e.commit().catch((e) => console.error('Restore Trash Items Error:', e)));
           } catch (e) {
             console.error('Restore Trash Items Error:', e);
           }
@@ -1881,20 +1900,21 @@ const M = (0, s.create)()(
             e({
               lastPromotionYear: base,
             });
-            try {
-              await (0, a.setDoc)(
-                (0, a.doc)(fb.db, `groups/${o}/config`, 'app_settings'),
-                {
-                  lastPromotionYear: base,
-                  lastModified: (0, a.serverTimestamp)(),
-                },
-                {
-                  merge: !0,
-                }
-              );
-            } catch (e) {
+            // 送信の完了は待たない。この関数は syncSessions の先頭で待たれて
+            // いるため、通信できないときにここで止まると同期そのものが動かなく
+            // なる。手元の値は先に入れてあり、送信は待ち行列に任せる。
+            (0, a.setDoc)(
+              (0, a.doc)(fb.db, `groups/${o}/config`, 'app_settings'),
+              {
+                lastPromotionYear: base,
+                lastModified: (0, a.serverTimestamp)(),
+              },
+              {
+                merge: !0,
+              }
+            ).catch((e) => {
               console.error('[AutoPromotion] Failed to store baseline year:', e);
-            }
+            });
             return;
           }
           const { autoPromotionEnabled: u, lastPromotionYear: m } = s();
@@ -2097,7 +2117,10 @@ const M = (0, s.create)()(
             // 送信が済んでいない削除を送り直す。通信できないときに削除した場合、
             // 待ち行列ごと失われることがあり、そのままだと次の全件取得で記録が
             // 復活してしまう。
-            const Y = ごみ箱.filter((e) => e && e.id && '未同期' === e.syncStatus);
+            // 送り直すのは「この端末で捨てて、まだ送れていない」ものだけ。
+            // クラウドの写しを読み込んだだけの項目まで送ると、ゴミ箱を空にした
+            // 直後に読み込んだ分が戻ってきてしまう。
+            const Y = ごみ箱.filter((e) => e && e.id && e.pendingDelete && '未同期' === e.syncStatus);
             if (Y.length > 0) {
               console.log(`[syncSessions] Syncing ${Y.length} pending deletions...`);
               try {
@@ -2110,7 +2133,9 @@ const M = (0, s.create)()(
                       syncStatus: 'trashed',
                     })
                   );
-                  ((i.lastModified = (0, a.serverTimestamp)()),
+                  // pendingDelete は端末の中だけの印。クラウドへは持ち込まない
+                  (delete i.pendingDelete,
+                    (i.lastModified = (0, a.serverTimestamp)()),
                     (i.deletedAt = i.deletedAt || (0, a.serverTimestamp)()),
                     e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, t.id), i));
                 }),
@@ -2124,6 +2149,7 @@ const M = (0, s.create)()(
                           t && 送った削除.has(t.id) && t.lastModified === 送った削除.get(t.id)
                             ? Object.assign({}, t, {
                                 syncStatus: '同期済み',
+                                pendingDelete: !1,
                               })
                             : t
                         ),
@@ -2763,13 +2789,26 @@ const M = (0, s.create)()(
                     })
                   );
                 });
+                // 手元で捨てた印は、送信が終わるまで持ち越す。クラウドの写しには
+                // この印が無いので、そのまま置き換えると数百msで消えてしまい、
+                // あとで送信が失われても送り直せなくなる。
+                // 写しの syncStatus が「同期済み」＝送信が終わった、なので落とす。
+                const 手元のゴミ箱 = new Map(
+                  (s().trash || []).filter((e) => e && e.id).map((e) => [e.id, e])
+                );
+                const 写し = o.map((e) => {
+                  const t = 手元のゴミ箱.get(e.id);
+                  return t && t.pendingDelete && '未同期' === e.syncStatus
+                    ? Object.assign({}, e, { pendingDelete: !0 })
+                    : e;
+                });
                 // まだ送れていない削除は、クラウドの写しに無くても残す。ここで
                 // 消すと送り直しの対象から外れ、次の全件取得で記録が復活する。
-                const クラウドのid = new Set(o.map((e) => e.id));
+                const クラウドのid = new Set(写し.map((e) => e.id));
                 const 未送信の削除 = (s().trash || []).filter(
-                  (e) => e && e.id && '未同期' === e.syncStatus && !クラウドのid.has(e.id)
+                  (e) => e && e.id && e.pendingDelete && '未同期' === e.syncStatus && !クラウドのid.has(e.id)
                 );
-                const 新しいゴミ箱 = 未送信の削除.length > 0 ? [...o, ...未送信の削除] : o;
+                const 新しいゴミ箱 = 未送信の削除.length > 0 ? [...写し, ...未送信の削除] : 写し;
                 新しいゴミ箱.sort((e, s) => trashedAtMillis(s) - trashedAtMillis(e));
                 // 戻したばかりでまだ送れていない記録は、クラウドのゴミ箱に写しが
                 // あっても履歴から外さない。外すと復元が取り消されて見える。
