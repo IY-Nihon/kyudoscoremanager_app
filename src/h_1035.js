@@ -11,6 +11,6 @@
  *           → getGenerativeModel({ model, systemInstruction, generationConfig })
  *           → generateContent / startChat / sendMessage
  */
-"use strict";
+'use strict';
 
 module.exports = require('@google/generative-ai');

@@ -37,9 +37,16 @@ const src = fs.readFileSync('src/JP_useScoreStore_174.js', 'utf8');
 const { trashedAtMillis } = createRequire(import.meta.url)('../src/syncRules.js');
 
 // ── 実装のクエリが想定どおりか確かめる ──────────────────────
-const 修正済み = /\}\/trash`\),n=\(0,a\.query\)\(i,\(0,a\.limit\)\(200\)\)/.test(src);
-const 旧クエリ残り = /trash`\),n=\(0,a\.query\)\(i,\(0,a\.orderBy\)\('deletedAt'/.test(src);
-const 単体削除にdeletedAt = /i\.lastModified=\(0,a\.serverTimestamp\)\(\),i\.deletedAt=\(0,a\.serverTimestamp\)\(\),e\.set\(\(0,a\.doc\)\(fb\.db,`groups\/\$\{\s*\r?\ns\(\)\.activeGroupId\s*\r?\n\}\/trash`,o\),i\)/.test(src);
+// 空白を全部落としてから照合する。整形の仕方が変わっても、書いてある
+// ことが同じなら通るようにするため（以前は最小化された1行の形に
+// 合わせていたので、整形しただけで検査が落ちていた）。
+const 詰めた = src.replace(/\s+/g, '');
+const 修正済み = 詰めた.includes('}/trash`),n=(0,a.query)(i,(0,a.limit)(200))');
+const 旧クエリ残り = /trash`\),n=\(0,a\.query\)\(i,\(0,a\.orderBy\)\('deletedAt'/.test(詰めた);
+const 単体削除にdeletedAt = 詰めた.includes(
+  '(i.lastModified=(0,a.serverTimestamp)()),(i.deletedAt=(0,a.serverTimestamp)()),' +
+    'e.set((0,a.doc)(fb.db,`groups/${s().activeGroupId}/trash`,o),i)'
+);
 
 const app = initializeApp({ apiKey, projectId });
 const auth = getAuth(app);

@@ -11,7 +11,7 @@
  * そこで既定色をスタイル配列の先頭に差し込む。
  * 呼び出し側の style は後ろに置くため、明示指定は従来どおり優先される。
  */
-"use strict";
+'use strict';
 
 const React = require('react');
 const { Text } = require('react-native');

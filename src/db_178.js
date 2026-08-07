@@ -1,20 +1,47 @@
 /**
  * Module ID: 178
  */
-"use strict";
+'use strict';
 
-const g = (typeof global !== "undefined" ? global : typeof window !== "undefined" ? window : this);
+const g = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : this;
 const r = require;
-const i = (typeof metroImport !== 'undefined' ? metroImport : undefined);
-const a = (typeof id !== 'undefined' ? id : 178);
+const i = typeof metroImport !== 'undefined' ? metroImport : undefined;
+const a = typeof id !== 'undefined' ? id : 178;
 const m = module;
 const _e = exports;
-const d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
+const d = typeof dependencyMap !== 'undefined' ? dependencyMap : [];
 
-"use strict";Object.defineProperty(_e,'__esModule',{value:!0});var e=require("./module_179"),t=require("./module_186"),n=require("./module_188"),u=require("./module_191"),o=require("./setupAppCheck_195");const c={apiKey:process.env.EXPO_PUBLIC_FIREBASE_API_KEY,authDomain:process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,databaseURL:process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL,projectId:process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,storageBucket:process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,messagingSenderId:process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,appId:process.env.EXPO_PUBLIC_FIREBASE_APP_ID},p=(0,e.getApps)().length>0?(0,e.getApp)():(0,e.initializeApp)(c);console.log('[db_178] Firebase config API Key:', c.apiKey ? 'FOUND' : 'MISSING');console.log('[db_178] Firebase App:', p ? 'INITIALIZED' : 'NULL');(0,o.setupAppCheck)(p);const s = (0, n.getFirestore)(p);console.log('[db_178] Firestore Instance:', s ? 'CREATED' : 'NULL');
+('use strict');
+Object.defineProperty(_e, '__esModule', { value: !0 });
+var e = require('./module_179'),
+  t = require('./module_186'),
+  n = require('./module_188'),
+  u = require('./module_191'),
+  o = require('./setupAppCheck_195');
+const c = {
+    apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    databaseURL: process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL,
+    projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+  },
+  p = (0, e.getApps)().length > 0 ? (0, e.getApp)() : (0, e.initializeApp)(c);
+console.log('[db_178] Firebase config API Key:', c.apiKey ? 'FOUND' : 'MISSING');
+console.log('[db_178] Firebase App:', p ? 'INITIALIZED' : 'NULL');
+(0, o.setupAppCheck)(p);
+const s = (0, n.getFirestore)(p);
+console.log('[db_178] Firestore Instance:', s ? 'CREATED' : 'NULL');
 
 const b = (0, u.getAuth)(p);
-const l=(()=>{try{return c.databaseURL?(0,t.getDatabase)(p):null}catch(e){return console.warn('[Firebase] RTDB initialization failed:',e),null}})();
+const l = (() => {
+  try {
+    return c.databaseURL ? (0, t.getDatabase)(p) : null;
+  } catch (e) {
+    return (console.warn('[Firebase] RTDB initialization failed:', e), null);
+  }
+})();
 
 // db/auth/rtdb を先に exports に設定してから、永続化を非同期で行う
 _e.db = s;

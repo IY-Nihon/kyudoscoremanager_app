@@ -1,6 +1,6 @@
 /**
  * Library Bridge: module_233.js
  */
-"use strict";
+'use strict';
 
 module.exports = require('@react-navigation/native');

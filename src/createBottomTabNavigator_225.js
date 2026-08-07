@@ -1,6 +1,6 @@
 /**
  * Library Bridge: createBottomTabNavigator_225.js
  */
-"use strict";
+'use strict';
 
 module.exports = require('@react-navigation/bottom-tabs');

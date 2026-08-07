@@ -7,6 +7,6 @@
  *
  * 利用箇所: JP_useScoreStore_174（zustand の persist ストレージとして .default を使用）
  */
-"use strict";
+'use strict';
 
 module.exports = require('@react-native-async-storage/async-storage');

@@ -21,24 +21,24 @@
  * 文字列は inlineStr で書き出すため sharedStrings.xml は使わない
  * （実装が単純になり、この規模のデータでは実害がない）。
  */
-"use strict";
+'use strict';
 
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, '__esModule', { value: true });
 
 // XML の特殊文字と、Excelが扱えない制御文字を除去・置換する
 function esc(v) {
   return String(v)
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 // 0始まりの列番号を Excel の列名（A, B, ... Z, AA ...）へ変換する
 function colName(index) {
   let n = index + 1;
-  let s = "";
+  let s = '';
   while (n > 0) {
     const m = (n - 1) % 26;
     s = String.fromCharCode(65 + m) + s;
@@ -49,9 +49,9 @@ function colName(index) {
 
 /** 1セル分の XML。数値はそのまま、それ以外は inlineStr で出す */
 function cellXml(ref, value, styleId) {
-  const st = styleId ? ` s="${styleId}"` : "";
-  if (value == null || value === "") return `<c r="${ref}"${st}/>`;
-  if (typeof value === "number" && isFinite(value)) {
+  const st = styleId ? ` s="${styleId}"` : '';
+  if (value == null || value === '') return `<c r="${ref}"${st}/>`;
+  if (typeof value === 'number' && isFinite(value)) {
     return `<c r="${ref}"${st}><v>${value}</v></c>`;
   }
   return `<c r="${ref}"${st} t="inlineStr"><is><t xml:space="preserve">${esc(value)}</t></is></c>`;
@@ -67,8 +67,8 @@ function cellXml(ref, value, styleId) {
  * @param {string} [sheetName]      シート名
  */
 async function exportXlsx(headers, rows, fileName, widths, sheetName) {
-  const { zipSync, strToU8 } = require("fflate");
-  const { saveAs } = require("file-saver");
+  const { zipSync, strToU8 } = require('fflate');
+  const { saveAs } = require('file-saver');
 
   const lastCol = colName(headers.length - 1);
   const lastRow = rows.length + 1;
@@ -79,19 +79,19 @@ async function exportXlsx(headers, rows, fileName, widths, sheetName) {
       const w = widths && widths[i] ? widths[i] : Math.max(10, String(h).length * 2 + 2);
       return `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`;
     })
-    .join("");
+    .join('');
 
   // 見出し行（styleId=1: 太字＋背景＋罫線＋中央揃え）
-  const headerCells = headers.map((h, i) => cellXml(colName(i) + "1", h, 1)).join("");
+  const headerCells = headers.map((h, i) => cellXml(colName(i) + '1', h, 1)).join('');
   const headerXml = `<row r="1" ht="20" customHeight="1">${headerCells}</row>`;
 
   // 明細行
   const bodyXml = rows
     .map((r, ri) => {
-      const cells = r.map((v, ci) => cellXml(colName(ci) + (ri + 2), v, 0)).join("");
+      const cells = r.map((v, ci) => cellXml(colName(ci) + (ri + 2), v, 0)).join('');
       return `<row r="${ri + 2}">${cells}</row>`;
     })
-    .join("");
+    .join('');
 
   const sheet =
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
@@ -110,10 +110,10 @@ async function exportXlsx(headers, rows, fileName, widths, sheetName) {
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
     `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ` +
     `xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">` +
-    `<sheets><sheet name="${esc(sheetName || "記録")}" sheetId="1" r:id="rId1"/></sheets>` +
+    `<sheets><sheet name="${esc(sheetName || '記録')}" sheetId="1" r:id="rId1"/></sheets>` +
     // オートフィルターを「並べ替え範囲」としてExcelに認識させる
     `<definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">` +
-    `'${esc(sheetName || "記録")}'!$A$1:$${lastCol}$${lastRow}</definedName></definedNames>` +
+    `'${esc(sheetName || '記録')}'!$A$1:$${lastCol}$${lastRow}</definedName></definedNames>` +
     `</workbook>`;
 
   // styles.xml — 0番は既定、1番が見出し用
@@ -160,19 +160,19 @@ async function exportXlsx(headers, rows, fileName, widths, sheetName) {
 
   const zipped = zipSync(
     {
-      "[Content_Types].xml": strToU8(contentTypes),
-      "_rels/.rels": strToU8(rels),
-      "xl/workbook.xml": strToU8(workbook),
-      "xl/_rels/workbook.xml.rels": strToU8(wbRels),
-      "xl/styles.xml": strToU8(styles),
-      "xl/worksheets/sheet1.xml": strToU8(sheet),
+      '[Content_Types].xml': strToU8(contentTypes),
+      '_rels/.rels': strToU8(rels),
+      'xl/workbook.xml': strToU8(workbook),
+      'xl/_rels/workbook.xml.rels': strToU8(wbRels),
+      'xl/styles.xml': strToU8(styles),
+      'xl/worksheets/sheet1.xml': strToU8(sheet),
     },
     { level: 6 }
   );
 
   saveAs(
     new Blob([zipped], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     }),
     fileName
   );

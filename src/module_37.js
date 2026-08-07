@@ -1,14 +1,15 @@
 /**
  * Module ID: 37
  */
-"use strict";
+'use strict';
 
-const g = (typeof global !== "undefined" ? global : typeof window !== "undefined" ? window : this);
+const g = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : this;
 const r = require;
-const i = (typeof metroImport !== 'undefined' ? metroImport : undefined);
-const a = (typeof id !== 'undefined' ? id : 37);
+const i = typeof metroImport !== 'undefined' ? metroImport : undefined;
+const a = typeof id !== 'undefined' ? id : 37;
 const m = module;
 const e = exports;
-const d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
+const d = typeof dependencyMap !== 'undefined' ? dependencyMap : [];
 
-'use strict';m.exports=require("./module_38")
+('use strict');
+m.exports = require('./module_38');

@@ -1,14 +1,121 @@
 /**
  * Module ID: 1037
  */
-"use strict";
+'use strict';
 
-const g = (typeof global !== "undefined" ? global : typeof window !== "undefined" ? window : this);
+const g = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : this;
 const r = require;
-const _i = (typeof metroImport !== 'undefined' ? metroImport : undefined);
-const a = (typeof id !== 'undefined' ? id : 1037);
+const _i = typeof metroImport !== 'undefined' ? metroImport : undefined;
+const a = typeof id !== 'undefined' ? id : 1037;
 const m = module;
 const _e = exports;
-const d = (typeof dependencyMap !== 'undefined' ? dependencyMap : []);
+const d = typeof dependencyMap !== 'undefined' ? dependencyMap : [];
 
-"use strict";function e(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(_e,'__esModule',{value:!0}),Object.defineProperty(_e,"LoadingScreen",{enumerable:!0,get:function(){return s}}),require("./module_37");var t=e(require("./default_144")),o=e(require("./default_217")),l=e(require("./default_380")),n=e(require("./default_45")),i=require("./JP_useScoreStore_174"),j=require("./module_592"),c=require("./module_427");const s=()=>{const e=(0,i.useScoreStore)(e=>e.initializationLogs);return(0,c.jsxs)(t.default,{style:u.container,children:[(0,c.jsx)(t.default,{style:u.logoWrapper,children:(0,c.jsx)(require("react-native").Image,{source:require("../assets/kyudo_icon.png"),style:u.logoImage})}),(0,c.jsx)(o.default,{style:u.title,children:"弓道的中管理アプリ"}),(0,c.jsx)(t.default,{style:u.loaderWrapper,children:(0,c.jsx)(l.default,{size:"small",color:"#007AFF"})}),(0,c.jsx)(o.default,{style:u.subtitle,children:"データを準備しています..."}),e&&e.length>0&&(0,c.jsxs)(t.default,{style:u.logContainer,children:[(0,c.jsxs)(t.default,{style:u.logHeader,children:[(0,c.jsx)(t.default,{style:u.logDot}),(0,c.jsx)(o.default,{style:u.logHeaderText,children:"INITIALIZATION LOG"})]}),(0,c.jsx)(t.default,{style:u.logList,children:e.map((t,l)=>(0,c.jsx)(o.default,{style:[u.logText,l===e.length-1?u.logTextActive:u.logTextInactive],children:t},l))})]})]})},u=n.default.create({container:{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#F2F2F7'},logoWrapper:Object.assign({width:80,height:80,backgroundColor:'#FFF',borderRadius:20,justifyContent:'center',alignItems:'center',marginBottom:24},(0,j.getShadowStyle)({shadowColor:'#000',shadowOffset:{width:0,height:4},shadowOpacity:.1,shadowRadius:10,elevation:5})),logoImage:{width:80,height:80,borderRadius:20},loaderWrapper:{marginBottom:24},title:{fontSize:24,fontWeight:'800',color:'#1C1C1E',marginBottom:12,letterSpacing:-.5},subtitle:{fontSize:15,color:'#8E8E93',marginBottom:48,fontWeight:'500'},logContainer:{width:'90%',maxWidth:400,backgroundColor:'rgba(255, 255, 255, 0.8)',padding:16,borderRadius:16,borderWidth:1,borderColor:'rgba(0, 122, 255, 0.1)'},logHeader:{flexDirection:'row',alignItems:'center',marginBottom:12},logDot:{width:6,height:6,borderRadius:3,backgroundColor:'#007AFF',marginRight:8},logHeaderText:{fontSize:13,color:'#1C1C1E',fontWeight:'700',letterSpacing:.5},logList:{gap:4},logText:{fontSize:11},logTextActive:{color:'#007AFF',opacity:1},logTextInactive:{color:'#636366',opacity:.7}})
+('use strict');
+function e(e) {
+  return e && e.__esModule ? e : { default: e };
+}
+(Object.defineProperty(_e, '__esModule', { value: !0 }),
+  Object.defineProperty(_e, 'LoadingScreen', {
+    enumerable: !0,
+    get: function () {
+      return s;
+    },
+  }),
+  require('./module_37'));
+var t = e(require('./default_144')),
+  o = e(require('./default_217')),
+  l = e(require('./default_380')),
+  n = e(require('./default_45')),
+  i = require('./JP_useScoreStore_174'),
+  j = require('./module_592'),
+  c = require('./module_427');
+const s = () => {
+    const e = (0, i.useScoreStore)((e) => e.initializationLogs);
+    return (0, c.jsxs)(t.default, {
+      style: u.container,
+      children: [
+        (0, c.jsx)(t.default, {
+          style: u.logoWrapper,
+          children: (0, c.jsx)(require('react-native').Image, {
+            source: require('../assets/kyudo_icon.png'),
+            style: u.logoImage,
+          }),
+        }),
+        (0, c.jsx)(o.default, { style: u.title, children: '弓道的中管理アプリ' }),
+        (0, c.jsx)(t.default, {
+          style: u.loaderWrapper,
+          children: (0, c.jsx)(l.default, { size: 'small', color: '#007AFF' }),
+        }),
+        (0, c.jsx)(o.default, { style: u.subtitle, children: 'データを準備しています...' }),
+        e &&
+          e.length > 0 &&
+          (0, c.jsxs)(t.default, {
+            style: u.logContainer,
+            children: [
+              (0, c.jsxs)(t.default, {
+                style: u.logHeader,
+                children: [
+                  (0, c.jsx)(t.default, { style: u.logDot }),
+                  (0, c.jsx)(o.default, { style: u.logHeaderText, children: 'INITIALIZATION LOG' }),
+                ],
+              }),
+              (0, c.jsx)(t.default, {
+                style: u.logList,
+                children: e.map((t, l) =>
+                  (0, c.jsx)(
+                    o.default,
+                    {
+                      style: [u.logText, l === e.length - 1 ? u.logTextActive : u.logTextInactive],
+                      children: t,
+                    },
+                    l
+                  )
+                ),
+              }),
+            ],
+          }),
+      ],
+    });
+  },
+  u = n.default.create({
+    container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F2F2F7' },
+    logoWrapper: Object.assign(
+      {
+        width: 80,
+        height: 80,
+        backgroundColor: '#FFF',
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 24,
+      },
+      (0, j.getShadowStyle)({
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 5,
+      })
+    ),
+    logoImage: { width: 80, height: 80, borderRadius: 20 },
+    loaderWrapper: { marginBottom: 24 },
+    title: { fontSize: 24, fontWeight: '800', color: '#1C1C1E', marginBottom: 12, letterSpacing: -0.5 },
+    subtitle: { fontSize: 15, color: '#8E8E93', marginBottom: 48, fontWeight: '500' },
+    logContainer: {
+      width: '90%',
+      maxWidth: 400,
+      backgroundColor: 'rgba(255, 255, 255, 0.8)',
+      padding: 16,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: 'rgba(0, 122, 255, 0.1)',
+    },
+    logHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+    logDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#007AFF', marginRight: 8 },
+    logHeaderText: { fontSize: 13, color: '#1C1C1E', fontWeight: '700', letterSpacing: 0.5 },
+    logList: { gap: 4 },
+    logText: { fontSize: 11 },
+    logTextActive: { color: '#007AFF', opacity: 1 },
+    logTextInactive: { color: '#636366', opacity: 0.7 },
+  });
