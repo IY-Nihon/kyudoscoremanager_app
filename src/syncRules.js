@@ -52,6 +52,11 @@ function trashedAtMillis(item) {
  *
  * purge が true のとき、クラウドに無くなったものを手元からも消す。ただし
  * 「未同期」のものは送信前なので残す。
+ *
+ * 日時の読み方は元の実装のまま。Timestamp か数値のときだけ比較に使い、
+ * {seconds} の入れ物や文字列だと比較が NaN になって 2 も 3 も成立しない
+ * ＝クラウドが勝てない。toMillis を使えば読めるが、それは挙動が変わるので
+ * ここでは行わない。入れ物の形は本番の25件を数値に直して解消済み。
  */
 function mergeById(localList, cloudList, force = false, purge = false) {
   const byId = new Map();
@@ -70,7 +75,10 @@ function mergeById(localList, cloudList, force = false, purge = false) {
       return;
     }
 
-    const cloudAt = toMillis(cloudItem.lastModified);
+    // Timestamp なら数値に、それ以外は素通し（数値でなければ比較は NaN になる）
+    const cloudAt = cloudItem.lastModified?.toMillis
+      ? cloudItem.lastModified.toMillis()
+      : cloudItem.lastModified || 0;
     const localAt = localItem.lastModified || 0;
     const クラウドが新しい = cloudAt > localAt + CLOUD_NEWER_MARGIN_MS;
     const 手元は送信済み = localItem.syncStatus === SYNCED || !localItem.syncStatus;
