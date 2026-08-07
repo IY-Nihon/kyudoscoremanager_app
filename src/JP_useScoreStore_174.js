@@ -110,7 +110,7 @@ i[t]=null===e[s]||void 0===e[s]?'':e[s]
 }return Object.values(e)
 }return[]
 },S=(e,s)=>e&&'object'==typeof e?{
-id:e.id||'',name:e.name||'',gender:e.gender||'\u672a\u8a2d\u5b9a',grade:'number'==typeof e.grade?e.grade:1,marks:f(e.marks,e.isSeparator?0:s),isSeparator:!0===e.isSeparator,isTotalCalculator:!0===e.isTotalCalculator,isGuest:!0===e.isGuest,memberId:e.memberId||void 0,lockedBlocks:e.lockedBlocks||{
+id:e.id||'',name:e.name||'',gender:e.gender||'未設定',grade:'number'==typeof e.grade?e.grade:1,marks:f(e.marks,e.isSeparator?0:s),isSeparator:!0===e.isSeparator,isTotalCalculator:!0===e.isTotalCalculator,isGuest:!0===e.isGuest,memberId:e.memberId||void 0,lockedBlocks:e.lockedBlocks||{
 
 },substitutions:e.substitutions||{
 
@@ -118,7 +118,7 @@ id:e.id||'',name:e.name||'',gender:e.gender||'\u672a\u8a2d\u5b9a',grade:'number'
 
 },bowWeight:e.bowWeight||void 0,lastModified:e.lastModified||0,arrowLocations:Array.isArray(e.arrowLocations)?e.arrowLocations:Array(e.isSeparator?0:s||8).fill(null)
 }:null,b=(e,s)=>JSON.parse(JSON.stringify(e.map(e=>({
-id:e.id,name:e.name||'',gender:e.gender||'\u672a\u8a2d\u5b9a',grade:e.grade||0,isSeparator:e.isSeparator||!1,isTotalCalculator:e.isTotalCalculator||!1,isGuest:e.isGuest||!1,memberId:e.memberId||null,lockedBlocks:e.lockedBlocks||{
+id:e.id,name:e.name||'',gender:e.gender||'未設定',grade:e.grade||0,isSeparator:e.isSeparator||!1,isTotalCalculator:e.isTotalCalculator||!1,isGuest:e.isGuest||!1,memberId:e.memberId||null,lockedBlocks:e.lockedBlocks||{
 
 },substitutions:e.substitutions||{
 
@@ -191,20 +191,20 @@ let i='function'==typeof o?o(s()):o;
 i&&(i.sessions&&(i.sessions=cleanUpSessions(i.sessions)),i.trash&&(i.trash=cleanUpSessions(i.trash))),t(i)
 };
 return{
-enableArrowLocation:!1,arrowTargetType:'kasumi36',activeArrowLocationEdit:null,activeGroupId:null,activeGroupName:null,publicGroupId:null,activeRole:null,myMemberId:null,myMemberName:null,activeUserEmail:null,memberAuthVersion:0,archers:[],members:[],alumni:[],history:[],sessions:[],trash:[],shotsPerRound:8,activeSessionID:null,historyStack:[],redoStack:[],viewScale:1,syncStatus:'\u672a\u540c\u671f',lastSyncTime:null,offlineSaveWarning:null,isNetworkOnline:!0,isAdminMode:!1,autoPromotionEnabled:!0,_pendingUpdateTimers:{
+enableArrowLocation:!1,arrowTargetType:'kasumi36',activeArrowLocationEdit:null,activeGroupId:null,activeGroupName:null,publicGroupId:null,activeRole:null,myMemberId:null,myMemberName:null,activeUserEmail:null,memberAuthVersion:0,archers:[],members:[],alumni:[],history:[],sessions:[],trash:[],shotsPerRound:8,activeSessionID:null,historyStack:[],redoStack:[],viewScale:1,syncStatus:'未同期',lastSyncTime:null,offlineSaveWarning:null,isNetworkOnline:!0,isAdminMode:!1,autoPromotionEnabled:!0,_pendingUpdateTimers:{
 
-},showSyncErrorPopups:!0,includeInStats:!0,lastLocalChange:0,lastResetHandled:0,lastPushedTimestamp:0,showTrash:!1,sessionUnsubscribe:null,trashUnsubscribe:null,memberUnsubscribe:null,alumniUnsubscribe:null,configUnsubscribe:null,showAlumniInAnalysis:!1,showAlumniInPicker:!1,currentFreshmanTerm:1,historyViewMode:'list',selectedHistorySessionId:null,isAdminModePending:!1,isLiveActive:!1,isHost:!1,liveSessionName:null,isIncomingLiveSync:!1,liveSessionsList:[],analysisSelectedTags:[],analysisTagLogic:'AND',historySelectedTags:[],historyTagLogic:'AND',currentSessionTags:[],tagTemplates:['#\u7acb','#\u7df4\u7fd2\u8a66\u5408','#\u5927\u4f1a','#\u81ea\u4e3b\u7df4\u7fd2','#\u5408\u5bbf'],initializationLogs:[],syncIntervalId:null,lastPromotionYear:null,_pendingMemberTimers:{
+},showSyncErrorPopups:!0,includeInStats:!0,lastLocalChange:0,lastResetHandled:0,lastPushedTimestamp:0,showTrash:!1,sessionUnsubscribe:null,trashUnsubscribe:null,memberUnsubscribe:null,alumniUnsubscribe:null,configUnsubscribe:null,showAlumniInAnalysis:!1,showAlumniInPicker:!1,currentFreshmanTerm:1,historyViewMode:'list',selectedHistorySessionId:null,isAdminModePending:!1,isLiveActive:!1,isHost:!1,liveSessionName:null,isIncomingLiveSync:!1,liveSessionsList:[],analysisSelectedTags:[],analysisTagLogic:'AND',historySelectedTags:[],historyTagLogic:'AND',currentSessionTags:[],tagTemplates:['#立','#練習試合','#大会','#自主練習','#合宿'],initializationLogs:[],syncIntervalId:null,lastPromotionYear:null,_pendingMemberTimers:{
 
 },isHydrated:!1,analysisRankingSettings:{
-'\u6708\u3054\u3068':{
+'月ごと':{
 type:'ratio',value:0
-},'\u671f\u9593\u6307\u5b9a':{
+},'期間指定':{
 type:'ratio',value:0
-},'\u76f4\u8fd130\u65e5':{
+},'直近30日':{
 type:'ratio',value:0
-},'\u4eca\u5e74\u5ea6':{
+},'今年度':{
 type:'ratio',value:0
-},'\u3059\u3079\u3066':{
+},'すべて':{
 type:'ratio',value:0
 }
 },focusedMemberId:null,currentRouteName:null,updateLoadingLog:t=>{
@@ -220,7 +220,7 @@ focusedMemberId:s
 showSyncErrorPopups:s
 }),setAuth:(t,o,a,i=null,n=null,c=null,l=null)=>{
 null===t?(e({
-activeGroupId:null,activeGroupName:null,publicGroupId:null,activeRole:null,myMemberId:null,myMemberName:null,activeUserEmail:null,sessions:[],members:[],history:[],alumni:[],trash:[],archers:[],activeSessionID:null,analysisSelectedTags:[],historySelectedTags:[],historyTagLogic:'AND',tagTemplates:['\u7acb','\u7df4\u7fd2\u8a66\u5408','\u5927\u4f1a','\u81ea\u4e3b\u7df4\u7fd2','\u5408\u5bbf'],initializationLogs:[],isAdminMode:!1,isAdminModePending:!1
+activeGroupId:null,activeGroupName:null,publicGroupId:null,activeRole:null,myMemberId:null,myMemberName:null,activeUserEmail:null,sessions:[],members:[],history:[],alumni:[],trash:[],archers:[],activeSessionID:null,analysisSelectedTags:[],historySelectedTags:[],historyTagLogic:'AND',tagTemplates:['立','練習試合','大会','自主練習','合宿'],initializationLogs:[],isAdminMode:!1,isAdminModePending:!1
 }),s().stopPeriodicSync(),s().stopListeningToSessions(),s().stopListeningToMembers(),s().stopListeningToAlumni(),s().stopListeningToTrash(),s().configUnsubscribe&&(s().configUnsubscribe(),e({
 configUnsubscribe:null
 }))):(e({
@@ -352,7 +352,7 @@ showAlumniInPicker:s
 includeInStats:s
 }),addArcher:(t,o)=>{
 const a=Array.isArray(s().archers)?s().archers:[],i={
-id:(0,l.generateUUID)(),name:'',marks:Array(s().shotsPerRound||8).fill(''),arrowLocations:Array(s().shotsPerRound||8).fill(null),gender:o||'\u672a\u8a2d\u5b9a',grade:1,isGuest:!1,isSeparator:!1,isTotalCalculator:!1,lockedBlocks:{
+id:(0,l.generateUUID)(),name:'',marks:Array(s().shotsPerRound||8).fill(''),arrowLocations:Array(s().shotsPerRound||8).fill(null),gender:o||'未設定',grade:1,isGuest:!1,isSeparator:!1,isTotalCalculator:!1,lockedBlocks:{
 
 },lastModified:Date.now()
 },n='number'!=typeof t||isNaN(t)?[...a,i]:[...a];
@@ -368,7 +368,7 @@ isLiveActive:c,liveSessionName:d,shotsPerRound:u
 c&&d&&v(d,n,u)
 },addSeparator:t=>{
 const o=Array.isArray(s().archers)?s().archers:[],a={
-id:'sep-'+(0,l.generateUUID)(),name:'---',marks:[],isSeparator:!0,gender:'\u672a\u8a2d\u5b9a',grade:0,isGuest:!1,isTotalCalculator:!1,lockedBlocks:{
+id:'sep-'+(0,l.generateUUID)(),name:'---',marks:[],isSeparator:!0,gender:'未設定',grade:0,isGuest:!1,isTotalCalculator:!1,lockedBlocks:{
 
 },lastModified:Date.now()
 },i='number'==typeof t?[...o]:[...o,a];
@@ -381,7 +381,7 @@ isLiveActive:n,liveSessionName:c,shotsPerRound:d
 n&&c&&v(c,i,d)
 },addTotalCalculator:t=>{
 const o=Array.isArray(s().archers)?s().archers:[],a={
-id:'total-'+(0,l.generateUUID)(),name:'\u8a08',marks:Array(s().shotsPerRound||8).fill(''),arrowLocations:Array(s().shotsPerRound||8).fill(null),isTotalCalculator:!0,gender:'\u672a\u8a2d\u5b9a',grade:0,isGuest:!1,isSeparator:!1,lockedBlocks:{
+id:'total-'+(0,l.generateUUID)(),name:'計',marks:Array(s().shotsPerRound||8).fill(''),arrowLocations:Array(s().shotsPerRound||8).fill(null),isTotalCalculator:!0,gender:'未設定',grade:0,isGuest:!1,isSeparator:!1,lockedBlocks:{
 
 },lastModified:Date.now()
 },i='number'==typeof t?[...o]:[...o,a];
@@ -455,7 +455,7 @@ archers:a,isLiveActive:i,liveSessionName:n
 let l='';
 const d=(a||[]).map(e=>{
 if(e.id===t){
-const s=[...e.marks||[]],t=s[o],a=''===t?'\u25cb':'\u25cb'===t?'\xd7':'';
+const s=[...e.marks||[]],t=s[o],a=''===t?'○':'○'===t?'\xd7':'';
 return s[o]=a,l=a,Object.assign({
 
 },e,{
@@ -514,7 +514,7 @@ p&&h&&v(h,m,f)
 const a=Array.isArray(s().archers)?s().archers:[],i=o?.equipments?.length?[...o.equipments].sort((e,s)=>s.date-e.date)[0]?.weight:void 0,n=a.map(e=>e&&e.id===t?Object.assign({
 
 },e,{
-name:o?o.name:'',gender:o?o.gender:'\u672a\u8a2d\u5b9a',grade:o?o.grade:1,memberId:o?o.id:void 0,isGuest:!1,bowWeight:i||e.bowWeight,lastModified:Date.now()
+name:o?o.name:'',gender:o?o.gender:'未設定',grade:o?o.grade:1,memberId:o?o.id:void 0,isGuest:!1,bowWeight:i||e.bowWeight,lastModified:Date.now()
 }):e);
 e({
 historyStack:[...s().historyStack,a],redoStack:[],lastLocalChange:Date.now(),archers:n
@@ -540,7 +540,7 @@ i&&n&&v(n,a,c)
 const a=(Array.isArray(s().archers)?s().archers:[]).map(e=>e&&e.id===t?Object.assign({
 
 },e,{
-name:o,isGuest:!0,gender:'\u672a\u8a2d\u5b9a',memberId:void 0,lastModified:Date.now()
+name:o,isGuest:!0,gender:'未設定',memberId:void 0,lastModified:Date.now()
 }):e);
 e({
 historyStack:[...s().historyStack,(Array.isArray(s().archers)?s().archers:[])],redoStack:[],lastLocalChange:Date.now(),archers:a
@@ -589,9 +589,9 @@ isLiveActive:i,liveSessionName:n,shotsPerRound:c
 }=s();
 i&&n&&v(n,a,c)
 },addMember:(o,i,c,d)=>{
-if(!s().activeGroupId||'group'!==s().activeRole)return void n.default.alert('\u6a29\u9650\u30a8\u30e9\u30fc','\u30e1\u30f3\u30d0\u30fc\u306e\u8ffd\u52a0\u306f\u56e3\u4f53\u30ed\u30b0\u30a4\u30f3\u3001\u304b\u3064\u7ba1\u7406\u8005\u306e\u307f\u53ef\u80fd\u3067\u3059\u3002');
+if(!s().activeGroupId||'group'!==s().activeRole)return void n.default.alert('権限エラー','メンバーの追加は団体ログイン、かつ管理者のみ可能です。');
 const u=o?o.trim():'',m={
-id:(0,l.generateUUID)(),personalId:h(s().members,s().alumni),name:u,gender:i,grade:c,termKi:d||s().currentFreshmanTerm-(c-1),lastModified:Date.now(),syncStatus:'\u672a\u540c\u671f'
+id:(0,l.generateUUID)(),personalId:h(s().members,s().alumni),name:u,gender:i,grade:c,termKi:d||s().currentFreshmanTerm-(c-1),lastModified:Date.now(),syncStatus:'未同期'
 };
 if(e({
 members:[...s().members,m],lastLocalChange:Date.now()
@@ -599,7 +599,7 @@ members:[...s().members,m],lastLocalChange:Date.now()
 const o=Object.assign({
 
 },m,{
-lastModified:(0,a.serverTimestamp)(),syncStatus:'\u540c\u671f\u6e08\u307f'
+lastModified:(0,a.serverTimestamp)(),syncStatus:'同期済み'
 });
 (0,a.setDoc)((0,a.doc)(fb.db,`groups/${
 s().activeGroupId
@@ -608,13 +608,13 @@ e(e=>({
 members:e.members.map(e=>e.id===m.id?Object.assign({
 
 },e,{
-syncStatus:'\u540c\u671f\u6e08\u307f'
+syncStatus:'同期済み'
 }):e)
 }))
 }).catch(e=>console.error('Add Member Sync Error:',e))
 }
 },updateMember:(o,i)=>{
-if(!s().activeGroupId||'group'!==s().activeRole)return void n.default.alert('\u6a29\u9650\u30a8\u30e9\u30fc','\u30e1\u30f3\u30d0\u30fc\u306e\u7de8\u96c6\u306f\u56e3\u4f53\u30ed\u30b0\u30a4\u30f3\u6642\u306e\u307f\u53ef\u80fd\u3067\u3059\u3002');
+if(!s().activeGroupId||'group'!==s().activeRole)return void n.default.alert('権限エラー','メンバーの編集は団体ログイン時のみ可能です。');
 if(void 0!==i.grade){
 const e=new Date,s=e.getFullYear(),t=e.getMonth()+1,o=t>=4?s:s-1;
 5===Number(i.grade)?i.graduationYear=o:i.graduationYear=null
@@ -628,7 +628,7 @@ c.termKi=e
 }const l=s().members.map(e=>e.id===o?Object.assign({
 
 },e,c,{
-lastModified:Date.now(),syncStatus:'\u672a\u540c\u671f'
+lastModified:Date.now(),syncStatus:'未同期'
 }):e);
 e({
 members:l,lastLocalChange:Date.now()
@@ -709,7 +709,7 @@ if(i){
 const n=Object.assign({
 
 },i,{
-lastModified:(0,a.serverTimestamp)(),syncStatus:'\u540c\u671f\u6e08\u307f'
+lastModified:(0,a.serverTimestamp)(),syncStatus:'同期済み'
 });
 (0,a.updateDoc)((0,a.doc)(fb.db,`groups/${
 s().activeGroupId
@@ -720,7 +720,7 @@ i.name
 members:e.members.map(e=>e.id===o?Object.assign({
 
 },e,{
-syncStatus:'\u540c\u671f\u6e08\u307f'
+syncStatus:'同期済み'
 }):e)
 })),delete p[o]
 }).catch(e=>{
@@ -733,7 +733,7 @@ s().activeGroupId&&'group'===s().activeRole?(e({
 members:s().members.filter(e=>e.id!==o),lastLocalChange:Date.now()
 }),s().activeGroupId&&(0,a.deleteDoc)((0,a.doc)(fb.db,`groups/${
 s().activeGroupId
-}/members`,o)).then(()=>s().syncMemberLookup()).catch(e=>console.error('Delete Member Sync Error:',e))):n.default.alert('\u6a29\u9650\u30a8\u30e9\u30fc','\u30e1\u30f3\u30d0\u30fc\u306e\u524a\u9664\u306f\u56e3\u4f53\u30ed\u30b0\u30a4\u30f3\u6642\u306e\u307f\u53ef\u80fd\u3067\u3059\u3002')
+}/members`,o)).then(()=>s().syncMemberLookup()).catch(e=>console.error('Delete Member Sync Error:',e))):n.default.alert('権限エラー','メンバーの削除は団体ログイン時のみ可能です。')
 },syncMemberLookup:async()=>{const{activeGroupId:g,activeRole:r,members:ms}=s();if(!g||'group'!==r||!fb.db)return;try{const col=(0,a.collection)(fb.db,`groups/${g}/member_lookup`);const snap=await(0,a.getDocs)(col);const want=new Map;(ms||[]).forEach(m=>{if(m&&m.id&&/^\d{4}$/.test(m.personalId||''))want.set(m.personalId,m.id)});const batch=(0,a.writeBatch)(fb.db);let n=0;snap.forEach(d=>{const w=want.get(d.id);if(!w){batch.delete(d.ref);n++}else if(d.data().memberId===w){want.delete(d.id)}});want.forEach((memberId,pid)=>{batch.set((0,a.doc)(fb.db,`groups/${g}/member_lookup`,pid),{memberId:memberId,updatedAt:Date.now()});n++});if(n>0){await batch.commit();console.log('[Store] member_lookup synced:',n)}}catch(e){console.error('[Store] syncMemberLookup error:',e)}},ensurePersonalIds:async()=>{
 const{
 members:o,alumni:i,activeGroupId:n
@@ -761,7 +761,7 @@ const s=u(),o=Date.now();
 c[e]=Object.assign({
 
 },c[e],{
-personalId:p(s),lastModified:o,syncStatus:'\u540c\u671f\u6e08\u307f'
+personalId:p(s),lastModified:o,syncStatus:'同期済み'
 }),h.set((0,a.doc)(fb.db,`groups/${
 n
 }/members`,c[e].id),Object.assign({
@@ -776,7 +776,7 @@ const s=u(),o=Date.now();
 l[e]=Object.assign({
 
 },l[e],{
-personalId:p(s),lastModified:o,syncStatus:'\u540c\u671f\u6e08\u307f'
+personalId:p(s),lastModified:o,syncStatus:'同期済み'
 }),h.set((0,a.doc)(fb.db,`groups/${
 n
 }/alumni`,l[e].id),Object.assign({
@@ -790,14 +790,14 @@ members:c,alumni:l,lastLocalChange:Date.now()
 f
 } non-compliant IDs.`)),await s().syncMemberLookup()
 },deleteEquipment:(o,i)=>{
-if(!s().activeGroupId||'group'!==s().activeRole)return void n.default.alert('\u6a29\u9650\u30a8\u30e9\u30fc','\u9053\u5177\u7ba1\u7406\u306f\u56e3\u4f53\u30ed\u30b0\u30a4\u30f3\u6642\u306e\u307f\u53ef\u80fd\u3067\u3059\u3002');
+if(!s().activeGroupId||'group'!==s().activeRole)return void n.default.alert('権限エラー','道具管理は団体ログイン時のみ可能です。');
 const c=Date.now(),l=s().members.map(e=>{
 if(e.id===o){
 const s=e.equipments||[];
 return Object.assign({
 
 },e,{
-equipments:s.filter(e=>e.id!==i),lastModified:c,syncStatus:'\u672a\u540c\u671f'
+equipments:s.filter(e=>e.id!==i),lastModified:c,syncStatus:'未同期'
 })
 }return e
 });
@@ -809,7 +809,7 @@ if(d&&s().activeGroupId){
 const i=Object.assign({
 
 },d,{
-lastModified:(0,a.serverTimestamp)(),syncStatus:'\u540c\u671f\u6e08\u307f'
+lastModified:(0,a.serverTimestamp)(),syncStatus:'同期済み'
 });
 (0,a.updateDoc)((0,a.doc)(fb.db,`groups/${
 s().activeGroupId
@@ -818,7 +818,7 @@ e(e=>({
 members:e.members.map(e=>e.id===o?Object.assign({
 
 },e,{
-syncStatus:'\u540c\u671f\u6e08\u307f'
+syncStatus:'同期済み'
 }):e)
 }))
 }).catch(e=>console.error('Delete Equipment Sync Error:',e))
@@ -827,37 +827,37 @@ syncStatus:'\u540c\u671f\u6e08\u307f'
 const p=s().activeSessionID||(0,l.generateUUID)(),{
 archers:h,shotsPerRound:f,activeGroupId:S,activeRole:b,myMemberId:y
 }=s(),v=Array.isArray(h)?h:[],T={
-id:p,date:Date.now(),title:o,note:d,archers:JSON.parse(JSON.stringify(v)),archerNames:Array.from(new Set(v.map(e=>e&&e.name?e.name.trim():'').filter(Boolean))),shotCount:f||8,includeInStats:u,tags:m,attendance:attendanceData,syncStatus:'\u672a\u540c\u671f',lastModified:Date.now()
+id:p,date:Date.now(),title:o,note:d,archers:JSON.parse(JSON.stringify(v)),archerNames:Array.from(new Set(v.map(e=>e&&e.name?e.name.trim():'').filter(Boolean))),shotCount:f||8,includeInStats:u,tags:m,attendance:attendanceData,syncStatus:'未同期',lastModified:Date.now()
 };
-// \u500b\u4eba\u30e2\u30fc\u30c9\u3067\u306e\u4e0a\u66f8\u304d\u306f\u3001\u624b\u5143\u306b\u78ba\u5b9a\u3059\u308b\u524d\u306b\u6b62\u3081\u308b
+// 個人モードでの上書きは、手元に確定する前に止める
 if(S&&'member'===b)try{
 if((await(0,a.getDoc)((0,a.doc)(fb.db,`groups/${
 S
 }/sessions`,p))).exists()){
-const e='\u3053\u306e\u8a18\u9332\u306f\u65e2\u306b\u30af\u30e9\u30a6\u30c9\u306b\u5b58\u5728\u3059\u308b\u305f\u3081\u3001\u500b\u4eba\u30e2\u30fc\u30c9\u304b\u3089\u306f\u66f4\u65b0\u3067\u304d\u307e\u305b\u3093\u3002';
-return void(c.IS_WEB?window.alert(e):n.default.alert('\u4fdd\u5b58\u5236\u9650',e))
+const e='この記録は既にクラウドに存在するため、個人モードからは更新できません。';
+return void(c.IS_WEB?window.alert(e):n.default.alert('保存制限',e))
 }
 }catch(e){
-console.warn('[Store] \u65e2\u5b58\u78ba\u8a8d\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002\u4fdd\u5b58\u306f\u7d9a\u884c\u3057\u307e\u3059:',e)
+console.warn('[Store] 既存確認に失敗しました。保存は続行します:',e)
 }
-// \u307e\u305a\u624b\u5143\u306b\u78ba\u5b9a\u3059\u308b\u3002\u30af\u30e9\u30a6\u30c9\u306e\u5fdc\u7b54\u306f\u5f85\u305f\u306a\u3044\u3002
-// \u5f85\u3064\u3068\u3001\u901a\u4fe1\u3067\u304d\u306a\u3044\u3068\u304d\u306b\u5c04\u624b\u304c\u6d88\u3048\u305a\u5c65\u6b74\u306b\u3082\u51fa\u306a\u3044\u3046\u3048\u3001
-// \u753b\u9762\u306b\u306f\u4f55\u3082\u77e5\u3089\u3055\u308c\u306a\u3044\u307e\u307e\u306b\u306a\u308b\u3002
-const \u5143\u306e\u30e9\u30a4\u30d6\u540d=s().liveSessionName;
+// まず手元に確定する。クラウドの応答は待たない。
+// 待つと、通信できないときに射手が消えず履歴にも出ないうえ、
+// 画面には何も知らされないままになる。
+const 元のライブ名=s().liveSessionName;
 s().stopLiveSync(!0),e(e=>({
-sessions:[T,...e.sessions.filter(e=>e.id!==p)],activeSessionID:null,archers:[],isLiveActive:!1,isHost:!1,liveSessionName:null,lastLocalChange:Date.now(),syncStatus:'\u672a\u540c\u671f'
+sessions:[T,...e.sessions.filter(e=>e.id!==p)],activeSessionID:null,archers:[],isLiveActive:!1,isHost:!1,liveSessionName:null,lastLocalChange:Date.now(),syncStatus:'未同期'
 }));
-// \u30e9\u30a4\u30d6\u8a18\u9332\u306e\u5f8c\u59cb\u672b\u3002\u5c4a\u304b\u306a\u304f\u3066\u3082\u4fdd\u5b58\u306b\u306f\u5f71\u97ff\u3055\u305b\u306a\u3044
-if(\u5143\u306e\u30e9\u30a4\u30d6\u540d&&fb.rtdb){
+// ライブ記録の後始末。届かなくても保存には影響させない
+if(元のライブ名&&fb.rtdb){
 const e=(0,i.ref)(fb.rtdb,`live_sessions/${
 S
 }/${
-\u5143\u306e\u30e9\u30a4\u30d6\u540d
+元のライブ名
 }`);
 (0,i.update)((0,i.ref)(fb.rtdb,`live_sessions/${
 S
 }/${
-\u5143\u306e\u30e9\u30a4\u30d6\u540d
+元のライブ名
 }/state`),{
 status:'finished',timestamp:(0,i.serverTimestamp)()
 }).catch(()=>{
@@ -868,12 +868,12 @@ status:'finished',timestamp:(0,i.serverTimestamp)()
 })
 },2e3)
 }
-// \u30af\u30e9\u30a6\u30c9\u3078\u9001\u308b\u3002\u3053\u3053\u3082\u5f85\u305f\u306a\u3044\u3002
-// \u5c4a\u304f\u307e\u3067\u306f\u300c\u672a\u540c\u671f\u300d\u306e\u307e\u307e\u306b\u3057\u3066\u304a\u304f\u3002\u305d\u3046\u3059\u308c\u3070 syncSessions \u306e
-// \u518d\u9001\u3067\u62fe\u308f\u308c\u3001\u901a\u4fe1\u304c\u623b\u3063\u305f\u3068\u304d\u306b\u81ea\u52d5\u3067\u9001\u3089\u308c\u308b\u3002
+// クラウドへ送る。ここも待たない。
+// 届くまでは「未同期」のままにしておく。そうすれば syncSessions の
+// 再送で拾われ、通信が戻ったときに自動で送られる。
 if(S){
 const o=JSON.parse(JSON.stringify(T));
-o.syncStatus='\u540c\u671f\u6e08\u307f',o.lastModified=(0,a.serverTimestamp)(),(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
+o.syncStatus='同期済み',o.lastModified=(0,a.serverTimestamp)(),(0,a.setDoc)((0,a.doc)(fb.db,`groups/${
 S
 }/sessions`,p),o,{
 merge:!0
@@ -882,12 +882,12 @@ e(e=>({
 sessions:e.sessions.map(e=>e&&e.id===p?Object.assign({
 
 },e,{
-syncStatus:'\u540c\u671f\u6e08\u307f'
-}):e),syncStatus:'\u540c\u671f\u6e08\u307f'
+syncStatus:'同期済み'
+}):e),syncStatus:'同期済み'
 }))
 }).catch(t=>{
 console.error('Save Session Cloud Error:',t),e({
-syncStatus:'\u540c\u671f\u30a8\u30e9\u30fc'
+syncStatus:'同期エラー'
 })
 })
 }
@@ -1330,17 +1330,17 @@ const _syncDb=await waitForDb();
 if(!_syncDb){
 console.warn('[Store] syncSessions: db still undefined after await, aborting');
 e({
-syncStatus:'\u540c\u671f\u30a8\u30e9\u30fc'
+syncStatus:'同期エラー'
 });
 return;
 
 }if(await s().checkAndAutoIncrementGrades(),I)return void console.log('[syncSessions] Already syncing, skipping...');
 I=!0;
 const o=s().lastSyncTime||0;
-console.log('[Store] Syncing:',`\u540c\u671f\u3092\u958b\u59cb\u4e2d (\u524d\u56de\u57fa\u6e96\u6642\u523b: ${
-o?new Date(o).toLocaleString():'\u306a\u3057'
+console.log('[Store] Syncing:',`同期を開始中 (前回基準時刻: ${
+o?new Date(o).toLocaleString():'なし'
 })...`),e({
-syncStatus:'\u540c\u671f\u4e2d'
+syncStatus:'同期中'
 });
 try{
 // この関数の後ろで局所的な M を宣言しているため、下の forEach の中で
@@ -1377,7 +1377,7 @@ tags:cleanedTags
 }S.push(Object.assign({
 
 },s,{
-id:e.id,tags:cleanedTags,lastModified:t,syncStatus:'\u540c\u671f\u6e08\u307f'
+id:e.id,tags:cleanedTags,lastModified:t,syncStatus:'同期済み'
 }))
 });
 const b=[];
@@ -1386,7 +1386,7 @@ const s=e.data(),t=f(s.lastModified);
 t>h&&(h=t),b.push(Object.assign({
 
 },s,{
-id:e.id,lastModified:t,syncStatus:'\u540c\u671f\u6e08\u307f'
+id:e.id,lastModified:t,syncStatus:'同期済み'
 }))
 });
 const v=[];
@@ -1395,7 +1395,7 @@ const s=e.data(),t=f(s.lastModified);
 t>h&&(h=t),v.push(Object.assign({
 
 },s,{
-id:e.id,lastModified:t,syncStatus:'\u540c\u671f\u6e08\u307f'
+id:e.id,lastModified:t,syncStatus:'同期済み'
 }))
 });
 const T=[];
@@ -1404,7 +1404,7 @@ const s=e.data(),t=f(s.lastModified);
 t>h&&(h=t),T.push(Object.assign({
 
 },s,{
-id:e.id,lastModified:t,syncStatus:'\u540c\u671f\u6e08\u307f'
+id:e.id,lastModified:t,syncStatus:'同期済み'
 }))
 }),console.log(`[syncSessions] Fetched counts: S=${
 S.length
@@ -1420,10 +1420,10 @@ w.sort((e,s)=>{
 const t=e.date?new Date(e.date).getTime():0;
 return(s.date?new Date(s.date).getTime():0)-t
 });
-// \u623b\u3057\u305f\u8a18\u9332\u304c\u307e\u3060\u30af\u30e9\u30a6\u30c9\u3078\u5c4a\u3044\u3066\u3044\u306a\u3044\u3068\u304d\u306f\u3001\u30af\u30e9\u30a6\u30c9\u5074\u306e\u30b4\u30df\u7bb1\u306e
-// \u5199\u3057\u3067\u6d88\u3057\u8fbc\u307e\u306a\u3044\u3002\u5c4a\u304f\u307e\u3067\u306f\u624b\u5143\u306e\u300c\u623b\u3057\u305f\u300d\u72b6\u614b\u3092\u512a\u5148\u3059\u308b\u3002
-const \u5fa9\u5143\u5f85\u3061=new Set(w.filter(e=>e&&'\u672a\u540c\u671f'===e.syncStatus).map(e=>e.id)),\u3054\u307f\u7bb1=M.filter(e=>e&&!\u5fa9\u5143\u5f85\u3061.has(e.id));
-const $=new Set(\u3054\u307f\u7bb1.map(e=>e.id)),N=w.filter(e=>!$.has(e.id)),P=N.filter(e=>'\u672a\u540c\u671f'===e.syncStatus);
+// 戻した記録がまだクラウドへ届いていないときは、クラウド側のゴミ箱の
+// 写しで消し込まない。届くまでは手元の「戻した」状態を優先する。
+const 復元待ち=new Set(w.filter(e=>e&&'未同期'===e.syncStatus).map(e=>e.id)),ごみ箱=M.filter(e=>e&&!復元待ち.has(e.id));
+const $=new Set(ごみ箱.map(e=>e.id)),N=w.filter(e=>!$.has(e.id)),P=N.filter(e=>'未同期'===e.syncStatus);
 let k=N;
 if(P.length>0){
 console.log(`[syncSessions] Syncing ${
@@ -1434,7 +1434,7 @@ P.forEach(i=>{
 const n=JSON.parse(JSON.stringify(Object.assign({
 
 },i,{
-syncStatus:'\u540c\u671f\u6e08\u307f',lastModified:o
+syncStatus:'同期済み',lastModified:o
 })));
 e.set((0,a.doc)(fb.db,`groups/${
 s().activeGroupId
@@ -1451,14 +1451,14 @@ s().activeGroupId
 }),await e.commit(),k=k.map(e=>P.find(s=>s.id===e.id)?Object.assign({
 
 },e,{
-syncStatus:'\u540c\u671f\u6e08\u307f',lastModified:o
+syncStatus:'同期済み',lastModified:o
 }):e)
 }
-// \u9001\u4fe1\u304c\u6e08\u3093\u3067\u3044\u306a\u3044\u524a\u9664\u3092\u9001\u308a\u76f4\u3059\u3002\u901a\u4fe1\u3067\u304d\u306a\u3044\u3068\u304d\u306b\u524a\u9664\u3057\u305f\u5834\u5408\u3001
-// \u5f85\u3061\u884c\u5217\u3054\u3068\u5931\u308f\u308c\u308b\u3053\u3068\u304c\u3042\u308a\u3001\u305d\u306e\u307e\u307e\u3060\u3068\u6b21\u306e\u5168\u4ef6\u53d6\u5f97\u3067\u8a18\u9332\u304c
-// \u5fa9\u6d3b\u3057\u3066\u3057\u307e\u3046\u3002
-let Z=\u3054\u307f\u7bb1;
-const Y=\u3054\u307f\u7bb1.filter(e=>e&&e.id&&'\u672a\u540c\u671f'===e.syncStatus);
+// 送信が済んでいない削除を送り直す。通信できないときに削除した場合、
+// 待ち行列ごと失われることがあり、そのままだと次の全件取得で記録が
+// 復活してしまう。
+let Z=ごみ箱;
+const Y=ごみ箱.filter(e=>e&&e.id&&'未同期'===e.syncStatus);
 if(Y.length>0){
 console.log(`[syncSessions] Syncing ${
 Y.length
@@ -1480,14 +1480,14 @@ s().activeGroupId
 }),await e.commit(),Z=ごみ箱.map(e=>Y.find(s=>s.id===e.id)?Object.assign({
 
 },e,{
-syncStatus:'\u540c\u671f\u6e08\u307f'
+syncStatus:'同期済み'
 }):e)
 }catch(t){
-console.error('[syncSessions] \u524a\u9664\u306e\u9001\u308a\u76f4\u3057\u306b\u5931\u6557:',t)
+console.error('[syncSessions] 削除の送り直しに失敗:',t)
 }
 }
 e({
-sessions:k,members:O,trash:Z,alumni:G,syncStatus:'\u540c\u671f\u6e08\u307f',lastSyncTime:h
+sessions:k,members:O,trash:Z,alumni:G,syncStatus:'同期済み',lastSyncTime:h
 }),console.log(`[syncSessions] Finished. New lastSyncTime: ${
 h
 }`),setTimeout(()=>{
@@ -1495,7 +1495,7 @@ s().ensurePersonalIds()
 },500)
 }catch(s){
 console.error('[syncSessions] Error:',s),e({
-syncStatus:'\u540c\u671f\u30a8\u30e9\u30fc'
+syncStatus:'同期エラー'
 })
 }finally{
 I=!1
@@ -1505,8 +1505,8 @@ const{
 activeGroupId:o,activeRole:i,isNetworkOnline:n
 }=s();
 if(o&&n)if('member'!==i){
-console.log('[Store] Loading:','\u30af\u30e9\u30a6\u30c9\u3078\u306e\u540c\u671f\u3092\u958b\u59cb...'),e({
-syncStatus:'\u540c\u671f\u4e2d'
+console.log('[Store] Loading:','クラウドへの同期を開始...'),e({
+syncStatus:'同期中'
 });
 try{
 const o=e=>JSON.parse(JSON.stringify(e)),i=[];
@@ -1541,7 +1541,7 @@ if(e&&e.id){
 const n=o(Object.assign({
 
 },e,{
-syncStatus:'\u540c\u671f\u6e08\u307f',lastModified:Date.now()
+syncStatus:'同期済み',lastModified:Date.now()
 }));
 i.push({
 type:'set',ref:(0,a.doc)(fb.db,`groups/${
@@ -1580,34 +1580,34 @@ s.forEach(e=>{
 }const c=s().sessions.map(e=>Object.assign({
 
 },e,{
-syncStatus:'\u540c\u671f\u6e08\u307f'
+syncStatus:'同期済み'
 })),l=s().members.map(e=>Object.assign({
 
 },e,{
-syncStatus:'\u540c\u671f\u6e08\u307f'
+syncStatus:'同期済み'
 })),d=s().alumni.map(e=>Object.assign({
 
 },e,{
-syncStatus:'\u540c\u671f\u6e08\u307f'
+syncStatus:'同期済み'
 }));
 e({
-sessions:c,members:l,alumni:d,syncStatus:'\u540c\u671f\u6e08\u307f',lastSyncTime:Date.now()
-}),console.log('[Store] Loading:','\u30af\u30e9\u30a6\u30c9\u3078\u306e\u9001\u4fe1\u304c\u5b8c\u4e86\u3057\u307e\u3057\u305f')
+sessions:c,members:l,alumni:d,syncStatus:'同期済み',lastSyncTime:Date.now()
+}),console.log('[Store] Loading:','クラウドへの送信が完了しました')
 }catch(s){
 console.error('Full Sync Error:',s?.message||s),e({
-syncStatus:'\u540c\u671f\u30a8\u30e9\u30fc'
+syncStatus:'同期エラー'
 })
 }
 }else console.log('[Store] Member role: syncAllToCloud is strictly restricted.')
 },fetchAndOverwriteFromCloud:async()=>{
-console.log('[Store] Loading:','\u30af\u30e9\u30a6\u30c9\u304b\u3089\u306e\u53d6\u5f97\u3092\u958b\u59cb...'),e({
-syncStatus:'\u540c\u671f\u4e2d'
+console.log('[Store] Loading:','クラウドからの取得を開始...'),e({
+syncStatus:'同期中'
 });
 const _fetchDb=await waitForDb();
 if(!_fetchDb){
 console.warn('[Store] fetchAndOverwriteFromCloud: db still undefined after await, aborting');
 e({
-syncStatus:'\u540c\u671f\u30a8\u30e9\u30fc'
+syncStatus:'同期エラー'
 });
 return;
 
@@ -1621,9 +1621,9 @@ const c=await(0,a.getDocs)((0,a.collection)(fb.db,`groups/${
 s().activeGroupId
 }/sessions`));
 let l=[];
-c.forEach(e=>l.push(e.data())),console.log('[Store] Loading:',`\u30bb\u30c3\u30b7\u30e7\u30f3 ${
+c.forEach(e=>l.push(e.data())),console.log('[Store] Loading:',`セッション ${
 l.length
-}\u4ef6\u3092\u53d6\u5f97\u3057\u307e\u3057\u305f`);
+}件を取得しました`);
 const d=await(0,a.getDocs)((0,a.collection)(fb.db,`groups/${
 s().activeGroupId
 }/trash`));
@@ -1648,11 +1648,11 @@ e&&(void 0!==e.currentFreshmanTerm&&(f=e.currentFreshmanTerm),void 0!==e.tagTemp
 // 写しがあってもゴミ箱に入れ直さない。
 const 復元待ち=new Set(v.filter(e=>e&&'未同期'===e.syncStatus).map(e=>e.id)),ごみ箱=w.filter(e=>e&&!復元待ち.has(e.id)),I=new Set(ごみ箱.map(e=>e.id)),M=v.filter(e=>e&&!I.has(e.id));
 e({
-members:T,sessions:M,trash:ごみ箱,alumni:y(s().alumni,p,!1,!0),currentFreshmanTerm:f,tagTemplates:S,lastPromotionYear:b,syncStatus:'\u540c\u671f\u6e08\u307f',lastSyncTime:Date.now()
-}),console.log('[Store] Loading:','\u540c\u671f\u304c\u5b8c\u4e86\u3057\u307e\u3057\u305f')
+members:T,sessions:M,trash:ごみ箱,alumni:y(s().alumni,p,!1,!0),currentFreshmanTerm:f,tagTemplates:S,lastPromotionYear:b,syncStatus:'同期済み',lastSyncTime:Date.now()
+}),console.log('[Store] Loading:','同期が完了しました')
 }catch(s){
 console.error('Fetch Overwrite Error:',s),e({
-syncStatus:'\u540c\u671f\u30a8\u30e9\u30fc'
+syncStatus:'同期エラー'
 })
 }
 },startLiveSync:async o=>{
@@ -1677,7 +1677,7 @@ s().activeGroupId
 o
 }/state`),l=Array.isArray(a.archers)?a.archers:[];
 try{
-return v(o,l,a.shotsPerRound),c.IS_WEB&&console.log('\u30e9\u30a4\u30d6\u3092\u958b\u59cb\u3057\u307e\u3057\u305f: '+o),(0,i.onValue)(n,o=>{
+return v(o,l,a.shotsPerRound),c.IS_WEB&&console.log('ライブを開始しました: '+o),(0,i.onValue)(n,o=>{
 const a=o.val();
 if(!a){
 const o=s().liveSessionName;
@@ -1804,7 +1804,7 @@ c&&e({
 archers:l,shotsPerRound:o
 })
 }
-}),c.IS_WEB&&console.log('\u30e9\u30a4\u30d6\u306b\u53c2\u52a0\u3057\u307e\u3057\u305f: '+o)
+}),c.IS_WEB&&console.log('ライブに参加しました: '+o)
 },stopLiveSync:(o=!1)=>{
 const a=s();
 a.liveSessionName&&fb.rtdb&&(0,i.off)((0,i.ref)(fb.rtdb,`live_sessions/${
@@ -1901,7 +1901,7 @@ tags:cleanedTags
 }o.push(Object.assign({
 
 },s,{
-id:e.id,tags:cleanedTags,syncStatus:e.metadata&&e.metadata.hasPendingWrites?'\u672a\u540c\u671f':'\u540c\u671f\u6e08\u307f'
+id:e.id,tags:cleanedTags,syncStatus:e.metadata&&e.metadata.hasPendingWrites?'未同期':'同期済み'
 }))
 });
 const a=s().sessions,c=new Set(o.map(e=>e.id));
@@ -1916,13 +1916,13 @@ return cloudSession
 const l=a.filter(e=>!c.has(e.id)&&!e.hasOwnProperty('serverCreatedTime')),d=[...merged,...l];
 d.sort((e,s)=>(s.date||0)-(e.date||0));
 e({
-sessions:d,syncStatus:'\u540c\u671f\u6e08\u307f',lastSyncTime:Date.now()
+sessions:d,syncStatus:'同期済み',lastSyncTime:Date.now()
 }),console.log(`[Store] Real-time session update received: ${
 o.length
 } items (reflected deletions)`)
 },s=>{
 console.error('[Store] Real-time session listener error:',s),e({
-syncStatus:'\u540c\u671f\u30a8\u30e9\u30fc'
+syncStatus:'同期エラー'
 })
 });
 e({
@@ -1955,7 +1955,7 @@ const s=e.data();
 o.push(Object.assign({
 
 },s,{
-id:e.id,syncStatus:e.metadata&&e.metadata.hasPendingWrites?'\u672a\u540c\u671f':'\u540c\u671f\u6e08\u307f'
+id:e.id,syncStatus:e.metadata&&e.metadata.hasPendingWrites?'未同期':'同期済み'
 }))
 });
 o.sort((e,s)=>trashedAtMillis(s)-trashedAtMillis(e));
@@ -1998,7 +1998,7 @@ const s=e.data();
 o.push(Object.assign({
 
 },s,{
-id:e.id,syncStatus:'\u540c\u671f\u6e08\u307f'
+id:e.id,syncStatus:'同期済み'
 }))
 });
 const a=y(s().members,o,!1,!0);
@@ -2040,7 +2040,7 @@ const s=e.data();
 o.push(Object.assign({
 
 },s,{
-id:e.id,syncStatus:'\u540c\u671f\u6e08\u307f'
+id:e.id,syncStatus:'同期済み'
 }))
 });
 const a=y(s().alumni,o,!1,!0);
@@ -2134,17 +2134,17 @@ const s=gradeOf(e);
 if(isNaN(s)||s<1||s>=5)p.push(Object.assign({
 
 },e,{
-lastModified:u,syncStatus:'\u540c\u671f\u6e08\u307f'
+lastModified:u,syncStatus:'同期済み'
 }));
 else if(s>=4)p.push(Object.assign({
 
 },e,{
-grade:5,lastModified:u,syncStatus:'\u540c\u671f\u6e08\u307f'
+grade:5,lastModified:u,syncStatus:'同期済み'
 }));
 else p.push(Object.assign({
 
 },e,{
-grade:s+1,lastModified:u,syncStatus:'\u540c\u671f\u6e08\u307f'
+grade:s+1,lastModified:u,syncStatus:'同期済み'
 }))
 });
 const f=(l||0)+1;
@@ -2178,7 +2178,7 @@ merge:!0
 }),await i.commit()
 }console.log('[Store] incrementAllGrades: Cloud sync successful.')
 }catch(e){
-return console.error('[incrementAllGrades] Cloud sync failed:',e),void n.default.alert('\u9032\u7d1a\u51e6\u7406\u30a8\u30e9\u30fc','\u30af\u30e9\u30a6\u30c9\u3068\u306e\u540c\u671f\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002\u6642\u9593\u3092\u304a\u3044\u3066\u518d\u5ea6\u304a\u8a66\u3057\u304f\u3060\u3055\u3044\u3002')
+return console.error('[incrementAllGrades] Cloud sync failed:',e),void n.default.alert('進級処理エラー','クラウドとの同期に失敗しました。時間をおいて再度お試しください。')
 }const S=c;
 e({
 members:p,alumni:S,currentFreshmanTerm:f,lastPromotionYear:m,lastLocalChange:u,lastSyncTime:u
@@ -2197,11 +2197,11 @@ currentFreshmanTerm:o,autoPromotionEnabled:n,tagTemplates:c,lastPromotionYear:l,
 },{
 merge:!0
 }),e({
-syncStatus:'\u540c\u671f\u6e08\u307f',lastSyncTime:Date.now()
+syncStatus:'同期済み',lastSyncTime:Date.now()
 })
 }catch(s){
 console.error('Update Term Sync Error:',s),e({
-syncStatus:'\u540c\u671f\u30a8\u30e9\u30fc'
+syncStatus:'同期エラー'
 })
 }
 },resetCurrentSession:(o=!0)=>{
@@ -2230,7 +2230,7 @@ lastPushedTimestamp:a
 }
 },recoverPassword:async e=>{
 if(!s().isNetworkOnline)return{
-success:!1,error:'\u30aa\u30d5\u30e9\u30a4\u30f3\u306e\u305f\u3081\u5b9f\u884c\u3067\u304d\u307e\u305b\u3093'
+success:!1,error:'オフラインのため実行できません'
 };
 try{
 return await(0,o.sendPasswordResetEmail)(fb.auth,e),console.log('Password reset email sent to:',e),{
@@ -2238,7 +2238,7 @@ success:!0
 }
 }catch(e){
 return console.error('Password Recovery Error:',e),{
-success:!1,error:e.message||'\u30d1\u30b9\u30ef\u30fc\u30c9\u30ea\u30bb\u30c3\u30c8\u30e1\u30fc\u30eb\u306e\u9001\u4fe1\u306b\u5931\u6557\u3057\u307e\u3057\u305f'
+success:!1,error:e.message||'パスワードリセットメールの送信に失敗しました'
 }
 }
 },listenToConfig:async()=>{

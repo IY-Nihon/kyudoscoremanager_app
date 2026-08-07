@@ -154,7 +154,7 @@ const C = ({
                         style: j.header,
                         children: [(0, b.jsx)(s.default, {
                             style: j.headerTitle,
-                            children: "\u8a18\u9332\u306e\u7de8\u96c6"
+                            children: "記録の編集"
                         }), (0, b.jsx)(i.default, {
                             onPress: u,
                             children: (0, b.jsx)(f.Ionicons, {
@@ -171,13 +171,13 @@ const C = ({
                             style: j.body,
                             children: [(0, b.jsx)(s.default, {
                                 style: j.label,
-                                children: "\u65e5\u4ed8"
+                                children: "日付"
                             }), (0, b.jsxs)(i.default, {
                                 style: j.dateSelector,
                                 onPress: () => W(!0),
                                 children: [(0, b.jsxs)(s.default, {
                                                                     style: j.dateSelectorText,
-                                                                    children: [w.getFullYear(), "\u5e74 ", w.getMonth() + 1, "\u6708 ", w.getDate(), "\u65e5"]
+                                                                    children: [w.getFullYear(), "年 ", w.getMonth() + 1, "月 ", w.getDate(), "日"]
                                                                 }), (0, b.jsx)(f.Ionicons, {
                                                                     name: "calendar-outline",
                                                                     size: 20,
@@ -185,15 +185,15 @@ const C = ({
                                                                 })]
                             }), (0, b.jsx)(s.default, {
                                 style: j.label,
-                                children: "\u30bf\u30a4\u30c8\u30eb"
+                                children: "タイトル"
                             }), (0, b.jsx)(d.default, {
                                 style: j.input,
                                 value: y,
                                 onChangeText: F,
-                                placeholder: "\u4f8b: \u5348\u524d\u7df4\u7fd2"
+                                placeholder: "例: 午前練習"
                             }), (0, b.jsx)(s.default, {
                                 style: j.label,
-                                children: "\u30e1\u30e2"
+                                children: "メモ"
                             }), (0, b.jsx)(d.default, {
                                 style: [j.input, {
                                     height: 80,
@@ -201,12 +201,12 @@ const C = ({
                                 }],
                                 value: S,
                                 onChangeText: T,
-                                placeholder: "\u7df4\u7fd2\u306e\u30e1\u30e2\u306a\u3069",
+                                placeholder: "練習のメモなど",
                                 multiline: !0
                             }), E && (0, b.jsxs)(b.Fragment, {
                                 children: [(0, b.jsx)(s.default, {
                                     style: j.label,
-                                    children: "\u30bf\u30b0"
+                                    children: "タグ"
                                 }), (0, b.jsxs)(o.default, {
                                     style: {
                                         flexDirection: 'row',
@@ -231,7 +231,7 @@ const C = ({
                                             fontSize: 13,
                                             marginBottom: 4
                                         },
-                                        children: "\u8a2d\u5b9a\u306a\u3057"
+                                        children: "設定なし"
                                     })]
                                 }), (0, b.jsxs)(o.default, {
                                     style: {
@@ -243,7 +243,7 @@ const C = ({
                                             style: j.tagInput,
                                             value: P,
                                             onChangeText: M,
-                                            placeholder: "\u65b0\u898f\u8ffd\u52a0",
+                                            placeholder: "新規追加",
                                             onSubmitEditing: () => {
                                                 const e = normalizeTag(P);
                                                 if (e) {
@@ -264,7 +264,7 @@ const C = ({
                                             },
                                             children: (0, b.jsx)(s.default, {
                                                 style: j.tagAddButtonText,
-                                                children: "\u8ffd\u52a0"
+                                                children: "追加"
                                             })
                                         })]
                                     }), V.length > 0 && (0, b.jsx)(o.default, {
@@ -298,7 +298,7 @@ const C = ({
                                     },
                                     children: [(0, b.jsxs)(s.default, {
                                         style: j.label,
-                                        children: ["\u7dcf\u77e2\u6570 (\u73fe\u5728: ", (l && l.shotCount) || 8, "\u5c04)"]
+                                        children: ["総矢数 (現在: ", (l && l.shotCount) || 8, "射)"]
                                     }), (0, b.jsx)(d.default, {
                                         style: j.input,
                                         value: String(B),
@@ -315,7 +315,7 @@ const C = ({
                                     },
                                     children: [(0, b.jsx)(s.default, {
                                         style: j.label,
-                                        children: "\u7d71\u8a08\u306b\u542b\u3081\u308b"
+                                        children: "統計に含める"
                                     }), (0, b.jsx)(c.default, {
                                         value: A,
                                         onValueChange: I,
@@ -335,7 +335,7 @@ const C = ({
                                     },
                                     children: [(0, b.jsx)(s.default, {
                                         style: j.label,
-                                        children: "\u51fa\u5e2d\u7ba1\u7406"
+                                        children: "出席管理"
                                     }), (0, b.jsxs)(o.default, {
                                         style: {
                                             flexDirection: 'row',
@@ -366,7 +366,7 @@ const C = ({
                                                     fontSize: 11,
                                                     fontWeight: 'bold'
                                                 },
-                                                children: "\u8a18\u9332\u306b\u3044\u308b\u4eba\u3092\u51fa\u5e2d"
+                                                children: "記録にいる人を出席"
                                             })
                                         }), (0, b.jsx)(i.default, {
                                             style: {
@@ -388,7 +388,7 @@ const C = ({
                                                     fontSize: 11,
                                                     fontWeight: 'bold'
                                                 },
-                                                children: "\u5168\u54e1\u51fa\u5e2d"
+                                                children: "全員出席"
                                             })
                                         }), (0, b.jsx)(i.default, {
                                             style: {
@@ -410,7 +410,7 @@ const C = ({
                                                     fontSize: 11,
                                                     fontWeight: 'bold'
                                                 },
-                                                children: "\u5168\u54e1\u6b20\u5e2d"
+                                                children: "全員欠席"
                                             })
                                         })]
                                     })]
@@ -430,7 +430,7 @@ const C = ({
                                         if (l !== a) return l - a;
                                         const s = e => {
                                                 const t = (e || '').trim();
-                                                return '\u7537\u5b50' === t ? 0 : '\u5973\u5b50' === t ? 1 : 2
+                                                return '男子' === t ? 0 : '女子' === t ? 1 : 2
                                             },
                                             c = s(e.gender) - s(t.gender);
                                         return 0 !== c ? c : (e.name || '').localeCompare(t.name || '', 'ja')
@@ -503,7 +503,7 @@ const C = ({
                         },
                         children: (0, b.jsx)(s.default, {
                             style: j.saveButtonText,
-                            children: "\u5909\u66f4\u3092\u4fdd\u5b58"
+                            children: "変更を保存"
                         })
                     })]
                 })]
@@ -525,10 +525,10 @@ const C = ({
                     style: j.confirmBox,
                     children: [(0, b.jsx)(s.default, {
                         style: j.confirmTitle,
-                        children: "\u5c04\u6570\u306e\u5909\u66f4"
+                        children: "射数の変更"
                     }), (0, b.jsx)(s.default, {
                         style: j.confirmMessage,
-                        children: "\u5c04\u6570\u3092\u6e1b\u3089\u3059\u3068\u3001\u6e1b\u3089\u3057\u305f\u5206\u306e\u25cb\u2573\u8a18\u9332\u304c\u524a\u9664\u3055\u308c\u307e\u3059\u3002\u3088\u308d\u3057\u3044\u3067\u3059\u304b\uff1f"
+                        children: "射数を減らすと、減らした分の○\u2573記録が削除されます。よろしいですか？"
                     }), (0, b.jsxs)(o.default, {
                         style: j.confirmButtons,
                         children: [(0, b.jsx)(i.default, {
@@ -541,7 +541,7 @@ const C = ({
                                     color: "#007AFF",
                                     fontWeight: "bold"
                                 },
-                                children: "\u30ad\u30e3\u30f3\u30bb\u30eb"
+                                children: "キャンセル"
                             })
                         }), (0, b.jsx)(i.default, {
                             style: [j.confirmBtn, {
@@ -555,7 +555,7 @@ const C = ({
                                     color: "#FFF",
                                     fontWeight: "bold"
                                 },
-                                children: "\u5909\u66f4\u3059\u308b"
+                                children: "変更する"
                             })
                         })]
                     })]

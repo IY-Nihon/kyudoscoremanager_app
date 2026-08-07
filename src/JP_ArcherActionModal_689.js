@@ -82,7 +82,7 @@ const j = ({
         if (sVal !== aVal) return sVal - aVal;
         const cVal = e => {
           const t = (e || '').trim();
-          return '\u7537\u5b50' === t ? 0 : '\u5973\u5b50' === t ? 1 : 2;
+          return '男子' === t ? 0 : '女子' === t ? 1 : 2;
         };
         const uVal = cVal(e.gender) - cVal(t.gender);
         return 0 !== uVal ? uVal : (e.name || '').localeCompare(t.name || '', 'ja');
@@ -184,7 +184,7 @@ const j = ({
                       },
                       children: [
                         (0, F.jsx)(x.Ionicons, { name: "close-circle-outline", size: 18, color: "#FF3B30" }),
-                        (0, F.jsx)(l.default, { style: [y.actionBtnText, { color: '#FF3B30' }], children: "\u540d\u524d\u30af\u30ea\u30a2" })
+                        (0, F.jsx)(l.default, { style: [y.actionBtnText, { color: '#FF3B30' }], children: "名前クリア" })
                       ]
                     }),
                     (0, F.jsxs)(g.default, {
@@ -192,14 +192,14 @@ const j = ({
                       onPress: () => { C(); I(); },
                       children: [
                         (0, F.jsx)(x.Ionicons, { name: "repeat", size: 18, color: "#007AFF" }),
-                        (0, F.jsx)(l.default, { style: [y.actionBtnText, { color: '#007AFF' }], children: "\u9014\u4e2d\u4ea4\u4ee3" })
+                        (0, F.jsx)(l.default, { style: [y.actionBtnText, { color: '#007AFF' }], children: "途中交代" })
                       ]
                     }),
                     _ ? (0, F.jsxs)(n.default, {
                       style: y.guestInputRow,
                       children: [
-                        (0, F.jsx)(u.default, { style: y.guestInput, placeholder: "\u30b2\u30b9\u30c8\u540d", value: G, onChangeText: K, autoFocus: !0, onSubmitEditing: J }),
-                        (0, F.jsx)(c.default, { onPress: J, children: (0, F.jsx)(l.default, { style: y.guestConfirmText, children: "\u6c7a\u5b9a" }) }),
+                        (0, F.jsx)(u.default, { style: y.guestInput, placeholder: "ゲスト名", value: G, onChangeText: K, autoFocus: !0, onSubmitEditing: J }),
+                        (0, F.jsx)(c.default, { onPress: J, children: (0, F.jsx)(l.default, { style: y.guestConfirmText, children: "決定" }) }),
                         (0, F.jsx)(c.default, { onPress: () => { N(!1); K(''); }, children: (0, F.jsx)(x.Ionicons, { name: "close", size: 20, color: "#8E8E93" }) })
                       ]
                     }) : (0, F.jsxs)(g.default, {
@@ -207,7 +207,7 @@ const j = ({
                       onPress: () => { N(!0); },
                       children: [
                         (0, F.jsx)(x.Ionicons, { name: "person-outline", size: 18, color: "#5856D6" }),
-                        (0, F.jsx)(l.default, { style: [y.actionBtnText, { color: '#5856D6' }], children: "\u30b2\u30b9\u30c8\u767b\u9332" })
+                        (0, F.jsx)(l.default, { style: [y.actionBtnText, { color: '#5856D6' }], children: "ゲスト登録" })
                       ]
                     })
                   ]
@@ -216,12 +216,12 @@ const j = ({
               (0, F.jsx)(n.default, { style: y.dividerFull }),
               !jVal && !b && (0, F.jsxs)(F.Fragment, {
                 children: [
-                  (0, F.jsx)(n.default, { style: y.sectionHeader, children: (0, F.jsx)(l.default, { style: y.sectionHeaderText, children: "\u30e1\u30f3\u30d0\u30fc\u3092\u9078\u629e" }) }),
+                  (0, F.jsx)(n.default, { style: y.sectionHeader, children: (0, F.jsx)(l.default, { style: y.sectionHeaderText, children: "メンバーを選択" }) }),
                   (0, F.jsxs)(n.default, {
                     style: y.searchRow,
                     children: [
                       (0, F.jsx)(x.Ionicons, { name: "search", size: 18, color: "#8E8E93", style: { marginRight: 8 } }),
-                      (0, F.jsx)(u.default, { style: y.searchInput, placeholder: "\u30e1\u30f3\u30d0\u30fc\u3092\u691c\u7d22", value: O, onChangeText: M, placeholderTextColor: "#8E8E93" }),
+                      (0, F.jsx)(u.default, { style: y.searchInput, placeholder: "メンバーを検索", value: O, onChangeText: M, placeholderTextColor: "#8E8E93" }),
                       '' !== O && (0, F.jsx)(c.default, { onPress: () => M(''), children: (0, F.jsx)(x.Ionicons, { name: "close-circle", size: 18, color: "#C6C6C8" }) })
                     ]
                   }),
@@ -236,7 +236,7 @@ const j = ({
                             style: y.termHeader,
                             onPress: () => toggleActiveGrade(gStr),
                             children: [
-                              (0, F.jsxs)(l.default, { style: y.termTitle, children: [group.title, " (", group.members.length, "\u4eba)"] }),
+                              (0, F.jsxs)(l.default, { style: y.termTitle, children: [group.title, " (", group.members.length, "人)"] }),
                               (0, F.jsx)(x.Ionicons, { name: isOpen ? "chevron-up" : "chevron-down", size: 16, color: "#8E8E93" })
                             ]
                           }),
@@ -250,14 +250,14 @@ const j = ({
                                   onPress: () => $(e),
                                   children: [
                                     (0, F.jsxs)(l.default, {
-                                      style: [y.menuText, '\u7537\u5b50' === e.gender && { color: '#007AFF' }, '\u5973\u5b50' === e.gender && { color: '#FF2D55' }, sVal && { opacity: .5 }],
+                                      style: [y.menuText, '男子' === e.gender && { color: '#007AFF' }, '女子' === e.gender && { color: '#FF2D55' }, sVal && { opacity: .5 }],
                                       children: [
                                         e.name,
                                         " ",
-                                        (0, F.jsx)(l.default, { style: { fontSize: 11, color: '#8E8E93' }, children: [e.termKi ? `(${e.termKi}\u671f)` : ''] })
+                                        (0, F.jsx)(l.default, { style: { fontSize: 11, color: '#8E8E93' }, children: [e.termKi ? `(${e.termKi}期)` : ''] })
                                       ]
                                     }),
-                                    sVal && (0, F.jsx)(n.default, { style: y.selectedBadge, children: (0, F.jsx)(l.default, { style: y.selectedBadgeText, children: "\u9078\u629e\u6e08" }) })
+                                    sVal && (0, F.jsx)(n.default, { style: y.selectedBadge, children: (0, F.jsx)(l.default, { style: y.selectedBadgeText, children: "選択済" }) })
                                   ]
                                 })
                               ]}, e.id);
@@ -268,7 +268,7 @@ const j = ({
                   })
                 ]
               }),
-              (0, F.jsx)(n.default, { style: y.sectionHeader, children: (0, F.jsx)(l.default, { style: y.sectionHeaderText, children: "\u5352\u696d\u751f\u3092\u9078\u629e" }) }),
+              (0, F.jsx)(n.default, { style: y.sectionHeader, children: (0, F.jsx)(l.default, { style: y.sectionHeaderText, children: "卒業生を選択" }) }),
               (0, F.jsx)(n.default, {
                 style: y.section,
                 children: alumniByTerm.map(e => (0, F.jsxs)(F.Fragment, {
@@ -277,7 +277,7 @@ const j = ({
                       style: y.termHeader,
                       onPress: () => toggleTerm(e.term),
                       children: [
-                        (0, F.jsxs)(l.default, { style: y.termTitle, children: [999 === Number(e.term) ? '\u4e0d\u660e' : e.term, "\u671f"] }),
+                        (0, F.jsxs)(l.default, { style: y.termTitle, children: [999 === Number(e.term) ? '不明' : e.term, "期"] }),
                         (0, F.jsx)(x.Ionicons, { name: expandedTerms.has(e.term) ? "chevron-up" : "chevron-down", size: 16, color: "#8E8E93" })
                       ]
                     }),
@@ -291,14 +291,14 @@ const j = ({
                             onPress: () => $(e),
                             children: [
                               (0, F.jsxs)(l.default, {
-                                style: [y.menuText, '\u7537\u5b50' === e.gender && { color: '#007AFF' }, '\u5973\u5b50' === e.gender && { color: '#FF2D55' }, sVal && { opacity: .5 }],
+                                style: [y.menuText, '男子' === e.gender && { color: '#007AFF' }, '女子' === e.gender && { color: '#FF2D55' }, sVal && { opacity: .5 }],
                                 children: [
                                   e.name,
                                   " ",
-                                  (0, F.jsx)(l.default, { style: { fontSize: 11, color: '#8E8E93' }, children: "(\u5352\u696d\u751f)" })
+                                  (0, F.jsx)(l.default, { style: { fontSize: 11, color: '#8E8E93' }, children: "(卒業生)" })
                                 ]
                               }),
-                              sVal && (0, F.jsx)(n.default, { style: y.selectedBadge, children: (0, F.jsx)(l.default, { style: y.selectedBadgeText, children: "\u9078\u629e\u6e08" }) })
+                              sVal && (0, F.jsx)(n.default, { style: y.selectedBadge, children: (0, F.jsx)(l.default, { style: y.selectedBadgeText, children: "選択済" }) })
                             ]
                           })
                         ]}, e.id);
@@ -314,7 +314,7 @@ const j = ({
                     style: ({ pressed: e, hovered: t }) => [y.menuItem, t && { backgroundColor: '#F2F2F7' }, e && { opacity: .7 }],
                     onPress: () => { w ? w(pVal + 1) : R(pVal + 1, void 0); C(); },
                     children: [
-                      (0, F.jsx)(l.default, { style: y.menuText, children: "\u5de6\u306b\u5c04\u624b\u3092\u8ffd\u52a0" }),
+                      (0, F.jsx)(l.default, { style: y.menuText, children: "左に射手を追加" }),
                       (0, F.jsx)(x.Ionicons, { name: "person-add-outline", size: 20, color: "#8E8E93" })
                     ]
                   }),
@@ -323,7 +323,7 @@ const j = ({
                     style: ({ pressed: e, hovered: t }) => [y.menuItem, t && { backgroundColor: '#F2F2F7' }, e && { opacity: .7 }],
                     onPress: () => { T ? T(pVal + 1) : W(pVal + 1); C(); },
                     children: [
-                      (0, F.jsx)(l.default, { style: y.menuText, children: "\u5de6\u306b\u9593\u9694\u3092\u8ffd\u52a0" }),
+                      (0, F.jsx)(l.default, { style: y.menuText, children: "左に間隔を追加" }),
                       (0, F.jsx)(x.Ionicons, { name: "reorder-four-outline", size: 20, color: "#8E8E93" })
                     ]
                   }),
@@ -332,7 +332,7 @@ const j = ({
                     style: ({ pressed: e, hovered: t }) => [y.menuItem, t && { backgroundColor: '#F2F2F7' }, e && { opacity: .7 }],
                     onPress: () => { k ? k(pVal + 1) : V(pVal + 1); C(); },
                     children: [
-                      (0, F.jsx)(l.default, { style: y.menuText, children: "\u5de6\u306b\u8a08\u3092\u8ffd\u52a0" }),
+                      (0, F.jsx)(l.default, { style: y.menuText, children: "左に計を追加" }),
                       (0, F.jsx)(x.Ionicons, { name: "calculator-outline", size: 20, color: "#8E8E93" })
                     ]
                   }),
@@ -341,7 +341,7 @@ const j = ({
                     style: ({ pressed: e, hovered: t }) => [y.menuItem, t && { backgroundColor: '#FFF0F0' }, e && { opacity: .7 }],
                     onPress: () => { z ? z(s) : D(s); C(); },
                     children: [
-                      (0, F.jsx)(l.default, { style: [y.menuText, { color: '#FF3B30', fontWeight: 'bold' }], children: "\u524a\u9664" }),
+                      (0, F.jsx)(l.default, { style: [y.menuText, { color: '#FF3B30', fontWeight: 'bold' }], children: "削除" }),
                       (0, F.jsx)(x.Ionicons, { name: "trash-outline", size: 20, color: "#FF3B30" })
                     ]
                   })

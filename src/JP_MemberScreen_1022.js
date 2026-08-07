@@ -20,7 +20,7 @@ const C = () => {
   const [z, D] = (0, t.useState)(!1);
   const [q, v] = (0, t.useState)(null);
   const [k, A] = (0, t.useState)('');
-  const [R, H] = (0, t.useState)('\u672a\u8a2d\u5b9a');
+  const [R, H] = (0, t.useState)('未設定');
   const [P, _] = (0, t.useState)('1');
   const [M, O] = (0, t.useState)('');
   const G = (0, x.useScoreStore)(e => e.currentFreshmanTerm);
@@ -42,7 +42,7 @@ const C = () => {
     if (l !== a) return l - a;
     const s = e => {
       const t = (e || '').trim();
-      return '\u7537\u5b50' === t ? 0 : '\u5973\u5b50' === t ? 1 : 2
+      return '男子' === t ? 0 : '女子' === t ? 1 : 2
     },
       c = s(e.gender) - s(t.gender);
     return 0 !== c ? c : (e.name || '').localeCompare(t.name || '', 'ja')
@@ -54,7 +54,7 @@ const C = () => {
     if (kiB !== kiA) return kiB - kiA;
     const s = e => {
       const t = (e || '').trim();
-      return '\u7537\u5b50' === t ? 0 : '\u5973\u5b50' === t ? 1 : 2
+      return '男子' === t ? 0 : '女子' === t ? 1 : 2
     },
       c = s(e.gender) - s(t.gender);
     return 0 !== c ? c : (e.name || '').localeCompare(t.name || '', 'ja')
@@ -70,7 +70,7 @@ const C = () => {
   const renderMemberCard = (e) => {
     const t = e.equipments && e.equipments.length > 0 ? [...e.equipments].sort((e, t) => t.date - e.date)[0] : null;
     return (0, y.jsxs)(h.default, { style: ({ hovered: e_h }) => [j.memberCard, e_h && { backgroundColor: 'rgba(0,122,255,0.05)' }, m.IS_WEB && { cursor: 'pointer' }],
-      onPress: () => { 'member' !== E || e.id === w ? ee(e) : f.default.alert('\u5236\u9650', '\u30e1\u30f3\u30d0\u30fc\u30e2\u30fc\u30c9\u3067\u306f\u81ea\u5206\u4ee5\u5916\u306e\u60c5\u5831\u306f\u7de8\u96c6\u3067\u304d\u307e\u305b\u3093\u3002') },
+      onPress: () => { 'member' !== E || e.id === w ? ee(e) : f.default.alert('制限', 'メンバーモードでは自分以外の情報は編集できません。') },
       children: [
         (0, y.jsxs)(n.default, {
           style: j.memberInfoMain,
@@ -78,11 +78,11 @@ const C = () => {
             (0, y.jsxs)(n.default, {
               style: j.nameRow,
               children: [
-                (0, y.jsx)(o.default, { style: [j.genderDot, { color: '\u7537\u5b50' === e.gender ? '#007AFF' : '\u5973\u5b50' === e.gender ? '#FF2D55' : '#8E8E93' }], children: "\u25cf" }),
+                (0, y.jsx)(o.default, { style: [j.genderDot, { color: '男子' === e.gender ? '#007AFF' : '女子' === e.gender ? '#FF2D55' : '#8E8E93' }], children: "●" }),
                 (0, y.jsx)(o.default, { style: j.memberName, numberOfLines: 1, children: e.name })
               ]
             }),
-            (0, y.jsxs)(o.default, { style: j.memberSub, children: [e.termKi ? `${e.termKi}\u671f / ` : '', e.gender, " / ", e.grade === 5 ? '卒業生' : e.grade > 0 ? `${e.grade}年` : 'その他'] })
+            (0, y.jsxs)(o.default, { style: j.memberSub, children: [e.termKi ? `${e.termKi}期 / ` : '', e.gender, " / ", e.grade === 5 ? '卒業生' : e.grade > 0 ? `${e.grade}年` : 'その他'] })
           ]
         }),
         (0, y.jsxs)(n.default, {
@@ -107,18 +107,18 @@ const C = () => {
         children: [
           (0, y.jsxs)(n.default, {
             children: [
-              (0, y.jsx)(o.default, { style: j.title, children: "\u30e1\u30f3\u30d0\u30fc\u7ba1\u7406" }),
-              (S || I) && (0, y.jsx)(n.default, { style: j.headerGroupIdBadge, children: (0, y.jsxs)(o.default, { style: j.headerGroupIdText, children: ["\u56e3\u4f53ID: ", S || I] }) })
+              (0, y.jsx)(o.default, { style: j.title, children: "メンバー管理" }),
+              (S || I) && (0, y.jsx)(n.default, { style: j.headerGroupIdBadge, children: (0, y.jsxs)(o.default, { style: j.headerGroupIdText, children: ["団体ID: ", S || I] }) })
             ]
           }),
-          (0, y.jsx)(n.default, { style: { flexDirection: 'row', gap: 16 }, children: 'member' !== E && (0, y.jsx)(h.default, { style: ({ hovered: e }) => [j.addBtn, e && { backgroundColor: 'rgba(0,122,255,0.05)', borderRadius: 8, padding: 4 }], onPress: () => { v(null), A(''), H('\u672a\u8a2d\u5b9a'), _('1'), O(G ? String(G) : ''), D(!0) }, children: (0, y.jsx)(p.Ionicons, { name: "person-add", size: 24, color: "#007AFF" }) }) })
+          (0, y.jsx)(n.default, { style: { flexDirection: 'row', gap: 16 }, children: 'member' !== E && (0, y.jsx)(h.default, { style: ({ hovered: e }) => [j.addBtn, e && { backgroundColor: 'rgba(0,122,255,0.05)', borderRadius: 8, padding: 4 }], onPress: () => { v(null), A(''), H('未設定'), _('1'), O(G ? String(G) : ''), D(!0) }, children: (0, y.jsx)(p.Ionicons, { name: "person-add", size: 24, color: "#007AFF" }) }) })
         ]
       }),
       (0, y.jsxs)(n.default, {
         style: j.searchBar,
         children: [
           (0, y.jsx)(p.Ionicons, { name: "search", size: 18, color: "#8E8E93" }),
-          (0, y.jsx)(c.default, { style: j.searchInput, placeholder: "\u30e1\u30f3\u30d0\u30fc\u3092\u691c\u7d22...", value: T, onChangeText: W }),
+          (0, y.jsx)(c.default, { style: j.searchInput, placeholder: "メンバーを検索...", value: T, onChangeText: W }),
           '' !== T && (0, y.jsx)(s.default, { onPress: () => W(''), children: (0, y.jsx)(p.Ionicons, { name: "close-circle", size: 18, color: "#8E8E93" }) })
         ]
       }),
@@ -126,7 +126,7 @@ const C = () => {
         data: activeMembers,
         keyExtractor: (e, index) => typeof e.id === 'string' ? e.id : `member-${index}-${e.name}`,
         contentContainerStyle: j.listContent,
-        ListEmptyComponent: activeMembers.length === 0 && graduateMembers.length === 0 ? (0, y.jsx)(n.default, { style: j.empty, children: (0, y.jsx)(o.default, { style: j.emptyText, children: "\u30e1\u30f3\u30d0\u30fc\u304c\u3044\u307e\u305b\u3093" }) }) : null,
+        ListEmptyComponent: activeMembers.length === 0 && graduateMembers.length === 0 ? (0, y.jsx)(n.default, { style: j.empty, children: (0, y.jsx)(o.default, { style: j.emptyText, children: "メンバーがいません" }) }) : null,
         renderItem: ({ item: e }) => renderMemberCard(e),
         ListFooterComponent: graduateMembers.length > 0 ? (0, y.jsxs)(n.default, {
           style: { marginTop: 10 },
@@ -153,20 +153,20 @@ const C = () => {
         visible: z, animationType: "slide", transparent: !0, children: (0, y.jsx)(n.default, {
           style: j.modalOverlay, children: (0, y.jsxs)(n.default, {
             style: j.modalContent, children: [(0, y.jsxs)(n.default, {
-              style: j.modalHeader, children: [(0, y.jsx)(o.default, { style: j.modalTitle, children: q ? '\u30e1\u30f3\u30d0\u30fc\u7de8\u96c6' : '\u65b0\u898f\u767b\u9332' }), (0, y.jsx)(s.default, { onPress: () => D(!1), style: j.closeBtn, children: (0, y.jsx)(p.Ionicons, { name: "close", size: 24, color: "#8E8E93" }) })]
+              style: j.modalHeader, children: [(0, y.jsx)(o.default, { style: j.modalTitle, children: q ? 'メンバー編集' : '新規登録' }), (0, y.jsx)(s.default, { onPress: () => D(!1), style: j.closeBtn, children: (0, y.jsx)(p.Ionicons, { name: "close", size: 24, color: "#8E8E93" }) })]
             }), (0, y.jsxs)(n.default, {
-              style: { padding: 20 }, children: [(0, y.jsx)(o.default, { style: j.label, children: "\u540d\u524d" }), (0, y.jsx)(c.default, { style: j.input, value: k, onChangeText: A, placeholder: "\u4f8b: \u5c71\u7530 \u592a\u90ce", placeholderTextColor: "#C7C7CC" }), (0, y.jsx)(o.default, { style: j.inputHelperText, children: "姓名の間にスペースを入力してください" }), q && q.personalId && (0, y.jsxs)(y.Fragment, { children: [(0, y.jsx)(o.default, { style: j.label, children: "\u500b\u4ebaID (\u81ea\u52d5\u63a1\u756a)" }), (0, y.jsx)(n.default, { style: [j.input, { justifyContent: 'center', opacity: .6 }], children: (0, y.jsx)(o.default, { style: { fontSize: 16 }, children: B || q.id === w ? q.personalId : '******** (\u7ba1\u7406\u8005\u306e\u307f\u8868\u793a)' }) })] }), (0, y.jsx)(o.default, { style: j.label, children: "\u6027\u5225" }), (0, y.jsx)(n.default, { style: j.genderRow, children: ['\u7537\u5b50', '\u5973\u5b50', '\u672a\u8a2d\u5b9a'].map(e => (0, y.jsx)(h.default, { style: ({ hovered: t }) => [j.genderBtn, R === e && j.genderBtnActive, t && R !== e && { backgroundColor: '#E5E5EA' }], onPress: () => H(e), children: (0, y.jsx)(o.default, { style: [j.genderBtnText, R === e && j.genderBtnTextActive], children: e }) }, e)) }), (0, y.jsx)(o.default, { style: j.label, children: "\u5b66\u5e74" }), (0, y.jsxs)(n.default, { style: j.stepperContainer, children: [(0, y.jsx)(o.default, { style: j.stepperValue, children: '0' === P ? '\u305d\u306e\u4ed6' : '5' === P ? '\u5352\u696d\u751f' : `${P}\u5e74\u751f` }), (0, y.jsxs)(n.default, { style: j.stepperControls, children: [(0, y.jsx)(h.default, { style: ({ hovered: e }) => [j.stepperBtn, e && { backgroundColor: '#D1D1D6' }], onPress: () => { const e = parseInt(P) || 0; if (e > 0) { const t = e - 1; _(String(t)), G && t >= 1 && t <= 5 && O(String(G - (t - 1))) } }, children: (0, y.jsx)(p.Ionicons, { name: "remove", size: 24, color: "#007AFF" }) }), (0, y.jsx)(n.default, { style: j.stepperDivider }), (0, y.jsx)(h.default, { style: ({ hovered: e }) => [j.stepperBtn, e && { backgroundColor: '#D1D1D6' }], onPress: () => { const e = parseInt(P) || 0; if (e < 5) { const t = e + 1; _(String(t)), G && t >= 1 && t <= 5 && O(String(G - (t-1))) } }, children: (0, y.jsx)(p.Ionicons, { name: "add", size: 24, color: "#007AFF" }) })] })] }), (0, y.jsx)(o.default, { style: j.label, children: "\u671f" }), (0, y.jsx)(c.default, { style: j.input, value: M, onChangeText: O, placeholder: "\u4f8b: 70", keyboardType: "number-pad", placeholderTextColor: "#C7C7CC" }), q && (0, y.jsxs)(y.Fragment, { children: [(0, y.jsx)(o.default, { style: j.label, children: "\u5f13\u5177\u7ba1\u7406" }), (0, y.jsxs)(h.default, { style: ({ hovered: e }) => [j.eqHistoryBtn, e && { backgroundColor: '#E5E5EA' }], onPress: () => N(!0), children: [(0, y.jsx)(p.Ionicons, { name: "construct-outline", size: 20, color: "#007AFF" }), (0, y.jsx)(o.default, { style: j.eqHistoryBtnText, children: "\u5f13\u5177\u5909\u66f4\u5c65\u6b74\u3092\u8868\u793a\u30fb\u7de8\u96c6" })] })] }), (0, y.jsxs)(n.default, { style: j.modalFooter, children: [q && 'member' !== E ? (0, y.jsxs)(s.default, { style: j.deleteBtn, onPress: () => te(q.id, q.name), children: [(0, y.jsx)(p.Ionicons, { name: "trash-outline", size: 18, color: "#FF3B30", style: { marginRight: 4 } }), (0, y.jsx)(o.default, { style: j.deleteBtnText, children: "\u30e1\u30f3\u30d0\u30fc\u3092\u524a\u9664" })] }) : (0, y.jsx)(n.default, {}), (0, y.jsx)(s.default, { style: j.saveBtn, onPress: () => { if (!k.trim()) return void (m.IS_WEB ? window.alert('\u540d\u524d\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044') : f.default.alert('\u30a8\u30e9\u30fc', '\u540d\u524d\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044')); const e = parseInt(P) || 0, t = '' === M ? void 0 : parseInt(M) || void 0; q ? b(q.id, { name: k, gender: R, grade: e, termKi: t }) : l(k, R, e, t), D(!1) }, children: (0, y.jsx)(o.default, { style: j.saveBtnText, children: "\u4fdd\u5b58\u3059\u308b" }) })] })] })] }) }) }),
+              style: { padding: 20 }, children: [(0, y.jsx)(o.default, { style: j.label, children: "名前" }), (0, y.jsx)(c.default, { style: j.input, value: k, onChangeText: A, placeholder: "例: 山田 太郎", placeholderTextColor: "#C7C7CC" }), (0, y.jsx)(o.default, { style: j.inputHelperText, children: "姓名の間にスペースを入力してください" }), q && q.personalId && (0, y.jsxs)(y.Fragment, { children: [(0, y.jsx)(o.default, { style: j.label, children: "個人ID (自動採番)" }), (0, y.jsx)(n.default, { style: [j.input, { justifyContent: 'center', opacity: .6 }], children: (0, y.jsx)(o.default, { style: { fontSize: 16 }, children: B || q.id === w ? q.personalId : '******** (管理者のみ表示)' }) })] }), (0, y.jsx)(o.default, { style: j.label, children: "性別" }), (0, y.jsx)(n.default, { style: j.genderRow, children: ['男子', '女子', '未設定'].map(e => (0, y.jsx)(h.default, { style: ({ hovered: t }) => [j.genderBtn, R === e && j.genderBtnActive, t && R !== e && { backgroundColor: '#E5E5EA' }], onPress: () => H(e), children: (0, y.jsx)(o.default, { style: [j.genderBtnText, R === e && j.genderBtnTextActive], children: e }) }, e)) }), (0, y.jsx)(o.default, { style: j.label, children: "学年" }), (0, y.jsxs)(n.default, { style: j.stepperContainer, children: [(0, y.jsx)(o.default, { style: j.stepperValue, children: '0' === P ? 'その他' : '5' === P ? '卒業生' : `${P}年生` }), (0, y.jsxs)(n.default, { style: j.stepperControls, children: [(0, y.jsx)(h.default, { style: ({ hovered: e }) => [j.stepperBtn, e && { backgroundColor: '#D1D1D6' }], onPress: () => { const e = parseInt(P) || 0; if (e > 0) { const t = e - 1; _(String(t)), G && t >= 1 && t <= 5 && O(String(G - (t - 1))) } }, children: (0, y.jsx)(p.Ionicons, { name: "remove", size: 24, color: "#007AFF" }) }), (0, y.jsx)(n.default, { style: j.stepperDivider }), (0, y.jsx)(h.default, { style: ({ hovered: e }) => [j.stepperBtn, e && { backgroundColor: '#D1D1D6' }], onPress: () => { const e = parseInt(P) || 0; if (e < 5) { const t = e + 1; _(String(t)), G && t >= 1 && t <= 5 && O(String(G - (t-1))) } }, children: (0, y.jsx)(p.Ionicons, { name: "add", size: 24, color: "#007AFF" }) })] })] }), (0, y.jsx)(o.default, { style: j.label, children: "期" }), (0, y.jsx)(c.default, { style: j.input, value: M, onChangeText: O, placeholder: "例: 70", keyboardType: "number-pad", placeholderTextColor: "#C7C7CC" }), q && (0, y.jsxs)(y.Fragment, { children: [(0, y.jsx)(o.default, { style: j.label, children: "弓具管理" }), (0, y.jsxs)(h.default, { style: ({ hovered: e }) => [j.eqHistoryBtn, e && { backgroundColor: '#E5E5EA' }], onPress: () => N(!0), children: [(0, y.jsx)(p.Ionicons, { name: "construct-outline", size: 20, color: "#007AFF" }), (0, y.jsx)(o.default, { style: j.eqHistoryBtnText, children: "弓具変更履歴を表示・編集" })] })] }), (0, y.jsxs)(n.default, { style: j.modalFooter, children: [q && 'member' !== E ? (0, y.jsxs)(s.default, { style: j.deleteBtn, onPress: () => te(q.id, q.name), children: [(0, y.jsx)(p.Ionicons, { name: "trash-outline", size: 18, color: "#FF3B30", style: { marginRight: 4 } }), (0, y.jsx)(o.default, { style: j.deleteBtnText, children: "メンバーを削除" })] }) : (0, y.jsx)(n.default, {}), (0, y.jsx)(s.default, { style: j.saveBtn, onPress: () => { if (!k.trim()) return void (m.IS_WEB ? window.alert('名前を入力してください') : f.default.alert('エラー', '名前を入力してください')); const e = parseInt(P) || 0, t = '' === M ? void 0 : parseInt(M) || void 0; q ? b(q.id, { name: k, gender: R, grade: e, termKi: t }) : l(k, R, e, t), D(!1) }, children: (0, y.jsx)(o.default, { style: j.saveBtnText, children: "保存する" }) })] })] })] }) }) }),
       (0, y.jsx)(g.default, {
         visible: L, animationType: "slide", transparent: !0, children: (0, y.jsx)(n.default, {
           style: j.modalOverlay, children: (0, y.jsx)(n.default, {
             style: [j.modalContent, { height: '80%', padding: 0 }], children: (() => {
               const t = e.find(e => e.id === q?.id); return t ? (0, y.jsxs)(y.Fragment, {
-                children: [(0, y.jsxs)(n.default, { style: j.eqModalHeader, children: [(0, y.jsxs)(o.default, { style: j.modalTitle, children: ["\u5f13\u5177\u5909\u66f4\u5c65\u6b74 (", t.name, ")"] }), (0, y.jsx)(s.default, { onPress: () => { N(!1); setCalVis(false); }, children: (0, y.jsx)(p.Ionicons, { name: "close", size: 24, color: "#8E8E93" }) })] }), (0, y.jsxs)(n.default, {
-                  style: j.eqForm, children: [(0, y.jsxs)(n.default, { style: j.eqInputRow, children: [(0, y.jsx)(s.default, { style: [j.eqInput, { flex: 1, minWidth: 0, justifyContent: 'center' }], onPress: () => setCalVis(true), children: (0, y.jsx)(o.default, { style: { fontSize: 15, color: '#000' }, children: V }) }), (0, y.jsxs)(n.default, { style: [j.eqWeightInputWrapper, { flex: 1, minWidth: 0 }], children: [(0, y.jsx)(c.default, { style: j.eqInputInside, placeholder: "\u5f13\u529b", value: U, onChangeText: (text) => { let filtered = text.replace(/[^0-9.]/g, ''); const dotPos = filtered.indexOf('.'); if (dotPos !== -1) { const intPart = filtered.slice(0, dotPos).slice(0, 3); const decPart = filtered.slice(dotPos + 1).replace(/\./g, '').slice(0, 1); filtered = intPart + '.' + decPart; } else { filtered = filtered.slice(0, 3); } J(filtered); }, keyboardType: "decimal-pad" }), (0, y.jsx)(o.default, { style: j.kgUnit, children: "kg" })] })] }), (0, y.jsx)(c.default, { style: [j.eqInput, { height: 60 }], placeholder: "\u5185\u5bb9 (\u5f26\u4ea4\u63db\u3001\u5f13\u306e\u5909\u66f4\u306a\u3069)", value: Y, onChangeText: $, multiline: !0 }), (0, y.jsx)(s.default, { style: j.eqAddBtn, onPress: () => { (Y.trim() || U.trim()) && (Q(t.id, { date: new Date(V).getTime() || Date.now(), note: Y, weight: U }), $(''), J('')) }, children: (0, y.jsx)(o.default, { style: j.eqAddBtnText, children: "\u5c65\u6b74\u3092\u8ffd\u52a0" }) })]
+                children: [(0, y.jsxs)(n.default, { style: j.eqModalHeader, children: [(0, y.jsxs)(o.default, { style: j.modalTitle, children: ["弓具変更履歴 (", t.name, ")"] }), (0, y.jsx)(s.default, { onPress: () => { N(!1); setCalVis(false); }, children: (0, y.jsx)(p.Ionicons, { name: "close", size: 24, color: "#8E8E93" }) })] }), (0, y.jsxs)(n.default, {
+                  style: j.eqForm, children: [(0, y.jsxs)(n.default, { style: j.eqInputRow, children: [(0, y.jsx)(s.default, { style: [j.eqInput, { flex: 1, minWidth: 0, justifyContent: 'center' }], onPress: () => setCalVis(true), children: (0, y.jsx)(o.default, { style: { fontSize: 15, color: '#000' }, children: V }) }), (0, y.jsxs)(n.default, { style: [j.eqWeightInputWrapper, { flex: 1, minWidth: 0 }], children: [(0, y.jsx)(c.default, { style: j.eqInputInside, placeholder: "弓力", value: U, onChangeText: (text) => { let filtered = text.replace(/[^0-9.]/g, ''); const dotPos = filtered.indexOf('.'); if (dotPos !== -1) { const intPart = filtered.slice(0, dotPos).slice(0, 3); const decPart = filtered.slice(dotPos + 1).replace(/\./g, '').slice(0, 1); filtered = intPart + '.' + decPart; } else { filtered = filtered.slice(0, 3); } J(filtered); }, keyboardType: "decimal-pad" }), (0, y.jsx)(o.default, { style: j.kgUnit, children: "kg" })] })] }), (0, y.jsx)(c.default, { style: [j.eqInput, { height: 60 }], placeholder: "内容 (弦交換、弓の変更など)", value: Y, onChangeText: $, multiline: !0 }), (0, y.jsx)(s.default, { style: j.eqAddBtn, onPress: () => { (Y.trim() || U.trim()) && (Q(t.id, { date: new Date(V).getTime() || Date.now(), note: Y, weight: U }), $(''), J('')) }, children: (0, y.jsx)(o.default, { style: j.eqAddBtnText, children: "履歴を追加" }) })]
                 }), (0, y.jsx)(a.default, {
                   data: [...t.equipments || []].sort((e, t) => t.date - e.date), keyExtractor: (e, index) => typeof e.id === 'string' ? e.id : `eq-${index}-${e.date}`, contentContainerStyle: { padding: 15 }, renderItem: ({ item: e }) => (0, y.jsxs)(n.default, {
                     style: j.eqItem, children: [(0, y.jsxs)(n.default, { style: { flex: 1, marginRight: 8 }, children: [(0, y.jsxs)(n.default, { style: j.eqItemHeader, children: [(0, y.jsx)(o.default, { style: j.eqItemDate, children: new Date(e.date).toLocaleDateString() }), e.weight && (0, y.jsx)(n.default, { style: j.eqWeightBadge, children: (0, y.jsxs)(o.default, { style: j.eqWeightText, children: [e.weight, " kg"] }) })] }), (0, y.jsx)(o.default, { style: j.eqItemNote, children: e.note })] }), (0, y.jsx)(s.default, { onPress: () => X(t.id, e.id), style: { padding: 4 }, children: (0, y.jsx)(p.Ionicons, { name: "trash-outline", size: 20, color: "#FF3B30" }) })]
-                  }), ListEmptyComponent: (0, y.jsx)(o.default, { style: j.emptyText, children: "\u5c65\u6b74\u304c\u3042\u308a\u307e\u305b\u3093" })
+                  }), ListEmptyComponent: (0, y.jsx)(o.default, { style: j.emptyText, children: "履歴がありません" })
                 })]
               }) : null
             })()
