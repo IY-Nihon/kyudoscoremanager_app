@@ -1185,7 +1185,10 @@ const M = (0, s.create)()(
         },
         ensurePersonalIds: async () => {
           const { members: o, alumni: i, activeGroupId: n } = s();
-          if (!n) return;
+          // 名簿を書けるのは団体アカウントだけ。部員の端末で走ると、他人の
+          // 個人IDを勝手に振ってしまう。しかも逆引き表（こちらは団体限定）は
+          // 更新されないため、その人がログインできなくなる。
+          if (!n || 'group' !== s().activeRole) return;
           const _ensureDb = await waitForDb();
           if (!_ensureDb) {
             console.warn('[Store] ensurePersonalIds: db still undefined after await, aborting');

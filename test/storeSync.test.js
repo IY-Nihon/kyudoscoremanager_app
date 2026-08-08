@@ -542,6 +542,20 @@ test('逆引き表：部員ロールでは書き込まない', async () => {
   assert.deepEqual(雲.中身(逆引きの道), []);
 });
 
+test('個人ID：部員の端末では振らない', async () => {
+  // 部員が振ると、名簿だけ書き換わって逆引き表（団体限定）が置き去りになり、
+  // その人がログインできなくなる。名簿を触る他の処理と同じく団体限定にする。
+  const { store, 雲 } = 用意();
+  await 待つ(50); // 起動時の自動採番を先に済ませる
+  const 名簿 = [{ id: 'mem-1', name: '部員1', personalId: '', lastModified: 1 }];
+  雲.置く(メンバーの道, 'mem-1', Object.assign({}, 名簿[0]));
+  store.setState({ activeRole: 'member', members: 名簿.map((m) => Object.assign({}, m)), alumni: [] });
+  await store.getState().ensurePersonalIds();
+  await 待つ(50);
+  assert.equal(雲.値(メンバーの道, 'mem-1').personalId, '', 'クラウドの個人IDを書き換えない');
+  assert.equal(store.getState().members[0].personalId, '', '手元も変えない');
+});
+
 test('個人ID：持っていない人に4桁で重複しないIDを振る', async () => {
   const { store, 雲 } = 用意();
   const 名簿 = [
