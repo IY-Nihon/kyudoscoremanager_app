@@ -24,7 +24,7 @@ const ゴミ箱の道 = `groups/${団体}/trash`;
 
 /** 団体としてログインし、記録を n 件置いた状態から始める */
 function 用意(件数 = 3) {
-  const { store, 雲, 保存領域 } = ストアを用意する();
+  const { store, 雲, 保存領域, 知らせ } = ストアを用意する();
   const 今 = Date.now();
   const 記録 = [];
   for (let i = 1; i <= 件数; i++) {
@@ -49,7 +49,7 @@ function 用意(件数 = 3) {
     permanentlyDeleted: {},
     lastSyncTime: null,
   });
-  return { store, 雲, 保存領域 };
+  return { store, 雲, 保存領域, 知らせ };
 }
 
 const 記録を見る = (store, id) => store.getState().sessions.find((s) => s && s.id === id);
@@ -127,6 +127,92 @@ test('リスナー：送信が済んだ記録はクラウドの写しで更新�
   雲.通知();
   await 待つ(100);
   assert.equal(記録を見る(store, 'ses-1').title, '他の端末が直した');
+});
+
+// ──────────────────────────────────────────────────────────────
+// 保存
+// ──────────────────────────────────────────────────────────────
+/** 記録画面で射手を並べた状態にする */
+function 射手を置く(store, 人数 = 2) {
+  const 射手 = [];
+  for (let i = 1; i <= 人数; i++)
+    射手.push({ id: 'arc-' + i, name: '射手' + i, marks: ['○', '×', '○', '○'] });
+  store.setState({ archers: 射手, activeSessionID: null, shotsPerRound: 4 });
+  return 射手;
+}
+const 新しい記録 = (store, 既存) =>
+  store.getState().sessions.find((s) => s && !既存.includes(s.id));
+
+test('保存：手元に入り、届いたら「同期済み」になる', async () => {
+  const { store, 雲 } = 用意();
+  const 既存 = store.getState().sessions.map((s) => s.id);
+  射手を置く(store);
+  await store.getState().saveSession('新しい練習', 'メモ', true, ['#的前'], null);
+  await 待つ(50);
+  const s = 新しい記録(store, 既存);
+  assert.ok(s, '履歴に入る');
+  assert.equal(s.title, '新しい練習');
+  assert.equal(s.archers.length, 2, '射手が入る');
+  assert.equal(s.syncStatus, '同期済み');
+  assert.ok(雲.値(記録の道, s.id), 'クラウドにも届く');
+});
+
+test('保存：射手と編集中の記録が片付く', async () => {
+  const { store } = 用意();
+  射手を置く(store);
+  await store.getState().saveSession('練習', '', true, [], null);
+  await 待つ(50);
+  assert.deepEqual(store.getState().archers, [], '記録表が空になる');
+  assert.equal(store.getState().activeSessionID, null);
+});
+
+test('保存：通信できないときは「未同期」で手元に残る', async () => {
+  // 道場で起きたのと同じ場面。ここで記録が消えると取り返しがつかない。
+  const { store, 雲 } = 用意();
+  const 既存 = store.getState().sessions.map((s) => s.id);
+  雲.状態.オフライン = true;
+  射手を置く(store, 3);
+  await store.getState().saveSession('道場の練習', '', true, [], null);
+  await 待つ(50);
+  const s = 新しい記録(store, 既存);
+  assert.ok(s, '手元には残る');
+  assert.equal(s.archers.length, 3, '射手が消えない');
+  assert.equal(s.syncStatus, '未同期');
+});
+
+test('保存：送信が失われても、次の同期で送り直される', async () => {
+  const { store, 雲 } = 用意();
+  const 既存 = store.getState().sessions.map((s) => s.id);
+  雲.状態.オフライン = true;
+  射手を置く(store, 3);
+  await store.getState().saveSession('道場の練習', '', true, [], null);
+  await 待つ(50);
+  const id = 新しい記録(store, 既存).id;
+  // 送信待ちが失われた＝クラウドには届いていない
+  雲.状態.オフライン = false;
+  雲.消す(記録の道, id);
+
+  await store.getState().syncSessions();
+  await 待つ(50);
+  assert.ok(雲.値(記録の道, id), 'クラウドへ届く');
+  assert.equal(雲.値(記録の道, id).archers.length, 3, '射手も届く');
+});
+
+test('保存：部員は既にある記録を上書きできない', async () => {
+  // 部員の端末が、団体の保存した記録を丸ごと差し替えてしまわないための守り
+  const { store, 雲, 知らせ } = 用意();
+  射手を置く(store, 1); // 先に射手を置く（この中で編集中の記録が外れる）
+  store.setState({ activeRole: 'member', activeSessionID: 'ses-1' });
+  const 元 = 雲.値(記録の道, 'ses-1').title;
+  const 記録数 = store.getState().sessions.length;
+  await store.getState().saveSession('部員が上書き', '', true, [], null);
+  await 待つ(50);
+  assert.equal(雲.値(記録の道, 'ses-1').title, 元, 'クラウドが変わらない');
+  assert.equal(store.getState().sessions.length, 記録数, '手元にも増えない');
+  assert.ok(
+    知らせ.some((m) => m.includes('個人モードからは更新できません')),
+    '理由が画面に出る'
+  );
 });
 
 // ──────────────────────────────────────────────────────────────
@@ -267,6 +353,70 @@ test('完全削除：ゴミ箱から戻したら控えから外れる', async ()
 });
 
 // ──────────────────────────────────────────────────────────────
+// ゴミ箱のリスナー
+// ──────────────────────────────────────────────────────────────
+test('ゴミ箱のリスナー：まだ送れていない削除を消さない', async () => {
+  // 消してしまうと送り直しの対象から外れ、次の取得で記録が復活する
+  const { store, 雲 } = 用意();
+  await store.getState().listenToTrash();
+  await 待つ(50);
+  雲.状態.オフライン = true;
+  store.getState().deleteSession('ses-2');
+  await 待つ(100);
+  // クラウド側には届いていない状態でリスナーが動く
+  雲.消す(ゴミ箱の道, 'ses-2');
+  雲.通知();
+  await 待つ(50);
+  const t = ゴミ箱を見る(store, 'ses-2');
+  assert.ok(t, 'ゴミ箱に残る');
+  assert.equal(t.pendingDelete, true, '手元で捨てた印も保たれる');
+});
+
+test('ゴミ箱のリスナー：戻したばかりの記録を履歴から外さない', async () => {
+  // クラウドのゴミ箱に写しが残っていても、戻した操作を打ち消してはいけない
+  const { store, 雲 } = 用意();
+  await store.getState().deleteSession('ses-2');
+  await 待つ(50);
+  await store.getState().listenToTrash();
+  await 待つ(50);
+  雲.状態.オフライン = true;
+  store.getState().restoreSession('ses-2');
+  await 待つ(100);
+  雲.置く(ゴミ箱の道, 'ses-2', { id: 'ses-2', title: '練習2', lastModified: 1 });
+  雲.通知();
+  await 待つ(50);
+  assert.ok(記録を見る(store, 'ses-2'), '履歴に残る');
+});
+
+test('ゴミ箱のリスナー：完全に消したものは出さない', async () => {
+  const { store, 雲 } = 用意();
+  await store.getState().deleteSession('ses-2');
+  await 待つ(50);
+  await store.getState().emptyTrash();
+  await 待つ(50);
+  await store.getState().listenToTrash();
+  await 待つ(50);
+  // 他の端末の都合でクラウドのゴミ箱に写しが現れても出さない
+  雲.置く(ゴミ箱の道, 'ses-2', { id: 'ses-2', title: '練習2', lastModified: Date.now() });
+  雲.通知();
+  await 待つ(50);
+  assert.equal(ゴミ箱を見る(store, 'ses-2'), undefined, 'ゴミ箱に出さない');
+  assert.equal(記録を見る(store, 'ses-2'), undefined, '履歴にも出さない');
+});
+
+test('ゴミ箱のリスナー：クラウドで捨てられた記録は履歴から外す', async () => {
+  // 上の守りが効きすぎて、他の端末の削除が届かなくなっていないか
+  const { store, 雲 } = 用意();
+  await store.getState().listenToTrash();
+  await 待つ(50);
+  雲.置く(ゴミ箱の道, 'ses-3', { id: 'ses-3', title: '練習3', lastModified: Date.now() });
+  雲.通知();
+  await 待つ(50);
+  assert.ok(ゴミ箱を見る(store, 'ses-3'), 'ゴミ箱に入る');
+  assert.equal(記録を見る(store, 'ses-3'), undefined, '履歴から外れる');
+});
+
+// ──────────────────────────────────────────────────────────────
 // メンバー
 // ──────────────────────────────────────────────────────────────
 const メンバーの道 = `groups/${団体}/members`;
@@ -331,6 +481,223 @@ test('メンバー：送信が失われても、次の同期で送り直され�
   await 待つ(50);
   assert.equal(雲.値(メンバーの道, 'mem-1').name, 'オフ改名', 'クラウドへ届く');
   assert.equal(メンバーを見る(store, 'mem-1').syncStatus, '同期済み');
+});
+
+// ──────────────────────────────────────────────────────────────
+// 逆引き表（個人ID → 部員）
+//
+// セキュリティルールがこの表を直接引いて所属を確かめる。名簿と食い違うと
+// 部員がログインできなくなるので、ここは崩せない。
+// ──────────────────────────────────────────────────────────────
+const 逆引きの道 = `groups/${団体}/member_lookup`;
+
+test('逆引き表：名簿に足した人が載る', async () => {
+  const { store, 雲 } = 用意();
+  store.setState({
+    members: [{ id: 'mem-1', name: '部員1', personalId: '1234', lastModified: 1 }],
+  });
+  await store.getState().syncMemberLookup();
+  await 待つ(50);
+  assert.deepEqual(雲.中身(逆引きの道), ['1234']);
+  assert.equal(雲.値(逆引きの道, '1234').memberId, 'mem-1');
+});
+
+test('逆引き表：名簿から消えた人は表からも消える', async () => {
+  const { store, 雲 } = 用意();
+  雲.置く(逆引きの道, '9999', { memberId: 'mem-退部', updatedAt: 1 });
+  store.setState({
+    members: [{ id: 'mem-1', name: '部員1', personalId: '1234', lastModified: 1 }],
+  });
+  await store.getState().syncMemberLookup();
+  await 待つ(50);
+  assert.deepEqual(雲.中身(逆引きの道), ['1234'], '退部した人の分は残さない');
+});
+
+test('逆引き表：4桁でない個人IDは載せない', async () => {
+  const { store, 雲 } = 用意();
+  // 起動時に走る個人IDの自動採番を先に済ませてから確かめる
+  // （そうしないと、4桁でない人にIDが振られてしまい、この検査の対象が消える）
+  await 待つ(50);
+  store.setState({
+    members: [
+      { id: 'mem-1', name: '部員1', personalId: '12', lastModified: 1 },
+      { id: 'mem-2', name: '部員2', personalId: '', lastModified: 1 },
+      { id: 'mem-3', name: '部員3', personalId: '5678', lastModified: 1 },
+    ],
+  });
+  await store.getState().syncMemberLookup();
+  await 待つ(50);
+  assert.deepEqual(雲.中身(逆引きの道), ['5678']);
+});
+
+test('逆引き表：部員ロールでは書き込まない', async () => {
+  // 部員の端末は名簿を書けない。試みるとルールに拒否される
+  const { store, 雲 } = 用意();
+  store.setState({
+    activeRole: 'member',
+    members: [{ id: 'mem-1', name: '部員1', personalId: '1234', lastModified: 1 }],
+  });
+  await store.getState().syncMemberLookup();
+  await 待つ(50);
+  assert.deepEqual(雲.中身(逆引きの道), []);
+});
+
+test('個人ID：持っていない人に4桁で重複しないIDを振る', async () => {
+  const { store, 雲 } = 用意();
+  const 名簿 = [
+    { id: 'mem-1', name: '部員1', personalId: '1234', lastModified: 1 },
+    { id: 'mem-2', name: '部員2', personalId: '', lastModified: 1 },
+    { id: 'mem-3', name: '部員3', personalId: 'あ', lastModified: 1 },
+  ];
+  名簿.forEach((m) => 雲.置く(メンバーの道, m.id, Object.assign({}, m)));
+  store.setState({ members: 名簿.map((m) => Object.assign({}, m)), alumni: [] });
+  await store.getState().ensurePersonalIds();
+  await 待つ(50);
+  const 一覧 = store.getState().members.map((m) => m.personalId);
+  assert.equal(一覧[0], '1234', '持っている人は変えない');
+  一覧.forEach((id) => assert.match(id, /^\d{4}$/, '全員4桁になる'));
+  assert.equal(new Set(一覧).size, 3, '重複しない');
+});
+
+// ──────────────────────────────────────────────────────────────
+// 進級・卒業
+//
+// 4月1日に一度だけ動く処理。手で確かめるには時計を巻き戻すしかなく、
+// 間違えると名簿全員に影響する。分岐も多いので、ここは厚めに見る。
+// ──────────────────────────────────────────────────────────────
+const 設定の道 = `groups/${団体}/config`;
+
+/** 学年つきの名簿をクラウドと手元に置く */
+function 名簿を置く(store, 雲, 学年一覧) {
+  const 名簿 = 学年一覧.map((g, i) => ({
+    id: 'mem-' + (i + 1),
+    name: '部員' + (i + 1),
+    grade: g,
+    personalId: String(1000 + i),
+    lastModified: 1,
+    syncStatus: '同期済み',
+  }));
+  名簿.forEach((m) => 雲.置く(メンバーの道, m.id, Object.assign({}, m)));
+  store.setState({ members: 名簿.map((m) => Object.assign({}, m)), currentFreshmanTerm: 50 });
+  return 名簿;
+}
+const 学年 = (雲, id) => 雲.値(メンバーの道, id).grade;
+
+test('進級：1〜3年は1つ上がる', async () => {
+  const { store, 雲 } = 用意();
+  名簿を置く(store, 雲, [1, 2, 3]);
+  await store.getState().incrementAllGrades();
+  await 待つ(50);
+  assert.equal(学年(雲, 'mem-1'), 2);
+  assert.equal(学年(雲, 'mem-2'), 3);
+  assert.equal(学年(雲, 'mem-3'), 4);
+});
+
+test('進級：4年は卒業生（5）になる', async () => {
+  const { store, 雲 } = 用意();
+  名簿を置く(store, 雲, [4]);
+  await store.getState().incrementAllGrades();
+  await 待つ(50);
+  assert.equal(学年(雲, 'mem-1'), 5);
+});
+
+test('進級：卒業済み（5）は据え置き', async () => {
+  const { store, 雲 } = 用意();
+  名簿を置く(store, 雲, [5]);
+  await store.getState().incrementAllGrades();
+  await 待つ(50);
+  assert.equal(学年(雲, 'mem-1'), 5, '6年生を作らない');
+});
+
+test('進級：学年0（その他）は据え置き', async () => {
+  // 「その他」は現役扱いだが進級も卒業もしない、という仕様
+  const { store, 雲 } = 用意();
+  名簿を置く(store, 雲, [0]);
+  await store.getState().incrementAllGrades();
+  await 待つ(50);
+  assert.equal(学年(雲, 'mem-1'), 0);
+});
+
+test('進級：学年が空や数値でないものは据え置き', async () => {
+  const { store, 雲 } = 用意();
+  名簿を置く(store, 雲, [null, '', 'ふりがな']);
+  await store.getState().incrementAllGrades();
+  await 待つ(50);
+  assert.equal(学年(雲, 'mem-1'), null);
+  assert.equal(学年(雲, 'mem-2'), '');
+  assert.equal(学年(雲, 'mem-3'), 'ふりがな', '勝手に1年にしない');
+});
+
+test('進級：現在の期が1つ進む', async () => {
+  const { store, 雲 } = 用意();
+  名簿を置く(store, 雲, [1]);
+  await store.getState().incrementAllGrades();
+  await 待つ(50);
+  assert.equal(雲.値(設定の道, 'app_settings').currentFreshmanTerm, 51);
+});
+
+test('進級：通信できないときは何もしない', async () => {
+  // 途中まで進んで名簿が壊れるより、次につながったときにやり直すほうがよい。
+  // 手元だけ進級してクラウドが元のままだと、端末ごとに学年が食い違う。
+  const { store, 雲 } = 用意();
+  名簿を置く(store, 雲, [1, 2]);
+  const 期 = store.getState().currentFreshmanTerm;
+  store.setState({ isNetworkOnline: false });
+  await store.getState().incrementAllGrades();
+  await 待つ(50);
+  assert.equal(学年(雲, 'mem-1'), 1, 'クラウドの学年が動かない');
+  assert.equal(学年(雲, 'mem-2'), 2);
+  const 手元 = store.getState().members;
+  assert.equal(手元.find((m) => m.id === 'mem-1').grade, 1, '手元の学年も動かない');
+  assert.equal(手元.find((m) => m.id === 'mem-2').grade, 2);
+  assert.equal(store.getState().currentFreshmanTerm, 期, '現在の期も動かない');
+});
+
+test('進級：同じ年に二度は動かない', async () => {
+  const { store, 雲 } = 用意();
+  名簿を置く(store, 雲, [1]);
+  雲.置く(設定の道, 'app_settings', { lastPromotionYear: new Date().getFullYear() });
+  await store.getState().incrementAllGrades();
+  await 待つ(50);
+  assert.equal(学年(雲, 'mem-1'), 1, '二重に上がらない');
+});
+
+test('自動進級：記録が無いときは基準年を控えるだけで進級しない', async () => {
+  // これが無いと、初めて使う団体がいきなり全員進級してしまう
+  const { store, 雲 } = 用意();
+  名簿を置く(store, 雲, [1, 2]);
+  await store.getState().checkAndAutoIncrementGrades();
+  await 待つ(50);
+  assert.equal(学年(雲, 'mem-1'), 1, '進級しない');
+  assert.ok(
+    雲.値(設定の道, 'app_settings') && 雲.値(設定の道, 'app_settings').lastPromotionYear,
+    '基準年だけ控える'
+  );
+});
+
+test('自動進級：4月より前は動かない', async () => {
+  const { store, 雲 } = 用意();
+  名簿を置く(store, 雲, [1]);
+  const 今年 = new Date().getFullYear();
+  // 去年の記録があり、まだ4月を迎えていない状態にする
+  雲.置く(設定の道, 'app_settings', { lastPromotionYear: 今年 - 1, autoPromotionEnabled: true });
+  store.setState({ lastPromotionYear: 今年 - 1, autoPromotionEnabled: true });
+  const 四月以降 = new Date().getMonth() + 1 >= 4;
+  await store.getState().checkAndAutoIncrementGrades();
+  await 待つ(50);
+  if (四月以降) assert.equal(学年(雲, 'mem-1'), 2, '4月以降なら進級する');
+  else assert.equal(学年(雲, 'mem-1'), 1, '4月より前なら進級しない');
+});
+
+test('自動進級：切っていれば動かない', async () => {
+  const { store, 雲 } = 用意();
+  名簿を置く(store, 雲, [1]);
+  const 今年 = new Date().getFullYear();
+  雲.置く(設定の道, 'app_settings', { lastPromotionYear: 今年 - 1, autoPromotionEnabled: false });
+  store.setState({ lastPromotionYear: 今年 - 1, autoPromotionEnabled: false });
+  await store.getState().checkAndAutoIncrementGrades();
+  await 待つ(50);
+  assert.equal(学年(雲, 'mem-1'), 1);
 });
 
 // ──────────────────────────────────────────────────────────────
