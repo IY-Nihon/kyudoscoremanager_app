@@ -112,22 +112,31 @@ test('mergeById: purge を指定しなければ消さない', () => {
   assert.equal(r.length, 1);
 });
 
-test('mergeById: 日時が {seconds} の入れ物だと、新しくてもクラウドは勝てない', () => {
-  // 元の実装のまま。比較が NaN になるため 2 も 3 も成立しない。
-  // 直すと挙動が変わるので、ここでは現状を固定しておく。
-  // この形は本番の25件を数値に直して解消済み（scripts/repair-lastmodified.mjs）。
-  const r = mergeById(手元({ lastModified: 0, syncStatus: '同期済み' }), 雲({ lastModified: { seconds: 5 } }));
-  assert.equal(勝者(r), '手元');
-});
-
-test('mergeById: 日時が文字列でも同じくクラウドは勝てない', () => {
-  const r = mergeById(手元({ lastModified: 0, syncStatus: '同期済み' }), 雲({ lastModified: '2026-08-01T00:00:00Z' }));
-  assert.equal(勝者(r), '手元');
-});
-
-test('mergeById: force ならその形でもクラウドが勝つ', () => {
-  const r = mergeById(手元({ lastModified: 0, syncStatus: '同期済み' }), 雲({ lastModified: { seconds: 5 } }), true);
+test('mergeById: 日時が {seconds} の入れ物でも読めて、新しければクラウドが勝つ', () => {
+  // 元の実装は入れ物を読めず、比較が NaN になってクラウドが永久に勝てなかった。
+  // その記録だけ他の端末の編集が反映されなくなるため、読めるようにした。
+  const r = mergeById(手元({ lastModified: 0, syncStatus: '未同期' }), 雲({ lastModified: { seconds: 5 } }));
   assert.equal(勝者(r), 'クラウド');
+});
+
+test('mergeById: 日時が文字列でも読める', () => {
+  const 雲の日時 = '2026-08-01T00:00:00Z';
+  const r = mergeById(
+    手元({ lastModified: Date.parse(雲の日時) - 60000, syncStatus: '未同期' }),
+    雲({ lastModified: 雲の日時 })
+  );
+  assert.equal(勝者(r), 'クラウド');
+});
+
+test('mergeById: 入れ物の形でも、手元が未同期で新しければ手元が残る', () => {
+  // 読めるようにしても、送信前の編集を守る条件は変わらない
+  const r = mergeById(手元({ lastModified: 999000, syncStatus: '未同期' }), 雲({ lastModified: { seconds: 5 } }));
+  assert.equal(勝者(r), '手元');
+});
+
+test('mergeById: 読めない日時は 0 として扱い、手元が残る', () => {
+  const r = mergeById(手元({ lastModified: 999000, syncStatus: '未同期' }), 雲({ lastModified: 'ごみ' }));
+  assert.equal(勝者(r), '手元');
 });
 
 test('mergeById: Timestamp は数値に直して返す', () => {
