@@ -1213,14 +1213,18 @@ const M = (0, s.create)()(
             if (!m(c[e].personalId)) {
               const s = u(),
                 o = Date.now();
+              // 送信が済むまでは「未同期」にしておく。送信が失われた場合、
+              // 「同期済み」だと送り直しの対象にならず、クラウドにIDが無いまま
+              // 固定される。すると別の端末が別のIDを振り、端末ごとに食い違う。
               ((c[e] = Object.assign({}, c[e], {
                 personalId: p(s),
                 lastModified: o,
-                syncStatus: '同期済み',
+                syncStatus: '未同期',
               })),
                 h.set(
                   (0, a.doc)(fb.db, `groups/${n}/members`, c[e].id),
                   Object.assign({}, c[e], {
+                    syncStatus: '同期済み',
                     lastModified: (0, a.serverTimestamp)(),
                   })
                 ),
@@ -1231,29 +1235,55 @@ const M = (0, s.create)()(
             if (!m(l[e].personalId)) {
               const s = u(),
                 o = Date.now();
+              // メンバーと同じ理由で「未同期」にする
               ((l[e] = Object.assign({}, l[e], {
                 personalId: p(s),
                 lastModified: o,
-                syncStatus: '同期済み',
+                syncStatus: '未同期',
               })),
                 h.set(
                   (0, a.doc)(fb.db, `groups/${n}/alumni`, l[e].id),
                   Object.assign({}, l[e], {
+                    syncStatus: '同期済み',
                     lastModified: (0, a.serverTimestamp)(),
                   })
                 ),
                 f++,
                 (d = !0));
             }
-          (d &&
-            (e({
+          if (d) {
+            e({
               members: c,
               alumni: l,
               lastLocalChange: Date.now(),
-            }),
-            f > 0 && (await h.commit()),
-            console.log(`Ensured personal IDs: Updated ${f} non-compliant IDs.`)),
-            await s().syncMemberLookup());
+            });
+            if (f > 0) {
+              // 完了は待たない。通信できないと終わらず、この先の逆引き表の
+              // 更新まで止まってしまう。届いた分は syncSessions が印を
+              // 付け替え、届かなければ送り直す。
+              const 送った版 = new Map(
+                [...c, ...l].filter((e) => e && e.id).map((e) => [e.id, e.lastModified])
+              );
+              h.commit()
+                .then(() => {
+                  e((t) => ({
+                    members: t.members.map((t) =>
+                      t && 送った版.has(t.id) && t.lastModified === 送った版.get(t.id)
+                        ? Object.assign({}, t, { syncStatus: '同期済み' })
+                        : t
+                    ),
+                    alumni: t.alumni.map((t) =>
+                      t && 送った版.has(t.id) && t.lastModified === 送った版.get(t.id)
+                        ? Object.assign({}, t, { syncStatus: '同期済み' })
+                        : t
+                    ),
+                  }));
+                })
+                .catch((t) => console.error('[Store] 個人IDの送信に失敗:', t));
+            }
+            console.log(`Ensured personal IDs: Updated ${f} non-compliant IDs.`);
+          }
+          await s().syncMemberLookup();
         },
         deleteEquipment: (o, i) => {
           if (!s().activeGroupId || 'group' !== s().activeRole)
@@ -2231,6 +2261,38 @@ const M = (0, s.create)()(
                     }));
               } catch (t) {
                 console.error('[syncSessions] メンバーの送り直しの組み立てに失敗:', t);
+              }
+            }
+            // 卒業生も同じ。個人IDの自動採番は卒業生にも振るので、送り直しが
+            // 無いと手元にしかないIDが永久に届かず、端末ごとに食い違う。
+            const 未送信の卒業生 =
+              'group' === s().activeRole ? G.filter((e) => e && e.id && '未同期' === e.syncStatus) : [];
+            if (未送信の卒業生.length > 0) {
+              console.log(`[syncSessions] Syncing ${未送信の卒業生.length} pending alumni...`);
+              try {
+                const e = (0, a.writeBatch)(fb.db);
+                const 送った卒業生 = new Map(未送信の卒業生.map((x) => [x.id, x.lastModified]));
+                (未送信の卒業生.forEach((t) => {
+                  const i = dropUndefinedDeep(Object.assign({}, t, { syncStatus: '同期済み' }));
+                  ((i.lastModified = (0, a.serverTimestamp)()),
+                    e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/alumni`, t.id), i));
+                }),
+                  e
+                    .commit()
+                    .then(() => {
+                      反映((t) => ({
+                        alumni: t.alumni.map((t) =>
+                          t && 送った卒業生.has(t.id) && t.lastModified === 送った卒業生.get(t.id)
+                            ? Object.assign({}, t, { syncStatus: '同期済み' })
+                            : t
+                        ),
+                      }));
+                    })
+                    .catch((t) => {
+                      console.error('[syncSessions] 卒業生の送り直しに失敗:', t);
+                    }));
+              } catch (t) {
+                console.error('[syncSessions] 卒業生の送り直しの組み立てに失敗:', t);
               }
             }
             (e({

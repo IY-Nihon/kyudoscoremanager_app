@@ -556,6 +556,53 @@ test('個人ID：部員の端末では振らない', async () => {
   assert.equal(store.getState().members[0].personalId, '', '手元も変えない');
 });
 
+test('個人ID：送信が失われても、次の同期で送り直される', async () => {
+  // 「同期済み」の印を先に付けていたため、送信が失われるとクラウドにIDが
+  // 無いまま固定され、別の端末が別のIDを振って食い違っていた。
+  const { store, 雲 } = 用意();
+  await 待つ(50);
+  const 名簿 = [{ id: 'mem-1', name: '部員1', personalId: '', lastModified: 1000 }];
+  雲.置く(メンバーの道, 'mem-1', Object.assign({}, 名簿[0]));
+  store.setState({ members: 名簿.map((m) => Object.assign({}, m)), alumni: [] });
+
+  雲.状態.オフライン = true;
+  store.getState().ensurePersonalIds(); // 通信できないと返らないので待たない
+  await 待つ(80);
+  const 振ったID = store.getState().members[0].personalId;
+  assert.match(振ったID, /^\d{4}$/, '手元にはIDが振られる');
+  assert.equal(store.getState().members[0].syncStatus, '未同期', '送信前は未同期');
+
+  // 送信待ちが失われた＝クラウドは元のまま
+  雲.状態.オフライン = false;
+  雲.置く(メンバーの道, 'mem-1', Object.assign({}, 名簿[0]));
+  await store.getState().syncSessions();
+  await 待つ(80);
+  assert.equal(雲.値(メンバーの道, 'mem-1').personalId, 振ったID, 'クラウドへ届く');
+  assert.equal(store.getState().members[0].syncStatus, '同期済み');
+});
+
+test('個人ID：卒業生の分も送り直される', async () => {
+  const { store, 雲 } = 用意();
+  await 待つ(50);
+  const 卒 = { id: 'alu-1', name: '卒業生1', personalId: '', lastModified: 1000 };
+  雲.置く(`groups/${団体}/alumni`, 'alu-1', Object.assign({}, 卒));
+  store.setState({ members: [], alumni: [Object.assign({}, 卒)] });
+
+  雲.状態.オフライン = true;
+  store.getState().ensurePersonalIds();
+  await 待つ(80);
+  const 振ったID = store.getState().alumni[0].personalId;
+  assert.match(振ったID, /^\d{4}$/);
+  assert.equal(store.getState().alumni[0].syncStatus, '未同期');
+
+  雲.状態.オフライン = false;
+  雲.置く(`groups/${団体}/alumni`, 'alu-1', Object.assign({}, 卒));
+  await store.getState().syncSessions();
+  await 待つ(80);
+  assert.equal(雲.値(`groups/${団体}/alumni`, 'alu-1').personalId, 振ったID, 'クラウドへ届く');
+  assert.equal(store.getState().alumni[0].syncStatus, '同期済み');
+});
+
 test('個人ID：持っていない人に4桁で重複しないIDを振る', async () => {
   const { store, 雲 } = 用意();
   const 名簿 = [
