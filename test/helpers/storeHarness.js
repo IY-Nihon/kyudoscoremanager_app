@@ -89,6 +89,8 @@ function 偽Firestore() {
       const 一覧 = [...表.entries()].map(([id, 値]) => ({
         id,
         data: () => 値,
+        // 逆引き表の整理は d.ref を使って消すので、参照も返す
+        ref: { 道: 集まり.道, id },
         metadata: { hasPendingWrites: false },
       }));
       return { forEach: (f) => 一覧.forEach(f), docs: 一覧, empty: 一覧.length === 0, size: 一覧.length };
@@ -174,6 +176,11 @@ Module._resolveFilename = function (要求, ...残り) {
 function ストアを用意する() {
   const 雲 = 偽Firestore();
   const 保存領域 = new Map();
+  const 知らせ = []; // 画面に出した文言（saveSession の上書き防止など）
+
+  // IS_WEB が真なので window.alert が呼ばれる。node には無いので用意する
+  if (typeof global.window === 'undefined') global.window = {};
+  global.window.alert = (文) => 知らせ.push(String(文));
 
   // react-native は node では読めないので、使う分だけ用意する
   横取り.set(
@@ -222,14 +229,17 @@ function ストアを用意する() {
     },
   });
   差し替え('default_208', { __esModule: true, default: { addEventListener: () => () => {} } }); // NetInfo
-  差し替え('module_198', { __esModule: true, default: { alert: () => {} } }); // Alert
+  差し替え('module_198', {
+    __esModule: true,
+    default: { alert: (見出し, 文) => 知らせ.push(String(文 || 見出し)) },
+  }); // Alert
 
   // ストア本体は毎回読み直す
   const 場所 = path.join(SRC, 'JP_useScoreStore_174.js');
   delete require.cache[場所];
   const { useScoreStore } = require(場所);
 
-  return { store: useScoreStore, 雲, 保存領域 };
+  return { store: useScoreStore, 雲, 保存領域, 知らせ };
 }
 
 /** 少し待つ。送信の約束が片付くのを待つために使う */
