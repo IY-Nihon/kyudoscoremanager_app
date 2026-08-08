@@ -278,6 +278,12 @@ const M = (0, s.create)()(
         syncStatus: '未同期',
         lastSyncTime: null,
         offlineSaveWarning: null,
+        // 完全に消した記録の控え（id → 消した時刻）。ゴミ箱から完全に削除した
+        // けれど、その削除がまだクラウドへ届いていないものを覚えておく。
+        // これが無いと、通信できないときに「削除 → ゴミ箱を空にする」と操作し、
+        // 送信待ちが失われた場合に、消したはずの記録が次の取得で戻ってくる。
+        // クラウドから消えたことを確認できたら控えも消す。
+        permanentlyDeleted: {},
         isNetworkOnline: !0,
         isAdminMode: !1,
         autoPromotionEnabled: !0,
@@ -1442,10 +1448,17 @@ const M = (0, s.create)()(
           // 通信できるかで送信を止めない。止めると手元からだけ消えて、クラウドの
           // ゴミ箱は残り、次の全件取得で消したはずのものが戻ってきてしまう。
           // 通信できないときは Firestore の待ち行列に入り、つながった時点で送られる。
+          // 完全に消したことを控えておく。送信が失われても、次の取得で
+          // 戻ってこないようにするため。
+          const 控え = Object.assign({}, s().permanentlyDeleted);
+          c.forEach((e) => {
+            控え[e] = Date.now();
+          });
           if (
             (console.log('[Store] Emptying trash:', c.length, 'items'),
             e({
               trash: [],
+              permanentlyDeleted: 控え,
             }),
             n)
           )
@@ -1470,10 +1483,16 @@ const M = (0, s.create)()(
               (console.log('[Store] Deleting trash items:', o),
                 c && console.log(`[Store] Target Firestore path: groups/${c}/trash/`));
               const l = (i || []).filter((e) => e && !o.includes(e.id));
+              // emptyTrash と同じく、完全に消したことを控えておく
+              const 控え = Object.assign({}, s().permanentlyDeleted);
+              o.forEach((e) => {
+                e && (控え[e] = Date.now());
+              });
               // emptyTrash と同じ理由で、通信できるかでは止めない
               if (
                 (e({
                   trash: l,
+                  permanentlyDeleted: 控え,
                 }),
                 c)
               ) {
@@ -1541,9 +1560,13 @@ const M = (0, s.create)()(
               pendingDelete: void 0,
             }),
             l = Array.isArray(s().sessions) ? s().sessions : [];
+          // 戻したなら、完全に消した控えからも外す。残っていると画面に出なくなる
+          const 控え = Object.assign({}, s().permanentlyDeleted);
+          delete 控え[o];
           e({
             trash: i.filter((e) => e && e.id !== o),
             sessions: [c, ...l],
+            permanentlyDeleted: 控え,
           });
           try {
             const e = (0, a.writeBatch)(fb.db);
@@ -1568,9 +1591,13 @@ const M = (0, s.create)()(
                 pendingDelete: void 0,
               })
             );
+          // restoreSession と同じく、完全に消した控えから外す
+          const 控え = Object.assign({}, s().permanentlyDeleted);
+          o.forEach((e) => delete 控え[e]);
           e({
             trash: c,
             sessions: [...l, ...s().sessions],
+            permanentlyDeleted: 控え,
           });
           try {
             const e = (0, a.writeBatch)(fb.db);
@@ -2162,6 +2189,11 @@ const M = (0, s.create)()(
                 console.error('[syncSessions] 削除の送り直しの組み立てに失敗:', t);
               }
             }
+            // 完全に消したものは、クラウドにまだ残っていても画面に出さない。
+            // 控えの整理と消し直しは、記録もゴミ箱も全件そろう
+            // fetchAndOverwriteFromCloud 側で行う（ここは差分取得なので、
+            // クラウドに残っているかを正しく判定できない）。
+            const 完全削除ずみ = new Set(Object.keys(s().permanentlyDeleted || {}));
             // 送信が済んでいないメンバーを送り直す。記録やゴミ箱と同じで、
             // 通信できないときの変更は待ち行列ごと失われることがあり、
             // そのままだと手元にしかない氏名や学年が永久に届かない。
@@ -2199,9 +2231,10 @@ const M = (0, s.create)()(
               }
             }
             (e({
-              sessions: k,
+              // 完全に消したものは、クラウドにまだ残っていても画面に出さない
+              sessions: k.filter((e) => e && !完全削除ずみ.has(e.id)),
               members: O,
-              trash: ごみ箱,
+              trash: ごみ箱.filter((e) => e && !完全削除ずみ.has(e.id)),
               alumni: G,
               syncStatus: '同期済み',
               lastSyncTime: h,
@@ -2382,10 +2415,48 @@ const M = (0, s.create)()(
               ごみ箱 = w.filter((e) => e && !復元待ち.has(e.id)),
               I = new Set(ごみ箱.map((e) => e.id)),
               M = v.filter((e) => e && !I.has(e.id));
+            // 完全に消したものの後始末。ここは記録もゴミ箱も全件そろっているので、
+            // クラウドから本当に消えたかを正しく判定できる。
+            //   ・まだ残っている → 消し直して控えは残す
+            //   ・もう無い       → 消し終わったので控えから外す
+            //   ・30日を過ぎた   → 手放す（控えが際限なく増えないように）
+            const 控え = s().permanentlyDeleted || {};
+            const 控えのid = Object.keys(控え);
+            let 完全削除ずみ = new Set(控えのid);
+            if (控えのid.length > 0) {
+              const 期限 = Date.now() - 2592e6;
+              const クラウドに有る = new Set([...l, ...u].filter((e) => e && e.id).map((e) => e.id));
+              const 消し直す = 控えのid.filter((e) => 控え[e] >= 期限 && クラウドに有る.has(e));
+              const 残す = {};
+              消し直す.forEach((e) => {
+                残す[e] = 控え[e];
+              });
+              完全削除ずみ = new Set(消し直す);
+              if (消し直す.length !== 控えのid.length)
+                console.log(`[Store] 完全削除の控えを整理: ${控えのid.length}件 → ${消し直す.length}件`);
+              if (消し直す.length > 0) {
+                console.log(`[Store] クラウドに残っている ${消し直す.length}件 を消し直します`);
+                try {
+                  const e = (0, a.writeBatch)(fb.db);
+                  (消し直す.forEach((t) => {
+                    (e.delete((0, a.doc)(fb.db, `groups/${s().activeGroupId}/sessions`, t)),
+                      e.delete((0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, t)));
+                  }),
+                    e.commit().catch((t) => {
+                      console.error('[Store] 完全削除の送り直しに失敗:', t);
+                    }));
+                } catch (t) {
+                  console.error('[Store] 完全削除の送り直しの組み立てに失敗:', t);
+                }
+              }
+              e({
+                permanentlyDeleted: 残す,
+              });
+            }
             (e({
               members: T,
-              sessions: M,
-              trash: ごみ箱,
+              sessions: M.filter((e) => e && !完全削除ずみ.has(e.id)),
+              trash: ごみ箱.filter((e) => e && !完全削除ずみ.has(e.id)),
               alumni: y(s().alumni, p, !1, !0),
               currentFreshmanTerm: f,
               tagTemplates: S,
@@ -2733,8 +2804,10 @@ const M = (0, s.create)()(
                     return localSession;
                   return cloudSession;
                 });
-                const l = a.filter((e) => !c.has(e.id) && !e.hasOwnProperty('serverCreatedTime')),
-                  d = [...merged, ...l];
+                const l = a.filter((e) => !c.has(e.id) && !e.hasOwnProperty('serverCreatedTime'));
+                // 完全に消したものは、クラウドにまだ残っていても画面に出さない
+                const 完全削除ずみ = new Set(Object.keys(s().permanentlyDeleted || {}));
+                const d = [...merged, ...l].filter((e) => e && !完全削除ずみ.has(e.id));
                 d.sort((e, s) => (s.date || 0) - (e.date || 0));
                 (e({
                   sessions: d,
@@ -2812,13 +2885,16 @@ const M = (0, s.create)()(
                 新しいゴミ箱.sort((e, s) => trashedAtMillis(s) - trashedAtMillis(e));
                 // 戻したばかりでまだ送れていない記録は、クラウドのゴミ箱に写しが
                 // あっても履歴から外さない。外すと復元が取り消されて見える。
-                const 捨てたid = new Set(新しいゴミ箱.map((e) => e.id));
+                // 完全に消したものは、クラウドにまだ残っていても画面に出さない
+                const 完全削除ずみ = new Set(Object.keys(s().permanentlyDeleted || {}));
+                const 出すゴミ箱 = 新しいゴミ箱.filter((e) => e && !完全削除ずみ.has(e.id));
+                const 捨てたid = new Set(出すゴミ箱.map((e) => e.id));
                 const 残す = s().sessions.filter(
                   (e) => e && (!捨てたid.has(e.id) || '未同期' === e.syncStatus)
                 );
                 (e({
-                  trash: 新しいゴミ箱,
-                  sessions: 残す,
+                  trash: 出すゴミ箱,
+                  sessions: 残す.filter((e) => e && !完全削除ずみ.has(e.id)),
                 }),
                   console.log(
                     `[Store] Real-time trash update received: ${o.length} items (purged from sessions)`
@@ -3291,6 +3367,7 @@ const M = (0, s.create)()(
         history: e.history,
         alumni: e.alumni,
         trash: e.trash,
+        permanentlyDeleted: e.permanentlyDeleted,
         shotsPerRound: e.shotsPerRound,
         activeSessionID: e.activeSessionID,
         viewScale: e.viewScale,
