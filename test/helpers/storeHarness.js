@@ -58,13 +58,29 @@ function 偽Firestore() {
     return Promise.resolve();
   };
 
+  /**
+   * serverTimestamp() の目印を、届いた時点の実際の時刻に置き換える。
+   * 本物の Firestore はサーバー側でこれを行う。置き換えないと日時が読めず、
+   * 突き合わせの比較が常に成立しなくなる（検査が意味を持たなくなる）。
+   */
+  const 解決 = (値) => {
+    if (Array.isArray(値)) return 値.map(解決);
+    if (値 && typeof 値 === 'object') {
+      if (値.__サーバー日時) return Date.now();
+      const out = {};
+      for (const k in 値) out[k] = 解決(値[k]);
+      return out;
+    }
+    return 値;
+  };
+
   const 適用 = (やること) => {
     for (const o of やること.操作) {
       const 表 = 取り出す(o.道);
       if (o.種類 === 'delete') 表.delete(o.id);
-      else if (o.種類 === 'set') 表.set(o.id, Object.assign({}, o.値));
+      else if (o.種類 === 'set') 表.set(o.id, 解決(Object.assign({}, o.値)));
       else if (o.種類 === 'update')
-        表.set(o.id, Object.assign({}, 表.get(o.id) || {}, o.値));
+        表.set(o.id, 解決(Object.assign({}, 表.get(o.id) || {}, o.値)));
     }
   };
 
@@ -173,8 +189,9 @@ Module._resolveFilename = function (要求, ...残り) {
 /**
  * ストアを新しく読み込む。呼ぶたびにまっさらな状態になる。
  */
-function ストアを用意する() {
-  const 雲 = 偽Firestore();
+function ストアを用意する(既存の雲) {
+  // 同じクラウドを渡すと、2台目の端末として使える（食い違いの検査用）
+  const 雲 = 既存の雲 || 偽Firestore();
   const 保存領域 = new Map();
   const 知らせ = []; // 画面に出した文言（saveSession の上書き防止など）
 
