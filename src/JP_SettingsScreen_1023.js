@@ -75,6 +75,15 @@ var _xlsx = require('./JP_excelExport'),
   _G = require('expo-image-picker'),
   _RN = require('react-native'),
   _IM = require('expo-image-manipulator');
+// ログアウトの確認の文言は src/logoutPrompt.js にある（画面を動かさずに
+// 出し分けを検査できるようにするため）
+const {
+  logoutMessage: ログアウトの文言,
+  logoutButtonLabel: ログアウトのボタン名,
+  logoutButtonsDisabled: ログアウトのボタンを止める,
+  shouldTrySendFirst: 先に送信すべきか,
+} = require('./logoutPrompt');
+
 // ─────────────────────────────────────────
 // 書き出しの共通ヘルパー
 // ─────────────────────────────────────────
@@ -136,8 +145,8 @@ const w = () => {
       [Z, ee] = l.default.useState(!1),
       [te, le] = l.default.useState(!1),
       [re, oe] = l.default.useState(!1),
-      // ログアウトの確認で使う。'送信中' か、送り切れずに残った件数
-      [未送信を送信中, 未送信を送信中にする] = l.default.useState(!1),
+      // ログアウトの確認の段階。'確認' → '送信中' → '送信済み' / '失敗'
+      [ログアウトの段階, ログアウトの段階を設定] = l.default.useState('確認'),
       [残った未送信, 残った未送信を設定] = l.default.useState(0),
       [ne, ae] = l.default.useState(''),
       [se, ie] = l.default.useState(''),
@@ -656,19 +665,12 @@ const w = () => {
                     'log-out-outline',
                     'ログアウト',
                     () => {
-                      // 確認を出しつつ、送れていないものを裏で送り切ろうとする。
-                      // ログアウトは手元の記録を全部捨てるので、先に送っておかないと
-                      // 圏外で保存した分が失われる
-                      (oe(!0), 残った未送信を設定(0));
-                      const 店 = y.useScoreStore.getState();
-                      if (店.countUnsynced() > 0) {
-                        (未送信を送信中にする(!0),
-                          店
-                            .flushUnsyncedForLogout()
-                            .then((e) => 残った未送信を設定(e))
-                            .catch(() => 残った未送信を設定(店.countUnsynced()))
-                            .finally(() => 未送信を送信中にする(!1)));
-                      }
+                      // ログアウトは手元の記録を全部捨てるので、送れていないものが
+                      // 何件あるかを先に数えて確認に出す。送信するかどうかは
+                      // 利用者が押してから
+                      (残った未送信を設定(y.useScoreStore.getState().countUnsynced()),
+                        ログアウトの段階を設定('確認'),
+                        oe(!0));
                     },
                     '#FF3B30',
                     null,
@@ -1789,11 +1791,7 @@ const w = () => {
                   (0, T.jsx)(n.default, { style: D.modalTitle, children: 'ログアウト' }),
                   (0, T.jsx)(n.default, {
                     style: D.modalMessage,
-                    children: 未送信を送信中
-                      ? '送信できていない記録を送っています...'
-                      : 残った未送信 > 0
-                        ? `送信できていない記録が${残った未送信}件あります。このままログアウトすると失われます。`
-                        : 'ログアウトしますか？',
+                    children: ログアウトの文言(ログアウトの段階, 残った未送信),
                   }),
                   (0, T.jsxs)(o.default, {
                     style: D.modalButtonsRow,
@@ -1804,7 +1802,9 @@ const w = () => {
                           { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
                           e && { backgroundColor: '#E5E5EA' },
                           x.IS_WEB && { cursor: 'pointer' },
+                          ログアウトのボタンを止める(ログアウトの段階) && { opacity: 0.4 },
                         ],
+                        disabled: ログアウトのボタンを止める(ログアウトの段階),
                         onPress: () => oe(!1),
                         children: (0, T.jsx)(n.default, {
                           style: [D.modalBtnText, { color: '#007AFF' }],
@@ -1817,8 +1817,25 @@ const w = () => {
                           { backgroundColor: '#FF3B30', flex: 1, marginLeft: 5 },
                           e && { backgroundColor: '#D63027' },
                           x.IS_WEB && { cursor: 'pointer' },
+                          ログアウトのボタンを止める(ログアウトの段階) && { opacity: 0.4 },
                         ],
+                        disabled: ログアウトのボタンを止める(ログアウトの段階),
                         onPress: async () => {
+                          // 未送信があるうちは、まず送信を試す。送れなかったときだけ
+                          // 「捨てて抜ける」を選べるようにする
+                          if (先に送信すべきか(ログアウトの段階, 残った未送信)) {
+                            ログアウトの段階を設定('送信中');
+                            let 残り = 残った未送信;
+                            try {
+                              残り = await y.useScoreStore.getState().flushUnsyncedForLogout();
+                            } catch (e) {
+                              残り = y.useScoreStore.getState().countUnsynced();
+                            }
+                            残った未送信を設定(残り);
+                            if (残り > 0) return void ログアウトの段階を設定('失敗');
+                            ログアウトの段階を設定('送信済み');
+                            await new Promise((e) => setTimeout(e, 900));
+                          }
                           oe(!1);
                           try {
                             if ('member' === V && E.auth.currentUser) {
@@ -1833,7 +1850,7 @@ const w = () => {
                         },
                         children: (0, T.jsx)(n.default, {
                           style: [D.modalBtnText, { color: '#FFF' }],
-                          children: 'ログアウト',
+                          children: ログアウトのボタン名(ログアウトの段階, 残った未送信),
                         }),
                       }),
                     ],
