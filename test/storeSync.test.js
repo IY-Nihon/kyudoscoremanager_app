@@ -787,6 +787,50 @@ test('全件取得：送信前の編集をクラウドの古い写しで上書�
   assert.equal(記録を見る(store, 'ses-1').title, '手元の編集', '編集が消えない');
 });
 
+test('全件取得：端末の時計が遅れていても、送信前の編集が消えない', async () => {
+  // 手元の日時は端末の時計、クラウドの日時はサーバー時刻。端末の時計が
+  // 数秒でも遅れていると「クラウドのほうが新しい」と判定され、直したばかりの
+  // 内容が黙って元に戻っていた（しかも送信タイマーが戻された内容を送るため
+  // 永久に失われる）。管理者モードでの履歴の編集が該当する。
+  const { store, 雲 } = 用意();
+  雲.置く(記録の道, 'ses-1', {
+    id: 'ses-1', title: 'クラウドの内容', date: 1000,
+    lastModified: Date.now() + 3000, // 端末の時計が3秒遅れている状態と同じ
+    archers: [],
+  });
+  await store.getState().updateSession('ses-1', { title: '直したばかり' });
+  assert.equal(記録を見る(store, 'ses-1').syncStatus, '未同期');
+  await store.getState().fetchAndOverwriteFromCloud(); // 送信の前に割り込む
+  await 待つ(50);
+  assert.equal(記録を見る(store, 'ses-1').title, '直したばかり', '編集が残る');
+  await 待つ(900); // 送信タイマーが発火する
+  assert.equal(雲.値(記録の道, 'ses-1').title, '直したばかり', 'クラウドへも届く');
+});
+
+test('同期：端末の時計が遅れていても、送信前の編集が消えない', async () => {
+  const { store, 雲 } = 用意();
+  雲.置く(記録の道, 'ses-1', {
+    id: 'ses-1', title: 'クラウドの内容', date: 1000, lastModified: Date.now() + 3000, archers: [],
+  });
+  await store.getState().updateSession('ses-1', { title: '直したばかり' });
+  await store.getState().syncSessions();
+  await 待つ(50);
+  assert.equal(記録を見る(store, 'ses-1').title, '直したばかり');
+  await 待つ(900);
+  assert.equal(雲.値(記録の道, 'ses-1').title, '直したばかり');
+});
+
+test('全件取得：送信が済んでいれば、他の端末の新しい編集を受け取る', async () => {
+  // 上の守りが効きすぎて、他の端末の編集が届かなくなっていないか
+  const { store, 雲 } = 用意();
+  雲.置く(記録の道, 'ses-1', {
+    id: 'ses-1', title: '他の端末が直した', date: 1000, lastModified: Date.now() + 3000, archers: [],
+  });
+  await store.getState().fetchAndOverwriteFromCloud();
+  await 待つ(50);
+  assert.equal(記録を見る(store, 'ses-1').title, '他の端末が直した');
+});
+
 test('同期：送信できていない記録を送り直す', async () => {
   const { store, 雲 } = 用意();
   雲.状態.オフライン = true;
