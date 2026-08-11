@@ -187,14 +187,22 @@ function 偽RTDB() {
     else 今[末] = 値;
   };
 
-  /** 本物に合わせる。null 混じりの配列は添字のオブジェクトになる */
+  /**
+   * 本物に合わせる。Realtime Database は null の要素を保存しないので、
+   * 配列の末尾の null は落ち、途中の null は穴として残る。
+   * 全部 null なら値ごと消える。
+   * （scripts/verify-live.mjs で実際のサーバー相手に確かめた振る舞い）
+   */
   const 雲の形へ = (値) => {
     if (Array.isArray(値)) {
       if (値.some((v) => v == null)) {
-        const out = {};
+        let 最後 = -1;
         値.forEach((v, i) => {
-          if (v != null) out[String(i)] = 雲の形へ(v);
+          if (v != null) 最後 = i;
         });
+        if (最後 < 0) return undefined; // 全部 null は丸ごと消える
+        const out = [];
+        for (let i = 0; i <= 最後; i++) out.push(値[i] == null ? null : 雲の形へ(値[i]));
         return out;
       }
       return 値.map(雲の形へ);
