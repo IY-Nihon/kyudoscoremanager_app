@@ -10,7 +10,11 @@
  *
  * stg 専用（書いて消すため）。
  */
+import { createRequire } from 'node:module';
 import { configFor, signIn } from './fb-rest.mjs';
+
+// 判断そのものは実装（src/syncRules.js）をそのまま使う。写すと食い違うため。
+const { mergeLiveArchers, normalizeArrowLocations } = createRequire(import.meta.url)('../src/syncRules.js');
 
 const target = process.argv[2] || 'stg';
 if (target !== 'stg') {
@@ -119,7 +123,83 @@ try {
     'このとき受信側は手元の矢所を残す（mergeLiveArchers）'
   );
 
-  // ── 5. 後始末 ──────────────────────────────────────────
+  // ── 5. 端末を2台に見立てて、本物の判断を実データに当てる ────────
+  //
+  // アプリの受信側と同じ順序で処理する。
+  //   サーバーの値 → 受信の整形（w 相当）→ mergeLiveArchers → 手元の一覧
+  // 整形の糊だけこの場で書き、判断は src/syncRules.js のものをそのまま使う。
+  const 受信の整形 = (状態) => {
+    const 本数 = typeof 状態.shotsPerRound === 'number' ? 状態.shotsPerRound : 8;
+    const marks = 状態.marks_by_id || {};
+    const 日時 = 状態.archer_timestamps || {};
+    return {
+      本数,
+      archers: (状態.archers || []).filter(Boolean).map((a) => ({
+        ...a,
+        marks: marks[a.id] ? marks[a.id].map((m) => (m == null ? '' : m)) : a.marks || [],
+        lastModified: Math.max(a.lastModified || 0, 日時[a.id] || 0),
+        arrowLocations: normalizeArrowLocations(a.arrowLocations, a.isSeparator ? 0 : 本数),
+      })),
+    };
+  };
+
+  // A（主催者）が矢所つきで開始した状態を置く
+  const A時刻 = Date.now();
+  const A射手 = { ...射手, lastModified: A時刻, arrowLocations: ['', { x: 12, y: 34 }, '', ''] };
+  await rt('PUT', 道, {
+    archers: [A射手],
+    marks_by_id: { a1: ['', '', '', ''] },
+    archer_timestamps: { a1: A時刻 },
+    shotsPerRound: 4,
+    timestamp: A時刻,
+    status: 'active',
+  });
+
+  // B（参加者）が受け取る。手元は空
+  const B受信 = 受信の整形((await rt('GET', 道)).json);
+  const B = mergeLiveArchers([], B受信.archers, 4, B受信.本数);
+  check('2台', 'B が A の矢所を受け取る', [null, { x: 12, y: 34 }, null, null], B.archers[0].arrowLocations);
+
+  // B が自分の矢所を置き、○を1本入れて軽量送信する。
+  // updateMark は「手元に反映してから送る」ので、こちらも同じ順序にする
+  const B時刻 = Date.now() + 1;
+  const B手元 = [
+    {
+      ...B.archers[0],
+      marks: ['', '', '', '○'],
+      arrowLocations: [{ x: 1, y: 2 }, { x: 12, y: 34 }, null, null],
+      lastModified: B時刻,
+    },
+  ];
+  await rt('PATCH', 道, { 'marks_by_id/a1/3': '○', 'archer_timestamps/a1': B時刻, timestamp: B時刻 });
+
+  // B が自分の送信の返りを受け取っても、自分の矢所を失わない
+  const B返り = 受信の整形((await rt('GET', 道)).json);
+  const B2 = mergeLiveArchers(B手元, B返り.archers, 4, B返り.本数);
+  check('2台', 'B は自分の矢所を失わない', [{ x: 1, y: 2 }, { x: 12, y: 34 }, null, null], B2.archers[0].arrowLocations);
+  check('2台', 'B の○は残る', '○', B2.archers[0].marks[3]);
+
+  // A が受け取る。A は自分の矢所を持ったまま B の○を受け取る
+  const A受信 = 受信の整形((await rt('GET', 道)).json);
+  const A2 = mergeLiveArchers(
+    [{ ...A射手, arrowLocations: [null, { x: 12, y: 34 }, null, null] }],
+    A受信.archers,
+    4,
+    A受信.本数
+  );
+  check('2台', 'A は B の○を受け取る', '○', A2.archers[0].marks[3]);
+  check('2台', 'A の矢所は消えない', [null, { x: 12, y: 34 }, null, null], A2.archers[0].arrowLocations);
+
+  // 古い版の端末が矢所なしで上書きしても、手元の矢所は残る
+  const 古い版 = { ...射手, lastModified: Date.now() + 2 };
+  delete 古い版.arrowLocations;
+  await rt('PUT', `${道}/archers`, [古い版]);
+  await rt('PATCH', 道, { 'archer_timestamps/a1': Date.now() + 2, timestamp: Date.now() + 2 });
+  const 古い受信 = 受信の整形((await rt('GET', 道)).json);
+  const A3 = mergeLiveArchers(A2.archers, 古い受信.archers, 4, 古い受信.本数);
+  check('2台', '古い版の上書きでも矢所が残る', [null, { x: 12, y: 34 }, null, null], A3.archers[0].arrowLocations);
+
+  // ── 6. 後始末 ──────────────────────────────────────────
   const 消し = await rt('DELETE', `/live_sessions/${G1}/${名}`);
   check('後始末', 'ライブを消せる', 200, 消し.status);
   const 残り = await rt('GET', `/live_sessions/${G1}/${名}`);
