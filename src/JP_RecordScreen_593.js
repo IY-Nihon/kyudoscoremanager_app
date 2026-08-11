@@ -679,10 +679,18 @@ const k = () => {
                         const e = Le.trim();
                         if ((Ne(null), 'host' === Re)) {
                           Ge('ライブを開始しています...');
-                          return void ((await x.useScoreStore.getState().startLiveSync(e))
-                            ? (Oe(!1), j.notificationAsync(j.NotificationFeedbackType.Success))
-                            : (Ne(`'${e}' は既に使用されています。別の名前を入力してください。`),
-                              j.impactAsync(j.ImpactFeedbackStyle.Heavy)));
+                          const 結果 = await x.useScoreStore.getState().startLiveSync(e);
+                          if ('開始した' === 結果)
+                            return void (Oe(!1), j.notificationAsync(j.NotificationFeedbackType.Success));
+                          // 「同名あり」と「確かめられなかった」を区別する。
+                          // 元はどちらも「既に使用されています」と出していて、
+                          // 通信が乱れただけのときに誤った案内になっていた
+                          return void (Ne(
+                            '同名あり' === 結果
+                              ? `'${e}' は既に使用されています。別の名前を入力してください。`
+                              : '通信が不安定なため開始できませんでした。電波の良い場所でもう一度お試しください。'
+                          ),
+                          j.impactAsync(j.ImpactFeedbackStyle.Heavy));
                         }
                         if ('join' === Re) {
                           if (!x.useScoreStore.getState().liveSessionsList.includes(e))
