@@ -107,6 +107,7 @@ const 同期規則 = require('./syncRules');
 const h = 同期規則.generateUniquePersonalId,
   y = 同期規則.mergeById,
   mergeLiveArchers = 同期規則.mergeLiveArchers,
+  restampChangedArchers = 同期規則.restampChangedArchers,
   normalizeArrowLocations = 同期規則.normalizeArrowLocations,
   dropUndefinedDeep = 同期規則.dropUndefinedDeep,
   trashedAtMillis = 同期規則.trashedAtMillis,
@@ -292,6 +293,11 @@ const M = (0, s.create)()(
         // 送信待ちが失われた場合に、消したはずの記録が次の取得で戻ってくる。
         // クラウドから消えたことを確認できたら控えも消す。
         permanentlyDeleted: {},
+        // 消したメンバーのうち、まだクラウドへ届いていないものの控え。
+        // 名簿の受け取りは「クラウドに在って手元に無いものは足す」ので、
+        // これが無いと、送信が失われたときに消したメンバーが復活する。
+        // 記録側の permanentlyDeleted と同じ考え方。
+        deletedMembers: {},
         isNetworkOnline: !0,
         isAdminMode: !1,
         autoPromotionEnabled: !0,
@@ -880,7 +886,7 @@ const M = (0, s.create)()(
             archers: a,
           });
           const { isLiveActive: i, liveSessionName: n, shotsPerRound: c } = s();
-          i && n && v(n, a, c);
+          i && n && v(n, s().archers, c);
         },
         setArcherGuestName: (t, o) => {
           const a = (Array.isArray(s().archers) ? s().archers : []).map((e) =>
@@ -901,7 +907,7 @@ const M = (0, s.create)()(
             archers: a,
           });
           const { isLiveActive: i, liveSessionName: n, shotsPerRound: c } = s();
-          i && n && v(n, a, c);
+          i && n && v(n, s().archers, c);
         },
         setArcherGender: (t, o) => {
           const a = (Array.isArray(s().archers) ? s().archers : []).map((e) =>
@@ -917,12 +923,14 @@ const M = (0, s.create)()(
             archers: a,
           });
           const { isLiveActive: i, liveSessionName: n, shotsPerRound: c } = s();
-          i && n && v(n, a, c);
+          i && n && v(n, s().archers, c);
         },
         undo: () => {
           const { historyStack: t, archers: o } = s();
           if (0 === t.length) return;
-          const a = t[t.length - 1];
+          // 中身が変わった射手には新しい日時を打ち直す。打たないと、ライブ中の
+          // 取り消しが相手に届かず、主催者の画面だけ戻る食い違いになる
+          const a = restampChangedArchers(t[t.length - 1], o, Date.now());
           e({
             historyStack: t.slice(0, -1),
             redoStack: [...s().redoStack, o],
@@ -930,12 +938,13 @@ const M = (0, s.create)()(
             lastLocalChange: Date.now(),
           });
           const { isLiveActive: i, liveSessionName: n, shotsPerRound: c } = s();
-          i && n && v(n, a, c);
+          i && n && v(n, s().archers, c);
         },
         redo: () => {
           const { redoStack: t, archers: o } = s();
           if (0 === t.length) return;
-          const a = t[t.length - 1];
+          // 取り消しと同じ理由で日時を打ち直す
+          const a = restampChangedArchers(t[t.length - 1], o, Date.now());
           e({
             redoStack: t.slice(0, -1),
             historyStack: [...s().historyStack, o],
@@ -943,7 +952,7 @@ const M = (0, s.create)()(
             lastLocalChange: Date.now(),
           });
           const { isLiveActive: i, liveSessionName: n, shotsPerRound: c } = s();
-          i && n && v(n, a, c);
+          i && n && v(n, s().archers, c);
         },
         addMember: (o, i, c, d) => {
           if (!s().activeGroupId || 'group' !== s().activeRole)
@@ -1148,16 +1157,20 @@ const M = (0, s.create)()(
             }, 300)));
         },
         deleteMember: (o) => {
-          s().activeGroupId && 'group' === s().activeRole
-            ? (e({
-                members: s().members.filter((e) => e.id !== o),
-                lastLocalChange: Date.now(),
-              }),
-              s().activeGroupId &&
-                (0, a.deleteDoc)((0, a.doc)(fb.db, `groups/${s().activeGroupId}/members`, o))
-                  .then(() => s().syncMemberLookup())
-                  .catch((e) => console.error('Delete Member Sync Error:', e)))
-            : n.default.alert('権限エラー', 'メンバーの削除は団体ログイン時のみ可能です。');
+          if (!s().activeGroupId || 'group' !== s().activeRole)
+            return void n.default.alert('権限エラー', 'メンバーの削除は団体ログイン時のみ可能です。');
+          // 消したことを控えに残す。送信が失われても、次の受け取りで
+          // 復活させないため。クラウドから消えたのを確かめてから控えを外す
+          const 控え = Object.assign({}, s().deletedMembers);
+          ((控え[o] = Date.now()),
+            e({
+              members: s().members.filter((e) => e.id !== o),
+              deletedMembers: 控え,
+              lastLocalChange: Date.now(),
+            }),
+            (0, a.deleteDoc)((0, a.doc)(fb.db, `groups/${s().activeGroupId}/members`, o))
+              .then(() => s().syncMemberLookup())
+              .catch((e) => console.error('Delete Member Sync Error:', e)));
         },
         syncMemberLookup: async () => {
           const { activeGroupId: g, activeRole: r, members: ms } = s();
@@ -2340,6 +2353,13 @@ const M = (0, s.create)()(
               try {
                 const o = (e) => JSON.parse(JSON.stringify(e)),
                   i = [];
+                // 送る時点の更新日時を控えておく。送り終えたあとに照合して、
+                // 送っている最中の編集に「同期済み」を付けないようにする
+                const 控える = (一覧) =>
+                  new Map((一覧 || []).filter((e) => e && e.id).map((e) => [e.id, e.lastModified]));
+                const 送った記録 = 控える(s().sessions),
+                   送った名簿 = 控える(s().members),
+                   送った卒業生 = 控える(s().alumni);
                 (s().members.forEach((e) => {
                   if (e && e.id) {
                     const n = Object.assign({}, e, {
@@ -2413,21 +2433,18 @@ const M = (0, s.create)()(
                   }),
                     await o.commit());
                 }
-                const c = s().sessions.map((e) =>
-                    Object.assign({}, e, {
-                      syncStatus: '同期済み',
-                    })
-                  ),
-                  l = s().members.map((e) =>
-                    Object.assign({}, e, {
-                      syncStatus: '同期済み',
-                    })
-                  ),
-                  d = s().alumni.map((e) =>
-                    Object.assign({}, e, {
-                      syncStatus: '同期済み',
-                    })
+                // 印を付けるのは「送った版」だけ。送っている最中に編集された
+                // ものまで送信済みにすると、その新しい内容が送り直しの対象から
+                // 外れてクラウドへ届かないままになる（記録の保存や編集と同じ考え方）
+                const 済ませる = (一覧, 送った版) =>
+                  一覧.map((e) =>
+                    e && 送った版.has(e.id) && e.lastModified === 送った版.get(e.id)
+                      ? Object.assign({}, e, { syncStatus: '同期済み' })
+                      : e
                   );
+                const c = 済ませる(s().sessions, 送った記録),
+                  l = 済ませる(s().members, 送った名簿),
+                  d = 済ませる(s().alumni, 送った卒業生);
                 (e({
                   sessions: c,
                   members: l,
@@ -2443,6 +2460,35 @@ const M = (0, s.create)()(
                   }));
               }
             } else console.log('[Store] Member role: syncAllToCloud is strictly restricted.');
+        },
+        /** まだ送れていないものの数を数える */
+        countUnsynced: () => {
+          const 数 = (一覧) =>
+            Array.isArray(一覧) ? 一覧.filter((e) => e && '未同期' === e.syncStatus).length : 0;
+          const { sessions: o, members: i, alumni: n, trash: c } = s();
+          return 数(o) + 数(i) + 数(n) + 数(c);
+        },
+        /**
+         * ログアウトの前に、送れていないものを送り切ろうとする。
+         * 残った数を返す。0 なら失われるものは無い。
+         *
+         * ログアウトは手元の記録を全部捨てるので、ここで送っておかないと
+         * 圏外で保存してそのまま抜けた分が失われる。送信の完了は待たない作りな
+         * ので、印が「同期済み」に変わるのを少しの間だけ見張る（最大3秒）。
+         */
+        flushUnsyncedForLogout: async () => {
+          if (0 === s().countUnsynced()) return 0;
+          if (!s().isNetworkOnline) return s().countUnsynced();
+          try {
+            await s().syncSessions();
+          } catch (e) {
+            console.error('[Store] flushUnsyncedForLogout error:', e);
+          }
+          for (let e = 0; e < 15; e++) {
+            if (0 === s().countUnsynced()) return 0;
+            await new Promise((e) => setTimeout(e, 200));
+          }
+          return s().countUnsynced();
         },
         fetchAndOverwriteFromCloud: async () => {
           (console.log('[Store] Loading:', 'クラウドからの取得を開始...'),
@@ -2533,8 +2579,42 @@ const M = (0, s.create)()(
                 permanentlyDeleted: 残す,
               });
             }
+            // 消したメンバーの控えも同じように整理する。
+            //   ・まだクラウドに残っている → 消し直して控えは残す
+            //   ・もう無い                 → 消し終わったので控えから外す
+            //   ・30日を過ぎた             → 手放す
+            const メンバーの控え = s().deletedMembers || {};
+            const メンバーの控えのid = Object.keys(メンバーの控え);
+            let 削除ずみのメンバー = new Set(メンバーの控えのid);
+            if (メンバーの控えのid.length > 0) {
+              const 期限 = Date.now() - 2592e6;
+              const クラウドに有る = new Set((n || []).filter((e) => e && e.id).map((e) => e.id));
+              const 消し直す = メンバーの控えのid.filter((e) => メンバーの控え[e] >= 期限 && クラウドに有る.has(e));
+              const 残す = {};
+              消し直す.forEach((e) => {
+                残す[e] = メンバーの控え[e];
+              });
+              削除ずみのメンバー = new Set(消し直す);
+              if (消し直す.length > 0) {
+                console.log(`[Store] クラウドに残っているメンバー ${消し直す.length}件 を消し直します`);
+                try {
+                  const e = (0, a.writeBatch)(fb.db);
+                  (消し直す.forEach((t) => {
+                    e.delete((0, a.doc)(fb.db, `groups/${s().activeGroupId}/members`, t));
+                  }),
+                    e.commit().catch((t) => {
+                      console.error('[Store] メンバーの削除の送り直しに失敗:', t);
+                    }));
+                } catch (t) {
+                  console.error('[Store] メンバーの削除の送り直しの組み立てに失敗:', t);
+                }
+              }
+              e({
+                deletedMembers: 残す,
+              });
+            }
             (e({
-              members: T,
+              members: T.filter((e) => e && !削除ずみのメンバー.has(e.id)),
               sessions: M.filter((e) => e && !完全削除ずみ.has(e.id)),
               trash: ごみ箱.filter((e) => e && !完全削除ずみ.has(e.id)),
               alumni: y(s().alumni, p, !1, !0),
@@ -2977,7 +3057,9 @@ const M = (0, s.create)()(
                     })
                   );
                 });
-                const a = y(s().members, o, !1, !0);
+                // 消したのにクラウドへ届いていないメンバーは、受け取っても戻さない
+                const 削除ずみ = new Set(Object.keys(s().deletedMembers || {}));
+                const a = y(s().members, o, !1, !0).filter((e) => e && !削除ずみ.has(e.id));
                 (e({
                   members: a,
                   lastSyncTime: Date.now(),
@@ -3405,6 +3487,7 @@ const M = (0, s.create)()(
         alumni: e.alumni,
         trash: e.trash,
         permanentlyDeleted: e.permanentlyDeleted,
+        deletedMembers: e.deletedMembers,
         shotsPerRound: e.shotsPerRound,
         activeSessionID: e.activeSessionID,
         viewScale: e.viewScale,

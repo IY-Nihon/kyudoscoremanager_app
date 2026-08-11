@@ -142,13 +142,10 @@ test('保存すると履歴が消える（前の記録に遡らない）', async
 });
 
 // ──────────────────────────────────────────────────────────────
-test('ライブ中の取り消しは相手に伝わらない（既知の穴）', async () => {
-  // 取り消しは「前の状態」をそのまま戻すため、射手の更新日時も古い値に戻る。
-  // 突き合わせは日時で勝ち負けを決めるので、相手の側では自分の値が新しく見え、
-  // 取り消しが無視される。直す前の実装でも同じで（そちらは受信側の日時が
-  // 古い値へ巻き戻るぶん、さらに具合が悪い）、元からある穴。
-  // 直すなら、取り消しで内容が変わった射手の日時を打ち直すこと。
-  // そのときはこの検査を裏返す。
+test('ライブ中の取り消しが、相手の画面にも伝わる', async () => {
+  // 取り消しは「前の状態」をそのまま戻すので、放っておくと射手の更新日時も
+  // 古い値に戻る。突き合わせは日時で勝ち負けを決めるため、そのままだと
+  // 相手には届かず、主催者の画面だけ戻る食い違いになる。
   const 主 = 端末();
   主.store.setState({ archers: [射手()] });
   await 主.store.getState().startLiveSync(ライブ名);
@@ -164,10 +161,41 @@ test('ライブ中の取り消しは相手に伝わらない（既知の穴）',
   主.store.getState().undo();
   await 待つ(20);
 
-  assert.equal(印(主.store), '', '主催者の画面では戻っている');
-  assert.equal(印(参.store), '○', '★参加者には伝わらない');
-  assert.ok(
-    参.store.getState().archers[0].lastModified > 1000,
-    '受信側の日時は巻き戻らない（ここは直してある）'
-  );
+  assert.equal(印(主.store), '', '主催者の画面で戻っている');
+  assert.equal(印(参.store), '', '参加者の画面でも戻る');
+});
+
+test('ライブ中のやり直しも相手に伝わる', async () => {
+  const 主 = 端末();
+  主.store.setState({ archers: [射手()] });
+  await 主.store.getState().startLiveSync(ライブ名);
+
+  const 参 = 端末(主.ライブ);
+  参.store.getState().joinLiveSync(ライブ名);
+  await 待つ(10);
+
+  主.store.getState().updateMark('a1', 0, '○');
+  await 待つ(20);
+  主.store.getState().undo();
+  await 待つ(20);
+  主.store.getState().redo();
+  await 待つ(20);
+
+  assert.equal(印(参.store), '○', 'やり直しが届く');
+});
+
+test('取り消し：中身が変わっていない射手の日時は触らない', () => {
+  // 変わっていないものまで打ち直すと、相手が加えた新しい入力を
+  // 古い内容で上書きしてしまう
+  const { store } = 端末();
+  store.setState({
+    archers: [射手(), 射手({ id: 'a2', name: '二人目', lastModified: 2000 })],
+  });
+
+  store.getState().updateMark('a1', 0, '○');
+  store.getState().undo();
+
+  const 後 = store.getState().archers;
+  assert.equal(後.find((a) => a.id === 'a2').lastModified, 2000, '触っていない射手はそのまま');
+  assert.ok(後.find((a) => a.id === 'a1').lastModified > 1000, '戻した射手は打ち直す');
 });
