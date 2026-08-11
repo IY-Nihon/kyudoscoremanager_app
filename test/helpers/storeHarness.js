@@ -128,6 +128,16 @@ function 偽Firestore() {
       const v = {
         発火: () => {
           const 表 = 取り出す(対象.道);
+          // 書類1件の購読と、集まりの購読で形が違う（本物と同じ）
+          if (対象 && 対象.id != null) {
+            const 値 = 表.get(対象.id);
+            return void 受け取る({
+              id: 対象.id,
+              exists: () => 値 !== undefined,
+              data: () => 値,
+              metadata: { hasPendingWrites: 状態.オフライン },
+            });
+          }
           const 一覧 = [...表.entries()].map(([id, 値]) => ({
             id,
             data: () => 値,

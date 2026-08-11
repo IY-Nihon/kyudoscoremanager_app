@@ -2384,6 +2384,9 @@ const M = (0, s.create)()(
                       const n = Object.assign({}, e, {
                         lastModified: Date.now(),
                       });
+                      // pendingDelete は端末の中だけの印。クラウドへは持ち込まない
+                      // （syncSessions の送り直しと同じ扱い）
+                      delete n.pendingDelete;
                       i.push({
                         type: 'set',
                         ref: (0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, e.id),
