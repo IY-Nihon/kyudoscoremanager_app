@@ -295,12 +295,38 @@ function mergeLiveArchers(localList, remoteList, localShots, remoteShots) {
   return { archers, changed };
 }
 
+/**
+ * 取り消し・やり直しで戻す一覧に、新しい日時を打ち直す。
+ *
+ * 取り消しは「前の状態」をそのまま戻すので、射手の更新日時も古い値に戻る。
+ * ライブ記録の突き合わせは日時で勝ち負けを決めるため、そのままだと相手の
+ * 側では自分の値のほうが新しく見え、取り消しが無視される。主催者の画面
+ * だけ戻って参加者の画面は戻らない、という食い違いになる。
+ *
+ * 中身が変わった射手にだけ打ち直す。変わっていないものまで触ると、
+ * 相手が加えた新しい入力を古い内容で上書きしてしまう。
+ */
+function restampChangedArchers(戻す一覧, いまの一覧, 日時) {
+  const 戻す = Array.isArray(戻す一覧) ? 戻す一覧 : [];
+  const 索引 = new Map();
+  (Array.isArray(いまの一覧) ? いまの一覧 : []).forEach((a) => {
+    if (a && a.id) 索引.set(a.id, a);
+  });
+  return 戻す.map((a) => {
+    if (!a || !a.id) return a;
+    const いま = 索引.get(a.id);
+    if (いま && 射手が同じ(a, いま)) return a;
+    return Object.assign({}, a, { lastModified: 日時 });
+  });
+}
+
 module.exports = {
   toMillis,
   trashedAtMillis,
   mergeById,
   mergeLiveArchers,
   normalizeArrowLocations,
+  restampChangedArchers,
   dropUndefinedDeep,
   normalizeTag,
   cleanUpTagsArray,

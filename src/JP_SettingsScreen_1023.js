@@ -136,6 +136,9 @@ const w = () => {
       [Z, ee] = l.default.useState(!1),
       [te, le] = l.default.useState(!1),
       [re, oe] = l.default.useState(!1),
+      // ログアウトの確認で使う。'送信中' か、送り切れずに残った件数
+      [未送信を送信中, 未送信を送信中にする] = l.default.useState(!1),
+      [残った未送信, 残った未送信を設定] = l.default.useState(0),
       [ne, ae] = l.default.useState(''),
       [se, ie] = l.default.useState(''),
       [de, ce] = l.default.useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
@@ -649,7 +652,28 @@ const w = () => {
                     ],
                   }),
                   Je('help-circle-outline', '運用ガイド・ヘルプ', () => le(!0)),
-                  Je('log-out-outline', 'ログアウト', () => oe(!0), '#FF3B30', null, !0),
+                  Je(
+                    'log-out-outline',
+                    'ログアウト',
+                    () => {
+                      // 確認を出しつつ、送れていないものを裏で送り切ろうとする。
+                      // ログアウトは手元の記録を全部捨てるので、先に送っておかないと
+                      // 圏外で保存した分が失われる
+                      (oe(!0), 残った未送信を設定(0));
+                      const 店 = y.useScoreStore.getState();
+                      if (店.countUnsynced() > 0) {
+                        (未送信を送信中にする(!0),
+                          店
+                            .flushUnsyncedForLogout()
+                            .then((e) => 残った未送信を設定(e))
+                            .catch(() => 残った未送信を設定(店.countUnsynced()))
+                            .finally(() => 未送信を送信中にする(!1)));
+                      }
+                    },
+                    '#FF3B30',
+                    null,
+                    !0
+                  ),
                 ],
               })
             ),
@@ -1763,7 +1787,14 @@ const w = () => {
                 style: D.modalContent,
                 children: [
                   (0, T.jsx)(n.default, { style: D.modalTitle, children: 'ログアウト' }),
-                  (0, T.jsx)(n.default, { style: D.modalMessage, children: 'ログアウトしますか？' }),
+                  (0, T.jsx)(n.default, {
+                    style: D.modalMessage,
+                    children: 未送信を送信中
+                      ? '送信できていない記録を送っています...'
+                      : 残った未送信 > 0
+                        ? `送信できていない記録が${残った未送信}件あります。このままログアウトすると失われます。`
+                        : 'ログアウトしますか？',
+                  }),
                   (0, T.jsxs)(o.default, {
                     style: D.modalButtonsRow,
                     children: [

@@ -111,23 +111,80 @@ test('ログアウト：見張りを止める（別団体の更新を拾わな�
   assert.equal(store.getState().sessions.length, 0, '拾っていない');
 });
 
-test('ログアウト：まだ送っていない記録も消える（既知の穴）', async () => {
-  // ログアウトは sessions を丸ごと空にするので、送信できていない記録が
-  // あっても確認や送信をせずに捨てる。圏外で保存してそのままログアウトすると
-  // 記録が失われる。いまの実装をそのまま写した検査。直したらこれを裏返すこと。
+// ──────────────────────────────────────────────────────────────
+// ログアウトは手元の記録を全部捨てるので、抜ける前に送り切れるかを見る。
+// ──────────────────────────────────────────────────────────────
+test('未送信の数：記録・名簿・卒業生・ゴミ箱をまとめて数える', async () => {
+  const { store } = await 用意();
+  store.setState({
+    sessions: [記録({ syncStatus: '未同期' }), 記録({ id: 'ses-2', syncStatus: '同期済み' })],
+    members: [{ id: 'm1', syncStatus: '未同期' }],
+    alumni: [{ id: 'a1', syncStatus: '同期済み' }],
+    trash: [記録({ id: 'tr-1', syncStatus: '未同期' })],
+  });
+  assert.equal(store.getState().countUnsynced(), 3);
+});
+
+test('ログアウト前：送り切れれば残りは0になる', async () => {
   const { store, 雲 } = await 用意();
   store.getState().setAuth(団体, 'group', null, 'a@example.com');
   await 待つ(50);
+  store.setState({ sessions: [記録({ syncStatus: '未同期' })] });
 
+  const 残り = await store.getState().flushUnsyncedForLogout();
+
+  assert.equal(残り, 0, '送り切れた');
+  assert.ok(雲.値(記録の道, 'ses-1'), 'クラウドへ届いている');
+});
+
+test('ログアウト前：送れなければ残った数を返す（利用者に知らせるため）', async () => {
+  const { store, 雲 } = await 用意();
+  store.getState().setAuth(団体, 'group', null, 'a@example.com');
+  await 待つ(50);
   雲.状態.失敗させる = true;
   store.setState({ sessions: [記録({ syncStatus: '未同期' })] });
-  assert.equal(store.getState().sessions.length, 1);
+
+  const 残り = await store.getState().flushUnsyncedForLogout();
+
+  assert.equal(残り, 1, '残っていることが分かる');
+  assert.equal(store.getState().sessions.length, 1, 'まだ捨てていない');
+});
+
+test('ログアウト前：圏外なら送信を試さずに数だけ返す', async () => {
+  const { store } = await 用意();
+  store.setState({
+    isNetworkOnline: false,
+    sessions: [記録({ syncStatus: '未同期' }), 記録({ id: 'ses-2', syncStatus: '未同期' })],
+  });
+
+  const 始め = Date.now();
+  const 残り = await store.getState().flushUnsyncedForLogout();
+
+  assert.equal(残り, 2);
+  assert.ok(Date.now() - 始め < 500, '待たされない');
+});
+
+test('ログアウト前：送るものが無ければ何もしない', async () => {
+  const { store, 雲 } = await 用意();
+  store.setState({ sessions: [記録({ syncStatus: '同期済み' })] });
+  const 前 = 雲.記録.length;
+
+  assert.equal(await store.getState().flushUnsyncedForLogout(), 0);
+  assert.equal(雲.記録.length, 前, '余計な通信をしない');
+});
+
+test('ログアウト：それでも捨てるのは変わらない（画面側で確認を出す）', async () => {
+  // ストアの setAuth(null) は今までどおり全部捨てる。送るかどうか・
+  // 捨ててよいかの判断は画面側（設定画面のログアウト確認）で行う。
+  const { store, 雲 } = await 用意();
+  store.getState().setAuth(団体, 'group', null, 'a@example.com');
+  await 待つ(50);
+  雲.状態.失敗させる = true;
+  store.setState({ sessions: [記録({ syncStatus: '未同期' })] });
 
   store.getState().setAuth(null);
   await 待つ(30);
-
-  assert.equal(store.getState().sessions.length, 0, '★確認も送信もせず捨てられる');
-  assert.equal(雲.値(記録の道, 'ses-1'), undefined, 'クラウドにも無い＝失われた');
+  assert.equal(store.getState().sessions.length, 0);
 });
 
 // ──────────────────────────────────────────────────────────────

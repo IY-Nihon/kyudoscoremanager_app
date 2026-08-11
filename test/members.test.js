@@ -167,11 +167,10 @@ test('削除：圏外で消しても、通信が戻れば削除が届く', async
   assert.equal(名簿(store).length, 0, '戻ってこない');
 });
 
-test('削除：送信が失われると、次の受信で名簿に戻ってしまう（既知の穴）', async () => {
-  // 記録側には pendingDelete と送り直しの仕組みがあるが、名簿側には無い。
-  // 送信が失われる場面（複数タブで貯め置きが効かない・タブを閉じた等）では、
-  // 消したはずのメンバーがクラウドから復活する。
-  // いまの実装をそのまま写した検査。直したらこの検査を裏返すこと。
+test('削除：送信が失われても、次の受信で復活しない', async () => {
+  // 送信が失われる場面（複数タブで貯め置きが効かない・タブを閉じた等）でも
+  // 消したままにする。記録側の permanentlyDeleted と同じ考え方で、
+  // 消したことを控えに残し、クラウドから消えるまで消し直す。
   const { store, 雲 } = await 用意();
   雲.置く(名簿の道, 'mem-1', 部員());
   store.setState({ members: [部員()] });
@@ -181,12 +180,43 @@ test('削除：送信が失われると、次の受信で名簿に戻ってし�
   await 待つ(50);
   assert.equal(名簿(store).length, 0, '手元からは消えている');
   assert.ok(雲.値(名簿の道, 'mem-1'), 'クラウドには残ったまま');
+  assert.ok(store.getState().deletedMembers['mem-1'], '消したことを覚えている');
 
   雲.状態.失敗させる = false;
   await store.getState().fetchAndOverwriteFromCloud();
-  await 待つ(50);
+  await 待つ(80);
 
-  assert.equal(名簿(store).length, 1, '★いまの実装では復活してしまう');
+  assert.equal(名簿(store).length, 0, '復活しない');
+  assert.equal(雲.値(名簿の道, 'mem-1'), undefined, 'クラウドからも消し直される');
+});
+
+test('削除：クラウドから消えたら控えを手放す（際限なく増えない）', async () => {
+  const { store, 雲 } = await 用意();
+  雲.置く(名簿の道, 'mem-1', 部員());
+  store.setState({ members: [部員()] });
+
+  store.getState().deleteMember('mem-1');
+  await 待つ(50);
+  await store.getState().fetchAndOverwriteFromCloud();
+  await 待つ(80);
+
+  assert.deepEqual(store.getState().deletedMembers, {}, '控えが空になる');
+});
+
+test('削除：見張りが受け取っても、消したメンバーは戻さない', async () => {
+  const { store, 雲 } = await 用意();
+  雲.置く(名簿の道, 'mem-1', 部員());
+  store.setState({ members: [部員()] });
+
+  雲.状態.失敗させる = true;
+  store.getState().deleteMember('mem-1');
+  await 待つ(50);
+  雲.状態.失敗させる = false;
+
+  await store.getState().listenToMembers();
+  await 待つ(80);
+
+  assert.equal(名簿(store).length, 0, '見張り経由でも戻らない');
 });
 
 // ──────────────────────────────────────────────────────────────
