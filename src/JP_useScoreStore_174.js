@@ -106,6 +106,8 @@ let p = {};
 const 同期規則 = require('./syncRules');
 const h = 同期規則.generateUniquePersonalId,
   y = 同期規則.mergeById,
+  mergeLiveArchers = 同期規則.mergeLiveArchers,
+  normalizeArrowLocations = 同期規則.normalizeArrowLocations,
   dropUndefinedDeep = 同期規則.dropUndefinedDeep,
   trashedAtMillis = 同期規則.trashedAtMillis,
   normalizeTag = 同期規則.normalizeTag,
@@ -152,9 +154,9 @@ const f = (e, s) => {
           substitutionIds: e.substitutionIds || {},
           bowWeight: e.bowWeight || void 0,
           lastModified: e.lastModified || 0,
-          arrowLocations: Array.isArray(e.arrowLocations)
-            ? e.arrowLocations
-            : Array(e.isSeparator ? 0 : s || 8).fill(null),
+          // 入っていなければ undefined のままにする。突き合わせ側が
+          // 「情報が無い」と見て手元の矢所を残せるようにするため
+          arrowLocations: normalizeArrowLocations(e.arrowLocations, e.isSeparator ? 0 : s || 8),
         }
       : null,
   b = (e, s) =>
@@ -174,6 +176,12 @@ const f = (e, s) => {
           lastModified: e.lastModified || 0,
           substitutionIds: e.substitutionIds || {},
           bowWeight: e.bowWeight || null,
+          // 空欄は '' で送る（○× と同じ）。null のままだと Realtime Database が
+          // 配列から落として添字のオブジェクトに変えてしまい、位置がずれる。
+          // 持っていないときは null にして、受け取り側が手元の値を残せるようにする
+          arrowLocations: Array.isArray(e.arrowLocations)
+            ? e.arrowLocations.map((矢所) => (null == 矢所 ? '' : 矢所))
+            : null,
         }))
       )
     );
@@ -724,6 +732,10 @@ const M = (0, s.create)()(
             redoStack: [],
             lastLocalChange: n,
           });
+          // ライブ中は矢所も送る。送らないと相手の画面に出ないうえ、
+          // 相手からの更新で手元の矢所が消えていた
+          const { isLiveActive: ライブ中, liveSessionName: ライブ名, shotsPerRound: 本数 } = s();
+          ライブ中 && ライブ名 && v(ライブ名, c, 本数);
         },
         updateMark: (t, o, a) => {
           const { archers: i, isLiveActive: n, liveSessionName: c } = s(),
@@ -2537,13 +2549,17 @@ const M = (0, s.create)()(
               }));
           }
         },
+        // 戻り値は '開始した' / '同名あり' / '確認できない' の3つ。
+        // 元は真偽値で、画面はどちらの理由でも「既に使用されています」と出していた。
         startLiveSync: async (o) => {
-          if (!fb.rtdb) return !1;
+          if (!fb.rtdb) return '確認できない';
           try {
             const e = (0, i.ref)(fb.rtdb, `live_sessions/${s().activeGroupId}/${o}`);
-            if ((await (0, i.get)(e)).exists()) return !1;
+            if ((await (0, i.get)(e)).exists()) return '同名あり';
           } catch (e) {
-            console.error('Session Name Check Error:', e);
+            // 確かめられないまま作ると、進行中の同名ライブを上書きして潰す。
+            // 元はここで握りつぶして、そのまま作成へ進んでいた
+            return (console.error('Session Name Check Error:', e), '確認できない');
           }
           (s().stopLiveSync(!0),
             e({
@@ -2554,7 +2570,7 @@ const M = (0, s.create)()(
               lastLocalChange: Date.now(),
             }));
           const a = s();
-          if (!fb.rtdb) return !1;
+          if (!fb.rtdb) return '確認できない';
           const n = (0, i.ref)(fb.rtdb, `live_sessions/${s().activeGroupId}/${o}/state`),
             l = Array.isArray(a.archers) ? a.archers : [];
           try {
@@ -2595,52 +2611,27 @@ const M = (0, s.create)()(
                       e({
                         lastResetHandled: a.reset_at,
                       }),
-                      void s().resetCurrentSession()
+                      // 送信はしない。受け取ったリセットを送り返すと、相手の画面に
+                      // 「リセットしました」が二度出るうえ、無駄な書き込みが増える
+                      void s().resetCurrentSession(!1)
                     );
                   if (a.archers || Array.isArray(a.archers)) {
-                    const { archers: t, shotsPerRound: o } = w(a),
-                      i = s().archers,
-                      n = new Map(i.map((e) => [e.id, e]));
-                    let c = t.length !== i.length || o !== s().shotsPerRound;
-                    const l = t.map((e) => {
-                      const s = n.get(e.id);
-                      if (!s) return ((c = !0), e);
-                      const t = (e.lastModified || 0) >= (s.lastModified || 0),
-                        o = t ? e.marks : s.marks,
-                        a = t ? e.lockedBlocks || {} : s.lockedBlocks || {};
-                      return (
-                        !c &&
-                          t &&
-                          (e.name !== s.name ||
-                            e.gender !== s.gender ||
-                            e.grade !== s.grade ||
-                            e.isSeparator !== s.isSeparator ||
-                            e.isTotalCalculator !== s.isTotalCalculator ||
-                            e.isGuest !== s.isGuest ||
-                            e.memberId !== s.memberId ||
-                            JSON.stringify(a) !== JSON.stringify(s.lockedBlocks || {}) ||
-                            JSON.stringify(e.substitutions || {}) !== JSON.stringify(s.substitutions || {}) ||
-                            o.some((e, t) => e !== (s.marks[t] ?? ''))) &&
-                          (c = !0),
-                        Object.assign({}, e, {
-                          marks: o,
-                          lockedBlocks: a,
-                          substitutions: e.substitutions || {},
-                        })
-                      );
-                    });
-                    c &&
+                    // 突き合わせは syncRules.js の mergeLiveArchers に出した。
+                    // 主催者側と参加者側で同じ処理が二重に書かれていたため
+                    const { archers: 受信, shotsPerRound: 本数 } = w(a),
+                      結果 = mergeLiveArchers(s().archers, 受信, s().shotsPerRound, 本数);
+                    結果.changed &&
                       e({
-                        archers: l,
-                        shotsPerRound: o,
+                        archers: 結果.archers,
+                        shotsPerRound: 本数,
                       });
                   }
                 }
               }),
-              !0
+              '開始した'
             );
           } catch (e) {
-            return (console.error('Start Live Sync Error:', e), !1);
+            return (console.error('Start Live Sync Error:', e), '確認できない');
           }
         },
         joinLiveSync: (o) => {
@@ -2672,13 +2663,19 @@ const M = (0, s.create)()(
                 })
               );
             }
+            // 自分が送ったものの返りは見ない。主催者側（startLiveSync）には元から
+            // ある判定で、参加者側だけ抜けていた。無いと、○×を1つ入れるたびに
+            // 自分の送信が返ってきて自分の矢所を消していた
+            if (a.timestamp === s().lastPushedTimestamp) return;
             if ('finished' === a.status) {
               const o = s().liveSessionName;
               return (
                 o &&
                   fb.rtdb &&
                   (0, i.off)((0, i.ref)(fb.rtdb, `live_sessions/${s().activeGroupId}/${o}/state`)),
-                s().resetCurrentSession(),
+                // 送信しない。ここで送ると、主催者が2秒後に消す節点を書き戻してしまい、
+                // 届くのが遅れた場合は「終わったはずのライブ」が一覧に残り続ける
+                s().resetCurrentSession(!1),
                 void e({
                   isLiveActive: !1,
                   isHost: !1,
@@ -2698,41 +2695,13 @@ const M = (0, s.create)()(
                 s().resetCurrentSession(!1));
             }
             if (a.archers || Array.isArray(a.archers)) {
-              const { archers: t, shotsPerRound: o } = w(a),
-                i = s().archers,
-                n = new Map(i.map((e) => [e.id, e]));
-              let c = t.length !== i.length || o !== s().shotsPerRound;
-              const l = t.map((e) => {
-                const s = n.get(e.id);
-                if (!s) return ((c = !0), e);
-                const t = (e.lastModified || 0) >= (s.lastModified || 0),
-                  o = t ? e.marks : s.marks,
-                  a = t ? e.lockedBlocks || {} : s.lockedBlocks || {};
-                return (
-                  !c &&
-                    t &&
-                    (e.name !== s.name ||
-                      e.gender !== s.gender ||
-                      e.grade !== s.grade ||
-                      e.isSeparator !== s.isSeparator ||
-                      e.isTotalCalculator !== s.isTotalCalculator ||
-                      e.isGuest !== s.isGuest ||
-                      e.memberId !== s.memberId ||
-                      JSON.stringify(a) !== JSON.stringify(s.lockedBlocks || {}) ||
-                      JSON.stringify(e.substitutions || {}) !== JSON.stringify(s.substitutions || {}) ||
-                      o.some((e, t) => e !== (s.marks[t] ?? ''))) &&
-                    (c = !0),
-                  Object.assign({}, e, {
-                    marks: o,
-                    lockedBlocks: a,
-                    substitutions: e.substitutions || {},
-                  })
-                );
-              });
-              c &&
+              // 主催者側（startLiveSync）と同じ関数を使う
+              const { archers: 受信, shotsPerRound: 本数 } = w(a),
+                結果 = mergeLiveArchers(s().archers, 受信, s().shotsPerRound, 本数);
+              結果.changed &&
                 e({
-                  archers: l,
-                  shotsPerRound: o,
+                  archers: 結果.archers,
+                  shotsPerRound: 本数,
                 });
             }
           }),

@@ -20,6 +20,8 @@ const {
   cleanUpTagsArray,
   cleanUpSessions,
   generateUniquePersonalId,
+  mergeLiveArchers,
+  normalizeArrowLocations,
 } = require('../src/syncRules');
 
 /** Firestore の Timestamp のふり */
@@ -230,6 +232,125 @@ test('generateUniquePersonalId: 4桁で、使用中と重ならない', () => {
   assert.equal(id, '9999');
 });
 
+// ──────────────────────────────────────────────────────────────
+// ライブ記録（RTDB）の突き合わせ。ここが緩むと入力中の○×や矢所が消える。
+// ──────────────────────────────────────────────────────────────
+const 射手 = (o) =>
+  Object.assign({ id: 'a1', name: '一人目', marks: ['', '', '', ''], lastModified: 0 }, o);
+
+test('normalizeArrowLocations: 配列はそのまま、空文字は null に戻す', () => {
+  // 送るときは空欄を '' にする（○× と同じ）。RTDB が null だらけの配列を
+  // 落として添字のオブジェクトに変えてしまうのを避けるため。
+  assert.deepEqual(normalizeArrowLocations(['', { x: 1, y: 2 }, ''], 3), [null, { x: 1, y: 2 }, null]);
+});
+
+test('normalizeArrowLocations: 添字のオブジェクトを配列に戻す', () => {
+  assert.deepEqual(normalizeArrowLocations({ 1: { x: 5, y: 6 } }, 3), [null, { x: 5, y: 6 }, null]);
+});
+
+test('normalizeArrowLocations: 長さを揃える', () => {
+  assert.deepEqual(normalizeArrowLocations([{ x: 1, y: 1 }], 3), [{ x: 1, y: 1 }, null, null]);
+});
+
+test('normalizeArrowLocations: 無いときは undefined（「情報が無い」と「空」を区別する）', () => {
+  assert.equal(normalizeArrowLocations(undefined, 4), undefined);
+  assert.equal(normalizeArrowLocations(null, 4), undefined);
+});
+
+test('mergeLiveArchers: 受信が新しければ受信が勝つ', () => {
+  const r = mergeLiveArchers(
+    [射手({ marks: ['○', '', '', ''], lastModified: 1000 })],
+    [射手({ marks: ['×', '×', '', ''], lastModified: 2000 })],
+    4,
+    4
+  );
+  assert.deepEqual(r.archers[0].marks, ['×', '×', '', '']);
+  assert.equal(r.changed, true);
+});
+
+test('mergeLiveArchers: 手元が新しければ、日時ごと手元が残る', () => {
+  // ここが崩れると、次の更新で手元の○×が古い内容に戻る。
+  // 日時まで手元のまま残すことが肝心（受信側の古い日時に巻き戻すと、
+  // 次の受信で「受信のほうが新しい」と誤判定されて消える）。
+  const r = mergeLiveArchers(
+    [射手({ marks: ['○', '○', '', ''], lastModified: 3000 })],
+    [射手({ marks: ['', '', '', ''], lastModified: 1000 })],
+    4,
+    4
+  );
+  assert.deepEqual(r.archers[0].marks, ['○', '○', '', '']);
+  assert.equal(r.archers[0].lastModified, 3000, '日時が巻き戻っていない');
+});
+
+test('mergeLiveArchers: 同着なら手元を優先する', () => {
+  const r = mergeLiveArchers(
+    [射手({ marks: ['○', '', '', ''], lastModified: 5000 })],
+    [射手({ marks: ['', '', '', ''], lastModified: 5000 })],
+    4,
+    4
+  );
+  assert.deepEqual(r.archers[0].marks, ['○', '', '', '']);
+});
+
+test('mergeLiveArchers: 手元に無い射手は受信から足す', () => {
+  const r = mergeLiveArchers([], [射手({ id: 'a2' })], 4, 4);
+  assert.equal(r.archers.length, 1);
+  assert.equal(r.archers[0].id, 'a2');
+  assert.equal(r.changed, true);
+});
+
+test('mergeLiveArchers: 受信に矢所が無ければ手元の矢所を残す', () => {
+  // 古い版のアプリは矢所を送らない。配信の途中で混在しても消さないための守り。
+  const 手元の矢所 = [{ x: 1, y: 1 }, null, null, null];
+  const r = mergeLiveArchers(
+    [射手({ lastModified: 1000, arrowLocations: 手元の矢所 })],
+    [射手({ lastModified: 2000 })],
+    4,
+    4
+  );
+  assert.deepEqual(r.archers[0].arrowLocations, 手元の矢所);
+});
+
+test('mergeLiveArchers: 受信が新しく矢所を持っていれば、受信の矢所になる', () => {
+  // 受け取った形（'' 混じり・添字のオブジェクト）を配列に直すのは
+  // normalizeArrowLocations の役目で、突き合わせに入る前に済んでいる。
+  // 電波に乗せてから戻すまでの一続きは test/liveSync.test.js で見る。
+  const r = mergeLiveArchers(
+    [射手({ lastModified: 1000, arrowLocations: [{ x: 1, y: 1 }, null, null, null] })],
+    [射手({ lastModified: 2000, arrowLocations: [null, { x: 9, y: 9 }, null, null] })],
+    4,
+    4
+  );
+  assert.deepEqual(r.archers[0].arrowLocations, [null, { x: 9, y: 9 }, null, null]);
+});
+
+test('mergeLiveArchers: 手元が新しければ矢所も手元のまま', () => {
+  const 手元の矢所 = [{ x: 2, y: 2 }, null, null, null];
+  const r = mergeLiveArchers(
+    [射手({ lastModified: 9000, arrowLocations: 手元の矢所 })],
+    [射手({ lastModified: 1000, arrowLocations: ['', '', '', ''] })],
+    4,
+    4
+  );
+  assert.deepEqual(r.archers[0].arrowLocations, 手元の矢所);
+});
+
+test('mergeLiveArchers: 中身が同じなら changed は false（無駄な描き直しをしない）', () => {
+  const r = mergeLiveArchers([射手({ lastModified: 1000 })], [射手({ lastModified: 1000 })], 4, 4);
+  assert.equal(r.changed, false);
+});
+
+test('mergeLiveArchers: 人数や本数が違えば changed は true', () => {
+  assert.equal(mergeLiveArchers([射手()], [], 4, 4).changed, true);
+  assert.equal(mergeLiveArchers([射手()], [射手()], 4, 8).changed, true);
+});
+
+test('mergeLiveArchers: 空でも落ちない', () => {
+  const r = mergeLiveArchers(null, null, 4, 4);
+  assert.deepEqual(r.archers, []);
+});
+
+// ──────────────────────────────────────────────────────────────
 test('generateUniquePersonalId: 卒業生の分も避ける', () => {
   const 名簿 = [{ personalId: '1111' }];
   const 卒業生 = [{ personalId: '2222' }];

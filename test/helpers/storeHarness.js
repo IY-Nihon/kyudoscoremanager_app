@@ -158,6 +158,133 @@ function 偽Firestore() {
   };
 }
 
+/**
+ * 偽の Realtime Database。ライブ記録が使う。
+ *
+ * 木構造を素のオブジェクトで持ち、道（'live_sessions/100001/朝練/state'）で読み書きする。
+ * 本物と同じく「配列の中の null は落として添字のオブジェクトにする」までまねる。
+ * ここをまねないと矢所の往復が本番と違う形になり、検査の意味が薄れる。
+ */
+function 偽RTDB() {
+  let 木 = {};
+  const 見張り = []; // { 道, 受け取る }
+  const 記録 = [];
+  // 遅延: 書き込みが届くまでの時間(ms)。「送ったあとに相手が消した」順序を作るために要る
+  const 状態 = { オフライン: false, 失敗させる: false, 遅延: 0 };
+
+  const 分解 = (道) => String(道).split('/').filter(Boolean);
+  const 読む = (部分) => 部分.reduce((o, k) => (o == null ? undefined : o[k]), 木);
+  const 写し = (値) => (値 === undefined ? null : JSON.parse(JSON.stringify(値)));
+  const 書く = (部分, 値) => {
+    if (部分.length === 0) return void (木 = 値 == null ? {} : 値);
+    let 今 = 木;
+    for (let i = 0; i < 部分.length - 1; i++) {
+      if (今[部分[i]] == null || typeof 今[部分[i]] !== 'object') 今[部分[i]] = {};
+      今 = 今[部分[i]];
+    }
+    const 末 = 部分[部分.length - 1];
+    if (値 === undefined) delete 今[末];
+    else 今[末] = 値;
+  };
+
+  /** 本物に合わせる。null 混じりの配列は添字のオブジェクトになる */
+  const 雲の形へ = (値) => {
+    if (Array.isArray(値)) {
+      if (値.some((v) => v == null)) {
+        const out = {};
+        値.forEach((v, i) => {
+          if (v != null) out[String(i)] = 雲の形へ(v);
+        });
+        return out;
+      }
+      return 値.map(雲の形へ);
+    }
+    if (値 && typeof 値 === 'object') {
+      if (値.__サーバー日時) return Date.now();
+      const out = {};
+      for (const k in 値) if (値[k] !== undefined) out[k] = 雲の形へ(値[k]);
+      return out;
+    }
+    return 値;
+  };
+
+  const 配る = (v) => {
+    const 値 = 読む(分解(v.道));
+    v.受け取る({ val: () => 写し(値), exists: () => 値 !== undefined });
+  };
+  const 通知 = () => {
+    for (const v of [...見張り]) 配る(v);
+  };
+
+  const 送る = (やること) => {
+    記録.push(やること);
+    if (状態.失敗させる) return Promise.reject(new Error('偽の失敗'));
+    if (状態.オフライン) return 決着しない();
+    if (状態.遅延 > 0)
+      return new Promise((r) =>
+        setTimeout(() => {
+          (やること.適用(), 通知(), r());
+        }, 状態.遅延)
+      );
+    やること.適用();
+    通知();
+    return Promise.resolve();
+  };
+
+  const api = {
+    getDatabase: () => ({ __偽: true }),
+    ref: (db, 道) => ({ 道: 道 === undefined ? '' : String(道) }),
+    serverTimestamp: () => ({ __サーバー日時: true }),
+    get: async (参照) => {
+      const 値 = 読む(分解(参照.道));
+      return { exists: () => 値 !== undefined, val: () => 写し(値) };
+    },
+    set: (参照, 値) =>
+      送る({
+        種別: 'set',
+        道: 参照.道,
+        適用: () => 書く(分解(参照.道), 値 == null ? undefined : 雲の形へ(値)),
+      }),
+    remove: (参照) => 送る({ 種別: 'remove', 道: 参照.道, 適用: () => 書く(分解(参照.道), undefined) }),
+    update: (参照, 値) =>
+      送る({
+        種別: 'update',
+        道: 参照.道,
+        値,
+        適用: () => {
+          // 鍵に '/' を含められる（marks_by_id/xxx/0 のような形）
+          for (const k in 値) {
+            if (値[k] === undefined) continue;
+            書く([...分解(参照.道), ...分解(k)], 雲の形へ(値[k]));
+          }
+        },
+      }),
+    onValue: (参照, 受け取る) => {
+      const v = { 道: 参照.道, 受け取る };
+      見張り.push(v);
+      配る(v);
+      return () => {
+        const i = 見張り.indexOf(v);
+        if (i >= 0) 見張り.splice(i, 1);
+      };
+    },
+    /** 本物と同じく、その道に付いた見張りを全部外す */
+    off: (参照) => {
+      for (let i = 見張り.length - 1; i >= 0; i--) if (見張り[i].道 === 参照.道) 見張り.splice(i, 1);
+    },
+  };
+
+  return {
+    api,
+    状態,
+    記録,
+    見張りの数: () => 見張り.length,
+    値: (道) => 写し(読む(分解(道))),
+    置く: (道, 値) => (書く(分解(道), 雲の形へ(値)), 通知()),
+    消す: (道) => (書く(分解(道), undefined), 通知()),
+  };
+}
+
 /** require.cache に偽物を差し込む */
 function 差し替え(名前, 中身) {
   const 場所 = path.join(SRC, 名前 + '.js');
@@ -189,9 +316,10 @@ Module._resolveFilename = function (要求, ...残り) {
 /**
  * ストアを新しく読み込む。呼ぶたびにまっさらな状態になる。
  */
-function ストアを用意する(既存の雲) {
+function ストアを用意する(既存の雲, 既存のライブ) {
   // 同じクラウドを渡すと、2台目の端末として使える（食い違いの検査用）
   const 雲 = 既存の雲 || 偽Firestore();
+  const ライブ = 既存のライブ || 偽RTDB();
   const 保存領域 = new Map();
   const 知らせ = []; // 画面に出した文言（saveSession の上書き防止など）
 
@@ -218,21 +346,12 @@ function ストアを用意する(既存の雲) {
     signInWithEmailAndPassword: async () => ({ user: {} }),
     sendPasswordResetEmail: async () => {},
   });
-  差し替え('module_186', {
-    getDatabase: () => ({}),
-    ref: () => ({}),
-    set: async () => {},
-    update: async () => {},
-    remove: async () => {},
-    get: async () => ({ exists: () => false, val: () => null }),
-    onValue: () => () => {},
-    off: () => {},
-    serverTimestamp: () => ({ __サーバー日時: true }),
-  });
+  差し替え('module_186', ライブ.api); // firebase/database
   差し替え('db_178', {
     db: { __偽: true },
     auth: { currentUser: { uid: 'test-uid' } },
-    rtdb: null,
+    // 偽物でも真の値にしておかないと、ライブ記録の処理が入口で全部帰ってしまう
+    rtdb: { __偽: true },
     dbReady: Promise.resolve({ __偽: true }),
     persistence: { state: 'ok', code: null },
   });
@@ -256,7 +375,7 @@ function ストアを用意する(既存の雲) {
   delete require.cache[場所];
   const { useScoreStore } = require(場所);
 
-  return { store: useScoreStore, 雲, 保存領域, 知らせ };
+  return { store: useScoreStore, 雲, ライブ, 保存領域, 知らせ };
 }
 
 /** 少し待つ。送信の約束が片付くのを待つために使う */

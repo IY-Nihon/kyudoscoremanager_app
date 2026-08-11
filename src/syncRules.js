@@ -174,10 +174,133 @@ function generateUniquePersonalId(members, alumni) {
   return id;
 }
 
+/**
+ * 矢所（arrowLocations）を配列に揃える。
+ *
+ * 送るときは空欄を '' にする（○× と同じ）。null のままだと Realtime Database が
+ * 配列から落として `{1:…}` の形に変えてしまい、受け取り側で位置がずれるため。
+ * ここではその逆をして、'' を null に戻し、添字のオブジェクトも配列に直す。
+ *
+ * 入っていないときは undefined を返す。「情報が無い」と「全部空」を区別するため。
+ * 古い版のアプリは矢所を送らないので、この区別が無いと配信の途中で
+ * 手元の矢所を消してしまう。
+ */
+function normalizeArrowLocations(value, length) {
+  if (value == null) return undefined;
+  const 長さ = typeof length === 'number' && length > 0 ? length : 0;
+  const 空へ = (v) => (v === '' || v == null ? null : v);
+
+  if (Array.isArray(value)) {
+    const out = value.map(空へ);
+    while (out.length < 長さ) out.push(null);
+    return out;
+  }
+  if (typeof value === 'object') {
+    const keys = Object.keys(value);
+    if (keys.length === 0) return Array(長さ).fill(null);
+    if (!keys.every((k) => !isNaN(Number(k)))) return undefined;
+    const 最大 = Math.max(...keys.map(Number));
+    const out = Array(Math.max(長さ, 最大 + 1)).fill(null);
+    keys.forEach((k) => {
+      out[Number(k)] = 空へ(value[k]);
+    });
+    return out;
+  }
+  return undefined;
+}
+
+/** 描き直しが要るかの判定に使う。射手1人分が同じ中身かを見る */
+const 射手の単純な項目 = [
+  'id',
+  'name',
+  'gender',
+  'grade',
+  'isSeparator',
+  'isTotalCalculator',
+  'isGuest',
+  'memberId',
+  'bowWeight',
+  'lastModified',
+];
+function 射手が同じ(a, b) {
+  if (!a || !b) return a === b;
+  for (const k of 射手の単純な項目) {
+    const x = a[k] === undefined ? null : a[k];
+    const y = b[k] === undefined ? null : b[k];
+    if (x !== y) return false;
+  }
+  const 同じ入れ物 = (x, y) => JSON.stringify(x || null) === JSON.stringify(y || null);
+  return (
+    同じ入れ物(a.marks, b.marks) &&
+    同じ入れ物(a.lockedBlocks, b.lockedBlocks) &&
+    同じ入れ物(a.substitutions, b.substitutions) &&
+    同じ入れ物(a.substitutionIds, b.substitutionIds) &&
+    同じ入れ物(a.arrowLocations, b.arrowLocations)
+  );
+}
+
+/**
+ * ライブ記録で受け取った射手の一覧を、手元の一覧と突き合わせる。
+ *
+ * 元は主催者側と参加者側に同じ処理が丸ごと二重に書かれていた
+ * （JP_useScoreStore_174.js の 2600 行目付近と 2700 行目付近）。
+ * 片方だけ直す事故を防ぐためここへ出した。中身は次の3点を直してある。
+ *
+ * 1. 判定を `>=` から `>` にした。同着は手元を優先する
+ * 2. 勝ったほうを土台にする。元は常に受信側が土台で、手元が新しいときも
+ *    lastModified が受信側の古い値に巻き戻っていた。そのせいで次の受信で
+ *    「受信のほうが新しい」と誤判定され、直したばかりの○×が消えていた
+ * 3. 矢所は、受信に入っていなければ手元を残す。元は受信側が土台だったため、
+ *    誰かが1本記録するたびに参加者全員の矢所が消えていた（矢所は送信の項目に
+ *    そもそも入っていなかった）
+ *
+ * 一覧は受信側の並びで作る。誰が参加しているかはライブ側を正とするため。
+ * changed は「画面を描き直す必要があるか」。無駄な描き直しを避けるために返す。
+ */
+function mergeLiveArchers(localList, remoteList, localShots, remoteShots) {
+  const 手元 = Array.isArray(localList) ? localList : [];
+  const 受信 = Array.isArray(remoteList) ? remoteList : [];
+
+  const 索引 = new Map();
+  手元.forEach((a) => {
+    if (a && a.id) 索引.set(a.id, a);
+  });
+
+  const archers = 受信.map((r) => {
+    if (!r || !r.id) return r;
+    const l = 索引.get(r.id);
+    if (!l) return r;
+
+    const 受信が新しい = (r.lastModified || 0) > (l.lastModified || 0);
+    const 勝ち = 受信が新しい ? r : l;
+    // 受信に矢所が入っていなければ、手元の値を残す（古い版との混在対策）
+    const 矢所 = r.arrowLocations === undefined ? l.arrowLocations : 勝ち.arrowLocations;
+
+    const out = Object.assign({}, 勝ち);
+    if (矢所 === undefined) delete out.arrowLocations;
+    else out.arrowLocations = 矢所;
+    return out;
+  });
+
+  let changed = archers.length !== 手元.length || remoteShots !== localShots;
+  if (!changed) {
+    for (let i = 0; i < archers.length; i++) {
+      const a = archers[i];
+      if (!射手が同じ(a, 索引.get(a && a.id))) {
+        changed = true;
+        break;
+      }
+    }
+  }
+  return { archers, changed };
+}
+
 module.exports = {
   toMillis,
   trashedAtMillis,
   mergeById,
+  mergeLiveArchers,
+  normalizeArrowLocations,
   dropUndefinedDeep,
   normalizeTag,
   cleanUpTagsArray,
