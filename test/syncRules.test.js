@@ -53,9 +53,23 @@ const 手元 = (o) => [Object.assign({ id: 'x', name: '手元' }, o)];
 const 雲 = (o) => [Object.assign({ id: 'x', name: 'クラウド' }, o)];
 const 勝者 = (r) => r[0].name;
 
-test('mergeById: クラウドが1秒以上新しければクラウドが勝つ', () => {
-  const r = mergeById(手元({ lastModified: 1000, syncStatus: '未同期' }), 雲({ lastModified: 5000 }));
+test('mergeById: 送信が済んでいれば、クラウドが1秒以上新しいとクラウドが勝つ', () => {
+  const r = mergeById(手元({ lastModified: 1000, syncStatus: '同期済み' }), 雲({ lastModified: 5000 }));
   assert.equal(勝者(r), 'クラウド');
+});
+
+test('mergeById: まだ送っていなければ、クラウドが新しくても手元が残る', () => {
+  // ここが崩れると、端末の時計が数秒遅れているだけで、直したばかりの
+  // ○×が黙って元に戻る。記録アプリでは入力が消えるほうが致命的なので、
+  // 送信が済むまでは手元を優先する。届けば普通の突き合わせに戻るため、
+  // 端末どうしで食い違ったままにはならない。
+  const r = mergeById(手元({ lastModified: 1000, syncStatus: '未同期' }), 雲({ lastModified: 5000 }));
+  assert.equal(勝者(r), '手元');
+});
+
+test('mergeById: 未同期なら、クラウドが1時間新しくても手元が残る', () => {
+  const r = mergeById(手元({ lastModified: 1000, syncStatus: '未同期' }), 雲({ lastModified: 3601000 }));
+  assert.equal(勝者(r), '手元');
 });
 
 test('mergeById: 差が1秒以内なら、それだけではクラウドは勝てない', () => {
@@ -115,14 +129,14 @@ test('mergeById: purge を指定しなければ消さない', () => {
 test('mergeById: 日時が {seconds} の入れ物でも読めて、新しければクラウドが勝つ', () => {
   // 元の実装は入れ物を読めず、比較が NaN になってクラウドが永久に勝てなかった。
   // その記録だけ他の端末の編集が反映されなくなるため、読めるようにした。
-  const r = mergeById(手元({ lastModified: 0, syncStatus: '未同期' }), 雲({ lastModified: { seconds: 5 } }));
+  const r = mergeById(手元({ lastModified: 0, syncStatus: '同期済み' }), 雲({ lastModified: { seconds: 5 } }));
   assert.equal(勝者(r), 'クラウド');
 });
 
 test('mergeById: 日時が文字列でも読める', () => {
   const 雲の日時 = '2026-08-01T00:00:00Z';
   const r = mergeById(
-    手元({ lastModified: Date.parse(雲の日時) - 60000, syncStatus: '未同期' }),
+    手元({ lastModified: Date.parse(雲の日時) - 60000, syncStatus: '同期済み' }),
     雲({ lastModified: 雲の日時 })
   );
   assert.equal(勝者(r), 'クラウド');
