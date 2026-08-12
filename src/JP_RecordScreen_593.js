@@ -109,6 +109,9 @@ const k = () => {
         members: oe = [],
         isHydrated: re,
         lastResetHandled: le,
+        // 誰かがライブ中に取り消し／やり直しをしたときの知らせ
+        historyNoticeAt: 共有履歴の知らせ,
+        historyNoticeKind: 共有履歴の種類,
         activeGroupId: ne,
         publicGroupId: ie,
         activeArrowLocationEdit,
@@ -125,6 +128,7 @@ const k = () => {
       [Fe, je] = (0, t.useState)(null),
       [警告を閉じた, 警告を閉じる] = (0, t.useState)(!1),
       Se = o.default.useRef(0),
+      共有履歴を出した = o.default.useRef(0),
       [pe, Ce] = (0, t.useState)(!1),
       [Ie, ve] = (0, t.useState)(!1),
       [Be, Ae] = (0, t.useState)(8),
@@ -153,6 +157,15 @@ const k = () => {
             e || (Ge('リセットしました。'), j.notificationAsync(j.NotificationFeedbackType.Warning)));
         }
       }, [le]),
+      // 誰かがライブ中に取り消し／やり直しをしたら短く知らせる。
+      // 盤面が突然戻るので、理由が分かったほうが親切（リセットと同じ考え方）
+      o.default.useEffect(() => {
+        if (共有履歴の知らせ > 0 && 共有履歴を出した.current < 共有履歴の知らせ) {
+          ((共有履歴を出した.current = 共有履歴の知らせ),
+            Ge(`${共有履歴の種類 || '取り消し'}されました。`),
+            j.notificationAsync(j.NotificationFeedbackType.Warning));
+        }
+      }, [共有履歴の知らせ, 共有履歴の種類]),
       o.default.useEffect(() => {
         x.useScoreStore.getState().loadData();
       }, []),
