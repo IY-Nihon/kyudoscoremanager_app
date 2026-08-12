@@ -74,11 +74,20 @@ const rt = async (path, token, method = 'GET', body) => {
   const r = await fetch(url, { method, body: body === undefined ? undefined : JSON.stringify(body) });
   return r.status;
 };
+// appData と users はアプリがどこでも使っていないので、ルールから外した。
+// 外す前は「認証さえ通れば丸ごと読み書きできる」状態で、匿名でも通った。
+// 中身は常に空だったが、書き込み放題は容量を食わせる余地になっていた。
+const anon2 = await signInAnonymously(apiKey);
 check('RTDB', 'appData を未認証で読む', 401, await rt('/appData', null));
-check('RTDB', 'appData を認証ありで読む', 200, await rt('/appData', tokG1), 'レガシー移行経路が使う');
+check('RTDB', 'appData を認証ありで読む', 401, await rt('/appData', tokG1), 'ルールから外した');
+check('RTDB', 'appData を匿名で書く', 401, await rt('/appData/x', anon2.idToken, 'PUT', { a: 1 }));
 check('RTDB', 'users を未認証で読む', 401, await rt('/users', null));
+check('RTDB', 'users を認証ありで読む', 401, await rt('/users', tokG1), 'ルールから外した');
+check('RTDB', 'users を匿名で書く', 401, await rt('/users/x', anon2.idToken, 'PUT', { a: 1 }));
 check('RTDB', 'ルート直下を未認証で読む', 401, await rt('/', null));
 check('RTDB', 'ルート直下を認証ありで読む', 401, await rt('/', tokG1), '全体の列挙は不可');
+// 消したあとも、使っている経路は今までどおり通ること
+check('RTDB', '自団体のライブを認証ありで読む', 200, await rt(`/live_sessions/${G1}`, tokG1), '巻き添えが無いこと');
 check('RTDB', '未定義のノードを認証ありで書く', 401, await rt('/unknownNode/x', tokG1, 'PUT', { a: 1 }),
   'ルールに無いパスは既定で拒否');
 

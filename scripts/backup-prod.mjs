@@ -127,11 +127,9 @@ for (const gid of 団体一覧) {
   rtdb.live_sessions[gid] = j;
   console.log(`  live_sessions/${gid} … ${j === null ? 'なし' : Object.keys(j).length + '件'}`);
 }
-{
-  const r = await fetch(`${RTDB}/appData.json${token ? `?auth=${token}` : ''}`);
-  if (r.ok) { rtdb.appData = await r.json(); console.log(`  appData … ${rtdb.appData === null ? 'なし' : 'あり'}`); }
-  else { 失敗.push({ パス: 'rtdb:/appData', HTTP: r.status }); console.log(`  appData … HTTP ${r.status}`); }
-}
+// appData はアプリが使っておらず、ルールからも外した（常に空だった）。
+// 控えを取ろうとすると拒否されて「失敗1件」と記録され、本物の失敗が
+// 埋もれるため、読み取りごと外した。RTDB で使っているのは live_sessions だけ。
 fs.writeFileSync(path.join(OUT, 'rtdb.json'), JSON.stringify(rtdb, null, 1));
 
 // ── ルールと設定 ─────────────────────────────────────────────────
