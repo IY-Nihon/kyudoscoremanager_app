@@ -250,7 +250,72 @@ const v = (e, s, o) => {
       shotsPerRound: s,
     };
   };
+/**
+ * ライブ中の共有履歴に1手ぶん積む。
+ *
+ * 置き場所は state の外（live_sessions/{団体}/{名前}/history/{番号}）。
+ * state の中に置くと、1射ごとに全員が履歴ごと再取得することになって重い。
+ * 「どこまで戻したか」の目印だけは state に置き、全員へ配る。
+ * 目印を使うので問い合わせ（query）が要らず、添字で直接読める。
+ */
+/**
+ * 共有履歴に残す形に整える。
+ * 送信用の b() は ○× を含まない（別の場所 marks_by_id で送るため）ので、
+ * そのまま使うと的中が落ちる。履歴は盤面まるごとを残す必要があるため足す。
+ */
+const 履歴用に整える = (一覧) =>
+  (Array.isArray(一覧) ? b(一覧) : []).map((射手, 番) =>
+    Object.assign({}, 射手, {
+      marks: ((一覧[番] && 一覧[番].marks) || []).map((m) => (null == m ? '' : m)),
+    })
+  );
+const 共有履歴へ積む = (前の盤面, 後の盤面, s) => {
+  const 団体 = M.getState().activeGroupId,
+     名前 = s().liveSessionName;
+  if (!fb.rtdb || !団体 || !名前) return;
+  const 根 = `live_sessions/${団体}/${名前}`;
+  const 位置 = s().historySharedLen || 0;
+  const 本数 = s().shotsPerRound;
+  (0, i.set)((0, i.ref)(fb.rtdb, `${根}/history/${位置}`), {
+    前: 履歴用に整える(前の盤面),
+    後: 履歴用に整える(後の盤面),
+    本数: 本数,
+    at: Date.now(),
+  }).catch((e) => console.error('[Store] 共有履歴の書き込みに失敗:', e));
+  // 目印を進める。新しい操作をしたので、やり直せる分はここで打ち切る
+  const 次 = 位置 + 1;
+  ((0, i.update)((0, i.ref)(fb.rtdb, `${根}/state`), {
+    history_len: 次,
+    history_max: 次,
+  }).catch(() => {}),
+    M.getState().updateState({ historySharedLen: 次, historySharedMax: 次 }));
+  // 古い手を捨てる（上限を超えた分）
+  if (次 > 共有履歴の上限)
+    (0, i.remove)((0, i.ref)(fb.rtdb, `${根}/history/${次 - 共有履歴の上限 - 1}`)).catch(() => {});
+};
+/**
+ * ライブから届いた state から、共有履歴の目印と知らせを取り込む。
+ * 主催者側と参加者側の両方で同じことをするので、ここへ出してある。
+ */
+const 共有履歴の目印を受け取る = (状態, e, s) => {
+  if (!状態) return;
+  const 変更 = {};
+  if ('number' == typeof 状態.history_len) 変更.historySharedLen = 状態.history_len;
+  if ('number' == typeof 状態.history_max) 変更.historySharedMax = 状態.history_max;
+  // 自分が起こしたものでなければ、画面に知らせる材料を渡す
+  if (状態.history_at && 状態.history_at !== s().historyHandledAt) {
+    ((変更.historyHandledAt = 状態.history_at),
+      (変更.historyNoticeAt = 状態.history_at),
+      (変更.historyNoticeKind = 状態.history_kind || '取り消し'));
+  }
+  Object.keys(変更).length > 0 && e(変更);
+};
 let I = !1;
+// ライブ中の共有履歴。取り消し・やり直しを全員で1本の履歴として扱う。
+// 取り消しの適用中は、その書き換え自体を履歴に積まないための目印。
+let 履歴を積まない = !1;
+/** 共有履歴に残す手数の上限。射手20人でも 1手あたり15KB程度 */
+const 共有履歴の上限 = 30;
 const M = (0, s.create)()(
   (0, d.persist)(
     (t, s) => {
@@ -259,6 +324,15 @@ const M = (0, s.create)()(
         (i &&
           (i.sessions && (i.sessions = cleanUpSessions(i.sessions)),
           i.trash && (i.trash = cleanUpSessions(i.trash))),
+          // ライブ中に手元の履歴が伸びたら、同じものを共有履歴にも積む。
+          // 各操作を1つずつ書き換えずに済むよう、ここ1箇所で拾う
+          i &&
+            Array.isArray(i.historyStack) &&
+            !履歴を積まない &&
+            i.historyStack.length > (s().historyStack || []).length &&
+            s().isLiveActive &&
+            s().liveSessionName &&
+            共有履歴へ積む(i.historyStack[i.historyStack.length - 1], i.archers || s().archers, s),
           t(i));
       };
       return {
@@ -307,6 +381,15 @@ const M = (0, s.create)()(
         lastLocalChange: 0,
         lastResetHandled: 0,
         lastPushedTimestamp: 0,
+        // ライブ中の共有履歴の目印。len は「いま何手ぶん適用しているか」、
+        // max は「やり直せる上限」。どちらも state 経由で全員に配られる
+        historySharedLen: 0,
+        historySharedMax: 0,
+        // 取り消し・やり直しの通知を出したかどうかの控え
+        historyHandledAt: 0,
+        // 画面へ知らせるための材料（誰かが取り消した／やり直した）
+        historyNoticeAt: 0,
+        historyNoticeKind: null,
         showTrash: !1,
         sessionUnsubscribe: null,
         trashUnsubscribe: null,
@@ -925,7 +1008,9 @@ const M = (0, s.create)()(
           const { isLiveActive: i, liveSessionName: n, shotsPerRound: c } = s();
           i && n && v(n, s().archers, c);
         },
+        // ライブ中は全員で1本の履歴を使う。誰が押しても「最後の1手」が戻る
         undo: () => {
+          if (s().isLiveActive && s().liveSessionName) return void s().sharedUndo(-1);
           const { historyStack: t, archers: o } = s();
           if (0 === t.length) return;
           // 中身が変わった射手には新しい日時を打ち直す。打たないと、ライブ中の
@@ -941,6 +1026,7 @@ const M = (0, s.create)()(
           i && n && v(n, s().archers, c);
         },
         redo: () => {
+          if (s().isLiveActive && s().liveSessionName) return void s().sharedUndo(1);
           const { redoStack: t, archers: o } = s();
           if (0 === t.length) return;
           // 取り消しと同じ理由で日時を打ち直す
@@ -953,6 +1039,63 @@ const M = (0, s.create)()(
           });
           const { isLiveActive: i, liveSessionName: n, shotsPerRound: c } = s();
           i && n && v(n, s().archers, c);
+        },
+        /**
+         * ライブ中の取り消し（向き -1）・やり直し（向き +1）。
+         *
+         * 全員で1本の履歴を使う。誰が押しても「最後の1手」が戻り、結果は
+         * 盤面としてライブへ流れるので全員の画面が揃う。
+         * 同時に押された場合は重なることがあるが、盤面は必ず一致する。
+         */
+        sharedUndo: async (向き) => {
+          const { activeGroupId: 団体, liveSessionName: 名前 } = s();
+          if (!fb.rtdb || !団体 || !名前) return;
+          const 根 = `live_sessions/${団体}/${名前}`;
+          try {
+            // 目印は state から配られてくる。手元の控えより新しいことがある
+            const 状態 = await (0, i.get)((0, i.ref)(fb.rtdb, `${根}/state`));
+            const v0 = 状態.exists() ? 状態.val() || {} : {};
+            const 位置 = 'number' == typeof v0.history_len ? v0.history_len : s().historySharedLen || 0;
+            const 上限 = 'number' == typeof v0.history_max ? v0.history_max : s().historySharedMax || 0;
+            const 読む番号 = 向き < 0 ? 位置 - 1 : 位置;
+            if (向き < 0 ? 位置 <= 0 : 位置 >= 上限) return; // これ以上は戻せない／進めない
+            const 手 = await (0, i.get)((0, i.ref)(fb.rtdb, `${根}/history/${読む番号}`));
+            if (!手.exists()) return;
+            const 中身 = 手.val() || {};
+            const 盤面 = w({
+              archers: 向き < 0 ? 中身.前 : 中身.後,
+              shotsPerRound: 中身.本数,
+            });
+            const 次 = 位置 + 向き;
+            const 知らせ時刻 = Date.now();
+            // 戻した内容が相手に届くよう、変わった射手の日時を打ち直す
+            const 戻す = restampChangedArchers(盤面.archers, s().archers, 知らせ時刻);
+            // ここでの書き換えは履歴に積まない（積むと際限がなくなる）
+            履歴を積まない = !0;
+            try {
+              e({
+                archers: 戻す,
+                shotsPerRound: 盤面.shotsPerRound,
+                historySharedLen: 次,
+                historySharedMax: 上限,
+                // 自分が起こした通知では知らせを出さないための控え
+                historyHandledAt: 知らせ時刻,
+                lastLocalChange: 知らせ時刻,
+              });
+            } finally {
+              履歴を積まない = !1;
+            }
+            // 盤面を全員へ流し、あわせて「取り消された」ことを知らせる
+            (v(名前, 戻す, 盤面.shotsPerRound),
+              (0, i.update)((0, i.ref)(fb.rtdb, `${根}/state`), {
+                history_len: 次,
+                history_max: 上限,
+                history_at: 知らせ時刻,
+                history_kind: 向き < 0 ? '取り消し' : 'やり直し',
+              }).catch(() => {}));
+          } catch (t) {
+            console.error('[Store] 共有の取り消しに失敗:', t);
+          }
         },
         addMember: (o, i, c, d) => {
           if (!s().activeGroupId || 'group' !== s().activeRole)
@@ -2689,6 +2832,7 @@ const M = (0, s.create)()(
                       })
                     );
                   }
+                  共有履歴の目印を受け取る(a, e, s);
                   if (a.reset_at && a.reset_at > (s().lastResetHandled || 0))
                     return (
                       e({
@@ -2766,6 +2910,7 @@ const M = (0, s.create)()(
                 })
               );
             }
+            共有履歴の目印を受け取る(a, e, s);
             if (a.reset_at && a.reset_at > (s().lastResetHandled || 0)) {
               const t = 0 === s().lastResetHandled;
               (e({
