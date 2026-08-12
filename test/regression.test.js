@@ -181,7 +181,7 @@ test('取り消しは、押した人が誰でも同じ結果になる', async ()
   assert.equal(参.store.getState().archers[0].marks[0], '', '参加者の画面でも戻る');
 });
 
-test('取り消されたことが、押していない人にも知らされる', async () => {
+test('取り消したことが、押した本人にも他の人にも知らされる', async () => {
   const 主 = 端末();
   主.store.setState({ archers: [射手()] });
   await 主.store.getState().startLiveSync(ライブ名);
@@ -197,7 +197,44 @@ test('取り消されたことが、押していない人にも知らされる',
 
   assert.ok(参.store.getState().historyNoticeAt > 0, '参加者に知らせが届く');
   assert.equal(参.store.getState().historyNoticeKind, '取り消し');
-  assert.equal(主.store.getState().historyNoticeAt, 0, '押した本人には出ない');
+  assert.ok(主.store.getState().historyNoticeAt > 0, '押した本人にも出る');
+  assert.equal(主.store.getState().historyNoticeKind, '取り消し');
+});
+
+test('やり直しの知らせは「やり直し」と出る', async () => {
+  const 主 = 端末();
+  主.store.setState({ archers: [射手()] });
+  await 主.store.getState().startLiveSync(ライブ名);
+
+  const 参 = 端末(主.ライブ);
+  参.store.getState().joinLiveSync(ライブ名);
+  await 待つ(20);
+
+  主.store.getState().updateMark('a1', 0, '○');
+  await 待つ(40);
+  主.store.getState().undo();
+  await 待つ(60);
+  主.store.getState().redo();
+  await 待つ(60);
+
+  assert.equal(主.store.getState().historyNoticeKind, 'やり直し', '押した本人');
+  assert.equal(参.store.getState().historyNoticeKind, 'やり直し', '他の人');
+});
+
+test('知らせは一度だけ出る（返りが届いても二重にならない）', async () => {
+  const 主 = 端末();
+  主.store.setState({ archers: [射手()] });
+  await 主.store.getState().startLiveSync(ライブ名);
+  await 待つ(20);
+
+  主.store.getState().updateMark('a1', 0, '○');
+  await 待つ(40);
+  主.store.getState().undo();
+  await 待つ(30);
+  const 一度目 = 主.store.getState().historyNoticeAt;
+  await 待つ(80); // 返りが届く時間
+
+  assert.equal(主.store.getState().historyNoticeAt, 一度目, '値が動かない＝二重に出ない');
 });
 
 // ──────────────────────────────────────────────────────────────

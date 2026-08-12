@@ -1078,8 +1078,12 @@ const M = (0, s.create)()(
                 shotsPerRound: 盤面.shotsPerRound,
                 historySharedLen: 次,
                 historySharedMax: 上限,
-                // 自分が起こした通知では知らせを出さないための控え
+                // 押した本人にも知らせる。自分の送信の返りは弾く作りなので、
+                // ここで立てないと本人にだけ知らせが出ない。
+                // historyHandledAt を同じ値にしておくと、返りが届いても二重に出ない
                 historyHandledAt: 知らせ時刻,
+                historyNoticeAt: 知らせ時刻,
+                historyNoticeKind: 向き < 0 ? '取り消し' : 'やり直し',
                 lastLocalChange: 知らせ時刻,
               });
             } finally {
