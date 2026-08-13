@@ -40,7 +40,11 @@ const AsyncStorage = require('@react-native-async-storage/async-storage').defaul
 const { Ionicons } = require('./AntDesign_600');
 const { useScoreStore } = require('./JP_useScoreStore_174');
 const { IS_WEB } = require('./IS_WEB_199');
-const { 手順を作る, 手が出せない: 手が出せないか } = require('./tutorialSteps');
+const {
+  手順を作る,
+  手が出せない: 手が出せないか,
+  見本の中身を作る,
+} = require('./tutorialSteps');
 
 // 案内の版。手順を作り直したら上げる。上げると、一度見た人にもまた出る
 const TUTORIAL_VERSION = '2026-08-13-01';
@@ -141,10 +145,15 @@ const use案内 = create((set) => ({
   // これまでに進んだ一番先の手順。「戻る」で読み返しているのかどうかを、
   // これで見分ける。読み返しでは、もう一度操作させない（下の 見返し を参照）
   最高到達: 0,
-  始める: (控え) => set({ 進行中: true, 番号: 0, 続きも見る: false, 控え, 最高到達: 0 }),
+  // 履歴・分析の手順のあいだだけ入る見本。本物の画面がこれを読んで描く。
+  // 差し替えるのは中身だけで、記録ストアにも通信にも触れない
+  見本データ: null,
+  見本を置く: (v) => set({ 見本データ: v }),
+  始める: (控え) => set({ 進行中: true, 番号: 0, 続きも見る: false, 控え, 最高到達: 0, 見本データ: null }),
   進める: (n) => set((s) => ({ 番号: n, 最高到達: Math.max(s.最高到達, n) })),
   続きへ: (n) => set((s) => ({ 続きも見る: true, 番号: n, 最高到達: Math.max(s.最高到達, n) })),
-  終える: () => set({ 進行中: false, 番号: 0, 続きも見る: false, 控え: null, 最高到達: 0 }),
+  終える: () =>
+    set({ 進行中: false, 番号: 0, 続きも見る: false, 控え: null, 最高到達: 0, 見本データ: null }),
 }));
 
 /**
@@ -170,6 +179,23 @@ function startTutorial() {
     console.error('[TutorialGuide] 控えを書けませんでした:', e)
   );
   return 'はじめた';
+}
+
+/**
+ * 画面が読む値に、案内の見本を重ねる。
+ *
+ * 履歴・分析の画面から、ストアを読んだ直後に一度だけ呼ぶ。
+ *   const 値 = 案内.見本を重ねる((0, y.useScoreStore)());
+ *
+ * 見本が出ていないときは、渡されたものをそのまま返す。出ているあいだだけ
+ * 記録・部員・卒業生・ごみ箱を見本に差し替える。操作の関数は本物のまま
+ * 残るので、画面の作りには手を入れずに済む。
+ * 記録ストアには書かないため、見本が本物として保存される経路は無い。
+ */
+function 見本を重ねる(値) {
+  const 見本 = use案内((s) => s.見本データ);
+  if (!見本) return 値;
+  return Object.assign({}, 値, 見本);
 }
 
 /** 案内で触ったぶんを元に戻す */
@@ -259,198 +285,6 @@ function 達成した(種類, 基準, 現在) {
 // ─────────────────────────────────────────
 const 既定の吹き出しの幅 = 340;
 const 余白 = 12;
-
-// ─────────────────────────────────────────
-// 見本。読むだけで、押しても何も起きない。
-// ストアにも通信にも触れないので、本物のデータと混ざる経路が無い
-// ─────────────────────────────────────────
-// 本物の履歴画面の1行に合わせてある（日付＋題／矢数／タグ／人数）。
-// 見た目を変えたときは、撮影用の団体 100006 でログインして
-// 実画面と見比べること（scripts/seed-tutorial-shots.mjs）
-const 見本の記録 = [
-  { 日付: '2026/08/12', 題: '通常練習', 矢数: 4, 人数: 3 },
-  { 日付: '2026/08/10', 題: '記録会', 矢数: 4, 人数: 3 },
-  { 日付: '2026/08/08', 題: '通常練習', 矢数: 4, 人数: 3 },
-];
-
-// 実物と見比べながら作ってある。撮影用の団体 100006 でログインすると
-// 本物が見られる（scripts/seed-tutorial-shots.mjs）
-const 札 = ({ 文字, 濃い, 灰 }) => (
-  <_View style={[styles.札, 濃い && styles.札の選択, 灰 && styles.札の灰]}>
-    <_Text style={[styles.札文字, 濃い && styles.札文字の選択]}>{文字}</_Text>
-  </_View>
-);
-
-const 含む切替 = () => (
-  <_View style={styles.切替}>
-    <_View style={[styles.切替の片, styles.切替の選択]}>
-      <_Text style={styles.切替の選択文字}>すべて含む</_Text>
-    </_View>
-    <_View style={styles.切替の片}>
-      <_Text style={styles.切替文字}>いずれか含む</_Text>
-    </_View>
-  </_View>
-);
-
-const タグの列 = () => (
-  <>
-    <_View style={styles.見出し行}>
-      <_Text style={styles.小見出し}>タグフィルター</_Text>
-      <含む切替 />
-    </_View>
-    <_View style={styles.札の並び}>
-      <札 文字="すべて解除" 濃い />
-      <札 文字="正規練習" 灰 />
-    </_View>
-  </>
-);
-
-const 履歴の見本 = () => (
-  <_View style={styles.全面}>
-    <_View style={styles.見出し行}>
-      <_Text style={styles.全面の題}>過去の記録表</_Text>
-      <_View style={styles.頭の右}>
-        <_Text style={styles.編集文字}>編集</_Text>
-        <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-      </_View>
-    </_View>
-
-    <_View style={styles.偽の検索}>
-      <Ionicons name="search" size={15} color="#8E8E93" />
-      <_Text style={styles.偽の検索文字}>日付や内容を検索（全期間対象）</_Text>
-    </_View>
-
-    <タグの列 />
-
-    <_View style={styles.年度札}>
-      <_Text style={styles.年度札文字}>2026年度 (2026/04 - 2027/03)</_Text>
-      <Ionicons name="swap-vertical" size={12} color="#3C3C43" />
-    </_View>
-
-    <_View style={styles.月の並び}>
-      {['04月', '05月', '06月', '07月', '08月'].map((m, i) => (
-        <札 key={m} 文字={m} 濃い={i === 4} 灰={i !== 4} />
-      ))}
-    </_View>
-
-    <_View style={styles.一覧}>
-      {見本の記録.map((r, i) => (
-        <_View key={i} style={[styles.記録行, i > 0 && styles.記録の区切り]}>
-          <_View style={{ flex: 1 }}>
-            <_View style={styles.題の行}>
-              <_Text style={styles.見本の題行} numberOfLines={1}>
-                {r.日付} <_Text style={styles.見本の題}>[{r.題}]</_Text>
-              </_Text>
-              <Ionicons name="cloud-done-outline" size={13} color="#007AFF" />
-            </_View>
-            <_Text style={styles.見本の小字}>矢数: {r.矢数}本</_Text>
-            <_View style={styles.見本のタグ}>
-              <_Text style={styles.見本のタグ文字}>正規練習</_Text>
-            </_View>
-          </_View>
-          <_View style={styles.見本の人数}>
-            <_Text style={styles.見本の人数文字}>{r.人数}人</_Text>
-          </_View>
-          <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
-        </_View>
-      ))}
-    </_View>
-  </_View>
-);
-
-// 本物の分析画面は、まず的中率の順位が並ぶ（部員どうしの比較）。
-// 折れ線ではないので、見本もその形にしてある
-const 見本の順位 = [
-  { 名: '山田 太郎', 属性: '51期 / 3年 / 男子', 率: '75.0%', 内訳: '21/28' },
-  { 名: '鈴木 花子', 属性: '52期 / 2年 / 女子', 率: '64.3%', 内訳: '18/28' },
-  { 名: '田中 一郎', 属性: '53期 / 1年 / 男子', 率: '57.1%', 内訳: '16/28' },
-];
-
-const 選ぶ行 = ({ 見出し, 中身, 選択 }) => (
-  <_View style={styles.選ぶ行}>
-    <_Text style={styles.選ぶ見出し}>{見出し}</_Text>
-    <_View style={styles.選ぶ枠}>
-      {中身.map((c) => (
-        <_View key={c} style={[styles.選ぶ片, c === 選択 && styles.選ぶ片の選択]}>
-          <_Text style={[styles.選ぶ文字, c === 選択 && styles.選ぶ文字の選択]}>{c}</_Text>
-        </_View>
-      ))}
-    </_View>
-  </_View>
-);
-
-const 分析の見本 = () => (
-  <_View style={styles.全面}>
-    <_Text style={styles.全面の題}>的中分析</_Text>
-
-    <_View style={styles.絞り込み札}>
-      <タグの列 />
-      <_View style={styles.期間の枠}>
-        {['月ごと', '年度', '期間指定', '直近30日', 'すべて'].map((m) => (
-          <_View key={m} style={[styles.期間の片, m === 'すべて' && styles.期間の選択]}>
-            <_Text style={[styles.期間文字, m === 'すべて' && styles.期間文字の選択]}>{m}</_Text>
-          </_View>
-        ))}
-      </_View>
-
-      <_View style={styles.基準札}>
-        <_Text style={styles.小見出し}>ランキング対象の基準 (最多比)</_Text>
-        <_View style={styles.基準の並び}>
-          {['1/2 (50%)', '1/3 (33%)', '1/4 (25%)'].map((c) => (
-            <_View key={c} style={styles.基準の片}>
-              <_Text style={styles.基準文字}>{c}</_Text>
-            </_View>
-          ))}
-        </_View>
-        <_View style={styles.基準の入力行}>
-          <_View style={styles.基準の入力}>
-            <_Text style={styles.基準の入力文字}>例: 20</_Text>
-          </_View>
-          <_Text style={styles.基準文字}>射以上</_Text>
-          <_View style={styles.絞り込みボタン}>
-            <_Text style={styles.絞り込み文字}>絞り込む</_Text>
-          </_View>
-        </_View>
-        <_Text style={styles.基準の注}>全メンバーがランキング対象です</_Text>
-      </_View>
-
-      <選ぶ行 見出し="性別:" 中身={['全員', '男子', '女子']} 選択="全員" />
-      <選ぶ行 見出し="学年:" 中身={['全学年', '1年', '2年', '3年', '4年']} 選択="全学年" />
-
-      <_View style={styles.見出し行}>
-        <_Text style={styles.小見出し}>卒業生を表示</_Text>
-        <_View style={styles.切り札}>
-          <_Text style={styles.切り札文字}>OFF</_Text>
-        </_View>
-      </_View>
-    </_View>
-
-    <_View style={styles.偽の検索}>
-      <Ionicons name="search" size={17} color="#007AFF" />
-      <_Text style={styles.偽の検索文字}>メンバー名を検索...</_Text>
-    </_View>
-
-    <_View style={styles.一覧}>
-      {見本の順位.map((r, i) => (
-        <_View key={i} style={[styles.記録行, i > 0 && styles.記録の区切り]}>
-          <_View style={styles.見本の順}>
-            <_Text style={styles.見本の順文字}>{i + 1}</_Text>
-          </_View>
-          <_View style={{ flex: 1, marginLeft: 8 }}>
-            <_Text style={styles.見本の名} numberOfLines={1}>
-              {r.名}
-            </_Text>
-            <_Text style={styles.見本の小字}>{r.属性}</_Text>
-          </_View>
-          <_View style={{ alignItems: 'flex-end' }}>
-            <_Text style={styles.見本の率}>{r.率}</_Text>
-            <_Text style={styles.見本の小字}>{r.内訳}</_Text>
-          </_View>
-        </_View>
-      ))}
-    </_View>
-  </_View>
-);
 
 const TutorialOverlay = ({ navRef }) => {
   const 進行中 = use案内((s) => s.進行中);
@@ -548,6 +382,8 @@ const TutorialOverlay = ({ navRef }) => {
     // 読み返し中は操作を求めないので、盤面もいじらない
     if (!見返し) 下ごしらえする(いまの手順.下ごしらえ);
     手が出せないを置く(手が出せないか(いまの手順, useScoreStore.getState()));
+    // 履歴・分析の手順のあいだだけ、画面が読む中身を見本に差し替える
+    use案内.getState().見本を置く(いまの手順.見本 ? 見本の中身を作る() : null);
     基準.current =
       いまの手順.操作 && いまの手順.操作.種類 !== 'タブへ移動'
         ? いまの値(useScoreStore.getState(), いまの手順.操作.種類)
@@ -680,17 +516,14 @@ const TutorialOverlay = ({ navRef }) => {
       ))}
 
       {/* 初めての人には、履歴も分析もまだ空。空の画面を指しても何も伝わらず、
-          壊れているようにも見える。その手順のあいだだけ、画面をまるごと
-          見本で覆う。読むだけで、押しても何も起きない。
-          ストアにも通信にも触れないので、本物のデータと混ざる経路が無い */}
+          壊れているようにも見える。その手順のあいだは、本物の画面にそのまま
+          見本の中身を読ませて描かせる（見た目を写し取っていないので、画面を
+          直してもズレない）。本物と間違えないよう、上に帯を出しておく */}
       {いまの手順.見本 && (
-        <_TouchableOpacity activeOpacity={1} onPress={() => {}} style={styles.全面の紙}>
-          <_View style={styles.見本の帯}>
-            <Ionicons name="eye-outline" size={13} color="#FFF" />
-            <_Text style={styles.見本の帯文字}>見本です（実際の中身ではありません）</_Text>
-          </_View>
-          {いまの手順.見本 === '履歴' ? <履歴の見本 /> : <分析の見本 />}
-        </_TouchableOpacity>
+        <_View style={styles.見本の帯} pointerEvents="none">
+          <Ionicons name="eye-outline" size={13} color="#FFF" />
+          <_Text style={styles.見本の帯文字}>見本です（実際の中身ではありません）</_Text>
+        </_View>
       )}
 
       {/* 説明だけの手順では、指した先を「見せるが押させない」。
@@ -947,4 +780,5 @@ exports.TutorialOverlay = TutorialOverlay;
 exports.useTutorialTarget = useTutorialTarget;
 exports.setTutorialTargetNode = setTutorialTargetNode;
 exports.startTutorial = startTutorial;
+exports.見本を重ねる = 見本を重ねる;
 exports.TUTORIAL_VERSION = TUTORIAL_VERSION;
