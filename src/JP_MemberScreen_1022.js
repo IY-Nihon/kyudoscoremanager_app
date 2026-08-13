@@ -35,6 +35,7 @@ var t = require('./module_37'),
   h = e(require('./default_218')),
   m = require('./IS_WEB_199'),
   x = require('./JP_useScoreStore_174'),
+  案内 = require('./JP_TutorialGuide'),
   p = require('./AntDesign_600'),
   b = require('./module_592'),
   y = require('./module_427');
@@ -53,6 +54,8 @@ const C = () => {
     activeRole: E,
     myMemberId: w,
   } = (0, x.useScoreStore)();
+  // 使い方の案内が指す先
+  const 案内の部員追加 = 案内.useTutorialTarget('メンバー.追加');
   const [T, W] = (0, t.useState)('');
   const [z, D] = (0, t.useState)(!1);
   const [q, v] = (0, t.useState)(null);
@@ -224,6 +227,7 @@ const C = () => {
             children:
               'member' !== E &&
               (0, y.jsx)(h.default, {
+                ref: 案内の部員追加,
                 style: ({ hovered: e }) => [
                   j.addBtn,
                   e && { backgroundColor: 'rgba(0,122,255,0.05)', borderRadius: 8, padding: 4 },

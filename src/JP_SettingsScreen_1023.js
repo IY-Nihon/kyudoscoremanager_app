@@ -573,6 +573,8 @@ const w = () => {
         }),
       Je = (e, t, l, a = '#007AFF', s, d = !1) =>
         (0, T.jsxs)(h.default, {
+          // 使い方の案内が指す先。行の名前をそのまま目印にする
+          ref: (node) => 案内.setTutorialTargetNode(`設定.${t}`, node),
           style: ({ hovered: e }) => [D.item, e && D.hovered, x.IS_WEB && !!l && { cursor: 'pointer' }],
           onPress: l,
           disabled: !l,
