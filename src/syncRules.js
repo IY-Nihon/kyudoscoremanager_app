@@ -320,11 +320,89 @@ function restampChangedArchers(戻す一覧, いまの一覧, 日時) {
   });
 }
 
+/**
+ * ライブ名に使えない字が入っていれば、それを並べて返す（無ければ null）。
+ *
+ * Realtime Database の枝の名前には . $ # [ ] / と制御文字が使えない。
+ * . $ # [ ] は書き込みが例外になるので開始そのものが失敗するが、
+ * 「/」だけは例外にならず階層の区切りとして通ってしまう。そのため
+ * 「5/8」のような日付を名前にすると live_sessions/{団体}/5/8 が作られ、
+ * 名前の直下に state が無いので参加一覧にも出ず、参加も削除もできない
+ * ライブが残る（本番に1件あった）。
+ */
+function ライブ名に使えない字(名前) {
+  const s = typeof 名前 === 'string' ? 名前 : '';
+  const 見つかった = [];
+  for (const 字 of ['/', '.', '$', '#', '[', ']']) {
+    if (s.includes(字)) 見つかった.push(字);
+  }
+  // 制御文字はまとめて1つの案内にする
+  if (/[\u0000-\u001F\u007F]/.test(s)) 見つかった.push('改行などの制御文字');
+  return 見つかった.length ? 見つかった.join(' ') : null;
+}
+
+/**
+ * 参加一覧から外す目安。最終更新からこれを過ぎたライブは、もう使われて
+ * いないものとして扱う。ライブは主催者・参加者のどちらが抜けても残る作りで、
+ * 終わらせるのは「終了・保存」か一覧から消したときだけなので、放っておくと
+ * 使われなくなったライブが溜まり続ける。
+ */
+const LIVE_STALE_MS = 14 * 24 * 60 * 60 * 1000;
+
+/**
+ * ライブの最終更新として使う日時を取り出す。
+ *
+ * updated_at はサーバーが打った時刻（serverTimestamp）。端末の時計が狂って
+ * いても正しい。timestamp のほうは書いた端末の時計で、「自分の送信の返りを
+ * 無視する」判定に使うため端末の値のままにしてある。
+ * updated_at を持たないのは、この仕組みより前に作られたライブだけ。
+ */
+function ライブの最終更新(state) {
+  if (!state) return null;
+  if (typeof state.updated_at === 'number') return state.updated_at;
+  if (typeof state.timestamp === 'number') return state.timestamp;
+  return null;
+}
+
+/**
+ * ライブ節点の一覧を、参加一覧に出す形へ整える。
+ *
+ *   { 出す: ['朝練', ...], 古い: ['先月の練習', ...] }
+ *
+ * 「出す」は最終更新が新しい順。「古い」は一覧から外して消してよいもの。
+ * 最終更新が分からないものは、古いとは見なさない。判断できないものを
+ * 消すほうが危ないので、一覧には出したうえで残す。
+ *
+ * 「いま」にはサーバー時刻を渡すこと（端末の時計そのままだと、時計が
+ * 大きく狂った端末が、使用中のライブを古いと見なして消しかねない）。
+ */
+function 参加できるライブ(節点, いま = Date.now()) {
+  const 生きている = [];
+  const 古い = [];
+  Object.keys(節点 || {}).forEach((名) => {
+    const v = 節点[名];
+    // state が無いものは、そもそも一覧に出さない（従来どおり）
+    if (!v || !v.state) return;
+    const 日時 = ライブの最終更新(v.state);
+    if (日時 !== null && いま - 日時 > LIVE_STALE_MS) {
+      古い.push(名);
+      return;
+    }
+    生きている.push({ 名, 日時: 日時 === null ? 0 : 日時 });
+  });
+  生きている.sort((a, b) => b.日時 - a.日時);
+  return { 出す: 生きている.map((x) => x.名), 古い };
+}
+
 module.exports = {
   toMillis,
   trashedAtMillis,
   mergeById,
   mergeLiveArchers,
+  参加できるライブ,
+  ライブの最終更新,
+  ライブ名に使えない字,
+  LIVE_STALE_MS,
   normalizeArrowLocations,
   restampChangedArchers,
   dropUndefinedDeep,
