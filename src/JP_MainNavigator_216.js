@@ -43,6 +43,7 @@ var l = e(require('./default_218')),
   AttendanceScreen = require('./AttendanceScreen').AttendanceScreen,
   v = require('./JP_SettingsScreen_1023'),
   B = require('./JP_AIChatBot_1034'),
+  案内 = require('./JP_TutorialGuide'),
   T = require('./module_427');
 const A = {
     prefixes: [
@@ -162,6 +163,8 @@ const I = n.default.memo(({ state: e, descriptors: t, navigation: nav }) => {
             return (0, T.jsx)(
               l.default,
               {
+                // 使い方の案内が指す先。繰り返しの中なのでフックは使えない
+                ref: (node) => 案内.setTutorialTargetNode(`タブ.${h.name}`, node),
                 onPress: () => {
                   const e = nav.emit({ type: 'tabPress', target: h.key, canPreventDefault: !0 });
                   x || e.defaultPrevented || nav.navigate(h.name);
@@ -235,6 +238,8 @@ const k = () => {
         ],
       }),
       (0, T.jsx)(B.AIChatBot, {}),
+      // 使い方の案内。画面を移動しながら指すので、移動用の ref を渡す
+      (0, T.jsx)(案内.TutorialOverlay, { navRef: l }),
     ],
   });
 };
