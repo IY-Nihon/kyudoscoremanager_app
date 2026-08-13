@@ -124,6 +124,16 @@ const WhatsNewModal = () => {
     }
     (async () => {
       try {
+        // 初めての人には出さない。使ったことのない機能の不具合修正一覧を
+        // 見せても意味がなく、そのあとに使い方の案内が続くと壁が二重になる。
+        // 使い方の案内を終えた（＝一度は使った）人から、変更点をお知らせする
+        const 案内済み = await AsyncStorage.getItem('tutorialDoneVersion');
+        if (!案内済み) {
+          await AsyncStorage.setItem(STORAGE_KEY, NOTICE_VERSION);
+          shownThisSession = true;
+          setCheckedStorage(true);
+          return;
+        }
         const dismissedVersion = await AsyncStorage.getItem(STORAGE_KEY);
         if (dismissedVersion !== NOTICE_VERSION) {
           shownThisSession = true;
