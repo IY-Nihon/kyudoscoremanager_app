@@ -34,7 +34,6 @@ const _View = RN.View;
 const _Text = require('./default_217').default; // テーマ変換を通すためブリッジ経由
 const _StyleSheet = require('./default_45').default; // テーマ変換を通すためブリッジ経由
 const _TouchableOpacity = RN.TouchableOpacity;
-const _ScrollView = RN.ScrollView;
 
 const { create } = require('zustand');
 const AsyncStorage = require('@react-native-async-storage/async-storage').default;
@@ -195,7 +194,7 @@ function 達成した(種類, 基準, 現在) {
 // ─────────────────────────────────────────
 // 本体
 // ─────────────────────────────────────────
-const 既定の吹き出しの幅 = 300;
+const 既定の吹き出しの幅 = 340;
 const 余白 = 12;
 
 const TutorialOverlay = ({ navRef }) => {
@@ -344,31 +343,31 @@ const TutorialOverlay = ({ navRef }) => {
   const { width: 画面幅, height: 画面高 } = 画面の大きさ;
 
   // 吹き出しの位置。
-  // 高さを当てにしない。上に出すときは「下端」を指す先の上に固定するので、
-  // 中身が何行になっても指す先を覆わない。
-  // 上下どちらにも読める広さが無いときだけ、真ん中に出す。指す先の一部に
-  // 重なるが、画面の外へはみ出して読めなくなるよりはよい
-  // 幅の狭い端末では画面からはみ出す。画面に合わせて縮める
+  //
+  // 押してもらう手順では、指す先を絶対に覆わない。覆うと押せなくなり、
+  // 「とばす」以外に進みようがなくなる。収まらなければ広いほうへ寄せ、
+  // 中で送れるようにする。
+  // 説明だけの手順では読みやすさを優先し、上下に入らなければ真ん中へ大きく
+  // 出す。指す先に重なるが、押す必要は無いので困らない。
   const 吹き出しの幅 = Math.min(既定の吹き出しの幅, 画面幅 - 余白 * 2);
-  // 上限は画面の高さだけ。指す先の脇の狭さに合わせて絞ると、説明が小さな枠に
-  // 押し込まれて送らないと読めなくなる。狭いときは指す先に重ねてでも大きく出す
-  const 入る高さ = 画面高 - 余白 * 2;
-  // 実際に必要な高さ。測れるまでは画面の3割を仮に置く
+  // 高さの上限は掛けない。掛けると、その上限を測り直して判断に使ってしまい、
+  // 「上限あり／なし」を行き来して落ち着かなくなる。中身が収まる置き場所を
+  // 選ぶだけにして、説明は常に丸ごと出す
   const 読める高さ = 自然高さ || Math.round(画面高 * 0.3);
-  let 置き場 = {
-    top: Math.max(余白, (画面高 - Math.min(読める高さ, 入る高さ)) / 2),
-    maxHeight: 入る高さ,
-  };
+  let 置き場 = { top: Math.max(余白, (画面高 - 読める高さ) / 2) };
   let 吹き出しの左 = (画面幅 - 吹き出しの幅) / 2;
   if (枠) {
     const 下の空き = 画面高 - (枠.y + 枠.高さ) - 余白 * 2;
     const 上の空き = 枠.y - 余白 * 2;
-    // 収まる側に置く。上に出すときは下端を指す先の上に固定するので、
-    // 中身が何行でも指す先を覆わない
-    if (下の空き >= 読める高さ && 下の空き >= 上の空き)
-      置き場 = { top: 枠.y + 枠.高さ + 余白, maxHeight: 入る高さ };
-    else if (上の空き >= 読める高さ) 置き場 = { bottom: 画面高 - 枠.y + 余白, maxHeight: 入る高さ };
-    else if (下の空き >= 読める高さ) 置き場 = { top: 枠.y + 枠.高さ + 余白, maxHeight: 入る高さ };
+    const 下へ = { top: 枠.y + 枠.高さ + 余白 };
+    const 上へ = { bottom: 画面高 - 枠.y + 余白 };
+    if (下の空き >= 読める高さ && 下の空き >= 上の空き) 置き場 = 下へ;
+    else if (上の空き >= 読める高さ) 置き場 = 上へ;
+    else if (下の空き >= 読める高さ) 置き場 = 下へ;
+    else if (触ってもらう)
+      // どちらにも収まらないが、押してもらうので覆えない。広いほうへ寄せる。
+      // 画面の端からはみ出さないよう、端に貼り付ける
+      置き場 = 下の空き >= 上の空き ? { bottom: 余白 } : { top: 余白 };
     吹き出しの左 = Math.min(
       Math.max(余白, 枠.x + 枠.幅 / 2 - 吹き出しの幅 / 2),
       Math.max(余白, 画面幅 - 吹き出しの幅 - 余白)
@@ -439,15 +438,13 @@ const TutorialOverlay = ({ navRef }) => {
         </_View>
 
         <_Text style={styles.題}>{いまの手順.題}</_Text>
-        {/* 説明はここに収める。上限を超えたぶんは中で送る。
-            そのまま並べると枠の外へはみ出して、下の画面に重なって見える */}
-        <_ScrollView style={styles.本文} contentContainerStyle={{ paddingBottom: 2 }}>
+        <_View>
           {いまの手順.文.map((一文, i) => (
             <_Text key={i} style={styles.文}>
               {一文}
             </_Text>
           ))}
-        </_ScrollView>
+        </_View>
 
         {触ってもらう && (
           <_View style={styles.やってみる}>
@@ -458,8 +455,8 @@ const TutorialOverlay = ({ navRef }) => {
 
         {/* 誤ってスキップしても行き止まりにならないよう、常に出しておく。
             アプリ全体で使える知らせの仕組みが無いため、ここに添える */}
-        <_Text style={styles.補足}>
-          ここで触ったぶんは、終わると元に戻ります。設定の「使い方を見る」で見返せます。
+        <_Text style={styles.補足} numberOfLines={1}>
+          触ったぶんは終わると元に戻ります
         </_Text>
 
         <_View style={styles.操作行}>
@@ -513,7 +510,6 @@ const styles = _StyleSheet.create({
   閉じるボタン: { paddingVertical: 2, paddingHorizontal: 4 },
   閉じる文字: { fontSize: 13, color: '#8E8E93' },
   題: { fontSize: 17, fontWeight: 'bold', color: '#1C1C1E', marginBottom: 8 },
-  本文: { flexShrink: 1 },
   文: { fontSize: 14, color: '#3A3A3C', lineHeight: 21, marginBottom: 3 },
   やってみる: {
     flexDirection: 'row',
