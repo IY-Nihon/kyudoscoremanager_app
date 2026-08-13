@@ -37,6 +37,7 @@ var h = e(require('./default_382')),
   m = require('./IS_WEB_199');
 require('./module_420');
 var x = require('./JP_useScoreStore_174'),
+  案内 = require('./JP_TutorialGuide'),
   y = require('./JP_ArcherColumnView_594'),
   b = require('./JP_LabelColumn_688'),
   F = require('./module_595'),
@@ -132,6 +133,12 @@ const k = () => {
       [警告を閉じた, 警告を閉じる] = (0, t.useState)(!1),
       Se = o.default.useRef(0),
       共有履歴を出した = o.default.useRef(0),
+      // 使い方の案内が指す先
+      案内の人ボタン = 案内.useTutorialTarget('記録.人'),
+      案内の記録表 = 案内.useTutorialTarget('記録.表'),
+      案内の射数 = 案内.useTutorialTarget('記録.射数'),
+      案内のライブボタン = 案内.useTutorialTarget('記録.ライブ'),
+      案内の保存ボタン = 案内.useTutorialTarget('記録.保存'),
       // ライブ中は全員で1本の共有履歴を使うので、押せるかどうかも
       // 共有の目印で決める。手元の履歴だけで見ると、ライブ中に
       // やり直しが永久に押せないままになる
@@ -298,6 +305,7 @@ const k = () => {
               style: W.navRight,
               children: [
                 (0, A.jsxs)(h.default, {
+                  ref: 案内のライブボタン,
                   onPress: () => {
                     K
                       ? (x.useScoreStore.getState().stopLiveSync(),
@@ -345,6 +353,7 @@ const k = () => {
                   ],
                 }),
                 (0, A.jsx)(h.default, {
+                  ref: 案内の射数,
                   onPress: () => Ke(!0),
                   style: W.shotsToggle,
                   children: (0, A.jsxs)(a.default, { style: W.shotsText, children: [T, '射'] }),
@@ -766,6 +775,7 @@ const k = () => {
           style: [W.gridArea, { justifyContent: 'center', alignItems: 'center' }],
           children: [
             (0, A.jsxs)(l.default, {
+              ref: 案内の記録表,
               style: { maxHeight: '100%', flexDirection: 'column', maxWidth: '100%' },
               children: [
                 (0, A.jsx)(n.default, {
@@ -856,6 +866,10 @@ const k = () => {
                             return (0, A.jsx)(
                               l.default,
                               {
+                                // 使い方の案内は先頭の列だけ指す。繰り返しの中なのでフックは使えない
+                                ref: (node) => {
+                                  if (0 === t) 案内.setTutorialTargetNode('記録.射手選択', node);
+                                },
                                 style: {
                                   width:
                                     (e.isSeparator ? F.UIConfig.separatorWidth : F.UIConfig.cellWidth) * se,
@@ -1003,6 +1017,7 @@ const k = () => {
                 style: W.addBtns,
                 children: [
                   (0, A.jsxs)(f.default, {
+                    ref: 案内の人ボタン,
                     style: ({ hovered: e }) => [
                       W.addBtn,
                       { backgroundColor: 'rgba(0,122,255,0.1)' },
@@ -1064,6 +1079,7 @@ const k = () => {
                 ],
               }),
               (0, A.jsx)(f.default, {
+                ref: 案内の保存ボタン,
                 style: ({ hovered: e }) => [
                   W.saveBtn,
                   e && m.IS_WEB && { opacity: 0.9, transform: [{ scale: 1.02 }] },
