@@ -15,6 +15,7 @@ const { ストアを用意する } = require('./helpers/storeHarness');
 const { 手順を作る } = require('../src/tutorialSteps');
 
 // 案内の「操作」を、実際のストアの動きに置き換える
+// 「部員を増やす」は別画面での登録で、盤面には効かないのでここには要らない
 const 押した時の動き = {
   射手を増やす: (s) => s.addArcher(),
   間隔を足す: (s) => s.addSeparator(),
@@ -82,7 +83,63 @@ test('案内：基本の手順だけで、保存まで辿り着ける', () => {
   assert.ok(種類.includes('○×を入れる'), '○×を入れる手順がない');
 });
 
-// このチュートリアルが本当に要るのは、作りたての＝部員0人の団体。
+// 「とばす」があるので、前の手順を踏んでいる保証はない。どこを飛ばしても、
+// 次の手順に押すものが在ることを確かめる（在らないと先へ進めなくなる）
+const 下ごしらえする = (store, 種類) => {
+  if (!種類) return;
+  const s = store.getState();
+  const 一覧 = s.archers || [];
+  const 射手か = (a) => !!a && !a.isSeparator && !a.isTotalCalculator;
+  if (種類 === '射手が1人') {
+    if (!一覧.some(射手か)) s.addArcher();
+    return;
+  }
+  if (種類 === '鍵が出る形') {
+    const 出ている = 一覧.some((a, i) => (a.isSeparator || a.isTotalCalculator) && 射手か(一覧[i - 1]));
+    if (出ている) return;
+    if (!射手か(一覧[一覧.length - 1])) s.addArcher();
+    s.addSeparator();
+  }
+};
+
+// その手順で「押すもの」が在るか
+const 押せるものがある = (store, 手順) => {
+  const s = store.getState();
+  const 一覧 = s.archers || [];
+  const 射手か = (a) => !!a && !a.isSeparator && !a.isTotalCalculator;
+  const 種類 = 手順.操作 && 手順.操作.種類;
+  if (種類 === '名前を決める' || 種類 === '○×を入れる') return 一覧.some(射手か);
+  if (種類 === '鍵をかける')
+    return 一覧.some((a, i) => (a.isSeparator || a.isTotalCalculator) && 射手か(一覧[i - 1]));
+  return true;
+};
+
+for (const 役割 of ['group', 'personal']) {
+  test(`案内(${役割})：どこを飛ばしても、次の手順に押すものが在る`, () => {
+    const { 基本, 続き } = 手順を作る(役割, { 部員数: 3, 記録数: 0 });
+    const 全手順 = [...基本, ...続き];
+
+    // 「飛ばし始める場所」を1つずつ変えて、そこから先を全部飛ばす
+    for (let 飛ばし始め = 0; 飛ばし始め <= 全手順.length; 飛ばし始め++) {
+      const { store } = ストアを用意する();
+      store.setState({ isHydrated: true, archers: [], shotsPerRound: 4, members: [] });
+      for (let i = 0; i < 全手順.length; i++) {
+        const 手順 = 全手順[i];
+        下ごしらえする(store, 手順.下ごしらえ);
+        assert.ok(
+          押せるものがある(store, 手順),
+          `${飛ばし始め}番目から飛ばすと、「${手順.題}」で押すものが無い`
+        );
+        // 飛ばし始め以降は操作しない（＝「とばす」を押した扱い）
+        if (i >= 飛ばし始め) continue;
+        const 動き = 手順.操作 && 押した時の動き[手順.操作.種類];
+        if (動き) 動き(store.getState());
+      }
+    }
+  });
+}
+
+// このチュートリアルが本当に要るのは、部員0人の作りたての団体。
 // そこで「選択」に誰も出てこないまま止まると、案内の意味がなくなる
 test('案内：部員0人の団体は、案内の中で実際に部員を登録できる', () => {
   const { 基本 } = 手順を作る('group', { 部員数: 0, 記録数: 0 });
