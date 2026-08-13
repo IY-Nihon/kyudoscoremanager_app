@@ -61,6 +61,7 @@ var _xlsx = require('./JP_excelExport'),
   h = e(require('./default_218')),
   x = require('./IS_WEB_199'),
   y = require('./JP_useScoreStore_174'),
+  案内 = require('./JP_TutorialGuide'),
   p = require('./AntDesign_600'),
   j = require('./module_420'),
   F = require('./JP_CustomCalendarModal_695'),
@@ -660,6 +661,8 @@ const w = () => {
                       }),
                     ],
                   }),
+                  // 初めての人向けの案内。初回は自動で出るが、ここからいつでも見返せる
+                  Je('school-outline', '使い方を見る', () => 案内.startTutorial()),
                   Je('help-circle-outline', '運用ガイド・ヘルプ', () => le(!0)),
                   Je(
                     'log-out-outline',
