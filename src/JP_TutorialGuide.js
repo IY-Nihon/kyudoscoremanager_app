@@ -273,40 +273,88 @@ const 見本の記録 = [
   { 日付: '2026/08/08', 題: '通常練習', 矢数: 4, 人数: 3 },
 ];
 
+// 実物と見比べながら作ってある。撮影用の団体 100006 でログインすると
+// 本物が見られる（scripts/seed-tutorial-shots.mjs）
+const 札 = ({ 文字, 濃い, 灰 }) => (
+  <_View style={[styles.札, 濃い && styles.札の選択, 灰 && styles.札の灰]}>
+    <_Text style={[styles.札文字, 濃い && styles.札文字の選択]}>{文字}</_Text>
+  </_View>
+);
+
+const 含む切替 = () => (
+  <_View style={styles.切替}>
+    <_View style={[styles.切替の片, styles.切替の選択]}>
+      <_Text style={styles.切替の選択文字}>すべて含む</_Text>
+    </_View>
+    <_View style={styles.切替の片}>
+      <_Text style={styles.切替文字}>いずれか含む</_Text>
+    </_View>
+  </_View>
+);
+
+const タグの列 = () => (
+  <>
+    <_View style={styles.見出し行}>
+      <_Text style={styles.小見出し}>タグフィルター</_Text>
+      <含む切替 />
+    </_View>
+    <_View style={styles.札の並び}>
+      <札 文字="すべて解除" 濃い />
+      <札 文字="正規練習" 灰 />
+    </_View>
+  </>
+);
+
 const 履歴の見本 = () => (
   <_View style={styles.全面}>
-    <_Text style={styles.全面の題}>過去の記録表</_Text>
+    <_View style={styles.見出し行}>
+      <_Text style={styles.全面の題}>過去の記録表</_Text>
+      <_View style={styles.頭の右}>
+        <_Text style={styles.編集文字}>編集</_Text>
+        <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+      </_View>
+    </_View>
+
     <_View style={styles.偽の検索}>
       <Ionicons name="search" size={15} color="#8E8E93" />
       <_Text style={styles.偽の検索文字}>日付や内容を検索（全期間対象）</_Text>
     </_View>
+
+    <タグの列 />
+
     <_View style={styles.年度札}>
       <_Text style={styles.年度札文字}>2026年度 (2026/04 - 2027/03)</_Text>
+      <Ionicons name="swap-vertical" size={12} color="#3C3C43" />
     </_View>
+
     <_View style={styles.月の並び}>
       {['04月', '05月', '06月', '07月', '08月'].map((m, i) => (
-        <_View key={m} style={[styles.月札, i === 4 && styles.月札の今]}>
-          <_Text style={[styles.月札文字, i === 4 && styles.月札文字の今]}>{m}</_Text>
+        <札 key={m} 文字={m} 濃い={i === 4} 灰={i !== 4} />
+      ))}
+    </_View>
+
+    <_View style={styles.一覧}>
+      {見本の記録.map((r, i) => (
+        <_View key={i} style={[styles.記録行, i > 0 && styles.記録の区切り]}>
+          <_View style={{ flex: 1 }}>
+            <_View style={styles.題の行}>
+              <_Text style={styles.見本の題行} numberOfLines={1}>
+                {r.日付} <_Text style={styles.見本の題}>[{r.題}]</_Text>
+              </_Text>
+              <Ionicons name="cloud-done-outline" size={13} color="#007AFF" />
+            </_View>
+            <_Text style={styles.見本の小字}>矢数: {r.矢数}本</_Text>
+            <_View style={styles.見本のタグ}>
+              <_Text style={styles.見本のタグ文字}>正規練習</_Text>
+            </_View>
+          </_View>
+          <_View style={styles.見本の人数}>
+            <_Text style={styles.見本の人数文字}>{r.人数}人</_Text>
+          </_View>
+          <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
         </_View>
       ))}
     </_View>
-    {見本の記録.map((r, i) => (
-      <_View key={i} style={styles.記録札}>
-        <_View style={{ flex: 1 }}>
-          <_Text style={styles.見本の題行} numberOfLines={1}>
-            {r.日付} <_Text style={styles.見本の題}>[{r.題}]</_Text>
-          </_Text>
-          <_Text style={styles.見本の小字}>矢数: {r.矢数}本</_Text>
-          <_View style={styles.見本のタグ}>
-            <_Text style={styles.見本のタグ文字}>正規練習</_Text>
-          </_View>
-        </_View>
-        <_View style={styles.見本の人数}>
-          <_Text style={styles.見本の人数文字}>{r.人数}人</_Text>
-        </_View>
-        <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
-      </_View>
-    ))}
   </_View>
 );
 
@@ -318,40 +366,89 @@ const 見本の順位 = [
   { 名: '田中 一郎', 属性: '53期 / 1年 / 男子', 率: '57.1%', 内訳: '16/28' },
 ];
 
+const 選ぶ行 = ({ 見出し, 中身, 選択 }) => (
+  <_View style={styles.選ぶ行}>
+    <_Text style={styles.選ぶ見出し}>{見出し}</_Text>
+    <_View style={styles.選ぶ枠}>
+      {中身.map((c) => (
+        <_View key={c} style={[styles.選ぶ片, c === 選択 && styles.選ぶ片の選択]}>
+          <_Text style={[styles.選ぶ文字, c === 選択 && styles.選ぶ文字の選択]}>{c}</_Text>
+        </_View>
+      ))}
+    </_View>
+  </_View>
+);
+
 const 分析の見本 = () => (
   <_View style={styles.全面}>
     <_Text style={styles.全面の題}>的中分析</_Text>
+
     <_View style={styles.絞り込み札}>
-      <_Text style={styles.絞り込み見出し}>タグフィルター</_Text>
-      <_View style={styles.月の並び}>
-        {['月ごと', '年度', '期間指定', 'すべて'].map((m, i) => (
-          <_View key={m} style={[styles.月札, i === 3 && styles.月札の今]}>
-            <_Text style={[styles.月札文字, i === 3 && styles.月札文字の今]}>{m}</_Text>
+      <タグの列 />
+      <_View style={styles.期間の枠}>
+        {['月ごと', '年度', '期間指定', '直近30日', 'すべて'].map((m) => (
+          <_View key={m} style={[styles.期間の片, m === 'すべて' && styles.期間の選択]}>
+            <_Text style={[styles.期間文字, m === 'すべて' && styles.期間文字の選択]}>{m}</_Text>
           </_View>
         ))}
       </_View>
-    </_View>
-    <_View style={styles.偽の検索}>
-      <Ionicons name="search" size={15} color="#8E8E93" />
-      <_Text style={styles.偽の検索文字}>メンバー名を検索...</_Text>
-    </_View>
-    {見本の順位.map((r, i) => (
-      <_View key={i} style={styles.記録札}>
-        <_View style={styles.見本の順}>
-          <_Text style={styles.見本の順文字}>{i + 1}</_Text>
+
+      <_View style={styles.基準札}>
+        <_Text style={styles.小見出し}>ランキング対象の基準 (最多比)</_Text>
+        <_View style={styles.基準の並び}>
+          {['1/2 (50%)', '1/3 (33%)', '1/4 (25%)'].map((c) => (
+            <_View key={c} style={styles.基準の片}>
+              <_Text style={styles.基準文字}>{c}</_Text>
+            </_View>
+          ))}
         </_View>
-        <_View style={{ flex: 1, marginLeft: 8 }}>
-          <_Text style={styles.見本の名} numberOfLines={1}>
-            {r.名}
-          </_Text>
-          <_Text style={styles.見本の小字}>{r.属性}</_Text>
+        <_View style={styles.基準の入力行}>
+          <_View style={styles.基準の入力}>
+            <_Text style={styles.基準の入力文字}>例: 20</_Text>
+          </_View>
+          <_Text style={styles.基準文字}>射以上</_Text>
+          <_View style={styles.絞り込みボタン}>
+            <_Text style={styles.絞り込み文字}>絞り込む</_Text>
+          </_View>
         </_View>
-        <_View style={{ alignItems: 'flex-end' }}>
-          <_Text style={styles.見本の率}>{r.率}</_Text>
-          <_Text style={styles.見本の小字}>{r.内訳}</_Text>
+        <_Text style={styles.基準の注}>全メンバーがランキング対象です</_Text>
+      </_View>
+
+      <選ぶ行 見出し="性別:" 中身={['全員', '男子', '女子']} 選択="全員" />
+      <選ぶ行 見出し="学年:" 中身={['全学年', '1年', '2年', '3年', '4年']} 選択="全学年" />
+
+      <_View style={styles.見出し行}>
+        <_Text style={styles.小見出し}>卒業生を表示</_Text>
+        <_View style={styles.切り札}>
+          <_Text style={styles.切り札文字}>OFF</_Text>
         </_View>
       </_View>
-    ))}
+    </_View>
+
+    <_View style={styles.偽の検索}>
+      <Ionicons name="search" size={17} color="#007AFF" />
+      <_Text style={styles.偽の検索文字}>メンバー名を検索...</_Text>
+    </_View>
+
+    <_View style={styles.一覧}>
+      {見本の順位.map((r, i) => (
+        <_View key={i} style={[styles.記録行, i > 0 && styles.記録の区切り]}>
+          <_View style={styles.見本の順}>
+            <_Text style={styles.見本の順文字}>{i + 1}</_Text>
+          </_View>
+          <_View style={{ flex: 1, marginLeft: 8 }}>
+            <_Text style={styles.見本の名} numberOfLines={1}>
+              {r.名}
+            </_Text>
+            <_Text style={styles.見本の小字}>{r.属性}</_Text>
+          </_View>
+          <_View style={{ alignItems: 'flex-end' }}>
+            <_Text style={styles.見本の率}>{r.率}</_Text>
+            <_Text style={styles.見本の小字}>{r.内訳}</_Text>
+          </_View>
+        </_View>
+      ))}
+    </_View>
   </_View>
 );
 
@@ -736,7 +833,56 @@ const styles = _StyleSheet.create({
   },
   見本の帯文字: { fontSize: 12, color: '#FFF', fontWeight: 'bold' },
   全面: { paddingHorizontal: 16, paddingTop: 14 },
-  全面の題: { fontSize: 22, fontWeight: 'bold', color: '#1C1C1E', marginBottom: 12 },
+  全面の題: { fontSize: 22, fontWeight: 'bold', color: '#1C1C1E' },
+  見出し行: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
+  頭の右: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  編集文字: { fontSize: 14, color: '#007AFF', fontWeight: 'bold' },
+  小見出し: { fontSize: 12, color: '#8E8E93' },
+  切替: { flexDirection: 'row', backgroundColor: '#EDEDF5', borderRadius: 7, padding: 2 },
+  切替の片: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 5 },
+  切替の選択: { backgroundColor: '#FFF' },
+  切替文字: { fontSize: 11, color: '#8E8E93' },
+  切替の選択文字: { fontSize: 11, color: '#1C1C1E', fontWeight: 'bold' },
+  札の並び: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  札: { borderRadius: 14, paddingHorizontal: 12, paddingVertical: 5 },
+  札の選択: { backgroundColor: '#007AFF' },
+  札の灰: { backgroundColor: '#EDEDF5' },
+  札文字: { fontSize: 12, color: '#3C3C43' },
+  札文字の選択: { color: '#FFF', fontWeight: 'bold' },
+  切り札: { backgroundColor: '#E5E5EA', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 3 },
+  切り札文字: { fontSize: 11, color: '#8E8E93', fontWeight: 'bold' },
+  期間の枠: { flexDirection: 'row', backgroundColor: '#F2F2F7', borderRadius: 8, padding: 3, marginTop: 10 },
+  期間の片: { flex: 1, alignItems: 'center', paddingVertical: 5, borderRadius: 6 },
+  期間の選択: { backgroundColor: '#FFF' },
+  期間文字: { fontSize: 11, color: '#8E8E93' },
+  期間文字の選択: { fontSize: 11, color: '#007AFF', fontWeight: 'bold' },
+  基準札: { backgroundColor: '#F7F7FA', borderRadius: 8, padding: 10, marginTop: 10 },
+  基準の並び: { flexDirection: 'row', gap: 6, marginTop: 8 },
+  基準の片: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: '#EDEDF5',
+    borderRadius: 6,
+    paddingVertical: 6,
+  },
+  基準文字: { fontSize: 11, color: '#3C3C43' },
+  基準の入力行: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
+  基準の入力: { flex: 1, backgroundColor: '#FFF', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 7 },
+  基準の入力文字: { fontSize: 11, color: '#C7C7CC' },
+  絞り込みボタン: { backgroundColor: '#E5E5EA', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 7 },
+  絞り込み文字: { fontSize: 11, color: '#8E8E93', fontWeight: 'bold' },
+  基準の注: { fontSize: 10, color: '#8E8E93', textAlign: 'center', marginTop: 8 },
+  選ぶ行: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 },
+  選ぶ見出し: { fontSize: 12, color: '#3C3C43', width: 34 },
+  選ぶ枠: { flex: 1, flexDirection: 'row', backgroundColor: '#F2F2F7', borderRadius: 8, padding: 3 },
+  選ぶ片: { flex: 1, alignItems: 'center', paddingVertical: 5, borderRadius: 6 },
+  選ぶ片の選択: { backgroundColor: '#FFF' },
+  選ぶ文字: { fontSize: 11, color: '#8E8E93' },
+  選ぶ文字の選択: { fontSize: 11, color: '#007AFF', fontWeight: 'bold' },
+  一覧: { backgroundColor: '#FFF', borderRadius: 10, marginTop: 12, overflow: 'hidden' },
+  記録行: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10 },
+  記録の区切り: { borderTopWidth: 1, borderTopColor: '#EFEFF4' },
+  題の行: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   偽の検索: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -748,8 +894,11 @@ const styles = _StyleSheet.create({
   },
   偽の検索文字: { fontSize: 13, color: '#8E8E93' },
   年度札: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     alignSelf: 'center',
-    marginTop: 10,
+    marginTop: 12,
     backgroundColor: '#EDEDF5',
     borderRadius: 14,
     paddingHorizontal: 14,
@@ -757,22 +906,7 @@ const styles = _StyleSheet.create({
   },
   年度札文字: { fontSize: 13, color: '#3C3C43', fontWeight: 'bold' },
   月の並び: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 10, flexWrap: 'wrap' },
-  月札: { backgroundColor: '#EDEDF5', borderRadius: 14, paddingHorizontal: 12, paddingVertical: 5 },
-  月札の今: { backgroundColor: '#007AFF' },
-  月札文字: { fontSize: 12, color: '#3C3C43' },
-  月札文字の今: { color: '#FFF', fontWeight: 'bold' },
-  絞り込み札: { backgroundColor: '#FFF', borderRadius: 12, padding: 12, marginBottom: 10 },
-  絞り込み見出し: { fontSize: 12, color: '#8E8E93' },
-  記録札: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#FFF',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginTop: 10,
-  },
+  絞り込み札: { backgroundColor: '#FFF', borderRadius: 12, padding: 12, marginTop: 10 },
   見本の題行: { fontSize: 12, color: '#1C1C1E', fontWeight: 'bold' },
   見本の題: { color: '#007AFF', fontWeight: 'bold' },
   見本の小字: { fontSize: 10, color: '#8E8E93', marginTop: 2 },
