@@ -260,6 +260,72 @@ function 達成した(種類, 基準, 現在) {
 const 既定の吹き出しの幅 = 340;
 const 余白 = 12;
 
+// ─────────────────────────────────────────
+// 見本。読むだけで、押しても何も起きない。
+// ストアにも通信にも触れないので、本物のデータと混ざる経路が無い
+// ─────────────────────────────────────────
+// 本物の履歴画面の1行に合わせてある（日付＋題／矢数／タグ／人数）。
+// 見た目を変えたときは、撮影用の団体 100006 でログインして
+// 実画面と見比べること（scripts/seed-tutorial-shots.mjs）
+const 見本の記録 = [
+  { 日付: '2026/08/12', 題: '通常練習', 矢数: 4, 人数: 3 },
+  { 日付: '2026/08/10', 題: '記録会', 矢数: 4, 人数: 3 },
+  { 日付: '2026/08/08', 題: '通常練習', 矢数: 4, 人数: 3 },
+];
+
+const 履歴の見本 = () => (
+  <_View style={styles.見本箱}>
+    <_Text style={styles.見本の見出し}>見本：たまるとこう並びます</_Text>
+    {見本の記録.map((r, i) => (
+      <_View key={i} style={[styles.見本の行, i > 0 && styles.見本の区切り]}>
+        <_View style={{ flex: 1 }}>
+          <_Text style={styles.見本の題行} numberOfLines={1}>
+            {r.日付} <_Text style={styles.見本の題}>[{r.題}]</_Text>
+          </_Text>
+          <_Text style={styles.見本の小字}>矢数: {r.矢数}本</_Text>
+          <_View style={styles.見本のタグ}>
+            <_Text style={styles.見本のタグ文字}>正規練習</_Text>
+          </_View>
+        </_View>
+        <_View style={styles.見本の人数}>
+          <_Text style={styles.見本の人数文字}>{r.人数}人</_Text>
+        </_View>
+      </_View>
+    ))}
+  </_View>
+);
+
+// 本物の分析画面は、まず的中率の順位が並ぶ（部員どうしの比較）。
+// 折れ線ではないので、見本もその形にしてある
+const 見本の順位 = [
+  { 名: '山田 太郎', 属性: '51期 / 3年 / 男子', 率: '75.0%', 内訳: '21/28' },
+  { 名: '鈴木 花子', 属性: '52期 / 2年 / 女子', 率: '64.3%', 内訳: '18/28' },
+  { 名: '田中 一郎', 属性: '53期 / 1年 / 男子', 率: '57.1%', 内訳: '16/28' },
+];
+
+const 分析の見本 = () => (
+  <_View style={styles.見本箱}>
+    <_Text style={styles.見本の見出し}>見本：的中率の高い順に並びます</_Text>
+    {見本の順位.map((r, i) => (
+      <_View key={i} style={[styles.見本の行, i > 0 && styles.見本の区切り]}>
+        <_View style={styles.見本の順}>
+          <_Text style={styles.見本の順文字}>{i + 1}</_Text>
+        </_View>
+        <_View style={{ flex: 1 }}>
+          <_Text style={styles.見本の名} numberOfLines={1}>
+            {r.名}
+          </_Text>
+          <_Text style={styles.見本の小字}>{r.属性}</_Text>
+        </_View>
+        <_View style={{ alignItems: 'flex-end' }}>
+          <_Text style={styles.見本の率}>{r.率}</_Text>
+          <_Text style={styles.見本の小字}>{r.内訳}</_Text>
+        </_View>
+      </_View>
+    ))}
+  </_View>
+);
+
 const TutorialOverlay = ({ navRef }) => {
   const 進行中 = use案内((s) => s.進行中);
   const 番号 = use案内((s) => s.番号);
@@ -538,6 +604,12 @@ const TutorialOverlay = ({ navRef }) => {
           ))}
         </_View>
 
+        {/* 初めての人には、履歴も分析もまだ空。空の画面を指しても何も伝わらず、
+            壊れているようにも見える。読むだけの見本をここに描いて、
+            「たまるとこうなる」を先に見せる。本物の中身には一切触らない */}
+        {いまの手順.見本 === '履歴' && <履歴の見本 />}
+        {いまの手順.見本 === '分析' && <分析の見本 />}
+
         {触ってもらう && (
           <_View style={styles.やってみる}>
             <Ionicons name="hand-left-outline" size={16} color="#FF9500" />
@@ -614,6 +686,45 @@ const styles = _StyleSheet.create({
   },
   やってみる文字: { fontSize: 14, color: '#B26A00', fontWeight: 'bold', marginLeft: 6, flexShrink: 1 },
   補足: { fontSize: 11, color: '#8E8E93', lineHeight: 16, marginTop: 10 },
+
+  // 見本。本物と間違えないよう、枠で囲って「見本」と明記する
+  見本箱: {
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    backgroundColor: '#FAFAFC',
+  },
+  見本の見出し: { fontSize: 11, color: '#8E8E93', marginBottom: 6 },
+  見本の行: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7, gap: 8 },
+  見本の区切り: { borderTopWidth: 1, borderTopColor: '#EEE' },
+  見本の題行: { fontSize: 12, color: '#1C1C1E', fontWeight: 'bold' },
+  見本の題: { color: '#007AFF', fontWeight: 'bold' },
+  見本の小字: { fontSize: 10, color: '#8E8E93', marginTop: 2 },
+  見本のタグ: {
+    alignSelf: 'flex-start',
+    marginTop: 3,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 3,
+    borderWidth: 1,
+    borderColor: '#C7C7CC',
+  },
+  見本のタグ文字: { fontSize: 9, color: '#8E8E93' },
+  見本の人数: { backgroundColor: '#E8F6EC', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
+  見本の人数文字: { fontSize: 11, color: '#34A853', fontWeight: 'bold' },
+  見本の順: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#E5E5EA',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  見本の順文字: { fontSize: 10, color: '#8E8E93', fontWeight: 'bold' },
+  見本の名: { fontSize: 12, color: '#1C1C1E', fontWeight: 'bold' },
+  見本の率: { fontSize: 13, color: '#D93025', fontWeight: 'bold' },
   操作行: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 },
   戻るボタン: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingHorizontal: 4 },
   戻る文字: { fontSize: 15, color: '#007AFF' },
