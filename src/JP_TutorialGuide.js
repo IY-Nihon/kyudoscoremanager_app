@@ -34,6 +34,7 @@ const _View = RN.View;
 const _Text = require('./default_217').default; // テーマ変換を通すためブリッジ経由
 const _StyleSheet = require('./default_45').default; // テーマ変換を通すためブリッジ経由
 const _TouchableOpacity = RN.TouchableOpacity;
+const _ScrollView = RN.ScrollView;
 
 const { create } = require('zustand');
 const AsyncStorage = require('@react-native-async-storage/async-storage').default;
@@ -113,15 +114,30 @@ function startTutorial() {
   use案内.getState().始める();
 }
 
-/** 「操作」の達成を測るための、いまの値 */
+/**
+ * 「操作」の達成を測るための、いまの値。
+ * 数が増える種類（射手を足すなど）と、値が変わる種類（射数を変えるなど）がある。
+ */
 function いまの値(状態, 種類) {
-  if (種類 === '射手を増やす') return (状態.archers || []).length;
+  const 射手 = 状態.archers || [];
+  if (種類 === '射手を増やす') return 射手.filter((a) => a && !a.isSeparator && !a.isTotalCalculator).length;
+  if (種類 === '間隔を足す') return 射手.filter((a) => a && a.isSeparator).length;
+  if (種類 === '計を足す') return 射手.filter((a) => a && a.isTotalCalculator).length;
   if (種類 === '○×を入れる')
-    return (状態.archers || []).reduce(
-      (合計, 射手) => 合計 + ((射手 && 射手.marks) || []).filter((m) => m === '○' || m === '×').length,
+    return 射手.reduce(
+      (合計, a) => 合計 + ((a && a.marks) || []).filter((m) => m === '○' || m === '×').length,
       0
     );
+  if (種類 === '射数を変える') return 状態.shotsPerRound;
+  if (種類 === '表示を変える') return 状態.viewScale;
   return null;
+}
+
+/** その種類は「増えたら達成」か、「変わったら達成」か */
+function 達成した(種類, 基準, 現在) {
+  if (基準 === null || 現在 === null || 現在 === undefined) return false;
+  if (種類 === '射数を変える' || 種類 === '表示を変える') return 現在 !== 基準;
+  return 現在 > 基準;
 }
 
 // ─────────────────────────────────────────
@@ -214,8 +230,7 @@ const TutorialOverlay = ({ navRef }) => {
       return;
     }
     const 解除 = useScoreStore.subscribe((状態) => {
-      const 現在 = いまの値(状態, 操作.種類);
-      if (基準.current !== null && 現在 !== null && 現在 > 基準.current) {
+      if (達成した(操作.種類, 基準.current, いまの値(状態, 操作.種類))) {
         基準.current = null;
         // 押した手応えが見えるよう、少し置いてから進む
         setTimeout(() => 進める(番号 + 1), 500);
@@ -241,16 +256,19 @@ const TutorialOverlay = ({ navRef }) => {
 
   // 吹き出しの位置。
   // 高さを当てにしない。上に出すときは「下端」を指す先の上に固定するので、
-  // 中身が何行になっても指す先を覆わない。空きの広いほうへ出す
-  let 置き場 = { top: Math.max(余白, 画面高 * 0.3), maxHeight: 画面高 - 余白 * 2 };
+  // 中身が何行になっても指す先を覆わない。
+  // 上下どちらにも読める広さが無いときだけ、真ん中に出す。指す先の一部に
+  // 重なるが、画面の外へはみ出して読めなくなるよりはよい
+  const 読める高さ = 200;
+  let 置き場 = { top: Math.max(余白, (画面高 - 読める高さ) / 2), maxHeight: 画面高 - 余白 * 2 };
   let 吹き出しの左 = (画面幅 - 吹き出しの幅) / 2;
   if (枠) {
     const 下の空き = 画面高 - (枠.y + 枠.高さ) - 余白 * 2;
     const 上の空き = 枠.y - 余白 * 2;
-    置き場 =
-      下の空き >= 上の空き
-        ? { top: 枠.y + 枠.高さ + 余白, maxHeight: Math.max(140, 下の空き) }
-        : { bottom: 画面高 - 枠.y + 余白, maxHeight: Math.max(140, 上の空き) };
+    if (下の空き >= 読める高さ && 下の空き >= 上の空き)
+      置き場 = { top: 枠.y + 枠.高さ + 余白, maxHeight: 下の空き };
+    else if (上の空き >= 読める高さ) 置き場 = { bottom: 画面高 - 枠.y + 余白, maxHeight: 上の空き };
+    else if (下の空き >= 読める高さ) 置き場 = { top: 枠.y + 枠.高さ + 余白, maxHeight: 下の空き };
     吹き出しの左 = Math.min(
       Math.max(余白, 枠.x + 枠.幅 / 2 - 吹き出しの幅 / 2),
       Math.max(余白, 画面幅 - 吹き出しの幅 - 余白)
@@ -294,11 +312,15 @@ const TutorialOverlay = ({ navRef }) => {
         </_View>
 
         <_Text style={styles.題}>{いまの手順.題}</_Text>
-        {いまの手順.文.map((一文, i) => (
-          <_Text key={i} style={styles.文}>
-            {一文}
-          </_Text>
-        ))}
+        {/* 説明はここに収める。上限を超えたぶんは中で送る。
+            そのまま並べると枠の外へはみ出して、下の画面に重なって見える */}
+        <_ScrollView style={styles.本文} contentContainerStyle={{ paddingBottom: 2 }}>
+          {いまの手順.文.map((一文, i) => (
+            <_Text key={i} style={styles.文}>
+              {一文}
+            </_Text>
+          ))}
+        </_ScrollView>
 
         {触ってもらう && (
           <_View style={styles.やってみる}>
@@ -341,6 +363,7 @@ const styles = _StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     padding: 16,
+    overflow: 'hidden',
     ...(IS_WEB ? { boxShadow: '0 6px 24px rgba(0,0,0,0.25)' } : { elevation: 8 }),
   },
   見出し行: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
@@ -348,6 +371,7 @@ const styles = _StyleSheet.create({
   閉じるボタン: { paddingVertical: 2, paddingHorizontal: 4 },
   閉じる文字: { fontSize: 13, color: '#8E8E93' },
   題: { fontSize: 17, fontWeight: 'bold', color: '#1C1C1E', marginBottom: 8 },
+  本文: { flexShrink: 1 },
   文: { fontSize: 14, color: '#3A3A3C', lineHeight: 21, marginBottom: 3 },
   やってみる: {
     flexDirection: 'row',
