@@ -8,9 +8,16 @@
  *
  * Firestore は REST の生の形（fields 付き）でそのまま保存する。型が保たれ、
  * 書き戻すときは同じ形を PATCH するだけで済む。
- * RTDB は認証が要るため匿名サインインを使う（パスワードは不要）。
+ *
+ * 読む権限は Firebase CLI のログイン（所有者）を借りる。事前に
+ * `firebase login` を済ませておくこと。
+ *
+ * 元は匿名サインインで読んでいた。これは本番のルールが全開だった頃の作りで、
+ * ルールを絞ったあとは全部 403 になる。それでも日付フォルダは作られるため、
+ * 中身の無い控えが「取れたように見える」状態になっていた。
  */
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
 const TARGET = ['stg', 'prod'].includes(process.argv[2]) ? process.argv[2] : 'prod';
@@ -28,20 +35,54 @@ const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
 const OUT = process.argv[3] || path.join('backup-output', `${TARGET === 'stg' ? 'stg-' : ''}${stamp}`);
 fs.mkdirSync(OUT, { recursive: true });
 
-// ── 匿名トークン（RTDB 用。Firestore にも付けておく） ──────────────
-let token = null;
-try {
-  // 検証環境はルールで団体ごとに絞られているため、団体アカウントで入る。
-  // 本番は全開なので匿名で足りる。
-  const [op, body] = TARGET === 'stg'
-    ? ['signInWithPassword', { email: 'nihonu.kouka@gmail.com', password: 'StgTest!2026', returnSecureToken: true }]
-    : ['signUp', { returnSecureToken: true }];
-  const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:${op}?key=${KEY}`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+// ── 所有者のトークン（Firebase CLI のログインを借りる） ──────────────
+// firebase-tools は access_token と refresh_token を手元の設定ファイルに置く。
+// access_token は1時間で切れるので、切れていれば refresh_token で取り直す。
+const CLI設定 = path.join(os.homedir(), '.config/configstore/firebase-tools.json');
+// firebase-tools が使っている公開のクライアントID（秘密ではない）
+const CLI_ID = '563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com';
+const CLI_SECRET = 'j9iVZfS8kkCEFUPaAeJV0sAi';
+
+async function 所有者トークン() {
+  if (!fs.existsSync(CLI設定)) {
+    throw new Error(`Firebase CLI のログイン情報が見つかりません（${CLI設定}）。firebase login を実行してください。`);
+  }
+  const 設定 = JSON.parse(fs.readFileSync(CLI設定, 'utf8'));
+  const t = 設定.tokens || {};
+  // 余裕をみて5分前には取り直す
+  if (t.access_token && t.expires_at && t.expires_at - Date.now() > 5 * 60 * 1000) return t.access_token;
+  if (!t.refresh_token) throw new Error('ログイン情報が古いようです。firebase login をやり直してください。');
+  const r = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: CLI_ID,
+      client_secret: CLI_SECRET,
+      refresh_token: t.refresh_token,
+      grant_type: 'refresh_token',
+    }),
   });
-  token = (await r.json()).idToken;
-} catch { /* 取れなくても Firestore は続行する */ }
-const H = token ? { Authorization: `Bearer ${token}` } : {};
+  const j = await r.json();
+  if (!r.ok || !j.access_token) throw new Error(`トークンを取り直せませんでした: ${JSON.stringify(j).slice(0, 200)}`);
+  return j.access_token;
+}
+
+const OWNER = await 所有者トークン();
+const H = { Authorization: `Bearer ${OWNER}` };
+
+// RTDB は Firebase の ID トークンでなく、所有者の access_token でも読める
+// （?access_token= を付ける）。匿名利用者を作らずに済む。
+const RTDB認証 = `access_token=${OWNER}`;
+
+// 読める状態かを先に確かめる。ここで落ちれば、空の控えを作らずに済む
+{
+  const r = await fetch(`${BASE}/groups?pageSize=1`, { headers: H });
+  if (!r.ok) {
+    console.error(`★ ${PID} の Firestore を読めません（HTTP ${r.status}）。`);
+    console.error('  firebase login のアカウントに、このプロジェクトの権限があるか確認してください。');
+    process.exit(1);
+  }
+}
 
 const 統計 = { コレクション: 0, ドキュメント: 0, バイト: 0 };
 const 失敗 = [];
@@ -120,12 +161,19 @@ for (const d of ga.documents || []) {
 console.log('\n■ RTDB');
 const 団体一覧 = (ga.documents || []).map((d) => d.name.split('/').pop());
 const rtdb = { live_sessions: {} };
+rtdb.live_history = {};
 for (const gid of 団体一覧) {
-  const r = await fetch(`${RTDB}/live_sessions/${gid}.json${token ? `?auth=${token}` : ''}`);
+  const r = await fetch(`${RTDB}/live_sessions/${gid}.json?${RTDB認証}`);
   if (!r.ok) { 失敗.push({ パス: `rtdb:/live_sessions/${gid}`, HTTP: r.status }); console.log(`  live_sessions/${gid} … HTTP ${r.status}`); continue; }
   const j = await r.json();
   rtdb.live_sessions[gid] = j;
   console.log(`  live_sessions/${gid} … ${j === null ? 'なし' : Object.keys(j).length + '件'}`);
+  // 共有履歴はライブの枝の外（live_history）にある。控えから漏らさない
+  const r2 = await fetch(`${RTDB}/live_history/${gid}.json?${RTDB認証}`);
+  if (!r2.ok) { 失敗.push({ パス: `rtdb:/live_history/${gid}`, HTTP: r2.status }); console.log(`  live_history/${gid} … HTTP ${r2.status}`); continue; }
+  const j2 = await r2.json();
+  rtdb.live_history[gid] = j2;
+  console.log(`  live_history/${gid}  … ${j2 === null ? 'なし' : Object.keys(j2).length + '件'}`);
 }
 // appData はアプリが使っておらず、ルールからも外した（常に空だった）。
 // 控えを取ろうとすると拒否されて「失敗1件」と記録され、本物の失敗が
@@ -178,11 +226,22 @@ const manifest = {
     .map(([g, v]) => [`live_sessions/${g}`, v === null ? 0 : Object.keys(v).length])),
   利用者: 利用者数,
   失敗,
-  注意: '本番のルールは全開のため未認証でも読める状態。書き戻しは同じ形を PATCH する。',
+  読んだ権限: `Firebase CLI のログイン（所有者）`,
+  注意: 'ルールは団体ごとに絞ってある。所有者権限で読む。書き戻しは同じ形を PATCH する。',
 };
 fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 1));
 
 console.log('\n■ まとめ');
 console.table([{ ...統計, MB: (統計.バイト / 1048576).toFixed(2) }]);
 if (失敗.length) { console.error('取得できなかったもの:'); console.table(失敗); }
-else console.log(`すべて取得しました → ${OUT}`);
+
+// 中身の無い控えを「取れた」と思わせないための最後の関門。
+// 権限まわりが変わったときに、日付フォルダだけができて気づかない事故を防ぐ
+const 空っぽ = 統計.ドキュメント === 0 || 統計.コレクション === 0;
+if (空っぽ || 失敗.length) {
+  console.error('\n★ この控えは不完全です。使い物になりません。');
+  if (空っぽ) console.error('  Firestore から1件も取れていません。権限を確認してください。');
+  console.error(`  場所: ${OUT}`);
+  process.exit(1);
+}
+console.log(`すべて取得しました → ${OUT}`);
