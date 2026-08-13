@@ -107,11 +107,15 @@ function 位置を測る(名前) {
 const use案内 = create((set) => ({
   進行中: false,
   番号: 0,
+  // 続きも見ると答えたか。基本の流れだけで終える人が大半なので、
+  // 最初は基本だけを出して、最後に尋ねる
+  続きも見る: false,
   // 案内を始めたときの盤面。終わったら必ずここへ戻す
   控え: null,
-  始める: (控え) => set({ 進行中: true, 番号: 0, 控え }),
+  始める: (控え) => set({ 進行中: true, 番号: 0, 続きも見る: false, 控え }),
   進める: (n) => set({ 番号: n }),
-  終える: () => set({ 進行中: false, 番号: 0, 控え: null }),
+  続きへ: (n) => set({ 続きも見る: true, 番号: n }),
+  終える: () => set({ 進行中: false, 番号: 0, 続きも見る: false, 控え: null }),
 }));
 
 /**
@@ -198,6 +202,8 @@ const TutorialOverlay = ({ navRef }) => {
   const 進行中 = use案内((s) => s.進行中);
   const 番号 = use案内((s) => s.番号);
   const 進める = use案内((s) => s.進める);
+  const 続きへ = use案内((s) => s.続きへ);
+  const 続きも見る = use案内((s) => s.続きも見る);
   const 終える = use案内((s) => s.終える);
   const 控え = use案内((s) => s.控え);
   const 役割 = useScoreStore((s) => s.activeRole);
@@ -207,7 +213,24 @@ const TutorialOverlay = ({ navRef }) => {
   const 済み確認 = useRef(false);
   const 基準 = useRef(null);
 
-  const 手順 = React.useMemo(() => 手順を作る(役割), [役割]);
+  const { 基本, 続き } = React.useMemo(() => 手順を作る(役割), [役割]);
+  // 基本の最後に「続きを見ますか」を挟む。見ると答えたら、そのまま続きへ
+  const 分かれ道 = React.useMemo(
+    () => ({
+      題: 'ここまでが基本の流れです',
+      文: [
+        'これだけ分かれば、練習の記録は取れます。',
+        'このあと、立ちの区切り・合計・ライブ記録・履歴や分析など、便利な機能もご案内できます。',
+        'あとで見る場合は、設定の「使い方を見る」からいつでも見られます。',
+      ],
+      分かれ道: true,
+    }),
+    []
+  );
+  const 手順 = React.useMemo(
+    () => (続きも見る ? [...基本, ...続き] : [...基本, 分かれ道]),
+    [基本, 続き, 続きも見る, 分かれ道]
+  );
   const いまの手順 = 進行中 ? 手順[番号] : null;
 
   // 画面の回転や窓の大きさ変更に追随する
@@ -427,7 +450,16 @@ const TutorialOverlay = ({ navRef }) => {
           ) : (
             <_View />
           )}
-          {触ってもらう ? (
+          {いまの手順.分かれ道 ? (
+            <_View style={styles.分かれ道行}>
+              <_TouchableOpacity onPress={閉じる} style={styles.とばすボタン}>
+                <_Text style={styles.とばす文字}>あとで</_Text>
+              </_TouchableOpacity>
+              <_TouchableOpacity onPress={() => 続きへ(基本.length)} style={styles.次へボタン}>
+                <_Text style={styles.次へ文字}>続きを見る</_Text>
+              </_TouchableOpacity>
+            </_View>
+          ) : 触ってもらう ? (
             // 押せない事情があっても行き止まりにならないよう、控えめな逃げ道を置く
             <_TouchableOpacity onPress={() => 進める(番号 + 1)} style={styles.とばすボタン}>
               <_Text style={styles.とばす文字}>とばす</_Text>
@@ -476,6 +508,7 @@ const styles = _StyleSheet.create({
   操作行: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 },
   戻るボタン: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingHorizontal: 4 },
   戻る文字: { fontSize: 15, color: '#007AFF' },
+  分かれ道行: { flexDirection: 'row', alignItems: 'center' },
   とばすボタン: { paddingVertical: 8, paddingHorizontal: 12 },
   とばす文字: { fontSize: 15, color: '#8E8E93' },
   次へボタン: { backgroundColor: '#007AFF', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 22 },
