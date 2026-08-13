@@ -5,6 +5,12 @@
         ".read": "auth != null",
         ".write": "auth != null"
       }
+    },
+    "live_history": {
+      "$groupId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
     }
   }
 }

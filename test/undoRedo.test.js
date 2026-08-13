@@ -129,7 +129,9 @@ test('取り消し：射手の削除も戻せる', () => {
   );
 });
 
-test('保存すると履歴が消える（前の記録に遡らない）', async () => {
+test('リセットすると履歴が消える（前の記録に遡らない）', async () => {
+  // 元はこの検査に「保存すると」という名前が付いていたが、試していたのは
+  // リセットのほうで、保存の経路は一度も確かめられていなかった
   const { store } = 端末();
   store.setState({ archers: [射手()] });
   store.getState().updateMark('a1', 0, '○');
@@ -139,6 +141,25 @@ test('保存すると履歴が消える（前の記録に遡らない）', async
   await 待つ(20);
   assert.equal(store.getState().historyStack.length, 0, '履歴が空になる');
   assert.equal(store.getState().redoStack.length, 0);
+});
+
+test('保存すると履歴が消える（保存済みの盤面が取り消しで戻らない）', async () => {
+  // 残していると、保存したあとに取り消しを押すと保存済みの盤面が戻り、
+  // そのままもう一度保存すると同じ記録が二重に入る
+  const { store } = 端末();
+  store.setState({ archers: [射手()] });
+  store.getState().updateMark('a1', 0, '○');
+  assert.ok(store.getState().historyStack.length > 0, '前提：遡れる手がある');
+
+  await store.getState().saveSession({});
+  await 待つ(20);
+
+  assert.equal(store.getState().archers.length, 0, '盤面が片付く');
+  assert.equal(store.getState().historyStack.length, 0, '遡れる手も消える');
+  assert.equal(store.getState().redoStack.length, 0, 'やり直せる手も消える');
+
+  store.getState().undo();
+  assert.equal(store.getState().archers.length, 0, '取り消しても盤面は戻らない');
 });
 
 // ──────────────────────────────────────────────────────────────
@@ -182,6 +203,90 @@ test('ライブ中のやり直しも相手に伝わる', async () => {
   await 待つ(20);
 
   assert.equal(印(参.store), '○', 'やり直しが届く');
+});
+
+test('共有履歴の目印は、次のライブへ持ち越さない（主催者）', async () => {
+  // 持ち越すと、始めたばかりのライブでいきなり取り消しが押せて、
+  // 無い手を読みにいく
+  const 主 = 端末();
+  主.store.setState({ archers: [射手()] });
+  await 主.store.getState().startLiveSync(ライブ名);
+  主.store.getState().updateMark('a1', 0, '○');
+  await 待つ(20);
+  assert.equal(主.store.getState().historySharedLen, 1, '前提：1手ぶん積まれている');
+
+  主.store.getState().stopLiveSync(true);
+  await 主.store.getState().startLiveSync('夕練');
+
+  assert.equal(主.store.getState().historySharedLen, 0, '目印が0に戻る');
+  assert.equal(主.store.getState().historySharedMax, 0, '上限も0に戻る');
+});
+
+test('共有履歴の目印は、次のライブへ持ち越さない（参加者）', async () => {
+  const 主 = 端末();
+  主.store.setState({ archers: [射手()] });
+  await 主.store.getState().startLiveSync(ライブ名);
+
+  const 参 = 端末(主.ライブ);
+  参.store.setState({ historySharedLen: 5, historySharedMax: 9 });
+  参.store.getState().joinLiveSync(ライブ名);
+
+  assert.equal(参.store.getState().historySharedLen, 0, '参加時に目印を捨てる');
+  assert.equal(参.store.getState().historySharedMax, 0, '上限も捨てる');
+});
+
+test('ライブ中にリセットすると、共有の取り消し履歴も消える', async () => {
+  // ライブ中でないときは historyStack を空にしている。ライブ中だけ残すと、
+  // リセットしたあとの取り消しで、消したはずの盤面が戻ってくる
+  const 主 = 端末();
+  主.store.setState({ archers: [射手()] });
+  await 主.store.getState().startLiveSync(ライブ名);
+  主.store.getState().updateMark('a1', 0, '○');
+  await 待つ(20);
+  assert.equal(主.store.getState().historySharedLen, 1, '前提：1手ぶん積まれている');
+
+  const 参 = 端末(主.ライブ);
+  参.store.getState().joinLiveSync(ライブ名);
+  await 待つ(20);
+
+  主.store.getState().resetCurrentSession();
+  await 待つ(20);
+
+  assert.equal(主.store.getState().historySharedLen, 0, '押した側の目印が消える');
+  assert.equal(主.store.getState().historySharedMax, 0, '上限も消える');
+  assert.equal(参.store.getState().historySharedLen, 0, '相手側の目印も消える');
+  assert.equal(参.store.getState().historySharedMax, 0, '相手側の上限も消える');
+
+  // 取り消しを押しても、消した盤面は戻らない
+  主.store.getState().undo();
+  await 待つ(20);
+  assert.equal(主.store.getState().archers.length, 0, 'リセットした盤面のまま');
+});
+
+test('参加したとき、過去の取り消しの知らせが蒸し返されない', async () => {
+  // 目印は引き継ぐが、知らせは出さない。出すと、取り消しのあったライブに
+  // 入るたび「取り消しされました。」が出る
+  const 主 = 端末();
+  主.store.setState({ archers: [射手()] });
+  await 主.store.getState().startLiveSync(ライブ名);
+  主.store.getState().updateMark('a1', 0, '○');
+  await 待つ(20);
+  主.store.getState().undo();
+  await 待つ(20);
+
+  const 参 = 端末(主.ライブ);
+  参.store.getState().joinLiveSync(ライブ名);
+  await 待つ(20);
+
+  assert.equal(参.store.getState().historyNoticeAt, 0, '入った時点では知らせを出さない');
+  assert.equal(参.store.getState().historySharedLen, 0, '目印は引き継ぐ');
+  assert.equal(参.store.getState().historySharedMax, 1, '上限も引き継ぐ');
+
+  // 入ったあとの取り消しは、ちゃんと知らせが出る
+  主.store.getState().redo();
+  await 待つ(20);
+  assert.ok(参.store.getState().historyNoticeAt > 0, '入ったあとの操作は知らせる');
+  assert.equal(参.store.getState().historyNoticeKind, 'やり直し');
 });
 
 test('取り消し：中身が変わっていない射手の日時は触らない', () => {
