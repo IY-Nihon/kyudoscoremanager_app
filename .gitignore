@@ -4,6 +4,7 @@ node_modules/
 # ── ビルド成果物 ──
 .expo/
 dist/
+dist-stg/
 web-build/
 expo-env.d.ts
 .firebase/
