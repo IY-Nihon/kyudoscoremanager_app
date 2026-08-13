@@ -48,6 +48,16 @@ const m = t.default.memo(
       onToggleMark: T,
       onToggleLock: I,
     }) => {
+      // 鍵が効くかどうか。
+      // toggleLock は押した列から右へ進み、間隔か計にぶつかったところで止める。
+      // 右どなりが間隔・計だと一歩目で止まるので自分の列しか掴まず、射手は
+      // 1人も固定されない。鍵は閉じるのに○×は編集できたままになり、効いた
+      // ように見えて効いていない状態になる。そういう鍵は初めから出さない
+      const 鍵が効く = (() => {
+        const 一覧 = Array.isArray(m) ? m : [];
+        const 右どなり = 一覧[C - 1];
+        return !!(C > 0 && 右どなり && !右どなり.isSeparator && !右どなり.isTotalCalculator);
+      })();
       const F = (0, c.useScoreStore)((e) => e.toggleLock),
         A = (0, c.useScoreStore)((e) => e.viewScale),
         z = 'number' == typeof A && !isNaN(A) && A > 0 ? A : 1,
@@ -207,7 +217,7 @@ const m = t.default.memo(
                               isBlockTop: h,
                               isFirst: 0 === t,
                               hideMark: !0,
-                              isNormalArcher: !1,
+                              isNormalArcher: !鍵が効く,
                               columnType: 'separator',
                               mark: e.marks?.[t],
                               onToggle: T,
@@ -253,7 +263,7 @@ const m = t.default.memo(
                                 isBlockTop: m,
                                 isFirst: 0 === t,
                                 hideMark: !0,
-                                isNormalArcher: !1,
+                                isNormalArcher: !鍵が効く,
                                 columnType: 'total',
                                 onToggle: T,
                               }),

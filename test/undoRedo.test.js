@@ -289,6 +289,59 @@ test('参加したとき、過去の取り消しの知らせが蒸し返され�
   assert.equal(参.store.getState().historyNoticeKind, 'やり直し');
 });
 
+test('鍵：間隔と計が隣り合うと、外側の鍵は自分の列しか掴まない（仕様）', () => {
+  // toggleLock は押した列から右へ進み、間隔か計にぶつかったところで止める。
+  // 隣り合うと一歩目で止まるため、射手は1人も固定されない。
+  // 画面側はこの場合に鍵の印を出さないようにしてある（JP_ArcherColumnView_594.js）
+  const { store } = 端末();
+  const 列 = (id, o) =>
+    Object.assign({ id, name: id, marks: ['', '', '', ''], lockedBlocks: {}, lastModified: 1000 }, o);
+  store.setState({
+    archers: [
+      列('A'),
+      列('B'),
+      列('計', { isTotalCalculator: true }),
+      列('間隔', { isSeparator: true }), // 計のすぐ左（＝隣り合う）
+      列('C'),
+    ],
+  });
+  const 鍵のついた列 = () =>
+    store
+      .getState()
+      .archers.filter((a) => a.lockedBlocks && a.lockedBlocks[0])
+      .map((a) => a.id);
+
+  store.getState().toggleLock('計', 0);
+  assert.deepEqual(鍵のついた列(), ['A', 'B', '計'], '計の鍵は右の射手までを掴む');
+
+  store.getState().toggleLock('計', 0); // 戻す
+  store.getState().toggleLock('間隔', 0);
+  assert.deepEqual(鍵のついた列(), ['間隔'], '隣り合う側は自分の列しか掴まない');
+});
+
+test('鍵：間隔と計が離れていれば、どちらも射手を掴む', () => {
+  const { store } = 端末();
+  const 列 = (id, o) =>
+    Object.assign({ id, name: id, marks: ['', '', '', ''], lockedBlocks: {}, lastModified: 1000 }, o);
+  store.setState({
+    archers: [
+      列('A'),
+      列('計', { isTotalCalculator: true }),
+      列('B'),
+      列('間隔', { isSeparator: true }),
+      列('C'),
+    ],
+  });
+  const 鍵のついた列 = () =>
+    store
+      .getState()
+      .archers.filter((a) => a.lockedBlocks && a.lockedBlocks[0])
+      .map((a) => a.id);
+
+  store.getState().toggleLock('間隔', 0);
+  assert.deepEqual(鍵のついた列(), ['B', '間隔'], '間の射手を掴む');
+});
+
 test('取り消し：中身が変わっていない射手の日時は触らない', () => {
   // 変わっていないものまで打ち直すと、相手が加えた新しい入力を
   // 古い内容で上書きしてしまう
