@@ -1007,6 +1007,9 @@ const w = () => {
               (0, T.jsxs)(T.Fragment, {
                 children: [
                   (0, T.jsxs)(o.default, {
+                    // 使い方の案内が指す先。この行は Je() を通らない作りなので、
+                    // ここで直接登録する
+                    ref: (node) => 案内.setTutorialTargetNode('設定.矢所の記録機能を有効化', node),
                     style: D.item,
                     children: [
                       (0, T.jsxs)(o.default, {
