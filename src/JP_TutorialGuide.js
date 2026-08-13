@@ -77,6 +77,33 @@ function setTutorialTargetNode(名前, node) {
   else 目印帳.delete(名前);
 }
 
+/**
+ * 目印が画面の外にあれば、見えるところまで運ぶ。運んだら true。
+ *
+ * 設定の「矢所」のように、一覧をずっと下へたどらないと出てこない目印がある。
+ * 案内の幕が出ているあいだは指でめくれないので、こちらから運んでおかないと、
+ * 位置に合わせて置いた吹き出しごと画面の外へ出てしまい、進みようがなくなる。
+ */
+function 見えるところへ(名前) {
+  const ref = 目印帳.get(名前);
+  const 節 = ref && ref.current;
+  if (!節 || typeof 節.scrollIntoView !== 'function') return false;
+  if (typeof 節.getBoundingClientRect !== 'function') return false;
+  const 枠 = 節.getBoundingClientRect();
+  const 画面高 = (typeof window !== 'undefined' && window.innerHeight) || 0;
+  if (!画面高) return false;
+  // 吹き出しを上か下に置ける程度に見えていれば、動かさない。
+  // 少し見えているだけで済ませると、また画面の端に張り付く
+  const ゆとり = 画面高 * 0.35;
+  if (枠.top >= ゆとり && 枠.bottom <= 画面高 - ゆとり) return false;
+  try {
+    節.scrollIntoView({ block: 'center' });
+  } catch (e) {
+    return false;
+  }
+  return true;
+}
+
 /** 目印の画面上の位置を測る。測れなければ null */
 function 位置を測る(名前) {
   return new Promise((解決) => {
@@ -207,7 +234,7 @@ const TutorialOverlay = ({ navRef }) => {
   const 控え = use案内((s) => s.控え);
   const 役割 = useScoreStore((s) => s.activeRole);
   const いまの画面 = useScoreStore((s) => s.currentRouteName);
-  const [枠, 枠を置く] = useState(null);
+  const [測った枠, 枠を置く] = useState(null);
   // 吹き出しが本来必要とする高さ。中身の折り返しまでは見積もれないので、
   // 上限を付けずに一度描いて測る。測るまでは透明にしておく（一瞬のちらつき防止）
   const [自然高さ, 自然高さを置く] = useState(0);
@@ -215,7 +242,14 @@ const TutorialOverlay = ({ navRef }) => {
   const 済み確認 = useRef(false);
   const 基準 = useRef(null);
 
-  const { 基本, 続き } = React.useMemo(() => 手順を作る(役割), [役割]);
+  // 「まだ1人も登録されていません」のような案内は、実際に空のときだけ出す。
+  // あとから設定の「使い方を見る」で開いた人には、事実と違って見えてしまう
+  const 部員数 = useScoreStore((s) => (Array.isArray(s.members) ? s.members.length : 0));
+  const 記録数 = useScoreStore((s) => (Array.isArray(s.sessions) ? s.sessions.length : 0));
+  const { 基本, 続き } = React.useMemo(
+    () => 手順を作る(役割, { 部員数, 記録数 }),
+    [役割, 部員数, 記録数]
+  );
   // 基本の最後に「続きを見ますか」を挟む。見ると答えたら、そのまま続きへ
   const 分かれ道 = React.useMemo(
     () => ({
@@ -291,6 +325,9 @@ const TutorialOverlay = ({ navRef }) => {
         }
       }
       if (捨てた || !いまの手順.目印) return;
+      // 一覧の下のほうにある目印は、先に見えるところまで運んでおく
+      if (見えるところへ(いまの手順.目印)) await new Promise((r) => setTimeout(r, 350));
+      if (捨てた) return;
       let 位置 = await 位置を測る(いまの手順.目印);
       if (!位置 && !捨てた) {
         // 一度で測れないことがある（描画の途中など）ので、少し待って再挑戦
@@ -341,6 +378,11 @@ const TutorialOverlay = ({ navRef }) => {
   const 最後 = 番号 >= 手順.length - 1;
   const 触ってもらう = !!いまの手順.操作;
   const { width: 画面幅, height: 画面高 } = 画面の大きさ;
+  // 運んでもなお画面の外にある目印は、無かったことにする。そのまま位置に
+  // 合わせて置くと、吹き出しごと画面の外へ追いやられて何も読めなくなる。
+  // 指す先は出ないが、説明は真ん中に出るので先へ進める
+  const 枠 =
+    測った枠 && 測った枠.y + 測った枠.高さ > 0 && 測った枠.y < 画面高 ? 測った枠 : null;
 
   // 吹き出しの位置。
   //
