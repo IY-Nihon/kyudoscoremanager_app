@@ -209,6 +209,9 @@ const TutorialOverlay = ({ navRef }) => {
   const 役割 = useScoreStore((s) => s.activeRole);
   const いまの画面 = useScoreStore((s) => s.currentRouteName);
   const [枠, 枠を置く] = useState(null);
+  // 吹き出しが本来必要とする高さ。中身の折り返しまでは見積もれないので、
+  // 上限を付けずに一度描いて測る。測るまでは透明にしておく（一瞬のちらつき防止）
+  const [自然高さ, 自然高さを置く] = useState(0);
   const [画面の大きさ, 大きさを置く] = useState(() => RN.Dimensions.get('window'));
   const 済み確認 = useRef(false);
   const 基準 = useRef(null);
@@ -270,7 +273,7 @@ const TutorialOverlay = ({ navRef }) => {
   useEffect(() => {
     if (!いまの手順) return;
     let 捨てた = false;
-    枠を置く(null);
+    (枠を置く(null), 自然高さを置く(0));
     基準.current =
       いまの手順.操作 && いまの手順.操作.種類 !== 'タブへ移動'
         ? いまの値(useScoreStore.getState(), いまの手順.操作.種類)
@@ -345,12 +348,20 @@ const TutorialOverlay = ({ navRef }) => {
   // 中身が何行になっても指す先を覆わない。
   // 上下どちらにも読める広さが無いときだけ、真ん中に出す。指す先の一部に
   // 重なるが、画面の外へはみ出して読めなくなるよりはよい
-  const 読める高さ = 200;
   // 幅の狭い端末では画面からはみ出す。画面に合わせて縮める
   const 吹き出しの幅 = Math.min(既定の吹き出しの幅, 画面幅 - 余白 * 2);
-  let 置き場 = { top: Math.max(余白, (画面高 - 読める高さ) / 2), maxHeight: 画面高 - 余白 * 2 };
+  // 測るまでは上限を付けない（上限を付けて測ると、その上限がそのまま返る）
+  const 測定中 = 自然高さ === 0;
+  const 入る高さ = 画面高 - 余白 * 2;
+  const 読める高さ = 自然高さ;
+  let 置き場 = 測定中
+    ? { top: 余白 }
+    : {
+        top: Math.max(余白, (画面高 - Math.min(読める高さ, 入る高さ)) / 2),
+        maxHeight: 入る高さ,
+      };
   let 吹き出しの左 = (画面幅 - 吹き出しの幅) / 2;
-  if (枠) {
+  if (枠 && !測定中) {
     const 下の空き = 画面高 - (枠.y + 枠.高さ) - 余白 * 2;
     const 上の空き = 枠.y - 余白 * 2;
     if (下の空き >= 読める高さ && 下の空き >= 上の空き)
@@ -409,7 +420,19 @@ const TutorialOverlay = ({ navRef }) => {
         />
       )}
 
-      <_View style={[styles.吹き出し, 置き場, { left: 吹き出しの左, width: 吹き出しの幅 }]}>
+      <_View
+        onLayout={(e) => {
+          const h = e.nativeEvent.layout.height;
+          // 測定中（上限なし）のときだけ拾う。上限を付けた後の値は当てにしない
+          if (測定中 && h > 0) 自然高さを置く(Math.ceil(h));
+        }}
+        style={[
+          styles.吹き出し,
+          置き場,
+          { left: 吹き出しの左, width: 吹き出しの幅 },
+          測定中 && { opacity: 0 },
+        ]}
+      >
         <_View style={styles.見出し行}>
           <_Text style={styles.番号}>{`${番号 + 1} / ${手順.length}`}</_Text>
           <_TouchableOpacity onPress={閉じる} style={styles.閉じるボタン}>
