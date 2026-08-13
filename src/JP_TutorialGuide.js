@@ -274,10 +274,24 @@ const 見本の記録 = [
 ];
 
 const 履歴の見本 = () => (
-  <_View style={styles.見本箱}>
-    <_Text style={styles.見本の見出し}>見本：たまるとこう並びます</_Text>
+  <_View style={styles.全面}>
+    <_Text style={styles.全面の題}>過去の記録表</_Text>
+    <_View style={styles.偽の検索}>
+      <Ionicons name="search" size={15} color="#8E8E93" />
+      <_Text style={styles.偽の検索文字}>日付や内容を検索（全期間対象）</_Text>
+    </_View>
+    <_View style={styles.年度札}>
+      <_Text style={styles.年度札文字}>2026年度 (2026/04 - 2027/03)</_Text>
+    </_View>
+    <_View style={styles.月の並び}>
+      {['04月', '05月', '06月', '07月', '08月'].map((m, i) => (
+        <_View key={m} style={[styles.月札, i === 4 && styles.月札の今]}>
+          <_Text style={[styles.月札文字, i === 4 && styles.月札文字の今]}>{m}</_Text>
+        </_View>
+      ))}
+    </_View>
     {見本の記録.map((r, i) => (
-      <_View key={i} style={[styles.見本の行, i > 0 && styles.見本の区切り]}>
+      <_View key={i} style={styles.記録札}>
         <_View style={{ flex: 1 }}>
           <_Text style={styles.見本の題行} numberOfLines={1}>
             {r.日付} <_Text style={styles.見本の題}>[{r.題}]</_Text>
@@ -290,6 +304,7 @@ const 履歴の見本 = () => (
         <_View style={styles.見本の人数}>
           <_Text style={styles.見本の人数文字}>{r.人数}人</_Text>
         </_View>
+        <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
       </_View>
     ))}
   </_View>
@@ -304,14 +319,28 @@ const 見本の順位 = [
 ];
 
 const 分析の見本 = () => (
-  <_View style={styles.見本箱}>
-    <_Text style={styles.見本の見出し}>見本：的中率の高い順に並びます</_Text>
+  <_View style={styles.全面}>
+    <_Text style={styles.全面の題}>的中分析</_Text>
+    <_View style={styles.絞り込み札}>
+      <_Text style={styles.絞り込み見出し}>タグフィルター</_Text>
+      <_View style={styles.月の並び}>
+        {['月ごと', '年度', '期間指定', 'すべて'].map((m, i) => (
+          <_View key={m} style={[styles.月札, i === 3 && styles.月札の今]}>
+            <_Text style={[styles.月札文字, i === 3 && styles.月札文字の今]}>{m}</_Text>
+          </_View>
+        ))}
+      </_View>
+    </_View>
+    <_View style={styles.偽の検索}>
+      <Ionicons name="search" size={15} color="#8E8E93" />
+      <_Text style={styles.偽の検索文字}>メンバー名を検索...</_Text>
+    </_View>
     {見本の順位.map((r, i) => (
-      <_View key={i} style={[styles.見本の行, i > 0 && styles.見本の区切り]}>
+      <_View key={i} style={styles.記録札}>
         <_View style={styles.見本の順}>
           <_Text style={styles.見本の順文字}>{i + 1}</_Text>
         </_View>
-        <_View style={{ flex: 1 }}>
+        <_View style={{ flex: 1, marginLeft: 8 }}>
           <_Text style={styles.見本の名} numberOfLines={1}>
             {r.名}
           </_Text>
@@ -553,6 +582,20 @@ const TutorialOverlay = ({ navRef }) => {
         <_TouchableOpacity key={key} activeOpacity={1} onPress={() => {}} style={[styles.暗幕, 位置]} />
       ))}
 
+      {/* 初めての人には、履歴も分析もまだ空。空の画面を指しても何も伝わらず、
+          壊れているようにも見える。その手順のあいだだけ、画面をまるごと
+          見本で覆う。読むだけで、押しても何も起きない。
+          ストアにも通信にも触れないので、本物のデータと混ざる経路が無い */}
+      {いまの手順.見本 && (
+        <_TouchableOpacity activeOpacity={1} onPress={() => {}} style={styles.全面の紙}>
+          <_View style={styles.見本の帯}>
+            <Ionicons name="eye-outline" size={13} color="#FFF" />
+            <_Text style={styles.見本の帯文字}>見本です（実際の中身ではありません）</_Text>
+          </_View>
+          {いまの手順.見本 === '履歴' ? <履歴の見本 /> : <分析の見本 />}
+        </_TouchableOpacity>
+      )}
+
       {/* 説明だけの手順では、指した先を「見せるが押させない」。
           穴を開けたままだと「押さずに進みます」と書いてあっても触れてしまい、
           終了・保存なら本物の記録が残り、ライブなら立ち上がってしまう。
@@ -603,12 +646,6 @@ const TutorialOverlay = ({ navRef }) => {
             </_Text>
           ))}
         </_View>
-
-        {/* 初めての人には、履歴も分析もまだ空。空の画面を指しても何も伝わらず、
-            壊れているようにも見える。読むだけの見本をここに描いて、
-            「たまるとこうなる」を先に見せる。本物の中身には一切触らない */}
-        {いまの手順.見本 === '履歴' && <履歴の見本 />}
-        {いまの手順.見本 === '分析' && <分析の見本 />}
 
         {触ってもらう && (
           <_View style={styles.やってみる}>
@@ -687,18 +724,55 @@ const styles = _StyleSheet.create({
   やってみる文字: { fontSize: 14, color: '#B26A00', fontWeight: 'bold', marginLeft: 6, flexShrink: 1 },
   補足: { fontSize: 11, color: '#8E8E93', lineHeight: 16, marginTop: 10 },
 
-  // 見本。本物と間違えないよう、枠で囲って「見本」と明記する
-  見本箱: {
-    marginTop: 10,
-    padding: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
-    backgroundColor: '#FAFAFC',
+  // 見本。画面をまるごと覆う。本物と間違えないよう、上に帯を出す
+  全面の紙: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#F2F2F7' },
+  見本の帯: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    backgroundColor: '#FF9500',
   },
-  見本の見出し: { fontSize: 11, color: '#8E8E93', marginBottom: 6 },
-  見本の行: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7, gap: 8 },
-  見本の区切り: { borderTopWidth: 1, borderTopColor: '#EEE' },
+  見本の帯文字: { fontSize: 12, color: '#FFF', fontWeight: 'bold' },
+  全面: { paddingHorizontal: 16, paddingTop: 14 },
+  全面の題: { fontSize: 22, fontWeight: 'bold', color: '#1C1C1E', marginBottom: 12 },
+  偽の検索: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  偽の検索文字: { fontSize: 13, color: '#8E8E93' },
+  年度札: {
+    alignSelf: 'center',
+    marginTop: 10,
+    backgroundColor: '#EDEDF5',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  年度札文字: { fontSize: 13, color: '#3C3C43', fontWeight: 'bold' },
+  月の並び: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 10, flexWrap: 'wrap' },
+  月札: { backgroundColor: '#EDEDF5', borderRadius: 14, paddingHorizontal: 12, paddingVertical: 5 },
+  月札の今: { backgroundColor: '#007AFF' },
+  月札文字: { fontSize: 12, color: '#3C3C43' },
+  月札文字の今: { color: '#FFF', fontWeight: 'bold' },
+  絞り込み札: { backgroundColor: '#FFF', borderRadius: 12, padding: 12, marginBottom: 10 },
+  絞り込み見出し: { fontSize: 12, color: '#8E8E93' },
+  記録札: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 10,
+  },
   見本の題行: { fontSize: 12, color: '#1C1C1E', fontWeight: 'bold' },
   見本の題: { color: '#007AFF', fontWeight: 'bold' },
   見本の小字: { fontSize: 10, color: '#8E8E93', marginTop: 2 },
