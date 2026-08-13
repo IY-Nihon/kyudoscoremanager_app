@@ -40,7 +40,7 @@ const AsyncStorage = require('@react-native-async-storage/async-storage').defaul
 const { Ionicons } = require('./AntDesign_600');
 const { useScoreStore } = require('./JP_useScoreStore_174');
 const { IS_WEB } = require('./IS_WEB_199');
-const { 手順を作る } = require('./tutorialSteps');
+const { 手順を作る, 手が出せない: 手が出せないか } = require('./tutorialSteps');
 
 // 案内の版。手順を作り直したら上げる。上げると、一度見た人にもまた出る
 const TUTORIAL_VERSION = '2026-08-13-01';
@@ -138,10 +138,13 @@ const use案内 = create((set) => ({
   続きも見る: false,
   // 案内を始めたときの盤面。終わったら必ずここへ戻す
   控え: null,
-  始める: (控え) => set({ 進行中: true, 番号: 0, 続きも見る: false, 控え }),
-  進める: (n) => set({ 番号: n }),
-  続きへ: (n) => set({ 続きも見る: true, 番号: n }),
-  終える: () => set({ 進行中: false, 番号: 0, 続きも見る: false, 控え: null }),
+  // これまでに進んだ一番先の手順。「戻る」で読み返しているのかどうかを、
+  // これで見分ける。読み返しでは、もう一度操作させない（下の 見返し を参照）
+  最高到達: 0,
+  始める: (控え) => set({ 進行中: true, 番号: 0, 続きも見る: false, 控え, 最高到達: 0 }),
+  進める: (n) => set((s) => ({ 番号: n, 最高到達: Math.max(s.最高到達, n) })),
+  続きへ: (n) => set((s) => ({ 続きも見る: true, 番号: n, 最高到達: Math.max(s.最高到達, n) })),
+  終える: () => set({ 進行中: false, 番号: 0, 続きも見る: false, 控え: null, 最高到達: 0 }),
 }));
 
 /**
@@ -265,9 +268,12 @@ const TutorialOverlay = ({ navRef }) => {
   const 続きも見る = use案内((s) => s.続きも見る);
   const 終える = use案内((s) => s.終える);
   const 控え = use案内((s) => s.控え);
+  const 最高到達 = use案内((s) => s.最高到達);
   const 役割 = useScoreStore((s) => s.activeRole);
   const いまの画面 = useScoreStore((s) => s.currentRouteName);
   const [測った枠, 枠を置く] = useState(null);
+  // その手順の操作が、いまの中身では成り立たないか（手順に入るときに決める）
+  const [手が出せない, 手が出せないを置く] = useState(false);
   // 吹き出しが本来必要とする高さ。中身の折り返しまでは見積もれないので、
   // 上限を付けずに一度描いて測る。測るまでは透明にしておく（一瞬のちらつき防止）
   const [自然高さ, 自然高さを置く] = useState(0);
@@ -301,6 +307,11 @@ const TutorialOverlay = ({ navRef }) => {
     [基本, 続き, 続きも見る, 分かれ道]
   );
   const いまの手順 = 進行中 ? 手順[番号] : null;
+  // 「戻る」で前の手順を読み返しているところ。
+  // ここでもう一度操作を求めると、行き止まりになることがある。たとえば部員が
+  // 1人しかいない団体では、その人はもう割り当て済みで「選択済」と灰色になり、
+  // 誰も選べない。読み返しでは操作を求めず、「次へ」で先に戻れるようにする
+  const 見返し = 番号 < 最高到達;
 
   // 画面の回転や窓の大きさ変更に追随する
   useEffect(() => {
@@ -341,8 +352,10 @@ const TutorialOverlay = ({ navRef }) => {
     let 捨てた = false;
     枠を置く(null);
     // 足りない形を先に整える。基準を取るのはそのあと。
-    // 先に取ると、整えたぶんを「本人が操作した」と見なして素通りしてしまう
-    下ごしらえする(いまの手順.下ごしらえ);
+    // 先に取ると、整えたぶんを「本人が操作した」と見なして素通りしてしまう。
+    // 読み返し中は操作を求めないので、盤面もいじらない
+    if (!見返し) 下ごしらえする(いまの手順.下ごしらえ);
+    手が出せないを置く(手が出せないか(いまの手順, useScoreStore.getState()));
     基準.current =
       いまの手順.操作 && いまの手順.操作.種類 !== 'タブへ移動'
         ? いまの値(useScoreStore.getState(), いまの手順.操作.種類)
@@ -375,11 +388,12 @@ const TutorialOverlay = ({ navRef }) => {
     return () => {
       捨てた = true;
     };
-  }, [いまの手順, navRef]);
+  }, [いまの手順, navRef, 見返し]);
 
   // 「押してみましょう」の手順は、実際に操作されたら次へ進む
   useEffect(() => {
-    const 操作 = いまの手順 && いまの手順.操作;
+    // 読み返し中は操作を待たない。「次へ」で先に戻ってもらう
+    const 操作 = 見返し || 手が出せない ? null : いまの手順 && いまの手順.操作;
     if (!操作) return;
     if (操作.種類 === 'タブへ移動') {
       if (いまの画面 === 操作.先) {
@@ -396,7 +410,7 @@ const TutorialOverlay = ({ navRef }) => {
       }
     });
     return 解除;
-  }, [いまの手順, いまの画面, 番号, 進める]);
+  }, [いまの手順, いまの画面, 番号, 進める, 見返し, 手が出せない]);
 
   const 閉じる = useCallback(async () => {
     // 案内で触ったぶんを戻してから閉じる。スキップでも必ず戻す
@@ -412,7 +426,7 @@ const TutorialOverlay = ({ navRef }) => {
   if (!進行中 || !いまの手順) return null;
 
   const 最後 = 番号 >= 手順.length - 1;
-  const 触ってもらう = !!いまの手順.操作;
+  const 触ってもらう = !!いまの手順.操作 && !見返し && !手が出せない;
   const { width: 画面幅, height: 画面高 } = 画面の大きさ;
   // 運んでもなお画面の外にある目印は、無かったことにする。そのまま位置に
   // 合わせて置くと、吹き出しごと画面の外へ追いやられて何も読めなくなる。
