@@ -140,6 +140,7 @@ const k = () => {
       案内の拡大 = 案内.useTutorialTarget('記録.拡大'),
       案内の間隔 = 案内.useTutorialTarget('記録.間隔'),
       案内の計 = 案内.useTutorialTarget('記録.計'),
+      案内のリセット = 案内.useTutorialTarget('記録.リセット'),
       案内のライブボタン = 案内.useTutorialTarget('記録.ライブ'),
       案内の保存ボタン = 案内.useTutorialTarget('記録.保存'),
       // ライブ中は全員で1本の共有履歴を使うので、押せるかどうかも
@@ -262,6 +263,7 @@ const k = () => {
               style: W.navLeft,
               children: [
                 (0, A.jsx)(f.default, {
+                  ref: 案内のリセット,
                   onPress: () => {
                     Ce(!0);
                   },

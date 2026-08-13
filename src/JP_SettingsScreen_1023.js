@@ -661,8 +661,14 @@ const w = () => {
                       }),
                     ],
                   }),
-                  // 初めての人向けの案内。初回は自動で出るが、ここからいつでも見返せる
-                  Je('school-outline', '使い方を見る', () => 案内.startTutorial()),
+                  // 初めての人向けの案内。初回は自動で出るが、ここからいつでも見返せる。
+                  // ライブ中は始めない（案内中の書き換えが全員の画面に流れてしまう）
+                  Je('school-outline', '使い方を見る', () => {
+                    if ('ライブ中' === 案内.startTutorial()) {
+                      const e = 'ライブ記録中は、使い方の案内を始められません。ライブを止めてからお試しください。';
+                      x.IS_WEB ? window.alert(e) : u.default.alert('使い方を見る', e);
+                    }
+                  }),
                   Je('help-circle-outline', '運用ガイド・ヘルプ', () => le(!0)),
                   Je(
                     'log-out-outline',
