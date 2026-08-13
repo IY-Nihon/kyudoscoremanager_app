@@ -104,14 +104,51 @@ function 位置を測る(名前) {
 const use案内 = create((set) => ({
   進行中: false,
   番号: 0,
-  始める: () => set({ 進行中: true, 番号: 0 }),
+  // 案内を始めたときの盤面。終わったら必ずここへ戻す
+  控え: null,
+  始める: (控え) => set({ 進行中: true, 番号: 0, 控え }),
   進める: (n) => set({ 番号: n }),
-  終える: () => set({ 進行中: false, 番号: 0 }),
+  終える: () => set({ 進行中: false, 番号: 0, 控え: null }),
 }));
 
-/** 設定画面などから案内を始める */
+/**
+ * 案内を始める。
+ *
+ * 案内は本人に実際に押してもらう作りなので、そのままだと本物の記録表に
+ * 射手や間隔が足され、射数まで変わってしまう。始める前に盤面を控えておき、
+ * 終わったら（スキップでも）必ず元に戻す。
+ *
+ * ライブ中は始めない。案内中の書き換えが全員の画面に流れてしまうため。
+ * 戻り値は 'はじめた' か 'ライブ中'。
+ */
 function startTutorial() {
-  use案内.getState().始める();
+  const s = useScoreStore.getState();
+  if (s.isLiveActive) return 'ライブ中';
+  use案内.getState().始める({
+    archers: JSON.parse(JSON.stringify(s.archers || [])),
+    shotsPerRound: s.shotsPerRound,
+    viewScale: s.viewScale,
+  });
+  return 'はじめた';
+}
+
+/** 案内で触ったぶんを元に戻す */
+function 盤面を戻す(控え) {
+  if (!控え) return;
+  const s = useScoreStore.getState();
+  const 変わった =
+    JSON.stringify(s.archers || []) !== JSON.stringify(控え.archers) ||
+    s.shotsPerRound !== 控え.shotsPerRound ||
+    s.viewScale !== 控え.viewScale;
+  if (!変わった) return;
+  s.updateState({
+    archers: 控え.archers,
+    shotsPerRound: 控え.shotsPerRound,
+    viewScale: 控え.viewScale,
+    // 案内で積んだぶんを、あとから取り消しで掘り返せないようにする
+    historyStack: [],
+    redoStack: [],
+  });
 }
 
 /**
@@ -123,11 +160,9 @@ function いまの値(状態, 種類) {
   if (種類 === '射手を増やす') return 射手.filter((a) => a && !a.isSeparator && !a.isTotalCalculator).length;
   if (種類 === '間隔を足す') return 射手.filter((a) => a && a.isSeparator).length;
   if (種類 === '計を足す') return 射手.filter((a) => a && a.isTotalCalculator).length;
-  if (種類 === '○×を入れる')
-    return 射手.reduce(
-      (合計, a) => 合計 + ((a && a.marks) || []).filter((m) => m === '○' || m === '×').length,
-      0
-    );
+  // ○×は「増えた」で見ると行き止まりになる。既に○のますを押すと×に
+  // 変わるだけで数が増えないため。中身そのものの変化で見る
+  if (種類 === '○×を入れる') return 射手.map((a) => ((a && a.marks) || []).join('')).join('|');
   if (種類 === '射数を変える') return 状態.shotsPerRound;
   if (種類 === '表示を変える') return 状態.viewScale;
   return null;
@@ -136,7 +171,8 @@ function いまの値(状態, 種類) {
 /** その種類は「増えたら達成」か、「変わったら達成」か */
 function 達成した(種類, 基準, 現在) {
   if (基準 === null || 現在 === null || 現在 === undefined) return false;
-  if (種類 === '射数を変える' || 種類 === '表示を変える') return 現在 !== 基準;
+  if (種類 === '射数を変える' || 種類 === '表示を変える' || 種類 === '○×を入れる')
+    return 現在 !== 基準;
   return 現在 > 基準;
 }
 
@@ -151,6 +187,7 @@ const TutorialOverlay = ({ navRef }) => {
   const 番号 = use案内((s) => s.番号);
   const 進める = use案内((s) => s.進める);
   const 終える = use案内((s) => s.終える);
+  const 控え = use案内((s) => s.控え);
   const 役割 = useScoreStore((s) => s.activeRole);
   const いまの画面 = useScoreStore((s) => s.currentRouteName);
   const [枠, 枠を置く] = useState(null);
@@ -174,7 +211,8 @@ const TutorialOverlay = ({ navRef }) => {
     (async () => {
       try {
         const 済み = await AsyncStorage.getItem(保存キー);
-        if (済み !== TUTORIAL_VERSION) use案内.getState().始める();
+        // startTutorial の中でライブ中かを見て、始めないこともある
+        if (済み !== TUTORIAL_VERSION) startTutorial();
       } catch (e) {
         // 読めなくても勝手に出すほどではない。設定からいつでも見られる
         console.error('[TutorialGuide] 保存領域を読めませんでした:', e);
@@ -240,13 +278,15 @@ const TutorialOverlay = ({ navRef }) => {
   }, [いまの手順, いまの画面, 番号, 進める]);
 
   const 閉じる = useCallback(async () => {
+    // 案内で触ったぶんを戻してから閉じる。スキップでも必ず戻す
+    盤面を戻す(控え);
     終える();
     try {
       await AsyncStorage.setItem(保存キー, TUTORIAL_VERSION);
     } catch (e) {
       console.error('[TutorialGuide] 保存領域に書けませんでした:', e);
     }
-  }, [終える]);
+  }, [終える, 控え]);
 
   if (!進行中 || !いまの手順) return null;
 
@@ -331,6 +371,12 @@ const TutorialOverlay = ({ navRef }) => {
           </_View>
         )}
 
+        {/* 誤ってスキップしても行き止まりにならないよう、常に出しておく。
+            アプリ全体で使える知らせの仕組みが無いため、ここに添える */}
+        <_Text style={styles.補足}>
+          ここで触ったぶんは、終わると元に戻ります。設定の「使い方を見る」で見返せます。
+        </_Text>
+
         <_View style={styles.操作行}>
           {番号 > 0 ? (
             <_TouchableOpacity onPress={() => 進める(番号 - 1)} style={styles.戻るボタン}>
@@ -385,6 +431,7 @@ const styles = _StyleSheet.create({
     marginTop: 10,
   },
   やってみる文字: { fontSize: 14, color: '#B26A00', fontWeight: 'bold', marginLeft: 6, flexShrink: 1 },
+  補足: { fontSize: 11, color: '#8E8E93', lineHeight: 16, marginTop: 10 },
   操作行: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 },
   戻るボタン: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingHorizontal: 4 },
   戻る文字: { fontSize: 15, color: '#007AFF' },
