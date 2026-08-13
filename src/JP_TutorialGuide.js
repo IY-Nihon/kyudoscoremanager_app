@@ -46,6 +46,9 @@ const { 手順を作る } = require('./tutorialSteps');
 // 案内の版。手順を作り直したら上げる。上げると、一度見た人にもまた出る
 const TUTORIAL_VERSION = '2026-08-13-01';
 const 保存キー = 'tutorialDoneVersion';
+// 案内の途中で読み込み直されても片付けられるよう、控えは端末にも書いておく。
+// 手元に持つだけだと、再読み込みで控えが消え、案内で足した列が残り続ける
+const 控えキー = 'tutorialBoardSnapshot';
 
 // ─────────────────────────────────────────
 // 目印の登録先。画面側が ref を置き、案内側が位置を測る
@@ -124,11 +127,15 @@ const use案内 = create((set) => ({
 function startTutorial() {
   const s = useScoreStore.getState();
   if (s.isLiveActive) return 'ライブ中';
-  use案内.getState().始める({
+  const 控え = {
     archers: JSON.parse(JSON.stringify(s.archers || [])),
     shotsPerRound: s.shotsPerRound,
     viewScale: s.viewScale,
-  });
+  };
+  use案内.getState().始める(控え);
+  AsyncStorage.setItem(控えキー, JSON.stringify(控え)).catch((e) =>
+    console.error('[TutorialGuide] 控えを書けませんでした:', e)
+  );
   return 'はじめた';
 }
 
@@ -210,6 +217,17 @@ const TutorialOverlay = ({ navRef }) => {
     済み確認.current = true;
     (async () => {
       try {
+        // 案内の途中で読み込み直されていたら、まず片付ける。
+        // これが無いと、案内で足した列や変えた射数が残り続ける
+        const 残り = await AsyncStorage.getItem(控えキー);
+        if (残り) {
+          try {
+            盤面を戻す(JSON.parse(残り));
+          } catch (e) {
+            console.error('[TutorialGuide] 控えを読めませんでした:', e);
+          }
+          await AsyncStorage.removeItem(控えキー);
+        }
         const 済み = await AsyncStorage.getItem(保存キー);
         // startTutorial の中でライブ中かを見て、始めないこともある
         if (済み !== TUTORIAL_VERSION) startTutorial();
@@ -282,7 +300,7 @@ const TutorialOverlay = ({ navRef }) => {
     盤面を戻す(控え);
     終える();
     try {
-      await AsyncStorage.setItem(保存キー, TUTORIAL_VERSION);
+      (await AsyncStorage.setItem(保存キー, TUTORIAL_VERSION), await AsyncStorage.removeItem(控えキー));
     } catch (e) {
       console.error('[TutorialGuide] 保存領域に書けませんでした:', e);
     }
@@ -337,6 +355,24 @@ const TutorialOverlay = ({ navRef }) => {
       {暗幕.map(({ key, ...位置 }) => (
         <_TouchableOpacity key={key} activeOpacity={1} onPress={() => {}} style={[styles.暗幕, 位置]} />
       ))}
+
+      {/* 説明だけの手順では、指した先を「見せるが押させない」。
+          穴を開けたままだと「押さずに進みます」と書いてあっても触れてしまい、
+          終了・保存なら本物の記録が残り、ライブなら立ち上がってしまう。
+          どちらも案内の片付けでは取り消せない */}
+      {枠 && !触ってもらう && (
+        <_TouchableOpacity
+          activeOpacity={1}
+          onPress={() => {}}
+          style={{
+            position: 'absolute',
+            top: 枠.y - 4,
+            left: 枠.x - 4,
+            width: 枠.幅 + 8,
+            height: 枠.高さ + 8,
+          }}
+        />
+      )}
 
       {枠 && (
         <_View
