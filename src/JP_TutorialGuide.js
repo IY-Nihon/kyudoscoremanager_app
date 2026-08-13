@@ -172,13 +172,18 @@ function いまの値(状態, 種類) {
   if (種類 === '○×を入れる') return 射手.map((a) => ((a && a.marks) || []).join('')).join('|');
   if (種類 === '射数を変える') return 状態.shotsPerRound;
   if (種類 === '表示を変える') return 状態.viewScale;
+  // 名前が入った射手の数。「選択」から誰かを割り当てると増える
+  if (種類 === '名前を決める') return 射手.filter((a) => a && a.name).length;
+  // 鍵をかけた場所の数。まとまり単位でかかるので、増減どちらもありうる
+  if (種類 === '鍵をかける')
+    return 射手.reduce((合計, a) => 合計 + Object.keys((a && a.lockedBlocks) || {}).length, 0);
   return null;
 }
 
 /** その種類は「増えたら達成」か、「変わったら達成」か */
 function 達成した(種類, 基準, 現在) {
   if (基準 === null || 現在 === null || 現在 === undefined) return false;
-  if (種類 === '射数を変える' || 種類 === '表示を変える' || 種類 === '○×を入れる')
+  if (種類 === '射数を変える' || 種類 === '表示を変える' || 種類 === '○×を入れる' || 種類 === '鍵をかける')
     return 現在 !== 基準;
   return 現在 > 基準;
 }

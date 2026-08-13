@@ -141,6 +141,8 @@ const k = () => {
       案内の間隔 = 案内.useTutorialTarget('記録.間隔'),
       案内の計 = 案内.useTutorialTarget('記録.計'),
       案内のリセット = 案内.useTutorialTarget('記録.リセット'),
+      案内の画像 = 案内.useTutorialTarget('記録.画像'),
+      案内の取り消し = 案内.useTutorialTarget('記録.取り消し'),
       案内のライブボタン = 案内.useTutorialTarget('記録.ライブ'),
       案内の保存ボタン = 案内.useTutorialTarget('記録.保存'),
       // ライブ中は全員で1本の共有履歴を使うので、押せるかどうかも
@@ -872,9 +874,16 @@ const k = () => {
                             return (0, A.jsx)(
                               l.default,
                               {
-                                // 使い方の案内は先頭の列だけ指す。繰り返しの中なのでフックは使えない
+                                // 使い方の案内が指す先。まだ名前の入っていない列を選ぶ。
+                                // 名前入りの列を指すと、押しても名前の数が増えず先へ進めない。
+                                // 繰り返しの中なのでフックは使えない
                                 ref: (node) => {
-                                  if (0 === t) 案内.setTutorialTargetNode('記録.射手選択', node);
+                                  const 一覧 = (Array.isArray(k) ? k : []).filter((e) => !!e);
+                                  let 指す = 一覧.findIndex(
+                                    (a) => a && !a.name && !a.isSeparator && !a.isTotalCalculator
+                                  );
+                                  if (指す < 0) 指す = 0;
+                                  if (t === 指す) 案内.setTutorialTargetNode('記録.射手選択', node);
                                 },
                                 style: {
                                   width:
@@ -983,6 +992,7 @@ const k = () => {
           children: (0, A.jsxs)(A.Fragment, {
             children: [
               (0, A.jsxs)(l.default, {
+                ref: 案内の取り消し,
                 style: W.historyBtns,
                 children: [
                   (0, A.jsx)(f.default, {
@@ -1071,6 +1081,7 @@ const k = () => {
                     ],
                   }),
                   (0, A.jsxs)(f.default, {
+                    ref: 案内の画像,
                     style: ({ hovered: e }) => [
                       W.addBtn,
                       { backgroundColor: 'rgba(142,142,147,0.1)' },
