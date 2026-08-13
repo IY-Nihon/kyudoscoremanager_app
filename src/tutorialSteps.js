@@ -304,4 +304,26 @@ function 手順を作る(役割, 手持ち) {
   return { 基本: 手順, 続き };
 }
 
-module.exports = { 手順を作る };
+/**
+ * その手順の操作が、いまの中身ではどうやっても成り立たないか。
+ *
+ * 「選択」は、部員が全員すでに記録表に並んでいると誰も選べない。一覧では
+ * 灰色の「選択済」になり、押しても何も起きない。部員が1人の団体はもちろん、
+ * 人数ぶん並べたあとに設定から見返したときも起きる。
+ * そのときは操作を求めず、説明だけにして「次へ」で進めるようにする。
+ *
+ * @param 手順  手順を作る が返す手順の1つ
+ * @param 状態  { archers, members, alumni }
+ */
+function 手が出せない(手順, 状態) {
+  const 種類 = 手順 && 手順.操作 && 手順.操作.種類;
+  if (種類 !== '名前を決める') return false;
+  const s = 状態 || {};
+  const 使用中 = new Set((s.archers || []).map((a) => a && a.memberId).filter(Boolean));
+  const 空きがある = [...(s.members || []), ...(s.alumni || [])].some(
+    (m) => m && m.id && !使用中.has(m.id)
+  );
+  return !空きがある;
+}
+
+module.exports = { 手順を作る, 手が出せない };
