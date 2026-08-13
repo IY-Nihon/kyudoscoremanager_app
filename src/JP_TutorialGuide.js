@@ -273,7 +273,7 @@ const TutorialOverlay = ({ navRef }) => {
   useEffect(() => {
     if (!いまの手順) return;
     let 捨てた = false;
-    (枠を置く(null), 自然高さを置く(0));
+    枠を置く(null);
     基準.current =
       いまの手順.操作 && いまの手順.操作.種類 !== 'タブへ移動'
         ? いまの値(useScoreStore.getState(), いまの手順.操作.種類)
@@ -350,24 +350,25 @@ const TutorialOverlay = ({ navRef }) => {
   // 重なるが、画面の外へはみ出して読めなくなるよりはよい
   // 幅の狭い端末では画面からはみ出す。画面に合わせて縮める
   const 吹き出しの幅 = Math.min(既定の吹き出しの幅, 画面幅 - 余白 * 2);
-  // 測るまでは上限を付けない（上限を付けて測ると、その上限がそのまま返る）
-  const 測定中 = 自然高さ === 0;
+  // 上限は画面の高さだけ。指す先の脇の狭さに合わせて絞ると、説明が小さな枠に
+  // 押し込まれて送らないと読めなくなる。狭いときは指す先に重ねてでも大きく出す
   const 入る高さ = 画面高 - 余白 * 2;
-  const 読める高さ = 自然高さ;
-  let 置き場 = 測定中
-    ? { top: 余白 }
-    : {
-        top: Math.max(余白, (画面高 - Math.min(読める高さ, 入る高さ)) / 2),
-        maxHeight: 入る高さ,
-      };
+  // 実際に必要な高さ。測れるまでは画面の3割を仮に置く
+  const 読める高さ = 自然高さ || Math.round(画面高 * 0.3);
+  let 置き場 = {
+    top: Math.max(余白, (画面高 - Math.min(読める高さ, 入る高さ)) / 2),
+    maxHeight: 入る高さ,
+  };
   let 吹き出しの左 = (画面幅 - 吹き出しの幅) / 2;
-  if (枠 && !測定中) {
+  if (枠) {
     const 下の空き = 画面高 - (枠.y + 枠.高さ) - 余白 * 2;
     const 上の空き = 枠.y - 余白 * 2;
+    // 収まる側に置く。上に出すときは下端を指す先の上に固定するので、
+    // 中身が何行でも指す先を覆わない
     if (下の空き >= 読める高さ && 下の空き >= 上の空き)
-      置き場 = { top: 枠.y + 枠.高さ + 余白, maxHeight: 下の空き };
-    else if (上の空き >= 読める高さ) 置き場 = { bottom: 画面高 - 枠.y + 余白, maxHeight: 上の空き };
-    else if (下の空き >= 読める高さ) 置き場 = { top: 枠.y + 枠.高さ + 余白, maxHeight: 下の空き };
+      置き場 = { top: 枠.y + 枠.高さ + 余白, maxHeight: 入る高さ };
+    else if (上の空き >= 読める高さ) 置き場 = { bottom: 画面高 - 枠.y + 余白, maxHeight: 入る高さ };
+    else if (下の空き >= 読める高さ) 置き場 = { top: 枠.y + 枠.高さ + 余白, maxHeight: 入る高さ };
     吹き出しの左 = Math.min(
       Math.max(余白, 枠.x + 枠.幅 / 2 - 吹き出しの幅 / 2),
       Math.max(余白, 画面幅 - 吹き出しの幅 - 余白)
@@ -422,16 +423,13 @@ const TutorialOverlay = ({ navRef }) => {
 
       <_View
         onLayout={(e) => {
-          const h = e.nativeEvent.layout.height;
-          // 測定中（上限なし）のときだけ拾う。上限を付けた後の値は当てにしない
-          if (測定中 && h > 0) 自然高さを置く(Math.ceil(h));
+          // 実際の高さを覚えて、次の描画から置き場所の判断に使う。
+          // 手順ごとに 0 に戻すと、前と同じ高さのときに onLayout が呼ばれず
+          // 0 のままになり、吹き出しが出なくなる。だから持ち越す
+          const h = Math.ceil(e.nativeEvent.layout.height);
+          if (h > 0 && Math.abs(h - 自然高さ) > 1) 自然高さを置く(h);
         }}
-        style={[
-          styles.吹き出し,
-          置き場,
-          { left: 吹き出しの左, width: 吹き出しの幅 },
-          測定中 && { opacity: 0 },
-        ]}
+        style={[styles.吹き出し, 置き場, { left: 吹き出しの左, width: 吹き出しの幅 }]}
       >
         <_View style={styles.見出し行}>
           <_Text style={styles.番号}>{`${番号 + 1} / ${手順.length}`}</_Text>
