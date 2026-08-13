@@ -12,7 +12,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const { ストアを用意する } = require('./helpers/storeHarness');
-const { 手順を作る, 手が出せない } = require('../src/tutorialSteps');
+const { 手順を作る, 手が出せない, 見本の中身を作る } = require('../src/tutorialSteps');
 
 // 案内の「操作」を、実際のストアの動きに置き換える
 // 「部員を増やす」は別画面での登録で、盤面には効かないのでここには要らない
@@ -207,6 +207,46 @@ test('見本：記録が無いときだけ、履歴と分析に見本を添え�
   };
   assert.deepEqual(見本たち(0), ['履歴', '分析'], '空のときは見本を出す');
   assert.deepEqual(見本たち(12), [], '記録があるのに見本を出している');
+});
+
+// 見本は、本物の履歴・分析の画面がそのまま読んで描く。
+// 画面が期待する形と、出てくる数字を押さえておく
+test('見本の中身：本物の画面が読める形になっている', () => {
+  const 見本 = 見本の中身を作る(new Date(2026, 7, 14));
+
+  assert.equal(見本.members.length, 3);
+  assert.equal(見本.sessions.length, 7);
+  assert.deepEqual(見本.alumni, []);
+  assert.deepEqual(見本.trash, []);
+
+  for (const s of 見本.sessions) {
+    assert.ok(s.id && s.title, '記録に id と題が要る');
+    assert.equal(typeof s.date, 'number', '日付は数値（並べ替えに使う）');
+    assert.equal(s.shotCount, 4);
+    assert.equal(s.includeInStats, true, '集計に入らないと分析に出ない');
+    assert.equal(s.archers.length, 3);
+    for (const a of s.archers) {
+      assert.equal(a.marks.length, 4, '射数ぶんの○×が要る');
+      assert.ok(
+        見本.members.some((m) => m.id === a.memberId),
+        '部員と結びついていないと、分析の順位に出ない'
+      );
+    }
+  }
+
+  // 分析の順位に出る数字。実画面で見えていた値と合わせてある
+  const 的中 = (memberId) =>
+    見本.sessions.reduce(
+      (合計, s) => 合計 + s.archers.find((a) => a.memberId === memberId).marks.filter((x) => x === '○').length,
+      0
+    );
+  assert.equal(的中('mihon-1'), 21, '山田 太郎 21/28 = 75.0%');
+  assert.equal(的中('mihon-2'), 18, '鈴木 花子 18/28 = 64.3%');
+  assert.equal(的中('mihon-3'), 16, '田中 一郎 16/28 = 57.1%');
+
+  // 年度をまたぐと履歴の年度切り替えに出てこない。4月〜のいまの年度に収める
+  const 年 = 見本.sessions.map((s) => new Date(s.date).getFullYear());
+  assert.deepEqual([...new Set(年)], [2026]);
 });
 
 // 設定の「使い方を見る」からは、すでに使い込んだ人も開く。

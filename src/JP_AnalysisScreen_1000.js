@@ -34,6 +34,7 @@ var t = require('./module_37'),
 require('./module_98');
 var c = require('./IS_WEB_199');
 require('./module_420');
+var 案内 = require('./JP_TutorialGuide');
 var u = require('./JP_useScoreStore_174'),
   h = require('./AntDesign_600'),
   f = require('./JP_CustomCalendarModal_695'),
@@ -65,7 +66,8 @@ const j = ({ navigation }) => {
     setSelectedHistorySessionId,
     setHistoryViewMode,
     setFocusedMemberId,
-  } = (0, u.useScoreStore)();
+    // 案内が見本を出しているあいだは、中身だけ見本に差し替わる
+  } = 案内.見本を重ねる((0, u.useScoreStore)());
 
   const D = (0, u.useScoreStore)((e) => e.myMemberName) || '';
   const [compareMembers, setCompareMembers] = (0, t.useState)([]);

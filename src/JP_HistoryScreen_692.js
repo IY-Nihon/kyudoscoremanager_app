@@ -36,6 +36,7 @@ require('./module_98');
 var f = e(require('./default_218')),
   x = require('./IS_WEB_199');
 require('./module_420');
+var 案内 = require('./JP_TutorialGuide');
 var y = require('./JP_useScoreStore_174'),
   b = require('./JP_module_693'),
   p = require('./JP_ArcherColumnView_594'),
@@ -101,7 +102,8 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
         setHistoryTagLogic: Z,
         focusedMemberId,
         setFocusedMemberId,
-      } = (0, y.useScoreStore)(),
+        // 案内が見本を出しているあいだは、中身だけ見本に差し替わる
+      } = 案内.見本を重ねる((0, y.useScoreStore)()),
       ee = (0, y.useScoreStore)((e) => e.myMemberName) || '',
       [te, re] = (0, t.useState)(''),
       [oe, ne] = (0, t.useState)(''),
