@@ -112,6 +112,9 @@ const k = () => {
         // 誰かがライブ中に取り消し／やり直しをしたときの知らせ
         historyNoticeAt: 共有履歴の知らせ,
         historyNoticeKind: 共有履歴の種類,
+        // 共有履歴の目印。取り消し・やり直しが押せるかの判定に使う
+        historySharedLen: 共有履歴の位置,
+        historySharedMax: 共有履歴の上限,
         activeGroupId: ne,
         publicGroupId: ie,
         activeArrowLocationEdit,
@@ -129,6 +132,12 @@ const k = () => {
       [警告を閉じた, 警告を閉じる] = (0, t.useState)(!1),
       Se = o.default.useRef(0),
       共有履歴を出した = o.default.useRef(0),
+      // ライブ中は全員で1本の共有履歴を使うので、押せるかどうかも
+      // 共有の目印で決める。手元の履歴だけで見ると、ライブ中に
+      // やり直しが永久に押せないままになる
+      ライブの知らせに任せる = !(!K || !Y),
+      戻せる = ライブの知らせに任せる ? (共有履歴の位置 || 0) > 0 : _.length > 0,
+      進める = ライブの知らせに任せる ? (共有履歴の位置 || 0) < (共有履歴の上限 || 0) : O.length > 0,
       [pe, Ce] = (0, t.useState)(!1),
       [Ie, ve] = (0, t.useState)(!1),
       [Be, Ae] = (0, t.useState)(8),
@@ -554,7 +563,11 @@ const k = () => {
                             marginBottom: 20,
                           },
                           value: Le,
-                          onChangeText: De,
+                          // 名前を直したら注意書きも消す。残すと、直したのに
+                          // 「使えません」が出たままで、何が悪いのか分からない
+                          onChangeText: (e) => {
+                            (De(e), Ne(null));
+                          },
                           placeholder: 'session_name_123',
                           autoCapitalize: 'none',
                           autoCorrect: !1,
@@ -618,7 +631,10 @@ const k = () => {
                                       children: [
                                         (0, A.jsx)(h.default, {
                                           style: { flex: 1, padding: 16 },
-                                          onPress: () => De(e),
+                                          // 選び直したら注意書きも消す（入力欄と揃える）
+                                          onPress: () => {
+                                            (De(e), Ne(null));
+                                          },
                                           children: (0, A.jsx)(a.default, {
                                             style: { fontSize: 16, color: '#333' },
                                             children: e,
@@ -690,6 +706,14 @@ const k = () => {
                       onPress: async () => {
                         if (!Le.trim()) return;
                         const e = Le.trim();
+                        // Realtime Database の枝の名前に使えない字を弾く。
+                        // とくに「/」は例外にならず階層の区切りとして通ってしまい、
+                        // 「5/8」のような日付を入れると 5 の下に 8 が作られる。
+                        // そうなると参加一覧にも出ず、参加も削除もできないライブが残る
+                        const 使えない字 = x.ライブ名に使えない字(e);
+                        if (使えない字)
+                          return void (Ne(`ライブ名に ${使えない字} は使えません。別の名前を入力してください。`),
+                          j.impactAsync(j.ImpactFeedbackStyle.Heavy));
                         if ((Ne(null), 'host' === Re)) {
                           Ge('ライブを開始しています...');
                           const 結果 = await x.useScoreStore.getState().startLiveSync(e);
@@ -944,25 +968,33 @@ const k = () => {
                   (0, A.jsx)(f.default, {
                     style: ({ hovered: e }) => [
                       W.historyBtn,
-                      { opacity: _.length > 0 ? 1 : 0.3 },
-                      e && _.length > 0 && m.IS_WEB && { backgroundColor: '#F2F2F7' },
+                      { opacity: 戻せる ? 1 : 0.3 },
+                      e && 戻せる && m.IS_WEB && { backgroundColor: '#F2F2F7' },
                     ],
                     onPress: () => {
-                      _.length > 0 && (D(), Ge('元に戻しました'), j.impactAsync(j.ImpactFeedbackStyle.Light));
+                      // ライブ中は共有の知らせ（「取り消しされました。」）が
+                      // 押した本人にも出る。ここでも出すと二つ重なる
+                      戻せる &&
+                        (D(),
+                        ライブの知らせに任せる || Ge('元に戻しました'),
+                        j.impactAsync(j.ImpactFeedbackStyle.Light));
                     },
-                    disabled: 0 === _.length,
+                    disabled: !戻せる,
                     children: (0, A.jsx)(p.Ionicons, { name: 'arrow-undo', size: 24, color: '#8E8E93' }),
                   }),
                   (0, A.jsx)(f.default, {
                     style: ({ hovered: e }) => [
                       W.historyBtn,
-                      { opacity: O.length > 0 ? 1 : 0.3 },
-                      e && O.length > 0 && m.IS_WEB && { backgroundColor: '#F2F2F7' },
+                      { opacity: 進める ? 1 : 0.3 },
+                      e && 進める && m.IS_WEB && { backgroundColor: '#F2F2F7' },
                     ],
                     onPress: () => {
-                      O.length > 0 && (H(), Ge('やり直しました'), j.impactAsync(j.ImpactFeedbackStyle.Light));
+                      進める &&
+                        (H(),
+                        ライブの知らせに任せる || Ge('やり直しました'),
+                        j.impactAsync(j.ImpactFeedbackStyle.Light));
                     },
-                    disabled: 0 === O.length,
+                    disabled: !進める,
                     children: (0, A.jsx)(p.Ionicons, { name: 'arrow-redo', size: 24, color: '#8E8E93' }),
                   }),
                 ],

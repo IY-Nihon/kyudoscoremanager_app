@@ -223,7 +223,131 @@ test('○×：手元の入力が、次の更新で古い内容に戻らない', 
   assert.equal(手元の射手(参.store).lastModified, 入れた日時, '日時が巻き戻っていない');
 });
 
+test('抜ける：主催者と参加者で分けず、どちらが抜けてもライブは残る', async () => {
+  // 仕様。抜けるのは手元だけで、残った人はそのまま続けられる。
+  // ライブを終わらせるのは「終了・保存」か、参加一覧から消したときだけ
+  const 主 = 端末(null, [射手()]);
+  await 主.store.getState().startLiveSync(ライブ名);
+
+  const 参 = 端末(主.ライブ, []);
+  参.store.getState().joinLiveSync(ライブ名);
+  await 待つ(20);
+  assert.equal(参.store.getState().isLiveActive, true, '前提：参加できている');
+
+  // 参加者が抜けても残る
+  参.store.getState().stopLiveSync();
+  await 待つ(20);
+  assert.equal(主.store.getState().isLiveActive, true, '主催者は続いている');
+  assert.notEqual(主.ライブ.値(道), null, '節点も残っている');
+
+  // 主催者が抜けても残る
+  主.store.getState().stopLiveSync();
+  await 待つ(20);
+  assert.equal(主.store.getState().isLiveActive, false, '抜けたのは手元だけ');
+  assert.notEqual(主.ライブ.値(道), null, 'ライブは終わらせない');
+  assert.notEqual(主.ライブ.値(道).status, 'finished', '終了扱いにもしない');
+});
+
 // ──────────────────────────────────────────────────────────────
+const 日 = 24 * 60 * 60 * 1000;
+
+test('共有履歴はライブの枝の外に置く（一覧の取得に付いてこない）', async () => {
+  // 中に置くと、参加一覧が live_sessions/{団体} を丸ごと読むときに履歴まで
+  // 降りてくる。実測で 47KB のうち 43KB が履歴だった
+  const 主 = 端末(null, [射手()]);
+  await 主.store.getState().startLiveSync(ライブ名);
+  主.store.getState().updateMark('a1', 0, '○');
+  await 待つ(20);
+
+  assert.equal(主.store.getState().historySharedLen, 1, '前提：1手ぶん積まれている');
+  assert.notEqual(主.ライブ.値(`live_history/${団体}/${ライブ名}/0`), null, '外の枝に入っている');
+  assert.equal(主.ライブ.値(`live_sessions/${団体}/${ライブ名}/history`), null, '中には入っていない');
+
+  // 取り消しは外の枝から読めている
+  主.store.getState().undo();
+  await 待つ(20);
+  assert.equal(主.store.getState().archers[0].marks[0], '', '取り消しは効く');
+});
+
+test('片付け：ライブを消すと、外に置いた共有履歴も消える', async () => {
+  const 主 = 端末(null, [射手()]);
+  await 主.store.getState().startLiveSync(ライブ名);
+  主.store.getState().updateMark('a1', 0, '○');
+  await 待つ(20);
+  assert.notEqual(主.ライブ.値(`live_history/${団体}/${ライブ名}/0`), null, '前提：履歴がある');
+
+  await 主.store.getState().deleteLiveSession(ライブ名);
+  await 待つ(20);
+
+  assert.equal(主.ライブ.値(`live_sessions/${団体}/${ライブ名}`), null, 'ライブが消える');
+  assert.equal(主.ライブ.値(`live_history/${団体}/${ライブ名}`), null, '履歴も消える');
+});
+
+test('一覧：最終更新から14日を過ぎたライブは出さず、消す', async () => {
+  // ライブはどちらが抜けても残る作りなので、放っておくと使われなくなった
+  // ものが溜まり続ける
+  const 端 = 端末();
+  const いま = Date.now();
+  端.ライブ.置く(`live_sessions/${団体}/先月の練習/state`, { status: 'active', timestamp: いま - 20 * 日 });
+  端.ライブ.置く(`live_sessions/${団体}/今朝/state`, { status: 'active', timestamp: いま - 60000 });
+
+  await 端.store.getState().fetchActiveLiveSessions();
+
+  assert.deepEqual(端.store.getState().liveSessionsList, ['今朝'], '古いほうは出さない');
+  assert.equal(端.ライブ.値(`live_sessions/${団体}/先月の練習`), null, '古いほうは消えている');
+  assert.notEqual(端.ライブ.値(`live_sessions/${団体}/今朝`), null, '新しいほうは残す');
+});
+
+test('一覧：最終更新が新しい順に並べる', async () => {
+  const 端 = 端末();
+  const いま = Date.now();
+  端.ライブ.置く(`live_sessions/${団体}/おととい/state`, { status: 'active', timestamp: いま - 2 * 日 });
+  端.ライブ.置く(`live_sessions/${団体}/さっき/state`, { status: 'active', timestamp: いま - 60000 });
+  端.ライブ.置く(`live_sessions/${団体}/昨日/state`, { status: 'active', timestamp: いま - 1 * 日 });
+
+  await 端.store.getState().fetchActiveLiveSessions();
+
+  assert.deepEqual(端.store.getState().liveSessionsList, ['さっき', '昨日', 'おととい']);
+});
+
+test('一覧：判定にはサーバーが打った日時を使う（端末の時計に頼らない）', async () => {
+  // 端末の時計が大きく狂っていると、使用中のライブを「古い」と見なして
+  // 消しかねない。timestamp は書いた端末の時計、updated_at はサーバーの時計
+  const 端 = 端末();
+  const いま = Date.now();
+  端.ライブ.置く(`live_sessions/${団体}/時計がずれた端末/state`, {
+    status: 'active',
+    timestamp: いま - 30 * 日, // 端末の時計が30日遅れている
+    updated_at: いま - 60000, // サーバーから見れば1分前
+  });
+  端.ライブ.置く(`live_sessions/${団体}/本当に古い/state`, {
+    status: 'active',
+    timestamp: いま - 60000, // 端末の時計は進んでいる
+    updated_at: いま - 30 * 日, // サーバーから見れば30日前
+  });
+
+  await 端.store.getState().fetchActiveLiveSessions();
+
+  assert.ok(
+    端.store.getState().liveSessionsList.includes('時計がずれた端末'),
+    '端末の時計が遅れていても消さない'
+  );
+  assert.notEqual(端.ライブ.値(`live_sessions/${団体}/時計がずれた端末`), null, '節点も残す');
+  assert.ok(!端.store.getState().liveSessionsList.includes('本当に古い'), 'サーバー基準で古いものは出さない');
+  assert.equal(端.ライブ.値(`live_sessions/${団体}/本当に古い`), null, 'サーバー基準で古いものは消す');
+});
+
+test('一覧：最終更新が分からないライブは消さない', async () => {
+  // 判断できないものを消すほうが危ない
+  const 端 = 端末();
+  端.ライブ.置く(`live_sessions/${団体}/日時なし/state`, { status: 'active' });
+
+  await 端.store.getState().fetchActiveLiveSessions();
+
+  assert.deepEqual(端.store.getState().liveSessionsList, ['日時なし'], '一覧には出す');
+  assert.notEqual(端.ライブ.値(`live_sessions/${団体}/日時なし`), null, '消さない');
+});
+
 test('終了：参加者がライブ節点を作り直さない', async () => {
   // 直す前は finished を受けたあと reset を送り返しており、届くのが遅れると
   // 主催者が消した節点を作り直して、幽霊セッションが一覧に残っていた
@@ -265,4 +389,32 @@ test('リセット：受け取ったリセットを送り返さない', async ()
 
   assert.equal(主.store.getState().archers.length, 0, 'リセットは効いている');
   assert.equal(主.ライブ.記録.length, 前の書き込み数, '送り返していない');
+});
+
+test('入り直し：最後に書いたのが自分でも、参加した直後に盤面が出る', async () => {
+  // 自分の送信の返りを無視する判定が、参加して最初の1通にも当たっていた。
+  // 当たると、誰かが次に何かするまで盤面が空のままになる
+  const 主 = 端末(null, [射手()]);
+  await 主.store.getState().startLiveSync(ライブ名);
+
+  const 参 = 端末(主.ライブ, []);
+  参.store.getState().joinLiveSync(ライブ名);
+  await 待つ(20);
+  assert.equal(参.store.getState().archers.length, 1, '前提：一度は届いている');
+
+  // 参加者が最後の書き込み手になる
+  参.store.getState().updateMark('a1', 0, '○');
+  await 待つ(20);
+  assert.equal(参.ライブ.値(道).timestamp, 参.store.getState().lastPushedTimestamp, '前提：最後に書いたのは参加者');
+
+  // 退出して入り直す
+  参.store.getState().stopLiveSync();
+  await 待つ(10);
+  assert.equal(参.store.getState().archers.length, 0, '前提：退出で盤面が消える');
+
+  参.store.getState().joinLiveSync(ライブ名);
+  await 待つ(20);
+
+  assert.equal(参.store.getState().archers.length, 1, '入り直してすぐ盤面が出る');
+  assert.equal(参.store.getState().archers[0].marks[0], '○', '○× も揃っている');
 });

@@ -33,6 +33,13 @@ function e(e) {
     get: function () {
       return M;
     },
+  }),
+  // ライブ名の検査。画面から使う
+  Object.defineProperty(_e, 'ライブ名に使えない字', {
+    enumerable: !0,
+    get: function () {
+      return 同期規則.ライブ名に使えない字;
+    },
   }));
 var s = require('./module_175'),
   _t_orig = require('./db_178'),
@@ -113,6 +120,7 @@ const h = 同期規則.generateUniquePersonalId,
   trashedAtMillis = 同期規則.trashedAtMillis,
   normalizeTag = 同期規則.normalizeTag,
   cleanUpTagsArray = 同期規則.cleanUpTagsArray,
+  参加できるライブ = 同期規則.参加できるライブ,
   cleanUpSessions = 同期規則.cleanUpSessions;
 const f = (e, s) => {
     if (!e) return s ? Array(s).fill('') : [];
@@ -206,6 +214,10 @@ const v = (e, s, o) => {
       archer_timestamps: d,
       shotsPerRound: o,
       timestamp: a,
+      // 参加一覧の「最終更新」はこちらを見る。timestamp は書いた端末の時計で、
+      // 自分の送信の返りを見分けるのに使うため端末の値のままにしてある。
+      // 端末の時計が狂っていると、使用中のライブが古いと見なされて消えかねない
+      updated_at: (0, i.serverTimestamp)(),
       status: 'active',
     };
     (console.log('[Store] pushLiveAll state updated, lastPushedTimestamp:', a),
@@ -223,6 +235,7 @@ const v = (e, s, o) => {
         [`marks_by_id/${s}/${o}`]: a,
         [`archer_timestamps/${s}`]: n,
         timestamp: c,
+        updated_at: (0, i.serverTimestamp)(),
       };
     (M.getState().updateState({
       lastPushedTimestamp: c,
@@ -253,10 +266,14 @@ const v = (e, s, o) => {
 /**
  * ライブ中の共有履歴に1手ぶん積む。
  *
- * 置き場所は state の外（live_sessions/{団体}/{名前}/history/{番号}）。
- * state の中に置くと、1射ごとに全員が履歴ごと再取得することになって重い。
+ * 置き場所はライブの枝の外（live_history/{団体}/{名前}/{番号}）。
  * 「どこまで戻したか」の目印だけは state に置き、全員へ配る。
  * 目印を使うので問い合わせ（query）が要らず、添字で直接読める。
+ *
+ * 元は live_sessions/{団体}/{名前}/history に置いていた。Realtime Database は
+ * 枝の途中だけを選んで読めないため、参加一覧が live_sessions/{団体} を丸ごと
+ * 読むときに履歴まで降りてきていた。実測で 47KB のうち 43KB が履歴で、
+ * 20人・30手だと 1ライブあたり 376KB になる。一覧には要らないので外へ出した。
  */
 /**
  * 共有履歴に残す形に整える。
@@ -269,14 +286,60 @@ const 履歴用に整える = (一覧) =>
       marks: ((一覧[番] && 一覧[番].marks) || []).map((m) => (null == m ? '' : m)),
     })
   );
+/** 共有履歴の置き場所。ライブの枝の外に置く（上の説明を参照） */
+const 共有履歴の場所 = (団体, 名前) => `live_history/${団体}/${名前}`;
+/**
+ * 端末の時計とサーバーの時計の差（ミリ秒）。
+ *
+ * 古いライブを消すかどうかは日時の引き算で決めるので、端末の時計が大きく
+ * 狂っていると、使用中のライブを「古い」と見なして消しかねない。
+ *
+ * .info/serverTimeOffset は規則の対象外で、つないだ時点で手元に配られる。
+ * 通信は増えない（実測で onValue が1ミリ秒、ふつうの枝の取得は230ミリ秒）。
+ * ただし get() は「Invalid token in path」で弾かれるので onValue を使うこと。
+ */
+let サーバーとの時差 = 0;
+let 時差の見張り = null;
+const 時差を見張る = () => {
+  if (時差の見張り || !fb.rtdb) return 時差の見張り;
+  時差の見張り = new Promise((解決) => {
+    let 済み = !1;
+    const 終わる = () => {
+      if (!済み) ((済み = !0), 解決());
+    };
+    try {
+      ((0, i.onValue)(
+        (0, i.ref)(fb.rtdb, '.info/serverTimeOffset'),
+        (s) => {
+          const 差 = s.val();
+          if ('number' == typeof 差)
+            ((サーバーとの時差 = 差), console.log('[Store] サーバーとの時差:', 差, 'ミリ秒'));
+          終わる();
+        },
+        () => 終わる()
+      ),
+        // つながっていなければ来ない。待ち続けない
+        setTimeout(終わる, 2e3));
+    } catch (e) {
+      終わる();
+    }
+  });
+  return 時差の見張り;
+};
+/** サーバーの時計に合わせた「いま」。取れなければ手元の時計のまま */
+const サーバー時刻 = async () => {
+  if (!fb.rtdb) return Date.now();
+  await 時差を見張る();
+  return Date.now() + サーバーとの時差;
+};
 const 共有履歴へ積む = (前の盤面, 後の盤面, s) => {
   const 団体 = M.getState().activeGroupId,
      名前 = s().liveSessionName;
   if (!fb.rtdb || !団体 || !名前) return;
-  const 根 = `live_sessions/${団体}/${名前}`;
+  const 履歴の根 = 共有履歴の場所(団体, 名前);
   const 位置 = s().historySharedLen || 0;
   const 本数 = s().shotsPerRound;
-  (0, i.set)((0, i.ref)(fb.rtdb, `${根}/history/${位置}`), {
+  (0, i.set)((0, i.ref)(fb.rtdb, `${履歴の根}/${位置}`), {
     前: 履歴用に整える(前の盤面),
     後: 履歴用に整える(後の盤面),
     本数: 本数,
@@ -284,14 +347,14 @@ const 共有履歴へ積む = (前の盤面, 後の盤面, s) => {
   }).catch((e) => console.error('[Store] 共有履歴の書き込みに失敗:', e));
   // 目印を進める。新しい操作をしたので、やり直せる分はここで打ち切る
   const 次 = 位置 + 1;
-  ((0, i.update)((0, i.ref)(fb.rtdb, `${根}/state`), {
+  ((0, i.update)((0, i.ref)(fb.rtdb, `live_sessions/${団体}/${名前}/state`), {
     history_len: 次,
     history_max: 次,
   }).catch(() => {}),
     M.getState().updateState({ historySharedLen: 次, historySharedMax: 次 }));
   // 古い手を捨てる（上限を超えた分）
   if (次 > 共有履歴の上限)
-    (0, i.remove)((0, i.ref)(fb.rtdb, `${根}/history/${次 - 共有履歴の上限 - 1}`)).catch(() => {});
+    (0, i.remove)((0, i.ref)(fb.rtdb, `${履歴の根}/${次 - 共有履歴の上限 - 1}`)).catch(() => {});
 };
 /**
  * ライブから届いた state から、共有履歴の目印と知らせを取り込む。
@@ -302,8 +365,13 @@ const 共有履歴の目印を受け取る = (状態, e, s) => {
   const 変更 = {};
   if ('number' == typeof 状態.history_len) 変更.historySharedLen = 状態.history_len;
   if ('number' == typeof 状態.history_max) 変更.historySharedMax = 状態.history_max;
-  // 自分が起こしたものでなければ、画面に知らせる材料を渡す
-  if (状態.history_at && 状態.history_at !== s().historyHandledAt) {
+  // 参加して最初の1通は、その場で起きたことではなく「これまでの結果」。
+  // 知らせを出すと、過去に一度でも取り消しがあったライブに入るたび
+  // 「取り消しされました。」が出てしまうので、目印だけ引き取る
+  if (s().historyIsFirstSnapshot) {
+    ((変更.historyIsFirstSnapshot = !1), (変更.historyHandledAt = 状態.history_at || 0));
+  } else if (状態.history_at && 状態.history_at !== s().historyHandledAt) {
+    // 自分が起こしたものでなければ、画面に知らせる材料を渡す
     ((変更.historyHandledAt = 状態.history_at),
       (変更.historyNoticeAt = 状態.history_at),
       (変更.historyNoticeKind = 状態.history_kind || '取り消し'));
@@ -385,6 +453,7 @@ const M = (0, s.create)()(
         // max は「やり直せる上限」。どちらも state 経由で全員に配られる
         historySharedLen: 0,
         historySharedMax: 0,
+        historyIsFirstSnapshot: !1,
         // 取り消し・やり直しの通知を出したかどうかの控え
         historyHandledAt: 0,
         // 画面へ知らせるための材料（誰かが取り消した／やり直した）
@@ -1059,7 +1128,9 @@ const M = (0, s.create)()(
             const 上限 = 'number' == typeof v0.history_max ? v0.history_max : s().historySharedMax || 0;
             const 読む番号 = 向き < 0 ? 位置 - 1 : 位置;
             if (向き < 0 ? 位置 <= 0 : 位置 >= 上限) return; // これ以上は戻せない／進めない
-            const 手 = await (0, i.get)((0, i.ref)(fb.rtdb, `${根}/history/${読む番号}`));
+            const 手 = await (0, i.get)(
+              (0, i.ref)(fb.rtdb, `${共有履歴の場所(団体, 名前)}/${読む番号}`)
+            );
             if (!手.exists()) return;
             const 中身 = 手.val() || {};
             const 盤面 = w({
@@ -1542,6 +1613,13 @@ const M = (0, s.create)()(
               liveSessionName: null,
               lastLocalChange: Date.now(),
               syncStatus: '未同期',
+              // 盤面を片付けたので、遡れる手も捨てる。リセットと同じ扱い。
+              // 残すと、保存したあとに取り消しを押すと保存済みの盤面が戻り、
+              // そのままもう一度保存すると同じ記録が二重に入る
+              historyStack: [],
+              redoStack: [],
+              historySharedLen: 0,
+              historySharedMax: 0,
             })));
           // ライブ記録の後始末。届かなくても保存には影響させない
           if (元のライブ名 && fb.rtdb) {
@@ -1551,7 +1629,9 @@ const M = (0, s.create)()(
               timestamp: (0, i.serverTimestamp)(),
             }).catch(() => {}),
               setTimeout(() => {
-                (0, i.remove)(e).catch(() => {});
+                ((0, i.remove)(e).catch(() => {}),
+                  // 共有履歴は別の枝にあるので、明示的に消す
+                  (0, i.remove)((0, i.ref)(fb.rtdb, 共有履歴の場所(S, 元のライブ名))).catch(() => {}));
               }, 2e3));
           }
           // クラウドへ送る。ここも待たない。
@@ -2798,6 +2878,14 @@ const M = (0, s.create)()(
               liveSessionName: o,
               isIncomingLiveSync: !1,
               lastLocalChange: Date.now(),
+              // 共有履歴はライブごとに別物。前のライブの目印を持ち越すと、
+              // 新しいライブでいきなり取り消しが押せて、無い手を読みにいく。
+              // 主催者は同名のライブを作れないので必ず新品。参加者と違って
+              // 「これまでの結果」が届くことがなく、初回を飛ばす目印は要らない
+              historySharedLen: 0,
+              historySharedMax: 0,
+              historyHandledAt: 0,
+              historyIsFirstSnapshot: !1,
             }));
           const a = s();
           if (!fb.rtdb) return '確認できない';
@@ -2874,6 +2962,15 @@ const M = (0, s.create)()(
               liveSessionName: o,
               isIncomingLiveSync: !1,
               lastLocalChange: 0,
+              // 参加して最初に届く1通は必ず取り込む。
+              // 自分の送信の返りを無視する判定（timestamp の一致）は、
+              // 最後に書き込んだのが自分自身だと1通目にも当たってしまう。
+              // 当たると盤面が空のまま、誰かが次に何かするまで何も出ない
+              lastPushedTimestamp: 0,
+              // 主催者側と同じ理由。目印は参加したライブのものを受け取り直す
+              historySharedLen: 0,
+              historySharedMax: 0,
+              historyIsFirstSnapshot: !0,
             }),
             !fb.rtdb)
           )
@@ -2939,6 +3036,10 @@ const M = (0, s.create)()(
           }),
             c.IS_WEB && console.log('ライブに参加しました: ' + o));
         },
+        // 抜けるのは手元だけで、ライブそのものは残す。主催者と参加者で
+        // 振る舞いを分けないための作りで、どちらが抜けても残った人は
+        // そのまま続けられる。ライブを終わらせるのは「終了・保存」か、
+        // 参加一覧から消したときだけ
         stopLiveSync: (o = !1) => {
           const a = s();
           (a.liveSessionName &&
@@ -2951,26 +3052,27 @@ const M = (0, s.create)()(
               liveSessionName: null,
             }));
         },
+        // 参加一覧を取り直す。ここでだけ、古いライブの片付けもする。
+        // 購読側（listenToLiveSessions）は変化のたびに呼ばれるので、
+        // 消す処理は明示的に取りにいくこちらへ寄せてある
         fetchActiveLiveSessions: async () => {
           if (!fb.rtdb) return;
-          const o = (0, i.ref)(fb.rtdb, `live_sessions/${s().activeGroupId}`);
+          const 団体 = s().activeGroupId;
+          const o = (0, i.ref)(fb.rtdb, `live_sessions/${団体}`);
           try {
             const s = await (0, i.get)(o);
-            if (s.exists()) {
-              const t = s.val();
-              if (t) {
-                const s = Object.keys(t).filter((e) => t[e] && t[e].state);
-                e({
-                  liveSessionsList: s,
-                });
-              } else
-                e({
-                  liveSessionsList: [],
-                });
-            } else
-              e({
-                liveSessionsList: [],
-              });
+            const 節点 = s.exists() ? s.val() : null;
+            const { 出す, 古い } = 参加できるライブ(節点, await サーバー時刻());
+            e({
+              liveSessionsList: 出す,
+            });
+            // 最終更新から日が経ったものは、一覧から外したうえで消す。
+            // 共有履歴は別の枝にあるので、そちらも一緒に消す
+            古い.forEach((名) => {
+              ((0, i.remove)((0, i.ref)(fb.rtdb, `live_sessions/${団体}/${名}`)).catch(() => {}),
+                (0, i.remove)((0, i.ref)(fb.rtdb, 共有履歴の場所(団体, 名))).catch(() => {}),
+                console.log(`[Store] 使われなくなったライブを片付けました: ${名}`));
+            });
           } catch (e) {
             console.error('Fetch live sessions error:', e);
           }
@@ -2981,21 +3083,10 @@ const M = (0, s.create)()(
           return (0, i.onValue)(
             o,
             (s) => {
-              if (s.exists()) {
-                const t = s.val();
-                if (t) {
-                  const s = Object.keys(t).filter((e) => t[e] && t[e].state);
-                  e({
-                    liveSessionsList: s,
-                  });
-                } else
-                  e({
-                    liveSessionsList: [],
-                  });
-              } else
-                e({
-                  liveSessionsList: [],
-                });
+              // ここは消さないので、時計の補正は控えの値で足りる
+              e({
+                liveSessionsList: 参加できるライブ(s.exists() ? s.val() : null, Date.now() + サーバーとの時差).出す,
+              });
             },
             (e) => {
               console.error('Listen to live sessions error:', e);
@@ -3005,8 +3096,11 @@ const M = (0, s.create)()(
         deleteLiveSession: async (o) => {
           if (fb.rtdb)
             try {
-              const a = (0, i.ref)(fb.rtdb, `live_sessions/${s().activeGroupId}/${o}`);
+              const 団体 = s().activeGroupId;
+              const a = (0, i.ref)(fb.rtdb, `live_sessions/${団体}/${o}`);
               (await (0, i.set)(a, null),
+                // 共有履歴は別の枝にあるので、そちらも消す
+                (0, i.remove)((0, i.ref)(fb.rtdb, 共有履歴の場所(団体, o))).catch(() => {}),
                 e({
                   liveSessionsList: s().liveSessionsList.filter((e) => e !== o),
                 }));
@@ -3518,6 +3612,11 @@ const M = (0, s.create)()(
             currentSessionTags: [],
             lastLocalChange: a,
             lastResetHandled: o ? a : s().lastResetHandled,
+            // 盤面を捨てたので、遡れる手も捨てる。ライブ中でないときに
+            // historyStack を空にするのと同じ扱い。残すと、リセットしたあとの
+            // 取り消しで、消したはずの盤面が戻ってくる
+            historySharedLen: 0,
+            historySharedMax: 0,
           });
           const { isLiveActive: n, liveSessionName: c } = s();
           if (o && n && c && fb.rtdb) {
@@ -3528,6 +3627,10 @@ const M = (0, s.create)()(
               archer_timestamps: {},
               reset_at: a,
               timestamp: a,
+              updated_at: (0, i.serverTimestamp)(),
+              // 共有履歴の目印も全員ぶん戻す
+              history_len: 0,
+              history_max: 0,
             }).catch((e) => console.error('Reset Live Sync Error:', e)),
               e({
                 lastPushedTimestamp: a,
