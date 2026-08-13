@@ -359,4 +359,54 @@ function 手が出せない(手順, 状態) {
   return !空きがある;
 }
 
-module.exports = { 手順を作る, 手が出せない };
+/**
+ * 見本の中身。履歴・分析の手順のあいだだけ、画面が読むデータをこれに差し替える。
+ *
+ * 画面そのものは本物をそのまま使う（見た目を写し取らないので、画面を直しても
+ * ズレない）。差し替えるのは中身だけで、ストアにも通信にも触れないため、
+ * 見本が本物として書き込まれる経路は無い。
+ *
+ * 数字は撮影用の団体（scripts/seed-tutorial-shots.mjs）と同じものにしてある。
+ */
+const 見本の部員 = [
+  { id: 'mihon-1', personalId: '2001', name: '山田 太郎', gender: '男子', grade: 3, termKi: 51 },
+  { id: 'mihon-2', personalId: '2002', name: '鈴木 花子', gender: '女子', grade: 2, termKi: 52 },
+  { id: 'mihon-3', personalId: '2003', name: '田中 一郎', gender: '男子', grade: 1, termKi: 53 },
+];
+
+// 月をまたいで少しずつ上がっていく形。分析の順位に差が出る
+const 見本の練習 = [
+  { 月: 4, 日: 12, 題: '通常練習', 的中: [2, 1, 2] },
+  { 月: 5, 日: 10, 題: '通常練習', 的中: [2, 2, 1] },
+  { 月: 6, 日: 7, 題: '記録会', 的中: [3, 2, 2] },
+  { 月: 7, 日: 5, 題: '通常練習', 的中: [3, 3, 2] },
+  { 月: 8, 日: 8, 題: '通常練習', 的中: [3, 3, 3] },
+  { 月: 8, 日: 10, 題: '記録会', 的中: [4, 3, 3] },
+  { 月: 8, 日: 12, 題: '通常練習', 的中: [4, 4, 3] },
+];
+
+function 見本の中身を作る(今 = new Date()) {
+  // 年度をまたがないよう、いまの年度の4月からの日付にする
+  const 年度 = 今.getMonth() + 1 >= 4 ? 今.getFullYear() : 今.getFullYear() - 1;
+  const 印 = (当たり, 射数) => Array.from({ length: 射数 }, (_, i) => (i < 当たり ? '○' : '×'));
+  const sessions = 見本の練習.map((p, i) => ({
+    id: `mihon-ses-${i + 1}`,
+    date: new Date(年度, p.月 - 1, p.日, 18, 0, 0).getTime(),
+    title: p.題,
+    note: '',
+    shotCount: 4,
+    includeInStats: true,
+    tags: ['#正規練習'],
+    archerNames: 見本の部員.map((m) => m.name),
+    archers: 見本の部員.map((m, k) => ({
+      id: `mihon-a${k + 1}`,
+      name: m.name,
+      memberId: m.id,
+      marks: 印(p.的中[k], 4),
+    })),
+    lastModified: 今.getTime(),
+  }));
+  return { members: 見本の部員, alumni: [], sessions, trash: [] };
+}
+
+module.exports = { 手順を作る, 手が出せない, 見本の中身を作る };
