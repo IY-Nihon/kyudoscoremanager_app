@@ -12,7 +12,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const { ストアを用意する } = require('./helpers/storeHarness');
-const { 手順を作る } = require('../src/tutorialSteps');
+const { 手順を作る, 手が出せない } = require('../src/tutorialSteps');
 
 // 案内の「操作」を、実際のストアの動きに置き換える
 // 「部員を増やす」は別画面での登録で、盤面には効かないのでここには要らない
@@ -36,7 +36,7 @@ function 案内どおりに押す(役割) {
   return store.getState().archers;
 }
 
-for (const 役割 of ['group', 'personal']) {
+for (const 役割 of ['group', 'member']) {
   test(`案内(${役割})：間隔と計が隣り合わない`, () => {
     const 列 = 案内どおりに押す(役割);
     const 印 = (c) => (c.isSeparator ? '間隔' : c.isTotalCalculator ? '計' : '射手');
@@ -114,7 +114,7 @@ const 押せるものがある = (store, 手順) => {
   return true;
 };
 
-for (const 役割 of ['group', 'personal']) {
+for (const 役割 of ['group', 'member']) {
   test(`案内(${役割})：どこを飛ばしても、次の手順に押すものが在る`, () => {
     const { 基本, 続き } = 手順を作る(役割, { 部員数: 3, 記録数: 0 });
     const 全手順 = [...基本, ...続き];
@@ -163,6 +163,42 @@ test('案内：すでに部員がいる団体には、部員の登録を強い�
   assert.ok(!選択の文.includes('ゲスト登録'), '部員がいるのにゲスト登録を勧めている');
 });
 
+// 「選択」は、部員が全員すでに並んでいると誰も選べない（一覧では灰色の
+// 「選択済」になる）。指示どおりに操作できないまま止まらないようにする
+test('選択：選べる人がいないときは、操作を求めない', () => {
+  const { 基本 } = 手順を作る('group', { 部員数: 1, 記録数: 0 });
+  const 選択の手順 = 基本.find((h) => h.操作 && h.操作.種類 === '名前を決める');
+
+  const 部員 = [{ id: 'm1', name: '山田 太郎' }];
+  assert.equal(
+    手が出せない(選択の手順, { members: 部員, archers: [{ id: 'a1', memberId: 'm1' }, { id: 'a2' }] }),
+    true,
+    '1人しかいない部員がもう並んでいるのに、選べと言っている'
+  );
+  assert.equal(
+    手が出せない(選択の手順, { members: 部員, archers: [{ id: 'a1' }] }),
+    false,
+    'まだ割り当てていないのに、操作を取り上げている'
+  );
+  // 卒業生も選べる相手に数える
+  assert.equal(
+    手が出せない(選択の手順, {
+      members: 部員,
+      alumni: [{ id: 'x1', name: '卒業生1' }],
+      archers: [{ id: 'a1', memberId: 'm1' }],
+    }),
+    false,
+    '卒業生が選べるのに、操作を取り上げている'
+  );
+  // 部員が1人もいない団体は、ゲスト登録という手が残るので取り上げない…
+  // わけではなく、選べる相手がいないので説明だけにする
+  assert.equal(手が出せない(選択の手順, { members: [], archers: [{ id: 'a1' }] }), true);
+
+  // 関係のない手順には効かない
+  const 人の手順 = 基本.find((h) => h.操作 && h.操作.種類 === '射手を増やす');
+  assert.equal(手が出せない(人の手順, { members: [], archers: [] }), false);
+});
+
 // 設定の「使い方を見る」からは、すでに使い込んだ人も開く。
 // 「まだ1人もいません」「いまは空です」が事実と違って出ないようにする
 test('案内：すでに部員や記録があるときは「まだ無い」と言わない', () => {
@@ -182,5 +218,5 @@ test('案内：すでに部員や記録があるときは「まだ無い」と�
   assert.ok(使用中.includes('いま12件たまっています。'));
 
   // 省略しても落ちない（空とみなす）
-  assert.ok(全文('personal').length > 0);
+  assert.ok(全文('member').length > 0);
 });
