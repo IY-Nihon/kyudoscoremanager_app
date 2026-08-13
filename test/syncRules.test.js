@@ -22,6 +22,7 @@ const {
   generateUniquePersonalId,
   mergeLiveArchers,
   normalizeArrowLocations,
+  ライブ名に使えない字,
 } = require('../src/syncRules');
 
 /** Firestore の Timestamp のふり */
@@ -358,4 +359,25 @@ test('generateUniquePersonalId: 卒業生の分も避ける', () => {
     const id = generateUniquePersonalId(名簿, 卒業生);
     assert.ok(id !== '1111' && id !== '2222', '重複した: ' + id);
   }
+});
+
+// ──────────────────────────────────────────────────────────────
+test('ライブ名：Realtime Database で使えない字を弾く', () => {
+  // 「/」は例外にならず階層の区切りとして通ってしまう。本番には
+  // 「5/8」という日付を名前にしたせいで、参加も削除もできないライブが
+  // 1件残っていた
+  assert.equal(ライブ名に使えない字('5/8'), '/', 'スラッシュを弾く');
+  assert.equal(ライブ名に使えない字('2026.5.8'), '.', 'ピリオドを弾く');
+  assert.equal(ライブ名に使えない字('a#b'), '#');
+  assert.equal(ライブ名に使えない字('x$y'), '$');
+  assert.equal(ライブ名に使えない字('[]'), '[ ]', '複数あれば並べる');
+  assert.equal(ライブ名に使えない字('改行\nあり'), '改行などの制御文字');
+});
+
+test('ライブ名：ふつうの名前は通す', () => {
+  for (const 名 of ['朝練', '5月8日', '2026-05-08', 'morning practice', '一年生 交替あり']) {
+    assert.equal(ライブ名に使えない字(名), null, `弾かれた: ${名}`);
+  }
+  assert.equal(ライブ名に使えない字(''), null, '空は別の検査で弾く');
+  assert.equal(ライブ名に使えない字(undefined), null, '文字列でなければ何も言わない');
 });
