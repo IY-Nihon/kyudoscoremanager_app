@@ -137,6 +137,9 @@ const k = () => {
       案内の人ボタン = 案内.useTutorialTarget('記録.人'),
       案内の記録表 = 案内.useTutorialTarget('記録.表'),
       案内の射数 = 案内.useTutorialTarget('記録.射数'),
+      案内の拡大 = 案内.useTutorialTarget('記録.拡大'),
+      案内の間隔 = 案内.useTutorialTarget('記録.間隔'),
+      案内の計 = 案内.useTutorialTarget('記録.計'),
       案内のライブボタン = 案内.useTutorialTarget('記録.ライブ'),
       案内の保存ボタン = 案内.useTutorialTarget('記録.保存'),
       // ライブ中は全員で1本の共有履歴を使うので、押せるかどうかも
@@ -326,6 +329,7 @@ const k = () => {
                   ],
                 }),
                 (0, A.jsxs)(l.default, {
+                  ref: 案内の拡大,
                   style: W.zoomContainer,
                   children: [
                     (0, A.jsx)(h.default, {
@@ -1032,6 +1036,7 @@ const k = () => {
                     ],
                   }),
                   (0, A.jsxs)(f.default, {
+                    ref: 案内の間隔,
                     style: ({ hovered: e }) => [
                       W.addBtn,
                       { backgroundColor: 'rgba(255,149,0,0.1)' },
@@ -1046,6 +1051,7 @@ const k = () => {
                     ],
                   }),
                   (0, A.jsxs)(f.default, {
+                    ref: 案内の計,
                     style: ({ hovered: e }) => [
                       W.addBtn,
                       { backgroundColor: 'rgba(52,199,89,0.1)' },
