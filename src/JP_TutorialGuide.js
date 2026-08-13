@@ -213,6 +213,36 @@ function いまの値(状態, 種類) {
   return null;
 }
 
+/**
+ * 手順に入る前に、その手順が成り立つ形を整える。
+ *
+ * 「とばす」があるので、前の手順を踏んでいる保証がない。射手を1人も
+ * 置かないまま「選択」へ来たり、鍵の出ない盤面で「鍵を押してみましょう」
+ * へ来たりすると、押すものが無くて先へ進めなくなる。
+ * 足りないぶんだけ、こちらで静かに用意する。整えたら true。
+ */
+function 下ごしらえする(種類) {
+  if (!種類) return false;
+  const s = useScoreStore.getState();
+  const 一覧 = s.archers || [];
+  const 射手か = (a) => !!a && !a.isSeparator && !a.isTotalCalculator;
+
+  if (種類 === '射手が1人') {
+    if (一覧.some(射手か)) return false;
+    s.addArcher();
+    return true;
+  }
+  if (種類 === '鍵が出る形') {
+    // 鍵は、間隔・計の右どなり（並びで1つ手前）が射手のときだけ出る
+    const 出ている = 一覧.some((a, i) => (a.isSeparator || a.isTotalCalculator) && 射手か(一覧[i - 1]));
+    if (出ている) return false;
+    if (!射手か(一覧[一覧.length - 1])) s.addArcher();
+    s.addSeparator();
+    return true;
+  }
+  return false;
+}
+
 /** その種類は「増えたら達成」か、「変わったら達成」か */
 function 達成した(種類, 基準, 現在) {
   if (基準 === null || 現在 === null || 現在 === undefined) return false;
@@ -310,6 +340,9 @@ const TutorialOverlay = ({ navRef }) => {
     if (!いまの手順) return;
     let 捨てた = false;
     枠を置く(null);
+    // 足りない形を先に整える。基準を取るのはそのあと。
+    // 先に取ると、整えたぶんを「本人が操作した」と見なして素通りしてしまう
+    下ごしらえする(いまの手順.下ごしらえ);
     基準.current =
       いまの手順.操作 && いまの手順.操作.種類 !== 'タブへ移動'
         ? いまの値(useScoreStore.getState(), いまの手順.操作.種類)
