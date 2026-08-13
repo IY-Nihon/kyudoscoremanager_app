@@ -47,7 +47,7 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
       [z, R] = (0, t.useState)(''),
       [w, I] = (0, t.useState)(''),
       [k, v] = (0, t.useState)(''),
-      H = ('' === w.trim() ? [...F] : F.filter((e) => e.name.toLowerCase().includes(w.toLowerCase()))).sort(
+      H = ('' === w.trim() ? [...F] : F.filter((e) => (e.name || '').toLowerCase().includes(w.toLowerCase()))).sort(
         (e, t) => {
           const n = void 0 === e.grade || null === e.grade ? 99 : Number(e.grade),
             o = void 0 === t.grade || null === t.grade ? 99 : Number(t.grade),

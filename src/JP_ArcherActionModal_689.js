@@ -73,7 +73,7 @@ const j = ({
 
   const L = (0, t.useMemo)(() => {
     return B.filter((e) => (e.grade || 0) < 5)
-      .filter((e) => '' === O || e.name.includes(O))
+      .filter((e) => '' === O || (e.name || '').includes(O))
       .sort((e, t) => {
         const o = q.some((t) => t.memberId === e.id);
         if (o !== q.some((e) => e.memberId === t.id)) return o ? 1 : -1;
@@ -115,7 +115,7 @@ const j = ({
   const alumniByTerm = (0, t.useMemo)(() => {
     const e = B.filter((e) => e.grade === 5 || e.isAlumni)
       .concat(alumniState || [])
-      .filter((e) => '' === O || e.name.includes(O));
+      .filter((e) => '' === O || (e.name || '').includes(O));
     const tVal = {};
     e.forEach((e) => {
       const o = e.termKi || 999;

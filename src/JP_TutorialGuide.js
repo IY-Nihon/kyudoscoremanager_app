@@ -204,6 +204,9 @@ function いまの値(状態, 種類) {
   if (種類 === '表示を変える') return 状態.viewScale;
   // 名前が入った射手の数。「選択」から誰かを割り当てると増える
   if (種類 === '名前を決める') return 射手.filter((a) => a && a.name).length;
+  // 登録した部員の数。作りたての団体は0人で、ここを越えないと
+  // 「選択」に誰も出てこず、記録の取りようがない
+  if (種類 === '部員を増やす') return (状態.members || []).length;
   // 鍵をかけた場所の数。まとまり単位でかかるので、増減どちらもありうる
   if (種類 === '鍵をかける')
     return 射手.reduce((合計, a) => 合計 + Object.keys((a && a.lockedBlocks) || {}).length, 0);
@@ -498,7 +501,7 @@ const TutorialOverlay = ({ navRef }) => {
         {/* 誤ってスキップしても行き止まりにならないよう、常に出しておく。
             アプリ全体で使える知らせの仕組みが無いため、ここに添える */}
         <_Text style={styles.補足} numberOfLines={1}>
-          触ったぶんは終わると元に戻ります
+          記録表に触ったぶんは、終わると元に戻ります
         </_Text>
 
         <_View style={styles.操作行}>
