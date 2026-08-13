@@ -359,7 +359,7 @@ const j = ({ navigation }) => {
           } else if (`${e.grade}年` !== O) return !1;
         }
       }
-      return !(oe && !e.name.toLowerCase().includes(oe.toLowerCase()));
+      return !(oe && !(e.name || '').toLowerCase().includes(oe.toLowerCase()));
     })
     .sort((e, t) => (Math.abs(t.rate - e.rate) > 0.01 ? t.rate - e.rate : t.shots - e.shots));
   const rankingConfig = C[R] || { type: 'ratio', value: 0 };
