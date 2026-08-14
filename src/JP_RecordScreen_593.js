@@ -388,15 +388,18 @@ const k = () => {
                     }),
                   ],
                 }),
-                // 拡大率。Excel と同じで、いまの倍率を出し、押すと選べる
-                (0, A.jsx)(h.default, {
+                // 表示の大きさ。数字だけでは何の％か分からないので虫めがねを添える
+                (0, A.jsxs)(h.default, {
                   ref: 案内の拡大,
                   onPress: () => 拡大を選ぶ(!0),
                   style: W.zoomToggle,
-                  children: (0, A.jsxs)(a.default, {
-                    style: W.zoomText,
-                    children: [Math.round(se * 100), '%'],
-                  }),
+                  children: [
+                    (0, A.jsx)(p.Ionicons, { name: 'search-outline', size: 13, color: '#007AFF' }),
+                    (0, A.jsxs)(a.default, {
+                      style: W.zoomText,
+                      children: [Math.round(se * 100), '%'],
+                    }),
+                  ],
                 }),
               ],
             }),
@@ -1546,7 +1549,8 @@ const k = () => {
     navLeft: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     syncContainer: { flexDirection: 'row', alignItems: 'center' },
     syncTimeText: { fontSize: 9, color: '#8E8E93' },
-    navRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    // 群（ライブ／立ちの増減／表示の大きさ）どうしは離し、群の中はくっつける
+    navRight: { flexDirection: 'row', alignItems: 'center', gap: 14 },
     resetBtn: {
       zIndex: 10001,
       backgroundColor: '#FF3B30',
@@ -1594,13 +1598,15 @@ const k = () => {
     liveBtnActive: { backgroundColor: '#FF3B30' },
     liveBtnText: { fontSize: 12, color: '#007AFF', fontWeight: 'bold' },
     liveBtnTextActive: { color: '#FFF' },
-    zoomContainer: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-    zoomBtn: { padding: 2 },
-    shotsToggle: { paddingHorizontal: 4, paddingVertical: 4, zIndex: 10001, minWidth: 40, alignItems: 'center' },
+    zoomContainer: { flexDirection: 'row', alignItems: 'center', gap: 0 },
+    zoomBtn: { padding: 1 },
+    shotsToggle: { paddingHorizontal: 2, paddingVertical: 4, zIndex: 10001, minWidth: 34, alignItems: 'center' },
     shotsText: { fontSize: 13, color: '#5856D6', fontWeight: 'bold' },
     // 拡大率。押せることが分かるよう、軽く枠で囲う
     zoomToggle: {
-      paddingHorizontal: 8,
+      flexDirection: 'row',
+      gap: 3,
+      paddingHorizontal: 7,
       paddingVertical: 3,
       borderRadius: 6,
       borderWidth: 1,
