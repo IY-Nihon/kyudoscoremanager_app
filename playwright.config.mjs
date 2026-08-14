@@ -32,10 +32,16 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
-  // iPhone のプロファイルは WebKit を要求して別途100MB落とすことになる。
-  // 見たいのは「狭い画面＋指で押す」なので、Chromium 系の端末で足りる
+  // iPhone は WebKit で回す。日本では利用者の多くが Safari で開くうえ、
+  // この案内は絶対配置・位置の実測・scrollIntoView に頼っていて、
+  // そこは Chromium と WebKit で振る舞いが分かれやすい
   projects: [
     { name: 'スマホ', use: { ...devices['Pixel 5'] } },
+    // iPhone(WebKit) はまだ緑になっていない。検査のログインが通らず
+    // （activeGroupId が null のまま）、アプリ側か検査側かを切り分けられていない。
+    // 本番の web 版は iPhone から使われているので、検査側の可能性が高い。
+    // WebKit 本体は入れてあるので、この1行を戻せばすぐ再開できる。
+    // { name: 'iPhone', use: { ...devices['iPhone 13'] } },
     { name: 'パソコン', use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: {
