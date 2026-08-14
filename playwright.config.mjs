@@ -41,7 +41,7 @@ export default defineConfig({
     // （activeGroupId が null のまま）、アプリ側か検査側かを切り分けられていない。
     // 本番の web 版は iPhone から使われているので、検査側の可能性が高い。
     // WebKit 本体は入れてあるので、この1行を戻せばすぐ再開できる。
-    // { name: 'iPhone', use: { ...devices['iPhone 13'] } },
+    { name: 'iPhone', use: { ...devices['iPhone 13'] } },
     { name: 'パソコン', use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: {
