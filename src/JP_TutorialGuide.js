@@ -34,6 +34,7 @@ const _View = RN.View;
 const _Text = require('./default_217').default; // テーマ変換を通すためブリッジ経由
 const _StyleSheet = require('./default_45').default; // テーマ変換を通すためブリッジ経由
 const _TouchableOpacity = RN.TouchableOpacity;
+const _ScrollView = RN.ScrollView;
 
 const { create } = require('zustand');
 const AsyncStorage = require('@react-native-async-storage/async-storage').default;
@@ -106,6 +107,26 @@ function 見えるところへ(名前) {
     return false;
   }
   return true;
+}
+
+/** 節をウィンドウ基準で測る。測れなければ null */
+function 節を測る(節) {
+  return new Promise((解決) => {
+    if (!節 || typeof 節.measureInWindow !== 'function') return 解決(null);
+    let 済み = false;
+    const 終わる = (v) => {
+      if (!済み) ((済み = true), 解決(v));
+    };
+    try {
+      節.measureInWindow((x, y, 幅, 高さ) => {
+        if (typeof x !== 'number' || !幅 || !高さ) return 終わる(null);
+        終わる({ x, y, 幅, 高さ });
+      });
+    } catch (e) {
+      終わる(null);
+    }
+    setTimeout(() => 終わる(null), 400);
+  });
 }
 
 /** 目印の画面上の位置を測る。測れなければ null */
@@ -306,6 +327,15 @@ const TutorialOverlay = ({ navRef }) => {
   // 上限を付けずに一度描いて測る。測るまでは透明にしておく（一瞬のちらつき防止）
   const [自然高さ, 自然高さを置く] = useState(0);
   const [画面の大きさ, 大きさを置く] = useState(() => RN.Dimensions.get('window'));
+  // 同じ値で置き直すと描き直しが起き、測り直しと堂々巡りになる
+  const 大きさが変わったら置く = useCallback(
+    (幅, 高さ) =>
+      大きさを置く((前) => (前.width === 幅 && 前.height === 高さ ? 前 : { width: 幅, height: 高さ })),
+    []
+  );
+  // 幕そのものの位置と大きさ。指す先はウィンドウ基準で測るが、吹き出しは
+  // 幕の中に置く。広い画面ではアプリが中央寄せになり、この2つがずれる
+  const 根ref = useRef(null);
   const 済み確認 = useRef(false);
   const 基準 = useRef(null);
 
@@ -418,7 +448,16 @@ const TutorialOverlay = ({ navRef }) => {
         await new Promise((r) => setTimeout(r, 300));
         位置 = await 位置を測る(いまの手順.目印);
       }
-      if (!捨てた) (枠を置く(位置), 測り中を置く(false));
+      // 幕そのものを測って、ウィンドウ基準の位置を幕の中の座標へ直す
+      const 幕 = await 節を測る(根ref.current);
+      if (捨てた) return;
+      if (幕) 大きさが変わったら置く(幕.幅, 幕.高さ);
+      const 直した =
+        位置 && 幕
+          ? { x: 位置.x - 幕.x, y: 位置.y - 幕.y, 幅: 位置.幅, 高さ: 位置.高さ }
+          : 位置;
+      枠を置く(直した);
+      測り中を置く(false);
     })();
     return () => {
       捨てた = true;
@@ -459,9 +498,13 @@ const TutorialOverlay = ({ navRef }) => {
   }, [終える, 控え]);
 
   if (!進行中 || !いまの手順) return null;
-  // 指す先を測り終わるまでは、何も出さない。
-  // 途中で出すと、枠がまだ無いぶん中央に描かれ、位置が決まった瞬間に飛ぶ
-  if (測り中) return null;
+  // 指す先を測り終わるまでは、中身を出さない。
+  // 途中で出すと、枠がまだ無いぶん中央に描かれ、位置が決まった瞬間に飛ぶ。
+  //
+  // ただし幕そのものは残す。消してしまうと幕を測れず、幕の左上が分からない。
+  // 広い画面ではアプリが中央寄せになるため、そこが分からないと吹き出しが
+  // 右へはみ出す。透明なまま置いておけば、指も通るし測れる
+  if (測り中) return <_View ref={根ref} style={styles.根} pointerEvents="none" />;
 
   const 最後 = 番号 >= 手順.length - 1;
   const 触ってもらう = !!いまの手順.操作 && !見返し && !手が出せない;
@@ -520,7 +563,7 @@ const TutorialOverlay = ({ navRef }) => {
   }
 
   return (
-    <_View style={styles.根} pointerEvents="box-none">
+    <_View ref={根ref} style={styles.根} pointerEvents="box-none">
       {暗幕.map(({ key, ...位置 }) => (
         <_TouchableOpacity key={key} activeOpacity={1} onPress={() => {}} style={[styles.暗幕, 位置]} />
       ))}
@@ -562,15 +605,24 @@ const TutorialOverlay = ({ navRef }) => {
       )}
 
       <_View
-        onLayout={(e) => {
-          // 実際の高さを覚えて、次の描画から置き場所の判断に使う。
-          // 手順ごとに 0 に戻すと、前と同じ高さのときに onLayout が呼ばれず
-          // 0 のままになり、吹き出しが出なくなる。だから持ち越す
-          const h = Math.ceil(e.nativeEvent.layout.height);
-          if (h > 0 && Math.abs(h - 自然高さ) > 1) 自然高さを置く(h);
-        }}
-        style={[styles.吹き出し, 置き場, { left: 吹き出しの左, width: 吹き出しの幅 }]}
+        style={[
+          styles.吹き出し,
+          置き場,
+          // 画面より高くなる手順（狭い画面での鍵の説明など）でも、下へはみ出さない
+          { left: 吹き出しの左, width: 吹き出しの幅, maxHeight: Math.max(140, 画面高 - 余白 * 2) },
+        ]}
       >
+        {/* 高さを測るのは中身側。外枠を測ると、上限で切られた高さを測り直して
+            置き場所が振動する。中身は上限の影響を受けないので落ち着く。
+            手順ごとに 0 に戻さないのは、同じ高さだと onLayout が呼ばれず
+            0 のままになって吹き出しが出なくなるため */}
+        <_ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ padding: 16 }}>
+          <_View
+            onLayout={(e) => {
+              const h = Math.ceil(e.nativeEvent.layout.height) + 32; // 上下の余白ぶん
+              if (h > 0 && Math.abs(h - 自然高さ) > 1) 自然高さを置く(h);
+            }}
+          >
         <_View style={styles.見出し行}>
           <_Text style={styles.番号}>{`${番号 + 1} / ${手順.length}`}</_Text>
           <_TouchableOpacity onPress={閉じる} style={styles.閉じるボタン}>
@@ -629,6 +681,8 @@ const TutorialOverlay = ({ navRef }) => {
             </_TouchableOpacity>
           )}
         </_View>
+          </_View>
+        </_ScrollView>
       </_View>
     </_View>
   );
@@ -642,7 +696,7 @@ const styles = _StyleSheet.create({
     position: 'absolute',
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
-    padding: 16,
+    // 余白は中身側（ScrollView の contentContainerStyle）で持つ
     overflow: 'hidden',
     ...(IS_WEB ? { boxShadow: '0 6px 24px rgba(0,0,0,0.25)' } : { elevation: 8 }),
   },
@@ -683,7 +737,6 @@ const styles = _StyleSheet.create({
   見本の帯文字: { fontSize: 12, color: '#FFF', fontWeight: 'bold' },
   全面: { paddingHorizontal: 16, paddingTop: 14 },
   全面の題: { fontSize: 22, fontWeight: 'bold', color: '#1C1C1E' },
-  見出し行: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
   頭の右: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   編集文字: { fontSize: 14, color: '#007AFF', fontWeight: 'bold' },
   小見出し: { fontSize: 12, color: '#8E8E93' },

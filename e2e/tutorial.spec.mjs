@@ -1,0 +1,236 @@
+/**
+ * 使い方の案内を、本物のブラウザで最初から最後まで踏む検査。
+ *
+ *   npm run e2e
+ *
+ * これまで案内の不具合は、全部手で20回くらい押して目で見つけてきた。
+ * 吹き出しが画面の外へ出た／指す先を覆った／押すものが無くて詰んだ／
+ * ボタンが小さくて押せない。どれも機械で測れる。
+ *
+ * 検証環境の合成アカウントで入る（合言葉は seed-stg.mjs と同じ・検証専用）。
+ * 事前に検証環境向けの dist/ が要る（npm run build:stg）。
+ */
+import { test, expect } from '@playwright/test';
+
+const 団体 = '100005'; // 部員0人。作りたての団体と同じ道筋を踏める
+const 合言葉 = 'StgTest!2026';
+const 指の目安 = 44; // iOS の指針。Android は 48
+
+/**
+ * 案内が出ているか。出ていれば「3 / 21」の文字を返す。
+ *
+ * 手順の切り替わりでは、指す先を測り終わるまで案内をわざと出さない
+ * （出すと中央に描かれてから飛ぶため）。その空白を「終わった」と
+ * 取り違えないよう、しばらく待ってから無いと判断する。
+ */
+async function いまの手順(page, { 待つ = 4000 } = {}) {
+  const 札 = page.locator('text=/^\\d+\\s*\\/\\s*\\d+$/').first();
+  try {
+    await 札.waitFor({ state: 'visible', timeout: 待つ });
+  } catch {
+    return null;
+  }
+  return (await 札.textContent()).trim();
+}
+
+/** いまの手順の見出し。失敗したときにどの手順か分かるように */
+async function 手順の題(page) {
+  return page.evaluate(() => {
+    const 札 = [...document.querySelectorAll('div')].find(
+      (e) => e.children.length === 0 && /^\d+\s*\/\s*\d+$/.test((e.textContent || '').trim())
+    );
+    if (!札) return '';
+    const 親 = 札.parentElement && 札.parentElement.parentElement;
+    if (!親) return '';
+    const 太字 = [...親.querySelectorAll('div')].find(
+      (e) => e.children.length === 0 && parseFloat(getComputedStyle(e).fontSize) >= 16
+    );
+    return 太字 ? (太字.textContent || '').trim() : '';
+  });
+}
+
+/** 吹き出しの箱。手順の番号札から親をたどって見つける */
+async function 吹き出しの枠(page) {
+  return page.evaluate(() => {
+    const 札 = [...document.querySelectorAll('div')].find(
+      (e) => e.children.length === 0 && /^\d+\s*\/\s*\d+$/.test((e.textContent || '').trim())
+    );
+    if (!札) return null;
+    // 影だけを目印にすると、見本の画面に並ぶカードを掴んでしまう。
+    // 「番号札」と「スキップ」の両方を含み、位置指定された箱を吹き出しとみなす
+    let n = 札;
+    for (let i = 0; i < 10 && n.parentElement; i++) {
+      n = n.parentElement;
+      const s = getComputedStyle(n);
+      const 中身 = n.textContent || '';
+      if (s.position === 'absolute' && 中身.includes('スキップ')) {
+        const r = n.getBoundingClientRect();
+        return { x: r.x, y: r.y, w: r.width, h: r.height };
+      }
+    }
+    return null;
+  });
+}
+
+/** 青い枠（指す先）の位置。無ければ null */
+async function 指す先の枠(page) {
+  return page.evaluate(() => {
+    const 枠 = [...document.querySelectorAll('div')].find((e) => {
+      const s = getComputedStyle(e);
+      return (
+        s.position === 'absolute' &&
+        s.borderStyle === 'solid' &&
+        parseFloat(s.borderTopWidth) >= 2 &&
+        /rgb\(0,\s*122,\s*255\)/.test(s.borderTopColor)
+      );
+    });
+    if (!枠) return null;
+    const r = 枠.getBoundingClientRect();
+    return { x: r.x, y: r.y, w: r.width, h: r.height };
+  });
+}
+
+/** 案内の押せるところを測る */
+async function 押せるところ(page) {
+  return page.evaluate(() => {
+    const 名 = ['スキップ', '次へ', 'とばす', '戻る', 'あとで', '続きを見る', '始める'];
+    const 出 = [];
+    for (const e of document.querySelectorAll('div,span')) {
+      if (e.children.length) continue;
+      const t = (e.textContent || '').trim();
+      if (!名.includes(t)) continue;
+      const 的 = e.closest('[role="button"]') || e.parentElement;
+      const r = 的.getBoundingClientRect();
+      if (r.width === 0) continue;
+      出.push({ 文字: t, 幅: Math.round(r.width), 高さ: Math.round(r.height) });
+    }
+    return 出;
+  });
+}
+
+/**
+ * 指す先のうち、吹き出しに覆われずに残っている割合。
+ *
+ * 「重なりゼロ」にはできない。記録表そのものを指す手順では、指す先が画面より
+ * 高く、吹き出しをどこに置いても必ず一部に重なる。
+ * 大事なのは押せるぶんが残っているかなので、残った割合で見る。
+ */
+function 残っている割合(先, 箱) {
+  if (!先 || !箱) return 1;
+  const 横 = Math.max(0, Math.min(先.x + 先.w, 箱.x + 箱.w) - Math.max(先.x, 箱.x));
+  const 縦 = Math.max(0, Math.min(先.y + 先.h, 箱.y + 箱.h) - Math.max(先.y, 箱.y));
+  const 面積 = 先.w * 先.h;
+  if (面積 <= 0) return 0;
+  return 1 - (横 * 縦) / 面積;
+}
+
+test.beforeEach(async ({ page }) => {
+  await page.goto('/');
+  // すでに入っていれば、そのまま。入っていなければ団体でログインする
+  const 団体ID欄 = page.getByPlaceholder('例: 123456');
+  if (await 団体ID欄.isVisible().catch(() => false)) {
+    await 団体ID欄.fill(団体);
+    await page.locator('input[type="password"]').fill(合言葉);
+    await page.getByText('ログイン', { exact: true }).click();
+    await expect(page.getByText('記録を始めましょう')).toBeVisible({ timeout: 20_000 });
+  }
+  // 初めて使う人と同じ状態にしてから開き直す
+  await page.evaluate(() => {
+    localStorage.removeItem('tutorialDoneVersion');
+    localStorage.removeItem('tutorialBoardSnapshot');
+  });
+  await page.reload();
+  await expect(page.locator('text=ようこそ')).toBeVisible({ timeout: 20_000 });
+});
+
+test('案内：最後まで踏んでも、行き止まりも画面外もはみ出しも無い', async ({ page }) => {
+  const 通った = [];
+
+  for (let i = 0; i < 60; i++) {
+    const 札 = await いまの手順(page);
+    if (!札) break; // 終わった
+    通った.push(札);
+
+    const 画面 = page.viewportSize();
+    const 箱 = await 吹き出しの枠(page);
+    expect(箱, `${札}：吹き出しが見つからない`).not.toBeNull();
+
+    // 1. 画面の外へ出ていないこと（矢所の手順で起きた不具合）
+    expect(箱.y, `${札}：吹き出しが画面の上に出ている`).toBeGreaterThanOrEqual(-1);
+    expect(
+      箱.y + 箱.h,
+      `${札}「${await 手順の題(page)}」：吹き出しが画面の下に出ている` +
+        `（吹き出し y=${Math.round(箱.y)} 高さ=${Math.round(箱.h)} / 画面 ${画面.height}）`
+    ).toBeLessThanOrEqual(画面.height + 1);
+    expect(箱.x, `${札}：吹き出しが画面の左に出ている`).toBeGreaterThanOrEqual(-1);
+    expect(箱.x + 箱.w, `${札}：吹き出しが画面の右に出ている`).toBeLessThanOrEqual(画面.width + 1);
+
+    // 2. 押してもらう手順では、押せるぶんが残っていること
+    const 触ってもらう = await page
+      .getByText('してみましょう', { exact: false })
+      .first()
+      .isVisible()
+      .catch(() => false);
+    if (触ってもらう) {
+      const 先 = await 指す先の枠(page);
+      if (先) {
+        const 残り = 残っている割合(先, 箱);
+        expect(
+          残り,
+          `${札}：吹き出しが押してほしい場所をほとんど覆っている（残り ${Math.round(残り * 100)}%）`
+        ).toBeGreaterThan(0.4);
+      }
+    }
+
+    // 3. 指で押せる大きさがあること
+    for (const b of await 押せるところ(page)) {
+      expect(b.高さ, `${札}：「${b.文字}」が低すぎる（${b.幅}×${b.高さ}）`).toBeGreaterThanOrEqual(指の目安);
+    }
+
+    // 4. 先へ進む道があること（無ければ行き止まり）
+    const 進む手 = ['とばす', '次へ', '続きを見る', '始める'];
+    let 進めた = false;
+    for (const 文字 of 進む手) {
+      const b = page.getByText(文字, { exact: true }).first();
+      if (await b.isVisible().catch(() => false)) {
+        await b.click();
+        進めた = true;
+        break;
+      }
+    }
+    expect(進めた, `${札}：先へ進む道が無い（行き止まり）`).toBe(true);
+    await page.waitForTimeout(700);
+  }
+
+  // 途中で止まらず、最後まで行ったこと
+  expect(通った.length, '案内が途中で止まっている').toBeGreaterThan(5);
+  expect(await いまの手順(page), '最後まで行っても案内が消えない').toBeNull();
+});
+
+test('案内：終わると記録表が元に戻り、控えも残らない', async ({ page }) => {
+  const 前 = await page.evaluate(() => {
+    const o = JSON.parse(localStorage.getItem('archery-score-storage') || '{}');
+    return ((o.state || o).archers || []).length;
+  });
+
+  // 最後まで飛ばす
+  for (let i = 0; i < 60; i++) {
+    if (!(await いまの手順(page))) break;
+    const b = page.getByText('スキップ', { exact: true }).first();
+    if (await b.isVisible().catch(() => false)) {
+      await b.click();
+      break;
+    }
+  }
+  await page.waitForTimeout(1000);
+
+  const 後 = await page.evaluate(() => {
+    const o = JSON.parse(localStorage.getItem('archery-score-storage') || '{}');
+    return {
+      列: ((o.state || o).archers || []).length,
+      控え: localStorage.getItem('tutorialBoardSnapshot'),
+    };
+  });
+  expect(後.列, '案内で足した列が記録表に残っている').toBe(前);
+  expect(後.控え, '控えが片付いていない').toBeNull();
+});
