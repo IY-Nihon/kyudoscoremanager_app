@@ -648,7 +648,8 @@ const styles = _StyleSheet.create({
   },
   見出し行: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   番号: { fontSize: 12, color: '#8E8E93', fontWeight: '600' },
-  閉じるボタン: { paddingVertical: 2, paddingHorizontal: 4 },
+  // 指で押す目安は44。文字を大きくせずに、押せる範囲だけ広げる
+  閉じるボタン: { minHeight: 44, minWidth: 64, paddingHorizontal: 8, justifyContent: 'center', alignItems: 'flex-end' },
   閉じる文字: { fontSize: 13, color: '#8E8E93' },
   題: { fontSize: 17, fontWeight: 'bold', color: '#1C1C1E', marginBottom: 8 },
   文: { fontSize: 14, color: '#3A3A3C', lineHeight: 21, marginBottom: 3 },
@@ -782,12 +783,18 @@ const styles = _StyleSheet.create({
   見本の名: { fontSize: 12, color: '#1C1C1E', fontWeight: 'bold' },
   見本の率: { fontSize: 13, color: '#D93025', fontWeight: 'bold' },
   操作行: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 },
-  戻るボタン: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingHorizontal: 4 },
+  戻るボタン: { flexDirection: 'row', alignItems: 'center', minHeight: 44, paddingHorizontal: 8 },
   戻る文字: { fontSize: 15, color: '#007AFF' },
   分かれ道行: { flexDirection: 'row', alignItems: 'center' },
-  とばすボタン: { paddingVertical: 8, paddingHorizontal: 12 },
+  とばすボタン: { minHeight: 44, paddingHorizontal: 14, justifyContent: 'center' },
   とばす文字: { fontSize: 15, color: '#8E8E93' },
-  次へボタン: { backgroundColor: '#007AFF', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 22 },
+  次へボタン: {
+    backgroundColor: '#007AFF',
+    borderRadius: 10,
+    minHeight: 44,
+    paddingHorizontal: 24,
+    justifyContent: 'center',
+  },
   次へ文字: { fontSize: 15, color: '#FFFFFF', fontWeight: 'bold' },
 });
 
