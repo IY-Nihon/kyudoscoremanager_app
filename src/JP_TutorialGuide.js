@@ -305,7 +305,22 @@ function 下ごしらえする(種類) {
     // 鍵は、間隔・計の右どなり（並びで1つ手前）が射手のときだけ出る
     const 出ている = 一覧.some((a, i) => (a.isSeparator || a.isTotalCalculator) && 射手か(一覧[i - 1]));
     if (出ている) return false;
-    if (!射手か(一覧[一覧.length - 1])) s.addArcher();
+    // 鍵を出す相手は、1立ぶんが埋まっていない射手にする。
+    // 埋まっている射手の隣に間隔を足すと、3秒後に誤タップ防止の鍵が
+    // 自動でかかり、「押してみましょう」が押さずに進んでしまう
+    const 本数 = s.shotsPerRound || 8;
+    const 埋まった立がある = (a) => {
+      const 印 = (a && a.marks) || [];
+      for (let b = 0; 4 * b < 本数; b++) {
+        const 端 = Math.min(4 * b + 4, 本数);
+        let 全部 = true;
+        for (let x = 4 * b; x < 端; x++) if (!(印[x] ?? '')) { 全部 = false; break; }
+        if (全部) return true;
+      }
+      return false;
+    };
+    const 最後 = 一覧[一覧.length - 1];
+    if (!射手か(最後) || 埋まった立がある(最後)) s.addArcher();
     s.addSeparator();
     return true;
   }
