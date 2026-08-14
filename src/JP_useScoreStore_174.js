@@ -226,6 +226,27 @@ const v = (e, s, o) => {
       }),
       (0, i.update)(c, m).catch((e) => console.error('[Store] pushLiveAll Error:', e)));
   },
+  // 自分の送信の返りから、的中の印だけを取り込む。
+  //
+  // 返りの archers は自分が送った時点のもので、手元にしかない射手が
+  // 落ちるため、一覧は入れ替えられない。しかし同じ通知には、ほぼ同時に
+  // 書いた相手の marks_by_id が載っていることがある。丸ごと捨てると
+  // その手は永久に届かない（他に変化が無ければ次の通知が来ないため）。
+  // そこで一覧はそのままに、相手のほうが新しい射手の印だけを入れる。
+  返りの印を取り込む = (状態, e, s) => {
+    const 印 = (状態 && 状態.marks_by_id) || {},
+      日時 = (状態 && 状態.archer_timestamps) || {},
+      本数 = 'number' == typeof (状態 && 状態.shotsPerRound) ? 状態.shotsPerRound : s().shotsPerRound;
+    let 変わった = !1;
+    const 一覧 = (s().archers || []).map((a) => {
+      if (!a || !a.id || a.isSeparator || a.isTotalCalculator) return a;
+      const 相手 = 印[a.id];
+      const 相手の日時 = 日時[a.id] || 0;
+      if (!相手 || 相手の日時 <= (a.lastModified || 0)) return a;
+      return ((変わった = !0), Object.assign({}, a, { marks: f(相手, 本数), lastModified: 相手の日時 }));
+    });
+    変わった && e({ archers: 一覧 });
+  },
   T = (e, s, o, a, n) => {
     const c = Date.now(),
       l = M.getState().activeGroupId;
@@ -2988,6 +3009,7 @@ const M = (0, s.create)()(
                     })
                   );
                 }
+                if (a.timestamp === s().lastPushedTimestamp) 返りの印を取り込む(a, e, s);
                 if (a.timestamp !== s().lastPushedTimestamp) {
                   if ('finished' === a.status) {
                     const o = s().liveSessionName;
@@ -3069,10 +3091,11 @@ const M = (0, s.create)()(
                 })
               );
             }
-            // 自分が送ったものの返りは見ない。主催者側（startLiveSync）には元から
-            // ある判定で、参加者側だけ抜けていた。無いと、○×を1つ入れるたびに
-            // 自分の送信が返ってきて自分の矢所を消していた
-            if (a.timestamp === s().lastPushedTimestamp) return;
+            // 自分が送ったものの返りでは、一覧を入れ替えない。入れ替えると
+            // 手元の矢所が消え、まだ届いていない射手も落ちる（主催者側には
+            // 元からある判定で、参加者側だけ抜けていた）。
+            // ただし同じ通知に載った相手の印だけは取り込む
+            if (a.timestamp === s().lastPushedTimestamp) return void 返りの印を取り込む(a, e, s);
             if ('finished' === a.status) {
               const o = s().liveSessionName;
               return (
