@@ -210,6 +210,8 @@ const k = () => {
         k.find((t) => t.id === e) && (fe(e), ge(o), ce(!0));
       },
       [Je, Ke] = (0, t.useState)(!1),
+      // 拡大率の選択が出ているか（Excel の倍率と同じ考え方）
+      [拡大選択中, 拡大を選ぶ] = (0, t.useState)(!1),
       Qe = () => Ke(!1),
       Xe = (e) => {
         e < T && k.some((t) => t && Array.isArray(t.marks) && t.marks.slice(e).some((e) => '' !== e))
@@ -332,24 +334,32 @@ const k = () => {
                     }),
                   ],
                 }),
+                // 立ちの増減。1立ち＝4射なので、4射ずつ動かす。
+                // 真ん中の「8射」を押せば、これまでどおり一覧から選べる
                 (0, A.jsxs)(l.default, {
-                  ref: 案内の拡大,
+                  ref: 案内の射数,
                   style: W.zoomContainer,
                   children: [
                     (0, A.jsx)(h.default, {
                       onPress: () => {
-                        (J(se - 0.1), j.impactAsync(j.ImpactFeedbackStyle.Light));
+                        Xe(Math.max(4, T - 4));
                       },
+                      disabled: T <= 4,
                       style: W.zoomBtn,
                       children: (0, A.jsx)(p.Ionicons, {
                         name: 'remove-circle-outline',
                         size: 22,
-                        color: '#007AFF',
+                        color: T <= 4 ? '#C7C7CC' : '#007AFF',
                       }),
                     }),
                     (0, A.jsx)(h.default, {
+                      onPress: () => Ke(!0),
+                      style: W.shotsToggle,
+                      children: (0, A.jsxs)(a.default, { style: W.shotsText, children: [T, '射'] }),
+                    }),
+                    (0, A.jsx)(h.default, {
                       onPress: () => {
-                        (J(se + 0.1), j.impactAsync(j.ImpactFeedbackStyle.Light));
+                        Xe(T + 4);
                       },
                       style: W.zoomBtn,
                       children: (0, A.jsx)(p.Ionicons, {
@@ -360,15 +370,99 @@ const k = () => {
                     }),
                   ],
                 }),
+                // 拡大率。Excel と同じで、いまの倍率を出し、押すと選べる
                 (0, A.jsx)(h.default, {
-                  ref: 案内の射数,
-                  onPress: () => Ke(!0),
-                  style: W.shotsToggle,
-                  children: (0, A.jsxs)(a.default, { style: W.shotsText, children: [T, '射'] }),
+                  ref: 案内の拡大,
+                  onPress: () => 拡大を選ぶ(!0),
+                  style: W.zoomToggle,
+                  children: (0, A.jsxs)(a.default, {
+                    style: W.zoomText,
+                    children: [Math.round(se * 100), '%'],
+                  }),
                 }),
               ],
             }),
           ],
+        }),
+        // 拡大率の選択。射数の選択と同じ形にしてある
+        (0, A.jsx)(d.default, {
+          visible: 拡大選択中,
+          transparent: !0,
+          animationType: 'fade',
+          onRequestClose: () => 拡大を選ぶ(!1),
+          children: (0, A.jsx)(f.default, {
+            style: {
+              flex: 1,
+              backgroundColor: 'rgba(0,0,0,0.4)',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              paddingBottom: 40,
+            },
+            onPress: () => 拡大を選ぶ(!1),
+            children: (0, A.jsxs)(l.default, {
+              style: {
+                width: '90%',
+                maxWidth: 400,
+                backgroundColor: '#FFF',
+                borderRadius: 14,
+                overflow: 'hidden',
+              },
+              children: [
+                (0, A.jsx)(l.default, {
+                  style: {
+                    padding: 16,
+                    borderBottomWidth: s.default.hairlineWidth,
+                    borderBottomColor: '#C6C6C8',
+                    alignItems: 'center',
+                  },
+                  children: (0, A.jsx)(a.default, {
+                    style: { fontSize: 13, color: '#8E8E93', fontWeight: '600' },
+                    children: '表示の大きさ',
+                  }),
+                }),
+                [0.5, 0.75, 1, 1.25, 1.5, 2].map((倍) =>
+                  (0, A.jsx)(
+                    f.default,
+                    {
+                      style: ({ hovered: e }) => [
+                        {
+                          padding: 16,
+                          alignItems: 'center',
+                          borderBottomWidth: s.default.hairlineWidth,
+                          borderBottomColor: '#C6C6C8',
+                        },
+                        e && m.IS_WEB && { backgroundColor: '#F2F2F7' },
+                        Math.abs(se - 倍) < 0.01 && { backgroundColor: '#EAF3FF' },
+                      ],
+                      onPress: () => {
+                        (J(倍), j.impactAsync(j.ImpactFeedbackStyle.Light), 拡大を選ぶ(!1));
+                      },
+                      children: (0, A.jsxs)(a.default, {
+                        style: {
+                          fontSize: 20,
+                          color: '#007AFF',
+                          fontWeight: Math.abs(se - 倍) < 0.01 ? 'bold' : 'normal',
+                        },
+                        children: [Math.round(倍 * 100), '%', 1 === 倍 ? '（標準）' : ''],
+                      }),
+                    },
+                    `zoom-option-${倍}`
+                  )
+                ),
+                (0, A.jsx)(f.default, {
+                  style: ({ hovered: e }) => [
+                    { padding: 16, alignItems: 'center' },
+                    e && m.IS_WEB && { backgroundColor: '#F2F2F7' },
+                  ],
+                  onPress: () => 拡大を選ぶ(!1),
+                  children: (0, A.jsx)(a.default, {
+                    style: { fontSize: 17, color: '#8E8E93' },
+                    children: 'キャンセル',
+                  }),
+                }),
+              ],
+            }),
+          }),
         }),
         (0, A.jsx)(d.default, {
           visible: Je,
@@ -1430,8 +1524,19 @@ const k = () => {
     liveBtnTextActive: { color: '#FFF' },
     zoomContainer: { flexDirection: 'row', alignItems: 'center', gap: 2 },
     zoomBtn: { padding: 2 },
-    shotsToggle: { padding: 4, zIndex: 10001 },
+    shotsToggle: { paddingHorizontal: 4, paddingVertical: 4, zIndex: 10001, minWidth: 40, alignItems: 'center' },
     shotsText: { fontSize: 13, color: '#5856D6', fontWeight: 'bold' },
+    // 拡大率。押せることが分かるよう、軽く枠で囲う
+    zoomToggle: {
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: '#C7C7CC',
+      minWidth: 48,
+      alignItems: 'center',
+    },
+    zoomText: { fontSize: 12, color: '#007AFF', fontWeight: 'bold' },
     liveStatusHeader: {
       height: 24,
       flexDirection: 'row',
