@@ -13,6 +13,7 @@
  * 検証環境専用。本番を指していたら止まる。
  */
 import { configFor, signIn, setDoc } from './fb-rest.mjs';
+import { 団体を借りる, 合言葉 as PW } from './stg-fixtures.mjs';
 
 const { apiKey, projectId } = configFor('stg');
 if (!apiKey || projectId !== 'kyudoscoremanager-stg') {
@@ -20,8 +21,9 @@ if (!apiKey || projectId !== 'kyudoscoremanager-stg') {
   process.exit(1);
 }
 
-const PW = 'StgTest!2026';
-const 団体 = { id: '100006', name: '撮影用', email: 'stg-shots@example.com' };
+// 台帳で持ち主を確かめてから書く。他の検証用団体を上書きしないため
+const 台帳 = 団体を借りる('100006', 'seed-tutorial-shots.mjs');
+const 団体 = { id: 台帳.id, name: 台帳.名, email: 台帳.email };
 
 const 部員 = [
   { id: 'mem-shot-1', personalId: '2001', name: '山田 太郎', gender: '男子', grade: 3, termKi: 51 },
