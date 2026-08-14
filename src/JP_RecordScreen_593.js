@@ -1186,6 +1186,8 @@ const k = () => {
                         j.impactAsync(j.ImpactFeedbackStyle.Light));
                     },
                     disabled: !戻せる,
+                    // 自動での確かめ用。絵だけのボタンは外から指せない
+                    testID: '取り消し',
                     children: (0, A.jsx)(p.Ionicons, { name: 'arrow-undo', size: 24, color: '#8E8E93' }),
                   }),
                   (0, A.jsx)(f.default, {
@@ -1201,6 +1203,7 @@ const k = () => {
                         j.impactAsync(j.ImpactFeedbackStyle.Light));
                     },
                     disabled: !進める,
+                    testID: 'やり直し',
                     children: (0, A.jsx)(p.Ionicons, { name: 'arrow-redo', size: 24, color: '#8E8E93' }),
                   }),
                 ],
