@@ -100,3 +100,22 @@ test('時刻は保存の対象に入れない（端末をまたいで持ち回�
   assert.ok(保存部.includes('自動ロックする'), '入り切りの設定は残したい');
   assert.ok(!保存部.includes('入れた時刻'), '時刻まで保存してしまっている');
 });
+
+test('画像から反映した○×は、初めから閉じていない', () => {
+  // 画像読み取りは toggleMark を通らない。印が付かないと
+  // 「読み込み直したもの」と見なされ、直すのが全部長押しになる
+  const store = 端末();
+  const 反映 = [
+    { id: 'a1', name: '山田', marks: ['○', '', '×', ''] },
+    { id: 'a2', name: '鈴木', marks: ['', '', '', ''] },
+  ];
+  const 前 = Date.now();
+  store.setState({ archers: 反映 });
+  store.getState().入れた印をまとめて付ける(反映);
+
+  const 印 = store.getState().入れた時刻;
+  assert.ok(印['a1:0'] >= 前, '○に印が付いていない');
+  assert.ok(印['a1:2'] >= 前, '×に印が付いていない');
+  assert.strictEqual(印['a1:1'], undefined, '空のますにまで印が付いている');
+  assert.strictEqual(印['a2:0'], undefined, '空の射手にまで印が付いている');
+});
