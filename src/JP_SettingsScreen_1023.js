@@ -1107,6 +1107,8 @@ const w = () => {
                 '管理者設定',
                 (0, T.jsxs)(o.default, {
                   style: D.item,
+                  // 使い方の案内から指せるように登録する
+                  ref: (node) => 案内.setTutorialTargetNode('設定.管理者モード', node),
                   children: [
                     (0, T.jsxs)(o.default, {
                       style: [D.itemLeft, { flex: 1 }],
