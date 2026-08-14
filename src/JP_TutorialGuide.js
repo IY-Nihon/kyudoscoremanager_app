@@ -298,6 +298,8 @@ const TutorialOverlay = ({ navRef }) => {
   const 役割 = useScoreStore((s) => s.activeRole);
   const いまの画面 = useScoreStore((s) => s.currentRouteName);
   const [測った枠, 枠を置く] = useState(null);
+  // 指す先を測っているあいだ。測り終わるまで案内は出さない
+  const [測り中, 測り中を置く] = useState(false);
   // その手順の操作が、いまの中身では成り立たないか（手順に入るときに決める）
   const [手が出せない, 手が出せないを置く] = useState(false);
   // 吹き出しが本来必要とする高さ。中身の折り返しまでは見積もれないので、
@@ -377,6 +379,10 @@ const TutorialOverlay = ({ navRef }) => {
     if (!いまの手順) return;
     let 捨てた = false;
     枠を置く(null);
+    // 指す先が決まるまでは何も出さない。先に出すと、枠がまだ無いので
+    // いったん画面の中央に描かれ、位置が決まった瞬間に飛ぶ。
+    // 出たり消えたり動いたりして、目で追えなくなる
+    測り中を置く(!!いまの手順.目印);
     // 足りない形を先に整える。基準を取るのはそのあと。
     // 先に取ると、整えたぶんを「本人が操作した」と見なして素通りしてしまう。
     // 読み返し中は操作を求めないので、盤面もいじらない
@@ -401,7 +407,8 @@ const TutorialOverlay = ({ navRef }) => {
           console.error('[TutorialGuide] 画面を移動できませんでした:', e);
         }
       }
-      if (捨てた || !いまの手順.目印) return;
+      if (捨てた) return;
+      if (!いまの手順.目印) return void 測り中を置く(false);
       // 一覧の下のほうにある目印は、先に見えるところまで運んでおく
       if (見えるところへ(いまの手順.目印)) await new Promise((r) => setTimeout(r, 350));
       if (捨てた) return;
@@ -411,7 +418,7 @@ const TutorialOverlay = ({ navRef }) => {
         await new Promise((r) => setTimeout(r, 300));
         位置 = await 位置を測る(いまの手順.目印);
       }
-      if (!捨てた) 枠を置く(位置);
+      if (!捨てた) (枠を置く(位置), 測り中を置く(false));
     })();
     return () => {
       捨てた = true;
@@ -452,6 +459,9 @@ const TutorialOverlay = ({ navRef }) => {
   }, [終える, 控え]);
 
   if (!進行中 || !いまの手順) return null;
+  // 指す先を測り終わるまでは、何も出さない。
+  // 途中で出すと、枠がまだ無いぶん中央に描かれ、位置が決まった瞬間に飛ぶ
+  if (測り中) return null;
 
   const 最後 = 番号 >= 手順.length - 1;
   const 触ってもらう = !!いまの手順.操作 && !見返し && !手が出せない;
@@ -656,12 +666,17 @@ const styles = _StyleSheet.create({
 
   // 見本。画面をまるごと覆う。本物と間違えないよう、上に帯を出す
   全面の紙: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#F2F2F7' },
+  // 上に置くとタブ列に被る。下端に寄せる
   見本の帯: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 6,
+    paddingVertical: 8,
     backgroundColor: '#FF9500',
   },
   見本の帯文字: { fontSize: 12, color: '#FFF', fontWeight: 'bold' },
