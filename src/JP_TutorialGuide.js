@@ -109,6 +109,25 @@ function 見えるところへ(名前) {
   return true;
 }
 
+/**
+ * 見本の中身が見えるところまで、画面を送る。
+ *
+ * 分析は絞り込みの札が長く、そのままだと肝心の順位が画面の外に出てしまう。
+ * 「的中率の高い順に並びます」と言いながら順位が見えないのでは意味がない。
+ * 画面のなかで一番大きくスクロールできるところを、下まで送る。
+ */
+function 見本を送る() {
+  if (typeof document === 'undefined') return;
+  let 一番 = null;
+  for (const e of document.querySelectorAll('div')) {
+    if (e.scrollHeight - e.clientHeight < 80) continue;
+    const s = getComputedStyle(e);
+    if (!/(auto|scroll)/.test(s.overflowY)) continue;
+    if (!一番 || e.clientHeight > 一番.clientHeight) 一番 = e;
+  }
+  if (一番) 一番.scrollTop = 一番.scrollHeight;
+}
+
 /** 節をウィンドウ基準で測る。測れなければ null */
 function 節を測る(節) {
   return new Promise((解決) => {
@@ -438,6 +457,14 @@ const TutorialOverlay = ({ navRef }) => {
         }
       }
       if (捨てた) return;
+      // 分析の見本は、絞り込みの札が長くて順位が画面の外に出る。
+      // 「的中率の高い順に並びます」と言う手順なので、順位まで送っておく
+      if (いまの手順.見本 === '分析') {
+        await new Promise((r) => setTimeout(r, 250));
+        見本を送る();
+        await new Promise((r) => setTimeout(r, 250));
+        if (捨てた) return;
+      }
       if (!いまの手順.目印) return void 測り中を置く(false);
       // 一覧の下のほうにある目印は、先に見えるところまで運んでおく
       if (見えるところへ(いまの手順.目印)) await new Promise((r) => setTimeout(r, 350));
@@ -529,7 +556,12 @@ const TutorialOverlay = ({ navRef }) => {
   const 読める高さ = 自然高さ || Math.round(画面高 * 0.3);
   let 置き場 = { top: Math.max(余白, (画面高 - 読める高さ) / 2) };
   let 吹き出しの左 = (画面幅 - 吹き出しの幅) / 2;
-  if (枠) {
+  if (いまの手順.見本) {
+    // 見本の手順では上端へ寄せる。真ん中に置くと見本の上に乗ってしまう。
+    // 履歴も分析も、見せたいもの（一覧・順位）は下のほうにあり、
+    // 上は見出しや絞り込みなので、そこに重ねるのが一番害が少ない
+    置き場 = { top: 余白 };
+  } else if (枠) {
     const 下の空き = 画面高 - (枠.y + 枠.高さ) - 余白 * 2;
     const 上の空き = 枠.y - 余白 * 2;
     const 下へ = { top: 枠.y + 枠.高さ + 余白 };
@@ -551,7 +583,11 @@ const TutorialOverlay = ({ navRef }) => {
   // SVG の切り抜きを使わないので、Web でもアプリでも同じに出る。
   // 穴の部分には何も置かないため、本物のボタンをそのまま押せる
   const 暗幕 = [];
-  if (枠) {
+  if (いまの手順.見本) {
+    // 見本の手順では暗くしない。見てもらうために出しているものを覆っては
+    // 本末転倒。触られると困るので、透明な蓋だけしておく
+    暗幕.push({ key: '見本の蓋', top: 0, left: 0, right: 0, bottom: 0, 透明: true });
+  } else if (枠) {
     暗幕.push(
       { key: '上', top: 0, left: 0, right: 0, height: Math.max(0, 枠.y - 4) },
       { key: '下', top: 枠.y + 枠.高さ + 4, left: 0, right: 0, bottom: 0 },
@@ -564,8 +600,13 @@ const TutorialOverlay = ({ navRef }) => {
 
   return (
     <_View ref={根ref} style={styles.根} pointerEvents="box-none">
-      {暗幕.map(({ key, ...位置 }) => (
-        <_TouchableOpacity key={key} activeOpacity={1} onPress={() => {}} style={[styles.暗幕, 位置]} />
+      {暗幕.map(({ key, 透明, ...位置 }) => (
+        <_TouchableOpacity
+          key={key}
+          activeOpacity={1}
+          onPress={() => {}}
+          style={[styles.暗幕, 位置, 透明 && { backgroundColor: 'transparent' }]}
+        />
       ))}
 
       {/* 初めての人には、履歴も分析もまだ空。空の画面を指しても何も伝わらず、
