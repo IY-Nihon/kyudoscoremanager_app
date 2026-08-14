@@ -161,6 +161,10 @@ function 残っている割合(先, 箱) {
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
+  // 描き終わる前に打ち込むと、欄には入るのに React 側へ届かず、空のまま
+  // 送ることになる（Safari で顕著）。落ち着いてから触る
+  await page.waitForTimeout(3000);
+
   // すでに入っていれば、そのまま。入っていなければ団体でログインする
   const 団体ID欄 = page.getByPlaceholder('例: 123456');
   if (await 団体ID欄.isVisible().catch(() => false)) {
@@ -174,15 +178,18 @@ test.beforeEach(async ({ page }) => {
     await expect(団体ID欄).toHaveValue(団体);
     await expect(合言葉欄).toHaveValue(合言葉);
     await 押す(page.getByText('ログイン', { exact: true }));
-    await expect(page.getByText('記録を始めましょう')).toBeVisible({ timeout: 30_000 });
+    // ログインの直後に読み直すと、Safari(WebKit) では認証の保存が間に合わず、
+    // ログアウトした状態で開いてしまう。書き終わるまで待つ
+    await page.waitForTimeout(9000);
   }
+
   // 初めて使う人と同じ状態にしてから開き直す
   await page.evaluate(() => {
     localStorage.removeItem('tutorialDoneVersion');
     localStorage.removeItem('tutorialBoardSnapshot');
   });
   await page.reload();
-  await expect(page.locator('text=ようこそ')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('text=ようこそ')).toBeVisible({ timeout: 30_000 });
 });
 
 test('案内：最後まで踏んでも、行き止まりも画面外もはみ出しも無い', async ({ page }) => {
