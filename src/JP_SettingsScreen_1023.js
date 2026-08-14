@@ -1127,7 +1127,7 @@ const w = () => {
                               style: { fontSize: 11, color: '#8E8E93', marginTop: 2, flexShrink: 1 },
                               numberOfLines: 0,
                               children:
-                                'オンにすると各会員の個人ID（数字）が表示され、記録の編集やタグ管理なども可能になります',
+                                'オンにすると、保存済みの記録をあとから直せます。各部員の個人ID（数字）も表示されます',
                             }),
                           ],
                         }),
