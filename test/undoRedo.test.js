@@ -390,3 +390,40 @@ test('共有履歴：2台が続けて操作しても、どちらの手も残る'
   const 目印 = A.ライブ.値(`live_sessions/${団体}/${ライブ名}/state`) || {};
   assert.equal(目印.history_len, 2, '目印が2まで進んでいない');
 });
+
+test('共有履歴：取り消しは、同時に入れた相手の○×を消さない', async () => {
+  // 控えが「盤面まるごと」だったころは、後に積まれた手の前に相手の入力が
+  // 入っていないため、取り消すと相手の○×まで消えた。
+  // 変えたますだけを持たせ、そこだけ戻す
+  const A = 端末();
+  const B = 端末(A.ライブ);
+  const 立てる = (端) =>
+    端.store.setState({
+      archers: [射手(), 射手({ id: 'a2', name: '二人目' })],
+      isLiveActive: true,
+      liveSessionName: ライブ名,
+      historySharedLen: 0,
+      historySharedMax: 0,
+    });
+  (立てる(A), 立てる(B));
+
+  // 2台がそれぞれ別の射手へ入れる（相手の入力はまだ手元に見えていない）
+  A.store.getState().toggleMark('a1', 0);
+  B.store.getState().toggleMark('a2', 0);
+  await 待つ(0);
+
+  // 同期が行き渡り、A の画面に両方の○が出ている状態にする
+  A.store.setState({
+    archers: [
+      射手({ marks: ['○', '', '', ''] }),
+      射手({ id: 'a2', name: '二人目', marks: ['○', '', '', ''] }),
+    ],
+  });
+
+  await A.store.getState().sharedUndo(-1);
+  await 待つ(0);
+
+  const 印 = (id) => A.store.getState().archers.find((a) => a.id === id).marks[0];
+  assert.equal(印('a2'), '', '最後の手（B の入力）が戻っていない');
+  assert.equal(印('a1'), '○', 'A の入力まで消えた');
+});

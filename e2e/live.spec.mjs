@@ -62,7 +62,7 @@ const 中身 = (page, 鍵) =>
     return el ? (el.innerText || '').trim() : null;
   }, 鍵);
 
-test('ライブ：2台が同時に入れた○×が、両方の画面に届く', async ({ browser }) => {
+test('ライブ：同時に入れた○×が両方に届き、取り消しは1手だけ戻す', async ({ browser }) => {
   test.setTimeout(300_000);
   const 主 = await browser.newContext();
   const 参 = await browser.newContext();
@@ -144,15 +144,11 @@ test('ライブ：2台が同時に入れた○×が、両方の画面に届く',
   expect(入れた後[1], 'B の手が A に届いていない').toBe('○');
   expect(入れた後[2], 'A の手が B に届いていない').toBe('○');
 
-  // ── ここから先は、まだ直っていない ──
-  // 共有履歴は「その端末から見た盤面まるごと」を前として持つ。2台が同時に
-  // 入れると、後に積まれた手の「前」には相手の入力がまだ入っていない。
-  // 取り消すとその盤面が戻るので、相手の手まで消える。
-  // 場所取りの競合（runTransaction で解決済み）とは別の、控えの持ち方の問題。
-  // 直すには「盤面まるごと」ではなく「変えたますだけ」を持つ必要がある。
+  // ── 取り消しは1手だけ戻すこと。相手の手を巻き込まない ──
   await A.locator('[data-testid="取り消し"]').click();
   await A.waitForTimeout(6000);
   await B.waitForTimeout(1000);
+
   const 残り = [
     await 中身(A, A鍵),
     await 中身(A, B鍵),
@@ -160,5 +156,9 @@ test('ライブ：2台が同時に入れた○×が、両方の画面に届く',
     await 中身(B, B鍵),
   ];
   console.log('取り消し後 [A:A手, A:B手, B:A手, B:B手] =', JSON.stringify(残り));
-  console.log('  ※ 相手の手まで消えるのは既知。控えの持ち方の問題として残している');
+
+  const 残った数 = 残り.slice(0, 2).filter((x) => x === '○').length;
+  expect(残った数, '取り消し1回で両方消えた（相手の手を飲み込んでいる）').toBe(1);
+  expect(残り[0], 'A と B で見え方が違う').toBe(残り[2]);
+  expect(残り[1], 'A と B で見え方が違う').toBe(残り[3]);
 });
