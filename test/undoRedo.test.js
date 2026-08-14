@@ -357,3 +357,36 @@ test('取り消し：中身が変わっていない射手の日時は触らな�
   assert.equal(後.find((a) => a.id === 'a2').lastModified, 2000, '触っていない射手はそのまま');
   assert.ok(後.find((a) => a.id === 'a1').lastModified > 1000, '戻した射手は打ち直す');
 });
+
+// ──────────────────────────────────────────────────────────────
+test('共有履歴：2台が続けて操作しても、どちらの手も残る', async () => {
+  // 場所取りを手元の目印だけで決めていたころは、2台が同じ番号を握り、
+  // 後に書いたほうが先の手を上書きしていた。上書きされた手は控えから
+  // 消えるだけでなく、誰かが取り消したときに「相手の入力を含まない盤面」が
+  // 復元され、入れたはずの○×が消える
+  const A = 端末();
+  const B = 端末(A.ライブ); // 同じライブを見る2台目
+
+  const 立てる = (端) =>
+    端.store.setState({
+      archers: [射手(), 射手({ id: 'a2', name: '二人目' })],
+      isLiveActive: true,
+      liveSessionName: ライブ名,
+      historySharedLen: 0,
+      historySharedMax: 0,
+    });
+  (立てる(A), 立てる(B));
+
+  // どちらも目印0を握ったまま、続けて操作する
+  A.store.getState().toggleMark('a1', 0);
+  B.store.getState().toggleMark('a2', 0);
+  await 待つ(0);
+
+  const 控え = A.ライブ.値(`live_history/${団体}/${ライブ名}`) || {};
+  assert.equal(Object.keys(控え).length, 2, '片方の手が上書きされている');
+  assert.ok(控え[0], '0番が無い');
+  assert.ok(控え[1], '1番が無い');
+
+  const 目印 = A.ライブ.値(`live_sessions/${団体}/${ライブ名}/state`) || {};
+  assert.equal(目印.history_len, 2, '目印が2まで進んでいない');
+});

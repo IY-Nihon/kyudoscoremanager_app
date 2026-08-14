@@ -338,29 +338,46 @@ const サーバー時刻 = async () => {
   await 時差を見張る();
   return Date.now() + サーバーとの時差;
 };
+/**
+ * 手元の履歴が伸びたぶんを、共有履歴にも積む。
+ *
+ * 置き場所（番号）は runTransaction で取る。手元の historySharedLen を
+ * 読んで書くだけだと、2台が同時に操作したとき同じ番号を握り合い、
+ * 後に書いたほうが先の手を上書きする。上書きされた手は控えから消える
+ * だけでなく、誰かが取り消したときに「相手の入力を含まない盤面」が
+ * 復元され、入れたはずの○×が消える。
+ */
 const 共有履歴へ積む = (前の盤面, 後の盤面, s) => {
   const 団体 = M.getState().activeGroupId,
      名前 = s().liveSessionName;
   if (!fb.rtdb || !団体 || !名前) return;
   const 履歴の根 = 共有履歴の場所(団体, 名前);
-  const 位置 = s().historySharedLen || 0;
+  const 状態の道 = `live_sessions/${団体}/${名前}/state`;
   const 本数 = s().shotsPerRound;
-  (0, i.set)((0, i.ref)(fb.rtdb, `${履歴の根}/${位置}`), {
-    前: 履歴用に整える(前の盤面),
-    後: 履歴用に整える(後の盤面),
-    本数: 本数,
-    at: Date.now(),
-  }).catch((e) => console.error('[Store] 共有履歴の書き込みに失敗:', e));
-  // 目印を進める。新しい操作をしたので、やり直せる分はここで打ち切る
-  const 次 = 位置 + 1;
-  ((0, i.update)((0, i.ref)(fb.rtdb, `live_sessions/${団体}/${名前}/state`), {
-    history_len: 次,
-    history_max: 次,
-  }).catch(() => {}),
-    M.getState().updateState({ historySharedLen: 次, historySharedMax: 次 }));
-  // 古い手を捨てる（上限を超えた分）
-  if (次 > 共有履歴の上限)
-    (0, i.remove)((0, i.ref)(fb.rtdb, `${履歴の根}/${次 - 共有履歴の上限 - 1}`)).catch(() => {});
+  // 盤面は今のうちに写しておく。場所が取れるまでに手元が変わりうる
+  const 前 = 履歴用に整える(前の盤面);
+  const 後 = 履歴用に整える(後の盤面);
+  (0, i.runTransaction)((0, i.ref)(fb.rtdb, `${状態の道}/history_len`), (今の値) =>
+    ('number' == typeof 今の値 ? 今の値 : 0) + 1
+  )
+    .then((結果) => {
+      if (!結果 || !結果.committed) return;
+      const 次 = 結果.snapshot.val();
+      const 位置 = 次 - 1;
+      (0, i.set)((0, i.ref)(fb.rtdb, `${履歴の根}/${位置}`), {
+        前: 前,
+        後: 後,
+        本数: 本数,
+        at: Date.now(),
+      }).catch((e) => console.error('[Store] 共有履歴の書き込みに失敗:', e));
+      // 新しい操作をしたので、やり直せる分はここで打ち切る
+      ((0, i.update)((0, i.ref)(fb.rtdb, 状態の道), { history_max: 次 }).catch(() => {}),
+        M.getState().updateState({ historySharedLen: 次, historySharedMax: 次 }));
+      // 古い手を捨てる（上限を超えた分）
+      if (次 > 共有履歴の上限)
+        (0, i.remove)((0, i.ref)(fb.rtdb, `${履歴の根}/${次 - 共有履歴の上限 - 1}`)).catch(() => {});
+    })
+    .catch((e) => console.error('[Store] 共有履歴の場所取りに失敗:', e));
 };
 /**
  * ライブから届いた state から、共有履歴の目印と知らせを取り込む。
