@@ -1520,6 +1520,9 @@ const k = () => {
                 redoStack: [],
               });
             x.useScoreStore.setState({ archers: newArchers });
+            // 読み取った○×は「いま入れたもの」として扱う。
+            // 印を付けないと初めから閉じてしまい、直すのが全部長押しになる
+            x.useScoreStore.getState().入れた印をまとめて付ける(newArchers);
             Ge('画像から立ち順を登録しました');
             j.notificationAsync(j.NotificationFeedbackType.Success);
           },
