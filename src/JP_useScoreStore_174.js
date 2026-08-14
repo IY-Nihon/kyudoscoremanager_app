@@ -114,6 +114,8 @@ const 同期規則 = require('./syncRules');
 const h = 同期規則.generateUniquePersonalId,
   y = 同期規則.mergeById,
   mergeLiveArchers = 同期規則.mergeLiveArchers,
+  印だけの差分 = 同期規則.印だけの差分,
+  差分を当てる = 同期規則.差分を当てる,
   restampChangedArchers = 同期規則.restampChangedArchers,
   normalizeArrowLocations = 同期規則.normalizeArrowLocations,
   dropUndefinedDeep = 同期規則.dropUndefinedDeep,
@@ -385,12 +387,17 @@ const 共有履歴へ積む = (前の盤面, 後の盤面, s) => {
       if (!結果 || !結果.committed) return;
       const 次 = 結果.snapshot.val();
       const 位置 = 次 - 1;
-      (0, i.set)((0, i.ref)(fb.rtdb, `${履歴の根}/${位置}`), {
-        前: 前,
-        後: 後,
-        本数: 本数,
-        at: Date.now(),
-      }).catch((e) => console.error('[Store] 共有履歴の書き込みに失敗:', e));
+      // 盤面まるごとに加えて、○×だけの違いなら「変えたます」も持たせる。
+      // 取り消しでそこだけ戻せば、2台が同時に入れても相手の手を消さずに済む。
+      // まるごとの側は消さない。古い版のアプリはそちらしか読まないため
+      const 差分 = 印だけの差分(前, 後);
+      (0, i.set)(
+        (0, i.ref)(fb.rtdb, `${履歴の根}/${位置}`),
+        Object.assign(
+          { 前: 前, 後: 後, 本数: 本数, at: Date.now() },
+          差分 ? { 差分: 差分 } : null
+        )
+      ).catch((e) => console.error('[Store] 共有履歴の書き込みに失敗:', e));
       // 新しい操作をしたので、やり直せる分はここで打ち切る
       ((0, i.update)((0, i.ref)(fb.rtdb, 状態の道), { history_max: 次 }).catch(() => {}),
         M.getState().updateState({ historySharedLen: 次, historySharedMax: 次 }));
@@ -1232,12 +1239,22 @@ const M = (0, s.create)()(
             );
             if (!手.exists()) return;
             const 中身 = 手.val() || {};
-            const 盤面 = w({
-              archers: 向き < 0 ? 中身.前 : 中身.後,
-              shotsPerRound: 中身.本数,
-            });
             const 次 = 位置 + 向き;
             const 知らせ時刻 = Date.now();
+            // 「変えたます」の控えがあれば、そこだけ戻す。盤面まるごと戻すと、
+            // 2台が同時に入れたとき、控えの前に相手の入力が入っていないため
+            // 相手の○×まで消える。古い版が積んだ控えには差分が無いので、
+            // そのときは従来どおり盤面で戻す
+            const 差分 = Array.isArray(中身.差分) ? 中身.差分 : null;
+            const 盤面 = 差分
+              ? {
+                  archers: 差分を当てる(s().archers, 差分, 向き).archers,
+                  shotsPerRound: s().shotsPerRound,
+                }
+              : w({
+                  archers: 向き < 0 ? 中身.前 : 中身.後,
+                  shotsPerRound: 中身.本数,
+                });
             // 戻した内容が相手に届くよう、変わった射手の日時を打ち直す
             const 戻す = restampChangedArchers(盤面.archers, s().archers, 知らせ時刻);
             // ここでの書き換えは履歴に積まない（積むと際限がなくなる）
