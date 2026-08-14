@@ -115,6 +115,69 @@ const m = t.default.memo(
         O = e.isSeparator || e.isTotalCalculator,
         R = O ? 1.5 : 1,
         _ = O ? 1.5 : 0;
+
+      // 1立が全部埋まって少し経ったら、鍵を自動でかける。
+      // 鍵ボタンは「間隔」「計」の列に付いていて、押すと自分より右の射手を
+      // まとめて閉じる。だから受け持つのもその列だけでよい。
+      // 履歴の編集画面（onToggleLock を渡してくる）と、そもそも押せない場では何もしない
+      const 自動ロックする = (0, c.useScoreStore)((e) => e.自動ロックする),
+        自動ロックまでの秒 = (0, c.useScoreStore)((e) => e.自動ロックまでの秒),
+        立を閉じる = (0, c.useScoreStore)((e) => e.立を閉じる);
+      const 埋まった時刻 = t.default.useRef({}),
+        閉じた覚え = t.default.useRef({});
+      // 埋まっている立の番号。中身が変わったときだけ数え直したいので文字にする
+      const 埋まった立 = (() => {
+        if (!O || !鍵が効く || I || (k && !y)) return '';
+        const 仲間 = N();
+        if (!仲間.length) return '';
+        const 出 = [];
+        for (let b = 0; 4 * b < i; b++) {
+          const 端 = Math.min(4 * b + 4, i);
+          let 全部 = !0;
+          for (let j = 0; j < 仲間.length && 全部; j++) {
+            const 印 = 仲間[j].marks || [];
+            for (let x = 4 * b; x < 端; x++) if (!(印[x] ?? '')) { 全部 = !1; break; }
+          }
+          if (全部) 出.push(b);
+        }
+        return 出.join(',');
+      })();
+      t.default.useEffect(() => {
+        const 立たち = 埋まった立
+          ? 埋まった立.split(',').map(Number)
+          : [];
+        // 埋まらなくなった立は覚えを捨てる。入れ直せば、また閉じるように
+        const いま = new Set(立たち);
+        [埋まった時刻, 閉じた覚え].forEach((箱) => {
+          Object.keys(箱.current).forEach((b) => {
+            if (!いま.has(Number(b))) delete 箱.current[b];
+          });
+        });
+        if (!自動ロックする || !立たち.length) return;
+        const 今 = Date.now();
+        立たち.forEach((b) => {
+          if (!埋まった時刻.current[b]) 埋まった時刻.current[b] = 今;
+          // すでに閉じている立は、自分で開け直した人の邪魔をしないよう放っておく
+          if (e.lockedBlocks?.[b]) 閉じた覚え.current[b] = !0;
+        });
+        const 残り = 立たち.filter((b) => !閉じた覚え.current[b]);
+        if (!残り.length) return;
+        const 待つ = Math.max(
+          0,
+          Math.min(...残り.map((b) => 埋まった時刻.current[b])) + 自動ロックまでの秒 * 1000 - 今
+        );
+        const 札 = setTimeout(() => {
+          const 頃 = Date.now();
+          残り.forEach((b) => {
+            if (埋まった時刻.current[b] + 自動ロックまでの秒 * 1000 <= 頃) {
+              閉じた覚え.current[b] = !0;
+              立を閉じる(e.id, b);
+            }
+          });
+        }, 待つ);
+        return () => clearTimeout(札);
+      }, [自動ロックする, 自動ロックまでの秒, 埋まった立, e.id, e.lockedBlocks, 立を閉じる]);
+
       return (0, f.jsxs)(o.default, {
         style: { width: W, backgroundColor: 'transparent' },
         children: [
