@@ -446,3 +446,60 @@ test('入り直し：最後に書いたのが自分でも、参加した直後�
   assert.equal(参.store.getState().archers.length, 1, '入り直してすぐ盤面が出る');
   assert.equal(参.store.getState().archers[0].marks[0], '○', '○× も揃っている');
 });
+
+// ──────────────────────────────────────────────────────────────
+// 自分の送信の返りの扱い。
+// 返りを「スナップショットごと」捨てると、同時に書いた相手の○×まで
+// 道連れになる。かといって素通しにすると、返りには矢所が載っていないので
+// 手元の矢所が消える。両方を同時に満たす必要がある。
+// ──────────────────────────────────────────────────────────────
+
+/** 主催者としてライブに入った端末を作る */
+async function 主催の端末(射手たち) {
+  const { store, ライブ } = 端末(null, 射手たち);
+  assert.equal(await store.getState().startLiveSync(ライブ名), '開始した');
+  return { store, ライブ };
+}
+
+test('返り：自分の送信が返ってきても、手元の矢所は消えない', async () => {
+  // 1射ごとの送信は marks_by_id だけを書き、archers は前のまま。
+  // その返りをそのまま当てると、矢所を持たない archers で上書きしてしまう
+  const 矢所 = [{ x: 0.1, y: 0.2 }];
+  const { store, ライブ } = await 主催の端末([射手({ marks: ['○', '', '', ''], arrowLocations: 矢所 })]);
+
+  const 送った時刻 = store.getState().lastPushedTimestamp;
+  ライブ.置く(道, {
+    status: 'active',
+    timestamp: 送った時刻, // 自分の返り
+    archers: [射手({ marks: ['', '', '', ''] })], // 矢所を持たない
+    marks_by_id: { a1: ['○', '', '', ''] },
+    archer_timestamps: { a1: 2000 },
+    shotsPerRound: 本数,
+  });
+
+  assert.deepEqual(手元の射手(store).arrowLocations, 矢所, '手元の矢所が消えた');
+});
+
+test('返り：自分の返りでも、同じ通知に載った相手の○×は取り込む', async () => {
+  // 2台がほぼ同時に書くと、state.timestamp は後に書いたほうの時刻になる。
+  // その通知には先に書いたほうの marks_by_id も入っている。
+  // 丸ごと捨てると、相手の○×が永久に届かない
+  const { store, ライブ } = await 主催の端末([
+    射手({ id: 'a1', marks: ['', '', '', ''] }),
+    射手({ id: 'a2', name: '二人目', marks: ['', '', '', ''] }),
+  ]);
+
+  const 送った時刻 = store.getState().lastPushedTimestamp;
+  ライブ.置く(道, {
+    status: 'active',
+    timestamp: 送った時刻, // 自分の返り
+    archers: [射手({ id: 'a1', marks: ['', '', '', ''] }), 射手({ id: 'a2', name: '二人目', marks: ['', '', '', ''] })],
+    // 相手（a2 を持つ端末）の手が同じ通知に載っている
+    marks_by_id: { a2: ['○', '', '', ''] },
+    archer_timestamps: { a2: Date.now() + 5000 },
+    shotsPerRound: 本数,
+  });
+
+  const a2 = store.getState().archers.find((a) => a.id === 'a2');
+  assert.equal(a2.marks[0], '○', '相手の○×が届いていない');
+});
