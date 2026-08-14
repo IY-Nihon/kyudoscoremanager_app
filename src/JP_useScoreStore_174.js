@@ -405,6 +405,12 @@ const M = (0, s.create)()(
       };
       return {
         enableArrowLocation: !1,
+        // 誤タップ防止。入れたますを少し経ってから閉じる。
+        // 同期する中身ではなく、画面の上の守りなので archers には持たせない
+        自動ロックする: !0,
+        自動ロックまでの秒: 3,
+        // { 'archerId:射番': 入れた時刻 }。時間が経ったものを閉じたとみなす
+        入れた時刻: {},
         arrowTargetType: 'kasumi36',
         activeArrowLocationEdit: null,
         activeGroupId: null,
@@ -856,6 +862,13 @@ const M = (0, s.create)()(
           const { isLiveActive: n, liveSessionName: c, shotsPerRound: l } = s();
           n && c && v(c, t, l);
         },
+        set自動ロックする: (t) => e({ 自動ロックする: t, 入れた時刻: {} }),
+        // 長押しで、そのますだけ開ける。
+        // 数え直しにしてある。開けたあと、また少し経てば閉じる
+        ますを開ける: (射手, 番) =>
+          e((前) => ({
+            入れた時刻: Object.assign({}, 前.入れた時刻, { [射手 + ':' + 番]: Date.now() }),
+          })),
         setEnableArrowLocation: (t) =>
           e({
             enableArrowLocation: t,
@@ -939,11 +952,14 @@ const M = (0, s.create)()(
             }
             return e;
           });
+          const 鍵 = t + ':' + o;
           (e({
             archers: d,
             historyStack: [...s().historyStack, a],
             redoStack: [],
             lastLocalChange: c,
+            // 入れ直したますは、また少し経ってから閉じる
+            入れた時刻: Object.assign({}, s().入れた時刻, { [鍵]: c }),
           }),
             i && n && T(n, t, o, l, c));
         },
@@ -966,6 +982,29 @@ const M = (0, s.create)()(
           });
           const { isLiveActive: n, liveSessionName: c, shotsPerRound: l } = s();
           n && c && v(c, i, l);
+        },
+        // 1立が全部埋まって少し経つと、画面側からここが呼ばれる。
+        // toggleLock と違って必ず「閉じる」側に倒す。
+        // 取り消しの控えには積まない（押した覚えのない操作が戻ると分かりにくい）
+        立を閉じる: (t, o) => {
+          const { archers: a } = s(),
+            i = Array.isArray(a) ? a : [],
+            n = i.findIndex((e) => e && e.id === t);
+          if (-1 === n) return;
+          if (i[n].lockedBlocks?.[o]) return;
+          let d = n;
+          for (; d > 0 && i[d - 1] && !i[d - 1].isSeparator && !i[d - 1].isTotalCalculator; ) d--;
+          const u = Date.now(),
+            m = i.map((e, s) => {
+              if (e && s >= d && s <= n) {
+                const s = Object.assign({}, e.lockedBlocks || {});
+                return ((s[o] = !0), Object.assign({}, e, { lockedBlocks: s, lastModified: u }));
+              }
+              return e;
+            });
+          e({ archers: m, lastLocalChange: u });
+          const { isLiveActive: p, liveSessionName: h, shotsPerRound: f } = s();
+          p && h && v(h, m, f);
         },
         toggleLock: (t, o) => {
           const { archers: a } = s(),
@@ -3766,6 +3805,7 @@ const M = (0, s.create)()(
         autoPromotionEnabled: e.autoPromotionEnabled,
         analysisRankingSettings: e.analysisRankingSettings,
         enableArrowLocation: e.enableArrowLocation,
+        自動ロックする: e.自動ロックする,
         arrowTargetType: e.arrowTargetType,
       }),
       onRehydrateStorage: () => {
