@@ -212,6 +212,24 @@ const k = () => {
       [Je, Ke] = (0, t.useState)(!1),
       // 拡大率の選択が出ているか（Excel の倍率と同じ考え方）
       [拡大選択中, 拡大を選ぶ] = (0, t.useState)(!1),
+      // 拡大率のバーの幅。指の位置を倍率に直すのに使う
+      [溝の幅, 溝の幅を置く] = (0, t.useState)(0),
+      // 拡大率の下限・上限。バーも一覧もこの幅で動かす
+      拡大の下 = 0.5,
+      拡大の上 = 2,
+      // バーのどこを触ったかを倍率に直す。5%きざみで止める
+      触った所を倍率に = (x) => {
+        if (!溝の幅) return se;
+        const 割合 = Math.min(1, Math.max(0, x / 溝の幅));
+        const 生 = 拡大の下 + 割合 * (拡大の上 - 拡大の下);
+        return Math.round(生 * 20) / 20;
+      },
+      倍率を割合に = (倍) =>
+        Math.min(1, Math.max(0, (倍 - 拡大の下) / (拡大の上 - 拡大の下))),
+      バーを動かす = (e) => {
+        const 倍 = 触った所を倍率に(e.nativeEvent.locationX);
+        if (Math.abs(倍 - se) > 0.001) J(倍);
+      },
       Qe = () => Ke(!1),
       Xe = (e) => {
         e < T && k.some((t) => t && Array.isArray(t.marks) && t.marks.slice(e).some((e) => '' !== e))
@@ -390,16 +408,22 @@ const k = () => {
           transparent: !0,
           animationType: 'fade',
           onRequestClose: () => 拡大を選ぶ(!1),
-          children: (0, A.jsx)(f.default, {
+          children: (0, A.jsxs)(l.default, {
             style: {
               flex: 1,
-              backgroundColor: 'rgba(0,0,0,0.4)',
               justifyContent: 'flex-end',
               alignItems: 'center',
               paddingBottom: 40,
             },
-            onPress: () => 拡大を選ぶ(!1),
-            children: (0, A.jsxs)(l.default, {
+            children: [
+              // 背景は「中身の親」ではなく「兄弟」にしてある。
+              // 親にすると、バーを掴んで離したときの click が背景まで伝わり、
+              // 倍率を合わせるたびに閉じてしまう
+              (0, A.jsx)(f.default, {
+                style: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },
+                onPress: () => 拡大を選ぶ(!1),
+              }),
+              (0, A.jsxs)(l.default, {
               style: {
                 width: '90%',
                 maxWidth: 400,
@@ -419,6 +443,53 @@ const k = () => {
                     style: { fontSize: 13, color: '#8E8E93', fontWeight: '600' },
                     children: '表示の大きさ',
                   }),
+                }),
+                // バーでも動かせるようにする。⊖ ⊕ は 5% ずつ
+                (0, A.jsxs)(l.default, {
+                  style: W.バーの行,
+                  children: [
+                    (0, A.jsx)(h.default, {
+                      onPress: () => J(Math.max(拡大の下, Math.round((se - 0.05) * 20) / 20)),
+                      disabled: se <= 拡大の下 + 0.001,
+                      style: W.zoomBtn,
+                      children: (0, A.jsx)(p.Ionicons, {
+                        name: 'remove-circle-outline',
+                        size: 24,
+                        color: se <= 拡大の下 + 0.001 ? '#C7C7CC' : '#007AFF',
+                      }),
+                    }),
+                    (0, A.jsxs)(l.default, {
+                      style: W.溝の当たり,
+                      onLayout: (e) => 溝の幅を置く(e.nativeEvent.layout.width),
+                      onStartShouldSetResponder: () => !0,
+                      onMoveShouldSetResponder: () => !0,
+                      onResponderGrant: バーを動かす,
+                      onResponderMove: バーを動かす,
+                      children: [
+                        (0, A.jsx)(l.default, { style: W.溝 }),
+                        (0, A.jsx)(l.default, {
+                          style: [W.溝の済み, { width: `${倍率を割合に(se) * 100}%` }],
+                        }),
+                        (0, A.jsx)(l.default, {
+                          style: [W.つまみ, { left: `${倍率を割合に(se) * 100}%` }],
+                        }),
+                      ],
+                    }),
+                    (0, A.jsx)(h.default, {
+                      onPress: () => J(Math.min(拡大の上, Math.round((se + 0.05) * 20) / 20)),
+                      disabled: se >= 拡大の上 - 0.001,
+                      style: W.zoomBtn,
+                      children: (0, A.jsx)(p.Ionicons, {
+                        name: 'add-circle-outline',
+                        size: 24,
+                        color: se >= 拡大の上 - 0.001 ? '#C7C7CC' : '#007AFF',
+                      }),
+                    }),
+                    (0, A.jsxs)(a.default, {
+                      style: W.バーの数字,
+                      children: [Math.round(se * 100), '%'],
+                    }),
+                  ],
                 }),
                 [0.5, 0.75, 1, 1.25, 1.5, 2].map((倍) =>
                   (0, A.jsx)(
@@ -461,7 +532,8 @@ const k = () => {
                   }),
                 }),
               ],
-            }),
+              }),
+            ],
           }),
         }),
         (0, A.jsx)(d.default, {
@@ -1537,6 +1609,37 @@ const k = () => {
       alignItems: 'center',
     },
     zoomText: { fontSize: 12, color: '#007AFF', fontWeight: 'bold' },
+    // 拡大率のバー。溝そのものは細いので、当たり判定だけ広く取る
+    バーの行: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: '#EFEFF4',
+    },
+    溝の当たり: { flex: 1, height: 36, justifyContent: 'center' },
+    溝: { height: 4, borderRadius: 2, backgroundColor: '#E5E5EA' },
+    溝の済み: {
+      position: 'absolute',
+      left: 0,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: '#007AFF',
+    },
+    つまみ: {
+      position: 'absolute',
+      width: 22,
+      height: 22,
+      marginLeft: -11,
+      borderRadius: 11,
+      backgroundColor: '#FFFFFF',
+      borderWidth: 1,
+      borderColor: '#C7C7CC',
+      ...(m.IS_WEB ? { boxShadow: '0 1px 4px rgba(0,0,0,0.3)' } : { elevation: 3 }),
+    },
+    バーの数字: { fontSize: 13, color: '#3C3C43', fontWeight: 'bold', minWidth: 44, textAlign: 'right' },
     liveStatusHeader: {
       height: 24,
       flexDirection: 'row',
