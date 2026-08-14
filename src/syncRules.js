@@ -240,6 +240,92 @@ function 射手が同じ(a, b) {
 }
 
 /**
+ * 前後の盤面を見比べて、○×だけの違いなら「変えたますの一覧」を返す。
+ * 盤面の形が変わっていれば null（差分では表せない）。
+ *
+ * なぜ要るか：
+ *   共有履歴が「盤面まるごと」を前として持つと、2台が同時に入れたとき、
+ *   後に積まれた手の「前」には相手の入力がまだ入っていない。取り消すと
+ *   その盤面が丸ごと戻り、相手の○×まで消える。変えたますだけを持てば、
+ *   自分が変えたところしか戻らない。
+ *
+ * 射手の増減・並び替え・射数の変更・鍵・名前・矢所は差分で表せないので、
+ * そのときは null を返し、呼ぶ側は従来どおり盤面まるごとに任せる。
+ */
+function 印だけの差分(前, 後) {
+  const a = Array.isArray(前) ? 前 : null;
+  const b = Array.isArray(後) ? 後 : null;
+  if (!a || !b || a.length !== b.length) return null;
+  const 出 = [];
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i];
+    const y = b[i];
+    if (!x || !y || !x.id || x.id !== y.id) return null;
+    if (!印以外が同じ(x, y)) return null;
+    const p = Array.isArray(x.marks) ? x.marks : [];
+    const q = Array.isArray(y.marks) ? y.marks : [];
+    if (p.length !== q.length) return null;
+    for (let j = 0; j < q.length; j++) {
+      const 元 = p[j] == null ? '' : p[j];
+      const 先 = q[j] == null ? '' : q[j];
+      if (元 !== 先) 出.push({ 射手: y.id, 射番: j, 前: 元, 後: 先 });
+    }
+  }
+  return 出.length ? 出 : null;
+}
+
+/** ○×と更新日時をのぞいて、射手の中身が同じか */
+function 印以外が同じ(a, b) {
+  for (const k of 射手の単純な項目) {
+    if (k === 'lastModified') continue;
+    const x = a[k] === undefined ? null : a[k];
+    const y = b[k] === undefined ? null : b[k];
+    if (x !== y) return false;
+  }
+  const 同じ入れ物 = (x, y) => JSON.stringify(x || null) === JSON.stringify(y || null);
+  return (
+    同じ入れ物(a.lockedBlocks, b.lockedBlocks) &&
+    同じ入れ物(a.substitutions, b.substitutions) &&
+    同じ入れ物(a.substitutionIds, b.substitutionIds) &&
+    同じ入れ物(a.arrowLocations, b.arrowLocations)
+  );
+}
+
+/**
+ * 「変えたますの一覧」を、いまの盤面に当てる。
+ * 向きが -1 なら前の値へ、+1 なら後の値へ戻す。
+ * 盤面まるごとを置き換えないので、他の人が入れた○×には触れない。
+ * 手元に居ない射手は飛ばす。
+ */
+function 差分を当てる(いまの一覧, 差分, 向き) {
+  const 束 = new Map();
+  (Array.isArray(差分) ? 差分 : []).forEach((d) => {
+    if (!d || !d.射手 || typeof d.射番 !== 'number') return;
+    if (!束.has(d.射手)) 束.set(d.射手, []);
+    束.get(d.射手).push(d);
+  });
+  let 変わった = false;
+  const archers = (Array.isArray(いまの一覧) ? いまの一覧 : []).map((a) => {
+    if (!a || !a.id || !束.has(a.id)) return a;
+    const marks = Array.isArray(a.marks) ? [...a.marks] : [];
+    let この射手が変わった = false;
+    束.get(a.id).forEach((d) => {
+      const 値 = 向き < 0 ? d.前 : d.後;
+      const 入れる = 値 == null ? '' : 値;
+      const いま = marks[d.射番] == null ? '' : marks[d.射番];
+      if (いま !== 入れる) {
+        marks[d.射番] = 入れる;
+        この射手が変わった = true;
+      }
+    });
+    if (!この射手が変わった) return a;
+    変わった = true;
+    return Object.assign({}, a, { marks });
+  });
+  return { archers, changed: 変わった };
+}
+
+/**
  * ライブ記録で受け取った射手の一覧を、手元の一覧と突き合わせる。
  *
  * 元は主催者側と参加者側に同じ処理が丸ごと二重に書かれていた
@@ -399,6 +485,8 @@ module.exports = {
   trashedAtMillis,
   mergeById,
   mergeLiveArchers,
+  印だけの差分,
+  差分を当てる,
   参加できるライブ,
   ライブの最終更新,
   ライブ名に使えない字,
