@@ -39,7 +39,23 @@ if (!fs.existsSync(置き場)) {
   process.exit(1);
 }
 
-const 束 = fs.readdirSync(置き場).find((f) => f.startsWith('AppEntry-') && f.endsWith('.js'));
+/**
+ * 実際に配信される束を選ぶ。
+ *
+ * ディレクトリを走査して最初の1つを取ると、古い束が残っていたときに
+ * 配信されないファイルを調べてしまう。index.html が読み込む名前を見る。
+ */
+const 束 = (() => {
+  try {
+    const html = fs.readFileSync(path.join('dist', 'index.html'), 'utf8');
+    const m = html.match(/AppEntry-[A-Za-z0-9]+\.js/);
+    if (m && fs.existsSync(path.join(置き場, m[0]))) return m[0];
+  } catch {
+    /* index.html が読めなければ下の走査に任せる */
+  }
+  return fs.readdirSync(置き場).find((f) => f.startsWith('AppEntry-') && f.endsWith('.js'));
+})();
+
 if (!束) {
   console.error('停止：AppEntry の束が見つかりません');
   process.exit(1);
