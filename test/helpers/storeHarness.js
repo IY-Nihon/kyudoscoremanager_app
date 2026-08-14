@@ -264,6 +264,29 @@ function 偽RTDB() {
         適用: () => 書く(分解(参照.道), 値 == null ? undefined : 雲の形へ(値)),
       }),
     remove: (参照) => 送る({ 種別: 'remove', 道: 参照.道, 適用: () => 書く(分解(参照.道), undefined) }),
+    /**
+     * 読んで書くまでを一息でやる。共有履歴の場所取りに使う。
+     * 本物と同じく、いまの値を渡して、返った値を書き込む。
+     * 2台が続けて呼んでも、後の呼び出しは先の結果を読む
+     */
+    runTransaction: (参照, 決める) => {
+      const いま = 読む(分解(参照.道));
+      const 新しい = 決める(いま === undefined ? null : 写し(いま));
+      if (新しい === undefined) {
+        return Promise.resolve({
+          committed: false,
+          snapshot: { exists: () => いま !== undefined, val: () => 写し(いま) },
+        });
+      }
+      return 送る({
+        種別: 'transaction',
+        道: 参照.道,
+        適用: () => 書く(分解(参照.道), 新しい == null ? undefined : 雲の形へ(新しい)),
+      }).then(() => ({
+        committed: true,
+        snapshot: { exists: () => 新しい !== undefined, val: () => 写し(新しい) },
+      }));
+    },
     update: (参照, 値) =>
       送る({
         種別: 'update',
