@@ -19,9 +19,10 @@ import { test, expect } from '@playwright/test';
  * 「指で触ったら動くか」は確かめられない。案内は指で押してもらう作りなので、
  * ここは分けておく必要がある。
  */
+const 指の端末 = ['スマホ', 'iPhone'];
+
 async function 押す(要素) {
-  const 指で触る = test.info().project.name === 'スマホ';
-  if (指で触る) await 要素.tap();
+  if (指の端末.includes(test.info().project.name)) await 要素.tap();
   else await 要素.click();
 }
 
@@ -163,10 +164,17 @@ test.beforeEach(async ({ page }) => {
   // すでに入っていれば、そのまま。入っていなければ団体でログインする
   const 団体ID欄 = page.getByPlaceholder('例: 123456');
   if (await 団体ID欄.isVisible().catch(() => false)) {
-    await 団体ID欄.fill(団体);
-    await page.locator('input[type="password"]').fill(合言葉);
+    // Safari(WebKit) では fill() だけだと React 側に伝わらないことがある。
+    // 触ってから一文字ずつ打ち、入ったことを確かめてから送る
+    await 団体ID欄.click();
+    await 団体ID欄.pressSequentially(団体, { delay: 20 });
+    const 合言葉欄 = page.locator('input[type="password"]').first();
+    await 合言葉欄.click();
+    await 合言葉欄.pressSequentially(合言葉, { delay: 20 });
+    await expect(団体ID欄).toHaveValue(団体);
+    await expect(合言葉欄).toHaveValue(合言葉);
     await 押す(page.getByText('ログイン', { exact: true }));
-    await expect(page.getByText('記録を始めましょう')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('記録を始めましょう')).toBeVisible({ timeout: 30_000 });
   }
   // 初めて使う人と同じ状態にしてから開き直す
   await page.evaluate(() => {
@@ -278,7 +286,7 @@ test('案内：終わると記録表が元に戻り、控えも残らない', as
 });
 
 test('案内：指のタップで進む（スマホの側だけ）', async ({ page }) => {
-  test.skip(test.info().project.name !== 'スマホ', 'タッチのある側だけで見る');
+  test.skip(!指の端末.includes(test.info().project.name), 'タッチのある側だけで見る');
 
   // 触った種類を記録する。RN Web はタッチの出来事を拾って反応する作りなので、
   // ここがマウスのままだと「指で押したら動くか」を確かめたことにならない
