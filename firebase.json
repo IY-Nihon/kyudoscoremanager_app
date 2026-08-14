@@ -13,6 +13,8 @@
   },
   "hosting": {
     "public": "dist",
+    "//": "配る直前に、dist の接続先と配り先が合っているかを確かめる。expo export は --clear を付けないとキャッシュから前回の設定を使い回すため、検証向けの束が本番へ出る事故が起きうる",
+    "predeploy": ["node scripts/verify-hosting-bundle.mjs"],
     "ignore": [
       "firebase.json",
       "**/.*"
