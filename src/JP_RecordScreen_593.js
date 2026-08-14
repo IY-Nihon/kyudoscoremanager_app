@@ -1519,10 +1519,12 @@ const k = () => {
                 historyStack: [...store.historyStack, { archers: [...k], activeSessionID: e }],
                 redoStack: [],
               });
-            x.useScoreStore.setState({ archers: newArchers });
             // 読み取った○×は「いま入れたもの」として扱う。
-            // 印を付けないと初めから閉じてしまい、直すのが全部長押しになる
+            // 印を付けないと初めから閉じてしまい、直すのが全部長押しになる。
+            // 盤面より先に印を付ける。逆にすると印の無い盤面が一度描かれ、
+            // 読み取った○×が一瞬すべて灰色に光ってから戻る
             x.useScoreStore.getState().入れた印をまとめて付ける(newArchers);
+            x.useScoreStore.setState({ archers: newArchers });
             Ge('画像から立ち順を登録しました');
             j.notificationAsync(j.NotificationFeedbackType.Success);
           },
