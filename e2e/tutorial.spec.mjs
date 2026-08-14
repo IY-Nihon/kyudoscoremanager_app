@@ -12,6 +12,19 @@
  */
 import { test, expect } from '@playwright/test';
 
+/**
+ * 押す。スマホの側では本物のタップ（touchstart/touchend）を送る。
+ *
+ * click() はタッチ端末の設定でもマウスの出来事を送るだけなので、
+ * 「指で触ったら動くか」は確かめられない。案内は指で押してもらう作りなので、
+ * ここは分けておく必要がある。
+ */
+async function 押す(要素) {
+  const 指で触る = test.info().project.name === 'スマホ';
+  if (指で触る) await 要素.tap();
+  else await 要素.click();
+}
+
 const 団体 = '100005'; // 部員0人。作りたての団体と同じ道筋を踏める
 const 合言葉 = 'StgTest!2026';
 const 指の目安 = 44; // iOS の指針。Android は 48
@@ -152,7 +165,7 @@ test.beforeEach(async ({ page }) => {
   if (await 団体ID欄.isVisible().catch(() => false)) {
     await 団体ID欄.fill(団体);
     await page.locator('input[type="password"]').fill(合言葉);
-    await page.getByText('ログイン', { exact: true }).click();
+    await 押す(page.getByText('ログイン', { exact: true }));
     await expect(page.getByText('記録を始めましょう')).toBeVisible({ timeout: 20_000 });
   }
   // 初めて使う人と同じ状態にしてから開き直す
@@ -216,7 +229,7 @@ test('案内：最後まで踏んでも、行き止まりも画面外もはみ�
       for (const 文字 of 進む手) {
         const b = page.getByText(文字, { exact: true }).first();
         if (await b.isVisible().catch(() => false)) {
-          await b.click().catch(() => {});
+          await 押す(b).catch(() => {});
           進めた = true;
           break;
         }
@@ -247,7 +260,7 @@ test('案内：終わると記録表が元に戻り、控えも残らない', as
     if (!(await いまの手順(page))) break;
     const b = page.getByText('スキップ', { exact: true }).first();
     if (await b.isVisible().catch(() => false)) {
-      await b.click();
+      await 押す(b);
       break;
     }
   }
@@ -262,4 +275,28 @@ test('案内：終わると記録表が元に戻り、控えも残らない', as
   });
   expect(後.列, '案内で足した列が記録表に残っている').toBe(前);
   expect(後.控え, '控えが片付いていない').toBeNull();
+});
+
+test('案内：指のタップで進む（スマホの側だけ）', async ({ page }) => {
+  test.skip(test.info().project.name !== 'スマホ', 'タッチのある側だけで見る');
+
+  // 触った種類を記録する。RN Web はタッチの出来事を拾って反応する作りなので、
+  // ここがマウスのままだと「指で押したら動くか」を確かめたことにならない
+  await page.evaluate(() => {
+    window.__触った = [];
+    for (const 名 of ['touchstart', 'touchend', 'mousedown']) {
+      document.addEventListener(名, () => window.__触った.push(名), true);
+    }
+  });
+
+  const 前 = await いまの手順(page);
+  await 押す(page.getByText('次へ', { exact: true }).first());
+  await page.waitForTimeout(1500);
+
+  const 触った = await page.evaluate(() => window.__触った);
+  expect(触った, 'タッチの出来事が送られていない').toContain('touchstart');
+  expect(触った, 'タッチの出来事が送られていない').toContain('touchend');
+
+  const 後 = await いまの手順(page);
+  expect(後, `指のタップで進めなかった（${前} のまま）`).not.toBe(前);
 });
