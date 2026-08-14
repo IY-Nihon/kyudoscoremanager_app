@@ -217,12 +217,12 @@ const k = () => {
       // 拡大率の下限・上限。バーも一覧もこの幅で動かす
       拡大の下 = 0.5,
       拡大の上 = 2,
-      // バーのどこを触ったかを倍率に直す。5%きざみで止める
+      // バーのどこを触ったかを倍率に直す。1%きざみで止める
       触った所を倍率に = (x) => {
         if (!溝の幅) return se;
         const 割合 = Math.min(1, Math.max(0, x / 溝の幅));
         const 生 = 拡大の下 + 割合 * (拡大の上 - 拡大の下);
-        return Math.round(生 * 20) / 20;
+        return Math.round(生 * 100) / 100;
       },
       倍率を割合に = (倍) =>
         Math.min(1, Math.max(0, (倍 - 拡大の下) / (拡大の上 - 拡大の下))),
@@ -388,16 +388,23 @@ const k = () => {
                     }),
                   ],
                 }),
-                // 表示の大きさ。数字だけでは何の％か分からないので虫めがねを添える
+                // 表示の大きさ。％だけでは何の割合か分からないので、
+                // 押した先のダイアログと同じ言葉を見出しにして上に置く
                 (0, A.jsxs)(h.default, {
                   ref: 案内の拡大,
                   onPress: () => 拡大を選ぶ(!0),
                   style: W.zoomToggle,
                   children: [
-                    (0, A.jsx)(p.Ionicons, { name: 'search-outline', size: 13, color: '#007AFF' }),
-                    (0, A.jsxs)(a.default, {
-                      style: W.zoomText,
-                      children: [Math.round(se * 100), '%'],
+                    (0, A.jsx)(a.default, { style: W.zoomLabel, children: '表示の大きさ' }),
+                    (0, A.jsxs)(l.default, {
+                      style: W.zoomValue,
+                      children: [
+                        (0, A.jsxs)(a.default, {
+                          style: W.zoomText,
+                          children: [Math.round(se * 100), '%'],
+                        }),
+                        (0, A.jsx)(p.Ionicons, { name: 'chevron-down', size: 10, color: '#007AFF' }),
+                      ],
                     }),
                   ],
                 }),
@@ -1541,12 +1548,16 @@ const k = () => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+      // 細い画面では右の群が下の段へ回る。
+      // 一列に詰め込むと端が切れて、押せないボタンが出てしまう
+      flexWrap: 'wrap',
+      rowGap: 6,
       paddingHorizontal: 12,
       paddingVertical: 6,
       borderBottomWidth: 1,
       borderBottomColor: '#E5E5EA',
     },
-    navLeft: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    navLeft: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 },
     syncContainer: { flexDirection: 'row', alignItems: 'center' },
     syncTimeText: { fontSize: 9, color: '#8E8E93' },
     // 群（ライブ／立ちの増減／表示の大きさ）どうしは離し、群の中はくっつける
@@ -1604,16 +1615,19 @@ const k = () => {
     shotsText: { fontSize: 13, color: '#5856D6', fontWeight: 'bold' },
     // 拡大率。押せることが分かるよう、軽く枠で囲う
     zoomToggle: {
-      flexDirection: 'row',
-      gap: 3,
+      flexDirection: 'column',
       paddingHorizontal: 7,
       paddingVertical: 3,
       borderRadius: 6,
       borderWidth: 1,
       borderColor: '#C7C7CC',
-      minWidth: 48,
+      minWidth: 62,
+      minHeight: 40,
       alignItems: 'center',
+      justifyContent: 'center',
     },
+    zoomLabel: { fontSize: 9, color: '#8E8E93', fontWeight: '600' },
+    zoomValue: { flexDirection: 'row', alignItems: 'center', gap: 1 },
     zoomText: { fontSize: 12, color: '#007AFF', fontWeight: 'bold' },
     // 拡大率のバー。溝そのものは細いので、当たり判定だけ広く取る
     バーの行: {
