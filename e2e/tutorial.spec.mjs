@@ -24,7 +24,9 @@ const 指の目安 = 44; // iOS の指針。Android は 48
  * 取り違えないよう、しばらく待ってから無いと判断する。
  */
 async function いまの手順(page, { 待つ = 4000 } = {}) {
-  const 札 = page.locator('text=/^\\d+\\s*\\/\\s*\\d+$/').first();
+  // 案内の番号は「21 / 28」と空白入り。分析の見本に出る的中「21/28」と
+  // 紛れるので、空白まで含めて見分ける
+  const 札 = page.locator('text=/^\\d+ \\/ \\d+$/').first();
   try {
     await 札.waitFor({ state: 'visible', timeout: 待つ });
   } catch {
@@ -37,7 +39,7 @@ async function いまの手順(page, { 待つ = 4000 } = {}) {
 async function 手順の題(page) {
   return page.evaluate(() => {
     const 札 = [...document.querySelectorAll('div')].find(
-      (e) => e.children.length === 0 && /^\d+\s*\/\s*\d+$/.test((e.textContent || '').trim())
+      (e) => e.children.length === 0 && /^\d+ \/ \d+$/.test((e.textContent || '').trim())
     );
     if (!札) return '';
     const 親 = 札.parentElement && 札.parentElement.parentElement;
@@ -53,22 +55,30 @@ async function 手順の題(page) {
 async function 吹き出しの枠(page) {
   return page.evaluate(() => {
     const 札 = [...document.querySelectorAll('div')].find(
-      (e) => e.children.length === 0 && /^\d+\s*\/\s*\d+$/.test((e.textContent || '').trim())
+      (e) => e.children.length === 0 && /^\d+ \/ \d+$/.test((e.textContent || '').trim())
     );
     if (!札) return null;
     // 影だけを目印にすると、見本の画面に並ぶカードを掴んでしまう。
-    // 「番号札」と「スキップ」の両方を含み、位置指定された箱を吹き出しとみなす
+    // 番号札から上へたどり、「スキップ」を含む位置指定の箱を吹き出しとみなす。
+    // 見つからなければ、番号札を含む一番内側の影付きの箱で代用する
+    let 控え = null;
     let n = 札;
-    for (let i = 0; i < 10 && n.parentElement; i++) {
+    for (let i = 0; i < 14 && n.parentElement; i++) {
       n = n.parentElement;
       const s = getComputedStyle(n);
-      const 中身 = n.textContent || '';
-      if (s.position === 'absolute' && 中身.includes('スキップ')) {
-        const r = n.getBoundingClientRect();
+      const r = n.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) continue;
+      // 画面いっぱいのものは幕であって吹き出しではない
+      const 幕らしい = r.width >= window.innerWidth - 2 && r.height >= window.innerHeight - 2;
+      if (幕らしい) break;
+      if ((n.textContent || '').includes('スキップ') && s.position === 'absolute') {
         return { x: r.x, y: r.y, w: r.width, h: r.height };
       }
+      if (!控え && s.boxShadow && s.boxShadow !== 'none') {
+        控え = { x: r.x, y: r.y, w: r.width, h: r.height };
+      }
     }
-    return null;
+    return 控え;
   });
 }
 
@@ -88,6 +98,17 @@ async function 指す先の枠(page) {
     const r = 枠.getBoundingClientRect();
     return { x: r.x, y: r.y, w: r.width, h: r.height };
   });
+}
+
+/** 失敗したときに、案内に見えている短い文字を並べる（原因を追うため） */
+async function 案内の文字(page) {
+  return page.evaluate(() =>
+    [...document.querySelectorAll('div,span')]
+      .filter((e) => e.children.length === 0)
+      .map((e) => (e.textContent || '').trim())
+      .filter((t) => t && t.length <= 8)
+      .slice(0, 20)
+  );
 }
 
 /** 案内の押せるところを測る */
@@ -190,15 +211,23 @@ test('案内：最後まで踏んでも、行き止まりも画面外もはみ�
     // 4. 先へ進む道があること（無ければ行き止まり）
     const 進む手 = ['とばす', '次へ', '続きを見る', '始める'];
     let 進めた = false;
-    for (const 文字 of 進む手) {
-      const b = page.getByText(文字, { exact: true }).first();
-      if (await b.isVisible().catch(() => false)) {
-        await b.click();
-        進めた = true;
-        break;
+    // 位置が決まった直後は、まだ描き終わっていないことがある。二度試す
+    for (let 回 = 0; 回 < 2 && !進めた; 回++) {
+      for (const 文字 of 進む手) {
+        const b = page.getByText(文字, { exact: true }).first();
+        if (await b.isVisible().catch(() => false)) {
+          await b.click().catch(() => {});
+          進めた = true;
+          break;
+        }
       }
+      if (!進めた) await page.waitForTimeout(800);
     }
-    expect(進めた, `${札}：先へ進む道が無い（行き止まり）`).toBe(true);
+    expect(
+      進めた,
+      `${札}「${await 手順の題(page)}」：先へ進む道が無い（行き止まり）。` +
+        `見えている案内の文字: ${JSON.stringify(await 案内の文字(page))}`
+    ).toBe(true);
     await page.waitForTimeout(700);
   }
 
