@@ -58,3 +58,7 @@ scratch/
 # ── OS / エディタ ──
 .DS_Store
 Thumbs.db
+
+# Playwright の実行結果（毎回作り直される）
+test-results/
+playwright-report/
