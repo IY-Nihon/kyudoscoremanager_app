@@ -64,7 +64,7 @@
 
   // 団体の一覧を取る。第1段階のルールでは list が管理者のみなので、
   // 取れない場合は groups の親ドキュメントから拾う。
-  let GROUPS = [];
+  let GROUPS;
   try {
     GROUPS = (await listAll('/group_accounts', ['id'])).map((d) => d.id);
   } catch {

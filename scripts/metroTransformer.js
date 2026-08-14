@@ -21,7 +21,9 @@ function getUpstreamTransformer() {
   for (const c of candidates) {
     try {
       return require(c);
-    } catch (_) {}
+    } catch {
+      // この候補には無い。次の候補を試す
+    }
   }
   throw new Error(
     '[metroTransformer] Could not find upstream babel transformer. ' +
