@@ -298,6 +298,34 @@ test('一覧：最終更新から14日を過ぎたライブは出さず、消す
   assert.notEqual(端.ライブ.値(`live_sessions/${団体}/今朝`), null, '新しいほうは残す');
 });
 
+test('一覧：サーバーの時計に合わせられないときは、古くても消さない', async () => {
+  // 時差が取れないと、判定は端末の時計に落ちる。時計が未来にずれた端末では
+  // 全部が「14日超」に見える。消すと保存前の盤面ごと戻らないので、
+  // 一覧から外すだけに留める（時計が合えば次の取得で戻ってくる）
+  const 端 = 端末();
+  端.ライブ.消す('.info/serverTimeOffset');
+  const いま = Date.now();
+  端.ライブ.置く(`live_sessions/${団体}/先月の練習/state`, {
+    status: 'active',
+    timestamp: いま - 20 * 日,
+  });
+  端.ライブ.置く(`live_history/${団体}/先月の練習/0`, { at: いま - 20 * 日 });
+
+  await 端.store.getState().fetchActiveLiveSessions();
+
+  assert.deepEqual(端.store.getState().liveSessionsList, [], '古いものは一覧に出さない');
+  assert.notEqual(
+    端.ライブ.値(`live_sessions/${団体}/先月の練習`),
+    null,
+    '時計が合っていないのに消してしまった'
+  );
+  assert.notEqual(
+    端.ライブ.値(`live_history/${団体}/先月の練習`),
+    null,
+    '共有履歴まで消してしまった'
+  );
+});
+
 test('一覧：最終更新が新しい順に並べる', async () => {
   const 端 = 端末();
   const いま = Date.now();
