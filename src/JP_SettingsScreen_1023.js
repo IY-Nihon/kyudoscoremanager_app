@@ -130,6 +130,8 @@ const w = () => {
         members: O = [],
         setAuth: N,
         isAdminMode: G,
+        自動ロックする: 自動ロックする,
+        set自動ロックする: set自動ロックする,
         setAdminMode: Y,
         verifyGroupPassword: J,
         tagTemplates: q = [],
@@ -1002,6 +1004,45 @@ const w = () => {
                   ],
                 })
               ),
+            Ye(
+              '入力の保護',
+              (0, T.jsxs)(o.default, {
+                ref: (node) => 案内.setTutorialTargetNode('設定.自動ロック', node),
+                style: D.item,
+                children: [
+                  (0, T.jsxs)(o.default, {
+                    style: [D.itemLeft, { flex: 1 }],
+                    children: [
+                      (0, T.jsx)(p.Ionicons, {
+                        name: 'lock-closed-outline',
+                        size: 22,
+                        color: '#34C759',
+                        style: D.itemIcon,
+                      }),
+                      (0, T.jsxs)(o.default, {
+                        style: { flex: 1, paddingRight: 8 },
+                        children: [
+                          (0, T.jsx)(n.default, {
+                            style: D.itemText,
+                            children: '入れたますを自動でロック',
+                          }),
+                          (0, T.jsx)(n.default, {
+                            style: { fontSize: 11, color: '#8E8E93', marginTop: 2 },
+                            children:
+                              '入れて3秒たつと押しても変わらなくなります。直すときは長押しで、そのますだけ開きます。1立が全部埋まったときは、間隔・計の鍵も自動でかかります',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  (0, T.jsx)(c.default, {
+                    value: 自動ロックする,
+                    onValueChange: set自動ロックする,
+                    trackColor: { false: '#D1D1D6', true: '#34C759' },
+                  }),
+                ],
+              })
+            ),
             Ye(
               '矢所の記録',
               (0, T.jsxs)(T.Fragment, {
