@@ -278,14 +278,20 @@ function 偽RTDB() {
           snapshot: { exists: () => いま !== undefined, val: () => 写し(いま) },
         });
       }
-      return 送る({
-        種別: 'transaction',
-        道: 参照.道,
-        適用: () => 書く(分解(参照.道), 新しい == null ? undefined : 雲の形へ(新しい)),
-      }).then(() => ({
+      記録.push({ 種別: 'transaction', 道: 参照.道 });
+      const 結果 = {
         committed: true,
         snapshot: { exists: () => 新しい !== undefined, val: () => 写し(新しい) },
-      }));
+      };
+      if (状態.失敗させる) return Promise.reject(new Error('偽の失敗'));
+      if (状態.オフライン) return 決着しない();
+      // 本物は場所取りを先に確定させる（手元に当て、ぶつかればサーバーが
+      // 読み直させる）。遅延があっても、次の呼び出しは確定後の値を読む。
+      // ここを遅らせると、2台が同じ番号を取れてしまい実物と食い違う
+      書く(分解(参照.道), 新しい == null ? undefined : 雲の形へ(新しい));
+      通知();
+      if (状態.遅延 > 0) return new Promise((r) => setTimeout(() => r(結果), 状態.遅延));
+      return Promise.resolve(結果);
     },
     update: (参照, 値) =>
       送る({

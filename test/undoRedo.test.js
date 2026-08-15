@@ -427,3 +427,265 @@ test('共有履歴：取り消しは、同時に入れた相手の○×を消さ
   assert.equal(印('a2'), '', '最後の手（B の入力）が戻っていない');
   assert.equal(印('a1'), '○', 'A の入力まで消えた');
 });
+
+test('共有履歴：やり直しも、変えたますだけを進める', async () => {
+  // 取り消しだけを確かめて、やり直し側を見ていなかった。
+  // 差分は向きを変えて当てるので、こちらも同じ性質が要る
+  const A = 端末();
+  const B = 端末(A.ライブ);
+  const 立てる = (端) =>
+    端.store.setState({
+      archers: [射手(), 射手({ id: 'a2', name: '二人目' })],
+      isLiveActive: true,
+      liveSessionName: ライブ名,
+      historySharedLen: 0,
+      historySharedMax: 0,
+    });
+  (立てる(A), 立てる(B));
+
+  A.store.getState().toggleMark('a1', 0);
+  B.store.getState().toggleMark('a2', 0);
+  await 待つ(0);
+  A.store.setState({
+    archers: [
+      射手({ marks: ['○', '', '', ''] }),
+      射手({ id: 'a2', name: '二人目', marks: ['○', '', '', ''] }),
+    ],
+  });
+
+  const 印 = (id) => A.store.getState().archers.find((a) => a.id === id).marks[0];
+
+  await A.store.getState().sharedUndo(-1);
+  await 待つ(0);
+  assert.equal(印('a2'), '', '前提：取り消しで戻っている');
+
+  await A.store.getState().sharedUndo(1);
+  await 待つ(0);
+  assert.equal(印('a2'), '○', 'やり直しで戻らない');
+  assert.equal(印('a1'), '○', 'やり直しで相手の手が消えた');
+});
+
+test('共有履歴：射数を減らしたあとの取り消しで、無いますに書かない', async () => {
+  // 差分は射番で位置を指す。射数が減ったあとにそのまま当てると、
+  // marks が伸びて存在しないますに○が入り、的中数まで狂う
+  const A = 端末();
+  A.store.setState({
+    archers: [射手({ marks: ['○', '', '', ''] })],
+    isLiveActive: true,
+    liveSessionName: ライブ名,
+    historySharedLen: 1,
+    historySharedMax: 1,
+  });
+  A.ライブ.置く(`live_sessions/${団体}/${ライブ名}/state`, {
+    status: 'active',
+    timestamp: 1,
+    history_len: 1,
+    history_max: 1,
+  });
+  A.ライブ.置く(`live_history/${団体}/${ライブ名}/0`, {
+    本数: 8,
+    at: 1,
+    差分: [{ 射手: 'a1', 射番: 7, 前: '○', 後: '×' }],
+  });
+
+  await A.store.getState().sharedUndo(-1);
+  await 待つ(0);
+
+  const marks = A.store.getState().archers[0].marks;
+  assert.equal(marks.length, 4, 'ますの数が増えている');
+  assert.deepEqual(marks, ['○', '', '', ''], '中身が変わっている');
+});
+
+test('共有履歴：差分にしてよいのは○×だけの違いのときに限る', () => {
+  // 差分は「同じ形の盤面で、ますの中身だけが違う」ときにしか作れない。
+  // 形が変わる操作を取りこぼすと、取り消しで盤面が壊れる
+  const { 印だけの差分 } = require('../src/syncRules');
+  const 元 = (o) =>
+    Object.assign(
+      {
+        id: 'a1',
+        name: '一人目',
+        gender: '男性',
+        grade: 1,
+        marks: ['', '', '', ''],
+        lockedBlocks: {},
+        substitutions: {},
+        substitutionIds: {},
+        arrowLocations: [null, null, null, null],
+        lastModified: 1,
+      },
+      o
+    );
+
+  // ○×だけの違い → 差分にする
+  assert.deepEqual(印だけの差分([元()], [元({ marks: ['○', '', '', ''], lastModified: 2 })]), [
+    { 射手: 'a1', 射番: 0, 前: '', 後: '○' },
+  ]);
+
+  // 形が変わる操作 → まるごとに任せる
+  const 形が変わる = {
+    鍵をかけた: [元()],
+    名前を変えた: [元()],
+    代役を入れた: [元()],
+    矢所を置いた: [元()],
+    射手を足した: [元()],
+    射数を増やした: [元()],
+  };
+  const 後たち = {
+    鍵をかけた: [元({ lockedBlocks: { 0: true }, lastModified: 2 })],
+    名前を変えた: [元({ name: '二人目', lastModified: 2 })],
+    代役を入れた: [元({ substitutions: { 0: '誰か' }, lastModified: 2 })],
+    矢所を置いた: [元({ arrowLocations: [{ x: 1, y: 1 }, null, null, null], lastModified: 2 })],
+    射手を足した: [元(), 元({ id: 'a2' })],
+    射数を増やした: [元({ marks: ['', '', '', '', '', '', '', ''], lastModified: 2 })],
+  };
+  for (const 名 of Object.keys(形が変わる)) {
+    assert.equal(印だけの差分(形が変わる[名], 後たち[名]), null, `${名}：差分にしてしまっている`);
+  }
+
+  // 並びが入れ替わったときも差分にしない（同じ位置に別の射手が来る）
+  assert.equal(印だけの差分([元(), 元({ id: 'a2' })], [元({ id: 'a2' }), 元()]), null);
+  // 日時だけの違いは、そもそも戻すものが無い
+  assert.equal(印だけの差分([元()], [元({ lastModified: 999 })]), null);
+});
+
+// ──────────────────────────────────────────────────────────────
+// まだ見ていなかった組み合わせ。
+// 2台・○×だけ・つながっている、という一本道しか確かめていなかった。
+// ──────────────────────────────────────────────────────────────
+
+/** 同じライブを見る端末を作る */
+function ライブの端末(共有, 射手たち) {
+  const 端 = 端末(共有);
+  端.store.setState({
+    archers: 射手たち,
+    isLiveActive: true,
+    liveSessionName: ライブ名,
+    historySharedLen: 0,
+    historySharedMax: 0,
+  });
+  return 端;
+}
+
+const 三人 = () => [
+  射手(),
+  射手({ id: 'a2', name: '二人目' }),
+  射手({ id: 'a3', name: '三人目' }),
+];
+
+test('共有履歴：3台が同時に入れても、どの手も控えに残る', async () => {
+  const A = ライブの端末(undefined, 三人());
+  const B = ライブの端末(A.ライブ, 三人());
+  const C = ライブの端末(A.ライブ, 三人());
+
+  A.store.getState().toggleMark('a1', 0);
+  B.store.getState().toggleMark('a2', 0);
+  C.store.getState().toggleMark('a3', 0);
+  await 待つ(0);
+
+  const 控え = A.ライブ.値(`live_history/${団体}/${ライブ名}`) || {};
+  assert.equal(Object.keys(控え).length, 3, '3台ぶん残っていない');
+  const 目印 = A.ライブ.値(`live_sessions/${団体}/${ライブ名}/state`) || {};
+  assert.equal(目印.history_len, 3, '目印が3まで進んでいない');
+
+  // どの控えも、自分が変えた1ますだけを指している
+  [0, 1, 2].forEach((i) => {
+    assert.equal(控え[i].差分.length, 1, `${i}番の控えが1ますになっていない`);
+  });
+  const 射手たち = [0, 1, 2].map((i) => 控え[i].差分[0].射手).sort();
+  assert.deepEqual(射手たち, ['a1', 'a2', 'a3'], '同じ射手を指している控えがある');
+});
+
+test('共有履歴：3台のうち1台が取り消しても、他2台の手は残る', async () => {
+  const A = ライブの端末(undefined, 三人());
+  const B = ライブの端末(A.ライブ, 三人());
+  const C = ライブの端末(A.ライブ, 三人());
+
+  A.store.getState().toggleMark('a1', 0);
+  B.store.getState().toggleMark('a2', 0);
+  C.store.getState().toggleMark('a3', 0);
+  await 待つ(0);
+
+  // 同期が行き渡り、A に3つとも見えている状態にする
+  A.store.setState({
+    archers: 三人().map((a) => Object.assign({}, a, { marks: ['○', '', '', ''] })),
+  });
+
+  await A.store.getState().sharedUndo(-1);
+  await 待つ(0);
+
+  const 印 = (id) => A.store.getState().archers.find((a) => a.id === id).marks[0];
+  assert.equal(印('a3'), '', '最後の手（C の入力）が戻っていない');
+  assert.equal(印('a1'), '○', 'A の手まで消えた');
+  assert.equal(印('a2'), '○', 'B の手まで消えた');
+});
+
+test('共有履歴：鍵と○×を同時にすると、取り消しで相手の手が消える（既知）', async () => {
+  // 鍵は盤面の形が変わるので差分にできず、まるごとの控えになる。
+  // まるごとは「その端末から見た盤面」なので、相手の入力を含まない。
+  // ここは直っていない。実態を検査として書き留めておく
+  const A = ライブの端末(undefined, [射手(), 射手({ id: 'a2', name: '二人目' })]);
+  const B = ライブの端末(A.ライブ, [射手(), 射手({ id: 'a2', name: '二人目' })]);
+
+  B.store.getState().toggleMark('a2', 0); // 差分になる
+  A.store.getState().toggleLock('a1', 0); // 形が変わる＝まるごと
+  await 待つ(0);
+
+  const 控え = A.ライブ.値(`live_history/${団体}/${ライブ名}`) || {};
+  assert.equal(Object.keys(控え).length, 2, '2件とも残っている');
+  assert.ok(控え[0].差分, '○×の控えは差分になっている');
+  assert.equal(控え[1].差分, undefined, '鍵の控えはまるごとになっている');
+
+  A.store.setState({
+    archers: [
+      射手({ lockedBlocks: { 0: true } }),
+      射手({ id: 'a2', name: '二人目', marks: ['○', '', '', ''] }),
+    ],
+  });
+
+  await A.store.getState().sharedUndo(-1);
+  await 待つ(0);
+
+  const a2 = A.store.getState().archers.find((a) => a.id === 'a2');
+  // 直っていれば '○' になる。いまは消える
+  assert.equal(a2.marks[0], '', '直った場合はこの検査を更新すること（相手の手が残るようになった）');
+});
+
+test('通信が遅くても、取り消しは1手だけ戻す', async () => {
+  const A = ライブの端末(undefined, [射手(), 射手({ id: 'a2', name: '二人目' })]);
+  const B = ライブの端末(A.ライブ, [射手(), 射手({ id: 'a2', name: '二人目' })]);
+  A.ライブ.状態.遅延 = 30;
+
+  A.store.getState().toggleMark('a1', 0);
+  B.store.getState().toggleMark('a2', 0);
+  await 待つ(120);
+
+  const 控え = A.ライブ.値(`live_history/${団体}/${ライブ名}`) || {};
+  assert.equal(Object.keys(控え).length, 2, '遅いと控えが取りこぼされる');
+
+  A.store.setState({
+    archers: [
+      射手({ marks: ['○', '', '', ''] }),
+      射手({ id: 'a2', name: '二人目', marks: ['○', '', '', ''] }),
+    ],
+  });
+  await A.store.getState().sharedUndo(-1);
+  await 待つ(120);
+
+  const 印 = (id) => A.store.getState().archers.find((a) => a.id === id).marks[0];
+  assert.ok(印('a1') === '○' || 印('a2') === '○', '遅いと両方消える');
+});
+
+test('回線が切れているあいだの操作は、控えに積まれない（つながれば積まれる）', async () => {
+  // 場所取りは runTransaction。決着しないあいだは控えも目印も動かない。
+  // 盤面そのものは手元に入るので、記録は失われない
+  const A = ライブの端末(undefined, [射手()]);
+  A.ライブ.状態.オフライン = true;
+
+  A.store.getState().toggleMark('a1', 0);
+  await 待つ(20);
+
+  assert.equal(印(A.store), '○', '手元には入っている');
+  assert.equal(A.ライブ.値(`live_history/${団体}/${ライブ名}`), null, '切れているのに控えが載った');
+  assert.equal(A.store.getState().historySharedLen, 0, '目印だけ進んでいる');
+});
