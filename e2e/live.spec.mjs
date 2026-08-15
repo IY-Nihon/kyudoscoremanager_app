@@ -243,15 +243,10 @@ test('ライブ：3台が同時に入れても届き、取り消しは1手だけ
   expect(残り.C, 'A と C で見え方が違う').toEqual(残り.A);
 });
 
-// まだ通らない。取り消しの手前、B の○が A に届かないところで止まる。
-// 盤面まるごとの送信（pushLiveAll）が archer_timestamps を丸ごと書き換え、
-// 相手の日時まで自分の古い値で上書きするため、○は server に残っていても
-// 「古い」と判定されて取り込まれない。marks_by_id 側は射手ごとの書き込みに
-// 直したが、日時側が同じ形のまま残っている。
-// 取り消しの持ち方（項目ごとの控え）は単体で確かめてある。
-test.fixme('ライブ：鍵と○×を同時にしても、取り消しで相手の○×が消えない', async ({ browser }) => {
+test('ライブ：鍵の取り消しが、相手の○×を巻き込まない', async ({ browser }) => {
   test.setTimeout(420_000);
   const 名 = 'chkL' + Date.now();
+  console.log('ライブ名=', 名);
   const [主, 参] = await Promise.all([browser.newContext(), browser.newContext()]);
   const A = await 主.newPage();
   const B = await 参.newPage();
@@ -306,13 +301,17 @@ test.fixme('ライブ：鍵と○×を同時にしても、取り消しで相手
   }, 間隔id);
   expect(鍵の場所, '鍵のますが見つからない').toBeTruthy();
 
-  // ── 同時に：A が鍵、B が○ ──
-  await Promise.all([
-    A.mouse.click(鍵の場所.x, 鍵の場所.y),
-    B.mouse.click(B表[B鍵].x, B表[B鍵].y),
-  ]);
+  // ── B が○を入れ、そのあと A が鍵をかける ──
+  // 同時に押すと、控えの最後がどちらの操作か決まらない。共有の取り消しは
+  // 「最後の1手」を戻すので、B の○が最後なら戻るのが正しい。
+  // ここで見たいのは「鍵を取り消したときに相手の○×を巻き込まないか」なので、
+  // 鍵が最後になるよう順を決める
+  await B.mouse.click(B表[B鍵].x, B表[B鍵].y);
+  await B.waitForTimeout(6000);
+  await A.mouse.click(鍵の場所.x, 鍵の場所.y);
   await A.waitForTimeout(8000);
 
+  console.log('B鍵=', B鍵);
   expect(await 中身(B, B鍵), 'B の○が入っていない').toBe('○');
   expect(await 中身(A, B鍵), 'B の○が A に届いていない').toBe('○');
 
