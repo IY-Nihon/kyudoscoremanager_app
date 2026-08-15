@@ -769,3 +769,84 @@ test('共有履歴：射数の変更は取り消しの控えに積まれない',
   assert.ok(控え[0].差分, '積まれているのは○×のほう（ますごとの差分）');
   assert.equal(控え[0].差分[0].射手, 'a2');
 });
+
+// ──────────────────────────────────────────────────────────────
+// まだ見ていなかった3つの角度
+// ──────────────────────────────────────────────────────────────
+
+// 未解決。片付けたあともサーバーに○×が載ったまま残る。
+// 射手ごとの道に書くようにしたため、居なくなった射手の分が消えない。
+// 表示は state.archers を土台にするので見た目には出ないが、同じ id の
+// 射手が戻ったときに古い○×が重なる恐れがある。確かめきれていない。
+test.skip('ライブ中に盤面を片付けると、相手の画面でも消える', async () => {
+  // 「終了・保存」は盤面を片付ける。○×を載せた覚え（載っている印）は
+  // 片付けでは捨てないので、空になった盤面を「前と同じ」と見なして
+  // 送らないと、相手の画面に○×が残り続ける
+  const A = ライブの端末(undefined, [射手(), 射手({ id: 'a2', name: '二人目' })]);
+  A.store.getState().toggleMark('a1', 0);
+  await 待つ(10);
+  assert.equal(
+    (A.ライブ.値(`live_sessions/${団体}/${ライブ名}/state`).marks_by_id || {}).a1[0],
+    '○',
+    '前提：載っている'
+  );
+
+  A.store.getState().resetCurrentSession(!1);
+  await 待つ(10);
+
+  const 載り = (A.ライブ.値(`live_sessions/${団体}/${ライブ名}/state`) || {}).marks_by_id || {};
+  const 残り = 載り.a1 ? 載り.a1[0] : '';
+  assert.equal(残り == null ? '' : 残り, '', '片付けたのに○×が載ったまま');
+});
+
+// 未解決。入り直したあと archers が空のままになる。検査の前提（待ち時間や
+// joinLiveSync の呼び方）が誤っている可能性と、実際の不具合の両方がありうる。
+// 切り分けできていない。
+test.skip('参加者が抜けて入り直しても、○×が見える', async () => {
+  const 主 = ライブの端末(undefined, [射手({ marks: ['○', '×', '', ''] })]);
+  await 待つ(10);
+
+  const 参 = 端末(主.ライブ);
+  参.store.getState().joinLiveSync(ライブ名);
+  await 待つ(20);
+  assert.equal(参.store.getState().archers[0].marks[0], '○', '前提：参加できている');
+
+  参.store.getState().stopLiveSync();
+  await 待つ(20);
+
+  参.store.getState().joinLiveSync(ライブ名);
+  await 待つ(20);
+  assert.equal(参.store.getState().archers[0].marks[0], '○', '入り直したら○が消えた');
+  assert.equal(参.store.getState().archers[0].marks[1], '×', '入り直したら×が消えた');
+});
+
+test('3台で形が変わる操作をしても、取り消しは相手の○×を巻き込まない', async () => {
+  const A = ライブの端末(undefined, 三人());
+  const B = ライブの端末(A.ライブ, 三人());
+  const C = ライブの端末(A.ライブ, 三人());
+
+  B.store.getState().toggleMark('a2', 0);
+  C.store.getState().toggleMark('a3', 0);
+  A.store.getState().toggleLock('a1', 0); // 形が変わる＝項目ごとの控え
+  await 待つ(0);
+
+  const 控え = A.ライブ.値(`live_history/${団体}/${ライブ名}`) || {};
+  assert.equal(Object.keys(控え).length, 3, '3件とも積まれていない');
+  assert.ok(控え[2].項目, '鍵の控えが項目ごとになっていない');
+
+  A.store.setState({
+    archers: [
+      射手({ lockedBlocks: { 0: true } }),
+      射手({ id: 'a2', name: '二人目', marks: ['○', '', '', ''] }),
+      射手({ id: 'a3', name: '三人目', marks: ['○', '', '', ''] }),
+    ],
+  });
+
+  await A.store.getState().sharedUndo(-1);
+  await 待つ(0);
+
+  const 見る = (id) => A.store.getState().archers.find((a) => a.id === id);
+  assert.deepEqual(見る('a1').lockedBlocks, {}, '鍵が外れていない');
+  assert.equal(見る('a2').marks[0], '○', 'B の○が消えた');
+  assert.equal(見る('a3').marks[0], '○', 'C の○が消えた');
+});
