@@ -503,3 +503,29 @@ test('返り：自分の返りでも、同じ通知に載った相手の○×は
   const a2 = store.getState().archers.find((a) => a.id === 'a2');
   assert.equal(a2.marks[0], '○', '相手の○×が届いていない');
 });
+
+test('送信：ライブを移ったら、○×は最初から載せ直す', async () => {
+  // 「サーバーに載っていると分かっている○×」の控えをライブ間で持ち越すと、
+  // 次のライブで「前と同じ」と見なして送らず、参加者の画面に○×が出ない
+  const { store, ライブ } = 端末(null, [射手({ marks: ['○', '×', '', ''] })]);
+
+  assert.equal(await store.getState().startLiveSync('一つ目'), '開始した');
+  await 待つ(10);
+  assert.deepEqual(
+    ライブ.値(`live_sessions/${団体}/一つ目/state`).marks_by_id.a1,
+    ['○', '×', '', ''],
+    '前提：一つ目には載っている'
+  );
+
+  store.getState().stopLiveSync();
+  await 待つ(10);
+
+  // 同じ盤面で別のライブを始める（stopLiveSync は盤面も片付けるので置き直す）
+  store.setState({ archers: [射手({ marks: ['○', '×', '', ''] })] });
+  assert.equal(await store.getState().startLiveSync('二つ目'), '開始した');
+  await 待つ(10);
+
+  const 二つ目 = ライブ.値(`live_sessions/${団体}/二つ目/state`);
+  assert.ok(二つ目 && 二つ目.marks_by_id, '二つ目に marks_by_id が無い');
+  assert.deepEqual(二つ目.marks_by_id.a1, ['○', '×', '', ''], '二つ目に○×が載っていない');
+});
