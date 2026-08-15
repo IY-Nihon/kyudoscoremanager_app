@@ -310,6 +310,9 @@ function 差分を当てる(いまの一覧, 差分, 向き) {
     const marks = Array.isArray(a.marks) ? [...a.marks] : [];
     let この射手が変わった = false;
     束.get(a.id).forEach((d) => {
+      // いまの盤面に無いますは触らない。射数を減らしたあとに古い控えを
+      // 当てると、配列が伸びて存在しないますに○が入り、的中数まで狂う
+      if (!(d.射番 >= 0) || d.射番 >= marks.length) return;
       const 値 = 向き < 0 ? d.前 : d.後;
       const 入れる = 値 == null ? '' : 値;
       const いま = marks[d.射番] == null ? '' : marks[d.射番];
