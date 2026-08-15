@@ -328,6 +328,91 @@ function 差分を当てる(いまの一覧, 差分, 向き) {
   return { archers, changed: 変わった };
 }
 
+/** 射手の中身を作っている項目。差分はこの単位で持つ */
+const 射手の項目 = [
+  ...射手の単純な項目.filter((k) => k !== 'lastModified'),
+  'marks',
+  'lockedBlocks',
+  'substitutions',
+  'substitutionIds',
+  'arrowLocations',
+];
+
+const 同じ値 = (x, y) =>
+  typeof x === 'object' || typeof y === 'object'
+    ? JSON.stringify(x === undefined ? null : x) === JSON.stringify(y === undefined ? null : y)
+    : (x === undefined ? null : x) === (y === undefined ? null : y);
+
+/**
+ * 前後の盤面を見比べて、射手ごとに「変わった項目」だけを返す。
+ * 人数・並び・id が同じときにしか作れない（違えば null）。
+ *
+ * なぜ要るか：
+ *   鍵・名前・矢所・射数のように盤面の形が変わる操作は、ますごとの差分に
+ *   できない。かといって盤面まるごとを戻すと、同時に入れた相手の○×まで
+ *   消える。項目ごとに戻せば、鍵は鍵だけが外れ、相手の○×は残る。
+ *
+ * 射手の増減と並び替えは対象外。位置がずれると当てる先を誤るので、
+ * そこは従来どおり盤面まるごとに任せる。
+ */
+function 項目の差分(前, 後) {
+  const a = Array.isArray(前) ? 前 : null;
+  const b = Array.isArray(後) ? 後 : null;
+  if (!a || !b || a.length !== b.length) return null;
+  const 出 = [];
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i];
+    const y = b[i];
+    if (!x || !y || !x.id || x.id !== y.id) return null;
+    // 射数が変わると盤面全体の値（shotsPerRound）も動く。ここでは戻せない
+    const 印の数 = (m) => (Array.isArray(m) ? m.length : -1);
+    if (印の数(x.marks) !== 印の数(y.marks)) return null;
+    const 項目 = {};
+    let あり = false;
+    for (const k of 射手の項目) {
+      if (同じ値(x[k], y[k])) continue;
+      項目[k] = { 前: x[k] === undefined ? null : x[k], 後: y[k] === undefined ? null : y[k] };
+      あり = true;
+    }
+    if (あり) 出.push({ 射手: y.id, 項目: 項目 });
+  }
+  return 出.length ? 出 : null;
+}
+
+/**
+ * 「変わった項目」を、いまの盤面に当てる。
+ * 向きが -1 なら前の値へ、+1 なら後の値へ。
+ * 触るのは控えに載っている項目だけなので、それ以外は手元のまま残る。
+ */
+function 項目差分を当てる(いまの一覧, 差分, 向き) {
+  const 束 = new Map();
+  (Array.isArray(差分) ? 差分 : []).forEach((d) => {
+    if (d && d.射手 && d.項目) 束.set(d.射手, d.項目);
+  });
+  let 変わった = false;
+  const archers = (Array.isArray(いまの一覧) ? いまの一覧 : []).map((a) => {
+    if (!a || !a.id || !束.has(a.id)) return a;
+    const 項目 = 束.get(a.id);
+    const 直す = {};
+    let この射手が変わった = false;
+    for (const k of Object.keys(項目)) {
+      if (射手の項目.indexOf(k) < 0) continue;
+      const 値 = 向き < 0 ? 項目[k].前 : 項目[k].後;
+      if (同じ値(a[k], 値)) continue;
+      直す[k] = 値 === null ? undefined : 値;
+      この射手が変わった = true;
+    }
+    if (!この射手が変わった) return a;
+    変わった = true;
+    const 出 = Object.assign({}, a, 直す);
+    Object.keys(直す).forEach((k) => {
+      if (直す[k] === undefined) delete 出[k];
+    });
+    return 出;
+  });
+  return { archers, changed: 変わった };
+}
+
 /**
  * ライブ記録で受け取った射手の一覧を、手元の一覧と突き合わせる。
  *
@@ -490,6 +575,8 @@ module.exports = {
   mergeLiveArchers,
   印だけの差分,
   差分を当てる,
+  項目の差分,
+  項目差分を当てる,
   参加できるライブ,
   ライブの最終更新,
   ライブ名に使えない字,
