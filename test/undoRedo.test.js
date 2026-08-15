@@ -792,8 +792,12 @@ test('共有履歴：射数の変更は取り消しの控えに積まれない',
 // ・「片付けの直後に同じ通知の archers で戻る」と考えて、その通知の
 //   突き合わせを飛ばしてみたが直らなかった（変更は戻した）
 // つまり参加者の盤面がそもそも片付いていない。次はそこを見る。
-test.skip('ライブ中に盤面を片付けると、相手の画面からも消える', async () => {
-  const 主 = ライブの端末(undefined, [射手({ marks: ['○', '×', '', ''] })]);
+test('ライブ中に盤面を片付けると、相手の画面からも消える', async () => {
+  // 主催者は startLiveSync を通す。setState でライブ中の印を立てるだけでは
+  // サーバーに盤面が一度も載らず、参加者は空の節点を掴む
+  const 主 = 端末();
+  主.store.setState({ archers: [射手({ marks: ['○', '×', '', ''] })] });
+  await 主.store.getState().startLiveSync(ライブ名);
   await 待つ(10);
 
   const 参 = 端末(主.ライブ);
@@ -807,11 +811,12 @@ test.skip('ライブ中に盤面を片付けると、相手の画面からも消
 
   assert.equal(参.store.getState().archers.length, 0, '相手の画面に盤面が残っている');
 });
-// 未解決。入り直したあと archers が空のままになる。検査の前提（待ち時間や
-// joinLiveSync の呼び方）が誤っている可能性と、実際の不具合の両方がありうる。
-// 切り分けできていない。
-test.skip('参加者が抜けて入り直しても、○×が見える', async () => {
-  const 主 = ライブの端末(undefined, [射手({ marks: ['○', '×', '', ''] })]);
+test('参加者が抜けて入り直しても、○×が見える', async () => {
+  // 主催者は startLiveSync を通す。setState でライブ中の印を立てるだけでは
+  // サーバーに盤面が一度も載らず、参加者は空の節点を掴む
+  const 主 = 端末();
+  主.store.setState({ archers: [射手({ marks: ['○', '×', '', ''] })] });
+  await 主.store.getState().startLiveSync(ライブ名);
   await 待つ(10);
 
   const 参 = 端末(主.ライブ);
