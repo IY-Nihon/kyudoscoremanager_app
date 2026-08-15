@@ -15,8 +15,10 @@ import { test, expect } from '@playwright/test';
 
 const 団体 = '100006';
 const 合言葉 = 'StgTest!2026';
-// 毎回ちがう名前にする。同名が残っていると開始できず、参加側が古い盤面を掴む
-const ライブ名 = 'chk' + Date.now();
+// ライブ名は検査ごとに作る。ここ（読み込み時）で決めると、画面の種類が
+// 変わっても同じ名前になり、2つ目以降は「同名あり」で開始できない。
+// 参加側は前の実行の古い盤面を掴み、原因の分かりにくい失敗になる
+const ライブ名を作る = (印) => 印 + Date.now() + Math.floor(Math.random() * 1000);
 
 async function 入る(page) {
   await page.goto('/');
@@ -64,6 +66,7 @@ const 中身 = (page, 鍵) =>
 
 test('ライブ：同時に入れた○×が両方に届き、取り消しは1手だけ戻す', async ({ browser }) => {
   test.setTimeout(300_000);
+  const ライブ名 = ライブ名を作る('chk');
   const 主 = await browser.newContext();
   const 参 = await browser.newContext();
   const A = await 主.newPage();
@@ -165,7 +168,7 @@ test('ライブ：同時に入れた○×が両方に届き、取り消しは1�
 
 test('ライブ：3台が同時に入れても届き、取り消しは1手だけ戻す', async ({ browser }) => {
   test.setTimeout(420_000);
-  const 名 = 'chk3' + Date.now();
+  const 名 = ライブ名を作る('chk3');
   const 文脈 = await Promise.all([browser.newContext(), browser.newContext(), browser.newContext()]);
   const [A, B, C] = await Promise.all(文脈.map((c) => c.newPage()));
 
@@ -245,7 +248,7 @@ test('ライブ：3台が同時に入れても届き、取り消しは1手だけ
 
 test('ライブ：鍵の取り消しが、相手の○×を巻き込まない', async ({ browser }) => {
   test.setTimeout(420_000);
-  const 名 = 'chkL' + Date.now();
+  const 名 = ライブ名を作る('chkL');
   console.log('ライブ名=', 名);
   const [主, 参] = await Promise.all([browser.newContext(), browser.newContext()]);
   const A = await 主.newPage();
