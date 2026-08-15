@@ -751,3 +751,21 @@ test('共有履歴：項目ごとに戻しても、同じ射手の相手の○×
   assert.deepEqual(出.archers[0].lockedBlocks, {}, '鍵が外れていない');
   assert.deepEqual(出.archers[0].marks, ['○', '', '', ''], '相手の○×まで戻した');
 });
+
+test('共有履歴：射数の変更は取り消しの控えに積まれない', async () => {
+  // 「差分にできない操作は盤面まるごとの控えになり、取り消すと相手の○×を
+  // 巻き込む」と考えて確かめたが、前提が違った。射数の変更はそもそも
+  // historyStack に積まれないので、取り消しの対象にならない。
+  // 巻き込む余地が無いことを、ここで固定しておく
+  const A = ライブの端末(undefined, [射手(), 射手({ id: 'a2', name: '二人目' })]);
+  const B = ライブの端末(A.ライブ, [射手(), 射手({ id: 'a2', name: '二人目' })]);
+
+  B.store.getState().toggleMark('a2', 0);
+  A.store.getState().setShotsPerRound(8);
+  await 待つ(0);
+
+  const 控え = A.ライブ.値(`live_history/${団体}/${ライブ名}`) || {};
+  assert.equal(Object.keys(控え).length, 1, '射数の変更まで控えに積まれている');
+  assert.ok(控え[0].差分, '積まれているのは○×のほう（ますごとの差分）');
+  assert.equal(控え[0].差分[0].射手, 'a2');
+});
