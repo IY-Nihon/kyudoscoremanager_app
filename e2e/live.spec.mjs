@@ -1,8 +1,8 @@
 /**
- * ライブ記録を2台で確かめる。本物の Firebase（検証環境）につなぐ。
+ * ライブ記録を2台・3台で確かめる。本物の Firebase（検証環境）につなぐ。
  *
- * 見たいのは1点。2台が同時に○×を入れたとき、共有の取り消しが
- * 相手の手を飲み込まないこと。
+ * 見たいのは2点。同時に入れた○×が全員に届くこと。そして共有の取り消しが
+ * 1手だけ戻し、相手の手を飲み込まないこと。
  *
  * 場所取りを手元の目印だけで決めていたころは、2台が同じ番号に書き合い、
  * 後から書いたほうが先の手を上書きしていた。上書きされた手は
@@ -161,4 +161,166 @@ test('ライブ：同時に入れた○×が両方に届き、取り消しは1�
   expect(残った数, '取り消し1回で両方消えた（相手の手を飲み込んでいる）').toBe(1);
   expect(残り[0], 'A と B で見え方が違う').toBe(残り[2]);
   expect(残り[1], 'A と B で見え方が違う').toBe(残り[3]);
+});
+
+test('ライブ：3台が同時に入れても届き、取り消しは1手だけ戻す', async ({ browser }) => {
+  test.setTimeout(420_000);
+  const 名 = 'chk3' + Date.now();
+  const 文脈 = await Promise.all([browser.newContext(), browser.newContext(), browser.newContext()]);
+  const [A, B, C] = await Promise.all(文脈.map((c) => c.newPage()));
+
+  // ── 主催者：射手を3人立ててライブを始める ──
+  await 入る(A);
+  for (let i = 0; i < 3; i++) {
+    await A.getByText('人', { exact: true }).first().click();
+    await A.waitForTimeout(1200);
+  }
+  await A.getByText('ライブ', { exact: true }).first().click();
+  await A.waitForTimeout(1500);
+  await A.getByText('ライブ記録を開始', { exact: true }).click();
+  await A.waitForTimeout(1500);
+  const 名欄 = A.getByPlaceholder('session_name_123');
+  await 名欄.click();
+  await 名欄.pressSequentially(名, { delay: 20 });
+  await A.getByText('決定', { exact: true }).click();
+  await A.waitForTimeout(8000);
+  await expect(A.getByText(new RegExp('ライブ中')), 'A がライブに入っていない').toBeVisible();
+
+  // ── 参加者を2台つなぐ ──
+  for (const P of [B, C]) {
+    await 入る(P);
+    await P.getByText('ライブ', { exact: true }).first().click();
+    await P.waitForTimeout(1500);
+    await P.getByText('ライブ記録に参加', { exact: true }).click();
+    await P.waitForTimeout(3000);
+    await P.getByText(名, { exact: true }).first().click();
+    await P.waitForTimeout(500);
+    await P.getByText('決定', { exact: true }).click();
+    await P.waitForTimeout(8000);
+  }
+
+  // ── 3台に共通の射手を3人ぶん見つける ──
+  const 表にする = (一覧) => Object.fromEntries(一覧.map((x) => [x.印, x]));
+  const 表 = { A: 表にする(await 一射目たち(A)), B: 表にする(await 一射目たち(B)), C: 表にする(await 一射目たち(C)) };
+  const 共通 = Object.keys(表.A)
+    .filter((k) => 表.B[k] && 表.C[k])
+    .sort();
+  expect(共通.length, '3台に共通の射手が3人いない').toBeGreaterThanOrEqual(3);
+  const [鍵A, 鍵B, 鍵C] = 共通;
+
+  // ── 3台が同時に、別々の射手へ入れる ──
+  await Promise.all([
+    A.mouse.click(表.A[鍵A].x, 表.A[鍵A].y),
+    B.mouse.click(表.B[鍵B].x, 表.B[鍵B].y),
+    C.mouse.click(表.C[鍵C].x, 表.C[鍵C].y),
+  ]);
+  await A.waitForTimeout(8000);
+
+  const 全部見る = async () => {
+    const 出 = {};
+    for (const [名前, P] of [['A', A], ['B', B], ['C', C]]) {
+      出[名前] = [await 中身(P, 鍵A), await 中身(P, 鍵B), await 中身(P, 鍵C)];
+    }
+    return 出;
+  };
+
+  const 入れた後 = await 全部見る();
+  console.log('入れた直後 =', JSON.stringify(入れた後));
+  for (const 名前 of ['A', 'B', 'C']) {
+    expect(入れた後[名前], `${名前} に3つとも届いていない`).toEqual(['○', '○', '○']);
+  }
+
+  // ── 1台が取り消す。他2台の手は残ること ──
+  await A.locator('[data-testid="取り消し"]').click();
+  await A.waitForTimeout(8000);
+
+  const 残り = await 全部見る();
+  console.log('取り消し後 =', JSON.stringify(残り));
+
+  const 残った数 = 残り.A.filter((x) => x === '○').length;
+  expect(残った数, '取り消し1回で2手以上消えた').toBe(2);
+  expect(残り.B, 'A と B で見え方が違う').toEqual(残り.A);
+  expect(残り.C, 'A と C で見え方が違う').toEqual(残り.A);
+});
+
+// いまは通らない。取り消しの手前で止まる。
+// 鍵のように盤面まるごとを送る操作は marks_by_id を丸ごと書き換えるため、
+// まだ受け取っていない相手の1射ぶんの送信を消してしまう（pushLiveAll）。
+// 取り消しの持ち方（項目ごとの控え）とは別の、送信の形の問題。
+// 単体では「鍵を取り消しても相手の○×が残る」ことを確かめてある。
+test.fixme('ライブ：鍵と○×を同時にしても、取り消しで相手の○×が消えない', async ({ browser }) => {
+  test.setTimeout(420_000);
+  const 名 = 'chkL' + Date.now();
+  const [主, 参] = await Promise.all([browser.newContext(), browser.newContext()]);
+  const A = await 主.newPage();
+  const B = await 参.newPage();
+
+  await 入る(A);
+  for (let i = 0; i < 2; i++) {
+    await A.getByText('人', { exact: true }).first().click();
+    await A.waitForTimeout(1200);
+  }
+  // 間隔の列を足す。鍵ボタンはこの列に付く
+  const 前の印 = (await 一射目たち(A)).map((x) => x.印);
+  await A.getByText('間隔', { exact: true }).first().click();
+  await A.waitForTimeout(1500);
+  const 間隔の印 = (await 一射目たち(A)).map((x) => x.印).find((k) => !前の印.includes(k));
+  expect(間隔の印, '間隔の列が増えていない').toBeTruthy();
+  const 間隔id = 間隔の印.slice('ます-'.length, -2);
+
+  await A.getByText('ライブ', { exact: true }).first().click();
+  await A.waitForTimeout(1500);
+  await A.getByText('ライブ記録を開始', { exact: true }).click();
+  await A.waitForTimeout(1500);
+  const 名欄 = A.getByPlaceholder('session_name_123');
+  await 名欄.click();
+  await 名欄.pressSequentially(名, { delay: 20 });
+  await A.getByText('決定', { exact: true }).click();
+  await A.waitForTimeout(8000);
+  await expect(A.getByText(new RegExp('ライブ中')), 'A がライブに入っていない').toBeVisible();
+
+  await 入る(B);
+  await B.getByText('ライブ', { exact: true }).first().click();
+  await B.waitForTimeout(1500);
+  await B.getByText('ライブ記録に参加', { exact: true }).click();
+  await B.waitForTimeout(3000);
+  await B.getByText(名, { exact: true }).first().click();
+  await B.waitForTimeout(500);
+  await B.getByText('決定', { exact: true }).click();
+  await B.waitForTimeout(8000);
+
+  // B が○を入れる射手（間隔ではない側）
+  const B表 = Object.fromEntries((await 一射目たち(B)).map((x) => [x.印, x]));
+  const B鍵 = Object.keys(B表)
+    .filter((k) => !k.startsWith(`ます-${間隔id}-`))
+    .sort()[0];
+  expect(B鍵, '参加側に射手が届いていない').toBeTruthy();
+
+  // A が押す鍵の位置（間隔の列の、立ちの上端のます）
+  const 鍵の場所 = await A.evaluate((id) => {
+    const el = document.querySelector(`[data-testid="ます-${id}-7"]`);
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) };
+  }, 間隔id);
+  expect(鍵の場所, '鍵のますが見つからない').toBeTruthy();
+
+  // ── 同時に：A が鍵、B が○ ──
+  await Promise.all([
+    A.mouse.click(鍵の場所.x, 鍵の場所.y),
+    B.mouse.click(B表[B鍵].x, B表[B鍵].y),
+  ]);
+  await A.waitForTimeout(8000);
+
+  expect(await 中身(B, B鍵), 'B の○が入っていない').toBe('○');
+  expect(await 中身(A, B鍵), 'B の○が A に届いていない').toBe('○');
+
+  // ── A が取り消す。鍵だけ外れ、B の○は残ること ──
+  await A.locator('[data-testid="取り消し"]').click();
+  await A.waitForTimeout(8000);
+
+  const 残り = [await 中身(A, B鍵), await 中身(B, B鍵)];
+  console.log('鍵を取り消したあと [A, B] =', JSON.stringify(残り));
+  expect(残り[0], '取り消しで B の○まで消えた').toBe('○');
+  expect(残り[1], 'A と B で見え方が違う').toBe('○');
 });
