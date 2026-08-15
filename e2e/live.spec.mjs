@@ -45,19 +45,37 @@ async function 入る(page) {
  */
 async function 一射目たち(page) {
   return page.evaluate(() => {
-    const 出 = [];
+    // その座標で本当に押せる ます だけを拾う。
+    // iPhone のように縦が短い画面では、1射目の行が下端で切れていたり、
+    // 下の操作バーに隠れていたりする。矩形だけ見ていると「在る」と誤解し、
+    // 何も無いところを押してしまう（○×が入らない原因になっていた）
+    const 押せる = new Map();
     document.querySelectorAll('[data-testid^="ます-"]').forEach((el) => {
       const 印 = el.getAttribute('data-testid');
       const 部 = 印.split('-');
-      if (部[部.length - 1] !== '0') return;
+      const 射番 = Number(部[部.length - 1]);
+      const 射手 = 部.slice(1, -1).join('-');
       const r = el.getBoundingClientRect();
-      if (r.width > 0)
-        出.push({ 印, x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) });
+      if (!(r.width > 0 && r.height > 0)) return;
+      const x = Math.round(r.x + r.width / 2);
+      const y = Math.round(r.y + r.height / 2);
+      if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) return;
+      const 最前面 = document.elementFromPoint(x, y);
+      if (!最前面 || !(el === 最前面 || el.contains(最前面))) return;
+      if (!押せる.has(射番)) 押せる.set(射番, []);
+      押せる.get(射番).push({ 印, 射手, x, y });
     });
-    return 出;
+    // 射手ごとに1つずつ揃う射番のうち、いちばん小さいものを使う
+    const 射手の数 = new Set();
+    押せる.forEach((一覧) => 一覧.forEach((c) => 射手の数.add(c.射手)));
+    const 候補 = [...押せる.keys()].sort((a, b) => a - b);
+    for (const 番 of 候補) {
+      const 一覧 = 押せる.get(番);
+      if (一覧.length === 射手の数.size) return 一覧;
+    }
+    return 候補.length ? 押せる.get(候補[0]) : [];
   });
 }
-
 /**
  * 台どうしの見え方が揃うまで待つ。固定の待ち時間だと、遅い画面で
  * 揃う前に読んでしまい、実際には合っているのに食い違いとして落ちる。
