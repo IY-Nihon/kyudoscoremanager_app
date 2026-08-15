@@ -58,6 +58,23 @@ async function 一射目たち(page) {
   });
 }
 
+/**
+ * 台どうしの見え方が揃うまで待つ。固定の待ち時間だと、遅い画面で
+ * 揃う前に読んでしまい、実際には合っているのに食い違いとして落ちる。
+ * 揃わないまま上限に達したら、最後に読んだ値を返す（そこで落ちる）
+ */
+async function 揃うまで待つ(読む, 上限 = 20000) {
+  const 始め = Date.now();
+  let 最後 = null;
+  while (Date.now() - 始め < 上限) {
+    最後 = await 読む();
+    const 並び = 最後.map((x) => JSON.stringify(x));
+    if (並び.every((x) => x === 並び[0])) return 最後;
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  return 最後;
+}
+
 const 中身 = (page, 鍵) =>
   page.evaluate((k) => {
     const el = document.querySelector(`[data-testid="${k}"]`);
@@ -235,9 +252,13 @@ test('ライブ：3台が同時に入れても届き、取り消しは1手だけ
 
   // ── 1台が取り消す。他2台の手は残ること ──
   await A.locator('[data-testid="取り消し"]').click();
-  await A.waitForTimeout(8000);
+  await A.waitForTimeout(3000);
 
-  const 残り = await 全部見る();
+  const 揃った = await 揃うまで待つ(async () => {
+    const x = await 全部見る();
+    return [x.A, x.B, x.C];
+  });
+  const 残り = { A: 揃った[0], B: 揃った[1], C: 揃った[2] };
   console.log('取り消し後 =', JSON.stringify(残り));
 
   const 残った数 = 残り.A.filter((x) => x === '○').length;
