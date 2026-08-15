@@ -198,6 +198,27 @@ const f = (e, s) => {
         }))
       )
     );
+/**
+ * サーバーに載っていると分かっている○×。射手id ごとに文字列で持つ。
+ *
+ * 盤面まるごとの送信は marks_by_id を丸ごと書き換えていた。自分の盤面から
+ * 作るので、まだ受け取っていない相手の1射ぶんの送信を消してしまう。
+ * 鍵をかけただけでも相手の○×が消えるのはこれが理由。
+ * 変わった射手のぶんだけを書けば、触っていない射手には手が届かない。
+ */
+let 載っている印 = {};
+const 印を並べる = (m) => (Array.isArray(m) ? m : []).map((x) => (x == null ? '' : x)).join('\u0001');
+/** 受け取った内容で、載っていると分かっている○×を控え直す */
+const 載っている印を控える = (印の表) => {
+  if (!印の表) return;
+  Object.keys(印の表).forEach((id) => {
+    載っている印[id] = 印を並べる(印の表[id]);
+  });
+};
+/** ライブに出入りしたら控えは捨てる */
+const 載っている印を捨てる = () => {
+  載っている印 = {};
+};
 const v = (e, s, o) => {
     const a = Date.now(),
       n = M.getState().activeGroupId;
@@ -208,13 +229,18 @@ const v = (e, s, o) => {
     s.forEach((e) => {
       e && e.id && (d[e.id] = e.lastModified || 0);
     });
+    // ○×は、前に載せたときから変わった射手のぶんだけ書く。
+    // marks_by_id を丸ごと差し替えると、まだ受け取っていない相手の
+    // 1射ぶんの送信を消してしまう
     const u = {};
     s.forEach((e) => {
-      e && e.id && !e.isSeparator && (u[e.id] = e.marks || []);
+      if (!e || !e.id || e.isSeparator) return;
+      const 並び = 印を並べる(e.marks);
+      if (載っている印[e.id] === 並び) return;
+      ((u[e.id] = e.marks || []), (載っている印[e.id] = 並び));
     });
     const m = {
       archers: l,
-      marks_by_id: u,
       archer_timestamps: d,
       shotsPerRound: o,
       timestamp: a,
@@ -224,6 +250,10 @@ const v = (e, s, o) => {
       updated_at: (0, i.serverTimestamp)(),
       status: 'active',
     };
+    // 丸ごとではなく射手ごとの道に書く。書かなかった射手の○×は残る
+    Object.keys(u).forEach((id) => {
+      m[`marks_by_id/${id}`] = u[id];
+    });
     (console.log('[Store] pushLiveAll state updated, lastPushedTimestamp:', a),
       M.getState().updateState({
         lastPushedTimestamp: a,
@@ -265,6 +295,10 @@ const v = (e, s, o) => {
         timestamp: c,
         updated_at: (0, i.serverTimestamp)(),
       };
+    // 1射ぶんの送信でも控えを更新する。ここを飛ばすと、次に盤面まるごとを
+    // 送るときに「前と同じ」と見なして送らず、取り消しが相手に届かない
+    const その射手 = (M.getState().archers || []).find((x) => x && x.id === s);
+    if (その射手) 載っている印[s] = 印を並べる(その射手.marks);
     (M.getState().updateState({
       lastPushedTimestamp: c,
     }),
@@ -275,6 +309,9 @@ const v = (e, s, o) => {
       t = f(e.archers),
       o = e.marks_by_id || {},
       a = e.archer_timestamps || {};
+    // 受け取った内容でも控え直す。自分が送った値しか覚えていないと、
+    // 相手が入れた○×を「前と同じ」と見なして送らず、取り消しが相手に届かない
+    載っている印を控える(o);
     return {
       archers: t
         .map((e) => {
