@@ -238,7 +238,10 @@ const v = (e, s, o) => {
   返りの印を取り込む = (状態, e, s) => {
     const 印 = (状態 && 状態.marks_by_id) || {},
       日時 = (状態 && 状態.archer_timestamps) || {},
-      本数 = 'number' == typeof (状態 && 状態.shotsPerRound) ? 状態.shotsPerRound : s().shotsPerRound;
+      // 正規化は手元の射数で行う。相手の射数で揃えると、射数が食い違って
+      // いるときに手元の盤面と長さの合わない marks を入れてしまう。
+      // 射数そのものの変更は、返りではない通知のほうで届く
+      本数 = s().shotsPerRound;
     let 変わった = !1;
     const 一覧 = (s().archers || []).map((a) => {
       if (!a || !a.id || a.isSeparator || a.isTotalCalculator) return a;
