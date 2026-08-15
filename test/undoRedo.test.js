@@ -620,10 +620,10 @@ test('共有履歴：3台のうち1台が取り消しても、他2台の手は�
   assert.equal(印('a2'), '○', 'B の手まで消えた');
 });
 
-test('共有履歴：鍵と○×を同時にすると、取り消しで相手の手が消える（既知）', async () => {
-  // 鍵は盤面の形が変わるので差分にできず、まるごとの控えになる。
-  // まるごとは「その端末から見た盤面」なので、相手の入力を含まない。
-  // ここは直っていない。実態を検査として書き留めておく
+test('共有履歴：鍵と○×を同時にしても、取り消しで相手の手が消えない', async () => {
+  // 鍵は○×だけの違いではないので、ますごとの差分にはできない。
+  // かわりに「変わった項目」だけを控えに持たせ、鍵は lockedBlocks だけを
+  // 戻すようにした。同じ盤面に相手が入れた○×には触れない
   const A = ライブの端末(undefined, [射手(), 射手({ id: 'a2', name: '二人目' })]);
   const B = ライブの端末(A.ライブ, [射手(), 射手({ id: 'a2', name: '二人目' })]);
 
@@ -634,7 +634,8 @@ test('共有履歴：鍵と○×を同時にすると、取り消しで相手の
   const 控え = A.ライブ.値(`live_history/${団体}/${ライブ名}`) || {};
   assert.equal(Object.keys(控え).length, 2, '2件とも残っている');
   assert.ok(控え[0].差分, '○×の控えは差分になっている');
-  assert.equal(控え[1].差分, undefined, '鍵の控えはまるごとになっている');
+  assert.equal(控え[1].差分, undefined, '鍵はますごとの差分ではない');
+  assert.ok(控え[1].項目, '鍵の控えが項目ごとになっていない');
 
   A.store.setState({
     archers: [
@@ -647,8 +648,9 @@ test('共有履歴：鍵と○×を同時にすると、取り消しで相手の
   await 待つ(0);
 
   const a2 = A.store.getState().archers.find((a) => a.id === 'a2');
-  // 直っていれば '○' になる。いまは消える
-  assert.equal(a2.marks[0], '', '直った場合はこの検査を更新すること（相手の手が残るようになった）');
+  const a1 = A.store.getState().archers.find((a) => a.id === 'a1');
+  assert.equal(a2.marks[0], '○', '相手の○×が消えた');
+  assert.deepEqual(a1.lockedBlocks, {}, '鍵が外れていない');
 });
 
 test('通信が遅くても、取り消しは1手だけ戻す', async () => {
@@ -688,4 +690,64 @@ test('回線が切れているあいだの操作は、控えに積まれない�
   assert.equal(印(A.store), '○', '手元には入っている');
   assert.equal(A.ライブ.値(`live_history/${団体}/${ライブ名}`), null, '切れているのに控えが載った');
   assert.equal(A.store.getState().historySharedLen, 0, '目印だけ進んでいる');
+});
+
+test('共有履歴：項目ごとの控えにしてよい操作と、まるごとに任せる操作', () => {
+  // 項目ごとに戻せるのは「人数・並び・射数が同じ」ときだけ。
+  // 位置がずれる操作や、盤面全体の値が動く操作は当てる先を誤るので、
+  // 従来どおりまるごとに任せる
+  const { 項目の差分 } = require('../src/syncRules');
+  const 元 = (o) =>
+    Object.assign(
+      {
+        id: 'a1',
+        name: '一人目',
+        gender: '男性',
+        grade: 1,
+        marks: ['', '', '', ''],
+        lockedBlocks: {},
+        substitutions: {},
+        substitutionIds: {},
+        arrowLocations: [null, null, null, null],
+        lastModified: 1,
+      },
+      o
+    );
+
+  // 項目ごとに戻せるもの
+  const 戻せる = {
+    鍵をかけた: [元({ lockedBlocks: { 0: true }, lastModified: 2 })],
+    名前を変えた: [元({ name: '二人目', lastModified: 2 })],
+    代役を入れた: [元({ substitutions: { 0: '誰か' }, lastModified: 2 })],
+    矢所を置いた: [元({ arrowLocations: [{ x: 1, y: 1 }, null, null, null], lastModified: 2 })],
+  };
+  for (const 名 of Object.keys(戻せる)) {
+    const 出 = 項目の差分([元()], 戻せる[名]);
+    assert.ok(出 && 出.length === 1, `${名}：項目ごとの控えになっていない`);
+    assert.equal(出[0].射手, 'a1');
+  }
+
+  // まるごとに任せるもの
+  assert.equal(項目の差分([元()], [元(), 元({ id: 'a2' })]), null, '射手を足した');
+  assert.equal(項目の差分([元(), 元({ id: 'a2' })], [元()]), null, '射手を消した');
+  assert.equal(項目の差分([元(), 元({ id: 'a2' })], [元({ id: 'a2' }), 元()]), null, '並び替え');
+  assert.equal(
+    項目の差分([元()], [元({ marks: ['', '', '', '', '', '', '', ''], lastModified: 2 })]),
+    null,
+    '射数を増やした（盤面全体の値も動く）'
+  );
+  assert.equal(項目の差分([元()], [元({ lastModified: 999 })]), null, '日時だけの違い');
+});
+
+test('共有履歴：項目ごとに戻しても、同じ射手の相手の○×は残る', () => {
+  const { 項目差分を当てる } = require('../src/syncRules');
+  // 鍵をかけたのと同じ射手に、相手が○を入れている盤面
+  const いま = [{ id: 'a1', name: '一人目', marks: ['○', '', '', ''], lockedBlocks: { 0: true } }];
+  const 出 = 項目差分を当てる(
+    いま,
+    [{ 射手: 'a1', 項目: { lockedBlocks: { 前: {}, 後: { 0: true } } } }],
+    -1
+  );
+  assert.deepEqual(出.archers[0].lockedBlocks, {}, '鍵が外れていない');
+  assert.deepEqual(出.archers[0].marks, ['○', '', '', ''], '相手の○×まで戻した');
 });

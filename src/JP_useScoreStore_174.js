@@ -116,6 +116,8 @@ const h = 同期規則.generateUniquePersonalId,
   mergeLiveArchers = 同期規則.mergeLiveArchers,
   印だけの差分 = 同期規則.印だけの差分,
   差分を当てる = 同期規則.差分を当てる,
+  項目の差分 = 同期規則.項目の差分,
+  項目差分を当てる = 同期規則.項目差分を当てる,
   restampChangedArchers = 同期規則.restampChangedArchers,
   normalizeArrowLocations = 同期規則.normalizeArrowLocations,
   dropUndefinedDeep = 同期規則.dropUndefinedDeep,
@@ -393,12 +395,17 @@ const 共有履歴へ積む = (前の盤面, 後の盤面, s) => {
       // 盤面まるごとに加えて、○×だけの違いなら「変えたます」も持たせる。
       // 取り消しでそこだけ戻せば、2台が同時に入れても相手の手を消さずに済む。
       // まるごとの側は消さない。古い版のアプリはそちらしか読まないため
+      // ○×だけの違いなら「変えたます」、形が変わる操作なら「変わった項目」。
+      // どちらも作れないとき（射手の増減・並び替え・射数の変更）は、
+      // まるごとの側だけで戻す
       const 差分 = 印だけの差分(前, 後);
+      const 項目 = 差分 ? null : 項目の差分(前, 後);
       (0, i.set)(
         (0, i.ref)(fb.rtdb, `${履歴の根}/${位置}`),
         Object.assign(
           { 前: 前, 後: 後, 本数: 本数, at: Date.now() },
-          差分 ? { 差分: 差分 } : null
+          差分 ? { 差分: 差分 } : null,
+          項目 ? { 項目: 項目 } : null
         )
       ).catch((e) => console.error('[Store] 共有履歴の書き込みに失敗:', e));
       // 新しい操作をしたので、やり直せる分はここで打ち切る
@@ -1249,15 +1256,21 @@ const M = (0, s.create)()(
             // 相手の○×まで消える。古い版が積んだ控えには差分が無いので、
             // そのときは従来どおり盤面で戻す
             const 差分 = Array.isArray(中身.差分) ? 中身.差分 : null;
+            const 項目 = Array.isArray(中身.項目) ? 中身.項目 : null;
             const 盤面 = 差分
               ? {
                   archers: 差分を当てる(s().archers, 差分, 向き).archers,
                   shotsPerRound: s().shotsPerRound,
                 }
-              : w({
-                  archers: 向き < 0 ? 中身.前 : 中身.後,
-                  shotsPerRound: 中身.本数,
-                });
+              : 項目
+                ? {
+                    archers: 項目差分を当てる(s().archers, 項目, 向き).archers,
+                    shotsPerRound: s().shotsPerRound,
+                  }
+                : w({
+                    archers: 向き < 0 ? 中身.前 : 中身.後,
+                    shotsPerRound: 中身.本数,
+                  });
             // 戻した内容が相手に届くよう、変わった射手の日時を打ち直す
             const 戻す = restampChangedArchers(盤面.archers, s().archers, 知らせ時刻);
             // ここでの書き換えは履歴に積まない（積むと際限がなくなる）
