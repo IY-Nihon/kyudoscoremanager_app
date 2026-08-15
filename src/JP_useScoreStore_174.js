@@ -241,7 +241,6 @@ const v = (e, s, o) => {
     });
     const m = {
       archers: l,
-      archer_timestamps: d,
       shotsPerRound: o,
       timestamp: a,
       // 参加一覧の「最終更新」はこちらを見る。timestamp は書いた端末の時計で、
@@ -250,9 +249,13 @@ const v = (e, s, o) => {
       updated_at: (0, i.serverTimestamp)(),
       status: 'active',
     };
-    // 丸ごとではなく射手ごとの道に書く。書かなかった射手の○×は残る
+    // 丸ごとではなく射手ごとの道に書く。書かなかった射手の○×は残る。
+    // 日時も同じ射手のぶんだけ。日時は○×の鮮度を表す値なので、○×を
+    // 書かない射手の日時に触ると、相手の新しい入力を古いと誤判定させる。
+    // 射手そのものの新しさは archers[].lastModified が運び、受け取り側は
+    // 両者の max を取るので、書かなくても取りこぼさない
     Object.keys(u).forEach((id) => {
-      m[`marks_by_id/${id}`] = u[id];
+      ((m[`marks_by_id/${id}`] = u[id]), (m[`archer_timestamps/${id}`] = d[id] || 0));
     });
     (console.log('[Store] pushLiveAll state updated, lastPushedTimestamp:', a),
       M.getState().updateState({
