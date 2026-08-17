@@ -1782,7 +1782,7 @@ const j = ({ navigation }) => {
                                   style: { width: '100%', marginBottom: 12 },
                                   children: (0, y.jsx)(we, {
                                     options: [
-                                      { label: '霞的（尺二寸）', value: 'kasumi36' },
+                                      { label: '霞的(尺二寸)', value: 'kasumi36' },
                                       { label: '星的(尺二寸)', value: 'hoshi36' },
                                       { label: '星的(八寸)', value: 'hoshi24' },
                                     ],
@@ -2071,7 +2071,7 @@ const j = ({ navigation }) => {
                                   style: { width: '100%', marginBottom: 12 },
                                   children: (0, y.jsx)(we, {
                                     options: [
-                                      { label: '霞的（尺二寸）', value: 'kasumi36' },
+                                      { label: '霞的(尺二寸)', value: 'kasumi36' },
                                       { label: '星的(尺二寸)', value: 'hoshi36' },
                                       { label: '星的(八寸)', value: 'hoshi24' },
                                     ],
