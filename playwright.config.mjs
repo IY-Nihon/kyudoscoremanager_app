@@ -45,9 +45,14 @@ export default defineConfig({
     { name: 'パソコン', use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: {
-    command: `npx --yes http-server dist -p ${港} -s -c-1`,
+    // --proxy で、無いパスは index.html へ回す。本番の Firebase Hosting も
+    // rewrites で同じことをしている（firebase.json）。
+    // これが無いと、ログイン後に URL が /record へ変わったあとの再読み込みで
+    // /record を取りにいって404になり、画面が白紙になる。速い画面では
+    // 間に合っていたが、iPhone では毎回踏んでいて、検査が6件とも落ちていた。
+    command: `npx --yes http-server dist -p ${港} -s -c-1 --proxy http://127.0.0.1:${港}?`,
     url: `http://127.0.0.1:${港}`,
-    reuseExistingServer: true,
+    reuseExistingServer: false,
     timeout: 60_000,
   },
 });
