@@ -377,13 +377,16 @@ const k = () => {
                     }),
                     (0, A.jsx)(h.default, {
                       onPress: () => {
-                        Xe(T + 4);
+                        // 手入力と同じ上限(500)で止める。ここだけ上限が無いと、
+                        // 押し続けてアプリが認めていない射数まで行けてしまう
+                        Xe(Math.min(500, T + 4));
                       },
+                      disabled: T >= 500,
                       style: W.zoomBtn,
                       children: (0, A.jsx)(p.Ionicons, {
                         name: 'add-circle-outline',
                         size: 22,
-                        color: '#007AFF',
+                        color: T >= 500 ? '#C7C7CC' : '#007AFF',
                       }),
                     }),
                   ],
