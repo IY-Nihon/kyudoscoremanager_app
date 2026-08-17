@@ -116,6 +116,8 @@ const h = 同期規則.generateUniquePersonalId,
   mergeLiveArchers = 同期規則.mergeLiveArchers,
   印だけの差分 = 同期規則.印だけの差分,
   差分を当てる = 同期規則.差分を当てる,
+  射数の差分 = 同期規則.射数の差分,
+  射数差を当てる = 同期規則.射数差を当てる,
   盤面を射数にそろえる = 同期規則.盤面を射数にそろえる,
   項目の差分 = 同期規則.項目の差分,
   項目差分を当てる = 同期規則.項目差分を当てる,
@@ -445,12 +447,16 @@ const 共有履歴へ積む = (前の盤面, 後の盤面, s) => {
       // まるごとの側だけで戻す
       const 差分 = 印だけの差分(前, 後);
       const 項目 = 差分 ? null : 項目の差分(前, 後);
+      // 射数の変更は○×の数が変わるので、上のどちらにもできない。
+      // 長さの伸び縮みだけを控えれば、頭のますに触らずに戻せる
+      const 射数 = 差分 || 項目 ? null : 射数の差分(前, 後);
       (0, i.set)(
         (0, i.ref)(fb.rtdb, `${履歴の根}/${位置}`),
         Object.assign(
           { 前: 前, 後: 後, 本数: 本数, at: Date.now() },
           差分 ? { 差分: 差分 } : null,
-          項目 ? { 項目: 項目 } : null
+          項目 ? { 項目: 項目 } : null,
+          射数 ? { 射数: 射数 } : null
         )
       ).catch((e) => console.error('[Store] 共有履歴の書き込みに失敗:', e));
       // 新しい操作をしたので、やり直せる分はここで打ち切る
@@ -494,6 +500,20 @@ const 共有履歴の目印を受け取る = (状態, e, s) => {
  */
 const 履歴の一手 = (項目) =>
   Array.isArray(項目) ? 項目 : 項目 && Array.isArray(項目.archers) ? 項目.archers : [];
+/**
+ * 控えの盤面から、そのときの射数を読む。
+ *
+ * ○×は射数のぶんだけ並ぶ。射手を足すときも、射数を変えるときも、画像から
+ * 取り込むときも、その長さにそろえてある。だから控えを見れば射数が分かり、
+ * 控えの形（射手の一覧そのまま）を変えずに射数ごと戻せる。
+ * 区切りの列は○×を持たないので飛ばす。
+ */
+const 控えの射数 = (一覧) => {
+  const 射手 = (Array.isArray(一覧) ? 一覧 : []).find(
+    (a) => a && !a.isSeparator && Array.isArray(a.marks)
+  );
+  return 射手 ? 射手.marks.length : null;
+};
 let I = !1;
 // ライブ中の共有履歴。取り消し・やり直しを全員で1本の履歴として扱う。
 // 取り消しの適用中は、その書き換え自体を履歴に積まないための目印。
@@ -1254,40 +1274,38 @@ const M = (0, s.create)()(
           const { historyStack: t, archers: o } = s();
           if (0 === t.length) return;
           // 中身が変わった射手には新しい日時を打ち直す。打たないと、ライブ中の
-          // 取り消しが相手に届かず、主催者の画面だけ戻る食い違いになる。
-          // 戻す前に、いまの射数へそろえる（射数の変更は履歴に積まれないため）
-          const a = restampChangedArchers(
-            盤面を射数にそろえる(履歴の一手(t[t.length - 1]), s().shotsPerRound),
-            o,
-            Date.now()
-          );
+          // 取り消しが相手に届かず、主催者の画面だけ戻る食い違いになる
+          const 戻す元 = 履歴の一手(t[t.length - 1]);
+          // 射数の変更も一手なので、控えが持っていた射数へ戻す
+          const 射数 = 控えの射数(戻す元) ?? s().shotsPerRound;
+          const a = restampChangedArchers(盤面を射数にそろえる(戻す元, 射数), o, Date.now());
           e({
             historyStack: t.slice(0, -1),
             redoStack: [...s().redoStack, o],
             archers: a,
+            shotsPerRound: 射数,
             lastLocalChange: Date.now(),
           });
-          const { isLiveActive: i, liveSessionName: n, shotsPerRound: c } = s();
-          i && n && v(n, s().archers, c);
+          const { isLiveActive: i, liveSessionName: n } = s();
+          i && n && v(n, s().archers, 射数);
         },
         redo: () => {
           if (s().isLiveActive && s().liveSessionName) return void s().sharedUndo(1);
           const { redoStack: t, archers: o } = s();
           if (0 === t.length) return;
-          // 取り消しと同じ理由で日時を打ち直す。射数へそろえるのも同じ
-          const a = restampChangedArchers(
-            盤面を射数にそろえる(履歴の一手(t[t.length - 1]), s().shotsPerRound),
-            o,
-            Date.now()
-          );
+          // 取り消しと同じ理由で日時を打ち直す。射数を戻すのも同じ
+          const 戻す元 = 履歴の一手(t[t.length - 1]);
+          const 射数 = 控えの射数(戻す元) ?? s().shotsPerRound;
+          const a = restampChangedArchers(盤面を射数にそろえる(戻す元, 射数), o, Date.now());
           e({
             redoStack: t.slice(0, -1),
             historyStack: [...s().historyStack, o],
             archers: a,
+            shotsPerRound: 射数,
             lastLocalChange: Date.now(),
           });
-          const { isLiveActive: i, liveSessionName: n, shotsPerRound: c } = s();
-          i && n && v(n, s().archers, c);
+          const { isLiveActive: i, liveSessionName: n } = s();
+          i && n && v(n, s().archers, 射数);
         },
         /**
          * ライブ中の取り消し（向き -1）・やり直し（向き +1）。
@@ -1321,6 +1339,9 @@ const M = (0, s.create)()(
             // そのときは従来どおり盤面で戻す
             const 差分 = Array.isArray(中身.差分) ? 中身.差分 : null;
             const 項目 = Array.isArray(中身.項目) ? 中身.項目 : null;
+            // 射数の控えは射手ごとの表を持つので、配列ではなく object
+            const 射数 =
+              !差分 && !項目 && 中身.射数 && 'number' == typeof 中身.射数.前 ? 中身.射数 : null;
             const 盤面 = 差分
               ? {
                   archers: 差分を当てる(s().archers, 差分, 向き).archers,
@@ -1331,10 +1352,15 @@ const M = (0, s.create)()(
                     archers: 項目差分を当てる(s().archers, 項目, 向き).archers,
                     shotsPerRound: s().shotsPerRound,
                   }
-                : w({
-                    archers: 向き < 0 ? 中身.前 : 中身.後,
-                    shotsPerRound: 中身.本数,
-                  });
+                : 射数
+                  ? (() => {
+                      const 出 = 射数差を当てる(s().archers, 射数, 向き);
+                      return { archers: 出.archers, shotsPerRound: 出.本数 };
+                    })()
+                  : w({
+                      archers: 向き < 0 ? 中身.前 : 中身.後,
+                      shotsPerRound: 中身.本数,
+                    });
             // 戻した内容が相手に届くよう、変わった射手の日時を打ち直す
             const 戻す = restampChangedArchers(盤面.archers, s().archers, 知らせ時刻);
             // ここでの書き換えは履歴に積まない（積むと際限がなくなる）
@@ -2209,6 +2235,11 @@ const M = (0, s.create)()(
           c && l && v(l, n, d);
         },
         setShotsPerRound: (t) => {
+          // 射数を減らすと○×を切り捨てる。取り消しで戻せるよう、変える前の
+          // 盤面を一手として積む。控えの○×の長さがそのときの射数になるので、
+          // 取り消し側はそれを見て射数ごと戻す
+          const 変える前 = Array.isArray(s().archers) ? s().archers : [];
+          const 射数が変わる = t !== s().shotsPerRound;
           const o = (Array.isArray(s().archers) ? s().archers : []).map((e) => {
             if (!e || e.isSeparator) return e;
             const s = Array.isArray(e.marks) ? e.marks : [],
@@ -2221,11 +2252,20 @@ const M = (0, s.create)()(
               })
             );
           });
-          e({
-            shotsPerRound: t,
-            archers: o,
-            lastLocalChange: Date.now(),
-          });
+          e(
+            Object.assign(
+              {
+                shotsPerRound: t,
+                archers: o,
+                lastLocalChange: Date.now(),
+              },
+              // 同じ射数を選び直したときは積まない。押しても何も起きない
+              // 一手が挟まり、取り消しが空振りして見える
+              射数が変わる
+                ? { historyStack: [...s().historyStack, 変える前], redoStack: [] }
+                : null
+            )
+          );
           const { isLiveActive: a, liveSessionName: i } = s();
           a && i && v(i, o, t);
         },
