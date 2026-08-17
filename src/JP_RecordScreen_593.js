@@ -1517,7 +1517,7 @@ const k = () => {
           members: oe,
           alumni: (0, x.useScoreStore)((e) => e.alumni) || [],
           shotsPerRound: T,
-          onApply: (newArchers) => {
+          onApply: (newArchers, 読み取りの種類) => {
             const store = x.useScoreStore.getState();
             store.historyStack &&
               store.historyStack.length >= 0 &&
@@ -1531,7 +1531,11 @@ const k = () => {
             // 読み取った○×が一瞬すべて灰色に光ってから戻る
             x.useScoreStore.getState().入れた印をまとめて付ける(newArchers);
             x.useScoreStore.setState({ archers: newArchers });
-            Ge('画像から立ち順を登録しました');
+            // 紙の記録は氏名と○×を、立ち順表は並びだけを読む。
+            // どちらも同じ処理を通るので、文言は種類で分ける
+            Ge(
+              'record' === 読み取りの種類 ? '画像から記録を読み取りました' : '画像から立ち順を登録しました'
+            );
             j.notificationAsync(j.NotificationFeedbackType.Success);
           },
         }),
