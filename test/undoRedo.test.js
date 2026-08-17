@@ -761,6 +761,50 @@ test('共有履歴：項目ごとに戻しても、同じ射手の相手の○×
   assert.deepEqual(出.archers[0].marks, ['○', '', '', ''], '相手の○×まで戻した');
 });
 
+test('取り消し：画像から取り込んだ直後に戻しても、盤面が消えない', () => {
+  // 履歴には射手の一覧をそのまま積む決まり（店の中の14か所はすべてそう）。
+  // 画像の取り込みだけが { archers, activeSessionID } という形で積んでいた。
+  // 取り消しは配列として扱うので、配列でないものが来ると空の盤面で戻る
+  const { store } = ストアを用意する();
+  const 元 = [
+    {
+      id: 'a1',
+      name: '山田',
+      marks: ['○', '×', '', ''],
+      lockedBlocks: {},
+      arrowLocations: [null, null, null, null],
+      lastModified: 1,
+    },
+  ];
+  store.setState({
+    isHydrated: true,
+    shotsPerRound: 4,
+    archers: 元,
+    // 画像の取り込みが積んでいたのと同じ形
+    historyStack: [{ archers: [...元], activeSessionID: null }],
+    redoStack: [],
+  });
+  // 取り込んだ結果に入れ替わった状態
+  store.setState({
+    archers: [
+      {
+        id: 'b1',
+        name: '読み取った人',
+        marks: ['○', '○', '', ''],
+        lockedBlocks: {},
+        arrowLocations: [null, null, null, null],
+        lastModified: 2,
+      },
+    ],
+  });
+
+  store.getState().undo();
+  const 後 = store.getState().archers;
+  assert.equal(後.length, 1, `取り消しで盤面が ${後.length} 人になった`);
+  assert.equal(後[0].name, '山田', '取り込む前の射手に戻っていない');
+  assert.deepEqual(後[0].marks, ['○', '×', '', ''], '取り込む前の○×に戻っていない');
+});
+
 test('取り消し：射数を減らしたあとに戻しても、○×が射数からはみ出さない', () => {
   // 射数の変更は履歴に積まれない。そのため「8射で入れる → 4射に減らす →
   // 取り消す」で、○×の配列だけが8のまま戻る。はみ出したますは画面に
