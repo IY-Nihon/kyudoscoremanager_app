@@ -216,3 +216,17 @@ test('お知らせ：前回より後に足したぶんだけを新しいと数�
     );
   }
 });
+
+test('「鍵を開けました」の帯は、指を下のますへ通す', () => {
+  // 帯は記録表の上に浮く。長押しで開けた直後は、その下のますを
+  // すぐ押したいので、帯が指を吸うと「開いたのに書けない」になる
+  const 本体 = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'src', 'JP_RecordScreen_593.js'),
+    'utf8'
+  );
+  const 始 = 本体.indexOf('feedbackOverlay: {');
+  assert.ok(始 > 0, '知らせの帯の見た目が見つからない');
+  const 帯 = 本体.slice(始, 本体.indexOf('},', 始));
+  assert.ok(帯.includes("position: 'absolute'"), '浮いていないなら、この検査の前提が変わっている');
+  assert.ok(帯.includes("pointerEvents: 'none'"), '帯が指を吸ってしまう');
+});

@@ -125,6 +125,32 @@ test('誤タップ防止：入れて3秒で閉じ、長押しで開く', async (
   expect(await 中身(), '長押しで開けても変えられない').toBe('×');
 });
 
+test('長押しで開けると帯が出て、その帯は指を下のますへ通す', async ({ page }) => {
+  await 入る(page);
+
+  const ます = page.locator('[data-testid^="ます-"]').first();
+  const 場所 = await 真ん中(ます);
+  await 押す(page, 場所);
+  await page.waitForTimeout(3500); // 閉じるのを待つ
+  await 長押しする(page, 場所, 900);
+
+  // 帯は出る（開いたことが伝わらないと、押さえが届いたか分からない）
+  const 帯 = page.getByText('このマスの鍵を開けました', { exact: true });
+  await expect(帯, '長押しで開けても何も知らせない').toBeVisible();
+
+  // その帯の真ん中を指で触ると、帯ではなく下にあるものに当たること。
+  // 帯が指を吸うと「開いたのに、その下のますが書けない」になる
+  const 枠 = await 帯.boundingBox();
+  const 当たり = await page.evaluate(
+    ({ x, y, 文 }) => {
+      const e = document.elementFromPoint(x, y);
+      return { 文字: e ? (e.textContent || '').slice(0, 30) : null, 帯か: !!(e && e.closest && e.closest('div') && (e.textContent || '').includes(文)) };
+    },
+    { x: Math.round(枠.x + 枠.width / 2), y: Math.round(枠.y + 枠.height / 2), 文: 'このマスの鍵を開けました' }
+  );
+  expect(当たり.帯か, `帯が指を吸っている（当たったもの: ${当たり.文字}）`).toBe(false);
+});
+
 test('1立が埋まって3秒たつと、間隔の鍵が自動でかかる', async ({ page }) => {
   await 入る(page);
 
