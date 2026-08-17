@@ -395,11 +395,18 @@ const j = ({
                     }),
                   ],
                 }),
-              (0, F.jsx)(n.default, {
-                style: y.sectionHeader,
-                children: (0, F.jsx)(l.default, { style: y.sectionHeaderText, children: '卒業生を選択' }),
-              }),
-              (0, F.jsx)(n.default, {
+              // 「計」と「間隔」の列は射手ではないので、人を選ぶところは出さない。
+              // すぐ上の「メンバーを選択」には同じ条件が付いているのに、卒業生の
+              // ほうだけ付いておらず、合計の欄を押すと卒業生の一覧だけが出ていた
+              !jVal &&
+                !b &&
+                (0, F.jsx)(n.default, {
+                  style: y.sectionHeader,
+                  children: (0, F.jsx)(l.default, { style: y.sectionHeaderText, children: '卒業生を選択' }),
+                }),
+              !jVal &&
+                !b &&
+                (0, F.jsx)(n.default, {
                 style: y.section,
                 children: alumniByTerm.map((e) =>
                   (0, F.jsxs)(

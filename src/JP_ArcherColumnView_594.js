@@ -429,12 +429,8 @@ const m = t.default.memo(
                       justifyContent: 'center',
                       padding: 4,
                     },
-                    // 「計」の列は射手ではないので、押しても射手の窓は出さない。
-                    // 出すと卒業生の選択や「左に射手を追加」が並び、
-                    // 合計の欄に人を登録するように見えてしまう
-                    onPress: e.isTotalCalculator ? undefined : x,
-                    onLongPress: e.isTotalCalculator ? undefined : j,
-                    disabled: e.isTotalCalculator,
+                    onPress: x,
+                    onLongPress: j,
                     delayLongPress: 500,
                     children: [
                       (0, f.jsx)(l.default, {

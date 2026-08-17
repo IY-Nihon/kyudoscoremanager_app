@@ -1114,7 +1114,7 @@ const k = () => {
                                                 backgroundColor:
                                                   e.isGuest ||
                                                   !e.gender ||
-                                                  e.gender === '枣設定' ||
+                                                  e.gender === '未設定' ||
                                                   !['男子', '女子'].includes(e.gender)
                                                     ? '#8E8E93'
                                                     : '男子' === e.gender
