@@ -18,7 +18,65 @@ const 合言葉 = 'StgTest!2026';
 // ライブ名は検査ごとに作る。ここ（読み込み時）で決めると、画面の種類が
 // 変わっても同じ名前になり、2つ目以降は「同名あり」で開始できない。
 // 参加側は前の実行の古い盤面を掴み、原因の分かりにくい失敗になる
-const ライブ名を作る = (印) => 印 + Date.now() + Math.floor(Math.random() * 1000);
+const ライブ名を作る = (印) => {
+  const 名 = 印 + Date.now() + Math.floor(Math.random() * 1000);
+  作ったライブ.push(名);
+  return 名;
+};
+
+/**
+ * この実行で作ったライブ。終わったら消す。
+ *
+ * 消さずに溜めていたら検証環境に30件たまり、参加一覧の読み込みが重くなって
+ * 3台の検査が時間切れになった。「端末が多くて重い」と考えて持ち時間を
+ * 延ばしたが、本当の原因は後始末をしていなかったこと。
+ */
+const 作ったライブ = [];
+
+// 検査ごとに片付ける。afterAll だと最後の検査より先に走ることがあり、
+// そのぶんが消し残る（実際、3件中1件が残った）
+test.afterEach(async () => {
+  if (!作ったライブ.length) return;
+  const { execFileSync } = await import('node:child_process');
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+
+  // firebase.cmd は Node 20 以降 execFile から直に起動できない（EINVAL）。
+  // CLI の実体（JS）を node で呼ぶ。stamp-live-release-day.mjs と同じ手口。
+  // 前はここで .cmd を呼んで毎回失敗しており、しかも例外を握りつぶして
+  // いたので「消しました」とだけ出て、実際には消えていなかった
+  const CLI = [
+    path.join(process.env.APPDATA || '', 'npm/node_modules/firebase-tools/lib/bin/firebase.js'),
+    '/usr/local/lib/node_modules/firebase-tools/lib/bin/firebase.js',
+    '/usr/lib/node_modules/firebase-tools/lib/bin/firebase.js',
+  ].find((p) => p && fs.existsSync(p));
+
+  const 失敗 = [];
+  const 消す = (道) => {
+    if (!CLI) return void 失敗.push(道 + '（firebase-tools が見つからない）');
+    try {
+      execFileSync(
+        process.execPath,
+        [CLI, 'database:remove', 道, '--project', 'kyudoscoremanager-stg', '--force'],
+        { stdio: 'ignore' }
+      );
+    } catch (e) {
+      失敗.push(道 + '（' + String(e.message).slice(0, 60) + '）');
+    }
+  };
+  // 消したぶんは一覧から外す。残すと次の検査で消し直そうとする
+  const 今回 = 作ったライブ.splice(0, 作ったライブ.length);
+  for (const 名 of 今回) {
+    消す(`/live_sessions/${団体}/${名}`);
+    消す(`/live_history/${団体}/${名}`);
+  }
+  if (失敗.length) {
+    console.log(`後片付け: ${今回.length} 件のうち ${失敗.length} 件を消せませんでした`);
+    失敗.forEach((x) => console.log('   ' + x));
+  } else {
+    console.log(`後片付け: ライブ ${今回.length} 件を消しました`);
+  }
+});
 
 async function 入る(page) {
   await page.goto('/');
@@ -202,7 +260,9 @@ test('ライブ：同時に入れた○×が両方に届き、取り消しは1�
 });
 
 test('ライブ：3台が同時に入れても届き、取り消しは1手だけ戻す', async ({ browser }) => {
-  test.setTimeout(420_000);
+  // 3台を WebKit（iPhone）で動かすと重く、7分では足りずに時間切れになっていた。
+  // 端末が1つ増えるぶん、参加の手順も突き合わせも増える
+  test.setTimeout(900_000);
   const 名 = ライブ名を作る('chk3');
   const 文脈 = await Promise.all([browser.newContext(), browser.newContext(), browser.newContext()]);
   const [A, B, C] = await Promise.all(文脈.map((c) => c.newPage()));
