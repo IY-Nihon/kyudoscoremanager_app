@@ -761,6 +761,73 @@ test('共有履歴：項目ごとに戻しても、同じ射手の相手の○×
   assert.deepEqual(出.archers[0].marks, ['○', '', '', ''], '相手の○×まで戻した');
 });
 
+test('取り消し：射数を減らしたあとに戻しても、○×が射数からはみ出さない', () => {
+  // 射数の変更は履歴に積まれない。そのため「8射で入れる → 4射に減らす →
+  // 取り消す」で、○×の配列だけが8のまま戻る。はみ出したますは画面に
+  // 出ないのに、的中数は配列を丸ごと数えるので数には入る。
+  // ライブは要らない。ひとりで使っていても起きる
+  const { store } = ストアを用意する();
+  store.setState({
+    isHydrated: true,
+    shotsPerRound: 8,
+    archers: [
+      {
+        id: 'a1',
+        name: '一人目',
+        // 後ろ半分に○。4射に減らすと画面から消える位置
+        marks: ['', '', '', '', '○', '○', '○', '○'],
+        lockedBlocks: {},
+        arrowLocations: [null, null, null, null, null, null, null, null],
+        lastModified: 1,
+      },
+    ],
+    historyStack: [],
+    redoStack: [],
+  });
+  store.getState().toggleMark('a1', 0);
+  store.getState().setShotsPerRound(4);
+  assert.equal(store.getState().archers[0].marks.length, 4, '前提：減らした時点では4');
+
+  store.getState().undo();
+  const 後 = store.getState().archers[0];
+  assert.equal(後.marks.length, store.getState().shotsPerRound, '○×が射数からはみ出した');
+  assert.equal(
+    後.marks.filter((m) => m === '○').length,
+    0,
+    '画面に出ないますの○が的中数に入っている'
+  );
+});
+
+test('共有履歴：項目で戻すときも、いまの射数からはみ出さない', () => {
+  const { 項目差分を当てる } = require('../src/syncRules');
+  // 8射のときに積んだ控えを、4射に減らしたあとで戻す場面。
+  // 射数の変更は控えに積まれないので（すぐ上の検査）、控えの中身だけが
+  // 8射のまま残る。そのまま当てると ○× の配列が伸びる。
+  // 的中数は配列を丸ごと数えるので、画面に出ないますの○が数に入ってしまう
+  const いま = [{ id: 'a1', name: '一人目', marks: ['○', '', '', ''] }];
+  const 出 = 項目差分を当てる(
+    いま,
+    [
+      {
+        射手: 'a1',
+        項目: {
+          name: { 前: 'むかしの名', 後: '一人目' },
+          marks: { 前: ['○', '×', '○', '×', '○', '○', '○', '○'], 後: ['○', '', '', ''] },
+        },
+      },
+    ],
+    -1
+  );
+  const 戻した = 出.archers[0].marks;
+  assert.equal(戻した.length, 4, `○×が ${戻した.length} 個に伸びた（いまは4射）`);
+  assert.equal(
+    戻した.filter((m) => m === '○').length,
+    2,
+    '画面に出ないますの○まで数に入る'
+  );
+  assert.equal(出.archers[0].name, 'むかしの名', '名前が戻っていない');
+});
+
 test('共有履歴：射数の変更は取り消しの控えに積まれない', async () => {
   // 「差分にできない操作は盤面まるごとの控えになり、取り消すと相手の○×を
   // 巻き込む」と考えて確かめたが、前提が違った。射数の変更はそもそも

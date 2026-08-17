@@ -116,6 +116,7 @@ const h = 同期規則.generateUniquePersonalId,
   mergeLiveArchers = 同期規則.mergeLiveArchers,
   印だけの差分 = 同期規則.印だけの差分,
   差分を当てる = 同期規則.差分を当てる,
+  盤面を射数にそろえる = 同期規則.盤面を射数にそろえる,
   項目の差分 = 同期規則.項目の差分,
   項目差分を当てる = 同期規則.項目差分を当てる,
   restampChangedArchers = 同期規則.restampChangedArchers,
@@ -1243,8 +1244,13 @@ const M = (0, s.create)()(
           const { historyStack: t, archers: o } = s();
           if (0 === t.length) return;
           // 中身が変わった射手には新しい日時を打ち直す。打たないと、ライブ中の
-          // 取り消しが相手に届かず、主催者の画面だけ戻る食い違いになる
-          const a = restampChangedArchers(t[t.length - 1], o, Date.now());
+          // 取り消しが相手に届かず、主催者の画面だけ戻る食い違いになる。
+          // 戻す前に、いまの射数へそろえる（射数の変更は履歴に積まれないため）
+          const a = restampChangedArchers(
+            盤面を射数にそろえる(t[t.length - 1], s().shotsPerRound),
+            o,
+            Date.now()
+          );
           e({
             historyStack: t.slice(0, -1),
             redoStack: [...s().redoStack, o],
@@ -1258,8 +1264,12 @@ const M = (0, s.create)()(
           if (s().isLiveActive && s().liveSessionName) return void s().sharedUndo(1);
           const { redoStack: t, archers: o } = s();
           if (0 === t.length) return;
-          // 取り消しと同じ理由で日時を打ち直す
-          const a = restampChangedArchers(t[t.length - 1], o, Date.now());
+          // 取り消しと同じ理由で日時を打ち直す。射数へそろえるのも同じ
+          const a = restampChangedArchers(
+            盤面を射数にそろえる(t[t.length - 1], s().shotsPerRound),
+            o,
+            Date.now()
+          );
           e({
             redoStack: t.slice(0, -1),
             historyStack: [...s().historyStack, o],
