@@ -119,3 +119,62 @@ test('画像から反映した○×は、初めから閉じていない', () => 
   assert.strictEqual(印['a1:1'], undefined, '空のますにまで印が付いている');
   assert.strictEqual(印['a2:0'], undefined, '空の射手にまで印が付いている');
 });
+
+// 保存時の出欠確認は、設定で切れる
+test('設定：保存時の出欠確認は既定で出し、切ると保存される値も残る', () => {
+  const { store } = ストアを用意する();
+  store.setState({ isHydrated: true });
+
+  assert.equal(store.getState().保存時に出欠を確認する, true, '既定は「確認する」');
+
+  store.getState().set保存時に出欠を確認する(false);
+  assert.equal(store.getState().保存時に出欠を確認する, false, '切り替わらない');
+
+  store.getState().set保存時に出欠を確認する(true);
+  assert.equal(store.getState().保存時に出欠を確認する, true, '戻せない');
+});
+
+test('設定：出欠を空のまま保存しても、記録は残る', async () => {
+  // 出欠確認を切ったときは attendance を渡さずに保存する。
+  // 出欠画面は「記録に出ている人は出席」と数えるので、空でも困らない
+  const { store } = ストアを用意する();
+  store.setState({
+    isHydrated: true,
+    isNetworkOnline: true,
+    activeGroupId: '100001',
+    activeRole: 'group',
+    archers: [
+      {
+        id: 'a1',
+        name: '山田',
+        memberId: 'm1',
+        marks: ['○', '×', '', ''],
+        lockedBlocks: {},
+        arrowLocations: [null, null, null, null],
+        lastModified: 1,
+      },
+    ],
+    sessions: [],
+  });
+
+  await store.getState().saveSession('朝練', '', true, [], null);
+  const 記録 = store.getState().sessions[0];
+  assert.ok(記録, '記録が保存されていない');
+  assert.equal(記録.title, '朝練');
+  assert.equal(記録.attendance, null, '出欠は空のまま');
+  assert.equal(記録.archers.length, 1, '射手が残っていない');
+});
+
+test('長押しで開けると、知らせの合図が立つ', () => {
+  // 灰色が戻るだけでは押さえが届いたか分かりにくいので、画面に短く知らせる。
+  // 記録画面はこの時刻を見て出すので、押すたびに新しくなる必要がある
+  const { store } = ストアを用意する();
+  store.setState({ isHydrated: true, 鍵を開けた時刻: 0 });
+
+  store.getState().ますを開ける('a1', 0);
+  const 一回目 = store.getState().鍵を開けた時刻;
+  assert.ok(一回目 > 0, '合図が立たない');
+
+  store.getState().ますを開ける('a1', 1);
+  assert.ok(store.getState().鍵を開けた時刻 >= 一回目, '二度目の合図が立たない');
+});
