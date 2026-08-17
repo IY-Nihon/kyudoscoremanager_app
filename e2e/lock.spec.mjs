@@ -34,6 +34,24 @@ async function 長押しする(page, 場所, ミリ秒) {
     await page.waitForTimeout(ミリ秒);
     await 指.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   } else {
+    console.log(
+      '■押す先:',
+      JSON.stringify(
+        await page.evaluate(
+          ({ x, y }) => {
+            const el = document.elementFromPoint(x, y);
+            let 印 = null;
+            let p = el;
+            while (p && !印) {
+              印 = p.getAttribute && p.getAttribute('data-testid');
+              p = p.parentElement;
+            }
+            return { x, y, tag: el && el.tagName, 印, 高さ: window.innerHeight };
+          },
+          { x: 場所.x, y: 場所.y }
+        )
+      )
+    );
     await page.mouse.move(場所.x, 場所.y);
     await page.mouse.down();
     await page.waitForTimeout(ミリ秒);
@@ -68,7 +86,26 @@ async function 入る(page) {
   await page.reload();
   await page.waitForTimeout(4000);
 
-  // 射手の列が無ければ1つ足す。名前は選ばない（部員を作らないため）。
+  // ライブ中なら抜ける。
+  // 同じ団体をライブの検査と共用しているため、直前の検査で始めたライブが
+  // 端末に残っていることがある。そのまま続けると盤面が同期で書き換わり、
+  // 「押していないのに○が増える」状態で長押しを試すことになって落ちる。
+  // 実際、失敗時の画面には「ライブ中」の帯が出ていて、1つしか入れていない
+  // はずの行に○が2つ並んでいた
+  // ライブの状態は読み込みのあとから復元されるので、一度見るだけでは
+  // 間に合わない。数秒かけて出てこないことを確かめる
+  for (let i = 0; i < 6; i++) {
+    const 停止 = page.getByText('停止', { exact: true });
+    if (await 停止.isVisible().catch(() => false)) {
+      await 停止.click();
+      await page.waitForTimeout(2500);
+      continue;
+    }
+    if (!(await page.getByText(/ライブ中/).isVisible().catch(() => false))) break;
+    await page.waitForTimeout(1500);
+  }
+
+  // 射手の列が無ければ1つ足す。名前は選ばない（メンバーを作らないため）。
   // 保存もしないので、団体の中身には触れない
   if (await page.getByText('記録を始めましょう').isVisible().catch(() => false)) {
     await page.getByText('人', { exact: true }).first().click();
