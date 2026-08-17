@@ -834,12 +834,23 @@ test('取り消し：射数を減らしたあとに戻しても、○×が射数
 
   store.getState().undo();
   const 後 = store.getState().archers[0];
+  // 射数の変更も取り消しの一手になったので、射数ごと8に戻る。
+  // ○×も8個そろい、はみ出しは無い（＝的中数と見えている数が一致する）
+  assert.equal(store.getState().shotsPerRound, 8, '射数が戻っていない');
   assert.equal(後.marks.length, store.getState().shotsPerRound, '○×が射数からはみ出した');
-  assert.equal(
-    後.marks.filter((m) => m === '○').length,
-    0,
-    '画面に出ないますの○が的中数に入っている'
-  );
+  // 戻るのは「射数を減らす直前」の盤面。直前の一手（0本目に入れた○）は
+  // まだ効いているので、○は5つ
+  assert.equal(後.marks.filter((m) => m === '○').length, 5, '減らす直前の○×が戻っていない');
+
+  // もう一手戻すと、その前の○×の操作が戻る
+  store.getState().undo();
+  assert.equal(store.getState().archers[0].marks[0], '', '前の一手まで戻っていない');
+
+  // やり直すと4射へ進み直す
+  store.getState().redo();
+  store.getState().redo();
+  assert.equal(store.getState().shotsPerRound, 4, 'やり直しで射数が進んでいない');
+  assert.equal(store.getState().archers[0].marks.length, 4, 'やり直しで○×が射数に揃っていない');
 });
 
 test('共有履歴：項目で戻すときも、いまの射数からはみ出さない', () => {
@@ -872,22 +883,57 @@ test('共有履歴：項目で戻すときも、いまの射数からはみ出�
   assert.equal(出.archers[0].name, 'むかしの名', '名前が戻っていない');
 });
 
-test('共有履歴：射数の変更は取り消しの控えに積まれない', async () => {
-  // 「差分にできない操作は盤面まるごとの控えになり、取り消すと相手の○×を
-  // 巻き込む」と考えて確かめたが、前提が違った。射数の変更はそもそも
-  // historyStack に積まれないので、取り消しの対象にならない。
-  // 巻き込む余地が無いことを、ここで固定しておく
+test('共有履歴：射数の変更も控えに積まれ、取り消すと射数ごと戻る', async () => {
+  // 射数の変更を取り消しの一手にした。ライブでは○×の数が変わるので
+  // ますごとの差分にも項目ごとの差分にもできず、盤面まるごとの控えになる。
+  // まるごとの控えは射数（本数）も持っているので、取り消すと射数ごと戻る
   const A = ライブの端末(undefined, [射手(), 射手({ id: 'a2', name: '二人目' })]);
-  const B = ライブの端末(A.ライブ, [射手(), 射手({ id: 'a2', name: '二人目' })]);
 
-  B.store.getState().toggleMark('a2', 0);
+  A.store.getState().setShotsPerRound(8);
+  await 待つ(0);
+  assert.equal(A.store.getState().shotsPerRound, 8, '前提：8射になっている');
+
+  const 控え = A.ライブ.値(`live_history/${団体}/${ライブ名}`) || {};
+  assert.equal(Object.keys(控え).length, 1, '射数の変更が控えに積まれていない');
+  assert.equal(控え[0].本数, 4, '控えが持つ射数が、変える前の値になっていない');
+
+  A.store.getState().undo();
+  await 待つ(10);
+  assert.equal(A.store.getState().shotsPerRound, 4, '取り消しで射数が戻っていない');
+  assert.equal(A.store.getState().archers[0].marks.length, 4, '○×が射数に揃っていない');
+
+  // やり直しでも射数が進む。まるごとで戻す経路は控えの本数（変える前の値）を
+  // 使うため、やり直すと射数だけ古いまま残っていた
+  A.store.getState().redo();
+  await 待つ(10);
+  assert.equal(A.store.getState().shotsPerRound, 8, 'やり直しで射数が進んでいない');
+  assert.equal(A.store.getState().archers[0].marks.length, 8, 'やり直しで○×が射数に揃っていない');
+});
+
+test('共有履歴：射数の変更を取り消しても、あとから入った相手の○×は残る', async () => {
+  // 射数の変更は○×の数が変わるので、ますごとにも項目ごとにも差分にできない。
+  // 盤面まるごとで戻すと、控えを作ったあとに相手が入れた○×まで消える。
+  // 「長さの伸び縮みだけ」の控えにしてあるので、頭のますには触らない
+  const A = ライブの端末(undefined, [射手(), 射手({ id: 'a2', name: '二人目' })]);
+
   A.store.getState().setShotsPerRound(8);
   await 待つ(0);
 
-  const 控え = A.ライブ.値(`live_history/${団体}/${ライブ名}`) || {};
-  assert.equal(Object.keys(控え).length, 1, '射数の変更まで控えに積まれている');
-  assert.ok(控え[0].差分, '積まれているのは○×のほう（ますごとの差分）');
-  assert.equal(控え[0].差分[0].射手, 'a2');
+  // 射数を変えたあとに、相手が a2 へ○を入れて届いた状態にする
+  // （この検査ファイルの他の3台ものと同じで、届いた結果を手で置く）
+  A.store.setState({
+    archers: [
+      射手({ marks: ['', '', '', '', '', '', '', ''] }),
+      射手({ id: 'a2', name: '二人目', marks: ['○', '', '', '', '', '', '', ''] }),
+    ],
+  });
+
+  await A.store.getState().sharedUndo(-1);
+  await 待つ(0);
+
+  assert.equal(A.store.getState().shotsPerRound, 4, '射数が戻っていない');
+  const a2 = A.store.getState().archers.find((a) => a.id === 'a2');
+  assert.equal(a2.marks[0], '○', '相手の○×を巻き込んで消した');
 });
 
 // ──────────────────────────────────────────────────────────────
