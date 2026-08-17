@@ -1325,7 +1325,7 @@ const j = ({ navigation }) => {
                   (0, y.jsxs)(o.default, {
                     style: { marginTop: 24 },
                     children: [
-                      (0, y.jsx)(l.default, { style: F.sectionSubTitle, children: '立の結果分布 (4射単位)' }),
+                      (0, y.jsx)(l.default, { style: F.sectionSubTitle, children: '立ちの結果分布 (4射単位)' }),
                       (0, y.jsx)(o.default, {
                         style: F.patternsCardDash,
                         children: [
@@ -2144,7 +2144,7 @@ const j = ({ navigation }) => {
                                     color: '#3A3A3C',
                                     marginBottom: 12,
                                   },
-                                  children: '立の結果分布 (4射単位)',
+                                  children: '立ちの結果分布 (4射単位)',
                                 }),
                                 (0, y.jsx)(o.default, {
                                   style: F.patternsCard,
