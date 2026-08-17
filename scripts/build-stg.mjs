@@ -48,4 +48,8 @@ if (!m || m[1] !== 'kyudoscoremanager-stg') {
   console.error(`停止：書き出した束の接続先が ${m ? m[1] : '不明'} になっています`);
   process.exit(1);
 }
+// expo が作る index.html の既定値を直す（lang="en" とタイトル）
+const 直し = spawnSync(process.execPath, ['scripts/patch-index-html.mjs'], { stdio: 'inherit' });
+if (直し.status !== 0) process.exit(直し.status ?? 1);
+
 console.log(`\n完了。接続先: ${m[1]}`);
