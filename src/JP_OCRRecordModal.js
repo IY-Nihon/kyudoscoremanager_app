@@ -262,7 +262,16 @@ function normalizeMarks(rawMarks, shotsPerRound) {
   return out;
 }
 
-const OCRRecordModal = ({ visible, onClose, members = [], alumni = [], shotsPerRound = 8, onApply }) => {
+const OCRRecordModal = ({
+  visible,
+  onClose,
+  members = [],
+  alumni = [],
+  shotsPerRound = 8,
+  onApply,
+  // 記録表にすでに中身があるか。あるときは置き換わることを確かめる
+  hasExistingRecord = false,
+}) => {
   const [step, setStep] = useState("pick"); // pick | analyzing | preview
   // lineup: ホワイトボードの立ち順表（名前のみ）
   // record: 紙に取った的中記録（名前＋各射の○×）
@@ -715,6 +724,22 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
     return result;
   };
 
+  // 読み取った結果は記録表を丸ごと置き換える。すでに記録が入っているなら、
+  // 消えることを伝えてから進む。ここで確かめるのは、断ったときに読み取り結果を
+  // 残したままこの画面に留まれるようにするため（呼び出し側だと画面が閉じてしまう）
+  const 確かめてから = (進む) => {
+    if (!hasExistingRecord) return 進む();
+    const 文 = "いま記録表にある内容は消えて、読み取った結果に置き換わります。よろしいですか？";
+    if (IS_WEB) {
+      if (window.confirm(文)) 進む();
+    } else {
+      _Alert.alert("確認", 文, [
+        { text: "キャンセル", style: "cancel" },
+        { text: "OK", onPress: 進む },
+      ]);
+    }
+  };
+
   const handleApply = () => {
     if (mode === "record") {
       if (recordRows.some(r => r.status === "ambiguous")) {
@@ -726,9 +751,11 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
         _Alert.alert("反映できません", "読み取れた射手がいません。写真を撮り直してください。");
         return;
       }
-      // どちらの読み取りかを渡す。呼び出し側の知らせの文言が変わる
-      onApply && onApply(archers, "record");
-      handleClose();
+      確かめてから(() => {
+        // どちらの読み取りかを渡す。呼び出し側の知らせの文言が変わる
+        onApply && onApply(archers, "record");
+        handleClose();
+      });
       return;
     }
 
@@ -738,8 +765,10 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
       return;
     }
     const archers = buildArchersArray();
-    onApply && onApply(archers, "tachi");
-    handleClose();
+    確かめてから(() => {
+      onApply && onApply(archers, "tachi");
+      handleClose();
+    });
   };
 
   // ─────────────────────────────────────────
