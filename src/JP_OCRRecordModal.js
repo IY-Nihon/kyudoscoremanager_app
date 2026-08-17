@@ -743,7 +743,7 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
   const handleApply = () => {
     if (mode === "record") {
       if (recordRows.some(r => r.status === "ambiguous")) {
-        _Alert.alert("確認が必要です", "候補が複数ある名前が残っています。該当の氏名をタップして選択してください。");
+        _Alert.alert("確認が必要です", "候補が複数ある名前が残っています。該当の氏名を押して選択してください。");
         return;
       }
       const archers = buildRecordArchersArray();
@@ -761,7 +761,7 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
 
     const hasAmbiguous = tachiList.some(t => t.seats.some(s => s.status === "ambiguous"));
     if (hasAmbiguous) {
-      _Alert.alert("確認が必要です", "候補が複数ある名前が残っています。該当のセルをタップして選択してください。");
+      _Alert.alert("確認が必要です", "候補が複数ある名前が残っています。該当のマスを押して選択してください。");
       return;
     }
     const archers = buildArchersArray();

@@ -219,8 +219,8 @@ export const ArrowLocationPopover = ({
           <View style={styles.guideContainer}>
             <Text style={[styles.guideText, currentMark === '○' ? styles.guideHit : styles.guideMiss]}>
               {currentMark === '○'
-                ? '【的中 ○】的の内側をタップしてください'
-                : '【外れ ×】的の外側（グレーの領域）をタップしてください'}
+                ? '【的中 ○】的の内側を押してください'
+                : '【外れ ×】的の外側（グレーの領域）を押してください'}
             </Text>
           </View>
 

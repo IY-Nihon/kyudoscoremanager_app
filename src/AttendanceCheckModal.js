@@ -188,7 +188,7 @@ const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
                 ? attendingMembers.map(renderMemberItem)
                 : (0, j.jsx)(o.Text, { style: styles.emptyText, children: '記録に参加者がありません' }),
               (0, j.jsx)(o.View, { style: styles.separator }),
-              (0, j.jsx)(o.Text, { style: styles.sectionTitle, children: 'その他の部員' }),
+              (0, j.jsx)(o.Text, { style: styles.sectionTitle, children: 'その他のメンバー' }),
               absentMembers.map(renderMemberItem),
             ],
           }),
