@@ -2,9 +2,17 @@
 // 入れて3秒たつと押しても変わらず、長押しするとそのますだけ開く。
 import { test, expect } from '@playwright/test';
 
-// 部員のいる団体を使う。部員0人の団体（100005）でこれをやると、
-// 射手を足すたびにゲストが1人残り、台帳とズレてしまう
-const 団体 = '100006';
+// ライブの検査（100006）とは別の団体を使う。混ざる余地をなくすため。
+// メンバーのいる団体にする。0人の団体だと射手を足すたびにゲストが残る。
+//
+// なお iPhone では、ライブの検査3件をすべて通したあとにこの検査を流すと
+// 長押しが効かずに落ちる。1件ずつ前に置いたときは（2台・3台・鍵のいずれ
+// でも）通るので、個々の検査ではなく積み重ねが効いている。
+// 押さえの長さは900ms・2000ms・2500msで試して差が無く、押下（mousedown /
+// mouseup）は届いていて mouseleave も0、盤面も正常（射手1人・○1つ）。
+// 原因は未特定。アプリ側の不具合ではなく、同じ操作はスマホ・パソコンで
+// 安定して通る。
+const 団体 = '100003';
 const 合言葉 = 'StgTest!2026';
 
 /** 触れる画面かどうか。指の画面では click ではなく tap でないと届かない */
@@ -34,24 +42,6 @@ async function 長押しする(page, 場所, ミリ秒) {
     await page.waitForTimeout(ミリ秒);
     await 指.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   } else {
-    console.log(
-      '■押す先:',
-      JSON.stringify(
-        await page.evaluate(
-          ({ x, y }) => {
-            const el = document.elementFromPoint(x, y);
-            let 印 = null;
-            let p = el;
-            while (p && !印) {
-              印 = p.getAttribute && p.getAttribute('data-testid');
-              p = p.parentElement;
-            }
-            return { x, y, tag: el && el.tagName, 印, 高さ: window.innerHeight };
-          },
-          { x: 場所.x, y: 場所.y }
-        )
-      )
-    );
     await page.mouse.move(場所.x, 場所.y);
     await page.mouse.down();
     await page.waitForTimeout(ミリ秒);
@@ -85,25 +75,6 @@ async function 入る(page) {
   await page.evaluate(() => localStorage.setItem('tutorialDoneVersion', '2026-08-13-01'));
   await page.reload();
   await page.waitForTimeout(4000);
-
-  // ライブ中なら抜ける。
-  // 同じ団体をライブの検査と共用しているため、直前の検査で始めたライブが
-  // 端末に残っていることがある。そのまま続けると盤面が同期で書き換わり、
-  // 「押していないのに○が増える」状態で長押しを試すことになって落ちる。
-  // 実際、失敗時の画面には「ライブ中」の帯が出ていて、1つしか入れていない
-  // はずの行に○が2つ並んでいた
-  // ライブの状態は読み込みのあとから復元されるので、一度見るだけでは
-  // 間に合わない。数秒かけて出てこないことを確かめる
-  for (let i = 0; i < 6; i++) {
-    const 停止 = page.getByText('停止', { exact: true });
-    if (await 停止.isVisible().catch(() => false)) {
-      await 停止.click();
-      await page.waitForTimeout(2500);
-      continue;
-    }
-    if (!(await page.getByText(/ライブ中/).isVisible().catch(() => false))) break;
-    await page.waitForTimeout(1500);
-  }
 
   // 射手の列が無ければ1つ足す。名前は選ばない（メンバーを作らないため）。
   // 保存もしないので、団体の中身には触れない
