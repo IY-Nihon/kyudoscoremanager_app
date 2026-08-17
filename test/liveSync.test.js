@@ -461,6 +461,33 @@ async function 主催の端末(射手たち) {
   return { store, ライブ };
 }
 
+test('受信：相手が射数を減らしたら、手元の○×も射数までに収まる', async () => {
+  // 受け取りの正規化は、短い○×は伸ばすが長いほうは切らない。
+  // 相手が8射→4射に減らしたとき、手元の射手のほうが新しいと、射数だけ4に
+  // なって○×は8のまま残る。はみ出したますは画面に出ないのに、的中数は
+  // marks を丸ごと数えるので数に入ってしまう
+  const 八射 = ['', '', '', '', '○', '○', '○', '○'];
+  const { store, ライブ } = await 主催の端末([射手({ marks: 八射, lastModified: 9999 })]);
+  store.setState({ shotsPerRound: 8 });
+  await 待つ(10);
+
+  // 相手が射数を4に減らした通知。射手そのものは手元のほうが新しい
+  ライブ.置く(道, {
+    status: 'active',
+    timestamp: (store.getState().lastPushedTimestamp || 0) + 1234,
+    archers: [射手({ marks: ['', '', '', ''], lastModified: 1000 })],
+    marks_by_id: { a1: ['', '', '', ''] },
+    archer_timestamps: { a1: 1000 },
+    shotsPerRound: 4,
+  });
+  await 待つ(10);
+
+  const 手元 = 手元の射手(store);
+  assert.equal(store.getState().shotsPerRound, 4, '前提：射数は4になっている');
+  assert.equal(手元.marks.length, 4, `○×が ${手元.marks.length} 個のまま残った`);
+  assert.equal(手元.marks.filter((m) => m === '○').length, 0, '画面に出ない○が的中数に入る');
+});
+
 test('送信：盤面を片付けたあと、同じ記録を読み込み直すと相手にも出る', async () => {
   // 「サーバーに載っていると分かっている○×」の控えは、片付けでも捨てないと
   // いけない。片付けはサーバーの marks_by_id を空にするのに、控えだけ前の
