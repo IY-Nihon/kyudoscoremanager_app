@@ -400,6 +400,47 @@ const 射数に合わせる = (値, 長さ, 埋め) => {
 };
 
 /**
+ * その射手は自分か。個人ログインの絞り込みで使う。
+ *
+ * 氏名だけで割り当てた射手（メンバーを選ばずに名前を入れた場合）と、
+ * 交代で入った場合も自分として数える。
+ * substitutions は氏名、substitutionIds は id で持っている。
+ *
+ * 元は履歴画面の中に2回書かれていて、片方は交代の判定で射手ではなく記録の
+ * ほうを見ており、交代で入った人を拾えていなかった。ここへ出して1つにする。
+ */
+function 自分の射手か(射手, 自分id, 自分名) {
+  if (!射手) return false;
+  if (自分id && 射手.memberId === 自分id) return true;
+  if (自分名 && 射手.name === 自分名) return true;
+  if (自分id && 射手.substitutionIds && Object.values(射手.substitutionIds).includes(自分id)) return true;
+  if (自分名 && 射手.substitutions && Object.values(射手.substitutions).includes(自分名)) return true;
+  return false;
+}
+
+/** その記録に自分が写っているか */
+function 自分の記録か(記録, 自分id, 自分名) {
+  return !!(
+    記録 &&
+    Array.isArray(記録.archers) &&
+    記録.archers.some((a) => 自分の射手か(a, 自分id, 自分名))
+  );
+}
+
+/**
+ * その人に見える記録の数。団体なら全部、個人なら自分が写っているものだけ。
+ *
+ * 案内の見本を出すかどうかの判断に使う。端末には団体ぜんぶの記録が入って
+ * いるので、素の件数で決めると、個人ログインでは「記録はあるのに自分のは
+ * 1件も無い」ときに見本が出ず、空の画面だけが残る。
+ */
+function 見える記録数(状態) {
+  const 一覧 = Array.isArray(状態 && 状態.sessions) ? 状態.sessions : [];
+  if (!状態 || 'member' !== 状態.activeRole || !状態.myMemberId) return 一覧.length;
+  return 一覧.filter((s) => 自分の記録か(s, 状態.myMemberId, 状態.myMemberName)).length;
+}
+
+/**
  * 前後の盤面が「射数だけ変わった」ものかを見る。違えば null。
  *
  * 射数の変更は○×の数が変わるので、ますごとの差分にも項目ごとの差分にも
@@ -685,6 +726,9 @@ module.exports = {
   項目差分を当てる,
   射数の差分,
   射数差を当てる,
+  自分の射手か,
+  自分の記録か,
+  見える記録数,
   盤面を射数にそろえる,
   参加できるライブ,
   ライブの最終更新,
