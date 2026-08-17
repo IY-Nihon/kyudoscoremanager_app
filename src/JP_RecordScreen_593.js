@@ -1772,6 +1772,9 @@ const k = () => {
     feedbackOverlay: {
       position: 'absolute',
       bottom: 100,
+      // 知らせの帯は見せるだけ。指は下の記録表へ通す。
+      // 長押しで鍵を開けた直後は、まさにその下のますを押したいことが多い
+      pointerEvents: 'none',
       alignSelf: 'center',
       backgroundColor: 'rgba(0,0,0,0.7)',
       paddingHorizontal: 16,
