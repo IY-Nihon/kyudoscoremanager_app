@@ -3129,9 +3129,13 @@ const M = (0, s.create)()(
                     // 主催者側と参加者側で同じ処理が二重に書かれていたため
                     const { archers: 受信, shotsPerRound: 本数 } = w(a),
                       結果 = mergeLiveArchers(s().archers, 受信, s().shotsPerRound, 本数);
+                    // 受け取りの正規化は短い○×を伸ばすだけで、長いほうは切らない。
+                    // 相手が射数を減らしたとき、手元の射手のほうが新しいと
+                    // 射数だけ減って○×が伸びたまま残る（画面に出ないますの○が
+                    // 的中数に入る）。射数が変わればここは必ず通る
                     結果.changed &&
                       e({
-                        archers: 結果.archers,
+                        archers: 盤面を射数にそろえる(結果.archers, 本数),
                         shotsPerRound: 本数,
                       });
                   }
@@ -3221,9 +3225,10 @@ const M = (0, s.create)()(
               // 主催者側（startLiveSync）と同じ関数を使う
               const { archers: 受信, shotsPerRound: 本数 } = w(a),
                 結果 = mergeLiveArchers(s().archers, 受信, s().shotsPerRound, 本数);
+              // 主催者側と同じ理由で、いまの射数にそろえる
               結果.changed &&
                 e({
-                  archers: 結果.archers,
+                  archers: 盤面を射数にそろえる(結果.archers, 本数),
                   shotsPerRound: 本数,
                 });
             }
