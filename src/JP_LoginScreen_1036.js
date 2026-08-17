@@ -121,7 +121,7 @@ const T = () => {
         v(false);
       }
     } else {
-      s.default.alert('エラー', '全ての項目を入力してください');
+      s.default.alert('エラー', 'すべての項目を入力してください');
     }
   };
 
@@ -516,7 +516,7 @@ const T = () => {
                               children: [
                                 (0, E.jsx)(h.default, {
                                   style: S.label,
-                                  children: '個人ID (4桁)',
+                                  children: '個人ID（4桁）',
                                 }),
                                 (0, E.jsxs)(u.default, {
                                   style: S.inputWrapper,
@@ -793,7 +793,7 @@ const T = () => {
                             S.footerLink,
                             state.hovered && y.IS_WEB && { textDecorationLine: 'underline' },
                           ],
-                          children: '既にアカウントをお持ちの方（ログイン）',
+                          children: 'すでにアカウントをお持ちの方（ログイン）',
                         });
                       },
                     })

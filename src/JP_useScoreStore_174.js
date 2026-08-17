@@ -1769,7 +1769,7 @@ const M = (0, s.create)()(
           if (S && 'member' === b)
             try {
               if ((await (0, a.getDoc)((0, a.doc)(fb.db, `groups/${S}/sessions`, p))).exists()) {
-                const e = 'この記録は既にクラウドに存在するため、個人モードからは更新できません。';
+                const e = 'この記録はすでにクラウドに存在するため、個人モードからは更新できません。';
                 return void (c.IS_WEB ? window.alert(e) : n.default.alert('保存制限', e));
               }
             } catch (e) {
@@ -2228,8 +2228,8 @@ const M = (0, s.create)()(
               );
             const i =
               'multipleTabs' === o.state
-                ? 'この記録画面が複数のタブで開かれているため、電波の無い場所での保存が保護されません。他のタブを閉じて開き直してください。'
-                : 'このブラウザでは電波の無い場所での保存が保護されません。通信できる場所で保存してください。';
+                ? 'この記録画面が複数のタブで開かれているため、電波のない場所での保存が保護されません。他のタブを閉じて開き直してください。'
+                : 'このブラウザでは電波のない場所での保存が保護されません。通信できる場所で保存してください。';
             (console.warn('[Store] オフライン保存が無効です:', o),
               e({
                 offlineSaveWarning: i,
