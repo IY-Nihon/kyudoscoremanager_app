@@ -1517,6 +1517,8 @@ const k = () => {
           members: oe,
           alumni: (0, x.useScoreStore)((e) => e.alumni) || [],
           shotsPerRound: T,
+          // 取り込みは記録表を丸ごと置き換える。中身があるなら先に確かめてもらう
+          hasExistingRecord: k.length > 0,
           onApply: (newArchers, 読み取りの種類) => {
             const store = x.useScoreStore.getState();
             store.historyStack &&
