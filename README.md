@@ -113,17 +113,68 @@ npm start
 
 ## デプロイ
 
+### 順序（守ること）
+
+RTDB のルールとアプリは、**必ずこの順**で出します。逆にすると全員の
+取り消し・やり直しが拒否されます。共有履歴は `live_history` に書きますが、
+その許可は新しいルールにしか入っていないためです。
+
+```bash
+npm run deploy:rules
+```
+```bash
+node scripts/stamp-live-release-day.mjs prod
+```
+```bash
+node scripts/stamp-live-release-day.mjs prod 実行
+```
 ```bash
 npm run deploy:web
 ```
 
-これは3段階を順に実行します:
+2番目は下見（何も書かない）。3番目で実際に書きます。
 
-1. `expo export --platform web` → `dist/` を生成
+**間の2つを飛ばさないこと。** アプリは最終更新から14日を過ぎたライブを
+自動で消します。本番には数か月前のライブが残っているため、そのまま配ると
+**配信した瞬間に消えます**（保存前の盤面ごと）。最終更新を配信日に揃えて
+おけば、どのライブにも14日の猶予ができます。
+
+Firestore のルールは、変えたときだけ別に出します（`--only firestore:rules`）。
+`deploy:rules` は RTDB だけです。
+
+練習時間帯は避けてください。配信後、案内（チュートリアル）を一度も見て
+いない人には自動で案内が始まり、その間だけ記録表が書き換わります
+（終了時に必ず元へ戻り、ライブ中は始まりません）。
+
+### 配信前に見るもの
+
+```bash
+node scripts/audit-prod-data.mjs prod
+```
+```bash
+node scripts/check-lookup-drift.mjs prod
+```
+```bash
+node scripts/check-marks-length.mjs prod
+```
+
+いずれも読むだけです。個人IDの重複・日時の型の壊れ・逆引き表の迷子・
+記録の形・○×の数と射数の食い違いを見ます。
+
+### npm run deploy:web の中身
+
+1. `scripts/build-prod.mjs` → `expo export --platform web --clear` で `dist/` を生成し、
+   焼き込まれた接続先が本番かを確かめる。そのあと `scripts/patch-index-html.mjs` が
+   `lang="en"` → `"ja"` と `<title>` を直す
 2. `scripts/deploy-web.ps1` → `dist/index.html` に OGP/PWA タグを注入し、`pwa/` 配下の
    manifest・Service Worker・アイコンを `dist/` へコピー
    （`dist/` は毎回再生成されるため、このコピーは毎回必要）
 3. `firebase deploy --only hosting`
+   直前に `firebase.json` の predeploy が `scripts/verify-hosting-bundle.mjs` を走らせ、
+   `dist/` の接続先と配り先が食い違えば止める
+
+`--clear` は必須です。付けないと、検証環境向けに書き出したときの設定が
+キャッシュから使い回され、検証環境を向いた束が本番へ出ます（再現済み）。
 
 iOS は `.github/workflows/` の EAS Build ワークフローで生成します。
 ビルド前に `patch_node_modules.mjs` が CI から実行されます（`patches/` と併用）。
