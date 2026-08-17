@@ -726,7 +726,8 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
         _Alert.alert("反映できません", "読み取れた射手がいません。写真を撮り直してください。");
         return;
       }
-      onApply && onApply(archers);
+      // どちらの読み取りかを渡す。呼び出し側の知らせの文言が変わる
+      onApply && onApply(archers, "record");
       handleClose();
       return;
     }
@@ -737,7 +738,7 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
       return;
     }
     const archers = buildArchersArray();
-    onApply && onApply(archers);
+    onApply && onApply(archers, "tachi");
     handleClose();
   };
 

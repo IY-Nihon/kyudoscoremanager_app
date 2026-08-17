@@ -212,6 +212,10 @@ const h = t.default.memo(
         el.addEventListener('touchcancel', endPress);
         el.addEventListener('contextmenu', suppressContext);
         return () => {
+          // 押さえている最中にこのますが消えることがある（射手を消した、
+          // 射数を減らした、ライブで盤面が入れ替わった）。止めておかないと、
+          // 消えたあとに鍵が開いたり矢所の窓が出たりする
+          endPress();
           el.removeEventListener('mousedown', startPress);
           el.removeEventListener('mouseup', endPress);
           el.removeEventListener('mouseleave', endPress);
