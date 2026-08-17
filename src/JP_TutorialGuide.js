@@ -452,8 +452,22 @@ const TutorialOverlay = ({ navRef }) => {
     // 読み返し中は操作を求めないので、盤面もいじらない
     if (!見返し) 下ごしらえする(いまの手順.下ごしらえ);
     手が出せないを置く(手が出せないか(いまの手順, useScoreStore.getState()));
-    // 履歴・分析の手順のあいだだけ、画面が読む中身を見本に差し替える
-    use案内.getState().見本を置く(いまの手順.見本 ? 見本の中身を作る() : null);
+    // 履歴・分析の手順のあいだだけ、画面が読む中身を見本に差し替える。
+    // 個人ログインのときは自分を渡す。渡さないと、履歴も分析も「自分が
+    // 参加した記録」だけに絞るため、架空の見本が全部落ちて何も出ない
+    use案内.getState().見本を置く(
+      いまの手順.見本
+        ? (() => {
+            const 状態 = useScoreStore.getState();
+            return 見本の中身を作る(
+              new Date(),
+              'member' === 状態.activeRole && 状態.myMemberId
+                ? { memberId: 状態.myMemberId, name: 状態.myMemberName }
+                : null
+            );
+          })()
+        : null
+    );
     基準.current =
       いまの手順.操作 && いまの手順.操作.種類 !== 'タブへ移動'
         ? いまの値(useScoreStore.getState(), いまの手順.操作.種類)

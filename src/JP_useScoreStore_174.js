@@ -590,6 +590,9 @@ const M = (0, s.create)()(
         includeInStats: !0,
         lastLocalChange: 0,
         lastResetHandled: 0,
+        // 入って最初の1通かどうか。最初の1通に載っている片付けは
+        // 「入る前に起きたこと」なので知らせない（共有履歴の知らせと同じ考え方）
+        resetIsFirstSnapshot: !1,
         lastPushedTimestamp: 0,
         // ライブ中の共有履歴の目印。len は「いま何手ぶん適用しているか」、
         // max は「やり直せる上限」。どちらも state 経由で全員に配られる
@@ -3125,6 +3128,9 @@ const M = (0, s.create)()(
               historySharedMax: 0,
               historyHandledAt: 0,
               historyIsFirstSnapshot: !1,
+              // 同じ名前で始め直したとき、前回の片付けが節点に残っていることがある。
+              // 最初の1通ぶんは知らせない
+              resetIsFirstSnapshot: !0,
             }));
           const a = s();
           if (!fb.rtdb) return '確認できない';
@@ -3165,11 +3171,19 @@ const M = (0, s.create)()(
                     );
                   }
                   共有履歴の目印を受け取る(a, e, s);
+                  // 参加者側と同じ。始め直したとき、節点に前回の片付けが
+                  // 残っていることがあるので、最初の1通ぶんは知らせない
+                  const 主のリセット初回 = s().resetIsFirstSnapshot;
+                  if (主のリセット初回) e({ resetIsFirstSnapshot: !1 });
                   if (a.reset_at && a.reset_at > (s().lastResetHandled || 0))
                     return (
                       e({
                         lastResetHandled: a.reset_at,
                       }),
+                      主のリセット初回 &&
+                        e({
+                          lastPushedTimestamp: a.timestamp || 0,
+                        }),
                       // 送信はしない。受け取ったリセットを送り返すと、相手の画面に
                       // 「リセットしました」が二度出るうえ、無駄な書き込みが増える
                       void s().resetCurrentSession(!1)
@@ -3218,6 +3232,7 @@ const M = (0, s.create)()(
               historySharedLen: 0,
               historySharedMax: 0,
               historyIsFirstSnapshot: !0,
+              resetIsFirstSnapshot: !0,
             }),
             !fb.rtdb)
           )
@@ -3260,12 +3275,21 @@ const M = (0, s.create)()(
               );
             }
             共有履歴の目印を受け取る(a, e, s);
+            // 入って最初の1通かどうかを先に控える（下で旗を倒すため）
+            const リセットの初回 = s().resetIsFirstSnapshot;
+            if (リセットの初回) e({ resetIsFirstSnapshot: !1 });
             if (a.reset_at && a.reset_at > (s().lastResetHandled || 0)) {
-              const t = 0 === s().lastResetHandled;
               (e({
                 lastResetHandled: a.reset_at,
               }),
-                t &&
+                // 入る前に起きた片付けなら知らせない。画面は
+                // lastResetHandled === lastPushedTimestamp を「自分の操作」と
+                // 見なすので、そこへ合わせて黙らせる。
+                //
+                // 元はここが「lastResetHandled が 0 か」で判定していた。0 のままなのは
+                // 一度も送信していない人なので、入った直後や見ているだけの人には
+                // 片付けの知らせが永久に出なかった（reset_at と timestamp は同じ値）
+                リセットの初回 &&
                   e({
                     lastPushedTimestamp: a.timestamp || 0,
                   }),
