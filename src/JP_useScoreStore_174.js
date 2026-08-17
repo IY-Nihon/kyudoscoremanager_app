@@ -484,6 +484,16 @@ const 共有履歴の目印を受け取る = (状態, e, s) => {
   }
   Object.keys(変更).length > 0 && e(変更);
 };
+/**
+ * 履歴の1手を、射手の一覧として取り出す。
+ *
+ * 積むときは射手の一覧そのままにする決まりで、店の中の14か所はそうしている。
+ * 画像の取り込みだけが { archers, activeSessionID } という形で積んでいた。
+ * 取り消しは配列として扱うので、そのままだと空の盤面で戻ってしまう。
+ * 積むほうは直したが、また形が崩れても盤面を消さないよう、ここで受け止める。
+ */
+const 履歴の一手 = (項目) =>
+  Array.isArray(項目) ? 項目 : 項目 && Array.isArray(項目.archers) ? 項目.archers : [];
 let I = !1;
 // ライブ中の共有履歴。取り消し・やり直しを全員で1本の履歴として扱う。
 // 取り消しの適用中は、その書き換え自体を履歴に積まないための目印。
@@ -1247,7 +1257,7 @@ const M = (0, s.create)()(
           // 取り消しが相手に届かず、主催者の画面だけ戻る食い違いになる。
           // 戻す前に、いまの射数へそろえる（射数の変更は履歴に積まれないため）
           const a = restampChangedArchers(
-            盤面を射数にそろえる(t[t.length - 1], s().shotsPerRound),
+            盤面を射数にそろえる(履歴の一手(t[t.length - 1]), s().shotsPerRound),
             o,
             Date.now()
           );
@@ -1266,7 +1276,7 @@ const M = (0, s.create)()(
           if (0 === t.length) return;
           // 取り消しと同じ理由で日時を打ち直す。射数へそろえるのも同じ
           const a = restampChangedArchers(
-            盤面を射数にそろえる(t[t.length - 1], s().shotsPerRound),
+            盤面を射数にそろえる(履歴の一手(t[t.length - 1]), s().shotsPerRound),
             o,
             Date.now()
           );
