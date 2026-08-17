@@ -35,6 +35,8 @@ require('./module_98');
 var c = require('./IS_WEB_199');
 require('./module_420');
 var 案内 = require('./JP_TutorialGuide');
+// 「自分が写っているか」の判定。履歴画面・案内の見本と同じものを使う
+var { 自分の記録か } = require('./syncRules');
 var u = require('./JP_useScoreStore_174'),
   h = require('./AntDesign_600'),
   f = require('./JP_CustomCalendarModal_695'),
@@ -217,19 +219,10 @@ const j = ({ navigation }) => {
   // memberロール時は自分が参加しているセッションのタグのみを収集する
   const ge = n.default.useMemo(() => {
     const t = new Set();
-    const src =
-      'member' === k && B
-        ? E.filter(
-            (s) =>
-              s &&
-              s.archers &&
-              s.archers.some(
-                (a) =>
-                  a &&
-                  (a.memberId === B || (a.substitutionIds && Object.values(a.substitutionIds).includes(B)))
-              )
-          )
-        : E;
+    // 判定は syncRules の 自分の記録か に出した。ここは氏名の一致を見て
+    // おらず、メンバーを選ばずに氏名だけで入れた記録が落ちていた。
+    // 履歴画面の絞り込み（あちらは氏名も見る）とも食い違っていた
+    const src = 'member' === k && B ? E.filter((s) => 自分の記録か(s, B, D)) : E;
     src.forEach((e) => {
       e && e.tags && e.tags.forEach((e) => t.add(e));
     });

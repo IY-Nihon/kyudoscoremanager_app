@@ -509,9 +509,11 @@ const 履歴の一手 = (項目) =>
  * 区切りの列は○×を持たないので飛ばす。
  */
 const 控えの射数 = (一覧) => {
-  const 射手 = (Array.isArray(一覧) ? 一覧 : []).find(
-    (a) => a && !a.isSeparator && Array.isArray(a.marks)
-  );
+  const 並び = Array.isArray(一覧) ? 一覧 : [];
+  const 使える = (a) => a && !a.isSeparator && Array.isArray(a.marks);
+  // 「計」の列は数えない。本番には、射数12なのに「計」だけ○×が20個ある
+  // 記録が実在する。そこから読むと、取り消しで射数が20に化ける
+  const 射手 = 並び.find((a) => 使える(a) && !a.isTotalCalculator) || 並び.find(使える);
   return 射手 ? 射手.marks.length : null;
 };
 let I = !1;
