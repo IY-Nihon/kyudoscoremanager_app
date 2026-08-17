@@ -1168,7 +1168,7 @@ const w = () => {
                               style: { fontSize: 11, color: '#8E8E93', marginTop: 2, flexShrink: 1 },
                               numberOfLines: 0,
                               children:
-                                'オンにすると、保存済みの記録をあとから直せます。各部員の個人ID（数字）も表示されます',
+                                'オンにすると、保存済みの記録をあとから直せます。各メンバーの個人ID（数字）も表示されます',
                             }),
                           ],
                         }),
@@ -1343,7 +1343,7 @@ const w = () => {
                                     style: [D.radioBtn, 'matrix' === ye && D.radioBtnActive],
                                     children: (0, T.jsx)(n.default, {
                                       style: [D.radioBtnText, 'matrix' === ye && D.radioBtnTextActive],
-                                      children: '印刷向形式',
+                                      children: '印刷向け形式',
                                     }),
                                   }),
                                 ],
@@ -1353,7 +1353,7 @@ const w = () => {
                                 children:
                                   'standard' === ye
                                     ? '1行に1記録を出力します。データ加工に適しています。'
-                                    : 'メンバーを各行、日付を各列に配置します。掲示や閱覧に適しています。',
+                                    : 'メンバーを各行、日付を各列に配置します。掲示や閲覧に適しています。',
                               }),
                             ],
                           }),
