@@ -198,11 +198,11 @@ const h = t.default.memo(
             longPressTimerRef.current = null;
           }
         };
+        // 矢所を使っていなくても、閉じたますを開けるのに長押しを使う。
+        // 矢所のときだけ止めていたので、既定の設定（矢所は切ってある）だと
+        // 開けようと押さえた指に対してブラウザの長押しメニューが出ていた
         const suppressContext = (ev) => {
-          const props = latestPropsRef.current;
-          if (props.enableArrowLocation) {
-            ev.preventDefault();
-          }
+          ev.preventDefault();
         };
         el.addEventListener('mousedown', startPress);
         el.addEventListener('mouseup', endPress);
@@ -338,6 +338,12 @@ const h = t.default.memo(
       alignItems: 'center',
       borderRightColor: '#000',
       position: 'relative',
+      // 閉じたますは長押しで開ける。押さえたままにすると、ブラウザ側が
+      // 文字を選び始めたり長押しメニューを出したりして、こちらの長押しと
+      // ぶつかる。ますは押すための場所で、文字を選ぶ用は無い
+      userSelect: 'none',
+      WebkitUserSelect: 'none',
+      WebkitTouchCallout: 'none',
     },
     markText: Object.assign({ fontSize: 28, fontWeight: '900' }, {}),
     lockIconOverlay: { position: 'absolute', top: 2, alignItems: 'center', width: '100%', zIndex: 1 },
