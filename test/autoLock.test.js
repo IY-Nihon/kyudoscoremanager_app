@@ -217,6 +217,31 @@ test('お知らせ：前回より後に足したぶんだけを新しいと数�
   }
 });
 
+test('お知らせ：「見たところ」の印がまだ無い人は、今後表示しないを押した版で代える', () => {
+  // 印は今回から付け始めた。今動いているアプリの利用者は誰も持っていない。
+  // 無いからと全部を新しい扱いにすると、切り替え直後の一回目
+  // ――線がいちばん要るとき――に線が最上段へ行き、何も区切らない
+  const 本体 = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'src', 'JP_WhatsNewModal.js'),
+    'utf8'
+  );
+  const 始 = 本体.indexOf('const dismissedVersion');
+  const 読む所 = 本体.slice(始, 本体.indexOf('shownThisSession = true', 始));
+  assert.ok(
+    /getItem\(LAST_SEEN_KEY\)\)? *\|\| *dismissedVersion/.test(読む所),
+    '印が無い人への代えが無い'
+  );
+
+  // 前の版まで読んだ人には、そのあとに足したぶんだけが新しい
+  const 版たち = [...本体.matchAll(/版: '([^']+)'/g)].map((m) => m[1]);
+  const 今の版 = (本体.match(/NOTICE_VERSION = '([^']+)'/) || [])[1];
+  const 前の版 = 版たち.find((v) => v !== 今の版);
+  assert.ok(前の版, '版が1種類しかなく、切り替えの見え方を確かめられない');
+  const 新しい数 = 版たち.filter((v) => v > 前の版).length;
+  assert.ok(新しい数 > 0, '前の版まで読んだ人に、新しいものが1つも無い');
+  assert.ok(新しい数 < 版たち.length, '前の版まで読んだ人に、全部が新しい扱いになっている');
+});
+
 test('「鍵を開けました」の帯は、指を下のますへ通す', () => {
   // 帯は記録表の上に浮く。長押しで開けた直後は、その下のますを
   // すぐ押したいので、帯が指を吸うと「開いたのに書けない」になる
