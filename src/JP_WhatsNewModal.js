@@ -150,12 +150,15 @@ const WhatsNewModal = () => {
     }
     (async () => {
       try {
-        // 初めての人には出さない。使ったことのない機能の不具合修正一覧を
-        // 見せても意味がなく、そのあとに使い方の案内が続くと壁が二重になる。
-        // 使い方の案内を終えた（＝一度は使った）人から、変更点をお知らせする
+        // 使い方の案内がまだの人には出さない。案内と二重の壁になるため。
+        // 案内を終えた（＝一度は使った）人から、次に開いたときにお知らせする。
+        //
+        // ここで「見た」印を書いてはいけない。書くと、そのあと案内を終えても
+        // 印が付いたままで、この版のお知らせが二度と出なくなる。
+        // 実際そうなっていた（案内をスキップして開き直しても出ない）。
+        // 出さずに帰るだけにすれば、次に開いたときに出る。
         const 案内済み = await AsyncStorage.getItem('tutorialDoneVersion');
         if (!案内済み) {
-          await AsyncStorage.setItem(STORAGE_KEY, NOTICE_VERSION);
           shownThisSession = true;
           setCheckedStorage(true);
           return;

@@ -346,3 +346,37 @@ test('案内：指のタップで進む（スマホの側だけ）', async ({ pa
   const 後 = await いまの手順(page);
   expect(後, `指のタップで進めなかった（${前} のまま）`).not.toBe(前);
 });
+
+// 案内を終えた（またはスキップした）人には、次に開いたときお知らせを出す。
+// お知らせ側のコメントにも「使い方の案内を終えた人から変更点をお知らせする」
+// と書いてあるが、実装は案内が未了のときに「見た」印を永久に付けていたため、
+// 案内を終えても二度と出なかった
+test('お知らせ：案内をスキップして開き直すと出る', async ({ page }) => {
+  test.setTimeout(120000);
+
+  // 配信を受け取ったばかりの人と同じ状態にする（お知らせは未読）
+  await page.evaluate(() => {
+    localStorage.removeItem('whatsNewDismissedVersion');
+    localStorage.removeItem('tutorialDoneVersion');
+  });
+  await page.reload();
+  await expect(page.locator('text=ようこそ')).toBeVisible({ timeout: 30_000 });
+
+  // このとき、お知らせはまだ出さない（案内と二重になるため）
+  expect(
+    await page.getByText('お知らせ', { exact: true }).first().isVisible().catch(() => false),
+    '案内の最中にお知らせまで出ている'
+  ).toBe(false);
+
+  await 押す(page.getByText('スキップ', { exact: true }).first());
+  await page.waitForTimeout(1500);
+  const 案内済み = await page.evaluate(() => localStorage.getItem('tutorialDoneVersion'));
+  expect(案内済み, '前提：スキップで案内が終わったことになっていない').toBeTruthy();
+
+  await page.reload();
+  await page.waitForTimeout(5000);
+  await expect(
+    page.getByText('お知らせ', { exact: true }).first(),
+    '案内を終えたのに、開き直してもお知らせが出ない'
+  ).toBeVisible({ timeout: 20_000 });
+});
