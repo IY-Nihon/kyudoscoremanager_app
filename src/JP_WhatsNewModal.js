@@ -213,8 +213,13 @@ const WhatsNewModal = () => {
         }
         const dismissedVersion = await AsyncStorage.getItem(STORAGE_KEY);
         if (dismissedVersion !== NOTICE_VERSION) {
-          // どこから下が前に読んだぶんか、線を引くために数えておく
-          set未読(未読の数(await AsyncStorage.getItem(LAST_SEEN_KEY)));
+          // どこから下が前に読んだぶんか、線を引くために数えておく。
+          // 「見たところ」の印は今回から付け始めたので、まだ無い人が居る。
+          // その人には「今後表示しない」を押した版を代わりに使う。
+          // 印が無いからと全部を新しい扱いにすると、切り替え直後の
+          // ――線がいちばん要る一回目に――線が最上段へ行って役に立たない
+          const 見たところ = (await AsyncStorage.getItem(LAST_SEEN_KEY)) || dismissedVersion;
+          set未読(未読の数(見たところ));
           shownThisSession = true;
           setVisible(true);
         }
