@@ -384,6 +384,39 @@ function 項目の差分(前, 後) {
  * 向きが -1 なら前の値へ、+1 なら後の値へ。
  * 触るのは控えに載っている項目だけなので、それ以外は手元のまま残る。
  */
+/**
+ * ○×と矢所は1射につき1つ並ぶ。控えを作ったときと射数が変わっていることが
+ * あるので、いまの射数に合わせて詰める（伸ばす）。
+ *
+ * 射数の変更は取り消しの控えに積まれない。そのため 8射のときに積んだ控えを
+ * 4射に減らしたあとで戻す、ということが起きる。そのまま当てると配列が伸び、
+ * 画面に出ないますができる。的中数は配列を丸ごと数えるので、見えないますの
+ * ○が数に入ってしまう。
+ */
+const 射数に合わせる = (値, 長さ, 埋め) => {
+  if (!Array.isArray(値) || typeof 長さ !== 'number') return 値;
+  if (値.length === 長さ) return 値;
+  return 値.length > 長さ ? 値.slice(0, 長さ) : [...値, ...Array(長さ - 値.length).fill(埋め)];
+};
+
+/**
+ * 盤面まるごとを、いまの射数にそろえる。取り消し・やり直しで使う。
+ *
+ * 射数の変更は履歴に積まれないので、「8射で入れる → 4射に減らす →
+ * 取り消す」をすると、○×の配列だけが8のまま戻る。はみ出したますは画面に
+ * 出ないのに、的中数は配列を丸ごと数えるので数には入ってしまう。
+ *
+ * 触る範囲は setShotsPerRound と同じにしてある（区切りの列は持たない）。
+ */
+function 盤面を射数にそろえる(一覧, 射数) {
+  if (!Array.isArray(一覧) || typeof 射数 !== 'number') return 一覧;
+  return 一覧.map((a) => {
+    if (!a || a.isSeparator || !Array.isArray(a.marks)) return a;
+    const marks = 射数に合わせる(a.marks, 射数, '');
+    return marks === a.marks ? a : Object.assign({}, a, { marks });
+  });
+}
+
 function 項目差分を当てる(いまの一覧, 差分, 向き) {
   const 束 = new Map();
   (Array.isArray(差分) ? 差分 : []).forEach((d) => {
@@ -397,7 +430,14 @@ function 項目差分を当てる(いまの一覧, 差分, 向き) {
     let この射手が変わった = false;
     for (const k of Object.keys(項目)) {
       if (射手の項目.indexOf(k) < 0) continue;
-      const 値 = 向き < 0 ? 項目[k].前 : 項目[k].後;
+      const 生 = 向き < 0 ? 項目[k].前 : 項目[k].後;
+      const 射数 = Array.isArray(a.marks) ? a.marks.length : null;
+      const 値 =
+        k === 'marks'
+          ? 射数に合わせる(生, 射数, '')
+          : k === 'arrowLocations'
+            ? 射数に合わせる(生, 射数, null)
+            : 生;
       if (同じ値(a[k], 値)) continue;
       直す[k] = 値 === null ? undefined : 値;
       この射手が変わった = true;
@@ -577,6 +617,7 @@ module.exports = {
   差分を当てる,
   項目の差分,
   項目差分を当てる,
+  盤面を射数にそろえる,
   参加できるライブ,
   ライブの最終更新,
   ライブ名に使えない字,
