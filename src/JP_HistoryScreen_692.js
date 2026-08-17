@@ -37,6 +37,8 @@ var f = e(require('./default_218')),
   x = require('./IS_WEB_199');
 require('./module_420');
 var 案内 = require('./JP_TutorialGuide');
+// 「自分が写っているか」の判定。案内の見本を出すかどうかにも同じものを使う
+var { 自分の射手か, 自分の記録か } = require('./syncRules');
 var y = require('./JP_useScoreStore_174'),
   b = require('./JP_module_693'),
   p = require('./JP_ArcherColumnView_594'),
@@ -140,11 +142,10 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
           t = ee,
           o = B.find((e) => e.id === P) || null;
         if (o && 'member' === z && e) {
-          const n = (n) =>
-              n.memberId === e ||
-              (t && n.name === t) ||
-              (o.substitutionIds && Object.values(o.substitutionIds).includes(e)) ||
-              (t && o.substitutions && Object.values(o.substitutions).includes(t)),
+          // 判定は syncRules の 自分の射手か に出した。ここは交代の判定で
+          // 射手ではなく記録のほう(o)を見ていて、交代で入った自分を拾えず、
+          // すぐ下の mySessions とも食い違っていた
+          const n = (射手) => 自分の射手か(射手, e, t),
             l = o.archers.find(n);
           return Object.assign({}, o, {
             archers: o.archers.filter(n),
@@ -158,17 +159,7 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
         const t = D,
           o = ee;
         if ('member' === z && t) {
-          e = e.filter(
-            (e) =>
-              e.archers &&
-              e.archers.some(
-                (n) =>
-                  n.memberId === t ||
-                  (o && n.name === o) ||
-                  (n.substitutionIds && Object.values(n.substitutionIds).includes(t)) ||
-                  (o && n.substitutions && Object.values(n.substitutions).includes(o))
-              )
-          );
+          e = e.filter((記録) => 自分の記録か(記録, t, o));
         }
         return e;
       }, [B, z, D, ee]),

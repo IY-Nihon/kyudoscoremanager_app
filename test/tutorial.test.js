@@ -270,3 +270,39 @@ test('案内：すでに部員や記録があるときは「まだ無い」と�
   // 省略しても落ちない（空とみなす）
   assert.ok(全文('member').length > 0);
 });
+
+// 個人ログインの履歴・分析は「自分が写っている記録」だけを出す。
+// 案内の見本を出すかどうかも、その数で決めないと食い違う。
+// 団体に記録があっても、自分が1件も写っていなければ画面は空のままで、
+// 見本が出ないと「壊れている」ようにしか見えない
+test('見える記録数：個人ログインでは、自分が写っている記録だけ数える', () => {
+  const { 見える記録数 } = require('../src/syncRules');
+  const 記録 = (射手たち) => ({ id: 'x', archers: 射手たち });
+  const 一覧 = [
+    記録([{ id: 'a1', name: '他人', memberId: 'm-other' }]),
+    記録([{ id: 'a2', name: '別人', memberId: 'm-another' }]),
+  ];
+
+  assert.equal(
+    見える記録数({ sessions: 一覧, activeRole: 'group' }),
+    2,
+    '団体では全部数える'
+  );
+  assert.equal(
+    見える記録数({ sessions: 一覧, activeRole: 'member', myMemberId: 'm-me', myMemberName: '自分' }),
+    0,
+    '自分が写っていないのに数えている'
+  );
+
+  // 自分が写っていれば数える。氏名だけの一致でも、交代で入った場合でも
+  const 自分入り = [
+    ...一覧,
+    記録([{ id: 'a3', name: '自分', memberId: undefined }]),
+    記録([{ id: 'a4', name: '他人', memberId: 'm-other', substitutionIds: { 0: 'm-me' } }]),
+  ];
+  assert.equal(
+    見える記録数({ sessions: 自分入り, activeRole: 'member', myMemberId: 'm-me', myMemberName: '自分' }),
+    2,
+    '氏名の一致と交代のぶんが数えられていない'
+  );
+});
