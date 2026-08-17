@@ -977,6 +977,52 @@ test('ライブ中に盤面を片付けると、相手の画面からも消え�
 
   assert.equal(参.store.getState().archers.length, 0, '相手の画面に盤面が残っている');
 });
+// 画面は「lastResetHandled が変わったら知らせる。ただし
+// lastResetHandled === lastPushedTimestamp なら自分の操作なので出さない」
+// という作り。ここでは店の値だけを見る
+const 片付けを知らせるか = (store) => {
+  const s = store.getState();
+  return s.lastResetHandled > 0 && s.lastResetHandled !== s.lastPushedTimestamp;
+};
+
+test('参加して何もしていない人にも、片付けの知らせが出る', async () => {
+  // 参加者が一度も送信していないと lastResetHandled が 0 のままで、
+  // 「初めて受け取るリセット＝入る前のもの」と誤って扱われ、
+  // lastPushedTimestamp に reset_at と同じ値が入って知らせが消えていた
+  const 主 = 端末();
+  主.store.setState({ archers: [射手({ marks: ['○', '×', '', ''] })] });
+  await 主.store.getState().startLiveSync(ライブ名);
+  await 待つ(10);
+
+  const 参 = 端末(主.ライブ);
+  参.store.getState().joinLiveSync(ライブ名);
+  await 待つ(20);
+  assert.equal(参.store.getState().archers[0].marks[0], '○', '前提：届いている');
+
+  // 参加者は何も操作しないまま、主催者が片付ける
+  主.store.getState().resetCurrentSession(!0);
+  await 待つ(50);
+
+  assert.equal(片付けを知らせるか(参.store), true, '何もしていない人に知らせが出ない');
+  assert.equal(片付けを知らせるか(主.store), false, '押した本人にまで知らせが出る');
+});
+
+test('入る前に片付けられていた場合は、入った人に知らせを出さない', async () => {
+  // 入る前の出来事なので、参加した瞬間に「リセットしました」と出るのは誤り
+  const 主 = 端末();
+  主.store.setState({ archers: [射手({ marks: ['○', '×', '', ''] })] });
+  await 主.store.getState().startLiveSync(ライブ名);
+  await 待つ(10);
+  主.store.getState().resetCurrentSession(!0);
+  await 待つ(20);
+
+  const 参 = 端末(主.ライブ);
+  参.store.getState().joinLiveSync(ライブ名);
+  await 待つ(30);
+
+  assert.equal(片付けを知らせるか(参.store), false, '入る前の片付けまで知らせている');
+});
+
 test('参加者が抜けて入り直しても、○×が見える', async () => {
   // 主催者は startLiveSync を通す。setState でライブ中の印を立てるだけでは
   // サーバーに盤面が一度も載らず、参加者は空の節点を掴む

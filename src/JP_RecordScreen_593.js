@@ -306,26 +306,9 @@ const k = () => {
                     !1,
                   ],
                 }),
-                ie || ne
-                  ? (0, A.jsxs)(l.default, {
-                      style: [W.groupBadge, m.IS_WEB && W.groupBadgeWeb],
-                      children: [
-                        (0, A.jsx)(p.Ionicons, {
-                          name: 'business',
-                          size: 10,
-                          color: m.IS_WEB ? '#007AFF' : '#8E8E93',
-                          style: { marginRight: 2 },
-                        }),
-                        (0, A.jsx)(a.default, {
-                          style: [
-                            { fontSize: 10, fontWeight: 'bold' },
-                            { color: m.IS_WEB ? '#007AFF' : '#8E8E93' },
-                          ],
-                          children: String(ie || ne),
-                        }),
-                      ],
-                    })
-                  : null,
+                // 団体IDはここに出さない。細い画面でヘッダーが2段になり、
+                // 記録表の見える範囲を削っていた。記録中に見るものでもないので
+                // 設定タブへ譲る（設定の先頭に出ている）
               ],
             }),
             (0, A.jsxs)(l.default, {
@@ -391,14 +374,16 @@ const k = () => {
                     }),
                   ],
                 }),
-                // 表示の大きさ。％だけでは何の割合か分からないので、
-                // 押した先のダイアログと同じ言葉を見出しにして上に置く
+                // ％だけでは何の割合か分からないので、見出しを上に置く。
+                // ここは「表示」と短くする。細い画面ではヘッダーが2段になり、
+                // 記録表の見える範囲を削っていた。押した先のダイアログには
+                // 場所があるので、そちらは「表示の大きさ」のままにしてある
                 (0, A.jsxs)(h.default, {
                   ref: 案内の拡大,
                   onPress: () => 拡大を選ぶ(!0),
                   style: W.zoomToggle,
                   children: [
-                    (0, A.jsx)(a.default, { style: W.zoomLabel, children: '表示の大きさ' }),
+                    (0, A.jsx)(a.default, { style: W.zoomLabel, children: '表示' }),
                     (0, A.jsxs)(l.default, {
                       style: W.zoomValue,
                       children: [
