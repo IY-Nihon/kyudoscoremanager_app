@@ -1522,7 +1522,10 @@ const k = () => {
             store.historyStack &&
               store.historyStack.length >= 0 &&
               x.useScoreStore.setState({
-                historyStack: [...store.historyStack, { archers: [...k], activeSessionID: e }],
+                // 履歴には射手の一覧をそのまま積む（店の中の積み方と同じ）。
+                // ここだけ { archers, activeSessionID } という形で積んでいたため、
+                // 取り込んだ直後に取り消しを押すと盤面が空になっていた
+                historyStack: [...store.historyStack, [...k]],
                 redoStack: [],
               });
             // 読み取った○×は「いま入れたもの」として扱う。
