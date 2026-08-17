@@ -400,6 +400,72 @@ const 射数に合わせる = (値, 長さ, 埋め) => {
 };
 
 /**
+ * 前後の盤面が「射数だけ変わった」ものかを見る。違えば null。
+ *
+ * 射数の変更は○×の数が変わるので、ますごとの差分にも項目ごとの差分にも
+ * できない。かといって盤面まるごとで戻すと、射数を変えたあとに相手が入れた
+ * ○×まで消える。ここで拾えば、長さの伸び縮みだけを戻せる。
+ *
+ * 条件は「同じ射手が同じ順に並び、○×以外は同じで、○×は頭から共通、
+ * 長さだけが全員そろって違う」。切り落とされた後ろの部分は射手ごとに控える。
+ */
+function 射数の差分(前, 後) {
+  const a = Array.isArray(前) ? 前 : null;
+  const b = Array.isArray(後) ? 後 : null;
+  if (!a || !b || a.length !== b.length) return null;
+  let 前の数 = null;
+  let 後の数 = null;
+  const 切った = {};
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i];
+    const y = b[i];
+    if (!x || !y || !x.id || x.id !== y.id) return null;
+    if (!印以外が同じ(x, y)) return null;
+    if (x.isSeparator) continue;
+    const p = Array.isArray(x.marks) ? x.marks : null;
+    const q = Array.isArray(y.marks) ? y.marks : null;
+    if (!p || !q || p.length === q.length) return null;
+    const 短いほう = Math.min(p.length, q.length);
+    for (let j = 0; j < 短いほう; j++) {
+      if ((p[j] == null ? '' : p[j]) !== (q[j] == null ? '' : q[j])) return null;
+    }
+    if (前の数 === null) ((前の数 = p.length), (後の数 = q.length));
+    else if (前の数 !== p.length || 後の数 !== q.length) return null;
+    切った[y.id] = p.length > q.length ? p.slice(q.length).map((m) => (m == null ? '' : m)) : [];
+  }
+  if (前の数 === null) return null;
+  return { 前: 前の数, 後: 後の数, 切った };
+}
+
+/**
+ * 「射数だけ変わった」控えを、いまの盤面に当てる。
+ * 向きが -1 なら前の射数へ、+1 なら後の射数へ。
+ * 頭のますには触らないので、相手が入れた○×は残る。
+ * 返り値の本数を、そのまま shotsPerRound にする。
+ */
+function 射数差を当てる(いまの一覧, 差, 向き) {
+  const 目標 = 向き < 0 ? 差 && 差.前 : 差 && 差.後;
+  if (typeof 目標 !== 'number') return { archers: いまの一覧, 本数: null };
+  const 控え = (差 && 差.切った) || {};
+  const archers = (Array.isArray(いまの一覧) ? いまの一覧 : []).map((a) => {
+    if (!a || a.isSeparator || !Array.isArray(a.marks)) return a;
+    if (a.marks.length === 目標) return a;
+    let marks;
+    if (a.marks.length > 目標) marks = a.marks.slice(0, 目標);
+    else {
+      const 尻尾 = 控え[a.id] || [];
+      marks = [...a.marks];
+      for (let i = a.marks.length; i < 目標; i++) {
+        const m = 尻尾[i - a.marks.length];
+        marks.push(m == null ? '' : m);
+      }
+    }
+    return Object.assign({}, a, { marks });
+  });
+  return { archers, 本数: 目標 };
+}
+
+/**
  * 盤面まるごとを、いまの射数にそろえる。取り消し・やり直しで使う。
  *
  * 射数の変更は履歴に積まれないので、「8射で入れる → 4射に減らす →
@@ -617,6 +683,8 @@ module.exports = {
   差分を当てる,
   項目の差分,
   項目差分を当てる,
+  射数の差分,
+  射数差を当てる,
   盤面を射数にそろえる,
   参加できるライブ,
   ライブの最終更新,
