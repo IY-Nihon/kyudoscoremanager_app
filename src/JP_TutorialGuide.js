@@ -46,6 +46,7 @@ const {
   手が出せない: 手が出せないか,
   見本の中身を作る,
 } = require('./tutorialSteps');
+const { 見える記録数 } = require('./syncRules');
 
 // 案内の版。手順を作り直したら上げる。上げると、一度見た人にもまた出る
 const TUTORIAL_VERSION = '2026-08-13-01';
@@ -376,7 +377,10 @@ const TutorialOverlay = ({ navRef }) => {
   // 「まだ1人も登録されていません」のような案内は、実際に空のときだけ出す。
   // あとから設定の「使い方を見る」で開いた人には、事実と違って見えてしまう
   const 部員数 = useScoreStore((s) => (Array.isArray(s.members) ? s.members.length : 0));
-  const 記録数 = useScoreStore((s) => (Array.isArray(s.sessions) ? s.sessions.length : 0));
+  // 素の件数ではなく「その人に見える件数」で数える。端末には団体ぜんぶの
+  // 記録が入っているので、素の件数だと個人ログインのときに
+  // 「記録はあるが自分のは1件も無い」場合でも見本を出さず、空の画面が残る
+  const 記録数 = useScoreStore((s) => 見える記録数(s));
   const { 基本, 続き } = React.useMemo(
     () => 手順を作る(役割, { 部員数, 記録数 }),
     [役割, 部員数, 記録数]
