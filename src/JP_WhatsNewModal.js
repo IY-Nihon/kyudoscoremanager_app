@@ -28,10 +28,28 @@ const { getShadowStyle } = require('./module_592');
 // ─────────────────────────────────────────
 const NOTICE_VERSION = '2026-08-18-02';
 const STORAGE_KEY = 'whatsNewDismissedVersion';
+// 最後に開いたときの版。閉じるたびに書く。
+// どこから下が「前に読んだぶん」かの線を引くためだけに使う。
+// 自動で出すかどうかは STORAGE_KEY のほうで決めるので、混ぜない
+//（あちらは「次のお知らせが来るまで表示しない」を選んだときだけ書く）
+const LAST_SEEN_KEY = 'whatsNewLastSeenVersion';
 
+// 新しい順に並べる。上から「前に見た版より新しいか」を数えて、
+// そこで線を引くため、順番が崩れると線の位置が狂う（検査で見ている）
 const NOTICE_ITEMS = [
   {
     date: '2026/08/18',
+    版: '2026-08-18-02',
+    title: '保存のときの出欠確認を、出さないようにもできます',
+    points: [
+      '「終了・保存」を押すと出る出欠の確認は、設定の「保存のしかた」から切れるようになりました。',
+      '切ると、そのまま保存の画面へ進みます。記録に名前が出ている人は、出欠画面でこれまでどおり出席として数えられます。',
+      'ただし遅刻・早退の区別は付かなくなります。あとから直すときは、管理者モードで履歴の詳細から出欠を編集できます。',
+    ],
+  },
+  {
+    date: '2026/08/18',
+    版: '2026-08-18-01',
     title: '誤タップ防止の鍵を追加しました',
     points: [
       '○×を入れて3秒たつと、そのマスは薄い灰色になり、押しても変わらなくなります。記録中に手や袖が当たって、入れた○×が消えてしまうのを防ぐためです。',
@@ -42,6 +60,7 @@ const NOTICE_ITEMS = [
   },
   {
     date: '2026/08/18',
+    版: '2026-08-18-01',
     title: '使い方の案内を追加しました',
     points: [
       '初めて使う方に、射手の追加から○×の入力、保存までを画面の上で順に案内するようにしました。',
@@ -50,6 +69,7 @@ const NOTICE_ITEMS = [
   },
   {
     date: '2026/08/18',
+    版: '2026-08-18-01',
     title: '記録画面の「＋ −」と表示の大きさを分かりやすくしました',
     points: [
       '「＋ −」は立ちの増減になりました。1立（4射）ずつ増やしたり減らしたりできます。真ん中の「8射」を押せば、これまでどおり一覧からも選べます。',
@@ -59,15 +79,7 @@ const NOTICE_ITEMS = [
   },
   {
     date: '2026/08/18',
-    title: '保存のときの出欠確認を、出さないようにもできます',
-    points: [
-      '「終了・保存」を押すと出る出欠の確認は、設定の「保存のしかた」から切れるようになりました。',
-      '切ると、そのまま保存の画面へ進みます。記録に名前が出ている人は、出欠画面でこれまでどおり出席として数えられます。',
-      'ただし遅刻・早退の区別は付かなくなります。あとから直すときは、管理者モードで履歴の詳細から出欠を編集できます。',
-    ],
-  },
-  {
-    date: '2026/08/18',
+    版: '2026-08-18-01',
     title: 'ライブ記録を使いやすくしました',
     points: [
       'ライブ記録の名前に「/」などが使えてしまい、その場合に誰も参加できないライブができてしまう不具合を修正しました。使えない文字を入力すると、その場でお知らせします。',
@@ -78,11 +90,13 @@ const NOTICE_ITEMS = [
   },
   {
     date: '2026/08/18',
+    版: '2026-08-18-01',
     title: '',
     points: ['不具合の修正やセキュリティの強化など、その他諸々の修正を行いました。'],
   },
   {
     date: '2026/08/06',
+    版: '2026-08-06-01',
     title: '',
     points: ['不具合の修正やセキュリティの強化など、その他諸々の修正を行いました。'],
   },
@@ -154,10 +168,28 @@ const NOTICE_ITEMS = [
 // この目印が無いと閉じたお知らせが切り替えのたびに出てきてしまう。
 let shownThisSession = false;
 
+/**
+ * 前に開いたときより後に足した項目の数。
+ *
+ * 版は '2026-08-18-02' の形なので、そのまま文字として比べれば新しい順になる。
+ * 版を持たない古い項目は「前からあったもの」として扱う。
+ * 一度も開いていない人（最後に見た版が無い）は、全部が新しい。
+ */
+function 未読の数(最後に見た版) {
+  let n = 0;
+  for (const 項目 of NOTICE_ITEMS) {
+    if (!項目.版) break;
+    if (最後に見た版 && !(項目.版 > 最後に見た版)) break;
+    n++;
+  }
+  return n;
+}
+
 const WhatsNewModal = () => {
   const [visible, setVisible] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [checkedStorage, setCheckedStorage] = useState(false);
+  const [未読, set未読] = useState(0);
 
   useEffect(() => {
     if (shownThisSession) {
@@ -181,6 +213,8 @@ const WhatsNewModal = () => {
         }
         const dismissedVersion = await AsyncStorage.getItem(STORAGE_KEY);
         if (dismissedVersion !== NOTICE_VERSION) {
+          // どこから下が前に読んだぶんか、線を引くために数えておく
+          set未読(未読の数(await AsyncStorage.getItem(LAST_SEEN_KEY)));
           shownThisSession = true;
           setVisible(true);
         }
@@ -197,6 +231,13 @@ const WhatsNewModal = () => {
 
   const handleClose = async () => {
     setVisible(false);
+    try {
+      // 開いた時点までを「読んだ」ことにする。閉じ方によらず必ず書く。
+      // 次に開いたとき、ここから上が新しいぶんになる
+      await AsyncStorage.setItem(LAST_SEEN_KEY, NOTICE_VERSION);
+    } catch (e) {
+      console.error('[WhatsNewModal] Failed to save last seen:', e);
+    }
     if (dontShowAgain) {
       try {
         await AsyncStorage.setItem(STORAGE_KEY, NOTICE_VERSION);
@@ -226,16 +267,27 @@ const WhatsNewModal = () => {
 
           <_ScrollView style={styles.body} contentContainerStyle={{ padding: 16 }}>
             {NOTICE_ITEMS.map((section, idx) => (
-              <_View key={idx} style={styles.section}>
-                <_Text style={styles.sectionDate}>{section.date}</_Text>
-                {!!section.title && <_Text style={styles.sectionTitle}>{section.title}</_Text>}
-                {section.points.map((p, pIdx) => (
-                  <_View key={pIdx} style={styles.pointRow}>
-                    <_Text style={styles.pointBullet}>・</_Text>
-                    <_Text style={[styles.pointText, section.boldPoints && styles.pointTextBold]}>{p}</_Text>
+              <React.Fragment key={idx}>
+                {/* 前に開いたとき以降に足したぶんと、それより前との境目。
+                    新しいものが上に並ぶので、この線から下は読んだことがある */}
+                {未読 > 0 && idx === 未読 && (
+                  <_View style={styles.読んだ境目}>
+                    <_View style={styles.読んだ線} />
+                    <_Text style={styles.読んだ文字}>ここから下は前回までのお知らせ</_Text>
+                    <_View style={styles.読んだ線} />
                   </_View>
-                ))}
-              </_View>
+                )}
+                <_View style={styles.section}>
+                  <_Text style={styles.sectionDate}>{section.date}</_Text>
+                  {!!section.title && <_Text style={styles.sectionTitle}>{section.title}</_Text>}
+                  {section.points.map((p, pIdx) => (
+                    <_View key={pIdx} style={styles.pointRow}>
+                      <_Text style={styles.pointBullet}>・</_Text>
+                      <_Text style={[styles.pointText, section.boldPoints && styles.pointTextBold]}>{p}</_Text>
+                    </_View>
+                  ))}
+                </_View>
+              </React.Fragment>
             ))}
           </_ScrollView>
 
@@ -281,6 +333,10 @@ const styles = _StyleSheet.create({
   pointBullet: { fontSize: 13, color: '#007AFF', marginRight: 4 },
   pointText: { fontSize: 13, color: '#3C3C43', flex: 1, lineHeight: 19 },
   pointTextBold: { fontWeight: 'bold', color: '#1C1C1E' },
+  // 「ここから下は前回までのお知らせ」の線。左右に細い線を渡し、間に字を置く
+  読んだ境目: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, marginTop: 4 },
+  読んだ線: { flex: 1, height: 1, backgroundColor: '#E5E5EA' },
+  読んだ文字: { fontSize: 11, color: '#8E8E93', marginHorizontal: 8 },
   footer: { padding: 16, borderTopWidth: 1, borderTopColor: '#EEE' },
   checkboxRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   checkbox: {
