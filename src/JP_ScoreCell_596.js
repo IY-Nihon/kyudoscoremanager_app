@@ -117,10 +117,15 @@ const h = t.default.memo(
       // 履歴の編集画面は onToggle を渡してくる。あちらは直しに来ている画面なので、
       // 同じ射手・同じ射番の鍵（記録側で付いたもの）を持ち込まない
       const 鍵をかける板 = !I;
+      // 「計」と「間隔」の列は、数字や区切りを出すだけで○×を入れる場所ではない。
+      // ここを普通のますとして扱うと、押しただけで見えない○が入り（hideMark が
+      // 立っているので画面には出ない）、3秒後に灰色になる
+      const 印を入れる列 = 'total' !== C && 'separator' !== C;
       // 空のますは閉じない（これから入れるところなので）。
       // 手元に入れた覚えが無い○×は、読み込み直後かライブで届いたもの。
       // どちらも「もう入れ終わったます」なので、初めから閉じておく
-      const 自動で閉じている = 鍵をかける板 && 自動ロックする && !!(l ?? '') && (経った || !入れた);
+      const 自動で閉じている =
+        印を入れる列 && 鍵をかける板 && 自動ロックする && !!(l ?? '') && (経った || !入れた);
       const 閉じている = p || 自動で閉じている;
       const setActiveArrowLocationEdit = (0, d.useScoreStore)((e) => e.setActiveArrowLocationEdit);
       const updateArrowLocation = (0, d.useScoreStore)((e) => e.updateArrowLocation);
@@ -226,6 +231,9 @@ const h = t.default.memo(
         };
       }, []);
       const handlePress = () => {
+        // 「計」と「間隔」の列には○×を入れない。押しても何もしない。
+        // 鍵の印はこの上に別に重ねてあるので、そちらは今までどおり押せる
+        if (!印を入れる列) return;
         // 閉じているますは押しても変わらない。長押しで開けてもらう
         if (閉じている) return;
         if (isLongPressedRef.current) {
