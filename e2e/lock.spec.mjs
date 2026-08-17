@@ -1,6 +1,11 @@
 // 誤タップ防止（自動ロック）の確かめ。
 // 入れて3秒たつと押しても変わらず、長押しするとそのますだけ開く。
 import { test, expect } from '@playwright/test';
+import fs from 'node:fs';
+
+// お知らせの版は本体から読む。版が上がっても検査を直さずに済む。
+// 案内だけ止めるとお知らせが出て画面を覆うため、両方まとめて止める
+const お知らせの版 = (fs.readFileSync('src/JP_WhatsNewModal.js', 'utf8').match(/NOTICE_VERSION = '([^']+)'/) || [])[1];
 
 // ライブの検査（100006）とは別の団体を使う。混ざる余地をなくすため。
 // メンバーのいる団体にする。0人の団体だと射手を足すたびにゲストが残る。
@@ -72,7 +77,12 @@ async function 入る(page) {
     await page.waitForTimeout(9000);
   }
   // 使い方の案内は別のテストで見る。ここでは邪魔なので出さない
-  await page.evaluate(() => localStorage.setItem('tutorialDoneVersion', '2026-08-13-01'));
+  await page.evaluate((版) => {
+    // 案内もお知らせも、ここでは邪魔なので出さない。
+    // お知らせは『案内を終えた人』に出る作りなので、案内だけ止めると出てくる
+    localStorage.setItem('tutorialDoneVersion', '2026-08-13-01');
+    localStorage.setItem('whatsNewDismissedVersion', 版);
+  }, お知らせの版);
   await page.reload();
   await page.waitForTimeout(4000);
 
