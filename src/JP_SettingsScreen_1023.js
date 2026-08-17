@@ -132,6 +132,8 @@ const w = () => {
         isAdminMode: G,
         自動ロックする: 自動ロックする,
         set自動ロックする: set自動ロックする,
+        保存時に出欠を確認する: 保存時に出欠を確認する = !0,
+        set保存時に出欠を確認する: set保存時に出欠を確認する,
         setAdminMode: Y,
         verifyGroupPassword: J,
         tagTemplates: q = [],
@@ -1038,6 +1040,44 @@ const w = () => {
                   (0, T.jsx)(c.default, {
                     value: 自動ロックする,
                     onValueChange: set自動ロックする,
+                    trackColor: { false: '#D1D1D6', true: '#34C759' },
+                  }),
+                ],
+              })
+            ),
+            Ye(
+              '保存のしかた',
+              (0, T.jsxs)(o.default, {
+                style: D.item,
+                children: [
+                  (0, T.jsxs)(o.default, {
+                    style: [D.itemLeft, { flex: 1 }],
+                    children: [
+                      (0, T.jsx)(p.Ionicons, {
+                        name: 'checkbox-outline',
+                        size: 22,
+                        color: '#34C759',
+                        style: D.itemIcon,
+                      }),
+                      (0, T.jsxs)(o.default, {
+                        style: { flex: 1, paddingRight: 8 },
+                        children: [
+                          (0, T.jsx)(n.default, {
+                            style: D.itemText,
+                            children: '保存のときに出欠を確認する',
+                          }),
+                          (0, T.jsx)(n.default, {
+                            style: { fontSize: 11, color: '#8E8E93', marginTop: 2 },
+                            children:
+                              '「終了・保存」を押したときに出欠の確認を出します。切ると、そのまま保存の画面へ進みます。記録に出ている人は出欠画面で出席として数えられますが、遅刻・早退の区別は付かなくなります',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  (0, T.jsx)(c.default, {
+                    value: 保存時に出欠を確認する,
+                    onValueChange: set保存時に出欠を確認する,
                     trackColor: { false: '#D1D1D6', true: '#34C759' },
                   }),
                 ],

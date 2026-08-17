@@ -120,6 +120,10 @@ const k = () => {
         publicGroupId: ie,
         activeArrowLocationEdit,
         setActiveArrowLocationEdit,
+        // 「終了・保存」で出欠確認を出すか（設定で切れる）
+        保存時に出欠を確認する = !0,
+        // 長押しでますを開けた時刻。知らせを出す合図
+        鍵を開けた時刻 = 0,
       } = (0, x.useScoreStore)(),
       se = 'number' == typeof q && !isNaN(q) && q > 0 ? q : 1;
     if (!re) return null;
@@ -133,6 +137,7 @@ const k = () => {
       [警告を閉じた, 警告を閉じる] = (0, t.useState)(!1),
       Se = o.default.useRef(0),
       共有履歴を出した = o.default.useRef(0),
+      鍵の知らせを出した = o.default.useRef(0),
       // 使い方の案内が指す先
       案内の人ボタン = 案内.useTutorialTarget('記録.人'),
       案内の記録表 = 案内.useTutorialTarget('記録.表'),
@@ -188,6 +193,15 @@ const k = () => {
             j.notificationAsync(j.NotificationFeedbackType.Warning));
         }
       }, [共有履歴の知らせ, 共有履歴の種類]),
+      // 長押しでますを開けたら短く知らせる。
+      // 灰色が戻るだけでは、押さえが届いたのか分かりにくい
+      o.default.useEffect(() => {
+        if (鍵を開けた時刻 > 0 && 鍵の知らせを出した.current < 鍵を開けた時刻) {
+          ((鍵の知らせを出した.current = 鍵を開けた時刻),
+            Ge('このマスの鍵を開けました'),
+            j.notificationAsync(j.NotificationFeedbackType.Success));
+        }
+      }, [鍵を開けた時刻]),
       o.default.useEffect(() => {
         x.useScoreStore.getState().loadData();
       }, []),
@@ -1271,7 +1285,12 @@ const k = () => {
                   e && m.IS_WEB && { opacity: 0.9, transform: [{ scale: 1.02 }] },
                 ],
                 onPress: () => {
-                  0 !== k.length && setShowAttendance(!0);
+                  if (0 === k.length) return;
+                  // 設定で出欠確認を切っていれば、窓を飛ばして保存へ進む。
+                  // 出欠は空のまま保存する。記録に出ている人は出欠画面で
+                  // そのまま出席として数えられる（遅刻・早退の区別は付かない）
+                  if (保存時に出欠を確認する) setShowAttendance(!0);
+                  else (setTempAttendance(null), xe(!0));
                 },
                 children: (0, A.jsx)(a.default, { style: W.saveBtnText, children: '終了・保存' }),
               }),
