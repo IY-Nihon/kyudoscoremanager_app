@@ -1075,3 +1075,26 @@ test('3台で形が変わる操作をしても、取り消しは相手の○×�
   assert.equal(見る('a2').marks[0], '○', 'B の○が消えた');
   assert.equal(見る('a3').marks[0], '○', 'C の○が消えた');
 });
+
+test('取り消し：控えの射数は「計」の列から読まない', () => {
+  // 本番の記録には、射数12なのに「計」の列だけ○×が20個あるものが実在する。
+  // 控えの射数を先頭の非区切りから読むと、盤面の先頭が「計」のときに
+  // その長さを射数だと思い込み、取り消しで射数が化ける
+  const { store } = ストアを用意する();
+  const マス = (n) => Array(n).fill('');
+  store.setState({
+    isHydrated: true,
+    shotsPerRound: 4,
+    archers: [
+      { id: 't1', name: '計', isTotalCalculator: true, marks: マス(20), lockedBlocks: {}, lastModified: 1 },
+      { id: 'a1', name: '山田', marks: ['○', '', '', ''], lockedBlocks: {}, lastModified: 1 },
+    ],
+    historyStack: [],
+    redoStack: [],
+  });
+  // 何か一手を積む
+  store.getState().toggleMark('a1', 1);
+  store.getState().undo();
+
+  assert.equal(store.getState().shotsPerRound, 4, '「計」の○×の数を射数と取り違えた');
+});
