@@ -4,7 +4,12 @@ $ErrorActionPreference = 'Stop'
 Set-Location (Split-Path -Parent $PSScriptRoot)
 
 $indexPath = 'dist/index.html'
-$html = Get-Content $indexPath -Raw
+# -Encoding UTF8 が要る。Windows PowerShell 5.1 の Get-Content は既定で
+# システムのANSI（日本語環境なら Shift_JIS）として読むため、index.html に
+# 入っている日本語が化ける。書き戻しは UTF-8 なので、化けたまま保存される。
+# 以前は index.html の中が英数字だけ（title が RecordAppExpo）で表に出な
+# かったが、title を日本語にした時点で「蠑馴％險倬鹸繧｢繝励Μ」になった。
+$html = Get-Content $indexPath -Raw -Encoding UTF8
 
 $headInjection = @'
 <meta property="og:title" content="弓道的中管理アプリ"><meta property="og:image" content="https://kyudoscoremanager.web.app/kyudo_icon.png"><meta property="og:description" content="団体弓道の的中記録と出欠を管理するアプリです。">
