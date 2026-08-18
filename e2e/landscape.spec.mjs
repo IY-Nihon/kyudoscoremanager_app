@@ -320,3 +320,31 @@ test('下の帯：狭い画面でも、どのボタンも隣に覆われない',
   );
   expect(横か, '狭い画面で並べ方を押しても切り替わらない').toBe(true);
 });
+
+test('帯：上下の操作帯を畳めて、畳んでも画面は移れる', async ({ page }) => {
+  // 記録中は上の操作列と下の操作帯で124px使う。畳めば記録表が広がる。
+  // ただし画面を移る帯（記録/履歴/…）まで隠すと移動できなくなるので残す
+  await 入る(page);
+
+  const 見える = (文) =>
+    page.evaluate((x) => {
+      const e = [...document.querySelectorAll('div')].find(
+        (q) => q.children.length === 0 && (q.textContent || '').trim() === x
+      );
+      return !!e && e.getBoundingClientRect().height > 0;
+    }, 文);
+
+  expect(await 見える('リセット'), '前提：上の操作列が出ていない').toBe(true);
+  expect(await 見える('終了・保存'), '前提：下の操作帯が出ていない').toBe(true);
+
+  await page.getByTestId('帯の開け閉め').click();
+  await page.waitForTimeout(1000);
+  expect(await 見える('リセット'), '押しても上の帯が畳まれない').toBe(false);
+  expect(await 見える('終了・保存'), '押しても下の帯が畳まれない').toBe(false);
+  expect(await 見える('履歴'), '畳むと画面を移れなくなっている').toBe(true);
+
+  await page.getByTestId('帯の開け閉め').click();
+  await page.waitForTimeout(1000);
+  expect(await 見える('リセット'), '戻せない').toBe(true);
+  expect(await 見える('終了・保存'), '戻せない').toBe(true);
+});

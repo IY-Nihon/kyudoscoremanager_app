@@ -172,6 +172,9 @@ const k = () => {
       [showAttendance, setShowAttendance] = (0, t.useState)(!1),
       [tempAttendance, setTempAttendance] = (0, t.useState)(null),
       [showOCRModal, setShowOCRModal] = (0, t.useState)(!1),
+      // 上下の帯を畳んでいるか。記録表を広く使いたいときに畳む。
+      // 画面を移る帯（記録/履歴/…）はここでは隠さない（移動できなくなるため）
+      [帯を畳む, 帯を畳むを置く] = (0, t.useState)(!1),
       Ve = o.default.useRef(null),
       Ue = o.default.useRef(null),
       Ge = (e) => {
@@ -467,7 +470,9 @@ const k = () => {
               ],
             })
           : null,
-        (0, A.jsxs)(l.default, {
+        帯を畳む
+          ? null
+          : (0, A.jsxs)(l.default, {
           style: [W.navBar, { zIndex: 1e4 }],
           children: [
             (0, A.jsxs)(l.default, {
@@ -1342,7 +1347,9 @@ const k = () => {
               }),
           ],
         }),
-        (0, A.jsx)(l.default, {
+        帯を畳む
+          ? null
+          : (0, A.jsx)(l.default, {
           style: W.toolbar,
           children: (0, A.jsxs)(A.Fragment, {
             children: [
@@ -1721,6 +1728,19 @@ const k = () => {
               children: (0, A.jsx)(a.default, { style: W.feedbackText, children: Fe }),
             })
           : null,
+        (0, A.jsx)(f.default, {
+          onPress: () => {
+            (帯を畳むを置く(!帯を畳む), j.impactAsync(j.ImpactFeedbackStyle.Light));
+          },
+          testID: '帯の開け閉め',
+          hitSlop: { top: 10, bottom: 10, left: 10, right: 10 },
+          style: ({ hovered: e }) => [W.帯の取っ手, e && m.IS_WEB && { opacity: 0.85 }],
+          children: (0, A.jsx)(p.Ionicons, {
+            name: 帯を畳む ? 'chevron-up' : 'chevron-down',
+            size: 18,
+            color: '#8E8E93',
+          }),
+        }),
         (0, A.jsx)(OCRRecordModal, {
           visible: showOCRModal,
           onClose: () => setShowOCRModal(!1),
@@ -1941,6 +1961,21 @@ const k = () => {
     }),
     emptyTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
     emptyHint: { fontSize: 14, color: '#8E8E93' },
+    // 帯を畳む取っ手。畳んでいても押せるように浮かせる
+    帯の取っ手: {
+      position: 'absolute',
+      right: 8,
+      bottom: 8,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: 'rgba(242,242,247,0.95)',
+      borderWidth: s.default.hairlineWidth,
+      borderColor: '#C6C6C8',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1e4,
+    },
     toolbar: {
       height: m.IS_WEB ? 70 : 80,
       backgroundColor: '#FFF',
