@@ -140,7 +140,9 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
                           }),
                           (0, p.jsx)(s.default, {
                             style: y.inputShot,
-                            placeholder: `番号 (1〜${上限})`,
+                            // 幅100pxの欄に「番号 (1〜2)」は入り切らず、閉じ括弧が切れていた。
+                            // 何の番号かは左の見出しと下の案内で分かるので、ここは短くする
+                            placeholder: `1〜${上限}`,
                             keyboardType: 'number-pad',
                             value: z,
                             onChangeText: R,

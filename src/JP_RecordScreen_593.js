@@ -276,10 +276,19 @@ const k = () => {
     const 名前の幅 = 100 * se,
       行の高さ = (射手) =>
         (射手 && 射手.isSeparator ? F.UIConfig.separatorWidth : F.UIConfig.cellHeight) * se,
+      // 案内が指す先。縦の足元と同じ決まりで、まだ名前の入っていない人を選ぶ
+      案内が指す順 = () => {
+        const 一覧 = (Array.isArray(k) ? k : []).filter((e) => !!e);
+        const 指す = 一覧.findIndex((a) => a && !a.name && !a.isSeparator && !a.isTotalCalculator);
+        return 指す < 0 ? 0 : 指す;
+      },
       横の名前セル = (射手, 順) =>
         (0, A.jsx)(
           l.default,
           {
+            ref: (node) => {
+              if (順 === 案内が指す順()) 案内.setTutorialTargetNode('記録.射手選択', node);
+            },
             style: {
               width: 名前の幅,
               height: 行の高さ(射手),

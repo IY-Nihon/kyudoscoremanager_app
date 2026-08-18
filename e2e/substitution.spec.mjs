@@ -71,7 +71,7 @@ test('途中交代：開くと立の単位になっていて、射目にも切�
 test('途中交代：2立目と入れると、5射目からの交代として書かれる', async ({ page }) => {
   await 交代の画面を開く(page);
 
-  const 番号欄 = page.getByPlaceholder(/番号 \(1〜/);
+  const 番号欄 = page.getByPlaceholder(/^1〜/);
   await 番号欄.click();
   await 番号欄.pressSequentially('2', { delay: 30 });
   await page.waitForTimeout(400);
@@ -99,7 +99,7 @@ test('途中交代：2立目と入れると、5射目からの交代として書
 test('途中交代：射数からはみ出す立の番号では確定できない', async ({ page }) => {
   await 交代の画面を開く(page);
 
-  const 番号欄 = page.getByPlaceholder(/番号 \(1〜/);
+  const 番号欄 = page.getByPlaceholder(/^1〜/);
   await 番号欄.click();
   await 番号欄.pressSequentially('9', { delay: 30 });
   await page.waitForTimeout(400);
