@@ -930,5 +930,10 @@ exports.TutorialOverlay = TutorialOverlay;
 exports.useTutorialTarget = useTutorialTarget;
 exports.setTutorialTargetNode = setTutorialTargetNode;
 exports.startTutorial = startTutorial;
+/** 案内が動いているか。画面側が「案内中は畳まない」などの判断に使う */
+function use案内中() {
+  return use案内((s) => s.進行中);
+}
+exports.use案内中 = use案内中;
 exports.見本を重ねる = 見本を重ねる;
 exports.TUTORIAL_VERSION = TUTORIAL_VERSION;

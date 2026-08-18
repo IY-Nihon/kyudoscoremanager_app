@@ -348,3 +348,31 @@ test('帯：上下の操作帯を畳めて、畳んでも画面は移れる', as
   expect(await 見える('リセット'), '戻せない').toBe(true);
   expect(await 見える('終了・保存'), '戻せない').toBe(true);
 });
+
+test('帯：畳んだまま案内を始めても、案内の指す先は出ている', async ({ page }) => {
+  // 案内が指す先（人・間隔・計・画像・保存・リセット・ライブ・射数・表示・
+  // 取り消し）は全部この帯の中にある。畳んだままだと指せないうえ、
+  // 「押してみましょう」の操作そのものができない
+  test.setTimeout(300_000);
+  await 入る(page);
+  await page.getByTestId('帯の開け閉め').click();
+  await page.waitForTimeout(1000);
+
+  await page.evaluate(() => {
+    localStorage.removeItem('tutorialDoneVersion');
+    localStorage.removeItem('tutorialBoardSnapshot');
+  });
+  await page.reload();
+  await expect(page.locator('text=ようこそ'), '案内が始まらない').toBeVisible({ timeout: 30_000 });
+
+  // 畳んでいても、案内の最中は帯が出ていること
+  const 見える = (文) =>
+    page.evaluate((x) => {
+      const e = [...document.querySelectorAll('div')].find(
+        (q) => q.children.length === 0 && (q.textContent || '').trim() === x
+      );
+      return !!e && e.getBoundingClientRect().height > 0;
+    }, 文);
+  expect(await 見える('リセット'), '案内中なのに上の帯が畳まれている').toBe(true);
+  expect(await 見える('終了・保存'), '案内中なのに下の帯が畳まれている').toBe(true);
+});

@@ -127,6 +127,9 @@ const k = () => {
         // 記録表の並べ方。真なら名前が左、○×が右へ伸びる
         横に並べる = !1,
         set横に並べる,
+        // 上下の帯を畳んでいるか。端末に残す（並べ方と同じ扱い）
+        帯を畳む: 畳む覚え = !1,
+        set帯を畳む,
       } = (0, x.useScoreStore)(),
       se = 'number' == typeof q && !isNaN(q) && q > 0 ? q : 1;
     if (!re) return null;
@@ -174,7 +177,7 @@ const k = () => {
       [showOCRModal, setShowOCRModal] = (0, t.useState)(!1),
       // 上下の帯を畳んでいるか。記録表を広く使いたいときに畳む。
       // 画面を移る帯（記録/履歴/…）はここでは隠さない（移動できなくなるため）
-      [帯を畳む, 帯を畳むを置く] = (0, t.useState)(!1),
+      _畳みは使わない = null,
       Ve = o.default.useRef(null),
       Ue = o.default.useRef(null),
       Ge = (e) => {
@@ -224,6 +227,12 @@ const k = () => {
         );
       }, [He, Re]));
     new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    // 案内の最中は畳まない。案内が指す先は全部この帯の中にあり、
+    // 畳んだままだと指せないうえ、押す操作そのものができない
+    // フックは必ず呼ぶ。&& の右に置くと、畳む・戻すでフックの数が変わり、
+    // React が描き直しに失敗して取っ手ごと消える（実際に消えていた）
+    const 案内中 = 案内.use案内中();
+    const 帯を畳む = 畳む覚え && !案内中;
     const $e = !1,
       qe = (e, t, o) => {
         j.impactAsync(j.ImpactFeedbackStyle.Medium);
@@ -1144,7 +1153,7 @@ const k = () => {
             // 無くても重ならない
             (0, A.jsx)(f.default, {
               onPress: () => {
-                (帯を畳むを置く(!帯を畳む), j.impactAsync(j.ImpactFeedbackStyle.Light));
+                (set帯を畳む && set帯を畳む(!畳む覚え), j.impactAsync(j.ImpactFeedbackStyle.Light));
               },
               testID: '帯の開け閉め',
               hitSlop: { top: 10, bottom: 10, left: 10, right: 10 },
@@ -1526,6 +1535,7 @@ const k = () => {
           }),
         }),
         (0, A.jsx)(S.ArcherActionModal, {
+          交代を消せる: !0,
           visible: de,
           archerId: ue || '',
           archerOrigIdx: he,
