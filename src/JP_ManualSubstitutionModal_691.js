@@ -31,7 +31,7 @@ var t = require('./module_37'),
   u = e(require('./default_382')),
   c = e(require('./default_385')),
   f = e(require('./default_406')),
-  g = e(require('./default_289')),
+  巻物 = e(require('./default_297')),
   m = require('./JP_useScoreStore_174'),
   h = require('./AntDesign_600'),
   b = require('./IS_WEB_199'),
@@ -127,58 +127,73 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
                       (0, p.jsx)(n.default, { style: y.headerBtn }),
                     ],
                   }),
-                  (0, p.jsxs)(n.default, {
+                  // 中身は窓ごと縦に流す。中に別々の流せる箱を置くと、細い画面で
+                  // 下の相手の一覧が0pxまで潰れ、部員が1人も見えなくなる
+                  (0, p.jsxs)(巻物.default, {
                     style: y.content,
+                    contentContainerStyle: y.中身,
+                    // 上の「交代するタイミング」は貼り付けたまま、下だけ流す。
+                    // 細い画面で相手の一覧が潰れるのを避けつつ、選んだ立目を見ながら探せる
+                    stickyHeaderIndices: [0],
+                    keyboardShouldPersistTaps: 'handled',
+                    showsVerticalScrollIndicator: !1,
                     children: [
-                      (0, p.jsx)(o.default, { style: y.sectionTitle, children: '交代するタイミング' }),
-                      (0, p.jsx)(n.default, {
-                        style: y.単位の列,
-                        children: ['立目', '射目'].map((名) =>
-                          (0, p.jsx)(
-                            u.default,
-                            {
-                              style: [y.単位ボタン, 名 === 単位 && y.単位ボタン選択中],
-                              onPress: () => {
-                                (単位を置く(名), R(''));
+                      (0, p.jsxs)(n.default, {
+                        style: y.貼り付け,
+                        children: [
+                        (0, p.jsx)(o.default, { style: y.sectionTitle, children: '交代するタイミング' }),
+                        (0, p.jsx)(n.default, {
+                          style: y.単位の列,
+                          children: ['立目', '射目'].map((名) =>
+                            (0, p.jsx)(
+                              u.default,
+                              {
+                                style: [y.単位ボタン, 名 === 単位 && y.単位ボタン選択中],
+                                onPress: () => {
+                                  (単位を置く(名), R(''));
+                                },
+                                children: (0, p.jsx)(o.default, {
+                                  style: [y.単位の字, 名 === 単位 && y.単位の字選択中],
+                                  children: 名,
+                                }),
                               },
-                              children: (0, p.jsx)(o.default, {
-                                style: [y.単位の字, 名 === 単位 && y.単位の字選択中],
-                                children: 名,
-                              }),
-                            },
-                            名
-                          )
-                        ),
-                      }),
-                      // 番号は打ち込まずに選ぶ。記録表で人を選ぶのと同じ並びにしてある
-                      (0, p.jsx)(g.default, {
-                        data: 番号たち,
-                        keyExtractor: (e) => String(e),
-                        style: y.番号の一覧,
-                        keyboardShouldPersistTaps: 'handled',
-                        renderItem: ({ item: e }) =>
-                          (0, p.jsxs)(u.default, {
-                            style: [y.番号の行, e === 選んだ && y.番号の行選択中],
-                            onPress: () => R(String(e)),
-                            children: [
-                              (0, p.jsxs)(o.default, {
-                                style: [y.番号の字, e === 選んだ && y.番号の字選択中],
-                                children: [e, 単位],
-                              }),
-                              e === 選んだ
-                                ? (0, p.jsx)(h.Ionicons, { name: 'checkmark', size: 20, color: '#007AFF' })
-                                : null,
-                            ],
-                          }),
-                      }),
-                      (0, p.jsx)(o.default, {
-                        style: y.案内,
-                        children:
-                          null === 何射目()
-                            ? '上から交代するところを選んでください'
-                            : 立か
-                              ? `${選んだ}立目（${何射目() + 1}射目）から交代します`
-                              : `${何射目() + 1}射目から交代します`,
+                              名
+                            )
+                          ),
+                        }),
+                        // 番号は打ち込まずに選ぶ。記録表で人を選ぶのと同じ並びにしてある
+                        (0, p.jsx)(n.default, {
+                          style: y.番号の一覧,
+                          children: 番号たち.map((e) =>
+                            (0, p.jsxs)(
+                              u.default,
+                              {
+                                style: [y.番号の行, e === 選んだ && y.番号の行選択中],
+                                onPress: () => R(String(e)),
+                                children: [
+                                  (0, p.jsxs)(o.default, {
+                                    style: [y.番号の字, e === 選んだ && y.番号の字選択中],
+                                    children: [e, 単位],
+                                  }),
+                                  e === 選んだ
+                                    ? (0, p.jsx)(h.Ionicons, { name: 'checkmark', size: 20, color: '#007AFF' })
+                                    : null,
+                                ],
+                              },
+                              String(e)
+                            )
+                          ),
+                        }),
+                        (0, p.jsx)(o.default, {
+                          style: y.案内,
+                          children:
+                            null === 何射目()
+                              ? '上から交代するところを選んでください'
+                              : 立か
+                                ? `${選んだ}立目（${何射目() + 1}射目）から交代します`
+                                : `${何射目() + 1}射目から交代します`,
+                        }),
+                        ],
                       }),
                       (0, p.jsx)(o.default, {
                         style: y.sectionTitle,
@@ -210,51 +225,56 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
                           }),
                         ],
                       }),
-                      (0, p.jsx)(g.default, {
-                        data: 学年ごと,
-                        keyExtractor: (e) => String(e.学年),
+                      (0, p.jsx)(n.default, {
                         style: y.list,
-                        keyboardShouldPersistTaps: 'handled',
-                        renderItem: ({ item: 組 }) =>
-                          (0, p.jsxs)(n.default, {
-                            children: [
-                              (0, p.jsxs)(u.default, {
-                                style: y.学年の見出し,
-                                onPress: () => 学年を開け閉め(String(組.学年)),
-                                children: [
-                                  (0, p.jsxs)(o.default, {
-                                    style: y.学年の字,
-                                    children: [組.題, ' (', 組.人たち.length, '人)'],
-                                  }),
-                                  (0, p.jsx)(h.Ionicons, {
-                                    name: 開いているか(組.学年) ? 'chevron-up' : 'chevron-down',
-                                    size: 16,
-                                    color: '#8E8E93',
-                                  }),
-                                ],
-                              }),
-                              ...(開いているか(組.学年) ? 組.人たち : []).map((e, 順) => {
-                                if (!e || !e.name || 'string' != typeof e.name) return null;
-                                const t = e.name.trim().split(/[\s\u3000]+/),
-                                   姓 = t && t.length > 0 ? t[0] || '' : '不明',
-                                   名前 = (t && t.length > 1 && t[1]) || '';
-                                return (0, p.jsxs)(
-                                  u.default,
-                                  {
-                                    style: y.memberItem,
-                                    onPress: () => {
-                                      A(e.name, e.id);
+                        children: 学年ごと.map((組) =>
+                          (0, p.jsxs)(
+                            n.default,
+                            {
+                              children: [
+                                (0, p.jsxs)(u.default, {
+                                  style: y.学年の見出し,
+                                  onPress: () => 学年を開け閉め(String(組.学年)),
+                                  children: [
+                                    (0, p.jsxs)(o.default, {
+                                      style: y.学年の字,
+                                      children: [組.題, ' (', 組.人たち.length, '人)'],
+                                    }),
+                                    (0, p.jsx)(h.Ionicons, {
+                                      name: 開いているか(組.学年) ? 'chevron-up' : 'chevron-down',
+                                      size: 16,
+                                      color: '#8E8E93',
+                                    }),
+                                  ],
+                                }),
+                                ...(開いているか(組.学年) ? 組.人たち : []).map((e, 順) => {
+                                  if (!e || !e.name || 'string' != typeof e.name) return null;
+                                  const t = e.name.trim().split(/[\s\u3000]+/),
+                                    姓 = t && t.length > 0 ? t[0] || '' : '不明',
+                                    名前 = (t && t.length > 1 && t[1]) || '';
+                                  return (0, p.jsxs)(
+                                    u.default,
+                                    {
+                                      style: y.memberItem,
+                                      onPress: () => {
+                                        A(e.name, e.id);
+                                      },
+                                      children: [
+                                        (0, p.jsxs)(o.default, {
+                                          style: y.memberName,
+                                          children: [姓, ' ', 名前],
+                                        }),
+                                        (0, p.jsx)(o.default, { style: y.memberSub, children: e.gender }),
+                                      ],
                                     },
-                                    children: [
-                                      (0, p.jsxs)(o.default, { style: y.memberName, children: [姓, ' ', 名前] }),
-                                      (0, p.jsx)(o.default, { style: y.memberSub, children: e.gender }),
-                                    ],
-                                  },
-                                  typeof e.id === 'string' ? e.id : `subst-${組.学年}-${順}-${e.name}`
-                                );
-                              }),
-                            ],
-                          }),
+                                    typeof e.id === 'string' ? e.id : `subst-${組.学年}-${順}-${e.name}`
+                                  );
+                                }),
+                              ],
+                            },
+                            String(組.学年)
+                          )
+                        ),
                       }),
                     ],
                   }),
@@ -271,8 +291,8 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
       backgroundColor: '#F2F2F7',
       borderTopLeftRadius: 16,
       borderTopRightRadius: 16,
-      height: '92%',
-      paddingBottom: 16,
+      height: '80%',
+      paddingBottom: 30,
     },
     header: {
       flexDirection: 'row',
@@ -289,27 +309,24 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
     headerTitle: { fontSize: 17, fontWeight: 'bold' },
     headerBtn: { width: 60 },
     headerBtnTxt: { fontSize: 17, color: '#007AFF' },
-    content: { flex: 1, paddingHorizontal: 16, paddingTop: 10 },
+    content: { flex: 1 },
+    中身: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8 },
+    // 貼り付ける側。流れる中身が下からのぞかないよう背景を敷く
+    貼り付け: { backgroundColor: '#F2F2F7', paddingBottom: 4 },
     sectionTitle: {
       fontSize: 13,
       color: '#8E8E93',
-      marginBottom: 6,
+      marginBottom: 8,
       marginLeft: 4,
       textTransform: 'uppercase',
     },
-    単位の列: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+    単位の列: { flexDirection: 'row', gap: 8, marginBottom: 10 },
     // 番号の一覧。人を選ぶ一覧（list / memberItem）と同じ見た目にそろえる
     // flexGrow: 0 が無いと、行が少なくても maxHeight ぶんの白い箱が残る。
     // flexShrink: 0 が無いと、細い画面（iPhone SE）で52pxまで潰れ、
     // 5立ぶんの一覧が1行しか見えなくなる。縮むのは下の相手の一覧に任せる
-    番号の一覧: {
-      backgroundColor: '#FFF',
-      borderRadius: 10,
-      maxHeight: 148,
-      flexGrow: 0,
-      flexShrink: 0,
-      marginBottom: 6,
-    },
+    // 窓ごと流すので、ここでは高さを縛らない
+    番号の一覧: { backgroundColor: '#FFF', borderRadius: 10, marginBottom: 6, overflow: 'hidden' },
     番号の行: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -346,14 +363,14 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
     単位ボタン選択中: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
     単位の字: { fontSize: 16, fontWeight: 'bold', color: '#007AFF' },
     単位の字選択中: { color: '#FFF' },
-    案内: { fontSize: 13, color: '#8E8E93', marginLeft: 4, marginBottom: 10 },
+    案内: { fontSize: 13, color: '#8E8E93', marginLeft: 4, marginBottom: 24 },
     searchBar: {
       backgroundColor: '#FFF',
       paddingHorizontal: 12,
       paddingVertical: 10,
       borderRadius: 10,
       fontSize: 16,
-      marginBottom: 8,
+      marginBottom: 12,
     },
     guestRow: {
       flexDirection: 'row',
@@ -362,7 +379,7 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
       paddingHorizontal: 12,
       paddingVertical: 10,
       borderRadius: 10,
-      marginBottom: 10,
+      marginBottom: 16,
       gap: 8,
     },
     guestInput: { flex: 1, fontSize: 16, color: '#000', height: 40 },
@@ -378,8 +395,7 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
     },
     confirmBtnDisabled: { backgroundColor: '#A2C8F2' },
     confirmTxt: { color: '#FFF', fontWeight: 'bold', fontSize: 15 },
-    // flex:1 で残りをもらう。上の段で使い切られないよう、窓を広げ余白を詰めてある
-    list: { backgroundColor: '#FFF', borderRadius: 10, flex: 1, marginBottom: 8 },
+    list: { backgroundColor: '#FFF', borderRadius: 10, marginBottom: 20, overflow: 'hidden' },
     memberItem: {
       flexDirection: 'row',
       justifyContent: 'space-between',
