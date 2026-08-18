@@ -62,7 +62,8 @@ const f = ({ shots: e, showFooter: i = !0, 横並び: 横 = !1 }) => {
                   ? {
                       width: n.UIConfig.cellWidth * s,
                       height: n.UIConfig.cellHeight * s,
-                      borderBottomWidth: 0,
+                      borderBottomWidth: 1.5,
+                      borderBottomColor: '#000',
                       borderRightWidth: 0,
                       borderLeftWidth: 1.5,
                       borderLeftColor: '#000',
@@ -91,6 +92,8 @@ const f = ({ shots: e, showFooter: i = !0, 横並び: 横 = !1 }) => {
                           height: n.UIConfig.cellHeight * s,
                           borderRightWidth: 切れ目 ? 2 : 1,
                           borderRightColor: '#000',
+                          borderBottomWidth: 1.5,
+                          borderBottomColor: '#000',
                         }
                       : {
                           height: n.UIConfig.cellHeight * s,

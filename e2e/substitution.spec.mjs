@@ -1,11 +1,13 @@
 /**
- * 途中交代の単位（立／射目）の検査。
+ * 途中交代の単位（立目／射目）の検査。
  *
  *   npx playwright test e2e/substitution.spec.mjs
  *
  * 交代は「その射目から後ろは別の人が引いた」という印で、
  * 記録表の合計の内訳と、履歴・分析の「自分の記録か」の判定に効く。
- * 単位を立にしても、しまわれる位置（何射目か）が同じであることを見る。
+ * 単位を立目にしても、しまわれる位置（何射目か）が同じであることを見る。
+ *
+ * 番号は打ち込まずに一覧から選ぶ（記録表で人を選ぶのと同じ形）。
  */
 import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
@@ -67,29 +69,33 @@ async function 交代の画面を開く(page) {
   await expect(page.getByText('途中交代の設定', { exact: true })).toBeVisible();
 }
 
-test('途中交代：開くと立の単位になっていて、射目にも切り替えられる', async ({ page }) => {
+test('途中交代：開くと立目の一覧が出て、射目にも切り替えられる', async ({ page }) => {
   await 交代の画面を開く(page);
 
-  // 既定は立。番号の呼び方も「立の番号」になる
-  await expect(page.getByText('立の番号', { exact: true }), '開いたときに立になっていない').toBeVisible();
-  await expect(page.getByText('射目番号', { exact: true })).toHaveCount(0);
+  // 既定は立目。8射なら 1立目・2立目 が選べる
+  await expect(page.getByText('1立目', { exact: true }), '開いたときに立目の一覧が無い').toBeVisible();
+  await expect(page.getByText('2立目', { exact: true })).toBeVisible();
+  await expect(page.getByText('3立目', { exact: true }), '8射なのに3立目が出ている').toHaveCount(0);
+  await expect(page.getByText('1射目', { exact: true }), '立目なのに射目の一覧が出ている').toHaveCount(0);
 
+  // 射目へ切り替えると、1射目から8射目まで選べる
   await page.getByText('射目', { exact: true }).click();
-  await page.waitForTimeout(400);
-  await expect(page.getByText('射目番号', { exact: true }), '射目へ切り替わらない').toBeVisible();
+  await page.waitForTimeout(600);
+  await expect(page.getByText('1射目', { exact: true }), '射目へ切り替わらない').toBeVisible();
+  await expect(page.getByText('8射目', { exact: true })).toBeVisible();
+  await expect(page.getByText('9射目', { exact: true }), '8射なのに9射目が出ている').toHaveCount(0);
 
-  await page.getByText('立', { exact: true }).first().click();
-  await page.waitForTimeout(400);
-  await expect(page.getByText('立の番号', { exact: true }), '立へ戻せない').toBeVisible();
+  // 立目へ戻せる
+  await page.getByText('立目', { exact: true }).click();
+  await page.waitForTimeout(600);
+  await expect(page.getByText('1立目', { exact: true }), '立目へ戻せない').toBeVisible();
 });
 
-test('途中交代：2立目と入れると、5射目からの交代として書かれる', async ({ page }) => {
+test('途中交代：2立目を選ぶと、5射目からの交代として書かれる', async ({ page }) => {
   await 交代の画面を開く(page);
 
-  const 番号欄 = page.getByPlaceholder(/^1〜/);
-  await 番号欄.click();
-  await 番号欄.pressSequentially('2', { delay: 30 });
-  await page.waitForTimeout(400);
+  await page.getByText('2立目', { exact: true }).click();
+  await page.waitForTimeout(600);
 
   // 何射目になるかを、決める前に見せる
   await expect(page.getByText('2立目（5射目）から交代します'), '案内が出ない').toBeVisible();
@@ -111,14 +117,33 @@ test('途中交代：2立目と入れると、5射目からの交代として書
   expect(位置, '2立目が5射目（位置4）としてしまわれていない').toEqual([4]);
 });
 
-test('途中交代：射数からはみ出す立の番号では確定できない', async ({ page }) => {
+test('途中交代：射目で選んだときも、その射目にしまわれる', async ({ page }) => {
   await 交代の画面を開く(page);
 
-  const 番号欄 = page.getByPlaceholder(/^1〜/);
-  await 番号欄.click();
-  await 番号欄.pressSequentially('9', { delay: 30 });
-  await page.waitForTimeout(400);
-  await expect(page.getByText(/で入れてください/), '範囲外だと分からない').toBeVisible();
+  await page.getByText('射目', { exact: true }).click();
+  await page.waitForTimeout(600);
+  await page.getByText('3射目', { exact: true }).click();
+  await page.waitForTimeout(600);
+  await expect(page.getByText('3射目から交代します'), '案内が出ない').toBeVisible();
+
+  const ゲスト欄 = page.getByPlaceholder('ゲスト名を入力');
+  await ゲスト欄.click();
+  await ゲスト欄.pressSequentially('交代次郎', { delay: 30 });
+  await page.getByText('確定', { exact: true }).click();
+  await page.waitForTimeout(1500);
+
+  const 位置 = await page.evaluate(() => {
+    const 状態 = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+    const 射手 = (状態.archers || []).find((a) => a && a.substitutions && Object.keys(a.substitutions).length > 0);
+    return 射手 ? Object.keys(射手.substitutions).map(Number) : [];
+  });
+  expect(位置, '3射目が位置2としてしまわれていない').toEqual([2]);
+});
+
+test('途中交代：どこで交代するかを選ぶまでは確定できない', async ({ page }) => {
+  await 交代の画面を開く(page);
+
+  await expect(page.getByText('上から交代するところを選んでください'), '選ぶ前の案内が出ない').toBeVisible();
 
   const ゲスト欄 = page.getByPlaceholder('ゲスト名を入力');
   await ゲスト欄.click();
@@ -127,5 +152,5 @@ test('途中交代：射数からはみ出す立の番号では確定できな�
   await page.waitForTimeout(1200);
 
   // 画面は閉じない（＝書かれていない）
-  await expect(page.getByText('途中交代の設定', { exact: true }), '範囲外なのに確定できてしまう').toBeVisible();
+  await expect(page.getByText('途中交代の設定', { exact: true }), '選ばずに確定できてしまう').toBeVisible();
 });
