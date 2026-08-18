@@ -436,3 +436,70 @@ test('ライブ：鍵の取り消しが、相手の○×を巻き込まない', 
   expect(残り[0], '取り消しで B の○まで消えた').toBe('○');
   expect(残り[1], 'A と B で見え方が違う').toBe('○');
 });
+
+test('ライブ：主催者が横・参加者が縦でも、○×は同じますに届く', async ({ browser }) => {
+  // 並べ方は端末ごとの好み。2台で違っていても、届く先は同じ射手・同じ射番の
+  // はずだが、横は ○× を並べる向きも線の向きも入れ替えている。
+  // 送るものは盤面そのものなので理屈では影響しないが、実物で確かめておく
+  test.setTimeout(300_000);
+  const ライブ名 = ライブ名を作る('yoko');
+  const 主 = await browser.newContext();
+  const 参 = await browser.newContext();
+  const A = await 主.newPage();
+  const B = await 参.newPage();
+
+  await 入る(A);
+  for (let i = 0; i < 2; i++) {
+    await A.getByText('人', { exact: true }).first().click();
+    await A.waitForTimeout(1200);
+  }
+  // 主催者だけ横に並べる
+  await A.getByTestId('並べ方').click();
+  await A.waitForTimeout(1200);
+
+  await A.getByText('ライブ', { exact: true }).first().click();
+  await A.waitForTimeout(1500);
+  await A.getByText('ライブ記録を開始', { exact: true }).click();
+  await A.waitForTimeout(1500);
+  const 名欄 = A.getByPlaceholder('session_name_123');
+  await 名欄.click();
+  await 名欄.pressSequentially(ライブ名, { delay: 20 });
+  await A.getByText('決定', { exact: true }).click();
+  await A.waitForTimeout(8000);
+  await expect(A.getByText(new RegExp('ライブ中')), '横のままだとライブに入れない').toBeVisible();
+
+  await 入る(B);
+  await B.getByText('ライブ', { exact: true }).first().click();
+  await B.waitForTimeout(1500);
+  await B.getByText('ライブ記録に参加', { exact: true }).click();
+  await B.waitForTimeout(3000);
+  await B.getByText(ライブ名, { exact: true }).first().click();
+  await B.waitForTimeout(500);
+  await B.getByText('決定', { exact: true }).click();
+  await B.waitForTimeout(8000);
+
+  const A側 = await 一射目たち(A);
+  const B側 = await 一射目たち(B);
+  expect(A側.length, '横の主催者に盤面が出ていない').toBeGreaterThan(0);
+  expect(B側.length, '縦の参加者へ盤面が届いていない').toBeGreaterThan(0);
+
+  // 横の主催者が入れたものが、縦の参加者の同じますに出ること
+  const 的 = A側[0];
+  await A.mouse.click(的.x, 的.y);
+  await A.waitForTimeout(1500);
+  expect(await 中身(A, 的.印), '横のままだと○が入らない').toBe('○');
+
+  const 届いた = await 揃うまで待つ(async () => [await 中身(A, 的.印), await 中身(B, 的.印)]);
+  expect(届いた[1], `横→縦へ届いていない（A=${届いた[0]} B=${届いた[1]}）`).toBe('○');
+
+  // 逆向きも見る。縦の参加者が入れたものが、横の主催者に出ること
+  const B的 = (await 一射目たち(B)).find((x) => x.印 !== 的.印);
+  expect(B的, '参加者側に別の射手が無い').toBeTruthy();
+  await B.mouse.click(B的.x, B的.y);
+  await B.waitForTimeout(1500);
+  const 戻り = await 揃うまで待つ(async () => [await 中身(A, B的.印), await 中身(B, B的.印)]);
+  expect(戻り[0], `縦→横へ届いていない（A=${戻り[0]} B=${戻り[1]}）`).toBe('○');
+
+  await 主.close();
+  await 参.close();
+});

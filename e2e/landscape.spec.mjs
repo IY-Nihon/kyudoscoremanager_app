@@ -260,3 +260,46 @@ test('並べ方：横のままでも案内は最後まで進み、名前の位�
   expect(踏んだ, '横だと案内が途中で止まる').toBeGreaterThan(5);
   expect(名前を指せた, '横のとき、案内が名前の位置を指せていない').toBe(true);
 });
+
+test('下の帯：狭い画面でも、どのボタンも隣に覆われない', async ({ page }) => {
+  // 並べ方のボタンを足したぶん左の組が広がり、右の「人・間隔・計・画像」が
+  // 枠に入り切らなくなった。あの箱は justifyContent: center なので、
+  // あふれたぶんが左右へ均等に漏れて隣を覆う。320px幅の端末で
+  // 並べ方が完全に隠れ、押しても何も起きない状態だった
+  await page.setViewportSize({ width: 320, height: 568 });
+  await 入る(page);
+  await page.waitForTimeout(1200);
+
+  const 調べ = await page.evaluate(() => {
+    const 出 = [];
+    const 見る = (名, el) => {
+      if (!el) return 出.push({ 名, 見つかった: false });
+      const r = el.getBoundingClientRect();
+      const x = Math.round(r.x + r.width / 2);
+      const y = Math.round(r.y + r.height / 2);
+      const 上 = document.elementFromPoint(x, y);
+      出.push({ 名, 見つかった: true, 幅: Math.round(r.width), 押せる: !!(上 && (el === 上 || el.contains(上))) });
+    };
+    ['取り消し', 'やり直し', '並べ方'].forEach((名) => 見る(名, document.querySelector(`[data-testid="${名}"]`)));
+    ['人', '間隔', '計', '画像'].forEach((名) => {
+      const 札 = [...document.querySelectorAll('div')].filter(
+        (e) => (e.textContent || '').trim() === 名 && e.children.length === 0
+      );
+      見る(名, 札.length ? 札[札.length - 1].parentElement : null);
+    });
+    return 出;
+  });
+
+  for (const b of 調べ) {
+    expect(b.見つかった, `${b.名} が下の帯に無い`).toBe(true);
+    expect(b.押せる, `${b.名}（幅${b.幅}）が隣のボタンに覆われている`).toBe(true);
+  }
+
+  // 覆われていないだけでなく、本当に効くこと
+  await page.getByTestId('並べ方').click();
+  await page.waitForTimeout(1200);
+  const 横か = await page.evaluate(
+    () => JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state?.横に並べる
+  );
+  expect(横か, '狭い画面で並べ方を押しても切り替わらない').toBe(true);
+});
