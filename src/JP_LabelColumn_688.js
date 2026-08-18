@@ -29,41 +29,80 @@ var t = e(require('./default_144')),
   n = require('./module_595'),
   l = require('./JP_useScoreStore_174'),
   h = require('./module_427');
-const f = ({ shots: e, showFooter: i = !0 }) => {
+const f = ({ shots: e, showFooter: i = !0, 横並び: 横 = !1 }) => {
     const f = (0, l.useScoreStore)((e) => e.viewScale),
       s = 'number' == typeof f && !isNaN(f) && f > 0 ? f : 1,
       u = [];
-    for (let t = e; t >= 1; t--) u.push(t);
+    // 縦の表は下から上へ数える（1射目が下）。横の表は左から右へ数える
+    if (横) for (let t = 1; t <= e; t++) u.push(t);
+    else for (let t = e; t >= 1; t--) u.push(t);
     return (0, h.jsxs)(t.default, {
-      style: [c.column, { width: n.UIConfig.headerWidth * s }],
+      style: [
+        c.column,
+        横
+          ? {
+              width: n.UIConfig.cellWidth * (e + 1) * s,
+              height: n.UIConfig.cellHeight * s,
+              flexDirection: 'row',
+              flexShrink: 0,
+              borderLeftWidth: 0,
+              borderTopWidth: 1.5,
+              borderTopColor: '#000',
+            }
+          : { width: n.UIConfig.headerWidth * s },
+      ],
       children: [
         (0, h.jsxs)(t.default, {
-          style: { flexDirection: 'column' },
+          style: { flexDirection: 横 ? 'row-reverse' : 'column' },
           children: [
             (0, h.jsx)(t.default, {
-              style: [c.header, { height: n.UIConfig.headerHeight * s }],
+              style: [
+                c.header,
+                横
+                  ? {
+                      width: n.UIConfig.cellWidth * s,
+                      height: n.UIConfig.cellHeight * s,
+                      borderBottomWidth: 0,
+                      borderRightWidth: 0,
+                      borderLeftWidth: 1.5,
+                      borderLeftColor: '#000',
+                    }
+                  : { height: n.UIConfig.headerHeight * s },
+              ],
               children: (0, h.jsx)(o.default, {
                 style: [c.headerText, { fontSize: 10 * s }],
                 children: '計',
               }),
             }),
-            u.map((e) => {
+            (0, h.jsx)(t.default, {
+              style: 横 ? { flexDirection: 'row' } : void 0,
+              children: u.map((e) => {
+              // 立の切れ目。縦では下の線、横では右の線を太くする
               const i = (e - 1) % 4 == 0 && 1 !== e;
+              const 切れ目 = 横 ? e % 4 == 0 && e !== u.length : i;
               return (0, h.jsx)(
                 t.default,
                 {
                   style: [
                     c.cell,
-                    {
-                      height: n.UIConfig.cellHeight * s,
-                      borderBottomWidth: i ? 2 : 1,
-                      borderBottomColor: '#000',
-                    },
+                    横
+                      ? {
+                          width: n.UIConfig.cellWidth * s,
+                          height: n.UIConfig.cellHeight * s,
+                          borderRightWidth: 切れ目 ? 2 : 1,
+                          borderRightColor: '#000',
+                        }
+                      : {
+                          height: n.UIConfig.cellHeight * s,
+                          borderBottomWidth: i ? 2 : 1,
+                          borderBottomColor: '#000',
+                        },
                   ],
                   children: (0, h.jsx)(o.default, { style: [c.numText, { fontSize: 10 * s }], children: e }),
                 },
                 e
               );
+              }),
             }),
           ],
         }),

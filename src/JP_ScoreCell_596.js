@@ -71,6 +71,7 @@ const h = t.default.memo(
       hideMark: j = !1,
       isNormalArcher: x = !1,
       columnType: C = 'normal',
+      横並び: 横 = !1,
       onToggle: I,
     }) => {
       const O = (0, d.useScoreStore)((e) => e.toggleMark),
@@ -88,8 +89,27 @@ const h = t.default.memo(
         B = F ? 1 : y ? 2 : 1,
         T = 'separator' === C || 'total' === C,
         w = T ? 1 : 0,
-        W = ('separator' === C ? s.UIConfig.separatorWidth : s.UIConfig.cellWidth) * v,
-        E = s.UIConfig.cellHeight * v;
+        細い = 'separator' === C ? s.UIConfig.separatorWidth : null,
+        W = (横 ? s.UIConfig.cellWidth : (細い ?? s.UIConfig.cellWidth)) * v,
+        E = (横 ? (細い ?? s.UIConfig.cellHeight) : s.UIConfig.cellHeight) * v,
+        // 縦は「下に太線・右に細線」。横はそれを90度まわして「右に太線・下に細線」
+        線 = 横
+          ? {
+              borderRightWidth: B,
+              borderRightColor: '#000',
+              borderBottomWidth: 1,
+              borderBottomColor: '#000',
+              borderTopWidth: w,
+              borderTopColor: '#000',
+            }
+          : {
+              borderBottomWidth: B,
+              borderBottomColor: '#000',
+              borderRightWidth: 1,
+              borderRightColor: '#000',
+              borderLeftWidth: w,
+              borderLeftColor: '#000',
+            };
       const timerRef = React.useRef(null);
       const longPressTimerRef = React.useRef(null);
       const isLongPressedRef = React.useRef(false);
@@ -279,13 +299,8 @@ const h = t.default.memo(
             width: W,
             height: E,
             backgroundColor: 自動で閉じている ? '#F2F2F7' : z,
-            borderBottomWidth: B,
-            borderBottomColor: '#000',
-            borderRightWidth: 1,
-            borderRightColor: '#000',
-            borderLeftWidth: w,
-            borderLeftColor: '#000',
           },
+          線,
         ],
         children: [
           (0, b.jsx)(pressable.default, {
