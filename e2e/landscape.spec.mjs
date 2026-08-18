@@ -26,7 +26,20 @@ async function 入る(page) {
     await 合言葉欄.click();
     await 合言葉欄.pressSequentially(合言葉, { delay: 20 });
     await page.getByText('ログイン', { exact: true }).click();
-    await page.waitForTimeout(9000);
+    // 決まった秒数で待たない。iPhone(WebKit) では9秒に収まらないことがあり、
+    // 収まらないとログイン画面のまま先へ進んで、まったく別の顔で落ちる
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+            return s.activeGroupId || null;
+          }),
+        { timeout: 60_000, message: 'ログインが通らない（団体IDが入らない）' }
+      )
+      .not.toBeNull();
+    // 認証の保存が書き終わるまでの余裕
+    await page.waitForTimeout(1500);
   }
   await page.evaluate((版) => {
     localStorage.setItem('tutorialDoneVersion', '2026-08-13-01');
@@ -190,7 +203,11 @@ test('並べ方：横のままでも案内は最後まで進み、名前の位�
   // 案内の目印「記録.射手選択」は、もともと縦の足元の名前セルにしか
   // 置いていなかった。横では指す先が消え、名前がどこかを教えられない。
   // 目印が無いと中央の吹き出しだけになり、行き止まりにはならないので
-  // 気づきにくい。ここで実際に指せていることを見る
+  // 気づきにくい。ここで実際に指せていることを見る。
+  //
+  // ログインと案内28手順ぶんを1本で踏むので、既定の180秒では足りない
+  // （iPhone では時間切れになっていた）
+  test.setTimeout(420_000);
   await 入る(page);
   await page.getByTestId('並べ方').click();
   await page.waitForTimeout(1200);
