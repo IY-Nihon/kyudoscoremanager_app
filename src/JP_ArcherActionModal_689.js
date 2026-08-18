@@ -57,6 +57,7 @@ const j = ({
     alumni: alumniState,
     archers: H,
     setArcherMember: P,
+    setSubstitution: 交代を書く,
     addArcher: R,
     addSeparator: W,
     addTotalCalculator: V,
@@ -68,6 +69,19 @@ const j = ({
   const [G, K] = (0, t.useState)('');
   const [expandedTerms, setExpandedTerms] = (0, t.useState)(new Set());
   const [expandedActiveGrades, setExpandedActiveGrades] = (0, t.useState)(new Set(['1', '2', '3', '4', '0']));
+
+  // いまこの射手に入っている途中交代。1つでもあれば取り消す道を出す。
+  // これまで解除する口がどこにも無く、履歴にも積んでいないので取り消しでも
+  // 戻らなかった（間違えるとリセットするしかなかった）
+  const いまの交代 = (0, t.useMemo)(() => {
+    const 射手 = (H || []).find((e) => e && e.id === s);
+    const 表 = (射手 && 射手.substitutions) || {};
+    return Object.keys(表)
+      .map(Number)
+      .filter((n) => !isNaN(n))
+      .sort((a, b) => a - b)
+      .map((位置) => ({ 位置, 名: 表[位置] }));
+  }, [H, s]);
 
   const q = A || H;
 
@@ -222,6 +236,31 @@ const j = ({
                           }),
                         ],
                       }),
+                      // 交代が入っているときだけ、取り消す道を出す。
+                      // 誰といつ代わっているかも一緒に見せる（間違いに気づけるように）
+                      いまの交代.length > 0
+                        ? (0, F.jsxs)(g.default, {
+                            style: ({ pressed: e, hovered: t }) => [
+                              y.actionBtn,
+                              t && { backgroundColor: '#FFE5E5' },
+                              e && { opacity: 0.7 },
+                            ],
+                            onPress: () => {
+                              (いまの交代.forEach((x) => 交代を書く(s, x.位置, '', null)), C());
+                            },
+                            children: [
+                              (0, F.jsx)(x.Ionicons, { name: 'close-circle', size: 18, color: '#FF3B30' }),
+                              (0, F.jsxs)(l.default, {
+                                style: [y.actionBtnText, { color: '#FF3B30' }],
+                                children: [
+                                  '途中交代を取り消す（',
+                                  いまの交代.map((z) => `${z.位置 + 1}射目〜 ${z.名}`).join('、'),
+                                  '）',
+                                ],
+                              }),
+                            ],
+                          })
+                        : null,
                       _
                         ? (0, F.jsxs)(n.default, {
                             style: y.guestInputRow,

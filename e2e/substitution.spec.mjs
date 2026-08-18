@@ -228,3 +228,34 @@ test('途中交代：細い画面でも、窓を流せば交代相手にたど�
   expect(await 見える人数(), '細い画面だと、流しても交代相手が見えない').toBeGreaterThan(0);
   await expect(page.getByText(/^\d年生 \(\d+人\)$/).first(), '学年の見出しにも届かない').toBeVisible();
 });
+
+test('途中交代：入れたあと、人の選択から取り消せる', async ({ page }) => {
+  // 解除する口がどこにも無く、履歴にも積んでいないので取り消しでも戻らなかった。
+  // 一度間違えるとリセットするしかない状態だった
+  await 交代の画面を開く(page);
+  await page.getByText('2立目', { exact: true }).click();
+  await page.waitForTimeout(600);
+  const ゲスト欄 = page.getByPlaceholder('ゲスト名を入力');
+  await ゲスト欄.click();
+  await ゲスト欄.pressSequentially('取消太郎', { delay: 30 });
+  await page.getByText('確定', { exact: true }).click();
+  await page.waitForTimeout(1500);
+
+  const 交代の数 = () =>
+    page.evaluate(() => {
+      const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+      const 射手 = (s.archers || []).find((a) => a && a.substitutions);
+      return 射手 ? Object.keys(射手.substitutions).length : 0;
+    });
+  expect(await 交代の数(), '前提：交代が入っていない').toBe(1);
+
+  // 名前のますから、いま入っている交代が見えて、押すと消える
+  await page.getByText('選択', { exact: true }).first().click();
+  await page.waitForTimeout(1200);
+  const 取り消し = page.getByText(/途中交代を取り消す（5射目〜 取消太郎）/);
+  await expect(取り消し, 'いま誰と代わっているかが出ていない').toBeVisible();
+  await 取り消し.click();
+  await page.waitForTimeout(1500);
+
+  expect(await 交代の数(), '押しても交代が消えない').toBe(0);
+});
