@@ -1140,6 +1140,21 @@ const k = () => {
         (0, A.jsxs)(l.default, {
           style: [W.gridArea, { justifyContent: 'center', alignItems: 'center' }],
           children: [
+            // 帯を畳む取っ手。記録表の区画の中に置くので、上の帯があっても
+            // 無くても重ならない
+            (0, A.jsx)(f.default, {
+              onPress: () => {
+                (帯を畳むを置く(!帯を畳む), j.impactAsync(j.ImpactFeedbackStyle.Light));
+              },
+              testID: '帯の開け閉め',
+              hitSlop: { top: 10, bottom: 10, left: 10, right: 10 },
+              style: ({ hovered: e }) => [W.帯の取っ手, e && m.IS_WEB && { opacity: 0.85 }],
+              children: (0, A.jsx)(p.Ionicons, {
+                name: 帯を畳む ? 'chevron-down' : 'chevron-up',
+                size: 18,
+                color: '#8E8E93',
+              }),
+            }),
             (0, A.jsxs)(l.default, {
               ref: 案内の記録表,
               style: { maxHeight: '100%', flexDirection: 'column', maxWidth: '100%' },
@@ -1728,19 +1743,6 @@ const k = () => {
               children: (0, A.jsx)(a.default, { style: W.feedbackText, children: Fe }),
             })
           : null,
-        (0, A.jsx)(f.default, {
-          onPress: () => {
-            (帯を畳むを置く(!帯を畳む), j.impactAsync(j.ImpactFeedbackStyle.Light));
-          },
-          testID: '帯の開け閉め',
-          hitSlop: { top: 10, bottom: 10, left: 10, right: 10 },
-          style: ({ hovered: e }) => [W.帯の取っ手, e && m.IS_WEB && { opacity: 0.85 }],
-          children: (0, A.jsx)(p.Ionicons, {
-            name: 帯を畳む ? 'chevron-up' : 'chevron-down',
-            size: 18,
-            color: '#8E8E93',
-          }),
-        }),
         (0, A.jsx)(OCRRecordModal, {
           visible: showOCRModal,
           onClose: () => setShowOCRModal(!1),
@@ -1965,7 +1967,7 @@ const k = () => {
     帯の取っ手: {
       position: 'absolute',
       right: 8,
-      bottom: 8,
+      top: 8,
       width: 36,
       height: 36,
       borderRadius: 18,
