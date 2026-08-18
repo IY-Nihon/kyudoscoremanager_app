@@ -36,7 +36,7 @@ var t = require('./module_37'),
   h = require('./AntDesign_600'),
   b = require('./IS_WEB_199'),
   p = require('./module_427');
-var { 立の数, 立の頭の射 } = require('./syncRules');
+var { 立の数, 立の頭の射, 学年でまとめる } = require('./syncRules');
 const x = ({ visible: e, archerId: x, onClose: j }) => {
     const {
         members: F,
@@ -48,8 +48,10 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
       [z, R] = (0, t.useState)(''),
       // 交代は立の切れ目ですることが多い。射目でも入れられるよう、単位を選べる
       [単位, 単位を置く] = (0, t.useState)('立目'),
-      // 開いている学年。人の選択（JP_ArcherActionModal_689.js）と同じく初めは全部開く
-      [開いた学年, 開いた学年を置く] = (0, t.useState)(new Set(['1', '2', '3', '4', '0'])),
+      // 閉じた学年を覚える（開いた学年ではなく）。初めは全部開く。
+      // 開く側を決め打ちすると、進級で出る5年生のように想定外の学年が
+      // 閉じたまま出て、中の人に辿り着けなくなる
+      [閉じた学年, 閉じた学年を置く] = (0, t.useState)(new Set()),
       [w, I] = (0, t.useState)(''),
       [k, v] = (0, t.useState)(''),
       H = ('' === w.trim() ? [...F] : F.filter((e) => (e.name || '').toLowerCase().includes(w.toLowerCase()))).sort(
@@ -70,27 +72,17 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
       立か = '立目' === 単位,
       上限 = 立か ? 立の数(C) : C,
       学年を開け閉め = (印) => {
-        開いた学年を置く((前) => {
+        閉じた学年を置く((前) => {
           const 次 = new Set(前);
           return (次.has(印) ? 次.delete(印) : 次.add(印), 次);
         });
       },
       // 名前で絞り込んでいるあいだは開いておく。閉じたままだと
       // 探した人が隠れたままで「居ない」と見えてしまう
-      開いているか = (学年) => '' !== w.trim() || 開いた学年.has(String(学年)),
+      開いているか = (学年) => '' !== w.trim() || !閉じた学年.has(String(学年)),
       // 交代相手を学年でまとめる。人の選択と同じで、0年（学年なし）は
       // 「その他/ゲスト」として最後に置く
-      学年ごと = (() => {
-        const 束 = {};
-        H.forEach((e) => {
-          const g = void 0 === e.grade || null === e.grade ? 0 : Number(e.grade);
-          (束[g] || (束[g] = [])).push(e);
-        });
-        return Object.keys(束)
-          .map(Number)
-          .sort((a, b) => (0 === a ? 1 : 0 === b ? -1 : a - b))
-          .map((g) => ({ 学年: g, 題: 0 === g ? 'その他/ゲスト' : `${g}年生`, 人たち: 束[g] }));
-      })(),
+      学年ごと = 学年でまとめる(H),
       // 選べる番号。1立目、2立目…（射目のときは 1射目、2射目…）
       番号たち = Array.from({ length: 上限 }, (e, t) => t + 1),
       選んだ = parseInt(z, 10),
@@ -307,8 +299,17 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
     },
     単位の列: { flexDirection: 'row', gap: 8, marginBottom: 10 },
     // 番号の一覧。人を選ぶ一覧（list / memberItem）と同じ見た目にそろえる
-    // flexGrow: 0 が無いと、行が少なくても maxHeight ぶんの白い箱が残る
-    番号の一覧: { backgroundColor: '#FFF', borderRadius: 10, maxHeight: 148, flexGrow: 0, marginBottom: 6 },
+    // flexGrow: 0 が無いと、行が少なくても maxHeight ぶんの白い箱が残る。
+    // flexShrink: 0 が無いと、細い画面（iPhone SE）で52pxまで潰れ、
+    // 5立ぶんの一覧が1行しか見えなくなる。縮むのは下の相手の一覧に任せる
+    番号の一覧: {
+      backgroundColor: '#FFF',
+      borderRadius: 10,
+      maxHeight: 148,
+      flexGrow: 0,
+      flexShrink: 0,
+      marginBottom: 6,
+    },
     番号の行: {
       flexDirection: 'row',
       justifyContent: 'space-between',
