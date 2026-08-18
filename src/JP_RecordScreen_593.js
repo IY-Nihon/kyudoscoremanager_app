@@ -1389,7 +1389,9 @@ const k = () => {
                   (0, A.jsxs)(f.default, {
                     style: ({ hovered: e }) => [
                       W.historyBtn,
-                      { alignItems: 'center' },
+                      // 取り消し・やり直しと同じ幅にそろえる。絵が小さいぶん
+                      // 放っておくと28pxになり、この並びで一番押しにくいボタンになる
+                      { alignItems: 'center', minWidth: 32 },
                       e && m.IS_WEB && { backgroundColor: '#F2F2F7' },
                     ],
                     onPress: () => {
@@ -1949,10 +1951,14 @@ const k = () => {
       paddingHorizontal: 8,
       paddingVertical: 8,
     },
-    addBtns: { flexDirection: 'row', gap: 4, flex: 1, justifyContent: 'center', minWidth: 0 },
+    // はみ出しても隣を覆わないように、この箱の中で切る（念のための二重の備え）
+    addBtns: { flexDirection: 'row', gap: 4, flex: 1, justifyContent: 'center', minWidth: 0, overflow: 'hidden' },
     addBtn: {
       flex: 1,
-      minWidth: 44,
+      // 狭い画面では縮ませる。minWidth を置くと入り切らないぶんが枠の外へ
+      // あふれ、justifyContent: center のせいで左右へ均等に漏れて、
+      // 隣のボタンを覆う。320px幅の端末で「並べ方」が押せなくなっていた
+      minWidth: 0,
       maxWidth: 62,
       height: 56,
       borderRadius: 10,
