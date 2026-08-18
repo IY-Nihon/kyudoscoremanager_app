@@ -36,6 +36,7 @@ var t = require('./module_37'),
   h = require('./AntDesign_600'),
   b = require('./IS_WEB_199'),
   p = require('./module_427');
+var { 立の数, 立の頭の射 } = require('./syncRules');
 const x = ({ visible: e, archerId: x, onClose: j }) => {
     const {
         members: F,
@@ -45,6 +46,8 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
         setSubstitution: T,
       } = (0, m.useScoreStore)(),
       [z, R] = (0, t.useState)(''),
+      // 交代は立の切れ目ですることが多い。射目でも入れられるよう、単位を選べる
+      [単位, 単位を置く] = (0, t.useState)('立'),
       [w, I] = (0, t.useState)(''),
       [k, v] = (0, t.useState)(''),
       H = ('' === w.trim() ? [...F] : F.filter((e) => (e.name || '').toLowerCase().includes(w.toLowerCase()))).sort(
@@ -62,12 +65,20 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
           return 0 !== u ? u : (e.name || '').localeCompare(t.name || '', 'ja');
         }
       ),
-      A = (e, t) => {
+      立か = '立' === 単位,
+      上限 = 立か ? 立の数(C) : C,
+      // 入れた番号が何射目にあたるか。立なら、その立の1本目
+      何射目 = () => {
         const n = parseInt(z, 10);
-        !isNaN(n) && n > 0 && n <= C && x && (T(x, n - 1, e, t), P());
+        if (isNaN(n) || n < 1 || n > 上限) return null;
+        return 立か ? 立の頭の射(n, C) : n - 1;
+      },
+      A = (e, t) => {
+        const n = 何射目();
+        null !== n && x && (T(x, n, e, t), P());
       },
       P = () => {
-        (R(''), I(''), v(''), j());
+        (R(''), I(''), v(''), 単位を置く('立'), j());
       };
     return e
       ? (0, p.jsx)(l.default, {
@@ -101,19 +112,50 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
                     style: y.content,
                     children: [
                       (0, p.jsx)(o.default, { style: y.sectionTitle, children: '交代するタイミング' }),
+                      (0, p.jsx)(n.default, {
+                        style: y.単位の列,
+                        children: ['立', '射目'].map((名) =>
+                          (0, p.jsx)(
+                            u.default,
+                            {
+                              style: [y.単位ボタン, 名 === 単位 && y.単位ボタン選択中],
+                              onPress: () => {
+                                (単位を置く(名), R(''));
+                              },
+                              children: (0, p.jsx)(o.default, {
+                                style: [y.単位の字, 名 === 単位 && y.単位の字選択中],
+                                children: 名,
+                              }),
+                            },
+                            名
+                          )
+                        ),
+                      }),
                       (0, p.jsxs)(n.default, {
                         style: y.inputRow,
                         children: [
-                          (0, p.jsx)(o.default, { style: y.label, children: '射目番号' }),
+                          (0, p.jsx)(o.default, {
+                            style: y.label,
+                            children: 立か ? '立の番号' : '射目番号',
+                          }),
                           (0, p.jsx)(s.default, {
                             style: y.inputShot,
-                            placeholder: '番号 (1〜)',
+                            placeholder: `番号 (1〜${上限})`,
                             keyboardType: 'number-pad',
                             value: z,
                             onChangeText: R,
                             textAlign: 'right',
                           }),
                         ],
+                      }),
+                      (0, p.jsx)(o.default, {
+                        style: y.案内,
+                        children:
+                          null === 何射目()
+                            ? `1〜${上限} で入れてください`
+                            : 立か
+                              ? `${parseInt(z, 10)}立目（${何射目() + 1}射目）から交代します`
+                              : `${何射目() + 1}射目から交代します`,
                       }),
                       (0, p.jsx)(o.default, {
                         style: y.sectionTitle,
@@ -136,11 +178,11 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
                             onChangeText: v,
                           }),
                           (0, p.jsx)(u.default, {
-                            style: [y.confirmBtn, (!k || !z) && y.confirmBtnDisabled],
+                            style: [y.confirmBtn, (!k || null === 何射目()) && y.confirmBtnDisabled],
                             onPress: () => {
                               '' !== k.trim() && A(k.trim());
                             },
-                            disabled: !k || !z,
+                            disabled: !k || null === 何射目(),
                             children: (0, p.jsx)(o.default, { style: y.confirmTxt, children: '確定' }),
                           }),
                         ],
@@ -220,8 +262,22 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
       paddingHorizontal: 16,
       paddingVertical: 12,
       borderRadius: 10,
-      marginBottom: 24,
+      marginBottom: 6,
     },
+    単位の列: { flexDirection: 'row', gap: 8, marginBottom: 10 },
+    単位ボタン: {
+      flex: 1,
+      paddingVertical: 10,
+      borderRadius: 10,
+      backgroundColor: '#FFF',
+      borderWidth: 1.5,
+      borderColor: '#D1D1D6',
+      alignItems: 'center',
+    },
+    単位ボタン選択中: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
+    単位の字: { fontSize: 16, fontWeight: 'bold', color: '#007AFF' },
+    単位の字選択中: { color: '#FFF' },
+    案内: { fontSize: 13, color: '#8E8E93', marginLeft: 4, marginBottom: 24 },
     label: { fontSize: 16, color: '#000' },
     inputShot: {
       fontSize: 16,
