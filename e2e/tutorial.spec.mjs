@@ -182,8 +182,20 @@ test.beforeEach(async ({ page }) => {
     await expect(合言葉欄).toHaveValue(合言葉);
     await 押す(page.getByText('ログイン', { exact: true }));
     // ログインの直後に読み直すと、Safari(WebKit) では認証の保存が間に合わず、
-    // ログアウトした状態で開いてしまう。書き終わるまで待つ
-    await page.waitForTimeout(9000);
+    // ログアウトした状態で開いてしまう。決まった秒数ではなく、
+    // 実際に入れたかを見て待つ（9秒では足りないことがある）
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+            return s.activeGroupId || null;
+          }),
+        { timeout: 60_000, message: 'ログインが通らない（団体IDが入らない）' }
+      )
+      .not.toBeNull();
+    // 認証の保存が書き終わるまでの余裕
+    await page.waitForTimeout(1500);
   }
 
   // 初めて使う人と同じ状態にしてから開き直す
