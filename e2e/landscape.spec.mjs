@@ -185,3 +185,78 @@ test('並べ方：横のとき、個人の計は一番右に出る', async ({ pa
   const 見出し = await page.getByText('計', { exact: true }).first().boundingBox();
   expect(見出し.x, '見出しの計が最後の射より左にある').toBeGreaterThan(最後のます.x);
 });
+
+test('並べ方：横のままでも案内は最後まで進み、名前の位置も指せる', async ({ page }) => {
+  // 案内の目印「記録.射手選択」は、もともと縦の足元の名前セルにしか
+  // 置いていなかった。横では指す先が消え、名前がどこかを教えられない。
+  // 目印が無いと中央の吹き出しだけになり、行き止まりにはならないので
+  // 気づきにくい。ここで実際に指せていることを見る
+  await 入る(page);
+  await page.getByTestId('並べ方').click();
+  await page.waitForTimeout(1200);
+
+  await page.evaluate(() => {
+    localStorage.removeItem('tutorialDoneVersion');
+    localStorage.removeItem('tutorialBoardSnapshot');
+  });
+  await page.reload();
+  await expect(page.locator('text=ようこそ'), '横だと案内が始まらない').toBeVisible({ timeout: 30_000 });
+
+  const 指す先の枠 = () =>
+    page.evaluate(() => {
+      const 枠 = [...document.querySelectorAll('div')].find((e) => {
+        const s = getComputedStyle(e);
+        return (
+          s.position === 'absolute' &&
+          s.borderStyle === 'solid' &&
+          parseFloat(s.borderTopWidth) >= 2 &&
+          /rgb\(0,\s*122,\s*255\)/.test(s.borderTopColor)
+        );
+      });
+      if (!枠) return null;
+      const r = 枠.getBoundingClientRect();
+      return { x: r.x, y: r.y, w: r.width, h: r.height };
+    });
+
+  const 進む手 = ['とばす', '次へ', '続きを見る', '始める'];
+  let 踏んだ = 0;
+  let 名前を指せた = false;
+  for (let i = 0; i < 40; i++) {
+    // 手順の切り替わりでは、指す先を測り終わるまで番号札を出さない。
+    // その空白を「終わった」と取り違えないよう、しばらく待ってから無いと判断する
+    const 札 = page.locator('text=/^\\d+ \\/ \\d+$/').first();
+    const 出ている = await 札.waitFor({ state: 'visible', timeout: 4000 }).then(() => true).catch(() => false);
+    if (!出ている) break;
+    踏んだ++;
+
+    const 題 = await page
+      .locator('text=誰の記録かを決めます')
+      .first()
+      .isVisible()
+      .catch(() => false);
+    if (題) {
+      const 枠 = await 指す先の枠();
+      if (枠 && 枠.w > 0) {
+        // 指しているのが左の名前のところであること（○×の側ではない）
+        const 一つ目 = await page.locator('[data-testid^="ます-"]').first().boundingBox();
+        expect(枠.x, '名前ではなく○×のほうを指している').toBeLessThan(一つ目.x + 2);
+        名前を指せた = true;
+      }
+    }
+
+    let 進めた = false;
+    for (const 文字 of 進む手) {
+      const b = page.getByText(文字, { exact: true }).first();
+      if (await b.isVisible().catch(() => false)) {
+        await b.click().catch(() => {});
+        進めた = true;
+        break;
+      }
+    }
+    expect(進めた, `横の案内が${踏んだ}手目で行き止まりになった`).toBe(true);
+    await page.waitForTimeout(700);
+  }
+
+  expect(踏んだ, '横だと案内が途中で止まる').toBeGreaterThan(5);
+  expect(名前を指せた, '横のとき、案内が名前の位置を指せていない').toBe(true);
+});

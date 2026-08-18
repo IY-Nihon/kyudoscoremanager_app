@@ -336,7 +336,8 @@ const m = t.default.memo(
                       children: M.map((t) => {
                         const c = Math.floor(t / 4),
                           h = U(c),
-                          u = 横 ? t % 4 == 0 : t % 4 == 0,
+                          // 立ごとの合計を出すます。縦なら立の一番下、横なら立の左端
+                          u = t % 4 == 0,
                           m = t === Math.min(i - 1, 4 * c + 3),
                           C = !(k && !y) && (e.lockedBlocks?.[c] || !1);
                         return (0, f.jsxs)(
