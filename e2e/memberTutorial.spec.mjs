@@ -38,7 +38,20 @@ test('個人ログインでも、案内の履歴と分析の見本が出る', as
     await 個人欄.click();
     await 個人欄.pressSequentially(個人ID, { delay: 20 });
     await page.getByText('ログイン', { exact: true }).click();
-    await page.waitForTimeout(9000);
+    // 決まった秒数で待たない。個人ログインは団体の逆引きを1回はさむぶん遅く、
+    // iPhone(WebKit) では9秒に収まらないことがある。収まらないと、まだ
+    // ログイン画面のまま先へ進み、案内が出ないという別の顔で落ちていた
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+            return s.activeGroupId || null;
+          }),
+        { timeout: 60_000, message: 'ログインが通らない（団体IDが入らない）' }
+      )
+      .not.toBeNull();
+    await page.waitForTimeout(1500);
   }
 
   // 初めて使う人と同じ状態にしてから開き直す
