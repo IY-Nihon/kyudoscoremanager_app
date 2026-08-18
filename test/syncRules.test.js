@@ -12,6 +12,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const {
+  学年でまとめる,
   一立の射数,
   立の数,
   立の頭の射,
@@ -433,4 +434,59 @@ test('立と射目は行き来できる（立の頭 → 立番号 で元に戻�
   for (let 立 = 1; 立 <= 立の数(12); 立++) {
     assert.strictEqual(射の立番号(立の頭の射(立, 12)), 立, `${立}立目で行き来が合わない`);
   }
+});
+
+// ── 学年でまとめる（交代相手・分析の比較・人の選択で同じ分け方にする） ──
+
+test('学年でまとめる：進級で5年になった人は「卒業生」', () => {
+  // 進級すると4年生は grade:5 になる（ストアの進級処理）。
+  // ここで拾えないと「5年生」という枠ができ、しかも開く学年を
+  // 決め打ちしていた画面ではその枠が閉じたまま出て、中の人に辿り着けない
+  const 組 = 学年でまとめる([
+    { name: '一年', grade: 1 },
+    { name: '五年', grade: 5 },
+    { name: '七年', grade: 7 },
+    { name: '卒A', isAlumni: true },
+    { name: '卒B', graduationYear: 2025 },
+  ]);
+  const 卒 = 組.find((x) => x.題 === '卒業生');
+  assert.ok(卒, '卒業生のまとまりが無い');
+  assert.deepStrictEqual(
+    卒.人たち.map((p) => p.name),
+    ['五年', '七年', '卒A', '卒B']
+  );
+  assert.ok(!組.some((x) => /^[5-9]年生$/.test(x.題)), '5年生などの枠ができている');
+});
+
+test('学年でまとめる：学年が無い人は「その他/ゲスト」', () => {
+  const 組 = 学年でまとめる([{ name: 'あ' }, { name: 'い', grade: null }, { name: 'う', grade: 0 }]);
+  assert.strictEqual(組.length, 1);
+  assert.strictEqual(組[0].題, 'その他/ゲスト');
+  assert.strictEqual(組[0].人たち.length, 3);
+});
+
+test('学年でまとめる：並びは 1年生→…→その他→卒業生', () => {
+  const 組 = 学年でまとめる([
+    { name: '卒', grade: 5 },
+    { name: '他', grade: 0 },
+    { name: '三', grade: 3 },
+    { name: '一', grade: 1 },
+  ]);
+  assert.deepStrictEqual(
+    組.map((x) => x.題),
+    ['1年生', '3年生', 'その他/ゲスト', '卒業生']
+  );
+});
+
+test('学年でまとめる：開け閉めの覚えに使う印は文字', () => {
+  // 数と文字が混ざると Set の照合が外れ、閉じたはずの枠が開く（逆も）
+  const 組 = 学年でまとめる([{ grade: 2 }, { grade: 5 }, {}]);
+  組.forEach((x) => assert.strictEqual(typeof x.学年, 'string', `印が文字でない: ${x.題}`));
+  assert.deepStrictEqual(組.map((x) => x.学年), ['2', '0', '卒']);
+});
+
+test('学年でまとめる：空でも落ちない', () => {
+  assert.deepStrictEqual(学年でまとめる([]), []);
+  assert.deepStrictEqual(学年でまとめる(null), []);
+  assert.deepStrictEqual(学年でまとめる([null, undefined]), []);
 });

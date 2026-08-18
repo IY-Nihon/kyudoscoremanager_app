@@ -751,7 +751,43 @@ function 射の立番号(位置) {
   return Math.floor(n / 一立の射数) + 1;
 }
 
+/**
+ * 人を学年でまとめる。記録表の人の選択と同じ分け方にそろえる。
+ *
+ * ・進級で 4年生は grade:5 になる（ストアの進級処理）。5以上、または
+ *   isAlumni / graduationYear を持つ人は「卒業生」としてひとまとめ。
+ * ・学年の無い人は「その他/ゲスト」。
+ * ・並びは 1年生→…→その他/ゲスト→卒業生。
+ *
+ * 返す印は文字（'1' '2' … '0' '卒'）。開け閉めの覚えに使うため、
+ * 数と文字が混ざらないようにしてある。
+ */
+function 学年でまとめる(人たち) {
+  const 束 = {};
+  (Array.isArray(人たち) ? 人たち : []).forEach((e) => {
+    if (!e) return;
+    const 卒 = 5 <= Number(e.grade) || e.isAlumni || e.graduationYear;
+    const 印 = 卒 ? '卒' : String(e.grade === undefined || e.grade === null ? 0 : Number(e.grade));
+    (束[印] || (束[印] = [])).push(e);
+  });
+  return Object.keys(束)
+    .sort((a, b) => {
+      if (a === b) return 0;
+      if ('卒' === a) return 1;
+      if ('卒' === b) return -1;
+      if ('0' === a) return 1;
+      if ('0' === b) return -1;
+      return Number(a) - Number(b);
+    })
+    .map((印) => ({
+      学年: 印,
+      題: '卒' === 印 ? '卒業生' : '0' === 印 ? 'その他/ゲスト' : `${印}年生`,
+      人たち: 束[印],
+    }));
+}
+
 module.exports = {
+  学年でまとめる,
   一立の射数,
   立の数,
   立の頭の射,

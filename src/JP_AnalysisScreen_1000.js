@@ -36,7 +36,7 @@ var c = require('./IS_WEB_199');
 require('./module_420');
 var 案内 = require('./JP_TutorialGuide');
 // 「自分が写っているか」の判定。履歴画面・案内の見本と同じものを使う
-var { 自分の記録か } = require('./syncRules');
+var { 自分の記録か, 学年でまとめる } = require('./syncRules');
 var u = require('./JP_useScoreStore_174'),
   h = require('./AntDesign_600'),
   f = require('./JP_CustomCalendarModal_695'),
@@ -75,10 +75,11 @@ const j = ({ navigation }) => {
   const [compareMembers, setCompareMembers] = (0, t.useState)([]);
   const [isSelectingCompareTarget, setIsSelectingCompareTarget] = (0, t.useState)(false);
   // 比較する相手も学年でまとめる。記録表の人の選択と同じ形にしてある。
-  // 初めは全部開いておく（'卒' は卒業生のまとまり）
-  const [開いた学年, 開いた学年を置く] = (0, t.useState)(new Set(['1', '2', '3', '4', '0', '卒']));
+  // 覚えるのは「閉じた学年」。開く側を決め打ちすると、想定外の学年が
+  // 閉じたまま出て、中の人に辿り着けなくなる
+  const [閉じた学年, 閉じた学年を置く] = (0, t.useState)(new Set());
   const 学年を開け閉め = (印) => {
-    開いた学年を置く((前) => {
+    閉じた学年を置く((前) => {
       const 次 = new Set(前);
       return (次.has(印) ? 次.delete(印) : 次.add(印), 次);
     });
@@ -1711,23 +1712,9 @@ const j = ({ navigation }) => {
                                 // 学年でまとめる。卒業生は最後にひとまとめ、
                                 // 学年の無い人は「その他/ゲスト」（人の選択と同じ分け方）
                                 const 相手 = [...w, ...A].filter((item) => item.id !== ae.id);
-                                const 束 = {};
-                                相手.forEach((e) => {
-                                  const 卒 = 5 === e.grade || e.graduationYear || e.isAlumni;
-                                  const 印 = 卒 ? '卒' : String(void 0 === e.grade || null === e.grade ? 0 : Number(e.grade));
-                                  (束[印] || (束[印] = [])).push(e);
-                                });
-                                const 順 = Object.keys(束).sort((a, b) => {
-                                  if (a === b) return 0;
-                                  if ('卒' === a) return 1;
-                                  if ('卒' === b) return -1;
-                                  if ('0' === a) return 1;
-                                  if ('0' === b) return -1;
-                                  return Number(a) - Number(b);
-                                });
-                                return 順.map((印) => {
-                                  const 題 = '卒' === 印 ? '卒業生' : '0' === 印 ? 'その他/ゲスト' : `${印}年生`;
-                                  const 開 = 開いた学年.has(印);
+                                return 学年でまとめる(相手).map(({ 学年: 印, 題, 人たち }) => {
+                                  const 束 = { [印]: 人たち };
+                                  const 開 = !閉じた学年.has(印);
                                   return (0, y.jsxs)(
                                     o.default,
                                     {
