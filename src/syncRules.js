@@ -715,7 +715,43 @@ function 参加できるライブ(節点, いま = Date.now()) {
   return { 出す: 生きている.map((x) => x.名), 古い };
 }
 
+/**
+ * 1立の射数。弓道では4射で1立。画面のあちこちに 4 と直接書いてあり、
+ * 「なぜ4なのか」が読めなかったので、名前を付けてここへ出す。
+ */
+const 一立の射数 = 4;
+
+/** 射数から立の数を出す。半端が出ても、その端数で1立と数える（8射→2立、6射→2立） */
+function 立の数(射数) {
+  const n = Number(射数);
+  if (!Number.isFinite(n) || n <= 0) return 1;
+  return Math.max(1, Math.ceil(n / 一立の射数));
+}
+
+/**
+ * 立の番号（1始まり）から、その立の1本目が何射目かを返す（0始まりの位置）。
+ * 2立目なら 4（＝5射目）。範囲の外は端に寄せる。
+ */
+function 立の頭の射(立番号, 射数) {
+  const n = Number(立番号);
+  if (!Number.isFinite(n)) return 0;
+  const 上限 = 立の数(射数);
+  const 収めた = Math.min(Math.max(Math.round(n), 1), 上限);
+  return (収めた - 1) * 一立の射数;
+}
+
+/** 何射目（0始まり）が何立目かを返す（1始まり） */
+function 射の立番号(位置) {
+  const n = Number(位置);
+  if (!Number.isFinite(n) || n < 0) return 1;
+  return Math.floor(n / 一立の射数) + 1;
+}
+
 module.exports = {
+  一立の射数,
+  立の数,
+  立の頭の射,
+  射の立番号,
   toMillis,
   trashedAtMillis,
   mergeById,
