@@ -85,8 +85,16 @@ test('個人ログインでも、案内の履歴と分析の見本が出る', as
   let 見本を見た = 0;
   const 踏んだ = [];
   for (let i = 0; i < 60; i++) {
+    // 手順の切り替わりでは、指す先を測り終わるまで番号札を出さない
+    //（出すと中央に描かれてから飛ぶため）。その空白を「終わった」と
+    // 取り違えると、見本の出る手順まで届かないまま数え終わってしまう。
+    // 実際、混み合った実行で6手目で打ち切られていた
     const 札 = page.locator('text=/^\\d+ \\/ \\d+$/').first();
-    if (!(await 札.isVisible().catch(() => false))) break;
+    const 出ている = await 札
+      .waitFor({ state: 'visible', timeout: 4000 })
+      .then(() => true)
+      .catch(() => false);
+    if (!出ている) break;
     踏んだ.push((await 札.textContent()).trim());
     if (await page.locator('text=見本です').first().isVisible().catch(() => false)) 見本を見た++;
 
