@@ -40,6 +40,8 @@ const m = t.default.memo(
       allArchers: m,
       indexInList: C,
       showFooter: p = !0,
+      // 横に並べる（名前が左、○×が右へ伸びる）。鍵も交代も規則は同じで、置き方だけ変える
+      横並び: 横 = !1,
       isReadOnly: k = !1,
       isAdminMode: y = !1,
       onPressName: x,
@@ -76,7 +78,16 @@ const m = t.default.memo(
           return (e.marks || []).filter((e) => '○' === e).length;
         })(),
         M = [];
-      if (!e.isSeparator) for (let e = i - 1; e >= 0; e--) M.push(e);
+      // 縦の表は下から上へ数える（1射目が下）。横の表は左から右へ数える
+      if (!e.isSeparator) {
+        if (横) for (let e = 0; e < i; e++) M.push(e);
+        else for (let e = i - 1; e >= 0; e--) M.push(e);
+      }
+      // 立の切れ目に引く太線。縦は「その立の1本目の下」、横は「その立の4本目の右」
+      const 切れ目 = (位置) => (横 ? 位置 % 4 == 3 && 位置 !== i - 1 : 位置 % 4 == 0 && 0 !== 位置);
+      // 1ますの外枠。横のとき、間隔は細い列ではなく細い行になる
+      const ます幅 = (横 ? s.UIConfig.cellWidth : e.isSeparator ? s.UIConfig.separatorWidth : s.UIConfig.cellWidth) * z,
+        ます高 = (横 && e.isSeparator ? s.UIConfig.separatorWidth : s.UIConfig.cellHeight) * z;
       const W = (e.isSeparator ? s.UIConfig.separatorWidth : s.UIConfig.cellWidth) * z,
         w = e.isSeparator
           ? 'rgba(142,142,147,0.15)'
@@ -179,25 +190,43 @@ const m = t.default.memo(
       }, [自動ロックする, 自動ロックまでの秒, 埋まった立, e.id, e.lockedBlocks, 立を閉じる]);
 
       return (0, f.jsxs)(o.default, {
-        style: { width: W, backgroundColor: 'transparent' },
+        style: 横
+          ? {
+              flexDirection: 'row',
+              flexShrink: 0,
+              width: s.UIConfig.cellWidth * (i + 1) * z,
+              backgroundColor: 'transparent',
+            }
+          : { width: W, backgroundColor: 'transparent' },
         children: [
           (0, f.jsxs)(o.default, {
-            style: { flexDirection: 'column' },
+            style: { flexDirection: 横 ? 'row-reverse' : 'column' },
             children: [
               (0, f.jsxs)(n.default, {
                 activeOpacity: 1,
                 style: [
                   b.header,
-                  {
-                    width: W,
-                    height: s.UIConfig.headerHeight * z,
-                    backgroundColor: w,
-                    marginBottom: 0,
-                    borderRightWidth: R,
-                    borderRightColor: '#000',
-                    borderLeftWidth: _,
-                    borderLeftColor: '#000',
-                  },
+                  横
+                    ? {
+                        width: s.UIConfig.cellWidth * z,
+                        height: ます高,
+                        backgroundColor: w,
+                        marginBottom: 0,
+                        borderBottomWidth: R,
+                        borderBottomColor: '#000',
+                        borderTopWidth: _,
+                        borderTopColor: '#000',
+                      }
+                    : {
+                        width: W,
+                        height: s.UIConfig.headerHeight * z,
+                        backgroundColor: w,
+                        marginBottom: 0,
+                        borderRightWidth: R,
+                        borderRightColor: '#000',
+                        borderLeftWidth: _,
+                        borderLeftColor: '#000',
+                      },
                 ],
                 disabled: !0,
                 children: [
@@ -249,32 +278,29 @@ const m = t.default.memo(
                       })
                     : null,
                   (0, f.jsx)(o.default, {
-                    style: {
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      height: 1.5,
-                      backgroundColor: '#000',
-                    },
+                    style: 横
+                      ? { position: 'absolute', top: 0, bottom: 0, left: 0, width: 1.5, backgroundColor: '#000' }
+                      : { position: 'absolute', bottom: 0, left: 0, right: 0, height: 1.5, backgroundColor: '#000' },
                   }),
                 ],
               }),
               e.isSeparator
                 ? (0, f.jsx)(o.default, {
-                    children: Array.from({ length: i }, (e, t) => i - 1 - t).map((t) => {
+                    style: 横 ? { flexDirection: 'row' } : void 0,
+                    children: Array.from({ length: i }, (e, t) => (横 ? t : i - 1 - t)).map((t) => {
                       const l = Math.floor(t / 4),
-                        c = t % 4 == 0 && 0 !== t,
+                        c = 切れ目(t),
                         h = t === Math.min(i - 1, 4 * l + 3),
                         u = !(k && !y) && (e.lockedBlocks?.[l] || !1);
                       return (0, f.jsxs)(
                         o.default,
                         {
-                          style: { width: W, height: s.UIConfig.cellHeight * z },
+                          style: { width: ます幅, height: ます高 },
                           children: [
                             (0, f.jsx)(a.ScoreCell, {
                               archerId: e.id,
                               index: t,
+                              横並び: 横,
                               isLocked: u,
                               isBlockBottom: c,
                               isBlockTop: h,
@@ -306,23 +332,25 @@ const m = t.default.memo(
                   })
                 : e.isTotalCalculator
                   ? (0, f.jsx)(o.default, {
+                      style: 横 ? { flexDirection: 'row' } : void 0,
                       children: M.map((t) => {
                         const c = Math.floor(t / 4),
                           h = U(c),
-                          u = t % 4 == 0,
+                          u = 横 ? t % 4 == 0 : t % 4 == 0,
                           m = t === Math.min(i - 1, 4 * c + 3),
                           C = !(k && !y) && (e.lockedBlocks?.[c] || !1);
                         return (0, f.jsxs)(
                           o.default,
                           {
-                            style: { width: W, height: s.UIConfig.cellHeight * z },
+                            style: { width: ます幅, height: ます高 },
                             children: [
                               (0, f.jsx)(a.ScoreCell, {
                                 archerId: e.id,
                                 index: t,
+                                横並び: 横,
                                 mark: e.marks?.[t],
                                 isLocked: C,
-                                isBlockBottom: t % 4 == 0 && (0 !== t || i > 4),
+                                isBlockBottom: 横 ? 切れ目(t) : t % 4 == 0 && (0 !== t || i > 4),
                                 isBlockTop: m,
                                 isFirst: 0 === t,
                                 hideMark: !0,
@@ -367,6 +395,7 @@ const m = t.default.memo(
                       }),
                     })
                   : (0, f.jsx)(o.default, {
+                      style: 横 ? { flexDirection: 'row' } : void 0,
                       children: M.map((t) => {
                         const o = e.substitutions?.[t];
                         let l = '';
@@ -379,10 +408,11 @@ const m = t.default.memo(
                           {
                             archerId: e.id,
                             index: t,
+                            横並び: 横,
                             mark: e.marks?.[t] || '',
                             subName: l,
                             isLocked: c,
-                            isBlockBottom: t % 4 == 0 && 0 !== t,
+                            isBlockBottom: 切れ目(t),
                             isBlockTop: s,
                             isFirst: 0 === t,
                             isNormalArcher: !0,
