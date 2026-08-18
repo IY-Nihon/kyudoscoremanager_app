@@ -48,6 +48,8 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
       [z, R] = (0, t.useState)(''),
       // 交代は立の切れ目ですることが多い。射目でも入れられるよう、単位を選べる
       [単位, 単位を置く] = (0, t.useState)('立目'),
+      // 開いている学年。人の選択（JP_ArcherActionModal_689.js）と同じく初めは全部開く
+      [開いた学年, 開いた学年を置く] = (0, t.useState)(new Set(['1', '2', '3', '4', '0'])),
       [w, I] = (0, t.useState)(''),
       [k, v] = (0, t.useState)(''),
       H = ('' === w.trim() ? [...F] : F.filter((e) => (e.name || '').toLowerCase().includes(w.toLowerCase()))).sort(
@@ -67,6 +69,15 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
       ),
       立か = '立目' === 単位,
       上限 = 立か ? 立の数(C) : C,
+      学年を開け閉め = (印) => {
+        開いた学年を置く((前) => {
+          const 次 = new Set(前);
+          return (次.has(印) ? 次.delete(印) : 次.add(印), 次);
+        });
+      },
+      // 名前で絞り込んでいるあいだは開いておく。閉じたままだと
+      // 探した人が隠れたままで「居ない」と見えてしまう
+      開いているか = (学年) => '' !== w.trim() || 開いた学年.has(String(学年)),
       // 交代相手を学年でまとめる。人の選択と同じで、0年（学年なし）は
       // 「その他/ゲスト」として最後に置く
       学年ごと = (() => {
@@ -215,11 +226,22 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
                         renderItem: ({ item: 組 }) =>
                           (0, p.jsxs)(n.default, {
                             children: [
-                              (0, p.jsxs)(o.default, {
+                              (0, p.jsxs)(u.default, {
                                 style: y.学年の見出し,
-                                children: [組.題, ' (', 組.人たち.length, '人)'],
+                                onPress: () => 学年を開け閉め(String(組.学年)),
+                                children: [
+                                  (0, p.jsxs)(o.default, {
+                                    style: y.学年の字,
+                                    children: [組.題, ' (', 組.人たち.length, '人)'],
+                                  }),
+                                  (0, p.jsx)(h.Ionicons, {
+                                    name: 開いているか(組.学年) ? 'chevron-up' : 'chevron-down',
+                                    size: 16,
+                                    color: '#8E8E93',
+                                  }),
+                                ],
                               }),
-                              ...組.人たち.map((e, 順) => {
+                              ...(開いているか(組.学年) ? 組.人たち : []).map((e, 順) => {
                                 if (!e || !e.name || 'string' != typeof e.name) return null;
                                 const t = e.name.trim().split(/[\s\u3000]+/),
                                    姓 = t && t.length > 0 ? t[0] || '' : '不明',
@@ -301,15 +323,16 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
     番号の字選択中: { color: '#007AFF', fontWeight: 'bold' },
     // 学年の見出し。人の選択（termHeader / termTitle）と同じ見た目
     学年の見出し: {
-      fontSize: 15,
-      color: '#333',
-      fontWeight: '600',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
       paddingHorizontal: 16,
       paddingVertical: 12,
       backgroundColor: '#FFF',
       borderBottomWidth: a.default.hairlineWidth,
       borderBottomColor: '#EEE',
     },
+    学年の字: { fontSize: 15, color: '#333', fontWeight: '600' },
     単位ボタン: {
       flex: 1,
       paddingVertical: 10,

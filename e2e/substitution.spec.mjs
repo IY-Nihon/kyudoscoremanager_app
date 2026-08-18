@@ -154,3 +154,40 @@ test('途中交代：どこで交代するかを選ぶまでは確定できな�
   // 画面は閉じない（＝書かれていない）
   await expect(page.getByText('途中交代の設定', { exact: true }), '選ばずに確定できてしまう').toBeVisible();
 });
+
+test('途中交代：交代相手は学年でまとまり、開け閉めできる', async ({ page }) => {
+  // 記録表の人の選択と同じ形にしてある。名前で絞っているあいだは、
+  // 閉じていても出す（閉じたままだと「居ない」と見えてしまう）
+  await 交代の画面を開く(page);
+
+  const 見えている人数 = () =>
+    page.evaluate(
+      () =>
+        [...document.querySelectorAll('div')].filter((e) => /^(男子|女子|未設定)$/.test((e.textContent || '').trim()))
+          .length
+    );
+
+  const 見出し = page.getByText(/^1年生 \(\d+人\)$/);
+  await expect(見出し, '学年の見出しが出ていない').toBeVisible();
+
+  const 初め = await 見えている人数();
+  expect(初め, '初めから誰も出ていない').toBeGreaterThan(0);
+
+  await 見出し.click();
+  await page.waitForTimeout(700);
+  const 閉じた = await 見えている人数();
+  expect(閉じた, '見出しを押しても閉じない').toBeLessThan(初め);
+
+  await 見出し.click();
+  await page.waitForTimeout(700);
+  expect(await 見えている人数(), '押し直しても開かない').toBe(初め);
+
+  // 閉じたまま名前で絞ると、隠れずに出てくること
+  await 見出し.click();
+  await page.waitForTimeout(600);
+  const 検索 = page.getByPlaceholder('名前で検索...');
+  await 検索.click();
+  await 検索.pressSequentially('部員', { delay: 30 });
+  await page.waitForTimeout(800);
+  expect(await 見えている人数(), '閉じたままだと、絞り込んでも出てこない').toBeGreaterThan(閉じた);
+});
