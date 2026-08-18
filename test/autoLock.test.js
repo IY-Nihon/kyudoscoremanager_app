@@ -255,3 +255,23 @@ test('「鍵を開けました」の帯は、指を下のますへ通す', () =>
   assert.ok(帯.includes("position: 'absolute'"), '浮いていないなら、この検査の前提が変わっている');
   assert.ok(帯.includes("pointerEvents: 'none'"), '帯が指を吸ってしまう');
 });
+
+// 記録表の並べ方（縦／横）は端末ごとの好みなので残す
+test('設定：記録表の並べ方は既定で縦、切り替えると端末に残る', () => {
+  const { store } = ストアを用意する();
+  store.setState({ isHydrated: true });
+
+  assert.equal(store.getState().横に並べる, false, '既定は縦のはず');
+
+  store.getState().set横に並べる(true);
+  assert.equal(store.getState().横に並べる, true, '横へ切り替わらない');
+  store.getState().set横に並べる(false);
+  assert.equal(store.getState().横に並べる, false, '縦へ戻せない');
+
+  const 中身 = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'src', 'JP_useScoreStore_174.js'),
+    'utf8'
+  );
+  const 保存部 = 中身.slice(中身.indexOf('partialize:'), 中身.indexOf('onRehydrateStorage'));
+  assert.ok(保存部.includes('横に並べる'), '並べ方が保存されていない（読み込み直すと縦に戻る）');
+});

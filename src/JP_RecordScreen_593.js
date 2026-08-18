@@ -124,6 +124,9 @@ const k = () => {
         保存時に出欠を確認する = !0,
         // 長押しでますを開けた時刻。知らせを出す合図
         鍵を開けた時刻 = 0,
+        // 記録表の並べ方。真なら名前が左、○×が右へ伸びる
+        横に並べる = !1,
+        set横に並べる,
       } = (0, x.useScoreStore)(),
       se = 'number' == typeof q && !isNaN(q) && q > 0 ? q : 1;
     if (!re) return null;
@@ -265,6 +268,168 @@ const k = () => {
           }, 100));
       },
       et = l.default;
+    // ── 横に並べた記録表 ──
+    // 縦の表は「射数が縦、名前は下、右から左」。横はそれを90度まわして
+    // 「名前が左、射数が右へ、上から下へ」にする。○×のますも、鍵も、
+    // 途中交代も同じ部品をそのまま使う（並べ方だけを変える）。
+    // 左の名前だけは動かさず、○×の側だけ横に流す
+    const 名前の幅 = 100 * se,
+      行の高さ = (射手) =>
+        (射手 && 射手.isSeparator ? F.UIConfig.separatorWidth : F.UIConfig.cellHeight) * se,
+      横の名前セル = (射手, 順) =>
+        (0, A.jsx)(
+          l.default,
+          {
+            style: {
+              width: 名前の幅,
+              height: 行の高さ(射手),
+              backgroundColor: 射手.isTotalCalculator ? 'rgba(0,122,255,0.05)' : '#F2F2F7',
+              borderBottomWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 1,
+              borderBottomColor: '#000',
+              borderTopWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 0,
+              borderTopColor: '#000',
+              borderRightWidth: 1.5,
+              borderRightColor: '#000',
+              paddingHorizontal: 4,
+              justifyContent: 'center',
+              alignItems: 'center',
+            },
+            children: 射手.isSeparator
+              ? (0, A.jsx)(h.default, {
+                  style: { alignItems: 'center', width: '100%', height: '100%', justifyContent: 'center' },
+                  onPress: () => M(射手.id),
+                  disabled: $e,
+                  children: (0, A.jsx)(p.Ionicons, { name: 'close-circle', size: 20 * se, color: '#8E8E93' }),
+                })
+              : (0, A.jsxs)(h.default, {
+                  style: { alignItems: 'center', width: '100%', height: '100%', justifyContent: 'center' },
+                  onPress: () => qe(射手.id, 射手.name, 順),
+                  children: [
+                    (0, A.jsx)(a.default, {
+                      style: [W.footerName, { color: 射手.name ? '#000' : '#8E8E93', fontSize: 13 * se }],
+                      numberOfLines: 1,
+                      children: 射手.isTotalCalculator
+                        ? '合計'
+                        : 射手.name
+                          ? (0, v.formatMemberName)(射手.name, oe)
+                          : '選択',
+                    }),
+                    射手.isGuest || (!射手.isTotalCalculator && '' !== 射手.name)
+                      ? (0, A.jsxs)(l.default, {
+                          style: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 1 },
+                          children: [
+                            射手.isGuest
+                              ? (0, A.jsx)(a.default, {
+                                  style: [W.guestLabel, { fontSize: 9 * se }],
+                                  children: '(ゲスト)',
+                                })
+                              : null,
+                            !射手.isTotalCalculator && '' !== 射手.name
+                              ? (0, A.jsx)(l.default, {
+                                  style: {
+                                    paddingHorizontal: 4,
+                                    paddingVertical: 1,
+                                    borderRadius: 10,
+                                    backgroundColor:
+                                      射手.isGuest ||
+                                      !射手.gender ||
+                                      射手.gender === '未設定' ||
+                                      !['男子', '女子'].includes(射手.gender)
+                                        ? '#8E8E93'
+                                        : '男子' === 射手.gender
+                                          ? '#007AFF'
+                                          : '#FF2D55',
+                                  },
+                                  children: (0, A.jsx)(p.Ionicons, {
+                                    name: 'person',
+                                    size: 9 * se,
+                                    color: '#FFF',
+                                  }),
+                                })
+                              : null,
+                          ],
+                        })
+                      : null,
+                  ],
+                }),
+          },
+          typeof 射手.id === 'string' ? `名-${射手.id}` : `名-${順}`
+        ),
+      横の表 = () => {
+        const 一覧 = (Array.isArray(k) ? k : []).filter((e) => !!e);
+        return [
+          (0, A.jsx)(
+            n.default,
+            {
+              showsVerticalScrollIndicator: !1,
+              bounces: !1,
+              style: { flexGrow: 0 },
+              children: (0, A.jsxs)(l.default, {
+                style: { flexDirection: 'row', minWidth: '100%' },
+                children: [
+                  (0, A.jsxs)(l.default, {
+                    style: { backgroundColor: '#F2F2F7', zIndex: 10 },
+                    children: [
+                      (0, A.jsx)(l.default, {
+                        style: {
+                          width: 名前の幅,
+                          height: F.UIConfig.cellHeight * se,
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          backgroundColor: '#F2F2F7',
+                          borderTopWidth: 1.5,
+                          borderTopColor: '#000',
+                          borderBottomWidth: 1.5,
+                          borderBottomColor: '#000',
+                          borderRightWidth: 1.5,
+                          borderRightColor: '#000',
+                        },
+                        children: (0, A.jsx)(a.default, {
+                          style: { fontSize: 10 * se, fontWeight: 'bold', color: '#3C3C43' },
+                          children: '名',
+                        }),
+                      }),
+                      一覧.map((射手, 順) => 横の名前セル(射手, 順)),
+                    ],
+                  }),
+                  (0, A.jsx)(n.default, {
+                    horizontal: !0,
+                    showsHorizontalScrollIndicator: !0,
+                    style: { flexGrow: 0, flexShrink: 1 },
+                    children: (0, A.jsxs)(l.default, {
+                      style: {
+                        flexDirection: 'column',
+                        width: F.UIConfig.cellWidth * (T + 1) * se,
+                      },
+                      children: [
+                        (0, A.jsx)(b.LabelColumn, { shots: T, showFooter: !1, 横並び: !0 }),
+                        一覧.map((射手, 順) =>
+                          (0, A.jsx)(
+                            y.ArcherColumnView,
+                            {
+                              archer: 射手,
+                              shots: T,
+                              allArchers: 一覧,
+                              indexInList: 順,
+                              showFooter: !1,
+                              横並び: !0,
+                              isReadOnly: $e,
+                              onPressName: () => qe(射手.id, 射手.name, 順),
+                              onDelete: () => M(射手.id),
+                            },
+                            typeof 射手.id === 'string' ? 射手.id : `行-${順}`
+                          )
+                        ),
+                      ],
+                    }),
+                  }),
+                ],
+              }),
+            },
+            '横の表'
+          ),
+        ];
+      };
     return (0, A.jsxs)(et, {
       style: W.safeArea,
       edges: ['top', 'left', 'right', 'bottom'],
@@ -963,7 +1128,9 @@ const k = () => {
             (0, A.jsxs)(l.default, {
               ref: 案内の記録表,
               style: { maxHeight: '100%', flexDirection: 'column', maxWidth: '100%' },
-              children: [
+              children: 横に並べる
+                ? 横の表()
+                : [
                 (0, A.jsx)(n.default, {
                   showsVerticalScrollIndicator: !1,
                   bounces: !1,
@@ -1207,6 +1374,33 @@ const k = () => {
                     disabled: !進める,
                     testID: 'やり直し',
                     children: (0, A.jsx)(p.Ionicons, { name: 'arrow-redo', size: 24, color: '#8E8E93' }),
+                  }),
+                  // 記録表の並べ方を変える。絵だけでは向きが読み取りにくいので、
+                  // 押したあとに何になったかを短く知らせる
+                  (0, A.jsxs)(f.default, {
+                    style: ({ hovered: e }) => [
+                      W.historyBtn,
+                      { alignItems: 'center' },
+                      e && m.IS_WEB && { backgroundColor: '#F2F2F7' },
+                    ],
+                    onPress: () => {
+                      const 次 = !横に並べる;
+                      (set横に並べる && set横に並べる(次),
+                        Ge(次 ? '横に並べました' : '縦に並べました'),
+                        j.impactAsync(j.ImpactFeedbackStyle.Light));
+                    },
+                    testID: '並べ方',
+                    children: [
+                      (0, A.jsx)(p.Ionicons, {
+                        name: 横に並べる ? 'phone-portrait-outline' : 'phone-landscape-outline',
+                        size: 20,
+                        color: '#8E8E93',
+                      }),
+                      (0, A.jsx)(a.default, {
+                        style: { fontSize: 9, color: '#8E8E93', marginTop: 1 },
+                        children: 横に並べる ? '縦へ' : '横へ',
+                      }),
+                    ],
                   }),
                 ],
               }),
