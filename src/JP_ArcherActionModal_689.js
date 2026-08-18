@@ -51,6 +51,9 @@ const j = ({
   onAddSeparator: T,
   onAddTotal: k,
   existingArchers: A,
+  // 途中交代を取り消す道を出すか。履歴の編集から開いたときは出さない
+  //（あちらの射手は記録中の盤面ではないので、消すと別の記録を触ってしまう）
+  交代を消せる: 交代を消せる = !1,
 }) => {
   const {
     members: B,
@@ -238,29 +241,33 @@ const j = ({
                       }),
                       // 交代が入っているときだけ、取り消す道を出す。
                       // 誰といつ代わっているかも一緒に見せる（間違いに気づけるように）
-                      いまの交代.length > 0
-                        ? (0, F.jsxs)(g.default, {
-                            style: ({ pressed: e, hovered: t }) => [
-                              y.actionBtn,
-                              t && { backgroundColor: '#FFE5E5' },
-                              e && { opacity: 0.7 },
-                            ],
-                            onPress: () => {
-                              (いまの交代.forEach((x) => 交代を書く(s, x.位置, '', null)), C());
-                            },
-                            children: [
-                              (0, F.jsx)(x.Ionicons, { name: 'close-circle', size: 18, color: '#FF3B30' }),
-                              (0, F.jsxs)(l.default, {
-                                style: [y.actionBtnText, { color: '#FF3B30' }],
-                                children: [
-                                  '途中交代を取り消す（',
-                                  いまの交代.map((z) => `${z.位置 + 1}射目〜 ${z.名}`).join('、'),
-                                  '）',
+                      // 入っている交代を1つずつ取り消せるようにする。
+                      // まとめて消すと、2か所以上あるときに1つだけ戻せない
+                      ...(交代を消せる
+                        ? いまの交代.map((交代) =>
+                            (0, F.jsxs)(
+                              g.default,
+                              {
+                                style: ({ pressed: e, hovered: t }) => [
+                                  y.actionBtn,
+                                  t && { backgroundColor: '#FFE5E5' },
+                                  e && { opacity: 0.7 },
                                 ],
-                              }),
-                            ],
-                          })
-                        : null,
+                                onPress: () => {
+                                  (交代を書く(s, 交代.位置, '', null), C());
+                                },
+                                children: [
+                                  (0, F.jsx)(x.Ionicons, { name: 'close-circle', size: 18, color: '#FF3B30' }),
+                                  (0, F.jsxs)(l.default, {
+                                    style: [y.actionBtnText, { color: '#FF3B30' }],
+                                    children: [交代.位置 + 1, '射目〜 ', 交代.名, ' の交代を取り消す'],
+                                  }),
+                                ],
+                              },
+                              `交代取消-${交代.位置}`
+                            )
+                          )
+                        : []),
                       _
                         ? (0, F.jsxs)(n.default, {
                             style: y.guestInputRow,
