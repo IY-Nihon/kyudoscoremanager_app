@@ -30,7 +30,20 @@ async function 入る(page) {
     await 合言葉欄.click();
     await 合言葉欄.pressSequentially(合言葉, { delay: 20 });
     await page.getByText('ログイン', { exact: true }).click();
-    await page.waitForTimeout(9000);
+    // 決まった秒数で待たない。iPhone(WebKit) では9秒に収まらないことがあり、
+    // 収まらないとログイン画面のまま先へ進んで、まったく別の顔で落ちる
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+            return s.activeGroupId || null;
+          }),
+        { timeout: 60_000, message: 'ログインが通らない（団体IDが入らない）' }
+      )
+      .not.toBeNull();
+    // 認証の保存が書き終わるまでの余裕
+    await page.waitForTimeout(1500);
   }
   await page.evaluate((版) => {
     localStorage.setItem('tutorialDoneVersion', '2026-08-13-01');
