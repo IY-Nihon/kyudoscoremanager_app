@@ -12,6 +12,10 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const {
+  一立の射数,
+  立の数,
+  立の頭の射,
+  射の立番号,
   toMillis,
   trashedAtMillis,
   mergeById,
@@ -380,4 +384,53 @@ test('ライブ名：ふつうの名前は通す', () => {
   }
   assert.equal(ライブ名に使えない字(''), null, '空は別の検査で弾く');
   assert.equal(ライブ名に使えない字(undefined), null, '文字列でなければ何も言わない');
+});
+
+// ── 立の数え方（途中交代を立の単位でも入れられるようにしたときに出した） ──
+
+test('1立は4射', () => {
+  assert.strictEqual(一立の射数, 4);
+});
+
+test('立の数：半端が出たら、その端数で1立と数える', () => {
+  assert.strictEqual(立の数(4), 1);
+  assert.strictEqual(立の数(8), 2);
+  assert.strictEqual(立の数(12), 3);
+  assert.strictEqual(立の数(6), 2, '5〜6射目は2立目として数えたい');
+  assert.strictEqual(立の数(1), 1);
+  // 読めないものが来ても、画面が壊れないように1を返す
+  assert.strictEqual(立の数(0), 1);
+  assert.strictEqual(立の数(-3), 1);
+  assert.strictEqual(立の数(null), 1);
+  assert.strictEqual(立の数('やま'), 1);
+});
+
+test('立の頭の射：その立の1本目が何射目か（0始まり）', () => {
+  assert.strictEqual(立の頭の射(1, 8), 0, '1立目は1射目から');
+  assert.strictEqual(立の頭の射(2, 8), 4, '2立目は5射目から');
+  assert.strictEqual(立の頭の射(3, 12), 8, '3立目は9射目から');
+});
+
+test('立の頭の射：射数からはみ出す番号は、端に寄せる', () => {
+  // 画面側でも 1〜上限 に絞っているが、ここが素通しだと
+  // 印の付いていない位置に交代が入り、表示が崩れる
+  assert.strictEqual(立の頭の射(9, 8), 4, '2立しか無いのに9立目');
+  assert.strictEqual(立の頭の射(0, 8), 0);
+  assert.strictEqual(立の頭の射(-1, 8), 0);
+  assert.strictEqual(立の頭の射('やま', 8), 0);
+});
+
+test('射の立番号：何射目が何立目か', () => {
+  assert.strictEqual(射の立番号(0), 1, '1射目は1立目');
+  assert.strictEqual(射の立番号(3), 1, '4射目は1立目');
+  assert.strictEqual(射の立番号(4), 2, '5射目は2立目');
+  assert.strictEqual(射の立番号(7), 2);
+  assert.strictEqual(射の立番号(8), 3);
+  assert.strictEqual(射の立番号(-1), 1);
+});
+
+test('立と射目は行き来できる（立の頭 → 立番号 で元に戻る）', () => {
+  for (let 立 = 1; 立 <= 立の数(12); 立++) {
+    assert.strictEqual(射の立番号(立の頭の射(立, 12)), 立, `${立}立目で行き来が合わない`);
+  }
 });
