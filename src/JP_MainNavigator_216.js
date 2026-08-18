@@ -22,7 +22,8 @@ function e(e) {
       return k;
     },
   }));
-var themeMod = require('./theme'),
+var RN画面 = require('react-native'),
+  themeMod = require('./theme'),
   t = require('./module_37'),
   n = e(t),
   o = e(require('./default_144')),
@@ -126,6 +127,12 @@ const D = c.default.create({
 
 const I = n.default.memo(({ state: e, descriptors: t, navigation: nav }) => {
   (0, h.useSafeAreaInsets)();
+  // 画面の幅で字を詰める。6つのタブは 320px の端末に収まらず、
+  // 左右にはみ出していた（記録・履歴・分析・メンバー・出欠・設定）
+  const 画面の幅 = (0, RN画面.useWindowDimensions)().width;
+  const 詰める = 画面の幅 < 380;
+  const 狭いときのボタン = 詰める ? { paddingHorizontal: 6, minWidth: 34 } : null;
+  const 狭いときの字 = 詰める ? { fontSize: 11 } : null;
   const c = (0, p.useScoreStore)((e) => e.historySelectedTags || []),
     u = (0, p.useScoreStore)((e) => e.analysisSelectedTags || []),
     b = (0, p.useScoreStore)((e) => e.currentSessionTags || []),
@@ -170,6 +177,7 @@ const I = n.default.memo(({ state: e, descriptors: t, navigation: nav }) => {
                   x || e.defaultPrevented || nav.navigate(h.name);
                 },
                 style: ({ pressed: e, hovered: t }) => [
+                  狭いときのボタン,
                   D.tabButton,
                   x && D.tabButtonActive,
                   !x && t && D.tabButtonHover,
@@ -179,7 +187,7 @@ const I = n.default.memo(({ state: e, descriptors: t, navigation: nav }) => {
                   style: { flexDirection: 'row', alignItems: 'center' },
                   children: [
                     (0, T.jsx)(s.default, {
-                      style: [D.tabText, x && D.tabTextActive, !x && D.tabTextHoverable],
+                      style: [D.tabText, 狭いときの字, x && D.tabTextActive, !x && D.tabTextHoverable],
                       children: f,
                     }),
                     y && (0, T.jsx)(o.default, { style: D.badgeDot }),
