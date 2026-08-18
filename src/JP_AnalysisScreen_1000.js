@@ -74,6 +74,15 @@ const j = ({ navigation }) => {
   const D = (0, u.useScoreStore)((e) => e.myMemberName) || '';
   const [compareMembers, setCompareMembers] = (0, t.useState)([]);
   const [isSelectingCompareTarget, setIsSelectingCompareTarget] = (0, t.useState)(false);
+  // 比較する相手も学年でまとめる。記録表の人の選択と同じ形にしてある。
+  // 初めは全部開いておく（'卒' は卒業生のまとまり）
+  const [開いた学年, 開いた学年を置く] = (0, t.useState)(new Set(['1', '2', '3', '4', '0', '卒']));
+  const 学年を開け閉め = (印) => {
+    開いた学年を置く((前) => {
+      const 次 = new Set(前);
+      return (次.has(印) ? 次.delete(印) : 次.add(印), 次);
+    });
+  };
 
   // 分析グラフの点タップ→履歴一覧の該当セッション詳細に飛び、対象者の列までスクロールする
   const goToHistoryRecord = (sessionId, memberId) => {
@@ -1697,50 +1706,102 @@ const j = ({ navigation }) => {
                               ],
                             }),
                             (0, y.jsx)(r.default, {
-                              style: { maxHeight: 150 },
-                              children: [...w, ...A]
-                                .filter((item) => item.id !== ae.id)
-                                .map((item) => {
-                                  const isSelected = compareMembers.some((m) => m.id === item.id);
+                              style: { maxHeight: 240 },
+                              children: (() => {
+                                // 学年でまとめる。卒業生は最後にひとまとめ、
+                                // 学年の無い人は「その他/ゲスト」（人の選択と同じ分け方）
+                                const 相手 = [...w, ...A].filter((item) => item.id !== ae.id);
+                                const 束 = {};
+                                相手.forEach((e) => {
+                                  const 卒 = 5 === e.grade || e.graduationYear || e.isAlumni;
+                                  const 印 = 卒 ? '卒' : String(void 0 === e.grade || null === e.grade ? 0 : Number(e.grade));
+                                  (束[印] || (束[印] = [])).push(e);
+                                });
+                                const 順 = Object.keys(束).sort((a, b) => {
+                                  if (a === b) return 0;
+                                  if ('卒' === a) return 1;
+                                  if ('卒' === b) return -1;
+                                  if ('0' === a) return 1;
+                                  if ('0' === b) return -1;
+                                  return Number(a) - Number(b);
+                                });
+                                return 順.map((印) => {
+                                  const 題 = '卒' === 印 ? '卒業生' : '0' === 印 ? 'その他/ゲスト' : `${印}年生`;
+                                  const 開 = 開いた学年.has(印);
                                   return (0, y.jsxs)(
-                                    s.default,
+                                    o.default,
                                     {
-                                      onPress: () => {
-                                        setCompareMembers((prev) => {
-                                          if (prev.some((m) => m.id === item.id)) {
-                                            return prev.filter((m) => m.id !== item.id);
-                                          } else {
-                                            return [...prev, item];
-                                          }
-                                        });
-                                      },
-                                      style: {
-                                        paddingVertical: 10,
-                                        borderBottomWidth: 1,
-                                        borderBottomColor: '#F2F2F7',
-                                        flexDirection: 'row',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                      },
                                       children: [
-                                        (0, y.jsx)(l.default, {
+                                        (0, y.jsxs)(s.default, {
+                                          onPress: () => 学年を開け閉め(印),
                                           style: {
-                                            fontSize: 14,
-                                            color: isSelected ? '#007AFF' : '#1C1C1E',
-                                            fontWeight: isSelected ? 'bold' : 'normal',
+                                            flexDirection: 'row',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            paddingVertical: 10,
+                                            borderBottomWidth: 1,
+                                            borderBottomColor: '#F2F2F7',
                                           },
-                                          children: item.name,
+                                          children: [
+                                            (0, y.jsxs)(l.default, {
+                                              style: { fontSize: 14, fontWeight: '600', color: '#3A3A3C' },
+                                              children: [題, ' (', 束[印].length, '人)'],
+                                            }),
+                                            (0, y.jsx)(h.Ionicons, {
+                                              name: 開 ? 'chevron-up' : 'chevron-down',
+                                              size: 14,
+                                              color: '#8E8E93',
+                                            }),
+                                          ],
                                         }),
-                                        isSelected &&
-                                          (0, y.jsx)(l.default, {
-                                            style: { color: '#007AFF', fontSize: 14, fontWeight: 'bold' },
-                                            children: '\u2713',
-                                          }),
+                                        ...(開 ? 束[印] : []).map((item) => {
+                                          const isSelected = compareMembers.some((m) => m.id === item.id);
+                                          return (0, y.jsxs)(
+                                            s.default,
+                                            {
+                                              onPress: () => {
+                                                setCompareMembers((prev) => {
+                                                  if (prev.some((m) => m.id === item.id)) {
+                                                    return prev.filter((m) => m.id !== item.id);
+                                                  } else {
+                                                    return [...prev, item];
+                                                  }
+                                                });
+                                              },
+                                              style: {
+                                                paddingVertical: 10,
+                                                paddingLeft: 12,
+                                                borderBottomWidth: 1,
+                                                borderBottomColor: '#F2F2F7',
+                                                flexDirection: 'row',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                              },
+                                              children: [
+                                                (0, y.jsx)(l.default, {
+                                                  style: {
+                                                    fontSize: 14,
+                                                    color: isSelected ? '#007AFF' : '#1C1C1E',
+                                                    fontWeight: isSelected ? 'bold' : 'normal',
+                                                  },
+                                                  children: item.name,
+                                                }),
+                                                isSelected &&
+                                                  (0, y.jsx)(l.default, {
+                                                    style: { color: '#007AFF', fontSize: 14, fontWeight: 'bold' },
+                                                    children: '\u2713',
+                                                  }),
+                                              ],
+                                            },
+                                            `select-${item.id}`
+                                          );
+                                        }),
                                       ],
                                     },
-                                    `select-${item.id}`
+                                    `組-${印}`
                                   );
-                                }),
+                                });
+                              })(),
                             }),
                           ],
                         })
