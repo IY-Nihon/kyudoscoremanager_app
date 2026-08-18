@@ -62,8 +62,7 @@ const f = ({ shots: e, showFooter: i = !0, 横並び: 横 = !1 }) => {
                   ? {
                       width: n.UIConfig.cellWidth * s,
                       height: n.UIConfig.cellHeight * s,
-                      borderBottomWidth: 1.5,
-                      borderBottomColor: '#000',
+                      borderBottomWidth: 0,
                       borderRightWidth: 0,
                       borderLeftWidth: 1.5,
                       borderLeftColor: '#000',
@@ -92,8 +91,6 @@ const f = ({ shots: e, showFooter: i = !0, 横並び: 横 = !1 }) => {
                           height: n.UIConfig.cellHeight * s,
                           borderRightWidth: 切れ目 ? 2 : 1,
                           borderRightColor: '#000',
-                          borderBottomWidth: 1.5,
-                          borderBottomColor: '#000',
                         }
                       : {
                           height: n.UIConfig.cellHeight * s,
@@ -114,6 +111,19 @@ const f = ({ shots: e, showFooter: i = !0, 横並び: 横 = !1 }) => {
             style: [c.footer, { height: n.UIConfig.footerHeight * s }],
             children: (0, h.jsx)(o.default, { style: [c.footerText, { fontSize: 10 * s }], children: '名' }),
           }),
+        横
+          ? (0, h.jsx)(t.default, {
+              style: {
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                bottom: 0,
+                // 見出しと本体の区切りなので、ますの線（1px）より太くする
+                height: 3,
+                backgroundColor: '#000',
+              },
+            })
+          : null,
       ],
     });
   },

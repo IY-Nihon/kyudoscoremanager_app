@@ -67,6 +67,19 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
       ),
       立か = '立目' === 単位,
       上限 = 立か ? 立の数(C) : C,
+      // 交代相手を学年でまとめる。人の選択と同じで、0年（学年なし）は
+      // 「その他/ゲスト」として最後に置く
+      学年ごと = (() => {
+        const 束 = {};
+        H.forEach((e) => {
+          const g = void 0 === e.grade || null === e.grade ? 0 : Number(e.grade);
+          (束[g] || (束[g] = [])).push(e);
+        });
+        return Object.keys(束)
+          .map(Number)
+          .sort((a, b) => (0 === a ? 1 : 0 === b ? -1 : a - b))
+          .map((g) => ({ 学年: g, 題: 0 === g ? 'その他/ゲスト' : `${g}年生`, 人たち: 束[g] }));
+      })(),
       // 選べる番号。1立目、2立目…（射目のときは 1射目、2射目…）
       番号たち = Array.from({ length: 上限 }, (e, t) => t + 1),
       選んだ = parseInt(z, 10),
@@ -195,30 +208,39 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
                         ],
                       }),
                       (0, p.jsx)(g.default, {
-                        data: H,
-                        keyExtractor: (e, index) =>
-                          typeof e.id === 'string' ? e.id : `subst-${index}-${e.name}`,
+                        data: 学年ごと,
+                        keyExtractor: (e) => String(e.学年),
                         style: y.list,
                         keyboardShouldPersistTaps: 'handled',
-                        renderItem: ({ item: e }) => {
-                          if (!e || !e.name || 'string' != typeof e.name) return null;
-                          const t = e.name.trim().split(/[\s\u3000]+/),
-                            n = t && t.length > 0 ? t[0] || '' : '不明',
-                            a = (t && t.length > 1 && t[1]) || '';
-                          return (0, p.jsxs)(u.default, {
-                            style: y.memberItem,
-                            onPress: () => {
-                              A(e.name, e.id);
-                            },
+                        renderItem: ({ item: 組 }) =>
+                          (0, p.jsxs)(n.default, {
                             children: [
-                              (0, p.jsxs)(o.default, { style: y.memberName, children: [n, ' ', a] }),
                               (0, p.jsxs)(o.default, {
-                                style: y.memberSub,
-                                children: [e.gender, '・', e.grade > 0 ? `${e.grade}年` : 'その他'],
+                                style: y.学年の見出し,
+                                children: [組.題, ' (', 組.人たち.length, '人)'],
+                              }),
+                              ...組.人たち.map((e, 順) => {
+                                if (!e || !e.name || 'string' != typeof e.name) return null;
+                                const t = e.name.trim().split(/[\s\u3000]+/),
+                                   姓 = t && t.length > 0 ? t[0] || '' : '不明',
+                                   名前 = (t && t.length > 1 && t[1]) || '';
+                                return (0, p.jsxs)(
+                                  u.default,
+                                  {
+                                    style: y.memberItem,
+                                    onPress: () => {
+                                      A(e.name, e.id);
+                                    },
+                                    children: [
+                                      (0, p.jsxs)(o.default, { style: y.memberName, children: [姓, ' ', 名前] }),
+                                      (0, p.jsx)(o.default, { style: y.memberSub, children: e.gender }),
+                                    ],
+                                  },
+                                  typeof e.id === 'string' ? e.id : `subst-${組.学年}-${順}-${e.name}`
+                                );
                               }),
                             ],
-                          });
-                        },
+                          }),
                       }),
                     ],
                   }),
@@ -277,6 +299,17 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
     番号の行選択中: { backgroundColor: 'rgba(0,122,255,0.08)' },
     番号の字: { fontSize: 16, color: '#000' },
     番号の字選択中: { color: '#007AFF', fontWeight: 'bold' },
+    // 学年の見出し。人の選択（termHeader / termTitle）と同じ見た目
+    学年の見出し: {
+      fontSize: 15,
+      color: '#333',
+      fontWeight: '600',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: '#FFF',
+      borderBottomWidth: a.default.hairlineWidth,
+      borderBottomColor: '#EEE',
+    },
     単位ボタン: {
       flex: 1,
       paddingVertical: 10,
