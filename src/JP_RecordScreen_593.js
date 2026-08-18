@@ -388,7 +388,8 @@ const k = () => {
                           backgroundColor: '#F2F2F7',
                           borderTopWidth: 1.5,
                           borderTopColor: '#000',
-                          borderBottomWidth: 1.5,
+                          // 見出しと本体の区切り。射数の見出しの線（3px）と太さをそろえる
+                          borderBottomWidth: 3,
                           borderBottomColor: '#000',
                           borderRightWidth: 1.5,
                           borderRightColor: '#000',
