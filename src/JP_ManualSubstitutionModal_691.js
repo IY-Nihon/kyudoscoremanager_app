@@ -47,7 +47,7 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
       } = (0, m.useScoreStore)(),
       [z, R] = (0, t.useState)(''),
       // 交代は立の切れ目ですることが多い。射目でも入れられるよう、単位を選べる
-      [単位, 単位を置く] = (0, t.useState)('立'),
+      [単位, 単位を置く] = (0, t.useState)('立目'),
       [w, I] = (0, t.useState)(''),
       [k, v] = (0, t.useState)(''),
       H = ('' === w.trim() ? [...F] : F.filter((e) => (e.name || '').toLowerCase().includes(w.toLowerCase()))).sort(
@@ -65,8 +65,11 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
           return 0 !== u ? u : (e.name || '').localeCompare(t.name || '', 'ja');
         }
       ),
-      立か = '立' === 単位,
+      立か = '立目' === 単位,
       上限 = 立か ? 立の数(C) : C,
+      // 選べる番号。1立目、2立目…（射目のときは 1射目、2射目…）
+      番号たち = Array.from({ length: 上限 }, (e, t) => t + 1),
+      選んだ = parseInt(z, 10),
       // 入れた番号が何射目にあたるか。立なら、その立の1本目
       何射目 = () => {
         const n = parseInt(z, 10);
@@ -78,7 +81,7 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
         null !== n && x && (T(x, n, e, t), P());
       },
       P = () => {
-        (R(''), I(''), v(''), 単位を置く('立'), j());
+        (R(''), I(''), v(''), 単位を置く('立目'), j());
       };
     return e
       ? (0, p.jsx)(l.default, {
@@ -114,7 +117,7 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
                       (0, p.jsx)(o.default, { style: y.sectionTitle, children: '交代するタイミング' }),
                       (0, p.jsx)(n.default, {
                         style: y.単位の列,
-                        children: ['立', '射目'].map((名) =>
+                        children: ['立目', '射目'].map((名) =>
                           (0, p.jsx)(
                             u.default,
                             {
@@ -131,32 +134,34 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
                           )
                         ),
                       }),
-                      (0, p.jsxs)(n.default, {
-                        style: y.inputRow,
-                        children: [
-                          (0, p.jsx)(o.default, {
-                            style: y.label,
-                            children: 立か ? '立の番号' : '射目番号',
+                      // 番号は打ち込まずに選ぶ。記録表で人を選ぶのと同じ並びにしてある
+                      (0, p.jsx)(g.default, {
+                        data: 番号たち,
+                        keyExtractor: (e) => String(e),
+                        style: y.番号の一覧,
+                        keyboardShouldPersistTaps: 'handled',
+                        renderItem: ({ item: e }) =>
+                          (0, p.jsxs)(u.default, {
+                            style: [y.番号の行, e === 選んだ && y.番号の行選択中],
+                            onPress: () => R(String(e)),
+                            children: [
+                              (0, p.jsxs)(o.default, {
+                                style: [y.番号の字, e === 選んだ && y.番号の字選択中],
+                                children: [e, 単位],
+                              }),
+                              e === 選んだ
+                                ? (0, p.jsx)(h.Ionicons, { name: 'checkmark', size: 20, color: '#007AFF' })
+                                : null,
+                            ],
                           }),
-                          (0, p.jsx)(s.default, {
-                            style: y.inputShot,
-                            // 幅100pxの欄に「番号 (1〜2)」は入り切らず、閉じ括弧が切れていた。
-                            // 何の番号かは左の見出しと下の案内で分かるので、ここは短くする
-                            placeholder: `1〜${上限}`,
-                            keyboardType: 'number-pad',
-                            value: z,
-                            onChangeText: R,
-                            textAlign: 'right',
-                          }),
-                        ],
                       }),
                       (0, p.jsx)(o.default, {
                         style: y.案内,
                         children:
                           null === 何射目()
-                            ? `1〜${上限} で入れてください`
+                            ? '上から交代するところを選んでください'
                             : 立か
-                              ? `${parseInt(z, 10)}立目（${何射目() + 1}射目）から交代します`
+                              ? `${選んだ}立目（${何射目() + 1}射目）から交代します`
                               : `${何射目() + 1}射目から交代します`,
                       }),
                       (0, p.jsx)(o.default, {
@@ -256,17 +261,22 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
       marginLeft: 4,
       textTransform: 'uppercase',
     },
-    inputRow: {
+    単位の列: { flexDirection: 'row', gap: 8, marginBottom: 10 },
+    // 番号の一覧。人を選ぶ一覧（list / memberItem）と同じ見た目にそろえる
+    // flexGrow: 0 が無いと、行が少なくても maxHeight ぶんの白い箱が残る
+    番号の一覧: { backgroundColor: '#FFF', borderRadius: 10, maxHeight: 148, flexGrow: 0, marginBottom: 6 },
+    番号の行: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      backgroundColor: '#FFF',
       paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderRadius: 10,
-      marginBottom: 6,
+      paddingVertical: 14,
+      borderBottomWidth: a.default.hairlineWidth,
+      borderBottomColor: '#C6C6C8',
     },
-    単位の列: { flexDirection: 'row', gap: 8, marginBottom: 10 },
+    番号の行選択中: { backgroundColor: 'rgba(0,122,255,0.08)' },
+    番号の字: { fontSize: 16, color: '#000' },
+    番号の字選択中: { color: '#007AFF', fontWeight: 'bold' },
     単位ボタン: {
       flex: 1,
       paddingVertical: 10,
@@ -280,17 +290,6 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
     単位の字: { fontSize: 16, fontWeight: 'bold', color: '#007AFF' },
     単位の字選択中: { color: '#FFF' },
     案内: { fontSize: 13, color: '#8E8E93', marginLeft: 4, marginBottom: 24 },
-    label: { fontSize: 16, color: '#000' },
-    inputShot: {
-      fontSize: 16,
-      color: '#000',
-      backgroundColor: '#F2F2F7',
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 6,
-      width: 100,
-      textAlign: 'right',
-    },
     searchBar: {
       backgroundColor: '#FFF',
       paddingHorizontal: 12,
