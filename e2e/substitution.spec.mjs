@@ -191,3 +191,40 @@ test('途中交代：交代相手は学年でまとまり、開け閉めでき�
   await page.waitForTimeout(800);
   expect(await 見えている人数(), '閉じたままだと、絞り込んでも出てこない').toBeGreaterThan(閉じた);
 });
+
+test('途中交代：細い画面でも、窓を流せば交代相手にたどり着ける', async ({ page }) => {
+  // 立目の一覧と相手の一覧を、それぞれ別に流せる箱にしていたとき、
+  // 細い画面では相手の一覧が0pxまで潰れ、部員が1人も見えなかった。
+  // いまは窓ごと流す（人の選択と同じ骨組み）
+  await page.setViewportSize({ width: 320, height: 568 });
+  await 交代の画面を開く(page);
+
+  const 見える人数 = () =>
+    page.evaluate(
+      () =>
+        [...document.querySelectorAll('div')]
+          .filter((e) => e.children.length === 0 && /^(男子|女子|未設定)$/.test((e.textContent || '').trim()))
+          .filter((e) => {
+            const r = e.getBoundingClientRect();
+            return r.height > 0 && r.top >= 0 && r.bottom <= window.innerHeight;
+          }).length
+    );
+
+  // 交代相手の見出しの上で指をすべらせる
+  const 場所 = await page.evaluate(() => {
+    const e = [...document.querySelectorAll('div')].find(
+      (x) => /交代相手/.test(x.textContent || '') && x.children.length === 0
+    );
+    const r = e.getBoundingClientRect();
+    return { x: Math.round(r.x + 20), y: Math.round(r.y) };
+  });
+  for (let i = 0; i < 6; i++) {
+    await page.mouse.move(場所.x, 場所.y);
+    await page.mouse.wheel(0, 200);
+    await page.waitForTimeout(250);
+  }
+  await page.waitForTimeout(600);
+
+  expect(await 見える人数(), '細い画面だと、流しても交代相手が見えない').toBeGreaterThan(0);
+  await expect(page.getByText(/^\d年生 \(\d+人\)$/).first(), '学年の見出しにも届かない').toBeVisible();
+});
