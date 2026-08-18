@@ -145,22 +145,39 @@ test('長押しで開けると帯が出て、その帯は指を下のますへ�
   const 場所 = await 真ん中(ます);
   await 押す(page, 場所);
   await page.waitForTimeout(3500); // 閉じるのを待つ
-  await 長押しする(page, 場所, 900);
 
-  // 帯は出る（開いたことが伝わらないと、押さえが届いたか分からない）
-  const 帯 = page.getByText('このマスの鍵を開けました', { exact: true });
-  await expect(帯, '長押しで開けても何も知らせない').toBeVisible();
+  // 帯は1.5秒で消える。長押しのあとに測りに行くと、混み合った実行では
+  // 消えたあとに見てしまう。出るのを待つ側を先に構えてから長押しし、
+  // 位置と当たり判定は1回のやり取りでまとめて測る（往復するあいだに消えるため）。
+  // それでも取りこぼすことがあるので、何度か試す
+  const 文 = 'このマスの鍵を開けました';
+  const 帯 = page.getByText(文, { exact: true });
+  let 当たり = null;
+  for (let 回 = 0; 回 < 3 && !当たり; 回++) {
+    const 出るのを待つ = 帯.waitFor({ state: 'visible', timeout: 15000 }).catch(() => null);
+    await 長押しする(page, 場所, 900);
+    await 出るのを待つ;
+    当たり = await page.evaluate((文) => {
+      const 帯 = [...document.querySelectorAll('div')].find(
+        (e) => (e.textContent || '').trim() === 文 && e.children.length === 0
+      );
+      if (!帯) return null; // もう消えている。測れないので試し直す
+      const r = 帯.getBoundingClientRect();
+      const x = Math.round(r.x + r.width / 2);
+      const y = Math.round(r.y + r.height / 2);
+      const 上 = document.elementFromPoint(x, y);
+      return {
+        文字: 上 ? (上.textContent || '').slice(0, 30) : null,
+        帯か: !!(上 && (上 === 帯 || 帯.contains(上))),
+      };
+    }, 文);
+    if (!当たり) await page.waitForTimeout(3500); // 閉じ直してから試す
+  }
 
+  // 帯が出ること自体（開いたことが伝わらないと、押さえが届いたか分からない）
+  expect(当たり, '長押しで開けても何も知らせない（帯が出ない）').not.toBeNull();
   // その帯の真ん中を指で触ると、帯ではなく下にあるものに当たること。
   // 帯が指を吸うと「開いたのに、その下のますが書けない」になる
-  const 枠 = await 帯.boundingBox();
-  const 当たり = await page.evaluate(
-    ({ x, y, 文 }) => {
-      const e = document.elementFromPoint(x, y);
-      return { 文字: e ? (e.textContent || '').slice(0, 30) : null, 帯か: !!(e && e.closest && e.closest('div') && (e.textContent || '').includes(文)) };
-    },
-    { x: Math.round(枠.x + 枠.width / 2), y: Math.round(枠.y + 枠.height / 2), 文: 'このマスの鍵を開けました' }
-  );
   expect(当たり.帯か, `帯が指を吸っている（当たったもの: ${当たり.文字}）`).toBe(false);
 });
 
