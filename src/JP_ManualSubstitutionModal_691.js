@@ -326,7 +326,15 @@ const x = ({ visible: e, archerId: x, onClose: j }) => {
     // flexShrink: 0 が無いと、細い画面（iPhone SE）で52pxまで潰れ、
     // 5立ぶんの一覧が1行しか見えなくなる。縮むのは下の相手の一覧に任せる
     // 窓ごと流すので、ここでは高さを縛らない
-    番号の一覧: { backgroundColor: '#FFF', borderRadius: 10, marginBottom: 6, overflow: 'hidden' },
+    // 貼り付ける側が大きくなりすぎないよう高さを縛る。射目にすると
+    // 8〜20行に伸び、相手の一覧が画面の外へ押し出されていた
+    番号の一覧: {
+      backgroundColor: '#FFF',
+      borderRadius: 10,
+      marginBottom: 6,
+      maxHeight: 148,
+      overflow: 'scroll',
+    },
     番号の行: {
       flexDirection: 'row',
       justifyContent: 'space-between',
