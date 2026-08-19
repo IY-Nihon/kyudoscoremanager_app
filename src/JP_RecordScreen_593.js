@@ -237,14 +237,19 @@ const k = () => {
     // React が描き直しに失敗して取っ手ごと消える（実際に消えていた）
     const 案内中 = 案内.use案内中();
     const 帯を畳む = 畳む覚え && !案内中;
+    // 閲覧用のときは何も変えず、そのことだけ短く知らせる。
+    // 押しても無反応だと、壊れたのか決まりなのか分からない
+    const 閲覧中に押された = () => {
+      (Ge('閲覧用で参加しています'), j.notificationAsync(j.NotificationFeedbackType.Warning));
+    };
     // ライブに入る。ポップアップから呼ぶので、画面の上のほうに置く
     const ライブに入る = (名, 見るだけ) => {
-      (Ge(見るだけ ? '見るだけで参加しています...' : 'ライブに参加しています...'),
+      (Ge(見るだけ ? '閲覧用で参加しています...' : '記録用で参加しています...'),
         Oe(!1),
         x.useScoreStore.getState().joinLiveSync(名, 見るだけ),
         j.notificationAsync(j.NotificationFeedbackType.Success));
     };
-    // 見るだけで入っているあいだは、鍵ボタンなども触れないようにする
+    // 閲覧用で入っているあいだは、鍵ボタンなども触れないようにする
     const $e = !!(K && ライブは見るだけ),
       qe = (e, t, o) => {
         j.impactAsync(j.ImpactFeedbackStyle.Medium);
@@ -486,7 +491,7 @@ const k = () => {
                 (0, A.jsxs)(a.default, {
                   style: W.liveStatusText,
                   numberOfLines: 1,
-                  children: ['ライブ中', ライブは見るだけ ? '（見るだけ）' : '', ': ', Y],
+                  children: ['ライブ中', ライブは見るだけ ? '（閲覧用）' : '', ': ', Y],
                 }),
               ],
             })
@@ -527,7 +532,7 @@ const k = () => {
               ],
             }),
             (0, A.jsxs)(l.default, {
-              style: W.navRight,
+              style: [W.navRight, $e && { opacity: 0.6 }],
               children: [
                 (0, A.jsxs)(h.default, {
                   ref: 案内のライブボタン,
@@ -558,6 +563,7 @@ const k = () => {
                   children: [
                     (0, A.jsx)(h.default, {
                       onPress: () => {
+                        if ($e) return void 閲覧中に押された();
                         Xe(Math.max(4, T - 4));
                       },
                       disabled: T <= 4,
@@ -577,6 +583,7 @@ const k = () => {
                       onPress: () => {
                         // 手入力と同じ上限(500)で止める。ここだけ上限が無いと、
                         // 押し続けてアプリが認めていない射数まで行けてしまう
+                        if ($e) return void 閲覧中に押された();
                         Xe(Math.min(500, T + 4));
                       },
                       disabled: T >= 500,
@@ -1457,7 +1464,7 @@ const k = () => {
                 ],
               }),
               (0, A.jsxs)(l.default, {
-                style: W.addBtns,
+                style: [W.addBtns, $e && { opacity: 0.4 }],
                 children: [
                   (0, A.jsxs)(f.default, {
                     ref: 案内の人ボタン,
@@ -1467,6 +1474,7 @@ const k = () => {
                       e && m.IS_WEB && { backgroundColor: 'rgba(0,122,255,0.2)' },
                     ],
                     onPress: () => {
+                      if ($e) return void 閲覧中に押された();
                       (j.impactAsync(j.ImpactFeedbackStyle.Medium), R());
                     },
                     children: [
@@ -1482,6 +1490,7 @@ const k = () => {
                       e && m.IS_WEB && { backgroundColor: 'rgba(255,149,0,0.2)' },
                     ],
                     onPress: () => {
+                      if ($e) return void 閲覧中に押された();
                       (j.impactAsync(j.ImpactFeedbackStyle.Light), P());
                     },
                     children: [
@@ -1497,6 +1506,7 @@ const k = () => {
                       e && m.IS_WEB && { backgroundColor: 'rgba(52,199,89,0.2)' },
                     ],
                     onPress: () => {
+                      if ($e) return void 閲覧中に押された();
                       (j.impactAsync(j.ImpactFeedbackStyle.Light), L());
                     },
                     children: [
@@ -1515,6 +1525,7 @@ const k = () => {
                       e && m.IS_WEB && { backgroundColor: 'rgba(142,142,147,0.2)' },
                     ],
                     onPress: () => {
+                      if ($e) return void 閲覧中に押された();
                       (j.impactAsync(j.ImpactFeedbackStyle.Medium), setShowOCRModal(!0));
                     },
                     children: [
@@ -1528,9 +1539,11 @@ const k = () => {
                 ref: 案内の保存ボタン,
                 style: ({ hovered: e }) => [
                   W.saveBtn,
+                  $e && { opacity: 0.4 },
                   e && m.IS_WEB && { opacity: 0.9, transform: [{ scale: 1.02 }] },
                 ],
                 onPress: () => {
+                  if ($e) return void 閲覧中に押された();
                   if (0 === k.length) return;
                   // 設定で出欠確認を切っていれば、窓を飛ばして保存へ進む。
                   // 出欠は空のまま保存する。記録に出ている人は出欠画面で
@@ -1821,7 +1834,7 @@ const k = () => {
                     children: [
                       (0, A.jsx)(a.default, {
                         style: { fontSize: 20, color: '#007AFF', fontWeight: 'bold' },
-                        children: '記録する',
+                        children: '記録用',
                       }),
                       (0, A.jsx)(a.default, {
                         style: { fontSize: 13, color: '#8E8E93', marginTop: 2 },
@@ -1841,7 +1854,7 @@ const k = () => {
                     children: [
                       (0, A.jsx)(a.default, {
                         style: { fontSize: 20, color: '#007AFF', fontWeight: 'bold' },
-                        children: '見るだけ',
+                        children: '閲覧用',
                       }),
                       (0, A.jsx)(a.default, {
                         style: { fontSize: 13, color: '#8E8E93', marginTop: 2 },
@@ -1882,6 +1895,9 @@ const k = () => {
           // 取り込みは記録表を丸ごと置き換える。中身があるなら先に確かめてもらう
           hasExistingRecord: k.length > 0,
           onApply: (newArchers, 読み取りの種類) => {
+            // 画像は setState で直に盤面を差し替えるため、ストアの止めが効かない。
+            // 閲覧用のときはここで返す
+            if ($e) return void 閲覧中に押された();
             const store = x.useScoreStore.getState();
             store.historyStack &&
               store.historyStack.length >= 0 &&
