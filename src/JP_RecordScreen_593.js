@@ -252,6 +252,9 @@ const k = () => {
     // 閲覧用で入っているあいだは、鍵ボタンなども触れないようにする
     const $e = !!(K && ライブは見るだけ),
       qe = (e, t, o) => {
+        // 閲覧用のときは人の選択も開かない。開いても名前も交代も削除も
+        // 止めてあるので、開くだけ無駄に迷わせる
+        if ($e) return void 閲覧中に押された();
         j.impactAsync(j.ImpactFeedbackStyle.Medium);
         k.find((t) => t.id === e) && (fe(e), ge(o), ce(!0));
       },
