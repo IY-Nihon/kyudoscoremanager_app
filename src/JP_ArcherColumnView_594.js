@@ -60,6 +60,9 @@ const m = t.default.memo(
         const 右どなり = 一覧[C - 1];
         return !!(C > 0 && 右どなり && !右どなり.isSeparator && !右どなり.isTotalCalculator);
       })();
+      // 途中交代があると、計は「山田 3, 交代太郎 2」と内訳で出る。
+      // 押すと合わせた数（5）に切り替わる。どちらで見たいかは場面による
+      const [合算で見る, 合算を置く] = t.default.useState(!1);
       const F = (0, c.useScoreStore)((e) => e.toggleLock),
         A = (0, c.useScoreStore)((e) => e.viewScale),
         z = 'number' == typeof A && !isNaN(A) && A > 0 ? A : 1,
@@ -228,7 +231,9 @@ const m = t.default.memo(
                         borderLeftColor: '#000',
                       },
                 ],
-                disabled: !0,
+                // 内訳が出ているときだけ押せる。押すと合算とを行き来する
+                disabled: !(!e.isSeparator && !e.isTotalCalculator && Object.keys(e.substitutions || {}).length > 0),
+                onPress: () => 合算を置く((x) => !x),
                 children: [
                   e.isSeparator || e.isTotalCalculator
                     ? null
@@ -239,7 +244,7 @@ const m = t.default.memo(
                             .map(Number)
                             .sort((e, t) => e - t)
                             .filter((e) => e < i.length);
-                        if (n.length > 0) {
+                        if (n.length > 0 && !合算で見る) {
                           const e = [],
                             s = n[0],
                             a = i.slice(0, s).filter((e) => '○' === e).length;
