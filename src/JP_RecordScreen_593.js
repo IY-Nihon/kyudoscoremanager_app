@@ -535,7 +535,7 @@ const k = () => {
               ],
             }),
             (0, A.jsxs)(l.default, {
-              style: [W.navRight, $e && { opacity: 0.6 }],
+              style: W.navRight,
               children: [
                 (0, A.jsxs)(h.default, {
                   ref: 案内のライブボタン,
@@ -562,7 +562,8 @@ const k = () => {
                 // 真ん中の「8射」を押せば、これまでどおり一覧から選べる
                 (0, A.jsxs)(l.default, {
                   ref: 案内の射数,
-                  style: W.zoomContainer,
+                  // 閲覧用のときは射数だけ薄くする。表示（大きさ）は触れてよい
+                  style: [W.zoomContainer, $e && { opacity: 0.4 }],
                   children: [
                     (0, A.jsx)(h.default, {
                       onPress: () => {

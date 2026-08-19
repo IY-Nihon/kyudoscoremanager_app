@@ -250,6 +250,9 @@ const j = ({
                               {
                                 style: ({ pressed: e, hovered: t }) => [
                                   y.actionBtn,
+                                  // 文が長いので1行いっぱいを使う。space-around の
+                                  // 折り返しに任せると右へ寄って見える
+                                  { flexBasis: '100%', justifyContent: 'center' },
                                   t && { backgroundColor: '#FFE5E5' },
                                   e && { opacity: 0.7 },
                                 ],
