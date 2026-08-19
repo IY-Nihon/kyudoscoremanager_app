@@ -510,10 +510,15 @@ const k = () => {
                 (0, A.jsx)(f.default, {
                   ref: 案内のリセット,
                   onPress: () => {
+                    if ($e) return void 閲覧中に押された();
                     Ce(!0);
                   },
                   hitSlop: { top: 20, bottom: 20, left: 20, right: 20 },
-                  style: ({ hovered: e }) => [W.resetBtn, e && m.IS_WEB && { opacity: 0.8 }],
+                  style: ({ hovered: e }) => [
+                    W.resetBtn,
+                    $e && { opacity: 0.4 },
+                    e && m.IS_WEB && { opacity: 0.8 },
+                  ],
                   children: (0, A.jsx)(a.default, { style: W.resetBtnText, children: 'リセット' }),
                 }),
                 (0, A.jsxs)(l.default, {
