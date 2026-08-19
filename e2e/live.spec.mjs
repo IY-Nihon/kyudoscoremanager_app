@@ -217,6 +217,9 @@ test('ライブ：同時に入れた○×が両方に届き、取り消しは1�
   await B.getByText(ライブ名, { exact: true }).first().click();
   await B.waitForTimeout(500);
   await B.getByText('決定', { exact: true }).click();
+  await B.waitForTimeout(2000);
+  // 参加のしかたを選ぶ窓が出る。検査は記録する側で入る
+  await B.getByText('記録用', { exact: true }).click();
   await B.waitForTimeout(8000);
 
   const B側 = await 一射目たち(B);
@@ -317,6 +320,9 @@ test('ライブ：3台が同時に入れても届き、取り消しは1手だけ
     await P.getByText(名, { exact: true }).first().click();
     await P.waitForTimeout(500);
     await P.getByText('決定', { exact: true }).click();
+    await P.waitForTimeout(2000);
+    // 参加のしかたを選ぶ窓が出る。検査は記録する側で入る
+    await P.getByText('記録用', { exact: true }).click();
     await P.waitForTimeout(8000);
   }
 
@@ -408,6 +414,9 @@ test('ライブ：鍵の取り消しが、相手の○×を巻き込まない', 
   await B.getByText(名, { exact: true }).first().click();
   await B.waitForTimeout(500);
   await B.getByText('決定', { exact: true }).click();
+  await B.waitForTimeout(2000);
+  // 参加のしかたを選ぶ窓が出る。検査は記録する側で入る
+  await B.getByText('記録用', { exact: true }).click();
   await B.waitForTimeout(8000);
 
   // B が○を入れる射手（間隔ではない側）
@@ -489,6 +498,9 @@ test('ライブ：主催者が横・参加者が縦でも、○×は同じます
   await B.getByText(ライブ名, { exact: true }).first().click();
   await B.waitForTimeout(500);
   await B.getByText('決定', { exact: true }).click();
+  await B.waitForTimeout(2000);
+  // 参加のしかたを選ぶ窓が出る。ここは記録する側で入る
+  await B.getByText('記録用', { exact: true }).click();
   await B.waitForTimeout(8000);
 
   const A側 = await 一射目たち(A);
