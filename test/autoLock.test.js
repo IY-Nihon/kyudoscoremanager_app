@@ -275,3 +275,35 @@ test('設定：記録表の並べ方は既定で縦、切り替えると端末�
   const 保存部 = 中身.slice(中身.indexOf('partialize:'), 中身.indexOf('onRehydrateStorage'));
   assert.ok(保存部.includes('横に並べる'), '並べ方が保存されていない（読み込み直すと縦に戻る）');
 });
+
+// ライブに「見るだけ」で入っているあいだは、盤面を書き換えない
+test('ライブ：見るだけで入っていると、○×も鍵も交代も変わらない', () => {
+  // 画面側の isReadOnly は鍵ボタンしか止めないので、ストアで止めている。
+  // ここが抜けると、見るだけのつもりの人の操作が全員の画面に流れる
+  const { store } = ストアを用意する();
+  store.setState({
+    isHydrated: true,
+    isLiveActive: true,
+    ライブは見るだけ: true,
+    archers: [{ id: 'a1', name: '山田', marks: ['', '', '', ''], lockedBlocks: {} }],
+    shotsPerRound: 4,
+  });
+
+  store.getState().toggleMark('a1', 0);
+  assert.strictEqual(store.getState().archers[0].marks[0], '', '見るだけなのに○が入った');
+
+  store.getState().立を閉じる('a1', 0);
+  assert.deepStrictEqual(store.getState().archers[0].lockedBlocks, {}, '見るだけなのに鍵がかかった');
+
+  store.getState().setSubstitution('a1', 2, '交代太郎', null);
+  assert.strictEqual(
+    store.getState().archers[0].substitutions,
+    undefined,
+    '見るだけなのに交代が入った'
+  );
+
+  // 記録する側に切り替えれば、これまでどおり書ける
+  store.getState().setライブは見るだけ(false);
+  store.getState().toggleMark('a1', 0);
+  assert.strictEqual(store.getState().archers[0].marks[0], '○', '記録する側にしても入らない');
+});

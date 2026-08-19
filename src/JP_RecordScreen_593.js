@@ -130,6 +130,8 @@ const k = () => {
         // 上下の帯を畳んでいるか。端末に残す（並べ方と同じ扱い）
         帯を畳む: 畳む覚え = !1,
         set帯を畳む,
+        // ライブに「見るだけ」で入っているか
+        ライブは見るだけ = !1,
       } = (0, x.useScoreStore)(),
       se = 'number' == typeof q && !isNaN(q) && q > 0 ? q : 1;
     if (!re) return null;
@@ -233,7 +235,8 @@ const k = () => {
     // React が描き直しに失敗して取っ手ごと消える（実際に消えていた）
     const 案内中 = 案内.use案内中();
     const 帯を畳む = 畳む覚え && !案内中;
-    const $e = !1,
+    // 見るだけで入っているあいだは、鍵ボタンなども触れないようにする
+    const $e = !!(K && ライブは見るだけ),
       qe = (e, t, o) => {
         j.impactAsync(j.ImpactFeedbackStyle.Medium);
         k.find((t) => t.id === e) && (fe(e), ge(o), ce(!0));
@@ -474,7 +477,7 @@ const k = () => {
                 (0, A.jsxs)(a.default, {
                   style: W.liveStatusText,
                   numberOfLines: 1,
-                  children: ['ライブ中: ', Y],
+                  children: ['ライブ中', ライブは見るだけ ? '（見るだけ）' : '', ': ', Y],
                 }),
               ],
             })
@@ -1116,11 +1119,22 @@ const k = () => {
                         if ('join' === Re) {
                           if (!x.useScoreStore.getState().liveSessionsList.includes(e))
                             return void Ne(`'${e}' というセッションは見つかりませんでした。`);
-                          const t = () => {
-                            (Ge('ライブに参加しています...'),
+                          // 参加のしかたを選ぶ。見るだけなら盤面を書き換えない
+                          const 入る = (見るだけ) => {
+                            (Ge(見るだけ ? '見るだけで参加しています...' : 'ライブに参加しています...'),
                               Oe(!1),
-                              x.useScoreStore.getState().joinLiveSync(e),
+                              x.useScoreStore.getState().joinLiveSync(e, 見るだけ),
                               j.notificationAsync(j.NotificationFeedbackType.Success));
+                          };
+                          const t = () => {
+                            const 文 =
+                              '記録もしますか？\n\nOK … 記録する（○×を入れられます）\nキャンセル … 見るだけ（画面を見るだけ）';
+                            m.IS_WEB
+                              ? 入る(!window.confirm(文))
+                              : u.default.alert('参加のしかた', '記録もしますか？', [
+                                  { text: '見るだけ', onPress: () => 入る(!0) },
+                                  { text: '記録する', onPress: () => 入る(!1) },
+                                ]);
                           };
                           if (k.length > 0) {
                             const e =
