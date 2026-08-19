@@ -302,6 +302,27 @@ test('ライブ：見るだけで入っていると、○×も鍵も交代も変
     '見るだけなのに交代が入った'
   );
 
+  // 盤面を変える操作は、どれも通らないこと。
+  // ○×だけ止めても、人を増やす・射数を変えるなどが素通りだと
+  // 「見るだけのつもり」の操作が全員の画面に流れる
+  const 前の数 = store.getState().archers.length;
+  store.getState().addArcher('新しい人');
+  store.getState().addSeparator();
+  store.getState().addTotalCalculator();
+  assert.strictEqual(store.getState().archers.length, 前の数, '見るだけなのに列が増えた');
+
+  store.getState().setShotsPerRound(12);
+  assert.strictEqual(store.getState().shotsPerRound, 4, '見るだけなのに射数が変わった');
+
+  store.getState().deleteArcher('a1');
+  assert.strictEqual(store.getState().archers.length, 前の数, '見るだけなのに射手が消えた');
+
+  store.getState().setArcherGuestName('a1', 'だれか');
+  assert.strictEqual(store.getState().archers[0].name, '山田', '見るだけなのに名前が変わった');
+
+  store.getState().ますを開ける('a1', 0);
+  assert.deepStrictEqual(store.getState().入れた時刻, {}, '見るだけなのに鍵が開いた');
+
   // 記録する側に切り替えれば、これまでどおり書ける
   store.getState().setライブは見るだけ(false);
   store.getState().toggleMark('a1', 0);

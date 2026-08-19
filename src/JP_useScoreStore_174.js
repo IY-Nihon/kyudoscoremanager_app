@@ -915,6 +915,7 @@ const M = (0, s.create)()(
             includeInStats: s,
           }),
         addArcher: (t, o) => {
+          if (s().書き換えを止めるか()) return;
           const a = Array.isArray(s().archers) ? s().archers : [],
             i = {
               id: (0, l.generateUUID)(),
@@ -944,6 +945,7 @@ const M = (0, s.create)()(
           c && d && v(d, n, u);
         },
         addSeparator: (t) => {
+          if (s().書き換えを止めるか()) return;
           const o = Array.isArray(s().archers) ? s().archers : [],
             a = {
               id: 'sep-' + (0, l.generateUUID)(),
@@ -969,6 +971,7 @@ const M = (0, s.create)()(
           n && c && v(c, i, d);
         },
         addTotalCalculator: (t) => {
+          if (s().書き換えを止めるか()) return;
           const o = Array.isArray(s().archers) ? s().archers : [],
             a = {
               id: 'total-' + (0, l.generateUUID)(),
@@ -995,6 +998,7 @@ const M = (0, s.create)()(
           n && c && v(c, i, d);
         },
         deleteArcher: (t) => {
+          if (s().書き換えを止めるか()) return;
           const o = Array.isArray(s().archers) ? s().archers : [],
             a = o.filter((e) => e && e.id !== t),
             i = Date.now();
@@ -1032,6 +1036,9 @@ const M = (0, s.create)()(
         // そのままだと「読み込み直したもの」と見なして初めから閉じてしまう。
         // 読み取りの直しが全部長押しになるのを防ぐ
         入れた印をまとめて付ける: (一覧) =>
+          s().書き換えを止めるか()
+            ? void 0
+            :
           e((前) => {
             const 印 = Object.assign({}, 前.入れた時刻);
             const いま = Date.now();
@@ -1049,6 +1056,9 @@ const M = (0, s.create)()(
         // 開けたことを画面に知らせる。灰色が戻るだけでは、押さえが届いたのか
         // 分かりにくい。知らせは記録画面が拾って短く出す（リセットと同じ作り）
         ますを開ける: (射手, 番) =>
+          s().書き換えを止めるか()
+            ? void 0
+            :
           e((前) => ({
             入れた時刻: Object.assign({}, 前.入れた時刻, { [射手 + ':' + 番]: Date.now() }),
             鍵を開けた時刻: Date.now(),
@@ -1225,6 +1235,7 @@ const M = (0, s.create)()(
           p && h && v(h, m, f);
         },
         setArcherMember: (t, o) => {
+          if (s().書き換えを止めるか()) return;
           const a = Array.isArray(s().archers) ? s().archers : [],
             i = o?.equipments?.length ? [...o.equipments].sort((e, s) => s.date - e.date)[0]?.weight : void 0,
             n = a.map((e) =>
@@ -1266,6 +1277,7 @@ const M = (0, s.create)()(
           i && n && v(n, s().archers, c);
         },
         setArcherGuestName: (t, o) => {
+          if (s().書き換えを止めるか()) return;
           const a = (Array.isArray(s().archers) ? s().archers : []).map((e) =>
             e && e.id === t
               ? Object.assign({}, e, {
@@ -1304,6 +1316,7 @@ const M = (0, s.create)()(
         },
         // ライブ中は全員で1本の履歴を使う。誰が押しても「最後の1手」が戻る
         undo: () => {
+          if (s().書き換えを止めるか()) return;
           if (s().isLiveActive && s().liveSessionName) return void s().sharedUndo(-1);
           const { historyStack: t, archers: o } = s();
           if (0 === t.length) return;
@@ -1324,6 +1337,7 @@ const M = (0, s.create)()(
           i && n && v(n, s().archers, 射数);
         },
         redo: () => {
+          if (s().書き換えを止めるか()) return;
           if (s().isLiveActive && s().liveSessionName) return void s().sharedUndo(1);
           const { redoStack: t, archers: o } = s();
           if (0 === t.length) return;
@@ -2270,6 +2284,7 @@ const M = (0, s.create)()(
           c && l && v(l, n, d);
         },
         setShotsPerRound: (t) => {
+          if (s().書き換えを止めるか()) return;
           // 射数を減らすと○×を切り捨てる。取り消しで戻せるよう、変える前の
           // 盤面を一手として積む。控えの○×の長さがそのときの射数になるので、
           // 取り消し側はそれを見て射数ごと戻す
@@ -3918,6 +3933,7 @@ const M = (0, s.create)()(
             }
         },
         resetCurrentSession: (o = !0) => {
+          if (s().書き換えを止めるか()) return;
           const a = Date.now();
           // 片付けるとサーバーの marks_by_id も空になるので、控えも捨てる。
           // 残すと「前と同じだから送らなくてよい」と誤って判断する。片付けた
