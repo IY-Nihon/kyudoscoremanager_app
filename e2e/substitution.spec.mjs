@@ -252,7 +252,7 @@ test('途中交代：入れたあと、人の選択から取り消せる', async
   // 名前のますから、いま入っている交代が見えて、押すと消える
   await page.getByText('選択', { exact: true }).first().click();
   await page.waitForTimeout(1200);
-  const 取り消し = page.getByText(/途中交代を取り消す（5射目〜 取消太郎）/);
+  const 取り消し = page.getByText(/5射目〜 取消太郎 の交代を取り消す/);
   await expect(取り消し, 'いま誰と代わっているかが出ていない').toBeVisible();
   await 取り消し.click();
   await page.waitForTimeout(1500);
