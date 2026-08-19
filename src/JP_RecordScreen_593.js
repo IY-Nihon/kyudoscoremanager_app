@@ -182,6 +182,8 @@ const k = () => {
       _畳みは使わない = null,
       // 参加のしかたを聞いている最中のライブ名。null なら聞いていない
       [参加のしかたを聞く, 参加のしかたを聞くを置く] = (0, t.useState)(null),
+      // アプリ内の確認。{ 文, 実行 } を入れると出る。ブラウザの確認窓は使わない
+      [確認, 確認を置く] = (0, t.useState)(null),
       Ve = o.default.useRef(null),
       Ue = o.default.useRef(null),
       Ge = (e) => {
@@ -1148,14 +1150,10 @@ const k = () => {
                           // 参加のしかたは画面の中のポップアップで選ぶ
                           const t = () => 参加のしかたを聞くを置く(e);
                           if (k.length > 0) {
-                            const e =
-                              '手元の記録が消去され、ライブ参加データで上書きされます。よろしいですか？';
-                            m.IS_WEB
-                              ? window.confirm(e) && t()
-                              : u.default.alert('確認', e, [
-                                  { text: 'キャンセル', style: 'cancel' },
-                                  { text: 'OK', onPress: t },
-                                ]);
+                            確認を置く({
+                              文: '手元の記録が消去され、ライブ参加データで上書きされます。よろしいですか？',
+                              実行: t,
+                            });
                           } else t();
                         }
                       },
@@ -1891,6 +1889,82 @@ const k = () => {
                   style: { fontSize: 20, color: '#007AFF', fontWeight: 'bold' },
                   children: 'キャンセル',
                 }),
+              }),
+            ],
+          }),
+        }),
+        (0, A.jsx)(d.default, {
+          visible: null !== 確認,
+          transparent: !0,
+          animationType: 'fade',
+          onRequestClose: () => 確認を置く(null),
+          children: (0, A.jsxs)(f.default, {
+            style: {
+              flex: 1,
+              backgroundColor: 'rgba(0,0,0,0.4)',
+              justifyContent: 'center',
+              alignItems: 'center',
+              paddingHorizontal: 24,
+            },
+            onPress: () => 確認を置く(null),
+            children: [
+              (0, A.jsxs)(l.default, {
+                style: {
+                  width: '100%',
+                  maxWidth: 400,
+                  backgroundColor: '#FFF',
+                  borderRadius: 14,
+                  overflow: 'hidden',
+                },
+                children: [
+                  (0, A.jsx)(l.default, {
+                    style: { padding: 20 },
+                    children: (0, A.jsx)(a.default, {
+                      style: { fontSize: 15, color: '#1C1C1E', lineHeight: 22 },
+                      children: (確認 && 確認.文) || '',
+                    }),
+                  }),
+                  (0, A.jsxs)(l.default, {
+                    style: {
+                      flexDirection: 'row',
+                      borderTopWidth: s.default.hairlineWidth,
+                      borderTopColor: '#C6C6C8',
+                    },
+                    children: [
+                      (0, A.jsx)(f.default, {
+                        style: ({ hovered: e }) => [
+                          { flex: 1, padding: 16, alignItems: 'center' },
+                          e && m.IS_WEB && { backgroundColor: '#F2F2F7' },
+                        ],
+                        onPress: () => 確認を置く(null),
+                        children: (0, A.jsx)(a.default, {
+                          style: { fontSize: 17, color: '#007AFF' },
+                          children: 'キャンセル',
+                        }),
+                      }),
+                      (0, A.jsx)(f.default, {
+                        style: ({ hovered: e }) => [
+                          {
+                            flex: 1,
+                            padding: 16,
+                            alignItems: 'center',
+                            borderLeftWidth: s.default.hairlineWidth,
+                            borderLeftColor: '#C6C6C8',
+                          },
+                          e && m.IS_WEB && { backgroundColor: '#F2F2F7' },
+                        ],
+                        onPress: () => {
+                          const 手 = 確認 && 確認.実行;
+                          (確認を置く(null), 手 && 手());
+                        },
+                        children: (0, A.jsx)(a.default, {
+                          style: { fontSize: 17, color: '#007AFF', fontWeight: 'bold' },
+                          children: 'OK',
+                        }),
+                      }),
+                    ],
+                  }),
+                ],
               }),
             ],
           }),
