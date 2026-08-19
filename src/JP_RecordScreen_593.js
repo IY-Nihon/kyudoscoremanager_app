@@ -1986,7 +1986,9 @@ const k = () => {
       borderColor: '#C6C6C8',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 1e4,
+      // 表より上、他の画面より下。記録画面は他のタブへ移っても裏で生きているので、
+      // 1e4 のように高くすると履歴のごみ箱など別の画面のボタンの上に乗る
+      zIndex: 5,
     },
     toolbar: {
       height: m.IS_WEB ? 70 : 80,
