@@ -180,6 +180,8 @@ const k = () => {
       // 上下の帯を畳んでいるか。記録表を広く使いたいときに畳む。
       // 画面を移る帯（記録/履歴/…）はここでは隠さない（移動できなくなるため）
       _畳みは使わない = null,
+      // 参加のしかたを聞いている最中のライブ名。null なら聞いていない
+      [参加のしかたを聞く, 参加のしかたを聞くを置く] = (0, t.useState)(null),
       Ve = o.default.useRef(null),
       Ue = o.default.useRef(null),
       Ge = (e) => {
@@ -235,6 +237,13 @@ const k = () => {
     // React が描き直しに失敗して取っ手ごと消える（実際に消えていた）
     const 案内中 = 案内.use案内中();
     const 帯を畳む = 畳む覚え && !案内中;
+    // ライブに入る。ポップアップから呼ぶので、画面の上のほうに置く
+    const ライブに入る = (名, 見るだけ) => {
+      (Ge(見るだけ ? '見るだけで参加しています...' : 'ライブに参加しています...'),
+        Oe(!1),
+        x.useScoreStore.getState().joinLiveSync(名, 見るだけ),
+        j.notificationAsync(j.NotificationFeedbackType.Success));
+    };
     // 見るだけで入っているあいだは、鍵ボタンなども触れないようにする
     const $e = !!(K && ライブは見るだけ),
       qe = (e, t, o) => {
@@ -1120,22 +1129,8 @@ const k = () => {
                           if (!x.useScoreStore.getState().liveSessionsList.includes(e))
                             return void Ne(`'${e}' というセッションは見つかりませんでした。`);
                           // 参加のしかたを選ぶ。見るだけなら盤面を書き換えない
-                          const 入る = (見るだけ) => {
-                            (Ge(見るだけ ? '見るだけで参加しています...' : 'ライブに参加しています...'),
-                              Oe(!1),
-                              x.useScoreStore.getState().joinLiveSync(e, 見るだけ),
-                              j.notificationAsync(j.NotificationFeedbackType.Success));
-                          };
-                          const t = () => {
-                            const 文 =
-                              '記録もしますか？\n\nOK … 記録する（○×を入れられます）\nキャンセル … 見るだけ（画面を見るだけ）';
-                            m.IS_WEB
-                              ? 入る(!window.confirm(文))
-                              : u.default.alert('参加のしかた', '記録もしますか？', [
-                                  { text: '見るだけ', onPress: () => 入る(!0) },
-                                  { text: '記録する', onPress: () => 入る(!1) },
-                                ]);
-                          };
+                          // 参加のしかたは画面の中のポップアップで選ぶ
+                          const t = () => 参加のしかたを聞くを置く(e);
                           if (k.length > 0) {
                             const e =
                               '手元の記録が消去され、ライブ参加データで上書きされます。よろしいですか？';
@@ -1767,6 +1762,117 @@ const k = () => {
               children: (0, A.jsx)(a.default, { style: W.feedbackText, children: Fe }),
             })
           : null,
+        (0, A.jsx)(d.default, {
+          visible: null !== 参加のしかたを聞く,
+          transparent: !0,
+          animationType: 'fade',
+          onRequestClose: () => 参加のしかたを聞くを置く(null),
+          children: (0, A.jsxs)(f.default, {
+            style: {
+              flex: 1,
+              backgroundColor: 'rgba(0,0,0,0.4)',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              paddingBottom: 40,
+            },
+            onPress: () => 参加のしかたを聞くを置く(null),
+            children: [
+              (0, A.jsxs)(l.default, {
+                style: {
+                  width: '90%',
+                  maxWidth: 400,
+                  backgroundColor: '#FFF',
+                  borderRadius: 14,
+                  overflow: 'hidden',
+                },
+                children: [
+                  (0, A.jsxs)(l.default, {
+                    style: {
+                      padding: 16,
+                      borderBottomWidth: s.default.hairlineWidth,
+                      borderBottomColor: '#C6C6C8',
+                      alignItems: 'center',
+                    },
+                    children: [
+                      (0, A.jsx)(a.default, {
+                        style: { fontSize: 13, color: '#8E8E93', fontWeight: '600' },
+                        children: '参加のしかた',
+                      }),
+                      (0, A.jsx)(a.default, {
+                        style: { fontSize: 15, color: '#3C3C43', marginTop: 4 },
+                        children: 参加のしかたを聞く || '',
+                      }),
+                    ],
+                  }),
+                  (0, A.jsxs)(f.default, {
+                    style: ({ hovered: e }) => [
+                      {
+                        padding: 16,
+                        alignItems: 'center',
+                        borderBottomWidth: s.default.hairlineWidth,
+                        borderBottomColor: '#C6C6C8',
+                      },
+                      e && m.IS_WEB && { backgroundColor: '#F2F2F7' },
+                    ],
+                    onPress: () => {
+                      const 名 = 参加のしかたを聞く;
+                      (参加のしかたを聞くを置く(null), 名 && ライブに入る(名, !1));
+                    },
+                    children: [
+                      (0, A.jsx)(a.default, {
+                        style: { fontSize: 20, color: '#007AFF', fontWeight: 'bold' },
+                        children: '記録する',
+                      }),
+                      (0, A.jsx)(a.default, {
+                        style: { fontSize: 13, color: '#8E8E93', marginTop: 2 },
+                        children: '○×を入れられます',
+                      }),
+                    ],
+                  }),
+                  (0, A.jsxs)(f.default, {
+                    style: ({ hovered: e }) => [
+                      { padding: 16, alignItems: 'center' },
+                      e && m.IS_WEB && { backgroundColor: '#F2F2F7' },
+                    ],
+                    onPress: () => {
+                      const 名 = 参加のしかたを聞く;
+                      (参加のしかたを聞くを置く(null), 名 && ライブに入る(名, !0));
+                    },
+                    children: [
+                      (0, A.jsx)(a.default, {
+                        style: { fontSize: 20, color: '#007AFF', fontWeight: 'bold' },
+                        children: '見るだけ',
+                      }),
+                      (0, A.jsx)(a.default, {
+                        style: { fontSize: 13, color: '#8E8E93', marginTop: 2 },
+                        children: '画面を見るだけ。○×は入れません',
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+              (0, A.jsx)(f.default, {
+                style: ({ hovered: e }) => [
+                  {
+                    width: '90%',
+                    maxWidth: 400,
+                    backgroundColor: '#FFF',
+                    borderRadius: 14,
+                    marginTop: 8,
+                    padding: 18,
+                    alignItems: 'center',
+                  },
+                  e && m.IS_WEB && { opacity: 0.8 },
+                ],
+                onPress: () => 参加のしかたを聞くを置く(null),
+                children: (0, A.jsx)(a.default, {
+                  style: { fontSize: 20, color: '#007AFF', fontWeight: 'bold' },
+                  children: 'キャンセル',
+                }),
+              }),
+            ],
+          }),
+        }),
         (0, A.jsx)(OCRRecordModal, {
           visible: showOCRModal,
           onClose: () => setShowOCRModal(!1),
