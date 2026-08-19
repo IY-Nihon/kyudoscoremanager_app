@@ -556,6 +556,9 @@ const M = (0, s.create)()(
         横に並べる: !1,
         // 記録画面の上下の帯を畳んでいるか。並べ方と同じく端末ごとの好みなので残す
         帯を畳む: !1,
+        // ライブに「見るだけ」で入っているか。入れているときは盤面を書き換えない。
+        // 端末には残さない（次に参加するときは、そのつど選ぶ）
+        ライブは見るだけ: !1,
         自動ロックまでの秒: 3,
         // { 'archerId:射番': 入れた時刻 }。時間が経ったものを閉じたとみなす
         入れた時刻: {},
@@ -1020,6 +1023,10 @@ const M = (0, s.create)()(
         set保存時に出欠を確認する: (t) => e({ 保存時に出欠を確認する: t }),
         set横に並べる: (t) => e({ 横に並べる: !!t }),
         set帯を畳む: (t) => e({ 帯を畳む: !!t }),
+        setライブは見るだけ: (t) => e({ ライブは見るだけ: !!t }),
+        // 見るだけで入っているあいだは盤面を触らせない。
+        // 画面側の isReadOnly は鍵ボタンしか止めないので、根元で止める
+        書き換えを止めるか: () => !!(s().isLiveActive && s().ライブは見るだけ),
         // まとめて入った○×に「いま入れた」印を付ける。
         // 画像からの反映は toggleMark を通らないので印が付かず、
         // そのままだと「読み込み直したもの」と見なして初めから閉じてしまう。
@@ -1110,6 +1117,7 @@ const M = (0, s.create)()(
             n && c && T(c, t, o, a, l));
         },
         toggleMark: (t, o) => {
+          if (s().書き換えを止めるか()) return;
           const { archers: a, isLiveActive: i, liveSessionName: n } = s(),
             c = Date.now();
           let l = '';
@@ -1164,6 +1172,7 @@ const M = (0, s.create)()(
         // toggleLock と違って必ず「閉じる」側に倒す。
         // 取り消しの控えには積まない（押した覚えのない操作が戻ると分かりにくい）
         立を閉じる: (t, o) => {
+          if (s().書き換えを止めるか()) return;
           const { archers: a } = s(),
             i = Array.isArray(a) ? a : [],
             n = i.findIndex((e) => e && e.id === t);
@@ -2219,6 +2228,7 @@ const M = (0, s.create)()(
           }));
         },
         setSubstitution: (t, o, a, i) => {
+          if (s().書き換えを止めるか()) return;
           const n = (Array.isArray(s().archers) ? s().archers : []).map((e) => {
             if (e && e.id === t) {
               const s = Object.assign({}, e.substitutions || {});
@@ -3139,6 +3149,8 @@ const M = (0, s.create)()(
             e({
               isLiveActive: !0,
               isHost: !0,
+              // 主催者は必ず記録する側
+              ライブは見るだけ: !1,
               liveSessionName: o,
               isIncomingLiveSync: !1,
               lastLocalChange: Date.now(),
@@ -3233,7 +3245,7 @@ const M = (0, s.create)()(
             return (console.error('Start Live Sync Error:', e), '確認できない');
           }
         },
-        joinLiveSync: (o) => {
+        joinLiveSync: (o, 見るだけ) => {
           // ライブを移ったら控えは捨てる。前のライブで載せた○×を覚えたままだと、
           // 次のライブで「前と同じ」と見なして送らず、相手の画面に出ない
           載っている印を捨てる();
@@ -3242,6 +3254,7 @@ const M = (0, s.create)()(
             e({
               isLiveActive: !0,
               isHost: !1,
+              ライブは見るだけ: !!見るだけ,
               liveSessionName: o,
               isIncomingLiveSync: !1,
               lastLocalChange: 0,
