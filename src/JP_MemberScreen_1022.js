@@ -195,12 +195,11 @@ const C = () => {
         o = () => {
           (C(e), D(!1));
         };
-      m.IS_WEB
-        ? window.confirm(n) && o()
-        : f.default.alert('確認', n, [
-            { text: 'キャンセル', style: 'cancel' },
-            { text: '削除', style: 'destructive', onPress: o },
-          ]);
+      // ブラウザの確認窓は使わない。受け口（module_198）がアプリの中の窓へ流す
+      f.default.alert('確認', n, [
+        { text: 'キャンセル', style: 'cancel' },
+        { text: '削除', style: 'destructive', onPress: o },
+      ]);
     };
 
   return (0, y.jsxs)(u.default, {
@@ -470,9 +469,7 @@ const C = () => {
                         style: j.saveBtn,
                         onPress: () => {
                           if (!k.trim())
-                            return void (m.IS_WEB
-                              ? window.alert('名前を入力してください')
-                              : f.default.alert('エラー', '名前を入力してください'));
+                            return void f.default.alert('お知らせ', '名前を入力してください');
                           const e = parseInt(P) || 0,
                             t = '' === M ? void 0 : parseInt(M) || void 0;
                           (q ? b(q.id, { name: k, gender: R, grade: e, termKi: t }) : l(k, R, e, t), D(!1));

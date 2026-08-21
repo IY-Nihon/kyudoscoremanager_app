@@ -20,25 +20,10 @@ const d = typeof dependencyMap !== 'undefined' ? dependencyMap : [];
     },
   }));
 var t = class {
+  // ブラウザの窓ではなく、アプリの中の窓へ流す（src/AppDialog.js）。
+  // 見た目が揃い、出る位置も機種に左右されない。
+  // 呼び方はこれまでと同じなので、呼び出し側は書き換えなくてよい
   static alert(title, message, buttons) {
-    if (typeof window !== 'undefined' && window.document) {
-      const msg = message ? `${title}\n\n${message}` : title;
-      if (buttons && buttons.length > 0) {
-        const hasCancel = buttons.find((b) => b.style === 'cancel' || b.text === 'キャンセル');
-        const hasConfirm = buttons.find((b) => b.style !== 'cancel' && b.text !== 'キャンセル');
-        if (hasCancel && hasConfirm) {
-          if (window.confirm(msg)) {
-            hasConfirm.onPress && hasConfirm.onPress();
-          } else {
-            hasCancel.onPress && hasCancel.onPress();
-          }
-        } else {
-          window.alert(msg);
-          buttons[0] && buttons[0].onPress && buttons[0].onPress();
-        }
-      } else {
-        window.alert(msg);
-      }
-    }
+    require('./AppDialog').出す(title, message, buttons);
   }
 };

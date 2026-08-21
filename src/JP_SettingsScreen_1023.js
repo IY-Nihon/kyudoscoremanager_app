@@ -360,7 +360,7 @@ const w = () => {
             });
           if (0 === a.length) {
             const e = '対象期間のデータがありません';
-            return void (x.IS_WEB ? window.alert(e) : u.default.alert('通知', e));
+            return void (u.default.alert('通知', e));
           }
           const s = (e) => (e || '').replace(/\s*\(\d+\)$/, '').trim();
           let d = '';
@@ -505,7 +505,7 @@ const w = () => {
           }
           if (0 === xlsxRows.length) {
             const msg = '対象のデータがありません';
-            window.alert(msg);
+            u.default.alert('書き出し', msg);
             return;
           }
           await _xlsx.exportXlsx(
@@ -520,19 +520,19 @@ const w = () => {
         } catch (e) {
           console.error('Export Error:', e);
           const t = 'ファイルの生成に失敗しました。';
-          x.IS_WEB ? window.alert(t) : u.default.alert('エラー', t);
+          u.default.alert('エラー', t);
         }
       },
       pickInquiryImage = async () => {
         try {
           if (inquiryImages.length >= 3) {
             const msg = '画像は最大3枚まで添付できます。';
-            return void (x.IS_WEB ? window.alert(msg) : u.default.alert('エラー', msg));
+            return void (u.default.alert('エラー', msg));
           }
           const perm = await _G.requestMediaLibraryPermissionsAsync();
           if (!perm.granted) {
             const msg = '画像ライブラリへのアクセスが許可されていません。';
-            return void (x.IS_WEB ? window.alert(msg) : u.default.alert('エラー', msg));
+            return void (u.default.alert('エラー', msg));
           }
           const res = await _G.launchImageLibraryAsync({
             mediaTypes: _G.MediaTypeOptions ? _G.MediaTypeOptions.Images : ['images'],
@@ -556,11 +556,11 @@ const w = () => {
           }
           if (!base64) {
             const msg = '画像の読み込みに失敗しました。';
-            return void (x.IS_WEB ? window.alert(msg) : u.default.alert('エラー', msg));
+            return void (u.default.alert('エラー', msg));
           }
           if (base64.length > 300000) {
             const msg = '画像サイズが大きすぎます。別の画像（より小さいサイズ・低解像度）を選んでください。';
-            return void (x.IS_WEB ? window.alert(msg) : u.default.alert('エラー', msg));
+            return void (u.default.alert('エラー', msg));
           }
           setInquiryImages((prev) => [...prev, `data:image/jpeg;base64,${base64}`]);
         } catch (e) {
@@ -672,7 +672,7 @@ const w = () => {
                   Je('school-outline', '使い方を見る', () => {
                     if ('ライブ中' === 案内.startTutorial()) {
                       const e = 'ライブ記録中は、使い方の案内を始められません。ライブを止めてからお試しください。';
-                      x.IS_WEB ? window.alert(e) : u.default.alert('使い方を見る', e);
+                      u.default.alert('使い方を見る', e);
                     }
                   }),
                   Je('help-circle-outline', '運用ガイド・ヘルプ', () => le(!0)),
@@ -2192,12 +2192,12 @@ const w = () => {
                           const contentVal = inquiryContent;
                           if (!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
                             const msg = '有効なメールアドレスを入力してください';
-                            x.IS_WEB ? window.alert(msg) : u.default.alert('エラー', msg);
+                            u.default.alert('エラー', msg);
                             return;
                           }
                           if (!contentVal.trim()) {
                             const msg = 'お問い合わせ内容を入力してください';
-                            x.IS_WEB ? window.alert(msg) : u.default.alert('エラー', msg);
+                            u.default.alert('エラー', msg);
                             return;
                           }
                           setInquirySending(true);
@@ -2214,7 +2214,7 @@ const w = () => {
                               memberName: V === 'member' ? H || '' : '',
                             });
                             const msg = 'お問い合わせを送信しました';
-                            x.IS_WEB ? window.alert(msg) : u.default.alert('完了', msg);
+                            u.default.alert('完了', msg);
                             setInquiryVisible(false);
                             setInquiryEmail('');
                             setInquiryContent('');
@@ -2222,7 +2222,7 @@ const w = () => {
                           } catch (err) {
                             console.error('Inquiry send error:', err);
                             const msg = '送信に失敗しました。再度お試しください。';
-                            x.IS_WEB ? window.alert(msg) : u.default.alert('エラー', msg);
+                            u.default.alert('エラー', msg);
                           } finally {
                             setInquirySending(false);
                           }

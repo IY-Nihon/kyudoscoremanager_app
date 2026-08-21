@@ -11,6 +11,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ErrorBoundary } from './src/JP_ErrorBoundary_1041';
 import { OfflineIndicator } from './src/JP_OfflineIndicator_1042';
 import { WhatsNewModal } from './src/JP_WhatsNewModal';
+import { アプリの窓, 出す } from './src/AppDialog';
 import { getShadowStyle } from './src/module_592';
 import { initTheme, useThemeMode } from './src/theme';
 import { auth } from './src/db_178';
@@ -63,8 +64,7 @@ export default function App() {
       console.log('[App] 部員の認証方式が更新されたため再ログインを求めます');
       setAuth(null, null, null, null);
       const msg = 'セキュリティ強化のため、お手数ですが個人IDで再度ログインしてください。';
-      if (IS_WEB) window.alert(msg);
-      else Alert.alert('再ログインのお願い', msg);
+      出す('再ログインのお願い', msg);
     }
   }, [isHydrated]);
 
@@ -127,6 +127,10 @@ export default function App() {
             ) : (
               <LoginScreen />
             )}
+            {/* 確認とお知らせの窓。ログインの前の画面でも使うので、
+                入った後・入る前のどちらにも入らない外側に1つだけ置く。
+                2つ置くと後に描かれた方が受け口を奪うので、必ず1つ。 */}
+            <アプリの窓 />
           </ErrorBoundary>
         </SafeAreaProvider>
       </View>

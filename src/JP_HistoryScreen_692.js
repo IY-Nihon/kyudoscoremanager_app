@@ -1193,11 +1193,7 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                                       (y.useScoreStore.getState().deleteTrashItems(e), be(new Set()), xe(!1));
                                       W.length - e.length <= 0 && fe(!1);
                                     };
-                                    x.IS_WEB
-                                      ? window.confirm(
-                                          '選択したゴミ箱の記録を完全に削除します。よろしいですか？'
-                                        ) && e()
-                                      : h.default.alert(
+                                    h.default.alert(
                                           '完全に削除',
                                           '選択したゴミ箱の記録を完全に削除します。よろしいですか？',
                                           [
@@ -1223,11 +1219,7 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                                 (0, k.jsx)(s.default, {
                                   onPress: () => {
                                     0 !== W.length &&
-                                      (x.IS_WEB
-                                        ? window.confirm(
-                                            'ゴミ箱の記録をすべて完全に削除します。よろしいですか？'
-                                          ) && (Y(), fe(!1))
-                                        : h.default.alert(
+                                      (h.default.alert(
                                             'ゴミ箱を空にする',
                                             'ゴミ箱内のすべての記録を完全に削除します。よろしいですか？',
                                             [
