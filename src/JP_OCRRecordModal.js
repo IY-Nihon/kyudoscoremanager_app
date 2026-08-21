@@ -731,7 +731,7 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
     if (!hasExistingRecord) return 進む();
     const 文 = "いま記録表にある内容は消えて、読み取った結果に置き換わります。よろしいですか？";
     if (IS_WEB) {
-      if (window.confirm(文)) 進む();
+      require('./module_198').default.alert('確認', 文, [{ text: 'キャンセル', style: 'cancel' }, { text: 'OK', onPress: 進む }]);
     } else {
       _Alert.alert("確認", 文, [
         { text: "キャンセル", style: "cancel" },

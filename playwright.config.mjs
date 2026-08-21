@@ -16,7 +16,10 @@
  */
 import { defineConfig, devices } from '@playwright/test';
 
-const 港 = 8091;
+// 港と配り元は環境変数で差し替えられる。検査を流している最中に、
+// 別の束を別の港で試したいときに使う（既定はこれまでと同じ）
+const 港 = Number(process.env.PW_PORT) || 8091;
+const 配り元 = process.env.PW_DIST || 'dist';
 
 export default defineConfig({
   testDir: './e2e',
@@ -36,13 +39,17 @@ export default defineConfig({
   // この案内は絶対配置・位置の実測・scrollIntoView に頼っていて、
   // そこは Chromium と WebKit で振る舞いが分かれやすい
   projects: [
-    { name: 'スマホ', use: { ...devices['Pixel 5'] } },
+    // 先に団体ごとのログインを1回だけ済ませ、控えを作る。
+    // 各検査はそれを読み込むので、ログインの往復を繰り返さない。
+    // 認証を短い間に何十回も投げなくなるので、429で落ちる取り合いも減る
+    { name: '下ごしらえ', testMatch: /auth.setup.mjs/ },
+    { name: 'スマホ', dependencies: ['下ごしらえ'], use: { ...devices['Pixel 5'] } },
     // iPhone(WebKit) はまだ緑になっていない。検査のログインが通らず
     // （activeGroupId が null のまま）、アプリ側か検査側かを切り分けられていない。
     // 本番の web 版は iPhone から使われているので、検査側の可能性が高い。
     // WebKit 本体は入れてあるので、この1行を戻せばすぐ再開できる。
-    { name: 'iPhone', use: { ...devices['iPhone 13'] } },
-    { name: 'パソコン', use: { ...devices['Desktop Chrome'] } },
+    { name: 'iPhone', dependencies: ['下ごしらえ'], use: { ...devices['iPhone 13'] } },
+    { name: 'パソコン', dependencies: ['下ごしらえ'], use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: {
     // --proxy で、無いパスは index.html へ回す。本番の Firebase Hosting も
@@ -50,7 +57,7 @@ export default defineConfig({
     // これが無いと、ログイン後に URL が /record へ変わったあとの再読み込みで
     // /record を取りにいって404になり、画面が白紙になる。速い画面では
     // 間に合っていたが、iPhone では毎回踏んでいて、検査が6件とも落ちていた。
-    command: `npx --yes http-server dist -p ${港} -s -c-1 --proxy http://127.0.0.1:${港}?`,
+    command: `npx --yes http-server ${配り元} -p ${港} -s -c-1 --proxy http://127.0.0.1:${港}?`,
     url: `http://127.0.0.1:${港}`,
     reuseExistingServer: false,
     timeout: 60_000,

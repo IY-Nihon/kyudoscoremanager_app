@@ -362,7 +362,7 @@ const AttendanceScreen = () => {
         setAiPreviewItems(validatedItems);
       } else {
         o.Alert.alert('通知', 'PDFから練習日を検出できませんでした。形式を確認してください。');
-        if (typeof window !== 'undefined' && window.alert) window.alert('練習日が検出されませんでした。');
+        require('./module_198').default.alert('お知らせ', '練習日が検出されませんでした。');
       }
     } catch (e) {
       o.Alert.alert('エラー', e.message);

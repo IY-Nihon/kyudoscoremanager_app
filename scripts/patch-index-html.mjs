@@ -14,7 +14,7 @@
  */
 import fs from 'node:fs';
 
-const 道 = 'dist/index.html';
+const 道 = (process.env.BUILD_OUT || 'dist') + '/index.html';
 const アプリ名 = '弓道記録アプリ';
 
 if (!fs.existsSync(道)) {

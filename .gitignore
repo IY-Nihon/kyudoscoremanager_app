@@ -62,3 +62,5 @@ Thumbs.db
 # Playwright の実行結果（毎回作り直される）
 test-results/
 playwright-report/
+e2e/.auth/
+dist2/

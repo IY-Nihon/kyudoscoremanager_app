@@ -1012,6 +1012,7 @@ const M = (0, s.create)()(
           n && c && v(c, a, l);
         },
         applyOCRResult: (t) => {
+          if (s().書き換えを止めるか()) return; // 閲覧用では画像から読み取った結果の取り込みも止める
           const o = Array.isArray(s().archers) ? s().archers : [],
             i = Date.now();
           e({
@@ -1076,6 +1077,7 @@ const M = (0, s.create)()(
             activeArrowLocationEdit: t,
           }),
         updateArrowLocation: (t, o, a) => {
+          if (s().書き換えを止めるか()) return; // 閲覧用では矢所（ライブにも送られる）も止める
           const { archers: i } = s(),
             n = Date.now(),
             c = (i || []).map((e) => {
@@ -1103,6 +1105,7 @@ const M = (0, s.create)()(
           ライブ中 && ライブ名 && v(ライブ名, c, 本数);
         },
         updateMark: (t, o, a) => {
+          if (s().書き換えを止めるか()) return; // 閲覧用では○×の直接の書き換えも止める
           const { archers: i, isLiveActive: n, liveSessionName: c } = s(),
             l = Date.now(),
             d = (i || []).map((e) => {
@@ -1159,6 +1162,7 @@ const M = (0, s.create)()(
             i && n && T(n, t, o, l, c));
         },
         clearArcherMarks: (t) => {
+          if (s().書き換えを止めるか()) return; // 閲覧用ではその人の○×の消去も止める
           const o = Array.isArray(s().archers) ? s().archers : [],
             a = Date.now(),
             i = o.map((e) =>
@@ -1261,6 +1265,7 @@ const M = (0, s.create)()(
           c && l && v(l, n, d);
         },
         setArcherBowWeight: (t, o) => {
+          if (s().書き換えを止めるか()) return; // 閲覧用では弓力も止める
           const a = (Array.isArray(s().archers) ? s().archers : []).map((e) =>
             e && e.id === t
               ? Object.assign({}, e, {
@@ -1299,6 +1304,7 @@ const M = (0, s.create)()(
           i && n && v(n, s().archers, c);
         },
         setArcherGender: (t, o) => {
+          if (s().書き換えを止めるか()) return; // 閲覧用では性別も止める
           const a = (Array.isArray(s().archers) ? s().archers : []).map((e) =>
             e && e.id === t
               ? Object.assign({}, e, {
@@ -1363,6 +1369,9 @@ const M = (0, s.create)()(
          * 同時に押された場合は重なることがあるが、盤面は必ず一致する。
          */
         sharedUndo: async (向き) => {
+          // 閲覧用はライブ全体を巻き戻せない。1人が見ているだけのつもりで
+          // 押しても、全員の○×が戻ってしまう
+          if (s().書き換えを止めるか()) return;
           const { activeGroupId: 団体, liveSessionName: 名前 } = s();
           if (!fb.rtdb || !団体 || !名前) return;
           const 根 = `live_sessions/${団体}/${名前}`;
@@ -1840,6 +1849,9 @@ const M = (0, s.create)()(
           }
         },
         saveSession: async (o, d, u, m, attendanceData) => {
+          // 閲覧用は記録として残さない。画面側でも保存の帯を薄くしてあるが、
+          // 道が増えたときに漏れないよう、ここでも止める
+          if (s().書き換えを止めるか()) return;
           const p = s().activeSessionID || (0, l.generateUUID)(),
             { archers: h, shotsPerRound: f, activeGroupId: S, activeRole: b, myMemberId: y } = s(),
             v = Array.isArray(h) ? h : [],
@@ -1864,7 +1876,7 @@ const M = (0, s.create)()(
             try {
               if ((await (0, a.getDoc)((0, a.doc)(fb.db, `groups/${S}/sessions`, p))).exists()) {
                 const e = 'この記録はすでにクラウドに存在するため、個人モードからは更新できません。';
-                return void (c.IS_WEB ? window.alert(e) : n.default.alert('保存制限', e));
+                return void n.default.alert('保存制限', e);
               }
             } catch (e) {
               console.warn('[Store] 既存確認に失敗しました。保存は続行します:', e);

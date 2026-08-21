@@ -328,3 +328,79 @@ test('ライブ：見るだけで入っていると、○×も鍵も交代も変
   store.getState().toggleMark('a1', 0);
   assert.strictEqual(store.getState().archers[0].marks[0], '○', '記録する側にしても入らない');
 });
+
+// 見るだけの守りは、画面側だけに置くと道が増えるたびに漏れる。
+// 矢所は画面側に守りが無く、しかもライブへ送っていた（監査で見つけた）。
+// ここでは「ストアの操作そのものが止まる」ことを一つずつ見る。
+test('ライブ：見るだけなら、矢所も直接の書き換えも消去も通らない', () => {
+  const { store } = ストアを用意する();
+  store.setState({
+    isHydrated: true,
+    isLiveActive: true,
+    ライブは見るだけ: true,
+    archers: [{ id: 'a1', name: '山田', marks: ['○', '', '', ''], lockedBlocks: {} }],
+    shotsPerRound: 4,
+  });
+
+  // 矢所。画面側に守りが無く、ここが素通りだと全員の画面に流れていた
+  store.getState().updateArrowLocation('a1', 0, { x: 0.5, y: 0.5 });
+  assert.strictEqual(
+    store.getState().archers[0].arrowLocations,
+    undefined,
+    '見るだけなのに矢所が入った'
+  );
+
+  // ○×の直接の書き換え
+  store.getState().updateMark('a1', 1, '×');
+  assert.strictEqual(store.getState().archers[0].marks[1], '', '見るだけなのに○×が変わった');
+
+  // その人の○×をまとめて消す
+  store.getState().clearArcherMarks('a1');
+  assert.strictEqual(store.getState().archers[0].marks[0], '○', '見るだけなのに○×が消えた');
+
+  // 弓力・性別
+  store.getState().setArcherBowWeight('a1', 16);
+  store.getState().setArcherGender('a1', '女子');
+  assert.strictEqual(store.getState().archers[0].bowWeight, undefined, '見るだけなのに弓力が入った');
+  assert.strictEqual(store.getState().archers[0].gender, undefined, '見るだけなのに性別が入った');
+
+  // 画像から読み取った結果の取り込み
+  store.getState().applyOCRResult([{ id: 'a1', marks: ['×', '×', '×', '×'] }]);
+  assert.strictEqual(store.getState().archers[0].marks[0], '○', '見るだけなのに読み取りが入った');
+});
+
+test('記録用なら、いまの操作はこれまでどおり通る', () => {
+  // 守りを足したせいで、ふつうの記録まで止まっていないことを見る。
+  // 止めるほうだけ検査すると、全部を無効にしても通ってしまう
+  const { store } = ストアを用意する();
+  store.setState({
+    isHydrated: true,
+    isLiveActive: true,
+    ライブは見るだけ: false,
+    archers: [{ id: 'a1', name: '山田', marks: ['○', '', '', ''], lockedBlocks: {} }],
+    shotsPerRound: 4,
+  });
+
+  store.getState().updateMark('a1', 1, '×');
+  assert.strictEqual(store.getState().archers[0].marks[1], '×', '記録用なのに○×が入らない');
+
+  store.getState().setArcherBowWeight('a1', 16);
+  assert.strictEqual(store.getState().archers[0].bowWeight, 16, '記録用なのに弓力が入らない');
+
+  store.getState().clearArcherMarks('a1');
+  assert.strictEqual(store.getState().archers[0].marks[0], '', '記録用なのに消えない');
+});
+
+test('ライブでなければ、見るだけの覚えが残っていても止めない', () => {
+  // ライブが終わったあとも止まったままだと、手元の記録が書けなくなる
+  const { store } = ストアを用意する();
+  store.setState({
+    isHydrated: true,
+    isLiveActive: false,
+    ライブは見るだけ: true,
+    archers: [{ id: 'a1', name: '山田', marks: ['', '', '', ''], lockedBlocks: {} }],
+    shotsPerRound: 4,
+  });
+  store.getState().updateMark('a1', 0, '○');
+  assert.strictEqual(store.getState().archers[0].marks[0], '○', 'ライブが終わったのに書けない');
+});

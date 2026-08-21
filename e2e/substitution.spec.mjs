@@ -19,6 +19,10 @@ const お知らせの版 = (fs.readFileSync('src/JP_WhatsNewModal.js', 'utf8').m
 // 部員0人の 100005 は使わない。あちらは「作りたての団体」を再現するための
 // 場所で、空のまま保つと決めてある（案内の検査がその前提で書かれている）
 const 団体 = '100003';
+
+// ログインは下ごしらえ（auth.setup.mjs）で1回だけ済ませ、その控えを使う。
+// 各検査でログインし直さないので速く、認証の投げすぎで断られることもない
+test.use({ storageState: 'e2e/.auth/100003.json' });
 const 合言葉 = 'StgTest!2026';
 
 async function 入る(page) {
@@ -210,19 +214,29 @@ test('途中交代：細い画面でも、窓を流せば交代相手にたど�
           }).length
     );
 
-  // 交代相手の見出しの上で指をすべらせる
-  const 場所 = await page.evaluate(() => {
-    const e = [...document.querySelectorAll('div')].find(
+  // 窓を下まで流す。
+  // page.mouse.wheel は iPhone(WebKit) では使えないので、流せる箱を
+  // 見つけて直に動かす。ここで見たいのは「流せば相手に届くか」であって、
+  // 指の動かし方そのものではない
+  const 流せた = await page.evaluate(() => {
+    const 見出し = [...document.querySelectorAll('div')].find(
       (x) => /交代相手/.test(x.textContent || '') && x.children.length === 0
     );
-    const r = e.getBoundingClientRect();
-    return { x: Math.round(r.x + 20), y: Math.round(r.y) };
+    if (!見出し) return { 見出しあり: false };
+    // 見出しから親をたどって、中身がはみ出している＝流せる箱を探す
+    let 箱 = 見出し.parentElement;
+    while (箱 && 箱 !== document.body) {
+      const 型 = getComputedStyle(箱).overflowY;
+      if ((型 === 'auto' || 型 === 'scroll') && 箱.scrollHeight > 箱.clientHeight + 4) break;
+      箱 = 箱.parentElement;
+    }
+    if (!箱 || 箱 === document.body) return { 見出しあり: true, 流せる箱: false };
+    箱.scrollTop = 箱.scrollHeight;
+    return { 見出しあり: true, 流せる箱: true, 動いた: 箱.scrollTop > 0 };
   });
-  for (let i = 0; i < 6; i++) {
-    await page.mouse.move(場所.x, 場所.y);
-    await page.mouse.wheel(0, 200);
-    await page.waitForTimeout(250);
-  }
+  expect(流せた.見出しあり, '交代相手の見出しが出ていない').toBe(true);
+  expect(流せた.流せる箱, '窓が流せない（中身がはみ出したまま止まっている）').toBe(true);
+  expect(流せた.動いた, '流そうとしても動かない').toBe(true);
   await page.waitForTimeout(600);
 
   expect(await 見える人数(), '細い画面だと、流しても交代相手が見えない').toBeGreaterThan(0);
