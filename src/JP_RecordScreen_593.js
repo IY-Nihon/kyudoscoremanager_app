@@ -1057,10 +1057,7 @@ const k = () => {
                                         (0, A.jsx)(h.default, {
                                           style: { padding: 16 },
                                           onPress: () => {
-                                            m.IS_WEB
-                                              ? window.confirm(`セッション「${e}」を完全に削除しますか？`) &&
-                                                x.useScoreStore.getState().deleteLiveSession(e)
-                                              : u.default.alert(
+                                            u.default.alert(
                                                   'セッション削除',
                                                   `セッション「${e}」を完全に削除しますか？`,
                                                   [

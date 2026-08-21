@@ -13,6 +13,10 @@ const お知らせの版 = (fs.readFileSync('src/JP_WhatsNewModal.js', 'utf8').m
 
 // 鍵（100003）・ライブ（100006）・交代（100005）とは別の団体を使う
 const 団体 = '100001';
+
+// ログインは下ごしらえ（auth.setup.mjs）で1回だけ済ませ、その控えを使う。
+// 各検査でログインし直さないので速く、認証の投げすぎで断られることもない
+test.use({ storageState: 'e2e/.auth/100001.json' });
 const 合言葉 = 'StgTest!2026';
 
 async function 入る(page) {

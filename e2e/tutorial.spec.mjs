@@ -30,6 +30,10 @@ async function 押す(要素) {
 }
 
 const 団体 = '100005'; // 部員0人。作りたての団体と同じ道筋を踏める
+
+// ログインは下ごしらえ（auth.setup.mjs）で1回だけ済ませ、その控えを使う。
+// 各検査でログインし直さないので速く、認証の投げすぎで断られることもない
+test.use({ storageState: 'e2e/.auth/100005.json' });
 const 合言葉 = 'StgTest!2026';
 const 指の目安 = 44; // iOS の指針。Android は 48
 

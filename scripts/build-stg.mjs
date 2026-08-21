@@ -31,8 +31,12 @@ if (環境.EXPO_PUBLIC_FIREBASE_PROJECT_ID !== 'kyudoscoremanager-stg') {
   process.exit(1);
 }
 
-console.log('検証環境向けに書き出します…');
-const 結果 = spawnSync('npx', ['expo', 'export', '--platform', 'web', '--clear'], {
+// 書き出し先は環境変数で差し替えられる。検査を流している最中に別の束を
+// 作りたいとき、dist を上書きすると走っている検査の足元が変わってしまう
+const 書き出し先 = process.env.BUILD_OUT || 'dist';
+
+console.log(`検証環境向けに書き出します…（${書き出し先}/）`);
+const 結果 = spawnSync('npx', ['expo', 'export', '--platform', 'web', '--clear', '--output-dir', 書き出し先], {
   stdio: 'inherit',
   env: 環境,
   shell: process.platform === 'win32',
@@ -40,7 +44,7 @@ const 結果 = spawnSync('npx', ['expo', 'export', '--platform', 'web', '--clear
 if (結果.status !== 0) process.exit(結果.status ?? 1);
 
 // 焼き込まれた接続先を確かめる
-const 置き場 = path.join('dist', '_expo', 'static', 'js', 'web');
+const 置き場 = path.join(書き出し先, '_expo', 'static', 'js', 'web');
 const 束 = fs.readdirSync(置き場).find((f) => f.startsWith('AppEntry-') && f.endsWith('.js'));
 const 中身 = fs.readFileSync(path.join(置き場, 束), 'utf8');
 const m = 中身.match(/projectId:"([a-z-]+)"/);
@@ -49,7 +53,10 @@ if (!m || m[1] !== 'kyudoscoremanager-stg') {
   process.exit(1);
 }
 // expo が作る index.html の既定値を直す（lang="en" とタイトル）
-const 直し = spawnSync(process.execPath, ['scripts/patch-index-html.mjs'], { stdio: 'inherit' });
+const 直し = spawnSync(process.execPath, ['scripts/patch-index-html.mjs'], {
+  stdio: 'inherit',
+  env: { ...process.env, BUILD_OUT: 書き出し先 },
+});
 if (直し.status !== 0) process.exit(直し.status ?? 1);
 
 console.log(`\n完了。接続先: ${m[1]}`);

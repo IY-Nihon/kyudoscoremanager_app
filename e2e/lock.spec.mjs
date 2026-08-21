@@ -18,6 +18,10 @@ const お知らせの版 = (fs.readFileSync('src/JP_WhatsNewModal.js', 'utf8').m
 // 原因は未特定。アプリ側の不具合ではなく、同じ操作はスマホ・パソコンで
 // 安定して通る。
 const 団体 = '100003';
+
+// ログインは下ごしらえ（auth.setup.mjs）で1回だけ済ませ、その控えを使う。
+// 各検査でログインし直さないので速く、認証の投げすぎで断られることもない
+test.use({ storageState: 'e2e/.auth/100003.json' });
 const 合言葉 = 'StgTest!2026';
 
 /** 触れる画面かどうか。指の画面では click ではなく tap でないと届かない */
