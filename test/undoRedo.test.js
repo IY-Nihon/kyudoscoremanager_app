@@ -1098,3 +1098,133 @@ test('取り消し：控えの射数は「計」の列から読まない', () =>
 
   assert.equal(store.getState().shotsPerRound, 4, '「計」の○×の数を射数と取り違えた');
 });
+
+// ──────────────────────────────────────────────────────────────
+// 途中交代も一手として積む。
+//
+// 積んでいなかったとき、○×の取り消しを続けると、その間に入れた交代まで
+// 巻き添えで消えていた。控えは盤面まるごとなので、交代を入れる前の控えまで
+// 戻ると交代ごと戻る。利用者は○×を1つ戻したつもりでいる。
+const 交代 = (store) => store.getState().archers[0].substitutions || {};
+
+test('取り消し：途中交代を入れたことも一手として戻せる', () => {
+  const { store } = 端末();
+  store.setState({ archers: [射手({ marks: ['', '', '', '', '', '', '', ''] })], shotsPerRound: 8 });
+
+  store.getState().setSubstitution('a1', 4, '田中', null);
+  assert.deepEqual(交代(store), { 4: '田中' }, '交代が入る');
+
+  store.getState().undo();
+  assert.deepEqual(交代(store), {}, '交代を入れる前に戻る');
+
+  store.getState().redo();
+  assert.deepEqual(交代(store), { 4: '田中' }, 'やり直しで交代が戻る');
+});
+
+test('取り消し：○×を戻しても、間に入れた交代は巻き添えにならない', () => {
+  const { store } = 端末();
+  store.setState({ archers: [射手({ marks: ['', '', '', '', '', '', '', ''] })], shotsPerRound: 8 });
+
+  store.getState().updateMark('a1', 0, '○');
+  store.getState().setSubstitution('a1', 4, '田中', null);
+  store.getState().updateMark('a1', 4, '○');
+
+  // 1回目：5射目の○が戻る
+  store.getState().undo();
+  assert.equal(印(store, 4), '', '5射目の○が戻る');
+  assert.deepEqual(交代(store), { 4: '田中' }, 'ここで交代が消えてはいけない');
+
+  // 2回目：交代を入れる前へ戻る（○はまだ1射目に残る）
+  store.getState().undo();
+  assert.deepEqual(交代(store), {}, '交代を入れる前に戻る');
+  assert.equal(印(store, 0), '○', '1射目の○まで戻ってはいけない');
+
+  // 3回目：1射目の○が戻る
+  store.getState().undo();
+  assert.equal(印(store, 0), '', '1射目の○が戻る');
+});
+
+test('取り消し：交代の取り消しも一手として戻せる', () => {
+  const { store } = 端末();
+  store.setState({ archers: [射手({ marks: ['', '', '', '', '', '', '', ''] })], shotsPerRound: 8 });
+
+  store.getState().setSubstitution('a1', 4, '田中', null);
+  store.getState().setSubstitution('a1', 4, '', null); // 取り消す
+  assert.deepEqual(交代(store), {}, '交代が消える');
+
+  store.getState().undo();
+  assert.deepEqual(交代(store), { 4: '田中' }, '取り消しを戻すと交代が復活する');
+});
+
+test('取り消し：同じ交代を入れ直しても、空振りの一手は挟まらない', () => {
+  // 何も変わらないのに積むと、押しても何も起きない一手ができる
+  const { store } = 端末();
+  store.setState({ archers: [射手({ marks: ['', '', '', '', '', '', '', ''] })], shotsPerRound: 8 });
+
+  store.getState().setSubstitution('a1', 4, '田中', null);
+  const 積んだ数 = store.getState().historyStack.length;
+  store.getState().setSubstitution('a1', 4, '田中', null); // 同じ内容
+  assert.equal(store.getState().historyStack.length, 積んだ数, '同じ内容で一手が増えた');
+});
+
+test('ライブ中：交代を入れたことも共有の取り消しで戻り、相手にも伝わる', async () => {
+  // 交代を一手として積むようにしたので、ライブ中の取り消しも交代を1手として
+  // 数える。共有履歴は盤面まるごとを残しており、交代も載っている
+  const 主 = 端末();
+  主.store.setState({
+    archers: [射手({ marks: ['', '', '', '', '', '', '', ''] })],
+    shotsPerRound: 8,
+  });
+  await 主.store.getState().startLiveSync(ライブ名);
+
+  const 参 = 端末(主.ライブ);
+  参.store.getState().joinLiveSync(ライブ名);
+  await 待つ(10);
+
+  主.store.getState().setSubstitution('a1', 4, '田中', null);
+  await 待つ(20);
+  assert.deepEqual(
+    参.store.getState().archers[0].substitutions || {},
+    { 4: '田中' },
+    '前提：交代が相手に届いている'
+  );
+
+  主.store.getState().undo();
+  await 待つ(20);
+
+  assert.deepEqual(主.store.getState().archers[0].substitutions || {}, {}, '主催者の画面で戻る');
+  assert.deepEqual(参.store.getState().archers[0].substitutions || {}, {}, '参加者の画面でも戻る');
+});
+
+test('ライブ中：○×の取り消しが、間に入れた交代を巻き添えにしない', async () => {
+  const 主 = 端末();
+  主.store.setState({
+    archers: [射手({ marks: ['', '', '', '', '', '', '', ''] })],
+    shotsPerRound: 8,
+  });
+  await 主.store.getState().startLiveSync(ライブ名);
+
+  const 参 = 端末(主.ライブ);
+  参.store.getState().joinLiveSync(ライブ名);
+  await 待つ(10);
+
+  主.store.getState().setSubstitution('a1', 4, '田中', null);
+  await 待つ(20);
+  主.store.getState().updateMark('a1', 4, '○');
+  await 待つ(20);
+
+  主.store.getState().undo(); // 5射目の○だけ戻る
+  await 待つ(20);
+
+  assert.equal(印(主.store, 4), '', '5射目の○が戻る');
+  assert.deepEqual(
+    主.store.getState().archers[0].substitutions || {},
+    { 4: '田中' },
+    '交代まで消えてはいけない'
+  );
+  assert.deepEqual(
+    参.store.getState().archers[0].substitutions || {},
+    { 4: '田中' },
+    '相手の画面でも交代が残る'
+  );
+});

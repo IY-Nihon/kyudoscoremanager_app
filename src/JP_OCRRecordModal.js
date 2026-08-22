@@ -469,8 +469,28 @@ const OCRRecordModal = ({
   const buildPrompt = () => (mode === "record" ? buildRecordPrompt() : buildLineupPrompt());
 
   // 紙の的中記録用プロンプト
+  /**
+   * 読み取りの候補になる名前を、指示文に渡せる形で作る。
+   *
+   * 渡さないと、模型は写真の字だけを頼りに書き起こす。手書きの氏名は
+   * 誤読の主因で、「三山→大山」「篠原→簀原」のように崩れる。
+   * 候補を先に見せると、迷ったときに名簿の側へ寄る。
+   * 読み取ったあとの名寄せ（matchArcherName）は残す。両方効く。
+   */
+  const buildNameHint = () => {
+    const 現役 = members.map(m => formatMemberName(m.name, members)).filter(Boolean);
+    const 卒業生 = alumni.map(a => formatMemberName(a.name, alumni)).filter(Boolean);
+    if (!現役.length && !卒業生.length) return '';
+    const 行 = ['', '【この部の名簿（読み取りの候補）】'];
+    if (現役.length) 行.push('部員: ' + 現役.join('、'));
+    if (卒業生.length) 行.push('卒業生: ' + 卒業生.join('、'));
+    行.push('写真の氏名は、ほとんどがこの名簿の中の誰かです。似た字で迷ったら名簿にある方を選んでください。');
+    行.push('ただしゲストや助っ人が混じることもあるため、名簿に無い名前を見つけたら、そのまま読み取ってください。');
+    return 行.join(String.fromCharCode(10));
+  };
+
   const buildRecordPrompt = () => {
-    return `あなたは弓道の「的中記録表」（紙に手書きされたもの）を読み取るOCRアシスタントです。
+    return `あなたは弓道の「的中記録表」（紙に手書きされたもの）を読み取るOCRアシスタントです。${buildNameHint()}
 添付された${images.length}枚の画像は、同じ記録表の続き（1枚目の続きが2枚目...）です。すべてを1つの記録として結合してください。
 
 【読み取り対象】
@@ -499,9 +519,7 @@ rows は表の上から順に、marks は左（1射目）から順に並べて�
 
   // ホワイトボードの立ち順表用プロンプト
   const buildLineupPrompt = () => {
-    const memberNames = members.map(m => formatMemberName(m.name, members)).join("、");
-    const alumniNames = alumni.map(a => formatMemberName(a.name, alumni)).join("、");
-    return `あなたは弓道の立ち順表（ホワイトボード）を読み取るOCRアシスタントです。
+    return `あなたは弓道の立ち順表（ホワイトボード）を読み取るOCRアシスタントです。${buildNameHint()}
 添付された${images.length}枚の画像は、同じ記録表の続き（1枚目の続きが2枚目...）です。すべてを1つの記録として結合してください。
 
 【読み取り対象】
