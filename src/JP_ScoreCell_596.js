@@ -122,6 +122,7 @@ const h = t.default.memo(
       const 自動ロックする = (0, d.useScoreStore)((e) => e.自動ロックする);
       const 自動ロックまでの秒 = (0, d.useScoreStore)((e) => e.自動ロックまでの秒);
       const ますを開ける = (0, d.useScoreStore)((e) => e.ますを開ける);
+      const 閉じたますが押された = (0, d.useScoreStore)((e) => e.閉じたますが押された);
       const この鍵 = e + ':' + t;
       const 入れた = (0, d.useScoreStore)((s) => s.入れた時刻[この鍵]);
       const [経った, 経ったを置く] = React.useState(!1);
@@ -149,10 +150,12 @@ const h = t.default.memo(
       const 閉じている = p || 自動で閉じている;
       const setActiveArrowLocationEdit = (0, d.useScoreStore)((e) => e.setActiveArrowLocationEdit);
       const updateArrowLocation = (0, d.useScoreStore)((e) => e.updateArrowLocation);
-      const archer = (0, d.useScoreStore)((s) => s.archers.find((a) => a && a.id === e));
+      // ここで (s) => s.archers.find(...) を購読していた。ますの数だけ
+      // 全射手の走査が走り、○×を1つ入れるたびに盤面全体が重くなっていた。
+      // この射手を使うのは長押しの中だけなので、そのとき取りに行けばよい
+      const 射手を取る = () => d.useScoreStore.getState().archers.find((a) => a && a.id === e);
       const latestPropsRef = React.useRef({
         mark: l,
-        archer: archer,
         archerId: e,
         shotIndex: t,
         isLocked: p,
@@ -162,7 +165,6 @@ const h = t.default.memo(
       });
       latestPropsRef.current = {
         mark: l,
-        archer: archer,
         archerId: e,
         shotIndex: t,
         isLocked: p,
@@ -191,12 +193,13 @@ const h = t.default.memo(
               // 矢所を使っているなら、長押しは「このますを直す」合図。
               // 開けるだけで終わると、矢所を出すのに二度長押しさせることになる
               const 印 = props.mark ?? '';
-              if (props.enableArrowLocation && '' !== 印 && props.archer) {
+              const 射手 = 射手を取る();
+              if (props.enableArrowLocation && '' !== 印 && 射手) {
                 setActiveArrowLocationEdit({
                   archerId: props.archerId,
                   shotIndex: props.shotIndex,
                   currentMark: 印,
-                  arrowLocations: props.archer.arrowLocations || [],
+                  arrowLocations: 射手.arrowLocations || [],
                 });
               }
             }, 500);
@@ -206,13 +209,14 @@ const h = t.default.memo(
           isLongPressedRef.current = false;
           longPressTimerRef.current = setTimeout(() => {
             const currentMark = props.mark ?? '';
-            if (currentMark !== '' && props.archer) {
+            const 射手2 = 射手を取る();
+            if (currentMark !== '' && 射手2) {
               isLongPressedRef.current = true;
               setActiveArrowLocationEdit({
                 archerId: props.archerId,
                 shotIndex: props.shotIndex,
                 currentMark: currentMark,
-                arrowLocations: props.archer.arrowLocations || [],
+                arrowLocations: 射手2.arrowLocations || [],
               });
             }
           }, 500);
@@ -254,8 +258,10 @@ const h = t.default.memo(
         // 「計」と「間隔」の列には○×を入れない。押しても何もしない。
         // 鍵の印はこの上に別に重ねてあるので、そちらは今までどおり押せる
         if (!印を入れる列) return;
-        // 閉じているますは押しても変わらない。長押しで開けてもらう
-        if (閉じている) return;
+        // 閉じているますは押しても変わらない。ただし黙って何も起きないと、
+        // 開け方が分からないまま何度も押すことになる。押されたことを伝えて
+        // 記録画面に「長押しで開きます」と出してもらう
+        if (閉じている) return void 閉じたますが押された();
         if (isLongPressedRef.current) {
           isLongPressedRef.current = false;
           return;

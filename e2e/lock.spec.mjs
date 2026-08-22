@@ -245,3 +245,24 @@ test('読み込み直しても、入れてある○×は閉じたまま', async 
   await 押す(page, 場所);
   expect((await 後.innerText()).trim(), '長押しでも開けられない').toBe('×');
 });
+
+test('鍵がかかったますを押すと、開け方を知らせる', async ({ page }) => {
+  // 黙って何も起きないと、壊れたと思って何度も押すことになる。
+  // 「長押しで開く」と分かる道は、灰色になること以外に無かった
+  await 入る(page);
+
+  const ます = page.locator('[data-testid^="ます-"]').first();
+  const 場所 = await 真ん中(ます);
+  await 押す(page, 場所);
+  await page.waitForTimeout(3500); // 閉じるのを待つ
+
+  const 帯 = page.getByText('このマスは鍵がかかっています。長押しで開きます', { exact: true });
+  // 帯は1.5秒で消えるので、待つ側を先に構えてから押す
+  const 待つ = 帯.waitFor({ state: 'visible', timeout: 4000 });
+  await 押す(page, 場所);
+  await 待つ;
+
+  // 知らせるだけで、○×は変わらないこと
+  const 印 = await ます.innerText();
+  expect(印.trim(), '知らせるだけのはずが、○×まで変わっている').toBe('○');
+});

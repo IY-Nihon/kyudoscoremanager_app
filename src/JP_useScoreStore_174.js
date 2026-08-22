@@ -565,6 +565,9 @@ const M = (0, s.create)()(
         // 長押しでますを開けた時刻。記録画面がこれを見て短く知らせる。
         // 端末に残す値ではないので、保存の対象には入れない
         鍵を開けた時刻: 0,
+        // 閉じたますを押した時刻。開け方が分からないまま何度も押す人が
+        // いるので、押されたら記録画面が「長押しで開きます」と知らせる
+        閉じたますを押した時刻: 0,
         arrowTargetType: 'kasumi36',
         activeArrowLocationEdit: null,
         activeGroupId: null,
@@ -1056,6 +1059,9 @@ const M = (0, s.create)()(
         //
         // 開けたことを画面に知らせる。灰色が戻るだけでは、押さえが届いたのか
         // 分かりにくい。知らせは記録画面が拾って短く出す（リセットと同じ作り）
+        // 閉じたますが押されたことを伝える。盤面は変えないので、
+        // 見るだけで入っている人でも知らせは出す（開け方は同じだから）
+        閉じたますが押された: () => e({ 閉じたますを押した時刻: Date.now() }),
         ますを開ける: (射手, 番) =>
           s().書き換えを止めるか()
             ? void 0
@@ -2255,7 +2261,17 @@ const M = (0, s.create)()(
         },
         setSubstitution: (t, o, a, i) => {
           if (s().書き換えを止めるか()) return;
-          const n = (Array.isArray(s().archers) ? s().archers : []).map((e) => {
+          // 交代も一手として積む。積まないと、○×の取り消しを続けたときに
+          // 交代を入れる前の控えまで戻り、交代ごと巻き添えで消えていた。
+          // 射数の変更（setShotsPerRound）と同じ考え方
+          const 変える前 = Array.isArray(s().archers) ? s().archers : [];
+          const 交代の中身 = (一覧) => {
+            const 射手 = (一覧 || []).find((e) => e && e.id === t);
+            if (!射手) return '';
+            return JSON.stringify([射手.substitutions || {}, 射手.substitutionIds || {}]);
+          };
+          const 前の交代 = 交代の中身(変える前);
+          const n = 変える前.map((e) => {
             if (e && e.id === t) {
               const s = Object.assign({}, e.substitutions || {});
               if ('' !== a) {
@@ -2288,10 +2304,18 @@ const M = (0, s.create)()(
             }
             return e;
           });
-          e({
-            archers: n,
-            lastLocalChange: Date.now(),
-          });
+          // 同じ内容を選び直したときは積まない。押しても何も起きない
+          // 一手が挟まり、取り消しが空振りして見える
+          const 交代が変わる = 交代の中身(n) !== 前の交代;
+          e(
+            Object.assign(
+              {
+                archers: n,
+                lastLocalChange: Date.now(),
+              },
+              交代が変わる ? { historyStack: [...s().historyStack, 変える前], redoStack: [] } : null
+            )
+          );
           const { isLiveActive: c, liveSessionName: l, shotsPerRound: d } = s();
           c && l && v(l, n, d);
         },
