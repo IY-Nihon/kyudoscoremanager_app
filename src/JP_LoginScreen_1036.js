@@ -1037,21 +1037,25 @@ var S = p.default.create({
   // 登録時の同意の欄
   同意の枠: { marginTop: 4, marginBottom: 12, gap: 10 },
   同意の行: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  // この画面は独自の暗い配色（#030508 + 金 #E5C184/#B8965A）で、テーマ変換の
+  // 対象外という前提で組まれている。変換表に載っている色（#3C3C43 や #007AFF など）
+  // を使うと、明るいテーマのときに変換されず、暗い背景に沈んで読めなくなる
   同意の印: {
     width: 22,
     height: 22,
     borderRadius: 5,
     borderWidth: 1.5,
-    borderColor: '#8E8E93',
+    borderColor: '#a09880',
     textAlign: 'center',
     lineHeight: 20,
     fontSize: 15,
     color: 'transparent',
     overflow: 'hidden',
   },
-  同意の印つき: { backgroundColor: '#007AFF', borderColor: '#007AFF', color: '#FFF' },
-  同意の字: { flex: 1, fontSize: 13, color: '#3C3C43', lineHeight: 20 },
-  同意のリンク: { color: '#007AFF', textDecorationLine: 'underline' },
+  同意の印つき: { backgroundColor: '#b8965a', borderColor: '#b8965a', color: '#030508' },
+  // 押す前に読んでもらう文なので、補助の #a09880 より明るくする
+  同意の字: { flex: 1, fontSize: 13, color: '#c9c1ae', lineHeight: 20 },
+  同意のリンク: { color: '#e5c184', textDecorationLine: 'underline' },
   helpLinks: {
     marginTop: 20,
     gap: 12,
