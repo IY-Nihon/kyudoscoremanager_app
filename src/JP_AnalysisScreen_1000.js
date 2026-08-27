@@ -121,12 +121,6 @@ const j = ({ navigation }) => {
       }
 
       session.archers.forEach((archer) => {
-        const substitutions = archer.substitutions || {};
-        const subIdxs = Object.keys(substitutions)
-          .map(Number)
-          .sort((e, t) => e - t);
-        const subIds = archer.substitutionIds || {};
-
         const archerLocations = archer.arrowLocations || [];
         archerLocations.forEach((loc, idx) => {
           if (!loc) return;
@@ -338,9 +332,6 @@ const j = ({ navigation }) => {
 
           let s = 0;
           let i = 0;
-          const d = Object.keys(r.substitutions || {})
-            .map(Number)
-            .sort((e, t) => e - t);
 
           r.marks.forEach((oVal, lVal) => {
             if ('○' !== oVal && '\xd7' !== oVal) return;
