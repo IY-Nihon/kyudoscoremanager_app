@@ -37,6 +37,8 @@ require('./module_420');
 var 案内 = require('./JP_TutorialGuide');
 // 「自分が写っているか」の判定。履歴画面・案内の見本と同じものを使う
 var { 自分の記録か, 学年でまとめる } = require('./syncRules');
+// 「その射は誰のものか」の決まりは1か所に寄せてある（src/statsRules.js）
+var 集 = require('./statsRules');
 var u = require('./JP_useScoreStore_174'),
   h = require('./AntDesign_600'),
   f = require('./JP_CustomCalendarModal_695'),
@@ -128,17 +130,7 @@ const j = ({ navigation }) => {
         const archerLocations = archer.arrowLocations || [];
         archerLocations.forEach((loc, idx) => {
           if (!loc) return;
-          let cId = archer.memberId;
-          let cName = archer.name || '';
-          for (const sIdx of subIdxs) {
-            if (!(sIdx <= idx)) break;
-            cId = subIds[sIdx] || void 0;
-            cName = substitutions[sIdx];
-          }
-          const isMatch = memberId
-            ? String(cId) === String(memberId)
-            : cName && name && cName.replace(/\s/g, '') === name.replace(/\s/g, '');
-          if (isMatch) {
+          if (集.その人の射か(archer, idx, memberId)) {
             const mark = archer.marks ? archer.marks[idx] : undefined;
             // 的中/外れのマークが登録されている射のみを対象とする
             if (mark === '○' || mark === '○' || mark === '×' || mark === '\xd7') {
@@ -247,7 +239,7 @@ const j = ({ navigation }) => {
 
   const me = E.filter((t) => {
     if (!t) return !1;
-    if (!t.includeInStats) return !1;
+    if (!集.集計に入れるか(t)) return !1; // 未設定の古い記録は含める（Excel の書き出しと揃える）
     if (e.length > 0) {
       const n = t.tags || [];
       if ('AND' === a) {
@@ -279,81 +271,7 @@ const j = ({ navigation }) => {
   const xe = [...(w || []).filter((e) => v || (e.grade || 0) < 5), ...(((O === '卒業生' || v) && A) || [])]
     .filter((e) => !!e)
     .filter((e) => k !== 'member' || !B || e.id === B)
-    .map((e) => {
-      let t = 0;
-      let n = 0;
-      const o = Array.from({ length: T }, () => ({ shots: 0, hits: 0 }));
-      const l = { kaichu: 0, sanchu: 0, hake: 0, icchu: 0, zannen: 0 };
-
-      me.forEach((a) => {
-        if (!a || !a.archers) return;
-        a.archers.forEach((a) => {
-          if (!a || !a.marks) return;
-          const r = a.substitutions || {};
-          const s = Object.keys(r)
-            .map(Number)
-            .sort((e, t) => e - t);
-          const i = a.substitutionIds || {};
-
-          a.marks.forEach((l, d) => {
-            if ('○' !== l && '\xd7' !== l) return;
-            let c = a.memberId;
-            let u = a.name || '';
-            for (const e of s) {
-              if (!(e <= d)) break;
-              c = i[e] || void 0;
-              u = r[e];
-            }
-            if (c ? c === e.id : u === e.name) {
-              t++;
-              '○' === l && n++;
-              const e = d % 4;
-              if (o[e]) {
-                o[e].shots++;
-                '○' === l && o[e].hits++;
-              }
-            }
-          });
-
-          const d = Math.floor(a.marks.length / 4);
-          for (let t = 0; t < d; t++) {
-            let n = [];
-            let o = !0;
-            for (let l = 0; l < 4; l++) {
-              const d = 4 * t + l;
-              const c = a.marks[d];
-              if ('○' !== c && '\xd7' !== c) {
-                o = !1;
-                break;
-              }
-              let u = a.memberId;
-              let h = a.name || '';
-              for (const e of s) {
-                if (!(e <= d)) break;
-                u = i[e] || void 0;
-                h = r[e];
-              }
-              if (!(u ? u === e.id : h === e.name)) {
-                o = !1;
-                break;
-              }
-              n.push(c);
-            }
-            if (o && 4 === n.length) {
-              const e = n.filter((e) => '○' === e).length;
-              if (4 === e) l.kaichu++;
-              else if (3 === e) l.sanchu++;
-              else if (2 === e) l.hake++;
-              else if (1 === e) l.icchu++;
-              else if (0 === e) l.zannen++;
-            }
-          }
-        });
-      });
-
-      const rate = t > 0 ? (n / t) * 100 : 0;
-      return Object.assign({}, e, { rate: rate, shots: t, hits: n, perShotStats: o, patterns: l });
-    })
+    .map((e) => Object.assign({}, e, 集.成績を数える(me, e.id)))
     .filter((e) => {
       if (0 === e.shots) return !1;
       if (k === 'group') {
@@ -426,16 +344,9 @@ const j = ({ navigation }) => {
 
           r.marks.forEach((oVal, lVal) => {
             if ('○' !== oVal && '\xd7' !== oVal) return;
-            let c = r.memberId;
-            let u = r.name || '';
-            for (const subIdx of d) {
-              if (!(subIdx <= lVal)) break;
-              c = (r.substitutionIds && r.substitutionIds[subIdx]) || void 0;
-              u = r.substitutions[subIdx] || '';
-            }
-            const isMatch =
-              (e && String(c) === String(e)) || (t && u.replace(/\s/g, '') === t.replace(/\s/g, ''));
-            if (isMatch) {
+            // 氏名では拾わない。ID一致「または」氏名一致だったため、
+            // 1つの射が2人に数えられることがあった
+            if (集.その人の射か(r, lVal, e)) {
               n[a].shots++;
               i++;
               if ('○' === oVal) {
@@ -459,16 +370,7 @@ const j = ({ navigation }) => {
                 sAllMine = !1;
                 break;
               }
-              let c = r.memberId;
-              let u = r.name || '';
-              for (const subIdx of d) {
-                if (!(subIdx <= aIdx)) break;
-                c = (r.substitutionIds && r.substitutionIds[subIdx]) || void 0;
-                u = r.substitutions[subIdx] || '';
-              }
-              const isMatch =
-                (e && String(c) === String(e)) || (t && u.replace(/\s/g, '') === t.replace(/\s/g, ''));
-              if (!isMatch) {
+              if (!集.その人の射か(r, aIdx, e)) {
                 sAllMine = !1;
                 break;
               }
@@ -505,6 +407,14 @@ const j = ({ navigation }) => {
     },
     [me, J]
   );
+
+  // 比較相手の成績。1〜4射目のマスごとに数え直すと、記録の数だけ何度も
+  // 走って重くなる。相手が変わったときだけ数える
+  const 比較の成績 = n.default.useMemo(() => {
+    const 表 = new Map();
+    for (const cm of compareMembers) if (cm && cm.id) 表.set(cm.id, 集.成績を数える(me, cm.id));
+    return 表;
+  }, [compareMembers, me]);
 
   const ke = n.default.useMemo(() => ('member' === k && B ? Se(B, D) : []), [k, B, D, Se]);
   const Be = n.default.useMemo(() => (ae ? Se(ae.id, ae.name) : []), [ae, Se]);
@@ -2008,9 +1918,14 @@ const j = ({ navigation }) => {
                                             ],
                                           }),
                                           ...compareMembers.map((cm, cmIdx) => {
-                                            const cmAnalyzed = xe.find((x) => x.id === cm.id) || {};
-                                            const cmStat = (cmAnalyzed.perShotStats &&
-                                              cmAnalyzed.perShotStats[t]) || { shots: 0, hits: 0 };
+                                            // 絞り込み後の一覧（xe）から引くと、学年や性別で
+                                            // 絞っている最中に選んだ相手が見つからず 0% になる。
+                                            // 相手は全員から選べるので、記録から数えたものを使う
+                                            const cmAll = 比較の成績.get(cm.id);
+                                            const cmStat = (cmAll && cmAll.perShotStats[t]) || {
+                                              shots: 0,
+                                              hits: 0,
+                                            };
                                             const cmRate =
                                               cmStat.shots > 0 ? (cmStat.hits / cmStat.shots) * 100 : 0;
                                             const dsColor = COLORS[cmIdx % COLORS.length];

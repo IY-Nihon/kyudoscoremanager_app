@@ -30,6 +30,8 @@ const { 全員の成績, 出欠の集計, 記録をさがす, 射位ごとの成
 // 「何でも聞いてください」だけでは何を聞けるか分からない。
 // その団体の中身に合わせた質問例を出す（test/chatSuggestions.test.js）
 const { 質問例, 質問例のすべて, 打ちかけの候補 } = require("./chatSuggestions");
+// 「その射は誰のものか」は分析画面と共通の決まりを使う
+const 集 = require("./statsRules");
 // 言い換えて聞かれても当てるための、コードだけの近さ測り（外のAPIは使わない）
 const { 引きをつくる, 近い順 } = require("./textMatch");
 const { getShadowStyle } = require("./module_592");
@@ -742,8 +744,16 @@ const AIChatBot = () => {
             }));
             
             let statsData = { error: "選手が見つかりませんでした。" };
-            
-            if (targetMember || hasRecord) {
+
+            // 成績は部員IDで数える。名簿に無い名前（ゲストなど）は、記録に
+            // 名前が出ていても成績を出せない。0 を並べるより、その旨を返す
+            if (!targetMember && hasRecord) {
+              statsData = {
+                error:
+                  `「${finalTargetName}」は部員名簿にありません。` +
+                  '記録に名前は出ていますが、ゲストとして入力されているため成績は集計できません。',
+              };
+            } else if (targetMember) {
               let shotTotals = [0, 0, 0, 0];
               let shotHits = [0, 0, 0, 0];
               let omaeTotal = 0, omaeHit = 0;
@@ -764,25 +774,9 @@ const AIChatBot = () => {
                   archer.marks.forEach((m, idx) => {
                     if (m !== '○' && m !== '×') return;
                     
-                    let currentId = archer.memberId;
-                    let currentName = archer.name || '';
-                    for (const subIdx of subIndices) {
-                      if (subIdx <= idx) {
-                        currentId = subIds[subIdx] || undefined;
-                        currentName = subs[subIdx] || '';
-                      } else {
-                        break;
-                      }
-                    }
-                    
-                    const cleanCurrentName = currentName.replace(/\s/g, '');
-                    const cleanFinalTargetName = finalTargetName.replace(/\s/g, '');
-                    
-                    const isTarget = (targetId && currentId === targetId) ||
-                                     (cleanCurrentName && cleanFinalTargetName && 
-                                      (cleanCurrentName.includes(cleanFinalTargetName) || cleanFinalTargetName.includes(cleanCurrentName)));
-                                     
-                    if (isTarget) {
+                    // 部員IDだけで判定する。氏名の部分一致では「田中」が
+                    // 「田中一郎」を拾うなど、別人の射が混ざる
+                    if (集.その人の射か(archer, idx, targetId)) {
                       participatedInSession = true;
                       const arrowPos = idx % 4;
                       shotTotals[arrowPos]++;
@@ -815,25 +809,7 @@ const AIChatBot = () => {
                       const shotIdx = 4 * i + l;
                       const mark = archer.marks[shotIdx];
                       
-                      let currentId = archer.memberId;
-                      let currentName = archer.name || '';
-                      for (const subIdx of subIndices) {
-                        if (subIdx <= shotIdx) {
-                          currentId = subIds[subIdx] || undefined; // 交代後の正しいIDを使用
-                          currentName = subs[subIdx] || '';        // 交代後の正しい名前を使用
-                        } else {
-                          break;
-                        }
-                      }
-                      
-                      const cleanCurrentName = currentName.replace(/\s/g, '');
-                      const cleanFinalTargetName = finalTargetName.replace(/\s/g, '');
-                      
-                      const isTarget = (targetId && currentId === targetId) ||
-                                       (cleanCurrentName && cleanFinalTargetName && 
-                                        (cleanCurrentName.includes(cleanFinalTargetName) || cleanFinalTargetName.includes(cleanCurrentName)));
-                      
-                      if (!isTarget) {
+                      if (!集.その人の射か(archer, shotIdx, targetId)) {
                         isBlockAllTarget = false;
                         break;
                       }
@@ -868,25 +844,7 @@ const AIChatBot = () => {
                   archer.marks.forEach((m, shotIdx) => {
                     if (m !== '○' && m !== '×') return;
                     
-                    let currentId = archer.memberId;
-                    let currentName = archer.name || '';
-                    for (const subIdx of subIndices) {
-                      if (subIdx <= shotIdx) {
-                        currentId = subIds[subIdx] || undefined;
-                        currentName = subs[subIdx] || '';
-                      } else {
-                        break;
-                      }
-                    }
-                    
-                    const cleanCurrentName = currentName.replace(/\s/g, '');
-                    const cleanFinalTargetName = finalTargetName.replace(/\s/g, '');
-                    
-                    if ((targetId && currentId === targetId) ||
-                        (cleanCurrentName && cleanFinalTargetName && 
-                         (cleanCurrentName.includes(cleanFinalTargetName) || cleanFinalTargetName.includes(cleanCurrentName)))) {
-                      hasParticipation = true;
-                    }
+                    if (集.その人の射か(archer, shotIdx, targetId)) hasParticipation = true;
                   });
                   
                   if (hasParticipation) {
@@ -903,9 +861,18 @@ const AIChatBot = () => {
                   if (archerIndex === 0) positionName = "大前";
                   else if (session.archers.length >= 3 && archerIndex === session.archers.length - 1) positionName = "落";
                   
-                  const marksStr = foundArcher.marks.filter(m => m === '○' || m === '×').join('');
-                  const hits = foundArcher.marks.filter(m => m === '○').length;
-                  const total = foundArcher.marks.filter(m => m === '○' || m === '×').length;
+                  // 列ぜんぶではなく、その人が引いたぶんだけを数える。
+                  // 交代があると、列には2人ぶんの○×が入っている
+                  let marksStr = '';
+                  let hits = 0;
+                  let total = 0;
+                  foundArcher.marks.forEach((m, i) => {
+                    if (!集.引いた射か(m)) return;
+                    if (!集.その人の射か(foundArcher, i, targetId)) return;
+                    marksStr += m;
+                    total++;
+                    if (m === '○') hits++;
+                  });
                   
                   recentSessionsDetail.push({
                     date: dateStr,
