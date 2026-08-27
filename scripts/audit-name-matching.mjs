@@ -87,7 +87,7 @@ function 素にする(v) {
 }
 
 /** 空白を落とす。氏名の突き合わせはこの形で行う */
-const 詰める = (s) => String(s || '').replace(/[\s　]+/g, '');
+const 詰める = (s) => String(s || '').replace(/[\s\u3000]+/g, '');
 
 const 団体 = new Set();
 for (const d of await 取る('group_accounts')) {
