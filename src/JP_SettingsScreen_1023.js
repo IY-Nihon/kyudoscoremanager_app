@@ -46,6 +46,8 @@ function t(e) {
       return w;
     },
   }));
+// 成績の数え方は分析画面と共通（src/statsRules.js）
+var 集 = require('./statsRules');
 var _xlsx = require('./JP_excelExport'),
   themeMod = require('./theme'),
   l = e(require('./module_37')),
@@ -362,6 +364,10 @@ const w = () => {
             const e = '対象期間のデータがありません';
             return void (u.default.alert('通知', e));
           }
+          // 「集計に含めない」にした記録は、本表から外して別のシートに回す。
+          // 混ぜると分析画面の数字と食い違う（画面はこれを外して数えている）
+          const 集計しない記録 = a.filter((t) => !集.集計に入れるか(t));
+          const 集計する記録 = a.filter((t) => 集.集計に入れるか(t));
           const s = (e) => (e || '').replace(/\s*\(\d+\)$/, '').trim();
           let d = '';
           let xlsxHeaders = [],
@@ -383,47 +389,79 @@ const w = () => {
               'メモ',
               '統計対象',
             ];
-            a.forEach((t) => {
+            集計する記録.forEach((t) => {
               if (!t || !t.archers || !Array.isArray(t.archers)) return;
               const dateStr = csvDate(t.date);
               t.archers.forEach((l) => {
                 if (!l || l.isSeparator || l.isTotalCalculator) return;
-                if (n) {
-                  if (
-                    l.memberId !== n &&
-                    !(H && !l.memberId && l.name && l.name.replace(/\s*\(\d+\)$/, '').trim() === H)
-                  )
-                    return;
-                } else if ('custom' === e) {
-                  if (selectedMembers.length > 0) {
-                    if (!selectedMembers.includes(s(l.name))) return;
-                  } else if (!('all' === me || (l.name && l.name.toLowerCase().includes(me.toLowerCase()))))
-                    return;
-                }
-                const hits = (Array.isArray(l.marks) ? l.marks : []).filter((e) => '○' === e).length,
-                  shots = t.shotCount || 0,
-                  rateNum = shots > 0 ? Number(((hits / shots) * 100).toFixed(1)) : 0,
-                  mi = findMemberInfo(l, mList, aList, s),
-                  gradeV = mi && null != mi.grade ? mi.grade : null != l.grade ? l.grade : '',
-                  genderV = mi && mi.gender ? mi.gender : l.gender || '',
-                  termV = mi && null != mi.termKi ? mi.termKi : '',
-                  tagsV = (t.tags || []).join(' '),
+                // 途中交代があると1つの列に2人ぶんが入る。区間に分けて人ごとの行にする。
+                // 分けないと、交代後の射も交代前の人の行に入ってしまう
+                const 区間たち = 集.射手を区間に分ける(l);
+                // ○×が1つも入っていない列も、誰が立っていたかは残す
+                const 書く区間 = 区間たち.length
+                  ? 区間たち
+                  : [{ 部員id: l.memberId, 名前: l.name || '', 的中: 0, 射数: 0 }];
+                const tagsV = (t.tags || []).join(' '),
                   noteV = t.note || '',
                   statV = !1 === t.includeInStats ? 'FALSE' : 'TRUE';
-                xlsxRows.push([
-                  dateStr,
-                  t.title || '',
-                  s(l.name),
-                  gradeV,
-                  genderV,
-                  termV,
-                  hits,
-                  shots,
-                  rateNum,
-                  tagsV,
-                  noteV,
-                  statV,
-                ]);
+                書く区間.forEach((区間) => {
+                  // 絞り込みは列ではなく人ごとに見る。列で見ると、交代で入った人が
+                  // 自分の書き出しから丸ごと落ちる（列の持ち主は別人のため）
+                  if (n) {
+                    const 自分か =
+                      String(区間.部員id || '') === String(n) ||
+                      (H &&
+                        !区間.部員id &&
+                        区間.名前 &&
+                        区間.名前.replace(/\s*\(\d+\)$/, '').trim() === H);
+                    if (!自分か) return;
+                  } else if ('custom' === e) {
+                    if (selectedMembers.length > 0) {
+                      if (!selectedMembers.includes(s(区間.名前))) return;
+                    } else if (
+                      !('all' === me || (区間.名前 && 区間.名前.toLowerCase().includes(me.toLowerCase())))
+                    )
+                      return;
+                  }
+                  // 分母は実際に引いた数。記録の射数（割り当て）だと、
+                  // 途中で帰った人の的中率が低く出る（分析画面は実射数で数えている）
+                  const hits = 区間.的中,
+                    shots = 区間.射数,
+                    rateNum = shots > 0 ? Number(((hits / shots) * 100).toFixed(1)) : 0,
+                    // 交代で入った人の学年や性別は、その人の名簿から引く
+                    mi = findMemberInfo(
+                      { memberId: 区間.部員id, name: 区間.名前 },
+                      mList,
+                      aList,
+                      s
+                    ),
+                    // 名簿に無いときは射手側の値を使うが、それが使えるのは
+                    // 列の持ち主のときだけ。交代で入った人に列の持ち主の学年を
+                    // 当てると別人の情報になる
+                    列の持ち主か = 区間.名前 === (l.name || ''),
+                    gradeV =
+                      mi && null != mi.grade
+                        ? mi.grade
+                        : 列の持ち主か && null != l.grade
+                          ? l.grade
+                          : '',
+                    genderV = mi && mi.gender ? mi.gender : 列の持ち主か ? l.gender || '' : '',
+                    termV = mi && null != mi.termKi ? mi.termKi : '';
+                  xlsxRows.push([
+                    dateStr,
+                    t.title || '',
+                    s(区間.名前 || l.name),
+                    gradeV,
+                    genderV,
+                    termV,
+                    hits,
+                    shots,
+                    rateNum,
+                    tagsV,
+                    noteV,
+                    statV,
+                  ]);
+                });
               });
             });
           } else {
@@ -477,17 +515,21 @@ const w = () => {
                 let s = 0,
                   d2 = 0,
                   c2 = !1;
-                a.forEach((t) => {
+                集計する記録.forEach((t) => {
                   const l = new Date(t.date);
                   `${l.getFullYear()}/${(l.getMonth() + 1).toString().padStart(2, '0')}/${l.getDate().toString().padStart(2, '0')}` ===
                     n &&
                     t.archers.forEach((l) => {
                       if (!l || l.isSeparator || l.isTotalCalculator) return;
-                      if (e.id ? l.memberId === e.id : l.name === e.name) {
+                      // 分析画面と同じ数え方をする。部員IDだけで判定し、途中交代を
+                      // 踏まえ、分母は実際に引いた数にする。以前は氏名でも拾い、
+                      // 交代を見ず、割り当ての射数を分母にしていたため画面と食い違っていた
+                      集.射手を区間に分ける(l).forEach((区間) => {
+                        if (!e.id || String(区間.部員id) !== String(e.id)) return;
                         c2 = !0;
-                        const e2 = Array.isArray(l.marks) ? l.marks : [];
-                        ((s += e2.filter((e) => '○' === e).length), (d2 += t.shotCount));
-                      }
+                        s += 区間.的中;
+                        d2 += 区間.射数;
+                      });
                     });
                 });
                 c2 ? (o.push(`${s}/${d2}`), (t += s), (l += d2)) : o.push('');
@@ -508,15 +550,45 @@ const w = () => {
             u.default.alert('書き出し', msg);
             return;
           }
-          await _xlsx.exportXlsx(
-            xlsxHeaders,
-            xlsxRows,
-            fname,
+          const 幅 =
             'matrix' === ye
               ? [16, 7, 9, 9, 9].concat(xlsxHeaders.slice(5).map(() => 9))
-              : [12, 20, 14, 6, 8, 6, 9, 9, 9, 16, 24, 10],
-            'matrix' === ye ? '集計' : '記録'
-          );
+              : [12, 20, 14, 6, 8, 6, 9, 9, 9, 16, 24, 10];
+          const シートたち = [
+            { name: 'matrix' === ye ? '集計' : '記録', headers: xlsxHeaders, rows: xlsxRows, widths: 幅 },
+          ];
+          // 「集計に含めない」にした記録は、本表から外したぶんを別のシートに残す。
+          // 消してしまうと、何が外れたのかを確かめる手立てが無くなる
+          if (集計しない記録.length > 0) {
+            const 除外の見出し = ['日付', '題', '氏名', '的中数', '射数', '的中率', 'タグ', 'メモ'];
+            const 除外の行 = [];
+            集計しない記録.forEach((t) => {
+              if (!t || !Array.isArray(t.archers)) return;
+              const dateStr = csvDate(t.date);
+              t.archers.forEach((l) => {
+                if (!l || l.isSeparator || l.isTotalCalculator) return;
+                集.射手を区間に分ける(l).forEach((区間) => {
+                  除外の行.push([
+                    dateStr,
+                    t.title || '',
+                    s(区間.名前 || l.name),
+                    区間.的中,
+                    区間.射数,
+                    区間.射数 > 0 ? Number(((区間.的中 / 区間.射数) * 100).toFixed(1)) : 0,
+                    (t.tags || []).join(' '),
+                    t.note || '',
+                  ]);
+                });
+              });
+            });
+            シートたち.push({
+              name: '集計に含めない記録',
+              headers: 除外の見出し,
+              rows: 除外の行,
+              widths: [12, 20, 14, 9, 9, 9, 16, 24],
+            });
+          }
+          await _xlsx.exportXlsxSheets(シートたち, fname);
         } catch (e) {
           console.error('Export Error:', e);
           const t = 'ファイルの生成に失敗しました。';
