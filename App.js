@@ -34,6 +34,7 @@ export default function App() {
   const activeRole = useScoreStore(e => e.activeRole);
   const memberAuthVersion = useScoreStore(e => e.memberAuthVersion);
   const setAuth = useScoreStore(e => e.setAuth);
+  const 同意の確認が要る = useScoreStore(e => e.同意の確認が要る);
   const startPeriodicSync = useScoreStore(e => e.startPeriodicSync);
   const fetchAndOverwriteFromCloud = useScoreStore(e => e.fetchAndOverwriteFromCloud);
   const setupNetworkListener = useScoreStore(e => e.setupNetworkListener);
@@ -68,6 +69,28 @@ export default function App() {
     }
   }, [isHydrated]);
 
+  // 規約とプライバシーポリシーを改定したときだけ出る。
+  // 練習の最中に出ることもあるので、「あとで」を必ず添える。
+  // 「あとで」を選んだときは記録を残さないため、次の起動でまた出る
+  useEffect(() => {
+    if (!同意の確認が要る) return;
+    const 法 = require('./src/legalDocs');
+    const 窓を出す = () => {
+      出す(
+        '利用規約とプライバシーポリシーの改定',
+        '内容が変わりました。お手数ですが、ご確認のうえ同意をお願いします。',
+        [
+          // 読みに行くと窓は閉じるので、戻ってこられるようもう一度出す
+          { text: '利用規約を読む', onPress: () => { 法.開く(法.規約のURL); setTimeout(窓を出す, 500); } },
+          { text: 'プライバシーポリシーを読む', onPress: () => { 法.開く(法.プライバシーのURL); setTimeout(窓を出す, 500); } },
+          { text: '同意する', onPress: () => useScoreStore.getState().同意を記録する() },
+          { text: 'あとで', style: 'cancel', onPress: () => useScoreStore.getState().同意をあとにする() },
+        ]
+      );
+    };
+    窓を出す();
+  }, [同意の確認が要る]);
+
   useEffect(() => {
     if (isHydrated && activeGroupId && authReady) {
       console.log('[App] Initializing data for group:', activeGroupId);
@@ -75,6 +98,9 @@ export default function App() {
         try {
           await fetchAndOverwriteFromCloud();
           startPeriodicSync();
+          // 同意の記録を確かめる。記録が無ければ静かに補い、
+          // 版が古ければ取り直しの窓を出す（下の効果で拾う）
+          useScoreStore.getState().同意を確かめる();
         } catch (e) {
           console.error('[App] Initial data fetch error:', e);
         }
