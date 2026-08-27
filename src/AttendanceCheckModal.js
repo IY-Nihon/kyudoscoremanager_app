@@ -23,6 +23,8 @@ var m = require('./AntDesign_600');
 var b = require('./JP_useScoreStore_174');
 var x = require('./IS_WEB_199');
 var F = require('./module_592');
+// 出欠の自動判定。交代で入った人も数えるため、決まりは切り出してある
+const { 出ていた部員たち } = require('./attendanceRules');
 var j = require('./module_427');
 
 const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
@@ -35,11 +37,11 @@ const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
       members.forEach((m) => {
         initial[m.id] = 'absent';
       });
-      archers.forEach((a) => {
-        if (a && a.memberId) {
-          initial[a.memberId] = 'present';
-        }
-      });
+      // 立っていた人を出席にする。途中交代で入った人も、実際に引いているので
+      // 出席にする（archer.memberId には出てこず substitutionIds にだけ出てくる）
+      for (const id of 出ていた部員たち(archers)) {
+        initial[id] = 'present';
+      }
       setAttendance(initial);
     }
   }, [visible, members, archers]);
