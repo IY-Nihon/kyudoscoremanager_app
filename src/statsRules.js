@@ -133,6 +133,8 @@ function 成績を数える(記録たち, 部員id) {
   let hits = 0;
   const perShotStats = Array.from({ length: 立ちの射数 }, () => ({ shots: 0, hits: 0 }));
   const patterns = { kaichu: 0, sanchu: 0, hake: 0, icchu: 0, zannen: 0 };
+  // 4射そろわず、結果分布に数えられなかった射。画面で断り書きを出すのに使う
+  let 端数の射 = 0;
 
   for (const 記録 of Array.isArray(記録たち) ? 記録たち : []) {
     if (!記録 || !Array.isArray(記録.archers)) continue;
@@ -171,10 +173,25 @@ function 成績を数える(記録たち, 部員id) {
         else if (中り === 1) patterns.icchu++;
         else patterns.zannen++;
       }
+
+      // 4射に満たない末尾。分類できないので結果分布には数えないが、
+      // 「合わない」と思われないよう画面で断れるように数えておく
+      for (let 射目 = 立ち数 * 立ちの射数; 射目 < 射手.marks.length; 射目++) {
+        if (!引いた射か(射手.marks[射目])) continue;
+        if (!その人の射か(射手, 射目, 部員id)) continue;
+        端数の射++;
+      }
     }
   }
 
-  return { shots, hits, rate: shots > 0 ? (hits / shots) * 100 : 0, perShotStats, patterns };
+  return {
+    shots,
+    hits,
+    rate: shots > 0 ? (hits / shots) * 100 : 0,
+    perShotStats,
+    patterns,
+    端数の射,
+  };
 }
 
 /**
