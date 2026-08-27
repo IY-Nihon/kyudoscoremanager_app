@@ -47,6 +47,10 @@ var u = require('./JP_useScoreStore_174'),
   b = e(x),
   y = require('./module_427'),
   { ArrowLocationView } = require('./ArrowLocationView');
+// 比較相手を見分けるための色。グラフ・矢所・立ち順別・結果分布で同じ順に使う。
+// 別々に書いていたころは、増やしたときに片方だけ色がずれる心配があった
+const 比較の色たち = ['#FF2D55', '#34C759', '#FF9500', '#AF52DE', '#32ADE6', '#5856D6', '#FFCC00'];
+
 const j = ({ navigation }) => {
   const {
     analysisSelectedTags: e = [],
@@ -433,7 +437,7 @@ const j = ({ navigation }) => {
   const Be = n.default.useMemo(() => (ae ? Se(ae.id, ae.name) : []), [ae, Se]);
 
   const CompareGraph = ({ baseData, baseName, compareTargets, selectedLabel, onSelectLabel }) => {
-    const COLORS = ['#FF2D55', '#34C759', '#FF9500', '#AF52DE', '#32ADE6', '#5856D6', '#FFCC00'];
+    const COLORS = 比較の色たち;
     const allDataSets = [
       { name: baseName, data: baseData, color: '#007AFF', isBase: true },
       ...compareTargets.map((target, idx) => ({
@@ -1863,15 +1867,7 @@ const j = ({ navigation }) => {
                                       ],
                                     }),
                                     ...compareMembers.map((cm, cmIdx) => {
-                                      const COLORS = [
-                                        '#FF2D55',
-                                        '#34C759',
-                                        '#FF9500',
-                                        '#AF52DE',
-                                        '#32ADE6',
-                                        '#5856D6',
-                                        '#FFCC00',
-                                      ];
+                                      const COLORS = 比較の色たち;
                                       const dsColor = COLORS[cmIdx % COLORS.length];
                                       return (0, y.jsxs)(
                                         o.default,
@@ -1908,6 +1904,12 @@ const j = ({ navigation }) => {
                                 }),
                               ],
                             }),
+                            // 立ち順別の的中率。
+                            //
+                            // 射目ごとに人を並べていたころは、4人比べると
+                            // 4区画×4行で20行になり、上下に離れた数字を
+                            // 見比べることになって読めなかった。
+                            // 1人1行の表にして、横に射目を並べる
                             (0, y.jsxs)(o.default, {
                               style: { marginBottom: 20 },
                               children: [
@@ -1916,170 +1918,163 @@ const j = ({ navigation }) => {
                                     fontSize: 14,
                                     fontWeight: 'bold',
                                     color: '#3A3A3C',
-                                    marginBottom: 8,
+                                    marginBottom: 12,
                                   },
                                   children: selectedModalTrendLabel
                                     ? `立ち順別の的中率 (${selectedModalTrendLabel})`
                                     : '立ち順別の的中率 (1-4射目)',
                                 }),
-                                (0, y.jsx)(o.default, {
-                                  children: Array.from({ length: 4 }).map((_, t) => {
-                                    const baseStat =
-                                      (詳細の期間の成績 || ae).perShotStats[t] || { shots: 0, hits: 0 };
-                                    const baseRate =
-                                      baseStat.shots > 0 ? (baseStat.hits / baseStat.shots) * 100 : 0;
-                                    const COLORS = [
-                                      '#FF2D55',
-                                      '#34C759',
-                                      '#FF9500',
-                                      '#AF52DE',
-                                      '#32ADE6',
-                                      '#5856D6',
-                                      '#FFCC00',
-                                    ];
-
-                                    return (0, y.jsxs)(
-                                      o.default,
-                                      {
+                                (() => {
+                                  const COLORS = 比較の色たち;
+                                  const 空 = [];
+                                  const 並び = [
+                                    {
+                                      name: ae.name,
+                                      色: '#3C3C43',
+                                      表: (詳細の期間の成績 || ae).perShotStats || 空,
+                                    },
+                                    ...compareMembers.map((cm, i) => ({
+                                      name: cm.name,
+                                      色: COLORS[i % COLORS.length],
+                                      表: (比較の成績.get(cm.id) || {}).perShotStats || 空,
+                                    })),
+                                  ];
+                                  const 率 = (x) => (x && x.shots > 0 ? (x.hits / x.shots) * 100 : 0);
+                                  // 濃さは、この表の中でいちばん高い率を基準にする。
+                                  // 決め打ちの目盛だと、的中率が低い団体では全部同じ薄さになる
+                                  let 最大 = 0;
+                                  for (const 人 of 並び)
+                                    for (let t = 0; t < 4; t++) 最大 = Math.max(最大, 率(人.表[t]));
+                                  const 淡く = (濃さ) => `rgba(0, 122, 255, ${濃さ})`;
+                                  return (0, y.jsxs)(o.default, {
+                                    style: F.patternsCard,
+                                    children: [
+                                      (0, y.jsxs)(o.default, {
                                         style: {
-                                          marginBottom: 12,
-                                          padding: 8,
-                                          backgroundColor: '#F9F9F9',
-                                          borderRadius: 8,
+                                          flexDirection: 'row',
+                                          alignItems: 'flex-end',
+                                          marginBottom: 6,
                                         },
                                         children: [
-                                          (0, y.jsxs)(l.default, {
-                                            style: {
-                                              fontSize: 11,
-                                              fontWeight: 'bold',
-                                              color: '#3C3C43',
-                                              marginBottom: 6,
-                                            },
-                                            children: [t + 1, '射目'],
+                                          (0, y.jsx)(o.default, { style: { width: 72 } }),
+                                          ...[0, 1, 2, 3].map((t) =>
+                                            (0, y.jsx)(
+                                              o.default,
+                                              {
+                                                style: { flex: 1, alignItems: 'center' },
+                                                children: (0, y.jsxs)(l.default, {
+                                                  style: {
+                                                    fontSize: 10,
+                                                    fontWeight: 'bold',
+                                                    color: '#3A3A3C',
+                                                  },
+                                                  children: [t + 1, '射目'],
+                                                }),
+                                              },
+                                              `head-shot-${t}`
+                                            )
+                                          ),
+                                          (0, y.jsx)(o.default, {
+                                            style: { width: 40, alignItems: 'flex-end' },
+                                            children: (0, y.jsx)(l.default, {
+                                              style: { fontSize: 10, color: '#8E8E93' },
+                                              children: '射数',
+                                            }),
                                           }),
-                                          (0, y.jsxs)(o.default, {
+                                        ],
+                                      }),
+                                      ...並び.map((人, 番) => {
+                                        const 総射数 = [0, 1, 2, 3].reduce(
+                                          (a, t) => a + ((人.表[t] && 人.表[t].shots) || 0),
+                                          0
+                                        );
+                                        return (0, y.jsxs)(
+                                          o.default,
+                                          {
                                             style: {
                                               flexDirection: 'row',
                                               alignItems: 'center',
                                               marginBottom: 4,
                                             },
                                             children: [
-                                              (0, y.jsx)(l.default, {
-                                                style: { width: 70, fontSize: 10, color: '#3A3A3C' },
-                                                children: ae.name,
-                                              }),
-                                              (0, y.jsx)(o.default, {
-                                                style: {
-                                                  flex: 1,
-                                                  height: 8,
-                                                  backgroundColor: '#E5E5EA',
-                                                  borderRadius: 4,
-                                                  marginRight: 8,
-                                                  overflow: 'hidden',
-                                                },
-                                                children: (0, y.jsx)(o.default, {
-                                                  style: {
-                                                    width: `${baseRate}%`,
-                                                    height: '100%',
-                                                    backgroundColor: '#007AFF',
-                                                    borderRadius: 4,
-                                                  },
-                                                }),
-                                              }),
-                                              (0, y.jsxs)(l.default, {
-                                                style: {
-                                                  width: 80,
-                                                  fontSize: 10,
-                                                  textAlign: 'right',
-                                                  fontWeight: 'bold',
-                                                },
+                                              (0, y.jsxs)(o.default, {
+                                                style: { width: 72, paddingRight: 4, flexDirection: 'row', alignItems: 'center' },
                                                 children: [
-                                                  baseRate.toFixed(0),
-                                                  '% (',
-                                                  baseStat.hits,
-                                                  '/',
-                                                  baseStat.shots,
-                                                  ')',
-                                                ],
-                                              }),
-                                            ],
-                                          }),
-                                          ...compareMembers.map((cm, cmIdx) => {
-                                            // 絞り込み後の一覧（xe）から引くと、学年や性別で
-                                            // 絞っている最中に選んだ相手が見つからず 0% になる。
-                                            // 相手は全員から選べるので、記録から数えたものを使う
-                                            const cmAll = 比較の成績.get(cm.id);
-                                            const cmStat = (cmAll && cmAll.perShotStats[t]) || {
-                                              shots: 0,
-                                              hits: 0,
-                                            };
-                                            const cmRate =
-                                              cmStat.shots > 0 ? (cmStat.hits / cmStat.shots) * 100 : 0;
-                                            const dsColor = COLORS[cmIdx % COLORS.length];
-
-                                            return (0, y.jsxs)(
-                                              o.default,
-                                              {
-                                                style: {
-                                                  flexDirection: 'row',
-                                                  alignItems: 'center',
-                                                  marginBottom: 4,
-                                                },
-                                                children: [
-                                                  (0, y.jsx)(l.default, {
-                                                    style: { width: 70, fontSize: 10, color: dsColor },
-                                                    children: cm.name,
-                                                  }),
                                                   (0, y.jsx)(o.default, {
                                                     style: {
-                                                      flex: 1,
+                                                      width: 8,
                                                       height: 8,
-                                                      backgroundColor: '#E5E5EA',
                                                       borderRadius: 4,
-                                                      marginRight: 8,
-                                                      overflow: 'hidden',
+                                                      marginRight: 4,
+                                                      backgroundColor: 人.色,
                                                     },
-                                                    children: (0, y.jsx)(o.default, {
-                                                      style: {
-                                                        width: `${cmRate}%`,
-                                                        height: '100%',
-                                                        backgroundColor: dsColor,
-                                                        borderRadius: 4,
-                                                      },
-                                                    }),
                                                   }),
-                                                  (0, y.jsxs)(l.default, {
-                                                    style: {
-                                                      width: 80,
-                                                      fontSize: 10,
-                                                      textAlign: 'right',
-                                                      fontWeight: 'bold',
-                                                    },
-                                                    children: [
-                                                      cmRate.toFixed(0),
-                                                      '% (',
-                                                      cmStat.hits,
-                                                      '/',
-                                                      cmStat.shots,
-                                                      ')',
-                                                    ],
+                                                  (0, y.jsx)(l.default, {
+                                                    style: { flex: 1, fontSize: 11, fontWeight: 'bold', color: '#1C1C1E' },
+                                                    numberOfLines: 1,
+                                                    children: 人.name,
                                                   }),
                                                 ],
-                                              },
-                                              `compare-per-shot-${t}-${cm.id}`
-                                            );
-                                          }),
-                                        ],
-                                      },
-                                      `compare-per-shot-${t}`
-                                    );
-                                  }),
-                                }),
+                                              }),
+                                              ...[0, 1, 2, 3].map((t) => {
+                                                const 枡 = 人.表[t] || { shots: 0, hits: 0 };
+                                                const r = 率(枡);
+                                                return (0, y.jsxs)(
+                                                  o.default,
+                                                  {
+                                                    style: {
+                                                      flex: 1,
+                                                      alignItems: 'center',
+                                                      paddingVertical: 4,
+                                                      marginHorizontal: 2,
+                                                      borderRadius: 6,
+                                                      backgroundColor:
+                                                        枡.shots > 0 && 最大 > 0
+                                                          ? 淡く(0.06 + (r / 最大) * 0.36)
+                                                          : 'transparent',
+                                                    },
+                                                    children: [
+                                                      (0, y.jsxs)(l.default, {
+                                                        style: {
+                                                          fontSize: 13,
+                                                          fontWeight: '600',
+                                                          color: 枡.shots > 0 ? '#1C1C1E' : '#C7C7CC',
+                                                        },
+                                                        children: [r.toFixed(0), '%'],
+                                                      }),
+                                                      (0, y.jsxs)(l.default, {
+                                                        style: { fontSize: 9, color: '#48484A' },
+                                                        children: [枡.hits, '/', 枡.shots],
+                                                      }),
+                                                    ],
+                                                  },
+                                                  `compare-per-shot-${t}-${番}`
+                                                );
+                                              }),
+                                              (0, y.jsx)(o.default, {
+                                                style: { width: 40, alignItems: 'flex-end' },
+                                                children: (0, y.jsx)(l.default, {
+                                                  style: { fontSize: 11, color: '#8E8E93' },
+                                                  children: String(総射数),
+                                                }),
+                                              }),
+                                            ],
+                                          },
+                                          `per-shot-row-${番}`
+                                        );
+                                      }),
+                                    ],
+                                  });
+                                })(),
                               ],
                             }),
                             // 立ちの結果分布。比較のときも出す。
                             // 分けていたころは、比較を始めるとこの節ごと消えていた。
-                            // 見た目は比較なしのときと同じ帯で、人ごとに1行ずつ並べる
+                            //
+                            // 比較なしのときと同じ帯を人数ぶん並べると、3人で15行、
+                            // 4人で20行になって読めない。比較のときは1人1行の表にし、
+                            // マスの濃さでその人の中での多い少ないを見せる。
+                            // 回数そのものは書いてあるので、濃さは目安でよい
                             (0, y.jsxs)(o.default, {
                               style: { marginBottom: 20 },
                               children: [
@@ -2094,104 +2089,151 @@ const j = ({ navigation }) => {
                                     ? `立ちの結果分布 (${selectedModalTrendLabel})`
                                     : '立ちの結果分布 (4射単位)',
                                 }),
-                                (0, y.jsx)(o.default, {
-                                  style: F.patternsCard,
-                                  children: [
+                                (() => {
+                                  const 区分たち = [
                                     { label: '皆中', key: 'kaichu', color: '#FF9500' },
                                     { label: '三中', key: 'sanchu', color: '#34C759' },
                                     { label: '羽分', key: 'hake', color: '#007AFF' },
                                     { label: '一中', key: 'icchu', color: '#5856D6' },
                                     { label: '残念', key: 'zannen', color: '#FF3B30' },
-                                  ].map((区分) => {
-                                    const COLORS = [
-                                      '#FF2D55',
-                                      '#34C759',
-                                      '#FF9500',
-                                      '#AF52DE',
-                                      '#32ADE6',
-                                      '#5856D6',
-                                      '#FFCC00',
-                                    ];
-                                    const 空 = { kaichu: 0, sanchu: 0, hake: 0, icchu: 0, zannen: 0 };
-                                    const 並び = [
-                                      {
-                                        name: ae.name,
-                                        色: '#007AFF',
-                                        表: (詳細の期間の成績 || ae).patterns || 空,
-                                      },
-                                      ...compareMembers.map((cm, i) => ({
-                                        name: cm.name,
-                                        色: COLORS[i % COLORS.length],
-                                        表: (比較の成績.get(cm.id) || {}).patterns || 空,
-                                      })),
-                                    ];
-                                    return (0, y.jsxs)(
-                                      o.default,
-                                      {
-                                        style: { marginBottom: 8 },
+                                  ];
+                                  const COLORS = 比較の色たち;
+                                  const 空 = { kaichu: 0, sanchu: 0, hake: 0, icchu: 0, zannen: 0 };
+                                  const 並び = [
+                                    {
+                                      name: ae.name,
+                                      // 立ち順別の比較と同じ。同じ画面で同じ人の色が変わると迷う
+                                      色: '#3C3C43',
+                                      表: (詳細の期間の成績 || ae).patterns || 空,
+                                    },
+                                    ...compareMembers.map((cm, i) => ({
+                                      name: cm.name,
+                                      色: COLORS[i % COLORS.length],
+                                      表: (比較の成績.get(cm.id) || {}).patterns || 空,
+                                    })),
+                                  ];
+                                  // 区分の色を薄く敷く。'#RRGGBB' から rgba を作る
+                                  const 淡く = (色, 濃さ) => {
+                                    const n = parseInt(色.slice(1), 16);
+                                    const r = (n >> 16) & 255;
+                                    const g = (n >> 8) & 255;
+                                    const b = n & 255;
+                                    return `rgba(${r}, ${g}, ${b}, ${濃さ})`;
+                                  };
+                                  return (0, y.jsxs)(o.default, {
+                                    style: F.patternsCard,
+                                    children: [
+                                      (0, y.jsxs)(o.default, {
+                                        style: {
+                                          flexDirection: 'row',
+                                          alignItems: 'flex-end',
+                                          marginBottom: 6,
+                                        },
                                         children: [
-                                          (0, y.jsx)(l.default, {
-                                            style: F.patternLabelText,
-                                            children: 区分.label,
-                                          }),
-                                          ...並び.map((人, 番) => {
-                                            const 回 = 人.表[区分.key] || 0;
-                                            const 全 = Object.values(人.表).reduce((a, b) => a + b, 0);
-                                            const 割 = 全 > 0 ? (回 / 全) * 100 : 0;
-                                            return (0, y.jsxs)(
+                                          (0, y.jsx)(o.default, { style: { width: 72 } }),
+                                          ...区分たち.map((区分) =>
+                                            (0, y.jsx)(
                                               o.default,
                                               {
-                                                style: F.patternLine,
-                                                children: [
-                                                  (0, y.jsx)(o.default, {
-                                                    style: { width: 60 },
-                                                    children: (0, y.jsx)(l.default, {
-                                                      style: {
-                                                        fontSize: 10,
-                                                        color: 人.色,
-                                                        fontWeight: 'bold',
-                                                      },
-                                                      numberOfLines: 1,
-                                                      children: 人.name,
-                                                    }),
-                                                  }),
-                                                  (0, y.jsx)(o.default, {
-                                                    style: { flex: 1 },
-                                                    children: (0, y.jsx)(o.default, {
-                                                      style: F.barContainer,
-                                                      children: (0, y.jsx)(o.default, {
-                                                        style: [
-                                                          F.barFill,
-                                                          {
-                                                            width: `${Math.max(割, 回 > 0 ? 3 : 0)}%`,
-                                                            backgroundColor: 区分.color,
-                                                          },
-                                                        ],
-                                                      }),
-                                                    }),
-                                                  }),
-                                                  (0, y.jsx)(o.default, {
-                                                    style: { width: 50, alignItems: 'flex-end' },
-                                                    children: (0, y.jsxs)(l.default, {
-                                                      style: F.patternValueText,
-                                                      children: [回, '回'],
-                                                    }),
-                                                  }),
-                                                ],
+                                                style: { flex: 1, alignItems: 'center' },
+                                                children: (0, y.jsx)(l.default, {
+                                                  style: {
+                                                    fontSize: 10,
+                                                    fontWeight: 'bold',
+                                                    color: 区分.color,
+                                                  },
+                                                  children: 区分.label,
+                                                }),
                                               },
-                                              `${区分.key}-${番}`
-                                            );
+                                              `head-${区分.key}`
+                                            )
+                                          ),
+                                          (0, y.jsx)(o.default, {
+                                            style: { width: 40, alignItems: 'flex-end' },
+                                            children: (0, y.jsx)(l.default, {
+                                              style: { fontSize: 10, color: '#8E8E93' },
+                                              children: '立数',
+                                            }),
                                           }),
                                         ],
-                                      },
-                                      区分.key
-                                    );
-                                  }),
-                                }),
+                                      }),
+                                      ...並び.map((人, 番) => {
+                                        const 全 = Object.values(人.表).reduce((a, b) => a + b, 0);
+                                        return (0, y.jsxs)(
+                                          o.default,
+                                          {
+                                            style: {
+                                              flexDirection: 'row',
+                                              alignItems: 'center',
+                                              marginBottom: 4,
+                                            },
+                                            children: [
+                                              (0, y.jsxs)(o.default, {
+                                                style: { width: 72, paddingRight: 4, flexDirection: 'row', alignItems: 'center' },
+                                                children: [
+                                                  (0, y.jsx)(o.default, {
+                                                    style: {
+                                                      width: 8,
+                                                      height: 8,
+                                                      borderRadius: 4,
+                                                      marginRight: 4,
+                                                      backgroundColor: 人.色,
+                                                    },
+                                                  }),
+                                                  (0, y.jsx)(l.default, {
+                                                    style: { flex: 1, fontSize: 11, fontWeight: 'bold', color: '#1C1C1E' },
+                                                    numberOfLines: 1,
+                                                    children: 人.name,
+                                                  }),
+                                                ],
+                                              }),
+                                              ...区分たち.map((区分) => {
+                                                const 回 = 人.表[区分.key] || 0;
+                                                const 割 = 全 > 0 ? 回 / 全 : 0;
+                                                return (0, y.jsx)(
+                                                  o.default,
+                                                  {
+                                                    style: {
+                                                      flex: 1,
+                                                      alignItems: 'center',
+                                                      paddingVertical: 6,
+                                                      marginHorizontal: 2,
+                                                      borderRadius: 6,
+                                                      backgroundColor:
+                                                        回 > 0 ? 淡く(区分.color, 0.1 + 割 * 0.45) : 'transparent',
+                                                    },
+                                                    children: (0, y.jsx)(l.default, {
+                                                      style: {
+                                                        fontSize: 13,
+                                                        fontWeight: '600',
+                                                        color: 回 > 0 ? '#1C1C1E' : '#C7C7CC',
+                                                      },
+                                                      children: String(回),
+                                                    }),
+                                                  },
+                                                  `${区分.key}-${番}`
+                                                );
+                                              }),
+                                              (0, y.jsx)(o.default, {
+                                                style: { width: 40, alignItems: 'flex-end' },
+                                                children: (0, y.jsx)(l.default, {
+                                                  style: { fontSize: 11, color: '#8E8E93' },
+                                                  children: String(全),
+                                                }),
+                                              }),
+                                            ],
+                                          },
+                                          `bunpu-${番}`
+                                        );
+                                      }),
+                                    ],
+                                  });
+                                })(),
                                 // 4射そろわない末尾は分布に入れられない。
                                 // 断らないと「的中率と数が合わない」と見える
                                 (() => {
-                                  const 端 = ((詳細の期間の成績 || ae).端数の射 || 0) +
+                                  const 端 =
+                                    ((詳細の期間の成績 || ae).端数の射 || 0) +
                                     compareMembers.reduce(
                                       (a, cm) => a + ((比較の成績.get(cm.id) || {}).端数の射 || 0),
                                       0
