@@ -20,6 +20,11 @@ const お知らせの版 = (fs.readFileSync('src/JP_WhatsNewModal.js', 'utf8').m
 
 const 団体 = '100006';
 
+// ここを mode: 'parallel' にすると、1件が2〜3台の browser を開くため
+// iPhone(WebKit) で機を占め、同じ機で走る他の検査を押しのける。
+// 実測で全体 23.2分 → 29.0分に延び、案内の検査が時間切れになった。
+// 束（ファイル）どうしの並列だけに留める
+
 // ここは主催と参加で端末を2〜3台使い、台ごとに入り直す作りになっている。
 // 控えを当てると、主催の台がライブを始められなくなって落ちた（「ライブ中」が出ない）。
 // 台ごとの入り方をこの検査が自分で決めているので、控えは使わない
@@ -209,8 +214,7 @@ test('ライブ：同時に入れた○×が両方に届き、取り消しは1�
   await 名欄.click();
   await 名欄.pressSequentially(ライブ名, { delay: 20 });
   await A.getByText('決定', { exact: true }).click();
-  await A.waitForTimeout(8000);
-  await expect(A.getByText(new RegExp('ライブ中')), 'A がライブに入っていない').toBeVisible();
+  await expect(A.getByText(new RegExp('ライブ中')), 'A がライブに入っていない').toBeVisible({ timeout: 15_000 });
 
   // ── 参加者側をつなぐ ──
   await 入る(B);
@@ -224,7 +228,7 @@ test('ライブ：同時に入れた○×が両方に届き、取り消しは1�
   await B.waitForTimeout(2000);
   // 参加のしかたを選ぶ窓が出る。検査は記録する側で入る
   await B.getByText('記録用', { exact: true }).click();
-  await B.waitForTimeout(8000);
+  await expect(B.getByText(new RegExp('ライブ中')), 'B がライブに入れていない').toBeVisible({ timeout: 15_000 });
 
   const B側 = await 一射目たち(B);
   expect(B側.length, '参加側に盤面が届いていない').toBe(3);
@@ -311,8 +315,7 @@ test('ライブ：3台が同時に入れても届き、取り消しは1手だけ
   await 名欄.click();
   await 名欄.pressSequentially(名, { delay: 20 });
   await A.getByText('決定', { exact: true }).click();
-  await A.waitForTimeout(8000);
-  await expect(A.getByText(new RegExp('ライブ中')), 'A がライブに入っていない').toBeVisible();
+  await expect(A.getByText(new RegExp('ライブ中')), 'A がライブに入っていない').toBeVisible({ timeout: 15_000 });
 
   // ── 参加者を2台つなぐ ──
   for (const P of [B, C]) {
@@ -327,7 +330,7 @@ test('ライブ：3台が同時に入れても届き、取り消しは1手だけ
     await P.waitForTimeout(2000);
     // 参加のしかたを選ぶ窓が出る。検査は記録する側で入る
     await P.getByText('記録用', { exact: true }).click();
-    await P.waitForTimeout(8000);
+    await expect(P.getByText(new RegExp('ライブ中')), 'P がライブに入れていない').toBeVisible({ timeout: 15_000 });
   }
 
   // ── 3台に共通の射手を3人ぶん見つける ──
@@ -407,8 +410,7 @@ test('ライブ：鍵の取り消しが、相手の○×を巻き込まない', 
   await 名欄.click();
   await 名欄.pressSequentially(名, { delay: 20 });
   await A.getByText('決定', { exact: true }).click();
-  await A.waitForTimeout(8000);
-  await expect(A.getByText(new RegExp('ライブ中')), 'A がライブに入っていない').toBeVisible();
+  await expect(A.getByText(new RegExp('ライブ中')), 'A がライブに入っていない').toBeVisible({ timeout: 15_000 });
 
   await 入る(B);
   await B.getByText('ライブ', { exact: true }).first().click();
@@ -421,7 +423,7 @@ test('ライブ：鍵の取り消しが、相手の○×を巻き込まない', 
   await B.waitForTimeout(2000);
   // 参加のしかたを選ぶ窓が出る。検査は記録する側で入る
   await B.getByText('記録用', { exact: true }).click();
-  await B.waitForTimeout(8000);
+  await expect(B.getByText(new RegExp('ライブ中')), 'B がライブに入れていない').toBeVisible({ timeout: 15_000 });
 
   // B が○を入れる射手（間隔ではない側）
   const B表 = Object.fromEntries((await 一射目たち(B)).map((x) => [x.印, x]));
@@ -491,8 +493,7 @@ test('ライブ：主催者が横・参加者が縦でも、○×は同じます
   await 名欄.click();
   await 名欄.pressSequentially(ライブ名, { delay: 20 });
   await A.getByText('決定', { exact: true }).click();
-  await A.waitForTimeout(8000);
-  await expect(A.getByText(new RegExp('ライブ中')), '横のままだとライブに入れない').toBeVisible();
+  await expect(A.getByText(new RegExp('ライブ中')), '横のままだとライブに入れない').toBeVisible({ timeout: 15_000 });
 
   await 入る(B);
   await B.getByText('ライブ', { exact: true }).first().click();
@@ -505,7 +506,7 @@ test('ライブ：主催者が横・参加者が縦でも、○×は同じます
   await B.waitForTimeout(2000);
   // 参加のしかたを選ぶ窓が出る。ここは記録する側で入る
   await B.getByText('記録用', { exact: true }).click();
-  await B.waitForTimeout(8000);
+  await expect(B.getByText(new RegExp('ライブ中')), 'B がライブに入れていない').toBeVisible({ timeout: 15_000 });
 
   const A側 = await 一射目たち(A);
   const B側 = await 一射目たち(B);

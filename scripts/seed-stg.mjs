@@ -25,14 +25,30 @@ const GROUPS = [
   { id: '100001', name: 'テスト団体A（管理者メール）', email: 'nihonu.kouka@gmail.com', parentDoc: true,  members: 6 },
   { id: '100002', name: 'テスト団体B',                 email: 'stg-b@example.com',      parentDoc: false, members: 5 },
   { id: '100003', name: 'テスト団体C',                 email: 'stg-c@example.com',      parentDoc: false, members: 4 },
+  // 100003 と同じ中身。検査を並列に流したとき、鍵（lock）と途中交代
+  // （substitution）が同じ団体を取り合わないよう、交代の側をこちらへ移した
+  { id: '100007', name: 'テスト団体F（途中交代用）',   email: 'stg-f@example.com',      parentDoc: false, members: 4 },
 ];
 
 const uuid = (g, i) => `mem-${g}-${String(i).padStart(3, '0')}`;
 const pid = (g, i) => String(1000 + Number(g.slice(-2)) * 10 + i); // 4桁・団体内で一意
 
+// 団体IDを引数で渡すと、その団体だけを作る。
+// 全部に書き込むと、検査が積み上げた記録（100003 の3件など）まで
+// 作り直してしまう。1つだけ足したいときのために分けてある。
+//
+//   node scripts/seed-stg.mjs 100007
+const 作る団体 = process.argv.slice(2).filter((x) => /^[0-9]+$/.test(x));
+const 対象 = 作る団体.length ? GROUPS.filter((g) => 作る団体.includes(g.id)) : GROUPS;
+if (作る団体.length && 対象.length !== 作る団体.length) {
+  console.error('停止：知らない団体IDが混ざっています: ' + 作る団体.join(', '));
+  process.exit(1);
+}
+if (作る団体.length) console.log('指定された団体だけを作ります: ' + 対象.map((g) => g.id).join(', '));
+
 const summary = [];
 
-for (const g of GROUPS) {
+for (const g of 対象) {
   const token = await signIn(apiKey, g.email, PW, { create: true });
   console.log(`\n■ 団体 ${g.id}（${g.email}）`);
 
@@ -93,7 +109,7 @@ for (const g of GROUPS) {
 
 // 投入結果を確認する。
 // 第2段階のルール下では他団体を読めないため、必ず各団体自身のトークンで確認する。
-for (const g of GROUPS) {
+for (const g of 対象) {
   const token = await signIn(apiKey, g.email, PW);
   const { status, json } = await req(projectId, `/groups/${g.id}/members`, { token, query: '?pageSize=100' });
   console.log(`\n団体 ${g.id}: members ${(json.documents || []).length} 件 (HTTP ${status})`);

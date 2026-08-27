@@ -23,9 +23,12 @@ const 配り元 = process.env.PW_DIST || 'dist';
 
 export default defineConfig({
   testDir: './e2e',
-  // 案内は手順を順に踏むので、並列にすると端末保存がぶつかる
+  // 案内は手順を順に踏むので、1つの検査の中は順番どおりに流す
   fullyParallel: false,
-  workers: 1,
+  // 検査の束（ファイル）どうしは並列でよい。団体を分けてあるので取り合わない
+  //（scripts/stg-fixtures.mjs、test/e2eSetup.test.js で決まりを押さえている）。
+  // 1並列だと3機種で50分、2並列で23分だった
+  workers: Number(process.env.PW_WORKERS) || 2,
   retries: 0,
   // 案内は27手順あり、手順ごとに位置を測る間がある。既定の30秒では足りない
   timeout: 180_000,
