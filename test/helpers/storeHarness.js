@@ -78,7 +78,13 @@ function 偽Firestore() {
     for (const o of やること.操作) {
       const 表 = 取り出す(o.道);
       if (o.種類 === 'delete') 表.delete(o.id);
-      else if (o.種類 === 'set') 表.set(o.id, 解決(Object.assign({}, o.値)));
+      else if (o.種類 === 'set')
+        // merge を渡されたときは、本物と同じく、渡した鍵だけを重ねる。
+        // 差を付けないと「消えないはずの中身が消える」検査が書けない
+        表.set(
+          o.id,
+          解決(o.重ねる ? Object.assign({}, 表.get(o.id) || {}, o.値) : Object.assign({}, o.値))
+        );
       else if (o.種類 === 'update')
         表.set(o.id, 解決(Object.assign({}, 表.get(o.id) || {}, o.値)));
     }
@@ -111,14 +117,19 @@ function 偽Firestore() {
       }));
       return { forEach: (f) => 一覧.forEach(f), docs: 一覧, empty: 一覧.length === 0, size: 一覧.length };
     },
-    setDoc: (参照, 値) => 送る({ 種別: 'setDoc', 操作: [{ 種類: 'set', 道: 参照.道, id: 参照.id, 値 }] }),
+    setDoc: (参照, 値, 選び) =>
+      送る({
+        種別: 'setDoc',
+        操作: [{ 種類: 'set', 道: 参照.道, id: 参照.id, 値, 重ねる: !!(選び && 選び.merge) }],
+      }),
     updateDoc: (参照, 値) =>
       送る({ 種別: 'updateDoc', 操作: [{ 種類: 'update', 道: 参照.道, id: 参照.id, 値 }] }),
     deleteDoc: (参照) => 送る({ 種別: 'deleteDoc', 操作: [{ 種類: 'delete', 道: 参照.道, id: 参照.id }] }),
     writeBatch: () => {
       const 操作 = [];
       return {
-        set: (参照, 値) => 操作.push({ 種類: 'set', 道: 参照.道, id: 参照.id, 値 }),
+        set: (参照, 値, 選び) =>
+          操作.push({ 種類: 'set', 道: 参照.道, id: 参照.id, 値, 重ねる: !!(選び && 選び.merge) }),
         update: (参照, 値) => 操作.push({ 種類: 'update', 道: 参照.道, id: 参照.id, 値 }),
         delete: (参照) => 操作.push({ 種類: 'delete', 道: 参照.道, id: 参照.id }),
         commit: () => 送る({ 種別: 'batch', 操作 }),
