@@ -767,10 +767,6 @@ const AIChatBot = () => {
                 let participatedInSession = false;
                 session.archers.forEach((archer, archerIdx) => {
                   if (!archer || !archer.marks) return;
-                  const subs = archer.substitutions || {};
-                  const subIds = archer.substitutionIds || {};
-                  const subIndices = Object.keys(subs).map(Number).sort((e, t) => e - t);
-                  
                   archer.marks.forEach((m, idx) => {
                     if (m !== '○' && m !== '×') return;
                     
@@ -836,10 +832,6 @@ const AIChatBot = () => {
                 
                 session.archers.forEach((archer, idx) => {
                   if (!archer || !archer.marks) return;
-                  const subs = archer.substitutions || {};
-                  const subIds = archer.substitutionIds || {};
-                  const subIndices = Object.keys(subs).map(Number).sort((e, t) => e - t);
-                  
                   let hasParticipation = false;
                   archer.marks.forEach((m, shotIdx) => {
                     if (m !== '○' && m !== '×') return;
