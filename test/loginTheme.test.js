@@ -36,7 +36,14 @@ function 変換表たち() {
     const 候補 = [本体.indexOf('\n});', 始), 本体.indexOf('\n};', 始)].filter((i) => i > 0);
     const 終 = 候補.length ? Math.min(...候補) : 本体.length;
     const 塊 = 本体.slice(始, 終);
-    return new Set([...塊.matchAll(/'(#[0-9a-fA-F]{3,8})'\s*:\s*'#/g)].map((m) => m[1].toLowerCase()));
+    // 変換先が自分自身の行は、暗いテーマでも色が変わらないので咎めない
+    // （TEXT_MAP の '#ffffff': '#ffffff' ＝ 色付きボタン上の白文字）
+    return new Set(
+      [...塊.matchAll(/'(#[0-9a-fA-F]{3,8})'\s*:\s*'(#[0-9a-fA-F]{3,8})'/g)]
+        .map((m) => [m[1].toLowerCase(), m[2].toLowerCase()])
+        .filter(([鍵, 値]) => 鍵 !== 値)
+        .map(([鍵]) => 鍵)
+    );
   };
   const 共通 = 拾う('ACCENT');
   const 足す = (名) => new Set([...共通, ...拾う(名)]);
@@ -48,13 +55,20 @@ function 役割ごとの色(本体) {
   const 素 = 本体.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
   const 取る = (鍵) =>
     new Set(
-      [...素.matchAll(new RegExp(鍵 + ":\s*'(#[0-9a-fA-F]{3,8})'", 'g'))].map((m) => m[1].toLowerCase())
+      [...素.matchAll(new RegExp(鍵 + ":\\s*'(#[0-9a-fA-F]{3,8})'", 'g'))].map((m) => m[1].toLowerCase())
     );
-  return {
+  const 出来 = {
     text: 取る('color'),
     bg: 取る('backgroundColor'),
     border: 取る('borderColor'),
   };
+  // 一時、正規表現の書き間違いで1色も拾えず、この検査が空振りしたまま
+  // 通り続けていた。何も拾えないときは、合格ではなく壊れているとみなす
+  assert.ok(
+    出来.text.size + 出来.bg.size + 出来.border.size > 0,
+    '色をひとつも拾えていない。拾い方が壊れている（空振りのまま通ってしまう）'
+  );
+  return 出来;
 }
 
 const h2r = (h) => {
