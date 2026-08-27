@@ -278,3 +278,23 @@ test('射位：名前を指定すると、その人たちだけ返す', () => {
   assert.equal(r.一覧.length, 1);
   assert.equal(r.一覧[0].名前, '山田');
 });
+
+test('射位：「集計に含めない」にした記録は数えない（全員の成績と揃える）', () => {
+  const 記録たち = [
+    { date: 1, includeInStats: true, archers: [{ memberId: '山田', name: '山田', marks: ['○', '○'] }] },
+    { date: 2, includeInStats: false, archers: [{ memberId: '山田', name: '山田', marks: ['×', '×'] }] },
+  ];
+  const r = 射位ごとの成績([], 記録たち, {});
+  const 山田 = r.一覧.find((x) => x.名前 === '山田');
+  assert.equal(山田.全体の射数, 2, '外した記録の射まで数えている');
+  assert.equal(山田.全体の的中率, 100);
+
+  // 同じ記録を順位側に渡したときと、射数が一致すること
+  const 順位 = 全員の成績([{ id: '山田', name: '山田', grade: 1 }], 記録たち, {});
+  assert.equal(順位.一覧[0].射数, 山田.全体の射数, '順位と射位別で射数が食い違う');
+});
+
+test('射位：この項目が無い古い記録は、これまでどおり数える', () => {
+  const r = 射位ごとの成績([], [{ date: 1, archers: [{ name: '山田', marks: ['○'] }] }], {});
+  assert.equal(r.一覧.find((x) => x.名前 === '山田').全体の射数, 1);
+});

@@ -1296,7 +1296,12 @@ const j = ({ navigation }) => {
                   (0, y.jsxs)(o.default, {
                     style: { marginTop: 24 },
                     children: [
-                      (0, y.jsx)(l.default, { style: F.sectionSubTitle, children: '立ちの結果分布 (4射単位)' }),
+                      (0, y.jsx)(l.default, {
+                        style: F.sectionSubTitle,
+                        children: selectedTrendLabel
+                          ? `立ちの結果分布 (${selectedTrendLabel})`
+                          : '立ちの結果分布 (4射単位)',
+                      }),
                       (0, y.jsx)(o.default, {
                         style: F.patternsCardDash,
                         children: [
@@ -1347,6 +1352,22 @@ const j = ({ navigation }) => {
                           );
                         }),
                       }),
+                      // 4射そろわない末尾は分布に入れられない。
+                      // 断らないと「的中率と数が合わない」と見える
+                      (() => {
+                        const 端 = (自分の期間の成績 || Ce[0] || {}).端数の射 || 0;
+                        return 端 > 0
+                          ? (0, y.jsx)(l.default, {
+                              style: {
+                                fontSize: 11,
+                                color: '#8E8E93',
+                                marginTop: 8,
+                                lineHeight: 16,
+                              },
+                              children: `※ 4射に満たない ${端} 射は皆中・残念などに分けられないため、この分布に入れていません（的中率には入っています）。`,
+                            })
+                          : null;
+                      })(),
                     ],
                   }),
                 ],
