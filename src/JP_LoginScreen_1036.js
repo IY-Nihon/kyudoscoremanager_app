@@ -96,9 +96,18 @@ const T = () => {
   const [R, U] = (0, t.useState)('none');
   const [M, V] = (0, t.useState)('');
   const [H, X] = (0, t.useState)(false);
+  // 規約とプライバシーポリシーへの同意。登録の前に取る。
+  // 規約 第10条2項で、団体は部員本人から同意を得る責任を負うと定めている。
+  // その責任をここで伝えないと、知らないまま部員を登録できてしまう
+  const [規約に同意, 規約に同意を置く] = (0, t.useState)(false);
+  const [部員の同意を取る, 部員の同意を取るを置く] = (0, t.useState)(false);
 
   const $ = async () => {
     if (P && L && O) {
+      if (!規約に同意 || !部員の同意を取る) {
+        s.default.alert('確認', '利用規約とプライバシーポリシーの同意、および部員本人の同意についての確認にチェックを入れてください。');
+        return;
+      }
       v(true);
       try {
         const e = Math.floor(1e5 + 9e5 * Math.random()).toString();
@@ -108,7 +117,12 @@ const T = () => {
           return $();
         }
         await (0, C.createUserWithEmailAndPassword)(b.auth, P, L);
-        await (0, j.setDoc)(t, { id: e, name: O, email: P, createdAt: Date.now() });
+        // どの版にいつ同意したかを残す。版を上げたときに、誰へ
+        // 取り直しを求めるべきかが分からなくなるため
+        await (0, j.setDoc)(t, Object.assign(
+          { id: e, name: O, email: P, createdAt: Date.now() },
+          require('./legalDocs').同意の記録()
+        ));
         s.default.alert(
           '【重要】登録完了と運用ガイド',
           `団体アカウントを作成しました。\n\n■ 登録情報\n団体ID: ${e}\n\n【運用ガイド - スクリーンショット推奨】\n・「団体ID」はメンバーがログインする際、必要です。メンバー全員に共有してください。\n・「パスワード」は管理者のみが知るものとして保存してください。\n・メールアドレスを変更すると、セキュリティのため旧アドレスに確認・無効化のメールが自動送信されます。\n\n※ この運用ガイドの内容は忘れないよう必ず保存をお願いします。`
@@ -640,6 +654,57 @@ const T = () => {
                             }),
                         ],
                       }),
+                    // 登録の前に同意を取る。規約 第10条2項は、団体が部員本人から
+                    // 同意を得る責任を負うと定めている。ここで伝えないと、
+                    // その責任を知らないまま部員を登録できてしまう
+                    'register' === T &&
+                      (0, E.jsxs)(u.default, {
+                        style: S.同意の枠,
+                        children: [
+                          (0, E.jsxs)(c.default, {
+                            style: S.同意の行,
+                            onPress: () => 規約に同意を置く(!規約に同意),
+                            children: [
+                              (0, E.jsx)(h.default, {
+                                style: [S.同意の印, 規約に同意 && S.同意の印つき],
+                                children: 規約に同意 ? '✓' : '',
+                              }),
+                              (0, E.jsxs)(h.default, {
+                                style: S.同意の字,
+                                children: [
+                                  (0, E.jsx)(h.default, {
+                                    style: S.同意のリンク,
+                                    onPress: () => 法.開く(法.規約のURL),
+                                    children: '利用規約',
+                                  }),
+                                  ' と ',
+                                  (0, E.jsx)(h.default, {
+                                    style: S.同意のリンク,
+                                    onPress: () => 法.開く(法.プライバシーのURL),
+                                    children: 'プライバシーポリシー',
+                                  }),
+                                  ' に同意します',
+                                ],
+                              }),
+                            ],
+                          }),
+                          (0, E.jsxs)(c.default, {
+                            style: S.同意の行,
+                            onPress: () => 部員の同意を取るを置く(!部員の同意を取る),
+                            children: [
+                              (0, E.jsx)(h.default, {
+                                style: [S.同意の印, 部員の同意を取る && S.同意の印つき],
+                                children: 部員の同意を取る ? '✓' : '',
+                              }),
+                              (0, E.jsx)(h.default, {
+                                style: S.同意の字,
+                                children:
+                                  '部員の氏名を登録する前に、本人（未成年の場合は保護者）から同意を得ます',
+                              }),
+                            ],
+                          }),
+                        ],
+                      }),
                     (0, E.jsx)(c.default, {
                       style: function (state) {
                         return [
@@ -969,6 +1034,24 @@ var S = p.default.create({
     fontSize: 15,
     fontWeight: '600',
   },
+  // 登録時の同意の欄
+  同意の枠: { marginTop: 4, marginBottom: 12, gap: 10 },
+  同意の行: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  同意の印: {
+    width: 22,
+    height: 22,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: '#8E8E93',
+    textAlign: 'center',
+    lineHeight: 20,
+    fontSize: 15,
+    color: 'transparent',
+    overflow: 'hidden',
+  },
+  同意の印つき: { backgroundColor: '#007AFF', borderColor: '#007AFF', color: '#FFF' },
+  同意の字: { flex: 1, fontSize: 13, color: '#3C3C43', lineHeight: 20 },
+  同意のリンク: { color: '#007AFF', textDecorationLine: 'underline' },
   helpLinks: {
     marginTop: 20,
     gap: 12,

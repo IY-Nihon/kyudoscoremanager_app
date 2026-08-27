@@ -1291,6 +1291,7 @@ const w = () => {
                     ],
                   }),
                   Je('mail-outline', 'お問い合わせ', () => setInquiryVisible(true), '#FF9500'),
+
                   (0, T.jsxs)(h.default, {
                     style: ({ hovered: e }) => [D.item, e && D.hovered, x.IS_WEB && { cursor: 'pointer' }],
                     onPress: W,
@@ -1337,6 +1338,23 @@ const w = () => {
                     ' | ',
                     P ? `最終同期: ${new Date(P).toLocaleString('ja-JP')}` : z,
                   ],
+                }),
+                // 多くのアプリと同じく、バージョン表記の足元に小さく置く。
+                // 一覧の行にすると設定画面が煩雑になるが、無くすと
+                // 「読める場所」が登録画面の一度きりになってしまう
+                (0, T.jsx)(h.default, {
+                  onPress: () => {
+                    const 法 = require('./legalDocs');
+                    require('./AppDialog').出す('法的情報', '', [
+                      { text: '利用規約', onPress: () => 法.開く(法.規約のURL) },
+                      { text: 'プライバシーポリシー', onPress: () => 法.開く(法.プライバシーのURL) },
+                      { text: '閉じる', style: 'cancel' },
+                    ]);
+                  },
+                  children: (0, T.jsx)(n.default, {
+                    style: D.legalText,
+                    children: '利用規約・プライバシーポリシー',
+                  }),
                 }),
               ],
             }),
@@ -2293,6 +2311,7 @@ const w = () => {
     footer: { marginTop: 30, marginBottom: 50, alignItems: 'center' },
     versionText: { fontSize: 14, color: '#8E8E93', marginBottom: 4 },
     statusText: { fontSize: 12, color: '#34C759' },
+    legalText: { fontSize: 11, color: '#C7C7CC', marginTop: 10, textDecorationLine: 'underline' },
     modalBackdrop: {
       flex: 1,
       backgroundColor: 'rgba(0,0,0,0.4)',
