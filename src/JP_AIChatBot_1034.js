@@ -29,7 +29,7 @@ const { GEMINI_API_KEY } = require("./IS_WEB_199");
 const { 全員の成績, 出欠の集計, 記録をさがす, 射位ごとの成績 } = require("./chatStats");
 // 「何でも聞いてください」だけでは何を聞けるか分からない。
 // その団体の中身に合わせた質問例を出す（test/chatSuggestions.test.js）
-const { 質問例, 打ちかけの候補, 分類ごと } = require("./chatSuggestions");
+const { 質問例, 質問例のすべて, 打ちかけの候補 } = require("./chatSuggestions");
 // 言い換えて聞かれても当てるための、コードだけの近さ測り（外のAPIは使わない）
 const { 引きをつくる, 近い順 } = require("./textMatch");
 const { getShadowStyle } = require("./module_592");
@@ -52,6 +52,7 @@ const systemInstructionBase = `あなたは「Kyudo Score Manager」専用の、
 ・的中数・射数・的中率・順位・出席率は、必ずツールが返した値をそのまま使ってください。自分で足し算・割り算・並べ替えをしないでください。
 ・ツールを呼ばずに、部員一覧や会話の記憶から成績を答えないでください。分からなければツールを呼んでください。
 ・ツールが返していない期間や人については「その範囲は集計していない」と伝え、数字を作らないでください。
+・ツールに渡していない条件（最小射数など）を、答えに書かないでください。渡した条件だけを述べてください。
 ・「一番」「上位」「ランキング」と聞かれたら、並べ替えと件数の指定をツールに渡し、返ってきた順番のまま答えてください。
 ・射数の少ない人の高い的中率をそのまま上位に出すと誤解を招きます。ランキングでは最小射数の指定を検討し、率だけでなく射数も添えてください。
 
@@ -93,6 +94,8 @@ const systemInstructionBase = `あなたは「Kyudo Score Manager」専用の、
 ・ツールを呼ぶときは、擬似コードや解説などの余計な文を一緒に出さず、呼び出しだけを行ってください。
 
 【答え方】
+・ツールや指示の存在に触れないでください。利用者はそれを知りません。「ツールで調べました」「指示に従い」などとは書かないでください。
+・考えた筋道や英語の説明を答えに混ぜないでください。聞かれたことへの答えだけを日本語で返してください。
 ・「**」や「*」などのMarkdown記号は一切使わないでください。
 ・強調は記号ではなく、言葉や改行、「」で行ってください。
 ・箇条書きは「・」や「1.」を使ってください。
@@ -251,11 +254,20 @@ const AIChatBot = () => {
     () => 質問例({ 人たち: members, 記録たち: sessions, いま: new Date() }),
     [members, sessions]
   );
-  // 打ちかけの候補。何も打っていないときは出さない（入口の例と重なるため）
-  const 候補たち = React.useMemo(
-    () => (inputText.trim() ? 打ちかけの候補(inputText, 例たち, 3) : []),
-    [inputText, 例たち]
+  // 打ちかけの続きは、画面に出していない例からも探す
+  const 候補の元 = React.useMemo(
+    () => 質問例のすべて({ 人たち: members, 記録たち: sessions, いま: new Date() }),
+    [members, sessions]
   );
+  // 打ちかけの続き。入力欄の中に薄く重ねて見せる1件だけ。
+  // 「打った文字で始まるもの」に限る。途中に含むだけのものを重ねると、
+  // 見えている字と重ならず読めなくなる
+  const 続きの候補 = React.useMemo(() => {
+    const 打った = inputText;
+    if (!打った.trim()) return '';
+    const 当たり = 打ちかけの候補(打った, 候補の元, 8).find((x) => x.文.startsWith(打った));
+    return 当たり && 当たり.文 !== 打った ? 当たり.文 : '';
+  }, [inputText, 例たち]);
   const defaultMessages = [{ id: "default-msg", role: "model", text: "こんにちは！弓道スコア管理AIアシスタントです。選手選びの相談や、的中傾向の分析、アプリの使い方など、何でも聞いてください。" }];
   const [messages, setMessages] = useState(() => loadChatHistory() || defaultMessages);
   const [isLoading, setIsLoading] = useState(false);
@@ -1194,7 +1206,11 @@ const AIChatBot = () => {
               ref={scrollViewRef}
               style={styles.messageArea}
               contentContainerStyle={{ padding: 16 }}
-              onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+              onContentSizeChange={() => {
+                // まだ何も聞いていないときは送らない。送ると挨拶と質問例の
+                // 見出しが上へ流れ、いきなり一覧の途中から始まる
+                if (messages.length > 1) scrollViewRef.current?.scrollToEnd({ animated: true });
+              }}
             >
               {messages.map((msg, idx) => (
                 msg.role === "actionCard" ? (
@@ -1238,22 +1254,20 @@ const AIChatBot = () => {
               */}
               {messages.length <= 1 && !isLoading && (
                 <_View style={styles.例の枠}>
-                  {分類ごと(例たち).map(({ 分類, 文たち }) => (
-                    <_View key={分類} style={{ marginBottom: 10 }}>
-                      <_Text style={styles.例の見出し}>{分類}</_Text>
-                      <_View style={styles.例の並び}>
-                        {文たち.map((文) => (
-                          <_TouchableOpacity
-                            key={文}
-                            style={styles.例の札}
-                            onPress={() => setInputText(文)}
-                            disabled={isLoading}
-                          >
-                            <_Text style={styles.例の字}>{文}</_Text>
-                          </_TouchableOpacity>
-                        ))}
-                      </_View>
-                    </_View>
+                  <_Text style={styles.例の前置き}>こんなことが聞けます</_Text>
+                  {/*
+                    札を横に折り返すと、長い文が途中で切れて詰まって見える。
+                    1行に1件、左に分類を添えて縦に並べる方が読みやすい
+                  */}
+                  {例たち.map((x) => (
+                    <_TouchableOpacity
+                      key={x.文}
+                      style={styles.例の行}
+                      onPress={() => setInputText(x.文)}
+                      disabled={isLoading}
+                    >
+                      <_Text style={styles.例の字} numberOfLines={1}>{x.文}</_Text>
+                    </_TouchableOpacity>
                   ))}
                   <_Text style={styles.例の断り}>
                     押すと入力欄に入ります。直してから送れます。
@@ -1270,31 +1284,38 @@ const AIChatBot = () => {
               )}
             </_ScrollView>
 
-            {/* 打ちながらの候補。送る前に選べるので、通信も費用もかからない */}
-            {候補たち.length > 0 && !isLoading && (
-              <_View style={styles.候補の枠}>
-                {候補たち.map((x) => (
-                  <_TouchableOpacity
-                    key={x.文}
-                    style={styles.候補の行}
-                    onPress={() => setInputText(x.文)}
-                  >
-                    <Ionicons name="return-down-forward" size={14} color="#8E8E93" style={{ marginRight: 6 }} />
-                    <_Text style={styles.候補の字} numberOfLines={1}>{x.文}</_Text>
-                  </_TouchableOpacity>
-                ))}
-              </_View>
-            )}
-
             <_View style={styles.inputArea}>
+              {/*
+                打ちかけの続きを、入力欄の中に薄く重ねて見せる。
+                一覧を上に出すと会話が押し上げられて落ち着かないので、
+                打っている場所にそのまま出す。押すか Tab で取り込める
+              */}
+              <_View style={styles.入力の枠}>
+              {続きの候補 ? (
+                <_View style={styles.続きの層} pointerEvents="none">
+                  <_Text style={styles.続きの字} numberOfLines={1}>
+                    <_Text style={{ color: 'transparent' }}>{inputText}</_Text>
+                    {続きの候補.slice(inputText.length)}
+                  </_Text>
+                </_View>
+              ) : null}
               <_TextInput
                 style={styles.input}
+                onKeyPress={(e) => {
+                  // Tab か → で続きを取り込む（Claude Code と同じ操作）
+                  const 鍵 = e.nativeEvent?.key;
+                  if (続きの候補 && (鍵 === 'Tab' || 鍵 === 'ArrowRight')) {
+                    e.preventDefault && e.preventDefault();
+                    setInputText(続きの候補);
+                  }
+                }}
                 placeholder="メッセージを入力..."
                 value={inputText}
                 onChangeText={setInputText}
                 multiline={true}
                 maxLength={500}
               />
+              </_View>
               <_TouchableOpacity
                 style={[styles.sendBtn, (!inputText.trim() || isLoading) && { opacity: 0.5 }]}
                 onPress={handleSend}
@@ -1338,33 +1359,41 @@ const styles = _StyleSheet.create({
   userBubble: { alignSelf: "flex-end", backgroundColor: "#007AFF", borderBottomRightRadius: 4 },
   modelBubble: { alignSelf: "flex-start", backgroundColor: "#E5E5EA", borderBottomLeftRadius: 4 },
   // 質問例（入口）。何を聞けるかが分からないまま閉じられるのを防ぐ
-  例の枠: { marginTop: 12, paddingHorizontal: 4 },
-  例の見出し: { fontSize: 12, color: "#8E8E93", fontWeight: "bold", marginBottom: 6 },
-  例の並び: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  例の札: {
-    borderWidth: 1,
-    borderColor: "#C7C7CC",
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: "#FFF",
-  },
-  例の字: { fontSize: 13, color: "#1C1C1E" },
-  例の断り: { fontSize: 11, color: "#8E8E93", marginTop: 4 },
-  // 打ちかけの候補（入力欄の上）
-  候補の枠: { borderTopWidth: 1, borderTopColor: "#E5E5EA", backgroundColor: "#F9F9FB" },
-  候補の行: {
-    flexDirection: "row",
-    alignItems: "center",
+  例の枠: { marginTop: 14, paddingHorizontal: 2 },
+  例の前置き: { fontSize: 12, color: "#8E8E93", marginBottom: 8, paddingHorizontal: 4 },
+  例の行: {
+    paddingVertical: 7,
     paddingHorizontal: 12,
-    paddingVertical: 9,
+    borderRadius: 16,
+    backgroundColor: "#FFF",
+    borderWidth: 1,
+    borderColor: "#D1D1D6",
+    marginBottom: 5,
+    alignSelf: "flex-start",
+    maxWidth: "100%",
   },
-  候補の字: { fontSize: 13, color: "#1C1C1E", flex: 1 },
+  例の字: { fontSize: 13, color: "#007AFF" },
+  例の断り: { fontSize: 11, color: "#8E8E93", marginTop: 2, paddingHorizontal: 4 },
+  // 打ちかけの続き（入力欄の中に重ねる層）。
+  // 入力欄と同じ位置・同じ字の大きさにしないと、文字がずれて二重に見える
+  // 入力欄をぴったり包む枠。重ねる層はこの中で位置を決める
+  入力の枠: { flex: 1, marginRight: 8, position: "relative" },
+  // 入力欄と同じ余白（左右16・上下8）にそろえる
+  続きの層: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    top: 8,
+    bottom: 8,
+    zIndex: 1,
+  },
+  // 字の大きさと行の高さも入力欄と同じにする。違うと重ならない
+  続きの字: { fontSize: 15, lineHeight: 20, color: "#C7C7CC" },
   messageText: { fontSize: 15, lineHeight: 20 },
   userText: { color: "#FFF" },
   modelText: { color: "#1C1C1E" },
   inputArea: { flexDirection: "row", padding: 12, paddingBottom: 12, backgroundColor: "#FFF", borderTopWidth: 1, borderTopColor: "#F2F2F7", alignItems: "center" },
-  input: { flex: 1, backgroundColor: "#F2F2F7", borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8, maxHeight: 100, fontSize: 15, marginRight: 8 },
+  input: { flex: 1, backgroundColor: "#F2F2F7", borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8, maxHeight: 100, fontSize: 15, lineHeight: 20 },
   sendBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#007AFF", justifyContent: "center", alignItems: "center" },
   actionBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 16 },
   actionBtnText: { color: "#FFF", fontSize: 13, fontWeight: "bold" }
