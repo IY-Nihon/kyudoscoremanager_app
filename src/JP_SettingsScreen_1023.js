@@ -387,7 +387,7 @@ const w = () => {
               '的中率',
               'タグ',
               'メモ',
-              '統計対象',
+              '集計対象',
             ];
             集計する記録.forEach((t) => {
               if (!t || !t.archers || !Array.isArray(t.archers)) return;
@@ -403,7 +403,8 @@ const w = () => {
                   : [{ 部員id: l.memberId, 名前: l.name || '', 的中: 0, 射数: 0 }];
                 const tagsV = (t.tags || []).join(' '),
                   noteV = t.note || '',
-                  statV = !1 === t.includeInStats ? 'FALSE' : 'TRUE';
+                  // TRUE / FALSE では何の真偽か伝わらない。日本語で書く
+                  statV = 集.集計に入れるか(t) ? '対象' : '対象外';
                 書く区間.forEach((区間) => {
                   // 絞り込みは列ではなく人ごとに見る。列で見ると、交代で入った人が
                   // 自分の書き出しから丸ごと落ちる（列の持ち主は別人のため）
@@ -553,9 +554,21 @@ const w = () => {
           const 幅 =
             'matrix' === ye
               ? [16, 7, 9, 9, 9].concat(xlsxHeaders.slice(5).map(() => 9))
-              : [12, 20, 14, 6, 8, 6, 9, 9, 9, 16, 24, 10];
+              : [12, 22, 14, 6, 8, 6, 9, 9, 10, 18, 26, 10];
+          // 的中率の列は「38.9%」と見せる。中身は 38.9 のままなので、
+          // 表計算の式や並べ替えはこれまでどおり使える
+          const 見た目 =
+            'matrix' === ye
+              ? ['', '', '率']
+              : ['', '', '', '', '', '', '', '', '率'];
           const シートたち = [
-            { name: 'matrix' === ye ? '集計' : '記録', headers: xlsxHeaders, rows: xlsxRows, widths: 幅 },
+            {
+              name: 'matrix' === ye ? '集計' : '記録',
+              headers: xlsxHeaders,
+              rows: xlsxRows,
+              widths: 幅,
+              formats: 見た目,
+            },
           ];
           // 「集計に含めない」にした記録は、本表から外したぶんを別のシートに残す。
           // 消してしまうと、何が外れたのかを確かめる手立てが無くなる
@@ -585,7 +598,8 @@ const w = () => {
               name: '集計に含めない記録',
               headers: 除外の見出し,
               rows: 除外の行,
-              widths: [12, 20, 14, 9, 9, 9, 16, 24],
+              widths: [12, 22, 14, 9, 9, 10, 18, 26],
+              formats: ['', '', '', '', '', '率'],
             });
           }
           await _xlsx.exportXlsxSheets(シートたち, fname);
