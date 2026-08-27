@@ -126,6 +126,8 @@ const k = () => {
         鍵を開けた時刻 = 0,
         // 閉じたますを押した時刻。開け方を知らせる合図
         閉じたますを押した時刻 = 0,
+        // 閲覧用でますを押した時刻。閲覧用だと知らせる合図
+        閲覧でますを押した時刻 = 0,
         // 記録表の並べ方。真なら名前が左、○×が右へ伸びる
         横に並べる = !1,
         set横に並べる,
@@ -187,6 +189,7 @@ const k = () => {
       // アプリ内の確認。{ 文, 実行 } を入れると出る。ブラウザの確認窓は使わない
       [確認, 確認を置く] = (0, t.useState)(null),
       閉じた知らせを出した = o.default.useRef(0),
+      閲覧の知らせを出した = o.default.useRef(0),
       Ve = o.default.useRef(null),
       Ue = o.default.useRef(null),
       Ge = (e) => {
@@ -229,6 +232,13 @@ const k = () => {
             j.notificationAsync(j.NotificationFeedbackType.Warning));
         }
       }, [閉じたますを押した時刻]),
+      // 閲覧用でますを押されたら、閲覧用だと知らせる。
+      // 黙って何も起きないと、届いていないのか壊れたのか分からない
+      o.default.useEffect(() => {
+        if (閲覧でますを押した時刻 > 0 && 閲覧の知らせを出した.current < 閲覧でますを押した時刻) {
+          ((閲覧の知らせを出した.current = 閲覧でますを押した時刻), 閲覧中に押された());
+        }
+      }, [閲覧でますを押した時刻]),
       o.default.useEffect(() => {
         x.useScoreStore.getState().loadData();
       }, []),

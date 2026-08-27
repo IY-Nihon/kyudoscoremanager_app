@@ -102,12 +102,15 @@ const アプリの窓 = () => {
                 <_Text style={styles.文}>{いま.文}</_Text>
               </_ScrollView>
             ) : null}
-            <_View style={styles.ボタンの列}>
+            <_View style={[styles.ボタンの列, (いま.ボタン || []).length > 2 && styles.ボタンの列縦]}>
               {(いま ? いま.ボタン : []).map((b, i) => (
                 <_Pressable
                   key={`${b.text}-${i}`}
                   testID={`窓のボタン-${b.text}`}
-                  style={[styles.ボタン, i > 0 && styles.仕切り]}
+                  style={[
+                    styles.ボタン,
+                    (いま.ボタン || []).length > 2 ? i > 0 && styles.仕切り縦 : i > 0 && styles.仕切り,
+                  ]}
                   onPress={() => {
                     置く(null);
                     b.onPress && b.onPress();
@@ -151,8 +154,11 @@ const styles = _StyleSheet.create({
     borderTopWidth: _StyleSheet.hairlineWidth,
     borderTopColor: '#C6C6C8',
   },
+  // ボタンが3つ以上のときは縦に積む。横3等分だと長い文字が折り返して詰まる
+  ボタンの列縦: { flexDirection: 'column' },
   ボタン: { flex: 1, padding: 16, alignItems: 'center' },
   仕切り: { borderLeftWidth: _StyleSheet.hairlineWidth, borderLeftColor: '#C6C6C8' },
+  仕切り縦: { borderTopWidth: _StyleSheet.hairlineWidth, borderTopColor: '#C6C6C8' },
   ボタンの字: { fontSize: 17, color: '#007AFF', fontWeight: 'bold' },
   打ち消し: { fontWeight: 'normal' },
   危ない: { color: '#FF3B30' },

@@ -153,7 +153,12 @@ const h = t.default.memo(
       // ここで (s) => s.archers.find(...) を購読していた。ますの数だけ
       // 全射手の走査が走り、○×を1つ入れるたびに盤面全体が重くなっていた。
       // この射手を使うのは長押しの中だけなので、そのとき取りに行けばよい
-      const 射手を取る = () => d.useScoreStore.getState().archers.find((a) => a && a.id === e);
+      // 射手IDは控え（latestPropsRef）から読む。ここで e を閉じ込めると、
+      // ますが別の射手に使い回されたときに前の人を返してしまう
+      const 射手を取る = () => {
+        const id = latestPropsRef.current ? latestPropsRef.current.archerId : e;
+        return d.useScoreStore.getState().archers.find((a) => a && a.id === id);
+      };
       const latestPropsRef = React.useRef({
         mark: l,
         archerId: e,

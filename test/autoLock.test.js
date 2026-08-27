@@ -404,3 +404,47 @@ test('ライブでなければ、見るだけの覚えが残っていても止�
   store.getState().updateMark('a1', 0, '○');
   assert.strictEqual(store.getState().archers[0].marks[0], '○', 'ライブが終わったのに書けない');
 });
+
+test('閲覧用：ますを押したら「閲覧用」の合図が立つ（盤面は変えない）', () => {
+  // 黙って何も起きないと、届いていないのか壊れたのか分からない
+  const { store } = ストアを用意する();
+  store.setState({
+    isHydrated: true,
+    isLiveActive: true,
+    ライブは見るだけ: true,
+    archers: [{ id: 'a1', name: '山田', marks: ['', '', '', ''], lockedBlocks: {} }],
+    shotsPerRound: 4,
+  });
+
+  store.getState().toggleMark('a1', 0);
+  assert.strictEqual(store.getState().archers[0].marks[0], '', '閲覧用なのに○が入った');
+  assert.ok(store.getState().閲覧でますを押した時刻 > 0, '閲覧用の合図が立っていない');
+  assert.strictEqual(store.getState().閉じたますを押した時刻, 0, '鍵の案内の側が立ってはいけない');
+});
+
+test('閲覧用：閉じたますを押しても「長押しで開きます」とは言わない', () => {
+  // 閲覧用では ますを開ける も止めてあるので、長押ししても開かない。
+  // 開かないことをやらせる案内を出してはいけない
+  const { store } = ストアを用意する();
+  store.setState({ isHydrated: true, isLiveActive: true, ライブは見るだけ: true });
+
+  store.getState().閉じたますが押された();
+  assert.strictEqual(store.getState().閉じたますを押した時刻, 0, '嘘の案内が出ようとしている');
+  assert.ok(store.getState().閲覧でますを押した時刻 > 0, '閲覧用の合図が立っていない');
+});
+
+test('記録用：閉じたますを押したら「長押しで開きます」の合図が立つ', () => {
+  const { store } = ストアを用意する();
+  store.setState({ isHydrated: true, isLiveActive: true, ライブは見るだけ: false });
+
+  store.getState().閉じたますが押された();
+  assert.ok(store.getState().閉じたますを押した時刻 > 0, '鍵の案内が出ない');
+  assert.strictEqual(store.getState().閲覧でますを押した時刻, 0, '閲覧用の側が立ってはいけない');
+});
+
+test('ライブでなければ、閉じたますの案内はふつうに出る', () => {
+  const { store } = ストアを用意する();
+  store.setState({ isHydrated: true, isLiveActive: false, ライブは見るだけ: true });
+  store.getState().閉じたますが押された();
+  assert.ok(store.getState().閉じたますを押した時刻 > 0, 'ライブ外なのに止まっている');
+});
