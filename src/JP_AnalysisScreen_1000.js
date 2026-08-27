@@ -100,25 +100,36 @@ const j = ({ navigation }) => {
 
   if (!z) return null;
 
+  /**
+   * 推移のグラフで押した点（ラベル）の期間に入る記録かどうか。
+   *
+   * ラベルの形から日／月／年度を見分ける。推移がラベルを作るときと
+   * 同じ組み立てにしてあるので、片方だけ変えると噛み合わなくなる。
+   */
+  const 点の期間の記録か = (記録, ラベル) => {
+    if (!ラベル) return true;
+    if (!記録) return false;
+    const l = new Date(記録.date);
+    let 札 = '';
+    if (ラベル.endsWith('年度')) {
+      札 = `${l.getMonth() + 1 >= 4 ? l.getFullYear() : l.getFullYear() - 1}年度`;
+    } else if (ラベル.includes('/') && ラベル.split('/').length === 2) {
+      札 = `${l.getFullYear()}/${l.getMonth() + 1}`;
+    } else {
+      札 = `${l.getFullYear()}/${l.getMonth() + 1}/${l.getDate()}`;
+    }
+    return 札 === ラベル;
+  };
+
+  /** 点を押していればその期間だけ、押していなければ全部 */
+  const 点の期間で絞る = (記録たち, ラベル) =>
+    ラベル ? (記録たち || []).filter((s) => 点の期間の記録か(s, ラベル)) : 記録たち || [];
+
   const gatherAllArrowLocations = (memberId, name, selectedLabel) => {
     const locations = [];
     me.forEach((session) => {
       if (!session || !session.archers) return;
-
-      // グラフのデータポイントが選択されている場合、セッションをフィルタリング
-      if (selectedLabel) {
-        const l = new Date(session.date);
-        let sessionLabel = '';
-        if (selectedLabel.endsWith('年度')) {
-          // "年度"
-          sessionLabel = `${l.getMonth() + 1 >= 4 ? l.getFullYear() : l.getFullYear() - 1}年度`;
-        } else if (selectedLabel.includes('/') && selectedLabel.split('/').length === 2) {
-          sessionLabel = `${l.getFullYear()}/${l.getMonth() + 1}`;
-        } else {
-          sessionLabel = `${l.getFullYear()}/${l.getMonth() + 1}/${l.getDate()}`;
-        }
-        if (sessionLabel !== selectedLabel) return;
-      }
+      if (!点の期間の記録か(session, selectedLabel)) return;
 
       session.archers.forEach((archer) => {
         const archerLocations = archer.arrowLocations || [];
@@ -263,22 +274,22 @@ const j = ({ navigation }) => {
     return !0;
   });
   const xe = [...(w || []).filter((e) => v || (e.grade || 0) < 5), ...(((O === '卒業生' || v) && A) || [])]
-    .filter((e) => !!e)
-    .filter((e) => k !== 'member' || !B || e.id === B)
-    .map((e) => Object.assign({}, e, 集.成績を数える(me, e.id)))
-    .filter((e) => {
-      if (0 === e.shots) return !1;
-      if (k === 'group') {
-        if (W !== '全員' && e.gender !== W) return !1;
-        if (O !== '全学年') {
-          if (O === '卒業生') {
-            if (!(5 === e.grade || e.graduationYear || e.isAlumni)) return !1;
-          } else if (`${e.grade}年` !== O) return !1;
-        }
+  .filter((e) => !!e)
+  .filter((e) => k !== 'member' || !B || e.id === B)
+  .map((e) => Object.assign({}, e, 集.成績を数える(me, e.id)))
+  .filter((e) => {
+    if (0 === e.shots) return !1;
+    if (k === 'group') {
+      if (W !== '全員' && e.gender !== W) return !1;
+      if (O !== '全学年') {
+        if (O === '卒業生') {
+          if (!(5 === e.grade || e.graduationYear || e.isAlumni)) return !1;
+        } else if (`${e.grade}年` !== O) return !1;
       }
-      return !(oe && !(e.name || '').toLowerCase().includes(oe.toLowerCase()));
-    })
-    .sort((e, t) => (Math.abs(t.rate - e.rate) > 0.01 ? t.rate - e.rate : t.shots - e.shots));
+    }
+    return !(oe && !(e.name || '').toLowerCase().includes(oe.toLowerCase()));
+  })
+  .sort((e, t) => (Math.abs(t.rate - e.rate) > 0.01 ? t.rate - e.rate : t.shots - e.shots));
   const rankingConfig = C[R] || { type: 'ratio', value: 0 };
   const be = 'ratio' === rankingConfig.type ? rankingConfig.value : 0;
   const ye = Math.max(...xe.map((e) => e.shots), 0);
@@ -315,13 +326,9 @@ const j = ({ navigation }) => {
         }
 
         if (!n[a]) {
-          n[a] = {
-            hits: 0,
-            shots: 0,
-            patterns: { kaichu: 0, sanchu: 0, hake: 0, icchu: 0, zannen: 0 },
-            date: o.date,
-            details: [],
-          };
+          // 結果分布はここでは数えない。点を押したときは 期間の成績 が
+          // 成績を数える で出すので、同じものを2通りに数えると食い違う元になる
+          n[a] = { hits: 0, shots: 0, date: o.date, details: [] };
         }
 
         let sessionHits = 0;
@@ -350,31 +357,6 @@ const j = ({ navigation }) => {
           sessionHits += s;
           sessionShots += i;
 
-          const c = Math.floor(r.marks.length / 4);
-          for (let oIdx = 0; oIdx < c; oIdx++) {
-            let lCount = 0;
-            let sAllMine = !0;
-            for (let nIdx = 0; nIdx < 4; nIdx++) {
-              const aIdx = 4 * oIdx + nIdx;
-              const iVal = r.marks[aIdx];
-              if ('○' !== iVal && '\xd7' !== iVal) {
-                sAllMine = !1;
-                break;
-              }
-              if (!集.その人の射か(r, aIdx, e)) {
-                sAllMine = !1;
-                break;
-              }
-              if ('○' === iVal) lCount++;
-            }
-            if (sAllMine) {
-              if (4 === lCount) n[a].patterns.kaichu++;
-              else if (3 === lCount) n[a].patterns.sanchu++;
-              else if (2 === lCount) n[a].patterns.hake++;
-              else if (1 === lCount) n[a].patterns.icchu++;
-              else n[a].patterns.zannen++;
-            }
-          }
         });
 
         if (sessionShots > 0) {
@@ -401,11 +383,34 @@ const j = ({ navigation }) => {
 
   // 比較相手の成績。1〜4射目のマスごとに数え直すと、記録の数だけ何度も
   // 走って重くなる。相手が変わったときだけ数える
+  /**
+   * 推移の点を押したときの、その期間の成績。
+   *
+   * 矢所だけが点に連動していて、立ち順別と結果分布は全期間のままだった。
+   * 同じ画面の中で見ている期間が食い違うので、そろえる。
+   * 点を押していなければ全期間（＝順位側と同じ数字）になる。
+   */
+  const 期間の成績 = (部員id, ラベル) =>
+    部員id ? 集.成績を数える(点の期間で絞る(me, ラベル), 部員id) : null;
+
+  // 部員として入っているときの、自分の成績
+  const 自分の期間の成績 = n.default.useMemo(
+    () => ('member' === k && B ? 期間の成績(B, selectedTrendLabel) : null),
+    [k, B, me, selectedTrendLabel]
+  );
+
+  // 個人の詳細を開いているときの、その人の成績
+  const 詳細の期間の成績 = n.default.useMemo(
+    () => (ae ? 期間の成績(ae.id, selectedModalTrendLabel) : null),
+    [ae, me, selectedModalTrendLabel]
+  );
+
   const 比較の成績 = n.default.useMemo(() => {
     const 表 = new Map();
-    for (const cm of compareMembers) if (cm && cm.id) 表.set(cm.id, 集.成績を数える(me, cm.id));
+    const 記録たち = 点の期間で絞る(me, selectedModalTrendLabel);
+    for (const cm of compareMembers) if (cm && cm.id) 表.set(cm.id, 集.成績を数える(記録たち, cm.id));
     return 表;
-  }, [compareMembers, me]);
+  }, [compareMembers, me, selectedModalTrendLabel]);
 
   const ke = n.default.useMemo(() => ('member' === k && B ? Se(B, D) : []), [k, B, D, Se]);
   const Be = n.default.useMemo(() => (ae ? Se(ae.id, ae.name) : []), [ae, Se]);
@@ -1194,12 +1199,17 @@ const j = ({ navigation }) => {
                     children: [
                       (0, y.jsx)(l.default, {
                         style: F.sectionSubTitle,
-                        children: '立ち順別の的中率 (1-4射目)',
+                        children: selectedTrendLabel
+                          ? `立ち順別の的中率 (${selectedTrendLabel})`
+                          : '立ち順別の的中率 (1-4射目)',
                       }),
                       (0, y.jsx)(o.default, {
                         style: F.statsGrid,
                         children: Array.from({ length: 4 }).map((e, t) => {
-                          const n = Ce[0].perShotStats[t] || { shots: 0, hits: 0 };
+                          // 点を押したらその期間で数え直す。矢所だけが連動して
+                          // ここが全期間のままだと、同じ画面で見ている期間が食い違う
+                          const 元 = 自分の期間の成績 || Ce[0];
+                          const n = 元.perShotStats[t] || { shots: 0, hits: 0 };
                           const a = n.shots > 0 ? (n.hits / n.shots) * 100 : 0;
                           return (0, y.jsxs)(
                             o.default,
@@ -1239,8 +1249,9 @@ const j = ({ navigation }) => {
                           { label: '一中', key: 'icchu', color: '#5856D6' },
                           { label: '残念', key: 'zannen', color: '#FF3B30' },
                         ].map((e) => {
-                          const t = Ce[0].patterns[e.key] || 0;
-                          const n = Object.values(Ce[0].patterns).reduce((e, t) => e + t, 0);
+                          const 元 = 自分の期間の成績 || Ce[0];
+                          const t = 元.patterns[e.key] || 0;
+                          const n = Object.values(元.patterns).reduce((e, t) => e + t, 0);
                           const a = n > 0 ? (t / n) * 100 : 0;
                           return (0, y.jsxs)(
                             o.default,
@@ -1825,11 +1836,14 @@ const j = ({ navigation }) => {
                                     color: '#3A3A3C',
                                     marginBottom: 8,
                                   },
-                                  children: '立ち順別の的中率',
+                                  children: selectedModalTrendLabel
+                                    ? `立ち順別の的中率 (${selectedModalTrendLabel})`
+                                    : '立ち順別の的中率',
                                 }),
                                 (0, y.jsx)(o.default, {
                                   children: Array.from({ length: 4 }).map((_, t) => {
-                                    const baseStat = ae.perShotStats[t] || { shots: 0, hits: 0 };
+                                    const baseStat =
+                                      (詳細の期間の成績 || ae).perShotStats[t] || { shots: 0, hits: 0 };
                                     const baseRate =
                                       baseStat.shots > 0 ? (baseStat.hits / baseStat.shots) * 100 : 0;
                                     const COLORS = [
@@ -2049,12 +2063,15 @@ const j = ({ navigation }) => {
                                     color: '#3A3A3C',
                                     marginBottom: 8,
                                   },
-                                  children: '立ち順別の的中率 (1-4射目)',
+                                  children: selectedModalTrendLabel
+                                    ? `立ち順別の的中率 (${selectedModalTrendLabel})`
+                                    : '立ち順別の的中率 (1-4射目)',
                                 }),
                                 (0, y.jsx)(o.default, {
                                   style: F.statsGrid,
                                   children: Array.from({ length: 4 }).map((e, t) => {
-                                    const n = ae.perShotStats[t] || { shots: 0, hits: 0 };
+                                    const 元 = 詳細の期間の成績 || ae;
+                                    const n = 元.perShotStats[t] || { shots: 0, hits: 0 };
                                     const a = n.shots > 0 ? (n.hits / n.shots) * 100 : 0;
                                     return (0, y.jsxs)(
                                       o.default,
@@ -2091,7 +2108,9 @@ const j = ({ navigation }) => {
                                     color: '#3A3A3C',
                                     marginBottom: 12,
                                   },
-                                  children: '立ちの結果分布 (4射単位)',
+                                  children: selectedModalTrendLabel
+                                    ? `立ちの結果分布 (${selectedModalTrendLabel})`
+                                    : '立ちの結果分布 (4射単位)',
                                 }),
                                 (0, y.jsx)(o.default, {
                                   style: F.patternsCard,
@@ -2102,8 +2121,9 @@ const j = ({ navigation }) => {
                                     { label: '一中', key: 'icchu', color: '#5856D6' },
                                     { label: '残念', key: 'zannen', color: '#FF3B30' },
                                   ].map((e) => {
-                                    const t = ae.patterns[e.key] || 0;
-                                    const n = Object.values(ae.patterns).reduce((e, t) => e + t, 0);
+                                    const 元 = 詳細の期間の成績 || ae;
+                                    const t = 元.patterns[e.key] || 0;
+                                    const n = Object.values(元.patterns).reduce((e, t) => e + t, 0);
                                     const a = n > 0 ? (t / n) * 100 : 0;
                                     return (0, y.jsxs)(
                                       o.default,
