@@ -81,9 +81,15 @@ function シートXML(中身, 先頭か) {
   const headerCells = headers.map((h, i) => cellXml(colName(i) + '1', h, 1)).join('');
   const headerXml = `<row r="1" ht="20" customHeight="1">${headerCells}</row>`;
 
+  // 列ごとの見た目。'率' を指定した列は 25 と入れて「25.0%」と見える
+  const 見た目 = 中身.formats || [];
+  const 列の型 = (i) => (見た目[i] === '率' ? 2 : 0);
+
   const bodyXml = rows
     .map((r, ri) => {
-      const cells = (r || []).map((v, ci) => cellXml(colName(ci) + (ri + 2), v, 0)).join('');
+      const cells = (r || [])
+        .map((v, ci) => cellXml(colName(ci) + (ri + 2), v, 列の型(ci)))
+        .join('');
       return `<row r="${ri + 2}">${cells}</row>`;
     })
     .join('');
@@ -112,7 +118,7 @@ const 使えない字 = /[:\\/?*[\]]/g;
  * 画面にもブラウザにも触れない純粋な関数なので、そのまま検査できる
  * （test/excelExport.test.js）。
  *
- * @param {Array<{name:string, headers:string[], rows:Array<Array<any>>, widths?:number[]}>} シートたち
+ * @param {Array<{name:string, headers:string[], rows:Array<Array<any>>, widths?:number[], formats?:string[]}>} シートたち
  * @returns {Object<string,string>} 道 → 中身
  */
 function ブックを組む(シートたち) {
@@ -159,6 +165,9 @@ function ブックを組む(シートたち) {
   const styles =
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
     `<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">` +
+    // numFmts は fonts より前に置く。xlsx は要素の並び順が決まっていて、
+    // 入れ替わると Excel が「開けません」としか言わずに撥ねる
+    `<numFmts count="1"><numFmt numFmtId="164" formatCode="0.0&quot;%&quot;"/></numFmts>` +
     `<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font>` +
     `<font><b/><sz val="11"/><name val="Calibri"/></font></fonts>` +
     `<fills count="3"><fill><patternFill patternType="none"/></fill>` +
@@ -168,10 +177,11 @@ function ブックを組む(シートたち) {
     `<border><left style="thin"><color rgb="FFB0B0B0"/></left><right style="thin"><color rgb="FFB0B0B0"/></right>` +
     `<top style="thin"><color rgb="FFB0B0B0"/></top><bottom style="thin"><color rgb="FFB0B0B0"/></bottom><diagonal/></border></borders>` +
     `<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>` +
-    `<cellXfs count="2">` +
+    `<cellXfs count="3">` +
     `<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>` +
     `<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">` +
     `<alignment horizontal="center" vertical="center"/></xf>` +
+    `<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>` +
     `</cellXfs></styleSheet>`;
 
   const contentTypes =
