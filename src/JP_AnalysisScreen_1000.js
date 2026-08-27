@@ -242,54 +242,71 @@ const j = ({ navigation }) => {
       });
   }, [E, e, k, B]);
 
-  const me = E.filter((t) => {
-    if (!t) return !1;
-    if (!集.集計に入れるか(t)) return !1; // 未設定の古い記録は含める（Excel の書き出しと揃える）
-    if (e.length > 0) {
-      const n = t.tags || [];
-      if ('AND' === a) {
-        if (!e.every((e) => n.includes(e))) return !1;
-      } else if (!e.some((e) => n.includes(e))) return !1;
-    }
-    const n = Date.now();
-    const o = t.date;
-    if ('直近30日' === R) return n - o <= 2592e6;
-    if ('月ごと' === R) {
-      const e = new Date(o);
-      return e.getFullYear() === $ && e.getMonth() + 1 === V;
-    }
-    if ('年度' === R) {
-      const e = new Date(o);
-      const t = e.getFullYear();
-      return (e.getMonth() + 1 >= 4 ? t : t - 1) === _;
-    }
-    if ('期間指定' === R) {
-      const e = new Date(o);
-      e.setHours(0, 0, 0, 0);
-      const t = new Date(q);
-      t.setHours(0, 0, 0, 0);
-      const n = new Date(Q);
-      return (n.setHours(23, 59, 59, 999), e >= t && e <= n);
-    }
-    return !0;
-  });
-  const xe = [...(w || []).filter((e) => v || (e.grade || 0) < 5), ...(((O === '卒業生' || v) && A) || [])]
-  .filter((e) => !!e)
-  .filter((e) => k !== 'member' || !B || e.id === B)
-  .map((e) => Object.assign({}, e, 集.成績を数える(me, e.id)))
-  .filter((e) => {
-    if (0 === e.shots) return !1;
-    if (k === 'group') {
-      if (W !== '全員' && e.gender !== W) return !1;
-      if (O !== '全学年') {
-        if (O === '卒業生') {
-          if (!(5 === e.grade || e.graduationYear || e.isAlumni)) return !1;
-        } else if (`${e.grade}年` !== O) return !1;
-      }
-    }
-    return !(oe && !(e.name || '').toLowerCase().includes(oe.toLowerCase()));
-  })
-  .sort((e, t) => (Math.abs(t.rate - e.rate) > 0.01 ? t.rate - e.rate : t.shots - e.shots));
+  // 記録の絞り込み。描画のたびに数え直すと、部員の数だけ記録を舐める
+  // xe まで巻き添えで走る。本番でいちばん大きい団体（部員79人・記録108件）で
+  // 1周 35ms かかっていた。絞り込みが変わったときだけ作り直す。
+  //
+  // 直近30日の境目は Date.now() で決まるので、この控えが効いているあいだは
+  // 動かない。境目が動くのは日付が変わるときだけで、そのとき画面を開き直せば
+  // 数え直される
+  const me = n.default.useMemo(
+    () =>
+      E.filter((t) => {
+        if (!t) return !1;
+        if (!集.集計に入れるか(t)) return !1; // 未設定の古い記録は含める（Excel の書き出しと揃える）
+        if (e.length > 0) {
+          const n = t.tags || [];
+          if ('AND' === a) {
+            if (!e.every((e) => n.includes(e))) return !1;
+          } else if (!e.some((e) => n.includes(e))) return !1;
+        }
+        const n = Date.now();
+        const o = t.date;
+        if ('直近30日' === R) return n - o <= 2592e6;
+        if ('月ごと' === R) {
+          const e = new Date(o);
+          return e.getFullYear() === $ && e.getMonth() + 1 === V;
+        }
+        if ('年度' === R) {
+          const e = new Date(o);
+          const t = e.getFullYear();
+          return (e.getMonth() + 1 >= 4 ? t : t - 1) === _;
+        }
+        if ('期間指定' === R) {
+          const e = new Date(o);
+          e.setHours(0, 0, 0, 0);
+          const t = new Date(q);
+          t.setHours(0, 0, 0, 0);
+          const n = new Date(Q);
+          return (n.setHours(23, 59, 59, 999), e >= t && e <= n);
+        }
+        return !0;
+      }),
+    [E, e, a, R, $, V, _, q, Q]
+  );
+
+  // 順位。人ごとに記録を舐めるので、ここが再計算のいちばん重いところ
+  const xe = n.default.useMemo(
+    () =>
+      [...(w || []).filter((e) => v || (e.grade || 0) < 5), ...(((O === '卒業生' || v) && A) || [])]
+        .filter((e) => !!e)
+        .filter((e) => k !== 'member' || !B || e.id === B)
+        .map((e) => Object.assign({}, e, 集.成績を数える(me, e.id)))
+        .filter((e) => {
+          if (0 === e.shots) return !1;
+          if (k === 'group') {
+            if (W !== '全員' && e.gender !== W) return !1;
+            if (O !== '全学年') {
+              if (O === '卒業生') {
+                if (!(5 === e.grade || e.graduationYear || e.isAlumni)) return !1;
+              } else if (`${e.grade}年` !== O) return !1;
+            }
+          }
+          return !(oe && !(e.name || '').toLowerCase().includes(oe.toLowerCase()));
+        })
+        .sort((e, t) => (Math.abs(t.rate - e.rate) > 0.01 ? t.rate - e.rate : t.shots - e.shots)),
+    [w, A, v, O, k, B, W, oe, me]
+  );
   const rankingConfig = C[R] || { type: 'ratio', value: 0 };
   const be = 'ratio' === rankingConfig.type ? rankingConfig.value : 0;
   const ye = Math.max(...xe.map((e) => e.shots), 0);
