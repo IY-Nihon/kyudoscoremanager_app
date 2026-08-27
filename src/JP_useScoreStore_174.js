@@ -570,6 +570,9 @@ const M = (0, s.create)()(
         閉じたますを押した時刻: 0,
         // 閲覧用のときにますを押した時刻。こちらは「閲覧用で参加しています」
         閲覧でますを押した時刻: 0,
+        // 規約とプライバシーポリシーの同意を取り直す必要があるか。
+        // 起動のたびにクラウドの記録から数え直すので、端末には残さない
+        同意の確認が要る: !1,
         arrowTargetType: 'kasumi36',
         activeArrowLocationEdit: null,
         activeGroupId: null,
@@ -2405,6 +2408,53 @@ const M = (0, s.create)()(
             archers: [],
             activeSessionID: null,
           }),
+        // 同意の記録を確かめる。起動のたびに1回だけ呼ぶ。
+        // ・記録が無い団体（同意の画面を入れる前から使っている）
+        //     運営者が口頭で同意を得ているので、記録だけを静かに補う
+        // ・記録はあるが版が古い（文書を改定した）
+        //     取り直しが要るので、画面に出すための印を立てる
+        // 部員の端末からは団体の帳面を書き換えられないので、何もしない
+        同意を確かめる: async () => {
+          const { activeGroupId: 団体, activeRole: 役, publicGroupId: 公開ID } = s();
+          if ('group' !== 役) return;
+          const id = (公開ID || 団体 || '').toUpperCase();
+          if (!id) return;
+          try {
+            const 場所 = (0, a.doc)(fb.db, 'group_accounts', id);
+            const 中身 = await (0, a.getDoc)(場所);
+            if (!中身.exists()) return;
+            const 法 = require('./legalDocs');
+            const 版 = (中身.data() || {}).同意の版;
+            if (!版) {
+              await (0, a.setDoc)(場所, 法.口頭での同意の記録(), { merge: !0 });
+              return;
+            }
+            if (法.同意を取り直すか(版)) e({ 同意の確認が要る: !0 });
+          } catch (t) {
+            // 確かめられなくても、使えなくする話ではない。次に入ったときにまた試す
+            console.warn('[Store] 同意の確認に失敗:', t);
+          }
+        },
+
+        // 同意してもらえた。記録して印を下ろす
+        同意を記録する: async () => {
+          const { activeGroupId: 団体, activeRole: 役, publicGroupId: 公開ID } = s();
+          e({ 同意の確認が要る: !1 });
+          if ('group' !== 役) return;
+          const id = (公開ID || 団体 || '').toUpperCase();
+          if (!id) return;
+          try {
+            const 場所 = (0, a.doc)(fb.db, 'group_accounts', id);
+            await (0, a.setDoc)(場所, require('./legalDocs').同意の記録(), { merge: !0 });
+          } catch (t) {
+            // 書けなかったときは印を立て直す。次の起動でまた聞く
+            (console.warn('[Store] 同意の記録に失敗:', t), e({ 同意の確認が要る: !0 }));
+          }
+        },
+
+        // あとにする。記録は残さないので、次の起動でまた出る
+        同意をあとにする: () => e({ 同意の確認が要る: !1 }),
+
         verifyGroupPassword: async (e) => {
           const { activeUserEmail: i, activeGroupId: n, publicGroupId: c } = s();
           let l = i || fb.auth.currentUser?.email;
