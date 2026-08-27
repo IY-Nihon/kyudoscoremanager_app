@@ -8,7 +8,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 exports.WhatsNewModal = void 0;
 
 const React = require('react');
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
 const RN = require('react-native');
 const _View = RN.View;
 const _Text = require('./default_217').default; // テーマ変換を通すためブリッジ経由
@@ -341,6 +341,36 @@ const WhatsNewModal = () => {
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [checkedStorage, setCheckedStorage] = useState(false);
   const [未読, set未読] = useState(0);
+  // 開いたときに「ここから下は前回まで」の線まで送るための控え。
+  // 未読がたくさんあると、上から順に読んでいくと新しい順（時系列の逆）になる。
+  // 線の位置から始めれば、いちばん古い未読が最初に目に入る
+  const 巻物 = useRef(null);
+  const 境目の位置 = useRef(0);
+  const 送った = useRef(false);
+
+  /**
+   * 「ここから下は前回までのお知らせ」の線まで送る。
+   *
+   * 線の高さが決まった時点で呼ばれる。窓を開くたびに1回だけ送り、
+   * そのあと利用者が動かしたぶんを奪わない。
+   */
+  const 送る = () => {
+    if (送った.current || !巻物.current || 境目の位置.current <= 0) return;
+    送った.current = true;
+    // 線そのものが画面の下端に隠れないよう、少し手前で止める
+    const 位置 = Math.max(境目の位置.current - 24, 0);
+    // 描き終わりを待つ。待たずに送ると、まだ高さが確定しておらず動かないことがある
+    setTimeout(() => {
+      if (巻物.current && 巻物.current.scrollTo) {
+        巻物.current.scrollTo({ y: 位置, animated: false });
+      }
+    }, 0);
+  };
+
+  // 窓を閉じたら、次に開いたときにまた送れるようにする
+  useEffect(() => {
+    if (!visible) 送った.current = false;
+  }, [visible]);
 
   useEffect(() => {
     if (shownThisSession) {
@@ -421,13 +451,19 @@ const WhatsNewModal = () => {
             </_TouchableOpacity>
           </_View>
 
-          <_ScrollView style={styles.body} contentContainerStyle={{ padding: 16 }}>
+          <_ScrollView ref={巻物} style={styles.body} contentContainerStyle={{ padding: 16 }}>
             {NOTICE_ITEMS.map((section, idx) => (
               <React.Fragment key={idx}>
                 {/* 前に開いたとき以降に足したぶんと、それより前との境目。
                     新しいものが上に並ぶので、この線から下は読んだことがある */}
                 {未読 > 0 && idx === 未読 && (
-                  <_View style={styles.読んだ境目}>
+                  <_View
+                    style={styles.読んだ境目}
+                    onLayout={(e) => {
+                      境目の位置.current = e.nativeEvent.layout.y;
+                      送る();
+                    }}
+                  >
                     <_View style={styles.読んだ線} />
                     <_Text style={styles.読んだ文字}>ここから下は前回までのお知らせ</_Text>
                     <_View style={styles.読んだ線} />
