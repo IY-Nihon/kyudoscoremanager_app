@@ -236,3 +236,26 @@ test('区間の射数の合計は、○×の数と一致する', () => {
   const 合計 = 分ける(射手).reduce((a, x) => a + x.射数, 0);
   assert.strictEqual(合計, 射手.marks.filter((m) => m === '○' || m === '×').length);
 });
+
+test('成績を数える：4射に満たない末尾は、結果分布に数えず別に数える', () => {
+  // 6射。1立目（4射）は数え、残る2射は分類できないので数えない
+  const r = 集計([記([{ memberId: 'm1', marks: ['○', '○', '×', '×', '○', '○'] }])], 'm1');
+  assert.strictEqual(r.shots, 6, '的中率の分母には入る');
+  assert.strictEqual(Object.values(r.patterns).reduce((a, b) => a + b, 0), 1, '完全な立ちだけ');
+  assert.strictEqual(r.patterns.hake, 1);
+  assert.strictEqual(r.端数の射, 2, '断り書きを出すために数えておく');
+});
+
+test('成績を数える：4の倍数なら端数は出ない', () => {
+  const r = 集計([記([{ memberId: 'm1', marks: ['○', '○', '×', '×', '○', '○', '×', '×'] }])], 'm1');
+  assert.strictEqual(r.端数の射, 0);
+  assert.strictEqual(Object.values(r.patterns).reduce((a, b) => a + b, 0), 2);
+});
+
+test('成績を数える：端数が他人の射なら数えない', () => {
+  const r = 集計(
+    [記([{ memberId: 'm1', marks: ['○', '○', '×', '×', '○', '○'], substitutionIds: { 4: 'm9' } }])],
+    'm1'
+  );
+  assert.strictEqual(r.端数の射, 0, '交代後の端数を自分のぶんに数えている');
+});
