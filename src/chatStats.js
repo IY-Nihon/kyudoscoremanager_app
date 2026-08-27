@@ -11,30 +11,25 @@
  */
 'use strict';
 
-/** 途中交代を踏まえて、その1射を引いた人を返す */
-function その射を引いた人(射手, 射目) {
-  const 交代 = 射手.substitutions || {};
-  const 交代のid = 射手.substitutionIds || {};
-  let id = 射手.memberId;
-  let 名前 = 射手.name || '';
-  Object.keys(交代)
-    .map(Number)
-    .sort((a, b) => a - b)
-    .forEach((位置) => {
-      if (位置 <= 射目) {
-        id = 交代のid[位置] || undefined;
-        名前 = 交代[位置] || '';
-      }
-    });
-  return { id, 名前 };
-}
+const 集 = require('./statsRules');
 
+/** 空白を落とす。名前で絞り込むとき（表示の突き合わせ）にだけ使う */
 const 詰める = (s) => String(s || '').replace(/\s/g, '');
 
-/** その人の1射かどうか */
+/**
+ * 途中交代を踏まえて、その1射を引いた人を返す。
+ * 判定の決まりは分析画面と共通（src/statsRules.js）。
+ * 以前はここだけ氏名でも拾っていたため、画面の順位と数字が食い違っていた
+ */
+function その射を引いた人(射手, 射目) {
+  // 名前は、射位ごとの成績のように「記録に書かれた名前で束ねる」ときだけ使う。
+  // 部員に結び付ける判定には使わない（同姓同名や異体字で別人を同一視するため）
+  return { id: 集.その射の部員id(射手, 射目), 名前: 集.その射の名前(射手, 射目) };
+}
+
+/** その人の1射かどうか。部員IDだけで判定する */
 function その人の射か(人, 引いた人) {
-  if (人.id && 引いた人.id === 人.id) return true;
-  return !!(引いた人.名前 && 人.name && 詰める(引いた人.名前) === 詰める(人.name));
+  return !!(人 && 人.id && 引いた人 && 引いた人.id !== undefined && String(引いた人.id) === String(人.id));
 }
 
 /**
@@ -48,8 +43,10 @@ function 全員の成績(人たち, 記録たち, 注文) {
   const 設定 = 注文 || {};
   const 始め = (設定.期間 && 設定.期間.始め) || 0;
   const 終わり = (設定.期間 && 設定.期間.終わり) || Infinity;
+  // 「集計に含めない」にした記録は数えない。ここを見ていなかったため、
+  // 同じことを聞いても分析画面と数字が食い違っていた
   const 対象 = (Array.isArray(記録たち) ? 記録たち : []).filter(
-    (r) => r && (r.date || 0) >= 始め && (r.date || 0) <= 終わり
+    (r) => r && 集.集計に入れるか(r) && (r.date || 0) >= 始め && (r.date || 0) <= 終わり
   );
 
   const 数え = (人) => {
@@ -59,7 +56,7 @@ function 全員の成績(人たち, 記録たち, 注文) {
       (Array.isArray(r.archers) ? r.archers : []).forEach((射手) => {
         if (!射手 || !Array.isArray(射手.marks)) return;
         射手.marks.forEach((印, 射目) => {
-          if ('○' !== 印 && '×' !== 印) return;
+          if (!集.引いた射か(印)) return;
           if (!その人の射か(人, その射を引いた人(射手, 射目))) return;
           射数 += 1;
           if ('○' === 印) 的中 += 1;
@@ -94,6 +91,8 @@ function 全員の成績(人たち, 記録たち, 注文) {
   残す.forEach((x, i) => {
     x.順位 = i + 1;
   });
+  // 並べ替えに使うだけの値。模型に渡すと答えに書いてしまうので落とす
+  全部.forEach((x) => delete x.素の率);
 
   const 全体の的中 = 全部.reduce((a, x) => a + x.的中, 0);
   const 全体の射数 = 全部.reduce((a, x) => a + x.射数, 0);
