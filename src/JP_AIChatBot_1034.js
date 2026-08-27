@@ -728,8 +728,12 @@ const AIChatBot = () => {
             let targetId = targetMember ? targetMember.id : null;
             let finalTargetName = targetMember ? targetMember.name : targetName;
             
-            // archers を持たない記録が1件でも混ざると、この道具ごと落ちる
-            const 使える記録 = sessions.filter((s) => s && Array.isArray(s.archers));
+            // archers を持たない記録が1件でも混ざると、この道具ごと落ちる。
+            // 「集計に含めない」にした記録も外す。外さないと、同じ人について
+            // 順位（全員の成績）と個人の詳細で的中率が食い違う
+            const 使える記録 = sessions.filter(
+              (s) => s && Array.isArray(s.archers) && 集.集計に入れるか(s)
+            );
             const hasRecord = 使える記録.some(s => s.archers.some(a => {
               if (a.name) {
                 const cleanAName = a.name.replace(/\s/g, '');
@@ -758,7 +762,10 @@ const AIChatBot = () => {
               let shotHits = [0, 0, 0, 0];
               let omaeTotal = 0, omaeHit = 0;
               let ochiTotal = 0, ochiHit = 0;
-              let totalMarks = 0, hitMarks = 0, kaichu = 0;
+              let totalMarks = 0, hitMarks = 0;
+              // 皆中は分析画面と同じ決まりで数える。ここで別に数えていたころは、
+              // 同じ人の皆中の回数がチャットと画面で食い違う恐れがあった
+              const kaichu = 集.成績を数える(使える記録, targetId).patterns.kaichu;
               let recentTotal = 0, recentHit = 0;
               let totalSessions = 0;
               
@@ -797,26 +804,6 @@ const AIChatBot = () => {
                     }
                   });
                   
-                  // 皆中判定
-                  for (let i = 0; i < Math.floor(archer.marks.length / 4); i++) {
-                    let isBlockAllTarget = true;
-                    let isBlockAllHit = true;
-                    for (let l = 0; l < 4; l++) {
-                      const shotIdx = 4 * i + l;
-                      const mark = archer.marks[shotIdx];
-                      
-                      if (!集.その人の射か(archer, shotIdx, targetId)) {
-                        isBlockAllTarget = false;
-                        break;
-                      }
-                      if (mark !== '○') {
-                        isBlockAllHit = false;
-                      }
-                    }
-                    if (isBlockAllTarget && isBlockAllHit) {
-                      kaichu++;
-                    }
-                  }
                 });
                 if (participatedInSession) {
                   totalSessions++;
