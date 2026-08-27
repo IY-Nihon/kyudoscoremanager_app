@@ -108,7 +108,7 @@ function 入れ物にする(v) {
   return { nullValue: null };
 }
 
-const 詰める = (s) => String(s || '').replace(/[\s　]+/g, '');
+const 詰める = (s) => String(s || '').replace(/[\s\u3000]+/g, '');
 const 引いた射か = (印) => 印 === '○' || 印 === '×';
 
 const 団体 = new Set();
