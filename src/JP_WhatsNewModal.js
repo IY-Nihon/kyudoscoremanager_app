@@ -342,23 +342,27 @@ const WhatsNewModal = () => {
   const [checkedStorage, setCheckedStorage] = useState(false);
   const [未読, set未読] = useState(0);
   // 開いたときに「ここから下は前回まで」の線まで送るための控え。
-  // 未読がたくさんあると、上から順に読んでいくと新しい順（時系列の逆）になる。
-  // 線の位置から始めれば、いちばん古い未読が最初に目に入る
+  // 未読がたくさんあると、上から順に読むと新しい順（時系列の逆）になる。
+  // 線が画面の下に来るように送れば、いちばん古い未読が目の高さに入り、
+  // 上へ戻れば新しいものが読める。線に合わせて送ると、その下の
+  // 「もう読んだぶん」が画面を占めてしまうので、下端に置くのが要る
   const 巻物 = useRef(null);
   const 境目の位置 = useRef(0);
+  const 巻物の高さ = useRef(0);
   const 送った = useRef(false);
 
   /**
-   * 「ここから下は前回までのお知らせ」の線まで送る。
+   * 「ここから下は前回までのお知らせ」の線が、画面の下のほうに来るまで送る。
    *
-   * 線の高さが決まった時点で呼ばれる。窓を開くたびに1回だけ送り、
-   * そのあと利用者が動かしたぶんを奪わない。
+   * 線の高さと巻物の高さが両方そろった時点で呼ばれる。窓を開くたびに
+   * 1回だけ送り、そのあと利用者が動かしたぶんを奪わない。
    */
   const 送る = () => {
-    if (送った.current || !巻物.current || 境目の位置.current <= 0) return;
+    if (送った.current || !巻物.current) return;
+    if (境目の位置.current <= 0 || 巻物の高さ.current <= 0) return;
     送った.current = true;
-    // 線そのものが画面の下端に隠れないよう、少し手前で止める
-    const 位置 = Math.max(境目の位置.current - 24, 0);
+    // 線を下端より少し上に置く。ちょうど下端だと線が縁に張り付いて読みにくい
+    const 位置 = Math.max(境目の位置.current - 巻物の高さ.current + 56, 0);
     // 描き終わりを待つ。待たずに送ると、まだ高さが確定しておらず動かないことがある
     setTimeout(() => {
       if (巻物.current && 巻物.current.scrollTo) {
@@ -451,7 +455,15 @@ const WhatsNewModal = () => {
             </_TouchableOpacity>
           </_View>
 
-          <_ScrollView ref={巻物} style={styles.body} contentContainerStyle={{ padding: 16 }}>
+          <_ScrollView
+            ref={巻物}
+            style={styles.body}
+            contentContainerStyle={{ padding: 16 }}
+            onLayout={(e) => {
+              巻物の高さ.current = e.nativeEvent.layout.height;
+              送る();
+            }}
+          >
             {NOTICE_ITEMS.map((section, idx) => (
               <React.Fragment key={idx}>
                 {/* 前に開いたとき以降に足したぶんと、それより前との境目。
