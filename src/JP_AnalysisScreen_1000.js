@@ -432,7 +432,7 @@ const j = ({ navigation }) => {
   const ke = n.default.useMemo(() => ('member' === k && B ? Se(B, D) : []), [k, B, D, Se]);
   const Be = n.default.useMemo(() => (ae ? Se(ae.id, ae.name) : []), [ae, Se]);
 
-  const CompareGraph = ({ baseData, baseName, compareTargets }) => {
+  const CompareGraph = ({ baseData, baseName, compareTargets, selectedLabel, onSelectLabel }) => {
     const COLORS = ['#FF2D55', '#34C759', '#FF9500', '#AF52DE', '#32ADE6', '#5856D6', '#FFCC00'];
     const allDataSets = [
       { name: baseName, data: baseData, color: '#007AFF', isBase: true },
@@ -580,13 +580,53 @@ const j = ({ navigation }) => {
                 `path-${idx}`
               )
             ),
+            // 押した期間の目印。線が何本も重なるので、縦の帯で示す
+            selectedLabel && allLabels.indexOf(selectedLabel) >= 0
+              ? (0, y.jsx)(x.Line, {
+                  x1:
+                    paddingX +
+                    (allLabels.indexOf(selectedLabel) / (allLabels.length > 1 ? allLabels.length - 1 : 1)) *
+                      usableWidth,
+                  y1: hHeight - paddingY - usableHeight,
+                  x2:
+                    paddingX +
+                    (allLabels.indexOf(selectedLabel) / (allLabels.length > 1 ? allLabels.length - 1 : 1)) *
+                      usableWidth,
+                  y2: hHeight - paddingY,
+                  stroke: '#FF9500',
+                  strokeWidth: '2',
+                  strokeDasharray: '3 3',
+                })
+              : null,
             datasetsWithPoints.flatMap((ds, dsIdx) =>
               ds.points.map((pt, idx) =>
                 (0, y.jsx)(
                   x.Circle,
-                  { cx: pt.x, cy: pt.y, r: ds.isBase ? '3.5' : '3.0', fill: ds.color },
+                  {
+                    cx: pt.x,
+                    cy: pt.y,
+                    // 選んでいる期間の点は大きくする。押せることが伝わるよう、
+                    // 押す的も見た目より広く取る（下の透明な丸）
+                    r: pt.label === selectedLabel ? (ds.isBase ? '5.5' : '5.0') : ds.isBase ? '3.5' : '3.0',
+                    fill: ds.color,
+                    onPress: () => onSelectLabel && onSelectLabel(pt.label === selectedLabel ? null : pt.label),
+                  },
                   `pt-${dsIdx}-${idx}`
                 )
+              )
+            ),
+            // 指で押しやすいよう、見えない広い的を重ねる（本人の線のぶんだけ）
+            (datasetsWithPoints[0] ? datasetsWithPoints[0].points : []).map((pt, idx) =>
+              (0, y.jsx)(
+                x.Circle,
+                {
+                  cx: pt.x,
+                  cy: pt.y,
+                  r: '11',
+                  fill: 'transparent',
+                  onPress: () => onSelectLabel && onSelectLabel(pt.label === selectedLabel ? null : pt.label),
+                },
+                `hit-${idx}`
               )
             ),
           ],
@@ -1734,6 +1774,8 @@ const j = ({ navigation }) => {
                                 name: cm.name,
                                 data: Se(cm.id, cm.name),
                               })),
+                              selectedLabel: selectedModalTrendLabel,
+                              onSelectLabel: setSelectedModalTrendLabel,
                             }),
                             (0, y.jsxs)(o.default, {
                               style: { marginBottom: 20, marginTop: 20, alignItems: 'center' },
@@ -1746,7 +1788,9 @@ const j = ({ navigation }) => {
                                     marginBottom: 8,
                                     alignSelf: 'flex-start',
                                   },
-                                  children: '矢所の横並べ比較',
+                                  children: selectedModalTrendLabel
+                                    ? `矢所の傾向 (${selectedModalTrendLabel})`
+                                    : '矢所の傾向 (集計)',
                                 }),
                                 (0, y.jsx)(o.default, {
                                   style: { width: '100%', marginBottom: 12 },
@@ -1855,7 +1899,7 @@ const j = ({ navigation }) => {
                                   },
                                   children: selectedModalTrendLabel
                                     ? `立ち順別の的中率 (${selectedModalTrendLabel})`
-                                    : '立ち順別の的中率',
+                                    : '立ち順別の的中率 (1-4射目)',
                                 }),
                                 (0, y.jsx)(o.default, {
                                   children: Array.from({ length: 4 }).map((_, t) => {
@@ -2010,6 +2054,139 @@ const j = ({ navigation }) => {
                                     );
                                   }),
                                 }),
+                              ],
+                            }),
+                            // 立ちの結果分布。比較のときも出す。
+                            // 分けていたころは、比較を始めるとこの節ごと消えていた。
+                            // 見た目は比較なしのときと同じ帯で、人ごとに1行ずつ並べる
+                            (0, y.jsxs)(o.default, {
+                              style: { marginBottom: 20 },
+                              children: [
+                                (0, y.jsx)(l.default, {
+                                  style: {
+                                    fontSize: 14,
+                                    fontWeight: 'bold',
+                                    color: '#3A3A3C',
+                                    marginBottom: 12,
+                                  },
+                                  children: selectedModalTrendLabel
+                                    ? `立ちの結果分布 (${selectedModalTrendLabel})`
+                                    : '立ちの結果分布 (4射単位)',
+                                }),
+                                (0, y.jsx)(o.default, {
+                                  style: F.patternsCard,
+                                  children: [
+                                    { label: '皆中', key: 'kaichu', color: '#FF9500' },
+                                    { label: '三中', key: 'sanchu', color: '#34C759' },
+                                    { label: '羽分', key: 'hake', color: '#007AFF' },
+                                    { label: '一中', key: 'icchu', color: '#5856D6' },
+                                    { label: '残念', key: 'zannen', color: '#FF3B30' },
+                                  ].map((区分) => {
+                                    const COLORS = [
+                                      '#FF2D55',
+                                      '#34C759',
+                                      '#FF9500',
+                                      '#AF52DE',
+                                      '#32ADE6',
+                                      '#5856D6',
+                                      '#FFCC00',
+                                    ];
+                                    const 空 = { kaichu: 0, sanchu: 0, hake: 0, icchu: 0, zannen: 0 };
+                                    const 並び = [
+                                      {
+                                        name: ae.name,
+                                        色: '#007AFF',
+                                        表: (詳細の期間の成績 || ae).patterns || 空,
+                                      },
+                                      ...compareMembers.map((cm, i) => ({
+                                        name: cm.name,
+                                        色: COLORS[i % COLORS.length],
+                                        表: (比較の成績.get(cm.id) || {}).patterns || 空,
+                                      })),
+                                    ];
+                                    return (0, y.jsxs)(
+                                      o.default,
+                                      {
+                                        style: { marginBottom: 8 },
+                                        children: [
+                                          (0, y.jsx)(l.default, {
+                                            style: F.patternLabelText,
+                                            children: 区分.label,
+                                          }),
+                                          ...並び.map((人, 番) => {
+                                            const 回 = 人.表[区分.key] || 0;
+                                            const 全 = Object.values(人.表).reduce((a, b) => a + b, 0);
+                                            const 割 = 全 > 0 ? (回 / 全) * 100 : 0;
+                                            return (0, y.jsxs)(
+                                              o.default,
+                                              {
+                                                style: F.patternLine,
+                                                children: [
+                                                  (0, y.jsx)(o.default, {
+                                                    style: { width: 60 },
+                                                    children: (0, y.jsx)(l.default, {
+                                                      style: {
+                                                        fontSize: 10,
+                                                        color: 人.色,
+                                                        fontWeight: 'bold',
+                                                      },
+                                                      numberOfLines: 1,
+                                                      children: 人.name,
+                                                    }),
+                                                  }),
+                                                  (0, y.jsx)(o.default, {
+                                                    style: { flex: 1 },
+                                                    children: (0, y.jsx)(o.default, {
+                                                      style: F.barContainer,
+                                                      children: (0, y.jsx)(o.default, {
+                                                        style: [
+                                                          F.barFill,
+                                                          {
+                                                            width: `${Math.max(割, 回 > 0 ? 3 : 0)}%`,
+                                                            backgroundColor: 区分.color,
+                                                          },
+                                                        ],
+                                                      }),
+                                                    }),
+                                                  }),
+                                                  (0, y.jsx)(o.default, {
+                                                    style: { width: 50, alignItems: 'flex-end' },
+                                                    children: (0, y.jsxs)(l.default, {
+                                                      style: F.patternValueText,
+                                                      children: [回, '回'],
+                                                    }),
+                                                  }),
+                                                ],
+                                              },
+                                              `${区分.key}-${番}`
+                                            );
+                                          }),
+                                        ],
+                                      },
+                                      区分.key
+                                    );
+                                  }),
+                                }),
+                                // 4射そろわない末尾は分布に入れられない。
+                                // 断らないと「的中率と数が合わない」と見える
+                                (() => {
+                                  const 端 = ((詳細の期間の成績 || ae).端数の射 || 0) +
+                                    compareMembers.reduce(
+                                      (a, cm) => a + ((比較の成績.get(cm.id) || {}).端数の射 || 0),
+                                      0
+                                    );
+                                  return 端 > 0
+                                    ? (0, y.jsx)(l.default, {
+                                        style: {
+                                          fontSize: 11,
+                                          color: '#8E8E93',
+                                          marginTop: 8,
+                                          lineHeight: 16,
+                                        },
+                                        children: `※ 4射に満たない ${端} 射は皆中・残念などに分けられないため、この分布に入れていません（的中率には入っています）。`,
+                                      })
+                                    : null;
+                                })(),
                               ],
                             }),
                           ],
@@ -2182,6 +2359,22 @@ const j = ({ navigation }) => {
                                     );
                                   }),
                                 }),
+                                // 4射そろわない末尾は分布に入れられない。
+                                // 断らないと「的中率と数が合わない」と見える
+                                (() => {
+                                  const 端 = (詳細の期間の成績 || ae).端数の射 || 0;
+                                  return 端 > 0
+                                    ? (0, y.jsx)(l.default, {
+                                        style: {
+                                          fontSize: 11,
+                                          color: '#8E8E93',
+                                          marginTop: 8,
+                                          lineHeight: 16,
+                                        },
+                                        children: `※ 4射に満たない ${端} 射は皆中・残念などに分けられないため、この分布に入れていません（的中率には入っています）。`,
+                                      })
+                                    : null;
+                                })(),
                               ],
                             }),
                           ],
