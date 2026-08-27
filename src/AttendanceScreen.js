@@ -26,6 +26,8 @@ var F = require('./module_592');
 var j = require('./module_427');
 var db = require('./db_178');
 var firestore = require('./module_188');
+// 出欠の自動判定。交代で入った人も数えるため、決まりは切り出してある
+const { 射に出ているか } = require('./attendanceRules');
 // Web-safe lazy imports to prevent null.default crash on web
 var _docPickerModule = null;
 var _fsModule = null;
@@ -133,7 +135,8 @@ const AttendanceScreen = () => {
 
     let status = 'none';
     for (const s of daySessions) {
-      const hasRecord = s.archers?.some((a) => String(a.memberId) === String(memberId));
+      // 交代で入った人は memberId に出てこない。substitutionIds も見る
+      const hasRecord = s.archers?.some((a) => 射に出ているか(a, memberId));
       if (hasRecord) return 'present';
 
       const explicit = s.attendance?.[memberId];
