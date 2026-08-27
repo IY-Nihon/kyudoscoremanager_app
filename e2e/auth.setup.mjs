@@ -9,6 +9,10 @@
  * 各検査はそれを読み込んで始めるので、ログイン画面を通らない。
  * 各検査の「入る」はログイン欄が見えるときだけ入力する作りなので、
  * 控えが効いていれば素通りする。
+ *
+ * 控えには IndexedDB も含める（indexedDB: true）。Firebase の認証は
+ * そこに入るため、含めないと「アプリは入ったつもりだが Firestore からは
+ * 権限なしで弾かれる」という、いちばん分かりにくい壊れ方をする。
  */
 import { test as setup, expect } from '@playwright/test';
 import fs from 'node:fs';
@@ -16,7 +20,7 @@ import path from 'node:path';
 
 const 合言葉 = 'StgTest!2026';
 // 検査が使う団体。増やしたらここにも足す
-const 団体たち = ['100001', '100003', '100005', '100006']; // 100002 は個人で入るので下に別で用意
+const 団体たち = ['100001', '100003', '100005', '100006', '100007']; // 100002 は個人で入るので下に別で用意
 
 export const 控えの道 = (団体) => path.join('e2e', '.auth', `${団体}.json`);
 
@@ -47,7 +51,7 @@ setup('団体100002に個人で入っておく', async ({ page }) => {
     )
     .not.toBeNull();
   fs.mkdirSync(path.dirname(控えの道('100002-個人')), { recursive: true });
-  await page.context().storageState({ path: 控えの道('100002-個人') });
+  await page.context().storageState({ path: 控えの道('100002-個人'), indexedDB: true });
 });
 
 for (const 団体 of 団体たち) {
@@ -80,6 +84,6 @@ for (const 団体 of 団体たち) {
       .toBe(true);
 
     fs.mkdirSync(path.dirname(控えの道(団体)), { recursive: true });
-    await page.context().storageState({ path: 控えの道(団体) });
+    await page.context().storageState({ path: 控えの道(団体), indexedDB: true });
   });
 }

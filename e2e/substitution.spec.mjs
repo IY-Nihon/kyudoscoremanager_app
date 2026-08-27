@@ -18,11 +18,13 @@ const お知らせの版 = (fs.readFileSync('src/JP_WhatsNewModal.js', 'utf8').m
 // 押さないので、団体の中身には何も書かない（検査は workers:1 で1つずつ動く）。
 // 部員0人の 100005 は使わない。あちらは「作りたての団体」を再現するための
 // 場所で、空のまま保つと決めてある（案内の検査がその前提で書かれている）
-const 団体 = '100003';
+// 鍵（lock）と同じ団体だと、並列に流したときに取り合う。
+// 100003 と同じ中身の団体を別に用意してある（scripts/stg-fixtures.mjs）
+const 団体 = '100007';
 
 // ログインは下ごしらえ（auth.setup.mjs）で1回だけ済ませ、その控えを使う。
 // 各検査でログインし直さないので速く、認証の投げすぎで断られることもない
-test.use({ storageState: 'e2e/.auth/100003.json' });
+test.use({ storageState: 'e2e/.auth/100007.json' });
 const 合言葉 = 'StgTest!2026';
 
 async function 入る(page) {
