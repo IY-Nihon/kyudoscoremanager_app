@@ -117,8 +117,6 @@ const w = () => {
         trash: I = [],
         shotsPerRound: w = 8,
         updateCurrentFreshmanTerm: v,
-        showSyncErrorPopups: A = !0,
-        setShowSyncErrorPopups: k,
         syncStatus: z = 'IDLE',
         lastSyncTime: P,
         isNetworkOnline: R = !0,
@@ -1354,28 +1352,6 @@ const w = () => {
                     },
                     '#34C759'
                   ),
-                  (0, T.jsxs)(o.default, {
-                    style: D.item,
-                    children: [
-                      (0, T.jsxs)(o.default, {
-                        style: D.itemLeft,
-                        children: [
-                          (0, T.jsx)(p.Ionicons, {
-                            name: 'notifications-outline',
-                            size: 22,
-                            color: '#FF9500',
-                            style: D.itemIcon,
-                          }),
-                          (0, T.jsx)(n.default, { style: D.itemText, children: '同期エラーを通知' }),
-                        ],
-                      }),
-                      (0, T.jsx)(c.default, {
-                        value: A,
-                        onValueChange: k,
-                        trackColor: { false: '#D1D1D6', true: '#34C759' },
-                      }),
-                    ],
-                  }),
                   Je('mail-outline', 'お問い合わせ', () => setInquiryVisible(true), '#FF9500'),
 
                   (0, T.jsxs)(h.default, {
@@ -2163,9 +2139,14 @@ const w = () => {
                     style: { fontSize: 13, color: '#8E8E93', marginBottom: 12, textAlign: 'center' },
                     children: '開発者へお問い合わせを送信します',
                   }),
+                  (0, T.jsx)(n.default, {
+                    style: { fontSize: 12, color: '#8E8E93', marginBottom: 10, lineHeight: 17 },
+                    children:
+                      'メールアドレスは書かなくても送れます。書いていただくと、こちらから返事ができます。',
+                  }),
                   (0, T.jsx)(m.default, {
                     style: [D.filterInput, { width: '100%', marginBottom: 10 }],
-                    placeholder: 'メールアドレス',
+                    placeholder: 'メールアドレス（任意）',
                     value: inquiryEmail,
                     onChangeText: (e) => setInquiryEmail(e),
                     keyboardType: 'email-address',
@@ -2294,8 +2275,10 @@ const w = () => {
                         onPress: async () => {
                           const emailVal = inquiryEmail;
                           const contentVal = inquiryContent;
-                          if (!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
-                            const msg = '有効なメールアドレスを入力してください';
+                          // メールアドレスは任意。書いていないことより、
+                          // 困っていることが伝わらないままになるほうが困る
+                          if (emailVal.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal.trim())) {
+                            const msg = 'メールアドレスの形が正しくありません。空のままでも送れます';
                             u.default.alert('エラー', msg);
                             return;
                           }
@@ -2307,7 +2290,7 @@ const w = () => {
                           setInquirySending(true);
                           try {
                             await _F.addDoc(_F.collection(E.db, 'inquiries'), {
-                              email: emailVal,
+                              email: emailVal.trim(),
                               content: contentVal,
                               imagesBase64: inquiryImages || [],
                               createdAt: new Date(),
