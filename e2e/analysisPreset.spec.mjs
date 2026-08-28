@@ -40,28 +40,46 @@ async function 入る(page) {
   await page.waitForTimeout(4000);
 }
 
-/** 重なりを避けて、その字が本当に手前にあるときだけ押す */
+/**
+ * 重なりを避けて、その字が本当に手前にあるときだけ押す。
+ *
+ * 画面の中に入っていなければ、まず送ってから測る。分析の一覧は
+ * 入れ子の巻物の中にあり、Playwright の scrollIntoViewIfNeeded では
+ * 外側しか動かないことがある（iPhone の狭い画面で、部員の一覧まで
+ * 届かずに落ちた）。要素そのものに scrollIntoView させると中まで動く。
+ */
 async function 押す(page, 文) {
   const 群 = page.getByText(文, { exact: false });
+  // 描き終わるのを待つ。決まった秒数で待つと、iPhone のように遅い側で
+  // まだ一覧が無いうちに数えてしまい、候補0件のまま「押せない」と答える
+  try {
+    await 群.first().waitFor({ state: 'attached', timeout: 15000 });
+  } catch (e) {
+    return false;
+  }
   const 数 = await 群.count();
   for (let i = 0; i < 数; i++) {
-    try {
-      await 群.nth(i).scrollIntoViewIfNeeded();
-      await page.waitForTimeout(200);
-      const 枠 = await 群.nth(i).boundingBox();
-      if (!枠) continue;
-      const 手前 = await page.evaluate(
-        ([x, y, t]) => {
-          const e = document.elementFromPoint(x, y);
-          return !!e && (e.textContent || '').indexOf(t) >= 0;
-        },
-        [枠.x + 枠.width / 2, 枠.y + 枠.height / 2, 文]
-      );
-      if (!手前) continue;
-      await 群.nth(i).click({ timeout: 5000 });
-      return true;
-    } catch (e) {
-      /* 次の候補へ */
+    for (const 送るか of [false, true]) {
+      try {
+        if (送るか) {
+          await 群.nth(i).evaluate((el) => el.scrollIntoView({ block: 'center' }));
+          await page.waitForTimeout(500);
+        }
+        const 枠 = await 群.nth(i).boundingBox();
+        if (!枠) continue;
+        const 手前 = await page.evaluate(
+          ([x, y, t]) => {
+            const e = document.elementFromPoint(x, y);
+            return !!e && (e.textContent || '').indexOf(t) >= 0;
+          },
+          [枠.x + 枠.width / 2, 枠.y + 枠.height / 2, 文]
+        );
+        if (!手前) continue;
+        await 群.nth(i).click({ timeout: 5000 });
+        return true;
+      } catch (e) {
+        /* 次へ */
+      }
     }
   }
   return false;
