@@ -16,6 +16,7 @@ import { getShadowStyle } from './src/module_592';
 import { initTheme, useThemeMode } from './src/theme';
 import { auth } from './src/db_178';
 import { onAuthStateChanged } from './src/module_191';
+import { 見張りを始める, 溜まりを流す, 行動を残す } from './src/errorReporter';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -44,7 +45,15 @@ export default function App() {
   useEffect(() => {
     setHasMounted(true);
     const cleanup = setupNetworkListener();
-    return () => cleanup();
+    // 画面の外で起きた不具合も拾う。捕まえ損ねると誰にも届かない
+    const 見張りをやめる = 見張りを始める();
+    行動を残す('アプリを開く');
+    // 前回、電波が無くて送れなかったぶんを出し直す
+    溜まりを流す();
+    return () => {
+      cleanup();
+      見張りをやめる();
+    };
   }, []);
 
   // ログイン情報は端末に保存されており起動直後に復元されるが、Firebase Auth の
@@ -52,7 +61,12 @@ export default function App() {
   // 未認証のまま送られて拒否される。最初の認証状態が確定してから読み書きを始める。
   useEffect(() => {
     if (!auth) { setAuthReady(true); return; }
-    const unsub = onAuthStateChanged(auth, () => setAuthReady(true));
+    const unsub = onAuthStateChanged(auth, (使う人) => {
+      setAuthReady(true);
+      // ログインする前に起きた不具合は、決まりの上で送れない（未ログインを弾く）。
+      // 入れたところで出し直さないと、ログイン画面での不具合が永久に届かない
+      if (使う人) 溜まりを流す();
+    });
     return () => unsub();
   }, []);
 

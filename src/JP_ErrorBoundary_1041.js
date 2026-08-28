@@ -36,6 +36,12 @@ class f extends t.Component {
   }
   componentDidCatch(e, t) {
     console.error('Uncaught error:', e, t);
+    // 画面ごと落ちたときこそ、何が起きたか残らないと直せない
+    try {
+      require('./errorReporter').不具合を送る('画面が落ちた', e);
+    } catch (_) {
+      /* 控えられなくても、復旧の画面は出す */
+    }
   }
   handleReset = () => {
     (c.useScoreStore.getState().clearAllData(), this.setState({ hasError: !1, error: null }));

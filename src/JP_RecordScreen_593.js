@@ -97,7 +97,6 @@ const k = () => {
         setArcherMember: V,
         saveSession: U,
         setShotsPerRound: G,
-        showSyncErrorPopups: $ = !0,
         viewScale: q = 1,
         setViewScale: J,
         isLiveActive: K = !1,
@@ -196,8 +195,11 @@ const k = () => {
         (je(e), setTimeout(() => je(null), 1500));
       };
     (o.default.useEffect(() => {
-      '同期エラー' === z && $ && je('同期エラー: クラウドとの同期に失敗しました');
-    }, [z, $]),
+      // 同期の失敗はいつも知らせる。切り替えで消せるようにしていたころは、
+      // 切っていることを忘れたまま何日も同期できていない状態になり得た。
+      // しかも切り替えは保存されておらず、開き直すと勝手に戻っていた
+      '同期エラー' === z && je('同期エラー: クラウドとの同期に失敗しました');
+    }, [z]),
       o.default.useEffect(() => {
         if (le > 0 && Se.current < le) {
           const e = le === x.useScoreStore.getState().lastPushedTimestamp;

@@ -25,6 +25,29 @@ function e(e) {
         default: e,
       };
 }
+
+// 不具合をこちらに控える。送れなければ端末に貯まり、つながったときに出し直す。
+// errorReporter → useScoreStore の向きに参照があるので、ここでは呼ぶときに読む
+const ひ = require('./comparePresets');
+
+// 行動を1つ控える。不具合の便りに「直前に何をしていたか」として載る。
+// 氏名・的中・記録の中身は渡さない（渡すと便りに名簿が出る）
+function 行動を控える(名, 中身) {
+  try {
+    require('./errorReporter').行動を残す(名, 中身);
+  } catch (e) {
+    /* 控えられなくても、本来の動きは続ける */
+  }
+}
+
+function 不具合を控える(出どころ, 誤り) {
+  try {
+    require('./errorReporter').不具合を送る(出どころ, 誤り);
+  } catch (e) {
+    /* 控えられなくても、同期そのものは続ける */
+  }
+}
+
 (Object.defineProperty(_e, '__esModule', {
   value: !0,
 }),
@@ -612,7 +635,6 @@ const M = (0, s.create)()(
         isAdminMode: !1,
         autoPromotionEnabled: !0,
         _pendingUpdateTimers: {},
-        showSyncErrorPopups: !0,
         includeInStats: !0,
         lastLocalChange: 0,
         lastResetHandled: 0,
@@ -656,6 +678,9 @@ const M = (0, s.create)()(
         initializationLogs: [],
         syncIntervalId: null,
         lastPromotionYear: null,
+        // 比較のひな型。端末に持つだけで、クラウドへは送らない。
+        // 誰と誰を並べて見るかは、見る人の手元の都合で、団体で揃えるものではない
+        比較のひな型: [],
         _pendingMemberTimers: {},
         isHydrated: !1,
         analysisRankingSettings: {
@@ -697,10 +722,6 @@ const M = (0, s.create)()(
         setFocusedMemberId: (s) =>
           e({
             focusedMemberId: s,
-          }),
-        setShowSyncErrorPopups: (s) =>
-          e({
-            showSyncErrorPopups: s,
           }),
         setAuth: (t, o, a, i = null, n = null, c = null, l = null) => {
           null === t
@@ -771,6 +792,18 @@ const M = (0, s.create)()(
         setAnalysisTagLogic: (s) =>
           e({
             analysisTagLogic: s,
+          }),
+        比較のひな型を足す: (名前, 部員idたち) =>
+          e({
+            比較のひな型: ひ.ひな型を足す(s().比較のひな型, {
+              名前,
+              部員idたち,
+              団体id: s().activeGroupId || '',
+            }),
+          }),
+        比較のひな型を消す: (id) =>
+          e({
+            比較のひな型: ひ.ひな型を消す(s().比較のひな型, id),
           }),
         setAnalysisRankingSetting: async (o, i) => {
           const n = Date.now(),
@@ -1869,6 +1902,8 @@ const M = (0, s.create)()(
           }
         },
         saveSession: async (o, d, u, m, attendanceData) => {
+          行動を控える('記録を保存', (s().archers || []).length + '人');
+
           // 閲覧用は記録として残さない。画面側でも保存の帯を薄くしてあるが、
           // 道が増えたときに漏れないよう、ここでも止める
           if (s().書き換えを止めるか()) return;
@@ -1962,6 +1997,7 @@ const M = (0, s.create)()(
                 })
                 .catch((t) => {
                   (console.error('Save Session Cloud Error:', t),
+                    不具合を控える('記録の保存（クラウド）', t),
                     e({
                       syncStatus: '同期エラー',
                     }));
@@ -2945,6 +2981,7 @@ const M = (0, s.create)()(
               }, 500));
           } catch (s) {
             (console.error('[syncSessions] Error:', s),
+              不具合を控える('記録の同期', s),
               e({
                 syncStatus: '同期エラー',
               }));
@@ -2953,6 +2990,8 @@ const M = (0, s.create)()(
           }
         },
         syncAllToCloud: async () => {
+          行動を控える('クラウドへ同期', (s().sessions || []).length + '件');
+
           const { activeGroupId: o, activeRole: i, isNetworkOnline: n } = s();
           if (o && n)
             if ('member' !== i) {
@@ -3065,6 +3104,7 @@ const M = (0, s.create)()(
                   console.log('[Store] Loading:', 'クラウドへの送信が完了しました'));
               } catch (s) {
                 (console.error('Full Sync Error:', s?.message || s),
+                  不具合を控える('クラウドへ同期', s),
                   e({
                     syncStatus: '同期エラー',
                   }));
@@ -3237,6 +3277,7 @@ const M = (0, s.create)()(
               console.log('[Store] Loading:', '同期が完了しました'));
           } catch (s) {
             (console.error('Fetch Overwrite Error:', s),
+              不具合を控える('クラウドから取得', s),
               e({
                 syncStatus: '同期エラー',
               }));
@@ -3607,6 +3648,7 @@ const M = (0, s.create)()(
               },
               (s) => {
                 (console.error('[Store] Real-time session listener error:', s),
+                  不具合を控える('記録の受信', s),
                   e({
                     syncStatus: '同期エラー',
                   }));
@@ -3842,6 +3884,8 @@ const M = (0, s.create)()(
               a &&
                 !o &&
                 (console.log('[Store] Connection restored. Triggering auto-sync...'),
+                // 電波が切れている最中にこそ失敗するので、戻ったときに出し直す
+                require('./errorReporter').溜まりを流す(),
                 s()
                   .syncSessions()
                   .catch((e) => console.error('[Store] Auto-sync failed:', e))));
@@ -4024,6 +4068,7 @@ const M = (0, s.create)()(
                 }));
             } catch (s) {
               (console.error('Update Term Sync Error:', s),
+                不具合を控える('期の更新', s),
                 e({
                   syncStatus: '同期エラー',
                 }));
@@ -4205,6 +4250,7 @@ const M = (0, s.create)()(
         横に並べる: e.横に並べる,
         帯を畳む: e.帯を畳む,
         arrowTargetType: e.arrowTargetType,
+        比較のひな型: e.比較のひな型,
       }),
       onRehydrateStorage: () => {
         console.log('[Store] Hydration starting...');
