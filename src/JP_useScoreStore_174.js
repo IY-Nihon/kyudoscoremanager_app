@@ -40,6 +40,15 @@ function 行動を控える(名, 中身) {
   }
 }
 
+// 行動の控えを捨てる。ログアウトのときに呼ぶ
+function 行動の控えを捨てる() {
+  try {
+    require('./errorReporter').行動を捨てる();
+  } catch (e) {
+    /* 捨てられなくても、ログアウトそのものは進める */
+  }
+}
+
 function 不具合を控える(出どころ, 誤り) {
   try {
     require('./errorReporter').不具合を送る(出どころ, 誤り);
@@ -725,7 +734,10 @@ const M = (0, s.create)()(
           }),
         setAuth: (t, o, a, i = null, n = null, c = null, l = null) => {
           null === t
-            ? (e({
+            ? // 出たら行動の控えも捨てる。次に入った人の不具合の便りに、
+              // 前の人が何をしていたかが付いていくのは筋が悪い
+              (行動の控えを捨てる(),
+              e({
                 activeGroupId: null,
                 activeGroupName: null,
                 publicGroupId: null,
