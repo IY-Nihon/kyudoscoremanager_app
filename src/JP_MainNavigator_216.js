@@ -174,6 +174,10 @@ const I = n.default.memo(({ state: e, descriptors: t, navigation: nav }) => {
                 ref: (node) => 案内.setTutorialTargetNode(`タブ.${h.name}`, node),
                 onPress: () => {
                   const e = nav.emit({ type: 'tabPress', target: h.key, canPreventDefault: !0 });
+                  // 不具合の便りに載せる。どの画面で起きたかが分かると原因を絞れる
+                  try {
+                    require('./errorReporter').行動を残す('画面を移る', h.name);
+                  } catch (_) {}
                   x || e.defaultPrevented || nav.navigate(h.name);
                 },
                 style: ({ pressed: e, hovered: t }) => [
