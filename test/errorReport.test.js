@@ -298,7 +298,7 @@ test('決まり（firestore.rules）が数える項目と、送る形が一致�
   const 塊 = 決まり.slice(i, 決まり.indexOf('}', 決まり.indexOf('allow read', i)));
   const 並び = 塊.slice(塊.indexOf('hasOnly(['), 塊.indexOf('])'));
   const 決まりの項目 = [...並び.matchAll(/'([a-zA-Z]+)'/g)].map((m) => m[1]).sort();
-  const 送る項目 = Object.keys(外向きの形(不具合の便を組む('x', {}))).concat(['createdAt']).sort();
+  const 送る項目 = Object.keys(外向きの形(不具合の便を組む('x', {}))).concat(['createdAt', 'expireAt']).sort();
   assert.deepStrictEqual(送る項目, 決まりの項目, '送る項目と決まりの項目が食い違っている');
 });
 
