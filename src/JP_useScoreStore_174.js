@@ -26,8 +26,7 @@ function e(e) {
       };
 }
 
-// 不具合をこちらに控える。送れなければ端末に貯まり、つながったときに出し直す。
-// errorReporter → useScoreStore の向きに参照があるので、ここでは呼ぶときに読む
+// 比較のひな型（よく見る組み合わせ）の決まり
 const ひ = require('./comparePresets');
 
 // 行動を1つ控える。不具合の便りに「直前に何をしていたか」として載る。
@@ -49,6 +48,17 @@ function 行動の控えを捨てる() {
   }
 }
 
+// 貯まっている便りを出し直す。errorReporter は呼ぶときに読む
+function 溜まりを流し直す() {
+  try {
+    require('./errorReporter').溜まりを流す();
+  } catch (e) {
+    /* 便りを出せなくても、同期は続ける */
+  }
+}
+
+// 不具合をこちらに控える。送れなければ端末に貯まり、つながったときに出し直す。
+// errorReporter → useScoreStore の向きに参照があるので、ここでは呼ぶときに読む
 function 不具合を控える(出どころ, 誤り) {
   try {
     require('./errorReporter').不具合を送る(出どころ, 誤り);
@@ -3896,8 +3906,9 @@ const M = (0, s.create)()(
               a &&
                 !o &&
                 (console.log('[Store] Connection restored. Triggering auto-sync...'),
-                // 電波が切れている最中にこそ失敗するので、戻ったときに出し直す
-                require('./errorReporter').溜まりを流す(),
+                // 電波が切れている最中にこそ失敗するので、戻ったときに出し直す。
+                // 便りの仕組みが転んでも、自動同期まで巻き添えにしない
+                溜まりを流し直す(),
                 s()
                   .syncSessions()
                   .catch((e) => console.error('[Store] Auto-sync failed:', e))));
