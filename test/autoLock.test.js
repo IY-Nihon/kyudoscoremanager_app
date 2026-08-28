@@ -448,3 +448,34 @@ test('ライブでなければ、閉じたますの案内はふつうに出る',
   store.getState().閉じたますが押された();
   assert.ok(store.getState().閉じたますを押した時刻 > 0, 'ライブ外なのに止まっている');
 });
+
+test('お知らせ：配信済みの版のまま項目を足していない', () => {
+  // 2026-08-28 に踏んだ落とし穴。本番へ出したあと、同じ版のまま項目を4件
+  // 足してしまった。「今後表示しない」を押した人は dismissedVersion が
+  // NOTICE_VERSION と等しいままなので、足したお知らせが二度と出ない。
+  // 出したつもりで誰にも届いていない、という気づきにくい壊れ方をする。
+  const 本体 = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'src', 'JP_WhatsNewModal.js'),
+    'utf8'
+  );
+  const 取る = (名) => {
+    const m = 本体.match(new RegExp('const ' + 名 + " = '([^']+)'"));
+    assert.ok(m, 'JP_WhatsNewModal.js に ' + 名 + ' が無い');
+    return m[1];
+  };
+  const いまの版 = 取る('NOTICE_VERSION');
+  const 配信済み = 取る('最後に配信した版');
+  const 版たち = [...本体.matchAll(/版: '([^']+)'/g)].map((m) => m[1]);
+
+  assert.ok(いまの版 >= 配信済み, `版が巻き戻っている: ${いまの版} < ${配信済み}`);
+  assert.ok(版たち.includes(いまの版), 'NOTICE_VERSION と同じ版の項目が1つも無い');
+
+  const 未配信 = 版たち.filter((v) => v > 配信済み);
+  if (未配信.length > 0) {
+    assert.ok(
+      いまの版 > 配信済み,
+      `配信済みの版(${配信済み})のまま項目を足している。NOTICE_VERSION を上げないと、` +
+        '「今後表示しない」を押した人にこのお知らせは出ない'
+    );
+  }
+});
