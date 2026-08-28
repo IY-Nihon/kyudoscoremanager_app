@@ -2063,7 +2063,7 @@ const j = ({ navigation }) => {
                                   const 並び = [
                                     {
                                       name: ae.name,
-                                      色: '#3C3C43',
+                                      色: '#007AFF',
                                       表: (詳細の期間の成績 || ae).perShotStats || 空,
                                     },
                                     ...compareMembers.map((cm, i) => ({
@@ -2176,7 +2176,9 @@ const j = ({ navigation }) => {
                                                         children: [r.toFixed(0), '%'],
                                                       }),
                                                       (0, y.jsxs)(l.default, {
-                                                        style: { fontSize: 9, color: '#48484A' },
+                                                        // 副次テキスト。暗いテーマでは #EBEBF5 に変わる。
+                                                        // #48484A は変換表に無く、暗い面の上で沈む
+                                                        style: { fontSize: 9, color: '#3C3C43' },
                                                         children: [枡.hits, '/', 枡.shots],
                                                       }),
                                                     ],
@@ -2236,7 +2238,7 @@ const j = ({ navigation }) => {
                                     {
                                       name: ae.name,
                                       // 立ち順別の比較と同じ。同じ画面で同じ人の色が変わると迷う
-                                      色: '#3C3C43',
+                                      色: '#007AFF',
                                       表: (詳細の期間の成績 || ae).patterns || 空,
                                     },
                                     ...compareMembers.map((cm, i) => ({
