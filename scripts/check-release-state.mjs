@@ -109,7 +109,8 @@ if (ttl.error) console.log('  ⚠   読めませんでした: ' + ttl.error.mess
 else {
   const 入 = !!ttl.ttlConfig;
   console.log(印(入) + (入 ? `入っている（${ttl.ttlConfig.state || '状態不明'}）` : '入っていない'));
-  if (!入) console.log('        node scripts/set-error-report-ttl.mjs ' + 対象 + ' 変える');
+  // 自動削除は従量課金プランでないと使えない。無料枠のあいだは道具で消す
+  if (!入) console.log('        従量課金なら set-error-report-ttl.mjs、無料枠なら prune-error-reports.mjs');
 }
 
 // ── 4 届いた便り ─────────────────────────────────
