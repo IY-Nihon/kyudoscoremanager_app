@@ -39,6 +39,9 @@ var 案内 = require('./JP_TutorialGuide');
 var { 自分の記録か, 学年でまとめる } = require('./syncRules');
 // 「その射は誰のものか」の決まりは1か所に寄せてある（src/statsRules.js）
 var 集 = require('./statsRules');
+// 比較のひな型（よく見る組み合わせ）の決まり
+var ひ = require('./comparePresets');
+var { 出す } = require('./AppDialog');
 var u = require('./JP_useScoreStore_174'),
   h = require('./AntDesign_600'),
   f = require('./JP_CustomCalendarModal_695'),
@@ -74,12 +77,18 @@ const j = ({ navigation }) => {
     setSelectedHistorySessionId,
     setHistoryViewMode,
     setFocusedMemberId,
+    比較のひな型: ひな型たち = [],
+    比較のひな型を足す,
+    比較のひな型を消す,
+    activeGroupId: いまの団体id,
     // 案内が見本を出しているあいだは、中身だけ見本に差し替わる
   } = 案内.見本を重ねる((0, u.useScoreStore)());
 
   const D = (0, u.useScoreStore)((e) => e.myMemberName) || '';
   const [compareMembers, setCompareMembers] = (0, t.useState)([]);
   const [isSelectingCompareTarget, setIsSelectingCompareTarget] = (0, t.useState)(false);
+  // ひな型に付ける名前。窓を閉じたら捨てる（書きかけを持ち越さない）
+  const [ひな型の名前, ひな型の名前を置く] = (0, t.useState)('');
   // 比較する相手も学年でまとめる。記録表の人の選択と同じ形にしてある。
   // 覚えるのは「閉じた学年」。開く側を決め打ちすると、想定外の学年が
   // 閉じたまま出て、中の人に辿り着けなくなる
@@ -1667,6 +1676,130 @@ const j = ({ navigation }) => {
                               }),
                             }),
                     }),
+
+                    // 比較のひな型。よく見る組み合わせを名前で残して呼び出す。
+                    // 毎回いちいち学年を開いて選び直すのが手間だった。
+                    // 持つのは部員IDだけ。氏名で持つと、改名や同姓同名で別人を呼ぶ
+                    (() => {
+                      const この団体の = ひ.この団体のひな型(ひな型たち, いまの団体id);
+                      if (0 === この団体の.length && 0 === compareMembers.length) return null;
+                      const 選べる人 = [...w, ...A];
+                      return (0, y.jsxs)(o.default, {
+                        style: { marginBottom: 12 },
+                        children: [
+                          この団体の.length > 0
+                            ? (0, y.jsxs)(o.default, {
+                                style: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
+                                children: [
+                                  (0, y.jsx)(l.default, {
+                                    style: { fontSize: 12, color: '#8E8E93', marginRight: 2 },
+                                    children: 'ひな型',
+                                  }),
+                                  ...この団体の.map((型) =>
+                                    (0, y.jsxs)(
+                                      o.default,
+                                      {
+                                        style: {
+                                          flexDirection: 'row',
+                                          alignItems: 'center',
+                                          backgroundColor: '#F2F2F7',
+                                          borderRadius: 8,
+                                        },
+                                        children: [
+                                          (0, y.jsx)(s.default, {
+                                            onPress: () => {
+                                              const 出来 = ひ.ひな型を当てはめる(型, 選べる人, ae && ae.id);
+                                              setCompareMembers(出来.人たち);
+                                              setIsSelectingCompareTarget(false);
+                                              // 抜けた部員は黙って落とさない。人数が違って見える
+                                              if (出来.見つからない > 0)
+                                                出す(
+                                                  'ひな型',
+                                                  'このひな型の ' +
+                                                    出来.見つからない +
+                                                    ' 人は、いまの名簿に居ないため外しました。'
+                                                );
+                                            },
+                                            style: { paddingVertical: 6, paddingLeft: 10, paddingRight: 4 },
+                                            children: (0, y.jsxs)(l.default, {
+                                              style: { color: '#007AFF', fontSize: 13, fontWeight: 'bold' },
+                                              children: [型.名前, ' (', 型.部員idたち.length, ')'],
+                                            }),
+                                          }),
+                                          (0, y.jsx)(s.default, {
+                                            onPress: () =>
+                                              出す('ひな型を消す', '「' + 型.名前 + '」を消しますか。', [
+                                                { text: 'やめる', style: 'cancel' },
+                                                {
+                                                  text: '消す',
+                                                  style: 'destructive',
+                                                  onPress: () => 比較のひな型を消す(型.id),
+                                                },
+                                              ]),
+                                            style: { paddingVertical: 6, paddingRight: 8, paddingLeft: 2 },
+                                            children: (0, y.jsx)(l.default, {
+                                              style: { color: '#8E8E93', fontSize: 13, fontWeight: 'bold' },
+                                              children: '×',
+                                            }),
+                                          }),
+                                        ],
+                                      },
+                                      型.id
+                                    )
+                                  ),
+                                ],
+                              })
+                            : null,
+                          compareMembers.length > 0
+                            ? (0, y.jsxs)(o.default, {
+                                style: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
+                                children: [
+                                  (0, y.jsx)(d.default, {
+                                    style: {
+                                      flex: 1,
+                                      height: 34,
+                                      paddingHorizontal: 10,
+                                      borderWidth: 1,
+                                      borderColor: '#E5E5EA',
+                                      borderRadius: 8,
+                                      fontSize: 13,
+                                      color: '#1C1C1E',
+                                      backgroundColor: '#FFF',
+                                    },
+                                    placeholder: 'この組み合わせに名前を付けて残す',
+                                    placeholderTextColor: '#C7C7CC',
+                                    value: ひな型の名前,
+                                    onChangeText: ひな型の名前を置く,
+                                    maxLength: 20,
+                                  }),
+                                  (0, y.jsx)(s.default, {
+                                    onPress: () => {
+                                      const 名 = (ひな型の名前 || '').trim();
+                                      if (!名)
+                                        return void 出す('ひな型', '名前を書いてください。');
+                                      比較のひな型を足す(
+                                        名,
+                                        compareMembers.map((m) => m.id)
+                                      );
+                                      ひな型の名前を置く('');
+                                    },
+                                    style: {
+                                      paddingVertical: 8,
+                                      paddingHorizontal: 14,
+                                      backgroundColor: '#E1F0FF',
+                                      borderRadius: 8,
+                                    },
+                                    children: (0, y.jsx)(l.default, {
+                                      style: { color: '#007AFF', fontSize: 13, fontWeight: 'bold' },
+                                      children: '保存',
+                                    }),
+                                  }),
+                                ],
+                              })
+                            : null,
+                        ],
+                      });
+                    })(),
 
                     isSelectingCompareTarget
                       ? (0, y.jsxs)(o.default, {
