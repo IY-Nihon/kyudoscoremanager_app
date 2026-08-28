@@ -39,6 +39,12 @@ const ACCENT = {
   '#5856d6': '#5e5ce6', // systemIndigo
   '#ff2d55': '#ff375f', // systemPink
   '#af52de': '#bf5af2', // systemPurple
+  // 比較相手を見分ける色のうち、systemGreen/Orange/Yellow は明るい面との比が
+  // 2.2／2.2／1.5 しかなく、白いカードの上で薄すぎた。明るい面用に濃い色を置き、
+  // 暗い面では元の鮮やかな色に戻す（src/JP_AnalysisScreen_1000.js の 比較の色たち）
+  '#248a3d': '#30d158', // 濃い緑 → systemGreen(dark)
+  '#c93400': '#ff9f0a', // 濃い橙 → systemOrange(dark)
+  '#8b6d00': '#ffd426', // 濃い黄土 → systemYellow(dark)
   // '#8e8e93' (systemGray) はライト/ダーク共通のため変換しない
 };
 
