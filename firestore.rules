@@ -111,7 +111,8 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly([
              'id', 'at', 'where', 'message', 'code', 'stack', 'trail',
-             'groupId', 'role', 'version', 'device', 'online', 'count', 'createdAt'
+             'groupId', 'role', 'version', 'device', 'online', 'count',
+             'createdAt', 'expireAt'
            ])
         && request.resource.data.message is string
         && request.resource.data.message.size() < 1000

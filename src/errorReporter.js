@@ -21,6 +21,19 @@ const 貯めの鍵 = 'kyudo-error-queue';
 /** 送りきるのを待つ時間。これを過ぎたら貯めに回し、つながったときに出し直す */
 const 送るのを待つ時間 = 10000;
 
+/**
+ * 便りを置いておく日数。この先の日付を expireAt に入れて送る。
+ *
+ * Firestore の自動削除（TTL）は「その項目の日時を過ぎたら消す」仕組みで、
+ * 「その日時から◯日後に消す」ではない。createdAt に掛けると、送った端から
+ * 消えてしまう。消したい時刻そのものを別の項目に入れる。
+ *
+ * 実際に消えるのは、Firebase 側で errorReports の expireAt に自動削除を
+ * 設定したあと（scripts/set-error-report-ttl.mjs）。設定していなければ
+ * この項目はただの日付として残るだけで、害は無い。
+ */
+const 便りを置く日数 = 90;
+
 // 端末に貯める。AsyncStorage は非同期なので、読み書きは控えを介して行う。
 // 起動時に一度読み、以後はこの控えを正とする（不具合の最中に await を挟むと
 // そこでまた落ちることがある）
@@ -64,7 +77,10 @@ const 係 = 決まり.送り係をつくる({
     await 決まり.間に合わなければ諦める(
       F.addDoc(
         F.collection(fb.db, 'errorReports'),
-        Object.assign(決まり.外向きの形(便), { createdAt: new Date() })
+        Object.assign(決まり.外向きの形(便), {
+          createdAt: new Date(),
+          expireAt: new Date(Date.now() + 便りを置く日数 * 86400000),
+        })
       ),
       送るのを待つ時間
     );
