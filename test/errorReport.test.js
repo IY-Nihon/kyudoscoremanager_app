@@ -382,3 +382,62 @@ test('歯止め：1回の起動で送る数に上限がある', async () => {
     await 台.係.出す(便({ id: 'id' + i, 出どころ: 'ところ' + i }));
   assert.strictEqual(台.送った.length, 一度に送る上限);
 });
+
+// ── 受け取った便りをまとめる ──────────────────────
+
+const { 便りをまとめる } = require('../src/errorReport');
+
+const 受 = (o) =>
+  Object.assign({ id: 'x', at: 1000, where: '同期', message: 'だめ', count: 1, groupId: 'g1', version: 'v1', device: 'A' }, o);
+
+test('まとめ：出どころと起きたことが同じなら1つに束ねる', () => {
+  const r = 便りをまとめる([受({ id: 'a' }), 受({ id: 'b', at: 2000 }), 受({ id: 'c', where: '保存' })]);
+  assert.strictEqual(r.length, 2);
+  assert.strictEqual(r[0].件数, 2);
+  assert.strictEqual(r[0].where, '同期');
+});
+
+test('まとめ：のべ回数は、端末側でまとめた回数も足す', () => {
+  const r = 便りをまとめる([受({ count: 3 }), 受({ count: 2 })]);
+  assert.strictEqual(r[0].件数, 2, '便りの数');
+  assert.strictEqual(r[0].のべ回数, 5, '実際に起きた数');
+});
+
+test('まとめ：多い順に並ぶ', () => {
+  const r = 便りをまとめる([
+    受({ message: '少ない' }),
+    受({ message: '多い', count: 9 }),
+    受({ message: '中くらい', count: 4 }),
+  ]);
+  assert.deepStrictEqual(
+    r.map((x) => x.message),
+    ['多い', '中くらい', '少ない']
+  );
+});
+
+test('まとめ：団体・版・端末は重なりを取り除いて数える', () => {
+  const r = 便りをまとめる([
+    受({ groupId: 'g1', version: 'v1', device: 'A' }),
+    受({ groupId: 'g1', version: 'v2', device: 'B' }),
+    受({ groupId: 'g2', version: 'v1', device: 'A' }),
+  ]);
+  assert.deepStrictEqual(r[0].団体.sort(), ['g1', 'g2']);
+  assert.deepStrictEqual(r[0].版.sort(), ['v1', 'v2']);
+  assert.deepStrictEqual(r[0].端末.sort(), ['A', 'B']);
+});
+
+test('まとめ：例にはいちばん新しいものを残す（いまの姿に近い）', () => {
+  const r = 便りをまとめる([受({ id: '古', at: 100 }), 受({ id: '新', at: 900 }), 受({ id: '中', at: 500 })]);
+  assert.strictEqual(r[0].例.id, '新');
+  assert.strictEqual(r[0].新しい, 900);
+  assert.strictEqual(r[0].古い, 100);
+});
+
+test('まとめ：中身が欠けていても落ちない', () => {
+  assert.deepStrictEqual(便りをまとめる(null), []);
+  assert.deepStrictEqual(便りをまとめる([null, undefined]), []);
+  const r = 便りをまとめる([{}]);
+  assert.strictEqual(r.length, 1);
+  assert.strictEqual(r[0].のべ回数, 1);
+  assert.strictEqual(r[0].古い, 0);
+});
