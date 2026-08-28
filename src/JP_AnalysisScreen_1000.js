@@ -41,6 +41,7 @@ var { 自分の記録か, 学年でまとめる } = require('./syncRules');
 var 集 = require('./statsRules');
 // 比較のひな型（よく見る組み合わせ）の決まり
 var ひ = require('./comparePresets');
+var RN画面 = require('react-native');
 var { 出す } = require('./AppDialog');
 var u = require('./JP_useScoreStore_174'),
   h = require('./AntDesign_600'),
@@ -92,6 +93,11 @@ const j = ({ navigation }) => {
   const [isSelectingCompareTarget, setIsSelectingCompareTarget] = (0, t.useState)(false);
   // ひな型に付ける名前。窓を閉じたら捨てる（書きかけを持ち越さない）
   const [ひな型の名前, ひな型の名前を置く] = (0, t.useState)('');
+  // 320px の端末では、名前と立数の柱を引くと1マスが40pxほどしか残らない。
+  // そこに率と（的中/射数）を積むと、字が枠を越えて隣と重なる。
+  // 狭いときは率だけにする。射数は右端の柱に出ているので、意味は落ちない
+  const 画面の幅 = (0, RN画面.useWindowDimensions)().width;
+  const 狭い画面 = 画面の幅 < 360;
   // 比較する相手も学年でまとめる。記録表の人の選択と同じ形にしてある。
   // 覚えるのは「閉じた学年」。開く側を決め打ちすると、想定外の学年が
   // 閉じたまま出て、中の人に辿り着けなくなる
@@ -2092,7 +2098,7 @@ const j = ({ navigation }) => {
                                           marginBottom: 6,
                                         },
                                         children: [
-                                          (0, y.jsx)(o.default, { style: { width: 72 } }),
+                                          (0, y.jsx)(o.default, { style: { width: 狭い画面 ? 52 : 64 } }),
                                           ...[0, 1, 2, 3].map((t) =>
                                             (0, y.jsx)(
                                               o.default,
@@ -2111,7 +2117,7 @@ const j = ({ navigation }) => {
                                             )
                                           ),
                                           (0, y.jsx)(o.default, {
-                                            style: { width: 40, alignItems: 'flex-end' },
+                                            style: { width: 狭い画面 ? 28 : 34, alignItems: 'flex-end' },
                                             children: (0, y.jsx)(l.default, {
                                               style: { fontSize: 10, color: '#8E8E93' },
                                               children: '射数',
@@ -2134,7 +2140,7 @@ const j = ({ navigation }) => {
                                             },
                                             children: [
                                               (0, y.jsxs)(o.default, {
-                                                style: { width: 72, paddingRight: 4, flexDirection: 'row', alignItems: 'center' },
+                                                style: { width: 狭い画面 ? 52 : 64, paddingRight: 4, flexDirection: 'row', alignItems: 'center' },
                                                 children: [
                                                   (0, y.jsx)(o.default, {
                                                     style: {
@@ -2162,7 +2168,7 @@ const j = ({ navigation }) => {
                                                       flex: 1,
                                                       alignItems: 'center',
                                                       paddingVertical: 4,
-                                                      marginHorizontal: 2,
+                                                      marginHorizontal: 1,
                                                       borderRadius: 6,
                                                       backgroundColor:
                                                         枡.shots > 0 && 最大 > 0
@@ -2172,25 +2178,29 @@ const j = ({ navigation }) => {
                                                     children: [
                                                       (0, y.jsxs)(l.default, {
                                                         style: {
-                                                          fontSize: 13,
+                                                          fontSize: 狭い画面 ? 12 : 13,
                                                           fontWeight: '600',
                                                           color: 枡.shots > 0 ? '#1C1C1E' : '#C7C7CC',
                                                         },
+                                                        numberOfLines: 1,
                                                         children: [r.toFixed(0), '%'],
                                                       }),
-                                                      (0, y.jsxs)(l.default, {
-                                                        // 副次テキスト。暗いテーマでは #EBEBF5 に変わる。
-                                                        // #48484A は変換表に無く、暗い面の上で沈む
-                                                        style: { fontSize: 9, color: '#3C3C43' },
-                                                        children: [枡.hits, '/', 枡.shots],
-                                                      }),
+                                                      狭い画面
+                                                        ? null
+                                                        : (0, y.jsxs)(l.default, {
+                                                            // 副次テキスト。暗いテーマでは #EBEBF5 に変わる。
+                                                            // #48484A は変換表に無く、暗い面の上で沈む
+                                                            style: { fontSize: 9, color: '#3C3C43' },
+                                                            numberOfLines: 1,
+                                                            children: [枡.hits, '/', 枡.shots],
+                                                          }),
                                                     ],
                                                   },
                                                   `compare-per-shot-${t}-${番}`
                                                 );
                                               }),
                                               (0, y.jsx)(o.default, {
-                                                style: { width: 40, alignItems: 'flex-end' },
+                                                style: { width: 狭い画面 ? 28 : 34, alignItems: 'flex-end' },
                                                 children: (0, y.jsx)(l.default, {
                                                   style: { fontSize: 11, color: '#8E8E93' },
                                                   children: String(総射数),
@@ -2268,7 +2278,7 @@ const j = ({ navigation }) => {
                                           marginBottom: 6,
                                         },
                                         children: [
-                                          (0, y.jsx)(o.default, { style: { width: 72 } }),
+                                          (0, y.jsx)(o.default, { style: { width: 狭い画面 ? 52 : 64 } }),
                                           ...区分たち.map((区分) =>
                                             (0, y.jsx)(
                                               o.default,
@@ -2287,7 +2297,7 @@ const j = ({ navigation }) => {
                                             )
                                           ),
                                           (0, y.jsx)(o.default, {
-                                            style: { width: 40, alignItems: 'flex-end' },
+                                            style: { width: 狭い画面 ? 28 : 34, alignItems: 'flex-end' },
                                             children: (0, y.jsx)(l.default, {
                                               style: { fontSize: 10, color: '#8E8E93' },
                                               children: '立数',
@@ -2307,7 +2317,7 @@ const j = ({ navigation }) => {
                                             },
                                             children: [
                                               (0, y.jsxs)(o.default, {
-                                                style: { width: 72, paddingRight: 4, flexDirection: 'row', alignItems: 'center' },
+                                                style: { width: 狭い画面 ? 52 : 64, paddingRight: 4, flexDirection: 'row', alignItems: 'center' },
                                                 children: [
                                                   (0, y.jsx)(o.default, {
                                                     style: {
@@ -2335,7 +2345,7 @@ const j = ({ navigation }) => {
                                                       flex: 1,
                                                       alignItems: 'center',
                                                       paddingVertical: 6,
-                                                      marginHorizontal: 2,
+                                                      marginHorizontal: 1,
                                                       borderRadius: 6,
                                                       backgroundColor:
                                                         回 > 0 ? 淡く(区分.color, 0.1 + 割 * 0.45) : 'transparent',
@@ -2353,7 +2363,7 @@ const j = ({ navigation }) => {
                                                 );
                                               }),
                                               (0, y.jsx)(o.default, {
-                                                style: { width: 40, alignItems: 'flex-end' },
+                                                style: { width: 狭い画面 ? 28 : 34, alignItems: 'flex-end' },
                                                 children: (0, y.jsx)(l.default, {
                                                   style: { fontSize: 11, color: '#8E8E93' },
                                                   children: String(全),
