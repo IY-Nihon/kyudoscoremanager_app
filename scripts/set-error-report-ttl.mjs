@@ -11,6 +11,11 @@
  * 消えてしまう。アプリは消したい時刻そのものを expireAt に入れて送っている
  * （src/errorReporter.js の 便りを置く日数、いまは90日）。
  *
+ * ■ 従量課金プランが要る
+ * Firestore の自動削除は無料枠では使えない。2026-08-29 の時点で、本番も
+ * 検証環境も無料枠なので、この道具は「使えません」と答えて終わる。
+ * それまでは scripts/prune-error-reports.mjs で消す。
+ *
  * ■ Firebase コンソールを使わずに済ませるため
  * firebase-tools には自動削除を設定する命令が無く、gcloud も入っていない。
  * ここでは Firestore の管理APIを直に叩く。認証は Firebase CLI の権限を使う
@@ -80,14 +85,21 @@ if (入っている) {
   process.exit(0);
 }
 
-const 返り = await fetch(道 + '?updateMask.fieldPaths=ttlConfig', {
+const 返り = await fetch(道 + '?updateMask=ttlConfig', {
   method: 'PATCH',
   headers: 頭,
   body: JSON.stringify({ ttlConfig: {} }),
 });
 const 結果 = await 返り.json();
 if (結果.error) {
-  console.error('\n設定できませんでした: ' + (結果.error.message || JSON.stringify(結果.error)));
+  const 文 = 結果.error.message || JSON.stringify(結果.error);
+  console.error('\n設定できませんでした: ' + 文);
+  if (/billing/i.test(文)) {
+    console.error('');
+    console.error('自動削除は従量課金プランでないと使えません。無料枠のあいだは、');
+    console.error('期限の過ぎた便りを次の道具で消してください（月に一度くらい）。');
+    console.error('  node scripts/prune-error-reports.mjs ' + 対象 + ' 消す');
+  }
   process.exit(1);
 }
 console.log('\n自動削除を設定しました。');
