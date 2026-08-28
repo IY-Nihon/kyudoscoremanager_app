@@ -104,6 +104,23 @@ service cloud.firestore {
       match /officialPracticeDays/{docId} { allow read, write: if canAccess(groupId); }
     }
 
+    // 不具合の便り。書き込みだけ許し、読み出しは誰にも許さない。
+    // 送り主が自分の送ったものを読めると、他人の端末の様子まで見えてしまう。
+    // 中身は src/errorReport.js が組む。氏名・的中は入れない決まり。
+    match /errorReports/{reportId} {
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+             'id', 'at', 'where', 'message', 'code', 'stack', 'trail',
+             'groupId', 'role', 'version', 'device', 'online', 'count', 'createdAt'
+           ])
+        && request.resource.data.message is string
+        && request.resource.data.message.size() < 1000
+        && request.resource.data.stack.size() < 4000
+        && request.resource.data.trail.size() <= 30
+        && request.resource.data.device.size() < 400;
+      allow read, update, delete: if false;
+    }
+
     match /inquiries/{inquiryId} {
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly([
