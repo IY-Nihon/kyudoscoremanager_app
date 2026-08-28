@@ -53,8 +53,9 @@ test('同じ団体を使う検査が重なっていない（並列で取り合�
     const t = fs.readFileSync(path.join('e2e', f), 'utf8');
     const m = t.match(/const 団体 = '(\d+)'/);
     if (!m) continue;
-    // 記録を書き換えない検査は重なってよい
-    const 読むだけ = /dialog|login/.test(f);
+    // 記録を書き換えない検査は重なってよい。
+    // 名前で覚えるのは増えるたびに漏れるので、検査の中に印を書いてもらう
+    const 読むだけ = /dialog|login/.test(f) || t.includes('団体には書き込まない');
     if (読むだけ) continue;
     if (!束.has(m[1])) 束.set(m[1], []);
     束.get(m[1]).push(f);
