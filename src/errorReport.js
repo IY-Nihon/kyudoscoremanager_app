@@ -275,7 +275,67 @@ function 外向きの形(便) {
   };
 }
 
+/**
+ * 受け取った便りを、同じ不具合ごとにまとめる。
+ *
+ * 1件ずつ眺めても、どれが多いのか分からない。「出どころ＋起きたこと」で
+ * 束ね、多い順に並べる。回数は 回数（同じ端末で続けて起きたぶん）も足す。
+ *
+ * 端末・版・団体は重なりを取り除いて数える。1つの団体でしか起きていない
+ * 不具合と、どの団体でも起きている不具合は、追い方が違う。
+ *
+ * 便りは「送るときの形」（英字）で来る。読む道具はそちらを見る。
+ *
+ * @param {Array} 便たち 外向きの形の便り
+ * @returns {Array} 多い順。{ where, message, 件数, のべ回数, 団体, 版, 端末, 新しい, 古い, 例 }
+ */
+function 便りをまとめる(便たち) {
+  const 束 = new Map();
+  for (const b of Array.isArray(便たち) ? 便たち : []) {
+    if (!b) continue;
+    const 鍵 = (b.where || '') + ' ' + (b.message || '');
+    let x = 束.get(鍵);
+    if (!x) {
+      x = {
+        where: b.where || '',
+        message: b.message || '',
+         件数: 0,
+        のべ回数: 0,
+        団体: new Set(),
+        版: new Set(),
+        端末: new Set(),
+        新しい: 0,
+        古い: Infinity,
+        例: b,
+      };
+      束.set(鍵, x);
+    }
+    x.件数++;
+    x.のべ回数 += b.count || 1;
+    if (b.groupId) x.団体.add(b.groupId);
+    if (b.version) x.版.add(b.version);
+    if (b.device) x.端末.add(b.device);
+    const t = b.at || 0;
+    if (t > x.新しい) {
+      x.新しい = t;
+      x.例 = b; // いちばん新しいものを例にする。いまの姿に近い
+    }
+    if (t && t < x.古い) x.古い = t;
+  }
+  return [...束.values()]
+    .map((x) =>
+      Object.assign({}, x, {
+        団体: [...x.団体],
+        版: [...x.版],
+        端末: [...x.端末],
+        古い: x.古い === Infinity ? 0 : x.古い,
+      })
+    )
+    .sort((a, b) => b.のべ回数 - a.のべ回数 || b.新しい - a.新しい);
+}
+
 module.exports = {
+  便りをまとめる,
   行動を残す,
   行動の控え,
   行動を捨てる,
