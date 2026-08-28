@@ -45,7 +45,11 @@ async function 貯めを読み込む() {
 function 貯めを書く(x) {
   貯めの控え = x;
   try {
-    蔵.default.setItem(貯めの鍵, JSON.stringify(x));
+    // setItem は約束を返す。受け取らずに捨てると、保存領域がいっぱいのときに
+    // 「投げっぱなしの約束」になり、それをこちらの見張りが不具合として拾って
+    // また貯めに書きにいく。控えの保存が不具合を生む形になるので、必ず受ける
+    const 約束 = 蔵.default.setItem(貯めの鍵, JSON.stringify(x));
+    if (約束 && 約束.catch) 約束.catch(() => {});
   } catch (e) {
     /* 保存できなくても、この起動のあいだは控えに残る */
   }
