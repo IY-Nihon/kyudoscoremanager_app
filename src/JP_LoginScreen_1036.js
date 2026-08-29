@@ -120,12 +120,25 @@ const T = () => {
           return $();
         }
         await (0, C.createUserWithEmailAndPassword)(b.auth, P, L);
-        // どの版にいつ同意したかを残す。版を上げたときに、誰へ
-        // 取り直しを求めるべきかが分からなくなるため
-        await (0, j.setDoc)(t, Object.assign(
-          { id: e, name: O, email: P, createdAt: Date.now() },
-          require('./legalDocs').同意の記録()
-        ));
+        try {
+          // どの版にいつ同意したかを残す。版を上げたときに、誰へ
+          // 取り直しを求めるべきかが分からなくなるため
+          await (0, j.setDoc)(t, Object.assign(
+            { id: e, name: O, email: P, createdAt: Date.now() },
+            require('./legalDocs').同意の記録()
+          ));
+        } catch (書けなかった) {
+          // ここで諦めると、認証の利用者だけが残る。メールアドレスが取られた
+          // ままになり、同じアドレスでは作り直せない（auth/email-already-in-use）。
+          // 作ったばかりの利用者を消してから返す。
+          // 実際、決まりの項目が足りずにここで弾かれる状態が続いていた
+          try {
+            if (b.auth && b.auth.currentUser) await (0, C.deleteUser)(b.auth.currentUser);
+          } catch (消せなかった) {
+            /* 消せなくても、元の失敗をそのまま伝える */
+          }
+          throw 書けなかった;
+        }
         s.default.alert(
           '【重要】登録完了と運用ガイド',
           `団体アカウントを作成しました。\n\n■ 登録情報\n団体ID: ${e}\n\n【運用ガイド - スクリーンショット推奨】\n・「団体ID」はメンバーがログインする際、必要です。メンバー全員に共有してください。\n・「パスワード」は管理者のみが知るものとして保存してください。\n・メールアドレスを変更すると、セキュリティのため旧アドレスに確認・無効化のメールが自動送信されます。\n\n※ この運用ガイドの内容は忘れないよう必ず保存をお願いします。`
