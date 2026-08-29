@@ -29,6 +29,30 @@ const { 窓で止めるか, 帯の長さ, 帯の時計をつくる } = require('
 const _Pressable = RN.Pressable;
 const _ScrollView = RN.ScrollView;
 
+/**
+ * 帯を包んでいる Modal の容器を、指が素通りする状態にする。
+ *
+ * Modal に pointerEvents="none" を渡しても、react-native-web は中の View に
+ * しか渡さない。容器（画面いっぱいの position:fixed の箱）は指を吸ったまま
+ * なので、帯が出ているあいだ、下の入力欄や釦が押せなくなる。
+ * 実際、新規作成で「すべての項目を入力してください」の帯が出ているあいだ、
+ * メールアドレスの欄を押せなかった。
+ *
+ * 帯は読ませるだけで押させないので、容器ごと素通りにしてよい。
+ * 中の View で受け取った節から親をたどって、画面いっぱいの箱に印を付ける。
+ */
+function 帯を素通りにする(節) {
+  if (!節 || typeof window === 'undefined') return;
+  let n = 節;
+  for (let i = 0; i < 6 && n; i++) {
+    if (n.style) n.style.pointerEvents = 'none';
+    const 親 = n.parentNode;
+    // 画面いっぱいの箱まで来たら、そこで止める
+    if (!親 || 親 === document.body) break;
+    n = 親;
+  }
+}
+
 // 画面側（アプリの窓）が入れ替わっても届くよう、購読の形にしておく
 let 聞き手 = null;
 let 待ち = [];
@@ -80,7 +104,14 @@ const アプリの窓 = () => {
       */}
       {帯 ? (
         <_Modal visible transparent animationType="fade" pointerEvents="none">
-          <_View style={styles.帯} pointerEvents="none" testID="アプリの帯">
+          <_View
+            style={styles.帯}
+            pointerEvents="none"
+            testID="アプリの帯"
+            /* pointerEvents は容器まで届かないので、描かれた節から親をたどって
+               素通りにする。これが無いと、帯が出ているあいだ下が押せない */
+            ref={帯を素通りにする}
+          >
             <_Text style={styles.帯の字}>{帯}</_Text>
           </_View>
         </_Modal>
