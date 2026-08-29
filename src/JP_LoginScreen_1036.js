@@ -36,7 +36,10 @@ var t = require('./module_37'),
   j = require('./module_188'),
   w = require('./AntDesign_600'),
   I = require('./module_592'),
-  E = require('./module_427');
+  E = require('./module_427'),
+  // 規約・プライバシーポリシーの住所と開き方。使っているのに読み込んでおらず、
+  // リンクを押すと 法 is not defined になっていた
+  法 = require('./legalDocs');
 
 function e(e) {
   return e && e.__esModule ? e : { default: e };
@@ -846,6 +849,23 @@ const T = () => {
                 }),
               ],
             }),
+            // 規約とプライバシーポリシーは、どの入り方でも下に置く。
+            // 新規作成のときしか出しておらず、個人で入る部員や、
+            // 登録の前に読みたい人には辿り着く道が無かった
+            (0, E.jsxs)(u.default, {
+              style: S.法の帯,
+              children: [
+                (0, E.jsx)(c.default, {
+                  onPress: () => 法.開く(法.規約のURL),
+                  children: (0, E.jsx)(h.default, { style: S.法のリンク, children: '利用規約' }),
+                }),
+                (0, E.jsx)(h.default, { style: S.法の仕切り, children: '・' }),
+                (0, E.jsx)(c.default, {
+                  onPress: () => 法.開く(法.プライバシーのURL),
+                  children: (0, E.jsx)(h.default, { style: S.法のリンク, children: 'プライバシーポリシー' }),
+                }),
+              ],
+            }),
             (0, E.jsx)(u.default, {
               style: S.footer,
               children:
@@ -1029,6 +1049,20 @@ var S = p.default.create({
     alignItems: 'center',
     marginTop: 24,
   },
+  法の帯: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  // 目立たせないが、探して見つからないほど薄くはしない。
+  // 地 #030508 に対して #a09880 は比 6.0 ある
+  法のリンク: {
+    color: '#a09880',
+    fontSize: 12,
+    textDecorationLine: 'underline',
+  },
+  法の仕切り: { color: '#a09880', fontSize: 12, marginHorizontal: 8 },
   footerLink: {
     color: '#e5c184',
     fontSize: 15,
