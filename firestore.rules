@@ -64,7 +64,12 @@ service cloud.firestore {
         && callerEmail() != ''
         && request.resource.data.email == callerEmail()
         && request.resource.data.id == groupId
-        && request.resource.data.keys().hasOnly(['id', 'name', 'email', 'createdAt']);
+        // 同意の版・同意した日時は、登録のときに一緒に書く（src/legalDocs.js の
+        // 同意の記録）。ここに無いと create が弾かれ、アカウントが作れない。
+        // 実際 2026-08-27 の配信からその状態になっていた
+        && request.resource.data.keys().hasOnly([
+             'id', 'name', 'email', 'createdAt', '同意の版', '同意した日時'
+           ]);
 
       allow update: if isAdmin()
         || (callerEmail() != '' && resource.data.email == callerEmail());
