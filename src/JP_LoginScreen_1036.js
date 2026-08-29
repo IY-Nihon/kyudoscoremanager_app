@@ -41,6 +41,12 @@ var t = require('./module_37'),
   // リンクを押すと 法 is not defined になっていた
   法 = require('./legalDocs');
 
+// 入れてもらったIDを整える。LINE やメモ帳から貼ると、前後に空白が
+// 混じることがある。そのまま照合すると「合っているのに入れない」になり、
+// 見た目では気づけない。使うたびに整えるのではなく、ここを通す。
+// パスワードには使わないこと（空白も文字のうち）
+const 整えたID = (値) => String(値 || '').trim().toUpperCase();
+
 // 入力の誤りを、押す前に知らせるための判定。
 // 空のうちは何も言わない。打ち始める前から赤字を出しても急かすだけで、
 // 直しようがない。中身が入っていて、かつ形が違うときだけ言う。
@@ -346,7 +352,7 @@ const T = () => {
                               if (D && L && M) {
                                 v(true);
                                 try {
-                                  const e = D.toUpperCase();
+                                  const e = 整えたID(D);
                                   const t = (0, j.doc)(b.db, 'group_accounts', e);
                                   const l = await (0, j.getDoc)(t);
                                   if (!l.exists()) {
@@ -441,7 +447,7 @@ const T = () => {
                               if (D) {
                                 v(true);
                                 try {
-                                  const e = D.toUpperCase();
+                                  const e = 整えたID(D);
                                   const t = (0, j.doc)(b.db, 'group_accounts', e);
                                   const l = await (0, j.getDoc)(t);
                                   if (!l.exists()) {
@@ -760,14 +766,14 @@ const T = () => {
                               if (D && L) {
                                 v(true);
                                 try {
-                                  const t = (0, j.doc)(b.db, 'group_accounts', D.toUpperCase());
+                                  const t = (0, j.doc)(b.db, 'group_accounts', 整えたID(D));
                                   const l = await (0, j.getDoc)(t);
                                   if (!l.exists()) {
                                     throw new Error('団体IDまたはパスワードが正しくありません');
                                   }
                                   const { email: n, id: o } = l.data();
                                   await (0, C.signInWithEmailAndPassword)(b.auth, n, L);
-                                  e(o || D.toUpperCase(), 'group', null, n, D.toUpperCase());
+                                  e(o || 整えたID(D), 'group', null, n, 整えたID(D));
                                 } catch (e) {
                                   s.default.alert('ログイン失敗', Q(e));
                                 } finally {
@@ -782,7 +788,7 @@ const T = () => {
                                 if (D && W) {
                                   v(true);
                                   try {
-                                    const t = D.toUpperCase();
+                                    const t = 整えたID(D);
                                     const l = (0, j.doc)(b.db, 'group_accounts', t);
                                     const n = await (0, j.getDoc)(l);
                                     if (!n.exists()) {
@@ -794,7 +800,7 @@ const T = () => {
                                     // 個人IDから1件だけ直接取得する。
                                     // 一覧(list)を使わないため、他団体の名簿は引けない。
                                     const lk = await (0, j.getDoc)(
-                                      (0, j.doc)(b.db, `groups/${o}/member_lookup`, W)
+                                      (0, j.doc)(b.db, `groups/${o}/member_lookup`, 整えたID(W))
                                     );
                                     if (!lk.exists()) {
                                       throw new Error('団体IDまたは個人IDが正しくありません');
@@ -805,7 +811,7 @@ const T = () => {
                                     // 正しい個人IDを知っている場合しか作れない。
                                     await (0, j.setDoc)(
                                       (0, j.doc)(b.db, 'member_claims', b.auth.currentUser.uid),
-                                      { groupId: o, memberId: memberId, personalId: W, claimedAt: Date.now() }
+                                      { groupId: o, memberId: memberId, personalId: 整えたID(W), claimedAt: Date.now() }
                                     );
 
                                     const md = await (0, j.getDoc)(
