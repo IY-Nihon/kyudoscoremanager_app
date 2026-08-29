@@ -150,3 +150,42 @@ test('取り直しの印は端末に残さない（起動のたびに数え直�
     '端末に残すと、あとでを選んだ印が居座って二度と出なくなる'
   );
 });
+
+test('新規登録で書く項目が、決まりの許す項目に収まっている', () => {
+  // 2026-08-27 の配信で踏んだ。同意の記録（同意の版・同意した日時）を
+  // group_accounts へ一緒に書くようにしたのに、firestore.rules の
+  // hasOnly は 4項目のままだった。create が弾かれ、団体アカウントを
+  // 新規に作れない状態が本番で続いていた。
+  //
+  // しかも Firebase Auth の利用者を先に作ってから Firestore に書くので、
+  // 失敗するとメールアドレスだけ取られ、同じアドレスで作り直せなくなる。
+  const 読む = (道) => fsMod.readFileSync(pathMod.join(__dirname, '..', ...道), 'utf8');
+  const fsMod = require('node:fs');
+  const pathMod = require('node:path');
+
+  const 決まり = 読む(['firestore.rules']);
+  const i = 決まり.indexOf('match /group_accounts');
+  assert.ok(i > 0, 'firestore.rules に group_accounts が無い');
+  const 作る所 = 決まり.slice(i, 決まり.indexOf('allow update', i));
+  const 並び = 作る所.slice(作る所.indexOf('hasOnly(['), 作る所.indexOf('])'));
+  const 許す = new Set([...並び.matchAll(/'([^']+)'/g)].map((m) => m[1]));
+  assert.ok(許す.size > 0, 'hasOnly の項目を読み取れない');
+
+  // 画面が書いている項目
+  const 画面 = 読む(['src', 'JP_LoginScreen_1036.js']);
+  const j = 画面.indexOf("'group_accounts'");
+  assert.ok(j > 0, 'ログイン画面が group_accounts に書いている所が見つからない');
+  const 書く所 = 画面.slice(画面.indexOf('setDoc)(t, Object.assign('), 画面.indexOf('登録完了と運用ガイド'));
+  const 直書き = [...書く所.matchAll(/([a-zA-Z]+):/g)].map((m) => m[1]);
+  // 同意の記録 が足す項目
+  const 法 = require('../src/legalDocs');
+  const 同意 = Object.keys(法.同意の記録());
+
+  const 書く = [...new Set([...直書き, ...同意])];
+  const 弾かれる = 書く.filter((k) => !許す.has(k));
+  assert.deepStrictEqual(
+    弾かれる.sort(),
+    [],
+    '決まりが許していない項目を書いている（新規登録が permission-denied で失敗する）'
+  );
+});
