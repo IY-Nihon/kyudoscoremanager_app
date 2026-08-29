@@ -165,3 +165,29 @@ test('掛け直しても、時計は1つしか持たない', () => {
   for (let i = 0; i < 5; i++) 時計.掛ける(3000, () => {});
   assert.strictEqual(時.残り(), 1, '掛け直したぶんが溜まっている');
 });
+
+test('帯は、包んでいる Modal の容器ごと指を通す', () => {
+  // 2026-08-29 に踏んだ。Modal に pointerEvents="none" を渡しても
+  // react-native-web は中の View にしか渡さない。容器（画面いっぱいの
+  // position:fixed の箱）は指を吸ったままなので、帯が出ているあいだ
+  // 下の入力欄が押せなかった（新規作成のメールアドレスの欄で発覚）。
+  //
+  // 帯は読ませるだけで押させないので、容器ごと素通りにしてよい。
+  // 窓（ボタン付き）は押させるので、こちらは素通りにしてはいけない。
+  const 本体 = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'src', 'AppDialog.js'),
+    'utf8'
+  );
+  assert.ok(
+    /function 帯を素通りにする/.test(本体),
+    '容器を素通りにする手当てが無い（帯の下が押せなくなる）'
+  );
+  // 帯にだけ付いていること
+  const 帯の所 = 本体.slice(本体.indexOf('{帯 ?'), 本体.indexOf('{いま ?'));
+  assert.ok(帯の所.includes('ref={帯を素通りにする}'), '帯に手当てが付いていない');
+  const 窓の所 = 本体.slice(本体.indexOf('{いま ?'));
+  assert.ok(
+    !窓の所.includes('帯を素通りにする'),
+    '窓まで素通りにすると、ボタンが押せなくなる'
+  );
+});
