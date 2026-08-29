@@ -68,3 +68,24 @@ test('同じ団体を使う検査が重なっていない（並列で取り合�
     );
   }
 });
+
+test('決まりを配信する命令が、Firestore の決まりも出す', () => {
+  // 2026-08-29 に踏んだ。deploy:rules は --only database だけで、
+  // Realtime Database の決まりしか出していなかった。firestore.rules に
+  // errorReports を足しても、この命令では本番に出ない。
+  // 出ていないことは、便りが1通も届かないという形でしか現れないので、
+  // 気づくのに時間がかかる。
+  const 手 = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')
+  ).scripts;
+  for (const 名 of ['deploy:rules', 'deploy:rules:stg']) {
+    assert.ok(手[名], 'package.json に ' + 名 + ' が無い');
+    assert.ok(
+      /firestore:rules/.test(手[名]),
+      名 + ' が Firestore の決まりを出していない: ' + 手[名]
+    );
+  }
+  // 本番向けと検証環境向けが取り違えられていないか
+  assert.ok(/--project kyudoscoremanager\b/.test(手['deploy:rules']), 'deploy:rules の宛先が本番でない');
+  assert.ok(/--project kyudoscoremanager-stg\b/.test(手['deploy:rules:stg']), 'deploy:rules:stg の宛先が検証環境でない');
+});
