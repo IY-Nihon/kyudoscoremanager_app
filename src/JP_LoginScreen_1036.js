@@ -41,6 +41,19 @@ var t = require('./module_37'),
   // リンクを押すと 法 is not defined になっていた
   法 = require('./legalDocs');
 
+// 入力の誤りを、押す前に知らせるための判定。
+// 空のうちは何も言わない。打ち始める前から赤字を出しても急かすだけで、
+// 直しようがない。中身が入っていて、かつ形が違うときだけ言う。
+const メールの形が変か = (値) => {
+  const s = String(値 || '').trim();
+  return s.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+};
+// Firebase の決まりで6文字未満は必ず弾かれる。押してから知るのは遅い
+const パスワードが短いか = (値) => {
+  const s = String(値 || '');
+  return s.length > 0 && s.length < 6;
+};
+
 function e(e) {
   return e && e.__esModule ? e : { default: e };
 }
@@ -627,6 +640,12 @@ const T = () => {
                                         }),
                                       ],
                                     }),
+                                    メールの形が変か(P)
+                                      ? (0, E.jsx)(h.default, {
+                                          style: S.入力の注意,
+                                          children: '@ を含む形で入れてください（例: example@mail.com）',
+                                        })
+                                      : null,
                                   ],
                                 }),
                                 (0, E.jsxs)(u.default, {
@@ -664,6 +683,12 @@ const T = () => {
                                         }),
                                       ],
                                     }),
+                                    パスワードが短いか(L)
+                                      ? (0, E.jsx)(h.default, {
+                                          style: S.入力の注意,
+                                          children: '6文字以上にしてください',
+                                        })
+                                      : null,
                                   ],
                                 }),
                               ],
@@ -1076,6 +1101,12 @@ var S = p.default.create({
     textDecorationLine: 'underline',
   },
   法の仕切り: { color: '#a09880', fontSize: 12, marginHorizontal: 8 },
+  入力の注意: {
+    color: '#ff8a80',
+    fontSize: 12,
+    marginTop: 6,
+    marginLeft: 2,
+  },
   footerLink: {
     color: '#e5c184',
     fontSize: 15,
