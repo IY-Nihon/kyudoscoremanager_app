@@ -2120,7 +2120,14 @@ const w = () => {
           transparent: true,
           animationType: 'fade',
           onRequestClose: () => !inquirySending && setInquiryVisible(false),
-          children: (0, T.jsxs)(o.default, {
+          // スマホで本文の欄を押すとキーボードが出て、下の「送信」
+          // 「キャンセル」が隠れる。窓ごと持ち上げ、中身は流せるようにする。
+          // keyboardShouldPersistTaps を handled にしないと、キーボードが
+          // 出ているあいだ、釦を押しても1回目は閉じるだけで終わる
+          children: (0, T.jsx)(_RN.KeyboardAvoidingView, {
+            behavior: x.IS_IOS ? 'padding' : 'height',
+            style: { flex: 1 },
+            children: (0, T.jsxs)(o.default, {
             style: D.modalBackdrop,
             children: [
               (0, T.jsx)(d.default, {
@@ -2128,8 +2135,12 @@ const w = () => {
                 activeOpacity: 1,
                 onPress: () => !inquirySending && setInquiryVisible(false),
               }),
-              (0, T.jsxs)(o.default, {
-                style: D.modalContent,
+              (0, T.jsxs)(_RN.ScrollView, {
+                // 巻物にするので高さの上限が要る。無いと中身のぶんだけ
+                // 伸びて、キーボードに押し上げても釦が画面の外へ出る
+                style: [D.modalContent, { maxHeight: '80%', flexGrow: 0 }],
+                contentContainerStyle: { alignItems: 'center' },
+                keyboardShouldPersistTaps: 'handled',
                 children: [
                   (0, T.jsx)(n.default, {
                     style: D.modalTitle,
@@ -2325,6 +2336,7 @@ const w = () => {
                 ],
               }),
             ],
+            }),
           }),
         }),
       ],
