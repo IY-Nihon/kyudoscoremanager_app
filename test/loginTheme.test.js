@@ -174,3 +174,29 @@ test('分析の比較で使う色が、暗いテーマで消えない', () => {
     '変換表に無い暗い色を丸に使っている。暗いテーマでそのまま出て見えなくなる'
   );
 });
+
+test('ログイン画面：使っている名前が、すべて読み込まれている', () => {
+  // 2026-08-29 に踏んだ。法.開く(法.規約のURL) を書いたのに
+  // const 法 = require('./legalDocs') が無く、押すと
+  // ReferenceError: 法 is not defined になっていた。
+  // 押さない限り現れないので、画面を開くだけの確認では見つからない。
+  const 本体 = fs.readFileSync(場所('JP_LoginScreen_1036.js'), 'utf8');
+  const 素 = 本体.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+
+  // 「漢字の名前.なにか」の形で使っている入れ物を集める
+  const 使っている = new Set(
+    [...素.matchAll(/(?:^|[^.\w\u3040-\u30ff\u4e00-\u9fff])([\u4e00-\u9fff]{1,4})\./g)].map((m) => m[1])
+  );
+  // 定義されているもの（require の別名・const/let/var・引数の分解）
+  const 定義 = new Set([
+    ...[...素.matchAll(/([\u4e00-\u9fff]{1,4})\s*=\s*require\(/g)].map((m) => m[1]),
+    ...[...素.matchAll(/(?:const|let|var)\s+([\u4e00-\u9fff]{1,4})\b/g)].map((m) => m[1]),
+    ...[...素.matchAll(/\[\s*([\u4e00-\u9fff]{1,4})\s*,/g)].map((m) => m[1]),
+  ]);
+  const 無い = [...使っている].filter((x) => !定義.has(x));
+  assert.deepStrictEqual(
+    無い.sort(),
+    [],
+    '読み込んでいない名前を使っている（押したときに ReferenceError になる）'
+  );
+});
