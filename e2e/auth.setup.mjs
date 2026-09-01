@@ -83,6 +83,45 @@ for (const 団体 of 団体たち) {
       .poll(() => page.evaluate(() => !!localStorage.getItem('archery-score-storage')), { timeout: 30_000 })
       .toBe(true);
 
+    // 中身が雲から届くまで待つ。
+    //
+    // 「保存領域が在ること」だけで控えを取ると、名簿も記録も空のまま残る。
+    // 各検査はそれを読み込んで始めるので、**全部が雲の取り直し待ちの競争**に
+    // なる。間に合った回だけ通る検査になり、落ちるたびに「本物か取り合いか」を
+    // 人が見て切り分けることになっていた（実際、質問例の分類「成績」は
+    // 記録があるときだけ出るので、iPhone で落ちた）。
+    //
+    // ただし**必須にはしない**。100005 は部員0人がそのまま仕様で
+    // （e2e/tutorial.spec.mjs が「作りたての団体」を再現するのに使う）、
+    // 待ちきると下ごしらえごと落ちる。届いたぶんを控えに入れて先へ進む。
+    // 中身を要る検査は、それぞれの入り口で自分の前提を確かめること。
+    const 中身の数 = () =>
+      page.evaluate(() => {
+        try {
+          const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+          return { 名簿: (s.members || []).length, 記録: (s.sessions || []).length };
+        } catch (e) {
+          return { 名簿: 0, 記録: 0 };
+        }
+      });
+
+    await page
+      .waitForFunction(
+        () => {
+          try {
+            const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+            return (s.members || []).length > 0 || (s.sessions || []).length > 0;
+          } catch (e) {
+            return false;
+          }
+        },
+        undefined,
+        { timeout: 45_000 }
+      )
+      .catch(() => {});
+    const 届いた = await 中身の数();
+    console.log(`  団体${団体}: 名簿${届いた.名簿}人 / 記録${届いた.記録}件を控えに入れます`);
+
     fs.mkdirSync(path.dirname(控えの道(団体)), { recursive: true });
     await page.context().storageState({ path: 控えの道(団体), indexedDB: true });
   });
