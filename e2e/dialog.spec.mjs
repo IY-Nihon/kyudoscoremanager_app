@@ -105,7 +105,9 @@ test.describe('確認とお知らせ', () => {
 
     const 札 = page.getByTestId('アプリの窓');
     await expect(札).toBeVisible({ timeout: 10_000 });
-    await expect(札).toContainText('アカウント登録時のメール');
+    // 見たいのは「長い知らせが帯ではなく窓で止まる」こと。
+    // 文言そのものを丸ごと書くと、案内を直すたびにここが落ちる
+    await expect(札).toContainText('登録直後の画面にのみ表示されます');
     await expect(page.getByTestId('窓のボタン-OK')).toBeVisible();
     expect(窓.件, `ブラウザの窓が出た: ${窓.中身.join(' / ')}`).toBe(0);
 
