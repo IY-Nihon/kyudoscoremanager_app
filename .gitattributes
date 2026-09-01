@@ -1,0 +1,36 @@
+# 改行の扱いを、環境によらず同じにする。
+#
+# git は core.autocrlf の設定次第で改行を変える。設定は人ごと・端末ごとに
+# 違うので、同じ repo でも取り出した中身の改行が揃わない。ここに書けば
+# 設定より優先され、誰が取り出しても同じになる。
+#
+# 実際、2026-09-02 に作業ディレクトリで改行が混在し、差し込み編集が
+# 2回当て損ねた（探す文字列は改行まで含めて突き合わせるため）。
+# git の保管側は LF で揃っていたので他の人には影響しなかったが、
+# 設定の違う端末では同じことが起きうる。
+
+# 既定：テキストと判断したものは、保管側を LF に揃える
+* text=auto
+
+# 取り出し側も LF に固定するもの。
+# シェルの台本は CRLF だと動かないことがある
+*.sh text eol=lf
+
+# Windows でしか動かさないので CRLF のまま
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 中身を書き換えられると壊れるもの
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.pdf binary
+*.zip binary
+*.xlsx binary
