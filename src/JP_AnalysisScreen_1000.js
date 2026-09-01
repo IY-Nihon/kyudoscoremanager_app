@@ -41,6 +41,8 @@ var { 自分の記録か, 学年でまとめる } = require('./syncRules');
 var 集 = require('./statsRules');
 // 比較のひな型（よく見る組み合わせ）の決まり
 var ひ = require('./comparePresets');
+// 弓具を変えた前後で的中率がどう動いたか（src/equipmentTrend.js）
+var 弓 = require('./equipmentTrend');
 var RN画面 = require('react-native');
 var { 出す } = require('./AppDialog');
 var u = require('./JP_useScoreStore_174'),
@@ -56,7 +58,177 @@ var u = require('./JP_useScoreStore_174'),
 // 明るい面でも暗い面でも読める色を選ぶ。緑・橙・黄をそのまま使っていたころは、
 // 白いカードの上で比が 2.2／2.2／1.5 しかなく、名前も丸も薄くて追えなかった。
 // 濃いほうを置いて、暗い面では theme.js が鮮やかな色に戻す
-const 比較の色たち = ['#FF2D55', '#248A3D', '#C93400', '#AF52DE', '#056B7A', '#5856D6', '#8B6D00'];
+// 比較相手を見分ける色。名前も隣に出るので、色は補助の手がかり。
+// それでも、色覚によって同じに見える組は避ける。
+// 元は最後が #8B6D00（黄土）で、#C93400（濃い橙）とD型で隔たり2.6しかなく、
+// ほぼ同じ色に見えていた。#0000CF に替えて 14.1 まで広げてある。
+// 健常色覚での最小は 25.9 のまま変わらない（scripts で測って決めた）
+/**
+ * 弓具を変えた前後の節。個人の詳細に出す。
+ *
+ * 数字は「弓具のせい」を意味しない。前後で動いても、時期・体調・相手が
+ * 絡む。射数が少なければなお揺れる。だから射数も一緒に出し、
+ * 言い切らない言葉を添える（src/equipmentTrend.js の 見立ての言葉）
+ */
+/**
+ * 弓具の履歴がまだ無い人に出す案内。
+ *
+ * 何も出さないと、この節そのものが在ることに気づけない。
+ * 記録するところ（メンバー → 弓具管理）だけを伝える。
+ */
+function 弓具の案内() {
+  return (0, y.jsxs)(o.default, {
+    style: { marginBottom: 20 },
+    children: [
+      (0, y.jsx)(l.default, {
+        style: { fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 4 },
+        children: '弓具を変えた前後',
+      }),
+      (0, y.jsx)(l.default, {
+        style: { fontSize: 11, color: '#8E8E93', lineHeight: 16 },
+        children:
+          'まだ弓具の記録がありません。メンバーの画面で「弓具管理」から弓力・矢・弦の変更を残すと、その前後の的中がここに並びます。',
+      }),
+    ],
+  });
+}
+
+/**
+ * 的中の型の節。「三中のうちどこで抜いたか」を並べる。
+ *
+ * 結果分布（皆中・三中…）は中り数までしか見ないので、同じ三中でも
+ * 「留矢を抜いた」のか「初矢を抜いた」のかが分からなかった。
+ *
+ * 数える決まりは statsRules（型を並べる）に置いてある。ここは並べるだけ。
+ * 個人の詳細と、部員として入ったときの自分の画面の2か所から呼ぶ。
+ * 比較中には出さない——16通りを人数ぶん並べても読めない。
+ *
+ * @param {any} 成績 statsRules.成績を数える の返り
+ * @param {string|null} 期間の名 推移の点を押しているときの期間（見出しに出す）
+ */
+function 型の節(成績, 期間の名) {
+  const 並び = 集.型を並べる((成績 || {}).型 || {});
+  if (!並び.length) return null;
+  // 中り数ごとにまとめて、見出しを1回だけ出す。
+  // 型ごとに「三中」を繰り返すと、同じ字が縦に並んで読みにくい
+  const 束 = [];
+  for (const x of 並び) {
+    const 尻 = 束[束.length - 1];
+    if (尻 && 尻.中り === x.中り) 尻.型たち.push(x);
+    else 束.push({ 中り: x.中り, 呼び名: x.呼び名, 型たち: [x] });
+  }
+  return (0, y.jsxs)(o.default, {
+    style: { marginBottom: 20 },
+    children: [
+      (0, y.jsx)(l.default, {
+        style: F.sectionSubTitle,
+        children: 期間の名 ? `的中の型 (${期間の名})` : '的中の型 (4射単位)',
+      }),
+      (0, y.jsx)(o.default, {
+        style: F.patternsCardDash,
+        children: 束.map((組) =>
+          (0, y.jsxs)(
+            o.default,
+            {
+              style: F.型の組,
+              children: [
+                (0, y.jsxs)(l.default, {
+                  style: F.型の見出し,
+                  children: [組.呼び名, ' ', 組.型たち.reduce((a, b) => a + b.回数, 0), '立'],
+                }),
+                ...組.型たち.map((x) =>
+                  (0, y.jsxs)(
+                    o.default,
+                    {
+                      style: F.型の行,
+                      children: [
+                        (0, y.jsx)(l.default, { style: F.型の印, children: x.型 }),
+                        (0, y.jsx)(l.default, {
+                          style: F.型の要点,
+                          numberOfLines: 1,
+                          children: x.要点 || '',
+                        }),
+                        (0, y.jsxs)(l.default, {
+                          style: F.型の回数,
+                          children: [x.回数, '立 ', Math.round(x.割合), '%'],
+                        }),
+                      ],
+                    },
+                    x.型
+                  )
+                ),
+              ],
+            },
+            組.中り
+          )
+        ),
+      }),
+      (0, y.jsx)(l.default, {
+        style: { fontSize: 11, color: '#8E8E93', marginTop: 8, lineHeight: 16 },
+        children: '※ 割合は同じ中り数の中での割合です（三中のうち、その抜き方が何割か）。',
+      }),
+    ],
+  });
+}
+
+function 弓具の節(人, 記録たち) {
+  const 並び = 弓.弓具の移り変わり(人, 記録たち);
+  // 履歴が無い人には、どこで記録するかだけ出す。
+  // 何も出さないと、この節そのものが在ることに気づけない
+  // （実際「分析で見たい」と二度言われた。作ってあったが空だった）
+  if (!並び.length) return 弓具の案内();
+  return (0, y.jsxs)(o.default, {
+    style: { marginBottom: 20 },
+    children: [
+      (0, y.jsx)(l.default, {
+        style: { fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 4 },
+        children: '弓具を変えた前後',
+      }),
+      (0, y.jsx)(l.default, {
+        style: { fontSize: 11, color: '#8E8E93', marginBottom: 10, lineHeight: 16 },
+        children:
+          'その弓具を使っていた間の成績です。次に変えた日の前日までを数えます。的中の動きが弓具のせいとは限りません。',
+      }),
+      ...並び.map((一件) =>
+        (0, y.jsxs)(
+          o.default,
+          {
+            style: {
+              backgroundColor: '#F2F2F7',
+              borderRadius: 8,
+              padding: 10,
+              marginBottom: 8,
+            },
+            children: [
+              (0, y.jsx)(l.default, {
+                style: { fontSize: 13, fontWeight: 'bold', color: '#1C1C1E' },
+                children:
+                  new Date(一件.変更.date).toLocaleDateString() +
+                  '　' +
+                  (一件.変更.weight
+                    ? 一件.変更.weight + 'kg へ'
+                    : 一件.種類),
+              }),
+              一件.変更.note
+                ? (0, y.jsx)(l.default, {
+                    style: { fontSize: 12, color: '#3C3C43', marginTop: 2 },
+                    children: 一件.変更.note,
+                  })
+                : null,
+              (0, y.jsx)(l.default, {
+                style: { fontSize: 12, color: '#3C3C43', marginTop: 4, lineHeight: 17 },
+                children: 弓.見立ての言葉(一件),
+              }),
+            ],
+          },
+          一件.変更.id || String(一件.変更.date)
+        )
+      ),
+    ],
+  });
+}
+
+const 比較の色たち = ['#FF2D55', '#248A3D', '#C93400', '#AF52DE', '#056B7A', '#5856D6', '#0000CF'];
 
 const j = ({ navigation }) => {
   const {
@@ -1392,6 +1564,9 @@ const j = ({ navigation }) => {
                       })(),
                     ],
                   }),
+                  // 的中の型。個人の詳細と同じものを、自分の画面にも出す。
+                  // 片方だけに出すと「部長の画面にはあるのに自分には無い」になる
+                  型の節(自分の期間の成績 || Ce[0], selectedTrendLabel),
                 ],
               }),
             'member' !== k &&
@@ -2590,6 +2765,23 @@ const j = ({ navigation }) => {
                             }),
                           ],
                         }),
+                    // 弓具を変えた前後。
+                    //
+                    // 比較の分岐（compareMembers.length > 0）の中に置いていたため、
+                    // 比較相手を足したときしか出ていなかった。求められたのは
+                    // 「個人の詳細で見たい」なので、比較の有無に関わらず出す。
+                    //
+                    // 置き場所は詳細のいちばん下（閉じるの手前）。ここは
+                    // 弓具を記録していない団体では案内だけが出る節なので、
+                    // 上に置くと、毎日見る数字より先に目に入ってしまう。
+                    //
+                    // 的中の型。結果分布のすぐ下に置く。
+                    // 上の分布で「三中が多い」と分かったあと、すぐ
+                    // 「その三中はどこで抜いているのか」へ目が移るため
+                    型の節(詳細の期間の成績 || ae, selectedModalTrendLabel),
+                    // 弓具の履歴が無い人には、どこで記録するかだけを出す
+                    // （何も出さないと、この節が在ることに気づけない）
+                    弓具の節(ae, me),
                     (0, y.jsx)(s.default, {
                       style: F.closeBtn,
                       onPress: () => {
@@ -2753,6 +2945,15 @@ const F = a.default.create({
   barContainer: { height: 8, backgroundColor: '#E5E5EA', borderRadius: 4, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 4 },
   patternValueText: { fontSize: 12, color: '#1C1C1E', fontWeight: 'bold' },
+  // 的中の型。○×を4つ並べるので、字が詰まらないよう間を空ける
+  型の組: { marginBottom: 12 },
+  型の見出し: { fontSize: 12, color: '#8E8E93', fontWeight: '600', marginBottom: 4 },
+  型の行: { flexDirection: 'row', alignItems: 'center', marginBottom: 4, gap: 8 },
+  型の印: { fontSize: 13, color: '#1C1C1E', fontWeight: 'bold', letterSpacing: 1, flexShrink: 0 },
+  // 要点が長いとき（「2本目・3本目・留矢を抜いた」）は、ここが縮んで省略される。
+  // 回数まで押し出されると、何立だったのかが分からなくなる
+  型の要点: { fontSize: 12, color: '#3A3A3C', flex: 1, flexShrink: 1 },
+  型の回数: { fontSize: 12, color: '#1C1C1E', fontWeight: 'bold', flexShrink: 0 },
   searchBarContainer: { marginBottom: 12 },
   searchBar: Object.assign(
     {

@@ -38,6 +38,7 @@ var h = e(require('./default_382')),
 require('./module_420');
 var x = require('./JP_useScoreStore_174'),
   案内 = require('./JP_TutorialGuide'),
+  在 = require('./livePresence'),
   y = require('./JP_ArcherColumnView_594'),
   b = require('./JP_LabelColumn_688'),
   F = require('./module_595'),
@@ -74,7 +75,9 @@ var x = require('./JP_useScoreStore_174'),
   B = require('./module_592'),
   A = require('./module_427'),
   { ArrowLocationPopover } = require('./ArrowLocationPopover'),
-  { OCRRecordModal } = require('./JP_OCRRecordModal');
+  { OCRRecordModal } = require('./JP_OCRRecordModal'),
+  { LiveShareModal } = require('./JP_LiveShareModal'),
+  期限 = require('./liveShare');
 const k = () => {
     const {
         activeSessionID: e,
@@ -138,6 +141,29 @@ const k = () => {
       } = (0, x.useScoreStore)(),
       se = 'number' == typeof q && !isNaN(q) && q > 0 ? q : 1;
     if (!re) return null;
+    // ライブに何台つないでいるか。電波の切れる弓道場で、
+    // 相手に届いているかをその場で見るために出す（src/livePresence.js）
+    const 接続の文言 = 在.台数の文言((0, x.useScoreStore)((e) => e.ライブの接続台数));
+    // ライブをURLで配る窓。主催者だけが開ける
+    const [共有の窓, 共有の窓を出す] = (0, t.useState)(!1);
+    // 共有リンクだけで来ている人。団体の名簿を持っていない
+    const 来客 = (0, x.useScoreStore)((e) => e.共有の来客);
+    // よその団体のライブに共有リンクで入っているか。保存はさせない
+    const よその団体 = (0, x.useScoreStore)((e) => e.よその団体のライブ);
+    // 配ったリンクの期限。帯に「あと30分」を出すために見る
+    const ライブの期限 = (0, x.useScoreStore)((e) => e.いまのライブの期限);
+    // 残りは時間で減るので、こちらから数え直さないと止まって見える。
+    // ただし数え直すたびに記録画面ぜんぶが描き直る。いつ起きればよいかは
+    // liveShare の 次に数え直すまで が決める（帯に出るころまでは眠る）
+    const [いま, いまを進める] = (0, t.useState)(() => Date.now());
+    (0, t.useEffect)(() => {
+      const 次 = 期限.次に数え直すまで(ライブの期限, いま);
+      if (次 === null) return;
+      const 札 = setTimeout(() => いまを進める(Date.now()), 次);
+      return () => clearTimeout(札);
+    }, [ライブの期限, いま]);
+    // 近いときだけ出す。ずっと出していると場所を取るだけで読まれなくなる
+    const 期限の残り = 期限.期限の短い文言(ライブの期限, いま);
     const ae = (0, x.useScoreStore)((e) => e.liveSessionsList),
       [de, ce] = (0, t.useState)(!1),
       [ue, fe] = (0, t.useState)(null),
@@ -281,6 +307,11 @@ const k = () => {
         // 閲覧用のときは人の選択も開かない。開いても名前も交代も削除も
         // 止めてあるので、開くだけ無駄に迷わせる
         if ($e) return void 閲覧中に押された();
+        // 共有リンクで来た人は団体の名簿を持っていない。開いても空の一覧が
+        // 出るだけなので、開かずに理由を伝える
+        if (来客)
+          return void (Ge('共有リンクでは名前を選べません'),
+          j.notificationAsync(j.NotificationFeedbackType.Warning));
         j.impactAsync(j.ImpactFeedbackStyle.Medium);
         k.find((t) => t.id === e) && (fe(e), ge(o), ce(!0));
       },
@@ -513,8 +544,11 @@ const k = () => {
             })
           : null,
         K && Y
-          ? (0, A.jsxs)(l.default, {
+          ? (0, A.jsxs)(X ? h.default : l.default, {
+              // 主催者は帯を押すと、リンクで配る窓が開く。
+              // ライブ中しか出ない帯なので、ここに置くのがいちばん近い
               style: [W.liveStatusHeader, W.liveActiveHeader, { marginHorizontal: 8, borderRadius: 8 }],
+              onPress: X ? () => 共有の窓を出す(!0) : void 0,
               children: [
                 (0, A.jsx)(p.Ionicons, { name: 'radio-outline', size: 12, color: '#FFF' }),
                 (0, A.jsxs)(a.default, {
@@ -522,6 +556,29 @@ const k = () => {
                   numberOfLines: 1,
                   children: ['ライブ中', ライブは見るだけ ? '（閲覧用）' : '', ': ', Y],
                 }),
+                X
+                  ? (0, A.jsx)(p.Ionicons, { name: 'share-outline', size: 12, color: '#FFF' })
+                  : null,
+                接続の文言
+                  ? (0, A.jsxs)(l.default, {
+                      style: W.liveCount,
+                      children: [
+                        (0, A.jsx)(p.Ionicons, { name: 'ellipse', size: 7, color: '#34C759' }),
+                        (0, A.jsx)(a.default, { style: W.liveCountText, children: 接続の文言 }),
+                      ],
+                    })
+                  : null,
+                // 期限が近いときだけ。字は最小限にして、意味は色で持たせる。
+                // 帯は1行なので、長い文を入れるとライブ名が潰れる
+                期限の残り
+                  ? (0, A.jsxs)(l.default, {
+                      style: W.liveLimit,
+                      children: [
+                        (0, A.jsx)(p.Ionicons, { name: 'time-outline', size: 10, color: '#FFF' }),
+                        (0, A.jsx)(a.default, { style: W.liveLimitText, children: 期限の残り }),
+                      ],
+                    })
+                  : null,
               ],
             })
           : null,
@@ -540,6 +597,13 @@ const k = () => {
                     Ce(!0);
                   },
                   hitSlop: { top: 20, bottom: 20, left: 20, right: 20 },
+                  // 絵だけのボタンは読み上げに何も伝わらない。端末は accessibilityLabel、
+                  // web の TouchableOpacity は aria-label を見るので、両方渡す
+                  accessible: !0,
+                  accessibilityRole: 'button',
+                  accessibilityLabel: 'リセット',
+                  'aria-label': 'リセット',
+                  accessibilityHint: '記録表を空にします',
                   style: ({ hovered: e }) => [
                     W.resetBtn,
                     $e && { opacity: 0.4 },
@@ -568,11 +632,40 @@ const k = () => {
             (0, A.jsxs)(l.default, {
               style: W.navRight,
               children: [
+                // ライブ中だけ出す「配る」。帯を押しても開くが、
+                // 押せると分かる形が無いと見つけられない。
+                //
+                // 帯は主催者しか押せないのに、こちらは部員にも出す。食い違いに
+                // 見えるが、2026-08-31 に承知のうえでこうすると決めた。
+                // 先に押した部員が合言葉と期限を決め、期限はあとからは主催者でも
+                // 延ばせない。それでも部員なら誰が配ってもよい、という判断。
+                // 直すときは帯（onPress: X ? … ）と揃えること。
+                K && !来客
+                  ? (0, A.jsxs)(h.default, {
+                      style: W.shareBtn,
+                      // 絵だけのボタンは読み上げに何も伝わらない。端末は accessibilityLabel、
+                      // web の TouchableOpacity は aria-label を見るので、両方渡す
+                      accessible: !0,
+                      accessibilityRole: 'button',
+                      accessibilityLabel: 'ライブをリンクで配る',
+                      'aria-label': 'ライブをリンクで配る',
+                      onPress: () => 共有の窓を出す(!0),
+                      children: [
+                        (0, A.jsx)(p.Ionicons, { name: 'share-outline', size: 16, color: '#007AFF' }),
+                        (0, A.jsx)(a.default, { style: W.shareBtnText, children: '配る' }),
+                      ],
+                    })
+                  : null,
                 (0, A.jsxs)(h.default, {
                   ref: 案内のライブボタン,
                   onPress: () => {
+                    // 共有リンクで来た人は、抜けたら見るものが無い。
+                    // ライブから出るだけだと空の記録表に取り残されるので、
+                    // 入口の画面まで戻す
                     K
-                      ? (x.useScoreStore.getState().stopLiveSync(),
+                      ? (来客
+                          ? x.useScoreStore.getState().共有の来客をやめる()
+                          : x.useScoreStore.getState().stopLiveSync(),
                         j.notificationAsync(j.NotificationFeedbackType.Warning))
                       : Ee(!0);
                   },
@@ -602,6 +695,10 @@ const k = () => {
                         Xe(Math.max(4, T - 4));
                       },
                       disabled: T <= 4,
+                      accessible: !0,
+                      accessibilityRole: 'button',
+                      accessibilityLabel: '射数を4本減らす',
+                      'aria-label': '射数を4本減らす',
                       style: W.zoomBtn,
                       children: (0, A.jsx)(p.Ionicons, {
                         name: 'remove-circle-outline',
@@ -622,6 +719,10 @@ const k = () => {
                         Xe(Math.min(500, T + 4));
                       },
                       disabled: T >= 500,
+                      accessible: !0,
+                      accessibilityRole: 'button',
+                      accessibilityLabel: '射数を4本増やす',
+                      'aria-label': '射数を4本増やす',
                       style: W.zoomBtn,
                       children: (0, A.jsx)(p.Ionicons, {
                         name: 'add-circle-outline',
@@ -706,6 +807,10 @@ const k = () => {
                     (0, A.jsx)(h.default, {
                       onPress: () => J(Math.max(拡大の下, Math.round((se - 0.05) * 20) / 20)),
                       disabled: se <= 拡大の下 + 0.001,
+                      accessible: !0,
+                      accessibilityRole: 'button',
+                      accessibilityLabel: '表示を小さくする',
+                      'aria-label': '表示を小さくする',
                       style: W.zoomBtn,
                       children: (0, A.jsx)(p.Ionicons, {
                         name: 'remove-circle-outline',
@@ -733,6 +838,10 @@ const k = () => {
                     (0, A.jsx)(h.default, {
                       onPress: () => J(Math.min(拡大の上, Math.round((se + 0.05) * 20) / 20)),
                       disabled: se >= 拡大の上 - 0.001,
+                      accessible: !0,
+                      accessibilityRole: 'button',
+                      accessibilityLabel: '表示を大きくする',
+                      'aria-label': '表示を大きくする',
                       style: W.zoomBtn,
                       children: (0, A.jsx)(p.Ionicons, {
                         name: 'add-circle-outline',
@@ -890,6 +999,10 @@ const k = () => {
               }),
             ],
           }),
+        }),
+        (0, A.jsx)(LiveShareModal, {
+          visible: 共有の窓,
+          onClose: () => 共有の窓を出す(!1),
         }),
         (0, A.jsx)(d.default, {
           visible: we,
@@ -1095,6 +1208,11 @@ const k = () => {
                                                   ]
                                                 );
                                           },
+                                          // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                                          accessible: !0,
+                                          accessibilityRole: 'button',
+                                          accessibilityLabel: 'このライブを消す',
+                                          'aria-label': 'このライブを消す',
                                           children: (0, A.jsx)(p.Ionicons, {
                                             name: 'trash-outline',
                                             size: 20,
@@ -1200,6 +1318,10 @@ const k = () => {
                 (set帯を畳む && set帯を畳む(!畳む覚え), j.impactAsync(j.ImpactFeedbackStyle.Light));
               },
               testID: '帯の開け閉め',
+              accessible: !0,
+              accessibilityRole: 'button',
+              accessibilityLabel: 畳む覚え ? '操作の帯を開く' : '操作の帯を畳む',
+              'aria-label': 畳む覚え ? '操作の帯を開く' : '操作の帯を畳む',
               hitSlop: { top: 10, bottom: 10, left: 10, right: 10 },
               style: ({ hovered: e }) => [W.帯の取っ手, e && m.IS_WEB && { opacity: 0.85 }],
               children: (0, A.jsx)(p.Ionicons, {
@@ -1442,6 +1564,10 @@ const k = () => {
                     disabled: !戻せる,
                     // 自動での確かめ用。絵だけのボタンは外から指せない
                     testID: '取り消し',
+                    accessible: !0,
+                    accessibilityRole: 'button',
+                    accessibilityLabel: '取り消し',
+                    'aria-label': '取り消し',
                     children: (0, A.jsx)(p.Ionicons, { name: 'arrow-undo', size: 24, color: '#8E8E93' }),
                   }),
                   (0, A.jsx)(f.default, {
@@ -1458,6 +1584,10 @@ const k = () => {
                     },
                     disabled: !進める,
                     testID: 'やり直し',
+                    accessible: !0,
+                    accessibilityRole: 'button',
+                    accessibilityLabel: 'やり直し',
+                    'aria-label': 'やり直し',
                     children: (0, A.jsx)(p.Ionicons, { name: 'arrow-redo', size: 24, color: '#8E8E93' }),
                   }),
                   // 記録表の並べ方を変える。絵だけでは向きが読み取りにくいので、
@@ -1501,6 +1631,13 @@ const k = () => {
                       { backgroundColor: 'rgba(0,122,255,0.1)' },
                       e && m.IS_WEB && { backgroundColor: 'rgba(0,122,255,0.2)' },
                     ],
+                    // 絵だけのボタンは読み上げに何も伝わらない。端末は accessibilityLabel、
+                    // web の TouchableOpacity は aria-label を見るので、両方渡す
+                    accessible: !0,
+                    accessibilityRole: 'button',
+                    accessibilityLabel: '射手を追加',
+                    'aria-label': '射手を追加',
+                    accessibilityHint: '記録表にひとり足します',
                     onPress: () => {
                       if ($e) return void 閲覧中に押された();
                       (j.impactAsync(j.ImpactFeedbackStyle.Medium), R());
@@ -1567,11 +1704,23 @@ const k = () => {
                 ref: 案内の保存ボタン,
                 style: ({ hovered: e }) => [
                   W.saveBtn,
-                  $e && { opacity: 0.4 },
+                  ($e || よその団体) && { opacity: 0.4 },
                   e && m.IS_WEB && { opacity: 0.9, transform: [{ scale: 1.02 }] },
                 ],
+                // 絵だけのボタンは読み上げに何も伝わらない。端末は accessibilityLabel、
+                // web の TouchableOpacity は aria-label を見るので、両方渡す
+                accessible: !0,
+                accessibilityRole: 'button',
+                accessibilityLabel: '終了して保存',
+                'aria-label': '終了して保存',
+                accessibilityHint: 'いまの記録表を履歴に残します',
                 onPress: () => {
                   if ($e) return void 閲覧中に押された();
+                  // よその団体のライブは、自分の記録として残さない。
+                  // 押しても無反応だと壊れたのか決まりなのか分からないので、理由を言う
+                  if (よその団体)
+                    return void (Ge('共有されたライブは、主催者の側で保存されます'),
+                    j.notificationAsync(j.NotificationFeedbackType.Warning));
                   if (0 === k.length) return;
                   // 設定で出欠確認を切っていれば、窓を飛ばして保存へ進む。
                   // 出欠は空のまま保存する。記録に出ている人は出欠画面で
@@ -2099,6 +2248,18 @@ const k = () => {
         elevation: 8,
       })
     ),
+    // ライブをリンクで配るボタン。ライブ中だけ出る
+    shareBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0,122,255,0.1)',
+      paddingHorizontal: 6,
+      paddingVertical: 4,
+      borderRadius: 6,
+      gap: 3,
+      marginRight: 6,
+    },
+    shareBtnText: { color: '#007AFF', fontSize: 11, fontWeight: 'bold' },
     liveBtn: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -2173,7 +2334,23 @@ const k = () => {
     liveHostHeader: { backgroundColor: '#007AFF' },
     liveJoinHeader: { backgroundColor: '#007AFF' },
     liveActiveHeader: { backgroundColor: '#007AFF' },
-    liveStatusText: { color: '#FFF', fontSize: 11, fontWeight: 'bold' },
+    // ライブ名が長いときは、名前のほうを縮めて台数を残す。
+    // 台数は「相手に届いているか」を見るためのもので、消えると意味が無い
+    liveStatusText: { color: '#FFF', fontSize: 11, fontWeight: 'bold', flexShrink: 1 },
+    liveCount: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 },
+    liveCountText: { color: '#FFF', fontSize: 11, fontWeight: 'bold' },
+    // 期限が近いことの札。台数と同じ形にして、狭いときはライブ名の側を縮ませる。
+    // 帯そのものが青（主催者）か灰（参加者）なので、札は赤地で浮かせる
+    liveLimit: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      flexShrink: 0,
+      backgroundColor: '#FF3B30',
+      paddingHorizontal: 5,
+      borderRadius: 8,
+    },
+    liveLimitText: { color: '#FFF', fontSize: 10, fontWeight: 'bold' },
     gridArea: { flex: 1, backgroundColor: '#FFF' },
     tallWrapper: { flex: 1, flexDirection: 'column' },
     gridRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', minWidth: '100%' },

@@ -115,6 +115,84 @@ function 集計に入れるか(記録) {
 const 立ちの射数 = 4;
 
 /**
+ * 矢の呼び名。位置の並び順そのままで、1立の4射に対応する。
+ *
+ * 四つ矢は一手（甲矢・乙矢）が2回なので、正しくは
+ * 1本目=甲矢、2本目=乙矢、3本目=甲矢、4本目=乙矢。
+ * **甲矢と乙矢は2回ずつ現れるため、4つの位置を区別できない。**
+ * 同じ理由で、AIのQ&A（JP_AIChatBot_1034.js）も「初矢（1本目）」
+ * 「4本目」と番号で補っている。
+ *
+ * そこで名前のある両端だけ弓道の言い方にして、中は番号にする
+ * （2026-08-31 に本人と決めた）。一度「二の矢・三の矢」と書いたが、
+ * これは造語だった。**弓道の用語は類推で埋めないこと。**
+ * 表記は AI の用語集に合わせて「留矢」（「留め矢」ではない）。
+ */
+const 矢の名前 = ['初矢', '2本目', '3本目', '留矢'];
+
+/**
+ * 中り数から、立ちの結果の呼び名を返す。
+ * 結果分布（patterns）の並びと同じ言葉を使う。
+ * @param {number} 中り
+ * @returns {string}
+ */
+function 立ちの呼び名(中り) {
+  if (中り === 4) return '皆中';
+  if (中り === 3) return '三中';
+  if (中り === 2) return '羽分';
+  if (中り === 1) return '一中';
+  return '残念';
+}
+
+/**
+ * 型（'○○○×' のような4文字）を、画面が並べやすい形にほどく。
+ *
+ * 多い順に並べる。同数のときは型の文字で並べて、数え直すたびに
+ * 順番が入れ替わらないようにする（入れ替わると「増えた」と誤読される）。
+ *
+ * @param {Record<string, number>} 型 成績を数える が返す 型
+ * 要点は「短いほうの側」を選ぶ。三中で「2本目・3本目・留矢が中った」と
+ * 言われても読み解けないが、「留矢を抜いた」なら一目で分かる。逆に一中は
+ * 「初矢だけ中った」のほうが短い。皆中と残念は型が1通りしかないので要点を出さない。
+ *
+ * @returns {Array<{型:string, 中り:number, 呼び名:string, 回数:number, 割合:number, 抜いた矢:string[], 中った矢:string[], 要点:string|null}>}
+ */
+function 型を並べる(型) {
+  const 一覧 = Object.keys(型 || {}).map((鍵) => {
+    const 印たち = String(鍵).split('');
+    const 中り = 印たち.filter((x) => x === '○').length;
+    const 抜いた矢 = 印たち.map((x, i) => (x === '×' ? 矢の名前[i] : null)).filter(Boolean);
+    const 中った矢 = 印たち.map((x, i) => (x === '○' ? 矢の名前[i] : null)).filter(Boolean);
+    return {
+      型: 鍵,
+      中り,
+      呼び名: 立ちの呼び名(中り),
+      回数: 型[鍵],
+      割合: 0,
+      抜いた矢,
+      中った矢,
+      // 「留矢を抜いた」「初矢だけ中った」。助詞まで含めてここで決める。
+      // 画面ごとに組み立てると、同じことを違う言い方で書いてしまう
+      要点:
+        中り === 4 || 中り === 0
+          ? null
+          : 中り >= 2
+            ? `${抜いた矢.join('・')}を抜いた`
+            : `${中った矢.join('・')}だけ中った`,
+    };
+  });
+  // 割合は「同じ中り数の中で」出す。皆中と三中を混ぜて割っても、
+  // 「三中のうちどこで抜いたか」という問いの答えにならない
+  const 中り数ごとの合計 = {};
+  for (const x of 一覧) 中り数ごとの合計[x.中り] = (中り数ごとの合計[x.中り] || 0) + x.回数;
+  for (const x of 一覧) {
+    const 母数 = 中り数ごとの合計[x.中り] || 0;
+    x.割合 = 母数 > 0 ? (x.回数 / 母数) * 100 : 0;
+  }
+  return 一覧.sort((a, b) => b.中り - a.中り || b.回数 - a.回数 || (a.型 < b.型 ? -1 : 1));
+}
+
+/**
  * ある部員の成績を、記録の一覧から数える。
  *
  * 分析画面の順位も、詳細の比較相手も、ここを通す。
@@ -126,13 +204,17 @@ const 立ちの射数 = 4;
  *
  * @param {Array} 記録たち すでに期間・タグで絞ったあとの記録
  * @param {string|number} 部員id
- * @returns {{shots:number, hits:number, rate:number, perShotStats:Array<{shots:number,hits:number}>, patterns:object}}
+ * @returns {{shots:number, hits:number, rate:number, perShotStats:Array<{shots:number,hits:number}>, patterns:object, 型:Record<string,number>, 端数の射:number}}
  */
 function 成績を数える(記録たち, 部員id) {
   let shots = 0;
   let hits = 0;
   const perShotStats = Array.from({ length: 立ちの射数 }, () => ({ shots: 0, hits: 0 }));
   const patterns = { kaichu: 0, sanchu: 0, hake: 0, icchu: 0, zannen: 0 };
+  // 中り数だけでなく「どの位置で抜いたか」も数える。'○○○×' のような4文字を鍵にする。
+  // patterns と同じ立ちだけを数えるので、足し合わせれば patterns に一致する
+  /** @type {Record<string, number>} */
+  const 型 = {};
   // 4射そろわず、結果分布に数えられなかった射。画面で断り書きを出すのに使う
   let 端数の射 = 0;
 
@@ -167,6 +249,12 @@ function 成績を数える(記録たち, 部員id) {
           if (印 === '○') 中り++;
         }
         if (!そろった) continue;
+        {
+          // そろった立ちだけ、印をそのまま並べて鍵にする
+          let 鍵 = '';
+          for (let i = 0; i < 立ちの射数; i++) 鍵 += 射手.marks[立ち * 立ちの射数 + i];
+          型[鍵] = (型[鍵] || 0) + 1;
+        }
         if (中り === 4) patterns.kaichu++;
         else if (中り === 3) patterns.sanchu++;
         else if (中り === 2) patterns.hake++;
@@ -190,6 +278,7 @@ function 成績を数える(記録たち, 部員id) {
     rate: shots > 0 ? (hits / shots) * 100 : 0,
     perShotStats,
     patterns,
+    型,
     端数の射,
   };
 }
@@ -231,4 +320,7 @@ module.exports = {
   集計に入れるか,
   成績を数える,
   射手を区間に分ける,
+  矢の名前,
+  立ちの呼び名,
+  型を並べる,
 };

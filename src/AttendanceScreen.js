@@ -457,6 +457,11 @@ const AttendanceScreen = () => {
           style: styles.monthNav,
           children: [
             (0, j.jsx)(o.TouchableOpacity, {
+              // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+              accessible: !0,
+              accessibilityRole: 'button',
+              accessibilityLabel: '前の月へ',
+              'aria-label': '前の月へ',
               onPress: () => (tab === 'days' || rangeType === 'month' ? changeMonth(-1) : changeYear(-1)),
               children: (0, j.jsx)(m.Ionicons, { name: 'chevron-back', size: 24, color: '#007AFF' }),
             }),
@@ -468,6 +473,11 @@ const AttendanceScreen = () => {
                   : `${currentFiscalYear}年度`,
             }),
             (0, j.jsx)(o.TouchableOpacity, {
+              // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+              accessible: !0,
+              accessibilityRole: 'button',
+              accessibilityLabel: '次の月へ',
+              'aria-label': '次の月へ',
               onPress: () => (tab === 'days' || rangeType === 'month' ? changeMonth(1) : changeYear(1)),
               children: (0, j.jsx)(m.Ionicons, { name: 'chevron-forward', size: 24, color: '#007AFF' }),
             }),
@@ -718,6 +728,11 @@ const AttendanceScreen = () => {
                     }),
                     (0, j.jsx)(o.TouchableOpacity, {
                       style: styles.closeBtn,
+                      // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                      accessible: !0,
+                      accessibilityRole: 'button',
+                      accessibilityLabel: '閉じる',
+                      'aria-label': '閉じる',
                       onPress: () => setSelectedMember(null),
                       children: (0, j.jsx)(m.Ionicons, { name: 'close', size: 24, color: '#8E8E93' }),
                     }),

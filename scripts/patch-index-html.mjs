@@ -15,7 +15,7 @@
 import fs from 'node:fs';
 
 const 道 = (process.env.BUILD_OUT || 'dist') + '/index.html';
-const アプリ名 = '弓道記録アプリ';
+const アプリ名 = '弓道部的中ノート';
 
 if (!fs.existsSync(道)) {
   console.error(`停止：${道} がありません`);

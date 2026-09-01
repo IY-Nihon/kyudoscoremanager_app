@@ -30,6 +30,8 @@ var t = e(require('./module_37')),
   s = require('./module_595'),
   a = require('./JP_ScoreCell_596'),
   c = require('./JP_useScoreStore_174'),
+  // 読み上げが読む言葉。射位の呼び方もここが持つ
+  読み = require('./a11yLabels'),
   h = require('./AntDesign_600'),
   u = require('./JP_module_687'),
   f = require('./module_427');
@@ -121,6 +123,16 @@ const m = t.default.memo(
             return e + i;
           }, 0);
         },
+        // 読み上げ（VoiceOver / TalkBack）が読む言葉。
+        // 画面の字は「○」「×」だけで、そのままだと「まる」「かける」と読まれる
+        読み上げの言葉 = (射番) =>
+          読み.ますの読み({
+            射手名: e.name,
+            番: 射位の番,
+            人数: 実の並び.length,
+            射番: 射番,
+            印: (e.marks || [])[射番],
+          }),
         H = (e, t) => {
           I ? I(e, t) : F(e, t);
         },
@@ -134,6 +146,13 @@ const m = t.default.memo(
       // 鍵ボタンは「間隔」「計」の列に付いていて、押すと自分より右の射手を
       // まとめて閉じる。だから受け持つのもその列だけでよい。
       // 履歴の編集画面（onToggleLock を渡してくる）と、そもそも押せない場では何もしない
+      // 射位（大前・N番・落）は、区切りや合計の行を除いた並びで数える。
+      // chatStats と同じ数え方でないと、AIの答えと読み上げで呼び方が食い違う
+      const 実の並び = (Array.isArray(m) ? m : []).filter(
+          (a) => a && !a.isSeparator && !a.isTotalCalculator
+        ),
+        射位の番 = 実の並び.findIndex((a) => a && a.id === e.id);
+
       const 自動ロックする = (0, c.useScoreStore)((e) => e.自動ロックする),
         自動ロックまでの秒 = (0, c.useScoreStore)((e) => e.自動ロックまでの秒),
         立を閉じる = (0, c.useScoreStore)((e) => e.立を閉じる);
@@ -423,6 +442,7 @@ const m = t.default.memo(
                             isFirst: 0 === t,
                             isNormalArcher: !0,
                             columnType: 'normal',
+                            読み: 読み上げの言葉(t),
                             onToggle: T,
                           },
                           t
@@ -451,6 +471,15 @@ const m = t.default.memo(
                     style: { alignItems: 'center', width: '100%', height: '100%', justifyContent: 'center' },
                     onPress: S,
                     disabled: k && !y,
+                    accessible: !0,
+                    accessibilityRole: 'button',
+                    accessibilityLabel: '区切りを外す',
+
+                    // react-native-web の TouchableOpacity は accessibilityLabel を通さない。
+
+                    // 端末側は accessibilityLabel が要るので、両方渡す
+
+                    'aria-label': '区切りを外す',
                     children: (0, f.jsx)(h.Ionicons, {
                       name: 'close-circle',
                       size: 24 * z,
@@ -468,6 +497,30 @@ const m = t.default.memo(
                     onPress: x,
                     onLongPress: j,
                     delayLongPress: 500,
+                    // 読み上げには射位と名前と成績をまとめて読ませる。
+                    // 名前だけだと、その人が何番目に立っているのか分からない
+                    accessible: !0,
+                    accessibilityRole: 'button',
+                    accessibilityLabel: e.isTotalCalculator
+                      ? '合計の列'
+                      : 読み.射手の読み({
+                          射手名: e.name,
+                          番: 射位の番,
+                          人数: 実の並び.length,
+                          marks: e.marks,
+                        }),
+                    // web の TouchableOpacity は accessibilityLabel を通さない
+                    'aria-label': e.isTotalCalculator
+                      ? '合計の列'
+                      : 読み.射手の読み({
+                          射手名: e.name,
+                          番: 射位の番,
+                          人数: 実の並び.length,
+                          marks: e.marks,
+                        }),
+                    accessibilityHint: e.isTotalCalculator
+                      ? void 0
+                      : '押すと名前を選べます。長押しで交代や削除ができます',
                     children: [
                       (0, f.jsx)(l.default, {
                         style: [b.footerName, { color: '#000', fontSize: 12 * z }],

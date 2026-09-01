@@ -15,6 +15,9 @@ if (target !== 'stg') { console.error('stg 専用です'); process.exit(1); }
 const { apiKey, projectId, databaseURL } = configFor('stg');
 const PW = 'StgTest!2026';
 const G1 = '100001', G2 = '100002';
+// ライブは団体IDではなく、団体ごとの推測できない合言葉の枝に置く（src/liveSecret.js）。
+// RTDB の決まりは枝の長さしか見ないので、検査は同じ長さの作り物で足りる
+const 検証の枝 = 'verify-live-branch-0000000000';
 const rows = [];
 const check = (id, name, expect, actual) => {
   const ok = (Array.isArray(expect) ? expect : [expect]).includes(actual);
@@ -127,14 +130,18 @@ const rt = async (method, path, body) => {
   });
   return r.status;
 };
-check('REG-12', 'ライブ記録の開始（自団体へ書く）', 200, await rt('PUT', `/live_sessions/${G1}/検証`, { state: { status: 'active' } }));
-check('REG-12', 'ライブ記録の更新（1射ごとの送信）', 200, await rt('PATCH', `/live_sessions/${G1}/検証/state`, { timestamp: stamp }));
-check('REG-12', 'ライブ記録の一覧（自団体ノード）', 200, await rt('GET', `/live_sessions/${G1}`));
-check('REG-12', 'ライブ記録の終了（削除）', 200, await rt('DELETE', `/live_sessions/${G1}/検証`));
+check('REG-12', 'ライブ記録の開始（合言葉の枝へ書く）', 200, await rt('PUT', `/live_sessions/${検証の枝}/検証`, { state: { status: 'active' } }));
+check('REG-12', 'ライブ記録の更新（1射ごとの送信）', 200, await rt('PATCH', `/live_sessions/${検証の枝}/検証/state`, { timestamp: stamp }));
+check('REG-12', 'ライブ記録の一覧（合言葉の枝）', 200, await rt('GET', `/live_sessions/${検証の枝}`));
+check('REG-12', 'ライブ記録の終了（削除）', 200, await rt('DELETE', `/live_sessions/${検証の枝}/検証`));
 
 // RTDB の遮断も確認する
-const rtNoAuth = await fetch(`${databaseURL}/live_sessions/${G1}.json`);
+const rtNoAuth = await fetch(`${databaseURL}/live_sessions/${検証の枝}.json`);
 check('SEC', 'RTDB 未認証での読み取り', 401, rtNoAuth.status);
+// 団体IDそのままの枝は、決まりが長さで弾く（database.rules.json）。
+// これが 200 に戻ったら、総当たりで他団体のライブを覗ける状態に逆戻りしている
+check('SEC', 'RTDB 団体IDそのままの枝を読む', 401,
+  (await fetch(`${databaseURL}/live_sessions/${G1}.json?auth=${tokG1}`)).status);
 const rtRoot = await fetch(`${databaseURL}/live_sessions.json?auth=${tokG1}`);
 check('SEC', 'RTDB 全団体の列挙', 401, rtRoot.status);
 
@@ -147,18 +154,20 @@ check('REG-10', '部員による記録の保存', 200,
   (await setDoc(projectId, `/groups/${G1}/sessions/by-member-${stamp}`,
     { id: `by-member-${stamp}`, title: '部員の記録', date: stamp, archers: [] }, anon.idToken)).status);
 check('REG-12', '部員によるライブ参加（RTDB 読み）', 200,
-  (await fetch(`${databaseURL}/live_sessions/${G1}.json?auth=${anon.idToken}`)).status);
-// 既知の制約：RTDB のルールは Firestore を参照できず、所属団体を判定できない。
-// そのため「認証さえ通れば他団体のライブ記録に触れられる」状態が残る。
-// 塞ぐにはカスタムクレーム（Cloud Functions と Blaze プラン）が必要で今回は対象外。
-// 対応前は認証すら不要だったため、ここは改善済みの上での残存事項。
-// 失敗ではなく制約として明示するため、現状（アクセスできる）を期待値にする。
-check('制約', '部員が他団体のライブへ書ける（RTDBの制約）', 200,
+  (await fetch(`${databaseURL}/live_sessions/${検証の枝}.json?auth=${anon.idToken}`)).status);
+// RTDB のルールは Firestore を参照できず、所属団体を判定できない。そのため
+// 決まりは「ログインしている誰か」までしか絞れない。枝の名前を団体ごとの
+// 推測できない合言葉にして、他団体の枝を当てられないようにしてある。
+// 団体IDを順に試す手はここで塞がる（src/liveSecret.js）。
+//
+// 残る制約：合言葉を一度知った人は、退部したあとも覚えていれば入れる。
+// 塞ぐにはカスタムクレーム（Cloud Functions と Blaze プラン）が要る。
+check('SEC', '団体IDを当てて他団体のライブへ書けない', 401,
   (await fetch(`${databaseURL}/live_sessions/${G2}/制約確認.json?auth=${anon.idToken}`,
     { method: 'PUT', body: JSON.stringify({ x: 1 }) })).status);
 
 // 後始末
-await fetch(`${databaseURL}/live_sessions/${G2}/制約確認.json?auth=${tokG1}`, { method: 'DELETE' });
+await fetch(`${databaseURL}/live_sessions/${検証の枝}.json?auth=${tokG1}`, { method: 'DELETE' });
 await req(projectId, `/groups/${G1}/sessions/by-member-${stamp}`, { token: tokG1, method: 'DELETE' });
 await req(projectId, `/member_claims/${anon.uid}`, { token: anon.idToken, method: 'DELETE' });
 

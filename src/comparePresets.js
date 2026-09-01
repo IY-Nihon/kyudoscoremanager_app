@@ -38,7 +38,7 @@ function この団体のひな型(一覧, 団体id) {
  */
 function ひな型を足す(一覧, 新しいの, いま) {
   const 元 = (Array.isArray(一覧) ? 一覧 : []).slice();
-  const n = 新しいの || {};
+  const n = 新しいの || /** @type {{名前?:string, 部員idたち?:Array, 団体id?:string}} */ ({});
   const 名前 = String(n.名前 || '').trim().slice(0, 名前の長さ);
   const 団体id = null == n.団体id ? '' : String(n.団体id);
   const 部員idたち = [...new Set((Array.isArray(n.部員idたち) ? n.部員idたち : []).map(String))];

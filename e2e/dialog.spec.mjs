@@ -12,6 +12,12 @@
  * を見る。ブラウザの窓に戻ると、この検査が落ちる。
  */
 import { test, expect } from '@playwright/test';
+import {
+  案内を止める,
+  画面が出るまで待つ,
+  画面が変わるまで待つ,
+  入り口が決まるまで待つ,
+} from './helpers.mjs';
 import fs from 'node:fs';
 
 const お知らせの版 = (fs.readFileSync('src/JP_WhatsNewModal.js', 'utf8').match(/NOTICE_VERSION = '([^']+)'/) || [])[1];
@@ -34,8 +40,14 @@ function 窓を見張る(page) {
 }
 
 async function 入る(page) {
+  // 案内とお知らせは開く前に止める。開いてから止めて reload すると、
+  // アプリを2回起動することになる（遅い機種ほど効く）
+  await 案内を止める(page);
   await page.goto('/');
-  await page.waitForTimeout(3000);
+  await 画面が出るまで待つ(page);
+  // 読み込み中の画面でも「出た」になるので、ログイン欄が出るか、
+  // もう入っているかが決まるまで待つ（飛ばすとログイン画面のまま進む）
+  await 入り口が決まるまで待つ(page);
   const 番号欄 = page.getByPlaceholder('例: 123456');
   if (await 番号欄.isVisible().catch(() => false)) {
     await 番号欄.click();
@@ -56,19 +68,14 @@ async function 入る(page) {
       .not.toBeNull();
     await page.waitForTimeout(1500);
   }
-  await page.evaluate((版) => {
-    localStorage.setItem('tutorialDoneVersion', '2026-08-13-01');
-    localStorage.setItem('whatsNewDismissedVersion', 版);
-  }, お知らせの版);
-  await page.reload();
-  await page.waitForTimeout(4000);
+  // ここで書いて reload していたのをやめた（上の 案内を止める が代わり）
 }
 
 test.describe('確認とお知らせ', () => {
   test('ログインの前でも、空のまま押すとアプリの中に帯が出る', async ({ page }) => {
     const 窓 = 窓を見張る(page);
     await page.goto('/');
-    await page.waitForTimeout(3000);
+    await 画面が出るまで待つ(page);
 
     await page.getByText('ログイン', { exact: true }).click();
 
@@ -80,7 +87,7 @@ test.describe('確認とお知らせ', () => {
 
   test('帯はしばらくすると自分で消える', async ({ page }) => {
     await page.goto('/');
-    await page.waitForTimeout(3000);
+    await 画面が出るまで待つ(page);
     await page.getByText('ログイン', { exact: true }).click();
     const 帯 = page.getByTestId('アプリの帯');
     await expect(帯).toBeVisible({ timeout: 10_000 });
@@ -92,7 +99,7 @@ test.describe('確認とお知らせ', () => {
     // 改行つき・長い文はボタンが無くても窓にして、OK を押すまで残す決まり
     const 窓 = 窓を見張る(page);
     await page.goto('/');
-    await page.waitForTimeout(3000);
+    await 画面が出るまで待つ(page);
 
     await page.getByText('団体IDを忘れた', { exact: true }).click();
 
@@ -103,7 +110,6 @@ test.describe('確認とお知らせ', () => {
     expect(窓.件, `ブラウザの窓が出た: ${窓.中身.join(' / ')}`).toBe(0);
 
     // 帯とちがって、待っても勝手には消えない
-    await page.waitForTimeout(4000);
     await expect(札).toBeVisible();
 
     await page.getByTestId('窓のボタン-OK').click();
@@ -115,7 +121,7 @@ test.describe('確認とお知らせ', () => {
     await 入る(page);
 
     await page.getByText('メンバー', { exact: true }).first().click();
-    await page.waitForTimeout(2000);
+    await 画面が変わるまで待つ(page, '部員を追加');
 
     // 一覧の先頭の部員を開く。1人もいない団体ではこの検査は流す
     const 削除ボタン = page.getByText('メンバーを削除', { exact: true }).first();
@@ -165,7 +171,7 @@ test.describe('帯は窓の上に出る', () => {
     await 入る(page);
 
     await page.getByText('メンバー', { exact: true }).first().click();
-    await page.waitForTimeout(2000);
+    await 画面が変わるまで待つ(page, '部員を追加');
 
     const 行 = page.getByText(/年生|その他/).first();
     test.skip(!(await 行.isVisible().catch(() => false)), 'この団体に部員がいない');

@@ -10,6 +10,11 @@
  * 番号は打ち込まずに一覧から選ぶ（記録表で人を選ぶのと同じ形）。
  */
 import { test, expect } from '@playwright/test';
+import {
+  案内を止める,
+  画面が出るまで待つ,
+  入り口が決まるまで待つ,
+} from './helpers.mjs';
 import fs from 'node:fs';
 
 const お知らせの版 = (fs.readFileSync('src/JP_WhatsNewModal.js', 'utf8').match(/NOTICE_VERSION = '([^']+)'/) || [])[1];
@@ -28,8 +33,14 @@ test.use({ storageState: 'e2e/.auth/100007.json' });
 const 合言葉 = 'StgTest!2026';
 
 async function 入る(page) {
+  // 案内とお知らせは開く前に止める。開いてから止めて reload すると、
+  // アプリを2回起動することになる（遅い機種ほど効く）
+  await 案内を止める(page);
   await page.goto('/');
-  await page.waitForTimeout(3000);
+  await 画面が出るまで待つ(page);
+  // 読み込み中の画面でも「出た」になるので、ログイン欄が出るか、
+  // もう入っているかが決まるまで待つ（飛ばすとログイン画面のまま進む）
+  await 入り口が決まるまで待つ(page);
   const 番号欄 = page.getByPlaceholder('例: 123456');
   if (await 番号欄.isVisible().catch(() => false)) {
     await 番号欄.click();
@@ -53,12 +64,7 @@ async function 入る(page) {
     // 認証の保存が書き終わるまでの余裕
     await page.waitForTimeout(1500);
   }
-  await page.evaluate((版) => {
-    localStorage.setItem('tutorialDoneVersion', '2026-08-13-01');
-    localStorage.setItem('whatsNewDismissedVersion', 版);
-  }, お知らせの版);
-  await page.reload();
-  await page.waitForTimeout(4000);
+  // ここで書いて reload していたのをやめた（上の 案内を止める が代わり）
 }
 
 /** 射手を1人立てて、その人の操作から途中交代の画面を開く */
@@ -71,7 +77,6 @@ async function 交代の画面を開く(page) {
   await page.getByText('選択', { exact: true }).first().click();
   await page.waitForTimeout(1200);
   await page.getByText('途中交代', { exact: true }).click();
-  await page.waitForTimeout(1200);
   await expect(page.getByText('途中交代の設定', { exact: true })).toBeVisible();
 }
 
@@ -86,14 +91,12 @@ test('途中交代：開くと立目の一覧が出て、射目にも切り替�
 
   // 射目へ切り替えると、1射目から8射目まで選べる
   await page.getByText('射目', { exact: true }).click();
-  await page.waitForTimeout(600);
   await expect(page.getByText('1射目', { exact: true }), '射目へ切り替わらない').toBeVisible();
   await expect(page.getByText('8射目', { exact: true })).toBeVisible();
   await expect(page.getByText('9射目', { exact: true }), '8射なのに9射目が出ている').toHaveCount(0);
 
   // 立目へ戻せる
   await page.getByText('立目', { exact: true }).click();
-  await page.waitForTimeout(600);
   await expect(page.getByText('1立目', { exact: true }), '立目へ戻せない').toBeVisible();
 });
 
@@ -129,7 +132,6 @@ test('途中交代：射目で選んだときも、その射目にしまわれ�
   await page.getByText('射目', { exact: true }).click();
   await page.waitForTimeout(600);
   await page.getByText('3射目', { exact: true }).click();
-  await page.waitForTimeout(600);
   await expect(page.getByText('3射目から交代します'), '案内が出ない').toBeVisible();
 
   const ゲスト欄 = page.getByPlaceholder('ゲスト名を入力');
@@ -166,6 +168,12 @@ test('途中交代：交代相手は学年でまとまり、開け閉めでき�
   // 閉じていても出す（閉じたままだと「居ない」と見えてしまう）
   await 交代の画面を開く(page);
 
+  // 数えるのも指すのも、途中交代の窓の中に限ること。
+  // 画面ぜんたいから拾うと、背後に残った人の選択の窓も一緒に数え、
+  // 「1年生 (1人)」が2つ見つかって指せなくなる（実際それで落ちた）
+  const 窓 = page.getByRole('dialog');
+  // 人の行は窓の要素の外に描かれているので、数えるのは画面ぜんたいから。
+  // 指すほうだけ窓の中に限る（下の 見出し）
   const 見えている人数 = () =>
     page.evaluate(
       () =>
@@ -173,8 +181,8 @@ test('途中交代：交代相手は学年でまとまり、開け閉めでき�
           .length
     );
 
-  const 見出し = page.getByText(/^1年生 \(\d+人\)$/);
-  await expect(見出し, '学年の見出しが出ていない').toBeVisible();
+  const 見出し = 窓.getByText(/^1年生 \(\d+人\)$/);
+  await expect(見出し, '学年の見出しが出ていない').toBeVisible({ timeout: 20_000 });
 
   const 初め = await 見えている人数();
   expect(初め, '初めから誰も出ていない').toBeGreaterThan(0);
