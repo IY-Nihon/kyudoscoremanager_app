@@ -11,16 +11,18 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-const { ストアを用意する, 待つ } = require('./helpers/storeHarness');
+const { ストアを用意する, 検査の合言葉, 待つ } = require('./helpers/storeHarness');
 
 const 団体 = '100001';
 const ライブ名 = '朝練';
-const 道 = `live_sessions/${団体}/${ライブ名}/state`;
+const 道 = `live_sessions/${検査の合言葉}/${ライブ名}/state`;
 
 function 端末(既存のライブ) {
   const { store, ライブ } = ストアを用意する(undefined, 既存のライブ);
   store.setState({
     activeGroupId: 団体,
+    // ライブは合言葉の枝に置く。無いと送信が入口で帰る（storeHarness を参照）
+    ライブの合言葉: { 団体: 団体, 合言葉: 検査の合言葉 },
     activeRole: 'group',
     isHydrated: true,
     isNetworkOnline: true,
@@ -382,12 +384,12 @@ test('共有履歴：2台が続けて操作しても、どちらの手も残る'
   B.store.getState().toggleMark('a2', 0);
   await 待つ(0);
 
-  const 控え = A.ライブ.値(`live_history/${団体}/${ライブ名}`) || {};
+  const 控え = A.ライブ.値(`live_history/${検査の合言葉}/${ライブ名}`) || {};
   assert.equal(Object.keys(控え).length, 2, '片方の手が上書きされている');
   assert.ok(控え[0], '0番が無い');
   assert.ok(控え[1], '1番が無い');
 
-  const 目印 = A.ライブ.値(`live_sessions/${団体}/${ライブ名}/state`) || {};
+  const 目印 = A.ライブ.値(`live_sessions/${検査の合言葉}/${ライブ名}/state`) || {};
   assert.equal(目印.history_len, 2, '目印が2まで進んでいない');
 });
 
@@ -476,13 +478,13 @@ test('共有履歴：射数を減らしたあとの取り消しで、無いま�
     historySharedLen: 1,
     historySharedMax: 1,
   });
-  A.ライブ.置く(`live_sessions/${団体}/${ライブ名}/state`, {
+  A.ライブ.置く(`live_sessions/${検査の合言葉}/${ライブ名}/state`, {
     status: 'active',
     timestamp: 1,
     history_len: 1,
     history_max: 1,
   });
-  A.ライブ.置く(`live_history/${団体}/${ライブ名}/0`, {
+  A.ライブ.置く(`live_history/${検査の合言葉}/${ライブ名}/0`, {
     本数: 8,
     at: 1,
     差分: [{ 射手: 'a1', 射番: 7, 前: '○', 後: '×' }],
@@ -592,9 +594,9 @@ test('共有履歴：3台が同時に入れても、どの手も控えに残る'
   C.store.getState().toggleMark('a3', 0);
   await 待つ(0);
 
-  const 控え = A.ライブ.値(`live_history/${団体}/${ライブ名}`) || {};
+  const 控え = A.ライブ.値(`live_history/${検査の合言葉}/${ライブ名}`) || {};
   assert.equal(Object.keys(控え).length, 3, '3台ぶん残っていない');
-  const 目印 = A.ライブ.値(`live_sessions/${団体}/${ライブ名}/state`) || {};
+  const 目印 = A.ライブ.値(`live_sessions/${検査の合言葉}/${ライブ名}/state`) || {};
   assert.equal(目印.history_len, 3, '目印が3まで進んでいない');
 
   // どの控えも、自分が変えた1ますだけを指している
@@ -640,7 +642,7 @@ test('共有履歴：鍵と○×を同時にしても、取り消しで相手の
   A.store.getState().toggleLock('a1', 0); // 形が変わる＝まるごと
   await 待つ(0);
 
-  const 控え = A.ライブ.値(`live_history/${団体}/${ライブ名}`) || {};
+  const 控え = A.ライブ.値(`live_history/${検査の合言葉}/${ライブ名}`) || {};
   assert.equal(Object.keys(控え).length, 2, '2件とも残っている');
   assert.ok(控え[0].差分, '○×の控えは差分になっている');
   assert.equal(控え[1].差分, undefined, '鍵はますごとの差分ではない');
@@ -671,7 +673,7 @@ test('通信が遅くても、取り消しは1手だけ戻す', async () => {
   B.store.getState().toggleMark('a2', 0);
   await 待つ(120);
 
-  const 控え = A.ライブ.値(`live_history/${団体}/${ライブ名}`) || {};
+  const 控え = A.ライブ.値(`live_history/${検査の合言葉}/${ライブ名}`) || {};
   assert.equal(Object.keys(控え).length, 2, '遅いと控えが取りこぼされる');
 
   A.store.setState({
@@ -697,7 +699,7 @@ test('回線が切れているあいだの操作は、控えに積まれない�
   await 待つ(20);
 
   assert.equal(印(A.store), '○', '手元には入っている');
-  assert.equal(A.ライブ.値(`live_history/${団体}/${ライブ名}`), null, '切れているのに控えが載った');
+  assert.equal(A.ライブ.値(`live_history/${検査の合言葉}/${ライブ名}`), null, '切れているのに控えが載った');
   assert.equal(A.store.getState().historySharedLen, 0, '目印だけ進んでいる');
 });
 
@@ -893,7 +895,7 @@ test('共有履歴：射数の変更も控えに積まれ、取り消すと射�
   await 待つ(0);
   assert.equal(A.store.getState().shotsPerRound, 8, '前提：8射になっている');
 
-  const 控え = A.ライブ.値(`live_history/${団体}/${ライブ名}`) || {};
+  const 控え = A.ライブ.値(`live_history/${検査の合言葉}/${ライブ名}`) || {};
   assert.equal(Object.keys(控え).length, 1, '射数の変更が控えに積まれていない');
   assert.equal(控え[0].本数, 4, '控えが持つ射数が、変える前の値になっていない');
 
@@ -1055,7 +1057,7 @@ test('3台で形が変わる操作をしても、取り消しは相手の○×�
   A.store.getState().toggleLock('a1', 0); // 形が変わる＝項目ごとの控え
   await 待つ(0);
 
-  const 控え = A.ライブ.値(`live_history/${団体}/${ライブ名}`) || {};
+  const 控え = A.ライブ.値(`live_history/${検査の合言葉}/${ライブ名}`) || {};
   assert.equal(Object.keys(控え).length, 3, '3件とも積まれていない');
   assert.ok(控え[2].項目, '鍵の控えが項目ごとになっていない');
 

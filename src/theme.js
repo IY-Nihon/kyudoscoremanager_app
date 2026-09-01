@@ -44,7 +44,7 @@ const ACCENT = {
   // 暗い面では元の鮮やかな色に戻す（src/JP_AnalysisScreen_1000.js の 比較の色たち）
   '#248a3d': '#30d158', // 濃い緑 → systemGreen(dark)
   '#c93400': '#ff9f0a', // 濃い橙 → systemOrange(dark)
-  '#8b6d00': '#ffd426', // 濃い黄土 → systemYellow(dark)
+  '#0000cf': '#409cff', // 濃い青 → 明るい青（暗い面用）
   '#056b7a': '#32ade6', // 濃い青緑 → systemCyan(dark)
   // '#8e8e93' (systemGray) はライト/ダーク共通のため変換しない
 };

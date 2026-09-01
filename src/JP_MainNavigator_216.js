@@ -218,6 +218,9 @@ const SettingsScreenComp = (props) => (0, T.jsx)(v.SettingsScreen, props);
 const k = () => {
   const e = (0, h.useSafeAreaInsets)(),
     n = (0, p.useScoreStore)((e) => e.activeRole),
+    // 共有リンクだけで来ている人。団体のデータを何も持っていないので、
+    // 履歴・分析・設定を出しても中身が無い。記録の画面だけにする
+    来客 = (0, p.useScoreStore)((e) => e.共有の来客),
     o = (0, p.useScoreStore)((e) => e.setCurrentRouteName),
     s =
       (S.IS_WEB ? S.WEB_TOP_PADDING : Math.max(e.top, 20),
@@ -242,16 +245,18 @@ const k = () => {
         screenOptions: { headerShown: !1 },
         children: [
           (0, T.jsx)(C.Screen, { name: '記録', component: RecordScreenComp }),
-          (0, T.jsx)(C.Screen, { name: '履歴', component: HistoryScreenComp }),
-          (0, T.jsx)(C.Screen, { name: '分析', component: AnalysisScreenComp }),
-          'group' === n && (0, T.jsx)(C.Screen, { name: 'メンバー', component: MemberScreenComp }),
-          'group' === n && (0, T.jsx)(C.Screen, { name: '出欠', component: AttendanceScreenComp }),
-          (0, T.jsx)(C.Screen, { name: '設定', component: SettingsScreenComp }),
+          !来客 && (0, T.jsx)(C.Screen, { name: '履歴', component: HistoryScreenComp }),
+          !来客 && (0, T.jsx)(C.Screen, { name: '分析', component: AnalysisScreenComp }),
+          !来客 && 'group' === n && (0, T.jsx)(C.Screen, { name: 'メンバー', component: MemberScreenComp }),
+          !来客 && 'group' === n && (0, T.jsx)(C.Screen, { name: '出欠', component: AttendanceScreenComp }),
+          !来客 && (0, T.jsx)(C.Screen, { name: '設定', component: SettingsScreenComp }),
         ],
       }),
-      (0, T.jsx)(B.AIChatBot, {}),
+      // 来客には出さない。相談役は団体の記録を見て答える作りで、
+      // 案内は団体の画面を順に指してまわる。どちらも来客には中身が無い
+      !来客 && (0, T.jsx)(B.AIChatBot, {}),
       // 使い方の案内。画面を移動しながら指すので、移動用の ref を渡す
-      (0, T.jsx)(案内.TutorialOverlay, { navRef: l }),
+      !来客 && (0, T.jsx)(案内.TutorialOverlay, { navRef: l }),
     ],
   });
 };

@@ -7,6 +7,14 @@
  * 「置き場所が変わっていること」と「中身の扱いは変わらないこと」を見る。
  */
 import { test, expect } from '@playwright/test';
+import {
+  案内を止める,
+  案内をあえて出す,
+  画面が出るまで待つ,
+  入り口が決まるまで待つ,
+  こうなるまで待つ,
+  横並びになるまで待つ,
+} from './helpers.mjs';
 import fs from 'node:fs';
 
 const お知らせの版 = (fs.readFileSync('src/JP_WhatsNewModal.js', 'utf8').match(/NOTICE_VERSION = '([^']+)'/) || [])[1];
@@ -20,8 +28,14 @@ test.use({ storageState: 'e2e/.auth/100001.json' });
 const 合言葉 = 'StgTest!2026';
 
 async function 入る(page) {
+  // 案内とお知らせは開く前に止める。開いてから止めて reload すると、
+  // アプリを2回起動することになる（遅い機種ほど効く）
+  await 案内を止める(page);
   await page.goto('/');
-  await page.waitForTimeout(3000);
+  await 画面が出るまで待つ(page);
+  // 読み込み中の画面でも「出た」になるので、ログイン欄が出るか、
+  // もう入っているかが決まるまで待つ（飛ばすとログイン画面のまま進む）
+  await 入り口が決まるまで待つ(page);
   const 番号欄 = page.getByPlaceholder('例: 123456');
   if (await 番号欄.isVisible().catch(() => false)) {
     await 番号欄.click();
@@ -45,17 +59,16 @@ async function 入る(page) {
     // 認証の保存が書き終わるまでの余裕
     await page.waitForTimeout(1500);
   }
-  await page.evaluate((版) => {
-    localStorage.setItem('tutorialDoneVersion', '2026-08-13-01');
-    localStorage.setItem('whatsNewDismissedVersion', 版);
-  }, お知らせの版);
-  await page.reload();
-  await page.waitForTimeout(4000);
+  // ここで書いて reload していたのをやめた（上の 案内を止める が代わり）
 
   // 射手を1人だけ立てる。ますは全部この人のものになる
   if (await page.getByText('記録を始めましょう').isVisible().catch(() => false)) {
     await page.getByText('人', { exact: true }).first().click();
-    await page.waitForTimeout(1500);
+    await こうなるまで待つ(
+      () => page.locator('[data-testid^="ます-"]').count(),
+      (n) => n > 0,
+      20000
+    );
   }
 }
 
@@ -77,7 +90,7 @@ test('並べ方：縦では射数が下に伸び、横では右に伸びる', as
   expect(Math.abs(縦.一.y - 縦.二.y), '縦なのに1射目と2射目が同じ高さにある').toBeGreaterThan(10);
 
   await page.getByTestId('並べ方').click();
-  await page.waitForTimeout(1500);
+  await 横並びになるまで待つ(page);
 
   const 横 = await 二つの位置(page);
   expect(Math.abs(横.一.y - 横.二.y), '横なのに1射目と2射目で高さがずれている').toBeLessThan(2);
@@ -94,7 +107,7 @@ test('並べ方：横にすると、名前が○×より左に出る', async ({ 
   expect(縦の名.y, '縦なのに名前が表の下に無い').toBeGreaterThan(縦の一.y);
 
   await page.getByTestId('並べ方').click();
-  await page.waitForTimeout(1500);
+  await 横並びになるまで待つ(page);
 
   const 横の名 = await page.getByText('選択', { exact: true }).first().boundingBox();
   const 横の一 = (await 二つの位置(page)).一;
@@ -104,13 +117,13 @@ test('並べ方：横にすると、名前が○×より左に出る', async ({ 
 test('並べ方：横のままでも○×を入れられ、同じ射目に入る', async ({ page }) => {
   await 入る(page);
   await page.getByTestId('並べ方').click();
-  await page.waitForTimeout(1500);
+  await 横並びになるまで待つ(page);
 
   const { 射手 } = await 二つの位置(page);
   const ます = page.getByTestId(`ます-${射手}-0`);
   expect((await ます.innerText()).trim(), '始めから何か入っている').toBe('');
   await ます.click({ force: true });
-  await page.waitForTimeout(800);
+  await こうなるまで待つ(async () => (await ます.innerText()).trim(), (x) => x === '○', 20000);
   expect((await ます.innerText()).trim(), '横のままだと押しても入らない').toBe('○');
 
   // しまわれる場所は縦のときと同じ（1射目＝0番）
@@ -125,7 +138,7 @@ test('並べ方：横のままでも○×を入れられ、同じ射目に入る
 test('並べ方：横のとき、立の切れ目は右の線になる', async ({ page }) => {
   await 入る(page);
   await page.getByTestId('並べ方').click();
-  await page.waitForTimeout(1500);
+  await 横並びになるまで待つ(page);
 
   const 線 = await page.evaluate(() => {
     const ますたち = [...document.querySelectorAll('[data-testid^="ます-"]')].slice(0, 8);
@@ -140,10 +153,10 @@ test('並べ方：横のとき、立の切れ目は右の線になる', async ({
 test('並べ方：選んだ並べ方は、読み込み直しても残る', async ({ page }) => {
   await 入る(page);
   await page.getByTestId('並べ方').click();
-  await page.waitForTimeout(1500);
+  await 横並びになるまで待つ(page);
 
   await page.reload();
-  await page.waitForTimeout(4000);
+  await 画面が出るまで待つ(page);
 
   const 横 = await 二つの位置(page);
   expect(Math.abs(横.一.y - 横.二.y), '読み込み直したら縦へ戻ってしまった').toBeLessThan(2);
@@ -154,7 +167,7 @@ test('並べ方：横でも誤タップ防止の鍵は効く（入れて3秒で�
   // 横では線の向きも大きさも入れ替えているので、実物で確かめておく
   await 入る(page);
   await page.getByTestId('並べ方').click();
-  await page.waitForTimeout(1500);
+  await 横並びになるまで待つ(page);
 
   const { 射手 } = await 二つの位置(page);
   const ます = page.getByTestId(`ます-${射手}-0`);
@@ -187,12 +200,16 @@ test('並べ方：横でも誤タップ防止の鍵は効く（入れて3秒で�
 test('並べ方：横のとき、個人の計は一番右に出る', async ({ page }) => {
   await 入る(page);
   await page.getByTestId('並べ方').click();
-  await page.waitForTimeout(1500);
+  await 横並びになるまで待つ(page);
 
   // 1射目に○を入れて、右端の数が動くことで「そこが計」だと確かめる
   const { 射手 } = await 二つの位置(page);
   await page.getByTestId(`ます-${射手}-0`).click({ force: true });
-  await page.waitForTimeout(800);
+  await こうなるまで待つ(
+    async () => (await page.getByTestId(`ます-${射手}-0`).innerText()).trim(),
+    (x) => x === '○',
+    20000
+  );
 
   const 最後のます = await page.getByTestId(`ます-${射手}-7`).boundingBox();
   const 計 = await page.getByText('1', { exact: true }).last().boundingBox();
@@ -214,12 +231,9 @@ test('並べ方：横のままでも案内は最後まで進み、名前の位�
   test.setTimeout(420_000);
   await 入る(page);
   await page.getByTestId('並べ方').click();
-  await page.waitForTimeout(1200);
+  await 横並びになるまで待つ(page);
 
-  await page.evaluate(() => {
-    localStorage.removeItem('tutorialDoneVersion');
-    localStorage.removeItem('tutorialBoardSnapshot');
-  });
+  await 案内をあえて出す(page);
   await page.reload();
   await expect(page.locator('text=ようこそ'), '横だと案内が始まらない').toBeVisible({ timeout: 30_000 });
 
@@ -289,7 +303,11 @@ test('下の帯：狭い画面でも、どのボタンも隣に覆われない',
   // 並べ方が完全に隠れ、押しても何も起きない状態だった
   await page.setViewportSize({ width: 320, height: 568 });
   await 入る(page);
-  await page.waitForTimeout(1200);
+  await こうなるまで待つ(
+    () => page.locator('[data-testid^="ます-"]').count(),
+    (n) => n > 0,
+    20000
+  );
 
   const 調べ = await page.evaluate(() => {
     const 出 = [];
@@ -318,7 +336,7 @@ test('下の帯：狭い画面でも、どのボタンも隣に覆われない',
 
   // 覆われていないだけでなく、本当に効くこと
   await page.getByTestId('並べ方').click();
-  await page.waitForTimeout(1200);
+  await 横並びになるまで待つ(page);
   const 横か = await page.evaluate(
     () => JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state?.横に並べる
   );
@@ -342,13 +360,13 @@ test('帯：上下の操作帯を畳めて、畳んでも画面は移れる', as
   expect(await 見える('終了・保存'), '前提：下の操作帯が出ていない').toBe(true);
 
   await page.getByTestId('帯の開け閉め').click();
-  await page.waitForTimeout(1000);
+  await こうなるまで待つ(() => 見える('リセット'), (x) => x === false, 20000);
   expect(await 見える('リセット'), '押しても上の帯が畳まれない').toBe(false);
   expect(await 見える('終了・保存'), '押しても下の帯が畳まれない').toBe(false);
   expect(await 見える('履歴'), '畳むと画面を移れなくなっている').toBe(true);
 
   await page.getByTestId('帯の開け閉め').click();
-  await page.waitForTimeout(1000);
+  await こうなるまで待つ(() => 見える('リセット'), (x) => x === true, 20000);
   expect(await 見える('リセット'), '戻せない').toBe(true);
   expect(await 見える('終了・保存'), '戻せない').toBe(true);
 });
@@ -360,12 +378,12 @@ test('帯：畳んだまま案内を始めても、案内の指す先は出て�
   test.setTimeout(300_000);
   await 入る(page);
   await page.getByTestId('帯の開け閉め').click();
+  // ここは畳めたことを見る道具（見える）がまだ無い位置なので、
+  // 決まった秒数のまま。畳んだ状態で案内を始めるのが目的で、
+  // 畳み終わりそのものは下の検査（帯：押すと畳まれ、もう一度で戻る）で見ている
   await page.waitForTimeout(1000);
 
-  await page.evaluate(() => {
-    localStorage.removeItem('tutorialDoneVersion');
-    localStorage.removeItem('tutorialBoardSnapshot');
-  });
+  await 案内をあえて出す(page);
   await page.reload();
   await expect(page.locator('text=ようこそ'), '案内が始まらない').toBeVisible({ timeout: 30_000 });
 

@@ -87,7 +87,11 @@ check('RTDB', 'users を匿名で書く', 401, await rt('/users/x', anon2.idToke
 check('RTDB', 'ルート直下を未認証で読む', 401, await rt('/', null));
 check('RTDB', 'ルート直下を認証ありで読む', 401, await rt('/', tokG1), '全体の列挙は不可');
 // 消したあとも、使っている経路は今までどおり通ること
-check('RTDB', '自団体のライブを認証ありで読む', 200, await rt(`/live_sessions/${G1}`, tokG1), '巻き添えが無いこと');
+// ライブは団体IDではなく、団体ごとの推測できない合言葉の枝に置く（src/liveSecret.js）。
+// RTDB の決まりは枝の長さしか見ないので、検査は同じ長さの作り物で足りる
+const 検証の枝 = 'verify-live-branch-0000000000';
+check('RTDB', 'ライブの枝を認証ありで読む', 200, await rt(`/live_sessions/${検証の枝}`, tokG1), '巻き添えが無いこと');
+check('RTDB', '団体IDそのままの枝は読めない', 401, await rt(`/live_sessions/${G1}`, tokG1), '総当たりを塞いでいること');
 check('RTDB', '未定義のノードを認証ありで書く', 401, await rt('/unknownNode/x', tokG1, 'PUT', { a: 1 }),
   'ルールに無いパスは既定で拒否');
 

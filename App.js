@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Platform, Alert } from 'react-native';
+import { View, Platform, Alert, AppState } from 'react-native';
 // StyleSheet はテーマ変換を通すためブリッジ経由で取得する
 import StyleSheet from './src/default_45';
 import { useScoreStore } from './src/JP_useScoreStore_174';
@@ -17,12 +17,23 @@ import { initTheme, useThemeMode } from './src/theme';
 import { auth } from './src/db_178';
 import { onAuthStateChanged } from './src/module_191';
 import { 見張りを始める, 溜まりを流す, 行動を残す } from './src/errorReporter';
+import { 来客の窓 } from './src/JP_LiveShareModal';
+import { UpdateBar } from './src/JP_UpdateBar';
+import { URLから荷を取る } from './src/liveShare';
+import { 見張りを作る } from './src/backgroundSaver';
+import { goOffline, goOnline } from './src/module_186';
+import { rtdb } from './src/db_178';
 
 const IS_WEB = Platform.OS === 'web';
 
 // 部員の認証方式の版。JP_LoginScreen_1036.js の同名の定数と必ず揃えること。
 // 値を上げると、古い方式でログイン中の部員は次回起動時にログアウトされる。
 const MEMBER_AUTH_VERSION = 2;
+
+// 共有リンクの荷を、タブ限りで控えておく鍵。
+// URL から消したあとも、再読み込みで入り直せるようにするために持つ。
+// タブを閉じれば消えるので、次に端末を使う人には残らない。
+const 共有の荷の鍵 = 'kyudo.共有の荷';
 
 // 保存済みのテーマと OS 配色の追従を、最初の描画前に開始しておく
 initTheme();
@@ -32,6 +43,83 @@ export default function App() {
   const { theme } = useThemeMode();
   const isHydrated = useScoreStore(e => e.isHydrated);
   const activeGroupId = useScoreStore(e => e.activeGroupId);
+  // 共有リンクだけで来ている人。団体に入っていなくても記録画面を出す
+  const 共有の来客 = useScoreStore(e => e.共有の来客);
+  // URL に載っていた共有の荷。窓を出して、合言葉があれば聞く
+  const [共有の荷, 共有の荷を置く] = useState(null);
+
+  // 裏に回っているあいだは、Realtime Database との線を休ませる。
+  //
+  // 無料枠の同時接続は100で、数えているのは「接続」であって見張りではない。
+  // 見張りを外しても線は残るので、減らすには線そのものを切る（src/backgroundSaver.js）。
+  // 切っているあいだの書き込みは Realtime Database が溜めて、つなぎ直したときに送る
+  useEffect(() => {
+    if (!rtdb) return;
+    const 見張り = 見張りを作る({
+      切る: () => goOffline(rtdb),
+      つなぐ: () => goOnline(rtdb),
+    });
+    // web は画面が見えているか、端末はアプリが前面か
+    let 外す = () => {};
+    if (typeof document !== 'undefined' && document.addEventListener) {
+      const 変わった = () =>
+        'hidden' === document.visibilityState ? 見張り.裏に回った() : 見張り.表に戻った();
+      (document.addEventListener('visibilitychange', 変わった),
+        (外す = () => document.removeEventListener('visibilitychange', 変わった)));
+    } else {
+      const 手 = AppState.addEventListener('change', (状態) =>
+        'active' === 状態 ? 見張り.表に戻った() : 見張り.裏に回った()
+      );
+      外す = () => 手 && 手.remove && 手.remove();
+    }
+    return () => {
+      (外す(), 見張り.片付ける());
+    };
+  }, []);
+
+  // 共有リンクで開かれたかを、起動のときに一度だけ見る。
+  //
+  // 荷は「#」の後ろにあるので、配り元の記録（サーバーのログや Referer）には
+  // 流れない。
+  //
+  // 読めたらタブ限りの控えへ移す。router は起動のときに URL を /record へ
+  // 書き換えてハッシュを落とすので、控えが無いと**再読み込みで来客が
+  // 締め出される**（共有で入った状態は端末に残していない）。実際、控えを
+  // 止めて焼き直すと e2e の再読み込みの件が落ちる。
+  // 控えはタブを閉じれば消えるので、次に端末を使う人には残らない。
+  //
+  // URL からも消す。router も結果として落とすので見た目は変わらないが、
+  // 読んだ直後に自分で消しておけば、router の振る舞いに頼らずに済む。
+  useEffect(() => {
+    try {
+      if (typeof window === 'undefined' || !window.location) return;
+      const URLの荷 = URLから荷を取る(String(window.location.href || ''));
+      if (URLの荷) {
+        try {
+          window.sessionStorage.setItem(共有の荷の鍵, URLの荷);
+        } catch (e) {
+          // 控えられなくても、この画面のあいだは荷を持っている
+        }
+        try {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        } catch (e) {
+          // 消せなくても、荷は読めているので先へ進む
+        }
+        共有の荷を置く(URLの荷);
+        return;
+      }
+      // 再読み込み。URL には無いが、タブの控えに残っている
+      let 控え = null;
+      try {
+        控え = window.sessionStorage.getItem(共有の荷の鍵);
+      } catch (e) {
+        // 読めなければ、共有リンクでは来ていない扱いにする
+      }
+      if (控え) 共有の荷を置く(控え);
+    } catch (e) {
+      console.warn('[App] 共有リンクを読めませんでした', e);
+    }
+  }, []);
   const activeRole = useScoreStore(e => e.activeRole);
   const memberAuthVersion = useScoreStore(e => e.memberAuthVersion);
   const setAuth = useScoreStore(e => e.setAuth);
@@ -108,6 +196,13 @@ export default function App() {
   useEffect(() => {
     if (isHydrated && activeGroupId && authReady) {
       console.log('[App] Initializing data for group:', activeGroupId);
+      // ライブを置く枝の合言葉。団体IDそのままだと総当たりで覗かれるので、
+      // 推測できない名前を使う。入った時点で取っておかないと、ライブを
+      // 始める瞬間に取りにいくことになり、間に合わないことがある。
+      //
+      // 下の取り込みとは別に呼ぶ。同じ try に入れると、雲からの取り込みが
+      // 遅れたり失敗したりしただけでライブが使えなくなる
+      useScoreStore.getState().ライブの合言葉を用意する();
       (async () => {
         try {
           await fetchAndOverwriteFromCloud();
@@ -154,7 +249,12 @@ export default function App() {
         <SafeAreaProvider style={{ flex: 1, width: '100%', height: '100%' }}>
           <ErrorBoundary>
             <StatusBar style={isDarkTheme ? 'light' : 'dark'} />
-            {activeGroupId ? (
+            {/* 新しい版が出たことの知らせ。開いたままのタブは、読み込み直す
+                まで古い束のまま動く。ライブの置き場所が変わる回では、古い
+                ままの端末が別の枝を見て「相手の○×が出ない」形になる。
+                ログインの前後どちらでも出す（気づけないのは同じく困る） */}
+            <UpdateBar />
+            {activeGroupId || 共有の来客 ? (
               // 色の変換は「描画時」に行うため、テーマを変えたら配下を再マウントして
               // 全画面を描画し直す。React Navigation の画面はメモ化されており、
               // key を変えないと再描画されず配色が古いままになる。
@@ -167,6 +267,10 @@ export default function App() {
             ) : (
               <LoginScreen />
             )}
+            {/* 共有リンクで来た人を迎える窓。団体に入る前に出す */}
+            {共有の荷 && !共有の来客 ? (
+              <来客の窓 荷={共有の荷} onClose={() => 共有の荷を置く(null)} />
+            ) : null}
             {/* 確認とお知らせの窓。ログインの前の画面でも使うので、
                 入った後・入る前のどちらにも入らない外側に1つだけ置く。
                 2つ置くと後に描かれた方が受け口を奪うので、必ず1つ。 */}

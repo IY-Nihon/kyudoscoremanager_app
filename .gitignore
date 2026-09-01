@@ -69,3 +69,4 @@ dist3/
 # 取り残された利用者を消したときの控え。誰を消したかの記録なので、
 # 手元に残しておくが、リポジトリには入れない
 orphan-deleted-*.json
+old-live-branches-*.json
