@@ -15,7 +15,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.nitidaikouka.RecordAppExpo",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDisplayName": "弓道部的中ノート"
       }
     },
     "android": {

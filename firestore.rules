@@ -56,6 +56,19 @@ service cloud.firestore {
       return isGroupOwner(groupId) || isClaimedMember(groupId);
     }
 
+    // ログインは団体IDで行うが、Firebase Auth はメールアドレスでしか認証
+    // できない。だから**認証する前に**「団体ID→メールアドレス」を引く必要が
+    // あり、get は開けたままにするしかない。
+    //
+    // 代わりに、ここへ置くのは**ログインに要る2つだけ**にする。
+    // 団体名・登録日・同意の記録を一緒に置いていたころは、6桁の団体IDを
+    // 順に試すだけで「学校名とその担当者のメールアドレス」が組で集められた
+    // （2026-09-02 に本番で実際に取得できることを確かめた）。
+    // メールアドレス単体なら「どこかの誰か」だが、学校名と組になると
+    // 「どこの誰か」になる。名寄せを止めるのがここの目的。
+    //
+    // 決まりは文書の一部だけを隠せない（get は文書ぜんぶを返す）ので、
+    // 隠したいものは下の private へ分けてある。
     match /group_accounts/{groupId} {
       allow get: if true;                        // ログインは認証前に参照する
       allow list: if isAdmin();
@@ -64,17 +77,23 @@ service cloud.firestore {
         && callerEmail() != ''
         && request.resource.data.email == callerEmail()
         && request.resource.data.id == groupId
-        // 同意の版・同意した日時は、登録のときに一緒に書く（src/legalDocs.js の
-        // 同意の記録）。ここに無いと create が弾かれ、アカウントが作れない。
-        // 実際 2026-08-27 の配信からその状態になっていた
-        && request.resource.data.keys().hasOnly([
-             'id', 'name', 'email', 'createdAt', '同意の版', '同意した日時'
-           ]);
+        // ログインに要る2つだけ。同意の記録は private/consent へ書く
+        //（src/legalDocs.js の 同意の記録。ここに混ぜると誰でも読める）
+        && request.resource.data.keys().hasOnly(['id', 'email']);
 
       allow update: if isAdmin()
         || (callerEmail() != '' && resource.data.email == callerEmail());
 
       allow delete: if isAdmin();
+
+      // 団体名・登録日・同意の記録。**その団体のメールアドレスで入っている
+      // 本人だけ**が読み書きする。親の email と突き合わせて確かめる
+      match /private/{doc} {
+        allow read, write: if isAdmin()
+          || (callerEmail() != ''
+              && callerEmail() ==
+                 get(/databases/$(database)/documents/group_accounts/$(groupId)).data.email);
+      }
     }
 
     // 所属クレーム。逆引き表と memberId が一致する場合だけ作れる。

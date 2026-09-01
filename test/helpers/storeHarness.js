@@ -96,7 +96,16 @@ function 偽Firestore() {
 
   const api = {
     collection: (db, 道) => ({ 道 }),
-    doc: (db, 道, id) => (id === undefined ? { 道: 道, id: null } : { 道, id }),
+    // doc(db, 'group_accounts', '100001') も
+    // doc(db, 'group_accounts', '100001', 'private', 'consent') も受ける。
+    // 下の階層を潰して親と同じ場所にすると、分けたつもりの検査が
+    // 何も確かめていないことになる（実際それで見落とした）
+    doc: (db, 道, ...続き) => {
+      if (!続き.length) return { 道: 道, id: null };
+      const 全部 = [道, ...続き.map(String)];
+      const id = 全部.pop();
+      return { 道: 全部.join('/'), id };
+    },
     query: (集まり) => ({ 道: 集まり.道 }),
     where: () => ({}),
     orderBy: () => ({}),
@@ -237,8 +246,21 @@ function 偽RTDB() {
     return 値;
   };
 
-  const 配る = (v) => {
+  /**
+   * 見張りへ配る。
+   *
+   * 本物の onValue は「その道の値が変わったとき」だけ呼ぶ。ここも同じにする。
+   * どの書き込みでも全部の見張りを叩いていたころは、`.info/connected` を見て
+   * 書き直す作り（ライブの在席）が、自分の書き込みでまた呼ばれて止まらなく
+   * なった。偽物が本物より多く呼ぶと、そこにしか無い不具合が生まれる。
+   *
+   * 初回だけは、値が無くても必ず配る（本物と同じ）。
+   */
+  const 配る = (v, 初回) => {
     const 値 = 読む(分解(v.道));
+    const 印 = JSON.stringify(値 === undefined ? null : 値);
+    if (!初回 && 印 === v.前の値) return;
+    v.前の値 = 印;
     v.受け取る({ val: () => 写し(値), exists: () => 値 !== undefined });
   };
   const 通知 = () => {
@@ -260,11 +282,42 @@ function 偽RTDB() {
     return Promise.resolve();
   };
 
+  // 回線が切れたときの約束（onDisconnect）。道 → やること
+  let 約束 = {};
+
+  /**
+   * 共有リンクの期限だけは、決まり（database.rules.json）と同じように
+   * ここでも止める。
+   *
+   * 偽のRTDBは決まりを持たないので、そのままだと「期限切れなのに読める」
+   * 状態になり、期限まわりの検査が本番と違う道を通ってしまう。
+   * 実際、期限切れの見分け方を「弾かれたときだけ調べる」形に直したとき、
+   * 決まりを持たない偽物では検査が素通りした。
+   *
+   * ここで写しているのは live_limits の一点だけで、決まりの全部ではない。
+   * 決まりそのものは検証環境に当てて確かめること（npm run ops:expiry-rules）。
+   */
+  const 期限で止まるか = (道) => {
+    const 節 = 分解(道);
+    if (節.length < 2) return !1;
+    const 根 = 節[0];
+    if (!['live_sessions', 'live_view', 'live_history', 'live_presence'].includes(根)) return !1;
+    const 期限 = 読む(['live_limits', 節[1]]);
+    return 'number' == typeof 期限 && Date.now() >= 期限;
+  };
+  const 弾く = () => {
+    const e = new Error('Permission denied');
+    // @ts-ignore Firebase の誤りに合わせる
+    e.code = 'PERMISSION_DENIED';
+    return e;
+  };
+
   const api = {
     getDatabase: () => ({ __偽: true }),
     ref: (db, 道) => ({ 道: 道 === undefined ? '' : String(道) }),
     serverTimestamp: () => ({ __サーバー日時: true }),
     get: async (参照) => {
+      if (期限で止まるか(参照.道)) throw 弾く();
       const 値 = 読む(分解(参照.道));
       return { exists: () => 値 !== undefined, val: () => 写し(値) };
     },
@@ -317,10 +370,16 @@ function 偽RTDB() {
           }
         },
       }),
-    onValue: (参照, 受け取る) => {
+    onValue: (参照, 受け取る, 弾かれたら) => {
+      // 期限の切れた枝は、決まりが見張りごと止める。本物と同じく
+      // 受け取る側ではなく、受けの側へ知らせる
+      if (期限で止まるか(参照.道)) {
+        if (弾かれたら) 弾かれたら(弾く());
+        return () => {};
+      }
       const v = { 道: 参照.道, 受け取る };
       見張り.push(v);
-      配る(v);
+      配る(v, !0); // 初回は必ず配る
       return () => {
         const i = 見張り.indexOf(v);
         if (i >= 0) 見張り.splice(i, 1);
@@ -330,6 +389,24 @@ function 偽RTDB() {
     off: (参照) => {
       for (let i = 見張り.length - 1; i >= 0; i--) if (見張り[i].道 === 参照.道) 見張り.splice(i, 1);
     },
+    /**
+     * 回線が切れたときに、サーバー側でやってもらう約束。
+     * ライブの在席（src/livePresence.js）が使う。
+     *
+     * 本物は一度きりで、つなぎ直したら掛け直しになる。ここでもその形にして
+     * あり、切断を起こすと約束は消える。掛け直していない作りは
+     * 「一度切れたら二度と消えない在席」になるので、検査で見分けたい
+     */
+    onDisconnect: (参照) => ({
+      remove: () => {
+        約束[参照.道] = () => 書く(分解(参照.道), undefined);
+        return Promise.resolve();
+      },
+      cancel: () => {
+        delete 約束[参照.道];
+        return Promise.resolve();
+      },
+    }),
   };
 
   return {
@@ -337,9 +414,23 @@ function 偽RTDB() {
     状態,
     記録,
     見張りの数: () => 見張り.length,
+    /** 見張っている道の一覧。どこの見張りが残っているかを確かめるのに使う */
+    見張りの道: () => 見張り.map((v) => v.道),
     値: (道) => 写し(読む(分解(道))),
     置く: (道, 値) => (書く(分解(道), 雲の形へ(値)), 通知()),
     消す: (道) => (書く(分解(道), undefined), 通知()),
+    /** 約束の数。掛け直しができているかを見るのに使う */
+    約束の数: () => Object.keys(約束).length,
+    /**
+     * 回線が切れたことにする。約束を実行して、本物と同じく約束は消す。
+     * `.info/connected` も false にするので、掛け直す作りなら気づける
+     */
+    切る: () => {
+      (Object.keys(約束).forEach((道) => 約束[道]()), (約束 = {}));
+      (書く(分解('.info/connected'), false), 通知());
+    },
+    /** 回線が戻ったことにする */
+    つなぐ: () => (書く(分解('.info/connected'), true), 通知()),
   };
 }
 
@@ -365,7 +456,11 @@ function 外部を差し替え(名前, 中身) {
 
 /** require の解決を横取りして、指定した名前だけ偽物へ向ける */
 const 横取り = new Map();
+// _resolveFilename は Node の内側の仕組みで、型の定義には載っていない。
+// ここは意図してその仕組みに手を入れている
+// @ts-ignore
 const 元の解決 = Module._resolveFilename;
+// @ts-ignore
 Module._resolveFilename = function (要求, ...残り) {
   if (横取り.has(要求)) return 横取り.get(要求);
   return 元の解決.call(this, 要求, ...残り);
@@ -381,10 +476,15 @@ function ストアを用意する(既存の雲, 既存のライブ) {
   // つながっている端末では、サーバーとの時差が取れる。既定はその形にしておく。
   // 「時差が取れない」場面を作りたいときは ライブ.消す(時差の道) で外す
   ライブ.置く('.info/serverTimeOffset', 0);
+  // 既定はつながっている状態。ライブの在席（src/livePresence.js）が見る。
+  // 「切れている」場面は ライブ.切る() で作る
+  ライブ.置く('.info/connected', true);
   const 保存領域 = new Map();
   const 知らせ = []; // 画面に出した文言（saveSession の上書き防止など）
 
   // IS_WEB が真なので window.alert が呼ばれる。node には無いので用意する
+  // 画面のふりをするだけの入れ物。本物の Window ではない
+  // @ts-ignore
   if (typeof global.window === 'undefined') global.window = {};
   global.window.alert = (文) => 知らせ.push(String(文));
 
@@ -442,4 +542,13 @@ function ストアを用意する(既存の雲, 既存のライブ) {
 /** 少し待つ。送信の約束が片付くのを待つために使う */
 const 待つ = (ms = 0) => new Promise((r) => setTimeout(r, ms));
 
-module.exports = { ストアを用意する, 待つ, 決着しない };
+/**
+ * 検査で使うライブの合言葉。
+ *
+ * ライブは団体IDではなくこの合言葉の枝に置く（src/liveSecret.js）。
+ * database.rules.json が短い枝を拒むので、実物と同じ長さにしておく。
+ * 検査でこれを入れ忘れると、送信が入口で全部帰って何も起きない
+ */
+const 検査の合言葉 = 'test-live-secret-0123456789';
+
+module.exports = { ストアを用意する, 待つ, 決着しない, 検査の合言葉 };

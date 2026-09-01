@@ -408,6 +408,11 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                         (0, k.jsxs)(k.Fragment, {
                           children: [
                             (0, k.jsx)(f.default, {
+                              // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                              accessible: !0,
+                              accessibilityRole: 'button',
+                              accessibilityLabel: 'この記録を消す',
+                              'aria-label': 'この記録を消す',
                               onPress: () => {
                                 (Ae(Pe.id), we(!0));
                               },
@@ -865,6 +870,11 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                                   }),
                                 (R || 'group' === z) &&
                                   (0, k.jsx)(f.default, {
+                                    // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                                    accessible: !0,
+                                    accessibilityRole: 'button',
+                                    accessibilityLabel: '選んだ記録を消す',
+                                    'aria-label': '選んだ記録を消す',
                                     onPress: Ke,
                                     style: ({ hovered: e }) => [
                                       { padding: 4, borderRadius: 20 },

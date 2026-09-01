@@ -28,6 +28,7 @@ const {
   mergeLiveArchers,
   normalizeArrowLocations,
   ライブ名に使えない字,
+  参加できるライブ,
 } = require('../src/syncRules');
 
 /** Firestore の Timestamp のふり */
@@ -489,4 +490,38 @@ test('学年でまとめる：空でも落ちない', () => {
   assert.deepStrictEqual(学年でまとめる([]), []);
   assert.deepStrictEqual(学年でまとめる(null), []);
   assert.deepStrictEqual(学年でまとめる([null, undefined]), []);
+});
+
+// ── 共有リンクの期限 ──────────────────────────────────
+//
+// 期限が切れると、そのライブの中身は決まりの側で読めなくなる。
+// 一覧に出したままだと、押しても何も出ない「空のライブ」に入る。
+
+test('参加できるライブ：期限の切れたものは一覧から外し、片付けへ回す', () => {
+  const 今 = 1000000;
+  const { 出す, 古い } = 参加できるライブ(
+    {
+      切れた: { state: { timestamp: 今 - 1000, 期限: 今 - 1 } },
+      生きている: { state: { timestamp: 今 - 1000, 期限: 今 + 100000 } },
+    },
+    今
+  );
+  assert.deepStrictEqual(出す, ['生きている']);
+  assert.deepStrictEqual(古い, ['切れた']);
+});
+
+test('参加できるライブ：期限が無いものはこれまでどおり', () => {
+  // 期限なしで配ったもの、期限を足す前に配ったもの、共有していないもの
+  const 今 = 1000000;
+  for (const 期限 of [undefined, null, 0]) {
+    const { 出す, 古い } = 参加できるライブ({ 朝練: { state: { timestamp: 今 - 1000, 期限 } } }, 今);
+    assert.deepStrictEqual(出す, ['朝練'], String(期限));
+    assert.deepStrictEqual(古い, [], String(期限));
+  }
+});
+
+test('参加できるライブ：期限ちょうどは切れている側', () => {
+  const 今 = 1000000;
+  assert.deepStrictEqual(参加できるライブ({ a: { state: { timestamp: 今, 期限: 今 } } }, 今).古い, ['a']);
+  assert.deepStrictEqual(参加できるライブ({ a: { state: { timestamp: 今, 期限: 今 + 1 } } }, 今).出す, ['a']);
 });

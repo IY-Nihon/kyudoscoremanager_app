@@ -961,6 +961,11 @@ const w = () => {
                                       D.stepperBtn,
                                       e && { backgroundColor: '#D1D1D6' },
                                     ],
+                                    // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                                    accessible: !0,
+                                    accessibilityRole: 'button',
+                                    accessibilityLabel: '減らす',
+                                    'aria-label': '減らす',
                                     onPress: () => v(Math.max(1, e - 1)),
                                     children: (0, T.jsx)(p.Ionicons, {
                                       name: 'remove',
@@ -974,6 +979,11 @@ const w = () => {
                                       D.stepperBtn,
                                       e && { backgroundColor: '#D1D1D6' },
                                     ],
+                                    // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                                    accessible: !0,
+                                    accessibilityRole: 'button',
+                                    accessibilityLabel: '増やす',
+                                    'aria-label': '増やす',
                                     onPress: () => v(e + 1),
                                     children: (0, T.jsx)(p.Ionicons, {
                                       name: 'add',
@@ -1033,6 +1043,11 @@ const w = () => {
                                       children: e,
                                     }),
                                     (0, T.jsx)(h.default, {
+                                      // 絵だけのボタン。どのタグを消すのかまで読ませる
+                                      accessible: !0,
+                                      accessibilityRole: 'button',
+                                      accessibilityLabel: e + ' を消す',
+                                      'aria-label': e + ' を消す',
                                       onPress: () => Q(e),
                                       style: ({ hovered: e }) => [
                                         e && { opacity: 0.7 },
@@ -1772,6 +1787,11 @@ const w = () => {
                                 children: [
                                   (0, T.jsx)(d.default, {
                                     style: D.monthNavBtn,
+                                    // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                                    accessible: !0,
+                                    accessibilityRole: 'button',
+                                    accessibilityLabel: '前へ',
+                                    'aria-label': '前へ',
                                     onPress: () => He(-1),
                                     children: (0, T.jsx)(p.Ionicons, {
                                       name: 'chevron-back',
@@ -1785,6 +1805,11 @@ const w = () => {
                                   }),
                                   (0, T.jsx)(d.default, {
                                     style: D.monthNavBtn,
+                                    // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                                    accessible: !0,
+                                    accessibilityRole: 'button',
+                                    accessibilityLabel: '次へ',
+                                    'aria-label': '次へ',
                                     onPress: () => He(1),
                                     children: (0, T.jsx)(p.Ionicons, {
                                       name: 'chevron-forward',
@@ -1888,6 +1913,11 @@ const w = () => {
                         autoFocus: !0,
                       }),
                       (0, T.jsx)(h.default, {
+                        // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                        accessible: !0,
+                        accessibilityRole: 'button',
+                        accessibilityLabel: 'パスワードの表示を切り替える',
+                        'aria-label': 'パスワードの表示を切り替える',
                         onPress: () => setShowPw(!showPw),
                         style: { padding: 4 },
                         children: (0, T.jsx)(p.Ionicons, {

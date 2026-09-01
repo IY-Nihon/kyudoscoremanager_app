@@ -1,11 +1,13 @@
 // 誤タップ防止（自動ロック）の確かめ。
 // 入れて3秒たつと押しても変わらず、長押しするとそのますだけ開く。
 import { test, expect } from '@playwright/test';
-import fs from 'node:fs';
+import {
+  案内を止める,
+  画面が出るまで待つ,
+  入り口が決まるまで待つ,
+  ますが増えるまで待つ,
+} from './helpers.mjs';
 
-// お知らせの版は本体から読む。版が上がっても検査を直さずに済む。
-// 案内だけ止めるとお知らせが出て画面を覆うため、両方まとめて止める
-const お知らせの版 = (fs.readFileSync('src/JP_WhatsNewModal.js', 'utf8').match(/NOTICE_VERSION = '([^']+)'/) || [])[1];
 
 // ライブの検査（100006）とは別の団体を使う。混ざる余地をなくすため。
 // メンバーのいる団体にする。0人の団体だと射手を足すたびにゲストが残る。
@@ -68,8 +70,14 @@ async function 指の便を取る(page) {
 }
 
 async function 入る(page) {
+  // 案内とお知らせは開く前に止める。開いてから止めて reload すると、
+  // アプリを2回起動することになる（遅い機種ほど効く）
+  await 案内を止める(page);
   await page.goto('/');
-  await page.waitForTimeout(3000);
+  await 画面が出るまで待つ(page);
+  // 読み込み中の画面でも「出た」になるので、ログイン欄が出るか、
+  // もう入っているかが決まるまで待つ（飛ばすとログイン画面のまま進む）
+  await 入り口が決まるまで待つ(page);
   const 番号欄 = page.getByPlaceholder('例: 123456');
   if (await 番号欄.isVisible().catch(() => false)) {
     await 番号欄.click();
@@ -94,20 +102,13 @@ async function 入る(page) {
     await page.waitForTimeout(1500);
   }
   // 使い方の案内は別のテストで見る。ここでは邪魔なので出さない
-  await page.evaluate((版) => {
-    // 案内もお知らせも、ここでは邪魔なので出さない。
-    // お知らせは『案内を終えた人』に出る作りなので、案内だけ止めると出てくる
-    localStorage.setItem('tutorialDoneVersion', '2026-08-13-01');
-    localStorage.setItem('whatsNewDismissedVersion', 版);
-  }, お知らせの版);
-  await page.reload();
-  await page.waitForTimeout(4000);
+  // ここで書いて reload していたのをやめた（上の 案内を止める が代わり）
 
   // 射手の列が無ければ1つ足す。名前は選ばない（メンバーを作らないため）。
   // 保存もしないので、団体の中身には触れない
   if (await page.getByText('記録を始めましょう').isVisible().catch(() => false)) {
     await page.getByText('人', { exact: true }).first().click();
-    await page.waitForTimeout(1500);
+    await ますが増えるまで待つ(page, 1);
   }
 }
 
@@ -233,7 +234,7 @@ test('読み込み直しても、入れてある○×は閉じたまま', async 
   // 入れた覚えは端末に残さない。残さないまま開いてしまうと無防備になるので、
   // 覚えの無い○×は初めから閉じている決まりにしてある
   await page.reload();
-  await page.waitForTimeout(4000);
+  await 画面が出るまで待つ(page);
   const 後 = page.locator('[data-testid^="ます-"]').first();
   expect((await 後.innerText()).trim(), '読み込み直しで○が消えた').toBe('○');
 
@@ -265,4 +266,71 @@ test('鍵がかかったますを押すと、開け方を知らせる', async ({
   // 知らせるだけで、○×は変わらないこと
   const 印 = await ます.innerText();
   expect(印.trim(), '知らせるだけのはずが、○×まで変わっている').toBe('○');
+});
+
+// ── 矢所（ますを押してから500ミリ秒後に出る窓）─────────────
+//
+// ここは検査がまったく無く、2026-08-30 まで**本番で落ちていた**。
+// 射手を取りに行く形へ直したとき、押したときの道だけ古い変数（archer）が
+// 残っていて、矢所を出す設定の団体では○×を入れるたびに赤画面になっていた。
+// 未定義の変数そのものは npm test（eslint.undef.mjs）で止まるようになったが、
+// この道が一度も動かされていなかったこと自体が穴だった。
+//
+// 矢所の設定は端末にだけ残る（クラウドへは行かない）ので、団体は汚さない。
+
+test('矢所：ますを押すと、500ミリ秒後に矢所の窓が出る（落ちない）', async ({ page }) => {
+  const 落ちた = [];
+  // 拾うのは「書き間違いで落ちた」ものだけ。
+  // WebKit は Firestore の長い通信に due to access control checks という
+  // 警告を出すことがあり、これはアプリの落ちではない。全部を数えると、
+  // その警告だけで落ちて、本物の落ちが見えなくなる
+  const 書き間違いか = (文) =>
+    /is not defined|is not a function|undefined is not an object|Cannot read/i.test(文);
+  page.on('pageerror', (e) => {
+    const 文 = String((e && e.message) || e);
+    if (書き間違いか(文)) 落ちた.push(文);
+  });
+
+  await 入る(page);
+
+  // 設定から矢所を入れる。画面から入れるのは、切り替えそのものも見るため
+  await page.getByText('設定', { exact: true }).first().click();
+  await page.waitForTimeout(1500);
+  const 行 = page.getByText('矢所の記録機能を有効化', { exact: true });
+  await 行.scrollIntoViewIfNeeded().catch(() => {});
+  await expect(行, '設定に矢所の行が無い').toBeVisible({ timeout: 15_000 });
+  // 行の右側の切り替えを押す
+  await page.evaluate(() => {
+    const 行 = [...document.querySelectorAll('div')].find(
+      (e) => (e.textContent || '').trim() === '矢所の記録機能を有効化'
+    );
+    let 親 = 行;
+    for (let i = 0; i < 5 && 親; i++) {
+      const 切替 = 親.querySelector('input[type="checkbox"], [role="switch"]');
+      if (切替) return void 切替.click();
+      親 = 親.parentElement;
+    }
+  });
+  await page.waitForTimeout(1200);
+  expect(
+    await page.evaluate(() => {
+      const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+      return !!s.enableArrowLocation;
+    }),
+    '矢所の設定が入らない'
+  ).toBe(true);
+
+  // 記録へ戻って、ますを押す
+  await page.getByText('記録', { exact: true }).first().click();
+  await page.waitForTimeout(1500);
+  const ます = page.locator('[data-testid^="ます-"]').first();
+  await expect(ます, '盤面が出ていない').toBeVisible({ timeout: 15_000 });
+  await 押す(page, await 真ん中(ます));
+
+  // 窓は500ミリ秒後に出る。落ちるのもこのとき
+  // 設定の行（矢所の記録機能を有効化）とも当たるので、完全一致で選ぶ
+  await expect(page.getByText('矢所の記録', { exact: true }), '矢所の窓が出ない').toBeVisible({
+    timeout: 15_000,
+  });
+  expect(落ちた, '矢所の窓を出すときに落ちた: ' + 落ちた.join(' / ')).toEqual([]);
 });

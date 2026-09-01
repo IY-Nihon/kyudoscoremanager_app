@@ -140,12 +140,20 @@ const T = () => {
         }
         await (0, C.createUserWithEmailAndPassword)(b.auth, P, L);
         try {
+          // 公開の文書には、ログインに要る2つだけ置く。
+          // 団体名・登録日・同意の記録を一緒に置くと、6桁の団体IDを順に
+          // 試すだけで「学校名とその担当者のメールアドレス」が組で取れる
+          await (0, j.setDoc)(t, { id: e, email: P });
           // どの版にいつ同意したかを残す。版を上げたときに、誰へ
-          // 取り直しを求めるべきかが分からなくなるため
-          await (0, j.setDoc)(t, Object.assign(
-            { id: e, name: O, email: P, createdAt: Date.now() },
-            require('./legalDocs').同意の記録()
-          ));
+          // 取り直しを求めるべきかが分からなくなるため。
+          // 置き場所は private（その団体のメールアドレスで入っている本人だけ）
+          await (0, j.setDoc)(
+            (0, j.doc)(b.db, 'group_accounts', e, 'private', 'consent'),
+            Object.assign(
+              { name: O, createdAt: Date.now() },
+              require('./legalDocs').同意の記録()
+            )
+          );
         } catch (書けなかった) {
           // ここで諦めると、認証の利用者だけが残る。メールアドレスが取られた
           // ままになり、同じアドレスでは作り直せない（auth/email-already-in-use）。
@@ -197,7 +205,7 @@ const T = () => {
                 }),
                 (0, E.jsx)(h.default, {
                   style: S.title,
-                  children: '弓道記録アプリ',
+                  children: '弓道部的中ノート',
                 }),
                 (0, E.jsx)(h.default, {
                   style: S.subtitle,
@@ -863,7 +871,7 @@ const T = () => {
                               onPress: () =>
                                 s.default.alert(
                                   '通知',
-                                  '団体IDは、アカウント登録時のメールに記載されています。見当たらない場合は管理者にお問い合わせください。'
+                                  '団体IDは、登録直後の画面にのみ表示されます。\n\n分からなくなった場合は、登録したメールアドレスを添えて運営者へご連絡ください。お調べしてお伝えします。\n\nkyudoteamscorenote.dev@gmail.com'
                                 ),
                               children: function (state) {
                                 return (0, E.jsx)(h.default, {

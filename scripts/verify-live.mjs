@@ -11,7 +11,7 @@
  * stg 専用（書いて消すため）。
  */
 import { createRequire } from 'node:module';
-import { configFor, signIn } from './fb-rest.mjs';
+import { configFor, signIn, ライブの枝を引く } from './fb-rest.mjs';
 
 // 判断そのものは実装（src/syncRules.js）をそのまま使う。写すと食い違うため。
 const { mergeLiveArchers, normalizeArrowLocations } = createRequire(import.meta.url)('../src/syncRules.js');
@@ -26,7 +26,6 @@ const { apiKey, databaseURL } = configFor('stg');
 const PW = 'StgTest!2026';
 const G1 = '100001';
 const 名 = `検証ライブ-${Date.now()}`;
-const 道 = `/live_sessions/${G1}/${名}/state`;
 
 const rows = [];
 const check = (区分, 項目, 期待, 実際, 備考 = '') => {
@@ -35,6 +34,14 @@ const check = (区分, 項目, 期待, 実際, 備考 = '') => {
 };
 
 const tok = await signIn(apiKey, 'nihonu.kouka@gmail.com', PW);
+// ライブは団体IDではなく、団体ごとの合言葉の枝に置く（src/liveSecret.js）。
+// 決まりが短い枝を拒むので、団体IDのままでは何も読み書きできない
+const 枝 = await ライブの枝を引く('kyudoscoremanager-stg', G1, tok);
+if (!枝) {
+  console.error(`団体 ${G1} の合言葉がまだありません。アプリで一度ログインしてから動かしてください`);
+  process.exit(1);
+}
+const 道 = `/live_sessions/${枝}/${名}/state`;
 const rt = async (method, path, body) => {
   const r = await fetch(`${databaseURL}${path}.json?auth=${tok}`, {
     method,
@@ -200,12 +207,12 @@ try {
   check('2台', '古い版の上書きでも矢所が残る', [null, { x: 12, y: 34 }, null, null], A3.archers[0].arrowLocations);
 
   // ── 6. 後始末 ──────────────────────────────────────────
-  const 消し = await rt('DELETE', `/live_sessions/${G1}/${名}`);
+  const 消し = await rt('DELETE', `/live_sessions/${枝}/${名}`);
   check('後始末', 'ライブを消せる', 200, 消し.status);
-  const 残り = await rt('GET', `/live_sessions/${G1}/${名}`);
+  const 残り = await rt('GET', `/live_sessions/${枝}/${名}`);
   check('後始末', '消えている', null, 残り.json);
 } finally {
-  await fetch(`${databaseURL}/live_sessions/${G1}/${名}.json?auth=${tok}`, { method: 'DELETE' }).catch(() => {});
+  await fetch(`${databaseURL}/live_sessions/${枝}/${名}.json?auth=${tok}`, { method: 'DELETE' }).catch(() => {});
 }
 
 console.table(rows);

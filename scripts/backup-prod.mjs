@@ -156,24 +156,25 @@ for (const d of ga.documents || []) {
 }
 
 // ── RTDB ─────────────────────────────────────────────────────────
-// live_sessions は団体ノード配下しか読めない（親をまとめて読むと401）。
-// 団体IDごとに取りに行く。
+// ライブは団体IDではなく、団体ごとの推測できない合言葉の枝に置く
+// （src/liveSecret.js）。控える側からは合言葉が分からないので、
+// 団体IDごとに取りにいく作りは当たらなくなった。
+// 所有者の権限で読むときは決まりを通らないため、親をまとめて読める。
+// そちらのほうが、どの団体のものかを知らなくても取りこぼさない
 console.log('\n■ RTDB');
-const 団体一覧 = (ga.documents || []).map((d) => d.name.split('/').pop());
-const rtdb = { live_sessions: {} };
-rtdb.live_history = {};
-for (const gid of 団体一覧) {
-  const r = await fetch(`${RTDB}/live_sessions/${gid}.json?${RTDB認証}`);
-  if (!r.ok) { 失敗.push({ パス: `rtdb:/live_sessions/${gid}`, HTTP: r.status }); console.log(`  live_sessions/${gid} … HTTP ${r.status}`); continue; }
+// live_presence は控えない。いま何台つないでいるかという、その場限りの状態で、
+// 書き戻すと居ない端末が「接続中」と出る。足すのは筋が悪い（src/livePresence.js）
+const rtdb = { live_sessions: {}, live_history: {} };
+for (const 枝 of ['live_sessions', 'live_history']) {
+  const r = await fetch(`${RTDB}/${枝}.json?${RTDB認証}`);
+  if (!r.ok) {
+    失敗.push({ パス: `rtdb:/${枝}`, HTTP: r.status });
+    console.log(`  ${枝} … HTTP ${r.status}`);
+    continue;
+  }
   const j = await r.json();
-  rtdb.live_sessions[gid] = j;
-  console.log(`  live_sessions/${gid} … ${j === null ? 'なし' : Object.keys(j).length + '件'}`);
-  // 共有履歴はライブの枝の外（live_history）にある。控えから漏らさない
-  const r2 = await fetch(`${RTDB}/live_history/${gid}.json?${RTDB認証}`);
-  if (!r2.ok) { 失敗.push({ パス: `rtdb:/live_history/${gid}`, HTTP: r2.status }); console.log(`  live_history/${gid} … HTTP ${r2.status}`); continue; }
-  const j2 = await r2.json();
-  rtdb.live_history[gid] = j2;
-  console.log(`  live_history/${gid}  … ${j2 === null ? 'なし' : Object.keys(j2).length + '件'}`);
+  rtdb[枝] = j || {};
+  console.log(`  ${枝} … ${j === null ? 'なし' : Object.keys(j).length + '件'}`);
 }
 // appData はアプリが使っておらず、ルールからも外した（常に空だった）。
 // 控えを取ろうとすると拒否されて「失敗1件」と記録され、本物の失敗が
@@ -222,8 +223,12 @@ const manifest = {
   取得日時: new Date().toISOString(),
   プロジェクト: PID,
   Firestore: 統計,
-  RTDB: Object.fromEntries(Object.entries(rtdb.live_sessions || {})
-    .map(([g, v]) => [`live_sessions/${g}`, v === null ? 0 : Object.keys(v).length])),
+  // 枝の名前は団体ごとの合言葉。目録に書き出すと、控えの目録から
+  // 他団体のライブへ入れてしまう。数だけ載せる
+  RTDB: {
+    'live_sessions（枝の数）': Object.keys(rtdb.live_sessions || {}).length,
+    'live_history（枝の数）': Object.keys(rtdb.live_history || {}).length,
+  },
   利用者: 利用者数,
   失敗,
   読んだ権限: `Firebase CLI のログイン（所有者）`,

@@ -231,6 +231,11 @@ const C = () => {
                   j.addBtn,
                   e && { backgroundColor: 'rgba(0,122,255,0.05)', borderRadius: 8, padding: 4 },
                 ],
+                // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                accessible: !0,
+                accessibilityRole: 'button',
+                accessibilityLabel: '部員を追加',
+                'aria-label': '部員を追加',
                 onPress: () => {
                   (v(null), A(''), H('未設定'), _('1'), O(G ? String(G) : ''), D(!0));
                 },
@@ -251,6 +256,11 @@ const C = () => {
           }),
           '' !== T &&
             (0, y.jsx)(s.default, {
+              // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+              accessible: !0,
+              accessibilityRole: 'button',
+              accessibilityLabel: '絞り込みを消す',
+              'aria-label': '絞り込みを消す',
               onPress: () => W(''),
               children: (0, y.jsx)(p.Ionicons, { name: 'close-circle', size: 18, color: '#8E8E93' }),
             }),
@@ -611,6 +621,11 @@ const C = () => {
                                 ],
                               }),
                               (0, y.jsx)(s.default, {
+                                // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                                accessible: !0,
+                                accessibilityRole: 'button',
+                                accessibilityLabel: 'この弓具の記録を消す',
+                                'aria-label': 'この弓具の記録を消す',
                                 onPress: () => X(t.id, e.id),
                                 style: { padding: 4 },
                                 children: (0, y.jsx)(p.Ionicons, {

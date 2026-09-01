@@ -17,9 +17,29 @@ const KEY = env.EXPO_PUBLIC_FIREBASE_API_KEY;
 const RTDB = env.EXPO_PUBLIC_FIREBASE_DATABASE_URL;
 const B = `https://firestore.googleapis.com/v1/projects/${PID}/databases/(default)/documents`;
 
-const dirs = fs.readdirSync('backup-output', { withFileTypes: true })
-  .filter((d) => d.isDirectory()).map((d) => d.name).sort();
-const BK = `backup-output/${dirs[dirs.length - 1]}`;
+// 控えは「本番のもの」だけを選ぶ。名前の新しい順に採ると、検証環境の控え
+// （stg- で始まる）が最後に来て、本番の受け入れ検査なのに検証環境の個人IDを
+// 読みにいく。実際そうなっていて、目当ての名簿が無いまま落ちていた。
+// 名前ではなく、控えの目録に書いてある企画名で選ぶ
+const 控えたち = fs
+  .readdirSync('backup-output', { withFileTypes: true })
+  .filter((d) => d.isDirectory())
+  .map((d) => d.name)
+  .sort()
+  .reverse()
+  .filter((名) => {
+    try {
+      return JSON.parse(fs.readFileSync(`backup-output/${名}/manifest.json`, 'utf8')).プロジェクト === PID;
+    } catch {
+      return false; // 目録が無い・壊れている控えは使わない
+    }
+  });
+if (!控えたち.length) {
+  console.error(`${PID} の控えが backup-output に見つかりません。先に npm run ops:backup を動かしてください。`);
+  process.exit(1);
+}
+const BK = `backup-output/${控えたち[0]}`;
+console.log(`使う控え: ${BK}`);
 
 const anon = async () => {
   const j = await (await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${KEY}`, {
@@ -87,10 +107,17 @@ for (const [g, other] of [[MY, OTHER], [OTHER, '897977'], ['897977', MY]]) {
 
 // ── 5. RTDB ──────────────────────────────────────────────────
 {
-  const r1 = await fetch(`${RTDB}/live_sessions/${MY}.json`);
+// ライブは団体IDではなく、団体ごとの推測できない合言葉の枝に置く（src/liveSecret.js）。
+// RTDB の決まりは枝の長さしか見ないので、検査は同じ長さの作り物で足りる
+const 検証の枝 = 'verify-live-branch-0000000000';
+  const r1 = await fetch(`${RTDB}/live_sessions/${検証の枝}.json`);
   検査('RTDB', '未認証：ライブ記録を読む', 401, r1.status);
-  const r2 = await fetch(`${RTDB}/live_sessions/${MY}.json?auth=${a.token}`);
+  const r2 = await fetch(`${RTDB}/live_sessions/${検証の枝}.json?auth=${a.token}`);
   検査('RTDB', '認証あり：ライブ記録を読む', 200, r2.status);
+  // 団体IDそのままの枝は決まりが長さで弾く。ここが 200 に戻ったら、
+  // 総当たりで他団体のライブを覗ける状態に逆戻りしている
+  const r4 = await fetch(`${RTDB}/live_sessions/${MY}.json?auth=${a.token}`);
+  検査('RTDB', '認証あり：団体IDそのままの枝を読む', 401, r4.status);
   const r3 = await fetch(`${RTDB}/.json?auth=${a.token}`);
   検査('RTDB', '認証あり：全体を列挙する', 401, r3.status);
 }

@@ -10,11 +10,11 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-const { ストアを用意する, 待つ } = require('./helpers/storeHarness');
+const { ストアを用意する, 検査の合言葉, 待つ } = require('./helpers/storeHarness');
 
 const 団体 = '100001';
 const ライブ名 = '朝練';
-const 道 = `live_sessions/${団体}/${ライブ名}/state`;
+const 道 = `live_sessions/${検査の合言葉}/${ライブ名}/state`;
 const 本数 = 4;
 
 const 射手 = (o) =>
@@ -38,6 +38,8 @@ function 端末(既存のライブ, 射手たち) {
   const { store, ライブ } = ストアを用意する(undefined, 既存のライブ);
   store.setState({
     activeGroupId: 団体,
+    // ライブは合言葉の枝に置く。無いと送信が入口で帰る（storeHarness を参照）
+    ライブの合言葉: { 団体: 団体, 合言葉: 検査の合言葉 },
     activeRole: 'group',
     isHydrated: true,
     isNetworkOnline: true,
@@ -71,7 +73,7 @@ test('開始：同名が無ければ開始できる', async () => {
 
 test('開始：同名があれば開始しない', async () => {
   const { store, ライブ } = 端末(null, [射手()]);
-  ライブ.置く(`live_sessions/${団体}/${ライブ名}/state`, { status: 'active', timestamp: 1 });
+  ライブ.置く(`live_sessions/${検査の合言葉}/${ライブ名}/state`, { status: 'active', timestamp: 1 });
   assert.equal(await store.getState().startLiveSync(ライブ名), '同名あり');
   assert.equal(store.getState().isLiveActive, false);
 });
@@ -260,8 +262,8 @@ test('共有履歴はライブの枝の外に置く（一覧の取得に付い�
   await 待つ(20);
 
   assert.equal(主.store.getState().historySharedLen, 1, '前提：1手ぶん積まれている');
-  assert.notEqual(主.ライブ.値(`live_history/${団体}/${ライブ名}/0`), null, '外の枝に入っている');
-  assert.equal(主.ライブ.値(`live_sessions/${団体}/${ライブ名}/history`), null, '中には入っていない');
+  assert.notEqual(主.ライブ.値(`live_history/${検査の合言葉}/${ライブ名}/0`), null, '外の枝に入っている');
+  assert.equal(主.ライブ.値(`live_sessions/${検査の合言葉}/${ライブ名}/history`), null, '中には入っていない');
 
   // 取り消しは外の枝から読めている
   主.store.getState().undo();
@@ -274,13 +276,13 @@ test('片付け：ライブを消すと、外に置いた共有履歴も消え�
   await 主.store.getState().startLiveSync(ライブ名);
   主.store.getState().updateMark('a1', 0, '○');
   await 待つ(20);
-  assert.notEqual(主.ライブ.値(`live_history/${団体}/${ライブ名}/0`), null, '前提：履歴がある');
+  assert.notEqual(主.ライブ.値(`live_history/${検査の合言葉}/${ライブ名}/0`), null, '前提：履歴がある');
 
   await 主.store.getState().deleteLiveSession(ライブ名);
   await 待つ(20);
 
-  assert.equal(主.ライブ.値(`live_sessions/${団体}/${ライブ名}`), null, 'ライブが消える');
-  assert.equal(主.ライブ.値(`live_history/${団体}/${ライブ名}`), null, '履歴も消える');
+  assert.equal(主.ライブ.値(`live_sessions/${検査の合言葉}/${ライブ名}`), null, 'ライブが消える');
+  assert.equal(主.ライブ.値(`live_history/${検査の合言葉}/${ライブ名}`), null, '履歴も消える');
 });
 
 test('一覧：最終更新から14日を過ぎたライブは出さず、消す', async () => {
@@ -288,14 +290,14 @@ test('一覧：最終更新から14日を過ぎたライブは出さず、消す
   // ものが溜まり続ける
   const 端 = 端末();
   const いま = Date.now();
-  端.ライブ.置く(`live_sessions/${団体}/先月の練習/state`, { status: 'active', timestamp: いま - 20 * 日 });
-  端.ライブ.置く(`live_sessions/${団体}/今朝/state`, { status: 'active', timestamp: いま - 60000 });
+  端.ライブ.置く(`live_sessions/${検査の合言葉}/先月の練習/state`, { status: 'active', timestamp: いま - 20 * 日 });
+  端.ライブ.置く(`live_sessions/${検査の合言葉}/今朝/state`, { status: 'active', timestamp: いま - 60000 });
 
   await 端.store.getState().fetchActiveLiveSessions();
 
   assert.deepEqual(端.store.getState().liveSessionsList, ['今朝'], '古いほうは出さない');
-  assert.equal(端.ライブ.値(`live_sessions/${団体}/先月の練習`), null, '古いほうは消えている');
-  assert.notEqual(端.ライブ.値(`live_sessions/${団体}/今朝`), null, '新しいほうは残す');
+  assert.equal(端.ライブ.値(`live_sessions/${検査の合言葉}/先月の練習`), null, '古いほうは消えている');
+  assert.notEqual(端.ライブ.値(`live_sessions/${検査の合言葉}/今朝`), null, '新しいほうは残す');
 });
 
 test('一覧：サーバーの時計に合わせられないときは、古くても消さない', async () => {
@@ -305,22 +307,22 @@ test('一覧：サーバーの時計に合わせられないときは、古く�
   const 端 = 端末();
   端.ライブ.消す('.info/serverTimeOffset');
   const いま = Date.now();
-  端.ライブ.置く(`live_sessions/${団体}/先月の練習/state`, {
+  端.ライブ.置く(`live_sessions/${検査の合言葉}/先月の練習/state`, {
     status: 'active',
     timestamp: いま - 20 * 日,
   });
-  端.ライブ.置く(`live_history/${団体}/先月の練習/0`, { at: いま - 20 * 日 });
+  端.ライブ.置く(`live_history/${検査の合言葉}/先月の練習/0`, { at: いま - 20 * 日 });
 
   await 端.store.getState().fetchActiveLiveSessions();
 
   assert.deepEqual(端.store.getState().liveSessionsList, [], '古いものは一覧に出さない');
   assert.notEqual(
-    端.ライブ.値(`live_sessions/${団体}/先月の練習`),
+    端.ライブ.値(`live_sessions/${検査の合言葉}/先月の練習`),
     null,
     '時計が合っていないのに消してしまった'
   );
   assert.notEqual(
-    端.ライブ.値(`live_history/${団体}/先月の練習`),
+    端.ライブ.値(`live_history/${検査の合言葉}/先月の練習`),
     null,
     '共有履歴まで消してしまった'
   );
@@ -329,9 +331,9 @@ test('一覧：サーバーの時計に合わせられないときは、古く�
 test('一覧：最終更新が新しい順に並べる', async () => {
   const 端 = 端末();
   const いま = Date.now();
-  端.ライブ.置く(`live_sessions/${団体}/おととい/state`, { status: 'active', timestamp: いま - 2 * 日 });
-  端.ライブ.置く(`live_sessions/${団体}/さっき/state`, { status: 'active', timestamp: いま - 60000 });
-  端.ライブ.置く(`live_sessions/${団体}/昨日/state`, { status: 'active', timestamp: いま - 1 * 日 });
+  端.ライブ.置く(`live_sessions/${検査の合言葉}/おととい/state`, { status: 'active', timestamp: いま - 2 * 日 });
+  端.ライブ.置く(`live_sessions/${検査の合言葉}/さっき/state`, { status: 'active', timestamp: いま - 60000 });
+  端.ライブ.置く(`live_sessions/${検査の合言葉}/昨日/state`, { status: 'active', timestamp: いま - 1 * 日 });
 
   await 端.store.getState().fetchActiveLiveSessions();
 
@@ -343,12 +345,12 @@ test('一覧：判定にはサーバーが打った日時を使う（端末の�
   // 消しかねない。timestamp は書いた端末の時計、updated_at はサーバーの時計
   const 端 = 端末();
   const いま = Date.now();
-  端.ライブ.置く(`live_sessions/${団体}/時計がずれた端末/state`, {
+  端.ライブ.置く(`live_sessions/${検査の合言葉}/時計がずれた端末/state`, {
     status: 'active',
     timestamp: いま - 30 * 日, // 端末の時計が30日遅れている
     updated_at: いま - 60000, // サーバーから見れば1分前
   });
-  端.ライブ.置く(`live_sessions/${団体}/本当に古い/state`, {
+  端.ライブ.置く(`live_sessions/${検査の合言葉}/本当に古い/state`, {
     status: 'active',
     timestamp: いま - 60000, // 端末の時計は進んでいる
     updated_at: いま - 30 * 日, // サーバーから見れば30日前
@@ -360,20 +362,20 @@ test('一覧：判定にはサーバーが打った日時を使う（端末の�
     端.store.getState().liveSessionsList.includes('時計がずれた端末'),
     '端末の時計が遅れていても消さない'
   );
-  assert.notEqual(端.ライブ.値(`live_sessions/${団体}/時計がずれた端末`), null, '節点も残す');
+  assert.notEqual(端.ライブ.値(`live_sessions/${検査の合言葉}/時計がずれた端末`), null, '節点も残す');
   assert.ok(!端.store.getState().liveSessionsList.includes('本当に古い'), 'サーバー基準で古いものは出さない');
-  assert.equal(端.ライブ.値(`live_sessions/${団体}/本当に古い`), null, 'サーバー基準で古いものは消す');
+  assert.equal(端.ライブ.値(`live_sessions/${検査の合言葉}/本当に古い`), null, 'サーバー基準で古いものは消す');
 });
 
 test('一覧：最終更新が分からないライブは消さない', async () => {
   // 判断できないものを消すほうが危ない
   const 端 = 端末();
-  端.ライブ.置く(`live_sessions/${団体}/日時なし/state`, { status: 'active' });
+  端.ライブ.置く(`live_sessions/${検査の合言葉}/日時なし/state`, { status: 'active' });
 
   await 端.store.getState().fetchActiveLiveSessions();
 
   assert.deepEqual(端.store.getState().liveSessionsList, ['日時なし'], '一覧には出す');
-  assert.notEqual(端.ライブ.値(`live_sessions/${団体}/日時なし`), null, '消さない');
+  assert.notEqual(端.ライブ.値(`live_sessions/${検査の合言葉}/日時なし`), null, '消さない');
 });
 
 test('終了：参加者がライブ節点を作り直さない', async () => {
@@ -393,11 +395,11 @@ test('終了：参加者がライブ節点を作り直さない', async () => {
   await 待つ(10);
 
   assert.equal(参.store.getState().isLiveActive, false, '参加者のライブが終わっている');
-  主.ライブ.消す(`live_sessions/${団体}/${ライブ名}`); // 主催者の後始末
+  主.ライブ.消す(`live_sessions/${検査の合言葉}/${ライブ名}`); // 主催者の後始末
   await 待つ(80); // 遅れていた書き込みが届くのを待つ
   主.ライブ.状態.遅延 = 0;
 
-  assert.equal(主.ライブ.値(`live_sessions/${団体}/${ライブ名}`), null, '節点が作り直されていない');
+  assert.equal(主.ライブ.値(`live_sessions/${検査の合言葉}/${ライブ名}`), null, '節点が作り直されていない');
 });
 
 test('リセット：受け取ったリセットを送り返さない', async () => {
@@ -567,7 +569,7 @@ test('送信：ライブを移ったら、○×は最初から載せ直す', asy
   assert.equal(await store.getState().startLiveSync('一つ目'), '開始した');
   await 待つ(10);
   assert.deepEqual(
-    ライブ.値(`live_sessions/${団体}/一つ目/state`).marks_by_id.a1,
+    ライブ.値(`live_sessions/${検査の合言葉}/一つ目/state`).marks_by_id.a1,
     ['○', '×', '', ''],
     '前提：一つ目には載っている'
   );
@@ -580,7 +582,129 @@ test('送信：ライブを移ったら、○×は最初から載せ直す', asy
   assert.equal(await store.getState().startLiveSync('二つ目'), '開始した');
   await 待つ(10);
 
-  const 二つ目 = ライブ.値(`live_sessions/${団体}/二つ目/state`);
+  const 二つ目 = ライブ.値(`live_sessions/${検査の合言葉}/二つ目/state`);
   assert.ok(二つ目 && 二つ目.marks_by_id, '二つ目に marks_by_id が無い');
   assert.deepEqual(二つ目.marks_by_id.a1, ['○', '×', '', ''], '二つ目に○×が載っていない');
+});
+
+// ── 合言葉が団体と結びついていること ────────────────────────
+// ライブを置く枝は団体ごとの合言葉（src/liveSecret.js）。合言葉は端末に残るので、
+// 団体を移ったあとも前のものが手元にある。照合を外すと、移った先の練習を
+// 前の団体の枝へ書き込み、向こうの部員に見えてしまう
+
+test('合言葉：前の団体のものは使わない（移った先の○×を流さない）', async () => {
+  const { store, ライブ } = 端末(null, [射手()]);
+  await store.getState().startLiveSync(ライブ名);
+  assert.ok(ライブ.値(道), '前提：合言葉の枝に載っている');
+
+  // 開始のときに、空の○×が一度だけ載る。そのあとの1射が載らないことを見る
+  const 前の印 = JSON.stringify((ライブ.値(道) || {}).marks_by_id || null);
+
+  // 別の団体へ移る。合言葉は端末に残ったまま、という形にする
+  store.setState({ activeGroupId: '100002' });
+  store.getState().updateMark('a1', 0, '○');
+  await 待つ(10);
+
+  const 後の印 = JSON.stringify((ライブ.値(道) || {}).marks_by_id || null);
+  assert.equal(後の印, 前の印, '移ったあとの○×が、前の団体の枝に入っている');
+  assert.ok(!後の印.includes('○'), '前の団体の枝に ○ が入っている');
+});
+
+test('合言葉：団体が合っていれば、これまでどおり送れる', async () => {
+  // 上の検査が「いつでも送らない」で通ってしまわないための対（逆さの確かめ）
+  const { store, ライブ } = 端末(null, [射手()]);
+  await store.getState().startLiveSync(ライブ名);
+  store.getState().updateMark('a1', 0, '○');
+  await 待つ(10);
+
+  const 印 = (ライブ.値(道) || {}).marks_by_id;
+  assert.ok(印 && 印.a1, '同じ団体なのに○×が送られていない');
+  assert.ok(JSON.stringify(印).includes('○'), '同じ団体なのに ○ が届いていない');
+});
+
+// ── つないでいる台数 ────────────────────────────────────────
+// 電波の切れる弓道場で「相手に届いているか」を見るための表示（src/livePresence.js）。
+// 少なく出るのがいちばん困る。届いていないと誤解させるため
+
+const 在席の道 = (名前) => `live_presence/${検査の合言葉}/${名前 || ライブ名}`;
+// 偽のRTDBは、子を消しても空の親を残す（本物は親ごと消える）。
+// 見たいのは在席が幾つ載っているかなので、数で見る
+const 在席の数 = (ライブ, 名前) => Object.keys(ライブ.値(在席の道(名前)) || {}).length;
+
+test('台数：主催者が始めると1台になる', async () => {
+  const { store, ライブ } = 端末(null, [射手()]);
+  await store.getState().startLiveSync(ライブ名);
+  await 待つ(10);
+  assert.equal(store.getState().ライブの接続台数, 1);
+  assert.equal(在席の数(ライブ), 1, '在席が置かれていない');
+});
+
+test('台数：参加者が入ると2台になり、両方から見える', async () => {
+  const 主 = 端末(null, [射手()]);
+  await 主.store.getState().startLiveSync(ライブ名);
+  const 参 = 端末(主.ライブ, []);
+  参.store.getState().joinLiveSync(ライブ名);
+  await 待つ(10);
+
+  assert.equal(主.store.getState().ライブの接続台数, 2, '主催者から2台に見えない');
+  assert.equal(参.store.getState().ライブの接続台数, 2, '参加者から2台に見えない');
+});
+
+test('台数：抜けると相手の画面から減る', async () => {
+  const 主 = 端末(null, [射手()]);
+  await 主.store.getState().startLiveSync(ライブ名);
+  const 参 = 端末(主.ライブ, []);
+  参.store.getState().joinLiveSync(ライブ名);
+  await 待つ(10);
+  assert.equal(主.store.getState().ライブの接続台数, 2, '前提：2台');
+
+  参.store.getState().stopLiveSync();
+  await 待つ(10);
+  assert.equal(主.store.getState().ライブの接続台数, 1, '抜けたのに減っていない');
+  assert.equal(参.store.getState().ライブの接続台数, 0, '抜けた側に台数が残っている');
+});
+
+test('台数：回線が切れたら、サーバー側の約束で在席が消える', async () => {
+  // アプリごと落ちても消えるように onDisconnect に任せてある。
+  // 任せていないと、落ちた端末が「まだ居る」と出続ける
+  const 主 = 端末(null, [射手()]);
+  await 主.store.getState().startLiveSync(ライブ名);
+  await 待つ(10);
+  assert.equal(在席の数(主.ライブ), 1, '前提：在席がある');
+
+  主.ライブ.切る();
+  assert.equal(在席の数(主.ライブ), 0, '切れても在席が残っている');
+});
+
+test('台数：つなぎ直したら約束を掛け直す', async () => {
+  // onDisconnect は一度きり。掛け直さないと、二度目に切れた端末が残り続ける
+  const 主 = 端末(null, [射手()]);
+  await 主.store.getState().startLiveSync(ライブ名);
+  await 待つ(10);
+  assert.ok(主.ライブ.約束の数() > 0, '前提：約束がある');
+
+  (主.ライブ.切る(), assert.equal(主.ライブ.約束の数(), 0, '切れたら約束は消える（本物と同じ）'));
+  主.ライブ.つなぐ();
+  await 待つ(10);
+  assert.ok(主.ライブ.約束の数() > 0, 'つなぎ直したのに約束を掛け直していない');
+
+  // 二度目に切れても、ちゃんと消えること
+  主.ライブ.切る();
+  assert.equal(在席の数(主.ライブ), 0, '二度目に切れたときに在席が残っている');
+});
+
+test('台数：ライブが終わったら在席の見張りも在席も残さない', async () => {
+  // 残ると、抜けたあとも書き続けて、相手の画面に居ないはずの台が出る。
+  // 時差の見張り（.info/serverTimeOffset）はわざと外さない作りなので、
+  // 在席の道に付いた見張りだけを見る
+  const 在席の見張り = (ライブ) => ライブ.見張りの道().filter((道) => String(道).includes('live_presence')).length;
+  const 主 = 端末(null, [射手()]);
+  await 主.store.getState().startLiveSync(ライブ名);
+  await 待つ(10);
+  assert.ok(在席の見張り(主.ライブ) > 0, '前提：在席を見張っている');
+
+  主.store.getState().stopLiveSync();
+  await 待つ(10);
+  assert.equal(在席の見張り(主.ライブ), 0, '在席の見張りが残っている');
+  assert.equal(在席の数(主.ライブ), 0, '在席が残っている');
 });

@@ -68,21 +68,23 @@ const 日 = 86400000;
 const 対象一覧 = [];
 const そのまま = [];
 
-for (const [団体, 中] of Object.entries(全部)) {
+// 枝の名前は団体IDではなく、団体ごとの合言葉になった（src/liveSecret.js）。
+// ここは live_sessions を丸ごと読むので、名前が何であれ当たる
+for (const [枝, 中] of Object.entries(全部)) {
   for (const [名, v] of Object.entries(中 || {})) {
     // 名前の直下に state が無いもの（「5/8」のように / で入れ子になった残骸）は触らない
     if (!v || !v.state) {
-      そのまま.push({ 団体, ライブ名: 名, 理由: 'state が無い（入れ子の残骸）' });
+      そのまま.push({ 枝, ライブ名: 名, 理由: 'state が無い（入れ子の残骸）' });
       continue;
     }
     // 参加一覧が見るのは updated_at（サーバーが打った時刻）。無ければ timestamp
     const t = typeof v.state.updated_at === 'number' ? v.state.updated_at : v.state.timestamp;
     if (typeof t === 'number' && t >= 配信日) {
-      そのまま.push({ 団体, ライブ名: 名, 理由: '既に配信日より新しい' });
+      そのまま.push({ 枝, ライブ名: 名, 理由: '既に配信日より新しい' });
       continue;
     }
     対象一覧.push({
-      団体,
+      枝,
       ライブ名: 名,
       これまでの最終更新: typeof t === 'number' ? new Date(t).toLocaleString('ja-JP') : '(不明)',
       経過日数: typeof t === 'number' ? Math.round(((配信日 - t) / 日) * 10) / 10 : null,
@@ -109,7 +111,7 @@ for (const x of 対象一覧) {
   fs.writeFileSync(一時2, JSON.stringify(配信日));
   cli(
     'database:set',
-    `/live_sessions/${x.団体}/${x.ライブ名}/state/updated_at`,
+    `/live_sessions/${x.枝}/${x.ライブ名}/state/updated_at`,
     一時2,
     '--project',
     プロジェクト,
