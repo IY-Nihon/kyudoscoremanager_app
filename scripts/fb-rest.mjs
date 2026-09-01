@@ -127,3 +127,19 @@ export async function listAll(projectId, path, token, mask) {
   } while (pageToken);
   return docs;
 }
+
+/**
+ * その団体のライブを置く枝の名前を引く。
+ *
+ * ライブは団体IDではなく、団体ごとの推測できない合言葉の枝に置く
+ * （src/liveSecret.js）。合言葉は Firestore の groups/{団体}.liveSecret にあり、
+ * 所属を確かめてからでないと読めない。道具から読むときは、団体アカウントの
+ * トークンか所有者の権限が要る。
+ *
+ * アプリが一度でも起動していれば入っている。まだ無ければ null を返す。
+ */
+export async function ライブの枝を引く(projectId, groupId, token) {
+  const r = await req(projectId, `/groups/${groupId}`, { token });
+  const 値 = r.json?.fields?.liveSecret?.stringValue;
+  return 値 && 値.length >= 20 ? 値 : null;
+}

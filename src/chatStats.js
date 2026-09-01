@@ -11,6 +11,8 @@
  */
 'use strict';
 
+const { 射位の名前 } = require('./a11yLabels');
+
 const 集 = require('./statsRules');
 
 /** 空白を落とす。名前で絞り込むとき（表示の突き合わせ）にだけ使う */
@@ -37,7 +39,10 @@ function その人の射か(人, 引いた人) {
  *
  * @param {Array} 人たち   部員
  * @param {Array} 記録たち セッション
- * @param {{期間?: {始め?: number, 終わり?: number}, 並び?: string, 件数?: number, 最小射数?: number}} 注文
+ * @param {{期間?: {始め?: number, 終わり?: number}, 並び?: string, 件数?: number, 最小射数?: number}} [注文]
+ * @returns {{並び:string, 人数:number, 数えた記録:number, 射数が足りず外した人数:number,
+ *   全体:{的中:number, 射数:number, 的中率:number|null},
+ *   一覧:Array<{名前:string, 学年:any, 的中:number, 射数:number, 的中率:number|null, 順位?:number}>}}
  */
 function 全員の成績(人たち, 記録たち, 注文) {
   const 設定 = 注文 || {};
@@ -69,13 +74,15 @@ function 全員の成績(人たち, 記録たち, 注文) {
   const 最小射数 = Number.isFinite(設定.最小射数) ? 設定.最小射数 : 1;
   const 全部 = (Array.isArray(人たち) ? 人たち : []).map((人) => {
     const { 的中, 射数 } = 数え(人);
-    return {
+    // 順位は並べ替えたあとで足す（下の 残す.forEach）。型にも書いておかないと、
+    // 足すところで「そんな項目は無い」と怒られる
+    return /** @type {{名前:string, 学年:any, 的中:number, 射数:number, 的中率:number|null, 順位?:number}} */ ({
       名前: 人.name || '',
       学年: 人.grade,
       的中,
       射数,
       的中率: 射数 > 0 ? Number(((的中 / 射数) * 100).toFixed(1)) : null,
-    };
+    });
   });
 
   const 残す = 全部.filter((x) => x.射数 >= 最小射数);
@@ -91,8 +98,6 @@ function 全員の成績(人たち, 記録たち, 注文) {
   残す.forEach((x, i) => {
     x.順位 = i + 1;
   });
-  // 並べ替えに使うだけの値。模型に渡すと答えに書いてしまうので落とす
-  全部.forEach((x) => delete x.素の率);
 
   const 全体の的中 = 全部.reduce((a, x) => a + x.的中, 0);
   const 全体の射数 = 全部.reduce((a, x) => a + x.射数, 0);
@@ -149,7 +154,8 @@ function 出欠の集計(人たち, 記録たち, 注文) {
     });
     const 来た = 数.出席 + 数.遅刻 + 数.早退;
     const 数えた = 来た + 数.欠席;
-    return {
+    // 順位はあとから足す（下の 残す.forEach）
+    return /** @type {{名前:string, 学年:any, 出席:number, 遅刻:number, 早退:number, 欠席:number, 来た回数:number, 出席率:number|null, 順位?:number}} */ ({
       名前: 人.name || '',
       学年: 人.grade,
       出席: 数.出席,
@@ -158,7 +164,7 @@ function 出欠の集計(人たち, 記録たち, 注文) {
       欠席: 数.欠席,
       来た回数: 来た,
       出席率: 数えた > 0 ? Number(((来た / 数えた) * 100).toFixed(1)) : null,
-    };
+    });
   });
 
   const 残す = 全部.filter((x) => x.来た回数 + x.欠席 > 0);
@@ -245,7 +251,9 @@ function 射位ごとの成績(人たち, 記録たち, 注文) {
       (a) => a && !a.isSeparator && !a.isTotalCalculator
     );
     並び.forEach((射手, 番) => {
-      const 射位 = 番 === 0 ? '大前' : 番 === 並び.length - 1 && 並び.length > 1 ? '落' : `${番 + 1}番`;
+      // 呼び方は src/a11yLabels.js に1か所だけ置く。2か所に書くと、
+      // AIの答えと読み上げで違う呼び方になる
+      const 射位 = 射位の名前(番, 並び.length);
       (Array.isArray(射手.marks) ? 射手.marks : []).forEach((印, 射目) => {
         if ('○' !== 印 && '×' !== 印) return;
         入れる(その射を引いた人(射手, 射目).名前 || 射手.name || '', 射位, 印);

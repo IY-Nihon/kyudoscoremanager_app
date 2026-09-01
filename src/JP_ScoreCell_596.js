@@ -72,6 +72,10 @@ const h = t.default.memo(
       isNormalArcher: x = !1,
       columnType: C = 'normal',
       横並び: 横 = !1,
+      // 読み上げが読む言葉（src/a11yLabels.js）。
+      // 画面の字は「○」「×」だけなので、そのままだと
+      //「まる」「かける」としか読まれず、どのますかも分からない
+      読み,
       onToggle: I,
     }) => {
       const O = (0, d.useScoreStore)((e) => e.toggleMark),
@@ -285,12 +289,15 @@ const h = t.default.memo(
             updateArrowLocation(e, t, null);
           } else {
             timerRef.current = setTimeout(() => {
-              if (archer) {
+              // 射手は購読せず、要るときに取りに行く（上の 射手を取る の説明）。
+              // ここだけ差し替え漏れがあり、矢所を出す設定のときに落ちていた
+              const 射手 = 射手を取る();
+              if (射手) {
                 setActiveArrowLocationEdit({
                   archerId: e,
                   shotIndex: t,
                   currentMark: nextMark,
-                  arrowLocations: archer.arrowLocations || [],
+                  arrowLocations: 射手.arrowLocations || [],
                 });
               }
             }, 500);
@@ -317,6 +324,12 @@ const h = t.default.memo(
           (0, b.jsx)(pressable.default, {
             onPress: handlePress,
             disabled: p,
+            // 読み上げにはここだけを読ませる。中の「○」だけを拾われると、
+            // どの射手のどの射なのかが分からない
+            accessible: !0,
+            accessibilityRole: 'button',
+            accessibilityLabel: 読み || void 0,
+            accessibilityHint: 読み ? '押すと 未記入・的中・はずれ の順に変わります' : void 0,
             style: ({ pressed }) => [
               {
                 width: '100%',

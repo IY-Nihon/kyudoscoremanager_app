@@ -42,7 +42,7 @@ const s = () => {
             style: u.logoImage,
           }),
         }),
-        (0, c.jsx)(o.default, { style: u.title, children: '弓道的中管理アプリ' }),
+        (0, c.jsx)(o.default, { style: u.title, children: '弓道部的中ノート' }),
         (0, c.jsx)(t.default, {
           style: u.loaderWrapper,
           children: (0, c.jsx)(l.default, { size: 'small', color: '#007AFF' }),

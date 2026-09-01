@@ -10,7 +10,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-const { ストアを用意する, 待つ } = require('./helpers/storeHarness');
+const { ストアを用意する, 検査の合言葉, 待つ } = require('./helpers/storeHarness');
 
 const 団体 = '100001';
 const 記録の道 = `groups/${団体}/sessions`;
@@ -27,6 +27,8 @@ async function 用意(役割 = 'group') {
   await 待つ(30);
   store.setState({
     activeGroupId: 団体,
+    // ライブは合言葉の枝に置く。無いと送信が入口で帰る（storeHarness を参照）
+    ライブの合言葉: { 団体: 団体, 合言葉: 検査の合言葉 },
     activeRole: 役割,
     isHydrated: true,
     isNetworkOnline: true,
@@ -54,6 +56,8 @@ function 端末(既存のライブ) {
   const { store, ライブ } = ストアを用意する(undefined, 既存のライブ);
   store.setState({
     activeGroupId: 団体,
+    // ライブは合言葉の枝に置く。無いと送信が入口で帰る（storeHarness を参照）
+    ライブの合言葉: { 団体: 団体, 合言葉: 検査の合言葉 },
     activeRole: 'group',
     isHydrated: true,
     isNetworkOnline: true,

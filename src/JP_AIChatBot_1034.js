@@ -20,6 +20,48 @@ const _Animated = RN.Animated;
 const _PanResponder = RN.PanResponder;
 
 const { Ionicons } = require("./AntDesign_600");
+const IS_WEB = RN.Platform.OS === "web";
+
+/**
+ * 横へ流せる1行。パソコンでは、上に乗せてホイールを回すと横へ動く。
+ *
+ * 横に並べた札は、指では流せてもマウスでは動かせない。ホイールは縦にしか
+ * 効かないので、乗せている間だけ縦の回転を横へ回す。
+ *
+ * 流す先が無いとき（札が全部見えているとき）は何もしない。
+ * そこで止めてしまうと、画面そのものが縦に動かせなくなる。
+ */
+function 横に流せる行({ children, style }) {
+  const 参照 = React.useRef(null);
+  React.useEffect(() => {
+    if (!IS_WEB) return;
+    const 部品 = 参照.current;
+    if (!部品) return;
+    const 節 =
+      typeof 部品.getScrollableNode === "function" ? 部品.getScrollableNode() : 部品;
+    if (!節 || typeof 節.addEventListener !== "function") return;
+    const 受け = (e) => {
+      // 横に回しているときは、そのまま任せる
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      // 流す先が無ければ、画面の縦の動きを邪魔しない
+      if (節.scrollWidth <= 節.clientWidth) return;
+      節.scrollLeft += e.deltaY;
+      e.preventDefault();
+    };
+    節.addEventListener("wheel", 受け, { passive: false });
+    return () => 節.removeEventListener("wheel", 受け);
+  }, []);
+  return (
+    <_ScrollView
+      ref={参照}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={style}
+    >
+      {children}
+    </_ScrollView>
+  );
+}
 const { GoogleGenerativeAI } = require("./h_1035");
 const { useScoreStore } = require("./JP_useScoreStore_174");
 const { useNavigation } = require("@react-navigation/native");
@@ -29,7 +71,7 @@ const { GEMINI_API_KEY } = require("./IS_WEB_199");
 const { 全員の成績, 出欠の集計, 記録をさがす, 射位ごとの成績 } = require("./chatStats");
 // 「何でも聞いてください」だけでは何を聞けるか分からない。
 // その団体の中身に合わせた質問例を出す（test/chatSuggestions.test.js）
-const { 質問例, 質問例のすべて, 打ちかけの候補 } = require("./chatSuggestions");
+const { 質問例のすべて, 打ちかけの候補, 分類ごと } = require("./chatSuggestions");
 // 「その射は誰のものか」は分析画面と共通の決まりを使う
 const 集 = require("./statsRules");
 // 言い換えて聞かれても当てるための、コードだけの近さ測り（外のAPIは使わない）
@@ -39,7 +81,7 @@ const { jsx, jsxs, Fragment } = require("./module_427");
 
 // --- システムプロンプト（動的Q&A注入方式） ---
 
-const systemInstructionBase = `あなたは「Kyudo Score Manager」専用の、弓道の記録を読み解き、アプリの使い方を案内するアシスタントです。
+const systemInstructionBase = `あなたは「弓道部的中ノート」専用の、弓道の記録を読み解き、アプリの使い方を案内するアシスタントです。
 話し相手は部活動の管理者です。次の2つを行ってください。
 
 1. [データを読む] ツールで取ってきた記録に基づいて、選手選考の助けになる見立てや、的中の傾向を伝える。
@@ -145,7 +187,7 @@ const qaData = [
   { k: ['卒業生','非表示','画面','消したい'], t: 'Q35: 卒業生を画面上から消したい場合は？\nA: メンバータブでその人を押すし「削除」を行えば消えます。' },
   { k: ['名前','変更','変えたい'], t: 'Q36: メンバーの名前を変えたい\nA: メンバータブで対象者を押すと名前の編集ができます。' },
   { k: ['パスワード','忘れ','ログイン'], t: 'Q37: パスワードを忘れた\nA: ログイン画面にある「パスワードを忘れた」のリンクから、登録メールアドレス宛に再設定メールを送信してください。' },
-  { k: ['共有','同期','複数','スマホ','端末'], t: 'Q38: 他のスマホで同じデータを共有できる？\nA: 同じグループIDとパスワードでログインすれば完全に同期されます。' },
+  { k: ['共有','同期','複数','スマホ','端末'], t: 'Q38: 他のスマホで同じデータを共有できる？\nA: 同じ団体IDとパスワードでログインすれば同期されます。団体に入っていない人にも見せたいときは、ライブ中に「配る」からリンクを渡せます（Q65）。' },
   { k: ['オフライン','通信','切れ','圏外','記録'], t: 'Q39: 通信が切れたらデータはどうなる？\nA: オフラインでも記録可能で、通信が回復した時に自動でクラウドに同期されます。' },
   { k: ['重い','遅い','動作'], t: 'Q40: アプリの動作が重い\nA: 設定等から不要な古いメンバーを整理するか、端末の再起動を試してください。' },
   { k: ['大前','向いて','選考','選手'], t: 'Q41: 大前（1番目）に向いている選手は？\nA: 初矢の的中率が高く、チームに勢いをもたらせる選手です。' },
@@ -171,12 +213,20 @@ const qaData = [
   { k: ['画像','写真','読み取り','紙','手書き','カメラ'], t: 'Q61: 紙の記録表を写真から取り込める？\nA: できます。記録画面下の「画像」を押して、紙の的中記録表の写真を選ぶと読み取ります。同じ表の続きなら複数枚まとめて選べます。読み取った結果は取り込む前に確認できます。手書きなので読み違えることがあります。取り込んだあとに必ず見比べてください。' },
   { k: ['確認','ポップアップ','窓','知らせ','帯','出る'], t: 'Q62: 削除の確認などが出る場所が変わった？\nA: 変わりました。以前はブラウザの窓で出ていた確認とお知らせを、すべてアプリの中に出すようにしました。選んでもらう確認は画面の中の窓で止まり、短いお知らせは画面の下に帯で出て自分で消えます。団体IDの控えのような長いお知らせは、押して閉じるまで残ります。' },
   { k: ['矢所','矢どころ','どこ','当たった場所'], t: 'Q63: 矢が的のどこに当たったか残せる？\nA: 残せます。マスを長押しすると矢所を記録できます。ライブ中は矢所も相手の画面に届きます。' },
+  { k: ['配れ','配る','リンク','URL','共有','招待','見せ'], t: 'Q65: ライブをリンクで配れる？\nA: 配れます。ライブ中に出る「配る」を押すと、リンクが2本できます。編集用は○×を入れられ、閲覧用は見るだけです。団体に入っていない人でも、リンクだけで入れます。ライブを始めた人は、青い帯を押しても開けます。' },
+  { k: ['合言葉','パスワード','リンク','鍵','あいことば'], t: 'Q66: 配ったリンクに合言葉を付けられる？\nA: 付けられます。6文字以上で、リンクの中には入りません。別に伝えてください。忘れると誰も入れなくなるので、配る前に控えておいてください。' },
+  { k: ['期限','有効期限','いつまで','切れ','時間'], t: 'Q67: 配ったリンクに期限は付けられる？\nA: 付けられます。12時間・24時間・7日間・期限なしから選べます（何も選ばなければ24時間）。期限が切れると、配った本人も含めて全員がそのライブから離れます。手元に取った記録は残ります。' },
+  { k: ['期限','延ば','伸ば','変更','あとから'], t: 'Q68: リンクの期限をあとから延ばせる？\nA: 延ばせません。短くすることはできます。延ばしたいときは、ライブを配り直して新しいリンクを渡してください。いちど切れたリンクがよみがえらないようにしてあります。' },
+  { k: ['台数','何台','接続','つない','人数'], t: 'Q69: いま何台つないでいるか分かる？\nA: 分かります。ライブ中の青い帯に「2台接続中」のように出ます。自分ひとりのときは出ません。相手が抜けると、その場で数が減ります。' },
+  { k: ['弓具','弓力','弦','変え','前後','買い替え'], t: 'Q70: 弓や矢を変えた前後で的中は変わった？\nA: 分かります。分析タブでメンバーを押して個人の詳細を開き、いちばん下まで見ると、弓力・矢・弦の履歴ごとの的中率と、前の弓具との差が出ます。弓具の履歴はメンバー画面の「弓具管理」から残します。' },
+  { k: ['皆中','三中','羽分','一中','残念','分布','何回'], t: 'Q71: 皆中や三中が何回あったか分かる？\nA: 分かります。個人の詳細に「立ちの結果分布」があり、4射そろった立ちを皆中・三中・羽分・一中・残念に分けて数えます。4射に満たない端数は分けられないので数えません。' },
+  { k: ['どの矢','留矢','初矢','抜い','癖','的中の型'], t: 'Q72: 三中のとき、どの矢を抜いているか分かる？\nA: 分かります。個人の詳細の「的中の型」に、「○○○× 留矢を抜いた」のように並びます。割合は同じ中り数の中での割合です（三中のうち、その抜き方が何割か）。立ちの途中で交代した立ちは数えません。' },
   { k: ['表示','大きさ','小さい','見えない','拡大','縮小','文字','サイズ'], t: 'Q64: 文字やマスが小さくて見えない\nA: 記録画面の上にある「表示」の−と＋で、記録表の大きさを変えられます。押すといまの倍率（100%など）が出ます。人数が多くて横に収まらないときは小さく、手元で入れにくいときは大きくしてください。「表示の大きさ」はその端末に残ります。' },
 ];
 
 // ユーザーの質問に関連するQ&Aを最大8件選んで返す
 // 送るQ&Aの数。多すぎると模型の注意が散り、少なすぎると取りこぼす。
-// 64件すべて送ると約2,500トークンで、選ぶ意味が無くなるうえ注意も散る
+// 全部送ると3,000トークンを超え、選ぶ意味が無くなるうえ注意も散る
 const QAの件数 = 12;
 
 // どれも当たらなかったときに必ず入れる基本。ここが空だと、
@@ -251,16 +301,20 @@ const AIChatBot = () => {
   const navigation = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
   const [inputText, setInputText] = useState("");
-  // 質問例。部員と記録が変わったときだけ作り直す
-  const 例たち = React.useMemo(
-    () => 質問例({ 人たち: members, 記録たち: sessions, いま: new Date() }),
-    [members, sessions]
-  );
+  // 質問例は、分類ごとに全部出すようになった（下の 分類たち）。
+  // 「分類ごとに1件だけ」を選ぶ 質問例() は、打ちかけの続きにも使わないので
+  // ここでは呼ばない（chatSuggestions 側には残してある）。
   // 打ちかけの続きは、画面に出していない例からも探す
   const 候補の元 = React.useMemo(
     () => 質問例のすべて({ 人たち: members, 記録たち: sessions, いま: new Date() }),
     [members, sessions]
   );
+  // 質問例は分類ごとに束ねて、全部出す。
+  //
+  // 前は分類ごとに1件ずつ・5件だけ出していた。11件あるうちの5件なので、
+  // 「成績のことは1つしか聞けない」ように見えていた。
+  // 分類を左に置いて、その行を横へ流せば、縦は5行のままで全部に届く
+  const 分類たち = React.useMemo(() => 分類ごと(候補の元), [候補の元]);
   // 打ちかけの続き。入力欄の中に薄く重ねて見せる1件だけ。
   // 「打った文字で始まるもの」に限る。途中に含むだけのものを重ねると、
   // 見えている字と重ならず読めなくなる
@@ -269,8 +323,10 @@ const AIChatBot = () => {
     if (!打った.trim()) return '';
     const 当たり = 打ちかけの候補(打った, 候補の元, 8).find((x) => x.文.startsWith(打った));
     return 当たり && 当たり.文 !== 打った ? 当たり.文 : '';
-  }, [inputText, 例たち]);
-  const defaultMessages = [{ id: "default-msg", role: "model", text: "こんにちは！弓道スコア管理AIアシスタントです。選手選びの相談や、的中傾向の分析、アプリの使い方など、何でも聞いてください。" }];
+    // もとは 例たち を見ていたが、中で使っているのは 候補の元。
+    // 食い違っていたので直した（どちらも同じときに変わるので害は無かった）
+  }, [inputText, 候補の元]);
+  const defaultMessages = [{ id: "default-msg", role: "model", text: "こんにちは！弓道部的中ノートのAIアシスタントです。選手選びの相談や、的中傾向の分析、アプリの使い方など、何でも聞いてください。" }];
   const [messages, setMessages] = useState(() => loadChatHistory() || defaultMessages);
   const [isLoading, setIsLoading] = useState(false);
   const [retryCountdown, setRetryCountdown] = useState(0);
@@ -625,7 +681,9 @@ const AIChatBot = () => {
         const pendingActionCards = [];
         
         for (const call of calls) {
-          console.log('[AIChatBot] Function Called:', call.name, call.args);
+          // 引数の中身には部員の氏名が入る。共用端末で読まれるので、
+      // どの引数が来たかだけにする（不具合を追うにはこれで足りる）
+      console.log('[AIChatBot] Function Called:', call.name, Object.keys(call.args || {}));
           
           if (call.name === "getAllMembersStats") {
             const { dateFrom, dateTo, sortBy, limit, minShots } = call.args;
@@ -1123,6 +1181,10 @@ const AIChatBot = () => {
       <_Animated.View
         style={[styles.floatingButton, getShadowStyle({ shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 }), { transform: pan.getTranslateTransform() }]}
         {...panResponder.panHandlers}
+        testID="AIを開く"
+        accessibilityRole="button"
+        accessibilityLabel="AIアシスタントを開く"
+        aria-label="AIアシスタントを開く"
       >
         <Ionicons name="chatbubble-ellipses" size={30} color="#FFF" />
         <_View style={styles.badge}>
@@ -1202,21 +1264,35 @@ const AIChatBot = () => {
                 <_View style={styles.例の枠}>
                   <_Text style={styles.例の前置き}>こんなことが聞けます</_Text>
                   {/*
-                    札を横に折り返すと、長い文が途中で切れて詰まって見える。
-                    1行に1件、左に分類を添えて縦に並べる方が読みやすい
+                    分類ごとに1行。その行を横へ流して選ぶ。
+                    縦に全部並べると、初めて開いたときに11行が挨拶を押し出す。
+                    文は折り返して2行まで出す。1行で切ると、長い例
+                    （「2026年8月いちばん練習に来ているのは誰？」）の末尾が
+                    見えず、何を聞けるのかが伝わらない
                   */}
-                  {例たち.map((x) => (
-                    <_TouchableOpacity
-                      key={x.文}
-                      style={styles.例の行}
-                      onPress={() => setInputText(x.文)}
-                      disabled={isLoading}
-                    >
-                      <_Text style={styles.例の字} numberOfLines={1}>{x.文}</_Text>
-                    </_TouchableOpacity>
+                  {分類たち.map((束) => (
+                    <_View key={束.分類} style={styles.例の段}>
+                      <_Text style={styles.例の分類}>{束.分類}</_Text>
+                      <横に流せる行 style={styles.例の並び}>
+                        {束.文たち.map((文) => (
+                          <_TouchableOpacity
+                            key={文}
+                            style={styles.例の行}
+                            onPress={() => setInputText(文)}
+                            disabled={isLoading}
+                            accessibilityRole="button"
+                            accessibilityLabel={`${束.分類}の質問例：${文}`}
+                            aria-label={`${束.分類}の質問例：${文}`}
+                          >
+                            <_Text style={styles.例の字} numberOfLines={1}>{文}</_Text>
+                          </_TouchableOpacity>
+                        ))}
+                      </横に流せる行>
+                    </_View>
                   ))}
                   <_Text style={styles.例の断り}>
                     押すと入力欄に入ります。直してから送れます。
+                    横に流すと続きがあります（パソコンは、上に乗せてホイールを回してください）。
                   </_Text>
                 </_View>
               )}
@@ -1307,6 +1383,10 @@ const styles = _StyleSheet.create({
   // 質問例（入口）。何を聞けるかが分からないまま閉じられるのを防ぐ
   例の枠: { marginTop: 14, paddingHorizontal: 2 },
   例の前置き: { fontSize: 12, color: "#8E8E93", marginBottom: 8, paddingHorizontal: 4 },
+  // 分類ごとの1段。左に分類、右に横へ流す札
+  例の段: { marginBottom: 8 },
+  例の分類: { fontSize: 11, color: "#8E8E93", marginBottom: 3, paddingHorizontal: 4 },
+  例の並び: { paddingRight: 12 },
   例の行: {
     paddingVertical: 7,
     paddingHorizontal: 12,
@@ -1314,9 +1394,9 @@ const styles = _StyleSheet.create({
     backgroundColor: "#FFF",
     borderWidth: 1,
     borderColor: "#D1D1D6",
-    marginBottom: 5,
-    alignSelf: "flex-start",
-    maxWidth: "100%",
+    marginRight: 6,
+    // 幅は決めない。決めると長い文の末尾が切れる。
+    // 1行のまま札を伸ばし、はみ出したぶんは横へ流して見てもらう
   },
   例の字: { fontSize: 13, color: "#007AFF" },
   例の断り: { fontSize: 11, color: "#8E8E93", marginTop: 2, paddingHorizontal: 4 },

@@ -97,6 +97,48 @@ if (検.error) {
     console.log(`        [${x.severity}] ${x.sourcePosition?.line || '?'}行: ${x.description}`);
 }
 
+// ── 2の2 ライブの決まり（Realtime Database） ─────────
+// ライブは団体ごとの推測できない枝に置く（src/liveSecret.js）。
+// その守りは、短い枝を拒むこの決まりが出ていて初めて効く。
+// 画面の側だけ配って決まりを配り忘れると、古い形の枝が通ったままになる
+{
+  const 手元 = fs.readFileSync(path.join(根本, 'database.rules.json'), 'utf8');
+  const r = await fetch(
+    `https://firebasedatabase.googleapis.com/v1beta/projects/${企画}/locations/-/instances`,
+    { headers: 頭 }
+  );
+  const 一覧 = (await r.json()).instances || [];
+  const 先 = (一覧[0] || {}).databaseUrl;
+  console.log('\n■ 出ているライブの決まり（database.rules.json）');
+  if (!先) {
+    console.log('  ⚠   置き場所が分かりませんでした');
+  } else {
+    const g = await fetch(`${先}/.settings/rules.json`, { headers: 頭 });
+    if (!g.ok) {
+      console.log(`  ⚠   読めませんでした（HTTP ${g.status}）`);
+    } else {
+      const 出ている = await g.text();
+      // 出てくるものは注釈が落ちて字下げも変わる。中身だけを見比べる
+      const 揃える = (x) => {
+        try {
+          return JSON.stringify(JSON.parse(x.replace(/\/\/[^\n]*/g, '')));
+        } catch {
+          return null;
+        }
+      };
+      const 同じ = 揃える(出ている) !== null && 揃える(出ている) === 揃える(手元);
+      console.log(印(同じ) + (同じ ? '手元と同じ' : '手元と違う（配信すると変わる）'));
+      const 長さを見ている = /\.length >= \d+/.test(出ている);
+      console.log(
+        印(長さを見ている) +
+          (長さを見ている
+            ? '枝の長さを見ている（団体IDの総当たりは通らない）'
+            : '枝の長さを見ていない ← 団体IDを順に試すと他団体のライブが見える')
+      );
+    }
+  }
+}
+
 // ── 3 自動削除 ───────────────────────────────────
 const ttl = await (
   await fetch(

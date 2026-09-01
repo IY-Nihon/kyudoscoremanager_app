@@ -11,6 +11,11 @@
  * わざと回線を切って、貯まることと、直前の操作が付いていることを見る。
  */
 import { test, expect } from '@playwright/test';
+import {
+  案内を止める,
+  画面が出るまで待つ,
+  入り口が決まるまで待つ,
+} from './helpers.mjs';
 import fs from 'node:fs';
 
 const お知らせの版 = (fs.readFileSync('src/JP_WhatsNewModal.js', 'utf8').match(/NOTICE_VERSION = '([^']+)'/) || [])[1];
@@ -20,8 +25,14 @@ const 団体 = '100001';
 test.use({ storageState: 'e2e/.auth/100001.json' });
 
 async function 入る(page) {
+  // 案内とお知らせは開く前に止める。開いてから止めて reload すると、
+  // アプリを2回起動することになる（遅い機種ほど効く）
+  await 案内を止める(page);
   await page.goto('/');
-  await page.waitForTimeout(3000);
+  await 画面が出るまで待つ(page);
+  // 読み込み中の画面でも「出た」になるので、ログイン欄が出るか、
+  // もう入っているかが決まるまで待つ（飛ばすとログイン画面のまま進む）
+  await 入り口が決まるまで待つ(page);
   await expect
     .poll(
       () =>
@@ -32,12 +43,28 @@ async function 入る(page) {
       { timeout: 60_000, message: 'ログインが通らない（団体IDが入らない）' }
     )
     .not.toBeNull();
-  await page.evaluate((版) => {
-    localStorage.setItem('tutorialDoneVersion', '2026-08-13-01');
-    localStorage.setItem('whatsNewDismissedVersion', 版);
-  }, お知らせの版);
-  await page.reload();
-  await page.waitForTimeout(4000);
+
+  // 記録が手元に届くまで待つ。
+  //
+  // e2e/.auth の控えは記録を持っていない（同期の完了を待たずに保存される
+  // ため）ので、雲から取り直すまで分析は空のまま。団体IDが入っただけで
+  // 先へ進むと、弓具の節も的中の型も「まだ何も無い」画面を見ることになる。
+  // 決まった秒数を置くやり方だと、取り直しが間に合った回だけ通る。
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          try {
+            const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+            return (s.sessions || []).length;
+          } catch (e) {
+            return 0;
+          }
+        }),
+      { timeout: 60_000, message: '記録が手元に届かない（分析が空のまま進む）' }
+    )
+    .toBeGreaterThan(0);
+  // ここで書いて reload していたのをやめた（上の 案内を止める が代わり）
 }
 
 /**
@@ -116,7 +143,6 @@ test('ひな型：組み合わせを名前で残し、解除しても呼び出�
 
   // 解除しても、ひな型そのものは残る
   expect(await 押す(page, '比較をすべて解除')).toBe(true);
-  await page.waitForTimeout(1500);
   await expect(page.getByText('検査のひな型', { exact: false }).first()).toBeVisible();
 
   // 押すと比較が戻る（相手の名前が表の中に出る）
@@ -186,4 +212,63 @@ test('不具合の便り：電波が無いと端末に貯まり、直前の操�
     const 鍵 = Object.keys(localStorage).find((k) => k.includes('kyudo-error-queue'));
     if (鍵) localStorage.removeItem(鍵);
   });
+});
+
+// ── 弓具を変えた前後（個人の詳細）────────────────────
+//
+// 「弓具履歴と的中の因果関係は分析の個人詳細で見たい」という求めに対して
+// 作ったが、弓具の履歴が無い人には何も出ず、在ることに気づけなかった。
+// 履歴が無いときは、どこで記録するかだけを出す。
+//
+// この検査は団体には書き込まない（開いて見るだけ）。
+
+test('個人の詳細に、弓具を変えた前後の節がある', async ({ page }) => {
+  await 入る(page);
+  expect(await 押す(page, '分析')).toBe(true);
+  await page.waitForTimeout(2500);
+
+  expect(await 押す(page, '部員1')).toBe(true);
+  await page.waitForTimeout(2000);
+
+  // 見出しは、履歴の有る無しにかかわらず出る
+  const 見出し = page.getByText('弓具を変えた前後', { exact: true });
+  await 見出し.first().scrollIntoViewIfNeeded().catch(() => {});
+  await expect(見出し.first(), '個人の詳細に弓具の節が無い').toBeVisible({ timeout: 15_000 });
+
+  // 検証環境の部員は弓具の履歴を持たないので、記録するところの案内が出る
+  await expect(
+    page.getByText(/弓具管理/),
+    '履歴が無いときに、どこで記録するかが出ていない'
+  ).toBeVisible({ timeout: 10_000 });
+});
+
+// ── 的中の型（個人の詳細）────────────────────────
+//
+// 結果分布（皆中・三中…）は中り数までしか見ないので、同じ三中でも
+// 「留矢を抜いた」のか「初矢を抜いた」のかが分からなかった。
+// 数える決まりは statsRules（型を並べる）にあり、ここは画面に出ることを見る。
+//
+// この検査は団体には書き込まない（開いて見るだけ）。
+
+test('個人の詳細に、的中の型が出る', async ({ page }) => {
+  await 入る(page);
+  expect(await 押す(page, '分析')).toBe(true);
+  await page.waitForTimeout(2500);
+
+  expect(await 押す(page, '部員1')).toBe(true);
+  await page.waitForTimeout(2000);
+
+  const 見出し = page.getByText(/的中の型/);
+  await 見出し.first().scrollIntoViewIfNeeded().catch(() => {});
+  await expect(見出し.first(), '個人の詳細に的中の型の節が無い').toBeVisible({ timeout: 15_000 });
+
+  // 中身。○×の型と、要点（「留矢を抜いた」など）が並ぶ。
+  // 検証環境の記録がどんな型かは決められないので、
+  // 「何か型が出ていること」と「言葉が弓道の言い方であること」を見る
+  const 本文 = await page.evaluate(() => document.body.innerText);
+  expect(本文, '結果分布のすぐ下に置いたのに、分布が見当たらない').toContain('立ちの結果分布');
+  expect(本文, '型の印（○×の並び）が出ていない').toMatch(/[○×]{4}/);
+  // 「初矢」はAIアシスタントのQ&Aにも出てくるので、それだけでは
+  // この節を見たことにならない。この節にしか無い断り書きで見る
+  expect(本文, '的中の型の節の中身が出ていない').toContain('割合は同じ中り数の中での割合');
 });

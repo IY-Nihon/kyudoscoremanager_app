@@ -17,14 +17,25 @@ const app = initializeApp({
 await signInAnonymously(getAuth(app));
 const db = getDatabase(app);
 
+// ライブは団体IDではなく、団体ごとの推測できない合言葉の枝に置く
+// （src/liveSecret.js）。合言葉は Firestore の groups/{団体}.liveSecret に
+// あり、匿名でつなぐこの道具からは読めない。ブラウザの開発者ツールで
+//   JSON.parse(localStorage["archery-score-storage"]).state.ライブの合言葉
+// を見て、LIVE_BRANCH に入れて動かす
+const 枝 = process.env.LIVE_BRANCH;
+if (!枝 || 枝.length < 20) {
+  console.error('LIVE_BRANCH にライブの合言葉を入れてください（上の説明を参照）');
+  process.exit(1);
+}
+
 if (!名) {
-  const 全部 = (await get(ref(db, 'live_sessions/100001'))).val() || {};
+  const 全部 = (await get(ref(db, `live_sessions/${枝}`))).val() || {};
   console.log('ライブ一覧:', Object.keys(全部));
   process.exit(0);
 }
-const 根 = `live_sessions/100001/${名}`;
+const 根 = `live_sessions/${枝}/${名}`;
 if (process.argv[3] === '消す') {
-  (await remove(ref(db, 根)), await remove(ref(db, `live_history/100001/${名}`)));
+  (await remove(ref(db, 根)), await remove(ref(db, `live_history/${枝}/${名}`)));
   console.log('消しました:', 名, '（共有履歴も）');
   process.exit(0);
 }
@@ -39,7 +50,7 @@ console.log('射手    :', (状態.archers || []).map((a) => `${a && a.id}:${a &
 console.log('marks   :', JSON.stringify(状態.marks_by_id));
 console.log('日時    :', JSON.stringify(状態.archer_timestamps), 'timestamp=', 状態.timestamp);
 // 共有履歴はライブの枝の外（live_history）。参加一覧の取得を軽くするため
-const 履歴 = (await get(ref(db, `live_history/100001/${名}`))).val();
+const 履歴 = (await get(ref(db, `live_history/${枝}/${名}`))).val();
 console.log('履歴の数:', 履歴 ? Object.keys(履歴).length : 0, 履歴 ? Object.keys(履歴) : '');
 const 中の古い履歴 = (await get(ref(db, `${根}/history`))).val();
 if (中の古い履歴) console.log('★ 中にも古い履歴が残っている:', Object.keys(中の古い履歴).length, '手');
