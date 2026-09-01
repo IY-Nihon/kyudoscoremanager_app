@@ -1,0 +1,67 @@
+{
+  // 純粋な部品だけを型で確かめる設定。
+  //
+  // ■ なぜ .d.ts を別に置かないのか
+  // .d.ts を置くと、TypeScript はそちらを「その部品の型」として信じ、
+  // .js の中身とは突き合わせない。実装と型がずれても誰も気づかないので、
+  // 「型のズレをゼロに」という狙いと逆になる。
+  // JSDoc を実装に直接書き、checkJs で実装と呼び出し側の両方を見る。
+  //
+  // ■ なぜ src ぜんぶを見ないのか
+  // src の多くはソースマップから復元したコードで、変数名が e, t, n のまま。
+  // 型を付けられる形になっていないので、誤りが数千件出て使い物にならない。
+  // 画面に触れない純粋な部品と、その検査だけに絞る。
+  //
+  //   npx tsc -p tsconfig.check.json
+  //
+  // npm test からも走る。
+  //
+  // ■ 捕まえられないもの（承知のうえの限界）
+  // ・Array.isArray(x) で包んだ先。TypeScript はそこで型を配列へ広げるので、
+  //   無い鍵を読んでも通ってしまう。守りの分岐を書くと検査が緩む形になる
+  // ・型を書いていない関数の引数（暗黙の any）。純粋な部品には順に付けている
+  // どちらも「検査が通った＝正しい」ではないことを意味する。検査は下支えで、
+  // test/ の実物の確かめの代わりにはならない。
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"],
+    // 段階的に上げる。いまは「渡し間違い」を捕まえるところまで
+    "strict": false,
+    "noImplicitAny": false,
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/sha256.js",
+    "src/liveSecret.js",
+    "src/liveShare.js",
+    "src/livePresence.js",
+    "src/localTrim.js",
+    "src/backgroundSaver.js",
+    "src/a11yLabels.js",
+    "src/equipmentTrend.js",
+    "src/i18n.js",
+    "src/updateNotice.js",
+    "src/messages/index.js",
+    "src/messages/a11y.js",
+    "src/messages/live.js",
+    "src/comparePresets.js",
+    "src/statsRules.js",
+    "src/chatStats.js",
+    "test/sha256.test.js",
+    "test/liveSecret.test.js",
+    "test/liveShare.test.js",
+    "test/livePresence.test.js",
+    "test/localTrim.test.js",
+    "test/backgroundSaver.test.js",
+    "test/a11yLabels.test.js",
+    "test/equipmentTrend.test.js",
+    "test/i18n.test.js",
+    "test/updateNotice.test.js"
+  ]
+}

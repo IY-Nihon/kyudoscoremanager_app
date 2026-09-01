@@ -47,21 +47,29 @@ export default defineConfig({
     // 認証を短い間に何十回も投げなくなるので、429で落ちる取り合いも減る
     { name: '下ごしらえ', testMatch: /auth.setup.mjs/ },
     { name: 'スマホ', dependencies: ['下ごしらえ'], use: { ...devices['Pixel 5'] } },
-    // iPhone(WebKit) はまだ緑になっていない。検査のログインが通らず
-    // （activeGroupId が null のまま）、アプリ側か検査側かを切り分けられていない。
-    // 本番の web 版は iPhone から使われているので、検査側の可能性が高い。
-    // WebKit 本体は入れてあるので、この1行を戻せばすぐ再開できる。
+    // iPhone(WebKit) も通っている。ここでしか出ない差が実際にあるので外さないこと
+    // （例：localStorage のメソッドは WebKit では差し替えられず、検査が
+    //  空振りしていた。パソコンだけ見ていると気づけない）
     { name: 'iPhone', dependencies: ['下ごしらえ'], use: { ...devices['iPhone 13'] } },
     { name: 'パソコン', dependencies: ['下ごしらえ'], use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: {
-    // --proxy で、無いパスは index.html へ回す。本番の Firebase Hosting も
-    // rewrites で同じことをしている（firebase.json）。
+    // 無い道は index.html へ回す（本番の Firebase Hosting の rewrites と同じ）。
     // これが無いと、ログイン後に URL が /record へ変わったあとの再読み込みで
-    // /record を取りにいって404になり、画面が白紙になる。速い画面では
-    // 間に合っていたが、iPhone では毎回踏んでいて、検査が6件とも落ちていた。
-    command: `npx --yes http-server ${配り元} -p ${港} -s -c-1 --proxy http://127.0.0.1:${港}?`,
+    // /record を取りにいって404になり、画面が白紙になる。
+    //
+    // 以前は `npx --yes http-server … --proxy http://127.0.0.1:${港}?` を使って
+    // いたが、2つ困ることがあった（scripts/e2e-server.mjs に詳しく書いてある）。
+    //   ・転送先が自分自身で、無い道が来るたびに接続が倍になる。機種を3つ
+    //     同時に流すと配り口ごと落ちた（174件中120件が接続失敗で全滅）
+    //   ・npx が間に入るので、止めても下の http-server が生き残り、
+    //     港が掴まれたまま次の実行が始められなくなった
+    // いまは node が直に聴いている。止めれば必ず離す。
+    command: `node scripts/e2e-server.mjs`,
+    env: { PW_PORT: String(港), PW_DIST: 配り元 },
     url: `http://127.0.0.1:${港}`,
+    // 使い回さない。前の実行の配り口が残っていると、焼き直す前の束を
+    // 配ってしまい、直したはずのものが直っていないように見える
     reuseExistingServer: false,
     timeout: 60_000,
   },
