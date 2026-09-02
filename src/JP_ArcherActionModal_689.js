@@ -15,7 +15,7 @@ const d = typeof dependencyMap !== 'undefined' ? dependencyMap : [];
 Object.defineProperty(exports, '__esModule', { value: true });
 exports.ArcherActionModal = undefined;
 
-var t = require('./module_37'),
+var t = require('react'),
   o = e(t),
   n = e(require('./default_144')),
   l = e(require('./default_217')),

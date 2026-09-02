@@ -22,7 +22,7 @@ function e(e) {
       return k;
     },
   }));
-var t = require('./module_37'),
+var t = require('react'),
   o = e(t),
   l = e(require('./default_144')),
   n = e(require('./default_297')),
@@ -35,7 +35,7 @@ var t = require('./module_37'),
 require('./module_98');
 var h = e(require('./default_382')),
   m = require('./IS_WEB_199');
-require('./module_420');
+require('react-native-safe-area-context');
 var x = require('./JP_useScoreStore_174'),
   案内 = require('./JP_TutorialGuide'),
   在 = require('./livePresence'),
