@@ -23,12 +23,12 @@ function e(e) {
     },
   }));
 var t = require('react'),
-  o = e(require('./default_144')),
-  n = e(require('./default_217')),
-  l = e(require('./default_382')),
-  s = e(require('./default_45')),
+  o = e(require('./View')),
+  n = e(require('./Text')),
+  l = e(require('./TouchableOpacity')),
+  s = e(require('./StyleSheet')),
   c = require('./JP_useScoreStore_174'),
-  u = require('./module_427');
+  u = require('./themedJsx');
 class f extends t.Component {
   state = { hasError: !1, error: null };
   static getDerivedStateFromError(e) {

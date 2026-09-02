@@ -1,5 +1,7 @@
 /**
- * Module ID: 693
+ * 立の行（射手・区切り・合計）の雛形を作る。
+ *
+ * （ソースマップからの復元時は module_693.js という名前だった）
  */
 'use strict';
 
@@ -31,7 +33,7 @@ const d = typeof dependencyMap !== 'undefined' ? dependencyMap : [];
       return l;
     },
   }));
-var t = require('./module_200');
+var t = require('./uuid');
 const n = (n) => ({
     id: (0, t.generateUUID)(),
     name: '',

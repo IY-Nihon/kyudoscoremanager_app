@@ -23,18 +23,18 @@ function e(e) {
     },
   }));
 var t = e(require('react')),
-  o = e(require('./default_144')),
-  l = e(require('./default_217')),
-  i = e(require('./default_45')),
-  n = e(require('./default_382')),
-  s = require('./module_595'),
+  o = e(require('./View')),
+  l = e(require('./Text')),
+  i = e(require('./StyleSheet')),
+  n = e(require('./TouchableOpacity')),
+  s = require('./uiConfig'),
   a = require('./JP_ScoreCell_596'),
   c = require('./JP_useScoreStore_174'),
   // 読み上げが読む言葉。射位の呼び方もここが持つ
   読み = require('./a11yLabels'),
-  h = require('./AntDesign_600'),
-  u = require('./JP_module_687'),
-  f = require('./module_427');
+  h = require('@expo/vector-icons'),
+  u = require('./formatMemberName'),
+  f = require('./themedJsx');
 const m = t.default.memo(
     ({
       archer: e,

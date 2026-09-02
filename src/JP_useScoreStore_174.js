@@ -53,7 +53,7 @@ function 書けないことを一度だけ知らせる() {
   if (書けないと知らせた) return;
   書けないと知らせた = !0;
   try {
-    require('./module_198').default.alert(
+    require('./alertBridge').default.alert(
       '端末に保存できませんでした',
       '端末の空きが足りないようです。このまま続けると、入れた記録が次に開いたときに消えていることがあります。ほかのアプリやブラウザの保存領域を空けてから、もう一度お試しください。'
     );
@@ -264,12 +264,12 @@ var s = require('zustand'),
   o = require('firebase/auth'),
   a = require('firebase/firestore'),
   i = require('firebase/database'),
-  n = e(require('./module_198')),
+  n = e(require('./alertBridge')),
   c = require('./IS_WEB_199'),
-  l = require('./module_200'),
-  d = require('./combine_201'),
-  u = e(require('./useAsyncStorage_202')),
-  m = e(require('./default_208'));
+  l = require('./uuid'),
+  d = require('zustand/middleware'),
+  u = e(require('@react-native-async-storage/async-storage')),
+  m = e(require('@react-native-community/netinfo'));
 const fb = {
   dbInstance: null,
   authInstance: null,

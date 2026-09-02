@@ -1,5 +1,5 @@
 /**
- * Library Bridge: default_289.js (react-native / FlatList)
+ * Library Bridge: FlatList.js (react-native / FlatList)
  *
  * 元はソースマップから復元された react-native の FlatList 実装。
  * Web ビルドでは Metro が react-native-web へ解決する（両方に FlatList が存在することを確認済み）。

@@ -23,22 +23,22 @@ function e(e) {
     },
   }));
 var t = require('react'),
-  n = e(require('./default_144')),
-  o = e(require('./default_217')),
-  l = e(require('./default_45')),
-  a = e(require('./default_289')),
-  s = e(require('./default_382')),
-  c = e(require('./default_398')),
-  u = e(require('./default_394')),
-  g = e(require('./default_386')),
-  f = e(require('./module_198')),
-  h = e(require('./default_218')),
+  n = e(require('./View')),
+  o = e(require('./Text')),
+  l = e(require('./StyleSheet')),
+  a = e(require('./FlatList')),
+  s = e(require('./TouchableOpacity')),
+  c = e(require('./TextInput')),
+  u = e(require('./SafeAreaView')),
+  g = e(require('./Modal')),
+  f = e(require('./alertBridge')),
+  h = e(require('./Pressable')),
   m = require('./IS_WEB_199'),
   x = require('./JP_useScoreStore_174'),
   案内 = require('./JP_TutorialGuide'),
-  p = require('./AntDesign_600'),
-  b = require('./module_592'),
-  y = require('./module_427');
+  p = require('@expo/vector-icons'),
+  b = require('./shadowStyle'),
+  y = require('./themedJsx');
 var CC = require('./JP_CustomCalendarModal_695');
 
 const C = () => {
@@ -195,7 +195,7 @@ const C = () => {
         o = () => {
           (C(e), D(!1));
         };
-      // ブラウザの確認窓は使わない。受け口（module_198）がアプリの中の窓へ流す
+      // ブラウザの確認窓は使わない。受け口（alertBridge）がアプリの中の窓へ流す
       f.default.alert('確認', n, [
         { text: 'キャンセル', style: 'cancel' },
         { text: '削除', style: 'destructive', onPress: o },

@@ -1,5 +1,5 @@
 /**
- * Library Bridge: default_396.js (react-native / Switch)
+ * Library Bridge: Switch.js (react-native / Switch)
  *
  * 元はソースマップから復元された react-native の Switch 実装。
  * Web ビルドでは Metro が react-native-web へ解決する（両方に Switch が存在することを確認済み）。

@@ -1,5 +1,5 @@
 /**
- * Library Bridge: default_394.js (react-native / SafeAreaView)
+ * Library Bridge: SafeAreaView.js (react-native / SafeAreaView)
  *
  * 元はソースマップから復元された react-native の SafeAreaView 実装。
  * Web ビルドでは Metro が react-native-web へ解決する（両方に SafeAreaView が存在することを確認済み）。

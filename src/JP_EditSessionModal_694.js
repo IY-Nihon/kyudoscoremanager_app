@@ -28,16 +28,16 @@ function e(e) {
     },
   }));
 var t = require('react'),
-  o = e(require('./default_144')),
-  n = e(require('./default_386')),
-  l = e(require('./default_45')),
-  s = e(require('./default_217')),
-  i = e(require('./default_382')),
-  d = e(require('./default_398')),
-  c = e(require('./default_396')),
+  o = e(require('./View')),
+  n = e(require('./Modal')),
+  l = e(require('./StyleSheet')),
+  s = e(require('./Text')),
+  i = e(require('./TouchableOpacity')),
+  d = e(require('./TextInput')),
+  c = e(require('./Switch')),
   u = require('./IS_WEB_199'),
-  f = require('./AntDesign_600'),
-  sv = e(require('./default_297')),
+  f = require('@expo/vector-icons'),
+  sv = e(require('./ScrollView')),
   h = (function (e) {
     if (e && e.__esModule) return e;
     var t = {};
@@ -61,10 +61,10 @@ var t = require('react'),
       (t.default = e),
       t
     );
-  })(require('./NotificationFeedbackType_597')),
+  })(require('expo-haptics')),
   x = require('./JP_CustomCalendarModal_695'),
   p = require('./JP_useScoreStore_174'),
-  b = require('./module_427');
+  b = require('./themedJsx');
 const normalizeTag = (e) => {
   if ('string' != typeof e) return '';
   let t = e.trim().replace(/^[#＃\s]+/, '');

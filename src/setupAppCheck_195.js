@@ -18,9 +18,7 @@ const d = typeof dependencyMap !== 'undefined' ? dependencyMap : [];
     get: function () {
       return e;
     },
-  }),
-  require('./module_196'),
-  require('./module_98'));
+  }));
 const e = (e) => {
   try {
     console.log('[AppCheck] Initialized for Web (Disabled due to missing ReCAPTCHA key)');

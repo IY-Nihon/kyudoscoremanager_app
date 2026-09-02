@@ -5,7 +5,7 @@
  * 出る位置も機種によって違う。ここを通せば、どの画面から呼んでも
  * 同じ形の窓が画面の中に出る。
  *
- * 呼び口は Alert と同じ形にしてある（module_198.js が中でこれを呼ぶ）。
+ * 呼び口は Alert と同じ形にしてある（alertBridge.js が中でこれを呼ぶ）。
  *   出す('題', '文')                          … OKだけの知らせ
  *   出す('題', '文', [{ text, onPress, style }]) … 選ばせる確認
  *
@@ -20,8 +20,8 @@ const React = require('react');
 const { useState, useEffect, useRef } = React;
 const RN = require('react-native');
 const _View = RN.View;
-const _Text = require('./default_217').default; // テーマ変換を通すためブリッジ経由
-const _StyleSheet = require('./default_45').default;
+const _Text = require('./Text').default; // テーマ変換を通すためブリッジ経由
+const _StyleSheet = require('./StyleSheet').default;
 const _Modal = RN.Modal;
 // 帯か窓かの決まりは純粋な関数なので外に出してある。
 // 43か所ぶんの実際の文で、node --test から確かめている（test/dialogRules.test.js）

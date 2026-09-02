@@ -23,28 +23,28 @@ function e(e) {
     },
   }));
 var t = require('react'),
-  o = e(require('./default_144')),
-  n = e(require('./default_217')),
-  l = e(require('./default_45')),
-  a = e(require('./default_289')),
-  s = e(require('./default_382')),
-  d = e(require('./default_398')),
-  c = e(require('./default_386')),
-  u = e(require('./default_297')),
-  h = e(require('./module_198'));
-require('./module_98');
-var f = e(require('./default_218')),
+  o = e(require('./View')),
+  n = e(require('./Text')),
+  l = e(require('./StyleSheet')),
+  a = e(require('./FlatList')),
+  s = e(require('./TouchableOpacity')),
+  d = e(require('./TextInput')),
+  c = e(require('./Modal')),
+  u = e(require('./ScrollView')),
+  h = e(require('./alertBridge'));
+require('./platform');
+var f = e(require('./Pressable')),
   x = require('./IS_WEB_199');
 require('react-native-safe-area-context');
 var 案内 = require('./JP_TutorialGuide');
 // 「自分が写っているか」の判定。案内の見本を出すかどうかにも同じものを使う
 var { 自分の射手か, 自分の記録か } = require('./syncRules');
 var y = require('./JP_useScoreStore_174'),
-  b = require('./JP_module_693'),
+  b = require('./archerFactory'),
   p = require('./JP_ArcherColumnView_594'),
   j = require('./JP_LabelColumn_688'),
-  C = require('./module_595'),
-  F = require('./AntDesign_600'),
+  C = require('./uiConfig'),
+  F = require('@expo/vector-icons'),
   S = (function (e) {
     if (e && e.__esModule) return e;
     var t = {};
@@ -68,13 +68,13 @@ var y = require('./JP_useScoreStore_174'),
       (t.default = e),
       t
     );
-  })(require('./NotificationFeedbackType_597')),
+  })(require('expo-haptics')),
   w = require('./JP_EditSessionModal_694'),
   T = require('./JP_ArcherActionModal_689'),
   A = require('./JP_ManualSubstitutionModal_691'),
-  z = require('./module_592'),
-  I = require('./JP_module_687'),
-  k = require('./module_427');
+  z = require('./shadowStyle'),
+  I = require('./formatMemberName'),
+  k = require('./themedJsx');
 const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E5E5EA', marginLeft: 16 } }),
   D = () => {
     const {

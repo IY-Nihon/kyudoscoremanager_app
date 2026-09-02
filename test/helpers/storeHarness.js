@@ -521,16 +521,25 @@ function ストアを用意する(既存の雲, 既存のライブ) {
     persistence: { state: 'ok', code: null },
   });
   // e(require(...)) の相互変換を通すので __esModule を立てる
-  差し替え('useAsyncStorage_202', {
-    __esModule: true,
-    default: {
-      getItem: async (k) => (保存領域.has(k) ? 保存領域.get(k) : null),
-      setItem: async (k, v) => void 保存領域.set(k, v),
-      removeItem: async (k) => void 保存領域.delete(k),
-    },
-  });
-  差し替え('default_208', { __esModule: true, default: { addEventListener: () => () => {} } }); // NetInfo
-  差し替え('module_198', {
+  横取り.set(
+    '@react-native-async-storage/async-storage',
+    外部を差し替え('@react-native-async-storage/async-storage', {
+      __esModule: true,
+      default: {
+        getItem: async (k) => (保存領域.has(k) ? 保存領域.get(k) : null),
+        setItem: async (k, v) => void 保存領域.set(k, v),
+        removeItem: async (k) => void 保存領域.delete(k),
+      },
+    })
+  );
+  横取り.set(
+    '@react-native-community/netinfo',
+    外部を差し替え('@react-native-community/netinfo', {
+      __esModule: true,
+      default: { addEventListener: () => () => {} },
+    })
+  ); // NetInfo
+  差し替え('alertBridge', {
     __esModule: true,
     default: { alert: (見出し, 文) => 知らせ.push(String(文 || 見出し)) },
   }); // Alert

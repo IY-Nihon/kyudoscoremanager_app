@@ -25,17 +25,17 @@ function e(e) {
   }));
 
 var t = require('react'),
-  l = e(require('./default_144')),
-  o = e(require('./default_217')),
-  s = e(require('./default_45')),
-  c = e(require('./default_386')),
-  u = e(require('./default_398')),
-  f = e(require('./default_382')),
-  h = e(require('./default_297')),
+  l = e(require('./View')),
+  o = e(require('./Text')),
+  s = e(require('./StyleSheet')),
+  c = e(require('./Modal')),
+  u = e(require('./TextInput')),
+  f = e(require('./TouchableOpacity')),
+  h = e(require('./ScrollView')),
   y = require('./JP_useScoreStore_174'),
   共 = require('./liveShare'),
   写 = require('./clipboard_bridge'),
-  A = require('./module_427');
+  A = require('./themedJsx');
 
 /** 配り元。web なら開いている場所、端末なら本番の住所 */
 function 配り元() {

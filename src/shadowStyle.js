@@ -1,5 +1,7 @@
 /**
- * Module ID: 592
+ * 影の見た目を組み立てる。色の16進表記を rgba へ直す。
+ *
+ * （ソースマップからの復元時は module_592.js という名前だった）
  */
 'use strict';
 
@@ -19,7 +21,7 @@ Object.defineProperty(e, 'getShadowStyle', {
     return getShadowStyle;
   },
 });
-require('./module_98');
+require('./platform');
 
 const getShadowStyle = (config) => {
   const n = 'number' == typeof config ? { elevation: config } : config;

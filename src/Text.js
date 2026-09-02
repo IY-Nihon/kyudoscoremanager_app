@@ -1,5 +1,5 @@
 /**
- * Library Bridge: default_217.js (react-native / Text) + ダークモードの既定文字色
+ * Library Bridge: Text.js (react-native / Text) + ダークモードの既定文字色
  *
  * 元はソースマップから復元された react-native の Text 実装。
  * Web ビルドでは Metro が react-native-web へ解決する。
