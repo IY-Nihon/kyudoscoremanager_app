@@ -24,7 +24,7 @@ function e(e) {
     },
   }));
 
-var t = require('./module_37'),
+var t = require('react'),
   l = e(require('./default_144')),
   o = e(require('./default_217')),
   s = e(require('./default_45')),
@@ -404,7 +404,7 @@ const 来客の窓 = ({ 荷, onClose }) => {
       // RTDB は「ログインしている誰か」を求める。団体には入らない
       try {
         const 認 = require('./db_178');
-        const 匿 = require('./module_191');
+        const 匿 = require('firebase/auth');
         if (認.auth && !認.auth.currentUser) await (0, 匿.signInAnonymously)(認.auth);
       } catch {
         return void 難点を置く('接続できませんでした。電波の良い場所でもう一度お試しください。');

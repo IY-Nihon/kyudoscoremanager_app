@@ -22,7 +22,7 @@ function e(e) {
       return j;
     },
   }));
-var t = require('./module_37'),
+var t = require('react'),
   n = e(t),
   o = e(require('./default_144')),
   l = e(require('./default_217')),
@@ -33,7 +33,7 @@ var t = require('./module_37'),
   d = e(require('./default_398'));
 require('./module_98');
 var c = require('./IS_WEB_199');
-require('./module_420');
+require('react-native-safe-area-context');
 var 案内 = require('./JP_TutorialGuide');
 // 「自分が写っているか」の判定。履歴画面・案内の見本と同じものを使う
 var { 自分の記録か, 学年でまとめる } = require('./syncRules');
