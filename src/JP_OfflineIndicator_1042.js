@@ -23,14 +23,14 @@ function e(e) {
     },
   }));
 var t = e(require('react')),
-  n = e(require('./default_144')),
-  o = e(require('./default_217')),
-  l = e(require('./default_45')),
-  s = e(require('./default_286')),
+  n = e(require('./View')),
+  o = e(require('./Text')),
+  l = e(require('./StyleSheet')),
+  s = e(require('./Animated')),
   u = require('./JP_useScoreStore_174'),
-  c = require('./AntDesign_600'),
-  f = require('./module_592'),
-  F = require('./module_427');
+  c = require('@expo/vector-icons'),
+  f = require('./shadowStyle'),
+  F = require('./themedJsx');
 const h = () => {
     const e = (0, u.useScoreStore)((e) => e.isNetworkOnline),
       [l] = t.default.useState(new s.default.Value(0));

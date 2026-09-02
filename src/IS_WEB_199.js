@@ -43,7 +43,7 @@ Object.defineProperty(_e, 'GEMINI_API_KEY', {
     return c;
   },
 });
-require('./module_98');
+require('./platform');
 const e = (() => {
   try {
     return !0;

@@ -23,19 +23,19 @@ function e(e) {
     },
   }));
 var t = require('react'),
-  n = e(require('./default_144')),
-  o = e(require('./default_217')),
-  a = e(require('./default_45')),
-  l = e(require('./default_386')),
-  s = e(require('./default_398')),
-  u = e(require('./default_382')),
-  c = e(require('./default_385')),
-  f = e(require('./default_406')),
-  巻物 = e(require('./default_297')),
+  n = e(require('./View')),
+  o = e(require('./Text')),
+  a = e(require('./StyleSheet')),
+  l = e(require('./Modal')),
+  s = e(require('./TextInput')),
+  u = e(require('./TouchableOpacity')),
+  c = e(require('./KeyboardAvoidingView')),
+  f = e(require('./TouchableWithoutFeedback')),
+  巻物 = e(require('./ScrollView')),
   m = require('./JP_useScoreStore_174'),
-  h = require('./AntDesign_600'),
+  h = require('@expo/vector-icons'),
   b = require('./IS_WEB_199'),
-  p = require('./module_427');
+  p = require('./themedJsx');
 var { 立の数, 立の頭の射, 学年でまとめる } = require('./syncRules');
 const x = ({ visible: e, archerId: x, onClose: j }) => {
     const {

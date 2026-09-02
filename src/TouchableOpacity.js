@@ -1,5 +1,5 @@
 /**
- * Library Bridge: default_382.js (react-native / TouchableOpacity)
+ * Library Bridge: TouchableOpacity.js (react-native / TouchableOpacity)
  *
  * 元はソースマップから復元された react-native の TouchableOpacity 実装。
  * Web ビルドでは Metro が react-native-web へ解決する（両方に TouchableOpacity が存在することを確認済み）。

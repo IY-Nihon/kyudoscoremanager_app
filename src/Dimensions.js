@@ -1,5 +1,5 @@
 /**
- * Library Bridge: default_298.js (react-native / Dimensions)
+ * Library Bridge: Dimensions.js (react-native / Dimensions)
  *
  * 元はソースマップから復元された react-native の Dimensions 実装。
  * Web ビルドでは Metro が react-native-web へ解決する（両方に Dimensions が存在することを確認済み）。

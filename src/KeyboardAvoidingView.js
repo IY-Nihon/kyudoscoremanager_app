@@ -1,5 +1,5 @@
 /**
- * Library Bridge: default_385.js (react-native / KeyboardAvoidingView)
+ * Library Bridge: KeyboardAvoidingView.js (react-native / KeyboardAvoidingView)
  *
  * 元はソースマップから復元された react-native の KeyboardAvoidingView 実装。
  * Web ビルドでは Metro が react-native-web へ解決する（両方に KeyboardAvoidingView が存在することを確認済み）。

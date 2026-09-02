@@ -7,11 +7,11 @@ const React = require("react");
 const { useState, useRef, useEffect } = React;
 const RN = require("react-native");
 const _View = RN.View;
-const _Text = require("./default_217").default; // テーマ変換を通すためブリッジ経由
-const _StyleSheet = require("./default_45").default; // テーマ変換を通すためブリッジ経由
+const _Text = require("./Text").default; // テーマ変換を通すためブリッジ経由
+const _StyleSheet = require("./StyleSheet").default; // テーマ変換を通すためブリッジ経由
 const _TouchableOpacity = RN.TouchableOpacity;
 const _Modal = RN.Modal;
-const _TextInput = require("./default_398").default; // テーマ変換（既定文字色）を通すためブリッジ経由
+const _TextInput = require("./TextInput").default; // テーマ変換（既定文字色）を通すためブリッジ経由
 const _ScrollView = RN.ScrollView;
 const _ActivityIndicator = RN.ActivityIndicator;
 const _KeyboardAvoidingView = RN.KeyboardAvoidingView;
@@ -19,7 +19,7 @@ const _Dimensions = RN.Dimensions;
 const _Animated = RN.Animated;
 const _PanResponder = RN.PanResponder;
 
-const { Ionicons } = require("./AntDesign_600");
+const { Ionicons } = require("@expo/vector-icons");
 const IS_WEB = RN.Platform.OS === "web";
 
 /**
@@ -62,7 +62,7 @@ function 横に流せる行({ children, style }) {
     </_ScrollView>
   );
 }
-const { GoogleGenerativeAI } = require("./h_1035");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { useScoreStore } = require("./JP_useScoreStore_174");
 const { useNavigation } = require("@react-navigation/native");
 const { GEMINI_API_KEY } = require("./IS_WEB_199");
@@ -76,8 +76,8 @@ const { 質問例のすべて, 打ちかけの候補, 分類ごと } = require("
 const 集 = require("./statsRules");
 // 言い換えて聞かれても当てるための、コードだけの近さ測り（外のAPIは使わない）
 const { 引きをつくる, 近い順 } = require("./textMatch");
-const { getShadowStyle } = require("./module_592");
-const { jsx, jsxs, Fragment } = require("./module_427");
+const { getShadowStyle } = require("./shadowStyle");
+const { jsx, jsxs, Fragment } = require("./themedJsx");
 
 // --- システムプロンプト（動的Q&A注入方式） ---
 

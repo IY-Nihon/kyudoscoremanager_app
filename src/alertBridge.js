@@ -1,5 +1,7 @@
 /**
- * Module ID: 198
+ * Alert を、ブラウザの窓ではなくアプリの中の窓（AppDialog）へ流す橋渡し。
+ *
+ * （ソースマップからの復元時は module_198.js という名前だった）
  */
 'use strict';
 

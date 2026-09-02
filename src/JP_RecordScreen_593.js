@@ -24,16 +24,16 @@ function e(e) {
   }));
 var t = require('react'),
   o = e(t),
-  l = e(require('./default_144')),
-  n = e(require('./default_297')),
-  s = e(require('./default_45')),
-  a = e(require('./default_217')),
-  d = e(require('./default_386')),
-  c = e(require('./default_398')),
-  u = e(require('./module_198')),
-  f = e(require('./default_218'));
-require('./module_98');
-var h = e(require('./default_382')),
+  l = e(require('./View')),
+  n = e(require('./ScrollView')),
+  s = e(require('./StyleSheet')),
+  a = e(require('./Text')),
+  d = e(require('./Modal')),
+  c = e(require('./TextInput')),
+  u = e(require('./alertBridge')),
+  f = e(require('./Pressable'));
+require('./platform');
+var h = e(require('./TouchableOpacity')),
   m = require('./IS_WEB_199');
 require('react-native-safe-area-context');
 var x = require('./JP_useScoreStore_174'),
@@ -41,7 +41,7 @@ var x = require('./JP_useScoreStore_174'),
   在 = require('./livePresence'),
   y = require('./JP_ArcherColumnView_594'),
   b = require('./JP_LabelColumn_688'),
-  F = require('./module_595'),
+  F = require('./uiConfig'),
   j = (function (e) {
     if (e && e.__esModule) return e;
     var t = {};
@@ -65,15 +65,15 @@ var x = require('./JP_useScoreStore_174'),
       (t.default = e),
       t
     );
-  })(require('./NotificationFeedbackType_597')),
+  })(require('expo-haptics')),
   S = require('./JP_ArcherActionModal_689'),
-  p = require('./AntDesign_600'),
+  p = require('@expo/vector-icons'),
   C = require('./JP_SaveSessionModal_690'),
   AttendanceCheckModal = require('./AttendanceCheckModal').AttendanceCheckModal,
   I = require('./JP_ManualSubstitutionModal_691'),
-  v = require('./JP_module_687'),
-  B = require('./module_592'),
-  A = require('./module_427'),
+  v = require('./formatMemberName'),
+  B = require('./shadowStyle'),
+  A = require('./themedJsx'),
   { ArrowLocationPopover } = require('./ArrowLocationPopover'),
   { OCRRecordModal } = require('./JP_OCRRecordModal'),
   { LiveShareModal } = require('./JP_LiveShareModal'),

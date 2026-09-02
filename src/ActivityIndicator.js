@@ -1,5 +1,5 @@
 /**
- * Library Bridge: default_380.js (react-native / ActivityIndicator)
+ * Library Bridge: ActivityIndicator.js (react-native / ActivityIndicator)
  *
  * 元はソースマップから復元された react-native の ActivityIndicator 実装。
  * Web ビルドでは Metro が react-native-web へ解決する（両方に ActivityIndicator が存在することを確認済み）。

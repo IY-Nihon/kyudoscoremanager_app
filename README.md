@@ -39,28 +39,37 @@
 
 - ファイル名が `JP_RecordScreen_593.js` のように **モジュールID付き** になっています
 - 中身の多くは **minify されたまま**（変数名が `e`, `t`, `n` 等）です
-- 展開されていた npm ライブラリは順次「ライブラリブリッジ」
-  （`module.exports = require('npm-package')` の1行ファイル）へ置き換え済みです
+- 展開されていた npm ライブラリは npm パッケージへ戻し済みです。1行転送するだけの
+  中継ファイルも削除し、`require('firebase/firestore')` のように直接呼んでいます
 
-現在の `src/` は **78ファイル**で、内訳は以下の通りです。
+現在の `src/` は **91ファイル**で、内訳は以下の通りです。
 
 | 区分 | 件数 | 容量 |
 |---|---|---|
-| 自作コード | 37 | 608KB |
-| ライブラリブリッジ | 39 | 15KB |
-| ライブラリ残 | 2 | 1KB |
+| 自作コード | 75 | 1,587KB |
+| ライブラリブリッジ | 16 | 10KB |
 
-ライブラリ残の2件（`module_37` / `module_196`）は、それぞれ react・firebase/app-check の
-ブリッジへ1段挟まっているだけの再エクスポート用ファイルです。
+かつては npm パッケージを1行転送するだけのファイルが20個あり、`require('./module_188')`
+のように**番号で**呼んでいました。react を使うのに `module_37` → `module_38` → `react` と
+二段辿るものもありました。中身は1行の転送しかないため、呼び出し側を本当の名前へ直して
+すべて削除しています。
 
-### ブリッジ済みのライブラリ
+残る16件は react-native の部品ごとの橋渡しで、`View.js` `Text.js` のように部品名を
+そのまま名前にしています。`Text` `TextInput` `StyleSheet` の3件はダークモードの既定色を
+ここで当てているため、単なる転送ではありません。
 
-date-fns / @expo/vector-icons / react-native（View・Text・StyleSheet 等18種）/
+### npm パッケージへ戻したライブラリ
+
+date-fns / @expo/vector-icons / react-native（View・Text・StyleSheet 等17種）/
 react-native-svg / expo-haptics / expo-file-system(legacy) / zustand(middleware) /
-@react-native-async-storage/async-storage / firebase(app・auth・firestore・database・app-check) /
+@react-native-async-storage/async-storage / firebase(app・auth・firestore・database) /
 @react-navigation(native・bottom-tabs) / react-native-safe-area-context /
 @react-native-community/netinfo / @google/generative-ai / expo-sharing /
 zustand / react / react/jsx-runtime
+
+firebase/app-check は取り込んでいた場所が結果を捨てるだけで、App Check 自体も
+ReCAPTCHA キー未設定で無効だったため、取り込みごと外しました（配信物が26KB減）。
+App Check を実装するときは `firebase/app-check` を直接読み込みます。
 
 かつて package.json に無い「隠れ依存」だった netinfo と generative-ai は、
 正式な依存として追加済みです（`@react-native-community/netinfo@11.5.2` は
@@ -68,7 +77,7 @@ zustand / react / react/jsx-runtime
 
 ### NativeWind ランタイムの除去について
 
-`src/module_427.js`（全画面の JSX が経由するランタイム）の実体は
+`src/themedJsx.js`（全画面の JSX が経由するランタイム）の実体は
 **react-native-css-interop = NativeWind のランタイム**でした。しかし
 
 - `package.json` に nativewind / react-native-css-interop / tailwindcss が無い
