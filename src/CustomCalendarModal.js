@@ -207,7 +207,6 @@ const f = 44,
         borderTopRightRadius: 20,
         paddingBottom: 20,
         width: '100%',
-        width: '100%',
       },
       (0, c.getShadowStyle)({
         shadowColor: '#000',
