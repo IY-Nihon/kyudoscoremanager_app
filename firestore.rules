@@ -21,13 +21,20 @@ service cloud.firestore {
         ? request.auth.token.email : '';
     }
 
+    // 管理者。ここに載っているアドレスは、全団体の一覧・他人の団体アカウントの
+    // 書き換え・削除ができる。強い権限なので、いま使っているものだけを載せる。
+    //
+    // 2026-09-03 に5件から1件へ減らした。本番の控えと突き合わせたところ
+    //   ・admin@kyudo-club.com / 1234@kyudo-club.com / nihondaigakukouka@gmail.com
+    //     は口座自体が存在せず、権限だけが空振りしていた。載せたままにすると、
+    //     そのアドレスで新規登録した人が管理者になれてしまう
+    //   ・admin@nitidai.app は実在したが開発初期のもの。最終ログインは 2026-07-03、
+    //     団体は持っておらず、弱いパスワードが作業用のファイルに残っていた
+    //
+    // 増やすときは、その口座が実在し、いま使っていることを確かめてから。
     function isAdmin() {
       return callerEmail() in [
-        'admin@kyudo-club.com',
-        '1234@kyudo-club.com',
-        'admin@nitidai.app',
-        'nihonu.kouka@gmail.com',
-        'nihondaigakukouka@gmail.com'
+        'nihonu.kouka@gmail.com'
       ];
     }
 
@@ -81,8 +88,15 @@ service cloud.firestore {
         //（src/legalDocs.js の 同意の記録。ここに混ぜると誰でも読める）
         && request.resource.data.keys().hasOnly(['id', 'email']);
 
+      // 更新にも hasOnly を掛ける。作るときだけ絞っても、あとから書き足せては
+      // 意味がない。2026-09-03、検証環境で seed-stg.mjs が name と createdAt を
+      // 書き戻せてしまい気づいた（作成は弾かれるが、更新は通っていた）。
+      // ここが開いていると、団体の持ち主が自分で「学校名とメールの組」を
+      // 誰でも読める場所に戻せる。
       allow update: if isAdmin()
-        || (callerEmail() != '' && resource.data.email == callerEmail());
+        || (callerEmail() != ''
+            && resource.data.email == callerEmail()
+            && request.resource.data.keys().hasOnly(['id', 'email']));
 
       allow delete: if isAdmin();
 

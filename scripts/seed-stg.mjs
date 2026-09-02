@@ -52,9 +52,21 @@ for (const g of 対象) {
   const token = await signIn(apiKey, g.email, PW, { create: true });
   console.log(`\n■ 団体 ${g.id}（${g.email}）`);
 
-  await setDoc(projectId, `/group_accounts/${g.id}`,
-    { id: g.id, name: g.name, email: g.email, createdAt: Date.now() }, token);
-  console.log('  group_accounts を作成');
+  // 公開の帳面にはログインに要る2つだけ。団体名と登録日は private へ置く。
+  // 誰でも読める場所に「学校名とメール」を組で置かないための決まりで、
+  // ここに name と createdAt を混ぜていたころは、決まりの検証（
+  // check-group-account-rules.mjs）が毎回 ★ を出していた。
+  // 作成は決まりに弾かれるが更新は通っていたため、種まきのたびに書き戻っていた
+  await setDoc(projectId, `/group_accounts/${g.id}`, { id: g.id, email: g.email }, token);
+  console.log('  group_accounts を作成（id と email だけ）');
+
+  await setDoc(
+    projectId,
+    `/group_accounts/${g.id}/private/profile`,
+    { name: g.name, createdAt: Date.now() },
+    token
+  );
+  console.log('  private/profile に団体名と登録日を作成');
 
   // 親ドキュメントは団体1だけ作る。本番も3件中2件が存在しないため、
   // その状態でアプリが動くこと（REG-27）を検証環境で踏めるようにする。
