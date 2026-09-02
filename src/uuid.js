@@ -5,13 +5,7 @@
  */
 'use strict';
 
-const g = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : this;
-const _r = require;
-const i = typeof metroImport !== 'undefined' ? metroImport : undefined;
-const a = typeof id !== 'undefined' ? id : 200;
-const m = module;
 const e = exports;
-const d = typeof dependencyMap !== 'undefined' ? dependencyMap : [];
 
 ('use strict');
 (Object.defineProperty(e, '__esModule', { value: !0 }),

@@ -3,14 +3,6 @@
  */
 'use strict';
 
-const _g = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : this;
-const r = require;
-const i = typeof metroImport !== 'undefined' ? metroImport : undefined;
-const _a = typeof id !== 'undefined' ? id : 689;
-const _m = module;
-const _e = exports;
-const d = typeof dependencyMap !== 'undefined' ? dependencyMap : [];
-
 ('use strict');
 Object.defineProperty(exports, '__esModule', { value: true });
 exports.ArcherActionModal = undefined;
