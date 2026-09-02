@@ -1,5 +1,7 @@
 /**
- * Module ID: 200
+ * 一意の番号を作る。crypto.randomUUID があればそれを使う。
+ *
+ * （ソースマップからの復元時は module_200.js という名前だった）
  */
 'use strict';
 

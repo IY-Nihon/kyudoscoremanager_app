@@ -3,7 +3,7 @@
  */
 import React from 'react';
 import { View, Text } from 'react-native';
-import ThemedStyleSheet from './default_45'; // テーマ変換を通すためブリッジ経由
+import ThemedStyleSheet from './StyleSheet'; // テーマ変換を通すためブリッジ経由
 const StyleSheet = ThemedStyleSheet;
 import { useScoreStore } from './JP_useScoreStore_174';
 

@@ -23,12 +23,12 @@ function e(e) {
     },
   }),
   require('react'));
-var t = e(require('./default_144')),
-  o = e(require('./default_217')),
-  i = e(require('./default_45')),
-  n = require('./module_595'),
+var t = e(require('./View')),
+  o = e(require('./Text')),
+  i = e(require('./StyleSheet')),
+  n = require('./uiConfig'),
   l = require('./JP_useScoreStore_174'),
-  h = require('./module_427');
+  h = require('./themedJsx');
 const f = ({ shots: e, showFooter: i = !0, 横並び: 横 = !1 }) => {
     const f = (0, l.useScoreStore)((e) => e.viewScale),
       s = 'number' == typeof f && !isNaN(f) && f > 0 ? f : 1,

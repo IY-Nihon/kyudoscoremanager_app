@@ -24,14 +24,14 @@ function e(e) {
   }));
 var t = require('react'),
   n = e(t),
-  o = e(require('./default_144')),
-  l = e(require('./default_217')),
-  a = e(require('./default_45')),
-  r = e(require('./default_297')),
-  s = e(require('./default_382')),
-  i = e(require('./default_386')),
-  d = e(require('./default_398'));
-require('./module_98');
+  o = e(require('./View')),
+  l = e(require('./Text')),
+  a = e(require('./StyleSheet')),
+  r = e(require('./ScrollView')),
+  s = e(require('./TouchableOpacity')),
+  i = e(require('./Modal')),
+  d = e(require('./TextInput'));
+require('./platform');
 var c = require('./IS_WEB_199');
 require('react-native-safe-area-context');
 var 案内 = require('./JP_TutorialGuide');
@@ -46,12 +46,12 @@ var 弓 = require('./equipmentTrend');
 var RN画面 = require('react-native');
 var { 出す } = require('./AppDialog');
 var u = require('./JP_useScoreStore_174'),
-  h = require('./AntDesign_600'),
+  h = require('@expo/vector-icons'),
   f = require('./JP_CustomCalendarModal_695'),
-  m = require('./module_592'),
-  x = require('./default_1001'),
+  m = require('./shadowStyle'),
+  x = require('react-native-svg'),
   b = e(x),
-  y = require('./module_427'),
+  y = require('./themedJsx'),
   { ArrowLocationView } = require('./ArrowLocationView');
 // 比較相手を見分けるための色。グラフ・矢所・立ち順別・結果分布で同じ順に使う。
 // 別々に書いていたころは、増やしたときに片方だけ色がずれる心配があった

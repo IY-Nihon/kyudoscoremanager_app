@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Platform, Alert, AppState } from 'react-native';
 // StyleSheet はテーマ変換を通すためブリッジ経由で取得する
-import StyleSheet from './src/default_45';
+import StyleSheet from './src/StyleSheet';
 import { useScoreStore } from './src/JP_useScoreStore_174';
 import { MainNavigator } from './src/JP_MainNavigator_216';
 import { LoginScreen } from './src/JP_LoginScreen_1036';
@@ -12,7 +12,7 @@ import { ErrorBoundary } from './src/JP_ErrorBoundary_1041';
 import { OfflineIndicator } from './src/JP_OfflineIndicator_1042';
 import { WhatsNewModal } from './src/JP_WhatsNewModal';
 import { アプリの窓, 出す } from './src/AppDialog';
-import { getShadowStyle } from './src/module_592';
+import { getShadowStyle } from './src/shadowStyle';
 import { initTheme, useThemeMode } from './src/theme';
 import { auth } from './src/db_178';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -226,7 +226,7 @@ export default function App() {
   }
 
   const isDarkTheme = theme === 'dark';
-  // styles 側の色は default_45 のブリッジが変換するため、ここでは上書きしない
+  // styles 側の色は StyleSheet のブリッジが変換するため、ここでは上書きしない
   // （上書きするとダーク色がもう一度変換されて元に戻ってしまう）。
   // 下の <style> は生のCSSで props を通らないため、変換対象外＝直接指定でよい。
   const rootBg = isDarkTheme ? '#000000' : '#F2F2F7';

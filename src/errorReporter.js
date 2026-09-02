@@ -13,7 +13,7 @@
 'use strict';
 
 const 決まり = require('./errorReport');
-const 蔵 = require('./useAsyncStorage_202');
+const 蔵 = require('@react-native-async-storage/async-storage');
 const F = require('firebase/firestore');
 const fb = require('./db_178');
 
