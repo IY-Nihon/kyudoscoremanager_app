@@ -18,7 +18,7 @@
  * どちらも終われば出る。見落としても、次に開いたときに出る。
  *
  * 流れの中に置いているのは、覆い隠さないため。オフラインの知らせ
- *（JP_OfflineIndicator_1042.js）は絶えず出たり消えたりするので浮かせて
+ *（OfflineIndicator.js）は絶えず出たり消えたりするので浮かせて
  * あるが、こちらは出たら押されるまで居座るので、覆うと邪魔になる。
  *
  * ■ 手元の記録は消えない
@@ -31,8 +31,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Platform } from 'react-native';
 import StyleSheet from './StyleSheet';
 import { 束の名前, 新しい版が出たか, 見に行く間隔 } from './updateNotice';
-import { useScoreStore } from './JP_useScoreStore_174';
-import { use案内中 } from './JP_TutorialGuide';
+import { useScoreStore } from './useScoreStore';
+import { use案内中 } from './TutorialGuide';
 
 const IS_WEB = Platform.OS === 'web';
 

@@ -27,7 +27,7 @@ var t = require('react'),
   f = e(require('./Dimensions')),
   g = e(require('./Pressable')),
   x = require('@expo/vector-icons'),
-  m = require('./JP_useScoreStore_174'),
+  m = require('./useScoreStore'),
   p = require('./shadowStyle'),
   F = require('./themedJsx');
 

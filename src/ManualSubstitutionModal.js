@@ -32,9 +32,9 @@ var t = require('react'),
   c = e(require('./KeyboardAvoidingView')),
   f = e(require('./TouchableWithoutFeedback')),
   巻物 = e(require('./ScrollView')),
-  m = require('./JP_useScoreStore_174'),
+  m = require('./useScoreStore'),
   h = require('@expo/vector-icons'),
-  b = require('./IS_WEB_199'),
+  b = require('./IS_WEB'),
   p = require('./themedJsx');
 var { 立の数, 立の頭の射, 学年でまとめる } = require('./syncRules');
 const x = ({ visible: e, archerId: x, onClose: j }) => {

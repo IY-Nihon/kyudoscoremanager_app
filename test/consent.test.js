@@ -150,7 +150,7 @@ test('あとでを選ぶと、記録は残さず印だけ下りる', async () =>
 
 test('取り直しの印は端末に残さない（起動のたびに数え直す）', () => {
   const 本体 = require('fs').readFileSync(
-    require('path').join(__dirname, '..', 'src', 'JP_useScoreStore_174.js'),
+    require('path').join(__dirname, '..', 'src', 'useScoreStore.js'),
     'utf8'
   );
   const 始 = 本体.indexOf('partialize: (e) => ({');
@@ -187,7 +187,7 @@ test('新規登録で書く項目が、決まりの許す項目に収まって�
   // 団体名・登録日・同意の記録は private/consent へ回す
   //（公開の帳面は誰でも読めるので、団体IDの総当たりで学校名と
   //  メールアドレスが組で集められる）
-  const 画面 = 読む(['src', 'JP_LoginScreen_1036.js']);
+  const 画面 = 読む(['src', 'LoginScreen.js']);
   const j = 画面.indexOf("'group_accounts'");
   assert.ok(j > 0, 'ログイン画面が group_accounts に書いている所が見つからない');
   const 帳面へ = 画面.slice(画面.indexOf('setDoc)(t, {'), 画面.indexOf("'private', 'consent'"));

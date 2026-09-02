@@ -12,32 +12,34 @@
 |---|---|
 | フレームワーク | Expo SDK 55 / React Native 0.83.6 / React 19.2 |
 | Web対応 | react-native-web 0.21 (Metro bundler, `output: single`) |
-| 状態管理 | zustand 5 (`src/JP_useScoreStore_174.js`) |
+| 状態管理 | zustand 5 (`src/useScoreStore.js`) |
 | ナビゲーション | React Navigation 7 (bottom-tabs) |
 | バックエンド | Firebase 9.23 — Auth / Firestore / Realtime Database / Storage |
 | AI | Google Gemini API (AIチャットボット・OCR立ち順読み取り) |
 
 ## 画面構成
 
-`src/JP_MainNavigator_216.js` が定義する6タブ + オーバーレイのAIチャットボット。
+`src/MainNavigator.js` が定義する6タブ + オーバーレイのAIチャットボット。
 「メンバー」「出欠」タブは `activeRole === 'group'`（団体ログイン）のときのみ表示されます。
 
 | タブ | 実装ファイル |
 |---|---|
-| 記録 | `src/JP_RecordScreen_593.js` |
-| 履歴 | `src/JP_HistoryScreen_692.js` |
-| 分析 | `src/JP_AnalysisScreen_1000.js` |
-| メンバー | `src/JP_MemberScreen_1022.js` |
+| 記録 | `src/RecordScreen.js` |
+| 履歴 | `src/HistoryScreen.js` |
+| 分析 | `src/AnalysisScreen.js` |
+| メンバー | `src/MemberScreen.js` |
 | 出欠 | `src/AttendanceScreen.js` |
-| 設定 | `src/JP_SettingsScreen_1023.js` |
-| （常駐） | `src/JP_AIChatBot_1034.js` |
+| 設定 | `src/SettingsScreen.js` |
+| （常駐） | `src/AIChatBot.js` |
 
 ## ⚠️ src/ の構造について（重要）
 
 **`src/` はソースマップから復元されたコードです。** 元の TypeScript ソースは失われており、
 現在のファイルは Metro バンドルを展開して復元したものです。そのため:
 
-- ファイル名が `JP_RecordScreen_593.js` のように **モジュールID付き** になっています
+- 復元直後のファイル名は `JP_RecordScreen_593.js` のように **JP_ の接頭辞とモジュールID付き**
+  でした。中身に合わせた名前（`RecordScreen.js`）へ改名済みで、手で書いた
+  `AttendanceScreen.js` と同じ流儀に揃えています
 - 中身の多くは **minify されたまま**（変数名が `e`, `t`, `n` 等）です
 - 展開されていた npm ライブラリは npm パッケージへ戻し済みです。1行転送するだけの
   中継ファイルも削除し、`require('firebase/firestore')` のように直接呼んでいます
@@ -92,22 +94,22 @@ App Check を実装するときは `firebase/app-check` を直接読み込みま
 ### 自作コード（編集対象になるファイル）
 
 ```
-src/JP_useScoreStore_174.js     状態管理の中核。Firebase同期・履歴・分析ロジック
-src/JP_MainNavigator_216.js     タブ定義・ディープリンク設定
-src/JP_LoginScreen_1036.js      団体/メンバーログイン・メールアドレス復旧
-src/JP_RecordScreen_593.js      記録画面
-src/JP_HistoryScreen_692.js     履歴画面
-src/JP_AnalysisScreen_1000.js   分析画面
-src/JP_MemberScreen_1022.js     メンバー管理
-src/JP_SettingsScreen_1023.js   設定・お問い合わせ
-src/JP_AIChatBot_1034.js        AIチャットボット
-src/JP_OCRRecordModal.js        写真から立ち順を読み取るOCRモーダル
+src/useScoreStore.js     状態管理の中核。Firebase同期・履歴・分析ロジック
+src/MainNavigator.js     タブ定義・ディープリンク設定
+src/LoginScreen.js      団体/メンバーログイン・メールアドレス復旧
+src/RecordScreen.js      記録画面
+src/HistoryScreen.js     履歴画面
+src/AnalysisScreen.js   分析画面
+src/MemberScreen.js     メンバー管理
+src/SettingsScreen.js   設定・お問い合わせ
+src/AIChatBot.js        AIチャットボット
+src/OCRRecordModal.js        写真から立ち順を読み取るOCRモーダル
 src/AttendanceScreen.js         出欠管理
 src/AttendanceCheckModal.js     出欠入力モーダル
 src/ArrowLocationView.js        矢所記録ビュー
 src/ArrowLocationPopover.js     矢所入力ポップオーバー
 src/KyudoBackgroundAnimation.js ログイン画面の背景アニメーション
-src/db_178.js                   Firebase 初期化
+src/db.js                   Firebase 初期化
 ```
 
 その他のモーダル・コンポーネントも `JP_` 接頭辞付きで `src/` 直下にあります。
@@ -513,7 +515,7 @@ npm run ops:scan-japanese
 ふだんは害が小さいのですが、ライブの置き場所（枝）が変わる回では、古いままの
 端末が別の枝を見て「相手の○×が出ない」という直しにくい形になります。
 
-そこで画面の上に細い帯を出します（`src/JP_UpdateBar.js`）。押されたときだけ
+そこで画面の上に細い帯を出します（`src/UpdateBar.js`）。押されたときだけ
 読み込み直し、勝手には入れ替えません。手元の記録は端末に残るので消えません。
 
 ### 何を見て気づくか
@@ -613,7 +615,7 @@ localStorage に書いて `reload` して効かせる作りだと、1つの検�
 |---|---|
 | Firestore の `groups` が `auth != null` だけ | `canAccess()`（団体アカウント本人か、所属を証明した部員）に。**本番へ配信済み** |
 | RTDB の `live_sessions` が認証不要 | 認証必須にしたうえで、枝を団体ごとの推測できない合言葉に変更（`src/liveSecret.js`）。**認証必須は配信済み・合言葉はまだ未配信** |
-| `src/db_178.js` の `ADMIN_EMAIL` / `ADMIN_PASSWORD` | 撤去済み。本番の束にも入っていないことを確認済み |
+| `src/db.js` の `ADMIN_EMAIL` / `ADMIN_PASSWORD` | 撤去済み。本番の束にも入っていないことを確認済み |
 
 未配信のぶんは `npm run ops:check` で確かめられます。
 

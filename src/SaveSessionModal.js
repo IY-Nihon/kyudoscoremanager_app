@@ -33,8 +33,8 @@ var t = require('react'),
   h = e(require('./KeyboardAvoidingView')),
   x = e(require('./Keyboard')),
   p = e(require('./ScrollView')),
-  y = require('./JP_useScoreStore_174'),
-  T = require('./IS_WEB_199'),
+  y = require('./useScoreStore'),
+  T = require('./IS_WEB'),
   C = require('./shadowStyle'),
   j = require('./themedJsx');
 const normalizeTag = (e) => {

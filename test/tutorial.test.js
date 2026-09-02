@@ -57,7 +57,7 @@ for (const 役割 of ['group', 'member']) {
       shotsPerRound: 4,
       archers: 列.map((c) => Object.assign({}, c, { marks: ['', '', '', ''], lockedBlocks: {} })),
     });
-    // 画面が鍵の印を出す条件（JP_ArcherColumnView_594.js の 鍵が効く）と同じ判定
+    // 画面が鍵の印を出す条件（ArcherColumnView.js の 鍵が効く）と同じ判定
     const 鍵を出す列 = 列.filter((c, i) => {
       if (!c.isSeparator && !c.isTotalCalculator) return false;
       const 右どなり = 列[i - 1];

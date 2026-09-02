@@ -15,7 +15,7 @@
 const 決まり = require('./errorReport');
 const 蔵 = require('@react-native-async-storage/async-storage');
 const F = require('firebase/firestore');
-const fb = require('./db_178');
+const fb = require('./db');
 
 const 貯めの鍵 = 'kyudo-error-queue';
 /** 送りきるのを待つ時間。これを過ぎたら貯めに回し、つながったときに出し直す */
@@ -94,7 +94,7 @@ function いまの様子() {
   let 状態 = {};
   try {
     // 循環参照を避けるため、必要になった時点で読む
-    const s = require('./JP_useScoreStore_174').useScoreStore.getState();
+    const s = require('./useScoreStore').useScoreStore.getState();
     状態 = {
       団体id: s.activeGroupId || '',
       役割: s.activeRole || '',
@@ -116,7 +116,7 @@ function いまの様子() {
   }
   let 版 = '';
   try {
-    版 = require('./JP_WhatsNewModal').NOTICE_VERSION || '';
+    版 = require('./WhatsNewModal').NOTICE_VERSION || '';
   } catch (e) {
     /* 版が分からなくても送る */
   }
