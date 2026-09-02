@@ -303,7 +303,7 @@ function 偽RTDB() {
     const 根 = 節[0];
     if (!['live_sessions', 'live_view', 'live_history', 'live_presence'].includes(根)) return !1;
     const 期限 = 読む(['live_limits', 節[1]]);
-    return 'number' == typeof 期限 && Date.now() >= 期限;
+    return 'number' === typeof 期限 && Date.now() >= 期限;
   };
   const 弾く = () => {
     const e = new Error('Permission denied');
