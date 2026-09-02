@@ -3,7 +3,7 @@
 /**
  * Custom Metro transformer for Expo SDK 55.
  *
- * Purpose: JP_LoginScreen_1036.js is a pre-compiled Metro bundle file
+ * Purpose: LoginScreen.js is a pre-compiled Metro bundle file
  * (not normal JSX source). It contains ({hovered:e})=> patterns that
  * Babel's Flow parser misinterprets as Flow type annotations, causing
  * SyntaxError: Unexpected token, expected ",".

@@ -2,31 +2,31 @@ import React, { useState, useEffect } from 'react';
 import { View, Platform, Alert, AppState } from 'react-native';
 // StyleSheet はテーマ変換を通すためブリッジ経由で取得する
 import StyleSheet from './src/StyleSheet';
-import { useScoreStore } from './src/JP_useScoreStore_174';
-import { MainNavigator } from './src/JP_MainNavigator_216';
-import { LoginScreen } from './src/JP_LoginScreen_1036';
-import { LoadingScreen } from './src/JP_LoadingScreen_1037';
+import { useScoreStore } from './src/useScoreStore';
+import { MainNavigator } from './src/MainNavigator';
+import { LoginScreen } from './src/LoginScreen';
+import { LoadingScreen } from './src/LoadingScreen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { ErrorBoundary } from './src/JP_ErrorBoundary_1041';
-import { OfflineIndicator } from './src/JP_OfflineIndicator_1042';
-import { WhatsNewModal } from './src/JP_WhatsNewModal';
+import { ErrorBoundary } from './src/ErrorBoundary';
+import { OfflineIndicator } from './src/OfflineIndicator';
+import { WhatsNewModal } from './src/WhatsNewModal';
 import { アプリの窓, 出す } from './src/AppDialog';
 import { getShadowStyle } from './src/shadowStyle';
 import { initTheme, useThemeMode } from './src/theme';
-import { auth } from './src/db_178';
+import { auth } from './src/db';
 import { onAuthStateChanged } from 'firebase/auth';
 import { 見張りを始める, 溜まりを流す, 行動を残す } from './src/errorReporter';
-import { 来客の窓 } from './src/JP_LiveShareModal';
-import { UpdateBar } from './src/JP_UpdateBar';
+import { 来客の窓 } from './src/LiveShareModal';
+import { UpdateBar } from './src/UpdateBar';
 import { URLから荷を取る } from './src/liveShare';
 import { 見張りを作る } from './src/backgroundSaver';
 import { goOffline, goOnline } from 'firebase/database';
-import { rtdb } from './src/db_178';
+import { rtdb } from './src/db';
 
 const IS_WEB = Platform.OS === 'web';
 
-// 部員の認証方式の版。JP_LoginScreen_1036.js の同名の定数と必ず揃えること。
+// 部員の認証方式の版。LoginScreen.js の同名の定数と必ず揃えること。
 // 値を上げると、古い方式でログイン中の部員は次回起動時にログアウトされる。
 const MEMBER_AUTH_VERSION = 2;
 

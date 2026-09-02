@@ -14,7 +14,7 @@ import {
 // テーマ変換（ダークモード）を通すため StyleSheet はブリッジ経由で取得する
 import StyleSheet from './StyleSheet';
 import { Ionicons } from '@expo/vector-icons';
-import { useScoreStore } from './JP_useScoreStore_174';
+import { useScoreStore } from './useScoreStore';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 

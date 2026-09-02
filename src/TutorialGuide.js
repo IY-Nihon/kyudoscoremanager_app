@@ -39,8 +39,8 @@ const _ScrollView = RN.ScrollView;
 const { create } = require('zustand');
 const AsyncStorage = require('@react-native-async-storage/async-storage').default;
 const { Ionicons } = require('@expo/vector-icons');
-const { useScoreStore } = require('./JP_useScoreStore_174');
-const { IS_WEB } = require('./IS_WEB_199');
+const { useScoreStore } = require('./useScoreStore');
+const { IS_WEB } = require('./IS_WEB');
 const {
   手順を作る,
   手が出せない: 手が出せないか,

@@ -96,7 +96,7 @@ const 地の色たち = new Set(['#030508']);
 
 test('ログイン画面は、テーマ変換表の色を使わない', () => {
   const 表 = 変換表たち();
-  const 使用 = 役割ごとの色(fs.readFileSync(場所('JP_LoginScreen_1036.js'), 'utf8'));
+  const 使用 = 役割ごとの色(fs.readFileSync(場所('LoginScreen.js'), 'utf8'));
   const 混入 = [];
   for (const 役 of ['text', 'bg', 'border']) {
     for (const c of 使用[役]) if (表[役].has(c)) 混入.push(役 + ': ' + c);
@@ -109,7 +109,7 @@ test('ログイン画面は、テーマ変換表の色を使わない', () => {
 });
 
 test('ログイン画面の文字は、地に対して十分な濃さがある', () => {
-  const 使用 = 色を拾う(fs.readFileSync(場所('JP_LoginScreen_1036.js'), 'utf8'));
+  const 使用 = 色を拾う(fs.readFileSync(場所('LoginScreen.js'), 'utf8'));
   const 薄い = [];
   for (const c of 使用) {
     if (地の色たち.has(c)) continue;
@@ -122,7 +122,7 @@ test('ログイン画面の文字は、地に対して十分な濃さがある',
 test('設定の法的情報のリンクは、そばのバージョン表記と同じ濃さ', () => {
   // 目立たせない方針だが、探して見つからないほど薄くはしない。
   // #C7C7CC だと明るい地との比が 1.5 しかなく、事実上見えなかった
-  const 本体 = fs.readFileSync(場所('JP_SettingsScreen_1023.js'), 'utf8');
+  const 本体 = fs.readFileSync(場所('SettingsScreen.js'), 'utf8');
   const 拾う = (名) => {
     const m = 本体.match(new RegExp(名 + ":\\s*\\{[^}]*color:\\s*'(#[0-9a-fA-F]{3,6})'"));
     return m ? m[1].toLowerCase() : null;
@@ -158,7 +158,7 @@ test('分析の比較で使う色が、暗いテーマで消えない', () => {
   // （実際それで一度、この検査が素通りした）
   const 背景に使える = new Set([...鍵たち('ACCENT'), ...鍵たち('BG_MAP')]);
 
-  const 分析 = fs.readFileSync(場所('JP_AnalysisScreen_1000.js'), 'utf8');
+  const 分析 = fs.readFileSync(場所('AnalysisScreen.js'), 'utf8');
   const 並び = (分析.match(/const 比較の色たち = \[([^\]]+)\]/) || [])[1];
   assert.ok(並び, '比較の色たち が見つからない');
   const 色たち = [...並び.matchAll(/'(#[0-9a-fA-F]{6})'/g)].map((m) => m[1].toLowerCase());
@@ -180,7 +180,7 @@ test('ログイン画面：使っている名前が、すべて読み込まれ�
   // const 法 = require('./legalDocs') が無く、押すと
   // ReferenceError: 法 is not defined になっていた。
   // 押さない限り現れないので、画面を開くだけの確認では見つからない。
-  const 本体 = fs.readFileSync(場所('JP_LoginScreen_1036.js'), 'utf8');
+  const 本体 = fs.readFileSync(場所('LoginScreen.js'), 'utf8');
   const 素 = 本体.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
   // 「漢字の名前.なにか」の形で使っている入れ物を集める
@@ -207,7 +207,7 @@ test('ログイン画面：IDは整えてから使い、パスワードは整え
   //
   // 逆にパスワードを整えてはいけない。空白も文字のうちで、末尾に空白を
   // 含むパスワードを設定した人が入れなくなる。
-  const 本体 = fs.readFileSync(場所('JP_LoginScreen_1036.js'), 'utf8');
+  const 本体 = fs.readFileSync(場所('LoginScreen.js'), 'utf8');
   const 素 = 本体.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
   assert.ok(/const 整えたID = /.test(素), '整えたID が無い');

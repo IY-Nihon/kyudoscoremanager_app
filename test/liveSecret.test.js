@@ -101,7 +101,7 @@ test('本体：ライブの道に団体IDが残っていない', () => {
   // ここが1つでも残ると、その操作だけ古い枝へ書き、決まりに弾かれて
   // 「自分の画面には出るが相手に届かない」という見つけにくい形になる
   const 本体 = fs.readFileSync(
-    path.join(__dirname, '..', 'src', 'JP_useScoreStore_174.js'),
+    path.join(__dirname, '..', 'src', 'useScoreStore.js'),
     'utf8'
   );
   const 道 = 本体.match(/`live_(?:sessions|history)\/\$\{[^`]*`/g) || [];
@@ -117,7 +117,7 @@ test('本体：合言葉はどの団体のものかと一緒に持っている',
   // 団体を移っても端末には前の合言葉が残る。照合を外すと、移った先の練習を
   // 前の団体の枝へ書き込み、向こうの部員に見えてしまう
   const 本体 = fs.readFileSync(
-    path.join(__dirname, '..', 'src', 'JP_useScoreStore_174.js'),
+    path.join(__dirname, '..', 'src', 'useScoreStore.js'),
     'utf8'
   );
   const 場所 = 本体.indexOf('function ライブの枝()');

@@ -33,13 +33,13 @@ var t = require('react'),
   g = e(require('./Modal')),
   f = e(require('./alertBridge')),
   h = e(require('./Pressable')),
-  m = require('./IS_WEB_199'),
-  x = require('./JP_useScoreStore_174'),
-  案内 = require('./JP_TutorialGuide'),
+  m = require('./IS_WEB'),
+  x = require('./useScoreStore'),
+  案内 = require('./TutorialGuide'),
   p = require('@expo/vector-icons'),
   b = require('./shadowStyle'),
   y = require('./themedJsx');
-var CC = require('./JP_CustomCalendarModal_695');
+var CC = require('./CustomCalendarModal');
 
 const C = () => {
   const {

@@ -294,7 +294,7 @@ test('参加したとき、過去の取り消しの知らせが蒸し返され�
 test('鍵：間隔と計が隣り合うと、外側の鍵は自分の列しか掴まない（仕様）', () => {
   // toggleLock は押した列から右へ進み、間隔か計にぶつかったところで止める。
   // 隣り合うと一歩目で止まるため、射手は1人も固定されない。
-  // 画面側はこの場合に鍵の印を出さないようにしてある（JP_ArcherColumnView_594.js）
+  // 画面側はこの場合に鍵の印を出さないようにしてある（ArcherColumnView.js）
   const { store } = 端末();
   const 列 = (id, o) =>
     Object.assign({ id, name: id, marks: ['', '', '', ''], lockedBlocks: {}, lastModified: 1000 }, o);

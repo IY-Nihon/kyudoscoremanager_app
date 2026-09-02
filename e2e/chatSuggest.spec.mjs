@@ -42,7 +42,7 @@ async function 入る(page) {
  * AIの窓を開く。
  *
  * 浮くボタンは**記録の画面には出ない**（盤面を覆わないため。
- * JP_AIChatBot_1034.js の `currentRouteName === "記録"` の分岐）。
+ * AIChatBot.js の `currentRouteName === "記録"` の分岐）。
  * 記録のまま探すと「入口が見つからない」で落ちるので、先に画面を移る
  */
 /**

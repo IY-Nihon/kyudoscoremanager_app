@@ -1,12 +1,12 @@
 /**
- * xlsx の組み立て（src/JP_excelExport.js）。
+ * xlsx の組み立て（src/excelExport.js）。
  *
  * 実体は ZIP + XML なので、番号や参照がずれると Excel が「開けません」と
  * 言うだけで理由を教えてくれない。組み立てだけを切り出して見張る。
  */
 const test = require('node:test');
 const assert = require('node:assert');
-const { ブックを組む } = require('../src/JP_excelExport');
+const { ブックを組む } = require('../src/excelExport');
 
 const 一枚 = { name: '記録', headers: ['氏名', '的中率'], rows: [['山田太郎', 38.9]] };
 
