@@ -287,7 +287,9 @@ const fb = {
         fb.dbInstance = firestore;
         return firestore;
       }
-    } catch (e) {}
+    } catch (e) {
+      /* まだ用意できていないだけ。undefined を返すと waitForDb が待つ */
+    }
     return undefined;
   },
   get auth() {
@@ -304,7 +306,9 @@ const fb = {
         fb.authInstance = auth;
         return auth;
       }
-    } catch (e) {}
+    } catch (e) {
+      /* まだ用意できていないだけ。undefined を返すと waitForDb が待つ */
+    }
     return undefined;
   },
   get rtdb() {

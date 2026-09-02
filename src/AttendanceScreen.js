@@ -33,10 +33,14 @@ var _docPickerModule = null;
 var _fsModule = null;
 try {
   _docPickerModule = require('expo-document-picker');
-} catch (e) {}
+} catch (e) {
+  /* この部品が無い場（Web）でも、下の代わりの品で動く */
+}
 try {
   _fsModule = require('expo-file-system');
-} catch (e) {}
+} catch (e) {
+  /* この部品が無い場（Web）でも、下の代わりの品で動く */
+}
 var docPicker = _docPickerModule || { getDocumentAsync: async () => ({ canceled: true, assets: [] }) };
 var fs = _fsModule || { readAsStringAsync: async () => '', EncodingType: { Base64: 'base64' } };
 
@@ -283,7 +287,9 @@ const AttendanceScreen = () => {
 
           selectedModel = m15 || mLatest || anyFlash || selectedModel;
         }
-      } catch (e) {}
+      } catch (e) {
+        /* 型の一覧が引けなくても、既定の型のまま読み取る */
+      }
 
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/${selectedModel}:generateContent?key=${apiKey}`;
 
@@ -313,7 +319,9 @@ const AttendanceScreen = () => {
             'AI解析の失敗',
             `${aiResponse.status} ${errText.slice(0, 200)}`
           );
-        } catch (_) {}
+        } catch (_) {
+          /* 便りに残せなくても、利用者への知らせは下で出す */
+        }
         if (aiResponse.status === 429) {
           alert('APIリクエスト回数の上限に達しました。1分ほど待ってから再度お試しください。');
         } else if (aiResponse.status === 503) {

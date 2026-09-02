@@ -282,7 +282,9 @@ const loadChatHistory = () => {
         return parsed.map(msg => msg.id ? msg : { ...msg, id: generateMsgId() });
       }
     }
-  } catch(e) {}
+  } catch(e) {
+    /* 読めなければ、やり取りの控えは無いものとして始める */
+  }
   return null;
 };
 
@@ -292,7 +294,9 @@ const saveChatHistory = (messages) => {
       const toSave = messages.slice(-MAX_SAVED_MESSAGES);
       localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(toSave));
     }
-  } catch(e) {}
+  } catch(e) {
+    /* 控えられなくても、やり取りは続く。端末の空き不足は記録の保存側が知らせる */
+  }
 };
 
 const AIChatBot = () => {
