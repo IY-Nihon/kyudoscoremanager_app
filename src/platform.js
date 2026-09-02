@@ -1,5 +1,5 @@
 /**
- * Library Bridge: module_98.js (react-native / Platform)
+ * Library Bridge: platform.js (react-native / Platform)
  *
  * 元はソースマップから復元された react-native の Platform 実装。
  * Web ビルドでは Metro が react-native-web へ解決する（両方に Platform が存在することを確認済み）。

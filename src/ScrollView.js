@@ -1,5 +1,5 @@
 /**
- * Library Bridge: default_297.js (react-native / ScrollView)
+ * Library Bridge: ScrollView.js (react-native / ScrollView)
  *
  * 元はソースマップから復元された react-native の ScrollView 実装。
  * Web ビルドでは Metro が react-native-web へ解決する（両方に ScrollView が存在することを確認済み）。

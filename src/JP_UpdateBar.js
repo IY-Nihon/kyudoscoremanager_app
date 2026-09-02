@@ -29,7 +29,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { View, Text, Platform } from 'react-native';
-import StyleSheet from './default_45';
+import StyleSheet from './StyleSheet';
 import { 束の名前, 新しい版が出たか, 見に行く間隔 } from './updateNotice';
 import { useScoreStore } from './JP_useScoreStore_174';
 import { use案内中 } from './JP_TutorialGuide';

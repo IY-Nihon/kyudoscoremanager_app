@@ -26,17 +26,17 @@ var RN画面 = require('react-native'),
   themeMod = require('./theme'),
   t = require('react'),
   n = e(t),
-  o = e(require('./default_144')),
-  s = e(require('./default_217')),
-  c = e(require('./default_45'));
-require('./module_98');
-var l = e(require('./default_218')),
-  u = require('./createBottomTabNavigator_225'),
+  o = e(require('./View')),
+  s = e(require('./Text')),
+  c = e(require('./StyleSheet'));
+require('./platform');
+var l = e(require('./Pressable')),
+  u = require('@react-navigation/bottom-tabs'),
   b = require('@react-navigation/native'),
   h = require('react-native-safe-area-context'),
   p = require('./JP_useScoreStore_174'),
   S = require('./IS_WEB_199'),
-  f = require('./module_592'),
+  f = require('./shadowStyle'),
   x = require('./JP_RecordScreen_593'),
   y = require('./JP_HistoryScreen_692'),
   F = require('./JP_AnalysisScreen_1000'),
@@ -45,7 +45,7 @@ var l = e(require('./default_218')),
   v = require('./JP_SettingsScreen_1023'),
   B = require('./JP_AIChatBot_1034'),
   案内 = require('./JP_TutorialGuide'),
-  T = require('./module_427');
+  T = require('./themedJsx');
 const A = {
     prefixes: [
       'http://localhost:8081',

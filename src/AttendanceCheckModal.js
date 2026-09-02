@@ -16,16 +16,16 @@ Object.defineProperty(_e, 'AttendanceCheckModal', {
 var t = require('react');
 // Text と StyleSheet はダークモードのテーマ変換を通すためブリッジ経由で差し替える
 var o = Object.assign({}, require('react-native'), {
-  Text: require('./default_217').default,
-  StyleSheet: require('./default_45').default,
+  Text: require('./Text').default,
+  StyleSheet: require('./StyleSheet').default,
 });
-var m = require('./AntDesign_600');
+var m = require('@expo/vector-icons');
 var b = require('./JP_useScoreStore_174');
 var x = require('./IS_WEB_199');
-var F = require('./module_592');
+var F = require('./shadowStyle');
 // 出欠の自動判定。交代で入った人も数えるため、決まりは切り出してある
 const { 出ていた部員たち } = require('./attendanceRules');
-var j = require('./module_427');
+var j = require('./themedJsx');
 
 const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
   const { members, archers } = (0, b.useScoreStore)();

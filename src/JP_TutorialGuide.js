@@ -31,14 +31,14 @@ const React = require('react');
 const { useState, useEffect, useRef, useCallback } = React;
 const RN = require('react-native');
 const _View = RN.View;
-const _Text = require('./default_217').default; // テーマ変換を通すためブリッジ経由
-const _StyleSheet = require('./default_45').default; // テーマ変換を通すためブリッジ経由
+const _Text = require('./Text').default; // テーマ変換を通すためブリッジ経由
+const _StyleSheet = require('./StyleSheet').default; // テーマ変換を通すためブリッジ経由
 const _TouchableOpacity = RN.TouchableOpacity;
 const _ScrollView = RN.ScrollView;
 
 const { create } = require('zustand');
 const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-const { Ionicons } = require('./AntDesign_600');
+const { Ionicons } = require('@expo/vector-icons');
 const { useScoreStore } = require('./JP_useScoreStore_174');
 const { IS_WEB } = require('./IS_WEB_199');
 const {

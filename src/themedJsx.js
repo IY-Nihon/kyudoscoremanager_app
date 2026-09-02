@@ -1,5 +1,5 @@
 /**
- * Library Bridge: module_427.js (react/jsx-runtime) + ダークモード変換
+ * Library Bridge: themedJsx.js (react/jsx-runtime) + ダークモード変換
  *
  * ■ 元の正体
  * react-native-css-interop（NativeWind のランタイム）の JSX ランタイムだった。

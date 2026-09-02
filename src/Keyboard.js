@@ -1,5 +1,5 @@
 /**
- * Library Bridge: default_371.js (react-native / Keyboard)
+ * Library Bridge: Keyboard.js (react-native / Keyboard)
  *
  * 元はソースマップから復元された react-native の Keyboard 実装。
  * Web ビルドでは Metro が react-native-web へ解決する（両方に Keyboard が存在することを確認済み）。

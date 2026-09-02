@@ -23,13 +23,13 @@ function e(e) {
     },
   }));
 var t = e(require('react')),
-  o = e(require('./default_144')),
-  n = e(require('./default_217')),
-  l = e(require('./default_45')),
-  c = e(require('./default_382')),
-  pressable = e(require('./default_218'));
-require('./module_98');
-var s = require('./module_595'),
+  o = e(require('./View')),
+  n = e(require('./Text')),
+  l = e(require('./StyleSheet')),
+  c = e(require('./TouchableOpacity')),
+  pressable = e(require('./Pressable'));
+require('./platform');
+var s = require('./uiConfig'),
   d = require('./JP_useScoreStore_174'),
   u = (function (e) {
     if (e && e.__esModule) return e;
@@ -54,9 +54,9 @@ var s = require('./module_595'),
       (t.default = e),
       t
     );
-  })(require('./NotificationFeedbackType_597')),
-  f = require('./AntDesign_600'),
-  b = require('./module_427');
+  })(require('expo-haptics')),
+  f = require('@expo/vector-icons'),
+  b = require('./themedJsx');
 var React = require('react');
 const h = t.default.memo(
     ({

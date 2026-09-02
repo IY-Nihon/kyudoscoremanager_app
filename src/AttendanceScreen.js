@@ -16,14 +16,14 @@ Object.defineProperty(_e, 'AttendanceScreen', {
 var t = require('react');
 // Text と StyleSheet はダークモードのテーマ変換を通すためブリッジ経由で差し替える
 var o = Object.assign({}, require('react-native'), {
-  Text: require('./default_217').default,
-  StyleSheet: require('./default_45').default,
+  Text: require('./Text').default,
+  StyleSheet: require('./StyleSheet').default,
 });
-var m = require('./AntDesign_600');
+var m = require('@expo/vector-icons');
 var b = require('./JP_useScoreStore_174');
 var x = require('./IS_WEB_199');
-var F = require('./module_592');
-var j = require('./module_427');
+var F = require('./shadowStyle');
+var j = require('./themedJsx');
 var db = require('./db_178');
 var firestore = require('firebase/firestore');
 // 出欠の自動判定。交代で入った人も数えるため、決まりは切り出してある
@@ -343,7 +343,7 @@ const AttendanceScreen = () => {
         setAiPreviewItems(validatedItems);
       } else {
         o.Alert.alert('通知', 'PDFから練習日を検出できませんでした。形式を確認してください。');
-        require('./module_198').default.alert('お知らせ', '練習日が検出されませんでした。');
+        require('./alertBridge').default.alert('お知らせ', '練習日が検出されませんでした。');
       }
     } catch (e) {
       o.Alert.alert('エラー', e.message);

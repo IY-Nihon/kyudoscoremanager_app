@@ -1,5 +1,5 @@
 /**
- * Library Bridge: default_406.js (react-native / TouchableWithoutFeedback)
+ * Library Bridge: TouchableWithoutFeedback.js (react-native / TouchableWithoutFeedback)
  *
  * 元はソースマップから復元された react-native の TouchableWithoutFeedback 実装。
  * Web ビルドでは Metro が react-native-web へ解決する（両方に TouchableWithoutFeedback が存在することを確認済み）。

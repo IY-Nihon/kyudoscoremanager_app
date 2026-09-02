@@ -11,11 +11,11 @@ const React = require("react");
 const { useState, useMemo } = React;
 const RN = require("react-native");
 const _View = RN.View;
-const _Text = require("./default_217").default; // テーマ変換を通すためブリッジ経由
-const _StyleSheet = require("./default_45").default; // テーマ変換を通すためブリッジ経由
+const _Text = require("./Text").default; // テーマ変換を通すためブリッジ経由
+const _StyleSheet = require("./StyleSheet").default; // テーマ変換を通すためブリッジ経由
 const _TouchableOpacity = RN.TouchableOpacity;
 const _Modal = RN.Modal;
-const _TextInput = require("./default_398").default; // テーマ変換（既定文字色）を通すためブリッジ経由
+const _TextInput = require("./TextInput").default; // テーマ変換（既定文字色）を通すためブリッジ経由
 const _ScrollView = RN.ScrollView;
 const _ActivityIndicator = RN.ActivityIndicator;
 const _Image = RN.Image;
@@ -23,12 +23,12 @@ const _Alert = RN.Alert;
 
 const DocumentPicker = require("expo-document-picker");
 const ImagePicker = require("expo-image-picker");
-const { Ionicons } = require("./AntDesign_600");
-const { GoogleGenerativeAI } = require("./h_1035");
+const { Ionicons } = require("@expo/vector-icons");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { GEMINI_API_KEY, IS_WEB } = require("./IS_WEB_199");
-const { generateUUID } = require("./module_200");
-const { formatMemberName } = require("./JP_module_687");
-const { getShadowStyle } = require("./module_592");
+const { generateUUID } = require("./uuid");
+const { formatMemberName } = require("./formatMemberName");
+const { getShadowStyle } = require("./shadowStyle");
 
 // ─────────────────────────────────────────
 // 画像 URI → base64 変換（Web / ネイティブ両対応）
@@ -751,7 +751,7 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
     if (!hasExistingRecord) return 進む();
     const 文 = "いま記録表にある内容は消えて、読み取った結果に置き換わります。よろしいですか？";
     if (IS_WEB) {
-      require('./module_198').default.alert('確認', 文, [{ text: 'キャンセル', style: 'cancel' }, { text: 'OK', onPress: 進む }]);
+      require('./alertBridge').default.alert('確認', 文, [{ text: 'キャンセル', style: 'cancel' }, { text: 'OK', onPress: 進む }]);
     } else {
       _Alert.alert("確認", 文, [
         { text: "キャンセル", style: "cancel" },

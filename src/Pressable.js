@@ -1,5 +1,5 @@
 /**
- * Library Bridge: default_218.js (react-native / Pressable)
+ * Library Bridge: Pressable.js (react-native / Pressable)
  *
  * 元はソースマップから復元された react-native の Pressable 実装。
  * Web ビルドでは Metro が react-native-web へ解決する（両方に Pressable が存在することを確認済み）。

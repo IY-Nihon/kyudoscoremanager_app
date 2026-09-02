@@ -1,5 +1,5 @@
 /**
- * Library Bridge: default_45.js (react-native / StyleSheet)
+ * Library Bridge: StyleSheet.js (react-native / StyleSheet)
  *
  * 素通しではなく、ダークモード対応のため create() の結果をテーマ変換する。
  *

@@ -1,5 +1,5 @@
 /**
- * Library Bridge: default_144.js (react-native / View)
+ * Library Bridge: View.js (react-native / View)
  *
  * 元はソースマップから復元された react-native の View 実装。
  * Web ビルドでは Metro が react-native-web へ解決する（両方に View が存在することを確認済み）。
