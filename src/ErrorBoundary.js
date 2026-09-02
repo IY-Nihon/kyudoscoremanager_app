@@ -27,7 +27,7 @@ var t = require('react'),
   n = e(require('./Text')),
   l = e(require('./TouchableOpacity')),
   s = e(require('./StyleSheet')),
-  c = require('./JP_useScoreStore_174'),
+  c = require('./useScoreStore'),
   u = require('./themedJsx');
 class f extends t.Component {
   state = { hasError: !1, error: null };

@@ -27,7 +27,7 @@ var t = e(require('./View')),
   o = e(require('./Text')),
   i = e(require('./StyleSheet')),
   n = require('./uiConfig'),
-  l = require('./JP_useScoreStore_174'),
+  l = require('./useScoreStore'),
   h = require('./themedJsx');
 const f = ({ shots: e, showFooter: i = !0, 横並び: 横 = !1 }) => {
     const f = (0, l.useScoreStore)((e) => e.viewScale),

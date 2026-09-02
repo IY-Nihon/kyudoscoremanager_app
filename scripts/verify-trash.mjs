@@ -33,7 +33,7 @@ const PW = 'StgTest!2026';
 // ── 実装から並べ替え関数をそのまま持ってくる ────────────────
 // 以前はストアの本文から正規表現で切り出していたが、純粋な関数を
 // src/syncRules.js へ移したので、そのまま読み込む。
-const src = fs.readFileSync('src/JP_useScoreStore_174.js', 'utf8');
+const src = fs.readFileSync('src/useScoreStore.js', 'utf8');
 const { trashedAtMillis } = createRequire(import.meta.url)('../src/syncRules.js');
 
 // ── 実装のクエリが想定どおりか確かめる ──────────────────────

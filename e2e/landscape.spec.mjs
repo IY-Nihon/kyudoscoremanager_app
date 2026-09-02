@@ -17,7 +17,7 @@ import {
 } from './helpers.mjs';
 import fs from 'node:fs';
 
-const お知らせの版 = (fs.readFileSync('src/JP_WhatsNewModal.js', 'utf8').match(/NOTICE_VERSION = '([^']+)'/) || [])[1];
+const お知らせの版 = (fs.readFileSync('src/WhatsNewModal.js', 'utf8').match(/NOTICE_VERSION = '([^']+)'/) || [])[1];
 
 // 鍵（100003）・ライブ（100006）・交代（100005）とは別の団体を使う
 const 団体 = '100001';

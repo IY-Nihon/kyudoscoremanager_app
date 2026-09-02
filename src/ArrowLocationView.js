@@ -5,7 +5,7 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import ThemedStyleSheet from './StyleSheet'; // テーマ変換を通すためブリッジ経由
 const StyleSheet = ThemedStyleSheet;
-import { useScoreStore } from './JP_useScoreStore_174';
+import { useScoreStore } from './useScoreStore';
 
 const CIRCLED_NUMBERS = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳'];
 

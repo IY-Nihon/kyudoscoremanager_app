@@ -32,7 +32,7 @@ var t = require('react'),
   u = e(require('./TextInput')),
   f = e(require('./TouchableOpacity')),
   h = e(require('./ScrollView')),
-  y = require('./JP_useScoreStore_174'),
+  y = require('./useScoreStore'),
   共 = require('./liveShare'),
   写 = require('./clipboard_bridge'),
   A = require('./themedJsx');
@@ -403,7 +403,7 @@ const 来客の窓 = ({ 荷, onClose }) => {
     try {
       // RTDB は「ログインしている誰か」を求める。団体には入らない
       try {
-        const 認 = require('./db_178');
+        const 認 = require('./db');
         const 匿 = require('firebase/auth');
         if (認.auth && !認.auth.currentUser) await (0, 匿.signInAnonymously)(認.auth);
       } catch {

@@ -34,15 +34,15 @@ var t = require('react'),
   h = e(require('./alertBridge'));
 require('./platform');
 var f = e(require('./Pressable')),
-  x = require('./IS_WEB_199');
+  x = require('./IS_WEB');
 require('react-native-safe-area-context');
-var 案内 = require('./JP_TutorialGuide');
+var 案内 = require('./TutorialGuide');
 // 「自分が写っているか」の判定。案内の見本を出すかどうかにも同じものを使う
 var { 自分の射手か, 自分の記録か } = require('./syncRules');
-var y = require('./JP_useScoreStore_174'),
+var y = require('./useScoreStore'),
   b = require('./archerFactory'),
-  p = require('./JP_ArcherColumnView_594'),
-  j = require('./JP_LabelColumn_688'),
+  p = require('./ArcherColumnView'),
+  j = require('./LabelColumn'),
   C = require('./uiConfig'),
   F = require('@expo/vector-icons'),
   S = (function (e) {
@@ -69,9 +69,9 @@ var y = require('./JP_useScoreStore_174'),
       t
     );
   })(require('expo-haptics')),
-  w = require('./JP_EditSessionModal_694'),
-  T = require('./JP_ArcherActionModal_689'),
-  A = require('./JP_ManualSubstitutionModal_691'),
+  w = require('./EditSessionModal'),
+  T = require('./ArcherActionModal'),
+  A = require('./ManualSubstitutionModal'),
   z = require('./shadowStyle'),
   I = require('./formatMemberName'),
   k = require('./themedJsx');

@@ -171,7 +171,7 @@ else {
 }
 
 // ── 5 出ているアプリのお知らせの版 ───────────────
-const 窓 = fs.readFileSync(path.join(根本, 'src', 'JP_WhatsNewModal.js'), 'utf8');
+const 窓 = fs.readFileSync(path.join(根本, 'src', 'WhatsNewModal.js'), 'utf8');
 const 手元の版 = (窓.match(/NOTICE_VERSION = '([^']+)'/) || [])[1];
 const 配信済み = (窓.match(/最後に配信した版 = '([^']+)'/) || [])[1];
 console.log('\n■ お知らせの版');

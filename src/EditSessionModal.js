@@ -35,7 +35,7 @@ var t = require('react'),
   i = e(require('./TouchableOpacity')),
   d = e(require('./TextInput')),
   c = e(require('./Switch')),
-  u = require('./IS_WEB_199'),
+  u = require('./IS_WEB'),
   f = require('@expo/vector-icons'),
   sv = e(require('./ScrollView')),
   h = (function (e) {
@@ -62,8 +62,8 @@ var t = require('react'),
       t
     );
   })(require('expo-haptics')),
-  x = require('./JP_CustomCalendarModal_695'),
-  p = require('./JP_useScoreStore_174'),
+  x = require('./CustomCalendarModal'),
+  p = require('./useScoreStore'),
   b = require('./themedJsx');
 const normalizeTag = (e) => {
   if ('string' != typeof e) return '';

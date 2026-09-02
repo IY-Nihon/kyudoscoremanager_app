@@ -17,7 +17,7 @@ var e = require('firebase/app'),
   t = require('firebase/database'),
   n = require('firebase/firestore'),
   u = require('firebase/auth'),
-  o = require('./setupAppCheck_195');
+  o = require('./setupAppCheck');
 const c = {
     apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
     authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -28,11 +28,11 @@ const c = {
     appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
   },
   p = (0, e.getApps)().length > 0 ? (0, e.getApp)() : (0, e.initializeApp)(c);
-console.log('[db_178] Firebase config API Key:', c.apiKey ? 'FOUND' : 'MISSING');
-console.log('[db_178] Firebase App:', p ? 'INITIALIZED' : 'NULL');
+console.log('[db] Firebase config API Key:', c.apiKey ? 'FOUND' : 'MISSING');
+console.log('[db] Firebase App:', p ? 'INITIALIZED' : 'NULL');
 (0, o.setupAppCheck)(p);
 const s = (0, n.getFirestore)(p);
-console.log('[db_178] Firestore Instance:', s ? 'CREATED' : 'NULL');
+console.log('[db] Firestore Instance:', s ? 'CREATED' : 'NULL');
 
 const b = (0, u.getAuth)(p);
 const l = (() => {
@@ -47,7 +47,7 @@ const l = (() => {
 _e.db = s;
 _e.auth = b;
 _e.rtdb = l;
-console.log('[db_178] exports.db set:', _e.db ? 'OK' : 'FAILED');
+console.log('[db] exports.db set:', _e.db ? 'OK' : 'FAILED');
 
 // オフライン保存が効いているか。効いていないと、電波の無い場所で保存した
 // 記録は、画面を閉じた時点で送信待ちごと失われる。画面に出すために持つ。

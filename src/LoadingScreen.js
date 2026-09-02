@@ -27,7 +27,7 @@ var t = e(require('./View')),
   o = e(require('./Text')),
   l = e(require('./ActivityIndicator')),
   n = e(require('./StyleSheet')),
-  i = require('./JP_useScoreStore_174'),
+  i = require('./useScoreStore'),
   j = require('./shadowStyle'),
   c = require('./themedJsx');
 const s = () => {
