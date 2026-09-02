@@ -3,13 +3,7 @@
  */
 'use strict';
 
-const g = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : this;
-const r = require;
-const i = typeof metroImport !== 'undefined' ? metroImport : undefined;
-const _a = typeof id !== 'undefined' ? id : 692;
-const m = module;
 const _e = exports;
-const _d = typeof dependencyMap !== 'undefined' ? dependencyMap : [];
 
 ('use strict');
 function e(e) {

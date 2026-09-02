@@ -3,13 +3,7 @@
  */
 'use strict';
 
-const g = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : this;
-const r = require;
-const i = typeof metroImport !== 'undefined' ? metroImport : undefined;
-const a = typeof id !== 'undefined' ? id : 1036;
-const m = module;
 const _e = exports;
-const d = typeof dependencyMap !== 'undefined' ? dependencyMap : [];
 
 Object.defineProperty(_e, '__esModule', { value: true });
 Object.defineProperty(_e, 'LoginScreen', {
