@@ -178,7 +178,7 @@ for (const { id, 中身 } of 一覧) {
     // 項目の道は、英数字と _ だけの名前でなければ逆引用符で囲む決まり。
     // 囲まずに送ると、その項目だけ黙って消えない（「消しました」と返るのに
     // 残る。実際、日本語の名前の項目だけが残って気づいた）
-    const 道にする = (k) => (/^[A-Za-z_][A-Za-z0-9_]*$/.test(k) ? k : '`' + k.replace(/`/g, '\`') + '`');
+    const 道にする = (k) => (/^[A-Za-z_][A-Za-z0-9_]*$/.test(k) ? k : '`' + k.replace(/`/g, '\\`') + '`');
     const 網 = 鍵たち
       .map((k) => `updateMask.fieldPaths=${encodeURIComponent(道にする(k))}`)
       .join('&');
