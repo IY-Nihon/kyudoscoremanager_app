@@ -170,8 +170,6 @@ const w = () => {
       [ze, Pe] = l.default.useState(''),
       [Re, We] = l.default.useState(!1),
       [showPw, setShowPw] = l.default.useState(!1),
-      [showTitleSuggestions, setShowTitleSuggestions] = l.default.useState(!1),
-      [showMemberSuggestions, setShowMemberSuggestions] = l.default.useState(!1),
       [selectedKeywords, setSelectedKeywords] = l.default.useState([]),
       [selectedMembers, setSelectedMembers] = l.default.useState([]),
       [inquiryVisible, setInquiryVisible] = l.default.useState(!1),
@@ -179,7 +177,6 @@ const w = () => {
       [inquiryContent, setInquiryContent] = l.default.useState(''),
       [inquirySending, setInquirySending] = l.default.useState(!1),
       [inquiryImages, setInquiryImages] = l.default.useState([]),
-      [inquiryImageUploading, setInquiryImageUploading] = l.default.useState(!1),
       titleScrollRef = l.default.useRef(null),
       memberScrollRef = l.default.useRef(null),
       titleRefCallback = l.default.useCallback((e) => {
@@ -1536,8 +1533,6 @@ const w = () => {
                                 placeholder: 'キーワードで絞り込み',
                                 value: xe,
                                 onChangeText: ge,
-                                onFocus: () => setShowTitleSuggestions(!0),
-                                onBlur: () => setTimeout(() => setShowTitleSuggestions(!1), 200),
                                 placeholderTextColor: '#C6C6C8',
                               }),
                               titleSuggestions.length > 0 &&
@@ -1587,8 +1582,6 @@ const w = () => {
                                   placeholder: '未入力ですべて対象',
                                   value: 'all' === me ? '' : me,
                                   onChangeText: (e) => he(e || 'all'),
-                                  onFocus: () => setShowMemberSuggestions(!0),
-                                  onBlur: () => setTimeout(() => setShowMemberSuggestions(!1), 200),
                                   placeholderTextColor: '#C6C6C8',
                                 }),
                                 memberSuggestions.length > 0 &&
