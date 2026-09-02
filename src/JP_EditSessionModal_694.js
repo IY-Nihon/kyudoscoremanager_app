@@ -140,16 +140,6 @@ const C = ({ visible: e, session: l, onClose: u, onSave: C }) => {
         u(),
         h.notificationAsync(h.NotificationFeedbackType.Success));
     };
-    const toggleAttendance = (memberId) => {
-      setAttendanceEdit((prev) => {
-        const cur = prev[memberId] || 'absent';
-        const states = ['present', 'late', 'early', 'absent'];
-        const nextIdx = (states.indexOf(cur) + 1) % states.length;
-        const nxt = Object.assign({}, prev);
-        nxt[memberId] = states[nextIdx];
-        return nxt;
-      });
-    };
     const attStyles = {
       present: {
         label: '出席',

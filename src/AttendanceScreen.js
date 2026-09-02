@@ -46,7 +46,6 @@ const AttendanceScreen = () => {
   const [tab, setTab] = (0, t.useState)('stats');
   const [rangeType, setRangeType] = (0, t.useState)('month');
   const [practiceDays, setPracticeDays] = (0, t.useState)({});
-  const [loading, setLoading] = (0, t.useState)(false);
   const [loadingMsg, setLoadingMsg] = (0, t.useState)(null);
   const [selectedMember, setSelectedMember] = (0, t.useState)(null);
   const [aiPreviewItems, setAiPreviewItems] = (0, t.useState)(null);
@@ -104,13 +103,6 @@ const AttendanceScreen = () => {
     });
     return () => unsubscribe();
   }, [activeGroupId]);
-
-  const monthPracticeDays = t.useMemo(() => {
-    return Object.keys(practiceDays).filter((d) => {
-      const parts = d.split('-');
-      return parseInt(parts[0]) === selectedYear && parseInt(parts[1]) === selectedMonth;
-    });
-  }, [practiceDays, selectedYear, selectedMonth]);
 
   const togglePracticeDay = async (dateStr) => {
     if (!activeGroupId) return;
@@ -230,26 +222,6 @@ const AttendanceScreen = () => {
       return 0 !== u_val ? u_val : (e.name || '').localeCompare(t.name || '', 'ja');
     });
 
-  const sessionCountForRange = sessions.filter((s) => {
-    const dStr = getLocalDateString(s?.date);
-    if (!dStr) return false;
-    const d = new Date(dStr);
-    if (rangeType === 'month') {
-      return d.getFullYear() === selectedYear && d.getMonth() + 1 === selectedMonth;
-    } else if (rangeType === 'year') {
-      const fy = d.getMonth() + 1 >= 4 ? d.getFullYear() : d.getFullYear() - 1;
-      return fy === currentFiscalYear;
-    }
-    return true;
-  }).length;
-
-  const rangeLabel =
-    rangeType === 'month'
-      ? `${selectedYear}年${selectedMonth}月`
-      : rangeType === 'year'
-        ? `${currentFiscalYear}年度`
-        : '全期間';
-
   const normalizeDate = (dStr) => {
     if (!dStr) return null;
     const parts = dStr.split('-');
@@ -268,7 +240,6 @@ const AttendanceScreen = () => {
       const mimeType =
         asset.mimeType || (asset.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
 
-      setLoading(true);
       setLoadingMsg('予定表を読み込み中...');
 
       let base64 = '';
@@ -336,6 +307,13 @@ const AttendanceScreen = () => {
 
       if (!aiResponse.ok) {
         const errText = await aiResponse.text();
+        // 生の英文は利用者に見せない。原因を追えるよう、便りにだけ残す
+        try {
+          require('./errorReporter').行動を残す(
+            'AI解析の失敗',
+            `${aiResponse.status} ${errText.slice(0, 200)}`
+          );
+        } catch (_) {}
         if (aiResponse.status === 429) {
           alert('APIリクエスト回数の上限に達しました。1分ほど待ってから再度お試しください。');
         } else if (aiResponse.status === 503) {
@@ -370,14 +348,13 @@ const AttendanceScreen = () => {
     } catch (e) {
       o.Alert.alert('エラー', e.message);
     } finally {
-      setLoading(false);
       setLoadingMsg(null);
     }
   };
 
   const saveAiDates = async () => {
     if (!aiPreviewItems || !activeGroupId) return;
-    setLoading(true);
+    setLoadingMsg('予定を保存中...');
     try {
       for (const item of aiPreviewItems) {
         await (0, firestore.setDoc)(
@@ -387,8 +364,9 @@ const AttendanceScreen = () => {
       }
       setAiPreviewItems(null);
     } catch (e) {
+      o.Alert.alert('エラー', e.message);
     } finally {
-      setLoading(false);
+      setLoadingMsg(null);
     }
   };
 
