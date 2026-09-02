@@ -14,7 +14,7 @@
 
 const 決まり = require('./errorReport');
 const 蔵 = require('./useAsyncStorage_202');
-const F = require('./module_188');
+const F = require('firebase/firestore');
 const fb = require('./db_178');
 
 const 貯めの鍵 = 'kyudo-error-queue';

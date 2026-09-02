@@ -22,7 +22,7 @@ function e(e) {
       return D;
     },
   }));
-var t = require('./module_37'),
+var t = require('react'),
   o = e(require('./default_144')),
   n = e(require('./default_217')),
   l = e(require('./default_45')),
@@ -35,7 +35,7 @@ var t = require('./module_37'),
 require('./module_98');
 var f = e(require('./default_218')),
   x = require('./IS_WEB_199');
-require('./module_420');
+require('react-native-safe-area-context');
 var 案内 = require('./JP_TutorialGuide');
 // 「自分が写っているか」の判定。案内の見本を出すかどうかにも同じものを使う
 var { 自分の射手か, 自分の記録か } = require('./syncRules');

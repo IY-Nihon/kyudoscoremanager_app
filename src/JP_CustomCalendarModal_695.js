@@ -22,7 +22,7 @@ function e(e) {
       return y;
     },
   }));
-var t = require('./module_37'),
+var t = require('react'),
   n = e(require('./default_144')),
   l = e(require('./default_217')),
   o = e(require('./default_45')),
@@ -31,7 +31,7 @@ var t = require('./module_37'),
   i = e(require('./default_297'));
 require('./module_98');
 var c = require('./module_592'),
-  u = require('./module_696'),
+  u = require('date-fns'),
   h = require('./module_427');
 const f = 44,
   x = ({ data: e, value: o, onValueChange: a, label: c, flex: u = 1 }) => {
