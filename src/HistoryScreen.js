@@ -1704,7 +1704,6 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
         position: 'absolute',
         top: 100,
         right: 20,
-        right: 20,
       },
       (0, z.getShadowStyle)({
         shadowColor: '#000',
