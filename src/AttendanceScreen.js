@@ -25,7 +25,7 @@ var x = require('./IS_WEB_199');
 var F = require('./module_592');
 var j = require('./module_427');
 var db = require('./db_178');
-var firestore = require('./module_188');
+var firestore = require('firebase/firestore');
 // 出欠の自動判定。交代で入った人も数えるため、決まりは切り出してある
 const { 射に出ているか } = require('./attendanceRules');
 // Web-safe lazy imports to prevent null.default crash on web

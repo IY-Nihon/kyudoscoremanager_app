@@ -27,7 +27,7 @@ function e(e) {
       return C;
     },
   }));
-var t = require('./module_37'),
+var t = require('react'),
   o = e(require('./default_144')),
   n = e(require('./default_386')),
   l = e(require('./default_45')),

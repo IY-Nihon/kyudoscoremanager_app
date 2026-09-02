@@ -15,13 +15,13 @@ import { アプリの窓, 出す } from './src/AppDialog';
 import { getShadowStyle } from './src/module_592';
 import { initTheme, useThemeMode } from './src/theme';
 import { auth } from './src/db_178';
-import { onAuthStateChanged } from './src/module_191';
+import { onAuthStateChanged } from 'firebase/auth';
 import { 見張りを始める, 溜まりを流す, 行動を残す } from './src/errorReporter';
 import { 来客の窓 } from './src/JP_LiveShareModal';
 import { UpdateBar } from './src/JP_UpdateBar';
 import { URLから荷を取る } from './src/liveShare';
 import { 見張りを作る } from './src/backgroundSaver';
-import { goOffline, goOnline } from './src/module_186';
+import { goOffline, goOnline } from 'firebase/database';
 import { rtdb } from './src/db_178';
 
 const IS_WEB = Platform.OS === 'web';

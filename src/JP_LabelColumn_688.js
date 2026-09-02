@@ -22,7 +22,7 @@ function e(e) {
       return f;
     },
   }),
-  require('./module_37'));
+  require('react'));
 var t = e(require('./default_144')),
   o = e(require('./default_217')),
   i = e(require('./default_45')),

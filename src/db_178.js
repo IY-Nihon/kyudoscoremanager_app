@@ -13,10 +13,10 @@ const d = typeof dependencyMap !== 'undefined' ? dependencyMap : [];
 
 ('use strict');
 Object.defineProperty(_e, '__esModule', { value: !0 });
-var e = require('./module_179'),
-  t = require('./module_186'),
-  n = require('./module_188'),
-  u = require('./module_191'),
+var e = require('firebase/app'),
+  t = require('firebase/database'),
+  n = require('firebase/firestore'),
+  u = require('firebase/auth'),
   o = require('./setupAppCheck_195');
 const c = {
     apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,

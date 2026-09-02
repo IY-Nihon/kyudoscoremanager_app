@@ -259,11 +259,11 @@ function 不具合を控える(出どころ, 誤り) {
       return 同期規則.ライブ名に使えない字;
     },
   }));
-var s = require('./module_175'),
+var s = require('zustand'),
   _t_orig = require('./db_178'),
-  o = require('./module_191'),
-  a = require('./module_188'),
-  i = require('./module_186'),
+  o = require('firebase/auth'),
+  a = require('firebase/firestore'),
+  i = require('firebase/database'),
   n = e(require('./module_198')),
   c = require('./IS_WEB_199'),
   l = require('./module_200'),
@@ -281,8 +281,8 @@ const fb = {
       return res.db;
     }
     try {
-      const fbApp = require('./module_179').getApp();
-      const firestore = require('./module_188').getFirestore(fbApp);
+      const fbApp = require('firebase/app').getApp();
+      const firestore = require('firebase/firestore').getFirestore(fbApp);
       if (firestore) {
         fb.dbInstance = firestore;
         return firestore;
@@ -298,8 +298,8 @@ const fb = {
       return res.auth;
     }
     try {
-      const fbApp = require('./module_179').getApp();
-      const auth = require('./module_191').getAuth(fbApp);
+      const fbApp = require('firebase/app').getApp();
+      const auth = require('firebase/auth').getAuth(fbApp);
       if (auth) {
         fb.authInstance = auth;
         return auth;

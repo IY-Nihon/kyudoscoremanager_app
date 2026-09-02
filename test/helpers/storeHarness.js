@@ -501,13 +501,17 @@ function ストアを用意する(既存の雲, 既存のライブ) {
     })
   );
 
-  差し替え('module_188', 雲.api); // firebase/firestore
-  差し替え('module_191', {
-    getAuth: () => ({ currentUser: { uid: 'test-uid' } }),
-    signInWithEmailAndPassword: async () => ({ user: {} }),
-    sendPasswordResetEmail: async () => {},
-  });
-  差し替え('module_186', ライブ.api); // firebase/database
+  // firebase は本物を読ませない。番号の中継を消したので、名前で横取りする
+  横取り.set('firebase/firestore', 外部を差し替え('firebase/firestore', 雲.api));
+  横取り.set(
+    'firebase/auth',
+    外部を差し替え('firebase/auth', {
+      getAuth: () => ({ currentUser: { uid: 'test-uid' } }),
+      signInWithEmailAndPassword: async () => ({ user: {} }),
+      sendPasswordResetEmail: async () => {},
+    })
+  );
+  横取り.set('firebase/database', 外部を差し替え('firebase/database', ライブ.api));
   差し替え('db_178', {
     db: { __偽: true },
     auth: { currentUser: { uid: 'test-uid' } },
