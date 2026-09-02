@@ -177,7 +177,9 @@ const I = n.default.memo(({ state: e, descriptors: t, navigation: nav }) => {
                   // 不具合の便りに載せる。どの画面で起きたかが分かると原因を絞れる
                   try {
                     require('./errorReporter').行動を残す('画面を移る', h.name);
-                  } catch (_) {}
+                  } catch (_) {
+                    /* 控えられなくても、画面の移動は止めない */
+                  }
                   x || e.defaultPrevented || nav.navigate(h.name);
                 },
                 style: ({ pressed: e, hovered: t }) => [
