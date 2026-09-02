@@ -43,13 +43,10 @@ service cloud.firestore {
         ? request.auth.token.email : '';
     }
 
+    // firestore.rules と同じ一覧にしておく（2026-09-03 に5件から1件へ減らした）
     function isAdmin() {
       return callerEmail() in [
-        'admin@kyudo-club.com',
-        '1234@kyudo-club.com',
-        'admin@nitidai.app',
-        'nihonu.kouka@gmail.com',
-        'nihondaigakukouka@gmail.com'
+        'nihonu.kouka@gmail.com'
       ];
     }
 
@@ -75,7 +72,9 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['id', 'email']);
 
       allow update: if isAdmin()
-        || (callerEmail() != '' && resource.data.email == callerEmail());
+        || (callerEmail() != ''
+            && resource.data.email == callerEmail()
+            && request.resource.data.keys().hasOnly(['id', 'email']));
 
       allow delete: if isAdmin();
 
