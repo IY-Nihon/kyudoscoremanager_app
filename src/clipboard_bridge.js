@@ -1,7 +1,7 @@
 /**
  * expo-clipboard への橋。
  *
- * 共有リンクを写すのに使う（src/JP_LiveShareModal.js）。
+ * 共有リンクを写すのに使う（src/LiveShareModal.js）。
  * 端末では expo-clipboard、web ではそれが navigator.clipboard を使う。
  *
  * 読み込みそのものが失敗する場面（古い端末・部品が入っていないビルド）でも

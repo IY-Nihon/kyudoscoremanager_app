@@ -1,7 +1,7 @@
 /**
  * ストアを手元だけで動かすための土台。
  *
- * JP_useScoreStore_174.js は Firebase と React Native の部品を読み込むため、
+ * useScoreStore.js は Firebase と React Native の部品を読み込むため、
  * そのままでは node で動かない。ここで偽物に差し替えてから読み込む。
  *
  * 偽の Firestore は「何を書こうとしたか」を覚えるだけで、実際の通信はしない。
@@ -512,7 +512,7 @@ function ストアを用意する(既存の雲, 既存のライブ) {
     })
   );
   横取り.set('firebase/database', 外部を差し替え('firebase/database', ライブ.api));
-  差し替え('db_178', {
+  差し替え('db', {
     db: { __偽: true },
     auth: { currentUser: { uid: 'test-uid' } },
     // 偽物でも真の値にしておかないと、ライブ記録の処理が入口で全部帰ってしまう
@@ -545,7 +545,7 @@ function ストアを用意する(既存の雲, 既存のライブ) {
   }); // Alert
 
   // ストア本体は毎回読み直す
-  const 場所 = path.join(SRC, 'JP_useScoreStore_174.js');
+  const 場所 = path.join(SRC, 'useScoreStore.js');
   delete require.cache[場所];
   const { useScoreStore } = require(場所);
 

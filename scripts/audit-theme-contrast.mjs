@@ -30,7 +30,7 @@ const ratio = (a, b) => { const l1 = lum(hex2rgb(a)), l2 = lum(hex2rgb(b)); cons
 // ── 自作コードから「役割つき」の色使用を抽出 ──
 // ログイン画面は元から独自のダーク基調（#030508 + 金）で設計されており
 // テーマ変換の対象外。ここで検査すると金背景上の暗色文字を誤検知するため除く。
-const EXCLUDE = new Set(['JP_LoginScreen_1036.js', 'KyudoBackgroundAnimation.js']);
+const EXCLUDE = new Set(['LoginScreen.js', 'KyudoBackgroundAnimation.js']);
 
 const appFiles = fs.readdirSync(SRC).filter((f) => {
   if (EXCLUDE.has(f)) return false;

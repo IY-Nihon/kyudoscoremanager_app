@@ -32,9 +32,9 @@ var t = require('react'),
   i = e(require('./Modal')),
   d = e(require('./TextInput'));
 require('./platform');
-var c = require('./IS_WEB_199');
+var c = require('./IS_WEB');
 require('react-native-safe-area-context');
-var 案内 = require('./JP_TutorialGuide');
+var 案内 = require('./TutorialGuide');
 // 「自分が写っているか」の判定。履歴画面・案内の見本と同じものを使う
 var { 自分の記録か, 学年でまとめる } = require('./syncRules');
 // 「その射は誰のものか」の決まりは1か所に寄せてある（src/statsRules.js）
@@ -45,9 +45,9 @@ var ひ = require('./comparePresets');
 var 弓 = require('./equipmentTrend');
 var RN画面 = require('react-native');
 var { 出す } = require('./AppDialog');
-var u = require('./JP_useScoreStore_174'),
+var u = require('./useScoreStore'),
   h = require('@expo/vector-icons'),
-  f = require('./JP_CustomCalendarModal_695'),
+  f = require('./CustomCalendarModal'),
   m = require('./shadowStyle'),
   x = require('react-native-svg'),
   b = e(x),

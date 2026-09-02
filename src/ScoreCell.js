@@ -30,7 +30,7 @@ var t = e(require('react')),
   pressable = e(require('./Pressable'));
 require('./platform');
 var s = require('./uiConfig'),
-  d = require('./JP_useScoreStore_174'),
+  d = require('./useScoreStore'),
   u = (function (e) {
     if (e && e.__esModule) return e;
     var t = {};

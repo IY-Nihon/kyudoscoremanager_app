@@ -34,13 +34,13 @@ var t = require('react'),
   f = e(require('./Pressable'));
 require('./platform');
 var h = e(require('./TouchableOpacity')),
-  m = require('./IS_WEB_199');
+  m = require('./IS_WEB');
 require('react-native-safe-area-context');
-var x = require('./JP_useScoreStore_174'),
-  案内 = require('./JP_TutorialGuide'),
+var x = require('./useScoreStore'),
+  案内 = require('./TutorialGuide'),
   在 = require('./livePresence'),
-  y = require('./JP_ArcherColumnView_594'),
-  b = require('./JP_LabelColumn_688'),
+  y = require('./ArcherColumnView'),
+  b = require('./LabelColumn'),
   F = require('./uiConfig'),
   j = (function (e) {
     if (e && e.__esModule) return e;
@@ -66,17 +66,17 @@ var x = require('./JP_useScoreStore_174'),
       t
     );
   })(require('expo-haptics')),
-  S = require('./JP_ArcherActionModal_689'),
+  S = require('./ArcherActionModal'),
   p = require('@expo/vector-icons'),
-  C = require('./JP_SaveSessionModal_690'),
+  C = require('./SaveSessionModal'),
   AttendanceCheckModal = require('./AttendanceCheckModal').AttendanceCheckModal,
-  I = require('./JP_ManualSubstitutionModal_691'),
+  I = require('./ManualSubstitutionModal'),
   v = require('./formatMemberName'),
   B = require('./shadowStyle'),
   A = require('./themedJsx'),
   { ArrowLocationPopover } = require('./ArrowLocationPopover'),
-  { OCRRecordModal } = require('./JP_OCRRecordModal'),
-  { LiveShareModal } = require('./JP_LiveShareModal'),
+  { OCRRecordModal } = require('./OCRRecordModal'),
+  { LiveShareModal } = require('./LiveShareModal'),
   期限 = require('./liveShare');
 const k = () => {
     const {

@@ -16,7 +16,7 @@ import { expect } from '@playwright/test';
 
 /** いまのお知らせの版。本体から読むので、版が上がっても検査を直さずに済む */
 export const お知らせの版 = (fs
-  .readFileSync('src/JP_WhatsNewModal.js', 'utf8')
+  .readFileSync('src/WhatsNewModal.js', 'utf8')
   .match(/NOTICE_VERSION = '([^']+)'/) || [])[1];
 
 /**

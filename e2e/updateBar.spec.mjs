@@ -1,5 +1,5 @@
 /**
- * 新しい版が出たことの知らせ（src/JP_UpdateBar.js / src/updateNotice.js）。
+ * 新しい版が出たことの知らせ（src/UpdateBar.js / src/updateNotice.js）。
  *
  *   npx playwright test e2e/updateBar.spec.mjs
  *

@@ -93,7 +93,7 @@ test('鍵の切り替えで、たまった時刻は捨てる', () => {
 
 test('時刻は保存の対象に入れない（端末をまたいで持ち回らない）', () => {
   const 中身 = require('fs').readFileSync(
-    require('path').resolve(__dirname, '../src/JP_useScoreStore_174.js'),
+    require('path').resolve(__dirname, '../src/useScoreStore.js'),
     'utf8'
   );
   const 保存部 = 中身.slice(中身.indexOf('partialize:'), 中身.indexOf('onRehydrateStorage'));
@@ -182,7 +182,7 @@ test('長押しで開けると、知らせの合図が立つ', () => {
 // お知らせの「ここから下は前回までのお知らせ」の線を引く位置
 test('お知らせ：前回より後に足したぶんだけを新しいと数える', () => {
   const 本体 = require('fs').readFileSync(
-    require('path').join(__dirname, '..', 'src', 'JP_WhatsNewModal.js'),
+    require('path').join(__dirname, '..', 'src', 'WhatsNewModal.js'),
     'utf8'
   );
   // 版を持つ項目が、上から新しい順に並んでいること（数え方の前提）
@@ -222,7 +222,7 @@ test('お知らせ：「見たところ」の印がまだ無い人は、今後�
   // 無いからと全部を新しい扱いにすると、切り替え直後の一回目
   // ――線がいちばん要るとき――に線が最上段へ行き、何も区切らない
   const 本体 = require('fs').readFileSync(
-    require('path').join(__dirname, '..', 'src', 'JP_WhatsNewModal.js'),
+    require('path').join(__dirname, '..', 'src', 'WhatsNewModal.js'),
     'utf8'
   );
   const 始 = 本体.indexOf('const dismissedVersion');
@@ -246,7 +246,7 @@ test('「鍵を開けました」の帯は、指を下のますへ通す', () =>
   // 帯は記録表の上に浮く。長押しで開けた直後は、その下のますを
   // すぐ押したいので、帯が指を吸うと「開いたのに書けない」になる
   const 本体 = require('fs').readFileSync(
-    require('path').join(__dirname, '..', 'src', 'JP_RecordScreen_593.js'),
+    require('path').join(__dirname, '..', 'src', 'RecordScreen.js'),
     'utf8'
   );
   const 始 = 本体.indexOf('feedbackOverlay: {');
@@ -269,7 +269,7 @@ test('設定：記録表の並べ方は既定で縦、切り替えると端末�
   assert.equal(store.getState().横に並べる, false, '縦へ戻せない');
 
   const 中身 = require('fs').readFileSync(
-    require('path').join(__dirname, '..', 'src', 'JP_useScoreStore_174.js'),
+    require('path').join(__dirname, '..', 'src', 'useScoreStore.js'),
     'utf8'
   );
   const 保存部 = 中身.slice(中身.indexOf('partialize:'), 中身.indexOf('onRehydrateStorage'));
@@ -455,12 +455,12 @@ test('お知らせ：配信済みの版のまま項目を足していない', ()
   // NOTICE_VERSION と等しいままなので、足したお知らせが二度と出ない。
   // 出したつもりで誰にも届いていない、という気づきにくい壊れ方をする。
   const 本体 = require('fs').readFileSync(
-    require('path').join(__dirname, '..', 'src', 'JP_WhatsNewModal.js'),
+    require('path').join(__dirname, '..', 'src', 'WhatsNewModal.js'),
     'utf8'
   );
   const 取る = (名) => {
     const m = 本体.match(new RegExp('const ' + 名 + " = '([^']+)'"));
-    assert.ok(m, 'JP_WhatsNewModal.js に ' + 名 + ' が無い');
+    assert.ok(m, 'WhatsNewModal.js に ' + 名 + ' が無い');
     return m[1];
   };
   const いまの版 = 取る('NOTICE_VERSION');

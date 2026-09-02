@@ -17,7 +17,7 @@ import {
 } from './helpers.mjs';
 import fs from 'node:fs';
 
-const お知らせの版 = (fs.readFileSync('src/JP_WhatsNewModal.js', 'utf8').match(/NOTICE_VERSION = '([^']+)'/) || [])[1];
+const お知らせの版 = (fs.readFileSync('src/WhatsNewModal.js', 'utf8').match(/NOTICE_VERSION = '([^']+)'/) || [])[1];
 
 // 鍵の検査（e2e/lock.spec.mjs）と同じ団体を使う。どちらも「終了・保存」を
 // 押さないので、団体の中身には何も書かない（検査は workers:1 で1つずつ動く）。

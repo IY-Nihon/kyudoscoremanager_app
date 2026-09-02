@@ -10,7 +10,7 @@
     "test": "tsc -p tsconfig.check.json && eslint --config eslint.undef.mjs \"src/**/*.js\" App.js && node --test test/*.test.js",
     "deploy:web": "node scripts/build-prod.mjs && powershell -ExecutionPolicy Bypass -File scripts/deploy-web.ps1 && firebase deploy --only hosting --project kyudoscoremanager",
     "deploy:rules": "firebase deploy --only database,firestore:rules --project kyudoscoremanager",
-    "lint": "eslint src/JP_TutorialGuide.js src/tutorialSteps.js src/JP_WhatsNewModal.js scripts test",
+    "lint": "eslint src/TutorialGuide.js src/tutorialSteps.js src/WhatsNewModal.js scripts test",
     "build:stg": "node scripts/build-stg.mjs",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",

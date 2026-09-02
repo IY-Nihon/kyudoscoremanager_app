@@ -63,9 +63,9 @@ function 横に流せる行({ children, style }) {
   );
 }
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const { useScoreStore } = require("./JP_useScoreStore_174");
+const { useScoreStore } = require("./useScoreStore");
 const { useNavigation } = require("@react-navigation/native");
-const { GEMINI_API_KEY } = require("./IS_WEB_199");
+const { GEMINI_API_KEY } = require("./IS_WEB");
 // 成績の集計・並べ替え・絞り込みは、模型ではなくここで済ませる。
 // 人数ぶんの表を渡して選ばせると取り違えるため（test/chatStats.test.js）
 const { 全員の成績, 出欠の集計, 記録をさがす, 射位ごとの成績 } = require("./chatStats");

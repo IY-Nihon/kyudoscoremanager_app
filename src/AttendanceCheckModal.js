@@ -20,8 +20,8 @@ var o = Object.assign({}, require('react-native'), {
   StyleSheet: require('./StyleSheet').default,
 });
 var m = require('@expo/vector-icons');
-var b = require('./JP_useScoreStore_174');
-var x = require('./IS_WEB_199');
+var b = require('./useScoreStore');
+var x = require('./IS_WEB');
 var F = require('./shadowStyle');
 // 出欠の自動判定。交代で入った人も数えるため、決まりは切り出してある
 const { 出ていた部員たち } = require('./attendanceRules');

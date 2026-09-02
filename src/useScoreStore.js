@@ -260,12 +260,12 @@ function 不具合を控える(出どころ, 誤り) {
     },
   }));
 var s = require('zustand'),
-  _t_orig = require('./db_178'),
+  _t_orig = require('./db'),
   o = require('firebase/auth'),
   a = require('firebase/firestore'),
   i = require('firebase/database'),
   n = e(require('./alertBridge')),
-  c = require('./IS_WEB_199'),
+  c = require('./IS_WEB'),
   l = require('./uuid'),
   d = require('zustand/middleware'),
   u = e(require('@react-native-async-storage/async-storage')),
@@ -275,7 +275,7 @@ const fb = {
   authInstance: null,
   get db() {
     if (fb.dbInstance) return fb.dbInstance;
-    const res = require('./db_178');
+    const res = require('./db');
     if (res && res.db) {
       fb.dbInstance = res.db;
       return res.db;
@@ -292,7 +292,7 @@ const fb = {
   },
   get auth() {
     if (fb.authInstance) return fb.authInstance;
-    const res = require('./db_178');
+    const res = require('./db');
     if (res && res.auth) {
       fb.authInstance = res.auth;
       return res.auth;
@@ -308,12 +308,12 @@ const fb = {
     return undefined;
   },
   get rtdb() {
-    return require('./db_178').rtdb;
+    return require('./db').rtdb;
   },
 };
 
 const waitForDb = async () => {
-  const mod = require('./db_178');
+  const mod = require('./db');
   if (mod.dbReady) {
     const dbInst = await mod.dbReady;
     fb.dbInstance = dbInst;
@@ -2886,7 +2886,7 @@ const M = (0, s.create)()(
         checkOfflineSave: async () => {
           try {
             await waitForDb();
-            const o = require('./db_178').persistence || {};
+            const o = require('./db').persistence || {};
             if ('ok' === o.state || 'pending' === o.state)
               return void (
                 s().offlineSaveWarning &&

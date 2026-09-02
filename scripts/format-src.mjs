@@ -35,8 +35,8 @@ const SRC = 'src';
 const 対象外 = new Set([
   'ArrowLocationPopover.js',
   'ArrowLocationView.js',
-  'JP_AIChatBot_1034.js',
-  'JP_OCRRecordModal.js',
+  'AIChatBot.js',
+  'OCRRecordModal.js',
 ]);
 
 const 解析設定 = {

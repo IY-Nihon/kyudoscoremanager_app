@@ -18,7 +18,7 @@ import {
 } from './helpers.mjs';
 import fs from 'node:fs';
 
-const お知らせの版 = (fs.readFileSync('src/JP_WhatsNewModal.js', 'utf8').match(/NOTICE_VERSION = '([^']+)'/) || [])[1];
+const お知らせの版 = (fs.readFileSync('src/WhatsNewModal.js', 'utf8').match(/NOTICE_VERSION = '([^']+)'/) || [])[1];
 
 // 部員6人と記録が入っている団体。読むだけで、書き込みはしない
 const 団体 = '100001';
