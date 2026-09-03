@@ -44,6 +44,19 @@
         "//": "バンドルはファイル名にハッシュが入るので長く持たせてよい",
         "source": "/_expo/static/**",
         "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+      },
+      {
+        "//": "ホーム画面に追加するときの決まり。型を明に出す。中身が変わったら拾わせたいので持たせない",
+        "source": "/site.webmanifest",
+        "headers": [
+          { "key": "Content-Type", "value": "application/manifest+json; charset=utf-8" },
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      },
+      {
+        "//": "アイコンは名前にハッシュが入らない。差し替えが届くよう、持たせつつ毎回確かめさせる",
+        "source": "@(/apple-touch-icon.png|/icon-192.png|/icon-512.png|/favicon.ico)",
+        "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }]
       }
     ]
   }
