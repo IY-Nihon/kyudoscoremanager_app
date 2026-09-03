@@ -2430,7 +2430,9 @@ const k = () => {
     historyBtns: { flexDirection: 'row', gap: 2 },
     historyBtn: { padding: 4 },
     saveBtn: {
-      backgroundColor: '#FF3B30',
+      // 保存は肯定的な操作。赤は「リセット」など戻せない操作のために取っておく。
+      // 同じ赤だと、色から手がかりが取れない
+      backgroundColor: '#007AFF',
       paddingHorizontal: 8,
       paddingVertical: 10,
       borderRadius: 8,
