@@ -148,3 +148,33 @@ curl -s "https://firestore.googleapis.com/v1/projects/kyudoscoremanager/database
 
 新規登録は検査でも e2e でも通らない道（本番の団体を作ることになる）なので、
 走らせて見つけることができない。だから走らせずに読み比べる。
+
+---
+
+## 依存している部品の危険について
+
+`npm audit` は組み立ての道具（metro・sharp・expo-cli など）の指摘も同じ重さで並べる。
+数字に慣れて本物を見落とすので、仕分けてから見る。
+
+```bash
+node scripts/audit-triage.mjs         # 数えるだけ
+node scripts/audit-triage.mjs 厳しく   # 届く重い指摘があれば失敗
+```
+
+`check-release-state.mjs` からも呼ばれるので、配信前の確認で毎回目に入る。
+
+### 2026-09-03 に見たこと
+
+38件のうち、Web の配信物に実体が載っているものは1件も無かった。
+critical と表示されていた `protobufjs` は `@firebase/firestore` の
+`platform/node/` からしか読まれず、ブラウザにも iOS にも届かない。
+
+`sharp` は devDependency で、束の中の443件は `pin-sharp` などのアイコン名だった
+（仕分けの台本の初版はこれを「届く」と誤判定したので、読み込みの形だけを見るよう
+に直してある）。
+
+### iOS を出すときは、改めて見ること
+
+iOS は `@react-native-firebase/*` を使い、Firestore は native の SDK が担う。
+`@grpc/grpc-js` への参照はゼロだが、**native 側の依存は npm audit では見えない**。
+CocoaPods の側を別に確かめる必要がある。
