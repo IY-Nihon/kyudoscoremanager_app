@@ -693,7 +693,7 @@ const w = () => {
               (0, T.jsxs)(T.Fragment, {
                 children: [
                   (0, T.jsxs)(o.default, {
-                    style: D.item,
+                    style: [D.item, D.itemStack],
                     children: [
                       (0, T.jsxs)(o.default, {
                         style: D.itemLeft,
@@ -708,7 +708,7 @@ const w = () => {
                         ],
                       }),
                       (0, T.jsxs)(n.default, {
-                        style: D.timestamp,
+                        style: [D.timestamp, D.timestampStack],
                         children: [L || '---', ' / ', $ || '未設定'],
                       }),
                     ],
@@ -2406,6 +2406,10 @@ const w = () => {
     iconContainer: { width: 32, height: 32, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
     itemRight: { flexDirection: 'row', alignItems: 'center' },
     timestamp: { fontSize: 12, color: '#8E8E93' },
+    // 団体ID/団体名は値が長く、狭い画面ではラベルと同じ行に収まらない。
+    // 値をラベルの下へ回し、折り返しても見出しと衝突しないようにする
+    itemStack: { flexDirection: 'column', alignItems: 'flex-start' },
+    timestampStack: { marginTop: 4, marginLeft: 36 },
     footer: { marginTop: 30, marginBottom: 50, alignItems: 'center' },
     versionText: { fontSize: 14, color: '#8E8E93', marginBottom: 4 },
     statusText: { fontSize: 12, color: '#34C759' },
