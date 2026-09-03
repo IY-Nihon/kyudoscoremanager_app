@@ -304,12 +304,14 @@ App.js, index.js       エントリポイント
 src/                   アプリ本体（上記の通りソースマップ復元コード）
 assets/                アプリ内で使うアイコン・画像
 pwa/                   PWA用の静的ファイル（デプロイ時にdist/へコピー）
-scripts/               デプロイ・iOSビルドパッチ用スクリプト
+scripts/               デプロイ・検証・修復・復元のスクリプト
 patches/               patch-package 用の node_modules パッチ
-docs/                  機能ごとの要件定義・実装計画（40件弱）
+test/                  単体検査（node --test。npm test で走る）
+e2e/                   本物のブラウザでの検査（Playwright。npm run e2e）
+rules/                 決まりの控え（bootstrap / stage1 / stage2 / rollback）
+docs/                  機能ごとの要件定義・実装計画、配信の手順
 .github/workflows/     EAS Build (iOS) の CI
 *.rules, firebase.json Firebase の設定・セキュリティルール
-_archive/              過去のデバッグ資材（Git管理外・削除して問題なし）
 ```
 
 ## ダークモード
