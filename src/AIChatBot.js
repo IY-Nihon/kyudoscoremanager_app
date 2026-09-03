@@ -272,6 +272,33 @@ const selectQAs = (userMsg) => {
 const generateMsgId = () => Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
 const CHAT_HISTORY_KEY = 'aiChatMessages_v1';
 const MAX_SAVED_MESSAGES = 50;
+const BUTTON_POS_KEY = 'aiButtonPos_v1';
+
+// ドラッグで動かした角を覚えておく。無ければ右下から始める
+const loadButtonPos = () => {
+  try {
+    const saved = typeof localStorage !== 'undefined' && localStorage.getItem(BUTTON_POS_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if ((parsed.x === 'left' || parsed.x === 'right') && (parsed.y === 'top' || parsed.y === 'bottom')) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    /* 読めなければ、右下から始める */
+  }
+  return null;
+};
+
+const saveButtonPos = (pos) => {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(BUTTON_POS_KEY, JSON.stringify(pos));
+    }
+  } catch (e) {
+    /* 覚えられなくても、この場では動く。次回また右下に戻るだけ */
+  }
+};
 
 const loadChatHistory = () => {
   try {
@@ -350,8 +377,9 @@ const AIChatBot = () => {
   // --- ドラッグ移動用のステート ＆ 追従ロジック ---
   const pan = useRef(new _Animated.ValueXY()).current;
   const currentPos = useRef({ x: 0, y: 0 });
-  const snapXRef = useRef("right");
-  const snapYRef = useRef("bottom");
+  const savedButtonPos = loadButtonPos();
+  const snapXRef = useRef(savedButtonPos?.x || "right");
+  const snapYRef = useRef(savedButtonPos?.y || "bottom");
   const isDragging = useRef(false);
 
   // 画面リサイズ時に現在のスナップ状態を維持したまま正しい位置へ追従
@@ -418,7 +446,8 @@ const AIChatBot = () => {
           
           snapXRef.current = isLeft ? "left" : "right";
           snapYRef.current = isTop ? "top" : "bottom";
-          
+          saveButtonPos({ x: snapXRef.current, y: snapYRef.current });
+
           const snapTopY = 60;
           
           const targetX = isLeft ? 20 - initX : 0;
