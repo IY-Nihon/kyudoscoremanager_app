@@ -22,6 +22,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import url from 'node:url';
 
 const 対象 = process.argv[2] || 'stg';
 if (!['stg', 'prod'].includes(対象)) {
@@ -35,14 +36,29 @@ const 企画 = 対象 === 'stg' ? 'kyudoscoremanager-stg' : 'kyudoscoremanager';
 const 消す = process.argv[3] === '消す';
 const 名指し = 消す ? process.argv.slice(4).map((x) => x.toLowerCase()) : [];
 
-// 団体を持たなくても不思議でない利用者（運営者の管理用）。firestore.rules と同じ並び
-const 管理者 = new Set([
-  'admin@kyudo-club.com',
-  '1234@kyudo-club.com',
-  'admin@nitidai.app',
-  'nihonu.kouka@gmail.com',
-  'nihondaigakukouka@gmail.com',
-]);
+// 団体を持たなくても不思議でない利用者（運営者の管理用）。
+//
+// 一覧を手で持つと、firestore.rules を直したときに片方だけ古くなる。
+// 実際 2026-09-03 に isAdmin() を5件から1件へ減らしたとき、ここだけ5件の
+// まま残り、外したはずの口座が「消してはいけないもの」として保護され続けて
+// いた。二度と食い違わないよう、決まりのファイルから読む。
+const 管理者 = (() => {
+  const 決まりの道 = path.join(path.dirname(url.fileURLToPath(import.meta.url)), '..', 'firestore.rules');
+  const 決まり = fs.readFileSync(決まりの道, 'utf8');
+  const i = 決まり.indexOf('function isAdmin()');
+  if (i < 0) {
+    console.error('firestore.rules に isAdmin() が見つかりません。中止します。');
+    process.exit(1);
+  }
+  const 節 = 決まり.slice(i, 決まり.indexOf(']', i));
+  const 一覧 = [...節.matchAll(/'([^']+@[^']+)'/g)].map((m) => m[1].toLowerCase());
+  if (!一覧.length) {
+    console.error('isAdmin() からアドレスを読み取れませんでした。中止します。');
+    process.exit(1);
+  }
+  return new Set(一覧);
+})();
+console.log(`管理者として扱う（firestore.rules から読んだ）: ${[...管理者].join(', ')}\n`);
 
 const 設定 = path.join(os.homedir(), '.config', 'configstore', 'firebase-tools.json');
 const refresh = fs.existsSync(設定) ? JSON.parse(fs.readFileSync(設定, 'utf8')).tokens?.refresh_token : null;
