@@ -190,3 +190,31 @@ try {
 } catch (e) {
   console.log('  ⚠   出ているアプリを読めませんでした: ' + String(e).slice(0, 80));
 }
+
+// ── 依存している部品の危険 ───────────────────────────────
+//
+// npm audit は組み立ての道具（metro・sharp・expo-cli など）の指摘も同じ重さで
+// 並べる。2026-09-03 の時点で38件出ていたが、Web の配信物に実体が載っている
+// ものは1件も無かった。数字に慣れて本物を見落とさないよう、仕分けて出す。
+//
+// 日々変わるものではないので npm test には入れず、配信の前だけ見る。
+console.log('\n■ 依存している部品の危険');
+try {
+  const { execSync } = await import('node:child_process');
+  const 出 = execSync('node scripts/audit-triage.mjs', {
+    cwd: 根本,
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  const 総 = (出.match(/npm audit: (\d+) 件/) || [])[1] || '?';
+  const 届く = (出.match(/届きうるもの（(\d+)件 \/ うち重いもの (\d+)件）/) || []).slice(1);
+  console.log(`   全部で ${総} 件 / 利用者へ届きうる ${届く[0] || '?'} 件`);
+  console.log(
+    印(届く[1] === '0') +
+      (届く[1] === '0'
+        ? '届きうる重い指摘は無い'
+        : `届きうる重い指摘が ${届く[1]} 件ある（node scripts/audit-triage.mjs で中身を見る）`)
+  );
+} catch (e) {
+  console.log('  ⚠   仕分けを回せませんでした: ' + String(e.message || e).slice(0, 80));
+}
