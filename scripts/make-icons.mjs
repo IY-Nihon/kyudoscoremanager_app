@@ -20,6 +20,17 @@
  * 中身は JPEG だった（先頭が ffd8ff）。3つとも同じ中身。
  * JPEG は透過を持てないので、余白は白い塗りとして入っている。
  * ここで作る出力は本物の PNG にする。
+ *
+ * ■ 出力先と、不透明にする理由
+ *
+ * web の PWA アイコン（apple-touch-icon・icon-192・icon-512）は pwa/ へ置く。
+ * 配信は deploy-web.ps1 が pwa/ を dist の直下へ配る。ここが本番で使われる
+ * 唯一の系。加えて端末アプリ用の assets/icon.png・favicon.png も作り直す。
+ *
+ * すべて**不透明**（アルファの層を持たない）で書き出す。iOS の
+ * apple-touch-icon は透過を嫌い、透明な角を黒で合成した上に端末が自前の
+ * 角丸を重ねるため、透過があると iPad でアイコンが出ない（2026-09 に本番の
+ * 配信物で、角のアルファが 103〜174 と半透明になっているのを確認した）。
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -38,11 +49,16 @@ const 白のしきい = 150;
 // 縁のぼかしが細い輪になって残らないよう、塗る範囲を少し広げる
 const 広げる = 3;
 
+// web の PWA アイコンは pwa/ へ置く。配信は deploy-web.ps1 が pwa/ を
+// dist の直下へ配る（この置き場が本番で実際に使われる唯一の系）。
+// iOS の apple-touch-icon は透過を嫌う——透明な角を黒で合成した上に端末が
+// 自前の角丸を重ねるため、iPad でアイコンが出なかった（2026-09 に本番で確認）。
+// だから**不透明**（アルファ無し）で書き出す。角丸も付けない。端末が丸くする。
 const 出力 = [
   // web（配信しているのはこちら）
-  { 先: 'public/apple-touch-icon.png', 大きさ: 180 },
-  { 先: 'public/icon-192.png', 大きさ: 192 },
-  { 先: 'public/icon-512.png', 大きさ: 512 },
+  { 先: 'pwa/apple-touch-icon.png', 大きさ: 180 },
+  { 先: 'pwa/icon-192.png', 大きさ: 192 },
+  { 先: 'pwa/icon-512.png', 大きさ: 512 },
   // expo が favicon.ico を作る元
   { 先: 'assets/favicon.png', 大きさ: 512 },
   // 端末に入れるときのアイコン（今は配信していないが、形式を揃えておく）
@@ -141,7 +157,11 @@ if (割合 < 5 || 割合 > 60) {
   process.exit(1);
 }
 
-const 土台 = sharp(出, { raw: { width: W, height: H, channels: 4 } }).png();
+// flatten でアルファの層を落とす（不透明にする）。地の紺で塗りつぶすので、
+// 万一この先で透明が混ざっても紺で埋まる。iOS が嫌う透過を残さない
+const 土台 = sharp(出, { raw: { width: W, height: H, channels: 4 } })
+  .flatten({ background: { r: 紺.r, g: 紺.g, b: 紺.b } })
+  .png();
 
 for (const { 先, 大きさ } of 出力) {
   const 道 = path.join(根, 先);
@@ -152,6 +172,12 @@ for (const { 先, 大きさ } of 出力) {
     .png({ compressionLevel: 9 })
     .toFile(道);
   const 大 = fs.statSync(道).size;
+  // 書き出したものが本当に不透明か（アルファの層を持っていないか）確かめる
+  const md = await sharp(道).metadata();
+  if (md.hasAlpha) {
+    console.error(`停止：${先} にアルファの層が残っています（iOS でアイコンが出なくなる）`);
+    process.exit(1);
+  }
   console.log(`  作りました: ${先.padEnd(30)} ${大きさ}x${大きさ}  ${(大 / 1024).toFixed(1)}KB`);
 }
 

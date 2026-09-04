@@ -14,10 +14,11 @@ $html = Get-Content $indexPath -Raw -Encoding UTF8
 $headInjection = @'
 <meta property="og:title" content="弓道部的中ノート"><meta property="og:image" content="https://kyudoscoremanager.web.app/kyudo_icon.png"><meta property="og:description" content="団体弓道の的中記録と出欠を管理するアプリです。">
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#007AFF">
+<meta name="theme-color" content="#1A3550">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="的中ノート">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js')})}</script>
 </head>
 '@
