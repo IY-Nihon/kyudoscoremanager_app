@@ -1049,8 +1049,13 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                               ],
                             }),
                           }),
-                          (0, k.jsx)(o.default, {
-                            style: E.monthTabsContainer,
+                          (0, k.jsx)(u.default, {
+                            // 月が多いと画面幅を超える。横スクロールにして
+                            // 隠れた月へ届かせる（上のタグチップと同じ作り）
+                            horizontal: !0,
+                            showsHorizontalScrollIndicator: !1,
+                            style: E.monthTabsScroll,
+                            contentContainerStyle: E.monthTabsContent,
                             children: Ge.map((e) => {
                               const t = oe === e;
                               return (0, k.jsx)(
@@ -1565,7 +1570,9 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
       borderRadius: 10,
     },
     yearButtonText: { color: '#5856D6', fontSize: 17, fontWeight: '500' },
-    monthTabsContainer: { flexDirection: 'row', paddingHorizontal: 16, gap: 10, marginBottom: 12 },
+    // 横スクロールの器は縦に伸びないよう flexGrow:0。中身の並びは content 側で
+    monthTabsScroll: { marginBottom: 12, flexGrow: 0 },
+    monthTabsContent: { flexDirection: 'row', paddingHorizontal: 16, gap: 10 },
     monthTab: {
       paddingHorizontal: 18,
       paddingVertical: 7,
