@@ -68,3 +68,43 @@ test('見に行く間隔は、短すぎず長すぎない', () => {
   assert.ok(見に行く間隔 >= 5 * 60 * 1000, '短すぎる');
   assert.ok(見に行く間隔 <= 60 * 60 * 1000, '長すぎる');
 });
+
+// お知らせ（src/WhatsNewModal.js）の版の見張り。
+//
+// 新しい項目を足したのに NOTICE_VERSION を上げ忘れると、その項目は
+// 「今後表示しない」を押した人に二度と出ない。自動で出すかどうかは
+// NOTICE_VERSION と、いちばん新しい項目の 版 を比べて決めているため。
+// ここが食い違わないことを、走らせずにファイルから読んで確かめる。
+test('お知らせ：NOTICE_VERSION が、いちばん新しい項目の版と一致する', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const 本体 = fs.readFileSync(path.join(__dirname, '..', 'src', 'WhatsNewModal.js'), 'utf8');
+
+  const 宣言 = 本体.match(/NOTICE_VERSION\s*=\s*'([^']+)'/);
+  assert.ok(宣言, 'NOTICE_VERSION の宣言が見つからない');
+  const 版 = 宣言[1];
+
+  // NOTICE_ITEMS のいちばん最初（＝いちばん新しい）項目の 版
+  const 最初の項目の版 = 本体.match(/NOTICE_ITEMS\s*=\s*\[[\s\S]*?版:\s*'([^']+)'/);
+  assert.ok(最初の項目の版, '最初の項目の 版 が見つからない');
+
+  assert.strictEqual(
+    版,
+    最初の項目の版[1],
+    `NOTICE_VERSION (${版}) が、いちばん新しい項目の版 (${最初の項目の版[1]}) と食い違っている。` +
+      '新しいお知らせを足したら NOTICE_VERSION も合わせること'
+  );
+});
+
+// お知らせの版は「年-月-日-連番」。新旧の比較（> で判定）に効くよう、
+// 形がそろっていることを見る。ここが崩れると新旧の線が狂う
+test('お知らせ：版の形が YYYY-MM-DD-NN でそろっている', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const 本体 = fs.readFileSync(path.join(__dirname, '..', 'src', 'WhatsNewModal.js'), 'utf8');
+  const 版たち = [...本体.matchAll(/版:\s*'([^']+)'/g)].map((m) => m[1]);
+  assert.ok(版たち.length >= 2, '版を持つ項目が少なすぎる');
+  for (const v of 版たち) {
+    assert.match(v, /^\d{4}-\d{2}-\d{2}-\d{2}$/, `版の形が違う: ${v}`);
+  }
+});
