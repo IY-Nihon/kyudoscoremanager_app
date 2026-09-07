@@ -2176,7 +2176,9 @@ const k = () => {
           shotIndex: activeArrowLocationEdit?.shotIndex,
           currentMark: activeArrowLocationEdit?.currentMark,
           arrowLocations: activeArrowLocationEdit?.arrowLocations,
-          onSave: () => setActiveArrowLocationEdit(null),
+          // 矢所を押しただけでは閉じない。置いた場所を見て、ずれていれば
+          // 置き直せるようにするため。閉じるのは「完了」を押したとき
+          onSave: () => {},
         }),
       ],
     });
