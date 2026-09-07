@@ -34,6 +34,7 @@ var x = require('./useScoreStore'),
   案内 = require('./TutorialGuide'),
   在 = require('./livePresence'),
   y = require('./ArcherColumnView'),
+  組 = require('./teamGrouping'),
   b = require('./LabelColumn'),
   F = require('./uiConfig'),
   j = (function (e) {
@@ -84,6 +85,7 @@ const k = () => {
         offlineSaveWarning: オフライン保存の警告 = null,
         addArcher: R,
         addSeparator: P,
+        setSeparatorTeam: 区切りにチーム名を付ける,
         addTotalCalculator: L,
         undo: D,
         redo: H,
@@ -188,6 +190,10 @@ const k = () => {
       戻せる = ライブの知らせに任せる ? (共有履歴の位置 || 0) > 0 : _.length > 0,
       進める = ライブの知らせに任せる ? (共有履歴の位置 || 0) < (共有履歴の上限 || 0) : O.length > 0,
       [pe, Ce] = (0, t.useState)(!1),
+      // 区切りにチーム名を付ける窓（リーグの大学名）。
+      // どの区切りを触っているかと、入力中の文字を持つ
+      [チーム名を付ける区切り, setチーム名を付ける区切り] = (0, t.useState)(null),
+      [チーム名の下書き, setチーム名の下書き] = (0, t.useState)(''),
       [Ie, ve] = (0, t.useState)(!1),
       [Be, Ae] = (0, t.useState)(8),
       [ke, We] = (0, t.useState)(!1),
@@ -509,6 +515,11 @@ const k = () => {
                               isReadOnly: $e,
                               onPressName: () => qe(射手.id, 射手.name, 順),
                               onDelete: () => M(射手.id),
+                              onLongPressSeparator: () => {
+                                if ($e) return void 閲覧中に押された();
+                                (setチーム名の下書き(射手.teamName || ''),
+                                  setチーム名を付ける区切り(射手.id));
+                              },
                             },
                             typeof 射手.id === 'string' ? 射手.id : `行-${順}`
                           )
@@ -1367,6 +1378,11 @@ const k = () => {
                                   isReadOnly: $e,
                                   onPressName: () => qe(e.id, e.name, t),
                                   onDelete: () => M(e.id),
+                                  onLongPressSeparator: () => {
+                                    if ($e) return void 閲覧中に押された();
+                                    (setチーム名の下書き(e.teamName || ''),
+                                      setチーム名を付ける区切り(e.id));
+                                  },
                                 },
                                 typeof e.id === 'string' ? e.id : `archer-${t}`
                               )
@@ -1451,20 +1467,50 @@ const k = () => {
                                         justifyContent: 'center',
                                       },
                                       onPress: () => M(e.id),
+                                      // 長押しでチーム名を付ける（リーグの大学名）。
+                                      // 押す＝外す は今までどおりにしておく
+                                      onLongPress: () => {
+                                        if ($e) return void 閲覧中に押された();
+                                        (setチーム名の下書き(e.teamName || ''),
+                                          setチーム名を付ける区切り(e.id));
+                                      },
+                                      delayLongPress: 500,
                                       disabled: $e,
-                                      children: (0, A.jsx)(p.Ionicons, {
-                                        name: 'close-circle',
-                                        size: 24 * se,
-                                        color: '#8E8E93',
-                                      }),
+                                      // 名前が付いていれば名前を、なければ今までの×印
+                                      children: 組.区切りのチーム名(e)
+                                        ? (0, A.jsx)(a.default, {
+                                            style: {
+                                              fontSize: 11 * se,
+                                              fontWeight: '700',
+                                              textAlign: 'center',
+                                              color: 組.チームの色(組.区切りのチーム名(e)) || '#8E8E93',
+                                            },
+                                            numberOfLines: 3,
+                                            children: 組.区切りのチーム名(e),
+                                          })
+                                        : (0, A.jsx)(p.Ionicons, {
+                                            name: 'close-circle',
+                                            size: 24 * se,
+                                            color: '#8E8E93',
+                                          }),
                                     })
                                   : (0, A.jsxs)(h.default, {
-                                      style: {
-                                        alignItems: 'center',
-                                        width: '100%',
-                                        height: '100%',
-                                        justifyContent: 'center',
-                                      },
+                                      style: [
+                                        {
+                                          alignItems: 'center',
+                                          width: '100%',
+                                          height: '100%',
+                                          justifyContent: 'center',
+                                        },
+                                        // チームの色を、名前の欄の上に細い帯で出す。
+                                        // 字を染めると読みにくいので帯にする
+                                        (() => {
+                                          const 色 = (組.チームを割り当てる(
+                                            Array.isArray(k) ? k : []
+                                          ).find((x) => x && x.id === e.id) || {}).色;
+                                          return 色 ? { borderTopWidth: 3 * se, borderTopColor: 色 } : null;
+                                        })(),
+                                      ],
                                       onPress: () => qe(e.id, e.name, t),
                                       children: [
                                         (0, A.jsx)(a.default, {
@@ -2180,6 +2226,80 @@ const k = () => {
           // 置き直せるようにするため。閉じるのは「完了」を押したとき
           onSave: () => {},
         }),
+        // 区切りにチーム名を付ける窓。リーグで大学名を出すため。
+        // 区切りから右がそのチームになるので、1回入れれば複数人に付く
+        (0, A.jsx)(d.default, {
+          visible: !!チーム名を付ける区切り,
+          transparent: !0,
+          animationType: 'fade',
+          onRequestClose: () => setチーム名を付ける区切り(null),
+          children: (0, A.jsxs)(l.default, {
+            style: W.modalBackdrop,
+            children: [
+              (0, A.jsx)(h.default, {
+                style: s.default.absoluteFill,
+                activeOpacity: 1,
+                onPress: () => setチーム名を付ける区切り(null),
+              }),
+              (0, A.jsxs)(l.default, {
+                style: W.modalContent,
+                children: [
+                  (0, A.jsx)(a.default, { style: W.modalTitle, children: 'チーム名' }),
+                  (0, A.jsx)(a.default, {
+                    style: W.modalMessage,
+                    children:
+                      'この区切りから右の射手が、そのチームになります。大学名などを入れてください。空にすると、ただの間隔に戻ります。',
+                  }),
+                  (0, A.jsx)(c.default, {
+                    style: W.チーム名の入力,
+                    value: チーム名の下書き,
+                    onChangeText: setチーム名の下書き,
+                    placeholder: '例: ◯◯大学',
+                    maxLength: 20,
+                    autoFocus: !0,
+                    returnKeyType: 'done',
+                    onSubmitEditing: () => {
+                      (区切りにチーム名を付ける(チーム名を付ける区切り, チーム名の下書き),
+                        setチーム名を付ける区切り(null));
+                    },
+                  }),
+                  (0, A.jsxs)(l.default, {
+                    style: W.modalButtonsRow,
+                    children: [
+                      (0, A.jsx)(f.default, {
+                        style: ({ hovered: e }) => [
+                          W.modalBtn,
+                          { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
+                          e && m.IS_WEB && { backgroundColor: '#E5E5EA' },
+                        ],
+                        onPress: () => setチーム名を付ける区切り(null),
+                        children: (0, A.jsx)(a.default, {
+                          style: [W.modalBtnText, { color: '#007AFF' }],
+                          children: 'キャンセル',
+                        }),
+                      }),
+                      (0, A.jsx)(f.default, {
+                        style: ({ hovered: e }) => [
+                          W.modalBtn,
+                          { backgroundColor: '#007AFF', flex: 1, marginLeft: 5 },
+                          e && m.IS_WEB && { opacity: 0.9 },
+                        ],
+                        onPress: () => {
+                          (区切りにチーム名を付ける(チーム名を付ける区切り, チーム名の下書き),
+                            setチーム名を付ける区切り(null));
+                        },
+                        children: (0, A.jsx)(a.default, {
+                          style: [W.modalBtnText, { color: '#FFF' }],
+                          children: '決定',
+                        }),
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+            ],
+          }),
+        }),
       ],
     });
   },
@@ -2443,6 +2563,18 @@ const k = () => {
       flexShrink: 0,
     },
     saveBtnText: { color: '#FFF', fontSize: 13, fontWeight: 'bold', textAlign: 'center' },
+    // 区切りに付けるチーム名の入力欄
+    チーム名の入力: {
+      borderWidth: 1,
+      borderColor: '#D1D1D6',
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontSize: 16,
+      color: '#000',
+      marginTop: 4,
+      marginBottom: 14,
+    },
     feedbackOverlay: {
       position: 'absolute',
       bottom: 100,
