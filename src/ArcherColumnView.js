@@ -28,6 +28,7 @@ var t = e(require('react')),
   読み = require('./a11yLabels'),
   h = require('@expo/vector-icons'),
   u = require('./formatMemberName'),
+  組 = require('./teamGrouping'),
   f = require('./themedJsx');
 const m = t.default.memo(
     ({
@@ -45,7 +46,18 @@ const m = t.default.memo(
       onDelete: S,
       onToggleMark: T,
       onToggleLock: I,
+      // 区切りを長押ししたとき（チーム名を付ける）
+      onLongPressSeparator: 区切りを長押し,
     }) => {
+      // この列がどのチームか。区切りに付けた名前から決まる（teamGrouping）。
+      // 立ち全体を見ないと決まらないので、allArchers から数える
+      const チーム = (() => {
+        const 一覧 = Array.isArray(m) ? m : [];
+        const 割り当て = 組.チームを割り当てる(一覧);
+        const 見つけた = 割り当て.find((x) => x && e && x.id === e.id);
+        return 見つけた || { チーム: null, 色: null };
+      })();
+      const 区切りの名 = 組.区切りのチーム名(e);
       // 鍵が効くかどうか。
       // toggleLock は押した列から右へ進み、間隔か計にぶつかったところで止める。
       // 右どなりが間隔・計だと一歩目で止まるので自分の列しか掴まず、射手は
@@ -464,30 +476,59 @@ const m = t.default.memo(
                 ? (0, f.jsx)(n.default, {
                     style: { alignItems: 'center', width: '100%', height: '100%', justifyContent: 'center' },
                     onPress: S,
+                    // 長押しでチーム名を付ける（リーグの大学名）。
+                    // 押す＝外す は今までどおりにして、覚え直さずに済むようにする
+                    onLongPress: 区切りを長押し,
+                    delayLongPress: 500,
                     disabled: k && !y,
                     accessible: !0,
                     accessibilityRole: 'button',
-                    accessibilityLabel: '区切りを外す',
+                    accessibilityLabel: 区切りの名
+                      ? `区切り ${区切りの名}。押すと外します。長押しでチーム名を変えられます`
+                      : '区切りを外す。長押しでチーム名を付けられます',
 
                     // react-native-web の TouchableOpacity は accessibilityLabel を通さない。
 
                     // 端末側は accessibilityLabel が要るので、両方渡す
 
-                    'aria-label': '区切りを外す',
-                    children: (0, f.jsx)(h.Ionicons, {
-                      name: 'close-circle',
-                      size: 24 * z,
-                      color: '#8E8E93',
-                    }),
+                    'aria-label': 区切りの名
+                      ? `区切り ${区切りの名}。押すと外します。長押しでチーム名を変えられます`
+                      : '区切りを外す。長押しでチーム名を付けられます',
+                    // 名前が付いていれば、その名前を縦に出す。付いていなければ今までの×印
+                    children: 区切りの名
+                      ? (0, f.jsx)(l.default, {
+                          style: {
+                            fontSize: 11 * z,
+                            fontWeight: '700',
+                            color: 組.チームの色(区切りの名) || '#8E8E93',
+                            textAlign: 'center',
+                          },
+                          numberOfLines: 3,
+                          children: 区切りの名,
+                        })
+                      : (0, f.jsx)(h.Ionicons, {
+                          name: 'close-circle',
+                          size: 24 * z,
+                          color: '#8E8E93',
+                        }),
                   })
                 : (0, f.jsxs)(n.default, {
-                    style: {
-                      alignItems: 'center',
-                      width: '100%',
-                      height: '100%',
-                      justifyContent: 'center',
-                      padding: 4,
-                    },
+                    style: [
+                      {
+                        alignItems: 'center',
+                        width: '100%',
+                        height: '100%',
+                        justifyContent: 'center',
+                        padding: 4,
+                      },
+                      // チームの色を、名前の欄の上に細い帯で出す。
+                      // 名前の字を染めると読みにくくなるので、帯にする
+                      チーム.色 && {
+                        borderTopWidth: 3 * z,
+                        borderTopColor: チーム.色,
+                        paddingTop: 4 - Math.min(3 * z, 4),
+                      },
+                    ],
                     onPress: x,
                     onLongPress: j,
                     delayLongPress: 500,
