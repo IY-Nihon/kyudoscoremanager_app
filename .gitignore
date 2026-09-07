@@ -70,3 +70,6 @@ dist3/
 # 手元に残しておくが、リポジトリには入れない
 orphan-deleted-*.json
 old-live-branches-*.json
+
+# Instagram の素材。アプリの中身ではないので版に載せない
+instagram_assets/
