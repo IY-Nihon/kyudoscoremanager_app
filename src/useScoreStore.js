@@ -374,6 +374,9 @@ const f = (e, s) => {
           isSeparator: !0 === e.isSeparator,
           isTotalCalculator: !0 === e.isTotalCalculator,
           isGuest: !0 === e.isGuest,
+          // 区切りに付けたチーム名（リーグの大学名）。ここに書かないと
+          // 読み直しや同期のたびに落ちて、色分けが消える
+          teamName: e.teamName || void 0,
           memberId: e.memberId || void 0,
           lockedBlocks: e.lockedBlocks || {},
           substitutions: e.substitutions || {},
@@ -396,6 +399,8 @@ const f = (e, s) => {
           isSeparator: e.isSeparator || !1,
           isTotalCalculator: e.isTotalCalculator || !1,
           isGuest: e.isGuest || !1,
+          // 区切りのチーム名。ライブでも相手に伝わるようにする
+          teamName: e.teamName || null,
           memberId: e.memberId || null,
           lockedBlocks: e.lockedBlocks || {},
           substitutions: e.substitutions || {},
@@ -1435,6 +1440,40 @@ const M = (0, s.create)()(
             }));
           const { isLiveActive: n, liveSessionName: c, shotsPerRound: d } = s();
           n && c && v(c, i, d);
+        },
+        /**
+         * 区切りにチーム名を付ける（リーグで大学名を出すため）。
+         *
+         * 区切りから右が、そのチームになる。次の区切りまで続く。
+         * 区切りを1つ置いて名前を入れるだけで複数人にまとめて付くので、
+         * 射手を一人ずつ設定しなくてよい。
+         * 空文字にすると名前が外れ、ただの間隔に戻る。
+         */
+        setSeparatorTeam: (区切りのid, 名前) => {
+          if (s().書き換えを止めるか()) return;
+          const 元 = Array.isArray(s().archers) ? s().archers : [];
+          const 整えた = String(名前 == null ? '' : 名前).trim().slice(0, 20);
+          let 触った = !1;
+          const 直した = 元.map((x) => {
+            if (!x || x.id !== 区切りのid || !x.isSeparator) return x;
+            触った = !0;
+            return Object.assign({}, x, {
+              teamName: 整えた,
+              // 名前が付いた区切りは、ただの隙間ではなく見出しになる。
+              // 画面はこの name を出すので、外したら元の '---' に戻す
+              name: 整えた || '---',
+              lastModified: Date.now(),
+            });
+          });
+          if (!触った) return;
+          e({
+            archers: 直した,
+            historyStack: [...s().historyStack, 元],
+            redoStack: [],
+            lastLocalChange: Date.now(),
+          });
+          const { isLiveActive: ライブ中, liveSessionName: 名, shotsPerRound: 射数 } = s();
+          ライブ中 && 名 && v(名, 直した, 射数);
         },
         addTotalCalculator: (t) => {
           if (s().書き換えを止めるか()) return;
