@@ -1506,6 +1506,23 @@ const M = (0, s.create)()(
          * 記録そのものは主催者の側で保存されるので、失われはしない
          */
         保存を止めるか: () => !!(s().isLiveActive && s().よその団体のライブ),
+        /**
+         * その人の弓具を扱ってよいか。見るのも直すのも、この一つで判定する。
+         *
+         * 団体アカウント … 全員ぶん
+         * 個人ログイン   … 自分のぶんだけ（他人の弓具は見せない）
+         *
+         * 画面側でも隠すが、隠すだけでは道が増えたときに漏れる。根元で止める
+         */
+        弓具を触れるか: (memberId, 黙って) => {
+          const { activeGroupId: 団体, activeRole: 役, myMemberId: 自分 } = s();
+          if (!団体) return !1;
+          if ('group' === 役) return !0;
+          if ('member' === 役 && 自分 && String(自分) === String(memberId)) return !0;
+          if (!黙って)
+            n.default.alert('権限エラー', '弓具を扱えるのは、団体アカウントか、本人だけです。');
+          return !1;
+        },
         // まとめて入った○×に「いま入れた」印を付ける。
         // 画像からの反映は toggleMark を通らないので印が付かず、
         // そのままだと「読み込み直したもの」と見なして初めから閉じてしまう。
@@ -2294,9 +2311,58 @@ const M = (0, s.create)()(
           }
           await s().syncMemberLookup();
         },
+        // 弓具の履歴を足す。
+        //
+        // ここが無いまま MemberScreen が addEquipment を取り出していたため、
+        // 「履歴を追加」を押しても何も起きなかった（消すほうだけ在った）。
+        // 消すほうと同じ形にそろえてある：手元を先に直し、送れたら印を下ろす。
+        addEquipment: (memberId, 中身) => {
+          if (!s().弓具を触れるか(memberId)) return;
+          const 今 = Date.now();
+          const 新しい記録 = {
+            id: (0, l.generateUUID)(),
+            date: Number(中身?.date) || 今,
+            note: (中身?.note || '').trim(),
+            weight: (中身?.weight || '').trim(),
+          };
+          const 直した = s().members.map((e) => {
+            if (e.id !== memberId) return e;
+            // 新しいものが上に来るように、日付の降順で並べておく。
+            // 画面側もそう並べて見せている
+            const 並び = [...(e.equipments || []), 新しい記録].sort((a, b) => b.date - a.date);
+            return Object.assign({}, e, {
+              equipments: 並び,
+              lastModified: 今,
+              syncStatus: '未同期',
+            });
+          });
+          e({ members: 直した, lastLocalChange: 今 });
+
+          const 本人 = 直した.find((e) => e.id === memberId);
+          if (本人 && s().activeGroupId) {
+            const 送る形 = Object.assign({}, 本人, {
+              lastModified: (0, a.serverTimestamp)(),
+              syncStatus: '同期済み',
+            });
+            (0, a.updateDoc)(
+              (0, a.doc)(fb.db, `groups/${s().activeGroupId}/members`, memberId),
+              送る形
+            )
+              .then(() => {
+                // 印を付けるのは送った版だけ（消すほうと同じ考え方）
+                e((e) => ({
+                  members: e.members.map((x) =>
+                    x && x.id === memberId && x.lastModified === 本人.lastModified
+                      ? Object.assign({}, x, { syncStatus: '同期済み' })
+                      : x
+                  ),
+                }));
+              })
+              .catch((err) => console.error('Add Equipment Sync Error:', err));
+          }
+        },
         deleteEquipment: (o, i) => {
-          if (!s().activeGroupId || 'group' !== s().activeRole)
-            return void n.default.alert('権限エラー', '道具管理は団体ログイン時のみ可能です。');
+          if (!s().弓具を触れるか(o)) return;
           const c = Date.now(),
             l = s().members.map((e) => {
               if (e.id === o) {

@@ -178,7 +178,10 @@ const COLOR_MAP_PROPS = { trackColor: 'bg' };
 
 const STORAGE_KEY = '@kyudo/themeMode';
 
-let mode = 'system'; // 'light' | 'dark' | 'system'
+// 既定は明るい配色。端末が暗い設定でも、初めて開いたときは明るいまま出す。
+// 記録表は白地に○×を並べる作りで、道場では明るいほうが読みやすい。
+// 暗くしたい人は、設定の「外観」で「ダーク」か「端末に合わせる」を選べる
+let mode = 'light'; // 'light' | 'dark' | 'system'
 let systemScheme = 'light';
 const listeners = new Set();
 
