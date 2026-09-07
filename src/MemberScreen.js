@@ -156,18 +156,22 @@ const C = () => {
           (0, y.jsxs)(n.default, {
             style: j.memberEqInfo,
             children: [
-              t?.weight
-                ? (0, y.jsx)(n.default, {
-                    style: j.listWeightBadge,
-                    children: (0, y.jsxs)(o.default, {
-                      style: j.listWeightText,
-                      children: [
-                        t.weight,
-                        (0, y.jsx)(o.default, { style: { fontSize: 10 }, children: 'kg' }),
-                      ],
-                    }),
-                  })
-                : (0, y.jsx)(o.default, { style: j.noEqText, children: '弓具未登録' }),
+              // 弓力は弓具の中身。個人ログインでは自分のぶんだけ見せる。
+              // 他人の行では「弓具未登録」も出さない（登録の有無も中身のうち）
+              'member' === E && e.id !== w
+                ? null
+                : t?.weight
+                  ? (0, y.jsx)(n.default, {
+                      style: j.listWeightBadge,
+                      children: (0, y.jsxs)(o.default, {
+                        style: j.listWeightText,
+                        children: [
+                          t.weight,
+                          (0, y.jsx)(o.default, { style: { fontSize: 10 }, children: 'kg' }),
+                        ],
+                      }),
+                    })
+                  : (0, y.jsx)(o.default, { style: j.noEqText, children: '弓具未登録' }),
               (0, y.jsx)(p.Ionicons, { name: 'chevron-forward', size: 16, color: '#C7C7CC' }),
             ],
           }),
@@ -434,7 +438,10 @@ const C = () => {
                     keyboardType: 'number-pad',
                     placeholderTextColor: '#C7C7CC',
                   }),
+                  // 弓具は、団体アカウントか本人だけ。個人ログインで他人の
+                  // 画面を開く道は塞いであるが、ここでも確かめる
                   q &&
+                    ('member' !== E || q.id === w) &&
                     (0, y.jsxs)(y.Fragment, {
                       children: [
                         (0, y.jsx)(o.default, { style: j.label, children: '弓具管理' }),
