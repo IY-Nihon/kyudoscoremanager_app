@@ -1578,6 +1578,9 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
       paddingVertical: 7,
       borderRadius: 16,
       backgroundColor: 'rgba(118,118,128,0.12)',
+      // 横に並べる器の中では、既定で縮む。月が増えると幅の取り合いになり、
+      // ボタンがつぶれて字が折り返す。縮ませずに、器のほうを横へ流す
+      flexShrink: 0,
     },
     monthTabActive: { backgroundColor: '#007AFF' },
     monthTabText: { fontSize: 15, color: '#000', fontWeight: '500' },
