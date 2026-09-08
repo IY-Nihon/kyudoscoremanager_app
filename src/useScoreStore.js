@@ -373,6 +373,9 @@ const f = (e, s) => {
           marks: f(e.marks, e.isSeparator ? 0 : s),
           isSeparator: !0 === e.isSeparator,
           isTotalCalculator: !0 === e.isTotalCalculator,
+          // 区切りをまたいで数える合計かどうか。写し忘れると、読み直した
+          // ときにふつうの「計」に戻り、複数立ちの合計が消える
+          またぐ合計: !0 === e.またぐ合計,
           isGuest: !0 === e.isGuest,
           // 区切りに付けたチーム名（リーグの大学名）。ここに書かないと
           // 読み直しや同期のたびに落ちて、色分けが消える
@@ -398,6 +401,8 @@ const f = (e, s) => {
           grade: e.grade || 0,
           isSeparator: e.isSeparator || !1,
           isTotalCalculator: e.isTotalCalculator || !1,
+          // 区切りをまたぐ合計かどうか。ライブでも相手に同じ数が出るようにする
+          またぐ合計: e.またぐ合計 || !1,
           isGuest: e.isGuest || !1,
           // 区切りのチーム名。ライブでも相手に伝わるようにする
           teamName: e.teamName || null,
@@ -1475,15 +1480,60 @@ const M = (0, s.create)()(
           const { isLiveActive: ライブ中, liveSessionName: 名, shotsPerRound: 射数 } = s();
           ライブ中 && 名 && v(名, 直した, 射数);
         },
-        addTotalCalculator: (t) => {
+        /**
+         * 合計の列が数える範囲を切り替える。
+         *
+         * 「計」（この立ちだけ・区切りで止まる）と
+         * 「総計」（区切りをまたいで端まで）を行き来する。
+         *
+         * ボタンを増やしたり長押しを覚えてもらう代わりに、入れた列を押して
+         * 切り替える。交代の内訳と合算を押して切り替えるのと同じ流儀
+         */
+        toggleTotalScope: (列のid) => {
+          if (s().書き換えを止めるか()) return;
+          const 元 = Array.isArray(s().archers) ? s().archers : [];
+          let 触った = !1;
+          const 直した = 元.map((x) => {
+            if (!x || x.id !== 列のid || !x.isTotalCalculator) return x;
+            触った = !0;
+            const 次 = !x.またぐ合計;
+            return Object.assign({}, x, {
+              またぐ合計: 次,
+              name: 次 ? '総計' : '計',
+              lastModified: Date.now(),
+            });
+          });
+          if (!触った) return;
+          e({
+            archers: 直した,
+            historyStack: [...s().historyStack, 元],
+            redoStack: [],
+            lastLocalChange: Date.now(),
+          });
+          const { isLiveActive: ライブ中, liveSessionName: 名, shotsPerRound: 射数 } = s();
+          ライブ中 && 名 && v(名, 直した, 射数);
+        },
+        /**
+         * 合計の列を足す。
+         *
+         * @param {number} [t] 差し込む場所。省くと末尾
+         * @param {boolean} [またぐ] 区切りをまたいで数えるか
+         *
+         * ふつうの「計」は隣から左へ数え、区切りに当たると止まる（1立ぶん）。
+         * またぐ合計は区切りで止まらず、端まで数える（複数立ちの合計）。
+         * 前の立ちと後ろの立ちを区切りで分けているとき、両方を足せる
+         */
+        addTotalCalculator: (t, またぐ) => {
           if (s().書き換えを止めるか()) return;
           const o = Array.isArray(s().archers) ? s().archers : [],
             a = {
               id: 'total-' + (0, l.generateUUID)(),
-              name: '計',
+              name: またぐ ? '総計' : '計',
               marks: Array(s().shotsPerRound || 8).fill(''),
               arrowLocations: Array(s().shotsPerRound || 8).fill(null),
               isTotalCalculator: !0,
+              // 区切りをまたいで数える印。ふつうの「計」と混ぜないよう別に持つ
+              またぐ合計: !!またぐ,
               gender: '未設定',
               grade: 0,
               isGuest: !1,
