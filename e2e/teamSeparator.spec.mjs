@@ -173,3 +173,54 @@ test('合計の列は、押すと窓が開き、そこで範囲を変えられ�
   ).toBeVisible({ timeout: 20000 });
   await expect(page.getByText('削除', { exact: true }), '消す道が無い').toBeVisible();
 });
+
+test('立ち順：窓から1つずつ動かせて、端では出ない', async ({ page }) => {
+  await 入る(page);
+  await 射手を立てる(page, 3);
+
+  /** 名前の欄を、画面の右から左の順で返す */
+  const 並び = async () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll('[data-testid^="名の欄-射手-"]')]
+        .map((el) => ({ 名: el.getAttribute('data-testid'), x: el.getBoundingClientRect().x }))
+        .sort((a, z) => z.x - a.x)
+        .map((v) => v.名)
+    );
+
+  const 前 = await 並び();
+  expect(前.length, '射手が3人立たない').toBe(3);
+
+  // いちばん右（大前）の欄を押す。右端なので「右へ動かす」は出ないはず
+  const 欄 = page.locator('[data-testid^="名の欄-射手-"]');
+  const 位置 = await 欄.evaluateAll((els) => els.map((e, i) => ({ i, x: e.getBoundingClientRect().x })));
+  const 右端 = 位置.sort((a, z) => z.x - a.x)[0].i;
+  await 欄.nth(右端).click();
+
+  const 左へ = page.getByText('左へ動かす', { exact: true });
+  await expect(左へ, '窓に「左へ動かす」が出ない').toBeVisible({ timeout: 20000 });
+  await expect(
+    page.getByText('右へ動かす', { exact: true }),
+    '右端なのに「右へ動かす」が出ている'
+  ).toHaveCount(0);
+
+  await 左へ.click();
+  await こうなるまで待つ(
+    async () => (await 並び())[0],
+    (先頭) => 先頭 !== 前[0],
+    20000
+  );
+  const 後 = await 並び();
+  expect(後[0], '押した列が1つ左へ動いていない').toBe(前[1]);
+  expect(後[1]).toBe(前[0]);
+  expect(後[2], '関係のない列まで動いている').toBe(前[2]);
+
+  // 窓は開いたままで、続けて押せる。左端まで来たら出なくなる
+  await page.getByText('左へ動かす', { exact: true }).click();
+  await こうなるまで待つ(
+    () => page.getByText('左へ動かす', { exact: true }).count(),
+    (n) => n === 0,
+    20000
+  );
+  const 端 = await 並び();
+  expect(端[2], '左端まで動いていない').toBe(前[0]);
+});
