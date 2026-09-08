@@ -708,6 +708,8 @@ const k = () => {
                       名の行のnode.current = node;
                     },
                     children: [
+                      // 運ぶ札。縦と同じものを、上下の座標に置き換えて出す
+                      運ぶ札(),
                       (0, A.jsx)(l.default, {
                         style: {
                           width: 名前の幅,
@@ -774,6 +776,80 @@ const k = () => {
           ),
         ];
       };
+    /**
+     * 運ぶ札。掴んだ列の名前が指に付いてくる。
+     *
+     * 表そのものは「離したらこうなる」並びで描いてあるので、
+     * 札＝いま持っているもの、表＝置いたあとの姿、になる。
+     * 縦は列が横に並ぶので左の座標に、横は上下に積むので上の座標に置く。
+     * 中身は同じなので、2か所に書き写さずここ1つにする。
+     */
+    const 運ぶ札 = () => {
+      if (!掴んだ列 || null === 指の横) return null;
+      const 持ち物 = 見えている並び.find((x) => x && x.id === 掴んだ列);
+      if (!持ち物) return null;
+      const 名 = 持ち物.isTotalCalculator
+        ? 持ち物.またぐ合計
+          ? '総計'
+          : '合計'
+        : 持ち物.isSeparator
+          ? 組.区切りのチーム名(持ち物) || '間隔'
+          : 持ち物.name
+            ? (0, v.formatMemberName)(持ち物.name, oe)
+            : '選択';
+      const 太さ =
+        (持ち物.isSeparator ? F.UIConfig.separatorWidth : F.UIConfig.cellWidth) * se;
+      // 縦は「幅＝列の太さ／高さ＝名前の欄の高さ」、横はその逆
+      const 置き方 = 横に並べる
+        ? {
+            left: 0,
+            top: 指の横 - 太さ / 2,
+            width: 名前の幅,
+            height: 太さ,
+          }
+        : {
+            left: 指の横 - 太さ / 2,
+            top: -6 * se,
+            width: 太さ,
+            height: F.UIConfig.footerHeight * se,
+          };
+      return (0, A.jsx)(
+        l.default,
+        {
+          pointerEvents: 'none',
+          style: {
+            position: 'absolute',
+            ...置き方,
+            backgroundColor: '#FFF',
+            borderWidth: 2,
+            borderColor: '#007AFF',
+            borderRadius: 6,
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 50,
+            // 影は直に書く。この部品の中では shadowStyle の読み込み名が
+            // 別の変数に隠れていて、呼ぶと落ちる（実際に落ちた）
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 3 },
+            shadowOpacity: 0.25,
+            shadowRadius: 6,
+            elevation: 8,
+          },
+          children: (0, A.jsx)(a.default, {
+            style: {
+              fontSize: 13 * se,
+              fontWeight: '700',
+              color: '#007AFF',
+              textAlign: 'center',
+            },
+            numberOfLines: 2,
+            children: 名,
+          }),
+        },
+        '運ぶ札'
+      );
+    };
+
     return (0, A.jsxs)(et, {
       style: W.safeArea,
       edges: ['top', 'left', 'right', 'bottom'],
@@ -1677,67 +1753,7 @@ const k = () => {
                           名の行のnode.current = node;
                         },
                         children: [
-                          // 運ぶ札。掴んだ列の名前が指に付いてくる。
-                          // 表そのものは「離したらこうなる」並びで描いてあるので、
-                          // 札＝いま持っているもの、表＝置いたあとの姿、になる
-                          掴んだ列 && null !== 指の横
-                            ? (() => {
-                                const 持ち物 = 見えている並び.find((x) => x && x.id === 掴んだ列);
-                                if (!持ち物) return null;
-                                const 幅 =
-                                  (持ち物.isSeparator
-                                    ? F.UIConfig.separatorWidth
-                                    : F.UIConfig.cellWidth) * se;
-                                const 名 = 持ち物.isTotalCalculator
-                                  ? 持ち物.またぐ合計
-                                    ? '総計'
-                                    : '合計'
-                                  : 持ち物.isSeparator
-                                    ? 組.区切りのチーム名(持ち物) || '間隔'
-                                    : 持ち物.name
-                                      ? (0, v.formatMemberName)(持ち物.name, oe)
-                                      : '選択';
-                                return (0, A.jsx)(
-                                  l.default,
-                                  {
-                                    pointerEvents: 'none',
-                                    style: {
-                                      position: 'absolute',
-                                      left: 指の横 - 幅 / 2,
-                                      top: -6 * se,
-                                      width: 幅,
-                                      height: F.UIConfig.footerHeight * se,
-                                      backgroundColor: '#FFF',
-                                      borderWidth: 2,
-                                      borderColor: '#007AFF',
-                                      borderRadius: 6,
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      zIndex: 50,
-                                      // 影は直に書く。この部品の中では
-                                      // shadowStyle の読み込み名が別の変数に隠れていて、
-                                      // 呼ぶと落ちる（実際に落ちた）
-                                      shadowColor: '#000',
-                                      shadowOffset: { width: 0, height: 3 },
-                                      shadowOpacity: 0.25,
-                                      shadowRadius: 6,
-                                      elevation: 8,
-                                    },
-                                    children: (0, A.jsx)(a.default, {
-                                      style: {
-                                        fontSize: 13 * se,
-                                        fontWeight: '700',
-                                        color: '#007AFF',
-                                        textAlign: 'center',
-                                      },
-                                      numberOfLines: 2,
-                                      children: 名,
-                                    }),
-                                  },
-                                  '運ぶ札'
-                                );
-                              })()
-                            : null,
+                          運ぶ札(),
                           ...見えている並び.map((e, t) => {
                             return (0, A.jsx)(
                               l.default,
