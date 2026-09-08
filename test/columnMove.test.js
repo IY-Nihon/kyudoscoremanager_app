@@ -3,8 +3,10 @@
  *
  *   npm test
  *
- * 記録表は右から左へ並ぶ（row-reverse）。画面の「右」は並びの手前、
- * 「左」は並びの奥。取り違えるとボタンと逆に動くので、向きをここで押さえる。
+ * store が受け取るのは「並びの向き」（前＝大前寄り／後＝落寄り）で、
+ * 画面の言葉（左・右・上・下）ではない。縦の表は右から左へ並び、横の表は
+ * 上から下へ積むので、同じ「後ろへ」が縦では左、横では下になる。
+ * 画面の言葉で受け取ると、並べ方を変えたとたんに字と動く向きが食い違う。
  *
  * ○×・矢所・鍵は列そのものが持っている。列ごと入れ替えれば付いていくはずで、
  * ここではその「付いていくこと」も見る。
@@ -49,28 +51,28 @@ const 射手 = (id, 名, 印) => ({
 
 const 並びの名 = (store) => store.getState().archers.map((x) => x.name).join(',');
 
-test('立ち順：画面の左へ動かすと、並びでは後ろへ行く', () => {
+test('立ち順：後ろへ動かすと、並びで1つ落寄りへ行く', () => {
   const store = 端末();
   store.setState({ archers: [射手('a', '大前'), 射手('b', '中'), 射手('c', '落')] });
-  store.getState().列を動かす('b', '左');
+  store.getState().列を動かす('b', '後');
   assert.equal(並びの名(store), '大前,落,中');
 });
 
-test('立ち順：画面の右へ動かすと、並びでは手前へ戻る', () => {
+test('立ち順：前へ動かすと、並びで1つ大前寄りへ戻る', () => {
   const store = 端末();
   store.setState({ archers: [射手('a', '大前'), 射手('b', '中'), 射手('c', '落')] });
-  store.getState().列を動かす('c', '右');
+  store.getState().列を動かす('c', '前');
   assert.equal(並びの名(store), '大前,落,中');
-  store.getState().列を動かす('c', '左');
+  store.getState().列を動かす('c', '後');
   assert.equal(並びの名(store), '大前,中,落', '戻せる');
 });
 
 test('立ち順：端では動かない', () => {
   const store = 端末();
   store.setState({ archers: [射手('a', '大前'), 射手('b', '落')] });
-  store.getState().列を動かす('a', '右'); // すでに右端
+  store.getState().列を動かす('a', '前'); // すでに先頭
   assert.equal(並びの名(store), '大前,落');
-  store.getState().列を動かす('b', '左'); // すでに左端
+  store.getState().列を動かす('b', '後'); // すでに末尾
   assert.equal(並びの名(store), '大前,落');
 });
 
@@ -79,7 +81,7 @@ test('立ち順：○×と矢所は列に付いていく', () => {
   const 中 = 射手('b', '中', ['○', '×', '○', '']);
   中.arrowLocations = [{ x: 0.1, y: 0.2 }, null, null, null];
   store.setState({ archers: [射手('a', '大前'), 中, 射手('c', '落')] });
-  store.getState().列を動かす('b', '左');
+  store.getState().列を動かす('b', '後');
   const 動いた = store.getState().archers.find((x) => x.id === 'b');
   assert.deepEqual(動いた.marks, ['○', '×', '○', '']);
   assert.deepEqual(動いた.arrowLocations[0], { x: 0.1, y: 0.2 });
@@ -90,14 +92,14 @@ test('立ち順：区切りや合計とも入れ替わる', () => {
   const store = 端末();
   const 区切り = Object.assign(射手('s', '---'), { isSeparator: !0 });
   store.setState({ archers: [射手('a', '大前'), 区切り, 射手('c', '落')] });
-  store.getState().列を動かす('c', '右');
+  store.getState().列を動かす('c', '前');
   assert.equal(並びの名(store), '大前,落,---', '区切りをまたいで入れ替わる');
 });
 
 test('立ち順：取り消しで元に戻せる', () => {
   const store = 端末();
   store.setState({ archers: [射手('a', '大前'), 射手('b', '中'), 射手('c', '落')] });
-  store.getState().列を動かす('b', '左');
+  store.getState().列を動かす('b', '後');
   assert.equal(並びの名(store), '大前,落,中');
   assert.equal(store.getState().historyStack.length, 1, '取り消しの控えが積まれる');
   store.getState().undo();
@@ -112,7 +114,7 @@ test('立ち順：閲覧用では動かせない', () => {
     isHost: !1,
     ライブは見るだけ: !0,
   });
-  store.getState().列を動かす('a', '左');
+  store.getState().列を動かす('a', '後');
   assert.equal(並びの名(store), '大前,落', '閲覧用は書き換えない');
 });
 

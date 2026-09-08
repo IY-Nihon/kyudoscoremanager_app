@@ -231,3 +231,60 @@ test('立ち順：窓から1つずつ動かせて、端では出ない', async (
   const 端 = await 並び();
   expect(端[2], '左端まで動いていない').toBe(前[0]);
 });
+
+test('立ち順：横に並べたときは「上へ／下へ」になる', async ({ page }) => {
+  // 縦の表は右から左、横の表は上から下。同じ「並びの後ろへ」が縦では左、
+  // 横では下になる。字と動く向きが食い違わないことを見る
+  await 入る(page);
+  await 射手を立てる(page, 3);
+
+  await page.getByTestId('並べ方').click();
+  await こうなるまで待つ(
+    () => page.getByText('縦へ', { exact: true }).count(),
+    (n) => n > 0,
+    20000
+  );
+
+  /** 名前の欄を、画面の上から下の順で返す（横のときの並び） */
+  const 縦の並び = async () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll('[data-testid^="名の欄-射手-"]')]
+        .map((el) => ({ 名: el.getAttribute('data-testid'), y: el.getBoundingClientRect().y }))
+        .sort((a, z) => a.y - z.y)
+        .map((v) => v.名)
+    );
+
+  // 横のときの名前の欄は、記録画面の別の作りなので目印が付いていない。
+  // 窓は射手の欄から開く（画面のいちばん上の人＝並びの先頭）
+  const 欄 = page.locator('[data-testid^="名の欄-射手-"]');
+  if ((await 欄.count()) === 0) {
+    // 横では目印付きの欄が無い作りなので、ここでは字だけを見る
+    await page.getByText('選択', { exact: true }).first().click();
+    await expect(
+      page.getByText('下へ動かす', { exact: true }),
+      '横に並べているのに「下へ動かす」が出ない'
+    ).toBeVisible({ timeout: 20000 });
+    await expect(
+      page.getByText('左へ動かす', { exact: true }),
+      '横に並べているのに「左へ動かす」が出ている（縦の言い方）'
+    ).toHaveCount(0);
+    return;
+  }
+
+  const 前 = await 縦の並び();
+  await 欄.first().click();
+  const 下へ = page.getByText('下へ動かす', { exact: true });
+  await expect(下へ, '横なのに「下へ動かす」が出ない').toBeVisible({ timeout: 20000 });
+  await expect(
+    page.getByText('左へ動かす', { exact: true }),
+    '横なのに縦の言い方が残っている'
+  ).toHaveCount(0);
+  await 下へ.click();
+  await こうなるまで待つ(
+    async () => (await 縦の並び())[0],
+    (先頭) => 先頭 !== 前[0],
+    20000
+  );
+  const 後 = await 縦の並び();
+  expect(後[1], '「下へ」で1つ下がっていない').toBe(前[0]);
+});

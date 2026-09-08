@@ -40,11 +40,13 @@ const j = ({
   // 窓からも入れるようにした
   onチーム名,
   いまのチーム名: いまのチーム名 = '',
-  // 立ち順の入れ替え。画面で見た向き（'左' / '右'）で受け渡す。
-  // 端の列は動かせないので、出すかどうかは呼ぶ側が決める
+  // 立ち順の入れ替え。store へは並びの向き（'前' / '後'）で渡す。
+  // 字と矢印は並べ方しだい（縦なら右／左、横なら上／下）なので、
+  // どちらに並べているかを受け取って出し分ける
   on動かす,
-  左へ動かせる: 左へ動かせる = !1,
-  右へ動かせる: 右へ動かせる = !1,
+  横に並べている: 横に並べている = !1,
+  手前へ動かせる: 手前へ動かせる = !1,
+  奥へ動かせる: 奥へ動かせる = !1,
   onClose: C,
   onSubstitution: I,
   onSetMember: S,
@@ -369,40 +371,49 @@ const j = ({
                 // 脇の窓は狭いので、2つ並べずに他の項目と同じ全幅の行にする。
                 // 横に並べたら「右へ動か／す」と折り返し、字を詰めたら消えた
                 on動かす &&
-                  右へ動かせる &&
+                  手前へ動かせる &&
                   (0, F.jsxs)(g.default, {
                     style: ({ pressed: e, hovered: t }) => [
                       y.menuItem,
                       t && { backgroundColor: '#F2F7FF' },
                       e && { opacity: 0.7 },
                     ],
-                    onPress: () => on動かす('右'),
+                    onPress: () => on動かす('前'),
                     accessibilityLabel: '立ち順で1つ前へ動かす',
                     children: [
                       (0, F.jsx)(l.default, {
                         style: [y.menuText, { color: '#007AFF' }],
-                        children: '右へ動かす',
+                        children: 横に並べている ? '上へ動かす' : '右へ動かす',
                       }),
-                      // 矢印は動く向きに合わせる。右へ動かすなら右向き
-                      (0, F.jsx)(x.Ionicons, { name: 'arrow-forward', size: 20, color: '#007AFF' }),
+                      // 矢印は動く向きに合わせる。縦の表は右から左へ並ぶので
+                      // 「前へ」は右向き、横の表では上向きになる
+                      (0, F.jsx)(x.Ionicons, {
+                        name: 横に並べている ? 'arrow-up' : 'arrow-forward',
+                        size: 20,
+                        color: '#007AFF',
+                      }),
                     ],
                   }),
                 on動かす &&
-                  左へ動かせる &&
+                  奥へ動かせる &&
                   (0, F.jsxs)(g.default, {
                     style: ({ pressed: e, hovered: t }) => [
                       y.menuItem,
                       t && { backgroundColor: '#F2F7FF' },
                       e && { opacity: 0.7 },
                     ],
-                    onPress: () => on動かす('左'),
+                    onPress: () => on動かす('後'),
                     accessibilityLabel: '立ち順で1つ後ろへ動かす',
                     children: [
                       (0, F.jsx)(l.default, {
                         style: [y.menuText, { color: '#007AFF' }],
-                        children: '左へ動かす',
+                        children: 横に並べている ? '下へ動かす' : '左へ動かす',
                       }),
-                      (0, F.jsx)(x.Ionicons, { name: 'arrow-back', size: 20, color: '#007AFF' }),
+                      (0, F.jsx)(x.Ionicons, {
+                        name: 横に並べている ? 'arrow-down' : 'arrow-back',
+                        size: 20,
+                        color: '#007AFF',
+                      }),
                     ],
                   }),
               (0, F.jsx)(n.default, { style: y.dividerFull }),

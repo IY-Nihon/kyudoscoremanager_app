@@ -2069,22 +2069,31 @@ const k = () => {
             (setチーム名の下書き((列 && 列.teamName) || ''), setチーム名を付ける区切り(ue));
             ce(!1);
           },
-          // 立ち順の入れ替え。画面で見た向きのまま渡す（並びの向きへの
-          // 読み替えは store の 列を動かす が引き受ける）。
-          // 端の列では、その向きのボタンを出さない
-          左へ動かせる: (() => {
-            const 並び = Array.isArray(k) ? k : [];
-            const i = 並び.findIndex((e) => e && e.id === ue);
-            return i >= 0 && i < 並び.length - 1;
+          // 立ち順の入れ替え。store には並びの向き（前・後）で渡す。
+          // 字をどう出すかは並べ方しだいなので、それは窓へ伝える
+          //（縦は右／左、横は上／下）。端の列では、その向きを出さない
+          横に並べている: !!横に並べる,
+          手前へ動かせる: (() => {
+            const 並び = (Array.isArray(k) ? k : []).filter((e) => !!e);
+            return 並び.findIndex((e) => e.id === ue) > 0;
           })(),
-          右へ動かせる: (() => {
-            const 並び = Array.isArray(k) ? k : [];
-            return (Array.isArray(k) ? k : []).findIndex((e) => e && e.id === ue) > 0 && 並び.length > 1;
+          奥へ動かせる: (() => {
+            const 並び = (Array.isArray(k) ? k : []).filter((e) => !!e);
+            const i = 並び.findIndex((e) => e.id === ue);
+            return i >= 0 && i < 並び.length - 1;
           })(),
           on動かす: (向き) => {
             if ($e) return void 閲覧中に押された();
             列を動かす(ue, 向き);
-            Ge('右' === 向き ? '右へ動かしました' : '左へ動かしました');
+            Ge(
+              '前' === 向き
+                ? 横に並べる
+                  ? '上へ動かしました'
+                  : '右へ動かしました'
+                : 横に並べる
+                  ? '下へ動かしました'
+                  : '左へ動かしました'
+            );
           },
           onClose: () => ce(!1),
           onSubstitution: () => be(!0),
