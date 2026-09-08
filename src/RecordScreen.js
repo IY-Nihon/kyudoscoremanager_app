@@ -87,6 +87,7 @@ const k = () => {
         addSeparator: P,
         setSeparatorTeam: 区切りにチーム名を付ける,
         toggleTotalScope: 合計の範囲を切り替える,
+        列を動かす,
         addTotalCalculator: L,
         undo: D,
         redo: H,
@@ -1471,7 +1472,9 @@ const k = () => {
                                         height: '100%',
                                         justifyContent: 'center',
                                       },
-                                      testID: '名の欄-区切り-' + t,
+                                      // 位置ではなく列のIDで名づける。並べ替えても
+                                      // 同じ列を追える（ます-<射手ID>-<射番> と同じ流儀）
+                                      testID: '名の欄-区切り-' + e.id,
                                       onPress: () => M(e.id),
                                       // 長押しでチーム名を付ける（リーグの大学名）。
                                       // 押す＝外す は今までどおりにしておく
@@ -1522,7 +1525,7 @@ const k = () => {
                                       // ここで範囲の切り替えだけを行うと、
                                       // 窓が開かなくなって消せなくなる（実際そうなった）
                                       testID:
-                                        '名の欄-' + (e.isTotalCalculator ? '合計' : '射手') + '-' + t,
+                                        '名の欄-' + (e.isTotalCalculator ? '合計' : '射手') + '-' + e.id,
                                       onPress: () => qe(e.id, e.name, t),
                                       children: [
                                         (0, A.jsx)(a.default, {
@@ -1808,6 +1811,23 @@ const k = () => {
             合計の範囲を切り替える(ue);
             Ge(列?.またぐ合計 ? 'この立ちだけの合計にしました' : '区切りをまたぐ総計にしました');
             ce(!1);
+          },
+          // 立ち順の入れ替え。画面で見た向きのまま渡す（並びの向きへの
+          // 読み替えは store の 列を動かす が引き受ける）。
+          // 端の列では、その向きのボタンを出さない
+          左へ動かせる: (() => {
+            const 並び = Array.isArray(k) ? k : [];
+            const i = 並び.findIndex((e) => e && e.id === ue);
+            return i >= 0 && i < 並び.length - 1;
+          })(),
+          右へ動かせる: (() => {
+            const 並び = Array.isArray(k) ? k : [];
+            return (Array.isArray(k) ? k : []).findIndex((e) => e && e.id === ue) > 0 && 並び.length > 1;
+          })(),
+          on動かす: (向き) => {
+            if ($e) return void 閲覧中に押された();
+            列を動かす(ue, 向き);
+            Ge('右' === 向き ? '右へ動かしました' : '左へ動かしました');
           },
           onClose: () => ce(!1),
           onSubstitution: () => be(!0),
