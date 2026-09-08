@@ -118,6 +118,109 @@ const T = () => {
   const [規約に同意, 規約に同意を置く] = (0, t.useState)(false);
   const [部員の同意を取る, 部員の同意を取るを置く] = (0, t.useState)(false);
 
+  /**
+   * 認証が済んだあと、団体の帳面を作る。
+   *
+   * メールとパスワードで作る道と、Google で作る道の両方から呼ぶ。
+   * 団体IDの採番・公開の帳面・同意の記録・案内の出し方を1か所にまとめ、
+   * 片方だけ直して食い違うことがないようにする。
+   */
+  const 団体を作る = async (メール) => {
+    const 団体ID = Math.floor(1e5 + 9e5 * Math.random()).toString();
+    const 帳面 = (0, j.doc)(b.db, 'group_accounts', 団体ID);
+    // 同じ番号が当たったら振り直す
+    if ((await (0, j.getDoc)(帳面)).exists()) return 団体を作る(メール);
+    try {
+      // 公開の帳面には、ログインに要る2つだけ置く
+      await (0, j.setDoc)(帳面, { id: 団体ID, email: メール });
+      // 同意の記録は private（誰でも読める場所に置かない）
+      await (0, j.setDoc)(
+        (0, j.doc)(b.db, 'group_accounts', 団体ID, 'private', 'consent'),
+        Object.assign({ name: O, createdAt: Date.now() }, require('./legalDocs').同意の記録())
+      );
+    } catch (書けなかった) {
+      // 認証の利用者だけが残ると、同じアドレスで作り直せなくなる
+      try {
+        if (b.auth && b.auth.currentUser) await (0, C.deleteUser)(b.auth.currentUser);
+      } catch (消せなかった) {
+        /* 消せなくても、元の失敗をそのまま伝える */
+      }
+      throw 書けなかった;
+    }
+    s.default.alert(
+      '【重要】登録完了と運用ガイド',
+      `団体アカウントを作成しました。\n\n■ 登録情報\n団体ID: ${団体ID}\n\n【運用ガイド - スクリーンショット推奨】\n・「団体ID」はメンバーがログインする際、必要です。メンバー全員に共有してください。\n・「パスワード」は管理者のみが知るものとして保存してください。\n・メールアドレスを変更すると、セキュリティのため旧アドレスに確認・無効化のメールが自動送信されます。\n\n※ この運用ガイドの内容は忘れないよう必ず保存をお願いします。`
+    );
+    k(団体ID);
+    F('login_group');
+  };
+
+  /**
+   * Google で団体アカウントを作る。
+   *
+   * 作るときだけ Google を使う。作ったあとは今までどおり、団体IDと
+   * パスワードで部員全員が入る——この共有の仕組みは変えない。
+   * Google は個人に紐づくので、共有の入口にすると誰の端末でも入れなくなる。
+   *
+   * パスワードは画面で入れてもらう。Google だけで作ると、部員へ配る
+   * パスワードが存在しなくなってしまうため。
+   */
+  const Googleで作る = async () => {
+    if (!規約に同意 || !部員の同意を取る) {
+      s.default.alert(
+        '確認',
+        '利用規約とプライバシーポリシーの同意、および部員本人の同意についての確認にチェックを入れてください。'
+      );
+      return;
+    }
+    if (!O) {
+      s.default.alert('エラー', '団体名を入れてください');
+      return;
+    }
+    if (!L) {
+      s.default.alert(
+        'エラー',
+        'パスワードを入れてください。部員はこのパスワードで入るので、Google で作る場合も必要です。'
+      );
+      return;
+    }
+    v(true);
+    try {
+      const 提供元 = new C.GoogleAuthProvider();
+      const 結果 = await (0, C.signInWithPopup)(b.auth, 提供元);
+      const メール = 結果?.user?.email;
+      if (!メール) throw new Error('Google からメールアドレスを受け取れませんでした');
+
+      // 同じメールでもう団体を持っていないか。持っていれば作らずに知らせる
+      const 既に = await (0, j.getDocs)(
+        (0, j.query)(
+          (0, j.collection)(b.db, 'group_accounts'),
+          (0, j.where)('email', '==', メール)
+        )
+      ).catch(() => null);
+      if (既に && !既に.empty) {
+        s.default.alert(
+          'すでにあります',
+          `このメールアドレス（${メール}）では、もう団体が作られています。ログインからお入りください。`
+        );
+        return;
+      }
+
+      // Google で入った人にも、部員へ配るパスワードを持たせる
+      await (0, C.updatePassword)(結果.user, L).catch(() => {
+        // 直後なので普通は通る。通らなくても団体は作れるので止めない
+      });
+      await 団体を作る(メール);
+    } catch (e) {
+      // 利用者が窓を閉じただけのときは、失敗として騒がない
+      const 符号 = e && e.code ? String(e.code) : '';
+      if (符号.includes('popup-closed') || 符号.includes('cancelled')) return;
+      s.default.alert('登録失敗', Q(e));
+    } finally {
+      v(false);
+    }
+  };
+
   const $ = async () => {
     if (P && L && O) {
       if (!規約に同意 || !部員の同意を取る) {
@@ -126,46 +229,10 @@ const T = () => {
       }
       v(true);
       try {
-        const e = Math.floor(1e5 + 9e5 * Math.random()).toString();
-        const t = (0, j.doc)(b.db, 'group_accounts', e);
-        if ((await (0, j.getDoc)(t)).exists()) {
-          v(false);
-          return $();
-        }
         await (0, C.createUserWithEmailAndPassword)(b.auth, P, L);
-        try {
-          // 公開の文書には、ログインに要る2つだけ置く。
-          // 団体名・登録日・同意の記録を一緒に置くと、6桁の団体IDを順に
-          // 試すだけで「学校名とその担当者のメールアドレス」が組で取れる
-          await (0, j.setDoc)(t, { id: e, email: P });
-          // どの版にいつ同意したかを残す。版を上げたときに、誰へ
-          // 取り直しを求めるべきかが分からなくなるため。
-          // 置き場所は private（その団体のメールアドレスで入っている本人だけ）
-          await (0, j.setDoc)(
-            (0, j.doc)(b.db, 'group_accounts', e, 'private', 'consent'),
-            Object.assign(
-              { name: O, createdAt: Date.now() },
-              require('./legalDocs').同意の記録()
-            )
-          );
-        } catch (書けなかった) {
-          // ここで諦めると、認証の利用者だけが残る。メールアドレスが取られた
-          // ままになり、同じアドレスでは作り直せない（auth/email-already-in-use）。
-          // 作ったばかりの利用者を消してから返す。
-          // 実際、決まりの項目が足りずにここで弾かれる状態が続いていた
-          try {
-            if (b.auth && b.auth.currentUser) await (0, C.deleteUser)(b.auth.currentUser);
-          } catch (消せなかった) {
-            /* 消せなくても、元の失敗をそのまま伝える */
-          }
-          throw 書けなかった;
-        }
-        s.default.alert(
-          '【重要】登録完了と運用ガイド',
-          `団体アカウントを作成しました。\n\n■ 登録情報\n団体ID: ${e}\n\n【運用ガイド - スクリーンショット推奨】\n・「団体ID」はメンバーがログインする際、必要です。メンバー全員に共有してください。\n・「パスワード」は管理者のみが知るものとして保存してください。\n・メールアドレスを変更すると、セキュリティのため旧アドレスに確認・無効化のメールが自動送信されます。\n\n※ この運用ガイドの内容は忘れないよう必ず保存をお願いします。`
-        );
-        k(e);
-        F('login_group');
+        // 団体の帳面を作るところは、Google で作る道と同じ処理を使う。
+        // 別々に書くと、片方だけ直して食い違う（実際それで本番が止まった）
+        await 団体を作る(P);
       } catch (e) {
         s.default.alert('登録失敗', Q(e));
       } finally {
@@ -842,6 +909,40 @@ const T = () => {
                             children: 'register' === T ? 'アカウント作成' : 'ログイン',
                           }),
                     }),
+                    // Google で作る道。作るときだけ使う。
+                    // 作ったあとは今までどおり、団体IDとパスワードで全員が入る
+                    'register' === T &&
+                      (0, E.jsxs)(u.default, {
+                        children: [
+                          (0, E.jsxs)(u.default, {
+                            style: S.区切りの行,
+                            children: [
+                              (0, E.jsx)(u.default, { style: S.区切りの線 }),
+                              (0, E.jsx)(h.default, { style: S.区切りの字, children: 'または' }),
+                              (0, E.jsx)(u.default, { style: S.区切りの線 }),
+                            ],
+                          }),
+                          (0, E.jsxs)(c.default, {
+                            style: S.Googleのボタン,
+                            onPress: Googleで作る,
+                            disabled: _,
+                            accessibilityRole: 'button',
+                            accessibilityLabel: 'Google で団体アカウントを作る',
+                            children: [
+                              (0, E.jsx)(h.default, { style: S.Googleの印, children: 'G' }),
+                              (0, E.jsx)(h.default, {
+                                style: S.Googleの字,
+                                children: 'Google で作る',
+                              }),
+                            ],
+                          }),
+                          (0, E.jsx)(h.default, {
+                            style: S.Googleの添え,
+                            children:
+                              'メールアドレスの入力を省けます。パスワードは部員が入るときに使うので、上の欄に入れてください。',
+                          }),
+                        ],
+                      }),
                     'login_group' === T &&
                       (0, E.jsxs)(u.default, {
                         style: S.helpLinks,
@@ -1090,6 +1191,30 @@ var S = p.default.create({
     color: '#030508',
     fontSize: 17,
     fontWeight: 'bold',
+  },
+  // Google で作る道。作るときだけ使う
+  区切りの行: { flexDirection: 'row', alignItems: 'center', marginTop: 18, marginBottom: 12 },
+  区切りの線: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.18)' },
+  区切りの字: { color: 'rgba(255,255,255,0.6)', fontSize: 12, marginHorizontal: 10 },
+  Googleのボタン: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    paddingVertical: 13,
+    gap: 10,
+  },
+  // Google の頭文字。青で置いて、それと分かるようにする。
+  // 本家の #4285F4 は白地で比 3.56 しかなく薄い。濃いほうの青にして
+  // 読めるようにした（検査 loginTheme が見ている）
+  Googleの印: { fontSize: 18, fontWeight: 'bold', color: '#1A5FCC' },
+  Googleの字: { fontSize: 16, fontWeight: '600', color: '#1F1F1F' },
+  Googleの添え: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 11,
+    marginTop: 8,
+    lineHeight: 16,
   },
   footer: {
     alignItems: 'center',
