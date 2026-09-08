@@ -86,6 +86,7 @@ const k = () => {
         addArcher: R,
         addSeparator: P,
         setSeparatorTeam: 区切りにチーム名を付ける,
+        toggleTotalScope: 合計の範囲を切り替える,
         addTotalCalculator: L,
         undo: D,
         redo: H,
@@ -406,8 +407,12 @@ const k = () => {
                     (0, A.jsx)(a.default, {
                       style: [W.footerName, { color: 射手.name ? '#000' : '#8E8E93', fontSize: 13 * se }],
                       numberOfLines: 1,
+                      // 区切りをまたぐ合計は「総計」。ふつうの「計」と
+                      // 見分けが付かないと、どこまでの合計か分からない
                       children: 射手.isTotalCalculator
-                        ? '合計'
+                        ? 射手.またぐ合計
+                          ? '総計'
+                          : '合計'
                         : 射手.name
                           ? (0, v.formatMemberName)(射手.name, oe)
                           : '選択',
@@ -1511,7 +1516,25 @@ const k = () => {
                                           return 色 ? { borderTopWidth: 3 * se, borderTopColor: 色 } : null;
                                         })(),
                                       ],
-                                      onPress: () => qe(e.id, e.name, t),
+                                      // 合計の列は、押すと数える範囲が変わる
+                                      // （この立ちだけ ⇔ 区切りをまたぐ総計）。
+                                      // 射手の列は今までどおり名前を選ぶ
+                                      onPress: () => {
+                                        if (e.isTotalCalculator) {
+                                          if ($e) return void 閲覧中に押された();
+                                          合計の範囲を切り替える(e.id);
+                                          Ge(
+                                            e.またぐ合計
+                                              ? 'この立ちだけの合計にしました'
+                                              : '区切りをまたぐ総計にしました'
+                                          );
+                                          return;
+                                        }
+                                        qe(e.id, e.name, t);
+                                      },
+                                      accessibilityHint: e.isTotalCalculator
+                                        ? '押すと、数える範囲を切り替えます'
+                                        : void 0,
                                       children: [
                                         (0, A.jsx)(a.default, {
                                           style: [
@@ -1519,8 +1542,12 @@ const k = () => {
                                             { color: e.name ? '#000' : '#8E8E93', fontSize: 14 * se },
                                           ],
                                           numberOfLines: 2,
+                                          // 区切りをまたぐ合計は「総計」。
+                                          // どちらを見ているか、見出しで分かるようにする
                                           children: e.isTotalCalculator
-                                            ? '合計'
+                                            ? e.またぐ合計
+                                              ? '総計'
+                                              : '合計'
                                             : e.name
                                               ? ((o = e.name), (0, v.formatMemberName)(o, oe))
                                               : '選択',
@@ -1714,6 +1741,9 @@ const k = () => {
                       if ($e) return void 閲覧中に押された();
                       (j.impactAsync(j.ImpactFeedbackStyle.Light), L());
                     },
+                    // 入れたあと、その列を押すと「この立ちだけ」と
+                    // 「区切りをまたぐ総計」を切り替えられる
+                    accessibilityHint: '合計の列を足します。入れたあと列を押すと、数える範囲を変えられます',
                     children: [
                       (0, A.jsx)(a.default, {
                         style: { fontSize: 22, fontWeight: 'bold', color: '#34C759' },
