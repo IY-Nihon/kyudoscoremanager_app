@@ -1516,25 +1516,11 @@ const k = () => {
                                           return 色 ? { borderTopWidth: 3 * se, borderTopColor: 色 } : null;
                                         })(),
                                       ],
-                                      // 合計の列は、押すと数える範囲が変わる
-                                      // （この立ちだけ ⇔ 区切りをまたぐ総計）。
-                                      // 射手の列は今までどおり名前を選ぶ
-                                      onPress: () => {
-                                        if (e.isTotalCalculator) {
-                                          if ($e) return void 閲覧中に押された();
-                                          合計の範囲を切り替える(e.id);
-                                          Ge(
-                                            e.またぐ合計
-                                              ? 'この立ちだけの合計にしました'
-                                              : '区切りをまたぐ総計にしました'
-                                          );
-                                          return;
-                                        }
-                                        qe(e.id, e.name, t);
-                                      },
-                                      accessibilityHint: e.isTotalCalculator
-                                        ? '押すと、数える範囲を切り替えます'
-                                        : void 0,
+                                      // 押すと窓が開く。合計の列なら、そこで
+                                      // 数える範囲を変えたり消したりできる。
+                                      // ここで範囲の切り替えだけを行うと、
+                                      // 窓が開かなくなって消せなくなる（実際そうなった）
+                                      onPress: () => qe(e.id, e.name, t),
                                       children: [
                                         (0, A.jsx)(a.default, {
                                           style: [
@@ -1811,6 +1797,15 @@ const k = () => {
           isSeparator: (Array.isArray(k) ? k : []).find((e) => e && e.id === ue)?.isSeparator || !1,
           isTotalCalculator:
             (Array.isArray(k) ? k : []).find((e) => e && e.id === ue)?.isTotalCalculator || !1,
+          // 合計の列が、いま区切りをまたいで数えているか。窓の中で切り替える
+          またぐ合計: (Array.isArray(k) ? k : []).find((e) => e && e.id === ue)?.またぐ合計 || !1,
+          on合計の範囲: () => {
+            if ($e) return void 閲覧中に押された();
+            const 列 = (Array.isArray(k) ? k : []).find((e) => e && e.id === ue);
+            合計の範囲を切り替える(ue);
+            Ge(列?.またぐ合計 ? 'この立ちだけの合計にしました' : '区切りをまたぐ総計にしました');
+            ce(!1);
+          },
           onClose: () => ce(!1),
           onSubstitution: () => be(!0),
         }),
@@ -2257,7 +2252,8 @@ const k = () => {
           onSave: () => {},
         }),
         // 区切りにチーム名を付ける窓。リーグで大学名を出すため。
-        // 区切りから右がそのチームになるので、1回入れれば複数人に付く
+        // 区切りより左（並びでは後ろ）がそのチームになるので、
+        // 1回入れれば複数人に付く
         (0, A.jsx)(d.default, {
           visible: !!チーム名を付ける区切り,
           transparent: !0,
@@ -2278,7 +2274,10 @@ const k = () => {
                   (0, A.jsx)(a.default, {
                     style: W.modalMessage,
                     children:
-                      'この区切りから右の射手が、そのチームになります。大学名などを入れてください。空にすると、ただの間隔に戻ります。',
+                      // 記録表は右から左へ並ぶ（row-reverse）。並びで「後ろ」の
+                      // 射手は、画面では区切りの左に出る。「右」と書いていたころは
+                      // 案内と逆の側に色が付いて見えた
+                      'この区切りより左の射手が、そのチームになります。大学名などを入れてください。空にすると、ただの間隔に戻ります。',
                   }),
                   (0, A.jsx)(c.default, {
                     style: W.チーム名の入力,

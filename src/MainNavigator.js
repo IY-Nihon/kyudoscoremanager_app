@@ -243,7 +243,11 @@ const k = () => {
           (0, T.jsx)(C.Screen, { name: '記録', component: RecordScreenComp }),
           !来客 && (0, T.jsx)(C.Screen, { name: '履歴', component: HistoryScreenComp }),
           !来客 && (0, T.jsx)(C.Screen, { name: '分析', component: AnalysisScreenComp }),
-          !来客 && 'group' === n && (0, T.jsx)(C.Screen, { name: 'メンバー', component: MemberScreenComp }),
+          // 個人ログインでも出す。自分の弓具を登録・編集するための入口で、
+          // ここが無いと画面まで辿り着けない（権限だけ許しても届かなかった）。
+          // 一覧で他人を開こうとすると MemberScreen 側が断り、弓具の欄も
+          // 自分のぶんしか出さない
+          !来客 && (0, T.jsx)(C.Screen, { name: 'メンバー', component: MemberScreenComp }),
           !来客 && 'group' === n && (0, T.jsx)(C.Screen, { name: '出欠', component: AttendanceScreenComp }),
           !来客 && (0, T.jsx)(C.Screen, { name: '設定', component: SettingsScreenComp }),
         ],
