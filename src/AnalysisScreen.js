@@ -95,12 +95,16 @@ function 弓具の案内() {
  *
  * 数える決まりは statsRules（型を並べる）に置いてある。ここは並べるだけ。
  * 個人の詳細と、部員として入ったときの自分の画面の2か所から呼ぶ。
- * 比較中には出さない——16通りを人数ぶん並べても読めない。
+ *
+ * 比較中は人数ぶん並べる。誰の型かが分かるよう、名前の見出しを付ける
+ * （もとは「16通りを人数ぶん並べても読めない」として出していなかったが、
+ *  本人の分だけが残るので、かえって紛らわしかった）。
  *
  * @param {any} 成績 statsRules.成績を数える の返り
  * @param {string|null} 期間の名 推移の点を押しているときの期間（見出しに出す）
+ * @param {string|null} 誰の 比較中に出す名前の見出し。単体で見るときは渡さない
  */
-function 型の節(成績, 期間の名) {
+function 型の節(成績, 期間の名, 誰の) {
   const 並び = 集.型を並べる((成績 || {}).型 || {});
   if (!並び.length) return null;
   // 中り数ごとにまとめて、見出しを1回だけ出す。
@@ -116,7 +120,12 @@ function 型の節(成績, 期間の名) {
     children: [
       (0, y.jsx)(l.default, {
         style: F.sectionSubTitle,
-        children: 期間の名 ? `的中の型 (${期間の名})` : '的中の型 (4射単位)',
+        // 比較中は誰の型かが分からないと読めないので、名前を見出しに出す
+        children: 誰の
+          ? `的中の型 — ${誰の}`
+          : 期間の名
+            ? `的中の型 (${期間の名})`
+            : '的中の型 (4射単位)',
       }),
       (0, y.jsx)(o.default, {
         style: F.patternsCardDash,
@@ -1621,10 +1630,15 @@ const j = ({ navigation }) => {
                                 children: [
                                   (0, y.jsx)(l.default, {
                                     style: [F.memberName, { color: '#000' }],
+                                    // 長い名前は2行まで。それ以上は…で切る。
+                                    // 切らないと右の的中率へ食い込む
+                                    numberOfLines: 2,
+                                    ellipsizeMode: 'tail',
                                     children: e.name,
                                   }),
                                   (0, y.jsxs)(l.default, {
                                     style: F.memberSub,
+                                    numberOfLines: 1,
                                     children: [
                                       'group' === k && (e.termKi ? `${e.termKi}期 / ` : ''),
                                       'group' === k &&
@@ -1781,19 +1795,58 @@ const j = ({ navigation }) => {
                         })
                       : (0, y.jsxs)(l.default, { style: F.modalTitle, children: [ae.name, 'の分析詳細'] }),
                     compareMembers.length > 0
-                      ? (0, y.jsxs)(l.default, {
-                          style: F.modalDesc,
+                      ? (0, y.jsxs)(o.default, {
                           children: [
-                            R,
-                            ' の的中成績比較 (',
-                            ae.name,
-                            ': ',
-                            ae.hits,
-                            '/',
-                            ae.shots,
-                            ' ',
-                            ae.rate.toFixed(1),
-                            '%)',
+                            (0, y.jsxs)(l.default, {
+                              style: F.modalDesc,
+                              children: [R, ' の的中成績比較'],
+                            }),
+                            // 全体の的中率を、比べている人ぶんまとめて出す。
+                            // これまでは本人の分しか出ておらず、相手の全体の
+                            // 的中率はランキングへ戻らないと見られなかった
+                            (0, y.jsx)(o.default, {
+                              style: F.比較の的中率,
+                              children: [
+                                { 名: ae.name, hits: ae.hits, shots: ae.shots, rate: ae.rate },
+                                ...compareMembers.map((cm) => {
+                                  const s = 比較の成績.get(cm.id) || {};
+                                  const 中 = s.hits ?? s.的中 ?? 0;
+                                  const 射 = s.shots ?? s.射数 ?? 0;
+                                  return {
+                                    名: cm.name,
+                                    hits: 中,
+                                    shots: 射,
+                                    rate: 射 > 0 ? (中 / 射) * 100 : 0,
+                                  };
+                                }),
+                              ].map((x, i) =>
+                                (0, y.jsxs)(
+                                  o.default,
+                                  {
+                                    style: F.比較の的中率の行,
+                                    children: [
+                                      (0, y.jsx)(l.default, {
+                                        style: [
+                                          F.比較の的中率の名,
+                                          { color: 比較の色たち[i % 比較の色たち.length] },
+                                        ],
+                                        numberOfLines: 1,
+                                        children: x.名,
+                                      }),
+                                      (0, y.jsxs)(l.default, {
+                                        style: F.比較の的中率の数,
+                                        children: [x.rate.toFixed(1), '%'],
+                                      }),
+                                      (0, y.jsxs)(l.default, {
+                                        style: F.比較の的中率の内訳,
+                                        children: [x.hits, '/', x.shots],
+                                      }),
+                                    ],
+                                  },
+                                  `全体-${x.名}-${i}`
+                                )
+                              ),
+                            }),
                           ],
                         })
                       : (0, y.jsxs)(l.default, {
@@ -2070,13 +2123,40 @@ const j = ({ navigation }) => {
                                                 alignItems: 'center',
                                               },
                                               children: [
-                                                (0, y.jsx)(l.default, {
+                                                // 男女が分かるよう、名前の前に色の丸を置く。
+                                                // メンバー画面と同じ色にそろえてある
+                                                (0, y.jsxs)(o.default, {
                                                   style: {
-                                                    fontSize: 14,
-                                                    color: isSelected ? '#007AFF' : '#1C1C1E',
-                                                    fontWeight: isSelected ? 'bold' : 'normal',
+                                                    flexDirection: 'row',
+                                                    alignItems: 'center',
+                                                    flex: 1,
+                                                    minWidth: 0,
                                                   },
-                                                  children: item.name,
+                                                  children: [
+                                                    (0, y.jsx)(l.default, {
+                                                      style: {
+                                                        fontSize: 10,
+                                                        marginRight: 6,
+                                                        color:
+                                                          '男子' === item.gender
+                                                            ? '#007AFF'
+                                                            : '女子' === item.gender
+                                                              ? '#FF2D55'
+                                                              : '#8E8E93',
+                                                      },
+                                                      children: '●',
+                                                    }),
+                                                    (0, y.jsx)(l.default, {
+                                                      style: {
+                                                        fontSize: 14,
+                                                        color: isSelected ? '#007AFF' : '#1C1C1E',
+                                                        fontWeight: isSelected ? 'bold' : 'normal',
+                                                        flexShrink: 1,
+                                                      },
+                                                      numberOfLines: 1,
+                                                      children: item.name,
+                                                    }),
+                                                  ],
                                                 }),
                                                 isSelected &&
                                                   (0, y.jsx)(l.default, {
@@ -2771,8 +2851,19 @@ const j = ({ navigation }) => {
                     //
                     // 的中の型。結果分布のすぐ下に置く。
                     // 上の分布で「三中が多い」と分かったあと、すぐ
-                    // 「その三中はどこで抜いているのか」へ目が移るため
-                    型の節(詳細の期間の成績 || ae, selectedModalTrendLabel),
+                    // 「その三中はどこで抜いているのか」へ目が移るため。
+                    //
+                    // 比較中は人数ぶん並べる。名前の見出しを付けて誰の型かを示す
+                    型の節(
+                      詳細の期間の成績 || ae,
+                      selectedModalTrendLabel,
+                      compareMembers.length > 0 ? ae.name : null
+                    ),
+                    ...(compareMembers.length > 0
+                      ? compareMembers.map((cm) =>
+                          型の節(比較の成績.get(cm.id), selectedModalTrendLabel, cm.name)
+                        )
+                      : []),
                     // 弓具の履歴が無い人には、どこで記録するかだけを出す
                     // （何も出さないと、この節が在ることに気づけない）
                     弓具の節(ae, me),
@@ -2939,6 +3030,13 @@ const F = a.default.create({
   barContainer: { height: 8, backgroundColor: '#E5E5EA', borderRadius: 4, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 4 },
   patternValueText: { fontSize: 12, color: '#1C1C1E', fontWeight: 'bold' },
+  // 比較中の「全体の的中率」。比べている人ぶん、縦に並べる
+  比較の的中率: { marginTop: 8, marginBottom: 4, gap: 4 },
+  比較の的中率の行: { flexDirection: 'row', alignItems: 'center' },
+  // 名前は色で見分ける（グラフの線と同じ並びの色）。長い名前は縮める
+  比較の的中率の名: { fontSize: 13, fontWeight: '700', flex: 1, minWidth: 0 },
+  比較の的中率の数: { fontSize: 15, fontWeight: 'bold', color: '#1C1C1E', marginLeft: 8 },
+  比較の的中率の内訳: { fontSize: 11, color: '#8E8E93', marginLeft: 6, minWidth: 48, textAlign: 'right' },
   // 的中の型。○×を4つ並べるので、字が詰まらないよう間を空ける
   型の組: { marginBottom: 12 },
   型の見出し: { fontSize: 12, color: '#8E8E93', fontWeight: '600', marginBottom: 4 },
@@ -2974,7 +3072,10 @@ const F = a.default.create({
     },
     (0, m.getShadowStyle)({ shadowOpacity: 0.05, shadowRadius: 5, elevation: 2 })
   ),
-  rowLeft: { flexDirection: 'row', alignItems: 'center' },
+  // 名前が長いと、右の的中率を押しのけて重なっていた。
+  // 左は余った幅ぶんだけ広がり、狭くなったら縮む（flex:1 + minWidth:0）。
+  // 右は縮ませない（flexShrink:0）ので、的中率が隠れない
+  rowLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, minWidth: 0 },
   rankBadge: {
     width: 24,
     height: 24,
@@ -2985,10 +3086,13 @@ const F = a.default.create({
     marginRight: 12,
   },
   rankText: { fontSize: 12, fontWeight: 'bold', color: '#8E8E93' },
-  nameContainer: { gap: 2 },
+  // 名前の入れ物も縮めるようにしておく。ここが縮まないと、
+  // 親に flex:1 を入れても中の長い名前が押し出してしまう
+  nameContainer: { gap: 2, flex: 1, minWidth: 0 },
   memberName: { fontSize: 16, fontWeight: '600', color: '#1C1C1E' },
   memberSub: { fontSize: 11, color: '#8E8E93' },
-  rowRight: { alignItems: 'flex-end' },
+  // 的中率は縮ませない。左が長くても隠れないようにする
+  rowRight: { alignItems: 'flex-end', flexShrink: 0, marginLeft: 8 },
   rateText: { fontSize: 17, fontWeight: 'bold', color: '#007AFF' },
   shotScoreText: { fontSize: 11, color: '#8E8E93' },
   noDataText: { textAlign: 'center', color: '#8E8E93', marginTop: 40, fontSize: 15 },
