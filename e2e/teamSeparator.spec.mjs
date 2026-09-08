@@ -1,5 +1,5 @@
 /**
- * 区切り（間隔）まわりの検査。チーム名の帯と、区切りをまたぐ総計。
+ * 区切り（間隔）まわりの検査。チーム名の帯と、合計・総計の数え方。
  *
  *   npx playwright test e2e/teamSeparator.spec.mjs
  *
@@ -98,8 +98,15 @@ test('チームの帯は、窓の案内が言うとおりの側に出る', async
   );
   await 射手を立てる(page, 2);
 
-  // 区切りを長押しするとチーム名の窓が開く
-  await page.locator('[data-testid^="名の欄-区切り-"]').first().click({ delay: 800 });
+  // 区切りを押すと窓が開き、そこから「チーム名を付ける」に入れる。
+  // 以前は長押しでしか入れられず、押す＝そのまま消すだったので気づけなかった
+  await page.locator('[data-testid^="名の欄-区切り-"]').first().click();
+  const 名を付ける = page.getByText('チーム名を付ける', { exact: true });
+  await expect(名を付ける, '区切りを押しても窓に「チーム名を付ける」が出ない').toBeVisible({
+    timeout: 20000,
+  });
+  await 名を付ける.click();
+
   const 案内 = page.getByText(/この区切り(より|から)(左|右)の射手が、そのチームになります/);
   await expect(案内, 'チーム名の窓が開かない').toBeVisible({ timeout: 20000 });
 
@@ -158,7 +165,7 @@ test('合計の列は、押すと窓が開き、そこで範囲を変えられ�
   // 押したら窓が開く。ここで範囲だけを切り替えていたころは、
   // 窓が開かず列を消せなくなっていた
   await 合計.click();
-  const 総計にする = page.getByText('区切りをまたぐ総計にする', { exact: true });
+  const 総計にする = page.getByText('手前の計もまとめた総計にする', { exact: true });
   await expect(総計にする, '合計の列を押しても窓が開かない').toBeVisible({ timeout: 20000 });
   await expect(page.getByText('削除', { exact: true }), '消す道が無い').toBeVisible();
 

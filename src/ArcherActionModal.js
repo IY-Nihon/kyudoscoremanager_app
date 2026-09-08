@@ -33,9 +33,13 @@ const j = ({
   archerOrigIdx: pVal,
   isSeparator: jVal,
   isTotalCalculator: b,
-  // 合計の列が、いま区切りをまたいで数えているか／切り替える手立て
+  // 合計の列が、いま手前の計もまとめて数えているか／切り替える手立て
   またぐ合計,
   on合計の範囲,
+  // 区切りにチーム名を付ける。長押しでしか入れられず気づけなかったので、
+  // 窓からも入れるようにした
+  onチーム名,
+  いまのチーム名: いまのチーム名 = '',
   // 立ち順の入れ替え。画面で見た向き（'左' / '右'）で受け渡す。
   // 端の列は動かせないので、出すかどうかは呼ぶ側が決める
   on動かす,
@@ -328,6 +332,36 @@ const j = ({
                     ],
                   }),
                 }),
+                // 区切りのときだけ出す。チーム名を入れる道は長押ししか無く、
+                // 気づけなかった（押す＝消す だったので、なおさら触れない）
+                jVal &&
+                  onチーム名 &&
+                  (0, F.jsxs)(g.default, {
+                    style: ({ pressed: e, hovered: t }) => [
+                      y.menuItem,
+                      t && { backgroundColor: '#F2F7FF' },
+                      e && { opacity: 0.7 },
+                    ],
+                    onPress: onチーム名,
+                    children: [
+                      (0, F.jsxs)(n.default, {
+                        style: { flex: 1, minWidth: 0 },
+                        children: [
+                          (0, F.jsx)(l.default, {
+                            style: [y.menuText, { color: '#007AFF', fontWeight: 'bold' }],
+                            children: いまのチーム名 ? 'チーム名を変える' : 'チーム名を付ける',
+                          }),
+                          (0, F.jsx)(l.default, {
+                            style: { fontSize: 11, color: '#8E8E93', marginTop: 2 },
+                            children: いまのチーム名
+                              ? `いまは「${いまのチーム名}」`
+                              : '大学名などを入れると、この区切りより左に色が付きます',
+                          }),
+                        ],
+                      }),
+                      (0, F.jsx)(x.Ionicons, { name: 'pricetag-outline', size: 20, color: '#007AFF' }),
+                    ],
+                  }),
                 // 立ち順の入れ替え。矢印のとおりに、画面で1つ動く。
                 // 記録表は右から左へ並ぶので、右が大前寄り・左が落寄り。
                 // ○×も矢所も列に付いているので、列ごと動けば付いていく。
@@ -676,12 +710,12 @@ const j = ({
                               style: [y.menuText, { color: '#007AFF', fontWeight: 'bold' }],
                               children: またぐ合計
                                 ? 'この立ちだけの合計にする'
-                                : '区切りをまたぐ総計にする',
+                                : '手前の計もまとめた総計にする',
                             }),
                             (0, F.jsx)(l.default, {
                               style: { fontSize: 11, color: '#8E8E93', marginTop: 2 },
                               children: またぐ合計
-                                ? 'いまは区切りをまたいで数えています'
+                                ? 'いまは手前の計もまとめて数えています（間隔で止まります）'
                                 : 'いまはこの立ちだけを数えています',
                             }),
                           ],

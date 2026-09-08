@@ -16,7 +16,8 @@ function e(e) {
       return k;
     },
   }));
-var t = require('react'),
+var RN = require('react-native'),
+  t = require('react'),
   o = e(t),
   l = e(require('./View')),
   n = e(require('./ScrollView')),
@@ -88,6 +89,7 @@ const k = () => {
         setSeparatorTeam: 区切りにチーム名を付ける,
         toggleTotalScope: 合計の範囲を切り替える,
         列を動かす,
+        列を並べ替える,
         addTotalCalculator: L,
         undo: D,
         redo: H,
@@ -317,6 +319,13 @@ const k = () => {
         j.impactAsync(j.ImpactFeedbackStyle.Medium);
         k.find((t) => t.id === e) && (fe(e), ge(o), ce(!0));
       },
+      // ── 立ち順を指で動かす（長押しで掴んで、滑らせて、離す）───────────
+      //
+      // 表は横に流れるので、掴む前は今までどおりスクロールできるようにする。
+      // 掴んでいる間だけスクロールを止め、そのあいだの横の動きを並べ替えに使う。
+      // 掴まないまま指を滑らせると、表が動くのか列が動くのか分からなくなる。
+      [掴んだ列, set掴んだ列] = (0, t.useState)(null),
+      [落とす先, set落とす先] = (0, t.useState)(null),
       [Je, Ke] = (0, t.useState)(!1),
       // 拡大率の選択が出ているか（Excel の倍率と同じ考え方）
       [拡大選択中, 拡大を選ぶ] = (0, t.useState)(!1),
@@ -359,6 +368,86 @@ const k = () => {
           }, 100));
       },
       et = l.default;
+
+    // ── 立ち順を指で動かす仕掛け ────────────────────────────────
+    //
+    // 名前の欄を長押しすると、その列を掴む。掴んでいる間だけ表のスクロールを
+    // 止め、指の下にある列を「落とす先」として光らせる。指を離した所へ入れる。
+    // 動かすのは離したとき1回だけなので、取り消し1回で元に戻る。
+    //
+    // PanResponder は作り直さない（作り直すと掴んでいる最中に取り落とす）。
+    // そのぶん中で使う値が古くなるので、毎回の描画で「手」を入れ替える。
+    const 名の欄のnode = (0, t.useRef)({}),
+      掴んだ列のref = (0, t.useRef)(null),
+      落とす先のref = (0, t.useRef)(null),
+      動かし始めた = (0, t.useRef)(!1),
+      測る手 = (0, t.useRef)(null),
+      離す手 = (0, t.useRef)(null),
+      並べ替えの手 = (0, t.useRef)(null);
+
+    // 指のいる場所（ページの座標）から、その下にある列の番号を出す。
+    // 端からはみ出したときは、いちばん近い端の列にする
+    測る手.current = (指のx) => {
+      const 一覧 = (Array.isArray(k) ? k : []).filter((e) => !!e);
+      const 箱 = [];
+      for (let i = 0; i < 一覧.length; i++) {
+        const node = 名の欄のnode.current[一覧[i].id];
+        if (!node || 'function' != typeof node.getBoundingClientRect) continue;
+        const r = node.getBoundingClientRect();
+        const ずれ = 'undefined' != typeof window && window.scrollX ? window.scrollX : 0;
+        箱.push({ i, 左: r.left + ずれ, 右: r.right + ずれ });
+      }
+      if (!箱.length) return null;
+      for (const x of 箱) if (指のx >= x.左 && 指のx <= x.右) return x.i;
+      const 左端 = 箱.reduce((a, b) => (a.左 < b.左 ? a : b));
+      const 右端 = 箱.reduce((a, b) => (a.右 > b.右 ? a : b));
+      if (指のx < 左端.左) return 左端.i;
+      if (指のx > 右端.右) return 右端.i;
+      return null;
+    };
+
+    const 掴むのをやめる = () => {
+      ((掴んだ列のref.current = null),
+        (落とす先のref.current = null),
+        (動かし始めた.current = !1),
+        set掴んだ列(null),
+        set落とす先(null));
+    };
+
+    離す手.current = () => {
+      const id = 掴んだ列のref.current,
+         先 = 落とす先のref.current;
+      掴むのをやめる();
+      if (!id || null === 先) return;
+      const 一覧 = (Array.isArray(k) ? k : []).filter((e) => !!e);
+      const いま = 一覧.findIndex((x) => x.id === id);
+      const 先の列 = 一覧[先];
+      if (いま < 0 || !先の列 || いま === 先) return;
+      // 番号は「間引く前の並び」で数え直す。null が混じっていてもずれない
+      const 生の先 = (Array.isArray(k) ? k : []).findIndex((x) => x && x.id === 先の列.id);
+      if (生の先 < 0) return;
+      (列を並べ替える(id, 生の先), Ge('立ち順を変えました'));
+      j.impactAsync(j.ImpactFeedbackStyle.Medium);
+    };
+
+    if (!並べ替えの手.current)
+      並べ替えの手.current = RN.PanResponder.create({
+        // 掴んでいないときは何も奪わない。ふつうのスクロールと押すが効く
+        onStartShouldSetPanResponder: () => !1,
+        onMoveShouldSetPanResponder: () => !!掴んだ列のref.current,
+        onPanResponderGrant: () => {
+          動かし始めた.current = !0;
+        },
+        onPanResponderMove: (_e, g) => {
+          const i = 測る手.current ? 測る手.current(g.moveX) : null;
+          if (null !== i && i !== 落とす先のref.current) {
+            ((落とす先のref.current = i), set落とす先(i));
+          }
+        },
+        onPanResponderRelease: () => 離す手.current && 離す手.current(),
+        onPanResponderTerminate: () => 掴むのをやめる(),
+      });
+
     // ── 横に並べた記録表 ──
     // 縦の表は「射数が縦、名前は下、右から左」。横はそれを90度まわして
     // 「名前が左、射数が右へ、上から下へ」にする。○×のますも、鍵も、
@@ -408,7 +497,7 @@ const k = () => {
                     (0, A.jsx)(a.default, {
                       style: [W.footerName, { color: 射手.name ? '#000' : '#8E8E93', fontSize: 13 * se }],
                       numberOfLines: 1,
-                      // 区切りをまたぐ合計は「総計」。ふつうの「計」と
+                      // 手前の計もまとめる合計は「総計」。ふつうの「計」と
                       // 見分けが付かないと、どこまでの合計か分からない
                       children: 射手.isTotalCalculator
                         ? 射手.またぐ合計
@@ -1425,6 +1514,9 @@ const k = () => {
                     (0, A.jsx)(n.default, {
                       horizontal: !0,
                       showsHorizontalScrollIndicator: !1,
+                      // 掴んでいる間は流さない。流すと、表が動くのか列が動くのか
+                      // 分からなくなる
+                      scrollEnabled: !掴んだ列,
                       style: { flexGrow: 0, flexShrink: 1 },
                       ref: Ue,
                       onScroll: (e) => {
@@ -1434,6 +1526,8 @@ const k = () => {
                       scrollEventThrottle: 16,
                       children: (0, A.jsx)(l.default, {
                         style: [W.gridRow, { flexDirection: 'row-reverse' }],
+                        // 掴んでいる間だけ、横の動きを並べ替えに使う
+                        ...(並べ替えの手.current ? 並べ替えの手.current.panHandlers : {}),
                         children: (Array.isArray(k) ? k : [])
                           .filter((e) => !!e)
                           .map((e, t) => {
@@ -1444,6 +1538,9 @@ const k = () => {
                                 // 名前入りの列を指すと、押しても名前の数が増えず先へ進めない。
                                 // 繰り返しの中なのでフックは使えない
                                 ref: (node) => {
+                                  // 指の下にどの列が居るかを測るために、節を覚えておく
+                                  if (node) 名の欄のnode.current[e.id] = node;
+                                  else delete 名の欄のnode.current[e.id];
                                   const 一覧 = (Array.isArray(k) ? k : []).filter((e) => !!e);
                                   let 指す = 一覧.findIndex(
                                     (a) => a && !a.name && !a.isSeparator && !a.isTotalCalculator
@@ -1463,6 +1560,16 @@ const k = () => {
                                   padding: 4,
                                   justifyContent: 'center',
                                   alignItems: 'center',
+                                  // 掴んでいる列は薄く、落とす先は青くふちどる。
+                                  // どこへ入るのかを、指を離す前に見せる
+                                  ...(掴んだ列 === e.id ? { opacity: 0.4 } : null),
+                                  ...(null !== 落とす先 &&
+                                  掴んだ列 &&
+                                  掴んだ列 !== e.id &&
+                                  (Array.isArray(k) ? k : []).filter((x) => !!x)[落とす先] &&
+                                  (Array.isArray(k) ? k : []).filter((x) => !!x)[落とす先].id === e.id
+                                    ? { backgroundColor: 'rgba(0,122,255,0.18)' }
+                                    : null),
                                 },
                                 children: e.isSeparator
                                   ? (0, A.jsx)(h.default, {
@@ -1475,17 +1582,34 @@ const k = () => {
                                       // 位置ではなく列のIDで名づける。並べ替えても
                                       // 同じ列を追える（ます-<射手ID>-<射番> と同じ流儀）
                                       testID: '名の欄-区切り-' + e.id,
-                                      onPress: () => M(e.id),
-                                      // 長押しでチーム名を付ける（リーグの大学名）。
-                                      // 押す＝外す は今までどおりにしておく
+                                      // 押すと窓が開く。以前は押す＝そのまま消すで、
+                                      // チーム名は長押しでしか入れられなかった。
+                                      // 消す道は窓の中の「削除」に移してある
+                                      onPress: () => qe(e.id, e.name, t),
+                                      // 長押しは「掴む」。チーム名は窓から入れる
+                                      //（長押ししか道が無くて気づけなかった）
                                       onLongPress: () => {
                                         if ($e) return void 閲覧中に押された();
-                                        (setチーム名の下書き(e.teamName || ''),
-                                          setチーム名を付ける区切り(e.id));
+                                        ((掴んだ列のref.current = e.id),
+                                          (落とす先のref.current = null),
+                                          (動かし始めた.current = !1),
+                                          set掴んだ列(e.id),
+                                          set落とす先(null),
+                                          Ge('動かす先へ指をすべらせて、離してください'),
+                                          j.impactAsync(j.ImpactFeedbackStyle.Medium));
                                       },
-                                      delayLongPress: 500,
+                                      onPressOut: () => {
+                                        // 掴んだだけで動かさずに離したときは、掴みを解く。
+                                        // 動かし始めていれば PanResponder が受け持つので触らない
+                                        setTimeout(() => {
+                                          if (!動かし始めた.current && 掴んだ列のref.current) 掴むのをやめる();
+                                        }, 60);
+                                      },
+                                      delayLongPress: 400,
                                       disabled: $e,
-                                      // 名前が付いていれば名前を、なければ今までの×印
+                                      // 名前が付いていれば名前を、なければ「⋯」。
+                                      // ×印だったころは押す＝消すに見えて、名前を
+                                      // 入れられることに気づけなかった
                                       children: 組.区切りのチーム名(e)
                                         ? (0, A.jsx)(a.default, {
                                             style: {
@@ -1498,7 +1622,7 @@ const k = () => {
                                             children: 組.区切りのチーム名(e),
                                           })
                                         : (0, A.jsx)(p.Ionicons, {
-                                            name: 'close-circle',
+                                            name: 'ellipsis-horizontal',
                                             size: 24 * se,
                                             color: '#8E8E93',
                                           }),
@@ -1527,6 +1651,24 @@ const k = () => {
                                       testID:
                                         '名の欄-' + (e.isTotalCalculator ? '合計' : '射手') + '-' + e.id,
                                       onPress: () => qe(e.id, e.name, t),
+                                      onLongPress: () => {
+                                        if ($e) return void 閲覧中に押された();
+                                        ((掴んだ列のref.current = e.id),
+                                          (落とす先のref.current = null),
+                                          (動かし始めた.current = !1),
+                                          set掴んだ列(e.id),
+                                          set落とす先(null),
+                                          Ge('動かす先へ指をすべらせて、離してください'),
+                                          j.impactAsync(j.ImpactFeedbackStyle.Medium));
+                                      },
+                                      onPressOut: () => {
+                                        // 掴んだだけで動かさずに離したときは、掴みを解く。
+                                        // 動かし始めていれば PanResponder が受け持つので触らない
+                                        setTimeout(() => {
+                                          if (!動かし始めた.current && 掴んだ列のref.current) 掴むのをやめる();
+                                        }, 60);
+                                      },
+                                      delayLongPress: 400,
                                       children: [
                                         (0, A.jsx)(a.default, {
                                           style: [
@@ -1534,7 +1676,7 @@ const k = () => {
                                             { color: e.name ? '#000' : '#8E8E93', fontSize: 14 * se },
                                           ],
                                           numberOfLines: 2,
-                                          // 区切りをまたぐ合計は「総計」。
+                                          // 手前の計もまとめる合計は「総計」。
                                           // どちらを見ているか、見出しで分かるようにする
                                           children: e.isTotalCalculator
                                             ? e.またぐ合計
@@ -1734,7 +1876,7 @@ const k = () => {
                       (j.impactAsync(j.ImpactFeedbackStyle.Light), L());
                     },
                     // 入れたあと、その列を押すと「この立ちだけ」と
-                    // 「区切りをまたぐ総計」を切り替えられる
+                    // 「手前の計もまとめた総計」を切り替えられる
                     accessibilityHint: '合計の列を足します。入れたあと列を押すと、数える範囲を変えられます',
                     children: [
                       (0, A.jsx)(a.default, {
@@ -1803,13 +1945,23 @@ const k = () => {
           isSeparator: (Array.isArray(k) ? k : []).find((e) => e && e.id === ue)?.isSeparator || !1,
           isTotalCalculator:
             (Array.isArray(k) ? k : []).find((e) => e && e.id === ue)?.isTotalCalculator || !1,
-          // 合計の列が、いま区切りをまたいで数えているか。窓の中で切り替える
+          // 合計の列が、いま手前の計もまとめて数えているか。窓の中で切り替える
           またぐ合計: (Array.isArray(k) ? k : []).find((e) => e && e.id === ue)?.またぐ合計 || !1,
           on合計の範囲: () => {
             if ($e) return void 閲覧中に押された();
             const 列 = (Array.isArray(k) ? k : []).find((e) => e && e.id === ue);
             合計の範囲を切り替える(ue);
-            Ge(列?.またぐ合計 ? 'この立ちだけの合計にしました' : '区切りをまたぐ総計にしました');
+            Ge(列?.またぐ合計 ? 'この立ちだけの合計にしました' : '手前の計もまとめた総計にしました');
+            ce(!1);
+          },
+          // 区切りにチーム名を付ける道。窓からも入れるようにした
+          いまのチーム名: 組.区切りのチーム名(
+            (Array.isArray(k) ? k : []).find((e) => e && e.id === ue) || {}
+          ) || '',
+          onチーム名: () => {
+            if ($e) return void 閲覧中に押された();
+            const 列 = (Array.isArray(k) ? k : []).find((e) => e && e.id === ue);
+            (setチーム名の下書き((列 && 列.teamName) || ''), setチーム名を付ける区切り(ue));
             ce(!1);
           },
           // 立ち順の入れ替え。画面で見た向きのまま渡す（並びの向きへの
