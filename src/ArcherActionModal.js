@@ -80,9 +80,14 @@ const j = ({
 
   const q = A || H;
 
+  // 男女の絞り込み。'全員' | '男子' | '女子'
+  const [男女の絞り, set男女の絞り] = (0, t.useState)('全員');
+
   const L = (0, t.useMemo)(() => {
     return B.filter((e) => (e.grade || 0) < 5)
       .filter((e) => '' === O || (e.name || '').includes(O))
+      // 男女で絞る。男女別の立ちを組むとき、毎回名前を探さずに済む
+      .filter((e) => '全員' === 男女の絞り || (e.gender || '') === 男女の絞り)
       .sort((e, t) => {
         const o = q.some((t) => t.memberId === e.id);
         if (o !== q.some((e) => e.memberId === t.id)) return o ? 1 : -1;
@@ -98,7 +103,7 @@ const j = ({
         const uVal = cVal(e.gender) - cVal(t.gender);
         return 0 !== uVal ? uVal : (e.name || '').localeCompare(t.name || '', 'ja');
       });
-  }, [B, H, O, q]);
+  }, [B, H, O, q, 男女の絞り]);
 
   const activeGroups = (0, t.useMemo)(() => {
     const groups = {};
@@ -353,6 +358,32 @@ const j = ({
                             }),
                           }),
                       ],
+                    }),
+                    // 男女で絞る。男女別の立ちを組むとき、毎回名前を探さずに済む
+                    (0, F.jsx)(n.default, {
+                      style: y.男女の絞りの列,
+                      children: ['全員', '男子', '女子'].map((名) =>
+                        (0, F.jsx)(
+                          c.default,
+                          {
+                            style: [
+                              y.男女の絞りのボタン,
+                              男女の絞り === 名 && y.男女の絞りのボタン選択中,
+                            ],
+                            onPress: () => set男女の絞り(名),
+                            accessibilityRole: 'button',
+                            accessibilityState: { selected: 男女の絞り === 名 },
+                            children: (0, F.jsx)(l.default, {
+                              style: [
+                                y.男女の絞りの字,
+                                男女の絞り === 名 && y.男女の絞りの字選択中,
+                              ],
+                              children: 名,
+                            }),
+                          },
+                          `絞り-${名}`
+                        )
+                      ),
                     }),
                     (0, F.jsx)(n.default, {
                       style: y.section,
@@ -699,6 +730,24 @@ const y = s.default.create({
     backgroundColor: '#FFF',
   },
   searchInput: { flex: 1, fontSize: 16, color: '#000' },
+  // 男女の絞り込み。検索欄のすぐ下に、3つ並べる
+  男女の絞りの列: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    gap: 8,
+    backgroundColor: '#FFF',
+  },
+  男女の絞りのボタン: {
+    flex: 1,
+    paddingVertical: 7,
+    borderRadius: 8,
+    backgroundColor: '#F2F2F7',
+    alignItems: 'center',
+  },
+  男女の絞りのボタン選択中: { backgroundColor: '#007AFF' },
+  男女の絞りの字: { fontSize: 14, color: '#3A3A3C', fontWeight: '600' },
+  男女の絞りの字選択中: { color: '#FFF' },
   selectedBadge: {
     backgroundColor: '#E0E0E0',
     paddingHorizontal: 8,

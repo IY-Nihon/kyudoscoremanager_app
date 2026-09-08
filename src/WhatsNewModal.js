@@ -590,6 +590,18 @@ const WhatsNewModal = () => {
   return (
     <_Modal visible={true} animationType="fade" transparent={true} onRequestClose={handleClose}>
       <_View style={styles.overlay}>
+        {/*
+          背景を押しても閉じられるようにする。読むだけの窓なので、
+          書きかけが消える心配がない。×を狙わせるのは手間だった。
+          「次のお知らせまで表示しない」の印は、押していれば handleClose が拾う
+        */}
+        <_TouchableOpacity
+          style={_StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={handleClose}
+          accessible={false}
+          importantForAccessibility="no"
+        />
         <_View
           style={[styles.container, getShadowStyle({ shadowOpacity: 0.2, shadowRadius: 16, elevation: 16 })]}
         >
