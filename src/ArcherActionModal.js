@@ -36,6 +36,11 @@ const j = ({
   // 合計の列が、いま区切りをまたいで数えているか／切り替える手立て
   またぐ合計,
   on合計の範囲,
+  // 立ち順の入れ替え。画面で見た向き（'左' / '右'）で受け渡す。
+  // 端の列は動かせないので、出すかどうかは呼ぶ側が決める
+  on動かす,
+  左へ動かせる: 左へ動かせる = !1,
+  右へ動かせる: 右へ動かせる = !1,
   onClose: C,
   onSubstitution: I,
   onSetMember: S,
@@ -323,6 +328,48 @@ const j = ({
                     ],
                   }),
                 }),
+                // 立ち順の入れ替え。矢印のとおりに、画面で1つ動く。
+                // 記録表は右から左へ並ぶので、右が大前寄り・左が落寄り。
+                // ○×も矢所も列に付いているので、列ごと動けば付いていく。
+                // 端の列では、その向きを出さない（押せるのに動かないのを避ける）
+                // 脇の窓は狭いので、2つ並べずに他の項目と同じ全幅の行にする。
+                // 横に並べたら「右へ動か／す」と折り返し、字を詰めたら消えた
+                on動かす &&
+                  右へ動かせる &&
+                  (0, F.jsxs)(g.default, {
+                    style: ({ pressed: e, hovered: t }) => [
+                      y.menuItem,
+                      t && { backgroundColor: '#F2F7FF' },
+                      e && { opacity: 0.7 },
+                    ],
+                    onPress: () => on動かす('右'),
+                    accessibilityLabel: '立ち順で1つ前へ動かす',
+                    children: [
+                      (0, F.jsx)(l.default, {
+                        style: [y.menuText, { color: '#007AFF' }],
+                        children: '右へ動かす',
+                      }),
+                      (0, F.jsx)(x.Ionicons, { name: 'arrow-back', size: 20, color: '#007AFF' }),
+                    ],
+                  }),
+                on動かす &&
+                  左へ動かせる &&
+                  (0, F.jsxs)(g.default, {
+                    style: ({ pressed: e, hovered: t }) => [
+                      y.menuItem,
+                      t && { backgroundColor: '#F2F7FF' },
+                      e && { opacity: 0.7 },
+                    ],
+                    onPress: () => on動かす('左'),
+                    accessibilityLabel: '立ち順で1つ後ろへ動かす',
+                    children: [
+                      (0, F.jsx)(l.default, {
+                        style: [y.menuText, { color: '#007AFF' }],
+                        children: '左へ動かす',
+                      }),
+                      (0, F.jsx)(x.Ionicons, { name: 'arrow-forward', size: 20, color: '#007AFF' }),
+                    ],
+                  }),
               (0, F.jsx)(n.default, { style: y.dividerFull }),
               !jVal &&
                 !b &&
