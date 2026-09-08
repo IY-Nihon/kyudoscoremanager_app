@@ -66,7 +66,12 @@ const C = () => {
   const [isAlumniExpanded, setIsAlumniExpanded] = (0, t.useState)(false);
   const [calVis, setCalVis] = (0, t.useState)(false);
 
-  const filteredMembers = (e || []).filter(
+  // 個人ログインでは自分だけを出す。他人は開けない作りなので、並べても
+  // 押せない行が続くだけだった。人数の多い団体ほど自分を探しにくい。
+  // 弓具を登録しに来る人にとって、この画面に用があるのは自分の行だけ
+  const 見せる名簿 = 'member' === E ? (e || []).filter((x) => x && x.id === w) : e || [];
+
+  const filteredMembers = 見せる名簿.filter(
     (e) => e && e.name && e.name.toLowerCase().includes(T.toLowerCase())
   );
 

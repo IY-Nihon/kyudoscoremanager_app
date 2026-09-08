@@ -74,7 +74,7 @@ test('個人ログインでもメンバーのタブが出て、自分の弓具�
   ).toBeVisible({ timeout: 20000 });
 });
 
-test('個人ログインでは、部員を足せず、他人の欄も開けない', async ({ page }) => {
+test('個人ログインでは、名簿に自分だけが出て、部員も足せない', async ({ page }) => {
   const 自分 = await 入る(page);
 
   await page.getByText('メンバー', { exact: true }).first().click();
@@ -86,28 +86,29 @@ test('個人ログインでは、部員を足せず、他人の欄も開けな�
     '個人ログインなのに部員を追加できてしまう'
   ).toHaveCount(0);
 
-  // 自分以外が名簿に届くのを待つ。雲から遅れて来るので、数で待つ
+  // 名簿そのものには自分以外も届いている（雲から遅れて来るので数で待つ）。
+  // それでも画面に出るのは自分だけ、というのがここで見たいこと
   await こうなるまで待つ(
-    () => page.evaluate(() => {
-      const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
-      return (s.members || []).length;
-    }),
+    () =>
+      page.evaluate(() => {
+        const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+        return (s.members || []).length;
+      }),
     (n) => n >= 2,
     30000
   );
-  const 他人 = await page.evaluate(() => {
+  const 他人たち = await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
-    const 自分 = s.myMemberId;
-    return (s.members || []).filter((m) => m && m.id !== 自分).map((m) => m.name)[0] || null;
+    return (s.members || []).filter((m) => m && m.id !== s.myMemberId).map((m) => m.name);
   });
-  expect(他人, `団体${団体}に自分以外の部員が届かない`).toBeTruthy();
-  expect(他人).not.toBe(自分.名);
+  expect(他人たち.length, `団体${団体}に自分以外の部員が届かない`).toBeGreaterThan(0);
 
-  await page.getByText(他人, { exact: true }).first().click();
-  // 断りはアプリの中の窓で出る（ブラウザの窓には出さない決まり）
-  await expect(
-    page.getByText('メンバーモードでは自分以外の情報は編集できません。'),
-    '他人の欄が開けてしまう'
-  ).toBeVisible({ timeout: 20000 });
-  await expect(page.getByText('弓具管理', { exact: true }), '他人の弓具が見えている').toHaveCount(0);
+  await expect(page.getByText(自分.名, { exact: true }).first(), '自分が出ていない').toBeVisible();
+  for (const 名 of 他人たち) {
+    if (!名 || 名 === 自分.名) continue;
+    await expect(
+      page.getByText(名, { exact: true }),
+      `個人ログインなのに他人（${名}）が名簿に出ている`
+    ).toHaveCount(0);
+  }
 });

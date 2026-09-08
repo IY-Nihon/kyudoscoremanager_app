@@ -128,7 +128,7 @@ const m = t.default.memo(
           I ? I(e, t) : F(e, t);
         },
         P = (e) => (0, u.formatMemberName)(e, L),
-        // 区切りをまたぐ合計は「総計」。ふつうの「計」と見分けるため
+        // 手前の計もまとめる合計は「総計」。ふつうの「計」と見分けるため
         v = () =>
           e.isTotalCalculator ? (e.またぐ合計 ? '総計' : '合計') : e.name ? P(e.name) : '選択',
         O = e.isSeparator || e.isTotalCalculator,
