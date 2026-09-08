@@ -1776,10 +1776,21 @@ const j = ({ navigation }) => {
           visible: !!ae,
           transparent: !0,
           animationType: 'fade',
-          children: (0, y.jsx)(o.default, {
+          // 見るだけの窓。端末の戻るでも、外を押しても閉じる
+          onRequestClose: () => re(null),
+          children: (0, y.jsxs)(o.default, {
             style: F.modalOverlay,
-            children: (0, y.jsx)(o.default, {
-              style: [F.modalContent, { maxHeight: '85%' }],
+            children: [
+            // 外側。押したら閉じる。中身より下に敷く
+            (0, y.jsx)(s.default, {
+              style: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+              activeOpacity: 1,
+              accessibilityLabel: '閉じる',
+              onPress: () => re(null),
+            }),
+            (0, y.jsx)(o.default, {
+              // 背景の板より上に置く。置かないと、板が中身の押すを横取りする
+              style: [F.modalContent, { maxHeight: '85%', zIndex: 1 }],
               children:
                 ae &&
                 (0, y.jsxs)(r.default, {
@@ -2881,6 +2892,7 @@ const j = ({ navigation }) => {
                   ],
                 }),
             }),
+            ],
           }),
         }),
       ],
