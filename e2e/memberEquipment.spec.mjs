@@ -49,36 +49,45 @@ async function 入る(page) {
   return 自分;
 }
 
-test('個人ログインでもメンバーのタブが出て、自分の弓具を登録しにいける', async ({ page }) => {
+test('個人ログインでは、自分の情報と弓具がそのまま出る', async ({ page }) => {
   const 自分 = await 入る(page);
 
-  // ここが本体。タブが出ていなければ、権限をいくら許しても届かない
+  // まずタブ。ここが出ていなければ、権限をいくら許しても届かない
   const タブ = page.getByText('メンバー', { exact: true }).first();
   await expect(タブ, '個人ログインでメンバーのタブが出ない').toBeVisible({ timeout: 30000 });
 
   await タブ.click();
-  await 画面が変わるまで待つ(page, 'メンバー管理');
-
-  // 自分の欄を開く
-  await page.getByText(自分.名, { exact: true }).first().click();
+  // 一覧ではなく、自分の画面がそのまま開く
+  await 画面が変わるまで待つ(page, '自分の情報');
   await expect(
-    page.getByText('弓具管理', { exact: true }),
-    '自分の欄を開いても弓具管理が出ない'
-  ).toBeVisible({ timeout: 20000 });
+    page.getByText('メンバー管理', { exact: true }),
+    '個人ログインなのに一覧の画面が出ている'
+  ).toHaveCount(0);
 
-  // 登録の窓まで開けること（ここまで来られれば弓力を入れられる）
-  await page.getByText('弓具変更履歴を表示・編集', { exact: true }).click();
+  // 自分の名前が、編集できる欄に入っている
+  await expect(
+    page.locator(`input[value="${自分.名}"]`),
+    '自分の名前が欄に入っていない'
+  ).toHaveCount(1);
+
+  // 弓具は窓を開かずに出る。押して開かせる一手間を無くしたのが今回の狙い
+  await expect(page.getByText('弓具管理', { exact: true }), '弓具管理が出ない').toBeVisible();
   await expect(
     page.getByPlaceholder('弓力'),
-    '弓具変更履歴の窓に、弓力を入れる欄が出ない'
+    '弓力を入れる欄が、開かずに出ていない'
   ).toBeVisible({ timeout: 20000 });
+  await expect(
+    page.getByText('弓具変更履歴を表示・編集', { exact: true }),
+    '個人ログインなのに、窓を開くボタンが残っている'
+  ).toHaveCount(0);
+  await expect(page.getByText('保存する', { exact: true }), '保存する道が無い').toBeVisible();
 });
 
-test('個人ログインでは、名簿に自分だけが出て、部員も足せない', async ({ page }) => {
+test('個人ログインでは、他人も出ず、部員も足せない', async ({ page }) => {
   const 自分 = await 入る(page);
 
   await page.getByText('メンバー', { exact: true }).first().click();
-  await 画面が変わるまで待つ(page, 'メンバー管理');
+  await 画面が変わるまで待つ(page, '自分の情報');
 
   // 部員を追加するボタンは、団体ログインのときだけ
   await expect(
@@ -103,12 +112,11 @@ test('個人ログインでは、名簿に自分だけが出て、部員も足�
   });
   expect(他人たち.length, `団体${団体}に自分以外の部員が届かない`).toBeGreaterThan(0);
 
-  await expect(page.getByText(自分.名, { exact: true }).first(), '自分が出ていない').toBeVisible();
   for (const 名 of 他人たち) {
     if (!名 || 名 === 自分.名) continue;
     await expect(
       page.getByText(名, { exact: true }),
-      `個人ログインなのに他人（${名}）が名簿に出ている`
+      `個人ログインなのに他人（${名}）が画面に出ている`
     ).toHaveCount(0);
   }
 });

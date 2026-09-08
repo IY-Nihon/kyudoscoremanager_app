@@ -383,7 +383,8 @@ const j = ({
                         style: [y.menuText, { color: '#007AFF' }],
                         children: '右へ動かす',
                       }),
-                      (0, F.jsx)(x.Ionicons, { name: 'arrow-back', size: 20, color: '#007AFF' }),
+                      // 矢印は動く向きに合わせる。右へ動かすなら右向き
+                      (0, F.jsx)(x.Ionicons, { name: 'arrow-forward', size: 20, color: '#007AFF' }),
                     ],
                   }),
                 on動かす &&
@@ -401,7 +402,7 @@ const j = ({
                         style: [y.menuText, { color: '#007AFF' }],
                         children: '左へ動かす',
                       }),
-                      (0, F.jsx)(x.Ionicons, { name: 'arrow-forward', size: 20, color: '#007AFF' }),
+                      (0, F.jsx)(x.Ionicons, { name: 'arrow-back', size: 20, color: '#007AFF' }),
                     ],
                   }),
               (0, F.jsx)(n.default, { style: y.dividerFull }),

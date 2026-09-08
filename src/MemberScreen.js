@@ -186,6 +186,17 @@ const C = () => {
     );
   };
 
+  // 個人ログインでは、自分の編集をはじめから開いておく。
+  // 一覧に自分1人しか出ないので、そこを押させる一手間に意味がない。
+  // 名簿は雲から遅れて届くので、届いたところで一度だけ開く
+  const 自分を開いた = (0, t.useRef)(!1);
+  (0, t.useEffect)(() => {
+    if ('member' !== E || 自分を開いた.current) return;
+    const 自分 = (e || []).find((x) => x && x.id === w);
+    if (!自分) return;
+    ((自分を開いた.current = !0), ee(自分));
+  }, [E, e, w]);
+
   const ee = (e) => {
       if ((v(e), A(e.name), H(e.gender), _(e.grade.toString()), !e.termKi && G)) {
         const t = e.grade || 1;
@@ -204,6 +215,416 @@ const C = () => {
         { text: '削除', style: 'destructive', onPress: o },
       ]);
     };
+
+  /**
+   * 弓具変更履歴の中身。窓の中にも、個人ログインの編集画面の中にも同じものを出す。
+   *
+   * 個人ログインでは一覧も窓も挟まず、自分の編集と履歴をそのまま出す（本人しか
+   * 触れないので、隠す意味がない）。同じ見た目を2か所に書き写すと必ずずれるので、
+   * ここ1つにして呼び分ける。
+   *
+   * @param {string} 部員id  誰の履歴か
+   * @param {boolean} 閉じるを出す 窓として出すときだけ true（見出しと×を付ける）
+   */
+  const 弓具履歴の中身 = (部員id, 閉じるを出す) => {
+    const t = e.find((e) => e.id === 部員id);
+    return t
+      ? (0, y.jsxs)(y.Fragment, {
+          children: [
+            // 見出しと×は、窓として出すときだけ。編集画面の中に並べるときは、
+            // すぐ上に「弓具管理」の見出しが在るので二重になる
+            閉じるを出す
+              ? (0, y.jsxs)(n.default, {
+                  style: j.eqModalHeader,
+                  children: [
+                    (0, y.jsxs)(o.default, {
+                      style: j.modalTitle,
+                      children: ['弓具変更履歴 (', t.name, ')'],
+                    }),
+                    (0, y.jsx)(s.default, {
+                      onPress: () => {
+                        N(!1);
+                        setCalVis(false);
+                      },
+                      children: (0, y.jsx)(p.Ionicons, { name: 'close', size: 24, color: '#8E8E93' }),
+                    }),
+                  ],
+                })
+              : null,
+            (0, y.jsxs)(n.default, {
+              style: j.eqForm,
+              children: [
+                (0, y.jsxs)(n.default, {
+                  style: j.eqInputRow,
+                  children: [
+                    (0, y.jsx)(s.default, {
+                      style: [j.eqInput, { flex: 1, minWidth: 0, justifyContent: 'center' }],
+                      onPress: () => setCalVis(true),
+                      children: (0, y.jsx)(o.default, {
+                        style: { fontSize: 15, color: '#000' },
+                        children: V,
+                      }),
+                    }),
+                    (0, y.jsxs)(n.default, {
+                      style: [j.eqWeightInputWrapper, { flex: 1, minWidth: 0 }],
+                      children: [
+                        (0, y.jsx)(c.default, {
+                          style: j.eqInputInside,
+                          placeholder: '弓力',
+                          value: U,
+                          onChangeText: (text) => {
+                            let filtered = text.replace(/[^0-9.]/g, '');
+                            const dotPos = filtered.indexOf('.');
+                            if (dotPos !== -1) {
+                              const intPart = filtered.slice(0, dotPos).slice(0, 3);
+                              const decPart = filtered
+                                .slice(dotPos + 1)
+                                .replace(/\./g, '')
+                                .slice(0, 1);
+                              filtered = intPart + '.' + decPart;
+                            } else {
+                              filtered = filtered.slice(0, 3);
+                            }
+                            J(filtered);
+                          },
+                          keyboardType: 'decimal-pad',
+                        }),
+                        (0, y.jsx)(o.default, { style: j.kgUnit, children: 'kg' }),
+                      ],
+                    }),
+                  ],
+                }),
+                (0, y.jsx)(c.default, {
+                  style: [j.eqInput, { height: 60 }],
+                  placeholder: '内容 (弦交換、弓の変更など)',
+                  value: Y,
+                  onChangeText: $,
+                  multiline: !0,
+                }),
+                (0, y.jsx)(s.default, {
+                  style: j.eqAddBtn,
+                  onPress: () => {
+                    (Y.trim() || U.trim()) &&
+                      (Q(t.id, { date: new Date(V).getTime() || Date.now(), note: Y, weight: U }),
+                      $(''),
+                      J(''));
+                  },
+                  children: (0, y.jsx)(o.default, {
+                    style: j.eqAddBtnText,
+                    children: '履歴を追加',
+                  }),
+                }),
+              ],
+            }),
+            (0, y.jsx)(a.default, {
+              data: [...(t.equipments || [])].sort((e, t) => t.date - e.date),
+              keyExtractor: (e, index) =>
+                typeof e.id === 'string' ? e.id : `eq-${index}-${e.date}`,
+              contentContainerStyle: { padding: 15 },
+              renderItem: ({ item: e }) =>
+                (0, y.jsxs)(n.default, {
+                  style: j.eqItem,
+                  children: [
+                    (0, y.jsxs)(n.default, {
+                      style: { flex: 1, marginRight: 8 },
+                      children: [
+                        (0, y.jsxs)(n.default, {
+                          style: j.eqItemHeader,
+                          children: [
+                            (0, y.jsx)(o.default, {
+                              style: j.eqItemDate,
+                              children: new Date(e.date).toLocaleDateString(),
+                            }),
+                            e.weight &&
+                              (0, y.jsx)(n.default, {
+                                style: j.eqWeightBadge,
+                                children: (0, y.jsxs)(o.default, {
+                                  style: j.eqWeightText,
+                                  children: [e.weight, ' kg'],
+                                }),
+                              }),
+                          ],
+                        }),
+                        (0, y.jsx)(o.default, { style: j.eqItemNote, children: e.note }),
+                      ],
+                    }),
+                    (0, y.jsx)(s.default, {
+                      // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                      accessible: !0,
+                      accessibilityRole: 'button',
+                      accessibilityLabel: 'この弓具の記録を消す',
+                      'aria-label': 'この弓具の記録を消す',
+                      onPress: () => X(t.id, e.id),
+                      style: { padding: 4 },
+                      children: (0, y.jsx)(p.Ionicons, {
+                        name: 'trash-outline',
+                        size: 20,
+                        color: '#FF3B30',
+                      }),
+                    }),
+                  ],
+                }),
+              ListEmptyComponent: (0, y.jsx)(o.default, {
+                style: j.emptyText,
+                children: '履歴がありません',
+              }),
+            }),
+          ],
+        })
+      : null;
+  };
+
+  /**
+   * メンバー編集の中身。団体ログインでは窓の中、個人ログインでは画面そのものに出す。
+   *
+   * 個人ログインでは一覧に自分しか出ないので、押して窓を開かせる一手間に意味がない。
+   * 同じ見た目を2か所に書き写すと必ずずれるので、ここ1つにして呼び分ける。
+   */
+  const 編集の中身 = (窓として出す) =>
+    (0, y.jsxs)(n.default, {
+            // 窓のときは窓の見た目、画面のときは画面いっぱいに広げる。
+            // 窓の枠のまま画面に置くと、右half が空いたままになる
+            style: 窓として出す ? j.modalContent : { flex: 1, width: '100%' },
+            children: [
+              // 見出しと×は窓のときだけ。画面のときは上に「自分の情報」が在る
+              窓として出す
+                ? (0, y.jsxs)(n.default, {
+                    style: j.modalHeader,
+                    children: [
+                      (0, y.jsx)(o.default, {
+                        style: j.modalTitle,
+                        children: q ? 'メンバー編集' : '新規登録',
+                      }),
+                      (0, y.jsx)(s.default, {
+                        onPress: () => D(!1),
+                        style: j.closeBtn,
+                        children: (0, y.jsx)(p.Ionicons, { name: 'close', size: 24, color: '#8E8E93' }),
+                      }),
+                    ],
+                  })
+                : null,
+              (0, y.jsxs)(n.default, {
+                style: { padding: 20 },
+                children: [
+                  (0, y.jsx)(o.default, { style: j.label, children: '名前' }),
+                  (0, y.jsx)(c.default, {
+                    style: j.input,
+                    value: k,
+                    onChangeText: A,
+                    placeholder: '例: 山田 太郎',
+                    placeholderTextColor: '#C7C7CC',
+                  }),
+                  (0, y.jsx)(o.default, {
+                    style: j.inputHelperText,
+                    children: '姓名の間にスペースを入力してください',
+                  }),
+                  q &&
+                    q.personalId &&
+                    (0, y.jsxs)(y.Fragment, {
+                      children: [
+                        (0, y.jsx)(o.default, { style: j.label, children: '個人ID (自動採番)' }),
+                        (0, y.jsx)(n.default, {
+                          style: [j.input, { justifyContent: 'center', opacity: 0.6 }],
+                          children: (0, y.jsx)(o.default, {
+                            style: { fontSize: 16 },
+                            children: B || q.id === w ? q.personalId : '******** (管理者のみ表示)',
+                          }),
+                        }),
+                      ],
+                    }),
+                  (0, y.jsx)(o.default, { style: j.label, children: '性別' }),
+                  (0, y.jsx)(n.default, {
+                    style: j.genderRow,
+                    children: ['男子', '女子', '未設定'].map((e) =>
+                      (0, y.jsx)(
+                        h.default,
+                        {
+                          style: ({ hovered: t }) => [
+                            j.genderBtn,
+                            R === e && j.genderBtnActive,
+                            t && R !== e && { backgroundColor: '#E5E5EA' },
+                          ],
+                          onPress: () => H(e),
+                          children: (0, y.jsx)(o.default, {
+                            style: [j.genderBtnText, R === e && j.genderBtnTextActive],
+                            children: e,
+                          }),
+                        },
+                        e
+                      )
+                    ),
+                  }),
+                  (0, y.jsx)(o.default, { style: j.label, children: '学年' }),
+                  (0, y.jsxs)(n.default, {
+                    style: j.stepperContainer,
+                    children: [
+                      (0, y.jsx)(o.default, {
+                        style: j.stepperValue,
+                        children: '0' === P ? 'その他' : '5' === P ? '卒業生' : `${P}年生`,
+                      }),
+                      (0, y.jsxs)(n.default, {
+                        style: j.stepperControls,
+                        children: [
+                          (0, y.jsx)(h.default, {
+                            style: ({ hovered: e }) => [j.stepperBtn, e && { backgroundColor: '#D1D1D6' }],
+                            onPress: () => {
+                              const e = parseInt(P) || 0;
+                              if (e > 0) {
+                                const t = e - 1;
+                                (_(String(t)), G && t >= 1 && t <= 5 && O(String(G - (t - 1))));
+                              }
+                            },
+                            children: (0, y.jsx)(p.Ionicons, { name: 'remove', size: 24, color: '#007AFF' }),
+                          }),
+                          (0, y.jsx)(n.default, { style: j.stepperDivider }),
+                          (0, y.jsx)(h.default, {
+                            style: ({ hovered: e }) => [j.stepperBtn, e && { backgroundColor: '#D1D1D6' }],
+                            onPress: () => {
+                              const e = parseInt(P) || 0;
+                              if (e < 5) {
+                                const t = e + 1;
+                                (_(String(t)), G && t >= 1 && t <= 5 && O(String(G - (t - 1))));
+                              }
+                            },
+                            children: (0, y.jsx)(p.Ionicons, { name: 'add', size: 24, color: '#007AFF' }),
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  (0, y.jsx)(o.default, { style: j.label, children: '期' }),
+                  (0, y.jsx)(c.default, {
+                    style: j.input,
+                    value: M,
+                    onChangeText: O,
+                    placeholder: '例: 70',
+                    keyboardType: 'number-pad',
+                    placeholderTextColor: '#C7C7CC',
+                  }),
+                  // 弓具は、団体アカウントか本人だけ。個人ログインで他人の
+                  // 画面を開く道は塞いであるが、ここでも確かめる
+                  q &&
+                    ('member' !== E || q.id === w) &&
+                    (0, y.jsxs)(y.Fragment, {
+                      children: [
+                        (0, y.jsx)(o.default, { style: j.label, children: '弓具管理' }),
+                        // 個人ログインでは、窓を挟まずにそのまま履歴を出す。
+                        // 自分のぶんしか触れないので、隠す意味がない
+                        'member' === E
+                          ? 弓具履歴の中身(q?.id, !1)
+                          : (0, y.jsxs)(h.default, {
+                              style: ({ hovered: e }) => [
+                                j.eqHistoryBtn,
+                                e && { backgroundColor: '#E5E5EA' },
+                              ],
+                              onPress: () => N(!0),
+                              children: [
+                                (0, y.jsx)(p.Ionicons, {
+                                  name: 'construct-outline',
+                                  size: 20,
+                                  color: '#007AFF',
+                                }),
+                                (0, y.jsx)(o.default, {
+                                  style: j.eqHistoryBtnText,
+                                  children: '弓具変更履歴を表示・編集',
+                                }),
+                              ],
+                            }),
+                      ],
+                    }),
+                  (0, y.jsxs)(n.default, {
+                    style: j.modalFooter,
+                    children: [
+                      q && 'member' !== E
+                        ? (0, y.jsxs)(s.default, {
+                            style: j.deleteBtn,
+                            onPress: () => te(q.id, q.name),
+                            children: [
+                              (0, y.jsx)(p.Ionicons, {
+                                name: 'trash-outline',
+                                size: 18,
+                                color: '#FF3B30',
+                                style: { marginRight: 4 },
+                              }),
+                              (0, y.jsx)(o.default, { style: j.deleteBtnText, children: 'メンバーを削除' }),
+                            ],
+                          })
+                        : (0, y.jsx)(n.default, {}),
+                      (0, y.jsx)(s.default, {
+                        style: j.saveBtn,
+                        onPress: () => {
+                          if (!k.trim())
+                            return void f.default.alert('お知らせ', '名前を入力してください');
+                          const e = parseInt(P) || 0,
+                            t = '' === M ? void 0 : parseInt(M) || void 0;
+                          (q ? b(q.id, { name: k, gender: R, grade: e, termKi: t }) : l(k, R, e, t), D(!1));
+                        },
+                        children: (0, y.jsx)(o.default, { style: j.saveBtnText, children: '保存する' }),
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+            ],
+          });
+
+  // ── 個人ログインの画面 ──────────────────────────────
+  //
+  // 出るのは自分1人だけなので、一覧から選ばせる作りをそのまま使うと、
+  // 「1行だけの一覧を押して窓を開く」という空回りになる。ここは自分の
+  // 情報と弓具だけを、そのまま並べた画面にする。
+  // 中身（編集の欄・弓具の履歴）は団体ログインと同じものを呼んでいるので、
+  // 直すところは1か所で済む。
+  if ('member' === E) {
+    const 自分 = (e || []).find((x) => x && x.id === w);
+    return (0, y.jsxs)(u.default, {
+      style: j.safeArea,
+      children: [
+        (0, y.jsxs)(n.default, {
+          style: j.header,
+          children: [
+            (0, y.jsxs)(n.default, {
+              children: [
+                (0, y.jsx)(o.default, { style: j.title, children: '自分の情報' }),
+                (S || I) &&
+                  (0, y.jsx)(n.default, {
+                    style: j.headerGroupIdBadge,
+                    children: (0, y.jsxs)(o.default, {
+                      style: j.headerGroupIdText,
+                      children: ['団体ID: ', S || I],
+                    }),
+                  }),
+              ],
+            }),
+          ],
+        }),
+        自分
+          ? (0, y.jsx)(n.default, { style: { flex: 1 }, children: 編集の中身(!1) })
+          : (0, y.jsx)(n.default, {
+              style: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+              children: (0, y.jsx)(o.default, {
+                style: j.emptyText,
+                children: '自分の情報を読み込んでいます',
+              }),
+            }),
+        (0, y.jsx)(CC.CustomCalendarModal, {
+          visible: calVis,
+          onClose: () => setCalVis(false),
+          selectedDate: new Date(V + 'T12:00:00'),
+          onSelectDate: (date) => {
+            (K(
+              date.getFullYear() +
+                '-' +
+                String(date.getMonth() + 1).padStart(2, '0') +
+                '-' +
+                String(date.getDate()).padStart(2, '0')
+            ),
+              setCalVis(false));
+          },
+        }),
+      ],
+    });
+  }
 
   return (0, y.jsxs)(u.default, {
     style: j.safeArea,
@@ -331,173 +752,7 @@ const C = () => {
         transparent: !0,
         children: (0, y.jsx)(n.default, {
           style: j.modalOverlay,
-          children: (0, y.jsxs)(n.default, {
-            style: j.modalContent,
-            children: [
-              (0, y.jsxs)(n.default, {
-                style: j.modalHeader,
-                children: [
-                  (0, y.jsx)(o.default, { style: j.modalTitle, children: q ? 'メンバー編集' : '新規登録' }),
-                  (0, y.jsx)(s.default, {
-                    onPress: () => D(!1),
-                    style: j.closeBtn,
-                    children: (0, y.jsx)(p.Ionicons, { name: 'close', size: 24, color: '#8E8E93' }),
-                  }),
-                ],
-              }),
-              (0, y.jsxs)(n.default, {
-                style: { padding: 20 },
-                children: [
-                  (0, y.jsx)(o.default, { style: j.label, children: '名前' }),
-                  (0, y.jsx)(c.default, {
-                    style: j.input,
-                    value: k,
-                    onChangeText: A,
-                    placeholder: '例: 山田 太郎',
-                    placeholderTextColor: '#C7C7CC',
-                  }),
-                  (0, y.jsx)(o.default, {
-                    style: j.inputHelperText,
-                    children: '姓名の間にスペースを入力してください',
-                  }),
-                  q &&
-                    q.personalId &&
-                    (0, y.jsxs)(y.Fragment, {
-                      children: [
-                        (0, y.jsx)(o.default, { style: j.label, children: '個人ID (自動採番)' }),
-                        (0, y.jsx)(n.default, {
-                          style: [j.input, { justifyContent: 'center', opacity: 0.6 }],
-                          children: (0, y.jsx)(o.default, {
-                            style: { fontSize: 16 },
-                            children: B || q.id === w ? q.personalId : '******** (管理者のみ表示)',
-                          }),
-                        }),
-                      ],
-                    }),
-                  (0, y.jsx)(o.default, { style: j.label, children: '性別' }),
-                  (0, y.jsx)(n.default, {
-                    style: j.genderRow,
-                    children: ['男子', '女子', '未設定'].map((e) =>
-                      (0, y.jsx)(
-                        h.default,
-                        {
-                          style: ({ hovered: t }) => [
-                            j.genderBtn,
-                            R === e && j.genderBtnActive,
-                            t && R !== e && { backgroundColor: '#E5E5EA' },
-                          ],
-                          onPress: () => H(e),
-                          children: (0, y.jsx)(o.default, {
-                            style: [j.genderBtnText, R === e && j.genderBtnTextActive],
-                            children: e,
-                          }),
-                        },
-                        e
-                      )
-                    ),
-                  }),
-                  (0, y.jsx)(o.default, { style: j.label, children: '学年' }),
-                  (0, y.jsxs)(n.default, {
-                    style: j.stepperContainer,
-                    children: [
-                      (0, y.jsx)(o.default, {
-                        style: j.stepperValue,
-                        children: '0' === P ? 'その他' : '5' === P ? '卒業生' : `${P}年生`,
-                      }),
-                      (0, y.jsxs)(n.default, {
-                        style: j.stepperControls,
-                        children: [
-                          (0, y.jsx)(h.default, {
-                            style: ({ hovered: e }) => [j.stepperBtn, e && { backgroundColor: '#D1D1D6' }],
-                            onPress: () => {
-                              const e = parseInt(P) || 0;
-                              if (e > 0) {
-                                const t = e - 1;
-                                (_(String(t)), G && t >= 1 && t <= 5 && O(String(G - (t - 1))));
-                              }
-                            },
-                            children: (0, y.jsx)(p.Ionicons, { name: 'remove', size: 24, color: '#007AFF' }),
-                          }),
-                          (0, y.jsx)(n.default, { style: j.stepperDivider }),
-                          (0, y.jsx)(h.default, {
-                            style: ({ hovered: e }) => [j.stepperBtn, e && { backgroundColor: '#D1D1D6' }],
-                            onPress: () => {
-                              const e = parseInt(P) || 0;
-                              if (e < 5) {
-                                const t = e + 1;
-                                (_(String(t)), G && t >= 1 && t <= 5 && O(String(G - (t - 1))));
-                              }
-                            },
-                            children: (0, y.jsx)(p.Ionicons, { name: 'add', size: 24, color: '#007AFF' }),
-                          }),
-                        ],
-                      }),
-                    ],
-                  }),
-                  (0, y.jsx)(o.default, { style: j.label, children: '期' }),
-                  (0, y.jsx)(c.default, {
-                    style: j.input,
-                    value: M,
-                    onChangeText: O,
-                    placeholder: '例: 70',
-                    keyboardType: 'number-pad',
-                    placeholderTextColor: '#C7C7CC',
-                  }),
-                  // 弓具は、団体アカウントか本人だけ。個人ログインで他人の
-                  // 画面を開く道は塞いであるが、ここでも確かめる
-                  q &&
-                    ('member' !== E || q.id === w) &&
-                    (0, y.jsxs)(y.Fragment, {
-                      children: [
-                        (0, y.jsx)(o.default, { style: j.label, children: '弓具管理' }),
-                        (0, y.jsxs)(h.default, {
-                          style: ({ hovered: e }) => [j.eqHistoryBtn, e && { backgroundColor: '#E5E5EA' }],
-                          onPress: () => N(!0),
-                          children: [
-                            (0, y.jsx)(p.Ionicons, { name: 'construct-outline', size: 20, color: '#007AFF' }),
-                            (0, y.jsx)(o.default, {
-                              style: j.eqHistoryBtnText,
-                              children: '弓具変更履歴を表示・編集',
-                            }),
-                          ],
-                        }),
-                      ],
-                    }),
-                  (0, y.jsxs)(n.default, {
-                    style: j.modalFooter,
-                    children: [
-                      q && 'member' !== E
-                        ? (0, y.jsxs)(s.default, {
-                            style: j.deleteBtn,
-                            onPress: () => te(q.id, q.name),
-                            children: [
-                              (0, y.jsx)(p.Ionicons, {
-                                name: 'trash-outline',
-                                size: 18,
-                                color: '#FF3B30',
-                                style: { marginRight: 4 },
-                              }),
-                              (0, y.jsx)(o.default, { style: j.deleteBtnText, children: 'メンバーを削除' }),
-                            ],
-                          })
-                        : (0, y.jsx)(n.default, {}),
-                      (0, y.jsx)(s.default, {
-                        style: j.saveBtn,
-                        onPress: () => {
-                          if (!k.trim())
-                            return void f.default.alert('お知らせ', '名前を入力してください');
-                          const e = parseInt(P) || 0,
-                            t = '' === M ? void 0 : parseInt(M) || void 0;
-                          (q ? b(q.id, { name: k, gender: R, grade: e, termKi: t }) : l(k, R, e, t), D(!1));
-                        },
-                        children: (0, y.jsx)(o.default, { style: j.saveBtnText, children: '保存する' }),
-                      }),
-                    ],
-                  }),
-                ],
-              }),
-            ],
-          }),
+          children: 編集の中身(!0),
         }),
       }),
       (0, y.jsx)(g.default, {
@@ -508,149 +763,7 @@ const C = () => {
           style: j.modalOverlay,
           children: (0, y.jsx)(n.default, {
             style: [j.modalContent, { height: '80%', padding: 0 }],
-            children: (() => {
-              const t = e.find((e) => e.id === q?.id);
-              return t
-                ? (0, y.jsxs)(y.Fragment, {
-                    children: [
-                      (0, y.jsxs)(n.default, {
-                        style: j.eqModalHeader,
-                        children: [
-                          (0, y.jsxs)(o.default, {
-                            style: j.modalTitle,
-                            children: ['弓具変更履歴 (', t.name, ')'],
-                          }),
-                          (0, y.jsx)(s.default, {
-                            onPress: () => {
-                              N(!1);
-                              setCalVis(false);
-                            },
-                            children: (0, y.jsx)(p.Ionicons, { name: 'close', size: 24, color: '#8E8E93' }),
-                          }),
-                        ],
-                      }),
-                      (0, y.jsxs)(n.default, {
-                        style: j.eqForm,
-                        children: [
-                          (0, y.jsxs)(n.default, {
-                            style: j.eqInputRow,
-                            children: [
-                              (0, y.jsx)(s.default, {
-                                style: [j.eqInput, { flex: 1, minWidth: 0, justifyContent: 'center' }],
-                                onPress: () => setCalVis(true),
-                                children: (0, y.jsx)(o.default, {
-                                  style: { fontSize: 15, color: '#000' },
-                                  children: V,
-                                }),
-                              }),
-                              (0, y.jsxs)(n.default, {
-                                style: [j.eqWeightInputWrapper, { flex: 1, minWidth: 0 }],
-                                children: [
-                                  (0, y.jsx)(c.default, {
-                                    style: j.eqInputInside,
-                                    placeholder: '弓力',
-                                    value: U,
-                                    onChangeText: (text) => {
-                                      let filtered = text.replace(/[^0-9.]/g, '');
-                                      const dotPos = filtered.indexOf('.');
-                                      if (dotPos !== -1) {
-                                        const intPart = filtered.slice(0, dotPos).slice(0, 3);
-                                        const decPart = filtered
-                                          .slice(dotPos + 1)
-                                          .replace(/\./g, '')
-                                          .slice(0, 1);
-                                        filtered = intPart + '.' + decPart;
-                                      } else {
-                                        filtered = filtered.slice(0, 3);
-                                      }
-                                      J(filtered);
-                                    },
-                                    keyboardType: 'decimal-pad',
-                                  }),
-                                  (0, y.jsx)(o.default, { style: j.kgUnit, children: 'kg' }),
-                                ],
-                              }),
-                            ],
-                          }),
-                          (0, y.jsx)(c.default, {
-                            style: [j.eqInput, { height: 60 }],
-                            placeholder: '内容 (弦交換、弓の変更など)',
-                            value: Y,
-                            onChangeText: $,
-                            multiline: !0,
-                          }),
-                          (0, y.jsx)(s.default, {
-                            style: j.eqAddBtn,
-                            onPress: () => {
-                              (Y.trim() || U.trim()) &&
-                                (Q(t.id, { date: new Date(V).getTime() || Date.now(), note: Y, weight: U }),
-                                $(''),
-                                J(''));
-                            },
-                            children: (0, y.jsx)(o.default, {
-                              style: j.eqAddBtnText,
-                              children: '履歴を追加',
-                            }),
-                          }),
-                        ],
-                      }),
-                      (0, y.jsx)(a.default, {
-                        data: [...(t.equipments || [])].sort((e, t) => t.date - e.date),
-                        keyExtractor: (e, index) =>
-                          typeof e.id === 'string' ? e.id : `eq-${index}-${e.date}`,
-                        contentContainerStyle: { padding: 15 },
-                        renderItem: ({ item: e }) =>
-                          (0, y.jsxs)(n.default, {
-                            style: j.eqItem,
-                            children: [
-                              (0, y.jsxs)(n.default, {
-                                style: { flex: 1, marginRight: 8 },
-                                children: [
-                                  (0, y.jsxs)(n.default, {
-                                    style: j.eqItemHeader,
-                                    children: [
-                                      (0, y.jsx)(o.default, {
-                                        style: j.eqItemDate,
-                                        children: new Date(e.date).toLocaleDateString(),
-                                      }),
-                                      e.weight &&
-                                        (0, y.jsx)(n.default, {
-                                          style: j.eqWeightBadge,
-                                          children: (0, y.jsxs)(o.default, {
-                                            style: j.eqWeightText,
-                                            children: [e.weight, ' kg'],
-                                          }),
-                                        }),
-                                    ],
-                                  }),
-                                  (0, y.jsx)(o.default, { style: j.eqItemNote, children: e.note }),
-                                ],
-                              }),
-                              (0, y.jsx)(s.default, {
-                                // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
-                                accessible: !0,
-                                accessibilityRole: 'button',
-                                accessibilityLabel: 'この弓具の記録を消す',
-                                'aria-label': 'この弓具の記録を消す',
-                                onPress: () => X(t.id, e.id),
-                                style: { padding: 4 },
-                                children: (0, y.jsx)(p.Ionicons, {
-                                  name: 'trash-outline',
-                                  size: 20,
-                                  color: '#FF3B30',
-                                }),
-                              }),
-                            ],
-                          }),
-                        ListEmptyComponent: (0, y.jsx)(o.default, {
-                          style: j.emptyText,
-                          children: '履歴がありません',
-                        }),
-                      }),
-                    ],
-                  })
-                : null;
-            })(),
+            children: 弓具履歴の中身(q?.id, !0),
           }),
         }),
       }),
