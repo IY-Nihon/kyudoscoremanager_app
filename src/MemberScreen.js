@@ -24,6 +24,7 @@ var t = require('react'),
   s = e(require('./TouchableOpacity')),
   c = e(require('./TextInput')),
   u = e(require('./SafeAreaView')),
+  流れ = e(require('./ScrollView')),
   g = e(require('./Modal')),
   f = e(require('./alertBridge')),
   h = e(require('./Pressable')),
@@ -317,6 +318,9 @@ const C = () => {
               ],
             }),
             (0, y.jsx)(a.default, {
+              // 画面として出すときは、外側の ScrollView が流す。
+              // ここでも流すと入れ子になって、指の動きを取り合う
+              scrollEnabled: !!閉じるを出す,
               data: [...(t.equipments || [])].sort((e, t) => t.date - e.date),
               keyExtractor: (e, index) =>
                 typeof e.id === 'string' ? e.id : `eq-${index}-${e.date}`,
@@ -384,7 +388,9 @@ const C = () => {
     (0, y.jsxs)(n.default, {
             // 窓のときは窓の見た目、画面のときは画面いっぱいに広げる。
             // 窓の枠のまま画面に置くと、右half が空いたままになる
-            style: 窓として出す ? j.modalContent : { flex: 1, width: '100%' },
+            style: 窓として出す
+              ? j.modalContent
+              : { flex: 1, width: '100%', backgroundColor: '#FFF' },
             children: [
               // 見出しと×は窓のときだけ。画面のときは上に「自分の情報」が在る
               窓として出す
@@ -406,101 +412,168 @@ const C = () => {
               (0, y.jsxs)(n.default, {
                 style: { padding: 20 },
                 children: [
-                  (0, y.jsx)(o.default, { style: j.label, children: '名前' }),
-                  (0, y.jsx)(c.default, {
-                    style: j.input,
-                    value: k,
-                    onChangeText: A,
-                    placeholder: '例: 山田 太郎',
-                    placeholderTextColor: '#C7C7CC',
-                  }),
-                  (0, y.jsx)(o.default, {
-                    style: j.inputHelperText,
-                    children: '姓名の間にスペースを入力してください',
-                  }),
-                  q &&
-                    q.personalId &&
-                    (0, y.jsxs)(y.Fragment, {
+                  // 個人ログインでは名前も変えられない。名簿は団体で管理する
+                  // ものなので、本人が動かすと記録の名寄せまでずれる
+                  ...(窓として出す
+                    ? [
+                                      (0, y.jsx)(o.default, { style: j.label, children: '名前' }),
+                                      (0, y.jsx)(c.default, {
+                                        style: j.input,
+                                        value: k,
+                                        onChangeText: A,
+                                        placeholder: '例: 山田 太郎',
+                                        placeholderTextColor: '#C7C7CC',
+                                      }),
+                                      (0, y.jsx)(o.default, {
+                                        style: j.inputHelperText,
+                                        children: '姓名の間にスペースを入力してください',
+                                      }),
+                                      q &&
+                                        q.personalId &&
+                                        (0, y.jsxs)(y.Fragment, {
+                                          children: [
+                                            (0, y.jsx)(o.default, { style: j.label, children: '個人ID (自動採番)' }),
+                                            (0, y.jsx)(n.default, {
+                                              style: [j.input, { justifyContent: 'center', opacity: 0.6 }],
+                                              children: (0, y.jsx)(o.default, {
+                                                style: { fontSize: 16 },
+                                                children: B || q.id === w ? q.personalId : '******** (管理者のみ表示)',
+                                              }),
+                                            }),
+                                          ],
+                                        }),
+                      ]
+                    : []),
+                  // 性別・学年・期は団体で管理する項目。個人ログインでは
+                  // 見るだけにする。本人が動かすと名簿と食い違い、進級や
+                  // 卒業の扱いまでずれる
+                  窓として出す
+                    ? (0, y.jsxs)(y.Fragment, { children: [
+                    (0, y.jsx)(o.default, { style: j.label, children: '性別' }),
+                    (0, y.jsx)(n.default, {
+                      style: j.genderRow,
+                      children: ['男子', '女子', '未設定'].map((e) =>
+                        (0, y.jsx)(
+                          h.default,
+                          {
+                            style: ({ hovered: t }) => [
+                              j.genderBtn,
+                              R === e && j.genderBtnActive,
+                              t && R !== e && { backgroundColor: '#E5E5EA' },
+                            ],
+                            onPress: () => H(e),
+                            children: (0, y.jsx)(o.default, {
+                              style: [j.genderBtnText, R === e && j.genderBtnTextActive],
+                              children: e,
+                            }),
+                          },
+                          e
+                        )
+                      ),
+                    }),
+                    (0, y.jsx)(o.default, { style: j.label, children: '学年' }),
+                    (0, y.jsxs)(n.default, {
+                      style: j.stepperContainer,
                       children: [
-                        (0, y.jsx)(o.default, { style: j.label, children: '個人ID (自動採番)' }),
-                        (0, y.jsx)(n.default, {
-                          style: [j.input, { justifyContent: 'center', opacity: 0.6 }],
-                          children: (0, y.jsx)(o.default, {
-                            style: { fontSize: 16 },
-                            children: B || q.id === w ? q.personalId : '******** (管理者のみ表示)',
-                          }),
+                        (0, y.jsx)(o.default, {
+                          style: j.stepperValue,
+                          children: '0' === P ? 'その他' : '5' === P ? '卒業生' : `${P}年生`,
+                        }),
+                        (0, y.jsxs)(n.default, {
+                          style: j.stepperControls,
+                          children: [
+                            (0, y.jsx)(h.default, {
+                              style: ({ hovered: e }) => [j.stepperBtn, e && { backgroundColor: '#D1D1D6' }],
+                              onPress: () => {
+                                const e = parseInt(P) || 0;
+                                if (e > 0) {
+                                  const t = e - 1;
+                                  (_(String(t)), G && t >= 1 && t <= 5 && O(String(G - (t - 1))));
+                                }
+                              },
+                              children: (0, y.jsx)(p.Ionicons, { name: 'remove', size: 24, color: '#007AFF' }),
+                            }),
+                            (0, y.jsx)(n.default, { style: j.stepperDivider }),
+                            (0, y.jsx)(h.default, {
+                              style: ({ hovered: e }) => [j.stepperBtn, e && { backgroundColor: '#D1D1D6' }],
+                              onPress: () => {
+                                const e = parseInt(P) || 0;
+                                if (e < 5) {
+                                  const t = e + 1;
+                                  (_(String(t)), G && t >= 1 && t <= 5 && O(String(G - (t - 1))));
+                                }
+                              },
+                              children: (0, y.jsx)(p.Ionicons, { name: 'add', size: 24, color: '#007AFF' }),
+                            }),
+                          ],
                         }),
                       ],
                     }),
-                  (0, y.jsx)(o.default, { style: j.label, children: '性別' }),
-                  (0, y.jsx)(n.default, {
-                    style: j.genderRow,
-                    children: ['男子', '女子', '未設定'].map((e) =>
-                      (0, y.jsx)(
-                        h.default,
-                        {
-                          style: ({ hovered: t }) => [
-                            j.genderBtn,
-                            R === e && j.genderBtnActive,
-                            t && R !== e && { backgroundColor: '#E5E5EA' },
-                          ],
-                          onPress: () => H(e),
-                          children: (0, y.jsx)(o.default, {
-                            style: [j.genderBtnText, R === e && j.genderBtnTextActive],
-                            children: e,
-                          }),
-                        },
-                        e
-                      )
-                    ),
-                  }),
-                  (0, y.jsx)(o.default, { style: j.label, children: '学年' }),
-                  (0, y.jsxs)(n.default, {
-                    style: j.stepperContainer,
-                    children: [
-                      (0, y.jsx)(o.default, {
-                        style: j.stepperValue,
-                        children: '0' === P ? 'その他' : '5' === P ? '卒業生' : `${P}年生`,
-                      }),
-                      (0, y.jsxs)(n.default, {
-                        style: j.stepperControls,
+                    (0, y.jsx)(o.default, { style: j.label, children: '期' }),
+                    (0, y.jsx)(c.default, {
+                      style: j.input,
+                      value: M,
+                      onChangeText: O,
+                      placeholder: '例: 70',
+                      keyboardType: 'number-pad',
+                      placeholderTextColor: '#C7C7CC',
+                    }),
+                      ] })
+                    : (0, y.jsxs)(n.default, {
+                        style: j.きまり,
                         children: [
-                          (0, y.jsx)(h.default, {
-                            style: ({ hovered: e }) => [j.stepperBtn, e && { backgroundColor: '#D1D1D6' }],
-                            onPress: () => {
-                              const e = parseInt(P) || 0;
-                              if (e > 0) {
-                                const t = e - 1;
-                                (_(String(t)), G && t >= 1 && t <= 5 && O(String(G - (t - 1))));
-                              }
-                            },
-                            children: (0, y.jsx)(p.Ionicons, { name: 'remove', size: 24, color: '#007AFF' }),
+                          (0, y.jsxs)(n.default, {
+                            style: j.きまりの行,
+                            children: [
+                              (0, y.jsx)(o.default, { style: j.きまりの名, children: '名前' }),
+                              (0, y.jsx)(o.default, { style: j.きまりの値, children: k || '未設定' }),
+                            ],
                           }),
-                          (0, y.jsx)(n.default, { style: j.stepperDivider }),
-                          (0, y.jsx)(h.default, {
-                            style: ({ hovered: e }) => [j.stepperBtn, e && { backgroundColor: '#D1D1D6' }],
-                            onPress: () => {
-                              const e = parseInt(P) || 0;
-                              if (e < 5) {
-                                const t = e + 1;
-                                (_(String(t)), G && t >= 1 && t <= 5 && O(String(G - (t - 1))));
-                              }
-                            },
-                            children: (0, y.jsx)(p.Ionicons, { name: 'add', size: 24, color: '#007AFF' }),
+                          q && q.personalId
+                            ? (0, y.jsxs)(n.default, {
+                                style: j.きまりの行,
+                                children: [
+                                  (0, y.jsx)(o.default, { style: j.きまりの名, children: '個人ID' }),
+                                  (0, y.jsx)(o.default, {
+                                    style: j.きまりの値,
+                                    children: q.personalId,
+                                  }),
+                                ],
+                              })
+                            : null,
+                          (0, y.jsxs)(n.default, {
+                            style: j.きまりの行,
+                            children: [
+                              (0, y.jsx)(o.default, { style: j.きまりの名, children: '性別' }),
+                              (0, y.jsx)(o.default, { style: j.きまりの値, children: R || '未設定' }),
+                            ],
+                          }),
+                          (0, y.jsxs)(n.default, {
+                            style: j.きまりの行,
+                            children: [
+                              (0, y.jsx)(o.default, { style: j.きまりの名, children: '学年' }),
+                              (0, y.jsx)(o.default, {
+                                style: j.きまりの値,
+                                children: '5' === P ? '卒業生' : '0' === P ? 'その他' : `${P}年`,
+                              }),
+                            ],
+                          }),
+                          (0, y.jsxs)(n.default, {
+                            style: [j.きまりの行, { borderBottomWidth: 0 }],
+                            children: [
+                              (0, y.jsx)(o.default, { style: j.きまりの名, children: '期' }),
+                              (0, y.jsx)(o.default, {
+                                style: j.きまりの値,
+                                children: M ? `${M}期` : '未設定',
+                              }),
+                            ],
+                          }),
+                          (0, y.jsx)(o.default, {
+                            style: j.きまりの但し書き,
+                            children: '名前・性別・学年・期は団体の担当者が直します',
                           }),
                         ],
                       }),
-                    ],
-                  }),
-                  (0, y.jsx)(o.default, { style: j.label, children: '期' }),
-                  (0, y.jsx)(c.default, {
-                    style: j.input,
-                    value: M,
-                    onChangeText: O,
-                    placeholder: '例: 70',
-                    keyboardType: 'number-pad',
-                    placeholderTextColor: '#C7C7CC',
-                  }),
                   // 弓具は、団体アカウントか本人だけ。個人ログインで他人の
                   // 画面を開く道は塞いであるが、ここでも確かめる
                   q &&
@@ -532,37 +605,39 @@ const C = () => {
                             }),
                       ],
                     }),
-                  (0, y.jsxs)(n.default, {
-                    style: j.modalFooter,
-                    children: [
-                      q && 'member' !== E
-                        ? (0, y.jsxs)(s.default, {
-                            style: j.deleteBtn,
-                            onPress: () => te(q.id, q.name),
-                            children: [
-                              (0, y.jsx)(p.Ionicons, {
-                                name: 'trash-outline',
-                                size: 18,
-                                color: '#FF3B30',
-                                style: { marginRight: 4 },
-                              }),
-                              (0, y.jsx)(o.default, { style: j.deleteBtnText, children: 'メンバーを削除' }),
-                            ],
-                          })
-                        : (0, y.jsx)(n.default, {}),
-                      (0, y.jsx)(s.default, {
-                        style: j.saveBtn,
-                        onPress: () => {
-                          if (!k.trim())
-                            return void f.default.alert('お知らせ', '名前を入力してください');
-                          const e = parseInt(P) || 0,
-                            t = '' === M ? void 0 : parseInt(M) || void 0;
-                          (q ? b(q.id, { name: k, gender: R, grade: e, termKi: t }) : l(k, R, e, t), D(!1));
-                        },
-                        children: (0, y.jsx)(o.default, { style: j.saveBtnText, children: '保存する' }),
-                      }),
-                    ],
-                  }),
+                  ...(窓として出す ? [
+                    (0, y.jsxs)(n.default, {
+                      style: j.modalFooter,
+                      children: [
+                        q && 'member' !== E
+                          ? (0, y.jsxs)(s.default, {
+                              style: j.deleteBtn,
+                              onPress: () => te(q.id, q.name),
+                              children: [
+                                (0, y.jsx)(p.Ionicons, {
+                                  name: 'trash-outline',
+                                  size: 18,
+                                  color: '#FF3B30',
+                                  style: { marginRight: 4 },
+                                }),
+                                (0, y.jsx)(o.default, { style: j.deleteBtnText, children: 'メンバーを削除' }),
+                              ],
+                            })
+                          : (0, y.jsx)(n.default, {}),
+                        (0, y.jsx)(s.default, {
+                          style: j.saveBtn,
+                          onPress: () => {
+                            if (!k.trim())
+                              return void f.default.alert('お知らせ', '名前を入力してください');
+                            const e = parseInt(P) || 0,
+                              t = '' === M ? void 0 : parseInt(M) || void 0;
+                            (q ? b(q.id, { name: k, gender: R, grade: e, termKi: t }) : l(k, R, e, t), D(!1));
+                          },
+                          children: (0, y.jsx)(o.default, { style: j.saveBtnText, children: '保存する' }),
+                        }),
+                      ],
+                    }),
+                  ] : []),
                 ],
               }),
             ],
@@ -599,7 +674,11 @@ const C = () => {
           ],
         }),
         自分
-          ? (0, y.jsx)(n.default, { style: { flex: 1 }, children: 編集の中身(!1) })
+          ? (0, y.jsx)(流れ.default, {
+              style: { flex: 1 },
+              contentContainerStyle: { flexGrow: 1, paddingBottom: 32 },
+              children: 編集の中身(!1),
+            })
           : (0, y.jsx)(n.default, {
               style: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
               children: (0, y.jsx)(o.default, {
@@ -890,6 +969,28 @@ const j = l.default.create({
   },
   modalTitle: { fontSize: 17, fontWeight: '600', color: '#000' },
   closeBtn: { position: 'absolute', right: 16 },
+  // 個人ログインで「見るだけ」の項目を並べる一枚。
+  // 入力欄と見た目を分けて、触れないことがひと目で分かるようにする
+  きまり: {
+    backgroundColor: '#F7F7FA',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    paddingHorizontal: 12,
+    paddingVertical: 2,
+    marginTop: 4,
+  },
+  きまりの行: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5EA',
+  },
+  きまりの名: { fontSize: 14, color: '#8E8E93' },
+  きまりの値: { fontSize: 15, color: '#000', fontWeight: '600' },
+  きまりの但し書き: { fontSize: 11, color: '#8E8E93', paddingVertical: 8 },
   label: {
     fontSize: 13,
     color: '#8E8E93',

@@ -693,10 +693,20 @@ const AttendanceScreen = () => {
           visible: true,
           transparent: true,
           animationType: 'slide',
-          children: (0, j.jsx)(o.View, {
+          // 見るだけの窓。端末の戻るでも、外を押しても閉じる
+          onRequestClose: () => setSelectedMember(null),
+          children: (0, j.jsxs)(o.View, {
             style: styles.modalOverlay,
-            children: (0, j.jsxs)(o.View, {
-              style: [styles.modalContent, { height: '85%' }],
+            children: [
+            (0, j.jsx)(o.TouchableOpacity, {
+              style: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+              activeOpacity: 1,
+              accessibilityLabel: '閉じる',
+              onPress: () => setSelectedMember(null),
+            }),
+            (0, j.jsxs)(o.View, {
+              // 背景の板より上に置く。置かないと、板が中身の押すを横取りする
+              style: [styles.modalContent, { height: '85%', zIndex: 1 }],
               children: [
                 (0, j.jsxs)(o.View, {
                   style: styles.modalHeader,
@@ -852,6 +862,7 @@ const AttendanceScreen = () => {
                 }),
               ],
             }),
+            ],
           }),
         }),
     ],
