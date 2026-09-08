@@ -37,6 +37,7 @@ var y = require('./useScoreStore'),
   b = require('./archerFactory'),
   p = require('./ArcherColumnView'),
   j = require('./LabelColumn'),
+  組 = require('./teamGrouping'),
   C = require('./uiConfig'),
   F = require('@expo/vector-icons'),
   S = (function (e) {
@@ -98,6 +99,10 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
         setHistoryTagLogic: Z,
         focusedMemberId,
         setFocusedMemberId,
+        // 縦横の並べ方。記録画面と同じ設定を使う。
+        // 画面ごとに別々に覚えると、同じ表なのに向きが食い違う
+        横に並べる = !1,
+        set横に並べる,
         // 案内が見本を出しているあいだは、中身だけ見本に差し替わる
       } = 案内.見本を重ねる((0, y.useScoreStore)()),
       ee = (0, y.useScoreStore)((e) => e.myMemberName) || '',
@@ -395,9 +400,33 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                   },
                   children: [
                     (0, k.jsx)(n.default, { style: E.detailDate, children: l }),
-                    (0, k.jsx)(o.default, {
+                    (0, k.jsxs)(o.default, {
                       style: { flexDirection: 'row', alignItems: 'center' },
-                      children:
+                      children: [
+                        // 縦横の切り替え。見るだけの人にも要るので、
+                        // 消す・直すの権限とは別に、いつでも出す
+                        (0, k.jsxs)(f.default, {
+                          accessible: !0,
+                          accessibilityRole: 'button',
+                          accessibilityLabel: 横に並べる ? '縦に並べる' : '横に並べる',
+                          'aria-label': 横に並べる ? '縦に並べる' : '横に並べる',
+                          onPress: () => set横に並べる && set横に並べる(!横に並べる),
+                          style: ({ hovered: e }) => [
+                            { padding: 4, borderRadius: 20, alignItems: 'center', marginRight: 8 },
+                            e && { backgroundColor: 'rgba(0,122,255,0.05)' },
+                          ],
+                          children: [
+                            (0, k.jsx)(F.Ionicons, {
+                              name: 横に並べる ? 'phone-portrait-outline' : 'phone-landscape-outline',
+                              size: 20,
+                              color: '#8E8E93',
+                            }),
+                            (0, k.jsx)(n.default, {
+                              style: { fontSize: 9, color: '#8E8E93', marginTop: 1 },
+                              children: 横に並べる ? '縦へ' : '横へ',
+                            }),
+                          ],
+                        }),
                         (R || 'group' === z) &&
                         (0, k.jsxs)(k.Fragment, {
                           children: [
@@ -435,6 +464,7 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                               }),
                           ],
                         }),
+                      ],
                     }),
                   ],
                 }),
@@ -460,7 +490,158 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
               style: [E.detailTableArea, { justifyContent: 'center', alignItems: 'center' }],
               children: (0, k.jsxs)(o.default, {
                 style: { flexDirection: 'column', maxWidth: '100%', maxHeight: '100%' },
-                children: [
+                children: 横に並べる
+                  ? [
+                      // ── 横に並べた表 ──
+                      // 記録画面の横並びと同じ形。名前を左に固定し、○×は右へ伸びる。
+                      // 部品（LabelColumn / ArcherColumnView）は縦と同じものを、
+                      // 横並びの印を付けて使う
+                      (0, k.jsx)(
+                        u.default,
+                        {
+                          showsVerticalScrollIndicator: !1,
+                          bounces: !1,
+                          style: { flexGrow: 0 },
+                          children: (0, k.jsxs)(o.default, {
+                            style: { flexDirection: 'row', minWidth: '100%' },
+                            children: [
+                              (0, k.jsxs)(o.default, {
+                                style: { backgroundColor: '#F2F2F7', zIndex: 10 },
+                                children: [
+                                  (0, k.jsx)(o.default, {
+                                    style: {
+                                      width: 100 * V,
+                                      height: C.UIConfig.cellHeight * V,
+                                      justifyContent: 'center',
+                                      alignItems: 'center',
+                                      backgroundColor: '#F2F2F7',
+                                      borderTopWidth: 1.5,
+                                      borderTopColor: '#000',
+                                      borderBottomWidth: 3,
+                                      borderBottomColor: '#000',
+                                      borderRightWidth: 1.5,
+                                      borderRightColor: '#000',
+                                    },
+                                    children: (0, k.jsx)(n.default, {
+                                      style: { fontSize: 10 * V, fontWeight: 'bold', color: '#3C3C43' },
+                                      children: '名',
+                                    }),
+                                  }),
+                                  d.map((射手, 順) =>
+                                    (0, k.jsx)(
+                                      o.default,
+                                      {
+                                        style: {
+                                          width: 100 * V,
+                                          height:
+                                            (射手.isSeparator
+                                              ? C.UIConfig.separatorWidth
+                                              : C.UIConfig.cellHeight) * V,
+                                          justifyContent: 'center',
+                                          alignItems: 'center',
+                                          backgroundColor: 射手.isTotalCalculator
+                                            ? 'rgba(0,122,255,0.05)'
+                                            : '#F2F2F7',
+                                          borderBottomWidth:
+                                            射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 1,
+                                          borderBottomColor: '#000',
+                                          borderRightWidth: 1.5,
+                                          borderRightColor: '#000',
+                                          paddingHorizontal: 4,
+                                          // チームの色。横のときは名前の左に細い帯で出す
+                                          ...(() => {
+                                            const 色 = (組.チームを割り当てる(d).find(
+                                              (x) => x && x.id === 射手.id
+                                            ) || {}).色;
+                                            return 色
+                                              ? { borderLeftWidth: 3 * V, borderLeftColor: 色 }
+                                              : null;
+                                          })(),
+                                        },
+                                        children: 射手.isSeparator
+                                          ? 組.区切りのチーム名(射手)
+                                            ? (0, k.jsx)(n.default, {
+                                                style: {
+                                                  fontSize: 11 * V,
+                                                  fontWeight: '700',
+                                                  color:
+                                                    組.チームの色(組.区切りのチーム名(射手)) || '#8E8E93',
+                                                },
+                                                numberOfLines: 1,
+                                                children: 組.区切りのチーム名(射手),
+                                              })
+                                            : null
+                                          : (0, k.jsx)(s.default, {
+                                              style: {
+                                                width: '100%',
+                                                height: '100%',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                              },
+                                              onPress: () => it(射手.id, 順),
+                                              disabled: !R,
+                                              children: (0, k.jsx)(n.default, {
+                                                style: {
+                                                  fontSize: 13 * V,
+                                                  color: 射手.name ? '#000' : '#8E8E93',
+                                                },
+                                                numberOfLines: 1,
+                                                children: 射手.isTotalCalculator
+                                                  ? 射手.またぐ合計
+                                                    ? '総計'
+                                                    : '合計'
+                                                  : 射手.name
+                                                    ? (0, I.formatMemberName)(射手.name, e || [])
+                                                    : '選択',
+                                              }),
+                                            }),
+                                      },
+                                      typeof 射手.id === 'string' ? `名-${射手.id}` : `名-${順}`
+                                    )
+                                  ),
+                                ],
+                              }),
+                              (0, k.jsx)(u.default, {
+                                horizontal: !0,
+                                showsHorizontalScrollIndicator: !0,
+                                style: { flexGrow: 0, flexShrink: 1 },
+                                children: (0, k.jsxs)(o.default, {
+                                  style: {
+                                    flexDirection: 'column',
+                                    width: C.UIConfig.cellWidth * (a + 1) * V,
+                                  },
+                                  children: [
+                                    (0, k.jsx)(j.LabelColumn, { shots: a, showFooter: !1, 横並び: !0 }),
+                                    d.map((射手, 順) =>
+                                      (0, k.jsx)(
+                                        p.ArcherColumnView,
+                                        {
+                                          archer: 射手,
+                                          shots: a,
+                                          allArchers: d,
+                                          indexInList: 順,
+                                          showFooter: !1,
+                                          横並び: !0,
+                                          isReadOnly: !R,
+                                          isAdminMode: R,
+                                          onPressName: () => it(射手.id, 順),
+                                          onDelete: () => nt(射手.id),
+                                          onToggleMark: Ze,
+                                          onToggleLock: et,
+                                        },
+                                        typeof 射手.id === 'string' ? `行-${射手.id}` : `行-${順}`
+                                      )
+                                    ),
+                                  ],
+                                }),
+                              }),
+                            ],
+                          }),
+                        },
+                        '横の表'
+                      ),
+                    ]
+                  : [
                   (0, k.jsx)(u.default, {
                     showsVerticalScrollIndicator: !1,
                     bounces: !1,
@@ -554,9 +735,30 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                                   padding: 4,
                                   justifyContent: 'center',
                                   alignItems: 'center',
+                                  // チームの色。記録中と同じ見え方にする
+                                  ...(() => {
+                                    const 色 = (組.チームを割り当てる(d).find(
+                                      (x) => x && x.id === t.id
+                                    ) || {}).色;
+                                    return 色 ? { borderTopWidth: 3 * V, borderTopColor: 色 } : null;
+                                  })(),
                                 },
-                                children:
-                                  !t.isSeparator &&
+                                children: t.isSeparator
+                                  ? // 区切りに付けたチーム名。保存はされているのに
+                                    // 履歴では出していなかった
+                                    組.区切りのチーム名(t)
+                                    ? (0, k.jsx)(n.default, {
+                                        style: {
+                                          fontSize: 11 * V,
+                                          fontWeight: '700',
+                                          textAlign: 'center',
+                                          color: 組.チームの色(組.区切りのチーム名(t)) || '#8E8E93',
+                                        },
+                                        numberOfLines: 3,
+                                        children: 組.区切りのチーム名(t),
+                                      })
+                                    : null
+                                  : !t.isSeparator &&
                                   (0, k.jsxs)(s.default, {
                                     style: {
                                       alignItems: 'center',
@@ -621,7 +823,7 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                       }),
                     ],
                   }),
-                ],
+                    ],
               }),
             }),
           ],
