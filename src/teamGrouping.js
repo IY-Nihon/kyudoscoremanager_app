@@ -105,3 +105,34 @@ module.exports = {
   出てくるチーム,
   チームの色たち,
 };
+
+/**
+ * 合計の列が数える中り数を返す。
+ *
+ * ふつうの「計」は隣から左へ数え、区切りに当たると止まる（1立ぶん）。
+ * 「総計」（またぐ合計）は区切りで止まらず、端まで数える（複数立ちの合計）。
+ * どちらも、別の合計の列に当たったら止める——合計の合計を数えて
+ * 二重にならないようにするため。
+ *
+ * @param {Array} 射手たち 立ちの並び
+ * @param {number} 位置 合計の列の場所
+ * @returns {number} 中り数
+ */
+function 合計を数える(射手たち, 位置) {
+  const 並び = Array.isArray(射手たち) ? 射手たち : [];
+  const 自分 = 並び[位置];
+  if (!自分 || !自分.isTotalCalculator) return 0;
+  let 数 = 0;
+  for (let i = 位置 - 1; i >= 0; i--) {
+    const x = 並び[i];
+    if (!x || x.isTotalCalculator) break;
+    if (x.isSeparator) {
+      if (自分.またぐ合計) continue;
+      break;
+    }
+    数 += (x.marks || []).filter((m) => '○' === m).length;
+  }
+  return 数;
+}
+
+module.exports.合計を数える = 合計を数える;

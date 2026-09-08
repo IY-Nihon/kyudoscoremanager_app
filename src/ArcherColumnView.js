@@ -77,14 +77,22 @@ const m = t.default.memo(
         L = (0, c.useScoreStore)((e) => e.members || []),
         B = (() => {
           if (e.isTotalCalculator) {
-            let e = 0;
+            let 数 = 0;
             const t = Array.isArray(m) ? m : [];
+            // ふつうの「計」は区切りで止まる（1立ぶん）。
+            // 「総計」は区切りをまたいで端まで数える（複数立ちの合計）。
+            // どちらも、別の合計の列に当たったらそこで止める
+            // （合計の合計を数えて二重になるのを防ぐ）
             for (let o = C - 1; o >= 0; o--) {
               const l = t[o];
-              if (!l || l.isSeparator || l.isTotalCalculator) break;
-              e += (l.marks || []).filter((e) => '○' === e).length;
+              if (!l || l.isTotalCalculator) break;
+              if (l.isSeparator) {
+                if (e.またぐ合計) continue;
+                break;
+              }
+              数 += (l.marks || []).filter((x) => '○' === x).length;
             }
-            return e;
+            return 数;
           }
           return (e.marks || []).filter((e) => '○' === e).length;
         })(),
@@ -143,7 +151,9 @@ const m = t.default.memo(
           I ? I(e, t) : F(e, t);
         },
         P = (e) => (0, u.formatMemberName)(e, L),
-        v = () => (e.name ? P(e.name) : e.isTotalCalculator ? '合計' : '選択'),
+        // 区切りをまたぐ合計は「総計」。ふつうの「計」と見分けるため
+        v = () =>
+          e.isTotalCalculator ? (e.またぐ合計 ? '総計' : '合計') : e.name ? P(e.name) : '選択',
         O = e.isSeparator || e.isTotalCalculator,
         R = O ? 1.5 : 1,
         _ = O ? 1.5 : 0;
