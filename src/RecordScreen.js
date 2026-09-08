@@ -402,26 +402,78 @@ const k = () => {
     })();
 
     // 指のいる場所（ページの座標）から、その下にある列の番号を出す。
+    // 縦に並べているときは横の位置で、横に並べているときは縦の位置で決める
+    //（縦の表は列が横に並び、横の表は上から下へ積まれるため）。
     // 端からはみ出したときは、いちばん近い端の列にする。
     // 測るのは「いま描いている並び」。掴んだ列は指の下にあるので、
     // そのまま同じ番号が返り、行ったり来たりしない
-    測る手.current = (指のx) => {
+    測る手.current = (指の位置) => {
       const 一覧 = 見えている並び;
       const 箱 = [];
       for (let i = 0; i < 一覧.length; i++) {
         const node = 名の欄のnode.current[一覧[i].id];
         if (!node || 'function' != typeof node.getBoundingClientRect) continue;
         const r = node.getBoundingClientRect();
-        const ずれ = 'undefined' != typeof window && window.scrollX ? window.scrollX : 0;
-        箱.push({ i, 左: r.left + ずれ, 右: r.right + ずれ });
+        const ずれ =
+          'undefined' == typeof window ? 0 : (横に並べる ? window.scrollY : window.scrollX) || 0;
+        箱.push({
+          i,
+          頭: (横に並べる ? r.top : r.left) + ずれ,
+          尻: (横に並べる ? r.bottom : r.right) + ずれ,
+        });
       }
       if (!箱.length) return null;
-      for (const x of 箱) if (指のx >= x.左 && 指のx <= x.右) return x.i;
-      const 左端 = 箱.reduce((a, b) => (a.左 < b.左 ? a : b));
-      const 右端 = 箱.reduce((a, b) => (a.右 > b.右 ? a : b));
-      if (指のx < 左端.左) return 左端.i;
-      if (指のx > 右端.右) return 右端.i;
+      for (const x of 箱) if (指の位置 >= x.頭 && 指の位置 <= x.尻) return x.i;
+      const 手前 = 箱.reduce((a, b) => (a.頭 < b.頭 ? a : b));
+      const 奥 = 箱.reduce((a, b) => (a.尻 > b.尻 ? a : b));
+      if (指の位置 < 手前.頭) return 手前.i;
+      if (指の位置 > 奥.尻) return 奥.i;
       return null;
+    };
+
+    // 指の動きを直に受ける（横に並べたとき用）。
+    // 掴んでいないときは何もしないので、ふつうの押す・流すの邪魔をしない
+    const 指が動いた = (ev) => {
+      if (!掴んだ列のref.current) return;
+      const e = ev && ev.nativeEvent ? ev.nativeEvent : ev;
+      if (!e) return;
+      const t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]) || null;
+      const 縦位置 = e.pageY != null ? e.pageY : t ? t.pageY : null;
+      if (縦位置 == null) return;
+      動かし始めた.current = !0;
+      const 行 = 名の行のnode.current;
+      if (行 && 'function' == typeof 行.getBoundingClientRect) {
+        const r = 行.getBoundingClientRect();
+        const ずれ = 'undefined' != typeof window && window.scrollY ? window.scrollY : 0;
+        set指の横(縦位置 - (r.top + ずれ));
+      }
+      const i = 測る手.current ? 測る手.current(縦位置) : null;
+      if (null !== i && i !== 落とす先のref.current) {
+        ((落とす先のref.current = i), set落とす先(i));
+      }
+    };
+    const 指を離した = () => {
+      if (!掴んだ列のref.current) return;
+      離す手.current && 離す手.current();
+    };
+
+    // 掴む／掴みを解く。縦でも横でも同じものを使う
+    const 掴む = (id) => {
+      if ($e) return void 閲覧中に押された();
+      ((掴んだ列のref.current = id),
+        (落とす先のref.current = null),
+        (動かし始めた.current = !1),
+        set掴んだ列(id),
+        set落とす先(null),
+        Ge('動かす先へ指をすべらせて、離してください'),
+        j.impactAsync(j.ImpactFeedbackStyle.Medium));
+    };
+    // 掴んだだけで動かさずに離したときは、掴みを解く。
+    // 動かし始めていれば PanResponder が受け持つので触らない
+    const 掴みを見直す = () => {
+      setTimeout(() => {
+        if (!動かし始めた.current && 掴んだ列のref.current) 掴むのをやめる();
+      }, 60);
     };
 
     const 掴むのをやめる = () => {
@@ -452,18 +504,24 @@ const k = () => {
         // 掴んでいないときは何も奪わない。ふつうのスクロールと押すが効く
         onStartShouldSetPanResponder: () => !1,
         onMoveShouldSetPanResponder: () => !!掴んだ列のref.current,
+        // 掴んでいる間は、子（ますや名前のボタン）や外の流れより先に受け取る。
+        // 先取りしないと、横に並べたときに指の動きが流れ側へ持っていかれて、
+        // 掴めているのに動かせない（実際そうなった）
+        onStartShouldSetPanResponderCapture: () => !!掴んだ列のref.current,
+        onMoveShouldSetPanResponderCapture: () => !!掴んだ列のref.current,
         onPanResponderGrant: () => {
           動かし始めた.current = !0;
         },
         onPanResponderMove: (_e, g) => {
-          // 札を指に付いてこさせる。行の左端からの座標に直して置く
+          // 札を指に付いてこさせる。名前の並びの端からの座標に直して置く
           const 行 = 名の行のnode.current;
           if (行 && 'function' == typeof 行.getBoundingClientRect) {
             const r = 行.getBoundingClientRect();
-            const ずれ = 'undefined' != typeof window && window.scrollX ? window.scrollX : 0;
-            set指の横(g.moveX - (r.left + ずれ));
+            const ずれ =
+              'undefined' == typeof window ? 0 : (横に並べる ? window.scrollY : window.scrollX) || 0;
+            set指の横((横に並べる ? g.moveY : g.moveX) - ((横に並べる ? r.top : r.left) + ずれ));
           }
-          const i = 測る手.current ? 測る手.current(g.moveX) : null;
+          const i = 測る手.current ? 測る手.current(横に並べる ? g.moveY : g.moveX) : null;
           if (null !== i && i !== 落とす先のref.current) {
             ((落とす先のref.current = i), set落とす先(i));
           }
@@ -491,8 +549,17 @@ const k = () => {
           l.default,
           {
             ref: (node) => {
+              // 指の下にどの列が居るかを測るために、節を覚えておく。
+              // 縦と同じ入れ物を使う（並べ方が変わっても測り方は同じ）
+              if (node) 名の欄のnode.current[射手.id] = node;
+              else delete 名の欄のnode.current[射手.id];
               if (順 === 案内が指す順()) 案内.setTutorialTargetNode('記録.射手選択', node);
             },
+            testID:
+              '名の欄-' +
+              (射手.isSeparator ? '区切り' : 射手.isTotalCalculator ? '合計' : '射手') +
+              '-' +
+              射手.id,
             style: {
               width: 名前の幅,
               height: 行の高さ(射手),
@@ -506,6 +573,18 @@ const k = () => {
               paddingHorizontal: 4,
               justifyContent: 'center',
               alignItems: 'center',
+              // チームの色。縦では名前の上に細い帯で出しているので、横では
+              // 名前の左に出す（並べ方を変えても、どのチームかは分かるように）
+              ...(() => {
+                const 色 = (組.チームを割り当てる(見えている並び).find(
+                  (x) => x && x.id === 射手.id
+                ) || {}).色;
+                return 色 ? { borderLeftWidth: 3 * se, borderLeftColor: 色 } : null;
+              })(),
+              // 掴んでいる列は、抜けた跡として薄く残す（縦と同じ）
+              ...(掴んだ列 === 射手.id
+                ? { opacity: 0.35, backgroundColor: 'rgba(0,122,255,0.10)' }
+                : null),
             },
             children: 射手.isSeparator
               ? (0, A.jsx)(h.default, {
@@ -514,6 +593,9 @@ const k = () => {
                   // 消したりできる。横だけ「押す＝そのまま消す」のままだと、
                   // 向きを変えただけで振る舞いが変わって驚く
                   onPress: () => qe(射手.id, 射手.name, 順),
+                  onLongPress: () => 掴む(射手.id),
+                  onPressOut: () => 掴みを見直す(),
+                  delayLongPress: 400,
                   disabled: $e,
                   children: 組.区切りのチーム名(射手)
                     ? (0, A.jsx)(a.default, {
@@ -535,6 +617,9 @@ const k = () => {
               : (0, A.jsxs)(h.default, {
                   style: { alignItems: 'center', width: '100%', height: '100%', justifyContent: 'center' },
                   onPress: () => qe(射手.id, 射手.name, 順),
+                  onLongPress: () => 掴む(射手.id),
+                  onPressOut: () => 掴みを見直す(),
+                  delayLongPress: 400,
                   children: [
                     (0, A.jsx)(a.default, {
                       style: [W.footerName, { color: 射手.name ? '#000' : '#8E8E93', fontSize: 13 * se }],
@@ -591,19 +676,37 @@ const k = () => {
           typeof 射手.id === 'string' ? `名-${射手.id}` : `名-${順}`
         ),
       横の表 = () => {
-        const 一覧 = (Array.isArray(k) ? k : []).filter((e) => !!e);
+        // 掴んでいる間は「離したらこうなる」並びを先に描く（縦と同じ）
+        const 一覧 = 見えている並び;
         return [
           (0, A.jsx)(
             n.default,
             {
               showsVerticalScrollIndicator: !1,
               bounces: !1,
+              // 掴んでいる間は流さない。流すと、表が動くのか列が動くのか
+              // 分からなくなる
+              scrollEnabled: !掴んだ列,
               style: { flexGrow: 0 },
               children: (0, A.jsxs)(l.default, {
                 style: { flexDirection: 'row', minWidth: '100%' },
                 children: [
                   (0, A.jsxs)(l.default, {
                     style: { backgroundColor: '#F2F2F7', zIndex: 10 },
+                    // 掴んでいる間だけ、縦の動きを並べ替えに使う。
+                    //
+                    // 横では PanResponder が指の動きを受け取れなかった（掴めるのに
+                    // 動かせない）。縦のときは横の動きなので取り合いにならないが、
+                    // 横のときは縦の動きで、外側の流れと競合するらしい。
+                    // ここは指の動きを直に見る（矢所の窓と同じやり方）
+                    onTouchMove: (ev) => 指が動いた(ev),
+                    onTouchEnd: () => 指を離した(),
+                    onTouchCancel: () => 掴むのをやめる(),
+                    onMouseMove: (ev) => 指が動いた(ev),
+                    onMouseUp: () => 指を離した(),
+                    ref: (node) => {
+                      名の行のnode.current = node;
+                    },
                     children: [
                       (0, A.jsx)(l.default, {
                         style: {
@@ -1692,23 +1795,8 @@ const k = () => {
                                       onPress: () => qe(e.id, e.name, t),
                                       // 長押しは「掴む」。チーム名は窓から入れる
                                       //（長押ししか道が無くて気づけなかった）
-                                      onLongPress: () => {
-                                        if ($e) return void 閲覧中に押された();
-                                        ((掴んだ列のref.current = e.id),
-                                          (落とす先のref.current = null),
-                                          (動かし始めた.current = !1),
-                                          set掴んだ列(e.id),
-                                          set落とす先(null),
-                                          Ge('動かす先へ指をすべらせて、離してください'),
-                                          j.impactAsync(j.ImpactFeedbackStyle.Medium));
-                                      },
-                                      onPressOut: () => {
-                                        // 掴んだだけで動かさずに離したときは、掴みを解く。
-                                        // 動かし始めていれば PanResponder が受け持つので触らない
-                                        setTimeout(() => {
-                                          if (!動かし始めた.current && 掴んだ列のref.current) 掴むのをやめる();
-                                        }, 60);
-                                      },
+                                      onLongPress: () => 掴む(e.id),
+                                      onPressOut: () => 掴みを見直す(),
                                       delayLongPress: 400,
                                       disabled: $e,
                                       // 名前が付いていれば名前を、なければ「⋯」。
@@ -1755,23 +1843,8 @@ const k = () => {
                                       testID:
                                         '名の欄-' + (e.isTotalCalculator ? '合計' : '射手') + '-' + e.id,
                                       onPress: () => qe(e.id, e.name, t),
-                                      onLongPress: () => {
-                                        if ($e) return void 閲覧中に押された();
-                                        ((掴んだ列のref.current = e.id),
-                                          (落とす先のref.current = null),
-                                          (動かし始めた.current = !1),
-                                          set掴んだ列(e.id),
-                                          set落とす先(null),
-                                          Ge('動かす先へ指をすべらせて、離してください'),
-                                          j.impactAsync(j.ImpactFeedbackStyle.Medium));
-                                      },
-                                      onPressOut: () => {
-                                        // 掴んだだけで動かさずに離したときは、掴みを解く。
-                                        // 動かし始めていれば PanResponder が受け持つので触らない
-                                        setTimeout(() => {
-                                          if (!動かし始めた.current && 掴んだ列のref.current) 掴むのをやめる();
-                                        }, 60);
-                                      },
+                                      onLongPress: () => 掴む(e.id),
+                                      onPressOut: () => 掴みを見直す(),
                                       delayLongPress: 400,
                                       children: [
                                         (0, A.jsx)(a.default, {

@@ -288,3 +288,122 @@ test('立ち順：横に並べたときは「上へ／下へ」になる', async
   const 後 = await 縦の並び();
   expect(後[1], '「下へ」で1つ下がっていない').toBe(前[0]);
 });
+
+test('立ち順：横に並べても、長押しから指で動かせる', async ({ page }) => {
+  // 縦では指の動きを PanResponder が受け取れたが、横（縦の動き）では
+  // 受け取れず、掴めるのに動かせなかった。横は指の動きを直に見ている。
+  // 目印も横には付いていなかったので、そこも一緒に押さえる
+  await 入る(page);
+  await 射手を立てる(page, 3);
+
+  await page.getByTestId('並べ方').click();
+  await こうなるまで待つ(
+    () => page.getByText('縦へ', { exact: true }).count(),
+    (n) => n > 0,
+    20000
+  );
+
+  const 欄 = page.locator('[data-testid^="名の欄-射手-"]');
+  await こうなるまで待つ(
+    () => 欄.count(),
+    (n) => n === 3,
+    20000
+  );
+
+  /** 名前の欄を、画面の上から下の順で返す */
+  const 並び = async () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll('[data-testid^="名の欄-射手-"]')]
+        .map((el) => ({ 名: el.getAttribute('data-testid'), y: el.getBoundingClientRect().y }))
+        .sort((a, z) => a.y - z.y)
+        .map((v) => v.名)
+    );
+
+  const 前 = await 並び();
+  const 位置 = await 欄.evaluateAll((els) =>
+    els.map((e) => {
+      const r = e.getBoundingClientRect();
+      return { cx: r.x + r.width / 2, cy: r.y + r.height / 2 };
+    })
+  );
+  位置.sort((a, z) => a.cy - z.cy);
+
+  // いちばん上を掴んで、いちばん下まで運ぶ
+  await page.mouse.move(位置[0].cx, 位置[0].cy);
+  await page.mouse.down();
+  await page.waitForTimeout(700);
+  for (let i = 1; i <= 6; i++) {
+    await page.mouse.move(位置[0].cx, 位置[0].cy + ((位置[2].cy - 位置[0].cy) * i) / 6, { steps: 2 });
+    await page.waitForTimeout(90);
+  }
+  await page.mouse.up();
+
+  await こうなるまで待つ(
+    async () => (await 並び())[0],
+    (先頭) => 先頭 !== 前[0],
+    20000
+  );
+  const 後 = await 並び();
+  expect(後[2], '掴んだ列がいちばん下へ移っていない').toBe(前[0]);
+});
+
+test('チーム：縦でも横でも、同じ数の射手に色が付き、区切りに名前が出る', async ({ page }) => {
+  // 横の名前の欄は縦とは別の作りなので、縦に足したものが横に入らない。
+  // 実際、チームの色が横だけ出ていなかった（2026-09-08）。
+  // 片方だけ直したことに気づけるよう、両方を突き合わせる
+  await 入る(page);
+  await 射手を立てる(page, 2);
+  await page.getByText('間隔', { exact: true }).first().click();
+  await こうなるまで待つ(
+    () => page.locator('[data-testid^="名の欄-区切り-"]').count(),
+    (n) => n === 1,
+    20000
+  );
+  await 射手を立てる(page, 2);
+
+  await page.locator('[data-testid^="名の欄-区切り-"]').first().click();
+  await page.getByText('チーム名を付ける', { exact: true }).click();
+  await page.getByPlaceholder('例: ◯◯大学').fill('A大学');
+  await page.getByText('決定', { exact: true }).click();
+
+  /** 色の帯が付いている射手の数と、区切りに出ている字 */
+  const 見え方 = () =>
+    page.evaluate(() => {
+      const 帯あり = [...document.querySelectorAll('[data-testid^="名の欄-射手-"]')].filter((el) => {
+        const st = getComputedStyle(el);
+        // 縦は上の辺、横は左の辺に出す。どちらかに色が付いていればよい
+        return ['borderTop', 'borderLeft'].some((辺) => {
+          const w = parseFloat(st[辺 + 'Width']) || 0;
+          const c = st[辺 + 'Color'] || '';
+          return w >= 2 && !/rgba\(0, 0, 0, 0\)|transparent/.test(c);
+        });
+      }).length;
+      const 区切り = document.querySelector('[data-testid^="名の欄-区切り-"]');
+      return { 帯あり, 区切りの字: 区切り ? (区切り.innerText || '').trim() : '' };
+    });
+
+  await こうなるまで待つ(
+    async () => (await 見え方()).帯あり,
+    (n) => n > 0,
+    20000
+  );
+  const 縦 = await 見え方();
+  expect(縦.帯あり, '縦でチームの色が2人に付かない').toBe(2);
+  expect(縦.区切りの字, '縦で区切りにチーム名が出ない').toBe('A大学');
+
+  await page.getByTestId('並べ方').click();
+  await こうなるまで待つ(
+    () => page.getByText('縦へ', { exact: true }).count(),
+    (n) => n > 0,
+    20000
+  );
+  await こうなるまで待つ(
+    () => page.locator('[data-testid^="名の欄-射手-"]').count(),
+    (n) => n === 4,
+    20000
+  );
+
+  const 横 = await 見え方();
+  expect(横.帯あり, '横だけチームの色が付いていない').toBe(縦.帯あり);
+  expect(横.区切りの字, '横だけ区切りのチーム名が出ていない').toBe(縦.区切りの字);
+});
