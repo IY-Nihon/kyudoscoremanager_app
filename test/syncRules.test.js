@@ -525,3 +525,42 @@ test('参加できるライブ：期限ちょうどは切れている側', () =>
   assert.deepStrictEqual(参加できるライブ({ a: { state: { timestamp: 今, 期限: 今 } } }, 今).古い, ['a']);
   assert.deepStrictEqual(参加できるライブ({ a: { state: { timestamp: 今, 期限: 今 + 1 } } }, 今).出す, ['a']);
 });
+
+// ── ライブ：見た目だけが変わる操作も、相手に届くこと ──────────────
+//
+// チーム名を付ける・計と総計を切り替える、は○×を変えない。それでも相手の
+// 画面に出ないと困る。どちらの操作も lastModified を打ち直しているので、
+// 受信側は「新しいほうが勝ち」で拾える。ここでは、拾ったうえで**中身が
+// 落ちない**ことを見る（勝ち負けだけ合っていても、項目が消えては意味がない）。
+test('ライブ：チーム名を付けた更新が、相手にそのまま届く', () => {
+  const 手元 = [{ id: 's1', isSeparator: true, name: '---', marks: [], lastModified: 100 }];
+  const 受信 = [
+    { id: 's1', isSeparator: true, name: '---', marks: [], teamName: 'A大学', lastModified: 200 },
+  ];
+  const r = mergeLiveArchers(手元, 受信, 8, 8);
+  assert.equal(r.changed, true, '新しい更新が捨てられている');
+  assert.equal(r.archers[0].teamName, 'A大学', 'チーム名が落ちている');
+});
+
+test('ライブ：計から総計への切り替えが、相手にそのまま届く', () => {
+  const 手元 = [{ id: 't1', isTotalCalculator: true, marks: [], またぐ合計: !1, lastModified: 100 }];
+  const 受信 = [{ id: 't1', isTotalCalculator: true, marks: [], またぐ合計: !0, lastModified: 200 }];
+  const r = mergeLiveArchers(手元, 受信, 8, 8);
+  assert.equal(r.changed, true, '新しい更新が捨てられている');
+  assert.equal(r.archers[0].またぐ合計, !0, '総計の印が落ちている');
+});
+
+test('ライブ：古い更新では、手元のチーム名を上書きしない', () => {
+  const 手元 = [
+    { id: 's1', isSeparator: true, name: '---', marks: [], teamName: 'A大学', lastModified: 300 },
+  ];
+  const 受信 = [{ id: 's1', isSeparator: true, name: '---', marks: [], lastModified: 100 }];
+  const r = mergeLiveArchers(手元, 受信, 8, 8);
+  assert.equal(r.archers[0].teamName, 'A大学', '古い更新に消されている');
+});
+
+test('ライブ：本当に同じなら、変わったとは見なさない', () => {
+  const 同じ = () => [{ id: 'a', name: '山田', marks: ['○', ''], teamName: 'A大学', lastModified: 1 }];
+  const r = mergeLiveArchers(同じ(), 同じ(), 8, 8);
+  assert.equal(r.changed, false, '同じ中身で描き直してはいけない');
+});
