@@ -1471,6 +1471,7 @@ const k = () => {
                                         height: '100%',
                                         justifyContent: 'center',
                                       },
+                                      testID: '名の欄-区切り-' + t,
                                       onPress: () => M(e.id),
                                       // 長押しでチーム名を付ける（リーグの大学名）。
                                       // 押す＝外す は今までどおりにしておく
@@ -1520,6 +1521,8 @@ const k = () => {
                                       // 数える範囲を変えたり消したりできる。
                                       // ここで範囲の切り替えだけを行うと、
                                       // 窓が開かなくなって消せなくなる（実際そうなった）
+                                      testID:
+                                        '名の欄-' + (e.isTotalCalculator ? '合計' : '射手') + '-' + t,
                                       onPress: () => qe(e.id, e.name, t),
                                       children: [
                                         (0, A.jsx)(a.default, {
