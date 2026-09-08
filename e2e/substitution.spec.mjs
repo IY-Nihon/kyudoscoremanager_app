@@ -78,6 +78,9 @@ async function 交代の画面を開く(page) {
   await page.waitForTimeout(1200);
   await page.getByText('途中交代', { exact: true }).click();
   await expect(page.getByText('途中交代の設定', { exact: true })).toBeVisible();
+  // 手前の「人の選択」の窓が消えきるのを待つ。消えかけの窓も画面に残るので、
+  // 数え始めが早いと、その窓のぶんまで数に入る（人数の数え方は画面ぜんたい）
+  await expect(page.getByText('メンバーを選択', { exact: true })).toHaveCount(0, { timeout: 20_000 });
 }
 
 test('途中交代：開くと立目の一覧が出て、射目にも切り替えられる', async ({ page }) => {
