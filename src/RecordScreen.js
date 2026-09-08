@@ -510,9 +510,27 @@ const k = () => {
             children: 射手.isSeparator
               ? (0, A.jsx)(h.default, {
                   style: { alignItems: 'center', width: '100%', height: '100%', justifyContent: 'center' },
-                  onPress: () => M(射手.id),
+                  // 縦の表と同じにする。押すと窓が開き、そこでチーム名を付けたり
+                  // 消したりできる。横だけ「押す＝そのまま消す」のままだと、
+                  // 向きを変えただけで振る舞いが変わって驚く
+                  onPress: () => qe(射手.id, 射手.name, 順),
                   disabled: $e,
-                  children: (0, A.jsx)(p.Ionicons, { name: 'close-circle', size: 20 * se, color: '#8E8E93' }),
+                  children: 組.区切りのチーム名(射手)
+                    ? (0, A.jsx)(a.default, {
+                        style: {
+                          fontSize: 11 * se,
+                          fontWeight: '700',
+                          textAlign: 'center',
+                          color: 組.チームの色(組.区切りのチーム名(射手)) || '#8E8E93',
+                        },
+                        numberOfLines: 2,
+                        children: 組.区切りのチーム名(射手),
+                      })
+                    : (0, A.jsx)(p.Ionicons, {
+                        name: 'ellipsis-horizontal',
+                        size: 20 * se,
+                        color: '#8E8E93',
+                      }),
                 })
               : (0, A.jsxs)(h.default, {
                   style: { alignItems: 'center', width: '100%', height: '100%', justifyContent: 'center' },
