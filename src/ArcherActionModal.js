@@ -33,6 +33,9 @@ const j = ({
   archerOrigIdx: pVal,
   isSeparator: jVal,
   isTotalCalculator: b,
+  // 合計の列が、いま区切りをまたいで数えているか／切り替える手立て
+  またぐ合計,
+  on合計の範囲,
   onClose: C,
   onSubstitution: I,
   onSetMember: S,
@@ -607,6 +610,38 @@ const j = ({
                     ],
                   }),
                   (0, F.jsx)(n.default, { style: y.divider }),
+                  // 合計の列だけに出す。数える範囲を切り替える。
+                  // 「計」は区切りで止まる（1立ぶん）、「総計」は端まで数える
+                  b &&
+                    on合計の範囲 &&
+                    (0, F.jsxs)(g.default, {
+                      style: ({ pressed: e, hovered: t }) => [
+                        y.menuItem,
+                        t && { backgroundColor: '#F2F7FF' },
+                        e && { opacity: 0.7 },
+                      ],
+                      onPress: on合計の範囲,
+                      children: [
+                        (0, F.jsxs)(n.default, {
+                          style: { flex: 1, minWidth: 0 },
+                          children: [
+                            (0, F.jsx)(l.default, {
+                              style: [y.menuText, { color: '#007AFF', fontWeight: 'bold' }],
+                              children: またぐ合計
+                                ? 'この立ちだけの合計にする'
+                                : '区切りをまたぐ総計にする',
+                            }),
+                            (0, F.jsx)(l.default, {
+                              style: { fontSize: 11, color: '#8E8E93', marginTop: 2 },
+                              children: またぐ合計
+                                ? 'いまは区切りをまたいで数えています'
+                                : 'いまはこの立ちだけを数えています',
+                            }),
+                          ],
+                        }),
+                        (0, F.jsx)(x.Ionicons, { name: 'swap-horizontal', size: 20, color: '#007AFF' }),
+                      ],
+                    }),
                   (0, F.jsxs)(g.default, {
                     style: ({ pressed: e, hovered: t }) => [
                       y.menuItem,
