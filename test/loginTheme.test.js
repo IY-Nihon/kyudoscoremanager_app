@@ -110,9 +110,18 @@ test('ログイン画面は、テーマ変換表の色を使わない', () => {
 
 test('ログイン画面の文字は、地に対して十分な濃さがある', () => {
   const 使用 = 色を拾う(fs.readFileSync(場所('LoginScreen.js'), 'utf8'));
+  // 白いボタンの上に置く文字は、画面の地ではなく白に対して読む。
+  // 「Google で作る」のボタンがそれ（白地に濃い字と Google の青）。
+  // 地の色で測ると、読めているのに薄いと言われてしまうので分けて見る
+  const 白の上に置く色 = new Set(['#1f1f1f', '#1a5fcc']);
+  for (const c of 白の上に置く色) {
+    const v = 比(c, '#ffffff');
+    assert.ok(v >= 4.5, '白いボタンの上の字 ' + c + ' が薄い（白に対して比 ' + v.toFixed(2) + '）');
+  }
   const 薄い = [];
   for (const c of 使用) {
     if (地の色たち.has(c)) continue;
+    if (白の上に置く色.has(c)) continue;
     const v = 比(c, 地);
     if (v < 4.5) 薄い.push(c + '（比 ' + v.toFixed(2) + '）');
   }
@@ -190,7 +199,14 @@ test('ログイン画面：使っている名前が、すべて読み込まれ�
   // 定義されているもの（require の別名・const/let/var・引数の分解）
   const 定義 = new Set([
     ...[...素.matchAll(/([\u4e00-\u9fff]{1,4})\s*=\s*require\(/g)].map((m) => m[1]),
-    ...[...素.matchAll(/(?:const|let|var)\s+([\u4e00-\u9fff]{1,4})\b/g)].map((m) => m[1]),
+    // \b は漢字のうしろでは語の切れ目と見なされない（\w に漢字が入らない）。
+    // 「const 結果 = ...」を拾えず、定義済みなのに「読み込んでいない」と
+    // 言ってしまっていた。切れ目は自分で書く
+    ...[...素.matchAll(/(?:const|let|var)\s+([\u4e00-\u9fff]{1,4})\s*(?==|,|;|\))/g)].map(
+      (m) => m[1]
+    ),
+    // 関数の引数（(メール) => ...）
+    ...[...素.matchAll(/\(\s*([\u4e00-\u9fff]{1,4})\s*\)\s*=>/g)].map((m) => m[1]),
     ...[...素.matchAll(/\[\s*([\u4e00-\u9fff]{1,4})\s*,/g)].map((m) => m[1]),
   ]);
   const 無い = [...使っている].filter((x) => !定義.has(x));
