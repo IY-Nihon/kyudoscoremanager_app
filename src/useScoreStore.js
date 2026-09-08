@@ -4769,6 +4769,12 @@ const M = (0, s.create)()(
                     Object.assign({}, s, {
                       id: e.id,
                       tags: cleanedTags,
+                      // 射手の入っていない記録が雲に在ることがある（古い版の書き込み、
+                      // 書きかけ、手で作った下ごしらえ）。読む側は archers を配列と
+                      // 思って回すので、undefined のままだと画面ごと落ちる。
+                      // 2026-09-08、団体100002 の `id: 'x'` という記録で分析画面が
+                      // 落ちた。tags と同じように、ここで形を整えてから渡す
+                      archers: Array.isArray(s.archers) ? s.archers : [],
                       syncStatus: e.metadata && e.metadata.hasPendingWrites ? '未同期' : '同期済み',
                     })
                   );
