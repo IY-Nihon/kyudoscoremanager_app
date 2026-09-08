@@ -548,7 +548,9 @@ const j = ({ navigation }) => {
         let sessionHits = 0;
         let sessionShots = 0;
 
-        o.archers.forEach((r) => {
+        // 射手の入っていない記録でも落ちないようにする。上の
+        // gatherAllArrowLocations は同じ守りをしているのに、ここだけ抜けていた
+        (Array.isArray(o.archers) ? o.archers : []).forEach((r) => {
           if (!r || !r.marks) return;
 
           let s = 0;

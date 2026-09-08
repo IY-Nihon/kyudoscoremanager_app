@@ -37,6 +37,12 @@ export const ArrowLocationPopover = ({
   const archer = storeArchers.find(a => a.id === archerId);
   const archerMarks = archer ? (archer.marks || []) : [];
 
+  // 矢所は帳簿から直に読む。prop の arrowLocations は窓を開いた時の写しなので、
+  // 置いた直後の点が出ない。指を離すと下絵（previewPos）も消えるので、
+  // 「押したのに何も残らない」ように見えていた（2026-09-08）
+  const 表示する矢所 =
+    archer && Array.isArray(archer.arrowLocations) ? archer.arrowLocations : arrowLocations;
+
   // タップを検知するタッチエリア（親View）のサイズは常に 320x320 とします
   const touchAreaSize = 320;
   const touchAreaRadius = touchAreaSize / 2;
@@ -263,7 +269,7 @@ export const ArrowLocationPopover = ({
               {renderTargetVisual()}
 
               {/* 登録済みの矢所をプレビュー（現在の的種類と一致するものだけ表示） */}
-              {arrowLocations.map((loc, idx) => {
+              {表示する矢所.map((loc, idx) => {
                 if (!loc) return null;
                 
                 // 的の種類が異なる矢所は表示しない

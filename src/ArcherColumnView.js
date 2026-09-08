@@ -76,24 +76,9 @@ const m = t.default.memo(
         z = 'number' == typeof A && !isNaN(A) && A > 0 ? A : 1,
         L = (0, c.useScoreStore)((e) => e.members || []),
         B = (() => {
-          if (e.isTotalCalculator) {
-            let 数 = 0;
-            const t = Array.isArray(m) ? m : [];
-            // ふつうの「計」は区切りで止まる（1立ぶん）。
-            // 「総計」は区切りをまたいで端まで数える（複数立ちの合計）。
-            // どちらも、別の合計の列に当たったらそこで止める
-            // （合計の合計を数えて二重になるのを防ぐ）
-            for (let o = C - 1; o >= 0; o--) {
-              const l = t[o];
-              if (!l || l.isTotalCalculator) break;
-              if (l.isSeparator) {
-                if (e.またぐ合計) continue;
-                break;
-              }
-              数 += (l.marks || []).filter((x) => '○' === x).length;
-            }
-            return 数;
-          }
+          // どこまで数えるかの規則は teamGrouping に1つだけ置く。
+          // ここに写しを持つと、欄と行で数が食い違う（2026-09-08 に起きた）
+          if (e.isTotalCalculator) return 組.合計を数える(Array.isArray(m) ? m : [], C);
           return (e.marks || []).filter((e) => '○' === e).length;
         })(),
         M = [];
@@ -113,18 +98,10 @@ const m = t.default.memo(
           : e.isTotalCalculator
             ? 'rgba(0,122,255,0.1)'
             : '#F2F2F7',
-        N =
-          (e.isSeparator || e.isTotalCalculator,
-          () => {
-            const e = [],
-              t = Array.isArray(m) ? m : [];
-            for (let o = C - 1; o >= 0; o--) {
-              const l = t[o];
-              if (!l || l.isSeparator || l.isTotalCalculator) break;
-              e.push(l);
-            }
-            return e;
-          }),
+        // 立ごとの行に出す数を作るために、この合計が受け持つ射手を集める。
+        // 上の「計」の欄とまったく同じ規則を使う。以前はここに写しを持っていて、
+        // 欄は総計になっているのに行の数だけ0のままだった（2026-09-08）
+        N = () => 組.合計が受け持つ射手(Array.isArray(m) ? m : [], C),
         U = (e) => {
           const t = N();
           if (0 === t.length) return 0;
