@@ -190,8 +190,19 @@ test('新規登録で書く項目が、決まりの許す項目に収まって�
   const 画面 = 読む(['src', 'LoginScreen.js']);
   const j = 画面.indexOf("'group_accounts'");
   assert.ok(j > 0, 'ログイン画面が group_accounts に書いている所が見つからない');
-  const 帳面へ = 画面.slice(画面.indexOf('setDoc)(t, {'), 画面.indexOf("'private', 'consent'"));
-  const 直書き = [...帳面へ.matchAll(/([a-zA-Z]+):/g)].map((m) => m[1]);
+  // 公開の帳面へ書いている setDoc を探す。
+  // 2026-09-08 に「団体を作る」へ切り出したので、変数名で探すと見失う。
+  //
+  // private/consent へ書く setDoc の、さらに手前にあるものが公開の帳面ぶん。
+  // 「private の直前の setDoc」を取ると、private を書く setDoc 自身を掴む
+  const 私用の場所 = 画面.indexOf("'private', 'consent'");
+  assert.ok(私用の場所 > 0, 'private/consent へ書いている所が見つからない');
+  const 私用のsetDoc = 画面.slice(0, 私用の場所).lastIndexOf('setDoc)(');
+  assert.ok(私用のsetDoc > 0, 'private へ書いている setDoc が見つからない');
+  const 公開のsetDoc = 画面.slice(0, 私用のsetDoc).lastIndexOf('setDoc)(');
+  assert.ok(公開のsetDoc > 0, '公開の帳面へ書いている setDoc が見つからない');
+  const 帳面へ = 画面.slice(公開のsetDoc, 私用のsetDoc);
+  const 直書き = [...帳面へ.matchAll(/([a-zA-Z]+):\s/g)].map((m) => m[1]);
   assert.ok(直書き.length > 0, '公開の帳面へ書いている所を読み取れない');
 
   const 弾かれる = 直書き.filter((k) => !許す.has(k));
