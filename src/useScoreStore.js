@@ -373,7 +373,7 @@ const f = (e, s) => {
           marks: f(e.marks, e.isSeparator ? 0 : s),
           isSeparator: !0 === e.isSeparator,
           isTotalCalculator: !0 === e.isTotalCalculator,
-          // 区切りをまたいで数える合計かどうか。写し忘れると、読み直した
+          // 手前の計もまとめて数える合計かどうか。写し忘れると、読み直した
           // ときにふつうの「計」に戻り、複数立ちの合計が消える
           またぐ合計: !0 === e.またぐ合計,
           isGuest: !0 === e.isGuest,
@@ -401,7 +401,7 @@ const f = (e, s) => {
           grade: e.grade || 0,
           isSeparator: e.isSeparator || !1,
           isTotalCalculator: e.isTotalCalculator || !1,
-          // 区切りをまたぐ合計かどうか。ライブでも相手に同じ数が出るようにする
+          // 手前の計もまとめる合計かどうか。ライブでも相手に同じ数が出るようにする
           またぐ合計: e.またぐ合計 || !1,
           isGuest: e.isGuest || !1,
           // 区切りのチーム名。ライブでも相手に伝わるようにする
@@ -1547,10 +1547,43 @@ const M = (0, s.create)()(
           ラ && な && v(な, 直した, しゃ);
         },
         /**
+         * 立ち順を入れ替える。掴んだ列を、指した場所へ移す。
+         *
+         * 指で滑らせて動かすとき（ドラッグ）に、離した所で1回だけ呼ぶ。
+         * 途中経過は書かないので、1回動かす＝取り消し1回で戻る。
+         *
+         * 場所は「いまの並び」での番号。抜いてから差し込むので、離した先に
+         * 居た列の場所へそのまま入る。
+         *
+         * @param {string} 列のid     動かす列
+         * @param {number} 新しい位置 いまの並びでの番号
+         */
+        列を並べ替える: (列のid, 新しい位置) => {
+          if (s().書き換えを止めるか()) return;
+          const 元 = Array.isArray(s().archers) ? s().archers : [];
+          const いま = 元.findIndex((x) => x && x.id === 列のid);
+          if (いま < 0) return;
+          const 数 = Number(新しい位置);
+          if (!Number.isFinite(数)) return;
+          const 先 = Math.max(0, Math.min(Math.trunc(数), 元.length - 1));
+          if (先 === いま) return;
+          const 直した = [...元];
+          const 取り出した = 直した.splice(いま, 1)[0];
+          直した.splice(先, 0, 取り出した);
+          e({
+            archers: 直した,
+            historyStack: [...s().historyStack, 元],
+            redoStack: [],
+            lastLocalChange: Date.now(),
+          });
+          const { isLiveActive: ラ2, liveSessionName: な2, shotsPerRound: しゃ2 } = s();
+          ラ2 && な2 && v(な2, 直した, しゃ2);
+        },
+        /**
          * 合計の列を足す。
          *
          * @param {number} [t] 差し込む場所。省くと末尾
-         * @param {boolean} [またぐ] 区切りをまたいで数えるか
+         * @param {boolean} [またぐ] 手前の計もまとめて数えるか（間隔では止まる）
          *
          * ふつうの「計」は隣から左へ数え、区切りに当たると止まる（1立ぶん）。
          * またぐ合計は区切りで止まらず、端まで数える（複数立ちの合計）。
@@ -1565,7 +1598,7 @@ const M = (0, s.create)()(
               marks: Array(s().shotsPerRound || 8).fill(''),
               arrowLocations: Array(s().shotsPerRound || 8).fill(null),
               isTotalCalculator: !0,
-              // 区切りをまたいで数える印。ふつうの「計」と混ぜないよう別に持つ
+              // 手前の計もまとめて数える印。ふつうの「計」と混ぜないよう別に持つ
               またぐ合計: !!またぐ,
               gender: '未設定',
               grade: 0,

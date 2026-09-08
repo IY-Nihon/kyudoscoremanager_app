@@ -115,3 +115,55 @@ test('立ち順：閲覧用では動かせない', () => {
   store.getState().列を動かす('a', '左');
   assert.equal(並びの名(store), '大前,落', '閲覧用は書き換えない');
 });
+
+// ── 指で滑らせて動かす（ドラッグ）ぶん ──────────────
+test('並べ替え：離した先に居た列の場所へ入る（右端の列を左端へ）', () => {
+  const store = 端末();
+  store.setState({ archers: [射手('a', '大前'), 射手('b', '中'), 射手('c', '落')] });
+  store.getState().列を並べ替える('a', 2);
+  assert.equal(並びの名(store), '中,落,大前');
+});
+
+test('並べ替え：左端の列を右端へ', () => {
+  const store = 端末();
+  store.setState({ archers: [射手('a', '大前'), 射手('b', '中'), 射手('c', '落')] });
+  store.getState().列を並べ替える('c', 0);
+  assert.equal(並びの名(store), '落,大前,中');
+});
+
+test('並べ替え：1回のドラッグは、取り消し1回で戻る', () => {
+  const store = 端末();
+  store.setState({ archers: [射手('a', '大前'), 射手('b', '中'), 射手('c', '落')] });
+  store.getState().列を並べ替える('a', 2);
+  assert.equal(store.getState().historyStack.length, 1, '控えは1つだけ積む');
+  store.getState().undo();
+  assert.equal(並びの名(store), '大前,中,落');
+});
+
+test('並べ替え：同じ場所・並びの外・おかしな値では何もしない', () => {
+  const store = 端末();
+  store.setState({ archers: [射手('a', '大前'), 射手('b', '中')] });
+  store.getState().列を並べ替える('a', 0);
+  store.getState().列を並べ替える('a', NaN);
+  store.getState().列を並べ替える('無い列', 1);
+  assert.equal(並びの名(store), '大前,中');
+  assert.equal(store.getState().historyStack.length, 0, '何もしないときは控えも積まない');
+});
+
+test('並べ替え：並びの外を指しても、端に収まる', () => {
+  const store = 端末();
+  store.setState({ archers: [射手('a', '大前'), 射手('b', '中'), 射手('c', '落')] });
+  store.getState().列を並べ替える('a', 99);
+  assert.equal(並びの名(store), '中,落,大前');
+});
+
+test('並べ替え：閲覧用では動かせない', () => {
+  const store = 端末();
+  store.setState({
+    archers: [射手('a', '大前'), 射手('b', '落')],
+    isLiveActive: !0,
+    ライブは見るだけ: !0,
+  });
+  store.getState().列を並べ替える('a', 1);
+  assert.equal(並びの名(store), '大前,落');
+});
