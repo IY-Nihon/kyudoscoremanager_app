@@ -326,6 +326,8 @@ const k = () => {
       // 掴まないまま指を滑らせると、表が動くのか列が動くのか分からなくなる。
       [掴んだ列, set掴んだ列] = (0, t.useState)(null),
       [落とす先, set落とす先] = (0, t.useState)(null),
+      // 指の横の位置（名前の行の中での座標）。運ぶ札をここに置く
+      [指の横, set指の横] = (0, t.useState)(null),
       [Je, Ke] = (0, t.useState)(!1),
       // 拡大率の選択が出ているか（Excel の倍率と同じ考え方）
       [拡大選択中, 拡大を選ぶ] = (0, t.useState)(!1),
@@ -383,12 +385,28 @@ const k = () => {
       動かし始めた = (0, t.useRef)(!1),
       測る手 = (0, t.useRef)(null),
       離す手 = (0, t.useRef)(null),
-      並べ替えの手 = (0, t.useRef)(null);
+      並べ替えの手 = (0, t.useRef)(null),
+      名の行のnode = (0, t.useRef)(null);
+
+    // いま画面に描く並び。掴んでいる間は「離したらこうなる」並びを先に見せる。
+    // 指の下の列と入れ替えて描くので、出来上がりを見てから離せる。
+    // 掴んだ列は抜けた跡として薄く残し、指には別の札（下の 運ぶ札）が付いてくる
+    const 見えている並び = (() => {
+      const 一覧 = (Array.isArray(k) ? k : []).filter((e) => !!e);
+      if (!掴んだ列 || null === 落とす先) return 一覧;
+      const いま = 一覧.findIndex((x) => x.id === 掴んだ列);
+      if (いま < 0 || いま === 落とす先) return 一覧;
+      const 写し = [...一覧];
+      写し.splice(落とす先, 0, 写し.splice(いま, 1)[0]);
+      return 写し;
+    })();
 
     // 指のいる場所（ページの座標）から、その下にある列の番号を出す。
-    // 端からはみ出したときは、いちばん近い端の列にする
+    // 端からはみ出したときは、いちばん近い端の列にする。
+    // 測るのは「いま描いている並び」。掴んだ列は指の下にあるので、
+    // そのまま同じ番号が返り、行ったり来たりしない
     測る手.current = (指のx) => {
-      const 一覧 = (Array.isArray(k) ? k : []).filter((e) => !!e);
+      const 一覧 = 見えている並び;
       const 箱 = [];
       for (let i = 0; i < 一覧.length; i++) {
         const node = 名の欄のnode.current[一覧[i].id];
@@ -411,7 +429,8 @@ const k = () => {
         (落とす先のref.current = null),
         (動かし始めた.current = !1),
         set掴んだ列(null),
-        set落とす先(null));
+        set落とす先(null),
+        set指の横(null));
     };
 
     離す手.current = () => {
@@ -419,14 +438,12 @@ const k = () => {
          先 = 落とす先のref.current;
       掴むのをやめる();
       if (!id || null === 先) return;
-      const 一覧 = (Array.isArray(k) ? k : []).filter((e) => !!e);
-      const いま = 一覧.findIndex((x) => x.id === id);
-      const 先の列 = 一覧[先];
-      if (いま < 0 || !先の列 || いま === 先) return;
-      // 番号は「間引く前の並び」で数え直す。null が混じっていてもずれない
-      const 生の先 = (Array.isArray(k) ? k : []).findIndex((x) => x && x.id === 先の列.id);
-      if (生の先 < 0) return;
-      (列を並べ替える(id, 生の先), Ge('立ち順を変えました'));
+      // 画面にはもう「離したらこうなる」並びが出ている。その並びのとおりに
+      // 決めるだけなので、指していた番号をそのまま渡す
+      const 元の一覧 = (Array.isArray(k) ? k : []).filter((e) => !!e);
+      const いま = 元の一覧.findIndex((x) => x.id === id);
+      if (いま < 0 || いま === 先) return;
+      (列を並べ替える(id, 先), Ge('立ち順を変えました'));
       j.impactAsync(j.ImpactFeedbackStyle.Medium);
     };
 
@@ -439,6 +456,13 @@ const k = () => {
           動かし始めた.current = !0;
         },
         onPanResponderMove: (_e, g) => {
+          // 札を指に付いてこさせる。行の左端からの座標に直して置く
+          const 行 = 名の行のnode.current;
+          if (行 && 'function' == typeof 行.getBoundingClientRect) {
+            const r = 行.getBoundingClientRect();
+            const ずれ = 'undefined' != typeof window && window.scrollX ? window.scrollX : 0;
+            set指の横(g.moveX - (r.left + ずれ));
+          }
           const i = 測る手.current ? 測る手.current(g.moveX) : null;
           if (null !== i && i !== 落とす先のref.current) {
             ((落とす先のref.current = i), set落とす先(i));
@@ -1459,15 +1483,15 @@ const k = () => {
                         scrollEventThrottle: 16,
                         children: (0, A.jsx)(l.default, {
                           style: [W.gridRow, { flexDirection: 'row-reverse' }],
-                          children: (Array.isArray(k) ? k : [])
-                            .filter((e) => !!e)
-                            .map((e, t) =>
+                          children: 見えている並び.map((e, t) =>
                               (0, A.jsx)(
                                 y.ArcherColumnView,
                                 {
                                   archer: e,
                                   shots: T,
-                                  allArchers: Array.isArray(k) ? k : [],
+                                  // ドラッグ中は「入れた結果」の並びを渡す。計もチームも
+                                  // その並びで数え直るので、離す前に出来上がりが見える
+                                  allArchers: 見えている並び,
                                   indexInList: t,
                                   showFooter: !1,
                                   isReadOnly: $e,
@@ -1528,9 +1552,72 @@ const k = () => {
                         style: [W.gridRow, { flexDirection: 'row-reverse' }],
                         // 掴んでいる間だけ、横の動きを並べ替えに使う
                         ...(並べ替えの手.current ? 並べ替えの手.current.panHandlers : {}),
-                        children: (Array.isArray(k) ? k : [])
-                          .filter((e) => !!e)
-                          .map((e, t) => {
+                        ref: (node) => {
+                          名の行のnode.current = node;
+                        },
+                        children: [
+                          // 運ぶ札。掴んだ列の名前が指に付いてくる。
+                          // 表そのものは「離したらこうなる」並びで描いてあるので、
+                          // 札＝いま持っているもの、表＝置いたあとの姿、になる
+                          掴んだ列 && null !== 指の横
+                            ? (() => {
+                                const 持ち物 = 見えている並び.find((x) => x && x.id === 掴んだ列);
+                                if (!持ち物) return null;
+                                const 幅 =
+                                  (持ち物.isSeparator
+                                    ? F.UIConfig.separatorWidth
+                                    : F.UIConfig.cellWidth) * se;
+                                const 名 = 持ち物.isTotalCalculator
+                                  ? 持ち物.またぐ合計
+                                    ? '総計'
+                                    : '合計'
+                                  : 持ち物.isSeparator
+                                    ? 組.区切りのチーム名(持ち物) || '間隔'
+                                    : 持ち物.name
+                                      ? (0, v.formatMemberName)(持ち物.name, oe)
+                                      : '選択';
+                                return (0, A.jsx)(
+                                  l.default,
+                                  {
+                                    pointerEvents: 'none',
+                                    style: {
+                                      position: 'absolute',
+                                      left: 指の横 - 幅 / 2,
+                                      top: -6 * se,
+                                      width: 幅,
+                                      height: F.UIConfig.footerHeight * se,
+                                      backgroundColor: '#FFF',
+                                      borderWidth: 2,
+                                      borderColor: '#007AFF',
+                                      borderRadius: 6,
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      zIndex: 50,
+                                      // 影は直に書く。この部品の中では
+                                      // shadowStyle の読み込み名が別の変数に隠れていて、
+                                      // 呼ぶと落ちる（実際に落ちた）
+                                      shadowColor: '#000',
+                                      shadowOffset: { width: 0, height: 3 },
+                                      shadowOpacity: 0.25,
+                                      shadowRadius: 6,
+                                      elevation: 8,
+                                    },
+                                    children: (0, A.jsx)(a.default, {
+                                      style: {
+                                        fontSize: 13 * se,
+                                        fontWeight: '700',
+                                        color: '#007AFF',
+                                        textAlign: 'center',
+                                      },
+                                      numberOfLines: 2,
+                                      children: 名,
+                                    }),
+                                  },
+                                  '運ぶ札'
+                                );
+                              })()
+                            : null,
+                          ...見えている並び.map((e, t) => {
                             return (0, A.jsx)(
                               l.default,
                               {
@@ -1560,15 +1647,14 @@ const k = () => {
                                   padding: 4,
                                   justifyContent: 'center',
                                   alignItems: 'center',
-                                  // 掴んでいる列は薄く、落とす先は青くふちどる。
-                                  // どこへ入るのかを、指を離す前に見せる
-                                  ...(掴んだ列 === e.id ? { opacity: 0.4 } : null),
-                                  ...(null !== 落とす先 &&
-                                  掴んだ列 &&
-                                  掴んだ列 !== e.id &&
-                                  (Array.isArray(k) ? k : []).filter((x) => !!x)[落とす先] &&
-                                  (Array.isArray(k) ? k : []).filter((x) => !!x)[落とす先].id === e.id
-                                    ? { backgroundColor: 'rgba(0,122,255,0.18)' }
+                                  // 掴んでいる列は、抜けた跡として薄く残す。
+                                  // どこへ入るかは並びそのもので見せるので、
+                                  // 落とす先を別に光らせる必要はない
+                                  ...(掴んだ列 === e.id
+                                    ? {
+                                        opacity: 0.35,
+                                        backgroundColor: 'rgba(0,122,255,0.10)',
+                                      }
                                     : null),
                                 },
                                 children: e.isSeparator
@@ -1638,9 +1724,9 @@ const k = () => {
                                         // チームの色を、名前の欄の上に細い帯で出す。
                                         // 字を染めると読みにくいので帯にする
                                         (() => {
-                                          const 色 = (組.チームを割り当てる(
-                                            Array.isArray(k) ? k : []
-                                          ).find((x) => x && x.id === e.id) || {}).色;
+                                          const 色 = (組.チームを割り当てる(見えている並び).find(
+                                            (x) => x && x.id === e.id
+                                          ) || {}).色;
                                           return 色 ? { borderTopWidth: 3 * se, borderTopColor: 色 } : null;
                                         })(),
                                       ],
@@ -1722,6 +1808,7 @@ const k = () => {
                             );
                             var o;
                           }),
+                        ],
                       }),
                     }),
                   ],
