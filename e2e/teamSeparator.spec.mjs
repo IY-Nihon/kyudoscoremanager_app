@@ -117,7 +117,14 @@ test('チームの帯は、窓の案内が言うとおりの側に出る', async
   // fill は WebKit で入らない（値が空のまま決定される）。実機の打鍵と同じ形にする
   const 名入れ = page.getByPlaceholder('例: ◯◯大学');
   await 名入れ.click();
-  await 名入れ.pressSequentially('A大学', { delay: 30 });
+  // 窓が出きるまで、打った字が落ちる。指が乗るのを待ってから打つ
+  //（待たずに打つと、最初の1文字だけ消えて「大学」になることがあった）
+  await こうなるまで待つ(
+    () => page.evaluate(() => document.activeElement && document.activeElement.tagName),
+    (名) => 'INPUT' === 名 || 'TEXTAREA' === 名,
+    20000
+  );
+  await 名入れ.pressSequentially('A大学', { delay: 60 });
   // 入ったことをここで確かめる。入らないまま決定すると、空で消えて
   // 「色が付かない」という遠い場所で落ちる
   await expect(名入れ, 'チーム名が入力欄に入っていない').toHaveValue('A大学', { timeout: 10000 });
@@ -384,7 +391,14 @@ test('チーム：縦でも横でも、同じ数の射手に色が付き、区�
   // fill は WebKit で入らない（値が空のまま決定される）。実機の打鍵と同じ形にする
   const 名入れ = page.getByPlaceholder('例: ◯◯大学');
   await 名入れ.click();
-  await 名入れ.pressSequentially('A大学', { delay: 30 });
+  // 窓が出きるまで、打った字が落ちる。指が乗るのを待ってから打つ
+  //（待たずに打つと、最初の1文字だけ消えて「大学」になることがあった）
+  await こうなるまで待つ(
+    () => page.evaluate(() => document.activeElement && document.activeElement.tagName),
+    (名) => 'INPUT' === 名 || 'TEXTAREA' === 名,
+    20000
+  );
+  await 名入れ.pressSequentially('A大学', { delay: 60 });
   // 入ったことをここで確かめる。入らないまま決定すると、空で消えて
   // 「色が付かない」という遠い場所で落ちる
   await expect(名入れ, 'チーム名が入力欄に入っていない').toHaveValue('A大学', { timeout: 10000 });

@@ -69,7 +69,11 @@ test('個人ログインでは、自分の情報と弓具がそのまま出る',
     page.locator(`input[value="${自分.名}"]`),
     '名前が直せる欄のまま残っている'
   ).toHaveCount(0);
-  await expect(page.getByText(自分.名, { exact: true }).first(), '自分の名前が出ていない').toBeVisible();
+  // 名前は雲から名簿が届いてから出る。3機種を同時に流すと WebKit では
+  // 30秒を超えることがあった（実測。単独なら5秒ほど）。既定の5秒では足りない
+  await expect(page.getByText(自分.名, { exact: true }).first(), '自分の名前が出ていない').toBeVisible({
+    timeout: 60000,
+  });
   await expect(
     page.getByText('名前・性別・学年・期は団体の担当者が直します', { exact: true }),
     '直せない旨の断りが出ていない'
@@ -112,7 +116,7 @@ test('個人ログインでは、他人も出ず、部員も足せない', async
         return (s.members || []).length;
       }),
     (n) => n >= 2,
-    30000
+    60000
   );
   const 他人たち = await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
