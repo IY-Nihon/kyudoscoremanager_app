@@ -30,7 +30,7 @@ const { generateUUID } = require("./uuid");
 const { formatMemberName } = require("./formatMemberName");
 const { getShadowStyle } = require("./shadowStyle");
 const { 記録の指示文, 立ち順の指示文, 名簿の手がかり } = require("./ocrPrompts");
-const { マスを開く } = require("./ocrCells");
+const { マスを開く, 一射目からの順にする } = require("./ocrCells");
 
 // ─────────────────────────────────────────
 // 画像 URI → base64 変換（Web / ネイティブ両対応）
@@ -296,6 +296,10 @@ const OCRRecordModal = ({
   const [向き, set向き] = useState("右から");
   // すでに記録表に人が居るときの入れ方。'置き換える' か '後ろに足す'
   const [反映のしかた, set反映のしかた] = useState("置き換える");
+  // 縦の表で、1射目がどちら側か。板は下から書き足されることがある。
+  // 実物で確かめた（団体910280 の板は下から。合計欄も下から 22→44→65→88→107 と増える）。
+  // 取り違えると、その人の○×が丸ごと逆順になる
+  const [起点, set起点] = useState("上から");
 
   // ゲスト入力用ステート
   const [isEnteringGuest, setIsEnteringGuest] = useState(false);
@@ -306,6 +310,7 @@ const OCRRecordModal = ({
     setMode("lineup");
     set向き("右から");
     set反映のしかた("置き換える");
+    set起点("上から");
     setImages([]);
     setTachiList([]);
     setRecordRows([]);
@@ -452,7 +457,7 @@ const OCRRecordModal = ({
             // マスの見た目で返ってきたら、こちらで1射ずつに開く。
             // 開くところまで模型に任せると、射数が倍になったり全部○になった
             const marks = Array.isArray(r && r.cells) && r.cells.length
-              ? マスを開く(r.cells, 一マス)
+              ? マスを開く(一射目からの順にする(r.cells, 起点), 一マス)
               : (Array.isArray(r && r.marks) ? r.marks : []);
             rawRows.push({ name: r && r.name, marks, チーム番号: ti, 立の人数, チーム名: (t && t.name) || "" });
           });
@@ -973,7 +978,9 @@ const OCRRecordModal = ({
 
               <_Text style={styles.hint}>
                 {mode === "record"
-                  ? `的中記録（紙でもホワイトボードでも構いません）を撮影・選択してください。氏名と1射ごとの○×を読み取ります（1人${shotsPerRound}射の設定）。1枚に収まらない場合は続けて追加できます。`
+                  ? `的中記録（紙でもホワイトボードでも構いません）を撮影・選択してください。氏名と1射ごとの○×を読み取ります（1人${shotsPerRound}射の設定）。1枚に収まらない場合は続けて追加できます。
+
+※ ホワイトボードの○×は、1枚に大勢を写すほど読み違えます。実測では、16人を1枚に写すと4分の1しか合いませんでしたが、4人（1立）ずつに分けて撮ると8割まで上がりました。氏名と並びだけなら1枚で正しく取れます。`
                   : "ホワイトボードの立ち順表を撮影・選択してください。1枚に収まらない場合は続けて追加できます。"}
               </_Text>
 
@@ -999,6 +1006,29 @@ const OCRRecordModal = ({
                 {向き === "左右から"
                   ? "リーグの対戦などで、板が向かい合って2つ並んでいるときに選んでください。左の板は左から、右の板は右から読み、間に区切りを入れます。"
                   : "写真の中で、大前（一的）の人がどちら側に書かれているかを選んでください。"}
+              </_Text>
+
+              {/* 板は下から書き足されることがある。取り違えると、その人の○×が
+                  丸ごと逆順になる（実物の板で踏んだ） */}
+              <_Text style={styles.settingLabel}>1射目はどちらに書かれていますか</_Text>
+              <_View style={styles.modeRow}>
+                {[
+                  { 値: "上から", 札: "上から書く" },
+                  { 値: "下から", 札: "下から書く" },
+                ].map((x) => (
+                  <_TouchableOpacity
+                    key={x.値}
+                    style={[styles.modeBtn, 起点 === x.値 && styles.modeBtnActive]}
+                    onPress={() => { set起点(x.値); setErrorMsg(""); }}
+                  >
+                    <_Text style={[styles.modeBtnText, 起点 === x.値 && styles.modeBtnTextActive]}>{x.札}</_Text>
+                  </_TouchableOpacity>
+                ))}
+              </_View>
+              <_Text style={styles.settingNote}>
+                {起点 === "下から"
+                  ? "いちばん下の行が1立目です。合計欄の数が下から上へ増えていく板は、こちらです。"
+                  : "いちばん上の行が1立目です。ふつうの紙の記録表はこちらです。"}
               </_Text>
 
               {hasExistingRecord && (
