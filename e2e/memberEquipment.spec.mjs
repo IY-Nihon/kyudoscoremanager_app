@@ -162,16 +162,28 @@ test('個人ログインの画面は、履歴が増えても下まで流せる',
   expect(前, '縦に流れる入れ物が無い（下の履歴に届かない）').not.toBeNull();
   expect(前.幅, '流せる余地が無い').toBeGreaterThan(0);
 
-  await page.mouse.move(200, 500);
-  await page.mouse.wheel(0, 1200);
+  // ホイールは使わない。モバイル WebKit では動かせず、iPhone の検査だけが
+  // 落ちる（アプリの話ではなく、動かし方の話）。入れ物を直に動かす
+  const 動かす = (量) =>
+    page.evaluate((y) => {
+      const el = [...document.querySelectorAll('*')].find(
+        (x) =>
+          x.scrollHeight > x.clientHeight + 8 &&
+          x.clientHeight > 150 &&
+          /auto|scroll/.test(getComputedStyle(x).overflowY)
+      );
+      if (el) el.scrollTop = Math.max(0, el.scrollTop + y);
+    }, 量);
+
+  await 動かす(1200);
   await こうなるまで待つ(
     async () => (await 流れ()).位置,
     (x) => x > 0,
     20000
   );
 
-  // 上へ戻れば、保存する道もまた見える
-  await page.mouse.wheel(0, -2000);
+  // 上へ戻れば、弓具管理もまた見える
+  await 動かす(-2000);
   await こうなるまで待つ(
     async () => (await 流れ()).位置,
     (x) => x === 0,
