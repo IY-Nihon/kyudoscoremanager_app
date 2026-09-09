@@ -176,14 +176,15 @@ function cleanUpSessions(sessions) {
     const 直し = {};
     if (Array.isArray(session.tags)) 直し.tags = cleanUpTagsArray(session.tags);
     // 端末に控えた記録にも、壊れたものが混ざっている。雲の取り込み口だけを
-    // 直しても、次の同期で上書きされるまでの間は落ちたままになる
-    const 射手 = 記録の射手を整える(session);
-    if (
+    // 直しても、次の同期で上書きされるまでの間は落ちたままになる。
+    //
+    // ここは記録を書き込むたびに通る（ストアの set が包んでいる）ので、
+    // 直すところが在るときだけ作り直す。整った記録で並びを作り直すと、
+    // 記録の数だけ捨てる並びが生まれる
+    const 傷んでいる =
       !Array.isArray(session.archers) ||
-      射手.some((x, i) => x !== session.archers[i])
-    ) {
-      直し.archers = 射手;
-    }
+      session.archers.some((x) => !x || !Array.isArray(x.marks));
+    if (傷んでいる) 直し.archers = 記録の射手を整える(session);
     return Object.keys(直し).length ? Object.assign({}, session, 直し) : session;
   });
 }
