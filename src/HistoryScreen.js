@@ -1772,8 +1772,13 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
       borderRadius: 10,
     },
     yearButtonText: { color: '#5856D6', fontSize: 17, fontWeight: '500' },
-    // 横スクロールの器は縦に伸びないよう flexGrow:0。中身の並びは content 側で
-    monthTabsScroll: { marginBottom: 12, flexGrow: 0 },
+    // 横スクロールの器は、縦に伸びも縮みもさせない。
+    //
+    // 伸びる側（flexGrow:0）だけを止めていたが、縮む側が残っていた。
+    // この器は縦に並ぶ器の直の子で、下の一覧が場所を欲しがると縦に潰され、
+    // 中の月が上下で切れて、一覧が月に重なって見える（2026-09-09 に踏んだ）。
+    // 月の札そのものと同じで、器も縮ませない。
+    monthTabsScroll: { marginBottom: 12, flexGrow: 0, flexShrink: 0 },
     monthTabsContent: { flexDirection: 'row', paddingHorizontal: 16, gap: 10 },
     monthTab: {
       paddingHorizontal: 18,
