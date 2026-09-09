@@ -286,6 +286,15 @@ const OCRRecordModal = ({
   const [expandedActiveGrades, setExpandedActiveGrades] = useState(new Set(["1", "2", "3", "4", "0"]));
   const [expandedTerms, setExpandedTerms] = useState(new Set());
   
+  // 大前がどちらの端かは、道場や大会で違う。1枚の写真に板が2つ写り、
+  // それぞれ外側が大前ということもある（リーグの対戦）。読む前に選んでもらう。
+  //   '右から' … 右端が大前。右から左へ読む
+  //   '左から' … 左端が大前。左から右へ読む
+  //   '左右から' … 板が2つ。それぞれ外側が大前（左の板は左から、右の板は右から）
+  const [向き, set向き] = useState("右から");
+  // すでに記録表に人が居るときの入れ方。'置き換える' か '後ろに足す'
+  const [反映のしかた, set反映のしかた] = useState("置き換える");
+
   // ゲスト入力用ステート
   const [isEnteringGuest, setIsEnteringGuest] = useState(false);
   const [guestNameInput, setGuestNameInput] = useState("");
@@ -293,6 +302,8 @@ const OCRRecordModal = ({
   const resetAll = () => {
     setStep("pick");
     setMode("lineup");
+    set向き("右から");
+    set反映のしかた("置き換える");
     setImages([]);
     setTachiList([]);
     setRecordRows([]);
@@ -489,6 +500,44 @@ const OCRRecordModal = ({
     return 行.join(String.fromCharCode(10));
   };
 
+  /**
+   * 選んでもらった向きを、指示文に入れる言い方にする。
+   *
+   * 大前がどちらの端かは道場や大会で違う。読み違えると並びが丸ごと逆になり、
+   * 直すには全員を動かすことになるので、当てずっぽうにしない。
+   */
+  const 向きの言い方 = () => {
+    if (向き === "左から") return "左端（大前）から右へ";
+    if (向き === "左右から") return "板ごとに、外側の端（大前）から内側へ";
+    return "右端（大前）から左へ";
+  };
+
+  /** 向きについての、指示文に足す説明 */
+  const 向きの説明 = () => {
+    if (向き === "左右から") {
+      return [
+        "",
+        "【並びの向き】",
+        "・写真には、向かい合った板（またはグリッド）が左右に2つ写っています。",
+        "・左側の板は、左端が大前です。左から右へ読んでください。",
+        "・右側の板は、右端が大前です。右から左へ読んでください。",
+        "・2つの板は別々のチームです。teams を2つに分けて出力してください。",
+      ].join(String.fromCharCode(10));
+    }
+    if (向き === "左から") {
+      return [
+        "",
+        "【並びの向き】",
+        "・左端が大前（一的）です。左から右へ、大前→落 の順で読んでください。",
+      ].join(String.fromCharCode(10));
+    }
+    return [
+      "",
+      "【並びの向き】",
+      "・右端が大前（一的）です。右から左へ、大前→落 の順で読んでください。",
+    ].join(String.fromCharCode(10));
+  };
+
   const buildRecordPrompt = () => {
     return `あなたは弓道の「的中記録表」（紙に手書きされたもの）を読み取るOCRアシスタントです。${buildNameHint()}
 添付された${images.length}枚の画像は、同じ記録表の続き（1枚目の続きが2枚目...）です。すべてを1つの記録として結合してください。
@@ -525,8 +574,10 @@ rows は表の上から順に、marks は左（1射目）から順に並べて�
 【読み取り対象】
 ホワイトボード上の「立ち順表」のグリッド部分のみを対象とします。矢取りの図やメモ書き、磁石 of 跡など、グリッド外の要素は完全に無視してください。
 
+${向きの説明()}
+
 【グリッド構造】
-・縦方向が「立」（壱之立、弐之立、参之立...）、横方向が「的」（一的〜、右から左へ並ぶ）です。
+・縦方向が「立」（壱之立、弐之立、参之立...）、横方向が「的」です。
 ・各セルにはネームプレート（氏名）が入っています。手書き・印刷どちらもあります。
 ・プレート内で名前が2行に分かれていても、改行を無視して1つの名前として結合してください。
 ・空欄（プレートが無い「選択」状態のマス）は空文字列 "" として、位置を保持したまま出力してください（詰めないでください）。
@@ -538,7 +589,7 @@ rows は表の上から順に、marks は左（1射目）から順に並べて�
 【出力形式】
 以下のJSON形式のみを出力してください（説明文やMarkdownは一切不要）:
 {"tachi":[{"seats":["一的の名前","二的の名前","...","御落の名前"]},{"seats":[...]}]}
-seatsは各立ちについて、右側（一的）から左側（御落）の順で、グリッドに見える通りの人数分を配列にしてください。立ちごとに人数が異なっていても構いません。`;
+seatsは各立ちについて、${向きの言い方()}の順で、グリッドに見える通りの人数分を配列にしてください。立ちごとに人数が異なっていても構いません。`;
   };
 
   // ─────────────────────────────────────────
@@ -749,6 +800,8 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
   // 残したままこの画面に留まれるようにするため（呼び出し側だと画面が閉じてしまう）
   const 確かめてから = (進む) => {
     if (!hasExistingRecord) return 進む();
+    // 後ろに足すなら、いまの記録表は消えない。確かめる必要がない
+    if (反映のしかた === "後ろに足す") return 進む();
     const 文 = "いま記録表にある内容は消えて、読み取った結果に置き換わります。よろしいですか？";
     if (IS_WEB) {
       require('./alertBridge').default.alert('確認', 文, [{ text: 'キャンセル', style: 'cancel' }, { text: 'OK', onPress: 進む }]);
@@ -773,7 +826,7 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
       }
       確かめてから(() => {
         // どちらの読み取りかを渡す。呼び出し側の知らせの文言が変わる
-        onApply && onApply(archers, "record");
+        onApply && onApply(archers, "record", 反映のしかた);
         handleClose();
       });
       return;
@@ -786,7 +839,7 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
     }
     const archers = buildArchersArray();
     確かめてから(() => {
-      onApply && onApply(archers, "tachi");
+      onApply && onApply(archers, "tachi", 反映のしかた);
       handleClose();
     });
   };
@@ -946,9 +999,58 @@ seatsは各立ちについて、右側（一的）から左側（御落）の順
 
               <_Text style={styles.hint}>
                 {mode === "record"
-                  ? `紙に取った的中記録を撮影・選択してください。氏名と1射ごとの○×を読み取ります（1人${shotsPerRound}射の設定）。1枚に収まらない場合は続けて追加できます。`
+                  ? `的中記録（紙でもホワイトボードでも構いません）を撮影・選択してください。氏名と1射ごとの○×を読み取ります（1人${shotsPerRound}射の設定）。1枚に収まらない場合は続けて追加できます。`
                   : "ホワイトボードの立ち順表を撮影・選択してください。1枚に収まらない場合は続けて追加できます。"}
               </_Text>
+
+              {/* 大前がどちらの端かは道場や大会で違う。読み違えると並びが丸ごと逆になるので、
+                  当てずっぽうにせず選んでもらう */}
+              <_Text style={styles.settingLabel}>大前はどちら側ですか</_Text>
+              <_View style={styles.modeRow}>
+                {[
+                  { 値: "右から", 札: "右端が大前" },
+                  { 値: "左から", 札: "左端が大前" },
+                  { 値: "左右から", 札: "板が2つ（外側が大前）" },
+                ].map((x) => (
+                  <_TouchableOpacity
+                    key={x.値}
+                    style={[styles.modeBtn, 向き === x.値 && styles.modeBtnActive]}
+                    onPress={() => { set向き(x.値); setErrorMsg(""); }}
+                  >
+                    <_Text style={[styles.modeBtnText, 向き === x.値 && styles.modeBtnTextActive]}>{x.札}</_Text>
+                  </_TouchableOpacity>
+                ))}
+              </_View>
+              <_Text style={styles.settingNote}>
+                {向き === "左右から"
+                  ? "リーグの対戦などで、板が向かい合って2つ並んでいるときに選んでください。左の板は左から、右の板は右から読み、間に区切りを入れます。"
+                  : "写真の中で、大前（一的）の人がどちら側に書かれているかを選んでください。"}
+              </_Text>
+
+              {hasExistingRecord && (
+                <_View>
+                  <_Text style={styles.settingLabel}>いまの記録表はどうしますか</_Text>
+                  <_View style={styles.modeRow}>
+                    {[
+                      { 値: "置き換える", 札: "置き換える" },
+                      { 値: "後ろに足す", 札: "後ろに足す" },
+                    ].map((x) => (
+                      <_TouchableOpacity
+                        key={x.値}
+                        style={[styles.modeBtn, 反映のしかた === x.値 && styles.modeBtnActive]}
+                        onPress={() => { set反映のしかた(x.値); setErrorMsg(""); }}
+                      >
+                        <_Text style={[styles.modeBtnText, 反映のしかた === x.値 && styles.modeBtnTextActive]}>{x.札}</_Text>
+                      </_TouchableOpacity>
+                    ))}
+                  </_View>
+                  <_Text style={styles.settingNote}>
+                    {反映のしかた === "後ろに足す"
+                      ? "いまの記録表はそのまま残り、読み取った人がその後ろに並びます。"
+                      : "いまの記録表の内容は消えて、読み取った結果に置き換わります。"}
+                  </_Text>
+                </_View>
+              )}
 
               {images.length > 0 && (
                 <_View style={styles.thumbRow}>
@@ -1341,6 +1443,8 @@ const styles = _StyleSheet.create({
   closeBtn: { padding: 4 },
   body: { flexGrow: 0 },
   hint: { fontSize: 13, color: "#666", marginBottom: 12, lineHeight: 18 },
+  settingLabel: { fontSize: 13, fontWeight: "600", color: "#000", marginBottom: 6 },
+  settingNote: { fontSize: 12, color: "#8E8E93", marginBottom: 14, lineHeight: 17 },
 
   thumbRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 12 },
   thumbWrap: { alignItems: "center" },
