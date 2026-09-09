@@ -3429,6 +3429,10 @@ const M = (0, s.create)()(
           const _syncDb = await waitForDb();
           if (!_syncDb) {
             console.warn('[Store] syncSessions: db still undefined after await, aborting');
+            // ここは黙って同期エラーにしていた。利用者の画面には帯が出るのに
+            // こちらには何も残らないので、原因が分からないまま止まる
+            //（2026-09-09、スマホで同期に失敗したときに便りが1通も無かった）
+            不具合を控える('記録の同期', new Error('雲との連絡口が用意できませんでした'));
             e({
               syncStatus: '同期エラー',
             });
@@ -3917,6 +3921,8 @@ const M = (0, s.create)()(
           const _fetchDb = await waitForDb();
           if (!_fetchDb) {
             console.warn('[Store] fetchAndOverwriteFromCloud: db still undefined after await, aborting');
+            // 同期と同じく、黙って終わらせない
+            不具合を控える('クラウドから取得', new Error('雲との連絡口が用意できませんでした'));
             e({
               syncStatus: '同期エラー',
             });
