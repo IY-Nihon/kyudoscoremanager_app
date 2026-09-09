@@ -1,75 +1,67 @@
-# ── 依存パッケージ ──
-node_modules/
 
-# ── ビルド成果物 ──
-.expo/
-dist/
-dist-stg/
-web-build/
-expo-env.d.ts
-.firebase/
-*.tsbuildinfo
-
-# ── ネイティブ（自動生成 / 署名ファイル） ──
-/ios
-/android
-.kotlin/
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.pem
-*.mobileprovision
-
-# ── Metro ──
-.metro-health-check*
-
-# ── ログ・診断 ──
-*.log
-*.heapsnapshot
-*.trace
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-diagnostic_*
-prebuild_log.txt
-RecordAppExpo
-
-# ── 機密情報（絶対にコミットしない） ──
-.env
-.env*.local
-users.csv
-users.json
-auth_test_result.txt
-test_auth.*
-
-# ── バックアップ / リストア検証（ローカル作業用） ──
-backup-output/
-backup-output-old/
-restore-test/
-restore-*.mjs
-*.json.gz
-
-# ── 過去のデバッグ資材を退避した場所（Git管理外） ──
-_archive/
-scratch/
-
-# ── OS / エディタ ──
-.DS_Store
-Thumbs.db
-
-# Playwright の実行結果（毎回作り直される）
-test-results/
-playwright-report/
-e2e/.auth/
-dist2/
-dist3/
-
-# 取り残された利用者を消したときの控え。誰を消したかの記録なので、
-# 手元に残しておくが、リポジトリには入れない
-orphan-deleted-*.json
-old-live-branches-*.json
 
 # Instagram の素材。アプリの中身ではないので版に載せない
+# Playwright の実行結果（毎回作り直される）
+# ── Metro ──
+# ── OS / エディタ ──
+# ── ネイティブ（自動生成 / 署名ファイル） ──
+# ── バックアップ / リストア検証（ローカル作業用） ──
+# ── ビルド成果物 ──
+# ── ログ・診断 ──
+# ── 依存パッケージ ──
+# ── 機密情報（絶対にコミットしない） ──
+# ── 過去のデバッグ資材を退避した場所（Git管理外） ──
+# 取り残された利用者を消したときの控え。誰を消したかの記録なので、
+# 手元に残しておくが、リポジトリには入れない
+*.heapsnapshot
+*.jks
+*.json.gz
+*.key
+*.log
+*.mobileprovision
+*.orig.*
+*.p12
+*.p8
+*.pem
+*.trace
+*.tsbuildinfo
+.DS_Store
+.env
+.env*.local
+.expo/
+.firebase/
+.kotlin/
+.metro-health-check*
+/android
+/ios
+RecordAppExpo
+Thumbs.db
+_archive/
+auth_test_result.txt
+backup-output-old/
+backup-output/
+diagnostic_*
+dist-stg/
+dist/
+dist2/
+dist3/
+e2e/.auth/
+expo-env.d.ts
 instagram_assets/
+node_modules/
+npm-debug.*
+ocr-out.json
+old-live-branches-*.json
+orphan-deleted-*.json
+playwright-report/
+prebuild_log.txt
+restore-*.mjs
+restore-test/
+scratch/
+test-results/
+test_auth.*
+users.csv
+users.json
+web-build/
+yarn-debug.*
+yarn-error.*
