@@ -384,6 +384,11 @@ const C = () => {
    * 個人ログインでは一覧に自分しか出ないので、押して窓を開かせる一手間に意味がない。
    * 同じ見た目を2か所に書き写すと必ずずれるので、ここ1つにして呼び分ける。
    */
+  // 見るだけの欄は、開いたときに写した値ではなく名簿から直に読む。
+  // 写した値のままだと、団体側で名前や学年を直しても
+  // 読み込み直すまで古いまま出る
+  const いまの自分 = 'member' === E ? (e || []).find((x) => x && x.id === w) : null;
+
   const 編集の中身 = (窓として出す) =>
     (0, y.jsxs)(n.default, {
             // 窓のときは窓の見た目、画面のときは画面いっぱいに広げる。
@@ -526,7 +531,10 @@ const C = () => {
                             style: j.きまりの行,
                             children: [
                               (0, y.jsx)(o.default, { style: j.きまりの名, children: '名前' }),
-                              (0, y.jsx)(o.default, { style: j.きまりの値, children: k || '未設定' }),
+                              (0, y.jsx)(o.default, {
+                                style: j.きまりの値,
+                                children: (いまの自分 || {}).name || k || '未設定',
+                              }),
                             ],
                           }),
                           q && q.personalId
@@ -545,7 +553,10 @@ const C = () => {
                             style: j.きまりの行,
                             children: [
                               (0, y.jsx)(o.default, { style: j.きまりの名, children: '性別' }),
-                              (0, y.jsx)(o.default, { style: j.きまりの値, children: R || '未設定' }),
+                              (0, y.jsx)(o.default, {
+                                style: j.きまりの値,
+                                children: (いまの自分 || {}).gender || R || '未設定',
+                              }),
                             ],
                           }),
                           (0, y.jsxs)(n.default, {
@@ -554,7 +565,12 @@ const C = () => {
                               (0, y.jsx)(o.default, { style: j.きまりの名, children: '学年' }),
                               (0, y.jsx)(o.default, {
                                 style: j.きまりの値,
-                                children: '5' === P ? '卒業生' : '0' === P ? 'その他' : `${P}年`,
+                                children: (() => {
+                                  const 学 = String(
+                                    (いまの自分 && いまの自分.grade != null ? いまの自分.grade : P) ?? ''
+                                  );
+                                  return '5' === 学 ? '卒業生' : '0' === 学 ? 'その他' : `${学}年`;
+                                })(),
                               }),
                             ],
                           }),
@@ -564,7 +580,10 @@ const C = () => {
                               (0, y.jsx)(o.default, { style: j.きまりの名, children: '期' }),
                               (0, y.jsx)(o.default, {
                                 style: j.きまりの値,
-                                children: M ? `${M}期` : '未設定',
+                                children: (() => {
+                                  const 期 = (いまの自分 && いまの自分.termKi) || M;
+                                  return 期 ? `${期}期` : '未設定';
+                                })(),
                               }),
                             ],
                           }),
