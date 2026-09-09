@@ -338,7 +338,8 @@ const h = 同期規則.generateUniquePersonalId,
   normalizeTag = 同期規則.normalizeTag,
   cleanUpTagsArray = 同期規則.cleanUpTagsArray,
   参加できるライブ = 同期規則.参加できるライブ,
-  cleanUpSessions = 同期規則.cleanUpSessions;
+  cleanUpSessions = 同期規則.cleanUpSessions,
+  記録の射手を整える = 同期規則.記録の射手を整える;
 const f = (e, s) => {
     if (!e) return s ? Array(s).fill('') : [];
     if (Array.isArray(e)) {
@@ -3490,6 +3491,9 @@ const M = (0, s.create)()(
                 Object.assign({}, s, {
                   id: e.id,
                   tags: cleanedTags,
+                  // 見張りと同じように形を整える。ここを抜かすと、
+                  // 取りにいった方から壊れた記録がそのまま入ってくる
+                  archers: 記録の射手を整える(s),
                   lastModified: t,
                   syncStatus: '同期済み',
                 })
@@ -4837,12 +4841,8 @@ const M = (0, s.create)()(
                     Object.assign({}, s, {
                       id: e.id,
                       tags: cleanedTags,
-                      // 射手の入っていない記録が雲に在ることがある（古い版の書き込み、
-                      // 書きかけ、手で作った下ごしらえ）。読む側は archers を配列と
-                      // 思って回すので、undefined のままだと画面ごと落ちる。
-                      // 2026-09-08、団体100002 の `id: 'x'` という記録で分析画面が
-                      // 落ちた。tags と同じように、ここで形を整えてから渡す
-                      archers: Array.isArray(s.archers) ? s.archers : [],
+                      // tags と同じように、ここで形を整えてから渡す
+                      archers: 記録の射手を整える(s),
                       syncStatus: e.metadata && e.metadata.hasPendingWrites ? '未同期' : '同期済み',
                     })
                   );

@@ -150,14 +150,42 @@ function cleanUpTagsArray(tags) {
   return Array.from(new Set(tags.map(normalizeTag).filter(Boolean)));
 }
 
-/** 記録の一覧のタグをまとめて揃える */
+/**
+ * 記録の射手を、読む側が回せる形にして返す。
+ *
+ * 射手の入っていない記録が在ることがある（古い版の書き込み、書きかけ、
+ * 手で作った下ごしらえ）。読む側は archers を配列と思って回すので、
+ * 無いまま渡すと画面ごと落ちる。2026-09-08、団体100002 の `id: 'x'`
+ * という記録で分析画面が落ちた。
+ *
+ * ○×の無い射手も同じ。marks を回している所が幾つもある。
+ * 揃っているものは作り直さずそのまま返す（同じものだと分かるように）。
+ */
+function 記録の射手を整える(session) {
+  if (!session || !Array.isArray(session.archers)) return [];
+  return session.archers.map((射手) =>
+    射手 && Array.isArray(射手.marks) ? 射手 : Object.assign({}, 射手, { marks: [] })
+  );
+}
+
+/** 記録の一覧のタグをまとめて揃え、射手の形も整える */
 function cleanUpSessions(sessions) {
   if (!Array.isArray(sessions)) return sessions;
-  return sessions.map((session) =>
-    session && session.tags && Array.isArray(session.tags)
-      ? Object.assign({}, session, { tags: cleanUpTagsArray(session.tags) })
-      : session
-  );
+  return sessions.map((session) => {
+    if (!session) return session;
+    const 直し = {};
+    if (Array.isArray(session.tags)) 直し.tags = cleanUpTagsArray(session.tags);
+    // 端末に控えた記録にも、壊れたものが混ざっている。雲の取り込み口だけを
+    // 直しても、次の同期で上書きされるまでの間は落ちたままになる
+    const 射手 = 記録の射手を整える(session);
+    if (
+      !Array.isArray(session.archers) ||
+      射手.some((x, i) => x !== session.archers[i])
+    ) {
+      直し.archers = 射手;
+    }
+    return Object.keys(直し).length ? Object.assign({}, session, 直し) : session;
+  });
 }
 
 /**
@@ -844,6 +872,7 @@ module.exports = {
   normalizeTag,
   cleanUpTagsArray,
   cleanUpSessions,
+  記録の射手を整える,
   generateUniquePersonalId,
   SYNCED,
   UNSYNCED,
