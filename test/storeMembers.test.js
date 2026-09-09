@@ -49,7 +49,10 @@ test('画面が取り出しているストアの名前は、すべて実在す�
     let m;
     while ((m = re.exec(s)) !== null) {
       for (const 片 of m[1].split(',')) {
-        const 名 = 片.split(':')[0].trim().replace(/^\.\.\./, '');
+        // 別名（a: b）と既定値（a = null）の両方を落とす。既定値を落とし忘れると、
+        // 名前に " = null" が付いたまま照らし合わせて、在るものを「無い」と言ってしまう
+        const 生 = 片.split(':')[0].split('=')[0].trim();
+        const 名 = 生.startsWith('...') ? 生.slice(3) : 生;
         if (!名 || 名.startsWith('//')) continue;
         if (!在る.has(名)) 抜け.push(f + ' → ' + 名);
       }
