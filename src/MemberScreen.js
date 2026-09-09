@@ -60,7 +60,14 @@ const C = () => {
   const [M, O] = (0, t.useState)('');
   const G = (0, x.useScoreStore)((e) => e.currentFreshmanTerm);
   const [L, N] = (0, t.useState)(!1);
-  const [V, K] = (0, t.useState)(new Date().toISOString().split('T')[0]);
+  // 端末の日付で出す。toISOString は世界標準時なので、日本では
+  // 朝9時より前に開くと前の日が入ってしまう（弓具を変えた日がずれる）
+  const [V, K] = (0, t.useState)(
+    (() => {
+      const 今 = new Date();
+      return `${今.getFullYear()}-${String(今.getMonth() + 1).padStart(2, '0')}-${String(今.getDate()).padStart(2, '0')}`;
+    })()
+  );
   const [Y, $] = (0, t.useState)('');
   const [U, J] = (0, t.useState)('');
   const { addEquipment: Q, deleteEquipment: X } = (0, x.useScoreStore)();
