@@ -223,6 +223,28 @@ function 溜まりを流し直す() {
 
 // 不具合をこちらに控える。送れなければ端末に貯まり、つながったときに出し直す。
 // errorReporter → useScoreStore の向きに参照があるので、ここでは呼ぶときに読む
+/**
+ * その失敗が「入り直せば直るもの」か。
+ *
+ * 端末のサインインが外れると、雲への読み書きがすべて permission-denied で
+ * 断られる。画面は端末の控えから出るので一見データはあり、利用者からは
+ * 「同期エラー」としか見えない。何をすればよいか分からないまま、記録だけが
+ * 届かなくなる（2026-09-09、団体910280 で便り20通ぶん溜まった）。
+ * 見分けて、入り直すよう伝える。
+ */
+function 入り直せば直るか(誤り) {
+  if (!誤り) return false;
+  const 符 = 誤り.code || 誤り.name || '';
+  if ('permission-denied' === 符 || 'unauthenticated' === 符) return true;
+  return /Missing or insufficient permissions|permission-denied|unauthenticated/i.test(
+    String(誤り.message || '')
+  );
+}
+
+/** 入り直しの案内。画面の帯に出す */
+const 入り直しの案内 =
+  'ログインの有効期限が切れています。設定からログアウトして、もう一度ログインしてください。（記録は残ります）';
+
 function 不具合を控える(出どころ, 誤り) {
   try {
     require('./errorReporter').不具合を送る(出どころ, 誤り);
@@ -954,7 +976,10 @@ const M = (0, s.create)()(
     (t, s) => {
       const e = (o) => {
         let i = 'function' == typeof o ? o(s()) : o;
-        (i &&
+        // 同期できたなら、入り直しの案内は下ろす。書き換えは幾つもあるので、
+        // 1つずつ消して回らずにここで拾う
+        (i && '同期済み' === i.syncStatus && (i.再ログインの案内 = null),
+        i &&
           (i.sessions && (i.sessions = cleanUpSessions(i.sessions)),
           i.trash && (i.trash = cleanUpSessions(i.trash))),
           // ライブ中に手元の履歴が伸びたら、同じものを共有履歴にも積む。
@@ -1024,6 +1049,8 @@ const M = (0, s.create)()(
         syncStatus: '未同期',
         lastSyncTime: null,
         offlineSaveWarning: null,
+        // 入り直しが要るときの案内。permission-denied を拾ったときだけ立てる
+        再ログインの案内: null,
         // 完全に消した記録の控え（id → 消した時刻）。ゴミ箱から完全に削除した
         // けれど、その削除がまだクラウドへ届いていないものを覚えておく。
         // これが無いと、通信できないときに「削除 → ゴミ箱を空にする」と操作し、
@@ -3757,7 +3784,9 @@ const M = (0, s.create)()(
               不具合を控える('記録の同期', s),
               e({
                 syncStatus: '同期エラー',
-              }));
+              }),
+              // 断られたなら、入り直せば直る。何をすればよいかを画面に出す
+              入り直せば直るか(s) && e({ 再ログインの案内: 入り直しの案内 }));
           } finally {
             I = !1;
           }
@@ -4055,7 +4084,8 @@ const M = (0, s.create)()(
               不具合を控える('クラウドから取得', s),
               e({
                 syncStatus: '同期エラー',
-              }));
+              }),
+              入り直せば直るか(s) && e({ 再ログインの案内: 入り直しの案内 }));
           }
         },
         // 戻り値は '開始した' / '同名あり' / '確認できない' の3つ。
@@ -4883,7 +4913,8 @@ const M = (0, s.create)()(
                   不具合を控える('記録の受信', s),
                   e({
                     syncStatus: '同期エラー',
-                  }));
+                  }),
+                  入り直せば直るか(s) && e({ 再ログインの案内: 入り直しの案内 }));
               }
             );
           e({
