@@ -114,8 +114,26 @@ test('チームの帯は、窓の案内が言うとおりの側に出る', async
   const 文 = await 案内.innerText();
   const 言っている側 = /より左|から左/.test(文) ? '左' : '右';
 
-  await page.getByPlaceholder('例: ◯◯大学').fill('A大学');
+  // fill は WebKit で入らない（値が空のまま決定される）。実機の打鍵と同じ形にする
+  const 名入れ = page.getByPlaceholder('例: ◯◯大学');
+  await 名入れ.click();
+  await 名入れ.pressSequentially('A大学', { delay: 30 });
+  // 入ったことをここで確かめる。入らないまま決定すると、空で消えて
+  // 「色が付かない」という遠い場所で落ちる
+  await expect(名入れ, 'チーム名が入力欄に入っていない').toHaveValue('A大学', { timeout: 10000 });
   await page.getByText('決定', { exact: true }).click();
+
+  // 区切りに名前が出るまで待つ。ここを待たずに測ると、遅い機種では
+  // 窓の操作が終わる前に数えて「色が付いていない」と見える
+  await こうなるまで待つ(
+    () =>
+      page.evaluate(() => {
+        const el = document.querySelector('[data-testid^="名の欄-区切り-"]');
+        return el ? (el.innerText || '').trim() : '';
+      }),
+    (字) => 字.includes('A大学'),
+    20000
+  );
 
   await こうなるまで待つ(
     async () => (await 名の欄を測る(page)).射手.filter((x) => x.帯).length,
@@ -363,8 +381,26 @@ test('チーム：縦でも横でも、同じ数の射手に色が付き、区�
 
   await page.locator('[data-testid^="名の欄-区切り-"]').first().click();
   await page.getByText('チーム名を付ける', { exact: true }).click();
-  await page.getByPlaceholder('例: ◯◯大学').fill('A大学');
+  // fill は WebKit で入らない（値が空のまま決定される）。実機の打鍵と同じ形にする
+  const 名入れ = page.getByPlaceholder('例: ◯◯大学');
+  await 名入れ.click();
+  await 名入れ.pressSequentially('A大学', { delay: 30 });
+  // 入ったことをここで確かめる。入らないまま決定すると、空で消えて
+  // 「色が付かない」という遠い場所で落ちる
+  await expect(名入れ, 'チーム名が入力欄に入っていない').toHaveValue('A大学', { timeout: 10000 });
   await page.getByText('決定', { exact: true }).click();
+
+  // 区切りに名前が出るまで待つ。ここを待たずに測ると、遅い機種では
+  // 窓の操作が終わる前に数えて「色が付いていない」と見える
+  await こうなるまで待つ(
+    () =>
+      page.evaluate(() => {
+        const el = document.querySelector('[data-testid^="名の欄-区切り-"]');
+        return el ? (el.innerText || '').trim() : '';
+      }),
+    (字) => 字.includes('A大学'),
+    20000
+  );
 
   /** 色の帯が付いている射手の数と、区切りに出ている字 */
   const 見え方 = () =>
