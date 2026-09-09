@@ -564,3 +564,27 @@ test('ライブ：本当に同じなら、変わったとは見なさない', ()
   const r = mergeLiveArchers(同じ(), 同じ(), 8, 8);
   assert.equal(r.changed, false, '同じ中身で描き直してはいけない');
 });
+
+test('ライブ：並べ替えだけの更新（中身も日時も同じ）も、変わったと見なす', () => {
+  // 立ち順の入れ替えは射手の中身を何も変えない。lastModified も動かさない。
+  // 同じ id どうしの見比べだけでは「変わっていない」と取り違え、
+  // 相手の画面に並びが届かなかった（2026-09-09 に踏んだ）
+  const 甲 = { id: 'a', name: '甲', marks: ['○'], lastModified: 100 };
+  const 乙 = { id: 'b', name: '乙', marks: ['×'], lastModified: 100 };
+  const r = mergeLiveArchers([甲, 乙], [乙, 甲], 8, 8);
+  assert.equal(r.changed, true, '並べ替えが捨てられている');
+  assert.deepEqual(
+    r.archers.map((x) => x.id),
+    ['b', 'a'],
+    '受け取った並びのとおりにならない'
+  );
+});
+
+test('ライブ：並びも中身も同じなら、変わったとは見なさない', () => {
+  const 作る = () => [
+    { id: 'a', name: '甲', marks: ['○'], lastModified: 100 },
+    { id: 'b', name: '乙', marks: ['×'], lastModified: 100 },
+  ];
+  const r = mergeLiveArchers(作る(), 作る(), 8, 8);
+  assert.equal(r.changed, false, '同じ中身で描き直してはいけない');
+});
