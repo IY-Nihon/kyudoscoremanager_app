@@ -313,7 +313,11 @@ const C = () => {
                   style: j.eqAddBtn,
                   onPress: () => {
                     (Y.trim() || U.trim()) &&
-                      (Q(t.id, { date: new Date(V).getTime() || Date.now(), note: Y, weight: U }),
+                      (Q(t.id, {
+                        date: new Date(V + 'T12:00:00').getTime() || Date.now(),
+                        note: Y,
+                        weight: U,
+                      }),
                       $(''),
                       J(''));
                   },
