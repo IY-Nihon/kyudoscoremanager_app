@@ -77,7 +77,7 @@ function 回した(x, y) {
 }
 
 /** 点を、太さぶんの丸で押す */
-function 押す(画, 幅, 高, x0生, y0生, 太さ, 濃さ) {
+export function 押す(画, 幅, 高, x0生, y0生, 太さ, 濃さ) {
   const [x, y] = 回した(x0生, y0生);
   const r = 太さ / 2;
   const x0 = Math.max(0, Math.floor(x - r - 1));
@@ -97,7 +97,7 @@ function 押す(画, 幅, 高, x0生, y0生, 太さ, 濃さ) {
 }
 
 /** 手で引いた線。少しゆらぐ */
-function 線をひく(画, 幅, 高, x1, y1, x2, y2, 太さ, 濃さ, 乱) {
+export function 線をひく(画, 幅, 高, x1, y1, x2, y2, 太さ, 濃さ, 乱) {
   const 長さ = Math.hypot(x2 - x1, y2 - y1);
   const 歩 = Math.max(2, Math.ceil(長さ * 2));
   // 真ん中がふくらむ（手で引くと少し反る）
@@ -115,7 +115,7 @@ function 線をひく(画, 幅, 高, x1, y1, x2, y2, 太さ, 濃さ, 乱) {
 }
 
 /** 手で描いた丸。閉じきらないことがある */
-function 丸をかく(画, 幅, 高, cx, cy, rx, ry, 太さ, 濃さ, 乱) {
+export function 丸をかく(画, 幅, 高, cx, cy, rx, ry, 太さ, 濃さ, 乱) {
   const 始め = 乱() * Math.PI * 2;
   // 閉じ足りない／描きすぎる
   const 回る = Math.PI * 2 * (0.93 + 乱() * 0.14);
@@ -190,6 +190,51 @@ export function 印をえがく(記号, 種, 大きさ) {
   const ずれy = (乱() - 0.5) * 半 * 0.25;
   線をひく(画, N, N, cx - dx + ずれx, cy - dy + ずれy, cx + dx + ずれx, cy + dy + ずれy, 太さ, 濃さ, 乱);
   return { 画, 幅: N, 高: N };
+}
+
+/**
+ * 好きな板の、好きな場所へ印を1つ描く。
+ *
+ * @param {Float32Array} 画
+ * @param {number} 幅
+ * @param {number} 高
+ * @param {string} 記号
+ * @param {{cx:number, cy:number, 半:number, 濃さ:number, 太さ:number, 乱:Function}} 注文
+ */
+export function 印をそこへ描く(画, 幅, 高, 記号, 注文) {
+  const { cx, cy, 半, 濃さ, 太さ, 乱 } = 注文;
+  傾きを決める(0, 0);
+  const 縦横 = 0.85 + 乱() * 0.3;
+
+  if (記号 === '×') {
+    const の = 半 * (1.0 + 乱() * 0.25);
+    const ずれ = () => (乱() - 0.5) * 半 * 0.35;
+    線をひく(画, 幅, 高, cx - の + ずれ(), cy - の + ずれ(), cx + の + ずれ(), cy + の + ずれ(), 太さ, 濃さ, 乱);
+    線をひく(画, 幅, 高, cx + の + ずれ(), cy - の + ずれ(), cx - の + ずれ(), cy + の + ずれ(), 太さ, 濃さ, 乱);
+    return;
+  }
+  if (記号 === '') return;
+
+  丸をかく(画, 幅, 高, cx, cy, 半, 半 * 縦横, 太さ, 濃さ, 乱);
+  if (記号 === '◎') {
+    const 内半 = 半 * (0.2 + 乱() * 0.25);
+    丸をかく(
+      画, 幅, 高,
+      cx + (乱() - 0.5) * 半 * 0.4, cy + (乱() - 0.5) * 半 * 0.4,
+      内半, 内半 * (0.85 + 乱() * 0.3), 太さ * (0.8 + 乱() * 0.3), 濃さ, 乱
+    );
+    return;
+  }
+  if (記号 === '○') return;
+
+  const 下がりか = 記号 === '○' + 逆;
+  const 角 = ((下がりか ? 45 : 135) + (乱() - 0.5) * 22) * (Math.PI / 180);
+  const のび = 半 * (0.95 + 乱() * 0.4);
+  const dx = Math.cos(角) * のび;
+  const dy = Math.sin(角) * のび;
+  const ずれx = (乱() - 0.5) * 半 * 0.25;
+  const ずれy = (乱() - 0.5) * 半 * 0.25;
+  線をひく(画, 幅, 高, cx - dx + ずれx, cy - dy + ずれy, cx + dx + ずれx, cy + dy + ずれy, 太さ, 濃さ, 乱);
 }
 
 /** Float32 の板を、0-255 の白黒に直す */
