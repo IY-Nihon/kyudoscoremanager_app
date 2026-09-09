@@ -19,7 +19,7 @@ $headInjection = @'
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="的中ノート">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js')})}</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(e){console.warn('[sw] 登録できませんでした（起動が速くならないだけです）:',e)})})}</script>
 </head>
 '@
 
