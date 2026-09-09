@@ -22,7 +22,7 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const { 記録の指示文, 名簿の手がかり } = require('../src/ocrPrompts.js');
-const { マスを開く } = require('../src/ocrCells.js');
+const { マスを開く, 一射目からの順にする } = require('../src/ocrCells.js');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const 引数 = process.argv.slice(2);
@@ -37,6 +37,7 @@ const みち = (引数[0] || '').split(',').filter(Boolean);
 const 向き = 引数[1] || '右から';
 const 射数 = Number(引数[2]) || 20;
 const 模型名 = process.env.OCR_MODEL || 'gemini-2.5-flash';
+const 起点 = process.env.OCR_START || '上から';
 
 if (!みち.length) {
   console.error('使い方: node scripts/try-ocr.mjs <画像のみち> [向き] [射数] [--正解 団体:題]');
@@ -123,7 +124,7 @@ const 指示 = 記録の指示文({
   向き,
 });
 
-console.log('── 模型:', 模型名, '/ 向き:', 向き, '/ 射数:', 射数, '/ 画像:', みち.join(', '));
+console.log('── 模型:', 模型名, '/ 起点:', 起点, '/ 向き:', 向き, '/ 射数:', 射数, '/ 画像:', みち.join(', '));
 console.log('── 名簿の手がかり:', 名簿.length ? 名簿.length + '人' : 'なし');
 
 const genAI = new GoogleGenerativeAI(鍵);
@@ -154,7 +155,7 @@ try {
 fs.writeFileSync('ocr-out.json', JSON.stringify(読み, null, 1));
 /** cells を1射ずつに開く。marks で返ってきたときはそのまま使う */
 const 開く = (t, r) => {
-  if (Array.isArray(r.cells) && r.cells.length) return マスを開く(r.cells, t.cellStyle || '2射');
+  if (Array.isArray(r.cells) && r.cells.length) return マスを開く(一射目からの順にする(r.cells, 起点), t.cellStyle || '2射');
   return Array.isArray(r.marks) ? r.marks : [];
 };
 
