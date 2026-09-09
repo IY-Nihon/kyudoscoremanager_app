@@ -84,6 +84,7 @@ const k = () => {
         lastSyncTime: w,
         isNetworkOnline: E = !0,
         offlineSaveWarning: オフライン保存の警告 = null,
+        再ログインの案内 = null,
         addArcher: R,
         addSeparator: P,
         setSeparatorTeam: 区切りにチーム名を付ける,
@@ -874,13 +875,17 @@ const k = () => {
       style: W.safeArea,
       edges: ['top', 'left', 'right', 'bottom'],
       children: [
-        オフライン保存の警告 && !警告を閉じた
+        // 入り直しが要るときは、そちらを先に出す。同期エラーの帯だけでは
+        // 何をすればよいか分からず、記録が届かないまま使い続けることになる
+        再ログインの案内 || (オフライン保存の警告 && !警告を閉じた)
           ? (0, A.jsx)(h.default, {
               style: { backgroundColor: '#B00020', paddingVertical: 8, paddingHorizontal: 12 },
               onPress: () => 警告を閉じる(!0),
               children: (0, A.jsx)(a.default, {
                 style: { color: '#FFF', fontSize: 12, lineHeight: 17, textAlign: 'center' },
-                children: `${オフライン保存の警告}（タップで閉じる）`,
+                children: 再ログインの案内
+                  ? 再ログインの案内
+                  : `${オフライン保存の警告}（タップで閉じる）`,
               }),
             })
           : null,
