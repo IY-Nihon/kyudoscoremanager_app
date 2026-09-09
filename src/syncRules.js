@@ -604,6 +604,22 @@ function mergeLiveArchers(localList, remoteList, localShots, remoteShots) {
   });
 
   let changed = archers.length !== 手元.length || remoteShots !== localShots;
+  // 並びの順そのものを先に見る。
+  //
+  // 下の見比べは「同じ id の射手どうし」を突き合わせるので、中身が同じまま
+  // 順番だけ入れ替わった更新を「変わっていない」と取り違える。立ち順の
+  // 入れ替えは射手の中身を何も変えない（lastModified も動かさない）ため、
+  // これが無いと相手の画面に並びが届かない（2026-09-09 に踏んだ）。
+  if (!changed) {
+    for (let i = 0; i < archers.length; i++) {
+      const 受 = archers[i] && archers[i].id;
+      const 手 = 手元[i] && 手元[i].id;
+      if (受 !== 手) {
+        changed = true;
+        break;
+      }
+    }
+  }
   if (!changed) {
     for (let i = 0; i < archers.length; i++) {
       const a = archers[i];
