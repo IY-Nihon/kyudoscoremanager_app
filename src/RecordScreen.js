@@ -2613,9 +2613,9 @@ const k = () => {
           members: oe,
           alumni: (0, x.useScoreStore)((e) => e.alumni) || [],
           shotsPerRound: T,
-          // 取り込みは記録表を丸ごと置き換える。中身があるなら先に確かめてもらう
+          // 中身があるなら、置き換えるか後ろに足すかを窓の側で選んでもらう
           hasExistingRecord: k.length > 0,
-          onApply: (newArchers, 読み取りの種類) => {
+          onApply: (newArchers, 読み取りの種類, 入れ方) => {
             // 画像は setState で直に盤面を差し替えるため、ストアの止めが効かない。
             // 閲覧用のときはここで返す
             if ($e) return void 閲覧中に押された();
@@ -2633,8 +2633,12 @@ const k = () => {
             // 印を付けないと初めから閉じてしまい、直すのが全部長押しになる。
             // 盤面より先に印を付ける。逆にすると印の無い盤面が一度描かれ、
             // 読み取った○×が一瞬すべて灰色に光ってから戻る
+            // 後ろに足すときは、いまの並びの後ろへ繋ぐ。区切りは入れない
+            //（区切るかどうかは、写真の中に板が2つ在るときだけ窓の側で決める）
+            const 入れる並び =
+              '後ろに足す' === 入れ方 ? [...(Array.isArray(k) ? k : []), ...newArchers] : newArchers;
             x.useScoreStore.getState().入れた印をまとめて付ける(newArchers);
-            x.useScoreStore.setState({ archers: newArchers });
+            x.useScoreStore.setState({ archers: 入れる並び });
             // 紙の記録は氏名と○×を、立ち順表は並びだけを読む。
             // どちらも同じ処理を通るので、文言は種類で分ける
             Ge(
