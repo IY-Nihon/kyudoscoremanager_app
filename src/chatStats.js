@@ -212,13 +212,25 @@ function 記録をさがす(記録たち, 注文) {
     見つかった件数: 見つけた.length,
     一覧: 見つけた.slice(0, 件数).map((r) => ({
       id: r.id,
-      日付: new Date(r.date || 0).toISOString().slice(0, 10),
+      日付: 端末の日付(r.date || 0),
       題: r.title || '',
       目印: r.tags || [],
       覚え書き: r.note || '',
       人数: (Array.isArray(r.archers) ? r.archers : []).filter((a) => a && !a.isSeparator && !a.isTotalCalculator).length,
     })),
   };
+}
+
+/**
+ * 日時を「年-月-日」にする。端末の日付で切る。
+ *
+ * toISOString は世界標準時で切るので、日本では朝9時より前の練習が
+ * 前の日にまとめられてしまう。朝練の記録がひとつ前の日付で答えられていた。
+ */
+function 端末の日付(日時) {
+  const d = new Date(日時);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 /**
