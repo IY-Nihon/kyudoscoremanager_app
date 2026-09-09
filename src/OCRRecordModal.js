@@ -29,6 +29,8 @@ const { GEMINI_API_KEY, IS_WEB } = require("./IS_WEB");
 const { generateUUID } = require("./uuid");
 const { formatMemberName } = require("./formatMemberName");
 const { getShadowStyle } = require("./shadowStyle");
+const { 記録の指示文, 立ち順の指示文, 名簿の手がかり } = require("./ocrPrompts");
+const { マスを開く } = require("./ocrCells");
 
 // ─────────────────────────────────────────
 // 画像 URI → base64 変換（Web / ネイティブ両対応）
@@ -437,7 +439,24 @@ const OCRRecordModal = ({
       const parsed = JSON.parse(raw);
 
       if (mode === "record") {
-        const rawRows = Array.isArray(parsed.rows) ? parsed.rows : [];
+        // 新しい形は teams（板ごと）。古い形（rows だけ）も受ける。
+        // 板が2つ写っているときは、間に区切りを入れるために team の番号を持たせる
+        const teams = Array.isArray(parsed.teams) && parsed.teams.length
+          ? parsed.teams
+          : [{ name: "", cellStyle: "1射", tachiPeople: 0, rows: Array.isArray(parsed.rows) ? parsed.rows : [] }];
+        const rawRows = [];
+        teams.forEach((t, ti) => {
+          const 一マス = t && t.cellStyle === "1射" ? "1射" : "2射";
+          const 立の人数 = Number(t && t.tachiPeople) > 0 ? Number(t.tachiPeople) : 0;
+          (Array.isArray(t && t.rows) ? t.rows : []).forEach(r => {
+            // マスの見た目で返ってきたら、こちらで1射ずつに開く。
+            // 開くところまで模型に任せると、射数が倍になったり全部○になった
+            const marks = Array.isArray(r && r.cells) && r.cells.length
+              ? マスを開く(r.cells, 一マス)
+              : (Array.isArray(r && r.marks) ? r.marks : []);
+            rawRows.push({ name: r && r.name, marks, チーム番号: ti, 立の人数, チーム名: (t && t.name) || "" });
+          });
+        });
         // 氏名も的中も空の行は表の余白なので落とす
         const rows = rawRows.filter(
           r => (r && String(r.name || "").trim() !== "") ||
@@ -477,9 +496,6 @@ const OCRRecordModal = ({
   // ─────────────────────────────────────────
   // プロンプト構築
   // ─────────────────────────────────────────
-  const buildPrompt = () => (mode === "record" ? buildRecordPrompt() : buildLineupPrompt());
-
-  // 紙の的中記録用プロンプト
   /**
    * 読み取りの候補になる名前を、指示文に渡せる形で作る。
    *
@@ -488,109 +504,21 @@ const OCRRecordModal = ({
    * 候補を先に見せると、迷ったときに名簿の側へ寄る。
    * 読み取ったあとの名寄せ（matchArcherName）は残す。両方効く。
    */
-  const buildNameHint = () => {
-    const 現役 = members.map(m => formatMemberName(m.name, members)).filter(Boolean);
-    const 卒業生 = alumni.map(a => formatMemberName(a.name, alumni)).filter(Boolean);
-    if (!現役.length && !卒業生.length) return '';
-    const 行 = ['', '【この部の名簿（読み取りの候補）】'];
-    if (現役.length) 行.push('部員: ' + 現役.join('、'));
-    if (卒業生.length) 行.push('卒業生: ' + 卒業生.join('、'));
-    行.push('似た字で迷ったときの手がかりに使ってください。写真の氏名がこの名簿に無くても構いません。');
-    行.push('名簿に合わせようとして、読み取れた名前を書き換えたり空欄にしたりしないでください。読めた文字をそのまま書いてください。');
-    return 行.join(String.fromCharCode(10));
-  };
+  const buildNameHint = () =>
+    名簿の手がかり(
+      members.map(m => formatMemberName(m.name, members)).filter(Boolean),
+      alumni.map(a => formatMemberName(a.name, alumni)).filter(Boolean)
+    );
 
-  /**
-   * 選んでもらった向きを、指示文に入れる言い方にする。
-   *
-   * 大前がどちらの端かは道場や大会で違う。読み違えると並びが丸ごと逆になり、
-   * 直すには全員を動かすことになるので、当てずっぽうにしない。
-   */
-  const 向きの言い方 = () => {
-    if (向き === "左から") return "左端（大前）から右へ";
-    if (向き === "左右から") return "板ごとに、外側の端（大前）から内側へ";
-    return "右端（大前）から左へ";
-  };
+  // 指示文そのものは src/ocrPrompts.js に置いてある。画面から切り離してあるので、
+  // 実物の写真で試して正解と突き合わせられる（scripts/try-ocr.mjs）
+  const buildRecordPrompt = () =>
+    記録の指示文({ 手がかり: buildNameHint(), 射数: shotsPerRound, 枚数: images.length, 向き });
 
-  /** 向きについての、指示文に足す説明 */
-  const 向きの説明 = () => {
-    if (向き === "左右から") {
-      return [
-        "",
-        "【並びの向き】",
-        "・写真には、向かい合った板（またはグリッド）が左右に2つ写っています。",
-        "・左側の板は、左端が大前です。左から右へ読んでください。",
-        "・右側の板は、右端が大前です。右から左へ読んでください。",
-        "・2つの板は別々のチームです。teams を2つに分けて出力してください。",
-      ].join(String.fromCharCode(10));
-    }
-    if (向き === "左から") {
-      return [
-        "",
-        "【並びの向き】",
-        "・左端が大前（一的）です。左から右へ、大前→落 の順で読んでください。",
-      ].join(String.fromCharCode(10));
-    }
-    return [
-      "",
-      "【並びの向き】",
-      "・右端が大前（一的）です。右から左へ、大前→落 の順で読んでください。",
-    ].join(String.fromCharCode(10));
-  };
+  const buildLineupPrompt = () =>
+    立ち順の指示文({ 手がかり: buildNameHint(), 枚数: images.length, 向き });
 
-  const buildRecordPrompt = () => {
-    return `あなたは弓道の「的中記録表」（紙に手書きされたもの）を読み取るOCRアシスタントです。${buildNameHint()}
-添付された${images.length}枚の画像は、同じ記録表の続き（1枚目の続きが2枚目...）です。すべてを1つの記録として結合してください。
-
-【読み取り対象】
-・1行が1人の射手で、行の先頭付近に氏名が書かれています。
-・氏名の右側に、1射ごとの結果が横に並んでいます（左から1射目、2射目...の順）。
-・合計欄・的中数・％などの集計列は結果ではありません。読み飛ばしてください。
-・表の外側のメモ書き、日付、署名などは無視してください。
-
-【的中記号の読み取り】
-・的中（当たり）は ○ ◯ 〇 ● ◎ などの丸印で書かれます。→ "○" として出力
-・外れは × ✕ ✖ ／ ＼ ・ などで書かれます。→ "×" として出力
-・まだ引いていない・空欄のマスは "" （空文字列）として出力
-・判読できない場合は無理に推測せず "" にしてください。
-・大切なのは「位置」です。空欄があっても詰めず、左から順に位置を保ったまま出力してください。
-
-【射数】
-・このアプリの設定では1人あたり${shotsPerRound}射です。
-・表の列数が${shotsPerRound}と違う場合は、実際に表に見える列数のぶんだけ出力してください（こちらで調整します）。
-
-【出力形式】
-以下のJSON形式のみを出力してください（説明文やMarkdownは一切不要）:
-{"rows":[{"name":"氏名","marks":["○","×","",...]}]}
-rows は表の上から順に、marks は左（1射目）から順に並べてください。
-氏名が読み取れない行は name を "" にし、marks はそのまま出力してください。`;
-  };
-
-  // ホワイトボードの立ち順表用プロンプト
-  const buildLineupPrompt = () => {
-    return `あなたは弓道の立ち順表（ホワイトボード）を読み取るOCRアシスタントです。${buildNameHint()}
-添付された${images.length}枚の画像は、同じ記録表の続き（1枚目の続きが2枚目...）です。すべてを1つの記録として結合してください。
-
-【読み取り対象】
-ホワイトボード上の「立ち順表」のグリッド部分のみを対象とします。矢取りの図やメモ書き、磁石 of 跡など、グリッド外の要素は完全に無視してください。
-
-${向きの説明()}
-
-【グリッド構造】
-・縦方向が「立」（壱之立、弐之立、参之立...）、横方向が「的」です。
-・各セルにはネームプレート（氏名）が入っています。手書き・印刷どちらもあります。
-・プレート内で名前が2行に分かれていても、改行を無視して1つの名前として結合してください。
-・空欄（プレートが無い「選択」状態のマス）は空文字列 "" として、位置を保持したまま出力してください（詰めないでください）。
-・字がかすれていても、一部だけでも読めたなら、その読めた文字を書いてください。
-・1文字だけの名字（瀧、槙、林 など）もそのまま出力してください。短いからといって飛ばさないでください。
-・どうしても読めないときだけ空文字列にしてください。読めないマスに、当てずっぽうの文字や意味のない文字を書くことは絶対にしないでください。空欄のほうがましです。
-・撮影が斜めで歪んでいる場合は、行と列の対応関係を論理的に解釈してください。
-
-【出力形式】
-以下のJSON形式のみを出力してください（説明文やMarkdownは一切不要）:
-{"tachi":[{"seats":["一的の名前","二的の名前","...","御落の名前"]},{"seats":[...]}]}
-seatsは各立ちについて、${向きの言い方()}の順で、グリッドに見える通りの人数分を配列にしてください。立ちごとに人数が異なっていても構いません。`;
-  };
+  const buildPrompt = () => (mode === "record" ? buildRecordPrompt() : buildLineupPrompt());
 
   // ─────────────────────────────────────────
   // 認識結果へのメンバー名寄せ適用
@@ -620,6 +548,9 @@ seatsは各立ちについて、${向きの言い方()}の順で、グリッド�
         marks: normalizeMarks(r?.marks, shotsPerRound),
         // AI が読み取った実際の列数。設定と食い違う場合に警告を出すため保持する
         detectedShots: Array.isArray(r?.marks) ? r.marks.length : 0,
+        // 板が2つ写っていたときの、どちらの板か。立の切れ目に「計」を入れるための人数
+        チーム番号: Number(r?.チーム番号) || 0,
+        立の人数: Number(r?.立の人数) || 0,
       };
     });
     setRecordRows(rows);
@@ -698,8 +629,23 @@ seatsは各立ちについて、${向きの言い方()}の順で、グリッド�
    * 紙の記録から射手配列を作る。
    * 立ち順モードと違い「立」の概念がないため、セパレータは挟まず読み取った順に並べる。
    */
+  /** 区切り・計の列を1つ作る */
+  const 仕切りを作る = (種) => ({
+    id: generateUUID(),
+    name: "区切り" === 種 ? "---" : "計",
+    marks: Array(shotsPerRound).fill(""),
+    arrowLocations: Array(shotsPerRound).fill(null),
+    gender: "未設定",
+    grade: 0,
+    isGuest: false,
+    isSeparator: "区切り" === 種,
+    isTotalCalculator: "計" === 種,
+    lockedBlocks: {},
+    lastModified: Date.now(),
+  });
+
   const buildRecordArchersArray = () => {
-    return recordRows
+    const 射手たち = recordRows
       .filter(row => row.status === "matched" || (row.rawText && row.rawText.trim() !== ""))
       .map(row => {
         const base = {
@@ -725,8 +671,36 @@ seatsは各立ちについて、${向きの言い方()}の順で、グリッド�
             isGuest: false,
           };
         }
-        return { ...base, name: row.rawText, isGuest: true };
+        return { ...base, name: row.rawText, isGuest: true, チーム番号: row.チーム番号 || 0, 立の人数: row.立の人数 || 0 };
       });
+
+    // 板が2つ写っていたら、その境目に区切りを入れる。
+    // 立の切れ目（ふつう4人）には「計」を入れる。板の小計・合計の列にあたる。
+    // 数字は読まない。並びから数え直すので、そのほうが確かめられる
+    const 出 = [];
+    let 前のチーム = null;
+    let この立 = 0;
+    const 立を閉じる = (人数) => {
+      if (人数 > 0 && この立 > 0) 出.push(仕切りを作る("計"));
+      この立 = 0;
+    };
+    射手たち.forEach((射手) => {
+      const 番 = 射手.チーム番号 || 0;
+      const 人数 = 射手.立の人数 || 0;
+      if (前のチーム !== null && 番 !== 前のチーム) {
+        立を閉じる(人数);
+        出.push(仕切りを作る("区切り"));
+      }
+      前のチーム = 番;
+      // 射手そのものには、組み立て用の目印を残さない
+      const { チーム番号, 立の人数, ...中身 } = 射手;
+      出.push(中身);
+      この立++;
+      if (人数 > 0 && この立 >= 人数) 立を閉じる(人数);
+    });
+    const 最後の人数 = 射手たち.length ? 射手たち[射手たち.length - 1].立の人数 || 0 : 0;
+    立を閉じる(最後の人数);
+    return 出;
   };
 
   const buildArchersArray = () => {
