@@ -443,3 +443,53 @@ test('チーム：縦でも横でも、同じ数の射手に色が付き、区�
   expect(横.帯あり, '横だけチームの色が付いていない').toBe(縦.帯あり);
   expect(横.区切りの字, '横だけ区切りのチーム名が出ていない').toBe(縦.区切りの字);
 });
+
+test('立ち順：表の外で指を離しても、掴みが残らない', async ({ page }) => {
+  // 横に並べたときは、指の動きを名前の行が直に受けている。行の外まで
+  // 動かして離すと、その行の「離した」が来ないまま掴んだ状態が残り、
+  // 押していない指に札が付いてきた（2026-09-09 に踏んだ）。
+  // いまは窓ごと「離した」を受けるので、どこで離しても終わる。
+  await 入る(page);
+  await 射手を立てる(page, 3);
+
+  await page.getByTestId('並べ方').click();
+  await こうなるまで待つ(
+    () => page.getByText('縦へ', { exact: true }).count(),
+    (n) => n > 0,
+    20000
+  );
+
+  const 欄 = page.locator('[data-testid^="名の欄-射手-"]');
+  await こうなるまで待つ(
+    () => 欄.count(),
+    (n) => n === 3,
+    20000
+  );
+  const 位置 = await 欄.evaluateAll((els) =>
+    els.map((e) => {
+      const r = e.getBoundingClientRect();
+      return { cx: r.x + r.width / 2, cy: r.y + r.height / 2 };
+    })
+  );
+  位置.sort((a, z) => a.cy - z.cy);
+
+  const 札 = page.getByTestId('運ぶ札');
+
+  // 掴んで少し動かす。ここでは札が出ている
+  await page.mouse.move(位置[0].cx, 位置[0].cy);
+  await page.mouse.down();
+  await page.waitForTimeout(700);
+  await page.mouse.move(位置[1].cx, 位置[1].cy, { steps: 6 });
+  await expect(札, '掴んで動かしても札が出ない').toBeVisible({ timeout: 20000 });
+
+  // 表のずっと下、名前の行の外で離す
+  const 高さ = page.viewportSize().height;
+  await page.mouse.move(位置[0].cx, 高さ - 5, { steps: 6 });
+  await page.mouse.up();
+  await expect(札, '外で離したのに札が残っている').toHaveCount(0, { timeout: 20000 });
+
+  // 押していない指で表の上を通っても、付いてこない
+  await page.mouse.move(位置[2].cx, 位置[2].cy, { steps: 5 });
+  await page.waitForTimeout(500);
+  await expect(札, '離したあとなのに札が付いてくる').toHaveCount(0);
+});

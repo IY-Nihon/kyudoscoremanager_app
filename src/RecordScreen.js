@@ -499,6 +499,25 @@ const k = () => {
       j.impactAsync(j.ImpactFeedbackStyle.Medium);
     };
 
+    // 表の外で指を離しても、掴みを解く。
+    //
+    // 横に並べたときは、指の動きを名前の行が直に受けている。行の外まで
+    // 動かして離すと、その行の「離した」が来ないまま掴んだ状態が残り、
+    // 押していない指に札が付いてくる（2026-09-09 に踏んだ）。
+    // 窓ごと受け止めれば、どこで離しても必ず終わる。
+    (0, t.useEffect)(() => {
+      if (!掴んだ列 || !m.IS_WEB || 'undefined' == typeof window) return;
+      const 終わる = () => 離す手.current && 離す手.current();
+      (window.addEventListener('mouseup', 終わる),
+        window.addEventListener('touchend', 終わる),
+        window.addEventListener('touchcancel', 終わる));
+      return () => {
+        (window.removeEventListener('mouseup', 終わる),
+          window.removeEventListener('touchend', 終わる),
+          window.removeEventListener('touchcancel', 終わる));
+      };
+    }, [掴んだ列]);
+
     if (!並べ替えの手.current)
       並べ替えの手.current = RN.PanResponder.create({
         // 掴んでいないときは何も奪わない。ふつうのスクロールと押すが効く
@@ -817,6 +836,7 @@ const k = () => {
         l.default,
         {
           pointerEvents: 'none',
+          testID: '運ぶ札',
           style: {
             position: 'absolute',
             ...置き方,
