@@ -850,7 +850,9 @@ test('ライブ：立ち順を入れ替えると、相手の画面にも並び�
   // 更新を捨てる。立ち順の入れ替えは射手の中身を何も変えず lastModified も
   // 動かさないので、順番だけが変わった更新がそのまま捨てられていた
   //（2026-09-09 に踏んだ。相手の画面が元の並びのままだった）
-  test.setTimeout(300_000);
+  // 2つの台を立てて突き合わせるので長い。iPhone では5分では足りず、参加する
+  // ところで時間切れになっていた
+  test.setTimeout(600_000);
   const ライブ名 = ライブ名を作る('jun');
   const 主 = await browser.newContext();
   const 参 = await browser.newContext();
