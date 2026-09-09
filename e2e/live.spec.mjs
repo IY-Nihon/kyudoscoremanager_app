@@ -844,3 +844,68 @@ test('ライブ：URLで配ると、編集用は記録でき、閲覧用は見�
   await 外.close();
   await 見.close();
 });
+
+test('ライブ：立ち順を入れ替えると、相手の画面にも並びが届く', async ({ browser }) => {
+  // 突き合わせは「同じ id の射手どうし」を見比べて、違いが無ければ受け取った
+  // 更新を捨てる。立ち順の入れ替えは射手の中身を何も変えず lastModified も
+  // 動かさないので、順番だけが変わった更新がそのまま捨てられていた
+  //（2026-09-09 に踏んだ。相手の画面が元の並びのままだった）
+  test.setTimeout(300_000);
+  const ライブ名 = ライブ名を作る('jun');
+  const 主 = await browser.newContext();
+  const 参 = await browser.newContext();
+  const A = await 主.newPage();
+  const B = await 参.newPage();
+
+  await 入る(A);
+  await 射手を立てる(A, 3);
+  // 誰がどれか分かるよう、1人目に1つ、2人目に2つ…と○を入れる
+  const ますたち = await A.locator('[data-testid^="ます-"]').evaluateAll((els) =>
+    els.map((e) => e.getAttribute('data-testid'))
+  );
+  const 射手ID = [...new Set(ますたち.map((t) => t.slice(3, t.lastIndexOf('-'))))].filter(
+    (id) => !id.startsWith('sep-')
+  );
+  for (let i = 0; i < 射手ID.length; i++) {
+    for (let j = 0; j <= i; j++) {
+      await A.getByTestId(`ます-${射手ID[i]}-${j}`).click();
+      await A.waitForTimeout(150);
+    }
+  }
+  await ライブを始める(A, ライブ名);
+  await 入る(B);
+  await ライブに参加する(B, ライブ名);
+
+  /** 中り数の並びで、どの列がどこに居るかを見る */
+  const 並び = (page) =>
+    page.evaluate(() =>
+      ((JSON.parse(localStorage.getItem('archery-score-storage') || '{}').state || {}).archers || [])
+        .map((a) => (a.marks || []).filter((m) => m === '○').length)
+        .join(',')
+    );
+
+  await こうなるまで待つ(() => 並び(B), (x) => x === '1,2,3', 40_000);
+
+  // 主催者が、いちばん右の列をいちばん左まで運ぶ
+  const 位置 = await A.locator('[data-testid^="名の欄-射手-"]').evaluateAll((els) =>
+    els
+      .map((e) => {
+        const r = e.getBoundingClientRect();
+        return { cx: r.x + r.width / 2, cy: r.y + r.height / 2, x: r.x };
+      })
+      .sort((a, z) => z.x - a.x)
+  );
+  await A.mouse.move(位置[0].cx, 位置[0].cy);
+  await A.mouse.down();
+  await A.waitForTimeout(700);
+  for (let i = 1; i <= 6; i++) {
+    await A.mouse.move(位置[0].cx + ((位置[2].cx - 位置[0].cx) * i) / 6, 位置[0].cy, { steps: 2 });
+    await A.waitForTimeout(100);
+  }
+  await A.mouse.up();
+
+  await こうなるまで待つ(() => 並び(A), (x) => x === '2,3,1', 20_000);
+  const 届いた = await こうなるまで待つ(() => 並び(B), (x) => x === '2,3,1', 40_000).catch(() => null);
+  expect(await 並び(B), '相手の画面に並びが届いていない').toBe('2,3,1');
+  expect(届いた === null, '待っている間に落ちた').toBe(false);
+});
