@@ -223,12 +223,20 @@ test('cleanUpTagsArray: 配列でなければそのまま返す', () => {
   assert.equal(cleanUpTagsArray(null), null);
 });
 
-test('cleanUpSessions: タグを持つ記録だけ入れ替える', () => {
+test('cleanUpSessions: 直すところの在る記録だけ入れ替える', () => {
+  // 射手の入っていない記録には、空の並びを持たせる。読む側は archers を
+  // 配列と思って回すので、無いまま渡すと画面ごと落ちる（2026-09-08 に踏んだ）
   const 元 = [{ id: 1, tags: ['a', '#a'] }, { id: 2 }, null];
   const 後 = cleanUpSessions(元);
   assert.deepEqual(後[0].tags, ['#a']);
-  assert.equal(後[1], 元[1]);
+  assert.deepEqual(後[0].archers, []);
+  assert.deepEqual(後[1].archers, []);
   assert.equal(後[2], null);
+
+  // 直すところが無ければ、同じものを返す（むだな作り直しをしない）
+  // タグは在るだけで揃え直すので、ここは射手だけの記録で見る
+  const 揃い = { id: 3, archers: [{ id: 'x', marks: ['○'] }] };
+  assert.equal(cleanUpSessions([揃い])[0], 揃い);
 });
 
 // ──────────────────────────────────────────────────────────────
