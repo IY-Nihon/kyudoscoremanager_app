@@ -7,12 +7,11 @@
  * 分けるため、確かめにだけ使う。
  */
 import fs from 'node:fs';
-import { 種類, 描いた見本, 本物の見本, 網をつくる, 前へ, 測る } from './manabu.mjs';
+import { 種類, 描いた見本, 本物の見本, 網をつくる, 前へ, 測る, 入 } from './manabu.mjs';
 
 const 一種類あたり = Number(process.argv[2]) || 2000;
 const 巡回数 = Number(process.argv[3]) || 20;
 const 隠れ = Number(process.argv[4]) || 96;
-const 入 = 400;
 
 console.log(`描く枚数: ${一種類あたり}/種類  巡回: ${巡回数}  隠れ: ${隠れ}`);
 const t0 = Date.now();
