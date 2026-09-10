@@ -17,12 +17,11 @@ import fs from 'node:fs';
 import sharp from 'sharp';
 import { 板をえがく } from './ban.mjs';
 import { 格子 } from './kiridasu.mjs';
-import { 種類, 形にする, 本物の見本, 網をつくる, 前へ, 測る } from './manabu.mjs';
+import { 種類, 形にする, 本物の見本, 網をつくる, 前へ, 測る, 入 } from './manabu.mjs';
 
 const 板の枚数 = Number(process.argv[2]) || 40;
 const 巡回数 = Number(process.argv[3]) || 8;
 const 隠れ = Number(process.argv[4]) || 96;
-const 入 = 400;
 const 仮の置き場 = (process.env.TEMP || '.') + '/ocr-ban';
 
 fs.mkdirSync(仮の置き場, { recursive: true });
@@ -57,8 +56,8 @@ for (let i = 0; i < 板の枚数; i++) {
     立たなかった++;
     continue;
   }
-  const 半幅 = Math.round(g.印の幅 * 0.85);
-  const 半高 = Math.round(Math.min(g.行.間隔 * 0.48, g.印の幅 * 0.9));
+  const 半幅 = Math.round(g.印の幅 * (Number(process.env.OCR_HABA) || 0.85));
+  const 半高 = Math.round(Math.min(g.行.間隔 * 0.37, g.印の幅 * (Number(process.env.OCR_HABA) || 0.85)));
   for (let 列番 = 0; 列番 < g.列.length; 列番++) {
     for (let 行番 = 0; 行番 < g.行.位置.length; 行番++) {
       const 記号 = b.答え.マスの中身[列番][行番];

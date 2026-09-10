@@ -55,6 +55,44 @@ export function 等間隔を当てはめる(値たち, 本数, 許す幅) {
       }
     }
   }
+  // ここまでは 0.01 刻みの総当たりなので、いちばん良いものでも少しずれる。
+  // 割り当てを決めてから、そのずれがいちばん小さくなる始めと間隔を計算し直し、
+  // それを何度か繰り返す。格子は等間隔のままなので、行ごとにばらけることはない
+  for (let 巡 = 0; 巡 < 4; 巡++) {
+    let n = 0;
+    let 和i = 0;
+    let 和y = 0;
+    let 和ii = 0;
+    let 和iy = 0;
+    for (const v of 並び) {
+      let 近さ = Infinity;
+      let どれ = -1;
+      for (let i = 0; i < 本数; i++) {
+        const d = Math.abs(v - (最良.始め + 最良.間隔 * i));
+        if (d < 近さ) {
+          近さ = d;
+          どれ = i;
+        }
+      }
+      if (近さ > 許す幅) continue;
+      n++;
+      和i += どれ;
+      和y += v;
+      和ii += どれ * どれ;
+      和iy += どれ * v;
+    }
+    if (n < 3) break;
+    const 分母 = n * 和ii - 和i * 和i;
+    if (Math.abs(分母) < 1e-9) break;
+    const 間隔 = (n * 和iy - 和i * 和y) / 分母;
+    const 始め = (和y - 間隔 * 和i) / n;
+    if (!(間隔 > 0)) break;
+    const 止まった = Math.abs(間隔 - 最良.間隔) < 1e-4 && Math.abs(始め - 最良.始め) < 1e-4;
+    最良.間隔 = 間隔;
+    最良.始め = 始め;
+    if (止まった) break;
+  }
+
   最良.位置 = [];
   for (let i = 0; i < 本数; i++) 最良.位置.push(最良.始め + 最良.間隔 * i);
   return 最良;

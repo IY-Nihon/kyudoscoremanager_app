@@ -107,25 +107,63 @@ export async function 格子(みち, 注文) {
   const 射手の印 = 印.filter((b) => 射手の列.some((c) => Math.abs(b.x - c.中心) <= 印の幅 * 0.8));
   const 行 = 等間隔を当てはめる(射手の印.map((b) => b.y), 注文.行数, 印の幅 * 0.45);
 
+  // 写真は少し傾いている。板ぜんぶに1つの格子を当てると、端の列ほど
+  // 上下にずれ、印が切れて写る（実測で、右端の列の印が下で切れていた）。
+  // 列ごとに「どれだけ下にずれているか」を測って持たせる。
+  // 10行ぶんの印から決めるので、1行ずつ寄せるのと違ってぶれない
+  for (const 列 of 射手の列) {
+    const 残り = [];
+    for (const b of 射手の印) {
+      if (Math.abs(b.x - 列.中心) > 印の幅 * 0.8) continue;
+      let 近さ = Infinity;
+      for (const y of 行.位置) {
+        const d = b.y - y;
+        if (Math.abs(d) < Math.abs(近さ)) 近さ = d;
+      }
+      if (Math.abs(近さ) <= 行.間隔 * 0.42) 残り.push(近さ);
+    }
+    if (残り.length < 4) {
+      列.ずれ = 0;
+      continue;
+    }
+    残り.sort((a, z) => a - z);
+    const 真ん中 = 残り[Math.floor(残り.length / 2)];
+    列.ずれ = Math.max(-行.間隔 * 0.3, Math.min(行.間隔 * 0.3, 真ん中));
+  }
+
   return { 幅: 生.幅, 高: 生.高, 札の上, 印の幅, 列: 射手の列, 行, 印: 射手の印 };
 }
 
+/**
+ * 1マスを切り出す箱の大きさ。
+ *
+ * 学習側と本物側で別々に書いていたら、片方が 行の間隔×0.37、もう片方が
+ * ×0.48 になっていた。同じ写真から違う大きさで切っていたので、網が見ている
+ * ものが食い違っていた。ここ一箇所で決める。
+ */
+export function 箱の大きさ(格子の中身) {
+  const 半幅 = Math.round(格子の中身.印の幅 * (Number(process.env.OCR_HABA) || 0.85));
+  const 半高 = Math.round(
+    Math.min(格子の中身.行.間隔 * (Number(process.env.OCR_TAKA) || 0.48), 格子の中身.印の幅 * 0.9)
+  );
+  return { 半幅, 半高 };
+}
+
 /** マスを切り出して書き出す */
-export async function マスを書き出す(みち, 格子の中身, 出し先, 札を付ける) {
+export async function マスを書き出す(みち, 格子の中身, 出し先, 札を付ける, 頭 = '') {
   fs.mkdirSync(出し先, { recursive: true });
-  const 半幅 = Math.round(格子の中身.印の幅 * 0.85);
-  const 半高 = Math.round(Math.min(格子の中身.行.間隔 * 0.48, 格子の中身.印の幅 * 0.9));
+  const { 半幅, 半高 } = 箱の大きさ(格子の中身);
   const 出 = [];
   for (let 列番 = 0; 列番 < 格子の中身.列.length; 列番++) {
     for (let 行番 = 0; 行番 < 格子の中身.行.位置.length; 行番++) {
       const cx = Math.round(格子の中身.列[列番].中心);
-      const cy = Math.round(格子の中身.行.位置[行番]);
+      const cy = Math.round(格子の中身.行.位置[行番] + (格子の中身.列[列番].ずれ || 0));
       const 左 = Math.max(0, cx - 半幅);
       const 上 = Math.max(0, cy - 半高);
       const w = Math.min(半幅 * 2, 格子の中身.幅 - 左);
       const h = Math.min(半高 * 2, 格子の中身.高 - 上);
       const 札 = 札を付ける ? 札を付ける(列番, 行番) : null;
-      const 名 = (札 == null ? '' : 札 + '/') + `r${行番}c${列番}.png`;
+      const 名 = (札 == null ? '' : 札 + '/') + 頭 + `r${行番}c${列番}.png`;
       const 先 = path.join(出し先, 名);
       fs.mkdirSync(path.dirname(先), { recursive: true });
       await sharp(みち).extract({ left: 左, top: 上, width: w, height: h }).resize(64, 64, { fit: 'fill' }).png().toFile(先);

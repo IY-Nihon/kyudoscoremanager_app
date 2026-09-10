@@ -97,9 +97,19 @@ export function 押す(画, 幅, 高, x0生, y0生, 太さ, 濃さ) {
 }
 
 /** 手で引いた線。少しゆらぐ */
-export function 線をひく(画, 幅, 高, x1, y1, x2, y2, 太さ, 濃さ, 乱) {
+export function 線をひく(画, 幅, 高, x1, y1, x2, y2, 太さ, 濃さ, 乱, 途切れ) {
   const 長さ = Math.hypot(x2 - x1, y2 - y1);
   const 歩 = Math.max(2, Math.ceil(長さ * 2));
+  // 白板の筆は擦れる。線が点々に途切れることがある（本物の板で見た）。
+  // 途切れた線を丸の中に描くと、学習していないと ◎ と読み違える
+  const 抜け = [];
+  if (途切れ) {
+    const 数 = 1 + Math.floor(乱() * 3);
+    for (let i = 0; i < 数; i++) {
+      const 始 = 乱() * 0.85;
+      抜け.push([始, 始 + 0.05 + 乱() * 0.16]);
+    }
+  }
   // 真ん中がふくらむ（手で引くと少し反る）
   const 反り = (乱() - 0.5) * 太さ * 1.5;
   const 法線x = -(y2 - y1) / 長さ;
@@ -109,6 +119,7 @@ export function 線をひく(画, 幅, 高, x1, y1, x2, y2, 太さ, 濃さ, 乱)
     const ふくらみ = Math.sin(t * Math.PI) * 反り;
     const x = x1 + (x2 - x1) * t + 法線x * ふくらみ + (乱() - 0.5) * 0.8;
     const y = y1 + (y2 - y1) * t + 法線y * ふくらみ + (乱() - 0.5) * 0.8;
+    if (抜け.some(([a, b]) => t >= a && t <= b)) continue;
     const 太 = 太さ * (0.85 + 0.3 * Math.sin(t * Math.PI));
     押す(画, 幅, 高, x, y, 太, 濃さ * (0.85 + 0.3 * 乱()));
   }
@@ -234,7 +245,12 @@ export function 印をそこへ描く(画, 幅, 高, 記号, 注文) {
   const dy = Math.sin(角) * のび;
   const ずれx = (乱() - 0.5) * 半 * 0.25;
   const ずれy = (乱() - 0.5) * 半 * 0.25;
-  線をひく(画, 幅, 高, cx - dx + ずれx, cy - dy + ずれy, cx + dx + ずれx, cy + dy + ずれy, 太さ, 濃さ, 乱);
+  線をひく(
+    画, 幅, 高,
+    cx - dx + ずれx, cy - dy + ずれy, cx + dx + ずれx, cy + dy + ずれy,
+    太さ, 濃さ, 乱,
+    乱() < 0.3
+  );
 }
 
 /** Float32 の板を、0-255 の白黒に直す */
