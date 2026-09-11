@@ -110,7 +110,8 @@ export function 崩し方(注文) {
  * 画を崩す。明るさ（1面）でも色（3面）でも受ける。
  *
  * @param {{画:Uint8Array|Buffer, 幅:number, 高:number, 面?:number}} 元
- * @param {{崩し?:object, ぼかし?:number, 明るさ?:number, 締まり?:number, ざらつき?:number, 種?:number}} 注文
+ * @param {{崩し?:object, ぼかし?:number, 縮小?:number, 明るさ?:number, 締まり?:number, ざらつき?:number, 種?:number}} 注文
+ *   ぼかし … 半径（px）。縮小 … 0.5 なら一度半分に縮めてから戻す（低解像度）
  */
 export function ゆがませる(元, 注文) {
   const 面 = 元.面 || 1;
@@ -152,6 +153,86 @@ export function ゆがませる(元, 注文) {
         v *= 明るさ;
         if (ざらつき) v += (乱() - 0.5) * ざらつき;
         出[出先 + c] = v < 0 ? 0 : v > 255 ? 255 : Math.round(v);
+      }
+    }
+  }
+  let 結果 = { 画: 出, 幅, 高, 面 };
+  // 低解像度。いったん縮めてから元の大きさに戻す（小さい写真・遠くから撮った写真）
+  if (注文.縮小 && 注文.縮小 < 1) 結果 = 縮めて戻す(結果, 注文.縮小);
+  // ぼけ。手ぶれやピント外れ。半径ぶんの箱で平均する（縦横に分けて2回）
+  if (注文.ぼかし) 結果 = ぼかす(結果, 注文.ぼかし);
+  return 結果;
+}
+
+function ぼかす(元, 半径) {
+  const r = Math.max(1, Math.round(半径));
+  const { 幅, 高, 面 } = 元;
+  const 途中 = new Float32Array(幅 * 高 * 面);
+  const 出 = new Uint8Array(幅 * 高 * 面);
+  for (let y = 0; y < 高; y++) {
+    for (let x = 0; x < 幅; x++) {
+      for (let c = 0; c < 面; c++) {
+        let 和 = 0;
+        let n = 0;
+        for (let k = -r; k <= r; k++) {
+          const xx = x + k;
+          if (xx < 0 || xx >= 幅) continue;
+          和 += 元.画[(y * 幅 + xx) * 面 + c];
+          n++;
+        }
+        途中[(y * 幅 + x) * 面 + c] = 和 / n;
+      }
+    }
+  }
+  for (let y = 0; y < 高; y++) {
+    for (let x = 0; x < 幅; x++) {
+      for (let c = 0; c < 面; c++) {
+        let 和 = 0;
+        let n = 0;
+        for (let k = -r; k <= r; k++) {
+          const yy = y + k;
+          if (yy < 0 || yy >= 高) continue;
+          和 += 途中[(yy * 幅 + x) * 面 + c];
+          n++;
+        }
+        出[(y * 幅 + x) * 面 + c] = Math.round(和 / n);
+      }
+    }
+  }
+  return { 画: 出, 幅, 高, 面 };
+}
+
+function 縮めて戻す(元, 倍) {
+  const { 幅, 高, 面 } = 元;
+  const 小幅 = Math.max(2, Math.round(幅 * 倍));
+  const 小高 = Math.max(2, Math.round(高 * 倍));
+  // 平均で縮める
+  const 小 = new Float32Array(小幅 * 小高 * 面);
+  const 数 = new Float32Array(小幅 * 小高);
+  for (let y = 0; y < 高; y++) {
+    const sy = Math.min(小高 - 1, Math.floor(y * 倍));
+    for (let x = 0; x < 幅; x++) {
+      const sx = Math.min(小幅 - 1, Math.floor(x * 倍));
+      for (let c = 0; c < 面; c++) 小[(sy * 小幅 + sx) * 面 + c] += 元.画[(y * 幅 + x) * 面 + c];
+      数[sy * 小幅 + sx]++;
+    }
+  }
+  // 4点で混ぜて戻す
+  const 出 = new Uint8Array(幅 * 高 * 面);
+  const 読む = (sx, sy, c) => 小[(sy * 小幅 + sx) * 面 + c] / Math.max(1, 数[sy * 小幅 + sx]);
+  for (let y = 0; y < 高; y++) {
+    const fy = Math.min(小高 - 1, (y + 0.5) * 倍 - 0.5);
+    const y0 = Math.max(0, Math.floor(fy));
+    const y1 = Math.min(小高 - 1, y0 + 1);
+    const ty = fy - y0;
+    for (let x = 0; x < 幅; x++) {
+      const fx = Math.min(小幅 - 1, (x + 0.5) * 倍 - 0.5);
+      const x0 = Math.max(0, Math.floor(fx));
+      const x1 = Math.min(小幅 - 1, x0 + 1);
+      const tx = fx - x0;
+      for (let c = 0; c < 面; c++) {
+        const v = 読む(x0, y0, c) * (1 - tx) * (1 - ty) + 読む(x1, y0, c) * tx * (1 - ty) + 読む(x0, y1, c) * (1 - tx) * ty + 読む(x1, y1, c) * tx * ty;
+        出[(y * 幅 + x) * 面 + c] = Math.round(v);
       }
     }
   }

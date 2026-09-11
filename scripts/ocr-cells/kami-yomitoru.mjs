@@ -18,7 +18,7 @@ const 人数 = 4, 立数 = 5, 立のマス = 4;
 const 群れ = 重みを読む(process.env.OCR_KAMI_OMOMI || 'scripts/ocr-cells/kami-omomi.json');
 
 const { data, info } = await sharp(元).extract(紙の区画).greyscale().raw().toBuffer({ resolveWithObject: true });
-const g = 紙の格子({ 画素: data, 幅: info.width, 高: info.height }, { 人数, 立数, 立のマス });
+const g = await 紙の格子({ 画素: data, 幅: info.width, 高: info.height }, { 人数, 立数, 立のマス });
 
 let 合った射 = 0;
 let 全射 = 0;
