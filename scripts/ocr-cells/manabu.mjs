@@ -27,7 +27,7 @@ export const 入 = 辺 * 辺 + (辺 * 2 - 1) * 2 + 10 + 4;
  * 墨の在る範囲で切り直し、20×20 に伸ばし、墨を1にする。
  * 描いたものと本物で、まったく同じ手順を通すこと。
  */
-export async function 形にする(明るさ, 幅, 高) {
+export async function 形にする(明るさ, 幅, 高, 選び方) {
   let 最小 = 255;
   let 最大 = 0;
   for (let i = 0; i < 明るさ.length; i++) {
@@ -49,13 +49,17 @@ export async function 形にする(明るさ, 幅, 高) {
   for (let y = 0; y < 高; y++) {
     let 数 = 0;
     for (let x = 0; x < 幅; x++) if (明るさ[y * 幅 + x] < 境) 数++;
-    if (数 > 幅 * 0.9) for (let x = 0; x < 幅; x++) 明るさ[y * 幅 + x] = 最大;
+    if (数 > 幅 * 0.8) for (let x = 0; x < 幅; x++) 明るさ[y * 幅 + x] = 最大;
   }
   for (let x = 0; x < 幅; x++) {
     let 数 = 0;
     for (let y = 0; y < 高; y++) if (明るさ[y * 幅 + x] < 境) 数++;
-    if (数 > 高 * 0.9) for (let y = 0; y < 高; y++) 明るさ[y * 幅 + x] = 最大;
+    if (数 > 高 * 0.8) for (let y = 0; y < 高; y++) 明るさ[y * 幅 + x] = 最大;
   }
+  // 紙の記録用紙のように箱がすでにマスに合っているなら、囲み直さず箱をそのまま使う。
+  // ボールペンの線は細く途切れていて、破片を主に選んで引き伸ばしてしまう
+  //（実測で × が太い帯1本に化けた）
+  if (選び方 === 'そのまま') return 仕上げる(明るさ, 幅, 高, 0, 0, 幅, 高);
 
   // 墨ぜんぶの外接ではなく、「真ん中の印」だけを見る。
   //
@@ -155,8 +159,11 @@ export async function 形にする(明るさ, 幅, 高) {
     上 = 0;
     下 = 高 - 1;
   }
-  const w = 右 - 左 + 1;
-  const h = 下 - 上 + 1;
+  return 仕上げる(明るさ, 幅, 高, 左, 上, 右 - 左 + 1, 下 - 上 + 1);
+}
+
+/** 囲んだところを 20×20 に縮め、明暗をそろえ、特徴を付ける */
+function 仕上げる(明るさ, 幅, 高, 左, 上, w, h) {
   // 20×20 に縮める。ここも sharp を通さない。マス1枚ごとに sharp を呼ぶと、
   // 板120枚（9600マス）で数十分かかっていた。縦横の比は無視して引き伸ばす
   const 小 = 縮める(明るさ, 幅, 高, 左, 上, w, h, 辺, 辺);
@@ -313,7 +320,9 @@ export async function 本物の見本(根) {
 
 // ── 小さな網 ────────────────────────────────
 
-export function 網をつくる(隠れ, 種) {
+export function 網をつくる(隠れ, 種, 出の数) {
+  // 出の数は既定で板の4種類。紙の記録用紙は ○× の2種類なので、そちらは2を渡す
+  const 出 = 出の数 || 種類.length;
   let s = (種 || 12345) >>> 0;
   const 乱 = () => {
     s = (s * 1664525 + 1013904223) >>> 0;
@@ -325,14 +334,16 @@ export function 網をつくる(隠れ, 種) {
     隠れ,
     W1: Float32Array.from({ length: 入 * 隠れ }, () => 乱() * 2 * 幅1),
     b1: new Float32Array(隠れ),
-    W2: Float32Array.from({ length: 隠れ * 種類.length }, () => 乱() * 2 * 幅2),
-    b2: new Float32Array(種類.length),
+    W2: Float32Array.from({ length: 隠れ * 出 }, () => 乱() * 2 * 幅2),
+    b2: new Float32Array(出),
   };
 }
 
 export function 前へ(網, x, 途中) {
+  // 出の数は重みの形から取る（板は4、紙は2）
+  const 出 = 網.b2.length;
   const h = 途中 ? 途中.h : new Float32Array(網.隠れ);
-  const o = 途中 ? 途中.o : new Float32Array(種類.length);
+  const o = 途中 ? 途中.o : new Float32Array(出);
   for (let j = 0; j < 網.隠れ; j++) {
     let s = 網.b1[j];
     const 基 = j * 入;
@@ -340,7 +351,7 @@ export function 前へ(網, x, 途中) {
     h[j] = s > 0 ? s : 0;
   }
   let 最大 = -Infinity;
-  for (let k = 0; k < 種類.length; k++) {
+  for (let k = 0; k < 出; k++) {
     let s = 網.b2[k];
     const 基 = k * 網.隠れ;
     for (let j = 0; j < 網.隠れ; j++) s += 網.W2[基 + j] * h[j];
@@ -348,11 +359,11 @@ export function 前へ(網, x, 途中) {
     if (s > 最大) 最大 = s;
   }
   let 和 = 0;
-  for (let k = 0; k < 種類.length; k++) {
+  for (let k = 0; k < 出; k++) {
     o[k] = Math.exp(o[k] - 最大);
     和 += o[k];
   }
-  for (let k = 0; k < 種類.length; k++) o[k] /= 和;
+  for (let k = 0; k < 出; k++) o[k] /= 和;
   return { h, o };
 }
 
