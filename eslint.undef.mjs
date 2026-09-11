@@ -36,11 +36,18 @@ function 取り込みの書き方か(道) {
   }
 }
 
+// src の直下と、その下の 1 段（src/ocr など）を見る
 const 見る場所 = [
   'App.js',
-  ...readdirSync('src')
-    .filter((f) => f.endsWith('.js'))
-    .map((f) => join('src', f)),
+  ...readdirSync('src', { withFileTypes: true }).flatMap((d) =>
+    d.isDirectory()
+      ? readdirSync(join('src', d.name))
+          .filter((f) => f.endsWith('.js'))
+          .map((f) => join('src', d.name, f))
+      : d.name.endsWith('.js')
+        ? [join('src', d.name)]
+        : []
+  ),
 ];
 const ESM = 見る場所.filter(取り込みの書き方か).map((p) => p.split('\\').join('/'));
 
