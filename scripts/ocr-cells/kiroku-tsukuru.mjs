@@ -42,28 +42,42 @@ const 素 = (v) => {
   return undefined;
 };
 let 記録 = null;
+let 紙の記録 = null;
 for (const d of j.documents || []) {
   const o = {};
   for (const [k, v] of Object.entries(d.fields || {})) o[k] = 素(v);
   if (/男子リーグ/.test(o.title || '')) 記録 = o;
+  if (/女子リーグ/.test(o.title || '')) 紙の記録 = o;
 }
 if (!記録) throw new Error('男子リーグの記録が見つかりません');
+if (!紙の記録) throw new Error('女子リーグの記録が見つかりません');
 
-const 射手たち = [];
-for (const a of 記録.archers || []) {
-  if (a.isSeparator || a.isTotalCalculator) continue;
-  // 名字は書き出さない（倉庫は公開なので）。記録の順の番号だけを持つ
-  射手たち.push({ 名: String(射手たち.length + 1), 印: (a.marks || []).join('') });
-}
-// 板の上端に書かれた的中数（写真から人が読んだ）。写しではなく、答えの裏づけ
-const 板の数字 = [12, 15, 15, 16, 14, 11, 13, 11, 11, 5, 14, 11, 13, 15, 8, 13];
-if (射手たち.length !== 板の数字.length) throw new Error('射手の数が合いません: ' + 射手たち.length);
-射手たち.forEach((s, i) => {
-  const 当 = [...s.印].filter((c) => c === '\u25cb').length;
-  if (s.印.length !== 20 || 当 !== 板の数字[i]) {
-    throw new Error(`${s.名}: 印${s.印.length}個 的中${当} なのに板の数字は${板の数字[i]}`);
+// 名字は書き出さない（倉庫は公開なので）。記録の順の番号だけを持つ
+const 取り出す = (o) => {
+  const 出 = [];
+  for (const a of o.archers || []) {
+    if (a.isSeparator || a.isTotalCalculator) continue;
+    出.push({ 名: String(出.length + 1), 印: (a.marks || []).join('') });
   }
-});
+  return 出;
+};
+// 板や紙に書かれた的中数（写真から人が読んだ）。写しではなく、答えの裏づけ
+const 検める = (射手たち, 数字, 何) => {
+  if (射手たち.length !== 数字.length) throw new Error(`${何}: 射手の数が合いません: ${射手たち.length}`);
+  射手たち.forEach((s, i) => {
+    const 当 = [...s.印].filter((c) => c === '\u25cb').length;
+    if (s.印.length !== 20 || 当 !== 数字[i]) {
+      throw new Error(`${何} ${s.名}: 印${s.印.length}個 的中${当} なのに数字は${数字[i]}`);
+    }
+  });
+};
+const 射手たち = 取り出す(記録);
+const 板の数字 = [12, 15, 15, 16, 14, 11, 13, 11, 11, 5, 14, 11, 13, 15, 8, 13];
+検める(射手たち, 板の数字, '板');
+// 紙の記録用紙（女子リーグ）。紙の上端の数字は左から 16,11,10,12 で、記録の順の逆
+const 紙の射手たち = 取り出す(紙の記録);
+const 紙の数字 = [12, 10, 11, 16];
+検める(紙の射手たち, 紙の数字, '紙');
 
 const 逃 = (s) => [...s].map((c) => '\\u' + c.codePointAt(0).toString(16).padStart(4, '0')).join('');
 const 本文 = `/**
@@ -75,6 +89,14 @@ const 本文 = `/**
  */
 export const 射手たち = [
 ${射手たち.map((s, i) => `  { 名: '${逃(s.名)}', 印: '${逃(s.印)}', 的中: ${板の数字[i]} },`).join(String.fromCharCode(10))}
+];
+
+/**
+ * 紙の記録用紙（9/6「女子リーグ戦第一節」）の答え。並びは記録のまま（大前→落）。
+ * 紙では右の列が大前。1立は縦4マスで、下のマスが1射目。5立が下から上へ
+ */
+export const 紙の射手たち = [
+${紙の射手たち.map((s, i) => `  { 名: '${逃(s.名)}', 印: '${逃(s.印)}', 的中: ${紙の数字[i]} },`).join(String.fromCharCode(10))}
 ];
 `;
 fs.writeFileSync('scripts/ocr-cells/kiroku.mjs', 本文);
