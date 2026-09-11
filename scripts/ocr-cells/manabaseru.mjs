@@ -7,7 +7,8 @@
  * 分けるため、確かめにだけ使う。
  */
 import fs from 'node:fs';
-import { 種類, 描いた見本, 本物の見本, 網をつくる, 前へ, 測る, 入 } from './manabu.mjs';
+import { 種類, 網をつくる, 前へ, 測る, 入 } from './manabu.mjs';
+import { 描いた見本, 本物の見本 } from './manabu-node.mjs';
 
 const 一種類あたり = Number(process.argv[2]) || 2000;
 const 巡回数 = Number(process.argv[3]) || 20;

@@ -13,18 +13,13 @@
  * 名札は色の枠に入っている。彩度の高い帯を見つけて、そこから下は見ない。
  * 板の上端の数字（各人の的中数）も印ではないので、いちばん上の帯も外す。
  */
-import fs from 'node:fs';
-import path from 'node:path';
-import sharp from 'sharp';
-import { 画素を読む, 暗さの境, かたまりを拾う, 束ねる, 明暗を伸ばす, 傾きを測る } from './koushi.mjs';
+import { 暗さの境, かたまりを拾う, 束ねる, 明暗を伸ばす, 傾きを測る } from './koushi.mjs';
 import { 等間隔を当てはめる } from './atehameru.mjs';
 
 /** 色の濃い（彩度の高い）帯を探す。名札はここに在る */
-export async function 色の帯を探す(みち) {
-  const { data, info } = await sharp(みち).raw().toBuffer({ resolveWithObject: true });
-  const 幅 = info.width;
-  const 高 = info.height;
-  const ch = info.channels;
+export function 色の帯を探す(色, 幅, 高) {
+  const data = 色.data;
+  const ch = 色.ch;
   const 彩度 = new Array(高).fill(0);
   for (let y = 0; y < 高; y++) {
     let 合 = 0;
@@ -51,23 +46,19 @@ export async function 色の帯を探す(みち) {
 /**
  * 格子を組み立てる。
  *
- * @param {string | {画素: Uint8Array, 幅: number, 高: number}} みち 写真の場所か、明るさの並び
- * @param {{人数:number, 行数:number, 上を除く?:number, 角度?:number}} 注文
+ * @param {{画素: Uint8Array, 幅: number, 高: number, 色?: {data:Uint8Array, ch:number}}} 元
+ *   明るさの並び。色があれば名札の帯を外すのに使う（Node は gazou-node の 画を読む）
+ * @param {{人数:number, 行数:number, 上を除く?:number, 角度?:number, 回す?:Function}} 注文
  *   角度 … 度。渡せばその角度で起こす。渡さなければ印の並びから測る
+ *   回す … (生, 度) => 生。傾きを起こすときに使う。無ければ起こさない
  * @returns 列・行のほかに、起こしたあとの明るさ（生）と角度を返す。
  *   角度が付いたときは 列・行 の座標は起こしたあとの画に対するものなので、
  *   マスを切るときは 生 から切ること（元の写真から切るとずれる）
  */
-export async function 格子(みち, 注文) {
-  let 生 = typeof みち === 'string' ? await 画素を読む(みち) : みち;
+export async function 格子(元, 注文) {
+  let 生 = { 画素: 元.画素, 幅: 元.幅, 高: 元.高 };
   let 札の上 = 生.高;
-  if (typeof みち === 'string') {
-    try {
-      札の上 = (await 色の帯を探す(みち)).札の上;
-    } catch (_) {
-      // 色が読めない画なら、札の帯は無いものとして進む
-    }
-  }
+  if (元.色) 札の上 = 色の帯を探す(元.色, 生.幅, 生.高).札の上;
 
   // 明暗を伸ばしてから見る。暗い写真・薄い印・照り返しのむらは、
   // 暗さの境を1つ決めるやり方だと印を取りこぼす（実測で、暗くした写真は
@@ -108,13 +99,8 @@ export async function 格子(みち, 注文) {
   // それくらいの傾きは行の当てはめと列ごとのずれで吸収できる
   //（実測で、1.45度を回したら写真の読みが 320 → 316 に落ちた）
   const 角度 = 注文.角度 != null ? 注文.角度 : 傾きを測る(印, 最小);
-  if (Math.abs(角度) > 1.5) {
-    const 起こした = await sharp(Buffer.from(生.画素), { raw: { width: 生.幅, height: 生.高, channels: 1 } })
-      .rotate(-角度, { background: '#ffffff' })
-      .toColourspace('b-w')
-      .raw()
-      .toBuffer({ resolveWithObject: true });
-    生 = { 画素: 起こした.data, 幅: 起こした.info.width, 高: 起こした.info.height };
+  if (Math.abs(角度) > 1.5 && 注文.回す) {
+    生 = await 注文.回す(生, 角度);
     // 回すと札の帯の位置も動くので、帯は当てにしない
     札の上 = 生.高;
     ({ 印, 最小 } = 印を拾う(生));
@@ -153,7 +139,23 @@ export async function 格子(みち, 注文) {
     .sort((a, z) => a.中心 - z.中心);
 
   const 射手の印 = 印.filter((b) => 射手の列.some((c) => Math.abs(b.x - c.中心) <= 印の幅 * 0.8));
-  const 行 = 等間隔を当てはめる(射手の印.map((b) => b.y), 注文.行数, 印の幅 * 0.45);
+  // 行は「射手の列の6割以上に印がある行」がいちばん多い置き方を選ぶ。
+  // 印の数だけで選ぶと、上端の的中数の数字と下の名前に引かれて、10行を
+  // 広い間隔で当てはめてしまう（板1枚まるごと渡した実物で、右の板の行間隔が
+  // 105 のところ 121 になり、読みが 316 → 284 に落ちた）。
+  // 1行を強く数える（印の総数より重く）ので、埋まった行が多い置き方が勝つ
+  const 埋まった行の数 = (位置たち) => {
+    let n = 0;
+    for (const y of 位置たち) {
+      let 列の数 = 0;
+      for (const c of 射手の列) {
+        if (射手の印.some((b) => Math.abs(b.x - c.中心) <= 印の幅 * 0.8 && Math.abs(b.y - y) <= 印の幅 * 0.45)) 列の数++;
+      }
+      if (列の数 >= 射手の列.length * 0.6) n++;
+    }
+    return n * 射手の印.length;
+  };
+  const 行 = 等間隔を当てはめる(射手の印.map((b) => b.y), 注文.行数, 印の幅 * 0.45, undefined, 埋まった行の数);
 
   // 起こしても、板ぜんぶに1つの格子を当てると端の列ほど上下にずれる
   //（手書きの罫線は真っ直ぐではない。実測で、右端の列の印が下で切れていた）。
@@ -431,33 +433,66 @@ export function 箱の大きさ(格子の中身) {
   return { 半幅, 半高 };
 }
 
-/** マスを切り出して書き出す */
-export async function マスを書き出す(みち, 格子の中身, 出し先, 札を付ける, 頭 = '') {
-  fs.mkdirSync(出し先, { recursive: true });
-  const { 半幅, 半高 } = 箱の大きさ(格子の中身);
+
+/**
+ * 写真に板が何枚か写っているとき、板ごとに分けて格子を立てる。
+ *
+ * 印を拾って x で束ね、束と束の間がいちばん広いところで切る（板と板の間は
+ * マス何個ぶんも空く）。板の枚数は 板の人数たち の長さ。板ごとに、その人数で
+ * 格子を立てる。板は左から順に並んでいるものとする。
+ *
+ * @param {{画素:Uint8Array, 幅:number, 高:number, 色?:object}} 元
+ * @param {{板の人数たち:number[], 行数:number, 回す?:Function}} 注文
+ * @returns {Promise<{格子:object, 左:number}[]>} 板ごとの格子と、切り出した左端
+ */
+export async function 板ごとの格子(元, 注文) {
+  const 板の人数たち = 注文.板の人数たち;
+  if (板の人数たち.length === 1) {
+    return [{ 格子: await 格子(元, { 人数: 板の人数たち[0], 行数: 注文.行数, 回す: 注文.回す }), 左: 0 }];
+  }
+  const 生 = { 画素: 明暗を伸ばす(元.画素), 幅: 元.幅, 高: 元.高 };
+  const 全人数 = 板の人数たち.reduce((a, b) => a + b, 0);
+  // 印の大きさの見当。列は 人数×1.35+2 本が板ごと（板の数だけ余白も増える）
+  const 期待するマス = 生.幅 / (全人数 * 1.35 + 2 * 板の人数たち.length + 1);
+  const 最小 = Math.max(6, Math.round(期待するマス * 0.22));
+  const 最大 = Math.round(期待するマス * 1.15);
+  const 印 = かたまりを拾う(生, 暗さの境(生.画素)).filter(
+    (b) =>
+      b.幅 >= 最小 && b.幅 <= 最大 && b.高 >= 最小 && b.高 <= 最大 &&
+      b.幅 / b.高 > 0.45 && b.幅 / b.高 < 2.2 &&
+      b.数 > 最小 * 最小 * 0.12
+  );
+  if (印.length < 全人数 * 3) throw new Error('印が少なすぎます（' + 印.length + '個）');
+  const 印の幅 = 印.map((b) => b.幅).sort((a, z) => a - z)[Math.floor(印.length / 2)];
+  const 束 = 束ねる(印.map((b) => b.x), 印の幅 * 0.7).filter((c) => c.数 >= 3);
+  // 束と束の隙間。広い順に 板の枚数-1 個を切れ目にする
+  const 隙間 = [];
+  for (let i = 1; i < 束.length; i++) 隙間.push({ 幅: 束[i].端[0] - 束[i - 1].端[1], 位置: (束[i].端[0] + 束[i - 1].端[1]) / 2 });
+  const 切れ目 = 隙間
+    .slice()
+    .sort((a, z) => z.幅 - a.幅)
+    .slice(0, 板の人数たち.length - 1)
+    .map((g) => g.位置)
+    .sort((a, z) => a - z);
   const 出 = [];
-  for (let 列番 = 0; 列番 < 格子の中身.列.length; 列番++) {
-    for (let 行番 = 0; 行番 < 格子の中身.行.位置.length; 行番++) {
-      const cx = Math.round(格子の中身.列[列番].中心);
-      const cy = Math.round(格子の中身.行.位置[行番] + (格子の中身.列[列番].ずれ || 0));
-      const 左 = Math.max(0, cx - 半幅);
-      const 上 = Math.max(0, cy - 半高);
-      const w = Math.min(半幅 * 2, 格子の中身.幅 - 左);
-      const h = Math.min(半高 * 2, 格子の中身.高 - 上);
-      const 札 = 札を付ける ? 札を付ける(列番, 行番) : null;
-      const 名 = (札 == null ? '' : 札 + '/') + 頭 + `r${行番}c${列番}.png`;
-      const 先 = path.join(出し先, 名);
-      fs.mkdirSync(path.dirname(先), { recursive: true });
-      // 格子が起こしたあとの画から切る。元の写真から切ると、角度が付いたときに
-      // 座標が合わない。学習側（muregaku）も同じ画から切っている
-      const 画 = 格子の中身.生;
-      await sharp(Buffer.from(画.画素), { raw: { width: 画.幅, height: 画.高, channels: 1 } })
-        .extract({ left: 左, top: 上, width: w, height: h })
-        .resize(64, 64, { fit: 'fill' })
-        .png()
-        .toFile(先);
-      出.push({ 列番, 行番, 札, 先 });
+  let 左端 = 0;
+  for (let i = 0; i < 板の人数たち.length; i++) {
+    const 右端 = i < 切れ目.length ? 切れ目[i] : 生.幅;
+    // 板の範囲は、その区間の印の端に余白を足したもの
+    const その板 = 印.filter((b) => b.x >= 左端 && b.x < 右端);
+    if (その板.length < 板の人数たち[i] * 3) throw new Error(`${i + 1}枚目の板の印が少なすぎます（${その板.length}個）`);
+    const 左 = Math.max(0, Math.floor(Math.min(...その板.map((b) => b.x)) - 印の幅 * 1.5));
+    const 右 = Math.min(生.幅, Math.ceil(Math.max(...その板.map((b) => b.x)) + 印の幅 * 1.5));
+    const 切 = { 画素: new Uint8Array((右 - 左) * 元.高), 幅: 右 - 左, 高: 元.高 };
+    for (let y = 0; y < 元.高; y++) 切.画素.set(元.画素.subarray(y * 元.幅 + 左, y * 元.幅 + 右), y * 切.幅);
+    let 色;
+    if (元.色) {
+      const ch = 元.色.ch;
+      色 = { data: new Uint8Array((右 - 左) * 元.高 * ch), ch };
+      for (let y = 0; y < 元.高; y++) 色.data.set(元.色.data.subarray((y * 元.幅 + 左) * ch, (y * 元.幅 + 右) * ch), y * 切.幅 * ch);
     }
+    出.push({ 格子: await 格子({ ...切, 色 }, { 人数: 板の人数たち[i], 行数: 注文.行数, 回す: 注文.回す }), 左 });
+    左端 = 右端;
   }
   return 出;
 }

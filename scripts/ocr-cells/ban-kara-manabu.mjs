@@ -17,7 +17,8 @@ import fs from 'node:fs';
 import sharp from 'sharp';
 import { 板をえがく } from './ban.mjs';
 import { 格子 } from './kiridasu.mjs';
-import { 種類, 形にする, 本物の見本, 網をつくる, 前へ, 測る, 入 } from './manabu.mjs';
+import { 種類, 形にする, 網をつくる, 前へ, 測る, 入 } from './manabu.mjs';
+import { 本物の見本 } from './manabu-node.mjs';
 
 const 板の枚数 = Number(process.argv[2]) || 40;
 const 巡回数 = Number(process.argv[3]) || 8;

@@ -14,6 +14,7 @@
 import fs from 'node:fs';
 import sharp from 'sharp';
 import { 格子, 箱の大きさ } from './kiridasu.mjs';
+import { 画を読む, 回す } from './gazou-node.mjs';
 import { 種類, 形にする, 前へ, 切り取る } from './manabu.mjs';
 import { 射手たち } from './kiroku.mjs';
 import { 的中数 } from './tsujitsuma.mjs';
@@ -54,7 +55,7 @@ let 合った人 = 0;
 for (const k of 区画) {
   const みち = `${置き}/${k.名}.jpg`;
   await sharp(元).extract({ left: k.left, top: k.top, width: k.width, height: k.height }).jpeg({ quality: 95 }).toFile(みち);
-  const g = await 格子(みち, { 人数: k.順.length, 行数: 10, 上を除く: 0 });
+  const g = await 格子(await 画を読む(みち), { 人数: k.順.length, 行数: 10, 上を除く: 0, 回す });
   // 格子が起こしたあとの画から切る（角度が付くと元の写真とは座標が合わない）
   const 画 = g.生.画素;
   const info = { width: g.生.幅, height: g.生.高 };

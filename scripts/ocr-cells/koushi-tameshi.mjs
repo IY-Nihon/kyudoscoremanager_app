@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import sharp from 'sharp';
 import { 板をえがく } from './ban.mjs';
 import { 格子 } from './kiridasu.mjs';
+import { 画を読む, 回す } from './gazou-node.mjs';
 const 置き = process.env.TEMP + '/hachinin';
 fs.mkdirSync(置き, { recursive: true });
 let 立 = 0, 合 = 0, 全 = 0;
@@ -23,7 +24,7 @@ for (let i = 0; i < 30; i++) {
   await sharp(Buffer.from(b.色), { raw: { width: b.幅, height: b.高, channels: 3 } }).jpeg({ quality: 88 }).toFile(みち);
   全++;
   let g;
-  try { g = await 格子(みち, { 人数, 行数 }); } catch (e) { continue; }
+  try { g = await 格子(await 画を読む(みち), { 人数, 行数, 回す }); } catch (e) { continue; }
   立++;
   const ok = g.列.length === 人数 && g.列.every((c, k) => Math.abs(c.中心 - b.答え.列のx[k]) <= b.答え.マス * 0.35)
     && g.行.位置.length === 行数 && g.行.位置.every((y, r) => Math.abs(y - b.答え.行のy[r]) <= b.答え.マス * 0.35);
