@@ -21,69 +21,12 @@ import { 種類, 形にする, 前へ, 入 } from './manabu.mjs';
 const 逆 = String.fromCharCode(92);
 const 札の名 = { batsu: '×', maru2: '◎', maru_gyaku: '○' + 逆, maru_seki: '○/' };
 
-/** int8 に丸める。層ごとに、いちばん大きい値で割ってから127倍する */
-export function 丸める(重み) {
-  let 最大 = 0;
-  for (const v of 重み) {
-    const a = Math.abs(v);
-    if (a > 最大) 最大 = a;
-  }
-  const 目盛 = 最大 / 127 || 1;
-  const 粒 = new Int8Array(重み.length);
-  for (let i = 0; i < 重み.length; i++) {
-    const v = Math.round(重み[i] / 目盛);
-    粒[i] = v > 127 ? 127 : v < -127 ? -127 : v;
-  }
-  return { 目盛, 粒: Buffer.from(粒.buffer).toString('base64') };
-}
+import { 丸める, ほどく, 網を丸める, 網をほどく, 重みを組む } from './omomi.mjs';
+export { 丸める, ほどく, 網を丸める, 網をほどく, 重みを組む };
 
-/** 丸めた重みを元に戻す */
-export function ほどく(丸め) {
-  // Buffer は使い回しの器の途中を指していることがある。byteOffset を渡さずに
-  // .buffer だけ見ると、まったく別のところを読む（実測で当たりが3割に落ちた）
-  const 箱 = Buffer.from(丸め.粒, 'base64');
-  const 粒 = new Int8Array(箱.buffer, 箱.byteOffset, 箱.length);
-  const 出 = new Float32Array(粒.length);
-  for (let i = 0; i < 粒.length; i++) 出[i] = 粒[i] * 丸め.目盛;
-  return 出;
-}
-
-/** 重みの入った物を読む。丸めた形でも、そのままの形でも受ける */
+/** 重みの入った物を読む（Node）。丸めた形でも、そのままの形でも受ける */
 export function 重みを読む(みち) {
-  const 中身 = JSON.parse(fs.readFileSync(みち, 'utf8'));
-  return 中身.網たち.map((n) =>
-    n.W1 && n.W1.粒
-      ? 網をほどく(n)
-      : {
-          隠れ: n.隠れ,
-          W1: Float32Array.from(n.W1),
-          b1: Float32Array.from(n.b1),
-          W2: Float32Array.from(n.W2),
-          b2: Float32Array.from(n.b2),
-        }
-  );
-}
-
-/** 網ひとまとまりを、丸めた形に書き換える */
-export function 網を丸める(網) {
-  return {
-    隠れ: 網.隠れ,
-    W1: 丸める(網.W1),
-    b1: Array.from(網.b1),
-    W2: 丸める(網.W2),
-    b2: Array.from(網.b2),
-  };
-}
-
-/** 丸めた形から、動かせる網に戻す */
-export function 網をほどく(丸め) {
-  return {
-    隠れ: 丸め.隠れ,
-    W1: ほどく(丸め.W1),
-    b1: Float32Array.from(丸め.b1),
-    W2: ほどく(丸め.W2),
-    b2: Float32Array.from(丸め.b2),
-  };
+  return 重みを組む(JSON.parse(fs.readFileSync(みち, 'utf8')));
 }
 
 // ── ここから下は、測るための道具 ──────────────────

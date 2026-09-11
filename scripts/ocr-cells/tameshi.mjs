@@ -14,6 +14,7 @@
 import fs from 'node:fs';
 import sharp from 'sharp';
 import { 格子, 箱の大きさ } from './kiridasu.mjs';
+import { 画を読む, 回す } from './gazou-node.mjs';
 import { 種類, 形にする, 前へ, 切り取る } from './manabu.mjs';
 import { 射手たち } from './kiroku.mjs';
 import { 縦横で合わせる } from './tsujitsuma2.mjs';
@@ -97,7 +98,7 @@ async function 読んでみる(崩し, 味付け, 名) {
     // 角度は格子が自分で測る。区画ごとの手当ては入れない（本番では無いので）
     let g;
     try {
-      g = await 格子({ 画素: 切.画, 幅: 切.幅, 高: 切.高 }, { 人数: k.順.length, 行数: 10, 上を除く: 0 });
+      g = await 格子({ 画素: 切.画, 幅: 切.幅, 高: 切.高 }, { 人数: k.順.length, 行数: 10, 上を除く: 0, 回す });
     } catch (e) {
       マス全 += 40;
       射全 += 80;

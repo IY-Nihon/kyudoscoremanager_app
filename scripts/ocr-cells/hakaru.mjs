@@ -5,7 +5,8 @@
  */
 
 import fs from 'node:fs';
-import { 種類, 本物の見本, 前へ } from './manabu.mjs';
+import { 種類, 前へ } from './manabu.mjs';
+import { 本物の見本 } from './manabu-node.mjs';
 const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/mure.json', 'utf8'));
 const 群れ = 重み.網たち.map((n) => ({
   隠れ: n.隠れ, W1: Float32Array.from(n.W1), b1: Float32Array.from(n.b1),

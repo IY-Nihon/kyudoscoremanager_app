@@ -7,20 +7,10 @@
  * 規則正しい格子に並んでいる。印の位置から格子を復元するほうが確かだった。
  *
  * 使い方（部品として）:
- *   import { 格子を見つける } from './koushi.mjs';
- *   const 格子 = await 格子を見つける('板.jpg');
+ *   import { 暗さの境, かたまりを拾う } from './koushi.mjs';
  */
-import sharp from 'sharp';
-
-/** 白黒の生画素と、その大きさを返す */
-export async function 画素を読む(みち) {
-  const { data, info } = await sharp(みち)
-    .greyscale()
-    .normalise()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  return { 画素: data, 幅: info.width, 高: info.height };
-}
+// 画は外から渡される（Node は gazou-node.mjs、アプリは src/ocr/gazou-web.js で読む）。
+// ここは sharp を知らない。アプリの束に入れるため
 
 /**
  * 暗いとみなす境を決める。
