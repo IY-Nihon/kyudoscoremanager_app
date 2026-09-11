@@ -18,6 +18,7 @@ import { 種類, 形にする, 前へ, 切り取る } from './manabu.mjs';
 import { 射手たち } from './kiroku.mjs';
 import { 的中数 } from './tsujitsuma.mjs';
 import { 縦横で合わせる } from './tsujitsuma2.mjs';
+import { 重みを読む } from './chiisaku.mjs';
 
 const 逆 = String.fromCharCode(92);
 const 立のマス = 2;
@@ -37,14 +38,7 @@ const 区画 = [
   { 名: 'migi-b', left: 3808, top: 1121, width: 638, height: 1052, 順: [11, 10, 9, 8] },
 ];
 
-const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/mure.json', 'utf8'));
-const 群れ = 重み.網たち.map((n) => ({
-  隠れ: n.隠れ,
-  W1: Float32Array.from(n.W1),
-  b1: Float32Array.from(n.b1),
-  W2: Float32Array.from(n.W2),
-  b2: Float32Array.from(n.b2),
-}));
+const 群れ = 重みを読む(process.env.OCR_OMOMI || 'scripts/ocr-cells/mure.json');
 const 見立てる = (形) => {
   const 合 = new Float32Array(種類.length);
   for (const 網 of 群れ) {
@@ -61,7 +55,9 @@ for (const k of 区画) {
   const みち = `${置き}/${k.名}.jpg`;
   await sharp(元).extract({ left: k.left, top: k.top, width: k.width, height: k.height }).jpeg({ quality: 95 }).toFile(みち);
   const g = await 格子(みち, { 人数: k.順.length, 行数: 10, 上を除く: 0 });
-  const { data: 画, info } = await sharp(みち).greyscale().raw().toBuffer({ resolveWithObject: true });
+  // 格子が起こしたあとの画から切る（角度が付くと元の写真とは座標が合わない）
+  const 画 = g.生.画素;
+  const info = { width: g.生.幅, height: g.生.高 };
   const { 半幅, 半高 } = 箱の大きさ(g);
 
   const 見立て = [];
