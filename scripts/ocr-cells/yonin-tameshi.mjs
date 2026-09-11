@@ -10,6 +10,7 @@
  */
 import sharp from 'sharp';
 import { 格子, 箱の大きさ } from './kiridasu.mjs';
+import { 画を読む, 回す } from './gazou-node.mjs';
 import { 種類, 形にする, 前へ, 切り取る } from './manabu.mjs';
 import { 重みを読む } from './chiisaku.mjs';
 import { 的中数に合わせる } from './tsujitsuma.mjs';
@@ -24,7 +25,7 @@ const 元 = 'docs/ocr-samples/yonin-ita.png';
 const m = await sharp(元).metadata();
 const 切 = { left: Math.round(m.width * 0.10), top: Math.round(m.height * 0.115), width: Math.round(m.width * 0.78), height: Math.round(m.height * 0.69) };
 await sharp(元).extract(切).png().toFile(みち);
-const g = await 格子(みち, { 人数: 4, 行数: 10, 上を除く: 0 });
+const g = await 格子(await 画を読む(みち), { 人数: 4, 行数: 10, 上を除く: 0, 回す });
 console.log(`格子: 列${g.列.length} 行${g.行.位置.length} 印の幅${g.印の幅} 角度${g.角度.toFixed(1)}度`);
 const { 半幅, 半高 } = 箱の大きさ(g);
 for (let c = 0; c < g.列.length; c++) {

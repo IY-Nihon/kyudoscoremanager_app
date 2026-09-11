@@ -19,7 +19,8 @@
  */
 import fs from 'node:fs';
 import sharp from 'sharp';
-import { 格子, マスを書き出す } from './kiridasu.mjs';
+import { 格子 } from './kiridasu.mjs';
+import { 画を読む, 回す, マスを書き出す } from './gazou-node.mjs';
 import { 射手たち } from './kiroku.mjs';
 
 const 元 = 'docs/ocr-samples/PXL_20260906_081921509.jpg';
@@ -57,9 +58,9 @@ const 数え = {};
 for (const k of 区画) {
   const みち = `${置き}/${k.名}.jpg`;
   await sharp(元).extract({ left: k.left, top: k.top, width: k.width, height: k.height }).jpeg({ quality: 95 }).toFile(みち);
-  const g = await 格子(みち, { 人数: 4, 行数: 10, 上を除く: 0 });
+  const g = await 格子(await 画を読む(みち), { 人数: 4, 行数: 10, 上を除く: 0, 回す });
   const 出 = await マスを書き出す(
-    みち, g, 'docs/ocr-samples/' + k.板,
+    g, 'docs/ocr-samples/' + k.板,
     (c, r) => (射手たち[k.順[c]] ? 板の並びにする(射手たち[k.順[c]].印)[r] : null),
     k.名 + '-'
   );

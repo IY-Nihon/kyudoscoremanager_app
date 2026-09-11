@@ -17,8 +17,10 @@ import fs from 'node:fs';
 import sharp from 'sharp';
 import { 板をえがく } from './ban.mjs';
 import { 格子, 箱の大きさ } from './kiridasu.mjs';
+import { 画を読む, 回す } from './gazou-node.mjs';
 import { 明暗を伸ばす } from './koushi.mjs';
-import { 種類, 形にする, 本物の見本, 網をつくる, 前へ, 入, 切り取る } from './manabu.mjs';
+import { 種類, 形にする, 網をつくる, 前へ, 入, 切り取る } from './manabu.mjs';
+import { 本物の見本 } from './manabu-node.mjs';
 import { ゆがませる } from './kuzusu.mjs';
 
 // 崩しに使う乱数。板の種とは別に持つ（板の絵は同じまま、崩し方だけ変えられるように）
@@ -56,7 +58,7 @@ async function 見本をあつめる(枚数) {
       .toFile(みち);
     let g = null;
     try {
-      g = await 格子(みち, { 人数, 行数 });
+      g = await 格子(await 画を読む(みち), { 人数, 行数, 回す });
     } catch (e) {
       g = null;
     }
