@@ -17,6 +17,7 @@ import fs from 'node:fs';
 import sharp from 'sharp';
 import { 板をえがく } from './ban.mjs';
 import { 格子, 箱の大きさ } from './kiridasu.mjs';
+import { 明暗を伸ばす } from './koushi.mjs';
 import { 種類, 形にする, 本物の見本, 網をつくる, 前へ, 入, 切り取る } from './manabu.mjs';
 import { 崩し方, ゆがませる } from './kuzusu.mjs';
 
@@ -43,28 +44,47 @@ async function 見本をあつめる(枚数) {
     const 人数 = [4, 6, 8, 8, 8, 10, 12][i % 7];
     const 行数 = [8, 10, 10, 10, 12, 6][i % 6];
     const 立の人数 = [3, 4, 4, 4, 5][i % 5];
-    const b = 板をえがく({ 種: 3000 + i * 6961, 人数, 行数, 立の人数, 幅: 2000 });
+    // 5枚に2枚は「ぎっしり」の板（印がマスいっぱい、1マス40〜70px）。
+    // 4人立ちの板の実物がこの書き方で、それまでの網はまったく読めなかった
+    const ぎっしり = i % 5 === 1 || i % 5 === 3;
+    const b = ぎっしり
+      ? 板をえがく({ 種: 3000 + i * 6961, 人数, 行数, 立の人数, マス: 40 + (i % 4) * 10, 書き方: 'ぎっしり' })
+      : 板をえがく({ 種: 3000 + i * 6961, 人数, 行数, 立の人数, 幅: 2000 });
     const みち = `${置き場}/b${i}.jpg`;
     await sharp(Buffer.from(b.色), { raw: { width: b.幅, height: b.高, channels: 3 } })
       .jpeg({ quality: 88 })
       .toFile(みち);
-    let g;
+    let g = null;
     try {
       g = await 格子(みち, { 人数, 行数 });
     } catch (e) {
-      外れ++;
-      fs.rmSync(みち, { force: true });
-      continue;
+      g = null;
     }
     const 合う =
+      g &&
       g.列.length === 人数 &&
       g.列.every((c, k) => Math.abs(c.中心 - b.答え.列のx[k]) <= b.答え.マス * 0.35) &&
       g.行.位置.length === 行数 &&
       g.行.位置.every((y, r) => Math.abs(y - b.答え.行のy[r]) <= b.答え.マス * 0.35);
     if (!合う) {
-      外れ++;
-      fs.rmSync(みち, { force: true });
-      continue;
+      if (!ぎっしり) {
+        外れ++;
+        fs.rmSync(みち, { force: true });
+        continue;
+      }
+      // ぎっしりの板は、板ぜんぶが写っていると格子が立たない（かたまりがつながり、
+      // 罫線の方式は印の部分だけが前提）。学習には答えの位置で切ればよい。
+      // 位置のゆらぎは下で混ぜるので、格子の誤差の代わりになる
+      const { data, info } = await sharp(みち).greyscale().raw().toBuffer({ resolveWithObject: true });
+      g = {
+        幅: info.width,
+        高: info.height,
+        印の幅: b.答え.印の幅,
+        列: b.答え.列のx.map((x) => ({ 中心: x, ずれ: 0 })),
+        行: { 位置: b.答え.行のy.slice(), 間隔: b.答え.マス },
+        生: { 画素: 明暗を伸ばす(data), 幅: info.width, 高: info.height },
+        角度: 0,
+      };
     }
     const { 半幅, 半高 } = 箱の大きさ(g);
     // 格子が起こしたあとの画から切る（本物の切り出しと同じ元にそろえる）。
