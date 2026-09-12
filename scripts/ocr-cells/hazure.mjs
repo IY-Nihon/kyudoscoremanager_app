@@ -19,7 +19,8 @@ const { マスを開く, 一射目からの順にする } = createRequire(import
 const 重み = JSON.parse(fs.readFileSync(process.env.OCR_OMOMI || 'scripts/ocr-cells/omomi-chiisai.json', 'utf8'));
 const 出 = process.env.DEKI;
 
-const 元 = await 画を読む('docs/ocr-samples/PXL_20260906_081921509.jpg');
+const 写真 = process.env.SHASHIN || 'docs/ocr-samples/PXL_20260906_081921509.jpg';
+const 元 = await 画を読む(写真);
 const 板たち = await 板の印を読む(元, { 板の人数たち: [8, 8], 行数: 10, 回す, 重み });
 const 格子たち = 出 ? await 板ごとの格子(元, { 板の人数たち: [8, 8], 行数: 10, 回す }) : null;
 
