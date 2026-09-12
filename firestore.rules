@@ -98,7 +98,10 @@ service cloud.firestore {
             && resource.data.email == callerEmail()
             && request.resource.data.keys().hasOnly(['id', 'email']));
 
-      allow delete: if isAdmin();
+      // 消すのは管理者か、団体の持ち主本人（設定の「アカウントを削除する」。
+      // src/accountDeletion.js が、写しを deleted_accounts に書いてから最後に消す）
+      allow delete: if isAdmin()
+        || (callerEmail() != '' && resource.data.email == callerEmail());
 
       // 団体名・登録日・同意の記録。**その団体のメールアドレスで入っている
       // 本人だけ**が読み書きする。親の email と突き合わせて確かめる
@@ -140,6 +143,22 @@ service cloud.firestore {
       match /trash/{docId}                { allow read, write: if canAccess(groupId); }
       match /config/{docId}               { allow read, write: if canAccess(groupId); }
       match /officialPracticeDays/{docId} { allow read, write: if canAccess(groupId); }
+    }
+
+    // 消した団体アカウントの写し。設定の「アカウントを削除する」で、団体の持ち主が
+    // 自分の団体の中身をここへ写してから元を消す（src/accountDeletion.js）。
+    // 30日残して運営者の道具（scripts/prune-deleted-accounts.mjs）が消す。
+    // 読めるのは管理者だけ。持ち主も、写したあとは読めない（消したものは戻せない）。
+    // 書けるのは自分の団体IDの下だけ。group_accounts が残っているうちに書く順になっている
+    match /deleted_accounts/{groupId} {
+      allow read: if isAdmin();
+      allow create, update: if isAdmin() || isGroupOwner(groupId);
+      allow delete: if isAdmin();
+      match /{sub}/{docId} {
+        allow read: if isAdmin();
+        allow create, update: if isAdmin() || isGroupOwner(groupId);
+        allow delete: if isAdmin();
+      }
     }
 
     // 不具合の便り。書き込みだけ許し、読み出しは誰にも許さない。

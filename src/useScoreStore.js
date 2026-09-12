@@ -24,6 +24,8 @@ const 在 = require('./livePresence');
 const 共 = require('./liveShare');
 // 端末に残す記録を選ぶ。放っておくと localStorage の上限に当たる
 const 端 = require('./localTrim');
+// 団体アカウントの削除（写してから消す）
+const 消去 = require('./accountDeletion');
 
 /**
  * 端末に書けなくなったことを、利用者にも一度だけ伝える。
@@ -3309,6 +3311,49 @@ const M = (0, s.create)()(
             isAdminMode: s,
             isAdminModePending: !1,
           }),
+        /**
+         * 団体アカウントを消す（設定 → アカウント → アカウントを削除する）。
+         * 団体アカウントで入っていて、管理者モードで、ライブ中でないときだけ。
+         * 中身は src/accountDeletion.js。返り値は { ok, 訳 }。ok なら呼ぶ側で
+         * setAuth(null) して入口へ戻す
+         */
+        deleteGroupAccount: async (合言葉, 進み) => {
+          const { activeGroupId: 団体ID, activeRole: 役, isAdminMode: 管理者, isLiveActive: ライブ中, activeUserEmail: 控えの宛先 } = s();
+          if ('group' !== 役 || !団体ID) return { ok: !1, 訳: '団体アカウントで入っているときだけ消せます' };
+          if (!管理者) return { ok: !1, 訳: '管理者モードをオンにしてください' };
+          if (ライブ中) return { ok: !1, 訳: 'ライブ記録中は消せません。先にライブを止めてください' };
+          if (!合言葉) return { ok: !1, 訳: 'パスワードを入れてください' };
+          let 宛先 = 控えの宛先 || fb.auth.currentUser?.email;
+          if (!宛先) {
+            try {
+              const d = await (0, a.getDoc)((0, a.doc)(fb.db, 'group_accounts', 団体ID));
+              d.exists() && (宛先 = d.data().email);
+            } catch (e) {
+              console.error('[Store] deleteGroupAccount: email lookup failed', e);
+            }
+          }
+          if (!宛先) return { ok: !1, 訳: 'メールアドレスが分かりません' };
+          try {
+            (s().stopPeriodicSync(),
+              s().stopListeningToSessions(),
+              s().stopListeningToMembers(),
+              s().stopListeningToAlumni(),
+              s().stopListeningToTrash());
+            const 結果 = await 消去.団体を消す({ db: fb.db, a, auth: fb.auth, o }, { 団体ID, email: 宛先, 合言葉, 進み });
+            return { ok: !0, 件数: 結果.件数 };
+          } catch (e) {
+            console.error('[Store] deleteGroupAccount failed:', e);
+            const 符号 = String((e && e.code) || '');
+            const 訳 = /wrong-password|invalid-credential|invalid-login/.test(符号)
+              ? 'パスワードが正しくありません'
+              : /permission-denied/.test(符号)
+                ? '削除の権限がありません（決まりが古いままかもしれません）'
+                : /network/.test(符号)
+                  ? '通信エラーが発生しました。電波の良い場所でもう一度お試しください'
+                  : '削除に失敗しました: ' + String((e && e.message) || e);
+            return { ok: !1, 訳 };
+          }
+        },
         updateGroupName: async (o) => {
           const { activeGroupId: i } = s();
           if (i) {
