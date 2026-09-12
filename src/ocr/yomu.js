@@ -14,7 +14,7 @@
  */
 import { 板ごとの格子, 箱の大きさ } from '../../scripts/ocr-cells/kiridasu.mjs';
 import { 紙の表を探す, 紙の格子, 紙の箱 } from '../../scripts/ocr-cells/kami.mjs';
-import { 種類, 形にする, 前へ, 切り取る } from '../../scripts/ocr-cells/manabu.mjs';
+import { 種類, 形にする, 前へ, 切り取る, 輪の覆い } from '../../scripts/ocr-cells/manabu.mjs';
 import { 重みを組む } from '../../scripts/ocr-cells/omomi.mjs';
 
 // 重みの JSON は呼ぶ側が渡す（アプリは require、Node の試験は fs）。
@@ -59,8 +59,16 @@ export async function 板の印を読む(元, 注文) {
         }
         let 最 = 0;
         for (let k = 1; k < 種類.length; k++) if (合[k] > 合[最]) 最 = k;
+        // 丸の仲間と読んだのに輪が半分も無ければ ×。細いペンの小さな × を
+        // ○＼ と読む取り違えを、網の外で止める（本物の丸は輪が 0.67 以上、× は 9割が 0.58 以下）。
+        // 倒したマスは確からしさを 0.5 にして、確認画面で「迷った」の色を付ける
+        let 確からしさの値 = 合[最];
+        if (種類[最] !== '×' && 輪の覆い(形) <= 0.5) {
+          最 = 種類.indexOf('×');
+          確からしさの値 = 0.5;
+        }
         列.push(種類[最]);
-        確.push(合[最]);
+        確.push(確からしさの値);
       }
       列たち.push(列);
       確からしさ.push(確);

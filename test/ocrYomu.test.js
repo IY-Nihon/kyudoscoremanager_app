@@ -7,7 +7,7 @@ const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
 
-test('写真1枚まるごとを端末の読み取りで読むと、320射のうち315以上が記録と合う', async () => {
+test('写真1枚まるごとを端末の読み取りで読むと、320射のうち317以上が記録と合う', async () => {
   const { 板の印を読む, 大前から並べる } = await import('../src/ocr/yomu.js');
   const { 画を読む, 回す } = await import('../scripts/ocr-cells/gazou-node.mjs');
   const { 射手たち } = await import('../scripts/ocr-cells/kiroku.mjs');
@@ -29,7 +29,7 @@ test('写真1枚まるごとを端末の読み取りで読むと、320射のう�
       for (let k = 0; k < 真.length; k++) if (印[k] === 真[k]) 合++;
     }
   });
-  assert.ok(合 >= 315, `合ったのは ${合}/320`);
+  assert.ok(合 >= 317, `合ったのは ${合}/320`);
 });
 
 test('紙の写真をページ全体から読むと、80射のうち79以上が記録と合う', async () => {

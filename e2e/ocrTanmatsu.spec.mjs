@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
 import { 案内を止める } from './helpers.mjs';
 
-test('写真1枚まるごとを canvas で読むと、320射のうち315以上が記録と合う', async ({ page }) => {
+test('写真1枚まるごとを canvas で読むと、320射のうち316以上が記録と合う', async ({ page }) => {
   test.setTimeout(240_000);
   await 案内を止める(page);
   await page.goto('/');
@@ -30,9 +30,9 @@ test('写真1枚まるごとを canvas で読むと、320射のうち315以上�
       for (let k = 0; k < 真.length; k++) if (印[k] === 真[k]) 合++;
     }
   });
-  // 元の大きさのまま読むと Chromium 318、WebKit 317（2600 に縮めていたころは 315・314）。
-  // 合計の列を射手の列と取り違えたときは 295 まで落ちたので、315 なら格子は合っている
-  expect(合, `合ったのは ${合}/320`).toBeGreaterThanOrEqual(315);
+  // 3つのブラウザとも 318（残る2射は途中交代の段）。
+  // 合計の列を射手の列と取り違えたときは 295 まで落ちたので、316 なら格子は合っている
+  expect(合, `合ったのは ${合}/320`).toBeGreaterThanOrEqual(316);
 });
 
 test('紙の写真をページ全体から canvas で読むと、80射のうち79以上が記録と合う', async ({ page }) => {
