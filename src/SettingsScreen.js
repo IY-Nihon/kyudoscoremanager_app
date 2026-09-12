@@ -130,6 +130,7 @@ const w = () => {
         set保存時に出欠を確認する: set保存時に出欠を確認する,
         setAdminMode: Y,
         verifyGroupPassword: J,
+        deleteGroupAccount: 団体を消す,
         tagTemplates: q = [],
         addTagTemplate: U,
         removeTagTemplate: Q,
@@ -164,6 +165,11 @@ const w = () => {
       [ze, Pe] = l.default.useState(''),
       [Re, We] = l.default.useState(!1),
       [showPw, setShowPw] = l.default.useState(!1),
+      // アカウントの削除。窓の開閉・入れたパスワード・消している最中の段階
+      [削除の窓, 削除の窓を開く] = l.default.useState(!1),
+      [削除の合言葉, 削除の合言葉を設定] = l.default.useState(''),
+      [削除の段階, 削除の段階を設定] = l.default.useState(''),
+      [削除の失敗, 削除の失敗を設定] = l.default.useState(''),
       [selectedKeywords, setSelectedKeywords] = l.default.useState([]),
       [selectedMembers, setSelectedMembers] = l.default.useState([]),
       [inquiryVisible, setInquiryVisible] = l.default.useState(!1),
@@ -766,6 +772,22 @@ const w = () => {
                     null,
                     !0
                   ),
+                  // 団体アカウントで、管理者モードのときだけ出す。押すと警告の窓へ
+                  'group' === V &&
+                    G &&
+                    Je(
+                      'trash-outline',
+                      'アカウントを削除する',
+                      () => {
+                        削除の合言葉を設定('');
+                        削除の失敗を設定('');
+                        削除の段階を設定('');
+                        削除の窓を開く(!0);
+                      },
+                      '#FF3B30',
+                      null,
+                      !0
+                    ),
                 ],
               })
             ),
@@ -1853,6 +1875,123 @@ const w = () => {
                           }),
                         ],
                       }),
+                ],
+              }),
+            ],
+          }),
+        }),
+        (0, T.jsx)(f.default, {
+          visible: 削除の窓,
+          transparent: !0,
+          animationType: 'fade',
+          onRequestClose: () => !削除の段階 && 削除の窓を開く(!1),
+          children: (0, T.jsxs)(o.default, {
+            style: D.modalBackdrop,
+            children: [
+              (0, T.jsx)(d.default, {
+                style: a.default.absoluteFill,
+                activeOpacity: 1,
+                onPress: () => !削除の段階 && 削除の窓を開く(!1),
+              }),
+              (0, T.jsxs)(o.default, {
+                style: D.modalContent,
+                children: [
+                  (0, T.jsx)(n.default, { style: [D.modalTitle, { color: '#FF3B30' }], children: 'アカウントを削除する' }),
+                  (0, T.jsx)(n.default, {
+                    style: [D.modalMessage, { textAlign: 'left' }],
+                    children:
+                      `団体「${$ || L || ''}」のアカウントを削除します。\n\n` +
+                      '・記録・部員・卒業生・ゴミ箱・設定がすべて消え、団体IDでログインできなくなります。\n' +
+                      '・部員も、この団体には入れなくなります。\n' +
+                      '・削除後30日間は復旧のために運営者が保管し、その後に消去します。この画面から戻すことはできません。\n' +
+                      '・必要な記録は、先に「データ管理」から書き出してください。\n\n' +
+                      '続けるには団体パスワードを入力してください。',
+                  }),
+                  (0, T.jsxs)(o.default, {
+                    style: [
+                      D.filterInput,
+                      { width: '100%', marginBottom: 10, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12 },
+                    ],
+                    children: [
+                      (0, T.jsx)(m.default, {
+                        style: { flex: 1, height: 48, fontSize: 16 },
+                        placeholder: '団体パスワード',
+                        secureTextEntry: !showPw,
+                        value: 削除の合言葉,
+                        onChangeText: 削除の合言葉を設定,
+                        editable: !削除の段階,
+                      }),
+                      (0, T.jsx)(h.default, {
+                        accessible: !0,
+                        accessibilityRole: 'button',
+                        accessibilityLabel: 'パスワードの表示を切り替える',
+                        'aria-label': 'パスワードの表示を切り替える',
+                        onPress: () => setShowPw(!showPw),
+                        style: { padding: 4 },
+                        children: (0, T.jsx)(p.Ionicons, { name: showPw ? 'eye-off' : 'eye', size: 20, color: '#8E8E93' }),
+                      }),
+                    ],
+                  }),
+                  !!削除の失敗 &&
+                    (0, T.jsx)(n.default, {
+                      style: { color: '#FF3B30', fontSize: 13, marginBottom: 10 },
+                      children: 削除の失敗,
+                    }),
+                  !!削除の段階 &&
+                    (0, T.jsx)(n.default, {
+                      style: { color: '#8E8E93', fontSize: 13, marginBottom: 10 },
+                      children: `${削除の段階}…`,
+                    }),
+                  (0, T.jsxs)(o.default, {
+                    style: D.modalButtonsRow,
+                    children: [
+                      (0, T.jsx)(h.default, {
+                        style: ({ hovered: e }) => [
+                          D.modalBtn,
+                          { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
+                          e && { backgroundColor: '#E5E5EA' },
+                          x.IS_WEB && { cursor: 'pointer' },
+                        ],
+                        onPress: () => 削除の窓を開く(!1),
+                        disabled: !!削除の段階,
+                        children: (0, T.jsx)(n.default, { style: [D.modalBtnText, { color: '#007AFF' }], children: 'キャンセル' }),
+                      }),
+                      (0, T.jsx)(h.default, {
+                        style: ({ hovered: e }) => [
+                          D.modalBtn,
+                          { backgroundColor: '#FF3B30', flex: 1, marginLeft: 5 },
+                          e && { backgroundColor: '#D70015' },
+                          (!!削除の段階 || !削除の合言葉) && { opacity: 0.5 },
+                          x.IS_WEB && { cursor: 'pointer' },
+                        ],
+                        onPress: async () => {
+                          if (!削除の合言葉 || 削除の段階) return;
+                          削除の失敗を設定('');
+                          削除の段階を設定('本人確認');
+                          const 結果 = await 団体を消す(削除の合言葉, (文) => 削除の段階を設定(文));
+                          if (!結果.ok) {
+                            削除の段階を設定('');
+                            削除の失敗を設定(結果.訳 || '削除に失敗しました');
+                            return;
+                          }
+                          削除の窓を開く(!1);
+                          削除の段階を設定('');
+                          try {
+                            await (0, B.signOut)(E.auth);
+                          } catch (e) {
+                            // 口座はもう無いので、ここで失敗しても構わない
+                          }
+                          N(null, null, null, null);
+                          u.default.alert('削除しました', '団体アカウントを削除しました。ご利用ありがとうございました。');
+                        },
+                        disabled: !!削除の段階 || !削除の合言葉,
+                        children: (0, T.jsx)(n.default, {
+                          style: [D.modalBtnText, { color: '#FFF' }],
+                          children: 削除の段階 ? '削除中…' : '削除する',
+                        }),
+                      }),
+                    ],
+                  }),
                 ],
               }),
             ],

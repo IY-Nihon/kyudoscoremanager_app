@@ -531,8 +531,17 @@ function ストアを用意する(既存の雲, 既存のライブ) {
     'firebase/auth',
     外部を差し替え('firebase/auth', {
       getAuth: () => ({ currentUser: { uid: 'test-uid' } }),
-      signInWithEmailAndPassword: async () => ({ user: {} }),
+      signInWithEmailAndPassword: async (auth, email, pw) => {
+        if (雲.状態.合言葉 != null && pw !== 雲.状態.合言葉) {
+          throw Object.assign(new Error('wrong password'), { code: 'auth/invalid-credential' });
+        }
+        return { user: {} };
+      },
       sendPasswordResetEmail: async () => {},
+      // 口座を消す。消したことを 状態.消した口座 に残す（アカウントの削除の検査）
+      deleteUser: async (user) => {
+        雲.状態.消した口座 = user;
+      },
     })
   );
   横取り.set('firebase/database', 外部を差し替え('firebase/database', ライブ.api));
