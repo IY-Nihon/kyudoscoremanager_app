@@ -29,8 +29,16 @@ test('団体アカウントを作って、設定から削除すると、その�
   await page.getByPlaceholder('例: ○○弓道部').fill('削除の検査');
   await page.getByPlaceholder('example@mail.com').fill(宛先);
   await page.getByPlaceholder('••••••••').last().fill(合言葉);
-  await page.getByText('に同意します', { exact: false }).click();
-  await page.getByText('部員の氏名を登録する前に', { exact: false }).click();
+  // 同意の行は、文の左の印（□）を押す。文の真ん中を押すと、中の「プライバシーポリシー」の
+  // リンクに当たって別の頁が開き、印が付かない（iPhone で実際に）
+  const 印を押す = async (文) => {
+    const 字 = page.getByText(文, { exact: false }).first();
+    const 枠 = await 字.boundingBox();
+    await page.mouse.click(Math.round(枠.x - 14), Math.round(枠.y + 枠.height / 2));
+  };
+  await 印を押す('に同意します');
+  await 印を押す('部員の氏名を登録する前に');
+  await expect(page.getByText('✓', { exact: true })).toHaveCount(2, { timeout: 5_000 });
   await page.getByText('アカウント作成', { exact: true }).click();
   await expect(page.getByText('団体アカウントを作成しました', { exact: false })).toBeVisible({ timeout: 60_000 });
   const 文 = await page.getByText('団体ID:', { exact: false }).first().textContent();
