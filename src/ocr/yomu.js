@@ -69,7 +69,7 @@ export async function 板の印を読む(元, 注文) {
       列たち,
       確からしさ,
       // 確かめ用。どこに格子を立てたか
-      格子: { 角度: g.角度, 列: g.列.map((c) => Math.round(c.中心)), 行: g.行.位置.map((v) => Math.round(v)), 印の幅: g.印の幅 },
+      格子: { 角度: g.角度, 列: g.列.map((c) => Math.round(c.中心)), 列の見当: g.列の見当, 行: g.行.位置.map((v) => Math.round(v)), 印の幅: g.印の幅 },
     });
   }
   return 出;
