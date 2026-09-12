@@ -72,184 +72,8 @@ async function uriToBase64(uri) {
   });
 }
 
-// ─────────────────────────────────────────
-// 氏名の正規化・分割（姓／名）
-// ─────────────────────────────────────────
-function splitName(fullName) {
-  if (!fullName) return { sei: "", mei: "" };
-  const parts = fullName.trim().split(/[\s\u3000]+/);
-  return { sei: parts[0] || "", mei: parts.length > 1 ? parts.slice(1).join("") : "" };
-}
-
-// 異体字正規化は行わず、空白の除去のみ行う（表記そのものの完全一致を判定するためのヘルパー）
-function stripSpace(s) {
-  if (!s) return "";
-  return s.replace(/[\s\u3000]+/g, "");
-}
-
-// 代表的な異体字・旧字体を新字体・常用漢字に正規化してマッチング精度を飛躍的に高める
-function normalize(s) {
-  if (!s) return "";
-  let nStr = s.replace(/[\s\u3000]+/g, "");
-  const mapping = {
-    "澁": "渋",
-    "眞": "真",
-    "邉": "辺",
-    "邊": "辺",
-    "齋": "斉",
-    "齊": "斉",
-    "廣": "広",
-    "澤": "沢",
-    "嶋": "島",
-    "嶌": "島",
-    "栁": "柳",
-    "國": "国",
-    "櫻": "桜",
-    "髙": "高",
-    "﨑": "崎"
-  };
-  for (const [oldChar, newChar] of Object.entries(mapping)) {
-    nStr = nStr.replace(new RegExp(oldChar, "g"), newChar);
-  }
-  return nStr;
-}
-
-// ─────────────────────────────────────────
-// 編集距離（Levenshtein Distance）の計算
-// ─────────────────────────────────────────
-function getLevenshteinDistance(a, b) {
-  const tmp = [];
-  for (let i = 0; i <= a.length; i++) {
-    tmp[i] = [i];
-  }
-  for (let j = 0; j <= b.length; j++) {
-    tmp[0][j] = j;
-  }
-  for (let i = 1; i <= a.length; i++) {
-    for (let j = 1; j <= b.length; j++) {
-      tmp[i][j] = Math.min(
-        tmp[i - 1][j] + 1,
-        tmp[i][j - 1] + 1,
-        tmp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
-      );
-    }
-  }
-  return tmp[a.length][b.length];
-}
-
-// ─────────────────────────────────────────
-// 名前マッチング（要件定義 3.3 名寄せロジック）
-// candidates: [{id, name, gender, grade, isAlumni}]
-// 戻り値: { status: 'matched'|'ambiguous'|'guest', match, options }
-// ─────────────────────────────────────────
-function matchArcherName(rawText, candidates) {
-  const text = normalize(rawText);
-  if (!text) return { status: "empty" };
-
-  // 括弧付き識別子: "林(飛)" 形式を分離
-  const parenMatch = rawText.match(/^([^\s\u3000(（]+)[\(（]([^)）]+)[\)）]$/);
-  const searchSei = parenMatch ? parenMatch[1] : null;
-  const searchDisambig = parenMatch ? parenMatch[2] : null;
-
-  // 1. 完全一致（現役優先）
-  const exact = candidates.filter(c => normalize(c.name) === text);
-  if (exact.length === 1) return { status: "matched", match: exact[0] };
-  if (exact.length > 1) {
-    // 異体字正規化により複数候補が同居した場合、まずは「変換なしの表記そのもの」が
-    // 完全一致する候補を優先する（例：渡辺/渡邉/渡邊が同居する場合、書かれた文字通りの「渡辺」を優先）
-    const rawExact = exact.filter(c => stripSpace(c.name) === stripSpace(rawText));
-    if (rawExact.length === 1) return { status: "matched", match: rawExact[0] };
-
-    const active = exact.filter(c => !c.isAlumni);
-    if (active.length === 1) return { status: "matched", match: active[0] };
-    return { status: "ambiguous", options: exact };
-  }
-
-  // 2. 姓+識別子（括弧書き）一致
-  if (searchSei && searchDisambig) {
-    const bySei = candidates.filter(c => splitName(c.name).sei === searchSei);
-    const withDisambig = bySei.filter(c => splitName(c.name).mei.startsWith(searchDisambig));
-    if (withDisambig.length === 1) return { status: "matched", match: withDisambig[0] };
-    if (bySei.length > 0) return { status: "ambiguous", options: bySei };
-  }
-
-  // 3. 姓のみ一致（現役生を優先、前方一致やスペース無しも強力にマッチ）
-  const bySeiOnly = candidates.filter(c => {
-    const sName = splitName(c.name);
-    if (normalize(sName.sei) === text) return true;
-    const cn = normalize(c.name);
-    // 部員名が「澁川航大」（正規化で「渋川航大」）で、読み取ったテキストが「渋川」などの場合（前方一致で長さ2以上）
-    if (text.length >= 2 && cn.startsWith(text) && cn.length > text.length) return true;
-    return false;
-  });
-  if (bySeiOnly.length === 1) return { status: "matched", match: bySeiOnly[0] };
-  if (bySeiOnly.length > 1) {
-    // 異体字正規化により複数候補が同居した場合、まずは「変換なしの表記そのもの」の姓が
-    // 完全一致する候補を優先する（例：渡辺/渡邉/渡邊のうち、書かれた文字通りの「渡辺」姓を優先）
-    const rawSeiExact = bySeiOnly.filter(c => stripSpace(splitName(c.name).sei) === stripSpace(rawText));
-    if (rawSeiExact.length === 1) return { status: "matched", match: rawSeiExact[0] };
-
-    const activeOnly = bySeiOnly.filter(c => !c.isAlumni);
-    if (activeOnly.length === 1) return { status: "matched", match: activeOnly[0] };
-    return { status: "ambiguous", options: bySeiOnly };
-  }
-
-  // 3.5. 姓のみの編集距離救済（OCRが名前部分を読み落とし／姓自体を誤読した場合）
-  // 例：候補「渋川航大」に対し、OCRが名前部分を読み落として姓のみ「渋川」と読み取った上に
-  //     さらに1文字を誤読して「渋谷」となったケース。姓（2〜3文字程度）同士の編集距離で救済する。
-  if (text.length >= 2 && text.length <= 4) {
-    let minSeiDistance = 2; // 姓は短いので許容距離は最大1まで
-    let seiFuzzyMatches = [];
-    candidates.forEach(c => {
-      const sei = normalize(splitName(c.name).sei);
-      if (!sei || sei.length > 4) return; // 姓が極端に長い（＝姓名を分割できていない）データは対象外
-      const dist = getLevenshteinDistance(text, sei);
-      if (dist < minSeiDistance) {
-        minSeiDistance = dist;
-        seiFuzzyMatches = [c];
-      } else if (dist === minSeiDistance) {
-        seiFuzzyMatches.push(c);
-      }
-    });
-    if (seiFuzzyMatches.length === 1 && minSeiDistance <= 1) {
-      return { status: "matched", match: seiFuzzyMatches[0], fuzzy: true };
-    } else if (seiFuzzyMatches.length > 1 && minSeiDistance <= 1) {
-      const activeSeiFuzzy = seiFuzzyMatches.filter(c => !c.isAlumni);
-      if (activeSeiFuzzy.length === 1) return { status: "matched", match: activeSeiFuzzy[0], fuzzy: true };
-      return { status: "ambiguous", options: seiFuzzyMatches };
-    }
-  }
-
-  // 4. 部分一致（手書き誤字・略字の緩やかな救済）
-  const partial = candidates.filter(c => {
-    const cn = normalize(c.name);
-    return cn.includes(text) || text.includes(cn.slice(0, 1)) && cn.startsWith(text.slice(0, 1)) && Math.abs(cn.length - text.length) <= 1;
-  });
-  if (partial.length === 1) return { status: "matched", match: partial[0], fuzzy: true };
-
-  // 5. 編集距離（Levenshtein Distance）による漢字書き間違い救済
-  let bestFuzzyMatches = [];
-  let minDistance = 3; // 最大許容距離は2まで
-  candidates.forEach(c => {
-    const cn = normalize(c.name);
-    const dist = getLevenshteinDistance(text, cn);
-    if (dist < minDistance) {
-      minDistance = dist;
-      bestFuzzyMatches = [c];
-    } else if (dist === minDistance) {
-      bestFuzzyMatches.push(c);
-    }
-  });
-
-  if (bestFuzzyMatches.length === 1 && minDistance <= 2) {
-    return { status: "matched", match: bestFuzzyMatches[0], fuzzy: true };
-  } else if (bestFuzzyMatches.length > 1 && minDistance <= 2) {
-    return { status: "ambiguous", options: bestFuzzyMatches };
-  }
-
-  // 6. 一致なし → ゲスト扱い
-  return { status: "guest", rawText: rawText.trim() };
-}
+// 氏名の正規化と名寄せは ./ocrNamae に移した（Gemini の名簿照合と合わせて検査するため）
+const { normalize, matchArcherName, 名簿で名寄せ, 重なりを外す } = require("./ocrNamae");
 
 const SHOT_LABELS = ["壱之立", "弐之立", "参之立", "四之立", "伍之立", "六之立", "七之立", "八之立", "九之立", "拾之立"];
 
@@ -494,7 +318,9 @@ const OCRRecordModal = ({
             const 迷い = Array.isArray(r && r.確からしさ)
               ? 迷いを開く(一射目からの順にする(r.確からしさ, 起点), 一マス)
               : [];
-            rawRows.push({ name: r && r.name, marks, 迷い, チーム番号: ti, 立の人数, チーム名: (t && t.name) || "" });
+            // roster … Gemini が名簿と照合した表記（無ければ null、古い返事なら undefined）
+            const roster = r && "roster" in r ? (typeof r.roster === "string" && r.roster.trim() ? r.roster.trim() : null) : undefined;
+            rawRows.push({ name: r && r.name, roster, marks, 迷い, チーム番号: ti, 立の人数, チーム名: (t && t.name) || "" });
           });
         });
         // 氏名も的中も空の行は表の余白なので落とす
@@ -579,9 +405,13 @@ const OCRRecordModal = ({
   // 紙の記録：認識結果へのメンバー名寄せ適用
   // ─────────────────────────────────────────
   const applyRecordMatching = (rawRows) => {
-    const rows = rawRows.map(r => {
+    // 名寄せは Gemini の照合（roster）を主にし、同じ人に寄った2行目からは「もしかして」に落とす
+    const 名寄せ = 重なりを外す(
+      rawRows.map(r => ({ rawText: String(r?.name || ""), ...名簿で名寄せ(String(r?.name || ""), r?.roster, allCandidates) }))
+    );
+    const rows = rawRows.map((r, i) => {
       const rawText = String(r?.name || "");
-      const m = matchArcherName(rawText, allCandidates);
+      const m = 名寄せ[i];
       return {
         rawText,
         ...m,
