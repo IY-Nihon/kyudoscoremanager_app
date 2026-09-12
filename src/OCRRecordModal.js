@@ -278,7 +278,9 @@ const OCRRecordModal = ({
     try {
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash",
+        // 2.5-flash は相手校の板で行の数が 14〜17 に揺れ、瀧を渡邉と読んだ。
+        // 3.6-flash は同じ写真・同じ指示文で 8+8 行・名寄せ 16/16 が4回とも（2026-09-12）
+        model: "gemini-3.6-flash",
         generationConfig: { responseMimeType: "application/json" },
       });
 
