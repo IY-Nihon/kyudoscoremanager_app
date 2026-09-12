@@ -31,12 +31,6 @@ Object.defineProperty(_e, 'SAFE_TOP_PADDING', {
     return u;
   },
 });
-Object.defineProperty(_e, 'GEMINI_API_KEY', {
-  enumerable: !0,
-  get: function () {
-    return c;
-  },
-});
 // 復元の際、ここは「常に true を返す try」と「常に false になる式」に
 // 潰れていた。Web だけに配っているので結果は合っていたが、何を見て
 // いるのか読めないため、本来の判定に戻す。
@@ -47,4 +41,4 @@ const e = Platform.OS === 'web';
 const t = Platform.OS === 'ios';
 const n = 60;
 const u = e ? n : 0;
-const c = process.env.EXPO_PUBLIC_GEMINI_API_KEY || '';
+// Gemini の鍵はここに無い（2026-09-13 に中継へ移した。src/geminiChukei.js）

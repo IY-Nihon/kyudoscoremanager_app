@@ -65,7 +65,8 @@ function 横に流せる行({ children, style }) {
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { useScoreStore } = require("./useScoreStore");
 const { useNavigation } = require("@react-navigation/native");
-const { GEMINI_API_KEY } = require("./IS_WEB");
+// 鍵はアプリに無い。中継（Cloudflare Workers）へログインの証を付けて呼ぶ
+const 中継 = require("./geminiChukei");
 // 成績の集計・並べ替え・絞り込みは、模型ではなくここで済ませる。
 // 人数ぶんの表を渡して選ばせると取り違えるため（test/chatStats.test.js）
 const { 全員の成績, 出欠の集計, 記録をさがす, 射位ごとの成績 } = require("./chatStats");
@@ -585,7 +586,9 @@ const AIChatBot = () => {
         `\n\n[今日の日付: ${todayStr} / 昨日: ${yesterdayStr}]` +
         `\n[部員一覧（計${members.length}名）]\n${memberList}`;
 
-      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+      // 鍵の引数は飾り。中継が本物の鍵に付け替える（baseUrl と Authorization は SDKの設定 が足す）
+      const genAI = new GoogleGenerativeAI("chukei");
+      const 中継の設定 = await 中継.SDKの設定();
 
       // Function Calling の宣言
       const tools = [{
@@ -726,7 +729,7 @@ const AIChatBot = () => {
         model: "gemini-3.6-flash",
         systemInstruction: fullInstruction,
         tools: tools
-      });
+      }, 中継の設定);
 
       const chat = model.startChat({
         history: newMessages.slice(1).map(msg => ({
@@ -1261,7 +1264,9 @@ const AIChatBot = () => {
       } else if (error.message?.includes("404")) {
         errorMsg = "AIモデルが見つかりません。API設定を確認してください。";
       } else if (error.message?.includes("403")) {
-        errorMsg = "APIキーの権限がありません。Google CloudでAPIを有効化してください。";
+        errorMsg = "この出どころからは AI 機能を使えません。";
+      } else if (error.message?.includes("401") || error.message?.includes("ログインしていない")) {
+        errorMsg = "ログインの証が確かめられませんでした。ログインし直してからもう一度送信してください。";
       } else {
         errorMsg = `エラー: ${error.message}`;
       }
