@@ -66,8 +66,8 @@ import { 画面が出るまで待つ, 入り口が決まるまで待つ, 団体�
 test.describe('確認画面', () => {
   test.use({ storageState: 'e2e/.auth/100007.json' });
 
-  test('端末で読んだ○×が確認画面に出て、迷ったマスに色が付く', async ({ page }) => {
-    test.setTimeout(300_000);
+  /** Gemini の返事を差し替えて、板の写真を解析し、確認画面まで進める */
+  async function 確認画面まで(page, 行を直す) {
     const { 射手たち } = await import('../scripts/ocr-cells/kiroku.mjs');
     // Gemini の返事（名前は本番の記録の番号。マスは全部空）
     const 返事 = {
@@ -77,6 +77,7 @@ test.describe('確認画面', () => {
         rows: 射手たち.slice(i * 8, i * 8 + 8).map((s) => ({ name: s.名, roster: null, cells: Array(10).fill('') })),
       })),
     };
+    if (行を直す) 行を直す(返事);
     await page.route(/generativelanguage\.googleapis\.com/, (route) =>
       route.fulfill({
         status: 200,
@@ -100,6 +101,24 @@ test.describe('確認画面', () => {
     await (await 選ぶ).setFiles('docs/ocr-samples/PXL_20260906_081921509.jpg');
     await expect(page.getByText('1枚目', { exact: true })).toBeVisible();
     await page.getByText('この画像で解析する', { exact: true }).click();
+  }
+
+  test('「もしかして」の名前が残っていると、反映を押したときにその旨が窓で出る', async ({ page }) => {
+    test.setTimeout(300_000);
+    // 2人目を、Gemini が名簿の「部員1」に寄せたが読めた字は違う体（要選択になる）
+    await 確認画面まで(page, (返事) => {
+      返事.teams[0].rows[1].roster = '部員1';
+    });
+    await expect(page.getByText('○×は端末で読み取りました（名前と並びはAI）。')).toBeVisible({ timeout: 120_000 });
+    await expect(page.getByText('(要選択)', { exact: false }).first()).toBeVisible();
+    // React Native の Alert はブラウザで何も出ず、押しても何も起きないように見えた（実際に踏んだ）
+    await page.getByText('記録表に反映する', { exact: true }).click();
+    await expect(page.getByText('候補が複数ある名前が残っています', { exact: false })).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('端末で読んだ○×が確認画面に出て、迷ったマスに色が付く', async ({ page }) => {
+    test.setTimeout(300_000);
+    await 確認画面まで(page);
 
     await expect(page.getByText('○×は端末で読み取りました（名前と並びはAI）。')).toBeVisible({ timeout: 120_000 });
     // 射数は写真に合わせる（団体の設定は8射、板は20射）
