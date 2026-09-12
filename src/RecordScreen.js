@@ -2613,12 +2613,28 @@ const k = () => {
           members: oe,
           alumni: (0, x.useScoreStore)((e) => e.alumni) || [],
           shotsPerRound: T,
-          // 中身があるなら、置き換えるか後ろに足すかを窓の側で選んでもらう
           hasExistingRecord: k.length > 0,
-          onApply: (newArchers, 読み取りの種類, 入れ方) => {
+          // いまの記録表で埋まっている射数（いちばん後ろの○×の位置）。
+          // 窓の側で、写真で読めた射数と比べて多いほうに射数を合わせる
+          記入済みの射数: Math.max(
+            0,
+            ...(Array.isArray(k) ? k : []).map((e) => {
+              if (!e || e.isSeparator || !Array.isArray(e.marks)) return 0;
+              let 後ろ = 0;
+              e.marks.forEach((m, i) => {
+                if (m) 後ろ = i + 1;
+              });
+              return 後ろ;
+            })
+          ),
+          onApply: (newArchers, 読み取りの種類, 入れ方, 射数) => {
             // 画像は setState で直に盤面を差し替えるため、ストアの止めが効かない。
             // 閲覧用のときはここで返す
             if ($e) return void 閲覧中に押された();
+            // 射数を写真と記録表の多いほうに合わせる（設定より多ければ広げ、少なければ縮める。
+            // 埋まった○×は縮めても消えない）。先に合わせないと、いまの並びと読み取った
+            // 並びで○×の長さが食い違う
+            if (Number.isInteger(射数) && 射数 >= 1 && 射数 !== T) G(射数);
             const store = x.useScoreStore.getState();
             store.historyStack &&
               store.historyStack.length >= 0 &&
@@ -2635,8 +2651,10 @@ const k = () => {
             // 読み取った○×が一瞬すべて灰色に光ってから戻る
             // 後ろに足すときは、いまの並びの後ろへ繋ぐ。区切りは入れない
             //（区切るかどうかは、写真の中に板が2つ在るときだけ窓の側で決める）
+            // 射数を合わせたあとの並びを店から取り直す（k は合わせる前の写し）
+            const いまの並び = x.useScoreStore.getState().archers;
             const 入れる並び =
-              '後ろに足す' === 入れ方 ? [...(Array.isArray(k) ? k : []), ...newArchers] : newArchers;
+              '後ろに足す' === 入れ方 ? [...(Array.isArray(いまの並び) ? いまの並び : []), ...newArchers] : newArchers;
             x.useScoreStore.getState().入れた印をまとめて付ける(newArchers);
             x.useScoreStore.setState({ archers: 入れる並び });
             // 紙の記録は氏名と○×を、立ち順表は並びだけを読む。

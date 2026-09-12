@@ -25,8 +25,10 @@ import { 板の印を読む, 紙の印を読む, 大前から並べる } from '.
 /**
  * @param {object[]} teams Gemini の返した teams（rows[].cells を持つ）
  * @param {{base64:string}[]} images
- * @param {{向き:string, shotsPerRound:number, 道具:{画を読む:Function, 回す:Function}, 重み:object, 紙の重み?:object}} 設定
+ * @param {{向き:string, 道具:{画を読む:Function, 回す:Function}, 重み:object, 紙の重み?:object}} 設定
  *   重み … 板の網（omomi-chiisai.json）、紙の重み … 紙の網（kami-omomi.json）
+ *   行数（板）と立数（紙）は Gemini の cells の数から決める。設定の射数には縛らない
+ *  （射数は写真に合わせる決まり。8射の設定で20射の板を撮ることがある）
  * @returns {Promise<{teams:object[], 読み取り元:'端末'|'AI', 訳?:string}>}
  */
 export async function マスを端末で差し替える(teams, images, 設定) {
@@ -60,11 +62,27 @@ export async function マスを端末で差し替える(teams, images, 設定) {
   return { teams: 新しい, 読み取り元: '端末' };
 }
 
+/** rows の cells の数で、いちばん多いもの（Gemini が行ごとに数を違えても、多数に合わせる） */
+function マスの数(rows) {
+  const 数え = new Map();
+  for (const r of rows) {
+    const n = Array.isArray(r && r.cells) ? r.cells.length : 0;
+    数え.set(n, (数え.get(n) || 0) + 1);
+  }
+  let 最多 = 0;
+  let 票 = -1;
+  for (const [n, c] of 数え) if (c > 票 || (c === 票 && n > 最多)) (最多 = n), (票 = c);
+  return 最多;
+}
+
 /** 板。写真ごとに板を割り当てて読む。合わなければ訳の文字列を返す */
 async function 板を読む(teams, images, 設定) {
   const 人数たち = teams.map((t) => t.rows.length);
-  const 行数 = Math.round(設定.shotsPerRound / 2);
-  if (行数 < 2) return '射数が少なすぎる';
+  // 行数（1列のマスの数）は Gemini の cells の数から。板ごとに違えば多いほうに合わせる
+  //（同じ写真の板は同じ段数のはずで、違うのは読み違え。少ないほうに合わせると
+  // 下の段が落ちる）
+  const 行数 = Math.max(...teams.map((t) => マスの数(t.rows)));
+  if (!(行数 >= 2)) return `1列のマスの数が少なすぎる（${行数}）`;
   if (images.length > teams.length) return `写真（${images.length}枚）が板（${teams.length}枚）より多い`;
 
   const 出 = [];
@@ -85,10 +103,15 @@ async function 板を読む(teams, images, 設定) {
         const 板たち = await 板の印を読む(元, { 板の人数たち: この写真の人数, 行数, 回す: 設定.道具.回す, 重み: 設定.重み });
         // 格子は頼まれた人数ぶんの列を必ず返すので、列の数そのものは合ってしまう。
         // 人数を当てにしない「列の見当」で、Gemini の行の数が板と違っていないかを見る
-        //（違うのに人数ぶん取ると、小計の列まで射手にして印が黙ってずれる）
-        const 外れ = 板たち.findIndex(
-          (b, i) => b.列たち.length !== この写真の人数[i] || (b.格子 && b.格子.列の見当 != null && b.格子.列の見当 !== この写真の人数[i])
-        );
+        //（違うのに人数ぶん取ると、小計の列まで射手にして印が黙ってずれる）。
+        // 見当が人数より少ない＝明らかな外れの列を射手にしている。
+        // 外した強い列がある＝射手の列らしいのに取っていない（人数が少なすぎる）。
+        // 小計の列と薄い印の列は見分けられないので、人数より1つ多い程度の読み違えは通る
+        const 合わない = (b, n) =>
+          b.列たち.length !== n ||
+          (b.格子 && b.格子.列の見当 != null && b.格子.列の見当 < n) ||
+          (b.格子 && b.格子.外した強い列 > 0);
+        const 外れ = 板たち.findIndex((b, i) => 合わない(b, この写真の人数[i]));
         if (板たち.length === n && 外れ < 0) {
           取れた = 板たち;
           break;
@@ -110,11 +133,13 @@ async function 紙を読む(teams, images, 設定) {
   if (!設定.紙の重み) return '紙の網が無い';
   if (images.length !== teams.length) return `写真（${images.length}枚）と表（${teams.length}つ）の数が合わない`;
   const 立のマス = 4;
-  const 立数 = 設定.shotsPerRound / 立のマス;
-  if (!Number.isInteger(立数) || 立数 < 1) return `射数（${設定.shotsPerRound}）が4で割れない`;
   const 出 = [];
   for (let k = 0; k < images.length; k++) {
     const 人数 = teams[k].rows.length;
+    // 立数は Gemini の cells の数（1マス1射）から。4で割れなければ表の形が違う
+    const マス数 = マスの数(teams[k].rows);
+    const 立数 = マス数 / 立のマス;
+    if (!Number.isInteger(立数) || 立数 < 1) return `マスの数（${マス数}）が4で割れない`;
     const 元 = await 設定.道具.画を読む(images[k].base64);
     出.push(await 紙の印を読む(元, { 人数, 立数, 立のマス, 重み: 設定.紙の重み }));
   }
