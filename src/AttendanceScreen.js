@@ -265,35 +265,15 @@ const AttendanceScreen = () => {
         base64 = await fs.readAsStringAsync(asset.uri, { encoding: fs.EncodingType.Base64 });
       }
 
-      const apiKey = (x.GEMINI_API_KEY || '').trim();
-      if (!apiKey) {
-        throw new Error('Gemini APIキーが設定されていません。');
+      // 鍵はアプリに無い。中継（Cloudflare Workers）へログインの証を付けて呼ぶ。
+      // 以前は模型の一覧を引いて 1.5-flash を探していたが、1.5 はもう一覧に無く、
+      // 中継は決めた模型しか通さないので、写真の読み取り・チャットと同じ 3.6-flash に固定する
+      const 中継 = require('./geminiChukei');
+      if (!中継.中継がある()) {
+        throw new Error('AI機能の設定（中継の宛先）が見つかりません。');
       }
 
-      let selectedModel = 'models/gemini-1.5-flash'; // デフォルト
-
-      // 使用可能なモデルを確認
-      try {
-        const listResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
-        );
-        const listData = await listResponse.json();
-
-        if (listData.models && listData.models.length > 0) {
-          const modelNames = listData.models.map((m) => m.name);
-          const m15 = modelNames.find((n) => n.includes('gemini-1.5-flash'));
-          const mLatest = modelNames.find((n) => n.includes('flash-latest'));
-          const anyFlash = modelNames.find((n) => n.includes('flash') && !n.includes('2.5'));
-
-          selectedModel = m15 || mLatest || anyFlash || selectedModel;
-        }
-      } catch (e) {
-        /* 型の一覧が引けなくても、既定の型のまま読み取る */
-      }
-
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/${selectedModel}:generateContent?key=${apiKey}`;
-
-      const aiResponse = await fetch(apiUrl, {
+      const aiResponse = await 中継.中継へfetch('/v1beta/models/gemini-3.6-flash:generateContent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -324,6 +304,8 @@ const AttendanceScreen = () => {
         }
         if (aiResponse.status === 429) {
           alert('APIリクエスト回数の上限に達しました。1分ほど待ってから再度お試しください。');
+        } else if (aiResponse.status === 401) {
+          alert('ログインの証が確かめられませんでした。ログインし直してから再度お試しください。');
         } else if (aiResponse.status === 503) {
           alert('AI解析サーバーが混み合っています。少し待ってから再度お試しください。');
         } else {

@@ -78,7 +78,7 @@ test.describe('確認画面', () => {
       })),
     };
     if (行を直す) 行を直す(返事);
-    await page.route(/generativelanguage\.googleapis\.com/, (route) =>
+    await page.route(/generativelanguage\.googleapis\.com|workers\.dev\/v1beta\//, (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',

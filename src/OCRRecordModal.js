@@ -28,7 +28,9 @@ const DocumentPicker = require("expo-document-picker");
 const ImagePicker = require("expo-image-picker");
 const { Ionicons } = require("@expo/vector-icons");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const { GEMINI_API_KEY, IS_WEB } = require("./IS_WEB");
+const { IS_WEB } = require("./IS_WEB");
+// 鍵はアプリに無い。中継（Cloudflare Workers）へログインの証を付けて呼ぶ
+const 中継 = require("./geminiChukei");
 const { generateUUID } = require("./uuid");
 const { formatMemberName } = require("./formatMemberName");
 const { getShadowStyle } = require("./shadowStyle");
@@ -285,8 +287,8 @@ const OCRRecordModal = ({
     setStep("analyzing");
     setErrorMsg("");
 
-    if (!GEMINI_API_KEY) {
-      setErrorMsg("AI機能の設定（APIキー）が見つかりません。管理者にご確認ください。");
+    if (!中継.中継がある()) {
+      setErrorMsg("AI機能の設定（中継の宛先）が見つかりません。管理者にご確認ください。");
       setStep("pick");
       return;
     }
@@ -294,13 +296,14 @@ const OCRRecordModal = ({
     const prompt = buildPrompt();
 
     try {
-      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+      // 鍵の引数は飾り。中継が本物の鍵に付け替える（baseUrl と Authorization は SDKの設定 が足す）
+      const genAI = new GoogleGenerativeAI("chukei");
       const model = genAI.getGenerativeModel({
         // 2.5-flash は相手校の板で行の数が 14〜17 に揺れ、瀧を渡邉と読んだ。
         // 3.6-flash は同じ写真・同じ指示文で 8+8 行・名寄せ 16/16 が4回とも（2026-09-12）
         model: "gemini-3.6-flash",
         generationConfig: { responseMimeType: "application/json" },
-      });
+      }, await 中継.SDKの設定());
 
       const parts = [{ text: prompt }];
       images.forEach(img => {
@@ -373,6 +376,8 @@ const OCRRecordModal = ({
       const msg = String(e?.message || e);
       if (msg.includes("429")) {
         setErrorMsg("AIの利用制限に達しました。しばらく待ってから再度お試しください。");
+      } else if (msg.includes("401") || msg.includes("ログインしていない")) {
+        setErrorMsg("ログインの証が確かめられませんでした。ログインし直してから再度お試しください。");
       } else if (/network|fetch|Failed to fetch/i.test(msg)) {
         setErrorMsg("通信エラーが発生しました。電波の良い場所で再度お試しください。");
       } else {
