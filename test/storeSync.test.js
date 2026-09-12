@@ -111,7 +111,7 @@ test('リスナー：送信前の編集をクラウドの写しで上書きし�
   await 待つ(900);
   雲.状態.オフライン = false;
   // 他の人が別の記録を保存した＝リスナーが動く
-  雲.置く(記録の道, 'ses-3', { id: 'ses-3', title: '誰かの保存', lastModified: Date.now() });
+  雲.置く(記録の道, 'ses-3', { id: 'ses-3', title: '誰かの保存', date: Date.now(), lastModified: Date.now() });
   雲.通知();
   await 待つ(100);
   assert.equal(記録を見る(store, 'ses-1').title, '道場で直した', '編集が消えない');
@@ -123,7 +123,7 @@ test('リスナー：送信が済んだ記録はクラウドの写しで更新�
   const { store, 雲 } = 用意();
   await store.getState().listenToSessions();
   await 待つ(50);
-  雲.置く(記録の道, 'ses-1', { id: 'ses-1', title: '他の端末が直した', lastModified: Date.now() });
+  雲.置く(記録の道, 'ses-1', { id: 'ses-1', title: '他の端末が直した', date: Date.now(), lastModified: Date.now() });
   雲.通知();
   await 待つ(100);
   assert.equal(記録を見る(store, 'ses-1').title, '他の端末が直した');
@@ -841,4 +841,51 @@ test('同期：送信できていない記録を送り直す', async () => {
   await 待つ(50);
   assert.equal(雲.値(記録の道, 'ses-1').title, '未送信', 'クラウドへ届く');
   assert.equal(記録を見る(store, 'ses-1').syncStatus, '同期済み');
+});
+
+// ──────────────────────────────────────────────────────────────
+// 見張りの窓の外の記録
+// ──────────────────────────────────────────────────────────────
+test('見張り：30日より前の記録は、見張りが動いても手元から消えない', async () => {
+  // 見張りは直近30日・最大100件しか受け取らない。手元にあってその中に無い記録を
+  // 「クラウドで消された」と一律に落としていたせいで、古い記録が履歴から消えていた
+  const { store, 雲 } = 用意();
+  const 今 = Date.now();
+  const 古い = {
+    id: 'ses-old',
+    title: '40日前の練習',
+    date: 今 - 40 * 86400000,
+    lastModified: 今 - 40 * 86400000,
+    serverCreatedTime: 今 - 40 * 86400000,
+    syncStatus: '同期済み',
+    archers: [],
+  };
+  雲.置く(記録の道, 古い.id, Object.assign({}, 古い));
+  store.setState({ sessions: [...store.getState().sessions, Object.assign({}, 古い)] });
+  await store.getState().listenToSessions();
+  await 待つ(50);
+  assert.ok(記録を見る(store, 'ses-old'), '40日前の記録が消えた');
+  // 他の人の保存で見張りがもう一度動いても消えない
+  雲.置く(記録の道, 'ses-9', { id: 'ses-9', title: '誰かの保存', date: 今, lastModified: 今 });
+  雲.通知();
+  await 待つ(100);
+  assert.ok(記録を見る(store, 'ses-old'), '見張りが動いたら消えた');
+  assert.ok(記録を見る(store, 'ses-9'), '新しい記録は届く');
+});
+
+test('見張り：30日以内の記録がクラウドで消されたら、手元からも消える（今までどおり）', async () => {
+  const { store, 雲 } = 用意();
+  const 今 = Date.now();
+  // クラウドに在った印（serverCreatedTime）は、クラウドの写しにも手元にも付いている
+  for (const s of store.getState().sessions) 雲.置く(記録の道, s.id, Object.assign({}, s, { serverCreatedTime: 今 - 86400000 }));
+  store.setState({
+    sessions: store.getState().sessions.map((s) => Object.assign({}, s, { serverCreatedTime: 今 - 86400000 })),
+  });
+  await store.getState().listenToSessions();
+  await 待つ(50);
+  雲.消す(記録の道, 'ses-2');
+  雲.通知();
+  await 待つ(100);
+  assert.ok(!記録を見る(store, 'ses-2'), '消された記録が残っている');
+  assert.ok(記録を見る(store, 'ses-1'));
 });
