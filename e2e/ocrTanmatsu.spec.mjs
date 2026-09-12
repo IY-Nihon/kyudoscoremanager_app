@@ -56,3 +56,75 @@ test('紙の写真をページ全体から canvas で読むと、80射のうち7
   });
   expect(合, `合ったのは ${合}/80`).toBeGreaterThanOrEqual(79);
 });
+
+// ── 確認画面まで通す ─────────────────────────────────────────
+// Gemini の返事は差し替える（名前と並びだけ返し、マスは空）。○×は端末が読む。
+// 途中交代の段（射手10の4段目、確からしさ 0.42）が「迷ったマス」として色付きで出て、
+// タップすると色が消えることを見る
+import { 画面が出るまで待つ, 入り口が決まるまで待つ, 団体で入る } from './helpers.mjs';
+
+test.describe('確認画面', () => {
+  test.use({ storageState: 'e2e/.auth/100007.json' });
+
+  test('端末で読んだ○×が確認画面に出て、迷ったマスに色が付く', async ({ page }) => {
+    test.setTimeout(300_000);
+    const { 射手たち } = await import('../scripts/ocr-cells/kiroku.mjs');
+    // Gemini の返事（名前は本番の記録の番号。マスは全部空）
+    const 返事 = {
+      teams: [0, 1].map((i) => ({
+        name: '', cellStyle: '2射', tachiPeople: 4,
+        rows: 射手たち.slice(i * 8, i * 8 + 8).map((s) => ({ name: s.名, cells: Array(10).fill('') })),
+      })),
+    };
+    await page.route(/generativelanguage\.googleapis\.com/, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ candidates: [{ content: { role: 'model', parts: [{ text: JSON.stringify(返事) }] }, finishReason: 'STOP' }] }),
+      })
+    );
+
+    await 案内を止める(page);
+    await page.goto('/');
+    await 画面が出るまで待つ(page);
+    await 入り口が決まるまで待つ(page);
+    await 団体で入る(page, '100007', 'StgTest!2026');
+    // 板は10段（20射）。団体の設定は8射なので、端末に残る設定だけ20射にして開き直す
+    await page.evaluate(() => {
+      const 鍵 = 'archery-score-storage';
+      const 中 = JSON.parse(localStorage.getItem(鍵) || '{}');
+      中.state = { ...(中.state || {}), shotsPerRound: 20 };
+      localStorage.setItem(鍵, JSON.stringify(中));
+    });
+    await page.reload();
+    await 画面が出るまで待つ(page);
+    await 入り口が決まるまで待つ(page);
+    await page.waitForFunction(() => window.端末の読み取り != null, null, { timeout: 60_000 });
+
+    await page.getByText('画像', { exact: true }).first().click();
+    await page.getByText('紙の記録', { exact: true }).click();
+    await page.getByText('板が2つ（外側が大前）', { exact: true }).click();
+    await page.getByText('下から書く', { exact: true }).click();
+    const 選ぶ = page.waitForEvent('filechooser');
+    await page.getByText('画像を選択', { exact: true }).click();
+    await (await 選ぶ).setFiles('docs/ocr-samples/PXL_20260906_081921509.jpg');
+    await expect(page.getByText('1枚目', { exact: true })).toBeVisible();
+    await page.getByText('この画像で解析する', { exact: true }).click();
+
+    await expect(page.getByText('○×は端末で読み取りました（名前と並びはAI）。')).toBeVisible({ timeout: 120_000 });
+    await expect(page.getByText('読み取りが迷ったマス', { exact: true })).toBeVisible();
+    // 迷ったマスには途中交代の段（2射）が入る。canvas の復号はブラウザで少し違い、
+    // 際どいマスがほかに数個入ることがある（Chromium で3マス）。多すぎなければよい
+    const 迷い = page.getByTestId('ocr-mayoi-cell');
+    const 数 = await 迷い.count();
+    expect(数, `迷ったマスが ${数}射`).toBeGreaterThanOrEqual(2);
+    expect(数, `迷ったマスが ${数}射（多すぎる）`).toBeLessThanOrEqual(12);
+    if (process.env.PW_SHOT) {
+      await 迷い.first().scrollIntoViewIfNeeded();
+      await page.screenshot({ path: process.env.PW_SHOT });
+    }
+    // タップして直すと、そのマスの色は消える
+    await 迷い.first().click();
+    await expect(迷い).toHaveCount(数 - 1);
+  });
+});
