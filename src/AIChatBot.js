@@ -108,7 +108,7 @@ const systemInstructionBase = `あなたは「弓道部的中ノート」専用�
 ・日付が分かっている記録 → getSessionsByDate
 ・日付が分からない記録を言葉で探す → searchSessions
 ・画面を開く → navigateToScreen
-・部員を追加 → addMember
+・部員を追加 → addMember（1人）／addMembers（2人以上は必ずこちらで、1回にまとめて）
 部員一覧に載っていない人でも、過去の記録にゲストや交代相手として出ていることがあります。「見当たらない」と自分で決めつけず、必ずツールで確かめてください。
 
 【立ち順を尋ねられたとき】
@@ -134,7 +134,8 @@ const systemInstructionBase = `あなたは「弓道部的中ノート」専用�
 
 【部員の追加について】
 ・部員を追加するときは、先に「登録しました」とテキストで答えないでください。必ず addMember ツールを呼んでください。呼ぶと画面に承認のカードが出て、利用者が押して初めて登録されます。
-・複数人をまとめて頼まれたら、addMember を同時に複数回呼んでください。一度に複数のカードを出せます。
+・複数人をまとめて頼まれたら、addMembers を1回だけ呼び、members に全員を入れてください（人ごとにカードが出て、まとめて承認できます）。名簿の貼り付けや「1年男子：山田、佐藤」のような書き方でも、人ごとに名前・学年・性別に分けてください。学年や性別が書かれていない人は、学年は書かれている範囲から推し、性別は '未設定' にしてください。
+・名前・学年・性別が足りなくて聞き返すときは、「複数人でもまとめて伝えてもらえば、一度に登録できます」と必ず添えてください。
 ・ツールを呼ぶときは、擬似コードや解説などの余計な文を一緒に出さず、呼び出しだけを行ってください。
 
 【答え方】
@@ -180,7 +181,7 @@ const qaData = [
   { k: ['卒業生','分析'], t: 'Q28: 卒業生の分析もできる？\nA: はい、メンバー選択で卒業生を選べば過去のデータも分析できます。' },
   { k: ['期','比較'], t: 'Q29: 「期」ごとの比較はできる？\nA: アプリ上には直接の機能はありませんが、データがあればAI（私）が比較します。' },
   { k: ['ランキング','順位','一番'], t: 'Q30: 誰が一番中っているかランキングはある？\nA: 分析タブの下部に、メンバー別の的中率ランキング（成績一覧）が表示されます。' },
-  { k: ['追加','新入','登録','入部'], t: 'Q31: 新入部員を追加するには？\nA: メンバータブ右上の「メンバー追加」アイコンボタンを押すし、名前、学年、性別を登録します。' },
+  { k: ['追加','新入','登録','入部','まとめて','複数','何人'], t: 'Q31: 新入部員を追加するには？\nA: このチャットで、追加したい人の「名前」「学年」「性別」を伝えてください。「山田太郎（1年男子）と佐藤花子（2年女子）を追加して」のように、複数人をまとめて頼めます。人ごとに確認のカードが出て、「すべて承認」で一度に登録できます。アプリの操作で追加する場合は、メンバータブ右上の「メンバー追加」ボタンを押し、名前・学年・性別を入力して登録します。' },
   { k: ['学年','進級','4月','自動'], t: 'Q32: 年度が変わったら学年はどうする？\nA: 設定タブの「4月1日の自動進級」がオンになっていれば、すべてのメンバーの学年が自動で更新されます。手動で少しずつ行う場合は、メンバータブで各部員を押して個別に学年を変更する必要があります。' },
   { k: ['4年生','5年','卒業','進級'], t: 'Q33: 4年生が進級するとどうなる？\nA: 「卒業生」としてシステムに残り続けます。' },
   { k: ['卒業生','データ','消えない'], t: 'Q34: 卒業生のデータは消えないの？\nA: 消えません。過去の記録もそのまま残ります。' },
@@ -372,7 +373,7 @@ const AIChatBot = () => {
 
   const [layoutWidth, setLayoutWidth] = useState(_Dimensions.get("window").width);
   const [layoutHeight, setLayoutHeight] = useState(_Dimensions.get("window").height);
-  
+
   const onLayout = (event) => {
     const { width, height } = event.nativeEvent.layout;
     setLayoutWidth(width);
@@ -391,10 +392,10 @@ const AIChatBot = () => {
   useEffect(() => {
     const initX = layoutWidth - 20 - 60;
     const initY = layoutHeight - 20 - 60;
-    
+
     const targetX = snapXRef.current === "left" ? 20 - initX : 0;
     const targetY = snapYRef.current === "top" ? 60 - initY : 0;
-    
+
     currentPos.current = { x: targetX, y: targetY };
     pan.setValue({ x: targetX, y: targetY });
   }, [layoutWidth, layoutHeight]);
@@ -412,29 +413,29 @@ const AIChatBot = () => {
         if (Math.abs(g.dx) > 2 || Math.abs(g.dy) > 2) {
           isDragging.current = true;
         }
-        
+
         const initX = layoutWidth - 20 - 60;
         const initY = layoutHeight - 20 - 60;
-        
+
         const offsetX = currentPos.current.x;
         const offsetY = currentPos.current.y;
-        
+
         let absX = initX + offsetX + g.dx;
         let absY = initY + offsetY + g.dy;
-        
+
         const minAbsX = 20;
         const maxAbsX = layoutWidth - 20 - 60;
         const minAbsY = 60;
         const maxAbsY = layoutHeight - 20 - 60;
-        
+
         if (absX < minAbsX) absX = minAbsX;
         if (absX > maxAbsX) absX = maxAbsX;
         if (absY < minAbsY) absY = minAbsY;
         if (absY > maxAbsY) absY = maxAbsY;
-        
+
         const nextX = absX - initX - offsetX;
         const nextY = absY - initY - offsetY;
-        
+
         pan.setValue({ x: nextX, y: nextY });
         currentPos.current = { x: offsetX + nextX, y: offsetY + nextY };
       },
@@ -445,21 +446,21 @@ const AIChatBot = () => {
         } else {
           const initX = layoutWidth - 20 - 60;
           const initY = layoutHeight - 20 - 60;
-          
+
           const isLeft = Math.abs(g.vx) > 0.2 ? g.vx < 0 : g.dx < 0;
           const isTop = Math.abs(g.vy) > 0.2 ? g.vy < 0 : g.dy < 0;
-          
+
           snapXRef.current = isLeft ? "left" : "right";
           snapYRef.current = isTop ? "top" : "bottom";
           saveButtonPos({ x: snapXRef.current, y: snapYRef.current });
 
           const snapTopY = 60;
-          
+
           const targetX = isLeft ? 20 - initX : 0;
           const targetY = isTop ? snapTopY - initY : 0;
-          
+
           currentPos.current = { x: targetX, y: targetY };
-          
+
           _Animated.spring(pan, {
             toValue: { x: targetX, y: targetY },
             useNativeDriver: false
@@ -473,52 +474,84 @@ const AIChatBot = () => {
     return null;
   }
 
+  /** カード1枚ぶんの部員を追加する。追加できたら名前を返す（団体ログインでなければ null） */
+  const カードの人を追加する = (card) => {
+    const { name, grade, gender } = card.args;
+    // 性別の値をアプリの定義（男子・女子・未設定）にマッピング変換
+    let finalGender = '未設定';
+    if (gender === 'male' || gender === '男子') {
+      finalGender = '男子';
+    } else if (gender === 'female' || gender === '女子') {
+      finalGender = '女子';
+    }
+    // 部員の追加は団体ログインのときだけ通る（ストア側で止めている）。
+    // 確かめずに「追加しました」と出していたため、個人で入っている人には
+    // 権限エラーの帯と「追加しました」が同時に出ていた
+    if (activeRole !== 'group') return null;
+    addMember(name, finalGender, Number(grade) || 1);
+    return name;
+  };
+
   const handleActionResponse = (msgId, isApproved) => {
     const targetMsgIndex = messages.findIndex(m => m.id === msgId);
     if (targetMsgIndex === -1) return;
     const targetMsg = messages[targetMsgIndex];
     if (!targetMsg || targetMsg.status !== 'pending') return;
-    
+
     const updatedMessages = [...messages];
     updatedMessages[targetMsgIndex] = { ...targetMsg, status: isApproved ? 'approved' : 'rejected' };
-    
+
     if (isApproved) {
       if (targetMsg.actionType === 'addMember') {
-        const { name, grade, gender } = targetMsg.args;
-        // 性別の値をアプリの定義（男子・女子・未設定）にマッピング変換
-        let finalGender = '未設定';
-        if (gender === 'male' || gender === '男子') {
-          finalGender = '男子';
-        } else if (gender === 'female' || gender === '女子') {
-          finalGender = '女子';
-        }
-        // 部員の追加は団体ログインのときだけ通る（ストア側で止めている）。
-        // 確かめずに「追加しました」と出していたため、個人で入っている人には
-        // 権限エラーの帯と「追加しました」が同時に出ていた
-        if (activeRole !== 'group') {
-          updatedMessages.push({
-            id: generateMsgId(),
-            role: 'model',
-            text: 'メンバーの追加は団体ログインのときだけできます。追加していません。',
-          });
-        } else {
-          addMember(name, finalGender, grade);
-          updatedMessages.push({ id: generateMsgId(), role: 'model', text: `${name}さんをメンバーに追加しました。` });
-        }
+        const 名 = カードの人を追加する(targetMsg);
+        updatedMessages.push({
+          id: generateMsgId(),
+          role: 'model',
+          text: 名 ? `${名}さんをメンバーに追加しました。` : 'メンバーの追加は団体ログインのときだけできます。追加していません。',
+        });
       }
     } else {
       updatedMessages.push({ id: generateMsgId(), role: 'model', text: `操作をキャンセルしました。` });
     }
-    
+
     setMessages(updatedMessages);
     setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
   };
+
+  /** 待っているカードを全部まとめて承認する／キャンセルする（部員を何人も頼んだとき） */
+  const handleAllPending = (isApproved) => {
+    const 待ち = messages.filter((m) => m.role === 'actionCard' && m.status === 'pending');
+    if (!待ち.length) return;
+    const 追加した = [];
+    let 断られた = false;
+    const updatedMessages = messages.map((m) => {
+      if (m.role !== 'actionCard' || m.status !== 'pending') return m;
+      if (isApproved && m.actionType === 'addMember') {
+        const 名 = カードの人を追加する(m);
+        if (名) 追加した.push(名);
+        else 断られた = true;
+      }
+      return { ...m, status: isApproved ? 'approved' : 'rejected' };
+    });
+    updatedMessages.push({
+      id: generateMsgId(),
+      role: 'model',
+      text: !isApproved
+        ? `${待ち.length}件の操作をキャンセルしました。`
+        : 断られた
+          ? 'メンバーの追加は団体ログインのときだけできます。追加していません。'
+          : `${追加した.length}人をメンバーに追加しました：${追加した.join('、')}`,
+    });
+    setMessages(updatedMessages);
+    setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+  };
+  const 待っているカードの数 = messages.filter((m) => m.role === 'actionCard' && m.status === 'pending').length;
 
   const handleSend = async () => {
     if (!inputText.trim() || isLoading) return;
     const userMsg = inputText.trim();
     setInputText("");
-    
+
     const newMessages = [...messages, { id: generateMsgId(), role: "user", text: userMsg }];
     setMessages(newMessages);
     setIsLoading(true);
@@ -553,7 +586,7 @@ const AIChatBot = () => {
         `\n[部員一覧（計${members.length}名）]\n${memberList}`;
 
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-      
+
       // Function Calling の宣言
       const tools = [{
         functionDeclarations: [
@@ -647,7 +680,7 @@ const AIChatBot = () => {
           },
           {
             name: "addMember",
-            description: "新しい部員を追加します。追加する前にユーザーへの確認が行われます。",
+            description: "新しい部員を1人追加します。追加する前にユーザーへの確認が行われます。2人以上は addMembers を使ってください。",
             parameters: {
               type: "OBJECT",
               properties: {
@@ -657,15 +690,40 @@ const AIChatBot = () => {
               },
               required: ["name", "grade", "gender"]
             }
+          },
+          {
+            name: "addMembers",
+            description: "新しい部員を2人以上まとめて追加します。人ごとに確認のカードが出て、利用者がまとめて承認できます。「山田と佐藤を追加して」「1年生を3人登録して」のように複数人を頼まれたときは、addMember を何度も呼ばず、必ずこちらを1回だけ呼んでください。",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                members: {
+                  type: "ARRAY",
+                  description: "追加する部員の一覧",
+                  items: {
+                    type: "OBJECT",
+                    properties: {
+                      name: { type: "STRING", description: "名前" },
+                      grade: { type: "INTEGER", description: "学年（1〜4など）" },
+                      gender: { type: "STRING", description: "性別（'male', 'female', '未設定' のいずれか）" }
+                    },
+                    required: ["name", "grade", "gender"]
+                  }
+                }
+              },
+              required: ["members"]
+            }
           }
         ]
       }];
 
-      const model = genAI.getGenerativeModel({ 
+      const model = genAI.getGenerativeModel({
         // flash-lite は最も軽い層で、道具の使い忘れや数字の取り違えが起きやすい。
         // flash に上げると質問の取り違えが減る。そのぶん無料枠の消費は速く、
         // 上限（429）に当たりやすくなるので、当たったときの待ちの作りはそのまま残す
-        model: "gemini-2.5-flash", 
+        // 2026-09-13 に 3.6-flash へ。2.5-flash は新しい鍵では使えず、無料枠も模型ごとなので、
+        // 写真の読み取りと同じ模型にそろえる（道具の呼び出しは検証環境で確かめた）
+        model: "gemini-3.6-flash",
         systemInstruction: fullInstruction,
         tools: tools
       });
@@ -707,27 +765,27 @@ const AIChatBot = () => {
       console.log('[AIChatBot] Sending message with Function Calling enabled...');
       let result = await 送る([{text: userMsg}]);
       let response = await result.response;
-      
+
       // Function Calling の処理ループ
       let calls = response.functionCalls ? response.functionCalls() : [];
       let loopCount = 0;
-      
+
       while (calls && calls.length > 0 && loopCount < 5) {
         loopCount++;
         const functionResponses = [];
         let hasPendingAction = false;
         const pendingActionCards = [];
-        
+
         for (const call of calls) {
           // 引数の中身には部員の氏名が入る。共用端末で読まれるので、
       // どの引数が来たかだけにする（不具合を追うにはこれで足りる）
       console.log('[AIChatBot] Function Called:', call.name, Object.keys(call.args || {}));
-          
+
           if (call.name === "getAllMembersStats") {
             const { dateFrom, dateTo, sortBy, limit, minShots } = call.args;
             const from = dateFrom ? new Date(dateFrom).getTime() : 0;
             const to = dateTo ? new Date(dateTo).getTime() + 86400000 : Infinity;
-            
+
             // 数える・並べる・絞るは、すべてここで済ませる。
             // 人数ぶんの表を渡して模型に選ばせると取り違えるため
             const 結果 = 全員の成績(members, sessions, {
@@ -815,15 +873,15 @@ const AIChatBot = () => {
           } else if (call.name === "getDetailedMemberStats") {
             const targetName = call.args.memberName;
             const cleanTargetName = targetName.replace(/\s/g, '');
-            
+
             let targetMember = members.find(m => {
               const cleanMName = m.name.replace(/\s/g, '');
               return cleanMName.includes(cleanTargetName) || cleanTargetName.includes(cleanMName);
             });
-            
+
             let targetId = targetMember ? targetMember.id : null;
             let finalTargetName = targetMember ? targetMember.name : targetName;
-            
+
             // archers を持たない記録が1件でも混ざると、この道具ごと落ちる。
             // 「集計に含めない」にした記録も外す。外さないと、同じ人について
             // 順位（全員の成績）と個人の詳細で的中率が食い違う
@@ -842,7 +900,7 @@ const AIChatBot = () => {
                 return cleanSubName.includes(cleanTargetName) || cleanTargetName.includes(cleanSubName);
               });
             }));
-            
+
             let statsData = { error: "選手が見つかりませんでした。" };
 
             // 成績は部員IDで数える。名簿に無い名前（ゲストなど）は、記録に
@@ -864,7 +922,7 @@ const AIChatBot = () => {
               const kaichu = 集.成績を数える(使える記録, targetId).patterns.kaichu;
               let recentTotal = 0, recentHit = 0;
               let totalSessions = 0;
-              
+
               const sortedSessions = [...使える記録].sort((a, b) => (b.created || 0) - (a.created || 0));
               sortedSessions.forEach((session, sessionIdx) => {
                 let participatedInSession = false;
@@ -872,7 +930,7 @@ const AIChatBot = () => {
                   if (!archer || !archer.marks) return;
                   archer.marks.forEach((m, idx) => {
                     if (m !== '○' && m !== '×') return;
-                    
+
                     // 部員IDだけで判定する。氏名の部分一致では「田中」が
                     // 「田中一郎」を拾うなど、別人の射が混ざる
                     if (集.その人の射か(archer, idx, targetId)) {
@@ -886,7 +944,7 @@ const AIChatBot = () => {
                         recentTotal++;
                         if (m === '○') recentHit++;
                       }
-                      
+
                       // 大前 (1番目)
                       if (archerIdx === 0) {
                         omaeTotal++;
@@ -899,43 +957,43 @@ const AIChatBot = () => {
                       }
                     }
                   });
-                  
+
                 });
                 if (participatedInSession) {
                   totalSessions++;
                 }
               });
-              
+
               const recentSessionsDetail = [];
               sortedSessions.forEach(session => {
                 if (recentSessionsDetail.length >= 5) return;
-                
+
                 let archerIndex = -1;
                 let foundArcher = null;
-                
+
                 session.archers.forEach((archer, idx) => {
                   if (!archer || !archer.marks) return;
                   let hasParticipation = false;
                   archer.marks.forEach((m, shotIdx) => {
                     if (m !== '○' && m !== '×') return;
-                    
+
                     if (集.その人の射か(archer, shotIdx, targetId)) hasParticipation = true;
                   });
-                  
+
                   if (hasParticipation) {
                     archerIndex = idx;
                     foundArcher = archer;
                   }
                 });
-                
+
                 if (foundArcher) {
                   const d = new Date(session.date || 0);
                   const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-                  
+
                   let positionName = `${archerIndex + 1}番目`;
                   if (archerIndex === 0) positionName = "大前";
                   else if (session.archers.length >= 3 && archerIndex === session.archers.length - 1) positionName = "落";
-                  
+
                   // 列ぜんぶではなく、その人が引いたぶんだけを数える。
                   // 交代があると、列には2人ぶんの○×が入っている
                   let marksStr = '';
@@ -948,7 +1006,7 @@ const AIChatBot = () => {
                     total++;
                     if (m === '○') hits++;
                   });
-                  
+
                   recentSessionsDetail.push({
                     date: dateStr,
                     title: session.title || "無題",
@@ -958,7 +1016,7 @@ const AIChatBot = () => {
                   });
                 }
               });
-              
+
               statsData = {
                 name: finalTargetName,
                 totalSessions: totalSessions,
@@ -975,7 +1033,7 @@ const AIChatBot = () => {
                 recentSessionsDetail: recentSessionsDetail
               };
             }
-            
+
             functionResponses.push({
               functionResponse: {
                 name: call.name,
@@ -1025,7 +1083,7 @@ const AIChatBot = () => {
                 if (!a || !a.marks) return;
                 const subs = a.substitutions || {};
                 const subIndices = Object.keys(subs).map(Number).sort((e, t) => e - t);
-                
+
                 a.marks.forEach((mk, shotIdx) => {
                   let currentName = a.name || 'ゲスト';
                   for (const subIdx of subIndices) {
@@ -1111,20 +1169,26 @@ const AIChatBot = () => {
                     }
               }
             });
-          } else if (call.name === "addMember") {
-            const newMsg = {
-               id: generateMsgId(),
-               role: "actionCard",
-               actionType: "addMember",
-               args: call.args,
-               status: "pending",
-               callName: call.name
-            };
-            pendingActionCards.push(newMsg);
-            hasPendingAction = true;
+          } else if (call.name === "addMember" || call.name === "addMembers") {
+            // addMembers は人ごとにカードにする（1枚ずつ見て、まとめて承認できる）
+            const 人たち = call.name === "addMembers"
+              ? (Array.isArray(call.args && call.args.members) ? call.args.members : [])
+              : [call.args];
+            for (const 人 of 人たち) {
+              if (!人 || !String(人.name || "").trim()) continue;
+              pendingActionCards.push({
+                id: generateMsgId(),
+                role: "actionCard",
+                actionType: "addMember",
+                args: 人,
+                status: "pending",
+                callName: call.name
+              });
+              hasPendingAction = true;
+            }
           }
         }
-        
+
         // 複数の addMember カードをまとめて追加
         if (hasPendingAction) {
           // 流しながら出していた途中の札は捨てる。道具を呼ぶ前に少しだけ
@@ -1134,7 +1198,7 @@ const AIChatBot = () => {
           setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
           return;
         }
-        
+
         if (functionResponses.length > 0) {
           // 関数実行結果をモデルに返す
           result = await 送る(functionResponses);
@@ -1151,7 +1215,7 @@ const AIChatBot = () => {
       } catch (e) {
         console.warn("[AIChatBot] Text extraction failed:", e);
       }
-      
+
       if (!responseText || responseText.trim() === "") {
         responseText = "（回答を生成できませんでした。もう一度お試しください）";
       }
@@ -1344,6 +1408,18 @@ const AIChatBot = () => {
               )}
             </_ScrollView>
 
+            {待っているカードの数 >= 2 && (
+              <_View style={styles.まとめて承認の段} testID="chat-bulk-approve">
+                <_Text style={styles.まとめて承認の文}>{待っているカードの数}件の追加が待っています</_Text>
+                <_TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#FF3B30' }]} onPress={() => handleAllPending(false)}>
+                  <_Text style={styles.actionBtnText}>すべてキャンセル</_Text>
+                </_TouchableOpacity>
+                <_TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#34C759' }]} onPress={() => handleAllPending(true)}>
+                  <_Text style={styles.actionBtnText}>すべて承認</_Text>
+                </_TouchableOpacity>
+              </_View>
+            )}
+
             <_View style={styles.inputArea}>
               {/*
                 打ちかけの続きを、入力欄の中に薄く重ねて見せる。
@@ -1378,6 +1454,8 @@ const AIChatBot = () => {
               </_View>
               <_TouchableOpacity
                 style={[styles.sendBtn, (!inputText.trim() || isLoading) && { opacity: 0.5 }]}
+                testID="AIに送る"
+                accessibilityLabel="送信"
                 onPress={handleSend}
                 disabled={!inputText.trim() || isLoading}
               >
@@ -1460,5 +1538,8 @@ const styles = _StyleSheet.create({
   input: { flex: 1, backgroundColor: "#F2F2F7", borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8, maxHeight: 100, fontSize: 15, lineHeight: 20 },
   sendBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#007AFF", justifyContent: "center", alignItems: "center" },
   actionBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 16 },
+  // 部員を何人も頼んだとき、カードを1枚ずつ押さずに済むよう入力欄の上に出す
+  まとめて承認の段: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderTopWidth: 1, borderTopColor: '#E5E5EA', backgroundColor: '#F9F9FB' },
+  まとめて承認の文: { flex: 1, fontSize: 13, color: '#3A3A3C' },
   actionBtnText: { color: "#FFF", fontSize: 13, fontWeight: "bold" }
 });

@@ -43,6 +43,26 @@ export async function 案内を止める(page) {
 }
 
 /**
+ * 入れたマスの自動ロックを入れる（既定はオフ。2026-09-13 に使う人が決めた）。
+ * 自動ロックそのものを見る検査は、これを page.goto の前に呼ぶ。
+ * 端末に残る設定（archery-score-storage）へ書くので、開いたときからオンになる
+ */
+export async function 自動ロックを入れる(page) {
+  await page.addInitScript(() => {
+    const 鍵 = 'archery-score-storage';
+    let 中 = {};
+    try {
+      中 = JSON.parse(localStorage.getItem(鍵) || '{}') || {};
+    } catch {
+      中 = {};
+    }
+    中.state = Object.assign({}, 中.state || {}, { 自動ロックする: true });
+    if (中.version == null) 中.version = 0;
+    localStorage.setItem(鍵, JSON.stringify(中));
+  });
+}
+
+/**
  * 案内をあえて出す。案内そのものを見る検査で使う。
  *
  * 案内を止める が仕掛けた「移動のたびに止め直す」を、断りの印で外す。
