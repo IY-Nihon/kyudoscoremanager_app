@@ -248,6 +248,32 @@ export function 特徴にする(画) {
   return 出;
 }
 
+/**
+ * 輪の覆い … 網に届く形（20×20 の墨）の外側の輪を12の扇に分け、墨のある扇の割合。
+ *
+ * 丸の仲間（◎・○＼・○／）は輪がぐるりと在るので 0.67 以上（本物160マスの最小）。
+ * × は斜めの2本だけなので中央 0.42、9割が 0.58 以下。
+ * 細いペンの小さな × を網が ○＼ と読んだ（本物、0.7〜0.9 の確からしさで）ので、
+ * 輪が半分も無ければ × に倒す守りに使う（src/ocr/yomu.js）
+ */
+export function 輪の覆い(形, 扇 = 12) {
+  const 中 = (辺 - 1) / 2;
+  const 最 = new Float32Array(扇);
+  for (let y = 0; y < 辺; y++) {
+    for (let x = 0; x < 辺; x++) {
+      const r = Math.hypot(x - 中, y - 中);
+      if (r < 中 * 0.55 || r > 中 * 1.05) continue;
+      const 角 = Math.atan2(y - 中, x - 中);
+      const s = Math.floor(((角 + Math.PI) / (2 * Math.PI)) * 扇) % 扇;
+      const v = 形[y * 辺 + x];
+      if (v > 最[s]) 最[s] = v;
+    }
+  }
+  let n = 0;
+  for (const v of 最) if (v >= 0.45) n++;
+  return n / 扇;
+}
+
 /** 3×3 の平均でならす */
 function ならす(画, 幅, 高) {
   const 出 = new Uint8Array(幅 * 高);
