@@ -73,7 +73,8 @@ test.describe('確認画面', () => {
     const 返事 = {
       teams: [0, 1].map((i) => ({
         name: '', cellStyle: '2射', tachiPeople: 4,
-        rows: 射手たち.slice(i * 8, i * 8 + 8).map((s) => ({ name: s.名, cells: Array(10).fill('') })),
+        // roster は null（名簿に無い＝ゲスト）。無いと古い文字比較が「11」を部員1に寄せて要選択になり、反映できない
+        rows: 射手たち.slice(i * 8, i * 8 + 8).map((s) => ({ name: s.名, roster: null, cells: Array(10).fill('') })),
       })),
     };
     await page.route(/generativelanguage\.googleapis\.com/, (route) =>
@@ -89,22 +90,11 @@ test.describe('確認画面', () => {
     await 画面が出るまで待つ(page);
     await 入り口が決まるまで待つ(page);
     await 団体で入る(page, '100007', 'StgTest!2026');
-    // 板は10段（20射）。団体の設定は8射なので、端末に残る設定だけ20射にして開き直す
-    await page.evaluate(() => {
-      const 鍵 = 'archery-score-storage';
-      const 中 = JSON.parse(localStorage.getItem(鍵) || '{}');
-      中.state = { ...(中.state || {}), shotsPerRound: 20 };
-      localStorage.setItem(鍵, JSON.stringify(中));
-    });
-    await page.reload();
-    await 画面が出るまで待つ(page);
-    await 入り口が決まるまで待つ(page);
     await page.waitForFunction(() => window.端末の読み取り != null, null, { timeout: 60_000 });
 
     await page.getByText('画像', { exact: true }).first().click();
     await page.getByText('紙の記録', { exact: true }).click();
     await page.getByText('板が2つ（外側が大前）', { exact: true }).click();
-    await page.getByText('下から書く', { exact: true }).click();
     const 選ぶ = page.waitForEvent('filechooser');
     await page.getByText('画像を選択', { exact: true }).click();
     await (await 選ぶ).setFiles('docs/ocr-samples/PXL_20260906_081921509.jpg');
@@ -112,6 +102,8 @@ test.describe('確認画面', () => {
     await page.getByText('この画像で解析する', { exact: true }).click();
 
     await expect(page.getByText('○×は端末で読み取りました（名前と並びはAI）。')).toBeVisible({ timeout: 120_000 });
+    // 射数は写真に合わせる（団体の設定は8射、板は20射）
+    await expect(page.getByText('射数を8射から20射に合わせます', { exact: false })).toBeVisible();
     await expect(page.getByText('読み取りが迷ったマス', { exact: true })).toBeVisible();
     // 迷ったマスには途中交代の段（2射）が入る。canvas の復号はブラウザで少し違い、
     // 際どいマスがほかに数個入ることがある（Chromium で3マス）。多すぎなければよい
@@ -126,5 +118,18 @@ test.describe('確認画面', () => {
     // タップして直すと、そのマスの色は消える
     await 迷い.first().click();
     await expect(迷い).toHaveCount(数 - 1);
+
+    // 反映すると、記録表の射数が写真に合わせて 8 → 20 に広がり、16人が後ろに足される。
+    // 手元の盤面が変わるだけで、クラウドには書かない（終了・保存は押さない）
+    await expect(page.getByText('8射', { exact: true })).toBeVisible();
+    await page.getByText('記録表に反映する', { exact: true }).click();
+    await expect(page.getByText('20射', { exact: true })).toBeVisible({ timeout: 15_000 });
+    const 盤面 = await page.evaluate(() => {
+      const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}').state || {};
+      return { shotsPerRound: s.shotsPerRound, 人数: (s.archers || []).filter((a) => a && !a.isSeparator && !a.isTotalCalculator).length };
+    });
+    expect(盤面.shotsPerRound).toBe(20);
+    expect(盤面.人数, '16人が足されていない').toBe(16);
+    await expect(page.getByText('画像から記録を読み取りました')).toBeVisible({ timeout: 15_000 });
   });
 });

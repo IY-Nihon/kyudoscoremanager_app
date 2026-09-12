@@ -119,6 +119,8 @@ const OCRRecordModal = ({
   onApply,
   // 記録表にすでに中身があるか。あるときは置き換わることを確かめる
   hasExistingRecord = false,
+  // いまの記録表で埋まっている射数（いちばん後ろの○×の位置）。射数を合わせるのに使う
+  記入済みの射数 = 0,
 }) => {
   const [step, setStep] = useState("pick"); // pick | analyzing | preview
   // lineup: ホワイトボードの立ち順表（名前のみ）
@@ -141,11 +143,12 @@ const OCRRecordModal = ({
   //   '左右から' … 板が2つ。それぞれ外側が大前（左の板は左から、右の板は右から）
   const [向き, set向き] = useState("右から");
   // すでに記録表に人が居るときの入れ方。'置き換える' か '後ろに足す'
-  const [反映のしかた, set反映のしかた] = useState("置き換える");
+  // 読み取った人は、いまの記録表の後ろに足す（置き換えは無くした）
   // 縦の表で、1射目がどちら側か。板は下から書き足されることがある。
   // 実物で確かめた（団体910280 の板は下から。合計欄も下から 22→44→65→88→107 と増える）。
   // 取り違えると、その人の○×が丸ごと逆順になる
-  const [起点, set起点] = useState("上から");
+  // 1射目は「下から」で固定（ヒアリング 2026-09-11：板も紙も黒板も下から）。
+  // 横書きの紙（1行1人・左から1射目）だけは、Gemini が返す layout で見分ける
   // ○×をどこで読んだか。'端末' なら板の印を端末で読み替えた。'AI' は Gemini のまま
   const [読み取り元, set読み取り元] = useState("AI");
 
@@ -157,8 +160,6 @@ const OCRRecordModal = ({
     setStep("pick");
     setMode("lineup");
     set向き("右から");
-    set反映のしかた("置き換える");
-    set起点("上から");
     setImages([]);
     setTachiList([]);
     setRecordRows([]);
@@ -301,7 +302,7 @@ const OCRRecordModal = ({
           : [{ name: "", cellStyle: "1射", tachiPeople: 0, rows: Array.isArray(parsed.rows) ? parsed.rows : [] }];
         // ○×のマスは端末で読み替える（板でも紙でも）。合わなければ Gemini のまま
         const 差し替え = IS_WEB
-          ? await マスを端末で差し替える(生のteams, images, { 向き, shotsPerRound, 道具: 画像の道具, 重み: 板の重み, 紙の重み })
+          ? await マスを端末で差し替える(生のteams, images, { 向き, 道具: 画像の道具, 重み: 板の重み, 紙の重み })
           : { teams: 生のteams, 読み取り元: "AI", 訳: "Web でないので端末の読み取りは使わない" };
         if (差し替え.訳) console.log("[OCRRecordModal] 端末の読み取りを使わなかった:", 差し替え.訳);
         set読み取り元(差し替え.読み取り元);
@@ -309,6 +310,9 @@ const OCRRecordModal = ({
         const rawRows = [];
         teams.forEach((t, ti) => {
           const 一マス = t && t.cellStyle === "1射" ? "1射" : "2射";
+          // 縦の表（板・縦書きの紙）は下が1射目なので見た目の順を逆にする。
+          // 横書きの紙（1行1人）は左が1射目なので、見た目の順のまま
+          const 起点 = t && t.layout === "横" ? "上から" : "下から";
           const 立の人数 = Number(t && t.tachiPeople) > 0 ? Number(t.tachiPeople) : 0;
           (Array.isArray(t && t.rows) ? t.rows : []).forEach(r => {
             // マスの見た目で返ってきたら、こちらで1射ずつに開く。
@@ -417,9 +421,10 @@ const OCRRecordModal = ({
       return {
         rawText,
         ...m,
-        marks: normalizeMarks(r?.marks, shotsPerRound),
+        // 確認画面では写真で読めた射数のぶんを見せる（設定の射数で切らない）
+        marks: normalizeMarks(r?.marks, Math.max(1, Array.isArray(r?.marks) ? r.marks.length : 0, Number(記入済みの射数) || 0)),
         // 端末の読み取りが迷ったマス（射ごと）。タップして直したら消える
-        迷い: Array.from({ length: shotsPerRound }, (_, i) => Boolean(r?.迷い?.[i])),
+        迷い: Array.from({ length: Math.max(1, Array.isArray(r?.marks) ? r.marks.length : 0, Number(記入済みの射数) || 0) }, (_, i) => Boolean(r?.迷い?.[i])),
         // AI が読み取った実際の列数。設定と食い違う場合に警告を出すため保持する
         detectedShots: Array.isArray(r?.marks) ? r.marks.length : 0,
         // 板が2つ写っていたときの、どちらの板か。立の切れ目に「計」を入れるための人数
@@ -431,14 +436,15 @@ const OCRRecordModal = ({
     setStep("preview");
   };
 
-  // 設定の射数と、実際に読み取れた列数が食い違っていないか
-  const shotsMismatch = useMemo(() => {
-    if (mode !== "record" || recordRows.length === 0) return null;
-    const counts = recordRows.map(r => r.detectedShots).filter(n => n > 0);
-    if (counts.length === 0) return null;
-    const max = Math.max(...counts);
-    return max !== shotsPerRound ? max : null;
-  }, [mode, recordRows, shotsPerRound]);
+  // 射数は設定に縛らず、「写真で読めた射数」と「いまの記録表で埋まっている射数」の
+  // 多いほうに合わせる（設定より多ければ記録表を広げ、少なければ縮める。埋まった
+  // マスは消えない）。以前は設定の射数で切り捨てていて、20射の板を8射の設定で
+  // 読むと後ろが落ちていた
+  const 合わせる射数 = useMemo(() => {
+    if (mode !== "record" || recordRows.length === 0) return shotsPerRound;
+    const 写真 = Math.max(0, ...recordRows.map(r => Number(r.detectedShots) || 0));
+    return Math.max(1, 写真, Number(記入済みの射数) || 0);
+  }, [mode, recordRows, shotsPerRound, 記入済みの射数]);
 
   /** プレビュー上で ○ → × → 未記録 を切り替える */
   const toggleRecordMark = (rowIdx, markIdx) => {
@@ -509,8 +515,8 @@ const OCRRecordModal = ({
   const 仕切りを作る = (種) => ({
     id: generateUUID(),
     name: "区切り" === 種 ? "---" : "計",
-    marks: Array(shotsPerRound).fill(""),
-    arrowLocations: Array(shotsPerRound).fill(null),
+    marks: Array(合わせる射数).fill(""),
+    arrowLocations: Array(合わせる射数).fill(null),
     gender: "未設定",
     grade: 0,
     isGuest: false,
@@ -527,8 +533,8 @@ const OCRRecordModal = ({
         const base = {
           id: generateUUID(),
           name: "",
-          marks: normalizeMarks(row.marks, shotsPerRound),
-          arrowLocations: Array(shotsPerRound).fill(null),
+          marks: normalizeMarks(row.marks, 合わせる射数),
+          arrowLocations: Array(合わせる射数).fill(null),
           gender: "未設定",
           grade: 1,
           isGuest: false,
@@ -645,23 +651,9 @@ const OCRRecordModal = ({
     return result;
   };
 
-  // 読み取った結果は記録表を丸ごと置き換える。すでに記録が入っているなら、
-  // 消えることを伝えてから進む。ここで確かめるのは、断ったときに読み取り結果を
-  // 残したままこの画面に留まれるようにするため（呼び出し側だと画面が閉じてしまう）
-  const 確かめてから = (進む) => {
-    if (!hasExistingRecord) return 進む();
-    // 後ろに足すなら、いまの記録表は消えない。確かめる必要がない
-    if (反映のしかた === "後ろに足す") return 進む();
-    const 文 = "いま記録表にある内容は消えて、読み取った結果に置き換わります。よろしいですか？";
-    if (IS_WEB) {
-      require('./alertBridge').default.alert('確認', 文, [{ text: 'キャンセル', style: 'cancel' }, { text: 'OK', onPress: 進む }]);
-    } else {
-      _Alert.alert("確認", 文, [
-        { text: "キャンセル", style: "cancel" },
-        { text: "OK", onPress: 進む },
-      ]);
-    }
-  };
+  // 読み取った人は、いまの記録表の後ろに足す。何も消えないので確かめは要らない
+  const 反映のしかた = "後ろに足す";
+  const 確かめてから = (進む) => 進む();
 
   const handleApply = () => {
     if (mode === "record") {
@@ -675,8 +667,9 @@ const OCRRecordModal = ({
         return;
       }
       確かめてから(() => {
-        // どちらの読み取りかを渡す。呼び出し側の知らせの文言が変わる
-        onApply && onApply(archers, "record", 反映のしかた);
+        // どちらの読み取りかを渡す。呼び出し側の知らせの文言が変わる。
+        // 射数は、写真で読めた数といまの記録表で埋まっている数の多いほうに合わせる
+        onApply && onApply(archers, "record", 反映のしかた, 合わせる射数);
         handleClose();
       });
       return;
@@ -849,9 +842,9 @@ const OCRRecordModal = ({
 
               <_Text style={styles.hint}>
                 {mode === "record"
-                  ? `的中記録（紙でもホワイトボードでも構いません）を撮影・選択してください。氏名と1射ごとの○×を読み取ります（1人${shotsPerRound}射の設定）。1枚に収まらない場合は続けて追加できます。
+                  ? `的中記録（紙でもホワイトボードでも構いません）を撮影・選択してください。氏名と1射ごとの○×を読み取り、いまの記録表の後ろに足します。射数は写真に合わせます。1枚に収まらない場合は続けて追加できます。
 
-※ ホワイトボードの○×は、1枚に大勢を写すほど読み違えます。実測では、16人を1枚に写すと4分の1しか合いませんでしたが、4人（1立）ずつに分けて撮ると8割まで上がりました。氏名と並びだけなら1枚で正しく取れます。`
+※ 1射目はいちばん下のマス（横書きの紙は左端）として読みます。読み取った結果は次の画面で必ず確かめてください。`
                   : "ホワイトボードの立ち順表を撮影・選択してください。1枚に収まらない場合は続けて追加できます。"}
               </_Text>
 
@@ -878,54 +871,6 @@ const OCRRecordModal = ({
                   ? "リーグの対戦などで、板が向かい合って2つ並んでいるときに選んでください。左の板は左から、右の板は右から読み、間に区切りを入れます。"
                   : "写真の中で、大前（一的）の人がどちら側に書かれているかを選んでください。"}
               </_Text>
-
-              {/* 板は下から書き足されることがある。取り違えると、その人の○×が
-                  丸ごと逆順になる（実物の板で踏んだ） */}
-              <_Text style={styles.settingLabel}>1射目はどちらに書かれていますか</_Text>
-              <_View style={styles.modeRow}>
-                {[
-                  { 値: "上から", 札: "上から書く" },
-                  { 値: "下から", 札: "下から書く" },
-                ].map((x) => (
-                  <_TouchableOpacity
-                    key={x.値}
-                    style={[styles.modeBtn, 起点 === x.値 && styles.modeBtnActive]}
-                    onPress={() => { set起点(x.値); setErrorMsg(""); }}
-                  >
-                    <_Text style={[styles.modeBtnText, 起点 === x.値 && styles.modeBtnTextActive]}>{x.札}</_Text>
-                  </_TouchableOpacity>
-                ))}
-              </_View>
-              <_Text style={styles.settingNote}>
-                {起点 === "下から"
-                  ? "いちばん下の行が1立目です。合計欄の数が下から上へ増えていく板は、こちらです。"
-                  : "いちばん上の行が1立目です。ふつうの紙の記録表はこちらです。"}
-              </_Text>
-
-              {hasExistingRecord && (
-                <_View>
-                  <_Text style={styles.settingLabel}>いまの記録表はどうしますか</_Text>
-                  <_View style={styles.modeRow}>
-                    {[
-                      { 値: "置き換える", 札: "置き換える" },
-                      { 値: "後ろに足す", 札: "後ろに足す" },
-                    ].map((x) => (
-                      <_TouchableOpacity
-                        key={x.値}
-                        style={[styles.modeBtn, 反映のしかた === x.値 && styles.modeBtnActive]}
-                        onPress={() => { set反映のしかた(x.値); setErrorMsg(""); }}
-                      >
-                        <_Text style={[styles.modeBtnText, 反映のしかた === x.値 && styles.modeBtnTextActive]}>{x.札}</_Text>
-                      </_TouchableOpacity>
-                    ))}
-                  </_View>
-                  <_Text style={styles.settingNote}>
-                    {反映のしかた === "後ろに足す"
-                      ? "いまの記録表はそのまま残り、読み取った人がその後ろに並びます。"
-                      : "いまの記録表の内容は消えて、読み取った結果に置き換わります。"}
-                  </_Text>
-                </_View>
-              )}
 
               {images.length > 0 && (
                 <_View style={styles.thumbRow}>
@@ -994,17 +939,10 @@ const OCRRecordModal = ({
                   </_Text>
                 )}
 
-                {shotsMismatch != null && (
-                  <_View style={styles.errorBox}>
-                    <Ionicons name="warning" size={16} color="#FF9500" />
-                    <_Text style={styles.errorText}>
-                      表からは{shotsMismatch}射ぶん読み取れましたが、アプリの設定は{shotsPerRound}射です。
-                      {shotsMismatch > shotsPerRound
-                        ? `${shotsPerRound}射目までを取り込みます。`
-                        : "足りない分は未記録になります。"}
-                      必要なら閉じてから設定の射数を変更してください。
-                    </_Text>
-                  </_View>
+                {合わせる射数 !== shotsPerRound && (
+                  <_Text style={styles.hint}>
+                    射数を{shotsPerRound}射から{合わせる射数}射に合わせます（写真といまの記録表の多いほう）。
+                  </_Text>
                 )}
 
                 <_View style={styles.legendRow}>
@@ -1033,7 +971,7 @@ const OCRRecordModal = ({
                         >
                           <_Text style={styles.recordNameText} numberOfLines={1}>{seatLabel(row)}</_Text>
                         </_TouchableOpacity>
-                        <_Text style={styles.recordScoreText}>{hits}/{shots || shotsPerRound}</_Text>
+                        <_Text style={styles.recordScoreText}>{hits}/{shots || 合わせる射数}</_Text>
                         <_TouchableOpacity onPress={() => removeRecordRow(rIdx)} style={styles.recordRemoveBtn}>
                           <Ionicons name="trash-outline" size={18} color="#FF3B30" />
                         </_TouchableOpacity>

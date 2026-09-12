@@ -70,7 +70,7 @@ test('マスを端末で差し替える: 紙（1射）の teams を端末の読�
   // Gemini が返したつもりの teams。マスは全部空（読めなかった体）
   const teams = [{ name: '', cellStyle: '1射', tachiPeople: 4, rows: 紙の射手たち.map((s) => ({ name: s.名, cells: Array(20).fill('') })) }];
   const 出 = await マスを端末で差し替える(teams, [{ base64: 'docs/ocr-samples/1788683956272.jpg' }], {
-    向き: '右から', shotsPerRound: 20, 道具: await 道具をつくる(), 重み, 紙の重み,
+    向き: '右から', 道具: await 道具をつくる(), 重み, 紙の重み,
   });
   assert.strictEqual(出.読み取り元, '端末', 出.訳);
   let 合 = 0;
@@ -109,7 +109,7 @@ test('マスを端末で差し替える: 写真2枚に板が1枚ずつでも、�
     rows: 射手たち.slice(i * 8, i * 8 + 8).map((s) => ({ name: s.名, cells: Array(10).fill('') })),
   }));
   const 出 = await マスを端末で差し替える(teams, [{ base64: 左 }, { base64: 右 }], {
-    向き: '左右から', shotsPerRound: 20, 道具: { 画を読む: (p) => 画を読む(p), 回す }, 重み,
+    向き: '左右から', 道具: { 画を読む: (p) => 画を読む(p), 回す }, 重み,
   });
   assert.strictEqual(出.読み取り元, '端末', 出.訳);
   let 合 = 0;
@@ -134,7 +134,7 @@ test('マスを端末で差し替える: Gemini の行の数が板の列の数�
     rows: Array.from({ length: n }, (_, i) => ({ name: String(i + 1), cells: Array(10).fill('') })),
   }));
   const 出 = await マスを端末で差し替える(teams, [{ base64: 'docs/ocr-samples/PXL_20260906_081921509.jpg' }], {
-    向き: '左右から', shotsPerRound: 20, 道具: { 画を読む: (p) => 画を読む(p), 回す }, 重み,
+    向き: '左右から', 道具: { 画を読む: (p) => 画を読む(p), 回す }, 重み,
   });
   assert.strictEqual(出.読み取り元, 'AI');
   assert.match(出.訳 || '', /列の数が合わない/);
