@@ -19,7 +19,10 @@ const _TextInput = require("./TextInput").default; // テーマ変換（既定�
 const _ScrollView = RN.ScrollView;
 const _ActivityIndicator = RN.ActivityIndicator;
 const _Image = RN.Image;
-const _Alert = RN.Alert;
+// React Native の Alert はブラウザでは何も出ない。「候補が複数ある名前が残っています」を
+// 出したつもりで黙っていて、反映を押しても何も起きないように見えた（検証環境で実際に）。
+// アプリの中の窓へ流す橋渡しを使う（機種を問わず同じ見た目で出る）
+const _Alert = require("./alertBridge").default;
 
 const DocumentPicker = require("expo-document-picker");
 const ImagePicker = require("expo-image-picker");
