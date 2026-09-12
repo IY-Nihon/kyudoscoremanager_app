@@ -49,6 +49,20 @@ if (IS_WEB && typeof window !== "undefined") {
       const 元 = await 画像の道具.画を読む(base64);
       return 板の印を読む(元, { 板の人数たち, 行数, 回す: 画像の道具.回す, 重み: 板の重み });
     },
+    // 1マスの切り抜きと、網に届く形（20×20）を返す。読み違えたマスを Node と比べるため
+    マスを見る: async (base64, 板の人数たち, 行数, 板, 列, 行) => {
+      const { 板ごとの格子, 箱の大きさ } = require("../scripts/ocr-cells/kiridasu.mjs");
+      const { 形にする, 切り取る, 辺 } = require("../scripts/ocr-cells/manabu.mjs");
+      const 元 = await 画像の道具.画を読む(base64);
+      const 板たち = await 板ごとの格子(元, { 板の人数たち, 行数, 回す: 画像の道具.回す });
+      const g = 板たち[板].格子;
+      const { 半幅, 半高 } = 箱の大きさ(g);
+      const 左 = Math.max(0, Math.round(g.列[列].中心) - 半幅);
+      const 上 = Math.max(0, Math.round(g.行.位置[行] + (g.列[列].ずれ || 0)) - 半高);
+      const 切 = 切り取る(g.生.画素, g.生.幅, g.生.高, 左, 上, 半幅 * 2, 半高 * 2);
+      const 形 = await 形にする(切.画, 切.幅, 切.高);
+      return { 左, 上, 幅: 切.幅, 高: 切.高, 切: Array.from(切.画), 形: Array.from(形.slice(0, 辺 * 辺)), 画の幅: 元.幅, 画の高: 元.高 };
+    },
     紙の印を読む: async (base64, 人数, 立数, 立のマス) => {
       const { 紙の印を読む } = require("./ocr/yomu");
       const 元 = await 画像の道具.画を読む(base64);
