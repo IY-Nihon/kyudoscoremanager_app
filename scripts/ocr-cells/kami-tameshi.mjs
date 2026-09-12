@@ -7,39 +7,28 @@
  * 本番の記録と射ごとに比べる。数字での辻褄合わせは使わない。
  */
 import sharp from 'sharp';
-import { 紙の格子, 紙の箱 } from './kami.mjs';
+import { 紙の格子, 紙の箱, 紙の表を探す } from './kami.mjs';
 import { 紙の射手たち } from './kiroku.mjs';
 import { 形にする, 前へ, 切り取る } from './manabu.mjs';
 import { 重みを読む } from './chiisaku.mjs';
 import { 崩し方, ゆがませる } from './kuzusu.mjs';
 
 const 元 = 'docs/ocr-samples/1788683956272.jpg';
-// 表より少し広く切る（回すと角が欠けるので）
-const 広め = { left: 350, top: 500, width: 320, height: 700 };
-const 表 = { left: 30, top: 28, width: 260, height: 640 };
 const 人数 = 4, 立数 = 5, 立のマス = 4;
 const 群れ = 重みを読む(process.env.OCR_KAMI_OMOMI || 'scripts/ocr-cells/kami-omomi.json');
 
-const 生 = await sharp(元).extract(広め).greyscale().raw().toBuffer({ resolveWithObject: true });
+// ページ全体を崩し、表の場所は写真から探す（アプリと同じ道）
+const 生 = await sharp(元).greyscale().raw().toBuffer({ resolveWithObject: true });
 const 全 = { 画: 生.data, 幅: 生.info.width, 高: 生.info.height, 面: 1 };
 
 async function 読んでみる(崩し, 味) {
   const 歪み = ゆがませる(全, { 崩し, ...味 });
-  // 崩したあとの表の四隅から切り出す四角を決める（試験なので四隅は知っている）
-  const 隅 = [
-    [表.left, 表.top],
-    [表.left + 表.width, 表.top],
-    [表.left + 表.width, 表.top + 表.height],
-    [表.left, 表.top + 表.height],
-  ].map(([x, y]) => (崩し ? 崩し.写す(x, y) : [x, y]));
-  const xs = 隅.map((p) => p[0]);
-  const ys = 隅.map((p) => p[1]);
-  const 左 = Math.max(0, Math.floor(Math.min(...xs)));
-  const 上 = Math.max(0, Math.floor(Math.min(...ys)));
-  const 切 = 切り取る(歪み.画, 歪み.幅, 歪み.高, 左, 上, Math.ceil(Math.max(...xs)) - 左, Math.ceil(Math.max(...ys)) - 上);
   let g;
   try {
-    g = await 紙の格子({ 画素: 切.画, 幅: 切.幅, 高: 切.高 }, { 人数, 立数, 立のマス });
+    const 四角 = 紙の表を探す({ 画素: 歪み.画, 幅: 歪み.幅, 高: 歪み.高 }, { 人数 });
+    if (!四角) return { 立った: false, 当: 0, 全: 人数 * 立数 * 立のマス };
+    const 切 = 切り取る(歪み.画, 歪み.幅, 歪み.高, 四角.left, 四角.top, 四角.width, 四角.height);
+    g = await 紙の格子({ 画素: 切.画, 幅: 切.幅, 高: 切.高 }, { 人数, 立数, 立のマス, 枠: 四角.枠 });
   } catch (e) {
     return { 立った: false, 当: 0, 全: 人数 * 立数 * 立のマス };
   }

@@ -7,18 +7,24 @@
  * 数字での辻褄合わせは使わない（本番で数字を当てにしないと決めたので）。
  */
 import sharp from 'sharp';
-import { 紙の格子, 紙の箱 } from './kami.mjs';
+import { 紙の格子, 紙の箱, 紙の表を探す } from './kami.mjs';
+import { 画を読む } from './gazou-node.mjs';
 import { 紙の射手たち } from './kiroku.mjs';
 import { 形にする, 前へ, 切り取る } from './manabu.mjs';
 import { 重みを読む } from './chiisaku.mjs';
 
 const 元 = 'docs/ocr-samples/1788683956272.jpg';
-const 紙の区画 = { left: 380, top: 528, width: 260, height: 640 };
 const 人数 = 4, 立数 = 5, 立のマス = 4;
+// 表の場所は写真から探す（アプリと同じ道）。OCR_TEDE=1 なら手で決めた四角
+const 手で = { left: 380, top: 528, width: 260, height: 640 };
 const 群れ = 重みを読む(process.env.OCR_KAMI_OMOMI || 'scripts/ocr-cells/kami-omomi.json');
 
-const { data, info } = await sharp(元).extract(紙の区画).greyscale().raw().toBuffer({ resolveWithObject: true });
-const g = await 紙の格子({ 画素: data, 幅: info.width, 高: info.height }, { 人数, 立数, 立のマス });
+const 全体 = await 画を読む(元);
+const 紙の区画 = process.env.OCR_TEDE ? 手で : 紙の表を探す(全体, { 人数 });
+if (!紙の区画) throw new Error('表が見つかりません');
+console.log('表の四角:', JSON.stringify(紙の区画));
+const { data, info } = await sharp(元).extract({ left: 紙の区画.left, top: 紙の区画.top, width: 紙の区画.width, height: 紙の区画.height }).greyscale().raw().toBuffer({ resolveWithObject: true });
+const g = await 紙の格子({ 画素: data, 幅: info.width, 高: info.height }, { 人数, 立数, 立のマス, 枠: 紙の区画 && 紙の区画.枠 });
 
 let 合った射 = 0;
 let 全射 = 0;
