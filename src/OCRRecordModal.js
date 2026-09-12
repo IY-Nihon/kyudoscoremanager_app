@@ -30,7 +30,7 @@ const { generateUUID } = require("./uuid");
 const { formatMemberName } = require("./formatMemberName");
 const { getShadowStyle } = require("./shadowStyle");
 const { 記録の指示文, 立ち順の指示文, 名簿の手がかり } = require("./ocrPrompts");
-const { マスを開く, 一射目からの順にする } = require("./ocrCells");
+const { マスを開く, 一射目からの順にする, 迷いを開く } = require("./ocrCells");
 // 板と紙の○×は端末で読む（Gemini は線の向きを読めない）。名前と並びは Gemini のまま
 const { マスを端末で差し替える } = require("./ocr/sashikae");
 const 画像の道具 = require("./ocr/gazou-web");
@@ -490,7 +490,11 @@ const OCRRecordModal = ({
             const marks = Array.isArray(r && r.cells) && r.cells.length
               ? マスを開く(一射目からの順にする(r.cells, 起点), 一マス)
               : (Array.isArray(r && r.marks) ? r.marks : []);
-            rawRows.push({ name: r && r.name, marks, チーム番号: ti, 立の人数, チーム名: (t && t.name) || "" });
+            // 端末で読んだときは確からしさが付く。低いマスは確認画面で色を付ける
+            const 迷い = Array.isArray(r && r.確からしさ)
+              ? 迷いを開く(一射目からの順にする(r.確からしさ, 起点), 一マス)
+              : [];
+            rawRows.push({ name: r && r.name, marks, 迷い, チーム番号: ti, 立の人数, チーム名: (t && t.name) || "" });
           });
         });
         // 氏名も的中も空の行は表の余白なので落とす
@@ -582,6 +586,8 @@ const OCRRecordModal = ({
         rawText,
         ...m,
         marks: normalizeMarks(r?.marks, shotsPerRound),
+        // 端末の読み取りが迷ったマス（射ごと）。タップして直したら消える
+        迷い: Array.from({ length: shotsPerRound }, (_, i) => Boolean(r?.迷い?.[i])),
         // AI が読み取った実際の列数。設定と食い違う場合に警告を出すため保持する
         detectedShots: Array.isArray(r?.marks) ? r.marks.length : 0,
         // 板が2つ写っていたときの、どちらの板か。立の切れ目に「計」を入れるための人数
@@ -608,7 +614,9 @@ const OCRRecordModal = ({
       if (i !== rowIdx) return row;
       const marks = [...row.marks];
       marks[markIdx] = marks[markIdx] === "" ? "○" : marks[markIdx] === "○" ? "×" : "";
-      return { ...row, marks };
+      // 見た上で触ったので、迷いの色は消す
+      const 迷い = Array.isArray(row.迷い) ? row.迷い.map((v, i) => (i === markIdx ? false : v)) : row.迷い;
+      return { ...row, marks, 迷い };
     }));
   };
 
@@ -1171,6 +1179,9 @@ const OCRRecordModal = ({
                   <_View style={styles.legendItem}><_View style={[styles.legendDot, { backgroundColor: "#E5F1FF" }]} /><_Text style={styles.legendText}>一致</_Text></_View>
                   <_View style={styles.legendItem}><_View style={[styles.legendDot, { backgroundColor: "#FFE5E5" }]} /><_Text style={styles.legendText}>要確認</_Text></_View>
                   <_View style={styles.legendItem}><_View style={[styles.legendDot, { backgroundColor: "#F0F0F0" }]} /><_Text style={styles.legendText}>ゲスト</_Text></_View>
+                  {recordRows.some(r => Array.isArray(r.迷い) && r.迷い.some(Boolean)) && (
+                    <_View style={styles.legendItem}><_View style={[styles.legendDot, styles.legendDotMayoi]} /><_Text style={styles.legendText}>読み取りが迷ったマス</_Text></_View>
+                  )}
                 </_View>
 
                 {recordRows.map((row, rIdx) => {
@@ -1203,7 +1214,9 @@ const OCRRecordModal = ({
                               styles.markCell,
                               mk === "○" && styles.markCellHit,
                               mk === "×" && styles.markCellMiss,
+                              Boolean(row.迷い?.[mIdx]) && styles.markCellMayoi,
                             ]}
+                            testID={Boolean(row.迷い?.[mIdx]) ? "ocr-mayoi-cell" : undefined}
                             onPress={() => toggleRecordMark(rIdx, mIdx)}
                           >
                             <_Text style={[
@@ -1530,6 +1543,9 @@ const styles = _StyleSheet.create({
   markCell: { width: 36, height: 36, borderRadius: 8, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E5E5EA", alignItems: "center", justifyContent: "center" },
   markCellHit: { backgroundColor: "#E5F1FF", borderColor: "#007AFF" },
   markCellMiss: { backgroundColor: "#FFE5E5", borderColor: "#FF3B30" },
+  // 端末の読み取りが迷ったマス。○×の文字色はそのまま、枠を太い黄色にして目に留める
+  markCellMayoi: { borderWidth: 2, borderColor: "#FFB300", backgroundColor: "#FFF4CC" },
+  legendDotMayoi: { backgroundColor: "#FFF4CC", borderWidth: 2, borderColor: "#FFB300" },
   markCellText: { fontSize: 16, color: "#C7C7CC", fontWeight: "bold" },
   markCellTextHit: { color: "#007AFF" },
   markCellTextMiss: { color: "#FF3B30" },
