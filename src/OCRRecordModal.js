@@ -31,10 +31,11 @@ const { formatMemberName } = require("./formatMemberName");
 const { getShadowStyle } = require("./shadowStyle");
 const { 記録の指示文, 立ち順の指示文, 名簿の手がかり } = require("./ocrPrompts");
 const { マスを開く, 一射目からの順にする } = require("./ocrCells");
-// 板の○×は端末で読む（Gemini は線の向きを読めない）。名前と並びは Gemini のまま
+// 板と紙の○×は端末で読む（Gemini は線の向きを読めない）。名前と並びは Gemini のまま
 const { マスを端末で差し替える } = require("./ocr/sashikae");
 const 画像の道具 = require("./ocr/gazou-web");
 const 板の重み = require("../scripts/ocr-cells/omomi-chiisai.json");
+const 紙の重み = require("../scripts/ocr-cells/kami-omomi.json");
 // 検査（e2e/ocrTanmatsu.spec.mjs）から、ブラウザの canvas の道で読めるかを確かめるための入口。
 // アプリの動きには関わらない
 if (IS_WEB && typeof window !== "undefined") {
@@ -44,6 +45,11 @@ if (IS_WEB && typeof window !== "undefined") {
       const { 板の印を読む } = require("./ocr/yomu");
       const 元 = await 画像の道具.画を読む(base64);
       return 板の印を読む(元, { 板の人数たち, 行数, 回す: 画像の道具.回す, 重み: 板の重み });
+    },
+    紙の印を読む: async (base64, 人数, 立数, 立のマス) => {
+      const { 紙の印を読む } = require("./ocr/yomu");
+      const 元 = await 画像の道具.画を読む(base64);
+      return 紙の印を読む(元, { 人数, 立数, 立のマス, 重み: 紙の重み });
     },
   };
 }
@@ -467,9 +473,9 @@ const OCRRecordModal = ({
         const 生のteams = Array.isArray(parsed.teams) && parsed.teams.length
           ? parsed.teams
           : [{ name: "", cellStyle: "1射", tachiPeople: 0, rows: Array.isArray(parsed.rows) ? parsed.rows : [] }];
-        // ○×のマスは端末で読み替える（板の形式のとき）。合わなければ Gemini のまま
+        // ○×のマスは端末で読み替える（板でも紙でも）。合わなければ Gemini のまま
         const 差し替え = IS_WEB
-          ? await マスを端末で差し替える(生のteams, images, { 向き, shotsPerRound, 道具: 画像の道具, 重み: 板の重み })
+          ? await マスを端末で差し替える(生のteams, images, { 向き, shotsPerRound, 道具: 画像の道具, 重み: 板の重み, 紙の重み })
           : { teams: 生のteams, 読み取り元: "AI", 訳: "Web でないので端末の読み取りは使わない" };
         if (差し替え.訳) console.log("[OCRRecordModal] 端末の読み取りを使わなかった:", 差し替え.訳);
         set読み取り元(差し替え.読み取り元);
