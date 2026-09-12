@@ -112,3 +112,10 @@ test('分類ごとにまとめられる', () => {
   assert.equal(r.length, 2);
   assert.deepEqual(r[0], { 分類: '成績', 文たち: ['A', 'C'] });
 });
+
+test('頼める操作（部員の追加・画面を開く）が質問例に出る', () => {
+  const 例 = 質問例({ 人たち: [{ name: '山田' }], 記録たち: [記録({ archers: [{ name: '山田', marks: ['○'] }] })] });
+  assert.ok(文たち(例).some((x) => x.includes('部員を追加')), '部員の追加が無い');
+  const 全部 = 質問例({ 件数: Infinity });
+  assert.ok(文たち(全部).some((x) => x.includes('画面を開いて')), '画面を開く例が無い');
+});
