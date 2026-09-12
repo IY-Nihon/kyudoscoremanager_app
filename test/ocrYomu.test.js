@@ -123,3 +123,19 @@ test('マスを端末で差し替える: 写真2枚に板が1枚ずつでも、�
   }
   assert.ok(合 >= 312, `合ったのは ${合}/320`);
 });
+
+test('マスを端末で差し替える: Gemini の行の数が板の列の数と違えば、端末の読み取りは使わない', async () => {
+  const { マスを端末で差し替える } = await import('../src/ocr/sashikae.js');
+  const { 画を読む, 回す } = await import('../scripts/ocr-cells/gazou-node.mjs');
+  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-chiisai.json', 'utf8'));
+  // 左の板は8列なのに、Gemini が10人と言ってきた体（相手校の板で実際に 14〜17 に揺れた）
+  const teams = [10, 8].map((n) => ({
+    name: '', cellStyle: '2射', tachiPeople: 4,
+    rows: Array.from({ length: n }, (_, i) => ({ name: String(i + 1), cells: Array(10).fill('') })),
+  }));
+  const 出 = await マスを端末で差し替える(teams, [{ base64: 'docs/ocr-samples/PXL_20260906_081921509.jpg' }], {
+    向き: '左右から', shotsPerRound: 20, 道具: { 画を読む: (p) => 画を読む(p), 回す }, 重み,
+  });
+  assert.strictEqual(出.読み取り元, 'AI');
+  assert.match(出.訳 || '', /列の数が合わない/);
+});
