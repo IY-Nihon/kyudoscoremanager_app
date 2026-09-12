@@ -38,8 +38,8 @@ const 隠れ = Number(process.argv[5]) || 96;
 const 置き場 = (process.env.TEMP || '.') + '/ocr-ban2';
 fs.mkdirSync(置き場, { recursive: true });
 
-/** 板を描いて、本物と同じ切り出しでマスを取る */
-async function 見本をあつめる(枚数) {
+/** 板を描いて、本物と同じ切り出しでマスを取る。別のペン … 丸の線を細く薄くする率 */
+async function 見本をあつめる(枚数, 別のペン = 0.5, 種の頭 = 3000) {
   const 出 = [];
   let 外れ = 0;
   for (let i = 0; i < 枚数; i++) {
@@ -50,8 +50,8 @@ async function 見本をあつめる(枚数) {
     // 4人立ちの板の実物がこの書き方で、それまでの網はまったく読めなかった
     const ぎっしり = i % 5 === 1 || i % 5 === 3;
     const b = ぎっしり
-      ? 板をえがく({ 種: 3000 + i * 6961, 人数, 行数, 立の人数, マス: 40 + (i % 4) * 10, 書き方: 'ぎっしり' })
-      : 板をえがく({ 種: 3000 + i * 6961, 人数, 行数, 立の人数, 幅: 2000 });
+      ? 板をえがく({ 種: 種の頭 + i * 6961, 人数, 行数, 立の人数, マス: 40 + (i % 4) * 10, 書き方: 'ぎっしり', 別のペン })
+      : 板をえがく({ 種: 種の頭 + i * 6961, 人数, 行数, 立の人数, 幅: 2000, 別のペン });
     const みち = `${置き場}/b${i}.jpg`;
     await sharp(Buffer.from(b.色), { raw: { width: b.幅, height: b.高, channels: 3 } })
       .jpeg({ quality: 88 })
@@ -237,6 +237,8 @@ for (const b of 板たち) {
   }
 }
 const 確かめ = 板たち.flatMap((b) => (b.学習に使った ? [] : b.見本));
+// 細く薄い線の丸だけの見本（学習には使わない別の種）。この書き方を覚えたかを測る
+const 別のペンの見本 = (await 見本をあつめる(12, 1, 900000)).見本.filter((x) => 種類[x.札].startsWith('○'));
 console.log('本物: ' + 板たち.map((b) => `${b.名} ${b.見本.length}枚${b.学習に使った ? '（学習に混ぜた）' : ''}`).join(' / '));
 console.log(
   `板 ${板の枚数}枚 → マス ${見本.length}枚（外れた板 ${外れ}枚）  ${((Date.now() - t0) / 1000).toFixed(1)}秒`
@@ -257,6 +259,18 @@ for (let i = 0; i < 網の数; i++) {
   for (const x of 確かめ) if (群れで決める(群れ, x.形).番 === x.札) 群++;
   console.log(`  ${i + 1}枚目  この網ひとつ=${単}/${確かめ.length}  群れ(${群れ.length}枚)=${群}/${確かめ.length}` +
       ` (${((100 * 群) / Math.max(1, 確かめ.length)).toFixed(1)}%)`);
+}
+
+{
+  let 当 = 0;
+  const 表 = 種類.map(() => 種類.map(() => 0));
+  for (const x of 別のペンの見本) {
+    const { 番 } = 群れで決める(群れ, x.形);
+    表[x.札][番]++;
+    if (番 === x.札) 当++;
+  }
+  console.log(`細く薄い線の丸（描いたもの）: ${当}/${別のペンの見本.length} (${((100 * 当) / Math.max(1, 別のペンの見本.length)).toFixed(1)}%)  取り違え: ` +
+      種類.filter((s) => s.startsWith('○')).map((s, i) => `${s}→` + 種類.map((t, k) => `${t}${表[種類.indexOf(s)][k]}`).join(' ')).join(' | '));
 }
 
 const 表 = 種類.map(() => 種類.map(() => 0));
