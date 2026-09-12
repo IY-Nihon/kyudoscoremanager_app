@@ -4894,7 +4894,14 @@ const M = (0, s.create)()(
                     return localSession;
                   return cloudSession;
                 });
-                const l = a.filter((e) => !c.has(e.id) && !e.hasOwnProperty('serverCreatedTime'));
+                // 見張りが受け取るのは直近30日・最大100件だけ。手元にあってその中に無い
+                // 記録のうち、クラウドに在ったもの（serverCreatedTime 持ち）は「消された」
+                // とみなして落とす。ただし見張りの窓の外（30日より前、100件に収まらず
+                // 切れた分）は届かないだけなので落とさない。ここを一律に落としていた
+                // せいで、30日を過ぎた記録が見張りが動くたびに履歴から消えていた
+                const 窓の下 = o.length >= 100 ? Math.min(...o.map((e) => e.date || 0)) : m_30;
+                const 窓の中 = (e) => (e.date || 0) > 窓の下;
+                const l = a.filter((e) => !c.has(e.id) && (!e.hasOwnProperty('serverCreatedTime') || !窓の中(e)));
                 // 完全に消したものは、クラウドにまだ残っていても画面に出さない
                 const 完全削除ずみ = new Set(Object.keys(s().permanentlyDeleted || {}));
                 const d = [...merged, ...l].filter((e) => e && !完全削除ずみ.has(e.id));
