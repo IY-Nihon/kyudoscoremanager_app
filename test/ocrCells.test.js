@@ -23,7 +23,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-const { マスを開く, 記号を整える, 射数にそろえる } = require('../src/ocrCells');
+const { マスを開く, 記号を整える, 射数にそろえる, 迷いを開く, 迷いの境 } = require('../src/ocrCells');
 
 const 逆 = String.fromCharCode(92); // ＼（左上から右下）
 
@@ -70,4 +70,14 @@ test('射数に合わせて、位置を保ったままそろえる', () => {
   assert.deepStrictEqual(射数にそろえる(['○', '×'], 4), ['○', '×', '', '']);
   assert.deepStrictEqual(射数にそろえる(['○', '×', '○', '×', '○'], 4), ['○', '×', '○', '×']);
   assert.deepStrictEqual(射数にそろえる(null, 2), ['', '']);
+});
+
+test('確からしさの低いマスを、射ごとの「見直してほしい」に開く', () => {
+  // 板（1マス2射）。途中交代の段は 0.42 のように低く出る
+  assert.deepStrictEqual(迷いを開く([0.91, 0.42, 0.98], '2射'), [false, false, true, true, false, false]);
+  // 紙（1マス1射）。2択なので 0.5 は下回らない。境の手前が迷い
+  assert.deepStrictEqual(迷いを開く([0.52, 0.95], '1射'), [true, false]);
+  assert.deepStrictEqual(迷いを開く([迷いの境], '1射'), [false]);
+  // Gemini のまま（確からしさが無い）なら空
+  assert.deepStrictEqual(迷いを開く(undefined, '2射'), []);
 });

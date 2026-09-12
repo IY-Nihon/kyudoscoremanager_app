@@ -49,10 +49,12 @@ export async function マスを端末で差し替える(teams, images, 設定) {
 
   const 新しい = teams.map((t, i) => {
     const 列たち = 大前から並べる(読んだ[i].列たち, 設定.向き, i, teams.length);
+    const 確たち = 大前から並べる(読んだ[i].確からしさ, 設定.向き, i, teams.length);
     return {
       ...t,
       cellStyle: 紙 ? '1射' : '2射',
-      rows: t.rows.map((r, j) => ({ ...r, cells: 列たち[j].slice(), marks: undefined })),
+      // 確からしさ は cells と同じ並び。確認画面で迷ったマスに色を付けるのに使う
+      rows: t.rows.map((r, j) => ({ ...r, cells: 列たち[j].slice(), 確からしさ: 確たち[j].slice(), marks: undefined })),
     };
   });
   return { teams: 新しい, 読み取り元: '端末' };
