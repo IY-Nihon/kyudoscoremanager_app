@@ -14,6 +14,7 @@
 import { test, expect } from '@playwright/test';
 import {
   案内を止める,
+  自動ロックを入れる,
   画面が出るまで待つ,
   入り口が決まるまで待つ,
   こうなるまで待つ,
@@ -131,6 +132,9 @@ test.afterEach(async () => {
 async function 入る(page) {
   // 案内とお知らせは開く前に止める（helpers.mjs の説明を参照）
   await 案内を止める(page);
+  // 自動ロックは既定でオフになった（2026-09-13）。ここの検査は、届いた○×が閉じている
+  // 前提（同じますを押し直しても変わらない）で書いてあるので、オンにして入る
+  await 自動ロックを入れる(page);
   await page.goto('/');
   await 画面が出るまで待つ(page);
   // 読み込み中の画面でも「出た」になるので、ログイン欄が出るか、
@@ -763,6 +767,7 @@ test('ライブ：URLで配ると、編集用は記録でき、閲覧用は見�
   // ── 編集用のリンクで、団体に入っていない人が入る ──
   const 外 = await browser.newContext();
   const B = await 外.newPage();
+  await 自動ロックを入れる(B);
   await B.goto(編集のURL.replace(/^https?:\/\/[^/]+/, ''));
   await 画面が出るまで待つ(B);
   const B合言葉 = B.getByPlaceholder('合言葉');
@@ -793,6 +798,7 @@ test('ライブ：URLで配ると、編集用は記録でき、閲覧用は見�
   // ── 閲覧用のリンクは見るだけ ──
   const 見 = await browser.newContext();
   const C = await 見.newPage();
+  await 自動ロックを入れる(C);
   await C.goto(閲覧のURL.replace(/^https?:\/\/[^/]+/, ''));
   await 画面が出るまで待つ(C);
   const C合言葉 = C.getByPlaceholder('合言葉');

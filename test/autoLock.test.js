@@ -479,3 +479,10 @@ test('お知らせ：配信済みの版のまま項目を足していない', ()
     );
   }
 });
+
+test('設定：入れたマスの自動ロックと矢所の記録は、既定でオフ', () => {
+  const { ストアを用意する } = require('./helpers/storeHarness');
+  const { store } = ストアを用意する();
+  assert.equal(store.getState().自動ロックする, false, '自動ロックは既定でオフ（2026-09-13 に使う人が決めた）');
+  assert.equal(store.getState().enableArrowLocation, false, '矢所の記録は既定でオフ');
+});
