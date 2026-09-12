@@ -15,7 +15,7 @@
 | 状態管理 | zustand 5 (`src/useScoreStore.js`) |
 | ナビゲーション | React Navigation 7 (bottom-tabs) |
 | バックエンド | Firebase 9.23 — Auth / Firestore / Realtime Database / Storage |
-| AI | Google Gemini API (AIチャットボット・OCR立ち順読み取り) |
+| AI | Google Gemini API (AIチャットボット・OCR立ち順読み取り)。鍵はアプリに置かず、Cloudflare Workers の中継（別フォルダー `kyudo-chukei`、`src/geminiChukei.js` から呼ぶ）が付ける |
 
 ## 画面構成
 

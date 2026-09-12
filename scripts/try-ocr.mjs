@@ -46,9 +46,11 @@ if (!みち.length) {
 
 // ── 鍵 ──
 const env = fs.existsSync('.env') ? fs.readFileSync('.env', 'utf8') : '';
-const 鍵 = (env.match(/EXPO_PUBLIC_GEMINI_API_KEY=(.+)/) || [])[1]?.trim();
+// アプリは中継（Cloudflare Workers）経由で鍵を持たないが、手元の計測は Gemini を直接呼ぶ。
+// EXPO_PUBLIC_ を付けない名前にしておくと、Expo が束に焼き込まない
+const 鍵 = (env.match(/^GEMINI_API_KEY=(.+)$/m) || env.match(/EXPO_PUBLIC_GEMINI_API_KEY=(.+)/) || [])[1]?.trim();
 if (!鍵) {
-  console.error('.env に EXPO_PUBLIC_GEMINI_API_KEY がありません');
+  console.error('.env に GEMINI_API_KEY がありません（手元の計測だけが使う。アプリは中継を呼ぶ）');
   process.exit(1);
 }
 
