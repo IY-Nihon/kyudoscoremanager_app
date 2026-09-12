@@ -27,6 +27,23 @@ function 偽Firestore() {
   const 保管庫 = new Map();
   const 記録 = []; // 何をしたかの履歴
   const 見張り = []; // onSnapshot の登録
+  /** query の where / limit を当てる（[id, 値] の並びに） */
+  const 絞る = (並び, 対象) => {
+    let 出 = 並び;
+    for (const { 欄, 比べ, 値 } of (対象 && 対象.絞り) || []) {
+      出 = 出.filter(([, v]) => {
+        const x = v ? v[欄] : undefined;
+        if (比べ === '>') return x > 値;
+        if (比べ === '>=') return x >= 値;
+        if (比べ === '<') return x < 値;
+        if (比べ === '<=') return x <= 値;
+        if (比べ === '==') return x === 値;
+        return true;
+      });
+    }
+    if (対象 && 対象.上限) 出 = 出.slice(0, 対象.上限);
+    return 出;
+  };
   // 遅延: 送信が決着するまでの時間(ms)。0 ならすぐ決着する。
   // 「送信中にもう一度編集する」場面を作るために要る。
   const 状態 = { オフライン: false, 失敗させる: false, 遅延: 0 };
@@ -106,10 +123,17 @@ function 偽Firestore() {
       const id = 全部.pop();
       return { 道: 全部.join('/'), id };
     },
-    query: (集まり) => ({ 道: 集まり.道 }),
-    where: () => ({}),
+    // 絞り込みは where（>, >=, <, <=, ==）と limit だけ写す。記録の見張りが
+    // 「直近30日・最大100件」なのを再現するため（無いと、窓の外の記録が
+    // 落とされる不具合を検査で作れない）
+    query: (集まり, ...条件) => ({
+      道: 集まり.道,
+      絞り: 条件.filter((c) => c && c.絞り).map((c) => c.絞り),
+      上限: (条件.find((c) => c && c.上限) || {}).上限,
+    }),
+    where: (欄, 比べ, 値) => ({ 絞り: { 欄, 比べ, 値 } }),
     orderBy: () => ({}),
-    limit: () => ({}),
+    limit: (n) => ({ 上限: n }),
     serverTimestamp: () => ({ __サーバー日時: true }),
     getDoc: async (参照) => {
       const 値 = 取り出す(参照.道).get(参照.id);
@@ -117,7 +141,7 @@ function 偽Firestore() {
     },
     getDocs: async (集まり) => {
       const 表 = 取り出す(集まり.道);
-      const 一覧 = [...表.entries()].map(([id, 値]) => ({
+      const 一覧 = 絞る([...表.entries()], 集まり).map(([id, 値]) => ({
         id,
         data: () => 値,
         // 逆引き表の整理は d.ref を使って消すので、参照も返す
@@ -158,7 +182,7 @@ function 偽Firestore() {
               metadata: { hasPendingWrites: 状態.オフライン },
             });
           }
-          const 一覧 = [...表.entries()].map(([id, 値]) => ({
+          const 一覧 = 絞る([...表.entries()], 対象).map(([id, 値]) => ({
             id,
             data: () => 値,
             metadata: { hasPendingWrites: 状態.オフライン },
