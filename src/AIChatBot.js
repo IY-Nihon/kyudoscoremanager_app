@@ -223,7 +223,7 @@ const qaData = [
   { k: ['台数','何台','接続','つない','人数'], t: 'Q69: いま何台つないでいるか分かる？\nA: 分かります。ライブ中の青い帯に「2台接続中」のように出ます。自分ひとりのときは出ません。相手が抜けると、その場で数が減ります。' },
   { k: ['弓具','弓力','弦','変え','前後','買い替え'], t: 'Q70: 弓や矢を変えた前後で的中は変わった？\nA: 分かります。分析タブでメンバーを押して個人の詳細を開き、いちばん下まで見ると、弓力・矢・弦の履歴ごとの的中率と、前の弓具との差が出ます。弓具の履歴はメンバー画面の「弓具管理」から残します。' },
   { k: ['皆中','三中','羽分','一中','残念','分布','何回'], t: 'Q71: 皆中や三中が何回あったか分かる？\nA: 分かります。個人の詳細に「立ちの結果分布」があり、4射そろった立ちを皆中・三中・羽分・一中・残念に分けて数えます。4射に満たない端数は分けられないので数えません。' },
-  { k: ['どの矢','留矢','初矢','抜い','癖','的中の型'], t: 'Q72: 三中のとき、どの矢を抜いているか分かる？\nA: 分かります。個人の詳細の「的中の型」の見出しを押すと開き、「○○○× 留矢を抜いた」のように並びます。割合は同じ中り数の中での割合です（三中のうち、その抜き方が何割か）。一射単位（1射ごとの的中率）と一手単位（2射の型。「甲矢を抜いた」「乙矢を抜いた」）も出ます。立ちや手の途中で交代したものは数えません。' },
+  { k: ['どの矢','留矢','初矢','抜い','癖','的中の型'], t: 'Q72: 三中のとき、どの矢を抜いているか分かる？\nA: 分かります。個人の詳細の「的中の型」の見出しを押すと開き、「○○○× 留矢を抜いた」のように並びます。割合は同じ中り数の中での割合です（三中のうち、その抜き方が何割か）。一射のとき（1本だけ引いた記録）と一手のとき（2本だけ引いた記録）の的中率も出ます。一手は「甲矢を抜いた」「乙矢を抜いた」の型も並びます。立ちや手の途中で交代したものは数えません。' },
   { k: ['チーム','大学名','色分け','リーグ','対抗','区切り','間隔'], t: 'Q73: 他の大学と一緒の立ちを、見分けやすくできる？\nA: できます。記録表の区切り（間隔）を押すと窓が出るので、「チーム名を付ける」から大学名などを入れてください。入れた名前より左の射手に、そのチームの色が付きます。同じ名前ならいつも同じ色になります。名前を空にすると、ただの間隔に戻ります。保存した記録の詳細でも、チーム名と色は出ます。' },
   { k: ['総計','まとめ','合計の合計','立ちをまとめ','全部の計'], t: 'Q74: 立ちごとの「計」を、まとめて数えられる？\nA: できます。「計」を入れたあとその列を押し、「手前の計もまとめた総計にする」を選ぶと「総計」になります。立ちごとに計を置き、その端に総計を置くと、まとめた数が出ます。間隔（区切り）を入れると、そこが総計の切れ目になります。ふつうの「計」は、間隔でも手前の計でも止まります。' },
   { k: ['立ち順','並べ替え','順番','入れ替え','動かす','ドラッグ'], t: 'Q75: 立ち順（並び）をあとから変えられる？\nA: 変えられます。記録表の名前のところを長押しすると、その列を掴めます。そのまま指をすべらせると、離した所へ入ります。○×も矢所も鍵も一緒に移ります。1つずつ動かしたいときは、名前を押して出る窓の「右へ動かす」「左へ動かす」を使ってください（横に並べているときは「上へ」「下へ」になります）。取り消しで元に戻せます。ライブ中は相手の画面にも並びが届きます。' },
@@ -374,9 +374,14 @@ const AIChatBot = () => {
 
   const [layoutWidth, setLayoutWidth] = useState(_Dimensions.get("window").width);
   const [layoutHeight, setLayoutHeight] = useState(_Dimensions.get("window").height);
+  // 引く仕掛け（PanResponder）は一度しか作らないので、中から state を読むと
+  // 最初の描画の値（窓の幅）で固まる。パソコンで窓が広いとアプリの枠（最大幅）より
+  // 窓が広く、左へ引くとその差のぶん枠の外へ飛び出して消えた。枠の実測は ref で渡す
+  const layoutRef = useRef({ width: layoutWidth, height: layoutHeight });
 
   const onLayout = (event) => {
     const { width, height } = event.nativeEvent.layout;
+    layoutRef.current = { width, height };
     setLayoutWidth(width);
     setLayoutHeight(height);
   };
@@ -405,6 +410,10 @@ const AIChatBot = () => {
     _PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 2 || Math.abs(g.dy) > 2,
+      // パソコンで引くと、字の上を通ったときに字の選択が始まり、react-native-web の
+      // responder が選択の合図（selectionchange）で責任を取り上げてボタンが止まる。
+      // 取り上げは断る（記録表の取っ手と同じ。始まった選択は下で解く）
+      onPanResponderTerminationRequest: () => false,
       onPanResponderGrant: () => {
         isDragging.current = false;
         pan.setOffset({ x: currentPos.current.x, y: currentPos.current.y });
@@ -414,9 +423,17 @@ const AIChatBot = () => {
         if (Math.abs(g.dx) > 2 || Math.abs(g.dy) > 2) {
           isDragging.current = true;
         }
+        if (typeof window !== 'undefined' && window.getSelection) {
+          try {
+            const 選択 = window.getSelection();
+            if (選択 && !選択.isCollapsed) 選択.removeAllRanges();
+          } catch (e) {
+            /* 解けなくても引く動きは続く */
+          }
+        }
 
-        const initX = layoutWidth - 20 - 60;
-        const initY = layoutHeight - 20 - 60;
+        const initX = layoutRef.current.width - 20 - 60;
+        const initY = layoutRef.current.height - 20 - 60;
 
         const offsetX = currentPos.current.x;
         const offsetY = currentPos.current.y;
@@ -425,9 +442,9 @@ const AIChatBot = () => {
         let absY = initY + offsetY + g.dy;
 
         const minAbsX = 20;
-        const maxAbsX = layoutWidth - 20 - 60;
+        const maxAbsX = layoutRef.current.width - 20 - 60;
         const minAbsY = 60;
-        const maxAbsY = layoutHeight - 20 - 60;
+        const maxAbsY = layoutRef.current.height - 20 - 60;
 
         if (absX < minAbsX) absX = minAbsX;
         if (absX > maxAbsX) absX = maxAbsX;
@@ -445,8 +462,8 @@ const AIChatBot = () => {
         if (!isDragging.current) {
           setModalVisible(true);
         } else {
-          const initX = layoutWidth - 20 - 60;
-          const initY = layoutHeight - 20 - 60;
+          const initX = layoutRef.current.width - 20 - 60;
+          const initY = layoutRef.current.height - 20 - 60;
 
           const isLeft = Math.abs(g.vx) > 0.2 ? g.vx < 0 : g.dx < 0;
           const isTop = Math.abs(g.vy) > 0.2 ? g.vy < 0 : g.dy < 0;
@@ -1494,7 +1511,9 @@ const styles = _StyleSheet.create({
   floatingButton: {
     position: "absolute", right: 20, bottom: 20, width: 60, height: 60,
     borderRadius: 30, backgroundColor: "#007AFF",
-    justifyContent: "center", alignItems: "center", zIndex: 9999
+    justifyContent: "center", alignItems: "center", zIndex: 9999,
+    // 引き始めで字の選択が始まらないように
+    userSelect: "none"
   },
   badge: {
     position: "absolute", top: -5, right: -5, backgroundColor: "#FF3B30",

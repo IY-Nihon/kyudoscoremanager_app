@@ -155,3 +155,62 @@ test('質問例：長い文が途中で切れていない', async ({ page }) => 
   });
   expect(切れ, '札の中で文が切れている: ' + 切れ.join(' / ')).toEqual([]);
 });
+
+/**
+ * 浮くボタンは指で引いて角へ動かせる（左右×上下）。
+ *
+ * パソコン（マウス）で引くと、字の上を通ったときに字の選択が始まり、
+ * react-native-web の responder が選択の合図で責任を取り上げて、
+ * ボタンが途中で止まっていた。記録表の取っ手と同じ直し方をしてある。
+ * 引き終わりに角へ吸い付き、置いた角は端末（localStorage）に残ること
+ */
+test('浮くボタン：横へ引くと左の角へ動き、置いた角が残る', async ({ page }) => {
+  await 入る(page);
+  await page.getByText('履歴', { exact: true }).first().click();
+  const 釦 = page.getByTestId('AIを開く');
+  await expect(釦, 'AIの入口が見つからない').toBeVisible({ timeout: 20_000 });
+  // 角はアプリの枠（親）の中で決まる。パソコンでは窓よりアプリの枠が狭いことがあるので、
+  // 窓の幅ではなく枠の実測で見る（前は窓の幅で計算していて、枠の外へ飛び出していた）
+  const 枠 = await 釦.evaluate((el) => {
+    const r = el.parentElement.getBoundingClientRect();
+    return { x: r.x, right: r.right };
+  });
+  const 前 = await 釦.boundingBox();
+  expect(前.x, '前提：ボタンが右に無い').toBeGreaterThan((枠.x + 枠.right) / 2);
+
+  // 引く。字（記録の一覧）の上を通る道で、何回かに分けて動かす
+  await page.mouse.move(前.x + 前.width / 2, 前.y + 前.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(枠.x + 40, 前.y + 前.height / 2 - 30, { steps: 15 });
+  await page.mouse.up();
+  // 角へ吸い付く動き（spring）が終わるまで待つ。途中で次を掴みにいくと空振りする
+  await expect
+    .poll(async () => Math.round((await 釦.boundingBox()).x - 枠.x), {
+      timeout: 10_000,
+      message: 'ボタンが左の角（枠から20px）に来ない',
+    })
+    .toBe(20);
+  const 覚え = await page.evaluate(() => {
+    try {
+      return JSON.parse(localStorage.getItem('aiButtonPos_v1') || 'null');
+    } catch (e) {
+      return null;
+    }
+  });
+  expect(覚え && 覚え.x, '置いた角が端末に残っていない').toBe('left');
+  // 引いただけでは窓は開かない
+  await expect(page.getByText('こんなことが聞けます')).toHaveCount(0);
+
+  // 右へ戻す（次の検査のために元の角へ）
+  const いま = await 釦.boundingBox();
+  await page.mouse.move(いま.x + いま.width / 2, いま.y + いま.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(枠.right - 40, いま.y + いま.height / 2 + 30, { steps: 15 });
+  await page.mouse.up();
+  await expect
+    .poll(async () => Math.round(枠.right - (await 釦.boundingBox()).x - いま.width), {
+      timeout: 10_000,
+      message: 'ボタンが右の角（枠から20px）へ戻らない',
+    })
+    .toBe(20);
+});
