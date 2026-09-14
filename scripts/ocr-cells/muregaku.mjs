@@ -221,17 +221,25 @@ const t0 = Date.now();
 const { 見本, 外れ } = await 見本をあつめる(板の枚数);
 // 本物は2枚ある。左＝自校（名札が色枠）、右＝相手校（板に直書き）。
 // 別の板・別の人の字なので、片方で学んで他方で測れば正直な数字になる
+// 9/13 の板 4 枚（自校の A・B、相手校の C・D）は、本物のマスとして倉庫に置いてある
+//（docs/ocr-samples/cells-0913。名前は写らない。答えは切り出した側で付けた）。
+// 相手校の板は印が大きく、丸も線も別の手なので、描いた見本だけでは足りなかった
+//（◎ の内側の楕円を ／ と読む、大きな × を ／ と読む）
 const 板たち = [
   { 名: '左の板', 見本: await 本物の見本('docs/ocr-samples/cells') },
   { 名: '右の板', 見本: await 本物の見本('docs/ocr-samples/cells-migi') },
+  { 名: '0913a', 見本: await 本物の見本('docs/ocr-samples/cells-0913/a') },
+  { 名: '0913b', 見本: await 本物の見本('docs/ocr-samples/cells-0913/b') },
+  { 名: '0913c', 見本: await 本物の見本('docs/ocr-samples/cells-0913/c') },
+  { 名: '0913d', 見本: await 本物の見本('docs/ocr-samples/cells-0913/d') },
 ];
-// 板を指名されていれば、それを学習側に足す（残りの板で測る）。
-// 本物は80枚しかなく、描いた板は4万枚を超えるので、そのまま足しても埋もれる。
-// 何度も繰り返して重みを持たせる
-const 混ぜる = process.env.OCR_MAZERU || '';
+// 板を指名されていれば（OCR_MAZERU、「,」区切りで何枚でも）、それを学習側に足す
+//（残りの板で測る）。本物は1枚 80 枚ほどしかなく、描いた板は4万枚を超えるので、
+// そのまま足しても埋もれる。何度も繰り返して重みを持たせる
+const 混ぜる = (process.env.OCR_MAZERU || '').split(',').map((x) => x.trim()).filter(Boolean);
 const 繰り返し = Number(process.env.OCR_MAZERU_KAI) || 200;
 for (const b of 板たち) {
-  if (混ぜる && b.名.includes(混ぜる)) {
+  if (混ぜる.some((m) => b.名.includes(m))) {
     for (let n = 0; n < 繰り返し; n++) for (const x of b.見本) 見本.push({ 形: x.形, 札: x.札 });
     b.学習に使った = true;
   }
