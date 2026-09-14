@@ -144,7 +144,8 @@ test('マスを端末で差し替える: Gemini のマスの数（段数）が�
   const { マスを端末で差し替える } = await import('../src/ocr/sashikae.js');
   const { 画を読む, 回す } = await import('../scripts/ocr-cells/gazou-node.mjs');
   const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-chiisai.json', 'utf8'));
-  // 10段の板なのに、28射の設定に引かれて 14 マスと答えてきた体（本番で実際に起きた）
+  // 10段の板なのに、28射の設定に引かれて 14 マスと答えてきた体（本番で実際に起きた）。
+  // 余った段は板の上に置かれ、各人の的中数の数字の行がマスになる。「上に字の行がある」で弾く
   const teams = [8, 8].map((n) => ({
     name: '', cellStyle: '2射', tachiPeople: 4,
     rows: Array.from({ length: n }, (_, i) => ({ name: String(i + 1), roster: null, cells: Array(14).fill('') })),

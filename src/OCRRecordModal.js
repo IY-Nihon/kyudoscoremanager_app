@@ -305,25 +305,66 @@ const OCRRecordModal = ({
         generationConfig: { responseMimeType: "application/json" },
       }, await 中継.SDKの設定());
 
-      const parts = [{ text: prompt }];
-      images.forEach(img => {
-        parts.push({ inlineData: { mimeType: "image/jpeg", data: img.base64 } });
-      });
-
-      const result = await model.generateContent(parts);
-      const raw = result.response.text();
-      const parsed = JSON.parse(raw);
+      const 読ませる = async (指示文) => {
+        const parts = [{ text: 指示文 }];
+        images.forEach(img => {
+          parts.push({ inlineData: { mimeType: "image/jpeg", data: img.base64 } });
+        });
+        const result = await model.generateContent(parts);
+        return JSON.parse(result.response.text());
+      };
+      let parsed = await 読ませる(prompt);
 
       if (mode === "record") {
         // 新しい形は teams（板ごと）。古い形（rows だけ）も受ける。
         // 板が2つ写っているときは、間に区切りを入れるために team の番号を持たせる
-        const 生のteams = Array.isArray(parsed.teams) && parsed.teams.length
-          ? parsed.teams
-          : [{ name: "", cellStyle: "1射", tachiPeople: 0, rows: Array.isArray(parsed.rows) ? parsed.rows : [] }];
+        const teamsにする = (p) => Array.isArray(p.teams) && p.teams.length
+          ? p.teams
+          : [{ name: "", cellStyle: "1射", tachiPeople: 0, rows: Array.isArray(p.rows) ? p.rows : [] }];
+        let 生のteams = teamsにする(parsed);
         // ○×のマスは端末で読み替える（板でも紙でも）。合わなければ Gemini のまま
-        const 差し替え = IS_WEB
-          ? await マスを端末で差し替える(生のteams, images, { 向き, 道具: 画像の道具, 重み: 板の重み, 紙の重み })
-          : { teams: 生のteams, 読み取り元: "AI", 訳: "Web でないので端末の読み取りは使わない" };
+        const 端末で = (t) => IS_WEB
+          ? マスを端末で差し替える(t, images, { 向き, 道具: 画像の道具, 重み: 板の重み, 紙の重み })
+          : Promise.resolve({ teams: t, 読み取り元: "AI", 訳: "Web でないので端末の読み取りは使わない" });
+        let 差し替え = await 端末で(生のteams);
+        // 人数が板と合わないとき（名札の読めない列を落とした、2枚の板を1つにした）は、
+        // もう一度だけ Gemini に読ませる。端末の○×（本物の板で 98〜100%）を、人数の
+        // 食い違いだけで捨てないため。添えるのは
+        //   ・「板が2つ」を選んだのに teams が1つ → 板の数（2枚）
+        //   ・teams の数は合っていて、端末の見当が1人だけ違う → 板ごとの人数
+        // 2人以上違うときは端末の見当も怪しい（板をまとめて9人と数えた実例）ので読み直さない
+        //「板が2つ」を選んだのに teams が1つのときは、端末で読めていても読み直す
+        //（1つの板として並べると、右の板の大前と落が逆になる）
+        const 読み直しの注文 = () => {
+          if (向き === "左右から" && 生のteams.length === 1) return { 板の数: 2 };
+          if (差し替え.読み取り元 !== "AI") return null;
+          const 見当 = 差し替え.列の見当たち;
+          if (!Array.isArray(見当) || 見当.length !== 生のteams.length) return null;
+          const 違い = 見当.map((n, i) => Math.abs(n - 生のteams[i].rows.length));
+          return 違い.every((d) => d <= 1) && 違い.some((d) => d === 1) ? { 列の数たち: 見当 } : null;
+        };
+        // 板の数を直したあと人数が1人違う、という2段はあるので、2回まで
+        for (let 回 = 0; 回 < 2; 回++) {
+          const 注文 = 読み直しの注文();
+          if (!注文) break;
+          console.log("[OCRRecordModal] 読み直す:", 差し替え.訳 || "板の数が違う", 注文);
+          try {
+            const 二度目 = await 読ませる(
+              記録の指示文({ 手がかり: buildNameHint(), 射数: shotsPerRound, 枚数: images.length, 向き, ...注文 })
+            );
+            const 二度目のteams = teamsにする(二度目);
+            const 二度目の差し替え = await 端末で(二度目のteams);
+            // 端末で読めたら採る。板の数だけ直ったときも、次の読み直しの土台として採る
+            const 採る = 二度目の差し替え.読み取り元 === "端末" || (注文.板の数 && 二度目のteams.length === 注文.板の数 && 生のteams.length !== 注文.板の数);
+            if (!採る) break;
+            parsed = 二度目;
+            生のteams = 二度目のteams;
+            差し替え = 二度目の差し替え;
+          } catch (e) {
+            console.log("[OCRRecordModal] 読み直しに失敗:", String((e && e.message) || e));
+            break;
+          }
+        }
         if (差し替え.訳) console.log("[OCRRecordModal] 端末の読み取りを使わなかった:", 差し替え.訳);
         set読み取り元(差し替え.読み取り元);
         const teams = 差し替え.teams;
