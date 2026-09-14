@@ -193,3 +193,55 @@ test('マスを端末で差し替える: Gemini が板を割りすぎても、�
   assert.strictEqual(行を組み直す([板(8, 4), 板(5, 4)], [8, 8]), null);
   assert.strictEqual(行を組み直す([板(8, 4), 板(8, 4)], [8, 8]), null, '板の数が同じなら何もしない');
 });
+
+test('箱で格子: 板ごとの○×の範囲（箱）を渡すと、その中を等分した格子で読める', async () => {
+  // 印がマスいっぱいで隣と触れ合う板（相手校の板）は、かたまりから格子が立たない。
+  // Gemini に範囲だけを出させ（本物の相手校の板 2 枚で 1% ほどの精度）、中を等分して読む。
+  // ここでは 9/6 の板の格子から箱を作って渡す（相手校の板の写真は名前が写るので倉庫に無い）。
+  // 印が小さく行の間隔がそろっていない 9/6 の板では、かたまりの格子（318）には及ばないが、
+  // 相手校の板 2 枚では 96/160・72/160 → 159/160・156/160 になった（2026-09-14）
+  const { 板の印を読む, 大前から並べる } = await import('../src/ocr/yomu.js');
+  const { 画を読む, 回す } = await import('../scripts/ocr-cells/gazou-node.mjs');
+  const { 射手たち } = await import('../scripts/ocr-cells/kiroku.mjs');
+  const { マスを開く, 一射目からの順にする } = require('../src/ocrCells');
+  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-chiisai.json', 'utf8'));
+  const 元 = await 画を読む('docs/ocr-samples/PXL_20260906_081921509.jpg');
+  // [上, 左, 下, 右]（0〜1000）。かたまりの格子の外側の列・行から半マスずつ広げたもの
+  const 箱たち = [[335, 67, 621, 387], [335, 648, 636, 964]];
+  const 板たち = await 板の印を読む(元, { 板の人数たち: [8, 8], 行数: 10, 回す, 重み, 箱たち });
+  assert.strictEqual(板たち.length, 2);
+  assert.deepStrictEqual(板たち.map((b) => b.列たち.length), [8, 8]);
+  assert.ok(板たち.every((b) => b.列たち.every((列) => 列.length === 10)));
+  let 合 = 0;
+  let 番 = 0;
+  板たち.forEach((板, i) => {
+    const 列たち = 大前から並べる(板.列たち, '左右から', i, 板たち.length);
+    for (const 列 of 列たち) {
+      const 印 = マスを開く(一射目からの順にする(列, '下から'), '2射');
+      const 真 = [...射手たち[番++].印];
+      for (let k = 0; k < 真.length; k++) if (印[k] === 真[k]) 合++;
+    }
+  });
+  assert.ok(合 >= 285, `合ったのは ${合}/320`);
+});
+
+test('マスを端末で差し替える: 箱たち を渡すと、写真1枚・板の数が合うときだけ箱で読む', async () => {
+  const { マスを端末で差し替える } = await import('../src/ocr/sashikae.js');
+  const { 画を読む, 回す } = await import('../scripts/ocr-cells/gazou-node.mjs');
+  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-chiisai.json', 'utf8'));
+  const teams = [8, 8].map((n) => ({
+    name: '', cellStyle: '2射', tachiPeople: 4,
+    rows: Array.from({ length: n }, (_, i) => ({ name: String(i + 1), roster: null, cells: Array(10).fill('') })),
+  }));
+  const 設定 = { 向き: '左右から', 道具: { 画を読む: (p) => 画を読む(p), 回す }, 重み };
+  const 出 = await マスを端末で差し替える(teams, [{ base64: 'docs/ocr-samples/PXL_20260906_081921509.jpg' }], {
+    ...設定, 箱たち: [[335, 67, 621, 387], [335, 648, 636, 964]],
+  });
+  assert.strictEqual(出.読み取り元, '端末', 出.訳);
+  assert.ok(出.teams[0].rows[0].cells.some((c) => c === '◎' || c === '×' || c.startsWith('○')), '箱で読んだ印が入っていない');
+  // 箱の数が板と合わなければ、箱は使わない（ふつうの格子で読む。ここでは読めるので端末のまま）
+  const 出2 = await マスを端末で差し替える(teams, [{ base64: 'docs/ocr-samples/PXL_20260906_081921509.jpg' }], {
+    ...設定, 箱たち: [[335, 67, 621, 387]],
+  });
+  assert.strictEqual(出2.読み取り元, '端末');
+});

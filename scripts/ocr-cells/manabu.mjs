@@ -30,6 +30,10 @@ export async function 形にする(明るさ, 幅, 高, 選び方) {
   // マス単体ではもともとざらつきの影響はほぼ無く（20×20 に縮めるときに平均される）、
   // ならして学び直すと綺麗な写真が 320 → 316 に落ちた。OCR_NARASU=1 で入る
   if (process.env.OCR_NARASU === '1') 明るさ = ならす(明るさ, 幅, 高);
+  // マスの中に照り返しの斑や影の縁があるとき（9/13 の板で、左下だけ明るいマスの ＼ が
+  // 真っ黒なかたまりになって ◎ と読まれた）は、背景のむらを平らにしてから見る。
+  // 平らな写真ではほぼ何もしない
+  if (process.env.OCR_TAIRA !== '0') 明るさ = 傾きを平らに(明るさ, 幅, 高);
   let 最小 = 255;
   let 最大 = 0;
   for (let i = 0; i < 明るさ.length; i++) {
@@ -121,8 +125,11 @@ export async function 形にする(明るさ, 幅, 高, 選び方) {
       if (数 > w2 * h2 * 0.45) continue;
       // マスより大きいものも印ではない。切り出しの箱は印の1.7倍ほどなので、
       // 印は箱の6割ほどに収まる。縦横とも箱いっぱいに広がるものは、
-      // 合計欄の長い斜線が写り込んだもの（実測で×を1枚取り違えていた）
-      if (w2 > 幅 * 0.88 && h2 > 高 * 0.88) continue;
+      // 合計欄の長い斜線が写り込んだもの（実測で×を1枚取り違えていた）。
+      // ただし印がマスいっぱいの板（箱や罫線で立てた格子。選び方 'ぎっしり'）では、
+      // 印そのものが箱いっぱいなので外さない（相手校の板で、× の本体を外して
+      // 上端のかけらだけを囲み、◎ の外の丸を外して内側だけを囲んでいた）
+      if (選び方 !== 'ぎっしり' && w2 > 幅 * 0.88 && h2 > 高 * 0.88) continue;
       かたまり.push(一つ);
     }
   }
@@ -275,6 +282,62 @@ export function 輪の覆い(形, 扇 = 12) {
 }
 
 /** 3×3 の平均でならす */
+/**
+ * 背景の明るさのむら（照り返しの明るい斑、影の縁）を平らにする。
+ *
+ * マスを縦横 4×4 の区画に分け、区画ごとの「明るい側の値（85%点）」を背景とみなし、
+ * 区画の中心の間を線形に補って、画素ごとに背景で割る（背景を 255 にそろえる）。
+ * 平面を当てるやり方では、斑（局所的に明るい）が取れなかった。
+ * 印は暗い線で、区画の 15% 以上を占めることは稀なので、背景の値には掛からない。
+ * 背景の落差が小さければそのまま返す（JPEG のむらで動かさない）
+ */
+export function 傾きを平らに(画, 幅, 高) {
+  const n = 幅 * 高;
+  const 区 = Number(process.env.OCR_KU) || 3;
+  if (幅 < 区 * 4 || 高 < 区 * 4) return 画;
+  const 背景 = new Float64Array(区 * 区);
+  let 最小 = 255;
+  let 最大 = 0;
+  for (let by = 0; by < 区; by++) {
+    for (let bx = 0; bx < 区; bx++) {
+      const x0 = Math.floor((幅 * bx) / 区);
+      const x1 = Math.floor((幅 * (bx + 1)) / 区);
+      const y0 = Math.floor((高 * by) / 区);
+      const y1 = Math.floor((高 * (by + 1)) / 区);
+      const 値 = [];
+      for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) 値.push(画[y * 幅 + x]);
+      値.sort((a, b) => a - b);
+      const v = 値[Math.floor(値.length * (Number(process.env.OCR_HAI) || 0.95))];
+      背景[by * 区 + bx] = v;
+      if (v < 最小) 最小 = v;
+      if (v > 最大) 最大 = v;
+    }
+  }
+  if (最大 - 最小 < 14) return 画;
+  const 出 = new Uint8Array(n);
+  for (let y = 0; y < 高; y++) {
+    // 区画の中心の座標系へ（0 〜 区-1）
+    const gy = Math.min(区 - 1, Math.max(0, ((y + 0.5) / 高) * 区 - 0.5));
+    const y0 = Math.floor(gy);
+    const y1 = Math.min(区 - 1, y0 + 1);
+    const ty = gy - y0;
+    for (let x = 0; x < 幅; x++) {
+      const gx = Math.min(区 - 1, Math.max(0, ((x + 0.5) / 幅) * 区 - 0.5));
+      const x0 = Math.floor(gx);
+      const x1 = Math.min(区 - 1, x0 + 1);
+      const tx = gx - x0;
+      const b =
+        背景[y0 * 区 + x0] * (1 - tx) * (1 - ty) +
+        背景[y0 * 区 + x1] * tx * (1 - ty) +
+        背景[y1 * 区 + x0] * (1 - tx) * ty +
+        背景[y1 * 区 + x1] * tx * ty;
+      const v = b > 8 ? (画[y * 幅 + x] * 255) / b : 画[y * 幅 + x];
+      出[y * 幅 + x] = v < 0 ? 0 : v > 255 ? 255 : Math.round(v);
+    }
+  }
+  return 出;
+}
+
 function ならす(画, 幅, 高) {
   const 出 = new Uint8Array(幅 * 高);
   for (let y = 0; y < 高; y++) {

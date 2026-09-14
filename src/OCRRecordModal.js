@@ -34,7 +34,7 @@ const 中継 = require("./geminiChukei");
 const { generateUUID } = require("./uuid");
 const { formatMemberName } = require("./formatMemberName");
 const { getShadowStyle } = require("./shadowStyle");
-const { 記録の指示文, 立ち順の指示文, 名簿の手がかり } = require("./ocrPrompts");
+const { 記録の指示文, 立ち順の指示文, 名簿の手がかり, 板の箱の指示文 } = require("./ocrPrompts");
 const { マスを開く, 一射目からの順にする, 迷いを開く } = require("./ocrCells");
 // 板と紙の○×は端末で読む（Gemini は線の向きを読めない）。名前と並びは Gemini のまま
 const { マスを端末で差し替える } = require("./ocr/sashikae");
@@ -170,6 +170,8 @@ const OCRRecordModal = ({
   // 横書きの紙（1行1人・左から1射目）だけは、Gemini が返す layout で見分ける
   // ○×をどこで読んだか。'端末' なら板の印を端末で読み替えた。'AI' は Gemini のまま
   const [読み取り元, set読み取り元] = useState("AI");
+  // 端末が数えた列の数と、AI の人数が合わなかったときの断り（名札の無い列を AI が落とすことがある）
+  const [列の断り, set列の断り] = useState("");
 
   // ゲスト入力用ステート
   const [isEnteringGuest, setIsEnteringGuest] = useState(false);
@@ -323,10 +325,12 @@ const OCRRecordModal = ({
           : [{ name: "", cellStyle: "1射", tachiPeople: 0, rows: Array.isArray(p.rows) ? p.rows : [] }];
         let 生のteams = teamsにする(parsed);
         // ○×のマスは端末で読み替える（板でも紙でも）。合わなければ Gemini のまま
-        const 端末で = (t) => IS_WEB
-          ? マスを端末で差し替える(t, images, { 向き, 道具: 画像の道具, 重み: 板の重み, 紙の重み })
+        const 端末で = (t, 箱たち, 行数) => IS_WEB
+          ? マスを端末で差し替える(t, images, { 向き, 道具: 画像の道具, 重み: 板の重み, 紙の重み, 箱たち, 行数 })
           : Promise.resolve({ teams: t, 読み取り元: "AI", 訳: "Web でないので端末の読み取りは使わない" });
         let 差し替え = await 端末で(生のteams);
+        // 端末が数えた列の数（板ごと）。あとで AI の人数と食い違ったままなら、確認画面で断る
+        let 端末の見当 = Array.isArray(差し替え.列の見当たち) ? 差し替え.列の見当たち : null;
         // 人数が板と合わないとき（名札の読めない列を落とした、2枚の板を1つにした）は、
         // もう一度だけ Gemini に読ませる。端末の○×（本物の板で 98〜100%）を、人数の
         // 食い違いだけで捨てないため。添えるのは
@@ -365,9 +369,63 @@ const OCRRecordModal = ({
             break;
           }
         }
+        // それでも端末で読めなかった板（印がマスいっぱいで隣と触れ合う相手校の板）は、
+        // Gemini に板ごとの○×の範囲（箱）だけを出させ、中を等分して端末で読む。
+        // 写真1枚の板のときだけ。箱の数が板の数と合わなければ Gemini のまま
+        if (差し替え.読み取り元 !== "端末" && IS_WEB && images.length === 1 && 生のteams.every((t) => !t || t.cellStyle !== "1射")) {
+          console.log("[OCRRecordModal] 端末で読めないので箱を聞く:", 差し替え.訳 || "");
+          try {
+            const 箱の返事 = await 読ませる(板の箱の指示文({ 板の数: 生のteams.length }));
+            console.log("[OCRRecordModal] 箱の返事:", JSON.stringify(箱の返事).slice(0, 400));
+            // {"boards":[…]} と頼んでも、配列だけを返してくることがある
+            const boards = Array.isArray(箱の返事) ? 箱の返事 : Array.isArray(箱の返事 && 箱の返事.boards) ? 箱の返事.boards : [];
+            const 箱たち = boards.map((b) => b && b.box_2d).filter((b) => Array.isArray(b) && b.length === 4);
+            // 段の数は 帯の数×帯の中の印の数。Gemini は印が 10 段並ぶ板の cells を 4 や 5 と数えた
+            //（帯を 1 マスと見る）ので、cells の数は当てにしない。数えられなければ cells の数のまま
+            const 段たち = boards.map((b) => Number(b && b.bands) * Number(b && b.marks_per_band)).filter((n) => Number.isInteger(n) && n >= 2 && n <= 40);
+            const 行数 = 段たち.length === boards.length && 段たち.length ? Math.max(...段たち) : undefined;
+            if (箱たち.length === 生のteams.length) {
+              // 箱の中の射手の列の数（people）が、最初の読みの行の数と違うなら（題の字を1人に
+              // 数えた・名札の無い列を落とした）、人数を添えてもう一度だけ名前と並びを読ませる。
+              // 箱は人数で等分するので、人数が違うと列が丸ごとずれる
+              const 人数たち = boards.map((b) => Number(b && b.people));
+              const 違う = 人数たち.every((n) => Number.isInteger(n) && n >= 1) && 人数たち.some((n, i) => n !== 生のteams[i].rows.length) && 人数たち.every((n, i) => Math.abs(n - 生のteams[i].rows.length) <= 2);
+              if (違う) {
+                console.log("[OCRRecordModal] 箱の中の人数が違うので読み直す:", 人数たち, "最初", 生のteams.map((t) => t.rows.length));
+                try {
+                  const 三度目 = teamsにする(await 読ませる(記録の指示文({ 手がかり: buildNameHint(), 射数: shotsPerRound, 枚数: images.length, 向き, 列の数たち: 人数たち })));
+                  if (三度目.length === 生のteams.length && 三度目.every((t, i) => t.rows.length === 人数たち[i])) {
+                    生のteams = 三度目;
+                  }
+                } catch (e) {
+                  console.log("[OCRRecordModal] 人数を添えた読み直しに失敗:", String((e && e.message) || e));
+                }
+              }
+              const 箱で = await 端末で(生のteams, 箱たち, 行数);
+              if (箱で.読み取り元 === "端末") {
+                差し替え = 箱で;
+                console.log("[OCRRecordModal] 箱で読んだ:", JSON.stringify(箱たち), "段", 行数 || "(cells の数)");
+              } else {
+                console.log("[OCRRecordModal] 箱でも読めなかった:", 箱で.訳 || "");
+              }
+            } else {
+              console.log("[OCRRecordModal] 箱の数が板と合わない:", 箱たち.length, "/", 生のteams.length);
+            }
+          } catch (e) {
+            console.log("[OCRRecordModal] 箱を聞けなかった:", String((e && e.message) || e));
+          }
+        }
         if (差し替え.訳) console.log("[OCRRecordModal] 端末の読み取りを使わなかった:", 差し替え.訳);
         if (差し替え.組み直した) console.log("[OCRRecordModal] 板の数を端末に合わせて組み直した:", 差し替え.組み直した);
         set読み取り元(差し替え.読み取り元);
+        if (Array.isArray(差し替え.列の見当たち)) 端末の見当 = 差し替え.列の見当たち;
+        {
+          const 人数 = 差し替え.teams.reduce((a, t) => a + ((t && t.rows) || []).length, 0);
+          const 見当 = 端末の見当 ? 端末の見当.reduce((a, b) => a + b, 0) : 0;
+          // 端末のほうが多い（AI が名札の無い列を落とした）ときだけ断る。少ないのは小計の列を
+          // 数え落としただけのことが多い
+          set列の断り(見当 > 人数 ? `写真には射手の列が${見当}本あるように見えますが、AI は${人数}人しか読めませんでした。名札の無い列や読めない列があれば、その人を記録表で足してください。` : "");
+        }
         const teams = 差し替え.teams;
         const rawRows = [];
         teams.forEach((t, ti) => {
@@ -1000,6 +1058,11 @@ const OCRRecordModal = ({
                 {読み取り元 === "端末" && (
                   <_Text style={styles.hint}>
                     ○×は端末で読み取りました（名前と並びはAI）。
+                  </_Text>
+                )}
+                {!!列の断り && (
+                  <_Text style={[styles.hint, { color: "#B25000" }]} testID="ocr-retsu-kotowari">
+                    {列の断り}
                   </_Text>
                 )}
 
