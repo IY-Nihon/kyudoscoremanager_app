@@ -13,7 +13,7 @@ import { 箱の大きさ } from './kiridasu.mjs';
 /** 写真を読む。明るさ（明暗を伸ばしたもの）と色を持つ */
 export async function 画を読む(みち) {
   const 色 = await sharp(みち).raw().toBuffer({ resolveWithObject: true });
-  const 灰 = await sharp(みち).greyscale().normalise().raw().toBuffer({ resolveWithObject: true });
+  const 灰 = await sharp(みち).greyscale().raw().toBuffer({ resolveWithObject: true });
   return {
     画素: new Uint8Array(灰.data.buffer, 灰.data.byteOffset, 灰.data.length),
     幅: 灰.info.width,
