@@ -151,4 +151,30 @@ test.describe('確認画面', () => {
     expect(盤面.人数, '16人が足されていない').toBe(16);
     await expect(page.getByText('画像から記録を読み取りました')).toBeVisible({ timeout: 15_000 });
   });
+
+  test('Gemini が板を割りすぎても、記録表は板2枚に組み直される', async ({ page }) => {
+    test.setTimeout(300_000);
+    // 右の板を「5人・2人・1人」の3つに割って 4 teams で返してきた体
+    //（2026-09-13 の板で本番に出た。そのまま通すと区切りと計が余計に入る）
+    await 確認画面まで(page, (返事) => {
+      const 右 = 返事.teams[1].rows;
+      返事.teams = [
+        返事.teams[0],
+        { ...返事.teams[1], rows: 右.slice(0, 5) },
+        { ...返事.teams[1], tachiPeople: 2, rows: 右.slice(5, 7) },
+        { ...返事.teams[1], tachiPeople: 1, rows: 右.slice(7, 8) },
+      ];
+    });
+    await expect(page.getByText('○×は端末で読み取りました（名前と並びはAI）。')).toBeVisible({ timeout: 120_000 });
+    await page.getByText('記録表に反映する', { exact: true }).click();
+    await expect(page.getByText('20射', { exact: true })).toBeVisible({ timeout: 15_000 });
+    const 並び = await page.evaluate(() => {
+      const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}').state || {};
+      return (s.archers || []).map((a) => (a.isSeparator ? '|' : a.isTotalCalculator ? '計' : '人'));
+    });
+    // 板2枚 × 8人。立（4人）ごとに計、板の間に区切り1つ
+    expect(並び.join(' '), '区切りと計の入り方が違う').toBe(
+      '人 人 人 人 計 人 人 人 人 計 | 人 人 人 人 計 人 人 人 人 計'
+    );
+  });
 });

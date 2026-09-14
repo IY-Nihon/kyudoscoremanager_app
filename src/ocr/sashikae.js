@@ -21,6 +21,13 @@
  * どれも黙って Gemini のまま進む。返り値の 読み取り元 で分かる。
  * 列の数が合わなかったときは 列の見当たち（板ごとに端末が数えた射手の列の数）も返す。
  * 呼ぶ側はそれを添えて Gemini にもう一度だけ読ませられる（OCRRecordModal）。
+ *
+ * ■ 板の数を Gemini が違えたとき（行を組み直す）
+ *   写真1枚に板2枚なのに、右の板を「2人・1人・1人」の3つに割って 4 teams で返すことがある
+ *  （2026-09-13 の板 B で本番に出た。区切りと計が余計に入り、○×も Gemini のまま＝2射違った）。
+ *   行の総数が端末の見当（板ごとの人数）の合計と同じなら、行を前から見当の人数ずつ板に
+ *   組み直して、もう一度だけ端末で読む。読めたら組み直した teams を返す（読み取り元 '端末'）。
+ *   Gemini は板ごとに前から順に行を返すので、組み直しで並びは崩れない。
  */
 import { 板の印を読む, 紙の印を読む, 大前から並べる } from './yomu.js';
 
@@ -43,6 +50,33 @@ export async function マスを端末で差し替える(teams, images, 設定) {
   const 板 = teams.every((t) => !t || t.cellStyle !== '1射');
   if (!紙 && !板) return そのまま('板と紙が混ざっている');
 
+  // 板の数を Gemini が違えたとき（右の板を 2人・1人・1人 に割るなど）は、行を板に組み直して読む。
+  // 「板が2つ」と選んでいるのに 2 より多ければ、Gemini の板のまま読む前に 2 枚として試す。
+  // 割られた板のまま読んでも、端末の格子は「頼まれた板の数」に写真を割るので列は合ってしまい、
+  // 余計な区切りと計が入った記録表になる（2026-09-13 の板 B で本番に出た）
+  const 組み直せる = 板 && images.length === 1;
+  const 板の数 = 設定.向き === '左右から' ? 2 : null;
+  const 組み直して読む = async (見当たち) => {
+    for (const 見当 of 見当たち) {
+      const 組み直し = 行を組み直す(teams, 見当);
+      if (!組み直し) continue;
+      let 二度目;
+      try {
+        二度目 = await 板を読む(組み直し, images, 設定);
+      } catch (e) {
+        二度目 = null;
+      }
+      if (Array.isArray(二度目)) {
+        return { teams: 差し替えた(組み直し, 二度目, 設定, 紙), 読み取り元: '端末', 組み直した: 見当 };
+      }
+    }
+    return null;
+  };
+  if (組み直せる && 板の数 && teams.length > 板の数) {
+    const 先に = await 組み直して読む(組み直しの候補(teams, 板の数, null));
+    if (先に) return 先に;
+  }
+
   let 読んだ;
   try {
     読んだ = 紙 ? await 紙を読む(teams, images, 設定) : await 板を読む(teams, images, 設定);
@@ -50,9 +84,20 @@ export async function マスを端末で差し替える(teams, images, 設定) {
     return そのまま('読めなかった: ' + String((e && e.message) || e));
   }
   if (typeof 読んだ === 'string') return そのまま(読んだ);
-  if (読んだ && 読んだ.訳) return { teams, 読み取り元: 'AI', 訳: 読んだ.訳, 列の見当たち: 読んだ.列の見当たち };
+  if (読んだ && 読んだ.訳) {
+    // 読めなかったとき。端末の見当（板ごとの人数）が行の総数と合えば、それで組み直して読み直す
+    if (組み直せる) {
+      const 後で = await 組み直して読む(組み直しの候補(teams, 板の数, 読んだ.列の見当たち));
+      if (後で) return 後で;
+    }
+    return { teams, 読み取り元: 'AI', 訳: 読んだ.訳, 列の見当たち: 読んだ.列の見当たち };
+  }
+  return { teams: 差し替えた(teams, 読んだ, 設定, 紙), 読み取り元: '端末' };
+}
 
-  const 新しい = teams.map((t, i) => {
+/** 端末で読んだ列を teams の rows へ入れる */
+function 差し替えた(teams, 読んだ, 設定, 紙) {
+  return teams.map((t, i) => {
     const 列たち = 大前から並べる(読んだ[i].列たち, 設定.向き, i, teams.length);
     const 確たち = 大前から並べる(読んだ[i].確からしさ, 設定.向き, i, teams.length);
     return {
@@ -62,7 +107,62 @@ export async function マスを端末で差し替える(teams, images, 設定) {
       rows: t.rows.map((r, j) => ({ ...r, cells: 列たち[j].slice(), 確からしさ: 確たち[j].slice(), marks: undefined })),
     };
   });
-  return { teams: 新しい, 読み取り元: '端末' };
+}
+
+/**
+ * 行を板に組み直す割り方の候補（板ごとの人数）。合いそうな順。
+ *   ・端末の見当（列の見当たち）が行の総数と合えば、まずそれ
+ *   ・板の数が決まっている（「板が2つ」）なら、Gemini の板の境目で2つに分ける割り方を、
+ *     半々に近い順に。Gemini は板の中を割ることはあっても、板をまたいで束ねることは少ない
+ * 板の数が Gemini と同じ割り方は含めない（それは読めなかったばかり）
+ */
+export function 組み直しの候補(teams, 板の数, 見当) {
+  const 人数たち = teams.map((t) => t.rows.length);
+  const 総 = 人数たち.reduce((a, b) => a + b, 0);
+  const 出 = [];
+  const 足す = (割り方) => {
+    if (割り方.length === teams.length) return;
+    if (割り方.some((n) => !(Number.isInteger(n) && n >= 1))) return;
+    if (割り方.reduce((a, b) => a + b, 0) !== 総) return;
+    if (出.some((x) => x.length === 割り方.length && x.every((n, i) => n === 割り方[i]))) return;
+    出.push(割り方);
+  };
+  if (Array.isArray(見当)) 足す(見当);
+  if (板の数 === 2 && teams.length > 2) {
+    const 境目 = [];
+    let 積 = 0;
+    for (let i = 0; i < 人数たち.length - 1; i++) {
+      積 += 人数たち[i];
+      境目.push(積);
+    }
+    境目.sort((a, b) => Math.abs(a - 総 / 2) - Math.abs(b - 総 / 2));
+    for (const b of 境目) 足す([b, 総 - b]);
+  }
+  return 出;
+}
+
+/**
+ * Gemini の teams の行を、端末の見当（板ごとの人数）で板に組み直す。
+ * 板の数が違い、行の総数が見当の合計と同じときだけ。それ以外は null。
+ *
+ * 立の人数（tachiPeople）は、いちばん行の多い元の板のものを使う（割られた小さな板は
+ * 「2人」「1人」と言ってくることがある）。それが無ければ見当の人数
+ */
+export function 行を組み直す(teams, 見当) {
+  if (!Array.isArray(見当) || !見当.length || 見当.length === teams.length) return null;
+  if (!見当.every((n) => Number.isInteger(n) && n >= 1)) return null;
+  const 行たち = teams.flatMap((t) => (Array.isArray(t && t.rows) ? t.rows : []));
+  if (見当.reduce((a, b) => a + b, 0) !== 行たち.length) return null;
+  const 大きい = teams.reduce((a, t) => (t.rows.length > a.rows.length ? t : a), teams[0]);
+  const 立 = Number(大きい.tachiPeople) > 0 ? Number(大きい.tachiPeople) : 0;
+  let i = 0;
+  return 見当.map((n) => {
+    const rows = 行たち.slice(i, i + n);
+    i += n;
+    // 名前・向きなどは、この板の最初の行が入っていた元の板から
+    const 元 = teams.find((t) => t.rows.includes(rows[0])) || 大きい;
+    return { ...元, rows, tachiPeople: 立 > 0 && 立 <= n ? 立 : n };
+  });
 }
 
 /** rows の cells の数で、いちばん多いもの（Gemini が行ごとに数を違えても、多数に合わせる） */
