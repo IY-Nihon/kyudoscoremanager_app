@@ -133,7 +133,6 @@ const 矢の名前 = ['初矢', '2本目', '3本目', '留矢'];
 // 一手（2射）の中の呼び名。1本目が甲矢、2本目が乙矢（上の説明のとおり、
 // 一手の中でなら区別できる）
 const 一手の矢の名前 = ['甲矢', '乙矢'];
-const 一手の射数 = 2;
 
 /**
  * 中り数から、立ちの結果の呼び名を返す。
@@ -168,7 +167,7 @@ function 一手の呼び名(中り) {
  * 割合はすべての手の中での割合（4射の型と違い、同じ中り数の中で分ける意味が薄い）。
  * 一度も無い型は出さない。
  *
- * @param {Record<string, number>} 一手の型 成績を数える が返す 一手の型
+ * @param {Record<string, number>} 一手の型 成績を数える が返す 一手.型
  * @returns {Array<{型:string, 中り:number, 呼び名:string, 回数:number, 割合:number, 要点:string|null}>}
  */
 function 一手の型を並べる(一手の型) {
@@ -250,7 +249,7 @@ function 型を並べる(型) {
  *
  * @param {Array} 記録たち すでに期間・タグで絞ったあとの記録
  * @param {string|number} 部員id
- * @returns {{shots:number, hits:number, rate:number, perShotStats:Array<{shots:number,hits:number}>, patterns:object, 型:Record<string,number>, 一手の型:Record<string,number>, 端数の射:number}}
+ * @returns {{shots:number, hits:number, rate:number, perShotStats:Array<{shots:number,hits:number}>, patterns:object, 型:Record<string,number>, 一射:{shots:number,hits:number}, 一手:{shots:number,hits:number,型:Record<string,number>}, 端数の射:number}}
  */
 function 成績を数える(記録たち, 部員id) {
   let shots = 0;
@@ -261,10 +260,14 @@ function 成績を数える(記録たち, 部員id) {
   // patterns と同じ立ちだけを数えるので、足し合わせれば patterns に一致する
   /** @type {Record<string, number>} */
   const 型 = {};
-  // 一手（2射）単位の型。'○×' のような2文字を鍵にする。
-  // 4射の立ちにも一手が2つ入っているので、こちらは4射そろわなくても数える
-  /** @type {Record<string, number>} */
-  const 一手の型 = {};
+  // 一射・一手のとき。「その日は1本しか引いていない」「一手（2本）だけ引いた」記録を、
+  // 4射の立ちとは別に数える（一射・一手の試合や、1本だけの立ち）。
+  // 行（射手）に引いた印が 1 つなら一射、2 つなら一手。列（射数）の設定は 4 刻みで
+  // 1・2 にできないので、「引いた本数」で見分ける。3 本や 4 本以上は端数・立ちのまま。
+  // 一手の型は '○×' のような2文字（1本目が甲矢、2本目が乙矢）
+  const 一射 = { shots: 0, hits: 0 };
+  /** @type {{shots:number, hits:number, 型:Record<string, number>}} */
+  const 一手 = { shots: 0, hits: 0, 型: {} };
   // 4射そろわず、結果分布に数えられなかった射。画面で断り書きを出すのに使う
   let 端数の射 = 0;
 
@@ -320,20 +323,23 @@ function 成績を数える(記録たち, 部員id) {
         端数の射++;
       }
 
-      // 一手の型。2射そろっていて、2射とも同じ人のときだけ数える（立ちと同じ決まり）
-      const 手の数 = Math.floor(射手.marks.length / 一手の射数);
-      for (let 手 = 0; 手 < 手の数; 手++) {
-        let 鍵 = '';
-        for (let i = 0; i < 一手の射数; i++) {
-          const 射目 = 手 * 一手の射数 + i;
-          const 印 = 射手.marks[射目];
-          if (!引いた射か(印) || !その人の射か(射手, 射目, 部員id)) {
-            鍵 = null;
-            break;
-          }
-          鍵 += 印;
+      // 一射・一手のとき。行で引いた本数が 1 か 2 のときだけ。
+      // 交代で入った人の分は、その人の射だけを数える（型は2本とも同じ人のときだけ）
+      const 引いた射目 = [];
+      射手.marks.forEach((印, 射目) => {
+        if (引いた射か(印)) 引いた射目.push(射目);
+      });
+      if (引いた射目.length === 1 || 引いた射目.length === 2) {
+        const 束 = 引いた射目.length === 1 ? 一射 : 一手;
+        const 自分の = 引いた射目.filter((射目) => その人の射か(射手, 射目, 部員id));
+        for (const 射目 of 自分の) {
+          束.shots++;
+          if (射手.marks[射目] === '○') 束.hits++;
         }
-        if (鍵) 一手の型[鍵] = (一手の型[鍵] || 0) + 1;
+        if (引いた射目.length === 2 && 自分の.length === 2) {
+          const 鍵 = 射手.marks[引いた射目[0]] + 射手.marks[引いた射目[1]];
+          一手.型[鍵] = (一手.型[鍵] || 0) + 1;
+        }
       }
     }
   }
@@ -345,7 +351,8 @@ function 成績を数える(記録たち, 部員id) {
     perShotStats,
     patterns,
     型,
-    一手の型,
+    一射,
+    一手,
     端数の射,
   };
 }
