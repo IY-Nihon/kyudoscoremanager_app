@@ -204,11 +204,17 @@ test.describe('確認画面', () => {
     const { 射手たち } = await import('../scripts/ocr-cells/kiroku.mjs');
     const 読み = await page.evaluate(() => {
       const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}').state || {};
-      return (s.archers || []).filter((a) => a && !a.isSeparator && !a.isTotalCalculator).map((a) => a.marks);
+      return (s.archers || []).filter((a) => a && !a.isSeparator && !a.isTotalCalculator).map((a) => ({ name: a.name, marks: a.marks }));
     });
     expect(読み.length).toBe(16);
+    // 記録表の板の順は写真と逆（右の板が先）なので、名前で突き合わせる
     let 合 = 0;
-    読み.forEach((marks, i) => { const 真 = [...射手たち[i].印]; for (let k = 0; k < 真.length; k++) if (marks[k] === 真[k]) 合++; });
+    for (const { name, marks } of 読み) {
+      const 人 = 射手たち.find((s) => s.名 === name);
+      expect(人, `${name} が記録に無い`).toBeTruthy();
+      const 真 = [...人.印];
+      for (let k = 0; k < 真.length; k++) if (marks[k] === 真[k]) 合++;
+    }
     expect(合, `合ったのは ${合}/320`).toBeGreaterThanOrEqual(256);
   });
 });
