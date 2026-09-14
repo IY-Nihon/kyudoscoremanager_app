@@ -275,6 +275,30 @@ const k = () => {
       o.default.useEffect(() => {
         x.useScoreStore.getState().loadData();
       }, []),
+      // アプリを閉じて戻ったとき、続けていたライブへ戻る（ライブが終わっていれば
+      // 記録表を片付ける）。開いた直後は合言葉や Realtime Database がまだ用意できて
+      // いないことがあるので、少し置いてもう一度だけ試す。画面が前に出たときにも見る
+      o.default.useEffect(() => {
+        let 止めた = !1;
+        const 試す = () => {
+          if (止めた) return;
+          const 店 = x.useScoreStore.getState();
+          if (店.isLiveActive || !店.ライブの続き || 'function' !== typeof 店.ライブに戻る) return;
+          Promise.resolve(店.ライブに戻る()).catch(() => {});
+        };
+        試す();
+        const 後で = setTimeout(試す, 4000);
+        const もっと後で = setTimeout(試す, 15000);
+        const 見張り = RN.AppState.addEventListener('change', (状態) => {
+          if ('active' === 状態) 試す();
+        });
+        return () => {
+          止めた = !0;
+          clearTimeout(後で);
+          clearTimeout(もっと後で);
+          見張り && 見張り.remove && 見張り.remove();
+        };
+      }, []),
       o.default.useEffect(() => {
         let e;
         return (
