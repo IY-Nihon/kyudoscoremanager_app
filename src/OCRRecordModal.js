@@ -366,6 +366,7 @@ const OCRRecordModal = ({
           }
         }
         if (差し替え.訳) console.log("[OCRRecordModal] 端末の読み取りを使わなかった:", 差し替え.訳);
+        if (差し替え.組み直した) console.log("[OCRRecordModal] 板の数を端末に合わせて組み直した:", 差し替え.組み直した);
         set読み取り元(差し替え.読み取り元);
         const teams = 差し替え.teams;
         const rawRows = [];
