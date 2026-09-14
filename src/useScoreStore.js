@@ -763,7 +763,7 @@ function つなげなくなった(誤り, e, s) {
   const もう離れている = !s().isLiveActive;
   (在席を終える(e),
     写しを見るのをやめる(),
-    e({ isLiveActive: !1, isHost: !1, liveSessionName: null, いまのライブの期限: null }));
+    e({ isLiveActive: !1, ライブの続き: null, isHost: !1, liveSessionName: null, いまのライブの期限: null }));
   if (もう離れている) return;
   try {
     n.default.alert(
@@ -825,7 +825,7 @@ function 期限で閉じるか(状態, e, s) {
     (0, i.off)((0, i.ref)(fb.rtdb, `live_sessions/${枝}/${名前}/state`)),
     在席を終える(e),
     写しを見るのをやめる(),
-    e({ isLiveActive: !1, isHost: !1, liveSessionName: null, いまのライブの期限: null }));
+    e({ isLiveActive: !1, ライブの続き: null, isHost: !1, liveSessionName: null, いまのライブの期限: null }));
   // 何度も出さない。見張りが複数あると同じ通知で二度三度呼ばれる
   if (期限 !== 期限を知らせた) {
     期限を知らせた = 期限;
@@ -1100,7 +1100,7 @@ const M = (0, s.create)()(
         historyViewMode: 'list',
         selectedHistorySessionId: null,
         isAdminModePending: !1,
-        isLiveActive: !1,
+        isLiveActive: !1, ライブの続き: null,
         isHost: !1,
         liveSessionName: null,
         // 帯にカウントダウンを出すために持つ。盤面に載ってくる期限の控え。
@@ -2637,7 +2637,7 @@ const M = (0, s.create)()(
               sessions: [T, ...e.sessions.filter((e) => e.id !== p)],
               activeSessionID: null,
               archers: [],
-              isLiveActive: !1,
+              isLiveActive: !1, ライブの続き: null,
               isHost: !1,
               liveSessionName: null,
               lastLocalChange: Date.now(),
@@ -4194,6 +4194,16 @@ const M = (0, s.create)()(
               // 同じ名前で始め直したとき、前回の片付けが節点に残っていることがある。
               // 最初の1通ぶんは知らせない
               resetIsFirstSnapshot: !0,
+              // アプリを閉じて戻ったときに、このライブへ戻るための控え（端末に残す）
+              ライブの続き: {
+                名前: o,
+                枝: 共有 ? 枝 : null,
+                閲覧枝: 共有 ? 共有.閲覧の枝 || null : null,
+                主催: !0,
+                見るだけ: !1,
+                よそ: !1,
+                団体: s().activeGroupId || null,
+              },
             }));
           const a = s();
           if (!fb.rtdb) return '確認できない';
@@ -4232,7 +4242,7 @@ const M = (0, s.create)()(
                       (0, i.off)((0, i.ref)(fb.rtdb, `live_sessions/${枝}/${o}/state`)),
                       (在席を終える(e), 写しを見るのをやめる()),
                     void e({
-                      isLiveActive: !1,
+                      isLiveActive: !1, ライブの続き: null,
                       isHost: !1,
                       liveSessionName: null,
                     })
@@ -4252,7 +4262,7 @@ const M = (0, s.create)()(
                         (0, i.off)((0, i.ref)(fb.rtdb, `live_sessions/${枝}/${o}/state`)),
                         (在席を終える(e), 写しを見るのをやめる()),
                       void e({
-                        isLiveActive: !1,
+                        isLiveActive: !1, ライブの続き: null,
                         isHost: !1,
                         liveSessionName: null,
                       })
@@ -4587,7 +4597,7 @@ const M = (0, s.create)()(
             const v0 = x.val();
             if (!v0) return;
             if ('finished' === v0.status)
-              return void e({ isLiveActive: !1, isHost: !1, liveSessionName: null, いまのライブの期限: null });
+              return void e({ isLiveActive: !1, ライブの続き: null, isHost: !1, liveSessionName: null, いまのライブの期限: null });
             if (期限で閉じるか(v0, e, s)) return;
             if (!v0.archers && !Array.isArray(v0.archers)) return;
             // 部員が参加するときと同じ突き合わせを通す。
@@ -4658,6 +4668,17 @@ const M = (0, s.create)()(
               historySharedMax: 0,
               historyIsFirstSnapshot: !0,
               resetIsFirstSnapshot: !0,
+              // アプリを閉じて戻ったときに、このライブへ戻るための控え（端末に残す）。
+              // 主催・よその団体は、呼ぶ側があとで据え直すことがある（ライブに戻る で拾う）
+              ライブの続き: {
+                名前: o,
+                枝: 差し込み || 道しるべ ? 枝 : null,
+                閲覧枝: 差し込み ? (共有 && 共有.閲覧枝) || null : 道しるべ ? 道しるべ.閲覧の枝 : null,
+                主催: !1,
+                見るだけ: !!見るだけ,
+                よそ: !1,
+                団体: s().activeGroupId || null,
+              },
             }),
             !fb.rtdb)
           )
@@ -4673,7 +4694,7 @@ const M = (0, s.create)()(
                   (0, i.off)((0, i.ref)(fb.rtdb, `live_sessions/${枝}/${o}/state`)),
                   (在席を終える(e), 写しを見るのをやめる()),
                 void e({
-                  isLiveActive: !1,
+                  isLiveActive: !1, ライブの続き: null,
                   isHost: !1,
                   liveSessionName: null,
                 })
@@ -4695,7 +4716,7 @@ const M = (0, s.create)()(
                 // 届くのが遅れた場合は「終わったはずのライブ」が一覧に残り続ける
                 s().resetCurrentSession(!1),
                 void e({
-                  isLiveActive: !1,
+                  isLiveActive: !1, ライブの続き: null,
                   isHost: !1,
                   liveSessionName: null,
                 })
@@ -4752,6 +4773,49 @@ const M = (0, s.create)()(
         共有の来客をやめる: () => {
           (s().stopLiveSync(!0), e({ 共有の来客: !1 }));
         },
+        /**
+         * アプリを閉じて戻ったとき、続けていたライブへ戻る。
+         *
+         * ライブの状態（isLiveActive など）は端末に残さないので、閉じて開き直すと
+         * ライブから抜けた形になり、記録表にはライブを始めた時点の○×だけが残っていた。
+         * 端末に残した ライブの続き を見て、
+         *   ・まだ続いているライブなら、同じ立場（主催／参加・見るだけ）で入り直す
+         *   ・終わっている（節点が無い・finished）なら、記録表を片付けて控えを捨てる
+         *   ・確かめられない（つながらない）なら、何もしない（次に開いたときにまた見る）
+         */
+        ライブに戻る: async () => {
+          const 続き = s().ライブの続き;
+          if (!続き || !続き.名前 || s().isLiveActive) return '無い';
+          if (続き.団体 && 続き.団体 !== s().activeGroupId) return void e({ ライブの続き: null });
+          if (!fb.rtdb) return '確認できない';
+          let 枝 = 秘.枝として使えるか(続き.枝) ? String(続き.枝) : 団体の枝();
+          if (!枝) {
+            try {
+              枝 = 秘.ライブの枝(await s().ライブの合言葉を用意する());
+            } catch (t) {
+              枝 = null;
+            }
+          }
+          if (!秘.枝として使えるか(枝)) return '確認できない';
+          let 状態;
+          try {
+            状態 = (await (0, i.get)((0, i.ref)(fb.rtdb, `live_sessions/${枝}/${続き.名前}/state`))).val();
+          } catch (t) {
+            return '確認できない';
+          }
+          if (s().isLiveActive) return '無い';
+          const 切れた = 状態 && 'number' === typeof 状態.期限 && 状態.期限 > 0 && いまの見当() >= 状態.期限;
+          if (!状態 || 'finished' === 状態.status || 切れた) {
+            // 終わっていた。ライブを始めた時点の○×が記録表に残っているので片付ける
+            s().resetCurrentSession(!1);
+            e({ ライブの続き: null });
+            return '終わっていた';
+          }
+          s().joinLiveSync(続き.名前, !!続き.見るだけ, 秘.枝として使えるか(続き.枝) ? { 枝: String(続き.枝), 閲覧枝: 続き.閲覧枝 || null } : undefined);
+          // joinLiveSync は参加者として入る。主催だったなら主催に戻す（移ったら付いていく と同じ）
+          if (s().liveSessionName === 続き.名前) e({ isHost: !!続き.主催, よその団体のライブ: !!続き.よそ });
+          return '戻った';
+        },
         stopLiveSync: (o = !1) => {
           // ライブを移ったら控えは捨てる。前のライブで載せた○×を覚えたままだと、
           // 次のライブで「前と同じ」と見なして送らず、相手の画面に出ない
@@ -4765,7 +4829,7 @@ const M = (0, s.create)()(
             (在席を終える(e), 写しを見るのをやめる()),
             o || s().resetCurrentSession(!1),
             e({
-              isLiveActive: !1,
+              isLiveActive: !1, ライブの続き: null,
               isHost: !1,
               liveSessionName: null,
             }));
@@ -5577,6 +5641,7 @@ const M = (0, s.create)()(
         arrowTargetType: e.arrowTargetType,
         比較のひな型: e.比較のひな型,
         ライブの合言葉: e.ライブの合言葉,
+        ライブの続き: e.ライブの続き,
       }),
       onRehydrateStorage: () => {
         console.log('[Store] Hydration starting...');

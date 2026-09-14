@@ -67,19 +67,15 @@ const 作った共有の枝 = [];
  */
 let ライブの枝 = null;
 
-// 検査ごとに片付ける。afterAll だと最後の検査より先に走ることがあり、
-// そのぶんが消し残る（実際、3件中1件が残った）
-test.afterEach(async () => {
-  if (!作ったライブ.length) return;
-  if (!ライブの枝) {
-    console.log(`後片付け: 枝の名前が取れず、${作ったライブ.length} 件を消せませんでした`);
-    作ったライブ.length = 0;
-    return;
-  }
+/**
+ * 検証環境の枝を、管理の資格（firebase CLI）で消す。
+ * 検査の後片付けと、「主催者がライブを終えて節点が消えた」を作るのに使う。
+ * 消せなければ、その理由を返す（消せたら null）
+ */
+async function 管理で消す(道) {
   const { execFileSync } = await import('node:child_process');
   const fs = await import('node:fs');
   const path = await import('node:path');
-
   // firebase.cmd は Node 20 以降 execFile から直に起動できない（EINVAL）。
   // CLI の実体（JS）を node で呼ぶ。stamp-live-release-day.mjs と同じ手口。
   // 前はここで .cmd を呼んで毎回失敗しており、しかも例外を握りつぶして
@@ -89,37 +85,50 @@ test.afterEach(async () => {
     '/usr/local/lib/node_modules/firebase-tools/lib/bin/firebase.js',
     '/usr/lib/node_modules/firebase-tools/lib/bin/firebase.js',
   ].find((p) => p && fs.existsSync(p));
+  if (!CLI) return 道 + '（firebase-tools が見つからない）';
+  try {
+    execFileSync(
+      process.execPath,
+      [CLI, 'database:remove', 道, '--project', 'kyudoscoremanager-stg', '--force'],
+      { stdio: 'ignore' }
+    );
+    return null;
+  } catch (e) {
+    return 道 + '（' + String(e.message).slice(0, 60) + '）';
+  }
+}
 
+// 検査ごとに片付ける。afterAll だと最後の検査より先に走ることがあり、
+// そのぶんが消し残る（実際、3件中1件が残った）
+test.afterEach(async () => {
+  if (!作ったライブ.length) return;
+  if (!ライブの枝) {
+    console.log(`後片付け: 枝の名前が取れず、${作ったライブ.length} 件を消せませんでした`);
+    作ったライブ.length = 0;
+    return;
+  }
   const 失敗 = [];
-  const 消す = (道) => {
-    if (!CLI) return void 失敗.push(道 + '（firebase-tools が見つからない）');
-    try {
-      execFileSync(
-        process.execPath,
-        [CLI, 'database:remove', 道, '--project', 'kyudoscoremanager-stg', '--force'],
-        { stdio: 'ignore' }
-      );
-    } catch (e) {
-      失敗.push(道 + '（' + String(e.message).slice(0, 60) + '）');
-    }
+  const 消す = async (道) => {
+    const 訳 = await 管理で消す(道);
+    if (訳) 失敗.push(訳);
   };
   // 消したぶんは一覧から外す。残すと次の検査で消し直そうとする
   const 今回 = 作ったライブ.splice(0, 作ったライブ.length);
   for (const 名 of 今回) {
-    消す(`/live_sessions/${ライブの枝}/${名}`);
-    消す(`/live_history/${ライブの枝}/${名}`);
+    await 消す(`/live_sessions/${ライブの枝}/${名}`);
+    await 消す(`/live_history/${ライブの枝}/${名}`);
     // 在席も別の枝にある。消し忘れると検証環境に溜まる（上の説明と同じ轍）
-    消す(`/live_presence/${ライブの枝}/${名}`);
+    await 消す(`/live_presence/${ライブの枝}/${名}`);
   }
   for (const 枝 of 作った共有の枝.splice(0, 作った共有の枝.length)) {
-    消す(`/live_sessions/${枝}`);
-    消す(`/live_history/${枝}`);
-    消す(`/live_presence/${枝}`);
-    消す(`/live_view/${枝}`);
+    await 消す(`/live_sessions/${枝}`);
+    await 消す(`/live_history/${枝}`);
+    await 消す(`/live_presence/${枝}`);
+    await 消す(`/live_view/${枝}`);
     // 有効期限も別の根にある。消し忘れると検証環境に溜まり続ける。
     // ここは firebase CLI（管理の資格）で消すので、決まりの「中身が
     // 残っているうちは消せない」には掛からない
-    消す(`/live_limits/${枝}`);
+    await 消す(`/live_limits/${枝}`);
   }
   if (失敗.length) {
     console.log(`後片付け: ${今回.length} 件のうち ${失敗.length} 件を消せませんでした`);
@@ -916,4 +925,97 @@ test('ライブ：立ち順を入れ替えると、相手の画面にも並び�
   const 届いた = await こうなるまで待つ(() => 並び(B), (x) => x === '2,3,1', 40_000).catch(() => null);
   expect(await 並び(B), '相手の画面に並びが届いていない').toBe('2,3,1');
   expect(届いた === null, '待っている間に落ちた').toBe(false);
+});
+
+/**
+ * ライブ中にアプリを閉じて開き直しても、ライブへ戻る（useScoreStore の ライブに戻る）。
+ *
+ * 前は、開き直すとライブから抜けた形になり、記録表にはライブを始めた時点の
+ * ○×だけが残っていた。見たいのは3つ。
+ *   ・主催者が開き直しても「ライブ中」のまま、そのあと入れた○が参加者に届く
+ *   ・参加者が開き直しても「ライブ中」のまま、そのあと主催者が入れた○が届く
+ *   ・閉じている間にライブが終わっていたら、開き直したとき記録表が空になり、ライブに居ない
+ * 3つ目は、主催者が終了・保存したあと節点が消える形を、管理の資格で消して作る
+ * （終了・保存を押すと検証環境に記録が増えるので押さない）。
+ */
+test('ライブ：閉じて開き直してもライブへ戻り、終わっていれば記録表が片付く', async ({ browser }) => {
+  test.setTimeout(360_000);
+  const ライブ名 = ライブ名を作る('back');
+  const 主 = await browser.newContext();
+  const 参 = await browser.newContext();
+  const A = await 主.newPage();
+  const B = await 参.newPage();
+
+  await 入る(A);
+  await 射手を立てる(A, 3);
+  await ライブを始める(A, ライブ名);
+  const 一人目 = (await 一射目たち(A)).sort((a, b) => a.x - b.x || a.y - b.y);
+  expect(一人目.length, '射手が3人立っていない').toBe(3);
+  await A.mouse.click(一人目[0].x, 一人目[0].y);
+  expect(await 印がつくまで待つ(A, 一人目[0].印), '主催者の○が入らない').toBe('○');
+
+  // ── 主催者が開き直す ──
+  await A.reload();
+  await 画面が出るまで待つ(A);
+  await expect(A.getByText(new RegExp('ライブ中')), '主催者が開き直したらライブから抜けた').toBeVisible({
+    timeout: 60_000,
+  });
+  expect(await 中身(A, 一人目[0].印), '開き直す前の○が消えた').toBe('○');
+  // 戻ったあとに入れた○が届くこと（帯が出ているだけでは、送れているか分からない）
+  const 戻った後 = Object.fromEntries((await 一射目たち(A)).map((x) => [x.印, x]));
+  await A.mouse.click(戻った後[一人目[1].印].x, 戻った後[一人目[1].印].y);
+  expect(await 印がつくまで待つ(A, 一人目[1].印), '戻ったあとの○が入らない').toBe('○');
+
+  // ── 参加者がつなぎ、開き直す ──
+  await 入る(B);
+  await ライブに参加する(B, ライブ名);
+  expect((await 盤面を待つ(B)).length, '参加側に盤面が届いていない').toBe(3);
+  expect(await 印がつくまで待つ(B, 一人目[1].印), '主催者が戻ったあとの○が参加者に届かない').toBe('○');
+
+  await B.reload();
+  await 画面が出るまで待つ(B);
+  await expect(B.getByText(new RegExp('ライブ中')), '参加者が開き直したらライブから抜けた').toBeVisible({
+    timeout: 60_000,
+  });
+  // 戻った参加者に、そのあと主催者が入れた○が届くこと
+  const いま = Object.fromEntries((await 一射目たち(A)).map((x) => [x.印, x]));
+  await A.mouse.click(いま[一人目[2].印].x, いま[一人目[2].印].y);
+  expect(await 印がつくまで待つ(A, 一人目[2].印), '3人目の○が入らない').toBe('○');
+  expect(await 印がつくまで待つ(B, 一人目[2].印), '戻った参加者に○が届かない').toBe('○');
+  // 開き直す前の席は切れた合図で消える。少し遅れることがあるので待つ
+  await expect(B.getByText('2台接続中'), '台数が2に戻っていない').toBeVisible({ timeout: 20_000 });
+
+  // ── 閉じている間にライブが終わる ──
+  await B.close();
+  expect(ライブの枝, '枝の名前が取れていない').toBeTruthy();
+  for (const 道 of [
+    `/live_sessions/${ライブの枝}/${ライブ名}`,
+    `/live_history/${ライブの枝}/${ライブ名}`,
+    `/live_presence/${ライブの枝}/${ライブ名}`,
+  ]) {
+    const 訳 = await 管理で消す(道);
+    expect(訳, 'ライブの節点を消せない').toBeNull();
+  }
+  const B2 = await 参.newPage();
+  await 案内を止める(B2);
+  await 自動ロックを入れる(B2);
+  await B2.goto('/');
+  await 画面が出るまで待つ(B2);
+  await 入り口が決まるまで待つ(B2);
+  // 開いた直後は古い記録表（○×つき）が出ていてよい。確かめたら片付く
+  await expect
+    .poll(async () => (await 一射目たち(B2)).length, {
+      timeout: 60_000,
+      message: '終わったライブの記録表が残っている',
+    })
+    .toBe(0);
+  await expect(B2.getByText(new RegExp('ライブ中')), '終わったのにライブ中のまま').toHaveCount(0);
+  const 控え = await B2.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+    return s.ライブの続き || null;
+  });
+  expect(控え, 'ライブの控えが捨てられていない').toBeNull();
+
+  await 主.close();
+  await 参.close();
 });
