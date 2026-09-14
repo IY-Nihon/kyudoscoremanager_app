@@ -615,7 +615,8 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                                                   color:
                                                     組.チームの色(組.区切りのチーム名(射手)) || '#8E8E93',
                                                 },
-                                                numberOfLines: 1,
+                                                // 横の表の区切りは高さ 35 で 2 行入る。1 行では長い大学名が切れた
+                                                numberOfLines: 2,
                                                 children: 組.区切りのチーム名(射手),
                                               })
                                             : null
@@ -797,12 +798,14 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                                     組.区切りのチーム名(t)
                                     ? (0, k.jsx)(n.default, {
                                         style: {
-                                          fontSize: 11 * V,
+                                          fontSize: 組.区切りの名の字(V, C.UIConfig).fontSize,
+                                          lineHeight: 組.区切りの名の字(V, C.UIConfig).lineHeight,
                                           fontWeight: '700',
                                           textAlign: 'center',
                                           color: 組.チームの色(組.区切りのチーム名(t)) || '#8E8E93',
                                         },
-                                        numberOfLines: 3,
+                                        // 記録中と同じく、欄の高さに入るだけ行を使う
+                                        numberOfLines: 組.区切りの名の字(V, C.UIConfig).numberOfLines,
                                         children: 組.区切りのチーム名(t),
                                       })
                                     : null

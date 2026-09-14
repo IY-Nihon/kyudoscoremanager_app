@@ -1958,12 +1958,15 @@ const k = () => {
                                       children: 組.区切りのチーム名(e)
                                         ? (0, A.jsx)(a.default, {
                                             style: {
-                                              fontSize: 11 * se,
+                                              fontSize: 組.区切りの名の字(se, F.UIConfig).fontSize,
+                                              lineHeight: 組.区切りの名の字(se, F.UIConfig).lineHeight,
                                               fontWeight: '700',
                                               textAlign: 'center',
                                               color: 組.チームの色(組.区切りのチーム名(e)) || '#8E8E93',
                                             },
-                                            numberOfLines: 3,
+                                            // 欄の高さに入るだけ行を使う。3 行では
+                                            // 「日本大学工科」が「日本大.」に切れて分からなかった
+                                            numberOfLines: 組.区切りの名の字(se, F.UIConfig).numberOfLines,
                                             children: 組.区切りのチーム名(e),
                                           })
                                         : (0, A.jsx)(p.Ionicons, {
