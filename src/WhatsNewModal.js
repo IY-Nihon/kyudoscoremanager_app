@@ -34,7 +34,7 @@ const { getShadowStyle } = require('./shadowStyle');
 // test/updateNotice.test.js が見張っている。
 const 最後に配信した版 = '2026-09-15-01';
 // お知らせの版。新しい項目を足したら、必ずこれを最新の項目の 版 に合わせる。
-const NOTICE_VERSION = '2026-09-15-01';
+const NOTICE_VERSION = '2026-09-15-02';
 const STORAGE_KEY = 'whatsNewDismissedVersion';
 // 最後に開いたときの版。閉じるたびに書く。
 // どこから下が「前に読んだぶん」かの線を引くためだけに使う。
@@ -45,6 +45,14 @@ const LAST_SEEN_KEY = 'whatsNewLastSeenVersion';
 // 新しい順に並べる。上から「前に見た版より新しいか」を数えて、
 // そこで線を引くため、順番が崩れると線の位置が狂う（検査で見ている）
 const NOTICE_ITEMS = [
+  {
+    date: '2026/09/15',
+    版: '2026-09-15-02',
+    title: '記録表の区切りのチーム名を、切れずに出すようにしました',
+    points: [
+      '名前の欄の高さいっぱいに字を並べます。「日本大学工科」が「日本大.」に切れていたのを直しました。',
+    ],
+  },
   {
     date: '2026/09/15',
     版: '2026-09-15-01',

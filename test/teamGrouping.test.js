@@ -262,3 +262,20 @@ test('間隔は数を出さない（鍵のための受け持ちだけ）', () =>
   const 並び = [中り('a', 3), 区切り('s')];
   assert.equal(合計を数える(並び, 1), 0);
 });
+
+test('縦の表の下の欄に出す区切りのチーム名は、欄の高さに入るだけ行を使う', () => {
+  const { 区切りの名の字 } = require('../src/teamGrouping');
+  const 寸法 = { footerHeight: 95 };
+  // 等倍：11px の字で 6 行（3 行に決め打ちしていたときは「日本大学工科」が「日本大.」に切れた）
+  const 等倍 = 区切りの名の字(1, 寸法);
+  assert.strictEqual(等倍.fontSize, 11);
+  assert.ok(等倍.numberOfLines >= 6, `等倍で ${等倍.numberOfLines} 行`);
+  assert.ok(等倍.lineHeight * 等倍.numberOfLines <= 95, '欄の高さからはみ出す');
+  // 75%：字も欄も縮むので行数はほぼ同じ
+  const 小 = 区切りの名の字(0.75, 寸法);
+  assert.ok(小.numberOfLines >= 5, `75% で ${小.numberOfLines} 行`);
+  assert.ok(小.lineHeight * 小.numberOfLines <= 95 * 0.75, '欄の高さからはみ出す');
+  // どんな倍率でも 3 行は切らない。倍率や寸法が無くても落ちない
+  assert.ok(区切りの名の字(3, 寸法).numberOfLines >= 3);
+  assert.ok(区切りの名の字(undefined, undefined).numberOfLines >= 3);
+});

@@ -100,12 +100,32 @@ function 出てくるチーム(射手たち) {
   return 出;
 }
 
+/**
+ * 縦の表の下の欄（名前の欄）に、区切りのチーム名を出すときの字の大きさと行数。
+ *
+ * 欄の高さ（footerHeight × 倍率）に、字の行がいくつ入るかで行数を決める。
+ * 3 行に決め打ちしていたときは「日本大学工科」が「日本大.」に切れて、どこの
+ * チームか分からなかった（2026-09-15、写真から読んだ記録で）。欄の幅は 35 なので
+ * 1 行に 2〜3 字、6 行で 12 字以上まで切れずに出る
+ *
+ * @param {number} 倍率 表の表示倍率（z）
+ * @param {{footerHeight:number}} 寸法 UIConfig
+ */
+function 区切りの名の字(倍率, 寸法) {
+  const z = Number(倍率) > 0 ? Number(倍率) : 1;
+  const fontSize = 11 * z;
+  const lineHeight = Math.round(fontSize * 1.3);
+  const 高さ = (Number(寸法 && 寸法.footerHeight) || 95) * z - 4;
+  return { fontSize, lineHeight, numberOfLines: Math.max(3, Math.floor(高さ / lineHeight)) };
+}
+
 module.exports = {
   チームを割り当てる,
   チームの色,
   区切りのチーム名,
   出てくるチーム,
   チームの色たち,
+  区切りの名の字,
 };
 
 /**

@@ -485,12 +485,14 @@ const m = t.default.memo(
                     children: 区切りの名
                       ? (0, f.jsx)(l.default, {
                           style: {
-                            fontSize: 11 * z,
+                            fontSize: 組.区切りの名の字(z, s.UIConfig).fontSize,
+                            lineHeight: 組.区切りの名の字(z, s.UIConfig).lineHeight,
                             fontWeight: '700',
                             color: 組.チームの色(区切りの名) || '#8E8E93',
                             textAlign: 'center',
                           },
-                          numberOfLines: 3,
+                          // 欄の高さに入るだけ行を使う（3 行では大学名が切れた）
+                          numberOfLines: 組.区切りの名の字(z, s.UIConfig).numberOfLines,
                           children: 区切りの名,
                         })
                       : (0, f.jsx)(h.Ionicons, {
