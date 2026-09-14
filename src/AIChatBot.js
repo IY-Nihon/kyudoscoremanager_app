@@ -731,12 +731,19 @@ const AIChatBot = () => {
         tools: tools
       }, 中継の設定);
 
-      const chat = model.startChat({
-        history: newMessages.slice(1).map(msg => ({
-          role: msg.role === 'user' ? 'user' : 'model',
-          parts: [{ text: msg.role === 'actionCard' ? `[システムのデータ追加提案: ${msg.status}]` : msg.text }]
-        }))
-      });
+      // 会話の中身（contents）は自分で持ち、SDK の startChat は使わない。
+      //   ・履歴は「いま送る発言の手前まで」。newMessages には送る発言も入っているので、
+      //     slice(1) だと同じ発言が履歴と送信で二重になり、模型が「はたはまはたはま」と
+      //     名前を二重に読んだ（3.6-flash で実際に）。先頭のあいさつも外す
+      //   ・SDK 0.24 の startChat は、流し読みのときに模型の返事から thoughtSignature を
+      //     落とし（空の text にして「返事が無効」扱い→履歴に積まない）、道具の返事を
+      //     role:'function' で送る。3.x の模型はどちらも受けず、道具を使う質問が
+      //     「Role 'function' is not supported」「function response turn comes immediately
+      //     after a function call turn」の 400 になった（2026-09-14、本番で）
+      const 会話 = newMessages.slice(1, -1).map(msg => ({
+        role: msg.role === 'user' ? 'user' : 'model',
+        parts: [{ text: msg.role === 'actionCard' ? `[システムのデータ追加提案: ${msg.status}]` : msg.text }]
+      }));
 
       // 流しながら出す。全文ができるまで待たせると、道具を使う質問では
       // 数秒から十数秒、砂時計だけを見せることになる。
@@ -745,8 +752,14 @@ const AIChatBot = () => {
       let 途中の文 = '';
       const 送る = async (中身) => {
         途中の文 = '';
-        const r = await chat.sendMessageStream(中身);
+        会話.push({ role: 'user', parts: 中身 });
+        const r = await model.generateContentStream({ contents: 会話 });
+        // 模型の返事の部品は、かけらのまま（thoughtSignature ごと）積む。次の送信で
+        // そのまま返さないと「Function call is missing a thought_signature」になる
+        const 模型の部品 = [];
         for await (const かけら of r.stream) {
+          const 部品 = (かけら.candidates && かけら.candidates[0] && かけら.candidates[0].content && かけら.candidates[0].content.parts) || [];
+          for (const p of 部品) 模型の部品.push(p);
           let 文 = '';
           try {
             文 = かけら.text() || '';
@@ -762,6 +775,7 @@ const AIChatBot = () => {
             return 最後 && 最後.id === 途中の札 ? [...前.slice(0, -1), 札付き] : [...前, 札付き];
           });
         }
+        if (模型の部品.length) 会話.push({ role: 'model', parts: 模型の部品 });
         return r;
       };
 
