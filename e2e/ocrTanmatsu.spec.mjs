@@ -112,7 +112,8 @@ test.describe('確認画面', () => {
     await 確認画面まで(page, (返事) => {
       返事.teams[0].rows[1].roster = '部員1';
     });
-    await expect(page.getByText('○×は端末で読み取りました（名前と並びはAI）。')).toBeVisible({ timeout: 120_000 });
+    // 端末で読めた印（画面には出ない）
+    await expect(page.getByTestId('ocr-yomitori-tanmatsu')).toBeAttached({ timeout: 120_000 });
     await expect(page.getByText('(要選択)', { exact: false }).first()).toBeVisible();
     // React Native の Alert はブラウザで何も出ず、押しても何も起きないように見えた（実際に踏んだ）
     await page.getByText('記録表に反映する', { exact: true }).click();
@@ -123,7 +124,8 @@ test.describe('確認画面', () => {
     test.setTimeout(300_000);
     await 確認画面まで(page);
 
-    await expect(page.getByText('○×は端末で読み取りました（名前と並びはAI）。')).toBeVisible({ timeout: 120_000 });
+    // 端末で読めた印（画面には出ない）
+    await expect(page.getByTestId('ocr-yomitori-tanmatsu')).toBeAttached({ timeout: 120_000 });
     // 射数は写真に合わせる（団体の設定は8射、板は20射）
     await expect(page.getByText('射数を8射から20射に合わせます', { exact: false })).toBeVisible();
     await expect(page.getByText('読み取りが迷ったマス', { exact: true })).toBeVisible();
@@ -160,6 +162,9 @@ test.describe('確認画面', () => {
     // 右の板を「5人・2人・1人」の3つに割って 4 teams で返してきた体
     //（2026-09-13 の板で本番に出た。そのまま通すと区切りと計が余計に入る）
     await 確認画面まで(page, (返事) => {
+      // 左の板の 4 人は名簿の部員に寄せる（部員でも区切りと計が入ること。前は名簿の人に板の番号を
+      // 付けておらず、全員が部員だと区切りも計も入らなかった）
+      返事.teams[0].rows.slice(0, 4).forEach((r, i) => { r.name = `部員${i + 1}`; r.roster = `部員${i + 1}`; });
       const 右 = 返事.teams[1].rows;
       返事.teams = [
         返事.teams[0],
@@ -168,7 +173,8 @@ test.describe('確認画面', () => {
         { ...返事.teams[1], tachiPeople: 1, rows: 右.slice(7, 8) },
       ];
     });
-    await expect(page.getByText('○×は端末で読み取りました（名前と並びはAI）。')).toBeVisible({ timeout: 120_000 });
+    // 端末で読めた印（画面には出ない）
+    await expect(page.getByTestId('ocr-yomitori-tanmatsu')).toBeAttached({ timeout: 120_000 });
     await page.getByText('記録表に反映する', { exact: true }).click();
     await expect(page.getByText('20射', { exact: true })).toBeVisible({ timeout: 15_000 });
     const 並び = await page.evaluate(() => {
@@ -194,7 +200,8 @@ test.describe('確認画面', () => {
       // 9/6 の板の、かたまりの格子から作った箱（[上, 左, 下, 右]、0〜1000）
       { boards: [{ box_2d: [335, 67, 621, 387], people: 8, bands: 5, marks_per_band: 2 }, { box_2d: [335, 648, 636, 964], people: 8, bands: 5, marks_per_band: 2 }] }
     );
-    await expect(page.getByText('○×は端末で読み取りました（名前と並びはAI）。')).toBeVisible({ timeout: 120_000 });
+    // 端末で読めた印（画面には出ない）
+    await expect(page.getByTestId('ocr-yomitori-tanmatsu')).toBeAttached({ timeout: 120_000 });
     // 5 段（10射）ではなく 10 段（20射）で読めていること
     await expect(page.getByText('射数を8射から20射に合わせます', { exact: false })).toBeVisible();
     await page.getByText('記録表に反映する', { exact: true }).click();

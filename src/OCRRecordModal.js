@@ -682,6 +682,9 @@ const OCRRecordModal = ({
           lockedBlocks: {},
           lastModified: Date.now(),
         };
+        // 板の番号と立の人数は、名簿の人でもゲストでも付ける。前は名簿の人に付けておらず、
+        // 全員が部員だと（本番の自校の板）区切りも計も入らなかった（検証環境ではゲストなので出ていた）
+        const 組 = { チーム番号: row.チーム番号 || 0, 立の人数: row.立の人数 || 0 };
         if (row.status === "matched" && row.match) {
           return {
             ...base,
@@ -690,14 +693,14 @@ const OCRRecordModal = ({
             grade: typeof row.match.grade === "number" ? row.match.grade : 1,
             memberId: row.match.id,
             isGuest: false,
+            ...組,
           };
         }
         return {
           ...base,
           name: row.rawText && row.rawText.trim() !== "" ? row.rawText : "（名前なし）",
           isGuest: true,
-          チーム番号: row.チーム番号 || 0,
-          立の人数: row.立の人数 || 0,
+          ...組,
         };
       });
 
@@ -1091,11 +1094,8 @@ const OCRRecordModal = ({
                   内容を確認してください。氏名をタップすると変更、○×のマスをタップすると
                   「○ → × → 未記録」の順で切り替わります。
                 </_Text>
-                {読み取り元 === "端末" && (
-                  <_Text style={styles.hint}>
-                    ○×は端末で読み取りました（名前と並びはAI）。
-                  </_Text>
-                )}
+                {/* 検査が「端末で読めたか」を見るための印。画面には出ない */}
+                <_View testID={読み取り元 === "端末" ? "ocr-yomitori-tanmatsu" : "ocr-yomitori-ai"} style={{ height: 0 }} />
                 {読み取り元 !== "端末" && mode === "record" && (
                   <_Text style={[styles.hint, { color: "#B25000" }]} testID="ocr-ai-kotowari">
                     ○×はAIが読みました（端末では読めませんでした：{端末の断り}）。AIは丸に線の向きを取り違えやすいので、○×をよく確かめてください。しばらくして撮り直すと端末で読めることがあります。
