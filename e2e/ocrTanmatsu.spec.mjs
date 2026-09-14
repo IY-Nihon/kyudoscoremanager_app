@@ -67,7 +67,7 @@ test.describe('確認画面', () => {
   test.use({ storageState: 'e2e/.auth/100007.json' });
 
   /** Gemini の返事を差し替えて、板の写真を解析し、確認画面まで進める */
-  async function 確認画面まで(page, 行を直す) {
+  async function 確認画面まで(page, 行を直す, 箱の返事) {
     const { 射手たち } = await import('../scripts/ocr-cells/kiroku.mjs');
     // Gemini の返事（名前は本番の記録の番号。マスは全部空）
     const 返事 = {
@@ -78,13 +78,16 @@ test.describe('確認画面', () => {
       })),
     };
     if (行を直す) 行を直す(返事);
-    await page.route(/generativelanguage\.googleapis\.com|workers\.dev\/v1beta\//, (route) =>
-      route.fulfill({
+    await page.route(/generativelanguage\.googleapis\.com|workers\.dev\/v1beta\//, (route) => {
+      // 箱を聞く2度目の呼び出し（指示文に box_2d がある）には、箱の返事を返す
+      const 箱を聞いている = 箱の返事 && /box_2d/.test(route.request().postData() || '');
+      const 中身 = 箱を聞いている ? 箱の返事 : 返事;
+      return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ candidates: [{ content: { role: 'model', parts: [{ text: JSON.stringify(返事) }] }, finishReason: 'STOP' }] }),
-      })
-    );
+        body: JSON.stringify({ candidates: [{ content: { role: 'model', parts: [{ text: JSON.stringify(中身) }] }, finishReason: 'STOP' }] }),
+      });
+    });
 
     await 案内を止める(page);
     await page.goto('/');
@@ -176,5 +179,36 @@ test.describe('確認画面', () => {
     expect(並び.join(' '), '区切りと計の入り方が違う').toBe(
       '人 人 人 人 計 人 人 人 人 計 | 人 人 人 人 計 人 人 人 人 計'
     );
+  });
+
+  test('Gemini が段を数え違えたら、箱（○×の範囲）を聞いて端末で読み直す', async ({ page }) => {
+    test.setTimeout(300_000);
+    // 10 段の板を 5 段と答えてきた体（印が 10 段並ぶ相手校の板で実際に起きた）。
+    // 5 段で当てはめると 1 行が 2 段ぶんになり、端末は「段の数が少なすぎる」と断る。
+    // そこで箱を聞き、帯の数×帯の中の印の数（5×2）で 10 段として読み直す
+    await 確認画面まで(
+      page,
+      (返事) => {
+        for (const t of 返事.teams) for (const r of t.rows) r.cells = Array(5).fill('');
+      },
+      // 9/6 の板の、かたまりの格子から作った箱（[上, 左, 下, 右]、0〜1000）
+      { boards: [{ box_2d: [335, 67, 621, 387], people: 8, bands: 5, marks_per_band: 2 }, { box_2d: [335, 648, 636, 964], people: 8, bands: 5, marks_per_band: 2 }] }
+    );
+    await expect(page.getByText('○×は端末で読み取りました（名前と並びはAI）。')).toBeVisible({ timeout: 120_000 });
+    // 5 段（10射）ではなく 10 段（20射）で読めていること
+    await expect(page.getByText('射数を8射から20射に合わせます', { exact: false })).toBeVisible();
+    await page.getByText('記録表に反映する', { exact: true }).click();
+    await expect(page.getByText('20射', { exact: true })).toBeVisible({ timeout: 15_000 });
+    // 箱の等分で読んだ○×が、記録と 8 割以上合うこと（かたまりの格子ほどは合わないが、
+    // Gemini の○×（丸に線の向きは 25%）より確かに良い）
+    const { 射手たち } = await import('../scripts/ocr-cells/kiroku.mjs');
+    const 読み = await page.evaluate(() => {
+      const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}').state || {};
+      return (s.archers || []).filter((a) => a && !a.isSeparator && !a.isTotalCalculator).map((a) => a.marks);
+    });
+    expect(読み.length).toBe(16);
+    let 合 = 0;
+    読み.forEach((marks, i) => { const 真 = [...射手たち[i].印]; for (let k = 0; k < 真.length; k++) if (marks[k] === 真[k]) 合++; });
+    expect(合, `合ったのは ${合}/320`).toBeGreaterThanOrEqual(256);
   });
 });
