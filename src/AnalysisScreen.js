@@ -115,17 +115,18 @@ function 型の節(成績, 期間の名, 誰の) {
  * もとは常に開いていたが、16通りが縦に並ぶと個人の詳細が長くなり、
  * 下の弓具の節まで遠かった。畳んでいる間は、要点だけを1行で出す。
  *
- * 4射の型のほかに、一射単位（1射ごとの的中率）と一手単位（2射の型）も出す。
- * 一手は1本目が甲矢・2本目が乙矢なので、どちらを抜いたかを言える
- * （四つ矢では甲矢・乙矢が2回ずつ現れて区別できないが、一手の中なら決まる）
+ * 4射の型のほかに、一射のとき（1本しか引いていない記録）と一手のとき（2本だけ
+ * 引いた記録）の的中率も出す（2026-09-14 に使う人が求めた。「人たちで一本しか
+ * 引いていないとき」の的中率）。一手は1本目が甲矢・2本目が乙矢なので、どちらを
+ * 抜いたかを言える（四つ矢では甲矢・乙矢が2回ずつ現れて区別できないが、一手の中なら決まる）
  */
 function 型の節の部品({ 成績, 期間の名, 誰の }) {
   const [開いている, set開いている] = (0, t.useState)(!1);
   const 並び = 集.型を並べる((成績 || {}).型 || {});
-  const 手の並び = 集.一手の型を並べる((成績 || {}).一手の型 || {});
-  const 射数 = (成績 || {}).shots || 0;
-  const 中り数 = (成績 || {}).hits || 0;
-  if (!並び.length && !手の並び.length) return null;
+  const 一射 = (成績 || {}).一射 || { shots: 0, hits: 0 };
+  const 一手 = (成績 || {}).一手 || { shots: 0, hits: 0, 型: {} };
+  const 手の並び = 集.一手の型を並べる(一手.型 || {});
+  if (!並び.length && !一射.shots && !一手.shots) return null;
   // 中り数ごとにまとめて、見出しを1回だけ出す。
   // 型ごとに「三中」を繰り返すと、同じ字が縦に並んで読みにくい
   const 束 = [];
@@ -136,13 +137,13 @@ function 型の節の部品({ 成績, 期間の名, 誰の }) {
   }
   const 手の数 = 手の並び.reduce((a, b) => a + b.回数, 0);
   const 立ちの数 = 並び.reduce((a, b) => a + b.回数, 0);
-  const 一射の的中率 = 射数 > 0 ? (中り数 / 射数) * 100 : 0;
-  const 手の皆中 = 手の並び.find((x) => x.型 === '○○');
+  const 率 = (x) => (x.shots > 0 ? ((x.hits / x.shots) * 100).toFixed(1) + '%' : null);
   const 立ちの皆中 = 並び.find((x) => x.型 === '○○○○');
-  // 畳んでいる間の要点。開かなくても、いちばん見たい数字は分かるように
+  // 畳んでいる間の要点。開かなくても、いちばん見たい数字は分かるように。
+  // 無いものは出さない（「一射 —」が並ぶと、何が無いのか分からない）
   const 要点 = [
-    `一射 ${一射の的中率.toFixed(1)}%`,
-    手の数 > 0 ? `一手皆中 ${Math.round(手の皆中 ? 手の皆中.割合 : 0)}%` : null,
+    一射.shots > 0 ? `一射 ${率(一射)}` : null,
+    一手.shots > 0 ? `一手 ${率(一手)}` : null,
     立ちの数 > 0 ? `皆中 ${Math.round(((立ちの皆中 ? 立ちの皆中.回数 : 0) / 立ちの数) * 100)}%` : null,
   ]
     .filter(Boolean)
@@ -189,24 +190,35 @@ function 型の節の部品({ 成績, 期間の名, 誰の }) {
       (0, y.jsxs)(o.default, {
         style: [F.patternsCardDash, { marginTop: 12 }],
         children: [
-          // 一射単位。1射ごとの的中率（上の的中率と同じ数字だが、単位を並べて見比べられるように）
-          (0, y.jsx)(l.default, { style: F.型の区切り, children: '一射単位（1射）' }),
+          // 一射のとき。1本しか引いていない記録の的中率
+          (0, y.jsx)(l.default, { style: F.型の区切り, children: '一射のとき（1本だけ引いた記録）' }),
           (0, y.jsxs)(o.default, {
             style: F.型の行,
             children: [
               (0, y.jsx)(l.default, { style: F.型の要点, children: '的中率' }),
-              (0, y.jsxs)(l.default, {
-                style: F.型の回数,
-                children: [一射の的中率.toFixed(1), '%（', 中り数, '中／', 射数, '射）'],
+              (0, y.jsx)(l.default, {
+                style: 一射.shots > 0 ? F.型の回数 : F.型の無し,
+                children:
+                  一射.shots > 0 ? 率(一射) + '（' + 一射.hits + '中／' + 一射.shots + '射）' : 'まだありません',
               }),
             ],
           }),
-          // 一手単位。2射の型
-          手の並び.length > 0 &&
-            (0, y.jsx)(l.default, {
-              style: F.型の区切り,
-              children: '一手単位（2射）　' + 手の数 + '手',
-            }),
+          // 一手のとき。2本だけ引いた記録の的中率と、2射の型
+          (0, y.jsx)(l.default, {
+            style: F.型の区切り,
+            children: '一手のとき（2本だけ引いた記録）' + (手の数 > 0 ? '　' + 手の数 + '手' : ''),
+          }),
+          (0, y.jsxs)(o.default, {
+            style: F.型の行,
+            children: [
+              (0, y.jsx)(l.default, { style: F.型の要点, children: '的中率' }),
+              (0, y.jsx)(l.default, {
+                style: 一手.shots > 0 ? F.型の回数 : F.型の無し,
+                children:
+                  一手.shots > 0 ? 率(一手) + '（' + 一手.hits + '中／' + 一手.shots + '射）' : 'まだありません',
+              }),
+            ],
+          }),
           ...手の並び.map((x) =>
             (0, y.jsxs)(
               o.default,
@@ -276,7 +288,7 @@ function 型の節の部品({ 成績, 期間の名, 誰の }) {
         (0, y.jsx)(l.default, {
           style: { fontSize: 11, color: '#8E8E93', marginTop: 8, lineHeight: 16 },
           children:
-            '※ 4射単位の割合は同じ中り数の中での割合です（三中のうち、その抜き方が何割か）。一手単位の割合はすべての手の中での割合です。',
+            '※ 4射単位の割合は同じ中り数の中での割合です（三中のうち、その抜き方が何割か）。一手のときの型の割合は、その手すべての中での割合です。',
         }),
     ],
   });
@@ -3166,6 +3178,7 @@ const F = a.default.create({
   型の要点の行: { fontSize: 11, color: '#8E8E93', marginTop: 2 },
   // 単位（一射・一手・4射）の区切り
   型の区切り: { fontSize: 12, fontWeight: 'bold', color: '#3A3A3C', marginTop: 10, marginBottom: 6 },
+  型の無し: { fontSize: 12, color: '#8E8E93', flexShrink: 0 },
   型の見出し: { fontSize: 12, color: '#8E8E93', fontWeight: '600', marginBottom: 4 },
   型の行: { flexDirection: 'row', alignItems: 'center', marginBottom: 4, gap: 8 },
   型の印: { fontSize: 13, color: '#1C1C1E', fontWeight: 'bold', letterSpacing: 1, flexShrink: 0 },
