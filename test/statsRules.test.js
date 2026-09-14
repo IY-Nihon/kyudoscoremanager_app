@@ -338,3 +338,45 @@ test('矢の名前と呼び名は、画面が期待する並び', () => {
   assert.ok(!矢の名前.includes('二の矢'), '造語が戻っている');
   assert.deepStrictEqual([4, 3, 2, 1, 0].map(立ちの呼び名), ['皆中', '三中', '羽分', '一中', '残念']);
 });
+
+// ── 一手（2射）の型と、一射・一手の的中率 ─────────────────
+// 4射の型だけだと、一手で引く練習や試合の「甲矢を抜きがち」が見えない。
+// 一手の中なら1本目が甲矢・2本目が乙矢と決まるので、どちらを抜いたかを言える。
+
+const { 一手の型を並べる, 一手の矢の名前, 一手の呼び名 } = require('../src/statsRules');
+
+test('一手の型は、2射そろった手ごとに数える（4射そろわなくても）', () => {
+  // 6射＝一手が3つ。4射の型は1立しか数えないが、一手は3つとも数える
+  const r = 集計([{ archers: [{ memberId: 'm1', marks: ['○', '×', '×', '○', '○', '○'] }] }], 'm1');
+  assert.deepStrictEqual(r.一手の型, { '○×': 1, '×○': 1, '○○': 1 });
+  assert.deepStrictEqual(r.型, { '○××○': 1 });
+});
+
+test('一手の型：引いていない射や交代をまたいだ手は数えない', () => {
+  const 記録 = {
+    archers: [
+      { memberId: 'm1', marks: ['○', '', '×', '×'], substitutions: { 3: '交代太郎' }, substitutionIds: { 3: 'm9' } },
+    ],
+  };
+  assert.deepStrictEqual(集計([記録], 'm1').一手の型, {}, '空の射や交代をまたいだ手を数えている');
+  assert.deepStrictEqual(集計([記録], 'm9').一手の型, {}, '交代した側でも数えない');
+});
+
+test('一手の型を並べる：決まった順で、割合はすべての手の中', () => {
+  const 並び = 一手の型を並べる({ '××': 1, '○○': 2, '×○': 1 });
+  assert.deepStrictEqual(並び.map((x) => x.型), ['○○', '×○', '××'], '無い型（○×）は出さず、順は固定');
+  const 引く = (型) => 並び.find((x) => x.型 === 型);
+  assert.strictEqual(引く('○○').呼び名, '皆中');
+  assert.strictEqual(引く('○○').要点, null, '皆中は要点を出さない');
+  assert.strictEqual(引く('×○').要点, '甲矢を抜いた', '1本目は甲矢');
+  assert.strictEqual(引く('××').呼び名, '残念');
+  assert.strictEqual(Math.round(引く('○○').割合), 50);
+  assert.strictEqual(Math.round(引く('×○').割合), 25);
+  assert.strictEqual(一手の型を並べる({ '○×': 3 })[0].要点, '乙矢を抜いた', '2本目は乙矢');
+  assert.deepStrictEqual(一手の型を並べる({}), []);
+});
+
+test('一手の矢の名前と呼び名', () => {
+  assert.deepStrictEqual(一手の矢の名前, ['甲矢', '乙矢']);
+  assert.deepStrictEqual([2, 1, 0].map(一手の呼び名), ['皆中', '一中', '残念']);
+});
