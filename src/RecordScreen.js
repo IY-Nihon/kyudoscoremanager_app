@@ -137,6 +137,9 @@ const k = () => {
         // 上下の帯を畳んでいるか。端末に残す（並べ方と同じ扱い）
         帯を畳む: 畳む覚え = !1,
         set帯を畳む,
+        // 畳む取っ手を左上に置いているか。指で引いて左右へ動かせる（端末に残す）
+        帯の取っ手は左 = !1,
+        set帯の取っ手は左,
         // ライブに「見るだけ」で入っているか
         ライブは見るだけ = !1,
       } = (0, x.useScoreStore)(),
@@ -395,6 +398,54 @@ const k = () => {
           }, 100));
       },
       et = l.default;
+
+    // ── 帯を畳む取っ手を、指で左上・右上へ動かす仕掛け ───────────────
+    //
+    // AI チャットの丸いボタンと同じ考え方。取っ手を横へ引いて離すと、近いほうの
+    // 上の角に吸い付く。下の角には行かせない（記録表の下は操作の帯で、そこに
+    // 重なると邪魔になる）。押すだけなら、これまでどおり畳む・開く。
+    //
+    // 動かす最中は Animated で横にずらし、離したら側を決めて店に残す。
+    // 側が変わったときは、置き場（left か right か）が変わるぶんを差し引いて
+    // 見た目の位置を保ってから 0 へ戻す（いきなり反対側へ飛ばない）
+    const 取っ手のずれ = (0, t.useRef)(new RN.Animated.Value(0)).current,
+      取っ手の区画の幅 = (0, t.useRef)(0),
+      取っ手は左のref = (0, t.useRef)(!!帯の取っ手は左),
+      取っ手を引いた = (0, t.useRef)(!1),
+      取っ手の手 = (0, t.useRef)(null);
+    取っ手は左のref.current = !!帯の取っ手は左;
+    if (!取っ手の手.current)
+      取っ手の手.current = RN.PanResponder.create({
+        // 押すだけなら奪わない（中の Pressable が畳む・開くを受け持つ）
+        onStartShouldSetPanResponder: () => !1,
+        onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) > 6 && Math.abs(g.dx) > Math.abs(g.dy),
+        onPanResponderGrant: () => {
+          取っ手を引いた.current = !0;
+        },
+        onPanResponderMove: (_e, g) => {
+          取っ手のずれ.setValue(g.dx);
+        },
+        onPanResponderRelease: (_e, g) => {
+          取っ手を引いた.current = !1;
+          const 幅 = 取っ手の区画の幅.current || 0,
+            左だった = 取っ手は左のref.current,
+            // 取っ手の左端の座標（8 は余白、36 は取っ手の幅）
+            元の左端 = 左だった ? 8 : Math.max(8, 幅 - 8 - 36),
+            いまの中心 = 元の左端 + 18 + g.dx,
+            左へ = 幅 > 0 ? いまの中心 < 幅 / 2 : 左だった;
+          if (左へ !== 左だった) {
+            const 新しい左端 = 左へ ? 8 : Math.max(8, 幅 - 8 - 36);
+            取っ手のずれ.setValue(元の左端 + g.dx - 新しい左端);
+            set帯の取っ手は左 && set帯の取っ手は左(左へ);
+            j.impactAsync(j.ImpactFeedbackStyle.Light);
+          }
+          RN.Animated.spring(取っ手のずれ, { toValue: 0, useNativeDriver: !1, bounciness: 6 }).start();
+        },
+        onPanResponderTerminate: () => {
+          取っ手を引いた.current = !1;
+          RN.Animated.spring(取っ手のずれ, { toValue: 0, useNativeDriver: !1 }).start();
+        },
+      });
 
     // ── 立ち順を指で動かす仕掛け ────────────────────────────────
     //
@@ -1680,24 +1731,38 @@ const k = () => {
         }),
         (0, A.jsxs)(l.default, {
           style: [W.gridArea, { justifyContent: 'center', alignItems: 'center' }],
+          onLayout: (e) => {
+            取っ手の区画の幅.current = e.nativeEvent.layout.width;
+          },
           children: [
             // 帯を畳む取っ手。記録表の区画の中に置くので、上の帯があっても
-            // 無くても重ならない
-            (0, A.jsx)(f.default, {
-              onPress: () => {
-                (set帯を畳む && set帯を畳む(!畳む覚え), j.impactAsync(j.ImpactFeedbackStyle.Light));
-              },
-              testID: '帯の開け閉め',
-              accessible: !0,
-              accessibilityRole: 'button',
-              accessibilityLabel: 畳む覚え ? '操作の帯を開く' : '操作の帯を畳む',
-              'aria-label': 畳む覚え ? '操作の帯を開く' : '操作の帯を畳む',
-              hitSlop: { top: 10, bottom: 10, left: 10, right: 10 },
-              style: ({ hovered: e }) => [W.帯の取っ手, e && m.IS_WEB && { opacity: 0.85 }],
-              children: (0, A.jsx)(p.Ionicons, {
-                name: 帯を畳む ? 'chevron-down' : 'chevron-up',
-                size: 18,
-                color: '#8E8E93',
+            // 無くても重ならない。横へ引くと左上・右上へ動かせる（上の仕掛け）
+            (0, A.jsx)(RN.Animated.View, {
+              ...取っ手の手.current.panHandlers,
+              testID: '帯の取っ手の置き場',
+              style: [
+                W.帯の取っ手の置き場,
+                帯の取っ手は左 ? { left: 8 } : { right: 8 },
+                { transform: [{ translateX: 取っ手のずれ }] },
+              ],
+              children: (0, A.jsx)(f.default, {
+                onPress: () => {
+                  if (取っ手を引いた.current) return;
+                  (set帯を畳む && set帯を畳む(!畳む覚え), j.impactAsync(j.ImpactFeedbackStyle.Light));
+                },
+                testID: '帯の開け閉め',
+                accessible: !0,
+                accessibilityRole: 'button',
+                accessibilityLabel: 畳む覚え ? '操作の帯を開く' : '操作の帯を畳む',
+                accessibilityHint: '横へ引くと左上・右上へ動かせます',
+                'aria-label': 畳む覚え ? '操作の帯を開く' : '操作の帯を畳む',
+                hitSlop: { top: 10, bottom: 10, left: 10, right: 10 },
+                style: ({ hovered: e }) => [W.帯の取っ手, e && m.IS_WEB && { opacity: 0.85 }],
+                children: (0, A.jsx)(p.Ionicons, {
+                  name: 帯を畳む ? 'chevron-down' : 'chevron-up',
+                  size: 18,
+                  color: '#8E8E93',
+                }),
               }),
             }),
             (0, A.jsxs)(l.default, {
@@ -2984,11 +3049,16 @@ const k = () => {
     }),
     emptyTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
     emptyHint: { fontSize: 14, color: '#8E8E93' },
-    // 帯を畳む取っ手。畳んでいても押せるように浮かせる
-    帯の取っ手: {
+    // 帯を畳む取っ手の置き場。畳んでいても押せるように浮かせる。
+    // 左右どちらに置くか（left / right）は描くときに足す
+    帯の取っ手の置き場: {
       position: 'absolute',
-      right: 8,
       top: 8,
+      // 表より上、他の画面より下。記録画面は他のタブへ移っても裏で生きているので、
+      // 1e4 のように高くすると履歴のごみ箱など別の画面のボタンの上に乗る
+      zIndex: 5,
+    },
+    帯の取っ手: {
       width: 36,
       height: 36,
       borderRadius: 18,
@@ -2997,9 +3067,6 @@ const k = () => {
       borderColor: '#C6C6C8',
       alignItems: 'center',
       justifyContent: 'center',
-      // 表より上、他の画面より下。記録画面は他のタブへ移っても裏で生きているので、
-      // 1e4 のように高くすると履歴のごみ箱など別の画面のボタンの上に乗る
-      zIndex: 5,
     },
     toolbar: {
       height: m.IS_WEB ? 70 : 80,
