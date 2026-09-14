@@ -177,14 +177,51 @@ test.describe('確認画面', () => {
     await expect(page.getByTestId('ocr-yomitori-tanmatsu')).toBeAttached({ timeout: 120_000 });
     await page.getByText('記録表に反映する', { exact: true }).click();
     await expect(page.getByText('20射', { exact: true })).toBeVisible({ timeout: 15_000 });
-    const 並び = await page.evaluate(() => {
-      const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}').state || {};
-      return (s.archers || []).map((a) => (a.isSeparator ? '|' : a.isTotalCalculator ? '計' : '人'));
-    });
-    // 板2枚 × 8人。立（4人）ごとに計、板の間に区切り1つ
+    const 並び = await 並びを読む(page);
+    // 板2枚 × 8人、どちらも名前の無い板（自校）。立（4人）ごとに計、板の間に区切りは
+    // 入れず、端に総計（使う人が手で作る形。2026-09-15 の期待図）
     expect(並び.join(' '), '区切りと計の入り方が違う').toBe(
-      '人 人 人 人 計 人 人 人 人 計 | 人 人 人 人 計 人 人 人 人 計'
+      '人 人 人 人 計 人 人 人 人 計 人 人 人 人 計 人 人 人 人 計 総計'
     );
+  });
+
+  /** 記録表の並びを、人・計・総計・|名前 の字に直して返す */
+  async function 並びを読む(page) {
+    return page.evaluate(() => {
+      const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}').state || {};
+      return (s.archers || []).map((a) =>
+        a.isSeparator ? '|' + (a.teamName || '') : a.isTotalCalculator ? (a.またぐ合計 ? '総計' : '計') : '人'
+      );
+    });
+  }
+
+  test('チーム名が読めた板は、先頭に名前付きの区切り、立ごとに計、端に総計で組む', async ({ page }) => {
+    test.setTimeout(300_000);
+    // 左の板は A大学、右の板は B大学（それぞれ 8 人＝2 立）
+    await 確認画面まで(page, (返事) => {
+      返事.teams[0].name = 'A大学';
+      返事.teams[1].name = 'B大学';
+    });
+    await expect(page.getByTestId('ocr-yomitori-tanmatsu')).toBeAttached({ timeout: 120_000 });
+    await page.getByText('記録表に反映する', { exact: true }).click();
+    await expect(page.getByText('20射', { exact: true })).toBeVisible({ timeout: 15_000 });
+    const 並び = await 並びを読む(page);
+    // 板の順は写真と逆（右の板が並びの先＝画面の右）。チームの先頭に名前付きの区切り、
+    // 区切りより左（並びでは後ろ）の射手がそのチームの色になる
+    expect(並び.join(' '), 'チームごとの組み方が違う').toBe(
+      '|B大学 人 人 人 人 計 人 人 人 人 計 総計 |A大学 人 人 人 人 計 人 人 人 人 計 総計'
+    );
+    // 総計は手前の計をまとめて数える（区切りで止まる）。B大学の 8 人ぶんが入っていること
+    const 総計 = await page.evaluate(() => {
+      const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}').state || {};
+      const 並び = s.archers || [];
+      const i = 並び.findIndex((a) => a.isTotalCalculator && a.またぐ合計);
+      let 人 = 0, 的中 = 0;
+      for (let k = i - 1; k >= 0 && !並び[k].isSeparator; k--) if (!並び[k].isTotalCalculator) { 人++; 的中 += (並び[k].marks || []).filter((m) => m === '○').length; }
+      return { 人, 的中 };
+    });
+    expect(総計.人).toBe(8);
+    expect(総計.的中).toBeGreaterThan(0);
   });
 
   test('Gemini が段を数え違えたら、箱（○×の範囲）を聞いて端末で読み直す', async ({ page }) => {
