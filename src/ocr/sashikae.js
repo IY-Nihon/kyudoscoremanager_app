@@ -75,7 +75,7 @@ export async function マスを端末で差し替える(teams, images, 設定) {
     }
     return null;
   };
-  if (組み直せる && 板の数 && teams.length > 板の数) {
+  if (組み直せる && 板の数 && teams.length !== 板の数) {
     const 先に = await 組み直して読む(組み直しの候補(teams, 板の数, null));
     if (先に) return 先に;
   }
@@ -135,6 +135,9 @@ export function 組み直しの候補(teams, 板の数, 見当) {
     出.push(割り方);
   };
   if (Array.isArray(見当)) 足す(見当);
+  // 板 2 枚を 1 つの teams にまとめて返してきたとき（Gemini はときどきそうする）は、半々に分ける。
+  // 指示文の並び（左の板を左から、右の板を右から）で 1 つに並べてあれば、半々で板ごとの順になる
+  if (板の数 === 2 && teams.length === 1 && 総 >= 4) 足す([Math.ceil(総 / 2), Math.floor(総 / 2)]);
   if (板の数 === 2 && teams.length > 2) {
     const 境目 = [];
     let 積 = 0;
@@ -222,6 +225,8 @@ async function 板を読む(teams, images, 設定) {
             images.length === 1 && Array.isArray(設定.箱たち) && 設定.箱たち.length === n
               ? 設定.箱たち.slice().sort((a, b) => a[1] - b[1])
               : undefined,
+          // 帯（太い横線で区切られた立）の数。箱の中の行を、帯の線で決めるのに使う
+          帯の数: Number(設定.帯の数) >= 1 ? Number(設定.帯の数) : undefined,
         });
         // 格子は頼まれた人数ぶんの列を必ず返すので、列の数そのものは合ってしまう。
         // 人数を当てにしない「列の見当」で、Gemini の行の数が板と違っていないかを見る
