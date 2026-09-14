@@ -65,6 +65,8 @@ if (IS_WEB && typeof window !== "undefined") {
       const 形 = await 形にする(切.画, 切.幅, 切.高);
       return { 左, 上, 幅: 切.幅, 高: 切.高, 切: Array.from(切.画), 形: Array.from(形.slice(0, 辺 * 辺)), 画の幅: 元.幅, 画の高: 元.高 };
     },
+    // 格子そのもの（印の位置・行の当てはめ）を Node と見比べるため
+    板ごとの格子: (元, 注文) => require("../scripts/ocr-cells/kiridasu.mjs").板ごとの格子(元, 注文),
     紙の印を読む: async (base64, 人数, 立数, 立のマス) => {
       const { 紙の印を読む } = require("./ocr/yomu");
       const 元 = await 画像の道具.画を読む(base64);
@@ -324,6 +326,8 @@ const OCRRecordModal = ({
           ? p.teams
           : [{ name: "", cellStyle: "1射", tachiPeople: 0, rows: Array.isArray(p.rows) ? p.rows : [] }];
         let 生のteams = teamsにする(parsed);
+        const 板の様子 = (ts) => ts.map((t) => `[${t.name || ""} 立${t.tachiPeople} 大前${t.omae || "?"} ${(t.rows || []).map((r) => r.name || "(無名)").join("・")}]`).join(" ");
+        console.log("[OCRRecordModal] 読んだ板:", 板の様子(生のteams));
         // ○×のマスは端末で読み替える（板でも紙でも）。合わなければ Gemini のまま
         const 端末で = (t, 箱たち, 行数) => IS_WEB
           ? マスを端末で差し替える(t, images, { 向き, 道具: 画像の道具, 重み: 板の重み, 紙の重み, 箱たち, 行数 })
@@ -357,6 +361,7 @@ const OCRRecordModal = ({
               記録の指示文({ 手がかり: buildNameHint(), 射数: shotsPerRound, 枚数: images.length, 向き, ...注文 })
             );
             const 二度目のteams = teamsにする(二度目);
+            console.log("[OCRRecordModal] 読み直した板:", 板の様子(二度目のteams));
             const 二度目の差し替え = await 端末で(二度目のteams);
             // 端末で読めたら採る。板の数だけ直ったときも、次の読み直しの土台として採る
             const 採る = 二度目の差し替え.読み取り元 === "端末" || (注文.板の数 && 二度目のteams.length === 注文.板の数 && 生のteams.length !== 注文.板の数);
@@ -649,8 +654,11 @@ const OCRRecordModal = ({
   });
 
   const buildRecordArchersArray = () => {
+    // 名前が読めなかった行でも、○×が入っていれば射手として足す（名札の無い人。
+    // 前は名前の無い行を落としていて、確認画面には居たのに記録表に写らなかった）
+    const 印がある = (row) => Array.isArray(row.marks) && row.marks.some((m) => normalizeMark(m) !== "");
     const 射手たち = recordRows
-      .filter(row => row.status === "matched" || (row.rawText && row.rawText.trim() !== ""))
+      .filter(row => row.status === "matched" || (row.rawText && row.rawText.trim() !== "") || 印がある(row))
       .map(row => {
         const base = {
           id: generateUUID(),
@@ -675,12 +683,31 @@ const OCRRecordModal = ({
             isGuest: false,
           };
         }
-        return { ...base, name: row.rawText, isGuest: true, チーム番号: row.チーム番号 || 0, 立の人数: row.立の人数 || 0 };
+        return {
+          ...base,
+          name: row.rawText && row.rawText.trim() !== "" ? row.rawText : "（名前なし）",
+          isGuest: true,
+          チーム番号: row.チーム番号 || 0,
+          立の人数: row.立の人数 || 0,
+        };
       });
 
     // 板が2つ写っていたら、その境目に区切りを入れる。
     // 立の切れ目（ふつう4人）には「計」を入れる。板の小計・合計の列にあたる。
-    // 数字は読まない。並びから数え直すので、そのほうが確かめられる
+    // 数字は読まない。並びから数え直すので、そのほうが確かめられる。
+    //
+    // 板の順は写真と逆に並べる。記録表は 1 人目（大前）を右端に置くので、teams の順
+    //（写真の左の板から）のままだと、写真の左の板が画面の右に出て見比べにくい
+    //（相手校の板 2 枚で「人の順序がおかしい」と言われた）。板ごとの中の並びはそのまま
+    const 板ごと = [];
+    for (const 射手 of 射手たち) {
+      const 番 = 射手.チーム番号 || 0;
+      const 尻 = 板ごと[板ごと.length - 1];
+      if (尻 && 尻.番 === 番) 尻.人.push(射手);
+      else 板ごと.push({ 番, 人: [射手] });
+    }
+    射手たち.length = 0;
+    for (const 板 of 板ごと.slice().reverse()) 射手たち.push(...板.人);
     const 出 = [];
     let 前のチーム = null;
     let この立 = 0;

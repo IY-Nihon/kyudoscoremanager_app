@@ -101,8 +101,12 @@ export async function マスを端末で差し替える(teams, images, 設定) {
 /** 端末で読んだ列を teams の rows へ入れる */
 function 差し替えた(teams, 読んだ, 設定, 紙) {
   return teams.map((t, i) => {
-    const 列たち = 大前から並べる(読んだ[i].列たち, 設定.向き, i, teams.length);
-    const 確たち = 大前から並べる(読んだ[i].確からしさ, 設定.向き, i, teams.length);
+    // 大前がどちらの端かは、板ごとに Gemini が読んだ札（omae）を優先する。使う人の選んだ向きと
+    // 板の札が食い違うと（相手校の板に「大前」の字があるのに「板が2つ（外側が大前）」を選んだ）、
+    // Gemini は札のとおり大前から並べ、端末は選んだ向きで並べて、○×が逆さに付いた
+    const 向き = t && (t.omae === '右' || t.omae === '左') ? (t.omae === '右' ? '右から' : '左から') : 設定.向き;
+    const 列たち = 大前から並べる(読んだ[i].列たち, 向き, i, teams.length);
+    const 確たち = 大前から並べる(読んだ[i].確からしさ, 向き, i, teams.length);
     return {
       ...t,
       cellStyle: 紙 ? '1射' : '2射',
