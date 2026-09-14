@@ -416,17 +416,34 @@ const k = () => {
     取っ手は左のref.current = !!帯の取っ手は左;
     if (!取っ手の手.current)
       取っ手の手.current = RN.PanResponder.create({
-        // 押すだけなら奪わない（中の Pressable が畳む・開くを受け持つ）
-        onStartShouldSetPanResponder: () => !1,
-        onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) > 6 && Math.abs(g.dx) > Math.abs(g.dy),
-        onPanResponderGrant: () => {
-          取っ手を引いた.current = !0;
-        },
+        // 触れた時点で先取りして責任を持つ。動き始めてから取りにいく作りだと、
+        // Web では指（マウス）が取っ手の外へ出た後の move は取っ手の枝に届かず、
+        // 速く引くと一度も掴めない（react-native-web は責任者と的の共通の親までしか聞かない）。
+        // 押すだけなら、中の Pressable の onPress が click で受ける（責任とは別の道）
+        onStartShouldSetPanResponderCapture: () => !0,
+        onStartShouldSetPanResponder: () => !0,
+        // Web では引いている最中に字の選択が始まると、選択の合図で責任を取り上げられて
+        // 取っ手が止まる（react-native-web の responder は selectionchange で終わらせる）。
+        // 取り上げは断り、始まってしまった選択はその場で解く
+        onPanResponderTerminationRequest: () => !1,
         onPanResponderMove: (_e, g) => {
+          if (!取っ手を引いた.current) {
+            if (!(Math.abs(g.dx) > 6 && Math.abs(g.dx) > Math.abs(g.dy))) return;
+            取っ手を引いた.current = !0;
+          }
           取っ手のずれ.setValue(g.dx);
+          if (m.IS_WEB && typeof window !== 'undefined' && window.getSelection) {
+            try {
+              const 選択 = window.getSelection();
+              選択 && !選択.isCollapsed && 選択.removeAllRanges();
+            } catch (t) {
+              /* 解けなくても引く動きは続く */
+            }
+          }
         },
         onPanResponderRelease: (_e, g) => {
-          取っ手を引いた.current = !1;
+          // 引いていなければ押しただけ。畳む・開くは Pressable の onPress（click）に任せる
+          if (!取っ手を引いた.current) return;
           const 幅 = 取っ手の区画の幅.current || 0,
             左だった = 取っ手は左のref.current,
             // 取っ手の左端の座標（8 は余白、36 は取っ手の幅）
@@ -440,10 +457,16 @@ const k = () => {
             j.impactAsync(j.ImpactFeedbackStyle.Light);
           }
           RN.Animated.spring(取っ手のずれ, { toValue: 0, useNativeDriver: !1, bounciness: 6 }).start();
+          // 引き終わりの直後に来る click で畳まないよう、印は一拍おいて下ろす
+          setTimeout(() => {
+            取っ手を引いた.current = !1;
+          }, 0);
         },
         onPanResponderTerminate: () => {
-          取っ手を引いた.current = !1;
           RN.Animated.spring(取っ手のずれ, { toValue: 0, useNativeDriver: !1 }).start();
+          setTimeout(() => {
+            取っ手を引いた.current = !1;
+          }, 0);
         },
       });
 
@@ -3054,6 +3077,8 @@ const k = () => {
     帯の取っ手の置き場: {
       position: 'absolute',
       top: 8,
+      // 引き始めで字の選択が始まらないように
+      userSelect: 'none',
       // 表より上、他の画面より下。記録画面は他のタブへ移っても裏で生きているので、
       // 1e4 のように高くすると履歴のごみ箱など別の画面のボタンの上に乗る
       zIndex: 5,

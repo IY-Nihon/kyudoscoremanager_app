@@ -374,6 +374,56 @@ test('帯：上下の操作帯を畳めて、畳んでも画面は移れる', as
   expect(await 見える('終了・保存'), '戻せない').toBe(true);
 });
 
+test('帯：取っ手を横へ引くと左上へ動き、押すと畳めるまま', async ({ page }) => {
+  // AI チャットの丸いボタンと同じく、取っ手を横へ引いて離すと近いほうの上の角へ付く。
+  // 下の角には行かない。置いた側は端末に残る。押すだけならこれまでどおり畳む
+  await 入る(page);
+  const 取っ手 = page.getByTestId('帯の開け閉め');
+  await expect(取っ手).toBeVisible({ timeout: 20_000 });
+  const 区画の幅 = await page.evaluate(() => innerWidth);
+  const 前 = await 取っ手.boundingBox();
+  expect(前.x, '前提：取っ手が右に無い').toBeGreaterThan(区画の幅 / 2);
+
+  // 引く。指の動きは何回かに分けて出す（1回だけだと掴む前に離してしまう）
+  await page.mouse.move(前.x + 前.width / 2, 前.y + 前.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(40, 前.y + 前.height / 2 + 4, { steps: 12 });
+  await page.mouse.up();
+  await expect
+    .poll(async () => (await 取っ手.boundingBox()).x, { timeout: 10_000, message: '取っ手が左へ来ない' })
+    .toBeLessThan(区画の幅 / 4);
+  const 後 = await 取っ手.boundingBox();
+  expect(Math.abs(後.y - 前.y), '縦の位置が変わっている（上の角に留まっていない）').toBeLessThan(4);
+  const 左か = await page.evaluate(
+    () => JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state?.帯の取っ手は左
+  );
+  expect(左か, '置いた側が端末に残っていない').toBe(true);
+
+  // 押すだけなら畳む
+  const 見える = (文) =>
+    page.evaluate((x) => {
+      const e = [...document.querySelectorAll('div')].find(
+        (q) => q.children.length === 0 && (q.textContent || '').trim() === x
+      );
+      return !!e && e.getBoundingClientRect().height > 0;
+    }, 文);
+  await 取っ手.click();
+  await こうなるまで待つ(() => 見える('リセット'), (x) => x === false, 20000);
+  expect(await 見える('リセット'), '左に置いた取っ手を押しても畳まれない').toBe(false);
+  await 取っ手.click();
+  await こうなるまで待つ(() => 見える('リセット'), (x) => x === true, 20000);
+
+  // 右へ戻す（次の検査のために元の側へ）
+  const いま = await 取っ手.boundingBox();
+  await page.mouse.move(いま.x + いま.width / 2, いま.y + いま.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(区画の幅 - 40, いま.y + いま.height / 2, { steps: 12 });
+  await page.mouse.up();
+  await expect
+    .poll(async () => (await 取っ手.boundingBox()).x, { timeout: 10_000, message: '取っ手が右へ戻らない' })
+    .toBeGreaterThan(区画の幅 / 2);
+});
+
 test('帯：畳んだまま案内を始めても、案内の指す先は出ている', async ({ page }) => {
   // 案内が指す先（人・間隔・計・画像・保存・リセット・ライブ・射数・表示・
   // 取り消し）は全部この帯の中にある。畳んだままだと指せないうえ、
