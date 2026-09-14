@@ -105,8 +105,27 @@ function 弓具の案内() {
  * @param {string|null} 誰の 比較中に出す名前の見出し。単体で見るときは渡さない
  */
 function 型の節(成績, 期間の名, 誰の) {
+  // 開く・畳むを覚える部品にした。比較中は人ぶん並ぶので、名前で鍵を分ける
+  return (0, y.jsx)(型の節の部品, { 成績, 期間の名, 誰の }, 誰の ? `型:${誰の}` : '型');
+}
+
+/**
+ * 型の節の中身。見出しを押すと開く（既定は畳む）。
+ *
+ * もとは常に開いていたが、16通りが縦に並ぶと個人の詳細が長くなり、
+ * 下の弓具の節まで遠かった。畳んでいる間は、要点だけを1行で出す。
+ *
+ * 4射の型のほかに、一射単位（1射ごとの的中率）と一手単位（2射の型）も出す。
+ * 一手は1本目が甲矢・2本目が乙矢なので、どちらを抜いたかを言える
+ * （四つ矢では甲矢・乙矢が2回ずつ現れて区別できないが、一手の中なら決まる）
+ */
+function 型の節の部品({ 成績, 期間の名, 誰の }) {
+  const [開いている, set開いている] = (0, t.useState)(!1);
   const 並び = 集.型を並べる((成績 || {}).型 || {});
-  if (!並び.length) return null;
+  const 手の並び = 集.一手の型を並べる((成績 || {}).一手の型 || {});
+  const 射数 = (成績 || {}).shots || 0;
+  const 中り数 = (成績 || {}).hits || 0;
+  if (!並び.length && !手の並び.length) return null;
   // 中り数ごとにまとめて、見出しを1回だけ出す。
   // 型ごとに「三中」を繰り返すと、同じ字が縦に並んで読みにくい
   const 束 = [];
@@ -115,21 +134,107 @@ function 型の節(成績, 期間の名, 誰の) {
     if (尻 && 尻.中り === x.中り) 尻.型たち.push(x);
     else 束.push({ 中り: x.中り, 呼び名: x.呼び名, 型たち: [x] });
   }
+  const 手の数 = 手の並び.reduce((a, b) => a + b.回数, 0);
+  const 立ちの数 = 並び.reduce((a, b) => a + b.回数, 0);
+  const 一射の的中率 = 射数 > 0 ? (中り数 / 射数) * 100 : 0;
+  const 手の皆中 = 手の並び.find((x) => x.型 === '○○');
+  const 立ちの皆中 = 並び.find((x) => x.型 === '○○○○');
+  // 畳んでいる間の要点。開かなくても、いちばん見たい数字は分かるように
+  const 要点 = [
+    `一射 ${一射の的中率.toFixed(1)}%`,
+    手の数 > 0 ? `一手皆中 ${Math.round(手の皆中 ? 手の皆中.割合 : 0)}%` : null,
+    立ちの数 > 0 ? `皆中 ${Math.round(((立ちの皆中 ? 立ちの皆中.回数 : 0) / 立ちの数) * 100)}%` : null,
+  ]
+    .filter(Boolean)
+    .join('　');
   return (0, y.jsxs)(o.default, {
     style: { marginBottom: 20 },
     children: [
-      (0, y.jsx)(l.default, {
-        style: F.sectionSubTitle,
-        // 比較中は誰の型かが分からないと読めないので、名前を見出しに出す
-        children: 誰の
-          ? `的中の型 — ${誰の}`
-          : 期間の名
-            ? `的中の型 (${期間の名})`
-            : '的中の型 (4射単位)',
+      (0, y.jsxs)(s.default, {
+        testID: '的中の型の見出し',
+        accessibilityRole: 'button',
+        accessibilityState: { expanded: 開いている },
+        accessibilityLabel: (開いている ? '的中の型を畳む' : '的中の型を開く') + (誰の ? `（${誰の}）` : ''),
+        onPress: () => set開いている(!開いている),
+        style: F.型の見出しの行,
+        children: [
+          (0, y.jsxs)(o.default, {
+            style: { flex: 1, minWidth: 0 },
+            children: [
+              (0, y.jsx)(l.default, {
+                style: [F.sectionSubTitle, { marginBottom: 0 }],
+                // 比較中は誰の型かが分からないと読めないので、名前を見出しに出す
+                children: 誰の
+                  ? `的中の型 — ${誰の}`
+                  : 期間の名
+                    ? `的中の型 (${期間の名})`
+                    : '的中の型',
+              }),
+              !開いている &&
+                (0, y.jsx)(l.default, {
+                  style: F.型の要点の行,
+                  numberOfLines: 1,
+                  children: 要点 + '　押すと開く',
+                }),
+            ],
+          }),
+          (0, y.jsx)(h.Ionicons, {
+            name: 開いている ? 'chevron-up' : 'chevron-down',
+            size: 18,
+            color: '#8E8E93',
+          }),
+        ],
       }),
-      (0, y.jsx)(o.default, {
-        style: F.patternsCardDash,
-        children: 束.map((組) =>
+      開いている &&
+      (0, y.jsxs)(o.default, {
+        style: [F.patternsCardDash, { marginTop: 12 }],
+        children: [
+          // 一射単位。1射ごとの的中率（上の的中率と同じ数字だが、単位を並べて見比べられるように）
+          (0, y.jsx)(l.default, { style: F.型の区切り, children: '一射単位（1射）' }),
+          (0, y.jsxs)(o.default, {
+            style: F.型の行,
+            children: [
+              (0, y.jsx)(l.default, { style: F.型の要点, children: '的中率' }),
+              (0, y.jsxs)(l.default, {
+                style: F.型の回数,
+                children: [一射の的中率.toFixed(1), '%（', 中り数, '中／', 射数, '射）'],
+              }),
+            ],
+          }),
+          // 一手単位。2射の型
+          手の並び.length > 0 &&
+            (0, y.jsx)(l.default, {
+              style: F.型の区切り,
+              children: '一手単位（2射）　' + 手の数 + '手',
+            }),
+          ...手の並び.map((x) =>
+            (0, y.jsxs)(
+              o.default,
+              {
+                style: F.型の行,
+                children: [
+                  (0, y.jsx)(l.default, { style: F.型の印, children: x.型 }),
+                  (0, y.jsx)(l.default, {
+                    style: F.型の要点,
+                    numberOfLines: 1,
+                    children: x.要点 ? x.呼び名 + '　' + x.要点 : x.呼び名,
+                  }),
+                  (0, y.jsxs)(l.default, {
+                    style: F.型の回数,
+                    children: [x.回数, '手 ', Math.round(x.割合), '%'],
+                  }),
+                ],
+              },
+              '手' + x.型
+            )
+          ),
+          // 4射単位。立ちの型
+          束.length > 0 &&
+            (0, y.jsx)(l.default, {
+              style: F.型の区切り,
+              children: '4射単位（立ち）　' + 立ちの数 + '立',
+            }),
+          ...束.map((組) =>
           (0, y.jsxs)(
             o.default,
             {
@@ -165,11 +270,14 @@ function 型の節(成績, 期間の名, 誰の) {
             組.中り
           )
         ),
+        ],
       }),
-      (0, y.jsx)(l.default, {
-        style: { fontSize: 11, color: '#8E8E93', marginTop: 8, lineHeight: 16 },
-        children: '※ 割合は同じ中り数の中での割合です（三中のうち、その抜き方が何割か）。',
-      }),
+      開いている &&
+        (0, y.jsx)(l.default, {
+          style: { fontSize: 11, color: '#8E8E93', marginTop: 8, lineHeight: 16 },
+          children:
+            '※ 4射単位の割合は同じ中り数の中での割合です（三中のうち、その抜き方が何割か）。一手単位の割合はすべての手の中での割合です。',
+        }),
     ],
   });
 }
@@ -3053,6 +3161,11 @@ const F = a.default.create({
   比較の的中率の内訳: { fontSize: 11, color: '#8E8E93', marginLeft: 6, minWidth: 48, textAlign: 'right' },
   // 的中の型。○×を4つ並べるので、字が詰まらないよう間を空ける
   型の組: { marginBottom: 12 },
+  // 見出しの行。押して開く・畳むので、行ごと押せる幅にする
+  型の見出しの行: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 },
+  型の要点の行: { fontSize: 11, color: '#8E8E93', marginTop: 2 },
+  // 単位（一射・一手・4射）の区切り
+  型の区切り: { fontSize: 12, fontWeight: 'bold', color: '#3A3A3C', marginTop: 10, marginBottom: 6 },
   型の見出し: { fontSize: 12, color: '#8E8E93', fontWeight: '600', marginBottom: 4 },
   型の行: { flexDirection: 'row', alignItems: 'center', marginBottom: 4, gap: 8 },
   型の印: { fontSize: 13, color: '#1C1C1E', fontWeight: 'bold', letterSpacing: 1, flexShrink: 0 },
