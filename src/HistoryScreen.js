@@ -126,6 +126,9 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
       [ke, ve] = (0, t.useState)(null),
       [De, Ee] = (0, t.useState)(0),
       [Be, We] = (0, t.useState)(!1),
+      // ゴミ箱から開いて見ている記録の id。ゴミ箱の中は見るだけ（直す・消す・
+      // 前後へ送るは出さない）で、画面にもゴミ箱の中だと分かる帯を出す
+      [ゴミ箱の記録, setゴミ箱の記録] = (0, t.useState)(null),
       Re = (0, t.useRef)(null),
       Oe = (0, t.useRef)(null),
       Me = (e) => {
@@ -139,7 +142,11 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
       Pe = (0, t.useMemo)(() => {
         const e = D,
           t = ee,
-          o = B.find((e) => e.id === P) || null;
+          o =
+            B.find((e) => e.id === P) ||
+            // ゴミ箱から開いたときだけ、ゴミ箱の中も探す
+            (ゴミ箱の記録 && ゴミ箱の記録 === P ? W.find((e) => e && e.id === P) : null) ||
+            null;
         if (o && 'member' === z && e) {
           // 判定は syncRules の 自分の射手か に出した。ここは交代の判定で
           // 射手ではなく記録のほう(o)を見ていて、交代で入った自分を拾えず、
@@ -152,7 +159,14 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
           });
         }
         return o;
-      }, [B, P, z, D, ee]),
+      }, [B, W, P, ゴミ箱の記録, z, D, ee]),
+      // いま見ている記録がゴミ箱の中か。復元されて記録に戻ったら、ふつうの詳細になる
+      ゴミ箱を見ている =
+        !!Pe &&
+        !!ゴミ箱の記録 &&
+        Pe.id === ゴミ箱の記録 &&
+        !B.some((e) => e && e.id === Pe.id) &&
+        W.some((e) => e && e.id === Pe.id),
       mySessions = (0, t.useMemo)(() => {
         let e = B || [];
         const t = D,
@@ -300,7 +314,9 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
             children: [
               (0, k.jsx)(n.default, { style: E.emptyText, children: '記録が見つかりません' }),
               (0, k.jsx)(s.default, {
-                onPress: () => H('list'),
+                onPress: () => {
+                  (H('list'), setゴミ箱の記録(null));
+                },
                 style: { marginTop: 20 },
                 children: (0, k.jsx)(n.default, { style: { color: '#007AFF' }, children: '一覧に戻る' }),
               }),
@@ -341,7 +357,10 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
               },
               children: [
                 (0, k.jsxs)(f.default, {
-                  onPress: () => H('list'),
+                  // ゴミ箱から来たなら、ゴミ箱へ戻す
+                  onPress: () => {
+                    (H('list'), ゴミ箱を見ている && (setゴミ箱の記録(null), fe(!0)));
+                  },
                   style: ({ hovered: e }) => [
                     {
                       flexDirection: 'row',
@@ -359,9 +378,12 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                 }),
                 (0, k.jsx)(n.default, {
                   style: { fontSize: 17, fontWeight: 'bold', color: '#000', flex: 1, textAlign: 'center' },
-                  children: '記録詳細',
+                  children: ゴミ箱を見ている ? 'ゴミ箱の記録' : '記録詳細',
                 }),
-                (0, k.jsxs)(o.default, {
+                // 前後へ送るのは一覧の並び。ゴミ箱の中では出さない（幅だけ残して題を中央に保つ）
+                ゴミ箱を見ている
+                  ? (0, k.jsx)(o.default, { style: { width: 72 } })
+                  : (0, k.jsxs)(o.default, {
                   style: { flexDirection: 'row', alignItems: 'center', gap: 12 },
                   children: [
                     (0, k.jsx)(f.default, {
@@ -388,6 +410,31 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                 }),
               ],
             }),
+            // ゴミ箱の中の記録だと分かる帯。見るだけで、直す・消すは出さない。
+            // 復元はここからもできる（見てから戻したくなるのが自然な流れ）
+            ゴミ箱を見ている &&
+              (0, k.jsxs)(o.default, {
+                testID: 'ゴミ箱の帯',
+                style: E.trashBanner,
+                children: [
+                  (0, k.jsx)(F.Ionicons, { name: 'trash-outline', size: 18, color: '#FFF' }),
+                  (0, k.jsx)(n.default, {
+                    style: E.trashBannerText,
+                    children: 'ゴミ箱の中の記録です。見るだけで、直したり消したりはできません',
+                  }),
+                  (R || 'group' === z) &&
+                    (0, k.jsx)(f.default, {
+                      accessibilityRole: 'button',
+                      accessibilityLabel: 'この記録を復元する',
+                      'aria-label': 'この記録を復元する',
+                      onPress: () => {
+                        (G(Pe.id), setゴミ箱の記録(null), S.impactAsync(S.ImpactFeedbackStyle.Light));
+                      },
+                      style: ({ hovered: e }) => [E.trashBannerBtn, e && { opacity: 0.85 }],
+                      children: (0, k.jsx)(n.default, { style: E.trashBannerBtnText, children: '復元' }),
+                    }),
+                ],
+              }),
             (0, k.jsxs)(o.default, {
               style: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#F9F9F9' },
               children: [
@@ -428,6 +475,7 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                           ],
                         }),
                         (R || 'group' === z) &&
+                        !ゴミ箱を見ている &&
                         (0, k.jsxs)(k.Fragment, {
                           children: [
                             (0, k.jsx)(f.default, {
@@ -1007,7 +1055,7 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
         U(Pe.id, { archers: t });
       },
       it = (e, t) => {
-        R && (ve(e), Ee(t), Ie(!0));
+        R && !ゴミ箱を見ている && (ve(e), Ee(t), Ie(!0));
       },
       lt = o.default;
     return (0, k.jsxs)(
@@ -1502,13 +1550,27 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                           renderItem: ({ item: e }) => {
                             const t = new Date(e.date),
                               l = `${t.getFullYear()}年${t.getMonth() + 1}月${t.getDate()}日`;
-                            return (0, k.jsxs)(o.default, {
-                              style: {
-                                flexDirection: 'row',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                paddingVertical: 14,
+                            // 押すと中身を見られる（見るだけ）。選んでいる最中は選ぶ・外すに使う
+                            return (0, k.jsxs)(f.default, {
+                              testID: `ゴミ箱の記録-${e.id}`,
+                              accessibilityRole: 'button',
+                              accessibilityLabel: me ? `${l} を選ぶ` : `${l} の記録を見る`,
+                              'aria-label': me ? `${l} を選ぶ` : `${l} の記録を見る`,
+                              onPress: () => {
+                                if (me) return void Le(e.id);
+                                (setゴミ箱の記録(e.id), L(e.id), H('detail'), fe(!1));
+                                S.impactAsync(S.ImpactFeedbackStyle.Light);
                               },
+                              style: ({ hovered: h }) => [
+                                {
+                                  flexDirection: 'row',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  paddingVertical: 14,
+                                },
+                                h && { backgroundColor: 'rgba(0,122,255,0.05)' },
+                                x.IS_WEB && { cursor: 'pointer' },
+                              ],
                               children: [
                                 me &&
                                   (0, k.jsx)(s.default, {
@@ -1542,6 +1604,13 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                                       style: { color: '#007AFF', fontSize: 16, fontWeight: '500' },
                                       children: '復元',
                                     }),
+                                  }),
+                                !me &&
+                                  (0, k.jsx)(F.Ionicons, {
+                                    name: 'chevron-forward',
+                                    size: 18,
+                                    color: '#C7C7CC',
+                                    style: { marginLeft: 8 },
                                   }),
                               ],
                             });
@@ -1730,6 +1799,23 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
     },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     detailContainer: { flex: 1 },
+    // ゴミ箱の中の記録を見ているときの帯。見るだけだと一目で分かる色にする
+    trashBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      backgroundColor: '#8E8E93',
+    },
+    trashBannerText: { flex: 1, minWidth: 0, color: '#FFF', fontSize: 13, fontWeight: '600' },
+    trashBannerBtn: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 14,
+      backgroundColor: '#FFF',
+    },
+    trashBannerBtnText: { color: '#007AFF', fontSize: 14, fontWeight: 'bold' },
     detailHeader: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 6 },
     detailDate: { fontSize: 24, fontWeight: 'bold', color: '#000' },
     detailTitle: { fontSize: 20, color: '#000', marginTop: 4, fontWeight: '600' },
