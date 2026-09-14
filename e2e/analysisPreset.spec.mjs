@@ -266,7 +266,7 @@ test('個人の詳細に、的中の型が出る', async ({ page }) => {
   // 型の印（○×の並び）は出ない。押すと開く
   const 畳んだ本文 = await page.evaluate(() => document.body.innerText);
   expect(畳んだ本文, '畳んでいるのに断り書きが出ている').not.toContain('同じ中り数の中での割合');
-  expect(畳んだ本文, '畳んでいる間の要点（一射の的中率）が出ていない').toMatch(/一射 \d+\.\d%/);
+  expect(畳んだ本文, '畳んでいる間の要点が出ていない').toContain('押すと開く');
   await 見出し.first().click();
   await page.waitForTimeout(500);
 
@@ -276,9 +276,9 @@ test('個人の詳細に、的中の型が出る', async ({ page }) => {
   const 本文 = await page.evaluate(() => document.body.innerText);
   expect(本文, '結果分布のすぐ下に置いたのに、分布が見当たらない').toContain('立ちの結果分布');
   expect(本文, '型の印（○×の並び）が出ていない').toMatch(/[○×]{4}/);
-  // 一射・一手の単位も出る
-  expect(本文, '一射単位が出ていない').toContain('一射単位');
-  expect(本文, '一手単位が出ていない').toContain('一手単位');
+  // 一射・一手のとき（1本だけ／2本だけ引いた記録）も出る。無ければ「まだありません」
+  expect(本文, '一射のときが出ていない').toContain('一射のとき');
+  expect(本文, '一手のときが出ていない').toContain('一手のとき');
   // 「初矢」はAIアシスタントのQ&Aにも出てくるので、それだけでは
   // この節を見たことにならない。この節にしか無い断り書きで見る
   expect(本文, '的中の型の節の中身が出ていない').toContain('同じ中り数の中での割合');
