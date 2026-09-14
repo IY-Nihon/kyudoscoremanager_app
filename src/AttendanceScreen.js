@@ -694,6 +694,8 @@ const AttendanceScreen = () => {
                   style: styles.modalHeader,
                   children: [
                     (0, j.jsxs)(o.View, {
+                      // 名前が長くても閉じるボタンを押し出さない。名前は折り返す
+                      style: styles.modalHeaderMain,
                       children: [
                         (0, j.jsx)(o.Text, { style: styles.modalTitle, children: selectedMember.name }),
                         (0, j.jsxs)(o.Text, {
@@ -899,12 +901,13 @@ const styles = o.StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  memberInfoMain: { flex: 1 },
+  memberInfoMain: { flex: 1, minWidth: 0 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   genderDot: { fontSize: 10 },
-  memberName: { fontSize: 16, fontWeight: 'bold' },
+  // 長い名前は折り返す。縮まない字だと、右の数字と矢印を画面の外へ押し出す
+  memberName: { fontSize: 16, fontWeight: 'bold', flexShrink: 1, minWidth: 0 },
   memberSub: { fontSize: 11, color: '#8E8E93' },
-  statInfo: { alignItems: 'flex-end' },
+  statInfo: { alignItems: 'flex-end', flexShrink: 0 },
   rateText: { fontSize: 16, fontWeight: 'bold', color: '#007AFF' },
   countsText: { fontSize: 12, color: '#8E8E93' },
   scroll: { flex: 1 },
@@ -966,7 +969,8 @@ const styles = o.StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 20,
   },
-  modalTitle: { fontSize: 22, fontWeight: 'bold', color: '#1C1C1E' },
+  modalHeaderMain: { flex: 1, minWidth: 0, marginRight: 12 },
+  modalTitle: { fontSize: 22, fontWeight: 'bold', color: '#1C1C1E', flexShrink: 1 },
   modalStatRow: {
     flexDirection: 'row',
     backgroundColor: '#F2F2F7',
@@ -978,7 +982,7 @@ const styles = o.StyleSheet.create({
   modalStatItem: { alignItems: 'center' },
   modalStatVal: { fontSize: 18, fontWeight: 'bold', color: '#007AFF' },
   modalStatLab: { fontSize: 11, color: '#8E8E93', marginTop: 4 },
-  closeBtn: { padding: 4 },
+  closeBtn: { padding: 4, flexShrink: 0 },
   loadingOverlay: {
     ...o.StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(255,255,255,0.7)',
