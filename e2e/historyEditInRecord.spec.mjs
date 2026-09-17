@@ -8,7 +8,7 @@
  * 「記録画面で直す」を押すと記録が記録画面に乗り、道具は全部そのまま使える。
  *
  * 見るのは
- *   ・押すと記録画面に移り、帯が出て、記録の人が並ぶ
+ *   ・三本線の窓の「記録画面で直す」を押すと記録画面に移り、帯が出て、記録の人が並ぶ
  *   ・「人」で人を足せる（記録画面の道具が効く）
  *   ・「やめる」で履歴の詳細に戻り、記録は変わっていない。記録画面は直す前の盤面に戻る
  * 団体には書き込まない（保存の道は test/historyEditInRecord.test.js で見ている）。
@@ -72,8 +72,11 @@ test('管理者モードの履歴から記録画面で直し、やめると元�
   await 行.click();
   await expect(page.getByText('記録詳細', { exact: true })).toBeVisible({ timeout: 15_000 });
 
+  // 管理者モードの詳細にある三本線の窓（人追加・間隔追加・計追加・記録を編集）から入る
+  await page.getByRole('button', { name: '記録の道具' }).click();
+  await expect(page.getByText('人追加', { exact: true })).toBeVisible({ timeout: 15_000 });
   const 直す = page.getByRole('button', { name: '記録画面で直す' });
-  await expect(直す, '「記録画面で直す」が出ない').toBeVisible({ timeout: 15_000 });
+  await expect(直す, '窓に「記録画面で直す」が無い').toBeVisible({ timeout: 15_000 });
   await 直す.click();
 
   // 記録画面に移り、帯が出て、記録の 2 人が並ぶ
