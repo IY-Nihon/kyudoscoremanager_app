@@ -25,15 +25,15 @@ test('roster が名簿の表記なら、その人に寄る（記号付きの表�
 
 test('roster が null なら、編集距離では寄せない（相手校の選手が部員に化けない）', () => {
   // 文字比較だけだと 斉藤 → 佐藤 になっていた
-  assert.strictEqual(matchArcherName('松本', 名簿).status, 'matched');
-  assert.strictEqual(名簿で名寄せ('松本', null, 名簿).status, 'guest');
-  assert.strictEqual(名簿で名寄せ('田中', null, 名簿).status, 'guest');
+  assert.strictEqual(matchArcherName('斉藤', 名簿).status, 'matched');
+  assert.strictEqual(名簿で名寄せ('斉藤', null, 名簿).status, 'guest');
+  assert.strictEqual(名簿で名寄せ('田村', null, 名簿).status, 'guest');
   // 完全一致・姓の一致だけは認める（Gemini が見落としても救う）
   assert.strictEqual(名簿で名寄せ('佐藤', null, 名簿).match.id, 'm2');
 });
 
 test('roster が無い（古い返事）なら、これまでの文字比較のまま', () => {
-  assert.strictEqual(名簿で名寄せ('松本', undefined, 名簿).status, 'matched');
+  assert.strictEqual(名簿で名寄せ('斉藤', undefined, 名簿).status, 'matched');
 });
 
 test('roster が複数の人に当たるなら「もしかして」', () => {
@@ -55,7 +55,7 @@ test('roster が付いていても、読めた字が名簿の姓と違うなら�
 
 test('roster が名簿に無い表記（作ったもの）なら、読めた文字で厳しく照合', () => {
   assert.strictEqual(名簿で名寄せ('佐藤', '佐籐', 名簿).match.id, 'm2');
-  assert.strictEqual(名簿で名寄せ('松本', '佐籐', 名簿).status, 'guest');
+  assert.strictEqual(名簿で名寄せ('斉藤', '佐籐', 名簿).status, 'guest');
 });
 
 test('空なら empty', () => {
