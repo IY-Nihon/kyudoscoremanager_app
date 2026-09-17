@@ -1,10 +1,46 @@
-# 弓道部的中ノート (RecordAppExpo)
+# 弓道部的中ノート
 
-団体弓道の的中記録・出欠管理アプリ。Web (Firebase Hosting) と iOS (EAS Build) で配信。
+大学弓道部の**的中（○×）の記録・分析・出欠**を、部員みんなの端末で共有するアプリです。
+的場に置いた 1 台で記録しながら、ライブで全員のスマホに同じ盤面が映ります。紙の記録簿や
+ホワイトボードをそのまま写真に撮って、○×を読み取ることもできます。
+
+- 使う： https://kyudoscoremanager.web.app （PWA。iPhone / Android のホーム画面に追加して使う）
+- 紹介ページ： https://kyudoscoremanagehomepage.netlify.app/ （別リポジトリ `IY-Nihon/kyudoscoremanager-homepage`）
+
+<p>
+<img src="docs/images/record_ui.webp" width="180" alt="記録画面">
+<img src="docs/images/analysis_ui.webp" width="180" alt="分析画面">
+<img src="docs/images/history_ui.webp" width="180" alt="履歴画面">
+<img src="docs/images/ai_chat_ui.webp" width="180" alt="AI の相談役">
+</p>
+
+## できること
+
+| | |
+|---|---|
+| **記録** | 立ち順に並べた盤面で ○× を押すだけ。間隔・計・総計、途中交代、矢所（的のどこに当たったか）、鍵（押し間違い防止）、取り消し・やり直し |
+| **ライブ** | 1 台で記録すると、同じ団体の全員の端末に即時に映る。リンクや QR で部外の人にも見せられる（見るだけ） |
+| **写真から読む** | 板や紙の記録を撮ると、名前を Gemini が、○× を端末の小さな網（自前で学習）が読む。板の名前は名簿と照合して部員に寄せる |
+| **履歴・分析** | 日ごとの記録、タグで絞り込み、個人と団体の的中率の推移、順位、期間の比較 |
+| **出欠** | 記録から出欠を自動で付け、月ごとのカレンダーで見る |
+| **AI の相談役** | 記録を読んだうえで「今月の調子は？」に答えるチャット |
+| **団体と個人** | 団体の合言葉で入る記録係と、個人 ID で入る部員の 2 つの入り方。部員は自分の記録だけを見る |
+
+## 作りの要点
+
+- **Expo / React Native Web** の 1 つのコードで Web（PWA）と iOS を配信。状態は zustand、同期は Firebase（Firestore・Realtime Database）
+- **オフライン優先**：手元に確定してから雲へ送る。通信が切れても記録は止まらず、つながったときに突き合わせる
+- **○× の読み取りは端末の中で**：20×20 の小さな MLP（`scripts/ocr-cells/`、自分で描いた見本で学習）を int8 で束ね、写真を外に出さずに読む。名前だけ Gemini（鍵は Cloudflare Workers の中継が持ち、アプリには置かない）
+- **検査**：単体 800 件（`node --test`）と、3 機種の Playwright e2e（検証用の Firebase 企画に対して本物の流れを通す）
+- **お知らせ・法務文書・バックアップ**：更新はアプリ内のお知らせで届け、利用規約とプライバシーポリシーはアプリと紹介ページの両方に、データは毎日暗号化して控える（別リポジトリ `kyudoscoremanager_backup`）
+
+---
+
+以下は開発の手引き（構成・配信・検査・既知の課題）。
 
 - 本番Web: https://kyudoscoremanager.web.app
 - Firebase プロジェクト: `kyudoscoremanager`
-- ランディングページ: 別リポジトリ `IY-Nihon/kyudo-landing`
+- 紹介ページ: 別リポジトリ `IY-Nihon/kyudoscoremanager-homepage`
 
 ## 技術スタック
 
@@ -304,12 +340,12 @@ App.js, index.js       エントリポイント
 src/                   アプリ本体（上記の通りソースマップ復元コード）
 assets/                アプリ内で使うアイコン・画像
 pwa/                   PWA用の静的ファイル（デプロイ時にdist/へコピー）
-scripts/               デプロイ・検証・修復・復元のスクリプト
+scripts/               デプロイ・検証・修復・復元のスクリプト（ocr-cells/ は○×を読む網の学習、archive/ は使い終わったもの）
 patches/               patch-package 用の node_modules パッチ
 test/                  単体検査（node --test。npm test で走る）
 e2e/                   本物のブラウザでの検査（Playwright。npm run e2e）
 rules/                 決まりの控え（bootstrap / stage1 / stage2 / rollback）
-docs/                  機能ごとの要件定義・実装計画、配信の手順
+docs/                  法務文書（legal/）、配信の手順（deploy/）、画面写真（images/）、OCR の見本（ocr-samples/）。archive/plans/ は昔の計画書
 .github/workflows/     EAS Build (iOS) の CI
 *.rules, firebase.json Firebase の設定・セキュリティルール
 ```

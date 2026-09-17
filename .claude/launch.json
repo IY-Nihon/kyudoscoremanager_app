@@ -4,8 +4,21 @@
     {
       "name": "web",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "web"],
+      "runtimeArgs": [
+        "run",
+        "web"
+      ],
       "port": 8081,
+      "autoPort": false
+    },
+    {
+      "name": "stg-8090",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": [
+        "/c",
+        "set PW_PORT=8090&& set PW_DIST=C:/Users/yutoi/Documents/kyudo/app/dist&& node C:/Users/yutoi/Documents/kyudo/app/scripts/e2e-server.mjs"
+      ],
+      "port": 8090,
       "autoPort": false
     }
   ]
