@@ -28,6 +28,9 @@ const GROUPS = [
   // 100003 と同じ中身。検査を並列に流したとき、鍵（lock）と途中交代
   // （substitution）が同じ団体を取り合わないよう、交代の側をこちらへ移した
   { id: '100007', name: 'テスト団体F（途中交代用）',   email: 'stg-f@example.com',      parentDoc: false, members: 4 },
+  // ゴミ箱の巡り（作る→消す→復元→完全に削除）の検査用。記録を作って消すので、
+  // 途中交代（100007）と取り合わないよう分けた（2026-09-17）
+  { id: '100008', name: 'テスト団体H（ゴミ箱用）',     email: 'stg-h@example.com',      parentDoc: false, members: 4 },
 ];
 
 const uuid = (g, i) => `mem-${g}-${String(i).padStart(3, '0')}`;
