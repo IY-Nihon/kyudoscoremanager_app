@@ -57,6 +57,7 @@ var _xlsx = require('./excelExport'),
   h = e(require('./Pressable')),
   x = require('./IS_WEB'),
   y = require('./useScoreStore'),
+  規則 = require('./syncRules'),
   案内 = require('./TutorialGuide'),
   p = require('@expo/vector-icons'),
   j = require('react-native-safe-area-context'),
@@ -1053,13 +1054,14 @@ const w = () => {
                                   children: [
                                     (0, T.jsx)(n.default, {
                                       style: { fontSize: 13, color: '#000' },
-                                      children: e,
+                                      // しまう形は「#合宿」だが、画面では # を付けない
+                                      children: 規則.タグの見た目(e),
                                     }),
                                     (0, T.jsx)(h.default, {
                                       // 絵だけのボタン。どのタグを消すのかまで読ませる
                                       accessible: !0,
                                       accessibilityRole: 'button',
-                                      accessibilityLabel: e + ' を消す',
+                                      accessibilityLabel: 規則.タグの見た目(e) + ' を消す',
                                       'aria-label': e + ' を消す',
                                       onPress: () => Q(e),
                                       style: ({ hovered: e }) => [

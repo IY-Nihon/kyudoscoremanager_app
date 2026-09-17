@@ -1053,6 +1053,9 @@ const M = (0, s.create)()(
         activeSessionID: null,
         historyStack: [],
         redoStack: [],
+        // 履歴の記録を記録画面で直しているあいだの目印。{ id, 控え }。
+        // 控え は直す前の盤面（archers など）で、終えるときに据え直す
+        履歴の編集: null,
         viewScale: 1,
         syncStatus: '未同期',
         lastSyncTime: null,
@@ -1211,6 +1214,8 @@ const M = (0, s.create)()(
                 trash: [],
                 archers: [],
                 activeSessionID: null,
+                // 履歴の記録を直している途中の控えも、団体を離れるときに捨てる
+                履歴の編集: null,
                 analysisSelectedTags: [],
                 historySelectedTags: [],
                 historyTagLogic: 'AND',
@@ -2738,6 +2743,65 @@ const M = (0, s.create)()(
               historyStack: [],
               redoStack: [],
             });
+        },
+        /**
+         * 履歴の記録を、記録画面に載せて直す（管理者モードの履歴から）。
+         *
+         * 履歴の詳細で直せるのは ○×・鍵・名前・削除だけで、人や間隔や計を足す、
+         * 並べ替える、矢所、射数を変える、はできなかった（使う人：「普通の記録表で
+         * できることをすべて」2026-09-17）。記録画面そのものに載せ替えれば道具は
+         * 全部そのまま使える。いま記録中の盤面は 控え に取り、終えるときに据え直す。
+         * 端末に残す（partialize）ので、途中で閉じても元の盤面は失われない。
+         *
+         * ライブ中は載せ替えない（盤面がライブと結びついている）。
+         * @returns {boolean} 載せ替えたか
+         */
+        履歴の記録を記録画面で開く: (id) => {
+          const 店 = s();
+          if (店.履歴の編集 || 店.isLiveActive) return !1;
+          const 記録 = (Array.isArray(店.sessions) ? 店.sessions : []).find((e) => e && e.id === id);
+          if (!記録) return !1;
+          行動を控える('履歴の記録を記録画面で開く', id);
+          e({
+            履歴の編集: {
+              id,
+              控え: {
+                archers: 店.archers,
+                shotsPerRound: 店.shotsPerRound,
+                activeSessionID: 店.activeSessionID,
+                historyStack: 店.historyStack,
+                redoStack: 店.redoStack,
+              },
+            },
+            archers: JSON.parse(JSON.stringify(記録の射手を整える(記録))),
+            shotsPerRound: 記録.shotCount || 8,
+            // 記録中の id を外す。付けたままだと「終了・保存」やライブがその記録に結びつく
+            activeSessionID: null,
+            historyStack: [],
+            redoStack: [],
+          });
+          return !0;
+        },
+        /**
+         * 記録画面での履歴の直しを終える。保存するなら記録を書き戻し（題・メモ・タグ・日付は
+         * そのまま）、どちらでも直す前の盤面を据え直す
+         */
+        履歴の編集を終える: (保存する) => {
+          const 店 = s(),
+            編集 = 店.履歴の編集;
+          if (!編集) return;
+          if (保存する) {
+            const 射手たち = JSON.parse(JSON.stringify(Array.isArray(店.archers) ? 店.archers : []));
+            店.updateSession(編集.id, {
+              archers: 射手たち,
+              shotCount: 店.shotsPerRound,
+              archerNames: Array.from(
+                new Set(射手たち.map((e) => (e && e.name ? e.name.trim() : '')).filter(Boolean))
+              ),
+            });
+          }
+          行動を控える('履歴の編集を終える', 保存する ? '保存' : '取りやめ');
+          e(Object.assign({ 履歴の編集: null }, 編集.控え));
         },
         deleteSession: async (o) => {
           const i = Array.isArray(s().sessions) ? s().sessions : [],
@@ -5647,6 +5711,7 @@ const M = (0, s.create)()(
         比較のひな型: e.比較のひな型,
         ライブの合言葉: e.ライブの合言葉,
         ライブの続き: e.ライブの続き,
+        履歴の編集: e.履歴の編集,
       }),
       onRehydrateStorage: () => {
         console.log('[Store] Hydration starting...');

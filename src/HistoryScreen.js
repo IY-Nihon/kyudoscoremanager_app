@@ -38,6 +38,8 @@ var y = require('./useScoreStore'),
   p = require('./ArcherColumnView'),
   j = require('./LabelColumn'),
   組 = require('./teamGrouping'),
+  窓 = require('./AppDialog'),
+  航 = require('@react-navigation/native'),
   C = require('./uiConfig'),
   F = require('@expo/vector-icons'),
   S = (function (e) {
@@ -103,8 +105,12 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
         // 画面ごとに別々に覚えると、同じ表なのに向きが食い違う
         横に並べる = !1,
         set横に並べる,
+        // 履歴の記録を記録画面に載せて直す（管理者モード）。人・間隔・計・並べ替え・矢所など、
+        // 記録表でできることを全部使うため。詳細の画面で直せるのは○×と名前と鍵と削除だけ
+        履歴の記録を記録画面で開く,
         // 案内が見本を出しているあいだは、中身だけ見本に差し替わる
       } = 案内.見本を重ねる((0, y.useScoreStore)()),
+      航路 = (0, 航.useNavigation)(),
       ee = (0, y.useScoreStore)((e) => e.myMemberName) || '',
       [te, re] = (0, t.useState)(''),
       [oe, ne] = (0, t.useState)(''),
@@ -497,6 +503,40 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                                 color: '#FF3B30',
                               }),
                             }),
+                            R &&
+                              !ゴミ箱を見ている &&
+                              (0, k.jsxs)(f.default, {
+                                // 記録画面に載せて直す。詳細の画面でできるのは○×・名前・鍵・削除だけで、
+                                // 人や間隔や計を足す・並べ替える・矢所は記録画面の道具が要る
+                                onPress: () => {
+                                  if (!Pe) return;
+                                  if (typeof 履歴の記録を記録画面で開く !== 'function' || !履歴の記録を記録画面で開く(Pe.id)) {
+                                    窓.出す('いまは直せません', 'ライブ中か、別の記録を直している途中です。先にそちらを終えてください。');
+                                    return;
+                                  }
+                                  航路.navigate('記録');
+                                },
+                                accessibilityRole: 'button',
+                                accessibilityLabel: '記録画面で直す',
+                                'aria-label': '記録画面で直す',
+                                style: ({ hovered: e }) => [
+                                  {
+                                    marginLeft: 12,
+                                    paddingHorizontal: 10,
+                                    paddingVertical: 4,
+                                    borderRadius: 14,
+                                    backgroundColor: '#FF9500',
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                  },
+                                  e && { opacity: 0.85 },
+                                ],
+                                children: [
+                                  (0, k.jsx)(F.Ionicons, { name: 'create-outline', size: 16, color: '#FFF' }),
+                                  (0, k.jsx)(n.default, { style: { color: '#FFF', fontSize: 12, fontWeight: '700' }, children: '記録画面で直す' }),
+                                ],
+                              }),
                             R &&
                               (0, k.jsx)(f.default, {
                                 onPress: () => je(!0),
