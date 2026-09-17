@@ -504,42 +504,13 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                               }),
                             }),
                             R &&
-                              !ゴミ箱を見ている &&
-                              (0, k.jsxs)(f.default, {
-                                // 記録画面に載せて直す。詳細の画面でできるのは○×・名前・鍵・削除だけで、
-                                // 人や間隔や計を足す・並べ替える・矢所は記録画面の道具が要る
-                                onPress: () => {
-                                  if (!Pe) return;
-                                  if (typeof 履歴の記録を記録画面で開く !== 'function' || !履歴の記録を記録画面で開く(Pe.id)) {
-                                    窓.出す('いまは直せません', 'ライブ中か、別の記録を直している途中です。先にそちらを終えてください。');
-                                    return;
-                                  }
-                                  航路.navigate('記録');
-                                },
-                                accessibilityRole: 'button',
-                                accessibilityLabel: '記録画面で直す',
-                                'aria-label': '記録画面で直す',
-                                style: ({ hovered: e }) => [
-                                  {
-                                    marginLeft: 12,
-                                    paddingHorizontal: 10,
-                                    paddingVertical: 4,
-                                    borderRadius: 14,
-                                    backgroundColor: '#FF9500',
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    gap: 4,
-                                  },
-                                  e && { opacity: 0.85 },
-                                ],
-                                children: [
-                                  (0, k.jsx)(F.Ionicons, { name: 'create-outline', size: 16, color: '#FFF' }),
-                                  (0, k.jsx)(n.default, { style: { color: '#FFF', fontSize: 12, fontWeight: '700' }, children: '記録画面で直す' }),
-                                ],
-                              }),
-                            R &&
                               (0, k.jsx)(f.default, {
                                 onPress: () => je(!0),
+                                // 絵だけのボタン。読み上げと検査のために名前を付ける
+                                accessible: !0,
+                                accessibilityRole: 'button',
+                                accessibilityLabel: '記録の道具',
+                                'aria-label': '記録の道具',
                                 style: ({ hovered: e }) => [
                                   { marginLeft: 16, padding: 4, borderRadius: 20 },
                                   e && { backgroundColor: 'rgba(0,122,255,0.05)' },
@@ -1775,6 +1746,38 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                     (0, k.jsx)(o.default, {
                       style: { height: 1, backgroundColor: '#EEE', marginVertical: 8 },
                     }),
+                    // 記録画面に載せて直す。ここ（詳細）でできるのは人・間隔・計を足すことと、
+                    // ○×・名前・鍵・削除だけ。並べ替え・矢所・射数・交代・画像からの読み取りなど
+                    // 記録表の道具は、記録画面そのものに載せ替えて使う
+                    !ゴミ箱を見ている &&
+                      (0, k.jsxs)(s.default, {
+                        style: E.adminMenuItem,
+                        accessibilityRole: 'button',
+                        accessibilityLabel: '記録画面で直す',
+                        'aria-label': '記録画面で直す',
+                        onPress: () => {
+                          if (!Pe) return;
+                          je(!1);
+                          if (typeof 履歴の記録を記録画面で開く !== 'function' || !履歴の記録を記録画面で開く(Pe.id)) {
+                            窓.出す('いまは直せません', 'ライブ中か、別の記録を直している途中です。先にそちらを終えてください。');
+                            return;
+                          }
+                          航路.navigate('記録');
+                        },
+                        children: [
+                          (0, k.jsx)(F.Ionicons, { name: 'open-outline', size: 20, color: '#FF9500' }),
+                          (0, k.jsxs)(o.default, {
+                            style: { flex: 1 },
+                            children: [
+                              (0, k.jsx)(n.default, { style: E.adminMenuText, children: '記録画面で直す' }),
+                              (0, k.jsx)(n.default, {
+                                style: { fontSize: 11, color: '#8E8E93', marginLeft: 12 },
+                                children: '並べ替え・矢所・射数など、記録表の道具をすべて使う',
+                              }),
+                            ],
+                          }),
+                        ],
+                      }),
                     (0, k.jsxs)(s.default, {
                       style: E.adminMenuItem,
                       onPress: () => {
