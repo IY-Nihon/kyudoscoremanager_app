@@ -170,7 +170,7 @@ const C = ({ visible: e, session: l, onClose: u, onSave: C }) => {
                     children: [
                       (0, b.jsx)(s.default, {
                         style: j.headerTitle,
-                        children: '記録の編集',
+                        children: '記録の情報を変える',
                       }),
                       (0, b.jsx)(i.default, {
                         onPress: u,

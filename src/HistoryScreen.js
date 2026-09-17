@@ -1695,60 +1695,9 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                 children: (0, k.jsxs)(o.default, {
                   style: E.adminMenuContent,
                   children: [
-                    (0, k.jsxs)(s.default, {
-                      style: E.adminMenuItem,
-                      onPress: () => {
-                        if (!Pe) return;
-                        const e = (0, b.newArcher)(Pe.shotCount || 8),
-                          t = [...(Pe.archers || []), e];
-                        (U(Pe.id, { archers: t }), je(!1), S.impactAsync(S.ImpactFeedbackStyle.Medium));
-                      },
-                      children: [
-                        (0, k.jsx)(F.Ionicons, { name: 'person-add', size: 20, color: '#007AFF' }),
-                        (0, k.jsx)(n.default, { style: E.adminMenuText, children: '人追加' }),
-                      ],
-                    }),
-                    (0, k.jsxs)(s.default, {
-                      style: E.adminMenuItem,
-                      onPress: () => {
-                        if (!Pe) return;
-                        const e = (0, b.newSeparator)(),
-                          t = [...(Pe.archers || []), e];
-                        (U(Pe.id, { archers: t }), je(!1), S.impactAsync(S.ImpactFeedbackStyle.Light));
-                      },
-                      children: [
-                        (0, k.jsx)(F.Ionicons, { name: 'pause', size: 20, color: '#FF9500' }),
-                        (0, k.jsx)(n.default, { style: E.adminMenuText, children: '間隔追加' }),
-                      ],
-                    }),
-                    (0, k.jsxs)(s.default, {
-                      style: E.adminMenuItem,
-                      onPress: () => {
-                        if (!Pe) return;
-                        const e = (0, b.newTotalCalculator)(Pe.shotCount || 8),
-                          t = [...(Pe.archers || []), e];
-                        (U(Pe.id, { archers: t }), je(!1), S.impactAsync(S.ImpactFeedbackStyle.Light));
-                      },
-                      children: [
-                        (0, k.jsx)(n.default, {
-                          style: {
-                            fontSize: 18,
-                            fontWeight: 'bold',
-                            color: '#34C759',
-                            width: 20,
-                            textAlign: 'center',
-                          },
-                          children: '\u03a3',
-                        }),
-                        (0, k.jsx)(n.default, { style: E.adminMenuText, children: '計追加' }),
-                      ],
-                    }),
-                    (0, k.jsx)(o.default, {
-                      style: { height: 1, backgroundColor: '#EEE', marginVertical: 8 },
-                    }),
-                    // 記録画面に載せて直す。ここ（詳細）でできるのは人・間隔・計を足すことと、
-                    // ○×・名前・鍵・削除だけ。並べ替え・矢所・射数・交代・画像からの読み取りなど
-                    // 記録表の道具は、記録画面そのものに載せ替えて使う
+                    // 記録表そのものの直しは、記録画面に載せ替えて行う（人・間隔・計を足す、
+                    // 並べ替え・矢所・射数・交代・画像からの読み取り）。ここに在った「人追加・
+                    // 間隔追加・計追加」は記録画面で足せるので外した（使う人の指摘 2026-09-17）
                     !ゴミ箱を見ている &&
                       (0, k.jsxs)(s.default, {
                         style: E.adminMenuItem,
@@ -1778,14 +1727,28 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                           }),
                         ],
                       }),
+                    // 記録の情報（日付・題・メモ・タグ・出欠）の窓。前は「記録を編集」で、
+                    // 何が直せるのか分からなかった
                     (0, k.jsxs)(s.default, {
                       style: E.adminMenuItem,
+                      accessibilityRole: 'button',
+                      accessibilityLabel: '記録の情報を変える',
+                      'aria-label': '記録の情報を変える',
                       onPress: () => {
                         (je(!1), Fe(!0));
                       },
                       children: [
                         (0, k.jsx)(F.Ionicons, { name: 'create-outline', size: 20, color: '#5856D6' }),
-                        (0, k.jsx)(n.default, { style: E.adminMenuText, children: '記録を編集' }),
+                        (0, k.jsxs)(o.default, {
+                          style: { flex: 1 },
+                          children: [
+                            (0, k.jsx)(n.default, { style: E.adminMenuText, children: '記録の情報を変える' }),
+                            (0, k.jsx)(n.default, {
+                              style: { fontSize: 11, color: '#8E8E93', marginLeft: 12 },
+                              children: '日付・題・メモ・タグ・出欠',
+                            }),
+                          ],
+                        }),
                       ],
                     }),
                   ],
@@ -2043,7 +2006,9 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
         backgroundColor: '#FFF',
         borderRadius: 12,
         padding: 8,
-        width: 200,
+        // 「記録の情報を変える」と説明の行が 1 行で収まる幅。200 では折れた
+        width: 260,
+        maxWidth: '90%',
         position: 'absolute',
         top: 100,
         right: 20,

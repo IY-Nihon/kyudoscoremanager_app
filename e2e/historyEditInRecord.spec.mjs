@@ -72,9 +72,11 @@ test('管理者モードの履歴から記録画面で直し、やめると元�
   await 行.click();
   await expect(page.getByText('記録詳細', { exact: true })).toBeVisible({ timeout: 15_000 });
 
-  // 管理者モードの詳細にある三本線の窓（人追加・間隔追加・計追加・記録を編集）から入る
+  // 管理者モードの詳細にある三本線の窓（記録画面で直す・記録の情報を変える）から入る
   await page.getByRole('button', { name: '記録の道具' }).click();
-  await expect(page.getByText('人追加', { exact: true })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole('button', { name: '記録の情報を変える' })).toBeVisible({ timeout: 15_000 });
+  // 人追加・間隔追加・計追加は記録画面で足せるので、この窓からは外した
+  await expect(page.getByText('人追加', { exact: true })).toHaveCount(0);
   const 直す = page.getByRole('button', { name: '記録画面で直す' });
   await expect(直す, '窓に「記録画面で直す」が無い').toBeVisible({ timeout: 15_000 });
   await 直す.click();
