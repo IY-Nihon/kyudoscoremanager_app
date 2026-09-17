@@ -596,3 +596,12 @@ test('ライブ：並びも中身も同じなら、変わったとは見なさ�
   const r = mergeLiveArchers(作る(), 作る(), 8, 8);
   assert.equal(r.changed, false, '同じ中身で描き直してはいけない');
 });
+
+test('タグの見た目: 画面に出すときは先頭の # を外す（しまう形は #付きのまま）', () => {
+  const { タグの見た目 } = require('../src/syncRules');
+  assert.equal(タグの見た目('#合宿'), '合宿');
+  assert.equal(タグの見た目('＃合宿'), '合宿');
+  assert.equal(タグの見た目('合宿'), '合宿');
+  assert.equal(タグの見た目(''), '');
+  assert.equal(タグの見た目(null), '');
+});

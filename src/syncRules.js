@@ -144,6 +144,15 @@ function normalizeTag(tag) {
   return body ? `#${body}` : '';
 }
 
+/**
+ * 画面に出すときのタグの字。しまう形は「#合宿」だが、画面では # を付けない。
+ * 履歴の一覧と絞り込みは前から外していたのに、保存の窓・記録の編集・設定の定型文には
+ * 「#合宿」のまま出ていて、使う人に「シャープが付いてしまう」と言われた（2026-09-17）
+ */
+function タグの見た目(tag) {
+  return typeof tag === 'string' ? tag.replace(/^[#＃]+/, '') : String(tag == null ? '' : tag);
+}
+
 /** タグの配列を揃えて重複を除く。配列でなければそのまま返す */
 function cleanUpTagsArray(tags) {
   if (!Array.isArray(tags)) return tags;
@@ -871,6 +880,7 @@ module.exports = {
   restampChangedArchers,
   dropUndefinedDeep,
   normalizeTag,
+  タグの見た目,
   cleanUpTagsArray,
   cleanUpSessions,
   記録の射手を整える,

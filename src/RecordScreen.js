@@ -67,6 +67,8 @@ var x = require('./useScoreStore'),
   C = require('./SaveSessionModal'),
   AttendanceCheckModal = require('./AttendanceCheckModal').AttendanceCheckModal,
   I = require('./ManualSubstitutionModal'),
+  窓 = require('./AppDialog'),
+  航 = require('@react-navigation/native'),
   v = require('./formatMemberName'),
   B = require('./shadowStyle'),
   A = require('./themedJsx'),
@@ -142,7 +144,12 @@ const k = () => {
         set帯の取っ手は左,
         // ライブに「見るだけ」で入っているか
         ライブは見るだけ = !1,
+        // 履歴の記録を記録画面で直しているあいだの目印（管理者モードの履歴から）
+        履歴の編集 = null,
+        履歴の編集を終える,
+        sessions: 記録たち = [],
       } = (0, x.useScoreStore)(),
+      航路 = (0, 航.useNavigation)(),
       se = 'number' == typeof q && !isNaN(q) && q > 0 ? q : 1;
     if (!re) return null;
     // ライブに何台つないでいるか。電波の切れる弓道場で、
@@ -987,6 +994,52 @@ const k = () => {
               }),
             })
           : null,
+        // 履歴の記録を直しているあいだの帯。ここから保存して履歴へ戻るか、やめて戻る。
+        // 「終了・保存」とライブはこの間は出さない（記録が二重になる・ライブに結びつく）
+        履歴の編集
+          ? (() => {
+              const 記録 = 記録たち.find((e) => e && e.id === 履歴の編集.id);
+              const 題 = 記録
+                ? (記録.title && String(記録.title).trim()) || new Date(記録.date).toLocaleDateString('ja-JP')
+                : '';
+              const 戻る = (保存する) => {
+                履歴の編集を終える(保存する);
+                Ge(保存する ? '履歴の記録に保存しました' : '直す前の記録表に戻しました');
+                航路.navigate('履歴');
+              };
+              return (0, A.jsxs)(l.default, {
+                style: [
+                  W.liveStatusHeader,
+                  { backgroundColor: '#FF9500', height: 'auto', paddingVertical: 5, paddingHorizontal: 10, marginHorizontal: 8, borderRadius: 8 },
+                ],
+                testID: '履歴の編集の帯',
+                children: [
+                  (0, A.jsx)(p.Ionicons, { name: 'create-outline', size: 13, color: '#FFF' }),
+                  (0, A.jsxs)(a.default, {
+                    style: [W.liveStatusText, { flex: 1 }],
+                    numberOfLines: 1,
+                    children: ['履歴の記録を直しています', 題 ? '：' + 題 : ''],
+                  }),
+                  (0, A.jsx)(h.default, {
+                    onPress: () => 戻る(!0),
+                    style: { backgroundColor: '#FFF', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 3 },
+                    accessibilityRole: 'button',
+                    children: (0, A.jsx)(a.default, { style: { color: '#FF9500', fontSize: 12, fontWeight: 'bold' }, children: '保存して戻る' }),
+                  }),
+                  (0, A.jsx)(h.default, {
+                    onPress: () =>
+                      窓.出す('直すのをやめますか', '変えたところは履歴に残りません。', [
+                        { text: '続ける', style: 'cancel' },
+                        { text: 'やめる', style: 'destructive', onPress: () => 戻る(!1) },
+                      ]),
+                    style: { borderColor: '#FFF', borderWidth: 1, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 3 },
+                    accessibilityRole: 'button',
+                    children: (0, A.jsx)(a.default, { style: { color: '#FFF', fontSize: 12, fontWeight: 'bold' }, children: 'やめる' }),
+                  }),
+                ],
+              });
+            })()
+          : null,
         K && Y
           ? (0, A.jsxs)(X ? h.default : l.default, {
               // 主催者は帯を押すと、リンクで配る窓が開く。
@@ -1100,7 +1153,10 @@ const k = () => {
                       ],
                     })
                   : null,
-                (0, A.jsxs)(h.default, {
+                // 履歴の記録を直しているあいだはライブに入らない（盤面がライブと結びつく）
+                履歴の編集
+                  ? null
+                  : (0, A.jsxs)(h.default, {
                   ref: 案内のライブボタン,
                   onPress: () => {
                     // 共有リンクで来た人は、抜けたら見るものが無い。
@@ -2242,6 +2298,7 @@ const k = () => {
                 ref: 案内の保存ボタン,
                 style: ({ hovered: e }) => [
                   W.saveBtn,
+                  履歴の編集 && { backgroundColor: '#FF9500' },
                   ($e || よその団体) && { opacity: 0.4 },
                   e && m.IS_WEB && { opacity: 0.9, transform: [{ scale: 1.02 }] },
                 ],
@@ -2249,10 +2306,17 @@ const k = () => {
                 // web の TouchableOpacity は aria-label を見るので、両方渡す
                 accessible: !0,
                 accessibilityRole: 'button',
-                accessibilityLabel: '終了して保存',
-                'aria-label': '終了して保存',
-                accessibilityHint: 'いまの記録表を履歴に残します',
+                accessibilityLabel: 履歴の編集 ? '履歴に保存して戻る' : '終了して保存',
+                'aria-label': 履歴の編集 ? '履歴に保存して戻る' : '終了して保存',
+                accessibilityHint: 履歴の編集 ? '直した内容を履歴の記録に書き戻します' : 'いまの記録表を履歴に残します',
                 onPress: () => {
+                  // 履歴の記録を直しているあいだは、新しい記録にせず元の記録へ書き戻す
+                  if (履歴の編集) {
+                    履歴の編集を終える(!0);
+                    Ge('履歴の記録に保存しました');
+                    航路.navigate('履歴');
+                    return;
+                  }
                   if ($e) return void 閲覧中に押された();
                   // よその団体のライブは、自分の記録として残さない。
                   // 押しても無反応だと壊れたのか決まりなのか分からないので、理由を言う
@@ -2266,7 +2330,7 @@ const k = () => {
                   if (保存時に出欠を確認する) setShowAttendance(!0);
                   else (setTempAttendance(null), xe(!0));
                 },
-                children: (0, A.jsx)(a.default, { style: W.saveBtnText, children: '終了・保存' }),
+                children: (0, A.jsx)(a.default, { style: W.saveBtnText, children: 履歴の編集 ? '保存して戻る' : '終了・保存' }),
               }),
             ],
           }),

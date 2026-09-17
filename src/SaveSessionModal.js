@@ -31,11 +31,7 @@ var t = require('react'),
   T = require('./IS_WEB'),
   C = require('./shadowStyle'),
   j = require('./themedJsx');
-const normalizeTag = (e) => {
-  if ('string' != typeof e) return '';
-  let t = e.trim().replace(/^[#＃\s]+/, '');
-  return ((t = t.replace(/＃/g, '#')), t ? `#${t}` : '');
-};
+const { normalizeTag, タグの見た目 } = require('./syncRules');
 const S = ['練習試合', '正規練習', '大会', '自主稽古', 'アリーナ', '屋外', '晴れ', '曇り', '雨天', '強風'],
   b = ({ visible: e, onClose: C, onSave: b }) => {
     const {
@@ -49,10 +45,11 @@ const S = ['練習試合', '正規練習', '大会', '自主稽古', 'アリー�
       W = A.length > 0 ? A : S,
       [E, P] = (0, t.useState)(''),
       [R, w] = (0, t.useState)(''),
-      [_, O] = (0, t.useState)(z.join(' ')),
+      // 入力欄には # を付けずに出す（空白区切り。読むときに normalizeTag で # を付ける）
+      [_, O] = (0, t.useState)(z.map(タグの見た目).join(' ')),
       [V, H] = (0, t.useState)(!1);
     n.default.useEffect(() => {
-      O(z.join(' '));
+      O(z.map(タグの見た目).join(' '));
     }, [z, e]);
     const K = (e) => {
       e ? (B(!0), b(E.trim(), R.trim(), !0, z.join(' ')), P(''), w('')) : H(!0);
@@ -130,7 +127,7 @@ const S = ['練習試合', '正規練習', '大会', '自主稽古', 'アリー�
                       children: [
                         (0, j.jsx)(u.default, {
                           style: F.input,
-                          placeholder: 'タグ（例: #審査前, #雨天）',
+                          placeholder: 'タグ（例: 審査前 雨天）',
                           placeholderTextColor: '#C7C7CC',
                           value: _,
                           onChangeText: (e) => {
@@ -160,7 +157,7 @@ const S = ['練習試合', '正規練習', '大会', '自主稽古', 'アリー�
                                 },
                                 children: (0, j.jsx)(o.default, {
                                   style: [F.presetTagTxt, n && F.presetTagTxtActive],
-                                  children: t,
+                                  children: タグの見た目(t),
                                 }),
                               },
                               e

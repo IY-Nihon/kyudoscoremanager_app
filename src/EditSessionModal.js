@@ -59,11 +59,7 @@ var t = require('react'),
   x = require('./CustomCalendarModal'),
   p = require('./useScoreStore'),
   b = require('./themedJsx');
-const normalizeTag = (e) => {
-  if ('string' != typeof e) return '';
-  let t = e.trim().replace(/^[#＃\s]+/, '');
-  return ((t = t.replace(/＃/g, '#')), t ? `#${t}` : '');
-};
+const { normalizeTag, タグの見た目 } = require('./syncRules');
 const C = ({ visible: e, session: l, onClose: u, onSave: C }) => {
     const [y, F] = (0, t.useState)(''),
       [S, T] = (0, t.useState)(''),
@@ -263,7 +259,7 @@ const C = ({ visible: e, session: l, onClose: u, onSave: C }) => {
                                         children: [
                                           (0, b.jsx)(s.default, {
                                             style: j.selectedTagText,
-                                            children: e,
+                                            children: タグの見た目(e),
                                           }),
                                           (0, b.jsx)(f.Ionicons, {
                                             name: 'close-circle',
