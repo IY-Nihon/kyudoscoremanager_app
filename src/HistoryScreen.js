@@ -416,8 +416,8 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                 }),
               ],
             }),
-            // ゴミ箱の中の記録だと分かる帯。見るだけで、直す・消すは出さない。
-            // 復元はここからもできる（見てから戻したくなるのが自然な流れ）
+            // ゴミ箱の中の記録だと分かる帯。見るだけで、直す道具は出さない。
+            // 復元と完全な削除はここからもできる（見てから決めるのが自然な流れ）
             ゴミ箱を見ている &&
               (0, k.jsxs)(o.default, {
                 testID: 'ゴミ箱の帯',
@@ -426,7 +426,7 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                   (0, k.jsx)(F.Ionicons, { name: 'trash-outline', size: 18, color: '#FFF' }),
                   (0, k.jsx)(n.default, {
                     style: E.trashBannerText,
-                    children: 'ゴミ箱の中の記録です。見るだけで、直したり消したりはできません',
+                    children: 'ゴミ箱の中の記録です。見るだけで、直せません',
                   }),
                   (R || 'group' === z) &&
                     (0, k.jsx)(f.default, {
@@ -438,6 +438,30 @@ const v = () => (0, k.jsx)(o.default, { style: { height: 1, backgroundColor: '#E
                       },
                       style: ({ hovered: e }) => [E.trashBannerBtn, e && { opacity: 0.85 }],
                       children: (0, k.jsx)(n.default, { style: E.trashBannerBtnText, children: '復元' }),
+                    }),
+                  // 完全に削除もここから。一覧の「選んで削除」と同じ道（deleteTrashItems）を通し、
+                  // 消したあとはゴミ箱の一覧へ戻る（使う人の要望 2026-09-17）
+                  (R || 'group' === z) &&
+                    (0, k.jsx)(f.default, {
+                      accessibilityRole: 'button',
+                      accessibilityLabel: 'この記録を完全に削除する',
+                      'aria-label': 'この記録を完全に削除する',
+                      onPress: () => {
+                        if (!Pe) return;
+                        const id = Pe.id;
+                        窓.出す('完全に削除', 'この記録をゴミ箱からも消します。元に戻せません。よろしいですか？', [
+                          { text: 'キャンセル', style: 'cancel' },
+                          {
+                            text: '削除',
+                            style: 'destructive',
+                            onPress: () => {
+                              (y.useScoreStore.getState().deleteTrashItems([id]), setゴミ箱の記録(null), H('list'), fe(!0));
+                            },
+                          },
+                        ]);
+                      },
+                      style: ({ hovered: e }) => [E.trashBannerBtn, { backgroundColor: '#FF3B30' }, e && { opacity: 0.85 }],
+                      children: (0, k.jsx)(n.default, { style: [E.trashBannerBtnText, { color: '#FFF' }], children: '完全に削除' }),
                     }),
                 ],
               }),
