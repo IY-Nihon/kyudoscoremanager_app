@@ -39,12 +39,12 @@ const 店の中身 = fs.readFileSync(
  */
 function 記録を組み立てている所() {
   const 出 = [];
-  const 印 = 'Object.assign({}, s, {';
-  let 位置 = 0;
+  // 読める形に直したので、雲の文書の中身の名前は問わない（s でも 中身 でも）
+  const 印 = /Object\.assign\(\{\}, [^\s,()]+, \{/g;
   for (;;) {
-    const 始め = 店の中身.indexOf(印, 位置);
-    if (始め < 0) break;
-    位置 = 始め + 印.length;
+    const m = 印.exec(店の中身);
+    if (!m) break;
+    const 始め = m.index;
     let 深さ = 0;
     let 終わり = 始め;
     for (let i = 始め; i < 店の中身.length; i++) {
