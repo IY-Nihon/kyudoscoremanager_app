@@ -25,7 +25,7 @@ const 名前の長さ = 20;
 /** その団体のぶんだけ取り出す */
 function この団体のひな型(一覧, 団体id) {
   const id = null == 団体id ? '' : String(団体id);
-  return (Array.isArray(一覧) ? 一覧 : []).filter((x) => x && String(x.団体id || '') === id);
+  return (Array.isArray(一覧) ? 一覧 : []).filter((ひな型) => ひな型 && String(ひな型.団体id || '') === id);
 }
 
 /**
@@ -38,26 +38,30 @@ function この団体のひな型(一覧, 団体id) {
  */
 function ひな型を足す(一覧, 新しいの, いま) {
   const 元 = (Array.isArray(一覧) ? 一覧 : []).slice();
-  const n = 新しいの || /** @type {{名前?:string, 部員idたち?:Array, 団体id?:string}} */ ({});
-  const 名前 = String(n.名前 || '').trim().slice(0, 名前の長さ);
-  const 団体id = null == n.団体id ? '' : String(n.団体id);
-  const 部員idたち = [...new Set((Array.isArray(n.部員idたち) ? n.部員idたち : []).map(String))];
+  const 新しい = 新しいの || /** @type {{名前?:string, 部員idたち?:Array, 団体id?:string}} */ ({});
+  const 名前 = String(新しい.名前 || '')
+    .trim()
+    .slice(0, 名前の長さ);
+  const 団体id = null == 新しい.団体id ? '' : String(新しい.団体id);
+  const 部員idたち = [...new Set((Array.isArray(新しい.部員idたち) ? 新しい.部員idたち : []).map(String))];
   if (!名前 || 0 === 部員idたち.length) return 元;
 
   const 時 = いま || Date.now();
-  const 残り = 元.filter((x) => !(x && String(x.団体id || '') === 団体id && x.名前 === 名前));
+  const 残り = 元.filter(
+    (ひな型) => !(ひな型 && String(ひな型.団体id || '') === 団体id && ひな型.名前 === 名前)
+  );
   残り.push({ id: 時 + '-' + Math.random().toString(36).slice(2, 8), 名前, 部員idたち, 団体id, 作成: 時 });
 
   // 上限はその団体の中で数える。他の団体のぶんを巻き添えにしない
-  const この団体 = 残り.filter((x) => String(x.団体id || '') === 団体id);
+  const この団体 = 残り.filter((ひな型) => String(ひな型.団体id || '') === 団体id);
   if (この団体.length <= ひな型の上限) return 残り;
-  const 捨てる = new Set(この団体.slice(0, この団体.length - ひな型の上限).map((x) => x.id));
-  return 残り.filter((x) => !捨てる.has(x.id));
+  const 捨てる = new Set(この団体.slice(0, この団体.length - ひな型の上限).map((ひな型) => ひな型.id));
+  return 残り.filter((ひな型) => !捨てる.has(ひな型.id));
 }
 
 /** ひな型を1つ消す */
 function ひな型を消す(一覧, id) {
-  return (Array.isArray(一覧) ? 一覧 : []).filter((x) => x && x.id !== id);
+  return (Array.isArray(一覧) ? 一覧 : []).filter((ひな型) => ひな型 && ひな型.id !== id);
 }
 
 /**
@@ -74,8 +78,8 @@ function ひな型を消す(一覧, id) {
 function ひな型を当てはめる(ひな型, 選べる人たち, 本人id) {
   const 欲しい = (ひな型 && Array.isArray(ひな型.部員idたち) ? ひな型.部員idたち : []).map(String);
   const 表 = new Map();
-  for (const x of Array.isArray(選べる人たち) ? 選べる人たち : [])
-    if (x && null != x.id) 表.set(String(x.id), x);
+  for (const 一人 of Array.isArray(選べる人たち) ? 選べる人たち : [])
+    if (一人 && null != 一人.id) 表.set(String(一人.id), 一人);
   const 人たち = [];
   let 見つからない = 0;
   for (const id of 欲しい) {
@@ -87,10 +91,4 @@ function ひな型を当てはめる(ひな型, 選べる人たち, 本人id) {
   return { 人たち, 見つからない };
 }
 
-module.exports = {
-  この団体のひな型,
-  ひな型を足す,
-  ひな型を消す,
-  ひな型を当てはめる,
-  ひな型の上限,
-};
+module.exports = { この団体のひな型, ひな型を足す, ひな型を消す, ひな型を当てはめる, ひな型の上限 };

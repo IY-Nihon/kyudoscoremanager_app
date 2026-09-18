@@ -5,33 +5,25 @@
  */
 'use strict';
 
-const e = exports;
-
-('use strict');
-Object.defineProperty(e, '__esModule', { value: !0 });
-Object.defineProperty(e, 'getShadowStyle', {
-  enumerable: !0,
-  get: function () {
-    return getShadowStyle;
-  },
-});
-require('./platform');
-
+/**
+ * @param {number|object} config 数なら elevation。object なら shadowColor などをそのまま受ける
+ * @returns {object} Web では boxShadow、端末では shadow* と elevation
+ */
 const getShadowStyle = (config) => {
-  const n = 'number' == typeof config ? { elevation: config } : config;
+  const 指定 = 'number' == typeof config ? { elevation: config } : config;
   const {
-    shadowColor: s = '#000000',
-    shadowOffset: o = { width: 0, height: Math.floor((n.elevation || 4) / 2) },
-    shadowOpacity: u = 0.2,
-    shadowRadius: h = n.elevation || 4,
-    elevation: l = n.elevation || 4,
-  } = n;
+    shadowColor: 色 = '#000000',
+    shadowOffset: ずれ = { width: 0, height: Math.floor((指定.elevation || 4) / 2) },
+    shadowOpacity: 濃さ = 0.2,
+    shadowRadius: ぼかし = 指定.elevation || 4,
+    elevation: 高さ = 指定.elevation || 4,
+  } = 指定;
 
   if (typeof window !== 'undefined') {
-    const t = s.startsWith('#') ? hexToRgba(s, u) : s;
-    return { boxShadow: `${o.width}px ${o.height}px ${h}px ${t}` };
+    const 影の色 = 色.startsWith('#') ? hexToRgba(色, 濃さ) : 色;
+    return { boxShadow: `${ずれ.width}px ${ずれ.height}px ${ぼかし}px ${影の色}` };
   }
-  return { shadowColor: s, shadowOffset: o, shadowOpacity: u, shadowRadius: h, elevation: l };
+  return { shadowColor: 色, shadowOffset: ずれ, shadowOpacity: 濃さ, shadowRadius: ぼかし, elevation: 高さ };
 };
 
 const hexToRgba = (color, opacity) => {
@@ -39,19 +31,22 @@ const hexToRgba = (color, opacity) => {
   if (color.startsWith('rgba')) return color;
   if ('black' === color) return `rgba(0,0,0,${opacity})`;
   if ('white' === color) return `rgba(255,255,255,${opacity})`;
-  let n = 0,
-    s = 0,
-    o = 0,
-    u = color.replace('#', '');
-  if (3 === u.length) {
-    n = parseInt(u[0] + u[0], 16);
-    s = parseInt(u[1] + u[1], 16);
-    o = parseInt(u[2] + u[2], 16);
+  const 十六進 = color.replace('#', '');
+  let 赤 = 0;
+  let 緑 = 0;
+  let 青 = 0;
+  if (3 === 十六進.length) {
+    赤 = parseInt(十六進[0] + 十六進[0], 16);
+    緑 = parseInt(十六進[1] + 十六進[1], 16);
+    青 = parseInt(十六進[2] + 十六進[2], 16);
   } else {
-    if (6 !== u.length) return color;
-    n = parseInt(u.substring(0, 2), 16);
-    s = parseInt(u.substring(2, 4), 16);
-    o = parseInt(u.substring(4, 6), 16);
+    if (6 !== 十六進.length) return color;
+    赤 = parseInt(十六進.substring(0, 2), 16);
+    緑 = parseInt(十六進.substring(2, 4), 16);
+    青 = parseInt(十六進.substring(4, 6), 16);
   }
-  return `rgba(${n}, ${s}, ${o}, ${opacity})`;
+  return `rgba(${赤}, ${緑}, ${青}, ${opacity})`;
 };
+
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.getShadowStyle = getShadowStyle;

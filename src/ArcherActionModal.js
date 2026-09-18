@@ -68,12 +68,12 @@ const ArcherActionModal = ({
   // これまで解除する口がどこにも無く、履歴にも積んでいないので取り消しでも
   // 戻らなかった（間違えるとリセットするしかなかった）
   const いまの交代 = React.useMemo(() => {
-    const 射手 = (archers || []).find((x) => x && x.id === archerId);
+    const 射手 = (archers || []).find((一人) => 一人 && 一人.id === archerId);
     const 表 = (射手 && 射手.substitutions) || {};
     return Object.keys(表)
       .map(Number)
-      .filter((x) => !isNaN(x))
-      .sort((a, b) => a - b)
+      .filter((数) => !isNaN(数))
+      .sort((甲, 乙) => 甲 - 乙)
       .map((位置) => ({ 位置, 名: 表[位置] }));
   }, [archers, archerId]);
   const 今の射手たち = existingArchers || archers;
@@ -87,8 +87,8 @@ const ArcherActionModal = ({
         // 男女で絞る。男女別の立ちを組むとき、毎回名前を探さずに済む
         .filter((部員) => '全員' === 男女の絞り || (部員.gender || '') === 男女の絞り)
         .sort((甲, 乙) => {
-          const 甲は入っている = 今の射手たち.some((x) => x.memberId === 甲.id);
-          if (甲は入っている !== 今の射手たち.some((x) => x.memberId === 乙.id))
+          const 甲は入っている = 今の射手たち.some((一人) => 一人.memberId === 甲.id);
+          if (甲は入っている !== 今の射手たち.some((一人) => 一人.memberId === 乙.id))
             return 甲は入っている ? 1 : -1;
           const 甲の学年 = undefined === 甲.grade || null === 甲.grade ? 99 : Number(甲.grade);
           const 乙の学年 = undefined === 乙.grade || null === 乙.grade ? 99 : Number(乙.grade);
@@ -115,10 +115,10 @@ const ArcherActionModal = ({
     });
     const sortedGrades = Object.keys(groups)
       .map(Number)
-      .sort((a, b) => {
-        if (a === 0) return 1;
-        if (b === 0) return -1;
-        return a - b;
+      .sort((甲, 乙) => {
+        if (甲 === 0) return 1;
+        if (乙 === 0) return -1;
+        return 甲 - 乙;
       });
     return sortedGrades.map((gVal) => {
       let title = `${gVal}年生`;
@@ -417,7 +417,7 @@ const ArcherActionModal = ({
                         </TouchableOpacity>
                         {isOpen &&
                           group.members.map((部員, idx) => {
-                            const sVal = 今の射手たち.some((x) => x.memberId === 部員.id);
+                            const sVal = 今の射手たち.some((一人) => 一人.memberId === 部員.id);
                             return (
                               <React.Fragment key={部員.id}>
                                 {idx > 0 && <View style={[styles.divider, { marginLeft: 32 }]} />}
@@ -483,7 +483,7 @@ const ArcherActionModal = ({
                     </TouchableOpacity>
                     {expandedTerms.has(期の組.term) &&
                       期の組.members.map((部員, 無し) => {
-                        const sVal = 今の射手たち.some((x) => x.memberId === 部員.id);
+                        const sVal = 今の射手たち.some((一人) => 一人.memberId === 部員.id);
                         return (
                           <React.Fragment key={部員.id}>
                             <View style={[styles.divider, { marginLeft: 32 }]} />

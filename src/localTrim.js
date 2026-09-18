@@ -49,11 +49,11 @@ function 送れていないか(記録, 最後に送った時刻) {
 function 新しさ(記録) {
   if (!記録) return 0;
   for (const 鍵 of ['lastModified', 'date', 'createdAt']) {
-    const v = 記録[鍵];
-    if ('number' == typeof v) return v;
-    if ('string' == typeof v) {
-      const t = Date.parse(v);
-      if (!isNaN(t)) return t;
+    const 値 = 記録[鍵];
+    if ('number' == typeof 値) return 値;
+    if ('string' == typeof 値) {
+      const 時刻 = Date.parse(値);
+      if (!isNaN(時刻)) return 時刻;
     }
   }
   return 0;
@@ -90,14 +90,14 @@ function 端末に残す記録(記録たち, 選び) {
     }
 
   // ② 残りは新しい順に、予算に収まるまで
-  const 残り = 一覧.filter((x) => !残す.has(x)).sort((a, b) => 新しさ(b) - 新しさ(a));
+  const 残り = 一覧.filter((一つ) => !残す.has(一つ)).sort((甲, 乙) => 新しさ(乙) - 新しさ(甲));
   for (const 記録 of 残り) {
-    const m = 目方(記録);
-    if (使った + m > 予算) break;
-    (残す.add(記録), (使った += m));
+    const 重さ = 目方(記録);
+    if (使った + 重さ > 予算) break;
+    (残す.add(記録), (使った += 重さ));
   }
 
-  return 一覧.filter((x) => 残す.has(x));
+  return 一覧.filter((一つ) => 残す.has(一つ));
 }
 
 /**
@@ -114,14 +114,14 @@ const 覚え = typeof WeakMap === 'function' ? new WeakMap() : null;
 function 目方(記録) {
   if (!記録 || 'object' != typeof 記録) return 0;
   if (覚え && 覚え.has(記録)) return 覚え.get(記録);
-  let n = 0;
+  let 計 = 0;
   try {
-    n = JSON.stringify(記録).length;
+    計 = JSON.stringify(記録).length;
   } catch {
-    n = 0;
+    計 = 0;
   }
-  if (覚え) 覚え.set(記録, n);
-  return n;
+  if (覚え) 覚え.set(記録, 計);
+  return 計;
 }
 
 /** 何件を端末から外したか。知らせに使う */

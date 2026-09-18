@@ -49,7 +49,9 @@ const NOTICE_ITEMS = [
     date: '2026/09/17',
     版: '2026-09-17-02',
     title: 'ゴミ箱の記録を、開いた画面から完全に削除できます',
-    points: ['ゴミ箱の記録を開いたときの帯に「完全に削除」が付きました。「復元」と並んで、中身を見てから決められます。'],
+    points: [
+      'ゴミ箱の記録を開いたときの帯に「完全に削除」が付きました。「復元」と並んで、中身を見てから決められます。',
+    ],
   },
   {
     date: '2026/09/17',
@@ -65,7 +67,9 @@ const NOTICE_ITEMS = [
     date: '2026/09/17',
     版: '2026-09-17-01',
     title: 'タグの # を画面に出さないようにしました',
-    points: ['保存の窓・記録の情報を変える窓・設定の定型文で、タグの先頭に # が付いて見えていたのを直しました。'],
+    points: [
+      '保存の窓・記録の情報を変える窓・設定の定型文で、タグの先頭に # が付いて見えていたのを直しました。',
+    ],
   },
   {
     date: '2026/09/15',
@@ -194,9 +198,7 @@ const NOTICE_ITEMS = [
     date: '2026/09/13',
     版: '2026-09-13-01',
     title: '不具合の直し',
-    points: [
-      '30日より前の記録が、履歴から突然消えて見えることがあったのを直しました。',
-    ],
+    points: ['30日より前の記録が、履歴から突然消えて見えることがあったのを直しました。'],
   },
   {
     date: '2026/09/09',
@@ -265,33 +267,25 @@ const NOTICE_ITEMS = [
     date: '2026/09/05',
     版: '2026-09-05-01',
     title: 'ホーム画面のアイコンを直しました',
-    points: [
-      'iPhone・iPad でホーム画面に追加したとき、アイコンがきれいに出るようにしました。',
-    ],
+    points: ['iPhone・iPad でホーム画面に追加したとき、アイコンがきれいに出るようにしました。'],
   },
   {
     date: '2026/09/05',
     版: '2026-09-05-01',
     title: '履歴で、月を横にたどれます',
-    points: [
-      '月がたくさんあるとき、月の帯を横に動かして選べるようにしました。',
-    ],
+    points: ['月がたくさんあるとき、月の帯を横に動かして選べるようにしました。'],
   },
   {
     date: '2026/09/05',
     版: '2026-09-05-01',
     title: '「終了・保存」の色を変えました',
-    points: [
-      '赤い「リセット」と間違えにくいよう、「終了・保存」を青にしました。',
-    ],
+    points: ['赤い「リセット」と間違えにくいよう、「終了・保存」を青にしました。'],
   },
   {
     date: '2026/09/05',
     版: '2026-09-05-01',
     title: 'AIアシスタントのボタンを好きな場所へ',
-    points: [
-      'ボタンを動かした場所を、次に開いたときも覚えているようにしました。',
-    ],
+    points: ['ボタンを動かした場所を、次に開いたときも覚えているようにしました。'],
   },
   {
     // 9/01 に作った機能だが、配信はこの日。利用者にとっては「今日から使える」
@@ -299,9 +293,7 @@ const NOTICE_ITEMS = [
     date: '2026/09/05',
     版: '2026-09-01-01',
     title: '三中のうち、どの矢を抜いたかが見られます',
-    points: [
-      '個人の詳細の「的中の型」に、「○○○× 留矢を抜いた」のように並びます。',
-    ],
+    points: ['個人の詳細の「的中の型」に、「○○○× 留矢を抜いた」のように並びます。'],
   },
   {
     date: '2026/08/31',
@@ -316,9 +308,7 @@ const NOTICE_ITEMS = [
     date: '2026/08/31',
     版: '2026-08-28-02',
     title: '読み上げに対応しました',
-    points: [
-      'マスやボタンを VoiceOver / TalkBack が読み上げます。',
-    ],
+    points: ['マスやボタンを VoiceOver / TalkBack が読み上げます。'],
   },
   {
     date: '2026/08/31',
@@ -333,65 +323,49 @@ const NOTICE_ITEMS = [
     date: '2026/08/31',
     版: '2026-08-28-02',
     title: 'ライブ中、何台つないでいるかが出ます',
-    points: [
-      '青い帯に「2台接続中」のように出ます。',
-    ],
+    points: ['青い帯に「2台接続中」のように出ます。'],
   },
   {
     date: '2026/08/31',
     版: '2026-08-28-02',
     title: '弓具を変えた前後の的中を、分析で見られます',
-    points: [
-      '個人の詳細のいちばん下に、弓具の履歴ごとの的中率が出ます。',
-    ],
+    points: ['個人の詳細のいちばん下に、弓具の履歴ごとの的中率が出ます。'],
   },
   {
     date: '2026/08/31',
     版: '2026-08-28-02',
     title: 'AIアシスタントを直しました',
-    points: [
-      '質問例を分類ごとに並べました。集計の食い違いも直しました。',
-    ],
+    points: ['質問例を分類ごとに並べました。集計の食い違いも直しました。'],
   },
   {
     date: '2026/08/31',
     版: '2026-08-28-02',
     title: '分析の個人の詳細を直しました',
-    points: [
-      '比較の組み合わせを名前を付けて残せます。比較中も結果分布が出ます。',
-    ],
+    points: ['比較の組み合わせを名前を付けて残せます。比較中も結果分布が出ます。'],
   },
   {
     date: '2026/08/31',
     版: '2026-08-28-02',
     title: '新しい版が出たら、画面でお知らせします',
-    points: [
-      '帯の「更新」を押すと最新になります。お手元の記録は残ります。',
-    ],
+    points: ['帯の「更新」を押すと最新になります。お手元の記録は残ります。'],
   },
   {
     date: '2026/08/31',
     版: '2026-08-28-02',
     title: '色の見分けやすさを見直しました',
-    points: [
-      '比較の線を、赤と緑が見分けにくい方でも重ならない色にしました。',
-    ],
+    points: ['比較の線を、赤と緑が見分けにくい方でも重ならない色にしました。'],
   },
   {
     date: '2026/08/31',
     版: '2026-08-28-02',
     title: '端末と通信の無駄を減らしました',
-    points: [
-      '裏に回ったら接続を控え、古い記録は自動で整理します。送れていない記録は残します。',
-    ],
+    points: ['裏に回ったら接続を控え、古い記録は自動で整理します。送れていない記録は残します。'],
   },
   {
     date: '2026/08/31',
     版: '2026-08-28-02',
     title: 'お問い合わせと不具合の連絡を直しました',
-    points: [
-      'メールアドレスが空でも送れます。不具合は自動で届きます（氏名や的中は含みません）。',
-    ],
+    points: ['メールアドレスが空でも送れます。不具合は自動で届きます（氏名や的中は含みません）。'],
   },
   {
     date: '2026/08/28',
@@ -542,9 +516,7 @@ const NOTICE_ITEMS = [
     date: '2026/08/22',
     版: '2026-08-22-01',
     title: '',
-    points: [
-      '細い画面での表示の崩れなど、その他の不具合を直しました。',
-    ],
+    points: ['細い画面での表示の崩れなど、その他の不具合を直しました。'],
   },
   {
     date: '2026/08/18',
@@ -601,17 +573,13 @@ const NOTICE_ITEMS = [
     date: '2026/08/18',
     版: '2026-08-18-01',
     title: '',
-    points: [
-      '不具合の修正やセキュリティの強化など、その他諸々の修正を行いました。',
-    ],
+    points: ['不具合の修正やセキュリティの強化など、その他諸々の修正を行いました。'],
   },
   {
     date: '2026/08/06',
     版: '2026-08-06-01',
     title: '',
-    points: [
-      '不具合の修正やセキュリティの強化など、その他諸々の修正を行いました。',
-    ],
+    points: ['不具合の修正やセキュリティの強化など、その他諸々の修正を行いました。'],
   },
   {
     date: '2026/08/03',
@@ -642,9 +610,7 @@ const NOTICE_ITEMS = [
   {
     date: '2026/08/03',
     title: '',
-    points: [
-      'アプリ内部の整理を行い、読み込みが軽くなりました。表示や操作の変更はありません。',
-    ],
+    points: ['アプリ内部の整理を行い、読み込みが軽くなりました。表示や操作の変更はありません。'],
   },
   {
     date: '2026/07/11',
@@ -662,7 +628,8 @@ const NOTICE_ITEMS = [
   },
   {
     date: '2026/07/08',
-    title: '画像から立ち順を自動登録できるようになりました(デモ)※機能改善のために立ち順の黒板の画像などがあればお問い合わせから送っていただけると幸いです。',
+    title:
+      '画像から立ち順を自動登録できるようになりました(デモ)※機能改善のために立ち順の黒板の画像などがあればお問い合わせから送っていただけると幸いです。',
     points: [
       'ホワイトボードの立ち順表を撮影・選択するだけで、AIが読み取って記録表に反映できます。',
       '「撮影する」ボタンからその場でカメラ起動、「画像を選択」からは既存の写真も使えます。',
@@ -671,10 +638,7 @@ const NOTICE_ITEMS = [
   {
     date: '2026/07/04',
     title: '',
-    points: [
-      '分析画面で複数人を比較できるようになりました。',
-      '設定にお問い合わせフォームを追加しました。',
-    ],
+    points: ['分析画面で複数人を比較できるようになりました。', '設定にお問い合わせフォームを追加しました。'],
   },
 ];
 
@@ -691,13 +655,13 @@ let shownThisSession = false;
  * 一度も開いていない人（最後に見た版が無い）は、全部が新しい。
  */
 function 未読の数(最後に見た版) {
-  let n = 0;
+  let 数 = 0;
   for (const 項目 of NOTICE_ITEMS) {
     if (!項目.版) break;
     if (最後に見た版 && !(項目.版 > 最後に見た版)) break;
-    n++;
+    数++;
   }
-  return n;
+  return 数;
 }
 
 const WhatsNewModal = () => {
@@ -772,8 +736,8 @@ const WhatsNewModal = () => {
           shownThisSession = true;
           setVisible(true);
         }
-      } catch (e) {
-        console.error('[WhatsNewModal] Failed to read storage:', e);
+      } catch (誤り) {
+        console.error('[WhatsNewModal] Failed to read storage:', 誤り);
         // 読み込み失敗時は安全側に倒して表示する
         shownThisSession = true;
         setVisible(true);
@@ -789,14 +753,14 @@ const WhatsNewModal = () => {
       // 開いた時点までを「読んだ」ことにする。閉じ方によらず必ず書く。
       // 次に開いたとき、ここから上が新しいぶんになる
       await AsyncStorage.setItem(LAST_SEEN_KEY, NOTICE_VERSION);
-    } catch (e) {
-      console.error('[WhatsNewModal] Failed to save last seen:', e);
+    } catch (誤り) {
+      console.error('[WhatsNewModal] Failed to save last seen:', 誤り);
     }
     if (dontShowAgain) {
       try {
         await AsyncStorage.setItem(STORAGE_KEY, NOTICE_VERSION);
-      } catch (e) {
-        console.error('[WhatsNewModal] Failed to save dismissal:', e);
+      } catch (誤り) {
+        console.error('[WhatsNewModal] Failed to save dismissal:', 誤り);
       }
     }
   };
@@ -835,8 +799,8 @@ const WhatsNewModal = () => {
             ref={巻物}
             style={styles.body}
             contentContainerStyle={{ padding: 16 }}
-            onLayout={(e) => {
-              巻物の高さ.current = e.nativeEvent.layout.height;
+            onLayout={(出来事) => {
+              巻物の高さ.current = 出来事.nativeEvent.layout.height;
               送る();
             }}
           >
@@ -847,8 +811,8 @@ const WhatsNewModal = () => {
                 {未読 > 0 && idx === 未読 && (
                   <_View
                     style={styles.読んだ境目}
-                    onLayout={(e) => {
-                      境目の位置.current = e.nativeEvent.layout.y;
+                    onLayout={(出来事) => {
+                      境目の位置.current = 出来事.nativeEvent.layout.y;
                       送る();
                     }}
                   >
@@ -860,10 +824,12 @@ const WhatsNewModal = () => {
                 <_View style={styles.section}>
                   <_Text style={styles.sectionDate}>{section.date}</_Text>
                   {!!section.title && <_Text style={styles.sectionTitle}>{section.title}</_Text>}
-                  {section.points.map((p, pIdx) => (
+                  {section.points.map((要点, pIdx) => (
                     <_View key={pIdx} style={styles.pointRow}>
                       <_Text style={styles.pointBullet}>・</_Text>
-                      <_Text style={[styles.pointText, section.boldPoints && styles.pointTextBold]}>{p}</_Text>
+                      <_Text style={[styles.pointText, section.boldPoints && styles.pointTextBold]}>
+                        {要点}
+                      </_Text>
                     </_View>
                   ))}
                 </_View>
