@@ -22,7 +22,6 @@ const 案内 = require('./TutorialGuide');
 const Icons = require('@expo/vector-icons');
 const ReactNativeSafeAreaContext = require('react-native-safe-area-context');
 const { CustomCalendarModal } = require('./CustomCalendarModal');
-const fileSaver = require('./fileSaver');
 const { auth, db } = require('./db');
 const FirebaseAuth = require('firebase/auth');
 const { getShadowStyle } = require('./shadowStyle');

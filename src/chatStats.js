@@ -16,7 +16,7 @@ const { 射位の名前 } = require('./a11yLabels');
 const 集 = require('./statsRules');
 
 /** 空白を落とす。名前で絞り込むとき（表示の突き合わせ）にだけ使う */
-const 詰める = (s) => String(s || '').replace(/\s/g, '');
+const 詰める = (文) => String(文 || '').replace(/\s/g, '');
 
 /**
  * 途中交代を踏まえて、その1射を引いた人を返す。
@@ -51,14 +51,14 @@ function 全員の成績(人たち, 記録たち, 注文) {
   // 「集計に含めない」にした記録は数えない。ここを見ていなかったため、
   // 同じことを聞いても分析画面と数字が食い違っていた
   const 対象 = (Array.isArray(記録たち) ? 記録たち : []).filter(
-    (r) => r && 集.集計に入れるか(r) && (r.date || 0) >= 始め && (r.date || 0) <= 終わり
+    (記録) => 記録 && 集.集計に入れるか(記録) && (記録.date || 0) >= 始め && (記録.date || 0) <= 終わり
   );
 
   const 数え = (人) => {
     let 的中 = 0;
     let 射数 = 0;
-    対象.forEach((r) => {
-      (Array.isArray(r.archers) ? r.archers : []).forEach((射手) => {
+    対象.forEach((記録) => {
+      (Array.isArray(記録.archers) ? 記録.archers : []).forEach((射手) => {
         if (!射手 || !Array.isArray(射手.marks)) return;
         射手.marks.forEach((印, 射目) => {
           if (!集.引いた射か(印)) return;
@@ -85,22 +85,22 @@ function 全員の成績(人たち, 記録たち, 注文) {
     });
   });
 
-  const 残す = 全部.filter((x) => x.射数 >= 最小射数);
+  const 残す = 全部.filter((人) => 人.射数 >= 最小射数);
   const 並び = 設定.並び || '的中率';
   const 比べ = {
     // 率が同じときは、たくさん引いた人を上にする。3射で100%が首位に立たない
-    的中率: (a, b) => b.的中率 - a.的中率 || b.射数 - a.射数,
-    的中数: (a, b) => b.的中 - a.的中 || b.射数 - a.射数,
-    射数: (a, b) => b.射数 - a.射数 || b.的中 - a.的中,
-    名前: (a, b) => String(a.名前).localeCompare(String(b.名前), 'ja'),
+    的中率: (甲, 乙) => 乙.的中率 - 甲.的中率 || 乙.射数 - 甲.射数,
+    的中数: (甲, 乙) => 乙.的中 - 甲.的中 || 乙.射数 - 甲.射数,
+    射数: (甲, 乙) => 乙.射数 - 甲.射数 || 乙.的中 - 甲.的中,
+    名前: (甲, 乙) => String(甲.名前).localeCompare(String(乙.名前), 'ja'),
   };
   残す.sort(比べ[並び] || 比べ.的中率);
-  残す.forEach((x, i) => {
-    x.順位 = i + 1;
+  残す.forEach((人, 番) => {
+    人.順位 = 番 + 1;
   });
 
-  const 全体の的中 = 全部.reduce((a, x) => a + x.的中, 0);
-  const 全体の射数 = 全部.reduce((a, x) => a + x.射数, 0);
+  const 全体の的中 = 全部.reduce((計, 人) => 計 + 人.的中, 0);
+  const 全体の射数 = 全部.reduce((計, 人) => 計 + 人.射数, 0);
   const 件数 = Number.isFinite(設定.件数) && 設定.件数 > 0 ? 設定.件数 : 残す.length;
 
   return {
@@ -117,8 +117,6 @@ function 全員の成績(人たち, 記録たち, 注文) {
   };
 }
 
-
-
 // ── ここから下は、チャットボットに足した道具のための集計 ──
 
 /** 期間で記録を絞る */
@@ -126,7 +124,7 @@ function 期間で絞る(記録たち, 期間) {
   const 始め = (期間 && 期間.始め) || 0;
   const 終わり = (期間 && 期間.終わり) || Infinity;
   return (Array.isArray(記録たち) ? 記録たち : []).filter(
-    (r) => r && (r.date || 0) >= 始め && (r.date || 0) <= 終わり
+    (記録) => 記録 && (記録.date || 0) >= 始め && (記録.date || 0) <= 終わり
   );
 }
 
@@ -142,13 +140,13 @@ const 出欠の名 = { present: '出席', late: '遅刻', early: '早退', absen
 function 出欠の集計(人たち, 記録たち, 注文) {
   const 設定 = 注文 || {};
   const 対象 = 期間で絞る(記録たち, 設定.期間).filter(
-    (r) => r.attendance && Object.keys(r.attendance).length > 0
+    (記録) => 記録.attendance && Object.keys(記録.attendance).length > 0
   );
 
   const 全部 = (Array.isArray(人たち) ? 人たち : []).map((人) => {
     const 数 = { 出席: 0, 遅刻: 0, 早退: 0, 欠席: 0 };
-    対象.forEach((r) => {
-      const 印 = r.attendance[人.id];
+    対象.forEach((記録) => {
+      const 印 = 記録.attendance[人.id];
       const 名 = 出欠の名[印];
       if (名) 数[名] += 1;
     });
@@ -167,17 +165,17 @@ function 出欠の集計(人たち, 記録たち, 注文) {
     });
   });
 
-  const 残す = 全部.filter((x) => x.来た回数 + x.欠席 > 0);
+  const 残す = 全部.filter((人) => 人.来た回数 + 人.欠席 > 0);
   const 並び = 設定.並び || '出席率';
   const 比べ = {
-    出席率: (a, b) => b.出席率 - a.出席率 || b.来た回数 - a.来た回数,
-    来た回数: (a, b) => b.来た回数 - a.来た回数 || b.出席率 - a.出席率,
-    欠席: (a, b) => b.欠席 - a.欠席,
-    名前: (a, b) => String(a.名前).localeCompare(String(b.名前), 'ja'),
+    出席率: (甲, 乙) => 乙.出席率 - 甲.出席率 || 乙.来た回数 - 甲.来た回数,
+    来た回数: (甲, 乙) => 乙.来た回数 - 甲.来た回数 || 乙.出席率 - 甲.出席率,
+    欠席: (甲, 乙) => 乙.欠席 - 甲.欠席,
+    名前: (甲, 乙) => String(甲.名前).localeCompare(String(乙.名前), 'ja'),
   };
   残す.sort(比べ[並び] || 比べ.出席率);
-  残す.forEach((x, i) => {
-    x.順位 = i + 1;
+  残す.forEach((人, 番) => {
+    人.順位 = 番 + 1;
   });
   const 件数 = Number.isFinite(設定.件数) && 設定.件数 > 0 ? 設定.件数 : 残す.length;
   return {
@@ -196,28 +194,38 @@ function 記録をさがす(記録たち, 注文) {
   const 設定 = 注文 || {};
   const 語 = String(設定.言葉 || '').replace(/\s/g, '');
   const 対象 = 期間で絞る(記録たち, 設定.期間);
-  const 当たる = (r) => {
+  const 当たる = (記録) => {
     if (!語) return true;
-    const 中身 = [r.title || '', r.note || '', (r.tags || []).join(' ')].join(' ').replace(/\s/g, '');
+    const 中身 = [記録.title || '', 記録.note || '', (記録.tags || []).join(' ')]
+      .join(' ')
+      .replace(/\s/g, '');
     if (中身.includes(語)) return true;
-    return (Array.isArray(r.archers) ? r.archers : []).some((a) => {
-      if (!a) return false;
-      const 名 = [a.name || ''].concat(Object.values(a.substitutions || {}));
-      return 名.some((n) => String(n || '').replace(/\s/g, '').includes(語));
+    return (Array.isArray(記録.archers) ? 記録.archers : []).some((射手) => {
+      if (!射手) return false;
+      const 名 = [射手.name || ''].concat(Object.values(射手.substitutions || {}));
+      return 名.some((名前) =>
+        String(名前 || '')
+          .replace(/\s/g, '')
+          .includes(語)
+      );
     });
   };
-  const 見つけた = 対象.filter(当たる).sort((a, b) => (b.date || 0) - (a.date || 0));
+  const 見つけた = 対象.filter(当たる).sort((甲, 乙) => (乙.date || 0) - (甲.date || 0));
   const 件数 = Number.isFinite(設定.件数) && 設定.件数 > 0 ? 設定.件数 : 20;
   return {
     見つかった件数: 見つけた.length,
-    一覧: 見つけた.slice(0, 件数).map((r) => ({
-      id: r.id,
-      日付: 端末の日付(r.date || 0),
-      題: r.title || '',
-      目印: r.tags || [],
-      覚え書き: r.note || '',
-      人数: (Array.isArray(r.archers) ? r.archers : []).filter((a) => a && !a.isSeparator && !a.isTotalCalculator).length,
-    })),
+    一覧: 見つけた
+      .slice(0, 件数)
+      .map((記録) => ({
+        id: 記録.id,
+        日付: 端末の日付(記録.date || 0),
+        題: 記録.title || '',
+        目印: 記録.tags || [],
+        覚え書き: 記録.note || '',
+        人数: (Array.isArray(記録.archers) ? 記録.archers : []).filter(
+          (射手) => 射手 && !射手.isSeparator && !射手.isTotalCalculator
+        ).length,
+      })),
   };
 }
 
@@ -228,9 +236,9 @@ function 記録をさがす(記録たち, 注文) {
  * 前の日にまとめられてしまう。朝練の記録がひとつ前の日付で答えられていた。
  */
 function 端末の日付(日時) {
-  const d = new Date(日時);
-  if (Number.isNaN(d.getTime())) return '';
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const 日付 = new Date(日時);
+  if (Number.isNaN(日付.getTime())) return '';
+  return `${日付.getFullYear()}-${String(日付.getMonth() + 1).padStart(2, '0')}-${String(日付.getDate()).padStart(2, '0')}`;
 }
 
 /**
@@ -244,23 +252,23 @@ function 射位ごとの成績(人たち, 記録たち, 注文) {
   const 設定 = 注文 || {};
   // 「集計に含めない」にした記録は数えない。全員の成績と揃えないと、
   // 同じ話の中で順位と射位別の射数が食い違う
-  const 対象 = 期間で絞る(記録たち, 設定.期間).filter((r) => 集.集計に入れるか(r));
+  const 対象 = 期間で絞る(記録たち, 設定.期間).filter((記録) => 集.集計に入れるか(記録));
   const 箱 = new Map();
   const 入れる = (名前, 射位, 印) => {
     if (!箱.has(名前)) 箱.set(名前, { 名前, 全体: { 的中: 0, 射数: 0 }, 射位: {} });
-    const x = 箱.get(名前);
-    if (!x.射位[射位]) x.射位[射位] = { 的中: 0, 射数: 0 };
-    x.全体.射数 += 1;
-    x.射位[射位].射数 += 1;
+    const 人 = 箱.get(名前);
+    if (!人.射位[射位]) 人.射位[射位] = { 的中: 0, 射数: 0 };
+    人.全体.射数 += 1;
+    人.射位[射位].射数 += 1;
     if ('○' === 印) {
-      x.全体.的中 += 1;
-      x.射位[射位].的中 += 1;
+      人.全体.的中 += 1;
+      人.射位[射位].的中 += 1;
     }
   };
 
-  対象.forEach((r) => {
-    const 並び = (Array.isArray(r.archers) ? r.archers : []).filter(
-      (a) => a && !a.isSeparator && !a.isTotalCalculator
+  対象.forEach((記録) => {
+    const 並び = (Array.isArray(記録.archers) ? 記録.archers : []).filter(
+      (射手) => 射手 && !射手.isSeparator && !射手.isTotalCalculator
     );
     並び.forEach((射手, 番) => {
       // 呼び方は src/a11yLabels.js に1か所だけ置く。2か所に書くと、
@@ -273,37 +281,29 @@ function 射位ごとの成績(人たち, 記録たち, 注文) {
     });
   });
 
-  const 率 = (x) => (x.射数 > 0 ? Number(((x.的中 / x.射数) * 100).toFixed(1)) : null);
+  const 率 = (成績) => (成績.射数 > 0 ? Number(((成績.的中 / 成績.射数) * 100).toFixed(1)) : null);
   const 最小射数 = Number.isFinite(設定.最小射数) ? 設定.最小射数 : 1;
   const 名前で絞る = Array.isArray(設定.名前たち) && 設定.名前たち.length ? 設定.名前たち.map(詰める) : null;
 
   return {
     一覧: [...箱.values()]
-      .filter((x) => x.全体.射数 >= 最小射数)
-      .filter((x) => !名前で絞る || 名前で絞る.includes(詰める(x.名前)))
-      .sort((a, b) => 率(b.全体) - 率(a.全体))
-      .map((x) => ({
-        名前: x.名前,
-        全体の的中率: 率(x.全体),
-        全体の射数: x.全体.射数,
-        射位ごと: Object.keys(x.射位)
+      .filter((人) => 人.全体.射数 >= 最小射数)
+      .filter((人) => !名前で絞る || 名前で絞る.includes(詰める(人.名前)))
+      .sort((甲, 乙) => 率(乙.全体) - 率(甲.全体))
+      .map((人) => ({
+        名前: 人.名前,
+        全体の的中率: 率(人.全体),
+        全体の射数: 人.全体.射数,
+        射位ごと: Object.keys(人.射位)
           .sort()
           .map((射位) => ({
             射位,
-            的中率: 率(x.射位[射位]),
-            的中: x.射位[射位].的中,
-            射数: x.射位[射位].射数,
+            的中率: 率(人.射位[射位]),
+            的中: 人.射位[射位].的中,
+            射数: 人.射位[射位].射数,
           })),
       })),
   };
 }
 
-
-module.exports = {
-  全員の成績,
-  出欠の集計,
-  記録をさがす,
-  射位ごとの成績,
-  その射を引いた人,
-  その人の射か,
-};
+module.exports = { 全員の成績, 出欠の集計, 記録をさがす, 射位ごとの成績, その射を引いた人, その人の射か };
