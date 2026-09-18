@@ -20,11 +20,11 @@ try {
 /** 文字列を写す。写せたら true */
 async function 写す(文字列) {
   const s = String(文字列 == null ? '' : 文字列);
-  if (!s) return !1;
+  if (!s) return false;
   try {
     if (本体 && typeof 本体.setStringAsync === 'function') {
       await 本体.setStringAsync(s);
-      return !0;
+      return true;
     }
   } catch {
     /* 下の手立てを試す */
@@ -36,12 +36,12 @@ async function 写す(文字列) {
       typeof navigator.clipboard.writeText === 'function'
     ) {
       await navigator.clipboard.writeText(s);
-      return !0;
+      return true;
     }
   } catch {
     /* 写せなかった */
   }
-  return !1;
+  return false;
 }
 
 module.exports = { 写す };

@@ -5,21 +5,11 @@
  */
 'use strict';
 
-const e = exports;
-
-('use strict');
-(Object.defineProperty(e, '__esModule', { value: !0 }),
-  Object.defineProperty(e, 'default', {
-    enumerable: !0,
-    get: function () {
-      return t;
-    },
-  }));
-var t = class {
-  // ブラウザの窓ではなく、アプリの中の窓へ流す（src/AppDialog.js）。
-  // 見た目が揃い、出る位置も機種に左右されない。
-  // 呼び方はこれまでと同じなので、呼び出し側は書き換えなくてよい
+class Alert {
   static alert(title, message, buttons) {
     require('./AppDialog').出す(title, message, buttons);
   }
-};
+}
+
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.default = Alert;

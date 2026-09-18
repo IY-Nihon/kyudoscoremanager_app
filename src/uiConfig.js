@@ -5,17 +5,7 @@
  */
 'use strict';
 
-const e = exports;
-
-('use strict');
-(Object.defineProperty(e, '__esModule', { value: !0 }),
-  Object.defineProperty(e, 'UIConfig', {
-    enumerable: !0,
-    get: function () {
-      return t;
-    },
-  }));
-const t = {
+const UIConfig = {
   cellWidth: 58,
   cellHeight: 42,
   separatorWidth: 35,
@@ -23,3 +13,6 @@ const t = {
   footerHeight: 95,
   headerHeight: 42,
 };
+
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.UIConfig = UIConfig;

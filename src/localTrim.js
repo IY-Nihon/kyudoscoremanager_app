@@ -37,8 +37,8 @@ const 記録の予算 = 1500000;
  * @returns {boolean}
  */
 function 送れていないか(記録, 最後に送った時刻) {
-  if (!記録) return !1;
-  if ('未同期' === 記録.syncStatus) return !0;
+  if (!記録) return false;
+  if ('未同期' === 記録.syncStatus) return true;
   // 送った時刻より後に触られていれば、まだ届いていない見込み。
   // syncStatus が付かない道（一括の同期）でもここで拾える
   const 触った = 'number' == typeof 記録.lastModified ? 記録.lastModified : 0;

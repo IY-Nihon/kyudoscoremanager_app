@@ -1,7 +1,7 @@
 'use strict';
 
 Object.defineProperty(exports, '__esModule', { value: true });
-exports.AIChatBot = void 0;
+exports.AIChatBot = undefined;
 
 const React = require('react');
 const { useState, useRef, useEffect } = React;
