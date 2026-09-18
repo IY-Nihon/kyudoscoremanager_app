@@ -14,15 +14,15 @@ const { CustomCalendarModal } = require('./CustomCalendarModal');
 const { useScoreStore } = require('./useScoreStore');
 const { normalizeTag, タグの見た目 } = require('./syncRules');
 const EditSessionModal = ({ visible, session, onClose, onSave }) => {
-  const [y, F] = React.useState('');
-  const [S, T] = React.useState('');
-  const [B, k] = React.useState(8);
-  const [A, I] = React.useState(true);
-  const [w, v] = React.useState(new Date());
-  const [z, W] = React.useState(false);
-  const [D, R] = React.useState([]);
-  const [P, M] = React.useState('');
-  const [_, O] = React.useState(false);
+  const [題, 題を置く] = React.useState('');
+  const [覚え書き, 覚え書きを置く] = React.useState('');
+  const [本数, 本数を置く] = React.useState(8);
+  const [統計に入れる, 統計に入れるを置く] = React.useState(true);
+  const [日付, 日付を置く] = React.useState(new Date());
+  const [暦を出す, 暦を出すを置く] = React.useState(false);
+  const [タグたち, タグたちを置く] = React.useState([]);
+  const [タグの下書き, タグの下書きを置く] = React.useState('');
+  const [射数の確認, 射数の確認を出す] = React.useState(false);
   const [attendanceEdit, setAttendanceEdit] = React.useState({});
   const {
     isAdminMode,
@@ -33,44 +33,51 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
   const allMembers = React.useMemo(() => [...membersState, ...alumniState], [membersState, alumniState]);
   React.useEffect(() => {
     if (session) {
-      F(session.title || '');
-      T(session.note || '');
-      k(session.shotCount || 8);
-      I(session.includeInStats);
-      v(new Date(session.date));
+      題を置く(session.title || '');
+      覚え書きを置く(session.note || '');
+      本数を置く(session.shotCount || 8);
+      統計に入れるを置く(session.includeInStats);
+      日付を置く(new Date(session.date));
       const cleanedTags = Array.from(new Set((session.tags || []).map(normalizeTag).filter(Boolean)));
-      R(cleanedTags);
+      タグたちを置く(cleanedTags);
       let initialAtt = session.attendance ? Object.assign({}, session.attendance) : {};
       if (session.archers && Object.keys(initialAtt).length === 0) {
         session.archers.forEach((archer) => {
           if (!archer.isSeparator && archer.name) {
-            const m = allMembers.find(
+            const 部員 = allMembers.find(
               (member) =>
                 member.name === archer.name ||
                 member.id === archer.id ||
                 member.personalId === archer.personalId
             );
-            if (m) initialAtt[m.id] = 'present';
+            if (部員) initialAtt[部員.id] = 'present';
           }
         });
       }
       setAttendanceEdit(initialAtt);
     }
   }, [session, visible, allMembers]);
-  const H = (e) => {
-    const t = { title: y, note: S, date: e, includeInStats: A, shotCount: B, tags: D };
-    isAdminMode && (t.attendance = attendanceEdit);
+  const 保存する = (日付) => {
+    const 変更 = {
+      title: 題,
+      note: 覚え書き,
+      date: 日付,
+      includeInStats: 統計に入れる,
+      shotCount: 本数,
+      tags: タグたち,
+    };
+    isAdminMode && (変更.attendance = attendanceEdit);
     session &&
-      B !== session.shotCount &&
-      (t.archers = session.archers.map((e) => {
-        if (e.isSeparator || e.isTotalCalculator) return e;
-        const t = [...e.marks];
+      本数 !== session.shotCount &&
+      (変更.archers = session.archers.map((射手) => {
+        if (射手.isSeparator || 射手.isTotalCalculator) return 射手;
+        const 印 = [...射手.marks];
         return (
-          B > e.marks.length ? t.push(...Array(B - e.marks.length).fill('')) : t.splice(B),
-          Object.assign({}, e, { marks: t })
+          本数 > 射手.marks.length ? 印.push(...Array(本数 - 射手.marks.length).fill('')) : 印.splice(本数),
+          Object.assign({}, 射手, { marks: 印 })
         );
       }));
-    onSave(t);
+    onSave(変更);
     onClose();
     ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Success);
   };
@@ -83,100 +90,105 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
   return (
     <>
       <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-        <View style={j.backdrop}>
-          <View style={j.container}>
-            <View style={j.header}>
-              <Text style={j.headerTitle}>記録の情報を変える</Text>
+        <View style={styles.backdrop}>
+          <View style={styles.container}>
+            <View style={styles.header}>
+              <Text style={styles.headerTitle}>記録の情報を変える</Text>
               <TouchableOpacity onPress={onClose}>
                 <Icons.Ionicons name="close" size={24} color="#000" />
               </TouchableOpacity>
             </View>
             <ScrollView style={{ flex: 1 }}>
-              <View style={j.body}>
-                <Text style={j.label}>日付</Text>
-                <TouchableOpacity style={j.dateSelector} onPress={() => W(true)}>
-                  <Text style={j.dateSelectorText}>
-                    {w.getFullYear()}
+              <View style={styles.body}>
+                <Text style={styles.label}>日付</Text>
+                <TouchableOpacity style={styles.dateSelector} onPress={() => 暦を出すを置く(true)}>
+                  <Text style={styles.dateSelectorText}>
+                    {日付.getFullYear()}
                     {'年 '}
-                    {w.getMonth() + 1}
+                    {日付.getMonth() + 1}
                     {'月 '}
-                    {w.getDate()}日
+                    {日付.getDate()}日
                   </Text>
                   <Icons.Ionicons name="calendar-outline" size={20} color="#007AFF" />
                 </TouchableOpacity>
-                <Text style={j.label}>タイトル</Text>
-                <TextInput style={j.input} value={y} onChangeText={F} placeholder="例: 午前練習" />
-                <Text style={j.label}>メモ</Text>
+                <Text style={styles.label}>タイトル</Text>
                 <TextInput
-                  style={[j.input, { height: 80, textAlignVertical: 'top' }]}
-                  value={S}
-                  onChangeText={T}
+                  style={styles.input}
+                  value={題}
+                  onChangeText={題を置く}
+                  placeholder="例: 午前練習"
+                />
+                <Text style={styles.label}>メモ</Text>
+                <TextInput
+                  style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
+                  value={覚え書き}
+                  onChangeText={覚え書きを置く}
                   placeholder="練習のメモなど"
                   multiline
                 />
                 {isAdminMode && (
                   <>
-                    <Text style={j.label}>タグ</Text>
+                    <Text style={styles.label}>タグ</Text>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-                      {D.map((e, t) => (
+                      {タグたち.map((タグ, 番) => (
                         <TouchableOpacity
-                          key={t}
-                          style={j.selectedTagChip}
-                          onPress={() => R(D.filter((e, o) => o !== t))}
+                          key={番}
+                          style={styles.selectedTagChip}
+                          onPress={() => タグたちを置く(タグたち.filter((無し, 番) => 番 !== 番))}
                         >
-                          <Text style={j.selectedTagText}>{タグの見た目(e)}</Text>
+                          <Text style={styles.selectedTagText}>{タグの見た目(タグ)}</Text>
                           <Icons.Ionicons name="close-circle" size={16} color="#FFF" />
                         </TouchableOpacity>
                       ))}
-                      {0 === D.length && (
+                      {0 === タグたち.length && (
                         <Text style={{ color: '#C7C7CC', fontSize: 13, marginBottom: 4 }}>設定なし</Text>
                       )}
                     </View>
                     <View style={{ marginBottom: 16 }}>
-                      <View style={j.tagInputContainer}>
+                      <View style={styles.tagInputContainer}>
                         <TextInput
-                          style={j.tagInput}
-                          value={P}
-                          onChangeText={M}
+                          style={styles.tagInput}
+                          value={タグの下書き}
+                          onChangeText={タグの下書きを置く}
                           placeholder="新規追加"
                           onSubmitEditing={() => {
-                            const e = normalizeTag(P);
-                            if (e) {
-                              const normalizedD = D.map(normalizeTag).filter(Boolean);
-                              if (!normalizedD.includes(e)) R([...D, e]);
+                            const 整えた = normalizeTag(タグの下書き);
+                            if (整えた) {
+                              const normalizedD = タグたち.map(normalizeTag).filter(Boolean);
+                              if (!normalizedD.includes(整えた)) タグたちを置く([...タグたち, 整えた]);
                             }
-                            M('');
+                            タグの下書きを置く('');
                           }}
                         />
                         <TouchableOpacity
-                          style={j.tagAddButton}
+                          style={styles.tagAddButton}
                           onPress={() => {
-                            const e = normalizeTag(P);
-                            if (e) {
-                              const normalizedD = D.map(normalizeTag).filter(Boolean);
-                              if (!normalizedD.includes(e)) R([...D, e]);
+                            const 整えた = normalizeTag(タグの下書き);
+                            if (整えた) {
+                              const normalizedD = タグたち.map(normalizeTag).filter(Boolean);
+                              if (!normalizedD.includes(整えた)) タグたちを置く([...タグたち, 整えた]);
                             }
-                            M('');
+                            タグの下書きを置く('');
                           }}
                         >
-                          <Text style={j.tagAddButtonText}>追加</Text>
+                          <Text style={styles.tagAddButtonText}>追加</Text>
                         </TouchableOpacity>
                       </View>
                       {tagTemplates.length > 0 && (
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-                          {tagTemplates.map((e) => (
+                          {tagTemplates.map((タグ) => (
                             <TouchableOpacity
-                              key={e}
-                              style={j.templateTagChip}
+                              key={タグ}
+                              style={styles.templateTagChip}
                               onPress={() => {
-                                const t = normalizeTag(e);
-                                if (t) {
-                                  const normalizedD = D.map(normalizeTag).filter(Boolean);
-                                  if (!normalizedD.includes(t)) R([...D, t]);
+                                const 整えた = normalizeTag(タグ);
+                                if (整えた) {
+                                  const normalizedD = タグたち.map(normalizeTag).filter(Boolean);
+                                  if (!normalizedD.includes(整えた)) タグたちを置く([...タグたち, 整えた]);
                                 }
                               }}
                             >
-                              <Text style={j.templateTagText}>{e}</Text>
+                              <Text style={styles.templateTagText}>{タグ}</Text>
                             </TouchableOpacity>
                           ))}
                         </View>
@@ -184,23 +196,27 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                     </View>
                   </>
                 )}
-                <View style={j.row}>
+                <View style={styles.row}>
                   <View style={{ flex: 1 }}>
-                    <Text style={j.label}>
+                    <Text style={styles.label}>
                       {'総矢数 (現在: '}
                       {(session && session.shotCount) || 8}射)
                     </Text>
                     <TextInput
-                      style={j.input}
-                      value={String(B)}
-                      onChangeText={(e) => k(parseInt(e) || 0)}
+                      style={styles.input}
+                      value={String(本数)}
+                      onChangeText={(文) => 本数を置く(parseInt(文) || 0)}
                       keyboardType="number-pad"
                     />
                   </View>
                   <View style={{ width: 20 }} />
                   <View style={{ alignItems: 'center' }}>
-                    <Text style={j.label}>統計に含める</Text>
-                    <Switch value={A} onValueChange={I} trackColor={{ false: '#767577', true: '#34C759' }} />
+                    <Text style={styles.label}>統計に含める</Text>
+                    <Switch
+                      value={統計に入れる}
+                      onValueChange={統計に入れるを置く}
+                      trackColor={{ false: '#767577', true: '#34C759' }}
+                    />
                   </View>
                 </View>
                 {isAdminMode && allMembers.length > 0 && (
@@ -214,7 +230,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                         marginBottom: 6,
                       }}
                     >
-                      <Text style={j.label}>出席管理</Text>
+                      <Text style={styles.label}>出席管理</Text>
                       <View style={{ flexDirection: 'row', gap: 6 }}>
                         <TouchableOpacity
                           style={{
@@ -225,21 +241,21 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                           }}
                           onPress={() =>
                             setAttendanceEdit((prev) => {
-                              const n = Object.assign({}, prev);
+                              const 次 = Object.assign({}, prev);
                               if (session && session.archers) {
                                 session.archers.forEach((archer) => {
                                   if (!archer.isSeparator && archer.name) {
-                                    const m = allMembers.find(
+                                    const 部員 = allMembers.find(
                                       (member) =>
                                         member.name === archer.name ||
                                         member.id === archer.id ||
                                         member.personalId === archer.personalId
                                     );
-                                    if (m) n[m.id] = 'present';
+                                    if (部員) 次[部員.id] = 'present';
                                   }
                                 });
                               }
-                              return n;
+                              return 次;
                             })
                           }
                         >
@@ -256,11 +272,11 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                           }}
                           onPress={() =>
                             setAttendanceEdit((prev) => {
-                              const n = Object.assign({}, prev);
-                              allMembers.forEach((m) => {
-                                n[m.id] = 'present';
+                              const 次 = Object.assign({}, prev);
+                              allMembers.forEach((部員) => {
+                                次[部員.id] = 'present';
                               });
-                              return n;
+                              return 次;
                             })
                           }
                         >
@@ -275,11 +291,11 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                           }}
                           onPress={() =>
                             setAttendanceEdit((prev) => {
-                              const n = Object.assign({}, prev);
-                              allMembers.forEach((m) => {
-                                n[m.id] = 'absent';
+                              const 次 = Object.assign({}, prev);
+                              allMembers.forEach((部員) => {
+                                次[部員.id] = 'absent';
                               });
-                              return n;
+                              return 次;
                             })
                           }
                         >
@@ -297,18 +313,22 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                       }}
                     >
                       {[...allMembers]
-                        .sort((e, t) => {
-                          const n = undefined === e.grade || null === e.grade ? 99 : Number(e.grade);
-                          const o = undefined === t.grade || null === t.grade ? 99 : Number(t.grade);
-                          const l = 0 === n ? 99 : n;
-                          const a = 0 === o ? 99 : o;
-                          if (l !== a) return l - a;
-                          const s = (e) => {
-                            const t = (e || '').trim();
-                            return '男子' === t ? 0 : '女子' === t ? 1 : 2;
+                        .sort((甲, 乙) => {
+                          const 甲の学年 =
+                            undefined === 甲.grade || null === 甲.grade ? 99 : Number(甲.grade);
+                          const 乙の学年 =
+                            undefined === 乙.grade || null === 乙.grade ? 99 : Number(乙.grade);
+                          const 甲の順 = 0 === 甲の学年 ? 99 : 甲の学年;
+                          const 乙の順 = 0 === 乙の学年 ? 99 : 乙の学年;
+                          if (甲の順 !== 乙の順) return 甲の順 - 乙の順;
+                          const 性別の順 = (性別) => {
+                            const 整えた = (性別 || '').trim();
+                            return '男子' === 整えた ? 0 : '女子' === 整えた ? 1 : 2;
                           };
-                          const c = s(e.gender) - s(t.gender);
-                          return 0 !== c ? c : (e.name || '').localeCompare(t.name || '', 'ja');
+                          const 性別の差 = 性別の順(甲.gender) - 性別の順(乙.gender);
+                          return 0 !== 性別の差
+                            ? 性別の差
+                            : (甲.name || '').localeCompare(乙.name || '', 'ja');
                         })
                         .map((member, idx) => {
                           const status = attendanceEdit[member.id] || 'absent';
@@ -381,44 +401,44 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
               </View>
             </ScrollView>
             <TouchableOpacity
-              style={j.saveButton}
+              style={styles.saveButton}
               onPress={() => {
-                if (session && B < session.shotCount) O(true);
-                else H(w.getTime());
+                if (session && 本数 < session.shotCount) 射数の確認を出す(true);
+                else 保存する(日付.getTime());
               }}
             >
-              <Text style={j.saveButtonText}>変更を保存</Text>
+              <Text style={styles.saveButtonText}>変更を保存</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
       <CustomCalendarModal
-        visible={z}
-        selectedDate={w}
-        onSelectDate={(e) => {
-          v(e);
+        visible={暦を出す}
+        selectedDate={日付}
+        onSelectDate={(日付) => {
+          日付を置く(日付);
         }}
-        onClose={() => W(false)}
+        onClose={() => 暦を出すを置く(false)}
       />
-      <Modal visible={_} transparent animationType="fade">
-        <View style={j.confirmBackdrop}>
-          <View style={j.confirmBox}>
-            <Text style={j.confirmTitle}>射数の変更</Text>
-            <Text style={j.confirmMessage}>
+      <Modal visible={射数の確認} transparent animationType="fade">
+        <View style={styles.confirmBackdrop}>
+          <View style={styles.confirmBox}>
+            <Text style={styles.confirmTitle}>射数の変更</Text>
+            <Text style={styles.confirmMessage}>
               射数を減らすと、減らした分の○╳記録が削除されます。よろしいですか？
             </Text>
-            <View style={j.confirmButtons}>
+            <View style={styles.confirmButtons}>
               <TouchableOpacity
-                style={[j.confirmBtn, { backgroundColor: '#F2F2F7' }]}
-                onPress={() => O(false)}
+                style={[styles.confirmBtn, { backgroundColor: '#F2F2F7' }]}
+                onPress={() => 射数の確認を出す(false)}
               >
                 <Text style={{ color: '#007AFF', fontWeight: 'bold' }}>キャンセル</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[j.confirmBtn, { backgroundColor: '#FF3B30' }]}
+                style={[styles.confirmBtn, { backgroundColor: '#FF3B30' }]}
                 onPress={() => {
-                  O(false);
-                  H(w.getTime());
+                  射数の確認を出す(false);
+                  保存する(日付.getTime());
                 }}
               >
                 <Text style={{ color: '#FFF', fontWeight: 'bold' }}>変更する</Text>
@@ -430,7 +450,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
     </>
   );
 };
-const j = StyleSheet.create({
+const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   container: {
     backgroundColor: '#FFF',
