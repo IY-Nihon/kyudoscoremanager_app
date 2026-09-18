@@ -67,7 +67,7 @@ function 見えるところへ(名前) {
   if (枠.top >= ゆとり && 枠.bottom <= 画面高 - ゆとり) return false;
   try {
     節.scrollIntoView({ block: 'center' });
-  } catch (e) {
+  } catch (誤り) {
     return false;
   }
   return true;
@@ -82,11 +82,11 @@ function 見えるところへ(名前) {
 function 見本を送る() {
   if (typeof document === 'undefined') return;
   let 一番 = null;
-  for (const e of document.querySelectorAll('div')) {
-    if (e.scrollHeight - e.clientHeight < 80) continue;
-    const s = getComputedStyle(e);
-    if (!/(auto|scroll)/.test(s.overflowY)) continue;
-    if (!一番 || e.clientHeight > 一番.clientHeight) 一番 = e;
+  for (const 節点 of document.querySelectorAll('div')) {
+    if (節点.scrollHeight - 節点.clientHeight < 80) continue;
+    const 見た目 = getComputedStyle(節点);
+    if (!/(auto|scroll)/.test(見た目.overflowY)) continue;
+    if (!一番 || 節点.clientHeight > 一番.clientHeight) 一番 = 節点;
   }
   if (一番) 一番.scrollTop = 一番.scrollHeight;
 }
@@ -95,18 +95,18 @@ function 節を測る(節) {
   return new Promise((解決) => {
     if (!節 || typeof 節.measureInWindow !== 'function') return 解決(null);
     let 済み = false;
-    const 終わる = (v) => {
+    const 終わる = (値) => {
       if (!済み) {
         済み = true;
-        解決(v);
+        解決(値);
       }
     };
     try {
-      節.measureInWindow((x, y, 幅, 高さ) => {
-        if (typeof x !== 'number' || !幅 || !高さ) return 終わる(null);
-        終わる({ x, y, 幅, 高さ });
+      節.measureInWindow((左, 上, 幅, 高さ) => {
+        if (typeof 左 !== 'number' || !幅 || !高さ) return 終わる(null);
+        終わる({ x: 左, y: 上, 幅, 高さ });
       });
-    } catch (e) {
+    } catch (誤り) {
       終わる(null);
     }
     setTimeout(() => 終わる(null), 400);
@@ -119,18 +119,18 @@ function 位置を測る(名前) {
     const 中身 = ref && ref.current;
     if (!中身 || typeof 中身.measureInWindow !== 'function') return 解決(null);
     let 済み = false;
-    const 終わる = (v) => {
+    const 終わる = (値) => {
       if (!済み) {
         済み = true;
-        解決(v);
+        解決(値);
       }
     };
     try {
-      中身.measureInWindow((x, y, 幅, 高さ) => {
-        if (typeof x !== 'number' || !幅 || !高さ) return 終わる(null);
-        終わる({ x, y, 幅, 高さ });
+      中身.measureInWindow((左, 上, 幅, 高さ) => {
+        if (typeof 左 !== 'number' || !幅 || !高さ) return 終わる(null);
+        終わる({ x: 左, y: 上, 幅, 高さ });
       });
-    } catch (e) {
+    } catch (誤り) {
       終わる(null);
     }
     // measureInWindow は画面に無いと呼ばれ返らないことがある
@@ -154,10 +154,10 @@ const use案内 = create((set) => ({
   // 履歴・分析の手順のあいだだけ入る見本。本物の画面がこれを読んで描く。
   // 差し替えるのは中身だけで、記録ストアにも通信にも触れない
   見本データ: null,
-  見本を置く: (v) => set({ 見本データ: v }),
+  見本を置く: (値) => set({ 見本データ: 値 }),
   始める: (控え) => set({ 進行中: true, 番号: 0, 続きも見る: false, 控え, 最高到達: 0, 見本データ: null }),
-  進める: (n) => set((s) => ({ 番号: n, 最高到達: Math.max(s.最高到達, n) })),
-  続きへ: (n) => set((s) => ({ 続きも見る: true, 番号: n, 最高到達: Math.max(s.最高到達, n) })),
+  進める: (番) => set((状態) => ({ 番号: 番, 最高到達: Math.max(状態.最高到達, 番) })),
+  続きへ: (番) => set((状態) => ({ 続きも見る: true, 番号: 番, 最高到達: Math.max(状態.最高到達, 番) })),
   終える: () => set({ 進行中: false, 番号: 0, 続きも見る: false, 控え: null, 最高到達: 0, 見本データ: null }),
 }));
 /**
@@ -171,16 +171,16 @@ const use案内 = create((set) => ({
  * 戻り値は 'はじめた' か 'ライブ中'。
  */
 function startTutorial() {
-  const s = useScoreStore.getState();
-  if (s.isLiveActive) return 'ライブ中';
+  const 店 = useScoreStore.getState();
+  if (店.isLiveActive) return 'ライブ中';
   const 控え = {
-    archers: JSON.parse(JSON.stringify(s.archers || [])),
-    shotsPerRound: s.shotsPerRound,
-    viewScale: s.viewScale,
+    archers: JSON.parse(JSON.stringify(店.archers || [])),
+    shotsPerRound: 店.shotsPerRound,
+    viewScale: 店.viewScale,
   };
   use案内.getState().始める(控え);
-  AsyncStorage.setItem(控えキー, JSON.stringify(控え)).catch((e) =>
-    console.error('[TutorialGuide] 控えを書けませんでした:', e)
+  AsyncStorage.setItem(控えキー, JSON.stringify(控え)).catch((誤り) =>
+    console.error('[TutorialGuide] 控えを書けませんでした:', 誤り)
   );
   return 'はじめた';
 }
@@ -196,20 +196,20 @@ function startTutorial() {
  * 記録ストアには書かないため、見本が本物として保存される経路は無い。
  */
 function 見本を重ねる(値) {
-  const 見本 = use案内((s) => s.見本データ);
+  const 見本 = use案内((状態) => 状態.見本データ);
   if (!見本) return 値;
   return Object.assign({}, 値, 見本);
 }
 /** 案内で触ったぶんを元に戻す */
 function 盤面を戻す(控え) {
   if (!控え) return;
-  const s = useScoreStore.getState();
+  const 店 = useScoreStore.getState();
   const 変わった =
-    JSON.stringify(s.archers || []) !== JSON.stringify(控え.archers) ||
-    s.shotsPerRound !== 控え.shotsPerRound ||
-    s.viewScale !== 控え.viewScale;
+    JSON.stringify(店.archers || []) !== JSON.stringify(控え.archers) ||
+    店.shotsPerRound !== 控え.shotsPerRound ||
+    店.viewScale !== 控え.viewScale;
   if (!変わった) return;
-  s.updateState({
+  店.updateState({
     archers: 控え.archers,
     shotsPerRound: 控え.shotsPerRound,
     viewScale: 控え.viewScale,
@@ -224,22 +224,23 @@ function 盤面を戻す(控え) {
  */
 function いまの値(状態, 種類) {
   const 射手 = 状態.archers || [];
-  if (種類 === '射手を増やす') return 射手.filter((a) => a && !a.isSeparator && !a.isTotalCalculator).length;
-  if (種類 === '間隔を足す') return 射手.filter((a) => a && a.isSeparator).length;
-  if (種類 === '計を足す') return 射手.filter((a) => a && a.isTotalCalculator).length;
+  if (種類 === '射手を増やす')
+    return 射手.filter((一人) => 一人 && !一人.isSeparator && !一人.isTotalCalculator).length;
+  if (種類 === '間隔を足す') return 射手.filter((一人) => 一人 && 一人.isSeparator).length;
+  if (種類 === '計を足す') return 射手.filter((一人) => 一人 && 一人.isTotalCalculator).length;
   // ○×は「増えた」で見ると行き止まりになる。既に○のますを押すと×に
   // 変わるだけで数が増えないため。中身そのものの変化で見る
-  if (種類 === '○×を入れる') return 射手.map((a) => ((a && a.marks) || []).join('')).join('|');
+  if (種類 === '○×を入れる') return 射手.map((一人) => ((一人 && 一人.marks) || []).join('')).join('|');
   if (種類 === '射数を変える') return 状態.shotsPerRound;
   if (種類 === '表示を変える') return 状態.viewScale;
   // 名前が入った射手の数。「選択」から誰かを割り当てると増える
-  if (種類 === '名前を決める') return 射手.filter((a) => a && a.name).length;
+  if (種類 === '名前を決める') return 射手.filter((一人) => 一人 && 一人.name).length;
   // 登録した部員の数。作りたての団体は0人で、ここを越えないと
   // 「選択」に誰も出てこず、記録の取りようがない
   if (種類 === '部員を増やす') return (状態.members || []).length;
   // 鍵をかけた場所の数。まとまり単位でかかるので、増減どちらもありうる
   if (種類 === '鍵をかける')
-    return 射手.reduce((合計, a) => 合計 + Object.keys((a && a.lockedBlocks) || {}).length, 0);
+    return 射手.reduce((合計, 一人) => 合計 + Object.keys((一人 && 一人.lockedBlocks) || {}).length, 0);
   return null;
 }
 /**
@@ -252,29 +253,31 @@ function いまの値(状態, 種類) {
  */
 function 下ごしらえする(種類) {
   if (!種類) return false;
-  const s = useScoreStore.getState();
-  const 一覧 = s.archers || [];
-  const 射手か = (a) => !!a && !a.isSeparator && !a.isTotalCalculator;
+  const 店 = useScoreStore.getState();
+  const 一覧 = 店.archers || [];
+  const 射手か = (一人) => !!一人 && !一人.isSeparator && !一人.isTotalCalculator;
   if (種類 === '射手が1人') {
     if (一覧.some(射手か)) return false;
-    s.addArcher();
+    店.addArcher();
     return true;
   }
   if (種類 === '鍵が出る形') {
     // 鍵は、間隔・計の右どなり（並びで1つ手前）が射手のときだけ出る
-    const 出ている = 一覧.some((a, i) => (a.isSeparator || a.isTotalCalculator) && 射手か(一覧[i - 1]));
+    const 出ている = 一覧.some(
+      (一人, 番) => (一人.isSeparator || 一人.isTotalCalculator) && 射手か(一覧[番 - 1])
+    );
     if (出ている) return false;
     // 鍵を出す相手は、1立ぶんが埋まっていない射手にする。
     // 埋まっている射手の隣に間隔を足すと、3秒後に誤タップ防止の鍵が
     // 自動でかかり、「押してみましょう」が押さずに進んでしまう
-    const 本数 = s.shotsPerRound || 8;
-    const 埋まった立がある = (a) => {
-      const 印 = (a && a.marks) || [];
-      for (let b = 0; 4 * b < 本数; b++) {
-        const 端 = Math.min(4 * b + 4, 本数);
+    const 本数 = 店.shotsPerRound || 8;
+    const 埋まった立がある = (一人) => {
+      const 印 = (一人 && 一人.marks) || [];
+      for (let 立 = 0; 4 * 立 < 本数; 立++) {
+        const 端 = Math.min(4 * 立 + 4, 本数);
         let 全部 = true;
-        for (let x = 4 * b; x < 端; x++)
-          if (!(印[x] ?? '')) {
+        for (let 射番 = 4 * 立; 射番 < 端; 射番++)
+          if (!(印[射番] ?? '')) {
             全部 = false;
             break;
           }
@@ -283,8 +286,8 @@ function 下ごしらえする(種類) {
       return false;
     };
     const 最後 = 一覧[一覧.length - 1];
-    if (!射手か(最後) || 埋まった立がある(最後)) s.addArcher();
-    s.addSeparator();
+    if (!射手か(最後) || 埋まった立がある(最後)) 店.addArcher();
+    店.addSeparator();
     return true;
   }
   return false;
@@ -302,14 +305,14 @@ function 達成した(種類, 基準, 現在) {
 const 既定の吹き出しの幅 = 340;
 const 余白 = 12;
 const TutorialOverlay = ({ navRef }) => {
-  const 進行中 = use案内((s) => s.進行中);
-  const 番号 = use案内((s) => s.番号);
-  const 進める = use案内((s) => s.進める);
-  const 続きへ = use案内((s) => s.続きへ);
-  const 続きも見る = use案内((s) => s.続きも見る);
-  const 終える = use案内((s) => s.終える);
-  const 控え = use案内((s) => s.控え);
-  const 最高到達 = use案内((s) => s.最高到達);
+  const 進行中 = use案内((状態) => 状態.進行中);
+  const 番号 = use案内((状態) => 状態.番号);
+  const 進める = use案内((状態) => 状態.進める);
+  const 続きへ = use案内((状態) => 状態.続きへ);
+  const 続きも見る = use案内((状態) => 状態.続きも見る);
+  const 終える = use案内((状態) => 状態.終える);
+  const 控え = use案内((状態) => 状態.控え);
+  const 最高到達 = use案内((状態) => 状態.最高到達);
   const 役割 = useScoreStore((状態) => 状態.activeRole);
   const いまの画面 = useScoreStore((状態) => 状態.currentRouteName);
   const [測った枠, 枠を置く] = useState(null);
@@ -365,7 +368,7 @@ const TutorialOverlay = ({ navRef }) => {
   const 見返し = 番号 < 最高到達;
   // 画面の回転や窓の大きさ変更に追随する
   useEffect(() => {
-    const 購読 = RN.Dimensions.addEventListener('change', ({ window: w }) => 大きさを置く(w));
+    const 購読 = RN.Dimensions.addEventListener('change', ({ window: 窓 }) => 大きさを置く(窓));
     return () => 購読 && 購読.remove && 購読.remove();
   }, []);
   // 初めての人には自動で出す
@@ -380,17 +383,17 @@ const TutorialOverlay = ({ navRef }) => {
         if (残り) {
           try {
             盤面を戻す(JSON.parse(残り));
-          } catch (e) {
-            console.error('[TutorialGuide] 控えを読めませんでした:', e);
+          } catch (誤り) {
+            console.error('[TutorialGuide] 控えを読めませんでした:', 誤り);
           }
           await AsyncStorage.removeItem(控えキー);
         }
         const 済み = await AsyncStorage.getItem(保存キー);
         // startTutorial の中でライブ中かを見て、始めないこともある
         if (済み !== TUTORIAL_VERSION) startTutorial();
-      } catch (e) {
+      } catch (誤り) {
         // 読めなくても勝手に出すほどではない。設定からいつでも見られる
-        console.error('[TutorialGuide] 保存領域を読めませんでした:', e);
+        console.error('[TutorialGuide] 保存領域を読めませんでした:', 誤り);
       }
     })();
   }, [役割]);
@@ -435,29 +438,29 @@ const TutorialOverlay = ({ navRef }) => {
           if (!現在 || 現在.name !== いまの手順.画面) {
             navRef.current.navigate(いまの手順.画面);
             // 画面が描かれるのを待つ。待たずに測ると必ず失敗する
-            await new Promise((r) => setTimeout(r, 400));
+            await new Promise((解く) => setTimeout(解く, 400));
           }
-        } catch (e) {
-          console.error('[TutorialGuide] 画面を移動できませんでした:', e);
+        } catch (誤り) {
+          console.error('[TutorialGuide] 画面を移動できませんでした:', 誤り);
         }
       }
       if (捨てた) return;
       // 分析の見本は、絞り込みの札が長くて順位が画面の外に出る。
       // 「的中率の高い順に並びます」と言う手順なので、順位まで送っておく
       if (いまの手順.見本 === '分析') {
-        await new Promise((r) => setTimeout(r, 250));
+        await new Promise((解く) => setTimeout(解く, 250));
         見本を送る();
-        await new Promise((r) => setTimeout(r, 250));
+        await new Promise((解く) => setTimeout(解く, 250));
         if (捨てた) return;
       }
       if (!いまの手順.目印) return void 測り中を置く(false);
       // 一覧の下のほうにある目印は、先に見えるところまで運んでおく
-      if (見えるところへ(いまの手順.目印)) await new Promise((r) => setTimeout(r, 350));
+      if (見えるところへ(いまの手順.目印)) await new Promise((解く) => setTimeout(解く, 350));
       if (捨てた) return;
       let 位置 = await 位置を測る(いまの手順.目印);
       if (!位置 && !捨てた) {
         // 一度で測れないことがある（描画の途中など）ので、少し待って再挑戦
-        await new Promise((r) => setTimeout(r, 300));
+        await new Promise((解く) => setTimeout(解く, 300));
         位置 = await 位置を測る(いまの手順.目印);
       }
       // 幕そのものを測って、ウィンドウ基準の位置を幕の中の座標へ直す
@@ -479,8 +482,8 @@ const TutorialOverlay = ({ navRef }) => {
     if (!操作) return;
     if (操作.種類 === 'タブへ移動') {
       if (いまの画面 === 操作.先) {
-        const t = setTimeout(() => 進める(番号 + 1), 500);
-        return () => clearTimeout(t);
+        const 札 = setTimeout(() => 進める(番号 + 1), 500);
+        return () => clearTimeout(札);
       }
       return;
     }
@@ -500,8 +503,8 @@ const TutorialOverlay = ({ navRef }) => {
     try {
       await AsyncStorage.setItem(保存キー, TUTORIAL_VERSION);
       await AsyncStorage.removeItem(控えキー);
-    } catch (e) {
-      console.error('[TutorialGuide] 保存領域に書けませんでした:', e);
+    } catch (誤り) {
+      console.error('[TutorialGuide] 保存領域に書けませんでした:', 誤り);
     }
   }, [終える, 控え]);
   if (!進行中 || !いまの手順) return null;
@@ -635,9 +638,9 @@ const TutorialOverlay = ({ navRef }) => {
             0 のままになって吹き出しが出なくなるため */}
         <_ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ padding: 16 }}>
           <_View
-            onLayout={(e) => {
-              const h = Math.ceil(e.nativeEvent.layout.height) + 32; // 上下の余白ぶん
-              if (h > 0 && Math.abs(h - 自然高さ) > 1) 自然高さを置く(h);
+            onLayout={(出来事) => {
+              const 高さ = Math.ceil(出来事.nativeEvent.layout.height) + 32; // 上下の余白ぶん
+              if (高さ > 0 && Math.abs(高さ - 自然高さ) > 1) 自然高さを置く(高さ);
             }}
           >
             <_View style={styles.見出し行}>
@@ -649,8 +652,8 @@ const TutorialOverlay = ({ navRef }) => {
 
             <_Text style={styles.題}>{いまの手順.題}</_Text>
             <_View>
-              {いまの手順.文.map((一文, i) => (
-                <_Text key={i} style={styles.文}>
+              {いまの手順.文.map((一文, 番) => (
+                <_Text key={番} style={styles.文}>
                   {一文}
                 </_Text>
               ))}
@@ -886,7 +889,7 @@ exports.setTutorialTargetNode = setTutorialTargetNode;
 exports.startTutorial = startTutorial;
 /** 案内が動いているか。画面側が「案内中は畳まない」などの判断に使う */
 function use案内中() {
-  return use案内((s) => s.進行中);
+  return use案内((状態) => 状態.進行中);
 }
 exports.use案内中 = use案内中;
 exports.見本を重ねる = 見本を重ねる;

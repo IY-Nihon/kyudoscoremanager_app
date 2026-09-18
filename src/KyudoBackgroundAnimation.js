@@ -18,25 +18,21 @@ if (Platform.OS === 'web') {
         const THREE = window.THREE;
         if (!THREE) return;
 
-        const W = containerRef.current.offsetWidth || window.innerWidth;
-        const H = containerRef.current.offsetHeight || window.innerHeight;
+        const 幅 = containerRef.current.offsetWidth || window.innerWidth;
+        const 高さ = containerRef.current.offsetHeight || window.innerHeight;
 
         try {
-          renderer = new THREE.WebGLRenderer({
-            canvas: canvasRef.current,
-            alpha: true,
-            antialias: true,
-          });
-        } catch (e) {
-          console.warn('WebGL initialization failed in background: ', e);
+          renderer = new THREE.WebGLRenderer({ canvas: canvasRef.current, alpha: true, antialias: true });
+        } catch (誤り) {
+          console.warn('WebGL initialization failed in background: ', 誤り);
           return;
         }
 
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-        renderer.setSize(W, H);
+        renderer.setSize(幅, 高さ);
 
         scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(50, W / H, 0.1, 100);
+        camera = new THREE.PerspectiveCamera(50, 幅 / 高さ, 0.1, 100);
         camera.position.z = 8;
 
         // 星屑粒子
@@ -44,10 +40,10 @@ if (Platform.OS === 'web') {
         const geom = new THREE.BufferGeometry();
         const pos = new Float32Array(count * 3);
         const speeds = [];
-        for (let i = 0; i < count; i++) {
-          pos[i * 3] = (Math.random() - 0.5) * 15;
-          pos[i * 3 + 1] = (Math.random() - 0.5) * 10;
-          pos[i * 3 + 2] = (Math.random() - 0.5) * 10 - 2;
+        for (let 番 = 0; 番 < count; 番++) {
+          pos[番 * 3] = (Math.random() - 0.5) * 15;
+          pos[番 * 3 + 1] = (Math.random() - 0.5) * 10;
+          pos[番 * 3 + 2] = (Math.random() - 0.5) * 10 - 2;
           speeds.push(0.005 + Math.random() * 0.01);
         }
         geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -67,16 +63,8 @@ if (Platform.OS === 'web') {
 
         const createKyudoVectorArrow = () => {
           const arrow = new THREE.Group();
-          const lineMat = new THREE.LineBasicMaterial({
-            color: 0xe5c184,
-            transparent: true,
-            opacity: 0.85,
-          });
-          const subMat = new THREE.LineBasicMaterial({
-            color: 0xb8965a,
-            transparent: true,
-            opacity: 0.45,
-          });
+          const lineMat = new THREE.LineBasicMaterial({ color: 0xe5c184, transparent: true, opacity: 0.85 });
+          const subMat = new THREE.LineBasicMaterial({ color: 0xb8965a, transparent: true, opacity: 0.45 });
 
           // シャフト
           const shaftPts = [new THREE.Vector3(0, -2.4, 0), new THREE.Vector3(0, 2.4, 0)];
@@ -86,8 +74,8 @@ if (Platform.OS === 'web') {
           // 節
           [-1.3, 0.4, 1.7].forEach((yPos) => {
             const ringPts = [];
-            for (let a = 0; a <= 16; a++) {
-              const theta = (a / 16) * Math.PI * 2;
+            for (let 角の番 = 0; 角の番 <= 16; 角の番++) {
+              const theta = (角の番 / 16) * Math.PI * 2;
               ringPts.push(new THREE.Vector3(Math.cos(theta) * 0.035, yPos, Math.sin(theta) * 0.035));
             }
             const ringGeom = new THREE.BufferGeometry().setFromPoints(ringPts);
@@ -135,8 +123,8 @@ if (Platform.OS === 'web') {
           const quillPts = [new THREE.Vector3(0.02, -1.0, 0), new THREE.Vector3(0.02, -2.18, 0)];
           const quillGeom = new THREE.BufferGeometry().setFromPoints(quillPts);
 
-          for (let r = 0; r < 3; r++) {
-            const angle = (r * Math.PI * 2) / 3;
+          for (let 輪の番 = 0; 輪の番 < 3; 輪の番++) {
+            const angle = (輪の番 * Math.PI * 2) / 3;
             const feather = new THREE.Line(fGeom, lineMat);
             feather.rotation.y = angle;
             arrow.add(feather);
@@ -161,15 +149,15 @@ if (Platform.OS === 'web') {
         const ringsGroup = new THREE.Group();
         arrowPairGroup.add(ringsGroup);
 
-        const createRing = (r, op) => {
+        const createRing = (半径, 不透明度) => {
           const pts = [];
-          for (let a = 0; a <= 64; a++) {
-            const theta = (a / 64) * Math.PI * 2;
-            pts.push(new THREE.Vector3(Math.cos(theta) * r, 0, Math.sin(theta) * r));
+          for (let 角の番 = 0; 角の番 <= 64; 角の番++) {
+            const theta = (角の番 / 64) * Math.PI * 2;
+            pts.push(new THREE.Vector3(Math.cos(theta) * 半径, 0, Math.sin(theta) * 半径));
           }
           return new THREE.Line(
             new THREE.BufferGeometry().setFromPoints(pts),
-            new THREE.LineBasicMaterial({ color: 0xe5c184, transparent: true, opacity: op })
+            new THREE.LineBasicMaterial({ color: 0xe5c184, transparent: true, opacity: 不透明度 })
           );
         };
         ringsGroup.add(createRing(1.2, 0.4));
@@ -179,21 +167,21 @@ if (Platform.OS === 'web') {
         arrowPairGroup.rotation.x = 0.45;
         arrowPairGroup.rotation.y = -0.6;
 
-        let t = 0;
+        let 時 = 0;
         const animate = () => {
           if (!active) return;
           animationFrameId = requestAnimationFrame(animate);
-          t += 0.004;
+          時 += 0.004;
 
-          arrowPairGroup.rotation.y = t * 0.4;
-          arrowPairGroup.rotation.z = Math.sin(t * 0.25) * 0.12;
-          ringsGroup.rotation.x = Math.cos(t * 0.2) * 0.08;
+          arrowPairGroup.rotation.y = 時 * 0.4;
+          arrowPairGroup.rotation.z = Math.sin(時 * 0.25) * 0.12;
+          ringsGroup.rotation.x = Math.cos(時 * 0.2) * 0.08;
 
           const arr = stars.geometry.attributes.position.array;
-          for (let i = 0; i < count; i++) {
-            arr[i * 3 + 1] -= speeds[i];
-            if (arr[i * 3 + 1] < -5) {
-              arr[i * 3 + 1] = 5;
+          for (let 番 = 0; 番 < count; 番++) {
+            arr[番 * 3 + 1] -= speeds[番];
+            if (arr[番 * 3 + 1] < -5) {
+              arr[番 * 3 + 1] = 5;
             }
           }
           stars.geometry.attributes.position.needsUpdate = true;
@@ -219,11 +207,11 @@ if (Platform.OS === 'web') {
 
       const handleResize = () => {
         if (!containerRef.current || !camera || !renderer) return;
-        const W = containerRef.current.offsetWidth;
-        const H = containerRef.current.offsetHeight;
-        camera.aspect = W / H;
+        const 幅 = containerRef.current.offsetWidth;
+        const 高さ = containerRef.current.offsetHeight;
+        camera.aspect = 幅 / 高さ;
         camera.updateProjectionMatrix();
-        renderer.setSize(W, H);
+        renderer.setSize(幅, 高さ);
       };
       window.addEventListener('resize', handleResize);
 
@@ -275,9 +263,7 @@ if (Platform.OS === 'web') {
     }, []);
 
     const animatedStyle = useAnimatedStyle(() => {
-      return {
-        transform: [{ rotate: `${rotation.value}deg` }, { translateY: translateY.value }],
-      };
+      return { transform: [{ rotate: `${rotation.value}deg` }, { translateY: translateY.value }] };
     });
 
     const screenWidth = Dimensions.get('window').width;
@@ -385,12 +371,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
   },
-  animationWrapper: {
-    width: 480,
-    height: 480,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  animationWrapper: { width: 480, height: 480, justifyContent: 'center', alignItems: 'center' },
 });
 
 export default KyudoBackgroundAnimation;
