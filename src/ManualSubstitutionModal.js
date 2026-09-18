@@ -78,53 +78,53 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose }) => {
   };
   return visible ? (
     <Modal visible={visible} transparent animationType="slide">
-      <KeyboardAvoidingView behavior={IS_IOS ? 'padding' : undefined} style={y.overlay}>
+      <KeyboardAvoidingView behavior={IS_IOS ? 'padding' : undefined} style={styles.overlay}>
         <TouchableWithoutFeedback onPress={P}>
           <View style={StyleSheet.absoluteFill} />
         </TouchableWithoutFeedback>
-        <View style={y.container}>
-          <View style={y.header}>
-            <TouchableOpacity onPress={P} style={y.headerBtn}>
-              <Text style={y.headerBtnTxt}>閉じる</Text>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={P} style={styles.headerBtn}>
+              <Text style={styles.headerBtnTxt}>閉じる</Text>
             </TouchableOpacity>
-            <Text style={y.headerTitle}>途中交代の設定</Text>
-            <View style={y.headerBtn} />
+            <Text style={styles.headerTitle}>途中交代の設定</Text>
+            <View style={styles.headerBtn} />
           </View>
           {/* 中身は窓ごと縦に流す。中に別々の流せる箱を置くと、細い画面で */
           /* 下の相手の一覧が0pxまで潰れ、部員が1人も見えなくなる */}
           <ScrollView
-            style={y.content}
-            contentContainerStyle={y.中身} // 上の「交代するタイミング」は貼り付けたまま、下だけ流す。
+            style={styles.content}
+            contentContainerStyle={styles.中身} // 上の「交代するタイミング」は貼り付けたまま、下だけ流す。
             // 細い画面で相手の一覧が潰れるのを避けつつ、選んだ立目を見ながら探せる
             stickyHeaderIndices={[0]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <View style={y.貼り付け}>
-              <Text style={y.sectionTitle}>交代するタイミング</Text>
-              <View style={y.単位の列}>
+            <View style={styles.貼り付け}>
+              <Text style={styles.sectionTitle}>交代するタイミング</Text>
+              <View style={styles.単位の列}>
                 {['立目', '射目'].map((名) => (
                   <TouchableOpacity
                     key={名}
-                    style={[y.単位ボタン, 名 === 単位 && y.単位ボタン選択中]}
+                    style={[styles.単位ボタン, 名 === 単位 && styles.単位ボタン選択中]}
                     onPress={() => {
                       単位を置く(名);
                       R('');
                     }}
                   >
-                    <Text style={[y.単位の字, 名 === 単位 && y.単位の字選択中]}>{名}</Text>
+                    <Text style={[styles.単位の字, 名 === 単位 && styles.単位の字選択中]}>{名}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
               {/* 番号は打ち込まずに選ぶ。記録表で人を選ぶのと同じ並びにしてある */}
-              <View style={y.番号の一覧}>
+              <View style={styles.番号の一覧}>
                 {番号たち.map((e) => (
                   <TouchableOpacity
                     key={String(e)}
-                    style={[y.番号の行, e === 選んだ && y.番号の行選択中]}
+                    style={[styles.番号の行, e === 選んだ && styles.番号の行選択中]}
                     onPress={() => R(String(e))}
                   >
-                    <Text style={[y.番号の字, e === 選んだ && y.番号の字選択中]}>
+                    <Text style={[styles.番号の字, e === 選んだ && styles.番号の字選択中]}>
                       {e}
                       {単位}
                     </Text>
@@ -132,7 +132,7 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose }) => {
                   </TouchableOpacity>
                 ))}
               </View>
-              <Text style={y.案内}>
+              <Text style={styles.案内}>
                 {null === 何射目()
                   ? '上から交代するところを選んでください'
                   : 立か
@@ -140,26 +140,29 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose }) => {
                     : `${何射目() + 1}射目から交代します`}
               </Text>
             </View>
-            <Text style={y.sectionTitle}>交代相手（メンバーまたはゲスト）</Text>
-            <TextInput style={y.searchBar} placeholder="名前で検索..." value={w} onChangeText={I} />
-            <View style={y.guestRow}>
+            <Text style={styles.sectionTitle}>交代相手（メンバーまたはゲスト）</Text>
+            <TextInput style={styles.searchBar} placeholder="名前で検索..." value={w} onChangeText={I} />
+            <View style={styles.guestRow}>
               <Icons.Ionicons name="person-add" size={20} color="#007AFF" />
-              <TextInput style={y.guestInput} placeholder="ゲスト名を入力" value={k} onChangeText={v} />
+              <TextInput style={styles.guestInput} placeholder="ゲスト名を入力" value={k} onChangeText={v} />
               <TouchableOpacity
-                style={[y.confirmBtn, (!k || null === 何射目()) && y.confirmBtnDisabled]}
+                style={[styles.confirmBtn, (!k || null === 何射目()) && styles.confirmBtnDisabled]}
                 onPress={() => {
                   if ('' !== k.trim()) A(k.trim());
                 }}
                 disabled={!k || null === 何射目()}
               >
-                <Text style={y.confirmTxt}>確定</Text>
+                <Text style={styles.confirmTxt}>確定</Text>
               </TouchableOpacity>
             </View>
-            <View style={y.list}>
+            <View style={styles.list}>
               {学年ごと.map((組) => (
                 <View key={String(組.学年)}>
-                  <TouchableOpacity style={y.学年の見出し} onPress={() => 学年を開け閉め(String(組.学年))}>
-                    <Text style={y.学年の字}>
+                  <TouchableOpacity
+                    style={styles.学年の見出し}
+                    onPress={() => 学年を開け閉め(String(組.学年))}
+                  >
+                    <Text style={styles.学年の字}>
                       {組.題}
                       {' ('}
                       {組.人たち.length}人)
@@ -179,15 +182,15 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose }) => {
                       return (
                         <TouchableOpacity
                           key={typeof e.id === 'string' ? e.id : `subst-${組.学年}-${順}-${e.name}`}
-                          style={y.memberItem}
+                          style={styles.memberItem}
                           onPress={() => {
                             A(e.name, e.id);
                           }}
                         >
-                          <Text style={y.memberName}>
+                          <Text style={styles.memberName}>
                             {姓} {名前}
                           </Text>
-                          <Text style={y.memberSub}>{e.gender}</Text>
+                          <Text style={styles.memberSub}>{e.gender}</Text>
                         </TouchableOpacity>
                       );
                     }),
@@ -201,7 +204,7 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose }) => {
     </Modal>
   ) : null;
 };
-const y = StyleSheet.create({
+const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
   container: {
     backgroundColor: '#F2F2F7',

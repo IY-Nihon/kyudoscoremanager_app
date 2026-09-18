@@ -15,7 +15,7 @@ const LabelColumn = ({ shots, showFooter = true, 横並び: 横 = false }) => {
   return (
     <View
       style={[
-        c.column,
+        styles.column,
         横
           ? {
               width: UIConfig.cellWidth * (shots + 1) * s,
@@ -32,7 +32,7 @@ const LabelColumn = ({ shots, showFooter = true, 横並び: 横 = false }) => {
       <View style={{ flexDirection: 横 ? 'row-reverse' : 'column' }}>
         <View
           style={[
-            c.header,
+            styles.header,
             横
               ? {
                   width: UIConfig.cellWidth * s,
@@ -45,7 +45,7 @@ const LabelColumn = ({ shots, showFooter = true, 横並び: 横 = false }) => {
               : { height: UIConfig.headerHeight * s },
           ]}
         >
-          <Text style={[c.headerText, { fontSize: 10 * s }]}>計</Text>
+          <Text style={[styles.headerText, { fontSize: 10 * s }]}>計</Text>
         </View>
         <View style={横 ? { flexDirection: 'row' } : undefined}>
           {u.map((e) => {
@@ -56,7 +56,7 @@ const LabelColumn = ({ shots, showFooter = true, 横並び: 横 = false }) => {
               <View
                 key={e}
                 style={[
-                  c.cell,
+                  styles.cell,
                   横
                     ? {
                         width: UIConfig.cellWidth * s,
@@ -71,15 +71,15 @@ const LabelColumn = ({ shots, showFooter = true, 横並び: 横 = false }) => {
                       },
                 ]}
               >
-                <Text style={[c.numText, { fontSize: 10 * s }]}>{e}</Text>
+                <Text style={[styles.numText, { fontSize: 10 * s }]}>{e}</Text>
               </View>
             );
           })}
         </View>
       </View>
       {showFooter && (
-        <View style={[c.footer, { height: UIConfig.footerHeight * s }]}>
-          <Text style={[c.footerText, { fontSize: 10 * s }]}>名</Text>
+        <View style={[styles.footer, { height: UIConfig.footerHeight * s }]}>
+          <Text style={[styles.footerText, { fontSize: 10 * s }]}>名</Text>
         </View>
       )}
       {横 ? (
@@ -98,7 +98,7 @@ const LabelColumn = ({ shots, showFooter = true, 横並び: 横 = false }) => {
     </View>
   );
 };
-const c = StyleSheet.create({
+const styles = StyleSheet.create({
   column: {
     width: UIConfig.headerWidth,
     backgroundColor: '#F2F2F7',

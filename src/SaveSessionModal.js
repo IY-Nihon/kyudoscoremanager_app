@@ -43,19 +43,19 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
   };
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <View style={F.overlay}>
+      <View style={styles.overlay}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={Keyboard.dismiss} />
-        <KeyboardAvoidingView behavior={IS_IOS ? 'padding' : undefined} style={F.container}>
+        <KeyboardAvoidingView behavior={IS_IOS ? 'padding' : undefined} style={styles.container}>
           {V ? (
             <View>
-              <Text style={F.headerTitle}>統計の除外確認</Text>
-              <Text style={F.subTitle}>
+              <Text style={styles.headerTitle}>統計の除外確認</Text>
+              <Text style={styles.subTitle}>
                 この記録を統計（分析画面）に含めずに保存しますか？{'\n'}
                 （特定の練習などを除外したい場合に利用します）
               </Text>
-              <View style={F.separator} />
+              <View style={styles.separator} />
               <TouchableOpacity
-                style={[F.mainSaveBtn, { backgroundColor: '#FF3B30' }]}
+                style={[styles.mainSaveBtn, { backgroundColor: '#FF3B30' }]}
                 onPress={() => {
                   setIncludeInStats(false);
                   onSave(E.trim(), R.trim(), false, currentSessionTags.join(' '));
@@ -64,19 +64,19 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
                   H(false);
                 }}
               >
-                <Text style={F.mainSaveTxt}>統計に含めず保存</Text>
+                <Text style={styles.mainSaveTxt}>統計に含めず保存</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={F.cancelBtn} onPress={() => H(false)}>
-                <Text style={F.cancelTxt}>戻る</Text>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => H(false)}>
+                <Text style={styles.cancelTxt}>戻る</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View>
-              <Text style={F.headerTitle}>練習記録の保存</Text>
-              <Text style={F.subTitle}>保存内容を入力してください。</Text>
-              <View style={F.inputContainer}>
+              <Text style={styles.headerTitle}>練習記録の保存</Text>
+              <Text style={styles.subTitle}>保存内容を入力してください。</Text>
+              <View style={styles.inputContainer}>
                 <TextInput
-                  style={F.input}
+                  style={styles.input}
                   placeholder="大会名・練習名（例: ○○大会）"
                   placeholderTextColor="#C7C7CC"
                   value={E}
@@ -84,9 +84,9 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
                   returnKeyType="next"
                 />
               </View>
-              <View style={F.inputContainer}>
+              <View style={styles.inputContainer}>
                 <TextInput
-                  style={F.input}
+                  style={styles.input}
                   placeholder="練習メモ（例: 合宿1日目）"
                   placeholderTextColor="#C7C7CC"
                   value={R}
@@ -94,9 +94,9 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
                   returnKeyType="done"
                 />
               </View>
-              <View style={F.tagsAreaContainer}>
+              <View style={styles.tagsAreaContainer}>
                 <TextInput
-                  style={F.input}
+                  style={styles.input}
                   placeholder="タグ（例: 審査前 雨天）"
                   placeholderTextColor="#C7C7CC"
                   value={_}
@@ -113,8 +113,8 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
-                  style={F.presetTagsScroll}
-                  contentContainerStyle={F.presetTagsContainer}
+                  style={styles.presetTagsScroll}
+                  contentContainerStyle={styles.presetTagsContainer}
                 >
                   {W.map((e) => {
                     const t = normalizeTag(e);
@@ -122,26 +122,28 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
                     return (
                       <TouchableOpacity
                         key={e}
-                        style={[F.presetTagBtn, n && F.presetTagBtnActive]}
+                        style={[styles.presetTagBtn, n && styles.presetTagBtnActive]}
                         onPress={() => {
                           toggleCurrentSessionTag(t);
                         }}
                       >
-                        <Text style={[F.presetTagTxt, n && F.presetTagTxtActive]}>{タグの見た目(t)}</Text>
+                        <Text style={[styles.presetTagTxt, n && styles.presetTagTxtActive]}>
+                          {タグの見た目(t)}
+                        </Text>
                       </TouchableOpacity>
                     );
                   })}
                 </ScrollView>
               </View>
-              <View style={F.separator} />
-              <TouchableOpacity style={F.mainSaveBtn} onPress={() => K(true)}>
-                <Text style={F.mainSaveTxt}>保存</Text>
+              <View style={styles.separator} />
+              <TouchableOpacity style={styles.mainSaveBtn} onPress={() => K(true)}>
+                <Text style={styles.mainSaveTxt}>保存</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={F.secondaryBtn} onPress={() => K(false)}>
-                <Text style={F.secondaryTxt}>統計に含めないで保存</Text>
+              <TouchableOpacity style={styles.secondaryBtn} onPress={() => K(false)}>
+                <Text style={styles.secondaryTxt}>統計に含めないで保存</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={F.cancelBtn}
+                style={styles.cancelBtn}
                 onPress={() => {
                   P('');
                   w('');
@@ -150,7 +152,7 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
                   onClose();
                 }}
               >
-                <Text style={F.cancelTxt}>キャンセル</Text>
+                <Text style={styles.cancelTxt}>キャンセル</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -159,7 +161,7 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
     </Modal>
   );
 };
-const F = StyleSheet.create({
+const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',

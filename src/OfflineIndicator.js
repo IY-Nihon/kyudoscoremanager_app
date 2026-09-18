@@ -23,22 +23,22 @@ const OfflineIndicator = () => {
       <Animated.View
         pointerEvents="none"
         style={[
-          p.container,
+          styles.container,
           {
             opacity: l,
             transform: [{ translateY: l.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }],
           },
         ]}
       >
-        <View style={p.badge}>
+        <View style={styles.badge}>
           <Icons.MaterialCommunityIcons name="cloud-off-outline" size={16} color="#FFFFFF" />
-          <Text style={p.text}>オフラインモード</Text>
+          <Text style={styles.text}>オフラインモード</Text>
         </View>
       </Animated.View>
     )
   );
 };
-const p = StyleSheet.create({
+const styles = StyleSheet.create({
   container: { position: 'absolute', top: 50, left: 0, right: 0, alignItems: 'center', zIndex: 9999 },
   badge: Object.assign(
     {

@@ -10,24 +10,27 @@ const { Image } = require('react-native');
 const LoadingScreen = () => {
   const e = useScoreStore((e) => e.initializationLogs);
   return (
-    <View style={u.container}>
-      <View style={u.logoWrapper}>
-        <Image source={require('../assets/kyudo_icon.png')} style={u.logoImage} />
+    <View style={styles.container}>
+      <View style={styles.logoWrapper}>
+        <Image source={require('../assets/kyudo_icon.png')} style={styles.logoImage} />
       </View>
-      <Text style={u.title}>弓道部的中ノート</Text>
-      <View style={u.loaderWrapper}>
+      <Text style={styles.title}>弓道部的中ノート</Text>
+      <View style={styles.loaderWrapper}>
         <ActivityIndicator size="small" color="#007AFF" />
       </View>
-      <Text style={u.subtitle}>データを準備しています...</Text>
+      <Text style={styles.subtitle}>データを準備しています...</Text>
       {e && e.length > 0 && (
-        <View style={u.logContainer}>
-          <View style={u.logHeader}>
-            <View style={u.logDot} />
-            <Text style={u.logHeaderText}>INITIALIZATION LOG</Text>
+        <View style={styles.logContainer}>
+          <View style={styles.logHeader}>
+            <View style={styles.logDot} />
+            <Text style={styles.logHeaderText}>INITIALIZATION LOG</Text>
           </View>
-          <View style={u.logList}>
+          <View style={styles.logList}>
             {e.map((t, l) => (
-              <Text key={l} style={[u.logText, l === e.length - 1 ? u.logTextActive : u.logTextInactive]}>
+              <Text
+                key={l}
+                style={[styles.logText, l === e.length - 1 ? styles.logTextActive : styles.logTextInactive]}
+              >
                 {t}
               </Text>
             ))}
@@ -37,7 +40,7 @@ const LoadingScreen = () => {
     </View>
   );
 };
-const u = StyleSheet.create({
+const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F2F2F7' },
   logoWrapper: Object.assign(
     {

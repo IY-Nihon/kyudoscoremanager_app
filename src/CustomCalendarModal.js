@@ -9,60 +9,62 @@ const TouchableOpacity = require('./TouchableOpacity').default;
 const ScrollView = require('./ScrollView').default;
 const { getShadowStyle } = require('./shadowStyle');
 const DateFns = require('date-fns');
-const f = 44;
-const X要素 = ({ data, value, onValueChange, label, flex = 1 }) => {
-  const x = React.useRef(null);
-  const y = React.useRef(null);
-  const [b, p] = React.useState(false);
-  const w = React.useMemo(() => {
-    const t = data.indexOf(value);
-    return -1 !== t ? t : 0;
+const 一段の高さ = 44;
+const 回す選択 = ({ data, value, onValueChange, label, flex = 1 }) => {
+  const 流しのref = React.useRef(null);
+  const 止まりの札 = React.useRef(null);
+  const [指で動かし中, 指で動かし中を置く] = React.useState(false);
+  const 選んだ番 = React.useMemo(() => {
+    const 番 = data.indexOf(value);
+    return -1 !== 番 ? 番 : 0;
   }, [data, value]);
   React.useEffect(() => {
-    b || x.current?.scrollTo({ y: w * f, animated: true });
-  }, [w, b]);
-  const C = (t) => {
-    const n = Math.round(t / f);
-    const l = Math.max(0, Math.min(n, data.length - 1));
-    x.current?.scrollTo({ y: l * f, animated: true });
-    const s = data[l];
-    if (s !== value) onValueChange(s);
+    指で動かし中 || 流しのref.current?.scrollTo({ y: 選んだ番 * 一段の高さ, animated: true });
+  }, [選んだ番, 指で動かし中]);
+  const 止まった所で決める = (縦の位置) => {
+    const 近い番 = Math.round(縦の位置 / 一段の高さ);
+    const 番 = Math.max(0, Math.min(近い番, data.length - 1));
+    流しのref.current?.scrollTo({ y: 番 * 一段の高さ, animated: true });
+    const 値 = data[番];
+    if (値 !== value) onValueChange(値);
     setTimeout(() => {
-      p(false);
+      指で動かし中を置く(false);
     }, 150);
   };
   return (
-    <View style={[j.wheelContainer, { flex: flex }]}>
-      {label ? <Text style={j.wheelLabel}>{label}</Text> : null}
-      <View style={j.wheelClip}>
-        <View style={j.selectionIndicator} pointerEvents="none" />
+    <View style={[styles.wheelContainer, { flex }]}>
+      {label ? <Text style={styles.wheelLabel}>{label}</Text> : null}
+      <View style={styles.wheelClip}>
+        <View style={styles.selectionIndicator} pointerEvents="none" />
         <ScrollView
-          ref={x}
+          ref={流しのref}
           showsVerticalScrollIndicator={false}
           scrollEventThrottle={16}
-          onScroll={(e) => {
-            const t = e.nativeEvent.contentOffset.y;
-            if (!b) p(true);
-            if (y.current) clearTimeout(y.current);
-            y.current = setTimeout(() => {
-              C(t);
+          onScroll={(出来事) => {
+            const 縦の位置 = 出来事.nativeEvent.contentOffset.y;
+            if (!指で動かし中) 指で動かし中を置く(true);
+            if (止まりの札.current) clearTimeout(止まりの札.current);
+            止まりの札.current = setTimeout(() => {
+              止まった所で決める(縦の位置);
             }, 100);
           }}
-          onScrollBeginDrag={() => p(true)}
-          onMomentumScrollBegin={() => p(true)}
-          contentContainerStyle={{ paddingVertical: f * Math.floor(2.5) }}
+          onScrollBeginDrag={() => 指で動かし中を置く(true)}
+          onMomentumScrollBegin={() => 指で動かし中を置く(true)}
+          contentContainerStyle={{ paddingVertical: 一段の高さ * Math.floor(2.5) }}
         >
-          {data.map((e, t) => (
+          {data.map((項目, 番) => (
             <TouchableOpacity
-              key={`item-${t}-${e}`}
-              style={j.wheelItem}
+              key={`item-${番}-${項目}`}
+              style={styles.wheelItem}
               activeOpacity={0.7}
               onPress={() => {
-                onValueChange(e);
-                x.current?.scrollTo({ y: t * f, animated: true });
+                onValueChange(項目);
+                流しのref.current?.scrollTo({ y: 番 * 一段の高さ, animated: true });
               }}
             >
-              <Text style={[j.wheelItemText, e === value ? j.wheelItemTextSelected : null]}>{e}</Text>
+              <Text style={[styles.wheelItemText, 項目 === value ? styles.wheelItemTextSelected : null]}>
+                {項目}
+              </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -71,92 +73,92 @@ const X要素 = ({ data, value, onValueChange, label, flex = 1 }) => {
   );
 };
 const CustomCalendarModal = ({ visible, onClose, selectedDate, onSelectDate, title = '日付を選択' }) => {
-  const [y, b] = React.useState(new Date(selectedDate));
+  const [選んでいる日, 選んでいる日を置く] = React.useState(new Date(selectedDate));
   React.useEffect(() => {
-    if (visible) b(new Date(selectedDate));
+    if (visible) 選んでいる日を置く(new Date(selectedDate));
   }, [visible, selectedDate]);
-  const p = React.useMemo(() => {
-    const e = DateFns.getYear(new Date());
-    const t = [];
-    for (let n = e - 5; n <= e + 5; n++) t.push(n);
-    const n = DateFns.getYear(y);
-    return (t.includes(n) || (t.push(n), t.sort((e, t) => e - t)), t);
-  }, [y]);
-  const w = React.useMemo(() => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], []);
-  const C = React.useMemo(() => {
-    const e = DateFns.getDaysInMonth(y);
-    return Array.from({ length: e }, (e, t) => t + 1);
-  }, [DateFns.getYear(y), DateFns.getMonth(y)]);
+  const 年の一覧 = React.useMemo(() => {
+    const 今年 = DateFns.getYear(new Date());
+    const 一覧 = [];
+    for (let 年 = 今年 - 5; 年 <= 今年 + 5; 年++) 一覧.push(年);
+    const 選んだ年 = DateFns.getYear(選んでいる日);
+    return (一覧.includes(選んだ年) || (一覧.push(選んだ年), 一覧.sort((甲, 乙) => 甲 - 乙)), 一覧);
+  }, [選んでいる日]);
+  const 月の一覧 = React.useMemo(() => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], []);
+  const 日の一覧 = React.useMemo(() => {
+    const 日数 = DateFns.getDaysInMonth(選んでいる日);
+    return Array.from({ length: 日数 }, (_, 番) => 番 + 1);
+  }, [DateFns.getYear(選んでいる日), DateFns.getMonth(選んでいる日)]);
   return (
     <Modal visible={visible} transparent animationType="slide">
-      <View style={j.overlay}>
-        <TouchableOpacity style={j.dismissOverlay} activeOpacity={1} onPress={onClose} />
-        <View style={j.container}>
-          <View style={j.modalHeader}>
-            <TouchableOpacity onPress={onClose} style={j.headerBtn}>
-              <Text style={j.cancelText}>キャンセル</Text>
+      <View style={styles.overlay}>
+        <TouchableOpacity style={styles.dismissOverlay} activeOpacity={1} onPress={onClose} />
+        <View style={styles.container}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={onClose} style={styles.headerBtn}>
+              <Text style={styles.cancelText}>キャンセル</Text>
             </TouchableOpacity>
-            <Text style={j.modalTitle}>{title}</Text>
+            <Text style={styles.modalTitle}>{title}</Text>
             <TouchableOpacity
               onPress={() => {
-                onSelectDate(y);
+                onSelectDate(選んでいる日);
                 onClose();
               }}
-              style={j.headerBtn}
+              style={styles.headerBtn}
             >
-              <Text style={j.confirmText}>完了</Text>
+              <Text style={styles.confirmText}>完了</Text>
             </TouchableOpacity>
           </View>
-          <View style={j.pickerArea}>
-            <X要素
+          <View style={styles.pickerArea}>
+            <回す選択
               label="年"
-              data={p}
-              value={DateFns.getYear(y)}
-              onValueChange={(e) => {
-                const t = DateFns.setYear(y, e);
-                const n = DateFns.getDaysInMonth(t);
-                if (DateFns.getDate(t) > n) b(DateFns.setDate(t, n));
-                else b(t);
+              data={年の一覧}
+              value={DateFns.getYear(選んでいる日)}
+              onValueChange={(年) => {
+                const 直した日 = DateFns.setYear(選んでいる日, 年);
+                const 日数 = DateFns.getDaysInMonth(直した日);
+                if (DateFns.getDate(直した日) > 日数) 選んでいる日を置く(DateFns.setDate(直した日, 日数));
+                else 選んでいる日を置く(直した日);
               }}
               flex={1.5}
             />
-            <X要素
+            <回す選択
               label="月"
-              data={w}
-              value={DateFns.getMonth(y) + 1}
-              onValueChange={(e) => {
-                const t = DateFns.setMonth(y, e - 1);
-                const n = DateFns.getDaysInMonth(t);
-                if (DateFns.getDate(t) > n) b(DateFns.setDate(t, n));
-                else b(t);
+              data={月の一覧}
+              value={DateFns.getMonth(選んでいる日) + 1}
+              onValueChange={(月) => {
+                const 直した日 = DateFns.setMonth(選んでいる日, 月 - 1);
+                const 日数 = DateFns.getDaysInMonth(直した日);
+                if (DateFns.getDate(直した日) > 日数) 選んでいる日を置く(DateFns.setDate(直した日, 日数));
+                else 選んでいる日を置く(直した日);
               }}
               flex={1}
             />
-            <X要素
+            <回す選択
               label="日"
-              data={C}
-              value={DateFns.getDate(y)}
-              onValueChange={(e) => {
-                b(DateFns.setDate(y, e));
+              data={日の一覧}
+              value={DateFns.getDate(選んでいる日)}
+              onValueChange={(日) => {
+                選んでいる日を置く(DateFns.setDate(選んでいる日, 日));
               }}
               flex={1}
             />
           </View>
           <TouchableOpacity
-            style={j.todayBtn}
+            style={styles.todayBtn}
             onPress={() => {
-              const e = new Date();
-              b(e);
+              const 今日 = new Date();
+              選んでいる日を置く(今日);
             }}
           >
-            <Text style={j.todayBtnText}>今日に設定</Text>
+            <Text style={styles.todayBtnText}>今日に設定</Text>
           </TouchableOpacity>
         </View>
       </View>
     </Modal>
   );
 };
-const j = StyleSheet.create({
+const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   dismissOverlay: Object.assign({}, StyleSheet.absoluteFillObject),
   container: Object.assign(
@@ -205,12 +207,12 @@ const j = StyleSheet.create({
     left: 4,
     right: 4,
     top: 88,
-    height: f,
+    height: 一段の高さ,
     backgroundColor: '#F2F2F7',
     borderRadius: 8,
     zIndex: 0,
   },
-  wheelItem: { height: f, justifyContent: 'center', alignItems: 'center' },
+  wheelItem: { height: 一段の高さ, justifyContent: 'center', alignItems: 'center' },
   wheelItemText: { fontSize: 20, color: '#8E8E93' },
   wheelItemTextSelected: { color: '#000', fontWeight: '600', fontSize: 22 },
   todayBtn: {

@@ -115,22 +115,22 @@ const ScoreCell = React.memo(
       return useScoreStore.getState().archers.find((a) => a && a.id === id);
     };
     const latestPropsRef = React.useRef({
-      mark: mark,
-      archerId: archerId,
+      mark,
+      archerId,
       shotIndex: index,
-      isLocked: isLocked,
-      enableArrowLocation: enableArrowLocation,
-      自動で閉じている: 自動で閉じている,
-      ますを開ける: ますを開ける,
+      isLocked,
+      enableArrowLocation,
+      自動で閉じている,
+      ますを開ける,
     });
     latestPropsRef.current = {
-      mark: mark,
-      archerId: archerId,
+      mark,
+      archerId,
       shotIndex: index,
-      isLocked: isLocked,
-      enableArrowLocation: enableArrowLocation,
-      自動で閉じている: 自動で閉じている,
-      ますを開ける: ますを開ける,
+      isLocked,
+      enableArrowLocation,
+      自動で閉じている,
+      ますを開ける,
     };
     React.useEffect(() => {
       return () => {
@@ -175,7 +175,7 @@ const ScoreCell = React.memo(
             setActiveArrowLocationEdit({
               archerId: props.archerId,
               shotIndex: props.shotIndex,
-              currentMark: currentMark,
+              currentMark,
               arrowLocations: 射手2.arrowLocations || [],
             });
           }
@@ -245,7 +245,7 @@ const ScoreCell = React.memo(
             const 射手 = 射手を取る();
             if (射手) {
               setActiveArrowLocationEdit({
-                archerId: archerId,
+                archerId,
                 shotIndex: index,
                 currentMark: nextMark,
                 arrowLocations: 射手.arrowLocations || [],
@@ -262,7 +262,7 @@ const ScoreCell = React.memo(
         onTouchEnd={(ev) => {
           ev.stopPropagation();
         }}
-        style={[m.cell, { width: W, height: E, backgroundColor: 自動で閉じている ? '#F2F2F7' : z }, 線]}
+        style={[styles.cell, { width: W, height: E, backgroundColor: 自動で閉じている ? '#F2F2F7' : z }, 線]}
       >
         <Pressable
           onPress={handlePress}
@@ -286,7 +286,7 @@ const ScoreCell = React.memo(
             {!hideMark && (
               <Text
                 style={[
-                  m.markText,
+                  styles.markText,
                   {
                     color: ((L = _), '○' === L ? '#FF3B30' : '\xd7' === L ? '#000000' : 'transparent'),
                     fontSize: 34 * v,
@@ -298,8 +298,8 @@ const ScoreCell = React.memo(
               </Text>
             )}
             {subName ? (
-              <View style={[m.subContainer, { bottom: 2 * v }]}>
-                <Text style={[m.subText, { fontSize: 9 * v }]} numberOfLines={1}>
+              <View style={[styles.subContainer, { bottom: 2 * v }]}>
+                <Text style={[styles.subText, { fontSize: 9 * v }]} numberOfLines={1}>
                   {subName}
                 </Text>
               </View>
@@ -307,7 +307,7 @@ const ScoreCell = React.memo(
           </React.Fragment>
         </Pressable>
         {isBlockTop && !isNormalArcher && (
-          <View style={[m.lockIconOverlay, { top: 3 * v }]}>
+          <View style={[styles.lockIconOverlay, { top: 3 * v }]}>
             <Icons.Ionicons
               name={isLocked ? 'lock-closed' : 'lock-open'}
               size={16 * v}
@@ -320,7 +320,7 @@ const ScoreCell = React.memo(
     var L;
   }
 );
-const m = StyleSheet.create({
+const styles = StyleSheet.create({
   cell: {
     width: '100%',
     height: UIConfig.cellHeight,

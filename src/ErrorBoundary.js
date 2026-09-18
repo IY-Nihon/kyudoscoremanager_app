@@ -26,12 +26,12 @@ class ErrorBoundary extends React.Component {
   };
   render() {
     return this.state.hasError ? (
-      <View style={h.container}>
-        <Text style={h.title}>申し訳ありません</Text>
-        <Text style={h.message}>予期せぬエラーが発生しました。</Text>
-        <Text style={h.errorText}>{this.state.error?.toString()}</Text>
-        <TouchableOpacity style={h.button} onPress={this.handleReset}>
-          <Text style={h.buttonText}>データをリセットして復旧</Text>
+      <View style={styles.container}>
+        <Text style={styles.title}>申し訳ありません</Text>
+        <Text style={styles.message}>予期せぬエラーが発生しました。</Text>
+        <Text style={styles.errorText}>{this.state.error?.toString()}</Text>
+        <TouchableOpacity style={styles.button} onPress={this.handleReset}>
+          <Text style={styles.buttonText}>データをリセットして復旧</Text>
         </TouchableOpacity>
       </View>
     ) : (
@@ -39,7 +39,7 @@ class ErrorBoundary extends React.Component {
     );
   }
 }
-const h = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F2F2F7',
