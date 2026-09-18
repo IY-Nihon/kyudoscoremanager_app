@@ -401,12 +401,12 @@ const RecordScreen = () => {
       // 取っ手が止まる（react-native-web の responder は selectionchange で終わらせる）。
       // 取り上げは断り、始まってしまった選択はその場で解く
       onPanResponderTerminationRequest: () => false,
-      onPanResponderMove: (_e, g) => {
+      onPanResponderMove: (_e, 動き) => {
         if (!取っ手を引いた.current) {
-          if (!(Math.abs(g.dx) > 6 && Math.abs(g.dx) > Math.abs(g.dy))) return;
+          if (!(Math.abs(動き.dx) > 6 && Math.abs(動き.dx) > Math.abs(動き.dy))) return;
           取っ手を引いた.current = true;
         }
-        取っ手のずれ.setValue(g.dx);
+        取っ手のずれ.setValue(動き.dx);
         if (IS_WEB && typeof window !== 'undefined' && window.getSelection) {
           try {
             const 選択 = window.getSelection();
@@ -416,18 +416,18 @@ const RecordScreen = () => {
           }
         }
       },
-      onPanResponderRelease: (_e, g) => {
+      onPanResponderRelease: (_e, 動き) => {
         // 引いていなければ押しただけ。畳む・開くは Pressable の onPress（click）に任せる
         if (!取っ手を引いた.current) return;
         const 幅 = 取っ手の区画の幅.current || 0;
         const 左だった = 取っ手は左のref.current;
         const // 取っ手の左端の座標（8 は余白、36 は取っ手の幅）
           元の左端 = 左だった ? 8 : Math.max(8, 幅 - 8 - 36);
-        const いまの中心 = 元の左端 + 18 + g.dx;
+        const いまの中心 = 元の左端 + 18 + 動き.dx;
         const 左へ = 幅 > 0 ? いまの中心 < 幅 / 2 : 左だった;
         if (左へ !== 左だった) {
           const 新しい左端 = 左へ ? 8 : Math.max(8, 幅 - 8 - 36);
-          取っ手のずれ.setValue(元の左端 + g.dx - 新しい左端);
+          取っ手のずれ.setValue(元の左端 + 動き.dx - 新しい左端);
           if (set帯の取っ手は左) set帯の取っ手は左(左へ);
           ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
         }
@@ -502,9 +502,9 @@ const RecordScreen = () => {
   };
   // 指の動きを直に受ける（横に並べたとき用）。
   // 掴んでいないときは何もしないので、ふつうの押す・流すの邪魔をしない
-  const 指が動いた = (ev) => {
+  const 指が動いた = (合図) => {
     if (!掴んだ列のref.current) return;
-    const 出来事 = ev && ev.nativeEvent ? ev.nativeEvent : ev;
+    const 出来事 = 合図 && 合図.nativeEvent ? 合図.nativeEvent : 合図;
     if (!出来事) return;
     const 触れた指 =
       (出来事.touches && 出来事.touches[0]) || (出来事.changedTouches && 出来事.changedTouches[0]) || null;
@@ -598,15 +598,15 @@ const RecordScreen = () => {
       onPanResponderGrant: () => {
         動かし始めた.current = true;
       },
-      onPanResponderMove: (_e, g) => {
+      onPanResponderMove: (_e, 動き) => {
         // 札を指に付いてこさせる。名前の並びの端からの座標に直して置く
         const 行 = 名の行のnode.current;
         if (行 && 'function' == typeof 行.getBoundingClientRect) {
           const 枠 = 行.getBoundingClientRect();
           const ずれ = 'undefined' == typeof window ? 0 : (横に並べる ? window.scrollY : window.scrollX) || 0;
-          set指の横((横に並べる ? g.moveY : g.moveX) - ((横に並べる ? 枠.top : 枠.left) + ずれ));
+          set指の横((横に並べる ? 動き.moveY : 動き.moveX) - ((横に並べる ? 枠.top : 枠.left) + ずれ));
         }
-        const 番 = 測る手.current ? 測る手.current(横に並べる ? g.moveY : g.moveX) : null;
+        const 番 = 測る手.current ? 測る手.current(横に並べる ? 動き.moveY : 動き.moveX) : null;
         if (null !== 番 && 番 !== 落とす先のref.current) {
           落とす先のref.current = 番;
           set落とす先(番);
