@@ -43,7 +43,8 @@ test('順位の行：名前が長くても的中率を押しのけない', () =>
 
 test('順位の行：長い名前は行数を区切る', () => {
   // 切らないと縦に伸びて、右の的中率と上下がずれる
-  const i = 本体.indexOf('F.memberName');
+  // 見た目の名は styles（読める形に直す前は F）
+  const i = Math.max(本体.indexOf('styles.memberName'), 本体.indexOf('F.memberName'));
   assert.ok(i > 0, 'memberName を使っている所が見つかりません');
   const 節 = 本体.slice(i, i + 400);
   // JSX に直したので numberOfLines={2}。前の numberOfLines: 2 も受ける
@@ -62,7 +63,8 @@ test('的中の型：比較中は誰の型かを見出しに出せる', () => {
 test('的中の型：比較している人ぶん並べる', () => {
   // compareMembers を回して 型の節 を呼んでいること
   // 比較相手ぶん 型の節 を呼んでいる所を探す
-  const i = 本体.indexOf('型の節(比較の成績.get(cm.id)');
+  // 読める形に直したので 相手.id。前の cm.id も受ける
+  const i = Math.max(本体.indexOf('型の節(比較の成績.get(相手.id)'), 本体.indexOf('型の節(比較の成績.get(cm.id)'));
   assert.ok(i > 0, '比較相手について 型の節 を呼んでいる所が見つかりません');
   const 前 = 本体.slice(Math.max(0, i - 300), i);
   assert.ok(/compareMembers/.test(前), '比較相手ぶん回していません');
@@ -74,11 +76,13 @@ test('比較中：全体の的中率を、人数ぶんまとめて出す', () =>
   }
   // 本人と比較相手の両方を並べていること
   // JSX では style={F.比較の的中率}
-  let i = 本体.indexOf('style={F.比較の的中率}');
+  let i = 本体.indexOf('style={styles.比較の的中率}');
+  if (i < 0) i = 本体.indexOf('style={F.比較の的中率}');
   if (i < 0) i = 本体.indexOf('style: F.比較の的中率,');
   assert.ok(i > 0, '全体の的中率を出している所が見つかりません');
   const 節 = 本体.slice(i, i + 1400);
-  assert.ok(/ae\.name/.test(節), '本人が入っていません');
+  // 読める形に直したので 詳細の部員.name。前の ae.name も受ける
+  assert.ok(/(?:詳細の部員|ae)\.name/.test(節), '本人が入っていません');
   assert.ok(/compareMembers\.map/.test(節), '比較相手が入っていません');
   assert.ok(/比較の色たち/.test(節), 'グラフと同じ色で見分けられるようにしていません');
 });

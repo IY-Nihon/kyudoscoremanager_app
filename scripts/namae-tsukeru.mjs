@@ -25,6 +25,7 @@ traverse(ast, {
 });
 
 const 差し替え = []; // { start, end, text }
+const 困った = []; // まとめて報告する（1つずつ止まると往復が増える）
 const 使った名 = new Set();
 for (const s of 指定) {
   const m = s.match(/^(\d+):([^=]+)=(.+)$/);
@@ -32,12 +33,14 @@ for (const s of 指定) {
   const [, 行, 旧, 新] = m;
   if (!t.isValidIdentifier(新)) { console.error(`名前に使えない字がある: ${新}`); process.exit(1); }
   const b = 束たち.get(`${行}:${旧}`);
-  if (!b) { console.error(`見つからない: ${行}:${旧}`); process.exit(1); }
+  if (!b) { 困った.push(`見つからない: ${行}:${旧}`); continue; }
   // 新しい名前が、その束の見える範囲で既に使われていないか
-  if (b.scope.hasBinding(新) || b.scope.hasGlobal(新)) { console.error(`${行}:${旧} → ${新} は既に使われている`); process.exit(1); }
+  if (b.scope.hasBinding(新) || b.scope.hasGlobal(新)) { 困った.push(`${行}:${旧} → ${新} は既に使われている`); continue; }
+  let 隠れる = false;
   for (const p of b.referencePaths) {
-    if (p.scope.getBinding(新) && p.scope.getBinding(新) !== b.scope.getBinding(新)) { console.error(`${行}:${旧} → ${新} は ${p.node.loc.start.line} 行で内側の ${新} に隠れる`); process.exit(1); }
+    if (p.scope.getBinding(新) && p.scope.getBinding(新) !== b.scope.getBinding(新)) { 困った.push(`${行}:${旧} → ${新} は ${p.node.loc.start.line} 行で内側の ${新} に隠れる`); 隠れる = true; break; }
   }
+  if (隠れる) continue;
   const 節 = [b.identifier, ...b.referencePaths.map((p) => p.node)];
   for (const v of b.constantViolations) {
     const n = v.node;
@@ -53,6 +56,7 @@ for (const s of 指定) {
   }
   使った名.add(`${旧}→${新}（${節.length} 箇所）`);
 }
+if (困った.length) { for (const x of 困った) console.error(x); process.exit(1); }
 // 省略形の { a } は { a: 新 } に、{ a } の分解は { a: 新 } に
 const 省略 = new Set();
 traverse(ast, {
