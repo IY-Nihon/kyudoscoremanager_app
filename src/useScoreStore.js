@@ -68,7 +68,7 @@ const 端末の置き場 = {
 function 行動を控える(名, 中身) {
   try {
     require('./errorReporter').行動を残す(名, 中身);
-  } catch (e) {
+  } catch (誤り) {
     /* 控えられなくても、本来の動きは続ける */
   }
 }
@@ -183,7 +183,7 @@ function 道しるべたちを拾う(節点) {
 function 行動の控えを捨てる() {
   try {
     require('./errorReporter').行動を捨てる();
-  } catch (e) {
+  } catch (誤り) {
     /* 捨てられなくても、ログアウトそのものは進める */
   }
 }
@@ -191,7 +191,7 @@ function 行動の控えを捨てる() {
 function 溜まりを流し直す() {
   try {
     require('./errorReporter').溜まりを流す();
-  } catch (e) {
+  } catch (誤り) {
     /* 便りを出せなくても、同期は続ける */
   }
 }
@@ -220,7 +220,7 @@ const 入り直しの案内 =
 function 不具合を控える(出どころ, 誤り) {
   try {
     require('./errorReporter').不具合を送る(出どころ, 誤り);
-  } catch (e) {
+  } catch (中の誤り) {
     /* 控えられなくても、同期そのものは続ける */
   }
 }
@@ -269,7 +269,7 @@ const Firebaseの器 = {
         Firebaseの器.dbInstance = firestore;
         return firestore;
       }
-    } catch (e) {
+    } catch (誤り) {
       /* まだ用意できていないだけ。undefined を返すと waitForDb が待つ */
     }
     return undefined;
@@ -288,7 +288,7 @@ const Firebaseの器 = {
         Firebaseの器.authInstance = auth;
         return auth;
       }
-    } catch (e) {
+    } catch (誤り) {
       /* まだ用意できていないだけ。undefined を返すと waitForDb が待つ */
     }
     return undefined;
@@ -604,7 +604,7 @@ function 在席を始める(名前, 書く) {
           .remove()
           .catch(() => {});
         RTDB.set(自分, { at: RTDB.serverTimestamp() }).catch(() => {});
-      } catch (t) {
+      } catch (誤り) {
         /* 台数が出ないだけ。ライブそのものは続ける */
       }
     };
@@ -638,12 +638,12 @@ function 在席を始める(名前, 書く) {
           .cancel()
           .catch(() => {});
         RTDB.remove(自分).catch(() => {});
-      } catch (t) {
+      } catch (誤り) {
         /* 消せなくても、古いとみなす時間で数から落ちる */
       }
     };
-  } catch (t) {
-    console.warn('[Store] ライブの在席を置けませんでした', t);
+  } catch (誤り) {
+    console.warn('[Store] ライブの在席を置けませんでした', 誤り);
   }
 }
 /**
@@ -713,7 +713,7 @@ const 時差を見張る = () => {
       );
       // つながっていなければ来ない。待ち続けない
       setTimeout(終わる, 2e3);
-    } catch (e) {
+    } catch (誤り) {
       終わる();
     }
   });
@@ -750,7 +750,7 @@ function つなげなくなった(誤り, 書く, 状態) {
       'このライブには入れません',
       '共有の期限が切れたか、すでに終わっているようです。配った方にお確かめください。'
     );
-  } catch (t) {
+  } catch (中の誤り) {
     /* 知らせが出せなくても、離れることはできている */
   }
 }
@@ -814,7 +814,7 @@ function 期限で閉じるか(届いた状態, 書く, 状態) {
         '共有の期限が切れました',
         'このライブは、配った方も含めて全員がつながらなくなりました。お手元の記録は残っています。保存するか、ライブを始め直してください。'
       );
-    } catch (t) {
+    } catch (誤り) {
       /* 知らせが出せなくても、離れることはできている */
     }
   }
@@ -1210,7 +1210,7 @@ const useScoreStore = zustand.create()(
         setAnalysisSelectedTags: (タグたち) => 書く({ analysisSelectedTags: タグたち }),
         toggleAnalysisTag: (タグ) => {
           const 今の = 状態().analysisSelectedTags || [];
-          if (今の.includes(タグ)) 書く({ analysisSelectedTags: 今の.filter((x) => x !== タグ) });
+          if (今の.includes(タグ)) 書く({ analysisSelectedTags: 今の.filter((タグ1つ) => タグ1つ !== タグ) });
           else 書く({ analysisSelectedTags: [...今の, タグ] });
         },
         setAnalysisTagLogic: (論理) => 書く({ analysisTagLogic: 論理 }),
@@ -1243,14 +1243,14 @@ const useScoreStore = zustand.create()(
         setHistorySelectedTags: (タグたち) => 書く({ historySelectedTags: タグたち }),
         toggleHistoryTag: (タグ) => {
           const 今の = 状態().historySelectedTags || [];
-          if (今の.includes(タグ)) 書く({ historySelectedTags: 今の.filter((x) => x !== タグ) });
+          if (今の.includes(タグ)) 書く({ historySelectedTags: 今の.filter((タグ1つ) => タグ1つ !== タグ) });
           else 書く({ historySelectedTags: [...今の, タグ] });
         },
         setHistoryTagLogic: (論理) => 書く({ historyTagLogic: 論理 }),
         setCurrentSessionTags: (タグたち) => 書く({ currentSessionTags: タグたち }),
         toggleCurrentSessionTag: (タグ) => {
           const 今の = 状態().currentSessionTags || [];
-          if (今の.includes(タグ)) 書く({ currentSessionTags: 今の.filter((x) => x !== タグ) });
+          if (今の.includes(タグ)) 書く({ currentSessionTags: 今の.filter((タグ1つ) => タグ1つ !== タグ) });
           else 書く({ currentSessionTags: [...今の, タグ] });
         },
         setTagTemplates: async (タグたち) => {
@@ -1299,7 +1299,7 @@ const useScoreStore = zustand.create()(
         },
         removeTagTemplate: async (タグ) => {
           const 今 = Date.now();
-          const 新しい一覧 = (状態().tagTemplates || []).filter((x) => x !== タグ);
+          const 新しい一覧 = (状態().tagTemplates || []).filter((タグ1つ) => タグ1つ !== タグ);
           書く({ tagTemplates: 新しい一覧, lastLocalChange: 今 });
           const { activeGroupId, isNetworkOnline } = 状態();
           if (isNetworkOnline && activeGroupId)
@@ -1556,7 +1556,7 @@ const useScoreStore = zustand.create()(
         deleteArcher: (射手ID) => {
           if (状態().書き換えを止めるか()) return;
           const 元 = Array.isArray(状態().archers) ? 状態().archers : [];
-          const 残り = 元.filter((x) => x && x.id !== 射手ID);
+          const 残り = 元.filter((射手) => 射手 && 射手.id !== 射手ID);
           const 今 = Date.now();
           書く({
             historyStack: [...状態().historyStack, 元],
@@ -2180,7 +2180,7 @@ const useScoreStore = zustand.create()(
           状態().activeGroupId &&
             (部員を送る予約[部員ID] && clearTimeout(部員を送る予約[部員ID]),
             (部員を送る予約[部員ID] = setTimeout(async () => {
-              const 部員 = 状態().members.find((x) => x.id === 部員ID);
+              const 部員 = 状態().members.find((部員1人) => 部員1人.id === 部員ID);
               if (部員) {
                 // 送った版の更新日時。送信中にもう一度編集された場合、その
                 // 新しい内容に「同期済み」を付けないための目印。
@@ -2196,10 +2196,10 @@ const useScoreStore = zustand.create()(
                   .then(() => {
                     console.log(`[Store] Debounced Member Sync Success: ${部員.name}`);
                     書く((前) => ({
-                      members: 前.members.map((x) =>
-                        x && x.id === 部員ID && x.lastModified === 送った版
-                          ? Object.assign({}, x, { syncStatus: '同期済み' })
-                          : x
+                      members: 前.members.map((部員1人) =>
+                        部員1人 && 部員1人.id === 部員ID && 部員1人.lastModified === 送った版
+                          ? Object.assign({}, 部員1人, { syncStatus: '同期済み' })
+                          : 部員1人
                       ),
                     }));
                     delete 部員を送る予約[部員ID];
@@ -2281,9 +2281,10 @@ const useScoreStore = zustand.create()(
           const 卒業生の写し = [...alumni];
           let 変わった = false;
           const 使われている個人ID = () =>
-            [...部員の写し.map((x) => x.personalId), ...卒業生の写し.map((e) => e.personalId)].filter(
-              (e) => !!e
-            );
+            [
+              ...部員の写し.map((部員) => 部員.personalId),
+              ...卒業生の写し.map((卒業生) => 卒業生.personalId),
+            ].filter((個人ID) => !!個人ID);
           const 形が正しい = (id) => !!id && /^\d{4}$/.test(id);
           const 空いている番号を作る = (使われている) => {
             let 候補 = '';
@@ -2345,7 +2346,9 @@ const useScoreStore = zustand.create()(
               // 更新まで止まってしまう。届いた分は syncSessions が印を
               // 付け替え、届かなければ送り直す。
               const 送った版 = new Map(
-                [...部員の写し, ...卒業生の写し].filter((x) => x && x.id).map((e) => [e.id, e.lastModified])
+                [...部員の写し, ...卒業生の写し]
+                  .filter((人) => 人 && 人.id)
+                  .map((人) => [人.id, 人.lastModified])
               );
               一括.commit()
                 .then(() => {
@@ -2499,7 +2502,7 @@ const useScoreStore = zustand.create()(
           const 元のライブ名 = 状態().liveSessionName;
           状態().stopLiveSync(true);
           書く((前) => ({
-            sessions: [記録, ...前.sessions.filter((x) => x.id !== 記録ID)],
+            sessions: [記録, ...前.sessions.filter((記録1件) => 記録1件.id !== 記録ID)],
             activeSessionID: null,
             archers: [],
             isLiveActive: false,
@@ -2568,10 +2571,10 @@ const useScoreStore = zustand.create()(
                 // 印を付けるのは送った版だけ。送信中に編集されると更新日時が
                 // 変わるので、一致する場合に限る（updateSession と同じ考え方）。
                 書く((前) => ({
-                  sessions: 前.sessions.map((x) =>
-                    x && x.id === 記録ID && x.lastModified === 記録.lastModified
-                      ? Object.assign({}, x, { syncStatus: '同期済み' })
-                      : x
+                  sessions: 前.sessions.map((記録1件) =>
+                    記録1件 && 記録1件.id === 記録ID && 記録1件.lastModified === 記録.lastModified
+                      ? Object.assign({}, 記録1件, { syncStatus: '同期済み' })
+                      : 記録1件
                   ),
                   syncStatus: '同期済み',
                 }));
@@ -2585,7 +2588,7 @@ const useScoreStore = zustand.create()(
         },
         loadSession: (記録ID) => {
           const 記録 = (Array.isArray(状態().sessions) ? 状態().sessions : []).find(
-            (x) => x && x.id === 記録ID
+            (記録1件) => 記録1件 && 記録1件.id === 記録ID
           );
           if (記録)
             書く({
@@ -2611,7 +2614,9 @@ const useScoreStore = zustand.create()(
         履歴の記録を記録画面で開く: (id) => {
           const 店 = 状態();
           if (店.履歴の編集 || 店.isLiveActive) return false;
-          const 記録 = (Array.isArray(店.sessions) ? 店.sessions : []).find((x) => x && x.id === id);
+          const 記録 = (Array.isArray(店.sessions) ? 店.sessions : []).find(
+            (記録1件) => 記録1件 && 記録1件.id === id
+          );
           if (!記録) return false;
           行動を控える('履歴の記録を記録画面で開く', id);
           書く({
@@ -2657,8 +2662,8 @@ const useScoreStore = zustand.create()(
         },
         deleteSession: async (記録ID) => {
           const 元 = Array.isArray(状態().sessions) ? 状態().sessions : [];
-          const 消す記録 = 元.find((x) => x && x.id === 記録ID);
-          const 残り = 元.filter((x) => x && x.id !== 記録ID);
+          const 消す記録 = 元.find((記録) => 記録 && 記録.id === 記録ID);
+          const 残り = 元.filter((記録) => 記録 && 記録.id !== 記録ID);
           // 送信が済むまでは「未同期」にしておく。こうしないと、通信できない
           // ときに削除がクラウドへ届かないまま消し込まれ、次の全件取得で
           // 記録が復活しゴミ箱からも消えてしまう。
@@ -2704,7 +2709,7 @@ const useScoreStore = zustand.create()(
         emptyTrash: async () => {
           const { trash, activeGroupId: 団体 } = 状態();
           if (!trash || 0 === trash.length) return;
-          const 消すID = trash.map((x) => x.id);
+          const 消すID = trash.map((記録) => 記録.id);
           // 通信できるかで送信を止めない。止めると手元からだけ消えて、クラウドの
           // ゴミ箱は残り、次の全件取得で消したはずのものが戻ってきてしまう。
           // 通信できないときは Firestore の待ち行列に入り、つながった時点で送られる。
@@ -2738,7 +2743,7 @@ const useScoreStore = zustand.create()(
               const { trash: ごみ箱, activeGroupId: 団体 } = 状態();
               console.log('[Store] Deleting trash items:', 消すID);
               if (団体) console.log(`[Store] Target Firestore path: groups/${団体}/trash/`);
-              const 残り = (ごみ箱 || []).filter((x) => x && !消すID.includes(x.id));
+              const 残り = (ごみ箱 || []).filter((記録) => 記録 && !消すID.includes(記録.id));
               // emptyTrash と同じく、完全に消したことを控えておく
               const 控え = Object.assign({}, 状態().permanentlyDeleted);
               消すID.forEach((id) => {
@@ -2762,8 +2767,8 @@ const useScoreStore = zustand.create()(
           else console.warn('[Store] deleteTrashItems called with no IDs');
         },
         deleteMultipleSessions: async (消すID) => {
-          const 消す記録 = 状態().sessions.filter((x) => 消すID.includes(x.id));
-          const 残り = 状態().sessions.filter((x) => !消すID.includes(x.id));
+          const 消す記録 = 状態().sessions.filter((記録) => 消すID.includes(記録.id));
+          const 残り = 状態().sessions.filter((記録) => !消すID.includes(記録.id));
           書く({
             sessions: 残り,
             trash: [
@@ -2796,7 +2801,7 @@ const useScoreStore = zustand.create()(
         },
         restoreSession: async (記録ID) => {
           const ごみ箱 = Array.isArray(状態().trash) ? 状態().trash : [];
-          const 戻す記録 = ごみ箱.find((x) => x && x.id === 記録ID);
+          const 戻す記録 = ごみ箱.find((記録) => 記録 && 記録.id === 記録ID);
           if (!戻す記録) return;
           const 戻した形 = Object.assign({}, 戻す記録, {
             // 送信が済むまでは「未同期」にしておく。こうしないと、通信できない
@@ -2811,7 +2816,7 @@ const useScoreStore = zustand.create()(
           const 控え = Object.assign({}, 状態().permanentlyDeleted);
           delete 控え[記録ID];
           書く({
-            trash: ごみ箱.filter((x) => x && x.id !== 記録ID),
+            trash: ごみ箱.filter((記録) => 記録 && 記録.id !== 記録ID),
             sessions: [戻した形, ...今の記録],
             permanentlyDeleted: 控え,
           });
@@ -2832,8 +2837,8 @@ const useScoreStore = zustand.create()(
         restoreTrashItems: async (戻すID) => {
           if (!戻すID || 0 === 戻すID.length) return;
           const ごみ箱 = 状態().trash || [];
-          const 戻す記録 = ごみ箱.filter((x) => 戻すID.includes(x.id));
-          const 残り = ごみ箱.filter((x) => !戻すID.includes(x.id));
+          const 戻す記録 = ごみ箱.filter((記録) => 戻すID.includes(記録.id));
+          const 残り = ごみ箱.filter((記録) => !戻すID.includes(記録.id));
           const 戻した形 = 戻す記録.map((記録) =>
             Object.assign({}, 記録, {
               syncStatus: '未同期',
@@ -2868,7 +2873,7 @@ const useScoreStore = zustand.create()(
         },
         updateSession: async (記録ID, 変更) => {
           const 今の記録 = 状態().sessions || [];
-          const 位置 = 今の記録.findIndex((x) => x && x.id === 記録ID);
+          const 位置 = 今の記録.findIndex((記録) => 記録 && 記録.id === 記録ID);
           if (-1 === 位置) return;
           const 元の記録 = 今の記録[位置];
           if ('member' === 状態().activeRole && 変更.archers && 変更.archers.length < 元の記録.archers.length)
@@ -2893,7 +2898,7 @@ const useScoreStore = zustand.create()(
               const 予約の表 = Object.assign({}, 前._pendingUpdateTimers);
               return (delete 予約の表[記録ID], { _pendingUpdateTimers: 予約の表 });
             });
-            const 記録 = 状態().sessions.find((x) => x && x.id === 記録ID);
+            const 記録 = 状態().sessions.find((記録1件) => 記録1件 && 記録1件.id === 記録ID);
             if (!記録) return;
             // 送った版の更新日時を控える。送信中にもう一度編集されると
             // 更新日時が変わるので、戻ってきたときに一致する場合だけ印を付ける。
@@ -2911,10 +2916,10 @@ const useScoreStore = zustand.create()(
               .then(() => {
                 console.log(`[Store] Debounced sync finished for ${記録ID}`);
                 書く((前) => ({
-                  sessions: 前.sessions.map((x) =>
-                    x && x.id === 記録ID && x.lastModified === 送った版
-                      ? Object.assign({}, x, { syncStatus: '同期済み' })
-                      : x
+                  sessions: 前.sessions.map((記録1件) =>
+                    記録1件 && 記録1件.id === 記録ID && 記録1件.lastModified === 送った版
+                      ? Object.assign({}, 記録1件, { syncStatus: '同期済み' })
+                      : 記録1件
                   ),
                 }));
               })
@@ -2933,7 +2938,7 @@ const useScoreStore = zustand.create()(
           // 射数の変更（setShotsPerRound）と同じ考え方
           const 変える前 = Array.isArray(状態().archers) ? 状態().archers : [];
           const 交代の中身 = (一覧) => {
-            const 射手 = (一覧 || []).find((x) => x && x.id === 射手ID);
+            const 射手 = (一覧 || []).find((射手1人) => 射手1人 && 射手1人.id === 射手ID);
             if (!射手) return '';
             return JSON.stringify([射手.substitutions || {}, 射手.substitutionIds || {}]);
           };
@@ -3482,10 +3487,10 @@ const useScoreStore = zustand.create()(
             const 部員の合流 = mergeById(状態().members, 雲の部員, false, false);
             const ごみ箱の合流 = mergeById(状態().trash, 雲のごみ箱, false, false);
             const 卒業生の合流 = mergeById(状態().alumni, 雲の卒業生, false, false);
-            const 卒業生のID = new Set(卒業生の合流.map((x) => x.id));
-            const 部員 = 部員の合流.filter((x) => !卒業生のID.has(x.id));
-            const 部員のID = new Set(部員.map((x) => x.id));
-            const 卒業生 = 卒業生の合流.filter((x) => !部員のID.has(x.id));
+            const 卒業生のID = new Set(卒業生の合流.map((卒業生1人) => 卒業生1人.id));
+            const 部員 = 部員の合流.filter((部員1人) => !卒業生のID.has(部員1人.id));
+            const 部員のID = new Set(部員.map((部員1人) => 部員1人.id));
+            const 卒業生 = 卒業生の合流.filter((卒業生1人) => !部員のID.has(卒業生1人.id));
             記録の合流.sort((甲, 乙) => {
               const 甲の時刻 = 甲.date ? new Date(甲.date).getTime() : 0;
               return (乙.date ? new Date(乙.date).getTime() : 0) - 甲の時刻;
@@ -3493,12 +3498,14 @@ const useScoreStore = zustand.create()(
             // 戻した記録がまだクラウドへ届いていないときは、クラウド側のゴミ箱の
             // 写しで消し込まない。届くまでは手元の「戻した」状態を優先する。
             const 復元待ち = new Set(
-              記録の合流.filter((x) => x && '未同期' === x.syncStatus).map((e) => e.id)
+              記録の合流
+                .filter((記録1件) => 記録1件 && '未同期' === 記録1件.syncStatus)
+                .map((記録1件) => 記録1件.id)
             );
-            const ごみ箱 = ごみ箱の合流.filter((x) => x && !復元待ち.has(x.id));
-            const ごみ箱のID = new Set(ごみ箱.map((x) => x.id));
-            const 記録 = 記録の合流.filter((x) => !ごみ箱のID.has(x.id));
-            const 未送信の記録 = 記録.filter((x) => '未同期' === x.syncStatus);
+            const ごみ箱 = ごみ箱の合流.filter((記録1件) => 記録1件 && !復元待ち.has(記録1件.id));
+            const ごみ箱のID = new Set(ごみ箱.map((記録1件) => 記録1件.id));
+            const 記録 = 記録の合流.filter((記録1件) => !ごみ箱のID.has(記録1件.id));
+            const 未送信の記録 = 記録.filter((記録1件) => '未同期' === 記録1件.syncStatus);
             let 記録の一覧 = 記録;
             // 下のブロックでは e が一括送信の入れ物に隠れるので、状態の更新役を
             // ここで控えておく（ブロックの中から外の e は参照できない）。
@@ -3549,7 +3556,7 @@ const useScoreStore = zustand.create()(
             // クラウドの写しを読み込んだだけの項目まで送ると、ゴミ箱を空にした
             // 直後に読み込んだ分が戻ってきてしまう。
             const 未送信の削除 = ごみ箱.filter(
-              (x) => x && x.id && x.pendingDelete && '未同期' === x.syncStatus
+              (記録1件) => 記録1件 && 記録1件.id && 記録1件.pendingDelete && '未同期' === 記録1件.syncStatus
             );
             if (未送信の削除.length > 0) {
               console.log(`[syncSessions] Syncing ${未送信の削除.length} pending deletions...`);
@@ -3599,12 +3606,16 @@ const useScoreStore = zustand.create()(
             // そのままだと手元にしかない氏名や学年が永久に届かない。
             // 名簿を書けるのは団体アカウントだけなので、部員では試みない。
             const 未送信のメンバー =
-              'group' === 状態().activeRole ? 部員.filter((x) => x && x.id && '未同期' === x.syncStatus) : [];
+              'group' === 状態().activeRole
+                ? 部員.filter((部員1人) => 部員1人 && 部員1人.id && '未同期' === 部員1人.syncStatus)
+                : [];
             if (未送信のメンバー.length > 0) {
               console.log(`[syncSessions] Syncing ${未送信のメンバー.length} pending members...`);
               try {
                 const 一括 = Firestore.writeBatch(Firebaseの器.db);
-                const 送ったメンバー = new Map(未送信のメンバー.map((x) => [x.id, x.lastModified]));
+                const 送ったメンバー = new Map(
+                  未送信のメンバー.map((部員1人) => [部員1人.id, 部員1人.lastModified])
+                );
                 未送信のメンバー.forEach((一人) => {
                   const 送る形 = dropUndefinedDeep(Object.assign({}, 一人, { syncStatus: '同期済み' }));
                   送る形.lastModified = Firestore.serverTimestamp();
@@ -3638,7 +3649,7 @@ const useScoreStore = zustand.create()(
             // 無いと手元にしかないIDが永久に届かず、端末ごとに食い違う。
             const 未送信の卒業生 =
               'group' === 状態().activeRole
-                ? 卒業生.filter((x) => x && x.id && '未同期' === x.syncStatus)
+                ? 卒業生.filter((卒業生1人) => 卒業生1人 && 卒業生1人.id && '未同期' === 卒業生1人.syncStatus)
                 : [];
             if (未送信の卒業生.length > 0) {
               console.log(`[syncSessions] Syncing ${未送信の卒業生.length} pending alumni...`);
@@ -3672,9 +3683,9 @@ const useScoreStore = zustand.create()(
             }
             書く({
               // 完全に消したものは、クラウドにまだ残っていても画面に出さない
-              sessions: 記録の一覧.filter((x) => x && !完全削除ずみ.has(x.id)),
+              sessions: 記録の一覧.filter((記録1件) => 記録1件 && !完全削除ずみ.has(記録1件.id)),
               members: 部員,
-              trash: ごみ箱.filter((x) => x && !完全削除ずみ.has(x.id)),
+              trash: ごみ箱.filter((記録1件) => 記録1件 && !完全削除ずみ.has(記録1件.id)),
               alumni: 卒業生,
               syncStatus: '同期済み',
               lastSyncTime: 最新の時刻,
@@ -3705,7 +3716,9 @@ const useScoreStore = zustand.create()(
                 // 送る時点の更新日時を控えておく。送り終えたあとに照合して、
                 // 送っている最中の編集に「同期済み」を付けないようにする
                 const 控える = (一覧) =>
-                  new Map((一覧 || []).filter((x) => x && x.id).map((e) => [e.id, e.lastModified]));
+                  new Map(
+                    (一覧 || []).filter((一つ) => 一つ && 一つ.id).map((一つ) => [一つ.id, 一つ.lastModified])
+                  );
                 const 送った記録 = 控える(状態().sessions);
                 const 送った名簿 = 控える(状態().members);
                 const 送った卒業生 = 控える(状態().alumni);
@@ -3783,10 +3796,10 @@ const useScoreStore = zustand.create()(
                 // ものまで送信済みにすると、その新しい内容が送り直しの対象から
                 // 外れてクラウドへ届かないままになる（記録の保存や編集と同じ考え方）
                 const 済ませる = (一覧, 送った版) =>
-                  一覧.map((x) =>
-                    x && 送った版.has(x.id) && x.lastModified === 送った版.get(x.id)
-                      ? Object.assign({}, x, { syncStatus: '同期済み' })
-                      : x
+                  一覧.map((一つ) =>
+                    一つ && 送った版.has(一つ.id) && 一つ.lastModified === 送った版.get(一つ.id)
+                      ? Object.assign({}, 一つ, { syncStatus: '同期済み' })
+                      : 一つ
                   );
                 const 記録 = 済ませる(状態().sessions, 送った記録);
                 const 部員 = 済ませる(状態().members, 送った名簿);
@@ -3809,7 +3822,7 @@ const useScoreStore = zustand.create()(
         /** まだ送れていないものの数を数える */
         countUnsynced: () => {
           const 数 = (一覧) =>
-            Array.isArray(一覧) ? 一覧.filter((x) => x && '未同期' === x.syncStatus).length : 0;
+            Array.isArray(一覧) ? 一覧.filter((一つ) => 一つ && '未同期' === 一つ.syncStatus).length : 0;
           const { sessions, members, alumni, trash } = 状態();
           return 数(sessions) + 数(members) + 数(alumni) + 数(trash);
         },
@@ -3889,11 +3902,13 @@ const useScoreStore = zustand.create()(
             // 逆に、戻したばかりでまだ送信できていない記録は、クラウドのゴミ箱の
             // 写しがあってもゴミ箱に入れ直さない。
             const 復元待ち = new Set(
-              記録の合流.filter((x) => x && '未同期' === x.syncStatus).map((e) => e.id)
+              記録の合流
+                .filter((記録1件) => 記録1件 && '未同期' === 記録1件.syncStatus)
+                .map((記録1件) => 記録1件.id)
             );
-            const ごみ箱 = ごみ箱の合流.filter((x) => x && !復元待ち.has(x.id));
-            const ごみ箱のID = new Set(ごみ箱.map((x) => x.id));
-            const 残る記録 = 記録の合流.filter((x) => x && !ごみ箱のID.has(x.id));
+            const ごみ箱 = ごみ箱の合流.filter((記録1件) => 記録1件 && !復元待ち.has(記録1件.id));
+            const ごみ箱のID = new Set(ごみ箱.map((記録1件) => 記録1件.id));
+            const 残る記録 = 記録の合流.filter((記録1件) => 記録1件 && !ごみ箱のID.has(記録1件.id));
             // 完全に消したものの後始末。ここは記録もゴミ箱も全件そろっているので、
             // クラウドから本当に消えたかを正しく判定できる。
             //   ・まだ残っている → 消し直して控えは残す
@@ -3905,7 +3920,9 @@ const useScoreStore = zustand.create()(
             if (控えのid.length > 0) {
               const 期限 = Date.now() - 2592e6;
               const クラウドに有る = new Set(
-                [...記録, ...雲のごみ箱].filter((x) => x && x.id).map((e) => e.id)
+                [...記録, ...雲のごみ箱]
+                  .filter((記録1件) => 記録1件 && 記録1件.id)
+                  .map((記録1件) => 記録1件.id)
               );
               const 消し直す = 控えのid.filter((id) => 控え[id] >= 期限 && クラウドに有る.has(id));
               const 残す = {};
@@ -3943,7 +3960,9 @@ const useScoreStore = zustand.create()(
             let 削除ずみのメンバー = new Set(メンバーの控えのid);
             if (メンバーの控えのid.length > 0) {
               const 期限 = Date.now() - 2592e6;
-              const クラウドに有る = new Set((部員 || []).filter((x) => x && x.id).map((e) => e.id));
+              const クラウドに有る = new Set(
+                (部員 || []).filter((部員1人) => 部員1人 && 部員1人.id).map((部員1人) => 部員1人.id)
+              );
               const 消し直す = メンバーの控えのid.filter(
                 (id) => メンバーの控え[id] >= 期限 && クラウドに有る.has(id)
               );
@@ -3969,9 +3988,9 @@ const useScoreStore = zustand.create()(
               書く({ deletedMembers: 残す });
             }
             書く({
-              members: 部員の合流.filter((x) => x && !削除ずみのメンバー.has(x.id)),
-              sessions: 残る記録.filter((x) => x && !完全削除ずみ.has(x.id)),
-              trash: ごみ箱.filter((x) => x && !完全削除ずみ.has(x.id)),
+              members: 部員の合流.filter((部員1人) => 部員1人 && !削除ずみのメンバー.has(部員1人.id)),
+              sessions: 残る記録.filter((記録1件) => 記録1件 && !完全削除ずみ.has(記録1件.id)),
+              trash: ごみ箱.filter((記録1件) => 記録1件 && !完全削除ずみ.has(記録1件.id)),
               alumni: mergeById(状態().alumni, 卒業生, false, true),
               currentFreshmanTerm,
               tagTemplates,
@@ -4758,7 +4777,7 @@ const useScoreStore = zustand.create()(
               // 共有履歴と在席は別の枝にあるので、そちらも消す
               RTDB.remove(RTDB.ref(Firebaseの器.rtdb, 共有履歴の場所(枝, 名前))).catch(() => {});
               RTDB.remove(RTDB.ref(Firebaseの器.rtdb, 在席の場所(枝, 名前))).catch(() => {});
-              書く({ liveSessionsList: 状態().liveSessionsList.filter((x) => x !== 名前) });
+              書く({ liveSessionsList: 状態().liveSessionsList.filter((名) => 名 !== 名前) });
             } catch (誤り) {
               console.error('Delete live session error:', 誤り);
             }
@@ -4816,10 +4835,10 @@ const useScoreStore = zustand.create()(
                 );
               });
               const 手元の記録 = 状態().sessions;
-              const 雲にあるID = new Set(雲の記録.map((x) => x.id));
+              const 雲にあるID = new Set(雲の記録.map((記録1件) => 記録1件.id));
               const merged = 雲の記録.map((cloudSession) => {
                 const pendingTimer = 状態()._pendingUpdateTimers[cloudSession.id];
-                const localSession = 手元の記録.find((x) => x && x.id === cloudSession.id);
+                const localSession = 手元の記録.find((記録1件) => 記録1件 && 記録1件.id === cloudSession.id);
                 // 送信待ちの編集は、クラウドの古い写しで上書きしない。タイマーが動いて
                 // いる 800ms の間だけでなく、送信が済むまで（「未同期」の間）守る。
                 if (localSession && (pendingTimer || '未同期' === localSession.syncStatus))
@@ -4831,14 +4850,19 @@ const useScoreStore = zustand.create()(
               // とみなして落とす。ただし見張りの窓の外（30日より前、100件に収まらず
               // 切れた分）は届かないだけなので落とさない。ここを一律に落としていた
               // せいで、30日を過ぎた記録が見張りが動くたびに履歴から消えていた
-              const 窓の下 = 雲の記録.length >= 100 ? Math.min(...雲の記録.map((x) => x.date || 0)) : m_30;
+              const 窓の下 =
+                雲の記録.length >= 100 ? Math.min(...雲の記録.map((記録1件) => 記録1件.date || 0)) : m_30;
               const 窓の中 = (記録) => (記録.date || 0) > 窓の下;
               const 手元だけの記録 = 手元の記録.filter(
-                (x) => !雲にあるID.has(x.id) && (!x.hasOwnProperty('serverCreatedTime') || !窓の中(x))
+                (記録1件) =>
+                  !雲にあるID.has(記録1件.id) &&
+                  (!記録1件.hasOwnProperty('serverCreatedTime') || !窓の中(記録1件))
               );
               // 完全に消したものは、クラウドにまだ残っていても画面に出さない
               const 完全削除ずみ = new Set(Object.keys(状態().permanentlyDeleted || {}));
-              const 並べた記録 = [...merged, ...手元だけの記録].filter((x) => x && !完全削除ずみ.has(x.id));
+              const 並べた記録 = [...merged, ...手元だけの記録].filter(
+                (記録1件) => 記録1件 && !完全削除ずみ.has(記録1件.id)
+              );
               並べた記録.sort((甲, 乙) => (乙.date || 0) - (甲.date || 0));
               書く({ sessions: 並べた記録, syncStatus: '同期済み', lastSyncTime: Date.now() });
               console.log(
@@ -4891,7 +4915,9 @@ const useScoreStore = zustand.create()(
               // あとで送信が失われても送り直せなくなる。
               // 写しの syncStatus が「同期済み」＝送信が終わった、なので落とす。
               const 手元のゴミ箱 = new Map(
-                (状態().trash || []).filter((x) => x && x.id).map((e) => [e.id, e])
+                (状態().trash || [])
+                  .filter((記録1件) => 記録1件 && 記録1件.id)
+                  .map((記録1件) => [記録1件.id, 記録1件])
               );
               const 写し = 雲のごみ箱.map((記録) => {
                 const 手元の = 手元のゴミ箱.get(記録.id);
@@ -4901,9 +4927,14 @@ const useScoreStore = zustand.create()(
               });
               // まだ送れていない削除は、クラウドの写しに無くても残す。ここで
               // 消すと送り直しの対象から外れ、次の全件取得で記録が復活する。
-              const クラウドのid = new Set(写し.map((x) => x.id));
+              const クラウドのid = new Set(写し.map((記録1件) => 記録1件.id));
               const 未送信の削除 = (状態().trash || []).filter(
-                (x) => x && x.id && x.pendingDelete && '未同期' === x.syncStatus && !クラウドのid.has(x.id)
+                (記録1件) =>
+                  記録1件 &&
+                  記録1件.id &&
+                  記録1件.pendingDelete &&
+                  '未同期' === 記録1件.syncStatus &&
+                  !クラウドのid.has(記録1件.id)
               );
               const 新しいゴミ箱 = 未送信の削除.length > 0 ? [...写し, ...未送信の削除] : 写し;
               新しいゴミ箱.sort((甲, 乙) => trashedAtMillis(乙) - trashedAtMillis(甲));
@@ -4911,12 +4942,15 @@ const useScoreStore = zustand.create()(
               // あっても履歴から外さない。外すと復元が取り消されて見える。
               // 完全に消したものは、クラウドにまだ残っていても画面に出さない
               const 完全削除ずみ = new Set(Object.keys(状態().permanentlyDeleted || {}));
-              const 出すゴミ箱 = 新しいゴミ箱.filter((x) => x && !完全削除ずみ.has(x.id));
-              const 捨てたid = new Set(出すゴミ箱.map((x) => x.id));
+              const 出すゴミ箱 = 新しいゴミ箱.filter((記録1件) => 記録1件 && !完全削除ずみ.has(記録1件.id));
+              const 捨てたid = new Set(出すゴミ箱.map((記録1件) => 記録1件.id));
               const 残す = 状態().sessions.filter(
-                (x) => x && (!捨てたid.has(x.id) || '未同期' === x.syncStatus)
+                (記録1件) => 記録1件 && (!捨てたid.has(記録1件.id) || '未同期' === 記録1件.syncStatus)
               );
-              書く({ trash: 出すゴミ箱, sessions: 残す.filter((x) => x && !完全削除ずみ.has(x.id)) });
+              書く({
+                trash: 出すゴミ箱,
+                sessions: 残す.filter((記録1件) => 記録1件 && !完全削除ずみ.has(記録1件.id)),
+              });
               console.log(
                 `[Store] Real-time trash update received: ${雲のごみ箱.length} items (purged from sessions)`
               );
@@ -4956,7 +4990,7 @@ const useScoreStore = zustand.create()(
               // 消したのにクラウドへ届いていないメンバーは、受け取っても戻さない
               const 削除ずみ = new Set(Object.keys(状態().deletedMembers || {}));
               const 合流した = mergeById(状態().members, 雲の部員, false, true).filter(
-                (x) => x && !削除ずみ.has(x.id)
+                (部員1人) => 部員1人 && !削除ずみ.has(部員1人.id)
               );
               書く({ members: 合流した, lastSyncTime: Date.now() });
               console.log(`[Store] Real-time member update received: ${雲の部員.length} items`);
@@ -5102,7 +5136,9 @@ const useScoreStore = zustand.create()(
             const 数 = Number(値);
             return isNaN(数) ? NaN : 数;
           };
-          const skippedGrades = 雲の部員.filter((x) => isNaN(gradeOf(x))).map((e) => e.name || e.id);
+          const skippedGrades = 雲の部員
+            .filter((部員1人) => isNaN(gradeOf(部員1人)))
+            .map((部員1人) => 部員1人.name || 部員1人.id);
           if (skippedGrades.length)
             console.warn('[incrementAllGrades] 学年が未設定のため据え置いたメンバー:', skippedGrades);
           const 進級後の部員 = [];
