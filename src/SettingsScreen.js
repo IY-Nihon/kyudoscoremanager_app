@@ -1,29 +1,5 @@
 'use strict';
 
-function t(e) {
-  if (e && e.__esModule) return e;
-  const t = {};
-  return (
-    e &&
-      Object.keys(e).forEach(function (l) {
-        const o = Object.getOwnPropertyDescriptor(e, l);
-        Object.defineProperty(
-          t,
-          l,
-          o.get
-            ? o
-            : {
-                enumerable: true,
-                get: function () {
-                  return e[l];
-                },
-              }
-        );
-      }),
-    (t.default = e),
-    t
-  );
-}
 // 成績の数え方は分析画面と共通（src/statsRules.js）
 const 集 = require('./statsRules');
 const _xlsx = require('./excelExport');
@@ -46,8 +22,6 @@ const 案内 = require('./TutorialGuide');
 const Icons = require('@expo/vector-icons');
 const ReactNativeSafeAreaContext = require('react-native-safe-area-context');
 const { CustomCalendarModal } = require('./CustomCalendarModal');
-const C = t(require('expo-file-system/legacy'));
-const b = t(require('expo-sharing'));
 const fileSaver = require('./fileSaver');
 const { auth, db } = require('./db');
 const FirebaseAuth = require('firebase/auth');
@@ -123,28 +97,28 @@ const SettingsScreen = () => {
     setArrowTargetType,
     sessions: sList = [],
   } = useScoreStore();
-  const [Z, ee] = React.useState(false);
-  const [te, le] = React.useState(false);
-  const [re, oe] = React.useState(false);
+  const [書き出しの窓, 書き出しの窓を出す] = React.useState(false);
+  const [ガイドの窓, ガイドの窓を出す] = React.useState(false);
+  const [ログアウトの窓, ログアウトの窓を出す] = React.useState(false);
   const // ログアウトの確認の段階。'確認' → '送信中' → '送信済み' / '失敗'
     [ログアウトの段階, ログアウトの段階を設定] = React.useState('確認');
   const [残った未送信, 残った未送信を設定] = React.useState(0);
-  const [ne, ae] = React.useState('');
-  const [se, ie] = React.useState('');
-  const [de, ce] = React.useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
-  const [ue, fe] = React.useState(new Date());
-  const [me, he] = React.useState('all');
-  const [xe, ge] = React.useState('');
-  const [ye, pe] = React.useState('standard');
-  const [je, Fe] = React.useState(false);
-  const [Ce, be] = React.useState('start');
-  const [Se, Ee] = React.useState('');
-  const [Be, Ie] = React.useState([]);
-  const [Te, we] = React.useState('AND');
-  const [De, ve] = React.useState(false);
-  const [Ae, ke] = React.useState(false);
-  const [ze, Pe] = React.useState('');
-  const [Re, We] = React.useState(false);
+  const [期間の始め, 期間の始めを置く] = React.useState(
+    new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+  );
+  const [期間の終わり, 期間の終わりを置く] = React.useState(new Date());
+  const [部員名の絞り, 部員名の絞りを置く] = React.useState('all');
+  const [言葉の絞り, 言葉の絞りを置く] = React.useState('');
+  const [書き出しの形, 書き出しの形を置く] = React.useState('standard');
+  const [暦を出す, 暦を出すを置く] = React.useState(false);
+  const [暦の対象, 暦の対象を置く] = React.useState('start');
+  const [タグの下書き, タグの下書きを置く] = React.useState('');
+  const [選んだタグ, 選んだタグを置く] = React.useState([]);
+  const [タグの論理, タグの論理を置く] = React.useState('AND');
+  const [絞り込みを開く, 絞り込みを開くを置く] = React.useState(false);
+  const [管理者の合言葉の窓, 管理者の合言葉の窓を出す] = React.useState(false);
+  const [管理者の合言葉, 管理者の合言葉を置く] = React.useState('');
+  const [合言葉を確かめ中, 合言葉を確かめ中を置く] = React.useState(false);
   const [showPw, setShowPw] = React.useState(false);
   const // アカウントの削除。窓の開閉・入れたパスワード・消している最中の段階
     [削除の窓, 削除の窓を開く] = React.useState(false);
@@ -160,209 +134,211 @@ const SettingsScreen = () => {
   const [inquiryImages, setInquiryImages] = React.useState([]);
   const titleScrollRef = React.useRef(null);
   const memberScrollRef = React.useRef(null);
-  const titleRefCallback = React.useCallback((e) => {
+  const titleRefCallback = React.useCallback((節点) => {
     if (IS_WEB) {
       if (titleScrollRef.current && titleScrollRef.current._wheelHandler) {
-        const t = titleScrollRef.current.getScrollableNode
+        const 中身 = titleScrollRef.current.getScrollableNode
           ? titleScrollRef.current.getScrollableNode()
           : titleScrollRef.current;
-        if (t) t.removeEventListener('wheel', titleScrollRef.current._wheelHandler);
+        if (中身) 中身.removeEventListener('wheel', titleScrollRef.current._wheelHandler);
       }
-      titleScrollRef.current = e;
-      const t = e && e.getScrollableNode ? e.getScrollableNode() : e;
-      if (t) {
-        const e = (e) => {
-          t.scrollLeft += e.deltaY;
+      titleScrollRef.current = 節点;
+      const 中身 = 節点 && 節点.getScrollableNode ? 節点.getScrollableNode() : 節点;
+      if (中身) {
+        const 回した = (e) => {
+          中身.scrollLeft += e.deltaY;
           e.preventDefault();
         };
-        t.addEventListener('wheel', e, { passive: false });
-        titleScrollRef.current._wheelHandler = e;
+        中身.addEventListener('wheel', 回した, { passive: false });
+        titleScrollRef.current._wheelHandler = 回した;
       }
-    } else titleScrollRef.current = e;
+    } else titleScrollRef.current = 節点;
   }, []);
-  const memberRefCallback = React.useCallback((e) => {
+  const memberRefCallback = React.useCallback((節点) => {
     if (IS_WEB) {
       if (memberScrollRef.current && memberScrollRef.current._wheelHandler) {
-        const t = memberScrollRef.current.getScrollableNode
+        const 中身 = memberScrollRef.current.getScrollableNode
           ? memberScrollRef.current.getScrollableNode()
           : memberScrollRef.current;
-        if (t) t.removeEventListener('wheel', memberScrollRef.current._wheelHandler);
+        if (中身) 中身.removeEventListener('wheel', memberScrollRef.current._wheelHandler);
       }
-      memberScrollRef.current = e;
-      const t = e && e.getScrollableNode ? e.getScrollableNode() : e;
-      if (t) {
-        const e = (e) => {
-          t.scrollLeft += e.deltaY;
+      memberScrollRef.current = 節点;
+      const 中身 = 節点 && 節点.getScrollableNode ? 節点.getScrollableNode() : 節点;
+      if (中身) {
+        const 回した = (e) => {
+          中身.scrollLeft += e.deltaY;
           e.preventDefault();
         };
-        t.addEventListener('wheel', e, { passive: false });
-        memberScrollRef.current._wheelHandler = e;
+        中身.addEventListener('wheel', 回した, { passive: false });
+        memberScrollRef.current._wheelHandler = 回した;
       }
-    } else memberScrollRef.current = e;
+    } else memberScrollRef.current = 節点;
   }, []);
-  const Le = new Date();
-  const $e = Le.getMonth() + 1 >= 4 ? Le.getFullYear() : Le.getFullYear() - 1;
-  const [Ve, Me] = React.useState($e);
-  const He = (e) => {
-    Me((t) => t + e);
+  const 今日 = new Date();
+  const 今の年度 = 今日.getMonth() + 1 >= 4 ? 今日.getFullYear() : 今日.getFullYear() - 1;
+  const [書き出す年度, 書き出す年度を置く] = React.useState(今の年度);
+  const 年度を動かす = (差) => {
+    書き出す年度を置く((今) => 今 + 差);
   };
   const titleSuggestions = React.useMemo(() => {
     try {
       const src =
         'member' === activeRole && myMemberId
           ? sList.filter(
-              (s) =>
-                s &&
-                s.archers &&
-                s.archers.some(
-                  (a) =>
-                    a &&
-                    (a.memberId === myMemberId ||
+              (x) =>
+                x &&
+                x.archers &&
+                x.archers.some(
+                  (x) =>
+                    x &&
+                    (x.memberId === myMemberId ||
                       (myMemberName &&
-                        !a.memberId &&
-                        a.name &&
-                        a.name.replace(/\s*\(\d+\)$/, '').trim() === myMemberName))
+                        !x.memberId &&
+                        x.name &&
+                        x.name.replace(/\s*\(\d+\)$/, '').trim() === myMemberName))
                 )
             )
           : sList;
       if (!src) return [];
-      const titles = src.map((s) => s.title).filter((t) => t && t.trim() !== '');
+      const titles = src.map((x) => x.title).filter((x) => x && x.trim() !== '');
       return Array.from(new Set(titles)).slice(0, 10);
-    } catch (e) {
+    } catch (_) {
       return [];
     }
   }, [sList, activeRole, myMemberId, myMemberName]);
   const memberSuggestions = React.useMemo(() => {
     try {
       if ('member' === activeRole) return myMemberName ? [myMemberName] : [];
-      const sortMembers = (e, t) => {
-        const l = e.grade === undefined || e.grade === null ? 99 : Number(e.grade);
-        const o = t.grade === undefined || t.grade === null ? 99 : Number(t.grade);
-        const n = 0 === l ? 99 : l;
-        const a = 0 === o ? 99 : o;
-        if (n !== a) return n - a;
-        const s = (e) => {
-          const t = (e || '').trim();
-          return '男子' === t ? 0 : '女子' === t ? 1 : 2;
+      const sortMembers = (甲, 乙) => {
+        const 甲の学年 = 甲.grade === undefined || 甲.grade === null ? 99 : Number(甲.grade);
+        const 乙の学年 = 乙.grade === undefined || 乙.grade === null ? 99 : Number(乙.grade);
+        const 甲の順 = 0 === 甲の学年 ? 99 : 甲の学年;
+        const 乙の順 = 0 === 乙の学年 ? 99 : 乙の学年;
+        if (甲の順 !== 乙の順) return 甲の順 - 乙の順;
+        const 性別の順 = (性別) => {
+          const 整えた = (性別 || '').trim();
+          return '男子' === 整えた ? 0 : '女子' === 整えた ? 1 : 2;
         };
-        return s(e.gender) - s(t.gender) || (e.name || '').localeCompare(t.name || '', 'ja');
+        return (
+          性別の順(甲.gender) - 性別の順(乙.gender) || (甲.name || '').localeCompare(乙.name || '', 'ja')
+        );
       };
       const list = [...members, ...alumni]
         .sort(sortMembers)
-        .map((m) => m.name)
-        .filter((n) => n && n.trim() !== '');
+        .map((x) => x.name)
+        .filter((x) => x && x.trim() !== '');
       return Array.from(new Set(list));
-    } catch (e) {
+    } catch (_) {
       return [];
     }
   }, [members, alumni, activeRole, myMemberName]);
-  const Oe = React.useMemo(() => {
-    const t = new Set();
+  const タグの一覧 = React.useMemo(() => {
+    const 集めた = new Set();
     const src =
       'member' === activeRole && myMemberId
         ? sList.filter(
-            (s) =>
-              s &&
-              s.archers &&
-              s.archers.some(
-                (a) =>
-                  a &&
-                  (a.memberId === myMemberId ||
+            (x) =>
+              x &&
+              x.archers &&
+              x.archers.some(
+                (x) =>
+                  x &&
+                  (x.memberId === myMemberId ||
                     (myMemberName &&
-                      !a.memberId &&
-                      a.name &&
-                      a.name.replace(/\s*\(\d+\)$/, '').trim() === myMemberName))
+                      !x.memberId &&
+                      x.name &&
+                      x.name.replace(/\s*\(\d+\)$/, '').trim() === myMemberName))
               )
           )
         : sList;
     return (
-      src.forEach((e) => {
-        if (e.tags && Array.isArray(e.tags)) e.tags.forEach((e) => t.add(e));
+      src.forEach((記録) => {
+        if (記録.tags && Array.isArray(記録.tags)) 記録.tags.forEach((タグ) => 集めた.add(タグ));
       }),
-      Array.from(t).sort((e, t) => e.localeCompare(t))
+      Array.from(集めた).sort((甲, 乙) => 甲.localeCompare(乙))
     );
   }, [sList, activeRole, myMemberId, myMemberName]);
-  const Ne = (e) => {
-    Ie((t) => (t.includes(e) ? t.filter((t) => t !== e) : [...t, e]));
+  const タグを切り替える = (タグ) => {
+    選んだタグを置く((今の) => (今の.includes(タグ) ? 今の.filter((t) => t !== タグ) : [...今の, タグ]));
   };
-  const Ge = async (e) => {
+  const 書き出す = async (範囲) => {
     try {
-      const { sessions, members: o } = useScoreStore.getState();
-      const n = 'member' === activeRole ? myMemberId : null;
-      const rSessions = n
+      const { sessions, members: 部員たち } = useScoreStore.getState();
+      const 自分の部員ID = 'member' === activeRole ? myMemberId : null;
+      const rSessions = 自分の部員ID
         ? sessions.filter(
-            (e) =>
-              e &&
-              e.archers &&
-              e.archers.some(
-                (t) =>
-                  t &&
-                  (t.memberId === n ||
+            (x) =>
+              x &&
+              x.archers &&
+              x.archers.some(
+                (x) =>
+                  x &&
+                  (x.memberId === 自分の部員ID ||
                     (myMemberName &&
-                      !t.memberId &&
-                      t.name &&
-                      t.name.replace(/\s*\(\d+\)$/, '').trim() === myMemberName))
+                      !x.memberId &&
+                      x.name &&
+                      x.name.replace(/\s*\(\d+\)$/, '').trim() === myMemberName))
               )
           )
         : sessions;
-      const a = rSessions.filter((t) => {
-        if ('all' === e) return true;
-        const l = new Date(t.date);
-        if ('fiscal' === e) {
-          const e = l.getFullYear();
-          return (l.getMonth() + 1 >= 4 ? e : e - 1) === Ve;
+      const 対象の記録 = rSessions.filter((記録) => {
+        if ('all' === 範囲) return true;
+        const 日付 = new Date(記録.date);
+        if ('fiscal' === 範囲) {
+          const 年 = 日付.getFullYear();
+          return (日付.getMonth() + 1 >= 4 ? 年 : 年 - 1) === 書き出す年度;
         }
-        if ('custom' === e) {
-          const e = new Date(de);
-          e.setHours(0, 0, 0, 0);
-          const o = new Date(ue);
-          if ((o.setHours(23, 59, 59, 999), l < e || l > o)) return false;
-          if (Be.length > 0) {
-            const e = t.tags || [];
-            if ('AND' === Te) {
-              if (!Be.every((t) => e.includes(t))) return false;
-            } else if (!Be.some((t) => e.includes(t))) return false;
+        if ('custom' === 範囲) {
+          const 始め = new Date(期間の始め);
+          始め.setHours(0, 0, 0, 0);
+          const 終わり = new Date(期間の終わり);
+          if ((終わり.setHours(23, 59, 59, 999), 日付 < 始め || 日付 > 終わり)) return false;
+          if (選んだタグ.length > 0) {
+            const タグたち = 記録.tags || [];
+            if ('AND' === タグの論理) {
+              if (!選んだタグ.every((x) => タグたち.includes(x))) return false;
+            } else if (!選んだタグ.some((x) => タグたち.includes(x))) return false;
           }
           if (selectedKeywords.length > 0) {
-            const e = t.title?.toLowerCase() || '';
-            const l = t.note?.toLowerCase() || '';
-            const o = new Date(t.date);
-            const n = `${o.getFullYear()}/${String(o.getMonth() + 1).padStart(2, '0')}/${String(o.getDate()).padStart(2, '0')}`;
-            const a = selectedKeywords.some((t) => {
-              const a = t.toLowerCase();
-              return e.includes(a) || l.includes(a) || n.includes(a);
+            const 題 = 記録.title?.toLowerCase() || '';
+            const 覚え書き = 記録.note?.toLowerCase() || '';
+            const 日付 = new Date(記録.date);
+            const 日付の文 = `${日付.getFullYear()}/${String(日付.getMonth() + 1).padStart(2, '0')}/${String(日付.getDate()).padStart(2, '0')}`;
+            const 当たった = selectedKeywords.some((言葉) => {
+              const 小文字 = 言葉.toLowerCase();
+              return 題.includes(小文字) || 覚え書き.includes(小文字) || 日付の文.includes(小文字);
             });
-            if (!a) return false;
+            if (!当たった) return false;
           }
-          if (xe) {
-            const e = xe.toLowerCase();
-            const l = t.title?.toLowerCase().includes(e);
-            const o = t.note?.toLowerCase().includes(e);
-            const n = new Date(t.date);
-            const a =
-              `${n.getFullYear()}/${String(n.getMonth() + 1).padStart(2, '0')}/${String(n.getDate()).padStart(2, '0')}`.includes(
-                e
+          if (言葉の絞り) {
+            const 言葉 = 言葉の絞り.toLowerCase();
+            const 題に有る = 記録.title?.toLowerCase().includes(言葉);
+            const 覚え書きに有る = 記録.note?.toLowerCase().includes(言葉);
+            const 日付 = new Date(記録.date);
+            const 日付に有る =
+              `${日付.getFullYear()}/${String(日付.getMonth() + 1).padStart(2, '0')}/${String(日付.getDate()).padStart(2, '0')}`.includes(
+                言葉
               );
-            if (!(l || o || a)) return false;
+            if (!(題に有る || 覚え書きに有る || 日付に有る)) return false;
           }
           return true;
         }
         return true;
       });
-      if (0 === a.length) {
-        const e = '対象期間のデータがありません';
-        return void Alert.alert('通知', e);
+      if (0 === 対象の記録.length) {
+        const 文 = '対象期間のデータがありません';
+        return void Alert.alert('通知', 文);
       }
       // 「集計に含めない」にした記録は、本表から外して別のシートに回す。
       // 混ぜると分析画面の数字と食い違う（画面はこれを外して数えている）
-      const 集計しない記録 = a.filter((t) => !集.集計に入れるか(t));
-      const 集計する記録 = a.filter((t) => 集.集計に入れるか(t));
-      const s = (e) => (e || '').replace(/\s*\(\d+\)$/, '').trim();
-      let d = '';
+      const 集計しない記録 = 対象の記録.filter((t) => !集.集計に入れるか(t));
+      const 集計する記録 = 対象の記録.filter((t) => 集.集計に入れるか(t));
+      const 名を整える = (名) => (名 || '').replace(/\s*\(\d+\)$/, '').trim();
+      let _ = '';
       let xlsxHeaders = [];
       let xlsxRows = [];
-      if ('matrix' !== ye) {
-        const mList = o;
+      if ('matrix' !== 書き出しの形) {
+        const mList = 部員たち;
         const aList = alumni;
         xlsxHeaders = [
           '日付',
@@ -378,39 +354,39 @@ const SettingsScreen = () => {
           'メモ',
           '集計対象',
         ];
-        集計する記録.forEach((t) => {
-          if (!t || !t.archers || !Array.isArray(t.archers)) return;
-          const dateStr = csvDate(t.date);
-          t.archers.forEach((l) => {
-            if (!l || l.isSeparator || l.isTotalCalculator) return;
+        集計する記録.forEach((記録) => {
+          if (!記録 || !記録.archers || !Array.isArray(記録.archers)) return;
+          const dateStr = csvDate(記録.date);
+          記録.archers.forEach((射手) => {
+            if (!射手 || 射手.isSeparator || 射手.isTotalCalculator) return;
             // 途中交代があると1つの列に2人ぶんが入る。区間に分けて人ごとの行にする。
             // 分けないと、交代後の射も交代前の人の行に入ってしまう
-            const 区間たち = 集.射手を区間に分ける(l);
+            const 区間たち = 集.射手を区間に分ける(射手);
             // ○×が1つも入っていない列も、誰が立っていたかは残す
             const 書く区間 = 区間たち.length
               ? 区間たち
-              : [{ 部員id: l.memberId, 名前: l.name || '', 的中: 0, 射数: 0 }];
-            const tagsV = (t.tags || []).join(' ');
-            const noteV = t.note || '';
+              : [{ 部員id: 射手.memberId, 名前: 射手.name || '', 的中: 0, 射数: 0 }];
+            const tagsV = (記録.tags || []).join(' ');
+            const noteV = 記録.note || '';
             const // TRUE / FALSE では何の真偽か伝わらない。日本語で書く
-              statV = 集.集計に入れるか(t) ? '対象' : '対象外';
+              statV = 集.集計に入れるか(記録) ? '対象' : '対象外';
             書く区間.forEach((区間) => {
               // 絞り込みは列ではなく人ごとに見る。列で見ると、交代で入った人が
               // 自分の書き出しから丸ごと落ちる（列の持ち主は別人のため）
-              if (n) {
+              if (自分の部員ID) {
                 const 自分か =
-                  String(区間.部員id || '') === String(n) ||
+                  String(区間.部員id || '') === String(自分の部員ID) ||
                   (myMemberName &&
                     !区間.部員id &&
                     区間.名前 &&
                     区間.名前.replace(/\s*\(\d+\)$/, '').trim() === myMemberName);
                 if (!自分か) return;
-              } else if ('custom' === e) {
+              } else if ('custom' === 範囲) {
                 if (selectedMembers.length > 0) {
-                  if (!selectedMembers.includes(s(区間.名前))) return;
+                  if (!selectedMembers.includes(名を整える(区間.名前))) return;
                 } else if (!(
-                  'all' === me ||
-                  (区間.名前 && 区間.名前.toLowerCase().includes(me.toLowerCase()))
+                  'all' === 部員名の絞り ||
+                  (区間.名前 && 区間.名前.toLowerCase().includes(部員名の絞り.toLowerCase()))
                 ))
                   return;
               }
@@ -420,19 +396,29 @@ const SettingsScreen = () => {
               const shots = 区間.射数;
               const rateNum = shots > 0 ? Number(((hits / shots) * 100).toFixed(1)) : 0;
               const // 交代で入った人の学年や性別は、その人の名簿から引く
-                mi = findMemberInfo({ memberId: 区間.部員id, name: 区間.名前 }, mList, aList, s);
+                部員の情報 = findMemberInfo(
+                  { memberId: 区間.部員id, name: 区間.名前 },
+                  mList,
+                  aList,
+                  名を整える
+                );
               const // 名簿に無いときは射手側の値を使うが、それが使えるのは
                 // 列の持ち主のときだけ。交代で入った人に列の持ち主の学年を
                 // 当てると別人の情報になる
-                列の持ち主か = 区間.名前 === (l.name || '');
+                列の持ち主か = 区間.名前 === (射手.name || '');
               const gradeV =
-                mi && null != mi.grade ? mi.grade : 列の持ち主か && null != l.grade ? l.grade : '';
-              const genderV = mi && mi.gender ? mi.gender : 列の持ち主か ? l.gender || '' : '';
-              const termV = mi && null != mi.termKi ? mi.termKi : '';
+                部員の情報 && null != 部員の情報.grade
+                  ? 部員の情報.grade
+                  : 列の持ち主か && null != 射手.grade
+                    ? 射手.grade
+                    : '';
+              const genderV =
+                部員の情報 && 部員の情報.gender ? 部員の情報.gender : 列の持ち主か ? 射手.gender || '' : '';
+              const termV = 部員の情報 && null != 部員の情報.termKi ? 部員の情報.termKi : '';
               xlsxRows.push([
                 dateStr,
-                t.title || '',
-                s(区間.名前 || l.name),
+                記録.title || '',
+                名を整える(区間.名前 || 射手.name),
                 gradeV,
                 genderV,
                 termV,
@@ -447,88 +433,93 @@ const SettingsScreen = () => {
           });
         });
       } else {
-        const l = new Set();
-        a.forEach((e) => {
-          const t = new Date(e.date);
-          l.add(
-            `${t.getFullYear()}/${(t.getMonth() + 1).toString().padStart(2, '0')}/${t.getDate().toString().padStart(2, '0')}`
+        const 日付の集まり = new Set();
+        対象の記録.forEach((記録) => {
+          const 日付 = new Date(記録.date);
+          日付の集まり.add(
+            `${日付.getFullYear()}/${(日付.getMonth() + 1).toString().padStart(2, '0')}/${日付.getDate().toString().padStart(2, '0')}`
           );
         });
-        const c = Array.from(l).sort();
-        const u = new Map();
-        a.forEach((t) => {
-          t.archers.forEach((t) => {
-            if (!t || t.isSeparator || t.isTotalCalculator) return;
-            if (n) {
+        const 日付たち = Array.from(日付の集まり).sort();
+        const 人たち = new Map();
+        対象の記録.forEach((記録) => {
+          記録.archers.forEach((射手) => {
+            if (!射手 || 射手.isSeparator || 射手.isTotalCalculator) return;
+            if (自分の部員ID) {
               if (
-                t.memberId !== n &&
+                射手.memberId !== 自分の部員ID &&
                 !(
                   myMemberName &&
-                  !t.memberId &&
-                  t.name &&
-                  t.name.replace(/\s*\(\d+\)$/, '').trim() === myMemberName
+                  !射手.memberId &&
+                  射手.name &&
+                  射手.name.replace(/\s*\(\d+\)$/, '').trim() === myMemberName
                 )
               )
                 return;
-            } else if ('custom' === e) {
+            } else if ('custom' === 範囲) {
               if (selectedMembers.length > 0) {
-                if (!selectedMembers.includes(s(t.name || '不明'))) return;
-              } else if (!('all' === me || (t.name && t.name.toLowerCase().includes(me.toLowerCase()))))
+                if (!selectedMembers.includes(名を整える(射手.name || '不明'))) return;
+              } else if (!(
+                'all' === 部員名の絞り ||
+                (射手.name && 射手.name.toLowerCase().includes(部員名の絞り.toLowerCase()))
+              ))
                 return;
             }
-            const l = s(t.name || '不明');
-            const o = t.memberId || l || 'unknown';
-            if (!u.has(o)) u.set(o, { id: t.memberId || '', name: l });
+            const 名 = 名を整える(射手.name || '不明');
+            const 鍵 = 射手.memberId || 名 || 'unknown';
+            if (!人たち.has(鍵)) 人たち.set(鍵, { id: 射手.memberId || '', name: 名 });
           });
         });
-        const f = [...o, ...alumni];
-        u.forEach((e, t) => {
-          const l = f.find((t) => t.id === e.id || t.name === e.name);
-          l && ((e.grade = l.grade), (e.name = l.name));
+        const 名簿 = [...部員たち, ...alumni];
+        人たち.forEach((人, _) => {
+          const 部員 = 名簿.find((x) => x.id === 人.id || x.name === 人.name);
+          部員 && ((人.grade = 部員.grade), (人.name = 部員.name));
         });
-        const m = Array.from(u.values()).sort((e, t) =>
-          e.grade !== t.grade ? (e.grade || 9) - (t.grade || 9) : e.name.localeCompare(t.name, 'ja-JP')
+        const 並べた人たち = Array.from(人たち.values()).sort((甲, 乙) =>
+          甲.grade !== 乙.grade ? (甲.grade || 9) - (乙.grade || 9) : 甲.name.localeCompare(乙.name, 'ja-JP')
         );
-        const h = c.map((e) => {
-          const t = e.split('/');
-          return `${parseInt(t[1])}月${parseInt(t[2])}日`;
+        const 日付の見出し = 日付たち.map((日付) => {
+          const 片 = 日付.split('/');
+          return `${parseInt(片[1])}月${parseInt(片[2])}日`;
         });
-        xlsxHeaders = ['氏名', '学年', '的中率', '的中数', '総矢数'].concat(h);
-        m.forEach((e) => {
-          let t = 0;
-          let l = 0;
-          const o = [];
-          c.forEach((n) => {
-            let s = 0;
-            let d2 = 0;
-            let c2 = false;
-            集計する記録.forEach((t) => {
-              const l = new Date(t.date);
+        xlsxHeaders = ['氏名', '学年', '的中率', '的中数', '総矢数'].concat(日付の見出し);
+        並べた人たち.forEach((人) => {
+          let 的中の計 = 0;
+          let 射数の計 = 0;
+          const 日ごと = [];
+          日付たち.forEach((その日) => {
+            let 的中 = 0;
+            let 射数 = 0;
+            let 引いた = false;
+            集計する記録.forEach((記録) => {
+              const 日付 = new Date(記録.date);
               if (
-                `${l.getFullYear()}/${(l.getMonth() + 1).toString().padStart(2, '0')}/${l.getDate().toString().padStart(2, '0')}` ===
-                n
+                `${日付.getFullYear()}/${(日付.getMonth() + 1).toString().padStart(2, '0')}/${日付.getDate().toString().padStart(2, '0')}` ===
+                その日
               )
-                t.archers.forEach((l) => {
-                  if (!l || l.isSeparator || l.isTotalCalculator) return;
+                記録.archers.forEach((射手) => {
+                  if (!射手 || 射手.isSeparator || 射手.isTotalCalculator) return;
                   // 分析画面と同じ数え方をする。部員IDだけで判定し、途中交代を
                   // 踏まえ、分母は実際に引いた数にする。以前は氏名でも拾い、
                   // 交代を見ず、割り当ての射数を分母にしていたため画面と食い違っていた
-                  集.射手を区間に分ける(l).forEach((区間) => {
-                    if (!e.id || String(区間.部員id) !== String(e.id)) return;
-                    c2 = true;
-                    s += 区間.的中;
-                    d2 += 区間.射数;
+                  集.射手を区間に分ける(射手).forEach((区間) => {
+                    if (!人.id || String(区間.部員id) !== String(人.id)) return;
+                    引いた = true;
+                    的中 += 区間.的中;
+                    射数 += 区間.射数;
                   });
                 });
             });
-            c2 ? (o.push(`${s}/${d2}`), (t += s), (l += d2)) : o.push('');
+            引いた
+              ? (日ごと.push(`${的中}/${射数}`), (的中の計 += 的中), (射数の計 += 射数))
+              : 日ごと.push('');
           });
-          const n2 = l > 0 ? Number(((t / l) * 100).toFixed(1)) : 0;
-          xlsxRows.push([e.name, null != e.grade ? e.grade : '', n2, t, l].concat(o));
+          const 率 = 射数の計 > 0 ? Number(((的中の計 / 射数の計) * 100).toFixed(1)) : 0;
+          xlsxRows.push([人.name, null != 人.grade ? 人.grade : '', 率, 的中の計, 射数の計].concat(日ごと));
         });
       }
       const stamp = csvDate(Date.now());
-      const rangeLabel = 'fiscal' === e ? `${Ve}nendo` : 'custom' === e ? 'filtered' : 'all';
+      const rangeLabel = 'fiscal' === 範囲 ? `${書き出す年度}nendo` : 'custom' === 範囲 ? 'filtered' : 'all';
       const fname = `kyudo_records_${rangeLabel}_${stamp}.xlsx`;
       if (!IS_WEB) {
         Alert.alert('未対応', '書き出しはWeb版のみ対応しています。');
@@ -540,15 +531,15 @@ const SettingsScreen = () => {
         return;
       }
       const 幅 =
-        'matrix' === ye
+        'matrix' === 書き出しの形
           ? [16, 7, 9, 9, 9].concat(xlsxHeaders.slice(5).map(() => 9))
           : [12, 22, 14, 6, 8, 6, 9, 9, 10, 18, 26, 10];
       // 的中率の列は「38.9%」と見せる。中身は 38.9 のままなので、
       // 表計算の式や並べ替えはこれまでどおり使える
-      const 見た目 = 'matrix' === ye ? ['', '', '率'] : ['', '', '', '', '', '', '', '', '率'];
+      const 見た目 = 'matrix' === 書き出しの形 ? ['', '', '率'] : ['', '', '', '', '', '', '', '', '率'];
       const シートたち = [
         {
-          name: 'matrix' === ye ? '集計' : '記録',
+          name: 'matrix' === 書き出しの形 ? '集計' : '記録',
           headers: xlsxHeaders,
           rows: xlsxRows,
           widths: 幅,
@@ -560,21 +551,21 @@ const SettingsScreen = () => {
       if (集計しない記録.length > 0) {
         const 除外の見出し = ['日付', '題', '氏名', '的中数', '射数', '的中率', 'タグ', 'メモ'];
         const 除外の行 = [];
-        集計しない記録.forEach((t) => {
-          if (!t || !Array.isArray(t.archers)) return;
-          const dateStr = csvDate(t.date);
-          t.archers.forEach((l) => {
-            if (!l || l.isSeparator || l.isTotalCalculator) return;
-            集.射手を区間に分ける(l).forEach((区間) => {
+        集計しない記録.forEach((記録) => {
+          if (!記録 || !Array.isArray(記録.archers)) return;
+          const dateStr = csvDate(記録.date);
+          記録.archers.forEach((射手) => {
+            if (!射手 || 射手.isSeparator || 射手.isTotalCalculator) return;
+            集.射手を区間に分ける(射手).forEach((区間) => {
               除外の行.push([
                 dateStr,
-                t.title || '',
-                s(区間.名前 || l.name),
+                記録.title || '',
+                名を整える(区間.名前 || 射手.name),
                 区間.的中,
                 区間.射数,
                 区間.射数 > 0 ? Number(((区間.的中 / 区間.射数) * 100).toFixed(1)) : 0,
-                (t.tags || []).join(' '),
-                t.note || '',
+                (記録.tags || []).join(' '),
+                記録.note || '',
               ]);
             });
           });
@@ -588,10 +579,10 @@ const SettingsScreen = () => {
         });
       }
       await _xlsx.exportXlsxSheets(シートたち, fname);
-    } catch (e) {
-      console.error('Export Error:', e);
-      const t = 'ファイルの生成に失敗しました。';
-      Alert.alert('エラー', t);
+    } catch (誤り) {
+      console.error('Export Error:', 誤り);
+      const 文 = 'ファイルの生成に失敗しました。';
+      Alert.alert('エラー', 文);
     }
   };
   const pickInquiryImage = async () => {
@@ -634,52 +625,52 @@ const SettingsScreen = () => {
         return void Alert.alert('エラー', msg);
       }
       setInquiryImages((prev) => [...prev, `data:image/jpeg;base64,${base64}`]);
-    } catch (e) {
-      console.error('[Settings] Inquiry image pick error:', e);
+    } catch (誤り) {
+      console.error('[Settings] Inquiry image pick error:', 誤り);
     }
   };
-  const Ye = (e, t) => (
+  const 節 = (題, 中身) => (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{e}</Text>
-      <View style={styles.sectionContainer}>{t}</View>
+      <Text style={styles.sectionTitle}>{題}</Text>
+      <View style={styles.sectionContainer}>{中身}</View>
     </View>
   );
-  const Je = (e, t, l, a = '#007AFF', s, d = false) => (
+  const 行 = (絵, 題, 押したとき, 色 = '#007AFF', 右の中身, 赤字 = false) => (
     <Pressable // 使い方の案内が指す先。行の名前をそのまま目印にする
-      ref={(node) => 案内.setTutorialTargetNode(`設定.${t}`, node)}
+      ref={(node) => 案内.setTutorialTargetNode(`設定.${題}`, node)}
       style={({ hovered }) => [
         styles.item,
         hovered && styles.hovered,
-        IS_WEB && !!l && { cursor: 'pointer' },
+        IS_WEB && !!押したとき && { cursor: 'pointer' },
       ]}
-      onPress={l}
-      disabled={!l}
+      onPress={押したとき}
+      disabled={!押したとき}
     >
       <View style={styles.itemLeft}>
-        <Icons.Ionicons name={e} size={22} color={a} style={styles.itemIcon} />
-        <Text style={[styles.itemText, d && { color: '#FF3B30' }]}>{t}</Text>
+        <Icons.Ionicons name={絵} size={22} color={色} style={styles.itemIcon} />
+        <Text style={[styles.itemText, 赤字 && { color: '#FF3B30' }]}>{題}</Text>
       </View>
       <View style={styles.itemRight}>
-        {s || <Icons.Ionicons name="chevron-forward" size={18} color="#C6C6C8" />}
+        {右の中身 || <Icons.Ionicons name="chevron-forward" size={18} color="#C6C6C8" />}
       </View>
     </Pressable>
   );
   return (
     <ReactNativeSafeAreaContext.SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       <CustomCalendarModal
-        visible={je}
-        onClose={() => Fe(false)}
-        selectedDate={'start' === Ce ? de : ue}
-        onSelectDate={(e) => {
-          if ('start' === Ce) ce(e);
-          else fe(e);
-          Fe(false);
+        visible={暦を出す}
+        onClose={() => 暦を出すを置く(false)}
+        selectedDate={'start' === 暦の対象 ? 期間の始め : 期間の終わり}
+        onSelectDate={(日付) => {
+          if ('start' === 暦の対象) 期間の始めを置く(日付);
+          else 期間の終わりを置く(日付);
+          暦を出すを置く(false);
         }}
-        title={'start' === Ce ? '開始日を選択' : '終了日を選択'}
+        title={'start' === 暦の対象 ? '開始日を選択' : '終了日を選択'}
       />
       <ScrollView style={styles.container}>
         <Text style={styles.headerTitle}>設定</Text>
-        {Ye(
+        {節(
           'アカウント',
           <>
             <View style={[styles.item, styles.itemStack]}>
@@ -702,23 +693,23 @@ const SettingsScreen = () => {
                 {'group' === activeRole
                   ? '団体アカウント'
                   : `メンバー (${(() => {
-                      const e = members.find((e) => e.id === myMemberId);
-                      return e?.personalId
-                        ? `ID: ${e.personalId} / ${e.name || myMemberName || ''}`
+                      const 自分 = members.find((e) => e.id === myMemberId);
+                      return 自分?.personalId
+                        ? `ID: ${自分.personalId} / ${自分.name || myMemberName || ''}`
                         : myMemberName || myMemberId || '---';
                     })()})`}
               </Text>
             </View>
             {/* 初めての人向けの案内。初回は自動で出るが、ここからいつでも見返せる。 */
             /* ライブ中は始めない（案内中の書き換えが全員の画面に流れてしまう） */}
-            {Je('school-outline', '使い方を見る', () => {
+            {行('school-outline', '使い方を見る', () => {
               if ('ライブ中' === 案内.startTutorial()) {
-                const e = 'ライブ記録中は、使い方の案内を始められません。ライブを止めてからお試しください。';
-                Alert.alert('使い方を見る', e);
+                const 文 = 'ライブ記録中は、使い方の案内を始められません。ライブを止めてからお試しください。';
+                Alert.alert('使い方を見る', 文);
               }
             })}
-            {Je('help-circle-outline', '運用ガイド・ヘルプ', () => le(true))}
-            {Je(
+            {行('help-circle-outline', '運用ガイド・ヘルプ', () => ガイドの窓を出す(true))}
+            {行(
               'log-out-outline',
               'ログアウト',
               () => {
@@ -727,7 +718,7 @@ const SettingsScreen = () => {
                 // 利用者が押してから
                 残った未送信を設定(useScoreStore.getState().countUnsynced());
                 ログアウトの段階を設定('確認');
-                oe(true);
+                ログアウトの窓を出す(true);
               },
               '#FF3B30',
               null,
@@ -736,7 +727,7 @@ const SettingsScreen = () => {
             {/* 団体アカウントで、管理者モードのときだけ出す。押すと警告の窓へ */}
             {'group' === activeRole &&
               isAdminMode &&
-              Je(
+              行(
                 'trash-outline',
                 'アカウントを削除する',
                 () => {
@@ -751,7 +742,7 @@ const SettingsScreen = () => {
               )}
           </>
         )}
-        {Ye(
+        {節(
           '表示',
           <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
             <View style={[styles.itemLeft, { marginBottom: 10 }]}>
@@ -792,7 +783,7 @@ const SettingsScreen = () => {
           </View>
         )}
         {'member' !== activeRole &&
-          Ye(
+          節(
             '基本設定',
             <>
               {'group' === activeRole && (
@@ -863,16 +854,19 @@ const SettingsScreen = () => {
                     <TextInput
                       style={[styles.stepperValue, { width: 40, textAlign: 'center', padding: 0 }]}
                       value={String(currentFreshmanTerm)}
-                      onChangeText={(e) => {
-                        const t = parseInt(e.replace(/[^0-9]/g, ''));
-                        isNaN(t) ? '' === e && updateCurrentFreshmanTerm(0) : updateCurrentFreshmanTerm(t);
+                      onChangeText={(文) => {
+                        const 数 = parseInt(文.replace(/[^0-9]/g, ''));
+                        isNaN(数) ? '' === 文 && updateCurrentFreshmanTerm(0) : updateCurrentFreshmanTerm(数);
                       }}
                       keyboardType="number-pad"
                     />
                     <Text style={{ fontSize: 14, color: '#8E8E93', marginRight: 8 }}>期</Text>
                     <View style={styles.stepperControls}>
                       <Pressable
-                        style={({ hovered: e }) => [styles.stepperBtn, e && { backgroundColor: '#D1D1D6' }]} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                        style={({ hovered }) => [
+                          styles.stepperBtn,
+                          hovered && { backgroundColor: '#D1D1D6' },
+                        ]} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                         accessible
                         accessibilityRole="button"
                         accessibilityLabel="減らす"
@@ -883,7 +877,10 @@ const SettingsScreen = () => {
                       </Pressable>
                       <View style={styles.stepperDivider} />
                       <Pressable
-                        style={({ hovered: e }) => [styles.stepperBtn, e && { backgroundColor: '#D1D1D6' }]} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                        style={({ hovered }) => [
+                          styles.stepperBtn,
+                          hovered && { backgroundColor: '#D1D1D6' },
+                        ]} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                         accessible
                         accessibilityRole="button"
                         accessibilityLabel="増やす"
@@ -917,9 +914,9 @@ const SettingsScreen = () => {
                     </View>
                   </View>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-                    {tagTemplates.map((e) => (
+                    {tagTemplates.map((タグ) => (
                       <View
-                        key={`template-${e}`}
+                        key={`template-${タグ}`}
                         style={{
                           backgroundColor: '#E5E5EA',
                           borderRadius: 16,
@@ -933,15 +930,18 @@ const SettingsScreen = () => {
                       >
                         <Text style={{ fontSize: 13, color: '#000' }}>
                           {/* しまう形は「#合宿」だが、画面では # を付けない */}
-                          {規則.タグの見た目(e)}
+                          {規則.タグの見た目(タグ)}
                         </Text>
                         <Pressable // 絵だけのボタン。どのタグを消すのかまで読ませる
                           accessible
                           accessibilityRole="button"
-                          accessibilityLabel={規則.タグの見た目(e) + ' を消す'}
-                          aria-label={e + ' を消す'}
-                          onPress={() => removeTagTemplate(e)}
-                          style={({ hovered: e }) => [e && { opacity: 0.7 }, IS_WEB && { cursor: 'pointer' }]}
+                          accessibilityLabel={規則.タグの見た目(タグ) + ' を消す'}
+                          aria-label={タグ + ' を消す'}
+                          onPress={() => removeTagTemplate(タグ)}
+                          style={({ hovered }) => [
+                            hovered && { opacity: 0.7 },
+                            IS_WEB && { cursor: 'pointer' },
+                          ]}
                         >
                           <Icons.Ionicons name="close-circle" size={18} color="#8E8E93" />
                         </Pressable>
@@ -952,27 +952,37 @@ const SettingsScreen = () => {
                     <TextInput
                       style={[styles.filterInput, { flex: 1, paddingVertical: 8 }]}
                       placeholder="新しいタグを追加"
-                      value={Se}
-                      onChangeText={Ee}
+                      value={タグの下書き}
+                      onChangeText={タグの下書きを置く}
                       onSubmitEditing={() => {
-                        Se.trim() &&
-                          (addTagTemplate(Se.trim().startsWith('#') ? Se.trim() : `#${Se.trim()}`), Ee(''));
+                        タグの下書き.trim() &&
+                          (addTagTemplate(
+                            タグの下書き.trim().startsWith('#')
+                              ? タグの下書き.trim()
+                              : `#${タグの下書き.trim()}`
+                          ),
+                          タグの下書きを置く(''));
                       }}
                     />
                     <Pressable
-                      style={({ hovered: e }) => [
+                      style={({ hovered }) => [
                         {
                           backgroundColor: '#007AFF',
                           borderRadius: 8,
                           paddingHorizontal: 16,
                           justifyContent: 'center',
                         },
-                        e && { backgroundColor: '#0062CC' },
+                        hovered && { backgroundColor: '#0062CC' },
                         IS_WEB && { cursor: 'pointer' },
                       ]}
                       onPress={() => {
-                        Se.trim() &&
-                          (addTagTemplate(Se.trim().startsWith('#') ? Se.trim() : `#${Se.trim()}`), Ee(''));
+                        タグの下書き.trim() &&
+                          (addTagTemplate(
+                            タグの下書き.trim().startsWith('#')
+                              ? タグの下書き.trim()
+                              : `#${タグの下書き.trim()}`
+                          ),
+                          タグの下書きを置く(''));
                       }}
                     >
                       <Text style={{ color: '#FFF', fontWeight: 'bold' }}>追加</Text>
@@ -982,7 +992,7 @@ const SettingsScreen = () => {
               )}
             </>
           )}
-        {Ye(
+        {節(
           '入力の保護',
           <View ref={(node) => 案内.setTutorialTargetNode('設定.自動ロック', node)} style={styles.item}>
             <View style={[styles.itemLeft, { flex: 1 }]}>
@@ -1001,7 +1011,7 @@ const SettingsScreen = () => {
             />
           </View>
         )}
-        {Ye(
+        {節(
           '保存のしかた',
           <View style={styles.item}>
             <View style={[styles.itemLeft, { flex: 1 }]}>
@@ -1020,7 +1030,7 @@ const SettingsScreen = () => {
             />
           </View>
         )}
-        {Ye(
+        {節(
           '矢所の記録',
           <>
             <View // 使い方の案内が指す先。この行は Je() を通らない作りなので、
@@ -1095,7 +1105,7 @@ const SettingsScreen = () => {
           </>
         )}
         {'member' !== activeRole &&
-          Ye(
+          節(
             '管理者設定',
             <View
               style={styles.item} // 使い方の案内から指せるように登録する
@@ -1120,14 +1130,14 @@ const SettingsScreen = () => {
               </View>
               <Switch
                 value={isAdminMode}
-                onValueChange={async (e) => {
-                  e ? (Pe(''), ke(true)) : setAdminMode(false);
+                onValueChange={async (入れる) => {
+                  入れる ? (管理者の合言葉を置く(''), 管理者の合言葉の窓を出す(true)) : setAdminMode(false);
                 }}
                 trackColor={{ false: '#D1D1D6', true: '#FF3B30' }}
               />
             </View>
           )}
-        {Ye(
+        {節(
           'データ管理',
           <>
             {'member' === activeRole && (
@@ -1152,17 +1162,21 @@ const SettingsScreen = () => {
                 </Text>
               </View>
             )}
-            {Je(
+            {行(
               'share-outline',
               'データをExcel形式で書き出し',
               async () => {
-                ee(true);
+                書き出しの窓を出す(true);
               },
               '#34C759'
             )}
-            {Je('mail-outline', 'お問い合わせ', () => setInquiryVisible(true), '#FF9500')}
+            {行('mail-outline', 'お問い合わせ', () => setInquiryVisible(true), '#FF9500')}
             <Pressable
-              style={({ hovered: e }) => [styles.item, e && styles.hovered, IS_WEB && { cursor: 'pointer' }]}
+              style={({ hovered }) => [
+                styles.item,
+                hovered && styles.hovered,
+                IS_WEB && { cursor: 'pointer' },
+              ]}
               onPress={syncAllToCloud}
             >
               <View style={styles.itemLeft}>
@@ -1212,35 +1226,51 @@ const SettingsScreen = () => {
           </Pressable>
         </View>
       </ScrollView>
-      <Modal visible={Z} transparent animationType="fade" onRequestClose={() => ee(false)}>
+      <Modal
+        visible={書き出しの窓}
+        transparent
+        animationType="fade"
+        onRequestClose={() => 書き出しの窓を出す(false)}
+      >
         <View style={styles.modalBackdrop}>
-          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => ee(false)} />
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => 書き出しの窓を出す(false)}
+          />
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Excel形式で書き出し</Text>
-            {De ? (
+            {絞り込みを開く ? (
               <ScrollView style={{ width: '100%', maxHeight: 450 }}>
                 <View style={styles.filterGroup}>
                   <Text style={styles.filterLabel}>出力形式</Text>
                   <View style={styles.flexRow}>
                     <TouchableOpacity
-                      onPress={() => pe('standard')}
-                      style={[styles.radioBtn, 'standard' === ye && styles.radioBtnActive]}
+                      onPress={() => 書き出しの形を置く('standard')}
+                      style={[styles.radioBtn, 'standard' === 書き出しの形 && styles.radioBtnActive]}
                     >
-                      <Text style={[styles.radioBtnText, 'standard' === ye && styles.radioBtnTextActive]}>
+                      <Text
+                        style={[
+                          styles.radioBtnText,
+                          'standard' === 書き出しの形 && styles.radioBtnTextActive,
+                        ]}
+                      >
                         標準形式
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      onPress={() => pe('matrix')}
-                      style={[styles.radioBtn, 'matrix' === ye && styles.radioBtnActive]}
+                      onPress={() => 書き出しの形を置く('matrix')}
+                      style={[styles.radioBtn, 'matrix' === 書き出しの形 && styles.radioBtnActive]}
                     >
-                      <Text style={[styles.radioBtnText, 'matrix' === ye && styles.radioBtnTextActive]}>
+                      <Text
+                        style={[styles.radioBtnText, 'matrix' === 書き出しの形 && styles.radioBtnTextActive]}
+                      >
                         印刷向け形式
                       </Text>
                     </TouchableOpacity>
                   </View>
                   <Text style={styles.ratioHintText}>
-                    {'standard' === ye
+                    {'standard' === 書き出しの形
                       ? '1行に1記録を出力します。データ加工に適しています。'
                       : 'メンバーを各行、日付を各列に配置します。掲示や閲覧に適しています。'}
                   </Text>
@@ -1251,21 +1281,21 @@ const SettingsScreen = () => {
                     <TouchableOpacity
                       style={styles.dateSelector}
                       onPress={() => {
-                        be('start');
-                        Fe(true);
+                        暦の対象を置く('start');
+                        暦を出すを置く(true);
                       }}
                     >
-                      <Text style={styles.dateSelectorText}>{de.toLocaleDateString('ja-JP')}</Text>
+                      <Text style={styles.dateSelectorText}>{期間の始め.toLocaleDateString('ja-JP')}</Text>
                     </TouchableOpacity>
                     <Text style={{ marginHorizontal: 8 }}>〜</Text>
                     <TouchableOpacity
                       style={styles.dateSelector}
                       onPress={() => {
-                        be('end');
-                        Fe(true);
+                        暦の対象を置く('end');
+                        暦を出すを置く(true);
                       }}
                     >
-                      <Text style={styles.dateSelectorText}>{ue.toLocaleDateString('ja-JP')}</Text>
+                      <Text style={styles.dateSelectorText}>{期間の終わり.toLocaleDateString('ja-JP')}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1274,8 +1304,8 @@ const SettingsScreen = () => {
                   <TextInput
                     style={styles.filterInput}
                     placeholder="キーワードで絞り込み"
-                    value={xe}
-                    onChangeText={ge}
+                    value={言葉の絞り}
+                    onChangeText={言葉の絞りを置く}
                     placeholderTextColor="#C6C6C8"
                   />
                   {titleSuggestions.length > 0 && (
@@ -1286,19 +1316,19 @@ const SettingsScreen = () => {
                       showsHorizontalScrollIndicator={false}
                       style={[styles.suggestionsContainer, IS_WEB && { overflowX: 'auto' }]}
                     >
-                      {titleSuggestions.map((e) => {
-                        const t = selectedKeywords.includes(e);
+                      {titleSuggestions.map((題) => {
+                        const 選択中 = selectedKeywords.includes(題);
                         return (
                           <TouchableOpacity
-                            key={`suggest-title-${e}`}
+                            key={`suggest-title-${題}`}
                             onPress={() =>
-                              setSelectedKeywords((t) =>
-                                t.includes(e) ? t.filter((t) => t !== e) : [...t, e]
+                              setSelectedKeywords((今の) =>
+                                今の.includes(題) ? 今の.filter((x) => x !== 題) : [...今の, 題]
                               )
                             }
-                            style={[styles.suggestionChip, t && { backgroundColor: '#007AFF' }]}
+                            style={[styles.suggestionChip, 選択中 && { backgroundColor: '#007AFF' }]}
                           >
-                            <Text style={[styles.suggestionText, t && { color: '#FFF' }]}>{e}</Text>
+                            <Text style={[styles.suggestionText, 選択中 && { color: '#FFF' }]}>{題}</Text>
                           </TouchableOpacity>
                         );
                       })}
@@ -1319,8 +1349,8 @@ const SettingsScreen = () => {
                     <TextInput
                       style={styles.filterInput}
                       placeholder="未入力ですべて対象"
-                      value={'all' === me ? '' : me}
-                      onChangeText={(e) => he(e || 'all')}
+                      value={'all' === 部員名の絞り ? '' : 部員名の絞り}
+                      onChangeText={(文) => 部員名の絞りを置く(文 || 'all')}
                       placeholderTextColor="#C6C6C8"
                     />
                     {memberSuggestions.length > 0 && (
@@ -1331,19 +1361,19 @@ const SettingsScreen = () => {
                         showsHorizontalScrollIndicator={false}
                         style={[styles.suggestionsContainer, IS_WEB && { overflowX: 'auto' }]}
                       >
-                        {memberSuggestions.map((e) => {
-                          const t = selectedMembers.includes(e);
+                        {memberSuggestions.map((名前) => {
+                          const 選択中 = selectedMembers.includes(名前);
                           return (
                             <TouchableOpacity
-                              key={`suggest-member-${e}`}
+                              key={`suggest-member-${名前}`}
                               onPress={() =>
-                                setSelectedMembers((t) =>
-                                  t.includes(e) ? t.filter((t) => t !== e) : [...t, e]
+                                setSelectedMembers((今の) =>
+                                  今の.includes(名前) ? 今の.filter((x) => x !== 名前) : [...今の, 名前]
                                 )
                               }
-                              style={[styles.suggestionChip, t && { backgroundColor: '#007AFF' }]}
+                              style={[styles.suggestionChip, 選択中 && { backgroundColor: '#007AFF' }]}
                             >
-                              <Text style={[styles.suggestionText, t && { color: '#FFF' }]}>{e}</Text>
+                              <Text style={[styles.suggestionText, 選択中 && { color: '#FFF' }]}>{名前}</Text>
                             </TouchableOpacity>
                           );
                         })}
@@ -1378,34 +1408,34 @@ const SettingsScreen = () => {
                       }}
                     >
                       <TouchableOpacity
-                        onPress={() => we('AND')}
+                        onPress={() => タグの論理を置く('AND')}
                         style={[
                           { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-                          'AND' === Te && { backgroundColor: '#FFF' },
+                          'AND' === タグの論理 && { backgroundColor: '#FFF' },
                         ]}
                       >
                         <Text
                           style={{
                             fontSize: 11,
                             fontWeight: 'bold',
-                            color: 'AND' === Te ? '#007AFF' : '#8E8E93',
+                            color: 'AND' === タグの論理 ? '#007AFF' : '#8E8E93',
                           }}
                         >
                           すべて含む
                         </Text>
                       </TouchableOpacity>
                       <TouchableOpacity
-                        onPress={() => we('OR')}
+                        onPress={() => タグの論理を置く('OR')}
                         style={[
                           { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-                          'OR' === Te && { backgroundColor: '#FFF' },
+                          'OR' === タグの論理 && { backgroundColor: '#FFF' },
                         ]}
                       >
                         <Text
                           style={{
                             fontSize: 11,
                             fontWeight: 'bold',
-                            color: 'OR' === Te ? '#007AFF' : '#8E8E93',
+                            color: 'OR' === タグの論理 ? '#007AFF' : '#8E8E93',
                           }}
                         >
                           いずれか含む
@@ -1414,25 +1444,25 @@ const SettingsScreen = () => {
                     </View>
                   </View>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
-                    {Oe.length > 0 ? (
-                      Oe.map((e) => {
-                        const t = Be.includes(e);
+                    {タグの一覧.length > 0 ? (
+                      タグの一覧.map((タグ) => {
+                        const 選択中 = 選んだタグ.includes(タグ);
                         return (
                           <TouchableOpacity
-                            key={`export-tag-${e}`}
-                            onPress={() => Ne(e)}
+                            key={`export-tag-${タグ}`}
+                            onPress={() => タグを切り替える(タグ)}
                             style={[
                               styles.tagChip,
-                              t && styles.tagChipActive,
+                              選択中 && styles.tagChipActive,
                               {
-                                backgroundColor: t ? '#007AFF' : '#F2F2F7',
+                                backgroundColor: 選択中 ? '#007AFF' : '#F2F2F7',
                                 paddingVertical: 6,
                                 marginVertical: 2,
                               },
                             ]}
                           >
-                            <Text style={[styles.tagChipText, t && { color: '#FFF' }]}>
-                              {e.replace(/^#/, '')}
+                            <Text style={[styles.tagChipText, 選択中 && { color: '#FFF' }]}>
+                              {タグ.replace(/^#/, '')}
                             </Text>
                           </TouchableOpacity>
                         );
@@ -1441,36 +1471,36 @@ const SettingsScreen = () => {
                       <Text style={{ fontSize: 12, color: '#8E8E93' }}>使用されているタグがありません</Text>
                     )}
                   </View>
-                  {Be.length > 0 && (
-                    <TouchableOpacity onPress={() => Ie([])} style={{ marginTop: 8 }}>
+                  {選んだタグ.length > 0 && (
+                    <TouchableOpacity onPress={() => 選んだタグを置く([])} style={{ marginTop: 8 }}>
                       <Text style={{ fontSize: 12, color: '#007AFF' }}>選択をクリア</Text>
                     </TouchableOpacity>
                   )}
                 </View>
                 <View style={[styles.modalButtons, { marginTop: 20 }]}>
                   <Pressable
-                    style={({ hovered: e }) => [
+                    style={({ hovered }) => [
                       styles.modalBtn,
                       { backgroundColor: '#007AFF' },
-                      e && { backgroundColor: '#0062CC' },
+                      hovered && { backgroundColor: '#0062CC' },
                       IS_WEB && { cursor: 'pointer' },
                     ]}
                     onPress={() => {
-                      ee(false);
-                      ve(false);
-                      Ge('custom');
+                      書き出しの窓を出す(false);
+                      絞り込みを開くを置く(false);
+                      書き出す('custom');
                     }}
                   >
                     <Text style={[styles.modalBtnText, { color: '#FFF' }]}>この条件で書き出す</Text>
                   </Pressable>
                   <Pressable
-                    style={({ hovered: e }) => [
+                    style={({ hovered }) => [
                       styles.modalBtn,
                       { backgroundColor: '#F2F2F7' },
-                      e && { backgroundColor: '#E5E5EA' },
+                      hovered && { backgroundColor: '#E5E5EA' },
                       IS_WEB && { cursor: 'pointer' },
                     ]}
-                    onPress={() => ve(false)}
+                    onPress={() => 絞り込みを開くを置く(false)}
                   >
                     <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>戻る</Text>
                   </Pressable>
@@ -1481,13 +1511,13 @@ const SettingsScreen = () => {
                 <Text style={styles.modalMessage}>書き出すデータの範囲を選択してください。</Text>
                 <View style={styles.modalButtons}>
                   <Pressable
-                    style={({ hovered: e }) => [
+                    style={({ hovered }) => [
                       styles.modalBtn,
                       { backgroundColor: '#F2F2F7' },
-                      e && { backgroundColor: '#E5E5EA' },
+                      hovered && { backgroundColor: '#E5E5EA' },
                       IS_WEB && { cursor: 'pointer' },
                     ]}
-                    onPress={() => ee(false)}
+                    onPress={() => 書き出しの窓を出す(false)}
                   >
                     <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
                   </Pressable>
@@ -1498,58 +1528,58 @@ const SettingsScreen = () => {
                       accessibilityRole="button"
                       accessibilityLabel="前へ"
                       aria-label="前へ"
-                      onPress={() => He(-1)}
+                      onPress={() => 年度を動かす(-1)}
                     >
                       <Icons.Ionicons name="chevron-back" size={20} color="#007AFF" />
                     </TouchableOpacity>
-                    <Text style={styles.monthNavText}>{Ve}年度のデータ</Text>
+                    <Text style={styles.monthNavText}>{書き出す年度}年度のデータ</Text>
                     <TouchableOpacity
                       style={styles.monthNavBtn} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                       accessible
                       accessibilityRole="button"
                       accessibilityLabel="次へ"
                       aria-label="次へ"
-                      onPress={() => He(1)}
+                      onPress={() => 年度を動かす(1)}
                     >
                       <Icons.Ionicons name="chevron-forward" size={20} color="#007AFF" />
                     </TouchableOpacity>
                   </View>
                   <Pressable
-                    style={({ hovered: e }) => [
+                    style={({ hovered }) => [
                       styles.modalBtn,
                       { backgroundColor: '#007AFF', marginTop: 8 },
-                      e && { backgroundColor: '#0062CC' },
+                      hovered && { backgroundColor: '#0062CC' },
                       IS_WEB && { cursor: 'pointer' },
                     ]}
                     onPress={() => {
-                      ee(false);
-                      Ge('fiscal');
+                      書き出しの窓を出す(false);
+                      書き出す('fiscal');
                     }}
                   >
-                    <Text style={[styles.modalBtnText, { color: '#FFF' }]}>{Ve}年度を書き出す</Text>
+                    <Text style={[styles.modalBtnText, { color: '#FFF' }]}>{書き出す年度}年度を書き出す</Text>
                   </Pressable>
                   <Pressable
-                    style={({ hovered: e }) => [
+                    style={({ hovered }) => [
                       styles.modalBtn,
                       { backgroundColor: '#34C759' },
-                      e && { backgroundColor: '#28A745' },
+                      hovered && { backgroundColor: '#28A745' },
                       IS_WEB && { cursor: 'pointer' },
                     ]}
                     onPress={() => {
-                      ee(false);
-                      Ge('all');
+                      書き出しの窓を出す(false);
+                      書き出す('all');
                     }}
                   >
                     <Text style={[styles.modalBtnText, { color: '#FFF' }]}>すべてのデータ</Text>
                   </Pressable>
                   <Pressable
-                    style={({ hovered: e }) => [
+                    style={({ hovered }) => [
                       styles.modalBtn,
                       { backgroundColor: '#5856D6' },
-                      e && { backgroundColor: '#4845C6' },
+                      hovered && { backgroundColor: '#4845C6' },
                       IS_WEB && { cursor: 'pointer' },
                     ]}
-                    onPress={() => ve(true)}
+                    onPress={() => 絞り込みを開くを置く(true)}
                   >
                     <Text style={[styles.modalBtnText, { color: '#FFF' }]}>詳細な条件で絞り込む...</Text>
                   </Pressable>
@@ -1620,10 +1650,10 @@ const SettingsScreen = () => {
             )}
             <View style={styles.modalButtonsRow}>
               <Pressable
-                style={({ hovered: e }) => [
+                style={({ hovered }) => [
                   styles.modalBtn,
                   { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
-                  e && { backgroundColor: '#E5E5EA' },
+                  hovered && { backgroundColor: '#E5E5EA' },
                   IS_WEB && { cursor: 'pointer' },
                 ]}
                 onPress={() => 削除の窓を開く(false)}
@@ -1632,10 +1662,10 @@ const SettingsScreen = () => {
                 <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
               </Pressable>
               <Pressable
-                style={({ hovered: e }) => [
+                style={({ hovered }) => [
                   styles.modalBtn,
                   { backgroundColor: '#FF3B30', flex: 1, marginLeft: 5 },
-                  e && { backgroundColor: '#D70015' },
+                  hovered && { backgroundColor: '#D70015' },
                   (!!削除の段階 || !削除の合言葉) && { opacity: 0.5 },
                   IS_WEB && { cursor: 'pointer' },
                 ]}
@@ -1653,7 +1683,7 @@ const SettingsScreen = () => {
                   削除の段階を設定('');
                   try {
                     await FirebaseAuth.signOut(auth);
-                  } catch (e) {
+                  } catch (誤り) {
                     // 口座はもう無いので、ここで失敗しても構わない
                   }
                   setAuth(null, null, null, null);
@@ -1669,12 +1699,17 @@ const SettingsScreen = () => {
           </View>
         </View>
       </Modal>
-      <Modal visible={Ae} transparent animationType="fade" onRequestClose={() => ke(false)}>
+      <Modal
+        visible={管理者の合言葉の窓}
+        transparent
+        animationType="fade"
+        onRequestClose={() => 管理者の合言葉の窓を出す(false)}
+      >
         <View style={styles.modalBackdrop}>
           <TouchableOpacity
             style={StyleSheet.absoluteFill}
             activeOpacity={1}
-            onPress={() => !Re && ke(false)}
+            onPress={() => !合言葉を確かめ中 && 管理者の合言葉の窓を出す(false)}
           />
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>管理者認証</Text>
@@ -1695,8 +1730,8 @@ const SettingsScreen = () => {
                 style={{ flex: 1, height: 48, fontSize: 16 }}
                 placeholder="パスワード"
                 secureTextEntry={!showPw}
-                value={ze}
-                onChangeText={Pe}
+                value={管理者の合言葉}
+                onChangeText={管理者の合言葉を置く}
                 autoFocus
               />
               <Pressable // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
@@ -1712,71 +1747,82 @@ const SettingsScreen = () => {
             </View>
             <View style={styles.modalButtonsRow}>
               <Pressable
-                style={({ hovered: e }) => [
+                style={({ hovered }) => [
                   styles.modalBtn,
                   { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
-                  e && { backgroundColor: '#E5E5EA' },
+                  hovered && { backgroundColor: '#E5E5EA' },
                   IS_WEB && { cursor: 'pointer' },
                 ]}
-                onPress={() => ke(false)}
-                disabled={Re}
+                onPress={() => 管理者の合言葉の窓を出す(false)}
+                disabled={合言葉を確かめ中}
               >
                 <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
               </Pressable>
               <Pressable
-                style={({ hovered: e }) => [
+                style={({ hovered }) => [
                   styles.modalBtn,
                   { backgroundColor: '#007AFF', flex: 1, marginLeft: 5 },
-                  e && { backgroundColor: '#0062CC' },
+                  hovered && { backgroundColor: '#0062CC' },
                   IS_WEB && { cursor: 'pointer' },
                 ]}
                 onPress={async () => {
-                  if (ze) {
-                    We(true);
+                  if (管理者の合言葉) {
+                    合言葉を確かめ中を置く(true);
                     try {
-                      (await verifyGroupPassword(ze))
-                        ? (setAdminMode(true), ke(false), Pe(''))
+                      (await verifyGroupPassword(管理者の合言葉))
+                        ? (setAdminMode(true), 管理者の合言葉の窓を出す(false), 管理者の合言葉を置く(''))
                         : Alert.alert('エラー', 'パスワードが正しくありません。');
-                    } catch (e) {
+                    } catch (誤り) {
                       Alert.alert('エラー', '認証に失敗しました。');
                     } finally {
-                      We(false);
+                      合言葉を確かめ中を置く(false);
                     }
                   }
                 }}
-                disabled={Re || !ze}
+                disabled={合言葉を確かめ中 || !管理者の合言葉}
               >
-                <Text style={[styles.modalBtnText, { color: '#FFF' }]}>{Re ? '認証中...' : '認証'}</Text>
+                <Text style={[styles.modalBtnText, { color: '#FFF' }]}>
+                  {合言葉を確かめ中 ? '認証中...' : '認証'}
+                </Text>
               </Pressable>
             </View>
           </View>
         </View>
       </Modal>
-      <Modal visible={re} transparent animationType="fade" onRequestClose={() => oe(false)}>
+      <Modal
+        visible={ログアウトの窓}
+        transparent
+        animationType="fade"
+        onRequestClose={() => ログアウトの窓を出す(false)}
+      >
         <View style={styles.modalBackdrop}>
-          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => oe(false)} />
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => ログアウトの窓を出す(false)}
+          />
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>ログアウト</Text>
             <Text style={styles.modalMessage}>{ログアウトの文言(ログアウトの段階, 残った未送信)}</Text>
             <View style={styles.modalButtonsRow}>
               <Pressable
-                style={({ hovered: e }) => [
+                style={({ hovered }) => [
                   styles.modalBtn,
                   { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
-                  e && { backgroundColor: '#E5E5EA' },
+                  hovered && { backgroundColor: '#E5E5EA' },
                   IS_WEB && { cursor: 'pointer' },
                   ログアウトのボタンを止める(ログアウトの段階) && { opacity: 0.4 },
                 ]}
                 disabled={ログアウトのボタンを止める(ログアウトの段階)}
-                onPress={() => oe(false)}
+                onPress={() => ログアウトの窓を出す(false)}
               >
                 <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
               </Pressable>
               <Pressable
-                style={({ hovered: e }) => [
+                style={({ hovered }) => [
                   styles.modalBtn,
                   { backgroundColor: '#FF3B30', flex: 1, marginLeft: 5 },
-                  e && { backgroundColor: '#D63027' },
+                  hovered && { backgroundColor: '#D63027' },
                   IS_WEB && { cursor: 'pointer' },
                   ログアウトのボタンを止める(ログアウトの段階) && { opacity: 0.4 },
                 ]}
@@ -1789,15 +1835,15 @@ const SettingsScreen = () => {
                     let 残り = 残った未送信;
                     try {
                       残り = await useScoreStore.getState().flushUnsyncedForLogout();
-                    } catch (e) {
+                    } catch (誤り) {
                       残り = useScoreStore.getState().countUnsynced();
                     }
                     残った未送信を設定(残り);
                     if (残り > 0) return void ログアウトの段階を設定('失敗');
                     ログアウトの段階を設定('送信済み');
-                    await new Promise((e) => setTimeout(e, 900));
+                    await new Promise((解く) => setTimeout(解く, 900));
                   }
-                  oe(false);
+                  ログアウトの窓を出す(false);
                   try {
                     if ('member' === activeRole && auth.currentUser) {
                       await Firestore.deleteDoc(
@@ -1806,8 +1852,8 @@ const SettingsScreen = () => {
                     }
                     await FirebaseAuth.signOut(auth);
                     setAuth(null, null, null, null);
-                  } catch (e) {
-                    console.error('Logout error:', e);
+                  } catch (誤り) {
+                    console.error('Logout error:', 誤り);
                   }
                 }}
               >
@@ -1819,9 +1865,18 @@ const SettingsScreen = () => {
           </View>
         </View>
       </Modal>
-      <Modal visible={te} transparent animationType="fade" onRequestClose={() => le(false)}>
+      <Modal
+        visible={ガイドの窓}
+        transparent
+        animationType="fade"
+        onRequestClose={() => ガイドの窓を出す(false)}
+      >
         <View style={styles.modalBackdrop}>
-          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => le(false)} />
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => ガイドの窓を出す(false)}
+          />
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>運用ガイド</Text>
             <View
@@ -1849,13 +1904,13 @@ const SettingsScreen = () => {
               </Text>
             </View>
             <Pressable
-              style={({ hovered: e }) => [
+              style={({ hovered }) => [
                 styles.modalBtn,
                 { backgroundColor: '#F2F2F7', width: '100%' },
-                e && { backgroundColor: '#E5E5EA' },
+                hovered && { backgroundColor: '#E5E5EA' },
                 IS_WEB && { cursor: 'pointer' },
               ]}
-              onPress={() => le(false)}
+              onPress={() => ガイドの窓を出す(false)}
             >
               <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>閉じる</Text>
             </Pressable>
@@ -1863,14 +1918,14 @@ const SettingsScreen = () => {
         </View>
       </Modal>
       <CustomCalendarModal
-        visible={je}
-        onClose={() => Fe(false)}
-        selectedDate={'start' === Ce ? de : ue}
-        onSelectDate={(e) => {
-          if ('start' === Ce) ce(e);
-          else fe(e);
+        visible={暦を出す}
+        onClose={() => 暦を出すを置く(false)}
+        selectedDate={'start' === 暦の対象 ? 期間の始め : 期間の終わり}
+        onSelectDate={(日付) => {
+          if ('start' === 暦の対象) 期間の始めを置く(日付);
+          else 期間の終わりを置く(日付);
         }}
-        title={'start' === Ce ? '開始日を選択' : '終了日を選択'}
+        title={'start' === 暦の対象 ? '開始日を選択' : '終了日を選択'}
       />
       <Modal
         visible={inquiryVisible}
@@ -1906,7 +1961,7 @@ const SettingsScreen = () => {
                 style={[styles.filterInput, { width: '100%', marginBottom: 10 }]}
                 placeholder="メールアドレス（任意）"
                 value={inquiryEmail}
-                onChangeText={(e) => setInquiryEmail(e)}
+                onChangeText={(文) => setInquiryEmail(文)}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 editable={!inquirySending}
@@ -1918,7 +1973,7 @@ const SettingsScreen = () => {
                 ]}
                 placeholder="お問い合わせ内容"
                 value={inquiryContent}
-                onChangeText={(e) => setInquiryContent(e)}
+                onChangeText={(文) => setInquiryContent(文)}
                 multiline
                 editable={!inquirySending}
               />
@@ -1961,7 +2016,7 @@ const SettingsScreen = () => {
                 <Pressable
                   onPress={pickInquiryImage}
                   disabled={inquirySending}
-                  style={({ hovered: e }) => [
+                  style={({ hovered }) => [
                     {
                       width: '100%',
                       marginBottom: 15,
@@ -1975,7 +2030,7 @@ const SettingsScreen = () => {
                       borderRadius: 8,
                       paddingVertical: 12,
                     },
-                    e && { backgroundColor: '#F2F2F7' },
+                    hovered && { backgroundColor: '#F2F2F7' },
                     IS_WEB && { cursor: 'pointer' },
                   ]}
                 >
@@ -1987,10 +2042,10 @@ const SettingsScreen = () => {
               ) : null}
               <View style={styles.modalButtonsRow}>
                 <Pressable
-                  style={({ hovered: e }) => [
+                  style={({ hovered }) => [
                     styles.modalBtn,
                     { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
-                    e && { backgroundColor: '#E5E5EA' },
+                    hovered && { backgroundColor: '#E5E5EA' },
                     IS_WEB && { cursor: 'pointer' },
                   ]}
                   onPress={() => {
@@ -2004,10 +2059,10 @@ const SettingsScreen = () => {
                   <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
                 </Pressable>
                 <Pressable
-                  style={({ hovered: e }) => [
+                  style={({ hovered }) => [
                     styles.modalBtn,
                     { backgroundColor: '#FF9500', flex: 1, marginLeft: 5 },
-                    e && { backgroundColor: '#E68A00' },
+                    hovered && { backgroundColor: '#E68A00' },
                     IS_WEB && { cursor: 'pointer' },
                   ]}
                   onPress={async () => {
