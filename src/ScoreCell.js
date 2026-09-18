@@ -141,7 +141,7 @@ const ScoreCell = React.memo(
     React.useEffect(() => {
       const 節点 = cellRef.current;
       if (!節点) return;
-      const startPress = (ev) => {
+      const startPress = (出来事) => {
         const props = latestPropsRef.current;
         if (props.isLocked) return;
         // 自動で閉じたますは、長押しで1つだけ開ける
@@ -190,8 +190,8 @@ const ScoreCell = React.memo(
       // 矢所を使っていなくても、閉じたますを開けるのに長押しを使う。
       // 矢所のときだけ止めていたので、既定の設定（矢所は切ってある）だと
       // 開けようと押さえた指に対してブラウザの長押しメニューが出ていた
-      const suppressContext = (ev) => {
-        ev.preventDefault();
+      const suppressContext = (出来事) => {
+        出来事.preventDefault();
       };
       節点.addEventListener('mousedown', startPress);
       節点.addEventListener('mouseup', endPress);
@@ -259,8 +259,8 @@ const ScoreCell = React.memo(
       <View
         ref={cellRef} // 自動での確かめ用。どのますかを外から指せるようにしておく
         testID={'ます-' + archerId + '-' + index}
-        onTouchEnd={(ev) => {
-          ev.stopPropagation();
+        onTouchEnd={(出来事) => {
+          出来事.stopPropagation();
         }}
         style={[
           styles.cell,

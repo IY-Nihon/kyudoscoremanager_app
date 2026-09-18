@@ -1083,7 +1083,7 @@ const OCRRecordModal = ({
         const 甲の順 = gradeA === 0 ? 99 : gradeA;
         const 乙の順 = gradeB === 0 ? 99 : gradeB;
         if (甲の順 !== 乙の順) return 甲の順 - 乙の順;
-        const genderVal = (g) => ('男子' === g ? 0 : '女子' === g ? 1 : 2);
+        const genderVal = (性別) => ('男子' === 性別 ? 0 : '女子' === 性別 ? 1 : 2);
         const genDiff = genderVal(甲.gender) - genderVal(乙.gender);
         return 0 !== genDiff ? genDiff : (甲.name || '').localeCompare(乙.name || '', 'ja');
       });

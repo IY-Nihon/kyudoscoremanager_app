@@ -338,7 +338,6 @@ const SettingsScreen = () => {
       const 集計しない記録 = 対象の記録.filter((記録) => !集.集計に入れるか(記録));
       const 集計する記録 = 対象の記録.filter((記録) => 集.集計に入れるか(記録));
       const 名を整える = (名) => (名 || '').replace(/\s*\(\d+\)$/, '').trim();
-      let _ = '';
       let xlsxHeaders = [];
       let xlsxRows = [];
       if ('matrix' !== 書き出しの形) {

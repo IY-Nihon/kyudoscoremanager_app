@@ -641,7 +641,7 @@ const AIChatBot = () => {
   const panResponder = useRef(
     _PanResponder.create({
       onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 2 || Math.abs(g.dy) > 2,
+      onMoveShouldSetPanResponder: (_, 動き) => Math.abs(動き.dx) > 2 || Math.abs(動き.dy) > 2,
       // パソコンで引くと、字の上を通ったときに字の選択が始まり、react-native-web の
       // responder が選択の合図（selectionchange）で責任を取り上げてボタンが止まる。
       // 取り上げは断る（記録表の取っ手と同じ。始まった選択は下で解く）
@@ -651,8 +651,8 @@ const AIChatBot = () => {
         pan.setOffset({ x: currentPos.current.x, y: currentPos.current.y });
         pan.setValue({ x: 0, y: 0 });
       },
-      onPanResponderMove: (_, g) => {
-        if (Math.abs(g.dx) > 2 || Math.abs(g.dy) > 2) {
+      onPanResponderMove: (_, 動き) => {
+        if (Math.abs(動き.dx) > 2 || Math.abs(動き.dy) > 2) {
           isDragging.current = true;
         }
         if (typeof window !== 'undefined' && window.getSelection) {
@@ -670,8 +670,8 @@ const AIChatBot = () => {
         const offsetX = currentPos.current.x;
         const offsetY = currentPos.current.y;
 
-        let absX = initX + offsetX + g.dx;
-        let absY = initY + offsetY + g.dy;
+        let absX = initX + offsetX + 動き.dx;
+        let absY = initY + offsetY + 動き.dy;
 
         const minAbsX = 20;
         const maxAbsX = layoutRef.current.width - 20 - 60;
@@ -689,7 +689,7 @@ const AIChatBot = () => {
         pan.setValue({ x: nextX, y: nextY });
         currentPos.current = { x: offsetX + nextX, y: offsetY + nextY };
       },
-      onPanResponderRelease: (_, g) => {
+      onPanResponderRelease: (_, 動き) => {
         pan.flattenOffset();
         if (!isDragging.current) {
           setModalVisible(true);
@@ -697,8 +697,8 @@ const AIChatBot = () => {
           const initX = layoutRef.current.width - 20 - 60;
           const initY = layoutRef.current.height - 20 - 60;
 
-          const isLeft = Math.abs(g.vx) > 0.2 ? g.vx < 0 : g.dx < 0;
-          const isTop = Math.abs(g.vy) > 0.2 ? g.vy < 0 : g.dy < 0;
+          const isLeft = Math.abs(動き.vx) > 0.2 ? 動き.vx < 0 : 動き.dx < 0;
+          const isTop = Math.abs(動き.vy) > 0.2 ? 動き.vy < 0 : 動き.dy < 0;
 
           snapXRef.current = isLeft ? 'left' : 'right';
           snapYRef.current = isTop ? 'top' : 'bottom';

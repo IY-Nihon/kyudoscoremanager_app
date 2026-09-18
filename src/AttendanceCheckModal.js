@@ -55,8 +55,8 @@ const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
     const 乙の順 = gradeB === 0 ? 99 : gradeB;
     if (甲の順 !== 乙の順) return 甲の順 - 乙の順;
     // 2. 男女順 (男子→女子→未設定)
-    const genderOrder = (g) => {
-      const 整えた = (g || '').trim();
+    const genderOrder = (性別) => {
+      const 整えた = (性別 || '').trim();
       if (整えた === '男子') return 0;
       if (整えた === '女子') return 1;
       return 2;
