@@ -8,14 +8,14 @@ const StyleSheet = require('./StyleSheet').default;
 const { useScoreStore } = require('./useScoreStore');
 class ErrorBoundary extends React.Component {
   state = { hasError: false, error: null };
-  static getDerivedStateFromError(e) {
-    return { hasError: true, error: e };
+  static getDerivedStateFromError(誤り) {
+    return { hasError: true, error: 誤り };
   }
-  componentDidCatch(e, t) {
-    console.error('Uncaught error:', e, t);
+  componentDidCatch(誤り, 部品の履歴) {
+    console.error('Uncaught error:', 誤り, 部品の履歴);
     // 画面ごと落ちたときこそ、何が起きたか残らないと直せない
     try {
-      require('./errorReporter').不具合を送る('画面が落ちた', e);
+      require('./errorReporter').不具合を送る('画面が落ちた', 誤り);
     } catch (_) {
       /* 控えられなくても、復旧の画面は出す */
     }

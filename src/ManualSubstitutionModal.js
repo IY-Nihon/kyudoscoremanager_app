@@ -16,31 +16,31 @@ const { IS_IOS } = require('./IS_WEB');
 const { 立の数, 立の頭の射, 学年でまとめる } = require('./syncRules');
 const ManualSubstitutionModal = ({ visible, archerId, onClose }) => {
   const { members, shotsPerRound, setArcherMember, setArcherGuestName, setSubstitution } = useScoreStore();
-  const [z, R] = React.useState('');
+  const [番号の入力, 番号の入力を置く] = React.useState('');
   const // 交代は立の切れ目ですることが多い。射目でも入れられるよう、単位を選べる
     [単位, 単位を置く] = React.useState('立目');
   const // 閉じた学年を覚える（開いた学年ではなく）。初めは全部開く。
     // 開く側を決め打ちすると、進級で出る5年生のように想定外の学年が
     // 閉じたまま出て、中の人に辿り着けなくなる
     [閉じた学年, 閉じた学年を置く] = React.useState(new Set());
-  const [w, I] = React.useState('');
-  const [k, v] = React.useState('');
-  const H = (
-    '' === w.trim()
+  const [検索の文, 検索の文を置く] = React.useState('');
+  const [客名の入力, 客名の入力を置く] = React.useState('');
+  const 候補 = (
+    '' === 検索の文.trim()
       ? [...members]
-      : members.filter((e) => (e.name || '').toLowerCase().includes(w.toLowerCase()))
-  ).sort((e, t) => {
-    const n = undefined === e.grade || null === e.grade ? 99 : Number(e.grade);
-    const o = undefined === t.grade || null === t.grade ? 99 : Number(t.grade);
-    const a = 0 === n ? 99 : n;
-    const l = 0 === o ? 99 : o;
-    if (a !== l) return a - l;
-    const s = (e) => {
-      const t = (e || '').trim();
-      return '男子' === t ? 0 : '女子' === t ? 1 : 2;
+      : members.filter((部員) => (部員.name || '').toLowerCase().includes(検索の文.toLowerCase()))
+  ).sort((甲, 乙) => {
+    const 甲の学年 = undefined === 甲.grade || null === 甲.grade ? 99 : Number(甲.grade);
+    const 乙の学年 = undefined === 乙.grade || null === 乙.grade ? 99 : Number(乙.grade);
+    const 甲の順 = 0 === 甲の学年 ? 99 : 甲の学年;
+    const 乙の順 = 0 === 乙の学年 ? 99 : 乙の学年;
+    if (甲の順 !== 乙の順) return 甲の順 - 乙の順;
+    const 性別の順 = (性別) => {
+      const 整えた = (性別 || '').trim();
+      return '男子' === 整えた ? 0 : '女子' === 整えた ? 1 : 2;
     };
-    const u = s(e.gender) - s(t.gender);
-    return 0 !== u ? u : (e.name || '').localeCompare(t.name || '', 'ja');
+    const 性別の差 = 性別の順(甲.gender) - 性別の順(乙.gender);
+    return 0 !== 性別の差 ? 性別の差 : (甲.name || '').localeCompare(乙.name || '', 'ja');
   });
   const 立か = '立目' === 単位;
   const 上限 = 立か ? 立の数(shotsPerRound) : shotsPerRound;
@@ -52,39 +52,39 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose }) => {
   };
   const // 名前で絞り込んでいるあいだは開いておく。閉じたままだと
     // 探した人が隠れたままで「居ない」と見えてしまう
-    開いているか = (学年) => '' !== w.trim() || !閉じた学年.has(String(学年));
+    開いているか = (学年) => '' !== 検索の文.trim() || !閉じた学年.has(String(学年));
   const // 交代相手を学年でまとめる。人の選択と同じで、0年（学年なし）は
     // 「その他/ゲスト」として最後に置く
-    学年ごと = 学年でまとめる(H);
+    学年ごと = 学年でまとめる(候補);
   const // 選べる番号。1立目、2立目…（射目のときは 1射目、2射目…）
-    番号たち = Array.from({ length: 上限 }, (e, t) => t + 1);
-  const 選んだ = parseInt(z, 10);
+    番号たち = Array.from({ length: 上限 }, (_, 番) => 番 + 1);
+  const 選んだ = parseInt(番号の入力, 10);
   const // 入れた番号が何射目にあたるか。立なら、その立の1本目
     何射目 = () => {
-      const n = parseInt(z, 10);
-      if (isNaN(n) || n < 1 || n > 上限) return null;
-      return 立か ? 立の頭の射(n, shotsPerRound) : n - 1;
+      const 番号 = parseInt(番号の入力, 10);
+      if (isNaN(番号) || 番号 < 1 || 番号 > 上限) return null;
+      return 立か ? 立の頭の射(番号, shotsPerRound) : 番号 - 1;
     };
-  const A = (e, t) => {
-    const n = 何射目();
-    null !== n && archerId && (setSubstitution(archerId, n, e, t), P());
+  const 交代を入れる = (名前, 部員ID) => {
+    const 射番 = 何射目();
+    null !== 射番 && archerId && (setSubstitution(archerId, 射番, 名前, 部員ID), 入力を空にする());
   };
-  const P = () => {
-    R('');
-    I('');
-    v('');
+  const 入力を空にする = () => {
+    番号の入力を置く('');
+    検索の文を置く('');
+    客名の入力を置く('');
     単位を置く('立目');
     onClose();
   };
   return visible ? (
     <Modal visible={visible} transparent animationType="slide">
       <KeyboardAvoidingView behavior={IS_IOS ? 'padding' : undefined} style={styles.overlay}>
-        <TouchableWithoutFeedback onPress={P}>
+        <TouchableWithoutFeedback onPress={入力を空にする}>
           <View style={StyleSheet.absoluteFill} />
         </TouchableWithoutFeedback>
         <View style={styles.container}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={P} style={styles.headerBtn}>
+            <TouchableOpacity onPress={入力を空にする} style={styles.headerBtn}>
               <Text style={styles.headerBtnTxt}>閉じる</Text>
             </TouchableOpacity>
             <Text style={styles.headerTitle}>途中交代の設定</Text>
@@ -109,7 +109,7 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose }) => {
                     style={[styles.単位ボタン, 名 === 単位 && styles.単位ボタン選択中]}
                     onPress={() => {
                       単位を置く(名);
-                      R('');
+                      番号の入力を置く('');
                     }}
                   >
                     <Text style={[styles.単位の字, 名 === 単位 && styles.単位の字選択中]}>{名}</Text>
@@ -118,17 +118,17 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose }) => {
               </View>
               {/* 番号は打ち込まずに選ぶ。記録表で人を選ぶのと同じ並びにしてある */}
               <View style={styles.番号の一覧}>
-                {番号たち.map((e) => (
+                {番号たち.map((番号) => (
                   <TouchableOpacity
-                    key={String(e)}
-                    style={[styles.番号の行, e === 選んだ && styles.番号の行選択中]}
-                    onPress={() => R(String(e))}
+                    key={String(番号)}
+                    style={[styles.番号の行, 番号 === 選んだ && styles.番号の行選択中]}
+                    onPress={() => 番号の入力を置く(String(番号))}
                   >
-                    <Text style={[styles.番号の字, e === 選んだ && styles.番号の字選択中]}>
-                      {e}
+                    <Text style={[styles.番号の字, 番号 === 選んだ && styles.番号の字選択中]}>
+                      {番号}
                       {単位}
                     </Text>
-                    {e === 選んだ ? <Icons.Ionicons name="checkmark" size={20} color="#007AFF" /> : null}
+                    {番号 === 選んだ ? <Icons.Ionicons name="checkmark" size={20} color="#007AFF" /> : null}
                   </TouchableOpacity>
                 ))}
               </View>
@@ -141,16 +141,26 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose }) => {
               </Text>
             </View>
             <Text style={styles.sectionTitle}>交代相手（メンバーまたはゲスト）</Text>
-            <TextInput style={styles.searchBar} placeholder="名前で検索..." value={w} onChangeText={I} />
+            <TextInput
+              style={styles.searchBar}
+              placeholder="名前で検索..."
+              value={検索の文}
+              onChangeText={検索の文を置く}
+            />
             <View style={styles.guestRow}>
               <Icons.Ionicons name="person-add" size={20} color="#007AFF" />
-              <TextInput style={styles.guestInput} placeholder="ゲスト名を入力" value={k} onChangeText={v} />
+              <TextInput
+                style={styles.guestInput}
+                placeholder="ゲスト名を入力"
+                value={客名の入力}
+                onChangeText={客名の入力を置く}
+              />
               <TouchableOpacity
-                style={[styles.confirmBtn, (!k || null === 何射目()) && styles.confirmBtnDisabled]}
+                style={[styles.confirmBtn, (!客名の入力 || null === 何射目()) && styles.confirmBtnDisabled]}
                 onPress={() => {
-                  if ('' !== k.trim()) A(k.trim());
+                  if ('' !== 客名の入力.trim()) 交代を入れる(客名の入力.trim());
                 }}
-                disabled={!k || null === 何射目()}
+                disabled={!客名の入力 || null === 何射目()}
               >
                 <Text style={styles.confirmTxt}>確定</Text>
               </TouchableOpacity>
@@ -174,23 +184,23 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose }) => {
                     />
                   </TouchableOpacity>
                   {[
-                    ...(開いているか(組.学年) ? 組.人たち : []).map((e, 順) => {
-                      if (!e || !e.name || 'string' != typeof e.name) return null;
-                      const t = e.name.trim().split(/[\s\u3000]+/);
-                      const 姓 = t && t.length > 0 ? t[0] || '' : '不明';
-                      const 名前 = (t && t.length > 1 && t[1]) || '';
+                    ...(開いているか(組.学年) ? 組.人たち : []).map((部員, 順) => {
+                      if (!部員 || !部員.name || 'string' != typeof 部員.name) return null;
+                      const 名の片 = 部員.name.trim().split(/[\s\u3000]+/);
+                      const 姓 = 名の片 && 名の片.length > 0 ? 名の片[0] || '' : '不明';
+                      const 名前 = (名の片 && 名の片.length > 1 && 名の片[1]) || '';
                       return (
                         <TouchableOpacity
-                          key={typeof e.id === 'string' ? e.id : `subst-${組.学年}-${順}-${e.name}`}
+                          key={typeof 部員.id === 'string' ? 部員.id : `subst-${組.学年}-${順}-${部員.name}`}
                           style={styles.memberItem}
                           onPress={() => {
-                            A(e.name, e.id);
+                            交代を入れる(部員.name, 部員.id);
                           }}
                         >
                           <Text style={styles.memberName}>
                             {姓} {名前}
                           </Text>
-                          <Text style={styles.memberSub}>{e.gender}</Text>
+                          <Text style={styles.memberSub}>{部員.gender}</Text>
                         </TouchableOpacity>
                       );
                     }),

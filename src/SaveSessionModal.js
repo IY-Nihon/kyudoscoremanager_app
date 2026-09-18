@@ -14,7 +14,18 @@ const { useScoreStore } = require('./useScoreStore');
 const { IS_IOS } = require('./IS_WEB');
 const { getShadowStyle } = require('./shadowStyle');
 const { normalizeTag, タグの見た目 } = require('./syncRules');
-const S = ['練習試合', '正規練習', '大会', '自主稽古', 'アリーナ', '屋外', '晴れ', '曇り', '雨天', '強風'];
+const 既定のタグ = [
+  '練習試合',
+  '正規練習',
+  '大会',
+  '自主稽古',
+  'アリーナ',
+  '屋外',
+  '晴れ',
+  '曇り',
+  '雨天',
+  '強風',
+];
 const SaveSessionModal = ({ visible, onClose, onSave }) => {
   const {
     includeInStats,
@@ -24,29 +35,29 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
     setCurrentSessionTags,
     toggleCurrentSessionTag,
   } = useScoreStore();
-  const W = tagTemplates.length > 0 ? tagTemplates : S;
-  const [E, P] = React.useState('');
-  const [R, w] = React.useState('');
+  const 出すタグ = tagTemplates.length > 0 ? tagTemplates : 既定のタグ;
+  const [題, 題を置く] = React.useState('');
+  const [覚え書き, 覚え書きを置く] = React.useState('');
   const // 入力欄には # を付けずに出す（空白区切り。読むときに normalizeTag で # を付ける）
-    [_, O] = React.useState(currentSessionTags.map(タグの見た目).join(' '));
-  const [V, H] = React.useState(false);
+    [タグの文, タグの文を置く] = React.useState(currentSessionTags.map(タグの見た目).join(' '));
+  const [統計を聞いている, 統計を聞いているを置く] = React.useState(false);
   React.useEffect(() => {
-    O(currentSessionTags.map(タグの見た目).join(' '));
+    タグの文を置く(currentSessionTags.map(タグの見た目).join(' '));
   }, [currentSessionTags, visible]);
-  const K = (e) => {
-    e
+  const 統計の答え = (入れる) => {
+    入れる
       ? (setIncludeInStats(true),
-        onSave(E.trim(), R.trim(), true, currentSessionTags.join(' ')),
-        P(''),
-        w(''))
-      : H(true);
+        onSave(題.trim(), 覚え書き.trim(), true, currentSessionTags.join(' ')),
+        題を置く(''),
+        覚え書きを置く(''))
+      : 統計を聞いているを置く(true);
   };
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={Keyboard.dismiss} />
         <KeyboardAvoidingView behavior={IS_IOS ? 'padding' : undefined} style={styles.container}>
-          {V ? (
+          {統計を聞いている ? (
             <View>
               <Text style={styles.headerTitle}>統計の除外確認</Text>
               <Text style={styles.subTitle}>
@@ -58,15 +69,15 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
                 style={[styles.mainSaveBtn, { backgroundColor: '#FF3B30' }]}
                 onPress={() => {
                   setIncludeInStats(false);
-                  onSave(E.trim(), R.trim(), false, currentSessionTags.join(' '));
-                  P('');
-                  w('');
-                  H(false);
+                  onSave(題.trim(), 覚え書き.trim(), false, currentSessionTags.join(' '));
+                  題を置く('');
+                  覚え書きを置く('');
+                  統計を聞いているを置く(false);
                 }}
               >
                 <Text style={styles.mainSaveTxt}>統計に含めず保存</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => H(false)}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => 統計を聞いているを置く(false)}>
                 <Text style={styles.cancelTxt}>戻る</Text>
               </TouchableOpacity>
             </View>
@@ -79,8 +90,8 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
                   style={styles.input}
                   placeholder="大会名・練習名（例: ○○大会）"
                   placeholderTextColor="#C7C7CC"
-                  value={E}
-                  onChangeText={P}
+                  value={題}
+                  onChangeText={題を置く}
                   returnKeyType="next"
                 />
               </View>
@@ -89,8 +100,8 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
                   style={styles.input}
                   placeholder="練習メモ（例: 合宿1日目）"
                   placeholderTextColor="#C7C7CC"
-                  value={R}
-                  onChangeText={w}
+                  value={覚え書き}
+                  onChangeText={覚え書きを置く}
                   returnKeyType="done"
                 />
               </View>
@@ -99,14 +110,14 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
                   style={styles.input}
                   placeholder="タグ（例: 審査前 雨天）"
                   placeholderTextColor="#C7C7CC"
-                  value={_}
-                  onChangeText={(e) => {
-                    O(e);
-                    const t = e
+                  value={タグの文}
+                  onChangeText={(文) => {
+                    タグの文を置く(文);
+                    const タグたち = 文
                       .split(/[\s,\u3001]+/)
                       .map(normalizeTag)
                       .filter(Boolean);
-                    setCurrentSessionTags(t);
+                    setCurrentSessionTags(タグたち);
                   }}
                   returnKeyType="done"
                 />
@@ -116,19 +127,19 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
                   style={styles.presetTagsScroll}
                   contentContainerStyle={styles.presetTagsContainer}
                 >
-                  {W.map((e) => {
-                    const t = normalizeTag(e);
-                    const n = currentSessionTags.map(normalizeTag).includes(t);
+                  {出すタグ.map((タグ) => {
+                    const 整えた = normalizeTag(タグ);
+                    const 選択中 = currentSessionTags.map(normalizeTag).includes(整えた);
                     return (
                       <TouchableOpacity
-                        key={e}
-                        style={[styles.presetTagBtn, n && styles.presetTagBtnActive]}
+                        key={タグ}
+                        style={[styles.presetTagBtn, 選択中 && styles.presetTagBtnActive]}
                         onPress={() => {
-                          toggleCurrentSessionTag(t);
+                          toggleCurrentSessionTag(整えた);
                         }}
                       >
-                        <Text style={[styles.presetTagTxt, n && styles.presetTagTxtActive]}>
-                          {タグの見た目(t)}
+                        <Text style={[styles.presetTagTxt, 選択中 && styles.presetTagTxtActive]}>
+                          {タグの見た目(整えた)}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -136,19 +147,19 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
                 </ScrollView>
               </View>
               <View style={styles.separator} />
-              <TouchableOpacity style={styles.mainSaveBtn} onPress={() => K(true)}>
+              <TouchableOpacity style={styles.mainSaveBtn} onPress={() => 統計の答え(true)}>
                 <Text style={styles.mainSaveTxt}>保存</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.secondaryBtn} onPress={() => K(false)}>
+              <TouchableOpacity style={styles.secondaryBtn} onPress={() => 統計の答え(false)}>
                 <Text style={styles.secondaryTxt}>統計に含めないで保存</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.cancelBtn}
                 onPress={() => {
-                  P('');
-                  w('');
-                  O('');
-                  H(false);
+                  題を置く('');
+                  覚え書きを置く('');
+                  タグの文を置く('');
+                  統計を聞いているを置く(false);
                   onClose();
                 }}
               >
