@@ -76,7 +76,15 @@
 - 復元直後のファイル名は `JP_RecordScreen_593.js` のように **JP_ の接頭辞とモジュールID付き**
   でした。中身に合わせた名前（`RecordScreen.js`）へ改名済みで、手で書いた
   `AttendanceScreen.js` と同じ流儀に揃えています
-- 中身の多くは **minify されたまま**（変数名が `e`, `t`, `n` 等）です
+- 中身は長らく **minify されたまま**（`(0, A.jsx)(View, {…})`、変数名が `e`, `t`, `n` 等）
+  でしたが、2026-09-19 に読める形へ直しました。
+  1. 機械的な変換（`scripts/yomiyasuku.mjs`）: JSX 構文・ふつうの `require`・
+     `if` 文・`const`・`true/false` へ。意味は変えず、e2e で確かめてから入れています
+  2. 手で名前を付け直す（`scripts/namae-shirabe.mjs` で下調べ、`scripts/namae-tsukeru.mjs`
+     で束ごとに付け替え）: `s()` → `状態()`、`e({…})` → `書く({…})`、`W` → `styles` など。
+     ほかの手書きコードと同じく日本語の名前を使っています
+  変換の途中で見つかった取り違え（図の軸の `x` を別名に変えていた、名簿の並びの
+  比べ合いが片側しか見ていなかった、など）はコミットの説明に残してあります
 - 展開されていた npm ライブラリは npm パッケージへ戻し済みです。1行転送するだけの
   中継ファイルも削除し、`require('firebase/firestore')` のように直接呼んでいます
 
@@ -337,7 +345,7 @@ iOS は `.github/workflows/` の EAS Build ワークフローで生成します�
 
 ```
 App.js, index.js       エントリポイント
-src/                   アプリ本体（上記の通りソースマップ復元コード）
+src/                   アプリ本体（ソースマップ復元コードを読める形に直したもの）
 assets/                アプリ内で使うアイコン・画像
 pwa/                   PWA用の静的ファイル（デプロイ時にdist/へコピー）
 scripts/               デプロイ・検証・修復・復元のスクリプト（ocr-cells/ は○×を読む網の学習、archive/ は使い終わったもの）
@@ -657,8 +665,8 @@ localStorage に書いて `reload` して効かせる作りだと、1つの検�
 
 未配信のぶんは `npm run ops:check` で確かめられます。
 
-- **`src/` が読みにくい**: 復元コードのため minify されたまま。
-  可読なソースへ戻す場合は段階的なリファクタが必要です。
+- **`src/` は復元コード**: 2026-09-19 に JSX と意味のある名前へ直しましたが、
+  元の TypeScript ではなく、型の情報はありません（`tsconfig.check.json` で JS のまま検査）。
 - **iOSビルドに native モジュールが増えた**: `@react-native-community/netinfo` を
   正式な依存にしたことで、次回の EAS Build から NetInfo のネイティブモジュールが
   組み込まれます（Web版は `navigator.onLine` を使うため影響なし）。
