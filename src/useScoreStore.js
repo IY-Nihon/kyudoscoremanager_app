@@ -3171,8 +3171,8 @@ const useScoreStore = zustand.create()(
             console.log('[Store] Fetching group email for password verification...');
             const 団体ID = publicGroupId || activeGroupId;
             try {
-              const 場所 = Firestore.doc(Firebaseの器.db, 'group_accounts', 団体ID.toUpperCase());
-              const 帳面 = await Firestore.getDoc(場所);
+              const 帳面の場所 = Firestore.doc(Firebaseの器.db, 'group_accounts', 団体ID.toUpperCase());
+              const 帳面 = await Firestore.getDoc(帳面の場所);
               帳面.exists() && (宛先 = 帳面.data().email);
             } catch (誤り) {
               console.error('[Store] Failed to fetch group email:', 誤り);

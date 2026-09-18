@@ -34,61 +34,61 @@ const 整えたID = (値) =>
 // 空のうちは何も言わない。打ち始める前から赤字を出しても急かすだけで、
 // 直しようがない。中身が入っていて、かつ形が違うときだけ言う。
 const メールの形が変か = (値) => {
-  const s = String(値 || '').trim();
-  return s.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+  const 文 = String(値 || '').trim();
+  return 文.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(文);
 };
 // Firebase の決まりで6文字未満は必ず弾かれる。押してから知るのは遅い
 const パスワードが短いか = (値) => {
-  const s = String(値 || '');
-  return s.length > 0 && s.length < 6;
+  const 文 = String(値 || '');
+  return 文.length > 0 && 文.length < 6;
 };
-const Q = (e) => {
-  const c = e.code || '';
+const 誤りの文 = (誤り) => {
+  const 符号 = 誤り.code || '';
   if (
-    c === 'auth/wrong-password' ||
-    c === 'auth/invalid-credential' ||
-    c === 'auth/invalid-login-credentials'
+    符号 === 'auth/wrong-password' ||
+    符号 === 'auth/invalid-credential' ||
+    符号 === 'auth/invalid-login-credentials'
   ) {
     return 'IDまたはパスワードが正しくありません';
   }
-  if (c === 'auth/too-many-requests') {
+  if (符号 === 'auth/too-many-requests') {
     return 'ログイン試行回数が上限に達しました。しばらくたってから再試行してください';
   }
-  if (c === 'auth/email-already-in-use') {
+  if (符号 === 'auth/email-already-in-use') {
     return 'このメールアドレスはすでに登録されています';
   }
-  if (c === 'auth/weak-password') {
+  if (符号 === 'auth/weak-password') {
     return 'パスワードは6文字以上で設定してください';
   }
-  if (c === 'auth/invalid-email') {
+  if (符号 === 'auth/invalid-email') {
     return 'メールアドレスの形式が正しくありません';
   }
-  if (c === 'auth/requires-recent-login') {
+  if (符号 === 'auth/requires-recent-login') {
     return 'セキュリティのため、一度ログアウトして再ログイン後に変更してください';
   }
-  if (c === 'auth/network-request-failed') {
+  if (符号 === 'auth/network-request-failed') {
     return '通信エラーが発生しました。接続を確認して再試行してください';
   }
-  if (c === 'auth/user-not-found') {
+  if (符号 === 'auth/user-not-found') {
     return '入力内容を確認してください';
   }
-  return e.message || '予期しないエラーが発生しました。時間を置いて再試行してください';
+  return 誤り.message || '予期しないエラーが発生しました。時間を置いて再試行してください';
 };
 // 部員の認証方式の版。所属クレームを使う方式に切り替えたので 2。
 // 起動時にこの値が古い端末はログアウトさせ、個人IDで入り直してもらう。
 const MEMBER_AUTH_VERSION = 2;
 const LoginScreen = () => {
   const { setAuth, fetchAndOverwriteFromCloud, startPeriodicSync, setMemberAuthVersion } = useScoreStore();
-  const [T, F] = React.useState('login_group');
-  const [_, v] = React.useState(false);
-  const [D, k] = React.useState('');
-  const [W, B] = React.useState('');
-  const [P, A] = React.useState('');
-  const [L, z] = React.useState('');
-  const [O, G] = React.useState('');
-  const [R, U] = React.useState('none');
-  const [M, V] = React.useState('');
-  const [H, X] = React.useState(false);
+  const [画面の種類, 画面の種類を置く] = React.useState('login_group');
+  const [処理中, 処理中を置く] = React.useState(false);
+  const [団体IDの入力, 団体IDの入力を置く] = React.useState('');
+  const [個人IDの入力, 個人IDの入力を置く] = React.useState('');
+  const [メールの入力, メールの入力を置く] = React.useState('');
+  const [合言葉の入力, 合言葉の入力を置く] = React.useState('');
+  const [団体名の入力, 団体名の入力を置く] = React.useState('');
+  const [忘れた窓, 忘れた窓を置く] = React.useState('none');
+  const [新しいメールの入力, 新しいメールの入力を置く] = React.useState('');
+  const [合言葉を見せる, 合言葉を見せるを置く] = React.useState(false);
   // 規約とプライバシーポリシーへの同意。登録の前に取る。
   // 規約 第10条2項で、団体は部員本人から同意を得る責任を負うと定めている。
   // その責任をここで伝えないと、知らないまま部員を登録できてしまう
@@ -112,7 +112,7 @@ const LoginScreen = () => {
       // 同意の記録は private（誰でも読める場所に置かない）
       await Firestore.setDoc(
         Firestore.doc(db, 'group_accounts', 団体ID, 'private', 'consent'),
-        Object.assign({ name: O, createdAt: Date.now() }, require('./legalDocs').同意の記録())
+        Object.assign({ name: 団体名の入力, createdAt: Date.now() }, require('./legalDocs').同意の記録())
       );
     } catch (書けなかった) {
       // 認証の利用者だけが残ると、同じアドレスで作り直せなくなる
@@ -127,8 +127,8 @@ const LoginScreen = () => {
       '【重要】登録完了と運用ガイド',
       `団体アカウントを作成しました。\n\n■ 登録情報\n団体ID: ${団体ID}\n\n【運用ガイド - スクリーンショット推奨】\n・「団体ID」はメンバーがログインする際、必要です。メンバー全員に共有してください。\n・「パスワード」は管理者のみが知るものとして保存してください。\n・メールアドレスを変更すると、セキュリティのため旧アドレスに確認・無効化のメールが自動送信されます。\n\n※ この運用ガイドの内容は忘れないよう必ず保存をお願いします。`
     );
-    k(団体ID);
-    F('login_group');
+    団体IDの入力を置く(団体ID);
+    画面の種類を置く('login_group');
   };
   /**
    * Google で団体アカウントを作る。
@@ -148,18 +148,18 @@ const LoginScreen = () => {
       );
       return;
     }
-    if (!O) {
+    if (!団体名の入力) {
       Alert.alert('エラー', '団体名を入れてください');
       return;
     }
-    if (!L) {
+    if (!合言葉の入力) {
       Alert.alert(
         'エラー',
         'パスワードを入れてください。部員はこのパスワードで入るので、Google で作る場合も必要です。'
       );
       return;
     }
-    v(true);
+    処理中を置く(true);
     try {
       const 提供元 = new FirebaseAuth.GoogleAuthProvider();
       const 結果 = await FirebaseAuth.signInWithPopup(auth, 提供元);
@@ -177,21 +177,21 @@ const LoginScreen = () => {
         return;
       }
       // Google で入った人にも、部員へ配るパスワードを持たせる
-      await FirebaseAuth.updatePassword(結果.user, L).catch(() => {
+      await FirebaseAuth.updatePassword(結果.user, 合言葉の入力).catch(() => {
         // 直後なので普通は通る。通らなくても団体は作れるので止めない
       });
       await 団体を作る(メール);
-    } catch (e) {
+    } catch (誤り) {
       // 利用者が窓を閉じただけのときは、失敗として騒がない
-      const 符号 = e && e.code ? String(e.code) : '';
+      const 符号 = 誤り && 誤り.code ? String(誤り.code) : '';
       if (符号.includes('popup-closed') || 符号.includes('cancelled')) return;
-      Alert.alert('登録失敗', Q(e));
+      Alert.alert('登録失敗', 誤りの文(誤り));
     } finally {
-      v(false);
+      処理中を置く(false);
     }
   };
-  const $ = async () => {
-    if (P && L && O) {
+  const メールで作る = async () => {
+    if (メールの入力 && 合言葉の入力 && 団体名の入力) {
       if (!規約に同意 || !部員の同意を取る) {
         Alert.alert(
           '確認',
@@ -199,116 +199,124 @@ const LoginScreen = () => {
         );
         return;
       }
-      v(true);
+      処理中を置く(true);
       try {
-        await FirebaseAuth.createUserWithEmailAndPassword(auth, P, L);
+        await FirebaseAuth.createUserWithEmailAndPassword(auth, メールの入力, 合言葉の入力);
         // 団体の帳面を作るところは、Google で作る道と同じ処理を使う。
         // 別々に書くと、片方だけ直して食い違う（実際それで本番が止まった）
-        await 団体を作る(P);
-      } catch (e) {
-        Alert.alert('登録失敗', Q(e));
+        await 団体を作る(メールの入力);
+      } catch (誤り) {
+        Alert.alert('登録失敗', 誤りの文(誤り));
       } finally {
-        v(false);
+        処理中を置く(false);
       }
     } else {
       Alert.alert('エラー', 'すべての項目を入力してください');
     }
   };
   return (
-    <View style={S.container}>
+    <View style={styles.container}>
       <KyudoBackgroundAnimation />
-      <KeyboardAvoidingView behavior={IS_IOS ? 'padding' : 'height'} style={S.keyboardView}>
-        <ScrollView contentContainerStyle={S.scrollContent} keyboardShouldPersistTaps="handled">
-          <View style={S.header}>
-            <View style={S.logoContainer}>
+      <KeyboardAvoidingView behavior={IS_IOS ? 'padding' : 'height'} style={styles.keyboardView}>
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+          <View style={styles.header}>
+            <View style={styles.logoContainer}>
               <Image
                 source={require('../assets/kyudo_icon.png')}
                 style={{ width: 80, height: 80, borderRadius: 20 }}
               />
             </View>
-            <Text style={S.title}>弓道部的中ノート</Text>
-            <Text style={S.subtitle}>
-              {'none' !== R
+            <Text style={styles.title}>弓道部的中ノート</Text>
+            <Text style={styles.subtitle}>
+              {'none' !== 忘れた窓
                 ? 'アカウントの復旧'
-                : 'login_group' === T
+                : 'login_group' === 画面の種類
                   ? '団体ログイン'
-                  : 'login_member' === T
+                  : 'login_member' === 画面の種類
                     ? '個人ログイン'
                     : '団体アカウント作成'}
             </Text>
           </View>
-          <View style={S.card}>
-            {'register' !== T && 'none' === R && (
-              <View style={S.tabContainer}>
+          <View style={styles.card}>
+            {'register' !== 画面の種類 && 'none' === 忘れた窓 && (
+              <View style={styles.tabContainer}>
                 <Pressable
                   key={'tab-group'}
                   style={function (state) {
                     return [
-                      S.tab,
-                      'login_group' === T && S.activeTab,
-                      state.hovered && IS_WEB && !S.activeTab && { backgroundColor: 'rgba(255,255,255,0.1)' },
+                      styles.tab,
+                      'login_group' === 画面の種類 && styles.activeTab,
+                      state.hovered &&
+                        IS_WEB &&
+                        !styles.activeTab && { backgroundColor: 'rgba(255,255,255,0.1)' },
                     ];
                   }}
-                  onPress={() => F('login_group')}
+                  onPress={() => 画面の種類を置く('login_group')}
                 >
-                  <Text style={[S.tabText, 'login_group' === T && S.activeTabText]}>団体</Text>
+                  <Text style={[styles.tabText, 'login_group' === 画面の種類 && styles.activeTabText]}>
+                    団体
+                  </Text>
                 </Pressable>
                 <Pressable
                   key={'tab-member'}
                   style={function (state) {
                     return [
-                      S.tab,
-                      'login_member' === T && S.activeTab,
-                      state.hovered && IS_WEB && !S.activeTab && { backgroundColor: 'rgba(255,255,255,0.1)' },
+                      styles.tab,
+                      'login_member' === 画面の種類 && styles.activeTab,
+                      state.hovered &&
+                        IS_WEB &&
+                        !styles.activeTab && { backgroundColor: 'rgba(255,255,255,0.1)' },
                     ];
                   }}
-                  onPress={() => F('login_member')}
+                  onPress={() => 画面の種類を置く('login_member')}
                 >
-                  <Text style={[S.tabText, 'login_member' === T && S.activeTabText]}>個人</Text>
+                  <Text style={[styles.tabText, 'login_member' === 画面の種類 && styles.activeTabText]}>
+                    個人
+                  </Text>
                 </Pressable>
               </View>
             )}
-            <View style={S.form}>
-              {'email' === R && (
+            <View style={styles.form}>
+              {'email' === 忘れた窓 && (
                 <>
-                  <View style={S.inputGroup}>
-                    <Text style={S.label}>団体ID</Text>
-                    <View style={S.inputWrapper}>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>団体ID</Text>
+                    <View style={styles.inputWrapper}>
                       <TextInput
-                        style={S.input}
+                        style={styles.input}
                         placeholder="例: 123456"
                         placeholderTextColor="#8E8E93"
-                        value={D}
-                        onChangeText={k}
+                        value={団体IDの入力}
+                        onChangeText={団体IDの入力を置く}
                         keyboardType="number-pad"
                       />
                     </View>
                   </View>
-                  <View style={S.inputGroup}>
-                    <Text style={S.label}>現在のパスワード</Text>
-                    <View style={S.inputWrapper}>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>現在のパスワード</Text>
+                    <View style={styles.inputWrapper}>
                       <TextInput
-                        style={S.input}
+                        style={styles.input}
                         placeholder="••••••••"
                         placeholderTextColor="#8E8E93"
-                        value={L}
-                        onChangeText={z}
-                        secureTextEntry={!H}
+                        value={合言葉の入力}
+                        onChangeText={合言葉の入力を置く}
+                        secureTextEntry={!合言葉を見せる}
                       />
-                      <Pressable onPress={() => X(!H)} style={{ padding: 4 }}>
-                        <Icons.Ionicons name={H ? 'eye-off' : 'eye'} size={20} color="#8E8E93" />
+                      <Pressable onPress={() => 合言葉を見せるを置く(!合言葉を見せる)} style={{ padding: 4 }}>
+                        <Icons.Ionicons name={合言葉を見せる ? 'eye-off' : 'eye'} size={20} color="#8E8E93" />
                       </Pressable>
                     </View>
                   </View>
-                  <View style={S.inputGroup}>
-                    <Text style={S.label}>新しいメールアドレス</Text>
-                    <View style={S.inputWrapper}>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>新しいメールアドレス</Text>
+                    <View style={styles.inputWrapper}>
                       <TextInput
-                        style={S.input}
+                        style={styles.input}
                         placeholder="new@example.com"
                         placeholderTextColor="#8E8E93"
-                        value={M}
-                        onChangeText={V}
+                        value={新しいメールの入力}
+                        onChangeText={新しいメールの入力を置く}
                         keyboardType="email-address"
                         autoCapitalize="none"
                       />
@@ -317,62 +325,70 @@ const LoginScreen = () => {
                   <Pressable
                     style={function (state) {
                       return [
-                        S.submitBtn,
-                        _ && S.disabledBtn,
-                        state.hovered && !_ && IS_WEB && { opacity: 0.8 },
+                        styles.submitBtn,
+                        処理中 && styles.disabledBtn,
+                        state.hovered && !処理中 && IS_WEB && { opacity: 0.8 },
                       ];
                     }}
                     onPress={async () => {
-                      if (D && L && M) {
-                        v(true);
+                      if (団体IDの入力 && 合言葉の入力 && 新しいメールの入力) {
+                        処理中を置く(true);
                         try {
-                          const e = 整えたID(D);
-                          const t = Firestore.doc(db, 'group_accounts', e);
-                          const l = await Firestore.getDoc(t);
-                          if (!l.exists()) {
+                          const 団体ID = 整えたID(団体IDの入力);
+                          const 帳面の場所 = Firestore.doc(db, 'group_accounts', 団体ID);
+                          const 帳面 = await Firestore.getDoc(帳面の場所);
+                          if (!帳面.exists()) {
                             throw new Error('入力内容を確認してください');
                           }
-                          const { email } = l.data();
-                          const o = await FirebaseAuth.signInWithEmailAndPassword(auth, email, L);
-                          if (o.user) {
+                          const { email } = 帳面.data();
+                          const 入った = await FirebaseAuth.signInWithEmailAndPassword(
+                            auth,
+                            email,
+                            合言葉の入力
+                          );
+                          if (入った.user) {
                             // Firestore を先に書く。updateEmail は ID トークンの
                             // メールアドレスを更新してしまい、その後だと
                             // 「本人だけが変更できる」ルールに引っかかるため。
-                            await Firestore.setDoc(t, { email: M }, { merge: true });
+                            await Firestore.setDoc(
+                              帳面の場所,
+                              { email: 新しいメールの入力 },
+                              { merge: true }
+                            );
                             try {
-                              await FirebaseAuth.updateEmail(o.user, M);
+                              await FirebaseAuth.updateEmail(入った.user, 新しいメールの入力);
                             } catch (err) {
                               // 認証側が変わらなかったときは保存済みの値を戻す。
                               // 放置すると保存メールと認証アカウントが食い違い、
                               // その団体がログインできなくなる。
-                              await Firestore.setDoc(t, { email: email }, { merge: true });
+                              await Firestore.setDoc(帳面の場所, { email }, { merge: true });
                               throw err;
                             }
                             Alert.alert(
                               '完了',
                               'メールアドレスを変更しました。今後は新しいメールアドレスでログインできます。\n\n◆セキュリティ保護のため、古いメールアドレス宛に変更を通知するメールが自動送信されています。身に覚えのない変更だった場合は、そのメール内のリンクから変更を取り消すことができます。'
                             );
-                            U('none');
+                            忘れた窓を置く('none');
                           }
-                        } catch (e) {
-                          Alert.alert('復旧失敗', Q(e));
+                        } catch (誤り) {
+                          Alert.alert('復旧失敗', 誤りの文(誤り));
                         } finally {
-                          v(false);
+                          処理中を置く(false);
                         }
                       } else {
                         Alert.alert('エラー', '団体ID、パスワード、新しいメールアドレスを入力してください');
                       }
                     }}
-                    disabled={_}
+                    disabled={処理中}
                   >
-                    <Text style={S.submitBtnText}>メールアドレスを更新</Text>
+                    <Text style={styles.submitBtnText}>メールアドレスを更新</Text>
                   </Pressable>
-                  <Pressable onPress={() => U('none')}>
+                  <Pressable onPress={() => 忘れた窓を置く('none')}>
                     {function (state) {
                       return (
                         <Text
                           style={[
-                            S.cancelLink,
+                            styles.cancelLink,
                             state.hovered && IS_WEB && { textDecorationLine: 'underline' },
                           ]}
                         >
@@ -383,17 +399,17 @@ const LoginScreen = () => {
                   </Pressable>
                 </>
               )}
-              {'password' === R && (
+              {'password' === 忘れた窓 && (
                 <>
-                  <View style={S.inputGroup}>
-                    <Text style={S.label}>団体ID</Text>
-                    <View style={S.inputWrapper}>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>団体ID</Text>
+                    <View style={styles.inputWrapper}>
                       <TextInput
-                        style={S.input}
+                        style={styles.input}
                         placeholder="例: 123456"
                         placeholderTextColor="#8E8E93"
-                        value={D}
-                        onChangeText={k}
+                        value={団体IDの入力}
+                        onChangeText={団体IDの入力を置く}
                         keyboardType="number-pad"
                       />
                     </View>
@@ -401,47 +417,47 @@ const LoginScreen = () => {
                   <Pressable
                     style={function (state) {
                       return [
-                        S.submitBtn,
-                        _ && S.disabledBtn,
-                        state.hovered && !_ && IS_WEB && { opacity: 0.8 },
+                        styles.submitBtn,
+                        処理中 && styles.disabledBtn,
+                        state.hovered && !処理中 && IS_WEB && { opacity: 0.8 },
                       ];
                     }}
                     onPress={async () => {
-                      if (D) {
-                        v(true);
+                      if (団体IDの入力) {
+                        処理中を置く(true);
                         try {
-                          const e = 整えたID(D);
-                          const t = Firestore.doc(db, 'group_accounts', e);
-                          const l = await Firestore.getDoc(t);
-                          if (!l.exists()) {
+                          const 団体ID = 整えたID(団体IDの入力);
+                          const 帳面の場所 = Firestore.doc(db, 'group_accounts', 団体ID);
+                          const 帳面 = await Firestore.getDoc(帳面の場所);
+                          if (!帳面.exists()) {
                             throw new Error('入力内容を確認してください');
                           }
-                          const { email: n } = l.data();
-                          await FirebaseAuth.sendPasswordResetEmail(auth, n);
+                          const { email: 登録のメール } = 帳面.data();
+                          await FirebaseAuth.sendPasswordResetEmail(auth, 登録のメール);
                           Alert.alert(
                             '完了',
                             '登録メールアドレスにパスワード再設定用のリンクを送信しました。'
                           );
-                          U('none');
-                        } catch (e) {
-                          Alert.alert('送信失敗', Q(e));
+                          忘れた窓を置く('none');
+                        } catch (誤り) {
+                          Alert.alert('送信失敗', 誤りの文(誤り));
                         } finally {
-                          v(false);
+                          処理中を置く(false);
                         }
                       } else {
                         Alert.alert('エラー', '団体IDを入力してください');
                       }
                     }}
-                    disabled={_}
+                    disabled={処理中}
                   >
-                    <Text style={S.submitBtnText}>パスワード再設定メールを送信</Text>
+                    <Text style={styles.submitBtnText}>パスワード再設定メールを送信</Text>
                   </Pressable>
-                  <Pressable onPress={() => U('none')}>
+                  <Pressable onPress={() => 忘れた窓を置く('none')}>
                     {function (state) {
                       return (
                         <Text
                           style={[
-                            S.cancelLink,
+                            styles.cancelLink,
                             state.hovered && IS_WEB && { textDecorationLine: 'underline' },
                           ]}
                         >
@@ -452,111 +468,137 @@ const LoginScreen = () => {
                   </Pressable>
                 </>
               )}
-              {'none' === R && (
+              {'none' === 忘れた窓 && (
                 <>
-                  {('login_group' === T || 'login_member' === T) && (
-                    <View style={S.inputGroup}>
-                      <Text style={S.label}>団体ID</Text>
-                      <View style={S.inputWrapper}>
-                        <Icons.Ionicons name="business" size={20} color="#8E8E93" style={S.inputIcon} />
+                  {('login_group' === 画面の種類 || 'login_member' === 画面の種類) && (
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.label}>団体ID</Text>
+                      <View style={styles.inputWrapper}>
+                        <Icons.Ionicons name="business" size={20} color="#8E8E93" style={styles.inputIcon} />
                         <TextInput
-                          style={S.input}
+                          style={styles.input}
                           placeholder="例: 123456"
                           placeholderTextColor="#8E8E93"
-                          value={D}
-                          onChangeText={k}
+                          value={団体IDの入力}
+                          onChangeText={団体IDの入力を置く}
                           keyboardType="number-pad"
                         />
                       </View>
                     </View>
                   )}
-                  {'login_group' === T && (
-                    <View style={S.inputGroup}>
-                      <Text style={S.label}>パスワード</Text>
-                      <View style={S.inputWrapper}>
-                        <Icons.Ionicons name="lock-closed" size={20} color="#8E8E93" style={S.inputIcon} />
+                  {'login_group' === 画面の種類 && (
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.label}>パスワード</Text>
+                      <View style={styles.inputWrapper}>
+                        <Icons.Ionicons
+                          name="lock-closed"
+                          size={20}
+                          color="#8E8E93"
+                          style={styles.inputIcon}
+                        />
                         <TextInput
-                          style={S.input}
+                          style={styles.input}
                           placeholder="••••••••"
                           placeholderTextColor="#8E8E93"
-                          value={L}
-                          onChangeText={z}
-                          secureTextEntry={!H}
+                          value={合言葉の入力}
+                          onChangeText={合言葉の入力を置く}
+                          secureTextEntry={!合言葉を見せる}
                         />
-                        <Pressable onPress={() => X(!H)} style={{ padding: 4 }}>
-                          <Icons.Ionicons name={H ? 'eye-off' : 'eye'} size={20} color="#8E8E93" />
+                        <Pressable
+                          onPress={() => 合言葉を見せるを置く(!合言葉を見せる)}
+                          style={{ padding: 4 }}
+                        >
+                          <Icons.Ionicons
+                            name={合言葉を見せる ? 'eye-off' : 'eye'}
+                            size={20}
+                            color="#8E8E93"
+                          />
                         </Pressable>
                       </View>
                     </View>
                   )}
-                  {'login_member' === T && (
-                    <View style={S.inputGroup}>
-                      <Text style={S.label}>個人ID（4桁）</Text>
-                      <View style={S.inputWrapper}>
-                        <Icons.Ionicons name="person" size={20} color="#8E8E93" style={S.inputIcon} />
+                  {'login_member' === 画面の種類 && (
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.label}>個人ID（4桁）</Text>
+                      <View style={styles.inputWrapper}>
+                        <Icons.Ionicons name="person" size={20} color="#8E8E93" style={styles.inputIcon} />
                         <TextInput
-                          style={S.input}
+                          style={styles.input}
                           placeholder="例: 1234"
                           placeholderTextColor="#8E8E93"
-                          value={W}
-                          onChangeText={B}
+                          value={個人IDの入力}
+                          onChangeText={個人IDの入力を置く}
                           keyboardType="number-pad"
                           maxLength={4}
                         />
                       </View>
                     </View>
                   )}
-                  {'register' === T && (
+                  {'register' === 画面の種類 && (
                     <>
-                      <View style={S.inputGroup}>
-                        <Text style={S.label}>団体名</Text>
-                        <View style={S.inputWrapper}>
-                          <Icons.Ionicons name="ribbon" size={20} color="#8E8E93" style={S.inputIcon} />
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>団体名</Text>
+                        <View style={styles.inputWrapper}>
+                          <Icons.Ionicons name="ribbon" size={20} color="#8E8E93" style={styles.inputIcon} />
                           <TextInput
-                            style={S.input}
+                            style={styles.input}
                             placeholder="例: ○○弓道部"
                             placeholderTextColor="#8E8E93"
-                            value={O}
-                            onChangeText={G}
+                            value={団体名の入力}
+                            onChangeText={団体名の入力を置く}
                           />
                         </View>
                       </View>
-                      <View style={S.inputGroup}>
-                        <Text style={S.label}>メールアドレス</Text>
-                        <View style={S.inputWrapper}>
-                          <Icons.Ionicons name="mail" size={20} color="#8E8E93" style={S.inputIcon} />
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>メールアドレス</Text>
+                        <View style={styles.inputWrapper}>
+                          <Icons.Ionicons name="mail" size={20} color="#8E8E93" style={styles.inputIcon} />
                           <TextInput
-                            style={S.input}
+                            style={styles.input}
                             placeholder="example@mail.com"
                             placeholderTextColor="#8E8E93"
-                            value={P}
-                            onChangeText={A}
+                            value={メールの入力}
+                            onChangeText={メールの入力を置く}
                             keyboardType="email-address"
                             autoCapitalize="none"
                           />
                         </View>
-                        {メールの形が変か(P) ? (
-                          <Text style={S.入力の注意}>@ を含む形で入れてください（例: example@mail.com）</Text>
+                        {メールの形が変か(メールの入力) ? (
+                          <Text style={styles.入力の注意}>
+                            @ を含む形で入れてください（例: example@mail.com）
+                          </Text>
                         ) : null}
                       </View>
-                      <View style={S.inputGroup}>
-                        <Text style={S.label}>パスワード</Text>
-                        <View style={S.inputWrapper}>
-                          <Icons.Ionicons name="lock-closed" size={20} color="#8E8E93" style={S.inputIcon} />
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>パスワード</Text>
+                        <View style={styles.inputWrapper}>
+                          <Icons.Ionicons
+                            name="lock-closed"
+                            size={20}
+                            color="#8E8E93"
+                            style={styles.inputIcon}
+                          />
                           <TextInput
-                            style={S.input}
+                            style={styles.input}
                             placeholder="••••••••"
                             placeholderTextColor="#8E8E93"
-                            value={L}
-                            onChangeText={z}
-                            secureTextEntry={!H}
+                            value={合言葉の入力}
+                            onChangeText={合言葉の入力を置く}
+                            secureTextEntry={!合言葉を見せる}
                           />
-                          <Pressable onPress={() => X(!H)} style={{ padding: 4 }}>
-                            <Icons.Ionicons name={H ? 'eye-off' : 'eye'} size={20} color="#8E8E93" />
+                          <Pressable
+                            onPress={() => 合言葉を見せるを置く(!合言葉を見せる)}
+                            style={{ padding: 4 }}
+                          >
+                            <Icons.Ionicons
+                              name={合言葉を見せる ? 'eye-off' : 'eye'}
+                              size={20}
+                              color="#8E8E93"
+                            />
                           </Pressable>
                         </View>
-                        {パスワードが短いか(L) ? (
-                          <Text style={S.入力の注意}>6文字以上にしてください</Text>
+                        {パスワードが短いか(合言葉の入力) ? (
+                          <Text style={styles.入力の注意}>6文字以上にしてください</Text>
                         ) : null}
                       </View>
                     </>
@@ -566,26 +608,31 @@ const LoginScreen = () => {
               {/* 登録の前に同意を取る。規約 第10条2項は、団体が部員本人から */
               /* 同意を得る責任を負うと定めている。ここで伝えないと、 */
               /* その責任を知らないまま部員を登録できてしまう */}
-              {'register' === T && (
-                <View style={S.同意の枠}>
-                  <Pressable style={S.同意の行} onPress={() => 規約に同意を置く(!規約に同意)}>
-                    <Text style={[S.同意の印, 規約に同意 && S.同意の印つき]}>{規約に同意 ? '✓' : ''}</Text>
-                    <Text style={S.同意の字}>
-                      <Text style={S.同意のリンク} onPress={() => 法.開く(法.規約のURL)}>
+              {'register' === 画面の種類 && (
+                <View style={styles.同意の枠}>
+                  <Pressable style={styles.同意の行} onPress={() => 規約に同意を置く(!規約に同意)}>
+                    <Text style={[styles.同意の印, 規約に同意 && styles.同意の印つき]}>
+                      {規約に同意 ? '✓' : ''}
+                    </Text>
+                    <Text style={styles.同意の字}>
+                      <Text style={styles.同意のリンク} onPress={() => 法.開く(法.規約のURL)}>
                         利用規約
                       </Text>
                       {' と '}
-                      <Text style={S.同意のリンク} onPress={() => 法.開く(法.プライバシーのURL)}>
+                      <Text style={styles.同意のリンク} onPress={() => 法.開く(法.プライバシーのURL)}>
                         プライバシーポリシー
                       </Text>
                       {' に同意します'}
                     </Text>
                   </Pressable>
-                  <Pressable style={S.同意の行} onPress={() => 部員の同意を取るを置く(!部員の同意を取る)}>
-                    <Text style={[S.同意の印, 部員の同意を取る && S.同意の印つき]}>
+                  <Pressable
+                    style={styles.同意の行}
+                    onPress={() => 部員の同意を取るを置く(!部員の同意を取る)}
+                  >
+                    <Text style={[styles.同意の印, 部員の同意を取る && styles.同意の印つき]}>
                       {部員の同意を取る ? '✓' : ''}
                     </Text>
-                    <Text style={S.同意の字}>
+                    <Text style={styles.同意の字}>
                       部員の氏名を登録する前に、本人（未成年の場合は保護者）から同意を得ます
                     </Text>
                   </Pressable>
@@ -593,119 +640,131 @@ const LoginScreen = () => {
               )}
               <Pressable
                 style={function (state) {
-                  return [S.submitBtn, _ && S.disabledBtn, state.hovered && !_ && IS_WEB && { opacity: 0.8 }];
+                  return [
+                    styles.submitBtn,
+                    処理中 && styles.disabledBtn,
+                    state.hovered && !処理中 && IS_WEB && { opacity: 0.8 },
+                  ];
                 }}
                 onPress={
-                  'login_group' === T
+                  'login_group' === 画面の種類
                     ? async () => {
-                        if (D && L) {
-                          v(true);
+                        if (団体IDの入力 && 合言葉の入力) {
+                          処理中を置く(true);
                           try {
-                            const t = Firestore.doc(db, 'group_accounts', 整えたID(D));
-                            const l = await Firestore.getDoc(t);
-                            if (!l.exists()) {
+                            const 帳面の場所 = Firestore.doc(db, 'group_accounts', 整えたID(団体IDの入力));
+                            const 帳面 = await Firestore.getDoc(帳面の場所);
+                            if (!帳面.exists()) {
                               throw new Error('団体IDまたはパスワードが正しくありません');
                             }
-                            const { email: n, id } = l.data();
-                            await FirebaseAuth.signInWithEmailAndPassword(auth, n, L);
-                            setAuth(id || 整えたID(D), 'group', null, n, 整えたID(D));
-                          } catch (e) {
-                            Alert.alert('ログイン失敗', Q(e));
+                            const { email: 登録のメール, id } = 帳面.data();
+                            await FirebaseAuth.signInWithEmailAndPassword(auth, 登録のメール, 合言葉の入力);
+                            setAuth(
+                              id || 整えたID(団体IDの入力),
+                              'group',
+                              null,
+                              登録のメール,
+                              整えたID(団体IDの入力)
+                            );
+                          } catch (誤り) {
+                            Alert.alert('ログイン失敗', 誤りの文(誤り));
                           } finally {
-                            v(false);
+                            処理中を置く(false);
                           }
                         } else {
                           Alert.alert('エラー', '団体IDとパスワードを入力してください');
                         }
                       }
-                    : 'login_member' === T
+                    : 'login_member' === 画面の種類
                       ? async () => {
-                          if (D && W) {
-                            v(true);
+                          if (団体IDの入力 && 個人IDの入力) {
+                            処理中を置く(true);
                             try {
-                              const t = 整えたID(D);
-                              const l = Firestore.doc(db, 'group_accounts', t);
-                              const n = await Firestore.getDoc(l);
-                              if (!n.exists()) {
+                              const 団体ID = 整えたID(団体IDの入力);
+                              const 帳面の場所 = Firestore.doc(db, 'group_accounts', 団体ID);
+                              const 帳面 = await Firestore.getDoc(帳面の場所);
+                              if (!帳面.exists()) {
                                 throw new Error('団体IDまたは個人IDが正しくありません');
                               }
-                              const { id: o } = n.data();
+                              const { id: 団体の鍵 } = 帳面.data();
                               await FirebaseAuth.signInAnonymously(auth);
                               // 個人IDから1件だけ直接取得する。
                               // 一覧(list)を使わないため、他団体の名簿は引けない。
-                              const lk = await Firestore.getDoc(
-                                Firestore.doc(db, `groups/${o}/member_lookup`, 整えたID(W))
+                              const 逆引き = await Firestore.getDoc(
+                                Firestore.doc(db, `groups/${団体の鍵}/member_lookup`, 整えたID(個人IDの入力))
                               );
-                              if (!lk.exists()) {
+                              if (!逆引き.exists()) {
                                 throw new Error('団体IDまたは個人IDが正しくありません');
                               }
-                              const memberId = lk.data().memberId;
+                              const memberId = 逆引き.data().memberId;
                               // 所属を宣言する。ルール側が逆引き表と突き合わせて検証するため、
                               // 正しい個人IDを知っている場合しか作れない。
                               await Firestore.setDoc(
                                 Firestore.doc(db, 'member_claims', auth.currentUser.uid),
                                 {
-                                  groupId: o,
-                                  memberId: memberId,
-                                  personalId: 整えたID(W),
+                                  groupId: 団体の鍵,
+                                  memberId,
+                                  personalId: 整えたID(個人IDの入力),
                                   claimedAt: Date.now(),
                                 }
                               );
-                              const md = await Firestore.getDoc(
-                                Firestore.doc(db, `groups/${o}/members`, memberId)
+                              const 部員の帳面 = await Firestore.getDoc(
+                                Firestore.doc(db, `groups/${団体の鍵}/members`, memberId)
                               );
-                              const f = md.data() || {};
-                              setAuth(o || t, 'member', memberId, null, t, null, f.name);
+                              const 部員 = 部員の帳面.data() || {};
+                              setAuth(団体の鍵 || 団体ID, 'member', memberId, null, 団体ID, null, 部員.name);
                               setMemberAuthVersion(MEMBER_AUTH_VERSION);
-                            } catch (e) {
-                              Alert.alert('ログイン失敗', Q(e));
+                            } catch (誤り) {
+                              Alert.alert('ログイン失敗', 誤りの文(誤り));
                             } finally {
-                              v(false);
+                              処理中を置く(false);
                             }
                           } else {
                             Alert.alert('エラー', '団体IDと個人IDを入力してください');
                           }
                         }
-                      : $
+                      : メールで作る
                 }
-                disabled={_}
+                disabled={処理中}
               >
-                {_ ? (
+                {処理中 ? (
                   <ActivityIndicator color="#FFF" />
                 ) : (
-                  <Text style={S.submitBtnText}>{'register' === T ? 'アカウント作成' : 'ログイン'}</Text>
+                  <Text style={styles.submitBtnText}>
+                    {'register' === 画面の種類 ? 'アカウント作成' : 'ログイン'}
+                  </Text>
                 )}
               </Pressable>
               {/* Google で作る道。作るときだけ使う。 */
               /* 作ったあとは今までどおり、団体IDとパスワードで全員が入る */}
-              {'register' === T && (
+              {'register' === 画面の種類 && (
                 <View>
-                  <View style={S.区切りの行}>
-                    <View style={S.区切りの線} />
-                    <Text style={S.区切りの字}>または</Text>
-                    <View style={S.区切りの線} />
+                  <View style={styles.区切りの行}>
+                    <View style={styles.区切りの線} />
+                    <Text style={styles.区切りの字}>または</Text>
+                    <View style={styles.区切りの線} />
                   </View>
                   <Pressable
-                    style={S.Googleのボタン}
+                    style={styles.Googleのボタン}
                     onPress={Googleで作る}
-                    disabled={_}
+                    disabled={処理中}
                     accessibilityRole="button"
                     accessibilityLabel="Google で団体アカウントを作る"
                   >
-                    <Text style={S.Googleの印}>G</Text>
-                    <Text style={S.Googleの字}>Google で作る</Text>
+                    <Text style={styles.Googleの印}>G</Text>
+                    <Text style={styles.Googleの字}>Google で作る</Text>
                   </Pressable>
-                  <Text style={S.Googleの添え}>
+                  <Text style={styles.Googleの添え}>
                     メールアドレスの入力を省けます。パスワードは部員が入るときに使うので、上の欄に入れてください。
                   </Text>
                 </View>
               )}
-              {'login_group' === T && (
-                <View style={S.helpLinks}>
-                  <Pressable key={'email'} onPress={() => U('email')}>
+              {'login_group' === 画面の種類 && (
+                <View style={styles.helpLinks}>
+                  <Pressable key={'email'} onPress={() => 忘れた窓を置く('email')}>
                     {function (state) {
                       return (
-                        <Text style={[S.helpLink, state.hovered && IS_WEB && { color: '#e5c184' }]}>
+                        <Text style={[styles.helpLink, state.hovered && IS_WEB && { color: '#e5c184' }]}>
                           メールアドレスを忘れた
                         </Text>
                       );
@@ -722,16 +781,16 @@ const LoginScreen = () => {
                   >
                     {function (state) {
                       return (
-                        <Text style={[S.helpLink, state.hovered && IS_WEB && { color: '#e5c184' }]}>
+                        <Text style={[styles.helpLink, state.hovered && IS_WEB && { color: '#e5c184' }]}>
                           団体IDを忘れた
                         </Text>
                       );
                     }}
                   </Pressable>
-                  <Pressable key={'password'} onPress={() => U('password')}>
+                  <Pressable key={'password'} onPress={() => 忘れた窓を置く('password')}>
                     {function (state) {
                       return (
-                        <Text style={[S.helpLink, state.hovered && IS_WEB && { color: '#e5c184' }]}>
+                        <Text style={[styles.helpLink, state.hovered && IS_WEB && { color: '#e5c184' }]}>
                           パスワードを忘れた
                         </Text>
                       );
@@ -744,22 +803,25 @@ const LoginScreen = () => {
           {/* 規約とプライバシーポリシーは、どの入り方でも下に置く。 */
           /* 新規作成のときしか出しておらず、個人で入る部員や、 */
           /* 登録の前に読みたい人には辿り着く道が無かった */}
-          <View style={S.法の帯}>
+          <View style={styles.法の帯}>
             <Pressable onPress={() => 法.開く(法.規約のURL)}>
-              <Text style={S.法のリンク}>利用規約</Text>
+              <Text style={styles.法のリンク}>利用規約</Text>
             </Pressable>
-            <Text style={S.法の仕切り}>・</Text>
+            <Text style={styles.法の仕切り}>・</Text>
             <Pressable onPress={() => 法.開く(法.プライバシーのURL)}>
-              <Text style={S.法のリンク}>プライバシーポリシー</Text>
+              <Text style={styles.法のリンク}>プライバシーポリシー</Text>
             </Pressable>
           </View>
-          <View style={S.footer}>
-            {'register' === T ? (
-              <Pressable onPress={() => F('login_group')}>
+          <View style={styles.footer}>
+            {'register' === 画面の種類 ? (
+              <Pressable onPress={() => 画面の種類を置く('login_group')}>
                 {function (state) {
                   return (
                     <Text
-                      style={[S.footerLink, state.hovered && IS_WEB && { textDecorationLine: 'underline' }]}
+                      style={[
+                        styles.footerLink,
+                        state.hovered && IS_WEB && { textDecorationLine: 'underline' },
+                      ]}
                     >
                       すでにアカウントをお持ちの方（ログイン）
                     </Text>
@@ -767,11 +829,14 @@ const LoginScreen = () => {
                 }}
               </Pressable>
             ) : (
-              <Pressable onPress={() => F('register')}>
+              <Pressable onPress={() => 画面の種類を置く('register')}>
                 {function (state) {
                   return (
                     <Text
-                      style={[S.footerLink, state.hovered && IS_WEB && { textDecorationLine: 'underline' }]}
+                      style={[
+                        styles.footerLink,
+                        state.hovered && IS_WEB && { textDecorationLine: 'underline' },
+                      ]}
                     >
                       団体アカウントを新規作成する
                     </Text>
@@ -785,7 +850,7 @@ const LoginScreen = () => {
     </View>
   );
 };
-const S = StyleSheet.create({
+const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#030508' },
   keyboardView: { flex: 1 },
   scrollContent: { flexGrow: 1, padding: 24, paddingTop: SAFE_TOP_PADDING || 24, justifyContent: 'center' },

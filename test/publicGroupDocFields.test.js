@@ -67,7 +67,8 @@ function アプリが書く項目() {
     const 変数 = new Set();
     // 読める形に直したので Firestore.doc( や doc(。前の (0, a.doc)( も受ける
     for (const m of s.matchAll(
-      /(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:\(0,\s*[\w.]+\.doc\)|[\w.]*\bdoc)\([^,]+,\s*'group_accounts',\s*([^,)]+)\)/g
+      // 変数名は日本語のこともある（帳面の場所 など）
+      /(?:const|let|var)\s+([A-Za-z_$぀-鿿][\w$぀-鿿]*)\s*=\s*(?:\(0,\s*[\w.]+\.doc\)|[\w.]*\bdoc)\([^,]+,\s*'group_accounts',\s*([^,)]+)\)/g
     ))
       変数.add(m[1]);
 
