@@ -1,52 +1,32 @@
-/**
- * Module ID: 1000
- */
 'use strict';
 
-const _e = exports;
-
-('use strict');
-function e(e) {
-  return e && e.__esModule ? e : { default: e };
-}
-(Object.defineProperty(_e, '__esModule', { value: !0 }),
-  Object.defineProperty(_e, 'AnalysisScreen', {
-    enumerable: !0,
-    get: function () {
-      return j;
-    },
-  }));
-var t = require('react'),
-  n = e(t),
-  o = e(require('./View')),
-  l = e(require('./Text')),
-  a = e(require('./StyleSheet')),
-  r = e(require('./ScrollView')),
-  s = e(require('./TouchableOpacity')),
-  i = e(require('./Modal')),
-  d = e(require('./TextInput'));
-require('./platform');
-var c = require('./IS_WEB');
-require('react-native-safe-area-context');
-var 案内 = require('./TutorialGuide');
+const React = require('react');
+const View = require('./View').default;
+const Text = require('./Text').default;
+const StyleSheet = require('./StyleSheet').default;
+const ScrollView = require('./ScrollView').default;
+const TouchableOpacity = require('./TouchableOpacity').default;
+const Modal = require('./Modal').default;
+const TextInput = require('./TextInput').default;
+const { SAFE_TOP_PADDING } = require('./IS_WEB');
+const 案内 = require('./TutorialGuide');
 // 「自分が写っているか」の判定。履歴画面・案内の見本と同じものを使う
-var { 自分の記録か, 学年でまとめる } = require('./syncRules');
+const { 自分の記録か, 学年でまとめる } = require('./syncRules');
 // 「その射は誰のものか」の決まりは1か所に寄せてある（src/statsRules.js）
-var 集 = require('./statsRules');
+const 集 = require('./statsRules');
 // 比較のひな型（よく見る組み合わせ）の決まり
-var ひ = require('./comparePresets');
+const ひ = require('./comparePresets');
 // 弓具を変えた前後で的中率がどう動いたか（src/equipmentTrend.js）
-var 弓 = require('./equipmentTrend');
-var RN画面 = require('react-native');
-var { 出す } = require('./AppDialog');
-var u = require('./useScoreStore'),
-  h = require('@expo/vector-icons'),
-  f = require('./CustomCalendarModal'),
-  m = require('./shadowStyle'),
-  x = require('react-native-svg'),
-  b = e(x),
-  y = require('./themedJsx'),
-  { ArrowLocationView } = require('./ArrowLocationView');
+const 弓 = require('./equipmentTrend');
+const RN画面 = require('react-native');
+const { 出す } = require('./AppDialog');
+const { useScoreStore } = require('./useScoreStore');
+const Icons = require('@expo/vector-icons');
+const { CustomCalendarModal } = require('./CustomCalendarModal');
+const { getShadowStyle } = require('./shadowStyle');
+const Svgの部品 = require('react-native-svg');
+const Svg = require('react-native-svg').default ?? require('react-native-svg');
+const { ArrowLocationView } = require('./ArrowLocationView');
 // 比較相手を見分けるための色。グラフ・矢所・立ち順別・結果分布で同じ順に使う。
 // 別々に書いていたころは、増やしたときに片方だけ色がずれる心配があった
 // 明るい面でも暗い面でも読める色を選ぶ。緑・橙・黄をそのまま使っていたころは、
@@ -71,22 +51,17 @@ var u = require('./useScoreStore'),
  * 記録するところ（メンバー → 弓具管理）だけを伝える。
  */
 function 弓具の案内() {
-  return (0, y.jsxs)(o.default, {
-    style: { marginBottom: 20 },
-    children: [
-      (0, y.jsx)(l.default, {
-        style: { fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 4 },
-        children: '弓具を変えた前後',
-      }),
-      (0, y.jsx)(l.default, {
-        style: { fontSize: 11, color: '#8E8E93', lineHeight: 16 },
-        children:
-          'まだ弓具の記録がありません。メンバーの画面で「弓具管理」から弓力・矢・弦の変更を残すと、その前後の的中がここに並びます。',
-      }),
-    ],
-  });
+  return (
+    <View style={{ marginBottom: 20 }}>
+      <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 4 }}>
+        弓具を変えた前後
+      </Text>
+      <Text style={{ fontSize: 11, color: '#8E8E93', lineHeight: 16 }}>
+        まだ弓具の記録がありません。メンバーの画面で「弓具管理」から弓力・矢・弦の変更を残すと、その前後の的中がここに並びます。
+      </Text>
+    </View>
+  );
 }
-
 /**
  * 的中の型の節。「三中のうちどこで抜いたか」を並べる。
  *
@@ -106,9 +81,8 @@ function 弓具の案内() {
  */
 function 型の節(成績, 期間の名, 誰の) {
   // 開く・畳むを覚える部品にした。比較中は人ぶん並ぶので、名前で鍵を分ける
-  return (0, y.jsx)(型の節の部品, { 成績, 期間の名, 誰の }, 誰の ? `型:${誰の}` : '型');
+  return <型の節の部品 key={誰の ? `型:${誰の}` : '型'} 成績={成績} 期間の名={期間の名} 誰の={誰の} />;
 }
-
 /**
  * 型の節の中身。見出しを押すと開く（既定は畳む）。
  *
@@ -121,7 +95,7 @@ function 型の節(成績, 期間の名, 誰の) {
  * 抜いたかを言える（四つ矢では甲矢・乙矢が2回ずつ現れて区別できないが、一手の中なら決まる）
  */
 function 型の節の部品({ 成績, 期間の名, 誰の }) {
-  const [開いている, set開いている] = (0, t.useState)(!1);
+  const [開いている, set開いている] = React.useState(false);
   const 並び = 集.型を並べる((成績 || {}).型 || {});
   const 一射 = (成績 || {}).一射 || { shots: 0, hits: 0 };
   const 一手 = (成績 || {}).一手 || { shots: 0, hits: 0, 型: {} };
@@ -148,230 +122,158 @@ function 型の節の部品({ 成績, 期間の名, 誰の }) {
   ]
     .filter(Boolean)
     .join('　');
-  return (0, y.jsxs)(o.default, {
-    style: { marginBottom: 20 },
-    children: [
-      (0, y.jsxs)(s.default, {
-        testID: '的中の型の見出し',
-        accessibilityRole: 'button',
-        accessibilityState: { expanded: 開いている },
-        accessibilityLabel: (開いている ? '的中の型を畳む' : '的中の型を開く') + (誰の ? `（${誰の}）` : ''),
-        onPress: () => set開いている(!開いている),
-        style: F.型の見出しの行,
-        children: [
-          (0, y.jsxs)(o.default, {
-            style: { flex: 1, minWidth: 0 },
-            children: [
-              (0, y.jsx)(l.default, {
-                style: [F.sectionSubTitle, { marginBottom: 0 }],
-                // 比較中は誰の型かが分からないと読めないので、名前を見出しに出す
-                children: 誰の
-                  ? `的中の型 — ${誰の}`
-                  : 期間の名
-                    ? `的中の型 (${期間の名})`
-                    : '的中の型',
-              }),
-              !開いている &&
-                (0, y.jsx)(l.default, {
-                  style: F.型の要点の行,
-                  numberOfLines: 1,
-                  children: 要点 + '　押すと開く',
-                }),
-            ],
-          }),
-          (0, y.jsx)(h.Ionicons, {
-            name: 開いている ? 'chevron-up' : 'chevron-down',
-            size: 18,
-            color: '#8E8E93',
-          }),
-        ],
-      }),
-      開いている &&
-      (0, y.jsxs)(o.default, {
-        style: [F.patternsCardDash, { marginTop: 12 }],
-        children: [
-          // 一射のとき。1本しか引いていない記録の的中率
-          (0, y.jsx)(l.default, { style: F.型の区切り, children: '一射のとき（1本だけ引いた記録）' }),
-          (0, y.jsxs)(o.default, {
-            style: F.型の行,
-            children: [
-              (0, y.jsx)(l.default, { style: F.型の要点, children: '的中率' }),
-              (0, y.jsx)(l.default, {
-                style: 一射.shots > 0 ? F.型の回数 : F.型の無し,
-                children:
-                  一射.shots > 0 ? 率(一射) + '（' + 一射.hits + '中／' + 一射.shots + '射）' : 'まだありません',
-              }),
-            ],
-          }),
-          // 一手のとき。2本だけ引いた記録の的中率と、2射の型
-          (0, y.jsx)(l.default, {
-            style: F.型の区切り,
-            children: '一手のとき（2本だけ引いた記録）' + (手の数 > 0 ? '　' + 手の数 + '手' : ''),
-          }),
-          (0, y.jsxs)(o.default, {
-            style: F.型の行,
-            children: [
-              (0, y.jsx)(l.default, { style: F.型の要点, children: '的中率' }),
-              (0, y.jsx)(l.default, {
-                style: 一手.shots > 0 ? F.型の回数 : F.型の無し,
-                children:
-                  一手.shots > 0 ? 率(一手) + '（' + 一手.hits + '中／' + 一手.shots + '射）' : 'まだありません',
-              }),
-            ],
-          }),
-          ...手の並び.map((x) =>
-            (0, y.jsxs)(
-              o.default,
-              {
-                style: F.型の行,
-                children: [
-                  (0, y.jsx)(l.default, { style: F.型の印, children: x.型 }),
-                  (0, y.jsx)(l.default, {
-                    style: F.型の要点,
-                    numberOfLines: 1,
-                    children: x.要点 ? x.呼び名 + '　' + x.要点 : x.呼び名,
-                  }),
-                  (0, y.jsxs)(l.default, {
-                    style: F.型の回数,
-                    children: [x.回数, '手 ', Math.round(x.割合), '%'],
-                  }),
-                ],
-              },
-              '手' + x.型
-            )
-          ),
-          // 4射単位。立ちの型
-          束.length > 0 &&
-            (0, y.jsx)(l.default, {
-              style: F.型の区切り,
-              children: '4射単位（立ち）　' + 立ちの数 + '立',
-            }),
-          ...束.map((組) =>
-          (0, y.jsxs)(
-            o.default,
-            {
-              style: F.型の組,
-              children: [
-                (0, y.jsxs)(l.default, {
-                  style: F.型の見出し,
-                  children: [組.呼び名, ' ', 組.型たち.reduce((a, b) => a + b.回数, 0), '立'],
-                }),
-                ...組.型たち.map((x) =>
-                  (0, y.jsxs)(
-                    o.default,
-                    {
-                      style: F.型の行,
-                      children: [
-                        (0, y.jsx)(l.default, { style: F.型の印, children: x.型 }),
-                        (0, y.jsx)(l.default, {
-                          style: F.型の要点,
-                          numberOfLines: 1,
-                          children: x.要点 || '',
-                        }),
-                        (0, y.jsxs)(l.default, {
-                          style: F.型の回数,
-                          children: [x.回数, '立 ', Math.round(x.割合), '%'],
-                        }),
-                      ],
-                    },
-                    x.型
-                  )
-                ),
-              ],
-            },
-            組.中り
-          )
-        ),
-        ],
-      }),
-      開いている &&
-        (0, y.jsx)(l.default, {
-          style: { fontSize: 11, color: '#8E8E93', marginTop: 8, lineHeight: 16 },
-          children:
-            '※ 4射単位の割合は同じ中り数の中での割合です（三中のうち、その抜き方が何割か）。一手のときの型の割合は、その手すべての中での割合です。',
-        }),
-    ],
-  });
+  return (
+    <View style={{ marginBottom: 20 }}>
+      <TouchableOpacity
+        testID="的中の型の見出し"
+        accessibilityRole="button"
+        accessibilityState={{ expanded: 開いている }}
+        accessibilityLabel={(開いている ? '的中の型を畳む' : '的中の型を開く') + (誰の ? `（${誰の}）` : '')}
+        onPress={() => set開いている(!開いている)}
+        style={F.型の見出しの行}
+      >
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={[F.sectionSubTitle, { marginBottom: 0 }]}>
+            {/* 比較中は誰の型かが分からないと読めないので、名前を見出しに出す */}
+            {誰の ? `的中の型 — ${誰の}` : 期間の名 ? `的中の型 (${期間の名})` : '的中の型'}
+          </Text>
+          {!開いている && (
+            <Text style={F.型の要点の行} numberOfLines={1}>
+              {要点 + '　押すと開く'}
+            </Text>
+          )}
+        </View>
+        <Icons.Ionicons name={開いている ? 'chevron-up' : 'chevron-down'} size={18} color="#8E8E93" />
+      </TouchableOpacity>
+      {開いている && (
+        <View style={[F.patternsCardDash, { marginTop: 12 }]}>
+          {/* 一射のとき。1本しか引いていない記録の的中率 */}
+          <Text style={F.型の区切り}>一射のとき（1本だけ引いた記録）</Text>
+          <View style={F.型の行}>
+            <Text style={F.型の要点}>的中率</Text>
+            <Text style={一射.shots > 0 ? F.型の回数 : F.型の無し}>
+              {一射.shots > 0 ? 率(一射) + '（' + 一射.hits + '中／' + 一射.shots + '射）' : 'まだありません'}
+            </Text>
+          </View>
+          {/* 一手のとき。2本だけ引いた記録の的中率と、2射の型 */}
+          <Text style={F.型の区切り}>
+            {'一手のとき（2本だけ引いた記録）' + (手の数 > 0 ? '　' + 手の数 + '手' : '')}
+          </Text>
+          <View style={F.型の行}>
+            <Text style={F.型の要点}>的中率</Text>
+            <Text style={一手.shots > 0 ? F.型の回数 : F.型の無し}>
+              {一手.shots > 0 ? 率(一手) + '（' + 一手.hits + '中／' + 一手.shots + '射）' : 'まだありません'}
+            </Text>
+          </View>
+          {[
+            ...手の並び.map((x) => (
+              <View key={'手' + x.型} style={F.型の行}>
+                <Text style={F.型の印}>{x.型}</Text>
+                <Text style={F.型の要点} numberOfLines={1}>
+                  {x.要点 ? x.呼び名 + '　' + x.要点 : x.呼び名}
+                </Text>
+                <Text style={F.型の回数}>
+                  {x.回数}
+                  {'手 '}
+                  {Math.round(x.割合)}%
+                </Text>
+              </View>
+            )),
+          ]}
+          {/* 4射単位。立ちの型 */}
+          {束.length > 0 && <Text style={F.型の区切り}>{'4射単位（立ち）　' + 立ちの数 + '立'}</Text>}
+          {[
+            ...束.map((組) => (
+              <View key={組.中り} style={F.型の組}>
+                <Text style={F.型の見出し}>
+                  {組.呼び名} {組.型たち.reduce((a, b) => a + b.回数, 0)}立
+                </Text>
+                {[
+                  ...組.型たち.map((x) => (
+                    <View key={x.型} style={F.型の行}>
+                      <Text style={F.型の印}>{x.型}</Text>
+                      <Text style={F.型の要点} numberOfLines={1}>
+                        {x.要点 || ''}
+                      </Text>
+                      <Text style={F.型の回数}>
+                        {x.回数}
+                        {'立 '}
+                        {Math.round(x.割合)}%
+                      </Text>
+                    </View>
+                  )),
+                ]}
+              </View>
+            )),
+          ]}
+        </View>
+      )}
+      {開いている && (
+        <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 8, lineHeight: 16 }}>
+          ※
+          4射単位の割合は同じ中り数の中での割合です（三中のうち、その抜き方が何割か）。一手のときの型の割合は、その手すべての中での割合です。
+        </Text>
+      )}
+    </View>
+  );
 }
-
 function 弓具の節(人, 記録たち) {
   const 並び = 弓.弓具の移り変わり(人, 記録たち);
   // 履歴が無い人には、どこで記録するかだけ出す。
   // 何も出さないと、この節そのものが在ることに気づけない
   // （実際「分析で見たい」と二度言われた。作ってあったが空だった）
   if (!並び.length) return 弓具の案内();
-  return (0, y.jsxs)(o.default, {
-    style: { marginBottom: 20 },
-    children: [
-      (0, y.jsx)(l.default, {
-        style: { fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 4 },
-        children: '弓具を変えた前後',
-      }),
-      (0, y.jsx)(l.default, {
-        style: { fontSize: 11, color: '#8E8E93', marginBottom: 10, lineHeight: 16 },
-        children:
-          'その弓具を使っていた間の成績です。次に変えた日の前日までを数えます。的中の動きが弓具のせいとは限りません。',
-      }),
-      ...並び.map((一件) =>
-        (0, y.jsxs)(
-          o.default,
-          {
-            style: {
-              backgroundColor: '#F2F2F7',
-              borderRadius: 8,
-              padding: 10,
-              marginBottom: 8,
-            },
-            children: [
-              (0, y.jsx)(l.default, {
-                style: { fontSize: 13, fontWeight: 'bold', color: '#1C1C1E' },
-                children:
-                  new Date(一件.変更.date).toLocaleDateString() +
-                  '　' +
-                  (一件.変更.weight
-                    ? 一件.変更.weight + 'kg へ'
-                    : 一件.種類),
-              }),
-              一件.変更.note
-                ? (0, y.jsx)(l.default, {
-                    style: { fontSize: 12, color: '#3C3C43', marginTop: 2 },
-                    children: 一件.変更.note,
-                  })
-                : null,
-              (0, y.jsx)(l.default, {
-                style: { fontSize: 12, color: '#3C3C43', marginTop: 4, lineHeight: 17 },
-                children: 弓.見立ての言葉(一件),
-              }),
-            ],
-          },
-          一件.変更.id || String(一件.変更.date)
-        )
-      ),
-    ],
-  });
+  return (
+    <View style={{ marginBottom: 20 }}>
+      <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 4 }}>
+        弓具を変えた前後
+      </Text>
+      <Text style={{ fontSize: 11, color: '#8E8E93', marginBottom: 10, lineHeight: 16 }}>
+        その弓具を使っていた間の成績です。次に変えた日の前日までを数えます。的中の動きが弓具のせいとは限りません。
+      </Text>
+      {[
+        ...並び.map((一件) => (
+          <View
+            key={一件.変更.id || String(一件.変更.date)}
+            style={{ backgroundColor: '#F2F2F7', borderRadius: 8, padding: 10, marginBottom: 8 }}
+          >
+            <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#1C1C1E' }}>
+              {new Date(一件.変更.date).toLocaleDateString() +
+                '　' +
+                (一件.変更.weight ? 一件.変更.weight + 'kg へ' : 一件.種類)}
+            </Text>
+            {一件.変更.note ? (
+              <Text style={{ fontSize: 12, color: '#3C3C43', marginTop: 2 }}>{一件.変更.note}</Text>
+            ) : null}
+            <Text style={{ fontSize: 12, color: '#3C3C43', marginTop: 4, lineHeight: 17 }}>
+              {弓.見立ての言葉(一件)}
+            </Text>
+          </View>
+        )),
+      ]}
+    </View>
+  );
 }
-
 const 比較の色たち = ['#FF2D55', '#248A3D', '#C93400', '#AF52DE', '#056B7A', '#5856D6', '#0000CF'];
-
-const j = ({ navigation }) => {
+const AnalysisScreen = ({ navigation }) => {
   const {
-    analysisSelectedTags: e = [],
-    analysisTagLogic: a = 'AND',
-    tagTemplates: c = [],
-    setAnalysisSelectedTags: m,
-    toggleAnalysisTag: j,
-    setAnalysisTagLogic: p,
-    analysisRankingSettings: C = {},
-    setAnalysisRankingSetting: S,
-    activeRole: k,
-    myMemberId: B,
-    sessions: E = [],
-    members: w = [],
-    alumni: A = [],
-    shotsPerRound: T = 8,
-    showAlumniInAnalysis: v,
+    analysisSelectedTags = [],
+    analysisTagLogic = 'AND',
+    tagTemplates = [],
+    setAnalysisSelectedTags,
+    toggleAnalysisTag,
+    setAnalysisTagLogic,
+    analysisRankingSettings = {},
+    setAnalysisRankingSetting,
+    activeRole,
+    myMemberId,
+    sessions = [],
+    members = [],
+    alumni = [],
+    shotsPerRound = 8,
+    showAlumniInAnalysis,
     setShowAlumniInAnalysis: setAlumni,
-    isHydrated: z,
+    isHydrated,
     arrowTargetType,
     setSelectedHistorySessionId,
     setHistoryViewMode,
@@ -381,29 +283,27 @@ const j = ({ navigation }) => {
     比較のひな型を消す,
     activeGroupId: いまの団体id,
     // 案内が見本を出しているあいだは、中身だけ見本に差し替わる
-  } = 案内.見本を重ねる((0, u.useScoreStore)());
-
-  const D = (0, u.useScoreStore)((e) => e.myMemberName) || '';
-  const [compareMembers, setCompareMembers] = (0, t.useState)([]);
-  const [isSelectingCompareTarget, setIsSelectingCompareTarget] = (0, t.useState)(false);
+  } = 案内.見本を重ねる(useScoreStore());
+  const D = useScoreStore((e) => e.myMemberName) || '';
+  const [compareMembers, setCompareMembers] = React.useState([]);
+  const [isSelectingCompareTarget, setIsSelectingCompareTarget] = React.useState(false);
   // ひな型に付ける名前。窓を閉じたら捨てる（書きかけを持ち越さない）
-  const [ひな型の名前, ひな型の名前を置く] = (0, t.useState)('');
+  const [ひな型の名前, ひな型の名前を置く] = React.useState('');
   // 320px の端末では、名前と立数の柱を引くと1マスが40pxほどしか残らない。
   // そこに率と（的中/射数）を積むと、字が枠を越えて隣と重なる。
   // 狭いときは率だけにする。射数は右端の柱に出ているので、意味は落ちない
-  const 画面の幅 = (0, RN画面.useWindowDimensions)().width;
+  const 画面の幅 = RN画面.useWindowDimensions().width;
   const 狭い画面 = 画面の幅 < 360;
   // 比較する相手も学年でまとめる。記録表の人の選択と同じ形にしてある。
   // 覚えるのは「閉じた学年」。開く側を決め打ちすると、想定外の学年が
   // 閉じたまま出て、中の人に辿り着けなくなる
-  const [閉じた学年, 閉じた学年を置く] = (0, t.useState)(new Set());
+  const [閉じた学年, 閉じた学年を置く] = React.useState(new Set());
   const 学年を開け閉め = (印) => {
     閉じた学年を置く((前) => {
       const 次 = new Set(前);
       return (次.has(印) ? 次.delete(印) : 次.add(印), 次);
     });
   };
-
   // 分析グラフの点タップ→履歴一覧の該当セッション詳細に飛び、対象者の列までスクロールする
   const goToHistoryRecord = (sessionId, memberId) => {
     if (!sessionId) return;
@@ -414,9 +314,7 @@ const j = ({ navigation }) => {
       navigation.navigate('履歴');
     }
   };
-
-  if (!z) return null;
-
+  if (!isHydrated) return null;
   /**
    * 推移のグラフで押した点（ラベル）の期間に入る記録かどうか。
    *
@@ -437,17 +335,14 @@ const j = ({ navigation }) => {
     }
     return 札 === ラベル;
   };
-
   /** 点を押していればその期間だけ、押していなければ全部 */
   const 点の期間で絞る = (記録たち, ラベル) =>
     ラベル ? (記録たち || []).filter((s) => 点の期間の記録か(s, ラベル)) : 記録たち || [];
-
   const gatherAllArrowLocations = (memberId, name, selectedLabel) => {
     const locations = [];
     me.forEach((session) => {
       if (!session || !session.archers) return;
       if (!点の期間の記録か(session, selectedLabel)) return;
-
       session.archers.forEach((archer) => {
         const archerLocations = archer.arrowLocations || [];
         archerLocations.forEach((loc, idx) => {
@@ -464,69 +359,59 @@ const j = ({ navigation }) => {
     });
     return locations;
   };
-
-  const [R, I] = (0, t.useState)('すべて');
-  const [W, L] = (0, t.useState)('全員');
-  const [O, P] = (0, t.useState)('全学年');
+  const [R, I] = React.useState('すべて');
+  const [W, L] = React.useState('全員');
+  const [O, P] = React.useState('全学年');
   const M = new Date();
   const N = M.getMonth() + 1 >= 4 ? M.getFullYear() : M.getFullYear() - 1;
-  const [$, H] = (0, t.useState)(M.getFullYear());
-  const [V, Y] = (0, t.useState)(M.getMonth() + 1);
-  const [_, G] = (0, t.useState)(N);
-  const [J, U] = (0, t.useState)('month');
-  const [q, K] = (0, t.useState)(new Date(M.getFullYear(), M.getMonth(), 1));
-  const [Q, X] = (0, t.useState)(new Date());
-  const [Z, ee] = (0, t.useState)(!1);
-  const [te, ne] = (0, t.useState)('start');
-  const [oe, le] = (0, t.useState)('');
-  const [ae, re] = (0, t.useState)(null);
-  const [se, ie] = (0, t.useState)('');
-  const [de, ce] = (0, t.useState)('');
-  const [customShotsInput, setCustomShotsInput] = (0, t.useState)('');
-
+  const [$, H] = React.useState(M.getFullYear());
+  const [V, Y] = React.useState(M.getMonth() + 1);
+  const [_, G] = React.useState(N);
+  const [J, U] = React.useState('month');
+  const [q, K] = React.useState(new Date(M.getFullYear(), M.getMonth(), 1));
+  const [Q, X] = React.useState(new Date());
+  const [Z, ee] = React.useState(false);
+  const [te, ne] = React.useState('start');
+  const [oe, le] = React.useState('');
+  const [ae, re] = React.useState(null);
+  const [se, ie] = React.useState('');
+  const [de, ce] = React.useState('');
+  const [customShotsInput, setCustomShotsInput] = React.useState('');
   // 的の種類切り替え用ステート
-  const [myTargetType, setMyTargetType] = (0, t.useState)(arrowTargetType || 'kasumi36');
-  const [modalTargetType, setModalTargetType] = (0, t.useState)(arrowTargetType || 'kasumi36');
-
+  const [myTargetType, setMyTargetType] = React.useState(arrowTargetType || 'kasumi36');
+  const [modalTargetType, setModalTargetType] = React.useState(arrowTargetType || 'kasumi36');
   // グラフタップ時の選択ラベルステート
-  const [selectedTrendLabel, setSelectedTrendLabel] = (0, t.useState)(null);
-  const [selectedModalTrendLabel, setSelectedModalTrendLabel] = (0, t.useState)(null);
-
+  const [selectedTrendLabel, setSelectedTrendLabel] = React.useState(null);
+  const [selectedModalTrendLabel, setSelectedModalTrendLabel] = React.useState(null);
   // 期間・集計単位・射手が変更されたらグラフの選択を解除する
-  n.default.useEffect(() => {
+  React.useEffect(() => {
     setSelectedTrendLabel(null);
-  }, [R, J, W, O, B]);
-
+  }, [R, J, W, O, myMemberId]);
   // モーダル対象が切り替わったら選択を解除する
-  n.default.useEffect(() => {
+  React.useEffect(() => {
     setSelectedModalTrendLabel(null);
   }, [ae]);
-
   // モーダル表示時に的の選択肢を現在のデフォルトに同期
-  n.default.useEffect(() => {
+  React.useEffect(() => {
     if (ae) {
       setModalTargetType(arrowTargetType || 'kasumi36');
     }
   }, [ae, arrowTargetType]);
-
   // カスタム射数入力の同期
-  n.default.useEffect(() => {
-    if (C[R]?.type === 'count') {
-      setCustomShotsInput(String(C[R]?.value));
+  React.useEffect(() => {
+    if (analysisRankingSettings[R]?.type === 'count') {
+      setCustomShotsInput(String(analysisRankingSettings[R]?.value));
     } else {
       setCustomShotsInput('');
     }
-  }, [R, C]);
-
+  }, [R, analysisRankingSettings]);
   const ue = (e) => {
     ne(e);
-    ee(!0);
+    ee(true);
   };
-
-  n.default.useEffect(() => {
+  React.useEffect(() => {
     '月ごと' === R || '直近30日' === R ? U('day') : '年度' === R && 'year' === J && U('month');
   }, [R, J]);
-
   const he = (e) => {
     let t = V + e;
     let n = $;
@@ -535,30 +420,30 @@ const j = ({ navigation }) => {
     Y(t);
     H(n);
   };
-
   const fe = (e) => {
     G((t) => t + e);
   };
-
   // memberロール時は自分が参加しているセッションのタグのみを収集する
-  const ge = n.default.useMemo(() => {
+  const ge = React.useMemo(() => {
     const t = new Set();
     // 判定は syncRules の 自分の記録か に出した。ここは氏名の一致を見て
     // おらず、メンバーを選ばずに氏名だけで入れた記録が落ちていた。
     // 履歴画面の絞り込み（あちらは氏名も見る）とも食い違っていた
-    const src = 'member' === k && B ? E.filter((s) => 自分の記録か(s, B, D)) : E;
+    const src =
+      'member' === activeRole && myMemberId
+        ? sessions.filter((s) => 自分の記録か(s, myMemberId, D))
+        : sessions;
     src.forEach((e) => {
-      e && e.tags && e.tags.forEach((e) => t.add(e));
+      if (e && e.tags) e.tags.forEach((e) => t.add(e));
     });
     return Array.from(t)
       .filter(Boolean)
       .sort((t, n) => {
-        const o = e.includes(t);
-        const l = e.includes(n);
+        const o = analysisSelectedTags.includes(t);
+        const l = analysisSelectedTags.includes(n);
         return o && !l ? -1 : !o && l ? 1 : t.localeCompare(n);
       });
-  }, [E, e, k, B]);
-
+  }, [sessions, analysisSelectedTags, activeRole, myMemberId]);
   // 記録の絞り込み。描画のたびに数え直すと、部員の数だけ記録を舐める
   // xe まで巻き添えで走る。本番でいちばん大きい団体（部員79人・記録108件）で
   // 1周 35ms かかっていた。絞り込みが変わったときだけ作り直す。
@@ -566,16 +451,16 @@ const j = ({ navigation }) => {
   // 直近30日の境目は Date.now() で決まるので、この控えが効いているあいだは
   // 動かない。境目が動くのは日付が変わるときだけで、そのとき画面を開き直せば
   // 数え直される
-  const me = n.default.useMemo(
+  const me = React.useMemo(
     () =>
-      E.filter((t) => {
-        if (!t) return !1;
-        if (!集.集計に入れるか(t)) return !1; // 未設定の古い記録は含める（Excel の書き出しと揃える）
-        if (e.length > 0) {
+      sessions.filter((t) => {
+        if (!t) return false;
+        if (!集.集計に入れるか(t)) return false; // 未設定の古い記録は含める（Excel の書き出しと揃える）
+        if (analysisSelectedTags.length > 0) {
           const n = t.tags || [];
-          if ('AND' === a) {
-            if (!e.every((e) => n.includes(e))) return !1;
-          } else if (!e.some((e) => n.includes(e))) return !1;
+          if ('AND' === analysisTagLogic) {
+            if (!analysisSelectedTags.every((e) => n.includes(e))) return false;
+          } else if (!analysisSelectedTags.some((e) => n.includes(e))) return false;
         }
         const n = Date.now();
         const o = t.date;
@@ -597,40 +482,41 @@ const j = ({ navigation }) => {
           const n = new Date(Q);
           return (n.setHours(23, 59, 59, 999), e >= t && e <= n);
         }
-        return !0;
+        return true;
       }),
-    [E, e, a, R, $, V, _, q, Q]
+    [sessions, analysisSelectedTags, analysisTagLogic, R, $, V, _, q, Q]
   );
-
   // 順位。人ごとに記録を舐めるので、ここが再計算のいちばん重いところ
-  const xe = n.default.useMemo(
+  const xe = React.useMemo(
     () =>
-      [...(w || []).filter((e) => v || (e.grade || 0) < 5), ...(((O === '卒業生' || v) && A) || [])]
+      [
+        ...(members || []).filter((e) => showAlumniInAnalysis || (e.grade || 0) < 5),
+        ...(((O === '卒業生' || showAlumniInAnalysis) && alumni) || []),
+      ]
         .filter((e) => !!e)
-        .filter((e) => k !== 'member' || !B || e.id === B)
+        .filter((e) => activeRole !== 'member' || !myMemberId || e.id === myMemberId)
         .map((e) => Object.assign({}, e, 集.成績を数える(me, e.id)))
         .filter((e) => {
-          if (0 === e.shots) return !1;
-          if (k === 'group') {
-            if (W !== '全員' && e.gender !== W) return !1;
+          if (0 === e.shots) return false;
+          if (activeRole === 'group') {
+            if (W !== '全員' && e.gender !== W) return false;
             if (O !== '全学年') {
               if (O === '卒業生') {
-                if (!(5 === e.grade || e.graduationYear || e.isAlumni)) return !1;
-              } else if (`${e.grade}年` !== O) return !1;
+                if (!(5 === e.grade || e.graduationYear || e.isAlumni)) return false;
+              } else if (`${e.grade}年` !== O) return false;
             }
           }
           return !(oe && !(e.name || '').toLowerCase().includes(oe.toLowerCase()));
         })
         .sort((e, t) => (Math.abs(t.rate - e.rate) > 0.01 ? t.rate - e.rate : t.shots - e.shots)),
-    [w, A, v, O, k, B, W, oe, me]
+    [members, alumni, showAlumniInAnalysis, O, activeRole, myMemberId, W, oe, me]
   );
-  const rankingConfig = C[R] || { type: 'ratio', value: 0 };
+  const rankingConfig = analysisRankingSettings[R] || { type: 'ratio', value: 0 };
   const be = 'ratio' === rankingConfig.type ? rankingConfig.value : 0;
   const ye = Math.max(...xe.map((e) => e.shots), 0);
   const je = 'count' === rankingConfig.type ? rankingConfig.value : Math.floor(ye * be);
   const Fe = xe.filter((e) => e.shots >= je);
   const pe = xe.filter((e) => e.shots < je);
-
   const Ce = ((e) => {
     let t = 1;
     return e.map((n, o) => {
@@ -643,8 +529,7 @@ const j = ({ navigation }) => {
       return Object.assign({}, n, { displayRank: t });
     });
   })(Fe);
-
-  const Se = n.default.useCallback(
+  const Se = React.useCallback(
     (e, t) => {
       if (!e && !t) return [];
       const n = {};
@@ -658,24 +543,19 @@ const j = ({ navigation }) => {
         } else {
           a = `${l.getMonth() + 1 >= 4 ? l.getFullYear() : l.getFullYear() - 1}年度`;
         }
-
         if (!n[a]) {
           // 結果分布はここでは数えない。点を押したときは 期間の成績 が
           // 成績を数える で出すので、同じものを2通りに数えると食い違う元になる
           n[a] = { hits: 0, shots: 0, date: o.date, details: [] };
         }
-
         let sessionHits = 0;
         let sessionShots = 0;
-
         // 射手の入っていない記録でも落ちないようにする。上の
         // gatherAllArrowLocations は同じ守りをしているのに、ここだけ抜けていた
         (Array.isArray(o.archers) ? o.archers : []).forEach((r) => {
           if (!r || !r.marks) return;
-
           let s = 0;
           let i = 0;
-
           r.marks.forEach((oVal, lVal) => {
             if ('○' !== oVal && '\xd7' !== oVal) return;
             // 氏名では拾わない。ID一致「または」氏名一致だったため、
@@ -689,12 +569,9 @@ const j = ({ navigation }) => {
               }
             }
           });
-
           sessionHits += s;
           sessionShots += i;
-
         });
-
         if (sessionShots > 0) {
           n[a].details.push({
             sessionId: o.id,
@@ -704,19 +581,13 @@ const j = ({ navigation }) => {
           });
         }
       });
-
       return Object.entries(n)
-        .map(([e, t]) =>
-          Object.assign({ label: e }, t, {
-            rate: t.shots > 0 ? (t.hits / t.shots) * 100 : 0,
-          })
-        )
+        .map(([e, t]) => Object.assign({ label: e }, t, { rate: t.shots > 0 ? (t.hits / t.shots) * 100 : 0 }))
         .filter((e) => e.shots > 0)
         .sort((e, t) => e.date - t.date);
     },
     [me, J]
   );
-
   // 比較相手の成績。1〜4射目のマスごとに数え直すと、記録の数だけ何度も
   // 走って重くなる。相手が変わったときだけ数える
   /**
@@ -728,29 +599,27 @@ const j = ({ navigation }) => {
    */
   const 期間の成績 = (部員id, ラベル) =>
     部員id ? 集.成績を数える(点の期間で絞る(me, ラベル), 部員id) : null;
-
   // 部員として入っているときの、自分の成績
-  const 自分の期間の成績 = n.default.useMemo(
-    () => ('member' === k && B ? 期間の成績(B, selectedTrendLabel) : null),
-    [k, B, me, selectedTrendLabel]
+  const 自分の期間の成績 = React.useMemo(
+    () => ('member' === activeRole && myMemberId ? 期間の成績(myMemberId, selectedTrendLabel) : null),
+    [activeRole, myMemberId, me, selectedTrendLabel]
   );
-
   // 個人の詳細を開いているときの、その人の成績
-  const 詳細の期間の成績 = n.default.useMemo(
+  const 詳細の期間の成績 = React.useMemo(
     () => (ae ? 期間の成績(ae.id, selectedModalTrendLabel) : null),
     [ae, me, selectedModalTrendLabel]
   );
-
-  const 比較の成績 = n.default.useMemo(() => {
+  const 比較の成績 = React.useMemo(() => {
     const 表 = new Map();
     const 記録たち = 点の期間で絞る(me, selectedModalTrendLabel);
     for (const cm of compareMembers) if (cm && cm.id) 表.set(cm.id, 集.成績を数える(記録たち, cm.id));
     return 表;
   }, [compareMembers, me, selectedModalTrendLabel]);
-
-  const ke = n.default.useMemo(() => ('member' === k && B ? Se(B, D) : []), [k, B, D, Se]);
-  const Be = n.default.useMemo(() => (ae ? Se(ae.id, ae.name) : []), [ae, Se]);
-
+  const ke = React.useMemo(
+    () => ('member' === activeRole && myMemberId ? Se(myMemberId, D) : []),
+    [activeRole, myMemberId, D, Se]
+  );
+  const Be = React.useMemo(() => (ae ? Se(ae.id, ae.name) : []), [ae, Se]);
   const CompareGraph = ({ baseData, baseName, compareTargets, selectedLabel, onSelectLabel }) => {
     const COLORS = 比較の色たち;
     const allDataSets = [
@@ -762,7 +631,6 @@ const j = ({ navigation }) => {
         isBase: false,
       })),
     ];
-
     const allLabels = Array.from(new Set(allDataSets.flatMap((set) => set.data.map((d) => d.label)))).sort(
       (a, b) => {
         const aDate = new Date(a.replace('年度', '/4/1'));
@@ -770,23 +638,18 @@ const j = ({ navigation }) => {
         return aDate - bDate;
       }
     );
-
     if (allLabels.length === 0) {
-      return (0, y.jsx)(o.default, {
-        style: F.noDataGraph,
-        children: (0, y.jsx)(l.default, {
-          style: { color: '#8E8E93' },
-          children: '比較するデータがありません',
-        }),
-      });
+      return (
+        <View style={F.noDataGraph}>
+          <Text style={{ color: '#8E8E93' }}>比較するデータがありません</Text>
+        </View>
+      );
     }
-
     const hHeight = 150;
     const paddingX = 25;
     const paddingY = 20;
     const usableHeight = 110;
     const usableWidth = 250;
-
     const datasetsWithPoints = allDataSets.map((dataset) => {
       const points = [];
       allLabels.forEach((label, idx) => {
@@ -794,2237 +657,1756 @@ const j = ({ navigation }) => {
         const item = dataset.data.find((d) => d.label === label);
         if (item) {
           points.push({
-            x: xVal,
+            Svgの部品: xVal,
             y: hHeight - (paddingY + (item.rate / 100) * usableHeight),
             rate: item.rate,
             label,
           });
         }
       });
-
       let path = '';
       points.forEach((pt, idx) => {
-        path += idx === 0 ? `M ${pt.x} ${pt.y}` : ` L ${pt.x} ${pt.y}`;
+        path += idx === 0 ? `M ${pt.Svgの部品} ${pt.y}` : ` L ${pt.Svgの部品} ${pt.y}`;
       });
-
       return { ...dataset, points, path };
     });
-
-    return (0, y.jsxs)(o.default, {
-      style: F.graphContainer,
-      children: [
-        (0, y.jsxs)(o.default, {
-          style: {
+    return (
+      <View style={F.graphContainer}>
+        <View
+          style={{
             flexDirection: 'row',
             justifyContent: 'space-between',
             marginBottom: 12,
             alignItems: 'center',
-          },
-          children: [
-            (0, y.jsx)(l.default, { style: F.graphTitle, children: '的中率推移の比較 (%)' }),
-            (0, y.jsx)(o.default, {
-              style: {
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                gap: 6,
-                maxWidth: '75%',
-                justifyContent: 'flex-end',
-              },
-              children: datasetsWithPoints.map((ds, idx) =>
-                (0, y.jsxs)(
-                  o.default,
-                  {
-                    style: { flexDirection: 'row', alignItems: 'center', marginRight: 4 },
-                    children: [
-                      (0, y.jsx)(o.default, {
-                        style: {
-                          width: 8,
-                          height: 8,
-                          backgroundColor: ds.color,
-                          borderRadius: 4,
-                          marginRight: 4,
-                        },
-                      }),
-                      (0, y.jsx)(l.default, { style: { fontSize: 9, color: '#3C3C43' }, children: ds.name }),
-                    ],
-                  },
-                  `legend-${idx}`
-                )
-              ),
-            }),
-          ],
-        }),
-        (0, y.jsxs)(b.default, {
-          width: '100%',
-          height: hHeight,
-          viewBox: '0 0 300 150',
-          children: [
-            [0, 25, 50, 75, 100].map((e) =>
-              (0, y.jsxs)(
-                n.default.Fragment,
-                {
-                  children: [
-                    (0, y.jsx)(x.Line, {
-                      x1: paddingX,
-                      y1: hHeight - (paddingY + (e / 100) * usableHeight),
-                      x2: 280,
-                      y2: hHeight - (paddingY + (e / 100) * usableHeight),
-                      stroke: '#E5E5EA',
-                      strokeWidth: '1',
-                    }),
-                    (0, y.jsx)(x.Text, {
-                      x: 20,
-                      y: hHeight - (paddingY + (e / 100) * usableHeight) + 3,
-                      fontSize: '8',
-                      fill: '#8E8E93',
-                      textAnchor: 'end',
-                      children: e,
-                    }),
-                  ],
-                },
-                `grid-compare-${e}`
-              )
-            ),
-            datasetsWithPoints.map((ds, idx) =>
-              (0, y.jsx)(
-                x.Path,
-                {
-                  d: ds.path,
-                  fill: 'none',
-                  stroke: ds.color,
-                  strokeWidth: ds.isBase ? '2.5' : '2.0',
-                  strokeLinecap: 'round',
-                  strokeLinejoin: 'round',
-                },
-                `path-${idx}`
-              )
-            ),
-            // 押した期間の目印。線が何本も重なるので、縦の帯で示す
-            selectedLabel && allLabels.indexOf(selectedLabel) >= 0
-              ? (0, y.jsx)(x.Line, {
-                  x1:
-                    paddingX +
-                    (allLabels.indexOf(selectedLabel) / (allLabels.length > 1 ? allLabels.length - 1 : 1)) *
-                      usableWidth,
-                  y1: hHeight - paddingY - usableHeight,
-                  x2:
-                    paddingX +
-                    (allLabels.indexOf(selectedLabel) / (allLabels.length > 1 ? allLabels.length - 1 : 1)) *
-                      usableWidth,
-                  y2: hHeight - paddingY,
-                  stroke: '#FF9500',
-                  strokeWidth: '2',
-                  strokeDasharray: '3 3',
-                })
-              : null,
-            datasetsWithPoints.flatMap((ds, dsIdx) =>
-              ds.points.map((pt, idx) =>
-                (0, y.jsx)(
-                  x.Circle,
-                  {
-                    cx: pt.x,
-                    cy: pt.y,
-                    // 選んでいる期間の点は大きくする。押せることが伝わるよう、
-                    // 押す的も見た目より広く取る（下の透明な丸）
-                    r: pt.label === selectedLabel ? (ds.isBase ? '5.5' : '5.0') : ds.isBase ? '3.5' : '3.0',
-                    fill: ds.color,
-                    onPress: () => onSelectLabel && onSelectLabel(pt.label === selectedLabel ? null : pt.label),
-                  },
-                  `pt-${dsIdx}-${idx}`
-                )
-              )
-            ),
-            // 指で押しやすいよう、見えない広い的を重ねる（本人の線のぶんだけ）
-            (datasetsWithPoints[0] ? datasetsWithPoints[0].points : []).map((pt, idx) =>
-              (0, y.jsx)(
-                x.Circle,
-                {
-                  cx: pt.x,
-                  cy: pt.y,
-                  r: '11',
-                  fill: 'transparent',
-                  onPress: () => onSelectLabel && onSelectLabel(pt.label === selectedLabel ? null : pt.label),
-                },
-                `hit-${idx}`
-              )
-            ),
-          ],
-        }),
-      ],
-    });
+          }}
+        >
+          <Text style={F.graphTitle}>的中率推移の比較 (%)</Text>
+          <View
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              gap: 6,
+              maxWidth: '75%',
+              justifyContent: 'flex-end',
+            }}
+          >
+            {datasetsWithPoints.map((ds, idx) => (
+              <View
+                key={`legend-${idx}`}
+                style={{ flexDirection: 'row', alignItems: 'center', marginRight: 4 }}
+              >
+                <View
+                  style={{ width: 8, height: 8, backgroundColor: ds.color, borderRadius: 4, marginRight: 4 }}
+                />
+                <Text style={{ fontSize: 9, color: '#3C3C43' }}>{ds.name}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+        <Svg width="100%" height={hHeight} viewBox="0 0 300 150">
+          {[0, 25, 50, 75, 100].map((e) => (
+            <React.Fragment key={`grid-compare-${e}`}>
+              <Svgの部品.Line
+                x1={paddingX}
+                y1={hHeight - (paddingY + (e / 100) * usableHeight)}
+                x2={280}
+                y2={hHeight - (paddingY + (e / 100) * usableHeight)}
+                stroke="#E5E5EA"
+                strokeWidth="1"
+              />
+              <Svgの部品.Text
+                Svgの部品={20}
+                y={hHeight - (paddingY + (e / 100) * usableHeight) + 3}
+                fontSize="8"
+                fill="#8E8E93"
+                textAnchor="end"
+              >
+                {e}
+              </Svgの部品.Text>
+            </React.Fragment>
+          ))}
+          {datasetsWithPoints.map((ds, idx) => (
+            <Svgの部品.Path
+              key={`path-${idx}`}
+              d={ds.path}
+              fill="none"
+              stroke={ds.color}
+              strokeWidth={ds.isBase ? '2.5' : '2.0'}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ))}
+          {/* 押した期間の目印。線が何本も重なるので、縦の帯で示す */}
+          {selectedLabel && allLabels.indexOf(selectedLabel) >= 0 ? (
+            <Svgの部品.Line
+              x1={
+                paddingX +
+                (allLabels.indexOf(selectedLabel) / (allLabels.length > 1 ? allLabels.length - 1 : 1)) *
+                  usableWidth
+              }
+              y1={hHeight - paddingY - usableHeight}
+              x2={
+                paddingX +
+                (allLabels.indexOf(selectedLabel) / (allLabels.length > 1 ? allLabels.length - 1 : 1)) *
+                  usableWidth
+              }
+              y2={hHeight - paddingY}
+              stroke="#FF9500"
+              strokeWidth="2"
+              strokeDasharray="3 3"
+            />
+          ) : null}
+          {datasetsWithPoints.flatMap((ds, dsIdx) =>
+            ds.points.map((pt, idx) => (
+              <Svgの部品.Circle
+                key={`pt-${dsIdx}-${idx}`}
+                cx={pt.Svgの部品}
+                cy={pt.y} // 選んでいる期間の点は大きくする。押せることが伝わるよう、
+                // 押す的も見た目より広く取る（下の透明な丸）
+                r={pt.label === selectedLabel ? (ds.isBase ? '5.5' : '5.0') : ds.isBase ? '3.5' : '3.0'}
+                fill={ds.color}
+                onPress={() => onSelectLabel && onSelectLabel(pt.label === selectedLabel ? null : pt.label)}
+              />
+            ))
+          )}
+          {/* 指で押しやすいよう、見えない広い的を重ねる（本人の線のぶんだけ） */}
+          {(datasetsWithPoints[0] ? datasetsWithPoints[0].points : []).map((pt, idx) => (
+            <Svgの部品.Circle
+              key={`hit-${idx}`}
+              cx={pt.Svgの部品}
+              cy={pt.y}
+              r="11"
+              fill="transparent"
+              onPress={() => onSelectLabel && onSelectLabel(pt.label === selectedLabel ? null : pt.label)}
+            />
+          ))}
+        </Svg>
+      </View>
+    );
   };
-
-  const Ee = ({ data: e, selectedLabel, onSelectLabel, onJumpToRecord }) => {
-    const a = selectedLabel ? e.findIndex((item) => item.label === selectedLabel) : null;
+  const Ee = ({ data, selectedLabel, onSelectLabel, onJumpToRecord }) => {
+    const a = selectedLabel ? data.findIndex((item) => item.label === selectedLabel) : null;
     const i = (index) => {
       if (null === index) {
         if (onSelectLabel) onSelectLabel(null);
       } else {
-        const item = e[index];
+        const item = data[index];
         if (onSelectLabel && item) onSelectLabel(item.label);
       }
     };
-
-    if (0 === e.length) {
-      return (0, y.jsx)(o.default, {
-        style: F.noDataGraph,
-        children: (0, y.jsx)(l.default, {
-          style: { color: '#8E8E93' },
-          children: 'データが足りません',
-        }),
-      });
+    if (0 === data.length) {
+      return (
+        <View style={F.noDataGraph}>
+          <Text style={{ color: '#8E8E93' }}>データが足りません</Text>
+        </View>
+      );
     }
-
     const d = 150;
     const c = 20;
     const u = 110;
-    const f = e.map((t, n) => ({
-      x: c + (n / (e.length > 1 ? e.length - 1 : 1)) * 260,
+    const f = data.map((t, n) => ({
+      Svgの部品: c + (n / (data.length > 1 ? data.length - 1 : 1)) * 260,
       y: d - (c + (t.rate / 100) * u),
     }));
-
     let m = '';
     f.forEach((e, t) => {
-      m += 0 === t ? `M ${e.x} ${e.y}` : ` L ${e.x} ${e.y}`;
+      m += 0 === t ? `M ${e.Svgの部品} ${e.y}` : ` L ${e.Svgの部品} ${e.y}`;
     });
-
-    return (0, y.jsxs)(o.default, {
-      style: F.graphContainer,
-      children: [
-        (0, y.jsxs)(o.default, {
-          style: {
+    return (
+      <View style={F.graphContainer}>
+        <View
+          style={{
             flexDirection: 'row',
             justifyContent: 'space-between',
             marginBottom: 12,
             alignItems: 'center',
-          },
-          children: [
-            (0, y.jsx)(l.default, { style: F.graphTitle, children: '的中率推移 (%)' }),
-            !('月ごと' === R || '直近30日' === R) &&
-              (0, y.jsx)(o.default, {
-                style: F.trendUnitSelector,
-                children: ['day', 'month', 'year']
-                  .filter((e) => '年度' !== R || 'year' !== e)
-                  .map((e) =>
-                    (0, y.jsx)(
-                      s.default,
-                      {
-                        onPress: () => {
-                          U(e);
-                          i(null);
-                        },
-                        style: [F.unitBtn, J === e && F.unitBtnActive],
-                        children: (0, y.jsx)(l.default, {
-                          style: [F.unitBtnText, J === e && F.unitBtnTextActive],
-                          children: 'day' === e ? '日' : 'month' === e ? '月' : '年度',
-                        }),
-                      },
-                      `unit-${e}`
-                    )
-                  ),
-              }),
-          ],
-        }),
-        (0, y.jsxs)(b.default, {
-          width: '100%',
-          height: d,
-          viewBox: '0 0 300 150',
-          children: [
-            [0, 25, 50, 75, 100].map((e) =>
-              (0, y.jsxs)(
-                n.default.Fragment,
-                {
-                  children: [
-                    (0, y.jsx)(x.Line, {
-                      x1: c,
-                      y1: d - (c + (e / 100) * u),
-                      x2: 280,
-                      y2: d - (c + (e / 100) * u),
-                      stroke: '#E5E5EA',
-                      strokeWidth: '1',
-                    }),
-                    (0, y.jsx)(x.Text, {
-                      x: 15,
-                      y: d - (c + (e / 100) * u) + 4,
-                      fontSize: '8',
-                      fill: '#8E8E93',
-                      textAnchor: 'end',
-                      children: e,
-                    }),
-                  ],
-                },
-                `grid-${e}`
-              )
-            ),
-            (0, y.jsx)(x.Path, {
-              d: m,
-              fill: 'none',
-              stroke: '#007AFF',
-              strokeWidth: '3',
-              strokeLinecap: 'round',
-              strokeLinejoin: 'round',
-            }),
-            f.map((e, t) =>
-              (0, y.jsx)(
-                x.Circle,
-                {
-                  cx: e.x,
-                  cy: e.y,
-                  r: a === t ? '6' : '4',
-                  fill: a === t ? '#FF9500' : '#007AFF',
-                  onPress: () => i(t),
-                },
-                `point-${t}`
-              )
-            ),
-          ],
-        }),
-        null !== a &&
-          e[a] &&
-          (0, y.jsxs)(o.default, {
-            style: F.pointDetailCard,
-            children: [
-              (0, y.jsxs)(o.default, {
-                style: {
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 8,
-                },
-                children: [
-                  (0, y.jsxs)(l.default, { style: F.detailLabel, children: [e[a].label, ' の詳細'] }),
-                  (0, y.jsx)(s.default, {
-                    onPress: () => i(null),
-                    children: (0, y.jsx)(h.Ionicons, { name: 'close-circle', size: 20, color: '#C7C7CC' }),
-                  }),
-                ],
-              }),
-              (0, y.jsx)(r.default, {
-                style: { maxHeight: 120 },
-                showsVerticalScrollIndicator: !0,
-                children: e[a].details.map((t, n) =>
-                  (0, y.jsxs)(
-                    s.default,
-                    {
-                      onPress: () => {
-                        i(null);
-                        onJumpToRecord && onJumpToRecord(t.sessionId);
-                      },
-                      activeOpacity: 0.5,
-                      style: [
-                        F.detailRow,
-                        n < e[a].details.length - 1 && {
-                          borderBottomWidth: 1,
-                          borderBottomColor: '#F2F2F7',
-                          paddingBottom: 6,
-                          marginBottom: 6,
-                        },
-                      ],
-                      children: [
-                        (0, y.jsxs)(l.default, { style: F.detailText, children: [t.date, ' ', t.title] }),
-                        (0, y.jsxs)(o.default, {
-                          style: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-                          children: [
-                            (0, y.jsx)(l.default, { style: F.detailStats, children: t.stats }),
-                            (0, y.jsx)(h.Ionicons, { name: 'chevron-forward', size: 14, color: '#C7C7CC' }),
-                          ],
-                        }),
-                      ],
+          }}
+        >
+          <Text style={F.graphTitle}>的中率推移 (%)</Text>
+          {!('月ごと' === R || '直近30日' === R) && (
+            <View style={F.trendUnitSelector}>
+              {['day', 'month', 'year']
+                .filter((e) => '年度' !== R || 'year' !== e)
+                .map((e) => (
+                  <TouchableOpacity
+                    key={`unit-${e}`}
+                    onPress={() => {
+                      U(e);
+                      i(null);
+                    }}
+                    style={[F.unitBtn, J === e && F.unitBtnActive]}
+                  >
+                    <Text style={[F.unitBtnText, J === e && F.unitBtnTextActive]}>
+                      {'day' === e ? '日' : 'month' === e ? '月' : '年度'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+            </View>
+          )}
+        </View>
+        <Svg width="100%" height={d} viewBox="0 0 300 150">
+          {[0, 25, 50, 75, 100].map((e) => (
+            <React.Fragment key={`grid-${e}`}>
+              <Svgの部品.Line
+                x1={c}
+                y1={d - (c + (e / 100) * u)}
+                x2={280}
+                y2={d - (c + (e / 100) * u)}
+                stroke="#E5E5EA"
+                strokeWidth="1"
+              />
+              <Svgの部品.Text
+                Svgの部品={15}
+                y={d - (c + (e / 100) * u) + 4}
+                fontSize="8"
+                fill="#8E8E93"
+                textAnchor="end"
+              >
+                {e}
+              </Svgの部品.Text>
+            </React.Fragment>
+          ))}
+          <Svgの部品.Path
+            d={m}
+            fill="none"
+            stroke="#007AFF"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          {f.map((e, t) => (
+            <Svgの部品.Circle
+              key={`point-${t}`}
+              cx={e.Svgの部品}
+              cy={e.y}
+              r={a === t ? '6' : '4'}
+              fill={a === t ? '#FF9500' : '#007AFF'}
+              onPress={() => i(t)}
+            />
+          ))}
+        </Svg>
+        {null !== a && data[a] && (
+          <View style={F.pointDetailCard}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 8,
+              }}
+            >
+              <Text style={F.detailLabel}>
+                {data[a].label}
+                {' の詳細'}
+              </Text>
+              <TouchableOpacity onPress={() => i(null)}>
+                <Icons.Ionicons name="close-circle" size={20} color="#C7C7CC" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ maxHeight: 120 }} showsVerticalScrollIndicator>
+              {data[a].details.map((t, n) => (
+                <TouchableOpacity
+                  key={`detail-${n}-${t.date}`}
+                  onPress={() => {
+                    i(null);
+                    if (onJumpToRecord) onJumpToRecord(t.sessionId);
+                  }}
+                  activeOpacity={0.5}
+                  style={[
+                    F.detailRow,
+                    n < data[a].details.length - 1 && {
+                      borderBottomWidth: 1,
+                      borderBottomColor: '#F2F2F7',
+                      paddingBottom: 6,
+                      marginBottom: 6,
                     },
-                    `detail-${n}-${t.date}`
-                  )
-                ),
-              }),
-            ],
-          }),
-      ],
-    });
+                  ]}
+                >
+                  <Text style={F.detailText}>
+                    {t.date} {t.title}
+                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Text style={F.detailStats}>{t.stats}</Text>
+                    <Icons.Ionicons name="chevron-forward" size={14} color="#C7C7CC" />
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+      </View>
+    );
   };
-  const we = ({ options: e, selected: t, onSelect: n, label: a = '', isWrap: r = !1 }) =>
-    (0, y.jsxs)(o.default, {
-      style: [F.segmentWrapper, r && { flexDirection: 'column', alignItems: 'stretch', width: '100%' }],
-      children: [
-        a ? (0, y.jsx)(l.default, { style: F.segmentLabel, children: a }) : null,
-        (0, y.jsx)(o.default, {
-          style: [
-            F.segmentContainer,
-            r && { width: '100%', flexDirection: 'row', justifyContent: 'space-between' },
-          ],
-          children: e.map((e) => {
-            const o = 'string' == typeof e ? e : e.label;
-            const a = 'string' == typeof e ? e : e.value;
-            const r = t === a;
-            return (0, y.jsx)(
-              s.default,
-              {
-                style: [F.segmentButton, r && F.segmentButtonActive],
-                onPress: () => n(a),
-                children: (0, y.jsx)(l.default, {
-                  style: [F.segmentText, r && F.segmentTextActive],
-                  numberOfLines: 1,
-                  children: o,
-                }),
-              },
-              a
-            );
-          }),
-        }),
-      ],
-    });
-
-  const Ae = o.default;
-
-  return (0, y.jsxs)(
-    Ae,
-    Object.assign({ style: F.safeArea }, !1, {
-      children: [
-        (0, y.jsx)(o.default, {
-          style: F.header,
-          children: (0, y.jsx)(l.default, { style: F.title, children: '的中分析' }),
-        }),
-        (0, y.jsxs)(r.default, {
-          contentContainerStyle: F.content,
-          children: [
-            (0, y.jsxs)(o.default, {
-              style: F.filtersCard,
-              children: [
-                (0, y.jsxs)(o.default, {
-                  style: { marginBottom: 16 },
-                  children: [
-                    (0, y.jsxs)(o.default, {
-                      style: {
+  const We要素 = ({ options, selected, onSelect, label: a = '', isWrap = false }) => (
+    <View
+      style={[F.segmentWrapper, isWrap && { flexDirection: 'column', alignItems: 'stretch', width: '100%' }]}
+    >
+      {a ? <Text style={F.segmentLabel}>{a}</Text> : null}
+      <View
+        style={[
+          F.segmentContainer,
+          isWrap && { width: '100%', flexDirection: 'row', justifyContent: 'space-between' },
+        ]}
+      >
+        {options.map((e) => {
+          const o = 'string' == typeof e ? e : e.label;
+          const a = 'string' == typeof e ? e : e.value;
+          const r = selected === a;
+          return (
+            <TouchableOpacity
+              key={a}
+              style={[F.segmentButton, r && F.segmentButtonActive]}
+              onPress={() => onSelect(a)}
+            >
+              <Text style={[F.segmentText, r && F.segmentTextActive]} numberOfLines={1}>
+                {o}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+  const Ae = View;
+  return (
+    <Ae style={F.safeArea} {...false}>
+      <View style={F.header}>
+        <Text style={F.title}>的中分析</Text>
+      </View>
+      <ScrollView contentContainerStyle={F.content}>
+        <View style={F.filtersCard}>
+          <View style={{ marginBottom: 16 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 8,
+              }}
+            >
+              <Text style={[F.segmentLabel, { width: 'auto', marginRight: 0 }]}>タグフィルター</Text>
+              <View style={{ flexDirection: 'row', backgroundColor: '#E5E5EA', borderRadius: 8, padding: 2 }}>
+                <TouchableOpacity
+                  onPress={() => setAnalysisTagLogic('AND')}
+                  style={[
+                    { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+                    'AND' === analysisTagLogic && { backgroundColor: '#FFF' },
+                  ]}
+                >
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 'bold',
+                      color: 'AND' === analysisTagLogic ? '#007AFF' : '#8E8E93',
+                    }}
+                  >
+                    すべて含む
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setAnalysisTagLogic('OR')}
+                  style={[
+                    { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+                    'OR' === analysisTagLogic && { backgroundColor: '#FFF' },
+                  ]}
+                >
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 'bold',
+                      color: 'OR' === analysisTagLogic ? '#007AFF' : '#8E8E93',
+                    }}
+                  >
+                    いずれか含む
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ flexDirection: 'row', marginBottom: 8 }}
+              contentContainerStyle={{ gap: 8, paddingVertical: 4 }}
+            >
+              <TouchableOpacity
+                style={[
+                  F.tagChip,
+                  0 === analysisSelectedTags.length && F.tagChipActive,
+                  { backgroundColor: 0 === analysisSelectedTags.length ? '#007AFF' : '#E5E5EA' },
+                ]}
+                onPress={() => setAnalysisSelectedTags([])}
+              >
+                <Text style={[F.tagChipText, 0 === analysisSelectedTags.length && { color: '#FFF' }]}>
+                  すべて解除
+                </Text>
+              </TouchableOpacity>
+              {ge.map((t) => {
+                const n = analysisSelectedTags.includes(t);
+                return (
+                  <TouchableOpacity
+                    key={`tag-${t}`}
+                    style={[F.tagChip, n && F.tagChipActive, { backgroundColor: n ? '#007AFF' : '#F2F2F7' }]}
+                    onPress={() => toggleAnalysisTag(t)}
+                  >
+                    <Text style={[F.tagChipText, n && { color: '#FFF' }]}>{t.replace(/^#/, '')}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+          <View style={{ marginBottom: 12 }}>
+            <We要素
+              options={['月ごと', '年度', '期間指定', '直近30日', 'すべて']}
+              selected={R}
+              onSelect={I}
+              isWrap
+            />
+          </View>
+          {'期間指定' === R && (
+            <View style={F.customRangeContainer}>
+              <TouchableOpacity style={F.dateBtn} onPress={() => ue('start')}>
+                <Text style={F.dateLabel}>
+                  {'開始: '}
+                  {q.toLocaleDateString('ja-JP')}
+                </Text>
+              </TouchableOpacity>
+              <Icons.Ionicons name="arrow-forward" size={16} color="#8E8E93" />
+              <TouchableOpacity style={F.dateBtn} onPress={() => ue('end')}>
+                <Text style={F.dateLabel}>
+                  {'終了: '}
+                  {Q.toLocaleDateString('ja-JP')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          {'月ごと' === R && (
+            <View style={F.monthNav}>
+              <TouchableOpacity style={F.monthNavBtn} onPress={() => he(-1)}>
+                <Icons.Ionicons name="chevron-back" size={20} color="#007AFF" />
+              </TouchableOpacity>
+              <Text style={F.monthNavText}>
+                {V >= 4 ? `${$}年度` : $ - 1 + '年度'} {V}月
+              </Text>
+              <TouchableOpacity style={F.monthNavBtn} onPress={() => he(1)}>
+                <Icons.Ionicons name="chevron-forward" size={20} color="#007AFF" />
+              </TouchableOpacity>
+            </View>
+          )}
+          {'年度' === R && (
+            <View style={F.monthNav}>
+              <TouchableOpacity style={F.monthNavBtn} onPress={() => fe(-1)}>
+                <Icons.Ionicons name="chevron-back" size={20} color="#007AFF" />
+              </TouchableOpacity>
+              <Text style={F.monthNavText}>{_}年度</Text>
+              <TouchableOpacity style={F.monthNavBtn} onPress={() => fe(1)}>
+                <Icons.Ionicons name="chevron-forward" size={20} color="#007AFF" />
+              </TouchableOpacity>
+            </View>
+          )}
+          {'member' !== activeRole && (
+            <View style={F.rankingSettingsContainer}>
+              <Text style={F.rankingSettingsLabel}>ランキング対象の基準 (最多比)</Text>
+              <View style={F.ratioButtonRow}>
+                {[
+                  { label: '1/2 (50%)', val: 0.5 },
+                  { label: '1/3 (33%)', val: 0.33 },
+                  { label: '1/4 (25%)', val: 0.25 },
+                ].map((e) => (
+                  <TouchableOpacity
+                    key={`ratio-${e.val}`}
+                    onPress={() => {
+                      const t = Math.abs(be - e.val) < 0.01 ? 0 : e.val;
+                      setAnalysisRankingSetting(R, { type: 'ratio', value: t });
+                    }}
+                    style={[F.ratioBtn, Math.abs(be - e.val) < 0.01 && F.ratioBtnActive]}
+                  >
+                    <Text style={[F.ratioBtnText, Math.abs(be - e.val) < 0.01 && F.ratioBtnTextActive]}>
+                      {e.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <View style={F.customShotsRow}>
+                <TextInput
+                  style={F.customShotsInput}
+                  value={customShotsInput}
+                  onChangeText={setCustomShotsInput}
+                  placeholder="例: 20"
+                  keyboardType="numeric"
+                  placeholderTextColor="#C7C7CC"
+                />
+                <Text style={F.customShotsUnit}>射以上</Text>
+                <TouchableOpacity
+                  style={[F.customShotsBtn, customShotsInput.trim() !== '' && F.customShotsBtnActive]}
+                  onPress={() => {
+                    const v = parseInt(customShotsInput, 10);
+                    if (!isNaN(v) && v > 0) {
+                      setAnalysisRankingSetting(R, { type: 'count', value: v });
+                    } else {
+                      setCustomShotsInput('');
+                      setAnalysisRankingSetting(R, { type: 'ratio', value: 0 });
+                    }
+                  }}
+                >
+                  <Text
+                    style={[
+                      F.customShotsBtnText,
+                      customShotsInput.trim() !== '' && F.customShotsBtnTextActive,
+                    ]}
+                  >
+                    絞り込む
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              {ye > 0 && (
+                <Text style={F.ratioHintText}>
+                  {je > 0
+                    ? `現在、${je}射以上がランキング対象です（最多: ${ye}射）`
+                    : '全メンバーがランキング対象です'}
+                </Text>
+              )}
+            </View>
+          )}
+          {'member' !== activeRole && (
+            <>
+              <View style={F.filterDivider} />
+              <We要素 label="性別:" options={['全員', '男子', '女子']} selected={W} onSelect={L} />
+              <View style={F.filterDivider} />
+              <We要素
+                label="学年:"
+                options={['全学年', '1年', '2年', '3年', '4年']}
+                selected={O}
+                onSelect={P}
+              />
+              <View style={F.filterDivider} />
+              <View style={F.toggleRow}>
+                <Text style={F.toggleLabel}>卒業生を表示</Text>
+                <TouchableOpacity
+                  style={[F.miniBtn, showAlumniInAnalysis && F.miniBtnActive]}
+                  onPress={() => setAlumni(!showAlumniInAnalysis)}
+                >
+                  <Text style={[F.miniBtnText, showAlumniInAnalysis && F.miniBtnTextActive]}>
+                    {showAlumniInAnalysis ? 'ON' : 'OFF'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </View>
+        {'member' === activeRole && Ce[0] && (
+          <View style={F.memberDashboard}>
+            <View style={F.dashboardHeader}>
+              <Text style={F.dashboardTitle}>マイ・パフォーマンス統計</Text>
+              <Text style={F.dashboardPeriod}>{R}</Text>
+            </View>
+            <View style={F.mainStatsRow}>
+              <View style={F.mainStatItem}>
+                <Text style={F.mainStatLabel}>的中率</Text>
+                <Text style={F.mainStatValue}>
+                  {Ce[0].rate.toFixed(1)}
+                  <Text style={{ fontSize: 16 }}>%</Text>
+                </Text>
+              </View>
+              <View style={F.mainStatItem}>
+                <Text style={F.mainStatLabel}>的中/射数</Text>
+                <Text style={F.mainStatValue}>
+                  {Ce[0].hits}
+                  <Text style={{ fontSize: 16, color: '#8E8E93' }}>
+                    {' / '}
+                    {Ce[0].shots}
+                  </Text>
+                </Text>
+              </View>
+            </View>
+            <Ee
+              data={ke}
+              selectedLabel={selectedTrendLabel}
+              onSelectLabel={setSelectedTrendLabel}
+              onJumpToRecord={(sessionId) => goToHistoryRecord(sessionId, myMemberId)}
+            />
+            <View style={{ marginTop: 20, alignItems: 'center' }}>
+              <Text style={[F.sectionSubTitle, { alignSelf: 'flex-start' }]}>
+                {selectedTrendLabel ? `矢所の傾向 (${selectedTrendLabel})` : '矢所の傾向 (集計)'}
+              </Text>
+              <View style={{ width: '100%', marginBottom: 12 }}>
+                <We要素
+                  options={[
+                    { label: '霞的(尺二寸)', value: 'kasumi36' },
+                    { label: '星的(尺二寸)', value: 'hoshi36' },
+                    { label: '星的(八寸)', value: 'hoshi24' },
+                  ]}
+                  selected={myTargetType}
+                  onSelect={setMyTargetType}
+                  isWrap
+                />
+              </View>
+              <ArrowLocationView
+                arrowLocations={gatherAllArrowLocations(myMemberId, D, selectedTrendLabel)}
+                size={200}
+                targetType={myTargetType}
+                hideNumbers
+              />
+            </View>
+            <View style={{ marginTop: 20 }}>
+              <Text style={F.sectionSubTitle}>
+                {selectedTrendLabel
+                  ? `立ち順別の的中率 (${selectedTrendLabel})`
+                  : '立ち順別の的中率 (1-4射目)'}
+              </Text>
+              <View style={F.statsGrid}>
+                {Array.from({ length: 4 }).map((e, t) => {
+                  // 点を押したらその期間で数え直す。矢所だけが連動して
+                  // ここが全期間のままだと、同じ画面で見ている期間が食い違う
+                  const 元 = 自分の期間の成績 || Ce[0];
+                  const n = 元.perShotStats[t] || { shots: 0, hits: 0 };
+                  const a = n.shots > 0 ? (n.hits / n.shots) * 100 : 0;
+                  return (
+                    <View key={`per-shot-${t}`} style={F.statBox}>
+                      <Text style={F.statBoxTitle}>{t + 1}射目</Text>
+                      <Text style={F.statBoxRateDash}>
+                        {a.toFixed(0)}
+                        <Text style={{ fontSize: 10 }}>%</Text>
+                      </Text>
+                      <Text style={F.statBoxCounts}>
+                        {n.hits}/{n.shots}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+            <View style={{ marginTop: 24 }}>
+              <Text style={F.sectionSubTitle}>
+                {selectedTrendLabel ? `立ちの結果分布 (${selectedTrendLabel})` : '立ちの結果分布 (4射単位)'}
+              </Text>
+              <View style={F.patternsCardDash}>
+                {[
+                  { label: '皆中', key: 'kaichu', color: '#FF9500' },
+                  { label: '三中', key: 'sanchu', color: '#34C759' },
+                  { label: '羽分', key: 'hake', color: '#007AFF' },
+                  { label: '一中', key: 'icchu', color: '#5856D6' },
+                  { label: '残念', key: 'zannen', color: '#FF3B30' },
+                ].map((e) => {
+                  const 元 = 自分の期間の成績 || Ce[0];
+                  const t = 元.patterns[e.key] || 0;
+                  const n = Object.values(元.patterns).reduce((e, t) => e + t, 0);
+                  const a = n > 0 ? (t / n) * 100 : 0;
+                  return (
+                    <View key={e.key} style={F.patternLine}>
+                      <View style={{ width: 45 }}>
+                        <Text style={F.patternLabelText}>{e.label}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <View style={F.barContainer}>
+                          <View
+                            style={[
+                              F.barFill,
+                              { width: `${Math.max(a, t > 0 ? 3 : 0)}%`, backgroundColor: e.color },
+                            ]}
+                          />
+                        </View>
+                      </View>
+                      <View style={{ width: 50, alignItems: 'flex-end' }}>
+                        <Text style={F.patternValueText}>{t}回</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+              {/* 4射そろわない末尾は分布に入れられない。 */
+              /* 断らないと「的中率と数が合わない」と見える */}
+              {(() => {
+                const 端 = (自分の期間の成績 || Ce[0] || {}).端数の射 || 0;
+                return 端 > 0 ? (
+                  <Text
+                    style={{ fontSize: 11, color: '#8E8E93', marginTop: 8, lineHeight: 16 }}
+                  >{`※ 4射に満たない ${端} 射は皆中・残念などに分けられないため、この分布に入れていません（的中率には入っています）。`}</Text>
+                ) : null;
+              })()}
+            </View>
+            {/* 的中の型。個人の詳細と同じものを、自分の画面にも出す。 */
+            /* 片方だけに出すと「部長の画面にはあるのに自分には無い」になる */}
+            {型の節(自分の期間の成績 || Ce[0], selectedTrendLabel)}
+          </View>
+        )}
+        {'member' !== activeRole && (
+          <View style={F.searchBarContainer}>
+            <View style={F.searchBar}>
+              <Icons.Ionicons name="search" size={18} color="#007AFF" style={F.searchIcon} />
+              <TextInput
+                style={F.searchInput}
+                placeholder="メンバー名を検索..."
+                placeholderTextColor="#8E8E93"
+                value={oe}
+                onChangeText={le}
+              />
+              {!!oe && (
+                <TouchableOpacity onPress={() => le('')} style={{ padding: 4 }}>
+                  <Icons.Ionicons name="close-circle" size={18} color="#C7C7CC" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
+        {'member' !== activeRole && (
+          <View style={F.listContainer}>
+            {Ce.map((e) => (
+              <TouchableOpacity
+                key={typeof e.id === 'string' ? e.id : `member-${e.name}`}
+                style={F.rowCard}
+                onPress={() => re(e)}
+              >
+                <View style={F.rowLeft}>
+                  <View style={F.rankBadge}>
+                    <Text style={F.rankText}>{'member' === activeRole ? '-' : e.displayRank}</Text>
+                  </View>
+                  <View style={F.nameContainer}>
+                    <Text
+                      style={[F.memberName, { color: '#000' }]} // 長い名前は2行まで。それ以上は…で切る。
+                      // 切らないと右の的中率へ食い込む
+                      numberOfLines={2}
+                      ellipsizeMode="tail"
+                    >
+                      {e.name}
+                    </Text>
+                    <Text style={F.memberSub} numberOfLines={1}>
+                      {'group' === activeRole && (e.termKi ? `${e.termKi}期 / ` : '')}
+                      {'group' === activeRole &&
+                        (e.grade === 5 || e.graduationYear
+                          ? '卒業生'
+                          : e.grade === 0
+                            ? 'その他'
+                            : `${e.grade}年`)}
+                      {' / '}
+                      {'group' === activeRole && `${e.gender}`}
+                    </Text>
+                  </View>
+                </View>
+                <View style={F.rowRight}>
+                  <Text style={[F.rateText, { color: e.rate >= 50 ? '#D32F2F' : '#000' }]}>
+                    {e.rate.toFixed(1)}%
+                  </Text>
+                  <Text style={F.shotScoreText}>
+                    {e.hits}/{e.shots}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+            {pe.length > 0 && (
+              <View style={{ marginTop: 24 }}>
+                <View
+                  style={{
+                    padding: 10,
+                    backgroundColor: '#F2F2F7',
+                    borderRadius: 8,
+                    marginBottom: 8,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Icons.Ionicons
+                    name="information-circle-outline"
+                    size={14}
+                    color="#8E8E93"
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text style={{ fontSize: 11, color: '#8E8E93', fontWeight: 'bold' }}>
+                    ランキング選外 ({je}射未満)
+                  </Text>
+                </View>
+                {pe.map((e) => (
+                  <TouchableOpacity
+                    key={typeof e.id === 'string' ? e.id : `low-member-${e.name}`}
+                    style={[F.rowCard, { opacity: 0.6 }]}
+                    onPress={() => re(e)}
+                  >
+                    <View style={F.rowLeft}>
+                      <View style={F.nameContainer}>
+                        <Text style={[F.memberName, { color: '#000' }]}>{e.name}</Text>
+                        <Text style={F.memberSub}>
+                          {'group' === activeRole && (e.termKi ? `${e.termKi}期 / ` : '')}
+                          {'group' === activeRole &&
+                            (e.grade === 5 || e.graduationYear
+                              ? '卒業生'
+                              : e.grade === 0
+                                ? 'その他'
+                                : `${e.grade}年`)}
+                          {' / '}
+                          {'group' === activeRole && `${e.gender}`}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={F.rowRight}>
+                      <Text style={F.rateText}>{e.rate.toFixed(1)}%</Text>
+                      <Text style={F.shotScoreText}>
+                        {e.hits}/{e.shots}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+            {0 === Fe.length && <Text style={F.noDataText}>条件に一致するメンバーがいません</Text>}
+          </View>
+        )}
+      </ScrollView>
+      <CustomCalendarModal
+        visible={Z}
+        onClose={() => ee(false)}
+        selectedDate={'start' === te ? q : Q}
+        onSelectDate={(e) => {
+          if ('start' === te) K(e);
+          else X(e);
+          ee(false);
+        }}
+        title={'start' === te ? '開始日を選択' : '終了日を選択'}
+      />
+      <Modal
+        visible={!!ae}
+        transparent
+        animationType="fade" // 見るだけの窓。端末の戻るでも、外を押しても閉じる
+        onRequestClose={() => re(null)}
+      >
+        <View style={F.modalOverlay}>
+          {/* 外側。押したら閉じる。中身より下に敷く */}
+          <TouchableOpacity
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+            activeOpacity={1}
+            accessibilityLabel="閉じる"
+            onPress={() => re(null)}
+          />
+          <View // 背景の板より上に置く。置かないと、板が中身の押すを横取りする
+            style={[F.modalContent, { maxHeight: '85%', zIndex: 1 }]}
+          >
+            {ae && (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {compareMembers.length > 0 ? (
+                  <Text style={F.modalTitle}>
+                    {ae.name}
+                    {' vs '}
+                    {compareMembers.map((m) => m.name).join(', ')}
+                    {' の比較'}
+                  </Text>
+                ) : (
+                  <Text style={F.modalTitle}>{ae.name}の分析詳細</Text>
+                )}
+                {compareMembers.length > 0 ? (
+                  <View>
+                    <Text style={F.modalDesc}>
+                      {R}
+                      {' の的中成績比較'}
+                    </Text>
+                    {/* 全体の的中率を、比べている人ぶんまとめて出す。 */
+                    /* これまでは本人の分しか出ておらず、相手の全体の */
+                    /* 的中率はランキングへ戻らないと見られなかった */}
+                    <View style={F.比較の的中率}>
+                      {[
+                        { 名: ae.name, hits: ae.hits, shots: ae.shots, rate: ae.rate },
+                        ...compareMembers.map((cm) => {
+                          const s = 比較の成績.get(cm.id) || {};
+                          const 中 = s.hits ?? s.的中 ?? 0;
+                          const 射 = s.shots ?? s.射数 ?? 0;
+                          return { 名: cm.name, hits: 中, shots: 射, rate: 射 > 0 ? (中 / 射) * 100 : 0 };
+                        }),
+                      ].map((x, i) => (
+                        <View key={`全体-${x.名}-${i}`} style={F.比較の的中率の行}>
+                          <Text
+                            style={[F.比較の的中率の名, { color: 比較の色たち[i % 比較の色たち.length] }]}
+                            numberOfLines={1}
+                          >
+                            {x.名}
+                          </Text>
+                          <Text style={F.比較の的中率の数}>{x.rate.toFixed(1)}%</Text>
+                          <Text style={F.比較の的中率の内訳}>
+                            {x.hits}/{x.shots}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                ) : (
+                  <Text style={F.modalDesc}>
+                    {R}の成績 ({ae.hits}/{ae.shots}
+                    {') '}
+                    {ae.rate.toFixed(1)}%
+                  </Text>
+                )}
+                <View style={{ marginVertical: 12 }}>
+                  {compareMembers.length > 0 ? (
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setCompareMembers([]);
+                          setIsSelectingCompareTarget(false);
+                        }}
+                        style={{
+                          paddingVertical: 6,
+                          paddingHorizontal: 12,
+                          backgroundColor: '#E5E5EA',
+                          borderRadius: 8,
+                        }}
+                      >
+                        <Text style={{ color: '#8E8E93', fontSize: 13, fontWeight: 'bold' }}>
+                          比較をすべて解除
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => setIsSelectingCompareTarget(true)}
+                        style={{
+                          paddingVertical: 6,
+                          paddingHorizontal: 12,
+                          backgroundColor: '#E1F0FF',
+                          borderRadius: 8,
+                        }}
+                      >
+                        <Text style={{ color: '#007AFF', fontSize: 13, fontWeight: 'bold' }}>
+                          比較メンバーを追加
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      onPress={() => setIsSelectingCompareTarget(true)}
+                      style={{
+                        alignSelf: 'flex-start',
+                        paddingVertical: 6,
+                        paddingHorizontal: 12,
+                        backgroundColor: '#E1F0FF',
+                        borderRadius: 8,
+                      }}
+                    >
+                      <Text style={{ color: '#007AFF', fontSize: 13, fontWeight: 'bold' }}>
+                        他のメンバーと比較
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                {/* 比較のひな型。よく見る組み合わせを名前で残して呼び出す。 */
+                /* 毎回いちいち学年を開いて選び直すのが手間だった。 */
+                /* 持つのは部員IDだけ。氏名で持つと、改名や同姓同名で別人を呼ぶ */}
+                {(() => {
+                  const この団体の = ひ.この団体のひな型(ひな型たち, いまの団体id);
+                  if (0 === この団体の.length && 0 === compareMembers.length) return null;
+                  const 選べる人 = [...members, ...alumni];
+                  return (
+                    <View style={{ marginBottom: 12 }}>
+                      {この団体の.length > 0 ? (
+                        <View
+                          style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}
+                        >
+                          <Text style={{ fontSize: 12, color: '#8E8E93', marginRight: 2 }}>ひな型</Text>
+                          {[
+                            ...この団体の.map((型) => (
+                              <View
+                                key={型.id}
+                                style={{
+                                  flexDirection: 'row',
+                                  alignItems: 'center',
+                                  backgroundColor: '#F2F2F7',
+                                  borderRadius: 8,
+                                }}
+                              >
+                                <TouchableOpacity
+                                  onPress={() => {
+                                    const 出来 = ひ.ひな型を当てはめる(型, 選べる人, ae && ae.id);
+                                    setCompareMembers(出来.人たち);
+                                    setIsSelectingCompareTarget(false);
+                                    // 抜けた部員は黙って落とさない。人数が違って見える
+                                    if (出来.見つからない > 0)
+                                      出す(
+                                        'ひな型',
+                                        'このひな型の ' +
+                                          出来.見つからない +
+                                          ' 人は、いまの名簿に居ないため外しました。'
+                                      );
+                                  }}
+                                  style={{ paddingVertical: 6, paddingLeft: 10, paddingRight: 4 }}
+                                >
+                                  <Text style={{ color: '#007AFF', fontSize: 13, fontWeight: 'bold' }}>
+                                    {型.名前}
+                                    {' ('}
+                                    {型.部員idたち.length})
+                                  </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  onPress={() =>
+                                    出す('ひな型を消す', '「' + 型.名前 + '」を消しますか。', [
+                                      { text: 'やめる', style: 'cancel' },
+                                      {
+                                        text: '消す',
+                                        style: 'destructive',
+                                        onPress: () => 比較のひな型を消す(型.id),
+                                      },
+                                    ])
+                                  }
+                                  style={{ paddingVertical: 6, paddingRight: 8, paddingLeft: 2 }}
+                                >
+                                  <Text style={{ color: '#8E8E93', fontSize: 13, fontWeight: 'bold' }}>
+                                    ×
+                                  </Text>
+                                </TouchableOpacity>
+                              </View>
+                            )),
+                          ]}
+                        </View>
+                      ) : null}
+                      {compareMembers.length > 0 ? (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
+                          <TextInput
+                            style={{
+                              flex: 1,
+                              height: 34,
+                              paddingHorizontal: 10,
+                              borderWidth: 1,
+                              borderColor: '#E5E5EA',
+                              borderRadius: 8,
+                              fontSize: 13,
+                              color: '#1C1C1E',
+                              backgroundColor: '#FFF',
+                            }}
+                            placeholder="この組み合わせに名前を付けて残す"
+                            placeholderTextColor="#C7C7CC"
+                            value={ひな型の名前}
+                            onChangeText={ひな型の名前を置く}
+                            maxLength={20}
+                          />
+                          <TouchableOpacity
+                            onPress={() => {
+                              const 名 = (ひな型の名前 || '').trim();
+                              if (!名) return void 出す('ひな型', '名前を書いてください。');
+                              比較のひな型を足す(
+                                名,
+                                compareMembers.map((m) => m.id)
+                              );
+                              ひな型の名前を置く('');
+                            }}
+                            style={{
+                              paddingVertical: 8,
+                              paddingHorizontal: 14,
+                              backgroundColor: '#E1F0FF',
+                              borderRadius: 8,
+                            }}
+                          >
+                            <Text style={{ color: '#007AFF', fontSize: 13, fontWeight: 'bold' }}>保存</Text>
+                          </TouchableOpacity>
+                        </View>
+                      ) : null}
+                    </View>
+                  );
+                })()}
+                {isSelectingCompareTarget ? (
+                  <View
+                    style={{
+                      padding: 12,
+                      backgroundColor: '#FFF',
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: '#E5E5EA',
+                      marginBottom: 16,
+                    }}
+                  >
+                    <View
+                      style={{
                         flexDirection: 'row',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        marginBottom: 8,
-                      },
-                      children: [
-                        (0, y.jsx)(l.default, {
-                          style: [F.segmentLabel, { width: 'auto', marginRight: 0 }],
-                          children: 'タグフィルター',
-                        }),
-                        (0, y.jsxs)(o.default, {
-                          style: {
-                            flexDirection: 'row',
-                            backgroundColor: '#E5E5EA',
-                            borderRadius: 8,
-                            padding: 2,
-                          },
-                          children: [
-                            (0, y.jsx)(s.default, {
-                              onPress: () => p('AND'),
-                              style: [
-                                { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-                                'AND' === a && { backgroundColor: '#FFF' },
-                              ],
-                              children: (0, y.jsx)(l.default, {
-                                style: {
-                                  fontSize: 11,
-                                  fontWeight: 'bold',
-                                  color: 'AND' === a ? '#007AFF' : '#8E8E93',
-                                },
-                                children: 'すべて含む',
-                              }),
-                            }),
-                            (0, y.jsx)(s.default, {
-                              onPress: () => p('OR'),
-                              style: [
-                                { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-                                'OR' === a && { backgroundColor: '#FFF' },
-                              ],
-                              children: (0, y.jsx)(l.default, {
-                                style: {
-                                  fontSize: 11,
-                                  fontWeight: 'bold',
-                                  color: 'OR' === a ? '#007AFF' : '#8E8E93',
-                                },
-                                children: 'いずれか含む',
-                              }),
-                            }),
-                          ],
-                        }),
-                      ],
-                    }),
-                    (0, y.jsxs)(r.default, {
-                      horizontal: !0,
-                      showsHorizontalScrollIndicator: !1,
-                      style: { flexDirection: 'row', marginBottom: 8 },
-                      contentContainerStyle: { gap: 8, paddingVertical: 4 },
-                      children: [
-                        (0, y.jsx)(s.default, {
-                          style: [
-                            F.tagChip,
-                            0 === e.length && F.tagChipActive,
-                            { backgroundColor: 0 === e.length ? '#007AFF' : '#E5E5EA' },
-                          ],
-                          onPress: () => m([]),
-                          children: (0, y.jsx)(l.default, {
-                            style: [F.tagChipText, 0 === e.length && { color: '#FFF' }],
-                            children: 'すべて解除',
-                          }),
-                        }),
-                        ge.map((t) => {
-                          const n = e.includes(t);
-                          return (0, y.jsx)(
-                            s.default,
-                            {
-                              style: [
-                                F.tagChip,
-                                n && F.tagChipActive,
-                                { backgroundColor: n ? '#007AFF' : '#F2F2F7' },
-                              ],
-                              onPress: () => j(t),
-                              children: (0, y.jsx)(l.default, {
-                                style: [F.tagChipText, n && { color: '#FFF' }],
-                                children: t.replace(/^#/, ''),
-                              }),
-                            },
-                            `tag-${t}`
+                        marginBottom: 12,
+                      }}
+                    >
+                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#1C1C1E' }}>
+                        比較するメンバーを選択
+                      </Text>
+                      <TouchableOpacity onPress={() => setIsSelectingCompareTarget(false)}>
+                        <Text style={{ color: '#007AFF', fontSize: 13, fontWeight: 'bold' }}>完了</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <ScrollView style={{ maxHeight: 240 }}>
+                      {(() => {
+                        // 学年でまとめる。卒業生は最後にひとまとめ、
+                        // 学年の無い人は「その他/ゲスト」（人の選択と同じ分け方）
+                        const 相手 = [...members, ...alumni].filter((item) => item.id !== ae.id);
+                        return 学年でまとめる(相手).map(({ 学年: 印, 題, 人たち }) => {
+                          const 束 = { [印]: 人たち };
+                          const 開 = !閉じた学年.has(印);
+                          return (
+                            <View key={`組-${印}`}>
+                              <TouchableOpacity
+                                onPress={() => 学年を開け閉め(印)}
+                                style={{
+                                  flexDirection: 'row',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  paddingVertical: 10,
+                                  borderBottomWidth: 1,
+                                  borderBottomColor: '#F2F2F7',
+                                }}
+                              >
+                                <Text style={{ fontSize: 14, fontWeight: '600', color: '#3A3A3C' }}>
+                                  {題}
+                                  {' ('}
+                                  {束[印].length}人)
+                                </Text>
+                                <Icons.Ionicons
+                                  name={開 ? 'chevron-up' : 'chevron-down'}
+                                  size={14}
+                                  color="#8E8E93"
+                                />
+                              </TouchableOpacity>
+                              {[
+                                ...(開 ? 束[印] : []).map((item) => {
+                                  const isSelected = compareMembers.some((m) => m.id === item.id);
+                                  return (
+                                    <TouchableOpacity
+                                      key={`select-${item.id}`}
+                                      onPress={() => {
+                                        setCompareMembers((prev) => {
+                                          if (prev.some((m) => m.id === item.id)) {
+                                            return prev.filter((m) => m.id !== item.id);
+                                          } else {
+                                            return [...prev, item];
+                                          }
+                                        });
+                                      }}
+                                      style={{
+                                        paddingVertical: 10,
+                                        paddingLeft: 12,
+                                        borderBottomWidth: 1,
+                                        borderBottomColor: '#F2F2F7',
+                                        flexDirection: 'row',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                      }}
+                                    >
+                                      {/* 男女が分かるよう、名前の前に色の丸を置く。 */
+                                      /* メンバー画面と同じ色にそろえてある */}
+                                      <View
+                                        style={{
+                                          flexDirection: 'row',
+                                          alignItems: 'center',
+                                          flex: 1,
+                                          minWidth: 0,
+                                        }}
+                                      >
+                                        <Text
+                                          style={{
+                                            fontSize: 10,
+                                            marginRight: 6,
+                                            color:
+                                              '男子' === item.gender
+                                                ? '#007AFF'
+                                                : '女子' === item.gender
+                                                  ? '#FF2D55'
+                                                  : '#8E8E93',
+                                          }}
+                                        >
+                                          ●
+                                        </Text>
+                                        <Text
+                                          style={{
+                                            fontSize: 14,
+                                            color: isSelected ? '#007AFF' : '#1C1C1E',
+                                            fontWeight: isSelected ? 'bold' : 'normal',
+                                            flexShrink: 1,
+                                          }}
+                                          numberOfLines={1}
+                                        >
+                                          {item.name}
+                                        </Text>
+                                      </View>
+                                      {isSelected && (
+                                        <Text style={{ color: '#007AFF', fontSize: 14, fontWeight: 'bold' }}>
+                                          ✓
+                                        </Text>
+                                      )}
+                                    </TouchableOpacity>
+                                  );
+                                }),
+                              ]}
+                            </View>
                           );
-                        }),
-                      ],
-                    }),
-                  ],
-                }),
-                (0, y.jsx)(o.default, {
-                  style: { marginBottom: 12 },
-                  children: (0, y.jsx)(we, {
-                    options: ['月ごと', '年度', '期間指定', '直近30日', 'すべて'],
-                    selected: R,
-                    onSelect: I,
-                    isWrap: !0,
-                  }),
-                }),
-                '期間指定' === R &&
-                  (0, y.jsxs)(o.default, {
-                    style: F.customRangeContainer,
-                    children: [
-                      (0, y.jsx)(s.default, {
-                        style: F.dateBtn,
-                        onPress: () => ue('start'),
-                        children: (0, y.jsxs)(l.default, {
-                          style: F.dateLabel,
-                          children: ['開始: ', q.toLocaleDateString('ja-JP')],
-                        }),
-                      }),
-                      (0, y.jsx)(h.Ionicons, { name: 'arrow-forward', size: 16, color: '#8E8E93' }),
-                      (0, y.jsx)(s.default, {
-                        style: F.dateBtn,
-                        onPress: () => ue('end'),
-                        children: (0, y.jsxs)(l.default, {
-                          style: F.dateLabel,
-                          children: ['終了: ', Q.toLocaleDateString('ja-JP')],
-                        }),
-                      }),
-                    ],
-                  }),
-                '月ごと' === R &&
-                  (0, y.jsxs)(o.default, {
-                    style: F.monthNav,
-                    children: [
-                      (0, y.jsx)(s.default, {
-                        style: F.monthNavBtn,
-                        onPress: () => he(-1),
-                        children: (0, y.jsx)(h.Ionicons, {
-                          name: 'chevron-back',
-                          size: 20,
-                          color: '#007AFF',
-                        }),
-                      }),
-                      (0, y.jsxs)(l.default, {
-                        style: F.monthNavText,
-                        children: [V >= 4 ? `${$}年度` : $ - 1 + '年度', ' ', V, '月'],
-                      }),
-                      (0, y.jsx)(s.default, {
-                        style: F.monthNavBtn,
-                        onPress: () => he(1),
-                        children: (0, y.jsx)(h.Ionicons, {
-                          name: 'chevron-forward',
-                          size: 20,
-                          color: '#007AFF',
-                        }),
-                      }),
-                    ],
-                  }),
-                '年度' === R &&
-                  (0, y.jsxs)(o.default, {
-                    style: F.monthNav,
-                    children: [
-                      (0, y.jsx)(s.default, {
-                        style: F.monthNavBtn,
-                        onPress: () => fe(-1),
-                        children: (0, y.jsx)(h.Ionicons, {
-                          name: 'chevron-back',
-                          size: 20,
-                          color: '#007AFF',
-                        }),
-                      }),
-                      (0, y.jsxs)(l.default, { style: F.monthNavText, children: [_, '年度'] }),
-                      (0, y.jsx)(s.default, {
-                        style: F.monthNavBtn,
-                        onPress: () => fe(1),
-                        children: (0, y.jsx)(h.Ionicons, {
-                          name: 'chevron-forward',
-                          size: 20,
-                          color: '#007AFF',
-                        }),
-                      }),
-                    ],
-                  }),
-                'member' !== k &&
-                  (0, y.jsxs)(o.default, {
-                    style: F.rankingSettingsContainer,
-                    children: [
-                      (0, y.jsx)(l.default, {
-                        style: F.rankingSettingsLabel,
-                        children: 'ランキング対象の基準 (最多比)',
-                      }),
-                      (0, y.jsx)(o.default, {
-                        style: F.ratioButtonRow,
-                        children: [
-                          { label: '1/2 (50%)', val: 0.5 },
-                          { label: '1/3 (33%)', val: 0.33 },
-                          { label: '1/4 (25%)', val: 0.25 },
-                        ].map((e) =>
-                          (0, y.jsx)(
-                            s.default,
-                            {
-                              onPress: () => {
-                                const t = Math.abs(be - e.val) < 0.01 ? 0 : e.val;
-                                S(R, { type: 'ratio', value: t });
-                              },
-                              style: [F.ratioBtn, Math.abs(be - e.val) < 0.01 && F.ratioBtnActive],
-                              children: (0, y.jsx)(l.default, {
-                                style: [F.ratioBtnText, Math.abs(be - e.val) < 0.01 && F.ratioBtnTextActive],
-                                children: e.label,
-                              }),
-                            },
-                            `ratio-${e.val}`
-                          )
-                        ),
-                      }),
-                      (0, y.jsxs)(o.default, {
-                        style: F.customShotsRow,
-                        children: [
-                          (0, y.jsx)(d.default, {
-                            style: F.customShotsInput,
-                            value: customShotsInput,
-                            onChangeText: setCustomShotsInput,
-                            placeholder: '例: 20',
-                            keyboardType: 'numeric',
-                            placeholderTextColor: '#C7C7CC',
-                          }),
-                          (0, y.jsx)(l.default, { style: F.customShotsUnit, children: '射以上' }),
-                          (0, y.jsx)(s.default, {
-                            style: [
-                              F.customShotsBtn,
-                              customShotsInput.trim() !== '' && F.customShotsBtnActive,
-                            ],
-                            onPress: () => {
-                              const v = parseInt(customShotsInput, 10);
-                              if (!isNaN(v) && v > 0) {
-                                S(R, { type: 'count', value: v });
-                              } else {
-                                setCustomShotsInput('');
-                                S(R, { type: 'ratio', value: 0 });
-                              }
-                            },
-                            children: (0, y.jsx)(l.default, {
-                              style: [
-                                F.customShotsBtnText,
-                                customShotsInput.trim() !== '' && F.customShotsBtnTextActive,
-                              ],
-                              children: '絞り込む',
-                            }),
-                          }),
-                        ],
-                      }),
-                      ye > 0 &&
-                        (0, y.jsx)(l.default, {
-                          style: F.ratioHintText,
-                          children:
-                            je > 0
-                              ? `現在、${je}射以上がランキング対象です（最多: ${ye}射）`
-                              : '全メンバーがランキング対象です',
-                        }),
-                    ],
-                  }),
-                'member' !== k &&
-                  (0, y.jsxs)(y.Fragment, {
-                    children: [
-                      (0, y.jsx)(o.default, { style: F.filterDivider }),
-                      (0, y.jsx)(we, {
-                        label: '性別:',
-                        options: ['全員', '男子', '女子'],
-                        selected: W,
-                        onSelect: L,
-                      }),
-                      (0, y.jsx)(o.default, { style: F.filterDivider }),
-                      (0, y.jsx)(we, {
-                        label: '学年:',
-                        options: ['全学年', '1年', '2年', '3年', '4年'],
-                        selected: O,
-                        onSelect: P,
-                      }),
-                      (0, y.jsx)(o.default, { style: F.filterDivider }),
-                      (0, y.jsxs)(o.default, {
-                        style: F.toggleRow,
-                        children: [
-                          (0, y.jsx)(l.default, { style: F.toggleLabel, children: '卒業生を表示' }),
-                          (0, y.jsx)(s.default, {
-                            style: [F.miniBtn, v && F.miniBtnActive],
-                            onPress: () => setAlumni(!v),
-                            children: (0, y.jsx)(l.default, {
-                              style: [F.miniBtnText, v && F.miniBtnTextActive],
-                              children: v ? 'ON' : 'OFF',
-                            }),
-                          }),
-                        ],
-                      }),
-                    ],
-                  }),
-              ],
-            }),
-            'member' === k &&
-              Ce[0] &&
-              (0, y.jsxs)(o.default, {
-                style: F.memberDashboard,
-                children: [
-                  (0, y.jsxs)(o.default, {
-                    style: F.dashboardHeader,
-                    children: [
-                      (0, y.jsx)(l.default, {
-                        style: F.dashboardTitle,
-                        children: 'マイ・パフォーマンス統計',
-                      }),
-                      (0, y.jsx)(l.default, { style: F.dashboardPeriod, children: R }),
-                    ],
-                  }),
-                  (0, y.jsxs)(o.default, {
-                    style: F.mainStatsRow,
-                    children: [
-                      (0, y.jsxs)(o.default, {
-                        style: F.mainStatItem,
-                        children: [
-                          (0, y.jsx)(l.default, { style: F.mainStatLabel, children: '的中率' }),
-                          (0, y.jsxs)(l.default, {
-                            style: F.mainStatValue,
-                            children: [
-                              Ce[0].rate.toFixed(1),
-                              (0, y.jsx)(l.default, { style: { fontSize: 16 }, children: '%' }),
-                            ],
-                          }),
-                        ],
-                      }),
-                      (0, y.jsxs)(o.default, {
-                        style: F.mainStatItem,
-                        children: [
-                          (0, y.jsx)(l.default, { style: F.mainStatLabel, children: '的中/射数' }),
-                          (0, y.jsxs)(l.default, {
-                            style: F.mainStatValue,
-                            children: [
-                              Ce[0].hits,
-                              (0, y.jsxs)(l.default, {
-                                style: { fontSize: 16, color: '#8E8E93' },
-                                children: [' / ', Ce[0].shots],
-                              }),
-                            ],
-                          }),
-                        ],
-                      }),
-                    ],
-                  }),
-                  (0, y.jsx)(Ee, {
-                    data: ke,
-                    selectedLabel: selectedTrendLabel,
-                    onSelectLabel: setSelectedTrendLabel,
-                    onJumpToRecord: (sessionId) => goToHistoryRecord(sessionId, B),
-                  }),
-                  (0, y.jsxs)(o.default, {
-                    style: { marginTop: 20, alignItems: 'center' },
-                    children: [
-                      (0, y.jsx)(l.default, {
-                        style: [F.sectionSubTitle, { alignSelf: 'flex-start' }],
-                        children: selectedTrendLabel
-                          ? `矢所の傾向 (${selectedTrendLabel})`
-                          : '矢所の傾向 (集計)',
-                      }),
-                      (0, y.jsx)(o.default, {
-                        style: { width: '100%', marginBottom: 12 },
-                        children: (0, y.jsx)(we, {
-                          options: [
+                        });
+                      })()}
+                    </ScrollView>
+                  </View>
+                ) : null}
+                {compareMembers.length > 0 ? (
+                  <View>
+                    <CompareGraph
+                      baseData={Be}
+                      baseName={ae.name}
+                      compareTargets={compareMembers.map((cm) => ({
+                        id: cm.id,
+                        name: cm.name,
+                        data: Se(cm.id, cm.name),
+                      }))}
+                      selectedLabel={selectedModalTrendLabel}
+                      onSelectLabel={setSelectedModalTrendLabel}
+                    />
+                    <View style={{ marginBottom: 20, marginTop: 20, alignItems: 'center' }}>
+                      <Text
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 'bold',
+                          color: '#3A3A3C',
+                          marginBottom: 8,
+                          alignSelf: 'flex-start',
+                        }}
+                      >
+                        {selectedModalTrendLabel
+                          ? `矢所の傾向 (${selectedModalTrendLabel})`
+                          : '矢所の傾向 (集計)'}
+                      </Text>
+                      <View style={{ width: '100%', marginBottom: 12 }}>
+                        <We要素
+                          options={[
                             { label: '霞的(尺二寸)', value: 'kasumi36' },
                             { label: '星的(尺二寸)', value: 'hoshi36' },
                             { label: '星的(八寸)', value: 'hoshi24' },
-                          ],
-                          selected: myTargetType,
-                          onSelect: setMyTargetType,
-                          isWrap: !0,
-                        }),
-                      }),
-                      (0, y.jsx)(ArrowLocationView, {
-                        arrowLocations: gatherAllArrowLocations(B, D, selectedTrendLabel),
-                        size: 200,
-                        targetType: myTargetType,
-                        hideNumbers: !0,
-                      }),
-                    ],
-                  }),
-                  (0, y.jsxs)(o.default, {
-                    style: { marginTop: 20 },
-                    children: [
-                      (0, y.jsx)(l.default, {
-                        style: F.sectionSubTitle,
-                        children: selectedTrendLabel
-                          ? `立ち順別の的中率 (${selectedTrendLabel})`
-                          : '立ち順別の的中率 (1-4射目)',
-                      }),
-                      (0, y.jsx)(o.default, {
-                        style: F.statsGrid,
-                        children: Array.from({ length: 4 }).map((e, t) => {
-                          // 点を押したらその期間で数え直す。矢所だけが連動して
-                          // ここが全期間のままだと、同じ画面で見ている期間が食い違う
-                          const 元 = 自分の期間の成績 || Ce[0];
+                          ]}
+                          selected={modalTargetType}
+                          onSelect={setModalTargetType}
+                          isWrap
+                        />
+                      </View>
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          overflowX: 'auto',
+                          overflowY: 'hidden',
+                          paddingVertical: 4,
+                          gap: 16,
+                          width: '100%',
+                        }}
+                      >
+                        <View style={{ alignItems: 'center', minWidth: 110, width: 110 }}>
+                          <Text
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 'bold',
+                              marginBottom: 4,
+                              color: '#3C3C43',
+                              textAlign: 'center',
+                            }}
+                            numberOfLines={1}
+                          >
+                            {ae.name}
+                          </Text>
+                          <ArrowLocationView
+                            arrowLocations={gatherAllArrowLocations(ae.id, ae.name, selectedModalTrendLabel)}
+                            size={100}
+                            targetType={modalTargetType}
+                            hideNumbers
+                          />
+                        </View>
+                        {[
+                          ...compareMembers.map((cm, cmIdx) => {
+                            const COLORS = 比較の色たち;
+                            const dsColor = COLORS[cmIdx % COLORS.length];
+                            return (
+                              <View
+                                key={`arrow-compare-${cm.id}`}
+                                style={{ alignItems: 'center', minWidth: 110, width: 110 }}
+                              >
+                                <Text
+                                  style={{
+                                    fontSize: 10,
+                                    fontWeight: 'bold',
+                                    marginBottom: 4,
+                                    color: dsColor,
+                                    textAlign: 'center',
+                                  }}
+                                  numberOfLines={1}
+                                >
+                                  {cm.name}
+                                </Text>
+                                <ArrowLocationView
+                                  arrowLocations={gatherAllArrowLocations(
+                                    cm.id,
+                                    cm.name,
+                                    selectedModalTrendLabel
+                                  )}
+                                  size={100}
+                                  targetType={modalTargetType}
+                                  hideNumbers
+                                />
+                              </View>
+                            );
+                          }),
+                        ]}
+                      </View>
+                    </View>
+                    {/* 立ち順別の的中率。 */
+                    /*  */
+                    /* 射目ごとに人を並べていたころは、4人比べると */
+                    /* 4区画×4行で20行になり、上下に離れた数字を */
+                    /* 見比べることになって読めなかった。 */
+                    /* 1人1行の表にして、横に射目を並べる */}
+                    <View style={{ marginBottom: 20 }}>
+                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 12 }}>
+                        {selectedModalTrendLabel
+                          ? `立ち順別の的中率 (${selectedModalTrendLabel})`
+                          : '立ち順別の的中率 (1-4射目)'}
+                      </Text>
+                      {(() => {
+                        const COLORS = 比較の色たち;
+                        const 空 = [];
+                        const 並び = [
+                          { name: ae.name, 色: '#007AFF', 表: (詳細の期間の成績 || ae).perShotStats || 空 },
+                          ...compareMembers.map((cm, i) => ({
+                            name: cm.name,
+                            色: COLORS[i % COLORS.length],
+                            表: (比較の成績.get(cm.id) || {}).perShotStats || 空,
+                          })),
+                        ];
+                        const 率 = (x) => (x && x.shots > 0 ? (x.hits / x.shots) * 100 : 0);
+                        // 濃さは、この表の中でいちばん高い率を基準にする。
+                        // 決め打ちの目盛だと、的中率が低い団体では全部同じ薄さになる
+                        let 最大 = 0;
+                        for (const 人 of 並び)
+                          for (let t = 0; t < 4; t++) 最大 = Math.max(最大, 率(人.表[t]));
+                        const 淡く = (濃さ) => `rgba(0, 122, 255, ${濃さ})`;
+                        return (
+                          <View style={F.patternsCard}>
+                            <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginBottom: 6 }}>
+                              <View style={{ width: 狭い画面 ? 52 : 64 }} />
+                              {[
+                                ...[0, 1, 2, 3].map((t) => (
+                                  <View key={`head-shot-${t}`} style={{ flex: 1, alignItems: 'center' }}>
+                                    <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#3A3A3C' }}>
+                                      {t + 1}射目
+                                    </Text>
+                                  </View>
+                                )),
+                              ]}
+                              <View style={{ width: 狭い画面 ? 28 : 34, alignItems: 'flex-end' }}>
+                                <Text style={{ fontSize: 10, color: '#8E8E93' }}>射数</Text>
+                              </View>
+                            </View>
+                            {[
+                              ...並び.map((人, 番) => {
+                                const 総射数 = [0, 1, 2, 3].reduce(
+                                  (a, t) => a + ((人.表[t] && 人.表[t].shots) || 0),
+                                  0
+                                );
+                                return (
+                                  <View
+                                    key={`per-shot-row-${番}`}
+                                    style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}
+                                  >
+                                    <View
+                                      style={{
+                                        width: 狭い画面 ? 52 : 64,
+                                        paddingRight: 4,
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                      }}
+                                    >
+                                      <View
+                                        style={{
+                                          width: 8,
+                                          height: 8,
+                                          borderRadius: 4,
+                                          marginRight: 4,
+                                          backgroundColor: 人.色,
+                                        }}
+                                      />
+                                      <Text
+                                        style={{
+                                          flex: 1,
+                                          fontSize: 11,
+                                          fontWeight: 'bold',
+                                          color: '#1C1C1E',
+                                        }}
+                                        numberOfLines={1}
+                                      >
+                                        {人.name}
+                                      </Text>
+                                    </View>
+                                    {[
+                                      ...[0, 1, 2, 3].map((t) => {
+                                        const 枡 = 人.表[t] || { shots: 0, hits: 0 };
+                                        const r = 率(枡);
+                                        return (
+                                          <View
+                                            key={`compare-per-shot-${t}-${番}`}
+                                            style={{
+                                              flex: 1,
+                                              alignItems: 'center',
+                                              paddingVertical: 4,
+                                              marginHorizontal: 1,
+                                              borderRadius: 6,
+                                              backgroundColor:
+                                                枡.shots > 0 && 最大 > 0
+                                                  ? 淡く(0.06 + (r / 最大) * 0.36)
+                                                  : 'transparent',
+                                            }}
+                                          >
+                                            <Text
+                                              style={{
+                                                fontSize: 狭い画面 ? 12 : 13,
+                                                fontWeight: '600',
+                                                color: 枡.shots > 0 ? '#1C1C1E' : '#C7C7CC',
+                                              }}
+                                              numberOfLines={1}
+                                            >
+                                              {r.toFixed(0)}%
+                                            </Text>
+                                            {狭い画面 ? null : (
+                                              <Text // 副次テキスト。暗いテーマでは #EBEBF5 に変わる。
+                                                // #48484A は変換表に無く、暗い面の上で沈む
+                                                style={{ fontSize: 9, color: '#3C3C43' }}
+                                                numberOfLines={1}
+                                              >
+                                                {枡.hits}/{枡.shots}
+                                              </Text>
+                                            )}
+                                          </View>
+                                        );
+                                      }),
+                                    ]}
+                                    <View style={{ width: 狭い画面 ? 28 : 34, alignItems: 'flex-end' }}>
+                                      <Text style={{ fontSize: 11, color: '#8E8E93' }}>{String(総射数)}</Text>
+                                    </View>
+                                  </View>
+                                );
+                              }),
+                            ]}
+                          </View>
+                        );
+                      })()}
+                    </View>
+                    {/* 立ちの結果分布。比較のときも出す。 */
+                    /* 分けていたころは、比較を始めるとこの節ごと消えていた。 */
+                    /*  */
+                    /* 比較なしのときと同じ帯を人数ぶん並べると、3人で15行、 */
+                    /* 4人で20行になって読めない。比較のときは1人1行の表にし、 */
+                    /* マスの濃さでその人の中での多い少ないを見せる。 */
+                    /* 回数そのものは書いてあるので、濃さは目安でよい */}
+                    <View style={{ marginBottom: 20 }}>
+                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 12 }}>
+                        {selectedModalTrendLabel
+                          ? `立ちの結果分布 (${selectedModalTrendLabel})`
+                          : '立ちの結果分布 (4射単位)'}
+                      </Text>
+                      {(() => {
+                        const 区分たち = [
+                          { label: '皆中', key: 'kaichu', color: '#FF9500' },
+                          { label: '三中', key: 'sanchu', color: '#34C759' },
+                          { label: '羽分', key: 'hake', color: '#007AFF' },
+                          { label: '一中', key: 'icchu', color: '#5856D6' },
+                          { label: '残念', key: 'zannen', color: '#FF3B30' },
+                        ];
+                        const COLORS = 比較の色たち;
+                        const 空 = { kaichu: 0, sanchu: 0, hake: 0, icchu: 0, zannen: 0 };
+                        const 並び = [
+                          {
+                            name: ae.name,
+                            // 立ち順別の比較と同じ。同じ画面で同じ人の色が変わると迷う
+                            色: '#007AFF',
+                            表: (詳細の期間の成績 || ae).patterns || 空,
+                          },
+                          ...compareMembers.map((cm, i) => ({
+                            name: cm.name,
+                            色: COLORS[i % COLORS.length],
+                            表: (比較の成績.get(cm.id) || {}).patterns || 空,
+                          })),
+                        ];
+                        // 区分の色を薄く敷く。'#RRGGBB' から rgba を作る
+                        const 淡く = (色, 濃さ) => {
+                          const n = parseInt(色.slice(1), 16);
+                          const r = (n >> 16) & 255;
+                          const g = (n >> 8) & 255;
+                          const b = n & 255;
+                          return `rgba(${r}, ${g}, ${b}, ${濃さ})`;
+                        };
+                        return (
+                          <View style={F.patternsCard}>
+                            <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginBottom: 6 }}>
+                              <View style={{ width: 狭い画面 ? 52 : 64 }} />
+                              {[
+                                ...区分たち.map((区分) => (
+                                  <View key={`head-${区分.key}`} style={{ flex: 1, alignItems: 'center' }}>
+                                    <Text style={{ fontSize: 10, fontWeight: 'bold', color: 区分.color }}>
+                                      {区分.label}
+                                    </Text>
+                                  </View>
+                                )),
+                              ]}
+                              <View style={{ width: 狭い画面 ? 28 : 34, alignItems: 'flex-end' }}>
+                                <Text style={{ fontSize: 10, color: '#8E8E93' }}>立数</Text>
+                              </View>
+                            </View>
+                            {[
+                              ...並び.map((人, 番) => {
+                                const 全 = Object.values(人.表).reduce((a, b) => a + b, 0);
+                                return (
+                                  <View
+                                    key={`bunpu-${番}`}
+                                    style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}
+                                  >
+                                    <View
+                                      style={{
+                                        width: 狭い画面 ? 52 : 64,
+                                        paddingRight: 4,
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                      }}
+                                    >
+                                      <View
+                                        style={{
+                                          width: 8,
+                                          height: 8,
+                                          borderRadius: 4,
+                                          marginRight: 4,
+                                          backgroundColor: 人.色,
+                                        }}
+                                      />
+                                      <Text
+                                        style={{
+                                          flex: 1,
+                                          fontSize: 11,
+                                          fontWeight: 'bold',
+                                          color: '#1C1C1E',
+                                        }}
+                                        numberOfLines={1}
+                                      >
+                                        {人.name}
+                                      </Text>
+                                    </View>
+                                    {[
+                                      ...区分たち.map((区分) => {
+                                        const 回 = 人.表[区分.key] || 0;
+                                        const 割 = 全 > 0 ? 回 / 全 : 0;
+                                        return (
+                                          <View
+                                            key={`${区分.key}-${番}`}
+                                            style={{
+                                              flex: 1,
+                                              alignItems: 'center',
+                                              paddingVertical: 6,
+                                              marginHorizontal: 1,
+                                              borderRadius: 6,
+                                              backgroundColor:
+                                                回 > 0 ? 淡く(区分.color, 0.1 + 割 * 0.45) : 'transparent',
+                                            }}
+                                          >
+                                            <Text
+                                              style={{
+                                                fontSize: 13,
+                                                fontWeight: '600',
+                                                color: 回 > 0 ? '#1C1C1E' : '#C7C7CC',
+                                              }}
+                                            >
+                                              {String(回)}
+                                            </Text>
+                                          </View>
+                                        );
+                                      }),
+                                    ]}
+                                    <View style={{ width: 狭い画面 ? 28 : 34, alignItems: 'flex-end' }}>
+                                      <Text style={{ fontSize: 11, color: '#8E8E93' }}>{String(全)}</Text>
+                                    </View>
+                                  </View>
+                                );
+                              }),
+                            ]}
+                          </View>
+                        );
+                      })()}
+                      {/* 4射そろわない末尾は分布に入れられない。 */
+                      /* 断らないと「的中率と数が合わない」と見える */}
+                      {(() => {
+                        const 端 =
+                          ((詳細の期間の成績 || ae).端数の射 || 0) +
+                          compareMembers.reduce(
+                            (a, cm) => a + ((比較の成績.get(cm.id) || {}).端数の射 || 0),
+                            0
+                          );
+                        return 端 > 0 ? (
+                          <Text
+                            style={{ fontSize: 11, color: '#8E8E93', marginTop: 8, lineHeight: 16 }}
+                          >{`※ 4射に満たない射（この画面の全員で ${端} 射）は皆中・残念などに分けられないため、この分布に入れていません（的中率には入っています）。`}</Text>
+                        ) : null;
+                      })()}
+                    </View>
+                  </View>
+                ) : (
+                  <View>
+                    <View style={{ marginBottom: 20 }}>
+                      <Ee
+                        data={Be}
+                        selectedLabel={selectedModalTrendLabel}
+                        onSelectLabel={setSelectedModalTrendLabel}
+                        onJumpToRecord={(sessionId) => {
+                          re(null);
+                          goToHistoryRecord(sessionId, ae?.id);
+                        }}
+                      />
+                    </View>
+                    <View style={{ marginBottom: 20, alignItems: 'center' }}>
+                      <Text
+                        style={[
+                          {
+                            fontSize: 14,
+                            fontWeight: 'bold',
+                            color: '#3A3A3C',
+                            marginBottom: 8,
+                            alignSelf: 'flex-start',
+                          },
+                        ]}
+                      >
+                        {selectedModalTrendLabel
+                          ? `矢所の傾向 (${selectedModalTrendLabel})`
+                          : '矢所の傾向 (集計)'}
+                      </Text>
+                      <View style={{ width: '100%', marginBottom: 12 }}>
+                        <We要素
+                          options={[
+                            { label: '霞的(尺二寸)', value: 'kasumi36' },
+                            { label: '星的(尺二寸)', value: 'hoshi36' },
+                            { label: '星的(八寸)', value: 'hoshi24' },
+                          ]}
+                          selected={modalTargetType}
+                          onSelect={setModalTargetType}
+                          isWrap
+                        />
+                      </View>
+                      <ArrowLocationView
+                        arrowLocations={gatherAllArrowLocations(ae.id, ae.name, selectedModalTrendLabel)}
+                        size={200}
+                        targetType={modalTargetType}
+                        hideNumbers
+                      />
+                    </View>
+                    <View style={{ marginBottom: 16 }}>
+                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 8 }}>
+                        {selectedModalTrendLabel
+                          ? `立ち順別の的中率 (${selectedModalTrendLabel})`
+                          : '立ち順別の的中率 (1-4射目)'}
+                      </Text>
+                      <View style={F.statsGrid}>
+                        {Array.from({ length: 4 }).map((e, t) => {
+                          const 元 = 詳細の期間の成績 || ae;
                           const n = 元.perShotStats[t] || { shots: 0, hits: 0 };
                           const a = n.shots > 0 ? (n.hits / n.shots) * 100 : 0;
-                          return (0, y.jsxs)(
-                            o.default,
-                            {
-                              style: F.statBox,
-                              children: [
-                                (0, y.jsxs)(l.default, { style: F.statBoxTitle, children: [t + 1, '射目'] }),
-                                (0, y.jsxs)(l.default, {
-                                  style: F.statBoxRateDash,
-                                  children: [
-                                    a.toFixed(0),
-                                    (0, y.jsx)(l.default, { style: { fontSize: 10 }, children: '%' }),
-                                  ],
-                                }),
-                                (0, y.jsxs)(l.default, {
-                                  style: F.statBoxCounts,
-                                  children: [n.hits, '/', n.shots],
-                                }),
-                              ],
-                            },
-                            `per-shot-${t}`
+                          return (
+                            <View key={`per-shot-modal-${t}`} style={F.statBox}>
+                              <Text style={F.statBoxTitle}>{t + 1}射目</Text>
+                              <Text style={F.statBoxRate}>{a.toFixed(0)}%</Text>
+                              <Text style={F.statBoxCounts}>
+                                {n.hits}/{n.shots}
+                              </Text>
+                            </View>
                           );
-                        }),
-                      }),
-                    ],
-                  }),
-                  (0, y.jsxs)(o.default, {
-                    style: { marginTop: 24 },
-                    children: [
-                      (0, y.jsx)(l.default, {
-                        style: F.sectionSubTitle,
-                        children: selectedTrendLabel
-                          ? `立ちの結果分布 (${selectedTrendLabel})`
-                          : '立ちの結果分布 (4射単位)',
-                      }),
-                      (0, y.jsx)(o.default, {
-                        style: F.patternsCardDash,
-                        children: [
+                        })}
+                      </View>
+                    </View>
+                    <View style={{ marginBottom: 24 }}>
+                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 12 }}>
+                        {selectedModalTrendLabel
+                          ? `立ちの結果分布 (${selectedModalTrendLabel})`
+                          : '立ちの結果分布 (4射単位)'}
+                      </Text>
+                      <View style={F.patternsCard}>
+                        {[
                           { label: '皆中', key: 'kaichu', color: '#FF9500' },
                           { label: '三中', key: 'sanchu', color: '#34C759' },
                           { label: '羽分', key: 'hake', color: '#007AFF' },
                           { label: '一中', key: 'icchu', color: '#5856D6' },
                           { label: '残念', key: 'zannen', color: '#FF3B30' },
                         ].map((e) => {
-                          const 元 = 自分の期間の成績 || Ce[0];
+                          const 元 = 詳細の期間の成績 || ae;
                           const t = 元.patterns[e.key] || 0;
                           const n = Object.values(元.patterns).reduce((e, t) => e + t, 0);
                           const a = n > 0 ? (t / n) * 100 : 0;
-                          return (0, y.jsxs)(
-                            o.default,
-                            {
-                              style: F.patternLine,
-                              children: [
-                                (0, y.jsx)(o.default, {
-                                  style: { width: 45 },
-                                  children: (0, y.jsx)(l.default, {
-                                    style: F.patternLabelText,
-                                    children: e.label,
-                                  }),
-                                }),
-                                (0, y.jsx)(o.default, {
-                                  style: { flex: 1 },
-                                  children: (0, y.jsx)(o.default, {
-                                    style: F.barContainer,
-                                    children: (0, y.jsx)(o.default, {
-                                      style: [
-                                        F.barFill,
-                                        { width: `${Math.max(a, t > 0 ? 3 : 0)}%`, backgroundColor: e.color },
-                                      ],
-                                    }),
-                                  }),
-                                }),
-                                (0, y.jsx)(o.default, {
-                                  style: { width: 50, alignItems: 'flex-end' },
-                                  children: (0, y.jsxs)(l.default, {
-                                    style: F.patternValueText,
-                                    children: [t, '回'],
-                                  }),
-                                }),
-                              ],
-                            },
-                            e.key
+                          return (
+                            <View key={e.key} style={F.patternLine}>
+                              <View style={{ width: 45 }}>
+                                <Text style={F.patternLabelText}>{e.label}</Text>
+                              </View>
+                              <View style={{ flex: 1 }}>
+                                <View style={F.barContainer}>
+                                  <View
+                                    style={[
+                                      F.barFill,
+                                      { width: `${Math.max(a, t > 0 ? 3 : 0)}%`, backgroundColor: e.color },
+                                    ]}
+                                  />
+                                </View>
+                              </View>
+                              <View style={{ width: 50, alignItems: 'flex-end' }}>
+                                <Text style={F.patternValueText}>{t}回</Text>
+                              </View>
+                            </View>
                           );
-                        }),
-                      }),
-                      // 4射そろわない末尾は分布に入れられない。
-                      // 断らないと「的中率と数が合わない」と見える
-                      (() => {
-                        const 端 = (自分の期間の成績 || Ce[0] || {}).端数の射 || 0;
-                        return 端 > 0
-                          ? (0, y.jsx)(l.default, {
-                              style: {
-                                fontSize: 11,
-                                color: '#8E8E93',
-                                marginTop: 8,
-                                lineHeight: 16,
-                              },
-                              children: `※ 4射に満たない ${端} 射は皆中・残念などに分けられないため、この分布に入れていません（的中率には入っています）。`,
-                            })
-                          : null;
-                      })(),
-                    ],
-                  }),
-                  // 的中の型。個人の詳細と同じものを、自分の画面にも出す。
-                  // 片方だけに出すと「部長の画面にはあるのに自分には無い」になる
-                  型の節(自分の期間の成績 || Ce[0], selectedTrendLabel),
-                ],
-              }),
-            'member' !== k &&
-              (0, y.jsx)(o.default, {
-                style: F.searchBarContainer,
-                children: (0, y.jsxs)(o.default, {
-                  style: F.searchBar,
-                  children: [
-                    (0, y.jsx)(h.Ionicons, {
-                      name: 'search',
-                      size: 18,
-                      color: '#007AFF',
-                      style: F.searchIcon,
-                    }),
-                    (0, y.jsx)(d.default, {
-                      style: F.searchInput,
-                      placeholder: 'メンバー名を検索...',
-                      placeholderTextColor: '#8E8E93',
-                      value: oe,
-                      onChangeText: le,
-                    }),
-                    !!oe &&
-                      (0, y.jsx)(s.default, {
-                        onPress: () => le(''),
-                        style: { padding: 4 },
-                        children: (0, y.jsx)(h.Ionicons, {
-                          name: 'close-circle',
-                          size: 18,
-                          color: '#C7C7CC',
-                        }),
-                      }),
-                  ],
-                }),
-              }),
-            'member' !== k &&
-              (0, y.jsxs)(o.default, {
-                style: F.listContainer,
-                children: [
-                  Ce.map((e) =>
-                    (0, y.jsxs)(
-                      s.default,
-                      {
-                        style: F.rowCard,
-                        onPress: () => re(e),
-                        children: [
-                          (0, y.jsxs)(o.default, {
-                            style: F.rowLeft,
-                            children: [
-                              (0, y.jsx)(o.default, {
-                                style: F.rankBadge,
-                                children: (0, y.jsx)(l.default, {
-                                  style: F.rankText,
-                                  children: 'member' === k ? '-' : e.displayRank,
-                                }),
-                              }),
-                              (0, y.jsxs)(o.default, {
-                                style: F.nameContainer,
-                                children: [
-                                  (0, y.jsx)(l.default, {
-                                    style: [F.memberName, { color: '#000' }],
-                                    // 長い名前は2行まで。それ以上は…で切る。
-                                    // 切らないと右の的中率へ食い込む
-                                    numberOfLines: 2,
-                                    ellipsizeMode: 'tail',
-                                    children: e.name,
-                                  }),
-                                  (0, y.jsxs)(l.default, {
-                                    style: F.memberSub,
-                                    numberOfLines: 1,
-                                    children: [
-                                      'group' === k && (e.termKi ? `${e.termKi}期 / ` : ''),
-                                      'group' === k &&
-                                        (e.grade === 5 || e.graduationYear
-                                          ? '卒業生'
-                                          : e.grade === 0
-                                            ? 'その他'
-                                            : `${e.grade}年`),
-                                      ' / ',
-                                      'group' === k && `${e.gender}`,
-                                    ],
-                                  }),
-                                ],
-                              }),
-                            ],
-                          }),
-                          (0, y.jsxs)(o.default, {
-                            style: F.rowRight,
-                            children: [
-                              (0, y.jsxs)(l.default, {
-                                style: [F.rateText, { color: e.rate >= 50 ? '#D32F2F' : '#000' }],
-                                children: [e.rate.toFixed(1), '%'],
-                              }),
-                              (0, y.jsxs)(l.default, {
-                                style: F.shotScoreText,
-                                children: [e.hits, '/', e.shots],
-                              }),
-                            ],
-                          }),
-                        ],
-                      },
-                      typeof e.id === 'string' ? e.id : `member-${e.name}`
-                    )
-                  ),
-                  pe.length > 0 &&
-                    (0, y.jsxs)(o.default, {
-                      style: { marginTop: 24 },
-                      children: [
-                        (0, y.jsxs)(o.default, {
-                          style: {
-                            padding: 10,
-                            backgroundColor: '#F2F2F7',
-                            borderRadius: 8,
-                            marginBottom: 8,
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                          },
-                          children: [
-                            (0, y.jsx)(h.Ionicons, {
-                              name: 'information-circle-outline',
-                              size: 14,
-                              color: '#8E8E93',
-                              style: { marginRight: 6 },
-                            }),
-                            (0, y.jsxs)(l.default, {
-                              style: { fontSize: 11, color: '#8E8E93', fontWeight: 'bold' },
-                              children: ['ランキング選外 (', je, '射未満)'],
-                            }),
-                          ],
-                        }),
-                        pe.map((e) =>
-                          (0, y.jsxs)(
-                            s.default,
-                            {
-                              style: [F.rowCard, { opacity: 0.6 }],
-                              onPress: () => re(e),
-                              children: [
-                                (0, y.jsx)(o.default, {
-                                  style: F.rowLeft,
-                                  children: (0, y.jsxs)(o.default, {
-                                    style: F.nameContainer,
-                                    children: [
-                                      (0, y.jsx)(l.default, {
-                                        style: [F.memberName, { color: '#000' }],
-                                        children: e.name,
-                                      }),
-                                      (0, y.jsxs)(l.default, {
-                                        style: F.memberSub,
-                                        children: [
-                                          'group' === k && (e.termKi ? `${e.termKi}期 / ` : ''),
-                                          'group' === k &&
-                                            (e.grade === 5 || e.graduationYear
-                                              ? '卒業生'
-                                              : e.grade === 0
-                                                ? 'その他'
-                                                : `${e.grade}年`),
-                                          ' / ',
-                                          'group' === k && `${e.gender}`,
-                                        ],
-                                      }),
-                                    ],
-                                  }),
-                                }),
-                                (0, y.jsxs)(o.default, {
-                                  style: F.rowRight,
-                                  children: [
-                                    (0, y.jsxs)(l.default, {
-                                      style: F.rateText,
-                                      children: [e.rate.toFixed(1), '%'],
-                                    }),
-                                    (0, y.jsxs)(l.default, {
-                                      style: F.shotScoreText,
-                                      children: [e.hits, '/', e.shots],
-                                    }),
-                                  ],
-                                }),
-                              ],
-                            },
-                            typeof e.id === 'string' ? e.id : `low-member-${e.name}`
-                          )
-                        ),
-                      ],
-                    }),
-                  0 === Fe.length &&
-                    (0, y.jsx)(l.default, {
-                      style: F.noDataText,
-                      children: '条件に一致するメンバーがいません',
-                    }),
-                ],
-              }),
-          ],
-        }),
-        (0, y.jsx)(f.CustomCalendarModal, {
-          visible: Z,
-          onClose: () => ee(!1),
-          selectedDate: 'start' === te ? q : Q,
-          onSelectDate: (e) => {
-            ('start' === te ? K(e) : X(e), ee(!1));
-          },
-          title: 'start' === te ? '開始日を選択' : '終了日を選択',
-        }),
-        (0, y.jsx)(i.default, {
-          visible: !!ae,
-          transparent: !0,
-          animationType: 'fade',
-          // 見るだけの窓。端末の戻るでも、外を押しても閉じる
-          onRequestClose: () => re(null),
-          children: (0, y.jsxs)(o.default, {
-            style: F.modalOverlay,
-            children: [
-            // 外側。押したら閉じる。中身より下に敷く
-            (0, y.jsx)(s.default, {
-              style: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-              activeOpacity: 1,
-              accessibilityLabel: '閉じる',
-              onPress: () => re(null),
-            }),
-            (0, y.jsx)(o.default, {
-              // 背景の板より上に置く。置かないと、板が中身の押すを横取りする
-              style: [F.modalContent, { maxHeight: '85%', zIndex: 1 }],
-              children:
-                ae &&
-                (0, y.jsxs)(r.default, {
-                  showsVerticalScrollIndicator: !1,
-                  children: [
-                    compareMembers.length > 0
-                      ? (0, y.jsxs)(l.default, {
-                          style: F.modalTitle,
-                          children: [
-                            ae.name,
-                            ' vs ',
-                            compareMembers.map((m) => m.name).join(', '),
-                            ' の比較',
-                          ],
-                        })
-                      : (0, y.jsxs)(l.default, { style: F.modalTitle, children: [ae.name, 'の分析詳細'] }),
-                    compareMembers.length > 0
-                      ? (0, y.jsxs)(o.default, {
-                          children: [
-                            (0, y.jsxs)(l.default, {
-                              style: F.modalDesc,
-                              children: [R, ' の的中成績比較'],
-                            }),
-                            // 全体の的中率を、比べている人ぶんまとめて出す。
-                            // これまでは本人の分しか出ておらず、相手の全体の
-                            // 的中率はランキングへ戻らないと見られなかった
-                            (0, y.jsx)(o.default, {
-                              style: F.比較の的中率,
-                              children: [
-                                { 名: ae.name, hits: ae.hits, shots: ae.shots, rate: ae.rate },
-                                ...compareMembers.map((cm) => {
-                                  const s = 比較の成績.get(cm.id) || {};
-                                  const 中 = s.hits ?? s.的中 ?? 0;
-                                  const 射 = s.shots ?? s.射数 ?? 0;
-                                  return {
-                                    名: cm.name,
-                                    hits: 中,
-                                    shots: 射,
-                                    rate: 射 > 0 ? (中 / 射) * 100 : 0,
-                                  };
-                                }),
-                              ].map((x, i) =>
-                                (0, y.jsxs)(
-                                  o.default,
-                                  {
-                                    style: F.比較の的中率の行,
-                                    children: [
-                                      (0, y.jsx)(l.default, {
-                                        style: [
-                                          F.比較の的中率の名,
-                                          { color: 比較の色たち[i % 比較の色たち.length] },
-                                        ],
-                                        numberOfLines: 1,
-                                        children: x.名,
-                                      }),
-                                      (0, y.jsxs)(l.default, {
-                                        style: F.比較の的中率の数,
-                                        children: [x.rate.toFixed(1), '%'],
-                                      }),
-                                      (0, y.jsxs)(l.default, {
-                                        style: F.比較の的中率の内訳,
-                                        children: [x.hits, '/', x.shots],
-                                      }),
-                                    ],
-                                  },
-                                  `全体-${x.名}-${i}`
-                                )
-                              ),
-                            }),
-                          ],
-                        })
-                      : (0, y.jsxs)(l.default, {
-                          style: F.modalDesc,
-                          children: [R, 'の成績 (', ae.hits, '/', ae.shots, ') ', ae.rate.toFixed(1), '%'],
-                        }),
-
-                    (0, y.jsx)(o.default, {
-                      style: { marginVertical: 12 },
-                      children:
-                        compareMembers.length > 0
-                          ? (0, y.jsxs)(o.default, {
-                              style: { flexDirection: 'row', gap: 8 },
-                              children: [
-                                (0, y.jsx)(s.default, {
-                                  onPress: () => {
-                                    setCompareMembers([]);
-                                    setIsSelectingCompareTarget(false);
-                                  },
-                                  style: {
-                                    paddingVertical: 6,
-                                    paddingHorizontal: 12,
-                                    backgroundColor: '#E5E5EA',
-                                    borderRadius: 8,
-                                  },
-                                  children: (0, y.jsx)(l.default, {
-                                    style: { color: '#8E8E93', fontSize: 13, fontWeight: 'bold' },
-                                    children: '比較をすべて解除',
-                                  }),
-                                }),
-                                (0, y.jsx)(s.default, {
-                                  onPress: () => setIsSelectingCompareTarget(true),
-                                  style: {
-                                    paddingVertical: 6,
-                                    paddingHorizontal: 12,
-                                    backgroundColor: '#E1F0FF',
-                                    borderRadius: 8,
-                                  },
-                                  children: (0, y.jsx)(l.default, {
-                                    style: { color: '#007AFF', fontSize: 13, fontWeight: 'bold' },
-                                    children: '比較メンバーを追加',
-                                  }),
-                                }),
-                              ],
-                            })
-                          : (0, y.jsx)(s.default, {
-                              onPress: () => setIsSelectingCompareTarget(true),
-                              style: {
-                                alignSelf: 'flex-start',
-                                paddingVertical: 6,
-                                paddingHorizontal: 12,
-                                backgroundColor: '#E1F0FF',
-                                borderRadius: 8,
-                              },
-                              children: (0, y.jsx)(l.default, {
-                                style: { color: '#007AFF', fontSize: 13, fontWeight: 'bold' },
-                                children: '他のメンバーと比較',
-                              }),
-                            }),
-                    }),
-
-                    // 比較のひな型。よく見る組み合わせを名前で残して呼び出す。
-                    // 毎回いちいち学年を開いて選び直すのが手間だった。
-                    // 持つのは部員IDだけ。氏名で持つと、改名や同姓同名で別人を呼ぶ
-                    (() => {
-                      const この団体の = ひ.この団体のひな型(ひな型たち, いまの団体id);
-                      if (0 === この団体の.length && 0 === compareMembers.length) return null;
-                      const 選べる人 = [...w, ...A];
-                      return (0, y.jsxs)(o.default, {
-                        style: { marginBottom: 12 },
-                        children: [
-                          この団体の.length > 0
-                            ? (0, y.jsxs)(o.default, {
-                                style: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
-                                children: [
-                                  (0, y.jsx)(l.default, {
-                                    style: { fontSize: 12, color: '#8E8E93', marginRight: 2 },
-                                    children: 'ひな型',
-                                  }),
-                                  ...この団体の.map((型) =>
-                                    (0, y.jsxs)(
-                                      o.default,
-                                      {
-                                        style: {
-                                          flexDirection: 'row',
-                                          alignItems: 'center',
-                                          backgroundColor: '#F2F2F7',
-                                          borderRadius: 8,
-                                        },
-                                        children: [
-                                          (0, y.jsx)(s.default, {
-                                            onPress: () => {
-                                              const 出来 = ひ.ひな型を当てはめる(型, 選べる人, ae && ae.id);
-                                              setCompareMembers(出来.人たち);
-                                              setIsSelectingCompareTarget(false);
-                                              // 抜けた部員は黙って落とさない。人数が違って見える
-                                              if (出来.見つからない > 0)
-                                                出す(
-                                                  'ひな型',
-                                                  'このひな型の ' +
-                                                    出来.見つからない +
-                                                    ' 人は、いまの名簿に居ないため外しました。'
-                                                );
-                                            },
-                                            style: { paddingVertical: 6, paddingLeft: 10, paddingRight: 4 },
-                                            children: (0, y.jsxs)(l.default, {
-                                              style: { color: '#007AFF', fontSize: 13, fontWeight: 'bold' },
-                                              children: [型.名前, ' (', 型.部員idたち.length, ')'],
-                                            }),
-                                          }),
-                                          (0, y.jsx)(s.default, {
-                                            onPress: () =>
-                                              出す('ひな型を消す', '「' + 型.名前 + '」を消しますか。', [
-                                                { text: 'やめる', style: 'cancel' },
-                                                {
-                                                  text: '消す',
-                                                  style: 'destructive',
-                                                  onPress: () => 比較のひな型を消す(型.id),
-                                                },
-                                              ]),
-                                            style: { paddingVertical: 6, paddingRight: 8, paddingLeft: 2 },
-                                            children: (0, y.jsx)(l.default, {
-                                              style: { color: '#8E8E93', fontSize: 13, fontWeight: 'bold' },
-                                              children: '×',
-                                            }),
-                                          }),
-                                        ],
-                                      },
-                                      型.id
-                                    )
-                                  ),
-                                ],
-                              })
-                            : null,
-                          compareMembers.length > 0
-                            ? (0, y.jsxs)(o.default, {
-                                style: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
-                                children: [
-                                  (0, y.jsx)(d.default, {
-                                    style: {
-                                      flex: 1,
-                                      height: 34,
-                                      paddingHorizontal: 10,
-                                      borderWidth: 1,
-                                      borderColor: '#E5E5EA',
-                                      borderRadius: 8,
-                                      fontSize: 13,
-                                      color: '#1C1C1E',
-                                      backgroundColor: '#FFF',
-                                    },
-                                    placeholder: 'この組み合わせに名前を付けて残す',
-                                    placeholderTextColor: '#C7C7CC',
-                                    value: ひな型の名前,
-                                    onChangeText: ひな型の名前を置く,
-                                    maxLength: 20,
-                                  }),
-                                  (0, y.jsx)(s.default, {
-                                    onPress: () => {
-                                      const 名 = (ひな型の名前 || '').trim();
-                                      if (!名)
-                                        return void 出す('ひな型', '名前を書いてください。');
-                                      比較のひな型を足す(
-                                        名,
-                                        compareMembers.map((m) => m.id)
-                                      );
-                                      ひな型の名前を置く('');
-                                    },
-                                    style: {
-                                      paddingVertical: 8,
-                                      paddingHorizontal: 14,
-                                      backgroundColor: '#E1F0FF',
-                                      borderRadius: 8,
-                                    },
-                                    children: (0, y.jsx)(l.default, {
-                                      style: { color: '#007AFF', fontSize: 13, fontWeight: 'bold' },
-                                      children: '保存',
-                                    }),
-                                  }),
-                                ],
-                              })
-                            : null,
-                        ],
-                      });
-                    })(),
-
-                    isSelectingCompareTarget
-                      ? (0, y.jsxs)(o.default, {
-                          style: {
-                            padding: 12,
-                            backgroundColor: '#FFF',
-                            borderRadius: 12,
-                            borderWidth: 1,
-                            borderColor: '#E5E5EA',
-                            marginBottom: 16,
-                          },
-                          children: [
-                            (0, y.jsxs)(o.default, {
-                              style: {
-                                flexDirection: 'row',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                marginBottom: 12,
-                              },
-                              children: [
-                                (0, y.jsx)(l.default, {
-                                  style: { fontSize: 14, fontWeight: 'bold', color: '#1C1C1E' },
-                                  children: '比較するメンバーを選択',
-                                }),
-                                (0, y.jsx)(s.default, {
-                                  onPress: () => setIsSelectingCompareTarget(false),
-                                  children: (0, y.jsx)(l.default, {
-                                    style: { color: '#007AFF', fontSize: 13, fontWeight: 'bold' },
-                                    children: '完了',
-                                  }),
-                                }),
-                              ],
-                            }),
-                            (0, y.jsx)(r.default, {
-                              style: { maxHeight: 240 },
-                              children: (() => {
-                                // 学年でまとめる。卒業生は最後にひとまとめ、
-                                // 学年の無い人は「その他/ゲスト」（人の選択と同じ分け方）
-                                const 相手 = [...w, ...A].filter((item) => item.id !== ae.id);
-                                return 学年でまとめる(相手).map(({ 学年: 印, 題, 人たち }) => {
-                                  const 束 = { [印]: 人たち };
-                                  const 開 = !閉じた学年.has(印);
-                                  return (0, y.jsxs)(
-                                    o.default,
-                                    {
-                                      children: [
-                                        (0, y.jsxs)(s.default, {
-                                          onPress: () => 学年を開け閉め(印),
-                                          style: {
-                                            flexDirection: 'row',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center',
-                                            paddingVertical: 10,
-                                            borderBottomWidth: 1,
-                                            borderBottomColor: '#F2F2F7',
-                                          },
-                                          children: [
-                                            (0, y.jsxs)(l.default, {
-                                              style: { fontSize: 14, fontWeight: '600', color: '#3A3A3C' },
-                                              children: [題, ' (', 束[印].length, '人)'],
-                                            }),
-                                            (0, y.jsx)(h.Ionicons, {
-                                              name: 開 ? 'chevron-up' : 'chevron-down',
-                                              size: 14,
-                                              color: '#8E8E93',
-                                            }),
-                                          ],
-                                        }),
-                                        ...(開 ? 束[印] : []).map((item) => {
-                                          const isSelected = compareMembers.some((m) => m.id === item.id);
-                                          return (0, y.jsxs)(
-                                            s.default,
-                                            {
-                                              onPress: () => {
-                                                setCompareMembers((prev) => {
-                                                  if (prev.some((m) => m.id === item.id)) {
-                                                    return prev.filter((m) => m.id !== item.id);
-                                                  } else {
-                                                    return [...prev, item];
-                                                  }
-                                                });
-                                              },
-                                              style: {
-                                                paddingVertical: 10,
-                                                paddingLeft: 12,
-                                                borderBottomWidth: 1,
-                                                borderBottomColor: '#F2F2F7',
-                                                flexDirection: 'row',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center',
-                                              },
-                                              children: [
-                                                // 男女が分かるよう、名前の前に色の丸を置く。
-                                                // メンバー画面と同じ色にそろえてある
-                                                (0, y.jsxs)(o.default, {
-                                                  style: {
-                                                    flexDirection: 'row',
-                                                    alignItems: 'center',
-                                                    flex: 1,
-                                                    minWidth: 0,
-                                                  },
-                                                  children: [
-                                                    (0, y.jsx)(l.default, {
-                                                      style: {
-                                                        fontSize: 10,
-                                                        marginRight: 6,
-                                                        color:
-                                                          '男子' === item.gender
-                                                            ? '#007AFF'
-                                                            : '女子' === item.gender
-                                                              ? '#FF2D55'
-                                                              : '#8E8E93',
-                                                      },
-                                                      children: '●',
-                                                    }),
-                                                    (0, y.jsx)(l.default, {
-                                                      style: {
-                                                        fontSize: 14,
-                                                        color: isSelected ? '#007AFF' : '#1C1C1E',
-                                                        fontWeight: isSelected ? 'bold' : 'normal',
-                                                        flexShrink: 1,
-                                                      },
-                                                      numberOfLines: 1,
-                                                      children: item.name,
-                                                    }),
-                                                  ],
-                                                }),
-                                                isSelected &&
-                                                  (0, y.jsx)(l.default, {
-                                                    style: { color: '#007AFF', fontSize: 14, fontWeight: 'bold' },
-                                                    children: '\u2713',
-                                                  }),
-                                              ],
-                                            },
-                                            `select-${item.id}`
-                                          );
-                                        }),
-                                      ],
-                                    },
-                                    `組-${印}`
-                                  );
-                                });
-                              })(),
-                            }),
-                          ],
-                        })
-                      : null,
-
-                    compareMembers.length > 0
-                      ? (0, y.jsxs)(o.default, {
-                          children: [
-                            (0, y.jsx)(CompareGraph, {
-                              baseData: Be,
-                              baseName: ae.name,
-                              compareTargets: compareMembers.map((cm) => ({
-                                id: cm.id,
-                                name: cm.name,
-                                data: Se(cm.id, cm.name),
-                              })),
-                              selectedLabel: selectedModalTrendLabel,
-                              onSelectLabel: setSelectedModalTrendLabel,
-                            }),
-                            (0, y.jsxs)(o.default, {
-                              style: { marginBottom: 20, marginTop: 20, alignItems: 'center' },
-                              children: [
-                                (0, y.jsx)(l.default, {
-                                  style: {
-                                    fontSize: 14,
-                                    fontWeight: 'bold',
-                                    color: '#3A3A3C',
-                                    marginBottom: 8,
-                                    alignSelf: 'flex-start',
-                                  },
-                                  children: selectedModalTrendLabel
-                                    ? `矢所の傾向 (${selectedModalTrendLabel})`
-                                    : '矢所の傾向 (集計)',
-                                }),
-                                (0, y.jsx)(o.default, {
-                                  style: { width: '100%', marginBottom: 12 },
-                                  children: (0, y.jsx)(we, {
-                                    options: [
-                                      { label: '霞的(尺二寸)', value: 'kasumi36' },
-                                      { label: '星的(尺二寸)', value: 'hoshi36' },
-                                      { label: '星的(八寸)', value: 'hoshi24' },
-                                    ],
-                                    selected: modalTargetType,
-                                    onSelect: setModalTargetType,
-                                    isWrap: !0,
-                                  }),
-                                }),
-                                (0, y.jsx)(o.default, {
-                                  style: {
-                                    flexDirection: 'row',
-                                    overflowX: 'auto',
-                                    overflowY: 'hidden',
-                                    paddingVertical: 4,
-                                    gap: 16,
-                                    width: '100%',
-                                  },
-                                  children: [
-                                    (0, y.jsxs)(o.default, {
-                                      style: { alignItems: 'center', minWidth: 110, width: 110 },
-                                      children: [
-                                        (0, y.jsx)(l.default, {
-                                          style: {
-                                            fontSize: 10,
-                                            fontWeight: 'bold',
-                                            marginBottom: 4,
-                                            color: '#3C3C43',
-                                            textAlign: 'center',
-                                          },
-                                          numberOfLines: 1,
-                                          children: ae.name,
-                                        }),
-                                        (0, y.jsx)(ArrowLocationView, {
-                                          arrowLocations: gatherAllArrowLocations(
-                                            ae.id,
-                                            ae.name,
-                                            selectedModalTrendLabel
-                                          ),
-                                          size: 100,
-                                          targetType: modalTargetType,
-                                          hideNumbers: !0,
-                                        }),
-                                      ],
-                                    }),
-                                    ...compareMembers.map((cm, cmIdx) => {
-                                      const COLORS = 比較の色たち;
-                                      const dsColor = COLORS[cmIdx % COLORS.length];
-                                      return (0, y.jsxs)(
-                                        o.default,
-                                        {
-                                          style: { alignItems: 'center', minWidth: 110, width: 110 },
-                                          children: [
-                                            (0, y.jsx)(l.default, {
-                                              style: {
-                                                fontSize: 10,
-                                                fontWeight: 'bold',
-                                                marginBottom: 4,
-                                                color: dsColor,
-                                                textAlign: 'center',
-                                              },
-                                              numberOfLines: 1,
-                                              children: cm.name,
-                                            }),
-                                            (0, y.jsx)(ArrowLocationView, {
-                                              arrowLocations: gatherAllArrowLocations(
-                                                cm.id,
-                                                cm.name,
-                                                selectedModalTrendLabel
-                                              ),
-                                              size: 100,
-                                              targetType: modalTargetType,
-                                              hideNumbers: !0,
-                                            }),
-                                          ],
-                                        },
-                                        `arrow-compare-${cm.id}`
-                                      );
-                                    }),
-                                  ],
-                                }),
-                              ],
-                            }),
-                            // 立ち順別の的中率。
-                            //
-                            // 射目ごとに人を並べていたころは、4人比べると
-                            // 4区画×4行で20行になり、上下に離れた数字を
-                            // 見比べることになって読めなかった。
-                            // 1人1行の表にして、横に射目を並べる
-                            (0, y.jsxs)(o.default, {
-                              style: { marginBottom: 20 },
-                              children: [
-                                (0, y.jsx)(l.default, {
-                                  style: {
-                                    fontSize: 14,
-                                    fontWeight: 'bold',
-                                    color: '#3A3A3C',
-                                    marginBottom: 12,
-                                  },
-                                  children: selectedModalTrendLabel
-                                    ? `立ち順別の的中率 (${selectedModalTrendLabel})`
-                                    : '立ち順別の的中率 (1-4射目)',
-                                }),
-                                (() => {
-                                  const COLORS = 比較の色たち;
-                                  const 空 = [];
-                                  const 並び = [
-                                    {
-                                      name: ae.name,
-                                      色: '#007AFF',
-                                      表: (詳細の期間の成績 || ae).perShotStats || 空,
-                                    },
-                                    ...compareMembers.map((cm, i) => ({
-                                      name: cm.name,
-                                      色: COLORS[i % COLORS.length],
-                                      表: (比較の成績.get(cm.id) || {}).perShotStats || 空,
-                                    })),
-                                  ];
-                                  const 率 = (x) => (x && x.shots > 0 ? (x.hits / x.shots) * 100 : 0);
-                                  // 濃さは、この表の中でいちばん高い率を基準にする。
-                                  // 決め打ちの目盛だと、的中率が低い団体では全部同じ薄さになる
-                                  let 最大 = 0;
-                                  for (const 人 of 並び)
-                                    for (let t = 0; t < 4; t++) 最大 = Math.max(最大, 率(人.表[t]));
-                                  const 淡く = (濃さ) => `rgba(0, 122, 255, ${濃さ})`;
-                                  return (0, y.jsxs)(o.default, {
-                                    style: F.patternsCard,
-                                    children: [
-                                      (0, y.jsxs)(o.default, {
-                                        style: {
-                                          flexDirection: 'row',
-                                          alignItems: 'flex-end',
-                                          marginBottom: 6,
-                                        },
-                                        children: [
-                                          (0, y.jsx)(o.default, { style: { width: 狭い画面 ? 52 : 64 } }),
-                                          ...[0, 1, 2, 3].map((t) =>
-                                            (0, y.jsx)(
-                                              o.default,
-                                              {
-                                                style: { flex: 1, alignItems: 'center' },
-                                                children: (0, y.jsxs)(l.default, {
-                                                  style: {
-                                                    fontSize: 10,
-                                                    fontWeight: 'bold',
-                                                    color: '#3A3A3C',
-                                                  },
-                                                  children: [t + 1, '射目'],
-                                                }),
-                                              },
-                                              `head-shot-${t}`
-                                            )
-                                          ),
-                                          (0, y.jsx)(o.default, {
-                                            style: { width: 狭い画面 ? 28 : 34, alignItems: 'flex-end' },
-                                            children: (0, y.jsx)(l.default, {
-                                              style: { fontSize: 10, color: '#8E8E93' },
-                                              children: '射数',
-                                            }),
-                                          }),
-                                        ],
-                                      }),
-                                      ...並び.map((人, 番) => {
-                                        const 総射数 = [0, 1, 2, 3].reduce(
-                                          (a, t) => a + ((人.表[t] && 人.表[t].shots) || 0),
-                                          0
-                                        );
-                                        return (0, y.jsxs)(
-                                          o.default,
-                                          {
-                                            style: {
-                                              flexDirection: 'row',
-                                              alignItems: 'center',
-                                              marginBottom: 4,
-                                            },
-                                            children: [
-                                              (0, y.jsxs)(o.default, {
-                                                style: { width: 狭い画面 ? 52 : 64, paddingRight: 4, flexDirection: 'row', alignItems: 'center' },
-                                                children: [
-                                                  (0, y.jsx)(o.default, {
-                                                    style: {
-                                                      width: 8,
-                                                      height: 8,
-                                                      borderRadius: 4,
-                                                      marginRight: 4,
-                                                      backgroundColor: 人.色,
-                                                    },
-                                                  }),
-                                                  (0, y.jsx)(l.default, {
-                                                    style: { flex: 1, fontSize: 11, fontWeight: 'bold', color: '#1C1C1E' },
-                                                    numberOfLines: 1,
-                                                    children: 人.name,
-                                                  }),
-                                                ],
-                                              }),
-                                              ...[0, 1, 2, 3].map((t) => {
-                                                const 枡 = 人.表[t] || { shots: 0, hits: 0 };
-                                                const r = 率(枡);
-                                                return (0, y.jsxs)(
-                                                  o.default,
-                                                  {
-                                                    style: {
-                                                      flex: 1,
-                                                      alignItems: 'center',
-                                                      paddingVertical: 4,
-                                                      marginHorizontal: 1,
-                                                      borderRadius: 6,
-                                                      backgroundColor:
-                                                        枡.shots > 0 && 最大 > 0
-                                                          ? 淡く(0.06 + (r / 最大) * 0.36)
-                                                          : 'transparent',
-                                                    },
-                                                    children: [
-                                                      (0, y.jsxs)(l.default, {
-                                                        style: {
-                                                          fontSize: 狭い画面 ? 12 : 13,
-                                                          fontWeight: '600',
-                                                          color: 枡.shots > 0 ? '#1C1C1E' : '#C7C7CC',
-                                                        },
-                                                        numberOfLines: 1,
-                                                        children: [r.toFixed(0), '%'],
-                                                      }),
-                                                      狭い画面
-                                                        ? null
-                                                        : (0, y.jsxs)(l.default, {
-                                                            // 副次テキスト。暗いテーマでは #EBEBF5 に変わる。
-                                                            // #48484A は変換表に無く、暗い面の上で沈む
-                                                            style: { fontSize: 9, color: '#3C3C43' },
-                                                            numberOfLines: 1,
-                                                            children: [枡.hits, '/', 枡.shots],
-                                                          }),
-                                                    ],
-                                                  },
-                                                  `compare-per-shot-${t}-${番}`
-                                                );
-                                              }),
-                                              (0, y.jsx)(o.default, {
-                                                style: { width: 狭い画面 ? 28 : 34, alignItems: 'flex-end' },
-                                                children: (0, y.jsx)(l.default, {
-                                                  style: { fontSize: 11, color: '#8E8E93' },
-                                                  children: String(総射数),
-                                                }),
-                                              }),
-                                            ],
-                                          },
-                                          `per-shot-row-${番}`
-                                        );
-                                      }),
-                                    ],
-                                  });
-                                })(),
-                              ],
-                            }),
-                            // 立ちの結果分布。比較のときも出す。
-                            // 分けていたころは、比較を始めるとこの節ごと消えていた。
-                            //
-                            // 比較なしのときと同じ帯を人数ぶん並べると、3人で15行、
-                            // 4人で20行になって読めない。比較のときは1人1行の表にし、
-                            // マスの濃さでその人の中での多い少ないを見せる。
-                            // 回数そのものは書いてあるので、濃さは目安でよい
-                            (0, y.jsxs)(o.default, {
-                              style: { marginBottom: 20 },
-                              children: [
-                                (0, y.jsx)(l.default, {
-                                  style: {
-                                    fontSize: 14,
-                                    fontWeight: 'bold',
-                                    color: '#3A3A3C',
-                                    marginBottom: 12,
-                                  },
-                                  children: selectedModalTrendLabel
-                                    ? `立ちの結果分布 (${selectedModalTrendLabel})`
-                                    : '立ちの結果分布 (4射単位)',
-                                }),
-                                (() => {
-                                  const 区分たち = [
-                                    { label: '皆中', key: 'kaichu', color: '#FF9500' },
-                                    { label: '三中', key: 'sanchu', color: '#34C759' },
-                                    { label: '羽分', key: 'hake', color: '#007AFF' },
-                                    { label: '一中', key: 'icchu', color: '#5856D6' },
-                                    { label: '残念', key: 'zannen', color: '#FF3B30' },
-                                  ];
-                                  const COLORS = 比較の色たち;
-                                  const 空 = { kaichu: 0, sanchu: 0, hake: 0, icchu: 0, zannen: 0 };
-                                  const 並び = [
-                                    {
-                                      name: ae.name,
-                                      // 立ち順別の比較と同じ。同じ画面で同じ人の色が変わると迷う
-                                      色: '#007AFF',
-                                      表: (詳細の期間の成績 || ae).patterns || 空,
-                                    },
-                                    ...compareMembers.map((cm, i) => ({
-                                      name: cm.name,
-                                      色: COLORS[i % COLORS.length],
-                                      表: (比較の成績.get(cm.id) || {}).patterns || 空,
-                                    })),
-                                  ];
-                                  // 区分の色を薄く敷く。'#RRGGBB' から rgba を作る
-                                  const 淡く = (色, 濃さ) => {
-                                    const n = parseInt(色.slice(1), 16);
-                                    const r = (n >> 16) & 255;
-                                    const g = (n >> 8) & 255;
-                                    const b = n & 255;
-                                    return `rgba(${r}, ${g}, ${b}, ${濃さ})`;
-                                  };
-                                  return (0, y.jsxs)(o.default, {
-                                    style: F.patternsCard,
-                                    children: [
-                                      (0, y.jsxs)(o.default, {
-                                        style: {
-                                          flexDirection: 'row',
-                                          alignItems: 'flex-end',
-                                          marginBottom: 6,
-                                        },
-                                        children: [
-                                          (0, y.jsx)(o.default, { style: { width: 狭い画面 ? 52 : 64 } }),
-                                          ...区分たち.map((区分) =>
-                                            (0, y.jsx)(
-                                              o.default,
-                                              {
-                                                style: { flex: 1, alignItems: 'center' },
-                                                children: (0, y.jsx)(l.default, {
-                                                  style: {
-                                                    fontSize: 10,
-                                                    fontWeight: 'bold',
-                                                    color: 区分.color,
-                                                  },
-                                                  children: 区分.label,
-                                                }),
-                                              },
-                                              `head-${区分.key}`
-                                            )
-                                          ),
-                                          (0, y.jsx)(o.default, {
-                                            style: { width: 狭い画面 ? 28 : 34, alignItems: 'flex-end' },
-                                            children: (0, y.jsx)(l.default, {
-                                              style: { fontSize: 10, color: '#8E8E93' },
-                                              children: '立数',
-                                            }),
-                                          }),
-                                        ],
-                                      }),
-                                      ...並び.map((人, 番) => {
-                                        const 全 = Object.values(人.表).reduce((a, b) => a + b, 0);
-                                        return (0, y.jsxs)(
-                                          o.default,
-                                          {
-                                            style: {
-                                              flexDirection: 'row',
-                                              alignItems: 'center',
-                                              marginBottom: 4,
-                                            },
-                                            children: [
-                                              (0, y.jsxs)(o.default, {
-                                                style: { width: 狭い画面 ? 52 : 64, paddingRight: 4, flexDirection: 'row', alignItems: 'center' },
-                                                children: [
-                                                  (0, y.jsx)(o.default, {
-                                                    style: {
-                                                      width: 8,
-                                                      height: 8,
-                                                      borderRadius: 4,
-                                                      marginRight: 4,
-                                                      backgroundColor: 人.色,
-                                                    },
-                                                  }),
-                                                  (0, y.jsx)(l.default, {
-                                                    style: { flex: 1, fontSize: 11, fontWeight: 'bold', color: '#1C1C1E' },
-                                                    numberOfLines: 1,
-                                                    children: 人.name,
-                                                  }),
-                                                ],
-                                              }),
-                                              ...区分たち.map((区分) => {
-                                                const 回 = 人.表[区分.key] || 0;
-                                                const 割 = 全 > 0 ? 回 / 全 : 0;
-                                                return (0, y.jsx)(
-                                                  o.default,
-                                                  {
-                                                    style: {
-                                                      flex: 1,
-                                                      alignItems: 'center',
-                                                      paddingVertical: 6,
-                                                      marginHorizontal: 1,
-                                                      borderRadius: 6,
-                                                      backgroundColor:
-                                                        回 > 0 ? 淡く(区分.color, 0.1 + 割 * 0.45) : 'transparent',
-                                                    },
-                                                    children: (0, y.jsx)(l.default, {
-                                                      style: {
-                                                        fontSize: 13,
-                                                        fontWeight: '600',
-                                                        color: 回 > 0 ? '#1C1C1E' : '#C7C7CC',
-                                                      },
-                                                      children: String(回),
-                                                    }),
-                                                  },
-                                                  `${区分.key}-${番}`
-                                                );
-                                              }),
-                                              (0, y.jsx)(o.default, {
-                                                style: { width: 狭い画面 ? 28 : 34, alignItems: 'flex-end' },
-                                                children: (0, y.jsx)(l.default, {
-                                                  style: { fontSize: 11, color: '#8E8E93' },
-                                                  children: String(全),
-                                                }),
-                                              }),
-                                            ],
-                                          },
-                                          `bunpu-${番}`
-                                        );
-                                      }),
-                                    ],
-                                  });
-                                })(),
-                                // 4射そろわない末尾は分布に入れられない。
-                                // 断らないと「的中率と数が合わない」と見える
-                                (() => {
-                                  const 端 =
-                                    ((詳細の期間の成績 || ae).端数の射 || 0) +
-                                    compareMembers.reduce(
-                                      (a, cm) => a + ((比較の成績.get(cm.id) || {}).端数の射 || 0),
-                                      0
-                                    );
-                                  return 端 > 0
-                                    ? (0, y.jsx)(l.default, {
-                                        style: {
-                                          fontSize: 11,
-                                          color: '#8E8E93',
-                                          marginTop: 8,
-                                          lineHeight: 16,
-                                        },
-                                        children: `※ 4射に満たない射（この画面の全員で ${端} 射）は皆中・残念などに分けられないため、この分布に入れていません（的中率には入っています）。`,
-                                      })
-                                    : null;
-                                })(),
-                              ],
-                            }),
-                          ],
-                        })
-                      : (0, y.jsxs)(o.default, {
-                          children: [
-                            (0, y.jsx)(o.default, {
-                              style: { marginBottom: 20 },
-                              children: (0, y.jsx)(Ee, {
-                                data: Be,
-                                selectedLabel: selectedModalTrendLabel,
-                                onSelectLabel: setSelectedModalTrendLabel,
-                                onJumpToRecord: (sessionId) => {
-                                  re(null);
-                                  goToHistoryRecord(sessionId, ae?.id);
-                                },
-                              }),
-                            }),
-                            (0, y.jsxs)(o.default, {
-                              style: { marginBottom: 20, alignItems: 'center' },
-                              children: [
-                                (0, y.jsx)(l.default, {
-                                  style: [
-                                    {
-                                      fontSize: 14,
-                                      fontWeight: 'bold',
-                                      color: '#3A3A3C',
-                                      marginBottom: 8,
-                                      alignSelf: 'flex-start',
-                                    },
-                                  ],
-                                  children: selectedModalTrendLabel
-                                    ? `矢所の傾向 (${selectedModalTrendLabel})`
-                                    : '矢所の傾向 (集計)',
-                                }),
-                                (0, y.jsx)(o.default, {
-                                  style: { width: '100%', marginBottom: 12 },
-                                  children: (0, y.jsx)(we, {
-                                    options: [
-                                      { label: '霞的(尺二寸)', value: 'kasumi36' },
-                                      { label: '星的(尺二寸)', value: 'hoshi36' },
-                                      { label: '星的(八寸)', value: 'hoshi24' },
-                                    ],
-                                    selected: modalTargetType,
-                                    onSelect: setModalTargetType,
-                                    isWrap: !0,
-                                  }),
-                                }),
-                                (0, y.jsx)(ArrowLocationView, {
-                                  arrowLocations: gatherAllArrowLocations(
-                                    ae.id,
-                                    ae.name,
-                                    selectedModalTrendLabel
-                                  ),
-                                  size: 200,
-                                  targetType: modalTargetType,
-                                  hideNumbers: !0,
-                                }),
-                              ],
-                            }),
-                            (0, y.jsxs)(o.default, {
-                              style: { marginBottom: 16 },
-                              children: [
-                                (0, y.jsx)(l.default, {
-                                  style: {
-                                    fontSize: 14,
-                                    fontWeight: 'bold',
-                                    color: '#3A3A3C',
-                                    marginBottom: 8,
-                                  },
-                                  children: selectedModalTrendLabel
-                                    ? `立ち順別の的中率 (${selectedModalTrendLabel})`
-                                    : '立ち順別の的中率 (1-4射目)',
-                                }),
-                                (0, y.jsx)(o.default, {
-                                  style: F.statsGrid,
-                                  children: Array.from({ length: 4 }).map((e, t) => {
-                                    const 元 = 詳細の期間の成績 || ae;
-                                    const n = 元.perShotStats[t] || { shots: 0, hits: 0 };
-                                    const a = n.shots > 0 ? (n.hits / n.shots) * 100 : 0;
-                                    return (0, y.jsxs)(
-                                      o.default,
-                                      {
-                                        style: F.statBox,
-                                        children: [
-                                          (0, y.jsxs)(l.default, {
-                                            style: F.statBoxTitle,
-                                            children: [t + 1, '射目'],
-                                          }),
-                                          (0, y.jsxs)(l.default, {
-                                            style: F.statBoxRate,
-                                            children: [a.toFixed(0), '%'],
-                                          }),
-                                          (0, y.jsxs)(l.default, {
-                                            style: F.statBoxCounts,
-                                            children: [n.hits, '/', n.shots],
-                                          }),
-                                        ],
-                                      },
-                                      `per-shot-modal-${t}`
-                                    );
-                                  }),
-                                }),
-                              ],
-                            }),
-                            (0, y.jsxs)(o.default, {
-                              style: { marginBottom: 24 },
-                              children: [
-                                (0, y.jsx)(l.default, {
-                                  style: {
-                                    fontSize: 14,
-                                    fontWeight: 'bold',
-                                    color: '#3A3A3C',
-                                    marginBottom: 12,
-                                  },
-                                  children: selectedModalTrendLabel
-                                    ? `立ちの結果分布 (${selectedModalTrendLabel})`
-                                    : '立ちの結果分布 (4射単位)',
-                                }),
-                                (0, y.jsx)(o.default, {
-                                  style: F.patternsCard,
-                                  children: [
-                                    { label: '皆中', key: 'kaichu', color: '#FF9500' },
-                                    { label: '三中', key: 'sanchu', color: '#34C759' },
-                                    { label: '羽分', key: 'hake', color: '#007AFF' },
-                                    { label: '一中', key: 'icchu', color: '#5856D6' },
-                                    { label: '残念', key: 'zannen', color: '#FF3B30' },
-                                  ].map((e) => {
-                                    const 元 = 詳細の期間の成績 || ae;
-                                    const t = 元.patterns[e.key] || 0;
-                                    const n = Object.values(元.patterns).reduce((e, t) => e + t, 0);
-                                    const a = n > 0 ? (t / n) * 100 : 0;
-                                    return (0, y.jsxs)(
-                                      o.default,
-                                      {
-                                        style: F.patternLine,
-                                        children: [
-                                          (0, y.jsx)(o.default, {
-                                            style: { width: 45 },
-                                            children: (0, y.jsx)(l.default, {
-                                              style: F.patternLabelText,
-                                              children: e.label,
-                                            }),
-                                          }),
-                                          (0, y.jsx)(o.default, {
-                                            style: { flex: 1 },
-                                            children: (0, y.jsx)(o.default, {
-                                              style: F.barContainer,
-                                              children: (0, y.jsx)(o.default, {
-                                                style: [
-                                                  F.barFill,
-                                                  {
-                                                    width: `${Math.max(a, t > 0 ? 3 : 0)}%`,
-                                                    backgroundColor: e.color,
-                                                  },
-                                                ],
-                                              }),
-                                            }),
-                                          }),
-                                          (0, y.jsx)(o.default, {
-                                            style: { width: 50, alignItems: 'flex-end' },
-                                            children: (0, y.jsxs)(l.default, {
-                                              style: F.patternValueText,
-                                              children: [t, '回'],
-                                            }),
-                                          }),
-                                        ],
-                                      },
-                                      e.key
-                                    );
-                                  }),
-                                }),
-                                // 4射そろわない末尾は分布に入れられない。
-                                // 断らないと「的中率と数が合わない」と見える
-                                (() => {
-                                  const 端 = (詳細の期間の成績 || ae).端数の射 || 0;
-                                  return 端 > 0
-                                    ? (0, y.jsx)(l.default, {
-                                        style: {
-                                          fontSize: 11,
-                                          color: '#8E8E93',
-                                          marginTop: 8,
-                                          lineHeight: 16,
-                                        },
-                                        children: `※ 4射に満たない ${端} 射は皆中・残念などに分けられないため、この分布に入れていません（的中率には入っています）。`,
-                                      })
-                                    : null;
-                                })(),
-                              ],
-                            }),
-                          ],
-                        }),
-                    // 弓具を変えた前後。
-                    //
-                    // 比較の分岐（compareMembers.length > 0）の中に置いていたため、
-                    // 比較相手を足したときしか出ていなかった。求められたのは
-                    // 「個人の詳細で見たい」なので、比較の有無に関わらず出す。
-                    //
-                    // 置き場所は詳細のいちばん下（閉じるの手前）。ここは
-                    // 弓具を記録していない団体では案内だけが出る節なので、
-                    // 上に置くと、毎日見る数字より先に目に入ってしまう。
-                    //
-                    // 的中の型。結果分布のすぐ下に置く。
-                    // 上の分布で「三中が多い」と分かったあと、すぐ
-                    // 「その三中はどこで抜いているのか」へ目が移るため。
-                    //
-                    // 比較中は人数ぶん並べる。名前の見出しを付けて誰の型かを示す
-                    型の節(
-                      詳細の期間の成績 || ae,
-                      selectedModalTrendLabel,
-                      compareMembers.length > 0 ? ae.name : null
-                    ),
-                    ...(compareMembers.length > 0
-                      ? compareMembers.map((cm) =>
-                          型の節(比較の成績.get(cm.id), selectedModalTrendLabel, cm.name)
-                        )
-                      : []),
-                    // 弓具の履歴が無い人には、どこで記録するかだけを出す
-                    // （何も出さないと、この節が在ることに気づけない）
-                    弓具の節(ae, me),
-                    (0, y.jsx)(s.default, {
-                      style: F.closeBtn,
-                      onPress: () => {
-                        re(null);
-                        setCompareMembers([]);
-                        setIsSelectingCompareTarget(false);
-                      },
-                      children: (0, y.jsx)(l.default, { style: F.closeBtnText, children: '閉じる' }),
-                    }),
-                  ],
-                }),
-            }),
-            ],
-          }),
-        }),
-      ],
-    })
+                        })}
+                      </View>
+                      {/* 4射そろわない末尾は分布に入れられない。 */
+                      /* 断らないと「的中率と数が合わない」と見える */}
+                      {(() => {
+                        const 端 = (詳細の期間の成績 || ae).端数の射 || 0;
+                        return 端 > 0 ? (
+                          <Text
+                            style={{ fontSize: 11, color: '#8E8E93', marginTop: 8, lineHeight: 16 }}
+                          >{`※ 4射に満たない ${端} 射は皆中・残念などに分けられないため、この分布に入れていません（的中率には入っています）。`}</Text>
+                        ) : null;
+                      })()}
+                    </View>
+                  </View>
+                )}
+                {/* 弓具を変えた前後。 */
+                /*  */
+                /* 比較の分岐（compareMembers.length > 0）の中に置いていたため、 */
+                /* 比較相手を足したときしか出ていなかった。求められたのは */
+                /* 「個人の詳細で見たい」なので、比較の有無に関わらず出す。 */
+                /*  */
+                /* 置き場所は詳細のいちばん下（閉じるの手前）。ここは */
+                /* 弓具を記録していない団体では案内だけが出る節なので、 */
+                /* 上に置くと、毎日見る数字より先に目に入ってしまう。 */
+                /*  */
+                /* 的中の型。結果分布のすぐ下に置く。 */
+                /* 上の分布で「三中が多い」と分かったあと、すぐ */
+                /* 「その三中はどこで抜いているのか」へ目が移るため。 */
+                /*  */
+                /* 比較中は人数ぶん並べる。名前の見出しを付けて誰の型かを示す */}
+                {型の節(
+                  詳細の期間の成績 || ae,
+                  selectedModalTrendLabel,
+                  compareMembers.length > 0 ? ae.name : null
+                )}
+                {[
+                  ...(compareMembers.length > 0
+                    ? compareMembers.map((cm) =>
+                        型の節(比較の成績.get(cm.id), selectedModalTrendLabel, cm.name)
+                      )
+                    : []),
+                ]}
+                {/* 弓具の履歴が無い人には、どこで記録するかだけを出す */
+                /* （何も出さないと、この節が在ることに気づけない） */}
+                {弓具の節(ae, me)}
+                <TouchableOpacity
+                  style={F.closeBtn}
+                  onPress={() => {
+                    re(null);
+                    setCompareMembers([]);
+                    setIsSelectingCompareTarget(false);
+                  }}
+                >
+                  <Text style={F.closeBtnText}>閉じる</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
+    </Ae>
   );
 };
-
-const F = a.default.create({
+const F = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#F2F2F7' },
   header: {
     paddingHorizontal: 20,
-    paddingTop: c.SAFE_TOP_PADDING + 10,
+    paddingTop: SAFE_TOP_PADDING + 10,
     paddingBottom: 15,
     backgroundColor: '#FFF',
     borderBottomWidth: 1,
@@ -3034,7 +2416,7 @@ const F = a.default.create({
   content: { padding: 16 },
   filtersCard: Object.assign(
     { backgroundColor: '#FFF', borderRadius: 16, padding: 16, marginBottom: 16 },
-    (0, m.getShadowStyle)({ shadowOpacity: 0.05, shadowRadius: 10, elevation: 3 })
+    getShadowStyle({ shadowOpacity: 0.05, shadowRadius: 10, elevation: 3 })
   ),
   segmentLabel: { fontSize: 13, fontWeight: 'bold', color: '#8E8E93', marginBottom: 10, width: 60 },
   segmentWrapper: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
@@ -3049,7 +2431,7 @@ const F = a.default.create({
   segmentButton: { flex: 1, justifyContent: 'center', alignItems: 'center', borderRadius: 10 },
   segmentButtonActive: Object.assign(
     { backgroundColor: '#FFF' },
-    (0, m.getShadowStyle)({ shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 })
+    getShadowStyle({ shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 })
   ),
   segmentText: { fontSize: 13, color: '#8E8E93', fontWeight: 'bold' },
   segmentTextActive: { color: '#007AFF' },
@@ -3122,7 +2504,7 @@ const F = a.default.create({
   miniBtnTextActive: { color: '#FFF' },
   memberDashboard: Object.assign(
     { backgroundColor: '#FFF', borderRadius: 20, padding: 20, marginBottom: 16 },
-    (0, m.getShadowStyle)({ shadowOpacity: 0.1, shadowRadius: 15, elevation: 5 })
+    getShadowStyle({ shadowOpacity: 0.1, shadowRadius: 15, elevation: 5 })
   ),
   dashboardHeader: {
     flexDirection: 'row',
@@ -3196,7 +2578,7 @@ const F = a.default.create({
       paddingHorizontal: 12,
       height: 44,
     },
-    (0, m.getShadowStyle)({ shadowOpacity: 0.05, shadowRadius: 5, elevation: 2 })
+    getShadowStyle({ shadowOpacity: 0.05, shadowRadius: 5, elevation: 2 })
   ),
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, fontSize: 15, color: '#1C1C1E' },
@@ -3210,7 +2592,7 @@ const F = a.default.create({
       padding: 12,
       borderRadius: 12,
     },
-    (0, m.getShadowStyle)({ shadowOpacity: 0.05, shadowRadius: 5, elevation: 2 })
+    getShadowStyle({ shadowOpacity: 0.05, shadowRadius: 5, elevation: 2 })
   ),
   // 名前が長いと、右の的中率を押しのけて重なっていた。
   // 左は余った幅ぶんだけ広がり、狭くなったら縮む（flex:1 + minWidth:0）。
@@ -3265,3 +2647,5 @@ const F = a.default.create({
   detailStats: { fontSize: 12, fontWeight: 'bold', color: '#1C1C1E' },
   detailMore: { fontSize: 10, color: '#8E8E93', marginTop: 4, textAlign: 'center' },
 });
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.AnalysisScreen = AnalysisScreen;

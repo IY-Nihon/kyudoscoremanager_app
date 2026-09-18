@@ -1,31 +1,17 @@
-/**
- * Module ID: AttendanceScreen
- */
 'use strict';
 
-const _e = exports;
-
-Object.defineProperty(_e, '__esModule', { value: true });
-Object.defineProperty(_e, 'AttendanceScreen', {
-  enumerable: true,
-  get: function () {
-    return AttendanceScreen;
-  },
-});
-
-var t = require('react');
+const React = require('react');
 // Text と StyleSheet はダークモードのテーマ変換を通すためブリッジ経由で差し替える
-var o = Object.assign({}, require('react-native'), {
+const o = Object.assign({}, require('react-native'), {
   Text: require('./Text').default,
   StyleSheet: require('./StyleSheet').default,
 });
-var m = require('@expo/vector-icons');
-var b = require('./useScoreStore');
-var x = require('./IS_WEB');
-var F = require('./shadowStyle');
-var j = require('./themedJsx');
-var db = require('./db');
-var firestore = require('firebase/firestore');
+const Icons = require('@expo/vector-icons');
+const { useScoreStore } = require('./useScoreStore');
+const { IS_WEB } = require('./IS_WEB');
+const { getShadowStyle } = require('./shadowStyle');
+const { db } = require('./db');
+const firestore = require('firebase/firestore');
 // 出欠の自動判定。交代で入った人も数えるため、決まりは切り出してある
 const { 射に出ているか } = require('./attendanceRules');
 // Web-safe lazy imports to prevent null.default crash on web
@@ -41,25 +27,20 @@ try {
 } catch (e) {
   /* この部品が無い場（Web）でも、下の代わりの品で動く */
 }
-var docPicker = _docPickerModule || { getDocumentAsync: async () => ({ canceled: true, assets: [] }) };
-var fs = _fsModule || { readAsStringAsync: async () => '', EncodingType: { Base64: 'base64' } };
-
+const docPicker = _docPickerModule || { getDocumentAsync: async () => ({ canceled: true, assets: [] }) };
+const fs = _fsModule || { readAsStringAsync: async () => '', EncodingType: { Base64: 'base64' } };
 const AttendanceScreen = () => {
-  const { members, sessions, activeGroupId } = (0, b.useScoreStore)();
-
-  const [tab, setTab] = (0, t.useState)('stats');
-  const [rangeType, setRangeType] = (0, t.useState)('month');
-  const [practiceDays, setPracticeDays] = (0, t.useState)({});
-  const [loadingMsg, setLoadingMsg] = (0, t.useState)(null);
-  const [selectedMember, setSelectedMember] = (0, t.useState)(null);
-  const [aiPreviewItems, setAiPreviewItems] = (0, t.useState)(null);
-
-  const now = t.useMemo(() => new Date(), []);
-  const [selectedYear, setSelectedYear] = (0, t.useState)(now.getFullYear());
-  const [selectedMonth, setSelectedMonth] = (0, t.useState)(now.getMonth() + 1);
-
+  const { members, sessions, activeGroupId } = useScoreStore();
+  const [tab, setTab] = React.useState('stats');
+  const [rangeType, setRangeType] = React.useState('month');
+  const [practiceDays, setPracticeDays] = React.useState({});
+  const [loadingMsg, setLoadingMsg] = React.useState(null);
+  const [selectedMember, setSelectedMember] = React.useState(null);
+  const [aiPreviewItems, setAiPreviewItems] = React.useState(null);
+  const now = React.useMemo(() => new Date(), []);
+  const [selectedYear, setSelectedYear] = React.useState(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = React.useState(now.getMonth() + 1);
   const currentFiscalYear = selectedMonth >= 4 ? selectedYear : selectedYear - 1;
-
   const getLocalDateString = (dateInput) => {
     if (!dateInput) return null;
     let d;
@@ -76,7 +57,6 @@ const AttendanceScreen = () => {
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
   };
-
   const changeMonth = (offset) => {
     let newMonth = selectedMonth + offset;
     let newYear = selectedYear;
@@ -90,15 +70,13 @@ const AttendanceScreen = () => {
     setSelectedMonth(newMonth);
     setSelectedYear(newYear);
   };
-
   const changeYear = (offset) => {
     setSelectedYear((prev) => prev + offset);
   };
-
-  (0, t.useEffect)(() => {
+  React.useEffect(() => {
     if (!activeGroupId) return;
-    const q = (0, firestore.collection)(db.db, `groups/${activeGroupId}/officialPracticeDays`);
-    const unsubscribe = (0, firestore.onSnapshot)(q, (snap) => {
+    const q = firestore.collection(db, `groups/${activeGroupId}/officialPracticeDays`);
+    const unsubscribe = firestore.onSnapshot(q, (snap) => {
       const days = {};
       snap.forEach((doc) => {
         days[doc.id] = doc.data();
@@ -107,40 +85,34 @@ const AttendanceScreen = () => {
     });
     return () => unsubscribe();
   }, [activeGroupId]);
-
   const togglePracticeDay = async (dateStr) => {
     if (!activeGroupId) return;
     const isSet = practiceDays[dateStr];
-    const docRef = (0, firestore.doc)(db.db, `groups/${activeGroupId}/officialPracticeDays`, dateStr);
+    const docRef = firestore.doc(db, `groups/${activeGroupId}/officialPracticeDays`, dateStr);
     try {
-      if (isSet) await (0, firestore.deleteDoc)(docRef);
-      else await (0, firestore.setDoc)(docRef, { date: dateStr, created: Date.now() });
+      if (isSet) await firestore.deleteDoc(docRef);
+      else await firestore.setDoc(docRef, { date: dateStr, created: Date.now() });
     } catch (e) {
       console.error(e);
     }
   };
-
   const getAttendanceStatus = (dateStr, memberId) => {
     const daySessions = sessions.filter((s) => getLocalDateString(s?.date) === dateStr);
     const isFuture = dateStr > getLocalDateString(new Date());
-
     if (daySessions.length === 0) {
       if (practiceDays[dateStr]) return isFuture ? 'none' : 'absent';
       return 'none';
     }
-
     let status = 'none';
     for (const s of daySessions) {
       // 交代で入った人は memberId に出てこない。substitutionIds も見る
       const hasRecord = s.archers?.some((a) => 射に出ているか(a, memberId));
       if (hasRecord) return 'present';
-
       const explicit = s.attendance?.[memberId];
       if (explicit && explicit !== 'none') {
         if (explicit !== 'present' || status === 'none') status = explicit;
       }
     }
-
     if (status === 'none' && practiceDays[dateStr]) {
       // 現役生のみ、記録がない場合に「欠席」とする
       const member = members.find((m) => String(m.id) === String(memberId));
@@ -149,7 +121,6 @@ const AttendanceScreen = () => {
     }
     return status;
   };
-
   const filteredPracticeDays = Object.keys(practiceDays)
     .filter((dStr) => {
       const d = new Date(dStr);
@@ -162,10 +133,8 @@ const AttendanceScreen = () => {
       return true;
     })
     .sort((a, b) => b.localeCompare(a));
-
   const todayStr = getLocalDateString(new Date());
   const pastPracticeDays = filteredPracticeDays.filter((d) => d <= todayStr);
-
   const stats = members
     .map((m) => {
       let presentCount = 0;
@@ -183,7 +152,6 @@ const AttendanceScreen = () => {
           earlyCount++;
         } else if (status === 'absent') absentCount++;
       });
-
       // その年度に現役だったか判定（留年等も考慮）
       let isActiveInYear = (m.grade || 0) < 5; // 現在現役なら基本真
       if (m.grade === 5) {
@@ -193,12 +161,11 @@ const AttendanceScreen = () => {
         } else if (m.termKi) {
           // 記録がない場合の救済：期から推測 (現在の1年生の期から逆算)
           // 卒業年度 ≒ (現在の年度) + (卒業代の期 - 現在の1年生の期)
-          const currentFreshmanTerm = b.useScoreStore.getState().currentFreshmanTerm;
+          const currentFreshmanTerm = useScoreStore.getState().currentFreshmanTerm;
           const gradYear = currentFiscalYear + (currentFreshmanTerm - 3 - m.termKi);
           isActiveInYear = currentFiscalYear <= gradYear;
         }
       }
-
       const totalOfficial = isActiveInYear ? pastPracticeDays.length : presentCount + absentCount;
       const rate = totalOfficial > 0 ? (presentCount / totalOfficial) * 100 : 0;
       return { ...m, rate, presentCount, lateCount, earlyCount, absentCount };
@@ -210,29 +177,25 @@ const AttendanceScreen = () => {
     .sort((e, t) => {
       // 出席率順は維持
       if (Math.abs(t.rate - e.rate) > 0.001) return t.rate - e.rate;
-
       // 出席率が同じ場合の基本の並び順（メンバー管理画面と一致）
-      const n_grade = void 0 === e.grade || null === e.grade ? 99 : Number(e.grade),
-        l_grade = void 0 === t.grade || null === t.grade ? 99 : Number(t.grade),
-        s_idx = 0 === n_grade ? 99 : n_grade,
-        a_idx = 0 === l_grade ? 99 : l_grade;
+      const n_grade = undefined === e.grade || null === e.grade ? 99 : Number(e.grade);
+      const l_grade = undefined === t.grade || null === t.grade ? 99 : Number(t.grade);
+      const s_idx = 0 === n_grade ? 99 : n_grade;
+      const a_idx = 0 === l_grade ? 99 : l_grade;
       if (s_idx !== a_idx) return s_idx - a_idx;
-
       const c_func = (g_val) => {
-          const t_gen = (g_val || '').trim();
-          return '男子' === t_gen ? 0 : '女子' === t_gen ? 1 : 2;
-        },
-        u_val = c_func(e.gender) - c_func(t.gender);
+        const t_gen = (g_val || '').trim();
+        return '男子' === t_gen ? 0 : '女子' === t_gen ? 1 : 2;
+      };
+      const u_val = c_func(e.gender) - c_func(t.gender);
       return 0 !== u_val ? u_val : (e.name || '').localeCompare(t.name || '', 'ja');
     });
-
   const normalizeDate = (dStr) => {
     if (!dStr) return null;
     const parts = dStr.split('-');
     if (parts.length !== 3) return null;
     return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
   };
-
   const handlePickPDF = async () => {
     try {
       const res = await docPicker.getDocumentAsync({
@@ -243,13 +206,10 @@ const AttendanceScreen = () => {
       const asset = res.assets[0];
       const mimeType =
         asset.mimeType || (asset.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
-
       setLoadingMsg('予定表を読み込み中...');
-
       let base64 = '';
-      if (x.IS_WEB) {
+      if (IS_WEB) {
         const fileData = asset.file || (await fetch(asset.uri).then((r) => r.blob()));
-
         base64 = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => {
@@ -264,7 +224,6 @@ const AttendanceScreen = () => {
       } else {
         base64 = await fs.readAsStringAsync(asset.uri, { encoding: fs.EncodingType.Base64 });
       }
-
       // 鍵はアプリに無い。中継（Cloudflare Workers）へログインの証を付けて呼ぶ。
       // 以前は模型の一覧を引いて 1.5-flash を探していたが、1.5 はもう一覧に無く、
       // 中継は決めた模型しか通さないので、写真の読み取り・チャットと同じ 3.6-flash に固定する
@@ -272,7 +231,6 @@ const AttendanceScreen = () => {
       if (!中継.中継がある()) {
         throw new Error('AI機能の設定（中継の宛先）が見つかりません。');
       }
-
       const aiResponse = await 中継.中継へfetch('/v1beta/models/gemini-3.6-flash:generateContent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -290,7 +248,6 @@ const AttendanceScreen = () => {
           generationConfig: { temperature: 0.1 },
         }),
       });
-
       if (!aiResponse.ok) {
         const errText = await aiResponse.text();
         // 生の英文は利用者に見せない。原因を追えるよう、便りにだけ残す
@@ -313,22 +270,18 @@ const AttendanceScreen = () => {
         }
         throw new Error(`AI解析失敗(Status: ${aiResponse.status})`);
       }
-
       const data = await aiResponse.json();
       let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       // JSON部分を抽出
       const jsonMatch = text.match(/\[[\s\S]*\]/);
       if (jsonMatch) text = jsonMatch[0];
-
       if (!text || text.trim() === '') {
         throw new Error('AIからの応答内容が空、またはJSON形式ではありませんでした。');
       }
-
       let items = JSON.parse(text);
       const validatedItems = (Array.isArray(items) ? items : [])
         .map((i) => ({ date: normalizeDate(i.date), reason: i.reason }))
         .filter((i) => !!i.date);
-
       if (validatedItems.length > 0) {
         setAiPreviewItems(validatedItems);
       } else {
@@ -341,16 +294,15 @@ const AttendanceScreen = () => {
       setLoadingMsg(null);
     }
   };
-
   const saveAiDates = async () => {
     if (!aiPreviewItems || !activeGroupId) return;
     setLoadingMsg('予定を保存中...');
     try {
       for (const item of aiPreviewItems) {
-        await (0, firestore.setDoc)(
-          (0, firestore.doc)(db.db, `groups/${activeGroupId}/officialPracticeDays`, item.date),
-          { date: item.date, created: Date.now() }
-        );
+        await firestore.setDoc(firestore.doc(db, `groups/${activeGroupId}/officialPracticeDays`, item.date), {
+          date: item.date,
+          created: Date.now(),
+        });
       }
       setAiPreviewItems(null);
     } catch (e) {
@@ -359,500 +311,359 @@ const AttendanceScreen = () => {
       setLoadingMsg(null);
     }
   };
-
-  return (0, j.jsxs)(o.View, {
-    style: styles.container,
-    children: [
-      (0, j.jsxs)(o.View, {
-        style: styles.header,
-        children: [
-          (0, j.jsx)(o.Text, { style: styles.title, children: '出欠管理' }),
-          (0, j.jsxs)(o.View, {
-            style: styles.tabRow,
-            children: [
-              (0, j.jsx)(o.TouchableOpacity, {
-                style: [styles.tab, tab === 'stats' && styles.tabActive],
-                onPress: () => setTab('stats'),
-                children: (0, j.jsx)(o.Text, {
-                  style: [styles.tabText, tab === 'stats' && styles.tabTextActive],
-                  children: '出席統計',
-                }),
-              }),
-              (0, j.jsx)(o.TouchableOpacity, {
-                style: [styles.tab, tab === 'days' && styles.tabActive],
-                onPress: () => setTab('days'),
-                children: (0, j.jsx)(o.Text, {
-                  style: [styles.tabText, tab === 'days' && styles.tabTextActive],
-                  children: '練習日設定',
-                }),
-              }),
-            ],
-          }),
-        ],
-      }),
-      tab === 'stats' &&
-        (0, j.jsxs)(o.View, {
-          style: styles.rangeSelector,
-          children: [
-            (0, j.jsx)(o.TouchableOpacity, {
-              style: [styles.rangeBtn, rangeType === 'month' && styles.rangeBtnActive],
-              onPress: () => setRangeType('month'),
-              children: (0, j.jsx)(o.Text, {
-                style: [styles.rangeBtnText, rangeType === 'month' && styles.rangeBtnTextActive],
-                children: '月間',
-              }),
-            }),
-            (0, j.jsx)(o.TouchableOpacity, {
-              style: [styles.rangeBtn, rangeType === 'year' && styles.rangeBtnActive],
-              onPress: () => setRangeType('year'),
-              children: (0, j.jsx)(o.Text, {
-                style: [styles.rangeBtnText, rangeType === 'year' && styles.rangeBtnTextActive],
-                children: '年度',
-              }),
-            }),
-            (0, j.jsx)(o.TouchableOpacity, {
-              style: [styles.rangeBtn, rangeType === 'all' && styles.rangeBtnActive],
-              onPress: () => setRangeType('all'),
-              children: (0, j.jsx)(o.Text, {
-                style: [styles.rangeBtnText, rangeType === 'all' && styles.rangeBtnTextActive],
-                children: 'すべて',
-              }),
-            }),
-          ],
-        }),
-      (tab === 'days' || rangeType !== 'all') &&
-        (0, j.jsxs)(o.View, {
-          style: styles.monthNav,
-          children: [
-            (0, j.jsx)(o.TouchableOpacity, {
-              // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
-              accessible: !0,
-              accessibilityRole: 'button',
-              accessibilityLabel: '前の月へ',
-              'aria-label': '前の月へ',
-              onPress: () => (tab === 'days' || rangeType === 'month' ? changeMonth(-1) : changeYear(-1)),
-              children: (0, j.jsx)(m.Ionicons, { name: 'chevron-back', size: 24, color: '#007AFF' }),
-            }),
-            (0, j.jsxs)(o.Text, {
-              style: styles.monthText,
-              children:
-                tab === 'days' || rangeType === 'month'
-                  ? `${selectedYear}年 ${selectedMonth}月`
-                  : `${currentFiscalYear}年度`,
-            }),
-            (0, j.jsx)(o.TouchableOpacity, {
-              // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
-              accessible: !0,
-              accessibilityRole: 'button',
-              accessibilityLabel: '次の月へ',
-              'aria-label': '次の月へ',
-              onPress: () => (tab === 'days' || rangeType === 'month' ? changeMonth(1) : changeYear(1)),
-              children: (0, j.jsx)(m.Ionicons, { name: 'chevron-forward', size: 24, color: '#007AFF' }),
-            }),
-          ],
-        }),
-      tab === 'stats'
-        ? (0, j.jsxs)(o.View, {
-            style: { flex: 1 },
-            children: [
-              (0, j.jsx)(o.FlatList, {
-                data: stats,
-                keyExtractor: (i, idx) =>
-                  i.id && typeof i.id === 'string' ? i.id : `attendance-member-${idx}`,
-                contentContainerStyle: styles.listContent,
-                renderItem: ({ item: s }) =>
-                  (0, j.jsxs)(o.TouchableOpacity, {
-                    style: styles.memberCard,
-                    onPress: () => setSelectedMember(s),
-                    children: [
-                      (0, j.jsxs)(o.View, {
-                        style: styles.memberInfoMain,
-                        children: [
-                          (0, j.jsxs)(o.View, {
-                            style: styles.nameRow,
-                            children: [
-                              (0, j.jsx)(o.Text, {
-                                style: [
-                                  styles.genderDot,
-                                  {
-                                    color:
-                                      s.gender === '男子'
-                                        ? '#007AFF'
-                                        : s.gender === '女子'
-                                          ? '#FF2D55'
-                                          : '#8E8E93',
-                                  },
-                                ],
-                                children: '●',
-                              }),
-                              (0, j.jsx)(o.Text, { style: styles.memberName, children: s.name }),
-                            ],
-                          }),
-                          (0, j.jsxs)(o.Text, {
-                            style: styles.memberSub,
-                            children: [
-                              `${s.termKi ? s.termKi + '期 / ' : ''}${s.gender} / ${s.grade === 5 ? '卒業生' : s.grade === 0 ? 'その他' : s.grade + '年'}`,
-                            ],
-                          }),
-                        ],
-                      }),
-                      (0, j.jsxs)(o.View, {
-                        style: styles.statInfo,
-                        children: [
-                          (0, j.jsxs)(o.Text, { style: styles.rateText, children: [s.rate.toFixed(1), '%'] }),
-                          (0, j.jsxs)(o.Text, {
-                            style: styles.countsText,
-                            children: [s.presentCount, '/', filteredPracticeDays.length],
-                          }),
-                        ],
-                      }),
-                      (0, j.jsx)(m.Ionicons, {
-                        name: 'chevron-forward',
-                        size: 16,
-                        color: '#C7C7CC',
-                        style: { marginLeft: 8 },
-                      }),
-                    ],
-                  }),
-              }),
-            ],
-          })
-        : (0, j.jsxs)(o.ScrollView, {
-            style: styles.scroll,
-            children: [
-              (0, j.jsxs)(o.View, {
-                style: styles.aiSection,
-                children: [
-                  (0, j.jsxs)(o.View, {
-                    style: styles.aiTextContainer,
-                    children: [
-                      (0, j.jsx)(o.Text, {
-                        style: styles.aiTitle,
-                        children: 'AIで予定表をスキャンして自動入力',
-                      }),
-                      (0, j.jsx)(o.Text, {
-                        style: styles.aiDescription,
-                        children: '練習予定表（PDF/画像）をAIが解析し、カレンダーへ自動的に登録します。',
-                      }),
-                    ],
-                  }),
-                  (0, j.jsx)(o.TouchableOpacity, {
-                    style: styles.aiActionBtn,
-                    onPress: () => {
-                      handlePickPDF();
-                    },
-                    children: (0, j.jsx)(o.Text, {
-                      style: styles.aiActionBtnText,
-                      children: 'ファイルを選択',
-                    }),
-                  }),
-                ],
-              }),
-              aiPreviewItems &&
-                (0, j.jsxs)(o.View, {
-                  style: [
-                    styles.aiSection,
-                    { backgroundColor: '#F0F0FF', borderLeftWidth: 4, borderLeftColor: '#5856D6' },
-                  ],
-                  children: [
-                    (0, j.jsx)(o.Text, {
-                      style: [styles.aiTitle, { color: '#5856D6', marginBottom: 10 }],
-                      children: '解析結果プレビュー',
-                    }),
-                    aiPreviewItems.map((item, idx) =>
-                      (0, j.jsxs)(
-                        o.View,
+  return (
+    <o.View style={styles.container}>
+      <o.View style={styles.header}>
+        <o.Text style={styles.title}>出欠管理</o.Text>
+        <o.View style={styles.tabRow}>
+          <o.TouchableOpacity
+            style={[styles.tab, tab === 'stats' && styles.tabActive]}
+            onPress={() => setTab('stats')}
+          >
+            <o.Text style={[styles.tabText, tab === 'stats' && styles.tabTextActive]}>出席統計</o.Text>
+          </o.TouchableOpacity>
+          <o.TouchableOpacity
+            style={[styles.tab, tab === 'days' && styles.tabActive]}
+            onPress={() => setTab('days')}
+          >
+            <o.Text style={[styles.tabText, tab === 'days' && styles.tabTextActive]}>練習日設定</o.Text>
+          </o.TouchableOpacity>
+        </o.View>
+      </o.View>
+      {tab === 'stats' && (
+        <o.View style={styles.rangeSelector}>
+          <o.TouchableOpacity
+            style={[styles.rangeBtn, rangeType === 'month' && styles.rangeBtnActive]}
+            onPress={() => setRangeType('month')}
+          >
+            <o.Text style={[styles.rangeBtnText, rangeType === 'month' && styles.rangeBtnTextActive]}>
+              月間
+            </o.Text>
+          </o.TouchableOpacity>
+          <o.TouchableOpacity
+            style={[styles.rangeBtn, rangeType === 'year' && styles.rangeBtnActive]}
+            onPress={() => setRangeType('year')}
+          >
+            <o.Text style={[styles.rangeBtnText, rangeType === 'year' && styles.rangeBtnTextActive]}>
+              年度
+            </o.Text>
+          </o.TouchableOpacity>
+          <o.TouchableOpacity
+            style={[styles.rangeBtn, rangeType === 'all' && styles.rangeBtnActive]}
+            onPress={() => setRangeType('all')}
+          >
+            <o.Text style={[styles.rangeBtnText, rangeType === 'all' && styles.rangeBtnTextActive]}>
+              すべて
+            </o.Text>
+          </o.TouchableOpacity>
+        </o.View>
+      )}
+      {(tab === 'days' || rangeType !== 'all') && (
+        <o.View style={styles.monthNav}>
+          <o.TouchableOpacity // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel="前の月へ"
+            aria-label="前の月へ"
+            onPress={() => (tab === 'days' || rangeType === 'month' ? changeMonth(-1) : changeYear(-1))}
+          >
+            <Icons.Ionicons name="chevron-back" size={24} color="#007AFF" />
+          </o.TouchableOpacity>
+          <o.Text style={styles.monthText}>
+            {tab === 'days' || rangeType === 'month'
+              ? `${selectedYear}年 ${selectedMonth}月`
+              : `${currentFiscalYear}年度`}
+          </o.Text>
+          <o.TouchableOpacity // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel="次の月へ"
+            aria-label="次の月へ"
+            onPress={() => (tab === 'days' || rangeType === 'month' ? changeMonth(1) : changeYear(1))}
+          >
+            <Icons.Ionicons name="chevron-forward" size={24} color="#007AFF" />
+          </o.TouchableOpacity>
+        </o.View>
+      )}
+      {tab === 'stats' ? (
+        <o.View style={{ flex: 1 }}>
+          <o.FlatList
+            data={stats}
+            keyExtractor={(i, idx) => (i.id && typeof i.id === 'string' ? i.id : `attendance-member-${idx}`)}
+            contentContainerStyle={styles.listContent}
+            renderItem={({ item: s }) => (
+              <o.TouchableOpacity style={styles.memberCard} onPress={() => setSelectedMember(s)}>
+                <o.View style={styles.memberInfoMain}>
+                  <o.View style={styles.nameRow}>
+                    <o.Text
+                      style={[
+                        styles.genderDot,
                         {
-                          style: {
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
-                            paddingVertical: 5,
-                            borderBottomWidth: 0.5,
-                            borderBottomColor: '#CCC',
-                          },
-                          children: [
-                            (0, j.jsx)(o.Text, { style: { fontSize: 13 }, children: item.date }),
-                            (0, j.jsx)(o.Text, {
-                              style: { fontSize: 13, color: '#666' },
-                              children: item.reason || '練習日',
-                            }),
-                          ],
+                          color:
+                            s.gender === '男子' ? '#007AFF' : s.gender === '女子' ? '#FF2D55' : '#8E8E93',
                         },
-                        idx
-                      )
-                    ),
-                    (0, j.jsxs)(o.View, {
-                      style: { flexDirection: 'row', gap: 10, marginTop: 15 },
-                      children: [
-                        (0, j.jsx)(o.TouchableOpacity, {
-                          style: [styles.aiActionBtn, { flex: 1, backgroundColor: '#5856D6' }],
-                          onPress: saveAiDates,
-                          children: (0, j.jsx)(o.Text, {
-                            style: styles.aiActionBtnText,
-                            children: 'これらを保存する',
-                          }),
-                        }),
-                        (0, j.jsx)(o.TouchableOpacity, {
-                          style: [styles.aiActionBtn, { flex: 1, backgroundColor: '#8E8E93' }],
-                          onPress: () => setAiPreviewItems(null),
-                          children: (0, j.jsx)(o.Text, {
-                            style: styles.aiActionBtnText,
-                            children: 'キャンセル',
-                          }),
-                        }),
-                      ],
-                    }),
-                  ],
-                }),
-              (0, j.jsxs)(o.View, {
-                style: styles.calendarContainer,
-                children: [
-                  (0, j.jsx)(o.View, {
-                    style: styles.dowRow,
-                    children: ['日', '月', '火', '水', '木', '金', '土'].map((d, i) =>
-                      (0, j.jsx)(
-                        o.View,
-                        {
-                          style: styles.dowCell,
-                          children: (0, j.jsx)(o.Text, { style: styles.dowText, children: d }),
-                        },
-                        i
-                      )
-                    ),
-                  }),
-                  (0, j.jsx)(o.View, {
-                    style: styles.calendarGrid,
-                    children: Array.from({ length: new Date(selectedYear, selectedMonth - 1, 1).getDay() })
-                      .map((_, i) => (0, j.jsx)(o.View, { style: styles.calendarCellEmpty }, i))
-                      .concat(
-                        Array.from({ length: new Date(selectedYear, selectedMonth, 0).getDate() }).map(
-                          (_, i) => {
-                            const dStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`;
-                            const isP = !!practiceDays[dStr];
-                            return (0, j.jsx)(
-                              o.TouchableOpacity,
-                              {
-                                style: [styles.calendarCell, isP && styles.calendarCellActive],
-                                onPress: () => togglePracticeDay(dStr),
-                                children: (0, j.jsx)(o.Text, {
-                                  style: [styles.calendarCellText, isP && styles.calendarCellTextActive],
-                                  children: i + 1,
-                                }),
-                              },
-                              dStr
-                            );
-                          }
-                        )
-                      ),
-                  }),
-                ],
-              }),
-              (0, j.jsxs)(o.View, {
-                style: styles.summaryCard,
-                children: [
-                  (0, j.jsx)(o.Text, {
-                    style: styles.summaryTitle,
-                    children: `${selectedMonth}月の練習日数`,
-                  }),
-                  (0, j.jsx)(o.Text, {
-                    style: styles.summaryValue,
-                    children: `${filteredPracticeDays.length} 日`,
-                  }),
-                ],
-              }),
-            ],
-          }),
-      loadingMsg &&
-        (0, j.jsxs)(o.View, {
-          style: styles.loadingOverlay,
-          children: [
-            (0, j.jsx)(o.ActivityIndicator, { size: 'large', color: '#007AFF' }),
-            (0, j.jsx)(o.Text, { style: styles.loadingText, children: loadingMsg }),
-          ],
-        }),
-      selectedMember &&
-        (0, j.jsx)(o.Modal, {
-          visible: true,
-          transparent: true,
-          animationType: 'slide',
-          // 見るだけの窓。端末の戻るでも、外を押しても閉じる
-          onRequestClose: () => setSelectedMember(null),
-          children: (0, j.jsxs)(o.View, {
-            style: styles.modalOverlay,
-            children: [
-            (0, j.jsx)(o.TouchableOpacity, {
-              style: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-              activeOpacity: 1,
-              accessibilityLabel: '閉じる',
-              onPress: () => setSelectedMember(null),
-            }),
-            (0, j.jsxs)(o.View, {
-              // 背景の板より上に置く。置かないと、板が中身の押すを横取りする
-              style: [styles.modalContent, { height: '85%', zIndex: 1 }],
-              children: [
-                (0, j.jsxs)(o.View, {
-                  style: styles.modalHeader,
-                  children: [
-                    (0, j.jsxs)(o.View, {
-                      // 名前が長くても閉じるボタンを押し出さない。名前は折り返す
-                      style: styles.modalHeaderMain,
-                      children: [
-                        (0, j.jsx)(o.Text, { style: styles.modalTitle, children: selectedMember.name }),
-                        (0, j.jsxs)(o.Text, {
-                          style: styles.memberSub,
-                          children: [
-                            `${selectedMember.gender} / ${selectedMember.grade === 5 ? '卒業生' : selectedMember.grade === 0 ? 'その他' : selectedMember.grade + '年'}`,
-                          ],
-                        }),
-                      ],
-                    }),
-                    (0, j.jsx)(o.TouchableOpacity, {
-                      style: styles.closeBtn,
-                      // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
-                      accessible: !0,
-                      accessibilityRole: 'button',
-                      accessibilityLabel: '閉じる',
-                      'aria-label': '閉じる',
-                      onPress: () => setSelectedMember(null),
-                      children: (0, j.jsx)(m.Ionicons, { name: 'close', size: 24, color: '#8E8E93' }),
-                    }),
-                  ],
-                }),
-                (0, j.jsxs)(o.View, {
-                  style: styles.modalStatRow,
-                  children: [
-                    (0, j.jsxs)(o.View, {
-                      style: styles.modalStatItem,
-                      children: [
-                        (0, j.jsx)(o.Text, {
-                          style: styles.modalStatVal,
-                          children: `${selectedMember.rate.toFixed(1)}%`,
-                        }),
-                        (0, j.jsx)(o.Text, { style: styles.modalStatLab, children: '出席率' }),
-                      ],
-                    }),
-                    (0, j.jsxs)(o.View, {
-                      style: styles.modalStatItem,
-                      children: [
-                        (0, j.jsx)(o.Text, {
-                          style: [styles.modalStatVal, { color: '#34C759' }],
-                          children: selectedMember.presentCount,
-                        }),
-                        (0, j.jsx)(o.Text, { style: styles.modalStatLab, children: '出席' }),
-                      ],
-                    }),
-                    (0, j.jsxs)(o.View, {
-                      style: styles.modalStatItem,
-                      children: [
-                        (0, j.jsx)(o.Text, {
-                          style: [styles.modalStatVal, { color: '#FF9500' }],
-                          children: selectedMember.lateCount,
-                        }),
-                        (0, j.jsx)(o.Text, { style: styles.modalStatLab, children: '遅刻' }),
-                      ],
-                    }),
-                    (0, j.jsxs)(o.View, {
-                      style: styles.modalStatItem,
-                      children: [
-                        (0, j.jsx)(o.Text, {
-                          style: [styles.modalStatVal, { color: '#FF9500' }],
-                          children: selectedMember.earlyCount,
-                        }),
-                        (0, j.jsx)(o.Text, { style: styles.modalStatLab, children: '早退' }),
-                      ],
-                    }),
-                    (0, j.jsxs)(o.View, {
-                      style: styles.modalStatItem,
-                      children: [
-                        (0, j.jsx)(o.Text, {
-                          style: [styles.modalStatVal, { color: '#FF3B30' }],
-                          children: selectedMember.absentCount,
-                        }),
-                        (0, j.jsx)(o.Text, { style: styles.modalStatLab, children: '欠席' }),
-                      ],
-                    }),
-                  ],
-                }),
-                (0, j.jsx)(o.FlatList, {
-                  data: filteredPracticeDays,
-                  keyExtractor: (d) => String(d),
-                  contentContainerStyle: { paddingBottom: 30 },
-                  renderItem: ({ item: d }) => {
-                    const s = getAttendanceStatus(d, selectedMember.id);
-                    const isFuture = d > getLocalDateString(new Date());
-                    return (0, j.jsxs)(o.View, {
-                      style: styles.historyRow,
-                      children: [
-                        (0, j.jsxs)(o.View, {
-                          style: { flexDirection: 'row', alignItems: 'center' },
-                          children: [
-                            (0, j.jsx)(m.Ionicons, {
-                              name:
-                                s === 'present'
-                                  ? 'checkmark-circle'
-                                  : s === 'late' || s === 'early'
-                                    ? 'time-outline'
-                                    : s === 'absent'
-                                      ? 'close-circle'
-                                      : 'ellipse-outline',
-                              size: 20,
-                              color:
-                                s === 'present'
-                                  ? '#34C759'
-                                  : s === 'late' || s === 'early'
-                                    ? '#FF9500'
-                                    : s === 'absent'
-                                      ? '#FF3B30'
-                                      : '#C7C7CC',
-                              style: { marginRight: 10 },
-                            }),
-                            (0, j.jsx)(o.Text, {
-                              style: { fontSize: 15, color: isFuture ? '#8E8E93' : '#000' },
-                              children: d,
-                            }),
-                          ],
-                        }),
-                        (0, j.jsx)(o.Text, {
-                          style: {
-                            fontSize: 14,
-                            fontWeight: '600',
-                            color:
-                              s === 'present'
-                                ? '#34C759'
-                                : s === 'late'
-                                  ? '#FF9500'
-                                  : s === 'early'
-                                    ? '#FF9500'
-                                    : s === 'absent'
-                                      ? '#FF3B30'
-                                      : '#8E8E93',
-                          },
-                          children:
+                      ]}
+                    >
+                      ●
+                    </o.Text>
+                    <o.Text style={styles.memberName}>{s.name}</o.Text>
+                  </o.View>
+                  <o.Text
+                    style={styles.memberSub}
+                  >{`${s.termKi ? s.termKi + '期 / ' : ''}${s.gender} / ${s.grade === 5 ? '卒業生' : s.grade === 0 ? 'その他' : s.grade + '年'}`}</o.Text>
+                </o.View>
+                <o.View style={styles.statInfo}>
+                  <o.Text style={styles.rateText}>{s.rate.toFixed(1)}%</o.Text>
+                  <o.Text style={styles.countsText}>
+                    {s.presentCount}/{filteredPracticeDays.length}
+                  </o.Text>
+                </o.View>
+                <Icons.Ionicons name="chevron-forward" size={16} color="#C7C7CC" style={{ marginLeft: 8 }} />
+              </o.TouchableOpacity>
+            )}
+          />
+        </o.View>
+      ) : (
+        <o.ScrollView style={styles.scroll}>
+          <o.View style={styles.aiSection}>
+            <o.View style={styles.aiTextContainer}>
+              <o.Text style={styles.aiTitle}>AIで予定表をスキャンして自動入力</o.Text>
+              <o.Text style={styles.aiDescription}>
+                練習予定表（PDF/画像）をAIが解析し、カレンダーへ自動的に登録します。
+              </o.Text>
+            </o.View>
+            <o.TouchableOpacity
+              style={styles.aiActionBtn}
+              onPress={() => {
+                handlePickPDF();
+              }}
+            >
+              <o.Text style={styles.aiActionBtnText}>ファイルを選択</o.Text>
+            </o.TouchableOpacity>
+          </o.View>
+          {aiPreviewItems && (
+            <o.View
+              style={[
+                styles.aiSection,
+                { backgroundColor: '#F0F0FF', borderLeftWidth: 4, borderLeftColor: '#5856D6' },
+              ]}
+            >
+              <o.Text style={[styles.aiTitle, { color: '#5856D6', marginBottom: 10 }]}>
+                解析結果プレビュー
+              </o.Text>
+              {aiPreviewItems.map((item, idx) => (
+                <o.View
+                  key={idx}
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    paddingVertical: 5,
+                    borderBottomWidth: 0.5,
+                    borderBottomColor: '#CCC',
+                  }}
+                >
+                  <o.Text style={{ fontSize: 13 }}>{item.date}</o.Text>
+                  <o.Text style={{ fontSize: 13, color: '#666' }}>{item.reason || '練習日'}</o.Text>
+                </o.View>
+              ))}
+              <o.View style={{ flexDirection: 'row', gap: 10, marginTop: 15 }}>
+                <o.TouchableOpacity
+                  style={[styles.aiActionBtn, { flex: 1, backgroundColor: '#5856D6' }]}
+                  onPress={saveAiDates}
+                >
+                  <o.Text style={styles.aiActionBtnText}>これらを保存する</o.Text>
+                </o.TouchableOpacity>
+                <o.TouchableOpacity
+                  style={[styles.aiActionBtn, { flex: 1, backgroundColor: '#8E8E93' }]}
+                  onPress={() => setAiPreviewItems(null)}
+                >
+                  <o.Text style={styles.aiActionBtnText}>キャンセル</o.Text>
+                </o.TouchableOpacity>
+              </o.View>
+            </o.View>
+          )}
+          <o.View style={styles.calendarContainer}>
+            <o.View style={styles.dowRow}>
+              {['日', '月', '火', '水', '木', '金', '土'].map((d, i) => (
+                <o.View key={i} style={styles.dowCell}>
+                  <o.Text style={styles.dowText}>{d}</o.Text>
+                </o.View>
+              ))}
+            </o.View>
+            <o.View style={styles.calendarGrid}>
+              {Array.from({ length: new Date(selectedYear, selectedMonth - 1, 1).getDay() })
+                .map((_, i) => <o.View key={i} style={styles.calendarCellEmpty} />)
+                .concat(
+                  Array.from({ length: new Date(selectedYear, selectedMonth, 0).getDate() }).map((_, i) => {
+                    const dStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`;
+                    const isP = !!practiceDays[dStr];
+                    return (
+                      <o.TouchableOpacity
+                        key={dStr}
+                        style={[styles.calendarCell, isP && styles.calendarCellActive]}
+                        onPress={() => togglePracticeDay(dStr)}
+                      >
+                        <o.Text style={[styles.calendarCellText, isP && styles.calendarCellTextActive]}>
+                          {i + 1}
+                        </o.Text>
+                      </o.TouchableOpacity>
+                    );
+                  })
+                )}
+            </o.View>
+          </o.View>
+          <o.View style={styles.summaryCard}>
+            <o.Text style={styles.summaryTitle}>{`${selectedMonth}月の練習日数`}</o.Text>
+            <o.Text style={styles.summaryValue}>{`${filteredPracticeDays.length} 日`}</o.Text>
+          </o.View>
+        </o.ScrollView>
+      )}
+      {loadingMsg && (
+        <o.View style={styles.loadingOverlay}>
+          <o.ActivityIndicator size="large" color="#007AFF" />
+          <o.Text style={styles.loadingText}>{loadingMsg}</o.Text>
+        </o.View>
+      )}
+      {selectedMember && (
+        <o.Modal
+          visible
+          transparent
+          animationType="slide" // 見るだけの窓。端末の戻るでも、外を押しても閉じる
+          onRequestClose={() => setSelectedMember(null)}
+        >
+          <o.View style={styles.modalOverlay}>
+            <o.TouchableOpacity
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+              activeOpacity={1}
+              accessibilityLabel="閉じる"
+              onPress={() => setSelectedMember(null)}
+            />
+            <o.View // 背景の板より上に置く。置かないと、板が中身の押すを横取りする
+              style={[styles.modalContent, { height: '85%', zIndex: 1 }]}
+            >
+              <o.View style={styles.modalHeader}>
+                <o.View // 名前が長くても閉じるボタンを押し出さない。名前は折り返す
+                  style={styles.modalHeaderMain}
+                >
+                  <o.Text style={styles.modalTitle}>{selectedMember.name}</o.Text>
+                  <o.Text
+                    style={styles.memberSub}
+                  >{`${selectedMember.gender} / ${selectedMember.grade === 5 ? '卒業生' : selectedMember.grade === 0 ? 'その他' : selectedMember.grade + '年'}`}</o.Text>
+                </o.View>
+                <o.TouchableOpacity
+                  style={styles.closeBtn} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                  accessible
+                  accessibilityRole="button"
+                  accessibilityLabel="閉じる"
+                  aria-label="閉じる"
+                  onPress={() => setSelectedMember(null)}
+                >
+                  <Icons.Ionicons name="close" size={24} color="#8E8E93" />
+                </o.TouchableOpacity>
+              </o.View>
+              <o.View style={styles.modalStatRow}>
+                <o.View style={styles.modalStatItem}>
+                  <o.Text style={styles.modalStatVal}>{`${selectedMember.rate.toFixed(1)}%`}</o.Text>
+                  <o.Text style={styles.modalStatLab}>出席率</o.Text>
+                </o.View>
+                <o.View style={styles.modalStatItem}>
+                  <o.Text style={[styles.modalStatVal, { color: '#34C759' }]}>
+                    {selectedMember.presentCount}
+                  </o.Text>
+                  <o.Text style={styles.modalStatLab}>出席</o.Text>
+                </o.View>
+                <o.View style={styles.modalStatItem}>
+                  <o.Text style={[styles.modalStatVal, { color: '#FF9500' }]}>
+                    {selectedMember.lateCount}
+                  </o.Text>
+                  <o.Text style={styles.modalStatLab}>遅刻</o.Text>
+                </o.View>
+                <o.View style={styles.modalStatItem}>
+                  <o.Text style={[styles.modalStatVal, { color: '#FF9500' }]}>
+                    {selectedMember.earlyCount}
+                  </o.Text>
+                  <o.Text style={styles.modalStatLab}>早退</o.Text>
+                </o.View>
+                <o.View style={styles.modalStatItem}>
+                  <o.Text style={[styles.modalStatVal, { color: '#FF3B30' }]}>
+                    {selectedMember.absentCount}
+                  </o.Text>
+                  <o.Text style={styles.modalStatLab}>欠席</o.Text>
+                </o.View>
+              </o.View>
+              <o.FlatList
+                data={filteredPracticeDays}
+                keyExtractor={(d) => String(d)}
+                contentContainerStyle={{ paddingBottom: 30 }}
+                renderItem={({ item: d }) => {
+                  const s = getAttendanceStatus(d, selectedMember.id);
+                  const isFuture = d > getLocalDateString(new Date());
+                  return (
+                    <o.View style={styles.historyRow}>
+                      <o.View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Icons.Ionicons
+                          name={
                             s === 'present'
-                              ? '出席'
+                              ? 'checkmark-circle'
+                              : s === 'late' || s === 'early'
+                                ? 'time-outline'
+                                : s === 'absent'
+                                  ? 'close-circle'
+                                  : 'ellipse-outline'
+                          }
+                          size={20}
+                          color={
+                            s === 'present'
+                              ? '#34C759'
+                              : s === 'late' || s === 'early'
+                                ? '#FF9500'
+                                : s === 'absent'
+                                  ? '#FF3B30'
+                                  : '#C7C7CC'
+                          }
+                          style={{ marginRight: 10 }}
+                        />
+                        <o.Text style={{ fontSize: 15, color: isFuture ? '#8E8E93' : '#000' }}>{d}</o.Text>
+                      </o.View>
+                      <o.Text
+                        style={{
+                          fontSize: 14,
+                          fontWeight: '600',
+                          color:
+                            s === 'present'
+                              ? '#34C759'
                               : s === 'late'
-                                ? '遅刻'
+                                ? '#FF9500'
                                 : s === 'early'
-                                  ? '早退'
+                                  ? '#FF9500'
                                   : s === 'absent'
-                                    ? '欠席'
-                                    : isFuture
-                                      ? '予定'
-                                      : '記録なし',
-                        }),
-                      ],
-                    });
-                  },
-                }),
-              ],
-            }),
-            ],
-          }),
-        }),
-    ],
-  });
+                                    ? '#FF3B30'
+                                    : '#8E8E93',
+                        }}
+                      >
+                        {s === 'present'
+                          ? '出席'
+                          : s === 'late'
+                            ? '遅刻'
+                            : s === 'early'
+                              ? '早退'
+                              : s === 'absent'
+                                ? '欠席'
+                                : isFuture
+                                  ? '予定'
+                                  : '記録なし'}
+                      </o.Text>
+                    </o.View>
+                  );
+                }}
+              />
+            </o.View>
+          </o.View>
+        </o.Modal>
+      )}
+    </o.View>
+  );
 };
-
 const styles = o.StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F2F2F7' },
   header: { backgroundColor: '#FFF', paddingHorizontal: 20, paddingTop: 60, paddingBottom: 15 },
@@ -955,7 +766,7 @@ const styles = o.StyleSheet.create({
   },
   modalContent: Object.assign(
     { backgroundColor: '#FFF', width: '95%', padding: 20, borderRadius: 20 },
-    (0, F.getShadowStyle)({
+    getShadowStyle({
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 5 },
       shadowOpacity: 0.3,
@@ -998,3 +809,5 @@ const styles = o.StyleSheet.create({
     borderBottomColor: '#F2F2F7',
   },
 });
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.AttendanceScreen = AttendanceScreen;

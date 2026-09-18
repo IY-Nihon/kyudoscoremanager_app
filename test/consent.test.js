@@ -197,9 +197,11 @@ test('新規登録で書く項目が、決まりの許す項目に収まって�
   // 「private の直前の setDoc」を取ると、private を書く setDoc 自身を掴む
   const 私用の場所 = 画面.indexOf("'private', 'consent'");
   assert.ok(私用の場所 > 0, 'private/consent へ書いている所が見つからない');
-  const 私用のsetDoc = 画面.slice(0, 私用の場所).lastIndexOf('setDoc)(');
+  // 読める形に直したので setDoc(。前の (0, a.setDoc)( も受ける
+  const 最後のsetDoc = (s) => Math.max(s.lastIndexOf('setDoc)('), s.lastIndexOf('setDoc('));
+  const 私用のsetDoc = 最後のsetDoc(画面.slice(0, 私用の場所));
   assert.ok(私用のsetDoc > 0, 'private へ書いている setDoc が見つからない');
-  const 公開のsetDoc = 画面.slice(0, 私用のsetDoc).lastIndexOf('setDoc)(');
+  const 公開のsetDoc = 最後のsetDoc(画面.slice(0, 私用のsetDoc));
   assert.ok(公開のsetDoc > 0, '公開の帳面へ書いている setDoc が見つからない');
   const 帳面へ = 画面.slice(公開のsetDoc, 私用のsetDoc);
   const 直書き = [...帳面へ.matchAll(/([a-zA-Z]+):\s/g)].map((m) => m[1]);

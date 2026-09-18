@@ -1,32 +1,15 @@
-/**
- * Module ID: 1041
- */
 'use strict';
 
-const _e = exports;
-
-('use strict');
-function e(e) {
-  return e && e.__esModule ? e : { default: e };
-}
-(Object.defineProperty(_e, '__esModule', { value: !0 }),
-  Object.defineProperty(_e, 'ErrorBoundary', {
-    enumerable: !0,
-    get: function () {
-      return f;
-    },
-  }));
-var t = require('react'),
-  o = e(require('./View')),
-  n = e(require('./Text')),
-  l = e(require('./TouchableOpacity')),
-  s = e(require('./StyleSheet')),
-  c = require('./useScoreStore'),
-  u = require('./themedJsx');
-class f extends t.Component {
-  state = { hasError: !1, error: null };
+const React = require('react');
+const View = require('./View').default;
+const Text = require('./Text').default;
+const TouchableOpacity = require('./TouchableOpacity').default;
+const StyleSheet = require('./StyleSheet').default;
+const { useScoreStore } = require('./useScoreStore');
+class ErrorBoundary extends React.Component {
+  state = { hasError: false, error: null };
   static getDerivedStateFromError(e) {
-    return { hasError: !0, error: e };
+    return { hasError: true, error: e };
   }
   componentDidCatch(e, t) {
     console.error('Uncaught error:', e, t);
@@ -38,27 +21,25 @@ class f extends t.Component {
     }
   }
   handleReset = () => {
-    (c.useScoreStore.getState().clearAllData(), this.setState({ hasError: !1, error: null }));
+    useScoreStore.getState().clearAllData();
+    this.setState({ hasError: false, error: null });
   };
   render() {
-    return this.state.hasError
-      ? (0, u.jsxs)(o.default, {
-          style: h.container,
-          children: [
-            (0, u.jsx)(n.default, { style: h.title, children: '申し訳ありません' }),
-            (0, u.jsx)(n.default, { style: h.message, children: '予期せぬエラーが発生しました。' }),
-            (0, u.jsx)(n.default, { style: h.errorText, children: this.state.error?.toString() }),
-            (0, u.jsx)(l.default, {
-              style: h.button,
-              onPress: this.handleReset,
-              children: (0, u.jsx)(n.default, { style: h.buttonText, children: 'データをリセットして復旧' }),
-            }),
-          ],
-        })
-      : this.props.children;
+    return this.state.hasError ? (
+      <View style={h.container}>
+        <Text style={h.title}>申し訳ありません</Text>
+        <Text style={h.message}>予期せぬエラーが発生しました。</Text>
+        <Text style={h.errorText}>{this.state.error?.toString()}</Text>
+        <TouchableOpacity style={h.button} onPress={this.handleReset}>
+          <Text style={h.buttonText}>データをリセットして復旧</Text>
+        </TouchableOpacity>
+      </View>
+    ) : (
+      this.props.children
+    );
   }
 }
-const h = s.default.create({
+const h = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F2F2F7',
@@ -80,3 +61,5 @@ const h = s.default.create({
   button: { backgroundColor: '#007AFF', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8 },
   buttonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
 });
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.ErrorBoundary = ErrorBoundary;

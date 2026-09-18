@@ -37,11 +37,13 @@ test('弓具：画面が取り出すものが、すべてストアに在る', ()
   // ストア側に定義があるか突き合わせる。1 の再発を防ぐ
   const 画面 = 読む('src/MemberScreen.js');
   const 店 = 読む('src/useScoreStore.js');
-  const m = 画面.match(/const\s*\{([^}]*)\}\s*=\s*\(0,\s*x\.useScoreStore\)\(\)/);
+  // 読める形に直したので useScoreStore()。前の (0, x.useScoreStore)() も受ける
+  const m = 画面.match(/const\s*\{([^}]*)\}\s*=\s*(?:\(0,\s*x\.useScoreStore\)|useScoreStore)\(\)/);
   assert.ok(m, 'MemberScreen が useScoreStore から取り出している所が見つかりません');
   const 名たち = m[1]
     .split(',')
-    .map((x) => x.split(':')[0].trim())
+    // 「名: 別名 = 既定」「名 = 既定」のどちらも、名だけを取る
+    .map((x) => x.split(/[:=]/)[0].trim())
     .filter(Boolean);
   assert.ok(名たち.length, '取り出している名前が読めません');
   for (const 名 of 名たち) {
@@ -88,7 +90,8 @@ test('弓具：他人の行では、弓力も「未登録」も出さない', ()
   assert.ok(i > 0, '一覧の弓具の欄が見つかりません');
   const 節 = 画面.slice(i, i + 900);
   assert.ok(
-    /'member'\s*===\s*E\s*&&\s*e\.id\s*!==\s*w/.test(節),
+    // 読める形に直したので activeRole / myMemberId。前の E / w も受ける
+    /'member'\s*===\s*(?:E|activeRole)\s*&&\s*e\.id\s*!==\s*(?:w|myMemberId)/.test(節),
     '一覧の弓具の欄で、個人ログインの他人を弾いていません'
   );
 });
