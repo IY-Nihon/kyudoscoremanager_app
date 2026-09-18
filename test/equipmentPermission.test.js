@@ -90,8 +90,8 @@ test('弓具：他人の行では、弓力も「未登録」も出さない', ()
   assert.ok(i > 0, '一覧の弓具の欄が見つかりません');
   const 節 = 画面.slice(i, i + 900);
   assert.ok(
-    // 読める形に直したので activeRole / myMemberId。前の E / w も受ける
-    /'member'\s*===\s*(?:E|activeRole)\s*&&\s*e\.id\s*!==\s*(?:w|myMemberId)/.test(節),
+    // 読める形に直したので activeRole / 部員.id / myMemberId。前の E / e.id / w も受ける
+    /'member'\s*===\s*(?:E|activeRole)\s*&&\s*(?:e|部員)\.id\s*!==\s*(?:w|myMemberId)/.test(節),
     '一覧の弓具の欄で、個人ログインの他人を弾いていません'
   );
 });
