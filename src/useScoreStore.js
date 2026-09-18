@@ -32,7 +32,7 @@ function 書けないことを一度だけ知らせる() {
       '端末に保存できませんでした',
       '端末の空きが足りないようです。このまま続けると、入れた記録が次に開いたときに消えていることがあります。ほかのアプリやブラウザの保存領域を空けてから、もう一度お試しください。'
     );
-  } catch (t) {
+  } catch (_) {
     /* 知らせが出せなくても、本来の動きは続ける */
   }
 }
@@ -882,10 +882,10 @@ const 共有履歴へ積む = (前の盤面, 後の盤面, 状態) => {
       RTDB.set(
         RTDB.ref(Firebaseの器.rtdb, `${履歴の根}/${位置}`),
         Object.assign(
-          { 前: 前, 後: 後, 本数: 本数, at: Date.now() },
-          差分 ? { 差分: 差分 } : null,
-          項目 ? { 項目: 項目 } : null,
-          射数 ? { 射数: 射数 } : null
+          { 前, 後, 本数, at: Date.now() },
+          差分 ? { 差分 } : null,
+          項目 ? { 項目 } : null,
+          射数 ? { 射数 } : null
         )
       ).catch((誤り) => console.error('[Store] 共有履歴の書き込みに失敗:', 誤り));
       // 新しい操作をしたので、やり直せる分はここで打ち切る
@@ -1257,7 +1257,7 @@ const useScoreStore = zustand.create()(
           const 今 = Date.now();
           const 整えた = Array.from(new Set((タグたち || []).map(normalizeTag).filter(Boolean)));
           書く({ tagTemplates: 整えた, lastLocalChange: 今 });
-          const { activeGroupId: activeGroupId, isNetworkOnline: isNetworkOnline } = 状態();
+          const { activeGroupId, isNetworkOnline } = 状態();
           if (isNetworkOnline && activeGroupId)
             try {
               await Firestore.setDoc(
@@ -1280,7 +1280,7 @@ const useScoreStore = zustand.create()(
             const 今 = Date.now();
             const 新しい一覧 = [...今の, 整えた];
             書く({ tagTemplates: 新しい一覧, lastLocalChange: 今 });
-            const { activeGroupId: activeGroupId, isNetworkOnline: isNetworkOnline } = 状態();
+            const { activeGroupId, isNetworkOnline } = 状態();
             if (isNetworkOnline && activeGroupId)
               try {
                 await Firestore.setDoc(
@@ -1301,7 +1301,7 @@ const useScoreStore = zustand.create()(
           const 今 = Date.now();
           const 新しい一覧 = (状態().tagTemplates || []).filter((x) => x !== タグ);
           書く({ tagTemplates: 新しい一覧, lastLocalChange: 今 });
-          const { activeGroupId: activeGroupId, isNetworkOnline: isNetworkOnline } = 状態();
+          const { activeGroupId, isNetworkOnline } = 状態();
           if (isNetworkOnline && activeGroupId)
             try {
               await Firestore.setDoc(
@@ -1373,11 +1373,7 @@ const useScoreStore = zustand.create()(
             redoStack: [],
             lastLocalChange: Date.now(),
           });
-          const {
-            isLiveActive: isLiveActive,
-            liveSessionName: liveSessionName,
-            shotsPerRound: shotsPerRound,
-          } = 状態();
+          const { isLiveActive, liveSessionName, shotsPerRound } = 状態();
           if (isLiveActive && liveSessionName) ライブへ盤面を送る(liveSessionName, 直した, shotsPerRound);
         },
         /**
@@ -1413,8 +1409,8 @@ const useScoreStore = zustand.create()(
             redoStack: [],
             lastLocalChange: Date.now(),
           });
-          const { isLiveActive: ライブ中, liveSessionName: 名, shotsPerRound: 射数 } = 状態();
-          if (ライブ中 && 名) ライブへ盤面を送る(名, 直した, 射数);
+          const { isLiveActive: ライブ中, liveSessionName: ライブ名, shotsPerRound: 本数 } = 状態();
+          if (ライブ中 && ライブ名) ライブへ盤面を送る(ライブ名, 直した, 本数);
         },
         /**
          * 合計の列が数える範囲を切り替える。
@@ -1446,8 +1442,8 @@ const useScoreStore = zustand.create()(
             redoStack: [],
             lastLocalChange: Date.now(),
           });
-          const { isLiveActive: ライブ中, liveSessionName: 名, shotsPerRound: 射数 } = 状態();
-          if (ライブ中 && 名) ライブへ盤面を送る(名, 直した, 射数);
+          const { isLiveActive: ライブ中, liveSessionName: ライブ名, shotsPerRound: 本数 } = 状態();
+          if (ライブ中 && ライブ名) ライブへ盤面を送る(ライブ名, 直した, 本数);
         },
         /**
          * 立ち順を入れ替える。押した列を、並びで1つ前か後ろへ動かす。
@@ -1482,8 +1478,8 @@ const useScoreStore = zustand.create()(
             redoStack: [],
             lastLocalChange: Date.now(),
           });
-          const { isLiveActive: ラ, liveSessionName: な, shotsPerRound: しゃ } = 状態();
-          if (ラ && な) ライブへ盤面を送る(な, 直した, しゃ);
+          const { isLiveActive: ライブ中, liveSessionName: ライブ名, shotsPerRound: 本数 } = 状態();
+          if (ライブ中 && ライブ名) ライブへ盤面を送る(ライブ名, 直した, 本数);
         },
         /**
          * 立ち順を入れ替える。掴んだ列を、指した場所へ移す。
@@ -1515,8 +1511,8 @@ const useScoreStore = zustand.create()(
             redoStack: [],
             lastLocalChange: Date.now(),
           });
-          const { isLiveActive: ラ2, liveSessionName: な2, shotsPerRound: しゃ2 } = 状態();
-          if (ラ2 && な2) ライブへ盤面を送る(な2, 直した, しゃ2);
+          const { isLiveActive: ライブ中, liveSessionName: ライブ名, shotsPerRound: 本数 } = 状態();
+          if (ライブ中 && ライブ名) ライブへ盤面を送る(ライブ名, 直した, 本数);
         },
         /**
          * 合計の列を足す。
@@ -1554,11 +1550,7 @@ const useScoreStore = zustand.create()(
             redoStack: [],
             lastLocalChange: Date.now(),
           });
-          const {
-            isLiveActive: isLiveActive,
-            liveSessionName: liveSessionName,
-            shotsPerRound: shotsPerRound,
-          } = 状態();
+          const { isLiveActive, liveSessionName, shotsPerRound } = 状態();
           if (isLiveActive && liveSessionName) ライブへ盤面を送る(liveSessionName, 直した, shotsPerRound);
         },
         deleteArcher: (射手ID) => {
@@ -1572,11 +1564,7 @@ const useScoreStore = zustand.create()(
             archers: 残り,
             lastLocalChange: 今,
           });
-          const {
-            isLiveActive: isLiveActive,
-            liveSessionName: liveSessionName,
-            shotsPerRound: shotsPerRound,
-          } = 状態();
+          const { isLiveActive, liveSessionName, shotsPerRound } = 状態();
           if (isLiveActive && liveSessionName) ライブへ盤面を送る(liveSessionName, 残り, shotsPerRound);
         },
         applyOCRResult: (読み取った射手) => {
@@ -1589,11 +1577,7 @@ const useScoreStore = zustand.create()(
             redoStack: [],
             lastLocalChange: 今,
           });
-          const {
-            isLiveActive: isLiveActive,
-            liveSessionName: liveSessionName,
-            shotsPerRound: shotsPerRound,
-          } = 状態();
+          const { isLiveActive, liveSessionName, shotsPerRound } = 状態();
           if (isLiveActive && liveSessionName)
             ライブへ盤面を送る(liveSessionName, 読み取った射手, shotsPerRound);
         },
@@ -1698,7 +1682,7 @@ const useScoreStore = zustand.create()(
         },
         updateMark: (射手ID, 番, 印) => {
           if (状態().書き換えを止めるか()) return; // 閲覧用では○×の直接の書き換えも止める
-          const { archers: 元, isLiveActive: isLiveActive, liveSessionName: liveSessionName } = 状態();
+          const { archers: 元, isLiveActive, liveSessionName } = 状態();
           const 今 = Date.now();
           const 直した = (元 || []).map((射手) => {
             if (射手.id === 射手ID) {
@@ -1718,7 +1702,7 @@ const useScoreStore = zustand.create()(
         toggleMark: (射手ID, 番) => {
           // 閲覧用は黙って何も起きないと、壊れたと思わせる
           if (状態().書き換えを止めるか()) return void 書く({ 閲覧でますを押した時刻: Date.now() });
-          const { archers: 元, isLiveActive: isLiveActive, liveSessionName: liveSessionName } = 状態();
+          const { archers: 元, isLiveActive, liveSessionName } = 状態();
           const 今 = Date.now();
           let 新しい印 = '';
           const 直した = (元 || []).map((射手) => {
@@ -1760,11 +1744,7 @@ const useScoreStore = zustand.create()(
             lastLocalChange: 今,
             archers: 直した,
           });
-          const {
-            isLiveActive: isLiveActive,
-            liveSessionName: liveSessionName,
-            shotsPerRound: shotsPerRound,
-          } = 状態();
+          const { isLiveActive, liveSessionName, shotsPerRound } = 状態();
           if (isLiveActive && liveSessionName) ライブへ盤面を送る(liveSessionName, 直した, shotsPerRound);
         },
         // 1立が全部埋まって少し経つと、画面側からここが呼ばれる。
@@ -1772,7 +1752,7 @@ const useScoreStore = zustand.create()(
         // 取り消しの控えには積まない（押した覚えのない操作が戻ると分かりにくい）
         立を閉じる: (射手ID, 塊) => {
           if (状態().書き換えを止めるか()) return;
-          const { archers: archers } = 状態();
+          const { archers } = 状態();
           const 元 = Array.isArray(archers) ? archers : [];
           const 押した列 = 元.findIndex((射手) => 射手 && 射手.id === 射手ID);
           if (-1 === 押した列) return;
@@ -1795,15 +1775,11 @@ const useScoreStore = zustand.create()(
             return 射手;
           });
           書く({ archers: 直した, lastLocalChange: 今 });
-          const {
-            isLiveActive: isLiveActive,
-            liveSessionName: liveSessionName,
-            shotsPerRound: shotsPerRound,
-          } = 状態();
+          const { isLiveActive, liveSessionName, shotsPerRound } = 状態();
           if (isLiveActive && liveSessionName) ライブへ盤面を送る(liveSessionName, 直した, shotsPerRound);
         },
         toggleLock: (射手ID, 塊) => {
-          const { archers: archers } = 状態();
+          const { archers } = 状態();
           const 元 = Array.isArray(archers) ? archers : [];
           const 押した列 = 元.findIndex((射手) => 射手 && 射手.id === 射手ID);
           if (-1 === 押した列) return;
@@ -1832,11 +1808,7 @@ const useScoreStore = zustand.create()(
             lastLocalChange: 今,
             archers: 直した,
           });
-          const {
-            isLiveActive: isLiveActive,
-            liveSessionName: liveSessionName,
-            shotsPerRound: shotsPerRound,
-          } = 状態();
+          const { isLiveActive, liveSessionName, shotsPerRound } = 状態();
           if (isLiveActive && liveSessionName) ライブへ盤面を送る(liveSessionName, 直した, shotsPerRound);
         },
         setArcherMember: (射手ID, 部員) => {
@@ -1864,11 +1836,7 @@ const useScoreStore = zustand.create()(
             lastLocalChange: Date.now(),
             archers: 直した,
           });
-          const {
-            isLiveActive: isLiveActive,
-            liveSessionName: liveSessionName,
-            shotsPerRound: shotsPerRound,
-          } = 状態();
+          const { isLiveActive, liveSessionName, shotsPerRound } = 状態();
           if (isLiveActive && liveSessionName) ライブへ盤面を送る(liveSessionName, 直した, shotsPerRound);
         },
         setArcherBowWeight: (射手ID, 弓力) => {
@@ -1879,11 +1847,7 @@ const useScoreStore = zustand.create()(
               : 射手
           );
           書く({ lastLocalChange: Date.now(), archers: 直した });
-          const {
-            isLiveActive: isLiveActive,
-            liveSessionName: liveSessionName,
-            shotsPerRound: shotsPerRound,
-          } = 状態();
+          const { isLiveActive, liveSessionName, shotsPerRound } = 状態();
           if (isLiveActive && liveSessionName)
             ライブへ盤面を送る(liveSessionName, 状態().archers, shotsPerRound);
         },
@@ -1906,11 +1870,7 @@ const useScoreStore = zustand.create()(
             lastLocalChange: Date.now(),
             archers: 直した,
           });
-          const {
-            isLiveActive: isLiveActive,
-            liveSessionName: liveSessionName,
-            shotsPerRound: shotsPerRound,
-          } = 状態();
+          const { isLiveActive, liveSessionName, shotsPerRound } = 状態();
           if (isLiveActive && liveSessionName)
             ライブへ盤面を送る(liveSessionName, 状態().archers, shotsPerRound);
         },
@@ -1922,11 +1882,7 @@ const useScoreStore = zustand.create()(
               : 射手
           );
           書く({ lastLocalChange: Date.now(), archers: 直した });
-          const {
-            isLiveActive: isLiveActive,
-            liveSessionName: liveSessionName,
-            shotsPerRound: shotsPerRound,
-          } = 状態();
+          const { isLiveActive, liveSessionName, shotsPerRound } = 状態();
           if (isLiveActive && liveSessionName)
             ライブへ盤面を送る(liveSessionName, 状態().archers, shotsPerRound);
         },
@@ -1949,7 +1905,7 @@ const useScoreStore = zustand.create()(
             shotsPerRound: 射数,
             lastLocalChange: Date.now(),
           });
-          const { isLiveActive: isLiveActive, liveSessionName: liveSessionName } = 状態();
+          const { isLiveActive, liveSessionName } = 状態();
           if (isLiveActive && liveSessionName) ライブへ盤面を送る(liveSessionName, 状態().archers, 射数);
         },
         redo: () => {
@@ -1968,7 +1924,7 @@ const useScoreStore = zustand.create()(
             shotsPerRound: 射数,
             lastLocalChange: Date.now(),
           });
-          const { isLiveActive: isLiveActive, liveSessionName: liveSessionName } = 状態();
+          const { isLiveActive, liveSessionName } = 状態();
           if (isLiveActive && liveSessionName) ライブへ盤面を送る(liveSessionName, 状態().archers, 射数);
         },
         /**
@@ -2297,7 +2253,7 @@ const useScoreStore = zustand.create()(
             });
             want.forEach((memberId, pid) => {
               batch.set(Firestore.doc(Firebaseの器.db, `groups/${団体}/member_lookup`, pid), {
-                memberId: memberId,
+                memberId,
                 updatedAt: Date.now(),
               });
               件数++;
@@ -2503,13 +2459,7 @@ const useScoreStore = zustand.create()(
           // よその団体のライブも、自分の記録には残さない（保存を止めるか を参照）
           if (状態().保存を止めるか()) return;
           const 記録ID = 状態().activeSessionID || generateUUID();
-          const {
-            archers: archers,
-            shotsPerRound: shotsPerRound,
-            activeGroupId: activeGroupId,
-            activeRole: activeRole,
-            myMemberId,
-          } = 状態();
+          const { archers, shotsPerRound, activeGroupId, activeRole, myMemberId } = 状態();
           const 射手たち = Array.isArray(archers) ? archers : [];
           const 記録 = {
             id: 記録ID,
@@ -3027,11 +2977,7 @@ const useScoreStore = zustand.create()(
               交代が変わる ? { historyStack: [...状態().historyStack, 変える前], redoStack: [] } : null
             )
           );
-          const {
-            isLiveActive: isLiveActive,
-            liveSessionName: liveSessionName,
-            shotsPerRound: shotsPerRound,
-          } = 状態();
+          const { isLiveActive, liveSessionName, shotsPerRound } = 状態();
           if (isLiveActive && liveSessionName) ライブへ盤面を送る(liveSessionName, 直した, shotsPerRound);
         },
         setShotsPerRound: (本数) => {
@@ -3060,7 +3006,7 @@ const useScoreStore = zustand.create()(
               射数が変わる ? { historyStack: [...状態().historyStack, 変える前], redoStack: [] } : null
             )
           );
-          const { isLiveActive: isLiveActive, liveSessionName: liveSessionName } = 状態();
+          const { isLiveActive, liveSessionName } = 状態();
           if (isLiveActive && liveSessionName) ライブへ盤面を送る(liveSessionName, 直した, 本数);
         },
         loadData: () => {
@@ -3143,7 +3089,7 @@ const useScoreStore = zustand.create()(
                   // 待っているあいだに団体を移っていたら、この合言葉は返さない。
                   // 返すと、移った先の練習を前の団体の枝へ流してしまう
                   if (状態().activeGroupId !== 団体) return null;
-                  書く({ ライブの合言葉: { 団体: 団体, 合言葉: 決 } });
+                  書く({ ライブの合言葉: { 団体, 合言葉: 決 } });
                   return 決;
                 }
               } catch (誤り) {
@@ -3155,7 +3101,7 @@ const useScoreStore = zustand.create()(
             }
             return null;
           })();
-          合言葉の取り寄せ = { 団体: 団体, 約束: 約束 };
+          合言葉の取り寄せ = { 団体, 約束 };
           // 片付けるのは自分が置いたものだけ。団体を移って別の取り寄せが
           // 始まっていたら、そちらを消してしまわない
           約束.finally(() => {
@@ -3219,7 +3165,7 @@ const useScoreStore = zustand.create()(
         // あとにする。記録は残さないので、次の起動でまた出る
         同意をあとにする: () => 書く({ 同意の確認が要る: false }),
         verifyGroupPassword: async (合言葉) => {
-          const { activeUserEmail, activeGroupId: activeGroupId, publicGroupId } = 状態();
+          const { activeUserEmail, activeGroupId, publicGroupId } = 状態();
           let 宛先 = activeUserEmail || Firebaseの器.auth.currentUser?.email;
           if (!宛先 && (activeGroupId || publicGroupId)) {
             console.log('[Store] Fetching group email for password verification...');
@@ -3294,7 +3240,7 @@ const useScoreStore = zustand.create()(
           }
         },
         updateGroupName: async (名前) => {
-          const { activeGroupId: activeGroupId } = 状態();
+          const { activeGroupId } = 状態();
           if (activeGroupId) {
             書く({ activeGroupName: 名前 });
             try {
@@ -3309,7 +3255,7 @@ const useScoreStore = zustand.create()(
           }
         },
         setAutoPromotionEnabled: async (入れる) => {
-          const { activeGroupId: activeGroupId } = 状態();
+          const { activeGroupId } = 状態();
           if (activeGroupId) {
             書く({ autoPromotionEnabled: 入れる });
             try {
@@ -3748,11 +3694,7 @@ const useScoreStore = zustand.create()(
         },
         syncAllToCloud: async () => {
           行動を控える('クラウドへ同期', (状態().sessions || []).length + '件');
-          const {
-            activeGroupId: activeGroupId,
-            activeRole: activeRole,
-            isNetworkOnline: isNetworkOnline,
-          } = 状態();
+          const { activeGroupId, activeRole, isNetworkOnline } = 状態();
           if (activeGroupId && isNetworkOnline)
             if ('member' !== activeRole) {
               console.log('[Store] Loading:', 'クラウドへの同期を開始...');
@@ -3868,7 +3810,7 @@ const useScoreStore = zustand.create()(
         countUnsynced: () => {
           const 数 = (一覧) =>
             Array.isArray(一覧) ? 一覧.filter((x) => x && '未同期' === x.syncStatus).length : 0;
-          const { sessions, members: members, alumni: alumni, trash: trash } = 状態();
+          const { sessions, members, alumni, trash } = 状態();
           return 数(sessions) + 数(members) + 数(alumni) + 数(trash);
         },
         /**
@@ -4031,9 +3973,9 @@ const useScoreStore = zustand.create()(
               sessions: 残る記録.filter((x) => x && !完全削除ずみ.has(x.id)),
               trash: ごみ箱.filter((x) => x && !完全削除ずみ.has(x.id)),
               alumni: mergeById(状態().alumni, 卒業生, false, true),
-              currentFreshmanTerm: currentFreshmanTerm,
-              tagTemplates: tagTemplates,
-              lastPromotionYear: lastPromotionYear,
+              currentFreshmanTerm,
+              tagTemplates,
+              lastPromotionYear,
               syncStatus: '同期済み',
               lastSyncTime: Date.now(),
             });
@@ -4105,7 +4047,7 @@ const useScoreStore = zustand.create()(
             resetIsFirstSnapshot: true,
             // アプリを閉じて戻ったときに、このライブへ戻るための控え（端末に残す）
             ライブの続き: {
-              名前: 名前,
+              名前,
               枝: 共有 ? 枝 : null,
               閲覧枝: 共有 ? 共有.閲覧の枝 || null : null,
               主催: true,
@@ -4268,14 +4210,14 @@ const useScoreStore = zustand.create()(
             return {
               編集の荷: 共.共有の荷を組む({
                 種: 種.編集,
-                名前: 名前,
+                名前,
                 役: 共.編集,
                 鍵が要るか: !!今の中身.鍵が要るか,
                 期限: 元の期限,
               }),
               閲覧の荷: 共.共有の荷を組む({
                 種: 種.閲覧,
-                名前: 名前,
+                名前,
                 役: 共.閲覧,
                 鍵が要るか: !!今の中身.鍵が要るか,
                 期限: 元の期限,
@@ -4308,10 +4250,10 @@ const useScoreStore = zustand.create()(
             await RTDB.set(
               RTDB.ref(Firebaseの器.rtdb, `live_sessions/${編集の枝}/${名前}/state`),
               Object.assign({}, 今の中身, {
-                閲覧の枝: 閲覧の枝,
+                閲覧の枝,
                 種: { 編集: 編集の種, 閲覧: 閲覧の種 },
                 鍵が要るか: !!鍵,
-                期限: 期限,
+                期限,
                 移った先: null,
                 timestamp: Date.now(),
                 updated_at: RTDB.serverTimestamp(),
@@ -4320,7 +4262,7 @@ const useScoreStore = zustand.create()(
             // 閲覧用の写しも、ここで一度作っておく。作らないと、配った直後に
             // 閲覧リンクを開いた人が「見つからない」になる。
             // 種と閲覧の枝は写しに入れないこと。閲覧の人に編集側の手がかりを渡さない
-            const 写しの中身 = Object.assign({}, 今の中身, { 期限: 期限 });
+            const 写しの中身 = Object.assign({}, 今の中身, { 期限 });
             delete 写しの中身.種;
             delete 写しの中身.閲覧の枝;
             delete 写しの中身.移った先;
@@ -4337,7 +4279,7 @@ const useScoreStore = zustand.create()(
             // 参加一覧に出すための道しるべ
             await RTDB.set(RTDB.ref(Firebaseの器.rtdb, 道しるべの場所(団, 名前)), {
               共有の枝: 編集の枝,
-              閲覧の枝: 閲覧の枝,
+              閲覧の枝,
               // 参加一覧が、期限の切れたライブを外すのに使う
               // （src/syncRules.js の 参加できるライブ）
               期限: 期限 || null,
@@ -4361,22 +4303,10 @@ const useScoreStore = zustand.create()(
           状態().joinLiveSync(名前, false, { 枝: 編集の枝, 閲覧枝: 閲覧の枝 });
           書く({ isHost: 主催だった, よその団体のライブ: false });
           return {
-            編集の荷: 共.共有の荷を組む({
-              種: 編集の種,
-              名前: 名前,
-              役: 共.編集,
-              鍵が要るか: !!鍵,
-              期限: 期限,
-            }),
-            閲覧の荷: 共.共有の荷を組む({
-              種: 閲覧の種,
-              名前: 名前,
-              役: 共.閲覧,
-              鍵が要るか: !!鍵,
-              期限: 期限,
-            }),
+            編集の荷: 共.共有の荷を組む({ 種: 編集の種, 名前, 役: 共.編集, 鍵が要るか: !!鍵, 期限 }),
+            閲覧の荷: 共.共有の荷を組む({ 種: 閲覧の種, 名前, 役: 共.閲覧, 鍵が要るか: !!鍵, 期限 }),
             合言葉が要るか: !!鍵,
-            期限: 期限,
+            期限,
             すでに配られていた: false,
           };
         },
@@ -4457,7 +4387,7 @@ const useScoreStore = zustand.create()(
             // 入れた○×が次の受信で消えていた
             載っている印を捨てる();
             写しを見るのをやめる();
-            状態().joinLiveSync(中身.名前, false, { 枝: 枝, 閲覧枝: 写す先 });
+            状態().joinLiveSync(中身.名前, false, { 枝, 閲覧枝: 写す先 });
             // joinLiveSync が偽に戻すので、そのあとで据える
             書く({ よその団体のライブ: よそ });
             return '入った';
@@ -4570,7 +4500,7 @@ const useScoreStore = zustand.create()(
               // アプリを閉じて戻ったときに、このライブへ戻るための控え（端末に残す）。
               // 主催・よその団体は、呼ぶ側があとで据え直すことがある（ライブに戻る で拾う）
               ライブの続き: {
-                名前: 名前,
+                名前,
                 枝: 差し込み || 道しるべ ? 枝 : null,
                 閲覧枝: 差し込み ? (共有 && 共有.閲覧枝) || null : 道しるべ ? 道しるべ.閲覧の枝 : null,
                 主催: false,
@@ -4901,25 +4831,25 @@ const useScoreStore = zustand.create()(
               // とみなして落とす。ただし見張りの窓の外（30日より前、100件に収まらず
               // 切れた分）は届かないだけなので落とさない。ここを一律に落としていた
               // せいで、30日を過ぎた記録が見張りが動くたびに履歴から消えていた
-              const 窓の下 = 雲の記録.length >= 100 ? Math.min(...雲の記録.map((e) => e.date || 0)) : m_30;
-              const 窓の中 = (e) => (e.date || 0) > 窓の下;
-              const l = 手元の記録.filter(
-                (e) => !雲にあるID.has(e.id) && (!e.hasOwnProperty('serverCreatedTime') || !窓の中(e))
+              const 窓の下 = 雲の記録.length >= 100 ? Math.min(...雲の記録.map((x) => x.date || 0)) : m_30;
+              const 窓の中 = (記録) => (記録.date || 0) > 窓の下;
+              const 手元だけの記録 = 手元の記録.filter(
+                (x) => !雲にあるID.has(x.id) && (!x.hasOwnProperty('serverCreatedTime') || !窓の中(x))
               );
               // 完全に消したものは、クラウドにまだ残っていても画面に出さない
               const 完全削除ずみ = new Set(Object.keys(状態().permanentlyDeleted || {}));
-              const d = [...merged, ...l].filter((e) => e && !完全削除ずみ.has(e.id));
-              d.sort((e, s) => (s.date || 0) - (e.date || 0));
-              書く({ sessions: d, syncStatus: '同期済み', lastSyncTime: Date.now() });
+              const 並べた記録 = [...merged, ...手元だけの記録].filter((x) => x && !完全削除ずみ.has(x.id));
+              並べた記録.sort((甲, 乙) => (乙.date || 0) - (甲.date || 0));
+              書く({ sessions: 並べた記録, syncStatus: '同期済み', lastSyncTime: Date.now() });
               console.log(
                 `[Store] Real-time session update received: ${雲の記録.length} items (reflected deletions)`
               );
             },
-            (s) => {
-              console.error('[Store] Real-time session listener error:', s);
-              不具合を控える('記録の受信', s);
+            (誤り) => {
+              console.error('[Store] Real-time session listener error:', 誤り);
+              不具合を控える('記録の受信', 誤り);
               書く({ syncStatus: '同期エラー' });
-              if (入り直せば直るか(s)) 書く({ 再ログインの案内: 入り直しの案内 });
+              if (入り直せば直るか(誤り)) 書く({ 再ログインの案内: 入り直しの案内 });
             }
           );
           書く({ sessionUnsubscribe: 止める });
@@ -4932,8 +4862,8 @@ const useScoreStore = zustand.create()(
             書く({ sessionUnsubscribe: null }));
         },
         listenToTrash: async () => {
-          const { activeGroupId: o } = 状態();
-          if (!o) return;
+          const { activeGroupId: 団体 } = 状態();
+          if (!団体) return;
           const _trashDb = await waitForDb();
           if (!_trashDb) {
             console.warn('[Store] listenToTrash: db still undefined after await, aborting');
@@ -4941,18 +4871,18 @@ const useScoreStore = zustand.create()(
           }
           状態().stopListeningToTrash();
           console.log('[Store] Starting real-time trash listener');
-          const i = Firestore.collection(Firebaseの器.db, `groups/${o}/trash`);
-          const n = Firestore.query(i, Firestore.limit(200));
-          const c = Firestore.onSnapshot(
-            n,
-            (t) => {
-              const o = [];
-              t.forEach((e) => {
-                const s = e.data();
-                o.push(
-                  Object.assign({}, s, {
-                    id: e.id,
-                    syncStatus: e.metadata && e.metadata.hasPendingWrites ? '未同期' : '同期済み',
+          const ごみ箱の置き場 = Firestore.collection(Firebaseの器.db, `groups/${団体}/trash`);
+          const 問い = Firestore.query(ごみ箱の置き場, Firestore.limit(200));
+          const 止める = Firestore.onSnapshot(
+            問い,
+            (返り) => {
+              const 雲のごみ箱 = [];
+              返り.forEach((文書) => {
+                const 中身 = 文書.data();
+                雲のごみ箱.push(
+                  Object.assign({}, 中身, {
+                    id: 文書.id,
+                    syncStatus: 文書.metadata && 文書.metadata.hasPendingWrites ? '未同期' : '同期済み',
                   })
                 );
               });
@@ -4961,41 +4891,41 @@ const useScoreStore = zustand.create()(
               // あとで送信が失われても送り直せなくなる。
               // 写しの syncStatus が「同期済み」＝送信が終わった、なので落とす。
               const 手元のゴミ箱 = new Map(
-                (状態().trash || []).filter((e) => e && e.id).map((e) => [e.id, e])
+                (状態().trash || []).filter((x) => x && x.id).map((e) => [e.id, e])
               );
-              const 写し = o.map((e) => {
-                const t = 手元のゴミ箱.get(e.id);
-                return t && t.pendingDelete && '未同期' === e.syncStatus
-                  ? Object.assign({}, e, { pendingDelete: true })
-                  : e;
+              const 写し = 雲のごみ箱.map((記録) => {
+                const 手元の = 手元のゴミ箱.get(記録.id);
+                return 手元の && 手元の.pendingDelete && '未同期' === 記録.syncStatus
+                  ? Object.assign({}, 記録, { pendingDelete: true })
+                  : 記録;
               });
               // まだ送れていない削除は、クラウドの写しに無くても残す。ここで
               // 消すと送り直しの対象から外れ、次の全件取得で記録が復活する。
-              const クラウドのid = new Set(写し.map((e) => e.id));
+              const クラウドのid = new Set(写し.map((x) => x.id));
               const 未送信の削除 = (状態().trash || []).filter(
-                (e) => e && e.id && e.pendingDelete && '未同期' === e.syncStatus && !クラウドのid.has(e.id)
+                (x) => x && x.id && x.pendingDelete && '未同期' === x.syncStatus && !クラウドのid.has(x.id)
               );
               const 新しいゴミ箱 = 未送信の削除.length > 0 ? [...写し, ...未送信の削除] : 写し;
-              新しいゴミ箱.sort((e, s) => trashedAtMillis(s) - trashedAtMillis(e));
+              新しいゴミ箱.sort((甲, 乙) => trashedAtMillis(乙) - trashedAtMillis(甲));
               // 戻したばかりでまだ送れていない記録は、クラウドのゴミ箱に写しが
               // あっても履歴から外さない。外すと復元が取り消されて見える。
               // 完全に消したものは、クラウドにまだ残っていても画面に出さない
               const 完全削除ずみ = new Set(Object.keys(状態().permanentlyDeleted || {}));
-              const 出すゴミ箱 = 新しいゴミ箱.filter((e) => e && !完全削除ずみ.has(e.id));
-              const 捨てたid = new Set(出すゴミ箱.map((e) => e.id));
+              const 出すゴミ箱 = 新しいゴミ箱.filter((x) => x && !完全削除ずみ.has(x.id));
+              const 捨てたid = new Set(出すゴミ箱.map((x) => x.id));
               const 残す = 状態().sessions.filter(
-                (e) => e && (!捨てたid.has(e.id) || '未同期' === e.syncStatus)
+                (x) => x && (!捨てたid.has(x.id) || '未同期' === x.syncStatus)
               );
-              書く({ trash: 出すゴミ箱, sessions: 残す.filter((e) => e && !完全削除ずみ.has(e.id)) });
+              書く({ trash: 出すゴミ箱, sessions: 残す.filter((x) => x && !完全削除ずみ.has(x.id)) });
               console.log(
-                `[Store] Real-time trash update received: ${o.length} items (purged from sessions)`
+                `[Store] Real-time trash update received: ${雲のごみ箱.length} items (purged from sessions)`
               );
             },
-            (e) => {
-              console.error('[Store] Real-time trash listener error:', e);
+            (誤り) => {
+              console.error('[Store] Real-time trash listener error:', 誤り);
             }
           );
-          書く({ trashUnsubscribe: c });
+          書く({ trashUnsubscribe: 止める });
         },
         stopListeningToTrash: () => {
           const { trashUnsubscribe } = 状態();
@@ -5005,8 +4935,8 @@ const useScoreStore = zustand.create()(
             書く({ trashUnsubscribe: null }));
         },
         listenToMembers: async () => {
-          const { activeGroupId: o } = 状態();
-          if (!o) return;
+          const { activeGroupId: 団体 } = 状態();
+          if (!団体) return;
           const _membDb = await waitForDb();
           if (!_membDb) {
             console.warn('[Store] listenToMembers: db still undefined after await, aborting');
@@ -5014,26 +4944,28 @@ const useScoreStore = zustand.create()(
           }
           状態().stopListeningToMembers();
           console.log('[Store] Starting real-time member listener');
-          const i = Firestore.collection(Firebaseの器.db, `groups/${o}/members`);
-          const n = Firestore.onSnapshot(
-            i,
-            (t) => {
-              const o = [];
-              t.forEach((e) => {
-                const s = e.data();
-                o.push(Object.assign({}, s, { id: e.id, syncStatus: '同期済み' }));
+          const 部員の置き場 = Firestore.collection(Firebaseの器.db, `groups/${団体}/members`);
+          const 止める = Firestore.onSnapshot(
+            部員の置き場,
+            (返り) => {
+              const 雲の部員 = [];
+              返り.forEach((文書) => {
+                const 中身 = 文書.data();
+                雲の部員.push(Object.assign({}, 中身, { id: 文書.id, syncStatus: '同期済み' }));
               });
               // 消したのにクラウドへ届いていないメンバーは、受け取っても戻さない
               const 削除ずみ = new Set(Object.keys(状態().deletedMembers || {}));
-              const a = mergeById(状態().members, o, false, true).filter((e) => e && !削除ずみ.has(e.id));
-              書く({ members: a, lastSyncTime: Date.now() });
-              console.log(`[Store] Real-time member update received: ${o.length} items`);
+              const 合流した = mergeById(状態().members, 雲の部員, false, true).filter(
+                (x) => x && !削除ずみ.has(x.id)
+              );
+              書く({ members: 合流した, lastSyncTime: Date.now() });
+              console.log(`[Store] Real-time member update received: ${雲の部員.length} items`);
             },
-            (e) => {
-              console.error('[Store] Real-time member listener error:', e);
+            (誤り) => {
+              console.error('[Store] Real-time member listener error:', 誤り);
             }
           );
-          書く({ memberUnsubscribe: n });
+          書く({ memberUnsubscribe: 止める });
         },
         stopListeningToMembers: () => {
           const { memberUnsubscribe } = 状態();
@@ -5043,8 +4975,8 @@ const useScoreStore = zustand.create()(
             書く({ memberUnsubscribe: null }));
         },
         listenToAlumni: async () => {
-          const { activeGroupId: o } = 状態();
-          if (!o) return;
+          const { activeGroupId: 団体 } = 状態();
+          if (!団体) return;
           const _alumDb = await waitForDb();
           if (!_alumDb) {
             console.warn('[Store] listenToAlumni: db still undefined after await, aborting');
@@ -5052,24 +4984,24 @@ const useScoreStore = zustand.create()(
           }
           状態().stopListeningToAlumni();
           console.log('[Store] Starting real-time alumni listener');
-          const i = Firestore.collection(Firebaseの器.db, `groups/${o}/alumni`);
-          const n = Firestore.onSnapshot(
-            i,
-            (t) => {
-              const o = [];
-              t.forEach((e) => {
-                const s = e.data();
-                o.push(Object.assign({}, s, { id: e.id, syncStatus: '同期済み' }));
+          const 卒業生の置き場 = Firestore.collection(Firebaseの器.db, `groups/${団体}/alumni`);
+          const 止める = Firestore.onSnapshot(
+            卒業生の置き場,
+            (返り) => {
+              const 雲の卒業生 = [];
+              返り.forEach((文書) => {
+                const 中身 = 文書.data();
+                雲の卒業生.push(Object.assign({}, 中身, { id: 文書.id, syncStatus: '同期済み' }));
               });
-              const a = mergeById(状態().alumni, o, false, true);
-              書く({ alumni: a, lastSyncTime: Date.now() });
-              console.log(`[Store] Real-time alumni update received: ${o.length} items`);
+              const 合流した = mergeById(状態().alumni, 雲の卒業生, false, true);
+              書く({ alumni: 合流した, lastSyncTime: Date.now() });
+              console.log(`[Store] Real-time alumni update received: ${雲の卒業生.length} items`);
             },
-            (e) => {
-              console.error('[Store] Real-time alumni listener error:', e);
+            (誤り) => {
+              console.error('[Store] Real-time alumni listener error:', 誤り);
             }
           );
-          書く({ alumniUnsubscribe: n });
+          書く({ alumniUnsubscribe: 止める });
         },
         stopListeningToAlumni: () => {
           const { alumniUnsubscribe } = 状態();
@@ -5087,15 +5019,17 @@ const useScoreStore = zustand.create()(
           状態().listenToMembers();
           状態().listenToAlumni();
           状態().syncSessions();
-          const t = setInterval(() => {
+          const 時計 = setInterval(() => {
             状態().syncSessions();
           }, 3e5);
-          書く({ syncIntervalId: t });
+          書く({ syncIntervalId: 時計 });
         },
         stopPeriodicSync: () => {
-          const t = 状態().syncIntervalId;
-          t &&
-            (console.log('[Store] Stopping periodic sync'), clearInterval(t), 書く({ syncIntervalId: null }));
+          const 時計 = 状態().syncIntervalId;
+          時計 &&
+            (console.log('[Store] Stopping periodic sync'),
+            clearInterval(時計),
+            書く({ syncIntervalId: null }));
           状態().stopListeningToSessions();
           状態().stopListeningToTrash();
           状態().stopListeningToMembers();
@@ -5103,162 +5037,167 @@ const useScoreStore = zustand.create()(
         },
         setupNetworkListener: () => {
           console.log('[Store] Setting up network listener');
-          return netinfo.addEventListener((t) => {
-            const o = 状態().isNetworkOnline;
-            const a = !(!t.isConnected || false === t.isInternetReachable);
-            a !== o &&
-              (console.log('[Store] Network state changed: ' + (a ? 'Online' : 'Offline')),
-              書く({ isNetworkOnline: a }),
-              a &&
-                !o &&
+          return netinfo.addEventListener((様子) => {
+            const 前はつながっていた = 状態().isNetworkOnline;
+            const つながっている = !(!様子.isConnected || false === 様子.isInternetReachable);
+            つながっている !== 前はつながっていた &&
+              (console.log('[Store] Network state changed: ' + (つながっている ? 'Online' : 'Offline')),
+              書く({ isNetworkOnline: つながっている }),
+              つながっている &&
+                !前はつながっていた &&
                 (console.log('[Store] Connection restored. Triggering auto-sync...'),
                 // 電波が切れている最中にこそ失敗するので、戻ったときに出し直す。
                 // 便りの仕組みが転んでも、自動同期まで巻き添えにしない
                 溜まりを流し直す(),
                 状態()
                   .syncSessions()
-                  .catch((e) => console.error('[Store] Auto-sync failed:', e))));
+                  .catch((誤り) => console.error('[Store] Auto-sync failed:', 誤り))));
           });
         },
         incrementAllGrades: async () => {
-          const { activeGroupId: o, alumni: c, currentFreshmanTerm, isNetworkOnline: d } = 状態();
-          if (!o) return;
-          const u = Date.now();
-          const m = new Date().getFullYear();
-          if (!d) return void console.warn('[incrementAllGrades] Offline. Skipping promotion until online.');
+          const { activeGroupId: 団体, alumni: 卒業生, currentFreshmanTerm, isNetworkOnline } = 状態();
+          if (!団体) return;
+          const 今 = Date.now();
+          const 今年 = new Date().getFullYear();
+          if (!isNetworkOnline)
+            return void console.warn('[incrementAllGrades] Offline. Skipping promotion until online.');
           try {
-            const s = await Firestore.getDoc(
-              Firestore.doc(Firebaseの器.db, `groups/${o}/config`, 'app_settings')
+            const 設定の帳面 = await Firestore.getDoc(
+              Firestore.doc(Firebaseの器.db, `groups/${団体}/config`, 'app_settings')
             );
-            if (s.exists()) {
-              const t = s.data();
-              if (t.lastPromotionYear && t.lastPromotionYear >= m)
+            if (設定の帳面.exists()) {
+              const 設定 = 設定の帳面.data();
+              if (設定.lastPromotionYear && 設定.lastPromotionYear >= 今年)
                 return (
                   console.log(
-                    `[incrementAllGrades] Skipped: Promotion for year ${m} already completed according to Firestore.`
+                    `[incrementAllGrades] Skipped: Promotion for year ${今年} already completed according to Firestore.`
                   ),
-                  void 書く({ lastPromotionYear: t.lastPromotionYear })
+                  void 書く({ lastPromotionYear: 設定.lastPromotionYear })
                 );
             }
-          } catch (e) {
-            return void console.error('[incrementAllGrades] Failed to re-verify settings:', e);
+          } catch (誤り) {
+            return void console.error('[incrementAllGrades] Failed to re-verify settings:', 誤り);
           }
-          let i;
+          let 雲の部員;
           try {
-            const t = await Firestore.getDocs(Firestore.collection(Firebaseの器.db, `groups/${o}/members`));
-            i = [];
-            t.forEach((e) => i.push(Object.assign({}, e.data(), { id: e.id })));
-          } catch (e) {
-            return void console.error('[incrementAllGrades] Failed to fetch members:', e);
+            const 返り = await Firestore.getDocs(
+              Firestore.collection(Firebaseの器.db, `groups/${団体}/members`)
+            );
+            雲の部員 = [];
+            返り.forEach((文書) => 雲の部員.push(Object.assign({}, 文書.data(), { id: 文書.id })));
+          } catch (誤り) {
+            return void console.error('[incrementAllGrades] Failed to fetch members:', 誤り);
           }
           console.log(
-            `[Store] incrementAllGrades: Starting atomic promotion process... (${i.length} members from cloud)`
+            `[Store] incrementAllGrades: Starting atomic promotion process... (${雲の部員.length} members from cloud)`
           );
-          const dropUndefined = (o) => {
-            const t = {};
-            for (const k in o) undefined !== o[k] && (t[k] = o[k]);
-            return t;
+          const dropUndefined = (元) => {
+            const 出 = {};
+            for (const 鍵 in 元) undefined !== 元[鍵] && (出[鍵] = 元[鍵]);
+            return 出;
           };
-          const gradeOf = (e) => {
-            const v = e ? e.grade : null;
-            if (null == v || '' === v) return NaN;
-            const n = Number(v);
-            return isNaN(n) ? NaN : n;
+          const gradeOf = (部員) => {
+            const 値 = 部員 ? 部員.grade : null;
+            if (null == 値 || '' === 値) return NaN;
+            const 数 = Number(値);
+            return isNaN(数) ? NaN : 数;
           };
-          const skippedGrades = i.filter((e) => isNaN(gradeOf(e))).map((e) => e.name || e.id);
+          const skippedGrades = 雲の部員.filter((x) => isNaN(gradeOf(x))).map((e) => e.name || e.id);
           if (skippedGrades.length)
             console.warn('[incrementAllGrades] 学年が未設定のため据え置いたメンバー:', skippedGrades);
-          const p = [];
-          i.forEach((e) => {
-            const s = gradeOf(e);
-            if (isNaN(s) || s < 1 || s >= 5)
-              p.push(Object.assign({}, e, { lastModified: u, syncStatus: '同期済み' }));
-            else if (s >= 4)
-              p.push(Object.assign({}, e, { grade: 5, lastModified: u, syncStatus: '同期済み' }));
-            else p.push(Object.assign({}, e, { grade: s + 1, lastModified: u, syncStatus: '同期済み' }));
+          const 進級後の部員 = [];
+          雲の部員.forEach((部員) => {
+            const 学年 = gradeOf(部員);
+            if (isNaN(学年) || 学年 < 1 || 学年 >= 5)
+              進級後の部員.push(Object.assign({}, 部員, { lastModified: 今, syncStatus: '同期済み' }));
+            else if (学年 >= 4)
+              進級後の部員.push(
+                Object.assign({}, 部員, { grade: 5, lastModified: 今, syncStatus: '同期済み' })
+              );
+            else
+              進級後の部員.push(
+                Object.assign({}, 部員, { grade: 学年 + 1, lastModified: 今, syncStatus: '同期済み' })
+              );
           });
-          const f = (currentFreshmanTerm || 0) + 1;
-          if (d)
+          const 次の期 = (currentFreshmanTerm || 0) + 1;
+          if (isNetworkOnline)
             try {
-              const e = [];
-              p.forEach((s) => {
-                e.push({
+              const 書き込み = [];
+              進級後の部員.forEach((部員) => {
+                書き込み.push({
                   type: 'set',
-                  ref: Firestore.doc(Firebaseの器.db, `groups/${o}/members`, s.id),
-                  data: dropUndefined(Object.assign({}, s, { lastModified: Firestore.serverTimestamp() })),
+                  ref: Firestore.doc(Firebaseの器.db, `groups/${団体}/members`, 部員.id),
+                  data: dropUndefined(Object.assign({}, 部員, { lastModified: Firestore.serverTimestamp() })),
                 });
               });
-              e.push({
+              書き込み.push({
                 type: 'set',
-                ref: Firestore.doc(Firebaseの器.db, `groups/${o}/config`, 'app_settings'),
+                ref: Firestore.doc(Firebaseの器.db, `groups/${団体}/config`, 'app_settings'),
                 data: {
-                  currentFreshmanTerm: f,
-                  lastPromotionYear: m,
+                  currentFreshmanTerm: 次の期,
+                  lastPromotionYear: 今年,
                   lastModified: Firestore.serverTimestamp(),
                 },
               });
-              for (let s = 0; s < e.length; s += 400) {
-                const o = e.slice(s, s + 400);
-                const i = Firestore.writeBatch(Firebaseの器.db);
-                o.forEach((e) => {
-                  'set' === e.type
-                    ? i.set(e.ref, e.data, { merge: true })
-                    : 'delete' === e.type && i.delete(e.ref);
+              for (let 頭 = 0; 頭 < 書き込み.length; 頭 += 400) {
+                const 切れ端 = 書き込み.slice(頭, 頭 + 400);
+                const 一括 = Firestore.writeBatch(Firebaseの器.db);
+                切れ端.forEach((書き込み1件) => {
+                  'set' === 書き込み1件.type
+                    ? 一括.set(書き込み1件.ref, 書き込み1件.data, { merge: true })
+                    : 'delete' === 書き込み1件.type && 一括.delete(書き込み1件.ref);
                 });
-                await i.commit();
+                await 一括.commit();
               }
               console.log('[Store] incrementAllGrades: Cloud sync successful.');
-            } catch (e) {
+            } catch (誤り) {
               return (
-                console.error('[incrementAllGrades] Cloud sync failed:', e),
+                console.error('[incrementAllGrades] Cloud sync failed:', 誤り),
                 void Alert.alert(
                   '進級処理エラー',
                   'クラウドとの同期に失敗しました。時間をおいて再度お試しください。'
                 )
               );
             }
-          const S = c;
+          const 卒業生の写し = 卒業生;
           書く({
-            members: p,
-            alumni: S,
-            currentFreshmanTerm: f,
-            lastPromotionYear: m,
-            lastLocalChange: u,
-            lastSyncTime: u,
+            members: 進級後の部員,
+            alumni: 卒業生の写し,
+            currentFreshmanTerm: 次の期,
+            lastPromotionYear: 今年,
+            lastLocalChange: 今,
+            lastSyncTime: 今,
           });
           console.log('[Store] incrementAllGrades: Promotion process completed.');
         },
-        updateCurrentFreshmanTerm: async (o) => {
-          const {
-            activeGroupId: i,
-            autoPromotionEnabled: n,
-            tagTemplates,
-            lastPromotionYear: l,
-            isNetworkOnline: d,
-          } = 状態();
-          if ((書く({ currentFreshmanTerm: o, lastLocalChange: Date.now() }), d && i))
+        updateCurrentFreshmanTerm: async (期) => {
+          const { activeGroupId, autoPromotionEnabled, tagTemplates, lastPromotionYear, isNetworkOnline } =
+            状態();
+          if (
+            (書く({ currentFreshmanTerm: 期, lastLocalChange: Date.now() }), isNetworkOnline && activeGroupId)
+          )
             try {
               await Firestore.setDoc(
-                Firestore.doc(Firebaseの器.db, `groups/${i}/config`, 'app_settings'),
+                Firestore.doc(Firebaseの器.db, `groups/${activeGroupId}/config`, 'app_settings'),
                 {
-                  currentFreshmanTerm: o,
-                  autoPromotionEnabled: n,
-                  tagTemplates: tagTemplates,
-                  lastPromotionYear: l,
+                  currentFreshmanTerm: 期,
+                  autoPromotionEnabled,
+                  tagTemplates,
+                  lastPromotionYear,
                   lastModified: Firestore.serverTimestamp(),
                 },
                 { merge: true }
               );
               書く({ syncStatus: '同期済み', lastSyncTime: Date.now() });
-            } catch (s) {
-              console.error('Update Term Sync Error:', s);
-              不具合を控える('期の更新', s);
+            } catch (誤り) {
+              console.error('Update Term Sync Error:', 誤り);
+              不具合を控える('期の更新', 誤り);
               書く({ syncStatus: '同期エラー' });
             }
         },
-        resetCurrentSession: (o = true) => {
+        resetCurrentSession: (相手にも知らせる = true) => {
           if (状態().書き換えを止めるか()) return;
-          const a = Date.now();
+          const 今 = Date.now();
           // 片付けるとサーバーの marks_by_id も空になるので、控えも捨てる。
           // 残すと「前と同じだから送らなくてよい」と誤って判断する。片付けた
           // あと同じ記録を読み込み直すと、○×が片付ける前と一字一句同じに
@@ -5271,78 +5210,78 @@ const useScoreStore = zustand.create()(
             redoStack: [],
             activeSessionID: null,
             currentSessionTags: [],
-            lastLocalChange: a,
-            lastResetHandled: o ? a : 状態().lastResetHandled,
+            lastLocalChange: 今,
+            lastResetHandled: 相手にも知らせる ? 今 : 状態().lastResetHandled,
             // 盤面を捨てたので、遡れる手も捨てる。ライブ中でないときに
             // historyStack を空にするのと同じ扱い。残すと、リセットしたあとの
             // 取り消しで、消したはずの盤面が戻ってくる
             historySharedLen: 0,
             historySharedMax: 0,
           });
-          const { isLiveActive: n, liveSessionName: c } = 状態();
+          const { isLiveActive, liveSessionName } = 状態();
           const 枝 = ライブの枝();
-          if (o && n && c && Firebaseの器.rtdb && 枝) {
-            const s = RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${c}/state`);
-            RTDB.update(s, {
+          if (相手にも知らせる && isLiveActive && liveSessionName && Firebaseの器.rtdb && 枝) {
+            const 盤面の場所 = RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${liveSessionName}/state`);
+            RTDB.update(盤面の場所, {
               archers: [],
               marks_by_id: {},
               archer_timestamps: {},
-              reset_at: a,
-              timestamp: a,
+              reset_at: 今,
+              timestamp: 今,
               updated_at: RTDB.serverTimestamp(),
               // 共有履歴の目印も全員ぶん戻す
               history_len: 0,
               history_max: 0,
-            }).catch((e) => console.error('Reset Live Sync Error:', e));
-            書く({ lastPushedTimestamp: a });
+            }).catch((誤り) => console.error('Reset Live Sync Error:', 誤り));
+            書く({ lastPushedTimestamp: 今 });
           }
         },
-        recoverPassword: async (e) => {
+        recoverPassword: async (メール) => {
           if (!状態().isNetworkOnline) return { success: false, error: 'オフラインのため実行できません' };
           try {
             return (
-              await FirebaseAuth.sendPasswordResetEmail(Firebaseの器.auth, e),
+              await FirebaseAuth.sendPasswordResetEmail(Firebaseの器.auth, メール),
               // 住所そのものは出さない。部活の共用端末では、次に使う人が
               // 開発者ツールで読める（復旧用の住所なので、知られたくない）
               console.log('[Store] パスワード再設定のメールを送りました'),
               { success: true }
             );
-          } catch (e) {
+          } catch (誤り) {
             return (
-              console.error('Password Recovery Error:', e),
-              { success: false, error: e.message || 'パスワードリセットメールの送信に失敗しました' }
+              console.error('Password Recovery Error:', 誤り),
+              { success: false, error: 誤り.message || 'パスワードリセットメールの送信に失敗しました' }
             );
           }
         },
         listenToConfig: async () => {
-          const { activeGroupId: o } = 状態();
-          if (!o) return;
+          const { activeGroupId: 団体 } = 状態();
+          if (!団体) return;
           const _cfgDb = await waitForDb();
           if (!_cfgDb) {
             console.warn('[Store] listenToConfig: db still undefined after await, aborting');
             return;
           }
           try {
-            const i = await Firestore.getDoc(
-              Firestore.doc(Firebaseの器.db, `groups/${o}/config`, 'app_settings')
+            const 設定の帳面 = await Firestore.getDoc(
+              Firestore.doc(Firebaseの器.db, `groups/${団体}/config`, 'app_settings')
             );
-            if (i.exists()) {
-              const t = i.data();
-              console.log('[Store] Config initial fetch from cloud:', t);
+            if (設定の帳面.exists()) {
+              const 設定 = 設定の帳面.data();
+              console.log('[Store] Config initial fetch from cloud:', 設定);
               書く({
-                autoPromotionEnabled: false !== t.autoPromotionEnabled,
-                currentFreshmanTerm: t.currentFreshmanTerm || 状態().currentFreshmanTerm,
-                tagTemplates: t.tagTemplates || 状態().tagTemplates,
-                lastPromotionYear: t.lastPromotionYear || 状態().lastPromotionYear,
+                autoPromotionEnabled: false !== 設定.autoPromotionEnabled,
+                currentFreshmanTerm: 設定.currentFreshmanTerm || 状態().currentFreshmanTerm,
+                tagTemplates: 設定.tagTemplates || 状態().tagTemplates,
+                lastPromotionYear: 設定.lastPromotionYear || 状態().lastPromotionYear,
               });
             }
-            const n = await Firestore.getDoc(Firestore.doc(Firebaseの器.db, 'groups', o));
-            if (n.exists()) {
-              const s = n.data();
-              if (s.groupName) 書く({ activeGroupName: s.groupName });
+            const 団体の帳面 = await Firestore.getDoc(Firestore.doc(Firebaseの器.db, 'groups', 団体));
+            if (団体の帳面.exists()) {
+              const 団体の中身 = 団体の帳面.data();
+              if (団体の中身.groupName) 書く({ activeGroupName: 団体の中身.groupName });
             }
-          } catch (e) {
-            console.warn('[Store] Initial config fetch failed (offline?), falling back to local.', e);
+          } catch (誤り) {
+            console.warn('[Store] Initial config fetch failed (offline?), falling back to local.', 誤り);
           }
           const _existing = 状態().configUnsubscribe;
           if (_existing) {
@@ -5350,32 +5289,35 @@ const useScoreStore = zustand.create()(
             書く({ configUnsubscribe: null });
             console.log('[Store] listenToConfig: stopped existing listener');
           }
-          const i = Firestore.onSnapshot(
-            Firestore.doc(Firebaseの器.db, `groups/${o}/config`, 'app_settings'),
-            (t) => {
-              if (t.exists()) {
-                const o = t.data();
-                console.log('[Store] Config updated from cloud (snapshot):', o);
+          const 設定を止める = Firestore.onSnapshot(
+            Firestore.doc(Firebaseの器.db, `groups/${団体}/config`, 'app_settings'),
+            (返り) => {
+              if (返り.exists()) {
+                const 設定 = 返り.data();
+                console.log('[Store] Config updated from cloud (snapshot):', 設定);
                 書く({
-                  autoPromotionEnabled: false !== o.autoPromotionEnabled,
-                  currentFreshmanTerm: o.currentFreshmanTerm || 状態().currentFreshmanTerm,
-                  tagTemplates: o.tagTemplates || 状態().tagTemplates,
-                  lastPromotionYear: o.lastPromotionYear || 状態().lastPromotionYear,
-                  analysisRankingSettings: o.analysisRankingSettings || 状態().analysisRankingSettings,
+                  autoPromotionEnabled: false !== 設定.autoPromotionEnabled,
+                  currentFreshmanTerm: 設定.currentFreshmanTerm || 状態().currentFreshmanTerm,
+                  tagTemplates: 設定.tagTemplates || 状態().tagTemplates,
+                  lastPromotionYear: 設定.lastPromotionYear || 状態().lastPromotionYear,
+                  analysisRankingSettings: 設定.analysisRankingSettings || 状態().analysisRankingSettings,
                 });
               }
             }
           );
-          const n = Firestore.onSnapshot(Firestore.doc(Firebaseの器.db, 'groups', o), (s) => {
-            if (s.exists()) {
-              const t = s.data();
-              if (t.groupName) 書く({ activeGroupName: t.groupName });
+          const 団体名を止める = Firestore.onSnapshot(
+            Firestore.doc(Firebaseの器.db, 'groups', 団体),
+            (返り) => {
+              if (返り.exists()) {
+                const 団体の中身 = 返り.data();
+                if (団体の中身.groupName) 書く({ activeGroupName: 団体の中身.groupName });
+              }
             }
-          });
+          );
           書く({
             configUnsubscribe: () => {
-              i();
-              n();
+              設定を止める();
+              団体名を止める();
             },
           });
         },
@@ -5384,102 +5326,110 @@ const useScoreStore = zustand.create()(
     {
       name: 'archery-score-storage',
       storage: middleware.createJSONStorage(() => 端末の置き場),
-      partialize: (e) => ({
-        archers: e.archers,
-        members: e.members,
+      partialize: (状態の中身) => ({
+        archers: 状態の中身.archers,
+        members: 状態の中身.members,
         // 端末には、予算に収まるぶんだけ残す。雲には全部あるので、
         // 次に開いたときに取り直せる。まだ送れていない記録は必ず残す
         //（落とすとその練習ぶんがどこにも無くなる。src/localTrim.js）
-        sessions: 端.端末に残す記録(e.sessions, { 最後に送った時刻: e.lastSyncTime || 0 }),
-        history: e.history,
-        alumni: e.alumni,
-        trash: e.trash,
-        permanentlyDeleted: e.permanentlyDeleted,
-        deletedMembers: e.deletedMembers,
-        shotsPerRound: e.shotsPerRound,
-        activeSessionID: e.activeSessionID,
-        viewScale: e.viewScale,
-        includeInStats: e.includeInStats,
-        lastSessionTags: e.tagTemplates,
-        currentSessionTags: e.currentSessionTags,
-        activeGroupId: e.activeGroupId,
-        activeGroupName: e.activeGroupName,
-        publicGroupId: e.publicGroupId,
-        activeRole: e.activeRole,
-        activeUserEmail: e.activeUserEmail,
-        myMemberId: e.myMemberId,
-        myMemberName: e.myMemberName,
-        memberAuthVersion: e.memberAuthVersion,
-        analysisSelectedTags: e.analysisSelectedTags,
-        analysisTagLogic: e.analysisTagLogic,
-        historySelectedTags: e.historySelectedTags,
-        historyTagLogic: e.historyTagLogic,
-        tagTemplates: e.tagTemplates,
-        currentFreshmanTerm: e.currentFreshmanTerm,
-        lastPromotionYear: e.lastPromotionYear,
-        lastSyncTime: e.lastSyncTime,
-        isAdminMode: e.isAdminMode,
-        autoPromotionEnabled: e.autoPromotionEnabled,
-        analysisRankingSettings: e.analysisRankingSettings,
-        enableArrowLocation: e.enableArrowLocation,
-        自動ロックする: e.自動ロックする,
-        保存時に出欠を確認する: e.保存時に出欠を確認する,
-        横に並べる: e.横に並べる,
-        帯を畳む: e.帯を畳む,
-        帯の取っ手は左: e.帯の取っ手は左,
-        arrowTargetType: e.arrowTargetType,
-        比較のひな型: e.比較のひな型,
-        ライブの合言葉: e.ライブの合言葉,
-        ライブの続き: e.ライブの続き,
-        履歴の編集: e.履歴の編集,
+        sessions: 端.端末に残す記録(状態の中身.sessions, { 最後に送った時刻: 状態の中身.lastSyncTime || 0 }),
+        history: 状態の中身.history,
+        alumni: 状態の中身.alumni,
+        trash: 状態の中身.trash,
+        permanentlyDeleted: 状態の中身.permanentlyDeleted,
+        deletedMembers: 状態の中身.deletedMembers,
+        shotsPerRound: 状態の中身.shotsPerRound,
+        activeSessionID: 状態の中身.activeSessionID,
+        viewScale: 状態の中身.viewScale,
+        includeInStats: 状態の中身.includeInStats,
+        lastSessionTags: 状態の中身.tagTemplates,
+        currentSessionTags: 状態の中身.currentSessionTags,
+        activeGroupId: 状態の中身.activeGroupId,
+        activeGroupName: 状態の中身.activeGroupName,
+        publicGroupId: 状態の中身.publicGroupId,
+        activeRole: 状態の中身.activeRole,
+        activeUserEmail: 状態の中身.activeUserEmail,
+        myMemberId: 状態の中身.myMemberId,
+        myMemberName: 状態の中身.myMemberName,
+        memberAuthVersion: 状態の中身.memberAuthVersion,
+        analysisSelectedTags: 状態の中身.analysisSelectedTags,
+        analysisTagLogic: 状態の中身.analysisTagLogic,
+        historySelectedTags: 状態の中身.historySelectedTags,
+        historyTagLogic: 状態の中身.historyTagLogic,
+        tagTemplates: 状態の中身.tagTemplates,
+        currentFreshmanTerm: 状態の中身.currentFreshmanTerm,
+        lastPromotionYear: 状態の中身.lastPromotionYear,
+        lastSyncTime: 状態の中身.lastSyncTime,
+        isAdminMode: 状態の中身.isAdminMode,
+        autoPromotionEnabled: 状態の中身.autoPromotionEnabled,
+        analysisRankingSettings: 状態の中身.analysisRankingSettings,
+        enableArrowLocation: 状態の中身.enableArrowLocation,
+        自動ロックする: 状態の中身.自動ロックする,
+        保存時に出欠を確認する: 状態の中身.保存時に出欠を確認する,
+        横に並べる: 状態の中身.横に並べる,
+        帯を畳む: 状態の中身.帯を畳む,
+        帯の取っ手は左: 状態の中身.帯の取っ手は左,
+        arrowTargetType: 状態の中身.arrowTargetType,
+        比較のひな型: 状態の中身.比較のひな型,
+        ライブの合言葉: 状態の中身.ライブの合言葉,
+        ライブの続き: 状態の中身.ライブの続き,
+        履歴の編集: 状態の中身.履歴の編集,
       }),
       onRehydrateStorage: () => {
         console.log('[Store] Hydration starting...');
-        const e = Date.now();
-        return (s, t) => {
-          const o = Date.now() - e;
-          if (t) console.error(`[Store] Hydration error (after ${o}ms):`, t);
-          else if (s) {
-            console.log(`[Store] Hydration finished successfully (Duration: ${o}ms)`);
+        const 始めた時刻 = Date.now();
+        return (戻した状態, 誤り) => {
+          const かかった時間 = Date.now() - 始めた時刻;
+          if (誤り) console.error(`[Store] Hydration error (after ${かかった時間}ms):`, 誤り);
+          else if (戻した状態) {
+            console.log(`[Store] Hydration finished successfully (Duration: ${かかった時間}ms)`);
             const updates = { isHydrated: true };
-            if (s.sessions) {
-              updates.sessions = cleanUpSessions(s.sessions);
+            if (戻した状態.sessions) {
+              updates.sessions = cleanUpSessions(戻した状態.sessions);
             }
-            if (s.trash) {
-              updates.trash = cleanUpSessions(s.trash);
+            if (戻した状態.trash) {
+              updates.trash = cleanUpSessions(戻した状態.trash);
             }
-            if (s.historySelectedTags) {
-              updates.historySelectedTags = cleanUpTagsArray(s.historySelectedTags);
+            if (戻した状態.historySelectedTags) {
+              updates.historySelectedTags = cleanUpTagsArray(戻した状態.historySelectedTags);
             }
-            if (s.analysisSelectedTags) {
-              updates.analysisSelectedTags = cleanUpTagsArray(s.analysisSelectedTags);
+            if (戻した状態.analysisSelectedTags) {
+              updates.analysisSelectedTags = cleanUpTagsArray(戻した状態.analysisSelectedTags);
             }
-            if (s.currentSessionTags) {
-              updates.currentSessionTags = cleanUpTagsArray(s.currentSessionTags);
+            if (戻した状態.currentSessionTags) {
+              updates.currentSessionTags = cleanUpTagsArray(戻した状態.currentSessionTags);
             }
-            if (s.tagTemplates) {
-              updates.tagTemplates = cleanUpTagsArray(s.tagTemplates);
+            if (戻した状態.tagTemplates) {
+              updates.tagTemplates = cleanUpTagsArray(戻した状態.tagTemplates);
             }
-            if (!Array.isArray(s.archers)) {
+            if (!Array.isArray(戻した状態.archers)) {
               console.warn('[Store] archers was not an array, recovering...');
               updates.archers = [];
             }
-            if ('number' != typeof s.viewScale || isNaN(s.viewScale) || s.viewScale <= 0) {
+            if (
+              'number' != typeof 戻した状態.viewScale ||
+              isNaN(戻した状態.viewScale) ||
+              戻した状態.viewScale <= 0
+            ) {
               console.warn('[Store] Invalid viewScale detected during hydration, resetting to 1.0');
               updates.viewScale = 1;
             }
-            if ('function' == typeof s.updateState) {
-              s.updateState(updates);
+            if ('function' == typeof 戻した状態.updateState) {
+              戻した状態.updateState(updates);
             }
-            if ('function' == typeof s.ensurePersonalIds) {
-              s.ensurePersonalIds();
+            if ('function' == typeof 戻した状態.ensurePersonalIds) {
+              戻した状態.ensurePersonalIds();
             }
           } else {
-            console.warn(`[Store] Hydration yielded empty state (after ${o}ms)`);
-            const e = useScoreStore.getState();
-            if (e && false === e.isHydrated && 'function' == typeof e.updateState) {
+            console.warn(`[Store] Hydration yielded empty state (after ${かかった時間}ms)`);
+            const いまの状態 = useScoreStore.getState();
+            if (
+              いまの状態 &&
+              false === いまの状態.isHydrated &&
+              'function' == typeof いまの状態.updateState
+            ) {
               console.log('[Store] Forcing isHydrated: true even for empty state');
-              e.updateState({ isHydrated: true });
+              いまの状態.updateState({ isHydrated: true });
             }
           }
         };

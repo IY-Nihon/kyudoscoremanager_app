@@ -74,6 +74,7 @@ for (const d of 差し替え) {
 const 設定 = await prettier.resolveConfig(path.resolve('.prettierrc.json'));
 src = await prettier.format(src, Object.assign({}, 設定, { parser: 'babel', filepath: file, objectWrap: 'collapse' }));
 // { activeGroupId: activeGroupId } のようになった所は省略形に戻す
-src = src.replace(/([{,]\s*)([A-Za-z_$぀-鿿][\w$぀-鿿]*): (?=\s*[,}])/g, '$1$2');
+src = src.replace(/([{,]\s*)([A-Za-z_$぀-鿿][\w$぀-鿿]*): \2(?=\s*[,}])/g, '$1$2');
+src = await prettier.format(src, Object.assign({}, 設定, { parser: 'babel', filepath: file, objectWrap: 'collapse' }));
 fs.writeFileSync(file, src);
 for (const x of 使った名) console.log(x);

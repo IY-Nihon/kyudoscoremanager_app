@@ -153,9 +153,11 @@ test('取り直しの印は端末に残さない（起動のたびに数え直�
     require('path').join(__dirname, '..', 'src', 'useScoreStore.js'),
     'utf8'
   );
-  const 始 = 本体.indexOf('partialize: (e) => ({');
-  const 保存する分 = 本体.slice(始, 本体.indexOf('}),', 始));
+  // 引数の名前は問わない（読める形に直したので e → 状態の中身）
+  const 頭 = 本体.match(/partialize: \([^)]*\) => \(\{/);
+  const 始 = 頭 ? 頭.index : -1;
   assert.ok(始 > 0, '保存する値の一覧が見つからない');
+  const 保存する分 = 本体.slice(始, 本体.indexOf('}),', 始));
   assert.ok(
     !保存する分.includes('同意の確認が要る'),
     '端末に残すと、あとでを選んだ印が居座って二度と出なくなる'
