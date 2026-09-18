@@ -29,7 +29,6 @@ const 窓 = require('./AppDialog');
 const 航 = require('@react-navigation/native');
 const { formatMemberName } = require('./formatMemberName');
 const { getShadowStyle } = require('./shadowStyle');
-const A = require('./themedJsx');
 const { ArrowLocationPopover } = require('./ArrowLocationPopover');
 const { OCRRecordModal } = require('./OCRRecordModal');
 const { LiveShareModal } = require('./LiveShareModal');
@@ -108,19 +107,21 @@ const RecordScreen = () => {
     sessions: 記録たち = [],
   } = useScoreStore();
   const 航路 = 航.useNavigation();
-  const se = 'number' == typeof viewScale && !isNaN(viewScale) && viewScale > 0 ? viewScale : 1;
+  // ライブ中の帯。主催者は押して配る窓を開けるので、押せる部品にする
+  const ライブの帯 = isHost ? TouchableOpacity : View;
+  const 倍率 = 'number' == typeof viewScale && !isNaN(viewScale) && viewScale > 0 ? viewScale : 1;
   if (!isHydrated) return null;
   // ライブに何台つないでいるか。電波の切れる弓道場で、
   // 相手に届いているかをその場で見るために出す（src/livePresence.js）
-  const 接続の文言 = 在.台数の文言(useScoreStore((e) => e.ライブの接続台数));
+  const 接続の文言 = 在.台数の文言(useScoreStore((x) => x.ライブの接続台数));
   // ライブをURLで配る窓。主催者だけが開ける
   const [共有の窓, 共有の窓を出す] = React.useState(false);
   // 共有リンクだけで来ている人。団体の名簿を持っていない
-  const 来客 = useScoreStore((e) => e.共有の来客);
+  const 来客 = useScoreStore((x) => x.共有の来客);
   // よその団体のライブに共有リンクで入っているか。保存はさせない
-  const よその団体 = useScoreStore((e) => e.よその団体のライブ);
+  const よその団体 = useScoreStore((x) => x.よその団体のライブ);
   // 配ったリンクの期限。帯に「あと30分」を出すために見る
-  const ライブの期限 = useScoreStore((e) => e.いまのライブの期限);
+  const ライブの期限 = useScoreStore((x) => x.いまのライブの期限);
   // 残りは時間で減るので、こちらから数え直さないと止まって見える。
   // ただし数え直すたびに記録画面ぜんぶが描き直る。いつ起きればよいかは
   // liveShare の 次に数え直すまで が決める（帯に出るころまでは眠る）
@@ -133,15 +134,15 @@ const RecordScreen = () => {
   }, [ライブの期限, いま]);
   // 近いときだけ出す。ずっと出していると場所を取るだけで読まれなくなる
   const 期限の残り = 期限.期限の短い文言(ライブの期限, いま);
-  const ae = useScoreStore((e) => e.liveSessionsList);
-  const [de, ce] = React.useState(false);
-  const [ue, fe] = React.useState(null);
-  const [he, ge] = React.useState(0);
-  const [me, xe] = React.useState(false);
-  const [ye, be] = React.useState(false);
-  const [Fe, je] = React.useState(null);
+  const ライブの一覧 = useScoreStore((x) => x.liveSessionsList);
+  const [人の窓, 人の窓を出す] = React.useState(false);
+  const [選んだ射手ID, 選んだ射手IDを置く] = React.useState(null);
+  const [選んだ射手の順, 選んだ射手の順を置く] = React.useState(0);
+  const [保存の窓, 保存の窓を出す] = React.useState(false);
+  const [交代の窓, 交代の窓を出す] = React.useState(false);
+  const [知らせ, 知らせを置く] = React.useState(null);
   const [警告を閉じた, 警告を閉じる] = React.useState(false);
-  const Se = React.useRef(0);
+  const 扱ったリセット = React.useRef(0);
   const 共有履歴を出した = React.useRef(0);
   const 鍵の知らせを出した = React.useRef(0);
   const // 使い方の案内が指す先
@@ -164,20 +165,20 @@ const RecordScreen = () => {
   const 進める = ライブの知らせに任せる
     ? (共有履歴の位置 || 0) < (共有履歴の上限 || 0)
     : redoStack.length > 0;
-  const [pe, Ce] = React.useState(false);
+  const [リセットの窓, リセットの窓を出す] = React.useState(false);
   const // 区切りにチーム名を付ける窓（リーグの大学名）。
     // どの区切りを触っているかと、入力中の文字を持つ
     [チーム名を付ける区切り, setチーム名を付ける区切り] = React.useState(null);
   const [チーム名の下書き, setチーム名の下書き] = React.useState('');
-  const [Ie, ve] = React.useState(false);
-  const [Be, Ae] = React.useState(8);
-  const [ke, We] = React.useState(false);
-  const [Te, ze] = React.useState('');
-  const [we, Ee] = React.useState(false);
-  const [Re, Pe] = React.useState(null);
-  const [Le, De] = React.useState('');
-  const [He, Oe] = React.useState(false);
-  const [Me, Ne] = React.useState(null);
+  const [射数を減らす確認, 射数を減らす確認を出す] = React.useState(false);
+  const [減らす先の射数, 減らす先の射数を置く] = React.useState(8);
+  const [射数の入力窓, 射数の入力窓を出す] = React.useState(false);
+  const [射数の下書き, 射数の下書きを置く] = React.useState('');
+  const [ライブの選び窓, ライブの選び窓を出す] = React.useState(false);
+  const [ライブの種類, ライブの種類を置く] = React.useState(null);
+  const [ライブ名の下書き, ライブ名の下書きを置く] = React.useState('');
+  const [ライブ名の窓, ライブ名の窓を出す] = React.useState(false);
+  const [ライブ名の注意, ライブ名の注意を置く] = React.useState(null);
   const [showAttendance, setShowAttendance] = React.useState(false);
   const [tempAttendance, setTempAttendance] = React.useState(null);
   const [showOCRModal, setShowOCRModal] = React.useState(false);
@@ -190,24 +191,24 @@ const RecordScreen = () => {
     [確認, 確認を置く] = React.useState(null);
   const 閉じた知らせを出した = React.useRef(0);
   const 閲覧の知らせを出した = React.useRef(0);
-  const Ve = React.useRef(null);
-  const Ue = React.useRef(null);
-  const Ge = (e) => {
-    je(e);
-    setTimeout(() => je(null), 1500);
+  const 上の横流し = React.useRef(null);
+  const 下の横流し = React.useRef(null);
+  const 知らせる = (文) => {
+    知らせを置く(文);
+    setTimeout(() => 知らせを置く(null), 1500);
   };
   React.useEffect(() => {
     // 同期の失敗はいつも知らせる。切り替えで消せるようにしていたころは、
     // 切っていることを忘れたまま何日も同期できていない状態になり得た。
     // しかも切り替えは保存されておらず、開き直すと勝手に戻っていた
-    if ('同期エラー' === syncStatus) je('同期エラー: クラウドとの同期に失敗しました');
+    if ('同期エラー' === syncStatus) 知らせを置く('同期エラー: クラウドとの同期に失敗しました');
   }, [syncStatus]);
   React.useEffect(() => {
-    if (lastResetHandled > 0 && Se.current < lastResetHandled) {
-      const e = lastResetHandled === useScoreStore.getState().lastPushedTimestamp;
-      Se.current = lastResetHandled;
-      e ||
-        (Ge('リセットしました。'),
+    if (lastResetHandled > 0 && 扱ったリセット.current < lastResetHandled) {
+      const 自分のリセット = lastResetHandled === useScoreStore.getState().lastPushedTimestamp;
+      扱ったリセット.current = lastResetHandled;
+      自分のリセット ||
+        (知らせる('リセットしました。'),
         ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning));
     }
   }, [lastResetHandled]);
@@ -216,7 +217,7 @@ const RecordScreen = () => {
   React.useEffect(() => {
     if (共有履歴の知らせ > 0 && 共有履歴を出した.current < 共有履歴の知らせ) {
       共有履歴を出した.current = 共有履歴の知らせ;
-      Ge(`${共有履歴の種類 || '取り消し'}されました。`);
+      知らせる(`${共有履歴の種類 || '取り消し'}されました。`);
       ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning);
     }
   }, [共有履歴の知らせ, 共有履歴の種類]);
@@ -225,7 +226,7 @@ const RecordScreen = () => {
   React.useEffect(() => {
     if (鍵を開けた時刻 > 0 && 鍵の知らせを出した.current < 鍵を開けた時刻) {
       鍵の知らせを出した.current = 鍵を開けた時刻;
-      Ge('このマスの鍵を開けました');
+      知らせる('このマスの鍵を開けました');
       ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Success);
     }
   }, [鍵を開けた時刻]);
@@ -234,7 +235,7 @@ const RecordScreen = () => {
   React.useEffect(() => {
     if (閉じたますを押した時刻 > 0 && 閉じた知らせを出した.current < 閉じたますを押した時刻) {
       閉じた知らせを出した.current = 閉じたますを押した時刻;
-      Ge('このマスは鍵がかかっています。長押しで開きます');
+      知らせる('このマスは鍵がかかっています。長押しで開きます');
       ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning);
     }
   }, [閉じたますを押した時刻]);
@@ -274,17 +275,17 @@ const RecordScreen = () => {
     };
   }, []);
   React.useEffect(() => {
-    let e;
+    let 止める;
     return (
-      He &&
-        'join' === Re &&
+      ライブ名の窓 &&
+        'join' === ライブの種類 &&
         (useScoreStore.getState().fetchActiveLiveSessions(),
-        (e = useScoreStore.getState().listenToLiveSessions())),
+        (止める = useScoreStore.getState().listenToLiveSessions())),
       () => {
-        if (e) e();
+        if (止める) 止める();
       }
     );
-  }, [He, Re]);
+  }, [ライブ名の窓, ライブの種類]);
   new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
   // 案内の最中は畳まない。案内が指す先は全部この帯の中にあり、
   // 畳んだままだと指せないうえ、押す操作そのものができない
@@ -295,29 +296,30 @@ const RecordScreen = () => {
   // 閲覧用のときは何も変えず、そのことだけ短く知らせる。
   // 押しても無反応だと、壊れたのか決まりなのか分からない
   const 閲覧中に押された = () => {
-    Ge('閲覧用で参加しています');
+    知らせる('閲覧用で参加しています');
     ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning);
   };
   // ライブに入る。ポップアップから呼ぶので、画面の上のほうに置く
   const ライブに入る = (名, 見るだけ) => {
-    Ge(見るだけ ? '閲覧用で参加しています...' : '記録用で参加しています...');
-    Oe(false);
+    知らせる(見るだけ ? '閲覧用で参加しています...' : '記録用で参加しています...');
+    ライブ名の窓を出す(false);
     useScoreStore.getState().joinLiveSync(名, 見るだけ);
     ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Success);
   };
   // 閲覧用で入っているあいだは、鍵ボタンなども触れないようにする
-  const $e = !!(isLiveActive && ライブは見るだけ);
-  const qe = (e, t, o) => {
+  const 見るだけ中 = !!(isLiveActive && ライブは見るだけ);
+  const 人を選ぶ = (射手ID, _, 順) => {
     // 閲覧用のときは人の選択も開かない。開いても名前も交代も削除も
     // 止めてあるので、開くだけ無駄に迷わせる
-    if ($e) return void 閲覧中に押された();
+    if (見るだけ中) return void 閲覧中に押された();
     // 共有リンクで来た人は団体の名簿を持っていない。開いても空の一覧が
     // 出るだけなので、開かずに理由を伝える
     if (来客)
-      return void (Ge('共有リンクでは名前を選べません'),
+      return void (知らせる('共有リンクでは名前を選べません'),
       ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning));
     ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Medium);
-    archers.find((t) => t.id === e) && (fe(e), ge(o), ce(true));
+    archers.find((x) => x.id === 射手ID) &&
+      (選んだ射手IDを置く(射手ID), 選んだ射手の順を置く(順), 人の窓を出す(true));
   };
   const // ── 立ち順を指で動かす（長押しで掴んで、滑らせて、離す）───────────
     //
@@ -328,7 +330,7 @@ const RecordScreen = () => {
   const [落とす先, set落とす先] = React.useState(null);
   const // 指の横の位置（名前の行の中での座標）。運ぶ札をここに置く
     [指の横, set指の横] = React.useState(null);
-  const [Je, Ke] = React.useState(false);
+  const [射数の窓, 射数の窓を出す] = React.useState(false);
   const // 拡大率の選択が出ているか（Excel の倍率と同じ考え方）
     [拡大選択中, 拡大を選ぶ] = React.useState(false);
   const // 拡大率のバーの幅。指の位置を倍率に直すのに使う
@@ -338,7 +340,7 @@ const RecordScreen = () => {
   const 拡大の上 = 2;
   const // バーのどこを触ったかを倍率に直す。1%きざみで止める
     触った所を倍率に = (x) => {
-      if (!溝の幅) return se;
+      if (!溝の幅) return 倍率;
       const 割合 = Math.min(1, Math.max(0, x / 溝の幅));
       const 生 = 拡大の下 + 割合 * (拡大の上 - 拡大の下);
       return Math.round(生 * 100) / 100;
@@ -346,27 +348,29 @@ const RecordScreen = () => {
   const 倍率を割合に = (倍) => Math.min(1, Math.max(0, (倍 - 拡大の下) / (拡大の上 - 拡大の下)));
   const バーを動かす = (e) => {
     const 倍 = 触った所を倍率に(e.nativeEvent.locationX);
-    if (Math.abs(倍 - se) > 0.001) setViewScale(倍);
+    if (Math.abs(倍 - 倍率) > 0.001) setViewScale(倍);
   };
-  const Qe = () => Ke(false);
-  const Xe = (e) => {
-    e < shotsPerRound &&
-    archers.some((t) => t && Array.isArray(t.marks) && t.marks.slice(e).some((e) => '' !== e))
-      ? (Ae(e), ve(true))
-      : (setShotsPerRound(e), ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Medium));
+  const 射数の窓を閉じる = () => 射数の窓を出す(false);
+  const 射数を変える = (本数) => {
+    本数 < shotsPerRound &&
+    archers.some(
+      (射手) => 射手 && Array.isArray(射手.marks) && 射手.marks.slice(本数).some((印) => '' !== 印)
+    )
+      ? (減らす先の射数を置く(本数), 射数を減らす確認を出す(true))
+      : (setShotsPerRound(本数), ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Medium));
   };
-  const Ye = () => {
-    const e = parseInt(Te, 10);
-    !isNaN(e) && e >= 1 && e <= 500
-      ? (We(false), Xe(e))
-      : (je('1〜500までの数字を入力してください'), setTimeout(() => je(null), 1500));
+  const 入力した射数で決める = () => {
+    const 本数 = parseInt(射数の下書き, 10);
+    !isNaN(本数) && 本数 >= 1 && 本数 <= 500
+      ? (射数の入力窓を出す(false), 射数を変える(本数))
+      : (知らせを置く('1〜500までの数字を入力してください'), setTimeout(() => 知らせを置く(null), 1500));
   };
-  const Ze = (e) => {
-    Ee(false);
-    Pe(e);
-    De('');
+  const ライブを始める窓へ = (種類) => {
+    ライブの選び窓を出す(false);
+    ライブの種類を置く(種類);
+    ライブ名の下書きを置く('');
     setTimeout(() => {
-      Oe(true);
+      ライブ名の窓を出す(true);
     }, 100);
   };
   const Et要素 = View;
@@ -460,9 +464,9 @@ const RecordScreen = () => {
   // 指の下の列と入れ替えて描くので、出来上がりを見てから離せる。
   // 掴んだ列は抜けた跡として薄く残し、指には別の札（下の 運ぶ札）が付いてくる
   const 見えている並び = (() => {
-    const 一覧 = (Array.isArray(archers) ? archers : []).filter((e) => !!e);
+    const 一覧 = (Array.isArray(archers) ? archers : []).filter((x) => !!x);
     if (!掴んだ列 || null === 落とす先) return 一覧;
-    const いま = 一覧.findIndex((x) => x.id === 掴んだ列);
+    const いま = 一覧.findIndex((列) => 列.id === 掴んだ列);
     if (いま < 0 || いま === 落とす先) return 一覧;
     const 写し = [...一覧];
     写し.splice(落とす先, 0, 写し.splice(いま, 1)[0]);
@@ -485,9 +489,9 @@ const RecordScreen = () => {
       箱.push({ i, 頭: (横に並べる ? r.top : r.left) + ずれ, 尻: (横に並べる ? r.bottom : r.right) + ずれ });
     }
     if (!箱.length) return null;
-    for (const x of 箱) if (指の位置 >= x.頭 && 指の位置 <= x.尻) return x.i;
-    const 手前 = 箱.reduce((a, b) => (a.頭 < b.頭 ? a : b));
-    const 奥 = 箱.reduce((a, b) => (a.尻 > b.尻 ? a : b));
+    for (const 枠 of 箱) if (指の位置 >= 枠.頭 && 指の位置 <= 枠.尻) return 枠.i;
+    const 手前 = 箱.reduce((甲, 乙) => (甲.頭 < 乙.頭 ? 甲 : 乙));
+    const 奥 = 箱.reduce((甲, 乙) => (甲.尻 > 乙.尻 ? 甲 : 乙));
     if (指の位置 < 手前.頭) return 手前.i;
     if (指の位置 > 奥.尻) return 奥.i;
     return null;
@@ -496,10 +500,11 @@ const RecordScreen = () => {
   // 掴んでいないときは何もしないので、ふつうの押す・流すの邪魔をしない
   const 指が動いた = (ev) => {
     if (!掴んだ列のref.current) return;
-    const e = ev && ev.nativeEvent ? ev.nativeEvent : ev;
-    if (!e) return;
-    const t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]) || null;
-    const 縦位置 = e.pageY != null ? e.pageY : t ? t.pageY : null;
+    const 出来事 = ev && ev.nativeEvent ? ev.nativeEvent : ev;
+    if (!出来事) return;
+    const 触れた指 =
+      (出来事.touches && 出来事.touches[0]) || (出来事.changedTouches && 出来事.changedTouches[0]) || null;
+    const 縦位置 = 出来事.pageY != null ? 出来事.pageY : 触れた指 ? 触れた指.pageY : null;
     if (縦位置 == null) return;
     動かし始めた.current = true;
     const 行 = 名の行のnode.current;
@@ -520,13 +525,13 @@ const RecordScreen = () => {
   };
   // 掴む／掴みを解く。縦でも横でも同じものを使う
   const 掴む = (id) => {
-    if ($e) return void 閲覧中に押された();
+    if (見るだけ中) return void 閲覧中に押された();
     掴んだ列のref.current = id;
     落とす先のref.current = null;
     動かし始めた.current = false;
     set掴んだ列(id);
     set落とす先(null);
-    Ge('動かす先へ指をすべらせて、離してください');
+    知らせる('動かす先へ指をすべらせて、離してください');
     ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Medium);
   };
   // 掴んだだけで動かさずに離したときは、掴みを解く。
@@ -551,11 +556,11 @@ const RecordScreen = () => {
     if (!id || null === 先) return;
     // 画面にはもう「離したらこうなる」並びが出ている。その並びのとおりに
     // 決めるだけなので、指していた番号をそのまま渡す
-    const 元の一覧 = (Array.isArray(archers) ? archers : []).filter((e) => !!e);
-    const いま = 元の一覧.findIndex((x) => x.id === id);
+    const 元の一覧 = (Array.isArray(archers) ? archers : []).filter((x) => !!x);
+    const いま = 元の一覧.findIndex((列) => 列.id === id);
     if (いま < 0 || いま === 先) return;
     列を並べ替える(id, 先);
-    Ge('立ち順を変えました');
+    知らせる('立ち順を変えました');
     ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Medium);
   };
   // 表の外で指を離しても、掴みを解く。
@@ -611,12 +616,13 @@ const RecordScreen = () => {
   // 「名前が左、射数が右へ、上から下へ」にする。○×のますも、鍵も、
   // 途中交代も同じ部品をそのまま使う（並べ方だけを変える）。
   // 左の名前だけは動かさず、○×の側だけ横に流す
-  const 名前の幅 = 100 * se;
-  const 行の高さ = (射手) => (射手 && 射手.isSeparator ? UIConfig.separatorWidth : UIConfig.cellHeight) * se;
+  const 名前の幅 = 100 * 倍率;
+  const 行の高さ = (射手) =>
+    (射手 && 射手.isSeparator ? UIConfig.separatorWidth : UIConfig.cellHeight) * 倍率;
   const // 案内が指す先。縦の足元と同じ決まりで、まだ名前の入っていない人を選ぶ
     案内が指す順 = () => {
-      const 一覧 = (Array.isArray(archers) ? archers : []).filter((e) => !!e);
-      const 指す = 一覧.findIndex((a) => a && !a.name && !a.isSeparator && !a.isTotalCalculator);
+      const 一覧 = (Array.isArray(archers) ? archers : []).filter((x) => !!x);
+      const 指す = 一覧.findIndex((x) => x && !x.name && !x.isSeparator && !x.isTotalCalculator);
       return 指す < 0 ? 0 : 指す;
     };
   const 横の名前セル = (射手, 順) => (
@@ -648,8 +654,8 @@ const RecordScreen = () => {
         // チームの色。縦では名前の上に細い帯で出しているので、横では
         // 名前の左に出す（並べ方を変えても、どのチームかは分かるように）
         ...(() => {
-          const 色 = (組.チームを割り当てる(見えている並び).find((x) => x && x.id === 射手.id) || {}).色;
-          return 色 ? { borderLeftWidth: 3 * se, borderLeftColor: 色 } : null;
+          const 色 = (組.チームを割り当てる(見えている並び).find((列) => 列 && 列.id === 射手.id) || {}).色;
+          return 色 ? { borderLeftWidth: 3 * 倍率, borderLeftColor: 色 } : null;
         })(),
         // 掴んでいる列は、抜けた跡として薄く残す（縦と同じ）
         ...(掴んだ列 === 射手.id ? { opacity: 0.35, backgroundColor: 'rgba(0,122,255,0.10)' } : null),
@@ -660,16 +666,16 @@ const RecordScreen = () => {
           style={{ alignItems: 'center', width: '100%', height: '100%', justifyContent: 'center' }} // 縦の表と同じにする。押すと窓が開き、そこでチーム名を付けたり
           // 消したりできる。横だけ「押す＝そのまま消す」のままだと、
           // 向きを変えただけで振る舞いが変わって驚く
-          onPress={() => qe(射手.id, 射手.name, 順)}
+          onPress={() => 人を選ぶ(射手.id, 射手.name, 順)}
           onLongPress={() => 掴む(射手.id)}
           onPressOut={() => 掴みを見直す()}
           delayLongPress={400}
-          disabled={$e}
+          disabled={見るだけ中}
         >
           {組.区切りのチーム名(射手) ? (
             <Text
               style={{
-                fontSize: 11 * se,
+                fontSize: 11 * 倍率,
                 fontWeight: '700',
                 textAlign: 'center',
                 color: 組.チームの色(組.区切りのチーム名(射手)) || '#8E8E93',
@@ -679,19 +685,19 @@ const RecordScreen = () => {
               {組.区切りのチーム名(射手)}
             </Text>
           ) : (
-            <Icons.Ionicons name="ellipsis-horizontal" size={20 * se} color="#8E8E93" />
+            <Icons.Ionicons name="ellipsis-horizontal" size={20 * 倍率} color="#8E8E93" />
           )}
         </TouchableOpacity>
       ) : (
         <TouchableOpacity
           style={{ alignItems: 'center', width: '100%', height: '100%', justifyContent: 'center' }}
-          onPress={() => qe(射手.id, 射手.name, 順)}
+          onPress={() => 人を選ぶ(射手.id, 射手.name, 順)}
           onLongPress={() => 掴む(射手.id)}
           onPressOut={() => 掴みを見直す()}
           delayLongPress={400}
         >
           <Text
-            style={[W.footerName, { color: 射手.name ? '#000' : '#8E8E93', fontSize: 13 * se }]}
+            style={[styles.footerName, { color: 射手.name ? '#000' : '#8E8E93', fontSize: 13 * 倍率 }]}
             numberOfLines={1}
           >
             {/* 手前の計もまとめる合計は「総計」。ふつうの「計」と */
@@ -706,7 +712,9 @@ const RecordScreen = () => {
           </Text>
           {射手.isGuest || (!射手.isTotalCalculator && '' !== 射手.name) ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 1 }}>
-              {射手.isGuest ? <Text style={[W.guestLabel, { fontSize: 9 * se }]}>(ゲスト)</Text> : null}
+              {射手.isGuest ? (
+                <Text style={[styles.guestLabel, { fontSize: 9 * 倍率 }]}>(ゲスト)</Text>
+              ) : null}
               {!射手.isTotalCalculator && '' !== 射手.name ? (
                 <View
                   style={{
@@ -724,7 +732,7 @@ const RecordScreen = () => {
                           : '#FF2D55',
                   }}
                 >
-                  <Icons.Ionicons name="person" size={9 * se} color="#FFF" />
+                  <Icons.Ionicons name="person" size={9 * 倍率} color="#FFF" />
                 </View>
               ) : null}
             </View>
@@ -753,10 +761,10 @@ const RecordScreen = () => {
             // 動かせない）。縦のときは横の動きなので取り合いにならないが、
             // 横のときは縦の動きで、外側の流れと競合するらしい。
             // ここは指の動きを直に見る（矢所の窓と同じやり方）
-            onTouchMove={(ev) => 指が動いた(ev)}
+            onTouchMove={(出来事) => 指が動いた(出来事)}
             onTouchEnd={() => 指を離した()}
             onTouchCancel={() => 掴むのをやめる()}
-            onMouseMove={(ev) => 指が動いた(ev)}
+            onMouseMove={(出来事) => 指が動いた(出来事)}
             onMouseUp={() => 指を離した()}
             ref={(node) => {
               名の行のnode.current = node;
@@ -767,7 +775,7 @@ const RecordScreen = () => {
             <View
               style={{
                 width: 名前の幅,
-                height: UIConfig.cellHeight * se,
+                height: UIConfig.cellHeight * 倍率,
                 justifyContent: 'center',
                 alignItems: 'center',
                 backgroundColor: '#F2F2F7',
@@ -780,12 +788,12 @@ const RecordScreen = () => {
                 borderRightColor: '#000',
               }}
             >
-              <Text style={{ fontSize: 10 * se, fontWeight: 'bold', color: '#3C3C43' }}>名</Text>
+              <Text style={{ fontSize: 10 * 倍率, fontWeight: 'bold', color: '#3C3C43' }}>名</Text>
             </View>
             {一覧.map((射手, 順) => 横の名前セル(射手, 順))}
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator style={{ flexGrow: 0, flexShrink: 1 }}>
-            <View style={{ flexDirection: 'column', width: UIConfig.cellWidth * (shotsPerRound + 1) * se }}>
+            <View style={{ flexDirection: 'column', width: UIConfig.cellWidth * (shotsPerRound + 1) * 倍率 }}>
               <LabelColumn shots={shotsPerRound} showFooter={false} 横並び />
               {一覧.map((射手, 順) => (
                 <ArcherColumnView
@@ -796,11 +804,11 @@ const RecordScreen = () => {
                   indexInList={順}
                   showFooter={false}
                   横並び
-                  isReadOnly={$e}
-                  onPressName={() => qe(射手.id, 射手.name, 順)}
+                  isReadOnly={見るだけ中}
+                  onPressName={() => 人を選ぶ(射手.id, 射手.name, 順)}
                   onDelete={() => deleteArcher(射手.id)}
                   onLongPressSeparator={() => {
-                    if ($e) return void 閲覧中に押された();
+                    if (見るだけ中) return void 閲覧中に押された();
                     setチーム名の下書き(射手.teamName || '');
                     setチーム名を付ける区切り(射手.id);
                   }}
@@ -822,7 +830,7 @@ const RecordScreen = () => {
    */
   const 運ぶ札 = () => {
     if (!掴んだ列 || null === 指の横) return null;
-    const 持ち物 = 見えている並び.find((x) => x && x.id === 掴んだ列);
+    const 持ち物 = 見えている並び.find((列) => 列 && 列.id === 掴んだ列);
     if (!持ち物) return null;
     const 名 = 持ち物.isTotalCalculator
       ? 持ち物.またぐ合計
@@ -833,11 +841,11 @@ const RecordScreen = () => {
         : 持ち物.name
           ? formatMemberName(持ち物.name, members)
           : '選択';
-    const 太さ = (持ち物.isSeparator ? UIConfig.separatorWidth : UIConfig.cellWidth) * se;
+    const 太さ = (持ち物.isSeparator ? UIConfig.separatorWidth : UIConfig.cellWidth) * 倍率;
     // 縦は「幅＝列の太さ／高さ＝名前の欄の高さ」、横はその逆
     const 置き方 = 横に並べる
       ? { left: 0, top: 指の横 - 太さ / 2, width: 名前の幅, height: 太さ }
-      : { left: 指の横 - 太さ / 2, top: -6 * se, width: 太さ, height: UIConfig.footerHeight * se };
+      : { left: 指の横 - 太さ / 2, top: -6 * 倍率, width: 太さ, height: UIConfig.footerHeight * 倍率 };
     return (
       <View
         key={'運ぶ札'}
@@ -863,7 +871,7 @@ const RecordScreen = () => {
         }}
       >
         <Text
-          style={{ fontSize: 13 * se, fontWeight: '700', color: '#007AFF', textAlign: 'center' }}
+          style={{ fontSize: 13 * 倍率, fontWeight: '700', color: '#007AFF', textAlign: 'center' }}
           numberOfLines={2}
         >
           {名}
@@ -872,7 +880,7 @@ const RecordScreen = () => {
     );
   };
   return (
-    <Et要素 style={W.safeArea} edges={['top', 'left', 'right', 'bottom']}>
+    <Et要素 style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
       {/* 入り直しが要るときは、そちらを先に出す。同期エラーの帯だけでは */
       /* 何をすればよいか分からず、記録が届かないまま使い続けることになる */}
       {再ログインの案内 || (オフライン保存の警告 && !警告を閉じた) ? (
@@ -889,19 +897,19 @@ const RecordScreen = () => {
       /* 「終了・保存」とライブはこの間は出さない（記録が二重になる・ライブに結びつく） */}
       {履歴の編集
         ? (() => {
-            const 記録 = 記録たち.find((e) => e && e.id === 履歴の編集.id);
+            const 記録 = 記録たち.find((x) => x && x.id === 履歴の編集.id);
             const 題 = 記録
               ? (記録.title && String(記録.title).trim()) || new Date(記録.date).toLocaleDateString('ja-JP')
               : '';
             const 戻る = (保存する) => {
               履歴の編集を終える(保存する);
-              Ge(保存する ? '履歴の記録に保存しました' : '直す前の記録表に戻しました');
+              知らせる(保存する ? '履歴の記録に保存しました' : '直す前の記録表に戻しました');
               航路.navigate('履歴');
             };
             return (
               <View
                 style={[
-                  W.liveStatusHeader,
+                  styles.liveStatusHeader,
                   {
                     backgroundColor: '#FF9500',
                     height: 'auto',
@@ -914,7 +922,7 @@ const RecordScreen = () => {
                 testID="履歴の編集の帯"
               >
                 <Icons.Ionicons name="create-outline" size={13} color="#FFF" />
-                <Text style={[W.liveStatusText, { flex: 1 }]} numberOfLines={1}>
+                <Text style={[styles.liveStatusText, { flex: 1 }]} numberOfLines={1}>
                   履歴の記録を直しています{題 ? '：' + 題 : ''}
                 </Text>
                 <TouchableOpacity
@@ -951,45 +959,44 @@ const RecordScreen = () => {
             );
           })()
         : null}
-      {isLiveActive && liveSessionName
-        ? (0, A.jsxs)(isHost ? TouchableOpacity : View, {
-            // 主催者は帯を押すと、リンクで配る窓が開く。
-            // ライブ中しか出ない帯なので、ここに置くのがいちばん近い
-            style: [W.liveStatusHeader, W.liveActiveHeader, { marginHorizontal: 8, borderRadius: 8 }],
-            onPress: isHost ? () => 共有の窓を出す(true) : undefined,
-            children: [
-              <Icons.Ionicons name="radio-outline" size={12} color="#FFF" />,
-              <Text style={W.liveStatusText} numberOfLines={1}>
-                ライブ中{ライブは見るだけ ? '（閲覧用）' : ''}
-                {': '}
-                {liveSessionName}
-              </Text>,
-              isHost ? <Icons.Ionicons name="share-outline" size={12} color="#FFF" /> : null,
-              接続の文言 ? (
-                <View style={W.liveCount}>
-                  <Icons.Ionicons name="ellipse" size={7} color="#34C759" />
-                  <Text style={W.liveCountText}>{接続の文言}</Text>
-                </View>
-              ) : null,
-              // 期限が近いときだけ。字は最小限にして、意味は色で持たせる。
-              // 帯は1行なので、長い文を入れるとライブ名が潰れる
-              期限の残り ? (
-                <View style={W.liveLimit}>
-                  <Icons.Ionicons name="time-outline" size={10} color="#FFF" />
-                  <Text style={W.liveLimitText}>{期限の残り}</Text>
-                </View>
-              ) : null,
-            ],
-          })
-        : null}
+      {isLiveActive && liveSessionName ? (
+        // 主催者は帯を押すと、リンクで配る窓が開く。
+        // ライブ中しか出ない帯なので、ここに置くのがいちばん近い
+        <ライブの帯
+          style={[styles.liveStatusHeader, styles.liveActiveHeader, { marginHorizontal: 8, borderRadius: 8 }]}
+          onPress={isHost ? () => 共有の窓を出す(true) : undefined}
+        >
+          <Icons.Ionicons name="radio-outline" size={12} color="#FFF" />
+          <Text style={styles.liveStatusText} numberOfLines={1}>
+            ライブ中{ライブは見るだけ ? '（閲覧用）' : ''}
+            {': '}
+            {liveSessionName}
+          </Text>
+          {isHost ? <Icons.Ionicons name="share-outline" size={12} color="#FFF" /> : null}
+          {接続の文言 ? (
+            <View style={styles.liveCount}>
+              <Icons.Ionicons name="ellipse" size={7} color="#34C759" />
+              <Text style={styles.liveCountText}>{接続の文言}</Text>
+            </View>
+          ) : null}
+          {/* 期限が近いときだけ。字は最小限にして、意味は色で持たせる。 */}
+          {/* 帯は1行なので、長い文を入れるとライブ名が潰れる */}
+          {期限の残り ? (
+            <View style={styles.liveLimit}>
+              <Icons.Ionicons name="time-outline" size={10} color="#FFF" />
+              <Text style={styles.liveLimitText}>{期限の残り}</Text>
+            </View>
+          ) : null}
+        </ライブの帯>
+      ) : null}
       {帯を畳む ? null : (
-        <View style={[W.navBar, { zIndex: 1e4 }]}>
-          <View style={W.navLeft}>
+        <View style={[styles.navBar, { zIndex: 1e4 }]}>
+          <View style={styles.navLeft}>
             <Pressable
               ref={案内のリセット}
               onPress={() => {
-                if ($e) return void 閲覧中に押された();
-                Ce(true);
+                if (見るだけ中) return void 閲覧中に押された();
+                リセットの窓を出す(true);
               }}
               hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} // 絵だけのボタンは読み上げに何も伝わらない。端末は accessibilityLabel、
               // web の TouchableOpacity は aria-label を見るので、両方渡す
@@ -999,14 +1006,14 @@ const RecordScreen = () => {
               aria-label="リセット"
               accessibilityHint="記録表を空にします"
               style={({ hovered }) => [
-                W.resetBtn,
-                $e && { opacity: 0.4 },
+                styles.resetBtn,
+                見るだけ中 && { opacity: 0.4 },
                 hovered && IS_WEB && { opacity: 0.8 },
               ]}
             >
-              <Text style={W.resetBtnText}>リセット</Text>
+              <Text style={styles.resetBtnText}>リセット</Text>
             </Pressable>
-            <View style={W.syncContainer}>
+            <View style={styles.syncContainer}>
               {isNetworkOnline && '同期エラー' !== syncStatus ? (
                 '同期中' === syncStatus ? (
                   <Icons.Ionicons name="cloud-upload-outline" size={14} color="#007AFF" />
@@ -1024,7 +1031,7 @@ const RecordScreen = () => {
             /* 記録表の見える範囲を削っていた。記録中に見るものでもないので */
             /* 設定タブへ譲る（設定の先頭に出ている） */}
           </View>
-          <View style={W.navRight}>
+          <View style={styles.navRight}>
             {/* ライブ中だけ出す「配る」。帯を押しても開くが、 */
             /* 押せると分かる形が無いと見つけられない。 */
             /*  */
@@ -1035,7 +1042,7 @@ const RecordScreen = () => {
             /* 直すときは帯（onPress: X ? … ）と揃えること。 */}
             {isLiveActive && !来客 ? (
               <TouchableOpacity
-                style={W.shareBtn} // 絵だけのボタンは読み上げに何も伝わらない。端末は accessibilityLabel、
+                style={styles.shareBtn} // 絵だけのボタンは読み上げに何も伝わらない。端末は accessibilityLabel、
                 // web の TouchableOpacity は aria-label を見るので、両方渡す
                 accessible
                 accessibilityRole="button"
@@ -1044,7 +1051,7 @@ const RecordScreen = () => {
                 onPress={() => 共有の窓を出す(true)}
               >
                 <Icons.Ionicons name="share-outline" size={16} color="#007AFF" />
-                <Text style={W.shareBtnText}>配る</Text>
+                <Text style={styles.shareBtnText}>配る</Text>
               </TouchableOpacity>
             ) : null}
             {/* 履歴の記録を直しているあいだはライブに入らない（盤面がライブと結びつく） */}
@@ -1060,12 +1067,12 @@ const RecordScreen = () => {
                         ? useScoreStore.getState().共有の来客をやめる()
                         : useScoreStore.getState().stopLiveSync(),
                       ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning))
-                    : Ee(true);
+                    : ライブの選び窓を出す(true);
                 }}
-                style={[W.liveBtn, isLiveActive && W.liveBtnActive]}
+                style={[styles.liveBtn, isLiveActive && styles.liveBtnActive]}
               >
                 <Icons.Ionicons name="radio-outline" size={16} color={isLiveActive ? '#FFF' : '#007AFF'} />
-                <Text style={[W.liveBtnText, isLiveActive && W.liveBtnTextActive]}>
+                <Text style={[styles.liveBtnText, isLiveActive && styles.liveBtnTextActive]}>
                   {isLiveActive ? (isHost ? '停止' : '退出') : 'ライブ'}
                 </Text>
               </TouchableOpacity>
@@ -1074,19 +1081,19 @@ const RecordScreen = () => {
             /* 真ん中の「8射」を押せば、これまでどおり一覧から選べる */}
             <View
               ref={案内の射数} // 閲覧用のときは射数だけ薄くする。表示（大きさ）は触れてよい
-              style={[W.zoomContainer, $e && { opacity: 0.4 }]}
+              style={[styles.zoomContainer, 見るだけ中 && { opacity: 0.4 }]}
             >
               <TouchableOpacity
                 onPress={() => {
-                  if ($e) return void 閲覧中に押された();
-                  Xe(Math.max(4, shotsPerRound - 4));
+                  if (見るだけ中) return void 閲覧中に押された();
+                  射数を変える(Math.max(4, shotsPerRound - 4));
                 }}
                 disabled={shotsPerRound <= 4}
                 accessible
                 accessibilityRole="button"
                 accessibilityLabel="射数を4本減らす"
                 aria-label="射数を4本減らす"
-                style={W.zoomBtn}
+                style={styles.zoomBtn}
               >
                 <Icons.Ionicons
                   name="remove-circle-outline"
@@ -1094,22 +1101,22 @@ const RecordScreen = () => {
                   color={shotsPerRound <= 4 ? '#C7C7CC' : '#007AFF'}
                 />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => Ke(true)} style={W.shotsToggle}>
-                <Text style={W.shotsText}>{shotsPerRound}射</Text>
+              <TouchableOpacity onPress={() => 射数の窓を出す(true)} style={styles.shotsToggle}>
+                <Text style={styles.shotsText}>{shotsPerRound}射</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => {
                   // 手入力と同じ上限(500)で止める。ここだけ上限が無いと、
                   // 押し続けてアプリが認めていない射数まで行けてしまう
-                  if ($e) return void 閲覧中に押された();
-                  Xe(Math.min(500, shotsPerRound + 4));
+                  if (見るだけ中) return void 閲覧中に押された();
+                  射数を変える(Math.min(500, shotsPerRound + 4));
                 }}
                 disabled={shotsPerRound >= 500}
                 accessible
                 accessibilityRole="button"
                 accessibilityLabel="射数を4本増やす"
                 aria-label="射数を4本増やす"
-                style={W.zoomBtn}
+                style={styles.zoomBtn}
               >
                 <Icons.Ionicons
                   name="add-circle-outline"
@@ -1122,10 +1129,10 @@ const RecordScreen = () => {
             /* ここは「表示」と短くする。細い画面ではヘッダーが2段になり、 */
             /* 記録表の見える範囲を削っていた。押した先のダイアログには */
             /* 場所があるので、そちらは「表示の大きさ」のままにしてある */}
-            <TouchableOpacity ref={案内の拡大} onPress={() => 拡大を選ぶ(true)} style={W.zoomToggle}>
-              <Text style={W.zoomLabel}>表示</Text>
-              <View style={W.zoomValue}>
-                <Text style={W.zoomText}>{Math.round(se * 100)}%</Text>
+            <TouchableOpacity ref={案内の拡大} onPress={() => 拡大を選ぶ(true)} style={styles.zoomToggle}>
+              <Text style={styles.zoomLabel}>表示</Text>
+              <View style={styles.zoomValue}>
+                <Text style={styles.zoomText}>{Math.round(倍率 * 100)}%</Text>
                 <Icons.Ionicons name="chevron-down" size={10} color="#007AFF" />
               </View>
             </TouchableOpacity>
@@ -1169,63 +1176,63 @@ const RecordScreen = () => {
               <Text style={{ fontSize: 13, color: '#8E8E93', fontWeight: '600' }}>表示の大きさ</Text>
             </View>
             {/* バーでも動かせるようにする。⊖ ⊕ は 5% ずつ */}
-            <View style={W.バーの行}>
+            <View style={styles.バーの行}>
               <TouchableOpacity
-                onPress={() => setViewScale(Math.max(拡大の下, Math.round((se - 0.05) * 20) / 20))}
-                disabled={se <= 拡大の下 + 0.001}
+                onPress={() => setViewScale(Math.max(拡大の下, Math.round((倍率 - 0.05) * 20) / 20))}
+                disabled={倍率 <= 拡大の下 + 0.001}
                 accessible
                 accessibilityRole="button"
                 accessibilityLabel="表示を小さくする"
                 aria-label="表示を小さくする"
-                style={W.zoomBtn}
+                style={styles.zoomBtn}
               >
                 <Icons.Ionicons
                   name="remove-circle-outline"
                   size={24}
-                  color={se <= 拡大の下 + 0.001 ? '#C7C7CC' : '#007AFF'}
+                  color={倍率 <= 拡大の下 + 0.001 ? '#C7C7CC' : '#007AFF'}
                 />
               </TouchableOpacity>
               <View
-                style={W.溝の当たり}
-                onLayout={(e) => 溝の幅を置く(e.nativeEvent.layout.width)}
+                style={styles.溝の当たり}
+                onLayout={(出来事) => 溝の幅を置く(出来事.nativeEvent.layout.width)}
                 onStartShouldSetResponder={() => true}
                 onMoveShouldSetResponder={() => true}
                 onResponderGrant={バーを動かす}
                 onResponderMove={バーを動かす}
               >
-                <View style={W.溝} />
-                <View style={[W.溝の済み, { width: `${倍率を割合に(se) * 100}%` }]} />
-                <View style={[W.つまみ, { left: `${倍率を割合に(se) * 100}%` }]} />
+                <View style={styles.溝} />
+                <View style={[styles.溝の済み, { width: `${倍率を割合に(倍率) * 100}%` }]} />
+                <View style={[styles.つまみ, { left: `${倍率を割合に(倍率) * 100}%` }]} />
               </View>
               <TouchableOpacity
-                onPress={() => setViewScale(Math.min(拡大の上, Math.round((se + 0.05) * 20) / 20))}
-                disabled={se >= 拡大の上 - 0.001}
+                onPress={() => setViewScale(Math.min(拡大の上, Math.round((倍率 + 0.05) * 20) / 20))}
+                disabled={倍率 >= 拡大の上 - 0.001}
                 accessible
                 accessibilityRole="button"
                 accessibilityLabel="表示を大きくする"
                 aria-label="表示を大きくする"
-                style={W.zoomBtn}
+                style={styles.zoomBtn}
               >
                 <Icons.Ionicons
                   name="add-circle-outline"
                   size={24}
-                  color={se >= 拡大の上 - 0.001 ? '#C7C7CC' : '#007AFF'}
+                  color={倍率 >= 拡大の上 - 0.001 ? '#C7C7CC' : '#007AFF'}
                 />
               </TouchableOpacity>
-              <Text style={W.バーの数字}>{Math.round(se * 100)}%</Text>
+              <Text style={styles.バーの数字}>{Math.round(倍率 * 100)}%</Text>
             </View>
             {[0.5, 0.75, 1, 1.25, 1.5, 2].map((倍) => (
               <Pressable
                 key={`zoom-option-${倍}`}
-                style={({ hovered: e }) => [
+                style={({ hovered }) => [
                   {
                     padding: 16,
                     alignItems: 'center',
                     borderBottomWidth: StyleSheet.hairlineWidth,
                     borderBottomColor: '#C6C6C8',
                   },
-                  e && IS_WEB && { backgroundColor: '#F2F2F7' },
-                  Math.abs(se - 倍) < 0.01 && { backgroundColor: '#EAF3FF' },
+                  hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
+                  Math.abs(倍率 - 倍) < 0.01 && { backgroundColor: '#EAF3FF' },
                 ]}
                 onPress={() => {
                   setViewScale(倍);
@@ -1237,7 +1244,7 @@ const RecordScreen = () => {
                   style={{
                     fontSize: 20,
                     color: '#007AFF',
-                    fontWeight: Math.abs(se - 倍) < 0.01 ? 'bold' : 'normal',
+                    fontWeight: Math.abs(倍率 - 倍) < 0.01 ? 'bold' : 'normal',
                   }}
                 >
                   {Math.round(倍 * 100)}%{1 === 倍 ? '（標準）' : ''}
@@ -1245,9 +1252,9 @@ const RecordScreen = () => {
               </Pressable>
             ))}
             <Pressable
-              style={({ hovered: e }) => [
+              style={({ hovered }) => [
                 { padding: 16, alignItems: 'center' },
-                e && IS_WEB && { backgroundColor: '#F2F2F7' },
+                hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
               ]}
               onPress={() => 拡大を選ぶ(false)}
             >
@@ -1256,7 +1263,7 @@ const RecordScreen = () => {
           </View>
         </View>
       </Modal>
-      <Modal visible={Je} transparent animationType="fade" onRequestClose={Qe}>
+      <Modal visible={射数の窓} transparent animationType="fade" onRequestClose={射数の窓を閉じる}>
         <Pressable
           style={{
             flex: 1,
@@ -1265,7 +1272,7 @@ const RecordScreen = () => {
             alignItems: 'center',
             paddingBottom: 40,
           }}
-          onPress={Qe}
+          onPress={射数の窓を閉じる}
         >
           <View
             style={{
@@ -1286,36 +1293,36 @@ const RecordScreen = () => {
             >
               <Text style={{ fontSize: 13, color: '#8E8E93', fontWeight: '600' }}>射数の設定</Text>
             </View>
-            {[4, 8, 12, 16, 20].map((e) => (
+            {[4, 8, 12, 16, 20].map((本数) => (
               <Pressable
-                key={`shot-option-${e}`}
-                style={({ hovered: e }) => [
+                key={`shot-option-${本数}`}
+                style={({ hovered }) => [
                   {
                     padding: 18,
                     alignItems: 'center',
                     borderBottomWidth: StyleSheet.hairlineWidth,
                     borderBottomColor: '#C6C6C8',
                   },
-                  e && IS_WEB && { backgroundColor: '#F2F2F7' },
+                  hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
                 ]}
                 onPress={() => {
-                  Xe(e);
-                  Qe();
+                  射数を変える(本数);
+                  射数の窓を閉じる();
                 }}
               >
-                <Text style={{ fontSize: 20, color: '#007AFF' }}>{e}射</Text>
+                <Text style={{ fontSize: 20, color: '#007AFF' }}>{本数}射</Text>
               </Pressable>
             ))}
             <Pressable
-              style={({ hovered: e }) => [
+              style={({ hovered }) => [
                 { padding: 18, alignItems: 'center' },
-                e && IS_WEB && { backgroundColor: '#F2F2F7' },
+                hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
               ]}
               onPress={() => {
-                Qe();
+                射数の窓を閉じる();
                 setTimeout(() => {
-                  ze(String(shotsPerRound));
-                  We(true);
+                  射数の下書きを置く(String(shotsPerRound));
+                  射数の入力窓を出す(true);
                 }, 100);
               }}
             >
@@ -1323,7 +1330,7 @@ const RecordScreen = () => {
             </Pressable>
           </View>
           <Pressable
-            style={({ hovered: e }) => [
+            style={({ hovered }) => [
               {
                 width: '90%',
                 maxWidth: 400,
@@ -1333,16 +1340,21 @@ const RecordScreen = () => {
                 padding: 18,
                 alignItems: 'center',
               },
-              e && IS_WEB && { opacity: 0.8 },
+              hovered && IS_WEB && { opacity: 0.8 },
             ]}
-            onPress={Qe}
+            onPress={射数の窓を閉じる}
           >
             <Text style={{ fontSize: 20, color: '#007AFF', fontWeight: 'bold' }}>キャンセル</Text>
           </Pressable>
         </Pressable>
       </Modal>
       <LiveShareModal visible={共有の窓} onClose={() => 共有の窓を出す(false)} />
-      <Modal visible={we} transparent animationType="fade" onRequestClose={() => Ee(false)}>
+      <Modal
+        visible={ライブの選び窓}
+        transparent
+        animationType="fade"
+        onRequestClose={() => ライブの選び窓を出す(false)}
+      >
         <TouchableOpacity
           style={{
             flex: 1,
@@ -1352,7 +1364,7 @@ const RecordScreen = () => {
             paddingBottom: 40,
           }}
           activeOpacity={1}
-          onPress={() => Ee(false)}
+          onPress={() => ライブの選び窓を出す(false)}
         >
           <View
             style={{
@@ -1370,11 +1382,14 @@ const RecordScreen = () => {
                 borderBottomWidth: StyleSheet.hairlineWidth,
                 borderBottomColor: '#C6C6C8',
               }}
-              onPress={() => Ze('host')}
+              onPress={() => ライブを始める窓へ('host')}
             >
               <Text style={{ fontSize: 20, color: '#007AFF' }}>ライブ記録を開始</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={{ padding: 18, alignItems: 'center' }} onPress={() => Ze('join')}>
+            <TouchableOpacity
+              style={{ padding: 18, alignItems: 'center' }}
+              onPress={() => ライブを始める窓へ('join')}
+            >
               <Text style={{ fontSize: 20, color: '#007AFF' }}>ライブ記録に参加</Text>
             </TouchableOpacity>
           </View>
@@ -1388,13 +1403,13 @@ const RecordScreen = () => {
               padding: 18,
               alignItems: 'center',
             }}
-            onPress={() => Ee(false)}
+            onPress={() => ライブの選び窓を出す(false)}
           >
             <Text style={{ fontSize: 20, color: '#007AFF', fontWeight: 'bold' }}>キャンセル</Text>
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
-      <Modal visible={He} transparent animationType="fade">
+      <Modal visible={ライブ名の窓} transparent animationType="fade">
         <View
           style={{
             flex: 1,
@@ -1414,9 +1429,9 @@ const RecordScreen = () => {
             }}
           >
             <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>
-              {'host' === Re ? 'ライブを開始' : 'ライブに参加'}
+              {'host' === ライブの種類 ? 'ライブを開始' : 'ライブに参加'}
             </Text>
-            {'host' === Re ? (
+            {'host' === ライブの種類 ? (
               <>
                 <Text style={{ fontSize: 14, color: '#666', marginBottom: 16 }}>
                   セッション名を入力してください
@@ -1431,18 +1446,18 @@ const RecordScreen = () => {
                     fontSize: 16,
                     marginBottom: 20,
                   }}
-                  value={Le} // 名前を直したら注意書きも消す。残すと、直したのに
+                  value={ライブ名の下書き} // 名前を直したら注意書きも消す。残すと、直したのに
                   // 「使えません」が出たままで、何が悪いのか分からない
-                  onChangeText={(e) => {
-                    De(e);
-                    Ne(null);
+                  onChangeText={(文) => {
+                    ライブ名の下書きを置く(文);
+                    ライブ名の注意を置く(null);
                   }}
                   placeholder="session_name_123"
                   autoCapitalize="none"
                   autoCorrect={false}
                   autoFocus
                 />
-                {Me && (
+                {ライブ名の注意 && (
                   <Text
                     style={{
                       color: '#FF3B30',
@@ -1452,7 +1467,7 @@ const RecordScreen = () => {
                       fontWeight: 'bold',
                     }}
                   >
-                    {Me}
+                    {ライブ名の注意}
                   </Text>
                 )}
               </>
@@ -1470,43 +1485,43 @@ const RecordScreen = () => {
                   <TouchableOpacity
                     onPress={() => {
                       useScoreStore.getState().fetchActiveLiveSessions();
-                      Ge('更新しました');
+                      知らせる('更新しました');
                     }}
                   >
                     <Icons.Ionicons name="refresh" size={20} color="#007AFF" />
                   </TouchableOpacity>
                 </View>
                 <ScrollView style={{ width: '100%', maxHeight: 300, marginBottom: 20 }}>
-                  {Array.isArray(ae) && 0 !== ae.length ? (
-                    ae.map((e) => (
+                  {Array.isArray(ライブの一覧) && 0 !== ライブの一覧.length ? (
+                    ライブの一覧.map((名前) => (
                       <View
-                        key={`live-session-${e}`}
+                        key={`live-session-${名前}`}
                         style={{
                           flexDirection: 'row',
                           alignItems: 'center',
                           borderBottomWidth: 1,
                           borderBottomColor: '#EEE',
-                          backgroundColor: Le === e ? '#E5F1FF' : '#FFF',
+                          backgroundColor: ライブ名の下書き === 名前 ? '#E5F1FF' : '#FFF',
                         }}
                       >
                         <TouchableOpacity
                           style={{ flex: 1, padding: 16 }} // 選び直したら注意書きも消す（入力欄と揃える）
                           onPress={() => {
-                            De(e);
-                            Ne(null);
+                            ライブ名の下書きを置く(名前);
+                            ライブ名の注意を置く(null);
                           }}
                         >
-                          <Text style={{ fontSize: 16, color: '#333' }}>{e}</Text>
+                          <Text style={{ fontSize: 16, color: '#333' }}>{名前}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={{ padding: 16 }}
                           onPress={() => {
-                            Alert.alert('セッション削除', `セッション「${e}」を完全に削除しますか？`, [
+                            Alert.alert('セッション削除', `セッション「${名前}」を完全に削除しますか？`, [
                               { text: 'キャンセル', style: 'cancel' },
                               {
                                 text: '削除',
                                 style: 'destructive',
-                                onPress: () => useScoreStore.getState().deleteLiveSession(e),
+                                onPress: () => useScoreStore.getState().deleteLiveSession(名前),
                               },
                             ]);
                           }} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
@@ -1536,7 +1551,7 @@ const RecordScreen = () => {
                   backgroundColor: '#F2F2F7',
                   alignItems: 'center',
                 }}
-                onPress={() => Oe(false)}
+                onPress={() => ライブ名の窓を出す(false)}
               >
                 <Text style={{ fontSize: 16, color: '#007AFF', fontWeight: 'bold' }}>キャンセル</Text>
               </TouchableOpacity>
@@ -1545,51 +1560,53 @@ const RecordScreen = () => {
                   flex: 1,
                   padding: 12,
                   borderRadius: 8,
-                  backgroundColor: Le.trim() ? '#007AFF' : '#CCC',
+                  backgroundColor: ライブ名の下書き.trim() ? '#007AFF' : '#CCC',
                   alignItems: 'center',
                 }}
                 onPress={async () => {
-                  if (!Le.trim()) return;
-                  const e = Le.trim();
+                  if (!ライブ名の下書き.trim()) return;
+                  const 名前 = ライブ名の下書き.trim();
                   // Realtime Database の枝の名前に使えない字を弾く。
                   // とくに「/」は例外にならず階層の区切りとして通ってしまい、
                   // 「5/8」のような日付を入れると 5 の下に 8 が作られる。
                   // そうなると参加一覧にも出ず、参加も削除もできないライブが残る
-                  const 使えない字 = ライブ名に使えない字(e);
+                  const 使えない字 = ライブ名に使えない字(名前);
                   if (使えない字)
-                    return void (Ne(`ライブ名に ${使えない字} は使えません。別の名前を入力してください。`),
+                    return void (ライブ名の注意を置く(
+                      `ライブ名に ${使えない字} は使えません。別の名前を入力してください。`
+                    ),
                     ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Heavy));
-                  if ((Ne(null), 'host' === Re)) {
-                    Ge('ライブを開始しています...');
-                    const 結果 = await useScoreStore.getState().startLiveSync(e);
+                  if ((ライブ名の注意を置く(null), 'host' === ライブの種類)) {
+                    知らせる('ライブを開始しています...');
+                    const 結果 = await useScoreStore.getState().startLiveSync(名前);
                     if ('開始した' === 結果)
-                      return void (Oe(false),
+                      return void (ライブ名の窓を出す(false),
                       ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Success));
                     // 「同名あり」と「確かめられなかった」を区別する。
                     // 元はどちらも「既に使用されています」と出していて、
                     // 通信が乱れただけのときに誤った案内になっていた
-                    return void (Ne(
+                    return void (ライブ名の注意を置く(
                       '同名あり' === 結果
-                        ? `'${e}' は既に使用されています。別の名前を入力してください。`
+                        ? `'${名前}' は既に使用されています。別の名前を入力してください。`
                         : '通信が不安定なため開始できませんでした。電波の良い場所でもう一度お試しください。'
                     ),
                     ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Heavy));
                   }
-                  if ('join' === Re) {
-                    if (!useScoreStore.getState().liveSessionsList.includes(e))
-                      return void Ne(`'${e}' というセッションは見つかりませんでした。`);
+                  if ('join' === ライブの種類) {
+                    if (!useScoreStore.getState().liveSessionsList.includes(名前))
+                      return void ライブ名の注意を置く(`'${名前}' というセッションは見つかりませんでした。`);
                     // 参加のしかたを選ぶ。見るだけなら盤面を書き換えない
                     // 参加のしかたは画面の中のポップアップで選ぶ
-                    const t = () => 参加のしかたを聞くを置く(e);
+                    const 聞く = () => 参加のしかたを聞くを置く(名前);
                     if (archers.length > 0) {
                       確認を置く({
                         文: '手元の記録が消去され、ライブ参加データで上書きされます。よろしいですか？',
-                        実行: t,
+                        実行: 聞く,
                       });
-                    } else t();
+                    } else 聞く();
                   }
                 }}
-                disabled={!Le.trim()}
+                disabled={!ライブ名の下書き.trim()}
               >
                 <Text style={{ fontSize: 16, color: '#FFF', fontWeight: 'bold' }}>決定</Text>
               </TouchableOpacity>
@@ -1598,9 +1615,9 @@ const RecordScreen = () => {
         </View>
       </Modal>
       <View
-        style={[W.gridArea, { justifyContent: 'center', alignItems: 'center' }]}
-        onLayout={(e) => {
-          取っ手の区画の幅.current = e.nativeEvent.layout.width;
+        style={[styles.gridArea, { justifyContent: 'center', alignItems: 'center' }]}
+        onLayout={(出来事) => {
+          取っ手の区画の幅.current = 出来事.nativeEvent.layout.width;
         }}
       >
         {/* 帯を畳む取っ手。記録表の区画の中に置くので、上の帯があっても */
@@ -1609,7 +1626,7 @@ const RecordScreen = () => {
           {...取っ手の手.current.panHandlers}
           testID="帯の取っ手の置き場"
           style={[
-            W.帯の取っ手の置き場,
+            styles.帯の取っ手の置き場,
             帯の取っ手は左 ? { left: 8 } : { right: 8 },
             { transform: [{ translateX: 取っ手のずれ }] },
           ]}
@@ -1627,7 +1644,7 @@ const RecordScreen = () => {
             accessibilityHint="横へ引くと左上・右上へ動かせます"
             aria-label={畳む覚え ? '操作の帯を開く' : '操作の帯を畳む'}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            style={({ hovered: e }) => [W.帯の取っ手, e && IS_WEB && { opacity: 0.85 }]}
+            style={({ hovered }) => [styles.帯の取っ手, hovered && IS_WEB && { opacity: 0.85 }]}
           >
             <Icons.Ionicons name={帯を畳む ? 'chevron-down' : 'chevron-up'} size={18} color="#8E8E93" />
           </Pressable>
@@ -1645,30 +1662,30 @@ const RecordScreen = () => {
                       horizontal
                       showsHorizontalScrollIndicator
                       style={{ flexGrow: 0, flexShrink: 1 }}
-                      ref={Ve}
-                      onScroll={(e) => {
-                        const t = e.nativeEvent.contentOffset.x;
-                        Ue.current?.scrollTo({ x: t, animated: false });
+                      ref={上の横流し}
+                      onScroll={(出来事) => {
+                        const 横の位置 = 出来事.nativeEvent.contentOffset.x;
+                        下の横流し.current?.scrollTo({ x: 横の位置, animated: false });
                       }}
                       scrollEventThrottle={16}
                     >
-                      <View style={[W.gridRow, { flexDirection: 'row-reverse' }]}>
-                        {見えている並び.map((e, t) => (
+                      <View style={[styles.gridRow, { flexDirection: 'row-reverse' }]}>
+                        {見えている並び.map((射手, 順) => (
                           <ArcherColumnView
-                            key={typeof e.id === 'string' ? e.id : `archer-${t}`}
-                            archer={e}
+                            key={typeof 射手.id === 'string' ? 射手.id : `archer-${順}`}
+                            archer={射手}
                             shots={shotsPerRound} // ドラッグ中は「入れた結果」の並びを渡す。計もチームも
                             // その並びで数え直るので、離す前に出来上がりが見える
                             allArchers={見えている並び}
-                            indexInList={t}
+                            indexInList={順}
                             showFooter={false}
-                            isReadOnly={$e}
-                            onPressName={() => qe(e.id, e.name, t)}
-                            onDelete={() => deleteArcher(e.id)}
+                            isReadOnly={見るだけ中}
+                            onPressName={() => 人を選ぶ(射手.id, 射手.name, 順)}
+                            onDelete={() => deleteArcher(射手.id)}
                             onLongPressSeparator={() => {
-                              if ($e) return void 閲覧中に押された();
-                              setチーム名の下書き(e.teamName || '');
-                              setチーム名を付ける区切り(e.id);
+                              if (見るだけ中) return void 閲覧中に押された();
+                              setチーム名の下書き(射手.teamName || '');
+                              setチーム名を付ける区切り(射手.id);
                             }}
                           />
                         ))}
@@ -1678,7 +1695,7 @@ const RecordScreen = () => {
                 </ScrollView>,
                 <View
                   style={{
-                    height: UIConfig.footerHeight * se,
+                    height: UIConfig.footerHeight * 倍率,
                     flexDirection: 'row-reverse',
                     borderTopWidth: 1.5,
                     borderTopColor: '#000',
@@ -1686,7 +1703,7 @@ const RecordScreen = () => {
                 >
                   <View
                     style={{
-                      width: UIConfig.headerWidth * se,
+                      width: UIConfig.headerWidth * 倍率,
                       justifyContent: 'center',
                       alignItems: 'center',
                       backgroundColor: '#F2F2F7',
@@ -1696,7 +1713,7 @@ const RecordScreen = () => {
                       borderRightColor: '#000',
                     }}
                   >
-                    <Text style={{ fontSize: 10 * se, fontWeight: 'bold', color: '#3C3C43' }}>名</Text>
+                    <Text style={{ fontSize: 10 * 倍率, fontWeight: 'bold', color: '#3C3C43' }}>名</Text>
                   </View>
                   <ScrollView
                     horizontal
@@ -1704,15 +1721,15 @@ const RecordScreen = () => {
                     // 分からなくなる
                     scrollEnabled={!掴んだ列}
                     style={{ flexGrow: 0, flexShrink: 1 }}
-                    ref={Ue}
-                    onScroll={(e) => {
-                      const t = e.nativeEvent.contentOffset.x;
-                      Ve.current?.scrollTo({ x: t, animated: false });
+                    ref={下の横流し}
+                    onScroll={(出来事) => {
+                      const 横の位置 = 出来事.nativeEvent.contentOffset.x;
+                      上の横流し.current?.scrollTo({ x: 横の位置, animated: false });
                     }}
                     scrollEventThrottle={16}
                   >
                     <View
-                      style={[W.gridRow, { flexDirection: 'row-reverse' }]}
+                      style={[styles.gridRow, { flexDirection: 'row-reverse' }]}
                       {...(並べ替えの手.current ? 並べ替えの手.current.panHandlers : {})}
                       ref={(node) => {
                         名の行のnode.current = node;
@@ -1720,30 +1737,31 @@ const RecordScreen = () => {
                     >
                       {運ぶ札()}
                       {[
-                        ...見えている並び.map((e, t) => {
+                        ...見えている並び.map((射手, 順) => {
                           return (
                             <View
-                              key={typeof e.id === 'string' ? `footer-${e.id}` : `footer-${t}`} // 使い方の案内が指す先。まだ名前の入っていない列を選ぶ。
+                              key={typeof 射手.id === 'string' ? `footer-${射手.id}` : `footer-${順}`} // 使い方の案内が指す先。まだ名前の入っていない列を選ぶ。
                               // 名前入りの列を指すと、押しても名前の数が増えず先へ進めない。
                               // 繰り返しの中なのでフックは使えない
                               ref={(node) => {
                                 // 指の下にどの列が居るかを測るために、節を覚えておく
-                                if (node) 名の欄のnode.current[e.id] = node;
-                                else delete 名の欄のnode.current[e.id];
-                                const 一覧 = (Array.isArray(archers) ? archers : []).filter((e) => !!e);
+                                if (node) 名の欄のnode.current[射手.id] = node;
+                                else delete 名の欄のnode.current[射手.id];
+                                const 一覧 = (Array.isArray(archers) ? archers : []).filter((x) => !!x);
                                 let 指す = 一覧.findIndex(
-                                  (a) => a && !a.name && !a.isSeparator && !a.isTotalCalculator
+                                  (x) => x && !x.name && !x.isSeparator && !x.isTotalCalculator
                                 );
                                 if (指す < 0) 指す = 0;
-                                if (t === 指す) 案内.setTutorialTargetNode('記録.射手選択', node);
+                                if (順 === 指す) 案内.setTutorialTargetNode('記録.射手選択', node);
                               }}
                               style={{
-                                width: (e.isSeparator ? UIConfig.separatorWidth : UIConfig.cellWidth) * se,
-                                height: UIConfig.footerHeight * se,
-                                backgroundColor: e.isTotalCalculator ? 'rgba(0,122,255,0.05)' : '#F2F2F7',
-                                borderRightWidth: e.isSeparator || e.isTotalCalculator ? 1.5 : 1,
+                                width:
+                                  (射手.isSeparator ? UIConfig.separatorWidth : UIConfig.cellWidth) * 倍率,
+                                height: UIConfig.footerHeight * 倍率,
+                                backgroundColor: 射手.isTotalCalculator ? 'rgba(0,122,255,0.05)' : '#F2F2F7',
+                                borderRightWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 1,
                                 borderRightColor: '#000',
-                                borderLeftWidth: e.isSeparator || e.isTotalCalculator ? 1.5 : 0,
+                                borderLeftWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 0,
                                 borderLeftColor: '#000',
                                 padding: 4,
                                 justifyContent: 'center',
@@ -1751,12 +1769,12 @@ const RecordScreen = () => {
                                 // 掴んでいる列は、抜けた跡として薄く残す。
                                 // どこへ入るかは並びそのもので見せるので、
                                 // 落とす先を別に光らせる必要はない
-                                ...(掴んだ列 === e.id
+                                ...(掴んだ列 === 射手.id
                                   ? { opacity: 0.35, backgroundColor: 'rgba(0,122,255,0.10)' }
                                   : null),
                               }}
                             >
-                              {e.isSeparator ? (
+                              {射手.isSeparator ? (
                                 <TouchableOpacity
                                   style={{
                                     alignItems: 'center',
@@ -1765,37 +1783,37 @@ const RecordScreen = () => {
                                     justifyContent: 'center',
                                   }} // 位置ではなく列のIDで名づける。並べ替えても
                                   // 同じ列を追える（ます-<射手ID>-<射番> と同じ流儀）
-                                  testID={'名の欄-区切り-' + e.id} // 押すと窓が開く。以前は押す＝そのまま消すで、
+                                  testID={'名の欄-区切り-' + 射手.id} // 押すと窓が開く。以前は押す＝そのまま消すで、
                                   // チーム名は長押しでしか入れられなかった。
                                   // 消す道は窓の中の「削除」に移してある
-                                  onPress={() => qe(e.id, e.name, t)} // 長押しは「掴む」。チーム名は窓から入れる
+                                  onPress={() => 人を選ぶ(射手.id, 射手.name, 順)} // 長押しは「掴む」。チーム名は窓から入れる
                                   //（長押ししか道が無くて気づけなかった）
-                                  onLongPress={() => 掴む(e.id)}
+                                  onLongPress={() => 掴む(射手.id)}
                                   onPressOut={() => 掴みを見直す()}
                                   delayLongPress={400}
-                                  disabled={$e}
+                                  disabled={見るだけ中}
                                 >
                                   {/* 名前が付いていれば名前を、なければ「⋯」。 */
                                   /* ×印だったころは押す＝消すに見えて、名前を */
                                   /* 入れられることに気づけなかった */}
-                                  {組.区切りのチーム名(e) ? (
+                                  {組.区切りのチーム名(射手) ? (
                                     <Text
                                       style={{
-                                        fontSize: 組.区切りの名の字(se, UIConfig).fontSize,
-                                        lineHeight: 組.区切りの名の字(se, UIConfig).lineHeight,
+                                        fontSize: 組.区切りの名の字(倍率, UIConfig).fontSize,
+                                        lineHeight: 組.区切りの名の字(倍率, UIConfig).lineHeight,
                                         fontWeight: '700',
                                         textAlign: 'center',
-                                        color: 組.チームの色(組.区切りのチーム名(e)) || '#8E8E93',
+                                        color: 組.チームの色(組.区切りのチーム名(射手)) || '#8E8E93',
                                       }} // 欄の高さに入るだけ行を使う。3 行では
                                       // 「日本大学工科」が「日本大.」に切れて分からなかった
-                                      numberOfLines={組.区切りの名の字(se, UIConfig).numberOfLines}
+                                      numberOfLines={組.区切りの名の字(倍率, UIConfig).numberOfLines}
                                     >
-                                      {組.区切りのチーム名(e)}
+                                      {組.区切りのチーム名(射手)}
                                     </Text>
                                   ) : (
                                     <Icons.Ionicons
                                       name="ellipsis-horizontal"
-                                      size={24 * se}
+                                      size={24 * 倍率}
                                       color="#8E8E93"
                                     />
                                   )}
@@ -1815,41 +1833,43 @@ const RecordScreen = () => {
                                       const 色 = (
                                         組
                                           .チームを割り当てる(見えている並び)
-                                          .find((x) => x && x.id === e.id) || {}
+                                          .find((列) => 列 && 列.id === 射手.id) || {}
                                       ).色;
-                                      return 色 ? { borderTopWidth: 3 * se, borderTopColor: 色 } : null;
+                                      return 色 ? { borderTopWidth: 3 * 倍率, borderTopColor: 色 } : null;
                                     })(),
                                   ]} // 押すと窓が開く。合計の列なら、そこで
                                   // 数える範囲を変えたり消したりできる。
                                   // ここで範囲の切り替えだけを行うと、
                                   // 窓が開かなくなって消せなくなる（実際そうなった）
-                                  testID={'名の欄-' + (e.isTotalCalculator ? '合計' : '射手') + '-' + e.id}
-                                  onPress={() => qe(e.id, e.name, t)}
-                                  onLongPress={() => 掴む(e.id)}
+                                  testID={
+                                    '名の欄-' + (射手.isTotalCalculator ? '合計' : '射手') + '-' + 射手.id
+                                  }
+                                  onPress={() => 人を選ぶ(射手.id, 射手.name, 順)}
+                                  onLongPress={() => 掴む(射手.id)}
                                   onPressOut={() => 掴みを見直す()}
                                   delayLongPress={400}
                                 >
                                   <Text
                                     style={[
-                                      W.footerName,
-                                      { color: e.name ? '#000' : '#8E8E93', fontSize: 14 * se },
+                                      styles.footerName,
+                                      { color: 射手.name ? '#000' : '#8E8E93', fontSize: 14 * 倍率 },
                                     ]}
                                     numberOfLines={2}
                                   >
                                     {/* 手前の計もまとめる合計は「総計」。 */
                                     /* どちらを見ているか、見出しで分かるようにする */}
-                                    {e.isTotalCalculator
-                                      ? e.またぐ合計
+                                    {射手.isTotalCalculator
+                                      ? 射手.またぐ合計
                                         ? '総計'
                                         : '合計'
-                                      : e.name
-                                        ? ((o = e.name), formatMemberName(o, members))
+                                      : 射手.name
+                                        ? formatMemberName(射手.name, members)
                                         : '選択'}
                                   </Text>
-                                  {!!e.isGuest && (
-                                    <Text style={[W.guestLabel, { fontSize: 9 * se }]}>(ゲスト)</Text>
+                                  {!!射手.isGuest && (
+                                    <Text style={[styles.guestLabel, { fontSize: 9 * 倍率 }]}>(ゲスト)</Text>
                                   )}
-                                  {!e.isTotalCalculator && '' !== e.name ? (
+                                  {!射手.isTotalCalculator && '' !== 射手.name ? (
                                     <View
                                       style={{
                                         marginTop: 2,
@@ -1857,24 +1877,23 @@ const RecordScreen = () => {
                                         paddingVertical: 2,
                                         borderRadius: 10,
                                         backgroundColor:
-                                          e.isGuest ||
-                                          !e.gender ||
-                                          e.gender === '未設定' ||
-                                          !['男子', '女子'].includes(e.gender)
+                                          射手.isGuest ||
+                                          !射手.gender ||
+                                          射手.gender === '未設定' ||
+                                          !['男子', '女子'].includes(射手.gender)
                                             ? '#8E8E93'
-                                            : '男子' === e.gender
+                                            : '男子' === 射手.gender
                                               ? '#007AFF'
                                               : '#FF2D55',
                                       }}
                                     >
-                                      <Icons.Ionicons name="person" size={10 * se} color="#FFF" />
+                                      <Icons.Ionicons name="person" size={10 * 倍率} color="#FFF" />
                                     </View>
                                   ) : null}
                                 </TouchableOpacity>
                               )}
                             </View>
                           );
-                          var o;
                         }),
                       ]}
                     </View>
@@ -1883,28 +1902,28 @@ const RecordScreen = () => {
               ]}
         </View>
         {0 === archers.length && (
-          <View style={W.emptyOverlay}>
-            <Text style={W.emptyTitle}>記録を始めましょう</Text>
-            <Text style={W.emptyHint}>下の「人」ボタンで射手を追加</Text>
+          <View style={styles.emptyOverlay}>
+            <Text style={styles.emptyTitle}>記録を始めましょう</Text>
+            <Text style={styles.emptyHint}>下の「人」ボタンで射手を追加</Text>
           </View>
         )}
       </View>
       {帯を畳む ? null : (
-        <View style={W.toolbar}>
+        <View style={styles.toolbar}>
           <>
-            <View ref={案内の取り消し} style={W.historyBtns}>
+            <View ref={案内の取り消し} style={styles.historyBtns}>
               <Pressable
-                style={({ hovered: e }) => [
-                  W.historyBtn,
+                style={({ hovered }) => [
+                  styles.historyBtn,
                   { opacity: 戻せる ? 1 : 0.3 },
-                  e && 戻せる && IS_WEB && { backgroundColor: '#F2F2F7' },
+                  hovered && 戻せる && IS_WEB && { backgroundColor: '#F2F2F7' },
                 ]}
                 onPress={() => {
                   // ライブ中は共有の知らせ（「取り消しされました。」）が
                   // 押した本人にも出る。ここでも出すと二つ重なる
                   戻せる &&
                     (undo(),
-                    ライブの知らせに任せる || Ge('元に戻しました'),
+                    ライブの知らせに任せる || 知らせる('元に戻しました'),
                     ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light));
                 }}
                 disabled={!戻せる} // 自動での確かめ用。絵だけのボタンは外から指せない
@@ -1917,15 +1936,15 @@ const RecordScreen = () => {
                 <Icons.Ionicons name="arrow-undo" size={24} color="#8E8E93" />
               </Pressable>
               <Pressable
-                style={({ hovered: e }) => [
-                  W.historyBtn,
+                style={({ hovered }) => [
+                  styles.historyBtn,
                   { opacity: 進める ? 1 : 0.3 },
-                  e && 進める && IS_WEB && { backgroundColor: '#F2F2F7' },
+                  hovered && 進める && IS_WEB && { backgroundColor: '#F2F2F7' },
                 ]}
                 onPress={() => {
                   進める &&
                     (redo(),
-                    ライブの知らせに任せる || Ge('やり直しました'),
+                    ライブの知らせに任せる || 知らせる('やり直しました'),
                     ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light));
                 }}
                 disabled={!進める}
@@ -1940,17 +1959,17 @@ const RecordScreen = () => {
               {/* 記録表の並べ方を変える。絵だけでは向きが読み取りにくいので、 */
               /* 押したあとに何になったかを短く知らせる */}
               <Pressable
-                style={({ hovered: e }) => [
-                  W.historyBtn,
+                style={({ hovered }) => [
+                  styles.historyBtn,
                   // 取り消し・やり直しと同じ幅にそろえる。絵が小さいぶん
                   // 放っておくと28pxになり、この並びで一番押しにくいボタンになる
                   { alignItems: 'center', minWidth: 32 },
-                  e && IS_WEB && { backgroundColor: '#F2F2F7' },
+                  hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
                 ]}
                 onPress={() => {
                   const 次 = !横に並べる;
                   if (set横に並べる) set横に並べる(次);
-                  Ge(次 ? '横に並べました' : '縦に並べました');
+                  知らせる(次 ? '横に並べました' : '縦に並べました');
                   ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
                 }}
                 testID="並べ方"
@@ -1965,13 +1984,13 @@ const RecordScreen = () => {
                 </Text>
               </Pressable>
             </View>
-            <View style={[W.addBtns, $e && { opacity: 0.4 }]}>
+            <View style={[styles.addBtns, 見るだけ中 && { opacity: 0.4 }]}>
               <Pressable
                 ref={案内の人ボタン}
-                style={({ hovered: e }) => [
-                  W.addBtn,
+                style={({ hovered }) => [
+                  styles.addBtn,
                   { backgroundColor: 'rgba(0,122,255,0.1)' },
-                  e && IS_WEB && { backgroundColor: 'rgba(0,122,255,0.2)' },
+                  hovered && IS_WEB && { backgroundColor: 'rgba(0,122,255,0.2)' },
                 ]} // 絵だけのボタンは読み上げに何も伝わらない。端末は accessibilityLabel、
                 // web の TouchableOpacity は aria-label を見るので、両方渡す
                 accessible
@@ -1980,39 +1999,39 @@ const RecordScreen = () => {
                 aria-label="射手を追加"
                 accessibilityHint="記録表にひとり足します"
                 onPress={() => {
-                  if ($e) return void 閲覧中に押された();
+                  if (見るだけ中) return void 閲覧中に押された();
                   ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Medium);
                   addArcher();
                 }}
               >
                 <Icons.Ionicons name="person-add" size={24} color="#007AFF" />
-                <Text style={[W.addLabel, { color: '#007AFF' }]}>人</Text>
+                <Text style={[styles.addLabel, { color: '#007AFF' }]}>人</Text>
               </Pressable>
               <Pressable
                 ref={案内の間隔}
-                style={({ hovered: e }) => [
-                  W.addBtn,
+                style={({ hovered }) => [
+                  styles.addBtn,
                   { backgroundColor: 'rgba(255,149,0,0.1)' },
-                  e && IS_WEB && { backgroundColor: 'rgba(255,149,0,0.2)' },
+                  hovered && IS_WEB && { backgroundColor: 'rgba(255,149,0,0.2)' },
                 ]}
                 onPress={() => {
-                  if ($e) return void 閲覧中に押された();
+                  if (見るだけ中) return void 閲覧中に押された();
                   ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
                   addSeparator();
                 }}
               >
                 <Icons.Ionicons name="pause" size={24} color="#FF9500" />
-                <Text style={[W.addLabel, { color: '#FF9500' }]}>間隔</Text>
+                <Text style={[styles.addLabel, { color: '#FF9500' }]}>間隔</Text>
               </Pressable>
               <Pressable
                 ref={案内の計}
-                style={({ hovered: e }) => [
-                  W.addBtn,
+                style={({ hovered }) => [
+                  styles.addBtn,
                   { backgroundColor: 'rgba(52,199,89,0.1)' },
-                  e && IS_WEB && { backgroundColor: 'rgba(52,199,89,0.2)' },
+                  hovered && IS_WEB && { backgroundColor: 'rgba(52,199,89,0.2)' },
                 ]}
                 onPress={() => {
-                  if ($e) return void 閲覧中に押された();
+                  if (見るだけ中) return void 閲覧中に押された();
                   ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
                   addTotalCalculator();
                 }} // 入れたあと、その列を押すと「この立ちだけ」と
@@ -2020,32 +2039,32 @@ const RecordScreen = () => {
                 accessibilityHint="合計の列を足します。入れたあと列を押すと、数える範囲を変えられます"
               >
                 <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#34C759' }}>Σ</Text>
-                <Text style={[W.addLabel, { color: '#34C759' }]}>計</Text>
+                <Text style={[styles.addLabel, { color: '#34C759' }]}>計</Text>
               </Pressable>
               <Pressable
                 ref={案内の画像}
-                style={({ hovered: e }) => [
-                  W.addBtn,
+                style={({ hovered }) => [
+                  styles.addBtn,
                   { backgroundColor: 'rgba(142,142,147,0.1)' },
-                  e && IS_WEB && { backgroundColor: 'rgba(142,142,147,0.2)' },
+                  hovered && IS_WEB && { backgroundColor: 'rgba(142,142,147,0.2)' },
                 ]}
                 onPress={() => {
-                  if ($e) return void 閲覧中に押された();
+                  if (見るだけ中) return void 閲覧中に押された();
                   ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Medium);
                   setShowOCRModal(true);
                 }}
               >
                 <Icons.Ionicons name="camera" size={24} color="#8E8E93" />
-                <Text style={[W.addLabel, { color: '#8E8E93' }]}>画像</Text>
+                <Text style={[styles.addLabel, { color: '#8E8E93' }]}>画像</Text>
               </Pressable>
             </View>
             <Pressable
               ref={案内の保存ボタン}
-              style={({ hovered: e }) => [
-                W.saveBtn,
+              style={({ hovered }) => [
+                styles.saveBtn,
                 履歴の編集 && { backgroundColor: '#FF9500' },
-                ($e || よその団体) && { opacity: 0.4 },
-                e && IS_WEB && { opacity: 0.9, transform: [{ scale: 1.02 }] },
+                (見るだけ中 || よその団体) && { opacity: 0.4 },
+                hovered && IS_WEB && { opacity: 0.9, transform: [{ scale: 1.02 }] },
               ]} // 絵だけのボタンは読み上げに何も伝わらない。端末は accessibilityLabel、
               // web の TouchableOpacity は aria-label を見るので、両方渡す
               accessible
@@ -2059,15 +2078,15 @@ const RecordScreen = () => {
                 // 履歴の記録を直しているあいだは、新しい記録にせず元の記録へ書き戻す
                 if (履歴の編集) {
                   履歴の編集を終える(true);
-                  Ge('履歴の記録に保存しました');
+                  知らせる('履歴の記録に保存しました');
                   航路.navigate('履歴');
                   return;
                 }
-                if ($e) return void 閲覧中に押された();
+                if (見るだけ中) return void 閲覧中に押された();
                 // よその団体のライブは、自分の記録として残さない。
                 // 押しても無反応だと壊れたのか決まりなのか分からないので、理由を言う
                 if (よその団体)
-                  return void (Ge('共有されたライブは、主催者の側で保存されます'),
+                  return void (知らせる('共有されたライブは、主催者の側で保存されます'),
                   ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning));
                 if (0 === archers.length) return;
                 // 設定で出欠確認を切っていれば、窓を飛ばして保存へ進む。
@@ -2076,63 +2095,66 @@ const RecordScreen = () => {
                 if (保存時に出欠を確認する) setShowAttendance(true);
                 else {
                   setTempAttendance(null);
-                  xe(true);
+                  保存の窓を出す(true);
                 }
               }}
             >
-              <Text style={W.saveBtnText}>{履歴の編集 ? '保存して戻る' : '終了・保存'}</Text>
+              <Text style={styles.saveBtnText}>{履歴の編集 ? '保存して戻る' : '終了・保存'}</Text>
             </Pressable>
           </>
         </View>
       )}
       <ArcherActionModal
         交代を消せる
-        visible={de}
-        archerId={ue || ''}
-        archerOrigIdx={he}
+        visible={人の窓}
+        archerId={選んだ射手ID || ''}
+        archerOrigIdx={選んだ射手の順}
         isSeparator={
-          (Array.isArray(archers) ? archers : []).find((e) => e && e.id === ue)?.isSeparator || false
+          (Array.isArray(archers) ? archers : []).find((x) => x && x.id === 選んだ射手ID)?.isSeparator ||
+          false
         }
         isTotalCalculator={
-          (Array.isArray(archers) ? archers : []).find((e) => e && e.id === ue)?.isTotalCalculator || false
+          (Array.isArray(archers) ? archers : []).find((x) => x && x.id === 選んだ射手ID)
+            ?.isTotalCalculator || false
         } // 合計の列が、いま手前の計もまとめて数えているか。窓の中で切り替える
         またぐ合計={
-          (Array.isArray(archers) ? archers : []).find((e) => e && e.id === ue)?.またぐ合計 || false
+          (Array.isArray(archers) ? archers : []).find((x) => x && x.id === 選んだ射手ID)?.またぐ合計 || false
         }
         on合計の範囲={() => {
-          if ($e) return void 閲覧中に押された();
-          const 列 = (Array.isArray(archers) ? archers : []).find((e) => e && e.id === ue);
-          合計の範囲を切り替える(ue);
-          Ge(列?.またぐ合計 ? 'この立ちだけの合計にしました' : '手前の計もまとめた総計にしました');
-          ce(false);
+          if (見るだけ中) return void 閲覧中に押された();
+          const 列 = (Array.isArray(archers) ? archers : []).find((x) => x && x.id === 選んだ射手ID);
+          合計の範囲を切り替える(選んだ射手ID);
+          知らせる(列?.またぐ合計 ? 'この立ちだけの合計にしました' : '手前の計もまとめた総計にしました');
+          人の窓を出す(false);
         }} // 区切りにチーム名を付ける道。窓からも入れるようにした
         いまのチーム名={
-          組.区切りのチーム名((Array.isArray(archers) ? archers : []).find((e) => e && e.id === ue) || {}) ||
-          ''
+          組.区切りのチーム名(
+            (Array.isArray(archers) ? archers : []).find((x) => x && x.id === 選んだ射手ID) || {}
+          ) || ''
         }
         onチーム名={() => {
-          if ($e) return void 閲覧中に押された();
-          const 列 = (Array.isArray(archers) ? archers : []).find((e) => e && e.id === ue);
+          if (見るだけ中) return void 閲覧中に押された();
+          const 列 = (Array.isArray(archers) ? archers : []).find((x) => x && x.id === 選んだ射手ID);
           setチーム名の下書き((列 && 列.teamName) || '');
-          setチーム名を付ける区切り(ue);
-          ce(false);
+          setチーム名を付ける区切り(選んだ射手ID);
+          人の窓を出す(false);
         }} // 立ち順の入れ替え。store には並びの向き（前・後）で渡す。
         // 字をどう出すかは並べ方しだいなので、それは窓へ伝える
         //（縦は右／左、横は上／下）。端の列では、その向きを出さない
         横に並べている={!!横に並べる}
         手前へ動かせる={(() => {
-          const 並び = (Array.isArray(archers) ? archers : []).filter((e) => !!e);
-          return 並び.findIndex((e) => e.id === ue) > 0;
+          const 並び = (Array.isArray(archers) ? archers : []).filter((x) => !!x);
+          return 並び.findIndex((x) => x.id === 選んだ射手ID) > 0;
         })()}
         奥へ動かせる={(() => {
-          const 並び = (Array.isArray(archers) ? archers : []).filter((e) => !!e);
-          const i = 並び.findIndex((e) => e.id === ue);
-          return i >= 0 && i < 並び.length - 1;
+          const 並び = (Array.isArray(archers) ? archers : []).filter((x) => !!x);
+          const 順 = 並び.findIndex((x) => x.id === 選んだ射手ID);
+          return 順 >= 0 && 順 < 並び.length - 1;
         })()}
         on動かす={(向き) => {
-          if ($e) return void 閲覧中に押された();
-          列を動かす(ue, 向き);
-          Ge(
+          if (見るだけ中) return void 閲覧中に押された();
+          列を動かす(選んだ射手ID, 向き);
+          知らせる(
             '前' === 向き
               ? 横に並べる
                 ? '上へ動かしました'
@@ -2142,8 +2164,8 @@ const RecordScreen = () => {
                 : '左へ動かしました'
           );
         }}
-        onClose={() => ce(false)}
-        onSubstitution={() => be(true)}
+        onClose={() => 人の窓を出す(false)}
+        onSubstitution={() => 交代の窓を出す(true)}
       />
       <AttendanceCheckModal
         visible={showAttendance}
@@ -2151,137 +2173,168 @@ const RecordScreen = () => {
         onConfirm={(attendance) => {
           setTempAttendance(attendance);
           setShowAttendance(false);
-          xe(true);
+          保存の窓を出す(true);
         }}
         members={members}
         activeArchers={archers}
       />
       <SaveSessionModal
-        visible={me}
-        onClose={() => xe(false)}
-        onSave={(e, t, o, l) => {
-          xe(false);
+        visible={保存の窓}
+        onClose={() => 保存の窓を出す(false)}
+        onSave={(題, 覚え書き, 統計に入れる, タグの文) => {
+          保存の窓を出す(false);
           ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Success);
-          const n = l
+          const タグ = タグの文
             .split(/[,\u3001\s]+/)
-            .map((e) => (e.startsWith('#') ? e : `#${e}`))
-            .map((e) => e.trim())
-            .filter((e) => '#' !== e);
-          saveSession(e, t, o, n, tempAttendance);
+            .map((x) => (x.startsWith('#') ? x : `#${x}`))
+            .map((x) => x.trim())
+            .filter((x) => '#' !== x);
+          saveSession(題, 覚え書き, 統計に入れる, タグ, tempAttendance);
           useScoreStore.getState().setCurrentSessionTags([]);
-          Ge('保存しました');
+          知らせる('保存しました');
         }}
       />
-      <ManualSubstitutionModal visible={ye} archerId={ue} onClose={() => be(false)} />
-      <Modal visible={pe} transparent animationType="fade" onRequestClose={() => Ce(false)}>
-        <View style={W.modalBackdrop}>
-          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => Ce(false)} />
-          <View style={W.modalContent}>
-            <Text style={W.modalTitle}>すべての記録をリセット</Text>
-            <Text style={W.modalMessage}>
+      <ManualSubstitutionModal
+        visible={交代の窓}
+        archerId={選んだ射手ID}
+        onClose={() => 交代の窓を出す(false)}
+      />
+      <Modal
+        visible={リセットの窓}
+        transparent
+        animationType="fade"
+        onRequestClose={() => リセットの窓を出す(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => リセットの窓を出す(false)}
+          />
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>すべての記録をリセット</Text>
+            <Text style={styles.modalMessage}>
               現在入力されているすべての的中記録と交代設定、およびすべてのデータが削除されます。リセットしてよろしいですか？
             </Text>
-            <View style={W.modalButtonsRow}>
+            <View style={styles.modalButtonsRow}>
               <Pressable
-                style={({ hovered: e }) => [
-                  W.modalBtn,
+                style={({ hovered }) => [
+                  styles.modalBtn,
                   { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
-                  e && IS_WEB && { backgroundColor: '#E5E5EA' },
+                  hovered && IS_WEB && { backgroundColor: '#E5E5EA' },
                 ]}
-                onPress={() => Ce(false)}
+                onPress={() => リセットの窓を出す(false)}
               >
-                <Text style={[W.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
+                <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
               </Pressable>
               <Pressable
-                style={({ hovered: e }) => [
-                  W.modalBtn,
+                style={({ hovered }) => [
+                  styles.modalBtn,
                   { backgroundColor: '#FF3B30', flex: 1, marginLeft: 5 },
-                  e && IS_WEB && { opacity: 0.8 },
+                  hovered && IS_WEB && { opacity: 0.8 },
                 ]}
                 onPress={() => {
-                  Ce(false);
+                  リセットの窓を出す(false);
                   resetCurrentSession();
                   ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning);
-                  Ge('リセットしました。');
+                  知らせる('リセットしました。');
                 }}
               >
-                <Text style={[W.modalBtnText, { color: '#FFF' }]}>リセット</Text>
+                <Text style={[styles.modalBtnText, { color: '#FFF' }]}>リセット</Text>
               </Pressable>
             </View>
           </View>
         </View>
       </Modal>
-      <Modal visible={Ie} transparent animationType="fade" onRequestClose={() => ve(false)}>
-        <View style={W.modalBackdrop}>
-          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => ve(false)} />
-          <View style={W.modalContent}>
-            <Text style={W.modalTitle}>射数を減らしますか？</Text>
-            <Text style={W.modalMessage}>
-              射数を{Be}射に減らすと、後ろの入力済みデータがすべて削除されます。よろしいですか？
+      <Modal
+        visible={射数を減らす確認}
+        transparent
+        animationType="fade"
+        onRequestClose={() => 射数を減らす確認を出す(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => 射数を減らす確認を出す(false)}
+          />
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>射数を減らしますか？</Text>
+            <Text style={styles.modalMessage}>
+              射数を{減らす先の射数}射に減らすと、後ろの入力済みデータがすべて削除されます。よろしいですか？
             </Text>
-            <View style={W.modalButtonsRow}>
+            <View style={styles.modalButtonsRow}>
               <TouchableOpacity
-                style={[W.modalBtn, { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 }]}
-                onPress={() => ve(false)}
+                style={[styles.modalBtn, { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 }]}
+                onPress={() => 射数を減らす確認を出す(false)}
               >
-                <Text style={[W.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
+                <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[W.modalBtn, { backgroundColor: '#FF3B30', flex: 1, marginLeft: 5 }]}
+                style={[styles.modalBtn, { backgroundColor: '#FF3B30', flex: 1, marginLeft: 5 }]}
                 onPress={() => {
-                  ve(false);
-                  setShotsPerRound(Be);
+                  射数を減らす確認を出す(false);
+                  setShotsPerRound(減らす先の射数);
                   ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Medium);
                 }}
               >
-                <Text style={[W.modalBtnText, { color: '#FFF' }]}>削除して変更</Text>
+                <Text style={[styles.modalBtnText, { color: '#FFF' }]}>削除して変更</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-      <Modal visible={ke} transparent animationType="fade" onRequestClose={() => We(false)}>
-        <View style={W.modalBackdrop}>
-          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => We(false)} />
-          <View style={W.modalContent}>
-            <Text style={W.modalTitle}>射数の詳細設定</Text>
-            <Text style={W.modalMessage}>1〜500本の間で入力してください</Text>
+      <Modal
+        visible={射数の入力窓}
+        transparent
+        animationType="fade"
+        onRequestClose={() => 射数の入力窓を出す(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => 射数の入力窓を出す(false)}
+          />
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>射数の詳細設定</Text>
+            <Text style={styles.modalMessage}>1〜500本の間で入力してください</Text>
             <TextInput
-              style={W.modalInput}
+              style={styles.modalInput}
               keyboardType="number-pad"
-              value={Te}
-              onChangeText={ze}
-              onSubmitEditing={Ye}
+              value={射数の下書き}
+              onChangeText={射数の下書きを置く}
+              onSubmitEditing={入力した射数で決める}
               autoFocus
             />
-            <View style={W.modalButtonsRow}>
+            <View style={styles.modalButtonsRow}>
               <Pressable
-                style={({ hovered: e }) => [
-                  W.modalBtn,
+                style={({ hovered }) => [
+                  styles.modalBtn,
                   { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
-                  e && IS_WEB && { backgroundColor: '#E5E5EA' },
+                  hovered && IS_WEB && { backgroundColor: '#E5E5EA' },
                 ]}
-                onPress={() => We(false)}
+                onPress={() => 射数の入力窓を出す(false)}
               >
-                <Text style={[W.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
+                <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
               </Pressable>
               <Pressable
-                style={({ hovered: e }) => [
-                  W.modalBtn,
+                style={({ hovered }) => [
+                  styles.modalBtn,
                   { backgroundColor: '#007AFF', flex: 1, marginLeft: 5 },
-                  e && IS_WEB && { opacity: 0.8 },
+                  hovered && IS_WEB && { opacity: 0.8 },
                 ]}
-                onPress={Ye}
+                onPress={入力した射数で決める}
               >
-                <Text style={[W.modalBtnText, { color: '#FFF' }]}>決定</Text>
+                <Text style={[styles.modalBtnText, { color: '#FFF' }]}>決定</Text>
               </Pressable>
             </View>
           </View>
         </View>
       </Modal>
-      {Fe ? (
-        <View style={W.feedbackOverlay}>
-          <Text style={W.feedbackText}>{Fe}</Text>
+      {知らせ ? (
+        <View style={styles.feedbackOverlay}>
+          <Text style={styles.feedbackText}>{知らせ}</Text>
         </View>
       ) : null}
       <Modal
@@ -2321,14 +2374,14 @@ const RecordScreen = () => {
               <Text style={{ fontSize: 15, color: '#3C3C43', marginTop: 4 }}>{参加のしかたを聞く || ''}</Text>
             </View>
             <Pressable
-              style={({ hovered: e }) => [
+              style={({ hovered }) => [
                 {
                   padding: 16,
                   alignItems: 'center',
                   borderBottomWidth: StyleSheet.hairlineWidth,
                   borderBottomColor: '#C6C6C8',
                 },
-                e && IS_WEB && { backgroundColor: '#F2F2F7' },
+                hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
               ]}
               onPress={() => {
                 const 名 = 参加のしかたを聞く;
@@ -2340,9 +2393,9 @@ const RecordScreen = () => {
               <Text style={{ fontSize: 13, color: '#8E8E93', marginTop: 2 }}>○×を入れられます</Text>
             </Pressable>
             <Pressable
-              style={({ hovered: e }) => [
+              style={({ hovered }) => [
                 { padding: 16, alignItems: 'center' },
-                e && IS_WEB && { backgroundColor: '#F2F2F7' },
+                hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
               ]}
               onPress={() => {
                 const 名 = 参加のしかたを聞く;
@@ -2357,7 +2410,7 @@ const RecordScreen = () => {
             </Pressable>
           </View>
           <Pressable
-            style={({ hovered: e }) => [
+            style={({ hovered }) => [
               {
                 width: '90%',
                 maxWidth: 400,
@@ -2367,7 +2420,7 @@ const RecordScreen = () => {
                 padding: 18,
                 alignItems: 'center',
               },
-              e && IS_WEB && { opacity: 0.8 },
+              hovered && IS_WEB && { opacity: 0.8 },
             ]}
             onPress={() => 参加のしかたを聞くを置く(null)}
           >
@@ -2408,16 +2461,16 @@ const RecordScreen = () => {
               }}
             >
               <Pressable
-                style={({ hovered: e }) => [
+                style={({ hovered }) => [
                   { flex: 1, padding: 16, alignItems: 'center' },
-                  e && IS_WEB && { backgroundColor: '#F2F2F7' },
+                  hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
                 ]}
                 onPress={() => 確認を置く(null)}
               >
                 <Text style={{ fontSize: 17, color: '#007AFF' }}>キャンセル</Text>
               </Pressable>
               <Pressable
-                style={({ hovered: e }) => [
+                style={({ hovered }) => [
                   {
                     flex: 1,
                     padding: 16,
@@ -2425,7 +2478,7 @@ const RecordScreen = () => {
                     borderLeftWidth: StyleSheet.hairlineWidth,
                     borderLeftColor: '#C6C6C8',
                   },
-                  e && IS_WEB && { backgroundColor: '#F2F2F7' },
+                  hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
                 ]}
                 onPress={() => {
                   const 手 = 確認 && 確認.実行;
@@ -2443,17 +2496,17 @@ const RecordScreen = () => {
         visible={showOCRModal}
         onClose={() => setShowOCRModal(false)}
         members={members}
-        alumni={useScoreStore((e) => e.alumni) || []}
+        alumni={useScoreStore((x) => x.alumni) || []}
         shotsPerRound={shotsPerRound}
         hasExistingRecord={archers.length > 0} // いまの記録表で埋まっている射数（いちばん後ろの○×の位置）。
         // 窓の側で、写真で読めた射数と比べて多いほうに射数を合わせる
         記入済みの射数={Math.max(
           0,
-          ...(Array.isArray(archers) ? archers : []).map((e) => {
-            if (!e || e.isSeparator || !Array.isArray(e.marks)) return 0;
+          ...(Array.isArray(archers) ? archers : []).map((射手) => {
+            if (!射手 || 射手.isSeparator || !Array.isArray(射手.marks)) return 0;
             let 後ろ = 0;
-            e.marks.forEach((m, i) => {
-              if (m) 後ろ = i + 1;
+            射手.marks.forEach((印, 番) => {
+              if (印) 後ろ = 番 + 1;
             });
             return 後ろ;
           })
@@ -2461,7 +2514,7 @@ const RecordScreen = () => {
         onApply={(newArchers, 読み取りの種類, 入れ方, 射数) => {
           // 画像は setState で直に盤面を差し替えるため、ストアの止めが効かない。
           // 閲覧用のときはここで返す
-          if ($e) return void 閲覧中に押された();
+          if (見るだけ中) return void 閲覧中に押された();
           // 射数を写真と記録表の多いほうに合わせる（設定より多ければ広げ、少なければ縮める。
           // 埋まった○×は縮めても消えない）。先に合わせないと、いまの並びと読み取った
           // 並びで○×の長さが食い違う
@@ -2490,7 +2543,9 @@ const RecordScreen = () => {
           useScoreStore.setState({ archers: 入れる並び });
           // 紙の記録は氏名と○×を、立ち順表は並びだけを読む。
           // どちらも同じ処理を通るので、文言は種類で分ける
-          Ge('record' === 読み取りの種類 ? '画像から記録を読み取りました' : '画像から立ち順を登録しました');
+          知らせる(
+            'record' === 読み取りの種類 ? '画像から記録を読み取りました' : '画像から立ち順を登録しました'
+          );
           ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Success);
         }}
       />
@@ -2513,22 +2568,22 @@ const RecordScreen = () => {
         animationType="fade"
         onRequestClose={() => setチーム名を付ける区切り(null)}
       >
-        <View style={W.modalBackdrop}>
+        <View style={styles.modalBackdrop}>
           <TouchableOpacity
             style={StyleSheet.absoluteFill}
             activeOpacity={1}
             onPress={() => setチーム名を付ける区切り(null)}
           />
-          <View style={W.modalContent}>
-            <Text style={W.modalTitle}>チーム名</Text>
-            <Text style={W.modalMessage}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>チーム名</Text>
+            <Text style={styles.modalMessage}>
               {/* 記録表は右から左へ並ぶ（row-reverse）。並びで「後ろ」の */
               /* 射手は、画面では区切りの左に出る。「右」と書いていたころは */
               /* 案内と逆の側に色が付いて見えた */}
               この区切りより左の射手が、そのチームになります。大学名などを入れてください。空にすると、ただの間隔に戻ります。
             </Text>
             <TextInput
-              style={W.チーム名の入力}
+              style={styles.チーム名の入力}
               value={チーム名の下書き}
               onChangeText={setチーム名の下書き}
               placeholder="例: ◯◯大学"
@@ -2540,29 +2595,29 @@ const RecordScreen = () => {
                 setチーム名を付ける区切り(null);
               }}
             />
-            <View style={W.modalButtonsRow}>
+            <View style={styles.modalButtonsRow}>
               <Pressable
-                style={({ hovered: e }) => [
-                  W.modalBtn,
+                style={({ hovered }) => [
+                  styles.modalBtn,
                   { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
-                  e && IS_WEB && { backgroundColor: '#E5E5EA' },
+                  hovered && IS_WEB && { backgroundColor: '#E5E5EA' },
                 ]}
                 onPress={() => setチーム名を付ける区切り(null)}
               >
-                <Text style={[W.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
+                <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
               </Pressable>
               <Pressable
-                style={({ hovered: e }) => [
-                  W.modalBtn,
+                style={({ hovered }) => [
+                  styles.modalBtn,
                   { backgroundColor: '#007AFF', flex: 1, marginLeft: 5 },
-                  e && IS_WEB && { opacity: 0.9 },
+                  hovered && IS_WEB && { opacity: 0.9 },
                 ]}
                 onPress={() => {
                   区切りにチーム名を付ける(チーム名を付ける区切り, チーム名の下書き);
                   setチーム名を付ける区切り(null);
                 }}
               >
-                <Text style={[W.modalBtnText, { color: '#FFF' }]}>決定</Text>
+                <Text style={[styles.modalBtnText, { color: '#FFF' }]}>決定</Text>
               </Pressable>
             </View>
           </View>
@@ -2571,7 +2626,7 @@ const RecordScreen = () => {
     </Et要素>
   );
 };
-const W = StyleSheet.create({
+const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#FFF', paddingTop: IS_WEB ? WEB_TOP_PADDING : SAFE_TOP_PADDING },
   navBar: {
     minHeight: 48,

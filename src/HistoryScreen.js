@@ -280,8 +280,8 @@ const HistoryScreen = () => {
   const qe = () => {
     if (!Pe)
       return (
-        <View style={E.center}>
-          <Text style={E.emptyText}>記録が見つかりません</Text>
+        <View style={styles.center}>
+          <Text style={styles.emptyText}>記録が見つかりません</Text>
           <TouchableOpacity
             onPress={() => {
               setHistoryViewMode('list');
@@ -313,7 +313,7 @@ const HistoryScreen = () => {
           : 'next' === e && t > 0 && setSelectedHistorySessionId(Ye[t - 1].id));
     };
     return (
-      <View style={E.detailContainer}>
+      <View style={styles.detailContainer}>
         <View
           style={{
             flexDirection: 'row',
@@ -371,9 +371,9 @@ const HistoryScreen = () => {
         {/* ゴミ箱の中の記録だと分かる帯。見るだけで、直す道具は出さない。 */
         /* 復元と完全な削除はここからもできる（見てから決めるのが自然な流れ） */}
         {ゴミ箱を見ている && (
-          <View testID="ゴミ箱の帯" style={E.trashBanner}>
+          <View testID="ゴミ箱の帯" style={styles.trashBanner}>
             <Icons.Ionicons name="trash-outline" size={18} color="#FFF" />
-            <Text style={E.trashBannerText}>ゴミ箱の中の記録です。見るだけで、直せません</Text>
+            <Text style={styles.trashBannerText}>ゴミ箱の中の記録です。見るだけで、直せません</Text>
             {(isAdminMode || 'group' === activeRole) && (
               <Pressable
                 accessibilityRole="button"
@@ -384,9 +384,9 @@ const HistoryScreen = () => {
                   setゴミ箱の記録(null);
                   ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
                 }}
-                style={({ hovered: e }) => [E.trashBannerBtn, e && { opacity: 0.85 }]}
+                style={({ hovered: e }) => [styles.trashBannerBtn, e && { opacity: 0.85 }]}
               >
-                <Text style={E.trashBannerBtnText}>復元</Text>
+                <Text style={styles.trashBannerBtnText}>復元</Text>
               </Pressable>
             )}
             {/* 完全に削除もここから。一覧の「選んで削除」と同じ道（deleteTrashItems）を通し、 */
@@ -414,12 +414,12 @@ const HistoryScreen = () => {
                   ]);
                 }}
                 style={({ hovered: e }) => [
-                  E.trashBannerBtn,
+                  styles.trashBannerBtn,
                   { backgroundColor: '#FF3B30' },
                   e && { opacity: 0.85 },
                 ]}
               >
-                <Text style={[E.trashBannerBtnText, { color: '#FFF' }]}>完全に削除</Text>
+                <Text style={[styles.trashBannerBtnText, { color: '#FFF' }]}>完全に削除</Text>
               </Pressable>
             )}
           </View>
@@ -433,7 +433,7 @@ const HistoryScreen = () => {
               marginBottom: 6,
             }}
           >
-            <Text style={E.detailDate}>{l}</Text>
+            <Text style={styles.detailDate}>{l}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               {/* 縦横の切り替え。見るだけの人にも要るので、 */
               /* 消す・直すの権限とは別に、いつでも出す */}
@@ -494,7 +494,7 @@ const HistoryScreen = () => {
               )}
             </View>
           </View>
-          {!!Pe.title && <Text style={E.detailTitle}>{Pe.title}</Text>}
+          {!!Pe.title && <Text style={styles.detailTitle}>{Pe.title}</Text>}
           {!!Pe.note && (
             <View
               style={{
@@ -510,7 +510,7 @@ const HistoryScreen = () => {
             </View>
           )}
         </View>
-        <View style={[E.detailTableArea, { justifyContent: 'center', alignItems: 'center' }]}>
+        <View style={[styles.detailTableArea, { justifyContent: 'center', alignItems: 'center' }]}>
           <View style={{ flexDirection: 'column', maxWidth: '100%', maxHeight: '100%' }}>
             {横に並べる
               ? [
@@ -828,7 +828,7 @@ const HistoryScreen = () => {
     return (
       <Pressable
         style={({ hovered: e }) => [
-          E.recordItem,
+          styles.recordItem,
           de && s && { backgroundColor: 'rgba(0,122,255,0.1)' },
           e && !s && { backgroundColor: 'rgba(0,122,255,0.05)' },
           IS_WEB && { cursor: 'pointer' },
@@ -844,11 +844,11 @@ const HistoryScreen = () => {
             />
           </View>
         )}
-        <View style={E.itemLeft}>
-          <View style={E.titleRow}>
-            <Text style={E.itemDateText}>{l}</Text>
+        <View style={styles.itemLeft}>
+          <View style={styles.titleRow}>
+            <Text style={styles.itemDateText}>{l}</Text>
             {!!item.title && (
-              <Text style={E.itemTitleText}>
+              <Text style={styles.itemTitleText}>
                 {' ['}
                 {item.title}]
               </Text>
@@ -873,7 +873,7 @@ const HistoryScreen = () => {
               </View>
             )}
           </View>
-          <Text style={E.itemSubText}>
+          <Text style={styles.itemSubText}>
             {'矢数: '}
             {item.shotCount}
             {'本 '}
@@ -885,18 +885,23 @@ const HistoryScreen = () => {
             )}
           </Text>
           {item.tags && item.tags.length > 0 && (
-            <View style={E.itemTagsContainer}>
+            <View style={styles.itemTagsContainer}>
               {item.tags.map((t, i) => (
-                <View key={typeof t == 'string' ? `tag-${t}-${i}` : `tag-obj-${i}`} style={E.itemTagChip}>
-                  <Text style={E.itemTagText}>{typeof t == 'string' ? t.replace(/^#/, '') : String(t)}</Text>
+                <View
+                  key={typeof t == 'string' ? `tag-${t}-${i}` : `tag-obj-${i}`}
+                  style={styles.itemTagChip}
+                >
+                  <Text style={styles.itemTagText}>
+                    {typeof t == 'string' ? t.replace(/^#/, '') : String(t)}
+                  </Text>
                 </View>
               ))}
             </View>
           )}
         </View>
-        <View style={E.itemRight}>
-          <View style={E.countBadge}>
-            <Text style={E.countBadgeText}>{a}人</Text>
+        <View style={styles.itemRight}>
+          <View style={styles.countBadge}>
+            <Text style={styles.countBadgeText}>{a}人</Text>
           </View>
           {!de && <Icons.Ionicons name="chevron-forward" size={18} color="#C7C7CC" />}
         </View>
@@ -985,15 +990,15 @@ const HistoryScreen = () => {
   };
   const Lt要素 = View;
   return (
-    <Lt要素 style={E.safeArea}>
+    <Lt要素 style={styles.safeArea}>
       {'detail' === historyViewMode ? (
         qe()
       ) : (
         <View style={{ flex: 1 }}>
-          <View style={E.listHeaderArea}>
+          <View style={styles.listHeaderArea}>
             {isAdminMode && (
-              <TouchableOpacity onPress={() => setAdminMode(false)} style={E.adminDeactivate}>
-                <Text style={E.adminDeactivateText}>(管理者モード解除)</Text>
+              <TouchableOpacity onPress={() => setAdminMode(false)} style={styles.adminDeactivate}>
+                <Text style={styles.adminDeactivateText}>(管理者モード解除)</Text>
               </TouchableOpacity>
             )}
             <View
@@ -1005,7 +1010,7 @@ const HistoryScreen = () => {
               }}
             >
               <View style={{ flex: 1 }}>
-                <Text style={E.listMainTitle}>過去の記録表</Text>
+                <Text style={styles.listMainTitle}>過去の記録表</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 {(isAdminMode || 'group' === activeRole) && (
@@ -1040,16 +1045,16 @@ const HistoryScreen = () => {
             </View>
           </View>
           {de && ue.size > 0 && (
-            <TouchableOpacity style={E.batchDeleteBar} onPress={Xe}>
+            <TouchableOpacity style={styles.batchDeleteBar} onPress={Xe}>
               <Icons.Ionicons name="trash" size={18} color="#FFF" />
-              <Text style={E.batchDeleteText}>{ue.size}件を削除</Text>
+              <Text style={styles.batchDeleteText}>{ue.size}件を削除</Text>
             </TouchableOpacity>
           )}
-          <View style={E.searchContainer}>
-            <View style={E.searchBar}>
-              <Icons.Ionicons name="search" size={18} color="#8E8E93" style={E.searchIcon} />
+          <View style={styles.searchContainer}>
+            <View style={styles.searchBar}>
+              <Icons.Ionicons name="search" size={18} color="#8E8E93" style={styles.searchIcon} />
               <TextInput
-                style={E.searchInput}
+                style={styles.searchInput}
                 placeholder="日付や内容を検索（全期間対象）"
                 placeholderTextColor="#8E8E93"
                 value={te}
@@ -1058,7 +1063,7 @@ const HistoryScreen = () => {
             </View>
           </View>
           {Ne.length > 0 && (
-            <View style={E.tagFilterContainer}>
+            <View style={styles.tagFilterContainer}>
               <View
                 style={{
                   flexDirection: 'row',
@@ -1115,14 +1120,14 @@ const HistoryScreen = () => {
               >
                 <Pressable
                   style={({ hovered: e }) => [
-                    E.tagChip,
-                    0 === historySelectedTags.length && E.tagChipActive,
+                    styles.tagChip,
+                    0 === historySelectedTags.length && styles.tagChipActive,
                     { backgroundColor: 0 === historySelectedTags.length ? '#007AFF' : '#E5E5EA' },
                     e && 0 !== historySelectedTags.length && { backgroundColor: '#D1D1D6' },
                   ]}
                   onPress={() => setHistorySelectedTags([])}
                 >
-                  <Text style={[E.tagChipText, 0 === historySelectedTags.length && { color: '#FFF' }]}>
+                  <Text style={[styles.tagChipText, 0 === historySelectedTags.length && { color: '#FFF' }]}>
                     すべて解除
                   </Text>
                 </Pressable>
@@ -1132,14 +1137,14 @@ const HistoryScreen = () => {
                     <Pressable
                       key={typeof e === 'string' ? e : `tag-${idx}`}
                       style={({ hovered: e }) => [
-                        E.tagChip,
-                        t && E.tagChipActive,
+                        styles.tagChip,
+                        t && styles.tagChipActive,
                         { backgroundColor: t ? '#007AFF' : '#F2F2F7' },
                         e && !t && { backgroundColor: '#E5E5EA' },
                       ]}
                       onPress={() => toggleHistoryTag(e)}
                     >
-                      <Text style={[E.tagChipText, t && { color: '#FFF' }]}>
+                      <Text style={[styles.tagChipText, t && { color: '#FFF' }]}>
                         {typeof e === 'string' && e.startsWith('#') ? e.substring(1) : String(e)}
                       </Text>
                     </Pressable>
@@ -1150,12 +1155,15 @@ const HistoryScreen = () => {
           )}
           {!te && (
             <>
-              <View style={E.yearSelectorContainer}>
+              <View style={styles.yearSelectorContainer}>
                 <Pressable
-                  style={({ hovered: e }) => [E.yearButton, e && { backgroundColor: 'rgba(88,86,214,0.05)' }]}
+                  style={({ hovered: e }) => [
+                    styles.yearButton,
+                    e && { backgroundColor: 'rgba(88,86,214,0.05)' },
+                  ]}
                   onPress={() => se(true)}
                 >
-                  <Text style={E.yearButtonText}>
+                  <Text style={styles.yearButtonText}>
                     {$e.length > 0 ? `${ie}年度 (${ie}/04 - ${ie + 1}/03)` : '記録なし'}
                   </Text>
                   <Icons.Ionicons name="chevron-expand" size={14} color="#5856D6" />
@@ -1165,8 +1173,8 @@ const HistoryScreen = () => {
                 // 隠れた月へ届かせる（上のタグチップと同じ作り）
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                style={E.monthTabsScroll}
-                contentContainerStyle={E.monthTabsContent}
+                style={styles.monthTabsScroll}
+                contentContainerStyle={styles.monthTabsContent}
               >
                 {Ge.map((e) => {
                   const t = oe === e;
@@ -1174,13 +1182,15 @@ const HistoryScreen = () => {
                     <Pressable
                       key={e}
                       style={({ hovered: e }) => [
-                        E.monthTab,
-                        t && E.monthTabActive,
+                        styles.monthTab,
+                        t && styles.monthTabActive,
                         e && !t && { backgroundColor: '#E5E5EA' },
                       ]}
                       onPress={() => ne(e)}
                     >
-                      <Text style={[E.monthTabText, t && E.monthTabTextActive]}>{e.split('/')[1]}月</Text>
+                      <Text style={[styles.monthTabText, t && styles.monthTabTextActive]}>
+                        {e.split('/')[1]}月
+                      </Text>
                     </Pressable>
                   );
                 })}
@@ -1200,26 +1210,26 @@ const HistoryScreen = () => {
             data={Ye}
             renderItem={Je}
             keyExtractor={(e, idx) => (typeof e.id === 'string' ? e.id : `history-item-${idx}`)}
-            contentContainerStyle={E.listContent}
+            contentContainerStyle={styles.listContent}
             ItemSeparatorComponent={v}
-            ListEmptyComponent={<Text style={E.emptyText}>記録がありません</Text>}
+            ListEmptyComponent={<Text style={styles.emptyText}>記録がありません</Text>}
           />
         </View>
       )}
       <Modal visible={ae} transparent animationType="fade">
-        <TouchableOpacity style={E.modalOverlay} activeOpacity={1} onPress={() => se(false)}>
-          <View style={E.yearModal}>
-            <Text style={E.yearModalTitle}>年度を選択</Text>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => se(false)}>
+          <View style={styles.yearModal}>
+            <Text style={styles.yearModalTitle}>年度を選択</Text>
             {$e.map((e) => (
               <TouchableOpacity
                 key={e}
-                style={[E.yearOption, ie === e && E.yearOptionSelected]}
+                style={[styles.yearOption, ie === e && styles.yearOptionSelected]}
                 onPress={() => {
                   le(e);
                   se(false);
                 }}
               >
-                <Text style={[E.yearOptionText, ie === e && E.yearOptionTextSelected]}>
+                <Text style={[styles.yearOptionText, ie === e && styles.yearOptionTextSelected]}>
                   {e}年度 ({e}
                   {'/04 - '}
                   {e + 1}/03)
@@ -1449,13 +1459,13 @@ const HistoryScreen = () => {
         </View>
       </Modal>
       <Modal visible={Se} transparent animationType="fade">
-        <View style={E.confirmOverlay}>
-          <View style={E.confirmModal}>
-            <Text style={E.confirmTitle}>{Te ? '記録を削除' : '選択した記録を削除'}</Text>
-            <Text style={E.confirmMessage}>選択した記録をゴミ箱に移動しますか？</Text>
-            <View style={E.modalButtonsRow}>
+        <View style={styles.confirmOverlay}>
+          <View style={styles.confirmModal}>
+            <Text style={styles.confirmTitle}>{Te ? '記録を削除' : '選択した記録を削除'}</Text>
+            <Text style={styles.confirmMessage}>選択した記録をゴミ箱に移動しますか？</Text>
+            <View style={styles.modalButtonsRow}>
               <TouchableOpacity
-                style={[E.modalBtn, { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 }]}
+                style={[styles.modalBtn, { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 }]}
                 onPress={() => {
                   we(false);
                   Ae(null);
@@ -1464,7 +1474,7 @@ const HistoryScreen = () => {
                 <Text style={{ color: '#007AFF', fontWeight: 'bold' }}>キャンセル</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[E.modalBtn, { backgroundColor: '#FF3B30', flex: 1, marginLeft: 5 }]}
+                style={[styles.modalBtn, { backgroundColor: '#FF3B30', flex: 1, marginLeft: 5 }]}
                 onPress={async () => {
                   Te
                     ? (deleteSession(Te), Ae(null), setHistoryViewMode('list'))
@@ -1479,14 +1489,14 @@ const HistoryScreen = () => {
         </View>
       </Modal>
       <Modal visible={pe} transparent animationType="fade" onRequestClose={() => je(false)}>
-        <TouchableOpacity style={E.confirmOverlay} activeOpacity={1} onPress={() => je(false)}>
-          <View style={E.adminMenuContent}>
+        <TouchableOpacity style={styles.confirmOverlay} activeOpacity={1} onPress={() => je(false)}>
+          <View style={styles.adminMenuContent}>
             {/* 記録表そのものの直しは、記録画面に載せ替えて行う（人・間隔・計を足す、 */
             /* 並べ替え・矢所・射数・交代・画像からの読み取り）。ここに在った「人追加・ */
             /* 間隔追加・計追加」は記録画面で足せるので外した（使う人の指摘 2026-09-17） */}
             {!ゴミ箱を見ている && (
               <TouchableOpacity
-                style={E.adminMenuItem}
+                style={styles.adminMenuItem}
                 accessibilityRole="button"
                 accessibilityLabel="記録画面で直す"
                 aria-label="記録画面で直す"
@@ -1508,7 +1518,7 @@ const HistoryScreen = () => {
               >
                 <Icons.Ionicons name="open-outline" size={20} color="#FF9500" />
                 <View style={{ flex: 1 }}>
-                  <Text style={E.adminMenuText}>記録画面で直す</Text>
+                  <Text style={styles.adminMenuText}>記録画面で直す</Text>
                   <Text style={{ fontSize: 11, color: '#8E8E93', marginLeft: 12 }}>
                     並べ替え・矢所・射数など、記録表の道具をすべて使う
                   </Text>
@@ -1518,7 +1528,7 @@ const HistoryScreen = () => {
             {/* 記録の情報（日付・題・メモ・タグ・出欠）の窓。前は「記録を編集」で、 */
             /* 何が直せるのか分からなかった */}
             <TouchableOpacity
-              style={E.adminMenuItem}
+              style={styles.adminMenuItem}
               accessibilityRole="button"
               accessibilityLabel="記録の情報を変える"
               aria-label="記録の情報を変える"
@@ -1529,7 +1539,7 @@ const HistoryScreen = () => {
             >
               <Icons.Ionicons name="create-outline" size={20} color="#5856D6" />
               <View style={{ flex: 1 }}>
-                <Text style={E.adminMenuText}>記録の情報を変える</Text>
+                <Text style={styles.adminMenuText}>記録の情報を変える</Text>
                 <Text style={{ fontSize: 11, color: '#8E8E93', marginLeft: 12 }}>
                   日付・題・メモ・タグ・出欠
                 </Text>
@@ -1584,7 +1594,7 @@ const HistoryScreen = () => {
     </Lt要素>
   );
 };
-const E = StyleSheet.create({
+const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#FFF', paddingTop: IS_WEB ? WEB_TOP_PADDING : SAFE_TOP_PADDING },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   detailContainer: { flex: 1 },
