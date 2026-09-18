@@ -657,7 +657,7 @@ const AnalysisScreen = ({ navigation }) => {
         const item = dataset.data.find((d) => d.label === label);
         if (item) {
           points.push({
-            Svgの部品: xVal,
+            x: xVal,
             y: hHeight - (paddingY + (item.rate / 100) * usableHeight),
             rate: item.rate,
             label,
@@ -666,7 +666,7 @@ const AnalysisScreen = ({ navigation }) => {
       });
       let path = '';
       points.forEach((pt, idx) => {
-        path += idx === 0 ? `M ${pt.Svgの部品} ${pt.y}` : ` L ${pt.Svgの部品} ${pt.y}`;
+        path += idx === 0 ? `M ${pt.x} ${pt.y}` : ` L ${pt.x} ${pt.y}`;
       });
       return { ...dataset, points, path };
     });
@@ -715,7 +715,7 @@ const AnalysisScreen = ({ navigation }) => {
                 strokeWidth="1"
               />
               <Svgの部品.Text
-                Svgの部品={20}
+                x={20}
                 y={hHeight - (paddingY + (e / 100) * usableHeight) + 3}
                 fontSize="8"
                 fill="#8E8E93"
@@ -760,7 +760,7 @@ const AnalysisScreen = ({ navigation }) => {
             ds.points.map((pt, idx) => (
               <Svgの部品.Circle
                 key={`pt-${dsIdx}-${idx}`}
-                cx={pt.Svgの部品}
+                cx={pt.x}
                 cy={pt.y} // 選んでいる期間の点は大きくする。押せることが伝わるよう、
                 // 押す的も見た目より広く取る（下の透明な丸）
                 r={pt.label === selectedLabel ? (ds.isBase ? '5.5' : '5.0') : ds.isBase ? '3.5' : '3.0'}
@@ -773,7 +773,7 @@ const AnalysisScreen = ({ navigation }) => {
           {(datasetsWithPoints[0] ? datasetsWithPoints[0].points : []).map((pt, idx) => (
             <Svgの部品.Circle
               key={`hit-${idx}`}
-              cx={pt.Svgの部品}
+              cx={pt.x}
               cy={pt.y}
               r="11"
               fill="transparent"
@@ -805,12 +805,12 @@ const AnalysisScreen = ({ navigation }) => {
     const c = 20;
     const u = 110;
     const f = data.map((t, n) => ({
-      Svgの部品: c + (n / (data.length > 1 ? data.length - 1 : 1)) * 260,
+      x: c + (n / (data.length > 1 ? data.length - 1 : 1)) * 260,
       y: d - (c + (t.rate / 100) * u),
     }));
     let m = '';
     f.forEach((e, t) => {
-      m += 0 === t ? `M ${e.Svgの部品} ${e.y}` : ` L ${e.Svgの部品} ${e.y}`;
+      m += 0 === t ? `M ${e.x} ${e.y}` : ` L ${e.x} ${e.y}`;
     });
     return (
       <View style={F.graphContainer}>
@@ -856,7 +856,7 @@ const AnalysisScreen = ({ navigation }) => {
                 strokeWidth="1"
               />
               <Svgの部品.Text
-                Svgの部品={15}
+                x={15}
                 y={d - (c + (e / 100) * u) + 4}
                 fontSize="8"
                 fill="#8E8E93"
@@ -877,7 +877,7 @@ const AnalysisScreen = ({ navigation }) => {
           {f.map((e, t) => (
             <Svgの部品.Circle
               key={`point-${t}`}
-              cx={e.Svgの部品}
+              cx={e.x}
               cy={e.y}
               r={a === t ? '6' : '4'}
               fill={a === t ? '#FF9500' : '#007AFF'}
