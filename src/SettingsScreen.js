@@ -42,18 +42,21 @@ const {
 // ─────────────────────────────────────────
 
 // Excel が日付として解釈でき、文字列ソートも崩れない形式にする。
-function csvDate(ts) {
-  const d = new Date(ts);
-  const p2 = (n) => String(n).padStart(2, '0');
-  return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate());
+function csvDate(時刻) {
+  const 日付 = new Date(時刻);
+  const 二桁 = (数) => String(数).padStart(2, '0');
+  return 日付.getFullYear() + '-' + 二桁(日付.getMonth() + 1) + '-' + 二桁(日付.getDate());
 }
 // memberId（無ければ氏名）でメンバーを引く。学年・性別・期の補完に使う。
 function findMemberInfo(archer, memberList, alumniList, normalizeName) {
   const all = [].concat(memberList || [], alumniList || []);
-  const nm = normalizeName(archer.name || '');
+  const 整えた名 = normalizeName(archer.name || '');
   return (
-    all.find(function (m) {
-      return (archer.memberId && m.id === archer.memberId) || (m.name && normalizeName(m.name) === nm);
+    all.find(function (部員) {
+      return (
+        (archer.memberId && 部員.id === archer.memberId) ||
+        (部員.name && normalizeName(部員.name) === 整えた名)
+      );
     }) || null
   );
 }
@@ -144,9 +147,9 @@ const SettingsScreen = () => {
       titleScrollRef.current = 節点;
       const 中身 = 節点 && 節点.getScrollableNode ? 節点.getScrollableNode() : 節点;
       if (中身) {
-        const 回した = (e) => {
-          中身.scrollLeft += e.deltaY;
-          e.preventDefault();
+        const 回した = (出来事) => {
+          中身.scrollLeft += 出来事.deltaY;
+          出来事.preventDefault();
         };
         中身.addEventListener('wheel', 回した, { passive: false });
         titleScrollRef.current._wheelHandler = 回した;
@@ -164,9 +167,9 @@ const SettingsScreen = () => {
       memberScrollRef.current = 節点;
       const 中身 = 節点 && 節点.getScrollableNode ? 節点.getScrollableNode() : 節点;
       if (中身) {
-        const 回した = (e) => {
-          中身.scrollLeft += e.deltaY;
-          e.preventDefault();
+        const 回した = (出来事) => {
+          中身.scrollLeft += 出来事.deltaY;
+          出来事.preventDefault();
         };
         中身.addEventListener('wheel', 回した, { passive: false });
         memberScrollRef.current._wheelHandler = 回した;
@@ -184,22 +187,22 @@ const SettingsScreen = () => {
       const src =
         'member' === activeRole && myMemberId
           ? sList.filter(
-              (x) =>
-                x &&
-                x.archers &&
-                x.archers.some(
-                  (x) =>
-                    x &&
-                    (x.memberId === myMemberId ||
+              (記録) =>
+                記録 &&
+                記録.archers &&
+                記録.archers.some(
+                  (射手) =>
+                    射手 &&
+                    (射手.memberId === myMemberId ||
                       (myMemberName &&
-                        !x.memberId &&
-                        x.name &&
-                        x.name.replace(/\s*\(\d+\)$/, '').trim() === myMemberName))
+                        !射手.memberId &&
+                        射手.name &&
+                        射手.name.replace(/\s*\(\d+\)$/, '').trim() === myMemberName))
                 )
             )
           : sList;
       if (!src) return [];
-      const titles = src.map((x) => x.title).filter((x) => x && x.trim() !== '');
+      const titles = src.map((記録) => 記録.title).filter((x) => x && x.trim() !== '');
       return Array.from(new Set(titles)).slice(0, 10);
     } catch (_) {
       return [];
@@ -224,8 +227,8 @@ const SettingsScreen = () => {
       };
       const list = [...members, ...alumni]
         .sort(sortMembers)
-        .map((x) => x.name)
-        .filter((x) => x && x.trim() !== '');
+        .map((部員) => 部員.name)
+        .filter((名) => 名 && 名.trim() !== '');
       return Array.from(new Set(list));
     } catch (_) {
       return [];
@@ -236,17 +239,17 @@ const SettingsScreen = () => {
     const src =
       'member' === activeRole && myMemberId
         ? sList.filter(
-            (x) =>
-              x &&
-              x.archers &&
-              x.archers.some(
-                (x) =>
-                  x &&
-                  (x.memberId === myMemberId ||
+            (記録) =>
+              記録 &&
+              記録.archers &&
+              記録.archers.some(
+                (射手) =>
+                  射手 &&
+                  (射手.memberId === myMemberId ||
                     (myMemberName &&
-                      !x.memberId &&
-                      x.name &&
-                      x.name.replace(/\s*\(\d+\)$/, '').trim() === myMemberName))
+                      !射手.memberId &&
+                      射手.name &&
+                      射手.name.replace(/\s*\(\d+\)$/, '').trim() === myMemberName))
               )
           )
         : sList;
@@ -258,7 +261,9 @@ const SettingsScreen = () => {
     );
   }, [sList, activeRole, myMemberId, myMemberName]);
   const タグを切り替える = (タグ) => {
-    選んだタグを置く((今の) => (今の.includes(タグ) ? 今の.filter((t) => t !== タグ) : [...今の, タグ]));
+    選んだタグを置く((今の) =>
+      今の.includes(タグ) ? 今の.filter((タグ1つ) => タグ1つ !== タグ) : [...今の, タグ]
+    );
   };
   const 書き出す = async (範囲) => {
     try {
@@ -266,17 +271,17 @@ const SettingsScreen = () => {
       const 自分の部員ID = 'member' === activeRole ? myMemberId : null;
       const rSessions = 自分の部員ID
         ? sessions.filter(
-            (x) =>
-              x &&
-              x.archers &&
-              x.archers.some(
-                (x) =>
-                  x &&
-                  (x.memberId === 自分の部員ID ||
+            (記録) =>
+              記録 &&
+              記録.archers &&
+              記録.archers.some(
+                (射手) =>
+                  射手 &&
+                  (射手.memberId === 自分の部員ID ||
                     (myMemberName &&
-                      !x.memberId &&
-                      x.name &&
-                      x.name.replace(/\s*\(\d+\)$/, '').trim() === myMemberName))
+                      !射手.memberId &&
+                      射手.name &&
+                      射手.name.replace(/\s*\(\d+\)$/, '').trim() === myMemberName))
               )
           )
         : sessions;
@@ -295,8 +300,8 @@ const SettingsScreen = () => {
           if (選んだタグ.length > 0) {
             const タグたち = 記録.tags || [];
             if ('AND' === タグの論理) {
-              if (!選んだタグ.every((x) => タグたち.includes(x))) return false;
-            } else if (!選んだタグ.some((x) => タグたち.includes(x))) return false;
+              if (!選んだタグ.every((タグ1つ) => タグたち.includes(タグ1つ))) return false;
+            } else if (!選んだタグ.some((タグ1つ) => タグたち.includes(タグ1つ))) return false;
           }
           if (selectedKeywords.length > 0) {
             const 題 = 記録.title?.toLowerCase() || '';
@@ -330,8 +335,8 @@ const SettingsScreen = () => {
       }
       // 「集計に含めない」にした記録は、本表から外して別のシートに回す。
       // 混ぜると分析画面の数字と食い違う（画面はこれを外して数えている）
-      const 集計しない記録 = 対象の記録.filter((t) => !集.集計に入れるか(t));
-      const 集計する記録 = 対象の記録.filter((t) => 集.集計に入れるか(t));
+      const 集計しない記録 = 対象の記録.filter((記録) => !集.集計に入れるか(記録));
+      const 集計する記録 = 対象の記録.filter((記録) => 集.集計に入れるか(記録));
       const 名を整える = (名) => (名 || '').replace(/\s*\(\d+\)$/, '').trim();
       let _ = '';
       let xlsxHeaders = [];
@@ -471,7 +476,7 @@ const SettingsScreen = () => {
         });
         const 名簿 = [...部員たち, ...alumni];
         人たち.forEach((人, _) => {
-          const 部員 = 名簿.find((x) => x.id === 人.id || x.name === 人.name);
+          const 部員 = 名簿.find((部員1人) => 部員1人.id === 人.id || 部員1人.name === 人.name);
           部員 && ((人.grade = 部員.grade), (人.name = 部員.name));
         });
         const 並べた人たち = Array.from(人たち.values()).sort((甲, 乙) =>
@@ -692,7 +697,7 @@ const SettingsScreen = () => {
                 {'group' === activeRole
                   ? '団体アカウント'
                   : `メンバー (${(() => {
-                      const 自分 = members.find((e) => e.id === myMemberId);
+                      const 自分 = members.find((部員) => 部員.id === myMemberId);
                       return 自分?.personalId
                         ? `ID: ${自分.personalId} / ${自分.name || myMemberName || ''}`
                         : myMemberName || myMemberId || '---';
@@ -1322,7 +1327,7 @@ const SettingsScreen = () => {
                             key={`suggest-title-${題}`}
                             onPress={() =>
                               setSelectedKeywords((今の) =>
-                                今の.includes(題) ? 今の.filter((x) => x !== 題) : [...今の, 題]
+                                今の.includes(題) ? 今の.filter((題1つ) => 題1つ !== 題) : [...今の, 題]
                               )
                             }
                             style={[styles.suggestionChip, 選択中 && { backgroundColor: '#007AFF' }]}
@@ -1367,7 +1372,9 @@ const SettingsScreen = () => {
                               key={`suggest-member-${名前}`}
                               onPress={() =>
                                 setSelectedMembers((今の) =>
-                                  今の.includes(名前) ? 今の.filter((x) => x !== 名前) : [...今の, 名前]
+                                  今の.includes(名前)
+                                    ? 今の.filter((名前1つ) => 名前1つ !== 名前)
+                                    : [...今の, 名前]
                                 )
                               }
                               style={[styles.suggestionChip, 選択中 && { backgroundColor: '#007AFF' }]}
@@ -1994,7 +2001,7 @@ const SettingsScreen = () => {
                         resizeMode="cover"
                       />
                       <Pressable
-                        onPress={() => setInquiryImages((prev) => prev.filter((_, i) => i !== idx))}
+                        onPress={() => setInquiryImages((prev) => prev.filter((_, 番) => 番 !== idx))}
                         disabled={inquirySending}
                         style={{
                           position: 'absolute',

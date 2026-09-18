@@ -104,15 +104,15 @@ function 型の節の部品({ 成績, 期間の名, 誰の }) {
   // 中り数ごとにまとめて、見出しを1回だけ出す。
   // 型ごとに「三中」を繰り返すと、同じ字が縦に並んで読みにくい
   const 束 = [];
-  for (const x of 並び) {
+  for (const 型1つ of 並び) {
     const 尻 = 束[束.length - 1];
-    if (尻 && 尻.中り === x.中り) 尻.型たち.push(x);
-    else 束.push({ 中り: x.中り, 呼び名: x.呼び名, 型たち: [x] });
+    if (尻 && 尻.中り === 型1つ.中り) 尻.型たち.push(型1つ);
+    else 束.push({ 中り: 型1つ.中り, 呼び名: 型1つ.呼び名, 型たち: [型1つ] });
   }
-  const 手の数 = 手の並び.reduce((a, b) => a + b.回数, 0);
-  const 立ちの数 = 並び.reduce((a, b) => a + b.回数, 0);
-  const 率 = (x) => (x.shots > 0 ? ((x.hits / x.shots) * 100).toFixed(1) + '%' : null);
-  const 立ちの皆中 = 並び.find((x) => x.型 === '○○○○');
+  const 手の数 = 手の並び.reduce((計, 型1つ) => 計 + 型1つ.回数, 0);
+  const 立ちの数 = 並び.reduce((計, 型1つ) => 計 + 型1つ.回数, 0);
+  const 率 = (数) => (数.shots > 0 ? ((数.hits / 数.shots) * 100).toFixed(1) + '%' : null);
+  const 立ちの皆中 = 並び.find((型1つ) => 型1つ.型 === '○○○○');
   // 畳んでいる間の要点。開かなくても、いちばん見たい数字は分かるように。
   // 無いものは出さない（「一射 —」が並ぶと、何が無いのか分からない）
   const 要点 = [
@@ -166,16 +166,16 @@ function 型の節の部品({ 成績, 期間の名, 誰の }) {
             </Text>
           </View>
           {[
-            ...手の並び.map((x) => (
-              <View key={'手' + x.型} style={styles.型の行}>
-                <Text style={styles.型の印}>{x.型}</Text>
+            ...手の並び.map((型1つ) => (
+              <View key={'手' + 型1つ.型} style={styles.型の行}>
+                <Text style={styles.型の印}>{型1つ.型}</Text>
                 <Text style={styles.型の要点} numberOfLines={1}>
-                  {x.要点 ? x.呼び名 + '　' + x.要点 : x.呼び名}
+                  {型1つ.要点 ? 型1つ.呼び名 + '　' + 型1つ.要点 : 型1つ.呼び名}
                 </Text>
                 <Text style={styles.型の回数}>
-                  {x.回数}
+                  {型1つ.回数}
                   {'手 '}
-                  {Math.round(x.割合)}%
+                  {Math.round(型1つ.割合)}%
                 </Text>
               </View>
             )),
@@ -186,19 +186,19 @@ function 型の節の部品({ 成績, 期間の名, 誰の }) {
             ...束.map((組) => (
               <View key={組.中り} style={styles.型の組}>
                 <Text style={styles.型の見出し}>
-                  {組.呼び名} {組.型たち.reduce((a, b) => a + b.回数, 0)}立
+                  {組.呼び名} {組.型たち.reduce((計, 型1つ) => 計 + 型1つ.回数, 0)}立
                 </Text>
                 {[
-                  ...組.型たち.map((x) => (
-                    <View key={x.型} style={styles.型の行}>
-                      <Text style={styles.型の印}>{x.型}</Text>
+                  ...組.型たち.map((型1つ) => (
+                    <View key={型1つ.型} style={styles.型の行}>
+                      <Text style={styles.型の印}>{型1つ.型}</Text>
                       <Text style={styles.型の要点} numberOfLines={1}>
-                        {x.要点 || ''}
+                        {型1つ.要点 || ''}
                       </Text>
                       <Text style={styles.型の回数}>
-                        {x.回数}
+                        {型1つ.回数}
                         {'立 '}
-                        {Math.round(x.割合)}%
+                        {Math.round(型1つ.割合)}%
                       </Text>
                     </View>
                   )),
@@ -337,7 +337,7 @@ const AnalysisScreen = ({ navigation }) => {
   };
   /** 点を押していればその期間だけ、押していなければ全部 */
   const 点の期間で絞る = (記録たち, ラベル) =>
-    ラベル ? (記録たち || []).filter((x) => 点の期間の記録か(x, ラベル)) : 記録たち || [];
+    ラベル ? (記録たち || []).filter((記録1件) => 点の期間の記録か(記録1件, ラベル)) : 記録たち || [];
   const gatherAllArrowLocations = (memberId, name, selectedLabel) => {
     const locations = [];
     絞った記録.forEach((session) => {
@@ -374,8 +374,6 @@ const AnalysisScreen = ({ navigation }) => {
   const [暦の対象, 暦の対象を置く] = React.useState('start');
   const [名前の検索, 名前の検索を置く] = React.useState('');
   const [詳細の部員, 詳細の部員を置く] = React.useState(null);
-  const [se, ie] = React.useState('');
-  const [de, ce] = React.useState('');
   const [customShotsInput, setCustomShotsInput] = React.useState('');
   // 的の種類切り替え用ステート
   const [myTargetType, setMyTargetType] = React.useState(arrowTargetType || 'kasumi36');
@@ -433,7 +431,7 @@ const AnalysisScreen = ({ navigation }) => {
     // 履歴画面の絞り込み（あちらは氏名も見る）とも食い違っていた
     const src =
       'member' === activeRole && myMemberId
-        ? sessions.filter((x) => 自分の記録か(x, myMemberId, 自分の名前))
+        ? sessions.filter((記録1件) => 自分の記録か(記録1件, myMemberId, 自分の名前))
         : sessions;
     src.forEach((記録) => {
       if (記録 && 記録.tags) 記録.tags.forEach((タグ) => 集めた.add(タグ));
@@ -502,11 +500,11 @@ const AnalysisScreen = ({ navigation }) => {
   const 順位の元 = React.useMemo(
     () =>
       [
-        ...(members || []).filter((x) => showAlumniInAnalysis || (x.grade || 0) < 5),
+        ...(members || []).filter((部員1人) => showAlumniInAnalysis || (部員1人.grade || 0) < 5),
         ...(((学年の絞り === '卒業生' || showAlumniInAnalysis) && alumni) || []),
       ]
-        .filter((x) => !!x)
-        .filter((x) => activeRole !== 'member' || !myMemberId || x.id === myMemberId)
+        .filter((部員1人) => !!部員1人)
+        .filter((部員1人) => activeRole !== 'member' || !myMemberId || 部員1人.id === myMemberId)
         .map((部員) => Object.assign({}, 部員, 集.成績を数える(絞った記録, 部員.id)))
         .filter((部員) => {
           if (0 === 部員.shots) return false;
@@ -535,10 +533,10 @@ const AnalysisScreen = ({ navigation }) => {
   );
   const rankingConfig = analysisRankingSettings[期間の種類] || { type: 'ratio', value: 0 };
   const 割合 = 'ratio' === rankingConfig.type ? rankingConfig.value : 0;
-  const 最多の射数 = Math.max(...順位の元.map((x) => x.shots), 0);
+  const 最多の射数 = Math.max(...順位の元.map((人) => 人.shots), 0);
   const 射数の下限 = 'count' === rankingConfig.type ? rankingConfig.value : Math.floor(最多の射数 * 割合);
-  const 順位に入る = 順位の元.filter((x) => x.shots >= 射数の下限);
-  const 順位に入らない = 順位の元.filter((x) => x.shots < 射数の下限);
+  const 順位に入る = 順位の元.filter((人) => 人.shots >= 射数の下限);
+  const 順位に入らない = 順位の元.filter((人) => 人.shots < 射数の下限);
   const 順位つき = ((一覧) => {
     let 順位 = 1;
     return 一覧.map((部員, 番) => {
@@ -607,7 +605,7 @@ const AnalysisScreen = ({ navigation }) => {
         .map(([札, 中身]) =>
           Object.assign({ label: 札 }, 中身, { rate: 中身.shots > 0 ? (中身.hits / 中身.shots) * 100 : 0 })
         )
-        .filter((x) => x.shots > 0)
+        .filter((点) => 点.shots > 0)
         .sort((甲, 乙) => 甲.date - 乙.date);
     },
     [絞った記録, 推移の刻み]
@@ -659,10 +657,10 @@ const AnalysisScreen = ({ navigation }) => {
         isBase: false,
       })),
     ];
-    const allLabels = Array.from(new Set(allDataSets.flatMap((set) => set.data.map((x) => x.label)))).sort(
-      (a, b) => {
-        const aDate = new Date(a.replace('年度', '/4/1'));
-        const bDate = new Date(b.replace('年度', '/4/1'));
+    const allLabels = Array.from(new Set(allDataSets.flatMap((set) => set.data.map((点) => 点.label)))).sort(
+      (甲, 乙) => {
+        const aDate = new Date(甲.replace('年度', '/4/1'));
+        const bDate = new Date(乙.replace('年度', '/4/1'));
         return aDate - bDate;
       }
     );
@@ -682,7 +680,7 @@ const AnalysisScreen = ({ navigation }) => {
       const points = [];
       allLabels.forEach((label, idx) => {
         const xVal = paddingX + (idx / (allLabels.length > 1 ? allLabels.length - 1 : 1)) * usableWidth;
-        const item = dataset.data.find((x) => x.label === label);
+        const item = dataset.data.find((点) => 点.label === label);
         if (item) {
           points.push({
             x: xVal,
@@ -854,7 +852,7 @@ const AnalysisScreen = ({ navigation }) => {
           {!('月ごと' === 期間の種類 || '直近30日' === 期間の種類) && (
             <View style={styles.trendUnitSelector}>
               {['day', 'month', 'year']
-                .filter((x) => '年度' !== 期間の種類 || 'year' !== x)
+                .filter((刻み) => '年度' !== 期間の種類 || 'year' !== 刻み)
                 .map((刻み) => (
                   <TouchableOpacity
                     key={`unit-${刻み}`}
@@ -2033,7 +2031,7 @@ const AnalysisScreen = ({ navigation }) => {
                             表: (比較の成績.get(相手.id) || {}).perShotStats || 空,
                           })),
                         ];
-                        const 率 = (x) => (x && x.shots > 0 ? (x.hits / x.shots) * 100 : 0);
+                        const 率 = (数) => (数 && 数.shots > 0 ? (数.hits / 数.shots) * 100 : 0);
                         // 濃さは、この表の中でいちばん高い率を基準にする。
                         // 決め打ちの目盛だと、的中率が低い団体では全部同じ薄さになる
                         let 最大 = 0;

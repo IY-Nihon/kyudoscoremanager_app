@@ -37,7 +37,7 @@ const ArcherColumnView = React.memo(
     const チーム = (() => {
       const 一覧 = Array.isArray(allArchers) ? allArchers : [];
       const 割り当て = 組.チームを割り当てる(一覧);
-      const 見つけた = 割り当て.find((x) => x && archer && x.id === archer.id);
+      const 見つけた = 割り当て.find((一人) => 一人 && archer && 一人.id === archer.id);
       return 見つけた || { チーム: null, 色: null };
     })();
     const 区切りの名 = 組.区切りのチーム名(archer);
@@ -133,9 +133,9 @@ const ArcherColumnView = React.memo(
     // 射位（大前・N番・落）は、区切りや合計の行を除いた並びで数える。
     // chatStats と同じ数え方でないと、AIの答えと読み上げで呼び方が食い違う
     const 実の並び = (Array.isArray(allArchers) ? allArchers : []).filter(
-      (x) => x && !x.isSeparator && !x.isTotalCalculator
+      (一人) => 一人 && !一人.isSeparator && !一人.isTotalCalculator
     );
-    const 射位の番 = 実の並び.findIndex((x) => x && x.id === archer.id);
+    const 射位の番 = 実の並び.findIndex((一人) => 一人 && 一人.id === archer.id);
     const 自動ロックする = useScoreStore((状態) => 状態.自動ロックする);
     const 自動ロックまでの秒 = useScoreStore((状態) => 状態.自動ロックまでの秒);
     const 立を閉じる = useScoreStore((状態) => 状態.立を閉じる);
@@ -147,18 +147,18 @@ const ArcherColumnView = React.memo(
       const 仲間 = 受け持つ射手();
       if (!仲間.length) return '';
       const 出 = [];
-      for (let b = 0; 4 * b < shots; b++) {
-        const 端 = Math.min(4 * b + 4, shots);
+      for (let 立 = 0; 4 * 立 < shots; 立++) {
+        const 端 = Math.min(4 * 立 + 4, shots);
         let 全部 = true;
-        for (let j = 0; j < 仲間.length && 全部; j++) {
-          const 印 = 仲間[j].marks || [];
-          for (let x = 4 * b; x < 端; x++)
-            if (!(印[x] ?? '')) {
+        for (let 仲間の番 = 0; 仲間の番 < 仲間.length && 全部; 仲間の番++) {
+          const 印 = 仲間[仲間の番].marks || [];
+          for (let 射番 = 4 * 立; 射番 < 端; 射番++)
+            if (!(印[射番] ?? '')) {
               全部 = false;
               break;
             }
         }
-        if (全部) 出.push(b);
+        if (全部) 出.push(立);
       }
       return 出.join(',');
     })();
@@ -167,29 +167,29 @@ const ArcherColumnView = React.memo(
       // 埋まらなくなった立は覚えを捨てる。入れ直せば、また閉じるように
       const いま = new Set(立たち);
       [埋まった時刻, 閉じた覚え].forEach((箱) => {
-        Object.keys(箱.current).forEach((b) => {
-          if (!いま.has(Number(b))) delete 箱.current[b];
+        Object.keys(箱.current).forEach((立) => {
+          if (!いま.has(Number(立))) delete 箱.current[立];
         });
       });
       if (!自動ロックする || !立たち.length) return;
       const 今 = Date.now();
-      立たち.forEach((b) => {
-        if (!埋まった時刻.current[b]) 埋まった時刻.current[b] = 今;
+      立たち.forEach((立) => {
+        if (!埋まった時刻.current[立]) 埋まった時刻.current[立] = 今;
         // すでに閉じている立は、自分で開け直した人の邪魔をしないよう放っておく
-        if (archer.lockedBlocks?.[b]) 閉じた覚え.current[b] = true;
+        if (archer.lockedBlocks?.[立]) 閉じた覚え.current[立] = true;
       });
-      const 残り = 立たち.filter((b) => !閉じた覚え.current[b]);
+      const 残り = 立たち.filter((立) => !閉じた覚え.current[立]);
       if (!残り.length) return;
       const 待つ = Math.max(
         0,
-        Math.min(...残り.map((b) => 埋まった時刻.current[b])) + 自動ロックまでの秒 * 1000 - 今
+        Math.min(...残り.map((立) => 埋まった時刻.current[立])) + 自動ロックまでの秒 * 1000 - 今
       );
       const 札 = setTimeout(() => {
         const 頃 = Date.now();
-        残り.forEach((b) => {
-          if (埋まった時刻.current[b] + 自動ロックまでの秒 * 1000 <= 頃) {
-            閉じた覚え.current[b] = true;
-            立を閉じる(archer.id, b);
+        残り.forEach((立) => {
+          if (埋まった時刻.current[立] + 自動ロックまでの秒 * 1000 <= 頃) {
+            閉じた覚え.current[立] = true;
+            立を閉じる(archer.id, 立);
           }
         });
       }, 待つ);
@@ -252,7 +252,7 @@ const ArcherColumnView = React.memo(
                   const 交代の射番 = Object.keys(交代)
                     .map(Number)
                     .sort((甲, 乙) => 甲 - 乙)
-                    .filter((x) => x < 印たち.length);
+                    .filter((射番) => 射番 < 印たち.length);
                   if (交代の射番.length > 0 && !合算で見る) {
                     const 内訳 = [];
                     const 最初の交代 = 交代の射番[0];
@@ -302,25 +302,25 @@ const ArcherColumnView = React.memo(
           </TouchableOpacity>
           {archer.isSeparator ? (
             <View style={横 ? { flexDirection: 'row' } : undefined}>
-              {Array.from({ length: shots }, (無し, 番) => (横 ? 番 : shots - 1 - 番)).map((t) => {
-                const 立 = Math.floor(t / 4);
-                const 太線 = 切れ目(t);
-                const 立の端 = t === Math.min(shots - 1, 4 * 立 + 3);
+              {Array.from({ length: shots }, (無し, 番) => (横 ? 番 : shots - 1 - 番)).map((射番) => {
+                const 立 = Math.floor(射番 / 4);
+                const 太線 = 切れ目(射番);
+                const 立の端 = 射番 === Math.min(shots - 1, 4 * 立 + 3);
                 const 鍵 = !(isReadOnly && !isAdminMode) && (archer.lockedBlocks?.[立] || false);
                 return (
-                  <View key={t} style={{ width: ます幅, height: ます高 }}>
+                  <View key={射番} style={{ width: ます幅, height: ます高 }}>
                     <ScoreCell
                       archerId={archer.id}
-                      index={t}
+                      index={射番}
                       横並び={横}
                       isLocked={鍵}
                       isBlockBottom={太線}
                       isBlockTop={立の端}
-                      isFirst={0 === t}
+                      isFirst={0 === 射番}
                       hideMark
                       isNormalArcher={!鍵が効く}
                       columnType="separator"
-                      mark={archer.marks?.[t]}
+                      mark={archer.marks?.[射番]}
                       onToggle={onToggleMark}
                     />
                     {立の端 && (
