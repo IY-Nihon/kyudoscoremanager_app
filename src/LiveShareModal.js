@@ -65,15 +65,15 @@ const LiveShareModal = ({ visible, onClose }) => {
   };
   return (
     <Modal visible={!!visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={S.外}>
-        <View style={S.箱}>
-          <Text style={S.見出し}>ライブをリンクで配る</Text>
+      <View style={styles.外}>
+        <View style={styles.箱}>
+          <Text style={styles.見出し}>ライブをリンクで配る</Text>
           <ScrollView style={{ maxHeight: 420 }}>
             {出来上がり ? 出来たところ(出来上がり, 写して知らせる) : 作るところ()}
           </ScrollView>
-          {知らせ ? <Text style={S.知らせ}>{知らせ}</Text> : null}
-          <TouchableOpacity style={S.閉じる} onPress={onClose}>
-            <Text style={S.閉じるの字}>{出来上がり ? '閉じる' : 'やめる'}</Text>
+          {知らせ ? <Text style={styles.知らせ}>{知らせ}</Text> : null}
+          <TouchableOpacity style={styles.閉じる} onPress={onClose}>
+            <Text style={styles.閉じるの字}>{出来上がり ? '閉じる' : 'やめる'}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -82,11 +82,11 @@ const LiveShareModal = ({ visible, onClose }) => {
   function 作るところ() {
     return (
       <View>
-        <Text style={S.説明}>
+        <Text style={styles.説明}>
           このライブだけを配ります。団体の他のライブには入れません。配ったあとも、部員はこれまでどおり参加一覧から入れます。
         </Text>
         <TouchableOpacity
-          style={S.選び}
+          style={styles.選び}
           onPress={() => 使うかを置く(!合言葉を使うか)} // ✓ は絵で描いてあるので、そのままでは入か切かが読み上げられない。
           // web には aria- を明示する（TouchableOpacity は渡さない）
           accessibilityRole="checkbox"
@@ -95,15 +95,15 @@ const LiveShareModal = ({ visible, onClose }) => {
           accessibilityLabel="合言葉を付ける"
           aria-label="合言葉を付ける"
         >
-          <View style={[S.印, 合言葉を使うか && S.印が入り]}>
-            {合言葉を使うか ? <Text style={S.印の字}>✓</Text> : null}
+          <View style={[styles.印, 合言葉を使うか && styles.印が入り]}>
+            {合言葉を使うか ? <Text style={styles.印の字}>✓</Text> : null}
           </View>
-          <Text style={S.選びの字}>合言葉を付ける</Text>
+          <Text style={styles.選びの字}>合言葉を付ける</Text>
         </TouchableOpacity>
         {合言葉を使うか ? (
           <View>
             <TextInput
-              style={S.入力}
+              style={styles.入力}
               value={合言葉}
               onChangeText={(x) => {
                 合言葉を置く(x);
@@ -114,19 +114,21 @@ const LiveShareModal = ({ visible, onClose }) => {
               autoCapitalize="none"
               autoCorrect={false}
             />
-            <Text style={S.注意}>
+            <Text style={styles.注意}>
               合言葉はリンクに入りません。忘れると誰も入れなくなります。短い合言葉は当てられることがあるので、長めにしてください。
             </Text>
           </View>
         ) : (
-          <Text style={S.注意}>リンクを知っている人は誰でも入れます。外へ出さないリンクにしてください。</Text>
+          <Text style={styles.注意}>
+            リンクを知っている人は誰でも入れます。外へ出さないリンクにしてください。
+          </Text>
         )}
-        <Text style={S.小見出し}>リンクの有効期限</Text>
-        <View style={S.期限の列}>
+        <Text style={styles.小見出し}>リンクの有効期限</Text>
+        <View style={styles.期限の列}>
           {共.期限の選択肢.map((選) => (
             <TouchableOpacity
               key={String(選.値)}
-              style={[S.期限の札, 持ち === 選.値 && S.期限の札が入り]}
+              style={[styles.期限の札, 持ち === 選.値 && styles.期限の札が入り]}
               onPress={() => 持ちを置く(選.値)}
               accessibilityRole="button" // accessibilityState も web の DOM には届かない
               // （accessibilityLabel と同じで、TouchableOpacity は渡さない）。
@@ -136,18 +138,22 @@ const LiveShareModal = ({ visible, onClose }) => {
               accessibilityLabel={`有効期限 ${選.名}`}
               aria-label={`有効期限 ${選.名}`}
             >
-              <Text style={[S.期限の札の字, 持ち === 選.値 && S.期限の札の字が入り]}>{選.名}</Text>
+              <Text style={[styles.期限の札の字, 持ち === 選.値 && styles.期限の札の字が入り]}>{選.名}</Text>
             </TouchableOpacity>
           ))}
         </View>
-        <Text style={S.注意}>
+        <Text style={styles.注意}>
           {持ち > 0
             ? '期限が過ぎると、このライブは配った方も含めて全員がつながらなくなります（お手元の記録は残ります）。あとから延ばすことはできません。延ばしたいときは配り直してください。'
             : '期限を付けないリンクは、ずっと開いたままです。配る先が決まっているときだけにしてください。'}
         </Text>
-        {難点 ? <Text style={S.難点}>{難点}</Text> : null}
-        <TouchableOpacity style={[S.作るボタン, 作業中 && S.作業中]} disabled={作業中} onPress={作る}>
-          <Text style={S.作るボタンの字}>{作業中 ? '作っています…' : 'リンクを作る'}</Text>
+        {難点 ? <Text style={styles.難点}>{難点}</Text> : null}
+        <TouchableOpacity
+          style={[styles.作るボタン, 作業中 && styles.作業中]}
+          disabled={作業中}
+          onPress={作る}
+        >
+          <Text style={styles.作るボタンの字}>{作業中 ? '作っています…' : 'リンクを作る'}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -155,14 +161,14 @@ const LiveShareModal = ({ visible, onClose }) => {
 };
 function 出来たところ(出来上がり, 写して知らせる) {
   const 一本 = (題, 説明, URL, 何を) => (
-    <View style={S.一本}>
-      <Text style={S.一本の題}>{題}</Text>
-      <Text style={S.一本の説明}>{説明}</Text>
-      <Text style={S.URL} selectable>
+    <View style={styles.一本}>
+      <Text style={styles.一本の題}>{題}</Text>
+      <Text style={styles.一本の説明}>{説明}</Text>
+      <Text style={styles.URL} selectable>
         {URL}
       </Text>
-      <TouchableOpacity style={S.写すボタン} onPress={() => 写して知らせる(URL, 何を)}>
-        <Text style={S.写すボタンの字}>リンクを写す</Text>
+      <TouchableOpacity style={styles.写すボタン} onPress={() => 写して知らせる(URL, 何を)}>
+        <Text style={styles.写すボタンの字}>リンクを写す</Text>
       </TouchableOpacity>
     </View>
   );
@@ -170,12 +176,12 @@ function 出来たところ(出来上がり, 写して知らせる) {
     <View>
       {一本('編集用', '記録できます。○×を入れると全員に届きます。', 出来上がり.編集, '編集用')}
       {一本('閲覧用', '見るだけです。この人が何をしても、記録には届きません。', 出来上がり.閲覧, '閲覧用')}
-      <Text style={S.注意}>
+      <Text style={styles.注意}>
         {出来上がり.合言葉が要るか
           ? '合言葉はリンクに入っていません。別に伝えてください。'
           : '合言葉はありません。リンクを知っている人は誰でも入れます。'}
       </Text>
-      <Text style={S.注意}>
+      <Text style={styles.注意}>
         {出来上がり.期限
           ? `有効期限：${期限の日時(出来上がり.期限)}（${共.期限の文言(出来上がり.期限) || ''}）`
           : '有効期限はありません。このリンクはずっと開いたままです。'}
@@ -183,7 +189,7 @@ function 出来たところ(出来上がり, 写して知らせる) {
       {/* 二度目に配ったときは、選んだ期限ではなく最初のものが使われる。 */
       /* 黙っていると「7日にしたのに1日で切れた」と見える */}
       {出来上がり.すでに配られていた ? (
-        <Text style={S.注意}>
+        <Text style={styles.注意}>
           このライブはすでに配られています。同じリンクをお渡しします。期限は最初に配ったときのままです。
         </Text>
       ) : null}
@@ -203,7 +209,7 @@ function 期限の日時(期限) {
     return new Date(期限).toISOString();
   }
 }
-const S = StyleSheet.create({
+const styles = StyleSheet.create({
   外: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
@@ -330,15 +336,15 @@ const 来客の窓 = ({ 荷, onClose }) => {
   };
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <View style={S.外}>
-        <View style={S.箱}>
-          <Text style={S.見出し}>ライブに参加します</Text>
+      <View style={styles.外}>
+        <View style={styles.箱}>
+          <Text style={styles.見出し}>ライブに参加します</Text>
           <Text
-            style={S.説明}
+            style={styles.説明}
           >{`「${中身.名前}」に${中身.役 === 共.閲覧 ? '見るだけで' : '記録する側で'}入ります。`}</Text>
           {中身.鍵が要るか ? (
             <TextInput
-              style={S.入力}
+              style={styles.入力}
               value={合言葉}
               onChangeText={(x) => {
                 合言葉を置く(x);
@@ -353,18 +359,22 @@ const 来客の窓 = ({ 荷, onClose }) => {
             />
           ) : null}
           {消えるもの ? (
-            <Text style={S.難点}>
+            <Text style={styles.難点}>
               手元に書きかけの記録があります。参加すると、ライブの内容で上書きされます。
             </Text>
           ) : null}
-          {難点 ? <Text style={S.難点}>{難点}</Text> : null}
-          <TouchableOpacity style={[S.作るボタン, 作業中 && S.作業中]} disabled={作業中} onPress={入る}>
-            <Text style={S.作るボタンの字}>
+          {難点 ? <Text style={styles.難点}>{難点}</Text> : null}
+          <TouchableOpacity
+            style={[styles.作るボタン, 作業中 && styles.作業中]}
+            disabled={作業中}
+            onPress={入る}
+          >
+            <Text style={styles.作るボタンの字}>
               {作業中 ? '入っています…' : 消えるもの ? '手元の記録を捨てて参加する' : '参加する'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={S.閉じる} onPress={onClose}>
-            <Text style={S.閉じるの字}>やめる</Text>
+          <TouchableOpacity style={styles.閉じる} onPress={onClose}>
+            <Text style={styles.閉じるの字}>やめる</Text>
           </TouchableOpacity>
         </View>
       </View>
