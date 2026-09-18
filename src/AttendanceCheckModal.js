@@ -2,7 +2,7 @@
 
 const React = require('react');
 // Text と StyleSheet はダークモードのテーマ変換を通すためブリッジ経由で差し替える
-const o = Object.assign({}, require('react-native'), {
+const RN = Object.assign({}, require('react-native'), {
   Text: require('./Text').default,
   StyleSheet: require('./StyleSheet').default,
 });
@@ -39,12 +39,12 @@ const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
   const StatusButton = ({ memberId, status, current, label, color }) => {
     const isActive = current === status;
     return (
-      <o.TouchableOpacity
+      <RN.TouchableOpacity
         onPress={() => updateStatus(memberId, status)}
         style={[styles.statusBtn, isActive && { backgroundColor: color, borderColor: color }]}
       >
-        <o.Text style={[styles.statusBtnText, isActive && { color: '#FFF' }]}>{label}</o.Text>
-      </o.TouchableOpacity>
+        <RN.Text style={[styles.statusBtnText, isActive && { color: '#FFF' }]}>{label}</RN.Text>
+      </RN.TouchableOpacity>
     );
   };
   const sortMembers = (a, b) => {
@@ -69,27 +69,27 @@ const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
   const attendingMembers = members.filter((m) => attendance[m.id] !== 'absent').sort(sortMembers);
   const absentMembers = members.filter((m) => attendance[m.id] === 'absent').sort(sortMembers);
   const renderMemberItem = (m) => (
-    <o.View key={m.id} style={styles.memberRow}>
-      <o.View style={styles.memberNameContainer}>
-        <o.View style={styles.nameRow}>
-          <o.Text
+    <RN.View key={m.id} style={styles.memberRow}>
+      <RN.View style={styles.memberNameContainer}>
+        <RN.View style={styles.nameRow}>
+          <RN.Text
             style={[
               styles.genderDot,
               { color: m.gender === '男子' ? '#007AFF' : m.gender === '女子' ? '#FF2D55' : '#8E8E93' },
             ]}
           >
             ●
-          </o.Text>
-          <o.Text style={styles.memberName}>{m.name}</o.Text>
-        </o.View>
-        <o.Text style={styles.memberSub}>
+          </RN.Text>
+          <RN.Text style={styles.memberName}>{m.name}</RN.Text>
+        </RN.View>
+        <RN.Text style={styles.memberSub}>
           {m.termKi ? `${m.termKi}期 / ` : ''}
           {m.gender}
           {' / '}
           {m.grade > 0 ? `${m.grade}年` : '卒業生'}
-        </o.Text>
-      </o.View>
-      <o.View style={styles.statusGroup}>
+        </RN.Text>
+      </RN.View>
+      <RN.View style={styles.statusGroup}>
         <StatusButton
           memberId={m.id}
           status="present"
@@ -112,42 +112,42 @@ const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
           label="欠席"
           color="#8E8E93"
         />
-      </o.View>
-    </o.View>
+      </RN.View>
+    </RN.View>
   );
   return (
-    <o.Modal visible={visible} transparent animationType="fade">
-      <o.View style={styles.overlay}>
-        <o.View style={styles.container}>
-          <o.View style={styles.header}>
-            <o.Text style={styles.headerTitle}>出欠の最終確認</o.Text>
-            <o.Text style={styles.subTitle}>遅刻・早退などの詳細がありませんか？</o.Text>
-          </o.View>
-          <o.ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-            <o.Text style={styles.sectionTitle}>参加者</o.Text>
+    <RN.Modal visible={visible} transparent animationType="fade">
+      <RN.View style={styles.overlay}>
+        <RN.View style={styles.container}>
+          <RN.View style={styles.header}>
+            <RN.Text style={styles.headerTitle}>出欠の最終確認</RN.Text>
+            <RN.Text style={styles.subTitle}>遅刻・早退などの詳細がありませんか？</RN.Text>
+          </RN.View>
+          <RN.ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+            <RN.Text style={styles.sectionTitle}>参加者</RN.Text>
             {attendingMembers.length > 0 ? (
               attendingMembers.map(renderMemberItem)
             ) : (
-              <o.Text style={styles.emptyText}>記録に参加者がありません</o.Text>
+              <RN.Text style={styles.emptyText}>記録に参加者がありません</RN.Text>
             )}
-            <o.View style={styles.separator} />
-            <o.Text style={styles.sectionTitle}>その他のメンバー</o.Text>
+            <RN.View style={styles.separator} />
+            <RN.Text style={styles.sectionTitle}>その他のメンバー</RN.Text>
             {absentMembers.map(renderMemberItem)}
-          </o.ScrollView>
-          <o.View style={styles.footer}>
-            <o.TouchableOpacity style={styles.confirmBtn} onPress={() => onConfirm(attendance)}>
-              <o.Text style={styles.confirmBtnText}>出欠を確定して次へ</o.Text>
-            </o.TouchableOpacity>
-            <o.TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
-              <o.Text style={styles.cancelBtnText}>キャンセル</o.Text>
-            </o.TouchableOpacity>
-          </o.View>
-        </o.View>
-      </o.View>
-    </o.Modal>
+          </RN.ScrollView>
+          <RN.View style={styles.footer}>
+            <RN.TouchableOpacity style={styles.confirmBtn} onPress={() => onConfirm(attendance)}>
+              <RN.Text style={styles.confirmBtnText}>出欠を確定して次へ</RN.Text>
+            </RN.TouchableOpacity>
+            <RN.TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
+              <RN.Text style={styles.cancelBtnText}>キャンセル</RN.Text>
+            </RN.TouchableOpacity>
+          </RN.View>
+        </RN.View>
+      </RN.View>
+    </RN.Modal>
   );
 };
-const styles = o.StyleSheet.create({
+const styles = RN.StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -180,7 +180,7 @@ const styles = o.StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 12,
-    borderBottomWidth: o.StyleSheet.hairlineWidth,
+    borderBottomWidth: RN.StyleSheet.hairlineWidth,
     borderBottomColor: '#E5E5EA',
   },
   memberNameContainer: { flex: 1, marginRight: 10 },

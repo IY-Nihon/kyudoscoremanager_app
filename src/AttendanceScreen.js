@@ -2,7 +2,7 @@
 
 const React = require('react');
 // Text と StyleSheet はダークモードのテーマ変換を通すためブリッジ経由で差し替える
-const o = Object.assign({}, require('react-native'), {
+const RN = Object.assign({}, require('react-native'), {
   Text: require('./Text').default,
   StyleSheet: require('./StyleSheet').default,
 });
@@ -285,11 +285,11 @@ const AttendanceScreen = () => {
       if (validatedItems.length > 0) {
         setAiPreviewItems(validatedItems);
       } else {
-        o.Alert.alert('通知', 'PDFから練習日を検出できませんでした。形式を確認してください。');
+        RN.Alert.alert('通知', 'PDFから練習日を検出できませんでした。形式を確認してください。');
         require('./alertBridge').default.alert('お知らせ', '練習日が検出されませんでした。');
       }
     } catch (e) {
-      o.Alert.alert('エラー', e.message);
+      RN.Alert.alert('エラー', e.message);
     } finally {
       setLoadingMsg(null);
     }
@@ -306,61 +306,61 @@ const AttendanceScreen = () => {
       }
       setAiPreviewItems(null);
     } catch (e) {
-      o.Alert.alert('エラー', e.message);
+      RN.Alert.alert('エラー', e.message);
     } finally {
       setLoadingMsg(null);
     }
   };
   return (
-    <o.View style={styles.container}>
-      <o.View style={styles.header}>
-        <o.Text style={styles.title}>出欠管理</o.Text>
-        <o.View style={styles.tabRow}>
-          <o.TouchableOpacity
+    <RN.View style={styles.container}>
+      <RN.View style={styles.header}>
+        <RN.Text style={styles.title}>出欠管理</RN.Text>
+        <RN.View style={styles.tabRow}>
+          <RN.TouchableOpacity
             style={[styles.tab, tab === 'stats' && styles.tabActive]}
             onPress={() => setTab('stats')}
           >
-            <o.Text style={[styles.tabText, tab === 'stats' && styles.tabTextActive]}>出席統計</o.Text>
-          </o.TouchableOpacity>
-          <o.TouchableOpacity
+            <RN.Text style={[styles.tabText, tab === 'stats' && styles.tabTextActive]}>出席統計</RN.Text>
+          </RN.TouchableOpacity>
+          <RN.TouchableOpacity
             style={[styles.tab, tab === 'days' && styles.tabActive]}
             onPress={() => setTab('days')}
           >
-            <o.Text style={[styles.tabText, tab === 'days' && styles.tabTextActive]}>練習日設定</o.Text>
-          </o.TouchableOpacity>
-        </o.View>
-      </o.View>
+            <RN.Text style={[styles.tabText, tab === 'days' && styles.tabTextActive]}>練習日設定</RN.Text>
+          </RN.TouchableOpacity>
+        </RN.View>
+      </RN.View>
       {tab === 'stats' && (
-        <o.View style={styles.rangeSelector}>
-          <o.TouchableOpacity
+        <RN.View style={styles.rangeSelector}>
+          <RN.TouchableOpacity
             style={[styles.rangeBtn, rangeType === 'month' && styles.rangeBtnActive]}
             onPress={() => setRangeType('month')}
           >
-            <o.Text style={[styles.rangeBtnText, rangeType === 'month' && styles.rangeBtnTextActive]}>
+            <RN.Text style={[styles.rangeBtnText, rangeType === 'month' && styles.rangeBtnTextActive]}>
               月間
-            </o.Text>
-          </o.TouchableOpacity>
-          <o.TouchableOpacity
+            </RN.Text>
+          </RN.TouchableOpacity>
+          <RN.TouchableOpacity
             style={[styles.rangeBtn, rangeType === 'year' && styles.rangeBtnActive]}
             onPress={() => setRangeType('year')}
           >
-            <o.Text style={[styles.rangeBtnText, rangeType === 'year' && styles.rangeBtnTextActive]}>
+            <RN.Text style={[styles.rangeBtnText, rangeType === 'year' && styles.rangeBtnTextActive]}>
               年度
-            </o.Text>
-          </o.TouchableOpacity>
-          <o.TouchableOpacity
+            </RN.Text>
+          </RN.TouchableOpacity>
+          <RN.TouchableOpacity
             style={[styles.rangeBtn, rangeType === 'all' && styles.rangeBtnActive]}
             onPress={() => setRangeType('all')}
           >
-            <o.Text style={[styles.rangeBtnText, rangeType === 'all' && styles.rangeBtnTextActive]}>
+            <RN.Text style={[styles.rangeBtnText, rangeType === 'all' && styles.rangeBtnTextActive]}>
               すべて
-            </o.Text>
-          </o.TouchableOpacity>
-        </o.View>
+            </RN.Text>
+          </RN.TouchableOpacity>
+        </RN.View>
       )}
       {(tab === 'days' || rangeType !== 'all') && (
-        <o.View style={styles.monthNav}>
-          <o.TouchableOpacity // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+        <RN.View style={styles.monthNav}>
+          <RN.TouchableOpacity // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
             accessible
             accessibilityRole="button"
             accessibilityLabel="前の月へ"
@@ -368,13 +368,13 @@ const AttendanceScreen = () => {
             onPress={() => (tab === 'days' || rangeType === 'month' ? changeMonth(-1) : changeYear(-1))}
           >
             <Icons.Ionicons name="chevron-back" size={24} color="#007AFF" />
-          </o.TouchableOpacity>
-          <o.Text style={styles.monthText}>
+          </RN.TouchableOpacity>
+          <RN.Text style={styles.monthText}>
             {tab === 'days' || rangeType === 'month'
               ? `${selectedYear}年 ${selectedMonth}月`
               : `${currentFiscalYear}年度`}
-          </o.Text>
-          <o.TouchableOpacity // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+          </RN.Text>
+          <RN.TouchableOpacity // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
             accessible
             accessibilityRole="button"
             accessibilityLabel="次の月へ"
@@ -382,20 +382,20 @@ const AttendanceScreen = () => {
             onPress={() => (tab === 'days' || rangeType === 'month' ? changeMonth(1) : changeYear(1))}
           >
             <Icons.Ionicons name="chevron-forward" size={24} color="#007AFF" />
-          </o.TouchableOpacity>
-        </o.View>
+          </RN.TouchableOpacity>
+        </RN.View>
       )}
       {tab === 'stats' ? (
-        <o.View style={{ flex: 1 }}>
-          <o.FlatList
+        <RN.View style={{ flex: 1 }}>
+          <RN.FlatList
             data={stats}
             keyExtractor={(i, idx) => (i.id && typeof i.id === 'string' ? i.id : `attendance-member-${idx}`)}
             contentContainerStyle={styles.listContent}
             renderItem={({ item: s }) => (
-              <o.TouchableOpacity style={styles.memberCard} onPress={() => setSelectedMember(s)}>
-                <o.View style={styles.memberInfoMain}>
-                  <o.View style={styles.nameRow}>
-                    <o.Text
+              <RN.TouchableOpacity style={styles.memberCard} onPress={() => setSelectedMember(s)}>
+                <RN.View style={styles.memberInfoMain}>
+                  <RN.View style={styles.nameRow}>
+                    <RN.Text
                       style={[
                         styles.genderDot,
                         {
@@ -405,54 +405,54 @@ const AttendanceScreen = () => {
                       ]}
                     >
                       ●
-                    </o.Text>
-                    <o.Text style={styles.memberName}>{s.name}</o.Text>
-                  </o.View>
-                  <o.Text
+                    </RN.Text>
+                    <RN.Text style={styles.memberName}>{s.name}</RN.Text>
+                  </RN.View>
+                  <RN.Text
                     style={styles.memberSub}
-                  >{`${s.termKi ? s.termKi + '期 / ' : ''}${s.gender} / ${s.grade === 5 ? '卒業生' : s.grade === 0 ? 'その他' : s.grade + '年'}`}</o.Text>
-                </o.View>
-                <o.View style={styles.statInfo}>
-                  <o.Text style={styles.rateText}>{s.rate.toFixed(1)}%</o.Text>
-                  <o.Text style={styles.countsText}>
+                  >{`${s.termKi ? s.termKi + '期 / ' : ''}${s.gender} / ${s.grade === 5 ? '卒業生' : s.grade === 0 ? 'その他' : s.grade + '年'}`}</RN.Text>
+                </RN.View>
+                <RN.View style={styles.statInfo}>
+                  <RN.Text style={styles.rateText}>{s.rate.toFixed(1)}%</RN.Text>
+                  <RN.Text style={styles.countsText}>
                     {s.presentCount}/{filteredPracticeDays.length}
-                  </o.Text>
-                </o.View>
+                  </RN.Text>
+                </RN.View>
                 <Icons.Ionicons name="chevron-forward" size={16} color="#C7C7CC" style={{ marginLeft: 8 }} />
-              </o.TouchableOpacity>
+              </RN.TouchableOpacity>
             )}
           />
-        </o.View>
+        </RN.View>
       ) : (
-        <o.ScrollView style={styles.scroll}>
-          <o.View style={styles.aiSection}>
-            <o.View style={styles.aiTextContainer}>
-              <o.Text style={styles.aiTitle}>AIで予定表をスキャンして自動入力</o.Text>
-              <o.Text style={styles.aiDescription}>
+        <RN.ScrollView style={styles.scroll}>
+          <RN.View style={styles.aiSection}>
+            <RN.View style={styles.aiTextContainer}>
+              <RN.Text style={styles.aiTitle}>AIで予定表をスキャンして自動入力</RN.Text>
+              <RN.Text style={styles.aiDescription}>
                 練習予定表（PDF/画像）をAIが解析し、カレンダーへ自動的に登録します。
-              </o.Text>
-            </o.View>
-            <o.TouchableOpacity
+              </RN.Text>
+            </RN.View>
+            <RN.TouchableOpacity
               style={styles.aiActionBtn}
               onPress={() => {
                 handlePickPDF();
               }}
             >
-              <o.Text style={styles.aiActionBtnText}>ファイルを選択</o.Text>
-            </o.TouchableOpacity>
-          </o.View>
+              <RN.Text style={styles.aiActionBtnText}>ファイルを選択</RN.Text>
+            </RN.TouchableOpacity>
+          </RN.View>
           {aiPreviewItems && (
-            <o.View
+            <RN.View
               style={[
                 styles.aiSection,
                 { backgroundColor: '#F0F0FF', borderLeftWidth: 4, borderLeftColor: '#5856D6' },
               ]}
             >
-              <o.Text style={[styles.aiTitle, { color: '#5856D6', marginBottom: 10 }]}>
+              <RN.Text style={[styles.aiTitle, { color: '#5856D6', marginBottom: 10 }]}>
                 解析結果プレビュー
-              </o.Text>
+              </RN.Text>
               {aiPreviewItems.map((item, idx) => (
-                <o.View
+                <RN.View
                   key={idx}
                   style={{
                     flexDirection: 'row',
@@ -462,95 +462,95 @@ const AttendanceScreen = () => {
                     borderBottomColor: '#CCC',
                   }}
                 >
-                  <o.Text style={{ fontSize: 13 }}>{item.date}</o.Text>
-                  <o.Text style={{ fontSize: 13, color: '#666' }}>{item.reason || '練習日'}</o.Text>
-                </o.View>
+                  <RN.Text style={{ fontSize: 13 }}>{item.date}</RN.Text>
+                  <RN.Text style={{ fontSize: 13, color: '#666' }}>{item.reason || '練習日'}</RN.Text>
+                </RN.View>
               ))}
-              <o.View style={{ flexDirection: 'row', gap: 10, marginTop: 15 }}>
-                <o.TouchableOpacity
+              <RN.View style={{ flexDirection: 'row', gap: 10, marginTop: 15 }}>
+                <RN.TouchableOpacity
                   style={[styles.aiActionBtn, { flex: 1, backgroundColor: '#5856D6' }]}
                   onPress={saveAiDates}
                 >
-                  <o.Text style={styles.aiActionBtnText}>これらを保存する</o.Text>
-                </o.TouchableOpacity>
-                <o.TouchableOpacity
+                  <RN.Text style={styles.aiActionBtnText}>これらを保存する</RN.Text>
+                </RN.TouchableOpacity>
+                <RN.TouchableOpacity
                   style={[styles.aiActionBtn, { flex: 1, backgroundColor: '#8E8E93' }]}
                   onPress={() => setAiPreviewItems(null)}
                 >
-                  <o.Text style={styles.aiActionBtnText}>キャンセル</o.Text>
-                </o.TouchableOpacity>
-              </o.View>
-            </o.View>
+                  <RN.Text style={styles.aiActionBtnText}>キャンセル</RN.Text>
+                </RN.TouchableOpacity>
+              </RN.View>
+            </RN.View>
           )}
-          <o.View style={styles.calendarContainer}>
-            <o.View style={styles.dowRow}>
+          <RN.View style={styles.calendarContainer}>
+            <RN.View style={styles.dowRow}>
               {['日', '月', '火', '水', '木', '金', '土'].map((d, i) => (
-                <o.View key={i} style={styles.dowCell}>
-                  <o.Text style={styles.dowText}>{d}</o.Text>
-                </o.View>
+                <RN.View key={i} style={styles.dowCell}>
+                  <RN.Text style={styles.dowText}>{d}</RN.Text>
+                </RN.View>
               ))}
-            </o.View>
-            <o.View style={styles.calendarGrid}>
+            </RN.View>
+            <RN.View style={styles.calendarGrid}>
               {Array.from({ length: new Date(selectedYear, selectedMonth - 1, 1).getDay() })
-                .map((_, i) => <o.View key={i} style={styles.calendarCellEmpty} />)
+                .map((_, i) => <RN.View key={i} style={styles.calendarCellEmpty} />)
                 .concat(
                   Array.from({ length: new Date(selectedYear, selectedMonth, 0).getDate() }).map((_, i) => {
                     const dStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`;
                     const isP = !!practiceDays[dStr];
                     return (
-                      <o.TouchableOpacity
+                      <RN.TouchableOpacity
                         key={dStr}
                         style={[styles.calendarCell, isP && styles.calendarCellActive]}
                         onPress={() => togglePracticeDay(dStr)}
                       >
-                        <o.Text style={[styles.calendarCellText, isP && styles.calendarCellTextActive]}>
+                        <RN.Text style={[styles.calendarCellText, isP && styles.calendarCellTextActive]}>
                           {i + 1}
-                        </o.Text>
-                      </o.TouchableOpacity>
+                        </RN.Text>
+                      </RN.TouchableOpacity>
                     );
                   })
                 )}
-            </o.View>
-          </o.View>
-          <o.View style={styles.summaryCard}>
-            <o.Text style={styles.summaryTitle}>{`${selectedMonth}月の練習日数`}</o.Text>
-            <o.Text style={styles.summaryValue}>{`${filteredPracticeDays.length} 日`}</o.Text>
-          </o.View>
-        </o.ScrollView>
+            </RN.View>
+          </RN.View>
+          <RN.View style={styles.summaryCard}>
+            <RN.Text style={styles.summaryTitle}>{`${selectedMonth}月の練習日数`}</RN.Text>
+            <RN.Text style={styles.summaryValue}>{`${filteredPracticeDays.length} 日`}</RN.Text>
+          </RN.View>
+        </RN.ScrollView>
       )}
       {loadingMsg && (
-        <o.View style={styles.loadingOverlay}>
-          <o.ActivityIndicator size="large" color="#007AFF" />
-          <o.Text style={styles.loadingText}>{loadingMsg}</o.Text>
-        </o.View>
+        <RN.View style={styles.loadingOverlay}>
+          <RN.ActivityIndicator size="large" color="#007AFF" />
+          <RN.Text style={styles.loadingText}>{loadingMsg}</RN.Text>
+        </RN.View>
       )}
       {selectedMember && (
-        <o.Modal
+        <RN.Modal
           visible
           transparent
           animationType="slide" // 見るだけの窓。端末の戻るでも、外を押しても閉じる
           onRequestClose={() => setSelectedMember(null)}
         >
-          <o.View style={styles.modalOverlay}>
-            <o.TouchableOpacity
+          <RN.View style={styles.modalOverlay}>
+            <RN.TouchableOpacity
               style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
               activeOpacity={1}
               accessibilityLabel="閉じる"
               onPress={() => setSelectedMember(null)}
             />
-            <o.View // 背景の板より上に置く。置かないと、板が中身の押すを横取りする
+            <RN.View // 背景の板より上に置く。置かないと、板が中身の押すを横取りする
               style={[styles.modalContent, { height: '85%', zIndex: 1 }]}
             >
-              <o.View style={styles.modalHeader}>
-                <o.View // 名前が長くても閉じるボタンを押し出さない。名前は折り返す
+              <RN.View style={styles.modalHeader}>
+                <RN.View // 名前が長くても閉じるボタンを押し出さない。名前は折り返す
                   style={styles.modalHeaderMain}
                 >
-                  <o.Text style={styles.modalTitle}>{selectedMember.name}</o.Text>
-                  <o.Text
+                  <RN.Text style={styles.modalTitle}>{selectedMember.name}</RN.Text>
+                  <RN.Text
                     style={styles.memberSub}
-                  >{`${selectedMember.gender} / ${selectedMember.grade === 5 ? '卒業生' : selectedMember.grade === 0 ? 'その他' : selectedMember.grade + '年'}`}</o.Text>
-                </o.View>
-                <o.TouchableOpacity
+                  >{`${selectedMember.gender} / ${selectedMember.grade === 5 ? '卒業生' : selectedMember.grade === 0 ? 'その他' : selectedMember.grade + '年'}`}</RN.Text>
+                </RN.View>
+                <RN.TouchableOpacity
                   style={styles.closeBtn} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                   accessible
                   accessibilityRole="button"
@@ -559,39 +559,39 @@ const AttendanceScreen = () => {
                   onPress={() => setSelectedMember(null)}
                 >
                   <Icons.Ionicons name="close" size={24} color="#8E8E93" />
-                </o.TouchableOpacity>
-              </o.View>
-              <o.View style={styles.modalStatRow}>
-                <o.View style={styles.modalStatItem}>
-                  <o.Text style={styles.modalStatVal}>{`${selectedMember.rate.toFixed(1)}%`}</o.Text>
-                  <o.Text style={styles.modalStatLab}>出席率</o.Text>
-                </o.View>
-                <o.View style={styles.modalStatItem}>
-                  <o.Text style={[styles.modalStatVal, { color: '#34C759' }]}>
+                </RN.TouchableOpacity>
+              </RN.View>
+              <RN.View style={styles.modalStatRow}>
+                <RN.View style={styles.modalStatItem}>
+                  <RN.Text style={styles.modalStatVal}>{`${selectedMember.rate.toFixed(1)}%`}</RN.Text>
+                  <RN.Text style={styles.modalStatLab}>出席率</RN.Text>
+                </RN.View>
+                <RN.View style={styles.modalStatItem}>
+                  <RN.Text style={[styles.modalStatVal, { color: '#34C759' }]}>
                     {selectedMember.presentCount}
-                  </o.Text>
-                  <o.Text style={styles.modalStatLab}>出席</o.Text>
-                </o.View>
-                <o.View style={styles.modalStatItem}>
-                  <o.Text style={[styles.modalStatVal, { color: '#FF9500' }]}>
+                  </RN.Text>
+                  <RN.Text style={styles.modalStatLab}>出席</RN.Text>
+                </RN.View>
+                <RN.View style={styles.modalStatItem}>
+                  <RN.Text style={[styles.modalStatVal, { color: '#FF9500' }]}>
                     {selectedMember.lateCount}
-                  </o.Text>
-                  <o.Text style={styles.modalStatLab}>遅刻</o.Text>
-                </o.View>
-                <o.View style={styles.modalStatItem}>
-                  <o.Text style={[styles.modalStatVal, { color: '#FF9500' }]}>
+                  </RN.Text>
+                  <RN.Text style={styles.modalStatLab}>遅刻</RN.Text>
+                </RN.View>
+                <RN.View style={styles.modalStatItem}>
+                  <RN.Text style={[styles.modalStatVal, { color: '#FF9500' }]}>
                     {selectedMember.earlyCount}
-                  </o.Text>
-                  <o.Text style={styles.modalStatLab}>早退</o.Text>
-                </o.View>
-                <o.View style={styles.modalStatItem}>
-                  <o.Text style={[styles.modalStatVal, { color: '#FF3B30' }]}>
+                  </RN.Text>
+                  <RN.Text style={styles.modalStatLab}>早退</RN.Text>
+                </RN.View>
+                <RN.View style={styles.modalStatItem}>
+                  <RN.Text style={[styles.modalStatVal, { color: '#FF3B30' }]}>
                     {selectedMember.absentCount}
-                  </o.Text>
-                  <o.Text style={styles.modalStatLab}>欠席</o.Text>
-                </o.View>
-              </o.View>
-              <o.FlatList
+                  </RN.Text>
+                  <RN.Text style={styles.modalStatLab}>欠席</RN.Text>
+                </RN.View>
+              </RN.View>
+              <RN.FlatList
                 data={filteredPracticeDays}
                 keyExtractor={(d) => String(d)}
                 contentContainerStyle={{ paddingBottom: 30 }}
@@ -599,8 +599,8 @@ const AttendanceScreen = () => {
                   const s = getAttendanceStatus(d, selectedMember.id);
                   const isFuture = d > getLocalDateString(new Date());
                   return (
-                    <o.View style={styles.historyRow}>
-                      <o.View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <RN.View style={styles.historyRow}>
+                      <RN.View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <Icons.Ionicons
                           name={
                             s === 'present'
@@ -623,9 +623,9 @@ const AttendanceScreen = () => {
                           }
                           style={{ marginRight: 10 }}
                         />
-                        <o.Text style={{ fontSize: 15, color: isFuture ? '#8E8E93' : '#000' }}>{d}</o.Text>
-                      </o.View>
-                      <o.Text
+                        <RN.Text style={{ fontSize: 15, color: isFuture ? '#8E8E93' : '#000' }}>{d}</RN.Text>
+                      </RN.View>
+                      <RN.Text
                         style={{
                           fontSize: 14,
                           fontWeight: '600',
@@ -652,19 +652,19 @@ const AttendanceScreen = () => {
                                 : isFuture
                                   ? '予定'
                                   : '記録なし'}
-                      </o.Text>
-                    </o.View>
+                      </RN.Text>
+                    </RN.View>
                   );
                 }}
               />
-            </o.View>
-          </o.View>
-        </o.Modal>
+            </RN.View>
+          </RN.View>
+        </RN.Modal>
       )}
-    </o.View>
+    </RN.View>
   );
 };
-const styles = o.StyleSheet.create({
+const styles = RN.StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F2F2F7' },
   header: { backgroundColor: '#FFF', paddingHorizontal: 20, paddingTop: 60, paddingBottom: 15 },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 15 },
@@ -795,7 +795,7 @@ const styles = o.StyleSheet.create({
   modalStatLab: { fontSize: 11, color: '#8E8E93', marginTop: 4 },
   closeBtn: { padding: 4, flexShrink: 0 },
   loadingOverlay: {
-    ...o.StyleSheet.absoluteFillObject,
+    ...RN.StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(255,255,255,0.7)',
     justifyContent: 'center',
     alignItems: 'center',
