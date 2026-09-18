@@ -152,8 +152,8 @@ function normalizeMark(raw) {
   if (HIT_CHARS.has(文)) return '○';
   if (MISS_CHARS.has(文)) return '×';
   // 「○」「×」が他の文字と混ざって返ってきた場合の保険
-  const firstHit = [...文].find((c) => HIT_CHARS.has(c));
-  const firstMiss = [...文].find((c) => MISS_CHARS.has(c));
+  const firstHit = [...文].find((一字) => HIT_CHARS.has(一字));
+  const firstMiss = [...文].find((一字) => MISS_CHARS.has(一字));
   if (firstHit && !firstMiss) return '○';
   if (firstMiss && !firstHit) return '×';
   return '';
@@ -285,8 +285,8 @@ const OCRRecordModal = ({
       const asset = result.assets[0];
       const base64 = await uriToBase64(asset.uri);
       setImages((prev) => [...prev, { uri: asset.uri, base64 }]);
-    } catch (e) {
-      console.error('[OCRRecordModal] Image pick error:', e);
+    } catch (誤り) {
+      console.error('[OCRRecordModal] Image pick error:', 誤り);
       setErrorMsg('画像の選択に失敗しました。');
     }
   };
@@ -310,14 +310,14 @@ const OCRRecordModal = ({
       const asset = result.assets[0];
       const base64 = asset.base64 ? asset.base64 : await uriToBase64(asset.uri);
       setImages((prev) => [...prev, { uri: asset.uri, base64 }]);
-    } catch (e) {
-      console.error('[OCRRecordModal] Camera capture error:', e);
+    } catch (誤り) {
+      console.error('[OCRRecordModal] Camera capture error:', 誤り);
       setErrorMsg('カメラの起動に失敗しました。');
     }
   };
 
   const removeImage = (idx) => {
-    setImages((prev) => prev.filter((_, i) => i !== idx));
+    setImages((prev) => prev.filter((_, 番) => 番 !== idx));
   };
 
   // ─────────────────────────────────────────
@@ -416,7 +416,7 @@ const OCRRecordModal = ({
           const 見当 = 差し替え.列の見当たち;
           if (!Array.isArray(見当) || 見当.length !== 生のteams.length) return null;
           const 違い = 見当.map((数, 番) => Math.abs(数 - 生のteams[番].rows.length));
-          return 違い.every((差) => 差 <= 1) && 違い.some((d) => d === 1) ? { 列の数たち: 見当 } : null;
+          return 違い.every((差) => 差 <= 1) && 違い.some((差) => 差 === 1) ? { 列の数たち: 見当 } : null;
         };
         // 板の数を直したあと人数が1人違う、という2段はあるので、2回まで
         for (let 回 = 0; 回 < 2; 回++) {
@@ -470,7 +470,7 @@ const OCRRecordModal = ({
                 : [];
             const 箱たち = boards
               .map((板) => 板 && 板.box_2d)
-              .filter((b) => Array.isArray(b) && b.length === 4);
+              .filter((箱) => Array.isArray(箱) && 箱.length === 4);
             // 段の数は 帯の数×帯の中の印の数。Gemini は印が 10 段並ぶ板の cells を 4 や 5 と数えた
             //（帯を 1 マスと見る）ので、cells の数は当てにしない。数えられなければ cells の数のまま
             const 段たち = boards
@@ -489,8 +489,8 @@ const OCRRecordModal = ({
               const 人数たち = boards.map((板) => Number(板 && 板.people));
               const 違う =
                 人数たち.every((数) => Number.isInteger(数) && 数 >= 1) &&
-                人数たち.some((n, 番) => n !== 生のteams[番].rows.length) &&
-                人数たち.every((n, i) => Math.abs(n - 生のteams[i].rows.length) <= 2);
+                人数たち.some((人数, 番) => 人数 !== 生のteams[番].rows.length) &&
+                人数たち.every((人数, 番) => Math.abs(人数 - 生のteams[番].rows.length) <= 2);
               if (違う) {
                 console.log(
                   '[OCRRecordModal] 箱の中の人数が違うので読み直す:',
@@ -1080,9 +1080,9 @@ const OCRRecordModal = ({
       .sort((甲, 乙) => {
         const gradeA = void 0 === 甲.grade || null === 甲.grade ? 99 : Number(甲.grade);
         const gradeB = void 0 === 乙.grade || null === 乙.grade ? 99 : Number(乙.grade);
-        const gA = gradeA === 0 ? 99 : gradeA;
-        const gB = gradeB === 0 ? 99 : gradeB;
-        if (gA !== gB) return gA - gB;
+        const 甲の順 = gradeA === 0 ? 99 : gradeA;
+        const 乙の順 = gradeB === 0 ? 99 : gradeB;
+        if (甲の順 !== 乙の順) return 甲の順 - 乙の順;
         const genderVal = (g) => ('男子' === g ? 0 : '女子' === g ? 1 : 2);
         const genDiff = genderVal(甲.gender) - genderVal(乙.gender);
         return 0 !== genDiff ? genDiff : (甲.name || '').localeCompare(乙.name || '', 'ja');

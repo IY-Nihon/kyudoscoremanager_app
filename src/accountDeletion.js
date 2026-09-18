@@ -32,7 +32,15 @@
 'use strict';
 
 const 保管日数 = 30;
-const 写す下位 = ['sessions', 'members', 'alumni', 'trash', 'config', 'officialPracticeDays', 'member_lookup'];
+const 写す下位 = [
+  'sessions',
+  'members',
+  'alumni',
+  'trash',
+  'config',
+  'officialPracticeDays',
+  'member_lookup',
+];
 /** 1回の一括送信に載せる数。Firestore の上限は500 */
 const 一括の上限 = 400;
 
@@ -42,7 +50,7 @@ const 一括の上限 = 400;
  * @returns {Promise<{件数:object}>}
  */
 async function 団体を消す(道具, 注文) {
-  const { db, a, auth, o } = 道具;
+  const { db, a: Firestore, auth, o: FirebaseAuth } = 道具;
   const { 団体ID, email, 合言葉 } = 注文;
   const 進み = 注文.進み || (() => {});
   if (!団体ID) throw new Error('団体IDがありません');
@@ -51,19 +59,19 @@ async function 団体を消す(道具, 注文) {
   // 本人確認。消す直前にもう一度合言葉で入り直す（Auth の口座を消すには
   // 直近のログインが要る。管理者モードの認証から時間が経っていても通るように）
   進み('本人確認');
-  await o.signInWithEmailAndPassword(auth, email, 合言葉);
+  await FirebaseAuth.signInWithEmailAndPassword(auth, email, 合言葉);
 
   // ── 1. 写す ──
   進み('写しを作成');
   const 元 = `groups/${団体ID}`;
   const 先 = `deleted_accounts/${団体ID}`;
   const 件数 = {};
-  let 一括 = a.writeBatch(db);
+  let 一括 = Firestore.writeBatch(db);
   let 載せた = 0;
   const 送る = async () => {
     if (!載せた) return;
     await 一括.commit();
-    一括 = a.writeBatch(db);
+    一括 = Firestore.writeBatch(db);
     載せた = 0;
   };
   const 載せる = async (作用) => {
@@ -73,24 +81,24 @@ async function 団体を消す(道具, 注文) {
   };
   const 下位の中身 = {};
   for (const 名 of 写す下位) {
-    const 束 = await a.getDocs(a.collection(db, `${元}/${名}`));
+    const 束 = await Firestore.getDocs(Firestore.collection(db, `${元}/${名}`));
     const 一覧 = [];
-    束.forEach((d) => 一覧.push({ id: d.id, 値: d.data() }));
+    束.forEach((文書) => 一覧.push({ id: 文書.id, 値: 文書.data() }));
     下位の中身[名] = 一覧;
     件数[名] = 一覧.length;
     for (const { id, 値 } of 一覧) {
-      await 載せる((b) => b.set(a.doc(db, `${先}/${名}`, id), 値));
+      await 載せる((束ね) => 束ね.set(Firestore.doc(db, `${先}/${名}`, id), 値));
     }
   }
-  const 団体の文書 = await a.getDoc(a.doc(db, 'groups', 団体ID));
-  const 口座の文書 = await a.getDoc(a.doc(db, 'group_accounts', 団体ID));
-  const 内緒 = await a.getDocs(a.collection(db, `group_accounts/${団体ID}/private`));
+  const 団体の文書 = await Firestore.getDoc(Firestore.doc(db, 'groups', 団体ID));
+  const 口座の文書 = await Firestore.getDoc(Firestore.doc(db, 'group_accounts', 団体ID));
+  const 内緒 = await Firestore.getDocs(Firestore.collection(db, `group_accounts/${団体ID}/private`));
   const 内緒の一覧 = [];
-  内緒.forEach((d) => 内緒の一覧.push({ id: d.id, 値: d.data() }));
+  内緒.forEach((文書) => 内緒の一覧.push({ id: 文書.id, 値: 文書.data() }));
   const 今 = Date.now();
   const 群 = 団体の文書.exists() ? 団体の文書.data() : null;
-  await 載せる((b) =>
-    b.set(a.doc(db, 'deleted_accounts', 団体ID), {
+  await 載せる((束ね) =>
+    束ね.set(Firestore.doc(db, 'deleted_accounts', 団体ID), {
       id: 団体ID,
       email,
       団体名: (群 && (群.name || 群.groupName)) || null,
@@ -109,21 +117,21 @@ async function 団体を消す(道具, 注文) {
   進み('元の場所から削除');
   for (const 名 of 写す下位) {
     for (const { id } of 下位の中身[名]) {
-      await 載せる((b) => b.delete(a.doc(db, `${元}/${名}`, id)));
+      await 載せる((束ね) => 束ね.delete(Firestore.doc(db, `${元}/${名}`, id)));
     }
   }
-  if (団体の文書.exists()) await 載せる((b) => b.delete(a.doc(db, 'groups', 団体ID)));
+  if (団体の文書.exists()) await 載せる((束ね) => 束ね.delete(Firestore.doc(db, 'groups', 団体ID)));
   for (const { id } of 内緒の一覧) {
-    await 載せる((b) => b.delete(a.doc(db, `group_accounts/${団体ID}/private`, id)));
+    await 載せる((束ね) => 束ね.delete(Firestore.doc(db, `group_accounts/${団体ID}/private`, id)));
   }
   await 送る();
   // 決まりの都合で最後（上の説明）。これを消すと団体IDでログインできなくなる
-  if (口座の文書.exists()) await a.deleteDoc(a.doc(db, 'group_accounts', 団体ID));
+  if (口座の文書.exists()) await Firestore.deleteDoc(Firestore.doc(db, 'group_accounts', 団体ID));
 
   // ── 3. 口座を消す ──
   進み('ログイン口座を削除');
-  if (auth && auth.currentUser && typeof o.deleteUser === 'function') {
-    await o.deleteUser(auth.currentUser);
+  if (auth && auth.currentUser && typeof FirebaseAuth.deleteUser === 'function') {
+    await FirebaseAuth.deleteUser(auth.currentUser);
   }
   return { 件数 };
 }
