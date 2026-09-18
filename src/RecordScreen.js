@@ -318,7 +318,7 @@ const RecordScreen = () => {
       return void (知らせる('共有リンクでは名前を選べません'),
       ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning));
     ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Medium);
-    archers.find((x) => x.id === 射手ID) &&
+    archers.find((射手) => 射手.id === 射手ID) &&
       (選んだ射手IDを置く(射手ID), 選んだ射手の順を置く(順), 人の窓を出す(true));
   };
   const // ── 立ち順を指で動かす（長押しで掴んで、滑らせて、離す）───────────
@@ -339,15 +339,15 @@ const RecordScreen = () => {
     拡大の下 = 0.5;
   const 拡大の上 = 2;
   const // バーのどこを触ったかを倍率に直す。1%きざみで止める
-    触った所を倍率に = (x) => {
+    触った所を倍率に = (横の位置) => {
       if (!溝の幅) return 倍率;
-      const 割合 = Math.min(1, Math.max(0, x / 溝の幅));
+      const 割合 = Math.min(1, Math.max(0, 横の位置 / 溝の幅));
       const 生 = 拡大の下 + 割合 * (拡大の上 - 拡大の下);
       return Math.round(生 * 100) / 100;
     };
   const 倍率を割合に = (倍) => Math.min(1, Math.max(0, (倍 - 拡大の下) / (拡大の上 - 拡大の下)));
-  const バーを動かす = (e) => {
-    const 倍 = 触った所を倍率に(e.nativeEvent.locationX);
+  const バーを動かす = (出来事) => {
+    const 倍 = 触った所を倍率に(出来事.nativeEvent.locationX);
     if (Math.abs(倍 - 倍率) > 0.001) setViewScale(倍);
   };
   const 射数の窓を閉じる = () => 射数の窓を出す(false);
@@ -411,7 +411,7 @@ const RecordScreen = () => {
           try {
             const 選択 = window.getSelection();
             if (選択 && !選択.isCollapsed) 選択.removeAllRanges();
-          } catch (t) {
+          } catch (誤り) {
             /* 解けなくても引く動きは続く */
           }
         }
@@ -464,7 +464,7 @@ const RecordScreen = () => {
   // 指の下の列と入れ替えて描くので、出来上がりを見てから離せる。
   // 掴んだ列は抜けた跡として薄く残し、指には別の札（下の 運ぶ札）が付いてくる
   const 見えている並び = (() => {
-    const 一覧 = (Array.isArray(archers) ? archers : []).filter((x) => !!x);
+    const 一覧 = (Array.isArray(archers) ? archers : []).filter((射手) => !!射手);
     if (!掴んだ列 || null === 落とす先) return 一覧;
     const いま = 一覧.findIndex((列) => 列.id === 掴んだ列);
     if (いま < 0 || いま === 落とす先) return 一覧;
@@ -481,12 +481,16 @@ const RecordScreen = () => {
   測る手.current = (指の位置) => {
     const 一覧 = 見えている並び;
     const 箱 = [];
-    for (let i = 0; i < 一覧.length; i++) {
-      const node = 名の欄のnode.current[一覧[i].id];
+    for (let 番 = 0; 番 < 一覧.length; 番++) {
+      const node = 名の欄のnode.current[一覧[番].id];
       if (!node || 'function' != typeof node.getBoundingClientRect) continue;
-      const r = node.getBoundingClientRect();
+      const 枠 = node.getBoundingClientRect();
       const ずれ = 'undefined' == typeof window ? 0 : (横に並べる ? window.scrollY : window.scrollX) || 0;
-      箱.push({ i, 頭: (横に並べる ? r.top : r.left) + ずれ, 尻: (横に並べる ? r.bottom : r.right) + ずれ });
+      箱.push({
+        i: 番,
+        頭: (横に並べる ? 枠.top : 枠.left) + ずれ,
+        尻: (横に並べる ? 枠.bottom : 枠.right) + ずれ,
+      });
     }
     if (!箱.length) return null;
     for (const 枠 of 箱) if (指の位置 >= 枠.頭 && 指の位置 <= 枠.尻) return 枠.i;
@@ -509,14 +513,14 @@ const RecordScreen = () => {
     動かし始めた.current = true;
     const 行 = 名の行のnode.current;
     if (行 && 'function' == typeof 行.getBoundingClientRect) {
-      const r = 行.getBoundingClientRect();
+      const 枠 = 行.getBoundingClientRect();
       const ずれ = 'undefined' != typeof window && window.scrollY ? window.scrollY : 0;
-      set指の横(縦位置 - (r.top + ずれ));
+      set指の横(縦位置 - (枠.top + ずれ));
     }
-    const i = 測る手.current ? 測る手.current(縦位置) : null;
-    if (null !== i && i !== 落とす先のref.current) {
-      落とす先のref.current = i;
-      set落とす先(i);
+    const 番 = 測る手.current ? 測る手.current(縦位置) : null;
+    if (null !== 番 && 番 !== 落とす先のref.current) {
+      落とす先のref.current = 番;
+      set落とす先(番);
     }
   };
   const 指を離した = () => {
@@ -556,7 +560,7 @@ const RecordScreen = () => {
     if (!id || null === 先) return;
     // 画面にはもう「離したらこうなる」並びが出ている。その並びのとおりに
     // 決めるだけなので、指していた番号をそのまま渡す
-    const 元の一覧 = (Array.isArray(archers) ? archers : []).filter((x) => !!x);
+    const 元の一覧 = (Array.isArray(archers) ? archers : []).filter((射手) => !!射手);
     const いま = 元の一覧.findIndex((列) => 列.id === id);
     if (いま < 0 || いま === 先) return;
     列を並べ替える(id, 先);
@@ -598,14 +602,14 @@ const RecordScreen = () => {
         // 札を指に付いてこさせる。名前の並びの端からの座標に直して置く
         const 行 = 名の行のnode.current;
         if (行 && 'function' == typeof 行.getBoundingClientRect) {
-          const r = 行.getBoundingClientRect();
+          const 枠 = 行.getBoundingClientRect();
           const ずれ = 'undefined' == typeof window ? 0 : (横に並べる ? window.scrollY : window.scrollX) || 0;
-          set指の横((横に並べる ? g.moveY : g.moveX) - ((横に並べる ? r.top : r.left) + ずれ));
+          set指の横((横に並べる ? g.moveY : g.moveX) - ((横に並べる ? 枠.top : 枠.left) + ずれ));
         }
-        const i = 測る手.current ? 測る手.current(横に並べる ? g.moveY : g.moveX) : null;
-        if (null !== i && i !== 落とす先のref.current) {
-          落とす先のref.current = i;
-          set落とす先(i);
+        const 番 = 測る手.current ? 測る手.current(横に並べる ? g.moveY : g.moveX) : null;
+        if (null !== 番 && 番 !== 落とす先のref.current) {
+          落とす先のref.current = 番;
+          set落とす先(番);
         }
       },
       onPanResponderRelease: () => 離す手.current && 離す手.current(),
@@ -621,8 +625,10 @@ const RecordScreen = () => {
     (射手 && 射手.isSeparator ? UIConfig.separatorWidth : UIConfig.cellHeight) * 倍率;
   const // 案内が指す先。縦の足元と同じ決まりで、まだ名前の入っていない人を選ぶ
     案内が指す順 = () => {
-      const 一覧 = (Array.isArray(archers) ? archers : []).filter((x) => !!x);
-      const 指す = 一覧.findIndex((x) => x && !x.name && !x.isSeparator && !x.isTotalCalculator);
+      const 一覧 = (Array.isArray(archers) ? archers : []).filter((射手) => !!射手);
+      const 指す = 一覧.findIndex(
+        (射手) => 射手 && !射手.name && !射手.isSeparator && !射手.isTotalCalculator
+      );
       return 指す < 0 ? 0 : 指す;
     };
   const 横の名前セル = (射手, 順) => (
@@ -897,7 +903,7 @@ const RecordScreen = () => {
       /* 「終了・保存」とライブはこの間は出さない（記録が二重になる・ライブに結びつく） */}
       {履歴の編集
         ? (() => {
-            const 記録 = 記録たち.find((x) => x && x.id === 履歴の編集.id);
+            const 記録 = 記録たち.find((記録1件) => 記録1件 && 記録1件.id === 履歴の編集.id);
             const 題 = 記録
               ? (記録.title && String(記録.title).trim()) || new Date(記録.date).toLocaleDateString('ja-JP')
               : '';
@@ -1747,9 +1753,15 @@ const RecordScreen = () => {
                                 // 指の下にどの列が居るかを測るために、節を覚えておく
                                 if (node) 名の欄のnode.current[射手.id] = node;
                                 else delete 名の欄のnode.current[射手.id];
-                                const 一覧 = (Array.isArray(archers) ? archers : []).filter((x) => !!x);
+                                const 一覧 = (Array.isArray(archers) ? archers : []).filter(
+                                  (射手1人) => !!射手1人
+                                );
                                 let 指す = 一覧.findIndex(
-                                  (x) => x && !x.name && !x.isSeparator && !x.isTotalCalculator
+                                  (射手1人) =>
+                                    射手1人 &&
+                                    !射手1人.name &&
+                                    !射手1人.isSeparator &&
+                                    !射手1人.isTotalCalculator
                                 );
                                 if (指す < 0) 指す = 0;
                                 if (順 === 指す) 案内.setTutorialTargetNode('記録.射手選択', node);
@@ -2110,31 +2122,32 @@ const RecordScreen = () => {
         archerId={選んだ射手ID || ''}
         archerOrigIdx={選んだ射手の順}
         isSeparator={
-          (Array.isArray(archers) ? archers : []).find((x) => x && x.id === 選んだ射手ID)?.isSeparator ||
-          false
+          (Array.isArray(archers) ? archers : []).find((射手) => 射手 && 射手.id === 選んだ射手ID)
+            ?.isSeparator || false
         }
         isTotalCalculator={
-          (Array.isArray(archers) ? archers : []).find((x) => x && x.id === 選んだ射手ID)
+          (Array.isArray(archers) ? archers : []).find((射手) => 射手 && 射手.id === 選んだ射手ID)
             ?.isTotalCalculator || false
         } // 合計の列が、いま手前の計もまとめて数えているか。窓の中で切り替える
         またぐ合計={
-          (Array.isArray(archers) ? archers : []).find((x) => x && x.id === 選んだ射手ID)?.またぐ合計 || false
+          (Array.isArray(archers) ? archers : []).find((射手) => 射手 && 射手.id === 選んだ射手ID)
+            ?.またぐ合計 || false
         }
         on合計の範囲={() => {
           if (見るだけ中) return void 閲覧中に押された();
-          const 列 = (Array.isArray(archers) ? archers : []).find((x) => x && x.id === 選んだ射手ID);
+          const 列 = (Array.isArray(archers) ? archers : []).find((射手) => 射手 && 射手.id === 選んだ射手ID);
           合計の範囲を切り替える(選んだ射手ID);
           知らせる(列?.またぐ合計 ? 'この立ちだけの合計にしました' : '手前の計もまとめた総計にしました');
           人の窓を出す(false);
         }} // 区切りにチーム名を付ける道。窓からも入れるようにした
         いまのチーム名={
           組.区切りのチーム名(
-            (Array.isArray(archers) ? archers : []).find((x) => x && x.id === 選んだ射手ID) || {}
+            (Array.isArray(archers) ? archers : []).find((射手) => 射手 && 射手.id === 選んだ射手ID) || {}
           ) || ''
         }
         onチーム名={() => {
           if (見るだけ中) return void 閲覧中に押された();
-          const 列 = (Array.isArray(archers) ? archers : []).find((x) => x && x.id === 選んだ射手ID);
+          const 列 = (Array.isArray(archers) ? archers : []).find((射手) => 射手 && 射手.id === 選んだ射手ID);
           setチーム名の下書き((列 && 列.teamName) || '');
           setチーム名を付ける区切り(選んだ射手ID);
           人の窓を出す(false);
@@ -2143,12 +2156,12 @@ const RecordScreen = () => {
         //（縦は右／左、横は上／下）。端の列では、その向きを出さない
         横に並べている={!!横に並べる}
         手前へ動かせる={(() => {
-          const 並び = (Array.isArray(archers) ? archers : []).filter((x) => !!x);
-          return 並び.findIndex((x) => x.id === 選んだ射手ID) > 0;
+          const 並び = (Array.isArray(archers) ? archers : []).filter((射手) => !!射手);
+          return 並び.findIndex((射手) => 射手.id === 選んだ射手ID) > 0;
         })()}
         奥へ動かせる={(() => {
-          const 並び = (Array.isArray(archers) ? archers : []).filter((x) => !!x);
-          const 順 = 並び.findIndex((x) => x.id === 選んだ射手ID);
+          const 並び = (Array.isArray(archers) ? archers : []).filter((射手) => !!射手);
+          const 順 = 並び.findIndex((射手) => 射手.id === 選んだ射手ID);
           return 順 >= 0 && 順 < 並び.length - 1;
         })()}
         on動かす={(向き) => {
@@ -2186,9 +2199,9 @@ const RecordScreen = () => {
           ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Success);
           const タグ = タグの文
             .split(/[,\u3001\s]+/)
-            .map((x) => (x.startsWith('#') ? x : `#${x}`))
-            .map((x) => x.trim())
-            .filter((x) => '#' !== x);
+            .map((タグ1つ) => (タグ1つ.startsWith('#') ? タグ1つ : `#${タグ1つ}`))
+            .map((タグ1つ) => タグ1つ.trim())
+            .filter((タグ1つ) => '#' !== タグ1つ);
           saveSession(題, 覚え書き, 統計に入れる, タグ, tempAttendance);
           useScoreStore.getState().setCurrentSessionTags([]);
           知らせる('保存しました');

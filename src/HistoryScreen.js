@@ -107,10 +107,10 @@ const HistoryScreen = () => {
     const 部員ID = myMemberId;
     const 名前 = 自分の名前;
     const 記録 =
-      sessions.find((x) => x.id === selectedHistorySessionId) ||
+      sessions.find((記録1件) => 記録1件.id === selectedHistorySessionId) ||
       // ゴミ箱から開いたときだけ、ゴミ箱の中も探す
       (ゴミ箱の記録 && ゴミ箱の記録 === selectedHistorySessionId
-        ? trash.find((x) => x && x.id === selectedHistorySessionId)
+        ? trash.find((記録1件) => 記録1件 && 記録1件.id === selectedHistorySessionId)
         : null) ||
       null;
     if (記録 && 'member' === activeRole && 部員ID) {
@@ -131,8 +131,8 @@ const HistoryScreen = () => {
       !!見ている記録 &&
       !!ゴミ箱の記録 &&
       見ている記録.id === ゴミ箱の記録 &&
-      !sessions.some((x) => x && x.id === 見ている記録.id) &&
-      trash.some((x) => x && x.id === 見ている記録.id);
+      !sessions.some((記録1件) => 記録1件 && 記録1件.id === 見ている記録.id) &&
+      trash.some((記録1件) => 記録1件 && 記録1件.id === 見ている記録.id);
   const mySessions = React.useMemo(() => {
     let 一覧 = sessions || [];
     const 部員ID = myMemberId;
@@ -312,7 +312,7 @@ const HistoryScreen = () => {
       })
     );
     const 前後へ = (向き) => {
-      const 位置 = 絞った記録.findIndex((x) => x.id === 見ている記録.id);
+      const 位置 = 絞った記録.findIndex((記録1件) => 記録1件.id === 見ている記録.id);
       -1 !== 位置 &&
         ('prev' === 向き && 位置 < 絞った記録.length - 1
           ? setSelectedHistorySessionId(絞った記録[位置 + 1].id)
@@ -835,7 +835,9 @@ const HistoryScreen = () => {
   const 記録の行 = ({ item }) => {
     const 日付 = new Date(item.date);
     const 日付の文 = `${日付.getFullYear()}/${String(日付.getMonth() + 1).padStart(2, '0')}/${String(日付.getDate()).padStart(2, '0')}`;
-    const 人数 = 並びにする(item.archers).filter((x) => !x.isSeparator && !x.isTotalCalculator).length;
+    const 人数 = 並びにする(item.archers).filter(
+      (射手) => !射手.isSeparator && !射手.isTotalCalculator
+    ).length;
     const 選ばれている = 選んだ記録.has(item.id);
     return (
       <Pressable
@@ -933,23 +935,23 @@ const HistoryScreen = () => {
   };
   const 印を切り替える = (射手ID, 番) => {
     if (!見ている記録 || !isAdminMode) return;
-    const 直した = 見ている記録.archers.map((o) => {
-      if (o.id === 射手ID) {
-        const 印 = [...o.marks];
+    const 直した = 見ている記録.archers.map((射手) => {
+      if (射手.id === 射手ID) {
+        const 印 = [...射手.marks];
         const 前の印 = 印[番];
         return (
           (印[番] = '' === 前の印 ? '○' : '○' === 前の印 ? '\xd7' : ''),
-          Object.assign({}, o, { marks: 印 })
+          Object.assign({}, 射手, { marks: 印 })
         );
       }
-      return o;
+      return 射手;
     });
     updateSession(見ている記録.id, { archers: 直した });
   };
   const 鍵を切り替える = (射手ID, 塊) => {
     if (!見ている記録 || !isAdminMode) return;
     const 元 = 見ている記録.archers || [];
-    const 押した列 = 元.findIndex((x) => x.id === 射手ID);
+    const 押した列 = 元.findIndex((射手) => 射手.id === 射手ID);
     if (-1 === 押した列) return;
     const その射手 = 元[押した列];
     const 掛ける = !その射手.lockedBlocks?.[塊];
@@ -967,40 +969,52 @@ const HistoryScreen = () => {
   };
   const 部員を当てる = (射手ID, 部員) => {
     if (!見ている記録) return;
-    const 直した = 見ている記録.archers.map((o) =>
-      o.id === 射手ID
-        ? Object.assign({}, o, {
+    const 直した = 見ている記録.archers.map((射手) =>
+      射手.id === 射手ID
+        ? Object.assign({}, 射手, {
             name: 部員.name,
             memberId: 部員.id,
             gender: 部員.gender,
             grade: 部員.grade,
             isGuest: false,
           })
-        : o
+        : 射手
     );
     updateSession(見ている記録.id, { archers: 直した });
   };
   const 客の名を付ける = (射手ID, 名前) => {
     if (!見ている記録) return;
-    const 直した = 見ている記録.archers.map((o) =>
-      o.id === 射手ID
-        ? Object.assign({}, o, { name: 名前, isGuest: true, gender: '未設定', grade: 0, memberId: undefined })
-        : o
+    const 直した = 見ている記録.archers.map((射手) =>
+      射手.id === 射手ID
+        ? Object.assign({}, 射手, {
+            name: 名前,
+            isGuest: true,
+            gender: '未設定',
+            grade: 0,
+            memberId: undefined,
+          })
+        : 射手
     );
     updateSession(見ている記録.id, { archers: 直した });
   };
   const 名前を外す = (射手ID) => {
     if (!見ている記録) return;
-    const 直した = 見ている記録.archers.map((t) =>
-      t.id === 射手ID
-        ? Object.assign({}, t, { name: '', memberId: undefined, isGuest: false, gender: '未設定', grade: 0 })
-        : t
+    const 直した = 見ている記録.archers.map((射手) =>
+      射手.id === 射手ID
+        ? Object.assign({}, 射手, {
+            name: '',
+            memberId: undefined,
+            isGuest: false,
+            gender: '未設定',
+            grade: 0,
+          })
+        : 射手
     );
     updateSession(見ている記録.id, { archers: 直した });
   };
   const 射手を消す = (射手ID) => {
     if (!見ている記録) return;
-    const 残り = 見ている記録.archers.filter((t) => t.id !== 射手ID);
+    const 残り = 見ている記録.archers.filter((射手) => 射手.id !== 射手ID);
     updateSession(見ている記録.id, { archers: 残り });
   };
   const 人を選ぶ = (射手ID, 順) => {
@@ -1600,11 +1614,11 @@ const HistoryScreen = () => {
       <ArcherActionModal
         visible={人の窓}
         archerId={選んだ射手ID || ''}
-        archerName={見ている記録?.archers?.find((x) => x.id === 選んだ射手ID)?.name || ''}
+        archerName={見ている記録?.archers?.find((射手) => 射手.id === 選んだ射手ID)?.name || ''}
         archerOrigIdx={選んだ射手の順}
-        isSeparator={見ている記録?.archers?.find((x) => x.id === 選んだ射手ID)?.isSeparator || false}
+        isSeparator={見ている記録?.archers?.find((射手) => 射手.id === 選んだ射手ID)?.isSeparator || false}
         isTotalCalculator={
-          見ている記録?.archers?.find((x) => x.id === 選んだ射手ID)?.isTotalCalculator || false
+          見ている記録?.archers?.find((射手) => 射手.id === 選んだ射手ID)?.isTotalCalculator || false
         }
         onClose={() => 人の窓を出す(false)}
         onSubstitution={() => 交代の窓を出す(true)}
