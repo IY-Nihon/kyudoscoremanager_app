@@ -46,7 +46,8 @@ test('順位の行：長い名前は行数を区切る', () => {
   const i = 本体.indexOf('F.memberName');
   assert.ok(i > 0, 'memberName を使っている所が見つかりません');
   const 節 = 本体.slice(i, i + 400);
-  assert.ok(/numberOfLines:\s*2/.test(節), '名前に numberOfLines がありません');
+  // JSX に直したので numberOfLines={2}。前の numberOfLines: 2 も受ける
+  assert.ok(/numberOfLines[:=]\s*\{?2/.test(節), '名前に numberOfLines がありません');
 });
 
 test('的中の型：比較中は誰の型かを見出しに出せる', () => {
@@ -72,7 +73,9 @@ test('比較中：全体の的中率を、人数ぶんまとめて出す', () =>
     assert.ok(new RegExp(名 + ':').test(本体), `${名} の見た目がありません`);
   }
   // 本人と比較相手の両方を並べていること
-  const i = 本体.indexOf('style: F.比較の的中率,');
+  // JSX では style={F.比較の的中率}
+  let i = 本体.indexOf('style={F.比較の的中率}');
+  if (i < 0) i = 本体.indexOf('style: F.比較の的中率,');
   assert.ok(i > 0, '全体の的中率を出している所が見つかりません');
   const 節 = 本体.slice(i, i + 1400);
   assert.ok(/ae\.name/.test(節), '本人が入っていません');

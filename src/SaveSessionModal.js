@@ -1,253 +1,220 @@
-/**
- * Module ID: 690
- */
 'use strict';
 
-const _e = exports;
-
-('use strict');
-function e(e) {
-  return e && e.__esModule ? e : { default: e };
-}
-(Object.defineProperty(_e, '__esModule', { value: !0 }),
-  Object.defineProperty(_e, 'SaveSessionModal', {
-    enumerable: !0,
-    get: function () {
-      return b;
-    },
-  }));
-var t = require('react'),
-  n = e(t),
-  l = e(require('./View')),
-  o = e(require('./Text')),
-  s = e(require('./StyleSheet')),
-  c = e(require('./Modal')),
-  u = e(require('./TextInput')),
-  f = e(require('./TouchableOpacity')),
-  h = e(require('./KeyboardAvoidingView')),
-  x = e(require('./Keyboard')),
-  p = e(require('./ScrollView')),
-  y = require('./useScoreStore'),
-  T = require('./IS_WEB'),
-  C = require('./shadowStyle'),
-  j = require('./themedJsx');
+const React = require('react');
+const View = require('./View').default;
+const Text = require('./Text').default;
+const StyleSheet = require('./StyleSheet').default;
+const Modal = require('./Modal').default;
+const TextInput = require('./TextInput').default;
+const TouchableOpacity = require('./TouchableOpacity').default;
+const KeyboardAvoidingView = require('./KeyboardAvoidingView').default;
+const Keyboard = require('./Keyboard').default;
+const ScrollView = require('./ScrollView').default;
+const { useScoreStore } = require('./useScoreStore');
+const { IS_IOS } = require('./IS_WEB');
+const { getShadowStyle } = require('./shadowStyle');
 const { normalizeTag, タグの見た目 } = require('./syncRules');
-const S = ['練習試合', '正規練習', '大会', '自主稽古', 'アリーナ', '屋外', '晴れ', '曇り', '雨天', '強風'],
-  b = ({ visible: e, onClose: C, onSave: b }) => {
-    const {
-        includeInStats: v,
-        setIncludeInStats: B,
-        tagTemplates: A = [],
-        currentSessionTags: z = [],
-        setCurrentSessionTags: k,
-        toggleCurrentSessionTag: I,
-      } = (0, y.useScoreStore)(),
-      W = A.length > 0 ? A : S,
-      [E, P] = (0, t.useState)(''),
-      [R, w] = (0, t.useState)(''),
-      // 入力欄には # を付けずに出す（空白区切り。読むときに normalizeTag で # を付ける）
-      [_, O] = (0, t.useState)(z.map(タグの見た目).join(' ')),
-      [V, H] = (0, t.useState)(!1);
-    n.default.useEffect(() => {
-      O(z.map(タグの見た目).join(' '));
-    }, [z, e]);
-    const K = (e) => {
-      e ? (B(!0), b(E.trim(), R.trim(), !0, z.join(' ')), P(''), w('')) : H(!0);
-    };
-    return (0, j.jsx)(c.default, {
-      visible: e,
-      transparent: !0,
-      animationType: 'fade',
-      children: (0, j.jsxs)(l.default, {
-        style: F.overlay,
-        children: [
-          (0, j.jsx)(f.default, {
-            style: s.default.absoluteFill,
-            activeOpacity: 1,
-            onPress: x.default.dismiss,
-          }),
-          (0, j.jsx)(h.default, {
-            behavior: T.IS_IOS ? 'padding' : void 0,
-            style: F.container,
-            children: V
-              ? (0, j.jsxs)(l.default, {
-                  children: [
-                    (0, j.jsx)(o.default, { style: F.headerTitle, children: '統計の除外確認' }),
-                    (0, j.jsxs)(o.default, {
-                      style: F.subTitle,
-                      children: [
-                        'この記録を統計（分析画面）に含めずに保存しますか？',
-                        '\n',
-                        '（特定の練習などを除外したい場合に利用します）',
-                      ],
-                    }),
-                    (0, j.jsx)(l.default, { style: F.separator }),
-                    (0, j.jsx)(f.default, {
-                      style: [F.mainSaveBtn, { backgroundColor: '#FF3B30' }],
-                      onPress: () => {
-                        (B(!1), b(E.trim(), R.trim(), !1, z.join(' ')), P(''), w(''), H(!1));
-                      },
-                      children: (0, j.jsx)(o.default, { style: F.mainSaveTxt, children: '統計に含めず保存' }),
-                    }),
-                    (0, j.jsx)(f.default, {
-                      style: F.cancelBtn,
-                      onPress: () => H(!1),
-                      children: (0, j.jsx)(o.default, { style: F.cancelTxt, children: '戻る' }),
-                    }),
-                  ],
-                })
-              : (0, j.jsxs)(l.default, {
-                  children: [
-                    (0, j.jsx)(o.default, { style: F.headerTitle, children: '練習記録の保存' }),
-                    (0, j.jsx)(o.default, { style: F.subTitle, children: '保存内容を入力してください。' }),
-                    (0, j.jsx)(l.default, {
-                      style: F.inputContainer,
-                      children: (0, j.jsx)(u.default, {
-                        style: F.input,
-                        placeholder: '大会名・練習名（例: ○○大会）',
-                        placeholderTextColor: '#C7C7CC',
-                        value: E,
-                        onChangeText: P,
-                        returnKeyType: 'next',
-                      }),
-                    }),
-                    (0, j.jsx)(l.default, {
-                      style: F.inputContainer,
-                      children: (0, j.jsx)(u.default, {
-                        style: F.input,
-                        placeholder: '練習メモ（例: 合宿1日目）',
-                        placeholderTextColor: '#C7C7CC',
-                        value: R,
-                        onChangeText: w,
-                        returnKeyType: 'done',
-                      }),
-                    }),
-                    (0, j.jsxs)(l.default, {
-                      style: F.tagsAreaContainer,
-                      children: [
-                        (0, j.jsx)(u.default, {
-                          style: F.input,
-                          placeholder: 'タグ（例: 審査前 雨天）',
-                          placeholderTextColor: '#C7C7CC',
-                          value: _,
-                          onChangeText: (e) => {
-                            O(e);
-                            const t = e
-                              .split(/[\s,\u3001]+/)
-                              .map(normalizeTag)
-                              .filter(Boolean);
-                            k(t);
-                          },
-                          returnKeyType: 'done',
-                        }),
-                        (0, j.jsx)(p.default, {
-                          horizontal: !0,
-                          showsHorizontalScrollIndicator: !1,
-                          style: F.presetTagsScroll,
-                          contentContainerStyle: F.presetTagsContainer,
-                          children: W.map((e) => {
-                            const t = normalizeTag(e),
-                              n = z.map(normalizeTag).includes(t);
-                            return (0, j.jsx)(
-                              f.default,
-                              {
-                                style: [F.presetTagBtn, n && F.presetTagBtnActive],
-                                onPress: () => {
-                                  I(t);
-                                },
-                                children: (0, j.jsx)(o.default, {
-                                  style: [F.presetTagTxt, n && F.presetTagTxtActive],
-                                  children: タグの見た目(t),
-                                }),
-                              },
-                              e
-                            );
-                          }),
-                        }),
-                      ],
-                    }),
-                    (0, j.jsx)(l.default, { style: F.separator }),
-                    (0, j.jsx)(f.default, {
-                      style: F.mainSaveBtn,
-                      onPress: () => K(!0),
-                      children: (0, j.jsx)(o.default, { style: F.mainSaveTxt, children: '保存' }),
-                    }),
-                    (0, j.jsx)(f.default, {
-                      style: F.secondaryBtn,
-                      onPress: () => K(!1),
-                      children: (0, j.jsx)(o.default, {
-                        style: F.secondaryTxt,
-                        children: '統計に含めないで保存',
-                      }),
-                    }),
-                    (0, j.jsx)(f.default, {
-                      style: F.cancelBtn,
-                      onPress: () => {
-                        (P(''), w(''), O(''), H(!1), C());
-                      },
-                      children: (0, j.jsx)(o.default, { style: F.cancelTxt, children: 'キャンセル' }),
-                    }),
-                  ],
-                }),
-          }),
-        ],
-      }),
-    });
+const S = ['練習試合', '正規練習', '大会', '自主稽古', 'アリーナ', '屋外', '晴れ', '曇り', '雨天', '強風'];
+const SaveSessionModal = ({ visible, onClose, onSave }) => {
+  const {
+    includeInStats,
+    setIncludeInStats,
+    tagTemplates = [],
+    currentSessionTags = [],
+    setCurrentSessionTags,
+    toggleCurrentSessionTag,
+  } = useScoreStore();
+  const W = tagTemplates.length > 0 ? tagTemplates : S;
+  const [E, P] = React.useState('');
+  const [R, w] = React.useState('');
+  const // 入力欄には # を付けずに出す（空白区切り。読むときに normalizeTag で # を付ける）
+    [_, O] = React.useState(currentSessionTags.map(タグの見た目).join(' '));
+  const [V, H] = React.useState(false);
+  React.useEffect(() => {
+    O(currentSessionTags.map(タグの見た目).join(' '));
+  }, [currentSessionTags, visible]);
+  const K = (e) => {
+    e
+      ? (setIncludeInStats(true),
+        onSave(E.trim(), R.trim(), true, currentSessionTags.join(' ')),
+        P(''),
+        w(''))
+      : H(true);
+  };
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={F.overlay}>
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={Keyboard.dismiss} />
+        <KeyboardAvoidingView behavior={IS_IOS ? 'padding' : undefined} style={F.container}>
+          {V ? (
+            <View>
+              <Text style={F.headerTitle}>統計の除外確認</Text>
+              <Text style={F.subTitle}>
+                この記録を統計（分析画面）に含めずに保存しますか？{'\n'}
+                （特定の練習などを除外したい場合に利用します）
+              </Text>
+              <View style={F.separator} />
+              <TouchableOpacity
+                style={[F.mainSaveBtn, { backgroundColor: '#FF3B30' }]}
+                onPress={() => {
+                  setIncludeInStats(false);
+                  onSave(E.trim(), R.trim(), false, currentSessionTags.join(' '));
+                  P('');
+                  w('');
+                  H(false);
+                }}
+              >
+                <Text style={F.mainSaveTxt}>統計に含めず保存</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={F.cancelBtn} onPress={() => H(false)}>
+                <Text style={F.cancelTxt}>戻る</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View>
+              <Text style={F.headerTitle}>練習記録の保存</Text>
+              <Text style={F.subTitle}>保存内容を入力してください。</Text>
+              <View style={F.inputContainer}>
+                <TextInput
+                  style={F.input}
+                  placeholder="大会名・練習名（例: ○○大会）"
+                  placeholderTextColor="#C7C7CC"
+                  value={E}
+                  onChangeText={P}
+                  returnKeyType="next"
+                />
+              </View>
+              <View style={F.inputContainer}>
+                <TextInput
+                  style={F.input}
+                  placeholder="練習メモ（例: 合宿1日目）"
+                  placeholderTextColor="#C7C7CC"
+                  value={R}
+                  onChangeText={w}
+                  returnKeyType="done"
+                />
+              </View>
+              <View style={F.tagsAreaContainer}>
+                <TextInput
+                  style={F.input}
+                  placeholder="タグ（例: 審査前 雨天）"
+                  placeholderTextColor="#C7C7CC"
+                  value={_}
+                  onChangeText={(e) => {
+                    O(e);
+                    const t = e
+                      .split(/[\s,\u3001]+/)
+                      .map(normalizeTag)
+                      .filter(Boolean);
+                    setCurrentSessionTags(t);
+                  }}
+                  returnKeyType="done"
+                />
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={F.presetTagsScroll}
+                  contentContainerStyle={F.presetTagsContainer}
+                >
+                  {W.map((e) => {
+                    const t = normalizeTag(e);
+                    const n = currentSessionTags.map(normalizeTag).includes(t);
+                    return (
+                      <TouchableOpacity
+                        key={e}
+                        style={[F.presetTagBtn, n && F.presetTagBtnActive]}
+                        onPress={() => {
+                          toggleCurrentSessionTag(t);
+                        }}
+                      >
+                        <Text style={[F.presetTagTxt, n && F.presetTagTxtActive]}>{タグの見た目(t)}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+              <View style={F.separator} />
+              <TouchableOpacity style={F.mainSaveBtn} onPress={() => K(true)}>
+                <Text style={F.mainSaveTxt}>保存</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={F.secondaryBtn} onPress={() => K(false)}>
+                <Text style={F.secondaryTxt}>統計に含めないで保存</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={F.cancelBtn}
+                onPress={() => {
+                  P('');
+                  w('');
+                  O('');
+                  H(false);
+                  onClose();
+                }}
+              >
+                <Text style={F.cancelTxt}>キャンセル</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </KeyboardAvoidingView>
+      </View>
+    </Modal>
+  );
+};
+const F = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
-  F = s.default.create({
-    overlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.4)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 20,
-    },
-    container: Object.assign(
-      { width: '100%', maxWidth: 400, backgroundColor: '#FFF', borderRadius: 14, padding: 20 },
-      (0, C.getShadowStyle)({ shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, elevation: 10 })
-    ),
-    headerTitle: { fontSize: 17, fontWeight: 'bold', textAlign: 'center', marginBottom: 4 },
-    subTitle: { fontSize: 13, color: '#8E8E93', textAlign: 'center', marginBottom: 16 },
-    inputContainer: { marginBottom: 10 },
-    tagsAreaContainer: { marginBottom: 8 },
-    input: {
-      backgroundColor: '#F2F2F7',
-      borderRadius: 10,
-      paddingHorizontal: 16,
-      paddingVertical: 14,
-      fontSize: 16,
-      color: '#000',
-    },
-    presetTagsScroll: { marginTop: 8 },
-    presetTagsContainer: { paddingRight: 10, gap: 8, flexDirection: 'row' },
-    presetTagBtn: {
-      backgroundColor: '#F2F2F7',
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: '#E5E5EA',
-    },
-    presetTagBtnActive: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
-    presetTagTxt: { fontSize: 13, color: '#666' },
-    presetTagTxtActive: { color: '#FFF', fontWeight: 'bold' },
-    separator: { height: s.default.hairlineWidth, backgroundColor: '#E5E5EA', marginVertical: 10 },
-    mainSaveBtn: {
-      paddingVertical: 14,
-      alignItems: 'center',
-      borderRadius: 10,
-      backgroundColor: '#007AFF',
-      marginBottom: 8,
-    },
-    mainSaveTxt: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
-    secondaryBtn: {
-      paddingVertical: 14,
-      alignItems: 'center',
-      borderRadius: 10,
-      backgroundColor: '#F2F2F7',
-      marginBottom: 8,
-    },
-    secondaryTxt: { color: '#FF3B30', fontWeight: '600', fontSize: 15 },
-    cancelBtn: { paddingVertical: 14, alignItems: 'center', borderRadius: 10, backgroundColor: '#F2F2F7' },
-    cancelTxt: { color: '#007AFF', fontWeight: '600', fontSize: 16 },
-  });
+  container: Object.assign(
+    { width: '100%', maxWidth: 400, backgroundColor: '#FFF', borderRadius: 14, padding: 20 },
+    getShadowStyle({ shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, elevation: 10 })
+  ),
+  headerTitle: { fontSize: 17, fontWeight: 'bold', textAlign: 'center', marginBottom: 4 },
+  subTitle: { fontSize: 13, color: '#8E8E93', textAlign: 'center', marginBottom: 16 },
+  inputContainer: { marginBottom: 10 },
+  tagsAreaContainer: { marginBottom: 8 },
+  input: {
+    backgroundColor: '#F2F2F7',
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: '#000',
+  },
+  presetTagsScroll: { marginTop: 8 },
+  presetTagsContainer: { paddingRight: 10, gap: 8, flexDirection: 'row' },
+  presetTagBtn: {
+    backgroundColor: '#F2F2F7',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  presetTagBtnActive: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
+  presetTagTxt: { fontSize: 13, color: '#666' },
+  presetTagTxtActive: { color: '#FFF', fontWeight: 'bold' },
+  separator: { height: StyleSheet.hairlineWidth, backgroundColor: '#E5E5EA', marginVertical: 10 },
+  mainSaveBtn: {
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderRadius: 10,
+    backgroundColor: '#007AFF',
+    marginBottom: 8,
+  },
+  mainSaveTxt: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
+  secondaryBtn: {
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderRadius: 10,
+    backgroundColor: '#F2F2F7',
+    marginBottom: 8,
+  },
+  secondaryTxt: { color: '#FF3B30', fontWeight: '600', fontSize: 15 },
+  cancelBtn: { paddingVertical: 14, alignItems: 'center', borderRadius: 10, backgroundColor: '#F2F2F7' },
+  cancelTxt: { color: '#007AFF', fontWeight: '600', fontSize: 16 },
+});
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.SaveSessionModal = SaveSessionModal;

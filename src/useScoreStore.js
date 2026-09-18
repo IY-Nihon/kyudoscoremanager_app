@@ -1,18 +1,4 @@
-/**
- * Module ID: 174
- */
 'use strict';
-
-const _e = exports;
-
-('use strict');
-function e(e) {
-  return e && e.__esModule
-    ? e
-    : {
-        default: e,
-      };
-}
 
 // 比較のひな型（よく見る組み合わせ）の決まり
 const ひ = require('./comparePresets');
@@ -26,7 +12,6 @@ const 共 = require('./liveShare');
 const 端 = require('./localTrim');
 // 団体アカウントの削除（写してから消す）
 const 消去 = require('./accountDeletion');
-
 /**
  * 端末に書けなくなったことを、利用者にも一度だけ伝える。
  *
@@ -38,10 +23,10 @@ const 消去 = require('./accountDeletion');
  * 保存は○×を入れるたびに走るので、出すのは起動につき1回だけ。
  * 毎回出すと記録の邪魔になり、かえって読まれなくなる。
  */
-let 書けないと知らせた = !1;
+let 書けないと知らせた = false;
 function 書けないことを一度だけ知らせる() {
   if (書けないと知らせた) return;
-  書けないと知らせた = !0;
+  書けないと知らせた = true;
   try {
     require('./alertBridge').default.alert(
       '端末に保存できませんでした',
@@ -51,7 +36,6 @@ function 書けないことを一度だけ知らせる() {
     /* 知らせが出せなくても、本来の動きは続ける */
   }
 }
-
 /**
  * 端末の置き場。書けなかったことを拾うために、素の AsyncStorage を包む。
  *
@@ -64,22 +48,21 @@ function 書けないことを一度だけ知らせる() {
  * 利用者には見えないので、こちらが気づけるようにしておく
  */
 const 端末の置き場 = {
-  getItem: (鍵) => u.default.getItem(鍵),
+  getItem: (鍵) => AsyncStorage.getItem(鍵),
   setItem: async (鍵, 値) => {
     try {
-      return await u.default.setItem(鍵, 値);
+      return await AsyncStorage.setItem(鍵, 値);
     } catch (t) {
       const 大きさ = 値 && 値.length ? Math.round(値.length / 1024) : 0;
-      (console.error('[Store] 端末に控えを書けませんでした（' + 大きさ + 'KB）', t),
-        不具合を控える('端末の控えが書けない', 大きさ + 'KB'));
+      console.error('[Store] 端末に控えを書けませんでした（' + 大きさ + 'KB）', t);
+      不具合を控える('端末の控えが書けない', 大きさ + 'KB');
       書けないことを一度だけ知らせる();
       // 投げ返さない。書けなくても、雲への同期と画面の操作は続けられる
-      return void 0;
+      return undefined;
     }
   },
-  removeItem: (鍵) => u.default.removeItem(鍵),
+  removeItem: (鍵) => AsyncStorage.removeItem(鍵),
 };
-
 // 行動を1つ控える。不具合の便りに「直前に何をしていたか」として載る。
 // 氏名・的中・記録の中身は渡さない（渡すと便りに名簿が出る）
 function 行動を控える(名, 中身) {
@@ -89,7 +72,6 @@ function 行動を控える(名, 中身) {
     /* 控えられなくても、本来の動きは続ける */
   }
 }
-
 /**
  * 合言葉の取り寄せ。同時に何度呼ばれても1本にまとめる。
  *
@@ -97,7 +79,6 @@ function 行動を控える(名, 中身) {
  * まとめないと同じ団体に別々の合言葉を書き合い、端末ごとに枝が分かれる
  */
 let 合言葉の取り寄せ = null;
-
 // ライブを置く枝。合言葉が無ければ null を返す。
 // 団体IDへ落とすと、合言葉を持つ端末と持たない端末で枝が分かれ、
 // 同じ練習に入っているつもりで相手の○×が見えない形になる
@@ -118,17 +99,14 @@ function ライブの枝() {
   if (!団体 || !控え || 控え.団体 !== 団体) return null;
   return 秘.ライブの枝(控え.合言葉);
 }
-
 /** 団体の枝。共有のライブに入っていても、こちらは団体のものを返す */
 function 団体の枝() {
   const { activeGroupId: 団体, ライブの合言葉: 控え } = M.getState();
   if (!団体 || !控え || 控え.団体 !== 団体) return null;
   return 秘.ライブの枝(控え.合言葉);
 }
-
 /** 共有のライブの、参加一覧に出すための道しるべ。団体の枝の下に置く */
 const 道しるべの場所 = (枝, 名前) => `live_sessions/${枝}/${名前}/state`;
-
 /**
  * ライブが別の枝へ移っていたら、付いていく。
  *
@@ -139,7 +117,7 @@ const 道しるべの場所 = (枝, 名前) => `live_sessions/${枝}/${名前}/s
  * 主催者かどうかは変えない。移したのが参加者でも、主催者は主催者のまま
  */
 function 移ったら付いていく(状態, e, s) {
-  if (!状態) return !1;
+  if (!状態) return false;
   // 目印は2通りある。
   //   ・移った先 … 共有の枝から別の共有の枝へ移したとき
   //   ・共有の枝 … 団体の枝から移したとき。元の節点はそのまま道しるべになる
@@ -148,22 +126,20 @@ function 移ったら付いていく(状態, e, s) {
     : 秘.枝として使えるか(状態.共有の枝)
       ? String(状態.共有の枝)
       : null;
-  if (!先 || 先 === ライブの枝()) return !1;
+  if (!先 || 先 === ライブの枝()) return false;
   const 名前 = s().liveSessionName;
-  if (!名前) return !1;
+  if (!名前) return false;
   const 主催だった = s().isHost;
   console.log('[Store] ライブが配られたので、新しい枝へ移ります');
-  (s().joinLiveSync(名前, s().ライブは見るだけ, {
+  s().joinLiveSync(名前, s().ライブは見るだけ, {
     枝: 先,
     閲覧枝: 状態.移った先の閲覧枝 || 状態.閲覧の枝 || null,
-  }),
-    e({ isHost: 主催だった }));
-  return !0;
+  });
+  e({ isHost: 主催だった });
+  return true;
 }
-
 /** 閲覧用の写しの置き場所。書き込まれても本物の記録には届かない */
 const 写しの場所 = (枝, 名前) => `live_view/${枝}/${名前}/state`;
-
 /**
  * 盤面の書き込みを、閲覧用の写しへも流す。
  *
@@ -178,11 +154,10 @@ function 写しへも流す(名前, 中身) {
   const { いまのライブの閲覧枝: 閲覧枝, 写しを見ているか } = M.getState();
   if (!fb.rtdb || 写しを見ているか || !名前) return;
   if (!秘.枝として使えるか(閲覧枝)) return;
-  (0, i.update)((0, i.ref)(fb.rtdb, 写しの場所(閲覧枝, 名前)), 中身).catch(() => {
+  RTDB.update(RTDB.ref(fb.rtdb, 写しの場所(閲覧枝, 名前)), 中身).catch(() => {
     /* 写しが遅れても、記録そのものには関わらせない */
   });
 }
-
 /**
  * 参加一覧の節点から、共有のライブの道しるべだけを拾う。
  *
@@ -204,7 +179,6 @@ function 道しるべたちを拾う(節点) {
   }
   return 出;
 }
-
 // 行動の控えを捨てる。ログアウトのときに呼ぶ
 function 行動の控えを捨てる() {
   try {
@@ -213,7 +187,6 @@ function 行動の控えを捨てる() {
     /* 捨てられなくても、ログアウトそのものは進める */
   }
 }
-
 // 貯まっている便りを出し直す。errorReporter は呼ぶときに読む
 function 溜まりを流し直す() {
   try {
@@ -222,7 +195,6 @@ function 溜まりを流し直す() {
     /* 便りを出せなくても、同期は続ける */
   }
 }
-
 // 不具合をこちらに控える。送れなければ端末に貯まり、つながったときに出し直す。
 // errorReporter → useScoreStore の向きに参照があるので、ここでは呼ぶときに読む
 /**
@@ -242,11 +214,9 @@ function 入り直せば直るか(誤り) {
     String(誤り.message || '')
   );
 }
-
 /** 入り直しの案内。画面の帯に出す */
 const 入り直しの案内 =
   'ログインの有効期限が切れています。設定からログアウトして、もう一度ログインしてください。（記録は残ります）';
-
 function 不具合を控える(出どころ, 誤り) {
   try {
     require('./errorReporter').不具合を送る(出どころ, 誤り);
@@ -254,34 +224,34 @@ function 不具合を控える(出どころ, 誤り) {
     /* 控えられなくても、同期そのものは続ける */
   }
 }
-
-(Object.defineProperty(_e, '__esModule', {
-  value: !0,
-}),
-  Object.defineProperty(_e, 'useScoreStore', {
-    enumerable: !0,
-    get: function () {
-      return M;
-    },
-  }),
-  // ライブ名の検査。画面から使う
-  Object.defineProperty(_e, 'ライブ名に使えない字', {
-    enumerable: !0,
-    get: function () {
-      return 同期規則.ライブ名に使えない字;
-    },
-  }));
-var s = require('zustand'),
-  _t_orig = require('./db'),
-  o = require('firebase/auth'),
-  a = require('firebase/firestore'),
-  i = require('firebase/database'),
-  n = e(require('./alertBridge')),
-  c = require('./IS_WEB'),
-  l = require('./uuid'),
-  d = require('zustand/middleware'),
-  u = e(require('@react-native-async-storage/async-storage')),
-  m = e(require('@react-native-community/netinfo'));
+Object.defineProperty(exports, '__esModule', { value: true });
+Object.defineProperty(exports, 'useScoreStore', {
+  enumerable: true,
+  get: function () {
+    return M;
+  },
+});
+// ライブ名の検査。画面から使う
+Object.defineProperty(exports, 'ライブ名に使えない字', {
+  enumerable: true,
+  get: function () {
+    return 同期規則.ライブ名に使えない字;
+  },
+});
+const zustand = require('zustand');
+const _t_orig = require('./db');
+const FirebaseAuth = require('firebase/auth');
+const Firestore = require('firebase/firestore');
+const RTDB = require('firebase/database');
+const Alert = require('./alertBridge').default;
+const { IS_WEB } = require('./IS_WEB');
+const { generateUUID } = require('./uuid');
+const middleware = require('zustand/middleware');
+const AsyncStorage =
+  require('@react-native-async-storage/async-storage').default ??
+  require('@react-native-async-storage/async-storage');
+const netinfo =
+  require('@react-native-community/netinfo').default ?? require('@react-native-community/netinfo');
 const fb = {
   dbInstance: null,
   authInstance: null,
@@ -327,7 +297,6 @@ const fb = {
     return require('./db').rtdb;
   },
 };
-
 const waitForDb = async () => {
   const mod = require('./db');
   if (mod.dbReady) {
@@ -345,107 +314,107 @@ let p = {};
 // 同期の判断に使う純粋な関数は syncRules.js へ移した。中身は変えていない。
 // 呼び出し側の書き換えを避けるため、従来の1文字の名前に割り当て直す。
 const 同期規則 = require('./syncRules');
-const h = 同期規則.generateUniquePersonalId,
-  y = 同期規則.mergeById,
-  mergeLiveArchers = 同期規則.mergeLiveArchers,
-  印だけの差分 = 同期規則.印だけの差分,
-  差分を当てる = 同期規則.差分を当てる,
-  射数の差分 = 同期規則.射数の差分,
-  射数差を当てる = 同期規則.射数差を当てる,
-  盤面を射数にそろえる = 同期規則.盤面を射数にそろえる,
-  項目の差分 = 同期規則.項目の差分,
-  項目差分を当てる = 同期規則.項目差分を当てる,
-  restampChangedArchers = 同期規則.restampChangedArchers,
-  normalizeArrowLocations = 同期規則.normalizeArrowLocations,
-  dropUndefinedDeep = 同期規則.dropUndefinedDeep,
-  trashedAtMillis = 同期規則.trashedAtMillis,
-  normalizeTag = 同期規則.normalizeTag,
-  cleanUpTagsArray = 同期規則.cleanUpTagsArray,
-  参加できるライブ = 同期規則.参加できるライブ,
-  cleanUpSessions = 同期規則.cleanUpSessions,
-  記録の射手を整える = 同期規則.記録の射手を整える;
+const generateUniquePersonalId = 同期規則.generateUniquePersonalId;
+const mergeById = 同期規則.mergeById;
+const mergeLiveArchers = 同期規則.mergeLiveArchers;
+const 印だけの差分 = 同期規則.印だけの差分;
+const 差分を当てる = 同期規則.差分を当てる;
+const 射数の差分 = 同期規則.射数の差分;
+const 射数差を当てる = 同期規則.射数差を当てる;
+const 盤面を射数にそろえる = 同期規則.盤面を射数にそろえる;
+const 項目の差分 = 同期規則.項目の差分;
+const 項目差分を当てる = 同期規則.項目差分を当てる;
+const restampChangedArchers = 同期規則.restampChangedArchers;
+const normalizeArrowLocations = 同期規則.normalizeArrowLocations;
+const dropUndefinedDeep = 同期規則.dropUndefinedDeep;
+const trashedAtMillis = 同期規則.trashedAtMillis;
+const normalizeTag = 同期規則.normalizeTag;
+const cleanUpTagsArray = 同期規則.cleanUpTagsArray;
+const 参加できるライブ = 同期規則.参加できるライブ;
+const cleanUpSessions = 同期規則.cleanUpSessions;
+const 記録の射手を整える = 同期規則.記録の射手を整える;
 const f = (e, s) => {
-    if (!e) return s ? Array(s).fill('') : [];
-    if (Array.isArray(e)) {
-      const t = e.map((e) => (null == e ? '' : e));
-      return s && t.length < s ? [...t, ...Array(s - t.length).fill('')] : t;
+  if (!e) return s ? Array(s).fill('') : [];
+  if (Array.isArray(e)) {
+    const t = e.map((e) => (null == e ? '' : e));
+    return s && t.length < s ? [...t, ...Array(s - t.length).fill('')] : t;
+  }
+  if ('object' == typeof e) {
+    const t = Object.keys(e);
+    if (t.length > 0 && t.every((e) => !isNaN(Number(e)))) {
+      const o = Math.max(...t.map(Number));
+      const a = s ? Math.max(s, o + 1) : o + 1;
+      const i = Array(a).fill('');
+      return (
+        t.forEach((s) => {
+          const t = Number(s);
+          i[t] = null === e[s] || undefined === e[s] ? '' : e[s];
+        }),
+        i
+      );
     }
-    if ('object' == typeof e) {
-      const t = Object.keys(e);
-      if (t.length > 0 && t.every((e) => !isNaN(Number(e)))) {
-        const o = Math.max(...t.map(Number)),
-          a = s ? Math.max(s, o + 1) : o + 1,
-          i = Array(a).fill('');
-        return (
-          t.forEach((s) => {
-            const t = Number(s);
-            i[t] = null === e[s] || void 0 === e[s] ? '' : e[s];
-          }),
-          i
-        );
+    return Object.values(e);
+  }
+  return [];
+};
+const S = (e, s) =>
+  e && 'object' == typeof e
+    ? {
+        id: e.id || '',
+        name: e.name || '',
+        gender: e.gender || '未設定',
+        grade: 'number' == typeof e.grade ? e.grade : 1,
+        marks: f(e.marks, e.isSeparator ? 0 : s),
+        isSeparator: true === e.isSeparator,
+        isTotalCalculator: true === e.isTotalCalculator,
+        // 手前の計もまとめて数える合計かどうか。写し忘れると、読み直した
+        // ときにふつうの「計」に戻り、複数立ちの合計が消える
+        またぐ合計: true === e.またぐ合計,
+        isGuest: true === e.isGuest,
+        // 区切りに付けたチーム名（リーグの大学名）。ここに書かないと
+        // 読み直しや同期のたびに落ちて、色分けが消える
+        teamName: e.teamName || undefined,
+        memberId: e.memberId || undefined,
+        lockedBlocks: e.lockedBlocks || {},
+        substitutions: e.substitutions || {},
+        substitutionIds: e.substitutionIds || {},
+        bowWeight: e.bowWeight || undefined,
+        lastModified: e.lastModified || 0,
+        // 入っていなければ undefined のままにする。突き合わせ側が
+        // 「情報が無い」と見て手元の矢所を残せるようにするため
+        arrowLocations: normalizeArrowLocations(e.arrowLocations, e.isSeparator ? 0 : s || 8),
       }
-      return Object.values(e);
-    }
-    return [];
-  },
-  S = (e, s) =>
-    e && 'object' == typeof e
-      ? {
-          id: e.id || '',
-          name: e.name || '',
-          gender: e.gender || '未設定',
-          grade: 'number' == typeof e.grade ? e.grade : 1,
-          marks: f(e.marks, e.isSeparator ? 0 : s),
-          isSeparator: !0 === e.isSeparator,
-          isTotalCalculator: !0 === e.isTotalCalculator,
-          // 手前の計もまとめて数える合計かどうか。写し忘れると、読み直した
-          // ときにふつうの「計」に戻り、複数立ちの合計が消える
-          またぐ合計: !0 === e.またぐ合計,
-          isGuest: !0 === e.isGuest,
-          // 区切りに付けたチーム名（リーグの大学名）。ここに書かないと
-          // 読み直しや同期のたびに落ちて、色分けが消える
-          teamName: e.teamName || void 0,
-          memberId: e.memberId || void 0,
-          lockedBlocks: e.lockedBlocks || {},
-          substitutions: e.substitutions || {},
-          substitutionIds: e.substitutionIds || {},
-          bowWeight: e.bowWeight || void 0,
-          lastModified: e.lastModified || 0,
-          // 入っていなければ undefined のままにする。突き合わせ側が
-          // 「情報が無い」と見て手元の矢所を残せるようにするため
-          arrowLocations: normalizeArrowLocations(e.arrowLocations, e.isSeparator ? 0 : s || 8),
-        }
-      : null,
-  b = (e, s) =>
-    JSON.parse(
-      JSON.stringify(
-        e.map((e) => ({
-          id: e.id,
-          name: e.name || '',
-          gender: e.gender || '未設定',
-          grade: e.grade || 0,
-          isSeparator: e.isSeparator || !1,
-          isTotalCalculator: e.isTotalCalculator || !1,
-          // 手前の計もまとめる合計かどうか。ライブでも相手に同じ数が出るようにする
-          またぐ合計: e.またぐ合計 || !1,
-          isGuest: e.isGuest || !1,
-          // 区切りのチーム名。ライブでも相手に伝わるようにする
-          teamName: e.teamName || null,
-          memberId: e.memberId || null,
-          lockedBlocks: e.lockedBlocks || {},
-          substitutions: e.substitutions || {},
-          lastModified: e.lastModified || 0,
-          substitutionIds: e.substitutionIds || {},
-          bowWeight: e.bowWeight || null,
-          // 空欄は '' で送る（○× と同じ）。null のままだと Realtime Database が
-          // 配列から落として添字のオブジェクトに変えてしまい、位置がずれる。
-          // 持っていないときは null にして、受け取り側が手元の値を残せるようにする
-          arrowLocations: Array.isArray(e.arrowLocations)
-            ? e.arrowLocations.map((矢所) => (null == 矢所 ? '' : 矢所))
-            : null,
-        }))
-      )
-    );
+    : null;
+const b = (e, s) =>
+  JSON.parse(
+    JSON.stringify(
+      e.map((e) => ({
+        id: e.id,
+        name: e.name || '',
+        gender: e.gender || '未設定',
+        grade: e.grade || 0,
+        isSeparator: e.isSeparator || false,
+        isTotalCalculator: e.isTotalCalculator || false,
+        // 手前の計もまとめる合計かどうか。ライブでも相手に同じ数が出るようにする
+        またぐ合計: e.またぐ合計 || false,
+        isGuest: e.isGuest || false,
+        // 区切りのチーム名。ライブでも相手に伝わるようにする
+        teamName: e.teamName || null,
+        memberId: e.memberId || null,
+        lockedBlocks: e.lockedBlocks || {},
+        substitutions: e.substitutions || {},
+        lastModified: e.lastModified || 0,
+        substitutionIds: e.substitutionIds || {},
+        bowWeight: e.bowWeight || null,
+        // 空欄は '' で送る（○× と同じ）。null のままだと Realtime Database が
+        // 配列から落として添字のオブジェクトに変えてしまい、位置がずれる。
+        // 持っていないときは null にして、受け取り側が手元の値を残せるようにする
+        arrowLocations: Array.isArray(e.arrowLocations)
+          ? e.arrowLocations.map((矢所) => (null == 矢所 ? '' : 矢所))
+          : null,
+      }))
+    )
+  );
 /**
  * サーバーに載っていると分かっている○×。射手id ごとに文字列で持つ。
  *
@@ -468,51 +437,51 @@ const 載っている印を捨てる = () => {
   載っている印 = {};
 };
 const v = (e, s, o) => {
-    const a = Date.now(),
-      n = ライブの枝();
-    if (!fb.rtdb || !n) return;
-    const c = (0, i.ref)(fb.rtdb, `live_sessions/${n}/${e}/state`),
-      l = b(s),
-      d = {};
-    s.forEach((e) => {
-      e && e.id && (d[e.id] = e.lastModified || 0);
-    });
-    // ○×は、前に載せたときから変わった射手のぶんだけ書く。
-    // marks_by_id を丸ごと差し替えると、まだ受け取っていない相手の
-    // 1射ぶんの送信を消してしまう
-    const u = {};
-    s.forEach((e) => {
-      if (!e || !e.id || e.isSeparator) return;
-      const 並び = 印を並べる(e.marks);
-      if (載っている印[e.id] === 並び) return;
-      ((u[e.id] = e.marks || []), (載っている印[e.id] = 並び));
-    });
-    const m = {
-      archers: l,
-      shotsPerRound: o,
-      timestamp: a,
-      // 参加一覧の「最終更新」はこちらを見る。timestamp は書いた端末の時計で、
-      // 自分の送信の返りを見分けるのに使うため端末の値のままにしてある。
-      // 端末の時計が狂っていると、使用中のライブが古いと見なされて消えかねない
-      updated_at: (0, i.serverTimestamp)(),
-      status: 'active',
-    };
-    // 丸ごとではなく射手ごとの道に書く。書かなかった射手の○×は残る。
-    // 日時も同じ射手のぶんだけ。日時は○×の鮮度を表す値なので、○×を
-    // 書かない射手の日時に触ると、相手の新しい入力を古いと誤判定させる。
-    // 射手そのものの新しさは archers[].lastModified が運び、受け取り側は
-    // 両者の max を取るので、書かなくても取りこぼさない
-    Object.keys(u).forEach((id) => {
-      ((m[`marks_by_id/${id}`] = u[id]), (m[`archer_timestamps/${id}`] = d[id] || 0));
-    });
-    (console.log('[Store] pushLiveAll state updated, lastPushedTimestamp:', a),
-      M.getState().updateState({
-        lastPushedTimestamp: a,
-      }),
-      (0, i.update)(c, m).catch((e) => console.error('[Store] pushLiveAll Error:', e)),
-      写しへも流す(e, m));
-  },
-  // 自分の送信の返りから、的中の印だけを取り込む。
+  const a = Date.now();
+  const n = ライブの枝();
+  if (!fb.rtdb || !n) return;
+  const c = RTDB.ref(fb.rtdb, `live_sessions/${n}/${e}/state`);
+  const l = b(s);
+  const d = {};
+  s.forEach((e) => {
+    e && e.id && (d[e.id] = e.lastModified || 0);
+  });
+  // ○×は、前に載せたときから変わった射手のぶんだけ書く。
+  // marks_by_id を丸ごと差し替えると、まだ受け取っていない相手の
+  // 1射ぶんの送信を消してしまう
+  const u = {};
+  s.forEach((e) => {
+    if (!e || !e.id || e.isSeparator) return;
+    const 並び = 印を並べる(e.marks);
+    if (載っている印[e.id] === 並び) return;
+    u[e.id] = e.marks || [];
+    載っている印[e.id] = 並び;
+  });
+  const m = {
+    archers: l,
+    shotsPerRound: o,
+    timestamp: a,
+    // 参加一覧の「最終更新」はこちらを見る。timestamp は書いた端末の時計で、
+    // 自分の送信の返りを見分けるのに使うため端末の値のままにしてある。
+    // 端末の時計が狂っていると、使用中のライブが古いと見なされて消えかねない
+    updated_at: RTDB.serverTimestamp(),
+    status: 'active',
+  };
+  // 丸ごとではなく射手ごとの道に書く。書かなかった射手の○×は残る。
+  // 日時も同じ射手のぶんだけ。日時は○×の鮮度を表す値なので、○×を
+  // 書かない射手の日時に触ると、相手の新しい入力を古いと誤判定させる。
+  // 射手そのものの新しさは archers[].lastModified が運び、受け取り側は
+  // 両者の max を取るので、書かなくても取りこぼさない
+  Object.keys(u).forEach((id) => {
+    m[`marks_by_id/${id}`] = u[id];
+    m[`archer_timestamps/${id}`] = d[id] || 0;
+  });
+  console.log('[Store] pushLiveAll state updated, lastPushedTimestamp:', a);
+  M.getState().updateState({ lastPushedTimestamp: a });
+  RTDB.update(c, m).catch((e) => console.error('[Store] pushLiveAll Error:', e));
+  写しへも流す(e, m);
+};
+const // 自分の送信の返りから、的中の印だけを取り込む。
   //
   // 返りの archers は自分が送った時点のもので、手元にしかない射手が
   // 落ちるため、一覧は入れ替えられない。しかし同じ通知には、ほぼ同時に
@@ -524,67 +493,65 @@ const v = (e, s, o) => {
     // 相手の○×を「まだ載っていない」と思い込んだままになる。
     // その状態で取り消すと「前と同じ」と見なして送らず、自分だけ戻る
     載っている印を控える((状態 && 状態.marks_by_id) || {});
-    const 印 = (状態 && 状態.marks_by_id) || {},
-      日時 = (状態 && 状態.archer_timestamps) || {},
-      // 正規化は手元の射数で行う。相手の射数で揃えると、射数が食い違って
+    const 印 = (状態 && 状態.marks_by_id) || {};
+    const 日時 = (状態 && 状態.archer_timestamps) || {};
+    const // 正規化は手元の射数で行う。相手の射数で揃えると、射数が食い違って
       // いるときに手元の盤面と長さの合わない marks を入れてしまう。
       // 射数そのものの変更は、返りではない通知のほうで届く
       本数 = s().shotsPerRound;
-    let 変わった = !1;
+    let 変わった = false;
     const 一覧 = (s().archers || []).map((a) => {
       if (!a || !a.id || a.isSeparator || a.isTotalCalculator) return a;
       const 相手 = 印[a.id];
       const 相手の日時 = 日時[a.id] || 0;
       if (!相手 || 相手の日時 <= (a.lastModified || 0)) return a;
-      return ((変わった = !0), Object.assign({}, a, { marks: f(相手, 本数), lastModified: 相手の日時 }));
+      return ((変わった = true), Object.assign({}, a, { marks: f(相手, 本数), lastModified: 相手の日時 }));
     });
-    変わった && e({ archers: 一覧 });
-  },
-  T = (e, s, o, a, n) => {
-    const c = Date.now(),
-      l = ライブの枝();
-    if (!fb.rtdb || !l) return;
-    const d = (0, i.ref)(fb.rtdb, `live_sessions/${l}/${e}/state`),
-      u = {
-        [`marks_by_id/${s}/${o}`]: a,
-        [`archer_timestamps/${s}`]: n,
-        timestamp: c,
-        updated_at: (0, i.serverTimestamp)(),
-      };
-    // 1射ぶんの送信でも控えを更新する。ここを飛ばすと、次に盤面まるごとを
-    // 送るときに「前と同じ」と見なして送らず、取り消しが相手に届かない
-    const その射手 = (M.getState().archers || []).find((x) => x && x.id === s);
-    if (その射手) 載っている印[s] = 印を並べる(その射手.marks);
-    (M.getState().updateState({
-      lastPushedTimestamp: c,
-    }),
-      (0, i.update)(d, u).catch((e) => console.error('pushLiveMark Error:', e)),
-      写しへも流す(e, u));
-  },
-  w = (e) => {
-    const s = 'number' == typeof e.shotsPerRound ? e.shotsPerRound : 8,
-      t = f(e.archers),
-      o = e.marks_by_id || {},
-      a = e.archer_timestamps || {};
-    // 受け取った内容でも控え直す。自分が送った値しか覚えていないと、
-    // 相手が入れた○×を「前と同じ」と見なして送らず、取り消しが相手に届かない
-    載っている印を控える(o);
-    return {
-      archers: t
-        .map((e) => {
-          if (!e) return null;
-          const t = S(e, s);
-          return t
-            ? (!e.isSeparator &&
-                o[e.id] &&
-                ((t.marks = f(o[e.id], s)), (t.lastModified = Math.max(t.lastModified || 0, a[e.id] || 0))),
-              t)
-            : null;
-        })
-        .filter(Boolean),
-      shotsPerRound: s,
-    };
+    if (変わった) e({ archers: 一覧 });
   };
+const T = (e, s, o, a, n) => {
+  const c = Date.now();
+  const l = ライブの枝();
+  if (!fb.rtdb || !l) return;
+  const d = RTDB.ref(fb.rtdb, `live_sessions/${l}/${e}/state`);
+  const u = {
+    [`marks_by_id/${s}/${o}`]: a,
+    [`archer_timestamps/${s}`]: n,
+    timestamp: c,
+    updated_at: RTDB.serverTimestamp(),
+  };
+  // 1射ぶんの送信でも控えを更新する。ここを飛ばすと、次に盤面まるごとを
+  // 送るときに「前と同じ」と見なして送らず、取り消しが相手に届かない
+  const その射手 = (M.getState().archers || []).find((x) => x && x.id === s);
+  if (その射手) 載っている印[s] = 印を並べる(その射手.marks);
+  M.getState().updateState({ lastPushedTimestamp: c });
+  RTDB.update(d, u).catch((e) => console.error('pushLiveMark Error:', e));
+  写しへも流す(e, u);
+};
+const w = (e) => {
+  const s = 'number' == typeof e.shotsPerRound ? e.shotsPerRound : 8;
+  const t = f(e.archers);
+  const o = e.marks_by_id || {};
+  const a = e.archer_timestamps || {};
+  // 受け取った内容でも控え直す。自分が送った値しか覚えていないと、
+  // 相手が入れた○×を「前と同じ」と見なして送らず、取り消しが相手に届かない
+  載っている印を控える(o);
+  return {
+    archers: t
+      .map((e) => {
+        if (!e) return null;
+        const t = S(e, s);
+        return t
+          ? (!e.isSeparator &&
+              o[e.id] &&
+              ((t.marks = f(o[e.id], s)), (t.lastModified = Math.max(t.lastModified || 0, a[e.id] || 0))),
+            t)
+          : null;
+      })
+      .filter(Boolean),
+    shotsPerRound: s,
+  };
+};
 // ── ライブにつないでいる台数 ──────────────────────────────
 // 在席はライブの枝の外に置く（共有履歴と同じ理由）。中に置くと、
 // 参加一覧が節点を丸ごと読むときに付いてきて、同名の判定にも紛れ込む
@@ -593,7 +560,6 @@ const 在席の場所 = (枝, 名前) => `live_presence/${枝}/${名前}`;
 const この端末 = 在.端末の名前を作る();
 /** 在席の後始末。始めるたびに入れ替える */
 let 在席の片付け = null;
-
 /**
  * 閲覧用の写しを見張るのをやめる係。
  *
@@ -602,18 +568,17 @@ let 在席の片付け = null;
  * 写しが届き続けて盤面が勝手に書き換わる
  */
 let 写しの片付け = null;
-
 /** 写しを見るのをやめる */
 function 写しを見るのをやめる() {
-  (写しの片付け && 写しの片付け(), (写しの片付け = null));
+  if (写しの片付け) 写しの片付け();
+  写しの片付け = null;
 }
-
 /** 在席をやめる。ライブから抜けたときに必ず呼ぶこと */
 function 在席を終える(e) {
-  (在席の片付け && 在席の片付け(), (在席の片付け = null));
+  if (在席の片付け) 在席の片付け();
+  在席の片付け = null;
   if (e) e({ ライブの接続台数: 0 });
 }
-
 /**
  * 在席を置き、台数を数え始める。
  *
@@ -627,31 +592,30 @@ function 在席を始める(名前, e) {
   if (!fb.rtdb || !枝 || !名前) return;
   try {
     const 根 = 在席の場所(枝, 名前);
-    const 自分 = (0, i.ref)(fb.rtdb, `${根}/${この端末}`);
+    const 自分 = RTDB.ref(fb.rtdb, `${根}/${この端末}`);
     const 置き直す = () => {
       try {
-        ((0, i.onDisconnect)(自分)
+        RTDB.onDisconnect(自分)
           .remove()
-          .catch(() => {}),
-          (0, i.set)(自分, { at: (0, i.serverTimestamp)() }).catch(() => {}));
+          .catch(() => {});
+        RTDB.set(自分, { at: RTDB.serverTimestamp() }).catch(() => {});
       } catch (t) {
         /* 台数が出ないだけ。ライブそのものは続ける */
       }
     };
     // 切れて戻ったときだけ掛け直す。知らせが来るたびに書くと、書いたことが
     // また知らせになって堂々巡りになる（偽のRTDBで実際に止まらなくなった）
-    let 前は繋がっていた = !1;
-    const 繋がりの見張り = (0, i.onValue)((0, i.ref)(fb.rtdb, '.info/connected'), (x) => {
+    let 前は繋がっていた = false;
+    const 繋がりの見張り = RTDB.onValue(RTDB.ref(fb.rtdb, '.info/connected'), (x) => {
       const いま = !!x.val();
-      (いま && !前は繋がっていた && 置き直す(), (前は繋がっていた = いま));
+      if (いま && !前は繋がっていた) 置き直す();
+      前は繋がっていた = いま;
     });
     // サーバーの時計に合わせられるまでは、古さで落とさない（null を渡す）。
     // 端末の時計が進んでいると全員が「古い」に見え、居るのに0台と出る
     時差を見張る();
-    const 数の見張り = (0, i.onValue)((0, i.ref)(fb.rtdb, 根), (x) => {
-      e({
-        ライブの接続台数: 在.在席を数える(x.val(), 時差が取れた ? Date.now() + サーバーとの時差 : null),
-      });
+    const 数の見張り = RTDB.onValue(RTDB.ref(fb.rtdb, 根), (x) => {
+      e({ ライブの接続台数: 在.在席を数える(x.val(), 時差が取れた ? Date.now() + サーバーとの時差 : null) });
     });
     // 電波が一瞬切れても在席が古びないように、ときどき打ち直す
     const 打ち直し = setInterval(置き直す, 在.打ち直す間隔);
@@ -659,14 +623,14 @@ function 在席を始める(名前, e) {
     // ブラウザや端末の setInterval に unref は無いので、あるときだけ呼ぶ
     if (打ち直し && 'function' == typeof 打ち直し.unref) 打ち直し.unref();
     在席の片付け = () => {
-      (clearInterval(打ち直し),
-        繋がりの見張り && 繋がりの見張り(),
-        数の見張り && 数の見張り());
+      clearInterval(打ち直し);
+      if (繋がりの見張り) 繋がりの見張り();
+      if (数の見張り) 数の見張り();
       try {
-        ((0, i.onDisconnect)(自分)
+        RTDB.onDisconnect(自分)
           .cancel()
-          .catch(() => {}),
-          (0, i.remove)(自分).catch(() => {}));
+          .catch(() => {});
+        RTDB.remove(自分).catch(() => {});
       } catch (t) {
         /* 消せなくても、古いとみなす時間で数から落ちる */
       }
@@ -675,7 +639,6 @@ function 在席を始める(名前, e) {
     console.warn('[Store] ライブの在席を置けませんでした', t);
   }
 }
-
 /**
  * ライブ中の共有履歴に1手ぶん積む。
  *
@@ -695,9 +658,7 @@ function 在席を始める(名前, e) {
  */
 const 履歴用に整える = (一覧) =>
   (Array.isArray(一覧) ? b(一覧) : []).map((射手, 番) =>
-    Object.assign({}, 射手, {
-      marks: ((一覧[番] && 一覧[番].marks) || []).map((m) => (null == m ? '' : m)),
-    })
+    Object.assign({}, 射手, { marks: ((一覧[番] && 一覧[番].marks) || []).map((m) => (null == m ? '' : m)) })
   );
 /** 共有履歴の置き場所。ライブの枝の外に置く（上の説明を参照） */
 const 共有履歴の場所 = (枝, 名前) => `live_history/${枝}/${名前}`;
@@ -715,30 +676,34 @@ let サーバーとの時差 = 0;
 // サーバーの時計に本当に合わせられたか。
 // 合わせられていないまま古いライブを消すと、端末の時計が狂っているだけで
 // 全部が「14日超」に見えて、保存前の盤面ごと消えてしまう
-let 時差が取れた = !1;
+let 時差が取れた = false;
 let 時差の見張り = null;
 const 時差を見張る = () => {
   if (時差の見張り || !fb.rtdb) return 時差の見張り;
   時差の見張り = new Promise((解決) => {
-    let 済み = !1;
+    let 済み = false;
     const 終わる = () => {
-      if (!済み) ((済み = !0), 解決());
+      if (!済み) {
+        済み = true;
+        解決();
+      }
     };
     try {
-      ((0, i.onValue)(
-        (0, i.ref)(fb.rtdb, '.info/serverTimeOffset'),
+      RTDB.onValue(
+        RTDB.ref(fb.rtdb, '.info/serverTimeOffset'),
         (s) => {
           const 差 = s.val();
-          if ('number' == typeof 差)
-            ((サーバーとの時差 = 差),
-              (時差が取れた = !0),
-              console.log('[Store] サーバーとの時差:', 差, 'ミリ秒'));
+          if ('number' == typeof 差) {
+            サーバーとの時差 = 差;
+            時差が取れた = true;
+            console.log('[Store] サーバーとの時差:', 差, 'ミリ秒');
+          }
           終わる();
         },
         () => 終わる()
-      ),
-        // つながっていなければ来ない。待ち続けない
-        setTimeout(終わる, 2e3));
+      );
+      // つながっていなければ来ない。待ち続けない
+      setTimeout(終わる, 2e3);
     } catch (e) {
       終わる();
     }
@@ -761,12 +726,18 @@ function つなげなくなった(誤り, e, s) {
   // 期限で閉じたあとにつなぎ直して弾かれると、ここも呼ばれる。
   // 断らないと、同じ出来事で知らせが二度出る
   const もう離れている = !s().isLiveActive;
-  (在席を終える(e),
-    写しを見るのをやめる(),
-    e({ isLiveActive: !1, ライブの続き: null, isHost: !1, liveSessionName: null, いまのライブの期限: null }));
+  在席を終える(e);
+  写しを見るのをやめる();
+  e({
+    isLiveActive: false,
+    ライブの続き: null,
+    isHost: false,
+    liveSessionName: null,
+    いまのライブの期限: null,
+  });
   if (もう離れている) return;
   try {
-    n.default.alert(
+    Alert.alert(
       'このライブには入れません',
       '共有の期限が切れたか、すでに終わっているようです。配った方にお確かめください。'
     );
@@ -774,7 +745,6 @@ function つなげなくなった(誤り, e, s) {
     /* 知らせが出せなくても、離れることはできている */
   }
 }
-
 /**
  * 決まりに弾かれた誤りか。
  *
@@ -785,7 +755,6 @@ function つなげなくなった(誤り, e, s) {
 function 弾かれたか(誤り) {
   return /permission[ _]denied/i.test(String((誤り && (誤り.message || 誤り.code)) || 誤り));
 }
-
 /**
  * 期限が過ぎていたら、ライブから離れる。
  *
@@ -813,24 +782,25 @@ function 期限を控える(状態, e, s) {
   if (s().いまのライブの期限 !== (期限 || null)) e({ いまのライブの期限: 期限 || null });
   return 期限;
 }
-
 function 期限で閉じるか(状態, e, s) {
   const 期限 = 期限を控える(状態, e, s);
-  if (!期限 || いまの見当() < 期限) return !1;
+  if (!期限 || いまの見当() < 期限) return false;
   const 名前 = s().liveSessionName;
   const 枝 = ライブの枝();
-  (名前 &&
-    枝 &&
-    fb.rtdb &&
-    (0, i.off)((0, i.ref)(fb.rtdb, `live_sessions/${枝}/${名前}/state`)),
-    在席を終える(e),
-    写しを見るのをやめる(),
-    e({ isLiveActive: !1, ライブの続き: null, isHost: !1, liveSessionName: null, いまのライブの期限: null }));
-  // 何度も出さない。見張りが複数あると同じ通知で二度三度呼ばれる
+  if (名前 && 枝 && fb.rtdb) RTDB.off(RTDB.ref(fb.rtdb, `live_sessions/${枝}/${名前}/state`));
+  在席を終える(e);
+  写しを見るのをやめる();
+  e({
+    isLiveActive: false,
+    ライブの続き: null,
+    isHost: false,
+    liveSessionName: null,
+    いまのライブの期限: null,
+  }); // 何度も出さない。見張りが複数あると同じ通知で二度三度呼ばれる
   if (期限 !== 期限を知らせた) {
     期限を知らせた = 期限;
     try {
-      n.default.alert(
+      Alert.alert(
         '共有の期限が切れました',
         'このライブは、配った方も含めて全員がつながらなくなりました。お手元の記録は残っています。保存するか、ライブを始め直してください。'
       );
@@ -838,9 +808,8 @@ function 期限で閉じるか(状態, e, s) {
       /* 知らせが出せなくても、離れることはできている */
     }
   }
-  return !0;
+  return true;
 }
-
 /**
  * 共有リンクの期限の置き場所。枝ごとに数（ミリ秒）を1つ置く。
  *
@@ -854,10 +823,8 @@ function 期限で閉じるか(状態, e, s) {
  * 両方あって初めて「もう見えない」が成り立つ。
  */
 const 期限の場所 = (枝) => `live_limits/${枝}`;
-
 /** サーバーに合わせた「いま」。合わせられていなければ手元の時計 */
 const いまの見当 = () => Date.now() + (時差が取れた ? サーバーとの時差 : 0);
-
 /** サーバーの時計に合わせた「いま」。取れなければ手元の時計のまま */
 const サーバー時刻 = async () => {
   if (!fb.rtdb) return Date.now();
@@ -874,8 +841,8 @@ const サーバー時刻 = async () => {
  * 復元され、入れたはずの○×が消える。
  */
 const 共有履歴へ積む = (前の盤面, 後の盤面, s) => {
-  const 枝 = ライブの枝(),
-     名前 = s().liveSessionName;
+  const 枝 = ライブの枝();
+  const 名前 = s().liveSessionName;
   if (!fb.rtdb || !枝 || !名前) return;
   const 履歴の根 = 共有履歴の場所(枝, 名前);
   const 状態の道 = `live_sessions/${枝}/${名前}/state`;
@@ -883,8 +850,9 @@ const 共有履歴へ積む = (前の盤面, 後の盤面, s) => {
   // 盤面は今のうちに写しておく。場所が取れるまでに手元が変わりうる
   const 前 = 履歴用に整える(前の盤面);
   const 後 = 履歴用に整える(後の盤面);
-  (0, i.runTransaction)((0, i.ref)(fb.rtdb, `${状態の道}/history_len`), (今の値) =>
-    ('number' == typeof 今の値 ? 今の値 : 0) + 1
+  RTDB.runTransaction(
+    RTDB.ref(fb.rtdb, `${状態の道}/history_len`),
+    (今の値) => ('number' == typeof 今の値 ? 今の値 : 0) + 1
   )
     .then((結果) => {
       if (!結果 || !結果.committed) return;
@@ -901,8 +869,8 @@ const 共有履歴へ積む = (前の盤面, 後の盤面, s) => {
       // 射数の変更は○×の数が変わるので、上のどちらにもできない。
       // 長さの伸び縮みだけを控えれば、頭のますに触らずに戻せる
       const 射数 = 差分 || 項目 ? null : 射数の差分(前, 後);
-      (0, i.set)(
-        (0, i.ref)(fb.rtdb, `${履歴の根}/${位置}`),
+      RTDB.set(
+        RTDB.ref(fb.rtdb, `${履歴の根}/${位置}`),
         Object.assign(
           { 前: 前, 後: 後, 本数: 本数, at: Date.now() },
           差分 ? { 差分: 差分 } : null,
@@ -911,11 +879,10 @@ const 共有履歴へ積む = (前の盤面, 後の盤面, s) => {
         )
       ).catch((e) => console.error('[Store] 共有履歴の書き込みに失敗:', e));
       // 新しい操作をしたので、やり直せる分はここで打ち切る
-      ((0, i.update)((0, i.ref)(fb.rtdb, 状態の道), { history_max: 次 }).catch(() => {}),
-        M.getState().updateState({ historySharedLen: 次, historySharedMax: 次 }));
-      // 古い手を捨てる（上限を超えた分）
+      RTDB.update(RTDB.ref(fb.rtdb, 状態の道), { history_max: 次 }).catch(() => {});
+      M.getState().updateState({ historySharedLen: 次, historySharedMax: 次 }); // 古い手を捨てる（上限を超えた分）
       if (次 > 共有履歴の上限)
-        (0, i.remove)((0, i.ref)(fb.rtdb, `${履歴の根}/${次 - 共有履歴の上限 - 1}`)).catch(() => {});
+        RTDB.remove(RTDB.ref(fb.rtdb, `${履歴の根}/${次 - 共有履歴の上限 - 1}`)).catch(() => {});
     })
     .catch((e) => console.error('[Store] 共有履歴の場所取りに失敗:', e));
 };
@@ -932,14 +899,15 @@ const 共有履歴の目印を受け取る = (状態, e, s) => {
   // 知らせを出すと、過去に一度でも取り消しがあったライブに入るたび
   // 「取り消しされました。」が出てしまうので、目印だけ引き取る
   if (s().historyIsFirstSnapshot) {
-    ((変更.historyIsFirstSnapshot = !1), (変更.historyHandledAt = 状態.history_at || 0));
+    変更.historyIsFirstSnapshot = false;
+    変更.historyHandledAt = 状態.history_at || 0;
   } else if (状態.history_at && 状態.history_at !== s().historyHandledAt) {
     // 自分が起こしたものでなければ、画面に知らせる材料を渡す
-    ((変更.historyHandledAt = 状態.history_at),
-      (変更.historyNoticeAt = 状態.history_at),
-      (変更.historyNoticeKind = 状態.history_kind || '取り消し'));
+    変更.historyHandledAt = 状態.history_at;
+    変更.historyNoticeAt = 状態.history_at;
+    変更.historyNoticeKind = 状態.history_kind || '取り消し';
   }
-  Object.keys(変更).length > 0 && e(変更);
+  if (Object.keys(変更).length > 0) e(変更);
 };
 /**
  * 履歴の1手を、射手の一覧として取り出す。
@@ -967,58 +935,58 @@ const 控えの射数 = (一覧) => {
   const 射手 = 並び.find((a) => 使える(a) && !a.isTotalCalculator) || 並び.find(使える);
   return 射手 ? 射手.marks.length : null;
 };
-let I = !1;
+let I = false;
 // ライブ中の共有履歴。取り消し・やり直しを全員で1本の履歴として扱う。
 // 取り消しの適用中は、その書き換え自体を履歴に積まないための目印。
-let 履歴を積まない = !1;
+let 履歴を積まない = false;
 /** 共有履歴に残す手数の上限。射手20人でも 1手あたり15KB程度 */
 const 共有履歴の上限 = 30;
-const M = (0, s.create)()(
-  (0, d.persist)(
+const M = zustand.create()(
+  middleware.persist(
     (t, s) => {
       const e = (o) => {
         let i = 'function' == typeof o ? o(s()) : o;
         // 同期できたなら、入り直しの案内は下ろす。書き換えは幾つもあるので、
         // 1つずつ消して回らずにここで拾う
-        (i && '同期済み' === i.syncStatus && (i.再ログインの案内 = null),
+        i && '同期済み' === i.syncStatus && (i.再ログインの案内 = null);
         i &&
           (i.sessions && (i.sessions = cleanUpSessions(i.sessions)),
-          i.trash && (i.trash = cleanUpSessions(i.trash))),
-          // ライブ中に手元の履歴が伸びたら、同じものを共有履歴にも積む。
-          // 各操作を1つずつ書き換えずに済むよう、ここ1箇所で拾う
+          i.trash && (i.trash = cleanUpSessions(i.trash)));
+        if (
           i &&
-            Array.isArray(i.historyStack) &&
-            !履歴を積まない &&
-            i.historyStack.length > (s().historyStack || []).length &&
-            s().isLiveActive &&
-            s().liveSessionName &&
-            共有履歴へ積む(i.historyStack[i.historyStack.length - 1], i.archers || s().archers, s),
-          t(i));
+          Array.isArray(i.historyStack) &&
+          !履歴を積まない &&
+          i.historyStack.length > (s().historyStack || []).length &&
+          s().isLiveActive &&
+          s().liveSessionName
+        )
+          共有履歴へ積む(i.historyStack[i.historyStack.length - 1], i.archers || s().archers, s);
+        t(i);
       };
       return {
         // 矢所の記録は既定でオフ。要る団体だけが設定で入れる
-        enableArrowLocation: !1,
+        enableArrowLocation: false,
         // 誤タップ防止。入れたますを少し経ってから閉じる。
         // 同期する中身ではなく、画面の上の守りなので archers には持たせない。
         // 既定はオフ（2026-09-13、使う人の指示。以前はオンだった。端末に残っている
         // 設定はそのまま。入れ直したい人は設定で切り替える）
-        自動ロックする: !1,
+        自動ロックする: false,
         // 「終了・保存」を押したときに出欠確認を出すか。
         // 切ると、出欠の窓を飛ばして保存の窓へ進む。記録に出ている人は
         // 出欠画面でそのまま出席として数えられるので、毎回聞かれたくない
         // 団体はここで切れる（遅刻・早退の区別だけ付かなくなる）
-        保存時に出欠を確認する: !0,
+        保存時に出欠を確認する: true,
         // 記録表の並べ方。切り替えると、名前が左・○×が右へ伸びる横の表になる。
         // 端末ごとの好みなので残す（同じ団体でも人によって持ち方が違う）
-        横に並べる: !1,
+        横に並べる: false,
         // 記録画面の上下の帯を畳んでいるか。並べ方と同じく端末ごとの好みなので残す
-        帯を畳む: !1,
+        帯を畳む: false,
         // 帯を畳む取っ手を左上に置いているか（既定は右上）。指で引いて動かせる。
         // 右利きは右、左利きは左が押しやすいので、端末ごとの好みとして残す
-        帯の取っ手は左: !1,
+        帯の取っ手は左: false,
         // ライブに「見るだけ」で入っているか。入れているときは盤面を書き換えない。
         // 端末には残さない（次に参加するときは、そのつど選ぶ）
-        ライブは見るだけ: !1,
+        ライブは見るだけ: false,
         自動ロックまでの秒: 3,
         // { 'archerId:射番': 入れた時刻 }。時間が経ったものを閉じたとみなす
         入れた時刻: {},
@@ -1032,7 +1000,7 @@ const M = (0, s.create)()(
         閲覧でますを押した時刻: 0,
         // 規約とプライバシーポリシーの同意を取り直す必要があるか。
         // 起動のたびにクラウドの記録から数え直すので、端末には残さない
-        同意の確認が要る: !1,
+        同意の確認が要る: false,
         arrowTargetType: 'kasumi36',
         activeArrowLocationEdit: null,
         activeGroupId: null,
@@ -1073,47 +1041,48 @@ const M = (0, s.create)()(
         // これが無いと、送信が失われたときに消したメンバーが復活する。
         // 記録側の permanentlyDeleted と同じ考え方。
         deletedMembers: {},
-        isNetworkOnline: !0,
-        isAdminMode: !1,
-        autoPromotionEnabled: !0,
+        isNetworkOnline: true,
+        isAdminMode: false,
+        autoPromotionEnabled: true,
         _pendingUpdateTimers: {},
-        includeInStats: !0,
+        includeInStats: true,
         lastLocalChange: 0,
         lastResetHandled: 0,
         // 入って最初の1通かどうか。最初の1通に載っている片付けは
         // 「入る前に起きたこと」なので知らせない（共有履歴の知らせと同じ考え方）
-        resetIsFirstSnapshot: !1,
+        resetIsFirstSnapshot: false,
         lastPushedTimestamp: 0,
         // ライブ中の共有履歴の目印。len は「いま何手ぶん適用しているか」、
         // max は「やり直せる上限」。どちらも state 経由で全員に配られる
         historySharedLen: 0,
         historySharedMax: 0,
-        historyIsFirstSnapshot: !1,
+        historyIsFirstSnapshot: false,
         // 取り消し・やり直しの通知を出したかどうかの控え
         historyHandledAt: 0,
         // 画面へ知らせるための材料（誰かが取り消した／やり直した）
         historyNoticeAt: 0,
         historyNoticeKind: null,
-        showTrash: !1,
+        showTrash: false,
         sessionUnsubscribe: null,
         trashUnsubscribe: null,
         memberUnsubscribe: null,
         alumniUnsubscribe: null,
         configUnsubscribe: null,
-        showAlumniInAnalysis: !1,
-        showAlumniInPicker: !1,
+        showAlumniInAnalysis: false,
+        showAlumniInPicker: false,
         currentFreshmanTerm: 1,
         historyViewMode: 'list',
         selectedHistorySessionId: null,
-        isAdminModePending: !1,
-        isLiveActive: !1, ライブの続き: null,
-        isHost: !1,
+        isAdminModePending: false,
+        isLiveActive: false,
+        ライブの続き: null,
+        isHost: false,
         liveSessionName: null,
         // 帯にカウントダウンを出すために持つ。盤面に載ってくる期限の控え。
         // 期限が無いライブでは null（「期限なし」と「まだ来ていない」は
         // どちらも null でよい。帯は期限があるときしか出さないため）
         いまのライブの期限: null,
-        isIncomingLiveSync: !1,
+        isIncomingLiveSync: false,
         liveSessionsList: [],
         analysisSelectedTags: [],
         analysisTagLogic: 'AND',
@@ -1138,58 +1107,35 @@ const M = (0, s.create)()(
         // 共有のライブの閲覧用の写しを置く枝。編集する側だけが持つ
         いまのライブの閲覧枝: null,
         // 閲覧用のリンクで入っているか。写しを読むだけで、何も書かない
-        写しを見ているか: !1,
+        写しを見ているか: false,
         // 共有リンクだけで来ている人か（団体に入っていない）。
         // 端末には残さない。閉じたら終わり、リンクを開き直せばまた入れる
-        共有の来客: !1,
+        共有の来客: false,
         // いま入っているのが、よその団体のライブか。
         // 共有リンクで入ったときに決める。自分の団体のライブなら偽
-        よその団体のライブ: !1,
+        よその団体のライブ: false,
         // 共有のライブの道しるべ。{ ライブ名: { 共有の枝, 閲覧の枝 } }。
         // 参加一覧を読むたびに作り直すので、端末には残さない
         共有のライブたち: {},
         _pendingMemberTimers: {},
-        isHydrated: !1,
+        isHydrated: false,
         analysisRankingSettings: {
-          '月ごと': {
-            type: 'ratio',
-            value: 0,
-          },
-          '期間指定': {
-            type: 'ratio',
-            value: 0,
-          },
-          '直近30日': {
-            type: 'ratio',
-            value: 0,
-          },
-          '今年度': {
-            type: 'ratio',
-            value: 0,
-          },
-          'すべて': {
-            type: 'ratio',
-            value: 0,
-          },
+          '月ごと': { type: 'ratio', value: 0 },
+          '期間指定': { type: 'ratio', value: 0 },
+          '直近30日': { type: 'ratio', value: 0 },
+          '今年度': { type: 'ratio', value: 0 },
+          'すべて': { type: 'ratio', value: 0 },
         },
         focusedMemberId: null,
         currentRouteName: null,
         updateLoadingLog: (t) => {
           const o = s().initializationLogs || [];
-          (e({
-            initializationLogs: [...o, t],
-          }),
-            console.log('[Store] Loading:', t));
+          e({ initializationLogs: [...o, t] });
+          console.log('[Store] Loading:', t);
         },
-        setCurrentRouteName: (s) =>
-          e({
-            currentRouteName: s,
-          }),
+        setCurrentRouteName: (s) => e({ currentRouteName: s }),
         setMemberAuthVersion: (s) => e({ memberAuthVersion: s }),
-        setFocusedMemberId: (s) =>
-          e({
-            focusedMemberId: s,
-          }),
+        setFocusedMemberId: (s) => e({ focusedMemberId: s }),
         setAuth: (t, o, a, i = null, n = null, c = null, l = null) => {
           null === t
             ? // 出たら行動の控えも捨てる。次に入った人の不具合の便りに、
@@ -1221,19 +1167,15 @@ const M = (0, s.create)()(
                 historyTagLogic: 'AND',
                 tagTemplates: ['立', '練習試合', '大会', '自主練習', '合宿'],
                 initializationLogs: [],
-                isAdminMode: !1,
-                isAdminModePending: !1,
+                isAdminMode: false,
+                isAdminModePending: false,
               }),
               s().stopPeriodicSync(),
               s().stopListeningToSessions(),
               s().stopListeningToMembers(),
               s().stopListeningToAlumni(),
               s().stopListeningToTrash(),
-              s().configUnsubscribe &&
-                (s().configUnsubscribe(),
-                e({
-                  configUnsubscribe: null,
-                })))
+              s().configUnsubscribe && (s().configUnsubscribe(), e({ configUnsubscribe: null })))
             : (e({
                 activeGroupId: t,
                 activeGroupName: c || s().activeGroupName,
@@ -1242,8 +1184,8 @@ const M = (0, s.create)()(
                 myMemberName: l || s().myMemberName,
                 activeUserEmail: i,
                 publicGroupId: n || ('group' === o ? t : s().publicGroupId),
-                isAdminMode: !1,
-                isAdminModePending: !1,
+                isAdminMode: false,
+                isAdminModePending: false,
               }),
               s().listenToConfig(),
               s().listenToSessions(),
@@ -1251,24 +1193,13 @@ const M = (0, s.create)()(
               s().listenToAlumni(),
               s().listenToTrash());
         },
-        setAnalysisSelectedTags: (s) =>
-          e({
-            analysisSelectedTags: s,
-          }),
+        setAnalysisSelectedTags: (s) => e({ analysisSelectedTags: s }),
         toggleAnalysisTag: (t) => {
           const o = s().analysisSelectedTags || [];
-          o.includes(t)
-            ? e({
-                analysisSelectedTags: o.filter((e) => e !== t),
-              })
-            : e({
-                analysisSelectedTags: [...o, t],
-              });
+          if (o.includes(t)) e({ analysisSelectedTags: o.filter((e) => e !== t) });
+          else e({ analysisSelectedTags: [...o, t] });
         },
-        setAnalysisTagLogic: (s) =>
-          e({
-            analysisTagLogic: s,
-          }),
+        setAnalysisTagLogic: (s) => e({ analysisTagLogic: s }),
         比較のひな型を足す: (名前, 部員idたち) =>
           e({
             比較のひな型: ひ.ひな型を足す(s().比較のひな型, {
@@ -1277,89 +1208,52 @@ const M = (0, s.create)()(
               団体id: s().activeGroupId || '',
             }),
           }),
-        比較のひな型を消す: (id) =>
-          e({
-            比較のひな型: ひ.ひな型を消す(s().比較のひな型, id),
-          }),
+        比較のひな型を消す: (id) => e({ 比較のひな型: ひ.ひな型を消す(s().比較のひな型, id) }),
         setAnalysisRankingSetting: async (o, i) => {
-          const n = Date.now(),
-            c = s().analysisRankingSettings || {},
-            l = Object.assign({}, c, {
-              [o]: i,
-            });
-          e({
-            analysisRankingSettings: l,
-            lastLocalChange: n,
-          });
-          const { activeGroupId: d, isNetworkOnline: u } = s();
-          if (u && d)
+          const n = Date.now();
+          const c = s().analysisRankingSettings || {};
+          const l = Object.assign({}, c, { [o]: i });
+          e({ analysisRankingSettings: l, lastLocalChange: n });
+          const { activeGroupId, isNetworkOnline } = s();
+          if (isNetworkOnline && activeGroupId)
             try {
-              await (0, a.setDoc)(
-                (0, a.doc)(fb.db, `groups/${d}/config`, 'app_settings'),
-                {
-                  analysisRankingSettings: l,
-                  lastModified: (0, a.serverTimestamp)(),
-                },
-                {
-                  merge: !0,
-                }
+              await Firestore.setDoc(
+                Firestore.doc(fb.db, `groups/${activeGroupId}/config`, 'app_settings'),
+                { analysisRankingSettings: l, lastModified: Firestore.serverTimestamp() },
+                { merge: true }
               );
             } catch (e) {
               console.error('[Store] setAnalysisRankingSetting sync error:', e);
             }
         },
-        setHistorySelectedTags: (s) =>
-          e({
-            historySelectedTags: s,
-          }),
+        setHistorySelectedTags: (s) => e({ historySelectedTags: s }),
         toggleHistoryTag: (t) => {
           const o = s().historySelectedTags || [];
-          o.includes(t)
-            ? e({
-                historySelectedTags: o.filter((e) => e !== t),
-              })
-            : e({
-                historySelectedTags: [...o, t],
-              });
+          if (o.includes(t)) e({ historySelectedTags: o.filter((e) => e !== t) });
+          else e({ historySelectedTags: [...o, t] });
         },
-        setHistoryTagLogic: (s) =>
-          e({
-            historyTagLogic: s,
-          }),
-        setCurrentSessionTags: (s) =>
-          e({
-            currentSessionTags: s,
-          }),
+        setHistoryTagLogic: (s) => e({ historyTagLogic: s }),
+        setCurrentSessionTags: (s) => e({ currentSessionTags: s }),
         toggleCurrentSessionTag: (t) => {
           const o = s().currentSessionTags || [];
-          o.includes(t)
-            ? e({
-                currentSessionTags: o.filter((e) => e !== t),
-              })
-            : e({
-                currentSessionTags: [...o, t],
-              });
+          if (o.includes(t)) e({ currentSessionTags: o.filter((e) => e !== t) });
+          else e({ currentSessionTags: [...o, t] });
         },
         setTagTemplates: async (o) => {
           const i = Date.now();
           const r = Array.from(new Set((o || []).map(normalizeTag).filter(Boolean)));
-          e({
-            tagTemplates: r,
-            lastLocalChange: i,
-          });
+          e({ tagTemplates: r, lastLocalChange: i });
           const { activeGroupId: n, isNetworkOnline: c } = s();
           if (c && n)
             try {
-              await (0, a.setDoc)(
-                (0, a.doc)(fb.db, `groups/${n}/config`, 'app_settings'),
+              await Firestore.setDoc(
+                Firestore.doc(fb.db, `groups/${n}/config`, 'app_settings'),
                 {
                   tagTemplates: r,
                   currentFreshmanTerm: s().currentFreshmanTerm,
-                  lastModified: (0, a.serverTimestamp)(),
+                  lastModified: Firestore.serverTimestamp(),
                 },
-                {
-                  merge: !0,
-                }
+                { merge: true }
               );
             } catch (e) {
               console.error('[Store] setTagTemplates sync error:', e);
@@ -1369,25 +1263,20 @@ const M = (0, s.create)()(
           const i = s().tagTemplates || [];
           const r = normalizeTag(o);
           if (r && !i.includes(r)) {
-            const n = Date.now(),
-              c = [...i, r];
-            e({
-              tagTemplates: c,
-              lastLocalChange: n,
-            });
+            const n = Date.now();
+            const c = [...i, r];
+            e({ tagTemplates: c, lastLocalChange: n });
             const { activeGroupId: l, isNetworkOnline: d } = s();
             if (d && l)
               try {
-                await (0, a.setDoc)(
-                  (0, a.doc)(fb.db, `groups/${l}/config`, 'app_settings'),
+                await Firestore.setDoc(
+                  Firestore.doc(fb.db, `groups/${l}/config`, 'app_settings'),
                   {
                     tagTemplates: c,
                     currentFreshmanTerm: s().currentFreshmanTerm,
-                    lastModified: (0, a.serverTimestamp)(),
+                    lastModified: Firestore.serverTimestamp(),
                   },
-                  {
-                    merge: !0,
-                  }
+                  { merge: true }
                 );
               } catch (e) {
                 console.error('[Store] addTagTemplate sync error:', e);
@@ -1395,59 +1284,45 @@ const M = (0, s.create)()(
           }
         },
         removeTagTemplate: async (o) => {
-          const i = Date.now(),
-            n = (s().tagTemplates || []).filter((e) => e !== o);
-          e({
-            tagTemplates: n,
-            lastLocalChange: i,
-          });
+          const i = Date.now();
+          const n = (s().tagTemplates || []).filter((e) => e !== o);
+          e({ tagTemplates: n, lastLocalChange: i });
           const { activeGroupId: c, isNetworkOnline: l } = s();
           if (l && c)
             try {
-              await (0, a.setDoc)(
-                (0, a.doc)(fb.db, `groups/${c}/config`, 'app_settings'),
+              await Firestore.setDoc(
+                Firestore.doc(fb.db, `groups/${c}/config`, 'app_settings'),
                 {
                   tagTemplates: n,
                   currentFreshmanTerm: s().currentFreshmanTerm,
-                  lastModified: (0, a.serverTimestamp)(),
+                  lastModified: Firestore.serverTimestamp(),
                 },
-                {
-                  merge: !0,
-                }
+                { merge: true }
               );
             } catch (e) {
               console.error('[Store] removeTagTemplate sync error:', e);
             }
         },
-        setShowAlumniInAnalysis: (s) =>
-          e({
-            showAlumniInAnalysis: s,
-          }),
-        setShowAlumniInPicker: (s) =>
-          e({
-            showAlumniInPicker: s,
-          }),
-        setIncludeInStats: (s) =>
-          e({
-            includeInStats: s,
-          }),
+        setShowAlumniInAnalysis: (s) => e({ showAlumniInAnalysis: s }),
+        setShowAlumniInPicker: (s) => e({ showAlumniInPicker: s }),
+        setIncludeInStats: (s) => e({ includeInStats: s }),
         addArcher: (t, o) => {
           if (s().書き換えを止めるか()) return;
-          const a = Array.isArray(s().archers) ? s().archers : [],
-            i = {
-              id: (0, l.generateUUID)(),
-              name: '',
-              marks: Array(s().shotsPerRound || 8).fill(''),
-              arrowLocations: Array(s().shotsPerRound || 8).fill(null),
-              gender: o || '未設定',
-              grade: 1,
-              isGuest: !1,
-              isSeparator: !1,
-              isTotalCalculator: !1,
-              lockedBlocks: {},
-              lastModified: Date.now(),
-            },
-            n = 'number' != typeof t || isNaN(t) ? [...a, i] : [...a];
+          const a = Array.isArray(s().archers) ? s().archers : [];
+          const i = {
+            id: generateUUID(),
+            name: '',
+            marks: Array(s().shotsPerRound || 8).fill(''),
+            arrowLocations: Array(s().shotsPerRound || 8).fill(null),
+            gender: o || '未設定',
+            grade: 1,
+            isGuest: false,
+            isSeparator: false,
+            isTotalCalculator: false,
+            lockedBlocks: {},
+            lastModified: Date.now(),
+          };
+          const n = 'number' != typeof t || isNaN(t) ? [...a, i] : [...a];
           if ('number' == typeof t && !isNaN(t)) {
             const e = Math.max(0, Math.min(t, n.length));
             n.splice(e, 0, i);
@@ -1458,34 +1333,34 @@ const M = (0, s.create)()(
             redoStack: [],
             lastLocalChange: Date.now(),
           });
-          const { isLiveActive: c, liveSessionName: d, shotsPerRound: u } = s();
-          c && d && v(d, n, u);
+          const { isLiveActive, liveSessionName, shotsPerRound } = s();
+          if (isLiveActive && liveSessionName) v(liveSessionName, n, shotsPerRound);
         },
         addSeparator: (t) => {
           if (s().書き換えを止めるか()) return;
-          const o = Array.isArray(s().archers) ? s().archers : [],
-            a = {
-              id: 'sep-' + (0, l.generateUUID)(),
-              name: '---',
-              marks: [],
-              isSeparator: !0,
-              gender: '未設定',
-              grade: 0,
-              isGuest: !1,
-              isTotalCalculator: !1,
-              lockedBlocks: {},
-              lastModified: Date.now(),
-            },
-            i = 'number' == typeof t ? [...o] : [...o, a];
-          ('number' == typeof t && i.splice(t, 0, a),
-            e({
-              archers: i,
-              historyStack: [...s().historyStack, o],
-              redoStack: [],
-              lastLocalChange: Date.now(),
-            }));
+          const o = Array.isArray(s().archers) ? s().archers : [];
+          const a = {
+            id: 'sep-' + generateUUID(),
+            name: '---',
+            marks: [],
+            isSeparator: true,
+            gender: '未設定',
+            grade: 0,
+            isGuest: false,
+            isTotalCalculator: false,
+            lockedBlocks: {},
+            lastModified: Date.now(),
+          };
+          const i = 'number' == typeof t ? [...o] : [...o, a];
+          if ('number' == typeof t) i.splice(t, 0, a);
+          e({
+            archers: i,
+            historyStack: [...s().historyStack, o],
+            redoStack: [],
+            lastLocalChange: Date.now(),
+          });
           const { isLiveActive: n, liveSessionName: c, shotsPerRound: d } = s();
-          n && c && v(c, i, d);
+          if (n && c) v(c, i, d);
         },
         /**
          * 区切りにチーム名を付ける（リーグで大学名を出すため）。
@@ -1498,11 +1373,13 @@ const M = (0, s.create)()(
         setSeparatorTeam: (区切りのid, 名前) => {
           if (s().書き換えを止めるか()) return;
           const 元 = Array.isArray(s().archers) ? s().archers : [];
-          const 整えた = String(名前 == null ? '' : 名前).trim().slice(0, 20);
-          let 触った = !1;
+          const 整えた = String(名前 == null ? '' : 名前)
+            .trim()
+            .slice(0, 20);
+          let 触った = false;
           const 直した = 元.map((x) => {
             if (!x || x.id !== 区切りのid || !x.isSeparator) return x;
-            触った = !0;
+            触った = true;
             return Object.assign({}, x, {
               teamName: 整えた,
               // 名前が付いた区切りは、ただの隙間ではなく見出しになる。
@@ -1519,7 +1396,7 @@ const M = (0, s.create)()(
             lastLocalChange: Date.now(),
           });
           const { isLiveActive: ライブ中, liveSessionName: 名, shotsPerRound: 射数 } = s();
-          ライブ中 && 名 && v(名, 直した, 射数);
+          if (ライブ中 && 名) v(名, 直した, 射数);
         },
         /**
          * 合計の列が数える範囲を切り替える。
@@ -1533,10 +1410,10 @@ const M = (0, s.create)()(
         toggleTotalScope: (列のid) => {
           if (s().書き換えを止めるか()) return;
           const 元 = Array.isArray(s().archers) ? s().archers : [];
-          let 触った = !1;
+          let 触った = false;
           const 直した = 元.map((x) => {
             if (!x || x.id !== 列のid || !x.isTotalCalculator) return x;
-            触った = !0;
+            触った = true;
             const 次 = !x.またぐ合計;
             return Object.assign({}, x, {
               またぐ合計: 次,
@@ -1552,7 +1429,7 @@ const M = (0, s.create)()(
             lastLocalChange: Date.now(),
           });
           const { isLiveActive: ライブ中, liveSessionName: 名, shotsPerRound: 射数 } = s();
-          ライブ中 && 名 && v(名, 直した, 射数);
+          if (ライブ中 && 名) v(名, 直した, 射数);
         },
         /**
          * 立ち順を入れ替える。押した列を、並びで1つ前か後ろへ動かす。
@@ -1579,7 +1456,8 @@ const M = (0, s.create)()(
           const 先 = '後' === 向き ? いま + 1 : いま - 1;
           if (先 < 0 || 先 >= 元.length) return;
           const 直した = [...元];
-          ((直した[いま] = 元[先]), (直した[先] = 元[いま]));
+          直した[いま] = 元[先];
+          直した[先] = 元[いま];
           e({
             archers: 直した,
             historyStack: [...s().historyStack, 元],
@@ -1587,7 +1465,7 @@ const M = (0, s.create)()(
             lastLocalChange: Date.now(),
           });
           const { isLiveActive: ラ, liveSessionName: な, shotsPerRound: しゃ } = s();
-          ラ && な && v(な, 直した, しゃ);
+          if (ラ && な) v(な, 直した, しゃ);
         },
         /**
          * 立ち順を入れ替える。掴んだ列を、指した場所へ移す。
@@ -1620,7 +1498,7 @@ const M = (0, s.create)()(
             lastLocalChange: Date.now(),
           });
           const { isLiveActive: ラ2, liveSessionName: な2, shotsPerRound: しゃ2 } = s();
-          ラ2 && な2 && v(な2, 直した, しゃ2);
+          if (ラ2 && な2) v(な2, 直した, しゃ2);
         },
         /**
          * 合計の列を足す。
@@ -1634,59 +1512,49 @@ const M = (0, s.create)()(
          */
         addTotalCalculator: (t, またぐ) => {
           if (s().書き換えを止めるか()) return;
-          const o = Array.isArray(s().archers) ? s().archers : [],
-            a = {
-              id: 'total-' + (0, l.generateUUID)(),
-              name: またぐ ? '総計' : '計',
-              marks: Array(s().shotsPerRound || 8).fill(''),
-              arrowLocations: Array(s().shotsPerRound || 8).fill(null),
-              isTotalCalculator: !0,
-              // 手前の計もまとめて数える印。ふつうの「計」と混ぜないよう別に持つ
-              またぐ合計: !!またぐ,
-              gender: '未設定',
-              grade: 0,
-              isGuest: !1,
-              isSeparator: !1,
-              lockedBlocks: {},
-              lastModified: Date.now(),
-            },
-            i = 'number' == typeof t ? [...o] : [...o, a];
-          ('number' == typeof t && i.splice(t, 0, a),
-            e({
-              archers: i,
-              historyStack: [...s().historyStack, o],
-              redoStack: [],
-              lastLocalChange: Date.now(),
-            }));
+          const o = Array.isArray(s().archers) ? s().archers : [];
+          const a = {
+            id: 'total-' + generateUUID(),
+            name: またぐ ? '総計' : '計',
+            marks: Array(s().shotsPerRound || 8).fill(''),
+            arrowLocations: Array(s().shotsPerRound || 8).fill(null),
+            isTotalCalculator: true,
+            // 手前の計もまとめて数える印。ふつうの「計」と混ぜないよう別に持つ
+            またぐ合計: !!またぐ,
+            gender: '未設定',
+            grade: 0,
+            isGuest: false,
+            isSeparator: false,
+            lockedBlocks: {},
+            lastModified: Date.now(),
+          };
+          const i = 'number' == typeof t ? [...o] : [...o, a];
+          if ('number' == typeof t) i.splice(t, 0, a);
+          e({
+            archers: i,
+            historyStack: [...s().historyStack, o],
+            redoStack: [],
+            lastLocalChange: Date.now(),
+          });
           const { isLiveActive: n, liveSessionName: c, shotsPerRound: d } = s();
-          n && c && v(c, i, d);
+          if (n && c) v(c, i, d);
         },
         deleteArcher: (t) => {
           if (s().書き換えを止めるか()) return;
-          const o = Array.isArray(s().archers) ? s().archers : [],
-            a = o.filter((e) => e && e.id !== t),
-            i = Date.now();
-          e({
-            historyStack: [...s().historyStack, o],
-            redoStack: [],
-            archers: a,
-            lastLocalChange: i,
-          });
+          const o = Array.isArray(s().archers) ? s().archers : [];
+          const a = o.filter((e) => e && e.id !== t);
+          const i = Date.now();
+          e({ historyStack: [...s().historyStack, o], redoStack: [], archers: a, lastLocalChange: i });
           const { isLiveActive: n, liveSessionName: c, shotsPerRound: l } = s();
-          n && c && v(c, a, l);
+          if (n && c) v(c, a, l);
         },
         applyOCRResult: (t) => {
           if (s().書き換えを止めるか()) return; // 閲覧用では画像から読み取った結果の取り込みも止める
-          const o = Array.isArray(s().archers) ? s().archers : [],
-            i = Date.now();
-          e({
-            archers: t,
-            historyStack: [...s().historyStack, o],
-            redoStack: [],
-            lastLocalChange: i,
-          });
+          const o = Array.isArray(s().archers) ? s().archers : [];
+          const i = Date.now();
+          e({ archers: t, historyStack: [...s().historyStack, o], redoStack: [], lastLocalChange: i });
           const { isLiveActive: n, liveSessionName: c, shotsPerRound: l } = s();
-          n && c && v(c, t, l);
+          if (n && c) v(c, t, l);
         },
         set自動ロックする: (t) => e({ 自動ロックする: t, 入れた時刻: {} }),
         set保存時に出欠を確認する: (t) => e({ 保存時に出欠を確認する: t }),
@@ -1715,12 +1583,11 @@ const M = (0, s.create)()(
          */
         弓具を触れるか: (memberId, 黙って) => {
           const { activeGroupId: 団体, activeRole: 役, myMemberId: 自分 } = s();
-          if (!団体) return !1;
-          if ('group' === 役) return !0;
-          if ('member' === 役 && 自分 && String(自分) === String(memberId)) return !0;
-          if (!黙って)
-            n.default.alert('権限エラー', '弓具を扱えるのは、団体アカウントか、本人だけです。');
-          return !1;
+          if (!団体) return false;
+          if ('group' === 役) return true;
+          if ('member' === 役 && 自分 && String(自分) === String(memberId)) return true;
+          if (!黙って) Alert.alert('権限エラー', '弓具を扱えるのは、団体アカウントか、本人だけです。');
+          return false;
         },
         // まとめて入った○×に「いま入れた」印を付ける。
         // 画像からの反映は toggleMark を通らないので印が付かず、
@@ -1728,19 +1595,18 @@ const M = (0, s.create)()(
         // 読み取りの直しが全部長押しになるのを防ぐ
         入れた印をまとめて付ける: (一覧) =>
           s().書き換えを止めるか()
-            ? void 0
-            :
-          e((前) => {
-            const 印 = Object.assign({}, 前.入れた時刻);
-            const いま = Date.now();
-            (Array.isArray(一覧) ? 一覧 : []).forEach((a) => {
-              if (!a || !a.id || !Array.isArray(a.marks)) return;
-              a.marks.forEach((m, i) => {
-                if (m) 印[a.id + ':' + i] = いま;
-              });
-            });
-            return { 入れた時刻: 印 };
-          }),
+            ? undefined
+            : e((前) => {
+                const 印 = Object.assign({}, 前.入れた時刻);
+                const いま = Date.now();
+                (Array.isArray(一覧) ? 一覧 : []).forEach((a) => {
+                  if (!a || !a.id || !Array.isArray(a.marks)) return;
+                  a.marks.forEach((m, i) => {
+                    if (m) 印[a.id + ':' + i] = いま;
+                  });
+                });
+                return { 入れた時刻: 印 };
+              }),
         // 長押しで、そのますだけ開ける。
         // 数え直しにしてある。開けたあと、また少し経てば閉じる。
         //
@@ -1759,204 +1625,148 @@ const M = (0, s.create)()(
         },
         ますを開ける: (射手, 番) =>
           s().書き換えを止めるか()
-            ? void 0
-            :
-          e((前) => ({
-            入れた時刻: Object.assign({}, 前.入れた時刻, { [射手 + ':' + 番]: Date.now() }),
-            鍵を開けた時刻: Date.now(),
-          })),
-        setEnableArrowLocation: (t) =>
-          e({
-            enableArrowLocation: t,
-          }),
-        setArrowTargetType: (t) =>
-          e({
-            arrowTargetType: t,
-          }),
-        setActiveArrowLocationEdit: (t) =>
-          e({
-            activeArrowLocationEdit: t,
-          }),
+            ? undefined
+            : e((前) => ({
+                入れた時刻: Object.assign({}, 前.入れた時刻, { [射手 + ':' + 番]: Date.now() }),
+                鍵を開けた時刻: Date.now(),
+              })),
+        setEnableArrowLocation: (t) => e({ enableArrowLocation: t }),
+        setArrowTargetType: (t) => e({ arrowTargetType: t }),
+        setActiveArrowLocationEdit: (t) => e({ activeArrowLocationEdit: t }),
         updateArrowLocation: (t, o, a) => {
           if (s().書き換えを止めるか()) return; // 閲覧用では矢所（ライブにも送られる）も止める
-          const { archers: i } = s(),
-            n = Date.now(),
-            c = (i || []).map((e) => {
-              if (e.id === t) {
-                const s = [...(e.arrowLocations || [])];
-                return (
-                  (s[o] = a),
-                  Object.assign({}, e, {
-                    arrowLocations: s,
-                    lastModified: n,
-                  })
-                );
-              }
-              return e;
-            });
-          e({
-            archers: c,
-            historyStack: [...s().historyStack, i],
-            redoStack: [],
-            lastLocalChange: n,
+          const { archers } = s();
+          const n = Date.now();
+          const c = (archers || []).map((e) => {
+            if (e.id === t) {
+              const s = [...(e.arrowLocations || [])];
+              return ((s[o] = a), Object.assign({}, e, { arrowLocations: s, lastModified: n }));
+            }
+            return e;
           });
+          e({ archers: c, historyStack: [...s().historyStack, archers], redoStack: [], lastLocalChange: n });
           // ライブ中は矢所も送る。送らないと相手の画面に出ないうえ、
           // 相手からの更新で手元の矢所が消えていた
           const { isLiveActive: ライブ中, liveSessionName: ライブ名, shotsPerRound: 本数 } = s();
-          ライブ中 && ライブ名 && v(ライブ名, c, 本数);
+          if (ライブ中 && ライブ名) v(ライブ名, c, 本数);
         },
         updateMark: (t, o, a) => {
           if (s().書き換えを止めるか()) return; // 閲覧用では○×の直接の書き換えも止める
-          const { archers: i, isLiveActive: n, liveSessionName: c } = s(),
-            l = Date.now(),
-            d = (i || []).map((e) => {
-              if (e.id === t) {
-                const s = [...(e.marks || [])];
-                return (
-                  (s[o] = a),
-                  Object.assign({}, e, {
-                    marks: s,
-                    lastModified: l,
-                  })
-                );
-              }
-              return e;
-            });
-          (e({
-            archers: d,
-            historyStack: [...s().historyStack, i],
-            redoStack: [],
-            lastLocalChange: l,
-          }),
-            n && c && T(c, t, o, a, l));
+          const { archers: i, isLiveActive: n, liveSessionName: c } = s();
+          const l = Date.now();
+          const d = (i || []).map((e) => {
+            if (e.id === t) {
+              const s = [...(e.marks || [])];
+              return ((s[o] = a), Object.assign({}, e, { marks: s, lastModified: l }));
+            }
+            return e;
+          });
+          e({ archers: d, historyStack: [...s().historyStack, i], redoStack: [], lastLocalChange: l });
+          if (n && c) T(c, t, o, a, l);
         },
         toggleMark: (t, o) => {
           // 閲覧用は黙って何も起きないと、壊れたと思わせる
           if (s().書き換えを止めるか()) return void e({ 閲覧でますを押した時刻: Date.now() });
-          const { archers: a, isLiveActive: i, liveSessionName: n } = s(),
-            c = Date.now();
+          const { archers: a, isLiveActive: i, liveSessionName: n } = s();
+          const c = Date.now();
           let l = '';
           const d = (a || []).map((e) => {
             if (e.id === t) {
-              const s = [...(e.marks || [])],
-                t = s[o],
-                a = '' === t ? '○' : '○' === t ? '\xd7' : '';
-              return (
-                (s[o] = a),
-                (l = a),
-                Object.assign({}, e, {
-                  marks: s,
-                  lastModified: c,
-                })
-              );
+              const s = [...(e.marks || [])];
+              const t = s[o];
+              const a = '' === t ? '○' : '○' === t ? '\xd7' : '';
+              return ((s[o] = a), (l = a), Object.assign({}, e, { marks: s, lastModified: c }));
             }
             return e;
           });
           const 鍵 = t + ':' + o;
-          (e({
+          e({
             archers: d,
             historyStack: [...s().historyStack, a],
             redoStack: [],
             lastLocalChange: c,
             // 入れ直したますは、また少し経ってから閉じる
             入れた時刻: Object.assign({}, s().入れた時刻, { [鍵]: c }),
-          }),
-            i && n && T(n, t, o, l, c));
+          });
+          if (i && n) T(n, t, o, l, c);
         },
         clearArcherMarks: (t) => {
           if (s().書き換えを止めるか()) return; // 閲覧用ではその人の○×の消去も止める
-          const o = Array.isArray(s().archers) ? s().archers : [],
-            a = Date.now(),
-            i = o.map((e) =>
-              e && e.id === t
-                ? Object.assign({}, e, {
-                    marks: Array(s().shotsPerRound).fill(''),
-                    lastModified: a,
-                  })
-                : e
-            );
-          e({
-            historyStack: [...s().historyStack, o],
-            redoStack: [],
-            lastLocalChange: a,
-            archers: i,
-          });
+          const o = Array.isArray(s().archers) ? s().archers : [];
+          const a = Date.now();
+          const i = o.map((e) =>
+            e && e.id === t
+              ? Object.assign({}, e, { marks: Array(s().shotsPerRound).fill(''), lastModified: a })
+              : e
+          );
+          e({ historyStack: [...s().historyStack, o], redoStack: [], lastLocalChange: a, archers: i });
           const { isLiveActive: n, liveSessionName: c, shotsPerRound: l } = s();
-          n && c && v(c, i, l);
+          if (n && c) v(c, i, l);
         },
         // 1立が全部埋まって少し経つと、画面側からここが呼ばれる。
         // toggleLock と違って必ず「閉じる」側に倒す。
         // 取り消しの控えには積まない（押した覚えのない操作が戻ると分かりにくい）
         立を閉じる: (t, o) => {
           if (s().書き換えを止めるか()) return;
-          const { archers: a } = s(),
-            i = Array.isArray(a) ? a : [],
-            n = i.findIndex((e) => e && e.id === t);
+          const { archers: a } = s();
+          const i = Array.isArray(a) ? a : [];
+          const n = i.findIndex((e) => e && e.id === t);
           if (-1 === n) return;
           if (i[n].lockedBlocks?.[o]) return;
           let d = n;
-          for (; d > 0 && i[d - 1] && !i[d - 1].isSeparator && !i[d - 1].isTotalCalculator; ) d--;
-          const u = Date.now(),
-            m = i.map((e, s) => {
-              if (e && s >= d && s <= n) {
-                const s = Object.assign({}, e.lockedBlocks || {});
-                return ((s[o] = !0), Object.assign({}, e, { lockedBlocks: s, lastModified: u }));
-              }
-              return e;
-            });
+          for (; d > 0 && i[d - 1] && !i[d - 1].isSeparator && !i[d - 1].isTotalCalculator;) d--;
+          const u = Date.now();
+          const m = i.map((e, s) => {
+            if (e && s >= d && s <= n) {
+              const s = Object.assign({}, e.lockedBlocks || {});
+              return ((s[o] = true), Object.assign({}, e, { lockedBlocks: s, lastModified: u }));
+            }
+            return e;
+          });
           e({ archers: m, lastLocalChange: u });
           const { isLiveActive: p, liveSessionName: h, shotsPerRound: f } = s();
-          p && h && v(h, m, f);
+          if (p && h) v(h, m, f);
         },
         toggleLock: (t, o) => {
-          const { archers: a } = s(),
-            i = Array.isArray(a) ? a : [],
-            n = i.findIndex((e) => e && e.id === t);
+          const { archers: a } = s();
+          const i = Array.isArray(a) ? a : [];
+          const n = i.findIndex((e) => e && e.id === t);
           if (-1 === n) return;
-          const c = i[n],
-            l = !c.lockedBlocks?.[o];
+          const c = i[n];
+          const l = !c.lockedBlocks?.[o];
           let d = n;
           for (; d > 0 && i[d - 1] && !i[d - 1].isSeparator && !i[d - 1].isTotalCalculator;) d--;
-          const u = Date.now(),
-            m = i.map((e, s) => {
-              if (e && s >= d && s <= n) {
-                const s = Object.assign({}, e.lockedBlocks || {});
-                return (
-                  (s[o] = l),
-                  Object.assign({}, e, {
-                    lockedBlocks: s,
-                    lastModified: u,
-                  })
-                );
-              }
-              return e;
-            });
-          e({
-            historyStack: [...s().historyStack, i],
-            redoStack: [],
-            lastLocalChange: u,
-            archers: m,
+          const u = Date.now();
+          const m = i.map((e, s) => {
+            if (e && s >= d && s <= n) {
+              const s = Object.assign({}, e.lockedBlocks || {});
+              return ((s[o] = l), Object.assign({}, e, { lockedBlocks: s, lastModified: u }));
+            }
+            return e;
           });
+          e({ historyStack: [...s().historyStack, i], redoStack: [], lastLocalChange: u, archers: m });
           const { isLiveActive: p, liveSessionName: h, shotsPerRound: f } = s();
-          p && h && v(h, m, f);
+          if (p && h) v(h, m, f);
         },
         setArcherMember: (t, o) => {
           if (s().書き換えを止めるか()) return;
-          const a = Array.isArray(s().archers) ? s().archers : [],
-            i = o?.equipments?.length ? [...o.equipments].sort((e, s) => s.date - e.date)[0]?.weight : void 0,
-            n = a.map((e) =>
-              e && e.id === t
-                ? Object.assign({}, e, {
-                    name: o ? o.name : '',
-                    gender: o ? o.gender : '未設定',
-                    grade: o ? o.grade : 1,
-                    memberId: o ? o.id : void 0,
-                    isGuest: !1,
-                    bowWeight: i || e.bowWeight,
-                    lastModified: Date.now(),
-                  })
-                : e
-            );
+          const a = Array.isArray(s().archers) ? s().archers : [];
+          const i = o?.equipments?.length
+            ? [...o.equipments].sort((e, s) => s.date - e.date)[0]?.weight
+            : undefined;
+          const n = a.map((e) =>
+            e && e.id === t
+              ? Object.assign({}, e, {
+                  name: o ? o.name : '',
+                  gender: o ? o.gender : '未設定',
+                  grade: o ? o.grade : 1,
+                  memberId: o ? o.id : undefined,
+                  isGuest: false,
+                  bowWeight: i || e.bowWeight,
+                  lastModified: Date.now(),
+                })
+              : e
+          );
           e({
             historyStack: [...s().historyStack, a],
             redoStack: [],
@@ -1964,24 +1774,16 @@ const M = (0, s.create)()(
             archers: n,
           });
           const { isLiveActive: c, liveSessionName: l, shotsPerRound: d } = s();
-          c && l && v(l, n, d);
+          if (c && l) v(l, n, d);
         },
         setArcherBowWeight: (t, o) => {
           if (s().書き換えを止めるか()) return; // 閲覧用では弓力も止める
           const a = (Array.isArray(s().archers) ? s().archers : []).map((e) =>
-            e && e.id === t
-              ? Object.assign({}, e, {
-                  bowWeight: o,
-                  lastModified: Date.now(),
-                })
-              : e
+            e && e.id === t ? Object.assign({}, e, { bowWeight: o, lastModified: Date.now() }) : e
           );
-          e({
-            lastLocalChange: Date.now(),
-            archers: a,
-          });
+          e({ lastLocalChange: Date.now(), archers: a });
           const { isLiveActive: i, liveSessionName: n, shotsPerRound: c } = s();
-          i && n && v(n, s().archers, c);
+          if (i && n) v(n, s().archers, c);
         },
         setArcherGuestName: (t, o) => {
           if (s().書き換えを止めるか()) return;
@@ -1989,9 +1791,9 @@ const M = (0, s.create)()(
             e && e.id === t
               ? Object.assign({}, e, {
                   name: o,
-                  isGuest: !0,
+                  isGuest: true,
                   gender: '未設定',
-                  memberId: void 0,
+                  memberId: undefined,
                   lastModified: Date.now(),
                 })
               : e
@@ -2003,65 +1805,57 @@ const M = (0, s.create)()(
             archers: a,
           });
           const { isLiveActive: i, liveSessionName: n, shotsPerRound: c } = s();
-          i && n && v(n, s().archers, c);
+          if (i && n) v(n, s().archers, c);
         },
         setArcherGender: (t, o) => {
           if (s().書き換えを止めるか()) return; // 閲覧用では性別も止める
           const a = (Array.isArray(s().archers) ? s().archers : []).map((e) =>
-            e && e.id === t
-              ? Object.assign({}, e, {
-                  gender: o,
-                  lastModified: Date.now(),
-                })
-              : e
+            e && e.id === t ? Object.assign({}, e, { gender: o, lastModified: Date.now() }) : e
           );
-          e({
-            lastLocalChange: Date.now(),
-            archers: a,
-          });
+          e({ lastLocalChange: Date.now(), archers: a });
           const { isLiveActive: i, liveSessionName: n, shotsPerRound: c } = s();
-          i && n && v(n, s().archers, c);
+          if (i && n) v(n, s().archers, c);
         },
         // ライブ中は全員で1本の履歴を使う。誰が押しても「最後の1手」が戻る
         undo: () => {
           if (s().書き換えを止めるか()) return;
           if (s().isLiveActive && s().liveSessionName) return void s().sharedUndo(-1);
-          const { historyStack: t, archers: o } = s();
-          if (0 === t.length) return;
+          const { historyStack, archers: o } = s();
+          if (0 === historyStack.length) return;
           // 中身が変わった射手には新しい日時を打ち直す。打たないと、ライブ中の
           // 取り消しが相手に届かず、主催者の画面だけ戻る食い違いになる
-          const 戻す元 = 履歴の一手(t[t.length - 1]);
+          const 戻す元 = 履歴の一手(historyStack[historyStack.length - 1]);
           // 射数の変更も一手なので、控えが持っていた射数へ戻す
           const 射数 = 控えの射数(戻す元) ?? s().shotsPerRound;
           const a = restampChangedArchers(盤面を射数にそろえる(戻す元, 射数), o, Date.now());
           e({
-            historyStack: t.slice(0, -1),
+            historyStack: historyStack.slice(0, -1),
             redoStack: [...s().redoStack, o],
             archers: a,
             shotsPerRound: 射数,
             lastLocalChange: Date.now(),
           });
           const { isLiveActive: i, liveSessionName: n } = s();
-          i && n && v(n, s().archers, 射数);
+          if (i && n) v(n, s().archers, 射数);
         },
         redo: () => {
           if (s().書き換えを止めるか()) return;
           if (s().isLiveActive && s().liveSessionName) return void s().sharedUndo(1);
-          const { redoStack: t, archers: o } = s();
-          if (0 === t.length) return;
+          const { redoStack, archers: o } = s();
+          if (0 === redoStack.length) return;
           // 取り消しと同じ理由で日時を打ち直す。射数を戻すのも同じ
-          const 戻す元 = 履歴の一手(t[t.length - 1]);
+          const 戻す元 = 履歴の一手(redoStack[redoStack.length - 1]);
           const 射数 = 控えの射数(戻す元) ?? s().shotsPerRound;
           const a = restampChangedArchers(盤面を射数にそろえる(戻す元, 射数), o, Date.now());
           e({
-            redoStack: t.slice(0, -1),
+            redoStack: redoStack.slice(0, -1),
             historyStack: [...s().historyStack, o],
             archers: a,
             shotsPerRound: 射数,
             lastLocalChange: Date.now(),
           });
           const { isLiveActive: i, liveSessionName: n } = s();
-          i && n && v(n, s().archers, 射数);
+          if (i && n) v(n, s().archers, 射数);
         },
         /**
          * ライブ中の取り消し（向き -1）・やり直し（向き +1）。
@@ -2080,15 +1874,13 @@ const M = (0, s.create)()(
           const 根 = `live_sessions/${枝}/${名前}`;
           try {
             // 目印は state から配られてくる。手元の控えより新しいことがある
-            const 状態 = await (0, i.get)((0, i.ref)(fb.rtdb, `${根}/state`));
+            const 状態 = await RTDB.get(RTDB.ref(fb.rtdb, `${根}/state`));
             const v0 = 状態.exists() ? 状態.val() || {} : {};
             const 位置 = 'number' == typeof v0.history_len ? v0.history_len : s().historySharedLen || 0;
             const 上限 = 'number' == typeof v0.history_max ? v0.history_max : s().historySharedMax || 0;
             const 読む番号 = 向き < 0 ? 位置 - 1 : 位置;
             if (向き < 0 ? 位置 <= 0 : 位置 >= 上限) return; // これ以上は戻せない／進めない
-            const 手 = await (0, i.get)(
-              (0, i.ref)(fb.rtdb, `${共有履歴の場所(枝, 名前)}/${読む番号}`)
-            );
+            const 手 = await RTDB.get(RTDB.ref(fb.rtdb, `${共有履歴の場所(枝, 名前)}/${読む番号}`));
             if (!手.exists()) return;
             const 中身 = 手.val() || {};
             const 次 = 位置 + 向き;
@@ -2100,13 +1892,9 @@ const M = (0, s.create)()(
             const 差分 = Array.isArray(中身.差分) ? 中身.差分 : null;
             const 項目 = Array.isArray(中身.項目) ? 中身.項目 : null;
             // 射数の控えは射手ごとの表を持つので、配列ではなく object
-            const 射数 =
-              !差分 && !項目 && 中身.射数 && 'number' == typeof 中身.射数.前 ? 中身.射数 : null;
+            const 射数 = !差分 && !項目 && 中身.射数 && 'number' == typeof 中身.射数.前 ? 中身.射数 : null;
             const 盤面 = 差分
-              ? {
-                  archers: 差分を当てる(s().archers, 差分, 向き).archers,
-                  shotsPerRound: s().shotsPerRound,
-                }
+              ? { archers: 差分を当てる(s().archers, 差分, 向き).archers, shotsPerRound: s().shotsPerRound }
               : 項目
                 ? {
                     archers: 項目差分を当てる(s().archers, 項目, 向き).archers,
@@ -2117,14 +1905,11 @@ const M = (0, s.create)()(
                       const 出 = 射数差を当てる(s().archers, 射数, 向き);
                       return { archers: 出.archers, shotsPerRound: 出.本数 };
                     })()
-                  : w({
-                      archers: 向き < 0 ? 中身.前 : 中身.後,
-                      shotsPerRound: 中身.本数,
-                    });
+                  : w({ archers: 向き < 0 ? 中身.前 : 中身.後, shotsPerRound: 中身.本数 });
             // 戻した内容が相手に届くよう、変わった射手の日時を打ち直す
             const 戻す = restampChangedArchers(盤面.archers, s().archers, 知らせ時刻);
             // ここでの書き換えは履歴に積まない（積むと際限がなくなる）
-            履歴を積まない = !0;
+            履歴を積まない = true;
             try {
               e({
                 archers: 戻す,
@@ -2140,49 +1925,40 @@ const M = (0, s.create)()(
                 lastLocalChange: 知らせ時刻,
               });
             } finally {
-              履歴を積まない = !1;
+              履歴を積まない = false;
             }
             // 盤面を全員へ流し、あわせて「取り消された」ことを知らせる
-            (v(名前, 戻す, 盤面.shotsPerRound),
-              (0, i.update)((0, i.ref)(fb.rtdb, `${根}/state`), {
-                history_len: 次,
-                history_max: 上限,
-                history_at: 知らせ時刻,
-                history_kind: 向き < 0 ? '取り消し' : 'やり直し',
-              }).catch(() => {}));
+            v(名前, 戻す, 盤面.shotsPerRound);
+            RTDB.update(RTDB.ref(fb.rtdb, `${根}/state`), {
+              history_len: 次,
+              history_max: 上限,
+              history_at: 知らせ時刻,
+              history_kind: 向き < 0 ? '取り消し' : 'やり直し',
+            }).catch(() => {});
           } catch (t) {
             console.error('[Store] 共有の取り消しに失敗:', t);
           }
         },
         addMember: (o, i, c, d) => {
           if (!s().activeGroupId || 'group' !== s().activeRole)
-            return void n.default.alert(
-              '権限エラー',
-              'メンバーの追加は団体ログイン、かつ管理者のみ可能です。'
-            );
-          const u = o ? o.trim() : '',
-            m = {
-              id: (0, l.generateUUID)(),
-              personalId: h(s().members, s().alumni),
-              name: u,
-              gender: i,
-              grade: c,
-              termKi: d || s().currentFreshmanTerm - (c - 1),
-              lastModified: Date.now(),
-              syncStatus: '未同期',
-            };
-          if (
-            (e({
-              members: [...s().members, m],
-              lastLocalChange: Date.now(),
-            }),
-            s().activeGroupId)
-          ) {
+            return void Alert.alert('権限エラー', 'メンバーの追加は団体ログイン、かつ管理者のみ可能です。');
+          const u = o ? o.trim() : '';
+          const m = {
+            id: generateUUID(),
+            personalId: generateUniquePersonalId(s().members, s().alumni),
+            name: u,
+            gender: i,
+            grade: c,
+            termKi: d || s().currentFreshmanTerm - (c - 1),
+            lastModified: Date.now(),
+            syncStatus: '未同期',
+          };
+          if ((e({ members: [...s().members, m], lastLocalChange: Date.now() }), s().activeGroupId)) {
             const o = Object.assign({}, m, {
-              lastModified: (0, a.serverTimestamp)(),
+              lastModified: Firestore.serverTimestamp(),
               syncStatus: '同期済み',
             });
-            (0, a.setDoc)((0, a.doc)(fb.db, `groups/${s().activeGroupId}/members`, m.id), o)
+            Firestore.setDoc(Firestore.doc(fb.db, `groups/${s().activeGroupId}/members`, m.id), o)
               .then(() => {
                 s().syncMemberLookup();
                 // 印を付けるのは送った版だけ。送信中に編集されると更新日時が
@@ -2190,9 +1966,7 @@ const M = (0, s.create)()(
                 e((e) => ({
                   members: e.members.map((e) =>
                     e && e.id === m.id && e.lastModified === m.lastModified
-                      ? Object.assign({}, e, {
-                          syncStatus: '同期済み',
-                        })
+                      ? Object.assign({}, e, { syncStatus: '同期済み' })
                       : e
                   ),
                 }));
@@ -2202,126 +1976,106 @@ const M = (0, s.create)()(
         },
         updateMember: (o, i) => {
           if (!s().activeGroupId || 'group' !== s().activeRole)
-            return void n.default.alert('権限エラー', 'メンバーの編集は団体ログイン時のみ可能です。');
-          if (void 0 !== i.grade) {
-            const e = new Date(),
-              s = e.getFullYear(),
-              t = e.getMonth() + 1,
-              o = t >= 4 ? s : s - 1;
+            return void Alert.alert('権限エラー', 'メンバーの編集は団体ログイン時のみ可能です。');
+          if (undefined !== i.grade) {
+            const e = new Date();
+            const s = e.getFullYear();
+            const t = e.getMonth() + 1;
+            const o = t >= 4 ? s : s - 1;
             5 === Number(i.grade) ? (i.graduationYear = o) : (i.graduationYear = null);
           }
           s().members.find((e) => e.id === o);
           let c = Object.assign({}, i);
-          if (void 0 !== i.grade && void 0 === i.termKi) {
+          if (undefined !== i.grade && undefined === i.termKi) {
             const e = s().currentFreshmanTerm - (i.grade - 1);
             c.termKi = e;
           }
           const l = s().members.map((e) =>
-            e.id === o
-              ? Object.assign({}, e, c, {
-                  lastModified: Date.now(),
-                  syncStatus: '未同期',
-                })
-              : e
+            e.id === o ? Object.assign({}, e, c, { lastModified: Date.now(), syncStatus: '未同期' }) : e
           );
-          e({
-            members: l,
-            lastLocalChange: Date.now(),
-          });
-          if (void 0 !== i.name || void 0 !== i.gender || void 0 !== i.grade) {
+          e({ members: l, lastLocalChange: Date.now() });
+          if (undefined !== i.name || undefined !== i.gender || undefined !== i.grade) {
             const n = (e) => {
-                let s = !1;
-                return {
-                  newList: e.map((e) => {
-                    if (!e || !e.archers) return e;
-                    let t = !1;
-                    const a = e.archers
-                      .map((e) =>
-                        e.memberId === o
-                          ? ((t = !0),
-                            Object.assign({}, e, {
-                              name: void 0 !== i.name ? i.name : e.name,
-                              gender: void 0 !== i.gender ? i.gender : e.gender,
-                              grade: void 0 !== i.grade ? i.grade : e.grade,
-                              lastModified: Date.now(),
-                            }))
-                          : e
-                      )
-                      .map((e) => {
-                        if (e.substitutionIds) {
-                          let s = !1;
-                          const a = Object.assign({}, e.substitutions || {});
-                          if (
-                            (Object.entries(e.substitutionIds).forEach(([e, t]) => {
-                              const n = Number(e);
-                              t === o && void 0 !== i.name && ((a[n] = i.name), (s = !0));
-                            }),
-                            s)
-                          )
-                            return (
-                              (t = !0),
-                              Object.assign({}, e, {
-                                substitutions: a,
-                                lastModified: Date.now(),
-                              })
-                            );
-                        }
-                        return e;
-                      });
-                    if (t) {
-                      s = !0;
-                      const t = Array.from(
-                        new Set(a.map((e) => (e && e.name ? e.name.trim() : '')).filter(Boolean))
-                      );
-                      return Object.assign({}, e, {
-                        archers: a,
-                        archerNames: t,
-                        lastModified: Date.now(),
-                      });
-                    }
-                    return e;
-                  }),
-                  changed: s,
-                };
-              },
-              c = s().sessions,
-              l = s().trash,
-              { newList: d, changed: u } = n(c),
-              { newList: m, changed: p } = n(l);
+              let s = false;
+              return {
+                newList: e.map((e) => {
+                  if (!e || !e.archers) return e;
+                  let t = false;
+                  const a = e.archers
+                    .map((e) =>
+                      e.memberId === o
+                        ? ((t = true),
+                          Object.assign({}, e, {
+                            name: undefined !== i.name ? i.name : e.name,
+                            gender: undefined !== i.gender ? i.gender : e.gender,
+                            grade: undefined !== i.grade ? i.grade : e.grade,
+                            lastModified: Date.now(),
+                          }))
+                        : e
+                    )
+                    .map((e) => {
+                      if (e.substitutionIds) {
+                        let s = false;
+                        const a = Object.assign({}, e.substitutions || {});
+                        if (
+                          (Object.entries(e.substitutionIds).forEach(([e, t]) => {
+                            const n = Number(e);
+                            t === o && undefined !== i.name && ((a[n] = i.name), (s = true));
+                          }),
+                          s)
+                        )
+                          return (
+                            (t = true),
+                            Object.assign({}, e, { substitutions: a, lastModified: Date.now() })
+                          );
+                      }
+                      return e;
+                    });
+                  if (t) {
+                    s = true;
+                    const t = Array.from(
+                      new Set(a.map((e) => (e && e.name ? e.name.trim() : '')).filter(Boolean))
+                    );
+                    return Object.assign({}, e, { archers: a, archerNames: t, lastModified: Date.now() });
+                  }
+                  return e;
+                }),
+                changed: s,
+              };
+            };
+            const c = s().sessions;
+            const l = s().trash;
+            const { newList, changed } = n(c);
+            const { newList: m, changed: p } = n(l);
             if (
-              (u || p) &&
-              (e({
-                sessions: d,
-                trash: m,
-                lastLocalChange: Date.now(),
-              }),
-              s().activeGroupId)
+              (changed || p) &&
+              (e({ sessions: newList, trash: m, lastLocalChange: Date.now() }), s().activeGroupId)
             ) {
-              const e = (0, a.writeBatch)(fb.db);
+              const e = Firestore.writeBatch(fb.db);
               let o = 0;
-              (u &&
-                d.forEach((i, n) => {
+              if (changed)
+                newList.forEach((i, n) => {
                   if (i.lastModified !== c[n].lastModified) {
                     const n = JSON.parse(JSON.stringify(i));
-                    ((n.lastModified = (0, a.serverTimestamp)()),
-                      e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/sessions`, i.id), n, {
-                        merge: !0,
-                      }),
-                      o++);
+                    n.lastModified = Firestore.serverTimestamp();
+                    e.set(Firestore.doc(fb.db, `groups/${s().activeGroupId}/sessions`, i.id), n, {
+                      merge: true,
+                    });
+                    o++;
                   }
-                }),
-                p &&
-                  m.forEach((i, n) => {
-                    if (i.lastModified !== l[n].lastModified) {
-                      const n = JSON.parse(JSON.stringify(i));
-                      ((n.lastModified = (0, a.serverTimestamp)()),
-                        e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, i.id), n, {
-                          merge: !0,
-                        }),
-                        o++);
-                    }
-                  }),
-                o > 0 && e.commit().catch((e) => console.error('Member Linkage Sync Error:', e)));
+                });
+              if (p)
+                m.forEach((i, n) => {
+                  if (i.lastModified !== l[n].lastModified) {
+                    const n = JSON.parse(JSON.stringify(i));
+                    n.lastModified = Firestore.serverTimestamp();
+                    e.set(Firestore.doc(fb.db, `groups/${s().activeGroupId}/trash`, i.id), n, {
+                      merge: true,
+                    });
+                    o++;
+                  }
+                });
+              if (o > 0) e.commit().catch((e) => console.error('Member Linkage Sync Error:', e));
             }
           }
           s().activeGroupId &&
@@ -2333,56 +2087,55 @@ const M = (0, s.create)()(
                 // 新しい内容に「同期済み」を付けないための目印。
                 const 送った版 = i.lastModified;
                 const n = Object.assign({}, i, {
-                  lastModified: (0, a.serverTimestamp)(),
+                  lastModified: Firestore.serverTimestamp(),
                   syncStatus: '同期済み',
                 });
-                (0, a.updateDoc)((0, a.doc)(fb.db, `groups/${s().activeGroupId}/members`, o), n)
+                Firestore.updateDoc(Firestore.doc(fb.db, `groups/${s().activeGroupId}/members`, o), n)
                   .then(() => {
-                    (console.log(`[Store] Debounced Member Sync Success: ${i.name}`),
-                      e((e) => ({
-                        members: e.members.map((e) =>
-                          e && e.id === o && e.lastModified === 送った版
-                            ? Object.assign({}, e, {
-                                syncStatus: '同期済み',
-                              })
-                            : e
-                        ),
-                      })),
-                      delete p[o]);
+                    console.log(`[Store] Debounced Member Sync Success: ${i.name}`);
+                    e((e) => ({
+                      members: e.members.map((e) =>
+                        e && e.id === o && e.lastModified === 送った版
+                          ? Object.assign({}, e, { syncStatus: '同期済み' })
+                          : e
+                      ),
+                    }));
+                    delete p[o];
                   })
                   .catch((e) => {
-                    (console.error('Update Member Sync Error:', e), delete p[o]);
+                    console.error('Update Member Sync Error:', e);
+                    delete p[o];
                   });
               }
             }, 300)));
         },
         deleteMember: (o) => {
           if (!s().activeGroupId || 'group' !== s().activeRole)
-            return void n.default.alert('権限エラー', 'メンバーの削除は団体ログイン時のみ可能です。');
+            return void Alert.alert('権限エラー', 'メンバーの削除は団体ログイン時のみ可能です。');
           // 消したことを控えに残す。送信が失われても、次の受け取りで
           // 復活させないため。クラウドから消えたのを確かめてから控えを外す
           const 控え = Object.assign({}, s().deletedMembers);
-          ((控え[o] = Date.now()),
-            e({
-              members: s().members.filter((e) => e.id !== o),
-              deletedMembers: 控え,
-              lastLocalChange: Date.now(),
-            }),
-            (0, a.deleteDoc)((0, a.doc)(fb.db, `groups/${s().activeGroupId}/members`, o))
-              .then(() => s().syncMemberLookup())
-              .catch((e) => console.error('Delete Member Sync Error:', e)));
+          控え[o] = Date.now();
+          e({
+            members: s().members.filter((e) => e.id !== o),
+            deletedMembers: 控え,
+            lastLocalChange: Date.now(),
+          });
+          Firestore.deleteDoc(Firestore.doc(fb.db, `groups/${s().activeGroupId}/members`, o))
+            .then(() => s().syncMemberLookup())
+            .catch((e) => console.error('Delete Member Sync Error:', e));
         },
         syncMemberLookup: async () => {
-          const { activeGroupId: g, activeRole: r, members: ms } = s();
-          if (!g || 'group' !== r || !fb.db) return;
+          const { activeGroupId: g, activeRole, members } = s();
+          if (!g || 'group' !== activeRole || !fb.db) return;
           try {
-            const col = (0, a.collection)(fb.db, `groups/${g}/member_lookup`);
-            const snap = await (0, a.getDocs)(col);
+            const col = Firestore.collection(fb.db, `groups/${g}/member_lookup`);
+            const snap = await Firestore.getDocs(col);
             const want = new Map();
-            (ms || []).forEach((m) => {
+            (members || []).forEach((m) => {
               if (m && m.id && /^\d{4}$/.test(m.personalId || '')) want.set(m.personalId, m.id);
             });
-            const batch = (0, a.writeBatch)(fb.db);
+            const batch = Firestore.writeBatch(fb.db);
             let n = 0;
             snap.forEach((d) => {
               const w = want.get(d.id);
@@ -2394,7 +2147,7 @@ const M = (0, s.create)()(
               }
             });
             want.forEach((memberId, pid) => {
-              batch.set((0, a.doc)(fb.db, `groups/${g}/member_lookup`, pid), {
+              batch.set(Firestore.doc(fb.db, `groups/${g}/member_lookup`, pid), {
                 memberId: memberId,
                 updatedAt: Date.now(),
               });
@@ -2409,7 +2162,7 @@ const M = (0, s.create)()(
           }
         },
         ensurePersonalIds: async () => {
-          const { members: o, alumni: i, activeGroupId: n } = s();
+          const { members: o, alumni, activeGroupId: n } = s();
           // 名簿を書けるのは団体アカウントだけ。部員の端末で走ると、他人の
           // 個人IDを勝手に振ってしまう。しかも逆引き表（こちらは団体限定）は
           // 更新されないため、その人がログインできなくなる。
@@ -2419,69 +2172,52 @@ const M = (0, s.create)()(
             console.warn('[Store] ensurePersonalIds: db still undefined after await, aborting');
             return;
           }
-          const c = [...o],
-            l = [...i];
-          let d = !1;
-          const u = () => [...c.map((e) => e.personalId), ...l.map((e) => e.personalId)].filter((e) => !!e),
-            m = (e) => !!e && /^\d{4}$/.test(e),
-            p = (e) => {
-              let s = '',
-                t = 0;
-              do {
-                ((s = Math.floor(1e3 + 9e3 * Math.random()).toString()), t++);
-              } while (e.includes(s) && t < 5e3);
-              return s;
-            },
-            h = (0, a.writeBatch)(fb.db);
+          const c = [...o];
+          const l = [...alumni];
+          let d = false;
+          const u = () => [...c.map((e) => e.personalId), ...l.map((e) => e.personalId)].filter((e) => !!e);
+          const m = (e) => !!e && /^\d{4}$/.test(e);
+          const p = (e) => {
+            let s = '';
+            let t = 0;
+            do {
+              s = Math.floor(1e3 + 9e3 * Math.random()).toString();
+              t++;
+            } while (e.includes(s) && t < 5e3);
+            return s;
+          };
+          const h = Firestore.writeBatch(fb.db);
           let f = 0;
           for (let e = 0; e < c.length; e++)
             if (!m(c[e].personalId)) {
-              const s = u(),
-                o = Date.now();
+              const s = u();
+              const o = Date.now();
               // 送信が済むまでは「未同期」にしておく。送信が失われた場合、
               // 「同期済み」だと送り直しの対象にならず、クラウドにIDが無いまま
               // 固定される。すると別の端末が別のIDを振り、端末ごとに食い違う。
-              ((c[e] = Object.assign({}, c[e], {
-                personalId: p(s),
-                lastModified: o,
-                syncStatus: '未同期',
-              })),
-                h.set(
-                  (0, a.doc)(fb.db, `groups/${n}/members`, c[e].id),
-                  Object.assign({}, c[e], {
-                    syncStatus: '同期済み',
-                    lastModified: (0, a.serverTimestamp)(),
-                  })
-                ),
-                f++,
-                (d = !0));
+              c[e] = Object.assign({}, c[e], { personalId: p(s), lastModified: o, syncStatus: '未同期' });
+              h.set(
+                Firestore.doc(fb.db, `groups/${n}/members`, c[e].id),
+                Object.assign({}, c[e], { syncStatus: '同期済み', lastModified: Firestore.serverTimestamp() })
+              );
+              f++;
+              d = true;
             }
           for (let e = 0; e < l.length; e++)
             if (!m(l[e].personalId)) {
-              const s = u(),
-                o = Date.now();
+              const s = u();
+              const o = Date.now();
               // メンバーと同じ理由で「未同期」にする
-              ((l[e] = Object.assign({}, l[e], {
-                personalId: p(s),
-                lastModified: o,
-                syncStatus: '未同期',
-              })),
-                h.set(
-                  (0, a.doc)(fb.db, `groups/${n}/alumni`, l[e].id),
-                  Object.assign({}, l[e], {
-                    syncStatus: '同期済み',
-                    lastModified: (0, a.serverTimestamp)(),
-                  })
-                ),
-                f++,
-                (d = !0));
+              l[e] = Object.assign({}, l[e], { personalId: p(s), lastModified: o, syncStatus: '未同期' });
+              h.set(
+                Firestore.doc(fb.db, `groups/${n}/alumni`, l[e].id),
+                Object.assign({}, l[e], { syncStatus: '同期済み', lastModified: Firestore.serverTimestamp() })
+              );
+              f++;
+              d = true;
             }
           if (d) {
-            e({
-              members: c,
-              alumni: l,
-              lastLocalChange: Date.now(),
-            });
+            e({ members: c, alumni: l, lastLocalChange: Date.now() });
             if (f > 0) {
               // 完了は待たない。通信できないと終わらず、この先の逆引き表の
               // 更新まで止まってしまう。届いた分は syncSessions が印を
@@ -2519,7 +2255,7 @@ const M = (0, s.create)()(
           if (!s().弓具を触れるか(memberId)) return;
           const 今 = Date.now();
           const 新しい記録 = {
-            id: (0, l.generateUUID)(),
+            id: generateUUID(),
             date: Number(中身?.date) || 今,
             note: (中身?.note || '').trim(),
             weight: (中身?.weight || '').trim(),
@@ -2529,24 +2265,16 @@ const M = (0, s.create)()(
             // 新しいものが上に来るように、日付の降順で並べておく。
             // 画面側もそう並べて見せている
             const 並び = [...(e.equipments || []), 新しい記録].sort((a, b) => b.date - a.date);
-            return Object.assign({}, e, {
-              equipments: 並び,
-              lastModified: 今,
-              syncStatus: '未同期',
-            });
+            return Object.assign({}, e, { equipments: 並び, lastModified: 今, syncStatus: '未同期' });
           });
           e({ members: 直した, lastLocalChange: 今 });
-
           const 本人 = 直した.find((e) => e.id === memberId);
           if (本人 && s().activeGroupId) {
             const 送る形 = Object.assign({}, 本人, {
-              lastModified: (0, a.serverTimestamp)(),
+              lastModified: Firestore.serverTimestamp(),
               syncStatus: '同期済み',
             });
-            (0, a.updateDoc)(
-              (0, a.doc)(fb.db, `groups/${s().activeGroupId}/members`, memberId),
-              送る形
-            )
+            Firestore.updateDoc(Firestore.doc(fb.db, `groups/${s().activeGroupId}/members`, memberId), 送る形)
               .then(() => {
                 // 印を付けるのは送った版だけ（消すほうと同じ考え方）
                 e((e) => ({
@@ -2562,37 +2290,32 @@ const M = (0, s.create)()(
         },
         deleteEquipment: (o, i) => {
           if (!s().弓具を触れるか(o)) return;
-          const c = Date.now(),
-            l = s().members.map((e) => {
-              if (e.id === o) {
-                const s = e.equipments || [];
-                return Object.assign({}, e, {
-                  equipments: s.filter((e) => e.id !== i),
-                  lastModified: c,
-                  syncStatus: '未同期',
-                });
-              }
-              return e;
-            });
-          e({
-            members: l,
-            lastLocalChange: c,
+          const c = Date.now();
+          const l = s().members.map((e) => {
+            if (e.id === o) {
+              const s = e.equipments || [];
+              return Object.assign({}, e, {
+                equipments: s.filter((e) => e.id !== i),
+                lastModified: c,
+                syncStatus: '未同期',
+              });
+            }
+            return e;
           });
+          e({ members: l, lastLocalChange: c });
           const d = l.find((e) => e.id === o);
           if (d && s().activeGroupId) {
             const i = Object.assign({}, d, {
-              lastModified: (0, a.serverTimestamp)(),
+              lastModified: Firestore.serverTimestamp(),
               syncStatus: '同期済み',
             });
-            (0, a.updateDoc)((0, a.doc)(fb.db, `groups/${s().activeGroupId}/members`, o), i)
+            Firestore.updateDoc(Firestore.doc(fb.db, `groups/${s().activeGroupId}/members`, o), i)
               .then(() => {
                 // 印を付けるのは送った版だけ（記録側と同じ考え方）
                 e((e) => ({
                   members: e.members.map((e) =>
                     e && e.id === o && e.lastModified === d.lastModified
-                      ? Object.assign({}, e, {
-                          syncStatus: '同期済み',
-                        })
+                      ? Object.assign({}, e, { syncStatus: '同期済み' })
                       : e
                   ),
                 }));
@@ -2602,37 +2325,36 @@ const M = (0, s.create)()(
         },
         saveSession: async (o, d, u, m, attendanceData) => {
           行動を控える('記録を保存', (s().archers || []).length + '人');
-
           // 閲覧用は記録として残さない。画面側でも保存の帯を薄くしてあるが、
           // 道が増えたときに漏れないよう、ここでも止める
           if (s().書き換えを止めるか()) return;
           // よその団体のライブも、自分の記録には残さない（保存を止めるか を参照）
           if (s().保存を止めるか()) return;
-          const p = s().activeSessionID || (0, l.generateUUID)(),
-            { archers: h, shotsPerRound: f, activeGroupId: S, activeRole: b, myMemberId: y } = s(),
-            v = Array.isArray(h) ? h : [],
-            T = {
-              id: p,
-              date: Date.now(),
-              title: o,
-              note: d,
-              archers: JSON.parse(JSON.stringify(v)),
-              archerNames: Array.from(
-                new Set(v.map((e) => (e && e.name ? e.name.trim() : '')).filter(Boolean))
-              ),
-              shotCount: f || 8,
-              includeInStats: u,
-              tags: m,
-              attendance: attendanceData,
-              syncStatus: '未同期',
-              lastModified: Date.now(),
-            };
+          const p = s().activeSessionID || generateUUID();
+          const { archers: h, shotsPerRound: f, activeGroupId: S, activeRole: b, myMemberId } = s();
+          const v = Array.isArray(h) ? h : [];
+          const T = {
+            id: p,
+            date: Date.now(),
+            title: o,
+            note: d,
+            archers: JSON.parse(JSON.stringify(v)),
+            archerNames: Array.from(
+              new Set(v.map((e) => (e && e.name ? e.name.trim() : '')).filter(Boolean))
+            ),
+            shotCount: f || 8,
+            includeInStats: u,
+            tags: m,
+            attendance: attendanceData,
+            syncStatus: '未同期',
+            lastModified: Date.now(),
+          };
           // 個人モードでの上書きは、手元に確定する前に止める
           if (S && 'member' === b)
             try {
-              if ((await (0, a.getDoc)((0, a.doc)(fb.db, `groups/${S}/sessions`, p))).exists()) {
+              if ((await Firestore.getDoc(Firestore.doc(fb.db, `groups/${S}/sessions`, p))).exists()) {
                 const e = 'この記録はすでにクラウドに存在するため、個人モードからは更新できません。';
-                return void n.default.alert('保存制限', e);
+                return void Alert.alert('保存制限', e);
               }
             } catch (e) {
               console.warn('[Store] 既存確認に失敗しました。保存は続行します:', e);
@@ -2641,101 +2363,91 @@ const M = (0, s.create)()(
           // 待つと、通信できないときに射手が消えず履歴にも出ないうえ、
           // 画面には何も知らされないままになる。
           const 元のライブ名 = s().liveSessionName;
-          (s().stopLiveSync(!0),
-            e((e) => ({
-              sessions: [T, ...e.sessions.filter((e) => e.id !== p)],
-              activeSessionID: null,
-              archers: [],
-              isLiveActive: !1, ライブの続き: null,
-              isHost: !1,
-              liveSessionName: null,
-              lastLocalChange: Date.now(),
-              syncStatus: '未同期',
-              // 盤面を片付けたので、遡れる手も捨てる。リセットと同じ扱い。
-              // 残すと、保存したあとに取り消しを押すと保存済みの盤面が戻り、
-              // そのままもう一度保存すると同じ記録が二重に入る
-              historyStack: [],
-              redoStack: [],
-              historySharedLen: 0,
-              historySharedMax: 0,
-            })));
-          // ライブ記録の後始末。届かなくても保存には影響させない
+          s().stopLiveSync(true);
+          e((e) => ({
+            sessions: [T, ...e.sessions.filter((e) => e.id !== p)],
+            activeSessionID: null,
+            archers: [],
+            isLiveActive: false,
+            ライブの続き: null,
+            isHost: false,
+            liveSessionName: null,
+            lastLocalChange: Date.now(),
+            syncStatus: '未同期',
+            // 盤面を片付けたので、遡れる手も捨てる。リセットと同じ扱い。
+            // 残すと、保存したあとに取り消しを押すと保存済みの盤面が戻り、
+            // そのままもう一度保存すると同じ記録が二重に入る
+            historyStack: [],
+            redoStack: [],
+            historySharedLen: 0,
+            historySharedMax: 0,
+          })); // ライブ記録の後始末。届かなくても保存には影響させない
           const 枝 = ライブの枝();
           // 共有していたライブは、団体の枝の道しるべと閲覧用の写しも残る。
           // 消さないと、参加一覧に入れないライブが並び、写しも読めたままになる
           const 団 = 団体の枝();
           const 閲覧枝 = s().いまのライブの閲覧枝;
           if (元のライブ名 && fb.rtdb && 枝) {
-            const e = (0, i.ref)(fb.rtdb, `live_sessions/${枝}/${元のライブ名}`);
-            ((0, i.update)((0, i.ref)(fb.rtdb, `live_sessions/${枝}/${元のライブ名}/state`), {
+            const e = RTDB.ref(fb.rtdb, `live_sessions/${枝}/${元のライブ名}`);
+            RTDB.update(RTDB.ref(fb.rtdb, `live_sessions/${枝}/${元のライブ名}/state`), {
               status: 'finished',
-              timestamp: (0, i.serverTimestamp)(),
-            }).catch(() => {}),
-              // 見ている人にも終わったことを知らせる
-              秘.枝として使えるか(閲覧枝) &&
-                (0, i.update)((0, i.ref)(fb.rtdb, 写しの場所(閲覧枝, 元のライブ名)), {
-                  status: 'finished',
-                  timestamp: (0, i.serverTimestamp)(),
-                }).catch(() => {}),
-              setTimeout(async () => {
-                const 落とす = (道) =>
-                  (0, i.remove)((0, i.ref)(fb.rtdb, 道)).catch(() => {});
-                await Promise.all([
-                  (0, i.remove)(e).catch(() => {}),
-                  // 共有履歴と在席は別の枝にあるので、明示的に消す
-                  落とす(共有履歴の場所(枝, 元のライブ名)),
-                  落とす(在席の場所(枝, 元のライブ名)),
-                  // 共有していたときの道しるべと写しも消す
-                  団 && 団 !== 枝 ? 落とす(`live_sessions/${団}/${元のライブ名}`) : null,
-                  秘.枝として使えるか(閲覧枝)
-                    ? 落とす(`live_view/${閲覧枝}/${元のライブ名}`)
-                    : null,
-                ]);
-                // 期限は最後。中身が残っているうちは決まりが消させない
-                // （消せると、期限を外してリンクをよみがえらせられてしまう）。
-                // 団体の枝には期限が無いので、共有していたときだけ
-                if (団 && 団 !== 枝) {
-                  await 落とす(期限の場所(枝));
-                  if (秘.枝として使えるか(閲覧枝)) await 落とす(期限の場所(閲覧枝));
-                }
-              }, 2e3));
+              timestamp: RTDB.serverTimestamp(),
+            }).catch(() => {});
+            if (秘.枝として使えるか(閲覧枝))
+              RTDB.update(RTDB.ref(fb.rtdb, 写しの場所(閲覧枝, 元のライブ名)), {
+                status: 'finished',
+                timestamp: RTDB.serverTimestamp(),
+              }).catch(() => {});
+            setTimeout(async () => {
+              const 落とす = (道) => RTDB.remove(RTDB.ref(fb.rtdb, 道)).catch(() => {});
+              await Promise.all([
+                RTDB.remove(e).catch(() => {}),
+                // 共有履歴と在席は別の枝にあるので、明示的に消す
+                落とす(共有履歴の場所(枝, 元のライブ名)),
+                落とす(在席の場所(枝, 元のライブ名)),
+                // 共有していたときの道しるべと写しも消す
+                団 && 団 !== 枝 ? 落とす(`live_sessions/${団}/${元のライブ名}`) : null,
+                秘.枝として使えるか(閲覧枝) ? 落とす(`live_view/${閲覧枝}/${元のライブ名}`) : null,
+              ]);
+              // 期限は最後。中身が残っているうちは決まりが消させない
+              // （消せると、期限を外してリンクをよみがえらせられてしまう）。
+              // 団体の枝には期限が無いので、共有していたときだけ
+              if (団 && 団 !== 枝) {
+                await 落とす(期限の場所(枝));
+                if (秘.枝として使えるか(閲覧枝)) await 落とす(期限の場所(閲覧枝));
+              }
+            }, 2e3);
           }
           // クラウドへ送る。ここも待たない。
           // 届くまでは「未同期」のままにしておく。そうすれば syncSessions の
           // 再送で拾われ、通信が戻ったときに自動で送られる。
           if (S) {
             const o = JSON.parse(JSON.stringify(T));
-            ((o.syncStatus = '同期済み'),
-              (o.lastModified = (0, a.serverTimestamp)()),
-              (0, a.setDoc)((0, a.doc)(fb.db, `groups/${S}/sessions`, p), o, {
-                merge: !0,
-              })
-                .then(() => {
-                  // 印を付けるのは送った版だけ。送信中に編集されると更新日時が
-                  // 変わるので、一致する場合に限る（updateSession と同じ考え方）。
-                  e((e) => ({
-                    sessions: e.sessions.map((e) =>
-                      e && e.id === p && e.lastModified === T.lastModified
-                        ? Object.assign({}, e, {
-                            syncStatus: '同期済み',
-                          })
-                        : e
-                    ),
-                    syncStatus: '同期済み',
-                  }));
-                })
-                .catch((t) => {
-                  (console.error('Save Session Cloud Error:', t),
-                    不具合を控える('記録の保存（クラウド）', t),
-                    e({
-                      syncStatus: '同期エラー',
-                    }));
+            o.syncStatus = '同期済み';
+            o.lastModified = Firestore.serverTimestamp();
+            Firestore.setDoc(Firestore.doc(fb.db, `groups/${S}/sessions`, p), o, { merge: true })
+              .then(() => {
+                // 印を付けるのは送った版だけ。送信中に編集されると更新日時が
+                // 変わるので、一致する場合に限る（updateSession と同じ考え方）。
+                e((e) => ({
+                  sessions: e.sessions.map((e) =>
+                    e && e.id === p && e.lastModified === T.lastModified
+                      ? Object.assign({}, e, { syncStatus: '同期済み' })
+                      : e
+                  ),
+                  syncStatus: '同期済み',
                 }));
+              })
+              .catch((t) => {
+                console.error('Save Session Cloud Error:', t);
+                不具合を控える('記録の保存（クラウド）', t);
+                e({ syncStatus: '同期エラー' });
+              });
           }
         },
         loadSession: (t) => {
           const o = (Array.isArray(s().sessions) ? s().sessions : []).find((e) => e && e.id === t);
-          o &&
+          if (o)
             e({
               archers: o.archers,
               shotsPerRound: o.shotCount,
@@ -2758,9 +2470,9 @@ const M = (0, s.create)()(
          */
         履歴の記録を記録画面で開く: (id) => {
           const 店 = s();
-          if (店.履歴の編集 || 店.isLiveActive) return !1;
+          if (店.履歴の編集 || 店.isLiveActive) return false;
           const 記録 = (Array.isArray(店.sessions) ? 店.sessions : []).find((e) => e && e.id === id);
-          if (!記録) return !1;
+          if (!記録) return false;
           行動を控える('履歴の記録を記録画面で開く', id);
           e({
             履歴の編集: {
@@ -2780,15 +2492,15 @@ const M = (0, s.create)()(
             historyStack: [],
             redoStack: [],
           });
-          return !0;
+          return true;
         },
         /**
          * 記録画面での履歴の直しを終える。保存するなら記録を書き戻し（題・メモ・タグ・日付は
          * そのまま）、どちらでも直す前の盤面を据え直す
          */
         履歴の編集を終える: (保存する) => {
-          const 店 = s(),
-            編集 = 店.履歴の編集;
+          const 店 = s();
+          const 編集 = 店.履歴の編集;
           if (!編集) return;
           if (保存する) {
             const 射手たち = JSON.parse(JSON.stringify(Array.isArray(店.archers) ? 店.archers : []));
@@ -2804,9 +2516,9 @@ const M = (0, s.create)()(
           e(Object.assign({ 履歴の編集: null }, 編集.控え));
         },
         deleteSession: async (o) => {
-          const i = Array.isArray(s().sessions) ? s().sessions : [],
-            n = i.find((e) => e && e.id === o),
-            c = i.filter((e) => e && e.id !== o);
+          const i = Array.isArray(s().sessions) ? s().sessions : [];
+          const n = i.find((e) => e && e.id === o);
+          const c = i.filter((e) => e && e.id !== o);
           // 送信が済むまでは「未同期」にしておく。こうしないと、通信できない
           // ときに削除がクラウドへ届かないまま消し込まれ、次の全件取得で
           // 記録が復活しゴミ箱からも消えてしまう。
@@ -2819,31 +2531,17 @@ const M = (0, s.create)()(
             n
               ? {
                   sessions: c,
-                  trash: [
-                    ...s().trash,
-                    Object.assign({}, n, {
-                      syncStatus: '未同期',
-                      pendingDelete: !0,
-                    }),
-                  ],
+                  trash: [...s().trash, Object.assign({}, n, { syncStatus: '未同期', pendingDelete: true })],
                 }
-              : {
-                  sessions: c,
-                }
+              : { sessions: c }
           );
           try {
-            const e = (0, a.writeBatch)(fb.db);
-            if ((e.delete((0, a.doc)(fb.db, `groups/${s().activeGroupId}/sessions`, o)), n)) {
-              const i = JSON.parse(
-                JSON.stringify(
-                  Object.assign({}, n, {
-                    syncStatus: 'trashed',
-                  })
-                )
-              );
-              ((i.lastModified = (0, a.serverTimestamp)()),
-                (i.deletedAt = (0, a.serverTimestamp)()),
-                e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, o), i));
+            const e = Firestore.writeBatch(fb.db);
+            if ((e.delete(Firestore.doc(fb.db, `groups/${s().activeGroupId}/sessions`, o)), n)) {
+              const i = JSON.parse(JSON.stringify(Object.assign({}, n, { syncStatus: 'trashed' })));
+              i.lastModified = Firestore.serverTimestamp();
+              i.deletedAt = Firestore.serverTimestamp();
+              e.set(Firestore.doc(fb.db, `groups/${s().activeGroupId}/trash`, o), i);
             }
             // 完了は待たない。通信できないと終わらないため、呼び出し側が
             // 待つと画面が反応しなくなる。送信は待ち行列に任せる。
@@ -2853,9 +2551,9 @@ const M = (0, s.create)()(
           }
         },
         emptyTrash: async () => {
-          const { trash: o, activeGroupId: n } = s();
-          if (!o || 0 === o.length) return;
-          const c = o.map((e) => e.id);
+          const { trash, activeGroupId: n } = s();
+          if (!trash || 0 === trash.length) return;
+          const c = trash.map((e) => e.id);
           // 通信できるかで送信を止めない。止めると手元からだけ消えて、クラウドの
           // ゴミ箱は残り、次の全件取得で消したはずのものが戻ってきてしまう。
           // 通信できないときは Firestore の待ち行列に入り、つながった時点で送られる。
@@ -2867,22 +2565,18 @@ const M = (0, s.create)()(
           });
           if (
             (console.log('[Store] Emptying trash:', c.length, 'items'),
-            e({
-              trash: [],
-              permanentlyDeleted: 控え,
-            }),
+            e({ trash: [], permanentlyDeleted: 控え }),
             n)
           )
             try {
-              const e = (0, a.writeBatch)(fb.db);
-              (c.forEach((s) => {
-                e.delete((0, a.doc)(fb.db, `groups/${n}/trash`, s));
-              }),
-                // 完了は待たない（deleteSession と同じ理由）
-                e
-                  .commit()
-                  .then(() => console.log('[Store] Cloud trash emptied'))
-                  .catch((e) => console.error('[Store] Error emptying cloud trash:', e)));
+              const e = Firestore.writeBatch(fb.db);
+              c.forEach((s) => {
+                e.delete(Firestore.doc(fb.db, `groups/${n}/trash`, s));
+              });
+              // 完了は待たない（deleteSession と同じ理由）
+              e.commit()
+                .then(() => console.log('[Store] Cloud trash emptied'))
+                .catch((e) => console.error('[Store] Error emptying cloud trash:', e));
             } catch (e) {
               console.error('[Store] Error emptying cloud trash:', e);
             }
@@ -2891,8 +2585,8 @@ const M = (0, s.create)()(
           if (o && 0 !== o.length)
             try {
               const { trash: i, activeGroupId: c } = s();
-              (console.log('[Store] Deleting trash items:', o),
-                c && console.log(`[Store] Target Firestore path: groups/${c}/trash/`));
+              console.log('[Store] Deleting trash items:', o);
+              if (c) console.log(`[Store] Target Firestore path: groups/${c}/trash/`);
               const l = (i || []).filter((e) => e && !o.includes(e.id));
               // emptyTrash と同じく、完全に消したことを控えておく
               const 控え = Object.assign({}, s().permanentlyDeleted);
@@ -2900,23 +2594,16 @@ const M = (0, s.create)()(
                 e && (控え[e] = Date.now());
               });
               // emptyTrash と同じ理由で、通信できるかでは止めない
-              if (
-                (e({
-                  trash: l,
-                  permanentlyDeleted: 控え,
-                }),
-                c)
-              ) {
-                const e = (0, a.writeBatch)(fb.db);
+              if ((e({ trash: l, permanentlyDeleted: 控え }), c)) {
+                const e = Firestore.writeBatch(fb.db);
                 let s = 0;
-                (o.forEach((o) => {
-                  o && (e.delete((0, a.doc)(fb.db, `groups/${c}/trash`, o)), s++);
-                }),
-                  s > 0 &&
-                    e
-                      .commit()
-                      .then(() => console.log('[Store] Successfully deleted trash items from cloud'))
-                      .catch((e) => console.error('[Store] Delete trash items error:', e)));
+                o.forEach((o) => {
+                  o && (e.delete(Firestore.doc(fb.db, `groups/${c}/trash`, o)), s++);
+                });
+                if (s > 0)
+                  e.commit()
+                    .then(() => console.log('[Store] Successfully deleted trash items from cloud'))
+                    .catch((e) => console.error('[Store] Delete trash items error:', e));
               } else console.warn('[Store] Skipping cloud deletion: activeGroupId が無い');
             } catch (e) {
               console.error('[Store] Delete trash items error:', e);
@@ -2924,101 +2611,82 @@ const M = (0, s.create)()(
           else console.warn('[Store] deleteTrashItems called with no IDs');
         },
         deleteMultipleSessions: async (o) => {
-          const i = s().sessions.filter((e) => o.includes(e.id)),
-            n = s().sessions.filter((e) => !o.includes(e.id));
+          const i = s().sessions.filter((e) => o.includes(e.id));
+          const n = s().sessions.filter((e) => !o.includes(e.id));
           e({
             sessions: n,
             trash: [
               ...s().trash,
-              ...i.map((e) =>
-                Object.assign({}, e, {
-                  syncStatus: '未同期',
-                  pendingDelete: !0,
-                })
-              ),
+              ...i.map((e) => Object.assign({}, e, { syncStatus: '未同期', pendingDelete: true })),
             ],
           });
           try {
-            const e = (0, a.writeBatch)(fb.db);
-            (o.forEach((o) => e.delete((0, a.doc)(fb.db, `groups/${s().activeGroupId}/sessions`, o))),
-              i.forEach((o) => {
-                const i = JSON.parse(
-                  JSON.stringify(
-                    Object.assign({}, o, {
-                      syncStatus: 'trashed',
-                    })
-                  )
-                );
-                ((i.lastModified = (0, a.serverTimestamp)()),
-                  (i.deletedAt = (0, a.serverTimestamp)()),
-                  e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, o.id), i));
-              }),
-              e.commit().catch((e) => console.error('Batch Delete Error:', e)));
+            const e = Firestore.writeBatch(fb.db);
+            o.forEach((o) => e.delete(Firestore.doc(fb.db, `groups/${s().activeGroupId}/sessions`, o)));
+            i.forEach((o) => {
+              const i = JSON.parse(JSON.stringify(Object.assign({}, o, { syncStatus: 'trashed' })));
+              i.lastModified = Firestore.serverTimestamp();
+              i.deletedAt = Firestore.serverTimestamp();
+              e.set(Firestore.doc(fb.db, `groups/${s().activeGroupId}/trash`, o.id), i);
+            });
+            e.commit().catch((e) => console.error('Batch Delete Error:', e));
           } catch (e) {
             console.error('Batch Delete Error:', e);
           }
         },
         restoreSession: async (o) => {
-          const i = Array.isArray(s().trash) ? s().trash : [],
-            n = i.find((e) => e && e.id === o);
+          const i = Array.isArray(s().trash) ? s().trash : [];
+          const n = i.find((e) => e && e.id === o);
           if (!n) return;
           const c = Object.assign({}, n, {
-              // 送信が済むまでは「未同期」にしておく。こうしないと、通信できない
-              // ときに復元がクラウドへ届かないまま同期済み扱いになり、次の全件取得
-              // でゴミ箱へ戻ってしまう。
-              syncStatus: '未同期',
-              // ゴミ箱側の印は記録に持ち込まない
-              pendingDelete: void 0,
-            }),
-            l = Array.isArray(s().sessions) ? s().sessions : [];
+            // 送信が済むまでは「未同期」にしておく。こうしないと、通信できない
+            // ときに復元がクラウドへ届かないまま同期済み扱いになり、次の全件取得
+            // でゴミ箱へ戻ってしまう。
+            syncStatus: '未同期',
+            // ゴミ箱側の印は記録に持ち込まない
+            pendingDelete: undefined,
+          });
+          const l = Array.isArray(s().sessions) ? s().sessions : [];
           // 戻したなら、完全に消した控えからも外す。残っていると画面に出なくなる
           const 控え = Object.assign({}, s().permanentlyDeleted);
           delete 控え[o];
-          e({
-            trash: i.filter((e) => e && e.id !== o),
-            sessions: [c, ...l],
-            permanentlyDeleted: 控え,
-          });
+          e({ trash: i.filter((e) => e && e.id !== o), sessions: [c, ...l], permanentlyDeleted: 控え });
           try {
-            const e = (0, a.writeBatch)(fb.db);
-            e.delete((0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, o));
+            const e = Firestore.writeBatch(fb.db);
+            e.delete(Firestore.doc(fb.db, `groups/${s().activeGroupId}/trash`, o));
             const i = JSON.parse(JSON.stringify(c));
-            ((i.lastModified = (0, a.serverTimestamp)()),
-              e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/sessions`, o), i),
-              e.commit().catch((e) => console.error('Restore Session Error:', e)));
+            i.lastModified = Firestore.serverTimestamp();
+            e.set(Firestore.doc(fb.db, `groups/${s().activeGroupId}/sessions`, o), i);
+            e.commit().catch((e) => console.error('Restore Session Error:', e));
           } catch (e) {
             console.error('Restore Session Error:', e);
           }
         },
         restoreTrashItems: async (o) => {
           if (!o || 0 === o.length) return;
-          const i = s().trash || [],
-            n = i.filter((e) => o.includes(e.id)),
-            c = i.filter((e) => !o.includes(e.id)),
-            l = n.map((e) =>
-              Object.assign({}, e, {
-                syncStatus: '未同期',
-                // ゴミ箱側の印は記録に持ち込まない
-                pendingDelete: void 0,
-              })
-            );
+          const i = s().trash || [];
+          const n = i.filter((e) => o.includes(e.id));
+          const c = i.filter((e) => !o.includes(e.id));
+          const l = n.map((e) =>
+            Object.assign({}, e, {
+              syncStatus: '未同期',
+              // ゴミ箱側の印は記録に持ち込まない
+              pendingDelete: undefined,
+            })
+          );
           // restoreSession と同じく、完全に消した控えから外す
           const 控え = Object.assign({}, s().permanentlyDeleted);
           o.forEach((e) => delete 控え[e]);
-          e({
-            trash: c,
-            sessions: [...l, ...s().sessions],
-            permanentlyDeleted: 控え,
-          });
+          e({ trash: c, sessions: [...l, ...s().sessions], permanentlyDeleted: 控え });
           try {
-            const e = (0, a.writeBatch)(fb.db);
-            (o.forEach((o) => e.delete((0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, o))),
-              l.forEach((o) => {
-                const i = JSON.parse(JSON.stringify(o));
-                ((i.lastModified = (0, a.serverTimestamp)()),
-                  e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/sessions`, o.id), i));
-              }),
-              e.commit().catch((e) => console.error('Restore Trash Items Error:', e)));
+            const e = Firestore.writeBatch(fb.db);
+            o.forEach((o) => e.delete(Firestore.doc(fb.db, `groups/${s().activeGroupId}/trash`, o)));
+            l.forEach((o) => {
+              const i = JSON.parse(JSON.stringify(o));
+              i.lastModified = Firestore.serverTimestamp();
+              e.set(Firestore.doc(fb.db, `groups/${s().activeGroupId}/sessions`, o.id), i);
+            });
+            e.commit().catch((e) => console.error('Restore Trash Items Error:', e));
           } catch (e) {
             console.error('Restore Trash Items Error:', e);
           }
@@ -3027,8 +2695,8 @@ const M = (0, s.create)()(
           e(s);
         },
         updateSession: async (o, i) => {
-          const n = s().sessions || [],
-            c = n.findIndex((e) => e && e.id === o);
+          const n = s().sessions || [];
+          const c = n.findIndex((e) => e && e.id === o);
           if (-1 === c) return;
           const l = n[c];
           if ('member' === s().activeRole && i.archers && i.archers.length < l.archers.length)
@@ -3036,29 +2704,19 @@ const M = (0, s.create)()(
           // 送信が済むまでは「未同期」にしておく。こうしないと、通信できない
           // ときに編集がクラウドへ届かないまま同期済み扱いになり、他の記録が
           // 更新された拍子にクラウドの古い写しで上書きされて編集が消える。
-          const d = Object.assign({}, n[c], i, {
-              lastModified: Date.now(),
-              syncStatus: '未同期',
-            }),
-            u = [...n];
-          ((u[c] = d),
-            e({
-              sessions: u,
-            }));
+          const d = Object.assign({}, n[c], i, { lastModified: Date.now(), syncStatus: '未同期' });
+          const u = [...n];
+          u[c] = d;
+          e({ sessions: u });
           const m = s().activeGroupId;
           if (!m) return;
-          s()._pendingUpdateTimers[o] && clearTimeout(s()._pendingUpdateTimers[o]);
+          if (s()._pendingUpdateTimers[o]) clearTimeout(s()._pendingUpdateTimers[o]);
           const p = setTimeout(() => {
             // タイマーの控えは先に片付ける。通信できないと送信は終わらないので、
             // 送信の完了を待って片付けると残り続けてしまう。
             e((e) => {
               const s = Object.assign({}, e._pendingUpdateTimers);
-              return (
-                delete s[o],
-                {
-                  _pendingUpdateTimers: s,
-                }
-              );
+              return (delete s[o], { _pendingUpdateTimers: s });
             });
             const t = s().sessions.find((e) => e && e.id === o);
             if (!t) return;
@@ -3073,29 +2731,23 @@ const M = (0, s.create)()(
             const n = JSON.parse(JSON.stringify(t));
             // 送信の完了は待たない。通信できないときは Firestore の待ち行列に
             // 入り、つながった時点で送られる。
-            ((n.lastModified = (0, a.serverTimestamp)()),
-              (0, a.updateDoc)((0, a.doc)(fb.db, `groups/${m}/sessions`, o), n)
-                .then(() => {
-                  (console.log(`[Store] Debounced sync finished for ${o}`),
-                    e((e) => ({
-                      sessions: e.sessions.map((e) =>
-                        e && e.id === o && e.lastModified === 送った版
-                          ? Object.assign({}, e, {
-                              syncStatus: '同期済み',
-                            })
-                          : e
-                      ),
-                    })));
-                })
-                .catch((e) => {
-                  console.error('Update Session Sync Error:', e);
+            n.lastModified = Firestore.serverTimestamp();
+            Firestore.updateDoc(Firestore.doc(fb.db, `groups/${m}/sessions`, o), n)
+              .then(() => {
+                console.log(`[Store] Debounced sync finished for ${o}`);
+                e((e) => ({
+                  sessions: e.sessions.map((e) =>
+                    e && e.id === o && e.lastModified === 送った版
+                      ? Object.assign({}, e, { syncStatus: '同期済み' })
+                      : e
+                  ),
                 }));
+              })
+              .catch((e) => {
+                console.error('Update Session Sync Error:', e);
+              });
           }, 800);
-          e((e) => ({
-            _pendingUpdateTimers: Object.assign({}, e._pendingUpdateTimers, {
-              [o]: p,
-            }),
-          }));
+          e((e) => ({ _pendingUpdateTimers: Object.assign({}, e._pendingUpdateTimers, { [o]: p }) }));
         },
         setSubstitution: (t, o, a, i) => {
           if (s().書き換えを止めるか()) return;
@@ -3117,28 +2769,17 @@ const M = (0, s.create)()(
                 const t = Object.assign({}, e.substitutionIds || {});
                 return (
                   i ? (t[o] = i) : delete t[o],
-                  Object.assign({}, e, {
-                    substitutions: s,
-                    substitutionIds: t,
-                    lastModified: Date.now(),
-                  })
+                  Object.assign({}, e, { substitutions: s, substitutionIds: t, lastModified: Date.now() })
                 );
               }
               if ((delete s[o], e.substitutionIds)) {
                 const t = Object.assign({}, e.substitutionIds);
                 return (
                   delete t[o],
-                  Object.assign({}, e, {
-                    substitutions: s,
-                    substitutionIds: t,
-                    lastModified: Date.now(),
-                  })
+                  Object.assign({}, e, { substitutions: s, substitutionIds: t, lastModified: Date.now() })
                 );
               }
-              return Object.assign({}, e, {
-                substitutions: s,
-                lastModified: Date.now(),
-              });
+              return Object.assign({}, e, { substitutions: s, lastModified: Date.now() });
             }
             return e;
           });
@@ -3147,15 +2788,12 @@ const M = (0, s.create)()(
           const 交代が変わる = 交代の中身(n) !== 前の交代;
           e(
             Object.assign(
-              {
-                archers: n,
-                lastLocalChange: Date.now(),
-              },
+              { archers: n, lastLocalChange: Date.now() },
               交代が変わる ? { historyStack: [...s().historyStack, 変える前], redoStack: [] } : null
             )
           );
           const { isLiveActive: c, liveSessionName: l, shotsPerRound: d } = s();
-          c && l && v(l, n, d);
+          if (c && l) v(l, n, d);
         },
         setShotsPerRound: (t) => {
           if (s().書き換えを止めるか()) return;
@@ -3166,35 +2804,27 @@ const M = (0, s.create)()(
           const 射数が変わる = t !== s().shotsPerRound;
           const o = (Array.isArray(s().archers) ? s().archers : []).map((e) => {
             if (!e || e.isSeparator) return e;
-            const s = Array.isArray(e.marks) ? e.marks : [],
-              o = [...s];
+            const s = Array.isArray(e.marks) ? e.marks : [];
+            const o = [...s];
             return (
               t > s.length ? o.push(...Array(t - s.length).fill('')) : o.splice(t),
-              Object.assign({}, e, {
-                marks: o,
-                lastModified: Date.now(),
-              })
+              Object.assign({}, e, { marks: o, lastModified: Date.now() })
             );
           });
           e(
             Object.assign(
-              {
-                shotsPerRound: t,
-                archers: o,
-                lastLocalChange: Date.now(),
-              },
+              { shotsPerRound: t, archers: o, lastLocalChange: Date.now() },
               // 同じ射数を選び直したときは積まない。押しても何も起きない
               // 一手が挟まり、取り消しが空振りして見える
-              射数が変わる
-                ? { historyStack: [...s().historyStack, 変える前], redoStack: [] }
-                : null
+              射数が変わる ? { historyStack: [...s().historyStack, 変える前], redoStack: [] } : null
             )
           );
           const { isLiveActive: a, liveSessionName: i } = s();
-          a && i && v(i, o, t);
+          if (a && i) v(i, o, t);
         },
         loadData: () => {
-          (s().checkOfflineSave(), s().syncSessions());
+          s().checkOfflineSave();
+          s().syncSessions();
         },
         // オフライン保存が効いているかを確かめ、効いていなければ画面に出す文言を持たせる。
         // 効いていない状態で電波の無い場所で保存すると、画面を閉じた時点で
@@ -3204,20 +2834,13 @@ const M = (0, s.create)()(
             await waitForDb();
             const o = require('./db').persistence || {};
             if ('ok' === o.state || 'pending' === o.state)
-              return void (
-                s().offlineSaveWarning &&
-                e({
-                  offlineSaveWarning: null,
-                })
-              );
+              return void (s().offlineSaveWarning && e({ offlineSaveWarning: null }));
             const i =
               'multipleTabs' === o.state
                 ? 'この記録画面が複数のタブで開かれているため、電波のない場所での保存が保護されません。他のタブを閉じて開き直してください。'
                 : 'このブラウザでは電波のない場所での保存が保護されません。通信できる場所で保存してください。';
-            (console.warn('[Store] オフライン保存が無効です:', o),
-              e({
-                offlineSaveWarning: i,
-              }));
+            console.warn('[Store] オフライン保存が無効です:', o);
+            e({ offlineSaveWarning: i });
           } catch (o) {
             console.warn('[Store] オフライン保存の確認に失敗:', o);
           }
@@ -3256,14 +2879,14 @@ const M = (0, s.create)()(
           // まとめてよいのは同じ団体のときだけ。団体を移った直後に前の団体ぶんを
           // 使い回すと、移った先の練習を前の団体の枝へ流してしまう
           if (合言葉の取り寄せ && 合言葉の取り寄せ.団体 === 団体) return 合言葉の取り寄せ.約束;
-          const 場所 = (0, a.doc)(fb.db, `groups/${団体}`);
+          const 場所 = Firestore.doc(fb.db, `groups/${団体}`);
           const 一度 = async () => {
-            const 今 = await (0, a.getDoc)(場所);
+            const 今 = await Firestore.getDoc(場所);
             const 有 = (今.data() || {}).liveSecret;
             if (秘.枝として使えるか(有)) return 有;
-            await (0, a.setDoc)(場所, { liveSecret: 秘.合言葉を作る() }, { merge: !0 });
+            await Firestore.setDoc(場所, { liveSecret: 秘.合言葉を作る() }, { merge: true });
             // 読み直す。同時に作られていたら、相手のほうが載っている
-            const 後 = await (0, a.getDoc)(場所);
+            const 後 = await Firestore.getDoc(場所);
             const 決 = (後.data() || {}).liveSecret;
             return 秘.枝として使えるか(決) ? 決 : null;
           };
@@ -3307,81 +2930,75 @@ const M = (0, s.create)()(
           try {
             // 帳面そのものが無い団体には、何も作らない。
             // 作ると、存在しない団体の同意記録が生まれる
-            const 帳面 = await (0, a.getDoc)((0, a.doc)(fb.db, 'group_accounts', id));
+            const 帳面 = await Firestore.getDoc(Firestore.doc(fb.db, 'group_accounts', id));
             if (!帳面.exists()) return;
             // 同意の記録は private に置く。誰でも読める場所に置くと、
             // 団体IDを知る者に「いつ・どうやって同意を得たか」まで見える
-            const 場所 = (0, a.doc)(fb.db, 'group_accounts', id, 'private', 'consent');
-            const 中身 = await (0, a.getDoc)(場所);
+            const 場所 = Firestore.doc(fb.db, 'group_accounts', id, 'private', 'consent');
+            const 中身 = await Firestore.getDoc(場所);
             const 法 = require('./legalDocs');
             // 記録が無いのが、画面を入れる前からの団体。静かに補う
             const 版 = 中身.exists() ? (中身.data() || {}).同意の版 : undefined;
             if (!版) {
-              await (0, a.setDoc)(場所, 法.口頭での同意の記録(), { merge: !0 });
+              await Firestore.setDoc(場所, 法.口頭での同意の記録(), { merge: true });
               return;
             }
             // 口頭で同意を得ている移りは、画面で求め直さず記録だけ進める。
             // どの移りが済んでいるかは legalDocs.js の 口頭で済んでいる移り に書く
             if (法.口頭で済んでいるか(版)) {
-              await (0, a.setDoc)(
+              await Firestore.setDoc(
                 場所,
                 法.口頭での同意の記録(`口頭（${法.同意の版} 版の内容を説明のうえ同意。前の記録は ${版}）`),
-                { merge: !0 }
+                { merge: true }
               );
               return;
             }
-            if (法.同意を取り直すか(版)) e({ 同意の確認が要る: !0 });
+            if (法.同意を取り直すか(版)) e({ 同意の確認が要る: true });
           } catch (t) {
             // 確かめられなくても、使えなくする話ではない。次に入ったときにまた試す
             console.warn('[Store] 同意の確認に失敗:', t);
           }
         },
-
         // 同意してもらえた。記録して印を下ろす
         同意を記録する: async () => {
           const { activeGroupId: 団体, activeRole: 役, publicGroupId: 公開ID } = s();
-          e({ 同意の確認が要る: !1 });
+          e({ 同意の確認が要る: false });
           if ('group' !== 役) return;
           const id = (公開ID || 団体 || '').toUpperCase();
           if (!id) return;
           try {
-            const 場所 = (0, a.doc)(fb.db, 'group_accounts', id, 'private', 'consent');
-            await (0, a.setDoc)(場所, require('./legalDocs').同意の記録(), { merge: !0 });
+            const 場所 = Firestore.doc(fb.db, 'group_accounts', id, 'private', 'consent');
+            await Firestore.setDoc(場所, require('./legalDocs').同意の記録(), { merge: true });
           } catch (t) {
             // 書けなかったときは印を立て直す。次の起動でまた聞く
-            (console.warn('[Store] 同意の記録に失敗:', t), e({ 同意の確認が要る: !0 }));
+            console.warn('[Store] 同意の記録に失敗:', t);
+            e({ 同意の確認が要る: true });
           }
         },
-
         // あとにする。記録は残さないので、次の起動でまた出る
-        同意をあとにする: () => e({ 同意の確認が要る: !1 }),
-
+        同意をあとにする: () => e({ 同意の確認が要る: false }),
         verifyGroupPassword: async (e) => {
-          const { activeUserEmail: i, activeGroupId: n, publicGroupId: c } = s();
-          let l = i || fb.auth.currentUser?.email;
-          if (!l && (n || c)) {
+          const { activeUserEmail, activeGroupId: n, publicGroupId } = s();
+          let l = activeUserEmail || fb.auth.currentUser?.email;
+          if (!l && (n || publicGroupId)) {
             console.log('[Store] Fetching group email for password verification...');
-            const e = c || n;
+            const e = publicGroupId || n;
             try {
-              const s = (0, a.doc)(fb.db, 'group_accounts', e.toUpperCase()),
-                o = await (0, a.getDoc)(s);
+              const s = Firestore.doc(fb.db, 'group_accounts', e.toUpperCase());
+              const o = await Firestore.getDoc(s);
               o.exists() && (l = o.data().email);
             } catch (e) {
               console.error('[Store] Failed to fetch group email:', e);
             }
           }
-          if (!l) return (console.warn('[Store] verifyGroupPassword: No email found to verify.'), !1);
+          if (!l) return (console.warn('[Store] verifyGroupPassword: No email found to verify.'), false);
           try {
-            return (await (0, o.signInWithEmailAndPassword)(fb.auth, l, e), !0);
+            return (await FirebaseAuth.signInWithEmailAndPassword(fb.auth, l, e), true);
           } catch (e) {
-            return (console.error('[Store] verifyGroupPassword error:', e), !1);
+            return (console.error('[Store] verifyGroupPassword error:', e), false);
           }
         },
-        setAdminMode: (s) =>
-          e({
-            isAdminMode: s,
-            isAdminModePending: !1,
-          }),
+        setAdminMode: (s) => e({ isAdminMode: s, isAdminModePending: false }),
         /**
          * 団体アカウントを消す（設定 → アカウント → アカウントを削除する）。
          * 団体アカウントで入っていて、管理者モードで、ライブ中でないときだけ。
@@ -3389,29 +3006,39 @@ const M = (0, s.create)()(
          * setAuth(null) して入口へ戻す
          */
         deleteGroupAccount: async (合言葉, 進み) => {
-          const { activeGroupId: 団体ID, activeRole: 役, isAdminMode: 管理者, isLiveActive: ライブ中, activeUserEmail: 控えの宛先 } = s();
-          if ('group' !== 役 || !団体ID) return { ok: !1, 訳: '団体アカウントで入っているときだけ消せます' };
-          if (!管理者) return { ok: !1, 訳: '管理者モードをオンにしてください' };
-          if (ライブ中) return { ok: !1, 訳: 'ライブ記録中は消せません。先にライブを止めてください' };
-          if (!合言葉) return { ok: !1, 訳: 'パスワードを入れてください' };
+          const {
+            activeGroupId: 団体ID,
+            activeRole: 役,
+            isAdminMode: 管理者,
+            isLiveActive: ライブ中,
+            activeUserEmail: 控えの宛先,
+          } = s();
+          if ('group' !== 役 || !団体ID)
+            return { ok: false, 訳: '団体アカウントで入っているときだけ消せます' };
+          if (!管理者) return { ok: false, 訳: '管理者モードをオンにしてください' };
+          if (ライブ中) return { ok: false, 訳: 'ライブ記録中は消せません。先にライブを止めてください' };
+          if (!合言葉) return { ok: false, 訳: 'パスワードを入れてください' };
           let 宛先 = 控えの宛先 || fb.auth.currentUser?.email;
           if (!宛先) {
             try {
-              const d = await (0, a.getDoc)((0, a.doc)(fb.db, 'group_accounts', 団体ID));
+              const d = await Firestore.getDoc(Firestore.doc(fb.db, 'group_accounts', 団体ID));
               d.exists() && (宛先 = d.data().email);
             } catch (e) {
               console.error('[Store] deleteGroupAccount: email lookup failed', e);
             }
           }
-          if (!宛先) return { ok: !1, 訳: 'メールアドレスが分かりません' };
+          if (!宛先) return { ok: false, 訳: 'メールアドレスが分かりません' };
           try {
-            (s().stopPeriodicSync(),
-              s().stopListeningToSessions(),
-              s().stopListeningToMembers(),
-              s().stopListeningToAlumni(),
-              s().stopListeningToTrash());
-            const 結果 = await 消去.団体を消す({ db: fb.db, a, auth: fb.auth, o }, { 団体ID, email: 宛先, 合言葉, 進み });
-            return { ok: !0, 件数: 結果.件数 };
+            s().stopPeriodicSync();
+            s().stopListeningToSessions();
+            s().stopListeningToMembers();
+            s().stopListeningToAlumni();
+            s().stopListeningToTrash();
+            const 結果 = await 消去.団体を消す(
+              { db: fb.db, a: Firestore, auth: fb.auth, o: FirebaseAuth },
+              { 団体ID, email: 宛先, 合言葉, 進み }
+            );
+            return { ok: true, 件数: 結果.件数 };
           } catch (e) {
             console.error('[Store] deleteGroupAccount failed:', e);
             const 符号 = String((e && e.code) || '');
@@ -3422,25 +3049,15 @@ const M = (0, s.create)()(
                 : /network/.test(符号)
                   ? '通信エラーが発生しました。電波の良い場所でもう一度お試しください'
                   : '削除に失敗しました: ' + String((e && e.message) || e);
-            return { ok: !1, 訳 };
+            return { ok: false, 訳 };
           }
         },
         updateGroupName: async (o) => {
           const { activeGroupId: i } = s();
           if (i) {
-            e({
-              activeGroupName: o,
-            });
+            e({ activeGroupName: o });
             try {
-              await (0, a.setDoc)(
-                (0, a.doc)(fb.db, 'groups', i),
-                {
-                  groupName: o,
-                },
-                {
-                  merge: !0,
-                }
-              );
+              await Firestore.setDoc(Firestore.doc(fb.db, 'groups', i), { groupName: o }, { merge: true });
             } catch (e) {
               console.error('[Store] updateGroupName error:', e);
             }
@@ -3449,55 +3066,31 @@ const M = (0, s.create)()(
         setAutoPromotionEnabled: async (o) => {
           const { activeGroupId: i } = s();
           if (i) {
-            e({
-              autoPromotionEnabled: o,
-            });
+            e({ autoPromotionEnabled: o });
             try {
-              await (0, a.setDoc)(
-                (0, a.doc)(fb.db, `groups/${i}/config`, 'app_settings'),
-                {
-                  autoPromotionEnabled: o,
-                },
-                {
-                  merge: !0,
-                }
+              await Firestore.setDoc(
+                Firestore.doc(fb.db, `groups/${i}/config`, 'app_settings'),
+                { autoPromotionEnabled: o },
+                { merge: true }
               );
             } catch (e) {
               console.error('[Store] setAutoPromotionEnabled error:', e);
             }
           }
         },
-        setIsAdminModePending: (s) =>
-          e({
-            isAdminModePending: s,
-          }),
-        setHistoryViewMode: (s) =>
-          e({
-            historyViewMode: s,
-          }),
-        setSelectedHistorySessionId: (s) =>
-          e({
-            selectedHistorySessionId: s,
-          }),
-        setViewScale: (s) =>
-          e({
-            viewScale: Math.max(0.5, Math.min(2, s)),
-          }),
+        setIsAdminModePending: (s) => e({ isAdminModePending: s }),
+        setHistoryViewMode: (s) => e({ historyViewMode: s }),
+        setSelectedHistorySessionId: (s) => e({ selectedHistorySessionId: s }),
+        setViewScale: (s) => e({ viewScale: Math.max(0.5, Math.min(2, s)) }),
         setIsLiveActive: (o) => {
-          if (
-            (e({
-              isLiveActive: o,
-            }),
-            o)
-          ) {
-            const e = s().activeSessionID || 'live-current',
-              o = s().liveSessionName || e,
-              a = s().archers || [];
+          if ((e({ isLiveActive: o }), o)) {
+            const e = s().activeSessionID || 'live-current';
+            const o = s().liveSessionName || e;
+            const a = s().archers || [];
             const 枝 = ライブの枝();
-            fb.rtdb &&
-              枝 &&
-              (0, i.set)(
-                (0, i.ref)(fb.rtdb, `live_sessions/${枝}/${o}/state`),
+            if (fb.rtdb && 枝)
+              RTDB.set(
+                RTDB.ref(fb.rtdb, `live_sessions/${枝}/${o}/state`),
                 JSON.parse(
                   JSON.stringify({
                     archers: Array.isArray(a) ? a : [],
@@ -3511,25 +3104,24 @@ const M = (0, s.create)()(
         checkAndAutoIncrementGrades: async () => {
           const { activeGroupId: o } = s();
           if (!o) return;
-          const i = new Date(),
-            n = i.getFullYear(),
-            c = i.getMonth() + 1,
-            l = i.getDate(),
-            d = c > 4 || (4 === c && l >= 1);
-          let hasPromotionRecord = !1;
+          const i = new Date();
+          const n = i.getFullYear();
+          const c = i.getMonth() + 1;
+          const l = i.getDate();
+          const d = c > 4 || (4 === c && l >= 1);
+          let hasPromotionRecord = false;
           try {
             console.log('[AutoPromotion] Fetching latest app_settings...');
-            const s = await (0, a.getDoc)((0, a.doc)(fb.db, `groups/${o}/config`, 'app_settings'));
+            const s = await Firestore.getDoc(Firestore.doc(fb.db, `groups/${o}/config`, 'app_settings'));
             if (s.exists()) {
-              const t = s.data(),
-                o = {};
-              ('number' == typeof t.currentFreshmanTerm && (o.currentFreshmanTerm = t.currentFreshmanTerm),
-                Array.isArray(t.tagTemplates) && (o.tagTemplates = t.tagTemplates),
-                'number' == typeof t.lastPromotionYear &&
-                  ((hasPromotionRecord = !0), (o.lastPromotionYear = t.lastPromotionYear)),
-                'boolean' == typeof t.autoPromotionEnabled &&
-                  (o.autoPromotionEnabled = t.autoPromotionEnabled),
-                e(o));
+              const t = s.data();
+              const o = {};
+              'number' == typeof t.currentFreshmanTerm && (o.currentFreshmanTerm = t.currentFreshmanTerm);
+              Array.isArray(t.tagTemplates) && (o.tagTemplates = t.tagTemplates);
+              'number' == typeof t.lastPromotionYear &&
+                ((hasPromotionRecord = true), (o.lastPromotionYear = t.lastPromotionYear));
+              'boolean' == typeof t.autoPromotionEnabled && (o.autoPromotionEnabled = t.autoPromotionEnabled);
+              e(o);
             }
           } catch (e) {
             return void console.error('[AutoPromotion] Failed to fetch config:', e);
@@ -3537,28 +3129,21 @@ const M = (0, s.create)()(
           if (!hasPromotionRecord) {
             const base = d ? n : n - 1;
             console.log(`[AutoPromotion] No record yet. Storing baseline year ${base} without promoting.`);
-            e({
-              lastPromotionYear: base,
-            });
+            e({ lastPromotionYear: base });
             // 送信の完了は待たない。この関数は syncSessions の先頭で待たれて
             // いるため、通信できないときにここで止まると同期そのものが動かなく
             // なる。手元の値は先に入れてあり、送信は待ち行列に任せる。
-            (0, a.setDoc)(
-              (0, a.doc)(fb.db, `groups/${o}/config`, 'app_settings'),
-              {
-                lastPromotionYear: base,
-                lastModified: (0, a.serverTimestamp)(),
-              },
-              {
-                merge: !0,
-              }
+            Firestore.setDoc(
+              Firestore.doc(fb.db, `groups/${o}/config`, 'app_settings'),
+              { lastPromotionYear: base, lastModified: Firestore.serverTimestamp() },
+              { merge: true }
             ).catch((e) => {
               console.error('[AutoPromotion] Failed to store baseline year:', e);
             });
             return;
           }
-          const { autoPromotionEnabled: u, lastPromotionYear: m } = s();
-          if (u && d && m < n) {
+          const { autoPromotionEnabled, lastPromotionYear } = s();
+          if (autoPromotionEnabled && d && lastPromotionYear < n) {
             console.log(`[AutoPromotion] Performing annual promotion for year ${n}...`);
             try {
               await s().incrementAllGrades();
@@ -3576,63 +3161,65 @@ const M = (0, s.create)()(
             // こちらには何も残らないので、原因が分からないまま止まる
             //（2026-09-09、スマホで同期に失敗したときに便りが1通も無かった）
             不具合を控える('記録の同期', new Error('雲との連絡口が用意できませんでした'));
-            e({
-              syncStatus: '同期エラー',
-            });
+            e({ syncStatus: '同期エラー' });
             return;
           }
           if ((await s().checkAndAutoIncrementGrades(), I))
             return void console.log('[syncSessions] Already syncing, skipping...');
-          I = !0;
+          I = true;
           const o = s().lastSyncTime || 0;
-          (console.log(
+          console.log(
             '[Store] Syncing:',
             `同期を開始中 (前回基準時刻: ${o ? new Date(o).toLocaleString() : 'なし'})...`
-          ),
-            e({
-              syncStatus: '同期中',
-            }));
+          );
+          e({ syncStatus: '同期中' });
           try {
             // この関数の後ろで局所的な M を宣言しているため、下の forEach の中で
             // M.getState() を呼ぶと「初期化前の参照」で例外になり、同期が丸ごと
             // 止まる。団体IDはここで控えておく。
             const 団体ID = s().activeGroupId;
-            const i = (0, a.collection)(fb.db, `groups/${s().activeGroupId}/sessions`),
-              n = (0, a.collection)(fb.db, `groups/${s().activeGroupId}/members`),
-              c = (0, a.collection)(fb.db, `groups/${s().activeGroupId}/trash`),
-              l = (0, a.collection)(fb.db, `groups/${s().activeGroupId}/alumni`);
-            let d, u, m, p;
+            const i = Firestore.collection(fb.db, `groups/${s().activeGroupId}/sessions`);
+            const n = Firestore.collection(fb.db, `groups/${s().activeGroupId}/members`);
+            const c = Firestore.collection(fb.db, `groups/${s().activeGroupId}/trash`);
+            const l = Firestore.collection(fb.db, `groups/${s().activeGroupId}/alumni`);
+            let d;
+            let u;
+            let m;
+            let p;
             if (o > 0 && s().sessions.length > 0) {
               const e = Math.max(0, o - 1e4);
-              ((d = await (0, a.getDocs)((0, a.query)(i, (0, a.where)('lastModified', '>', e)))),
-                (u = await (0, a.getDocs)((0, a.query)(n, (0, a.where)('lastModified', '>', e)))),
-                (m = await (0, a.getDocs)((0, a.query)(c, (0, a.where)('lastModified', '>', e)))),
-                (p = await (0, a.getDocs)((0, a.query)(l, (0, a.where)('lastModified', '>', e)))));
-            } else
-              ((d = await (0, a.getDocs)((0, a.query)(i, (0, a.orderBy)('date', 'desc'), (0, a.limit)(100)))),
-                (u = await (0, a.getDocs)(n)),
-                (m = await (0, a.getDocs)(c)),
-                (p = await (0, a.getDocs)(l)));
+              d = await Firestore.getDocs(Firestore.query(i, Firestore.where('lastModified', '>', e)));
+              u = await Firestore.getDocs(Firestore.query(n, Firestore.where('lastModified', '>', e)));
+              m = await Firestore.getDocs(Firestore.query(c, Firestore.where('lastModified', '>', e)));
+              p = await Firestore.getDocs(Firestore.query(l, Firestore.where('lastModified', '>', e)));
+            } else {
+              d = await Firestore.getDocs(
+                Firestore.query(i, Firestore.orderBy('date', 'desc'), Firestore.limit(100))
+              );
+              u = await Firestore.getDocs(n);
+              m = await Firestore.getDocs(c);
+              p = await Firestore.getDocs(l);
+            }
             let h = o;
-            const f = (e) => (e?.toMillis ? e.toMillis() : e || 0),
-              S = [];
+            const f = (e) => (e?.toMillis ? e.toMillis() : e || 0);
+            const S = [];
             d.forEach((e) => {
-              const s = e.data(),
-                t = f(s.lastModified);
+              const s = e.data();
+              const t = f(s.lastModified);
               t > h && (h = t);
               const cleanedTags =
-                  s.tags && Array.isArray(s.tags)
-                    ? Array.from(new Set(s.tags.map(normalizeTag).filter(Boolean)))
-                    : [],
-                originalTags = s.tags || [],
-                isModified =
-                  cleanedTags.length !== originalTags.length ||
-                  cleanedTags.some((e, t) => e !== originalTags[t]);
+                s.tags && Array.isArray(s.tags)
+                  ? Array.from(new Set(s.tags.map(normalizeTag).filter(Boolean)))
+                  : [];
+              const originalTags = s.tags || [];
+              const isModified =
+                cleanedTags.length !== originalTags.length ||
+                cleanedTags.some((e, t) => e !== originalTags[t]);
               if (isModified && fb.db && 団体ID) {
-                const s = (0, a.doc)(fb.db, `groups/${団体ID}/sessions`, e.id);
-                (0, a.updateDoc)(s, {
-                  tags: cleanedTags,
-                }).catch((e) => console.error('[Store] syncSessions Auto cleanup failed:', e));
+                const s = Firestore.doc(fb.db, `groups/${団体ID}/sessions`, e.id);
+                Firestore.updateDoc(s, { tags: cleanedTags }).catch((e) =>
+                  console.error('[Store] syncSessions Auto cleanup failed:', e)
+                );
               }
               S.push(
                 Object.assign({}, s, {
@@ -3648,118 +3235,89 @@ const M = (0, s.create)()(
             });
             const b = [];
             u.forEach((e) => {
-              const s = e.data(),
-                t = f(s.lastModified);
-              (t > h && (h = t),
-                b.push(
-                  Object.assign({}, s, {
-                    id: e.id,
-                    lastModified: t,
-                    syncStatus: '同期済み',
-                  })
-                ));
+              const s = e.data();
+              const t = f(s.lastModified);
+              t > h && (h = t);
+              b.push(Object.assign({}, s, { id: e.id, lastModified: t, syncStatus: '同期済み' }));
             });
             const v = [];
             m.forEach((e) => {
-              const s = e.data(),
-                t = f(s.lastModified);
-              (t > h && (h = t),
-                v.push(
-                  Object.assign({}, s, {
-                    id: e.id,
-                    lastModified: t,
-                    syncStatus: '同期済み',
-                  })
-                ));
+              const s = e.data();
+              const t = f(s.lastModified);
+              t > h && (h = t);
+              v.push(Object.assign({}, s, { id: e.id, lastModified: t, syncStatus: '同期済み' }));
             });
             const T = [];
-            (p.forEach((e) => {
-              const s = e.data(),
-                t = f(s.lastModified);
-              (t > h && (h = t),
-                T.push(
-                  Object.assign({}, s, {
-                    id: e.id,
-                    lastModified: t,
-                    syncStatus: '同期済み',
-                  })
-                ));
-            }),
-              console.log(
-                `[syncSessions] Fetched counts: S=${S.length}, M=${b.length}, T=${v.length}, A=${T.length}`
-              ));
-            const w = y(s().sessions, S, !1, !1),
-              I = y(s().members, b, !1, !1),
-              M = y(s().trash, v, !1, !1),
-              A = y(s().alumni, T, !1, !1),
-              D = new Set(A.map((e) => e.id)),
-              O = I.filter((e) => !D.has(e.id)),
-              L = new Set(O.map((e) => e.id)),
-              G = A.filter((e) => !L.has(e.id));
+            p.forEach((e) => {
+              const s = e.data();
+              const t = f(s.lastModified);
+              t > h && (h = t);
+              T.push(Object.assign({}, s, { id: e.id, lastModified: t, syncStatus: '同期済み' }));
+            });
+            console.log(
+              `[syncSessions] Fetched counts: S=${S.length}, M=${b.length}, T=${v.length}, A=${T.length}`
+            );
+            const w = mergeById(s().sessions, S, false, false);
+            const I = mergeById(s().members, b, false, false);
+            const M = mergeById(s().trash, v, false, false);
+            const A = mergeById(s().alumni, T, false, false);
+            const D = new Set(A.map((e) => e.id));
+            const O = I.filter((e) => !D.has(e.id));
+            const L = new Set(O.map((e) => e.id));
+            const G = A.filter((e) => !L.has(e.id));
             w.sort((e, s) => {
               const t = e.date ? new Date(e.date).getTime() : 0;
               return (s.date ? new Date(s.date).getTime() : 0) - t;
             });
             // 戻した記録がまだクラウドへ届いていないときは、クラウド側のゴミ箱の
             // 写しで消し込まない。届くまでは手元の「戻した」状態を優先する。
-            const 復元待ち = new Set(w.filter((e) => e && '未同期' === e.syncStatus).map((e) => e.id)),
-              ごみ箱 = M.filter((e) => e && !復元待ち.has(e.id));
-            const $ = new Set(ごみ箱.map((e) => e.id)),
-              N = w.filter((e) => !$.has(e.id)),
-              P = N.filter((e) => '未同期' === e.syncStatus);
+            const 復元待ち = new Set(w.filter((e) => e && '未同期' === e.syncStatus).map((e) => e.id));
+            const ごみ箱 = M.filter((e) => e && !復元待ち.has(e.id));
+            const $ = new Set(ごみ箱.map((e) => e.id));
+            const N = w.filter((e) => !$.has(e.id));
+            const P = N.filter((e) => '未同期' === e.syncStatus);
             let k = N;
             // 下のブロックでは e が一括送信の入れ物に隠れるので、状態の更新役を
             // ここで控えておく（ブロックの中から外の e は参照できない）。
             const 反映 = e;
             if (P.length > 0) {
               console.log(`[syncSessions] Syncing ${P.length} pending sessions...`);
-              const e = (0, a.writeBatch)(fb.db),
-                o = Date.now();
+              const e = Firestore.writeBatch(fb.db);
+              const o = Date.now();
               const 送った版 = new Map(P.map((x) => [x.id, x.lastModified]));
-              (P.forEach((i) => {
+              P.forEach((i) => {
                 const n = JSON.parse(
-                  JSON.stringify(
-                    Object.assign({}, i, {
-                      syncStatus: '同期済み',
-                      lastModified: o,
-                    })
-                  )
+                  JSON.stringify(Object.assign({}, i, { syncStatus: '同期済み', lastModified: o }))
                 );
-                (e.set(
-                  (0, a.doc)(fb.db, `groups/${s().activeGroupId}/sessions`, i.id),
-                  Object.assign({}, n, {
-                    lastModified: (0, a.serverTimestamp)(),
-                  })
-                ),
-                  // 戻した記録なら、クラウドのゴミ箱からも取り下げる。存在しない場合は
-                  // 何も起きないので、新規の記録に対しても安全。
-                  e.delete((0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, i.id)));
-              }),
-                // 送信の完了は待たない。通信できないと一括送信は終わらないため、
-                // 待つとこの関数自体が返らず、同期中の目印が立ったままになって
-                // 以後の同期がすべて飛ばされる。届いた時点で印を付け替える。
-                //
-                // 印を付けるのは送った版だけ。送信中に編集されると更新日時が
-                // 変わるので、一致する場合に限る。これをしないと、まだ届いて
-                // いない新しい内容が同期済みに見え、次の突き合わせでクラウドの
-                // 古い写しに負けて編集が消える。
-                e
-                  .commit()
-                  .then(() => {
-                    反映((t) => ({
-                      sessions: t.sessions.map((t) =>
-                        t && 送った版.has(t.id) && t.lastModified === 送った版.get(t.id)
-                          ? Object.assign({}, t, {
-                              syncStatus: '同期済み',
-                              lastModified: o,
-                            })
-                          : t
-                      ),
-                    }));
-                  })
-                  .catch((t) => {
-                    console.error('[syncSessions] 記録の送信に失敗:', t);
+                e.set(
+                  Firestore.doc(fb.db, `groups/${s().activeGroupId}/sessions`, i.id),
+                  Object.assign({}, n, { lastModified: Firestore.serverTimestamp() })
+                );
+                // 戻した記録なら、クラウドのゴミ箱からも取り下げる。存在しない場合は
+                // 何も起きないので、新規の記録に対しても安全。
+                e.delete(Firestore.doc(fb.db, `groups/${s().activeGroupId}/trash`, i.id));
+              });
+              // 送信の完了は待たない。通信できないと一括送信は終わらないため、
+              // 待つとこの関数自体が返らず、同期中の目印が立ったままになって
+              // 以後の同期がすべて飛ばされる。届いた時点で印を付け替える。
+              //
+              // 印を付けるのは送った版だけ。送信中に編集されると更新日時が
+              // 変わるので、一致する場合に限る。これをしないと、まだ届いて
+              // いない新しい内容が同期済みに見え、次の突き合わせでクラウドの
+              // 古い写しに負けて編集が消える。
+              e.commit()
+                .then(() => {
+                  反映((t) => ({
+                    sessions: t.sessions.map((t) =>
+                      t && 送った版.has(t.id) && t.lastModified === 送った版.get(t.id)
+                        ? Object.assign({}, t, { syncStatus: '同期済み', lastModified: o })
+                        : t
+                    ),
                   }));
+                })
+                .catch((t) => {
+                  console.error('[syncSessions] 記録の送信に失敗:', t);
+                });
             }
             // 送信が済んでいない削除を送り直す。通信できないときに削除した場合、
             // 待ち行列ごと失われることがあり、そのままだと次の全件取得で記録が
@@ -3771,40 +3329,32 @@ const M = (0, s.create)()(
             if (Y.length > 0) {
               console.log(`[syncSessions] Syncing ${Y.length} pending deletions...`);
               try {
-                const e = (0, a.writeBatch)(fb.db);
+                const e = Firestore.writeBatch(fb.db);
                 const 送った削除 = new Map(Y.map((x) => [x.id, x.lastModified]));
-                (Y.forEach((t) => {
-                  e.delete((0, a.doc)(fb.db, `groups/${s().activeGroupId}/sessions`, t.id));
-                  const i = dropUndefinedDeep(
-                    Object.assign({}, t, {
-                      syncStatus: 'trashed',
-                    })
-                  );
+                Y.forEach((t) => {
+                  e.delete(Firestore.doc(fb.db, `groups/${s().activeGroupId}/sessions`, t.id));
+                  const i = dropUndefinedDeep(Object.assign({}, t, { syncStatus: 'trashed' }));
                   // pendingDelete は端末の中だけの印。クラウドへは持ち込まない
-                  (delete i.pendingDelete,
-                    (i.lastModified = (0, a.serverTimestamp)()),
-                    (i.deletedAt = i.deletedAt || (0, a.serverTimestamp)()),
-                    e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, t.id), i));
-                }),
-                  // 記録の送信と同じ理由で完了は待たない。印を付けるのも
-                  // 送った版だけにする。
-                  e
-                    .commit()
-                    .then(() => {
-                      反映((t) => ({
-                        trash: t.trash.map((t) =>
-                          t && 送った削除.has(t.id) && t.lastModified === 送った削除.get(t.id)
-                            ? Object.assign({}, t, {
-                                syncStatus: '同期済み',
-                                pendingDelete: !1,
-                              })
-                            : t
-                        ),
-                      }));
-                    })
-                    .catch((t) => {
-                      console.error('[syncSessions] 削除の送り直しに失敗:', t);
+                  delete i.pendingDelete;
+                  i.lastModified = Firestore.serverTimestamp();
+                  i.deletedAt = i.deletedAt || Firestore.serverTimestamp();
+                  e.set(Firestore.doc(fb.db, `groups/${s().activeGroupId}/trash`, t.id), i);
+                });
+                // 記録の送信と同じ理由で完了は待たない。印を付けるのも
+                // 送った版だけにする。
+                e.commit()
+                  .then(() => {
+                    反映((t) => ({
+                      trash: t.trash.map((t) =>
+                        t && 送った削除.has(t.id) && t.lastModified === 送った削除.get(t.id)
+                          ? Object.assign({}, t, { syncStatus: '同期済み', pendingDelete: false })
+                          : t
+                      ),
                     }));
+                  })
+                  .catch((t) => {
+                    console.error('[syncSessions] 削除の送り直しに失敗:', t);
+                  });
               } catch (t) {
                 console.error('[syncSessions] 削除の送り直しの組み立てに失敗:', t);
               }
@@ -3823,29 +3373,28 @@ const M = (0, s.create)()(
             if (未送信のメンバー.length > 0) {
               console.log(`[syncSessions] Syncing ${未送信のメンバー.length} pending members...`);
               try {
-                const e = (0, a.writeBatch)(fb.db);
+                const e = Firestore.writeBatch(fb.db);
                 const 送ったメンバー = new Map(未送信のメンバー.map((x) => [x.id, x.lastModified]));
-                (未送信のメンバー.forEach((t) => {
+                未送信のメンバー.forEach((t) => {
                   const i = dropUndefinedDeep(Object.assign({}, t, { syncStatus: '同期済み' }));
-                  ((i.lastModified = (0, a.serverTimestamp)()),
-                    e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/members`, t.id), i));
-                }),
-                  // 完了は待たない（記録・ゴミ箱と同じ理由）
-                  e
-                    .commit()
-                    .then(() => {
-                      (反映((t) => ({
-                        members: t.members.map((t) =>
-                          t && 送ったメンバー.has(t.id) && t.lastModified === 送ったメンバー.get(t.id)
-                            ? Object.assign({}, t, { syncStatus: '同期済み' })
-                            : t
-                        ),
-                      })),
-                        s().syncMemberLookup());
-                    })
-                    .catch((t) => {
-                      console.error('[syncSessions] メンバーの送り直しに失敗:', t);
+                  i.lastModified = Firestore.serverTimestamp();
+                  e.set(Firestore.doc(fb.db, `groups/${s().activeGroupId}/members`, t.id), i);
+                });
+                // 完了は待たない（記録・ゴミ箱と同じ理由）
+                e.commit()
+                  .then(() => {
+                    反映((t) => ({
+                      members: t.members.map((t) =>
+                        t && 送ったメンバー.has(t.id) && t.lastModified === 送ったメンバー.get(t.id)
+                          ? Object.assign({}, t, { syncStatus: '同期済み' })
+                          : t
+                      ),
                     }));
+                    s().syncMemberLookup();
+                  })
+                  .catch((t) => {
+                    console.error('[syncSessions] メンバーの送り直しに失敗:', t);
+                  });
               } catch (t) {
                 console.error('[syncSessions] メンバーの送り直しの組み立てに失敗:', t);
               }
@@ -3857,32 +3406,31 @@ const M = (0, s.create)()(
             if (未送信の卒業生.length > 0) {
               console.log(`[syncSessions] Syncing ${未送信の卒業生.length} pending alumni...`);
               try {
-                const e = (0, a.writeBatch)(fb.db);
+                const e = Firestore.writeBatch(fb.db);
                 const 送った卒業生 = new Map(未送信の卒業生.map((x) => [x.id, x.lastModified]));
-                (未送信の卒業生.forEach((t) => {
+                未送信の卒業生.forEach((t) => {
                   const i = dropUndefinedDeep(Object.assign({}, t, { syncStatus: '同期済み' }));
-                  ((i.lastModified = (0, a.serverTimestamp)()),
-                    e.set((0, a.doc)(fb.db, `groups/${s().activeGroupId}/alumni`, t.id), i));
-                }),
-                  e
-                    .commit()
-                    .then(() => {
-                      反映((t) => ({
-                        alumni: t.alumni.map((t) =>
-                          t && 送った卒業生.has(t.id) && t.lastModified === 送った卒業生.get(t.id)
-                            ? Object.assign({}, t, { syncStatus: '同期済み' })
-                            : t
-                        ),
-                      }));
-                    })
-                    .catch((t) => {
-                      console.error('[syncSessions] 卒業生の送り直しに失敗:', t);
+                  i.lastModified = Firestore.serverTimestamp();
+                  e.set(Firestore.doc(fb.db, `groups/${s().activeGroupId}/alumni`, t.id), i);
+                });
+                e.commit()
+                  .then(() => {
+                    反映((t) => ({
+                      alumni: t.alumni.map((t) =>
+                        t && 送った卒業生.has(t.id) && t.lastModified === 送った卒業生.get(t.id)
+                          ? Object.assign({}, t, { syncStatus: '同期済み' })
+                          : t
+                      ),
                     }));
+                  })
+                  .catch((t) => {
+                    console.error('[syncSessions] 卒業生の送り直しに失敗:', t);
+                  });
               } catch (t) {
                 console.error('[syncSessions] 卒業生の送り直しの組み立てに失敗:', t);
               }
             }
-            (e({
+            e({
               // 完全に消したものは、クラウドにまだ残っていても画面に出さない
               sessions: k.filter((e) => e && !完全削除ずみ.has(e.id)),
               members: O,
@@ -3890,115 +3438,98 @@ const M = (0, s.create)()(
               alumni: G,
               syncStatus: '同期済み',
               lastSyncTime: h,
-            }),
-              console.log(`[syncSessions] Finished. New lastSyncTime: ${h}`),
-              setTimeout(() => {
-                s().ensurePersonalIds();
-              }, 500));
+            });
+            console.log(`[syncSessions] Finished. New lastSyncTime: ${h}`);
+            setTimeout(() => {
+              s().ensurePersonalIds();
+            }, 500);
           } catch (s) {
-            (console.error('[syncSessions] Error:', s),
-              不具合を控える('記録の同期', s),
-              e({
-                syncStatus: '同期エラー',
-              }),
-              // 断られたなら、入り直せば直る。何をすればよいかを画面に出す
-              入り直せば直るか(s) && e({ 再ログインの案内: 入り直しの案内 }));
+            console.error('[syncSessions] Error:', s);
+            不具合を控える('記録の同期', s);
+            e({ syncStatus: '同期エラー' });
+            if (入り直せば直るか(s)) e({ 再ログインの案内: 入り直しの案内 });
           } finally {
-            I = !1;
+            I = false;
           }
         },
         syncAllToCloud: async () => {
           行動を控える('クラウドへ同期', (s().sessions || []).length + '件');
-
           const { activeGroupId: o, activeRole: i, isNetworkOnline: n } = s();
           if (o && n)
             if ('member' !== i) {
-              (console.log('[Store] Loading:', 'クラウドへの同期を開始...'),
-                e({
-                  syncStatus: '同期中',
-                }));
+              console.log('[Store] Loading:', 'クラウドへの同期を開始...');
+              e({ syncStatus: '同期中' });
               try {
-                const o = (e) => JSON.parse(JSON.stringify(e)),
-                  i = [];
+                const o = (e) => JSON.parse(JSON.stringify(e));
+                const i = [];
                 // 送る時点の更新日時を控えておく。送り終えたあとに照合して、
                 // 送っている最中の編集に「同期済み」を付けないようにする
                 const 控える = (一覧) =>
                   new Map((一覧 || []).filter((e) => e && e.id).map((e) => [e.id, e.lastModified]));
-                const 送った記録 = 控える(s().sessions),
-                   送った名簿 = 控える(s().members),
-                   送った卒業生 = 控える(s().alumni);
-                (s().members.forEach((e) => {
+                const 送った記録 = 控える(s().sessions);
+                const 送った名簿 = 控える(s().members);
+                const 送った卒業生 = 控える(s().alumni);
+                s().members.forEach((e) => {
                   if (e && e.id) {
-                    const n = Object.assign({}, e, {
-                      lastModified: Date.now(),
-                    });
+                    const n = Object.assign({}, e, { lastModified: Date.now() });
                     i.push({
                       type: 'set',
-                      ref: (0, a.doc)(fb.db, `groups/${s().activeGroupId}/members`, e.id),
+                      ref: Firestore.doc(fb.db, `groups/${s().activeGroupId}/members`, e.id),
                       data: o(n),
                     });
                   }
-                }),
-                  s().alumni.forEach((e) => {
-                    if (e && e.id) {
-                      const n = Object.assign({}, e, {
-                        lastModified: Date.now(),
-                      });
-                      i.push({
-                        type: 'set',
-                        ref: (0, a.doc)(fb.db, `groups/${s().activeGroupId}/alumni`, e.id),
-                        data: o(n),
-                      });
-                    }
-                  }),
-                  s().sessions.forEach((e) => {
-                    if (e && e.id) {
-                      const n = o(
-                        Object.assign({}, e, {
-                          syncStatus: '同期済み',
-                          lastModified: Date.now(),
-                        })
-                      );
-                      i.push({
-                        type: 'set',
-                        ref: (0, a.doc)(fb.db, `groups/${s().activeGroupId}/sessions`, e.id),
-                        data: n,
-                      });
-                    }
-                  }),
-                  s().trash.forEach((e) => {
-                    if (e && e.id) {
-                      const n = Object.assign({}, e, {
-                        lastModified: Date.now(),
-                      });
-                      // pendingDelete は端末の中だけの印。クラウドへは持ち込まない
-                      // （syncSessions の送り直しと同じ扱い）
-                      delete n.pendingDelete;
-                      i.push({
-                        type: 'set',
-                        ref: (0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, e.id),
-                        data: o(n),
-                      });
-                    }
-                  }),
-                  i.push({
-                    type: 'set',
-                    ref: (0, a.doc)(fb.db, `groups/${s().activeGroupId}/config`, 'app_settings'),
-                    data: {
-                      currentFreshmanTerm: s().currentFreshmanTerm,
-                      tagTemplates: s().tagTemplates,
-                      lastPromotionYear: s().lastPromotionYear,
-                      lastModified: Date.now(),
-                    },
-                  }));
+                });
+                s().alumni.forEach((e) => {
+                  if (e && e.id) {
+                    const n = Object.assign({}, e, { lastModified: Date.now() });
+                    i.push({
+                      type: 'set',
+                      ref: Firestore.doc(fb.db, `groups/${s().activeGroupId}/alumni`, e.id),
+                      data: o(n),
+                    });
+                  }
+                });
+                s().sessions.forEach((e) => {
+                  if (e && e.id) {
+                    const n = o(Object.assign({}, e, { syncStatus: '同期済み', lastModified: Date.now() }));
+                    i.push({
+                      type: 'set',
+                      ref: Firestore.doc(fb.db, `groups/${s().activeGroupId}/sessions`, e.id),
+                      data: n,
+                    });
+                  }
+                });
+                s().trash.forEach((e) => {
+                  if (e && e.id) {
+                    const n = Object.assign({}, e, { lastModified: Date.now() });
+                    // pendingDelete は端末の中だけの印。クラウドへは持ち込まない
+                    // （syncSessions の送り直しと同じ扱い）
+                    delete n.pendingDelete;
+                    i.push({
+                      type: 'set',
+                      ref: Firestore.doc(fb.db, `groups/${s().activeGroupId}/trash`, e.id),
+                      data: o(n),
+                    });
+                  }
+                });
+                i.push({
+                  type: 'set',
+                  ref: Firestore.doc(fb.db, `groups/${s().activeGroupId}/config`, 'app_settings'),
+                  data: {
+                    currentFreshmanTerm: s().currentFreshmanTerm,
+                    tagTemplates: s().tagTemplates,
+                    lastPromotionYear: s().lastPromotionYear,
+                    lastModified: Date.now(),
+                  },
+                });
                 const n = 400;
                 for (let e = 0; e < i.length; e += n) {
-                  const s = i.slice(e, e + n),
-                    o = (0, a.writeBatch)(fb.db);
-                  (s.forEach((e) => {
+                  const s = i.slice(e, e + n);
+                  const o = Firestore.writeBatch(fb.db);
+                  s.forEach((e) => {
                     'set' === e.type ? o.set(e.ref, e.data) : 'delete' === e.type && o.delete(e.ref);
-                  }),
-                    await o.commit());
+                  });
+                  await o.commit();
                 }
                 // 印を付けるのは「送った版」だけ。送っている最中に編集された
                 // ものまで送信済みにすると、その新しい内容が送り直しの対象から
@@ -4009,23 +3540,15 @@ const M = (0, s.create)()(
                       ? Object.assign({}, e, { syncStatus: '同期済み' })
                       : e
                   );
-                const c = 済ませる(s().sessions, 送った記録),
-                  l = 済ませる(s().members, 送った名簿),
-                  d = 済ませる(s().alumni, 送った卒業生);
-                (e({
-                  sessions: c,
-                  members: l,
-                  alumni: d,
-                  syncStatus: '同期済み',
-                  lastSyncTime: Date.now(),
-                }),
-                  console.log('[Store] Loading:', 'クラウドへの送信が完了しました'));
+                const c = 済ませる(s().sessions, 送った記録);
+                const l = 済ませる(s().members, 送った名簿);
+                const d = 済ませる(s().alumni, 送った卒業生);
+                e({ sessions: c, members: l, alumni: d, syncStatus: '同期済み', lastSyncTime: Date.now() });
+                console.log('[Store] Loading:', 'クラウドへの送信が完了しました');
               } catch (s) {
-                (console.error('Full Sync Error:', s?.message || s),
-                  不具合を控える('クラウドへ同期', s),
-                  e({
-                    syncStatus: '同期エラー',
-                  }));
+                console.error('Full Sync Error:', s?.message || s);
+                不具合を控える('クラウドへ同期', s);
+                e({ syncStatus: '同期エラー' });
               }
             } else console.log('[Store] Member role: syncAllToCloud is strictly restricted.');
         },
@@ -4033,8 +3556,8 @@ const M = (0, s.create)()(
         countUnsynced: () => {
           const 数 = (一覧) =>
             Array.isArray(一覧) ? 一覧.filter((e) => e && '未同期' === e.syncStatus).length : 0;
-          const { sessions: o, members: i, alumni: n, trash: c } = s();
-          return 数(o) + 数(i) + 数(n) + 数(c);
+          const { sessions, members: i, alumni: n, trash: c } = s();
+          return 数(sessions) + 数(i) + 数(n) + 数(c);
         },
         /**
          * ログアウトの前に、送れていないものを送り切ろうとする。
@@ -4059,58 +3582,62 @@ const M = (0, s.create)()(
           return s().countUnsynced();
         },
         fetchAndOverwriteFromCloud: async () => {
-          (console.log('[Store] Loading:', 'クラウドからの取得を開始...'),
-            e({
-              syncStatus: '同期中',
-            }));
+          console.log('[Store] Loading:', 'クラウドからの取得を開始...');
+          e({ syncStatus: '同期中' });
           const _fetchDb = await waitForDb();
           if (!_fetchDb) {
             console.warn('[Store] fetchAndOverwriteFromCloud: db still undefined after await, aborting');
             // 同期と同じく、黙って終わらせない
             不具合を控える('クラウドから取得', new Error('雲との連絡口が用意できませんでした'));
-            e({
-              syncStatus: '同期エラー',
-            });
+            e({ syncStatus: '同期エラー' });
             return;
           }
           try {
-            const o = await (0, a.getDocs)((0, a.collection)(fb.db, `groups/${s().activeGroupId}/members`));
+            const o = await Firestore.getDocs(
+              Firestore.collection(fb.db, `groups/${s().activeGroupId}/members`)
+            );
             let n = [];
             o.forEach((e) => n.push(e.data()));
-            const c = await (0, a.getDocs)((0, a.collection)(fb.db, `groups/${s().activeGroupId}/sessions`));
+            const c = await Firestore.getDocs(
+              Firestore.collection(fb.db, `groups/${s().activeGroupId}/sessions`)
+            );
             let l = [];
-            (c.forEach((e) => l.push(e.data())),
-              console.log('[Store] Loading:', `セッション ${l.length}件を取得しました`));
-            const d = await (0, a.getDocs)((0, a.collection)(fb.db, `groups/${s().activeGroupId}/trash`));
+            c.forEach((e) => l.push(e.data()));
+            console.log('[Store] Loading:', `セッション ${l.length}件を取得しました`);
+            const d = await Firestore.getDocs(
+              Firestore.collection(fb.db, `groups/${s().activeGroupId}/trash`)
+            );
             let u = [];
             d.forEach((e) => u.push(e.data()));
-            const m = await (0, a.getDocs)((0, a.collection)(fb.db, `groups/${s().activeGroupId}/alumni`));
+            const m = await Firestore.getDocs(
+              Firestore.collection(fb.db, `groups/${s().activeGroupId}/alumni`)
+            );
             let p = [];
             m.forEach((e) => p.push(e.data()));
-            const h = await (0, a.getDoc)(
-              (0, a.doc)(fb.db, `groups/${s().activeGroupId}/config`, 'app_settings')
+            const h = await Firestore.getDoc(
+              Firestore.doc(fb.db, `groups/${s().activeGroupId}/config`, 'app_settings')
             );
-            let f = s().currentFreshmanTerm,
-              S = s().tagTemplates,
-              b = s().lastPromotionYear;
+            let f = s().currentFreshmanTerm;
+            let S = s().tagTemplates;
+            let b = s().lastPromotionYear;
             if (h.exists()) {
               const e = h.data();
               e &&
-                (void 0 !== e.currentFreshmanTerm && (f = e.currentFreshmanTerm),
-                void 0 !== e.tagTemplates && (S = e.tagTemplates),
-                void 0 !== e.lastPromotionYear && (b = e.lastPromotionYear));
+                (undefined !== e.currentFreshmanTerm && (f = e.currentFreshmanTerm),
+                undefined !== e.tagTemplates && (S = e.tagTemplates),
+                undefined !== e.lastPromotionYear && (b = e.lastPromotionYear));
             }
-            const v = y(s().sessions, l, !1, !0),
-              T = y(s().members, n, !1, !0),
-              w = y(s().trash, u, !1, !0);
+            const v = mergeById(s().sessions, l, false, true);
+            const T = mergeById(s().members, n, false, true);
+            const w = mergeById(s().trash, u, false, true);
             // ゴミ箱に入っているものは履歴に出さない。削除がまだクラウドへ届いて
             // いないとき、ここで書き戻すと記録が復活してしまう。
             // 逆に、戻したばかりでまだ送信できていない記録は、クラウドのゴミ箱の
             // 写しがあってもゴミ箱に入れ直さない。
-            const 復元待ち = new Set(v.filter((e) => e && '未同期' === e.syncStatus).map((e) => e.id)),
-              ごみ箱 = w.filter((e) => e && !復元待ち.has(e.id)),
-              I = new Set(ごみ箱.map((e) => e.id)),
-              M = v.filter((e) => e && !I.has(e.id));
+            const 復元待ち = new Set(v.filter((e) => e && '未同期' === e.syncStatus).map((e) => e.id));
+            const ごみ箱 = w.filter((e) => e && !復元待ち.has(e.id));
+            const I = new Set(ごみ箱.map((e) => e.id));
+            const M = v.filter((e) => e && !I.has(e.id));
             // 完全に消したものの後始末。ここは記録もゴミ箱も全件そろっているので、
             // クラウドから本当に消えたかを正しく判定できる。
             //   ・まだ残っている → 消し直して控えは残す
@@ -4133,21 +3660,19 @@ const M = (0, s.create)()(
               if (消し直す.length > 0) {
                 console.log(`[Store] クラウドに残っている ${消し直す.length}件 を消し直します`);
                 try {
-                  const e = (0, a.writeBatch)(fb.db);
-                  (消し直す.forEach((t) => {
-                    (e.delete((0, a.doc)(fb.db, `groups/${s().activeGroupId}/sessions`, t)),
-                      e.delete((0, a.doc)(fb.db, `groups/${s().activeGroupId}/trash`, t)));
-                  }),
-                    e.commit().catch((t) => {
-                      console.error('[Store] 完全削除の送り直しに失敗:', t);
-                    }));
+                  const e = Firestore.writeBatch(fb.db);
+                  消し直す.forEach((t) => {
+                    e.delete(Firestore.doc(fb.db, `groups/${s().activeGroupId}/sessions`, t));
+                    e.delete(Firestore.doc(fb.db, `groups/${s().activeGroupId}/trash`, t));
+                  });
+                  e.commit().catch((t) => {
+                    console.error('[Store] 完全削除の送り直しに失敗:', t);
+                  });
                 } catch (t) {
                   console.error('[Store] 完全削除の送り直しの組み立てに失敗:', t);
                 }
               }
-              e({
-                permanentlyDeleted: 残す,
-              });
+              e({ permanentlyDeleted: 残す });
             }
             // 消したメンバーの控えも同じように整理する。
             //   ・まだクラウドに残っている → 消し直して控えは残す
@@ -4159,7 +3684,9 @@ const M = (0, s.create)()(
             if (メンバーの控えのid.length > 0) {
               const 期限 = Date.now() - 2592e6;
               const クラウドに有る = new Set((n || []).filter((e) => e && e.id).map((e) => e.id));
-              const 消し直す = メンバーの控えのid.filter((e) => メンバーの控え[e] >= 期限 && クラウドに有る.has(e));
+              const 消し直す = メンバーの控えのid.filter(
+                (e) => メンバーの控え[e] >= 期限 && クラウドに有る.has(e)
+              );
               const 残す = {};
               消し直す.forEach((e) => {
                 残す[e] = メンバーの控え[e];
@@ -4168,40 +3695,36 @@ const M = (0, s.create)()(
               if (消し直す.length > 0) {
                 console.log(`[Store] クラウドに残っているメンバー ${消し直す.length}件 を消し直します`);
                 try {
-                  const e = (0, a.writeBatch)(fb.db);
-                  (消し直す.forEach((t) => {
-                    e.delete((0, a.doc)(fb.db, `groups/${s().activeGroupId}/members`, t));
-                  }),
-                    e.commit().catch((t) => {
-                      console.error('[Store] メンバーの削除の送り直しに失敗:', t);
-                    }));
+                  const e = Firestore.writeBatch(fb.db);
+                  消し直す.forEach((t) => {
+                    e.delete(Firestore.doc(fb.db, `groups/${s().activeGroupId}/members`, t));
+                  });
+                  e.commit().catch((t) => {
+                    console.error('[Store] メンバーの削除の送り直しに失敗:', t);
+                  });
                 } catch (t) {
                   console.error('[Store] メンバーの削除の送り直しの組み立てに失敗:', t);
                 }
               }
-              e({
-                deletedMembers: 残す,
-              });
+              e({ deletedMembers: 残す });
             }
-            (e({
+            e({
               members: T.filter((e) => e && !削除ずみのメンバー.has(e.id)),
               sessions: M.filter((e) => e && !完全削除ずみ.has(e.id)),
               trash: ごみ箱.filter((e) => e && !完全削除ずみ.has(e.id)),
-              alumni: y(s().alumni, p, !1, !0),
+              alumni: mergeById(s().alumni, p, false, true),
               currentFreshmanTerm: f,
               tagTemplates: S,
               lastPromotionYear: b,
               syncStatus: '同期済み',
               lastSyncTime: Date.now(),
-            }),
-              console.log('[Store] Loading:', '同期が完了しました'));
+            });
+            console.log('[Store] Loading:', '同期が完了しました');
           } catch (s) {
-            (console.error('Fetch Overwrite Error:', s),
-              不具合を控える('クラウドから取得', s),
-              e({
-                syncStatus: '同期エラー',
-              }),
-              入り直せば直るか(s) && e({ 再ログインの案内: 入り直しの案内 }));
+            console.error('Fetch Overwrite Error:', s);
+            不具合を控える('クラウドから取得', s);
+            e({ syncStatus: '同期エラー' });
+            if (入り直せば直るか(s)) e({ 再ログインの案内: 入り直しの案内 });
           }
         },
         // 戻り値は '開始した' / '同名あり' / '確認できない' の3つ。
@@ -4228,55 +3751,55 @@ const M = (0, s.create)()(
           // 団体の枝にある自分の節点を、道しるべへ置き換えるだけだから
           const 自分のを置き換える = !!(共有 && s().isHost && s().liveSessionName === o);
           try {
-            const e = (0, i.ref)(fb.rtdb, `live_sessions/${団}/${o}`);
-            if (!自分のを置き換える && (await (0, i.get)(e)).exists()) return '同名あり';
+            const e = RTDB.ref(fb.rtdb, `live_sessions/${団}/${o}`);
+            if (!自分のを置き換える && (await RTDB.get(e)).exists()) return '同名あり';
           } catch (e) {
             // 確かめられないまま作ると、進行中の同名ライブを上書きして潰す。
             // 元はここで握りつぶして、そのまま作成へ進んでいた
             return (console.error('Session Name Check Error:', e), '確認できない');
           }
-          (s().stopLiveSync(!0),
-            e({
-              // 共有のライブなら、そのライブ専用の枝を据える。
-              // stopLiveSync より後に置くこと。先に置くと、その中で消される
-              いまのライブの枝: 共有 ? 枝 : null,
-              // 自分で始めたライブなので、よそではない
-              よその団体のライブ: !1,
-              いまのライブの閲覧枝: 共有 ? 共有.閲覧の枝 || null : null,
-              写しを見ているか: !1,
-              isLiveActive: !0,
-              isHost: !0,
-              // 主催者は必ず記録する側
-              ライブは見るだけ: !1,
-              liveSessionName: o,
-              isIncomingLiveSync: !1,
-              lastLocalChange: Date.now(),
-              // 共有履歴はライブごとに別物。前のライブの目印を持ち越すと、
-              // 新しいライブでいきなり取り消しが押せて、無い手を読みにいく。
-              // 主催者は同名のライブを作れないので必ず新品。参加者と違って
-              // 「これまでの結果」が届くことがなく、初回を飛ばす目印は要らない
-              historySharedLen: 0,
-              historySharedMax: 0,
-              historyHandledAt: 0,
-              historyIsFirstSnapshot: !1,
-              // 同じ名前で始め直したとき、前回の片付けが節点に残っていることがある。
-              // 最初の1通ぶんは知らせない
-              resetIsFirstSnapshot: !0,
-              // アプリを閉じて戻ったときに、このライブへ戻るための控え（端末に残す）
-              ライブの続き: {
-                名前: o,
-                枝: 共有 ? 枝 : null,
-                閲覧枝: 共有 ? 共有.閲覧の枝 || null : null,
-                主催: !0,
-                見るだけ: !1,
-                よそ: !1,
-                団体: s().activeGroupId || null,
-              },
-            }));
+          s().stopLiveSync(true);
+          e({
+            // 共有のライブなら、そのライブ専用の枝を据える。
+            // stopLiveSync より後に置くこと。先に置くと、その中で消される
+            いまのライブの枝: 共有 ? 枝 : null,
+            // 自分で始めたライブなので、よそではない
+            よその団体のライブ: false,
+            いまのライブの閲覧枝: 共有 ? 共有.閲覧の枝 || null : null,
+            写しを見ているか: false,
+            isLiveActive: true,
+            isHost: true,
+            // 主催者は必ず記録する側
+            ライブは見るだけ: false,
+            liveSessionName: o,
+            isIncomingLiveSync: false,
+            lastLocalChange: Date.now(),
+            // 共有履歴はライブごとに別物。前のライブの目印を持ち越すと、
+            // 新しいライブでいきなり取り消しが押せて、無い手を読みにいく。
+            // 主催者は同名のライブを作れないので必ず新品。参加者と違って
+            // 「これまでの結果」が届くことがなく、初回を飛ばす目印は要らない
+            historySharedLen: 0,
+            historySharedMax: 0,
+            historyHandledAt: 0,
+            historyIsFirstSnapshot: false,
+            // 同じ名前で始め直したとき、前回の片付けが節点に残っていることがある。
+            // 最初の1通ぶんは知らせない
+            resetIsFirstSnapshot: true,
+            // アプリを閉じて戻ったときに、このライブへ戻るための控え（端末に残す）
+            ライブの続き: {
+              名前: o,
+              枝: 共有 ? 枝 : null,
+              閲覧枝: 共有 ? 共有.閲覧の枝 || null : null,
+              主催: true,
+              見るだけ: false,
+              よそ: false,
+              団体: s().activeGroupId || null,
+            },
+          });
           const a = s();
           if (!fb.rtdb) return '確認できない';
-          const n = (0, i.ref)(fb.rtdb, `live_sessions/${枝}/${o}/state`),
-            l = Array.isArray(a.archers) ? a.archers : [];
+          const n = RTDB.ref(fb.rtdb, `live_sessions/${枝}/${o}/state`);
+          const l = Array.isArray(a.archers) ? a.archers : [];
           try {
             return (
               v(o, l, a.shotsPerRound),
@@ -4285,35 +3808,30 @@ const M = (0, s.create)()(
               // 載せないと、その人の○×だけ見ている人に出ない。
               // ここを読めるのは編集の枝を知っている人だけなので、閲覧の人には見えない
               共有 &&
-                (0, i.update)((0, i.ref)(fb.rtdb, `live_sessions/${枝}/${o}/state`), {
+                RTDB.update(RTDB.ref(fb.rtdb, `live_sessions/${枝}/${o}/state`), {
                   閲覧の枝: 共有.閲覧の枝 || null,
                 }).catch(() => {}),
               // 共有のライブは別の枝にあるので、参加一覧に出すための道しるべを
               // 団体の枝へ置く。部員はこれを辿って共有の枝へ入る
               共有 &&
-                (0, i.set)((0, i.ref)(fb.rtdb, 道しるべの場所(団, o)), {
+                RTDB.set(RTDB.ref(fb.rtdb, 道しるべの場所(団, o)), {
                   共有の枝: 枝,
                   閲覧の枝: 共有.閲覧の枝 || null,
                   status: 'active',
                   timestamp: Date.now(),
-                  updated_at: (0, i.serverTimestamp)(),
+                  updated_at: RTDB.serverTimestamp(),
                 }).catch((t) => console.error('[Store] 道しるべを置けませんでした', t)),
               在席を始める(o, e),
-              c.IS_WEB && console.log('ライブを開始しました: ' + o),
-              (0, i.onValue)(n, (o) => {
+              IS_WEB && console.log('ライブを開始しました: ' + o),
+              RTDB.onValue(n, (o) => {
                 const a = o.val();
                 if (!a) {
                   const o = s().liveSessionName;
                   return (
-                    o &&
-                      fb.rtdb &&
-                      (0, i.off)((0, i.ref)(fb.rtdb, `live_sessions/${枝}/${o}/state`)),
-                      (在席を終える(e), 写しを見るのをやめる()),
-                    void e({
-                      isLiveActive: !1, ライブの続き: null,
-                      isHost: !1,
-                      liveSessionName: null,
-                    })
+                    o && fb.rtdb && RTDB.off(RTDB.ref(fb.rtdb, `live_sessions/${枝}/${o}/state`)),
+                    在席を終える(e),
+                    写しを見るのをやめる(),
+                    void e({ isLiveActive: false, ライブの続き: null, isHost: false, liveSessionName: null })
                   );
                 }
                 // 期限は枝分かれの前に控える。下の「他人の書き込み」の枝だけに
@@ -4325,53 +3843,45 @@ const M = (0, s.create)()(
                   if ('finished' === a.status) {
                     const o = s().liveSessionName;
                     return (
-                      o &&
-                        fb.rtdb &&
-                        (0, i.off)((0, i.ref)(fb.rtdb, `live_sessions/${枝}/${o}/state`)),
-                        (在席を終える(e), 写しを見るのをやめる()),
+                      o && fb.rtdb && RTDB.off(RTDB.ref(fb.rtdb, `live_sessions/${枝}/${o}/state`)),
+                      在席を終える(e),
+                      写しを見るのをやめる(),
                       void e({
-                        isLiveActive: !1, ライブの続き: null,
-                        isHost: !1,
+                        isLiveActive: false,
+                        ライブの続き: null,
+                        isHost: false,
                         liveSessionName: null,
                       })
                     );
                   }
                   // 誰かが配ったら、その枝へ付いていく
                   // 期限より先に見る。切れているのに付いていくと、行った先でも切れている
-            if (期限で閉じるか(a, e, s)) return;
-            if (移ったら付いていく(a, e, s)) return;
+                  if (期限で閉じるか(a, e, s)) return;
+                  if (移ったら付いていく(a, e, s)) return;
                   共有履歴の目印を受け取る(a, e, s);
                   // 参加者側と同じ。始め直したとき、節点に前回の片付けが
                   // 残っていることがあるので、最初の1通ぶんは知らせない
                   const 主のリセット初回 = s().resetIsFirstSnapshot;
-                  if (主のリセット初回) e({ resetIsFirstSnapshot: !1 });
+                  if (主のリセット初回) e({ resetIsFirstSnapshot: false });
                   if (a.reset_at && a.reset_at > (s().lastResetHandled || 0))
                     return (
-                      e({
-                        lastResetHandled: a.reset_at,
-                      }),
-                      主のリセット初回 &&
-                        e({
-                          lastPushedTimestamp: a.timestamp || 0,
-                        }),
+                      e({ lastResetHandled: a.reset_at }),
+                      主のリセット初回 && e({ lastPushedTimestamp: a.timestamp || 0 }),
                       // 送信はしない。受け取ったリセットを送り返すと、相手の画面に
                       // 「リセットしました」が二度出るうえ、無駄な書き込みが増える
-                      void s().resetCurrentSession(!1)
+                      void s().resetCurrentSession(false)
                     );
                   if (a.archers || Array.isArray(a.archers)) {
                     // 突き合わせは syncRules.js の mergeLiveArchers に出した。
                     // 主催者側と参加者側で同じ処理が二重に書かれていたため
-                    const { archers: 受信, shotsPerRound: 本数 } = w(a),
-                      結果 = mergeLiveArchers(s().archers, 受信, s().shotsPerRound, 本数);
+                    const { archers: 受信, shotsPerRound: 本数 } = w(a);
+                    const 結果 = mergeLiveArchers(s().archers, 受信, s().shotsPerRound, 本数);
                     // 受け取りの正規化は短い○×を伸ばすだけで、長いほうは切らない。
                     // 相手が射数を減らしたとき、手元の射手のほうが新しいと
                     // 射数だけ減って○×が伸びたまま残る（画面に出ないますの○が
                     // 的中数に入る）。射数が変わればここは必ず通る
-                    結果.changed &&
-                      e({
-                        archers: 盤面を射数にそろえる(結果.archers, 本数),
-                        shotsPerRound: 本数,
-                      });
+                    if (結果.changed)
+                      e({ archers: 盤面を射数にそろえる(結果.archers, 本数), shotsPerRound: 本数 });
                   }
                 }
               }),
@@ -4415,10 +3925,9 @@ const M = (0, s.create)()(
           const 今の枝 = ライブの枝();
           if (!今の枝) return null;
           const 状態の道 = `live_sessions/${今の枝}/${名前}/state`;
-
           let 今の中身 = {};
           try {
-            const x = await (0, i.get)((0, i.ref)(fb.rtdb, 状態の道));
+            const x = await RTDB.get(RTDB.ref(fb.rtdb, 状態の道));
             今の中身 = x.exists() ? x.val() || {} : {};
           } catch (t) {
             return (console.error('[Store] ライブを読めませんでした', t), null);
@@ -4446,10 +3955,9 @@ const M = (0, s.create)()(
               }),
               合言葉が要るか: !!今の中身.鍵が要るか,
               期限: 元の期限,
-              すでに配られていた: !0,
+              すでに配られていた: true,
             };
           }
-
           // ここから、まだ配られていないライブを専用の枝へ移す
           const 鍵 = String(合言葉 == null ? '' : 合言葉);
           const 編集の種 = 共.共有の種を作る();
@@ -4460,21 +3968,18 @@ const M = (0, s.create)()(
           if (!秘.枝として使えるか(団)) return null;
           // 期限はサーバーの時計で決める。手元の時計が進んでいると、
           // 配った瞬間に切れているリンクを渡してしまう
-          const 期限 = 共.期限の時刻(
-            'number' == typeof 持ち ? 持ち : 共.期限の既定,
-            await サーバー時刻()
-          );
+          const 期限 = 共.期限の時刻('number' == typeof 持ち ? 持ち : 共.期限の既定, await サーバー時刻());
           try {
             // 期限は盤面より先に置く。あとにすると、途中で失敗したときに
             // 「期限の無いリンク」が残る。逆なら残るのは読むもののない期限だけ
             if (期限)
               await Promise.all([
-                (0, i.set)((0, i.ref)(fb.rtdb, 期限の場所(編集の枝)), 期限),
-                (0, i.set)((0, i.ref)(fb.rtdb, 期限の場所(閲覧の枝)), 期限),
+                RTDB.set(RTDB.ref(fb.rtdb, 期限の場所(編集の枝)), 期限),
+                RTDB.set(RTDB.ref(fb.rtdb, 期限の場所(閲覧の枝)), 期限),
               ]);
             // 盤面をそのまま新しい枝へ写す。種もここに置く（編集の枝を知る人だけが読める）
-            await (0, i.set)(
-              (0, i.ref)(fb.rtdb, `live_sessions/${編集の枝}/${名前}/state`),
+            await RTDB.set(
+              RTDB.ref(fb.rtdb, `live_sessions/${編集の枝}/${名前}/state`),
               Object.assign({}, 今の中身, {
                 閲覧の枝: 閲覧の枝,
                 種: { 編集: 編集の種, 閲覧: 閲覧の種 },
@@ -4482,36 +3987,28 @@ const M = (0, s.create)()(
                 期限: 期限,
                 移った先: null,
                 timestamp: Date.now(),
-                updated_at: (0, i.serverTimestamp)(),
+                updated_at: RTDB.serverTimestamp(),
               })
             );
             // 閲覧用の写しも、ここで一度作っておく。作らないと、配った直後に
             // 閲覧リンクを開いた人が「見つからない」になる。
             // 種と閲覧の枝は写しに入れないこと。閲覧の人に編集側の手がかりを渡さない
             const 写しの中身 = Object.assign({}, 今の中身, { 期限: 期限 });
-            (delete 写しの中身.種,
-              delete 写しの中身.閲覧の枝,
-              delete 写しの中身.移った先,
-              delete 写しの中身.移った先の閲覧枝);
-            await (0, i.set)(
-              (0, i.ref)(fb.rtdb, 写しの場所(閲覧の枝, 名前)),
-              Object.assign(写しの中身, {
-                timestamp: Date.now(),
-                updated_at: (0, i.serverTimestamp)(),
-              })
+            delete 写しの中身.種;
+            delete 写しの中身.閲覧の枝;
+            delete 写しの中身.移った先;
+            delete 写しの中身.移った先の閲覧枝;
+            await RTDB.set(
+              RTDB.ref(fb.rtdb, 写しの場所(閲覧の枝, 名前)),
+              Object.assign(写しの中身, { timestamp: Date.now(), updated_at: RTDB.serverTimestamp() })
             );
             // 共有履歴も引き継ぐ。取り消しの目印は state に載っているので、
             // 中身を移さないと押した瞬間に無い手を読みにいく
-            const 元の履歴 = await (0, i.get)(
-              (0, i.ref)(fb.rtdb, 共有履歴の場所(今の枝, 名前))
-            );
+            const 元の履歴 = await RTDB.get(RTDB.ref(fb.rtdb, 共有履歴の場所(今の枝, 名前)));
             if (元の履歴.exists())
-              await (0, i.set)(
-                (0, i.ref)(fb.rtdb, 共有履歴の場所(編集の枝, 名前)),
-                元の履歴.val()
-              );
+              await RTDB.set(RTDB.ref(fb.rtdb, 共有履歴の場所(編集の枝, 名前)), 元の履歴.val());
             // 参加一覧に出すための道しるべ
-            await (0, i.set)((0, i.ref)(fb.rtdb, 道しるべの場所(団, 名前)), {
+            await RTDB.set(RTDB.ref(fb.rtdb, 道しるべの場所(団, 名前)), {
               共有の枝: 編集の枝,
               閲覧の枝: 閲覧の枝,
               // 参加一覧が、期限の切れたライブを外すのに使う
@@ -4519,23 +4016,23 @@ const M = (0, s.create)()(
               期限: 期限 || null,
               status: 'active',
               timestamp: Date.now(),
-              updated_at: (0, i.serverTimestamp)(),
+              updated_at: RTDB.serverTimestamp(),
             });
             // 元の枝に道しるべを置く。ほかの台はこれを見て付いてくる。
             // 置かないと、配った人だけが新しい枝へ移ってライブが分裂する
             if (今の枝 !== 団)
-              await (0, i.update)((0, i.ref)(fb.rtdb, 状態の道), {
+              await RTDB.update(RTDB.ref(fb.rtdb, 状態の道), {
                 移った先: 編集の枝,
                 移った先の閲覧枝: 閲覧の枝,
-                updated_at: (0, i.serverTimestamp)(),
+                updated_at: RTDB.serverTimestamp(),
               });
           } catch (t) {
             return (console.error('[Store] ライブを配れませんでした', t), null);
           }
           // 自分も新しい枝へ移る。主催者かどうかは変えない
           const 主催だった = s().isHost;
-          s().joinLiveSync(名前, !1, { 枝: 編集の枝, 閲覧枝: 閲覧の枝 });
-          e({ isHost: 主催だった, よその団体のライブ: !1 });
+          s().joinLiveSync(名前, false, { 枝: 編集の枝, 閲覧枝: 閲覧の枝 });
+          e({ isHost: 主催だった, よその団体のライブ: false });
           return {
             編集の荷: 共.共有の荷を組む({
               種: 編集の種,
@@ -4553,7 +4050,7 @@ const M = (0, s.create)()(
             }),
             合言葉が要るか: !!鍵,
             期限: 期限,
-            すでに配られていた: !1,
+            すでに配られていた: false,
           };
         },
         /**
@@ -4564,9 +4061,9 @@ const M = (0, s.create)()(
          * 「合っていない」ことは「盤面が来ない」という形で分かる。
          *
          * 戻り値は '入った' / '見つからない' / '期限切れ' / '確認できない'
- *
- * '見つからない' は合言葉違いと終了の両方を指す。枝の名前を合言葉から導くので、
- * 違えば別の枝を見にいくだけで、どちらなのかは区別できない
+         *
+         * '見つからない' は合言葉違いと終了の両方を指す。枝の名前を合言葉から導くので、
+         * 違えば別の枝を見にいくだけで、どちらなのかは区別できない
          */
         共有リンクで入る: async (荷, 合言葉) => {
           if (!fb.rtdb) return '確認できない';
@@ -4575,15 +4072,13 @@ const M = (0, s.create)()(
           const 枝 = 共.枝を導く(中身.種, String(合言葉 == null ? '' : 合言葉));
           if (!秘.枝として使えるか(枝)) return '確認できない';
           const 見るだけ = 中身.役 === 共.閲覧;
-          const 道 = 見るだけ
-            ? 写しの場所(枝, 中身.名前)
-            : `live_sessions/${枝}/${中身.名前}/state`;
+          const 道 = 見るだけ ? 写しの場所(枝, 中身.名前) : `live_sessions/${枝}/${中身.名前}/state`;
           // 記録する側は、写しを流す先も受け取る。受け取らないと、
           // この人が入れた○×だけが見ている人に出ない
           let 写す先 = null;
           try {
             // 合言葉が違えば別の枝になるので、ここで「無い」と分かる
-            const 有 = await (0, i.get)((0, i.ref)(fb.rtdb, 道));
+            const 有 = await RTDB.get(RTDB.ref(fb.rtdb, 道));
             if (!有.exists()) return '見つからない';
             if (!見るだけ) {
               const 中 = 有.val() || {};
@@ -4601,7 +4096,7 @@ const M = (0, s.create)()(
             // 切れた枝に入れないことは決まりの側が保証している
             if (弾かれたか(t))
               try {
-                const 限 = await (0, i.get)((0, i.ref)(fb.rtdb, 期限の場所(枝)));
+                const 限 = await RTDB.get(RTDB.ref(fb.rtdb, 期限の場所(枝)));
                 const v = 限.exists() ? 限.val() : null;
                 if ('number' == typeof v && (await サーバー時刻()) >= v) return '期限切れ';
               } catch (e2) {
@@ -4615,15 +4110,13 @@ const M = (0, s.create)()(
           // 部員が共有リンクを開いただけ、という筋がこれに当たる。
           // 見分けられなかったときは「よそ」として扱う。取り違えて
           // よその練習を自分の団体の記録に残すほうが困る
-          let よそ = !0;
+          let よそ = true;
           const 団 = 団体の枝();
           if (団) {
             try {
-              const 印 = await (0, i.get)(
-                (0, i.ref)(fb.rtdb, 道しるべの場所(団, 中身.名前))
-              );
+              const 印 = await RTDB.get(RTDB.ref(fb.rtdb, 道しるべの場所(団, 中身.名前)));
               const v = 印.exists() ? 印.val() || {} : {};
-              if (v.共有の枝 === 枝 || v.閲覧の枝 === 枝) よそ = !1;
+              if (v.共有の枝 === 枝 || v.閲覧の枝 === 枝) よそ = false;
             } catch (t) {
               console.warn('[Store] 自分の団体のライブか確かめられませんでした', t);
             }
@@ -4635,55 +4128,66 @@ const M = (0, s.create)()(
             // 「自分の送信の返りを無視する」「同じ通知に載った相手の印は取り込む」と
             // 込み入っていて、ここに別に書くと必ずずれる。実際、別に書いていたときは
             // 入れた○×が次の受信で消えていた
-            (載っている印を捨てる(), 写しを見るのをやめる());
-            s().joinLiveSync(中身.名前, !1, { 枝: 枝, 閲覧枝: 写す先 });
+            載っている印を捨てる();
+            写しを見るのをやめる();
+            s().joinLiveSync(中身.名前, false, { 枝: 枝, 閲覧枝: 写す先 });
             // joinLiveSync が偽に戻すので、そのあとで据える
             e({ よその団体のライブ: よそ });
             return '入った';
           }
           // 見るだけの側。写しを読むだけで、何も送り返さない
-          (載っている印を捨てる(), 写しを見るのをやめる());
-          (s().stopLiveSync(!0),
-            e({
-              いまのライブの枝: null,
-              いまのライブの閲覧枝: 枝,
-              写しを見ているか: !0,
-              よその団体のライブ: よそ,
-              isLiveActive: !0,
-              isHost: !1,
-              ライブは見るだけ: !0,
-              liveSessionName: 中身.名前,
-              isIncomingLiveSync: !1,
-              lastLocalChange: 0,
-              lastPushedTimestamp: 0,
-              historySharedLen: 0,
-              historySharedMax: 0,
-              historyIsFirstSnapshot: !0,
-              resetIsFirstSnapshot: !0,
-            }));
-          写しの片付け = (0, i.onValue)((0, i.ref)(fb.rtdb, 道), (x) => {
-            const v0 = x.val();
-            if (!v0) return;
-            if ('finished' === v0.status)
-              return void e({ isLiveActive: !1, ライブの続き: null, isHost: !1, liveSessionName: null, いまのライブの期限: null });
-            if (期限で閉じるか(v0, e, s)) return;
-            if (!v0.archers && !Array.isArray(v0.archers)) return;
-            // 部員が参加するときと同じ突き合わせを通す。
-            //
-            // ライブの archers に○×は入っていない（○×は marks_by_id で別に送る）。
-            // ここで archers をそのまま入れていたころは、○×がいつまでも出なかった。
-            // w() で組み直し、mergeLiveArchers で突き合わせる
-            const { archers: 受信, shotsPerRound: 本数 } = w(v0);
-            const 結果 = mergeLiveArchers(s().archers, 受信, s().shotsPerRound, 本数);
-            結果.changed &&
-              e({
-                archers: 盤面を射数にそろえる(結果.archers, 本数),
-                shotsPerRound: 本数,
-                isIncomingLiveSync: !0,
-              });
-          },
-          (t) => つなげなくなった(t, e, s));
-          c.IS_WEB && console.log('共有リンクで入りました（見るだけ）: ' + 中身.名前);
+          載っている印を捨てる();
+          写しを見るのをやめる();
+          s().stopLiveSync(true);
+          e({
+            いまのライブの枝: null,
+            いまのライブの閲覧枝: 枝,
+            写しを見ているか: true,
+            よその団体のライブ: よそ,
+            isLiveActive: true,
+            isHost: false,
+            ライブは見るだけ: true,
+            liveSessionName: 中身.名前,
+            isIncomingLiveSync: false,
+            lastLocalChange: 0,
+            lastPushedTimestamp: 0,
+            historySharedLen: 0,
+            historySharedMax: 0,
+            historyIsFirstSnapshot: true,
+            resetIsFirstSnapshot: true,
+          });
+          写しの片付け = RTDB.onValue(
+            RTDB.ref(fb.rtdb, 道),
+            (x) => {
+              const v0 = x.val();
+              if (!v0) return;
+              if ('finished' === v0.status)
+                return void e({
+                  isLiveActive: false,
+                  ライブの続き: null,
+                  isHost: false,
+                  liveSessionName: null,
+                  いまのライブの期限: null,
+                });
+              if (期限で閉じるか(v0, e, s)) return;
+              if (!v0.archers && !Array.isArray(v0.archers)) return;
+              // 部員が参加するときと同じ突き合わせを通す。
+              //
+              // ライブの archers に○×は入っていない（○×は marks_by_id で別に送る）。
+              // ここで archers をそのまま入れていたころは、○×がいつまでも出なかった。
+              // w() で組み直し、mergeLiveArchers で突き合わせる
+              const { archers: 受信, shotsPerRound: 本数 } = w(v0);
+              const 結果 = mergeLiveArchers(s().archers, 受信, s().shotsPerRound, 本数);
+              if (結果.changed)
+                e({
+                  archers: 盤面を射数にそろえる(結果.archers, 本数),
+                  shotsPerRound: 本数,
+                  isIncomingLiveSync: true,
+                });
+            },
+            (t) => つなげなくなった(t, e, s)
+          );
+          if (IS_WEB) console.log('共有リンクで入りました（見るだけ）: ' + 中身.名前);
           return '入った';
         },
         /**
@@ -4707,24 +4211,24 @@ const M = (0, s.create)()(
           const 枝 = 差し込み || (道しるべ ? 道しるべ.共有の枝 : 団体の枝());
           if (!枝) return;
           if (
-            (s().stopLiveSync(!0),
+            (s().stopLiveSync(true),
             e({
               // 共有のライブに入るときは、そのライブ専用の枝を据える
               いまのライブの枝: 差し込み || 道しるべ ? 枝 : null,
               // 参加一覧から入ったのなら自分の団体のライブ。
               // 共有リンクから来たときは、呼ぶ側があとで決め直す
-              よその団体のライブ: !1,
+              よその団体のライブ: false,
               いまのライブの閲覧枝: 差し込み
                 ? (共有 && 共有.閲覧枝) || null
                 : 道しるべ
                   ? 道しるべ.閲覧の枝
                   : null,
-              写しを見ているか: !1,
-              isLiveActive: !0,
-              isHost: !1,
+              写しを見ているか: false,
+              isLiveActive: true,
+              isHost: false,
               ライブは見るだけ: !!見るだけ,
               liveSessionName: o,
-              isIncomingLiveSync: !1,
+              isIncomingLiveSync: false,
               lastLocalChange: 0,
               // 参加して最初に届く1通は必ず取り込む。
               // 自分の送信の返りを無視する判定（timestamp の一致）は、
@@ -4734,104 +4238,82 @@ const M = (0, s.create)()(
               // 主催者側と同じ理由。目印は参加したライブのものを受け取り直す
               historySharedLen: 0,
               historySharedMax: 0,
-              historyIsFirstSnapshot: !0,
-              resetIsFirstSnapshot: !0,
+              historyIsFirstSnapshot: true,
+              resetIsFirstSnapshot: true,
               // アプリを閉じて戻ったときに、このライブへ戻るための控え（端末に残す）。
               // 主催・よその団体は、呼ぶ側があとで据え直すことがある（ライブに戻る で拾う）
               ライブの続き: {
                 名前: o,
                 枝: 差し込み || 道しるべ ? 枝 : null,
                 閲覧枝: 差し込み ? (共有 && 共有.閲覧枝) || null : 道しるべ ? 道しるべ.閲覧の枝 : null,
-                主催: !1,
+                主催: false,
                 見るだけ: !!見るだけ,
-                よそ: !1,
+                よそ: false,
                 団体: s().activeGroupId || null,
               },
             }),
             !fb.rtdb)
           )
             return;
-          const a = (0, i.ref)(fb.rtdb, `live_sessions/${枝}/${o}/state`);
-          ((0, i.onValue)(a, (o) => {
-            const a = o.val();
-            if (!a) {
-              const o = s().liveSessionName;
-              return (
-                o &&
-                  fb.rtdb &&
-                  (0, i.off)((0, i.ref)(fb.rtdb, `live_sessions/${枝}/${o}/state`)),
-                  (在席を終える(e), 写しを見るのをやめる()),
-                void e({
-                  isLiveActive: !1, ライブの続き: null,
-                  isHost: !1,
-                  liveSessionName: null,
-                })
-              );
-            }
-            // 自分が送ったものの返りでは、一覧を入れ替えない。入れ替えると
-            // 手元の矢所が消え、まだ届いていない射手も落ちる（主催者側には
-            // 元からある判定で、参加者側だけ抜けていた）。
-            // ただし同じ通知に載った相手の印だけは取り込む
-            if (a.timestamp === s().lastPushedTimestamp) return void 返りの印を取り込む(a, e, s);
-            if ('finished' === a.status) {
-              const o = s().liveSessionName;
-              return (
-                o &&
-                  fb.rtdb &&
-                  (0, i.off)((0, i.ref)(fb.rtdb, `live_sessions/${枝}/${o}/state`)),
-                  (在席を終える(e), 写しを見るのをやめる()),
-                // 送信しない。ここで送ると、主催者が2秒後に消す節点を書き戻してしまい、
-                // 届くのが遅れた場合は「終わったはずのライブ」が一覧に残り続ける
-                s().resetCurrentSession(!1),
-                void e({
-                  isLiveActive: !1, ライブの続き: null,
-                  isHost: !1,
-                  liveSessionName: null,
-                })
-              );
-            }
-            // 誰かが配ったら、その枝へ付いていく
-            // 期限より先に見る。切れているのに付いていくと、行った先でも切れている
-            if (期限で閉じるか(a, e, s)) return;
-            if (移ったら付いていく(a, e, s)) return;
-            共有履歴の目印を受け取る(a, e, s);
-            // 入って最初の1通かどうかを先に控える（下で旗を倒すため）
-            const リセットの初回 = s().resetIsFirstSnapshot;
-            if (リセットの初回) e({ resetIsFirstSnapshot: !1 });
-            if (a.reset_at && a.reset_at > (s().lastResetHandled || 0)) {
-              (e({
-                lastResetHandled: a.reset_at,
-              }),
-                // 入る前に起きた片付けなら知らせない。画面は
-                // lastResetHandled === lastPushedTimestamp を「自分の操作」と
-                // 見なすので、そこへ合わせて黙らせる。
-                //
-                // 元はここが「lastResetHandled が 0 か」で判定していた。0 のままなのは
-                // 一度も送信していない人なので、入った直後や見ているだけの人には
-                // 片付けの知らせが永久に出なかった（reset_at と timestamp は同じ値）
-                リセットの初回 &&
-                  e({
-                    lastPushedTimestamp: a.timestamp || 0,
-                  }),
-                s().resetCurrentSession(!1));
-            }
-            if (a.archers || Array.isArray(a.archers)) {
-              // 主催者側（startLiveSync）と同じ関数を使う
-              const { archers: 受信, shotsPerRound: 本数 } = w(a),
-                結果 = mergeLiveArchers(s().archers, 受信, s().shotsPerRound, 本数);
-              // 主催者側と同じ理由で、いまの射数にそろえる
-              結果.changed &&
-                e({
-                  archers: 盤面を射数にそろえる(結果.archers, 本数),
-                  shotsPerRound: 本数,
-                });
-            }
-          },
+          const a = RTDB.ref(fb.rtdb, `live_sessions/${枝}/${o}/state`);
+          RTDB.onValue(
+            a,
+            (o) => {
+              const a = o.val();
+              if (!a) {
+                const o = s().liveSessionName;
+                return (
+                  o && fb.rtdb && RTDB.off(RTDB.ref(fb.rtdb, `live_sessions/${枝}/${o}/state`)),
+                  在席を終える(e),
+                  写しを見るのをやめる(),
+                  void e({ isLiveActive: false, ライブの続き: null, isHost: false, liveSessionName: null })
+                );
+              }
+              // 自分が送ったものの返りでは、一覧を入れ替えない。入れ替えると
+              // 手元の矢所が消え、まだ届いていない射手も落ちる（主催者側には
+              // 元からある判定で、参加者側だけ抜けていた）。
+              // ただし同じ通知に載った相手の印だけは取り込む
+              if (a.timestamp === s().lastPushedTimestamp) return void 返りの印を取り込む(a, e, s);
+              if ('finished' === a.status) {
+                const o = s().liveSessionName;
+                return (
+                  o && fb.rtdb && RTDB.off(RTDB.ref(fb.rtdb, `live_sessions/${枝}/${o}/state`)),
+                  在席を終える(e),
+                  写しを見るのをやめる(),
+                  // 送信しない。ここで送ると、主催者が2秒後に消す節点を書き戻してしまい、
+                  // 届くのが遅れた場合は「終わったはずのライブ」が一覧に残り続ける
+                  s().resetCurrentSession(false),
+                  void e({ isLiveActive: false, ライブの続き: null, isHost: false, liveSessionName: null })
+                );
+              }
+              // 誰かが配ったら、その枝へ付いていく
+              // 期限より先に見る。切れているのに付いていくと、行った先でも切れている
+              if (期限で閉じるか(a, e, s)) return;
+              if (移ったら付いていく(a, e, s)) return;
+              共有履歴の目印を受け取る(a, e, s);
+              // 入って最初の1通かどうかを先に控える（下で旗を倒すため）
+              const リセットの初回 = s().resetIsFirstSnapshot;
+              if (リセットの初回) e({ resetIsFirstSnapshot: false });
+              if (a.reset_at && a.reset_at > (s().lastResetHandled || 0)) {
+                e({ lastResetHandled: a.reset_at });
+                if (リセットの初回) e({ lastPushedTimestamp: a.timestamp || 0 });
+                s().resetCurrentSession(false);
+              }
+              if (a.archers || Array.isArray(a.archers)) {
+                // 主催者側（startLiveSync）と同じ関数を使う
+                const { archers: 受信, shotsPerRound: 本数 } = w(a);
+                const 結果 = mergeLiveArchers(s().archers, 受信, s().shotsPerRound, 本数);
+                // 主催者側と同じ理由で、いまの射数にそろえる
+                if (結果.changed)
+                  e({ archers: 盤面を射数にそろえる(結果.archers, 本数), shotsPerRound: 本数 });
+              }
+            },
             // 決まりに弾かれたら知らせる。渡さないと、盤面が空のまま
             // 「ライブ中」の表示だけが残る
-            (t) => つなげなくなった(t, e, s)),
-            在席を始める(o, e),
-            c.IS_WEB && console.log('ライブに参加しました: ' + o));
+            (t) => つなげなくなった(t, e, s)
+          );
+          在席を始める(o, e);
+          if (IS_WEB) console.log('ライブに参加しました: ' + o);
         },
         // 抜けるのは手元だけで、ライブそのものは残す。主催者と参加者で
         // 振る舞いを分けないための作りで、どちらが抜けても残った人は
@@ -4839,7 +4321,8 @@ const M = (0, s.create)()(
         // 参加一覧から消したときだけ
         /** 共有リンクの来客をやめる。リンクで来た人が閉じるときに使う */
         共有の来客をやめる: () => {
-          (s().stopLiveSync(!0), e({ 共有の来客: !1 }));
+          s().stopLiveSync(true);
+          e({ 共有の来客: false });
         },
         /**
          * アプリを閉じて戻ったとき、続けていたライブへ戻る。
@@ -4867,7 +4350,7 @@ const M = (0, s.create)()(
           if (!秘.枝として使えるか(枝)) return '確認できない';
           let 状態;
           try {
-            状態 = (await (0, i.get)((0, i.ref)(fb.rtdb, `live_sessions/${枝}/${続き.名前}/state`))).val();
+            状態 = (await RTDB.get(RTDB.ref(fb.rtdb, `live_sessions/${枝}/${続き.名前}/state`))).val();
           } catch (t) {
             return '確認できない';
           }
@@ -4875,32 +4358,31 @@ const M = (0, s.create)()(
           const 切れた = 状態 && 'number' === typeof 状態.期限 && 状態.期限 > 0 && いまの見当() >= 状態.期限;
           if (!状態 || 'finished' === 状態.status || 切れた) {
             // 終わっていた。ライブを始めた時点の○×が記録表に残っているので片付ける
-            s().resetCurrentSession(!1);
+            s().resetCurrentSession(false);
             e({ ライブの続き: null });
             return '終わっていた';
           }
-          s().joinLiveSync(続き.名前, !!続き.見るだけ, 秘.枝として使えるか(続き.枝) ? { 枝: String(続き.枝), 閲覧枝: 続き.閲覧枝 || null } : undefined);
+          s().joinLiveSync(
+            続き.名前,
+            !!続き.見るだけ,
+            秘.枝として使えるか(続き.枝) ? { 枝: String(続き.枝), 閲覧枝: 続き.閲覧枝 || null } : undefined
+          );
           // joinLiveSync は参加者として入る。主催だったなら主催に戻す（移ったら付いていく と同じ）
           if (s().liveSessionName === 続き.名前) e({ isHost: !!続き.主催, よその団体のライブ: !!続き.よそ });
           return '戻った';
         },
-        stopLiveSync: (o = !1) => {
+        stopLiveSync: (o = false) => {
           // ライブを移ったら控えは捨てる。前のライブで載せた○×を覚えたままだと、
           // 次のライブで「前と同じ」と見なして送らず、相手の画面に出ない
           載っている印を捨てる();
           const a = s();
           const 枝 = ライブの枝();
-          (a.liveSessionName &&
-            fb.rtdb &&
-            枝 &&
-            (0, i.off)((0, i.ref)(fb.rtdb, `live_sessions/${枝}/${a.liveSessionName}/state`)),
-            (在席を終える(e), 写しを見るのをやめる()),
-            o || s().resetCurrentSession(!1),
-            e({
-              isLiveActive: !1, ライブの続き: null,
-              isHost: !1,
-              liveSessionName: null,
-            }));
+          if (a.liveSessionName && fb.rtdb && 枝)
+            RTDB.off(RTDB.ref(fb.rtdb, `live_sessions/${枝}/${a.liveSessionName}/state`));
+          在席を終える(e);
+          写しを見るのをやめる();
+          if (!o) s().resetCurrentSession(false);
+          e({ isLiveActive: false, ライブの続き: null, isHost: false, liveSessionName: null });
         },
         // 参加一覧を取り直す。ここでだけ、古いライブの片付けもする。
         // 購読側（listenToLiveSessions）は変化のたびに呼ばれるので、
@@ -4911,15 +4393,12 @@ const M = (0, s.create)()(
           // 一覧に出すのは団体のライブなので、そちらを見る
           const 枝 = 団体の枝() || (await s().ライブの合言葉を用意する());
           if (!秘.枝として使えるか(枝)) return;
-          const o = (0, i.ref)(fb.rtdb, `live_sessions/${枝}`);
+          const o = RTDB.ref(fb.rtdb, `live_sessions/${枝}`);
           try {
-            const s = await (0, i.get)(o);
+            const s = await RTDB.get(o);
             const 節点 = s.exists() ? s.val() : null;
             const { 出す, 古い } = 参加できるライブ(節点, await サーバー時刻());
-            e({
-              liveSessionsList: 出す,
-              共有のライブたち: 道しるべたちを拾う(節点),
-            });
+            e({ liveSessionsList: 出す, 共有のライブたち: 道しるべたちを拾う(節点) });
             // 最終更新から日が経ったものは、一覧から外したうえで消す。
             // 共有履歴は別の枝にあるので、そちらも一緒に消す。
             //
@@ -4936,8 +4415,7 @@ const M = (0, s.create)()(
               // （中の1件だけ消すのは通らない）。共有の枝はライブ1つ専用なので、
               // 枝ごと消すのが正しい。消し終えてから期限そのものを片付ける
               const 消す = async () => {
-                const 落とす = (道) =>
-                  (0, i.remove)((0, i.ref)(fb.rtdb, 道)).catch(() => {});
+                const 落とす = (道) => RTDB.remove(RTDB.ref(fb.rtdb, 道)).catch(() => {});
                 await Promise.all([
                   落とす(`live_sessions/${枝}/${名}`),
                   落とす(共有履歴の場所(枝, 名)),
@@ -4960,7 +4438,8 @@ const M = (0, s.create)()(
                   秘.枝として使えるか(閲) ? 落とす(期限の場所(閲)) : null,
                 ]);
               };
-              (消す(), console.log(`[Store] 使われなくなったライブを片付けました: ${名}`));
+              消す();
+              console.log(`[Store] 使われなくなったライブを片付けました: ${名}`);
             });
           } catch (e) {
             console.error('Fetch live sessions error:', e);
@@ -4972,13 +4451,13 @@ const M = (0, s.create)()(
           // 無いからと見張らずに帰ると、画面を開き直すまで一覧が空のままになる。
           // 届いてから見張り始め、やめる係は先に返しておく
           let 止める = null;
-          let やめた = !1;
+          let やめた = false;
           Promise.resolve(団体の枝() || s().ライブの合言葉を用意する())
             .then((合) => {
               const 枝 = 秘.ライブの枝(合);
               if (やめた || !枝 || !fb.rtdb) return;
-              const o = (0, i.ref)(fb.rtdb, `live_sessions/${枝}`);
-              止める = (0, i.onValue)(
+              const o = RTDB.ref(fb.rtdb, `live_sessions/${枝}`);
+              止める = RTDB.onValue(
                 o,
                 (s) => {
                   // ここは消さないので、時計の補正は控えの値で足りる
@@ -4995,7 +4474,8 @@ const M = (0, s.create)()(
             })
             .catch((t) => console.error('Listen to live sessions error:', t));
           return () => {
-            ((やめた = !0), 止める && 止める());
+            やめた = true;
+            if (止める) 止める();
           };
         },
         deleteLiveSession: async (o) => {
@@ -5004,118 +4484,109 @@ const M = (0, s.create)()(
               // 一覧から消すのは団体のライブ。共有の枝ではなく団体の枝を見る
               const 枝 = 団体の枝();
               if (!枝) return;
-              const a = (0, i.ref)(fb.rtdb, `live_sessions/${枝}/${o}`);
-              (await (0, i.set)(a, null),
-                // 共有履歴と在席は別の枝にあるので、そちらも消す
-                (0, i.remove)((0, i.ref)(fb.rtdb, 共有履歴の場所(枝, o))).catch(() => {}),
-                (0, i.remove)((0, i.ref)(fb.rtdb, 在席の場所(枝, o))).catch(() => {}),
-                e({
-                  liveSessionsList: s().liveSessionsList.filter((e) => e !== o),
-                }));
+              const a = RTDB.ref(fb.rtdb, `live_sessions/${枝}/${o}`);
+              await RTDB.set(a, null);
+              // 共有履歴と在席は別の枝にあるので、そちらも消す
+              RTDB.remove(RTDB.ref(fb.rtdb, 共有履歴の場所(枝, o))).catch(() => {});
+              RTDB.remove(RTDB.ref(fb.rtdb, 在席の場所(枝, o))).catch(() => {});
+              e({ liveSessionsList: s().liveSessionsList.filter((e) => e !== o) });
             } catch (e) {
               console.error('Delete live session error:', e);
             }
         },
         listenToSessions: async () => {
-          const { activeGroupId: o, activeRole: i, myMemberId: n, myMemberName: c } = s();
+          const { activeGroupId: o, activeRole: i, myMemberId: n, myMemberName } = s();
           if (!o) return;
           const _sessDb = await waitForDb();
           if (!_sessDb) {
             console.warn('[Store] listenToSessions: db still undefined after await, aborting');
             return;
           }
-          (s().stopListeningToSessions(), console.log('[Store] Starting real-time session listener'));
-          const l = (0, a.collection)(fb.db, `groups/${o}/sessions`),
-            m_30 = Date.now() - 2592000000,
-            d = (0, a.query)(
-              l,
-              (0, a.where)('date', '>', m_30),
-              (0, a.orderBy)('date', 'desc'),
-              (0, a.limit)(100)
-            ),
-            u = (0, a.onSnapshot)(
-              d,
-              (t) => {
-                const o = [];
-                t.forEach((e) => {
-                  const s = e.data(),
-                    cleanedTags =
-                      s.tags && Array.isArray(s.tags)
-                        ? Array.from(new Set(s.tags.map(normalizeTag).filter(Boolean)))
-                        : [],
-                    originalTags = s.tags || [],
-                    isModified =
-                      cleanedTags.length !== originalTags.length ||
-                      cleanedTags.some((e, t) => e !== originalTags[t]);
-                  if (isModified && fb.db && fb.db._delegate && 'member' !== i) {
-                    const s = (0, a.doc)(fb.db, `groups/${M.getState().activeGroupId}/sessions`, e.id);
-                    (0, a.updateDoc)(s, {
-                      tags: cleanedTags,
-                    }).catch((e) => console.error('[Store] Auto cleanup sync failed:', e));
-                  }
-                  o.push(
-                    Object.assign({}, s, {
-                      id: e.id,
-                      tags: cleanedTags,
-                      // tags と同じように、ここで形を整えてから渡す
-                      archers: 記録の射手を整える(s),
-                      syncStatus: e.metadata && e.metadata.hasPendingWrites ? '未同期' : '同期済み',
-                    })
+          s().stopListeningToSessions();
+          console.log('[Store] Starting real-time session listener');
+          const l = Firestore.collection(fb.db, `groups/${o}/sessions`);
+          const m_30 = Date.now() - 2592000000;
+          const d = Firestore.query(
+            l,
+            Firestore.where('date', '>', m_30),
+            Firestore.orderBy('date', 'desc'),
+            Firestore.limit(100)
+          );
+          const u = Firestore.onSnapshot(
+            d,
+            (t) => {
+              const o = [];
+              t.forEach((e) => {
+                const s = e.data();
+                const cleanedTags =
+                  s.tags && Array.isArray(s.tags)
+                    ? Array.from(new Set(s.tags.map(normalizeTag).filter(Boolean)))
+                    : [];
+                const originalTags = s.tags || [];
+                const isModified =
+                  cleanedTags.length !== originalTags.length ||
+                  cleanedTags.some((e, t) => e !== originalTags[t]);
+                if (isModified && fb.db && fb.db._delegate && 'member' !== i) {
+                  const s = (0, a.doc)(fb.db, `groups/${M.getState().activeGroupId}/sessions`, e.id);
+                  (0, a.updateDoc)(s, { tags: cleanedTags }).catch((e) =>
+                    console.error('[Store] Auto cleanup sync failed:', e)
                   );
-                });
-                const a = s().sessions,
-                  c = new Set(o.map((e) => e.id));
-                const merged = o.map((cloudSession) => {
-                  const pendingTimer = s()._pendingUpdateTimers[cloudSession.id];
-                  const localSession = a.find((ls) => ls && ls.id === cloudSession.id);
-                  // 送信待ちの編集は、クラウドの古い写しで上書きしない。タイマーが動いて
-                  // いる 800ms の間だけでなく、送信が済むまで（「未同期」の間）守る。
-                  if (localSession && (pendingTimer || '未同期' === localSession.syncStatus))
-                    return localSession;
-                  return cloudSession;
-                });
-                // 見張りが受け取るのは直近30日・最大100件だけ。手元にあってその中に無い
-                // 記録のうち、クラウドに在ったもの（serverCreatedTime 持ち）は「消された」
-                // とみなして落とす。ただし見張りの窓の外（30日より前、100件に収まらず
-                // 切れた分）は届かないだけなので落とさない。ここを一律に落としていた
-                // せいで、30日を過ぎた記録が見張りが動くたびに履歴から消えていた
-                const 窓の下 = o.length >= 100 ? Math.min(...o.map((e) => e.date || 0)) : m_30;
-                const 窓の中 = (e) => (e.date || 0) > 窓の下;
-                const l = a.filter((e) => !c.has(e.id) && (!e.hasOwnProperty('serverCreatedTime') || !窓の中(e)));
-                // 完全に消したものは、クラウドにまだ残っていても画面に出さない
-                const 完全削除ずみ = new Set(Object.keys(s().permanentlyDeleted || {}));
-                const d = [...merged, ...l].filter((e) => e && !完全削除ずみ.has(e.id));
-                d.sort((e, s) => (s.date || 0) - (e.date || 0));
-                (e({
-                  sessions: d,
-                  syncStatus: '同期済み',
-                  lastSyncTime: Date.now(),
-                }),
-                  console.log(
-                    `[Store] Real-time session update received: ${o.length} items (reflected deletions)`
-                  ));
-              },
-              (s) => {
-                (console.error('[Store] Real-time session listener error:', s),
-                  不具合を控える('記録の受信', s),
-                  e({
-                    syncStatus: '同期エラー',
-                  }),
-                  入り直せば直るか(s) && e({ 再ログインの案内: 入り直しの案内 }));
-              }
-            );
-          e({
-            sessionUnsubscribe: u,
-          });
+                }
+                o.push(
+                  Object.assign({}, s, {
+                    id: e.id,
+                    tags: cleanedTags,
+                    // tags と同じように、ここで形を整えてから渡す
+                    archers: 記録の射手を整える(s),
+                    syncStatus: e.metadata && e.metadata.hasPendingWrites ? '未同期' : '同期済み',
+                  })
+                );
+              });
+              const a = s().sessions;
+              const c = new Set(o.map((e) => e.id));
+              const merged = o.map((cloudSession) => {
+                const pendingTimer = s()._pendingUpdateTimers[cloudSession.id];
+                const localSession = a.find((ls) => ls && ls.id === cloudSession.id);
+                // 送信待ちの編集は、クラウドの古い写しで上書きしない。タイマーが動いて
+                // いる 800ms の間だけでなく、送信が済むまで（「未同期」の間）守る。
+                if (localSession && (pendingTimer || '未同期' === localSession.syncStatus))
+                  return localSession;
+                return cloudSession;
+              });
+              // 見張りが受け取るのは直近30日・最大100件だけ。手元にあってその中に無い
+              // 記録のうち、クラウドに在ったもの（serverCreatedTime 持ち）は「消された」
+              // とみなして落とす。ただし見張りの窓の外（30日より前、100件に収まらず
+              // 切れた分）は届かないだけなので落とさない。ここを一律に落としていた
+              // せいで、30日を過ぎた記録が見張りが動くたびに履歴から消えていた
+              const 窓の下 = o.length >= 100 ? Math.min(...o.map((e) => e.date || 0)) : m_30;
+              const 窓の中 = (e) => (e.date || 0) > 窓の下;
+              const l = a.filter(
+                (e) => !c.has(e.id) && (!e.hasOwnProperty('serverCreatedTime') || !窓の中(e))
+              );
+              // 完全に消したものは、クラウドにまだ残っていても画面に出さない
+              const 完全削除ずみ = new Set(Object.keys(s().permanentlyDeleted || {}));
+              const d = [...merged, ...l].filter((e) => e && !完全削除ずみ.has(e.id));
+              d.sort((e, s) => (s.date || 0) - (e.date || 0));
+              e({ sessions: d, syncStatus: '同期済み', lastSyncTime: Date.now() });
+              console.log(
+                `[Store] Real-time session update received: ${o.length} items (reflected deletions)`
+              );
+            },
+            (s) => {
+              console.error('[Store] Real-time session listener error:', s);
+              不具合を控える('記録の受信', s);
+              e({ syncStatus: '同期エラー' });
+              if (入り直せば直るか(s)) e({ 再ログインの案内: 入り直しの案内 });
+            }
+          );
+          e({ sessionUnsubscribe: u });
         },
         stopListeningToSessions: () => {
-          const { sessionUnsubscribe: t } = s();
-          t &&
+          const { sessionUnsubscribe } = s();
+          sessionUnsubscribe &&
             (console.log('[Store] Stopping real-time session listener'),
-            t(),
-            e({
-              sessionUnsubscribe: null,
-            }));
+            sessionUnsubscribe(),
+            e({ sessionUnsubscribe: null }));
         },
         listenToTrash: async () => {
           const { activeGroupId: o } = s();
@@ -5125,76 +4596,68 @@ const M = (0, s.create)()(
             console.warn('[Store] listenToTrash: db still undefined after await, aborting');
             return;
           }
-          (s().stopListeningToTrash(), console.log('[Store] Starting real-time trash listener'));
-          const i = (0, a.collection)(fb.db, `groups/${o}/trash`),
-            n = (0, a.query)(i, (0, a.limit)(200)),
-            c = (0, a.onSnapshot)(
-              n,
-              (t) => {
-                const o = [];
-                t.forEach((e) => {
-                  const s = e.data();
-                  o.push(
-                    Object.assign({}, s, {
-                      id: e.id,
-                      syncStatus: e.metadata && e.metadata.hasPendingWrites ? '未同期' : '同期済み',
-                    })
-                  );
-                });
-                // 手元で捨てた印は、送信が終わるまで持ち越す。クラウドの写しには
-                // この印が無いので、そのまま置き換えると数百msで消えてしまい、
-                // あとで送信が失われても送り直せなくなる。
-                // 写しの syncStatus が「同期済み」＝送信が終わった、なので落とす。
-                const 手元のゴミ箱 = new Map(
-                  (s().trash || []).filter((e) => e && e.id).map((e) => [e.id, e])
+          s().stopListeningToTrash();
+          console.log('[Store] Starting real-time trash listener');
+          const i = Firestore.collection(fb.db, `groups/${o}/trash`);
+          const n = Firestore.query(i, Firestore.limit(200));
+          const c = Firestore.onSnapshot(
+            n,
+            (t) => {
+              const o = [];
+              t.forEach((e) => {
+                const s = e.data();
+                o.push(
+                  Object.assign({}, s, {
+                    id: e.id,
+                    syncStatus: e.metadata && e.metadata.hasPendingWrites ? '未同期' : '同期済み',
+                  })
                 );
-                const 写し = o.map((e) => {
-                  const t = 手元のゴミ箱.get(e.id);
-                  return t && t.pendingDelete && '未同期' === e.syncStatus
-                    ? Object.assign({}, e, { pendingDelete: !0 })
-                    : e;
-                });
-                // まだ送れていない削除は、クラウドの写しに無くても残す。ここで
-                // 消すと送り直しの対象から外れ、次の全件取得で記録が復活する。
-                const クラウドのid = new Set(写し.map((e) => e.id));
-                const 未送信の削除 = (s().trash || []).filter(
-                  (e) => e && e.id && e.pendingDelete && '未同期' === e.syncStatus && !クラウドのid.has(e.id)
-                );
-                const 新しいゴミ箱 = 未送信の削除.length > 0 ? [...写し, ...未送信の削除] : 写し;
-                新しいゴミ箱.sort((e, s) => trashedAtMillis(s) - trashedAtMillis(e));
-                // 戻したばかりでまだ送れていない記録は、クラウドのゴミ箱に写しが
-                // あっても履歴から外さない。外すと復元が取り消されて見える。
-                // 完全に消したものは、クラウドにまだ残っていても画面に出さない
-                const 完全削除ずみ = new Set(Object.keys(s().permanentlyDeleted || {}));
-                const 出すゴミ箱 = 新しいゴミ箱.filter((e) => e && !完全削除ずみ.has(e.id));
-                const 捨てたid = new Set(出すゴミ箱.map((e) => e.id));
-                const 残す = s().sessions.filter(
-                  (e) => e && (!捨てたid.has(e.id) || '未同期' === e.syncStatus)
-                );
-                (e({
-                  trash: 出すゴミ箱,
-                  sessions: 残す.filter((e) => e && !完全削除ずみ.has(e.id)),
-                }),
-                  console.log(
-                    `[Store] Real-time trash update received: ${o.length} items (purged from sessions)`
-                  ));
-              },
-              (e) => {
-                console.error('[Store] Real-time trash listener error:', e);
-              }
-            );
-          e({
-            trashUnsubscribe: c,
-          });
+              });
+              // 手元で捨てた印は、送信が終わるまで持ち越す。クラウドの写しには
+              // この印が無いので、そのまま置き換えると数百msで消えてしまい、
+              // あとで送信が失われても送り直せなくなる。
+              // 写しの syncStatus が「同期済み」＝送信が終わった、なので落とす。
+              const 手元のゴミ箱 = new Map((s().trash || []).filter((e) => e && e.id).map((e) => [e.id, e]));
+              const 写し = o.map((e) => {
+                const t = 手元のゴミ箱.get(e.id);
+                return t && t.pendingDelete && '未同期' === e.syncStatus
+                  ? Object.assign({}, e, { pendingDelete: true })
+                  : e;
+              });
+              // まだ送れていない削除は、クラウドの写しに無くても残す。ここで
+              // 消すと送り直しの対象から外れ、次の全件取得で記録が復活する。
+              const クラウドのid = new Set(写し.map((e) => e.id));
+              const 未送信の削除 = (s().trash || []).filter(
+                (e) => e && e.id && e.pendingDelete && '未同期' === e.syncStatus && !クラウドのid.has(e.id)
+              );
+              const 新しいゴミ箱 = 未送信の削除.length > 0 ? [...写し, ...未送信の削除] : 写し;
+              新しいゴミ箱.sort((e, s) => trashedAtMillis(s) - trashedAtMillis(e));
+              // 戻したばかりでまだ送れていない記録は、クラウドのゴミ箱に写しが
+              // あっても履歴から外さない。外すと復元が取り消されて見える。
+              // 完全に消したものは、クラウドにまだ残っていても画面に出さない
+              const 完全削除ずみ = new Set(Object.keys(s().permanentlyDeleted || {}));
+              const 出すゴミ箱 = 新しいゴミ箱.filter((e) => e && !完全削除ずみ.has(e.id));
+              const 捨てたid = new Set(出すゴミ箱.map((e) => e.id));
+              const 残す = s().sessions.filter(
+                (e) => e && (!捨てたid.has(e.id) || '未同期' === e.syncStatus)
+              );
+              e({ trash: 出すゴミ箱, sessions: 残す.filter((e) => e && !完全削除ずみ.has(e.id)) });
+              console.log(
+                `[Store] Real-time trash update received: ${o.length} items (purged from sessions)`
+              );
+            },
+            (e) => {
+              console.error('[Store] Real-time trash listener error:', e);
+            }
+          );
+          e({ trashUnsubscribe: c });
         },
         stopListeningToTrash: () => {
-          const { trashUnsubscribe: t } = s();
-          t &&
+          const { trashUnsubscribe } = s();
+          trashUnsubscribe &&
             (console.log('[Store] Stopping real-time trash listener'),
-            t(),
-            e({
-              trashUnsubscribe: null,
-            }));
+            trashUnsubscribe(),
+            e({ trashUnsubscribe: null }));
         },
         listenToMembers: async () => {
           const { activeGroupId: o } = s();
@@ -5204,46 +4667,35 @@ const M = (0, s.create)()(
             console.warn('[Store] listenToMembers: db still undefined after await, aborting');
             return;
           }
-          (s().stopListeningToMembers(), console.log('[Store] Starting real-time member listener'));
-          const i = (0, a.collection)(fb.db, `groups/${o}/members`),
-            n = (0, a.onSnapshot)(
-              i,
-              (t) => {
-                const o = [];
-                t.forEach((e) => {
-                  const s = e.data();
-                  o.push(
-                    Object.assign({}, s, {
-                      id: e.id,
-                      syncStatus: '同期済み',
-                    })
-                  );
-                });
-                // 消したのにクラウドへ届いていないメンバーは、受け取っても戻さない
-                const 削除ずみ = new Set(Object.keys(s().deletedMembers || {}));
-                const a = y(s().members, o, !1, !0).filter((e) => e && !削除ずみ.has(e.id));
-                (e({
-                  members: a,
-                  lastSyncTime: Date.now(),
-                }),
-                  console.log(`[Store] Real-time member update received: ${o.length} items`));
-              },
-              (e) => {
-                console.error('[Store] Real-time member listener error:', e);
-              }
-            );
-          e({
-            memberUnsubscribe: n,
-          });
+          s().stopListeningToMembers();
+          console.log('[Store] Starting real-time member listener');
+          const i = Firestore.collection(fb.db, `groups/${o}/members`);
+          const n = Firestore.onSnapshot(
+            i,
+            (t) => {
+              const o = [];
+              t.forEach((e) => {
+                const s = e.data();
+                o.push(Object.assign({}, s, { id: e.id, syncStatus: '同期済み' }));
+              });
+              // 消したのにクラウドへ届いていないメンバーは、受け取っても戻さない
+              const 削除ずみ = new Set(Object.keys(s().deletedMembers || {}));
+              const a = mergeById(s().members, o, false, true).filter((e) => e && !削除ずみ.has(e.id));
+              e({ members: a, lastSyncTime: Date.now() });
+              console.log(`[Store] Real-time member update received: ${o.length} items`);
+            },
+            (e) => {
+              console.error('[Store] Real-time member listener error:', e);
+            }
+          );
+          e({ memberUnsubscribe: n });
         },
         stopListeningToMembers: () => {
-          const { memberUnsubscribe: t } = s();
-          t &&
+          const { memberUnsubscribe } = s();
+          memberUnsubscribe &&
             (console.log('[Store] Stopping real-time member listener'),
-            t(),
-            e({
-              memberUnsubscribe: null,
-            }));
+            memberUnsubscribe(),
+            e({ memberUnsubscribe: null }));
         },
         listenToAlumni: async () => {
           const { activeGroupId: o } = s();
@@ -5253,84 +4705,64 @@ const M = (0, s.create)()(
             console.warn('[Store] listenToAlumni: db still undefined after await, aborting');
             return;
           }
-          (s().stopListeningToAlumni(), console.log('[Store] Starting real-time alumni listener'));
-          const i = (0, a.collection)(fb.db, `groups/${o}/alumni`),
-            n = (0, a.onSnapshot)(
-              i,
-              (t) => {
-                const o = [];
-                t.forEach((e) => {
-                  const s = e.data();
-                  o.push(
-                    Object.assign({}, s, {
-                      id: e.id,
-                      syncStatus: '同期済み',
-                    })
-                  );
-                });
-                const a = y(s().alumni, o, !1, !0);
-                (e({
-                  alumni: a,
-                  lastSyncTime: Date.now(),
-                }),
-                  console.log(`[Store] Real-time alumni update received: ${o.length} items`));
-              },
-              (e) => {
-                console.error('[Store] Real-time alumni listener error:', e);
-              }
-            );
-          e({
-            alumniUnsubscribe: n,
-          });
+          s().stopListeningToAlumni();
+          console.log('[Store] Starting real-time alumni listener');
+          const i = Firestore.collection(fb.db, `groups/${o}/alumni`);
+          const n = Firestore.onSnapshot(
+            i,
+            (t) => {
+              const o = [];
+              t.forEach((e) => {
+                const s = e.data();
+                o.push(Object.assign({}, s, { id: e.id, syncStatus: '同期済み' }));
+              });
+              const a = mergeById(s().alumni, o, false, true);
+              e({ alumni: a, lastSyncTime: Date.now() });
+              console.log(`[Store] Real-time alumni update received: ${o.length} items`);
+            },
+            (e) => {
+              console.error('[Store] Real-time alumni listener error:', e);
+            }
+          );
+          e({ alumniUnsubscribe: n });
         },
         stopListeningToAlumni: () => {
-          const { alumniUnsubscribe: t } = s();
-          t &&
+          const { alumniUnsubscribe } = s();
+          alumniUnsubscribe &&
             (console.log('[Store] Stopping real-time alumni listener'),
-            t(),
-            e({
-              alumniUnsubscribe: null,
-            }));
+            alumniUnsubscribe(),
+            e({ alumniUnsubscribe: null }));
         },
         startPeriodicSync: () => {
-          (s().stopPeriodicSync(),
-            console.log('[Store] Starting sync (Real-time listeners + 5min config sync)'),
-            s().listenToConfig(),
-            s().listenToSessions(),
-            s().listenToTrash(),
-            s().listenToMembers(),
-            s().listenToAlumni(),
-            s().syncSessions());
+          s().stopPeriodicSync();
+          console.log('[Store] Starting sync (Real-time listeners + 5min config sync)');
+          s().listenToConfig();
+          s().listenToSessions();
+          s().listenToTrash();
+          s().listenToMembers();
+          s().listenToAlumni();
+          s().syncSessions();
           const t = setInterval(() => {
             s().syncSessions();
           }, 3e5);
-          e({
-            syncIntervalId: t,
-          });
+          e({ syncIntervalId: t });
         },
         stopPeriodicSync: () => {
           const t = s().syncIntervalId;
-          (t &&
-            (console.log('[Store] Stopping periodic sync'),
-            clearInterval(t),
-            e({
-              syncIntervalId: null,
-            })),
-            s().stopListeningToSessions(),
-            s().stopListeningToTrash(),
-            s().stopListeningToMembers(),
-            s().stopListeningToAlumni());
+          t && (console.log('[Store] Stopping periodic sync'), clearInterval(t), e({ syncIntervalId: null }));
+          s().stopListeningToSessions();
+          s().stopListeningToTrash();
+          s().stopListeningToMembers();
+          s().stopListeningToAlumni();
         },
         setupNetworkListener: () => {
           console.log('[Store] Setting up network listener');
-          return m.default.addEventListener((t) => {
-            const o = s().isNetworkOnline,
-              a = !(!t.isConnected || !1 === t.isInternetReachable);
+          return netinfo.addEventListener((t) => {
+            const o = s().isNetworkOnline;
+            const a = !(!t.isConnected || false === t.isInternetReachable);
             a !== o &&
               (console.log('[Store] Network state changed: ' + (a ? 'Online' : 'Offline')),
-              e({
-                isNetworkOnline: a,
-              }),
+              e({ isNetworkOnline: a }),
               a &&
                 !o &&
                 (console.log('[Store] Connection restored. Triggering auto-sync...'),
@@ -5343,25 +4775,21 @@ const M = (0, s.create)()(
           });
         },
         incrementAllGrades: async () => {
-          const { activeGroupId: o, alumni: c, currentFreshmanTerm: l, isNetworkOnline: d } = s();
+          const { activeGroupId: o, alumni: c, currentFreshmanTerm, isNetworkOnline: d } = s();
           if (!o) return;
-          const u = Date.now(),
-            m = new Date().getFullYear();
+          const u = Date.now();
+          const m = new Date().getFullYear();
           if (!d) return void console.warn('[incrementAllGrades] Offline. Skipping promotion until online.');
           try {
-            const s = await (0, a.getDoc)((0, a.doc)(fb.db, `groups/${o}/config`, 'app_settings'));
+            const s = await Firestore.getDoc(Firestore.doc(fb.db, `groups/${o}/config`, 'app_settings'));
             if (s.exists()) {
               const t = s.data();
               if (t.lastPromotionYear && t.lastPromotionYear >= m)
                 return (
                   console.log(
-                    `[incrementAllGrades] Skipped: Promotion for year ${
-                      m
-                    } already completed according to Firestore.`
+                    `[incrementAllGrades] Skipped: Promotion for year ${m} already completed according to Firestore.`
                   ),
-                  void e({
-                    lastPromotionYear: t.lastPromotionYear,
-                  })
+                  void e({ lastPromotionYear: t.lastPromotionYear })
                 );
             }
           } catch (e) {
@@ -5369,26 +4797,18 @@ const M = (0, s.create)()(
           }
           let i;
           try {
-            const t = await (0, a.getDocs)((0, a.collection)(fb.db, `groups/${o}/members`));
-            ((i = []),
-              t.forEach((e) =>
-                i.push(
-                  Object.assign({}, e.data(), {
-                    id: e.id,
-                  })
-                )
-              ));
+            const t = await Firestore.getDocs(Firestore.collection(fb.db, `groups/${o}/members`));
+            i = [];
+            t.forEach((e) => i.push(Object.assign({}, e.data(), { id: e.id })));
           } catch (e) {
             return void console.error('[incrementAllGrades] Failed to fetch members:', e);
           }
           console.log(
-            `[Store] incrementAllGrades: Starting atomic promotion process... (${
-              i.length
-            } members from cloud)`
+            `[Store] incrementAllGrades: Starting atomic promotion process... (${i.length} members from cloud)`
           );
           const dropUndefined = (o) => {
             const t = {};
-            for (const k in o) void 0 !== o[k] && (t[k] = o[k]);
+            for (const k in o) undefined !== o[k] && (t[k] = o[k]);
             return t;
           };
           const gradeOf = (e) => {
@@ -5404,128 +4824,91 @@ const M = (0, s.create)()(
           i.forEach((e) => {
             const s = gradeOf(e);
             if (isNaN(s) || s < 1 || s >= 5)
-              p.push(
-                Object.assign({}, e, {
-                  lastModified: u,
-                  syncStatus: '同期済み',
-                })
-              );
+              p.push(Object.assign({}, e, { lastModified: u, syncStatus: '同期済み' }));
             else if (s >= 4)
-              p.push(
-                Object.assign({}, e, {
-                  grade: 5,
-                  lastModified: u,
-                  syncStatus: '同期済み',
-                })
-              );
-            else
-              p.push(
-                Object.assign({}, e, {
-                  grade: s + 1,
-                  lastModified: u,
-                  syncStatus: '同期済み',
-                })
-              );
+              p.push(Object.assign({}, e, { grade: 5, lastModified: u, syncStatus: '同期済み' }));
+            else p.push(Object.assign({}, e, { grade: s + 1, lastModified: u, syncStatus: '同期済み' }));
           });
-          const f = (l || 0) + 1;
+          const f = (currentFreshmanTerm || 0) + 1;
           if (d)
             try {
               const e = [];
-              (p.forEach((s) => {
+              p.forEach((s) => {
                 e.push({
                   type: 'set',
-                  ref: (0, a.doc)(fb.db, `groups/${o}/members`, s.id),
-                  data: dropUndefined(
-                    Object.assign({}, s, {
-                      lastModified: (0, a.serverTimestamp)(),
-                    })
-                  ),
+                  ref: Firestore.doc(fb.db, `groups/${o}/members`, s.id),
+                  data: dropUndefined(Object.assign({}, s, { lastModified: Firestore.serverTimestamp() })),
                 });
-              }),
-                e.push({
-                  type: 'set',
-                  ref: (0, a.doc)(fb.db, `groups/${o}/config`, 'app_settings'),
-                  data: {
-                    currentFreshmanTerm: f,
-                    lastPromotionYear: m,
-                    lastModified: (0, a.serverTimestamp)(),
-                  },
-                }));
+              });
+              e.push({
+                type: 'set',
+                ref: Firestore.doc(fb.db, `groups/${o}/config`, 'app_settings'),
+                data: {
+                  currentFreshmanTerm: f,
+                  lastPromotionYear: m,
+                  lastModified: Firestore.serverTimestamp(),
+                },
+              });
               for (let s = 0; s < e.length; s += 400) {
-                const o = e.slice(s, s + 400),
-                  i = (0, a.writeBatch)(fb.db);
-                (o.forEach((e) => {
+                const o = e.slice(s, s + 400);
+                const i = Firestore.writeBatch(fb.db);
+                o.forEach((e) => {
                   'set' === e.type
-                    ? i.set(e.ref, e.data, {
-                        merge: !0,
-                      })
+                    ? i.set(e.ref, e.data, { merge: true })
                     : 'delete' === e.type && i.delete(e.ref);
-                }),
-                  await i.commit());
+                });
+                await i.commit();
               }
               console.log('[Store] incrementAllGrades: Cloud sync successful.');
             } catch (e) {
               return (
                 console.error('[incrementAllGrades] Cloud sync failed:', e),
-                void n.default.alert(
+                void Alert.alert(
                   '進級処理エラー',
                   'クラウドとの同期に失敗しました。時間をおいて再度お試しください。'
                 )
               );
             }
           const S = c;
-          (e({
+          e({
             members: p,
             alumni: S,
             currentFreshmanTerm: f,
             lastPromotionYear: m,
             lastLocalChange: u,
             lastSyncTime: u,
-          }),
-            console.log('[Store] incrementAllGrades: Promotion process completed.'));
+          });
+          console.log('[Store] incrementAllGrades: Promotion process completed.');
         },
         updateCurrentFreshmanTerm: async (o) => {
           const {
             activeGroupId: i,
             autoPromotionEnabled: n,
-            tagTemplates: c,
+            tagTemplates,
             lastPromotionYear: l,
             isNetworkOnline: d,
           } = s();
-          if (
-            (e({
-              currentFreshmanTerm: o,
-              lastLocalChange: Date.now(),
-            }),
-            d && i)
-          )
+          if ((e({ currentFreshmanTerm: o, lastLocalChange: Date.now() }), d && i))
             try {
-              (await (0, a.setDoc)(
-                (0, a.doc)(fb.db, `groups/${i}/config`, 'app_settings'),
+              await Firestore.setDoc(
+                Firestore.doc(fb.db, `groups/${i}/config`, 'app_settings'),
                 {
                   currentFreshmanTerm: o,
                   autoPromotionEnabled: n,
-                  tagTemplates: c,
+                  tagTemplates: tagTemplates,
                   lastPromotionYear: l,
-                  lastModified: (0, a.serverTimestamp)(),
+                  lastModified: Firestore.serverTimestamp(),
                 },
-                {
-                  merge: !0,
-                }
-              ),
-                e({
-                  syncStatus: '同期済み',
-                  lastSyncTime: Date.now(),
-                }));
+                { merge: true }
+              );
+              e({ syncStatus: '同期済み', lastSyncTime: Date.now() });
             } catch (s) {
-              (console.error('Update Term Sync Error:', s),
-                不具合を控える('期の更新', s),
-                e({
-                  syncStatus: '同期エラー',
-                }));
+              console.error('Update Term Sync Error:', s);
+              不具合を控える('期の更新', s);
+              e({ syncStatus: '同期エラー' });
             }
         },
-        resetCurrentSession: (o = !0) => {
+        resetCurrentSession: (o = true) => {
           if (s().書き換えを止めるか()) return;
           const a = Date.now();
           // 片付けるとサーバーの marks_by_id も空になるので、控えも捨てる。
@@ -5551,46 +4934,35 @@ const M = (0, s.create)()(
           const { isLiveActive: n, liveSessionName: c } = s();
           const 枝 = ライブの枝();
           if (o && n && c && fb.rtdb && 枝) {
-            const s = (0, i.ref)(fb.rtdb, `live_sessions/${枝}/${c}/state`);
-            ((0, i.update)(s, {
+            const s = RTDB.ref(fb.rtdb, `live_sessions/${枝}/${c}/state`);
+            RTDB.update(s, {
               archers: [],
               marks_by_id: {},
               archer_timestamps: {},
               reset_at: a,
               timestamp: a,
-              updated_at: (0, i.serverTimestamp)(),
+              updated_at: RTDB.serverTimestamp(),
               // 共有履歴の目印も全員ぶん戻す
               history_len: 0,
               history_max: 0,
-            }).catch((e) => console.error('Reset Live Sync Error:', e)),
-              e({
-                lastPushedTimestamp: a,
-              }));
+            }).catch((e) => console.error('Reset Live Sync Error:', e));
+            e({ lastPushedTimestamp: a });
           }
         },
         recoverPassword: async (e) => {
-          if (!s().isNetworkOnline)
-            return {
-              success: !1,
-              error: 'オフラインのため実行できません',
-            };
+          if (!s().isNetworkOnline) return { success: false, error: 'オフラインのため実行できません' };
           try {
             return (
-              await (0, o.sendPasswordResetEmail)(fb.auth, e),
+              await FirebaseAuth.sendPasswordResetEmail(fb.auth, e),
               // 住所そのものは出さない。部活の共用端末では、次に使う人が
               // 開発者ツールで読める（復旧用の住所なので、知られたくない）
               console.log('[Store] パスワード再設定のメールを送りました'),
-              {
-                success: !0,
-              }
+              { success: true }
             );
           } catch (e) {
             return (
               console.error('Password Recovery Error:', e),
-              {
-                success: !1,
-                error: e.message || 'パスワードリセットメールの送信に失敗しました',
-              }
+              { success: false, error: e.message || 'パスワードリセットメールの送信に失敗しました' }
             );
           }
         },
@@ -5603,24 +4975,21 @@ const M = (0, s.create)()(
             return;
           }
           try {
-            const i = await (0, a.getDoc)((0, a.doc)(fb.db, `groups/${o}/config`, 'app_settings'));
+            const i = await Firestore.getDoc(Firestore.doc(fb.db, `groups/${o}/config`, 'app_settings'));
             if (i.exists()) {
               const t = i.data();
-              (console.log('[Store] Config initial fetch from cloud:', t),
-                e({
-                  autoPromotionEnabled: !1 !== t.autoPromotionEnabled,
-                  currentFreshmanTerm: t.currentFreshmanTerm || s().currentFreshmanTerm,
-                  tagTemplates: t.tagTemplates || s().tagTemplates,
-                  lastPromotionYear: t.lastPromotionYear || s().lastPromotionYear,
-                }));
+              console.log('[Store] Config initial fetch from cloud:', t);
+              e({
+                autoPromotionEnabled: false !== t.autoPromotionEnabled,
+                currentFreshmanTerm: t.currentFreshmanTerm || s().currentFreshmanTerm,
+                tagTemplates: t.tagTemplates || s().tagTemplates,
+                lastPromotionYear: t.lastPromotionYear || s().lastPromotionYear,
+              });
             }
-            const n = await (0, a.getDoc)((0, a.doc)(fb.db, 'groups', o));
+            const n = await Firestore.getDoc(Firestore.doc(fb.db, 'groups', o));
             if (n.exists()) {
               const s = n.data();
-              s.groupName &&
-                e({
-                  activeGroupName: s.groupName,
-                });
+              if (s.groupName) e({ activeGroupName: s.groupName });
             }
           } catch (e) {
             console.warn('[Store] Initial config fetch failed (offline?), falling back to local.', e);
@@ -5631,31 +5000,29 @@ const M = (0, s.create)()(
             e({ configUnsubscribe: null });
             console.log('[Store] listenToConfig: stopped existing listener');
           }
-          const i = (0, a.onSnapshot)((0, a.doc)(fb.db, `groups/${o}/config`, 'app_settings'), (t) => {
-              if (t.exists()) {
-                const o = t.data();
-                (console.log('[Store] Config updated from cloud (snapshot):', o),
-                  e({
-                    autoPromotionEnabled: !1 !== o.autoPromotionEnabled,
-                    currentFreshmanTerm: o.currentFreshmanTerm || s().currentFreshmanTerm,
-                    tagTemplates: o.tagTemplates || s().tagTemplates,
-                    lastPromotionYear: o.lastPromotionYear || s().lastPromotionYear,
-                    analysisRankingSettings: o.analysisRankingSettings || s().analysisRankingSettings,
-                  }));
-              }
-            }),
-            n = (0, a.onSnapshot)((0, a.doc)(fb.db, 'groups', o), (s) => {
-              if (s.exists()) {
-                const t = s.data();
-                t.groupName &&
-                  e({
-                    activeGroupName: t.groupName,
-                  });
-              }
-            });
+          const i = Firestore.onSnapshot(Firestore.doc(fb.db, `groups/${o}/config`, 'app_settings'), (t) => {
+            if (t.exists()) {
+              const o = t.data();
+              console.log('[Store] Config updated from cloud (snapshot):', o);
+              e({
+                autoPromotionEnabled: false !== o.autoPromotionEnabled,
+                currentFreshmanTerm: o.currentFreshmanTerm || s().currentFreshmanTerm,
+                tagTemplates: o.tagTemplates || s().tagTemplates,
+                lastPromotionYear: o.lastPromotionYear || s().lastPromotionYear,
+                analysisRankingSettings: o.analysisRankingSettings || s().analysisRankingSettings,
+              });
+            }
+          });
+          const n = Firestore.onSnapshot(Firestore.doc(fb.db, 'groups', o), (s) => {
+            if (s.exists()) {
+              const t = s.data();
+              if (t.groupName) e({ activeGroupName: t.groupName });
+            }
+          });
           e({
             configUnsubscribe: () => {
-              (i(), n());
+              i();
+              n();
             },
           });
         },
@@ -5663,7 +5030,7 @@ const M = (0, s.create)()(
     },
     {
       name: 'archery-score-storage',
-      storage: (0, d.createJSONStorage)(() => 端末の置き場),
+      storage: middleware.createJSONStorage(() => 端末の置き場),
       partialize: (e) => ({
         archers: e.archers,
         members: e.members,
@@ -5721,9 +5088,7 @@ const M = (0, s.create)()(
           if (t) console.error(`[Store] Hydration error (after ${o}ms):`, t);
           else if (s) {
             console.log(`[Store] Hydration finished successfully (Duration: ${o}ms)`);
-            const updates = {
-              isHydrated: !0,
-            };
+            const updates = { isHydrated: true };
             if (s.sessions) {
               updates.sessions = cleanUpSessions(s.sessions);
             }
@@ -5759,11 +5124,9 @@ const M = (0, s.create)()(
           } else {
             console.warn(`[Store] Hydration yielded empty state (after ${o}ms)`);
             const e = M.getState();
-            if (e && !1 === e.isHydrated && 'function' == typeof e.updateState) {
+            if (e && false === e.isHydrated && 'function' == typeof e.updateState) {
               console.log('[Store] Forcing isHydrated: true even for empty state');
-              e.updateState({
-                isHydrated: !0,
-              });
+              e.updateState({ isHydrated: true });
             }
           }
         };

@@ -65,15 +65,17 @@ function アプリが書く項目() {
     const s = 読む(f);
     // 公開の帳面を指す変数名を集める（private の子は除く）
     const 変数 = new Set();
+    // 読める形に直したので Firestore.doc( や doc(。前の (0, a.doc)( も受ける
     for (const m of s.matchAll(
-      /(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*\(0,\s*[\w.]+\.doc\)\([^,]+,\s*'group_accounts',\s*([^,)]+)\)/g
+      /(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:\(0,\s*[\w.]+\.doc\)|[\w.]*\bdoc)\([^,]+,\s*'group_accounts',\s*([^,)]+)\)/g
     ))
       変数.add(m[1]);
 
     for (const 名 of 変数) {
       // setDoc(名, { … }) / setDoc(名, { … }, { merge: true })
+      // 読める形に直したので setDoc(。前の (0, a.setDoc)( も受ける
       const re = new RegExp(
-        `setDoc\\)\\(\\s*${名}\\s*,\\s*\\{([^{}]*)\\}`,
+        `(?:setDoc\\)|\\bsetDoc)\\(\\s*${名}\\s*,\\s*\\{([^{}]*)\\}`,
         'g'
       );
       for (const m of s.matchAll(re)) {

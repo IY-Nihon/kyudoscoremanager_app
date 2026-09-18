@@ -1,31 +1,4 @@
-/**
- * Module ID: TutorialGuide (hand-written, not bundler-generated)
- *
- * 初めて使う人向けの案内。実際の画面のボタンを指さして、吹き出しで説明する。
- * 「押してみましょう」の手順では、指した部分だけ触れるようにして、
- * 実際に操作してもらってから次へ進む。
- *
- * ■ 作りの方針
- * 指す先は「タブバー」と「記録画面の主要ボタン」に絞ってある。各画面の奥まで
- * 目印を付けると、画面を少し変えるたびに案内が壊れるため。
- * 目印が見つからないときは、穴を開けずに中央の吹き出しだけ出して先へ進む。
- * 案内が途中で止まるより、説明だけでも最後まで読めるほうがよい。
- *
- * Modal を使っていない。Modal だと穴の部分も覆われて、下のボタンを押せない。
- * 代わりに画面全体に重ねた View を置き、暗幕は指す先の周り4枚の帯で作る。
- * 穴の部分には何も置かないので、そのまま本物のボタンに届く。
- *
- * 手順の中身は tutorialSteps.js（画面の部品を持たない）に分けてある。
- *
- * ■ 使い方
- *   画面側： const ref = useTutorialTarget('記録.人');  → <View ref={ref} />
- *   繰り返しの中： ref={(node) => setTutorialTargetNode('タブ.履歴', node)}
- *   起動側： <TutorialOverlay navRef={navigationContainerRef} />
- *   任意起動： startTutorial()（設定の「使い方を見る」から）
- */
 'use strict';
-
-Object.defineProperty(exports, '__esModule', { value: true });
 
 const React = require('react');
 const { useState, useEffect, useRef, useCallback } = React;
@@ -35,31 +8,23 @@ const _Text = require('./Text').default; // テーマ変換を通すためブリ
 const _StyleSheet = require('./StyleSheet').default; // テーマ変換を通すためブリッジ経由
 const _TouchableOpacity = RN.TouchableOpacity;
 const _ScrollView = RN.ScrollView;
-
 const { create } = require('zustand');
 const AsyncStorage = require('@react-native-async-storage/async-storage').default;
 const { Ionicons } = require('@expo/vector-icons');
 const { useScoreStore } = require('./useScoreStore');
 const { IS_WEB } = require('./IS_WEB');
-const {
-  手順を作る,
-  手が出せない: 手が出せないか,
-  見本の中身を作る,
-} = require('./tutorialSteps');
+const { 手順を作る, 手が出せない: 手が出せないか, 見本の中身を作る } = require('./tutorialSteps');
 const { 見える記録数 } = require('./syncRules');
-
 // 案内の版。手順を作り直したら上げる。上げると、一度見た人にもまた出る
 const TUTORIAL_VERSION = '2026-08-13-01';
 const 保存キー = 'tutorialDoneVersion';
 // 案内の途中で読み込み直されても片付けられるよう、控えは端末にも書いておく。
 // 手元に持つだけだと、再読み込みで控えが消え、案内で足した列が残り続ける
 const 控えキー = 'tutorialBoardSnapshot';
-
 // ─────────────────────────────────────────
 // 目印の登録先。画面側が ref を置き、案内側が位置を測る
 // ─────────────────────────────────────────
 const 目印帳 = new Map();
-
 /** 画面側で使う。返ってきた ref を、指してほしい要素に付ける */
 function useTutorialTarget(名前) {
   const ref = useRef(null);
@@ -72,7 +37,6 @@ function useTutorialTarget(名前) {
   }, [名前]);
   return ref;
 }
-
 /**
  * 繰り返しの中で使う登録。タブバーのように数が変わる場所ではフックが使えない
  * （役割でタブ数が変わり、フックの数が変わってしまう）ので、こちらを使う。
@@ -82,7 +46,6 @@ function setTutorialTargetNode(名前, node) {
   if (node) 目印帳.set(名前, { current: node });
   else 目印帳.delete(名前);
 }
-
 /**
  * 目印が画面の外にあれば、見えるところまで運ぶ。運んだら true。
  *
@@ -109,7 +72,6 @@ function 見えるところへ(名前) {
   }
   return true;
 }
-
 /**
  * 見本の中身が見えるところまで、画面を送る。
  *
@@ -128,14 +90,16 @@ function 見本を送る() {
   }
   if (一番) 一番.scrollTop = 一番.scrollHeight;
 }
-
 /** 節をウィンドウ基準で測る。測れなければ null */
 function 節を測る(節) {
   return new Promise((解決) => {
     if (!節 || typeof 節.measureInWindow !== 'function') return 解決(null);
     let 済み = false;
     const 終わる = (v) => {
-      if (!済み) ((済み = true), 解決(v));
+      if (!済み) {
+        済み = true;
+        解決(v);
+      }
     };
     try {
       節.measureInWindow((x, y, 幅, 高さ) => {
@@ -148,7 +112,6 @@ function 節を測る(節) {
     setTimeout(() => 終わる(null), 400);
   });
 }
-
 /** 目印の画面上の位置を測る。測れなければ null */
 function 位置を測る(名前) {
   return new Promise((解決) => {
@@ -157,7 +120,10 @@ function 位置を測る(名前) {
     if (!中身 || typeof 中身.measureInWindow !== 'function') return 解決(null);
     let 済み = false;
     const 終わる = (v) => {
-      if (!済み) ((済み = true), 解決(v));
+      if (!済み) {
+        済み = true;
+        解決(v);
+      }
     };
     try {
       中身.measureInWindow((x, y, 幅, 高さ) => {
@@ -171,7 +137,6 @@ function 位置を測る(名前) {
     setTimeout(() => 終わる(null), 400);
   });
 }
-
 // ─────────────────────────────────────────
 // 案内の進み具合。設定画面からも始められるよう、外に出してある
 // ─────────────────────────────────────────
@@ -193,10 +158,8 @@ const use案内 = create((set) => ({
   始める: (控え) => set({ 進行中: true, 番号: 0, 続きも見る: false, 控え, 最高到達: 0, 見本データ: null }),
   進める: (n) => set((s) => ({ 番号: n, 最高到達: Math.max(s.最高到達, n) })),
   続きへ: (n) => set((s) => ({ 続きも見る: true, 番号: n, 最高到達: Math.max(s.最高到達, n) })),
-  終える: () =>
-    set({ 進行中: false, 番号: 0, 続きも見る: false, 控え: null, 最高到達: 0, 見本データ: null }),
+  終える: () => set({ 進行中: false, 番号: 0, 続きも見る: false, 控え: null, 最高到達: 0, 見本データ: null }),
 }));
-
 /**
  * 案内を始める。
  *
@@ -221,7 +184,6 @@ function startTutorial() {
   );
   return 'はじめた';
 }
-
 /**
  * 画面が読む値に、案内の見本を重ねる。
  *
@@ -238,7 +200,6 @@ function 見本を重ねる(値) {
   if (!見本) return 値;
   return Object.assign({}, 値, 見本);
 }
-
 /** 案内で触ったぶんを元に戻す */
 function 盤面を戻す(控え) {
   if (!控え) return;
@@ -257,7 +218,6 @@ function 盤面を戻す(控え) {
     redoStack: [],
   });
 }
-
 /**
  * 「操作」の達成を測るための、いまの値。
  * 数が増える種類（射手を足すなど）と、値が変わる種類（射数を変えるなど）がある。
@@ -282,7 +242,6 @@ function いまの値(状態, 種類) {
     return 射手.reduce((合計, a) => 合計 + Object.keys((a && a.lockedBlocks) || {}).length, 0);
   return null;
 }
-
 /**
  * 手順に入る前に、その手順が成り立つ形を整える。
  *
@@ -296,7 +255,6 @@ function 下ごしらえする(種類) {
   const s = useScoreStore.getState();
   const 一覧 = s.archers || [];
   const 射手か = (a) => !!a && !a.isSeparator && !a.isTotalCalculator;
-
   if (種類 === '射手が1人') {
     if (一覧.some(射手か)) return false;
     s.addArcher();
@@ -315,7 +273,11 @@ function 下ごしらえする(種類) {
       for (let b = 0; 4 * b < 本数; b++) {
         const 端 = Math.min(4 * b + 4, 本数);
         let 全部 = true;
-        for (let x = 4 * b; x < 端; x++) if (!(印[x] ?? '')) { 全部 = false; break; }
+        for (let x = 4 * b; x < 端; x++)
+          if (!(印[x] ?? '')) {
+            全部 = false;
+            break;
+          }
         if (全部) return true;
       }
       return false;
@@ -327,7 +289,6 @@ function 下ごしらえする(種類) {
   }
   return false;
 }
-
 /** その種類は「増えたら達成」か、「変わったら達成」か */
 function 達成した(種類, 基準, 現在) {
   if (基準 === null || 現在 === null || 現在 === undefined) return false;
@@ -335,13 +296,11 @@ function 達成した(種類, 基準, 現在) {
     return 現在 !== 基準;
   return 現在 > 基準;
 }
-
 // ─────────────────────────────────────────
 // 本体
 // ─────────────────────────────────────────
 const 既定の吹き出しの幅 = 340;
 const 余白 = 12;
-
 const TutorialOverlay = ({ navRef }) => {
   const 進行中 = use案内((s) => s.進行中);
   const 番号 = use案内((s) => s.番号);
@@ -373,7 +332,6 @@ const TutorialOverlay = ({ navRef }) => {
   const 根ref = useRef(null);
   const 済み確認 = useRef(false);
   const 基準 = useRef(null);
-
   // 「まだ1人も登録されていません」のような案内は、実際に空のときだけ出す。
   // あとから設定の「使い方を見る」で開いた人には、事実と違って見えてしまう
   const 部員数 = useScoreStore((s) => (Array.isArray(s.members) ? s.members.length : 0));
@@ -381,10 +339,7 @@ const TutorialOverlay = ({ navRef }) => {
   // 記録が入っているので、素の件数だと個人ログインのときに
   // 「記録はあるが自分のは1件も無い」場合でも見本を出さず、空の画面が残る
   const 記録数 = useScoreStore((s) => 見える記録数(s));
-  const { 基本, 続き } = React.useMemo(
-    () => 手順を作る(役割, { 部員数, 記録数 }),
-    [役割, 部員数, 記録数]
-  );
+  const { 基本, 続き } = React.useMemo(() => 手順を作る(役割, { 部員数, 記録数 }), [役割, 部員数, 記録数]);
   // 基本の最後に「続きを見ますか」を挟む。見ると答えたら、そのまま続きへ
   const 分かれ道 = React.useMemo(
     () => ({
@@ -408,13 +363,11 @@ const TutorialOverlay = ({ navRef }) => {
   // 1人しかいない団体では、その人はもう割り当て済みで「選択済」と灰色になり、
   // 誰も選べない。読み返しでは操作を求めず、「次へ」で先に戻れるようにする
   const 見返し = 番号 < 最高到達;
-
   // 画面の回転や窓の大きさ変更に追随する
   useEffect(() => {
     const 購読 = RN.Dimensions.addEventListener('change', ({ window: w }) => 大きさを置く(w));
     return () => 購読 && 購読.remove && 購読.remove();
   }, []);
-
   // 初めての人には自動で出す
   useEffect(() => {
     if (済み確認.current || !役割) return;
@@ -441,7 +394,6 @@ const TutorialOverlay = ({ navRef }) => {
       }
     })();
   }, [役割]);
-
   // 手順が変わるたび、必要なら画面を移動してから位置を測る
   useEffect(() => {
     if (!いまの手順) return;
@@ -512,10 +464,7 @@ const TutorialOverlay = ({ navRef }) => {
       const 幕 = await 節を測る(根ref.current);
       if (捨てた) return;
       if (幕) 大きさが変わったら置く(幕.幅, 幕.高さ);
-      const 直した =
-        位置 && 幕
-          ? { x: 位置.x - 幕.x, y: 位置.y - 幕.y, 幅: 位置.幅, 高さ: 位置.高さ }
-          : 位置;
+      const 直した = 位置 && 幕 ? { x: 位置.x - 幕.x, y: 位置.y - 幕.y, 幅: 位置.幅, 高さ: 位置.高さ } : 位置;
       枠を置く(直した);
       測り中を置く(false);
     })();
@@ -523,7 +472,6 @@ const TutorialOverlay = ({ navRef }) => {
       捨てた = true;
     };
   }, [いまの手順, navRef, 見返し]);
-
   // 「押してみましょう」の手順は、実際に操作されたら次へ進む
   useEffect(() => {
     // 読み返し中は操作を待たない。「次へ」で先に戻ってもらう
@@ -545,18 +493,17 @@ const TutorialOverlay = ({ navRef }) => {
     });
     return 解除;
   }, [いまの手順, いまの画面, 番号, 進める, 見返し, 手が出せない]);
-
   const 閉じる = useCallback(async () => {
     // 案内で触ったぶんを戻してから閉じる。スキップでも必ず戻す
     盤面を戻す(控え);
     終える();
     try {
-      (await AsyncStorage.setItem(保存キー, TUTORIAL_VERSION), await AsyncStorage.removeItem(控えキー));
+      await AsyncStorage.setItem(保存キー, TUTORIAL_VERSION);
+      await AsyncStorage.removeItem(控えキー);
     } catch (e) {
       console.error('[TutorialGuide] 保存領域に書けませんでした:', e);
     }
   }, [終える, 控え]);
-
   if (!進行中 || !いまの手順) return null;
   // 指す先を測り終わるまでは、中身を出さない。
   // 途中で出すと、枠がまだ無いぶん中央に描かれ、位置が決まった瞬間に飛ぶ。
@@ -565,16 +512,13 @@ const TutorialOverlay = ({ navRef }) => {
   // 広い画面ではアプリが中央寄せになるため、そこが分からないと吹き出しが
   // 右へはみ出す。透明なまま置いておけば、指も通るし測れる
   if (測り中) return <_View ref={根ref} style={styles.根} pointerEvents="none" />;
-
   const 最後 = 番号 >= 手順.length - 1;
   const 触ってもらう = !!いまの手順.操作 && !見返し && !手が出せない;
   const { width: 画面幅, height: 画面高 } = 画面の大きさ;
   // 運んでもなお画面の外にある目印は、無かったことにする。そのまま位置に
   // 合わせて置くと、吹き出しごと画面の外へ追いやられて何も読めなくなる。
   // 指す先は出ないが、説明は真ん中に出るので先へ進める
-  const 枠 =
-    測った枠 && 測った枠.y + 測った枠.高さ > 0 && 測った枠.y < 画面高 ? 測った枠 : null;
-
+  const 枠 = 測った枠 && 測った枠.y + 測った枠.高さ > 0 && 測った枠.y < 画面高 ? 測った枠 : null;
   // 吹き出しの位置。
   //
   // 押してもらう手順では、指す先を絶対に覆わない。覆うと押せなくなり、
@@ -612,7 +556,6 @@ const TutorialOverlay = ({ navRef }) => {
       Math.max(余白, 画面幅 - 吹き出しの幅 - 余白)
     );
   }
-
   // 穴あきの暗幕は、指す先の周り4枚の帯で作る。
   // SVG の切り抜きを使わないので、Web でもアプリでも同じに出る。
   // 穴の部分には何も置かないため、本物のボタンをそのまま押せる
@@ -631,7 +574,6 @@ const TutorialOverlay = ({ navRef }) => {
   } else {
     暗幕.push({ key: '全面', top: 0, left: 0, right: 0, bottom: 0 });
   }
-
   return (
     <_View ref={根ref} style={styles.根} pointerEvents="box-none">
       {暗幕.map(({ key, 透明, ...位置 }) => (
@@ -698,71 +640,73 @@ const TutorialOverlay = ({ navRef }) => {
               if (h > 0 && Math.abs(h - 自然高さ) > 1) 自然高さを置く(h);
             }}
           >
-        <_View style={styles.見出し行}>
-          <_Text style={styles.番号}>{`${番号 + 1} / ${手順.length}`}</_Text>
-          <_TouchableOpacity onPress={閉じる} style={styles.閉じるボタン}>
-            <_Text style={styles.閉じる文字}>スキップ</_Text>
-          </_TouchableOpacity>
-        </_View>
-
-        <_Text style={styles.題}>{いまの手順.題}</_Text>
-        <_View>
-          {いまの手順.文.map((一文, i) => (
-            <_Text key={i} style={styles.文}>
-              {一文}
-            </_Text>
-          ))}
-        </_View>
-
-        {触ってもらう && (
-          <_View style={styles.やってみる}>
-            <Ionicons name="hand-left-outline" size={16} color="#FF9500" />
-            <_Text style={styles.やってみる文字}>{いまの手順.操作.案内}</_Text>
-          </_View>
-        )}
-
-        {/* 誤ってスキップしても行き止まりにならないよう、常に出しておく。
-            アプリ全体で使える知らせの仕組みが無いため、ここに添える */}
-        <_Text style={styles.補足} numberOfLines={1}>
-          記録表に触ったぶんは、終わると元に戻ります
-        </_Text>
-
-        <_View style={styles.操作行}>
-          {番号 > 0 ? (
-            <_TouchableOpacity onPress={() => 進める(番号 - 1)} style={styles.戻るボタン}>
-              <Ionicons name="chevron-back" size={16} color="#007AFF" />
-              <_Text style={styles.戻る文字}>戻る</_Text>
-            </_TouchableOpacity>
-          ) : (
-            <_View />
-          )}
-          {いまの手順.分かれ道 ? (
-            <_View style={styles.分かれ道行}>
-              <_TouchableOpacity onPress={閉じる} style={styles.とばすボタン}>
-                <_Text style={styles.とばす文字}>あとで</_Text>
-              </_TouchableOpacity>
-              <_TouchableOpacity onPress={() => 続きへ(基本.length)} style={styles.次へボタン}>
-                <_Text style={styles.次へ文字}>続きを見る</_Text>
+            <_View style={styles.見出し行}>
+              <_Text style={styles.番号}>{`${番号 + 1} / ${手順.length}`}</_Text>
+              <_TouchableOpacity onPress={閉じる} style={styles.閉じるボタン}>
+                <_Text style={styles.閉じる文字}>スキップ</_Text>
               </_TouchableOpacity>
             </_View>
-          ) : 触ってもらう ? (
-            // 押せない事情があっても行き止まりにならないよう、控えめな逃げ道を置く
-            <_TouchableOpacity onPress={() => 進める(番号 + 1)} style={styles.とばすボタン}>
-              <_Text style={styles.とばす文字}>とばす</_Text>
-            </_TouchableOpacity>
-          ) : (
-            <_TouchableOpacity onPress={() => (最後 ? 閉じる() : 進める(番号 + 1))} style={styles.次へボタン}>
-              <_Text style={styles.次へ文字}>{最後 ? '始める' : '次へ'}</_Text>
-            </_TouchableOpacity>
-          )}
-        </_View>
+
+            <_Text style={styles.題}>{いまの手順.題}</_Text>
+            <_View>
+              {いまの手順.文.map((一文, i) => (
+                <_Text key={i} style={styles.文}>
+                  {一文}
+                </_Text>
+              ))}
+            </_View>
+
+            {触ってもらう && (
+              <_View style={styles.やってみる}>
+                <Ionicons name="hand-left-outline" size={16} color="#FF9500" />
+                <_Text style={styles.やってみる文字}>{いまの手順.操作.案内}</_Text>
+              </_View>
+            )}
+
+            {/* 誤ってスキップしても行き止まりにならないよう、常に出しておく。
+            アプリ全体で使える知らせの仕組みが無いため、ここに添える */}
+            <_Text style={styles.補足} numberOfLines={1}>
+              記録表に触ったぶんは、終わると元に戻ります
+            </_Text>
+
+            <_View style={styles.操作行}>
+              {番号 > 0 ? (
+                <_TouchableOpacity onPress={() => 進める(番号 - 1)} style={styles.戻るボタン}>
+                  <Ionicons name="chevron-back" size={16} color="#007AFF" />
+                  <_Text style={styles.戻る文字}>戻る</_Text>
+                </_TouchableOpacity>
+              ) : (
+                <_View />
+              )}
+              {いまの手順.分かれ道 ? (
+                <_View style={styles.分かれ道行}>
+                  <_TouchableOpacity onPress={閉じる} style={styles.とばすボタン}>
+                    <_Text style={styles.とばす文字}>あとで</_Text>
+                  </_TouchableOpacity>
+                  <_TouchableOpacity onPress={() => 続きへ(基本.length)} style={styles.次へボタン}>
+                    <_Text style={styles.次へ文字}>続きを見る</_Text>
+                  </_TouchableOpacity>
+                </_View>
+              ) : 触ってもらう ? (
+                // 押せない事情があっても行き止まりにならないよう、控えめな逃げ道を置く
+                <_TouchableOpacity onPress={() => 進める(番号 + 1)} style={styles.とばすボタン}>
+                  <_Text style={styles.とばす文字}>とばす</_Text>
+                </_TouchableOpacity>
+              ) : (
+                <_TouchableOpacity
+                  onPress={() => (最後 ? 閉じる() : 進める(番号 + 1))}
+                  style={styles.次へボタン}
+                >
+                  <_Text style={styles.次へ文字}>{最後 ? '始める' : '次へ'}</_Text>
+                </_TouchableOpacity>
+              )}
+            </_View>
           </_View>
         </_ScrollView>
       </_View>
     </_View>
   );
 };
-
 const styles = _StyleSheet.create({
   根: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999 },
   暗幕: { position: 'absolute', backgroundColor: 'rgba(0,0,0,0.55)' },
@@ -778,7 +722,13 @@ const styles = _StyleSheet.create({
   見出し行: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   番号: { fontSize: 12, color: '#8E8E93', fontWeight: '600' },
   // 指で押す目安は44。文字を大きくせずに、押せる範囲だけ広げる
-  閉じるボタン: { minHeight: 44, minWidth: 64, paddingHorizontal: 8, justifyContent: 'center', alignItems: 'flex-end' },
+  閉じるボタン: {
+    minHeight: 44,
+    minWidth: 64,
+    paddingHorizontal: 8,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+  },
   閉じる文字: { fontSize: 13, color: '#8E8E93' },
   題: { fontSize: 17, fontWeight: 'bold', color: '#1C1C1E', marginBottom: 8 },
   文: { fontSize: 14, color: '#3A3A3C', lineHeight: 21, marginBottom: 3 },
@@ -793,7 +743,6 @@ const styles = _StyleSheet.create({
   },
   やってみる文字: { fontSize: 14, color: '#B26A00', fontWeight: 'bold', marginLeft: 6, flexShrink: 1 },
   補足: { fontSize: 11, color: '#8E8E93', lineHeight: 16, marginTop: 10 },
-
   // 見本。画面をまるごと覆う。本物と間違えないよう、上に帯を出す
   全面の紙: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#F2F2F7' },
   // 上に置くとタブ列に被る。下端に寄せる
@@ -844,7 +793,13 @@ const styles = _StyleSheet.create({
   },
   基準文字: { fontSize: 11, color: '#3C3C43' },
   基準の入力行: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
-  基準の入力: { flex: 1, backgroundColor: '#FFF', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 7 },
+  基準の入力: {
+    flex: 1,
+    backgroundColor: '#FFF',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
   基準の入力文字: { fontSize: 11, color: '#C7C7CC' },
   絞り込みボタン: { backgroundColor: '#E5E5EA', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 7 },
   絞り込み文字: { fontSize: 11, color: '#8E8E93', fontWeight: 'bold' },
@@ -925,7 +880,6 @@ const styles = _StyleSheet.create({
   },
   次へ文字: { fontSize: 15, color: '#FFFFFF', fontWeight: 'bold' },
 });
-
 exports.TutorialOverlay = TutorialOverlay;
 exports.useTutorialTarget = useTutorialTarget;
 exports.setTutorialTargetNode = setTutorialTargetNode;

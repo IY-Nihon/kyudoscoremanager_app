@@ -1,115 +1,82 @@
-/**
- * Module ID: 1037
- */
 'use strict';
 
-const _e = exports;
-
-('use strict');
-function e(e) {
-  return e && e.__esModule ? e : { default: e };
-}
-(Object.defineProperty(_e, '__esModule', { value: !0 }),
-  Object.defineProperty(_e, 'LoadingScreen', {
-    enumerable: !0,
-    get: function () {
-      return s;
+const View = require('./View').default;
+const Text = require('./Text').default;
+const ActivityIndicator = require('./ActivityIndicator').default;
+const StyleSheet = require('./StyleSheet').default;
+const { useScoreStore } = require('./useScoreStore');
+const { getShadowStyle } = require('./shadowStyle');
+const { Image } = require('react-native');
+const LoadingScreen = () => {
+  const e = useScoreStore((e) => e.initializationLogs);
+  return (
+    <View style={u.container}>
+      <View style={u.logoWrapper}>
+        <Image source={require('../assets/kyudo_icon.png')} style={u.logoImage} />
+      </View>
+      <Text style={u.title}>弓道部的中ノート</Text>
+      <View style={u.loaderWrapper}>
+        <ActivityIndicator size="small" color="#007AFF" />
+      </View>
+      <Text style={u.subtitle}>データを準備しています...</Text>
+      {e && e.length > 0 && (
+        <View style={u.logContainer}>
+          <View style={u.logHeader}>
+            <View style={u.logDot} />
+            <Text style={u.logHeaderText}>INITIALIZATION LOG</Text>
+          </View>
+          <View style={u.logList}>
+            {e.map((t, l) => (
+              <Text key={l} style={[u.logText, l === e.length - 1 ? u.logTextActive : u.logTextInactive]}>
+                {t}
+              </Text>
+            ))}
+          </View>
+        </View>
+      )}
+    </View>
+  );
+};
+const u = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F2F2F7' },
+  logoWrapper: Object.assign(
+    {
+      width: 80,
+      height: 80,
+      backgroundColor: '#FFF',
+      borderRadius: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 24,
     },
-  }),
-  require('react'));
-var t = e(require('./View')),
-  o = e(require('./Text')),
-  l = e(require('./ActivityIndicator')),
-  n = e(require('./StyleSheet')),
-  i = require('./useScoreStore'),
-  j = require('./shadowStyle'),
-  c = require('./themedJsx');
-const s = () => {
-    const e = (0, i.useScoreStore)((e) => e.initializationLogs);
-    return (0, c.jsxs)(t.default, {
-      style: u.container,
-      children: [
-        (0, c.jsx)(t.default, {
-          style: u.logoWrapper,
-          children: (0, c.jsx)(require('react-native').Image, {
-            source: require('../assets/kyudo_icon.png'),
-            style: u.logoImage,
-          }),
-        }),
-        (0, c.jsx)(o.default, { style: u.title, children: '弓道部的中ノート' }),
-        (0, c.jsx)(t.default, {
-          style: u.loaderWrapper,
-          children: (0, c.jsx)(l.default, { size: 'small', color: '#007AFF' }),
-        }),
-        (0, c.jsx)(o.default, { style: u.subtitle, children: 'データを準備しています...' }),
-        e &&
-          e.length > 0 &&
-          (0, c.jsxs)(t.default, {
-            style: u.logContainer,
-            children: [
-              (0, c.jsxs)(t.default, {
-                style: u.logHeader,
-                children: [
-                  (0, c.jsx)(t.default, { style: u.logDot }),
-                  (0, c.jsx)(o.default, { style: u.logHeaderText, children: 'INITIALIZATION LOG' }),
-                ],
-              }),
-              (0, c.jsx)(t.default, {
-                style: u.logList,
-                children: e.map((t, l) =>
-                  (0, c.jsx)(
-                    o.default,
-                    {
-                      style: [u.logText, l === e.length - 1 ? u.logTextActive : u.logTextInactive],
-                      children: t,
-                    },
-                    l
-                  )
-                ),
-              }),
-            ],
-          }),
-      ],
-    });
+    getShadowStyle({
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 10,
+      elevation: 5,
+    })
+  ),
+  logoImage: { width: 80, height: 80, borderRadius: 20 },
+  loaderWrapper: { marginBottom: 24 },
+  title: { fontSize: 24, fontWeight: '800', color: '#1C1C1E', marginBottom: 12, letterSpacing: -0.5 },
+  subtitle: { fontSize: 15, color: '#8E8E93', marginBottom: 48, fontWeight: '500' },
+  logContainer: {
+    width: '90%',
+    maxWidth: 400,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 122, 255, 0.1)',
   },
-  u = n.default.create({
-    container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F2F2F7' },
-    logoWrapper: Object.assign(
-      {
-        width: 80,
-        height: 80,
-        backgroundColor: '#FFF',
-        borderRadius: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 24,
-      },
-      (0, j.getShadowStyle)({
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 5,
-      })
-    ),
-    logoImage: { width: 80, height: 80, borderRadius: 20 },
-    loaderWrapper: { marginBottom: 24 },
-    title: { fontSize: 24, fontWeight: '800', color: '#1C1C1E', marginBottom: 12, letterSpacing: -0.5 },
-    subtitle: { fontSize: 15, color: '#8E8E93', marginBottom: 48, fontWeight: '500' },
-    logContainer: {
-      width: '90%',
-      maxWidth: 400,
-      backgroundColor: 'rgba(255, 255, 255, 0.8)',
-      padding: 16,
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: 'rgba(0, 122, 255, 0.1)',
-    },
-    logHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-    logDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#007AFF', marginRight: 8 },
-    logHeaderText: { fontSize: 13, color: '#1C1C1E', fontWeight: '700', letterSpacing: 0.5 },
-    logList: { gap: 4 },
-    logText: { fontSize: 11 },
-    logTextActive: { color: '#007AFF', opacity: 1 },
-    logTextInactive: { color: '#636366', opacity: 0.7 },
-  });
+  logHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  logDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#007AFF', marginRight: 8 },
+  logHeaderText: { fontSize: 13, color: '#1C1C1E', fontWeight: '700', letterSpacing: 0.5 },
+  logList: { gap: 4 },
+  logText: { fontSize: 11 },
+  logTextActive: { color: '#007AFF', opacity: 1 },
+  logTextInactive: { color: '#636366', opacity: 0.7 },
+});
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.LoadingScreen = LoadingScreen;

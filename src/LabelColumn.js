@@ -1,161 +1,140 @@
-/**
- * Module ID: 688
- */
 'use strict';
 
-const _e = exports;
-
-('use strict');
-function e(e) {
-  return e && e.__esModule ? e : { default: e };
-}
-(Object.defineProperty(_e, '__esModule', { value: !0 }),
-  Object.defineProperty(_e, 'LabelColumn', {
-    enumerable: !0,
-    get: function () {
-      return f;
-    },
-  }),
-  require('react'));
-var t = e(require('./View')),
-  o = e(require('./Text')),
-  i = e(require('./StyleSheet')),
-  n = require('./uiConfig'),
-  l = require('./useScoreStore'),
-  h = require('./themedJsx');
-const f = ({ shots: e, showFooter: i = !0, 横並び: 横 = !1 }) => {
-    const f = (0, l.useScoreStore)((e) => e.viewScale),
-      s = 'number' == typeof f && !isNaN(f) && f > 0 ? f : 1,
-      u = [];
-    // 縦の表は下から上へ数える（1射目が下）。横の表は左から右へ数える
-    if (横) for (let t = 1; t <= e; t++) u.push(t);
-    else for (let t = e; t >= 1; t--) u.push(t);
-    return (0, h.jsxs)(t.default, {
-      style: [
+const View = require('./View').default;
+const Text = require('./Text').default;
+const StyleSheet = require('./StyleSheet').default;
+const { UIConfig } = require('./uiConfig');
+const { useScoreStore } = require('./useScoreStore');
+const LabelColumn = ({ shots, showFooter = true, 横並び: 横 = false }) => {
+  const f = useScoreStore((e) => e.viewScale);
+  const s = 'number' == typeof f && !isNaN(f) && f > 0 ? f : 1;
+  const u = [];
+  // 縦の表は下から上へ数える（1射目が下）。横の表は左から右へ数える
+  if (横) for (let t = 1; t <= shots; t++) u.push(t);
+  else for (let t = shots; t >= 1; t--) u.push(t);
+  return (
+    <View
+      style={[
         c.column,
         横
           ? {
-              width: n.UIConfig.cellWidth * (e + 1) * s,
-              height: n.UIConfig.cellHeight * s,
+              width: UIConfig.cellWidth * (shots + 1) * s,
+              height: UIConfig.cellHeight * s,
               flexDirection: 'row',
               flexShrink: 0,
               borderLeftWidth: 0,
               borderTopWidth: 1.5,
               borderTopColor: '#000',
             }
-          : { width: n.UIConfig.headerWidth * s },
-      ],
-      children: [
-        (0, h.jsxs)(t.default, {
-          style: { flexDirection: 横 ? 'row-reverse' : 'column' },
-          children: [
-            (0, h.jsx)(t.default, {
-              style: [
-                c.header,
-                横
-                  ? {
-                      width: n.UIConfig.cellWidth * s,
-                      height: n.UIConfig.cellHeight * s,
-                      borderBottomWidth: 0,
-                      borderRightWidth: 0,
-                      borderLeftWidth: 1.5,
-                      borderLeftColor: '#000',
-                    }
-                  : { height: n.UIConfig.headerHeight * s },
-              ],
-              children: (0, h.jsx)(o.default, {
-                style: [c.headerText, { fontSize: 10 * s }],
-                children: '計',
-              }),
-            }),
-            (0, h.jsx)(t.default, {
-              style: 横 ? { flexDirection: 'row' } : void 0,
-              children: u.map((e) => {
-              // 立の切れ目。縦では下の線、横では右の線を太くする
-              const i = (e - 1) % 4 == 0 && 1 !== e;
-              const 切れ目 = 横 ? e % 4 == 0 && e !== u.length : i;
-              return (0, h.jsx)(
-                t.default,
-                {
-                  style: [
-                    c.cell,
-                    横
-                      ? {
-                          width: n.UIConfig.cellWidth * s,
-                          height: n.UIConfig.cellHeight * s,
-                          borderRightWidth: 切れ目 ? 2 : 1,
-                          borderRightColor: '#000',
-                        }
-                      : {
-                          height: n.UIConfig.cellHeight * s,
-                          borderBottomWidth: i ? 2 : 1,
-                          borderBottomColor: '#000',
-                        },
-                  ],
-                  children: (0, h.jsx)(o.default, { style: [c.numText, { fontSize: 10 * s }], children: e }),
-                },
-                e
-              );
-              }),
-            }),
-          ],
-        }),
-        i &&
-          (0, h.jsx)(t.default, {
-            style: [c.footer, { height: n.UIConfig.footerHeight * s }],
-            children: (0, h.jsx)(o.default, { style: [c.footerText, { fontSize: 10 * s }], children: '名' }),
-          }),
-        横
-          ? (0, h.jsx)(t.default, {
-              style: {
-                position: 'absolute',
-                left: 0,
-                right: 0,
-                bottom: 0,
-                // 見出しと本体の区切りなので、ますの線（1px）より太くする
-                height: 3,
-                backgroundColor: '#000',
-              },
-            })
-          : null,
-      ],
-    });
+          : { width: UIConfig.headerWidth * s },
+      ]}
+    >
+      <View style={{ flexDirection: 横 ? 'row-reverse' : 'column' }}>
+        <View
+          style={[
+            c.header,
+            横
+              ? {
+                  width: UIConfig.cellWidth * s,
+                  height: UIConfig.cellHeight * s,
+                  borderBottomWidth: 0,
+                  borderRightWidth: 0,
+                  borderLeftWidth: 1.5,
+                  borderLeftColor: '#000',
+                }
+              : { height: UIConfig.headerHeight * s },
+          ]}
+        >
+          <Text style={[c.headerText, { fontSize: 10 * s }]}>計</Text>
+        </View>
+        <View style={横 ? { flexDirection: 'row' } : undefined}>
+          {u.map((e) => {
+            // 立の切れ目。縦では下の線、横では右の線を太くする
+            const i = (e - 1) % 4 == 0 && 1 !== e;
+            const 切れ目 = 横 ? e % 4 == 0 && e !== u.length : i;
+            return (
+              <View
+                key={e}
+                style={[
+                  c.cell,
+                  横
+                    ? {
+                        width: UIConfig.cellWidth * s,
+                        height: UIConfig.cellHeight * s,
+                        borderRightWidth: 切れ目 ? 2 : 1,
+                        borderRightColor: '#000',
+                      }
+                    : {
+                        height: UIConfig.cellHeight * s,
+                        borderBottomWidth: i ? 2 : 1,
+                        borderBottomColor: '#000',
+                      },
+                ]}
+              >
+                <Text style={[c.numText, { fontSize: 10 * s }]}>{e}</Text>
+              </View>
+            );
+          })}
+        </View>
+      </View>
+      {showFooter && (
+        <View style={[c.footer, { height: UIConfig.footerHeight * s }]}>
+          <Text style={[c.footerText, { fontSize: 10 * s }]}>名</Text>
+        </View>
+      )}
+      {横 ? (
+        <View
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            // 見出しと本体の区切りなので、ますの線（1px）より太くする
+            height: 3,
+            backgroundColor: '#000',
+          }}
+        />
+      ) : null}
+    </View>
+  );
+};
+const c = StyleSheet.create({
+  column: {
+    width: UIConfig.headerWidth,
+    backgroundColor: '#F2F2F7',
+    borderLeftWidth: 1.5,
+    borderLeftColor: '#000',
   },
-  c = i.default.create({
-    column: {
-      width: n.UIConfig.headerWidth,
-      backgroundColor: '#F2F2F7',
-      borderLeftWidth: 1.5,
-      borderLeftColor: '#000',
-    },
-    header: {
-      height: n.UIConfig.headerHeight,
-      justifyContent: 'center',
-      alignItems: 'center',
-      borderBottomWidth: 1.5,
-      borderBottomColor: '#000',
-      borderRightWidth: 1.5,
-      borderRightColor: '#000',
-    },
-    headerText: { color: '#3C3C43', fontSize: 10, fontWeight: 'bold' },
-    cell: {
-      height: n.UIConfig.cellHeight,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: '#F2F2F7',
-      borderRightWidth: 1.5,
-      borderRightColor: '#000',
-    },
-    numText: { color: '#3C3C43', fontSize: 10 },
-    footer: {
-      height: n.UIConfig.footerHeight,
-      justifyContent: 'center',
-      alignItems: 'center',
-      borderTopWidth: 1,
-      borderTopColor: '#000',
-      borderRightWidth: 1.5,
-      borderRightColor: '#000',
-      backgroundColor: '#F2F2F7',
-    },
-    footerText: { color: '#3C3C43', fontSize: 10, fontWeight: 'bold' },
-  });
+  header: {
+    height: UIConfig.headerHeight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#000',
+    borderRightWidth: 1.5,
+    borderRightColor: '#000',
+  },
+  headerText: { color: '#3C3C43', fontSize: 10, fontWeight: 'bold' },
+  cell: {
+    height: UIConfig.cellHeight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F2F2F7',
+    borderRightWidth: 1.5,
+    borderRightColor: '#000',
+  },
+  numText: { color: '#3C3C43', fontSize: 10 },
+  footer: {
+    height: UIConfig.footerHeight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#000',
+    borderRightWidth: 1.5,
+    borderRightColor: '#000',
+    backgroundColor: '#F2F2F7',
+  },
+  footerText: { color: '#3C3C43', fontSize: 10, fontWeight: 'bold' },
+});
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.LabelColumn = LabelColumn;

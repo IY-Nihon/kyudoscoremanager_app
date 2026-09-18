@@ -1,30 +1,23 @@
-/**
- * Module ID: 178
- */
 'use strict';
 
-const _e = exports;
-
-('use strict');
-Object.defineProperty(_e, '__esModule', { value: !0 });
-var e = require('firebase/app'),
-  t = require('firebase/database'),
-  n = require('firebase/firestore'),
-  u = require('firebase/auth'),
-  o = require('./setupAppCheck');
+const app = require('firebase/app');
+const RTDB = require('firebase/database');
+const Firestore = require('firebase/firestore');
+const FirebaseAuth = require('firebase/auth');
+const { setupAppCheck } = require('./setupAppCheck');
 const c = {
-    apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
-    authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    databaseURL: process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL,
-    projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
-  },
-  p = (0, e.getApps)().length > 0 ? (0, e.getApp)() : (0, e.initializeApp)(c);
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  databaseURL: process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL,
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+};
+const p = app.getApps().length > 0 ? app.getApp() : app.initializeApp(c);
 console.log('[db] Firebase config API Key:', c.apiKey ? 'FOUND' : 'MISSING');
 console.log('[db] Firebase App:', p ? 'INITIALIZED' : 'NULL');
-(0, o.setupAppCheck)(p);
+setupAppCheck(p);
 // オフラインの控えは、作るときに渡す。
 //
 // 以前は getFirestore のあとに enableIndexedDbPersistence を呼んでいた。
@@ -36,40 +29,34 @@ console.log('[db] Firebase App:', p ? 'INITIALIZED' : 'NULL');
 // 新しい作りは窓どうしで控えを分け合うので、2つ開いても両方が控えを持てる。
 const s = (() => {
   try {
-    return (0, n.initializeFirestore)(p, {
-      localCache: (0, n.persistentLocalCache)({
-        tabManager: (0, n.persistentMultipleTabManager)(),
-      }),
+    return Firestore.initializeFirestore(p, {
+      localCache: Firestore.persistentLocalCache({ tabManager: Firestore.persistentMultipleTabManager() }),
     });
   } catch (err) {
     // すでに作られている（読み込みが二重になった）ときや、
     // 控えを持てない端末のとき。同期そのものは続ける
     console.warn('[Firestore] 控えつきの初期化に失敗しました:', err);
-    return (0, n.getFirestore)(p);
+    return Firestore.getFirestore(p);
   }
 })();
 console.log('[db] Firestore Instance:', s ? 'CREATED' : 'NULL');
-
-const b = (0, u.getAuth)(p);
+const b = FirebaseAuth.getAuth(p);
 const l = (() => {
   try {
-    return c.databaseURL ? (0, t.getDatabase)(p) : null;
+    return c.databaseURL ? RTDB.getDatabase(p) : null;
   } catch (e) {
     return (console.warn('[Firebase] RTDB initialization failed:', e), null);
   }
 })();
-
 // db/auth/rtdb を先に exports に設定してから、永続化を非同期で行う
-_e.db = s;
-_e.auth = b;
-_e.rtdb = l;
-console.log('[db] exports.db set:', _e.db ? 'OK' : 'FAILED');
-
+exports.db = s;
+exports.auth = b;
+exports.rtdb = l;
+console.log('[db] exports.db set:', exports.db ? 'OK' : 'FAILED');
 // オフライン保存が効いているか。効いていないと、電波の無い場所で保存した
 // 記録は、画面を閉じた時点で送信待ちごと失われる。画面に出すために持つ。
 // 'ok' / 'multipleTabs' / 'unsupported' / 'error' のいずれか。
-_e.persistence = { state: 'pending', code: null };
-
+exports.persistence = { state: 'pending', code: null };
 // Firestore オフライン永続化の有効化（exports設定後に非同期実行）
 // 同期の待ち合わせ。ここは決して止めない。
 //
@@ -79,8 +66,7 @@ _e.persistence = { state: 'pending', code: null };
 //（WebKit で窓を多く開けているときなど）、返らないとこの約束が解けず、
 // syncSessions も見張りも await のまま止まる＝同期がまるごと動かない。
 // 待ち合わせと、控えを持てるかの見分けは、切り離す。
-_e.dbReady = Promise.resolve(s);
-
+exports.dbReady = Promise.resolve(s);
 // 控えを持てるか。持てない端末（プライベート閲覧など）では、電波の無い場所で
 // 保存した記録が画面を閉じた時点で消えるので、画面に出して知らせる。
 // 新しい作りは、持てないときに黙って記憶だけの控えへ落ちるため、
@@ -90,11 +76,11 @@ _e.dbReady = Promise.resolve(s);
 // 見切ったときは「持てている」に倒す。持てているのに警告を出すほうが害が大きい。
 (function 控えを持てるか見る() {
   if ('undefined' == typeof window) {
-    _e.persistence = { state: 'ok', code: null };
+    exports.persistence = { state: 'ok', code: null };
     return;
   }
   const 決める = (状態) => {
-    if ('pending' === _e.persistence.state) _e.persistence = 状態;
+    if ('pending' === exports.persistence.state) exports.persistence = 状態;
   };
   const 見切り = setTimeout(() => 持てているとする(), 3000);
   function 持てているとする() {

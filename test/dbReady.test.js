@@ -24,11 +24,12 @@ const path = require('node:path');
 const 中身 = fs.readFileSync(path.join(__dirname, '..', 'src', 'db.js'), 'utf8');
 
 test('dbReady は、何も待たずにすぐ解ける', () => {
-  const 行 = 中身.split(/\r?\n/).find((x) => x.includes('_e.dbReady ='));
-  assert.ok(行, '_e.dbReady が見つからない');
+  // 読める形に直したので exports.dbReady =。前の _e.dbReady = も受ける
+  const 行 = 中身.split(/\r?\n/).find((x) => x.includes('exports.dbReady =') || x.includes('_e.dbReady ='));
+  assert.ok(行, 'exports.dbReady が見つからない');
   assert.match(
     行,
-    /_e\.dbReady\s*=\s*Promise\.resolve\(/,
+    /(?:_e|exports)\.dbReady\s*=\s*Promise\.resolve\(/,
     'dbReady が「すぐ解ける約束」になっていない。中で何かを待つと、返らない端末で同期が止まる'
   );
 });

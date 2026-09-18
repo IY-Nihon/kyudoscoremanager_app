@@ -1,76 +1,57 @@
-/**
- * Module ID: 216
- */
 'use strict';
 
-const _e = exports;
-
-('use strict');
-function e(e) {
-  return e && e.__esModule ? e : { default: e };
-}
-(Object.defineProperty(_e, '__esModule', { value: !0 }),
-  Object.defineProperty(_e, 'MainNavigator', {
-    enumerable: !0,
-    get: function () {
-      return k;
-    },
-  }));
-var RN画面 = require('react-native'),
-  themeMod = require('./theme'),
-  t = require('react'),
-  n = e(t),
-  o = e(require('./View')),
-  s = e(require('./Text')),
-  c = e(require('./StyleSheet'));
-require('./platform');
-var l = e(require('./Pressable')),
-  u = require('@react-navigation/bottom-tabs'),
-  b = require('@react-navigation/native'),
-  h = require('react-native-safe-area-context'),
-  p = require('./useScoreStore'),
-  S = require('./IS_WEB'),
-  f = require('./shadowStyle'),
-  x = require('./RecordScreen'),
-  y = require('./HistoryScreen'),
-  F = require('./AnalysisScreen'),
-  j = require('./MemberScreen'),
-  AttendanceScreen = require('./AttendanceScreen').AttendanceScreen,
-  v = require('./SettingsScreen'),
-  B = require('./AIChatBot'),
-  案内 = require('./TutorialGuide'),
-  T = require('./themedJsx');
+const RN画面 = require('react-native');
+const themeMod = require('./theme');
+const React = require('react');
+const View = require('./View').default;
+const Text = require('./Text').default;
+const StyleSheet = require('./StyleSheet').default;
+const Pressable = require('./Pressable').default;
+const BottomTabs = require('@react-navigation/bottom-tabs');
+const Navigation = require('@react-navigation/native');
+const ReactNativeSafeAreaContext = require('react-native-safe-area-context');
+const { useScoreStore } = require('./useScoreStore');
+const { IS_WEB, WEB_TOP_PADDING } = require('./IS_WEB');
+const { getShadowStyle } = require('./shadowStyle');
+const { RecordScreen } = require('./RecordScreen');
+const { HistoryScreen } = require('./HistoryScreen');
+const { AnalysisScreen } = require('./AnalysisScreen');
+const { MemberScreen } = require('./MemberScreen');
+const AttendanceScreen = require('./AttendanceScreen').AttendanceScreen;
+const { SettingsScreen } = require('./SettingsScreen');
+const { AIChatBot } = require('./AIChatBot');
+const 案内 = require('./TutorialGuide');
 const A = {
-    prefixes: [
-      'http://localhost:8081',
-      'https://archery-record-app.web.app',
-      'https://kyudoscoremanager.web.app',
-    ],
-    config: {
-      screens: {
-        '記録': 'record',
-        '履歴': 'history',
-        '分析': 'analysis',
-        'メンバー': 'members',
-        '出欠': 'attendance',
-        '設定': 'settings',
-      },
+  prefixes: [
+    'http://localhost:8081',
+    'https://archery-record-app.web.app',
+    'https://kyudoscoremanager.web.app',
+  ],
+  config: {
+    screens: {
+      '記録': 'record',
+      '履歴': 'history',
+      '分析': 'analysis',
+      'メンバー': 'members',
+      '出欠': 'attendance',
+      '設定': 'settings',
     },
   },
-  C = (0, u.createBottomTabNavigator)(),
-  w = () =>
-    Object.assign({}, b.DefaultTheme, {
-      colors: Object.assign({}, b.DefaultTheme.colors, {
-        background: themeMod.mapColor('#FFFFFF', 'bg'),
-        card: themeMod.mapColor('#FFFFFF', 'bg'),
-        text: themeMod.mapColor('#1C1C1E', 'text'),
-        border: themeMod.mapColor('#C6C6C8', 'border'),
-      }),
-    });
-const D = c.default.create({
+};
+const C = BottomTabs.createBottomTabNavigator();
+const w = () =>
+  Object.assign({}, Navigation.DefaultTheme, {
+    colors: Object.assign({}, Navigation.DefaultTheme.colors, {
+      background: themeMod.mapColor('#FFFFFF', 'bg'),
+      card: themeMod.mapColor('#FFFFFF', 'bg'),
+      text: themeMod.mapColor('#1C1C1E', 'text'),
+      border: themeMod.mapColor('#C6C6C8', 'border'),
+    }),
+  });
+const D = StyleSheet.create({
   tabBarWrapper: Object.assign(
     { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1e3 },
-    S.IS_WEB ? { backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' } : {}
+    IS_WEB ? { backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' } : {}
   ),
   tabBarContainer: {
     flexDirection: 'row',
@@ -91,7 +72,7 @@ const D = c.default.create({
   },
   tabButtonActive: Object.assign(
     { backgroundColor: '#FFFFFF' },
-    (0, f.getShadowStyle)({
+    getShadowStyle({
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.1,
       shadowRadius: 1,
@@ -118,145 +99,135 @@ const D = c.default.create({
     marginTop: -8,
   },
 });
-
-const I = n.default.memo(({ state: e, descriptors: t, navigation: nav }) => {
-  (0, h.useSafeAreaInsets)();
+const I = React.memo(({ state, descriptors, navigation: nav }) => {
+  ReactNativeSafeAreaContext.useSafeAreaInsets();
   // 画面の幅で字を詰める。6つのタブは 320px の端末に収まらず、
   // 左右にはみ出していた（記録・履歴・分析・メンバー・出欠・設定）
-  const 画面の幅 = (0, RN画面.useWindowDimensions)().width;
+  const 画面の幅 = RN画面.useWindowDimensions().width;
   const 詰める = 画面の幅 < 380;
   const 狭いときのボタン = 詰める ? { paddingHorizontal: 6, minWidth: 34 } : null;
   const 狭いときの字 = 詰める ? { fontSize: 11 } : null;
-  const c = (0, p.useScoreStore)((e) => e.historySelectedTags || []),
-    u = (0, p.useScoreStore)((e) => e.analysisSelectedTags || []),
-    b = (0, p.useScoreStore)((e) => e.currentSessionTags || []),
-    f =
-      ((0, p.useScoreStore)((e) => e.toggleHistoryTag),
-      (0, p.useScoreStore)((e) => e.toggleAnalysisTag),
-      (0, p.useScoreStore)((e) => e.toggleCurrentSessionTag),
-      (0, p.useScoreStore)((e) => e.setHistorySelectedTags),
-      (0, p.useScoreStore)((e) => e.setAnalysisSelectedTags),
-      (0, p.useScoreStore)((e) => e.setCurrentSessionTags),
-      e.routes[e.index].name),
-    x = S.IS_WEB ? o.default : h.SafeAreaView;
+  const c = useScoreStore((e) => e.historySelectedTags || []);
+  const u = useScoreStore((e) => e.analysisSelectedTags || []);
+  const b = useScoreStore((e) => e.currentSessionTags || []);
+  const f =
+    (useScoreStore((e) => e.toggleHistoryTag),
+    useScoreStore((e) => e.toggleAnalysisTag),
+    useScoreStore((e) => e.toggleCurrentSessionTag),
+    useScoreStore((e) => e.setHistorySelectedTags),
+    useScoreStore((e) => e.setAnalysisSelectedTags),
+    useScoreStore((e) => e.setCurrentSessionTags),
+    state.routes[state.index].name);
+  const X要素 = IS_WEB ? View : ReactNativeSafeAreaContext.SafeAreaView;
   console.log('[CustomTabBar] Active Route:', f, 'Tags:', {
     current: b.length,
     history: c.length,
     analysis: u.length,
   });
-  return (0, T.jsx)(x, {
-    style: [D.tabBarWrapper, S.IS_WEB && { paddingTop: 0 }],
-    edges: ['top', 'left', 'right'],
-    children: (0, T.jsxs)(o.default, {
-      style: [D.tabBarContainer, { height: 60 }],
-      children: [
-        (0, T.jsx)(o.default, { style: D.leftActions }),
-        (0, T.jsx)(o.default, {
-          style: D.tabItems,
-          children: e.routes.map((h, p) => {
-            const { options: S } = t[h.key],
-              f = void 0 !== S.tabBarLabel ? S.tabBarLabel : void 0 !== S.title ? S.title : h.name,
-              x = e.index === p;
-            let y = !1;
-            ('記録' === h.name && b.length > 0 && (y = !0),
-              '履歴' === h.name && c.length > 0 && (y = !0),
-              '分析' === h.name && u.length > 0 && (y = !0));
-            return (0, T.jsx)(
-              l.default,
-              {
-                // 使い方の案内が指す先。繰り返しの中なのでフックは使えない
-                ref: (node) => 案内.setTutorialTargetNode(`タブ.${h.name}`, node),
-                onPress: () => {
-                  const e = nav.emit({ type: 'tabPress', target: h.key, canPreventDefault: !0 });
+  return (
+    <X要素 style={[D.tabBarWrapper, IS_WEB && { paddingTop: 0 }]} edges={['top', 'left', 'right']}>
+      <View style={[D.tabBarContainer, { height: 60 }]}>
+        <View style={D.leftActions} />
+        <View style={D.tabItems}>
+          {state.routes.map((h, p) => {
+            const { options } = descriptors[h.key];
+            const f =
+              undefined !== options.tabBarLabel
+                ? options.tabBarLabel
+                : undefined !== options.title
+                  ? options.title
+                  : h.name;
+            const x = state.index === p;
+            let y = false;
+            '記録' === h.name && b.length > 0 && (y = true);
+            '履歴' === h.name && c.length > 0 && (y = true);
+            '分析' === h.name && u.length > 0 && (y = true);
+            return (
+              <Pressable
+                key={p} // 使い方の案内が指す先。繰り返しの中なのでフックは使えない
+                ref={(node) => 案内.setTutorialTargetNode(`タブ.${h.name}`, node)}
+                onPress={() => {
+                  const e = nav.emit({ type: 'tabPress', target: h.key, canPreventDefault: true });
                   // 不具合の便りに載せる。どの画面で起きたかが分かると原因を絞れる
                   try {
                     require('./errorReporter').行動を残す('画面を移る', h.name);
                   } catch (_) {
                     /* 控えられなくても、画面の移動は止めない */
                   }
-                  x || e.defaultPrevented || nav.navigate(h.name);
-                },
-                style: ({ pressed: e, hovered: t }) => [
+                  if (!(x || e.defaultPrevented)) nav.navigate(h.name);
+                }}
+                style={({ pressed, hovered }) => [
                   狭いときのボタン,
                   D.tabButton,
                   x && D.tabButtonActive,
-                  !x && t && D.tabButtonHover,
-                  e && { opacity: 0.7 },
-                ],
-                children: (0, T.jsxs)(o.default, {
-                  style: { flexDirection: 'row', alignItems: 'center' },
-                  children: [
-                    (0, T.jsx)(s.default, {
-                      style: [D.tabText, 狭いときの字, x && D.tabTextActive, !x && D.tabTextHoverable],
-                      children: f,
-                    }),
-                    y && (0, T.jsx)(o.default, { style: D.badgeDot }),
-                  ],
-                }),
-              },
-              p
+                  !x && hovered && D.tabButtonHover,
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={[D.tabText, 狭いときの字, x && D.tabTextActive, !x && D.tabTextHoverable]}>
+                    {f}
+                  </Text>
+                  {y && <View style={D.badgeDot} />}
+                </View>
+              </Pressable>
             );
-          }),
-        }),
-        (0, T.jsx)(o.default, { style: D.rightActions }),
-      ],
-    }),
-  });
+          })}
+        </View>
+        <View style={D.rightActions} />
+      </View>
+    </X要素>
+  );
 });
-
-const RecordScreenComp = (props) => (0, T.jsx)(x.RecordScreen, props);
-const HistoryScreenComp = (props) => (0, T.jsx)(y.HistoryScreen, props);
-const AnalysisScreenComp = (props) => (0, T.jsx)(F.AnalysisScreen, props);
-const MemberScreenComp = (props) => (0, T.jsx)(j.MemberScreen, props);
-const AttendanceScreenComp = (props) => (0, T.jsx)(AttendanceScreen, props);
-const SettingsScreenComp = (props) => (0, T.jsx)(v.SettingsScreen, props);
-
-const k = () => {
-  const e = (0, h.useSafeAreaInsets)(),
-    n = (0, p.useScoreStore)((e) => e.activeRole),
-    // 共有リンクだけで来ている人。団体のデータを何も持っていないので、
+const RecordScreenComp = (props) => <RecordScreen {...props} />;
+const HistoryScreenComp = (props) => <HistoryScreen {...props} />;
+const AnalysisScreenComp = (props) => <AnalysisScreen {...props} />;
+const MemberScreenComp = (props) => <MemberScreen {...props} />;
+const AttendanceScreenComp = (props) => <AttendanceScreen {...props} />;
+const SettingsScreenComp = (props) => <SettingsScreen {...props} />;
+const MainNavigator = () => {
+  const e = ReactNativeSafeAreaContext.useSafeAreaInsets();
+  const n = useScoreStore((e) => e.activeRole);
+  const // 共有リンクだけで来ている人。団体のデータを何も持っていないので、
     // 履歴・分析・設定を出しても中身が無い。記録の画面だけにする
-    来客 = (0, p.useScoreStore)((e) => e.共有の来客),
-    o = (0, p.useScoreStore)((e) => e.setCurrentRouteName),
-    s =
-      (S.IS_WEB ? S.WEB_TOP_PADDING : Math.max(e.top, 20),
-      (0, t.useCallback)((e) => (0, T.jsx)(I, Object.assign({}, e)), [])),
-    c = (0, t.useMemo)(() => A, []),
-    l = (0, b.useNavigationContainerRef)();
-  return (0, T.jsxs)(b.NavigationContainer, {
-    ref: l,
-    theme: w(),
-    linking: c,
-    onStateChange: () => {
-      const e = l.getCurrentRoute();
-      e && o(e.name);
-    },
-    onReady: () => {
-      const e = l.getCurrentRoute();
-      e && o(e.name);
-    },
-    children: [
-      (0, T.jsxs)(C.Navigator, {
-        tabBar: s,
-        screenOptions: { headerShown: !1 },
-        children: [
-          (0, T.jsx)(C.Screen, { name: '記録', component: RecordScreenComp }),
-          !来客 && (0, T.jsx)(C.Screen, { name: '履歴', component: HistoryScreenComp }),
-          !来客 && (0, T.jsx)(C.Screen, { name: '分析', component: AnalysisScreenComp }),
-          // 個人ログインでも出す。自分の弓具を登録・編集するための入口で、
-          // ここが無いと画面まで辿り着けない（権限だけ許しても届かなかった）。
-          // 一覧で他人を開こうとすると MemberScreen 側が断り、弓具の欄も
-          // 自分のぶんしか出さない
-          !来客 && (0, T.jsx)(C.Screen, { name: 'メンバー', component: MemberScreenComp }),
-          !来客 && 'group' === n && (0, T.jsx)(C.Screen, { name: '出欠', component: AttendanceScreenComp }),
-          !来客 && (0, T.jsx)(C.Screen, { name: '設定', component: SettingsScreenComp }),
-        ],
-      }),
-      // 来客には出さない。相談役は団体の記録を見て答える作りで、
-      // 案内は団体の画面を順に指してまわる。どちらも来客には中身が無い
-      !来客 && (0, T.jsx)(B.AIChatBot, {}),
-      // 使い方の案内。画面を移動しながら指すので、移動用の ref を渡す
-      !来客 && (0, T.jsx)(案内.TutorialOverlay, { navRef: l }),
-    ],
-  });
+    来客 = useScoreStore((e) => e.共有の来客);
+  const o = useScoreStore((e) => e.setCurrentRouteName);
+  const s = (IS_WEB ? WEB_TOP_PADDING : Math.max(e.top, 20), React.useCallback((e) => <I {...e} />, []));
+  const c = React.useMemo(() => A, []);
+  const l = Navigation.useNavigationContainerRef();
+  return (
+    <Navigation.NavigationContainer
+      ref={l}
+      theme={w()}
+      linking={c}
+      onStateChange={() => {
+        const e = l.getCurrentRoute();
+        if (e) o(e.name);
+      }}
+      onReady={() => {
+        const e = l.getCurrentRoute();
+        if (e) o(e.name);
+      }}
+    >
+      <C.Navigator tabBar={s} screenOptions={{ headerShown: false }}>
+        <C.Screen name="記録" component={RecordScreenComp} />
+        {!来客 && <C.Screen name="履歴" component={HistoryScreenComp} />}
+        {!来客 && <C.Screen name="分析" component={AnalysisScreenComp} />}
+        {/* 個人ログインでも出す。自分の弓具を登録・編集するための入口で、 */
+        /* ここが無いと画面まで辿り着けない（権限だけ許しても届かなかった）。 */
+        /* 一覧で他人を開こうとすると MemberScreen 側が断り、弓具の欄も */
+        /* 自分のぶんしか出さない */}
+        {!来客 && <C.Screen name="メンバー" component={MemberScreenComp} />}
+        {!来客 && 'group' === n && <C.Screen name="出欠" component={AttendanceScreenComp} />}
+        {!来客 && <C.Screen name="設定" component={SettingsScreenComp} />}
+      </C.Navigator>
+      {/* 来客には出さない。相談役は団体の記録を見て答える作りで、 */
+      /* 案内は団体の画面を順に指してまわる。どちらも来客には中身が無い */}
+      {!来客 && <AIChatBot />}
+      {/* 使い方の案内。画面を移動しながら指すので、移動用の ref を渡す */}
+      {!来客 && <案内.TutorialOverlay navRef={l} />}
+    </Navigation.NavigationContainer>
+  );
 };
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.MainNavigator = MainNavigator;

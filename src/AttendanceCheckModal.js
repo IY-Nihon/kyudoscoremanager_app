@@ -1,37 +1,21 @@
-/**
- * Module ID: AttendanceCheckModal
- */
 'use strict';
 
-const _e = exports;
-
-Object.defineProperty(_e, '__esModule', { value: true });
-Object.defineProperty(_e, 'AttendanceCheckModal', {
-  enumerable: true,
-  get: function () {
-    return AttendanceCheckModal;
-  },
-});
-
-var t = require('react');
+const React = require('react');
 // Text と StyleSheet はダークモードのテーマ変換を通すためブリッジ経由で差し替える
-var o = Object.assign({}, require('react-native'), {
+const o = Object.assign({}, require('react-native'), {
   Text: require('./Text').default,
   StyleSheet: require('./StyleSheet').default,
 });
-var m = require('@expo/vector-icons');
-var b = require('./useScoreStore');
-var x = require('./IS_WEB');
-var F = require('./shadowStyle');
+const Icons = require('@expo/vector-icons');
+const { useScoreStore } = require('./useScoreStore');
+const IS_WEB = require('./IS_WEB');
+const shadowStyle = require('./shadowStyle');
 // 出欠の自動判定。交代で入った人も数えるため、決まりは切り出してある
 const { 出ていた部員たち } = require('./attendanceRules');
-var j = require('./themedJsx');
-
 const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
-  const { members, archers } = (0, b.useScoreStore)();
-  const [attendance, setAttendance] = (0, t.useState)({});
-
-  (0, t.useEffect)(() => {
+  const { members, archers } = useScoreStore();
+  const [attendance, setAttendance] = React.useState({});
+  React.useEffect(() => {
     if (visible) {
       const initial = {};
       members.forEach((m) => {
@@ -45,7 +29,6 @@ const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
       setAttendance(initial);
     }
   }, [visible, members, archers]);
-
   const updateStatus = (memberId, status) => {
     setAttendance((prev) => {
       const next = { ...prev };
@@ -53,19 +36,17 @@ const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
       return next;
     });
   };
-
   const StatusButton = ({ memberId, status, current, label, color }) => {
     const isActive = current === status;
-    return (0, j.jsx)(o.TouchableOpacity, {
-      onPress: () => updateStatus(memberId, status),
-      style: [styles.statusBtn, isActive && { backgroundColor: color, borderColor: color }],
-      children: (0, j.jsx)(o.Text, {
-        style: [styles.statusBtnText, isActive && { color: '#FFF' }],
-        children: label,
-      }),
-    });
+    return (
+      <o.TouchableOpacity
+        onPress={() => updateStatus(memberId, status)}
+        style={[styles.statusBtn, isActive && { backgroundColor: color, borderColor: color }]}
+      >
+        <o.Text style={[styles.statusBtnText, isActive && { color: '#FFF' }]}>{label}</o.Text>
+      </o.TouchableOpacity>
+    );
   };
-
   const sortMembers = (a, b) => {
     // 1. 学年順 (1→4年、卒業生は末尾)
     const gradeA = a.grade === undefined || a.grade === null ? 99 : Number(a.grade);
@@ -85,139 +66,87 @@ const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
     // 3. あいうえお順
     return (a.name || '').localeCompare(b.name || '', 'ja');
   };
-
   const attendingMembers = members.filter((m) => attendance[m.id] !== 'absent').sort(sortMembers);
   const absentMembers = members.filter((m) => attendance[m.id] === 'absent').sort(sortMembers);
-
-  const renderMemberItem = (m) =>
-    (0, j.jsxs)(
-      o.View,
-      {
-        style: styles.memberRow,
-        children: [
-          (0, j.jsxs)(o.View, {
-            style: styles.memberNameContainer,
-            children: [
-              (0, j.jsxs)(o.View, {
-                style: styles.nameRow,
-                children: [
-                  (0, j.jsx)(o.Text, {
-                    style: [
-                      styles.genderDot,
-                      {
-                        color: m.gender === '男子' ? '#007AFF' : m.gender === '女子' ? '#FF2D55' : '#8E8E93',
-                      },
-                    ],
-                    children: '●',
-                  }),
-                  (0, j.jsx)(o.Text, { style: styles.memberName, children: m.name }),
-                ],
-              }),
-              (0, j.jsxs)(o.Text, {
-                style: styles.memberSub,
-                children: [
-                  m.termKi ? `${m.termKi}期 / ` : '',
-                  m.gender,
-                  ' / ',
-                  m.grade > 0 ? `${m.grade}年` : '卒業生',
-                ],
-              }),
-            ],
-          }),
-          (0, j.jsxs)(o.View, {
-            style: styles.statusGroup,
-            children: [
-              (0, j.jsx)(StatusButton, {
-                memberId: m.id,
-                status: 'present',
-                current: attendance[m.id],
-                label: '出席',
-                color: '#34C759',
-              }),
-              (0, j.jsx)(StatusButton, {
-                memberId: m.id,
-                status: 'late',
-                current: attendance[m.id],
-                label: '遅刻',
-                color: '#FF9500',
-              }),
-              (0, j.jsx)(StatusButton, {
-                memberId: m.id,
-                status: 'early',
-                current: attendance[m.id],
-                label: '早退',
-                color: '#5856D6',
-              }),
-              (0, j.jsx)(StatusButton, {
-                memberId: m.id,
-                status: 'absent',
-                current: attendance[m.id],
-                label: '欠席',
-                color: '#8E8E93',
-              }),
-            ],
-          }),
-        ],
-      },
-      m.id
-    );
-
-  return (0, j.jsx)(o.Modal, {
-    visible: visible,
-    transparent: true,
-    animationType: 'fade',
-    children: (0, j.jsx)(o.View, {
-      style: styles.overlay,
-      children: (0, j.jsxs)(o.View, {
-        style: styles.container,
-        children: [
-          (0, j.jsxs)(o.View, {
-            style: styles.header,
-            children: [
-              (0, j.jsx)(o.Text, { style: styles.headerTitle, children: '出欠の最終確認' }),
-              (0, j.jsx)(o.Text, {
-                style: styles.subTitle,
-                children: '遅刻・早退などの詳細がありませんか？',
-              }),
-            ],
-          }),
-          (0, j.jsxs)(o.ScrollView, {
-            style: styles.scroll,
-            showsVerticalScrollIndicator: false,
-            children: [
-              (0, j.jsx)(o.Text, { style: styles.sectionTitle, children: '参加者' }),
-              attendingMembers.length > 0
-                ? attendingMembers.map(renderMemberItem)
-                : (0, j.jsx)(o.Text, { style: styles.emptyText, children: '記録に参加者がありません' }),
-              (0, j.jsx)(o.View, { style: styles.separator }),
-              (0, j.jsx)(o.Text, { style: styles.sectionTitle, children: 'その他のメンバー' }),
-              absentMembers.map(renderMemberItem),
-            ],
-          }),
-          (0, j.jsxs)(o.View, {
-            style: styles.footer,
-            children: [
-              (0, j.jsx)(o.TouchableOpacity, {
-                style: styles.confirmBtn,
-                onPress: () => onConfirm(attendance),
-                children: (0, j.jsx)(o.Text, {
-                  style: styles.confirmBtnText,
-                  children: '出欠を確定して次へ',
-                }),
-              }),
-              (0, j.jsx)(o.TouchableOpacity, {
-                style: styles.cancelBtn,
-                onPress: onClose,
-                children: (0, j.jsx)(o.Text, { style: styles.cancelBtnText, children: 'キャンセル' }),
-              }),
-            ],
-          }),
-        ],
-      }),
-    }),
-  });
+  const renderMemberItem = (m) => (
+    <o.View key={m.id} style={styles.memberRow}>
+      <o.View style={styles.memberNameContainer}>
+        <o.View style={styles.nameRow}>
+          <o.Text
+            style={[
+              styles.genderDot,
+              { color: m.gender === '男子' ? '#007AFF' : m.gender === '女子' ? '#FF2D55' : '#8E8E93' },
+            ]}
+          >
+            ●
+          </o.Text>
+          <o.Text style={styles.memberName}>{m.name}</o.Text>
+        </o.View>
+        <o.Text style={styles.memberSub}>
+          {m.termKi ? `${m.termKi}期 / ` : ''}
+          {m.gender}
+          {' / '}
+          {m.grade > 0 ? `${m.grade}年` : '卒業生'}
+        </o.Text>
+      </o.View>
+      <o.View style={styles.statusGroup}>
+        <StatusButton
+          memberId={m.id}
+          status="present"
+          current={attendance[m.id]}
+          label="出席"
+          color="#34C759"
+        />
+        <StatusButton memberId={m.id} status="late" current={attendance[m.id]} label="遅刻" color="#FF9500" />
+        <StatusButton
+          memberId={m.id}
+          status="early"
+          current={attendance[m.id]}
+          label="早退"
+          color="#5856D6"
+        />
+        <StatusButton
+          memberId={m.id}
+          status="absent"
+          current={attendance[m.id]}
+          label="欠席"
+          color="#8E8E93"
+        />
+      </o.View>
+    </o.View>
+  );
+  return (
+    <o.Modal visible={visible} transparent animationType="fade">
+      <o.View style={styles.overlay}>
+        <o.View style={styles.container}>
+          <o.View style={styles.header}>
+            <o.Text style={styles.headerTitle}>出欠の最終確認</o.Text>
+            <o.Text style={styles.subTitle}>遅刻・早退などの詳細がありませんか？</o.Text>
+          </o.View>
+          <o.ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+            <o.Text style={styles.sectionTitle}>参加者</o.Text>
+            {attendingMembers.length > 0 ? (
+              attendingMembers.map(renderMemberItem)
+            ) : (
+              <o.Text style={styles.emptyText}>記録に参加者がありません</o.Text>
+            )}
+            <o.View style={styles.separator} />
+            <o.Text style={styles.sectionTitle}>その他のメンバー</o.Text>
+            {absentMembers.map(renderMemberItem)}
+          </o.ScrollView>
+          <o.View style={styles.footer}>
+            <o.TouchableOpacity style={styles.confirmBtn} onPress={() => onConfirm(attendance)}>
+              <o.Text style={styles.confirmBtnText}>出欠を確定して次へ</o.Text>
+            </o.TouchableOpacity>
+            <o.TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
+              <o.Text style={styles.cancelBtnText}>キャンセル</o.Text>
+            </o.TouchableOpacity>
+          </o.View>
+        </o.View>
+      </o.View>
+    </o.Modal>
+  );
 };
-
 const styles = o.StyleSheet.create({
   overlay: {
     flex: 1,
@@ -278,3 +207,5 @@ const styles = o.StyleSheet.create({
   cancelBtn: { paddingVertical: 12, alignItems: 'center' },
   cancelBtnText: { color: '#007AFF', fontSize: 16, fontWeight: '600' },
 });
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.AttendanceCheckModal = AttendanceCheckModal;
