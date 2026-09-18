@@ -28,8 +28,8 @@ function toMillis(value) {
   if (!value) return 0;
   if (typeof value.toMillis === 'function') return value.toMillis();
   if (typeof value === 'object' && value.seconds != null) return Number(value.seconds) * 1000;
-  const n = Number(value);
-  return isNaN(n) ? Date.parse(value) || 0 : n;
+  const 数 = Number(value);
+  return isNaN(数) ? Date.parse(value) || 0 : 数;
 }
 
 /**
@@ -191,8 +191,7 @@ function cleanUpSessions(sessions) {
     // 直すところが在るときだけ作り直す。整った記録で並びを作り直すと、
     // 記録の数だけ捨てる並びが生まれる
     const 傷んでいる =
-      !Array.isArray(session.archers) ||
-      session.archers.some((x) => !x || !Array.isArray(x.marks));
+      !Array.isArray(session.archers) || session.archers.some((射手) => !射手 || !Array.isArray(射手.marks));
     if (傷んでいる) 直し.archers = 記録の射手を整える(session);
     return Object.keys(直し).length ? Object.assign({}, session, 直し) : session;
   });
@@ -203,7 +202,7 @@ function cleanUpSessions(sessions) {
  */
 function generateUniquePersonalId(members, alumni) {
   const 使用中 = new Set(
-    [...members.map((m) => m.personalId), ...alumni.map((a) => a.personalId)].filter(Boolean)
+    [...members.map((部員) => 部員.personalId), ...alumni.map((卒業生) => 卒業生.personalId)].filter(Boolean)
   );
   let id;
   do {
@@ -226,7 +225,7 @@ function generateUniquePersonalId(members, alumni) {
 function normalizeArrowLocations(value, length) {
   if (value == null) return undefined;
   const 長さ = typeof length === 'number' && length > 0 ? length : 0;
-  const 空へ = (v) => (v === '' || v == null ? null : v);
+  const 空へ = (値) => (値 === '' || 値 == null ? null : 値);
 
   if (Array.isArray(value)) {
     const out = value.map(空へ);
@@ -236,11 +235,11 @@ function normalizeArrowLocations(value, length) {
   if (typeof value === 'object') {
     const keys = Object.keys(value);
     if (keys.length === 0) return Array(長さ).fill(null);
-    if (!keys.every((k) => !isNaN(Number(k)))) return undefined;
+    if (!keys.every((鍵) => !isNaN(Number(鍵)))) return undefined;
     const 最大 = Math.max(...keys.map(Number));
     const out = Array(Math.max(長さ, 最大 + 1)).fill(null);
-    keys.forEach((k) => {
-      out[Number(k)] = 空へ(value[k]);
+    keys.forEach((鍵) => {
+      out[Number(鍵)] = 空へ(value[鍵]);
     });
     return out;
   }
@@ -260,20 +259,20 @@ const 射手の単純な項目 = [
   'bowWeight',
   'lastModified',
 ];
-function 射手が同じ(a, b) {
-  if (!a || !b) return a === b;
-  for (const k of 射手の単純な項目) {
-    const x = a[k] === undefined ? null : a[k];
-    const y = b[k] === undefined ? null : b[k];
-    if (x !== y) return false;
+function 射手が同じ(甲, 乙) {
+  if (!甲 || !乙) return 甲 === 乙;
+  for (const 項目 of 射手の単純な項目) {
+    const 甲の値 = 甲[項目] === undefined ? null : 甲[項目];
+    const 乙の値 = 乙[項目] === undefined ? null : 乙[項目];
+    if (甲の値 !== 乙の値) return false;
   }
-  const 同じ入れ物 = (x, y) => JSON.stringify(x || null) === JSON.stringify(y || null);
+  const 同じ入れ物 = (甲, 乙) => JSON.stringify(甲 || null) === JSON.stringify(乙 || null);
   return (
-    同じ入れ物(a.marks, b.marks) &&
-    同じ入れ物(a.lockedBlocks, b.lockedBlocks) &&
-    同じ入れ物(a.substitutions, b.substitutions) &&
-    同じ入れ物(a.substitutionIds, b.substitutionIds) &&
-    同じ入れ物(a.arrowLocations, b.arrowLocations)
+    同じ入れ物(甲.marks, 乙.marks) &&
+    同じ入れ物(甲.lockedBlocks, 乙.lockedBlocks) &&
+    同じ入れ物(甲.substitutions, 乙.substitutions) &&
+    同じ入れ物(甲.substitutionIds, 乙.substitutionIds) &&
+    同じ入れ物(甲.arrowLocations, 乙.arrowLocations)
   );
 }
 
@@ -291,41 +290,41 @@ function 射手が同じ(a, b) {
  * そのときは null を返し、呼ぶ側は従来どおり盤面まるごとに任せる。
  */
 function 印だけの差分(前, 後) {
-  const a = Array.isArray(前) ? 前 : null;
-  const b = Array.isArray(後) ? 後 : null;
-  if (!a || !b || a.length !== b.length) return null;
+  const 前の一覧 = Array.isArray(前) ? 前 : null;
+  const 後の一覧 = Array.isArray(後) ? 後 : null;
+  if (!前の一覧 || !後の一覧 || 前の一覧.length !== 後の一覧.length) return null;
   const 出 = [];
-  for (let i = 0; i < a.length; i++) {
-    const x = a[i];
-    const y = b[i];
-    if (!x || !y || !x.id || x.id !== y.id) return null;
-    if (!印以外が同じ(x, y)) return null;
-    const p = Array.isArray(x.marks) ? x.marks : [];
-    const q = Array.isArray(y.marks) ? y.marks : [];
-    if (p.length !== q.length) return null;
-    for (let j = 0; j < q.length; j++) {
-      const 元 = p[j] == null ? '' : p[j];
-      const 先 = q[j] == null ? '' : q[j];
-      if (元 !== 先) 出.push({ 射手: y.id, 射番: j, 前: 元, 後: 先 });
+  for (let 番 = 0; 番 < 前の一覧.length; 番++) {
+    const 前の射手 = 前の一覧[番];
+    const 後の射手 = 後の一覧[番];
+    if (!前の射手 || !後の射手 || !前の射手.id || 前の射手.id !== 後の射手.id) return null;
+    if (!印以外が同じ(前の射手, 後の射手)) return null;
+    const 前の印 = Array.isArray(前の射手.marks) ? 前の射手.marks : [];
+    const 後の印 = Array.isArray(後の射手.marks) ? 後の射手.marks : [];
+    if (前の印.length !== 後の印.length) return null;
+    for (let 射番 = 0; 射番 < 後の印.length; 射番++) {
+      const 元 = 前の印[射番] == null ? '' : 前の印[射番];
+      const 先 = 後の印[射番] == null ? '' : 後の印[射番];
+      if (元 !== 先) 出.push({ 射手: 後の射手.id, 射番, 前: 元, 後: 先 });
     }
   }
   return 出.length ? 出 : null;
 }
 
 /** ○×と更新日時をのぞいて、射手の中身が同じか */
-function 印以外が同じ(a, b) {
-  for (const k of 射手の単純な項目) {
-    if (k === 'lastModified') continue;
-    const x = a[k] === undefined ? null : a[k];
-    const y = b[k] === undefined ? null : b[k];
-    if (x !== y) return false;
+function 印以外が同じ(甲, 乙) {
+  for (const 項目 of 射手の単純な項目) {
+    if (項目 === 'lastModified') continue;
+    const 甲の値 = 甲[項目] === undefined ? null : 甲[項目];
+    const 乙の値 = 乙[項目] === undefined ? null : 乙[項目];
+    if (甲の値 !== 乙の値) return false;
   }
-  const 同じ入れ物 = (x, y) => JSON.stringify(x || null) === JSON.stringify(y || null);
+  const 同じ入れ物 = (甲, 乙) => JSON.stringify(甲 || null) === JSON.stringify(乙 || null);
   return (
-    同じ入れ物(a.lockedBlocks, b.lockedBlocks) &&
-    同じ入れ物(a.substitutions, b.substitutions) &&
-    同じ入れ物(a.substitutionIds, b.substitutionIds) &&
-    同じ入れ物(a.arrowLocations, b.arrowLocations)
+    同じ入れ物(甲.lockedBlocks, 乙.lockedBlocks) &&
+    同じ入れ物(甲.substitutions, 乙.substitutions) &&
+    同じ入れ物(甲.substitutionIds, 乙.substitutionIds) &&
+    同じ入れ物(甲.arrowLocations, 乙.arrowLocations)
   );
 }
 
@@ -337,38 +336,38 @@ function 印以外が同じ(a, b) {
  */
 function 差分を当てる(いまの一覧, 差分, 向き) {
   const 束 = new Map();
-  (Array.isArray(差分) ? 差分 : []).forEach((d) => {
-    if (!d || !d.射手 || typeof d.射番 !== 'number') return;
-    if (!束.has(d.射手)) 束.set(d.射手, []);
-    束.get(d.射手).push(d);
+  (Array.isArray(差分) ? 差分 : []).forEach((一つ) => {
+    if (!一つ || !一つ.射手 || typeof 一つ.射番 !== 'number') return;
+    if (!束.has(一つ.射手)) 束.set(一つ.射手, []);
+    束.get(一つ.射手).push(一つ);
   });
   let 変わった = false;
-  const archers = (Array.isArray(いまの一覧) ? いまの一覧 : []).map((a) => {
-    if (!a || !a.id || !束.has(a.id)) return a;
-    const marks = Array.isArray(a.marks) ? [...a.marks] : [];
+  const archers = (Array.isArray(いまの一覧) ? いまの一覧 : []).map((射手) => {
+    if (!射手 || !射手.id || !束.has(射手.id)) return 射手;
+    const marks = Array.isArray(射手.marks) ? [...射手.marks] : [];
     let この射手が変わった = false;
-    束.get(a.id).forEach((d) => {
+    束.get(射手.id).forEach((一つ) => {
       // いまの盤面に無いますは触らない。射数を減らしたあとに古い控えを
       // 当てると、配列が伸びて存在しないますに○が入り、的中数まで狂う
-      if (!(d.射番 >= 0) || d.射番 >= marks.length) return;
-      const 値 = 向き < 0 ? d.前 : d.後;
+      if (!(一つ.射番 >= 0) || 一つ.射番 >= marks.length) return;
+      const 値 = 向き < 0 ? 一つ.前 : 一つ.後;
       const 入れる = 値 == null ? '' : 値;
-      const いま = marks[d.射番] == null ? '' : marks[d.射番];
+      const いま = marks[一つ.射番] == null ? '' : marks[一つ.射番];
       if (いま !== 入れる) {
-        marks[d.射番] = 入れる;
+        marks[一つ.射番] = 入れる;
         この射手が変わった = true;
       }
     });
-    if (!この射手が変わった) return a;
+    if (!この射手が変わった) return 射手;
     変わった = true;
-    return Object.assign({}, a, { marks });
+    return Object.assign({}, 射手, { marks });
   });
   return { archers, changed: 変わった };
 }
 
 /** 射手の中身を作っている項目。差分はこの単位で持つ */
 const 射手の項目 = [
-  ...射手の単純な項目.filter((k) => k !== 'lastModified'),
+  ...射手の単純な項目.filter((項目) => 項目 !== 'lastModified'),
   'marks',
   'lockedBlocks',
   'substitutions',
@@ -376,10 +375,10 @@ const 射手の項目 = [
   'arrowLocations',
 ];
 
-const 同じ値 = (x, y) =>
-  typeof x === 'object' || typeof y === 'object'
-    ? JSON.stringify(x === undefined ? null : x) === JSON.stringify(y === undefined ? null : y)
-    : (x === undefined ? null : x) === (y === undefined ? null : y);
+const 同じ値 = (甲, 乙) =>
+  typeof 甲 === 'object' || typeof 乙 === 'object'
+    ? JSON.stringify(甲 === undefined ? null : 甲) === JSON.stringify(乙 === undefined ? null : 乙)
+    : (甲 === undefined ? null : 甲) === (乙 === undefined ? null : 乙);
 
 /**
  * 前後の盤面を見比べて、射手ごとに「変わった項目」だけを返す。
@@ -394,25 +393,28 @@ const 同じ値 = (x, y) =>
  * そこは従来どおり盤面まるごとに任せる。
  */
 function 項目の差分(前, 後) {
-  const a = Array.isArray(前) ? 前 : null;
-  const b = Array.isArray(後) ? 後 : null;
-  if (!a || !b || a.length !== b.length) return null;
+  const 前の一覧 = Array.isArray(前) ? 前 : null;
+  const 後の一覧 = Array.isArray(後) ? 後 : null;
+  if (!前の一覧 || !後の一覧 || 前の一覧.length !== 後の一覧.length) return null;
   const 出 = [];
-  for (let i = 0; i < a.length; i++) {
-    const x = a[i];
-    const y = b[i];
-    if (!x || !y || !x.id || x.id !== y.id) return null;
+  for (let 番 = 0; 番 < 前の一覧.length; 番++) {
+    const 前の射手 = 前の一覧[番];
+    const 後の射手 = 後の一覧[番];
+    if (!前の射手 || !後の射手 || !前の射手.id || 前の射手.id !== 後の射手.id) return null;
     // 射数が変わると盤面全体の値（shotsPerRound）も動く。ここでは戻せない
-    const 印の数 = (m) => (Array.isArray(m) ? m.length : -1);
-    if (印の数(x.marks) !== 印の数(y.marks)) return null;
+    const 印の数 = (印) => (Array.isArray(印) ? 印.length : -1);
+    if (印の数(前の射手.marks) !== 印の数(後の射手.marks)) return null;
     const 項目 = {};
     let あり = false;
-    for (const k of 射手の項目) {
-      if (同じ値(x[k], y[k])) continue;
-      項目[k] = { 前: x[k] === undefined ? null : x[k], 後: y[k] === undefined ? null : y[k] };
+    for (const 鍵 of 射手の項目) {
+      if (同じ値(前の射手[鍵], 後の射手[鍵])) continue;
+      項目[鍵] = {
+        前: 前の射手[鍵] === undefined ? null : 前の射手[鍵],
+        後: 後の射手[鍵] === undefined ? null : 後の射手[鍵],
+      };
       あり = true;
     }
-    if (あり) 出.push({ 射手: y.id, 項目: 項目 });
+    if (あり) 出.push({ 射手: 後の射手.id, 項目 });
   }
   return 出.length ? 出 : null;
 }
@@ -461,7 +463,7 @@ function 自分の記録か(記録, 自分id, 自分名) {
   return !!(
     記録 &&
     Array.isArray(記録.archers) &&
-    記録.archers.some((a) => 自分の射手か(a, 自分id, 自分名))
+    記録.archers.some((射手) => 自分の射手か(射手, 自分id, 自分名))
   );
 }
 
@@ -475,7 +477,7 @@ function 自分の記録か(記録, 自分id, 自分名) {
 function 見える記録数(状態) {
   const 一覧 = Array.isArray(状態 && 状態.sessions) ? 状態.sessions : [];
   if (!状態 || 'member' !== 状態.activeRole || !状態.myMemberId) return 一覧.length;
-  return 一覧.filter((s) => 自分の記録か(s, 状態.myMemberId, 状態.myMemberName)).length;
+  return 一覧.filter((記録) => 自分の記録か(記録, 状態.myMemberId, 状態.myMemberName)).length;
 }
 
 /**
@@ -489,28 +491,30 @@ function 見える記録数(状態) {
  * 長さだけが全員そろって違う」。切り落とされた後ろの部分は射手ごとに控える。
  */
 function 射数の差分(前, 後) {
-  const a = Array.isArray(前) ? 前 : null;
-  const b = Array.isArray(後) ? 後 : null;
-  if (!a || !b || a.length !== b.length) return null;
+  const 前の一覧 = Array.isArray(前) ? 前 : null;
+  const 後の一覧 = Array.isArray(後) ? 後 : null;
+  if (!前の一覧 || !後の一覧 || 前の一覧.length !== 後の一覧.length) return null;
   let 前の数 = null;
   let 後の数 = null;
   const 切った = {};
-  for (let i = 0; i < a.length; i++) {
-    const x = a[i];
-    const y = b[i];
-    if (!x || !y || !x.id || x.id !== y.id) return null;
-    if (!印以外が同じ(x, y)) return null;
-    if (x.isSeparator) continue;
-    const p = Array.isArray(x.marks) ? x.marks : null;
-    const q = Array.isArray(y.marks) ? y.marks : null;
-    if (!p || !q || p.length === q.length) return null;
-    const 短いほう = Math.min(p.length, q.length);
-    for (let j = 0; j < 短いほう; j++) {
-      if ((p[j] == null ? '' : p[j]) !== (q[j] == null ? '' : q[j])) return null;
+  for (let 番 = 0; 番 < 前の一覧.length; 番++) {
+    const 前の射手 = 前の一覧[番];
+    const 後の射手 = 後の一覧[番];
+    if (!前の射手 || !後の射手 || !前の射手.id || 前の射手.id !== 後の射手.id) return null;
+    if (!印以外が同じ(前の射手, 後の射手)) return null;
+    if (前の射手.isSeparator) continue;
+    const 前の印 = Array.isArray(前の射手.marks) ? 前の射手.marks : null;
+    const 後の印 = Array.isArray(後の射手.marks) ? 後の射手.marks : null;
+    if (!前の印 || !後の印 || 前の印.length === 後の印.length) return null;
+    const 短いほう = Math.min(前の印.length, 後の印.length);
+    for (let 射番 = 0; 射番 < 短いほう; 射番++) {
+      if ((前の印[射番] == null ? '' : 前の印[射番]) !== (後の印[射番] == null ? '' : 後の印[射番]))
+        return null;
     }
-    if (前の数 === null) ((前の数 = p.length), (後の数 = q.length));
-    else if (前の数 !== p.length || 後の数 !== q.length) return null;
-    切った[y.id] = p.length > q.length ? p.slice(q.length).map((m) => (m == null ? '' : m)) : [];
+    if (前の数 === null) ((前の数 = 前の印.length), (後の数 = 後の印.length));
+    else if (前の数 !== 前の印.length || 後の数 !== 後の印.length) return null;
+    切った[後の射手.id] =
+      前の印.length > 後の印.length ? 前の印.slice(後の印.length).map((印) => (印 == null ? '' : 印)) : [];
   }
   if (前の数 === null) return null;
   return { 前: 前の数, 後: 後の数, 切った };
@@ -526,20 +530,20 @@ function 射数差を当てる(いまの一覧, 差, 向き) {
   const 目標 = 向き < 0 ? 差 && 差.前 : 差 && 差.後;
   if (typeof 目標 !== 'number') return { archers: いまの一覧, 本数: null };
   const 控え = (差 && 差.切った) || {};
-  const archers = (Array.isArray(いまの一覧) ? いまの一覧 : []).map((a) => {
-    if (!a || a.isSeparator || !Array.isArray(a.marks)) return a;
-    if (a.marks.length === 目標) return a;
+  const archers = (Array.isArray(いまの一覧) ? いまの一覧 : []).map((射手) => {
+    if (!射手 || 射手.isSeparator || !Array.isArray(射手.marks)) return 射手;
+    if (射手.marks.length === 目標) return 射手;
     let marks;
-    if (a.marks.length > 目標) marks = a.marks.slice(0, 目標);
+    if (射手.marks.length > 目標) marks = 射手.marks.slice(0, 目標);
     else {
-      const 尻尾 = 控え[a.id] || [];
-      marks = [...a.marks];
-      for (let i = a.marks.length; i < 目標; i++) {
-        const m = 尻尾[i - a.marks.length];
-        marks.push(m == null ? '' : m);
+      const 尻尾 = 控え[射手.id] || [];
+      marks = [...射手.marks];
+      for (let 射番 = 射手.marks.length; 射番 < 目標; 射番++) {
+        const 印 = 尻尾[射番 - 射手.marks.length];
+        marks.push(印 == null ? '' : 印);
       }
     }
-    return Object.assign({}, a, { marks });
+    return Object.assign({}, 射手, { marks });
   });
   return { archers, 本数: 目標 };
 }
@@ -555,43 +559,43 @@ function 射数差を当てる(いまの一覧, 差, 向き) {
  */
 function 盤面を射数にそろえる(一覧, 射数) {
   if (!Array.isArray(一覧) || typeof 射数 !== 'number') return 一覧;
-  return 一覧.map((a) => {
-    if (!a || a.isSeparator || !Array.isArray(a.marks)) return a;
-    const marks = 射数に合わせる(a.marks, 射数, '');
-    return marks === a.marks ? a : Object.assign({}, a, { marks });
+  return 一覧.map((射手) => {
+    if (!射手 || 射手.isSeparator || !Array.isArray(射手.marks)) return 射手;
+    const marks = 射数に合わせる(射手.marks, 射数, '');
+    return marks === 射手.marks ? 射手 : Object.assign({}, 射手, { marks });
   });
 }
 
 function 項目差分を当てる(いまの一覧, 差分, 向き) {
   const 束 = new Map();
-  (Array.isArray(差分) ? 差分 : []).forEach((d) => {
-    if (d && d.射手 && d.項目) 束.set(d.射手, d.項目);
+  (Array.isArray(差分) ? 差分 : []).forEach((一つ) => {
+    if (一つ && 一つ.射手 && 一つ.項目) 束.set(一つ.射手, 一つ.項目);
   });
   let 変わった = false;
-  const archers = (Array.isArray(いまの一覧) ? いまの一覧 : []).map((a) => {
-    if (!a || !a.id || !束.has(a.id)) return a;
-    const 項目 = 束.get(a.id);
+  const archers = (Array.isArray(いまの一覧) ? いまの一覧 : []).map((射手) => {
+    if (!射手 || !射手.id || !束.has(射手.id)) return 射手;
+    const 項目 = 束.get(射手.id);
     const 直す = {};
     let この射手が変わった = false;
-    for (const k of Object.keys(項目)) {
-      if (射手の項目.indexOf(k) < 0) continue;
-      const 生 = 向き < 0 ? 項目[k].前 : 項目[k].後;
-      const 射数 = Array.isArray(a.marks) ? a.marks.length : null;
+    for (const 鍵 of Object.keys(項目)) {
+      if (射手の項目.indexOf(鍵) < 0) continue;
+      const 生 = 向き < 0 ? 項目[鍵].前 : 項目[鍵].後;
+      const 射数 = Array.isArray(射手.marks) ? 射手.marks.length : null;
       const 値 =
-        k === 'marks'
+        鍵 === 'marks'
           ? 射数に合わせる(生, 射数, '')
-          : k === 'arrowLocations'
+          : 鍵 === 'arrowLocations'
             ? 射数に合わせる(生, 射数, null)
             : 生;
-      if (同じ値(a[k], 値)) continue;
-      直す[k] = 値 === null ? undefined : 値;
+      if (同じ値(射手[鍵], 値)) continue;
+      直す[鍵] = 値 === null ? undefined : 値;
       この射手が変わった = true;
     }
-    if (!この射手が変わった) return a;
+    if (!この射手が変わった) return 射手;
     変わった = true;
-    const 出 = Object.assign({}, a, 直す);
-    Object.keys(直す).forEach((k) => {
-      if (直す[k] === undefined) delete 出[k];
+    const 出 = Object.assign({}, 射手, 直す);
+    Object.keys(直す).forEach((鍵) => {
+      if (直す[鍵] === undefined) delete 出[鍵];
     });
     return 出;
   });
@@ -621,19 +625,19 @@ function mergeLiveArchers(localList, remoteList, localShots, remoteShots) {
   const 受信 = Array.isArray(remoteList) ? remoteList : [];
 
   const 索引 = new Map();
-  手元.forEach((a) => {
-    if (a && a.id) 索引.set(a.id, a);
+  手元.forEach((射手) => {
+    if (射手 && 射手.id) 索引.set(射手.id, 射手);
   });
 
-  const archers = 受信.map((r) => {
-    if (!r || !r.id) return r;
-    const l = 索引.get(r.id);
-    if (!l) return r;
+  const archers = 受信.map((相手の射手) => {
+    if (!相手の射手 || !相手の射手.id) return 相手の射手;
+    const 手元の射手 = 索引.get(相手の射手.id);
+    if (!手元の射手) return 相手の射手;
 
-    const 受信が新しい = (r.lastModified || 0) > (l.lastModified || 0);
-    const 勝ち = 受信が新しい ? r : l;
+    const 受信が新しい = (相手の射手.lastModified || 0) > (手元の射手.lastModified || 0);
+    const 勝ち = 受信が新しい ? 相手の射手 : 手元の射手;
     // 受信に矢所が入っていなければ、手元の値を残す（古い版との混在対策）
-    const 矢所 = r.arrowLocations === undefined ? l.arrowLocations : 勝ち.arrowLocations;
+    const 矢所 = 相手の射手.arrowLocations === undefined ? 手元の射手.arrowLocations : 勝ち.arrowLocations;
 
     const out = Object.assign({}, 勝ち);
     if (矢所 === undefined) delete out.arrowLocations;
@@ -649,9 +653,9 @@ function mergeLiveArchers(localList, remoteList, localShots, remoteShots) {
   // 入れ替えは射手の中身を何も変えない（lastModified も動かさない）ため、
   // これが無いと相手の画面に並びが届かない（2026-09-09 に踏んだ）。
   if (!changed) {
-    for (let i = 0; i < archers.length; i++) {
-      const 受 = archers[i] && archers[i].id;
-      const 手 = 手元[i] && 手元[i].id;
+    for (let 番 = 0; 番 < archers.length; 番++) {
+      const 受 = archers[番] && archers[番].id;
+      const 手 = 手元[番] && 手元[番].id;
       if (受 !== 手) {
         changed = true;
         break;
@@ -659,9 +663,9 @@ function mergeLiveArchers(localList, remoteList, localShots, remoteShots) {
     }
   }
   if (!changed) {
-    for (let i = 0; i < archers.length; i++) {
-      const a = archers[i];
-      if (!射手が同じ(a, 索引.get(a && a.id))) {
+    for (let 番 = 0; 番 < archers.length; 番++) {
+      const 射手 = archers[番];
+      if (!射手が同じ(射手, 索引.get(射手 && 射手.id))) {
         changed = true;
         break;
       }
@@ -684,14 +688,14 @@ function mergeLiveArchers(localList, remoteList, localShots, remoteShots) {
 function restampChangedArchers(戻す一覧, いまの一覧, 日時) {
   const 戻す = Array.isArray(戻す一覧) ? 戻す一覧 : [];
   const 索引 = new Map();
-  (Array.isArray(いまの一覧) ? いまの一覧 : []).forEach((a) => {
-    if (a && a.id) 索引.set(a.id, a);
+  (Array.isArray(いまの一覧) ? いまの一覧 : []).forEach((射手) => {
+    if (射手 && 射手.id) 索引.set(射手.id, 射手);
   });
-  return 戻す.map((a) => {
-    if (!a || !a.id) return a;
-    const いま = 索引.get(a.id);
-    if (いま && 射手が同じ(a, いま)) return a;
-    return Object.assign({}, a, { lastModified: 日時 });
+  return 戻す.map((射手) => {
+    if (!射手 || !射手.id) return 射手;
+    const いま = 索引.get(射手.id);
+    if (いま && 射手が同じ(射手, いま)) return 射手;
+    return Object.assign({}, 射手, { lastModified: 日時 });
   });
 }
 
@@ -706,13 +710,13 @@ function restampChangedArchers(戻す一覧, いまの一覧, 日時) {
  * ライブが残る（本番に1件あった）。
  */
 function ライブ名に使えない字(名前) {
-  const s = typeof 名前 === 'string' ? 名前 : '';
+  const 文 = typeof 名前 === 'string' ? 名前 : '';
   const 見つかった = [];
   for (const 字 of ['/', '.', '$', '#', '[', ']']) {
-    if (s.includes(字)) 見つかった.push(字);
+    if (文.includes(字)) 見つかった.push(字);
   }
   // 制御文字はまとめて1つの案内にする
-  if (/[\u0000-\u001F\u007F]/.test(s)) 見つかった.push('改行などの制御文字');
+  if (/[\u0000-\u001F\u007F]/.test(文)) 見つかった.push('改行などの制御文字');
   return 見つかった.length ? 見つかった.join(' ') : null;
 }
 
@@ -760,25 +764,25 @@ function 参加できるライブ(節点, いま = Date.now()) {
   const 生きている = [];
   const 古い = [];
   Object.keys(節点 || {}).forEach((名) => {
-    const v = 節点[名];
+    const 中身 = 節点[名];
     // state が無いものは、そもそも一覧に出さない（従来どおり）
-    if (!v || !v.state) return;
+    if (!中身 || !中身.state) return;
     // 期限は道しるべに載っている。載っていないもの（期限なし、または
     // 期限を足す前に配ったもの）は、これまでどおり日時だけで見る
-    const 期限 = v.state.期限;
+    const 期限 = 中身.state.期限;
     if (typeof 期限 === 'number' && 期限 > 0 && いま >= 期限) {
       古い.push(名);
       return;
     }
-    const 日時 = ライブの最終更新(v.state);
+    const 日時 = ライブの最終更新(中身.state);
     if (日時 !== null && いま - 日時 > LIVE_STALE_MS) {
       古い.push(名);
       return;
     }
     生きている.push({ 名, 日時: 日時 === null ? 0 : 日時 });
   });
-  生きている.sort((a, b) => b.日時 - a.日時);
-  return { 出す: 生きている.map((x) => x.名), 古い };
+  生きている.sort((甲, 乙) => 乙.日時 - 甲.日時);
+  return { 出す: 生きている.map((一つ) => 一つ.名), 古い };
 }
 
 /**
@@ -793,9 +797,9 @@ const 一立の射数 = 4;
 
 /** 射数から立の数を出す。半端が出ても、その端数で1立と数える（8射→2立、6射→2立） */
 function 立の数(射数) {
-  const n = Number(射数);
-  if (!Number.isFinite(n) || n <= 0) return 1;
-  return Math.max(1, Math.ceil(n / 一立の射数));
+  const 数 = Number(射数);
+  if (!Number.isFinite(数) || 数 <= 0) return 1;
+  return Math.max(1, Math.ceil(数 / 一立の射数));
 }
 
 /**
@@ -803,18 +807,18 @@ function 立の数(射数) {
  * 2立目なら 4（＝5射目）。範囲の外は端に寄せる。
  */
 function 立の頭の射(立番号, 射数) {
-  const n = Number(立番号);
-  if (!Number.isFinite(n)) return 0;
+  const 数 = Number(立番号);
+  if (!Number.isFinite(数)) return 0;
   const 上限 = 立の数(射数);
-  const 収めた = Math.min(Math.max(Math.round(n), 1), 上限);
+  const 収めた = Math.min(Math.max(Math.round(数), 1), 上限);
   return (収めた - 1) * 一立の射数;
 }
 
 /** 何射目（0始まり）が何立目かを返す（1始まり） */
 function 射の立番号(位置) {
-  const n = Number(位置);
-  if (!Number.isFinite(n) || n < 0) return 1;
-  return Math.floor(n / 一立の射数) + 1;
+  const 数 = Number(位置);
+  if (!Number.isFinite(数) || 数 < 0) return 1;
+  return Math.floor(数 / 一立の射数) + 1;
 }
 
 /**
@@ -830,20 +834,20 @@ function 射の立番号(位置) {
  */
 function 学年でまとめる(人たち) {
   const 束 = {};
-  (Array.isArray(人たち) ? 人たち : []).forEach((e) => {
-    if (!e) return;
-    const 卒 = 5 <= Number(e.grade) || e.isAlumni || e.graduationYear;
-    const 印 = 卒 ? '卒' : String(e.grade === undefined || e.grade === null ? 0 : Number(e.grade));
-    (束[印] || (束[印] = [])).push(e);
+  (Array.isArray(人たち) ? 人たち : []).forEach((人) => {
+    if (!人) return;
+    const 卒 = 5 <= Number(人.grade) || 人.isAlumni || 人.graduationYear;
+    const 印 = 卒 ? '卒' : String(人.grade === undefined || 人.grade === null ? 0 : Number(人.grade));
+    (束[印] || (束[印] = [])).push(人);
   });
   return Object.keys(束)
-    .sort((a, b) => {
-      if (a === b) return 0;
-      if ('卒' === a) return 1;
-      if ('卒' === b) return -1;
-      if ('0' === a) return 1;
-      if ('0' === b) return -1;
-      return Number(a) - Number(b);
+    .sort((甲, 乙) => {
+      if (甲 === 乙) return 0;
+      if ('卒' === 甲) return 1;
+      if ('卒' === 乙) return -1;
+      if ('0' === 甲) return 1;
+      if ('0' === 乙) return -1;
+      return Number(甲) - Number(乙);
     })
     .map((印) => ({
       学年: 印,
