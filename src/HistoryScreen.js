@@ -30,7 +30,7 @@ const { ArcherActionModal } = require('./ArcherActionModal');
 const { ManualSubstitutionModal } = require('./ManualSubstitutionModal');
 const { getShadowStyle } = require('./shadowStyle');
 const { formatMemberName } = require('./formatMemberName');
-const v = () => <View style={{ height: 1, backgroundColor: '#E5E5EA', marginLeft: 16 }} />;
+const 仕切り線 = () => <View style={{ height: 1, backgroundColor: '#E5E5EA', marginLeft: 16 }} />;
 const HistoryScreen = () => {
   const {
     members,
@@ -69,143 +69,145 @@ const HistoryScreen = () => {
     // 案内が見本を出しているあいだは、中身だけ見本に差し替わる
   } = 案内.見本を重ねる(useScoreStore());
   const 航路 = 航.useNavigation();
-  const ee = useScoreStore((e) => e.myMemberName) || '';
-  const [te, re] = React.useState('');
-  const [oe, ne] = React.useState('');
-  const [ie, le] = React.useState(() => {
-    const e = new Date();
-    return e.getMonth() + 1 >= 4 ? e.getFullYear() : e.getFullYear() - 1;
+  const 自分の名前 = useScoreStore((x) => x.myMemberName) || '';
+  const [検索の文, 検索の文を置く] = React.useState('');
+  const [見ている月, 見ている月を置く] = React.useState('');
+  const [見ている年度, 見ている年度を置く] = React.useState(() => {
+    const 今日 = new Date();
+    return 今日.getMonth() + 1 >= 4 ? 今日.getFullYear() : 今日.getFullYear() - 1;
   });
-  const [ae, se] = React.useState(false);
-  const [de, ce] = React.useState(false);
-  const [ue, he] = React.useState(new Set());
-  const [ge, fe] = React.useState(false);
-  const [me, xe] = React.useState(false);
-  const [ye, be] = React.useState(new Set());
-  const [pe, je] = React.useState(false);
-  const [Ce, Fe] = React.useState(false);
-  const [Se, we] = React.useState(false);
-  const [Te, Ae] = React.useState(null);
-  const [ze, Ie] = React.useState(false);
-  const [ke, ve] = React.useState(null);
-  const [De, Ee] = React.useState(0);
-  const [Be, We] = React.useState(false);
+  const [年度の窓, 年度の窓を出す] = React.useState(false);
+  const [選択中, 選択中を置く] = React.useState(false);
+  const [選んだ記録, 選んだ記録を置く] = React.useState(new Set());
+  const [ゴミ箱の窓, ゴミ箱の窓を出す] = React.useState(false);
+  const [ゴミ箱を編集中, ゴミ箱を編集中を置く] = React.useState(false);
+  const [ゴミ箱で選んだ, ゴミ箱で選んだを置く] = React.useState(new Set());
+  const [管理者の品書き, 管理者の品書きを出す] = React.useState(false);
+  const [記録の情報の窓, 記録の情報の窓を出す] = React.useState(false);
+  const [削除の確認, 削除の確認を出す] = React.useState(false);
+  const [消す記録ID, 消す記録IDを置く] = React.useState(null);
+  const [人の窓, 人の窓を出す] = React.useState(false);
+  const [選んだ射手ID, 選んだ射手IDを置く] = React.useState(null);
+  const [選んだ射手の順, 選んだ射手の順を置く] = React.useState(0);
+  const [交代の窓, 交代の窓を出す] = React.useState(false);
   const // ゴミ箱から開いて見ている記録の id。ゴミ箱の中は見るだけ（直す・消す・
     // 前後へ送るは出さない）で、画面にもゴミ箱の中だと分かる帯を出す
     [ゴミ箱の記録, setゴミ箱の記録] = React.useState(null);
-  const Re = React.useRef(null);
-  const Oe = React.useRef(null);
-  const Me = (e) => {
-    const t = e.nativeEvent.contentOffset.x;
-    Oe.current?.scrollTo({ x: t, animated: false });
+  const 上の横流し = React.useRef(null);
+  const 下の横流し = React.useRef(null);
+  const 上に合わせる = (出来事) => {
+    const 横の位置 = 出来事.nativeEvent.contentOffset.x;
+    下の横流し.current?.scrollTo({ x: 横の位置, animated: false });
   };
-  const He = (e) => {
-    const t = e.nativeEvent.contentOffset.x;
-    Re.current?.scrollTo({ x: t, animated: false });
+  const 下に合わせる = (出来事) => {
+    const 横の位置 = 出来事.nativeEvent.contentOffset.x;
+    上の横流し.current?.scrollTo({ x: 横の位置, animated: false });
   };
-  const Pe = React.useMemo(() => {
-    const e = myMemberId;
-    const t = ee;
-    const o =
-      sessions.find((e) => e.id === selectedHistorySessionId) ||
+  const 見ている記録 = React.useMemo(() => {
+    const 部員ID = myMemberId;
+    const 名前 = 自分の名前;
+    const 記録 =
+      sessions.find((x) => x.id === selectedHistorySessionId) ||
       // ゴミ箱から開いたときだけ、ゴミ箱の中も探す
       (ゴミ箱の記録 && ゴミ箱の記録 === selectedHistorySessionId
-        ? trash.find((e) => e && e.id === selectedHistorySessionId)
+        ? trash.find((x) => x && x.id === selectedHistorySessionId)
         : null) ||
       null;
-    if (o && 'member' === activeRole && e) {
+    if (記録 && 'member' === activeRole && 部員ID) {
       // 判定は syncRules の 自分の射手か に出した。ここは交代の判定で
       // 射手ではなく記録のほう(o)を見ていて、交代で入った自分を拾えず、
       // すぐ下の mySessions とも食い違っていた
-      const n = (射手) => 自分の射手か(射手, e, t);
-      const l = o.archers.find(n);
-      return Object.assign({}, o, {
-        archers: o.archers.filter(n),
-        archerNames: [l?.name || '自分'].filter(Boolean),
+      const 自分か = (射手) => 自分の射手か(射手, 部員ID, 名前);
+      const 自分 = 記録.archers.find(自分か);
+      return Object.assign({}, 記録, {
+        archers: 記録.archers.filter(自分か),
+        archerNames: [自分?.name || '自分'].filter(Boolean),
       });
     }
-    return o;
-  }, [sessions, trash, selectedHistorySessionId, ゴミ箱の記録, activeRole, myMemberId, ee]);
+    return 記録;
+  }, [sessions, trash, selectedHistorySessionId, ゴミ箱の記録, activeRole, myMemberId, 自分の名前]);
   const // いま見ている記録がゴミ箱の中か。復元されて記録に戻ったら、ふつうの詳細になる
     ゴミ箱を見ている =
-      !!Pe &&
+      !!見ている記録 &&
       !!ゴミ箱の記録 &&
-      Pe.id === ゴミ箱の記録 &&
-      !sessions.some((e) => e && e.id === Pe.id) &&
-      trash.some((e) => e && e.id === Pe.id);
+      見ている記録.id === ゴミ箱の記録 &&
+      !sessions.some((x) => x && x.id === 見ている記録.id) &&
+      trash.some((x) => x && x.id === 見ている記録.id);
   const mySessions = React.useMemo(() => {
-    let e = sessions || [];
-    const t = myMemberId;
-    const o = ee;
-    if ('member' === activeRole && t) {
-      e = e.filter((記録) => 自分の記録か(記録, t, o));
+    let 一覧 = sessions || [];
+    const 部員ID = myMemberId;
+    const 名前 = 自分の名前;
+    if ('member' === activeRole && 部員ID) {
+      一覧 = 一覧.filter((記録) => 自分の記録か(記録, 部員ID, 名前));
     }
-    return e;
-  }, [sessions, activeRole, myMemberId, ee]);
-  const Le = (e) => {
-    const t = new Set(ye);
-    if (t.has(e)) t.delete(e);
-    else t.add(e);
-    be(t);
+    return 一覧;
+  }, [sessions, activeRole, myMemberId, 自分の名前]);
+  const ゴミ箱の選択を切り替える = (id) => {
+    const 次 = new Set(ゴミ箱で選んだ);
+    if (次.has(id)) 次.delete(id);
+    else 次.add(id);
+    ゴミ箱で選んだを置く(次);
   };
-  const Ve = (e) => {
-    if (de) {
-      const t = new Set(ue);
-      return (t.has(e.id) ? t.delete(e.id) : t.add(e.id), void he(t));
+  const 記録を押した = (記録) => {
+    if (選択中) {
+      const 次 = new Set(選んだ記録);
+      return (次.has(記録.id) ? 次.delete(記録.id) : 次.add(記録.id), void 選んだ記録を置く(次));
     }
-    setSelectedHistorySessionId(e.id);
+    setSelectedHistorySessionId(記録.id);
     setHistoryViewMode('detail');
     ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
   };
-  const $e = React.useMemo(() => {
-    const e = new Set();
-    const t = new Date();
-    const o = t.getMonth() + 1 >= 4 ? t.getFullYear() : t.getFullYear() - 1;
-    e.add(o);
-    mySessions.forEach((t) => {
-      const o = 'number' == typeof t.date ? t.date : Number(t.date);
-      if (isNaN(o)) return;
-      const n = new Date(o);
-      const l = n.getFullYear();
-      const a = n.getMonth() + 1 >= 4 ? l : l - 1;
-      e.add(a);
+  const 年度の一覧 = React.useMemo(() => {
+    const 集めた = new Set();
+    const 今日 = new Date();
+    const 今の年度 = 今日.getMonth() + 1 >= 4 ? 今日.getFullYear() : 今日.getFullYear() - 1;
+    集めた.add(今の年度);
+    mySessions.forEach((記録) => {
+      const 日時 = 'number' == typeof 記録.date ? 記録.date : Number(記録.date);
+      if (isNaN(日時)) return;
+      const 日付 = new Date(日時);
+      const 年 = 日付.getFullYear();
+      const 年度 = 日付.getMonth() + 1 >= 4 ? 年 : 年 - 1;
+      集めた.add(年度);
     });
-    return Array.from(e).sort((e, t) => t - e);
+    return Array.from(集めた).sort((甲, 乙) => 乙 - 甲);
   }, [mySessions]);
-  const Ne = React.useMemo(() => {
-    const e = new Set();
+  const タグの一覧 = React.useMemo(() => {
+    const 集めた = new Set();
     return (
-      mySessions.forEach((t) => {
-        if (t.tags && Array.isArray(t.tags)) t.tags.forEach((t) => e.add(t));
+      mySessions.forEach((記録) => {
+        if (記録.tags && Array.isArray(記録.tags)) 記録.tags.forEach((タグ) => 集めた.add(タグ));
       }),
-      Array.from(e).sort((e, t) => {
-        const o = historySelectedTags.includes(e);
-        const n = historySelectedTags.includes(t);
-        return o && !n ? -1 : !o && n ? 1 : e.localeCompare(t);
+      Array.from(集めた).sort((甲, 乙) => {
+        const 甲は選択中 = historySelectedTags.includes(甲);
+        const 乙は選択中 = historySelectedTags.includes(乙);
+        return 甲は選択中 && !乙は選択中 ? -1 : !甲は選択中 && 乙は選択中 ? 1 : 甲.localeCompare(乙);
       })
     );
   }, [mySessions, historySelectedTags]);
-  const Ge = React.useMemo(() => {
-    const e = new Set();
+  const 月の一覧 = React.useMemo(() => {
+    const 集めた = new Set();
     return (
-      mySessions.forEach((t) => {
-        const o = new Date(t.date);
-        const n = o.getFullYear();
-        const l = o.getMonth() + 1;
-        if ((l >= 4 ? n : n - 1) === ie) e.add(`${n}/${String(l).padStart(2, '0')}`);
+      mySessions.forEach((記録) => {
+        const 日付 = new Date(記録.date);
+        const 年 = 日付.getFullYear();
+        const 月 = 日付.getMonth() + 1;
+        if ((月 >= 4 ? 年 : 年 - 1) === 見ている年度) 集めた.add(`${年}/${String(月).padStart(2, '0')}`);
       }),
-      Array.from(e).sort((e, t) => e.localeCompare(t))
+      Array.from(集めた).sort((甲, 乙) => 甲.localeCompare(乙))
     );
-  }, [mySessions, ie]);
+  }, [mySessions, 見ている年度]);
   React.useEffect(() => {
-    if (!$e.includes(ie)) le($e[0]);
-  }, [$e, ie]);
+    if (!年度の一覧.includes(見ている年度)) 見ている年度を置く(年度の一覧[0]);
+  }, [年度の一覧, 見ている年度]);
   React.useEffect(() => {
-    Ge.length > 0 ? Ge.includes(oe) || ne(Ge[Ge.length - 1]) : ne('');
-  }, [Ge, oe]);
+    月の一覧.length > 0
+      ? 月の一覧.includes(見ている月) || 見ている月を置く(月の一覧[月の一覧.length - 1])
+      : 見ている月を置く('');
+  }, [月の一覧, 見ている月]);
   React.useEffect(() => {
-    if ('detail' === historyViewMode && Pe && focusedMemberId) {
-      const archersList = Ue(Pe.archers);
+    if ('detail' === historyViewMode && 見ている記録 && focusedMemberId) {
+      const archersList = 並びにする(見ている記録.archers);
       const cellW = UIConfig.cellWidth * viewScale;
       const archerIndex = archersList.findIndex((archer) => {
         if (!archer) return false;
@@ -217,68 +219,68 @@ const HistoryScreen = () => {
       if (archerIndex !== -1) {
         const targetX = (archersList.length - 1 - archerIndex) * cellW;
         setTimeout(() => {
-          Re.current?.scrollTo({ x: targetX, animated: true });
-          Oe.current?.scrollTo({ x: targetX, animated: true });
+          上の横流し.current?.scrollTo({ x: targetX, animated: true });
+          下の横流し.current?.scrollTo({ x: targetX, animated: true });
           setFocusedMemberId(null);
         }, 300);
       } else {
         setFocusedMemberId(null);
       }
     }
-  }, [historyViewMode, Pe, focusedMemberId]);
-  const Ye = React.useMemo(() => {
-    let e = mySessions || [];
-    return e
-      .filter((e) => {
-        if (!e) return false;
-        const t = 'number' == typeof e.date ? e.date : Number(e.date);
-        if (isNaN(t)) return false;
-        const o = new Date(t);
-        const n = o.getFullYear();
-        const l = o.getMonth() + 1;
-        const a = l >= 4 ? n : n - 1;
-        const s = te.trim().length > 0;
+  }, [historyViewMode, 見ている記録, focusedMemberId]);
+  const 絞った記録 = React.useMemo(() => {
+    let 元 = mySessions || [];
+    return 元
+      .filter((記録) => {
+        if (!記録) return false;
+        const 日時 = 'number' == typeof 記録.date ? 記録.date : Number(記録.date);
+        if (isNaN(日時)) return false;
+        const 日付 = new Date(日時);
+        const 年 = 日付.getFullYear();
+        const 月 = 日付.getMonth() + 1;
+        const 年度 = 月 >= 4 ? 年 : 年 - 1;
+        const 検索中 = 検索の文.trim().length > 0;
         if (historySelectedTags.length > 0) {
-          const t = e.tags || [];
+          const タグたち = 記録.tags || [];
           if ('AND' === historyTagLogic) {
-            if (!historySelectedTags.every((e) => t.includes(e))) return false;
+            if (!historySelectedTags.every((タグ) => タグたち.includes(タグ))) return false;
           } else {
-            if (!historySelectedTags.some((e) => t.includes(e))) return false;
+            if (!historySelectedTags.some((タグ) => タグたち.includes(タグ))) return false;
           }
         }
-        if (!s) {
-          if (a !== ie) return false;
-          if (`${n}/${String(l).padStart(2, '0')}` !== oe) return false;
+        if (!検索中) {
+          if (年度 !== 見ている年度) return false;
+          if (`${年}/${String(月).padStart(2, '0')}` !== 見ている月) return false;
         }
-        if (s) {
-          const t = te.toLowerCase();
-          const n = (e.title || '').toLowerCase().includes(t);
-          const l = (e.note || '').toLowerCase().includes(t);
-          const a =
-            `${o.getFullYear()}/${String(o.getMonth() + 1).padStart(2, '0')}/${String(o.getDate()).padStart(2, '0')}`.includes(
-              t
+        if (検索中) {
+          const 言葉 = 検索の文.toLowerCase();
+          const 題に有る = (記録.title || '').toLowerCase().includes(言葉);
+          const 覚え書きに有る = (記録.note || '').toLowerCase().includes(言葉);
+          const 日付に有る =
+            `${日付.getFullYear()}/${String(日付.getMonth() + 1).padStart(2, '0')}/${String(日付.getDate()).padStart(2, '0')}`.includes(
+              言葉
             );
-          const s = e.archers || [];
-          const d = (Array.isArray(s) ? s : 'object' == typeof s ? Object.values(s) : []).some((e) =>
-            (e?.name || '').toLowerCase().includes(t)
-          );
-          if (!(n || a || l || d)) return false;
+          const 射手たち = 記録.archers || [];
+          const 名前に有る = (
+            Array.isArray(射手たち) ? 射手たち : 'object' == typeof 射手たち ? Object.values(射手たち) : []
+          ).some((射手) => (射手?.name || '').toLowerCase().includes(言葉));
+          if (!(題に有る || 日付に有る || 覚え書きに有る || 名前に有る)) return false;
         }
         return true;
       })
-      .sort((e, t) => t.date - e.date);
-  }, [mySessions, te, oe, ie, historySelectedTags, historyTagLogic]);
-  const Ue = (e) =>
-    e
-      ? Array.isArray(e)
-        ? e.filter(Boolean)
-        : 'object' == typeof e
-          ? Object.values(e).filter(Boolean)
+      .sort((甲, 乙) => 乙.date - 甲.date);
+  }, [mySessions, 検索の文, 見ている月, 見ている年度, historySelectedTags, historyTagLogic]);
+  const 並びにする = (値) =>
+    値
+      ? Array.isArray(値)
+        ? 値.filter(Boolean)
+        : 'object' == typeof 値
+          ? Object.values(値).filter(Boolean)
           : []
       : [];
   if (!isHydrated) return null;
-  const qe = () => {
-    if (!Pe)
+  const 詳細を描く = () => {
+    if (!見ている記録)
       return (
         <View style={styles.center}>
           <Text style={styles.emptyText}>記録が見つかりません</Text>
@@ -293,24 +295,28 @@ const HistoryScreen = () => {
           </TouchableOpacity>
         </View>
       );
-    const t = new Date(Pe.date);
-    const l = `${t.getFullYear()}/${String(t.getMonth() + 1).padStart(2, '0')}/${String(t.getDate()).padStart(2, '0')}`;
-    const a = Pe.shotCount || 8;
-    const d = Ue(Pe.archers).map((e) =>
-      Object.assign({}, e, {
-        marks: Array.isArray(e.marks) ? e.marks : e.marks ? Object.values(e.marks) : Array(a).fill(''),
-        lockedBlocks: e.lockedBlocks || {},
-        isSeparator: e.isSeparator || false,
-        isTotalCalculator: e.isTotalCalculator || false,
-        isGuest: e.isGuest || false,
+    const 日付 = new Date(見ている記録.date);
+    const 日付の文 = `${日付.getFullYear()}/${String(日付.getMonth() + 1).padStart(2, '0')}/${String(日付.getDate()).padStart(2, '0')}`;
+    const 本数 = 見ている記録.shotCount || 8;
+    const 射手たち = 並びにする(見ている記録.archers).map((射手) =>
+      Object.assign({}, 射手, {
+        marks: Array.isArray(射手.marks)
+          ? 射手.marks
+          : 射手.marks
+            ? Object.values(射手.marks)
+            : Array(本数).fill(''),
+        lockedBlocks: 射手.lockedBlocks || {},
+        isSeparator: 射手.isSeparator || false,
+        isTotalCalculator: 射手.isTotalCalculator || false,
+        isGuest: 射手.isGuest || false,
       })
     );
-    const c = (e) => {
-      const t = Ye.findIndex((e) => e.id === Pe.id);
-      -1 !== t &&
-        ('prev' === e && t < Ye.length - 1
-          ? setSelectedHistorySessionId(Ye[t + 1].id)
-          : 'next' === e && t > 0 && setSelectedHistorySessionId(Ye[t - 1].id));
+    const 前後へ = (向き) => {
+      const 位置 = 絞った記録.findIndex((x) => x.id === 見ている記録.id);
+      -1 !== 位置 &&
+        ('prev' === 向き && 位置 < 絞った記録.length - 1
+          ? setSelectedHistorySessionId(絞った記録[位置 + 1].id)
+          : 'next' === 向き && 位置 > 0 && setSelectedHistorySessionId(絞った記録[位置 - 1].id));
     };
     return (
       <View style={styles.detailContainer}>
@@ -329,7 +335,7 @@ const HistoryScreen = () => {
           <Pressable // ゴミ箱から来たなら、ゴミ箱へ戻す
             onPress={() => {
               setHistoryViewMode('list');
-              ゴミ箱を見ている && (setゴミ箱の記録(null), fe(true));
+              ゴミ箱を見ている && (setゴミ箱の記録(null), ゴミ箱の窓を出す(true));
             }}
             style={({ hovered }) => [
               { flexDirection: 'row', alignItems: 'center', paddingRight: 12, borderRadius: 8, padding: 4 },
@@ -348,19 +354,19 @@ const HistoryScreen = () => {
           ) : (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <Pressable
-                onPress={() => c('prev')}
-                style={({ hovered: e }) => [
+                onPress={() => 前後へ('prev')}
+                style={({ hovered }) => [
                   { padding: 4, borderRadius: 20 },
-                  e && { backgroundColor: 'rgba(0,122,255,0.05)' },
+                  hovered && { backgroundColor: 'rgba(0,122,255,0.05)' },
                 ]}
               >
                 <Icons.Ionicons name="chevron-back" size={24} color="#007AFF" />
               </Pressable>
               <Pressable
-                onPress={() => c('next')}
-                style={({ hovered: e }) => [
+                onPress={() => 前後へ('next')}
+                style={({ hovered }) => [
                   { padding: 4, borderRadius: 20 },
-                  e && { backgroundColor: 'rgba(0,122,255,0.05)' },
+                  hovered && { backgroundColor: 'rgba(0,122,255,0.05)' },
                 ]}
               >
                 <Icons.Ionicons name="chevron-forward" size={24} color="#007AFF" />
@@ -380,11 +386,11 @@ const HistoryScreen = () => {
                 accessibilityLabel="この記録を復元する"
                 aria-label="この記録を復元する"
                 onPress={() => {
-                  restoreSession(Pe.id);
+                  restoreSession(見ている記録.id);
                   setゴミ箱の記録(null);
                   ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
                 }}
-                style={({ hovered: e }) => [styles.trashBannerBtn, e && { opacity: 0.85 }]}
+                style={({ hovered }) => [styles.trashBannerBtn, hovered && { opacity: 0.85 }]}
               >
                 <Text style={styles.trashBannerBtnText}>復元</Text>
               </Pressable>
@@ -397,8 +403,8 @@ const HistoryScreen = () => {
                 accessibilityLabel="この記録を完全に削除する"
                 aria-label="この記録を完全に削除する"
                 onPress={() => {
-                  if (!Pe) return;
-                  const id = Pe.id;
+                  if (!見ている記録) return;
+                  const id = 見ている記録.id;
                   窓.出す('完全に削除', 'この記録をゴミ箱からも消します。元に戻せません。よろしいですか？', [
                     { text: 'キャンセル', style: 'cancel' },
                     {
@@ -408,15 +414,15 @@ const HistoryScreen = () => {
                         useScoreStore.getState().deleteTrashItems([id]);
                         setゴミ箱の記録(null);
                         setHistoryViewMode('list');
-                        fe(true);
+                        ゴミ箱の窓を出す(true);
                       },
                     },
                   ]);
                 }}
-                style={({ hovered: e }) => [
+                style={({ hovered }) => [
                   styles.trashBannerBtn,
                   { backgroundColor: '#FF3B30' },
-                  e && { opacity: 0.85 },
+                  hovered && { opacity: 0.85 },
                 ]}
               >
                 <Text style={[styles.trashBannerBtnText, { color: '#FFF' }]}>完全に削除</Text>
@@ -433,7 +439,7 @@ const HistoryScreen = () => {
               marginBottom: 6,
             }}
           >
-            <Text style={styles.detailDate}>{l}</Text>
+            <Text style={styles.detailDate}>{日付の文}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               {/* 縦横の切り替え。見るだけの人にも要るので、 */
               /* 消す・直すの権限とは別に、いつでも出す */}
@@ -443,9 +449,9 @@ const HistoryScreen = () => {
                 accessibilityLabel={横に並べる ? '縦に並べる' : '横に並べる'}
                 aria-label={横に並べる ? '縦に並べる' : '横に並べる'}
                 onPress={() => set横に並べる && set横に並べる(!横に並べる)}
-                style={({ hovered: e }) => [
+                style={({ hovered }) => [
                   { padding: 4, borderRadius: 20, alignItems: 'center', marginRight: 8 },
-                  e && { backgroundColor: 'rgba(0,122,255,0.05)' },
+                  hovered && { backgroundColor: 'rgba(0,122,255,0.05)' },
                 ]}
               >
                 <Icons.Ionicons
@@ -465,26 +471,26 @@ const HistoryScreen = () => {
                     accessibilityLabel="この記録を消す"
                     aria-label="この記録を消す"
                     onPress={() => {
-                      Ae(Pe.id);
-                      we(true);
+                      消す記録IDを置く(見ている記録.id);
+                      削除の確認を出す(true);
                     }}
-                    style={({ hovered: e }) => [
+                    style={({ hovered }) => [
                       { padding: 4, borderRadius: 20 },
-                      e && { backgroundColor: 'rgba(255,59,48,0.05)' },
+                      hovered && { backgroundColor: 'rgba(255,59,48,0.05)' },
                     ]}
                   >
                     <Icons.Ionicons name="trash-outline" size={22} color="#FF3B30" />
                   </Pressable>
                   {isAdminMode && (
                     <Pressable
-                      onPress={() => je(true)} // 絵だけのボタン。読み上げと検査のために名前を付ける
+                      onPress={() => 管理者の品書きを出す(true)} // 絵だけのボタン。読み上げと検査のために名前を付ける
                       accessible
                       accessibilityRole="button"
                       accessibilityLabel="記録の道具"
                       aria-label="記録の道具"
-                      style={({ hovered: e }) => [
+                      style={({ hovered }) => [
                         { marginLeft: 16, padding: 4, borderRadius: 20 },
-                        e && { backgroundColor: 'rgba(0,122,255,0.05)' },
+                        hovered && { backgroundColor: 'rgba(0,122,255,0.05)' },
                       ]}
                     >
                       <Icons.Ionicons name="menu" size={26} color="#007AFF" />
@@ -494,8 +500,8 @@ const HistoryScreen = () => {
               )}
             </View>
           </View>
-          {!!Pe.title && <Text style={styles.detailTitle}>{Pe.title}</Text>}
-          {!!Pe.note && (
+          {!!見ている記録.title && <Text style={styles.detailTitle}>{見ている記録.title}</Text>}
+          {!!見ている記録.note && (
             <View
               style={{
                 marginTop: 8,
@@ -506,7 +512,7 @@ const HistoryScreen = () => {
                 borderColor: '#E5E5EA',
               }}
             >
-              <Text style={{ fontSize: 13, color: '#3C3C43' }}>{Pe.note}</Text>
+              <Text style={{ fontSize: 13, color: '#3C3C43' }}>{見ている記録.note}</Text>
             </View>
           )}
         </View>
@@ -545,7 +551,7 @@ const HistoryScreen = () => {
                             名
                           </Text>
                         </View>
-                        {d.map((射手, 順) => (
+                        {射手たち.map((射手, 順) => (
                           <View
                             key={typeof 射手.id === 'string' ? `名-${射手.id}` : `名-${順}`}
                             style={{
@@ -563,8 +569,9 @@ const HistoryScreen = () => {
                               paddingHorizontal: 4,
                               // チームの色。横のときは名前の左に細い帯で出す
                               ...(() => {
-                                const 色 = (組.チームを割り当てる(d).find((x) => x && x.id === 射手.id) || {})
-                                  .色;
+                                const 色 = (
+                                  組.チームを割り当てる(射手たち).find((列) => 列 && 列.id === 射手.id) || {}
+                                ).色;
                                 return 色 ? { borderLeftWidth: 3 * viewScale, borderLeftColor: 色 } : null;
                               })(),
                             }}
@@ -590,7 +597,7 @@ const HistoryScreen = () => {
                                   alignItems: 'center',
                                   justifyContent: 'center',
                                 }}
-                                onPress={() => it(射手.id, 順)}
+                                onPress={() => 人を選ぶ(射手.id, 順)}
                                 disabled={!isAdminMode}
                               >
                                 <Text
@@ -616,24 +623,27 @@ const HistoryScreen = () => {
                         style={{ flexGrow: 0, flexShrink: 1 }}
                       >
                         <View
-                          style={{ flexDirection: 'column', width: UIConfig.cellWidth * (a + 1) * viewScale }}
+                          style={{
+                            flexDirection: 'column',
+                            width: UIConfig.cellWidth * (本数 + 1) * viewScale,
+                          }}
                         >
-                          <LabelColumn shots={a} showFooter={false} 横並び />
-                          {d.map((射手, 順) => (
+                          <LabelColumn shots={本数} showFooter={false} 横並び />
+                          {射手たち.map((射手, 順) => (
                             <ArcherColumnView
                               key={typeof 射手.id === 'string' ? `行-${射手.id}` : `行-${順}`}
                               archer={射手}
-                              shots={a}
-                              allArchers={d}
+                              shots={本数}
+                              allArchers={射手たち}
                               indexInList={順}
                               showFooter={false}
                               横並び
                               isReadOnly={!isAdminMode}
                               isAdminMode={isAdminMode}
-                              onPressName={() => it(射手.id, 順)}
-                              onDelete={() => nt(射手.id)}
-                              onToggleMark={Ze}
-                              onToggleLock={et}
+                              onPressName={() => 人を選ぶ(射手.id, 順)}
+                              onDelete={() => 射手を消す(射手.id)}
+                              onToggleMark={印を切り替える}
+                              onToggleLock={鍵を切り替える}
                             />
                           ))}
                         </View>
@@ -645,31 +655,31 @@ const HistoryScreen = () => {
                   <ScrollView showsVerticalScrollIndicator={false} bounces={false} style={{ flexGrow: 0 }}>
                     <View style={{ flexDirection: 'row-reverse', minWidth: '100%' }}>
                       <View style={{ backgroundColor: '#F2F2F7', zIndex: 10 }}>
-                        <LabelColumn shots={a} showFooter={false} />
+                        <LabelColumn shots={本数} showFooter={false} />
                       </View>
                       <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator
                         style={{ flexGrow: 0, flexShrink: 1 }}
-                        ref={Re}
-                        onScroll={Me}
+                        ref={上の横流し}
+                        onScroll={上に合わせる}
                         scrollEventThrottle={16}
                       >
                         <View style={{ flexDirection: 'row-reverse' }}>
-                          {d.map((e, t) => (
+                          {射手たち.map((射手, 順) => (
                             <ArcherColumnView
-                              key={typeof e.id === 'string' ? e.id : `archer-${t}`}
-                              archer={e}
-                              shots={a}
-                              allArchers={d}
-                              indexInList={t}
+                              key={typeof 射手.id === 'string' ? 射手.id : `archer-${順}`}
+                              archer={射手}
+                              shots={本数}
+                              allArchers={射手たち}
+                              indexInList={順}
                               showFooter={false}
                               isReadOnly={!isAdminMode}
                               isAdminMode={isAdminMode}
-                              onPressName={() => it(e.id, t)}
-                              onDelete={() => nt(e.id)}
-                              onToggleMark={Ze}
-                              onToggleLock={et}
+                              onPressName={() => 人を選ぶ(射手.id, 順)}
+                              onDelete={() => 射手を消す(射手.id)}
+                              onToggleMark={印を切り替える}
+                              onToggleLock={鍵を切り替える}
                             />
                           ))}
                         </View>
@@ -704,54 +714,57 @@ const HistoryScreen = () => {
                       horizontal
                       showsHorizontalScrollIndicator={false}
                       style={{ flexGrow: 0, flexShrink: 1 }}
-                      ref={Oe}
-                      onScroll={He}
+                      ref={下の横流し}
+                      onScroll={下に合わせる}
                       scrollEventThrottle={16}
                     >
                       <View style={{ flexDirection: 'row-reverse' }}>
-                        {d.map((t, l) => {
+                        {射手たち.map((射手, 順) => {
                           return (
                             <View
-                              key={typeof t.id === 'string' ? `footer-${t.id}` : `footer-${l}`}
+                              key={typeof 射手.id === 'string' ? `footer-${射手.id}` : `footer-${順}`}
                               style={{
                                 width:
-                                  (t.isSeparator ? UIConfig.separatorWidth : UIConfig.cellWidth) * viewScale,
+                                  (射手.isSeparator ? UIConfig.separatorWidth : UIConfig.cellWidth) *
+                                  viewScale,
                                 height: UIConfig.footerHeight * viewScale,
-                                backgroundColor: t.isTotalCalculator ? 'rgba(0,122,255,0.05)' : '#F2F2F7',
-                                borderRightWidth: t.isSeparator || t.isTotalCalculator ? 1.5 : 1,
+                                backgroundColor: 射手.isTotalCalculator ? 'rgba(0,122,255,0.05)' : '#F2F2F7',
+                                borderRightWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 1,
                                 borderRightColor: '#000',
-                                borderLeftWidth: t.isSeparator || t.isTotalCalculator ? 1.5 : 0,
+                                borderLeftWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 0,
                                 borderLeftColor: '#000',
                                 padding: 4,
                                 justifyContent: 'center',
                                 alignItems: 'center',
                                 // チームの色。記録中と同じ見え方にする
                                 ...(() => {
-                                  const 色 = (組.チームを割り当てる(d).find((x) => x && x.id === t.id) || {})
-                                    .色;
+                                  const 色 = (
+                                    組.チームを割り当てる(射手たち).find((列) => 列 && 列.id === 射手.id) ||
+                                    {}
+                                  ).色;
                                   return 色 ? { borderTopWidth: 3 * viewScale, borderTopColor: 色 } : null;
                                 })(),
                               }}
                             >
-                              {t.isSeparator ? (
+                              {射手.isSeparator ? (
                                 // 区切りに付けたチーム名。保存はされているのに
                                 // 履歴では出していなかった
-                                組.区切りのチーム名(t) ? (
+                                組.区切りのチーム名(射手) ? (
                                   <Text
                                     style={{
                                       fontSize: 組.区切りの名の字(viewScale, UIConfig).fontSize,
                                       lineHeight: 組.区切りの名の字(viewScale, UIConfig).lineHeight,
                                       fontWeight: '700',
                                       textAlign: 'center',
-                                      color: 組.チームの色(組.区切りのチーム名(t)) || '#8E8E93',
+                                      color: 組.チームの色(組.区切りのチーム名(射手)) || '#8E8E93',
                                     }} // 記録中と同じく、欄の高さに入るだけ行を使う
                                     numberOfLines={組.区切りの名の字(viewScale, UIConfig).numberOfLines}
                                   >
-                                    {組.区切りのチーム名(t)}
+                                    {組.区切りのチーム名(射手)}
                                   </Text>
                                 ) : null
                               ) : (
-                                !t.isSeparator && (
+                                !射手.isSeparator && (
                                   <TouchableOpacity
                                     style={{
                                       alignItems: 'center',
@@ -759,31 +772,31 @@ const HistoryScreen = () => {
                                       height: '100%',
                                       justifyContent: 'center',
                                     }}
-                                    onPress={() => it(t.id, l)}
+                                    onPress={() => 人を選ぶ(射手.id, 順)}
                                     disabled={!isAdminMode}
                                   >
                                     <Text
                                       style={{
                                         fontSize: 14 * viewScale,
                                         fontWeight: '400',
-                                        color: t.name ? '#000' : '#8E8E93',
+                                        color: 射手.name ? '#000' : '#8E8E93',
                                       }}
                                       numberOfLines={2}
                                     >
-                                      {t.isTotalCalculator
+                                      {射手.isTotalCalculator
                                         ? '合計'
-                                        : t.name
-                                          ? ((a = t.name), formatMemberName(a, members || []))
+                                        : 射手.name
+                                          ? formatMemberName(射手.name, members || [])
                                           : '選択'}
                                     </Text>
-                                    {t.isGuest ? (
+                                    {射手.isGuest ? (
                                       <Text
                                         style={{ fontSize: 9 * viewScale, color: '#3C3C43', marginTop: 2 }}
                                       >
                                         (ゲスト)
                                       </Text>
                                     ) : null}
-                                    {t.isTotalCalculator || '' === t.name ? null : (
+                                    {射手.isTotalCalculator || '' === 射手.name ? null : (
                                       <View
                                         style={{
                                           marginTop: 2,
@@ -791,12 +804,12 @@ const HistoryScreen = () => {
                                           paddingVertical: 2,
                                           borderRadius: 10,
                                           backgroundColor:
-                                            t.isGuest ||
-                                            !t.gender ||
-                                            t.gender === '未設定' ||
-                                            !['男子', '女子'].includes(t.gender)
+                                            射手.isGuest ||
+                                            !射手.gender ||
+                                            射手.gender === '未設定' ||
+                                            !['男子', '女子'].includes(射手.gender)
                                               ? '#8E8E93'
-                                              : '男子' === t.gender
+                                              : '男子' === 射手.gender
                                                 ? '#007AFF'
                                                 : '#FF2D55',
                                         }}
@@ -809,7 +822,6 @@ const HistoryScreen = () => {
                               )}
                             </View>
                           );
-                          var a;
                         })}
                       </View>
                     </ScrollView>
@@ -820,33 +832,33 @@ const HistoryScreen = () => {
       </View>
     );
   };
-  const Je = ({ item }) => {
-    const t = new Date(item.date);
-    const l = `${t.getFullYear()}/${String(t.getMonth() + 1).padStart(2, '0')}/${String(t.getDate()).padStart(2, '0')}`;
-    const a = Ue(item.archers).filter((e) => !e.isSeparator && !e.isTotalCalculator).length;
-    const s = ue.has(item.id);
+  const 記録の行 = ({ item }) => {
+    const 日付 = new Date(item.date);
+    const 日付の文 = `${日付.getFullYear()}/${String(日付.getMonth() + 1).padStart(2, '0')}/${String(日付.getDate()).padStart(2, '0')}`;
+    const 人数 = 並びにする(item.archers).filter((x) => !x.isSeparator && !x.isTotalCalculator).length;
+    const 選ばれている = 選んだ記録.has(item.id);
     return (
       <Pressable
-        style={({ hovered: e }) => [
+        style={({ hovered }) => [
           styles.recordItem,
-          de && s && { backgroundColor: 'rgba(0,122,255,0.1)' },
-          e && !s && { backgroundColor: 'rgba(0,122,255,0.05)' },
+          選択中 && 選ばれている && { backgroundColor: 'rgba(0,122,255,0.1)' },
+          hovered && !選ばれている && { backgroundColor: 'rgba(0,122,255,0.05)' },
           IS_WEB && { cursor: 'pointer' },
         ]}
-        onPress={() => Ve(item)}
+        onPress={() => 記録を押した(item)}
       >
-        {de && (
+        {選択中 && (
           <View style={{ marginRight: 12 }}>
             <Icons.Ionicons
-              name={s ? 'checkmark-circle' : 'ellipse-outline'}
+              name={選ばれている ? 'checkmark-circle' : 'ellipse-outline'}
               size={24}
-              color={s ? '#007AFF' : '#C7C7CC'}
+              color={選ばれている ? '#007AFF' : '#C7C7CC'}
             />
           </View>
         )}
         <View style={styles.itemLeft}>
           <View style={styles.titleRow}>
-            <Text style={styles.itemDateText}>{l}</Text>
+            <Text style={styles.itemDateText}>{日付の文}</Text>
             {!!item.title && (
               <Text style={styles.itemTitleText}>
                 {' ['}
@@ -886,13 +898,13 @@ const HistoryScreen = () => {
           </Text>
           {item.tags && item.tags.length > 0 && (
             <View style={styles.itemTagsContainer}>
-              {item.tags.map((t, i) => (
+              {item.tags.map((タグ, 番) => (
                 <View
-                  key={typeof t == 'string' ? `tag-${t}-${i}` : `tag-obj-${i}`}
+                  key={typeof タグ == 'string' ? `tag-${タグ}-${番}` : `tag-obj-${番}`}
                   style={styles.itemTagChip}
                 >
                   <Text style={styles.itemTagText}>
-                    {typeof t == 'string' ? t.replace(/^#/, '') : String(t)}
+                    {typeof タグ == 'string' ? タグ.replace(/^#/, '') : String(タグ)}
                   </Text>
                 </View>
               ))}
@@ -901,98 +913,106 @@ const HistoryScreen = () => {
         </View>
         <View style={styles.itemRight}>
           <View style={styles.countBadge}>
-            <Text style={styles.countBadgeText}>{a}人</Text>
+            <Text style={styles.countBadgeText}>{人数}人</Text>
           </View>
-          {!de && <Icons.Ionicons name="chevron-forward" size={18} color="#C7C7CC" />}
+          {!選択中 && <Icons.Ionicons name="chevron-forward" size={18} color="#C7C7CC" />}
         </View>
       </Pressable>
     );
   };
-  const Ke = () => {
-    fe(true);
+  const ゴミ箱を開く = () => {
+    ゴミ箱の窓を出す(true);
   };
-  const Qe = () => {
-    de ? (ce(false), he(new Set())) : (ce(true), he(new Set()));
+  const 選択を切り替える = () => {
+    選択中
+      ? (選択中を置く(false), 選んだ記録を置く(new Set()))
+      : (選択中を置く(true), 選んだ記録を置く(new Set()));
   };
-  const Xe = () => {
-    if (0 !== ue.size) we(true);
+  const 選んだ記録を消す = () => {
+    if (0 !== 選んだ記録.size) 削除の確認を出す(true);
   };
-  const Ze = (e, t) => {
-    if (!Pe || !isAdminMode) return;
-    const o = Pe.archers.map((o) => {
-      if (o.id === e) {
-        const e = [...o.marks];
-        const n = e[t];
-        return ((e[t] = '' === n ? '○' : '○' === n ? '\xd7' : ''), Object.assign({}, o, { marks: e }));
+  const 印を切り替える = (射手ID, 番) => {
+    if (!見ている記録 || !isAdminMode) return;
+    const 直した = 見ている記録.archers.map((o) => {
+      if (o.id === 射手ID) {
+        const 印 = [...o.marks];
+        const 前の印 = 印[番];
+        return (
+          (印[番] = '' === 前の印 ? '○' : '○' === 前の印 ? '\xd7' : ''),
+          Object.assign({}, o, { marks: 印 })
+        );
       }
       return o;
     });
-    updateSession(Pe.id, { archers: o });
+    updateSession(見ている記録.id, { archers: 直した });
   };
-  const et = (e, t) => {
-    if (!Pe || !isAdminMode) return;
-    const o = Pe.archers || [];
-    const n = o.findIndex((t) => t.id === e);
-    if (-1 === n) return;
-    const l = o[n];
-    const a = !l.lockedBlocks?.[t];
-    let s = n;
-    for (; s > 0 && o[s - 1] && !o[s - 1].isSeparator && !o[s - 1].isTotalCalculator;) s--;
-    const d = o.map((e, o) => {
-      if (o >= s && o <= n) {
-        const o = Object.assign({}, e.lockedBlocks || {});
-        return ((o[t] = a), Object.assign({}, e, { lockedBlocks: o }));
+  const 鍵を切り替える = (射手ID, 塊) => {
+    if (!見ている記録 || !isAdminMode) return;
+    const 元 = 見ている記録.archers || [];
+    const 押した列 = 元.findIndex((x) => x.id === 射手ID);
+    if (-1 === 押した列) return;
+    const その射手 = 元[押した列];
+    const 掛ける = !その射手.lockedBlocks?.[塊];
+    let 塊の頭 = 押した列;
+    for (; 塊の頭 > 0 && 元[塊の頭 - 1] && !元[塊の頭 - 1].isSeparator && !元[塊の頭 - 1].isTotalCalculator;)
+      塊の頭--;
+    const 直した = 元.map((射手, 番) => {
+      if (番 >= 塊の頭 && 番 <= 押した列) {
+        const 鍵の表 = Object.assign({}, 射手.lockedBlocks || {});
+        return ((鍵の表[塊] = 掛ける), Object.assign({}, 射手, { lockedBlocks: 鍵の表 }));
       }
-      return e;
+      return 射手;
     });
-    updateSession(Pe.id, { archers: d });
+    updateSession(見ている記録.id, { archers: 直した });
   };
-  const tt = (e, t) => {
-    if (!Pe) return;
-    const o = Pe.archers.map((o) =>
-      o.id === e
+  const 部員を当てる = (射手ID, 部員) => {
+    if (!見ている記録) return;
+    const 直した = 見ている記録.archers.map((o) =>
+      o.id === 射手ID
         ? Object.assign({}, o, {
-            name: t.name,
-            memberId: t.id,
-            gender: t.gender,
-            grade: t.grade,
+            name: 部員.name,
+            memberId: 部員.id,
+            gender: 部員.gender,
+            grade: 部員.grade,
             isGuest: false,
           })
         : o
     );
-    updateSession(Pe.id, { archers: o });
+    updateSession(見ている記録.id, { archers: 直した });
   };
-  const rt = (e, t) => {
-    if (!Pe) return;
-    const o = Pe.archers.map((o) =>
-      o.id === e
-        ? Object.assign({}, o, { name: t, isGuest: true, gender: '未設定', grade: 0, memberId: undefined })
+  const 客の名を付ける = (射手ID, 名前) => {
+    if (!見ている記録) return;
+    const 直した = 見ている記録.archers.map((o) =>
+      o.id === 射手ID
+        ? Object.assign({}, o, { name: 名前, isGuest: true, gender: '未設定', grade: 0, memberId: undefined })
         : o
     );
-    updateSession(Pe.id, { archers: o });
+    updateSession(見ている記録.id, { archers: 直した });
   };
-  const ot = (e) => {
-    if (!Pe) return;
-    const t = Pe.archers.map((t) =>
-      t.id === e
+  const 名前を外す = (射手ID) => {
+    if (!見ている記録) return;
+    const 直した = 見ている記録.archers.map((t) =>
+      t.id === 射手ID
         ? Object.assign({}, t, { name: '', memberId: undefined, isGuest: false, gender: '未設定', grade: 0 })
         : t
     );
-    updateSession(Pe.id, { archers: t });
+    updateSession(見ている記録.id, { archers: 直した });
   };
-  const nt = (e) => {
-    if (!Pe) return;
-    const t = Pe.archers.filter((t) => t.id !== e);
-    updateSession(Pe.id, { archers: t });
+  const 射手を消す = (射手ID) => {
+    if (!見ている記録) return;
+    const 残り = 見ている記録.archers.filter((t) => t.id !== 射手ID);
+    updateSession(見ている記録.id, { archers: 残り });
   };
-  const it = (e, t) => {
-    isAdminMode && !ゴミ箱を見ている && (ve(e), Ee(t), Ie(true));
+  const 人を選ぶ = (射手ID, 順) => {
+    isAdminMode &&
+      !ゴミ箱を見ている &&
+      (選んだ射手IDを置く(射手ID), 選んだ射手の順を置く(順), 人の窓を出す(true));
   };
-  const Lt要素 = View;
+  const 外枠 = View;
   return (
-    <Lt要素 style={styles.safeArea}>
+    <外枠 style={styles.safeArea}>
       {'detail' === historyViewMode ? (
-        qe()
+        詳細を描く()
       ) : (
         <View style={{ flex: 1 }}>
           <View style={styles.listHeaderArea}>
@@ -1015,14 +1035,14 @@ const HistoryScreen = () => {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 {(isAdminMode || 'group' === activeRole) && (
                   <Pressable
-                    onPress={Qe}
-                    style={({ hovered: e }) => [
+                    onPress={選択を切り替える}
+                    style={({ hovered }) => [
                       { paddingVertical: 4, paddingHorizontal: 8, borderRadius: 8 },
-                      e && { backgroundColor: 'rgba(0,122,255,0.05)' },
+                      hovered && { backgroundColor: 'rgba(0,122,255,0.05)' },
                     ]}
                   >
                     <Text style={{ color: '#007AFF', fontSize: 16, fontWeight: '600' }}>
-                      {de ? '完了' : '編集'}
+                      {選択中 ? '完了' : '編集'}
                     </Text>
                   </Pressable>
                 )}
@@ -1032,10 +1052,10 @@ const HistoryScreen = () => {
                     accessibilityRole="button"
                     accessibilityLabel="選んだ記録を消す"
                     aria-label="選んだ記録を消す"
-                    onPress={Ke}
-                    style={({ hovered: e }) => [
+                    onPress={ゴミ箱を開く}
+                    style={({ hovered }) => [
                       { padding: 4, borderRadius: 20 },
-                      e && { backgroundColor: 'rgba(255,59,48,0.05)' },
+                      hovered && { backgroundColor: 'rgba(255,59,48,0.05)' },
                     ]}
                   >
                     <Icons.Ionicons name="trash-outline" size={22} color="#FF3B30" />
@@ -1044,10 +1064,10 @@ const HistoryScreen = () => {
               </View>
             </View>
           </View>
-          {de && ue.size > 0 && (
-            <TouchableOpacity style={styles.batchDeleteBar} onPress={Xe}>
+          {選択中 && 選んだ記録.size > 0 && (
+            <TouchableOpacity style={styles.batchDeleteBar} onPress={選んだ記録を消す}>
               <Icons.Ionicons name="trash" size={18} color="#FFF" />
-              <Text style={styles.batchDeleteText}>{ue.size}件を削除</Text>
+              <Text style={styles.batchDeleteText}>{選んだ記録.size}件を削除</Text>
             </TouchableOpacity>
           )}
           <View style={styles.searchContainer}>
@@ -1057,12 +1077,12 @@ const HistoryScreen = () => {
                 style={styles.searchInput}
                 placeholder="日付や内容を検索（全期間対象）"
                 placeholderTextColor="#8E8E93"
-                value={te}
-                onChangeText={re}
+                value={検索の文}
+                onChangeText={検索の文を置く}
               />
             </View>
           </View>
-          {Ne.length > 0 && (
+          {タグの一覧.length > 0 && (
             <View style={styles.tagFilterContainer}>
               <View
                 style={{
@@ -1119,11 +1139,11 @@ const HistoryScreen = () => {
                 contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
               >
                 <Pressable
-                  style={({ hovered: e }) => [
+                  style={({ hovered }) => [
                     styles.tagChip,
                     0 === historySelectedTags.length && styles.tagChipActive,
                     { backgroundColor: 0 === historySelectedTags.length ? '#007AFF' : '#E5E5EA' },
-                    e && 0 !== historySelectedTags.length && { backgroundColor: '#D1D1D6' },
+                    hovered && 0 !== historySelectedTags.length && { backgroundColor: '#D1D1D6' },
                   ]}
                   onPress={() => setHistorySelectedTags([])}
                 >
@@ -1131,21 +1151,21 @@ const HistoryScreen = () => {
                     すべて解除
                   </Text>
                 </Pressable>
-                {Ne.map((e, idx) => {
-                  const t = historySelectedTags.includes(e);
+                {タグの一覧.map((タグ, idx) => {
+                  const 選ばれている = historySelectedTags.includes(タグ);
                   return (
                     <Pressable
-                      key={typeof e === 'string' ? e : `tag-${idx}`}
-                      style={({ hovered: e }) => [
+                      key={typeof タグ === 'string' ? タグ : `tag-${idx}`}
+                      style={({ hovered }) => [
                         styles.tagChip,
-                        t && styles.tagChipActive,
-                        { backgroundColor: t ? '#007AFF' : '#F2F2F7' },
-                        e && !t && { backgroundColor: '#E5E5EA' },
+                        選ばれている && styles.tagChipActive,
+                        { backgroundColor: 選ばれている ? '#007AFF' : '#F2F2F7' },
+                        hovered && !選ばれている && { backgroundColor: '#E5E5EA' },
                       ]}
-                      onPress={() => toggleHistoryTag(e)}
+                      onPress={() => toggleHistoryTag(タグ)}
                     >
-                      <Text style={[styles.tagChipText, t && { color: '#FFF' }]}>
-                        {typeof e === 'string' && e.startsWith('#') ? e.substring(1) : String(e)}
+                      <Text style={[styles.tagChipText, 選ばれている && { color: '#FFF' }]}>
+                        {typeof タグ === 'string' && タグ.startsWith('#') ? タグ.substring(1) : String(タグ)}
                       </Text>
                     </Pressable>
                   );
@@ -1153,18 +1173,20 @@ const HistoryScreen = () => {
               </ScrollView>
             </View>
           )}
-          {!te && (
+          {!検索の文 && (
             <>
               <View style={styles.yearSelectorContainer}>
                 <Pressable
-                  style={({ hovered: e }) => [
+                  style={({ hovered }) => [
                     styles.yearButton,
-                    e && { backgroundColor: 'rgba(88,86,214,0.05)' },
+                    hovered && { backgroundColor: 'rgba(88,86,214,0.05)' },
                   ]}
-                  onPress={() => se(true)}
+                  onPress={() => 年度の窓を出す(true)}
                 >
                   <Text style={styles.yearButtonText}>
-                    {$e.length > 0 ? `${ie}年度 (${ie}/04 - ${ie + 1}/03)` : '記録なし'}
+                    {年度の一覧.length > 0
+                      ? `${見ている年度}年度 (${見ている年度}/04 - ${見ている年度 + 1}/03)`
+                      : '記録なし'}
                   </Text>
                   <Icons.Ionicons name="chevron-expand" size={14} color="#5856D6" />
                 </Pressable>
@@ -1176,20 +1198,20 @@ const HistoryScreen = () => {
                 style={styles.monthTabsScroll}
                 contentContainerStyle={styles.monthTabsContent}
               >
-                {Ge.map((e) => {
-                  const t = oe === e;
+                {月の一覧.map((月) => {
+                  const 選ばれている = 見ている月 === 月;
                   return (
                     <Pressable
-                      key={e}
-                      style={({ hovered: e }) => [
+                      key={月}
+                      style={({ hovered }) => [
                         styles.monthTab,
-                        t && styles.monthTabActive,
-                        e && !t && { backgroundColor: '#E5E5EA' },
+                        選ばれている && styles.monthTabActive,
+                        hovered && !選ばれている && { backgroundColor: '#E5E5EA' },
                       ]}
-                      onPress={() => ne(e)}
+                      onPress={() => 見ている月を置く(月)}
                     >
-                      <Text style={[styles.monthTabText, t && styles.monthTabTextActive]}>
-                        {e.split('/')[1]}月
+                      <Text style={[styles.monthTabText, 選ばれている && styles.monthTabTextActive]}>
+                        {月.split('/')[1]}月
                       </Text>
                     </Pressable>
                   );
@@ -1197,49 +1219,49 @@ const HistoryScreen = () => {
               </ScrollView>
             </>
           )}
-          {!!te && (
+          {!!検索の文 && (
             <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
               <Text style={{ fontSize: 13, color: '#8E8E93' }}>
-                「{te}
+                「{検索の文}
                 {'」の全期間検索結果: '}
-                {Ye.length}件
+                {絞った記録.length}件
               </Text>
             </View>
           )}
           <FlatList
-            data={Ye}
-            renderItem={Je}
-            keyExtractor={(e, idx) => (typeof e.id === 'string' ? e.id : `history-item-${idx}`)}
+            data={絞った記録}
+            renderItem={記録の行}
+            keyExtractor={(記録, idx) => (typeof 記録.id === 'string' ? 記録.id : `history-item-${idx}`)}
             contentContainerStyle={styles.listContent}
-            ItemSeparatorComponent={v}
+            ItemSeparatorComponent={仕切り線}
             ListEmptyComponent={<Text style={styles.emptyText}>記録がありません</Text>}
           />
         </View>
       )}
-      <Modal visible={ae} transparent animationType="fade">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => se(false)}>
+      <Modal visible={年度の窓} transparent animationType="fade">
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => 年度の窓を出す(false)}>
           <View style={styles.yearModal}>
             <Text style={styles.yearModalTitle}>年度を選択</Text>
-            {$e.map((e) => (
+            {年度の一覧.map((年度) => (
               <TouchableOpacity
-                key={e}
-                style={[styles.yearOption, ie === e && styles.yearOptionSelected]}
+                key={年度}
+                style={[styles.yearOption, 見ている年度 === 年度 && styles.yearOptionSelected]}
                 onPress={() => {
-                  le(e);
-                  se(false);
+                  見ている年度を置く(年度);
+                  年度の窓を出す(false);
                 }}
               >
-                <Text style={[styles.yearOptionText, ie === e && styles.yearOptionTextSelected]}>
-                  {e}年度 ({e}
+                <Text style={[styles.yearOptionText, 見ている年度 === 年度 && styles.yearOptionTextSelected]}>
+                  {年度}年度 ({年度}
                   {'/04 - '}
-                  {e + 1}/03)
+                  {年度 + 1}/03)
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
         </TouchableOpacity>
       </Modal>
-      <Modal visible={ge} transparent animationType="slide">
+      <Modal visible={ゴミ箱の窓} transparent animationType="slide">
         <View
           style={{
             flex: 1,
@@ -1269,29 +1291,33 @@ const HistoryScreen = () => {
             >
               <TouchableOpacity
                 onPress={() => {
-                  xe(!me);
-                  be(new Set());
+                  ゴミ箱を編集中を置く(!ゴミ箱を編集中);
+                  ゴミ箱で選んだを置く(new Set());
                 }}
               >
                 <Text style={{ fontSize: 16, color: '#007AFF', fontWeight: '500' }}>
-                  {me ? '完了' : '編集'}
+                  {ゴミ箱を編集中 ? '完了' : '編集'}
                 </Text>
               </TouchableOpacity>
-              {me ? (
+              {ゴミ箱を編集中 ? (
                 <View style={{ flexDirection: 'row', gap: 16 }}>
                   <TouchableOpacity
                     onPress={() => {
-                      if (0 === ye.size) return;
+                      if (0 === ゴミ箱で選んだ.size) return;
                       // まとめて戻す。1件ずつ待つと、通信できないときに
                       // 1件目の送信が終わらず、残りが戻らないまま画面も
                       // 反応しなくなる。
-                      useScoreStore.getState().restoreTrashItems(Array.from(ye));
-                      be(new Set());
-                      xe(false);
+                      useScoreStore.getState().restoreTrashItems(Array.from(ゴミ箱で選んだ));
+                      ゴミ箱で選んだを置く(new Set());
+                      ゴミ箱を編集中を置く(false);
                     }}
                   >
                     <Text
-                      style={{ fontSize: 16, color: ye.size > 0 ? '#007AFF' : '#C6C6C8', fontWeight: '500' }}
+                      style={{
+                        fontSize: 16,
+                        color: ゴミ箱で選んだ.size > 0 ? '#007AFF' : '#C6C6C8',
+                        fontWeight: '500',
+                      }}
                     >
                       復元
                     </Text>
@@ -1300,22 +1326,26 @@ const HistoryScreen = () => {
                     activeOpacity={0.6}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     onPress={() => {
-                      if (0 === ye.size) return;
-                      const e = () => {
-                        const e = Array.from(ye);
-                        useScoreStore.getState().deleteTrashItems(e);
-                        be(new Set());
-                        xe(false);
-                        if (trash.length - e.length <= 0) fe(false);
+                      if (0 === ゴミ箱で選んだ.size) return;
+                      const 消す = () => {
+                        const 消すID = Array.from(ゴミ箱で選んだ);
+                        useScoreStore.getState().deleteTrashItems(消すID);
+                        ゴミ箱で選んだを置く(new Set());
+                        ゴミ箱を編集中を置く(false);
+                        if (trash.length - 消すID.length <= 0) ゴミ箱の窓を出す(false);
                       };
                       Alert.alert('完全に削除', '選択したゴミ箱の記録を完全に削除します。よろしいですか？', [
                         { text: 'キャンセル', style: 'cancel' },
-                        { text: '削除', style: 'destructive', onPress: e },
+                        { text: '削除', style: 'destructive', onPress: 消す },
                       ]);
                     }}
                   >
                     <Text
-                      style={{ fontSize: 16, color: ye.size > 0 ? '#FF3B30' : '#C6C6C8', fontWeight: '500' }}
+                      style={{
+                        fontSize: 16,
+                        color: ゴミ箱で選んだ.size > 0 ? '#FF3B30' : '#C6C6C8',
+                        fontWeight: '500',
+                      }}
                     >
                       削除
                     </Text>
@@ -1336,7 +1366,7 @@ const HistoryScreen = () => {
                               style: 'destructive',
                               onPress: () => {
                                 emptyTrash();
-                                fe(false);
+                                ゴミ箱の窓を出す(false);
                               },
                             },
                           ]
@@ -1353,7 +1383,7 @@ const HistoryScreen = () => {
                       すべて削除
                     </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => fe(false)}>
+                  <TouchableOpacity onPress={() => ゴミ箱の窓を出す(false)}>
                     <Icons.Ionicons name="close" size={24} color="#000" />
                   </TouchableOpacity>
                 </View>
@@ -1374,7 +1404,7 @@ const HistoryScreen = () => {
               >
                 <FlatList
                   data={trash}
-                  keyExtractor={(e) => e.id}
+                  keyExtractor={(記録) => 記録.id}
                   ItemSeparatorComponent={() => (
                     <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: '#E5E5EA' }} />
                   )}
@@ -1385,63 +1415,65 @@ const HistoryScreen = () => {
                       ゴミ箱は空です
                     </Text>
                   }
-                  renderItem={({ item: e }) => {
-                    const t = new Date(e.date);
-                    const l = `${t.getFullYear()}年${t.getMonth() + 1}月${t.getDate()}日`;
+                  renderItem={({ item: 記録 }) => {
+                    const 日付 = new Date(記録.date);
+                    const 日付の文 = `${日付.getFullYear()}年${日付.getMonth() + 1}月${日付.getDate()}日`;
                     // 押すと中身を見られる（見るだけ）。選んでいる最中は選ぶ・外すに使う
                     return (
                       <Pressable
-                        testID={`ゴミ箱の記録-${e.id}`}
+                        testID={`ゴミ箱の記録-${記録.id}`}
                         accessibilityRole="button"
-                        accessibilityLabel={me ? `${l} を選ぶ` : `${l} の記録を見る`}
-                        aria-label={me ? `${l} を選ぶ` : `${l} の記録を見る`}
+                        accessibilityLabel={
+                          ゴミ箱を編集中 ? `${日付の文} を選ぶ` : `${日付の文} の記録を見る`
+                        }
+                        aria-label={ゴミ箱を編集中 ? `${日付の文} を選ぶ` : `${日付の文} の記録を見る`}
                         onPress={() => {
-                          if (me) return void Le(e.id);
-                          setゴミ箱の記録(e.id);
-                          setSelectedHistorySessionId(e.id);
+                          if (ゴミ箱を編集中) return void ゴミ箱の選択を切り替える(記録.id);
+                          setゴミ箱の記録(記録.id);
+                          setSelectedHistorySessionId(記録.id);
                           setHistoryViewMode('detail');
-                          fe(false);
+                          ゴミ箱の窓を出す(false);
                           ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
                         }}
-                        style={({ hovered: h }) => [
+                        style={({ hovered }) => [
                           {
                             flexDirection: 'row',
                             justifyContent: 'space-between',
                             alignItems: 'center',
                             paddingVertical: 14,
                           },
-                          h && { backgroundColor: 'rgba(0,122,255,0.05)' },
+                          hovered && { backgroundColor: 'rgba(0,122,255,0.05)' },
                           IS_WEB && { cursor: 'pointer' },
                         ]}
                       >
-                        {me && (
+                        {ゴミ箱を編集中 && (
                           <TouchableOpacity
-                            onPress={() => Le(e.id)}
+                            onPress={() => ゴミ箱の選択を切り替える(記録.id)}
                             style={{ marginRight: 12, paddingVertical: 4 }}
                           >
                             <Icons.Ionicons
-                              name={ye.has(e.id) ? 'checkmark-circle' : 'ellipse-outline'}
+                              name={ゴミ箱で選んだ.has(記録.id) ? 'checkmark-circle' : 'ellipse-outline'}
                               size={22}
-                              color={ye.has(e.id) ? '#007AFF' : '#C7C7CC'}
+                              color={ゴミ箱で選んだ.has(記録.id) ? '#007AFF' : '#C7C7CC'}
                             />
                           </TouchableOpacity>
                         )}
                         <View style={{ flex: 1, paddingRight: 8 }}>
                           <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#000' }}>
-                            {l} {e.title ? `[${e.title}]` : ''}
+                            {日付の文} {記録.title ? `[${記録.title}]` : ''}
                           </Text>
-                          {!!e.note && (
+                          {!!記録.note && (
                             <Text style={{ fontSize: 12, color: '#000', marginTop: 4 }} numberOfLines={1}>
-                              {e.note}
+                              {記録.note}
                             </Text>
                           )}
                         </View>
-                        {!me && (
-                          <TouchableOpacity onPress={() => restoreSession(e.id)}>
+                        {!ゴミ箱を編集中 && (
+                          <TouchableOpacity onPress={() => restoreSession(記録.id)}>
                             <Text style={{ color: '#007AFF', fontSize: 16, fontWeight: '500' }}>復元</Text>
                           </TouchableOpacity>
                         )}
-                        {!me && (
+                        {!ゴミ箱を編集中 && (
                           <Icons.Ionicons
                             name="chevron-forward"
                             size={18}
@@ -1458,17 +1490,17 @@ const HistoryScreen = () => {
           </View>
         </View>
       </Modal>
-      <Modal visible={Se} transparent animationType="fade">
+      <Modal visible={削除の確認} transparent animationType="fade">
         <View style={styles.confirmOverlay}>
           <View style={styles.confirmModal}>
-            <Text style={styles.confirmTitle}>{Te ? '記録を削除' : '選択した記録を削除'}</Text>
+            <Text style={styles.confirmTitle}>{消す記録ID ? '記録を削除' : '選択した記録を削除'}</Text>
             <Text style={styles.confirmMessage}>選択した記録をゴミ箱に移動しますか？</Text>
             <View style={styles.modalButtonsRow}>
               <TouchableOpacity
                 style={[styles.modalBtn, { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 }]}
                 onPress={() => {
-                  we(false);
-                  Ae(null);
+                  削除の確認を出す(false);
+                  消す記録IDを置く(null);
                 }}
               >
                 <Text style={{ color: '#007AFF', fontWeight: 'bold' }}>キャンセル</Text>
@@ -1476,10 +1508,12 @@ const HistoryScreen = () => {
               <TouchableOpacity
                 style={[styles.modalBtn, { backgroundColor: '#FF3B30', flex: 1, marginLeft: 5 }]}
                 onPress={async () => {
-                  Te
-                    ? (deleteSession(Te), Ae(null), setHistoryViewMode('list'))
-                    : (deleteMultipleSessions(Array.from(ue)), he(new Set()), ce(false));
-                  we(false);
+                  消す記録ID
+                    ? (deleteSession(消す記録ID), 消す記録IDを置く(null), setHistoryViewMode('list'))
+                    : (deleteMultipleSessions(Array.from(選んだ記録)),
+                      選んだ記録を置く(new Set()),
+                      選択中を置く(false));
+                  削除の確認を出す(false);
                 }}
               >
                 <Text style={{ color: '#FFF', fontWeight: 'bold' }}>移動する</Text>
@@ -1488,8 +1522,17 @@ const HistoryScreen = () => {
           </View>
         </View>
       </Modal>
-      <Modal visible={pe} transparent animationType="fade" onRequestClose={() => je(false)}>
-        <TouchableOpacity style={styles.confirmOverlay} activeOpacity={1} onPress={() => je(false)}>
+      <Modal
+        visible={管理者の品書き}
+        transparent
+        animationType="fade"
+        onRequestClose={() => 管理者の品書きを出す(false)}
+      >
+        <TouchableOpacity
+          style={styles.confirmOverlay}
+          activeOpacity={1}
+          onPress={() => 管理者の品書きを出す(false)}
+        >
           <View style={styles.adminMenuContent}>
             {/* 記録表そのものの直しは、記録画面に載せ替えて行う（人・間隔・計を足す、 */
             /* 並べ替え・矢所・射数・交代・画像からの読み取り）。ここに在った「人追加・ */
@@ -1501,11 +1544,11 @@ const HistoryScreen = () => {
                 accessibilityLabel="記録画面で直す"
                 aria-label="記録画面で直す"
                 onPress={() => {
-                  if (!Pe) return;
-                  je(false);
+                  if (!見ている記録) return;
+                  管理者の品書きを出す(false);
                   if (
                     typeof 履歴の記録を記録画面で開く !== 'function' ||
-                    !履歴の記録を記録画面で開く(Pe.id)
+                    !履歴の記録を記録画面で開く(見ている記録.id)
                   ) {
                     窓.出す(
                       'いまは直せません',
@@ -1533,8 +1576,8 @@ const HistoryScreen = () => {
               accessibilityLabel="記録の情報を変える"
               aria-label="記録の情報を変える"
               onPress={() => {
-                je(false);
-                Fe(true);
+                管理者の品書きを出す(false);
+                記録の情報の窓を出す(true);
               }}
             >
               <Icons.Ionicons name="create-outline" size={20} color="#5856D6" />
@@ -1549,49 +1592,55 @@ const HistoryScreen = () => {
         </TouchableOpacity>
       </Modal>
       <EditSessionModal
-        visible={Ce}
-        session={Pe}
-        onClose={() => Fe(false)}
-        onSave={(e) => updateSession(Pe.id, e)}
+        visible={記録の情報の窓}
+        session={見ている記録}
+        onClose={() => 記録の情報の窓を出す(false)}
+        onSave={(変更) => updateSession(見ている記録.id, 変更)}
       />
       <ArcherActionModal
-        visible={ze}
-        archerId={ke || ''}
-        archerName={Pe?.archers?.find((e) => e.id === ke)?.name || ''}
-        archerOrigIdx={De}
-        isSeparator={Pe?.archers?.find((e) => e.id === ke)?.isSeparator || false}
-        isTotalCalculator={Pe?.archers?.find((e) => e.id === ke)?.isTotalCalculator || false}
-        onClose={() => Ie(false)}
-        onSubstitution={() => We(true)}
-        onSetMember={(e) => tt(ke, e)}
-        onSetGuestName={(e) => rt(ke, e)}
-        onClearName={() => ot(ke)}
-        onDeleteArcher={nt}
-        onAddArcher={(e) => {
-          if (!Pe) return;
-          const t = newArcher(Pe.shotCount || 8);
-          const o = [...Ue(Pe.archers)];
-          o.splice(e, 0, t);
-          updateSession(Pe.id, { archers: o });
+        visible={人の窓}
+        archerId={選んだ射手ID || ''}
+        archerName={見ている記録?.archers?.find((x) => x.id === 選んだ射手ID)?.name || ''}
+        archerOrigIdx={選んだ射手の順}
+        isSeparator={見ている記録?.archers?.find((x) => x.id === 選んだ射手ID)?.isSeparator || false}
+        isTotalCalculator={
+          見ている記録?.archers?.find((x) => x.id === 選んだ射手ID)?.isTotalCalculator || false
+        }
+        onClose={() => 人の窓を出す(false)}
+        onSubstitution={() => 交代の窓を出す(true)}
+        onSetMember={(部員) => 部員を当てる(選んだ射手ID, 部員)}
+        onSetGuestName={(名前) => 客の名を付ける(選んだ射手ID, 名前)}
+        onClearName={() => 名前を外す(選んだ射手ID)}
+        onDeleteArcher={射手を消す}
+        onAddArcher={(位置) => {
+          if (!見ている記録) return;
+          const 新しい射手 = newArcher(見ている記録.shotCount || 8);
+          const 直した = [...並びにする(見ている記録.archers)];
+          直した.splice(位置, 0, 新しい射手);
+          updateSession(見ている記録.id, { archers: 直した });
         }}
-        onAddSeparator={(e) => {
-          if (!Pe) return;
-          const t = newSeparator();
-          const o = [...Ue(Pe.archers)];
-          o.splice(e, 0, t);
-          updateSession(Pe.id, { archers: o });
+        onAddSeparator={(位置) => {
+          if (!見ている記録) return;
+          const 区切り = newSeparator();
+          const 直した = [...並びにする(見ている記録.archers)];
+          直した.splice(位置, 0, 区切り);
+          updateSession(見ている記録.id, { archers: 直した });
         }}
-        onAddTotal={(e) => {
-          if (!Pe) return;
-          const t = newTotalCalculator(Pe.shotCount || 8);
-          const o = [...Ue(Pe.archers)];
-          o.splice(e, 0, t);
-          updateSession(Pe.id, { archers: o });
+        onAddTotal={(位置) => {
+          if (!見ている記録) return;
+          const 合計の列 = newTotalCalculator(見ている記録.shotCount || 8);
+          const 直した = [...並びにする(見ている記録.archers)];
+          直した.splice(位置, 0, 合計の列);
+          updateSession(見ている記録.id, { archers: 直した });
         }}
-        existingArchers={Ue(Pe?.archers)}
+        existingArchers={並びにする(見ている記録?.archers)}
       />
-      <ManualSubstitutionModal visible={Be} archerId={ke} onClose={() => We(false)} />
-    </Lt要素>
+      <ManualSubstitutionModal
+        visible={交代の窓}
+        archerId={選んだ射手ID}
+        onClose={() => 交代の窓を出す(false)}
+      />
+    </外枠>
   );
 };
 const styles = StyleSheet.create({
