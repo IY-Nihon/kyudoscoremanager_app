@@ -14,7 +14,7 @@ const Pressable = require('./Pressable').default;
 const Icons = require('@expo/vector-icons');
 const { useScoreStore } = require('./useScoreStore');
 const { getShadowStyle } = require('./shadowStyle');
-const j = ({
+const ArcherActionModal = ({
   visible,
   archerId,
   archerOrigIdx: pVal,
@@ -59,56 +59,59 @@ const j = ({
     addTotalCalculator,
     deleteArcher,
   } = useScoreStore();
-  const [O, M] = React.useState('');
-  const [_, N] = React.useState(false);
-  const [G, K] = React.useState('');
+  const [検索の文, 検索の文を置く] = React.useState('');
+  const [客名の入力中, 客名の入力中を置く] = React.useState(false);
+  const [客名の下書き, 客名の下書きを置く] = React.useState('');
   const [expandedTerms, setExpandedTerms] = React.useState(new Set());
   const [expandedActiveGrades, setExpandedActiveGrades] = React.useState(new Set(['1', '2', '3', '4', '0']));
   // いまこの射手に入っている途中交代。1つでもあれば取り消す道を出す。
   // これまで解除する口がどこにも無く、履歴にも積んでいないので取り消しでも
   // 戻らなかった（間違えるとリセットするしかなかった）
   const いまの交代 = React.useMemo(() => {
-    const 射手 = (archers || []).find((e) => e && e.id === archerId);
+    const 射手 = (archers || []).find((x) => x && x.id === archerId);
     const 表 = (射手 && 射手.substitutions) || {};
     return Object.keys(表)
       .map(Number)
-      .filter((n) => !isNaN(n))
+      .filter((x) => !isNaN(x))
       .sort((a, b) => a - b)
       .map((位置) => ({ 位置, 名: 表[位置] }));
   }, [archers, archerId]);
-  const q = existingArchers || archers;
+  const 今の射手たち = existingArchers || archers;
   // 男女の絞り込み。'全員' | '男子' | '女子'
   const [男女の絞り, set男女の絞り] = React.useState('全員');
-  const L = React.useMemo(() => {
+  const 現役の候補 = React.useMemo(() => {
     return (
       members
-        .filter((e) => (e.grade || 0) < 5)
-        .filter((e) => '' === O || (e.name || '').includes(O))
+        .filter((部員) => (部員.grade || 0) < 5)
+        .filter((部員) => '' === 検索の文 || (部員.name || '').includes(検索の文))
         // 男女で絞る。男女別の立ちを組むとき、毎回名前を探さずに済む
-        .filter((e) => '全員' === 男女の絞り || (e.gender || '') === 男女の絞り)
-        .sort((e, t) => {
-          const o = q.some((t) => t.memberId === e.id);
-          if (o !== q.some((e) => e.memberId === t.id)) return o ? 1 : -1;
-          const n = undefined === e.grade || null === e.grade ? 99 : Number(e.grade);
-          const l = undefined === t.grade || null === t.grade ? 99 : Number(t.grade);
-          const sVal = 0 === n ? 99 : n;
-          const aVal = 0 === o ? 99 : o;
-          if (sVal !== aVal) return sVal - aVal;
-          const cVal = (e) => {
-            const t = (e || '').trim();
-            return '男子' === t ? 0 : '女子' === t ? 1 : 2;
+        .filter((部員) => '全員' === 男女の絞り || (部員.gender || '') === 男女の絞り)
+        .sort((甲, 乙) => {
+          const 甲は入っている = 今の射手たち.some((x) => x.memberId === 甲.id);
+          if (甲は入っている !== 今の射手たち.some((x) => x.memberId === 乙.id))
+            return 甲は入っている ? 1 : -1;
+          const 甲の学年 = undefined === 甲.grade || null === 甲.grade ? 99 : Number(甲.grade);
+          const 乙の学年 = undefined === 乙.grade || null === 乙.grade ? 99 : Number(乙.grade);
+          // 「その他」（学年0）は後ろへ。乙の側は、以前は o（入っているか）を
+          // 見ていて学年の比べ合いになっておらず、一覧が学年順に並ばなかった
+          const 甲の順 = 0 === 甲の学年 ? 99 : 甲の学年;
+          const 乙の順 = 0 === 乙の学年 ? 99 : 乙の学年;
+          if (甲の順 !== 乙の順) return 甲の順 - 乙の順;
+          const cVal = (性別) => {
+            const 整えた = (性別 || '').trim();
+            return '男子' === 整えた ? 0 : '女子' === 整えた ? 1 : 2;
           };
-          const uVal = cVal(e.gender) - cVal(t.gender);
-          return 0 !== uVal ? uVal : (e.name || '').localeCompare(t.name || '', 'ja');
+          const uVal = cVal(甲.gender) - cVal(乙.gender);
+          return 0 !== uVal ? uVal : (甲.name || '').localeCompare(乙.name || '', 'ja');
         })
     );
-  }, [members, archers, O, q, 男女の絞り]);
+  }, [members, archers, 検索の文, 今の射手たち, 男女の絞り]);
   const activeGroups = React.useMemo(() => {
     const groups = {};
-    L.forEach((e) => {
-      const gVal = undefined === e.grade || null === e.grade ? 0 : Number(e.grade);
+    現役の候補.forEach((部員) => {
+      const gVal = undefined === 部員.grade || null === 部員.grade ? 0 : Number(部員.grade);
       groups[gVal] || (groups[gVal] = []);
-      groups[gVal].push(e);
+      groups[gVal].push(部員);
     });
     const sortedGrades = Object.keys(groups)
       .map(Number)
@@ -122,36 +125,36 @@ const j = ({
       if (gVal === 0) title = 'その他/ゲスト';
       return { grade: gVal, title, members: groups[gVal] };
     });
-  }, [L]);
+  }, [現役の候補]);
   const alumniByTerm = React.useMemo(() => {
-    const e = members
-      .filter((e) => e.grade === 5 || e.isAlumni)
+    const 候補 = members
+      .filter((部員) => 部員.grade === 5 || 部員.isAlumni)
       .concat(alumniState || [])
-      .filter((e) => '' === O || (e.name || '').includes(O));
+      .filter((部員) => '' === 検索の文 || (部員.name || '').includes(検索の文));
     const tVal = {};
-    e.forEach((e) => {
-      const o = e.termKi || 999;
-      tVal[o] || (tVal[o] = []);
-      tVal[o].push(e);
+    候補.forEach((部員) => {
+      const 期 = 部員.termKi || 999;
+      tVal[期] || (tVal[期] = []);
+      tVal[期].push(部員);
     });
     return Object.keys(tVal)
-      .sort((e, t) => Number(t) - Number(e))
-      .map((e) => ({
-        term: e,
-        members: tVal[e].sort((e, t) => (e.name || '').localeCompare(t.name || '', 'ja')),
+      .sort((甲, 乙) => Number(乙) - Number(甲))
+      .map((期) => ({
+        term: 期,
+        members: tVal[期].sort((甲, 乙) => (甲.name || '').localeCompare(乙.name || '', 'ja')),
       }));
-  }, [members, alumniState, O]);
-  const $ = (e) => {
-    if (onSetMember) onSetMember(e);
-    else setArcherMember(archerId, e);
+  }, [members, alumniState, 検索の文]);
+  const 部員を当てる = (部員) => {
+    if (onSetMember) onSetMember(部員);
+    else setArcherMember(archerId, 部員);
     onClose();
   };
-  const toggleTerm = (e) => {
-    setExpandedTerms((t) => {
-      const o = new Set(t);
-      if (o.has(e)) o.delete(e);
-      else o.add(e);
-      return o;
+  const toggleTerm = (期) => {
+    setExpandedTerms((前) => {
+      const 次 = new Set(前);
+      if (次.has(期)) 次.delete(期);
+      else 次.add(期);
+      return 次;
     });
   };
   const toggleActiveGrade = (gVal) => {
@@ -162,26 +165,27 @@ const j = ({
       return next;
     });
   };
-  const J = () => {
-    const e = G.trim();
-    e && (onSetGuestName ? onSetGuestName(e) : useScoreStore.getState().setArcherGuestName(archerId, e));
-    N(false);
-    K('');
+  const 客名で決める = () => {
+    const 名前 = 客名の下書き.trim();
+    名前 &&
+      (onSetGuestName ? onSetGuestName(名前) : useScoreStore.getState().setArcherGuestName(archerId, 名前));
+    客名の入力中を置く(false);
+    客名の下書きを置く('');
     onClose();
   };
-  const Q = Dimensions.get('window').height;
+  const 画面の高さ = Dimensions.get('window').height;
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={y.fullScreen}>
-        <TouchableOpacity style={y.backdrop} activeOpacity={1} onPress={onClose} />
-        <View style={[y.menuContainer, { maxHeight: 0.7 * Q }]}>
+      <View style={styles.fullScreen}>
+        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
+        <View style={[styles.menuContainer, { maxHeight: 0.7 * 画面の高さ }]}>
           <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
             {!jVal && !isTotalCalculator && (
-              <View style={y.section}>
-                <View style={y.actionRow}>
+              <View style={styles.section}>
+                <View style={styles.actionRow}>
                   <Pressable
                     style={({ pressed, hovered }) => [
-                      y.actionBtn,
+                      styles.actionBtn,
                       hovered && { backgroundColor: '#E5E5EA' },
                       pressed && { opacity: 0.7 },
                     ]}
@@ -192,13 +196,13 @@ const j = ({
                     }}
                   >
                     <Icons.Ionicons name="close-circle-outline" size={18} color="#FF3B30" />
-                    <Text style={[y.actionBtnText, { color: '#FF3B30' }]}>名前クリア</Text>
+                    <Text style={[styles.actionBtnText, { color: '#FF3B30' }]}>名前クリア</Text>
                   </Pressable>
                   <Pressable
-                    style={({ pressed: e, hovered: t }) => [
-                      y.actionBtn,
-                      t && { backgroundColor: '#E5E5EA' },
-                      e && { opacity: 0.7 },
+                    style={({ pressed, hovered }) => [
+                      styles.actionBtn,
+                      hovered && { backgroundColor: '#E5E5EA' },
+                      pressed && { opacity: 0.7 },
                     ]}
                     onPress={() => {
                       onClose();
@@ -206,7 +210,7 @@ const j = ({
                     }}
                   >
                     <Icons.Ionicons name="repeat" size={18} color="#007AFF" />
-                    <Text style={[y.actionBtnText, { color: '#007AFF' }]}>途中交代</Text>
+                    <Text style={[styles.actionBtnText, { color: '#007AFF' }]}>途中交代</Text>
                   </Pressable>
                   {[
                     // 交代が入っているときだけ、取り消す道を出す。
@@ -217,13 +221,13 @@ const j = ({
                       ? いまの交代.map((交代) => (
                           <Pressable
                             key={`交代取消-${交代.位置}`}
-                            style={({ pressed: e, hovered: t }) => [
-                              y.actionBtn,
+                            style={({ pressed, hovered }) => [
+                              styles.actionBtn,
                               // 文が長いので1行いっぱいを使う。space-around の
                               // 折り返しに任せると右へ寄って見える
                               { flexBasis: '100%', justifyContent: 'center' },
-                              t && { backgroundColor: '#FFE5E5' },
-                              e && { opacity: 0.7 },
+                              hovered && { backgroundColor: '#FFE5E5' },
+                              pressed && { opacity: 0.7 },
                             ]}
                             onPress={() => {
                               交代を書く(archerId, 交代.位置, '', null);
@@ -231,7 +235,7 @@ const j = ({
                             }}
                           >
                             <Icons.Ionicons name="close-circle" size={18} color="#FF3B30" />
-                            <Text style={[y.actionBtnText, { color: '#FF3B30' }]}>
+                            <Text style={[styles.actionBtnText, { color: '#FF3B30' }]}>
                               {交代.位置 + 1}
                               {'射目〜 '}
                               {交代.名}
@@ -241,23 +245,23 @@ const j = ({
                         ))
                       : []),
                   ]}
-                  {_ ? (
-                    <View style={y.guestInputRow}>
+                  {客名の入力中 ? (
+                    <View style={styles.guestInputRow}>
                       <TextInput
-                        style={y.guestInput}
+                        style={styles.guestInput}
                         placeholder="ゲスト名"
-                        value={G}
-                        onChangeText={K}
+                        value={客名の下書き}
+                        onChangeText={客名の下書きを置く}
                         autoFocus
-                        onSubmitEditing={J}
+                        onSubmitEditing={客名で決める}
                       />
-                      <TouchableOpacity onPress={J}>
-                        <Text style={y.guestConfirmText}>決定</Text>
+                      <TouchableOpacity onPress={客名で決める}>
+                        <Text style={styles.guestConfirmText}>決定</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => {
-                          N(false);
-                          K('');
+                          客名の入力中を置く(false);
+                          客名の下書きを置く('');
                         }}
                       >
                         <Icons.Ionicons name="close" size={20} color="#8E8E93" />
@@ -265,17 +269,17 @@ const j = ({
                     </View>
                   ) : (
                     <Pressable
-                      style={({ pressed: e, hovered: t }) => [
-                        y.actionBtn,
-                        t && { backgroundColor: '#E5E5EA' },
-                        e && { opacity: 0.7 },
+                      style={({ pressed, hovered }) => [
+                        styles.actionBtn,
+                        hovered && { backgroundColor: '#E5E5EA' },
+                        pressed && { opacity: 0.7 },
                       ]}
                       onPress={() => {
-                        N(true);
+                        客名の入力中を置く(true);
                       }}
                     >
                       <Icons.Ionicons name="person-outline" size={18} color="#5856D6" />
-                      <Text style={[y.actionBtnText, { color: '#5856D6' }]}>ゲスト登録</Text>
+                      <Text style={[styles.actionBtnText, { color: '#5856D6' }]}>ゲスト登録</Text>
                     </Pressable>
                   )}
                 </View>
@@ -285,15 +289,15 @@ const j = ({
             /* 気づけなかった（押す＝消す だったので、なおさら触れない） */}
             {jVal && onチーム名 && (
               <Pressable
-                style={({ pressed: e, hovered: t }) => [
-                  y.menuItem,
-                  t && { backgroundColor: '#F2F7FF' },
-                  e && { opacity: 0.7 },
+                style={({ pressed, hovered }) => [
+                  styles.menuItem,
+                  hovered && { backgroundColor: '#F2F7FF' },
+                  pressed && { opacity: 0.7 },
                 ]}
                 onPress={onチーム名}
               >
                 <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={[y.menuText, { color: '#007AFF', fontWeight: 'bold' }]}>
+                  <Text style={[styles.menuText, { color: '#007AFF', fontWeight: 'bold' }]}>
                     {いまのチーム名 ? 'チーム名を変える' : 'チーム名を付ける'}
                   </Text>
                   <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 2 }}>
@@ -313,15 +317,15 @@ const j = ({
             /* 横に並べたら「右へ動か／す」と折り返し、字を詰めたら消えた */}
             {on動かす && 手前へ動かせる && (
               <Pressable
-                style={({ pressed: e, hovered: t }) => [
-                  y.menuItem,
-                  t && { backgroundColor: '#F2F7FF' },
-                  e && { opacity: 0.7 },
+                style={({ pressed, hovered }) => [
+                  styles.menuItem,
+                  hovered && { backgroundColor: '#F2F7FF' },
+                  pressed && { opacity: 0.7 },
                 ]}
                 onPress={() => on動かす('前')}
                 accessibilityLabel="立ち順で1つ前へ動かす"
               >
-                <Text style={[y.menuText, { color: '#007AFF' }]}>
+                <Text style={[styles.menuText, { color: '#007AFF' }]}>
                   {横に並べている ? '上へ動かす' : '右へ動かす'}
                 </Text>
                 {/* 矢印は動く向きに合わせる。縦の表は右から左へ並ぶので */
@@ -335,15 +339,15 @@ const j = ({
             )}
             {on動かす && 奥へ動かせる && (
               <Pressable
-                style={({ pressed: e, hovered: t }) => [
-                  y.menuItem,
-                  t && { backgroundColor: '#F2F7FF' },
-                  e && { opacity: 0.7 },
+                style={({ pressed, hovered }) => [
+                  styles.menuItem,
+                  hovered && { backgroundColor: '#F2F7FF' },
+                  pressed && { opacity: 0.7 },
                 ]}
                 onPress={() => on動かす('後')}
                 accessibilityLabel="立ち順で1つ後ろへ動かす"
               >
-                <Text style={[y.menuText, { color: '#007AFF' }]}>
+                <Text style={[styles.menuText, { color: '#007AFF' }]}>
                   {横に並べている ? '下へ動かす' : '左へ動かす'}
                 </Text>
                 <Icons.Ionicons
@@ -353,51 +357,54 @@ const j = ({
                 />
               </Pressable>
             )}
-            <View style={y.dividerFull} />
+            <View style={styles.dividerFull} />
             {!jVal && !isTotalCalculator && (
               <>
-                <View style={y.sectionHeader}>
-                  <Text style={y.sectionHeaderText}>メンバーを選択</Text>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionHeaderText}>メンバーを選択</Text>
                 </View>
-                <View style={y.searchRow}>
+                <View style={styles.searchRow}>
                   <Icons.Ionicons name="search" size={18} color="#8E8E93" style={{ marginRight: 8 }} />
                   <TextInput
-                    style={y.searchInput}
+                    style={styles.searchInput}
                     placeholder="メンバーを検索"
-                    value={O}
-                    onChangeText={M}
+                    value={検索の文}
+                    onChangeText={検索の文を置く}
                     placeholderTextColor="#8E8E93"
                   />
-                  {'' !== O && (
-                    <TouchableOpacity onPress={() => M('')}>
+                  {'' !== 検索の文 && (
+                    <TouchableOpacity onPress={() => 検索の文を置く('')}>
                       <Icons.Ionicons name="close-circle" size={18} color="#C6C6C8" />
                     </TouchableOpacity>
                   )}
                 </View>
                 {/* 男女で絞る。男女別の立ちを組むとき、毎回名前を探さずに済む */}
-                <View style={y.男女の絞りの列}>
+                <View style={styles.男女の絞りの列}>
                   {['全員', '男子', '女子'].map((名) => (
                     <TouchableOpacity
                       key={`絞り-${名}`}
-                      style={[y.男女の絞りのボタン, 男女の絞り === 名 && y.男女の絞りのボタン選択中]}
+                      style={[
+                        styles.男女の絞りのボタン,
+                        男女の絞り === 名 && styles.男女の絞りのボタン選択中,
+                      ]}
                       onPress={() => set男女の絞り(名)}
                       accessibilityRole="button"
                       accessibilityState={{ selected: 男女の絞り === 名 }}
                     >
-                      <Text style={[y.男女の絞りの字, 男女の絞り === 名 && y.男女の絞りの字選択中]}>
+                      <Text style={[styles.男女の絞りの字, 男女の絞り === 名 && styles.男女の絞りの字選択中]}>
                         {名}
                       </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
-                <View style={y.section}>
+                <View style={styles.section}>
                   {activeGroups.map((group) => {
                     const gStr = group.grade.toString();
                     const isOpen = expandedActiveGrades.has(gStr);
                     return (
                       <React.Fragment key={`group-${group.grade}`}>
-                        <TouchableOpacity style={y.termHeader} onPress={() => toggleActiveGrade(gStr)}>
-                          <Text style={y.termTitle}>
+                        <TouchableOpacity style={styles.termHeader} onPress={() => toggleActiveGrade(gStr)}>
+                          <Text style={styles.termTitle}>
                             {group.title}
                             {' ('}
                             {group.members.length}人)
@@ -409,37 +416,37 @@ const j = ({
                           />
                         </TouchableOpacity>
                         {isOpen &&
-                          group.members.map((e, idx) => {
-                            const sVal = q.some((t) => t.memberId === e.id);
+                          group.members.map((部員, idx) => {
+                            const sVal = 今の射手たち.some((x) => x.memberId === 部員.id);
                             return (
-                              <React.Fragment key={e.id}>
-                                {idx > 0 && <View style={[y.divider, { marginLeft: 32 }]} />}
+                              <React.Fragment key={部員.id}>
+                                {idx > 0 && <View style={[styles.divider, { marginLeft: 32 }]} />}
                                 <Pressable
-                                  style={({ pressed: e, hovered: t }) => [
-                                    y.menuItem,
+                                  style={({ pressed, hovered }) => [
+                                    styles.menuItem,
                                     { paddingLeft: 32 },
                                     sVal && { backgroundColor: '#F0F0F5', opacity: 0.8 },
-                                    !sVal && t && { backgroundColor: '#F2F2F7' },
-                                    e && { opacity: 0.7 },
+                                    !sVal && hovered && { backgroundColor: '#F2F2F7' },
+                                    pressed && { opacity: 0.7 },
                                   ]}
-                                  onPress={() => $(e)}
+                                  onPress={() => 部員を当てる(部員)}
                                 >
                                   <Text
                                     style={[
-                                      y.menuText,
-                                      '男子' === e.gender && { color: '#007AFF' },
-                                      '女子' === e.gender && { color: '#FF2D55' },
+                                      styles.menuText,
+                                      '男子' === 部員.gender && { color: '#007AFF' },
+                                      '女子' === 部員.gender && { color: '#FF2D55' },
                                       sVal && { opacity: 0.5 },
                                     ]}
                                   >
-                                    {e.name}{' '}
+                                    {部員.name}{' '}
                                     <Text style={{ fontSize: 11, color: '#8E8E93' }}>
-                                      {e.termKi ? `(${e.termKi}期)` : ''}
+                                      {部員.termKi ? `(${部員.termKi}期)` : ''}
                                     </Text>
                                   </Text>
                                   {sVal && (
-                                    <View style={y.selectedBadge}>
-                                      <Text style={y.selectedBadgeText}>選択済</Text>
+                                    <View style={styles.selectedBadge}>
+                                      <Text style={styles.selectedBadgeText}>選択済</Text>
                                     </View>
                                   )}
                                 </Pressable>
@@ -456,51 +463,53 @@ const j = ({
             /* すぐ上の「メンバーを選択」には同じ条件が付いているのに、卒業生の */
             /* ほうだけ付いておらず、合計の欄を押すと卒業生の一覧だけが出ていた */}
             {!jVal && !isTotalCalculator && (
-              <View style={y.sectionHeader}>
-                <Text style={y.sectionHeaderText}>卒業生を選択</Text>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionHeaderText}>卒業生を選択</Text>
               </View>
             )}
             {!jVal && !isTotalCalculator && (
-              <View style={y.section}>
-                {alumniByTerm.map((e) => (
-                  <React.Fragment key={e.term}>
-                    <TouchableOpacity style={y.termHeader} onPress={() => toggleTerm(e.term)}>
-                      <Text style={y.termTitle}>{999 === Number(e.term) ? '不明' : e.term}期</Text>
+              <View style={styles.section}>
+                {alumniByTerm.map((期の組) => (
+                  <React.Fragment key={期の組.term}>
+                    <TouchableOpacity style={styles.termHeader} onPress={() => toggleTerm(期の組.term)}>
+                      <Text style={styles.termTitle}>
+                        {999 === Number(期の組.term) ? '不明' : 期の組.term}期
+                      </Text>
                       <Icons.Ionicons
-                        name={expandedTerms.has(e.term) ? 'chevron-up' : 'chevron-down'}
+                        name={expandedTerms.has(期の組.term) ? 'chevron-up' : 'chevron-down'}
                         size={16}
                         color="#8E8E93"
                       />
                     </TouchableOpacity>
-                    {expandedTerms.has(e.term) &&
-                      e.members.map((e, t) => {
-                        const sVal = q.some((t) => t.memberId === e.id);
+                    {expandedTerms.has(期の組.term) &&
+                      期の組.members.map((部員, 無し) => {
+                        const sVal = 今の射手たち.some((x) => x.memberId === 部員.id);
                         return (
-                          <React.Fragment key={e.id}>
-                            <View style={[y.divider, { marginLeft: 32 }]} />
+                          <React.Fragment key={部員.id}>
+                            <View style={[styles.divider, { marginLeft: 32 }]} />
                             <Pressable
-                              style={({ pressed: e, hovered: t }) => [
-                                y.menuItem,
+                              style={({ pressed, hovered }) => [
+                                styles.menuItem,
                                 { paddingLeft: 32 },
                                 sVal && { backgroundColor: '#F0F0F5', opacity: 0.8 },
-                                !sVal && t && { backgroundColor: '#F2F2F7' },
-                                e && { opacity: 0.7 },
+                                !sVal && hovered && { backgroundColor: '#F2F2F7' },
+                                pressed && { opacity: 0.7 },
                               ]}
-                              onPress={() => $(e)}
+                              onPress={() => 部員を当てる(部員)}
                             >
                               <Text
                                 style={[
-                                  y.menuText,
-                                  '男子' === e.gender && { color: '#007AFF' },
-                                  '女子' === e.gender && { color: '#FF2D55' },
+                                  styles.menuText,
+                                  '男子' === 部員.gender && { color: '#007AFF' },
+                                  '女子' === 部員.gender && { color: '#FF2D55' },
                                   sVal && { opacity: 0.5 },
                                 ]}
                               >
-                                {e.name} <Text style={{ fontSize: 11, color: '#8E8E93' }}>(卒業生)</Text>
+                                {部員.name} <Text style={{ fontSize: 11, color: '#8E8E93' }}>(卒業生)</Text>
                               </Text>
                               {sVal && (
-                                <View style={y.selectedBadge}>
-                                  <Text style={y.selectedBadgeText}>選択済</Text>
+                                <View style={styles.selectedBadge}>
+                                  <Text style={styles.selectedBadgeText}>選択済</Text>
                                 </View>
                               )}
                             </Pressable>
@@ -511,13 +520,13 @@ const j = ({
                 ))}
               </View>
             )}
-            <View style={y.dividerFull} />
-            <View style={y.section}>
+            <View style={styles.dividerFull} />
+            <View style={styles.section}>
               <Pressable
-                style={({ pressed: e, hovered: t }) => [
-                  y.menuItem,
-                  t && { backgroundColor: '#F2F2F7' },
-                  e && { opacity: 0.7 },
+                style={({ pressed, hovered }) => [
+                  styles.menuItem,
+                  hovered && { backgroundColor: '#F2F2F7' },
+                  pressed && { opacity: 0.7 },
                 ]}
                 onPress={() => {
                   if (onAddArcher) onAddArcher(pVal + 1);
@@ -525,15 +534,15 @@ const j = ({
                   onClose();
                 }}
               >
-                <Text style={y.menuText}>左に射手を追加</Text>
+                <Text style={styles.menuText}>左に射手を追加</Text>
                 <Icons.Ionicons name="person-add-outline" size={20} color="#8E8E93" />
               </Pressable>
-              <View style={y.divider} />
+              <View style={styles.divider} />
               <Pressable
-                style={({ pressed: e, hovered: t }) => [
-                  y.menuItem,
-                  t && { backgroundColor: '#F2F2F7' },
-                  e && { opacity: 0.7 },
+                style={({ pressed, hovered }) => [
+                  styles.menuItem,
+                  hovered && { backgroundColor: '#F2F2F7' },
+                  pressed && { opacity: 0.7 },
                 ]}
                 onPress={() => {
                   if (onAddSeparator) onAddSeparator(pVal + 1);
@@ -541,15 +550,15 @@ const j = ({
                   onClose();
                 }}
               >
-                <Text style={y.menuText}>左に間隔を追加</Text>
+                <Text style={styles.menuText}>左に間隔を追加</Text>
                 <Icons.Ionicons name="reorder-four-outline" size={20} color="#8E8E93" />
               </Pressable>
-              <View style={y.divider} />
+              <View style={styles.divider} />
               <Pressable
-                style={({ pressed: e, hovered: t }) => [
-                  y.menuItem,
-                  t && { backgroundColor: '#F2F2F7' },
-                  e && { opacity: 0.7 },
+                style={({ pressed, hovered }) => [
+                  styles.menuItem,
+                  hovered && { backgroundColor: '#F2F2F7' },
+                  pressed && { opacity: 0.7 },
                 ]}
                 onPress={() => {
                   if (onAddTotal) onAddTotal(pVal + 1);
@@ -557,23 +566,23 @@ const j = ({
                   onClose();
                 }}
               >
-                <Text style={y.menuText}>左に計を追加</Text>
+                <Text style={styles.menuText}>左に計を追加</Text>
                 <Icons.Ionicons name="calculator-outline" size={20} color="#8E8E93" />
               </Pressable>
-              <View style={y.divider} />
+              <View style={styles.divider} />
               {/* 合計の列だけに出す。数える範囲を切り替える。 */
               /* 「計」は区切りで止まる（1立ぶん）、「総計」は端まで数える */}
               {isTotalCalculator && on合計の範囲 && (
                 <Pressable
-                  style={({ pressed: e, hovered: t }) => [
-                    y.menuItem,
-                    t && { backgroundColor: '#F2F7FF' },
-                    e && { opacity: 0.7 },
+                  style={({ pressed, hovered }) => [
+                    styles.menuItem,
+                    hovered && { backgroundColor: '#F2F7FF' },
+                    pressed && { opacity: 0.7 },
                   ]}
                   onPress={on合計の範囲}
                 >
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={[y.menuText, { color: '#007AFF', fontWeight: 'bold' }]}>
+                    <Text style={[styles.menuText, { color: '#007AFF', fontWeight: 'bold' }]}>
                       {またぐ合計 ? 'この立ちだけの合計にする' : '手前の計もまとめた総計にする'}
                     </Text>
                     <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 2 }}>
@@ -586,10 +595,10 @@ const j = ({
                 </Pressable>
               )}
               <Pressable
-                style={({ pressed: e, hovered: t }) => [
-                  y.menuItem,
-                  t && { backgroundColor: '#FFF0F0' },
-                  e && { opacity: 0.7 },
+                style={({ pressed, hovered }) => [
+                  styles.menuItem,
+                  hovered && { backgroundColor: '#FFF0F0' },
+                  pressed && { opacity: 0.7 },
                 ]}
                 onPress={() => {
                   if (onDeleteArcher) onDeleteArcher(archerId);
@@ -597,7 +606,7 @@ const j = ({
                   onClose();
                 }}
               >
-                <Text style={[y.menuText, { color: '#FF3B30', fontWeight: 'bold' }]}>削除</Text>
+                <Text style={[styles.menuText, { color: '#FF3B30', fontWeight: 'bold' }]}>削除</Text>
                 <Icons.Ionicons name="trash-outline" size={20} color="#FF3B30" />
               </Pressable>
             </View>
@@ -607,8 +616,8 @@ const j = ({
     </Modal>
   );
 };
-exports.ArcherActionModal = j;
-const y = StyleSheet.create({
+exports.ArcherActionModal = ArcherActionModal;
+const styles = StyleSheet.create({
   fullScreen: { flex: 1 },
   backdrop: Object.assign({}, StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.15)' }),
   menuContainer: Object.assign(
