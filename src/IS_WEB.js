@@ -1,44 +1,21 @@
 /**
- * Module ID: 199
+ * 動いている場（Web か iOS か）と、Web で上に空ける余白。
+ *
+ * （ソースマップからの復元時は module_199.js という名前だった）
  */
 'use strict';
 
-const _e = exports;
-
-('use strict');
-Object.defineProperty(_e, '__esModule', { value: !0 });
-Object.defineProperty(_e, 'IS_WEB', {
-  enumerable: !0,
-  get: function () {
-    return e;
-  },
-});
-Object.defineProperty(_e, 'IS_IOS', {
-  enumerable: !0,
-  get: function () {
-    return t;
-  },
-});
-Object.defineProperty(_e, 'WEB_TOP_PADDING', {
-  enumerable: !0,
-  get: function () {
-    return n;
-  },
-});
-Object.defineProperty(_e, 'SAFE_TOP_PADDING', {
-  enumerable: !0,
-  get: function () {
-    return u;
-  },
-});
-// 復元の際、ここは「常に true を返す try」と「常に false になる式」に
-// 潰れていた。Web だけに配っているので結果は合っていたが、何を見て
-// いるのか読めないため、本来の判定に戻す。
-// Web では Metro が react-native を react-native-web へ向けるので、
-// Platform.OS は 'web' になる（値は今までと同じ）
 const Platform = require('./platform').default;
-const e = Platform.OS === 'web';
-const t = Platform.OS === 'ios';
-const n = 60;
-const u = e ? n : 0;
-// Gemini の鍵はここに無い（2026-09-13 に中継へ移した。src/geminiChukei.js）
+
+const IS_WEB = Platform.OS === 'web';
+const IS_IOS = Platform.OS === 'ios';
+/** Web では上に余白を取る（ブラウザの帯と重ならないように） */
+const WEB_TOP_PADDING = 60;
+/** 端末では SafeArea が受け持つので 0 */
+const SAFE_TOP_PADDING = IS_WEB ? WEB_TOP_PADDING : 0;
+
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.IS_WEB = IS_WEB;
+exports.IS_IOS = IS_IOS;
+exports.WEB_TOP_PADDING = WEB_TOP_PADDING;
+exports.SAFE_TOP_PADDING = SAFE_TOP_PADDING;

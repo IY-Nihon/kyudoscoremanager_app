@@ -81,7 +81,7 @@ const 閲覧 = 'view';
  */
 const 期限の選択肢 = [
   { 値: 12 * 60 * 60 * 1000, 名: '12時間' },
-  { 値: 24 * 60 * 60 * 1000, 名: '24時間', 既定: !0 },
+  { 値: 24 * 60 * 60 * 1000, 名: '24時間', 既定: true },
   { 値: 7 * 24 * 60 * 60 * 1000, 名: '7日間' },
   { 値: 0, 名: '期限なし' },
 ];
@@ -117,7 +117,7 @@ function 期限の時刻(持ち, 今) {
  * @returns {boolean}
  */
 function 期限切れか(期限, 今) {
-  if ('number' != typeof 期限 || !isFinite(期限) || 期限 <= 0) return !1;
+  if ('number' != typeof 期限 || !isFinite(期限) || 期限 <= 0) return false;
   return ('number' == typeof 今 ? 今 : Date.now()) >= 期限;
 }
 

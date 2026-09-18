@@ -5,20 +5,13 @@
  */
 'use strict';
 
-const e = exports;
-
-('use strict');
-(Object.defineProperty(e, '__esModule', { value: !0 }),
-  Object.defineProperty(e, 'generateUUID', {
-    enumerable: !0,
-    get: function () {
-      return x;
-    },
-  }));
-const x = () =>
+const generateUUID = () =>
   'undefined' != typeof crypto && crypto.randomUUID
     ? crypto.randomUUID()
-    : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (x) => {
-        const t = (16 * Math.random()) | 0;
-        return ('x' === x ? t : (3 & t) | 8).toString(16);
+    : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (字) => {
+        const 乱数 = (16 * Math.random()) | 0;
+        return ('x' === 字 ? 乱数 : (3 & 乱数) | 8).toString(16);
       });
+
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.generateUUID = generateUUID;

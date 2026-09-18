@@ -5,7 +5,7 @@
 'use strict';
 
 Object.defineProperty(exports, '__esModule', { value: true });
-exports.OCRRecordModal = void 0;
+exports.OCRRecordModal = undefined;
 
 const React = require('react');
 const { useState, useMemo } = React;
@@ -1078,8 +1078,8 @@ const OCRRecordModal = ({
       .filter((部員) => (部員.grade || 0) < 5)
       .filter((部員) => !pickerSearch.trim() || normalize(部員.name).includes(normalize(pickerSearch)))
       .sort((甲, 乙) => {
-        const gradeA = void 0 === 甲.grade || null === 甲.grade ? 99 : Number(甲.grade);
-        const gradeB = void 0 === 乙.grade || null === 乙.grade ? 99 : Number(乙.grade);
+        const gradeA = undefined === 甲.grade || null === 甲.grade ? 99 : Number(甲.grade);
+        const gradeB = undefined === 乙.grade || null === 乙.grade ? 99 : Number(乙.grade);
         const 甲の順 = gradeA === 0 ? 99 : gradeA;
         const 乙の順 = gradeB === 0 ? 99 : gradeB;
         if (甲の順 !== 乙の順) return 甲の順 - 乙の順;
@@ -1092,7 +1092,7 @@ const OCRRecordModal = ({
   const activeGroups = useMemo(() => {
     const groups = {};
     activeMembersSorted.forEach((部員) => {
-      const 学年 = void 0 === 部員.grade || null === 部員.grade ? 0 : Number(部員.grade);
+      const 学年 = undefined === 部員.grade || null === 部員.grade ? 0 : Number(部員.grade);
       groups[学年] || (groups[学年] = []);
       groups[学年].push(部員);
     });

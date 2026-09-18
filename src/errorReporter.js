@@ -38,11 +38,11 @@ const 便りを置く日数 = 90;
 // 起動時に一度読み、以後はこの控えを正とする（不具合の最中に await を挟むと
 // そこでまた落ちることがある）
 let 貯めの控え = [];
-let 読み込んだ = !1;
+let 読み込んだ = false;
 
 async function 貯めを読み込む() {
   if (読み込んだ) return;
-  読み込んだ = !0;
+  読み込んだ = true;
   try {
     const 文 = await 蔵.default.getItem(貯めの鍵);
     if (文) {
@@ -95,7 +95,7 @@ function いまの様子() {
   try {
     // 循環参照を避けるため、必要になった時点で読む
     const 店 = require('./useScoreStore').useScoreStore.getState();
-    状態 = { 団体id: 店.activeGroupId || '', 役割: 店.activeRole || '', 回線: !1 !== 店.isNetworkOnline };
+    状態 = { 団体id: 店.activeGroupId || '', 役割: 店.activeRole || '', 回線: false !== 店.isNetworkOnline };
   } catch (誤り) {
     /* 起動のごく初期は取れない */
   }
@@ -133,7 +133,7 @@ function 不具合を送る(出どころ, 誤り) {
   } catch (中の誤り) {
     // 送る仕組みが落ちてアプリを巻き込むのは本末転倒
     console.warn('[errorReporter] 便りを組めませんでした', 中の誤り);
-    return Promise.resolve(!1);
+    return Promise.resolve(false);
   }
 }
 

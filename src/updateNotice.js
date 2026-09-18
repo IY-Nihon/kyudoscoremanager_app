@@ -60,7 +60,7 @@ function 束の名前(html) {
 function 新しい版が出たか(いまの束, 取ってきたHTML) {
   const いま = 名前だけにする(いまの束);
   const 向こう = 名前だけにする(束の名前(取ってきたHTML));
-  if (!いま || !向こう) return !1;
+  if (!いま || !向こう) return false;
   return いま !== 向こう;
 }
 

@@ -5,7 +5,7 @@
 'use strict';
 
 Object.defineProperty(exports, '__esModule', { value: true });
-exports.WhatsNewModal = void 0;
+exports.WhatsNewModal = undefined;
 
 const React = require('react');
 const { useState, useEffect, useRef } = React;
