@@ -30,8 +30,8 @@ const ScoreCell = React.memo(
     読み,
     onToggle,
   }) => {
-    const 印を切り替える = useScoreStore((x) => x.toggleMark);
-    const viewScale = useScoreStore((x) => x.viewScale);
+    const 印を切り替える = useScoreStore((状態) => 状態.toggleMark);
+    const viewScale = useScoreStore((状態) => 状態.viewScale);
     const 倍率 = 'number' == typeof viewScale && !isNaN(viewScale) && viewScale > 0 ? viewScale : 1;
     const 印 = mark ?? '';
     const 背景の色 =
@@ -70,16 +70,16 @@ const ScoreCell = React.memo(
     const longPressTimerRef = React.useRef(null);
     const isLongPressedRef = React.useRef(false);
     const cellRef = React.useRef(null);
-    const enableArrowLocation = useScoreStore((x) => x.enableArrowLocation);
+    const enableArrowLocation = useScoreStore((状態) => 状態.enableArrowLocation);
     // 誤タップ防止。入れてから少し経ったますは、押しても変わらないようにする。
     // 直したいときは長押しで、そのますだけ開く。
     // 記録そのものには持たせない（同期の形を変えないため）
-    const 自動ロックする = useScoreStore((x) => x.自動ロックする);
-    const 自動ロックまでの秒 = useScoreStore((x) => x.自動ロックまでの秒);
-    const ますを開ける = useScoreStore((x) => x.ますを開ける);
-    const 閉じたますが押された = useScoreStore((x) => x.閉じたますが押された);
+    const 自動ロックする = useScoreStore((状態) => 状態.自動ロックする);
+    const 自動ロックまでの秒 = useScoreStore((状態) => 状態.自動ロックまでの秒);
+    const ますを開ける = useScoreStore((状態) => 状態.ますを開ける);
+    const 閉じたますが押された = useScoreStore((状態) => 状態.閉じたますが押された);
     const この鍵 = archerId + ':' + index;
-    const 入れた = useScoreStore((x) => x.入れた時刻[この鍵]);
+    const 入れた = useScoreStore((状態) => 状態.入れた時刻[この鍵]);
     const [経った, 経ったを置く] = React.useState(false);
     React.useEffect(() => {
       経ったを置く(false);
@@ -103,8 +103,8 @@ const ScoreCell = React.memo(
     const 自動で閉じている =
       印を入れる列 && 鍵をかける板 && 自動ロックする && !!(mark ?? '') && (経った || !入れた);
     const 閉じている = isLocked || 自動で閉じている;
-    const setActiveArrowLocationEdit = useScoreStore((x) => x.setActiveArrowLocationEdit);
-    const updateArrowLocation = useScoreStore((x) => x.updateArrowLocation);
+    const setActiveArrowLocationEdit = useScoreStore((状態) => 状態.setActiveArrowLocationEdit);
+    const updateArrowLocation = useScoreStore((状態) => 状態.updateArrowLocation);
     // ここで (s) => s.archers.find(...) を購読していた。ますの数だけ
     // 全射手の走査が走り、○×を1つ入れるたびに盤面全体が重くなっていた。
     // この射手を使うのは長押しの中だけなので、そのとき取りに行けばよい

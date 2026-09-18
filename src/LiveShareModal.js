@@ -299,8 +299,8 @@ const 来客の窓 = ({ 荷, onClose }) => {
   // いま団体に入っていて、手元に書きかけの記録があるか。
   // 参加すると盤面はライブのもので上書きされる。ふつうの参加には確認が
   // あるのに、リンクから入る道にだけ無いと、黙って消えることになる
-  const 団体 = useScoreStore((e) => e.activeGroupId);
-  const 手元の射手 = useScoreStore((e) => e.archers);
+  const 団体 = useScoreStore((状態) => 状態.activeGroupId);
+  const 手元の射手 = useScoreStore((状態) => 状態.archers);
   const 消えるもの =
     !!団体 &&
     (手元の射手 || []).some(

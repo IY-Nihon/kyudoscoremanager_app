@@ -69,7 +69,7 @@ const HistoryScreen = () => {
     // 案内が見本を出しているあいだは、中身だけ見本に差し替わる
   } = 案内.見本を重ねる(useScoreStore());
   const 航路 = 航.useNavigation();
-  const 自分の名前 = useScoreStore((x) => x.myMemberName) || '';
+  const 自分の名前 = useScoreStore((状態) => 状態.myMemberName) || '';
   const [検索の文, 検索の文を置く] = React.useState('');
   const [見ている月, 見ている月を置く] = React.useState('');
   const [見ている年度, 見ている年度を置く] = React.useState(() => {

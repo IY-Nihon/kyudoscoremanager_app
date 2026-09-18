@@ -113,15 +113,15 @@ const RecordScreen = () => {
   if (!isHydrated) return null;
   // ライブに何台つないでいるか。電波の切れる弓道場で、
   // 相手に届いているかをその場で見るために出す（src/livePresence.js）
-  const 接続の文言 = 在.台数の文言(useScoreStore((x) => x.ライブの接続台数));
+  const 接続の文言 = 在.台数の文言(useScoreStore((状態) => 状態.ライブの接続台数));
   // ライブをURLで配る窓。主催者だけが開ける
   const [共有の窓, 共有の窓を出す] = React.useState(false);
   // 共有リンクだけで来ている人。団体の名簿を持っていない
-  const 来客 = useScoreStore((x) => x.共有の来客);
+  const 来客 = useScoreStore((状態) => 状態.共有の来客);
   // よその団体のライブに共有リンクで入っているか。保存はさせない
-  const よその団体 = useScoreStore((x) => x.よその団体のライブ);
+  const よその団体 = useScoreStore((状態) => 状態.よその団体のライブ);
   // 配ったリンクの期限。帯に「あと30分」を出すために見る
-  const ライブの期限 = useScoreStore((x) => x.いまのライブの期限);
+  const ライブの期限 = useScoreStore((状態) => 状態.いまのライブの期限);
   // 残りは時間で減るので、こちらから数え直さないと止まって見える。
   // ただし数え直すたびに記録画面ぜんぶが描き直る。いつ起きればよいかは
   // liveShare の 次に数え直すまで が決める（帯に出るころまでは眠る）
@@ -134,7 +134,7 @@ const RecordScreen = () => {
   }, [ライブの期限, いま]);
   // 近いときだけ出す。ずっと出していると場所を取るだけで読まれなくなる
   const 期限の残り = 期限.期限の短い文言(ライブの期限, いま);
-  const ライブの一覧 = useScoreStore((x) => x.liveSessionsList);
+  const ライブの一覧 = useScoreStore((状態) => 状態.liveSessionsList);
   const [人の窓, 人の窓を出す] = React.useState(false);
   const [選んだ射手ID, 選んだ射手IDを置く] = React.useState(null);
   const [選んだ射手の順, 選んだ射手の順を置く] = React.useState(0);
@@ -2496,7 +2496,7 @@ const RecordScreen = () => {
         visible={showOCRModal}
         onClose={() => setShowOCRModal(false)}
         members={members}
-        alumni={useScoreStore((x) => x.alumni) || []}
+        alumni={useScoreStore((状態) => 状態.alumni) || []}
         shotsPerRound={shotsPerRound}
         hasExistingRecord={archers.length > 0} // いまの記録表で埋まっている射数（いちばん後ろの○×の位置）。
         // 窓の側で、写真で読めた射数と比べて多いほうに射数を合わせる

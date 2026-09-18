@@ -107,16 +107,16 @@ const 下の帯 = React.memo(({ state, descriptors, navigation: nav }) => {
   const 詰める = 画面の幅 < 380;
   const 狭いときのボタン = 詰める ? { paddingHorizontal: 6, minWidth: 34 } : null;
   const 狭いときの字 = 詰める ? { fontSize: 11 } : null;
-  const 履歴のタグ = useScoreStore((x) => x.historySelectedTags || []);
-  const 分析のタグ = useScoreStore((x) => x.analysisSelectedTags || []);
-  const 記録のタグ = useScoreStore((x) => x.currentSessionTags || []);
+  const 履歴のタグ = useScoreStore((状態) => 状態.historySelectedTags || []);
+  const 分析のタグ = useScoreStore((状態) => 状態.analysisSelectedTags || []);
+  const 記録のタグ = useScoreStore((状態) => 状態.currentSessionTags || []);
   const 今の画面 =
-    (useScoreStore((x) => x.toggleHistoryTag),
-    useScoreStore((x) => x.toggleAnalysisTag),
-    useScoreStore((x) => x.toggleCurrentSessionTag),
-    useScoreStore((x) => x.setHistorySelectedTags),
-    useScoreStore((x) => x.setAnalysisSelectedTags),
-    useScoreStore((x) => x.setCurrentSessionTags),
+    (useScoreStore((状態) => 状態.toggleHistoryTag),
+    useScoreStore((状態) => 状態.toggleAnalysisTag),
+    useScoreStore((状態) => 状態.toggleCurrentSessionTag),
+    useScoreStore((状態) => 状態.setHistorySelectedTags),
+    useScoreStore((状態) => 状態.setAnalysisSelectedTags),
+    useScoreStore((状態) => 状態.setCurrentSessionTags),
     state.routes[state.index].name);
   const X要素 = IS_WEB ? View : ReactNativeSafeAreaContext.SafeAreaView;
   console.log('[CustomTabBar] Active Route:', 今の画面, 'Tags:', {
@@ -194,11 +194,11 @@ const AttendanceScreenComp = (props) => <AttendanceScreen {...props} />;
 const SettingsScreenComp = (props) => <SettingsScreen {...props} />;
 const MainNavigator = () => {
   const 余白 = ReactNativeSafeAreaContext.useSafeAreaInsets();
-  const 役割 = useScoreStore((x) => x.activeRole);
+  const 役割 = useScoreStore((状態) => 状態.activeRole);
   const // 共有リンクだけで来ている人。団体のデータを何も持っていないので、
     // 履歴・分析・設定を出しても中身が無い。記録の画面だけにする
-    来客 = useScoreStore((x) => x.共有の来客);
-  const 画面名を控える = useScoreStore((x) => x.setCurrentRouteName);
+    来客 = useScoreStore((状態) => 状態.共有の来客);
+  const 画面名を控える = useScoreStore((状態) => 状態.setCurrentRouteName);
   const 帯を描く =
     (IS_WEB ? WEB_TOP_PADDING : Math.max(余白.top, 20),
     React.useCallback((渡す) => <下の帯 {...渡す} />, []));

@@ -49,7 +49,7 @@ export function UpdateBar() {
   const [出すか, 出すかを置く] = useState(false);
   const [閉じたか, 閉じたかを置く] = useState(false);
   // 記録中と案内中は出さない（上の説明を参照）。見に行くのは続ける
-  const ライブ中 = useScoreStore((s) => s.isLiveActive);
+  const ライブ中 = useScoreStore((状態) => 状態.isLiveActive);
   const 案内中 = use案内中();
 
   useEffect(() => {
@@ -75,8 +75,7 @@ export function UpdateBar() {
     const 戻ってきたら = () => {
       if (typeof document !== 'undefined' && !document.hidden) 見に行く();
     };
-    if (typeof document !== 'undefined')
-      document.addEventListener('visibilitychange', 戻ってきたら);
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', 戻ってきたら);
     const 時計 = setInterval(見に行く, 見に行く間隔);
     // node（検査）では、走り続ける時計があるとまとめて終われない
     if (時計 && typeof 時計.unref === 'function') 時計.unref();
@@ -84,8 +83,7 @@ export function UpdateBar() {
     return () => {
       生きている = false;
       clearInterval(時計);
-      if (typeof document !== 'undefined')
-        document.removeEventListener('visibilitychange', 戻ってきたら);
+      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', 戻ってきたら);
     };
   }, []);
 

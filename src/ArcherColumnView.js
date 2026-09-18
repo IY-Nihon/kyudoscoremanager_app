@@ -54,10 +54,10 @@ const ArcherColumnView = React.memo(
     // 途中交代があると、計は「山田 3, 交代太郎 2」と内訳で出る。
     // 押すと合わせた数（5）に切り替わる。どちらで見たいかは場面による
     const [合算で見る, 合算を置く] = React.useState(false);
-    const 鍵を切り替える = useScoreStore((x) => x.toggleLock);
-    const viewScale = useScoreStore((x) => x.viewScale);
+    const 鍵を切り替える = useScoreStore((状態) => 状態.toggleLock);
+    const viewScale = useScoreStore((状態) => 状態.viewScale);
     const 倍率 = 'number' == typeof viewScale && !isNaN(viewScale) && viewScale > 0 ? viewScale : 1;
-    const 部員たち = useScoreStore((x) => x.members || []);
+    const 部員たち = useScoreStore((状態) => 状態.members || []);
     const 的中の数 = (() => {
       // どこまで数えるかの規則は teamGrouping に1つだけ置く。
       // ここに写しを持つと、欄と行で数が食い違う（2026-09-08 に起きた）
@@ -136,9 +136,9 @@ const ArcherColumnView = React.memo(
       (x) => x && !x.isSeparator && !x.isTotalCalculator
     );
     const 射位の番 = 実の並び.findIndex((x) => x && x.id === archer.id);
-    const 自動ロックする = useScoreStore((x) => x.自動ロックする);
-    const 自動ロックまでの秒 = useScoreStore((x) => x.自動ロックまでの秒);
-    const 立を閉じる = useScoreStore((x) => x.立を閉じる);
+    const 自動ロックする = useScoreStore((状態) => 状態.自動ロックする);
+    const 自動ロックまでの秒 = useScoreStore((状態) => 状態.自動ロックまでの秒);
+    const 立を閉じる = useScoreStore((状態) => 状態.立を閉じる);
     const 埋まった時刻 = React.useRef({});
     const 閉じた覚え = React.useRef({});
     // 埋まっている立の番号。中身が変わったときだけ数え直したいので文字にする

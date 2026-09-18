@@ -8,7 +8,7 @@ const { useScoreStore } = require('./useScoreStore');
 const { getShadowStyle } = require('./shadowStyle');
 const { Image } = require('react-native');
 const LoadingScreen = () => {
-  const 読み込みの記録 = useScoreStore((e) => e.initializationLogs);
+  const 読み込みの記録 = useScoreStore((状態) => 状態.initializationLogs);
   return (
     <View style={styles.container}>
       <View style={styles.logoWrapper}>

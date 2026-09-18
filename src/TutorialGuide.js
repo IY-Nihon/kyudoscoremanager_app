@@ -310,8 +310,8 @@ const TutorialOverlay = ({ navRef }) => {
   const 終える = use案内((s) => s.終える);
   const 控え = use案内((s) => s.控え);
   const 最高到達 = use案内((s) => s.最高到達);
-  const 役割 = useScoreStore((s) => s.activeRole);
-  const いまの画面 = useScoreStore((s) => s.currentRouteName);
+  const 役割 = useScoreStore((状態) => 状態.activeRole);
+  const いまの画面 = useScoreStore((状態) => 状態.currentRouteName);
   const [測った枠, 枠を置く] = useState(null);
   // 指す先を測っているあいだ。測り終わるまで案内は出さない
   const [測り中, 測り中を置く] = useState(false);
@@ -334,11 +334,11 @@ const TutorialOverlay = ({ navRef }) => {
   const 基準 = useRef(null);
   // 「まだ1人も登録されていません」のような案内は、実際に空のときだけ出す。
   // あとから設定の「使い方を見る」で開いた人には、事実と違って見えてしまう
-  const 部員数 = useScoreStore((s) => (Array.isArray(s.members) ? s.members.length : 0));
+  const 部員数 = useScoreStore((状態) => (Array.isArray(状態.members) ? 状態.members.length : 0));
   // 素の件数ではなく「その人に見える件数」で数える。端末には団体ぜんぶの
   // 記録が入っているので、素の件数だと個人ログインのときに
   // 「記録はあるが自分のは1件も無い」場合でも見本を出さず、空の画面が残る
-  const 記録数 = useScoreStore((s) => 見える記録数(s));
+  const 記録数 = useScoreStore((状態) => 見える記録数(状態));
   const { 基本, 続き } = React.useMemo(() => 手順を作る(役割, { 部員数, 記録数 }), [役割, 部員数, 記録数]);
   // 基本の最後に「続きを見ますか」を挟む。見ると答えたら、そのまま続きへ
   const 分かれ道 = React.useMemo(

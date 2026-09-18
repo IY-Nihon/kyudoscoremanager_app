@@ -40,7 +40,7 @@ const MemberScreen = () => {
   const [性別の下書き, 性別の下書きを置く] = React.useState('未設定');
   const [学年の下書き, 学年の下書きを置く] = React.useState('1');
   const [期の下書き, 期の下書きを置く] = React.useState('');
-  const 今の一年生の期 = useScoreStore((x) => x.currentFreshmanTerm);
+  const 今の一年生の期 = useScoreStore((状態) => 状態.currentFreshmanTerm);
   const [弓具の窓, 弓具の窓を出す] = React.useState(false);
   // 端末の日付で出す。toISOString は世界標準時なので、日本では
   // 朝9時より前に開くと前の日が入ってしまう（弓具を変えた日がずれる）

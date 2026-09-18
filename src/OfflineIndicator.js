@@ -9,7 +9,7 @@ const { useScoreStore } = require('./useScoreStore');
 const Icons = require('@expo/vector-icons');
 const { getShadowStyle } = require('./shadowStyle');
 const OfflineIndicator = () => {
-  const つながっている = useScoreStore((e) => e.isNetworkOnline);
+  const つながっている = useScoreStore((状態) => 状態.isNetworkOnline);
   const [見え具合] = React.useState(new Animated.Value(0));
   return (
     React.useEffect(() => {

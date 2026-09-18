@@ -284,7 +284,7 @@ const AnalysisScreen = ({ navigation }) => {
     activeGroupId: いまの団体id,
     // 案内が見本を出しているあいだは、中身だけ見本に差し替わる
   } = 案内.見本を重ねる(useScoreStore());
-  const 自分の名前 = useScoreStore((x) => x.myMemberName) || '';
+  const 自分の名前 = useScoreStore((状態) => 状態.myMemberName) || '';
   const [compareMembers, setCompareMembers] = React.useState([]);
   const [isSelectingCompareTarget, setIsSelectingCompareTarget] = React.useState(false);
   // ひな型に付ける名前。窓を閉じたら捨てる（書きかけを持ち越さない）
