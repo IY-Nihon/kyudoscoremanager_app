@@ -121,12 +121,7 @@ const BORDER_MAP = Object.assign({}, ACCENT, {
 const DARK_MAP = Object.assign({}, BG_MAP, TEXT_MAP);
 
 // 3桁HEX・色名も拾えるように別名を登録
-const ALIASES = {
-  '#fff': '#ffffff',
-  '#000': '#000000',
-  white: '#ffffff',
-  black: '#000000',
-};
+const ALIASES = { '#fff': '#ffffff', '#000': '#000000', white: '#ffffff', black: '#000000' };
 
 // style のキー → どの変換表を使うか
 const KEY_KIND = {
@@ -185,7 +180,7 @@ let mode = 'light'; // 'light' | 'dark' | 'system'
 let systemScheme = 'light';
 const listeners = new Set();
 
-const notify = () => listeners.forEach((l) => l());
+const notify = () => listeners.forEach((灯り) => 灯り());
 
 /** 実効テーマ（'light' | 'dark'）を返す */
 const getEffectiveTheme = () => (mode === 'system' ? systemScheme : mode);
@@ -194,8 +189,8 @@ const isDark = () => getEffectiveTheme() === 'dark';
 
 const RGB_FN = /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)$/;
 
-const toHex = (r, g, b) =>
-  '#' + [r, g, b].map((n) => Math.round(Number(n)).toString(16).padStart(2, '0')).join('');
+const toHex = (赤, 緑, 青) =>
+  '#' + [赤, 緑, 青].map((数) => Math.round(Number(数)).toString(16).padStart(2, '0')).join('');
 
 const hexToRgbParts = (hex) => [
   parseInt(hex.slice(1, 3), 16),
@@ -218,18 +213,21 @@ function mapColor(value, kind) {
 
   // 3桁HEXの省略記法（#333）を6桁へ展開してから引く。
   // 展開しないと #333 や #eee が対応表に当たらず素通りしてしまう。
-  const expand = (h) => (/^#[0-9a-f]{3}$/.test(h) ? '#' + h[1] + h[1] + h[2] + h[2] + h[3] + h[3] : h);
+  const expand = (十六進) =>
+    /^#[0-9a-f]{3}$/.test(十六進)
+      ? '#' + 十六進[1] + 十六進[1] + 十六進[2] + 十六進[2] + 十六進[3] + 十六進[3]
+      : 十六進;
 
   const normalized = ALIASES[key] || expand(key);
   const direct = table[normalized];
   if (direct) return direct;
 
-  const m = RGB_FN.exec(key);
-  if (m) {
-    const mapped = table[toHex(m[1], m[2], m[3])];
+  const 当たり = RGB_FN.exec(key);
+  if (当たり) {
+    const mapped = table[toHex(当たり[1], 当たり[2], 当たり[3])];
     if (mapped) {
-      const [r, g, b] = hexToRgbParts(mapped);
-      return m[4] === undefined ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${m[4]})`;
+      const [赤, 緑, 青] = hexToRgbParts(mapped);
+      return 当たり[4] === undefined ? `rgb(${赤}, ${緑}, ${青})` : `rgba(${赤}, ${緑}, ${青}, ${当たり[4]})`;
     }
   }
   return value;
@@ -253,9 +251,9 @@ const MAX_DEPTH = 8;
  * （実際に外観の切替時に RangeError で画面が落ちた）。
  * クラスのインスタンスは変換対象ではないので、素のオブジェクトだけをたどる。
  */
-function isPlainObject(v) {
-  if (v === null || typeof v !== 'object') return false;
-  const proto = Object.getPrototypeOf(v);
+function isPlainObject(値) {
+  if (値 === null || typeof 値 !== 'object') return false;
+  const proto = Object.getPrototypeOf(値);
   return proto === Object.prototype || proto === null;
 }
 
@@ -274,10 +272,10 @@ function mapStyle(style, depth = 0) {
   let out;
   if (Array.isArray(style)) {
     let changed = false;
-    const arr = style.map((s) => {
-      const m = mapStyle(s, depth + 1);
-      if (m !== s) changed = true;
-      return m;
+    const arr = style.map((見た目) => {
+      const 当たり = mapStyle(見た目, depth + 1);
+      if (当たり !== 見た目) changed = true;
+      return 当たり;
     });
     out = changed ? arr : style;
   } else if (!isPlainObject(style)) {
@@ -286,13 +284,13 @@ function mapStyle(style, depth = 0) {
   } else {
     let changed = false;
     const obj = {};
-    for (const k in style) {
-      const v = style[k];
-      let nv = v;
-      if (KEY_KIND[k]) nv = mapColor(v, KEY_KIND[k]);
-      else if (Array.isArray(v) || isPlainObject(v)) nv = mapStyle(v, depth + 1);
-      if (nv !== v) changed = true;
-      obj[k] = nv;
+    for (const 鍵 in style) {
+      const 値 = style[鍵];
+      let 新しい値 = 値;
+      if (KEY_KIND[鍵]) 新しい値 = mapColor(値, KEY_KIND[鍵]);
+      else if (Array.isArray(値) || isPlainObject(値)) 新しい値 = mapStyle(値, depth + 1);
+      if (新しい値 !== 値) changed = true;
+      obj[鍵] = 新しい値;
     }
     out = changed ? obj : style;
   }
@@ -308,11 +306,11 @@ function mapStyle(style, depth = 0) {
  * 戻り値を変換するラッパーに差し替える必要がある。
  */
 const fnCache = new WeakMap();
-function wrapStyleFn(fn) {
-  const hit = fnCache.get(fn);
+function wrapStyleFn(関数) {
+  const hit = fnCache.get(関数);
   if (hit) return hit;
-  const wrapped = (...args) => mapStyle(fn(...args));
-  fnCache.set(fn, wrapped);
+  const wrapped = (...args) => mapStyle(関数(...args));
+  fnCache.set(関数, wrapped);
   return wrapped;
 }
 
@@ -335,30 +333,30 @@ function mapProps(props) {
   if (nextStyle !== props.style) changed = true;
 
   const patch = {};
-  for (const p of COLOR_PROPS) {
-    if (typeof props[p] === 'string') {
+  for (const 渡すもの of COLOR_PROPS) {
+    if (typeof props[渡すもの] === 'string') {
       // アイコンなどの color prop は「文字」扱い（白アイコンを暗色にしないため）
-      const nv = mapColor(props[p], KEY_KIND[p] || 'text');
-      if (nv !== props[p]) {
-        patch[p] = nv;
+      const 新しい値 = mapColor(props[渡すもの], KEY_KIND[渡すもの] || 'text');
+      if (新しい値 !== props[渡すもの]) {
+        patch[渡すもの] = 新しい値;
         changed = true;
       }
     }
   }
 
   // trackColor のように、色文字列を値に持つオブジェクト形式の props
-  for (const p in COLOR_MAP_PROPS) {
-    const obj = props[p];
+  for (const 渡すもの in COLOR_MAP_PROPS) {
+    const obj = props[渡すもの];
     if (obj && typeof obj === 'object') {
       let objChanged = false;
       const next = {};
-      for (const k in obj) {
-        const nv = typeof obj[k] === 'string' ? mapColor(obj[k], COLOR_MAP_PROPS[p]) : obj[k];
-        if (nv !== obj[k]) objChanged = true;
-        next[k] = nv;
+      for (const 鍵 in obj) {
+        const 新しい値 = typeof obj[鍵] === 'string' ? mapColor(obj[鍵], COLOR_MAP_PROPS[渡すもの]) : obj[鍵];
+        if (新しい値 !== obj[鍵]) objChanged = true;
+        next[鍵] = 新しい値;
       }
       if (objChanged) {
-        patch[p] = next;
+        patch[渡すもの] = next;
         changed = true;
       }
     }
@@ -382,8 +380,8 @@ function setThemeMode(next) {
   notify();
   try {
     require('@react-native-async-storage/async-storage').default.setItem(STORAGE_KEY, next);
-  } catch (e) {
-    console.warn('[theme] 保存に失敗:', e);
+  } catch (誤り) {
+    console.warn('[theme] 保存に失敗:', 誤り);
   }
 }
 
@@ -412,8 +410,8 @@ function initTheme() {
         notify();
       }
     });
-  } catch (e) {
-    console.warn('[theme] Appearance の取得に失敗:', e);
+  } catch (誤り) {
+    console.warn('[theme] Appearance の取得に失敗:', 誤り);
   }
 
   try {
@@ -435,7 +433,7 @@ function initTheme() {
 /** テーマ変更で再レンダリングさせるためのフック */
 function useThemeMode() {
   const React = require('react');
-  const subscribeRef = React.useCallback((cb) => subscribe(cb), []);
+  const subscribeRef = React.useCallback((呼び戻し) => subscribe(呼び戻し), []);
   const snapshot = React.useCallback(() => mode + ':' + systemScheme, []);
   React.useSyncExternalStore(subscribeRef, snapshot, snapshot);
   return { mode, theme: getEffectiveTheme(), setThemeMode };

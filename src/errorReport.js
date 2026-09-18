@@ -60,7 +60,7 @@ function 行動を残す(名, 中身) {
 
 /** 控えの写しを返す。渡した先で書き換えられても困らないように写す */
 function 行動の控え() {
-  return 行動たち.map((x) => ({ 時刻: x.時刻, 名: x.名, 中身: x.中身 }));
+  return 行動たち.map((行動) => ({ 時刻: 行動.時刻, 名: 行動.名, 中身: 行動.中身 }));
 }
 
 /** 控えを捨てる。検査と、ログアウトのときに使う */
@@ -71,8 +71,8 @@ function 行動を捨てる() {
 // ── 便りを組む ───────────────────────────────────
 
 function 短く(値, 長さ) {
-  const s = null == 値 ? '' : String(値);
-  return s.length > 長さ ? s.slice(0, 長さ) + '…' : s;
+  const 文 = null == 値 ? '' : String(値);
+  return 文.length > 長さ ? 文.slice(0, 長さ) + '…' : 文;
 }
 
 /**
@@ -83,31 +83,31 @@ function 短く(値, 長さ) {
  * @returns {object} そのまま Firestore に入れられる形
  */
 function 不具合の便を組む(誤り, 付帯) {
-  const p = 付帯 || {};
+  const 付帯の中身 = 付帯 || {};
   const 中 = 誤り && 'object' == typeof 誤り ? 誤り : { message: 誤り };
-  const 時刻 = p.時刻 || Date.now();
+  const 時刻 = 付帯の中身.時刻 || Date.now();
   return {
-    id: p.id || 時刻 + '-' + Math.random().toString(36).slice(2, 8),
+    id: 付帯の中身.id || 時刻 + '-' + Math.random().toString(36).slice(2, 8),
     時刻,
-    出どころ: 短く(p.出どころ || '不明', 60),
+    出どころ: 短く(付帯の中身.出どころ || '不明', 60),
     起きたこと: 短く(中.message || (誤り && 誤り.toString ? 誤り.toString() : ''), 文の上限),
     符号: 短く(中.code || '', 60),
     跡: 短く(中.stack || '', 跡の上限),
     行動: 行動の控え(),
-    団体id: 短く(p.団体id || '', 40),
-    役割: 短く(p.役割 || '', 20),
-    版: 短く(p.版 || '', 40),
-    端末: 短く(p.端末 || '', 200),
-    回線: !1 === p.回線 ? 'つながっていない' : 'つながっている',
+    団体id: 短く(付帯の中身.団体id || '', 40),
+    役割: 短く(付帯の中身.役割 || '', 20),
+    版: 短く(付帯の中身.版 || '', 40),
+    端末: 短く(付帯の中身.端末 || '', 200),
+    回線: !1 === 付帯の中身.回線 ? 'つながっていない' : 'つながっている',
     回数: 1,
   };
 }
 
 /** 同じ不具合とみなすか。出どころと起きたことが同じで、間隔が短いもの */
-function 同じ不具合か(a, b, いま) {
-  if (!a || !b) return !1;
-  if (a.出どころ !== b.出どころ || a.起きたこと !== b.起きたこと) return !1;
-  return Math.abs((いま || Date.now()) - a.時刻) < まとめる間隔;
+function 同じ不具合か(甲, 乙, いま) {
+  if (!甲 || !乙) return !1;
+  if (甲.出どころ !== 乙.出どころ || 甲.起きたこと !== 乙.起きたこと) return !1;
+  return Math.abs((いま || Date.now()) - 甲.時刻) < まとめる間隔;
 }
 
 /**
@@ -115,10 +115,10 @@ function 同じ不具合か(a, b, いま) {
  * 上限を超えたら古いほうから捨てる（新しいほうが今の様子に近い）。
  */
 function 貯めに足す(貯め, 便, いま) {
-  const 元 = (Array.isArray(貯め) ? 貯め : []).map((x) => Object.assign({}, x));
-  for (const x of 元) {
-    if (同じ不具合か(x, 便, いま)) {
-      x.回数 = (x.回数 || 1) + 1;
+  const 元 = (Array.isArray(貯め) ? 貯め : []).map((一つ) => Object.assign({}, 一つ));
+  for (const 一つ of 元) {
+    if (同じ不具合か(一つ, 便, いま)) {
+      一つ.回数 = (一つ.回数 || 1) + 1;
       return 元;
     }
   }
@@ -128,7 +128,7 @@ function 貯めに足す(貯め, 便, いま) {
 
 /** 貯めから1件消す。送れたときに使う */
 function 貯めから消す(貯め, id) {
-  return (Array.isArray(貯め) ? 貯め : []).filter((x) => x && x.id !== id);
+  return (Array.isArray(貯め) ? 貯め : []).filter((一つ) => 一つ && 一つ.id !== id);
 }
 
 // ── 送り係 ───────────────────────────────────────
@@ -157,13 +157,13 @@ function 間に合わなければ諦める(約束, ミリ秒, 仕掛け) {
       否(new Error('時間内に送れなかった'));
     }, ミリ秒);
     Promise.resolve(約束).then(
-      (x) => {
+      (返り) => {
         if (済み) return;
-        ((済み = !0), clearTimeout(札), 応(x));
+        ((済み = !0), clearTimeout(札), 応(返り));
       },
-      (e) => {
+      (誤り) => {
         if (済み) return;
-        ((済み = !0), clearTimeout(札), 否(e));
+        ((済み = !0), clearTimeout(札), 否(誤り));
       }
     );
   });
@@ -192,8 +192,8 @@ function 送り係をつくる(道具) {
   /** すでに送ったばかりの不具合か。同じ便りで埋めない */
   function 送ったばかりか(便) {
     const 時 = いま();
-    直近 = 直近.filter((x) => 時 - x.時刻 < まとめる間隔);
-    return 直近.some((x) => 同じ不具合か(x, 便, 時));
+    直近 = 直近.filter((一つ) => 時 - 一つ.時刻 < まとめる間隔);
+    return 直近.some((一つ) => 同じ不具合か(一つ, 便, 時));
   }
 
   /** 1件出す。送れなければ貯める（捨てない） */
@@ -253,25 +253,25 @@ function 送り係をつくる(道具) {
  * 送る形をここに閉じ込めておけば、中の名前を変えても決まりは動かさずに済む。
  */
 function 外向きの形(便) {
-  const b = 便 || {};
+  const 便の中身 = 便 || {};
   return {
-    id: b.id || '',
-    at: b.時刻 || 0,
-    where: b.出どころ || '',
-    message: b.起きたこと || '',
-    code: b.符号 || '',
-    stack: b.跡 || '',
-    trail: (Array.isArray(b.行動) ? b.行動 : []).map((x) => ({
-      at: x.時刻 || 0,
-      name: x.名 || '',
-      detail: x.中身 || '',
+    id: 便の中身.id || '',
+    at: 便の中身.時刻 || 0,
+    where: 便の中身.出どころ || '',
+    message: 便の中身.起きたこと || '',
+    code: 便の中身.符号 || '',
+    stack: 便の中身.跡 || '',
+    trail: (Array.isArray(便の中身.行動) ? 便の中身.行動 : []).map((行動) => ({
+      at: 行動.時刻 || 0,
+      name: 行動.名 || '',
+      detail: 行動.中身 || '',
     })),
-    groupId: b.団体id || '',
-    role: b.役割 || '',
-    version: b.版 || '',
-    device: b.端末 || '',
-    online: 'つながっていない' !== b.回線,
-    count: b.回数 || 1,
+    groupId: 便の中身.団体id || '',
+    role: 便の中身.役割 || '',
+    version: 便の中身.版 || '',
+    device: 便の中身.端末 || '',
+    online: 'つながっていない' !== 便の中身.回線,
+    count: 便の中身.回数 || 1,
   };
 }
 
@@ -291,47 +291,47 @@ function 外向きの形(便) {
  */
 function 便りをまとめる(便たち) {
   const 束 = new Map();
-  for (const b of Array.isArray(便たち) ? 便たち : []) {
-    if (!b) continue;
-    const 鍵 = (b.where || '') + ' ' + (b.message || '');
-    let x = 束.get(鍵);
-    if (!x) {
-      x = {
-        where: b.where || '',
-        message: b.message || '',
-         件数: 0,
+  for (const 便 of Array.isArray(便たち) ? 便たち : []) {
+    if (!便) continue;
+    const 鍵 = (便.where || '') + ' ' + (便.message || '');
+    let まとめ = 束.get(鍵);
+    if (!まとめ) {
+      まとめ = {
+        where: 便.where || '',
+        message: 便.message || '',
+        件数: 0,
         のべ回数: 0,
         団体: new Set(),
         版: new Set(),
         端末: new Set(),
         新しい: 0,
         古い: Infinity,
-        例: b,
+        例: 便,
       };
-      束.set(鍵, x);
+      束.set(鍵, まとめ);
     }
-    x.件数++;
-    x.のべ回数 += b.count || 1;
-    if (b.groupId) x.団体.add(b.groupId);
-    if (b.version) x.版.add(b.version);
-    if (b.device) x.端末.add(b.device);
-    const t = b.at || 0;
-    if (t > x.新しい) {
-      x.新しい = t;
-      x.例 = b; // いちばん新しいものを例にする。いまの姿に近い
+    まとめ.件数++;
+    まとめ.のべ回数 += 便.count || 1;
+    if (便.groupId) まとめ.団体.add(便.groupId);
+    if (便.version) まとめ.版.add(便.version);
+    if (便.device) まとめ.端末.add(便.device);
+    const 時刻 = 便.at || 0;
+    if (時刻 > まとめ.新しい) {
+      まとめ.新しい = 時刻;
+      まとめ.例 = 便; // いちばん新しいものを例にする。いまの姿に近い
     }
-    if (t && t < x.古い) x.古い = t;
+    if (時刻 && 時刻 < まとめ.古い) まとめ.古い = 時刻;
   }
   return [...束.values()]
-    .map((x) =>
-      Object.assign({}, x, {
-        団体: [...x.団体],
-        版: [...x.版],
-        端末: [...x.端末],
-        古い: x.古い === Infinity ? 0 : x.古い,
+    .map((まとめ) =>
+      Object.assign({}, まとめ, {
+        団体: [...まとめ.団体],
+        版: [...まとめ.版],
+        端末: [...まとめ.端末],
+        古い: まとめ.古い === Infinity ? 0 : まとめ.古い,
       })
     )
-    .sort((a, b) => b.のべ回数 - a.のべ回数 || b.新しい - a.新しい);
+    .sort((甲, 乙) => 乙.のべ回数 - 甲.のべ回数 || 乙.新しい - 甲.新しい);
 }
 
 module.exports = {

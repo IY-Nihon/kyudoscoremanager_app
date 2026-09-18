@@ -16,20 +16,20 @@
 
 /** 文字の二つ組に割る。空白と記号は落とす */
 function 二つ組(文) {
-  const s = String(文 || '')
+  const 元 = String(文 || '')
     .replace(/[\s、。「」（）()？?！!・…\-ー～]/g, '')
     .toLowerCase();
   const 出た = [];
-  for (let i = 0; i + 1 < s.length; i++) 出た.push(s.slice(i, i + 2));
+  for (let 位置 = 0; 位置 + 1 < 元.length; 位置++) 出た.push(元.slice(位置, 位置 + 2));
   // 1文字しかないときは、その1文字を組として扱う
-  if (出た.length === 0 && s.length === 1) 出た.push(s);
+  if (出た.length === 0 && 元.length === 1) 出た.push(元);
   return 出た;
 }
 
 /** 数える。同じ組が何度も出たら、その数だけ重くする */
 function 数える(組たち) {
   const 表 = new Map();
-  組たち.forEach((g) => 表.set(g, (表.get(g) || 0) + 1));
+  組たち.forEach((組) => 表.set(組, (表.get(組) || 0) + 1));
   return 表;
 }
 
@@ -40,28 +40,28 @@ function 数える(組たち) {
  * @param {Array<{id: any, 文: string}>} 品たち
  */
 function 引きをつくる(品たち) {
-  const 一覧 = (Array.isArray(品たち) ? 品たち : []).map((x) => ({
-    id: x.id,
-    文: x.文,
-    数: 数える(二つ組(x.文)),
+  const 一覧 = (Array.isArray(品たち) ? 品たち : []).map((文書) => ({
+    id: 文書.id,
+    文: 文書.文,
+    数: 数える(二つ組(文書.文)),
   }));
   // その組が何件の文に出るか
   const 出た件数 = new Map();
-  一覧.forEach((x) => {
-    new Set(x.数.keys()).forEach((g) => 出た件数.set(g, (出た件数.get(g) || 0) + 1));
+  一覧.forEach((文書) => {
+    new Set(文書.数.keys()).forEach((組) => 出た件数.set(組, (出た件数.get(組) || 0) + 1));
   });
   const 全件 = Math.max(1, 一覧.length);
   /** 珍しい組ほど重い */
-  const 重み = (g) => Math.log(1 + 全件 / (1 + (出た件数.get(g) || 0)));
+  const 重み = (組) => Math.log(1 + 全件 / (1 + (出た件数.get(組) || 0)));
 
   // 文ごとの長さ（正規化用）。長い文が有利にならないようにする
-  一覧.forEach((x) => {
+  一覧.forEach((文書) => {
     let 二乗 = 0;
-    x.数.forEach((n, g) => {
-      const w = n * 重み(g);
-      二乗 += w * w;
+    文書.数.forEach((回数, 組) => {
+      const 重さ = 回数 * 重み(組);
+      二乗 += 重さ * 重さ;
     });
-    x.長さ = Math.sqrt(二乗) || 1;
+    文書.長さ = Math.sqrt(二乗) || 1;
   });
 
   return { 一覧, 重み };
@@ -79,25 +79,25 @@ function 近い順(引き, 聞かれた文, 注文) {
   const 問 = 数える(二つ組(聞かれた文));
   if (問.size === 0) return [];
   let 問の長さ = 0;
-  問.forEach((n, g) => {
-    const w = n * 引き.重み(g);
-    問の長さ += w * w;
+  問.forEach((回数, 組) => {
+    const 重さ = 回数 * 引き.重み(組);
+    問の長さ += 重さ * 重さ;
   });
   問の長さ = Math.sqrt(問の長さ) || 1;
 
   const 出た = 引き.一覧
-    .map((x) => {
+    .map((文書) => {
       let 内積 = 0;
-      問.forEach((n, g) => {
-        const 相手 = x.数.get(g);
+      問.forEach((回数, 組) => {
+        const 相手 = 文書.数.get(組);
         if (!相手) return;
-        const w = 引き.重み(g);
-        内積 += n * w * (相手 * w);
+        const 重さ = 引き.重み(組);
+        内積 += 回数 * 重さ * (相手 * 重さ);
       });
-      return { id: x.id, 文: x.文, 近さ: 内積 / (問の長さ * x.長さ) };
+      return { id: 文書.id, 文: 文書.文, 近さ: 内積 / (問の長さ * 文書.長さ) };
     })
-    .filter((x) => x.近さ > (Number.isFinite(設定.下限) ? 設定.下限 : 0))
-    .sort((a, b) => b.近さ - a.近さ);
+    .filter((候補) => 候補.近さ > (Number.isFinite(設定.下限) ? 設定.下限 : 0))
+    .sort((甲, 乙) => 乙.近さ - 甲.近さ);
 
   return Number.isFinite(設定.件数) && 設定.件数 > 0 ? 出た.slice(0, 設定.件数) : 出た;
 }

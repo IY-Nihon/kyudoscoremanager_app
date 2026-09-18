@@ -26,8 +26,8 @@
 Object.defineProperty(exports, '__esModule', { value: true });
 
 // XML の特殊文字と、Excelが扱えない制御文字を除去・置換する
-function esc(v) {
-  return String(v)
+function esc(値) {
+  return String(値)
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -37,24 +37,24 @@ function esc(v) {
 
 // 0始まりの列番号を Excel の列名（A, B, ... Z, AA ...）へ変換する
 function colName(index) {
-  let n = index + 1;
-  let s = '';
-  while (n > 0) {
-    const m = (n - 1) % 26;
-    s = String.fromCharCode(65 + m) + s;
-    n = Math.floor((n - m) / 26);
+  let 残り = index + 1;
+  let 列の字 = '';
+  while (残り > 0) {
+    const 余り = (残り - 1) % 26;
+    列の字 = String.fromCharCode(65 + 余り) + 列の字;
+    残り = Math.floor((残り - 余り) / 26);
   }
-  return s;
+  return 列の字;
 }
 
 /** 1セル分の XML。数値はそのまま、それ以外は inlineStr で出す */
 function cellXml(ref, value, styleId) {
-  const st = styleId ? ` s="${styleId}"` : '';
-  if (value == null || value === '') return `<c r="${ref}"${st}/>`;
+  const 見た目の属性 = styleId ? ` s="${styleId}"` : '';
+  if (value == null || value === '') return `<c r="${ref}"${見た目の属性}/>`;
   if (typeof value === 'number' && isFinite(value)) {
-    return `<c r="${ref}"${st}><v>${value}</v></c>`;
+    return `<c r="${ref}"${見た目の属性}><v>${value}</v></c>`;
   }
-  return `<c r="${ref}"${st} t="inlineStr"><is><t xml:space="preserve">${esc(value)}</t></is></c>`;
+  return `<c r="${ref}"${見た目の属性} t="inlineStr"><is><t xml:space="preserve">${esc(value)}</t></is></c>`;
 }
 
 /**
@@ -71,26 +71,26 @@ function シートXML(中身, 先頭か) {
   const lastRow = rows.length + 1;
 
   const cols = headers
-    .map((h, i) => {
-      const w = widths && widths[i] ? widths[i] : Math.max(10, String(h).length * 2 + 2);
-      return `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`;
+    .map((見出し, 番) => {
+      const 幅 = widths && widths[番] ? widths[番] : Math.max(10, String(見出し).length * 2 + 2);
+      return `<col min="${番 + 1}" max="${番 + 1}" width="${幅}" customWidth="1"/>`;
     })
     .join('');
 
   // 見出し行（styleId=1: 太字＋背景＋罫線＋中央揃え）
-  const headerCells = headers.map((h, i) => cellXml(colName(i) + '1', h, 1)).join('');
+  const headerCells = headers.map((見出し, 番) => cellXml(colName(番) + '1', 見出し, 1)).join('');
   const headerXml = `<row r="1" ht="20" customHeight="1">${headerCells}</row>`;
 
   // 列ごとの見た目。'率' を指定した列は 25 と入れて「25.0%」と見える
   const 見た目 = 中身.formats || [];
-  const 列の型 = (i) => (見た目[i] === '率' ? 2 : 0);
+  const 列の型 = (番) => (見た目[番] === '率' ? 2 : 0);
 
   const bodyXml = rows
-    .map((r, ri) => {
-      const cells = (r || [])
-        .map((v, ci) => cellXml(colName(ci) + (ri + 2), v, 列の型(ci)))
+    .map((行, 行の番) => {
+      const cells = (行 || [])
+        .map((値, 列の番) => cellXml(colName(列の番) + (行の番 + 2), 値, 列の型(列の番)))
         .join('');
-      return `<row r="${ri + 2}">${cells}</row>`;
+      return `<row r="${行の番 + 2}">${cells}</row>`;
     })
     .join('');
 
@@ -127,27 +127,29 @@ function ブックを組む(シートたち) {
 
   // シート名は31字まで。重なると Excel が開けないので、後ろに番号を足して分ける
   const 使った = new Set();
-  const 名前たち = 束.map((x, i) => {
-    let n = String(x.name || '').replace(使えない字, '_').slice(0, 31);
-    if (!n) n = `シート${i + 1}`;
-    let 候補 = n;
-    let k = 2;
-    while (使った.has(候補)) 候補 = n.slice(0, 27) + '(' + k++ + ')';
+  const 名前たち = 束.map((シート, 番) => {
+    let 名 = String(シート.name || '')
+      .replace(使えない字, '_')
+      .slice(0, 31);
+    if (!名) 名 = `シート${番 + 1}`;
+    let 候補 = 名;
+    let 枝番 = 2;
+    while (使った.has(候補)) 候補 = 名.slice(0, 27) + '(' + 枝番++ + ')';
     使った.add(候補);
     return 候補;
   });
 
   const sheetsXml = 名前たち
-    .map((n, i) => `<sheet name="${esc(n)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`)
+    .map((名, 番) => `<sheet name="${esc(名)}" sheetId="${番 + 1}" r:id="rId${番 + 1}"/>`)
     .join('');
 
   const definedNames = 束
-    .map((x, i) => {
-      const lastCol = colName(Math.max((x.headers || []).length - 1, 0));
-      const lastRow = (x.rows || []).length + 1;
+    .map((シート, 番) => {
+      const lastCol = colName(Math.max((シート.headers || []).length - 1, 0));
+      const lastRow = (シート.rows || []).length + 1;
       return (
-        `<definedName name="_xlnm._FilterDatabase" localSheetId="${i}" hidden="1">` +
-        `'${esc(名前たち[i])}'!$A$1:$${lastCol}$${lastRow}</definedName>`
+        `<definedName name="_xlnm._FilterDatabase" localSheetId="${番}" hidden="1">` +
+        `'${esc(名前たち[番])}'!$A$1:$${lastCol}$${lastRow}</definedName>`
       );
     })
     .join('');
@@ -192,8 +194,8 @@ function ブックを組む(シートたち) {
     `<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>` +
     束
       .map(
-        (x, i) =>
-          `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ` +
+        (_, 番) =>
+          `<Override PartName="/xl/worksheets/sheet${番 + 1}.xml" ` +
           `ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`
       )
       .join('') +
@@ -212,10 +214,10 @@ function ブックを組む(シートたち) {
     `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
     束
       .map(
-        (x, i) =>
-          `<Relationship Id="rId${i + 1}" ` +
+        (_, 番) =>
+          `<Relationship Id="rId${番 + 1}" ` +
           `Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" ` +
-          `Target="worksheets/sheet${i + 1}.xml"/>`
+          `Target="worksheets/sheet${番 + 1}.xml"/>`
       )
       .join('') +
     `<Relationship Id="rId${束.length + 1}" ` +
@@ -229,8 +231,8 @@ function ブックを組む(シートたち) {
     'xl/_rels/workbook.xml.rels': wbRels,
     'xl/styles.xml': styles,
   };
-  束.forEach((x, i) => {
-    出[`xl/worksheets/sheet${i + 1}.xml`] = シートXML(x, i === 0);
+  束.forEach((シート, 番) => {
+    出[`xl/worksheets/sheet${番 + 1}.xml`] = シートXML(シート, 番 === 0);
   });
   return 出;
 }
@@ -249,9 +251,7 @@ async function exportXlsxSheets(シートたち, fileName) {
   for (const [道, 文] of Object.entries(中身)) 袋[道] = strToU8(文);
   const zipped = zipSync(袋, { level: 6 });
   saveAs(
-    new Blob([zipped], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    }),
+    new Blob([zipped], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
     fileName
   );
 }

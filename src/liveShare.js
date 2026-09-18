@@ -90,7 +90,7 @@ const 期限の選択肢 = [
 const 練習の長さ = 12 * 60 * 60 * 1000;
 
 /** 既定の持ち（ミリ秒） */
-const 期限の既定 = (期限の選択肢.find((x) => x.既定) || { 値: 0 }).値;
+const 期限の既定 = (期限の選択肢.find((選択肢) => 選択肢.既定) || { 値: 0 }).値;
 
 /**
  * 期限の時刻を出す。持ちが0や読めない値なら null（期限なし）。
@@ -100,10 +100,10 @@ const 期限の既定 = (期限の選択肢.find((x) => x.既定) || { 値: 0 })
  * @returns {number|null}
  */
 function 期限の時刻(持ち, 今) {
-  const m = 'number' == typeof 持ち && isFinite(持ち) && 持ち > 0 ? 持ち : 0;
-  if (!m) return null;
-  const t = 'number' == typeof 今 ? 今 : Date.now();
-  return t + m;
+  const 分 = 'number' == typeof 持ち && isFinite(持ち) && 持ち > 0 ? 持ち : 0;
+  if (!分) return null;
+  const 今の時刻 = 'number' == typeof 今 ? 今 : Date.now();
+  return 今の時刻 + 分;
 }
 
 /**
@@ -153,8 +153,8 @@ const 帯に出す残り = 60 * 60 * 1000;
  */
 function 期限の短い文言(期限, 今) {
   if ('number' != typeof 期限 || !isFinite(期限) || 期限 <= 0) return null;
-  const t = 'number' == typeof 今 ? 今 : Date.now();
-  const 残り = 期限 - t;
+  const 今の時刻 = 'number' == typeof 今 ? 今 : Date.now();
+  const 残り = 期限 - 今の時刻;
   if (残り <= 0 || 残り > 帯に出す残り) return null;
   const 分 = Math.ceil(残り / 60000);
   return `あと${分}分`;
@@ -177,8 +177,8 @@ function 期限の短い文言(期限, 今) {
  */
 function 次に数え直すまで(期限, 今) {
   if ('number' != typeof 期限 || !isFinite(期限) || 期限 <= 0) return null;
-  const t = 'number' == typeof 今 ? 今 : Date.now();
-  const 残り = 期限 - t;
+  const 今の時刻 = 'number' == typeof 今 ? 今 : Date.now();
+  const 残り = 期限 - 今の時刻;
   if (残り <= 0) return null;
   // 出る少しあとに起きる（ちょうどだと、起きた時点でまだ出ない見当になる）
   if (残り > 帯に出す残り) return 残り - 帯に出す残り + 1000;
@@ -187,9 +187,9 @@ function 次に数え直すまで(期限, 今) {
 
 function 期限の文言(期限, 今) {
   if ('number' != typeof 期限 || !isFinite(期限) || 期限 <= 0) return null;
-  const t = 'number' == typeof 今 ? 今 : Date.now();
-  if (t >= 期限) return '期限切れ';
-  const 残り = 期限 - t;
+  const 今の時刻 = 'number' == typeof 今 ? 今 : Date.now();
+  if (今の時刻 >= 期限) return '期限切れ';
+  const 残り = 期限 - 今の時刻;
   const 時 = Math.floor(残り / 3600000);
   if (時 < 1) return `あと${Math.max(1, Math.floor(残り / 60000))}分で期限切れ`;
   if (時 < 24) return `あと${時}時間で期限切れ`;
@@ -198,16 +198,16 @@ function 期限の文言(期限, 今) {
 
 /** 種を作る。役ごとに別々に作ること（上の説明を参照） */
 function 共有の種を作る(乱数源) {
-  const c = 乱数源 || (typeof globalThis !== 'undefined' ? globalThis.crypto : undefined);
-  if (c && typeof c.randomUUID === 'function') return c.randomUUID().replace(/-/g, '');
-  if (c && typeof c.getRandomValues === 'function') {
+  const 乱数 = 乱数源 || (typeof globalThis !== 'undefined' ? globalThis.crypto : undefined);
+  if (乱数 && typeof 乱数.randomUUID === 'function') return 乱数.randomUUID().replace(/-/g, '');
+  if (乱数 && typeof 乱数.getRandomValues === 'function') {
     const 桶 = new Uint8Array(16);
-    c.getRandomValues(桶);
-    return [...桶].map((x) => x.toString(16).padStart(2, '0')).join('');
+    乱数.getRandomValues(桶);
+    return [...桶].map((一字) => 一字.toString(16).padStart(2, '0')).join('');
   }
-  let s = '';
-  while (s.length < 32) s += Math.random().toString(36).slice(2);
-  return s.slice(0, 32);
+  let 文 = '';
+  while (文.length < 32) 文 += Math.random().toString(36).slice(2);
+  return 文.slice(0, 32);
 }
 
 /**
@@ -223,16 +223,16 @@ function 共有の種を作る(乱数源) {
  */
 function 枝を導く(種, 合言葉) {
   const 元 = String(種 == null ? '' : 種) + '\n' + String(合言葉 == null ? '' : 合言葉);
-  let b = ハッシュ.要約のバイト列(元);
-  for (let i = 1; i < 枝の繰り返し; i++) b = ハッシュ.バイト列から(b);
-  return ハッシュ.十六進(b);
+  let バイト列 = ハッシュ.要約のバイト列(元);
+  for (let 回 = 1; 回 < 枝の繰り返し; 回++) バイト列 = ハッシュ.バイト列から(バイト列);
+  return ハッシュ.十六進(バイト列);
 }
 
 /** 合言葉として受け付けられるか。null なら差し支えなし、文字列なら断る理由 */
 function 合言葉の難点(合言葉) {
-  const s = String(合言葉 == null ? '' : 合言葉);
-  if (s.length === 0) return '合言葉を入力してください。';
-  if (s.length < 合言葉の最短) return `合言葉は${合言葉の最短}文字以上にしてください。`;
+  const 文 = String(合言葉 == null ? '' : 合言葉);
+  if (文.length === 0) return '合言葉を入力してください。';
+  if (文.length < 合言葉の最短) return `合言葉は${合言葉の最短}文字以上にしてください。`;
   return null;
 }
 
@@ -242,29 +242,29 @@ const 字 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 
 function 詰める(バイト) {
   let 出 = '';
-  for (let i = 0; i < バイト.length; i += 3) {
-    const a = バイト[i];
-    const b = i + 1 < バイト.length ? バイト[i + 1] : -1;
-    const c = i + 2 < バイト.length ? バイト[i + 2] : -1;
-    出 += 字[a >> 2];
-    出 += 字[((a & 3) << 4) | (b < 0 ? 0 : b >> 4)];
-    if (b < 0) break;
-    出 += 字[((b & 15) << 2) | (c < 0 ? 0 : c >> 6)];
-    if (c < 0) break;
-    出 += 字[c & 63];
+  for (let 位置 = 0; 位置 < バイト.length; 位置 += 3) {
+    const 一つ目 = バイト[位置];
+    const 二つ目 = 位置 + 1 < バイト.length ? バイト[位置 + 1] : -1;
+    const 三つ目 = 位置 + 2 < バイト.length ? バイト[位置 + 2] : -1;
+    出 += 字[一つ目 >> 2];
+    出 += 字[((一つ目 & 3) << 4) | (二つ目 < 0 ? 0 : 二つ目 >> 4)];
+    if (二つ目 < 0) break;
+    出 += 字[((二つ目 & 15) << 2) | (三つ目 < 0 ? 0 : 三つ目 >> 6)];
+    if (三つ目 < 0) break;
+    出 += 字[三つ目 & 63];
   }
   return 出;
 }
 
 function ほどく(文字列) {
-  const s = String(文字列 || '');
+  const 文 = String(文字列 || '');
   const 出 = [];
   let 溜め = 0;
   let 桁 = 0;
-  for (const ch of s) {
-    const v = 字.indexOf(ch);
-    if (v < 0) return null; // 知らない字が混じっていたら、荷ではない
-    ((溜め = (溜め << 6) | v), (桁 += 6));
+  for (const 一字 of 文) {
+    const 値 = 字.indexOf(一字);
+    if (値 < 0) return null; // 知らない字が混じっていたら、荷ではない
+    ((溜め = (溜め << 6) | 値), (桁 += 6));
     if (桁 >= 8) ((桁 -= 8), 出.push((溜め >> 桁) & 255));
   }
   return 出;
@@ -273,23 +273,25 @@ function ほどく(文字列) {
 /** バイト列を UTF-8 の文字列として読む */
 function 文字列にする(バイト) {
   let 出 = '';
-  for (let i = 0; i < バイト.length; ) {
-    const b = バイト[i];
-    if (b < 0x80) ((出 += String.fromCharCode(b)), i++);
-    else if (b < 0xe0) ((出 += String.fromCharCode(((b & 31) << 6) | (バイト[i + 1] & 63))), (i += 2));
-    else if (b < 0xf0)
+  for (let 位置 = 0; 位置 < バイト.length;) {
+    const 先頭 = バイト[位置];
+    if (先頭 < 0x80) ((出 += String.fromCharCode(先頭)), 位置++);
+    else if (先頭 < 0xe0)
+      ((出 += String.fromCharCode(((先頭 & 31) << 6) | (バイト[位置 + 1] & 63))), (位置 += 2));
+    else if (先頭 < 0xf0)
       ((出 += String.fromCharCode(
-        ((b & 15) << 12) | ((バイト[i + 1] & 63) << 6) | (バイト[i + 2] & 63)
+        ((先頭 & 15) << 12) | ((バイト[位置 + 1] & 63) << 6) | (バイト[位置 + 2] & 63)
       )),
-        (i += 3));
+        (位置 += 3));
     else {
-      const c =
-        ((b & 7) << 18) |
-        ((バイト[i + 1] & 63) << 12) |
-        ((バイト[i + 2] & 63) << 6) |
-        (バイト[i + 3] & 63);
-      const x = c - 0x10000;
-      ((出 += String.fromCharCode(0xd800 + (x >> 10), 0xdc00 + (x & 1023))), (i += 4));
+      const 符号 =
+        ((先頭 & 7) << 18) |
+        ((バイト[位置 + 1] & 63) << 12) |
+        ((バイト[位置 + 2] & 63) << 6) |
+        (バイト[位置 + 3] & 63);
+      const ずらした符号 = 符号 - 0x10000;
+      ((出 += String.fromCharCode(0xd800 + (ずらした符号 >> 10), 0xdc00 + (ずらした符号 & 1023))),
+        (位置 += 4));
     }
   }
   return 出;
@@ -353,10 +355,10 @@ function リンクを作る(配り元, 荷) {
 
 /** URL から荷の文字列を取り出す。無ければ null */
 function URLから荷を取る(URL文字列) {
-  const s = String(URL文字列 || '');
-  const 場所 = s.indexOf('#');
+  const 文 = String(URL文字列 || '');
+  const 場所 = 文.indexOf('#');
   if (場所 < 0) return null;
-  for (const 組 of s.slice(場所 + 1).split('&')) {
+  for (const 組 of 文.slice(場所 + 1).split('&')) {
     const 等 = 組.indexOf('=');
     if (等 < 0) continue;
     // encodeURIComponent された「共有」も受ける

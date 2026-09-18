@@ -43,9 +43,9 @@ function その射の部員id(射手, 射目) {
   // 位置を取りこぼすと、交代後の射を交代前の人に付けてしまう
   const 位置たち = new Set();
   for (const 元 of [交代, 交代のid]) {
-    if (元 && typeof 元 === 'object') for (const k of Object.keys(元)) 位置たち.add(Number(k));
+    if (元 && typeof 元 === 'object') for (const 鍵 of Object.keys(元)) 位置たち.add(Number(鍵));
   }
-  const 順 = [...位置たち].filter((n) => Number.isFinite(n)).sort((a, b) => a - b);
+  const 順 = [...位置たち].filter((数) => Number.isFinite(数)).sort((甲, 乙) => 甲 - 乙);
   for (const 位置 of 順) {
     if (位置 > 射目) break;
     id = (交代のid && 交代のid[位置]) || undefined;
@@ -71,8 +71,8 @@ function その射の名前(射手, 射目) {
   if (交代 && typeof 交代 === 'object') {
     const 順 = Object.keys(交代)
       .map(Number)
-      .filter((n) => Number.isFinite(n))
-      .sort((a, b) => a - b);
+      .filter((数) => Number.isFinite(数))
+      .sort((甲, 乙) => 甲 - 乙);
     for (const 位置 of 順) {
       if (位置 > 射目) break;
       名前 = 交代[位置] || '';
@@ -171,13 +171,13 @@ function 一手の呼び名(中り) {
  * @returns {Array<{型:string, 中り:number, 呼び名:string, 回数:number, 割合:number, 要点:string|null}>}
  */
 function 一手の型を並べる(一手の型) {
-  const 総数 = Object.values(一手の型 || {}).reduce((a, b) => a + (b || 0), 0);
+  const 総数 = Object.values(一手の型 || {}).reduce((計, 一つ) => 計 + (一つ || 0), 0);
   return ['○○', '×○', '○×', '××']
     .filter((鍵) => (一手の型 || {})[鍵] > 0)
     .map((鍵) => {
       const 印たち = 鍵.split('');
-      const 中り = 印たち.filter((x) => x === '○').length;
-      const 抜いた矢 = 印たち.map((x, i) => (x === '×' ? 一手の矢の名前[i] : null)).filter(Boolean);
+      const 中り = 印たち.filter((一つ) => 一つ === '○').length;
+      const 抜いた矢 = 印たち.map((印, 番) => (印 === '×' ? 一手の矢の名前[番] : null)).filter(Boolean);
       return {
         型: 鍵,
         中り,
@@ -205,9 +205,9 @@ function 一手の型を並べる(一手の型) {
 function 型を並べる(型) {
   const 一覧 = Object.keys(型 || {}).map((鍵) => {
     const 印たち = String(鍵).split('');
-    const 中り = 印たち.filter((x) => x === '○').length;
-    const 抜いた矢 = 印たち.map((x, i) => (x === '×' ? 矢の名前[i] : null)).filter(Boolean);
-    const 中った矢 = 印たち.map((x, i) => (x === '○' ? 矢の名前[i] : null)).filter(Boolean);
+    const 中り = 印たち.filter((一つ) => 一つ === '○').length;
+    const 抜いた矢 = 印たち.map((印, 番) => (印 === '×' ? 矢の名前[番] : null)).filter(Boolean);
+    const 中った矢 = 印たち.map((印, 番) => (印 === '○' ? 矢の名前[番] : null)).filter(Boolean);
     return {
       型: 鍵,
       中り,
@@ -229,12 +229,12 @@ function 型を並べる(型) {
   // 割合は「同じ中り数の中で」出す。皆中と三中を混ぜて割っても、
   // 「三中のうちどこで抜いたか」という問いの答えにならない
   const 中り数ごとの合計 = {};
-  for (const x of 一覧) 中り数ごとの合計[x.中り] = (中り数ごとの合計[x.中り] || 0) + x.回数;
-  for (const x of 一覧) {
-    const 母数 = 中り数ごとの合計[x.中り] || 0;
-    x.割合 = 母数 > 0 ? (x.回数 / 母数) * 100 : 0;
+  for (const 一つ of 一覧) 中り数ごとの合計[一つ.中り] = (中り数ごとの合計[一つ.中り] || 0) + 一つ.回数;
+  for (const 一つ of 一覧) {
+    const 母数 = 中り数ごとの合計[一つ.中り] || 0;
+    一つ.割合 = 母数 > 0 ? (一つ.回数 / 母数) * 100 : 0;
   }
-  return 一覧.sort((a, b) => b.中り - a.中り || b.回数 - a.回数 || (a.型 < b.型 ? -1 : 1));
+  return 一覧.sort((甲, 乙) => 乙.中り - 甲.中り || 乙.回数 - 甲.回数 || (甲.型 < 乙.型 ? -1 : 1));
 }
 
 /**
@@ -292,8 +292,8 @@ function 成績を数える(記録たち, 部員id) {
       for (let 立ち = 0; 立ち < 立ち数; 立ち++) {
         let そろった = true;
         let 中り = 0;
-        for (let i = 0; i < 立ちの射数; i++) {
-          const 射目 = 立ち * 立ちの射数 + i;
+        for (let 番 = 0; 番 < 立ちの射数; 番++) {
+          const 射目 = 立ち * 立ちの射数 + 番;
           const 印 = 射手.marks[射目];
           if (!引いた射か(印) || !その人の射か(射手, 射目, 部員id)) {
             そろった = false;
@@ -305,7 +305,7 @@ function 成績を数える(記録たち, 部員id) {
         {
           // そろった立ちだけ、印をそのまま並べて鍵にする
           let 鍵 = '';
-          for (let i = 0; i < 立ちの射数; i++) 鍵 += 射手.marks[立ち * 立ちの射数 + i];
+          for (let 番 = 0; 番 < 立ちの射数; 番++) 鍵 += 射手.marks[立ち * 立ちの射数 + 番];
           型[鍵] = (型[鍵] || 0) + 1;
         }
         if (中り === 4) patterns.kaichu++;
