@@ -38,13 +38,13 @@ const チームの色たち = ['#FF2D55', '#248A3D', '#C93400', '#AF52DE', '#056
  * 「昨日は赤だったのに今日は青」ということが起きない。
  */
 function チームの色(名前) {
-  const s = String(名前 == null ? '' : 名前).trim();
-  if (!s) return null;
-  let h = 0;
-  for (let i = 0; i < s.length; i++) {
-    h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  const 文 = String(名前 == null ? '' : 名前).trim();
+  if (!文) return null;
+  let 値 = 0;
+  for (let 位置 = 0; 位置 < 文.length; 位置++) {
+    値 = (値 * 31 + 文.charCodeAt(位置)) >>> 0;
   }
-  return チームの色たち[h % チームの色たち.length];
+  return チームの色たち[値 % チームの色たち.length];
 }
 
 /**
@@ -72,18 +72,18 @@ function 区切りのチーム名(射手) {
 function チームを割り当てる(射手たち) {
   const 並び = Array.isArray(射手たち) ? 射手たち : [];
   let いまのチーム = 自団体;
-  return 並び.map((x) => {
-    if (!x) return { id: null, チーム: null, 色: null };
-    if (x.isSeparator) {
+  return 並び.map((一人) => {
+    if (!一人) return { id: null, チーム: null, 色: null };
+    if (一人.isSeparator) {
       // 区切り自身はチームに属さない。ただしここから先の持ち主が変わる
       // （並びの上では後ろ、画面では区切りより左）。
       // 名前の付いていない区切り（ただの間隔）は、持ち主を変えない
-      const 名 = 区切りのチーム名(x);
+      const 名 = 区切りのチーム名(一人);
       if (名) いまのチーム = 名;
-      return { id: x.id, チーム: null, 色: null };
+      return { id: 一人.id, チーム: null, 色: null };
     }
-    if (x.isTotalCalculator) return { id: x.id, チーム: null, 色: null };
-    return { id: x.id, チーム: いまのチーム, 色: いまのチーム ? チームの色(いまのチーム) : null };
+    if (一人.isTotalCalculator) return { id: 一人.id, チーム: null, 色: null };
+    return { id: 一人.id, チーム: いまのチーム, 色: いまのチーム ? チームの色(いまのチーム) : null };
   });
 }
 
@@ -93,8 +93,8 @@ function チームを割り当てる(射手たち) {
  */
 function 出てくるチーム(射手たち) {
   const 出 = [];
-  for (const x of Array.isArray(射手たち) ? 射手たち : []) {
-    const 名 = 区切りのチーム名(x);
+  for (const 一人 of Array.isArray(射手たち) ? 射手たち : []) {
+    const 名 = 区切りのチーム名(一人);
     if (名 && !出.includes(名)) 出.push(名);
   }
   return 出;
@@ -112,10 +112,10 @@ function 出てくるチーム(射手たち) {
  * @param {{footerHeight:number}} 寸法 UIConfig
  */
 function 区切りの名の字(倍率, 寸法) {
-  const z = Number(倍率) > 0 ? Number(倍率) : 1;
-  const fontSize = 11 * z;
+  const 倍率の数 = Number(倍率) > 0 ? Number(倍率) : 1;
+  const fontSize = 11 * 倍率の数;
   const lineHeight = Math.round(fontSize * 1.3);
-  const 高さ = (Number(寸法 && 寸法.footerHeight) || 95) * z - 4;
+  const 高さ = (Number(寸法 && 寸法.footerHeight) || 95) * 倍率の数 - 4;
   return { fontSize, lineHeight, numberOfLines: Math.max(3, Math.floor(高さ / lineHeight)) };
 }
 
@@ -166,18 +166,18 @@ function 合計が受け持つ射手(射手たち, 位置) {
   const 自分 = 並び[位置];
   if (!自分 || !(自分.isTotalCalculator || 自分.isSeparator)) return [];
   const 集めた = [];
-  for (let i = 位置 - 1; i >= 0; i--) {
-    const x = 並び[i];
-    if (!x) break;
+  for (let 番 = 位置 - 1; 番 >= 0; 番--) {
+    const 一人 = 並び[番];
+    if (!一人) break;
     // 間隔は、総計でも越えない。立ちの切れ目そのものなので、
     // 越えて足すと別々の記録が混ざる
-    if (x.isSeparator) break;
+    if (一人.isSeparator) break;
     // 手前の計は、総計だけ飛び越える（間隔の受け持ちは、ふつうの計と同じ）
-    if (x.isTotalCalculator) {
+    if (一人.isTotalCalculator) {
       if (自分.isTotalCalculator && 自分.またぐ合計) continue;
       break;
     }
-    集めた.push(x);
+    集めた.push(一人);
   }
   return 集めた;
 }
@@ -195,7 +195,7 @@ function 合計を数える(射手たち, 位置) {
   const 並び = Array.isArray(射手たち) ? 射手たち : [];
   if (!並び[位置] || !並び[位置].isTotalCalculator) return 0;
   return 合計が受け持つ射手(射手たち, 位置).reduce(
-    (数, x) => 数 + (x.marks || []).filter((m) => '○' === m).length,
+    (数, 一人) => 数 + (一人.marks || []).filter((印) => '○' === 印).length,
     0
   );
 }

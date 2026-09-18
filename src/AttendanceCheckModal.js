@@ -18,8 +18,8 @@ const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
   React.useEffect(() => {
     if (visible) {
       const initial = {};
-      members.forEach((m) => {
-        initial[m.id] = 'absent';
+      members.forEach((部員) => {
+        initial[部員.id] = 'absent';
       });
       // 立っていた人を出席にする。途中交代で入った人も、実際に引いているので
       // 出席にする（archer.memberId には出てこず substitutionIds にだけ出てくる）
@@ -47,68 +47,74 @@ const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
       </RN.TouchableOpacity>
     );
   };
-  const sortMembers = (a, b) => {
+  const sortMembers = (甲, 乙) => {
     // 1. 学年順 (1→4年、卒業生は末尾)
-    const gradeA = a.grade === undefined || a.grade === null ? 99 : Number(a.grade);
-    const gradeB = b.grade === undefined || b.grade === null ? 99 : Number(b.grade);
-    const gA = gradeA === 0 ? 99 : gradeA;
-    const gB = gradeB === 0 ? 99 : gradeB;
-    if (gA !== gB) return gA - gB;
+    const gradeA = 甲.grade === undefined || 甲.grade === null ? 99 : Number(甲.grade);
+    const gradeB = 乙.grade === undefined || 乙.grade === null ? 99 : Number(乙.grade);
+    const 甲の順 = gradeA === 0 ? 99 : gradeA;
+    const 乙の順 = gradeB === 0 ? 99 : gradeB;
+    if (甲の順 !== 乙の順) return 甲の順 - 乙の順;
     // 2. 男女順 (男子→女子→未設定)
     const genderOrder = (g) => {
-      const s = (g || '').trim();
-      if (s === '男子') return 0;
-      if (s === '女子') return 1;
+      const 整えた = (g || '').trim();
+      if (整えた === '男子') return 0;
+      if (整えた === '女子') return 1;
       return 2;
     };
-    const genderDiff = genderOrder(a.gender) - genderOrder(b.gender);
+    const genderDiff = genderOrder(甲.gender) - genderOrder(乙.gender);
     if (genderDiff !== 0) return genderDiff;
     // 3. あいうえお順
-    return (a.name || '').localeCompare(b.name || '', 'ja');
+    return (甲.name || '').localeCompare(乙.name || '', 'ja');
   };
-  const attendingMembers = members.filter((m) => attendance[m.id] !== 'absent').sort(sortMembers);
-  const absentMembers = members.filter((m) => attendance[m.id] === 'absent').sort(sortMembers);
-  const renderMemberItem = (m) => (
-    <RN.View key={m.id} style={styles.memberRow}>
+  const attendingMembers = members.filter((部員) => attendance[部員.id] !== 'absent').sort(sortMembers);
+  const absentMembers = members.filter((部員) => attendance[部員.id] === 'absent').sort(sortMembers);
+  const renderMemberItem = (部員) => (
+    <RN.View key={部員.id} style={styles.memberRow}>
       <RN.View style={styles.memberNameContainer}>
         <RN.View style={styles.nameRow}>
           <RN.Text
             style={[
               styles.genderDot,
-              { color: m.gender === '男子' ? '#007AFF' : m.gender === '女子' ? '#FF2D55' : '#8E8E93' },
+              { color: 部員.gender === '男子' ? '#007AFF' : 部員.gender === '女子' ? '#FF2D55' : '#8E8E93' },
             ]}
           >
             ●
           </RN.Text>
-          <RN.Text style={styles.memberName}>{m.name}</RN.Text>
+          <RN.Text style={styles.memberName}>{部員.name}</RN.Text>
         </RN.View>
         <RN.Text style={styles.memberSub}>
-          {m.termKi ? `${m.termKi}期 / ` : ''}
-          {m.gender}
+          {部員.termKi ? `${部員.termKi}期 / ` : ''}
+          {部員.gender}
           {' / '}
-          {m.grade > 0 ? `${m.grade}年` : '卒業生'}
+          {部員.grade > 0 ? `${部員.grade}年` : '卒業生'}
         </RN.Text>
       </RN.View>
       <RN.View style={styles.statusGroup}>
         <StatusButton
-          memberId={m.id}
+          memberId={部員.id}
           status="present"
-          current={attendance[m.id]}
+          current={attendance[部員.id]}
           label="出席"
           color="#34C759"
         />
-        <StatusButton memberId={m.id} status="late" current={attendance[m.id]} label="遅刻" color="#FF9500" />
         <StatusButton
-          memberId={m.id}
+          memberId={部員.id}
+          status="late"
+          current={attendance[部員.id]}
+          label="遅刻"
+          color="#FF9500"
+        />
+        <StatusButton
+          memberId={部員.id}
           status="early"
-          current={attendance[m.id]}
+          current={attendance[部員.id]}
           label="早退"
           color="#5856D6"
         />
         <StatusButton
-          memberId={m.id}
+          memberId={部員.id}
           status="absent"
-          current={attendance[m.id]}
+          current={attendance[部員.id]}
           label="欠席"
           color="#8E8E93"
         />
