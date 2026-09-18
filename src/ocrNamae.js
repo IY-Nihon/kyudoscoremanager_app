@@ -26,40 +26,40 @@
 // 氏名の正規化・分割（姓／名）
 // ─────────────────────────────────────────
 function splitName(fullName) {
-  if (!fullName) return { sei: "", mei: "" };
+  if (!fullName) return { sei: '', mei: '' };
   const parts = fullName.trim().split(/[\s\u3000]+/);
-  return { sei: parts[0] || "", mei: parts.length > 1 ? parts.slice(1).join("") : "" };
+  return { sei: parts[0] || '', mei: parts.length > 1 ? parts.slice(1).join('') : '' };
 }
 
 // 異体字正規化は行わず、空白の除去のみ行う（表記そのものの完全一致を判定するためのヘルパー）
-function stripSpace(s) {
-  if (!s) return "";
-  return s.replace(/[\s\u3000]+/g, "");
+function stripSpace(文) {
+  if (!文) return '';
+  return 文.replace(/[\s\u3000]+/g, '');
 }
 
 // 代表的な異体字・旧字体を新字体・常用漢字に正規化してマッチング精度を飛躍的に高める
-function normalize(s) {
-  if (!s) return "";
-  let nStr = s.replace(/[\s\u3000]+/g, "");
+function normalize(文) {
+  if (!文) return '';
+  let nStr = 文.replace(/[\s\u3000]+/g, '');
   const mapping = {
-    "澁": "渋",
-    "眞": "真",
-    "邉": "辺",
-    "邊": "辺",
-    "齋": "斉",
-    "齊": "斉",
-    "廣": "広",
-    "澤": "沢",
-    "嶋": "島",
-    "嶌": "島",
-    "栁": "柳",
-    "國": "国",
-    "櫻": "桜",
-    "髙": "高",
-    "﨑": "崎"
+    '澁': '渋',
+    '眞': '真',
+    '邉': '辺',
+    '邊': '辺',
+    '齋': '斉',
+    '齊': '斉',
+    '廣': '広',
+    '澤': '沢',
+    '嶋': '島',
+    '嶌': '島',
+    '栁': '柳',
+    '國': '国',
+    '櫻': '桜',
+    '髙': '高',
+    '﨑': '崎',
   };
   for (const [oldChar, newChar] of Object.entries(mapping)) {
-    nStr = nStr.replace(new RegExp(oldChar, "g"), newChar);
+    nStr = nStr.replace(new RegExp(oldChar, 'g'), newChar);
   }
   return nStr;
 }
@@ -67,24 +67,24 @@ function normalize(s) {
 // ─────────────────────────────────────────
 // 編集距離（Levenshtein Distance）の計算
 // ─────────────────────────────────────────
-function getLevenshteinDistance(a, b) {
+function getLevenshteinDistance(甲, 乙) {
   const tmp = [];
-  for (let i = 0; i <= a.length; i++) {
-    tmp[i] = [i];
+  for (let 甲の位置 = 0; 甲の位置 <= 甲.length; 甲の位置++) {
+    tmp[甲の位置] = [甲の位置];
   }
-  for (let j = 0; j <= b.length; j++) {
-    tmp[0][j] = j;
+  for (let 乙の位置 = 0; 乙の位置 <= 乙.length; 乙の位置++) {
+    tmp[0][乙の位置] = 乙の位置;
   }
-  for (let i = 1; i <= a.length; i++) {
-    for (let j = 1; j <= b.length; j++) {
-      tmp[i][j] = Math.min(
-        tmp[i - 1][j] + 1,
-        tmp[i][j - 1] + 1,
-        tmp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+  for (let 甲の位置 = 1; 甲の位置 <= 甲.length; 甲の位置++) {
+    for (let 乙の位置 = 1; 乙の位置 <= 乙.length; 乙の位置++) {
+      tmp[甲の位置][乙の位置] = Math.min(
+        tmp[甲の位置 - 1][乙の位置] + 1,
+        tmp[甲の位置][乙の位置 - 1] + 1,
+        tmp[甲の位置 - 1][乙の位置 - 1] + (甲[甲の位置 - 1] === 乙[乙の位置 - 1] ? 0 : 1)
       );
     }
   }
-  return tmp[a.length][b.length];
+  return tmp[甲.length][乙.length];
 }
 
 // ─────────────────────────────────────────
@@ -94,7 +94,7 @@ function getLevenshteinDistance(a, b) {
 // ─────────────────────────────────────────
 function matchArcherName(rawText, candidates) {
   const text = normalize(rawText);
-  if (!text) return { status: "empty" };
+  if (!text) return { status: 'empty' };
 
   // 括弧付き識別子: "林(飛)" 形式を分離
   const parenMatch = rawText.match(/^([^\s\u3000(（]+)[\(（]([^)）]+)[\)）]$/);
@@ -102,46 +102,48 @@ function matchArcherName(rawText, candidates) {
   const searchDisambig = parenMatch ? parenMatch[2] : null;
 
   // 1. 完全一致（現役優先）
-  const exact = candidates.filter(c => normalize(c.name) === text);
-  if (exact.length === 1) return { status: "matched", match: exact[0] };
+  const exact = candidates.filter((候補) => normalize(候補.name) === text);
+  if (exact.length === 1) return { status: 'matched', match: exact[0] };
   if (exact.length > 1) {
     // 異体字正規化により複数候補が同居した場合、まずは「変換なしの表記そのもの」が
     // 完全一致する候補を優先する（例：渡辺/渡邉/渡邊が同居する場合、書かれた文字通りの「渡辺」を優先）
-    const rawExact = exact.filter(c => stripSpace(c.name) === stripSpace(rawText));
-    if (rawExact.length === 1) return { status: "matched", match: rawExact[0] };
+    const rawExact = exact.filter((候補) => stripSpace(候補.name) === stripSpace(rawText));
+    if (rawExact.length === 1) return { status: 'matched', match: rawExact[0] };
 
-    const active = exact.filter(c => !c.isAlumni);
-    if (active.length === 1) return { status: "matched", match: active[0] };
-    return { status: "ambiguous", options: exact };
+    const active = exact.filter((候補) => !候補.isAlumni);
+    if (active.length === 1) return { status: 'matched', match: active[0] };
+    return { status: 'ambiguous', options: exact };
   }
 
   // 2. 姓+識別子（括弧書き）一致
   if (searchSei && searchDisambig) {
-    const bySei = candidates.filter(c => splitName(c.name).sei === searchSei);
-    const withDisambig = bySei.filter(c => splitName(c.name).mei.startsWith(searchDisambig));
-    if (withDisambig.length === 1) return { status: "matched", match: withDisambig[0] };
-    if (bySei.length > 0) return { status: "ambiguous", options: bySei };
+    const bySei = candidates.filter((候補) => splitName(候補.name).sei === searchSei);
+    const withDisambig = bySei.filter((候補) => splitName(候補.name).mei.startsWith(searchDisambig));
+    if (withDisambig.length === 1) return { status: 'matched', match: withDisambig[0] };
+    if (bySei.length > 0) return { status: 'ambiguous', options: bySei };
   }
 
   // 3. 姓のみ一致（現役生を優先、前方一致やスペース無しも強力にマッチ）
-  const bySeiOnly = candidates.filter(c => {
-    const sName = splitName(c.name);
+  const bySeiOnly = candidates.filter((候補) => {
+    const sName = splitName(候補.name);
     if (normalize(sName.sei) === text) return true;
-    const cn = normalize(c.name);
+    const 候補の名 = normalize(候補.name);
     // 部員名が「澁川航大」（正規化で「渋川航大」）で、読み取ったテキストが「渋川」などの場合（前方一致で長さ2以上）
-    if (text.length >= 2 && cn.startsWith(text) && cn.length > text.length) return true;
+    if (text.length >= 2 && 候補の名.startsWith(text) && 候補の名.length > text.length) return true;
     return false;
   });
-  if (bySeiOnly.length === 1) return { status: "matched", match: bySeiOnly[0] };
+  if (bySeiOnly.length === 1) return { status: 'matched', match: bySeiOnly[0] };
   if (bySeiOnly.length > 1) {
     // 異体字正規化により複数候補が同居した場合、まずは「変換なしの表記そのもの」の姓が
     // 完全一致する候補を優先する（例：渡辺/渡邉/渡邊のうち、書かれた文字通りの「渡辺」姓を優先）
-    const rawSeiExact = bySeiOnly.filter(c => stripSpace(splitName(c.name).sei) === stripSpace(rawText));
-    if (rawSeiExact.length === 1) return { status: "matched", match: rawSeiExact[0] };
+    const rawSeiExact = bySeiOnly.filter(
+      (候補) => stripSpace(splitName(候補.name).sei) === stripSpace(rawText)
+    );
+    if (rawSeiExact.length === 1) return { status: 'matched', match: rawSeiExact[0] };
 
-    const activeOnly = bySeiOnly.filter(c => !c.isAlumni);
-    if (activeOnly.length === 1) return { status: "matched", match: activeOnly[0] };
-    return { status: "ambiguous", options: bySeiOnly };
+    const activeOnly = bySeiOnly.filter((候補) => !候補.isAlumni);
+    if (activeOnly.length === 1) return { status: 'matched', match: activeOnly[0] };
+    return { status: 'ambiguous', options: bySeiOnly };
   }
 
   // 3.5. 姓のみの編集距離救済（OCRが名前部分を読み落とし／姓自体を誤読した場合）
@@ -150,57 +152,61 @@ function matchArcherName(rawText, candidates) {
   if (text.length >= 2 && text.length <= 4) {
     let minSeiDistance = 2; // 姓は短いので許容距離は最大1まで
     let seiFuzzyMatches = [];
-    candidates.forEach(c => {
-      const sei = normalize(splitName(c.name).sei);
+    candidates.forEach((候補) => {
+      const sei = normalize(splitName(候補.name).sei);
       if (!sei || sei.length > 4) return; // 姓が極端に長い（＝姓名を分割できていない）データは対象外
       const dist = getLevenshteinDistance(text, sei);
       if (dist < minSeiDistance) {
         minSeiDistance = dist;
-        seiFuzzyMatches = [c];
+        seiFuzzyMatches = [候補];
       } else if (dist === minSeiDistance) {
-        seiFuzzyMatches.push(c);
+        seiFuzzyMatches.push(候補);
       }
     });
     if (seiFuzzyMatches.length === 1 && minSeiDistance <= 1) {
-      return { status: "matched", match: seiFuzzyMatches[0], fuzzy: true };
+      return { status: 'matched', match: seiFuzzyMatches[0], fuzzy: true };
     } else if (seiFuzzyMatches.length > 1 && minSeiDistance <= 1) {
-      const activeSeiFuzzy = seiFuzzyMatches.filter(c => !c.isAlumni);
-      if (activeSeiFuzzy.length === 1) return { status: "matched", match: activeSeiFuzzy[0], fuzzy: true };
-      return { status: "ambiguous", options: seiFuzzyMatches };
+      const activeSeiFuzzy = seiFuzzyMatches.filter((候補) => !候補.isAlumni);
+      if (activeSeiFuzzy.length === 1) return { status: 'matched', match: activeSeiFuzzy[0], fuzzy: true };
+      return { status: 'ambiguous', options: seiFuzzyMatches };
     }
   }
 
   // 4. 部分一致（手書き誤字・略字の緩やかな救済）
-  const partial = candidates.filter(c => {
-    const cn = normalize(c.name);
-    return cn.includes(text) || text.includes(cn.slice(0, 1)) && cn.startsWith(text.slice(0, 1)) && Math.abs(cn.length - text.length) <= 1;
+  const partial = candidates.filter((候補) => {
+    const 候補の名 = normalize(候補.name);
+    return (
+      候補の名.includes(text) ||
+      (text.includes(候補の名.slice(0, 1)) &&
+        候補の名.startsWith(text.slice(0, 1)) &&
+        Math.abs(候補の名.length - text.length) <= 1)
+    );
   });
-  if (partial.length === 1) return { status: "matched", match: partial[0], fuzzy: true };
+  if (partial.length === 1) return { status: 'matched', match: partial[0], fuzzy: true };
 
   // 5. 編集距離（Levenshtein Distance）による漢字書き間違い救済
   let bestFuzzyMatches = [];
   let minDistance = 3; // 最大許容距離は2まで
-  candidates.forEach(c => {
-    const cn = normalize(c.name);
-    const dist = getLevenshteinDistance(text, cn);
+  candidates.forEach((候補) => {
+    const 候補の名 = normalize(候補.name);
+    const dist = getLevenshteinDistance(text, 候補の名);
     if (dist < minDistance) {
       minDistance = dist;
-      bestFuzzyMatches = [c];
+      bestFuzzyMatches = [候補];
     } else if (dist === minDistance) {
-      bestFuzzyMatches.push(c);
+      bestFuzzyMatches.push(候補);
     }
   });
 
   if (bestFuzzyMatches.length === 1 && minDistance <= 2) {
-    return { status: "matched", match: bestFuzzyMatches[0], fuzzy: true };
+    return { status: 'matched', match: bestFuzzyMatches[0], fuzzy: true };
   } else if (bestFuzzyMatches.length > 1 && minDistance <= 2) {
-    return { status: "ambiguous", options: bestFuzzyMatches };
+    return { status: 'ambiguous', options: bestFuzzyMatches };
   }
 
   // 6. 一致なし → ゲスト扱い
-  return { status: "guest", rawText: rawText.trim() };
+  return { status: 'guest', rawText: rawText.trim() };
 }
-
 
 /**
  * Gemini の照合（roster）を主にした名寄せ。
@@ -210,8 +216,8 @@ function matchArcherName(rawText, candidates) {
  * @param {object[]} candidates
  */
 /** 記号や空白を落として、字だけにする（名簿の「†山田 太郎†」と読めた「山田」を比べるため） */
-function 文字だけ(s) {
-  return String(s || '').replace(/[^\p{L}\p{N}]/gu, '');
+function 文字だけ(文) {
+  return String(文 || '').replace(/[^\p{L}\p{N}]/gu, '');
 }
 
 function 名簿で名寄せ(rawText, roster, candidates) {
@@ -220,22 +226,34 @@ function 名簿で名寄せ(rawText, roster, candidates) {
   const text = normalize(rawText);
   if (!text && !roster) return { status: 'empty' };
   if (roster) {
-    const r = normalize(roster);
+    const 名簿の名 = normalize(roster);
     // 名簿の表記は「姓」か「姓(名の頭)」（formatMemberName）で渡している。どちらでも受ける
-    const 同じ = candidates.filter((c) => {
-      const cn = normalize(c.name);
-      const sei = normalize(splitName(c.name).sei);
-      const 頭 = normalize(splitName(c.name).mei).slice(0, 1);
-      return cn === r || sei === r || (頭 && `${sei}(${頭})` === r.replace(/（/g, '(').replace(/）/g, ')'));
+    const 同じ = candidates.filter((候補) => {
+      const 候補の名 = normalize(候補.name);
+      const sei = normalize(splitName(候補.name).sei);
+      const 頭 = normalize(splitName(候補.name).mei).slice(0, 1);
+      return (
+        候補の名 === 名簿の名 ||
+        sei === 名簿の名 ||
+        (頭 && `${sei}(${頭})` === 名簿の名.replace(/（/g, '(').replace(/）/g, ')'))
+      );
     });
-    const 一人 = 同じ.length === 1 ? 同じ[0] : 同じ.filter((c) => !c.isAlumni).length === 1 ? 同じ.find((c) => !c.isAlumni) : null;
+    const 一人 =
+      同じ.length === 1
+        ? 同じ[0]
+        : 同じ.filter((候補) => !候補.isAlumni).length === 1
+          ? 同じ.find((c) => !c.isAlumni)
+          : null;
     if (一人) {
       // 読めた文字が名簿の姓（か氏名）と同じなら決まり。違うのに Gemini が寄せたなら
       //（「田」→田中、「長」→長田、「砂原」→笹原 のように、字の一部や似た字で寄せる）
       // 「もしかして」で止めて、人に決めてもらう
-      const 素 = (v) => 文字だけ(normalize(v));
-      const 同じ字 = 素(rawText) && [一人.name, splitName(一人.name).sei].some((v) => 素(v) === 素(rawText));
-      return 同じ字 ? { status: 'matched', match: 一人, 照合: 'AI' } : { status: 'ambiguous', options: [一人], 照合: 'AI' };
+      const 素 = (値) => 文字だけ(normalize(値));
+      const 同じ字 =
+        素(rawText) && [一人.name, splitName(一人.name).sei].some((名) => 素(名) === 素(rawText));
+      return 同じ字
+        ? { status: 'matched', match: 一人, 照合: 'AI' }
+        : { status: 'ambiguous', options: [一人], 照合: 'AI' };
     }
     if (同じ.length > 1) return { status: 'ambiguous', options: 同じ };
     // 名簿に無い表記を返してきた（作った）。読めた文字で厳しく照合する
@@ -243,10 +261,12 @@ function 名簿で名寄せ(rawText, roster, candidates) {
   if (!text) return { status: 'empty' };
   // roster が null … 名簿に無いと Gemini が言っている。完全一致か姓の一致だけ認め、
   // 編集距離の救済はしない（ここで緩めると相手校の選手が部員に化ける）
-  const exact = candidates.filter((c) => normalize(c.name) === text || normalize(splitName(c.name).sei) === text);
+  const exact = candidates.filter(
+    (候補) => normalize(候補.name) === text || normalize(splitName(候補.name).sei) === text
+  );
   if (exact.length === 1) return { status: 'matched', match: exact[0] };
   if (exact.length > 1) {
-    const 現役 = exact.filter((c) => !c.isAlumni);
+    const 現役 = exact.filter((候補) => !候補.isAlumni);
     if (現役.length === 1) return { status: 'matched', match: 現役[0] };
     return { status: 'ambiguous', options: exact };
   }
@@ -261,29 +281,41 @@ function 名簿で名寄せ(rawText, roster, candidates) {
  * @returns 同じ長さの配列
  */
 function 重なりを外す(rows) {
-  const 鍵 = (c) => (c && c.id != null ? `${c.isAlumni ? 'a' : 'm'}:${c.id}` : null);
+  const 鍵 = (候補) => (候補 && 候補.id != null ? `${候補.isAlumni ? 'a' : 'm'}:${候補.id}` : null);
   const 群 = new Map();
-  rows.forEach((r, i) => {
-    if (r.status !== 'matched' || !鍵(r.match)) return;
-    const k = 鍵(r.match);
-    if (!群.has(k)) 群.set(k, []);
-    群.get(k).push(i);
+  rows.forEach((行, 番) => {
+    if (行.status !== 'matched' || !鍵(行.match)) return;
+    const 行の鍵 = 鍵(行.match);
+    if (!群.has(行の鍵)) 群.set(行の鍵, []);
+    群.get(行の鍵).push(番);
   });
   const 出 = rows.slice();
   for (const 番たち of 群.values()) {
     if (番たち.length < 2) continue;
-    const 素の一致 = 番たち.filter((i) => {
-      const c = rows[i].match;
-      const t = normalize(rows[i].rawText || '');
-      return t && (t === normalize(c.name) || t === normalize(splitName(c.name).sei));
+    const 素の一致 = 番たち.filter((番) => {
+      const 当たり = rows[番].match;
+      const 読んだ字 = normalize(rows[番].rawText || '');
+      return (
+        読んだ字 &&
+        (読んだ字 === normalize(当たり.name) || 読んだ字 === normalize(splitName(当たり.name).sei))
+      );
     });
     const 残す = 素の一致.length ? 素の一致[0] : 番たち[0];
-    for (const i of 番たち) {
-      if (i === 残す) continue;
-      出[i] = { status: 'ambiguous', options: [rows[i].match], rawText: rows[i].rawText, 重なり: true };
+    for (const 番 of 番たち) {
+      if (番 === 残す) continue;
+      出[番] = { status: 'ambiguous', options: [rows[番].match], rawText: rows[番].rawText, 重なり: true };
     }
   }
   return 出;
 }
 
-module.exports = { splitName, stripSpace, normalize, getLevenshteinDistance, matchArcherName, 名簿で名寄せ, 重なりを外す, 文字だけ };
+module.exports = {
+  splitName,
+  stripSpace,
+  normalize,
+  getLevenshteinDistance,
+  matchArcherName,
+  名簿で名寄せ,
+  重なりを外す,
+  文字だけ,
+};
