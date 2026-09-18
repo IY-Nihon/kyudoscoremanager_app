@@ -6,7 +6,7 @@ const StyleSheet = require('./StyleSheet').default;
 const { UIConfig } = require('./uiConfig');
 const { useScoreStore } = require('./useScoreStore');
 const LabelColumn = ({ shots, showFooter = true, 横並び: 横 = false }) => {
-  const viewScale = useScoreStore((x) => x.viewScale);
+  const viewScale = useScoreStore((状態) => 状態.viewScale);
   const 倍率 = 'number' == typeof viewScale && !isNaN(viewScale) && viewScale > 0 ? viewScale : 1;
   const 番号たち = [];
   // 縦の表は下から上へ数える（1射目が下）。横の表は左から右へ数える
