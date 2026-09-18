@@ -105,10 +105,10 @@ const SettingsScreen = () => {
     members = [],
     setAuth,
     isAdminMode,
-    自動ロックする: 自動ロックする,
-    set自動ロックする: set自動ロックする,
+    自動ロックする,
+    set自動ロックする,
     保存時に出欠を確認する = true,
-    set保存時に出欠を確認する: set保存時に出欠を確認する,
+    set保存時に出欠を確認する,
     setAdminMode,
     verifyGroupPassword,
     deleteGroupAccount: 団体を消す,
@@ -639,29 +639,33 @@ const SettingsScreen = () => {
     }
   };
   const Ye = (e, t) => (
-    <View style={D.section}>
-      <Text style={D.sectionTitle}>{e}</Text>
-      <View style={D.sectionContainer}>{t}</View>
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{e}</Text>
+      <View style={styles.sectionContainer}>{t}</View>
     </View>
   );
   const Je = (e, t, l, a = '#007AFF', s, d = false) => (
     <Pressable // 使い方の案内が指す先。行の名前をそのまま目印にする
       ref={(node) => 案内.setTutorialTargetNode(`設定.${t}`, node)}
-      style={({ hovered }) => [D.item, hovered && D.hovered, IS_WEB && !!l && { cursor: 'pointer' }]}
+      style={({ hovered }) => [
+        styles.item,
+        hovered && styles.hovered,
+        IS_WEB && !!l && { cursor: 'pointer' },
+      ]}
       onPress={l}
       disabled={!l}
     >
-      <View style={D.itemLeft}>
-        <Icons.Ionicons name={e} size={22} color={a} style={D.itemIcon} />
-        <Text style={[D.itemText, d && { color: '#FF3B30' }]}>{t}</Text>
+      <View style={styles.itemLeft}>
+        <Icons.Ionicons name={e} size={22} color={a} style={styles.itemIcon} />
+        <Text style={[styles.itemText, d && { color: '#FF3B30' }]}>{t}</Text>
       </View>
-      <View style={D.itemRight}>
+      <View style={styles.itemRight}>
         {s || <Icons.Ionicons name="chevron-forward" size={18} color="#C6C6C8" />}
       </View>
     </Pressable>
   );
   return (
-    <ReactNativeSafeAreaContext.SafeAreaView style={D.safeArea} edges={['left', 'right']}>
+    <ReactNativeSafeAreaContext.SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       <CustomCalendarModal
         visible={je}
         onClose={() => Fe(false)}
@@ -673,28 +677,28 @@ const SettingsScreen = () => {
         }}
         title={'start' === Ce ? '開始日を選択' : '終了日を選択'}
       />
-      <ScrollView style={D.container}>
-        <Text style={D.headerTitle}>設定</Text>
+      <ScrollView style={styles.container}>
+        <Text style={styles.headerTitle}>設定</Text>
         {Ye(
           'アカウント',
           <>
-            <View style={[D.item, D.itemStack]}>
-              <View style={D.itemLeft}>
-                <Icons.Ionicons name="business-outline" size={22} color="#007AFF" style={D.itemIcon} />
-                <Text style={D.itemText}>団体ID / 団体名</Text>
+            <View style={[styles.item, styles.itemStack]}>
+              <View style={styles.itemLeft}>
+                <Icons.Ionicons name="business-outline" size={22} color="#007AFF" style={styles.itemIcon} />
+                <Text style={styles.itemText}>団体ID / 団体名</Text>
               </View>
-              <Text style={[D.timestamp, D.timestampStack]}>
+              <Text style={[styles.timestamp, styles.timestampStack]}>
                 {activeGroupId || '---'}
                 {' / '}
                 {activeGroupName || '未設定'}
               </Text>
             </View>
-            <View style={D.item}>
-              <View style={D.itemLeft}>
-                <Icons.Ionicons name="person-outline" size={22} color="#5856D6" style={D.itemIcon} />
-                <Text style={D.itemText}>ログイン種別</Text>
+            <View style={styles.item}>
+              <View style={styles.itemLeft}>
+                <Icons.Ionicons name="person-outline" size={22} color="#5856D6" style={styles.itemIcon} />
+                <Text style={styles.itemText}>ログイン種別</Text>
               </View>
-              <Text style={D.timestamp}>
+              <Text style={styles.timestamp}>
                 {'group' === activeRole
                   ? '団体アカウント'
                   : `メンバー (${(() => {
@@ -749,11 +753,11 @@ const SettingsScreen = () => {
         )}
         {Ye(
           '表示',
-          <View style={[D.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
-            <View style={[D.itemLeft, { marginBottom: 10 }]}>
+          <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
+            <View style={[styles.itemLeft, { marginBottom: 10 }]}>
               <Icons.Ionicons name="contrast-outline" size={22} color="#5856D6" style={{ marginRight: 12 }} />
               <View>
-                <Text style={D.itemText}>外観</Text>
+                <Text style={styles.itemText}>外観</Text>
                 <Text style={{ fontSize: 12, color: '#8E8E93', marginTop: 2 }}>
                   画面全体の配色を切り替えます
                 </Text>
@@ -761,22 +765,26 @@ const SettingsScreen = () => {
             </View>
             <View style={{ flexDirection: 'row', marginHorizontal: -4 }}>
               <TouchableOpacity
-                style={[D.radioBtn, themeMode === 'light' && D.radioBtnActive]}
+                style={[styles.radioBtn, themeMode === 'light' && styles.radioBtnActive]}
                 onPress={() => setThemeModeFn('light')}
               >
-                <Text style={[D.radioBtnText, themeMode === 'light' && D.radioBtnTextActive]}>ライト</Text>
+                <Text style={[styles.radioBtnText, themeMode === 'light' && styles.radioBtnTextActive]}>
+                  ライト
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[D.radioBtn, themeMode === 'dark' && D.radioBtnActive]}
+                style={[styles.radioBtn, themeMode === 'dark' && styles.radioBtnActive]}
                 onPress={() => setThemeModeFn('dark')}
               >
-                <Text style={[D.radioBtnText, themeMode === 'dark' && D.radioBtnTextActive]}>ダーク</Text>
+                <Text style={[styles.radioBtnText, themeMode === 'dark' && styles.radioBtnTextActive]}>
+                  ダーク
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[D.radioBtn, themeMode === 'system' && D.radioBtnActive]}
+                style={[styles.radioBtn, themeMode === 'system' && styles.radioBtnActive]}
                 onPress={() => setThemeModeFn('system')}
               >
-                <Text style={[D.radioBtnText, themeMode === 'system' && D.radioBtnTextActive]}>
+                <Text style={[styles.radioBtnText, themeMode === 'system' && styles.radioBtnTextActive]}>
                   端末に合わせる
                 </Text>
               </TouchableOpacity>
@@ -788,10 +796,15 @@ const SettingsScreen = () => {
             '基本設定',
             <>
               {'group' === activeRole && (
-                <View style={D.item}>
-                  <View style={[D.itemLeft, { flex: 1 }]}>
-                    <Icons.Ionicons name="business-outline" size={22} color="#007AFF" style={D.itemIcon} />
-                    <Text style={D.itemText}>
+                <View style={styles.item}>
+                  <View style={[styles.itemLeft, { flex: 1 }]}>
+                    <Icons.Ionicons
+                      name="business-outline"
+                      size={22}
+                      color="#007AFF"
+                      style={styles.itemIcon}
+                    />
+                    <Text style={styles.itemText}>
                       {'団体ID: '}
                       {activeGroupId}
                     </Text>
@@ -799,13 +812,13 @@ const SettingsScreen = () => {
                 </View>
               )}
               {'group' === activeRole && (
-                <View style={[D.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
-                  <View style={[D.itemLeft, { marginBottom: 8 }]}>
-                    <Icons.Ionicons name="pencil-outline" size={22} color="#007AFF" style={D.itemIcon} />
-                    <Text style={D.itemText}>団体名</Text>
+                <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
+                  <View style={[styles.itemLeft, { marginBottom: 8 }]}>
+                    <Icons.Ionicons name="pencil-outline" size={22} color="#007AFF" style={styles.itemIcon} />
+                    <Text style={styles.itemText}>団体名</Text>
                   </View>
                   <TextInput
-                    style={D.filterInput}
+                    style={styles.filterInput}
                     placeholder="団体名を入力"
                     value={activeGroupName || ''}
                     onChangeText={updateGroupName}
@@ -813,11 +826,16 @@ const SettingsScreen = () => {
                 </View>
               )}
               {'group' === activeRole && (
-                <View style={D.item}>
-                  <View style={[D.itemLeft, { flex: 1 }]}>
-                    <Icons.Ionicons name="sparkles-outline" size={22} color="#5856D6" style={D.itemIcon} />
+                <View style={styles.item}>
+                  <View style={[styles.itemLeft, { flex: 1 }]}>
+                    <Icons.Ionicons
+                      name="sparkles-outline"
+                      size={22}
+                      color="#5856D6"
+                      style={styles.itemIcon}
+                    />
                     <View style={{ flex: 1, paddingRight: 8 }}>
-                      <Text style={D.itemText}>4月1日の自動進級</Text>
+                      <Text style={styles.itemText}>4月1日の自動進級</Text>
                       <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 2 }}>
                         毎年4月1日に自動で学年を更新し、4年生を卒業生へ移動します
                       </Text>
@@ -831,19 +849,19 @@ const SettingsScreen = () => {
                 </View>
               )}
               {'group' === activeRole && (
-                <View style={D.item}>
-                  <View style={[D.itemLeft, { flex: 1 }]}>
-                    <Icons.Ionicons name="school-outline" size={22} color="#AF52DE" style={D.itemIcon} />
+                <View style={styles.item}>
+                  <View style={[styles.itemLeft, { flex: 1 }]}>
+                    <Icons.Ionicons name="school-outline" size={22} color="#AF52DE" style={styles.itemIcon} />
                     <View style={{ flex: 1, paddingRight: 8 }}>
-                      <Text style={D.itemText}>現在の期 (新入生)</Text>
+                      <Text style={styles.itemText}>現在の期 (新入生)</Text>
                       <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 2 }}>
                         新入生（1年生）が何期生にあたるかを設定します
                       </Text>
                     </View>
                   </View>
-                  <View style={D.stepperContainer}>
+                  <View style={styles.stepperContainer}>
                     <TextInput
-                      style={[D.stepperValue, { width: 40, textAlign: 'center', padding: 0 }]}
+                      style={[styles.stepperValue, { width: 40, textAlign: 'center', padding: 0 }]}
                       value={String(currentFreshmanTerm)}
                       onChangeText={(e) => {
                         const t = parseInt(e.replace(/[^0-9]/g, ''));
@@ -852,9 +870,9 @@ const SettingsScreen = () => {
                       keyboardType="number-pad"
                     />
                     <Text style={{ fontSize: 14, color: '#8E8E93', marginRight: 8 }}>期</Text>
-                    <View style={D.stepperControls}>
+                    <View style={styles.stepperControls}>
                       <Pressable
-                        style={({ hovered: e }) => [D.stepperBtn, e && { backgroundColor: '#D1D1D6' }]} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                        style={({ hovered: e }) => [styles.stepperBtn, e && { backgroundColor: '#D1D1D6' }]} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                         accessible
                         accessibilityRole="button"
                         accessibilityLabel="減らす"
@@ -863,9 +881,9 @@ const SettingsScreen = () => {
                       >
                         <Icons.Ionicons name="remove" size={20} color="#007AFF" />
                       </Pressable>
-                      <View style={D.stepperDivider} />
+                      <View style={styles.stepperDivider} />
                       <Pressable
-                        style={({ hovered: e }) => [D.stepperBtn, e && { backgroundColor: '#D1D1D6' }]} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                        style={({ hovered: e }) => [styles.stepperBtn, e && { backgroundColor: '#D1D1D6' }]} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                         accessible
                         accessibilityRole="button"
                         accessibilityLabel="増やす"
@@ -879,7 +897,7 @@ const SettingsScreen = () => {
                 </View>
               )}
               {'group' === activeRole && (
-                <View style={[D.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
+                <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
                   <View
                     style={{
                       flexDirection: 'row',
@@ -888,9 +906,14 @@ const SettingsScreen = () => {
                       marginBottom: 12,
                     }}
                   >
-                    <View style={D.itemLeft}>
-                      <Icons.Ionicons name="pricetags-outline" size={22} color="#FF9500" style={D.itemIcon} />
-                      <Text style={D.itemText}>タグの定型文</Text>
+                    <View style={styles.itemLeft}>
+                      <Icons.Ionicons
+                        name="pricetags-outline"
+                        size={22}
+                        color="#FF9500"
+                        style={styles.itemIcon}
+                      />
+                      <Text style={styles.itemText}>タグの定型文</Text>
                     </View>
                   </View>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
@@ -927,7 +950,7 @@ const SettingsScreen = () => {
                   </View>
                   <View style={{ flexDirection: 'row', gap: 8 }}>
                     <TextInput
-                      style={[D.filterInput, { flex: 1, paddingVertical: 8 }]}
+                      style={[styles.filterInput, { flex: 1, paddingVertical: 8 }]}
                       placeholder="新しいタグを追加"
                       value={Se}
                       onChangeText={Ee}
@@ -961,11 +984,11 @@ const SettingsScreen = () => {
           )}
         {Ye(
           '入力の保護',
-          <View ref={(node) => 案内.setTutorialTargetNode('設定.自動ロック', node)} style={D.item}>
-            <View style={[D.itemLeft, { flex: 1 }]}>
-              <Icons.Ionicons name="lock-closed-outline" size={22} color="#34C759" style={D.itemIcon} />
+          <View ref={(node) => 案内.setTutorialTargetNode('設定.自動ロック', node)} style={styles.item}>
+            <View style={[styles.itemLeft, { flex: 1 }]}>
+              <Icons.Ionicons name="lock-closed-outline" size={22} color="#34C759" style={styles.itemIcon} />
               <View style={{ flex: 1, paddingRight: 8 }}>
-                <Text style={D.itemText}>入れたマスを自動でロック</Text>
+                <Text style={styles.itemText}>入れたマスを自動でロック</Text>
                 <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 2 }}>
                   入れて3秒たつと押しても変わらなくなります。直すときは長押しで、そのマスだけ開きます。1立が全部埋まったときは、間隔・計の鍵も自動でかかります
                 </Text>
@@ -980,11 +1003,11 @@ const SettingsScreen = () => {
         )}
         {Ye(
           '保存のしかた',
-          <View style={D.item}>
-            <View style={[D.itemLeft, { flex: 1 }]}>
-              <Icons.Ionicons name="checkbox-outline" size={22} color="#34C759" style={D.itemIcon} />
+          <View style={styles.item}>
+            <View style={[styles.itemLeft, { flex: 1 }]}>
+              <Icons.Ionicons name="checkbox-outline" size={22} color="#34C759" style={styles.itemIcon} />
               <View style={{ flex: 1, paddingRight: 8 }}>
-                <Text style={D.itemText}>保存のときに出欠を確認する</Text>
+                <Text style={styles.itemText}>保存のときに出欠を確認する</Text>
                 <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 2 }}>
                   「終了・保存」を押したときに出欠の確認を出します。切ると、そのまま保存の画面へ進みます。記録に出ている人は出欠画面で出席として数えられますが、遅刻・早退の区別は付かなくなります
                 </Text>
@@ -1003,12 +1026,12 @@ const SettingsScreen = () => {
             <View // 使い方の案内が指す先。この行は Je() を通らない作りなので、
               // ここで直接登録する
               ref={(node) => 案内.setTutorialTargetNode('設定.矢所の記録機能を有効化', node)}
-              style={D.item}
+              style={styles.item}
             >
-              <View style={[D.itemLeft, { flex: 1 }]}>
-                <Icons.Ionicons name="location-outline" size={22} color="#34C759" style={D.itemIcon} />
+              <View style={[styles.itemLeft, { flex: 1 }]}>
+                <Icons.Ionicons name="location-outline" size={22} color="#34C759" style={styles.itemIcon} />
                 <View style={{ flex: 1, paddingRight: 8 }}>
-                  <Text style={D.itemText}>矢所の記録機能を有効化</Text>
+                  <Text style={styles.itemText}>矢所の記録機能を有効化</Text>
                   <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 2 }}>
                     記録時に矢所も記録できるようにします
                   </Text>
@@ -1021,33 +1044,48 @@ const SettingsScreen = () => {
               />
             </View>
             {enableArrowLocation && (
-              <View style={[D.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
-                <View style={[D.itemLeft, { marginBottom: 8 }]}>
-                  <Icons.Ionicons name="disc-outline" size={22} color="#34C759" style={D.itemIcon} />
-                  <Text style={D.itemText}>使用する的の種類</Text>
+              <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
+                <View style={[styles.itemLeft, { marginBottom: 8 }]}>
+                  <Icons.Ionicons name="disc-outline" size={22} color="#34C759" style={styles.itemIcon} />
+                  <Text style={styles.itemText}>使用する的の種類</Text>
                 </View>
-                <View style={D.flexRow}>
+                <View style={styles.flexRow}>
                   <TouchableOpacity
                     onPress={() => setArrowTargetType('kasumi36')}
-                    style={[D.radioBtn, 'kasumi36' === arrowTargetType && D.radioBtnActive]}
+                    style={[styles.radioBtn, 'kasumi36' === arrowTargetType && styles.radioBtnActive]}
                   >
-                    <Text style={[D.radioBtnText, 'kasumi36' === arrowTargetType && D.radioBtnTextActive]}>
+                    <Text
+                      style={[
+                        styles.radioBtnText,
+                        'kasumi36' === arrowTargetType && styles.radioBtnTextActive,
+                      ]}
+                    >
                       霞的
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => setArrowTargetType('hoshi36')}
-                    style={[D.radioBtn, 'hoshi36' === arrowTargetType && D.radioBtnActive]}
+                    style={[styles.radioBtn, 'hoshi36' === arrowTargetType && styles.radioBtnActive]}
                   >
-                    <Text style={[D.radioBtnText, 'hoshi36' === arrowTargetType && D.radioBtnTextActive]}>
+                    <Text
+                      style={[
+                        styles.radioBtnText,
+                        'hoshi36' === arrowTargetType && styles.radioBtnTextActive,
+                      ]}
+                    >
                       星的
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => setArrowTargetType('hoshi24')}
-                    style={[D.radioBtn, 'hoshi24' === arrowTargetType && D.radioBtnActive]}
+                    style={[styles.radioBtn, 'hoshi24' === arrowTargetType && styles.radioBtnActive]}
                   >
-                    <Text style={[D.radioBtnText, 'hoshi24' === arrowTargetType && D.radioBtnTextActive]}>
+                    <Text
+                      style={[
+                        styles.radioBtnText,
+                        'hoshi24' === arrowTargetType && styles.radioBtnTextActive,
+                      ]}
+                    >
                       星的(八寸)
                     </Text>
                   </TouchableOpacity>
@@ -1060,18 +1098,18 @@ const SettingsScreen = () => {
           Ye(
             '管理者設定',
             <View
-              style={D.item} // 使い方の案内から指せるように登録する
+              style={styles.item} // 使い方の案内から指せるように登録する
               ref={(node) => 案内.setTutorialTargetNode('設定.管理者モード', node)}
             >
-              <View style={[D.itemLeft, { flex: 1 }]}>
+              <View style={[styles.itemLeft, { flex: 1 }]}>
                 <Icons.Ionicons
                   name="shield-checkmark-outline"
                   size={22}
                   color="#FF3B30"
-                  style={D.itemIcon}
+                  style={styles.itemIcon}
                 />
                 <View style={{ flex: 1, paddingRight: 8 }}>
-                  <Text style={D.itemText}>管理者モード</Text>
+                  <Text style={styles.itemText}>管理者モード</Text>
                   <Text
                     style={{ fontSize: 11, color: '#8E8E93', marginTop: 2, flexShrink: 1 }}
                     numberOfLines={0}
@@ -1124,15 +1162,20 @@ const SettingsScreen = () => {
             )}
             {Je('mail-outline', 'お問い合わせ', () => setInquiryVisible(true), '#FF9500')}
             <Pressable
-              style={({ hovered: e }) => [D.item, e && D.hovered, IS_WEB && { cursor: 'pointer' }]}
+              style={({ hovered: e }) => [styles.item, e && styles.hovered, IS_WEB && { cursor: 'pointer' }]}
               onPress={syncAllToCloud}
             >
-              <View style={D.itemLeft}>
-                <Icons.Ionicons name="cloud-upload-outline" size={22} color="#5856D6" style={D.itemIcon} />
-                <Text style={D.itemText}>クラウドへ同期</Text>
+              <View style={styles.itemLeft}>
+                <Icons.Ionicons
+                  name="cloud-upload-outline"
+                  size={22}
+                  color="#5856D6"
+                  style={styles.itemIcon}
+                />
+                <Text style={styles.itemText}>クラウドへ同期</Text>
               </View>
-              <View style={D.itemRight}>
-                <Text style={D.timestamp}>
+              <View style={styles.itemRight}>
+                <Text style={styles.timestamp}>
                   {lastSyncTime
                     ? new Date(lastSyncTime).toLocaleTimeString('ja-JP')
                     : '同期済み' === syncStatus
@@ -1144,9 +1187,9 @@ const SettingsScreen = () => {
             </Pressable>
           </>
         )}
-        <View style={D.footer}>
-          <Text style={D.versionText}>Version 2.0.0 (Expo SQLite/Firebase)</Text>
-          <Text style={D.statusText}>
+        <View style={styles.footer}>
+          <Text style={styles.versionText}>Version 2.0.0 (Expo SQLite/Firebase)</Text>
+          <Text style={styles.statusText}>
             {'● '}
             {isNetworkOnline ? 'Firebase 接続済み' : '未接続'}
             {' | '}
@@ -1165,71 +1208,71 @@ const SettingsScreen = () => {
               ]);
             }}
           >
-            <Text style={D.legalText}>利用規約・プライバシーポリシー</Text>
+            <Text style={styles.legalText}>利用規約・プライバシーポリシー</Text>
           </Pressable>
         </View>
       </ScrollView>
       <Modal visible={Z} transparent animationType="fade" onRequestClose={() => ee(false)}>
-        <View style={D.modalBackdrop}>
+        <View style={styles.modalBackdrop}>
           <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => ee(false)} />
-          <View style={D.modalContent}>
-            <Text style={D.modalTitle}>Excel形式で書き出し</Text>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Excel形式で書き出し</Text>
             {De ? (
               <ScrollView style={{ width: '100%', maxHeight: 450 }}>
-                <View style={D.filterGroup}>
-                  <Text style={D.filterLabel}>出力形式</Text>
-                  <View style={D.flexRow}>
+                <View style={styles.filterGroup}>
+                  <Text style={styles.filterLabel}>出力形式</Text>
+                  <View style={styles.flexRow}>
                     <TouchableOpacity
                       onPress={() => pe('standard')}
-                      style={[D.radioBtn, 'standard' === ye && D.radioBtnActive]}
+                      style={[styles.radioBtn, 'standard' === ye && styles.radioBtnActive]}
                     >
-                      <Text style={[D.radioBtnText, 'standard' === ye && D.radioBtnTextActive]}>
+                      <Text style={[styles.radioBtnText, 'standard' === ye && styles.radioBtnTextActive]}>
                         標準形式
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={() => pe('matrix')}
-                      style={[D.radioBtn, 'matrix' === ye && D.radioBtnActive]}
+                      style={[styles.radioBtn, 'matrix' === ye && styles.radioBtnActive]}
                     >
-                      <Text style={[D.radioBtnText, 'matrix' === ye && D.radioBtnTextActive]}>
+                      <Text style={[styles.radioBtnText, 'matrix' === ye && styles.radioBtnTextActive]}>
                         印刷向け形式
                       </Text>
                     </TouchableOpacity>
                   </View>
-                  <Text style={D.ratioHintText}>
+                  <Text style={styles.ratioHintText}>
                     {'standard' === ye
                       ? '1行に1記録を出力します。データ加工に適しています。'
                       : 'メンバーを各行、日付を各列に配置します。掲示や閲覧に適しています。'}
                   </Text>
                 </View>
-                <View style={D.filterGroup}>
-                  <Text style={D.filterLabel}>日付範囲</Text>
-                  <View style={D.flexRow}>
+                <View style={styles.filterGroup}>
+                  <Text style={styles.filterLabel}>日付範囲</Text>
+                  <View style={styles.flexRow}>
                     <TouchableOpacity
-                      style={D.dateSelector}
+                      style={styles.dateSelector}
                       onPress={() => {
                         be('start');
                         Fe(true);
                       }}
                     >
-                      <Text style={D.dateSelectorText}>{de.toLocaleDateString('ja-JP')}</Text>
+                      <Text style={styles.dateSelectorText}>{de.toLocaleDateString('ja-JP')}</Text>
                     </TouchableOpacity>
                     <Text style={{ marginHorizontal: 8 }}>〜</Text>
                     <TouchableOpacity
-                      style={D.dateSelector}
+                      style={styles.dateSelector}
                       onPress={() => {
                         be('end');
                         Fe(true);
                       }}
                     >
-                      <Text style={D.dateSelectorText}>{ue.toLocaleDateString('ja-JP')}</Text>
+                      <Text style={styles.dateSelectorText}>{ue.toLocaleDateString('ja-JP')}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
-                <View style={D.filterGroup}>
-                  <Text style={D.filterLabel}>キーワード (タイトル・メモ)</Text>
+                <View style={styles.filterGroup}>
+                  <Text style={styles.filterLabel}>キーワード (タイトル・メモ)</Text>
                   <TextInput
-                    style={D.filterInput}
+                    style={styles.filterInput}
                     placeholder="キーワードで絞り込み"
                     value={xe}
                     onChangeText={ge}
@@ -1241,7 +1284,7 @@ const SettingsScreen = () => {
                       horizontal
                       keyboardShouldPersistTaps="always"
                       showsHorizontalScrollIndicator={false}
-                      style={[D.suggestionsContainer, IS_WEB && { overflowX: 'auto' }]}
+                      style={[styles.suggestionsContainer, IS_WEB && { overflowX: 'auto' }]}
                     >
                       {titleSuggestions.map((e) => {
                         const t = selectedKeywords.includes(e);
@@ -1253,9 +1296,9 @@ const SettingsScreen = () => {
                                 t.includes(e) ? t.filter((t) => t !== e) : [...t, e]
                               )
                             }
-                            style={[D.suggestionChip, t && { backgroundColor: '#007AFF' }]}
+                            style={[styles.suggestionChip, t && { backgroundColor: '#007AFF' }]}
                           >
-                            <Text style={[D.suggestionText, t && { color: '#FFF' }]}>{e}</Text>
+                            <Text style={[styles.suggestionText, t && { color: '#FFF' }]}>{e}</Text>
                           </TouchableOpacity>
                         );
                       })}
@@ -1271,10 +1314,10 @@ const SettingsScreen = () => {
                   )}
                 </View>
                 {'member' !== activeRole && (
-                  <View style={D.filterGroup}>
-                    <Text style={D.filterLabel}>メンバー名</Text>
+                  <View style={styles.filterGroup}>
+                    <Text style={styles.filterLabel}>メンバー名</Text>
                     <TextInput
-                      style={D.filterInput}
+                      style={styles.filterInput}
                       placeholder="未入力ですべて対象"
                       value={'all' === me ? '' : me}
                       onChangeText={(e) => he(e || 'all')}
@@ -1286,7 +1329,7 @@ const SettingsScreen = () => {
                         horizontal
                         keyboardShouldPersistTaps="always"
                         showsHorizontalScrollIndicator={false}
-                        style={[D.suggestionsContainer, IS_WEB && { overflowX: 'auto' }]}
+                        style={[styles.suggestionsContainer, IS_WEB && { overflowX: 'auto' }]}
                       >
                         {memberSuggestions.map((e) => {
                           const t = selectedMembers.includes(e);
@@ -1298,9 +1341,9 @@ const SettingsScreen = () => {
                                   t.includes(e) ? t.filter((t) => t !== e) : [...t, e]
                                 )
                               }
-                              style={[D.suggestionChip, t && { backgroundColor: '#007AFF' }]}
+                              style={[styles.suggestionChip, t && { backgroundColor: '#007AFF' }]}
                             >
-                              <Text style={[D.suggestionText, t && { color: '#FFF' }]}>{e}</Text>
+                              <Text style={[styles.suggestionText, t && { color: '#FFF' }]}>{e}</Text>
                             </TouchableOpacity>
                           );
                         })}
@@ -1316,7 +1359,7 @@ const SettingsScreen = () => {
                     )}
                   </View>
                 )}
-                <View style={D.filterGroup}>
+                <View style={styles.filterGroup}>
                   <View
                     style={{
                       flexDirection: 'row',
@@ -1325,7 +1368,7 @@ const SettingsScreen = () => {
                       marginBottom: 4,
                     }}
                   >
-                    <Text style={D.filterLabel}>タグ絞り込み</Text>
+                    <Text style={styles.filterLabel}>タグ絞り込み</Text>
                     <View
                       style={{
                         flexDirection: 'row',
@@ -1379,8 +1422,8 @@ const SettingsScreen = () => {
                             key={`export-tag-${e}`}
                             onPress={() => Ne(e)}
                             style={[
-                              D.tagChip,
-                              t && D.tagChipActive,
+                              styles.tagChip,
+                              t && styles.tagChipActive,
                               {
                                 backgroundColor: t ? '#007AFF' : '#F2F2F7',
                                 paddingVertical: 6,
@@ -1388,7 +1431,9 @@ const SettingsScreen = () => {
                               },
                             ]}
                           >
-                            <Text style={[D.tagChipText, t && { color: '#FFF' }]}>{e.replace(/^#/, '')}</Text>
+                            <Text style={[styles.tagChipText, t && { color: '#FFF' }]}>
+                              {e.replace(/^#/, '')}
+                            </Text>
                           </TouchableOpacity>
                         );
                       })
@@ -1402,10 +1447,10 @@ const SettingsScreen = () => {
                     </TouchableOpacity>
                   )}
                 </View>
-                <View style={[D.modalButtons, { marginTop: 20 }]}>
+                <View style={[styles.modalButtons, { marginTop: 20 }]}>
                   <Pressable
                     style={({ hovered: e }) => [
-                      D.modalBtn,
+                      styles.modalBtn,
                       { backgroundColor: '#007AFF' },
                       e && { backgroundColor: '#0062CC' },
                       IS_WEB && { cursor: 'pointer' },
@@ -1416,39 +1461,39 @@ const SettingsScreen = () => {
                       Ge('custom');
                     }}
                   >
-                    <Text style={[D.modalBtnText, { color: '#FFF' }]}>この条件で書き出す</Text>
+                    <Text style={[styles.modalBtnText, { color: '#FFF' }]}>この条件で書き出す</Text>
                   </Pressable>
                   <Pressable
                     style={({ hovered: e }) => [
-                      D.modalBtn,
+                      styles.modalBtn,
                       { backgroundColor: '#F2F2F7' },
                       e && { backgroundColor: '#E5E5EA' },
                       IS_WEB && { cursor: 'pointer' },
                     ]}
                     onPress={() => ve(false)}
                   >
-                    <Text style={[D.modalBtnText, { color: '#007AFF' }]}>戻る</Text>
+                    <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>戻る</Text>
                   </Pressable>
                 </View>
               </ScrollView>
             ) : (
               <>
-                <Text style={D.modalMessage}>書き出すデータの範囲を選択してください。</Text>
-                <View style={D.modalButtons}>
+                <Text style={styles.modalMessage}>書き出すデータの範囲を選択してください。</Text>
+                <View style={styles.modalButtons}>
                   <Pressable
                     style={({ hovered: e }) => [
-                      D.modalBtn,
+                      styles.modalBtn,
                       { backgroundColor: '#F2F2F7' },
                       e && { backgroundColor: '#E5E5EA' },
                       IS_WEB && { cursor: 'pointer' },
                     ]}
                     onPress={() => ee(false)}
                   >
-                    <Text style={[D.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
+                    <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
                   </Pressable>
-                  <View style={D.monthNav}>
+                  <View style={styles.monthNav}>
                     <TouchableOpacity
-                      style={D.monthNavBtn} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                      style={styles.monthNavBtn} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                       accessible
                       accessibilityRole="button"
                       accessibilityLabel="前へ"
@@ -1457,9 +1502,9 @@ const SettingsScreen = () => {
                     >
                       <Icons.Ionicons name="chevron-back" size={20} color="#007AFF" />
                     </TouchableOpacity>
-                    <Text style={D.monthNavText}>{Ve}年度のデータ</Text>
+                    <Text style={styles.monthNavText}>{Ve}年度のデータ</Text>
                     <TouchableOpacity
-                      style={D.monthNavBtn} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                      style={styles.monthNavBtn} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                       accessible
                       accessibilityRole="button"
                       accessibilityLabel="次へ"
@@ -1471,7 +1516,7 @@ const SettingsScreen = () => {
                   </View>
                   <Pressable
                     style={({ hovered: e }) => [
-                      D.modalBtn,
+                      styles.modalBtn,
                       { backgroundColor: '#007AFF', marginTop: 8 },
                       e && { backgroundColor: '#0062CC' },
                       IS_WEB && { cursor: 'pointer' },
@@ -1481,11 +1526,11 @@ const SettingsScreen = () => {
                       Ge('fiscal');
                     }}
                   >
-                    <Text style={[D.modalBtnText, { color: '#FFF' }]}>{Ve}年度を書き出す</Text>
+                    <Text style={[styles.modalBtnText, { color: '#FFF' }]}>{Ve}年度を書き出す</Text>
                   </Pressable>
                   <Pressable
                     style={({ hovered: e }) => [
-                      D.modalBtn,
+                      styles.modalBtn,
                       { backgroundColor: '#34C759' },
                       e && { backgroundColor: '#28A745' },
                       IS_WEB && { cursor: 'pointer' },
@@ -1495,18 +1540,18 @@ const SettingsScreen = () => {
                       Ge('all');
                     }}
                   >
-                    <Text style={[D.modalBtnText, { color: '#FFF' }]}>すべてのデータ</Text>
+                    <Text style={[styles.modalBtnText, { color: '#FFF' }]}>すべてのデータ</Text>
                   </Pressable>
                   <Pressable
                     style={({ hovered: e }) => [
-                      D.modalBtn,
+                      styles.modalBtn,
                       { backgroundColor: '#5856D6' },
                       e && { backgroundColor: '#4845C6' },
                       IS_WEB && { cursor: 'pointer' },
                     ]}
                     onPress={() => ve(true)}
                   >
-                    <Text style={[D.modalBtnText, { color: '#FFF' }]}>詳細な条件で絞り込む...</Text>
+                    <Text style={[styles.modalBtnText, { color: '#FFF' }]}>詳細な条件で絞り込む...</Text>
                   </Pressable>
                 </View>
               </>
@@ -1520,15 +1565,15 @@ const SettingsScreen = () => {
         animationType="fade"
         onRequestClose={() => !削除の段階 && 削除の窓を開く(false)}
       >
-        <View style={D.modalBackdrop}>
+        <View style={styles.modalBackdrop}>
           <TouchableOpacity
             style={StyleSheet.absoluteFill}
             activeOpacity={1}
             onPress={() => !削除の段階 && 削除の窓を開く(false)}
           />
-          <View style={D.modalContent}>
-            <Text style={[D.modalTitle, { color: '#FF3B30' }]}>アカウントを削除する</Text>
-            <Text style={[D.modalMessage, { textAlign: 'left' }]}>
+          <View style={styles.modalContent}>
+            <Text style={[styles.modalTitle, { color: '#FF3B30' }]}>アカウントを削除する</Text>
+            <Text style={[styles.modalMessage, { textAlign: 'left' }]}>
               {`団体「${activeGroupName || activeGroupId || ''}」のアカウントを削除します。\n\n` +
                 '・記録・部員・卒業生・ゴミ箱・設定がすべて消え、団体IDでログインできなくなります。\n' +
                 '・部員も、この団体には入れなくなります。\n' +
@@ -1538,7 +1583,7 @@ const SettingsScreen = () => {
             </Text>
             <View
               style={[
-                D.filterInput,
+                styles.filterInput,
                 {
                   width: '100%',
                   marginBottom: 10,
@@ -1573,10 +1618,10 @@ const SettingsScreen = () => {
             {!!削除の段階 && (
               <Text style={{ color: '#8E8E93', fontSize: 13, marginBottom: 10 }}>{`${削除の段階}…`}</Text>
             )}
-            <View style={D.modalButtonsRow}>
+            <View style={styles.modalButtonsRow}>
               <Pressable
                 style={({ hovered: e }) => [
-                  D.modalBtn,
+                  styles.modalBtn,
                   { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
                   e && { backgroundColor: '#E5E5EA' },
                   IS_WEB && { cursor: 'pointer' },
@@ -1584,11 +1629,11 @@ const SettingsScreen = () => {
                 onPress={() => 削除の窓を開く(false)}
                 disabled={!!削除の段階}
               >
-                <Text style={[D.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
+                <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
               </Pressable>
               <Pressable
                 style={({ hovered: e }) => [
-                  D.modalBtn,
+                  styles.modalBtn,
                   { backgroundColor: '#FF3B30', flex: 1, marginLeft: 5 },
                   e && { backgroundColor: '#D70015' },
                   (!!削除の段階 || !削除の合言葉) && { opacity: 0.5 },
@@ -1616,25 +1661,27 @@ const SettingsScreen = () => {
                 }}
                 disabled={!!削除の段階 || !削除の合言葉}
               >
-                <Text style={[D.modalBtnText, { color: '#FFF' }]}>{削除の段階 ? '削除中…' : '削除する'}</Text>
+                <Text style={[styles.modalBtnText, { color: '#FFF' }]}>
+                  {削除の段階 ? '削除中…' : '削除する'}
+                </Text>
               </Pressable>
             </View>
           </View>
         </View>
       </Modal>
       <Modal visible={Ae} transparent animationType="fade" onRequestClose={() => ke(false)}>
-        <View style={D.modalBackdrop}>
+        <View style={styles.modalBackdrop}>
           <TouchableOpacity
             style={StyleSheet.absoluteFill}
             activeOpacity={1}
             onPress={() => !Re && ke(false)}
           />
-          <View style={D.modalContent}>
-            <Text style={D.modalTitle}>管理者認証</Text>
-            <Text style={D.modalMessage}>団体パスワードを入力してください</Text>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>管理者認証</Text>
+            <Text style={styles.modalMessage}>団体パスワードを入力してください</Text>
             <View
               style={[
-                D.filterInput,
+                styles.filterInput,
                 {
                   width: '100%',
                   marginBottom: 15,
@@ -1663,10 +1710,10 @@ const SettingsScreen = () => {
                 <Icons.Ionicons name={showPw ? 'eye-off' : 'eye'} size={20} color="#8E8E93" />
               </Pressable>
             </View>
-            <View style={D.modalButtonsRow}>
+            <View style={styles.modalButtonsRow}>
               <Pressable
                 style={({ hovered: e }) => [
-                  D.modalBtn,
+                  styles.modalBtn,
                   { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
                   e && { backgroundColor: '#E5E5EA' },
                   IS_WEB && { cursor: 'pointer' },
@@ -1674,11 +1721,11 @@ const SettingsScreen = () => {
                 onPress={() => ke(false)}
                 disabled={Re}
               >
-                <Text style={[D.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
+                <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
               </Pressable>
               <Pressable
                 style={({ hovered: e }) => [
-                  D.modalBtn,
+                  styles.modalBtn,
                   { backgroundColor: '#007AFF', flex: 1, marginLeft: 5 },
                   e && { backgroundColor: '#0062CC' },
                   IS_WEB && { cursor: 'pointer' },
@@ -1699,22 +1746,22 @@ const SettingsScreen = () => {
                 }}
                 disabled={Re || !ze}
               >
-                <Text style={[D.modalBtnText, { color: '#FFF' }]}>{Re ? '認証中...' : '認証'}</Text>
+                <Text style={[styles.modalBtnText, { color: '#FFF' }]}>{Re ? '認証中...' : '認証'}</Text>
               </Pressable>
             </View>
           </View>
         </View>
       </Modal>
       <Modal visible={re} transparent animationType="fade" onRequestClose={() => oe(false)}>
-        <View style={D.modalBackdrop}>
+        <View style={styles.modalBackdrop}>
           <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => oe(false)} />
-          <View style={D.modalContent}>
-            <Text style={D.modalTitle}>ログアウト</Text>
-            <Text style={D.modalMessage}>{ログアウトの文言(ログアウトの段階, 残った未送信)}</Text>
-            <View style={D.modalButtonsRow}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>ログアウト</Text>
+            <Text style={styles.modalMessage}>{ログアウトの文言(ログアウトの段階, 残った未送信)}</Text>
+            <View style={styles.modalButtonsRow}>
               <Pressable
                 style={({ hovered: e }) => [
-                  D.modalBtn,
+                  styles.modalBtn,
                   { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
                   e && { backgroundColor: '#E5E5EA' },
                   IS_WEB && { cursor: 'pointer' },
@@ -1723,11 +1770,11 @@ const SettingsScreen = () => {
                 disabled={ログアウトのボタンを止める(ログアウトの段階)}
                 onPress={() => oe(false)}
               >
-                <Text style={[D.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
+                <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
               </Pressable>
               <Pressable
                 style={({ hovered: e }) => [
-                  D.modalBtn,
+                  styles.modalBtn,
                   { backgroundColor: '#FF3B30', flex: 1, marginLeft: 5 },
                   e && { backgroundColor: '#D63027' },
                   IS_WEB && { cursor: 'pointer' },
@@ -1764,7 +1811,7 @@ const SettingsScreen = () => {
                   }
                 }}
               >
-                <Text style={[D.modalBtnText, { color: '#FFF' }]}>
+                <Text style={[styles.modalBtnText, { color: '#FFF' }]}>
                   {ログアウトのボタン名(ログアウトの段階, 残った未送信)}
                 </Text>
               </Pressable>
@@ -1773,10 +1820,10 @@ const SettingsScreen = () => {
         </View>
       </Modal>
       <Modal visible={te} transparent animationType="fade" onRequestClose={() => le(false)}>
-        <View style={D.modalBackdrop}>
+        <View style={styles.modalBackdrop}>
           <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => le(false)} />
-          <View style={D.modalContent}>
-            <Text style={D.modalTitle}>運用ガイド</Text>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>運用ガイド</Text>
             <View
               style={{
                 width: '100%',
@@ -1803,14 +1850,14 @@ const SettingsScreen = () => {
             </View>
             <Pressable
               style={({ hovered: e }) => [
-                D.modalBtn,
+                styles.modalBtn,
                 { backgroundColor: '#F2F2F7', width: '100%' },
                 e && { backgroundColor: '#E5E5EA' },
                 IS_WEB && { cursor: 'pointer' },
               ]}
               onPress={() => le(false)}
             >
-              <Text style={[D.modalBtnText, { color: '#007AFF' }]}>閉じる</Text>
+              <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>閉じる</Text>
             </Pressable>
           </View>
         </View>
@@ -1836,7 +1883,7 @@ const SettingsScreen = () => {
         /* keyboardShouldPersistTaps を handled にしないと、キーボードが */
         /* 出ているあいだ、釦を押しても1回目は閉じるだけで終わる */}
         <_RN.KeyboardAvoidingView behavior={IS_IOS ? 'padding' : 'height'} style={{ flex: 1 }}>
-          <View style={D.modalBackdrop}>
+          <View style={styles.modalBackdrop}>
             <TouchableOpacity
               style={StyleSheet.absoluteFill}
               activeOpacity={1}
@@ -1844,11 +1891,11 @@ const SettingsScreen = () => {
             />
             <_RN.ScrollView // 巻物にするので高さの上限が要る。無いと中身のぶんだけ
               // 伸びて、キーボードに押し上げても釦が画面の外へ出る
-              style={[D.modalContent, { maxHeight: '80%', flexGrow: 0 }]}
+              style={[styles.modalContent, { maxHeight: '80%', flexGrow: 0 }]}
               contentContainerStyle={{ alignItems: 'center' }}
               keyboardShouldPersistTaps="handled"
             >
-              <Text style={D.modalTitle}>お問い合わせ</Text>
+              <Text style={styles.modalTitle}>お問い合わせ</Text>
               <Text style={{ fontSize: 13, color: '#8E8E93', marginBottom: 12, textAlign: 'center' }}>
                 開発者へお問い合わせを送信します
               </Text>
@@ -1856,7 +1903,7 @@ const SettingsScreen = () => {
                 メールアドレスは書かなくても送れます。書いていただくと、こちらから返事ができます。
               </Text>
               <TextInput
-                style={[D.filterInput, { width: '100%', marginBottom: 10 }]}
+                style={[styles.filterInput, { width: '100%', marginBottom: 10 }]}
                 placeholder="メールアドレス（任意）"
                 value={inquiryEmail}
                 onChangeText={(e) => setInquiryEmail(e)}
@@ -1866,7 +1913,7 @@ const SettingsScreen = () => {
               />
               <TextInput
                 style={[
-                  D.filterInput,
+                  styles.filterInput,
                   { width: '100%', marginBottom: 15, height: 120, textAlignVertical: 'top' },
                 ]}
                 placeholder="お問い合わせ内容"
@@ -1938,10 +1985,10 @@ const SettingsScreen = () => {
                   </Text>
                 </Pressable>
               ) : null}
-              <View style={D.modalButtonsRow}>
+              <View style={styles.modalButtonsRow}>
                 <Pressable
                   style={({ hovered: e }) => [
-                    D.modalBtn,
+                    styles.modalBtn,
                     { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
                     e && { backgroundColor: '#E5E5EA' },
                     IS_WEB && { cursor: 'pointer' },
@@ -1954,11 +2001,11 @@ const SettingsScreen = () => {
                   }}
                   disabled={inquirySending}
                 >
-                  <Text style={[D.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
+                  <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
                 </Pressable>
                 <Pressable
                   style={({ hovered: e }) => [
-                    D.modalBtn,
+                    styles.modalBtn,
                     { backgroundColor: '#FF9500', flex: 1, marginLeft: 5 },
                     e && { backgroundColor: '#E68A00' },
                     IS_WEB && { cursor: 'pointer' },
@@ -2007,7 +2054,7 @@ const SettingsScreen = () => {
                   }}
                   disabled={inquirySending}
                 >
-                  <Text style={[D.modalBtnText, { color: '#FFF' }]}>
+                  <Text style={[styles.modalBtnText, { color: '#FFF' }]}>
                     {inquirySending ? '送信中...' : '送信'}
                   </Text>
                 </Pressable>
@@ -2019,7 +2066,7 @@ const SettingsScreen = () => {
     </ReactNativeSafeAreaContext.SafeAreaView>
   );
 };
-const D = StyleSheet.create({
+const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#F2F2F7', paddingTop: IS_WEB ? WEB_TOP_PADDING : SAFE_TOP_PADDING },
   container: { flex: 1 },
   headerTitle: {
