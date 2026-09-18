@@ -30,11 +30,11 @@ const ScoreCell = React.memo(
     読み,
     onToggle,
   }) => {
-    const O = useScoreStore((e) => e.toggleMark);
-    const S = useScoreStore((e) => e.viewScale);
-    const v = 'number' == typeof S && !isNaN(S) && S > 0 ? S : 1;
-    const _ = mark ?? '';
-    const z =
+    const 印を切り替える = useScoreStore((x) => x.toggleMark);
+    const viewScale = useScoreStore((x) => x.viewScale);
+    const 倍率 = 'number' == typeof viewScale && !isNaN(viewScale) && viewScale > 0 ? viewScale : 1;
+    const 印 = mark ?? '';
+    const 背景の色 =
       'total' === columnType
         ? 'rgba(0,122,255,0.08)'
         : 'separator' === columnType
@@ -42,44 +42,44 @@ const ScoreCell = React.memo(
           : isLocked
             ? '#F2F2F7'
             : '#FFFFFF';
-    const B = isFirst ? 1 : isBlockBottom ? 2 : 1;
-    const T = 'separator' === columnType || 'total' === columnType;
-    const w = T ? 1 : 0;
+    const 下線の太さ = isFirst ? 1 : isBlockBottom ? 2 : 1;
+    const 間隔か合計 = 'separator' === columnType || 'total' === columnType;
+    const 枠の太さ = 間隔か合計 ? 1 : 0;
     const 細い = 'separator' === columnType ? UIConfig.separatorWidth : null;
-    const W = (横 ? UIConfig.cellWidth : (細い ?? UIConfig.cellWidth)) * v;
-    const E = (横 ? (細い ?? UIConfig.cellHeight) : UIConfig.cellHeight) * v;
+    const 幅 = (横 ? UIConfig.cellWidth : (細い ?? UIConfig.cellWidth)) * 倍率;
+    const 高さ = (横 ? (細い ?? UIConfig.cellHeight) : UIConfig.cellHeight) * 倍率;
     const // 縦は「下に太線・右に細線」。横はそれを90度まわして「右に太線・下に細線」
       線 = 横
         ? {
-            borderRightWidth: B,
+            borderRightWidth: 下線の太さ,
             borderRightColor: '#000',
             borderBottomWidth: 1,
             borderBottomColor: '#000',
-            borderTopWidth: w,
+            borderTopWidth: 枠の太さ,
             borderTopColor: '#000',
           }
         : {
-            borderBottomWidth: B,
+            borderBottomWidth: 下線の太さ,
             borderBottomColor: '#000',
             borderRightWidth: 1,
             borderRightColor: '#000',
-            borderLeftWidth: w,
+            borderLeftWidth: 枠の太さ,
             borderLeftColor: '#000',
           };
     const timerRef = React.useRef(null);
     const longPressTimerRef = React.useRef(null);
     const isLongPressedRef = React.useRef(false);
     const cellRef = React.useRef(null);
-    const enableArrowLocation = useScoreStore((e) => e.enableArrowLocation);
+    const enableArrowLocation = useScoreStore((x) => x.enableArrowLocation);
     // 誤タップ防止。入れてから少し経ったますは、押しても変わらないようにする。
     // 直したいときは長押しで、そのますだけ開く。
     // 記録そのものには持たせない（同期の形を変えないため）
-    const 自動ロックする = useScoreStore((e) => e.自動ロックする);
-    const 自動ロックまでの秒 = useScoreStore((e) => e.自動ロックまでの秒);
-    const ますを開ける = useScoreStore((e) => e.ますを開ける);
-    const 閉じたますが押された = useScoreStore((e) => e.閉じたますが押された);
+    const 自動ロックする = useScoreStore((x) => x.自動ロックする);
+    const 自動ロックまでの秒 = useScoreStore((x) => x.自動ロックまでの秒);
+    const ますを開ける = useScoreStore((x) => x.ますを開ける);
+    const 閉じたますが押された = useScoreStore((x) => x.閉じたますが押された);
     const この鍵 = archerId + ':' + index;
-    const 入れた = useScoreStore((s) => s.入れた時刻[この鍵]);
+    const 入れた = useScoreStore((x) => x.入れた時刻[この鍵]);
     const [経った, 経ったを置く] = React.useState(false);
     React.useEffect(() => {
       経ったを置く(false);
@@ -103,8 +103,8 @@ const ScoreCell = React.memo(
     const 自動で閉じている =
       印を入れる列 && 鍵をかける板 && 自動ロックする && !!(mark ?? '') && (経った || !入れた);
     const 閉じている = isLocked || 自動で閉じている;
-    const setActiveArrowLocationEdit = useScoreStore((e) => e.setActiveArrowLocationEdit);
-    const updateArrowLocation = useScoreStore((e) => e.updateArrowLocation);
+    const setActiveArrowLocationEdit = useScoreStore((x) => x.setActiveArrowLocationEdit);
+    const updateArrowLocation = useScoreStore((x) => x.updateArrowLocation);
     // ここで (s) => s.archers.find(...) を購読していた。ますの数だけ
     // 全射手の走査が走り、○×を1つ入れるたびに盤面全体が重くなっていた。
     // この射手を使うのは長押しの中だけなので、そのとき取りに行けばよい
@@ -112,7 +112,7 @@ const ScoreCell = React.memo(
     // ますが別の射手に使い回されたときに前の人を返してしまう
     const 射手を取る = () => {
       const id = latestPropsRef.current ? latestPropsRef.current.archerId : archerId;
-      return useScoreStore.getState().archers.find((a) => a && a.id === id);
+      return useScoreStore.getState().archers.find((x) => x && x.id === id);
     };
     const latestPropsRef = React.useRef({
       mark,
@@ -231,7 +231,7 @@ const ScoreCell = React.memo(
       if (onToggle) {
         onToggle(archerId, index);
       } else {
-        O(archerId, index);
+        印を切り替える(archerId, index);
       }
       ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
       if (enableArrowLocation) {
@@ -262,7 +262,11 @@ const ScoreCell = React.memo(
         onTouchEnd={(ev) => {
           ev.stopPropagation();
         }}
-        style={[styles.cell, { width: W, height: E, backgroundColor: 自動で閉じている ? '#F2F2F7' : z }, 線]}
+        style={[
+          styles.cell,
+          { width: 幅, height: 高さ, backgroundColor: 自動で閉じている ? '#F2F2F7' : 背景の色 },
+          線,
+        ]}
       >
         <Pressable
           onPress={handlePress}
@@ -288,18 +292,18 @@ const ScoreCell = React.memo(
                 style={[
                   styles.markText,
                   {
-                    color: ((L = _), '○' === L ? '#FF3B30' : '\xd7' === L ? '#000000' : 'transparent'),
-                    fontSize: 34 * v,
-                    lineHeight: E,
+                    color: '○' === 印 ? '#FF3B30' : '\xd7' === 印 ? '#000000' : 'transparent',
+                    fontSize: 34 * 倍率,
+                    lineHeight: 高さ,
                   },
                 ]}
               >
-                {_}
+                {印}
               </Text>
             )}
             {subName ? (
-              <View style={[styles.subContainer, { bottom: 2 * v }]}>
-                <Text style={[styles.subText, { fontSize: 9 * v }]} numberOfLines={1}>
+              <View style={[styles.subContainer, { bottom: 2 * 倍率 }]}>
+                <Text style={[styles.subText, { fontSize: 9 * 倍率 }]} numberOfLines={1}>
                   {subName}
                 </Text>
               </View>
@@ -307,17 +311,16 @@ const ScoreCell = React.memo(
           </React.Fragment>
         </Pressable>
         {isBlockTop && !isNormalArcher && (
-          <View style={[styles.lockIconOverlay, { top: 3 * v }]}>
+          <View style={[styles.lockIconOverlay, { top: 3 * 倍率 }]}>
             <Icons.Ionicons
               name={isLocked ? 'lock-closed' : 'lock-open'}
-              size={16 * v}
+              size={16 * 倍率}
               color={isLocked ? '#FF3B30' : '#8E8E93'}
             />
           </View>
         )}
       </View>
     );
-    var L;
   }
 );
 const styles = StyleSheet.create({

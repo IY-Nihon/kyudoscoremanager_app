@@ -6,27 +6,27 @@ const StyleSheet = require('./StyleSheet').default;
 const { UIConfig } = require('./uiConfig');
 const { useScoreStore } = require('./useScoreStore');
 const LabelColumn = ({ shots, showFooter = true, 横並び: 横 = false }) => {
-  const f = useScoreStore((e) => e.viewScale);
-  const s = 'number' == typeof f && !isNaN(f) && f > 0 ? f : 1;
-  const u = [];
+  const viewScale = useScoreStore((x) => x.viewScale);
+  const 倍率 = 'number' == typeof viewScale && !isNaN(viewScale) && viewScale > 0 ? viewScale : 1;
+  const 番号たち = [];
   // 縦の表は下から上へ数える（1射目が下）。横の表は左から右へ数える
-  if (横) for (let t = 1; t <= shots; t++) u.push(t);
-  else for (let t = shots; t >= 1; t--) u.push(t);
+  if (横) for (let 番 = 1; 番 <= shots; 番++) 番号たち.push(番);
+  else for (let 番 = shots; 番 >= 1; 番--) 番号たち.push(番);
   return (
     <View
       style={[
         styles.column,
         横
           ? {
-              width: UIConfig.cellWidth * (shots + 1) * s,
-              height: UIConfig.cellHeight * s,
+              width: UIConfig.cellWidth * (shots + 1) * 倍率,
+              height: UIConfig.cellHeight * 倍率,
               flexDirection: 'row',
               flexShrink: 0,
               borderLeftWidth: 0,
               borderTopWidth: 1.5,
               borderTopColor: '#000',
             }
-          : { width: UIConfig.headerWidth * s },
+          : { width: UIConfig.headerWidth * 倍率 },
       ]}
     >
       <View style={{ flexDirection: 横 ? 'row-reverse' : 'column' }}>
@@ -35,51 +35,51 @@ const LabelColumn = ({ shots, showFooter = true, 横並び: 横 = false }) => {
             styles.header,
             横
               ? {
-                  width: UIConfig.cellWidth * s,
-                  height: UIConfig.cellHeight * s,
+                  width: UIConfig.cellWidth * 倍率,
+                  height: UIConfig.cellHeight * 倍率,
                   borderBottomWidth: 0,
                   borderRightWidth: 0,
                   borderLeftWidth: 1.5,
                   borderLeftColor: '#000',
                 }
-              : { height: UIConfig.headerHeight * s },
+              : { height: UIConfig.headerHeight * 倍率 },
           ]}
         >
-          <Text style={[styles.headerText, { fontSize: 10 * s }]}>計</Text>
+          <Text style={[styles.headerText, { fontSize: 10 * 倍率 }]}>計</Text>
         </View>
         <View style={横 ? { flexDirection: 'row' } : undefined}>
-          {u.map((e) => {
+          {番号たち.map((番号) => {
             // 立の切れ目。縦では下の線、横では右の線を太くする
-            const i = (e - 1) % 4 == 0 && 1 !== e;
-            const 切れ目 = 横 ? e % 4 == 0 && e !== u.length : i;
+            const 縦の切れ目 = (番号 - 1) % 4 == 0 && 1 !== 番号;
+            const 切れ目 = 横 ? 番号 % 4 == 0 && 番号 !== 番号たち.length : 縦の切れ目;
             return (
               <View
-                key={e}
+                key={番号}
                 style={[
                   styles.cell,
                   横
                     ? {
-                        width: UIConfig.cellWidth * s,
-                        height: UIConfig.cellHeight * s,
+                        width: UIConfig.cellWidth * 倍率,
+                        height: UIConfig.cellHeight * 倍率,
                         borderRightWidth: 切れ目 ? 2 : 1,
                         borderRightColor: '#000',
                       }
                     : {
-                        height: UIConfig.cellHeight * s,
-                        borderBottomWidth: i ? 2 : 1,
+                        height: UIConfig.cellHeight * 倍率,
+                        borderBottomWidth: 縦の切れ目 ? 2 : 1,
                         borderBottomColor: '#000',
                       },
                 ]}
               >
-                <Text style={[styles.numText, { fontSize: 10 * s }]}>{e}</Text>
+                <Text style={[styles.numText, { fontSize: 10 * 倍率 }]}>{番号}</Text>
               </View>
             );
           })}
         </View>
       </View>
       {showFooter && (
-        <View style={[styles.footer, { height: UIConfig.footerHeight * s }]}>
-          <Text style={[styles.footerText, { fontSize: 10 * s }]}>名</Text>
+        <View style={[styles.footer, { height: UIConfig.footerHeight * 倍率 }]}>
+          <Text style={[styles.footerText, { fontSize: 10 * 倍率 }]}>名</Text>
         </View>
       )}
       {横 ? (

@@ -6,12 +6,12 @@
 'use strict';
 
 const { generateUUID } = require('./uuid');
-const newArcher = (n) => ({
+const newArcher = (本数) => ({
   id: generateUUID(),
   name: '',
   gender: '未設定',
   grade: 1,
-  marks: Array(n).fill(''),
+  marks: Array(本数).fill(''),
   isSeparator: false,
   isTotalCalculator: false,
   isGuest: false,
@@ -30,12 +30,12 @@ const newSeparator = () => ({
   lockedBlocks: {},
   lastModified: 0,
 });
-const newTotalCalculator = (n) => ({
+const newTotalCalculator = (本数) => ({
   id: generateUUID(),
   name: '計',
   gender: '未設定',
   grade: 0,
-  marks: Array(n).fill(''),
+  marks: Array(本数).fill(''),
   isSeparator: false,
   isTotalCalculator: true,
   isGuest: false,

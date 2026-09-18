@@ -9,24 +9,24 @@ const { useScoreStore } = require('./useScoreStore');
 const Icons = require('@expo/vector-icons');
 const { getShadowStyle } = require('./shadowStyle');
 const OfflineIndicator = () => {
-  const e = useScoreStore((e) => e.isNetworkOnline);
-  const [l] = React.useState(new Animated.Value(0));
+  const つながっている = useScoreStore((e) => e.isNetworkOnline);
+  const [見え具合] = React.useState(new Animated.Value(0));
   return (
     React.useEffect(() => {
-      Animated.timing(l, {
-        toValue: e ? 0 : 1,
+      Animated.timing(見え具合, {
+        toValue: つながっている ? 0 : 1,
         duration: 300,
         useNativeDriver: typeof window === 'undefined',
       }).start();
-    }, [e]),
-    e ? null : (
+    }, [つながっている]),
+    つながっている ? null : (
       <Animated.View
         pointerEvents="none"
         style={[
           styles.container,
           {
-            opacity: l,
-            transform: [{ translateY: l.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }],
+            opacity: 見え具合,
+            transform: [{ translateY: 見え具合.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }],
           },
         ]}
       >

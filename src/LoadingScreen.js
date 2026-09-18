@@ -8,7 +8,7 @@ const { useScoreStore } = require('./useScoreStore');
 const { getShadowStyle } = require('./shadowStyle');
 const { Image } = require('react-native');
 const LoadingScreen = () => {
-  const e = useScoreStore((e) => e.initializationLogs);
+  const 読み込みの記録 = useScoreStore((e) => e.initializationLogs);
   return (
     <View style={styles.container}>
       <View style={styles.logoWrapper}>
@@ -19,19 +19,22 @@ const LoadingScreen = () => {
         <ActivityIndicator size="small" color="#007AFF" />
       </View>
       <Text style={styles.subtitle}>データを準備しています...</Text>
-      {e && e.length > 0 && (
+      {読み込みの記録 && 読み込みの記録.length > 0 && (
         <View style={styles.logContainer}>
           <View style={styles.logHeader}>
             <View style={styles.logDot} />
             <Text style={styles.logHeaderText}>INITIALIZATION LOG</Text>
           </View>
           <View style={styles.logList}>
-            {e.map((t, l) => (
+            {読み込みの記録.map((行, 番) => (
               <Text
-                key={l}
-                style={[styles.logText, l === e.length - 1 ? styles.logTextActive : styles.logTextInactive]}
+                key={番}
+                style={[
+                  styles.logText,
+                  番 === 読み込みの記録.length - 1 ? styles.logTextActive : styles.logTextInactive,
+                ]}
               >
-                {t}
+                {行}
               </Text>
             ))}
           </View>
