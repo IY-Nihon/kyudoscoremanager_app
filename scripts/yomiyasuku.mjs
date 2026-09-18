@@ -648,6 +648,9 @@ export async function 読みやすく(元, 名札) {
     const 置き換え = (p) => {
       const 名 = p.node.name;
       if (!別名たち.has(名)) return;
+      // { x: 1 } の鍵・o.x・<Text x={1}> の x は変数の参照ではない。
+      // ここを見落として x → Svgの部品 に変えてしまい、図の軸の字が左端に寄った
+      if (!p.isReferencedIdentifier()) return;
       const 情報 = 付け替え.get(名);
       const b = p.scope.getBinding(名);
       if (!b || !宣言の節.has(b.path.node)) return; // 同名の別の変数
