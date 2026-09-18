@@ -86,8 +86,8 @@ const ScoreCell = React.memo(
       if (!自動ロックする || !入れた) return;
       const 残り = 自動ロックまでの秒 * 1000 - (Date.now() - 入れた);
       if (残り <= 0) return void 経ったを置く(true);
-      const t = setTimeout(() => 経ったを置く(true), 残り);
-      return () => clearTimeout(t);
+      const 札 = setTimeout(() => 経ったを置く(true), 残り);
+      return () => clearTimeout(札);
     }, [自動ロックする, 自動ロックまでの秒, 入れた]);
     // 鍵をかけるのは記録中の板だけ。
     // 履歴の編集画面は onToggle を渡してくる。あちらは直しに来ている画面なので、
@@ -112,7 +112,7 @@ const ScoreCell = React.memo(
     // ますが別の射手に使い回されたときに前の人を返してしまう
     const 射手を取る = () => {
       const id = latestPropsRef.current ? latestPropsRef.current.archerId : archerId;
-      return useScoreStore.getState().archers.find((x) => x && x.id === id);
+      return useScoreStore.getState().archers.find((射手) => 射手 && 射手.id === id);
     };
     const latestPropsRef = React.useRef({
       mark,
@@ -139,8 +139,8 @@ const ScoreCell = React.memo(
       };
     }, []);
     React.useEffect(() => {
-      const el = cellRef.current;
-      if (!el) return;
+      const 節点 = cellRef.current;
+      if (!節点) return;
       const startPress = (ev) => {
         const props = latestPropsRef.current;
         if (props.isLocked) return;
@@ -193,25 +193,25 @@ const ScoreCell = React.memo(
       const suppressContext = (ev) => {
         ev.preventDefault();
       };
-      el.addEventListener('mousedown', startPress);
-      el.addEventListener('mouseup', endPress);
-      el.addEventListener('mouseleave', endPress);
-      el.addEventListener('touchstart', startPress, { passive: true });
-      el.addEventListener('touchend', endPress);
-      el.addEventListener('touchcancel', endPress);
-      el.addEventListener('contextmenu', suppressContext);
+      節点.addEventListener('mousedown', startPress);
+      節点.addEventListener('mouseup', endPress);
+      節点.addEventListener('mouseleave', endPress);
+      節点.addEventListener('touchstart', startPress, { passive: true });
+      節点.addEventListener('touchend', endPress);
+      節点.addEventListener('touchcancel', endPress);
+      節点.addEventListener('contextmenu', suppressContext);
       return () => {
         // 押さえている最中にこのますが消えることがある（射手を消した、
         // 射数を減らした、ライブで盤面が入れ替わった）。止めておかないと、
         // 消えたあとに鍵が開いたり矢所の窓が出たりする
         endPress();
-        el.removeEventListener('mousedown', startPress);
-        el.removeEventListener('mouseup', endPress);
-        el.removeEventListener('mouseleave', endPress);
-        el.removeEventListener('touchstart', startPress);
-        el.removeEventListener('touchend', endPress);
-        el.removeEventListener('touchcancel', endPress);
-        el.removeEventListener('contextmenu', suppressContext);
+        節点.removeEventListener('mousedown', startPress);
+        節点.removeEventListener('mouseup', endPress);
+        節点.removeEventListener('mouseleave', endPress);
+        節点.removeEventListener('touchstart', startPress);
+        節点.removeEventListener('touchend', endPress);
+        節点.removeEventListener('touchcancel', endPress);
+        節点.removeEventListener('contextmenu', suppressContext);
       };
     }, []);
     const handlePress = () => {

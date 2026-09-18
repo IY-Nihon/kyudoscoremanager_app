@@ -515,7 +515,7 @@ const loadButtonPos = () => {
         return parsed;
       }
     }
-  } catch (e) {
+  } catch (誤り) {
     /* 読めなければ、右下から始める */
   }
   return null;
@@ -526,7 +526,7 @@ const saveButtonPos = (pos) => {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(BUTTON_POS_KEY, JSON.stringify(pos));
     }
-  } catch (e) {
+  } catch (誤り) {
     /* 覚えられなくても、この場では動く。次回また右下に戻るだけ */
   }
 };
@@ -540,7 +540,7 @@ const loadChatHistory = () => {
         return parsed.map((msg) => (msg.id ? msg : { ...msg, id: generateMsgId() }));
       }
     }
-  } catch (e) {
+  } catch (誤り) {
     /* 読めなければ、やり取りの控えは無いものとして始める */
   }
   return null;
@@ -552,7 +552,7 @@ const saveChatHistory = (messages) => {
       const toSave = messages.slice(-MAX_SAVED_MESSAGES);
       localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(toSave));
     }
-  } catch (e) {
+  } catch (誤り) {
     /* 控えられなくても、やり取りは続く。端末の空き不足は記録の保存側が知らせる */
   }
 };
@@ -659,7 +659,7 @@ const AIChatBot = () => {
           try {
             const 選択 = window.getSelection();
             if (選択 && !選択.isCollapsed) 選択.removeAllRanges();
-          } catch (e) {
+          } catch (誤り) {
             /* 解けなくても引く動きは続く */
           }
         }
@@ -1069,7 +1069,7 @@ const AIChatBot = () => {
             let 文 = '';
             try {
               文 = かけら.text() || '';
-            } catch (e) {
+            } catch (誤り) {
               文 = ''; // 道具の呼び出しだけのかけらは文字を持たない
             }
             if (!文) continue;
@@ -1107,12 +1107,12 @@ const AIChatBot = () => {
             if (call.name === 'getAllMembersStats') {
               const { dateFrom, dateTo, sortBy, limit, minShots } = call.args;
               const from = dateFrom ? new Date(dateFrom).getTime() : 0;
-              const to = dateTo ? new Date(dateTo).getTime() + 86400000 : Infinity;
+              const 終わり = dateTo ? new Date(dateTo).getTime() + 86400000 : Infinity;
 
               // 数える・並べる・絞るは、すべてここで済ませる。
               // 人数ぶんの表を渡して模型に選ばせると取り違えるため
               const 結果 = 全員の成績(members, sessions, {
-                期間: { 始め: from, 終わり: to },
+                期間: { 始め: from, 終わり },
                 並び: sortBy,
                 件数: limit,
                 最小射数: minShots,
@@ -1396,8 +1396,8 @@ const AIChatBot = () => {
                 });
               } else if (dateFrom || dateTo) {
                 const from = dateFrom ? new Date(dateFrom).getTime() : 0;
-                const to = dateTo ? new Date(dateTo).getTime() + 86400000 : Infinity;
-                filtered = filtered.filter((記録) => (記録.date || 0) >= from && (記録.date || 0) <= to);
+                const 終わり = dateTo ? new Date(dateTo).getTime() + 86400000 : Infinity;
+                filtered = filtered.filter((記録) => (記録.date || 0) >= from && (記録.date || 0) <= 終わり);
               }
 
               // 上限を置く。引数なしで呼ばれると全記録を人ごとの内訳付きで返し、

@@ -19,12 +19,12 @@ var _docPickerModule = null;
 var _fsModule = null;
 try {
   _docPickerModule = require('expo-document-picker');
-} catch (e) {
+} catch (誤り) {
   /* この部品が無い場（Web）でも、下の代わりの品で動く */
 }
 try {
   _fsModule = require('expo-file-system');
-} catch (e) {
+} catch (誤り) {
   /* この部品が無い場（Web）でも、下の代わりの品で動く */
 }
 const docPicker = _docPickerModule || { getDocumentAsync: async () => ({ canceled: true, assets: [] }) };
@@ -43,19 +43,19 @@ const AttendanceScreen = () => {
   const currentFiscalYear = selectedMonth >= 4 ? selectedYear : selectedYear - 1;
   const getLocalDateString = (dateInput) => {
     if (!dateInput) return null;
-    let d;
+    let 日付;
     if (dateInput && typeof dateInput.toDate === 'function') {
-      d = dateInput.toDate();
+      日付 = dateInput.toDate();
     } else if (dateInput && dateInput.seconds !== undefined) {
-      d = new Date(dateInput.seconds * 1000);
+      日付 = new Date(dateInput.seconds * 1000);
     } else {
-      d = new Date(dateInput);
+      日付 = new Date(dateInput);
     }
-    if (isNaN(d.getTime())) return null;
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
+    if (isNaN(日付.getTime())) return null;
+    const 年 = 日付.getFullYear();
+    const 月 = String(日付.getMonth() + 1).padStart(2, '0');
+    const day = String(日付.getDate()).padStart(2, '0');
+    return `${年}-${月}-${day}`;
   };
   const changeMonth = (offset) => {
     let newMonth = selectedMonth + offset;
@@ -75,8 +75,8 @@ const AttendanceScreen = () => {
   };
   React.useEffect(() => {
     if (!activeGroupId) return;
-    const q = firestore.collection(db, `groups/${activeGroupId}/officialPracticeDays`);
-    const unsubscribe = firestore.onSnapshot(q, (snap) => {
+    const 置き場 = firestore.collection(db, `groups/${activeGroupId}/officialPracticeDays`);
+    const unsubscribe = firestore.onSnapshot(置き場, (snap) => {
       const days = {};
       snap.forEach((doc) => {
         days[doc.id] = doc.data();
@@ -92,30 +92,30 @@ const AttendanceScreen = () => {
     try {
       if (isSet) await firestore.deleteDoc(docRef);
       else await firestore.setDoc(docRef, { date: dateStr, created: Date.now() });
-    } catch (e) {
-      console.error(e);
+    } catch (誤り) {
+      console.error(誤り);
     }
   };
   const getAttendanceStatus = (dateStr, memberId) => {
-    const daySessions = sessions.filter((s) => getLocalDateString(s?.date) === dateStr);
+    const daySessions = sessions.filter((記録) => getLocalDateString(記録?.date) === dateStr);
     const isFuture = dateStr > getLocalDateString(new Date());
     if (daySessions.length === 0) {
       if (practiceDays[dateStr]) return isFuture ? 'none' : 'absent';
       return 'none';
     }
     let status = 'none';
-    for (const s of daySessions) {
+    for (const 記録 of daySessions) {
       // 交代で入った人は memberId に出てこない。substitutionIds も見る
-      const hasRecord = s.archers?.some((a) => 射に出ているか(a, memberId));
+      const hasRecord = 記録.archers?.some((射手) => 射に出ているか(射手, memberId));
       if (hasRecord) return 'present';
-      const explicit = s.attendance?.[memberId];
+      const explicit = 記録.attendance?.[memberId];
       if (explicit && explicit !== 'none') {
         if (explicit !== 'present' || status === 'none') status = explicit;
       }
     }
     if (status === 'none' && practiceDays[dateStr]) {
       // 現役生のみ、記録がない場合に「欠席」とする
-      const member = members.find((m) => String(m.id) === String(memberId));
+      const member = members.find((部員) => String(部員.id) === String(memberId));
       if (member && (member.grade || 0) < 5) return 'absent';
       return 'none';
     }
@@ -123,26 +123,26 @@ const AttendanceScreen = () => {
   };
   const filteredPracticeDays = Object.keys(practiceDays)
     .filter((dStr) => {
-      const d = new Date(dStr);
+      const 日付 = new Date(dStr);
       if (tab === 'days' || rangeType === 'month')
-        return d.getFullYear() === selectedYear && d.getMonth() + 1 === selectedMonth;
+        return 日付.getFullYear() === selectedYear && 日付.getMonth() + 1 === selectedMonth;
       if (rangeType === 'year') {
-        const y = d.getMonth() + 1 >= 4 ? d.getFullYear() : d.getFullYear() - 1;
-        return y === currentFiscalYear;
+        const 年度 = 日付.getMonth() + 1 >= 4 ? 日付.getFullYear() : 日付.getFullYear() - 1;
+        return 年度 === currentFiscalYear;
       }
       return true;
     })
-    .sort((a, b) => b.localeCompare(a));
+    .sort((甲, 乙) => 乙.localeCompare(甲));
   const todayStr = getLocalDateString(new Date());
-  const pastPracticeDays = filteredPracticeDays.filter((d) => d <= todayStr);
+  const pastPracticeDays = filteredPracticeDays.filter((日) => 日 <= todayStr);
   const stats = members
-    .map((m) => {
+    .map((部員) => {
       let presentCount = 0;
       let lateCount = 0;
       let earlyCount = 0;
       let absentCount = 0;
       filteredPracticeDays.forEach((dStr) => {
-        const status = getAttendanceStatus(dStr, m.id);
+        const status = getAttendanceStatus(dStr, 部員.id);
         if (status === 'present') presentCount++;
         else if (status === 'late') {
           presentCount++;
@@ -153,33 +153,33 @@ const AttendanceScreen = () => {
         } else if (status === 'absent') absentCount++;
       });
       // その年度に現役だったか判定（留年等も考慮）
-      let isActiveInYear = (m.grade || 0) < 5; // 現在現役なら基本真
-      if (m.grade === 5) {
-        if (m.graduationYear) {
+      let isActiveInYear = (部員.grade || 0) < 5; // 現在現役なら基本真
+      if (部員.grade === 5) {
+        if (部員.graduationYear) {
           // 卒業年度が記録されていれば、表示年度がそれ以前なら現役扱い
-          isActiveInYear = currentFiscalYear <= m.graduationYear;
-        } else if (m.termKi) {
+          isActiveInYear = currentFiscalYear <= 部員.graduationYear;
+        } else if (部員.termKi) {
           // 記録がない場合の救済：期から推測 (現在の1年生の期から逆算)
           // 卒業年度 ≒ (現在の年度) + (卒業代の期 - 現在の1年生の期)
           const currentFreshmanTerm = useScoreStore.getState().currentFreshmanTerm;
-          const gradYear = currentFiscalYear + (currentFreshmanTerm - 3 - m.termKi);
+          const gradYear = currentFiscalYear + (currentFreshmanTerm - 3 - 部員.termKi);
           isActiveInYear = currentFiscalYear <= gradYear;
         }
       }
       const totalOfficial = isActiveInYear ? pastPracticeDays.length : presentCount + absentCount;
       const rate = totalOfficial > 0 ? (presentCount / totalOfficial) * 100 : 0;
-      return { ...m, rate, presentCount, lateCount, earlyCount, absentCount };
+      return { ...部員, rate, presentCount, lateCount, earlyCount, absentCount };
     })
-    .filter((m) => {
+    .filter((部員) => {
       // 現役生、またはその期間内に一度でも出席実績がある卒業生を表示
-      return (m.grade || 0) < 5 || m.presentCount > 0;
+      return (部員.grade || 0) < 5 || 部員.presentCount > 0;
     })
-    .sort((e, t) => {
+    .sort((甲, 乙) => {
       // 出席率順は維持
-      if (Math.abs(t.rate - e.rate) > 0.001) return t.rate - e.rate;
+      if (Math.abs(乙.rate - 甲.rate) > 0.001) return 乙.rate - 甲.rate;
       // 出席率が同じ場合の基本の並び順（メンバー管理画面と一致）
-      const n_grade = undefined === e.grade || null === e.grade ? 99 : Number(e.grade);
-      const l_grade = undefined === t.grade || null === t.grade ? 99 : Number(t.grade);
+      const n_grade = undefined === 甲.grade || null === 甲.grade ? 99 : Number(甲.grade);
+      const l_grade = undefined === 乙.grade || null === 乙.grade ? 99 : Number(乙.grade);
       const s_idx = 0 === n_grade ? 99 : n_grade;
       const a_idx = 0 === l_grade ? 99 : l_grade;
       if (s_idx !== a_idx) return s_idx - a_idx;
@@ -187,8 +187,8 @@ const AttendanceScreen = () => {
         const t_gen = (g_val || '').trim();
         return '男子' === t_gen ? 0 : '女子' === t_gen ? 1 : 2;
       };
-      const u_val = c_func(e.gender) - c_func(t.gender);
-      return 0 !== u_val ? u_val : (e.name || '').localeCompare(t.name || '', 'ja');
+      const u_val = c_func(甲.gender) - c_func(乙.gender);
+      return 0 !== u_val ? u_val : (甲.name || '').localeCompare(乙.name || '', 'ja');
     });
   const normalizeDate = (dStr) => {
     if (!dStr) return null;
@@ -209,7 +209,7 @@ const AttendanceScreen = () => {
       setLoadingMsg('予定表を読み込み中...');
       let base64 = '';
       if (IS_WEB) {
-        const fileData = asset.file || (await fetch(asset.uri).then((r) => r.blob()));
+        const fileData = asset.file || (await fetch(asset.uri).then((返り) => 返り.blob()));
         base64 = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => {
@@ -280,16 +280,16 @@ const AttendanceScreen = () => {
       }
       let items = JSON.parse(text);
       const validatedItems = (Array.isArray(items) ? items : [])
-        .map((i) => ({ date: normalizeDate(i.date), reason: i.reason }))
-        .filter((i) => !!i.date);
+        .map((項目) => ({ date: normalizeDate(項目.date), reason: 項目.reason }))
+        .filter((項目) => !!項目.date);
       if (validatedItems.length > 0) {
         setAiPreviewItems(validatedItems);
       } else {
         RN.Alert.alert('通知', 'PDFから練習日を検出できませんでした。形式を確認してください。');
         require('./alertBridge').default.alert('お知らせ', '練習日が検出されませんでした。');
       }
-    } catch (e) {
-      RN.Alert.alert('エラー', e.message);
+    } catch (誤り) {
+      RN.Alert.alert('エラー', 誤り.message);
     } finally {
       setLoadingMsg(null);
     }
@@ -305,8 +305,8 @@ const AttendanceScreen = () => {
         });
       }
       setAiPreviewItems(null);
-    } catch (e) {
-      RN.Alert.alert('エラー', e.message);
+    } catch (誤り) {
+      RN.Alert.alert('エラー', 誤り.message);
     } finally {
       setLoadingMsg(null);
     }
@@ -389,10 +389,12 @@ const AttendanceScreen = () => {
         <RN.View style={{ flex: 1 }}>
           <RN.FlatList
             data={stats}
-            keyExtractor={(i, idx) => (i.id && typeof i.id === 'string' ? i.id : `attendance-member-${idx}`)}
+            keyExtractor={(部員, idx) =>
+              部員.id && typeof 部員.id === 'string' ? 部員.id : `attendance-member-${idx}`
+            }
             contentContainerStyle={styles.listContent}
-            renderItem={({ item: s }) => (
-              <RN.TouchableOpacity style={styles.memberCard} onPress={() => setSelectedMember(s)}>
+            renderItem={({ item: 部員 }) => (
+              <RN.TouchableOpacity style={styles.memberCard} onPress={() => setSelectedMember(部員)}>
                 <RN.View style={styles.memberInfoMain}>
                   <RN.View style={styles.nameRow}>
                     <RN.Text
@@ -400,22 +402,26 @@ const AttendanceScreen = () => {
                         styles.genderDot,
                         {
                           color:
-                            s.gender === '男子' ? '#007AFF' : s.gender === '女子' ? '#FF2D55' : '#8E8E93',
+                            部員.gender === '男子'
+                              ? '#007AFF'
+                              : 部員.gender === '女子'
+                                ? '#FF2D55'
+                                : '#8E8E93',
                         },
                       ]}
                     >
                       ●
                     </RN.Text>
-                    <RN.Text style={styles.memberName}>{s.name}</RN.Text>
+                    <RN.Text style={styles.memberName}>{部員.name}</RN.Text>
                   </RN.View>
                   <RN.Text
                     style={styles.memberSub}
-                  >{`${s.termKi ? s.termKi + '期 / ' : ''}${s.gender} / ${s.grade === 5 ? '卒業生' : s.grade === 0 ? 'その他' : s.grade + '年'}`}</RN.Text>
+                  >{`${部員.termKi ? 部員.termKi + '期 / ' : ''}${部員.gender} / ${部員.grade === 5 ? '卒業生' : 部員.grade === 0 ? 'その他' : 部員.grade + '年'}`}</RN.Text>
                 </RN.View>
                 <RN.View style={styles.statInfo}>
-                  <RN.Text style={styles.rateText}>{s.rate.toFixed(1)}%</RN.Text>
+                  <RN.Text style={styles.rateText}>{部員.rate.toFixed(1)}%</RN.Text>
                   <RN.Text style={styles.countsText}>
-                    {s.presentCount}/{filteredPracticeDays.length}
+                    {部員.presentCount}/{filteredPracticeDays.length}
                   </RN.Text>
                 </RN.View>
                 <Icons.Ionicons name="chevron-forward" size={16} color="#C7C7CC" style={{ marginLeft: 8 }} />
@@ -484,18 +490,18 @@ const AttendanceScreen = () => {
           )}
           <RN.View style={styles.calendarContainer}>
             <RN.View style={styles.dowRow}>
-              {['日', '月', '火', '水', '木', '金', '土'].map((d, i) => (
-                <RN.View key={i} style={styles.dowCell}>
-                  <RN.Text style={styles.dowText}>{d}</RN.Text>
+              {['日', '月', '火', '水', '木', '金', '土'].map((曜日, 番) => (
+                <RN.View key={番} style={styles.dowCell}>
+                  <RN.Text style={styles.dowText}>{曜日}</RN.Text>
                 </RN.View>
               ))}
             </RN.View>
             <RN.View style={styles.calendarGrid}>
               {Array.from({ length: new Date(selectedYear, selectedMonth - 1, 1).getDay() })
-                .map((_, i) => <RN.View key={i} style={styles.calendarCellEmpty} />)
+                .map((_, 番) => <RN.View key={番} style={styles.calendarCellEmpty} />)
                 .concat(
-                  Array.from({ length: new Date(selectedYear, selectedMonth, 0).getDate() }).map((_, i) => {
-                    const dStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`;
+                  Array.from({ length: new Date(selectedYear, selectedMonth, 0).getDate() }).map((_, 番) => {
+                    const dStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(番 + 1).padStart(2, '0')}`;
                     const isP = !!practiceDays[dStr];
                     return (
                       <RN.TouchableOpacity
@@ -504,7 +510,7 @@ const AttendanceScreen = () => {
                         onPress={() => togglePracticeDay(dStr)}
                       >
                         <RN.Text style={[styles.calendarCellText, isP && styles.calendarCellTextActive]}>
-                          {i + 1}
+                          {番 + 1}
                         </RN.Text>
                       </RN.TouchableOpacity>
                     );
@@ -593,61 +599,61 @@ const AttendanceScreen = () => {
               </RN.View>
               <RN.FlatList
                 data={filteredPracticeDays}
-                keyExtractor={(d) => String(d)}
+                keyExtractor={(日) => String(日)}
                 contentContainerStyle={{ paddingBottom: 30 }}
-                renderItem={({ item: d }) => {
-                  const s = getAttendanceStatus(d, selectedMember.id);
-                  const isFuture = d > getLocalDateString(new Date());
+                renderItem={({ item: 日 }) => {
+                  const 出欠 = getAttendanceStatus(日, selectedMember.id);
+                  const isFuture = 日 > getLocalDateString(new Date());
                   return (
                     <RN.View style={styles.historyRow}>
                       <RN.View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <Icons.Ionicons
                           name={
-                            s === 'present'
+                            出欠 === 'present'
                               ? 'checkmark-circle'
-                              : s === 'late' || s === 'early'
+                              : 出欠 === 'late' || 出欠 === 'early'
                                 ? 'time-outline'
-                                : s === 'absent'
+                                : 出欠 === 'absent'
                                   ? 'close-circle'
                                   : 'ellipse-outline'
                           }
                           size={20}
                           color={
-                            s === 'present'
+                            出欠 === 'present'
                               ? '#34C759'
-                              : s === 'late' || s === 'early'
+                              : 出欠 === 'late' || 出欠 === 'early'
                                 ? '#FF9500'
-                                : s === 'absent'
+                                : 出欠 === 'absent'
                                   ? '#FF3B30'
                                   : '#C7C7CC'
                           }
                           style={{ marginRight: 10 }}
                         />
-                        <RN.Text style={{ fontSize: 15, color: isFuture ? '#8E8E93' : '#000' }}>{d}</RN.Text>
+                        <RN.Text style={{ fontSize: 15, color: isFuture ? '#8E8E93' : '#000' }}>{日}</RN.Text>
                       </RN.View>
                       <RN.Text
                         style={{
                           fontSize: 14,
                           fontWeight: '600',
                           color:
-                            s === 'present'
+                            出欠 === 'present'
                               ? '#34C759'
-                              : s === 'late'
+                              : 出欠 === 'late'
                                 ? '#FF9500'
-                                : s === 'early'
+                                : 出欠 === 'early'
                                   ? '#FF9500'
-                                  : s === 'absent'
+                                  : 出欠 === 'absent'
                                     ? '#FF3B30'
                                     : '#8E8E93',
                         }}
                       >
-                        {s === 'present'
+                        {出欠 === 'present'
                           ? '出席'
-                          : s === 'late'
+                          : 出欠 === 'late'
                             ? '遅刻'
-                            : s === 'early'
+                            : 出欠 === 'early'
                               ? '早退'
-                              : s === 'absent'
+                              : 出欠 === 'absent'
                                 ? '欠席'
                                 : isFuture
                                   ? '予定'

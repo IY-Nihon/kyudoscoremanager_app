@@ -11,7 +11,7 @@
  */
 'use strict';
 
-const 二桁 = (n) => String(n).padStart(2, '0');
+const 二桁 = (数) => String(数).padStart(2, '0');
 
 /**
  * 質問例を作る。
@@ -21,21 +21,23 @@ const 二桁 = (n) => String(n).padStart(2, '0');
  */
 function 質問例(材料) {
   const 素 = 材料 || {};
-  const 人たち = Array.isArray(素.人たち) ? 素.人たち.filter((x) => x && x.name) : [];
+  const 人たち = Array.isArray(素.人たち) ? 素.人たち.filter((人) => 人 && 人.name) : [];
   const 記録たち = Array.isArray(素.記録たち) ? 素.記録たち : [];
   const いま = 素.いま instanceof Date ? 素.いま : new Date();
   const 今月 = `${いま.getFullYear()}年${いま.getMonth() + 1}月`;
 
   // 記録がまだ無い団体に成績の質問を出しても、必ず空振りする
   const 記録あり = 記録たち.length > 0;
-  const 出欠あり = 記録たち.some((r) => r && r.attendance && Object.keys(r.attendance).length > 0);
+  const 出欠あり = 記録たち.some(
+    (記録) => 記録 && 記録.attendance && Object.keys(記録.attendance).length > 0
+  );
   // 名前を出す例は、いちばん最近の記録に出ている人から採る。
   // 部員一覧の先頭だと、辞めた人や名簿の並び順が出てしまう
   const 最近の人 = (() => {
-    const 新しい順 = [...記録たち].sort((a, b) => (b.date || 0) - (a.date || 0));
-    for (const r of 新しい順) {
-      const 出ている = (Array.isArray(r.archers) ? r.archers : []).find(
-        (a) => a && a.name && !a.isSeparator && !a.isTotalCalculator
+    const 新しい順 = [...記録たち].sort((甲, 乙) => (乙.date || 0) - (甲.date || 0));
+    for (const 記録 of 新しい順) {
+      const 出ている = (Array.isArray(記録.archers) ? 記録.archers : []).find(
+        (射手) => 射手 && 射手.name && !射手.isSeparator && !射手.isTotalCalculator
       );
       if (出ている) return 出ている.name;
     }
@@ -81,16 +83,16 @@ function 質問例(材料) {
   const 出た = [];
   const 使った = new Set();
   // まず分類ごとに1件（並びの順＝大事な順）
-  for (const x of 例) {
+  for (const 一つ of 例) {
     if (出た.length >= 上限) break;
-    if (使った.has(x.分類)) continue;
-    使った.add(x.分類);
-    出た.push(x);
+    if (使った.has(一つ.分類)) continue;
+    使った.add(一つ.分類);
+    出た.push(一つ);
   }
   // 空きがあれば、上から順に足す
-  for (const x of 例) {
+  for (const 一つ of 例) {
     if (出た.length >= 上限) break;
-    if (!出た.includes(x)) 出た.push(x);
+    if (!出た.includes(一つ)) 出た.push(一つ);
   }
   return 出た;
 }
@@ -105,16 +107,18 @@ function 質問例のすべて(材料) {
  * 送る前に選べるので、通信も費用もかからない。
  */
 function 打ちかけの候補(打った, 例たち, 上限) {
-  const 語 = String(打った || '').trim().replace(/\s/g, '');
+  const 語 = String(打った || '')
+    .trim()
+    .replace(/\s/g, '');
   const 全部 = Array.isArray(例たち) ? 例たち : [];
   const 数 = Number.isFinite(上限) && 上限 > 0 ? 上限 : 4;
   if (!語) return 全部.slice(0, 数);
   // 打った言葉を含むものだけ。前から一致するものを先に出す
-  const 当たり = 全部.filter((x) => x.文.replace(/\s/g, '').includes(語));
-  当たり.sort((a, b) => {
-    const A = a.文.replace(/\s/g, '').indexOf(語);
-    const B = b.文.replace(/\s/g, '').indexOf(語);
-    return A - B;
+  const 当たり = 全部.filter((候補) => 候補.文.replace(/\s/g, '').includes(語));
+  当たり.sort((甲, 乙) => {
+    const 甲の位置 = 甲.文.replace(/\s/g, '').indexOf(語);
+    const 乙の位置 = 乙.文.replace(/\s/g, '').indexOf(語);
+    return 甲の位置 - 乙の位置;
   });
   return 当たり.slice(0, 数);
 }
@@ -122,9 +126,9 @@ function 打ちかけの候補(打った, 例たち, 上限) {
 /** 分類ごとにまとめる（画面で見出しを付けるため） */
 function 分類ごと(例たち) {
   const 束 = new Map();
-  (Array.isArray(例たち) ? 例たち : []).forEach((x) => {
-    if (!束.has(x.分類)) 束.set(x.分類, []);
-    束.get(x.分類).push(x.文);
+  (Array.isArray(例たち) ? 例たち : []).forEach((一つ) => {
+    if (!束.has(一つ.分類)) 束.set(一つ.分類, []);
+    束.get(一つ.分類).push(一つ.文);
   });
   return [...束.entries()].map(([分類, 文たち]) => ({ 分類, 文たち }));
 }

@@ -59,7 +59,9 @@ const MemberScreen = () => {
   // 押せない行が続くだけだった。人数の多い団体ほど自分を探しにくい。
   // 弓具を登録しに来る人にとって、この画面に用があるのは自分の行だけ
   const 見せる名簿 =
-    'member' === activeRole ? (members || []).filter((x) => x && x.id === myMemberId) : members || [];
+    'member' === activeRole
+      ? (members || []).filter((部員1人) => 部員1人 && 部員1人.id === myMemberId)
+      : members || [];
   const filteredMembers = 見せる名簿.filter(
     (部員) => 部員 && 部員.name && 部員.name.toLowerCase().includes(検索の文.toLowerCase())
   );
@@ -92,9 +94,9 @@ const MemberScreen = () => {
       return 0 !== 性別の差 ? 性別の差 : (甲.name || '').localeCompare(乙.name || '', 'ja');
     });
   const graduateGroups = graduateMembers.reduce((groups, member) => {
-    const ki = member.termKi || '期不明';
-    if (!groups[ki]) groups[ki] = [];
-    groups[ki].push(member);
+    const 期 = member.termKi || '期不明';
+    if (!groups[期]) groups[期] = [];
+    groups[期].push(member);
     return groups;
   }, {});
   const renderMemberCard = (部員) => {
@@ -162,7 +164,7 @@ const MemberScreen = () => {
   const 自分を開いた = React.useRef(false);
   React.useEffect(() => {
     if ('member' !== activeRole || 自分を開いた.current) return;
-    const 自分 = (members || []).find((x) => x && x.id === myMemberId);
+    const 自分 = (members || []).find((部員1人) => 部員1人 && 部員1人.id === myMemberId);
     if (!自分) return;
     自分を開いた.current = true;
     編集を開く(自分);
@@ -203,7 +205,7 @@ const MemberScreen = () => {
    * @param {boolean} 閉じるを出す 窓として出すときだけ true（見出しと×を付ける）
    */
   const 弓具履歴の中身 = (部員id, 閉じるを出す) => {
-    const 部員 = members.find((x) => x.id === 部員id);
+    const 部員 = members.find((部員1人) => 部員1人.id === 部員id);
     return 部員 ? (
       <>
         {/* 見出しと×は、窓として出すときだけ。編集画面の中に並べるときは、 */
@@ -325,7 +327,8 @@ const MemberScreen = () => {
   // 見るだけの欄は、開いたときに写した値ではなく名簿から直に読む。
   // 写した値のままだと、団体側で名前や学年を直しても
   // 読み込み直すまで古いまま出る
-  const いまの自分 = 'member' === activeRole ? (members || []).find((x) => x && x.id === myMemberId) : null;
+  const いまの自分 =
+    'member' === activeRole ? (members || []).find((部員1人) => 部員1人 && 部員1人.id === myMemberId) : null;
   const 編集の中身 = (窓として出す) => (
     <View // 窓のときは窓の見た目、画面のときは画面いっぱいに広げる。
       // 窓の枠のまま画面に置くと、右half が空いたままになる
@@ -553,7 +556,7 @@ const MemberScreen = () => {
   // 中身（編集の欄・弓具の履歴）は団体ログインと同じものを呼んでいるので、
   // 直すところは1か所で済む。
   if ('member' === activeRole) {
-    const 自分 = (members || []).find((x) => x && x.id === myMemberId);
+    const 自分 = (members || []).find((部員1人) => 部員1人 && 部員1人.id === myMemberId);
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
@@ -683,11 +686,11 @@ const MemberScreen = () => {
               </Pressable>
               {isAlumniExpanded &&
                 Object.keys(graduateGroups)
-                  .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))
-                  .map((ki) => (
-                    <View key={`group-${ki}`} style={{ marginTop: 10 }}>
-                      <Text style={styles.alumniGroupTitle}>{ki === '期不明' ? '期不明' : `${ki}期`}</Text>
-                      {graduateGroups[ki].map(renderMemberCard)}
+                  .sort((甲, 乙) => 乙.localeCompare(甲, undefined, { numeric: true }))
+                  .map((期) => (
+                    <View key={`group-${期}`} style={{ marginTop: 10 }}>
+                      <Text style={styles.alumniGroupTitle}>{期 === '期不明' ? '期不明' : `${期}期`}</Text>
+                      {graduateGroups[期].map(renderMemberCard)}
                     </View>
                   ))}
             </View>

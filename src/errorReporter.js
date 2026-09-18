@@ -14,8 +14,8 @@
 
 const 決まり = require('./errorReport');
 const 蔵 = require('@react-native-async-storage/async-storage');
-const F = require('firebase/firestore');
-const fb = require('./db');
+const Firestore = require('firebase/firestore');
+const 器 = require('./db');
 
 const 貯めの鍵 = 'kyudo-error-queue';
 /** 送りきるのを待つ時間。これを過ぎたら貯めに回し、つながったときに出し直す */
@@ -46,37 +46,37 @@ async function 貯めを読み込む() {
   try {
     const 文 = await 蔵.default.getItem(貯めの鍵);
     if (文) {
-      const x = JSON.parse(文);
-      if (Array.isArray(x)) 貯めの控え = x;
+      const 読んだ = JSON.parse(文);
+      if (Array.isArray(読んだ)) 貯めの控え = 読んだ;
     }
-  } catch (e) {
+  } catch (誤り) {
     // 壊れていたら捨てる。不具合の控えのために起動を止める意味はない
     貯めの控え = [];
   }
 }
 
-function 貯めを書く(x) {
-  貯めの控え = x;
+function 貯めを書く(貯め) {
+  貯めの控え = 貯め;
   try {
     // setItem は約束を返す。受け取らずに捨てると、保存領域がいっぱいのときに
     // 「投げっぱなしの約束」になり、それをこちらの見張りが不具合として拾って
     // また貯めに書きにいく。控えの保存が不具合を生む形になるので、必ず受ける
-    const 約束 = 蔵.default.setItem(貯めの鍵, JSON.stringify(x));
+    const 約束 = 蔵.default.setItem(貯めの鍵, JSON.stringify(貯め));
     if (約束 && 約束.catch) 約束.catch(() => {});
-  } catch (e) {
+  } catch (誤り) {
     /* 保存できなくても、この起動のあいだは控えに残る */
   }
 }
 
 const 係 = 決まり.送り係をつくる({
   送る: async (便) => {
-    if (!fb.db) throw new Error('Firestore がまだ用意できていない');
+    if (!器.db) throw new Error('Firestore がまだ用意できていない');
     // createdAt は Firestore 側の時刻。端末の時計が狂っていても並べられる。
     // 電波が無いと Firestore は失敗せずに黙って待ち続けるので、時間で見切る。
     // 見切らないと、アプリを閉じた時点で便りごと消える
     await 決まり.間に合わなければ諦める(
-      F.addDoc(
-        F.collection(fb.db, 'errorReports'),
+      Firestore.addDoc(
+        Firestore.collection(器.db, 'errorReports'),
         Object.assign(決まり.外向きの形(便), {
           createdAt: new Date(),
           expireAt: new Date(Date.now() + 便りを置く日数 * 86400000),
@@ -94,13 +94,9 @@ function いまの様子() {
   let 状態 = {};
   try {
     // 循環参照を避けるため、必要になった時点で読む
-    const s = require('./useScoreStore').useScoreStore.getState();
-    状態 = {
-      団体id: s.activeGroupId || '',
-      役割: s.activeRole || '',
-      回線: !1 !== s.isNetworkOnline,
-    };
-  } catch (e) {
+    const 店 = require('./useScoreStore').useScoreStore.getState();
+    状態 = { 団体id: 店.activeGroupId || '', 役割: 店.activeRole || '', 回線: !1 !== 店.isNetworkOnline };
+  } catch (誤り) {
     /* 起動のごく初期は取れない */
   }
   let 端末 = '';
@@ -111,13 +107,13 @@ function いまの様子() {
         : 'undefined' != typeof process && process.platform
           ? process.platform
           : '';
-  } catch (e) {
+  } catch (誤り) {
     /* 端末が分からなくても送る */
   }
   let 版 = '';
   try {
     版 = require('./WhatsNewModal').NOTICE_VERSION || '';
-  } catch (e) {
+  } catch (誤り) {
     /* 版が分からなくても送る */
   }
   return Object.assign({ 版, 端末 }, 状態);
@@ -134,9 +130,9 @@ function 不具合を送る(出どころ, 誤り) {
   try {
     const 便 = 決まり.不具合の便を組む(誤り, Object.assign({ 出どころ }, いまの様子()));
     return 係.出す(便);
-  } catch (e) {
+  } catch (中の誤り) {
     // 送る仕組みが落ちてアプリを巻き込むのは本末転倒
-    console.warn('[errorReporter] 便りを組めませんでした', e);
+    console.warn('[errorReporter] 便りを組めませんでした', 中の誤り);
     return Promise.resolve(!1);
   }
 }
@@ -159,8 +155,9 @@ function 貯まっている数() {
  */
 function 見張りを始める() {
   if ('undefined' == typeof window || !window.addEventListener) return () => {};
-  const 誤り = (e) => 不具合を送る('画面の外', (e && e.error) || (e && e.message) || e);
-  const 投げっぱなし = (e) => 不具合を送る('約束の投げっぱなし', (e && e.reason) || e);
+  const 誤り = (出来事) =>
+    不具合を送る('画面の外', (出来事 && 出来事.error) || (出来事 && 出来事.message) || 出来事);
+  const 投げっぱなし = (出来事) => 不具合を送る('約束の投げっぱなし', (出来事 && 出来事.reason) || 出来事);
   window.addEventListener('error', 誤り);
   window.addEventListener('unhandledrejection', 投げっぱなし);
   return () => {
