@@ -3913,43 +3913,45 @@ const useScoreStore = zustand.create()(
             const 記録の返り = await Firestore.getDocs(
               Firestore.collection(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`)
             );
-            let l = [];
-            記録の返り.forEach((e) => l.push(e.data()));
-            console.log('[Store] Loading:', `セッション ${l.length}件を取得しました`);
-            const d = await Firestore.getDocs(
+            let 記録 = [];
+            記録の返り.forEach((文書) => 記録.push(文書.data()));
+            console.log('[Store] Loading:', `セッション ${記録.length}件を取得しました`);
+            const ごみ箱の返り = await Firestore.getDocs(
               Firestore.collection(Firebaseの器.db, `groups/${状態().activeGroupId}/trash`)
             );
-            let u = [];
-            d.forEach((e) => u.push(e.data()));
-            const m = await Firestore.getDocs(
+            let 雲のごみ箱 = [];
+            ごみ箱の返り.forEach((文書) => 雲のごみ箱.push(文書.data()));
+            const 卒業生の返り = await Firestore.getDocs(
               Firestore.collection(Firebaseの器.db, `groups/${状態().activeGroupId}/alumni`)
             );
-            let p = [];
-            m.forEach((e) => p.push(e.data()));
-            const h = await Firestore.getDoc(
+            let 卒業生 = [];
+            卒業生の返り.forEach((文書) => 卒業生.push(文書.data()));
+            const 設定の帳面 = await Firestore.getDoc(
               Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/config`, 'app_settings')
             );
-            let f = 状態().currentFreshmanTerm;
-            let S = 状態().tagTemplates;
-            let b = 状態().lastPromotionYear;
-            if (h.exists()) {
-              const e = h.data();
-              e &&
-                (undefined !== e.currentFreshmanTerm && (f = e.currentFreshmanTerm),
-                undefined !== e.tagTemplates && (S = e.tagTemplates),
-                undefined !== e.lastPromotionYear && (b = e.lastPromotionYear));
+            let currentFreshmanTerm = 状態().currentFreshmanTerm;
+            let tagTemplates = 状態().tagTemplates;
+            let lastPromotionYear = 状態().lastPromotionYear;
+            if (設定の帳面.exists()) {
+              const 設定 = 設定の帳面.data();
+              設定 &&
+                (undefined !== 設定.currentFreshmanTerm && (currentFreshmanTerm = 設定.currentFreshmanTerm),
+                undefined !== 設定.tagTemplates && (tagTemplates = 設定.tagTemplates),
+                undefined !== 設定.lastPromotionYear && (lastPromotionYear = 設定.lastPromotionYear));
             }
-            const v = mergeById(状態().sessions, l, false, true);
-            const T = mergeById(状態().members, 部員, false, true);
-            const w = mergeById(状態().trash, u, false, true);
+            const 記録の合流 = mergeById(状態().sessions, 記録, false, true);
+            const 部員の合流 = mergeById(状態().members, 部員, false, true);
+            const ごみ箱の合流 = mergeById(状態().trash, 雲のごみ箱, false, true);
             // ゴミ箱に入っているものは履歴に出さない。削除がまだクラウドへ届いて
             // いないとき、ここで書き戻すと記録が復活してしまう。
             // 逆に、戻したばかりでまだ送信できていない記録は、クラウドのゴミ箱の
             // 写しがあってもゴミ箱に入れ直さない。
-            const 復元待ち = new Set(v.filter((e) => e && '未同期' === e.syncStatus).map((e) => e.id));
-            const ごみ箱 = w.filter((e) => e && !復元待ち.has(e.id));
-            const I = new Set(ごみ箱.map((e) => e.id));
-            const M = v.filter((e) => e && !I.has(e.id));
+            const 復元待ち = new Set(
+              記録の合流.filter((x) => x && '未同期' === x.syncStatus).map((e) => e.id)
+            );
+            const ごみ箱 = ごみ箱の合流.filter((x) => x && !復元待ち.has(x.id));
+            const ごみ箱のID = new Set(ごみ箱.map((x) => x.id));
+            const 残る記録 = 記録の合流.filter((x) => x && !ごみ箱のID.has(x.id));
             // 完全に消したものの後始末。ここは記録もゴミ箱も全件そろっているので、
             // クラウドから本当に消えたかを正しく判定できる。
             //   ・まだ残っている → 消し直して控えは残す
@@ -3960,11 +3962,13 @@ const useScoreStore = zustand.create()(
             let 完全削除ずみ = new Set(控えのid);
             if (控えのid.length > 0) {
               const 期限 = Date.now() - 2592e6;
-              const クラウドに有る = new Set([...l, ...u].filter((e) => e && e.id).map((e) => e.id));
-              const 消し直す = 控えのid.filter((e) => 控え[e] >= 期限 && クラウドに有る.has(e));
+              const クラウドに有る = new Set(
+                [...記録, ...雲のごみ箱].filter((x) => x && x.id).map((e) => e.id)
+              );
+              const 消し直す = 控えのid.filter((id) => 控え[id] >= 期限 && クラウドに有る.has(id));
               const 残す = {};
-              消し直す.forEach((e) => {
-                残す[e] = 控え[e];
+              消し直す.forEach((id) => {
+                残す[id] = 控え[id];
               });
               完全削除ずみ = new Set(消し直す);
               if (消し直す.length !== 控えのid.length)
@@ -3972,16 +3976,18 @@ const useScoreStore = zustand.create()(
               if (消し直す.length > 0) {
                 console.log(`[Store] クラウドに残っている ${消し直す.length}件 を消し直します`);
                 try {
-                  const e = Firestore.writeBatch(Firebaseの器.db);
-                  消し直す.forEach((t) => {
-                    e.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, t));
-                    e.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/trash`, t));
+                  const 一括 = Firestore.writeBatch(Firebaseの器.db);
+                  消し直す.forEach((id) => {
+                    一括.delete(
+                      Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, id)
+                    );
+                    一括.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/trash`, id));
                   });
-                  e.commit().catch((t) => {
-                    console.error('[Store] 完全削除の送り直しに失敗:', t);
+                  一括.commit().catch((誤り) => {
+                    console.error('[Store] 完全削除の送り直しに失敗:', 誤り);
                   });
-                } catch (t) {
-                  console.error('[Store] 完全削除の送り直しの組み立てに失敗:', t);
+                } catch (誤り) {
+                  console.error('[Store] 完全削除の送り直しの組み立てに失敗:', 誤り);
                 }
               }
               書く({ permanentlyDeleted: 残す });
@@ -3995,48 +4001,48 @@ const useScoreStore = zustand.create()(
             let 削除ずみのメンバー = new Set(メンバーの控えのid);
             if (メンバーの控えのid.length > 0) {
               const 期限 = Date.now() - 2592e6;
-              const クラウドに有る = new Set((部員 || []).filter((e) => e && e.id).map((e) => e.id));
+              const クラウドに有る = new Set((部員 || []).filter((x) => x && x.id).map((e) => e.id));
               const 消し直す = メンバーの控えのid.filter(
-                (e) => メンバーの控え[e] >= 期限 && クラウドに有る.has(e)
+                (id) => メンバーの控え[id] >= 期限 && クラウドに有る.has(id)
               );
               const 残す = {};
-              消し直す.forEach((e) => {
-                残す[e] = メンバーの控え[e];
+              消し直す.forEach((id) => {
+                残す[id] = メンバーの控え[id];
               });
               削除ずみのメンバー = new Set(消し直す);
               if (消し直す.length > 0) {
                 console.log(`[Store] クラウドに残っているメンバー ${消し直す.length}件 を消し直します`);
                 try {
-                  const e = Firestore.writeBatch(Firebaseの器.db);
-                  消し直す.forEach((t) => {
-                    e.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/members`, t));
+                  const 一括 = Firestore.writeBatch(Firebaseの器.db);
+                  消し直す.forEach((id) => {
+                    一括.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/members`, id));
                   });
-                  e.commit().catch((t) => {
-                    console.error('[Store] メンバーの削除の送り直しに失敗:', t);
+                  一括.commit().catch((誤り) => {
+                    console.error('[Store] メンバーの削除の送り直しに失敗:', 誤り);
                   });
-                } catch (t) {
-                  console.error('[Store] メンバーの削除の送り直しの組み立てに失敗:', t);
+                } catch (誤り) {
+                  console.error('[Store] メンバーの削除の送り直しの組み立てに失敗:', 誤り);
                 }
               }
               書く({ deletedMembers: 残す });
             }
             書く({
-              members: T.filter((e) => e && !削除ずみのメンバー.has(e.id)),
-              sessions: M.filter((e) => e && !完全削除ずみ.has(e.id)),
-              trash: ごみ箱.filter((e) => e && !完全削除ずみ.has(e.id)),
-              alumni: mergeById(状態().alumni, p, false, true),
-              currentFreshmanTerm: f,
-              tagTemplates: S,
-              lastPromotionYear: b,
+              members: 部員の合流.filter((x) => x && !削除ずみのメンバー.has(x.id)),
+              sessions: 残る記録.filter((x) => x && !完全削除ずみ.has(x.id)),
+              trash: ごみ箱.filter((x) => x && !完全削除ずみ.has(x.id)),
+              alumni: mergeById(状態().alumni, 卒業生, false, true),
+              currentFreshmanTerm: currentFreshmanTerm,
+              tagTemplates: tagTemplates,
+              lastPromotionYear: lastPromotionYear,
               syncStatus: '同期済み',
               lastSyncTime: Date.now(),
             });
             console.log('[Store] Loading:', '同期が完了しました');
-          } catch (s) {
-            console.error('Fetch Overwrite Error:', s);
-            不具合を控える('クラウドから取得', s);
+          } catch (誤り) {
+            console.error('Fetch Overwrite Error:', 誤り);
+            不具合を控える('クラウドから取得', 誤り);
             書く({ syncStatus: '同期エラー' });
-            if (入り直せば直るか(s)) 書く({ 再ログインの案内: 入り直しの案内 });
+            if (入り直せば直るか(誤り)) 書く({ 再ログインの案内: 入り直しの案内 });
           }
         },
         // 戻り値は '開始した' / '同名あり' / '確認できない' の3つ。
@@ -4049,7 +4055,7 @@ const useScoreStore = zustand.create()(
          * 名前が空いているかは、どちらの場合も団体の枝で見る。参加一覧に出る
          * 名前はそちらで、共有の枝は毎回作りたてなので必ず空いている
          */
-        startLiveSync: async (o, 共有) => {
+        startLiveSync: async (名前, 共有) => {
           // ライブを移ったら控えは捨てる。前のライブで載せた○×を覚えたままだと、
           // 次のライブで「前と同じ」と見なして送らず、相手の画面に出ない
           載っている印を捨てる();
@@ -4061,14 +4067,14 @@ const useScoreStore = zustand.create()(
           const 枝 = 共有 && 秘.枝として使えるか(共有.編集の枝) ? String(共有.編集の枝) : 団;
           // いま自分が主催しているライブを共有へ切り替えるときは、同名でよい。
           // 団体の枝にある自分の節点を、道しるべへ置き換えるだけだから
-          const 自分のを置き換える = !!(共有 && 状態().isHost && 状態().liveSessionName === o);
+          const 自分のを置き換える = !!(共有 && 状態().isHost && 状態().liveSessionName === 名前);
           try {
-            const e = RTDB.ref(Firebaseの器.rtdb, `live_sessions/${団}/${o}`);
-            if (!自分のを置き換える && (await RTDB.get(e)).exists()) return '同名あり';
-          } catch (e) {
+            const 節点 = RTDB.ref(Firebaseの器.rtdb, `live_sessions/${団}/${名前}`);
+            if (!自分のを置き換える && (await RTDB.get(節点)).exists()) return '同名あり';
+          } catch (誤り) {
             // 確かめられないまま作ると、進行中の同名ライブを上書きして潰す。
             // 元はここで握りつぶして、そのまま作成へ進んでいた
-            return (console.error('Session Name Check Error:', e), '確認できない');
+            return (console.error('Session Name Check Error:', 誤り), '確認できない');
           }
           状態().stopLiveSync(true);
           書く({
@@ -4083,7 +4089,7 @@ const useScoreStore = zustand.create()(
             isHost: true,
             // 主催者は必ず記録する側
             ライブは見るだけ: false,
-            liveSessionName: o,
+            liveSessionName: 名前,
             isIncomingLiveSync: false,
             lastLocalChange: Date.now(),
             // 共有履歴はライブごとに別物。前のライブの目印を持ち越すと、
@@ -4099,7 +4105,7 @@ const useScoreStore = zustand.create()(
             resetIsFirstSnapshot: true,
             // アプリを閉じて戻ったときに、このライブへ戻るための控え（端末に残す）
             ライブの続き: {
-              名前: o,
+              名前: 名前,
               枝: 共有 ? 枝 : null,
               閲覧枝: 共有 ? 共有.閲覧の枝 || null : null,
               主催: true,
@@ -4108,41 +4114,41 @@ const useScoreStore = zustand.create()(
               団体: 状態().activeGroupId || null,
             },
           });
-          const a = 状態();
+          const いま = 状態();
           if (!Firebaseの器.rtdb) return '確認できない';
-          const n = RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${o}/state`);
-          const l = Array.isArray(a.archers) ? a.archers : [];
+          const 盤面の場所 = RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${名前}/state`);
+          const 射手たち = Array.isArray(いま.archers) ? いま.archers : [];
           try {
             return (
-              ライブへ盤面を送る(o, l, a.shotsPerRound),
+              ライブへ盤面を送る(名前, 射手たち, いま.shotsPerRound),
               // 閲覧用の枝を、共有の枝の state にも載せておく。
               // リンクで入った記録係も写しへ流せるようにするため。
               // 載せないと、その人の○×だけ見ている人に出ない。
               // ここを読めるのは編集の枝を知っている人だけなので、閲覧の人には見えない
               共有 &&
-                RTDB.update(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${o}/state`), {
+                RTDB.update(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${名前}/state`), {
                   閲覧の枝: 共有.閲覧の枝 || null,
                 }).catch(() => {}),
               // 共有のライブは別の枝にあるので、参加一覧に出すための道しるべを
               // 団体の枝へ置く。部員はこれを辿って共有の枝へ入る
               共有 &&
-                RTDB.set(RTDB.ref(Firebaseの器.rtdb, 道しるべの場所(団, o)), {
+                RTDB.set(RTDB.ref(Firebaseの器.rtdb, 道しるべの場所(団, 名前)), {
                   共有の枝: 枝,
                   閲覧の枝: 共有.閲覧の枝 || null,
                   status: 'active',
                   timestamp: Date.now(),
                   updated_at: RTDB.serverTimestamp(),
-                }).catch((t) => console.error('[Store] 道しるべを置けませんでした', t)),
-              在席を始める(o, 書く),
-              IS_WEB && console.log('ライブを開始しました: ' + o),
-              RTDB.onValue(n, (o) => {
-                const a = o.val();
-                if (!a) {
-                  const o = 状態().liveSessionName;
+                }).catch((誤り) => console.error('[Store] 道しるべを置けませんでした', 誤り)),
+              在席を始める(名前, 書く),
+              IS_WEB && console.log('ライブを開始しました: ' + 名前),
+              RTDB.onValue(盤面の場所, (返り) => {
+                const 届いた = 返り.val();
+                if (!届いた) {
+                  const 今の名前 = 状態().liveSessionName;
                   return (
-                    o &&
+                    今の名前 &&
                       Firebaseの器.rtdb &&
-                      RTDB.off(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${o}/state`)),
+                      RTDB.off(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${今の名前}/state`)),
                     在席を終える(書く),
                     写しを見るのをやめる(),
                     void 書く({
@@ -4156,15 +4162,15 @@ const useScoreStore = zustand.create()(
                 // 期限は枝分かれの前に控える。下の「他人の書き込み」の枝だけに
                 // 置くと、自分で配った主催者は自分の返りしか受けないので
                 // 一度も拾えない（カウントダウンが出なかった）
-                期限を控える(a, 書く, 状態);
-                if (a.timestamp === 状態().lastPushedTimestamp) 返りの印を取り込む(a, 書く, 状態);
-                if (a.timestamp !== 状態().lastPushedTimestamp) {
-                  if ('finished' === a.status) {
-                    const o = 状態().liveSessionName;
+                期限を控える(届いた, 書く, 状態);
+                if (届いた.timestamp === 状態().lastPushedTimestamp) 返りの印を取り込む(届いた, 書く, 状態);
+                if (届いた.timestamp !== 状態().lastPushedTimestamp) {
+                  if ('finished' === 届いた.status) {
+                    const 今の名前 = 状態().liveSessionName;
                     return (
-                      o &&
+                      今の名前 &&
                         Firebaseの器.rtdb &&
-                        RTDB.off(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${o}/state`)),
+                        RTDB.off(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${今の名前}/state`)),
                       在席を終える(書く),
                       写しを見るのをやめる(),
                       void 書く({
@@ -4177,25 +4183,25 @@ const useScoreStore = zustand.create()(
                   }
                   // 誰かが配ったら、その枝へ付いていく
                   // 期限より先に見る。切れているのに付いていくと、行った先でも切れている
-                  if (期限で閉じるか(a, 書く, 状態)) return;
-                  if (移ったら付いていく(a, 書く, 状態)) return;
-                  共有履歴の目印を受け取る(a, 書く, 状態);
+                  if (期限で閉じるか(届いた, 書く, 状態)) return;
+                  if (移ったら付いていく(届いた, 書く, 状態)) return;
+                  共有履歴の目印を受け取る(届いた, 書く, 状態);
                   // 参加者側と同じ。始め直したとき、節点に前回の片付けが
                   // 残っていることがあるので、最初の1通ぶんは知らせない
                   const 主のリセット初回 = 状態().resetIsFirstSnapshot;
                   if (主のリセット初回) 書く({ resetIsFirstSnapshot: false });
-                  if (a.reset_at && a.reset_at > (状態().lastResetHandled || 0))
+                  if (届いた.reset_at && 届いた.reset_at > (状態().lastResetHandled || 0))
                     return (
-                      書く({ lastResetHandled: a.reset_at }),
-                      主のリセット初回 && 書く({ lastPushedTimestamp: a.timestamp || 0 }),
+                      書く({ lastResetHandled: 届いた.reset_at }),
+                      主のリセット初回 && 書く({ lastPushedTimestamp: 届いた.timestamp || 0 }),
                       // 送信はしない。受け取ったリセットを送り返すと、相手の画面に
                       // 「リセットしました」が二度出るうえ、無駄な書き込みが増える
                       void 状態().resetCurrentSession(false)
                     );
-                  if (a.archers || Array.isArray(a.archers)) {
+                  if (届いた.archers || Array.isArray(届いた.archers)) {
                     // 突き合わせは syncRules.js の mergeLiveArchers に出した。
                     // 主催者側と参加者側で同じ処理が二重に書かれていたため
-                    const { archers: 受信, shotsPerRound: 本数 } = ライブの盤面を読み取る(a);
+                    const { archers: 受信, shotsPerRound: 本数 } = ライブの盤面を読み取る(届いた);
                     const 結果 = mergeLiveArchers(状態().archers, 受信, 状態().shotsPerRound, 本数);
                     // 受け取りの正規化は短い○×を伸ばすだけで、長いほうは切らない。
                     // 相手が射数を減らしたとき、手元の射手のほうが新しいと
@@ -4208,8 +4214,8 @@ const useScoreStore = zustand.create()(
               }),
               '開始した'
             );
-          } catch (e) {
-            return (console.error('Start Live Sync Error:', e), '確認できない');
+          } catch (誤り) {
+            return (console.error('Start Live Sync Error:', 誤り), '確認できない');
           }
         },
         /**
@@ -4248,10 +4254,10 @@ const useScoreStore = zustand.create()(
           const 状態の道 = `live_sessions/${今の枝}/${名前}/state`;
           let 今の中身 = {};
           try {
-            const x = await RTDB.get(RTDB.ref(Firebaseの器.rtdb, 状態の道));
-            今の中身 = x.exists() ? x.val() || {} : {};
-          } catch (t) {
-            return (console.error('[Store] ライブを読めませんでした', t), null);
+            const 返り = await RTDB.get(RTDB.ref(Firebaseの器.rtdb, 状態の道));
+            今の中身 = 返り.exists() ? 返り.val() || {} : {};
+          } catch (誤り) {
+            return (console.error('[Store] ライブを読めませんでした', 誤り), null);
           }
           // すでに配られている
           const 種 = 今の中身.種;
@@ -4347,8 +4353,8 @@ const useScoreStore = zustand.create()(
                 移った先の閲覧枝: 閲覧の枝,
                 updated_at: RTDB.serverTimestamp(),
               });
-          } catch (t) {
-            return (console.error('[Store] ライブを配れませんでした', t), null);
+          } catch (誤り) {
+            return (console.error('[Store] ライブを配れませんでした', 誤り), null);
           }
           // 自分も新しい枝へ移る。主催者かどうかは変えない
           const 主催だった = 状態().isHost;
@@ -4405,7 +4411,7 @@ const useScoreStore = zustand.create()(
               const 中 = 有.val() || {};
               if (秘.枝として使えるか(中.閲覧の枝)) 写す先 = String(中.閲覧の枝);
             }
-          } catch (t) {
+          } catch (誤り) {
             // 決まりに弾かれたときだけ、期限を見に行く。
             //
             // 先に期限を確かめる作りにしていたが、それだと期限の無いリンクでも
@@ -4415,15 +4421,15 @@ const useScoreStore = zustand.create()(
             // 荷に載っている期限は誰でも書き換えられるので、そちらは見ない。
             // ここで見るのは「期限切れです」と言い切るためだけで、
             // 切れた枝に入れないことは決まりの側が保証している
-            if (弾かれたか(t))
+            if (弾かれたか(誤り))
               try {
                 const 限 = await RTDB.get(RTDB.ref(Firebaseの器.rtdb, 期限の場所(枝)));
-                const v = 限.exists() ? 限.val() : null;
-                if ('number' == typeof v && (await サーバー時刻()) >= v) return '期限切れ';
+                const 期限の値 = 限.exists() ? 限.val() : null;
+                if ('number' == typeof 期限の値 && (await サーバー時刻()) >= 期限の値) return '期限切れ';
               } catch (e2) {
                 /* 期限も読めない。理由が分からないので、下の「確認できない」に落とす */
               }
-            return (console.error('[Store] 共有リンクの確認に失敗:', t), '確認できない');
+            return (console.error('[Store] 共有リンクの確認に失敗:', 誤り), '確認できない');
           }
           // 自分の団体のライブか、よその団体のライブかを見分ける。
           //
@@ -4436,10 +4442,10 @@ const useScoreStore = zustand.create()(
           if (団) {
             try {
               const 印 = await RTDB.get(RTDB.ref(Firebaseの器.rtdb, 道しるべの場所(団, 中身.名前)));
-              const v = 印.exists() ? 印.val() || {} : {};
-              if (v.共有の枝 === 枝 || v.閲覧の枝 === 枝) よそ = false;
-            } catch (t) {
-              console.warn('[Store] 自分の団体のライブか確かめられませんでした', t);
+              const 道しるべの値 = 印.exists() ? 印.val() || {} : {};
+              if (道しるべの値.共有の枝 === 枝 || 道しるべの値.閲覧の枝 === 枝) よそ = false;
+            } catch (誤り) {
+              console.warn('[Store] 自分の団体のライブか確かめられませんでした', 誤り);
             }
           }
           // 団体に入っていない人は「来客」。App.js がこれを見て画面を出す
@@ -4479,10 +4485,10 @@ const useScoreStore = zustand.create()(
           });
           写しの片付け = RTDB.onValue(
             RTDB.ref(Firebaseの器.rtdb, 道),
-            (x) => {
-              const v0 = x.val();
-              if (!v0) return;
-              if ('finished' === v0.status)
+            (返り) => {
+              const 届いた = 返り.val();
+              if (!届いた) return;
+              if ('finished' === 届いた.status)
                 return void 書く({
                   isLiveActive: false,
                   ライブの続き: null,
@@ -4490,14 +4496,14 @@ const useScoreStore = zustand.create()(
                   liveSessionName: null,
                   いまのライブの期限: null,
                 });
-              if (期限で閉じるか(v0, 書く, 状態)) return;
-              if (!v0.archers && !Array.isArray(v0.archers)) return;
+              if (期限で閉じるか(届いた, 書く, 状態)) return;
+              if (!届いた.archers && !Array.isArray(届いた.archers)) return;
               // 部員が参加するときと同じ突き合わせを通す。
               //
               // ライブの archers に○×は入っていない（○×は marks_by_id で別に送る）。
               // ここで archers をそのまま入れていたころは、○×がいつまでも出なかった。
               // w() で組み直し、mergeLiveArchers で突き合わせる
-              const { archers: 受信, shotsPerRound: 本数 } = ライブの盤面を読み取る(v0);
+              const { archers: 受信, shotsPerRound: 本数 } = ライブの盤面を読み取る(届いた);
               const 結果 = mergeLiveArchers(状態().archers, 受信, 状態().shotsPerRound, 本数);
               if (結果.changed)
                 書く({
@@ -4506,7 +4512,7 @@ const useScoreStore = zustand.create()(
                   isIncomingLiveSync: true,
                 });
             },
-            (t) => つなげなくなった(t, 書く, 状態)
+            (誤り) => つなげなくなった(誤り, 書く, 状態)
           );
           if (IS_WEB) console.log('共有リンクで入りました（見るだけ）: ' + 中身.名前);
           return '入った';
@@ -4519,13 +4525,13 @@ const useScoreStore = zustand.create()(
          * リンクで来た人もここを通す。受け取りの取り込みは、自分の送信の返りを
          * 見分けたり相手の印を混ぜたりと込み入っていて、別に書くと必ずずれる
          */
-        joinLiveSync: (o, 見るだけ, 共有) => {
+        joinLiveSync: (名前, 見るだけ, 共有) => {
           // ライブを移ったら控えは捨てる。前のライブで載せた○×を覚えたままだと、
           // 次のライブで「前と同じ」と見なして送らず、相手の画面に出ない
           載っている印を捨てる();
           // 共有のライブは団体の枝に盤面を置いていない。道しるべを辿って、
           // そのライブ専用の枝へ入る。辿らないと空の節点を見て何も出ない
-          const 道しるべ = (状態().共有のライブたち || {})[o] || null;
+          const 道しるべ = (状態().共有のライブたち || {})[名前] || null;
           const 差し込み = 共有 && 秘.枝として使えるか(共有.枝) ? String(共有.枝) : null;
           // 一覧は合言葉が取れてからしか出ないので、ここへ来る時点で普通は在る。
           // 無いまま進むと「参加中」の表示だけ出て何も届かないので、先に止める
@@ -4548,7 +4554,7 @@ const useScoreStore = zustand.create()(
               isLiveActive: true,
               isHost: false,
               ライブは見るだけ: !!見るだけ,
-              liveSessionName: o,
+              liveSessionName: 名前,
               isIncomingLiveSync: false,
               lastLocalChange: 0,
               // 参加して最初に届く1通は必ず取り込む。
@@ -4564,7 +4570,7 @@ const useScoreStore = zustand.create()(
               // アプリを閉じて戻ったときに、このライブへ戻るための控え（端末に残す）。
               // 主催・よその団体は、呼ぶ側があとで据え直すことがある（ライブに戻る で拾う）
               ライブの続き: {
-                名前: o,
+                名前: 名前,
                 枝: 差し込み || 道しるべ ? 枝 : null,
                 閲覧枝: 差し込み ? (共有 && 共有.閲覧枝) || null : 道しるべ ? 道しるべ.閲覧の枝 : null,
                 主催: false,
@@ -4576,17 +4582,17 @@ const useScoreStore = zustand.create()(
             !Firebaseの器.rtdb)
           )
             return;
-          const a = RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${o}/state`);
+          const 盤面の場所 = RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${名前}/state`);
           RTDB.onValue(
-            a,
-            (o) => {
-              const a = o.val();
-              if (!a) {
-                const o = 状態().liveSessionName;
+            盤面の場所,
+            (返り) => {
+              const 届いた = 返り.val();
+              if (!届いた) {
+                const 今の名前 = 状態().liveSessionName;
                 return (
-                  o &&
+                  今の名前 &&
                     Firebaseの器.rtdb &&
-                    RTDB.off(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${o}/state`)),
+                    RTDB.off(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${今の名前}/state`)),
                   在席を終える(書く),
                   写しを見るのをやめる(),
                   void 書く({ isLiveActive: false, ライブの続き: null, isHost: false, liveSessionName: null })
@@ -4596,13 +4602,14 @@ const useScoreStore = zustand.create()(
               // 手元の矢所が消え、まだ届いていない射手も落ちる（主催者側には
               // 元からある判定で、参加者側だけ抜けていた）。
               // ただし同じ通知に載った相手の印だけは取り込む
-              if (a.timestamp === 状態().lastPushedTimestamp) return void 返りの印を取り込む(a, 書く, 状態);
-              if ('finished' === a.status) {
-                const o = 状態().liveSessionName;
+              if (届いた.timestamp === 状態().lastPushedTimestamp)
+                return void 返りの印を取り込む(届いた, 書く, 状態);
+              if ('finished' === 届いた.status) {
+                const 今の名前 = 状態().liveSessionName;
                 return (
-                  o &&
+                  今の名前 &&
                     Firebaseの器.rtdb &&
-                    RTDB.off(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${o}/state`)),
+                    RTDB.off(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${今の名前}/state`)),
                   在席を終える(書く),
                   写しを見るのをやめる(),
                   // 送信しない。ここで送ると、主催者が2秒後に消す節点を書き戻してしまい、
@@ -4613,20 +4620,20 @@ const useScoreStore = zustand.create()(
               }
               // 誰かが配ったら、その枝へ付いていく
               // 期限より先に見る。切れているのに付いていくと、行った先でも切れている
-              if (期限で閉じるか(a, 書く, 状態)) return;
-              if (移ったら付いていく(a, 書く, 状態)) return;
-              共有履歴の目印を受け取る(a, 書く, 状態);
+              if (期限で閉じるか(届いた, 書く, 状態)) return;
+              if (移ったら付いていく(届いた, 書く, 状態)) return;
+              共有履歴の目印を受け取る(届いた, 書く, 状態);
               // 入って最初の1通かどうかを先に控える（下で旗を倒すため）
               const リセットの初回 = 状態().resetIsFirstSnapshot;
               if (リセットの初回) 書く({ resetIsFirstSnapshot: false });
-              if (a.reset_at && a.reset_at > (状態().lastResetHandled || 0)) {
-                書く({ lastResetHandled: a.reset_at });
-                if (リセットの初回) 書く({ lastPushedTimestamp: a.timestamp || 0 });
+              if (届いた.reset_at && 届いた.reset_at > (状態().lastResetHandled || 0)) {
+                書く({ lastResetHandled: 届いた.reset_at });
+                if (リセットの初回) 書く({ lastPushedTimestamp: 届いた.timestamp || 0 });
                 状態().resetCurrentSession(false);
               }
-              if (a.archers || Array.isArray(a.archers)) {
+              if (届いた.archers || Array.isArray(届いた.archers)) {
                 // 主催者側（startLiveSync）と同じ関数を使う
-                const { archers: 受信, shotsPerRound: 本数 } = ライブの盤面を読み取る(a);
+                const { archers: 受信, shotsPerRound: 本数 } = ライブの盤面を読み取る(届いた);
                 const 結果 = mergeLiveArchers(状態().archers, 受信, 状態().shotsPerRound, 本数);
                 // 主催者側と同じ理由で、いまの射数にそろえる
                 if (結果.changed)
@@ -4635,10 +4642,10 @@ const useScoreStore = zustand.create()(
             },
             // 決まりに弾かれたら知らせる。渡さないと、盤面が空のまま
             // 「ライブ中」の表示だけが残る
-            (t) => つなげなくなった(t, 書く, 状態)
+            (誤り) => つなげなくなった(誤り, 書く, 状態)
           );
-          在席を始める(o, 書く);
-          if (IS_WEB) console.log('ライブに参加しました: ' + o);
+          在席を始める(名前, 書く);
+          if (IS_WEB) console.log('ライブに参加しました: ' + 名前);
         },
         // 抜けるのは手元だけで、ライブそのものは残す。主催者と参加者で
         // 振る舞いを分けないための作りで、どちらが抜けても残った人は
@@ -4668,7 +4675,7 @@ const useScoreStore = zustand.create()(
           if (!枝) {
             try {
               枝 = 秘.ライブの枝(await 状態().ライブの合言葉を用意する());
-            } catch (t) {
+            } catch (誤り) {
               枝 = null;
             }
           }
@@ -4678,7 +4685,7 @@ const useScoreStore = zustand.create()(
             届いた状態 = (
               await RTDB.get(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${続き.名前}/state`))
             ).val();
-          } catch (t) {
+          } catch (誤り) {
             return '確認できない';
           }
           if (状態().isLiveActive) return '無い';
@@ -4703,17 +4710,17 @@ const useScoreStore = zustand.create()(
             書く({ isHost: !!続き.主催, よその団体のライブ: !!続き.よそ });
           return '戻った';
         },
-        stopLiveSync: (o = false) => {
+        stopLiveSync: (記録を残す = false) => {
           // ライブを移ったら控えは捨てる。前のライブで載せた○×を覚えたままだと、
           // 次のライブで「前と同じ」と見なして送らず、相手の画面に出ない
           載っている印を捨てる();
-          const a = 状態();
+          const いま = 状態();
           const 枝 = ライブの枝();
-          if (a.liveSessionName && Firebaseの器.rtdb && 枝)
-            RTDB.off(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${a.liveSessionName}/state`));
+          if (いま.liveSessionName && Firebaseの器.rtdb && 枝)
+            RTDB.off(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${いま.liveSessionName}/state`));
           在席を終える(書く);
           写しを見るのをやめる();
-          if (!o) 状態().resetCurrentSession(false);
+          if (!記録を残す) 状態().resetCurrentSession(false);
           書く({ isLiveActive: false, ライブの続き: null, isHost: false, liveSessionName: null });
         },
         // 参加一覧を取り直す。ここでだけ、古いライブの片付けもする。
@@ -4725,10 +4732,10 @@ const useScoreStore = zustand.create()(
           // 一覧に出すのは団体のライブなので、そちらを見る
           const 枝 = 団体の枝() || (await 状態().ライブの合言葉を用意する());
           if (!秘.枝として使えるか(枝)) return;
-          const o = RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}`);
+          const 一覧の場所 = RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}`);
           try {
-            const s = await RTDB.get(o);
-            const 節点 = s.exists() ? s.val() : null;
+            const 返り = await RTDB.get(一覧の場所);
+            const 節点 = 返り.exists() ? 返り.val() : null;
             const { 出す, 古い } = 参加できるライブ(節点, await サーバー時刻());
             書く({ liveSessionsList: 出す, 共有のライブたち: 道しるべたちを拾う(節点) });
             // 最終更新から日が経ったものは、一覧から外したうえで消す。
@@ -4773,8 +4780,8 @@ const useScoreStore = zustand.create()(
               消す();
               console.log(`[Store] 使われなくなったライブを片付けました: ${名}`);
             });
-          } catch (e) {
-            console.error('Fetch live sessions error:', e);
+          } catch (誤り) {
+            console.error('Fetch live sessions error:', 誤り);
           }
         },
         listenToLiveSessions: () => {
@@ -4788,47 +4795,47 @@ const useScoreStore = zustand.create()(
             .then((合) => {
               const 枝 = 秘.ライブの枝(合);
               if (やめた || !枝 || !Firebaseの器.rtdb) return;
-              const o = RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}`);
+              const 一覧の場所 = RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}`);
               止める = RTDB.onValue(
-                o,
-                (s) => {
+                一覧の場所,
+                (返り) => {
                   // ここは消さないので、時計の補正は控えの値で足りる
-                  const 節点 = s.exists() ? s.val() : null;
+                  const 節点 = 返り.exists() ? 返り.val() : null;
                   書く({
                     liveSessionsList: 参加できるライブ(節点, Date.now() + サーバーとの時差).出す,
                     共有のライブたち: 道しるべたちを拾う(節点),
                   });
                 },
-                (e) => {
-                  console.error('Listen to live sessions error:', e);
+                (誤り) => {
+                  console.error('Listen to live sessions error:', 誤り);
                 }
               );
             })
-            .catch((t) => console.error('Listen to live sessions error:', t));
+            .catch((誤り) => console.error('Listen to live sessions error:', 誤り));
           return () => {
             やめた = true;
             if (止める) 止める();
           };
         },
-        deleteLiveSession: async (o) => {
+        deleteLiveSession: async (名前) => {
           if (Firebaseの器.rtdb)
             try {
               // 一覧から消すのは団体のライブ。共有の枝ではなく団体の枝を見る
               const 枝 = 団体の枝();
               if (!枝) return;
-              const a = RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${o}`);
-              await RTDB.set(a, null);
+              const 節点 = RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${名前}`);
+              await RTDB.set(節点, null);
               // 共有履歴と在席は別の枝にあるので、そちらも消す
-              RTDB.remove(RTDB.ref(Firebaseの器.rtdb, 共有履歴の場所(枝, o))).catch(() => {});
-              RTDB.remove(RTDB.ref(Firebaseの器.rtdb, 在席の場所(枝, o))).catch(() => {});
-              書く({ liveSessionsList: 状態().liveSessionsList.filter((e) => e !== o) });
-            } catch (e) {
-              console.error('Delete live session error:', e);
+              RTDB.remove(RTDB.ref(Firebaseの器.rtdb, 共有履歴の場所(枝, 名前))).catch(() => {});
+              RTDB.remove(RTDB.ref(Firebaseの器.rtdb, 在席の場所(枝, 名前))).catch(() => {});
+              書く({ liveSessionsList: 状態().liveSessionsList.filter((x) => x !== 名前) });
+            } catch (誤り) {
+              console.error('Delete live session error:', 誤り);
             }
         },
         listenToSessions: async () => {
-          const { activeGroupId: o, activeRole: i, myMemberId: n, myMemberName } = 状態();
-          if (!o) return;
+          const { activeGroupId: 団体, activeRole: 役割, myMemberId: 自分の部員ID, myMemberName } = 状態();
+          if (!団体) return;
           const _sessDb = await waitForDb();
           if (!_sessDb) {
             console.warn('[Store] listenToSessions: db still undefined after await, aborting');
@@ -4836,53 +4843,53 @@ const useScoreStore = zustand.create()(
           }
           状態().stopListeningToSessions();
           console.log('[Store] Starting real-time session listener');
-          const l = Firestore.collection(Firebaseの器.db, `groups/${o}/sessions`);
+          const 記録の置き場 = Firestore.collection(Firebaseの器.db, `groups/${団体}/sessions`);
           const m_30 = Date.now() - 2592000000;
-          const d = Firestore.query(
-            l,
+          const 問い = Firestore.query(
+            記録の置き場,
             Firestore.where('date', '>', m_30),
             Firestore.orderBy('date', 'desc'),
             Firestore.limit(100)
           );
-          const u = Firestore.onSnapshot(
-            d,
-            (t) => {
-              const o = [];
-              t.forEach((e) => {
-                const s = e.data();
+          const 止める = Firestore.onSnapshot(
+            問い,
+            (返り) => {
+              const 雲の記録 = [];
+              返り.forEach((文書) => {
+                const 中身 = 文書.data();
                 const cleanedTags =
-                  s.tags && Array.isArray(s.tags)
-                    ? Array.from(new Set(s.tags.map(normalizeTag).filter(Boolean)))
+                  中身.tags && Array.isArray(中身.tags)
+                    ? Array.from(new Set(中身.tags.map(normalizeTag).filter(Boolean)))
                     : [];
-                const originalTags = s.tags || [];
+                const originalTags = 中身.tags || [];
                 const isModified =
                   cleanedTags.length !== originalTags.length ||
-                  cleanedTags.some((e, t) => e !== originalTags[t]);
-                if (isModified && Firebaseの器.db && Firebaseの器.db._delegate && 'member' !== i) {
-                  const s = (0, a.doc)(
+                  cleanedTags.some((タグ, 番) => タグ !== originalTags[番]);
+                if (isModified && Firebaseの器.db && Firebaseの器.db._delegate && 'member' !== 役割) {
+                  const 場所 = Firestore.doc(
                     Firebaseの器.db,
                     `groups/${useScoreStore.getState().activeGroupId}/sessions`,
-                    e.id
+                    文書.id
                   );
-                  (0, a.updateDoc)(s, { tags: cleanedTags }).catch((e) =>
-                    console.error('[Store] Auto cleanup sync failed:', e)
+                  Firestore.updateDoc(場所, { tags: cleanedTags }).catch((誤り) =>
+                    console.error('[Store] Auto cleanup sync failed:', 誤り)
                   );
                 }
-                o.push(
-                  Object.assign({}, s, {
-                    id: e.id,
+                雲の記録.push(
+                  Object.assign({}, 中身, {
+                    id: 文書.id,
                     tags: cleanedTags,
                     // tags と同じように、ここで形を整えてから渡す
-                    archers: 記録の射手を整える(s),
-                    syncStatus: e.metadata && e.metadata.hasPendingWrites ? '未同期' : '同期済み',
+                    archers: 記録の射手を整える(中身),
+                    syncStatus: 文書.metadata && 文書.metadata.hasPendingWrites ? '未同期' : '同期済み',
                   })
                 );
               });
-              const a = 状態().sessions;
-              const c = new Set(o.map((e) => e.id));
-              const merged = o.map((cloudSession) => {
+              const 手元の記録 = 状態().sessions;
+              const 雲にあるID = new Set(雲の記録.map((x) => x.id));
+              const merged = 雲の記録.map((cloudSession) => {
                 const pendingTimer = 状態()._pendingUpdateTimers[cloudSession.id];
-                const localSession = a.find((ls) => ls && ls.id === cloudSession.id);
+                const localSession = 手元の記録.find((x) => x && x.id === cloudSession.id);
                 // 送信待ちの編集は、クラウドの古い写しで上書きしない。タイマーが動いて
                 // いる 800ms の間だけでなく、送信が済むまで（「未同期」の間）守る。
                 if (localSession && (pendingTimer || '未同期' === localSession.syncStatus))
@@ -4894,10 +4901,10 @@ const useScoreStore = zustand.create()(
               // とみなして落とす。ただし見張りの窓の外（30日より前、100件に収まらず
               // 切れた分）は届かないだけなので落とさない。ここを一律に落としていた
               // せいで、30日を過ぎた記録が見張りが動くたびに履歴から消えていた
-              const 窓の下 = o.length >= 100 ? Math.min(...o.map((e) => e.date || 0)) : m_30;
+              const 窓の下 = 雲の記録.length >= 100 ? Math.min(...雲の記録.map((e) => e.date || 0)) : m_30;
               const 窓の中 = (e) => (e.date || 0) > 窓の下;
-              const l = a.filter(
-                (e) => !c.has(e.id) && (!e.hasOwnProperty('serverCreatedTime') || !窓の中(e))
+              const l = 手元の記録.filter(
+                (e) => !雲にあるID.has(e.id) && (!e.hasOwnProperty('serverCreatedTime') || !窓の中(e))
               );
               // 完全に消したものは、クラウドにまだ残っていても画面に出さない
               const 完全削除ずみ = new Set(Object.keys(状態().permanentlyDeleted || {}));
@@ -4905,7 +4912,7 @@ const useScoreStore = zustand.create()(
               d.sort((e, s) => (s.date || 0) - (e.date || 0));
               書く({ sessions: d, syncStatus: '同期済み', lastSyncTime: Date.now() });
               console.log(
-                `[Store] Real-time session update received: ${o.length} items (reflected deletions)`
+                `[Store] Real-time session update received: ${雲の記録.length} items (reflected deletions)`
               );
             },
             (s) => {
@@ -4915,7 +4922,7 @@ const useScoreStore = zustand.create()(
               if (入り直せば直るか(s)) 書く({ 再ログインの案内: 入り直しの案内 });
             }
           );
-          書く({ sessionUnsubscribe: u });
+          書く({ sessionUnsubscribe: 止める });
         },
         stopListeningToSessions: () => {
           const { sessionUnsubscribe } = 状態();
