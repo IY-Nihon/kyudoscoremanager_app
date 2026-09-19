@@ -1,13 +1,7 @@
 'use strict';
 
 const React = require('react');
-const View = require('./View').default;
-const Text = require('./Text').default;
-const StyleSheet = require('./StyleSheet').default;
-const Modal = require('./Modal').default;
-const TextInput = require('./TextInput').default;
-const TouchableOpacity = require('./TouchableOpacity').default;
-const ScrollView = require('./ScrollView').default;
+const { View, Text, StyleSheet, Modal, TextInput, TouchableOpacity, ScrollView } = require('./rn');
 const { useScoreStore } = require('./useScoreStore');
 const 共 = require('./liveShare');
 const 写 = require('./clipboard_bridge');

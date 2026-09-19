@@ -1,17 +1,19 @@
 'use strict';
 
 const React = require('react');
-const View = require('./View').default;
-const Text = require('./Text').default;
-const StyleSheet = require('./StyleSheet').default;
-const FlatList = require('./FlatList').default;
-const TouchableOpacity = require('./TouchableOpacity').default;
-const TextInput = require('./TextInput').default;
-const SafeAreaView = require('./SafeAreaView').default;
-const ScrollView = require('./ScrollView').default;
-const Modal = require('./Modal').default;
-const Alert = require('./alertBridge').default;
-const Pressable = require('./Pressable').default;
+const {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  TextInput,
+  SafeAreaView,
+  ScrollView,
+  Modal,
+  Alert,
+  Pressable,
+} = require('./rn');
 const { IS_WEB, SAFE_TOP_PADDING, WEB_TOP_PADDING } = require('./IS_WEB');
 const { useScoreStore } = require('./useScoreStore');
 const 案内 = require('./TutorialGuide');

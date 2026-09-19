@@ -1,13 +1,16 @@
 'use strict';
 
 const React = require('react');
-const View = require('./View').default;
-const Text = require('./Text').default;
-const StyleSheet = require('./StyleSheet').default;
-const ScrollView = require('./ScrollView').default;
-const TouchableOpacity = require('./TouchableOpacity').default;
-const Modal = require('./Modal').default;
-const TextInput = require('./TextInput').default;
+const {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Modal,
+  TextInput,
+  useWindowDimensions,
+} = require('./rn');
 const { SAFE_TOP_PADDING } = require('./IS_WEB');
 const 案内 = require('./TutorialGuide');
 // 「自分が写っているか」の判定。履歴画面・案内の見本と同じものを使う
@@ -18,7 +21,6 @@ const 集 = require('./statsRules');
 const ひ = require('./comparePresets');
 // 弓具を変えた前後で的中率がどう動いたか（src/equipmentTrend.js）
 const 弓 = require('./equipmentTrend');
-const RN画面 = require('react-native');
 const { 出す } = require('./AppDialog');
 const { useScoreStore } = require('./useScoreStore');
 const Icons = require('@expo/vector-icons');
@@ -293,7 +295,7 @@ const AnalysisScreen = ({ navigation }) => {
   // 320px の端末では、名前と立数の柱を引くと1マスが40pxほどしか残らない。
   // そこに率と（的中/射数）を積むと、字が枠を越えて隣と重なる。
   // 狭いときは率だけにする。射数は右端の柱に出ているので、意味は落ちない
-  const 画面の幅 = RN画面.useWindowDimensions().width;
+  const 画面の幅 = useWindowDimensions().width;
   const 狭い画面 = 画面の幅 < 360;
   // 比較する相手も学年でまとめる。記録表の人の選択と同じ形にしてある。
   // 覚えるのは「閉じた学年」。開く側を決め打ちすると、想定外の学年が

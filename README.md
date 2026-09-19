@@ -88,21 +88,26 @@
 - 展開されていた npm ライブラリは npm パッケージへ戻し済みです。1行転送するだけの
   中継ファイルも削除し、`require('firebase/firestore')` のように直接呼んでいます
 
-現在の `src/` は **93ファイル**で、内訳は以下の通りです（2026-09-19 時点。`yokoNagashi.js`・`retsuNoMitate.js` を足した後）。
-
-| 区分 | 件数 | 容量 |
-|---|---|---|
-| 自作コード | 75 | 1,762KB |
-| ライブラリブリッジ | 18 | 14KB |
+現在の `src/` 直下は **75ファイル・1,756KB**で、すべて自作コードです（2026-09-19 時点）。
 
 かつては npm パッケージを1行転送するだけのファイルが20個あり、`require('./module_188')`
 のように**番号で**呼んでいました。react を使うのに `module_37` → `module_38` → `react` と
 二段辿るものもありました。中身は1行の転送しかないため、呼び出し側を本当の名前へ直して
 すべて削除しています。
 
-残る18件は react-native の部品ごとの橋渡しで、`View.js` `Text.js` のように部品名を
-そのまま名前にしています。`Text` `TextInput` `StyleSheet` の3件はダークモードの既定色を
-ここで当てているため、単なる転送ではありません。
+その後も react-native の部品ごとに `View.js` `Text.js` … と 18 個の橋渡しファイルが
+残っていましたが、2026-09-19 に `src/rn.js` 1 つにまとめました。画面のコードは
+
+```js
+const { View, Text, StyleSheet } = require('./rn');
+```
+
+の 1 行で取ります。`Text` `TextInput` `StyleSheet` はダークモードの既定色を当てた
+包みで、`Alert` はブラウザでは何も出ない素のものではなくアプリの中の窓（`AppDialog`）へ
+流すもの、それ以外は react-native のものをそのまま通します（遅延の getter）。
+`src/` で `react-native` を直接呼ぶのは `theme.js`（rn.js が依存するので逆向きにできない）と
+`useScoreStore.js`（画面に触れない）だけです。素の `Text` や `Alert` をうっかり使って
+ダークモードで字が黒くなる・ブラウザで警告が出ない、という取り違えはこれで起きません。
 
 ### npm パッケージへ戻したライブラリ
 
@@ -123,7 +128,7 @@ App Check を実装するときは `firebase/app-check` を直接読み込みま
 
 ### NativeWind ランタイムの除去について
 
-`src/themedJsx.js`（全画面の JSX が経由するランタイム）の実体は
+かつて全画面の JSX が経由していた `src/themedJsx.js` の実体は
 **react-native-css-interop = NativeWind のランタイム**でした。しかし
 
 - `package.json` に nativewind / react-native-css-interop / tailwindcss が無い
@@ -133,7 +138,10 @@ App Check を実装するときは `firebase/app-check` を直接読み込みま
   `interopComponents` が空のため要素差し替えも発生しない）
 
 という状態で、全 JSX 呼び出しに挟まるだけの死荷重になっていたため、
-`react/jsx-runtime` へ置き換えました（19ファイル削減）。
+`react/jsx-runtime` へ置き換えました（19ファイル削減）。その後 JSX 構文へ直したことで
+`themedJsx.js` 自体も呼ばれなくなり、削除済みです。いまダークモードのインライン色を
+変換しているのは `src/theme-runtime/jsx-runtime.js`（`babel.config.js` の
+`jsxImportSource` で全ファイルの JSX がここを通る）です。
 
 ### 自作コード（編集対象になるファイル）
 
@@ -371,13 +379,12 @@ docs/                  法務文書（legal/）、配信の手順（deploy/）�
 **「ライト色 → ダーク色」を実行時に変換する**方式を採っています。変換の定義は
 [src/theme.js](src/theme.js) の1ファイルに集約されています。
 
-差し込み口は3つです。
+差し込み口は2つです。
 
 | 差し込み口 | 対象 |
 |---|---|
-| [src/default_45.js](src/default_45.js) | `StyleSheet.create` の結果（styles 定義側） |
+| [src/rn.js](src/rn.js) | `StyleSheet.create` の結果（styles 定義側）と、色未指定の `<Text>` `<TextInput>` の既定色 |
 | [src/theme-runtime/jsx-runtime.js](src/theme-runtime/jsx-runtime.js) | 全 JSX の `style` / `color` 系 props（インライン側） |
-| [src/default_217.js](src/default_217.js) | 色未指定の `<Text>` の既定色 |
 
 JSX ランタイムは `babel.config.js` の `jsxImportSource: 'theme-jsx'` で全ファイルに適用され、
 別名 `theme-jsx` は `metro.config.js` で `src/theme-runtime` へ解決されます。

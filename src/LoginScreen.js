@@ -1,15 +1,18 @@
 'use strict';
 
 const React = require('react');
-const ActivityIndicator = require('./ActivityIndicator').default;
-const KeyboardAvoidingView = require('./KeyboardAvoidingView').default;
-const ScrollView = require('./ScrollView').default;
-const Alert = require('./alertBridge').default;
-const Pressable = require('./Pressable').default;
-const View = require('./View').default;
-const Text = require('./Text').default;
-const StyleSheet = require('./StyleSheet').default;
-const TextInput = require('./TextInput').default;
+const {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  ScrollView,
+  Alert,
+  Pressable,
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  Image,
+} = require('./rn');
 const { useScoreStore } = require('./useScoreStore');
 const { IS_IOS, IS_WEB, SAFE_TOP_PADDING } = require('./IS_WEB');
 const { auth, db } = require('./db');
@@ -25,7 +28,6 @@ const // 規約・プライバシーポリシーの住所と開き方。使っ�
 // 見た目では気づけない。使うたびに整えるのではなく、ここを通す。
 // パスワードには使わないこと（空白も文字のうち）
 const KyudoBackgroundAnimation = require('./KyudoBackgroundAnimation').default;
-const { Image } = require('react-native');
 const 整えたID = (値) =>
   String(値 || '')
     .trim()

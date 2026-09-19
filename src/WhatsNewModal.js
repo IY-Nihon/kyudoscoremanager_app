@@ -9,13 +9,7 @@ exports.WhatsNewModal = undefined;
 
 const React = require('react');
 const { useState, useEffect, useRef } = React;
-const RN = require('react-native');
-const _View = RN.View;
-const _Text = require('./Text').default; // テーマ変換を通すためブリッジ経由
-const _StyleSheet = require('./StyleSheet').default; // テーマ変換を通すためブリッジ経由
-const _TouchableOpacity = RN.TouchableOpacity;
-const _Modal = RN.Modal;
-const _ScrollView = RN.ScrollView;
+const { Text, StyleSheet, View, TouchableOpacity, Modal, ScrollView } = require('./rn');
 
 const AsyncStorage = require('@react-native-async-storage/async-storage').default;
 const { Ionicons } = require('@expo/vector-icons');
@@ -784,34 +778,34 @@ const WhatsNewModal = () => {
   if (!checkedStorage || !visible) return null;
 
   return (
-    <_Modal visible={true} animationType="fade" transparent={true} onRequestClose={handleClose}>
-      <_View style={styles.overlay}>
+    <Modal visible={true} animationType="fade" transparent={true} onRequestClose={handleClose}>
+      <View style={styles.overlay}>
         {/*
           背景を押しても閉じられるようにする。読むだけの窓なので、
           書きかけが消える心配がない。×を狙わせるのは手間だった。
           「次のお知らせまで表示しない」の印は、押していれば handleClose が拾う
         */}
-        <_TouchableOpacity
-          style={_StyleSheet.absoluteFill}
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
           activeOpacity={1}
           onPress={handleClose}
           accessible={false}
           importantForAccessibility="no"
         />
-        <_View
+        <View
           style={[styles.container, getShadowStyle({ shadowOpacity: 0.2, shadowRadius: 16, elevation: 16 })]}
         >
-          <_View style={styles.header}>
-            <_View style={styles.headerTitleRow}>
+          <View style={styles.header}>
+            <View style={styles.headerTitleRow}>
               <Ionicons name="megaphone-outline" size={20} color="#007AFF" />
-              <_Text style={styles.headerTitle}>お知らせ</_Text>
-            </_View>
-            <_TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
+              <Text style={styles.headerTitle}>お知らせ</Text>
+            </View>
+            <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
               <Ionicons name="close" size={24} color="#8E8E93" />
-            </_TouchableOpacity>
-          </_View>
+            </TouchableOpacity>
+          </View>
 
-          <_ScrollView
+          <ScrollView
             ref={巻物}
             style={styles.body}
             contentContainerStyle={{ padding: 16 }}
@@ -825,49 +819,49 @@ const WhatsNewModal = () => {
                 {/* 前に開いたとき以降に足したぶんと、それより前との境目。
                     新しいものが上に並ぶので、この線から下は読んだことがある */}
                 {未読 > 0 && idx === 未読 && (
-                  <_View
+                  <View
                     style={styles.読んだ境目}
                     onLayout={(出来事) => {
                       境目の位置.current = 出来事.nativeEvent.layout.y;
                       送る();
                     }}
                   >
-                    <_View style={styles.読んだ線} />
-                    <_Text style={styles.読んだ文字}>ここから下は前回までのお知らせ</_Text>
-                    <_View style={styles.読んだ線} />
-                  </_View>
+                    <View style={styles.読んだ線} />
+                    <Text style={styles.読んだ文字}>ここから下は前回までのお知らせ</Text>
+                    <View style={styles.読んだ線} />
+                  </View>
                 )}
-                <_View style={styles.section}>
-                  <_Text style={styles.sectionDate}>{section.date}</_Text>
-                  {!!section.title && <_Text style={styles.sectionTitle}>{section.title}</_Text>}
+                <View style={styles.section}>
+                  <Text style={styles.sectionDate}>{section.date}</Text>
+                  {!!section.title && <Text style={styles.sectionTitle}>{section.title}</Text>}
                   {section.points.map((要点, pIdx) => (
-                    <_View key={pIdx} style={styles.pointRow}>
-                      <_Text style={styles.pointBullet}>・</_Text>
-                      <_Text style={[styles.pointText, section.boldPoints && styles.pointTextBold]}>
+                    <View key={pIdx} style={styles.pointRow}>
+                      <Text style={styles.pointBullet}>・</Text>
+                      <Text style={[styles.pointText, section.boldPoints && styles.pointTextBold]}>
                         {要点}
-                      </_Text>
-                    </_View>
+                      </Text>
+                    </View>
                   ))}
-                </_View>
+                </View>
               </React.Fragment>
             ))}
-          </_ScrollView>
+          </ScrollView>
 
-          <_View style={styles.footer}>
-            <_TouchableOpacity style={styles.checkboxRow} onPress={() => setDontShowAgain((prev) => !prev)}>
-              <_View style={[styles.checkbox, dontShowAgain && styles.checkboxChecked]}>
+          <View style={styles.footer}>
+            <TouchableOpacity style={styles.checkboxRow} onPress={() => setDontShowAgain((prev) => !prev)}>
+              <View style={[styles.checkbox, dontShowAgain && styles.checkboxChecked]}>
                 {dontShowAgain && <Ionicons name="checkmark" size={14} color="#FFF" />}
-              </_View>
-              <_Text style={styles.checkboxLabel}>次のお知らせが来るまで表示しない</_Text>
-            </_TouchableOpacity>
+              </View>
+              <Text style={styles.checkboxLabel}>次のお知らせが来るまで表示しない</Text>
+            </TouchableOpacity>
 
-            <_TouchableOpacity style={styles.closeFooterBtn} onPress={handleClose}>
-              <_Text style={styles.closeFooterBtnText}>閉じる</_Text>
-            </_TouchableOpacity>
-          </_View>
-        </_View>
-      </_View>
-    </_Modal>
+            <TouchableOpacity style={styles.closeFooterBtn} onPress={handleClose}>
+              <Text style={styles.closeFooterBtnText}>閉じる</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 };
 
@@ -875,7 +869,7 @@ exports.WhatsNewModal = WhatsNewModal;
 // 不具合の便りに載せる版。どの版で起きたかが分からないと直せない
 exports.NOTICE_VERSION = NOTICE_VERSION;
 
-const styles = _StyleSheet.create({
+const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
   container: { width: '90%', maxWidth: 420, maxHeight: '80%', backgroundColor: '#FFF', borderRadius: 16 },
   header: {

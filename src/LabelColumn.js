@@ -1,8 +1,6 @@
 'use strict';
 
-const View = require('./View').default;
-const Text = require('./Text').default;
-const StyleSheet = require('./StyleSheet').default;
+const { View, Text, StyleSheet } = require('./rn');
 const { UIConfig } = require('./uiConfig');
 const { useScoreStore } = require('./useScoreStore');
 const LabelColumn = ({ shots, showFooter = true, 横並び: 横 = false }) => {

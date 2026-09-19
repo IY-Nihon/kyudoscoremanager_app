@@ -2,17 +2,7 @@
  * 矢所記録入力用ポップアップモーダルコンポーネント
  */
 import React, { useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  Modal,
-  TouchableOpacity,
-  Pressable,
-  Alert,
-  Dimensions
-} from 'react-native';
-// テーマ変換（ダークモード）を通すため StyleSheet はブリッジ経由で取得する
-import StyleSheet from './StyleSheet';
+import { View, Text, Modal, TouchableOpacity, Pressable, Alert, Dimensions, StyleSheet } from './rn';
 import { Ionicons } from '@expo/vector-icons';
 import { useScoreStore } from './useScoreStore';
 

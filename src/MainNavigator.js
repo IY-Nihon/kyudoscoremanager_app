@@ -1,12 +1,8 @@
 'use strict';
 
-const RN画面 = require('react-native');
 const themeMod = require('./theme');
 const React = require('react');
-const View = require('./View').default;
-const Text = require('./Text').default;
-const StyleSheet = require('./StyleSheet').default;
-const Pressable = require('./Pressable').default;
+const { View, Text, StyleSheet, Pressable, useWindowDimensions } = require('./rn');
 const BottomTabs = require('@react-navigation/bottom-tabs');
 const Navigation = require('@react-navigation/native');
 const ReactNativeSafeAreaContext = require('react-native-safe-area-context');
@@ -103,7 +99,7 @@ const 下の帯 = React.memo(({ state, descriptors, navigation: nav }) => {
   ReactNativeSafeAreaContext.useSafeAreaInsets();
   // 画面の幅で字を詰める。6つのタブは 320px の端末に収まらず、
   // 左右にはみ出していた（記録・履歴・分析・メンバー・出欠・設定）
-  const 画面の幅 = RN画面.useWindowDimensions().width;
+  const 画面の幅 = useWindowDimensions().width;
   const 詰める = 画面の幅 < 380;
   const 狭いときのボタン = 詰める ? { paddingHorizontal: 6, minWidth: 34 } : null;
   const 狭いときの字 = 詰める ? { fontSize: 11 } : null;

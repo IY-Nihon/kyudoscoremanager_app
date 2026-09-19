@@ -2,15 +2,17 @@
 
 exports.ArcherActionModal = undefined;
 const React = require('react');
-const View = require('./View').default;
-const Text = require('./Text').default;
-const StyleSheet = require('./StyleSheet').default;
-const Modal = require('./Modal').default;
-const TouchableOpacity = require('./TouchableOpacity').default;
-const TextInput = require('./TextInput').default;
-const ScrollView = require('./ScrollView').default;
-const Dimensions = require('./Dimensions').default;
-const Pressable = require('./Pressable').default;
+const {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  Dimensions,
+  Pressable,
+} = require('./rn');
 const Icons = require('@expo/vector-icons');
 const { useScoreStore } = require('./useScoreStore');
 const { getShadowStyle } = require('./shadowStyle');

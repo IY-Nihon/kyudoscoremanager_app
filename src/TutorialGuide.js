@@ -2,12 +2,7 @@
 
 const React = require('react');
 const { useState, useEffect, useRef, useCallback } = React;
-const RN = require('react-native');
-const _View = RN.View;
-const _Text = require('./Text').default; // テーマ変換を通すためブリッジ経由
-const _StyleSheet = require('./StyleSheet').default; // テーマ変換を通すためブリッジ経由
-const _TouchableOpacity = RN.TouchableOpacity;
-const _ScrollView = RN.ScrollView;
+const { Text, StyleSheet, View, TouchableOpacity, ScrollView, Dimensions } = require('./rn');
 const { create } = require('zustand');
 const AsyncStorage = require('@react-native-async-storage/async-storage').default;
 const { Ionicons } = require('@expo/vector-icons');
@@ -323,7 +318,7 @@ const TutorialOverlay = ({ navRef }) => {
   // 吹き出しが本来必要とする高さ。中身の折り返しまでは見積もれないので、
   // 上限を付けずに一度描いて測る。測るまでは透明にしておく（一瞬のちらつき防止）
   const [自然高さ, 自然高さを置く] = useState(0);
-  const [画面の大きさ, 大きさを置く] = useState(() => RN.Dimensions.get('window'));
+  const [画面の大きさ, 大きさを置く] = useState(() => Dimensions.get('window'));
   // 同じ値で置き直すと描き直しが起き、測り直しと堂々巡りになる
   const 大きさが変わったら置く = useCallback(
     (幅, 高さ) =>
@@ -368,7 +363,7 @@ const TutorialOverlay = ({ navRef }) => {
   const 見返し = 番号 < 最高到達;
   // 画面の回転や窓の大きさ変更に追随する
   useEffect(() => {
-    const 購読 = RN.Dimensions.addEventListener('change', ({ window: 窓 }) => 大きさを置く(窓));
+    const 購読 = Dimensions.addEventListener('change', ({ window: 窓 }) => 大きさを置く(窓));
     return () => 購読 && 購読.remove && 購読.remove();
   }, []);
   // 初めての人には自動で出す
@@ -514,7 +509,7 @@ const TutorialOverlay = ({ navRef }) => {
   // ただし幕そのものは残す。消してしまうと幕を測れず、幕の左上が分からない。
   // 広い画面ではアプリが中央寄せになるため、そこが分からないと吹き出しが
   // 右へはみ出す。透明なまま置いておけば、指も通るし測れる
-  if (測り中) return <_View ref={根ref} style={styles.根} pointerEvents="none" />;
+  if (測り中) return <View ref={根ref} style={styles.根} pointerEvents="none" />;
   const 最後 = 番号 >= 手順.length - 1;
   const 触ってもらう = !!いまの手順.操作 && !見返し && !手が出せない;
   const { width: 画面幅, height: 画面高 } = 画面の大きさ;
@@ -578,9 +573,9 @@ const TutorialOverlay = ({ navRef }) => {
     暗幕.push({ key: '全面', top: 0, left: 0, right: 0, bottom: 0 });
   }
   return (
-    <_View ref={根ref} style={styles.根} pointerEvents="box-none">
+    <View ref={根ref} style={styles.根} pointerEvents="box-none">
       {暗幕.map(({ key, 透明, ...位置 }) => (
-        <_TouchableOpacity
+        <TouchableOpacity
           key={key}
           activeOpacity={1}
           onPress={() => {}}
@@ -593,10 +588,10 @@ const TutorialOverlay = ({ navRef }) => {
           見本の中身を読ませて描かせる（見た目を写し取っていないので、画面を
           直してもズレない）。本物と間違えないよう、上に帯を出しておく */}
       {いまの手順.見本 && (
-        <_View style={styles.見本の帯} pointerEvents="none">
+        <View style={styles.見本の帯} pointerEvents="none">
           <Ionicons name="eye-outline" size={13} color="#FFF" />
-          <_Text style={styles.見本の帯文字}>見本です（実際の中身ではありません）</_Text>
-        </_View>
+          <Text style={styles.見本の帯文字}>見本です（実際の中身ではありません）</Text>
+        </View>
       )}
 
       {/* 説明だけの手順では、指した先を「見せるが押させない」。
@@ -604,7 +599,7 @@ const TutorialOverlay = ({ navRef }) => {
           終了・保存なら本物の記録が残り、ライブなら立ち上がってしまう。
           どちらも案内の片付けでは取り消せない */}
       {枠 && !触ってもらう && (
-        <_TouchableOpacity
+        <TouchableOpacity
           activeOpacity={1}
           onPress={() => {}}
           style={{
@@ -618,13 +613,13 @@ const TutorialOverlay = ({ navRef }) => {
       )}
 
       {枠 && (
-        <_View
+        <View
           pointerEvents="none"
           style={[styles.強調, { top: 枠.y - 4, left: 枠.x - 4, width: 枠.幅 + 8, height: 枠.高さ + 8 }]}
         />
       )}
 
-      <_View
+      <View
         style={[
           styles.吹き出し,
           置き場,
@@ -636,81 +631,81 @@ const TutorialOverlay = ({ navRef }) => {
             置き場所が振動する。中身は上限の影響を受けないので落ち着く。
             手順ごとに 0 に戻さないのは、同じ高さだと onLayout が呼ばれず
             0 のままになって吹き出しが出なくなるため */}
-        <_ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ padding: 16 }}>
-          <_View
+        <ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ padding: 16 }}>
+          <View
             onLayout={(出来事) => {
               const 高さ = Math.ceil(出来事.nativeEvent.layout.height) + 32; // 上下の余白ぶん
               if (高さ > 0 && Math.abs(高さ - 自然高さ) > 1) 自然高さを置く(高さ);
             }}
           >
-            <_View style={styles.見出し行}>
-              <_Text style={styles.番号}>{`${番号 + 1} / ${手順.length}`}</_Text>
-              <_TouchableOpacity onPress={閉じる} style={styles.閉じるボタン}>
-                <_Text style={styles.閉じる文字}>スキップ</_Text>
-              </_TouchableOpacity>
-            </_View>
+            <View style={styles.見出し行}>
+              <Text style={styles.番号}>{`${番号 + 1} / ${手順.length}`}</Text>
+              <TouchableOpacity onPress={閉じる} style={styles.閉じるボタン}>
+                <Text style={styles.閉じる文字}>スキップ</Text>
+              </TouchableOpacity>
+            </View>
 
-            <_Text style={styles.題}>{いまの手順.題}</_Text>
-            <_View>
+            <Text style={styles.題}>{いまの手順.題}</Text>
+            <View>
               {いまの手順.文.map((一文, 番) => (
-                <_Text key={番} style={styles.文}>
+                <Text key={番} style={styles.文}>
                   {一文}
-                </_Text>
+                </Text>
               ))}
-            </_View>
+            </View>
 
             {触ってもらう && (
-              <_View style={styles.やってみる}>
+              <View style={styles.やってみる}>
                 <Ionicons name="hand-left-outline" size={16} color="#FF9500" />
-                <_Text style={styles.やってみる文字}>{いまの手順.操作.案内}</_Text>
-              </_View>
+                <Text style={styles.やってみる文字}>{いまの手順.操作.案内}</Text>
+              </View>
             )}
 
             {/* 誤ってスキップしても行き止まりにならないよう、常に出しておく。
             アプリ全体で使える知らせの仕組みが無いため、ここに添える */}
-            <_Text style={styles.補足} numberOfLines={1}>
+            <Text style={styles.補足} numberOfLines={1}>
               記録表に触ったぶんは、終わると元に戻ります
-            </_Text>
+            </Text>
 
-            <_View style={styles.操作行}>
+            <View style={styles.操作行}>
               {番号 > 0 ? (
-                <_TouchableOpacity onPress={() => 進める(番号 - 1)} style={styles.戻るボタン}>
+                <TouchableOpacity onPress={() => 進める(番号 - 1)} style={styles.戻るボタン}>
                   <Ionicons name="chevron-back" size={16} color="#007AFF" />
-                  <_Text style={styles.戻る文字}>戻る</_Text>
-                </_TouchableOpacity>
+                  <Text style={styles.戻る文字}>戻る</Text>
+                </TouchableOpacity>
               ) : (
-                <_View />
+                <View />
               )}
               {いまの手順.分かれ道 ? (
-                <_View style={styles.分かれ道行}>
-                  <_TouchableOpacity onPress={閉じる} style={styles.とばすボタン}>
-                    <_Text style={styles.とばす文字}>あとで</_Text>
-                  </_TouchableOpacity>
-                  <_TouchableOpacity onPress={() => 続きへ(基本.length)} style={styles.次へボタン}>
-                    <_Text style={styles.次へ文字}>続きを見る</_Text>
-                  </_TouchableOpacity>
-                </_View>
+                <View style={styles.分かれ道行}>
+                  <TouchableOpacity onPress={閉じる} style={styles.とばすボタン}>
+                    <Text style={styles.とばす文字}>あとで</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => 続きへ(基本.length)} style={styles.次へボタン}>
+                    <Text style={styles.次へ文字}>続きを見る</Text>
+                  </TouchableOpacity>
+                </View>
               ) : 触ってもらう ? (
                 // 押せない事情があっても行き止まりにならないよう、控えめな逃げ道を置く
-                <_TouchableOpacity onPress={() => 進める(番号 + 1)} style={styles.とばすボタン}>
-                  <_Text style={styles.とばす文字}>とばす</_Text>
-                </_TouchableOpacity>
+                <TouchableOpacity onPress={() => 進める(番号 + 1)} style={styles.とばすボタン}>
+                  <Text style={styles.とばす文字}>とばす</Text>
+                </TouchableOpacity>
               ) : (
-                <_TouchableOpacity
+                <TouchableOpacity
                   onPress={() => (最後 ? 閉じる() : 進める(番号 + 1))}
                   style={styles.次へボタン}
                 >
-                  <_Text style={styles.次へ文字}>{最後 ? '始める' : '次へ'}</_Text>
-                </_TouchableOpacity>
+                  <Text style={styles.次へ文字}>{最後 ? '始める' : '次へ'}</Text>
+                </TouchableOpacity>
               )}
-            </_View>
-          </_View>
-        </_ScrollView>
-      </_View>
-    </_View>
+            </View>
+          </View>
+        </ScrollView>
+      </View>
+    </View>
   );
 };
-const styles = _StyleSheet.create({
+const styles = StyleSheet.create({
   根: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999 },
   暗幕: { position: 'absolute', backgroundColor: 'rgba(0,0,0,0.55)' },
   強調: { position: 'absolute', borderWidth: 2, borderColor: '#007AFF', borderRadius: 10 },
