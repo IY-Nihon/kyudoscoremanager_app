@@ -15,6 +15,8 @@ const { 射位の名前 } = require('./a11yLabels');
 
 const 集 = require('./statsRules');
 const { 日付の文字, 練習日で数える } = require('./attendanceRules');
+// 射位は区切りごとに数え直す（記録画面の読み上げと同じ決まり）
+const { 射位を割り振る } = require('./teamGrouping');
 
 /** 空白を落とす。名前で絞り込むとき（表示の突き合わせ）にだけ使う */
 const 詰める = (文) => String(文 || '').replace(/\s/g, '');
@@ -342,9 +344,9 @@ function 端末の日付(日時) {
 /**
  * 射位ごとの成績を出す。立ち順を考えるための材料。
  *
- * 大前は一番前、落は一番後ろ。記録表の並び順がそのまま射位なので、
- * 区切りと合計の列を除いた並びで見る。ここでは数字を出すだけで、
- * 誰をどこに置くかは決めない（決めるのは人）。
+ * 大前は一番前、落は一番後ろ。記録表の並び順がそのまま射位で、区切りごとに
+ * 数え直す（板が 2 つ写った記録の 2 枚目も先頭が大前。teamGrouping の 射位を割り振る）。
+ * ここでは数字を出すだけで、誰をどこに置くかは決めない（決めるのは人）。
  */
 function 射位ごとの成績(人たち, 記録たち, 注文) {
   const 設定 = 注文 || {};
@@ -365,13 +367,13 @@ function 射位ごとの成績(人たち, 記録たち, 注文) {
   };
 
   対象.forEach((記録) => {
-    const 並び = (Array.isArray(記録.archers) ? 記録.archers : []).filter(
-      (射手) => 射手 && !射手.isSeparator && !射手.isTotalCalculator
-    );
-    並び.forEach((射手, 番) => {
+    const 並び = Array.isArray(記録.archers) ? 記録.archers : [];
+    const 射位たち = 射位を割り振る(並び);
+    並び.forEach((射手, i) => {
+      if (!射位たち[i]) return; // 区切り・計
       // 呼び方は src/a11yLabels.js に1か所だけ置く。2か所に書くと、
       // AIの答えと読み上げで違う呼び方になる
-      const 射位 = 射位の名前(番, 並び.length);
+      const 射位 = 射位の名前(射位たち[i].番, 射位たち[i].人数);
       (Array.isArray(射手.marks) ? 射手.marks : []).forEach((印, 射目) => {
         if ('○' !== 印 && '×' !== 印) return;
         入れる(その射を引いた人(射手, 射目).名前 || 射手.name || '', 射位, 印);
@@ -413,19 +415,20 @@ function 射位ごとの成績(人たち, 記録たち, 注文) {
 /**
  * 一人の詳しい成績。getDetailedMemberStats の中身（元は AIChatBot.js の中に在った）。
  *
- * 部員IDで数える。射位は区切りと計を除いた並びで見る（射位ごとの成績と同じ。
+ * 部員IDで数える。射位は区切りごとに数え直した並びで見る（射位ごとの成績と同じ。
  * 前は archers の生の添字で見ていて、計の列が末尾に在ると落が一度も数えられず、
  * 区切りの次の人が「6番目」になっていた）。直近は日付の新しい順（前は作った順）で、
- * その人が出た記録だけを 10 回数える。
+ * その人が出た記録だけを 10 回数える。期間を渡せばその範囲だけ（皆中も同じ範囲）。
  *
  * @param {Array<object>} 人たち 名簿
  * @param {Array<object>} 記録たち
  * @param {string} 名前 模型が渡した名前
+ * @param {{始め?: number, 終わり?: number}} [期間] 省くと全期間
  * @returns {object} 模型に返す中身（error か成績）
  */
-function 一人の成績(人たち, 記録たち, 名前) {
+function 一人の成績(人たち, 記録たち, 名前, 期間) {
   const { 人, 候補 } = 名前で選ぶ(人たち, 名前);
-  const 使える記録 = (Array.isArray(記録たち) ? 記録たち : []).filter(
+  const 使える記録 = 期間で絞る(記録たち, 期間).filter(
     (記録) => 記録 && Array.isArray(記録.archers) && 集.集計に入れるか(記録)
   );
   if (!人) {
@@ -463,31 +466,35 @@ function 一人の成績(人たち, 記録たち, 名前) {
   let 出た記録 = 0;
   const 新しい順 = [...使える記録].sort((甲, 乙) => (乙.date || 0) - (甲.date || 0));
   for (const 記録 of 新しい順) {
-    const 並び = 記録.archers.filter((射手) => 射手 && !射手.isSeparator && !射手.isTotalCalculator);
+    const 並び = 記録.archers;
+    const 射位たち = 射位を割り振る(並び);
     let 出た = false;
     let 射位 = '';
     let 印の並び = '';
     const この記録 = { 的中: 0, 射数: 0 };
-    並び.forEach((射手, 番) => {
-      if (!Array.isArray(射手.marks)) return;
+    並び.forEach((射手, i) => {
+      if (!射位たち[i] || !Array.isArray(射手.marks)) return;
+      const { 番, 人数 } = 射位たち[i];
+      const 大前か = 番 === 0;
+      const 落か = 人数 >= 3 && 番 === 人数 - 1;
       射手.marks.forEach((印, 射目) => {
         if (!集.引いた射か(印)) return;
         if (!集.その人の射か(射手, 射目, 部員id)) return;
-        if (!出た) 射位 = 射位の名前(番, 並び.length);
+        if (!出た) 射位 = 射位の名前(番, 人数);
         出た = true;
         const 位置 = 射目 % 4;
         射ごと[位置].射数++;
         全体.射数++;
         この記録.射数++;
         印の並び += 印;
-        if (番 === 0) 大前.射数++;
-        if (並び.length >= 3 && 番 === 並び.length - 1) 落.射数++;
+        if (大前か) 大前.射数++;
+        if (落か) 落.射数++;
         if ('○' === 印) {
           射ごと[位置].的中++;
           全体.的中++;
           この記録.的中++;
-          if (番 === 0) 大前.的中++;
-          if (並び.length >= 3 && 番 === 並び.length - 1) 落.的中++;
+          if (大前か) 大前.的中++;
+          if (落か) 落.的中++;
         }
       });
     });
@@ -511,6 +518,7 @@ function 一人の成績(人たち, 記録たち, 名前) {
   const 率 = (x) => (x.射数 > 0 ? ((x.的中 / x.射数) * 100).toFixed(1) + '%' : 'データなし');
   return {
     name: 人.name,
+    期間: 期間 && (期間.始め || (期間.終わり && 期間.終わり !== Infinity)) ? '指定の期間だけ' : '全期間',
     totalSessions: 出た記録,
     totalHitRate: 率(全体),
     totalArrows: 全体.射数,

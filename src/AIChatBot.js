@@ -978,10 +978,14 @@ const AIChatBot = () => {
               {
                 name: 'getDetailedMemberStats',
                 description:
-                  '指定した選手の過去の詳細な成績データを取得します。初矢から4本目（留矢）まで何本目の矢が当たりやすいか、また大前や落など立順ごとの成績などを分析する際に呼び出してください。',
+                  '指定した選手の詳細な成績データを取得します。初矢から4本目（留矢）まで何本目の矢が当たりやすいか、また大前や落など立順ごとの成績などを分析する際に呼び出してください。「9月の」「今年度の」のように期間が付いていれば dateFrom / dateTo を渡してください（省くと全期間）。',
                 parameters: {
                   type: 'OBJECT',
-                  properties: { memberName: { type: 'STRING', description: '選手の名前' } },
+                  properties: {
+                    memberName: { type: 'STRING', description: '選手の名前' },
+                    dateFrom: { type: 'STRING', description: '期間の開始日 (YYYY-MM-DD形式)。省くと全期間' },
+                    dateTo: { type: 'STRING', description: '期間の終了日 (YYYY-MM-DD形式)。省くと全期間' },
+                  },
                   required: ['memberName'],
                 },
               },
@@ -1235,7 +1239,12 @@ const AIChatBot = () => {
               });
             } else if (call.name === 'getDetailedMemberStats') {
               // 中身は chatStats の 一人の成績（検査できる形にした。射位は区切りと計を除いた並びで見る）
-              const statsData = 一人の成績(members, sessions, String(call.args.memberName || ''));
+              const statsData = 一人の成績(
+                members,
+                sessions,
+                String(call.args.memberName || ''),
+                期間にする(call.args.dateFrom, call.args.dateTo)
+              );
               functionResponses.push({ functionResponse: { name: call.name, response: statsData } });
             } else if (call.name === 'getSessionsByDate') {
               const { date, dateFrom, dateTo, recentCount } = call.args;
