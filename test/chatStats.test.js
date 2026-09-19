@@ -354,3 +354,106 @@ test('射位：この項目が無い古い記録は、これまでどおり数�
   const r = 射位ごとの成績([], [{ date: 1, archers: [{ name: '山田', marks: ['○'] }] }], {});
   assert.equal(r.一覧.find((x) => x.名前 === '山田').全体の射数, 1);
 });
+
+// ── AI チャットの不具合を洗った（2026-09-20） ──────────────────────────
+const { 一人の成績, 名前で選ぶ, 期間にする, 日付の始まり, 日付の終わり } = require('../src/chatStats');
+
+test('期間の日付は端末の時刻で読む（世界標準時で読むと月初の朝練が落ちる）', () => {
+  const 始め = 日付の始まり('2026-09-01');
+  const d = new Date(始め);
+  assert.deepEqual([d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours()], [2026, 9, 1, 0]);
+  const 終わり = 日付の終わり('2026-09-30');
+  const e = new Date(終わり + 1);
+  assert.deepEqual([e.getFullYear(), e.getMonth() + 1, e.getDate(), e.getHours()], [2026, 10, 1, 0]);
+  // 9/1 の朝 8 時の記録が 9 月に入り、10/1 の朝 8 時の記録は入らない
+  const 期間 = 期間にする('2026-09-01', '2026-09-30');
+  const 朝練 = new Date(2026, 8, 1, 8).getTime();
+  const 翌月 = new Date(2026, 9, 1, 8).getTime();
+  assert.ok(朝練 >= 期間.始め && 朝練 <= 期間.終わり);
+  assert.ok(!(翌月 >= 期間.始め && 翌月 <= 期間.終わり));
+  assert.deepEqual(期間にする(undefined, undefined), { 始め: 0, 終わり: Infinity });
+});
+
+test('名前で選ぶ：同じ名前が先、無ければ含む・含まれる。2 人以上当たれば決めない', () => {
+  const 名簿 = [人('山田 太郎'), 人('山田 花子'), 人('†永井 優郷†'), 人('田')];
+  assert.equal(名前で選ぶ(名簿, '永井').人.name, '†永井 優郷†');
+  assert.equal(名前で選ぶ(名簿, '山田太郎').人.name, '山田 太郎', '空白を除いて同じ');
+  const 迷う = 名前で選ぶ(名簿, '山田');
+  assert.equal(迷う.人, null);
+  assert.deepEqual(
+    迷う.候補.map((x) => x.name),
+    ['山田 太郎', '山田 花子']
+  );
+  assert.equal(名前で選ぶ(名簿, '').人, null);
+});
+
+test('一人の成績：射位は区切りと計を除いた並びで見る（計が末尾でも落を数える）', () => {
+  const 日 = (文, 時 = 10) => new Date(文 + 'T' + String(時).padStart(2, '0') + ':00:00').getTime();
+  const 名簿 = [人('山田'), 人('佐藤'), 人('鈴木')];
+  const 記録たち = [
+    {
+      id: 's1',
+      date: 日('2026-09-13'),
+      title: '9/13',
+      archers: [
+        { memberId: '山田', name: '山田', marks: ['○', '○', '×', '○'] },
+        { memberId: '佐藤', name: '佐藤', marks: ['×', '×', '×', '×'] },
+        { memberId: '鈴木', name: '鈴木', marks: ['○', '×', '○', '○'] },
+        { isTotalCalculator: true, marks: [] },
+      ],
+    },
+    {
+      id: 's2',
+      date: 日('2026-09-06'),
+      title: '9/6',
+      archers: [
+        { isSeparator: true, marks: [] },
+        { memberId: '鈴木', name: '鈴木', marks: ['○', '○', '○', '○'] },
+        { memberId: '山田', name: '山田', marks: ['×', '○', '×', '×'] },
+      ],
+    },
+  ];
+  const 鈴木 = 一人の成績(名簿, 記録たち, '鈴木');
+  assert.equal(鈴木.totalSessions, 2);
+  assert.equal(鈴木.ochiHitRate, '75.0%', '9/13 は計を除いた並びの落');
+  assert.equal(鈴木.omaeHitRate, '100.0%', '9/6 は区切りの次が大前（2 人なので落は数えない）');
+  assert.equal(鈴木.kaichuCount, 1);
+  assert.deepEqual(
+    鈴木.recentSessionsDetail.map((x) => [x.date, x.position, x.marks, x.result]),
+    [
+      ['2026-09-13', '落', '○×○○', '3/4'],
+      ['2026-09-06', '大前', '○○○○', '4/4'],
+    ],
+    '日付の新しい順'
+  );
+  const 山田 = 一人の成績(名簿, 記録たち, '山田');
+  assert.equal(山田.firstShotHitRate, '50.0%');
+  assert.equal(山田.totalHitRate, '50.0%');
+});
+
+test('一人の成績：名簿に無い名前は断り、記録に出ていればゲストの旨。複数当たれば聞き返す', () => {
+  const 名簿 = [人('山田 太郎'), 人('山田 花子')];
+  const 記録たち = [{ id: 's1', date: 1, archers: [{ name: '相手校 一郎', marks: ['○'] }] }];
+  assert.match(一人の成績(名簿, 記録たち, '相手校').error, /ゲスト/);
+  assert.equal(一人の成績(名簿, 記録たち, '誰も').error, '選手が見つかりませんでした。');
+  const 迷う = 一人の成績(名簿, 記録たち, '山田');
+  assert.match(迷う.error, /2 人います/);
+  assert.deepEqual(迷う.候補, ['山田 太郎', '山田 花子']);
+});
+
+test('射位ごとの成績：名前の絞り込みは短い名前でも当たる', () => {
+  const 記録たち = [
+    {
+      date: 1,
+      archers: [
+        { memberId: 'n', name: '†永井 優郷†', marks: ['○', '×'] },
+        { memberId: 't', name: '津高', marks: ['○', '○'] },
+      ],
+    },
+  ];
+  const r = 射位ごとの成績([], 記録たち, { 名前たち: ['永井'] });
+  assert.deepEqual(
+    r.一覧.map((x) => x.名前),
+    ['†永井 優郷†']
+  );
+});

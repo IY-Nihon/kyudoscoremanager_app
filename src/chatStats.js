@@ -20,6 +20,66 @@ const { 日付の文字, 練習日で数える } = require('./attendanceRules');
 const 詰める = (文) => String(文 || '').replace(/\s/g, '');
 
 /**
+ * 模型が渡す YYYY-MM-DD を、端末の時刻の「その日の 0 時」（ms）にする。
+ *
+ * new Date('2026-09-01') は世界標準時の 0 時＝日本の朝 9 時。そのまま使うと、
+ * 月初の朝練（9 時前）が期間から落ち、月末の翌日の朝 9 時までが期間に入っていた。
+ * 読めなければ null
+ * @param {string} 文
+ * @returns {number|null}
+ */
+function 日付の始まり(文) {
+  const m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(String(文 || '').trim());
+  if (!m) {
+    const t = new Date(文).getTime();
+    return Number.isFinite(t) ? t : null;
+  }
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).getTime();
+}
+
+/** その日の終わり（翌日の 0 時の 1ms 前）。読めなければ null */
+function 日付の終わり(文) {
+  const 始め = 日付の始まり(文);
+  if (始め == null) return null;
+  const d = new Date(始め);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime() - 1;
+}
+
+/**
+ * 模型が渡した dateFrom / dateTo を 期間 { 始め, 終わり } にする（どちらも省ける）
+ * @param {string} [dateFrom]
+ * @param {string} [dateTo]
+ */
+function 期間にする(dateFrom, dateTo) {
+  return {
+    始め: (dateFrom && 日付の始まり(dateFrom)) || 0,
+    終わり: (dateTo && 日付の終わり(dateTo)) || Infinity,
+  };
+}
+
+/**
+ * 名簿から名前で人を選ぶ。空白を除いて、まず同じ名前、無ければ含む・含まれる。
+ * 当てはまる人が 2 人以上いれば 候補 に並べて返す（黙って先頭を取ると別人の成績を答える）
+ * @param {Array<object>} 人たち
+ * @param {string} 名前
+ * @returns {{人: object|null, 候補: Array<object>}}
+ */
+function 名前で選ぶ(人たち, 名前) {
+  const 求める = 詰める(名前);
+  const 全部 = Array.isArray(人たち) ? 人たち.filter((人) => 人 && 人.name) : [];
+  if (!求める) return { 人: null, 候補: [] };
+  const 同じ = 全部.filter((人) => 詰める(人.name) === 求める);
+  if (同じ.length === 1) return { 人: 同じ[0], 候補: 同じ };
+  if (同じ.length > 1) return { 人: null, 候補: 同じ };
+  const 似た = 全部.filter((人) => {
+    const 名 = 詰める(人.name);
+    // 「求める」が名前を含むほう（模型が長く渡したとき）は、1 文字の名前だと何にでも当たるので 2 文字から
+    return 名.includes(求める) || (名.length >= 2 && 求める.includes(名));
+  });
+  return { 人: 似た.length === 1 ? 似た[0] : null, 候補: 似た };
+}
+
+/**
  * 途中交代を踏まえて、その1射を引いた人を返す。
  * 判定の決まりは分析画面と共通（src/statsRules.js）。
  * 以前はここだけ氏名でも拾っていたため、画面の順位と数字が食い違っていた
@@ -321,12 +381,18 @@ function 射位ごとの成績(人たち, 記録たち, 注文) {
 
   const 率 = (成績) => (成績.射数 > 0 ? Number(((成績.的中 / 成績.射数) * 100).toFixed(1)) : null);
   const 最小射数 = Number.isFinite(設定.最小射数) ? 設定.最小射数 : 1;
-  const 名前で絞る = Array.isArray(設定.名前たち) && 設定.名前たち.length ? 設定.名前たち.map(詰める) : null;
+  // 模型は「永井」のように短く渡す。記録の名前は「†永井 優郷†」のように長いので、含む・含まれるで見る
+  const 名前で絞る =
+    Array.isArray(設定.名前たち) && 設定.名前たち.length ? 設定.名前たち.map(詰める).filter(Boolean) : null;
+  const 名前が当たる = (名前) => {
+    const 名 = 詰める(名前);
+    return 名前で絞る.some((求める) => 名 === 求める || 名.includes(求める) || 求める.includes(名));
+  };
 
   return {
     一覧: [...箱.values()]
       .filter((人) => 人.全体.射数 >= 最小射数)
-      .filter((人) => !名前で絞る || 名前で絞る.includes(詰める(人.名前)))
+      .filter((人) => !名前で絞る || 名前が当たる(人.名前))
       .sort((甲, 乙) => 率(乙.全体) - 率(甲.全体))
       .map((人) => ({
         名前: 人.名前,
@@ -344,4 +410,133 @@ function 射位ごとの成績(人たち, 記録たち, 注文) {
   };
 }
 
-module.exports = { 全員の成績, 出欠の集計, 記録をさがす, 射位ごとの成績, その射を引いた人, その人の射か };
+/**
+ * 一人の詳しい成績。getDetailedMemberStats の中身（元は AIChatBot.js の中に在った）。
+ *
+ * 部員IDで数える。射位は区切りと計を除いた並びで見る（射位ごとの成績と同じ。
+ * 前は archers の生の添字で見ていて、計の列が末尾に在ると落が一度も数えられず、
+ * 区切りの次の人が「6番目」になっていた）。直近は日付の新しい順（前は作った順）で、
+ * その人が出た記録だけを 10 回数える。
+ *
+ * @param {Array<object>} 人たち 名簿
+ * @param {Array<object>} 記録たち
+ * @param {string} 名前 模型が渡した名前
+ * @returns {object} 模型に返す中身（error か成績）
+ */
+function 一人の成績(人たち, 記録たち, 名前) {
+  const { 人, 候補 } = 名前で選ぶ(人たち, 名前);
+  const 使える記録 = (Array.isArray(記録たち) ? 記録たち : []).filter(
+    (記録) => 記録 && Array.isArray(記録.archers) && 集.集計に入れるか(記録)
+  );
+  if (!人) {
+    if (候補.length > 1) {
+      return {
+        error: `「${名前}」に当てはまる部員が ${候補.length} 人います：${候補.map((x) => x.name).join('、')}。どの人か聞き返してください。`,
+        候補: 候補.map((x) => x.name),
+      };
+    }
+    // 名簿に無い名前（ゲストなど）は、記録に名前が出ていても成績を出せない。0 を並べるより、その旨を返す
+    const 求める = 詰める(名前);
+    const 記録に出ている = 使える記録.some((記録) =>
+      記録.archers.some((射手) => {
+        if (!射手) return false;
+        const 名たち = [射手.name || ''].concat(Object.values(射手.substitutions || {}));
+        return 名たち.some((名) => {
+          const 名を詰めた = 詰める(名);
+          return 名を詰めた && (名を詰めた.includes(求める) || 求める.includes(名を詰めた));
+        });
+      })
+    );
+    return {
+      error: 記録に出ている
+        ? `「${名前}」は部員名簿にありません。記録に名前は出ていますが、ゲストとして入力されているため成績は集計できません。`
+        : '選手が見つかりませんでした。',
+    };
+  }
+  const 部員id = 人.id;
+  const 射ごと = [0, 0, 0, 0].map(() => ({ 的中: 0, 射数: 0 }));
+  const 大前 = { 的中: 0, 射数: 0 };
+  const 落 = { 的中: 0, 射数: 0 };
+  const 全体 = { 的中: 0, 射数: 0 };
+  const 直近 = { 的中: 0, 射数: 0 };
+  const 直近の記録 = [];
+  let 出た記録 = 0;
+  const 新しい順 = [...使える記録].sort((甲, 乙) => (乙.date || 0) - (甲.date || 0));
+  for (const 記録 of 新しい順) {
+    const 並び = 記録.archers.filter((射手) => 射手 && !射手.isSeparator && !射手.isTotalCalculator);
+    let 出た = false;
+    let 射位 = '';
+    let 印の並び = '';
+    const この記録 = { 的中: 0, 射数: 0 };
+    並び.forEach((射手, 番) => {
+      if (!Array.isArray(射手.marks)) return;
+      射手.marks.forEach((印, 射目) => {
+        if (!集.引いた射か(印)) return;
+        if (!集.その人の射か(射手, 射目, 部員id)) return;
+        if (!出た) 射位 = 射位の名前(番, 並び.length);
+        出た = true;
+        const 位置 = 射目 % 4;
+        射ごと[位置].射数++;
+        全体.射数++;
+        この記録.射数++;
+        印の並び += 印;
+        if (番 === 0) 大前.射数++;
+        if (並び.length >= 3 && 番 === 並び.length - 1) 落.射数++;
+        if ('○' === 印) {
+          射ごと[位置].的中++;
+          全体.的中++;
+          この記録.的中++;
+          if (番 === 0) 大前.的中++;
+          if (並び.length >= 3 && 番 === 並び.length - 1) 落.的中++;
+        }
+      });
+    });
+    if (!出た) continue;
+    出た記録++;
+    // 直近 10 回は、その人が出た記録で数える（出ていない記録は飛ばす）
+    if (出た記録 <= 10) {
+      直近.的中 += この記録.的中;
+      直近.射数 += この記録.射数;
+    }
+    if (直近の記録.length < 5) {
+      直近の記録.push({
+        date: 端末の日付(記録.date || 0),
+        title: 記録.title || '無題',
+        position: 射位,
+        marks: 印の並び,
+        result: `${この記録.的中}/${この記録.射数}`,
+      });
+    }
+  }
+  const 率 = (x) => (x.射数 > 0 ? ((x.的中 / x.射数) * 100).toFixed(1) + '%' : 'データなし');
+  return {
+    name: 人.name,
+    totalSessions: 出た記録,
+    totalHitRate: 率(全体),
+    totalArrows: 全体.射数,
+    recentHitRate: 率(直近),
+    // 皆中は分析画面と同じ決まりで数える
+    kaichuCount: 集.成績を数える(使える記録, 部員id).patterns.kaichu,
+    firstShotHitRate: 率(射ごと[0]),
+    secondShotHitRate: 率(射ごと[1]),
+    thirdShotHitRate: 率(射ごと[2]),
+    fourthShotHitRate: 率(射ごと[3]),
+    omaeHitRate: 率(大前),
+    ochiHitRate: 率(落),
+    recentSessionsDetail: 直近の記録,
+  };
+}
+
+module.exports = {
+  全員の成績,
+  出欠の集計,
+  記録をさがす,
+  射位ごとの成績,
+  一人の成績,
+  名前で選ぶ,
+  期間にする,
+  日付の始まり,
+  日付の終わり,
+  その射を引いた人,
+  その人の射か,
+};
