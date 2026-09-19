@@ -590,6 +590,10 @@ const AIChatBot = () => {
     saveChatHistory(messages);
   }, [messages]);
   const scrollViewRef = useRef(null);
+  // 末尾の近くを見ているか。流し読みの間は文字が来るたびに中身の高さが変わるので、
+  // そのたびに末尾へ送ると、上へ戻って読み返している人を毎回引き戻してしまう。
+  // 末尾の近くにいるときだけ追いかけ、自分で送ったときは末尾へ戻す
+  const 末尾の近く = useRef(true);
 
   const [layoutWidth, setLayoutWidth] = useState(Dimensions.get('window').width);
   const [layoutHeight, setLayoutHeight] = useState(Dimensions.get('window').height);
@@ -792,6 +796,7 @@ const AIChatBot = () => {
 
     const newMessages = [...messages, { id: generateMsgId(), role: 'user', text: userMsg }];
     setMessages(newMessages);
+    末尾の近く.current = true; // 自分で聞いたのだから、返事は追いかける
     setIsLoading(true);
 
     let attempt = 0;
@@ -1670,10 +1675,18 @@ const AIChatBot = () => {
               ref={scrollViewRef}
               style={styles.messageArea}
               contentContainerStyle={{ padding: 16 }}
+              scrollEventThrottle={100}
+              onScroll={({ nativeEvent: { contentOffset, contentSize, layoutMeasurement } }) => {
+                末尾の近く.current =
+                  contentSize.height - (contentOffset.y + layoutMeasurement.height) < 80;
+              }}
               onContentSizeChange={() => {
                 // まだ何も聞いていないときは送らない。送ると挨拶と質問例の
-                // 見出しが上へ流れ、いきなり一覧の途中から始まる
-                if (messages.length > 1) scrollViewRef.current?.scrollToEnd({ animated: true });
+                // 見出しが上へ流れ、いきなり一覧の途中から始まる。
+                // 上へ戻って読み返しているときも送らない。流し読み中は文字が来るたびに
+                // ここが呼ばれるので、動きも付けない（付けると動きが積み重なる）
+                if (messages.length > 1 && 末尾の近く.current)
+                  scrollViewRef.current?.scrollToEnd({ animated: false });
               }}
             >
               {messages.map((msg, idx) =>

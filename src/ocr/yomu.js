@@ -13,6 +13,7 @@
  *   '◎' | '○\\' | '○/' | '×'。射に開くのは ocrCells の マスを開く に任せる。
  */
 import { 板ごとの格子, 箱の大きさ } from '../../scripts/ocr-cells/kiridasu.mjs';
+import { 息継ぎ } from '../../scripts/ocr-cells/ikitsugi.mjs';
 import { 紙の表を探す, 紙の格子, 紙の箱 } from '../../scripts/ocr-cells/kami.mjs';
 import { 種類, 形にする, 前へ, 切り取る, 輪の覆い } from '../../scripts/ocr-cells/manabu.mjs';
 import { 重みを組む } from '../../scripts/ocr-cells/omomi.mjs';
@@ -40,6 +41,7 @@ export async function 板の印を読む(元, 注文) {
   const 板の群れ = 網の群れ(注文.重み);
   const 板たち = await 板ごとの格子(元, { 板の人数たち: 注文.板の人数たち, 行数: 注文.行数, 回す: 注文.回す, 箱たち: 注文.箱たち, 帯の数: 注文.帯の数 });
   const 出 = [];
+  let 読んだ数 = 0; // 息継ぎ のため（8 マスごと）
   for (const { 格子: g } of 板たち) {
     const { 半幅, 半高 } = 箱の大きさ(g);
     const 列たち = [];
@@ -66,6 +68,7 @@ export async function 板の印を読む(元, 注文) {
         if (二段か(切)) 二段++;
         // 箱や罫線で立てた格子（印がマスいっぱいの板）は、箱いっぱいの印を外さない
         const 形 = await 形にする(切.画, 切.幅, 切.高, g.立て方 ? 'ぎっしり' : undefined);
+        if (++読んだ数 % 8 === 0) await 息継ぎ();
         const 合 = new Float32Array(種類.length);
         for (const 網 of 板の群れ) {
           const { o } = 前へ(網, 形);
@@ -134,14 +137,37 @@ function 二段か(切) {
 
 /**
  * 切り抜きの中の、印らしい大きさのかたまり（縦横ともマスの2割以上）。
- * 空のマスか と 二段か が使う
+ * 空のマスか と 二段か が使う。同じ切り抜きで 2 回呼ばれるので、答えを控えておく
+ *（1 マスあたりの計算で最も重い。以前は画素を並べ替えて 9 割点を取っていて、
+ * 320 射の写真で古い端末の見当 5 秒がここだった。度数で数えれば同じ値が一巡で出る）
  */
+const かたまりの控え = new WeakMap();
 function 印のかたまりたち(切) {
+  const 控え = かたまりの控え.get(切);
+  if (控え) return 控え;
+  const 出 = 印のかたまりを探す(切);
+  かたまりの控え.set(切, 出);
+  return 出;
+}
+
+/** 明るさ（0〜255）の 9 割点。並べ替えずに度数で数える（並べ替えたときと同じ値） */
+function 九割点(画) {
+  const 度数 = new Uint32Array(256);
+  for (let i = 0; i < 画.length; i++) 度数[画[i]]++;
+  const 位置 = Math.floor(画.length * 0.9);
+  let 累 = 0;
+  for (let v = 0; v < 256; v++) {
+    累 += 度数[v];
+    if (累 > 位置) return v;
+  }
+  return 255;
+}
+
+function 印のかたまりを探す(切) {
   const { 幅, 高 } = 切;
   const 出 = [];
   if (幅 < 4 || 高 < 4) return [{ 左: 0, 右: 幅 - 1, 上: 0, 下: 高 - 1 }];
-  const 並び = Array.from(切.画).sort((a, z) => a - z);
-  const 境 = 並び[Math.floor(並び.length * 0.9)] - 35;
+  const 境 = 九割点(切.画) - 35;
   const 見た = new Uint8Array(幅 * 高);
   const 積 = new Int32Array(幅 * 高);
   const 最小の辺 = Math.min(幅, 高) * 0.2;
@@ -252,6 +278,7 @@ export async function 紙の印を読む(元, 注文) {
   );
   const 列たち = [];
   const 確からしさ = [];
+  let 読んだ数 = 0; // 息継ぎ のため（8 マスごと）
   for (let c = 0; c < 注文.人数; c++) {
     const 列 = [];
     const 確 = [];
@@ -262,6 +289,7 @@ export async function 紙の印を読む(元, 注文) {
       const 上 = Math.max(0, Math.round(m.y) - 半高);
       const 切2 = 切り取る(g.生.画素, g.生.幅, g.生.高, 左, 上, 半幅 * 2, 半高 * 2);
       const 形 = await 形にする(切2.画, 切2.幅, 切2.高, 'そのまま');
+      if (++読んだ数 % 8 === 0) await 息継ぎ();
       let 丸 = 0;
       for (const 網 of 群れ) 丸 += 前へ(網, 形).o[1] / 群れ.length;
       列.push(丸 > 0.5 ? '○' : '×');
