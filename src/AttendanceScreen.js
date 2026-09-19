@@ -19,7 +19,7 @@ const { getShadowStyle } = require('./shadowStyle');
 const { db } = require('./db');
 const firestore = require('firebase/firestore');
 // 出欠の自動判定。交代で入った人も数えるため、決まりは切り出してある
-const { 射に出ているか } = require('./attendanceRules');
+const { 日付の文字, その日の出欠, 練習日で数える } = require('./attendanceRules');
 // Web-safe lazy imports to prevent null.default crash on web
 var _docPickerModule = null;
 var _fsModule = null;
@@ -47,22 +47,8 @@ const AttendanceScreen = () => {
   const [selectedYear, setSelectedYear] = React.useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = React.useState(now.getMonth() + 1);
   const currentFiscalYear = selectedMonth >= 4 ? selectedYear : selectedYear - 1;
-  const getLocalDateString = (dateInput) => {
-    if (!dateInput) return null;
-    let 日付;
-    if (dateInput && typeof dateInput.toDate === 'function') {
-      日付 = dateInput.toDate();
-    } else if (dateInput && dateInput.seconds !== undefined) {
-      日付 = new Date(dateInput.seconds * 1000);
-    } else {
-      日付 = new Date(dateInput);
-    }
-    if (isNaN(日付.getTime())) return null;
-    const 年 = 日付.getFullYear();
-    const 月 = String(日付.getMonth() + 1).padStart(2, '0');
-    const day = String(日付.getDate()).padStart(2, '0');
-    return `${年}-${月}-${day}`;
-  };
+  // 日付の文字と出欠の決まりは attendanceRules に置く。AI チャットの出欠の集計も同じ決まりで数える
+  const getLocalDateString = 日付の文字;
   const changeMonth = (offset) => {
     let newMonth = selectedMonth + offset;
     let newYear = selectedYear;
@@ -114,30 +100,10 @@ const AttendanceScreen = () => {
       console.error(誤り);
     }
   };
+  const todayStr = getLocalDateString(new Date());
   const getAttendanceStatus = (dateStr, memberId) => {
-    const daySessions = sessions.filter((記録) => getLocalDateString(記録?.date) === dateStr);
-    const isFuture = dateStr > getLocalDateString(new Date());
-    if (daySessions.length === 0) {
-      if (practiceDays[dateStr]) return isFuture ? 'none' : 'absent';
-      return 'none';
-    }
-    let status = 'none';
-    for (const 記録 of daySessions) {
-      // 交代で入った人は memberId に出てこない。substitutionIds も見る
-      const hasRecord = 記録.archers?.some((射手) => 射に出ているか(射手, memberId));
-      if (hasRecord) return 'present';
-      const explicit = 記録.attendance?.[memberId];
-      if (explicit && explicit !== 'none') {
-        if (explicit !== 'present' || status === 'none') status = explicit;
-      }
-    }
-    if (status === 'none' && practiceDays[dateStr]) {
-      // 現役生のみ、記録がない場合に「欠席」とする
-      const member = members.find((部員) => String(部員.id) === String(memberId));
-      if (member && (member.grade || 0) < 5) return 'absent';
-      return 'none';
-    }
-    return status;
+    const member = members.find((部員) => String(部員.id) === String(memberId));
+    return その日の出欠(sessions, practiceDays, member || { id: memberId, grade: 99 }, dateStr, todayStr);
   };
   const filteredPracticeDays = Object.keys(practiceDays)
     .filter((dStr) => {
@@ -151,43 +117,33 @@ const AttendanceScreen = () => {
       return true;
     })
     .sort((甲, 乙) => 乙.localeCompare(甲));
-  const todayStr = getLocalDateString(new Date());
-  const pastPracticeDays = filteredPracticeDays.filter((日) => 日 <= todayStr);
-  const stats = members
-    .map((部員) => {
-      let presentCount = 0;
-      let lateCount = 0;
-      let earlyCount = 0;
-      let absentCount = 0;
-      filteredPracticeDays.forEach((dStr) => {
-        const status = getAttendanceStatus(dStr, 部員.id);
-        if (status === 'present') presentCount++;
-        else if (status === 'late') {
-          presentCount++;
-          lateCount++;
-        } else if (status === 'early') {
-          presentCount++;
-          earlyCount++;
-        } else if (status === 'absent') absentCount++;
-      });
-      // その年度に現役だったか判定（留年等も考慮）
-      let isActiveInYear = (部員.grade || 0) < 5; // 現在現役なら基本真
-      if (部員.grade === 5) {
-        if (部員.graduationYear) {
-          // 卒業年度が記録されていれば、表示年度がそれ以前なら現役扱い
-          isActiveInYear = currentFiscalYear <= 部員.graduationYear;
-        } else if (部員.termKi) {
-          // 記録がない場合の救済：期から推測 (現在の1年生の期から逆算)
-          // 卒業年度 ≒ (現在の年度) + (卒業代の期 - 現在の1年生の期)
-          const currentFreshmanTerm = useScoreStore.getState().currentFreshmanTerm;
-          const gradYear = currentFiscalYear + (currentFreshmanTerm - 3 - 部員.termKi);
-          isActiveInYear = currentFiscalYear <= gradYear;
-        }
-      }
-      const totalOfficial = isActiveInYear ? pastPracticeDays.length : presentCount + absentCount;
-      const rate = totalOfficial > 0 ? (presentCount / totalOfficial) * 100 : 0;
-      return { ...部員, rate, presentCount, lateCount, earlyCount, absentCount };
-    })
+  // その年度に現役だったか（留年等も考慮）。出席率の分母を「期間の練習日数」にするかどうか
+  const isActiveInYear = (部員) => {
+    if (部員.grade !== 5) return (部員.grade || 0) < 5; // 現在現役なら基本真
+    if (部員.graduationYear) {
+      // 卒業年度が記録されていれば、表示年度がそれ以前なら現役扱い
+      return currentFiscalYear <= 部員.graduationYear;
+    }
+    if (部員.termKi) {
+      // 記録がない場合の救済：期から推測 (現在の1年生の期から逆算)
+      // 卒業年度 ≒ (現在の年度) + (卒業代の期 - 現在の1年生の期)
+      const currentFreshmanTerm = useScoreStore.getState().currentFreshmanTerm;
+      const gradYear = currentFiscalYear + (currentFreshmanTerm - 3 - 部員.termKi);
+      return currentFiscalYear <= gradYear;
+    }
+    return false;
+  };
+  // 表示している期間の練習日だけで数える（練習日で数える は日付の範囲で絞るので、絞った練習日をそのまま渡す）
+  const 絞った練習日 = Object.fromEntries(filteredPracticeDays.map((日) => [日, practiceDays[日]]));
+  const stats = 練習日で数える(members, sessions, 絞った練習日, { 今日: todayStr, 現役か: isActiveInYear })
+    .map(({ 部員, 出席, 遅刻, 早退, 欠席, 来た回数, 出席率 }) => ({
+      ...部員,
+      rate: 出席率,
+      presentCount: 来た回数,
+      lateCount: 遅刻,
+      earlyCount: 早退,
+      absentCount: 欠席,
+    }))
     .filter((部員) => {
       // 現役生、またはその期間内に一度でも出席実績がある卒業生を表示
       return (部員.grade || 0) < 5 || 部員.presentCount > 0;

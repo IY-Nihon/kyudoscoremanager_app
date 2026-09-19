@@ -14,6 +14,7 @@
 const { 射位の名前 } = require('./a11yLabels');
 
 const 集 = require('./statsRules');
+const { 日付の文字, 練習日で数える } = require('./attendanceRules');
 
 /** 空白を落とす。名前で絞り込むとき（表示の突き合わせ）にだけ使う */
 const 詰める = (文) => String(文 || '').replace(/\s/g, '');
@@ -133,39 +134,49 @@ const 出欠の名 = { present: '出席', late: '遅刻', early: '早退', absen
 /**
  * 出欠を数える。「今月いちばん来ているのは誰」に答えるための道具。
  *
+ * 正規練習日（注文.練習日 { 'YYYY-MM-DD': … }）が期間に有れば、出欠画面と同じ決まりで数える
+ * （attendanceRules の 練習日で数える：練習日ごとに、記録に出ていれば出席、記録が無ければ欠席。
+ * 分母は今日までの練習日数）。前は記録に付いた出欠の印だけを数えていて、9 月に記録が 2 件しか
+ * 無い団体で「来た回数 2 回・出席率 100%」が 8 人並び、出欠画面の数字と合わなかった（2026-09-20）。
+ *
+ * 練習日が無いとき（個人モード・練習日を登録していない団体）は前のまま、記録の出欠の印を数える。
  * 記録には attendance: { 部員id: 'present'|'late'|'early'|'absent' } が入る。
  * 出欠を付けずに保存した記録もあるので、その回は数に入れない
  * （全員欠席として数えると、出席率が実態より低く出る）。
  */
 function 出欠の集計(人たち, 記録たち, 注文) {
   const 設定 = 注文 || {};
-  const 対象 = 期間で絞る(記録たち, 設定.期間).filter(
-    (記録) => 記録.attendance && Object.keys(記録.attendance).length > 0
+  const 期間 = 設定.期間 || {};
+  const 始めの日 = 期間.始め ? 日付の文字(期間.始め) : null;
+  // 終わり は「翌日の 0 時」（ms）で渡ってくるので、その 1ms 前の日付が終わりの日
+  const 終わりの日 = 期間.終わり && Number.isFinite(期間.終わり) ? 日付の文字(期間.終わり - 1) : null;
+  const 練習日 = Object.fromEntries(
+    Object.keys(設定.練習日 || {})
+      .filter((日) => (!始めの日 || 日 >= 始めの日) && (!終わりの日 || 日 <= 終わりの日))
+      .map((日) => [日, 設定.練習日[日]])
   );
+  const 練習日で = Object.keys(練習日).length > 0;
 
-  const 全部 = (Array.isArray(人たち) ? 人たち : []).map((人) => {
-    const 数 = { 出席: 0, 遅刻: 0, 早退: 0, 欠席: 0 };
-    対象.forEach((記録) => {
-      const 印 = 記録.attendance[人.id];
-      const 名 = 出欠の名[印];
-      if (名) 数[名] += 1;
-    });
-    const 来た = 数.出席 + 数.遅刻 + 数.早退;
-    const 数えた = 来た + 数.欠席;
-    // 順位はあとから足す（下の 残す.forEach）
-    return /** @type {{名前:string, 学年:any, 出席:number, 遅刻:number, 早退:number, 欠席:number, 来た回数:number, 出席率:number|null, 順位?:number}} */ ({
-      名前: 人.name || '',
-      学年: 人.grade,
-      出席: 数.出席,
-      遅刻: 数.遅刻,
-      早退: 数.早退,
-      欠席: 数.欠席,
-      来た回数: 来た,
-      出席率: 数えた > 0 ? Number(((来た / 数えた) * 100).toFixed(1)) : null,
-    });
-  });
+  /** @type {Array<{名前:string, 学年:any, 出席:number, 遅刻:number, 早退:number, 欠席:number, 来た回数:number, 練習日数?:number, 出席率:number|null, 順位?:number}>} */
+  const 全部 = 練習日で
+    ? 練習日で数える(人たち, 記録たち, 練習日, { 今日: 設定.今日 }).map(
+        ({ 部員, 出席, 遅刻, 早退, 欠席, 来た回数, 練習日数, 出席率 }) => ({
+          名前: 部員.name || '',
+          学年: 部員.grade,
+          出席,
+          遅刻,
+          早退,
+          欠席,
+          来た回数,
+          練習日数,
+          出席率: 練習日数 > 0 ? Number(出席率.toFixed(1)) : null,
+        })
+      )
+    : 記録の印で数える(人たち, 期間で絞る(記録たち, 設定.期間));
 
-  const 残す = 全部.filter((人) => 人.来た回数 + 人.欠席 > 0);
+  // 現役は練習日が 1 日でも有れば載せる（来ていない人も「休みが多いのは誰」の答えになる）。
+  // 記録の印で数えたときは、一度も名前が出ない人は載せない
+  const 残す = 全部.filter((人) => (練習日で && (Number(人.学年) || 0) < 5) || 人.来た回数 + 人.欠席 > 0);
   const 並び = 設定.並び || '出席率';
   const 比べ = {
     出席率: (甲, 乙) => 乙.出席率 - 甲.出席率 || 乙.来た回数 - 甲.来た回数,
@@ -178,12 +189,41 @@ function 出欠の集計(人たち, 記録たち, 注文) {
     人.順位 = 番 + 1;
   });
   const 件数 = Number.isFinite(設定.件数) && 設定.件数 > 0 ? 設定.件数 : 残す.length;
+  const 対象 = 期間で絞る(記録たち, 設定.期間);
+  const 印つき = 対象.filter((記録) => 記録.attendance && Object.keys(記録.attendance).length > 0);
   return {
     並び,
-    出欠を付けた記録の件数: 対象.length,
-    出欠が付いていない記録の件数: 期間で絞る(記録たち, 設定.期間).length - 対象.length,
+    数え方: 練習日で ? '練習日' : '記録の出欠',
+    練習日数: 練習日で ? Object.keys(練習日).length : 0,
+    出欠を付けた記録の件数: 印つき.length,
+    出欠が付いていない記録の件数: 対象.length - 印つき.length,
     一覧: 残す.slice(0, 件数),
   };
+}
+
+/** 記録に付いた出欠の印だけで数える（練習日が無いとき） */
+function 記録の印で数える(人たち, 対象) {
+  const 印つき = 対象.filter((記録) => 記録.attendance && Object.keys(記録.attendance).length > 0);
+  return (Array.isArray(人たち) ? 人たち : []).map((人) => {
+    const 数 = { 出席: 0, 遅刻: 0, 早退: 0, 欠席: 0 };
+    印つき.forEach((記録) => {
+      const 名 = 出欠の名[記録.attendance[人.id]];
+      if (名) 数[名] += 1;
+    });
+    const 来た = 数.出席 + 数.遅刻 + 数.早退;
+    const 数えた = 来た + 数.欠席;
+    // 順位はあとから足す（出欠の集計 の 残す.forEach）
+    return /** @type {{名前:string, 学年:any, 出席:number, 遅刻:number, 早退:number, 欠席:number, 来た回数:number, 出席率:number|null, 順位?:number}} */ ({
+      名前: 人.name || '',
+      学年: 人.grade,
+      出席: 数.出席,
+      遅刻: 数.遅刻,
+      早退: 数.早退,
+      欠席: 数.欠席,
+      来た回数: 来た,
+      出席率: 数えた > 0 ? Number(((来た / 数えた) * 100).toFixed(1)) : null,
+    });
+  });
 }
 
 /**
@@ -214,18 +254,16 @@ function 記録をさがす(記録たち, 注文) {
   const 件数 = Number.isFinite(設定.件数) && 設定.件数 > 0 ? 設定.件数 : 20;
   return {
     見つかった件数: 見つけた.length,
-    一覧: 見つけた
-      .slice(0, 件数)
-      .map((記録) => ({
-        id: 記録.id,
-        日付: 端末の日付(記録.date || 0),
-        題: 記録.title || '',
-        目印: 記録.tags || [],
-        覚え書き: 記録.note || '',
-        人数: (Array.isArray(記録.archers) ? 記録.archers : []).filter(
-          (射手) => 射手 && !射手.isSeparator && !射手.isTotalCalculator
-        ).length,
-      })),
+    一覧: 見つけた.slice(0, 件数).map((記録) => ({
+      id: 記録.id,
+      日付: 端末の日付(記録.date || 0),
+      題: 記録.title || '',
+      目印: 記録.tags || [],
+      覚え書き: 記録.note || '',
+      人数: (Array.isArray(記録.archers) ? 記録.archers : []).filter(
+        (射手) => 射手 && !射手.isSeparator && !射手.isTotalCalculator
+      ).length,
+    })),
   };
 }
 
