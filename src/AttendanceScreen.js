@@ -76,13 +76,25 @@ const AttendanceScreen = () => {
   React.useEffect(() => {
     if (!activeGroupId) return;
     const 置き場 = firestore.collection(db, `groups/${activeGroupId}/officialPracticeDays`);
-    const unsubscribe = firestore.onSnapshot(置き場, (snap) => {
-      const days = {};
-      snap.forEach((doc) => {
-        days[doc.id] = doc.data();
-      });
-      setPracticeDays(days);
-    });
+    const unsubscribe = firestore.onSnapshot(
+      置き場,
+      (snap) => {
+        const days = {};
+        snap.forEach((doc) => {
+          days[doc.id] = doc.data();
+        });
+        setPracticeDays(days);
+      },
+      // 受け口が無いと、出たあとに断られたときの誤りが SDK の console に残るだけになる
+      (誤り) => {
+        console.warn('[Attendance] 練習日の見張りが止まりました:', 誤り);
+        try {
+          require('./errorReporter').不具合を送る('練習日の受信', 誤り);
+        } catch (_) {
+          /* 便りが出せなくても、画面は続ける */
+        }
+      }
+    );
     return () => unsubscribe();
   }, [activeGroupId]);
   const togglePracticeDay = async (dateStr) => {
