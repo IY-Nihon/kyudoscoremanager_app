@@ -5,7 +5,21 @@ exports.AIChatBot = undefined;
 
 const React = require('react');
 const { useState, useRef, useEffect } = React;
-const { Text, StyleSheet, TextInput, View, TouchableOpacity, Modal, ScrollView, ActivityIndicator, KeyboardAvoidingView, Dimensions, Animated, PanResponder, Platform } = require('./rn');
+const {
+  Text,
+  StyleSheet,
+  TextInput,
+  View,
+  TouchableOpacity,
+  Modal,
+  ScrollView,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Dimensions,
+  Animated,
+  PanResponder,
+  Platform,
+} = require('./rn');
 
 const { Ionicons } = require('@expo/vector-icons');
 const IS_WEB = Platform.OS === 'web';
@@ -52,6 +66,7 @@ const 中継 = require('./geminiChukei');
 // 成績の集計・並べ替え・絞り込みは、模型ではなくここで済ませる。
 // 人数ぶんの表を渡して選ばせると取り違えるため（test/chatStats.test.js）
 const { 全員の成績, 出欠の集計, 記録をさがす, 射位ごとの成績 } = require('./chatStats');
+const { 練習日を読む } = require('./practiceDays');
 // 「何でも聞いてください」だけでは何を聞けるか分からない。
 // その団体の中身に合わせた質問例を出す（test/chatSuggestions.test.js）
 const { 質問例のすべて, 打ちかけの候補, 分類ごと } = require('./chatSuggestions');
@@ -871,7 +886,7 @@ const AIChatBot = () => {
               {
                 name: 'getAttendanceStats',
                 description:
-                  '部員の出欠を集計し、順位を付けて返します。「今月いちばん練習に来ているのは誰」「◯◯さんの出席率は」「休みが多いのは誰」などに使います。遅刻・早退は「来た」に数えます。出欠を付けずに保存された記録は数に入れません。順位・並べ替えはこのツールが行うので、返った順番と数字をそのまま使ってください。',
+                  '部員の出欠を集計し、順位を付けて返します。「今月いちばん練習に来ているのは誰」「◯◯さんの出席率は」「休みが多いのは誰」などに使います。出欠画面と同じ数え方（正規練習日ごとに、記録に出ていれば来た、無ければ欠席。出席率＝来た日数÷今日までの練習日数）です。遅刻・早退は「来た」に数えます。順位・並べ替えはこのツールが行うので、返った順番と数字をそのまま使ってください。',
                 parameters: {
                   type: 'OBJECT',
                   properties: {
@@ -1029,14 +1044,12 @@ const AIChatBot = () => {
         //     role:'function' で送る。3.x の模型はどちらも受けず、道具を使う質問が
         //     「Role 'function' is not supported」「function response turn comes immediately
         //     after a function call turn」の 400 になった（2026-09-14、本番で）
-        const 会話 = newMessages
-          .slice(1, -1)
-          .map((msg) => ({
-            role: msg.role === 'user' ? 'user' : 'model',
-            parts: [
-              { text: msg.role === 'actionCard' ? `[システムのデータ追加提案: ${msg.status}]` : msg.text },
-            ],
-          }));
+        const 会話 = newMessages.slice(1, -1).map((msg) => ({
+          role: msg.role === 'user' ? 'user' : 'model',
+          parts: [
+            { text: msg.role === 'actionCard' ? `[システムのデータ追加提案: ${msg.status}]` : msg.text },
+          ],
+        }));
 
         // 流しながら出す。全文ができるまで待たせると、道具を使う質問では
         // 数秒から十数秒、砂時計だけを見せることになる。
@@ -1128,11 +1141,19 @@ const AIChatBot = () => {
               });
             } else if (call.name === 'getAttendanceStats') {
               const { dateFrom, dateTo, sortBy, limit } = call.args;
+              // 出欠画面と同じ決まりで数えるため、正規練習日を読む（読めなければ記録の出欠の印で数える）
+              let 練習日 = {};
+              try {
+                練習日 = await 練習日を読む(useScoreStore.getState().activeGroupId);
+              } catch (誤り) {
+                console.warn('[AIChatBot] 練習日を読めませんでした:', 誤り);
+              }
               const 結果 = 出欠の集計(members, sessions, {
                 期間: {
                   始め: dateFrom ? new Date(dateFrom).getTime() : 0,
                   終わり: dateTo ? new Date(dateTo).getTime() + 86400000 : Infinity,
                 },
+                練習日,
                 並び: sortBy,
                 件数: limit,
               });
@@ -1141,8 +1162,10 @@ const AIChatBot = () => {
                   name: call.name,
                   response: Object.assign({}, 結果, {
                     message:
-                      '遅刻・早退は「来た」に数えています。出欠を付けずに保存された記録は数に入れていません。' +
-                      '順位と数字はそのまま使ってください。',
+                      (結果.数え方 === '練習日'
+                        ? `正規練習日 ${結果.練習日数} 日について、記録に出ていれば「来た」、記録が無ければ「欠席」と数えました（出欠画面と同じ数え方。出席率＝来た回数÷今日までの練習日数）。`
+                        : '正規練習日が登録されていないので、記録に付いた出欠の印を数えました。出欠を付けずに保存された記録は数に入れていません。') +
+                      '遅刻・早退は「来た」に数えています。順位と数字はそのまま使ってください。',
                   }),
                 },
               });
@@ -1677,8 +1700,7 @@ const AIChatBot = () => {
               contentContainerStyle={{ padding: 16 }}
               scrollEventThrottle={100}
               onScroll={({ nativeEvent: { contentOffset, contentSize, layoutMeasurement } }) => {
-                末尾の近く.current =
-                  contentSize.height - (contentOffset.y + layoutMeasurement.height) < 80;
+                末尾の近く.current = contentSize.height - (contentOffset.y + layoutMeasurement.height) < 80;
               }}
               onContentSizeChange={() => {
                 // まだ何も聞いていないときは送らない。送ると挨拶と質問例の
