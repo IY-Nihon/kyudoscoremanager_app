@@ -5,6 +5,8 @@
  *   生 … { 画素: Uint8Array（明るさ）, 幅, 高, 色: { data: Uint8ClampedArray(RGBA), ch: 4 } }
  */
 
+import { 息継ぎ } from '../../scripts/ocr-cells/ikitsugi.mjs';
+
 /** base64（JPEG/PNG）を HTMLImageElement に */
 function 画像にする(base64, mime) {
   return new Promise((resolve, reject) => {
@@ -46,15 +48,27 @@ export async function 画を読む(base64, mime) {
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   ctx.drawImage(img, 0, 0, 描幅, 描高);
   const { data } = ctx.getImageData(0, 0, 描幅, 描高);
+  // 画素を取ったら canvas の裏の板（1600 万画素で 64MB）はすぐ手放す。放っておくと
+  // 掃除（GC）まで残り、2 枚目・3 枚目の写真で掃除の止まりが長くなる
+  canvas.width = 0;
+  canvas.height = 0;
 
   // 明るさ（人の目の重み）。sharp の greyscale と同じ式
-  const 明 = new Float32Array(描幅 * 描高);
-  for (let i = 0, j = 0; i < 明.length; i++, j += 4) 明[i] = 0.2126 * data[j] + 0.7152 * data[j + 1] + 0.0722 * data[j + 2];
+  const 明るさ = (j) => 0.2126 * data[j] + 0.7152 * data[j + 1] + 0.0722 * data[j + 2];
 
   const 倍 = Math.min(1, 長辺の上限 / Math.max(描幅, 描高));
   if (倍 >= 1) {
-    const 画素 = new Uint8Array(明.length);
-    for (let i = 0; i < 明.length; i++) 画素[i] = Math.round(明[i]);
+    // そのまま 1 バイトの明るさに。以前は Float32 の板（1600 万画素で 64MB）を間に挟んでいて、
+    // 2 枚目の写真を読むときの掃除（GC）で 3 秒止まった。
+    // 1600 万画素を一息にやると古い端末で 1 秒以上塞ぐので、200 万画素ごとに息をつく
+    const 数 = 描幅 * 描高;
+    const 画素 = new Uint8Array(数);
+    const 一息の画素 = 2_000_000;
+    for (let 頭 = 0; 頭 < 数; 頭 += 一息の画素) {
+      const 尻 = Math.min(数, 頭 + 一息の画素);
+      for (let i = 頭, j = 頭 * 4; i < 尻; i++, j += 4) 画素[i] = Math.round(明るさ(j));
+      if (尻 < 数) await 息継ぎ();
+    }
     return { 画素, 幅: 描幅, 高: 描高, 色: { data, ch: 4 } };
   }
   // 平均で縮める（明るさも色も）
@@ -63,6 +77,7 @@ export async function 画を読む(base64, mime) {
   const 画素 = new Uint8Array(幅 * 高);
   const 色 = new Uint8ClampedArray(幅 * 高 * 4);
   for (let y = 0; y < 高; y++) {
+    if (y > 0 && y % 200 === 0) await 息継ぎ();
     const y0 = Math.floor((y * 描高) / 高);
     const y1 = Math.max(y0 + 1, Math.floor(((y + 1) * 描高) / 高));
     for (let x = 0; x < 幅; x++) {
@@ -76,7 +91,7 @@ export async function 画を読む(base64, mime) {
       for (let yy = y0; yy < y1; yy++) {
         for (let xx = x0; xx < x1; xx++) {
           const i = yy * 描幅 + xx;
-          明和 += 明[i];
+          明和 += 明るさ(i * 4);
           r += data[i * 4];
           g += data[i * 4 + 1];
           b += data[i * 4 + 2];
@@ -122,6 +137,8 @@ export async function 回す(生, 度) {
   ctx.rotate(rad);
   ctx.drawImage(元, -生.幅 / 2, -生.高 / 2);
   const { data } = ctx.getImageData(0, 0, 幅, 高);
+  元.width = 元.height = 0;
+  canvas.width = canvas.height = 0;
   const 画素 = new Uint8Array(幅 * 高);
   for (let i = 0, j = 0; i < 画素.length; i++, j += 4) 画素[i] = data[j];
   return { 画素, 幅, 高 };

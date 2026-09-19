@@ -138,7 +138,10 @@ test('mergeById: purge を指定しなければ消さない', () => {
 test('mergeById: 日時が {seconds} の入れ物でも読めて、新しければクラウドが勝つ', () => {
   // 元の実装は入れ物を読めず、比較が NaN になってクラウドが永久に勝てなかった。
   // その記録だけ他の端末の編集が反映されなくなるため、読めるようにした。
-  const r = mergeById(手元({ lastModified: 0, syncStatus: '同期済み' }), 雲({ lastModified: { seconds: 5 } }));
+  const r = mergeById(
+    手元({ lastModified: 0, syncStatus: '同期済み' }),
+    雲({ lastModified: { seconds: 5 } })
+  );
   assert.equal(勝者(r), 'クラウド');
 });
 
@@ -153,7 +156,10 @@ test('mergeById: 日時が文字列でも読める', () => {
 
 test('mergeById: 入れ物の形でも、手元が未同期で新しければ手元が残る', () => {
   // 読めるようにしても、送信前の編集を守る条件は変わらない
-  const r = mergeById(手元({ lastModified: 999000, syncStatus: '未同期' }), 雲({ lastModified: { seconds: 5 } }));
+  const r = mergeById(
+    手元({ lastModified: 999000, syncStatus: '未同期' }),
+    雲({ lastModified: { seconds: 5 } })
+  );
   assert.equal(勝者(r), '手元');
 });
 
@@ -179,7 +185,10 @@ test('mergeById: 両方 null でも落ちない', () => {
 
 // ──────────────────────────────────────────────────────────────
 test('dropUndefinedDeep: undefined だけを取り除く', () => {
-  assert.deepEqual(dropUndefinedDeep({ a: 1, b: undefined, c: { d: undefined, e: 2 } }), { a: 1, c: { e: 2 } });
+  assert.deepEqual(dropUndefinedDeep({ a: 1, b: undefined, c: { d: undefined, e: 2 } }), {
+    a: 1,
+    c: { e: 2 },
+  });
   assert.deepEqual(dropUndefinedDeep([1, undefined, 2]), [1, undefined, 2].map(dropUndefinedDeep));
 });
 
@@ -250,8 +259,7 @@ test('generateUniquePersonalId: 4桁で、使用中と重ならない', () => {
 // ──────────────────────────────────────────────────────────────
 // ライブ記録（RTDB）の突き合わせ。ここが緩むと入力中の○×や矢所が消える。
 // ──────────────────────────────────────────────────────────────
-const 射手 = (o) =>
-  Object.assign({ id: 'a1', name: '一人目', marks: ['', '', '', ''], lastModified: 0 }, o);
+const 射手 = (o) => Object.assign({ id: 'a1', name: '一人目', marks: ['', '', '', ''], lastModified: 0 }, o);
 
 test('normalizeArrowLocations: 配列はそのまま、空文字は null に戻す', () => {
   // 送るときは空欄を '' にする（○× と同じ）。RTDB が null だらけの配列を
@@ -491,7 +499,10 @@ test('学年でまとめる：開け閉めの覚えに使う印は文字', () =>
   // 数と文字が混ざると Set の照合が外れ、閉じたはずの枠が開く（逆も）
   const 組 = 学年でまとめる([{ grade: 2 }, { grade: 5 }, {}]);
   組.forEach((x) => assert.strictEqual(typeof x.学年, 'string', `印が文字でない: ${x.題}`));
-  assert.deepStrictEqual(組.map((x) => x.学年), ['2', '0', '卒']);
+  assert.deepStrictEqual(
+    組.map((x) => x.学年),
+    ['2', '0', '卒']
+  );
 });
 
 test('学年でまとめる：空でも落ちない', () => {
@@ -604,4 +615,37 @@ test('タグの見た目: 画面に出すときは先頭の # を外す（しま
   assert.equal(タグの見た目('合宿'), '合宿');
   assert.equal(タグの見た目(''), '');
   assert.equal(タグの見た目(null), '');
+});
+
+// ──────────────────────────────────────────────────────────────
+// 見張りが届けた一覧が、手元と同じか
+// ──────────────────────────────────────────────────────────────
+test('一覧が同じか: id・lastModified・syncStatus・tags が並びごと同じなら同じ（別の物でも）', () => {
+  const { 一覧が同じか } = require('../src/syncRules');
+  const 旧 = [
+    { id: 'a', lastModified: 100, syncStatus: '同期済み', tags: ['#的前'], title: '朝' },
+    { id: 'b', lastModified: 200, syncStatus: '同期済み', tags: [] },
+  ];
+  const 新 = 旧.map((x) => Object.assign({}, x, { archers: [] })); // 見張りは作り直す
+  assert.equal(一覧が同じか(旧, 新), true);
+  // Firestore の Timestamp（toMillis）でも同じ値なら同じ
+  assert.equal(
+    一覧が同じか(旧, [Object.assign({}, 新[0], { lastModified: { toMillis: () => 100 } }), 新[1]]),
+    true
+  );
+});
+
+test('一覧が同じか: 数・並び・更新日時・同期の印・タグのどれかが違えば違う', () => {
+  const { 一覧が同じか } = require('../src/syncRules');
+  const 旧 = [
+    { id: 'a', lastModified: 100, syncStatus: '同期済み', tags: ['#的前'] },
+    { id: 'b', lastModified: 200, syncStatus: '同期済み', tags: [] },
+  ];
+  const 変える = (i, 差) => 旧.map((x, k) => (k === i ? Object.assign({}, x, 差) : x));
+  assert.equal(一覧が同じか(旧, 旧.slice(0, 1)), false, '数');
+  assert.equal(一覧が同じか(旧, [旧[1], 旧[0]]), false, '並び');
+  assert.equal(一覧が同じか(旧, 変える(0, { lastModified: 101 })), false, '更新日時');
+  assert.equal(一覧が同じか(旧, 変える(1, { syncStatus: '未同期' })), false, '同期の印');
+  assert.equal(一覧が同じか(旧, 変える(0, { tags: ['#的前', '#雨'] })), false, 'タグ');
+  assert.equal(一覧が同じか(undefined, []), false);
 });

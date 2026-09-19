@@ -609,6 +609,8 @@ npm run ops:scan-japanese
 | 列ごとの見立てを親で数字に直して渡す | `retsuNoMitate.js`、`ArcherColumnView.js` | 68ms → 42〜50ms。自分の列に関わらない ○× では列が描き直さない |
 | 残り時間の帯を小さな部品に切る | `RecordScreen.js` の `期限の帯` | 毎秒の描き直しが記録表全体に及ばない |
 | ますと列の購読を 1 つにまとめる | `ScoreCell.js`、`ArcherColumnView.js` | 差は測れる範囲になかったが、購読の数は減る |
+| 端末の読み取り（○×の OCR）が主スレッドを塞がないように | `scripts/ocr-cells/ikitsugi.mjs`、`yomu.js`、`gazou-web.js` | 320 射の写真で 13.9 秒 → 9.0 秒。読んでいる間に画面が描き変わる回数 1 → 40 以上、一息に塞ぐ最長 13 秒 → 0.9 秒。マスの 9 割点を並べ替えでなく度数で取る、Float32 の板と板ごとの色の写し（合わせて 130MB）をやめる |
+| 見張り（onSnapshot）が同じ中身を届けたときは書かない。起動時の同期は取りに行かない | `useScoreStore.js`、`syncRules.js` の `一覧が同じか` | 起動時に同じものを 3 回読み、そのたびに画面ぜんぶの描き直しと 2MB の控えの書き直しをしていたのをやめる |
 
 控えの書き込みを遅らせたので、画面が隠れる・閉じるときは待たずに書く
 （`visibilitychange`・`pagehide`・`beforeunload`・`AppState`）。雲への同期と

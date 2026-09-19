@@ -111,7 +111,12 @@ test('リスナー：送信前の編集をクラウドの写しで上書きし�
   await 待つ(900);
   雲.状態.オフライン = false;
   // 他の人が別の記録を保存した＝リスナーが動く
-  雲.置く(記録の道, 'ses-3', { id: 'ses-3', title: '誰かの保存', date: Date.now(), lastModified: Date.now() });
+  雲.置く(記録の道, 'ses-3', {
+    id: 'ses-3',
+    title: '誰かの保存',
+    date: Date.now(),
+    lastModified: Date.now(),
+  });
   雲.通知();
   await 待つ(100);
   assert.equal(記録を見る(store, 'ses-1').title, '道場で直した', '編集が消えない');
@@ -123,7 +128,12 @@ test('リスナー：送信が済んだ記録はクラウドの写しで更新�
   const { store, 雲 } = 用意();
   await store.getState().listenToSessions();
   await 待つ(50);
-  雲.置く(記録の道, 'ses-1', { id: 'ses-1', title: '他の端末が直した', date: Date.now(), lastModified: Date.now() });
+  雲.置く(記録の道, 'ses-1', {
+    id: 'ses-1',
+    title: '他の端末が直した',
+    date: Date.now(),
+    lastModified: Date.now(),
+  });
   雲.通知();
   await 待つ(100);
   assert.equal(記録を見る(store, 'ses-1').title, '他の端末が直した');
@@ -140,8 +150,7 @@ function 射手を置く(store, 人数 = 2) {
   store.setState({ archers: 射手, activeSessionID: null, shotsPerRound: 4 });
   return 射手;
 }
-const 新しい記録 = (store, 既存) =>
-  store.getState().sessions.find((s) => s && !既存.includes(s.id));
+const 新しい記録 = (store, 既存) => store.getState().sessions.find((s) => s && !既存.includes(s.id));
 
 test('保存：手元に入り、届いたら「同期済み」になる', async () => {
   const { store, 雲 } = 用意();
@@ -794,7 +803,9 @@ test('全件取得：端末の時計が遅れていても、送信前の編集�
   // 永久に失われる）。管理者モードでの履歴の編集が該当する。
   const { store, 雲 } = 用意();
   雲.置く(記録の道, 'ses-1', {
-    id: 'ses-1', title: 'クラウドの内容', date: 1000,
+    id: 'ses-1',
+    title: 'クラウドの内容',
+    date: 1000,
     lastModified: Date.now() + 3000, // 端末の時計が3秒遅れている状態と同じ
     archers: [],
   });
@@ -810,7 +821,11 @@ test('全件取得：端末の時計が遅れていても、送信前の編集�
 test('同期：端末の時計が遅れていても、送信前の編集が消えない', async () => {
   const { store, 雲 } = 用意();
   雲.置く(記録の道, 'ses-1', {
-    id: 'ses-1', title: 'クラウドの内容', date: 1000, lastModified: Date.now() + 3000, archers: [],
+    id: 'ses-1',
+    title: 'クラウドの内容',
+    date: 1000,
+    lastModified: Date.now() + 3000,
+    archers: [],
   });
   await store.getState().updateSession('ses-1', { title: '直したばかり' });
   await store.getState().syncSessions();
@@ -824,7 +839,11 @@ test('全件取得：送信が済んでいれば、他の端末の新しい編�
   // 上の守りが効きすぎて、他の端末の編集が届かなくなっていないか
   const { store, 雲 } = 用意();
   雲.置く(記録の道, 'ses-1', {
-    id: 'ses-1', title: '他の端末が直した', date: 1000, lastModified: Date.now() + 3000, archers: [],
+    id: 'ses-1',
+    title: '他の端末が直した',
+    date: 1000,
+    lastModified: Date.now() + 3000,
+    archers: [],
   });
   await store.getState().fetchAndOverwriteFromCloud();
   await 待つ(50);
@@ -877,9 +896,12 @@ test('見張り：30日以内の記録がクラウドで消されたら、手元
   const { store, 雲 } = 用意();
   const 今 = Date.now();
   // クラウドに在った印（serverCreatedTime）は、クラウドの写しにも手元にも付いている
-  for (const s of store.getState().sessions) 雲.置く(記録の道, s.id, Object.assign({}, s, { serverCreatedTime: 今 - 86400000 }));
+  for (const s of store.getState().sessions)
+    雲.置く(記録の道, s.id, Object.assign({}, s, { serverCreatedTime: 今 - 86400000 }));
   store.setState({
-    sessions: store.getState().sessions.map((s) => Object.assign({}, s, { serverCreatedTime: 今 - 86400000 })),
+    sessions: store
+      .getState()
+      .sessions.map((s) => Object.assign({}, s, { serverCreatedTime: 今 - 86400000 })),
   });
   await store.getState().listenToSessions();
   await 待つ(50);
@@ -888,4 +910,97 @@ test('見張り：30日以内の記録がクラウドで消されたら、手元
   await 待つ(100);
   assert.ok(!記録を見る(store, 'ses-2'), '消された記録が残っている');
   assert.ok(記録を見る(store, 'ses-1'));
+});
+
+// ──────────────────────────────────────────────────────────────
+// 個人ログインでの保存（電波が弱いとき）
+// ──────────────────────────────────────────────────────────────
+// 以前は「雲にすでにある記録か」を getDoc で確かめてから手元に確定していた。
+// 電波が弱い（つながっているのに応答が来ない）と getDoc が返らず、保存が
+// 終わらないまま記録表が残り、もう一度押せてしまった（2026-09-19）。
+test('個人ログインの保存：雲が応答しなくても、手元にすぐ確定する', async () => {
+  const { store, 雲 } = 用意();
+  store.setState({ activeRole: 'member', myMemberId: 'm-1' });
+  雲.状態.オフライン = true;
+  雲.api.getDoc = () => new Promise(() => {}); // 応答が来ない
+  const 既存 = store.getState().sessions.map((s) => s.id);
+  射手を置く(store);
+  let 終わった = false;
+  const 保存 = store
+    .getState()
+    .saveSession('弱い電波', '', true, [], null)
+    .then(() => (終わった = true));
+  await 待つ(50);
+  assert.ok(終わった, '保存が終わらない（雲の応答を待っている）');
+  assert.equal(store.getState().archers.length, 0, '記録表が片付いていない');
+  const s = 新しい記録(store, 既存);
+  assert.ok(s, '履歴に入っていない');
+  assert.equal(s.syncStatus, '未同期');
+});
+
+test('個人ログインの保存：雲にある記録（同期済み）を載せていたら、雲に聞かずに止める', async () => {
+  const { store, 雲, 知らせ } = 用意();
+  store.setState({ activeRole: 'member', myMemberId: 'm-1' });
+  雲.api.getDoc = () => new Promise(() => {});
+  射手を置く(store);
+  store.setState({ activeSessionID: 'ses-1' }); // 用意() の記録は 同期済み
+  await store.getState().saveSession('上書き', '', true, [], null);
+  assert.ok(
+    知らせ.some((文) => /個人モードからは更新できません/.test(文)),
+    '止めた理由を言っていない'
+  );
+  assert.equal(store.getState().archers.length, 2, '止めたのに記録表が片付いている');
+  assert.equal(記録を見る(store, 'ses-1').title, '練習1', '雲の記録を上書きしている');
+});
+
+// ──────────────────────────────────────────────────────────────
+// 同じものを何度も読まない・書かない
+// ──────────────────────────────────────────────────────────────
+test('リスナー：同じ中身が届いたときは、記録の配列を差し替えない（描き直し・控えの書き直しを起こさない）', async () => {
+  const { store, 雲 } = 用意();
+  await store.getState().listenToSessions();
+  await 待つ(50);
+  const 前 = store.getState().sessions;
+  雲.通知(); // 何も変えずにもう一度届く（起動時の全件取得のあとと同じ）
+  await 待つ(100);
+  assert.strictEqual(store.getState().sessions, 前, '同じ中身なのに配列が差し替わっている');
+  // 変わっていれば差し替わる
+  雲.置く(記録の道, 'ses-1', { id: 'ses-1', title: '直した', date: Date.now(), lastModified: Date.now() });
+  雲.通知();
+  await 待つ(100);
+  assert.notStrictEqual(store.getState().sessions, 前);
+  assert.equal(記録を見る(store, 'ses-1').title, '直した');
+});
+
+test('起動時の同期（取りに行かない）：雲から取らずに、送れていない記録だけ送り直す', async () => {
+  const { store, 雲 } = 用意();
+  let 取りに行った = 0;
+  const 元 = 雲.api.getDocs;
+  // 数えるのは記録・名簿・ゴミ箱・卒業生の 4 つ。逆引き表の手入れ（ensurePersonalIds）は別の仕組み
+  雲.api.getDocs = (...a) => {
+    if (/[/](sessions|members|trash|alumni)$/.test((a[0] && a[0].道) || '')) 取りに行った++;
+    return 元(...a);
+  };
+  // 電波が無いときに保存した記録が手元にある
+  store.setState({
+    sessions: [
+      {
+        id: 'ses-off',
+        title: '電波なしの保存',
+        date: Date.now(),
+        lastModified: Date.now(),
+        syncStatus: '未同期',
+        archers: [],
+      },
+      ...store.getState().sessions,
+    ],
+  });
+  await store.getState().syncSessions({ 取りに行かない: true });
+  await 待つ(50);
+  assert.equal(取りに行った, 0, '取りに行かないと言ったのに取りに行っている');
+  assert.ok(雲.値(記録の道, 'ses-off'), '送れていない記録が送り直されていない');
+  assert.equal(記録を見る(store, 'ses-off').syncStatus, '同期済み');
+  // 何も言わなければ取りに行く（5 分ごとの保険）
+  await store.getState().syncSessions();
+  assert.ok(取りに行った > 0);
 });

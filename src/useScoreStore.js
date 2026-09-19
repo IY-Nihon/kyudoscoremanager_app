@@ -2564,22 +2564,20 @@ const useScoreStore = zustand.create()(
             syncStatus: '未同期',
             lastModified: Date.now(),
           };
-          // 個人モードでの上書きは、手元に確定する前に止める
-          if (activeGroupId && 'member' === activeRole)
-            try {
-              if (
-                (
-                  await Firestore.getDoc(
-                    Firestore.doc(Firebaseの器.db, `groups/${activeGroupId}/sessions`, 記録ID)
-                  )
-                ).exists()
-              ) {
-                const 文 = 'この記録はすでにクラウドに存在するため、個人モードからは更新できません。';
-                return void Alert.alert('保存制限', 文);
-              }
-            } catch (誤り) {
-              console.warn('[Store] 既存確認に失敗しました。保存は続行します:', 誤り);
+          // 個人モードでの上書きは、手元に確定する前に止める。
+          // 雲には聞かない。以前は getDoc で確かめていたが、電波が弱い（つながって
+          // いるのに応答が来ない）と返らず、保存が終わらないまま記録表が残り、もう一度
+          // 押せてしまった（2026-09-19）。新しい記録（id を今作った）は雲に無いので
+          // 見る必要がなく、履歴から載せた記録なら手元の控えの 同期済み が雲にある印
+          if (activeGroupId && 'member' === activeRole && 状態().activeSessionID) {
+            const 手元 = (Array.isArray(状態().sessions) ? 状態().sessions : []).find(
+              (記録1件) => 記録1件 && 記録1件.id === 記録ID
+            );
+            if (手元 && '同期済み' === 手元.syncStatus) {
+              const 文 = 'この記録はすでにクラウドに存在するため、個人モードからは更新できません。';
+              return void Alert.alert('保存制限', 文);
             }
+          }
           // まず手元に確定する。クラウドの応答は待たない。
           // 待つと、通信できないときに射手が消えず履歴にも出ないうえ、
           // 画面には何も知らされないままになる。
@@ -3436,7 +3434,13 @@ const useScoreStore = zustand.create()(
             }
           }
         },
-        syncSessions: async () => {
+        /**
+         * 雲と突き合わせて、まだ送れていないものを送り直す。
+         * @param {{取りに行かない?: boolean}} [選び] 取りに行かない … 雲から取らず、送り直しだけ。
+         *   起動時は直前に fetchAndOverwriteFromCloud が全部取っていて、見張りも
+         *   これから届くので、ここでもう一度取るのは同じものを 3 回読むことになる
+         */
+        syncSessions: async (選び) => {
           if (!状態().activeGroupId) return;
           const _syncDb = await waitForDb();
           if (!_syncDb) {
@@ -3482,7 +3486,10 @@ const useScoreStore = zustand.create()(
             let 部員の返り;
             let ごみ箱の返り;
             let 卒業生の返り;
-            if (前回の同期時刻 > 0 && 状態().sessions.length > 0) {
+            const 空 = { forEach: () => {} };
+            if (選び && 選び.取りに行かない) {
+              記録の返り = 部員の返り = ごみ箱の返り = 卒業生の返り = 空;
+            } else if (前回の同期時刻 > 0 && 状態().sessions.length > 0) {
               const 基準時刻 = Math.max(0, 前回の同期時刻 - 1e4);
               記録の返り = await Firestore.getDocs(
                 Firestore.query(記録の置き場, Firestore.where('lastModified', '>', 基準時刻))
@@ -4948,6 +4955,14 @@ const useScoreStore = zustand.create()(
                 (記録1件) => 記録1件 && !完全削除ずみ.has(記録1件.id)
               );
               並べた記録.sort((甲, 乙) => (乙.date || 0) - (甲.date || 0));
+              // 同じ中身なら書かない。書くと画面ぜんぶの描き直しと端末への控えの
+              // 書き直し（大きい団体で 2MB）が走る。起動時は直前の全件取得と同じものが届く
+              if (同期規則.一覧が同じか(手元の記録, 並べた記録) && '同期済み' === 状態().syncStatus) {
+                console.log(
+                  `[Store] Real-time session update received: ${雲の記録.length} items (no change)`
+                );
+                return;
+              }
               書く({ sessions: 並べた記録, syncStatus: '同期済み', lastSyncTime: Date.now() });
               console.log(
                 `[Store] Real-time session update received: ${雲の記録.length} items (reflected deletions)`
@@ -5031,10 +5046,17 @@ const useScoreStore = zustand.create()(
               const 残す = 状態().sessions.filter(
                 (記録1件) => 記録1件 && (!捨てたid.has(記録1件.id) || '未同期' === 記録1件.syncStatus)
               );
-              書く({
-                trash: 出すゴミ箱,
-                sessions: 残す.filter((記録1件) => 記録1件 && !完全削除ずみ.has(記録1件.id)),
-              });
+              const 残す記録 = 残す.filter((記録1件) => 記録1件 && !完全削除ずみ.has(記録1件.id));
+              if (
+                同期規則.一覧が同じか(状態().trash, 出すゴミ箱) &&
+                同期規則.一覧が同じか(状態().sessions, 残す記録)
+              ) {
+                console.log(
+                  `[Store] Real-time trash update received: ${雲のごみ箱.length} items (no change)`
+                );
+                return;
+              }
+              書く({ trash: 出すゴミ箱, sessions: 残す記録 });
               console.log(
                 `[Store] Real-time trash update received: ${雲のごみ箱.length} items (purged from sessions)`
               );
@@ -5076,6 +5098,10 @@ const useScoreStore = zustand.create()(
               const 合流した = mergeById(状態().members, 雲の部員, false, true).filter(
                 (部員1人) => 部員1人 && !削除ずみ.has(部員1人.id)
               );
+              if (同期規則.一覧が同じか(状態().members, 合流した)) {
+                console.log(`[Store] Real-time member update received: ${雲の部員.length} items (no change)`);
+                return;
+              }
               書く({ members: 合流した, lastSyncTime: Date.now() });
               console.log(`[Store] Real-time member update received: ${雲の部員.length} items`);
             },
@@ -5112,6 +5138,12 @@ const useScoreStore = zustand.create()(
                 雲の卒業生.push(Object.assign({}, 中身, { id: 文書.id, syncStatus: '同期済み' }));
               });
               const 合流した = mergeById(状態().alumni, 雲の卒業生, false, true);
+              if (同期規則.一覧が同じか(状態().alumni, 合流した)) {
+                console.log(
+                  `[Store] Real-time alumni update received: ${雲の卒業生.length} items (no change)`
+                );
+                return;
+              }
               書く({ alumni: 合流した, lastSyncTime: Date.now() });
               console.log(`[Store] Real-time alumni update received: ${雲の卒業生.length} items`);
             },
@@ -5136,7 +5168,10 @@ const useScoreStore = zustand.create()(
           状態().listenToTrash();
           状態().listenToMembers();
           状態().listenToAlumni();
-          状態().syncSessions();
+          // 直前の fetchAndOverwriteFromCloud で全部取っていて、見張りもいま付けた。
+          // ここでは送り直しだけ（取りに行かない）。5 分ごとのほうは取りに行く
+          //（見張りが黙って切れたときの保険）
+          状態().syncSessions({ 取りに行かない: true });
           const 時計 = setInterval(() => {
             状態().syncSessions();
           }, 3e5);

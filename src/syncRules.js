@@ -856,7 +856,35 @@ function 学年でまとめる(人たち) {
     }));
 }
 
+/**
+ * 見張り（onSnapshot）が届けた一覧が、手元の一覧と同じか。
+ *
+ * 見張りは届くたびに全部の項目を作り直すので、中身が同じでも配列も項目も別物になる。
+ * そのまま書くと、画面ぜんぶが描き直され、端末への控え（大きい団体で 2MB）も
+ * 書き直される。変更は必ず lastModified を上げる決まりなので、id・lastModified・
+ * syncStatus・tags が並びごと同じなら「同じ」とみなす。
+ * @param {Array} 旧
+ * @param {Array} 新
+ * @returns {boolean}
+ */
+function 一覧が同じか(旧, 新) {
+  if (!Array.isArray(旧) || !Array.isArray(新) || 旧.length !== 新.length) return false;
+  const ミリ秒 = (値) => (値 && typeof 値.toMillis === 'function' ? 値.toMillis() : 値 || 0);
+  const タグ = (x) => (Array.isArray(x.tags) ? x.tags.join('\u0001') : '');
+  for (let i = 0; i < 旧.length; i++) {
+    const a = 旧[i];
+    const b = 新[i];
+    if (!a || !b) return a === b;
+    if (a.id !== b.id) return false;
+    if (ミリ秒(a.lastModified) !== ミリ秒(b.lastModified)) return false;
+    if (a.syncStatus !== b.syncStatus) return false;
+    if (タグ(a) !== タグ(b)) return false;
+  }
+  return true;
+}
+
 module.exports = {
+  一覧が同じか,
   学年でまとめる,
   一立の射数,
   立の数,
