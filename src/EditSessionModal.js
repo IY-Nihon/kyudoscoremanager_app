@@ -94,7 +94,13 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
           <View style={styles.container}>
             <View style={styles.header}>
               <Text style={styles.headerTitle}>記録の情報を変える</Text>
-              <TouchableOpacity onPress={onClose}>
+              <TouchableOpacity // 絵だけのボタン。読み上げと検査のために名を付ける
+                accessible
+                accessibilityRole="button"
+                accessibilityLabel="閉じる"
+                aria-label="閉じる"
+                onPress={onClose}
+              >
                 <Icons.Ionicons name="close" size={24} color="#000" />
               </TouchableOpacity>
             </View>
@@ -134,7 +140,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                         <TouchableOpacity
                           key={番}
                           style={styles.selectedTagChip}
-                          onPress={() => タグたちを置く(タグたち.filter((無し, 番) => 番 !== 番))}
+                          onPress={() => タグたちを置く(タグたち.filter((無し, 位置) => 位置 !== 番))}
                         >
                           <Text style={styles.selectedTagText}>{タグの見た目(タグ)}</Text>
                           <Icons.Ionicons name="close-circle" size={16} color="#FFF" />
@@ -188,7 +194,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                                 }
                               }}
                             >
-                              <Text style={styles.templateTagText}>{タグ}</Text>
+                              <Text style={styles.templateTagText}>{タグの見た目(タグ)}</Text>
                             </TouchableOpacity>
                           ))}
                         </View>
