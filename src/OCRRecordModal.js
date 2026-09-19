@@ -189,6 +189,8 @@ const OCRRecordModal = ({
   // record モード用: [{rawText, status, match, options, marks:['○','×','',...]}]
   const [recordRows, setRecordRows] = useState([]);
   const [errorMsg, setErrorMsg] = useState('');
+  // AI が混んでいて（503）、待ってからもう一度読んでいる間だけ true（読み取り中の文を変える）
+  const [混み待ち, set混み待ち] = useState(false);
   const [pickerTarget, setPickerTarget] = useState(null); // {tachiIdx, seatIdx}
   const [pickerSearch, setPickerSearch] = useState('');
   const [expandedActiveGrades, setExpandedActiveGrades] = useState(new Set(['1', '2', '3', '4', '0']));
@@ -355,7 +357,21 @@ const OCRRecordModal = ({
         images.forEach((img) => {
           parts.push({ inlineData: { mimeType: 'image/jpeg', data: img.base64 } });
         });
-        const result = await model.generateContent(parts);
+        let result;
+        try {
+          result = await model.generateContent(parts);
+        } catch (誤り) {
+          // 503（模型が混んでいる）。中継が 2・4・8 秒待って 3 回送り直したうえでの 503 なので、
+          // 山が長い。もう少し待ってから、もう一度だけ読む（配信した日に 2 回続けて出た。2026-09-20）
+          if (!/503/.test(String(誤り?.message || 誤り))) throw 誤り;
+          set混み待ち(true);
+          try {
+            await new Promise((r) => setTimeout(r, 8000));
+            result = await model.generateContent(parts);
+          } finally {
+            set混み待ち(false);
+          }
+        }
         return JSON.parse(result.response.text());
       };
       let parsed = await 読ませる(prompt);
@@ -640,7 +656,7 @@ const OCRRecordModal = ({
       if (msg.includes('429')) {
         setErrorMsg('AIの利用制限に達しました。しばらく待ってから再度お試しください。');
       } else if (msg.includes('503')) {
-        // 模型が混んでいる（high demand）。中継が 2 回まで待って送り直したうえでの 503
+        // 模型が混んでいる（high demand）。中継とここで待って送り直したうえでの 503
         setErrorMsg('ただいまAIが混み合っています。しばらく待ってからもう一度お試しください。');
       } else if (msg.includes('401') || msg.includes('ログインしていない')) {
         setErrorMsg('ログインの証が確かめられませんでした。ログインし直してから再度お試しください。');
@@ -1311,7 +1327,11 @@ const OCRRecordModal = ({
             <View style={styles.centerBox}>
               <ActivityIndicator size="large" color="#007AFF" />
               <Text style={styles.centerText}>
-                {mode === 'record' ? 'AIが記録表を読み取っています...' : 'AIが立ち順表を読み取っています...'}
+                {混み待ち
+                  ? 'AIが混み合っています。少し待ってからもう一度読みます...'
+                  : mode === 'record'
+                    ? 'AIが記録表を読み取っています...'
+                    : 'AIが立ち順表を読み取っています...'}
               </Text>
             </View>
           )}
