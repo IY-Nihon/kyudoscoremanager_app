@@ -44,12 +44,15 @@ setup('団体100002に個人で入っておく', async ({ page }) => {
     .poll(
       () =>
         page.evaluate(() => {
-          const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+          const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
           return s.activeGroupId || null;
         }),
       { timeout: 90_000, message: '団体100002の個人ログインが通らない' }
     )
     .not.toBeNull();
+  // 端末への控えは少し待ってから書かれる（useScoreStore の 控えの書き出し）。
+  // storageState は本物の localStorage を写すので、先に書かせておく
+  await page.evaluate(() => globalThis.__弓道の控えを書く?.());
   fs.mkdirSync(path.dirname(控えの道('100002-個人')), { recursive: true });
   await page.context().storageState({ path: 控えの道('100002-個人'), indexedDB: true });
 });
@@ -71,7 +74,7 @@ for (const 団体 of 団体たち) {
       .poll(
         () =>
           page.evaluate(() => {
-            const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+            const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
             return s.activeGroupId || null;
           }),
         { timeout: 90_000, message: `団体${団体}のログインが通らない` }
@@ -80,7 +83,7 @@ for (const 団体 of 団体たち) {
 
     // 認証の控えが書き終わるまで待つ。ここで急ぐと、控えが半端なまま残る
     await expect
-      .poll(() => page.evaluate(() => !!localStorage.getItem('archery-score-storage')), { timeout: 30_000 })
+      .poll(() => page.evaluate(() => !!(globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage'))), { timeout: 30_000 })
       .toBe(true);
 
     // 中身が雲から届くまで待つ。
@@ -98,7 +101,7 @@ for (const 団体 of 団体たち) {
     const 中身の数 = () =>
       page.evaluate(() => {
         try {
-          const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+          const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
           return { 名簿: (s.members || []).length, 記録: (s.sessions || []).length };
         } catch (e) {
           return { 名簿: 0, 記録: 0 };
@@ -109,7 +112,7 @@ for (const 団体 of 団体たち) {
       .waitForFunction(
         () => {
           try {
-            const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+            const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
             return (s.members || []).length > 0 || (s.sessions || []).length > 0;
           } catch (e) {
             return false;
@@ -122,6 +125,7 @@ for (const 団体 of 団体たち) {
     const 届いた = await 中身の数();
     console.log(`  団体${団体}: 名簿${届いた.名簿}人 / 記録${届いた.記録}件を控えに入れます`);
 
+    await page.evaluate(() => globalThis.__弓道の控えを書く?.());
     fs.mkdirSync(path.dirname(控えの道(団体)), { recursive: true });
     await page.context().storageState({ path: 控えの道(団体), indexedDB: true });
   });

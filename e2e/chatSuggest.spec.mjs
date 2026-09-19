@@ -61,7 +61,7 @@ async function 記録が届くまで待つ(page, 上限 = 60_000) {
       () =>
         page.evaluate(() => {
           try {
-            const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+            const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
             return (s.sessions || []).length;
           } catch (e) {
             return 0;

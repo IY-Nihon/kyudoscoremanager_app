@@ -7,6 +7,7 @@ const TouchableOpacity = require('./TouchableOpacity').default;
 const Pressable = require('./Pressable').default;
 const { UIConfig } = require('./uiConfig');
 const { useScoreStore } = require('./useScoreStore');
+const { useShallow } = require('zustand/react/shallow');
 const ExpoHaptics = require('expo-haptics');
 const Icons = require('@expo/vector-icons');
 const React = require('react');
@@ -30,8 +31,20 @@ const ScoreCell = React.memo(
     読み,
     onToggle,
   }) => {
-    const 印を切り替える = useScoreStore((状態) => 状態.toggleMark);
-    const viewScale = useScoreStore((状態) => 状態.viewScale);
+    // ますは 20 人 × 20 射で 400 個ある。1 つのますが店（zustand）を 10 か所で
+    // 購読していると、○× を 1 つ入れるたびに 4000 の選び出しが走る。
+    // 変わり得る値だけを 1 つの購読にまとめ、店の手（toggleMark など）は
+    // 呼ぶときに getState() から取る（手は変わらないので購読しなくてよい）
+    const 店 = () => useScoreStore.getState();
+    const 印を切り替える = (...引) => 店().toggleMark(...引);
+    const { viewScale, enableArrowLocation, 自動ロックする, 自動ロックまでの秒 } = useScoreStore(
+      useShallow((状態) => ({
+        viewScale: 状態.viewScale,
+        enableArrowLocation: 状態.enableArrowLocation,
+        自動ロックする: 状態.自動ロックする,
+        自動ロックまでの秒: 状態.自動ロックまでの秒,
+      }))
+    );
     const 倍率 = 'number' == typeof viewScale && !isNaN(viewScale) && viewScale > 0 ? viewScale : 1;
     const 印 = mark ?? '';
     const 背景の色 =
@@ -70,14 +83,11 @@ const ScoreCell = React.memo(
     const longPressTimerRef = React.useRef(null);
     const isLongPressedRef = React.useRef(false);
     const cellRef = React.useRef(null);
-    const enableArrowLocation = useScoreStore((状態) => 状態.enableArrowLocation);
     // 誤タップ防止。入れてから少し経ったますは、押しても変わらないようにする。
     // 直したいときは長押しで、そのますだけ開く。
     // 記録そのものには持たせない（同期の形を変えないため）
-    const 自動ロックする = useScoreStore((状態) => 状態.自動ロックする);
-    const 自動ロックまでの秒 = useScoreStore((状態) => 状態.自動ロックまでの秒);
-    const ますを開ける = useScoreStore((状態) => 状態.ますを開ける);
-    const 閉じたますが押された = useScoreStore((状態) => 状態.閉じたますが押された);
+    const ますを開ける = (...引) => 店().ますを開ける(...引);
+    const 閉じたますが押された = (...引) => 店().閉じたますが押された(...引);
     const この鍵 = archerId + ':' + index;
     const 入れた = useScoreStore((状態) => 状態.入れた時刻[この鍵]);
     const [経った, 経ったを置く] = React.useState(false);
@@ -103,8 +113,8 @@ const ScoreCell = React.memo(
     const 自動で閉じている =
       印を入れる列 && 鍵をかける板 && 自動ロックする && !!(mark ?? '') && (経った || !入れた);
     const 閉じている = isLocked || 自動で閉じている;
-    const setActiveArrowLocationEdit = useScoreStore((状態) => 状態.setActiveArrowLocationEdit);
-    const updateArrowLocation = useScoreStore((状態) => 状態.updateArrowLocation);
+    const setActiveArrowLocationEdit = (...引) => 店().setActiveArrowLocationEdit(...引);
+    const updateArrowLocation = (...引) => 店().updateArrowLocation(...引);
     // ここで (s) => s.archers.find(...) を購読していた。ますの数だけ
     // 全射手の走査が走り、○×を1つ入れるたびに盤面全体が重くなっていた。
     // この射手を使うのは長押しの中だけなので、そのとき取りに行けばよい

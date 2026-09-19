@@ -63,6 +63,85 @@ const 端末の置き場 = {
   },
   removeItem: (鍵) => AsyncStorage.removeItem(鍵),
 };
+/**
+ * 端末への控えは、少しまとめてから書く。
+ *
+ * persist は状態が変わるたびに、控え全体を JSON にして書き直す。控えは
+ * 大きい団体で 1.4MB あり、古い端末（CPU が 6 倍遅い見当）だと JSON にするのに
+ * 35ms、書くのに 32ms かかった。○×を 1 つ押すたびにこれが走ると、描き直しの
+ * 50ms と合わせて 100ms を超え、押した手応えが遅れる。
+ *
+ * そこで、状態の写しだけ受け取っておき、少し待ってから 1 回だけ JSON にして書く。
+ * 続けて押したぶんは 1 回にまとまる。画面が隠れる・閉じるときは待たずに書く
+ * （そこで書かないと、閉じた直後のぶんが端末に残らない）。雲への同期とライブは
+ * ここを通らないので、遅らせても相手に届く速さは変わらない。
+ */
+const 控えの書き出し = {
+  待ち: null, // { 名, 値 } … まだ書いていない最新の写し
+  札: null,
+  遅らせ: 600, // ms。検査では 0 にして待たずに書く
+  予約(名, 値) {
+    this.待ち = { 名, 値 };
+    if (this.札 !== null) return;
+    this.札 = setTimeout(() => this.今すぐ(), this.遅らせ);
+  },
+  async 今すぐ() {
+    if (this.札 !== null) clearTimeout(this.札);
+    this.札 = null;
+    const 待ち = this.待ち;
+    this.待ち = null;
+    if (!待ち) return;
+    await 端末の置き場.setItem(待ち.名, JSON.stringify(待ち.値));
+  },
+  捨てる() {
+    if (this.札 !== null) clearTimeout(this.札);
+    this.札 = null;
+    this.待ち = null;
+  },
+};
+// 画面が隠れる・閉じるときは待たずに書く（web）。端末では裏に回ったとき
+try {
+  if (typeof document !== 'undefined' && document.addEventListener) {
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) 控えの書き出し.今すぐ();
+    });
+  }
+  if (typeof window !== 'undefined' && window.addEventListener) {
+    window.addEventListener('pagehide', () => 控えの書き出し.今すぐ());
+    window.addEventListener('beforeunload', () => 控えの書き出し.今すぐ());
+  }
+  const AppState = require('react-native').AppState;
+  if (AppState && AppState.addEventListener) {
+    AppState.addEventListener('change', (様子) => {
+      if (様子 !== 'active') 控えの書き出し.今すぐ();
+    });
+  }
+} catch (誤り) {
+  /* 聞き手が付けられない場でも、時間で書くほうは動く */
+}
+// 検査（e2e）は「端末に書かれる中身」を localStorage から読む。書くのを遅らせたので、
+// まだ書いていない写しがあればそれを返す口と、待たずに書かせる口を置く。
+// 後者は auth.setup が storageState を取る前に呼ぶ（Playwright は本物の
+// localStorage を写すので、遅らせたぶんが入っていないと入り直しになる）。
+// 本番では誰も呼ばない
+if (typeof globalThis !== 'undefined') {
+  globalThis.__弓道の控え = () => (控えの書き出し.待ち ? JSON.stringify(控えの書き出し.待ち.値) : null);
+  globalThis.__弓道の控えを書く = () => 控えの書き出し.今すぐ();
+}
+/** persist に渡す置き場。JSON にするのは書くときだけ（控えの書き出し） */
+const 控えの置き場 = {
+  getItem: async (名) => {
+    const 文 = await 端末の置き場.getItem(名);
+    return 文 === null || 文 === undefined ? null : JSON.parse(文);
+  },
+  setItem: (名, 値) => {
+    控えの書き出し.予約(名, 値);
+  },
+  removeItem: async (名) => {
+    控えの書き出し.捨てる();
+    await 端末の置き場.removeItem(名);
+  },
+};
 // 行動を1つ控える。不具合の便りに「直前に何をしていたか」として載る。
 // 氏名・的中・記録の中身は渡さない（渡すと便りに名簿が出る）
 function 行動を控える(名, 中身) {
@@ -225,6 +304,11 @@ function 不具合を控える(出どころ, 誤り) {
   }
 }
 Object.defineProperty(exports, '__esModule', { value: true });
+// 端末への控えを待たずに書く／待ちを変える（検査と、閉じる前に確実に書きたいとき用）
+exports.控えを今すぐ書く = () => 控えの書き出し.今すぐ();
+exports.控えの待ちを変える = (ms) => {
+  控えの書き出し.遅らせ = ms;
+};
 Object.defineProperty(exports, 'useScoreStore', {
   enumerable: true,
   get: function () {
@@ -5371,7 +5455,8 @@ const useScoreStore = zustand.create()(
     },
     {
       name: 'archery-score-storage',
-      storage: middleware.createJSONStorage(() => 端末の置き場),
+      // JSON にする前の写しを受け取り、少しまとめてから書く（控えの書き出し）
+      storage: 控えの置き場,
       partialize: (状態の中身) => ({
         archers: 状態の中身.archers,
         members: 状態の中身.members,

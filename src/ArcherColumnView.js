@@ -8,17 +8,34 @@ const TouchableOpacity = require('./TouchableOpacity').default;
 const { UIConfig } = require('./uiConfig');
 const { ScoreCell } = require('./ScoreCell');
 const { useScoreStore } = require('./useScoreStore');
+const { useShallow } = require('zustand/react/shallow');
 const // 読み上げが読む言葉。射位の呼び方もここが持つ
   読み = require('./a11yLabels');
 const Icons = require('@expo/vector-icons');
 const { formatMemberName } = require('./formatMemberName');
 const 組 = require('./teamGrouping');
+/**
+ * 記録表の 1 列（射手・区切り・計）。
+ *
+ * React.memo で包んであり、渡されたものが変わらなければ描き直さない。そのため
+ * 立ち全体を見ないと決まらないもの（チームの色・鍵が効くか・射位・計の数）は
+ * 一覧をまるごと受け取らず、親が retsuNoMitate で数字と文字にした見立てを受ける。
+ * 押したときの手（onPressName など）も、親は同じ関数を渡し続けること
+ * （描き直すたびに作り直すと、memo が効かなくなる）。
+ */
 const ArcherColumnView = React.memo(
   ({
     archer,
     shots,
-    allArchers,
     indexInList,
+    // 列の見立て（src/retsuNoMitate.js）。一覧から親が数えて、数字と文字で渡す
+    チームの色 = null,
+    鍵が効く = false,
+    射位の番 = -1,
+    人数 = 0,
+    合計の的中 = 0,
+    立の的中 = '',
+    埋まった立: 受け持ちの埋まった立 = '',
     showFooter = true,
     // 横に並べる（名前が左、○×が右へ伸びる）。鍵も交代も規則は同じで、置き方だけ変える
     横並び: 横 = false,
@@ -29,42 +46,32 @@ const ArcherColumnView = React.memo(
     onDelete,
     onToggleMark,
     onToggleLock,
-    // 区切りを長押ししたとき（チーム名を付ける）
+    // 区切りを長押ししたとき（チーム名を付ける）。onPressName・onDelete と同じく、列の id を渡して呼ぶ
     onLongPressSeparator: 区切りを長押し,
   }) => {
-    // この列がどのチームか。区切りに付けた名前から決まる（teamGrouping）。
-    // 立ち全体を見ないと決まらないので、allArchers から数える
-    const チーム = (() => {
-      const 一覧 = Array.isArray(allArchers) ? allArchers : [];
-      const 割り当て = 組.チームを割り当てる(一覧);
-      const 見つけた = 割り当て.find((一人) => 一人 && archer && 一人.id === archer.id);
-      return 見つけた || { チーム: null, 色: null };
-    })();
     const 区切りの名 = 組.区切りのチーム名(archer);
-    // 鍵が効くかどうか。
-    // toggleLock は押した列から右へ進み、間隔か計にぶつかったところで止める。
-    // 右どなりが間隔・計だと一歩目で止まるので自分の列しか掴まず、射手は
-    // 1人も固定されない。鍵は閉じるのに○×は編集できたままになり、効いた
-    // ように見えて効いていない状態になる。そういう鍵は初めから出さない
-    const 鍵が効く = (() => {
-      const 一覧 = Array.isArray(allArchers) ? allArchers : [];
-      const 右どなり = 一覧[indexInList - 1];
-      return !!(indexInList > 0 && 右どなり && !右どなり.isSeparator && !右どなり.isTotalCalculator);
-    })();
     // 途中交代があると、計は「山田 3, 交代太郎 2」と内訳で出る。
     // 押すと合わせた数（5）に切り替わる。どちらで見たいかは場面による
     const [合算で見る, 合算を置く] = React.useState(false);
-    const 鍵を切り替える = useScoreStore((状態) => 状態.toggleLock);
-    const viewScale = useScoreStore((状態) => 状態.viewScale);
+    // 店（zustand）の購読は 1 つにまとめる（ます と同じ理由。列は 30 本ほど並ぶ）。
+    // 店の手（toggleLock・立を閉じる）は呼ぶときに getState() から取る
+    const { viewScale, members, 自動ロックする, 自動ロックまでの秒 } = useScoreStore(
+      useShallow((状態) => ({
+        viewScale: 状態.viewScale,
+        members: 状態.members,
+        自動ロックする: 状態.自動ロックする,
+        自動ロックまでの秒: 状態.自動ロックまでの秒,
+      }))
+    );
+    const 鍵を切り替える = (...引) => useScoreStore.getState().toggleLock(...引);
+    const 立を閉じる = (...引) => useScoreStore.getState().立を閉じる(...引);
     const 倍率 = 'number' == typeof viewScale && !isNaN(viewScale) && viewScale > 0 ? viewScale : 1;
-    const 部員たち = useScoreStore((状態) => 状態.members || []);
-    const 的中の数 = (() => {
-      // どこまで数えるかの規則は teamGrouping に1つだけ置く。
-      // ここに写しを持つと、欄と行で数が食い違う（2026-09-08 に起きた）
-      if (archer.isTotalCalculator)
-        return 組.合計を数える(Array.isArray(allArchers) ? allArchers : [], indexInList);
-      return (archer.marks || []).filter((印) => '○' === 印).length;
-    })();
+    const 部員たち = members || [];
+    // 計の列の数は親が数えて渡す（どこまで数えるかの規則は teamGrouping に1つだけ）。
+    // 射手の列は自分の○×を数えるだけ
+    const 的中の数 = archer.isTotalCalculator
+      ? 合計の的中
+      : (archer.marks || []).filter((印) => '○' === 印).length;
     const 射番の並び = [];
     // 縦の表は下から上へ数える（1射目が下）。横の表は左から右へ数える
     if (!archer.isSeparator) {
@@ -83,29 +90,17 @@ const ArcherColumnView = React.memo(
       : archer.isTotalCalculator
         ? 'rgba(0,122,255,0.1)'
         : '#F2F2F7';
-    const // 立ごとの行に出す数を作るために、この合計が受け持つ射手を集める。
-      // 上の「計」の欄とまったく同じ規則を使う。以前はここに写しを持っていて、
-      // 欄は総計になっているのに行の数だけ0のままだった（2026-09-08）
-      受け持つ射手 = () => 組.合計が受け持つ射手(Array.isArray(allArchers) ? allArchers : [], indexInList);
-    const 立の的中 = (立) => {
-      const 仲間 = 受け持つ射手();
-      if (0 === 仲間.length) return 0;
-      const 頭 = 4 * 立;
-      const 尻 = Math.min(頭 + 4, shots);
-      return 仲間.reduce((計, 射手) => {
-        let 中り = 0;
-        const 印たち = 射手.marks || [];
-        for (let 射番 = 頭; 射番 < 尻; 射番++) '○' === 印たち[射番] && 中り++;
-        return 計 + 中り;
-      }, 0);
-    };
+    // 立ごとの行に出す数。親が「計」の欄と同じ規則（合計が受け持つ射手）で数えて、
+    // 「3,2,4」の形で渡してくる
+    const 立ごとの的中 = 立の的中 ? 立の的中.split(',').map(Number) : [];
+    const 立の的中数を出す = (立) => 立ごとの的中[立] || 0;
     const // 読み上げ（VoiceOver / TalkBack）が読む言葉。
       // 画面の字は「○」「×」だけで、そのままだと「まる」「かける」と読まれる
       読み上げの言葉 = (射番) =>
         読み.ますの読み({
           射手名: archer.name,
           番: 射位の番,
-          人数: 実の並び.length,
+          人数,
           射番,
           印: (archer.marks || [])[射番],
         });
@@ -130,38 +125,12 @@ const ArcherColumnView = React.memo(
     // 鍵ボタンは「間隔」「計」の列に付いていて、押すと自分より右の射手を
     // まとめて閉じる。だから受け持つのもその列だけでよい。
     // 履歴の編集画面（onToggleLock を渡してくる）と、そもそも押せない場では何もしない
-    // 射位（大前・N番・落）は、区切りや合計の行を除いた並びで数える。
-    // chatStats と同じ数え方でないと、AIの答えと読み上げで呼び方が食い違う
-    const 実の並び = (Array.isArray(allArchers) ? allArchers : []).filter(
-      (一人) => 一人 && !一人.isSeparator && !一人.isTotalCalculator
-    );
-    const 射位の番 = 実の並び.findIndex((一人) => 一人 && 一人.id === archer.id);
-    const 自動ロックする = useScoreStore((状態) => 状態.自動ロックする);
-    const 自動ロックまでの秒 = useScoreStore((状態) => 状態.自動ロックまでの秒);
-    const 立を閉じる = useScoreStore((状態) => 状態.立を閉じる);
     const 埋まった時刻 = React.useRef({});
     const 閉じた覚え = React.useRef({});
-    // 埋まっている立の番号。中身が変わったときだけ数え直したいので文字にする
-    const 埋まった立 = (() => {
-      if (!間隔か合計 || !鍵が効く || onToggleLock || (isReadOnly && !isAdminMode)) return '';
-      const 仲間 = 受け持つ射手();
-      if (!仲間.length) return '';
-      const 出 = [];
-      for (let 立 = 0; 4 * 立 < shots; 立++) {
-        const 端 = Math.min(4 * 立 + 4, shots);
-        let 全部 = true;
-        for (let 仲間の番 = 0; 仲間の番 < 仲間.length && 全部; 仲間の番++) {
-          const 印 = 仲間[仲間の番].marks || [];
-          for (let 射番 = 4 * 立; 射番 < 端; 射番++)
-            if (!(印[射番] ?? '')) {
-              全部 = false;
-              break;
-            }
-        }
-        if (全部) 出.push(立);
-      }
-      return 出.join(',');
-    })();
+    // 埋まっている立の番号（「0,2」の形。親が受け持つ射手を見て数える）。
+    // 中身が変わったときだけ数え直したいので文字のまま持つ
+    const 埋まった立 =
+      !間隔か合計 || !鍵が効く || onToggleLock || (isReadOnly && !isAdminMode) ? '' : 受け持ちの埋まった立;
     React.useEffect(() => {
       const 立たち = 埋まった立 ? 埋まった立.split(',').map(Number) : [];
       // 埋まらなくなった立は覚えを捨てる。入れ直せば、また閉じるように
@@ -194,7 +163,8 @@ const ArcherColumnView = React.memo(
         });
       }, 待つ);
       return () => clearTimeout(札);
-    }, [自動ロックする, 自動ロックまでの秒, 埋まった立, archer.id, archer.lockedBlocks, 立を閉じる]);
+      // 立を閉じる は getState() から取る手なので、依存に入れない（入れると毎回新しい関数で効果が回り直す）
+    }, [自動ロックする, 自動ロックまでの秒, 埋まった立, archer.id, archer.lockedBlocks]);
     return (
       <View
         style={
@@ -338,7 +308,7 @@ const ArcherColumnView = React.memo(
             <View style={横 ? { flexDirection: 'row' } : undefined}>
               {射番の並び.map((射番) => {
                 const 立 = Math.floor(射番 / 4);
-                const 立の的中数 = 立の的中(立);
+                const 立の的中数 = 立の的中数を出す(立);
                 const // 立ごとの合計を出すます。縦なら立の一番下、横なら立の左端
                   合計を出すます = 射番 % 4 == 0;
                 const 立の端 = 射番 === Math.min(shots - 1, 4 * 立 + 3);
@@ -436,9 +406,9 @@ const ArcherColumnView = React.memo(
             {archer.isSeparator ? (
               <TouchableOpacity
                 style={{ alignItems: 'center', width: '100%', height: '100%', justifyContent: 'center' }}
-                onPress={onDelete} // 長押しでチーム名を付ける（リーグの大学名）。
+                onPress={() => onDelete && onDelete(archer.id)} // 長押しでチーム名を付ける（リーグの大学名）。
                 // 押す＝外す は今までどおりにして、覚え直さずに済むようにする
-                onLongPress={区切りを長押し}
+                onLongPress={() => 区切りを長押し && 区切りを長押し(archer.id)}
                 delayLongPress={500}
                 disabled={isReadOnly && !isAdminMode}
                 accessible
@@ -485,14 +455,14 @@ const ArcherColumnView = React.memo(
                   },
                   // チームの色を、名前の欄の上に細い帯で出す。
                   // 名前の字を染めると読みにくくなるので、帯にする
-                  チーム.色 && {
+                  チームの色 && {
                     borderTopWidth: 3 * 倍率,
-                    borderTopColor: チーム.色,
+                    borderTopColor: チームの色,
                     paddingTop: 4 - Math.min(3 * 倍率, 4),
                   },
                 ]}
-                onPress={onPressName}
-                onLongPress={onLongPressName}
+                onPress={() => onPressName && onPressName(archer.id, archer.name, indexInList)}
+                onLongPress={() => onLongPressName && onLongPressName(archer.id, archer.name, indexInList)}
                 delayLongPress={500} // 読み上げには射位と名前と成績をまとめて読ませる。
                 // 名前だけだと、その人が何番目に立っているのか分からない
                 accessible
@@ -503,7 +473,7 @@ const ArcherColumnView = React.memo(
                     : 読み.射手の読み({
                         射手名: archer.name,
                         番: 射位の番,
-                        人数: 実の並び.length,
+                        人数,
                         marks: archer.marks,
                       })
                 } // web の TouchableOpacity は accessibilityLabel を通さない
@@ -513,7 +483,7 @@ const ArcherColumnView = React.memo(
                     : 読み.射手の読み({
                         射手名: archer.name,
                         番: 射位の番,
-                        人数: 実の並び.length,
+                        人数,
                         marks: archer.marks,
                       })
                 }

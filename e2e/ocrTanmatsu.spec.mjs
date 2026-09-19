@@ -149,7 +149,7 @@ test.describe('確認画面', () => {
     await page.getByText('記録表に反映する', { exact: true }).click();
     await expect(page.getByText('20射', { exact: true })).toBeVisible({ timeout: 15_000 });
     const 盤面 = await page.evaluate(() => {
-      const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}').state || {};
+      const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}').state || {};
       return { shotsPerRound: s.shotsPerRound, 人数: (s.archers || []).filter((a) => a && !a.isSeparator && !a.isTotalCalculator).length };
     });
     expect(盤面.shotsPerRound).toBe(20);
@@ -188,7 +188,7 @@ test.describe('確認画面', () => {
   /** 記録表の並びを、人・計・総計・|名前 の字に直して返す */
   async function 並びを読む(page) {
     return page.evaluate(() => {
-      const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}').state || {};
+      const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}').state || {};
       return (s.archers || []).map((a) =>
         a.isSeparator ? '|' + (a.teamName || '') : a.isTotalCalculator ? (a.またぐ合計 ? '総計' : '計') : '人'
       );
@@ -213,7 +213,7 @@ test.describe('確認画面', () => {
     );
     // 総計は手前の計をまとめて数える（区切りで止まる）。B大学の 8 人ぶんが入っていること
     const 総計 = await page.evaluate(() => {
-      const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}').state || {};
+      const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}').state || {};
       const 並び = s.archers || [];
       const i = 並び.findIndex((a) => a.isTotalCalculator && a.またぐ合計);
       let 人 = 0, 的中 = 0;
@@ -247,7 +247,7 @@ test.describe('確認画面', () => {
     // Gemini の○×（丸に線の向きは 25%）より確かに良い）
     const { 射手たち } = await import('../scripts/ocr-cells/kiroku.mjs');
     const 読み = await page.evaluate(() => {
-      const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}').state || {};
+      const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}').state || {};
       return (s.archers || []).filter((a) => a && !a.isSeparator && !a.isTotalCalculator).map((a) => ({ name: a.name, marks: a.marks }));
     });
     expect(読み.length).toBe(16);
