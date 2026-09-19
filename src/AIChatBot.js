@@ -65,7 +65,15 @@ const { useNavigation } = require('@react-navigation/native');
 const 中継 = require('./geminiChukei');
 // 成績の集計・並べ替え・絞り込みは、模型ではなくここで済ませる。
 // 人数ぶんの表を渡して選ばせると取り違えるため（test/chatStats.test.js）
-const { 全員の成績, 出欠の集計, 記録をさがす, 射位ごとの成績 } = require('./chatStats');
+const {
+  全員の成績,
+  出欠の集計,
+  記録をさがす,
+  射位ごとの成績,
+  一人の成績,
+  期間にする,
+  日付の始まり,
+} = require('./chatStats');
 const { 練習日を読む } = require('./practiceDays');
 // 「何でも聞いてください」だけでは何を聞けるか分からない。
 // その団体の中身に合わせた質問例を出す（test/chatSuggestions.test.js）
@@ -848,6 +856,21 @@ const AIChatBot = () => {
         const genAI = new GoogleGenerativeAI('chukei');
         const 中継の設定 = await 中継.SDKの設定();
 
+        /**
+         * 分析画面のランキングの基準（射数の下限）。設定は期間の種類ごと（'すべて'・'期間指定' など）で、
+         * 「最多比」なら期間でいちばん引いた人の射数 × 割合、「N 射以上」なら N
+         */
+        const 分析の順位の基準 = (期間, 期間の種類) => {
+          const 設定 = (useScoreStore.getState().analysisRankingSettings || {})[期間の種類] || {
+            type: 'ratio',
+            value: 0,
+          };
+          if ('count' === 設定.type) return Math.max(1, Number(設定.value) || 0);
+          const 下見 = 全員の成績(members, sessions, { 期間, 最小射数: 0 });
+          const 最多 = Math.max(0, ...下見.一覧.map((人) => 人.射数));
+          return Math.max(1, Math.floor(最多 * (Number(設定.value) || 0)));
+        };
+
         // Function Calling の宣言
         const tools = [
           {
@@ -1111,16 +1134,21 @@ const AIChatBot = () => {
 
             if (call.name === 'getAllMembersStats') {
               const { dateFrom, dateTo, sortBy, limit, minShots } = call.args;
-              const from = dateFrom ? new Date(dateFrom).getTime() : 0;
-              const 終わり = dateTo ? new Date(dateTo).getTime() + 86400000 : Infinity;
 
               // 数える・並べる・絞るは、すべてここで済ませる。
-              // 人数ぶんの表を渡して模型に選ばせると取り違えるため
+              // 人数ぶんの表を渡して模型に選ばせると取り違えるため。
+              // 期間の日付は端末の時刻で読む（期間にする。世界標準時で読むと月初の朝練が落ちる）
+              const 期間 = 期間にする(dateFrom, dateTo);
+              // 最小射数を模型が渡さないときは、分析画面のランキングの基準（設定の「最多比」か「N 射以上」）
+              // をそのまま使う。前は 1 射から順位に入れていて、画面のランキングに出ない人が
+              // チャットでは首位になった
+              const 基準 = 分析の順位の基準(期間, dateFrom || dateTo ? '期間指定' : 'すべて');
+              const 最小射数 = Number.isFinite(minShots) ? minShots : 基準;
               const 結果 = 全員の成績(members, sessions, {
-                期間: { 始め: from, 終わり },
+                期間,
                 並び: sortBy,
                 件数: limit,
-                最小射数: minShots,
+                最小射数,
               });
 
               functionResponses.push({
@@ -1131,9 +1159,15 @@ const AIChatBot = () => {
                     数えた記録の件数: 結果.数えた記録,
                     順位を付けた人数: 結果.人数,
                     射数が足りず外した人数: 結果.射数が足りず外した人数,
+                    順位の基準の射数: 最小射数,
                     団体全体: 結果.全体,
                     順位: 結果.一覧,
                     message:
+                      (Number.isFinite(minShots)
+                        ? `${最小射数} 射に満たない人は順位から外しました。`
+                        : 最小射数 > 1
+                          ? `分析画面のランキングと同じ基準で、${最小射数} 射に満たない人は順位から外しました（外した人数は 射数が足りず外した人数）。`
+                          : '') +
                       '順位・並べ替え・絞り込みは集計済みです。返した順番と数字をそのまま使い、' +
                       '自分で並べ替えたり計算したりしないでください。的中率は百分率です。',
                   },
@@ -1149,10 +1183,7 @@ const AIChatBot = () => {
                 console.warn('[AIChatBot] 練習日を読めませんでした:', 誤り);
               }
               const 結果 = 出欠の集計(members, sessions, {
-                期間: {
-                  始め: dateFrom ? new Date(dateFrom).getTime() : 0,
-                  終わり: dateTo ? new Date(dateTo).getTime() + 86400000 : Infinity,
-                },
+                期間: 期間にする(dateFrom, dateTo),
                 練習日,
                 並び: sortBy,
                 件数: limit,
@@ -1173,10 +1204,7 @@ const AIChatBot = () => {
               const { keyword, dateFrom, dateTo, limit } = call.args;
               const 結果 = 記録をさがす(sessions, {
                 言葉: keyword,
-                期間: {
-                  始め: dateFrom ? new Date(dateFrom).getTime() : 0,
-                  終わり: dateTo ? new Date(dateTo).getTime() + 86400000 : Infinity,
-                },
+                期間: 期間にする(dateFrom, dateTo),
                 件数: limit,
               });
               functionResponses.push({
@@ -1191,10 +1219,7 @@ const AIChatBot = () => {
             } else if (call.name === 'getPositionStats') {
               const { dateFrom, dateTo, memberNames, minShots } = call.args;
               const 結果 = 射位ごとの成績(members, sessions, {
-                期間: {
-                  始め: dateFrom ? new Date(dateFrom).getTime() : 0,
-                  終わり: dateTo ? new Date(dateTo).getTime() + 86400000 : Infinity,
-                },
+                期間: 期間にする(dateFrom, dateTo),
                 名前たち: memberNames,
                 最小射数: minShots,
               });
@@ -1209,184 +1234,8 @@ const AIChatBot = () => {
                 },
               });
             } else if (call.name === 'getDetailedMemberStats') {
-              const targetName = call.args.memberName;
-              const cleanTargetName = targetName.replace(/\s/g, '');
-
-              let targetMember = members.find((部員) => {
-                const cleanMName = 部員.name.replace(/\s/g, '');
-                return cleanMName.includes(cleanTargetName) || cleanTargetName.includes(cleanMName);
-              });
-
-              let targetId = targetMember ? targetMember.id : null;
-              let finalTargetName = targetMember ? targetMember.name : targetName;
-
-              // archers を持たない記録が1件でも混ざると、この道具ごと落ちる。
-              // 「集計に含めない」にした記録も外す。外さないと、同じ人について
-              // 順位（全員の成績）と個人の詳細で的中率が食い違う
-              const 使える記録 = sessions.filter(
-                (記録) => 記録 && Array.isArray(記録.archers) && 集.集計に入れるか(記録)
-              );
-              const hasRecord = 使える記録.some((記録) =>
-                記録.archers.some((射手) => {
-                  if (射手.name) {
-                    const cleanAName = 射手.name.replace(/\s/g, '');
-                    if (cleanAName.includes(cleanTargetName) || cleanTargetName.includes(cleanAName))
-                      return true;
-                  }
-                  const subs = 射手.substitutions || {};
-                  return Object.values(subs).some((subName) => {
-                    if (!subName) return false;
-                    const cleanSubName = subName.replace(/\s/g, '');
-                    return cleanSubName.includes(cleanTargetName) || cleanTargetName.includes(cleanSubName);
-                  });
-                })
-              );
-
-              let statsData = { error: '選手が見つかりませんでした。' };
-
-              // 成績は部員IDで数える。名簿に無い名前（ゲストなど）は、記録に
-              // 名前が出ていても成績を出せない。0 を並べるより、その旨を返す
-              if (!targetMember && hasRecord) {
-                statsData = {
-                  error:
-                    `「${finalTargetName}」は部員名簿にありません。` +
-                    '記録に名前は出ていますが、ゲストとして入力されているため成績は集計できません。',
-                };
-              } else if (targetMember) {
-                let shotTotals = [0, 0, 0, 0];
-                let shotHits = [0, 0, 0, 0];
-                let omaeTotal = 0,
-                  omaeHit = 0;
-                let ochiTotal = 0,
-                  ochiHit = 0;
-                let totalMarks = 0,
-                  hitMarks = 0;
-                // 皆中は分析画面と同じ決まりで数える。ここで別に数えていたころは、
-                // 同じ人の皆中の回数がチャットと画面で食い違う恐れがあった
-                const kaichu = 集.成績を数える(使える記録, targetId).patterns.kaichu;
-                let recentTotal = 0,
-                  recentHit = 0;
-                let totalSessions = 0;
-
-                const sortedSessions = [...使える記録].sort(
-                  (甲, 乙) => (乙.created || 0) - (甲.created || 0)
-                );
-                sortedSessions.forEach((session, sessionIdx) => {
-                  let participatedInSession = false;
-                  session.archers.forEach((archer, archerIdx) => {
-                    if (!archer || !archer.marks) return;
-                    archer.marks.forEach((印, idx) => {
-                      if (印 !== '○' && 印 !== '×') return;
-
-                      // 部員IDだけで判定する。氏名の部分一致では「田中」が
-                      // 「田中一郎」を拾うなど、別人の射が混ざる
-                      if (集.その人の射か(archer, idx, targetId)) {
-                        participatedInSession = true;
-                        const arrowPos = idx % 4;
-                        shotTotals[arrowPos]++;
-                        if (印 === '○') shotHits[arrowPos]++;
-                        totalMarks++;
-                        if (印 === '○') hitMarks++;
-                        if (sessionIdx < 10) {
-                          recentTotal++;
-                          if (印 === '○') recentHit++;
-                        }
-
-                        // 大前 (1番目)
-                        if (archerIdx === 0) {
-                          omaeTotal++;
-                          if (印 === '○') omaeHit++;
-                        }
-                        // 落 (最後、3人以上の場合)
-                        if (session.archers.length >= 3 && archerIdx === session.archers.length - 1) {
-                          ochiTotal++;
-                          if (印 === '○') ochiHit++;
-                        }
-                      }
-                    });
-                  });
-                  if (participatedInSession) {
-                    totalSessions++;
-                  }
-                });
-
-                const recentSessionsDetail = [];
-                sortedSessions.forEach((session) => {
-                  if (recentSessionsDetail.length >= 5) return;
-
-                  let archerIndex = -1;
-                  let foundArcher = null;
-
-                  session.archers.forEach((archer, idx) => {
-                    if (!archer || !archer.marks) return;
-                    let hasParticipation = false;
-                    archer.marks.forEach((印, shotIdx) => {
-                      if (印 !== '○' && 印 !== '×') return;
-
-                      if (集.その人の射か(archer, shotIdx, targetId)) hasParticipation = true;
-                    });
-
-                    if (hasParticipation) {
-                      archerIndex = idx;
-                      foundArcher = archer;
-                    }
-                  });
-
-                  if (foundArcher) {
-                    const 日付 = new Date(session.date || 0);
-                    const dateStr = `${日付.getFullYear()}-${String(日付.getMonth() + 1).padStart(2, '0')}-${String(日付.getDate()).padStart(2, '0')}`;
-
-                    let positionName = `${archerIndex + 1}番目`;
-                    if (archerIndex === 0) positionName = '大前';
-                    else if (session.archers.length >= 3 && archerIndex === session.archers.length - 1)
-                      positionName = '落';
-
-                    // 列ぜんぶではなく、その人が引いたぶんだけを数える。
-                    // 交代があると、列には2人ぶんの○×が入っている
-                    let marksStr = '';
-                    let hits = 0;
-                    let total = 0;
-                    foundArcher.marks.forEach((印, 番) => {
-                      if (!集.引いた射か(印)) return;
-                      if (!集.その人の射か(foundArcher, 番, targetId)) return;
-                      marksStr += 印;
-                      total++;
-                      if (印 === '○') hits++;
-                    });
-
-                    recentSessionsDetail.push({
-                      date: dateStr,
-                      title: session.title || '無題',
-                      position: positionName,
-                      marks: marksStr,
-                      result: `${hits}/${total}`,
-                    });
-                  }
-                });
-
-                statsData = {
-                  name: finalTargetName,
-                  totalSessions,
-                  totalHitRate:
-                    totalMarks > 0 ? ((hitMarks / totalMarks) * 100).toFixed(1) + '%' : 'データなし',
-                  totalArrows: totalMarks,
-                  recentHitRate:
-                    recentTotal > 0 ? ((recentHit / recentTotal) * 100).toFixed(1) + '%' : 'データなし',
-                  kaichuCount: kaichu,
-                  firstShotHitRate:
-                    shotTotals[0] > 0 ? ((shotHits[0] / shotTotals[0]) * 100).toFixed(1) + '%' : 'データなし',
-                  secondShotHitRate:
-                    shotTotals[1] > 0 ? ((shotHits[1] / shotTotals[1]) * 100).toFixed(1) + '%' : 'データなし',
-                  thirdShotHitRate:
-                    shotTotals[2] > 0 ? ((shotHits[2] / shotTotals[2]) * 100).toFixed(1) + '%' : 'データなし',
-                  fourthShotHitRate:
-                    shotTotals[3] > 0 ? ((shotHits[3] / shotTotals[3]) * 100).toFixed(1) + '%' : 'データなし',
-                  omaeHitRate: omaeTotal > 0 ? ((omaeHit / omaeTotal) * 100).toFixed(1) + '%' : 'データなし',
-                  ochiHitRate: ochiTotal > 0 ? ((ochiHit / ochiTotal) * 100).toFixed(1) + '%' : 'データなし',
-                  recentSessionsDetail,
-                };
-              }
-
+              // 中身は chatStats の 一人の成績（検査できる形にした。射位は区切りと計を除いた並びで見る）
+              const statsData = 一人の成績(members, sessions, String(call.args.memberName || ''));
               functionResponses.push({ functionResponse: { name: call.name, response: statsData } });
             } else if (call.name === 'getSessionsByDate') {
               const { date, dateFrom, dateTo, recentCount } = call.args;
@@ -1400,7 +1249,7 @@ const AIChatBot = () => {
               if (recentCount) {
                 filtered = filtered.slice(0, recentCount);
               } else if (date) {
-                const target = new Date(date);
+                const target = new Date(日付の始まり(date) || NaN);
                 filtered = filtered.filter((記録) => {
                   const 日付 = new Date(記録.date || 0);
                   return (
@@ -1410,9 +1259,8 @@ const AIChatBot = () => {
                   );
                 });
               } else if (dateFrom || dateTo) {
-                const from = dateFrom ? new Date(dateFrom).getTime() : 0;
-                const 終わり = dateTo ? new Date(dateTo).getTime() + 86400000 : Infinity;
-                filtered = filtered.filter((記録) => (記録.date || 0) >= from && (記録.date || 0) <= 終わり);
+                const { 始め, 終わり } = 期間にする(dateFrom, dateTo);
+                filtered = filtered.filter((記録) => (記録.date || 0) >= 始め && (記録.date || 0) <= 終わり);
               }
 
               // 上限を置く。引数なしで呼ばれると全記録を人ごとの内訳付きで返し、
