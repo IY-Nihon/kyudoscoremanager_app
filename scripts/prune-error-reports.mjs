@@ -4,6 +4,12 @@
  *   node scripts/prune-error-reports.mjs             （検証環境・数えるだけ）
  *   node scripts/prune-error-reports.mjs prod        （本番・数えるだけ）
  *   node scripts/prune-error-reports.mjs prod 消す   （本番・実際に消す）
+ *   node scripts/prune-error-reports.mjs prod 済み      （本番・直した不具合の便りを数えるだけ）
+ *   node scripts/prune-error-reports.mjs prod 済み 消す （本番・直した不具合の便りを消す）
+ *
+ * ■ 済み
+ * 直した不具合の便りが残っていると、次に読むときに紛らわしい。下の 直した に文言の印を
+ * 足してから 済み で消す（使う人が「直したものは消していい」と言った。2026-09-20）。
  *
  * ■ なぜ道具で消すのか
  * Firestore には期限の過ぎた文書を自動で消す仕組み（TTL）があるが、
@@ -24,11 +30,26 @@ import os from 'node:os';
 import path from 'node:path';
 
 const 対象 = process.argv[2] || 'stg';
-const 消す = process.argv[3] === '消す';
+const 済みで選ぶ = process.argv[3] === '済み';
+const 消す = process.argv[3] === '消す' || (済みで選ぶ && process.argv[4] === '消す');
 if (!['stg', 'prod'].includes(対象)) {
-  console.error('使い方: node scripts/prune-error-reports.mjs <stg|prod> [消す]');
+  console.error('使い方: node scripts/prune-error-reports.mjs <stg|prod> [済み] [消す]');
   process.exit(1);
 }
+
+/** 直した不具合の便りの印（message に対して）。直した日と commit を添える */
+const 直した = [
+  {
+    印: /ms timeout exceeded|A network error occurred\./,
+    訳: 'web のアイコンの字体が読めない（2026-09-20、1759c5f）',
+  },
+  { 印: /^Script error\.$/, 訳: '中身の無い便り。送らなくした（2026-09-20、1759c5f）' },
+  { 印: /sw\.js load failed/, 訳: 'Service Worker の登録の失敗。登録は catch 済み' },
+  {
+    印: /INTERNAL ASSERTION FAILED|exclusive access to the persistence layer/,
+    訳: 'Firestore の控えの取り合い（2026-09-06、persistentMultipleTabManager）',
+  },
+];
 const 企画 = 対象 === 'stg' ? 'kyudoscoremanager-stg' : 'kyudoscoremanager';
 
 const 設定 = path.join(os.homedir(), '.config', 'configstore', 'firebase-tools.json');
@@ -78,15 +99,27 @@ const 時 = (d, 名) => {
 };
 
 // expireAt が無い便り（この項目を入れる前に届いたもの）は、createdAt から90日で見る
-const 期限切れ = 全部.filter((d) => {
-  const e = 時(d, 'expireAt');
-  if (e) return e <= いま;
-  const c = 時(d, 'createdAt');
-  return c ? c + 90 * 86400000 <= いま : false;
-});
+const 訳を選ぶ = (d) => 直した.find((x) => x.印.test(d.fields?.message?.stringValue || ''));
+const 期限切れ = 済みで選ぶ
+  ? 全部.filter((d) => 訳を選ぶ(d))
+  : 全部.filter((d) => {
+      const e = 時(d, 'expireAt');
+      if (e) return e <= いま;
+      const c = 時(d, 'createdAt');
+      return c ? c + 90 * 86400000 <= いま : false;
+    });
 
 console.log(`接続先: ${企画}`);
-console.log(`便り ${全部.length} 件のうち、期限が過ぎたもの ${期限切れ.length} 件\n`);
+if (済みで選ぶ) {
+  console.log(`便り ${全部.length} 件のうち、直した不具合のもの ${期限切れ.length} 件\n`);
+  for (const x of 直した) {
+    const n = 期限切れ.filter((d) => 訳を選ぶ(d) === x).length;
+    if (n) console.log(`  ${n} 件  ${x.訳}`);
+  }
+  console.log('');
+} else {
+  console.log(`便り ${全部.length} 件のうち、期限が過ぎたもの ${期限切れ.length} 件\n`);
+}
 if (期限切れ.length === 0) {
   console.log('消すものはありません。');
   process.exit(0);
@@ -97,7 +130,7 @@ if (期限切れ.length > 5) console.log(`  … ほか ${期限切れ.length - 5
 
 if (!消す) {
   console.log('\n消すには、末尾に 消す を付けてください。');
-  console.log('  node scripts/prune-error-reports.mjs ' + 対象 + ' 消す');
+  console.log('  node scripts/prune-error-reports.mjs ' + 対象 + (済みで選ぶ ? ' 済み' : '') + ' 消す');
   process.exit(0);
 }
 
