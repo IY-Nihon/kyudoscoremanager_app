@@ -34,7 +34,7 @@ const { getShadowStyle } = require('./shadowStyle');
 // test/updateNotice.test.js が見張っている。
 const 最後に配信した版 = '2026-09-17-02';
 // お知らせの版。新しい項目を足したら、必ずこれを最新の項目の 版 に合わせる。
-const NOTICE_VERSION = '2026-09-17-02';
+const NOTICE_VERSION = '2026-09-19-01';
 const STORAGE_KEY = 'whatsNewDismissedVersion';
 // 最後に開いたときの版。閉じるたびに書く。
 // どこから下が「前に読んだぶん」かの線を引くためだけに使う。
@@ -45,6 +45,14 @@ const LAST_SEEN_KEY = 'whatsNewLastSeenVersion';
 // 新しい順に並べる。上から「前に見た版より新しいか」を数えて、
 // そこで線を引くため、順番が崩れると線の位置が狂う（検査で見ている）
 const NOTICE_ITEMS = [
+  {
+    date: '2026/09/19',
+    版: '2026-09-19-01',
+    title: '人を選ぶ窓の名簿が、同じ学年の中でも性別・名前の順に並ぶようになりました',
+    points: [
+      '記録表で人を選ぶとき、同じ学年の中の並びが決まっていませんでした。学年ごとに、男子・女子の順、そのあと名前の順で並びます。',
+    ],
+  },
   {
     date: '2026/09/17',
     版: '2026-09-17-02',
