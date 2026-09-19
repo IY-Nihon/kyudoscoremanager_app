@@ -22,6 +22,7 @@ const 案内 = require('./TutorialGuide');
 const Icons = require('@expo/vector-icons');
 const ReactNativeSafeAreaContext = require('react-native-safe-area-context');
 const { CustomCalendarModal } = require('./CustomCalendarModal');
+const { use横流し } = require('./yokoNagashi');
 const { auth, db } = require('./db');
 const FirebaseAuth = require('firebase/auth');
 const { getShadowStyle } = require('./shadowStyle');
@@ -134,48 +135,11 @@ const SettingsScreen = () => {
   const [inquiryContent, setInquiryContent] = React.useState('');
   const [inquirySending, setInquirySending] = React.useState(false);
   const [inquiryImages, setInquiryImages] = React.useState([]);
-  const titleScrollRef = React.useRef(null);
-  const memberScrollRef = React.useRef(null);
-  const titleRefCallback = React.useCallback((節点) => {
-    if (IS_WEB) {
-      if (titleScrollRef.current && titleScrollRef.current._wheelHandler) {
-        const 中身 = titleScrollRef.current.getScrollableNode
-          ? titleScrollRef.current.getScrollableNode()
-          : titleScrollRef.current;
-        if (中身) 中身.removeEventListener('wheel', titleScrollRef.current._wheelHandler);
-      }
-      titleScrollRef.current = 節点;
-      const 中身 = 節点 && 節点.getScrollableNode ? 節点.getScrollableNode() : 節点;
-      if (中身) {
-        const 回した = (出来事) => {
-          中身.scrollLeft += 出来事.deltaY;
-          出来事.preventDefault();
-        };
-        中身.addEventListener('wheel', 回した, { passive: false });
-        titleScrollRef.current._wheelHandler = 回した;
-      }
-    } else titleScrollRef.current = 節点;
-  }, []);
-  const memberRefCallback = React.useCallback((節点) => {
-    if (IS_WEB) {
-      if (memberScrollRef.current && memberScrollRef.current._wheelHandler) {
-        const 中身 = memberScrollRef.current.getScrollableNode
-          ? memberScrollRef.current.getScrollableNode()
-          : memberScrollRef.current;
-        if (中身) 中身.removeEventListener('wheel', memberScrollRef.current._wheelHandler);
-      }
-      memberScrollRef.current = 節点;
-      const 中身 = 節点 && 節点.getScrollableNode ? 節点.getScrollableNode() : 節点;
-      if (中身) {
-        const 回した = (出来事) => {
-          中身.scrollLeft += 出来事.deltaY;
-          出来事.preventDefault();
-        };
-        中身.addEventListener('wheel', 回した, { passive: false });
-        memberScrollRef.current._wheelHandler = 回した;
-      }
-    } else memberScrollRef.current = 節点;
-  }, []);
+  // 候補の並びは横に流す。パソコンの車の動きは横に読み替える（src/yokoNagashi.js）
+  const titleRefCallback = use横流し();
+  const memberRefCallback = use横流し();
+  // 問い合わせに付ける写真の並びも同じ
+  const 写真の横流し = use横流し();
   const 今日 = new Date();
   const 今の年度 = 今日.getMonth() + 1 >= 4 ? 今日.getFullYear() : 今日.getFullYear() - 1;
   const [書き出す年度, 書き出す年度を置く] = React.useState(今の年度);
@@ -1984,6 +1948,7 @@ const SettingsScreen = () => {
               />
               {inquiryImages.length > 0 ? (
                 <_RN.ScrollView
+                  ref={写真の横流し}
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   style={{ width: '100%', marginBottom: 10 }}
