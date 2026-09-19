@@ -5339,6 +5339,12 @@ const useScoreStore = zustand.create()(
                   analysisRankingSettings: 設定.analysisRankingSettings || 状態().analysisRankingSettings,
                 });
               }
+            },
+            // 受け口を付けないと、断られたとき（出たあと・権限が変わったとき）に
+            // SDK が「Uncaught Error in snapshot listener」を吐くだけで、何が起きたか残らない
+            (誤り) => {
+              console.error('[Store] Config listener error:', 誤り);
+              不具合を控える('設定の受信', 誤り);
             }
           );
           const 団体名を止める = Firestore.onSnapshot(
@@ -5348,6 +5354,10 @@ const useScoreStore = zustand.create()(
                 const 団体の中身 = 返り.data();
                 if (団体の中身.groupName) 書く({ activeGroupName: 団体の中身.groupName });
               }
+            },
+            (誤り) => {
+              console.error('[Store] Group name listener error:', 誤り);
+              不具合を控える('団体名の受信', 誤り);
             }
           );
           書く({
