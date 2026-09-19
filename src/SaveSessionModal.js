@@ -14,6 +14,7 @@ const { useScoreStore } = require('./useScoreStore');
 const { IS_IOS } = require('./IS_WEB');
 const { getShadowStyle } = require('./shadowStyle');
 const { normalizeTag, タグの見た目 } = require('./syncRules');
+const { use横流し } = require('./yokoNagashi');
 const 既定のタグ = [
   '練習試合',
   '正規練習',
@@ -41,6 +42,8 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
   const // 入力欄には # を付けずに出す（空白区切り。読むときに normalizeTag で # を付ける）
     [タグの文, タグの文を置く] = React.useState(currentSessionTags.map(タグの見た目).join(' '));
   const [統計を聞いている, 統計を聞いているを置く] = React.useState(false);
+  // 定型文の並びは横に流す。パソコンでは車を回しても動かなかったので、横に読み替える
+  const 定型文の横流し = use横流し();
   React.useEffect(() => {
     タグの文を置く(currentSessionTags.map(タグの見た目).join(' '));
   }, [currentSessionTags, visible]);
@@ -122,6 +125,7 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
                   returnKeyType="done"
                 />
                 <ScrollView
+                  ref={定型文の横流し}
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   style={styles.presetTagsScroll}

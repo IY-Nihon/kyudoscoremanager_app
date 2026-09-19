@@ -30,6 +30,7 @@ const { ArcherActionModal } = require('./ArcherActionModal');
 const { ManualSubstitutionModal } = require('./ManualSubstitutionModal');
 const { getShadowStyle } = require('./shadowStyle');
 const { formatMemberName } = require('./formatMemberName');
+const { use横流し } = require('./yokoNagashi');
 const 仕切り線 = () => <View style={{ height: 1, backgroundColor: '#E5E5EA', marginLeft: 16 }} />;
 const HistoryScreen = () => {
   const {
@@ -69,6 +70,9 @@ const HistoryScreen = () => {
     // 案内が見本を出しているあいだは、中身だけ見本に差し替わる
   } = 案内.見本を重ねる(useScoreStore());
   const 航路 = 航.useNavigation();
+  // タグと月の並びは横に流す。パソコンの車の動きは横に読み替える
+  const タグの横流し = use横流し();
+  const 月の横流し = use横流し();
   const 自分の名前 = useScoreStore((状態) => 状態.myMemberName) || '';
   const [検索の文, 検索の文を置く] = React.useState('');
   const [見ている月, 見ている月を置く] = React.useState('');
@@ -1148,6 +1152,7 @@ const HistoryScreen = () => {
                 </View>
               </View>
               <ScrollView
+                ref={タグの横流し}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
@@ -1207,6 +1212,7 @@ const HistoryScreen = () => {
               </View>
               <ScrollView // 月が多いと画面幅を超える。横スクロールにして
                 // 隠れた月へ届かせる（上のタグチップと同じ作り）
+                ref={月の横流し}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 style={styles.monthTabsScroll}

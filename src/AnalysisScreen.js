@@ -23,6 +23,7 @@ const { 出す } = require('./AppDialog');
 const { useScoreStore } = require('./useScoreStore');
 const Icons = require('@expo/vector-icons');
 const { CustomCalendarModal } = require('./CustomCalendarModal');
+const { use横流し } = require('./yokoNagashi');
 const { getShadowStyle } = require('./shadowStyle');
 const Svgの部品 = require('react-native-svg');
 const Svg = require('react-native-svg').default ?? require('react-native-svg');
@@ -298,6 +299,8 @@ const AnalysisScreen = ({ navigation }) => {
   // 覚えるのは「閉じた学年」。開く側を決め打ちすると、想定外の学年が
   // 閉じたまま出て、中の人に辿り着けなくなる
   const [閉じた学年, 閉じた学年を置く] = React.useState(new Set());
+  // タグの並びは横に流す。パソコンの車の動きは横に読み替える
+  const タグの横流し = use横流し();
   const 学年を開け閉め = (印) => {
     閉じた学年を置く((前) => {
       const 次 = new Set(前);
@@ -1052,6 +1055,7 @@ const AnalysisScreen = ({ navigation }) => {
               </View>
             </View>
             <ScrollView
+              ref={タグの横流し}
               horizontal
               showsHorizontalScrollIndicator={false}
               style={{ flexDirection: 'row', marginBottom: 8 }}
