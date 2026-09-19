@@ -639,6 +639,9 @@ const OCRRecordModal = ({
       const msg = String(誤り?.message || 誤り);
       if (msg.includes('429')) {
         setErrorMsg('AIの利用制限に達しました。しばらく待ってから再度お試しください。');
+      } else if (msg.includes('503')) {
+        // 模型が混んでいる（high demand）。中継が 2 回まで待って送り直したうえでの 503
+        setErrorMsg('ただいまAIが混み合っています。しばらく待ってからもう一度お試しください。');
       } else if (msg.includes('401') || msg.includes('ログインしていない')) {
         setErrorMsg('ログインの証が確かめられませんでした。ログインし直してから再度お試しください。');
       } else if (/network|fetch|Failed to fetch/i.test(msg)) {
