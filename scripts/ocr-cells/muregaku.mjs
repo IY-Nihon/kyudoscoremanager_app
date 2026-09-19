@@ -218,7 +218,9 @@ export function 群れで決める(群れ, 形) {
 // 本物のマスは scripts/ocr-cells/honmono.mjs で切り出しておく。
 // 切り方の設定（OCR_HABA など）を変えたら、そちらも走らせ直すこと。
 const t0 = Date.now();
-const { 見本, 外れ } = await 見本をあつめる(板の枚数);
+// OCR_TANE … 種をずらす。同じ引数でも回によって 314〜317 とぶれるので、何回か流して選ぶときに使う
+const 種のずれ = Number(process.env.OCR_TANE) || 0;
+const { 見本, 外れ } = await 見本をあつめる(板の枚数, undefined, 3000 + 種のずれ);
 // 本物は2枚ある。左＝自校（名札が色枠）、右＝相手校（板に直書き）。
 // 別の板・別の人の字なので、片方で学んで他方で測れば正直な数字になる
 // 9/13 の板 4 枚（自校の A・B、相手校の C・D）は、本物のマスとして倉庫に置いてある
@@ -232,6 +234,10 @@ const 板たち = [
   { 名: '0913b', 見本: await 本物の見本('docs/ocr-samples/cells-0913/b') },
   { 名: '0913c', 見本: await 本物の見本('docs/ocr-samples/cells-0913/c') },
   { 名: '0913d', 見本: await 本物の見本('docs/ocr-samples/cells-0913/d') },
+  // 9/20 に SNS の板 3 枚（白板 2・黒板 1。目で読んで札を付けた。写真は倉庫に無い）から切り出したもの
+  { 名: '0920a', 見本: await 本物の見本('docs/ocr-samples/cells-0920/a') },
+  { 名: '0920b', 見本: await 本物の見本('docs/ocr-samples/cells-0920/b') },
+  { 名: '0920d', 見本: await 本物の見本('docs/ocr-samples/cells-0920/d') },
 ];
 // 板を指名されていれば（OCR_MAZERU、「,」区切りで何枚でも）、それを学習側に足す
 //（残りの板で測る）。本物は1枚 80 枚ほどしかなく、描いた板は4万枚を超えるので、
@@ -254,7 +260,7 @@ console.log(
 
 const 群れ = [];
 for (let i = 0; i < 網の数; i++) {
-  const 網 = 学習(見本, 1000 + i * 7717, 巡回数);
+  const 網 = 学習(見本, 1000 + i * 7717 + 種のずれ, 巡回数);
   群れ.push(網);
   let 単 = 0;
   for (const x of 確かめ) {
