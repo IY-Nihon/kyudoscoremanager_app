@@ -5,16 +5,20 @@ const 集 = require('./statsRules');
 const _xlsx = require('./excelExport');
 const themeMod = require('./theme');
 const React = require('react');
-const View = require('./View').default;
-const Text = require('./Text').default;
-const StyleSheet = require('./StyleSheet').default;
-const ScrollView = require('./ScrollView').default;
-const TouchableOpacity = require('./TouchableOpacity').default;
-const Switch = require('./Switch').default;
-const Alert = require('./alertBridge').default;
-const Modal = require('./Modal').default;
-const TextInput = require('./TextInput').default;
-const Pressable = require('./Pressable').default;
+const {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Switch,
+  Alert,
+  Modal,
+  TextInput,
+  Pressable,
+  KeyboardAvoidingView,
+  Image,
+} = require('./rn');
 const { IS_IOS, IS_WEB, SAFE_TOP_PADDING, WEB_TOP_PADDING } = require('./IS_WEB');
 const { useScoreStore } = require('./useScoreStore');
 const 規則 = require('./syncRules');
@@ -28,7 +32,6 @@ const FirebaseAuth = require('firebase/auth');
 const { getShadowStyle } = require('./shadowStyle');
 const Firestore = require('firebase/firestore');
 const ExpoImagePicker = require('expo-image-picker');
-const _RN = require('react-native');
 const _IM = require('expo-image-manipulator');
 // ログアウトの確認の文言は src/logoutPrompt.js にある（画面を動かさずに
 // 出し分けを検査できるようにするため）
@@ -1906,14 +1909,14 @@ const SettingsScreen = () => {
         /* 「キャンセル」が隠れる。窓ごと持ち上げ、中身は流せるようにする。 */
         /* keyboardShouldPersistTaps を handled にしないと、キーボードが */
         /* 出ているあいだ、釦を押しても1回目は閉じるだけで終わる */}
-        <_RN.KeyboardAvoidingView behavior={IS_IOS ? 'padding' : 'height'} style={{ flex: 1 }}>
+        <KeyboardAvoidingView behavior={IS_IOS ? 'padding' : 'height'} style={{ flex: 1 }}>
           <View style={styles.modalBackdrop}>
             <TouchableOpacity
               style={StyleSheet.absoluteFill}
               activeOpacity={1}
               onPress={() => !inquirySending && setInquiryVisible(false)}
             />
-            <_RN.ScrollView // 巻物にするので高さの上限が要る。無いと中身のぶんだけ
+            <ScrollView // 巻物にするので高さの上限が要る。無いと中身のぶんだけ
               // 伸びて、キーボードに押し上げても釦が画面の外へ出る
               style={[styles.modalContent, { maxHeight: '80%', flexGrow: 0 }]}
               contentContainerStyle={{ alignItems: 'center' }}
@@ -1947,7 +1950,7 @@ const SettingsScreen = () => {
                 editable={!inquirySending}
               />
               {inquiryImages.length > 0 ? (
-                <_RN.ScrollView
+                <ScrollView
                   ref={写真の横流し}
                   horizontal
                   showsHorizontalScrollIndicator={false}
@@ -1955,11 +1958,11 @@ const SettingsScreen = () => {
                   contentContainerStyle={{ gap: 8 }}
                 >
                   {inquiryImages.map((uri, idx) => (
-                    <_RN.View
+                    <View
                       key={`inquiry-img-${idx}`}
                       style={{ width: 100, height: 100, position: 'relative' }}
                     >
-                      <_RN.Image
+                      <Image
                         source={{ uri }}
                         style={{ width: 100, height: 100, borderRadius: 8, backgroundColor: '#F2F2F7' }}
                         resizeMode="cover"
@@ -1978,9 +1981,9 @@ const SettingsScreen = () => {
                       >
                         <Icons.Ionicons name="close" size={14} color="#FFF" />
                       </Pressable>
-                    </_RN.View>
+                    </View>
                   ))}
-                </_RN.ScrollView>
+                </ScrollView>
               ) : null}
               {inquiryImages.length < 3 ? (
                 <Pressable
@@ -2084,9 +2087,9 @@ const SettingsScreen = () => {
                   </Text>
                 </Pressable>
               </View>
-            </_RN.ScrollView>
+            </ScrollView>
           </View>
-        </_RN.KeyboardAvoidingView>
+        </KeyboardAvoidingView>
       </Modal>
     </ReactNativeSafeAreaContext.SafeAreaView>
   );

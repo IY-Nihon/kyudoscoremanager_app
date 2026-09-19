@@ -9,20 +9,21 @@ exports.OCRRecordModal = undefined;
 
 const React = require('react');
 const { useState, useMemo } = React;
-const RN = require('react-native');
-const _View = RN.View;
-const _Text = require('./Text').default; // テーマ変換を通すためブリッジ経由
-const _StyleSheet = require('./StyleSheet').default; // テーマ変換を通すためブリッジ経由
-const _TouchableOpacity = RN.TouchableOpacity;
-const _Modal = RN.Modal;
-const _TextInput = require('./TextInput').default; // テーマ変換（既定文字色）を通すためブリッジ経由
-const _ScrollView = RN.ScrollView;
-const _ActivityIndicator = RN.ActivityIndicator;
-const _Image = RN.Image;
+const {
+  Text,
+  StyleSheet,
+  TextInput,
+  Alert,
+  View,
+  TouchableOpacity,
+  Modal,
+  ScrollView,
+  ActivityIndicator,
+  Image,
+} = require('./rn');
 // React Native の Alert はブラウザでは何も出ない。「候補が複数ある名前が残っています」を
 // 出したつもりで黙っていて、反映を押しても何も起きないように見えた（検証環境で実際に）。
 // アプリの中の窓へ流す橋渡しを使う（機種を問わず同じ見た目で出る）
-const _Alert = require('./alertBridge').default;
 
 const DocumentPicker = require('expo-document-picker');
 const ImagePicker = require('expo-image-picker');
@@ -1019,7 +1020,7 @@ const OCRRecordModal = ({
   const handleApply = () => {
     if (mode === 'record') {
       if (recordRows.some((行) => 行.status === 'ambiguous')) {
-        _Alert.alert(
+        Alert.alert(
           '確認が必要です',
           '候補が複数ある名前が残っています。該当の氏名を押して選択してください。'
         );
@@ -1027,7 +1028,7 @@ const OCRRecordModal = ({
       }
       const archers = buildRecordArchersArray();
       if (archers.length === 0) {
-        _Alert.alert('反映できません', '読み取れた射手がいません。写真を撮り直してください。');
+        Alert.alert('反映できません', '読み取れた射手がいません。写真を撮り直してください。');
         return;
       }
       確かめてから(() => {
@@ -1041,10 +1042,7 @@ const OCRRecordModal = ({
 
     const hasAmbiguous = tachiList.some((立) => 立.seats.some((席) => 席.status === 'ambiguous'));
     if (hasAmbiguous) {
-      _Alert.alert(
-        '確認が必要です',
-        '候補が複数ある名前が残っています。該当のマスを押して選択してください。'
-      );
+      Alert.alert('確認が必要です', '候補が複数ある名前が残っています。該当のマスを押して選択してください。');
       return;
     }
     const archers = buildArchersArray();
@@ -1180,68 +1178,68 @@ const OCRRecordModal = ({
   };
 
   return (
-    <_Modal visible={visible} animationType="slide" transparent={true} onRequestClose={handleClose}>
-      <_View style={styles.overlay}>
-        <_View
+    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={handleClose}>
+      <View style={styles.overlay}>
+        <View
           style={[styles.container, getShadowStyle({ shadowOpacity: 0.15, shadowRadius: 12, elevation: 12 })]}
         >
-          <_View style={styles.header}>
-            <_View style={styles.headerTitleRow}>
+          <View style={styles.header}>
+            <View style={styles.headerTitleRow}>
               <Ionicons name="camera" size={20} color="#007AFF" />
-              <_Text style={styles.headerTitle}>
+              <Text style={styles.headerTitle}>
                 {mode === 'record' ? '画像から記録を読み取る' : '画像から立ち順を登録'}
-              </_Text>
-            </_View>
-            <_TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
+              </Text>
+            </View>
+            <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
               <Ionicons name="close" size={24} color="#8E8E93" />
-            </_TouchableOpacity>
-          </_View>
+            </TouchableOpacity>
+          </View>
 
           {step === 'pick' && (
-            <_ScrollView style={styles.body} contentContainerStyle={{ padding: 16 }}>
-              <_View style={styles.modeRow}>
-                <_TouchableOpacity
+            <ScrollView style={styles.body} contentContainerStyle={{ padding: 16 }}>
+              <View style={styles.modeRow}>
+                <TouchableOpacity
                   style={[styles.modeBtn, mode === 'lineup' && styles.modeBtnActive]}
                   onPress={() => {
                     setMode('lineup');
                     setErrorMsg('');
                   }}
                 >
-                  <_Text style={[styles.modeBtnText, mode === 'lineup' && styles.modeBtnTextActive]}>
+                  <Text style={[styles.modeBtnText, mode === 'lineup' && styles.modeBtnTextActive]}>
                     立ち順表
-                  </_Text>
-                </_TouchableOpacity>
-                <_TouchableOpacity
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
                   style={[styles.modeBtn, mode === 'record' && styles.modeBtnActive]}
                   onPress={() => {
                     setMode('record');
                     setErrorMsg('');
                   }}
                 >
-                  <_Text style={[styles.modeBtnText, mode === 'record' && styles.modeBtnTextActive]}>
+                  <Text style={[styles.modeBtnText, mode === 'record' && styles.modeBtnTextActive]}>
                     紙の記録
-                  </_Text>
-                </_TouchableOpacity>
-              </_View>
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
-              <_Text style={styles.hint}>
+              <Text style={styles.hint}>
                 {mode === 'record'
                   ? `的中記録を撮影・選択してください。氏名と1射ごとの○×を読み取り、いまの記録表の後ろに足します。射数は、写真といまの記録表で多いほうに合わせます。1枚に収まらない場合は続けて追加できます。
 
 ※ 1射目はいちばん下のマス（横書きの紙は左端）として読みます。読み取った結果は次の画面で必ず確かめてください。`
                   : '立ち順表を撮影・選択してください。1枚に収まらない場合は続けて追加できます。'}
-              </_Text>
+              </Text>
 
               {/* 大前がどちらの端かは道場や大会で違う。読み違えると並びが丸ごと逆になるので、
                   当てずっぽうにせず選んでもらう */}
-              <_Text style={styles.settingLabel}>大前はどちら側ですか</_Text>
-              <_View style={styles.modeRow}>
+              <Text style={styles.settingLabel}>大前はどちら側ですか</Text>
+              <View style={styles.modeRow}>
                 {[
                   { 値: '右から', 札: '右端が大前' },
                   { 値: '左から', 札: '左端が大前' },
                   { 値: '左右から', 札: '板が2つ（外側が大前）' },
                 ].map((選択肢) => (
-                  <_TouchableOpacity
+                  <TouchableOpacity
                     key={選択肢.値}
                     style={[styles.modeBtn, 向き === 選択肢.値 && styles.modeBtnActive]}
                     onPress={() => {
@@ -1249,130 +1247,130 @@ const OCRRecordModal = ({
                       setErrorMsg('');
                     }}
                   >
-                    <_Text style={[styles.modeBtnText, 向き === 選択肢.値 && styles.modeBtnTextActive]}>
+                    <Text style={[styles.modeBtnText, 向き === 選択肢.値 && styles.modeBtnTextActive]}>
                       {選択肢.札}
-                    </_Text>
-                  </_TouchableOpacity>
+                    </Text>
+                  </TouchableOpacity>
                 ))}
-              </_View>
-              <_Text style={styles.settingNote}>
+              </View>
+              <Text style={styles.settingNote}>
                 {向き === '左右から'
                   ? 'リーグの対戦などで、板が向かい合って2つ並んでいるときに選んでください。左の板は左から、右の板は右から読み、間に区切りを入れます。'
                   : '写真の中で、大前（一的）の人がどちら側に書かれているかを選んでください。'}
-              </_Text>
+              </Text>
 
               {images.length > 0 && (
-                <_View style={styles.thumbRow}>
+                <View style={styles.thumbRow}>
                   {images.map((img, idx) => (
-                    <_View key={idx} style={styles.thumbWrap}>
-                      <_Image source={{ uri: img.uri }} style={styles.thumb} />
-                      <_TouchableOpacity style={styles.thumbRemove} onPress={() => removeImage(idx)}>
+                    <View key={idx} style={styles.thumbWrap}>
+                      <Image source={{ uri: img.uri }} style={styles.thumb} />
+                      <TouchableOpacity style={styles.thumbRemove} onPress={() => removeImage(idx)}>
                         <Ionicons name="close-circle" size={20} color="#FF3B30" />
-                      </_TouchableOpacity>
-                      <_Text style={styles.thumbLabel}>{idx + 1}枚目</_Text>
-                    </_View>
+                      </TouchableOpacity>
+                      <Text style={styles.thumbLabel}>{idx + 1}枚目</Text>
+                    </View>
                   ))}
-                </_View>
+                </View>
               )}
 
-              <_View style={styles.pickBtnRow}>
-                <_TouchableOpacity style={[styles.pickBtn, { flex: 1 }]} onPress={captureImage}>
+              <View style={styles.pickBtnRow}>
+                <TouchableOpacity style={[styles.pickBtn, { flex: 1 }]} onPress={captureImage}>
                   <Ionicons name="camera-outline" size={22} color="#007AFF" />
-                  <_Text style={styles.pickBtnText}>撮影する</_Text>
-                </_TouchableOpacity>
-                <_TouchableOpacity style={[styles.pickBtn, { flex: 1 }]} onPress={pickImage}>
+                  <Text style={styles.pickBtnText}>撮影する</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.pickBtn, { flex: 1 }]} onPress={pickImage}>
                   <Ionicons name="images-outline" size={22} color="#007AFF" />
-                  <_Text style={styles.pickBtnText}>
+                  <Text style={styles.pickBtnText}>
                     {images.length === 0 ? '画像を選択' : '写真を追加する'}
-                  </_Text>
-                </_TouchableOpacity>
-              </_View>
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
               {!!errorMsg && (
-                <_View style={styles.errorBox}>
+                <View style={styles.errorBox}>
                   <Ionicons name="warning" size={16} color="#FF3B30" />
-                  <_Text style={styles.errorText}>{errorMsg}</_Text>
-                </_View>
+                  <Text style={styles.errorText}>{errorMsg}</Text>
+                </View>
               )}
 
-              <_TouchableOpacity
+              <TouchableOpacity
                 style={[styles.analyzeBtn, images.length === 0 && styles.analyzeBtnDisabled]}
                 onPress={analyzeImages}
                 disabled={images.length === 0}
               >
                 <Ionicons name="sparkles" size={18} color="#FFF" />
-                <_Text style={styles.analyzeBtnText}>この画像で解析する</_Text>
-              </_TouchableOpacity>
-            </_ScrollView>
+                <Text style={styles.analyzeBtnText}>この画像で解析する</Text>
+              </TouchableOpacity>
+            </ScrollView>
           )}
 
           {step === 'analyzing' && (
-            <_View style={styles.centerBox}>
-              <_ActivityIndicator size="large" color="#007AFF" />
-              <_Text style={styles.centerText}>
+            <View style={styles.centerBox}>
+              <ActivityIndicator size="large" color="#007AFF" />
+              <Text style={styles.centerText}>
                 {mode === 'record' ? 'AIが記録表を読み取っています...' : 'AIが立ち順表を読み取っています...'}
-              </_Text>
-            </_View>
+              </Text>
+            </View>
           )}
 
           {step === 'preview' && mode === 'record' && (
             <>
-              <_ScrollView style={styles.body} contentContainerStyle={{ padding: 16 }}>
-                <_Text style={styles.hint}>
+              <ScrollView style={styles.body} contentContainerStyle={{ padding: 16 }}>
+                <Text style={styles.hint}>
                   内容を確認してください。氏名をタップすると変更、○×のマスをタップすると 「○ → × →
                   未記録」の順で切り替わります。
-                </_Text>
+                </Text>
                 {/* 検査が「端末で読めたか」を見るための印。画面には出ない */}
-                <_View
+                <View
                   testID={読み取り元 === '端末' ? 'ocr-yomitori-tanmatsu' : 'ocr-yomitori-ai'}
                   style={{ height: 0 }}
                 />
                 {読み取り元 !== '端末' && mode === 'record' && (
-                  <_Text style={[styles.hint, { color: '#B25000' }]} testID="ocr-ai-kotowari">
+                  <Text style={[styles.hint, { color: '#B25000' }]} testID="ocr-ai-kotowari">
                     ○×はAIが読みました（端末では読めませんでした：{端末の断り}
                     ）。AIは丸に線の向きを取り違えやすいので、○×をよく確かめてください。しばらくして撮り直すと端末で読めることがあります。
-                  </_Text>
+                  </Text>
                 )}
                 {!!列の断り && (
-                  <_Text style={[styles.hint, { color: '#B25000' }]} testID="ocr-retsu-kotowari">
+                  <Text style={[styles.hint, { color: '#B25000' }]} testID="ocr-retsu-kotowari">
                     {列の断り}
-                  </_Text>
+                  </Text>
                 )}
 
                 {合わせる射数 !== shotsPerRound && (
-                  <_Text style={styles.hint}>
+                  <Text style={styles.hint}>
                     射数を{shotsPerRound}射から{合わせる射数}射に合わせます（写真といまの記録表の多いほう）。
-                  </_Text>
+                  </Text>
                 )}
 
-                <_View style={styles.legendRow}>
-                  <_View style={styles.legendItem}>
-                    <_View style={[styles.legendDot, { backgroundColor: '#E5F1FF' }]} />
-                    <_Text style={styles.legendText}>一致</_Text>
-                  </_View>
-                  <_View style={styles.legendItem}>
-                    <_View style={[styles.legendDot, { backgroundColor: '#FFE5E5' }]} />
-                    <_Text style={styles.legendText}>要確認</_Text>
-                  </_View>
-                  <_View style={styles.legendItem}>
-                    <_View style={[styles.legendDot, { backgroundColor: '#F0F0F0' }]} />
-                    <_Text style={styles.legendText}>ゲスト</_Text>
-                  </_View>
+                <View style={styles.legendRow}>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: '#E5F1FF' }]} />
+                    <Text style={styles.legendText}>一致</Text>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: '#FFE5E5' }]} />
+                    <Text style={styles.legendText}>要確認</Text>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: '#F0F0F0' }]} />
+                    <Text style={styles.legendText}>ゲスト</Text>
+                  </View>
                   {recordRows.some((行) => Array.isArray(行.迷い) && 行.迷い.some(Boolean)) && (
-                    <_View style={styles.legendItem}>
-                      <_View style={[styles.legendDot, styles.legendDotMayoi]} />
-                      <_Text style={styles.legendText}>読み取りが迷ったマス</_Text>
-                    </_View>
+                    <View style={styles.legendItem}>
+                      <View style={[styles.legendDot, styles.legendDotMayoi]} />
+                      <Text style={styles.legendText}>読み取りが迷ったマス</Text>
+                    </View>
                   )}
-                </_View>
+                </View>
 
                 {recordRows.map((row, rIdx) => {
                   const hits = row.marks.filter((印) => 印 === '○').length;
                   const shots = row.marks.filter((印) => 印 !== '').length;
                   return (
-                    <_View key={rIdx} style={styles.recordRow}>
-                      <_View style={styles.recordRowHeader}>
-                        <_TouchableOpacity
+                    <View key={rIdx} style={styles.recordRow}>
+                      <View style={styles.recordRowHeader}>
+                        <TouchableOpacity
                           style={[styles.recordNameChip, { backgroundColor: seatColor(row) }]}
                           onPress={() => {
                             setPickerTarget({ rowIdx: rIdx });
@@ -1381,23 +1379,23 @@ const OCRRecordModal = ({
                             );
                           }}
                         >
-                          <_Text style={styles.recordNameText} numberOfLines={1}>
+                          <Text style={styles.recordNameText} numberOfLines={1}>
                             {seatLabel(row)}
-                          </_Text>
-                        </_TouchableOpacity>
-                        <_Text style={styles.recordScoreText}>
+                          </Text>
+                        </TouchableOpacity>
+                        <Text style={styles.recordScoreText}>
                           {hits}/{shots || 合わせる射数}
-                        </_Text>
-                        <_TouchableOpacity
+                        </Text>
+                        <TouchableOpacity
                           onPress={() => removeRecordRow(rIdx)}
                           style={styles.recordRemoveBtn}
                         >
                           <Ionicons name="trash-outline" size={18} color="#FF3B30" />
-                        </_TouchableOpacity>
-                      </_View>
-                      <_View style={styles.markRow}>
+                        </TouchableOpacity>
+                      </View>
+                      <View style={styles.markRow}>
                         {row.marks.map((印, mIdx) => (
-                          <_TouchableOpacity
+                          <TouchableOpacity
                             key={mIdx}
                             style={[
                               styles.markCell,
@@ -1408,7 +1406,7 @@ const OCRRecordModal = ({
                             testID={Boolean(row.迷い?.[mIdx]) ? 'ocr-mayoi-cell' : undefined}
                             onPress={() => toggleRecordMark(rIdx, mIdx)}
                           >
-                            <_Text
+                            <Text
                               style={[
                                 styles.markCellText,
                                 印 === '○' && styles.markCellTextHit,
@@ -1416,46 +1414,46 @@ const OCRRecordModal = ({
                               ]}
                             >
                               {印 || '－'}
-                            </_Text>
-                          </_TouchableOpacity>
+                            </Text>
+                          </TouchableOpacity>
                         ))}
-                      </_View>
-                    </_View>
+                      </View>
+                    </View>
                   );
                 })}
-              </_ScrollView>
+              </ScrollView>
 
-              <_View style={styles.previewFooter}>
-                <_TouchableOpacity style={styles.footerBtnSecondary} onPress={() => setStep('pick')}>
-                  <_Text style={styles.footerBtnSecondaryText}>撮り直す</_Text>
-                </_TouchableOpacity>
-                <_TouchableOpacity style={styles.footerBtnPrimary} onPress={handleApply}>
-                  <_Text style={styles.footerBtnPrimaryText}>記録表に反映する</_Text>
-                </_TouchableOpacity>
-              </_View>
+              <View style={styles.previewFooter}>
+                <TouchableOpacity style={styles.footerBtnSecondary} onPress={() => setStep('pick')}>
+                  <Text style={styles.footerBtnSecondaryText}>撮り直す</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.footerBtnPrimary} onPress={handleApply}>
+                  <Text style={styles.footerBtnPrimaryText}>記録表に反映する</Text>
+                </TouchableOpacity>
+              </View>
             </>
           )}
 
           {step === 'preview' && mode !== 'record' && (
             <>
-              <_ScrollView style={styles.body} contentContainerStyle={{ padding: 16 }}>
-                <_Text style={styles.hint}>
+              <ScrollView style={styles.body} contentContainerStyle={{ padding: 16 }}>
+                <Text style={styles.hint}>
                   内容を確認してください。色付きのセルはタップして修正できます。
-                </_Text>
-                <_View style={styles.legendRow}>
-                  <_View style={styles.legendItem}>
-                    <_View style={[styles.legendDot, { backgroundColor: '#E5F1FF' }]} />
-                    <_Text style={styles.legendText}>一致</_Text>
-                  </_View>
-                  <_View style={styles.legendItem}>
-                    <_View style={[styles.legendDot, { backgroundColor: '#FFE5E5' }]} />
-                    <_Text style={styles.legendText}>要確認</_Text>
-                  </_View>
-                  <_View style={styles.legendItem}>
-                    <_View style={[styles.legendDot, { backgroundColor: '#F0F0F0' }]} />
-                    <_Text style={styles.legendText}>ゲスト</_Text>
-                  </_View>
-                </_View>
+                </Text>
+                <View style={styles.legendRow}>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: '#E5F1FF' }]} />
+                    <Text style={styles.legendText}>一致</Text>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: '#FFE5E5' }]} />
+                    <Text style={styles.legendText}>要確認</Text>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: '#F0F0F0' }]} />
+                    <Text style={styles.legendText}>ゲスト</Text>
+                  </View>
+                </View>
 
                 {tachiList.map((tachi, tIdx) => {
                   // 空欄（status === "empty"）のセルを除外した有効な的のみをカウント
@@ -1463,13 +1461,13 @@ const OCRRecordModal = ({
                   if (activeSeats.length === 0) return null; // 有効な的が1つもなければこの立ち自体を描画しない
 
                   return (
-                    <_View key={tIdx} style={styles.tachiBlock}>
-                      <_Text style={styles.tachiLabel}>{SHOT_LABELS[tIdx] || `${tIdx + 1}立目`}</_Text>
-                      <_View style={styles.seatRow}>
+                    <View key={tIdx} style={styles.tachiBlock}>
+                      <Text style={styles.tachiLabel}>{SHOT_LABELS[tIdx] || `${tIdx + 1}立目`}</Text>
+                      <View style={styles.seatRow}>
                         {tachi.seats.map((seat, sIdx) => {
                           if (seat.status === 'empty') return null; // 空欄の的はプレビュー画面にも何も入れない（表示しない）
                           return (
-                            <_TouchableOpacity
+                            <TouchableOpacity
                               key={sIdx}
                               style={[styles.seatChip, { backgroundColor: seatColor(seat) }]}
                               onPress={() => {
@@ -1483,51 +1481,51 @@ const OCRRecordModal = ({
                                 );
                               }}
                             >
-                              <_Text style={styles.seatChipText} numberOfLines={2}>
+                              <Text style={styles.seatChipText} numberOfLines={2}>
                                 {seatLabel(seat)}
-                              </_Text>
-                            </_TouchableOpacity>
+                              </Text>
+                            </TouchableOpacity>
                           );
                         })}
-                      </_View>
-                    </_View>
+                      </View>
+                    </View>
                   );
                 })}
-              </_ScrollView>
+              </ScrollView>
 
-              <_View style={styles.previewFooter}>
-                <_TouchableOpacity style={styles.footerBtnSecondary} onPress={() => setStep('pick')}>
-                  <_Text style={styles.footerBtnSecondaryText}>撮り直す</_Text>
-                </_TouchableOpacity>
-                <_TouchableOpacity style={styles.footerBtnPrimary} onPress={handleApply}>
-                  <_Text style={styles.footerBtnPrimaryText}>記録表に反映する</_Text>
-                </_TouchableOpacity>
-              </_View>
+              <View style={styles.previewFooter}>
+                <TouchableOpacity style={styles.footerBtnSecondary} onPress={() => setStep('pick')}>
+                  <Text style={styles.footerBtnSecondaryText}>撮り直す</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.footerBtnPrimary} onPress={handleApply}>
+                  <Text style={styles.footerBtnPrimaryText}>記録表に反映する</Text>
+                </TouchableOpacity>
+              </View>
             </>
           )}
-        </_View>
-      </_View>
+        </View>
+      </View>
 
       {!!pickerTarget && (
-        <_Modal
+        <Modal
           visible={true}
           transparent={true}
           animationType="fade"
           onRequestClose={() => setPickerTarget(null)}
         >
-          <_View style={styles.pickerOverlay}>
-            <_TouchableOpacity
-              style={_StyleSheet.absoluteFill}
+          <View style={styles.pickerOverlay}>
+            <TouchableOpacity
+              style={StyleSheet.absoluteFill}
               activeOpacity={1}
               onPress={() => setPickerTarget(null)}
             />
-            <_View style={styles.pickerBox}>
-              <_Text style={styles.pickerTitle}>メンバーを選択</_Text>
+            <View style={styles.pickerBox}>
+              <Text style={styles.pickerTitle}>メンバーを選択</Text>
 
               {/* ゲスト登録切り替えエリア */}
               {isEnteringGuest ? (
-                <_View style={styles.guestInputRow}>
-                  <_TextInput
+                <View style={styles.guestInputRow}>
+                  <TextInput
                     style={styles.guestInput}
                     placeholder="ゲスト名を入力"
                     value={guestNameInput}
@@ -1535,10 +1533,10 @@ const OCRRecordModal = ({
                     autoFocus={true}
                     onSubmitEditing={submitGuest}
                   />
-                  <_TouchableOpacity onPress={submitGuest} style={styles.guestSubmitBtn}>
-                    <_Text style={styles.guestSubmitBtnText}>決定</_Text>
-                  </_TouchableOpacity>
-                  <_TouchableOpacity
+                  <TouchableOpacity onPress={submitGuest} style={styles.guestSubmitBtn}>
+                    <Text style={styles.guestSubmitBtnText}>決定</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
                     onPress={() => {
                       setIsEnteringGuest(false);
                       setGuestNameInput('');
@@ -1546,28 +1544,28 @@ const OCRRecordModal = ({
                     style={{ marginLeft: 8 }}
                   >
                     <Ionicons name="close" size={24} color="#8E8E93" />
-                  </_TouchableOpacity>
-                </_View>
+                  </TouchableOpacity>
+                </View>
               ) : (
-                <_View style={styles.pickerToolbarRow}>
-                  <_TextInput
+                <View style={styles.pickerToolbarRow}>
+                  <TextInput
                     style={[styles.pickerSearchInput, { flex: 1, marginBottom: 0 }]}
                     placeholder="名前で検索"
                     value={pickerSearch}
                     onChangeText={setPickerSearch}
                     autoFocus={true}
                   />
-                  <_TouchableOpacity style={styles.guestToggleBtn} onPress={() => setIsEnteringGuest(true)}>
+                  <TouchableOpacity style={styles.guestToggleBtn} onPress={() => setIsEnteringGuest(true)}>
                     <Ionicons name="person-add-outline" size={18} color="#5856D6" />
-                    <_Text style={styles.guestToggleBtnText}>ゲスト</_Text>
-                  </_TouchableOpacity>
-                </_View>
+                    <Text style={styles.guestToggleBtnText}>ゲスト</Text>
+                  </TouchableOpacity>
+                </View>
               )}
 
-              <_ScrollView style={styles.pickerList}>
-                <_TouchableOpacity style={styles.pickerRow} onPress={() => pickAssign(null)}>
-                  <_Text style={styles.pickerRowTextMuted}>（空欄にする）</_Text>
-                </_TouchableOpacity>
+              <ScrollView style={styles.pickerList}>
+                <TouchableOpacity style={styles.pickerRow} onPress={() => pickAssign(null)}>
+                  <Text style={styles.pickerRowTextMuted}>（空欄にする）</Text>
+                </TouchableOpacity>
 
                 {/* 現役生グループアコーディオン */}
                 {activeGroups.map((group) => {
@@ -1576,15 +1574,15 @@ const OCRRecordModal = ({
                   const isOpen = pickerSearch.trim() ? true : expandedActiveGrades.has(gStr);
                   return (
                     <React.Fragment key={`grade-${gStr}`}>
-                      <_TouchableOpacity
+                      <TouchableOpacity
                         style={styles.accordionHeader}
                         onPress={() => toggleActiveGrade(gStr)}
                       >
-                        <_Text style={styles.accordionTitle}>
+                        <Text style={styles.accordionTitle}>
                           {group.title} ({group.members.length}人)
-                        </_Text>
+                        </Text>
                         <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color="#8E8E93" />
-                      </_TouchableOpacity>
+                      </TouchableOpacity>
                       {isOpen &&
                         group.members.map((部員) => {
                           const isSelected = selectedMemberIds.has(部員.id);
@@ -1592,7 +1590,7 @@ const OCRRecordModal = ({
                           const isFemale = 部員.gender === '女子';
                           const textColor = isMale ? '#007AFF' : isFemale ? '#FF2D55' : '#1C1C1E';
                           return (
-                            <_TouchableOpacity
+                            <TouchableOpacity
                               key={部員.id}
                               style={[
                                 styles.pickerRowIndent,
@@ -1600,7 +1598,7 @@ const OCRRecordModal = ({
                               ]}
                               onPress={() => pickAssign(部員)}
                             >
-                              <_View
+                              <View
                                 style={{
                                   flexDirection: 'row',
                                   justifyContent: 'space-between',
@@ -1608,7 +1606,7 @@ const OCRRecordModal = ({
                                   width: '100%',
                                 }}
                               >
-                                <_Text
+                                <Text
                                   style={[
                                     styles.pickerRowText,
                                     { color: textColor },
@@ -1617,14 +1615,14 @@ const OCRRecordModal = ({
                                 >
                                   {部員.name}
                                   {部員.termKi ? ` (${部員.termKi}期)` : ''}
-                                </_Text>
+                                </Text>
                                 {isSelected && (
-                                  <_View style={styles.selectedBadge}>
-                                    <_Text style={styles.selectedBadgeText}>選択済</_Text>
-                                  </_View>
+                                  <View style={styles.selectedBadge}>
+                                    <Text style={styles.selectedBadgeText}>選択済</Text>
+                                  </View>
                                 )}
-                              </_View>
-                            </_TouchableOpacity>
+                              </View>
+                            </TouchableOpacity>
                           );
                         })}
                     </React.Fragment>
@@ -1633,23 +1631,23 @@ const OCRRecordModal = ({
 
                 {/* 卒業生グループ期別アコーディオン */}
                 {alumniByTerm.length > 0 && (
-                  <_View style={{ marginTop: 12 }}>
-                    <_Text style={styles.sectionDividerText}>卒業生</_Text>
+                  <View style={{ marginTop: 12 }}>
+                    <Text style={styles.sectionDividerText}>卒業生</Text>
                     {alumniByTerm.map((group) => {
                       const tStr = group.term.toString();
                       const isOpen = pickerSearch.trim() ? true : expandedTerms.has(tStr);
                       return (
                         <React.Fragment key={`term-${tStr}`}>
-                          <_TouchableOpacity style={styles.accordionHeader} onPress={() => toggleTerm(tStr)}>
-                            <_Text style={styles.accordionTitle}>
+                          <TouchableOpacity style={styles.accordionHeader} onPress={() => toggleTerm(tStr)}>
+                            <Text style={styles.accordionTitle}>
                               {tStr === '999' ? '期生不明' : `${tStr}期`} ({group.members.length}人)
-                            </_Text>
+                            </Text>
                             <Ionicons
                               name={isOpen ? 'chevron-up' : 'chevron-down'}
                               size={16}
                               color="#8E8E93"
                             />
-                          </_TouchableOpacity>
+                          </TouchableOpacity>
                           {isOpen &&
                             group.members.map((卒業生) => {
                               const isSelected = selectedMemberIds.has(卒業生.id);
@@ -1657,7 +1655,7 @@ const OCRRecordModal = ({
                               const isFemale = 卒業生.gender === '女子';
                               const textColor = isMale ? '#007AFF' : isFemale ? '#FF2D55' : '#1C1C1E';
                               return (
-                                <_TouchableOpacity
+                                <TouchableOpacity
                                   key={卒業生.id}
                                   style={[
                                     styles.pickerRowIndent,
@@ -1665,7 +1663,7 @@ const OCRRecordModal = ({
                                   ]}
                                   onPress={() => pickAssign(卒業生)}
                                 >
-                                  <_View
+                                  <View
                                     style={{
                                       flexDirection: 'row',
                                       justifyContent: 'space-between',
@@ -1673,7 +1671,7 @@ const OCRRecordModal = ({
                                       width: '100%',
                                     }}
                                   >
-                                    <_Text
+                                    <Text
                                       style={[
                                         styles.pickerRowText,
                                         { color: textColor },
@@ -1681,47 +1679,45 @@ const OCRRecordModal = ({
                                       ]}
                                     >
                                       {卒業生.name}
-                                    </_Text>
+                                    </Text>
                                     {isSelected && (
-                                      <_View style={styles.selectedBadge}>
-                                        <_Text style={styles.selectedBadgeText}>選択済</_Text>
-                                      </_View>
+                                      <View style={styles.selectedBadge}>
+                                        <Text style={styles.selectedBadgeText}>選択済</Text>
+                                      </View>
                                     )}
-                                  </_View>
-                                </_TouchableOpacity>
+                                  </View>
+                                </TouchableOpacity>
                               );
                             })}
                         </React.Fragment>
                       );
                     })}
-                  </_View>
+                  </View>
                 )}
 
                 {!!pickerSearch.trim() && (
-                  <_TouchableOpacity
+                  <TouchableOpacity
                     style={styles.pickerRow}
                     onPress={() => pickAssignGuest(pickerSearch.trim())}
                   >
-                    <_Text style={styles.pickerRowTextGuest}>
-                      「{pickerSearch.trim()}」をゲストとして登録
-                    </_Text>
-                  </_TouchableOpacity>
+                    <Text style={styles.pickerRowTextGuest}>「{pickerSearch.trim()}」をゲストとして登録</Text>
+                  </TouchableOpacity>
                 )}
-              </_ScrollView>
-              <_TouchableOpacity style={styles.pickerCloseBtn} onPress={() => setPickerTarget(null)}>
-                <_Text style={styles.pickerCloseBtnText}>閉じる</_Text>
-              </_TouchableOpacity>
-            </_View>
-          </_View>
-        </_Modal>
+              </ScrollView>
+              <TouchableOpacity style={styles.pickerCloseBtn} onPress={() => setPickerTarget(null)}>
+                <Text style={styles.pickerCloseBtnText}>閉じる</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       )}
-    </_Modal>
+    </Modal>
   );
 };
 
 exports.OCRRecordModal = OCRRecordModal;
 
-const styles = _StyleSheet.create({
+const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   container: {
     backgroundColor: '#FFF',

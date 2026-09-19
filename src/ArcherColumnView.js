@@ -1,10 +1,7 @@
 'use strict';
 
 const React = require('react');
-const View = require('./View').default;
-const Text = require('./Text').default;
-const StyleSheet = require('./StyleSheet').default;
-const TouchableOpacity = require('./TouchableOpacity').default;
+const { View, Text, StyleSheet, TouchableOpacity } = require('./rn');
 const { UIConfig } = require('./uiConfig');
 const { ScoreCell } = require('./ScoreCell');
 const { useScoreStore } = require('./useScoreStore');

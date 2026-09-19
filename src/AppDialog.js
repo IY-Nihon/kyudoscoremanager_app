@@ -18,16 +18,10 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 const React = require('react');
 const { useState, useEffect, useRef } = React;
-const RN = require('react-native');
-const _View = RN.View;
-const _Text = require('./Text').default; // テーマ変換を通すためブリッジ経由
-const _StyleSheet = require('./StyleSheet').default;
-const _Modal = RN.Modal;
+const { Text, StyleSheet, View, Modal, Pressable, ScrollView } = require('./rn');
 // 帯か窓かの決まりは純粋な関数なので外に出してある。
 // 43か所ぶんの実際の文で、node --test から確かめている（test/dialogRules.test.js）
 const { 窓で止めるか, 帯の長さ, 帯の時計をつくる } = require('./dialogRules');
-const _Pressable = RN.Pressable;
-const _ScrollView = RN.ScrollView;
 
 /**
  * 帯を包んでいる Modal の容器を、指が素通りする状態にする。
@@ -103,8 +97,8 @@ const アプリの窓 = () => {
         だから出すときだけ置く。帯は押す邪魔をしないよう素通しにする。
       */}
       {帯 ? (
-        <_Modal visible transparent animationType="fade" pointerEvents="none">
-          <_View
+        <Modal visible transparent animationType="fade" pointerEvents="none">
+          <View
             style={styles.帯}
             pointerEvents="none"
             testID="アプリの帯"
@@ -112,30 +106,30 @@ const アプリの窓 = () => {
                素通りにする。これが無いと、帯が出ているあいだ下が押せない */
             ref={帯を素通りにする}
           >
-            <_Text style={styles.帯の字}>{帯}</_Text>
-          </_View>
-        </_Modal>
+            <Text style={styles.帯の字}>{帯}</Text>
+          </View>
+        </Modal>
       ) : null}
       {いま ? (
-      <_Modal
+      <Modal
         visible
         transparent
         animationType="fade"
         onRequestClose={() => 置く(null)}
       >
-        <_View style={styles.背景}>
-          <_View style={styles.札} testID="アプリの窓">
-            {いま && いま.題 ? <_Text style={styles.題}>{いま.題}</_Text> : null}
+        <View style={styles.背景}>
+          <View style={styles.札} testID="アプリの窓">
+            {いま && いま.題 ? <Text style={styles.題}>{いま.題}</Text> : null}
             {/* 登録完了の控えのように長い文が来る。画面からはみ出して
                 ボタンが押せなくならないよう、文だけを中でスクロールさせる */}
             {いま && いま.文 ? (
-              <_ScrollView style={styles.文の枠} contentContainerStyle={styles.文の中}>
-                <_Text style={styles.文}>{いま.文}</_Text>
-              </_ScrollView>
+              <ScrollView style={styles.文の枠} contentContainerStyle={styles.文の中}>
+                <Text style={styles.文}>{いま.文}</Text>
+              </ScrollView>
             ) : null}
-            <_View style={[styles.ボタンの列, (いま.ボタン || []).length > 2 && styles.ボタンの列縦]}>
+            <View style={[styles.ボタンの列, (いま.ボタン || []).length > 2 && styles.ボタンの列縦]}>
               {(いま ? いま.ボタン : []).map((b, i) => (
-                <_Pressable
+                <Pressable
                   key={`${b.text}-${i}`}
                   testID={`窓のボタン-${b.text}`}
                   style={[
@@ -147,7 +141,7 @@ const アプリの窓 = () => {
                     b.onPress && b.onPress();
                   }}
                 >
-                  <_Text
+                  <Text
                     style={[
                       styles.ボタンの字,
                       b.style === 'cancel' && styles.打ち消し,
@@ -155,19 +149,19 @@ const アプリの窓 = () => {
                     ]}
                   >
                     {b.text}
-                  </_Text>
-                </_Pressable>
+                  </Text>
+                </Pressable>
               ))}
-            </_View>
-          </_View>
-        </_View>
-      </_Modal>
+            </View>
+          </View>
+        </View>
+      </Modal>
       ) : null}
     </>
   );
 };
 
-const styles = _StyleSheet.create({
+const styles = StyleSheet.create({
   背景: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
@@ -182,14 +176,14 @@ const styles = _StyleSheet.create({
   文: { fontSize: 15, color: '#1C1C1E', lineHeight: 22 },
   ボタンの列: {
     flexDirection: 'row',
-    borderTopWidth: _StyleSheet.hairlineWidth,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#C6C6C8',
   },
   // ボタンが3つ以上のときは縦に積む。横3等分だと長い文字が折り返して詰まる
   ボタンの列縦: { flexDirection: 'column' },
   ボタン: { flex: 1, padding: 16, alignItems: 'center' },
-  仕切り: { borderLeftWidth: _StyleSheet.hairlineWidth, borderLeftColor: '#C6C6C8' },
-  仕切り縦: { borderTopWidth: _StyleSheet.hairlineWidth, borderTopColor: '#C6C6C8' },
+  仕切り: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: '#C6C6C8' },
+  仕切り縦: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#C6C6C8' },
   ボタンの字: { fontSize: 17, color: '#007AFF', fontWeight: 'bold' },
   打ち消し: { fontWeight: 'normal' },
   危ない: { color: '#FF3B30' },

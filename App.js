@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Platform, Alert, AppState } from 'react-native';
-// StyleSheet はテーマ変換を通すためブリッジ経由で取得する
-import StyleSheet from './src/StyleSheet';
+// react-native の部品は src/rn.js から取る（StyleSheet はダークモードの変換を通したもの）
+import { View, Platform, AppState, StyleSheet } from './src/rn';
 import { useScoreStore } from './src/useScoreStore';
 import { MainNavigator } from './src/MainNavigator';
 import { LoginScreen } from './src/LoginScreen';
@@ -226,7 +225,7 @@ export default function App() {
   }
 
   const isDarkTheme = theme === 'dark';
-  // styles 側の色は StyleSheet のブリッジが変換するため、ここでは上書きしない
+  // styles 側の色は StyleSheet（src/rn.js）が変換するため、ここでは上書きしない
   // （上書きするとダーク色がもう一度変換されて元に戻ってしまう）。
   // 下の <style> は生のCSSで props を通らないため、変換対象外＝直接指定でよい。
   const rootBg = isDarkTheme ? '#000000' : '#F2F2F7';

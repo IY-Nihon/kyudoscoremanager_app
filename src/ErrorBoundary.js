@@ -1,10 +1,7 @@
 'use strict';
 
 const React = require('react');
-const View = require('./View').default;
-const Text = require('./Text').default;
-const TouchableOpacity = require('./TouchableOpacity').default;
-const StyleSheet = require('./StyleSheet').default;
+const { View, Text, TouchableOpacity, StyleSheet } = require('./rn');
 const { useScoreStore } = require('./useScoreStore');
 class ErrorBoundary extends React.Component {
   state = { hasError: false, error: null };

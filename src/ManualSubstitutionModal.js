@@ -1,15 +1,17 @@
 'use strict';
 
 const React = require('react');
-const View = require('./View').default;
-const Text = require('./Text').default;
-const StyleSheet = require('./StyleSheet').default;
-const Modal = require('./Modal').default;
-const TextInput = require('./TextInput').default;
-const TouchableOpacity = require('./TouchableOpacity').default;
-const KeyboardAvoidingView = require('./KeyboardAvoidingView').default;
-const TouchableWithoutFeedback = require('./TouchableWithoutFeedback').default;
-const ScrollView = require('./ScrollView').default;
+const {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  ScrollView,
+} = require('./rn');
 const { useScoreStore } = require('./useScoreStore');
 const Icons = require('@expo/vector-icons');
 const { IS_IOS } = require('./IS_WEB');

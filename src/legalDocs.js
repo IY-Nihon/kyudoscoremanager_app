@@ -90,7 +90,7 @@ function 開く(URL) {
   }
   // ネイティブでは Linking を使う
   try {
-    require('react-native').Linking.openURL(URL);
+    require('./rn').Linking.openURL(URL);
   } catch (e) {
     console.warn('[legalDocs] 開けませんでした:', e);
   }

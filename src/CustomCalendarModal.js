@@ -1,12 +1,7 @@
 'use strict';
 
 const React = require('react');
-const View = require('./View').default;
-const Text = require('./Text').default;
-const StyleSheet = require('./StyleSheet').default;
-const Modal = require('./Modal').default;
-const TouchableOpacity = require('./TouchableOpacity').default;
-const ScrollView = require('./ScrollView').default;
+const { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } = require('./rn');
 const { getShadowStyle } = require('./shadowStyle');
 const DateFns = require('date-fns');
 const 一段の高さ = 44;

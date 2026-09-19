@@ -5,7 +5,7 @@
  */
 'use strict';
 
-const Platform = require('./platform').default;
+const { Platform } = require('./rn');
 
 const IS_WEB = Platform.OS === 'web';
 const IS_IOS = Platform.OS === 'ios';

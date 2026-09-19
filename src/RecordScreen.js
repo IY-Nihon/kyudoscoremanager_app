@@ -1,16 +1,20 @@
 'use strict';
 
-const RN = require('react-native');
 const React = require('react');
-const View = require('./View').default;
-const ScrollView = require('./ScrollView').default;
-const StyleSheet = require('./StyleSheet').default;
-const Text = require('./Text').default;
-const Modal = require('./Modal').default;
-const TextInput = require('./TextInput').default;
-const Alert = require('./alertBridge').default;
-const Pressable = require('./Pressable').default;
-const TouchableOpacity = require('./TouchableOpacity').default;
+const {
+  View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  Modal,
+  TextInput,
+  Alert,
+  Pressable,
+  TouchableOpacity,
+  AppState,
+  Animated,
+  PanResponder,
+} = require('./rn');
 const { IS_WEB, SAFE_TOP_PADDING, WEB_TOP_PADDING } = require('./IS_WEB');
 const { useScoreStore, ライブ名に使えない字 } = require('./useScoreStore');
 const 案内 = require('./TutorialGuide');
@@ -279,7 +283,7 @@ const RecordScreen = () => {
     試す();
     const 後で = setTimeout(試す, 4000);
     const もっと後で = setTimeout(試す, 15000);
-    const 見張り = RN.AppState.addEventListener('change', (状態) => {
+    const 見張り = AppState.addEventListener('change', (状態) => {
       if ('active' === 状態) 試す();
     });
     return () => {
@@ -398,14 +402,14 @@ const RecordScreen = () => {
   // 動かす最中は Animated で横にずらし、離したら側を決めて店に残す。
   // 側が変わったときは、置き場（left か right か）が変わるぶんを差し引いて
   // 見た目の位置を保ってから 0 へ戻す（いきなり反対側へ飛ばない）
-  const 取っ手のずれ = React.useRef(new RN.Animated.Value(0)).current;
+  const 取っ手のずれ = React.useRef(new Animated.Value(0)).current;
   const 取っ手の区画の幅 = React.useRef(0);
   const 取っ手は左のref = React.useRef(!!帯の取っ手は左);
   const 取っ手を引いた = React.useRef(false);
   const 取っ手の手 = React.useRef(null);
   取っ手は左のref.current = !!帯の取っ手は左;
   if (!取っ手の手.current)
-    取っ手の手.current = RN.PanResponder.create({
+    取っ手の手.current = PanResponder.create({
       // 触れた時点で先取りして責任を持つ。動き始めてから取りにいく作りだと、
       // Web では指（マウス）が取っ手の外へ出た後の move は取っ手の枝に届かず、
       // 速く引くと一度も掴めない（react-native-web は責任者と的の共通の親までしか聞かない）。
@@ -446,14 +450,14 @@ const RecordScreen = () => {
           if (set帯の取っ手は左) set帯の取っ手は左(左へ);
           ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
         }
-        RN.Animated.spring(取っ手のずれ, { toValue: 0, useNativeDriver: false, bounciness: 6 }).start();
+        Animated.spring(取っ手のずれ, { toValue: 0, useNativeDriver: false, bounciness: 6 }).start();
         // 引き終わりの直後に来る click で畳まないよう、印は一拍おいて下ろす
         setTimeout(() => {
           取っ手を引いた.current = false;
         }, 0);
       },
       onPanResponderTerminate: () => {
-        RN.Animated.spring(取っ手のずれ, { toValue: 0, useNativeDriver: false }).start();
+        Animated.spring(取っ手のずれ, { toValue: 0, useNativeDriver: false }).start();
         setTimeout(() => {
           取っ手を引いた.current = false;
         }, 0);
@@ -623,7 +627,7 @@ const RecordScreen = () => {
     };
   }, [掴んだ列]);
   if (!並べ替えの手.current)
-    並べ替えの手.current = RN.PanResponder.create({
+    並べ替えの手.current = PanResponder.create({
       // 掴んでいないときは何も奪わない。ふつうのスクロールと押すが効く
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: () => !!掴んだ列のref.current,
@@ -1655,7 +1659,7 @@ const RecordScreen = () => {
       >
         {/* 帯を畳む取っ手。記録表の区画の中に置くので、上の帯があっても */
         /* 無くても重ならない。横へ引くと左上・右上へ動かせる（上の仕掛け） */}
-        <RN.Animated.View
+        <Animated.View
           {...取っ手の手.current.panHandlers}
           testID="帯の取っ手の置き場"
           style={[
@@ -1681,7 +1685,7 @@ const RecordScreen = () => {
           >
             <Icons.Ionicons name={帯を畳む ? 'chevron-down' : 'chevron-up'} size={18} color="#8E8E93" />
           </Pressable>
-        </RN.Animated.View>
+        </Animated.View>
         <View ref={案内の記録表} style={{ maxHeight: '100%', flexDirection: 'column', maxWidth: '100%' }}>
           {横に並べる
             ? 横の表()

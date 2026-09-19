@@ -28,8 +28,7 @@
 'use strict';
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, Platform } from 'react-native';
-import StyleSheet from './StyleSheet';
+import { View, Text, Platform, StyleSheet } from './rn';
 import { 束の名前, 新しい版が出たか, 見に行く間隔 } from './updateNotice';
 import { useScoreStore } from './useScoreStore';
 import { use案内中 } from './TutorialGuide';

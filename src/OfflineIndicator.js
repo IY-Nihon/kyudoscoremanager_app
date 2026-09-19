@@ -1,10 +1,7 @@
 'use strict';
 
 const React = require('react');
-const View = require('./View').default;
-const Text = require('./Text').default;
-const StyleSheet = require('./StyleSheet').default;
-const Animated = require('./Animated').default;
+const { View, Text, StyleSheet, Animated } = require('./rn');
 const { useScoreStore } = require('./useScoreStore');
 const Icons = require('@expo/vector-icons');
 const { getShadowStyle } = require('./shadowStyle');

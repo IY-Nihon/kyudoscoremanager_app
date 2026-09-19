@@ -5,22 +5,10 @@ exports.AIChatBot = undefined;
 
 const React = require('react');
 const { useState, useRef, useEffect } = React;
-const RN = require('react-native');
-const _View = RN.View;
-const _Text = require('./Text').default; // テーマ変換を通すためブリッジ経由
-const _StyleSheet = require('./StyleSheet').default; // テーマ変換を通すためブリッジ経由
-const _TouchableOpacity = RN.TouchableOpacity;
-const _Modal = RN.Modal;
-const _TextInput = require('./TextInput').default; // テーマ変換（既定文字色）を通すためブリッジ経由
-const _ScrollView = RN.ScrollView;
-const _ActivityIndicator = RN.ActivityIndicator;
-const _KeyboardAvoidingView = RN.KeyboardAvoidingView;
-const _Dimensions = RN.Dimensions;
-const _Animated = RN.Animated;
-const _PanResponder = RN.PanResponder;
+const { Text, StyleSheet, TextInput, View, TouchableOpacity, Modal, ScrollView, ActivityIndicator, KeyboardAvoidingView, Dimensions, Animated, PanResponder, Platform } = require('./rn');
 
 const { Ionicons } = require('@expo/vector-icons');
-const IS_WEB = RN.Platform.OS === 'web';
+const IS_WEB = Platform.OS === 'web';
 
 /**
  * 横へ流せる1行。パソコンでは、上に乗せてホイールを回すと横へ動く。
@@ -51,9 +39,9 @@ function 横に流せる行({ children, style }) {
     return () => 節.removeEventListener('wheel', 受け);
   }, []);
   return (
-    <_ScrollView ref={参照} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={style}>
+    <ScrollView ref={参照} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={style}>
       {children}
-    </_ScrollView>
+    </ScrollView>
   );
 }
 const { GoogleGenerativeAI } = require('@google/generative-ai');
@@ -72,7 +60,6 @@ const 集 = require('./statsRules');
 // 言い換えて聞かれても当てるための、コードだけの近さ測り（外のAPIは使わない）
 const { 引きをつくる, 近い順 } = require('./textMatch');
 const { getShadowStyle } = require('./shadowStyle');
-const { jsx, jsxs, Fragment } = require('./themedJsx');
 
 // --- システムプロンプト（動的Q&A注入方式） ---
 
@@ -604,8 +591,8 @@ const AIChatBot = () => {
   }, [messages]);
   const scrollViewRef = useRef(null);
 
-  const [layoutWidth, setLayoutWidth] = useState(_Dimensions.get('window').width);
-  const [layoutHeight, setLayoutHeight] = useState(_Dimensions.get('window').height);
+  const [layoutWidth, setLayoutWidth] = useState(Dimensions.get('window').width);
+  const [layoutHeight, setLayoutHeight] = useState(Dimensions.get('window').height);
   // 引く仕掛け（PanResponder）は一度しか作らないので、中から state を読むと
   // 最初の描画の値（窓の幅）で固まる。パソコンで窓が広いとアプリの枠（最大幅）より
   // 窓が広く、左へ引くとその差のぶん枠の外へ飛び出して消えた。枠の実測は ref で渡す
@@ -619,7 +606,7 @@ const AIChatBot = () => {
   };
 
   // --- ドラッグ移動用のステート ＆ 追従ロジック ---
-  const pan = useRef(new _Animated.ValueXY()).current;
+  const pan = useRef(new Animated.ValueXY()).current;
   const currentPos = useRef({ x: 0, y: 0 });
   const savedButtonPos = loadButtonPos();
   const snapXRef = useRef(savedButtonPos?.x || 'right');
@@ -639,7 +626,7 @@ const AIChatBot = () => {
   }, [layoutWidth, layoutHeight]);
 
   const panResponder = useRef(
-    _PanResponder.create({
+    PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_, 動き) => Math.abs(動き.dx) > 2 || Math.abs(動き.dy) > 2,
       // パソコンで引くと、字の上を通ったときに字の選択が始まり、react-native-web の
@@ -711,7 +698,7 @@ const AIChatBot = () => {
 
           currentPos.current = { x: targetX, y: targetY };
 
-          _Animated.spring(pan, { toValue: { x: targetX, y: targetY }, useNativeDriver: false }).start();
+          Animated.spring(pan, { toValue: { x: targetX, y: targetY }, useNativeDriver: false }).start();
         }
       },
     })
@@ -1630,8 +1617,8 @@ const AIChatBot = () => {
   const modalH = Math.min(0.8 * layoutHeight, 600);
 
   return (
-    <_View style={_StyleSheet.absoluteFill} pointerEvents="box-none" onLayout={onLayout}>
-      <_Animated.View
+    <View style={StyleSheet.absoluteFill} pointerEvents="box-none" onLayout={onLayout}>
+      <Animated.View
         style={[
           styles.floatingButton,
           getShadowStyle({ shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 }),
@@ -1644,27 +1631,27 @@ const AIChatBot = () => {
         aria-label="AIアシスタントを開く"
       >
         <Ionicons name="chatbubble-ellipses" size={30} color="#FFF" />
-        <_View style={styles.badge}>
-          <_Text style={styles.badgeText}>AI</_Text>
-        </_View>
-      </_Animated.View>
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>AI</Text>
+        </View>
+      </Animated.View>
 
-      <_Modal visible={modalVisible} animationType="slide" transparent={true}>
-        <_KeyboardAvoidingView behavior="height" style={styles.modalOverlay}>
-          <_View
+      <Modal visible={modalVisible} animationType="slide" transparent={true}>
+        <KeyboardAvoidingView behavior="height" style={styles.modalOverlay}>
+          <View
             style={[
               styles.chatContainer,
               { width: modalW, height: modalH },
               getShadowStyle({ shadowOpacity: 0.1, shadowRadius: 10, elevation: 10 }),
             ]}
           >
-            <_View style={styles.header}>
-              <_View style={styles.headerTitleRow}>
+            <View style={styles.header}>
+              <View style={styles.headerTitleRow}>
                 <Ionicons name="sparkles" size={20} color="#007AFF" />
-                <_Text style={styles.headerTitle}>AIアシスタント</_Text>
-              </_View>
-              <_View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <_TouchableOpacity
+                <Text style={styles.headerTitle}>AIアシスタント</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <TouchableOpacity
                   onPress={() => {
                     setMessages(defaultMessages);
                     saveChatHistory(defaultMessages);
@@ -1672,14 +1659,14 @@ const AIChatBot = () => {
                   style={{ padding: 4 }}
                 >
                   <Ionicons name="trash-outline" size={20} color="#8E8E93" />
-                </_TouchableOpacity>
-                <_TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
                   <Ionicons name="close" size={24} color="#8E8E93" />
-                </_TouchableOpacity>
-              </_View>
-            </_View>
+                </TouchableOpacity>
+              </View>
+            </View>
 
-            <_ScrollView
+            <ScrollView
               ref={scrollViewRef}
               style={styles.messageArea}
               contentContainerStyle={{ padding: 16 }}
@@ -1691,11 +1678,11 @@ const AIChatBot = () => {
             >
               {messages.map((msg, idx) =>
                 msg.role === 'actionCard' ? (
-                  <_View key={idx} style={[styles.messageBubble, styles.modelBubble, { minWidth: 200 }]}>
-                    <_Text style={[styles.modelText, { fontWeight: 'bold', marginBottom: 8 }]}>
+                  <View key={idx} style={[styles.messageBubble, styles.modelBubble, { minWidth: 200 }]}>
+                    <Text style={[styles.modelText, { fontWeight: 'bold', marginBottom: 8 }]}>
                       データの追加提案
-                    </_Text>
-                    <_Text style={styles.modelText}>
+                    </Text>
+                    <Text style={styles.modelText}>
                       名前: {msg.args.name}
                       {'\n'}
                       学年: {msg.args.grade}年{'\n'}
@@ -1705,27 +1692,27 @@ const AIChatBot = () => {
                         : msg.args.gender === 'female'
                           ? '女性'
                           : msg.args.gender}
-                    </_Text>
+                    </Text>
                     {msg.status === 'pending' ? (
-                      <_View
+                      <View
                         style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12, gap: 8 }}
                       >
-                        <_TouchableOpacity
+                        <TouchableOpacity
                           style={[styles.actionBtn, { backgroundColor: '#FF3B30' }]}
                           onPress={() => handleActionResponse(msg.id, false)}
                         >
-                          <_Text style={styles.actionBtnText}>キャンセル</_Text>
-                        </_TouchableOpacity>
-                        <_TouchableOpacity
+                          <Text style={styles.actionBtnText}>キャンセル</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
                           style={[styles.actionBtn, { backgroundColor: '#34C759' }]}
                           onPress={() => handleActionResponse(msg.id, true)}
                         >
-                          <_Text style={styles.actionBtnText}>承認</_Text>
-                        </_TouchableOpacity>
-                      </_View>
+                          <Text style={styles.actionBtnText}>承認</Text>
+                        </TouchableOpacity>
+                      </View>
                     ) : (
-                      <_View style={{ marginTop: 12 }}>
-                        <_Text
+                      <View style={{ marginTop: 12 }}>
+                        <Text
                           style={[
                             styles.modelText,
                             {
@@ -1736,24 +1723,24 @@ const AIChatBot = () => {
                           ]}
                         >
                           {msg.status === 'approved' ? '✓ 承認済み' : 'キャンセル済み'}
-                        </_Text>
-                      </_View>
+                        </Text>
+                      </View>
                     )}
-                  </_View>
+                  </View>
                 ) : (
-                  <_View
+                  <View
                     key={idx}
                     style={[
                       styles.messageBubble,
                       msg.role === 'user' ? styles.userBubble : styles.modelBubble,
                     ]}
                   >
-                    <_Text
+                    <Text
                       style={[styles.messageText, msg.role === 'user' ? styles.userText : styles.modelText]}
                     >
                       {msg.text}
-                    </_Text>
-                  </_View>
+                    </Text>
+                  </View>
                 )
               )}
               {/*
@@ -1761,8 +1748,8 @@ const AIChatBot = () => {
                 話し始めたあとも出し続けると、会話の流れを遮る
               */}
               {messages.length <= 1 && !isLoading && (
-                <_View style={styles.例の枠}>
-                  <_Text style={styles.例の前置き}>こんなことが聞けます</_Text>
+                <View style={styles.例の枠}>
+                  <Text style={styles.例の前置き}>こんなことが聞けます</Text>
                   {/*
                     分類ごとに1行。その行を横へ流して選ぶ。
                     縦に全部並べると、初めて開いたときに11行が挨拶を押し出す。
@@ -1771,11 +1758,11 @@ const AIChatBot = () => {
                     見えず、何を聞けるのかが伝わらない
                   */}
                   {分類たち.map((束) => (
-                    <_View key={束.分類} style={styles.例の段}>
-                      <_Text style={styles.例の分類}>{束.分類}</_Text>
+                    <View key={束.分類} style={styles.例の段}>
+                      <Text style={styles.例の分類}>{束.分類}</Text>
                       <横に流せる行 style={styles.例の並び}>
                         {束.文たち.map((文) => (
-                          <_TouchableOpacity
+                          <TouchableOpacity
                             key={文}
                             style={styles.例の行}
                             onPress={() => setInputText(文)}
@@ -1784,70 +1771,70 @@ const AIChatBot = () => {
                             accessibilityLabel={`${束.分類}の質問例：${文}`}
                             aria-label={`${束.分類}の質問例：${文}`}
                           >
-                            <_Text style={styles.例の字} numberOfLines={1}>
+                            <Text style={styles.例の字} numberOfLines={1}>
                               {文}
-                            </_Text>
-                          </_TouchableOpacity>
+                            </Text>
+                          </TouchableOpacity>
                         ))}
                       </横に流せる行>
-                    </_View>
+                    </View>
                   ))}
-                  <_Text style={styles.例の断り}>
+                  <Text style={styles.例の断り}>
                     押すと入力欄に入ります。直してから送れます。
                     横に流すと続きがあります（パソコンは、上に乗せてホイールを回してください）。
-                  </_Text>
-                </_View>
+                  </Text>
+                </View>
               )}
               {isLoading && (
-                <_View
+                <View
                   style={[
                     styles.messageBubble,
                     styles.modelBubble,
                     { flexDirection: 'row', alignItems: 'center' },
                   ]}
                 >
-                  <_ActivityIndicator size="small" color="#007AFF" style={{ marginRight: 8 }} />
-                  <_Text style={styles.modelText}>
+                  <ActivityIndicator size="small" color="#007AFF" style={{ marginRight: 8 }} />
+                  <Text style={styles.modelText}>
                     {retryCountdown > 0 ? `制限中... ${retryCountdown}秒後に再試行します` : '考え中...'}
-                  </_Text>
-                </_View>
+                  </Text>
+                </View>
               )}
-            </_ScrollView>
+            </ScrollView>
 
             {待っているカードの数 >= 2 && (
-              <_View style={styles.まとめて承認の段} testID="chat-bulk-approve">
-                <_Text style={styles.まとめて承認の文}>{待っているカードの数}件の追加が待っています</_Text>
-                <_TouchableOpacity
+              <View style={styles.まとめて承認の段} testID="chat-bulk-approve">
+                <Text style={styles.まとめて承認の文}>{待っているカードの数}件の追加が待っています</Text>
+                <TouchableOpacity
                   style={[styles.actionBtn, { backgroundColor: '#FF3B30' }]}
                   onPress={() => handleAllPending(false)}
                 >
-                  <_Text style={styles.actionBtnText}>すべてキャンセル</_Text>
-                </_TouchableOpacity>
-                <_TouchableOpacity
+                  <Text style={styles.actionBtnText}>すべてキャンセル</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
                   style={[styles.actionBtn, { backgroundColor: '#34C759' }]}
                   onPress={() => handleAllPending(true)}
                 >
-                  <_Text style={styles.actionBtnText}>すべて承認</_Text>
-                </_TouchableOpacity>
-              </_View>
+                  <Text style={styles.actionBtnText}>すべて承認</Text>
+                </TouchableOpacity>
+              </View>
             )}
 
-            <_View style={styles.inputArea}>
+            <View style={styles.inputArea}>
               {/*
                 打ちかけの続きを、入力欄の中に薄く重ねて見せる。
                 一覧を上に出すと会話が押し上げられて落ち着かないので、
                 打っている場所にそのまま出す。押すか Tab で取り込める
               */}
-              <_View style={styles.入力の枠}>
+              <View style={styles.入力の枠}>
                 {続きの候補 ? (
-                  <_View style={styles.続きの層} pointerEvents="none">
-                    <_Text style={styles.続きの字} numberOfLines={1}>
-                      <_Text style={{ color: 'transparent' }}>{inputText}</_Text>
+                  <View style={styles.続きの層} pointerEvents="none">
+                    <Text style={styles.続きの字} numberOfLines={1}>
+                      <Text style={{ color: 'transparent' }}>{inputText}</Text>
                       {続きの候補.slice(inputText.length)}
-                    </_Text>
-                  </_View>
+                    </Text>
+                  </View>
                 ) : null}
-                <_TextInput
+                <TextInput
                   style={styles.input}
                   onKeyPress={(出来事) => {
                     // Tab か → で続きを取り込む（Claude Code と同じ操作）
@@ -1863,8 +1850,8 @@ const AIChatBot = () => {
                   multiline={true}
                   maxLength={500}
                 />
-              </_View>
-              <_TouchableOpacity
+              </View>
+              <TouchableOpacity
                 style={[styles.sendBtn, (!inputText.trim() || isLoading) && { opacity: 0.5 }]}
                 testID="AIに送る"
                 accessibilityLabel="送信"
@@ -1872,18 +1859,18 @@ const AIChatBot = () => {
                 disabled={!inputText.trim() || isLoading}
               >
                 <Ionicons name="send" size={20} color="#FFF" />
-              </_TouchableOpacity>
-            </_View>
-          </_View>
-        </_KeyboardAvoidingView>
-      </_Modal>
-    </_View>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    </View>
   );
 };
 
 exports.AIChatBot = AIChatBot;
 
-const styles = _StyleSheet.create({
+const styles = StyleSheet.create({
   floatingButton: {
     position: 'absolute',
     right: 20,

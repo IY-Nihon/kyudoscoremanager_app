@@ -8,8 +8,10 @@
  * 「既存のライト色 → ダーク色」への変換を実行時に一箇所で行う方式を採る。
  *
  * 変換の差し込み口は2つだけ:
- *   1. src/StyleSheet.js   … StyleSheet.create の結果を変換（styles 定義側）
- *   2. src/themedJsx.js   … JSX ランタイムで style / color 系 props を変換（インライン側）
+ *   1. src/rn.js            … StyleSheet.create の結果を変換（styles 定義側）。Text と
+ *                             TextInput の既定の文字色もここで当てる
+ *   2. src/theme-runtime/   … JSX ランタイムで style / color 系 props を変換（インライン側。
+ *                             babel の jsxImportSource で全ファイルの JSX がここを通る）
  *
  * ■ 配色の根拠
  * 元のパレットが Apple のシステムカラー（systemBlue #007AFF、

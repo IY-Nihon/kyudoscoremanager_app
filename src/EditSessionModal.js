@@ -1,14 +1,7 @@
 const React = require('react');
-const View = require('./View').default;
-const Modal = require('./Modal').default;
-const StyleSheet = require('./StyleSheet').default;
-const Text = require('./Text').default;
-const TouchableOpacity = require('./TouchableOpacity').default;
-const TextInput = require('./TextInput').default;
-const Switch = require('./Switch').default;
+const { View, Modal, StyleSheet, Text, TouchableOpacity, TextInput, Switch, ScrollView } = require('./rn');
 const { IS_IOS } = require('./IS_WEB');
 const Icons = require('@expo/vector-icons');
-const ScrollView = require('./ScrollView').default;
 const ExpoHaptics = require('expo-haptics');
 const { CustomCalendarModal } = require('./CustomCalendarModal');
 const { useScoreStore } = require('./useScoreStore');
