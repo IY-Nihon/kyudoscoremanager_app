@@ -155,8 +155,12 @@ function 貯まっている数() {
  */
 function 見張りを始める() {
   if ('undefined' == typeof window || !window.addEventListener) return () => {};
-  const 誤り = (出来事) =>
+  const 誤り = (出来事) => {
+    // 別の出どころ（拡張機能など）の script の失敗は、ブラウザが中身を隠して
+    // 「Script error.」とだけ告げる。何も分からない便りなので送らない（9 月に 4 通）
+    if (出来事 && !出来事.error && 'Script error.' === 出来事.message) return;
     不具合を送る('画面の外', (出来事 && 出来事.error) || (出来事 && 出来事.message) || 出来事);
+  };
   const 投げっぱなし = (出来事) => 不具合を送る('約束の投げっぱなし', (出来事 && 出来事.reason) || 出来事);
   window.addEventListener('error', 誤り);
   window.addEventListener('unhandledrejection', 投げっぱなし);

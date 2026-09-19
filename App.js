@@ -20,6 +20,7 @@ import { 来客の窓 } from './src/LiveShareModal';
 import { UpdateBar } from './src/UpdateBar';
 import { URLから荷を取る } from './src/liveShare';
 import { 見張りを作る } from './src/backgroundSaver';
+import { アイコンの字体を読んでおく } from './src/iconFont';
 import { goOffline, goOnline } from 'firebase/database';
 import { rtdb } from './src/db';
 
@@ -46,6 +47,11 @@ export default function App() {
   const 共有の来客 = useScoreStore(e => e.共有の来客);
   // URL に載っていた共有の荷。窓を出して、合言葉があれば聞く
   const [共有の荷, 共有の荷を置く] = useState(null);
+
+  // アイコンの字体は画面より先に読んでおく（web で読めないと Icon ごとに約束が投げっぱなしになる。src/iconFont.js）
+  useEffect(() => {
+    if (Platform.OS === 'web') アイコンの字体を読んでおく();
+  }, []);
 
   // 裏に回っているあいだは、Realtime Database との線を休ませる。
   //

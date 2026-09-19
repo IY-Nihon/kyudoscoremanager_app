@@ -28,7 +28,8 @@ const OfflineIndicator = () => {
         ]}
       >
         <View style={styles.badge}>
-          <Icons.MaterialCommunityIcons name="cloud-off-outline" size={16} color="#FFFFFF" />
+          {/* Ionicons にそろえる。MaterialCommunityIcons はこの 1 つのために 1.3MB の字体を取り寄せていた */}
+          <Icons.Ionicons name="cloud-offline-outline" size={16} color="#FFFFFF" />
           <Text style={styles.text}>オフラインモード</Text>
         </View>
       </Animated.View>
