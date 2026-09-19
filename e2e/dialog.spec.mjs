@@ -60,7 +60,7 @@ async function 入る(page) {
       .poll(
         () =>
           page.evaluate(() => {
-            const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+            const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
             return s.activeGroupId || null;
           }),
         { timeout: 60_000, message: 'ログインが通らない（団体IDが入らない）' }
@@ -139,7 +139,7 @@ test.describe('確認とお知らせ', () => {
     test.skip(!開けた, '部員が開けなかった（この団体に部員がいない）');
 
     const 人数の前 = await page.evaluate(() => {
-      const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+      const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
       return (s.members || []).length;
     });
 
@@ -158,7 +158,7 @@ test.describe('確認とお知らせ', () => {
 
     // キャンセルなので1人も減っていないこと
     const 人数の後 = await page.evaluate(() => {
-      const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+      const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
       return (s.members || []).length;
     });
     expect(人数の後).toBe(人数の前);

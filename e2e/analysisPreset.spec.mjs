@@ -37,7 +37,7 @@ async function 入る(page) {
     .poll(
       () =>
         page.evaluate(() => {
-          const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+          const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
           return s.activeGroupId || null;
         }),
       { timeout: 60_000, message: 'ログインが通らない（団体IDが入らない）' }
@@ -55,7 +55,7 @@ async function 入る(page) {
       () =>
         page.evaluate(() => {
           try {
-            const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+            const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
             return (s.sessions || []).length;
           } catch (e) {
             return 0;
@@ -136,7 +136,7 @@ test('ひな型：組み合わせを名前で残し、解除しても呼び出�
 
   // 端末に残っていること。ここが残らないと、開き直したときに消える
   const 残った = await page.evaluate(() => {
-    const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+    const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
     return (s.比較のひな型 || []).map((x) => x.名前);
   });
   expect(残った).toContain('検査のひな型');
@@ -154,7 +154,7 @@ test('ひな型：組み合わせを名前で残し、解除しても呼び出�
 
   // 後片付け。次に流したときへ持ち越さない
   await page.evaluate(() => {
-    const 箱 = JSON.parse(localStorage.getItem('archery-score-storage') || '{}');
+    const 箱 = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}');
     if (箱.state) {
       箱.state.比較のひな型 = [];
       localStorage.setItem('archery-score-storage', JSON.stringify(箱));

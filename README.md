@@ -31,7 +31,7 @@
 - **Expo / React Native Web** の 1 つのコードで Web（PWA）と iOS を配信。状態は zustand、同期は Firebase（Firestore・Realtime Database）
 - **オフライン優先**：手元に確定してから雲へ送る。通信が切れても記録は止まらず、つながったときに突き合わせる
 - **○× の読み取りは端末の中で**：20×20 の小さな MLP（`scripts/ocr-cells/`、自分で描いた見本で学習）を int8 で束ね、写真を外に出さずに読む。名前だけ Gemini（鍵は Cloudflare Workers の中継が持ち、アプリには置かない）
-- **検査**：単体 800 件（`node --test`）と、3 機種の Playwright e2e（検証用の Firebase 企画に対して本物の流れを通す）
+- **検査**：単体 817 件（`node --test`）と、3 機種の Playwright e2e（検証用の Firebase 企画に対して本物の流れを通す）
 - **お知らせ・法務文書・バックアップ**：更新はアプリ内のお知らせで届け、利用規約とプライバシーポリシーはアプリと紹介ページの両方に、データは毎日暗号化して控える（別リポジトリ `kyudoscoremanager_backup`）
 
 ---
@@ -177,6 +177,7 @@ src/messages/          言語ごとの言葉（画面ごとに分ける）
 src/statsRules.js      集計の決まり
 src/chatStats.js       AIの答えのための集計
 src/syncRules.js       同期の突き合わせ
+src/retsuNoMitate.js  記録表の列ごとの見立て（チームの色・鍵・射位・計の数）。列の描き直しを減らす
 ```
 
 ## セットアップ
@@ -585,6 +586,45 @@ npm run ops:scan-japanese
 
 読み込み直せば必ず新しくなります。残っていた穴は「開いたままのタブ」だけで、
 そこを帯で埋めました。
+
+## 古い端末での速さ
+
+人が「遅い」と感じるのは、押してから描き変わるまで 100ms あたりから。
+記録画面は 30 人 × 20 射で ○× のますが 600 個あり、古い端末（CPU を 6 倍遅く
+した見当）では ○× を 1 つ押すのに 68ms かかっていた。これに端末への控えの
+書き込み（大きい団体で 1.4MB。JSON にして書くのに 67ms）が毎回乗る。
+
+2026-09-19 に直したこと：
+
+| 直したもの | どこ | 効き目（30 人 × 20 射、CPU 6 倍遅く） |
+|---|---|---|
+| 端末への控えを、少し待って 1 回にまとめて書く | `useScoreStore.js` の `控えの書き出し` | 押すたびの 67ms が消える。8 回続けて押しても書くのは 2 回 |
+| 列ごとの見立てを親で数字に直して渡す | `retsuNoMitate.js`、`ArcherColumnView.js` | 68ms → 42〜50ms。自分の列に関わらない ○× では列が描き直さない |
+| 残り時間の帯を小さな部品に切る | `RecordScreen.js` の `期限の帯` | 毎秒の描き直しが記録表全体に及ばない |
+| ますと列の購読を 1 つにまとめる | `ScoreCell.js`、`ArcherColumnView.js` | 差は測れる範囲になかったが、購読の数は減る |
+
+控えの書き込みを遅らせたので、画面が隠れる・閉じるときは待たずに書く
+（`visibilitychange`・`pagehide`・`beforeunload`・`AppState`）。雲への同期と
+ライブはここを通らないので、相手に届く速さは変わらない。
+
+はかるには、検証用の配り口を立ててから `scripts/perf-tap.mjs` を叩く：
+
+```
+PW_PORT=8091 node scripts/e2e-server.mjs
+node scripts/perf-tap.mjs 30 20 6        # 30 人・20 射、CPU を 6 倍遅く
+node scripts/perf-tap.mjs 30 20 6 100    # さらに記録 100 件を端末に持たせて
+```
+
+押した時刻（`pointerdown`）と描き変わった時刻（`MutationObserver`）の差を 12 回
+出す。±5ms は揺れるので、1 回の差で一喜一憂しないこと。
+
+e2e は「端末に書かれる中身」を `localStorage` から読むが、書くのを遅らせたので
+まだ書いていないぶんがある。`globalThis.__弓道の控え()` がその写しを返すので、
+e2e では `(globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage'))`
+と読む。storageState を取る `auth.setup.mjs` は、先に `globalThis.__弓道の控えを書く()` で
+書かせる（Playwright は本物の localStorage を写すので、遅らせたぶんが入っていないと
+入り直しになる。全機種の個人ログインの検査が落ちて気づいた）。単体の検査は
+`test/helpers/storeHarness.js` が待ちを 0 にしている。
 
 ## e2e の待ち方
 

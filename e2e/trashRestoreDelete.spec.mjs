@@ -21,7 +21,7 @@ let 題 = 'e2e ゴミ箱の巡り';
 
 async function 手元の記録(page) {
   return page.evaluate((題) => {
-    const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}').state || {};
+    const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}').state || {};
     const 探す = (xs) => (xs || []).find((x) => x && x.title === 題);
     return { 一覧: 探す(s.sessions), ゴミ箱: 探す(s.trash) };
   }, 題);

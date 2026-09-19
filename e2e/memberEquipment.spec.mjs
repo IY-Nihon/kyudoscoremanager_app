@@ -33,7 +33,7 @@ test.use({ storageState: 'e2e/.auth/100002-個人.json' });
 /** 控えに入っている「自分」。誰の欄を開けばよいかは端末が覚えている */
 async function 自分を読む(page) {
   return page.evaluate(() => {
-    const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+    const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
     return { 役: s.activeRole || null, id: s.myMemberId || null, 名: s.myMemberName || null };
   });
 }
@@ -112,14 +112,14 @@ test('個人ログインでは、他人も出ず、部員も足せない', async
   await こうなるまで待つ(
     () =>
       page.evaluate(() => {
-        const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+        const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
         return (s.members || []).length;
       }),
     (n) => n >= 2,
     60000
   );
   const 他人たち = await page.evaluate(() => {
-    const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+    const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
     return (s.members || []).filter((m) => m && m.id !== s.myMemberId).map((m) => m.name);
   });
   expect(他人たち.length, `団体${団体}に自分以外の部員が届かない`).toBeGreaterThan(0);
@@ -143,7 +143,7 @@ test('個人ログインの画面は、履歴が増えても下まで流せる',
   await こうなるまで待つ(
     () =>
       page.evaluate(() => {
-        const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+        const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
         const 自分 = (s.members || []).find((x) => x && x.id === s.myMemberId);
         return ((自分 && 自分.equipments) || []).length;
       }),

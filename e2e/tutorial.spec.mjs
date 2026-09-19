@@ -192,7 +192,7 @@ test.beforeEach(async ({ page }) => {
       .poll(
         () =>
           page.evaluate(() => {
-            const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+            const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
             return s.activeGroupId || null;
           }),
         { timeout: 60_000, message: 'ログインが通らない（団体IDが入らない）' }
@@ -313,7 +313,7 @@ test('案内：最後まで踏んでも、行き止まりも画面外もはみ�
 
 test('案内：終わると記録表が元に戻り、控えも残らない', async ({ page }) => {
   const 前 = await page.evaluate(() => {
-    const o = JSON.parse(localStorage.getItem('archery-score-storage') || '{}');
+    const o = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}');
     return ((o.state || o).archers || []).length;
   });
 
@@ -329,7 +329,7 @@ test('案内：終わると記録表が元に戻り、控えも残らない', as
   await page.waitForTimeout(1000);
 
   const 後 = await page.evaluate(() => {
-    const o = JSON.parse(localStorage.getItem('archery-score-storage') || '{}');
+    const o = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}');
     return {
       列: ((o.state || o).archers || []).length,
       控え: localStorage.getItem('tutorialBoardSnapshot'),

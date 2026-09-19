@@ -132,7 +132,7 @@ test('管理者モードの履歴から記録画面で直し、やめると元�
   await page.getByText('やめる', { exact: true }).last().click();
   await expect(page.getByText('記録詳細', { exact: true })).toBeVisible({ timeout: 20_000 });
   const 記録 = await page.evaluate(() => {
-    const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}').state || {};
+    const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}').state || {};
     return {
       人数: ((s.sessions || []).find((x) => x && x.id === 'ses-100007-3') || {}).archers?.length,
       編集中: s.履歴の編集,
@@ -189,10 +189,15 @@ test('記録の情報を変える：タグの × は押した 1 つだけを外�
   // 設定の画面（後ろに残っている）にも同じ字があるので、窓の中だけを見る
   const 窓 = 見出し.locator('xpath=../..');
 
-  // 種のタグ（正規練習）に、もう 1 つ足して 2 つにする
+  // 種のタグ（正規練習）に、もう 1 つ足して 2 つにする。
+  // 入力欄は controlled なので、窓が開ききる前に fill すると字が落ちる（README「e2e の待ち方」）。
+  // iPhone（WebKit）では Enter が onSubmitEditing に届かないことがあるので、1 字ずつ打って「追加」を押す
   const 入力 = 窓.getByPlaceholder('新規追加');
-  await 入力.fill('検証');
-  await 入力.press('Enter');
+  await expect(入力).toBeVisible({ timeout: 10_000 });
+  await 入力.click();
+  await 入力.pressSequentially('検証', { delay: 20 });
+  await expect(入力).toHaveValue('検証');
+  await 窓.getByText('追加', { exact: true }).click();
   await expect(窓.getByText('検証', { exact: true })).toBeVisible({ timeout: 10_000 });
   // 「正規練習」は選んだチップと、下の定型文の 2 か所に出る。選んだほう（先に出る）を押す
   const 正規練習 = 窓.getByText('正規練習', { exact: true });

@@ -28,7 +28,7 @@ test('団体IDと合言葉で入れる', async ({ page }) => {
     .poll(
       () =>
         page.evaluate(() => {
-          const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+          const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
           return s.activeGroupId || null;
         }),
       { timeout: 90_000, message: 'ログインが通らない（団体IDが入らない）' }

@@ -31,6 +31,7 @@ const { ManualSubstitutionModal } = require('./ManualSubstitutionModal');
 const { getShadowStyle } = require('./shadowStyle');
 const { formatMemberName } = require('./formatMemberName');
 const { use横流し } = require('./yokoNagashi');
+const { 列の見立てを作る } = require('./retsuNoMitate');
 const 仕切り線 = () => <View style={{ height: 1, backgroundColor: '#E5E5EA', marginLeft: 16 }} />;
 const HistoryScreen = () => {
   const {
@@ -315,6 +316,8 @@ const HistoryScreen = () => {
         isGuest: 射手.isGuest || false,
       })
     );
+    // 列ごとの見立て（チームの色・鍵が効くか・射位・計の数）。列には一覧でなくこれを渡す
+    const 見立て = 列の見立てを作る(射手たち, 本数);
     const 前後へ = (向き) => {
       const 位置 = 絞った記録.findIndex((記録1件) => 記録1件.id === 見ている記録.id);
       -1 !== 位置 &&
@@ -638,14 +641,14 @@ const HistoryScreen = () => {
                               key={typeof 射手.id === 'string' ? `行-${射手.id}` : `行-${順}`}
                               archer={射手}
                               shots={本数}
-                              allArchers={射手たち}
                               indexInList={順}
+                              {...見立て[順]}
                               showFooter={false}
                               横並び
                               isReadOnly={!isAdminMode}
                               isAdminMode={isAdminMode}
-                              onPressName={() => 人を選ぶ(射手.id, 順)}
-                              onDelete={() => 射手を消す(射手.id)}
+                              onPressName={(射手ID, 名前, 位置) => 人を選ぶ(射手ID, 位置)}
+                              onDelete={射手を消す}
                               onToggleMark={印を切り替える}
                               onToggleLock={鍵を切り替える}
                             />
@@ -675,13 +678,13 @@ const HistoryScreen = () => {
                               key={typeof 射手.id === 'string' ? 射手.id : `archer-${順}`}
                               archer={射手}
                               shots={本数}
-                              allArchers={射手たち}
                               indexInList={順}
+                              {...見立て[順]}
                               showFooter={false}
                               isReadOnly={!isAdminMode}
                               isAdminMode={isAdminMode}
-                              onPressName={() => 人を選ぶ(射手.id, 順)}
-                              onDelete={() => 射手を消す(射手.id)}
+                              onPressName={(射手ID, 名前, 位置) => 人を選ぶ(射手ID, 位置)}
+                              onDelete={射手を消す}
                               onToggleMark={印を切り替える}
                               onToggleLock={鍵を切り替える}
                             />

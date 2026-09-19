@@ -98,12 +98,8 @@ function 偽Firestore() {
       else if (o.種類 === 'set')
         // merge を渡されたときは、本物と同じく、渡した鍵だけを重ねる。
         // 差を付けないと「消えないはずの中身が消える」検査が書けない
-        表.set(
-          o.id,
-          解決(o.重ねる ? Object.assign({}, 表.get(o.id) || {}, o.値) : Object.assign({}, o.値))
-        );
-      else if (o.種類 === 'update')
-        表.set(o.id, 解決(Object.assign({}, 表.get(o.id) || {}, o.値)));
+        表.set(o.id, 解決(o.重ねる ? Object.assign({}, 表.get(o.id) || {}, o.値) : Object.assign({}, o.値)));
+      else if (o.種類 === 'update') 表.set(o.id, 解決(Object.assign({}, 表.get(o.id) || {}, o.値)));
     }
   };
 
@@ -580,7 +576,9 @@ function ストアを用意する(既存の雲, 既存のライブ) {
   // ストア本体は毎回読み直す
   const 場所 = path.join(SRC, 'useScoreStore.js');
   delete require.cache[場所];
-  const { useScoreStore } = require(場所);
+  const { useScoreStore, 控えの待ちを変える } = require(場所);
+  // 端末への控えは本番では少しまとめて書くが、検査は書いた直後を読むので待たない
+  控えの待ちを変える(0);
 
   return { store: useScoreStore, 雲, ライブ, 保存領域, 知らせ };
 }

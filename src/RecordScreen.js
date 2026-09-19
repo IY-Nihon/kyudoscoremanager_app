@@ -33,6 +33,34 @@ const { ArrowLocationPopover } = require('./ArrowLocationPopover');
 const { OCRRecordModal } = require('./OCRRecordModal');
 const { LiveShareModal } = require('./LiveShareModal');
 const 期限 = require('./liveShare');
+const { 列の見立てを作る } = require('./retsuNoMitate');
+/**
+ * ライブの帯に出す「あと30分で期限切れ」。
+ *
+ * 残りは時間で減るので、こちらから数え直さないと止まって見える。数え直しは
+ * この小さな部品の中だけで起きるようにしてある（記録画面の中に置くと、数え直す
+ * たびに記録表ぜんぶが描き直る）。いつ起きればよいかは liveShare の
+ * 次に数え直すまで が決める（帯に出るころまでは眠り、出てからは 30 秒ごと）。
+ * 近いときだけ出す。ずっと出していると場所を取るだけで読まれなくなる
+ */
+const 期限の帯 = React.memo(({ ライブの期限 }) => {
+  const [いま, いまを進める] = React.useState(() => Date.now());
+  React.useEffect(() => {
+    const 次 = 期限.次に数え直すまで(ライブの期限, いま);
+    if (次 === null) return;
+    const 札 = setTimeout(() => いまを進める(Date.now()), 次);
+    return () => clearTimeout(札);
+  }, [ライブの期限, いま]);
+  const 期限の残り = 期限.期限の短い文言(ライブの期限, いま);
+  if (!期限の残り) return null;
+  // 字は最小限にして、意味は色で持たせる。帯は1行なので、長い文を入れるとライブ名が潰れる
+  return (
+    <View style={styles.liveLimit}>
+      <Icons.Ionicons name="time-outline" size={10} color="#FFF" />
+      <Text style={styles.liveLimitText}>{期限の残り}</Text>
+    </View>
+  );
+});
 const RecordScreen = () => {
   const {
     activeSessionID,
@@ -55,7 +83,6 @@ const RecordScreen = () => {
     redo,
     historyStack = [],
     redoStack = [],
-    deleteArcher,
     clearArcherMarks,
     setArcherMember,
     saveSession,
@@ -120,20 +147,8 @@ const RecordScreen = () => {
   const 来客 = useScoreStore((状態) => 状態.共有の来客);
   // よその団体のライブに共有リンクで入っているか。保存はさせない
   const よその団体 = useScoreStore((状態) => 状態.よその団体のライブ);
-  // 配ったリンクの期限。帯に「あと30分」を出すために見る
+  // 配ったリンクの期限。帯に「あと30分」を出す（期限の帯。数え直しはあちらの中で起きる）
   const ライブの期限 = useScoreStore((状態) => 状態.いまのライブの期限);
-  // 残りは時間で減るので、こちらから数え直さないと止まって見える。
-  // ただし数え直すたびに記録画面ぜんぶが描き直る。いつ起きればよいかは
-  // liveShare の 次に数え直すまで が決める（帯に出るころまでは眠る）
-  const [いま, いまを進める] = React.useState(() => Date.now());
-  React.useEffect(() => {
-    const 次 = 期限.次に数え直すまで(ライブの期限, いま);
-    if (次 === null) return;
-    const 札 = setTimeout(() => いまを進める(Date.now()), 次);
-    return () => clearTimeout(札);
-  }, [ライブの期限, いま]);
-  // 近いときだけ出す。ずっと出していると場所を取るだけで読まれなくなる
-  const 期限の残り = 期限.期限の短い文言(ライブの期限, いま);
   const ライブの一覧 = useScoreStore((状態) => 状態.liveSessionsList);
   const [人の窓, 人の窓を出す] = React.useState(false);
   const [選んだ射手ID, 選んだ射手IDを置く] = React.useState(null);
@@ -472,6 +487,28 @@ const RecordScreen = () => {
     写し.splice(落とす先, 0, 写し.splice(いま, 1)[0]);
     return 写し;
   })();
+  // 列ごとの見立て（チームの色・鍵が効くか・射位・計の数）。列に一覧をまるごと渡すと
+  // ○× を 1 つ入れるたびに全部の列が描き直るので、数字と文字に直して渡す（retsuNoMitate）
+  const 列の見立て = React.useMemo(
+    () => 列の見立てを作る(見えている並び, shotsPerRound),
+    [見えている並び, shotsPerRound]
+  );
+  // 列に渡す手は、描き直しても同じ関数のままにする（変わると列の memo が効かない）。
+  // 中身はそのときの最新の手を呼ぶ
+  const 最新の手 = React.useRef({});
+  最新の手.current = { 人を選ぶ, 閲覧中に押された, 見るだけ中, archers };
+  const 名前を押した = React.useCallback(
+    (射手ID, 名前, 順) => 最新の手.current.人を選ぶ(射手ID, 名前, 順),
+    []
+  );
+  const 列を消す = React.useCallback((射手ID) => useScoreStore.getState().deleteArcher(射手ID), []);
+  const 区切りを長押しした = React.useCallback((射手ID) => {
+    const 手 = 最新の手.current;
+    if (手.見るだけ中) return void 手.閲覧中に押された();
+    const 射手 = (Array.isArray(手.archers) ? 手.archers : []).find((列) => 列 && 列.id === 射手ID);
+    setチーム名の下書き((射手 && 射手.teamName) || '');
+    setチーム名を付ける区切り(射手ID);
+  }, []);
   // 指のいる場所（ページの座標）から、その下にある列の番号を出す。
   // 縦に並べているときは横の位置で、横に並べているときは縦の位置で決める
   //（縦の表は列が横に並び、横の表は上から下へ積まれるため）。
@@ -806,18 +843,14 @@ const RecordScreen = () => {
                   key={typeof 射手.id === 'string' ? 射手.id : `行-${順}`}
                   archer={射手}
                   shots={shotsPerRound}
-                  allArchers={一覧}
                   indexInList={順}
+                  {...列の見立て[順]}
                   showFooter={false}
                   横並び
                   isReadOnly={見るだけ中}
-                  onPressName={() => 人を選ぶ(射手.id, 射手.name, 順)}
-                  onDelete={() => deleteArcher(射手.id)}
-                  onLongPressSeparator={() => {
-                    if (見るだけ中) return void 閲覧中に押された();
-                    setチーム名の下書き(射手.teamName || '');
-                    setチーム名を付ける区切り(射手.id);
-                  }}
+                  onPressName={名前を押した}
+                  onDelete={列を消す}
+                  onLongPressSeparator={区切りを長押しした}
                 />
               ))}
             </View>
@@ -985,14 +1018,8 @@ const RecordScreen = () => {
               <Text style={styles.liveCountText}>{接続の文言}</Text>
             </View>
           ) : null}
-          {/* 期限が近いときだけ。字は最小限にして、意味は色で持たせる。 */}
-          {/* 帯は1行なので、長い文を入れるとライブ名が潰れる */}
-          {期限の残り ? (
-            <View style={styles.liveLimit}>
-              <Icons.Ionicons name="time-outline" size={10} color="#FFF" />
-              <Text style={styles.liveLimitText}>{期限の残り}</Text>
-            </View>
-          ) : null}
+          {/* 期限が近いときだけ出る（期限の帯） */}
+          <期限の帯 ライブの期限={ライブの期限} />
         </ライブの帯>
       ) : null}
       {帯を畳む ? null : (
@@ -1680,19 +1707,15 @@ const RecordScreen = () => {
                           <ArcherColumnView
                             key={typeof 射手.id === 'string' ? 射手.id : `archer-${順}`}
                             archer={射手}
-                            shots={shotsPerRound} // ドラッグ中は「入れた結果」の並びを渡す。計もチームも
-                            // その並びで数え直るので、離す前に出来上がりが見える
-                            allArchers={見えている並び}
-                            indexInList={順}
+                            shots={shotsPerRound}
+                            indexInList={順} // ドラッグ中は「入れた結果」の並び（見えている並び）で
+                            // 数えた見立てを渡す。計もチームもその並びで数え直るので、離す前に出来上がりが見える
+                            {...列の見立て[順]}
                             showFooter={false}
                             isReadOnly={見るだけ中}
-                            onPressName={() => 人を選ぶ(射手.id, 射手.name, 順)}
-                            onDelete={() => deleteArcher(射手.id)}
-                            onLongPressSeparator={() => {
-                              if (見るだけ中) return void 閲覧中に押された();
-                              setチーム名の下書き(射手.teamName || '');
-                              setチーム名を付ける区切り(射手.id);
-                            }}
+                            onPressName={名前を押した}
+                            onDelete={列を消す}
+                            onLongPressSeparator={区切りを長押しした}
                           />
                         ))}
                       </View>

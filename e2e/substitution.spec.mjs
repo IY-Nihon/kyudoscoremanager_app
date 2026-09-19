@@ -55,7 +55,7 @@ async function 入る(page) {
       .poll(
         () =>
           page.evaluate(() => {
-            const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+            const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
             return s.activeGroupId || null;
           }),
         { timeout: 60_000, message: 'ログインが通らない（団体IDが入らない）' }
@@ -121,7 +121,7 @@ test('途中交代：2立目を選ぶと、5射目からの交代として書か
 
   // しまわれた位置が 4（＝5射目、0始まり）であること
   const 位置 = await page.evaluate(() => {
-    const 生 = localStorage.getItem('archery-score-storage');
+    const 生 = (globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage'));
     const 状態 = JSON.parse(生 || '{}')?.state || {};
     const 射手 = (状態.archers || []).find((a) => a && a.substitutions && Object.keys(a.substitutions).length > 0);
     return 射手 ? Object.keys(射手.substitutions).map(Number) : [];
@@ -144,7 +144,7 @@ test('途中交代：射目で選んだときも、その射目にしまわれ�
   await page.waitForTimeout(1500);
 
   const 位置 = await page.evaluate(() => {
-    const 状態 = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+    const 状態 = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
     const 射手 = (状態.archers || []).find((a) => a && a.substitutions && Object.keys(a.substitutions).length > 0);
     return 射手 ? Object.keys(射手.substitutions).map(Number) : [];
   });
@@ -270,7 +270,7 @@ test('途中交代：入れたあと、人の選択から取り消せる', async
 
   const 交代の数 = () =>
     page.evaluate(() => {
-      const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+      const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
       const 射手 = (s.archers || []).find((a) => a && a.substitutions);
       return 射手 ? Object.keys(射手.substitutions).length : 0;
     });

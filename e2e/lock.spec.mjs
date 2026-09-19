@@ -95,7 +95,7 @@ async function 入る(page) {
       .poll(
         () =>
           page.evaluate(() => {
-            const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+            const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
             return s.activeGroupId || null;
           }),
         { timeout: 60_000, message: 'ログインが通らない（団体IDが入らない）' }
@@ -317,7 +317,7 @@ test('矢所：ますを押すと、500ミリ秒後に矢所の窓が出る（�
   await page.waitForTimeout(1200);
   expect(
     await page.evaluate(() => {
-      const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+      const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
       return !!s.enableArrowLocation;
     }),
     '矢所の設定が入らない'

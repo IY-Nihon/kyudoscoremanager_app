@@ -163,7 +163,7 @@ async function 入る(page) {
       .poll(
         () =>
           page.evaluate(() => {
-            const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+            const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
             return s.activeGroupId || null;
           }),
         { timeout: 60_000, message: 'ログインが通らない（団体IDが入らない）' }
@@ -184,7 +184,7 @@ async function 入る(page) {
       .poll(
         () =>
           page.evaluate(() => {
-            const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+            const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
             return (s.ライブの合言葉 || {}).合言葉 || null;
           }),
         { timeout: 90_000, message: 'ライブの合言葉が取れない' }
@@ -192,7 +192,7 @@ async function 入る(page) {
       .not.toBeNull()
       .then(() =>
         page.evaluate(() => {
-          const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+          const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
           return (s.ライブの合言葉 || {}).合言葉 || null;
         })
       );
@@ -896,7 +896,7 @@ test('ライブ：立ち順を入れ替えると、相手の画面にも並び�
   /** 中り数の並びで、どの列がどこに居るかを見る */
   const 並び = (page) =>
     page.evaluate(() =>
-      ((JSON.parse(localStorage.getItem('archery-score-storage') || '{}').state || {}).archers || [])
+      ((JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}').state || {}).archers || [])
         .map((a) => (a.marks || []).filter((m) => m === '○').length)
         .join(',')
     );
@@ -1011,7 +1011,7 @@ test('ライブ：閉じて開き直してもライブへ戻り、終わって�
     .toBe(0);
   await expect(B2.getByText(new RegExp('ライブ中')), '終わったのにライブ中のまま').toHaveCount(0);
   const 控え = await B2.evaluate(() => {
-    const s = JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state || {};
+    const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
     return s.ライブの続き || null;
   });
   expect(控え, 'ライブの控えが捨てられていない').toBeNull();
