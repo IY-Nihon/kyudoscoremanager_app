@@ -119,6 +119,44 @@ function 区切りの名の字(倍率, 寸法) {
   return { fontSize, lineHeight, numberOfLines: Math.max(3, Math.floor(高さ / lineHeight)) };
 }
 
+/**
+ * 立ちの並びから、射手ごとの射位（番と人数）を割り振る。
+ *
+ * 射位は**区切りごと**に数え直す。区切りより後ろは別の立ち（板が 2 つ写った記録、
+ * リーグの相手校）なので、そこの先頭がまた大前、末尾がまた落。名前の付いていない
+ * 区切り（ただの間隔）も、立ちの切れ目なので数え直す。計の列は数えない。
+ * 前は区切りと計を除いた並びを通しで数えていて、2 枚目の板の大前が「5番」だった（2026-09-20）。
+ *
+ * 返すのは並びと同じ長さの配列。区切りと計は null
+ *
+ * @param {Array} 射手たち 立ちの並び
+ * @returns {Array<{番:number, 人数:number}|null>}
+ */
+function 射位を割り振る(射手たち) {
+  const 並び = Array.isArray(射手たち) ? 射手たち : [];
+  /** @type {Array<{番:number, 人数:number}|null>} */
+  const 出 = 並び.map(() => null);
+  let 頭 = 0;
+  const 締める = (尻) => {
+    const 射手の位置 = [];
+    for (let i = 頭; i < 尻; i++) {
+      const 一人 = 並び[i];
+      if (一人 && !一人.isSeparator && !一人.isTotalCalculator) 射手の位置.push(i);
+    }
+    射手の位置.forEach((位置, 番) => {
+      出[位置] = { 番, 人数: 射手の位置.length };
+    });
+  };
+  並び.forEach((一人, i) => {
+    if (一人 && 一人.isSeparator) {
+      締める(i);
+      頭 = i + 1;
+    }
+  });
+  締める(並び.length);
+  return 出;
+}
+
 module.exports = {
   チームを割り当てる,
   チームの色,
@@ -126,6 +164,7 @@ module.exports = {
   出てくるチーム,
   チームの色たち,
   区切りの名の字,
+  射位を割り振る,
 };
 
 /**

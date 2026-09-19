@@ -17,13 +17,20 @@ const 射手 = (id, marks, 余り) => Object.assign({ id, name: id, marks }, 余
 const 区切り = (id, 余り) => Object.assign({ id, name: '---', isSeparator: true, marks: [] }, 余り);
 const 計 = (id, 余り) => Object.assign({ id, name: '計', isTotalCalculator: true, marks: [] }, 余り);
 
-test('射位と人数は、区切りと計を除いた並びで数える', () => {
-  const 見立て = 列の見立てを作る([区切り('s1'), 射手('a', []), 射手('b', []), 計('t'), 射手('c', [])], 8);
+test('射位と人数は、区切りごとに数え直し、計は数えない', () => {
+  // 区切りより後ろは別の立ち（板が 2 つ写った記録の 2 枚目）。先頭がまた大前、人数もその立ちの人数
+  const 見立て = 列の見立てを作る(
+    [射手('x', []), 区切り('s1'), 射手('a', []), 射手('b', []), 計('t'), 射手('c', [])],
+    8
+  );
   assert.deepStrictEqual(
     見立て.map((x) => x.射位の番),
-    [-1, 0, 1, -1, 2]
+    [0, -1, 0, 1, -1, 2]
   );
-  assert.ok(見立て.every((x) => x.人数 === 3));
+  assert.deepStrictEqual(
+    見立て.map((x) => x.人数),
+    [1, 0, 3, 3, 0, 3]
+  );
 });
 
 test('鍵が効くのは、右どなり（並びで手前）が射手の列だけ', () => {
