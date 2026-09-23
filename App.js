@@ -17,6 +17,8 @@ import { auth } from './src/db';
 import { onAuthStateChanged } from 'firebase/auth';
 import { 見張りを始める, 溜まりを流す, 行動を残す } from './src/errorReporter';
 import { 来客の窓 } from './src/LiveShareModal';
+import { 招待の窓 } from './src/InviteModal';
+import { URLから招待を取る } from './src/memberInvite';
 import { UpdateBar } from './src/UpdateBar';
 import { URLから荷を取る } from './src/liveShare';
 import { 見張りを作る } from './src/backgroundSaver';
@@ -34,6 +36,9 @@ const MEMBER_AUTH_VERSION = 2;
 // URL から消したあとも、再読み込みで入り直せるようにするために持つ。
 // タブを閉じれば消えるので、次に端末を使う人には残らない。
 const 共有の荷の鍵 = 'kyudo.共有の荷';
+// 招待リンクの控え（タブ限り）。router が URL を /record へ書き換えてハッシュを落とすので、
+// 読んだらここへ移す（共有リンクと同じ）
+const 招待の鍵 = 'kyudo.招待';
 
 // 保存済みのテーマと OS 配色の追従を、最初の描画前に開始しておく
 initTheme();
@@ -47,6 +52,8 @@ export default function App() {
   const 共有の来客 = useScoreStore(e => e.共有の来客);
   // URL に載っていた共有の荷。窓を出して、合言葉があれば聞く
   const [共有の荷, 共有の荷を置く] = useState(null);
+  // 招待リンクで開かれたときの { 団体, 合言葉 }（src/memberInvite.js）
+  const [招待, 招待を置く] = useState(null);
 
   // アイコンの字体は画面より先に読んでおく（web で読めないと Icon ごとに約束が投げっぱなしになる。src/iconFont.js）
   useEffect(() => {
@@ -81,6 +88,46 @@ export default function App() {
       (外す(), 見張り.片付ける());
     };
   }, []);
+
+  // 招待リンクで開かれたかを、起動のときに一度だけ見る。合言葉は「#」の後ろにあるので、
+  // サーバーの記録や Referer には流れない。読んだら URL から消し、タブの控えへ移す
+  useEffect(() => {
+    try {
+      if (typeof window === 'undefined' || !window.location) return;
+      const URLの招待 = URLから招待を取る(String(window.location.href || ''));
+      if (URLの招待) {
+        try {
+          window.sessionStorage.setItem(招待の鍵, JSON.stringify(URLの招待));
+        } catch (e) {
+          // 控えられなくても、この画面のあいだは持っている
+        }
+        try {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        } catch (e) {
+          // 消せなくても、読めているので先へ進む
+        }
+        招待を置く(URLの招待);
+        return;
+      }
+      let 控え = null;
+      try {
+        控え = JSON.parse(window.sessionStorage.getItem(招待の鍵) || 'null');
+      } catch (e) {
+        // 読めなければ、招待リンクでは来ていない扱いにする
+      }
+      if (控え && 控え.団体 && 控え.合言葉) 招待を置く(控え);
+    } catch (e) {
+      console.warn('[App] 招待リンクを読めませんでした', e);
+    }
+  }, []);
+  const 招待を閉じる = () => {
+    try {
+      window.sessionStorage.removeItem(招待の鍵);
+    } catch (e) {
+      // 消せなくても、窓は閉じる
+    }
+    招待を置く(null);
+  };
 
   // 共有リンクで開かれたかを、起動のときに一度だけ見る。
   //
@@ -273,6 +320,8 @@ export default function App() {
             ) : (
               <LoginScreen />
             )}
+            {/* 招待リンクで来た人を迎える窓 */}
+            {招待 ? <招待の窓 招待={招待} onClose={招待を閉じる} /> : null}
             {/* 共有リンクで来た人を迎える窓。団体に入る前に出す */}
             {共有の荷 && !共有の来客 ? (
               <来客の窓 荷={共有の荷} onClose={() => 共有の荷を置く(null)} />

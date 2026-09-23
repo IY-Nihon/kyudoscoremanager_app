@@ -125,7 +125,9 @@ for (const g of 団体たち) {
     団体: g.id,
     名: 素に(g.f.name) || '',
     部員: 名簿.length,
-    逆引き: 逆引き.length,
+    // 招待リンクの合言葉（src/memberInvite.js）は個人ID ではないので分けて数える
+    逆引き: 逆引き.filter((d) => !(d.f.招待 && d.f.招待.booleanValue)).length,
+    招待: 逆引き.filter((d) => d.f.招待 && d.f.招待.booleanValue).length,
     引けない: 無し,
     別人を指す: 食い違い,
     例: 例.join(' '),
