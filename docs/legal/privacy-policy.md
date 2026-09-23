@@ -169,6 +169,7 @@
 | Google LLC | Firebase Authentication | アカウントの認証及びパスワードの管理 |
 | Google LLC | Cloud Firestore 及び Realtime Database | 団体データ、部員情報及びお問い合わせ内容の保存 |
 | Google LLC | Firebase Hosting | ウェブ版の配信 |
+| Google LLC | Firebase App Check（reCAPTCHA v3） | 本サービスへのアクセスが正規のアプリケーションからのものであるかの判定 |
 | Google LLC | Gemini API | 生成AI機能における回答及び読取結果の生成 |
 | Cloudflare, Inc. | Cloudflare Workers | 生成AI機能における Gemini API への送信の中継（送信された情報の保存は行いません） |
 | Apple Inc. | App Store | iOS 版アプリケーションの配信（※） |
@@ -253,7 +254,8 @@
 
 1. 運営者は、広告の配信又は行動の追跡を目的とした Cookie を使用しません。
 2. ウェブ版においては、ログイン状態の維持及びオフライン環境における利用のため、ブラウザのローカルストレージ及び IndexedDB を使用します。IndexedDB には、認証状態及びオフライン環境で参照するための団体データが保存されます。
-3. 前項に定める情報は、利用者がブラウザの設定を変更することにより削除することができます。ただし、削除した場合、本サービスの一部の機能が利用できなくなることがあります。
+3. ウェブ版においては、不正なアクセスの防止（第16条第3項第7号）のため、Google LLC が提供する reCAPTCHA を使用します。reCAPTCHA は、その判定のため、利用中の端末及びブラウザに関する情報（Cookie を含みます。）を Google LLC に送信します。当該情報の取扱いには、Google プライバシーポリシー（https://policies.google.com/privacy）及び Google 利用規約（https://policies.google.com/terms）が適用されます。
+4. 第2項に定める情報は、利用者がブラウザの設定を変更することにより削除することができます。ただし、削除した場合、本サービスの一部の機能が利用できなくなることがあります。
 
 ## 第23条（アクセス解析ツール）
 
@@ -282,4 +284,4 @@
 
 ## 制定及び改定の履歴
 
-- 2026年9月13日　制定
+- 2026年9月24日　制定
