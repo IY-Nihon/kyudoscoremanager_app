@@ -55,7 +55,7 @@
       },
       {
         "//": "アイコンは名前にハッシュが入らない。差し替えが届くよう、持たせつつ毎回確かめさせる",
-        "source": "@(/apple-touch-icon.png|/icon-192.png|/icon-512.png|/favicon.ico)",
+        "source": "@(/apple-touch-icon*.png|/icon-*.png|/favicon.ico)",
         "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }]
       }
     ]

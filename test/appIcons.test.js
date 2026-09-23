@@ -47,8 +47,12 @@ function png情報(p) {
 
 const アイコン = [
   ['pwa/apple-touch-icon.png', 180],
+  ['pwa/apple-touch-icon-152.png', 152],
+  ['pwa/apple-touch-icon-167.png', 167],
   ['pwa/icon-192.png', 192],
   ['pwa/icon-512.png', 512],
+  ['pwa/icon-maskable-192.png', 192],
+  ['pwa/icon-maskable-512.png', 512],
 ];
 
 test('ホーム画面に追加するのに要るファイルが揃っている', () => {
@@ -142,12 +146,19 @@ test('maskable と名乗る絵は、端まで塗ってあり図柄が安全域�
 
 test('配信の台本が、アイコンと manifest を注入・配布する', () => {
   const ps = 読む('scripts/deploy-web.ps1');
-  for (const 印 of ['apple-touch-icon', 'manifest.json', 'theme-color', 'sw.js']) {
+  for (const 印 of [
+    'apple-touch-icon',
+    'manifest.json',
+    'theme-color',
+    'sw.js',
+    'viewport-fit=cover',
+    '<link rel="apple-touch-icon" href="/apple-touch-icon.png">',
+  ]) {
     assert.ok(ps.includes(印), `deploy-web.ps1 が ${印} を扱っていません`);
   }
   // pwa/ の中身を dist へ配っているか
-  for (const 絵 of ['apple-touch-icon.png', 'icon-192.png', 'icon-512.png']) {
-    assert.ok(ps.includes(`pwa/${絵}`), `deploy-web.ps1 が pwa/${絵} を配っていません`);
+  for (const 絵 of ['apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-192.png', 'icon-maskable-512.png']) {
+    assert.ok(ps.includes(`pwa/${絵}`) || ps.includes("pwa/*'"), `deploy-web.ps1 が pwa/${絵} を配っていません`);
   }
 });
 

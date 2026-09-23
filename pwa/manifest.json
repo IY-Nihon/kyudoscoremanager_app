@@ -1,15 +1,18 @@
 {
+  "id": "/",
   "short_name": "的中ノート",
   "name": "弓道部的中ノート",
   "description": "弓道の的中記録・分析・部活動のチーム管理",
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "lang": "ja",
   "theme_color": "#1A3550",
-  "background_color": "#ffffff"
+  "background_color": "#1A3550"
 }
