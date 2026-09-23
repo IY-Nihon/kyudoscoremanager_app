@@ -94,8 +94,9 @@ const AttendanceScreen = () => {
     const isSet = practiceDays[dateStr];
     const docRef = firestore.doc(db, `groups/${activeGroupId}/officialPracticeDays`, dateStr);
     try {
+      // created は Date で置く（管理画面で日時として読める。数だと読めない）
       if (isSet) await firestore.deleteDoc(docRef);
-      else await firestore.setDoc(docRef, { date: dateStr, created: Date.now() });
+      else await firestore.setDoc(docRef, { date: dateStr, created: new Date() });
     } catch (誤り) {
       console.error(誤り);
     }
@@ -274,7 +275,7 @@ const AttendanceScreen = () => {
       for (const item of aiPreviewItems) {
         await firestore.setDoc(firestore.doc(db, `groups/${activeGroupId}/officialPracticeDays`, item.date), {
           date: item.date,
-          created: Date.now(),
+          created: new Date(),
         });
       }
       setAiPreviewItems(null);

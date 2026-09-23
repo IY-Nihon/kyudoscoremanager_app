@@ -114,7 +114,8 @@ const LoginScreen = () => {
       // 同意の記録は private（誰でも読める場所に置かない）
       await Firestore.setDoc(
         Firestore.doc(db, 'group_accounts', 団体ID, 'private', 'consent'),
-        Object.assign({ name: 団体名の入力, createdAt: Date.now() }, require('./legalDocs').同意の記録())
+        // 日時は Date で置く（管理画面で日時として読める）
+        Object.assign({ name: 団体名の入力, createdAt: new Date() }, require('./legalDocs').同意の記録())
       );
     } catch (書けなかった) {
       // 認証の利用者だけが残ると、同じアドレスで作り直せなくなる
@@ -715,7 +716,7 @@ const LoginScreen = () => {
                                   groupId: 団体の鍵,
                                   memberId,
                                   personalId: 整えたID(個人IDの入力),
-                                  claimedAt: Date.now(),
+                                  claimedAt: new Date(),
                                 }
                               );
                               const 部員の帳面 = await Firestore.getDoc(
