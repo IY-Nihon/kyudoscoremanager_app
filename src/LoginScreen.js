@@ -24,6 +24,9 @@ const { getShadowStyle } = require('./shadowStyle');
 const // 規約・プライバシーポリシーの住所と開き方。使っているのに読み込んでおらず、
   // リンクを押すと 法 is not defined になっていた
   法 = require('./legalDocs');
+// App Check（reCAPTCHA v3）を使っているか。使っているときは、右下の reCAPTCHA の札を隠す代わりに
+// 下の断りを出す（Google の決まり。src/setupAppCheck.js）
+const { AppCheckを使うか } = require('./setupAppCheck');
 // 入れてもらったIDを整える。LINE やメモ帳から貼ると、前後に空白が
 // 混じることがある。そのまま照合すると「合っているのに入れない」になり、
 // 見た目では気づけない。使うたびに整えるのではなく、ここを通す。
@@ -799,6 +802,19 @@ const LoginScreen = () => {
               <Text style={styles.法のリンク}>プライバシーポリシー</Text>
             </Pressable>
           </View>
+          {AppCheckを使うか() && (
+            <Text style={styles.reCAPTCHAの断り}>
+              {'このサイトは reCAPTCHA で保護されており、Google の'}
+              <Text style={styles.法のリンク} onPress={() => 法.開く('https://policies.google.com/privacy')}>
+                プライバシーポリシー
+              </Text>
+              {'と'}
+              <Text style={styles.法のリンク} onPress={() => 法.開く('https://policies.google.com/terms')}>
+                利用規約
+              </Text>
+              {'が適用されます。'}
+            </Text>
+          )}
           <View style={styles.footer}>
             {'register' === 画面の種類 ? (
               <Pressable onPress={() => 画面の種類を置く('login_group')}>
@@ -949,6 +965,14 @@ const styles = StyleSheet.create({
   // 地 #030508 に対して #a09880 は比 6.0 ある
   法のリンク: { color: '#a09880', fontSize: 12, textDecorationLine: 'underline' },
   法の仕切り: { color: '#a09880', fontSize: 12, marginHorizontal: 8 },
+  reCAPTCHAの断り: {
+    color: '#a09880',
+    fontSize: 11,
+    lineHeight: 16,
+    textAlign: 'center',
+    marginTop: 8,
+    marginHorizontal: 16,
+  },
   入力の注意: { color: '#ff8a80', fontSize: 12, marginTop: 6, marginLeft: 2 },
   footerLink: { color: '#e5c184', fontSize: 15, fontWeight: '600' },
   // 登録時の同意の欄
