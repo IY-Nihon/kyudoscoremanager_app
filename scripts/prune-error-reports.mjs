@@ -6,6 +6,11 @@
  *   node scripts/prune-error-reports.mjs prod 消す   （本番・実際に消す）
  *   node scripts/prune-error-reports.mjs prod 済み      （本番・直した不具合の便りを数えるだけ）
  *   node scripts/prune-error-reports.mjs prod 済み 消す （本番・直した不具合の便りを消す）
+ *   node scripts/prune-error-reports.mjs prod 前 2026-09-24 消す （本番・その日より前に届いた便りをすべて消す）
+ *
+ * ■ 前
+ * 配信で直したあと、それより前の便りをまとめて片付けるとき（2026-09-24、使う人が「古い便りは消して」）。
+ * 日付は日本の時刻のその日の 0 時。それより後に届いた便りには触らない。
  *
  * ■ 済み
  * 直した不具合の便りが残っていると、次に読むときに紛らわしい。下の 直した に文言の印を
@@ -31,7 +36,16 @@ import path from 'node:path';
 
 const 対象 = process.argv[2] || 'stg';
 const 済みで選ぶ = process.argv[3] === '済み';
-const 消す = process.argv[3] === '消す' || (済みで選ぶ && process.argv[4] === '消す');
+const 前で選ぶ = process.argv[3] === '前';
+const 境の日 = 前で選ぶ ? Date.parse(`${process.argv[4]}T00:00:00+09:00`) : NaN;
+if (前で選ぶ && !Number.isFinite(境の日)) {
+  console.error('使い方: node scripts/prune-error-reports.mjs <stg|prod> 前 YYYY-MM-DD [消す]');
+  process.exit(1);
+}
+const 消す =
+  process.argv[3] === '消す' ||
+  (済みで選ぶ && process.argv[4] === '消す') ||
+  (前で選ぶ && process.argv[5] === '消す');
 if (!['stg', 'prod'].includes(対象)) {
   console.error('使い方: node scripts/prune-error-reports.mjs <stg|prod> [済み] [消す]');
   process.exit(1);
@@ -100,14 +114,19 @@ const 時 = (d, 名) => {
 
 // expireAt が無い便り（この項目を入れる前に届いたもの）は、createdAt から90日で見る
 const 訳を選ぶ = (d) => 直した.find((x) => x.印.test(d.fields?.message?.stringValue || ''));
-const 期限切れ = 済みで選ぶ
-  ? 全部.filter((d) => 訳を選ぶ(d))
-  : 全部.filter((d) => {
-      const e = 時(d, 'expireAt');
-      if (e) return e <= いま;
+const 期限切れ = 前で選ぶ
+  ? 全部.filter((d) => {
       const c = 時(d, 'createdAt');
-      return c ? c + 90 * 86400000 <= いま : false;
-    });
+      return c && c < 境の日;
+    })
+  : 済みで選ぶ
+    ? 全部.filter((d) => 訳を選ぶ(d))
+    : 全部.filter((d) => {
+        const e = 時(d, 'expireAt');
+        if (e) return e <= いま;
+        const c = 時(d, 'createdAt');
+        return c ? c + 90 * 86400000 <= いま : false;
+      });
 
 console.log(`接続先: ${企画}`);
 if (済みで選ぶ) {
@@ -117,6 +136,8 @@ if (済みで選ぶ) {
     if (n) console.log(`  ${n} 件  ${x.訳}`);
   }
   console.log('');
+} else if (前で選ぶ) {
+  console.log(`便り ${全部.length} 件のうち、${process.argv[4]} より前に届いたもの ${期限切れ.length} 件\n`);
 } else {
   console.log(`便り ${全部.length} 件のうち、期限が過ぎたもの ${期限切れ.length} 件\n`);
 }
@@ -130,7 +151,12 @@ if (期限切れ.length > 5) console.log(`  … ほか ${期限切れ.length - 5
 
 if (!消す) {
   console.log('\n消すには、末尾に 消す を付けてください。');
-  console.log('  node scripts/prune-error-reports.mjs ' + 対象 + (済みで選ぶ ? ' 済み' : '') + ' 消す');
+  console.log(
+    '  node scripts/prune-error-reports.mjs ' +
+      対象 +
+      (済みで選ぶ ? ' 済み' : 前で選ぶ ? ` 前 ${process.argv[4]}` : '') +
+      ' 消す'
+  );
   process.exit(0);
 }
 
