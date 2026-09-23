@@ -72,9 +72,24 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['id', 'email']);
 
       allow update: if isAdmin()
+        // 持ち主が直せるのは、ログインに要る2つと、切り替え待ちのアドレス（pendingEmail）だけ。
+        // email そのものは変えさせない。切り替えは新しいアドレスの確認を通す（下の句）。
+        // 直接変えられると、確かめていないアドレスに団体を渡せてしまう
         || (callerEmail() != ''
             && resource.data.email == callerEmail()
-            && request.resource.data.keys().hasOnly(['id', 'email']));
+            && request.resource.data.keys().hasOnly(['id', 'email', 'pendingEmail'])
+            && request.resource.data.email == resource.data.email
+            && request.resource.data.get('id', '') == resource.data.get('id', ''))
+        // 切り替えの仕上げ。確認のリンクを開いて新しいアドレスになった本人が、email を自分に
+        // 書き換えて切り替え待ちを消す（src/groupLogin.js の 団体で入る）。
+        // 確認済み（email_verified）でなければ通さない。通すと、切り替え待ちのアドレスで
+        // 勝手に口座を作った人が団体を乗っ取れる（pendingEmail は誰でも読める）
+        || (callerEmail() != ''
+            && request.auth.token.email_verified == true
+            && resource.data.get('pendingEmail', '') == callerEmail()
+            && request.resource.data.keys().hasOnly(['id', 'email'])
+            && request.resource.data.email == callerEmail()
+            && request.resource.data.get('id', '') == resource.data.get('id', ''));
 
       allow delete: if isAdmin();
 
