@@ -169,7 +169,7 @@
 | Google LLC | Firebase Authentication | アカウントの認証及びパスワードの管理 |
 | Google LLC | Cloud Firestore 及び Realtime Database | 団体データ、部員情報及びお問い合わせ内容の保存 |
 | Google LLC | Firebase Hosting | ウェブ版の配信 |
-| Google LLC | Firebase App Check（reCAPTCHA v3） | 本サービスへのアクセスが正規のアプリケーションからのものであるかの判定 |
+| Google LLC | Firebase App Check（reCAPTCHA） | 本サービスへのアクセスが正規のアプリケーションからのものであるかの判定 |
 | Google LLC | Gemini API | 生成AI機能における回答及び読取結果の生成 |
 | Cloudflare, Inc. | Cloudflare Workers | 生成AI機能における Gemini API への送信の中継（送信された情報の保存は行いません） |
 | Apple Inc. | App Store | iOS 版アプリケーションの配信（※） |
