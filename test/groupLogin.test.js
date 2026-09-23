@@ -12,15 +12,19 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-const { 団体で入る, 切り替えを頼む } = require('../src/groupLogin');
+const { 団体で入る, 切り替えを頼む, 前のアドレスを残す日数 } = require('../src/groupLogin');
 
-/** 偽の Firestore と認証。口座は { メール: パスワード } */
-function 用意({ 帳面, 口座, 書けない = false, 送れない = null }) {
+/**
+ * 偽の Firestore と認証。口座は { メール: パスワード }。口座の番号（uid）はメールから作る
+ * （口座.uid で上書きできる。「元に戻す」は同じ口座のまま、アドレスだけが前のものに戻る）
+ */
+function 用意({ 帳面, 口座, 非公開 = null, 番号 = {}, 書けない = false, 送れない = null }) {
   const 表 = new Map([['group_accounts/100001', Object.assign({}, 帳面)]]);
+  if (非公開) 表.set('group_accounts/100001/private/consent', Object.assign({}, 非公開));
   const した = [];
   const 認証 = { 今: null };
   const Firestore = {
-    doc: (db, 集まり, id) => ({ 道: `${集まり}/${id}` }),
+    doc: (db, ...道) => ({ 道: 道.join('/') }),
     getDoc: async (場所) => ({ exists: () => 表.has(場所.道), data: () => 表.get(場所.道) }),
     setDoc: async (場所, 値, 選び) => {
       した.push(['setDoc', 値, 選び || null]);
@@ -39,7 +43,7 @@ function 用意({ 帳面, 口座, 書けない = false, 送れない = null }) {
     signInWithEmailAndPassword: async (auth, メール, 合言葉) => {
       した.push(['入る', メール]);
       if (口座[メール] !== 合言葉) throw Object.assign(new Error('no'), { code: 'auth/invalid-credential' });
-      認証.今 = { email: メール };
+      認証.今 = { email: メール, uid: 番号[メール] || 'uid-' + メール };
       return { user: 認証.今 };
     },
     verifyBeforeUpdateEmail: async (user, 宛先) => {
@@ -73,7 +77,59 @@ test('切り替えが済んでいれば、新しいアドレスで入り直し�
     口座: { 'b@example.com': 'pw' },
   });
   assert.deepStrictEqual(await 団体で入る(道具, '100001', 'pw'), { id: '100001', メール: 'b@example.com' });
-  assert.deepStrictEqual(帳面の中身(表), { id: '100001', email: 'b@example.com' }, '切り替え待ちが消える');
+  assert.deepStrictEqual(
+    帳面の中身(表),
+    { id: '100001', email: 'b@example.com', previousEmail: 'a@example.com', ownerUid: 'uid-b@example.com' },
+    '切り替え待ちが消え、「元に戻す」に備えて前のアドレスと口座の番号が残る'
+  );
+  assert.ok(
+    表.get('group_accounts/100001/private/consent').emailSwitchedAt instanceof Date,
+    '切り替えた日時は非公開の側'
+  );
+});
+
+test('「元に戻す」が押されていれば、前のアドレスで入り直し、帳面を戻す', async () => {
+  // 切り替えのあと、古いアドレス宛のリンクで認証のアドレスが a に戻った（口座は同じ）
+  const { 道具, 表 } = 用意({
+    帳面: { id: '100001', email: 'b@example.com', previousEmail: 'a@example.com', ownerUid: 'u1' },
+    口座: { 'a@example.com': 'pw' },
+    番号: { 'a@example.com': 'u1' },
+  });
+  assert.deepStrictEqual(await 団体で入る(道具, '100001', 'pw'), { id: '100001', メール: 'a@example.com' });
+  assert.deepStrictEqual(帳面の中身(表), { id: '100001', email: 'a@example.com' });
+});
+
+test('切り替えて 30 日が過ぎたら、次のログインで前のアドレスを帳面から消す', async () => {
+  const 昔 = new Date(Date.now() - (前のアドレスを残す日数 + 1) * 86400000);
+  const { 道具, 表 } = 用意({
+    帳面: { id: '100001', email: 'b@example.com', previousEmail: 'a@example.com', ownerUid: 'u1' },
+    口座: { 'b@example.com': 'pw' },
+    非公開: { emailSwitchedAt: 昔 },
+  });
+  await 団体で入る(道具, '100001', 'pw');
+  await new Promise((r) => setTimeout(r, 10)); // 片付けは待たずに走る
+  assert.deepStrictEqual(帳面の中身(表), { id: '100001', email: 'b@example.com' });
+});
+
+test('30 日たっていなければ前のアドレスを残す。切り替えた日時が無ければ、いまから数える', async () => {
+  const 近い = new Date(Date.now() - 86400000);
+  const 残る = 用意({
+    帳面: { id: '100001', email: 'b@example.com', previousEmail: 'a@example.com', ownerUid: 'u1' },
+    口座: { 'b@example.com': 'pw' },
+    非公開: { emailSwitchedAt: 近い },
+  });
+  await 団体で入る(残る.道具, '100001', 'pw');
+  await new Promise((r) => setTimeout(r, 10));
+  assert.strictEqual(帳面の中身(残る.表).previousEmail, 'a@example.com');
+
+  const 無い = 用意({
+    帳面: { id: '100001', email: 'b@example.com', previousEmail: 'a@example.com', ownerUid: 'u1' },
+    口座: { 'b@example.com': 'pw' },
+  });
+  await 団体で入る(無い.道具, '100001', 'pw');
+  await new Promise((r) => setTimeout(r, 10));
+  assert.strictEqual(帳面の中身(無い.表).previousEmail, 'a@example.com');
+  assert.ok(無い.表.get('group_accounts/100001/private/consent').emailSwitchedAt instanceof Date);
 });
 
 test('切り替え待ちがあっても、まだリンクが開かれていなければ今のアドレスで入る', async () => {

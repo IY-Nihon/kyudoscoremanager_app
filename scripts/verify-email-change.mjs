@@ -15,8 +15,12 @@
  *   2. 持ち主は email を直接は変えられない（確かめていないアドレスに渡せない）
  *   3. 持ち主は id・email・pendingEmail 以外を書けない（学校名などを戻せない）
  *   4. 切り替え待ちのアドレスで勝手に作った口座（確認していない）は、団体を乗っ取れない
- *   5. 確認のリンクで新しいアドレスになった本人は、email を自分に書き換えて切り替え待ちを消せる
+ *   5. 確認のリンクで新しいアドレスになった本人は、email を自分に書き換えて切り替え待ちを消せる。
+ *      前のアドレスと自分の口座の番号を必ず残す（他人の番号は残せない）
  *   6. 切り替えたあと、古いアドレスでは入れない
+ *   7. 持ち主は前のアドレス・口座の番号を書き換えられない（消すことはできる）
+ *   8. 前のアドレスで勝手に作った口座は、帳面を戻せない
+ *   9. 「元に戻す」のあと、同じ口座の本人は帳面を前のアドレスへ戻せる
  */
 import fs from 'node:fs';
 import os from 'node:os';
@@ -147,30 +151,44 @@ try {
 
     const 新しい鍵 = await signIn(apiKey, 新しいメール, 合言葉);
     後片付けの鍵 = 新しい鍵;
-    const 仕上げ = await 直す(新しい鍵, { id: 団体, email: 新しいメール }, ['id', 'email', 'pendingEmail']);
-    const 中 = JSON.parse(Buffer.from(新しい鍵.split('.')[1], 'base64url').toString());
-    const 前の帳面 = await req(projectId, `/group_accounts/${団体}`);
-    if (仕上げ.status !== 200)
-      console.log(
-        '    [調べ]',
-        JSON.stringify({
-          email: 中.email,
-          v: 中.email_verified,
-          前: Object.keys(前の帳面.json?.fields || {}),
-          返り: 仕上げ.json,
-        }).slice(0, 400)
-      );
+    const 口座の番号 = JSON.parse(Buffer.from(新しい鍵.split('.')[1], 'base64url').toString()).user_id;
+    const 全部 = ['id', 'email', 'pendingEmail', 'previousEmail', 'ownerUid'];
+    const 鍵たち = async () =>
+      Object.keys((await req(projectId, `/group_accounts/${団体}`)).json?.fields || {})
+        .sort()
+        .join('・');
+
+    // 5. 仕上げ
+    const 足りない = await 直す(新しい鍵, { id: 団体, email: 新しいメール }, 全部);
     見る(
-      '5. 確認済みの本人は email を自分に書き換え、切り替え待ちを消せる',
+      '5. 仕上げで前のアドレスと口座の番号を残さない書き方は断る',
+      足りない.status === 403,
+      `HTTP ${足りない.status}`
+    );
+    const 他人の番号 = await 直す(
+      新しい鍵,
+      { id: 団体, email: 新しいメール, previousEmail: 今のメール, ownerUid: 'someone-else' },
+      全部
+    );
+    見る('   口座の番号は自分のものしか残せない', 他人の番号.status === 403, `HTTP ${他人の番号.status}`);
+    const 仕上げ = await 直す(
+      新しい鍵,
+      { id: 団体, email: 新しいメール, previousEmail: 今のメール, ownerUid: 口座の番号 },
+      全部
+    );
+    見る(
+      '   確認済みの本人は email を自分に書き換え、前のアドレスと口座の番号を残せる',
       仕上げ.status === 200,
       `HTTP ${仕上げ.status}`
     );
-    const 後 = await req(projectId, `/group_accounts/${団体}`);
-    const 鍵たち = Object.keys(後.json?.fields || {})
-      .sort()
-      .join('・');
-    見る('   帳面は id と email だけになる', 鍵たち === 'email・id', 鍵たち);
+    const 仕上げの後 = await 鍵たち();
+    見る(
+      '   帳面は id・email・previousEmail・ownerUid になる',
+      仕上げの後 === 'email・id・ownerUid・previousEmail',
+      仕上げの後
+    );
 
+    // 6. 古いアドレスでは入れない
     let 古いので入れた = true;
     try {
       await signIn(apiKey, 今のメール, 合言葉);
@@ -178,6 +196,62 @@ try {
       古いので入れた = false;
     }
     見る('6. 切り替えたあと、古いアドレスでは入れない', !古いので入れた);
+
+    // 7. 持ち主は前のアドレスと口座の番号を書き換えられない（消すことはできる）
+    const 書き換え = await 直す(新しい鍵, { previousEmail: 'someone@example.com' }, ['previousEmail']);
+    見る('7. 持ち主は前のアドレスを書き換えられない', 書き換え.status === 403, `HTTP ${書き換え.status}`);
+    const 消す = await 直す(新しい鍵, {}, ['previousEmail', 'ownerUid']);
+    見る(
+      '   持ち主は前のアドレスと口座の番号を消せる（30 日後の片付け）',
+      消す.status === 200,
+      `HTTP ${消す.status}`
+    );
+    // 「元に戻す」を試すため、所有者の権限で戻しておく（決まりを通さない）
+    await req(projectId, `/group_accounts/${団体}`, {
+      token: 所有者,
+      method: 'PATCH',
+      query: '?updateMask.fieldPaths=previousEmail&updateMask.fieldPaths=ownerUid',
+      body: { fields: { previousEmail: { stringValue: 今のメール }, ownerUid: { stringValue: 口座の番号 } } },
+    });
+
+    // 8. 前のアドレスは空いたので、誰でもそのアドレスで口座を作れる。作っても戻せない
+    const 横取り2 = await signIn(apiKey, 今のメール, 'Other-' + 印, { create: true });
+    const 戻し取り = await 直す(横取り2, { id: 団体, email: 今のメール }, 全部);
+    見る(
+      '8. 前のアドレスで勝手に作った口座は、帳面を戻せない',
+      戻し取り.status === 403,
+      `HTTP ${戻し取り.status}`
+    );
+    await 自分を消す(横取り2);
+
+    // 9. 「元に戻す」。古いアドレスに届くリンクと同じく、口座のアドレスを前のものへ戻す
+    //（戻すリンクは API で受け取れないので、所有者の権限で口座を直接直す）
+    const 戻す = await (
+      await fetch(`${IDT}/projects/${projectId}/accounts:update`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${所有者}`,
+          'Content-Type': 'application/json',
+          'x-goog-user-project': projectId,
+        },
+        body: JSON.stringify({ localId: 口座の番号, email: 今のメール }),
+      })
+    ).json();
+    見る(
+      '（下ごしらえ）口座のアドレスが前のものに戻る',
+      戻す.email === 今のメール,
+      戻す.email || JSON.stringify(戻す.error || 戻す).slice(0, 160)
+    );
+    const 戻った鍵 = await signIn(apiKey, 今のメール, 合言葉);
+    後片付けの鍵 = 戻った鍵;
+    const 戻し = await 直す(戻った鍵, { id: 団体, email: 今のメール }, 全部);
+    見る(
+      '9. 「元に戻す」のあと、同じ口座の本人は帳面を前のアドレスへ戻せる',
+      戻し.status === 200,
+      `HTTP ${戻し.status}`
+    );
+    const 戻しの後 = await 鍵たち();
+    見る('   帳面は id と email だけになる', 戻しの後 === 'email・id', 戻しの後);
   }
 } finally {
   // 後片付け。帳面は所有者の権限で消す（決まりを通さない）

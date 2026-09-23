@@ -68,7 +68,9 @@ service cloud.firestore {
     // あり、get は開けたままにするしかない。
     //
     // 代わりに、ここへ置くのは**ログインに要る2つだけ**にする（メールアドレスの
-    // 切り替え中だけ、切り替え待ちのアドレス pendingEmail も置く。これもログインに要る）。
+    // 切り替え中は、切り替え待ちのアドレス pendingEmail も置く。切り替えて 30 日は、
+    // 「元に戻す」に備えて前のアドレス previousEmail と口座の番号 ownerUid も置く。
+    // どれもログインに要る。src/groupLogin.js）。
     // 団体名・登録日・同意の記録を一緒に置いていたころは、6桁の団体IDを
     // 順に試すだけで「学校名とその担当者のメールアドレス」が組で集められた
     // （2026-09-02 に本番で実際に取得できることを確かめた）。
@@ -97,19 +99,37 @@ service cloud.firestore {
       allow update: if isAdmin()
         // 持ち主が直せるのは、ログインに要る2つと、切り替え待ちのアドレス（pendingEmail）だけ。
         // email そのものは変えさせない。切り替えは新しいアドレスの確認を通す（下の句）。
-        // 直接変えられると、確かめていないアドレスに団体を渡せてしまう
+        // 直接変えられると、確かめていないアドレスに団体を渡せてしまう。
+        // 前のアドレス（previousEmail）と口座の番号（ownerUid）は、消せるが書き換えられない
         || (callerEmail() != ''
             && resource.data.email == callerEmail()
-            && request.resource.data.keys().hasOnly(['id', 'email', 'pendingEmail'])
+            && request.resource.data.keys().hasOnly(['id', 'email', 'pendingEmail', 'previousEmail', 'ownerUid'])
             && request.resource.data.email == resource.data.email
-            && request.resource.data.get('id', '') == resource.data.get('id', ''))
+            && request.resource.data.get('id', '') == resource.data.get('id', '')
+            && (!('previousEmail' in request.resource.data)
+                || request.resource.data.previousEmail == resource.data.get('previousEmail', ''))
+            && (!('ownerUid' in request.resource.data)
+                || request.resource.data.ownerUid == resource.data.get('ownerUid', '')))
         // 切り替えの仕上げ。確認のリンクを開いて新しいアドレスになった本人が、email を自分に
         // 書き換えて切り替え待ちを消す（src/groupLogin.js の 団体で入る）。
         // 確認済み（email_verified）でなければ通さない。通すと、切り替え待ちのアドレスで
-        // 勝手に口座を作った人が団体を乗っ取れる（pendingEmail は誰でも読める）
+        // 勝手に口座を作った人が団体を乗っ取れる（pendingEmail は誰でも読める）。
+        // 前のアドレス（いまの email）と自分の口座の番号を残す。「元に戻す」に備える（下の句）
         || (callerEmail() != ''
             && request.auth.token.email_verified == true
             && resource.data.get('pendingEmail', '') == callerEmail()
+            && request.resource.data.keys().hasOnly(['id', 'email', 'previousEmail', 'ownerUid'])
+            && request.resource.data.email == callerEmail()
+            && request.resource.data.get('previousEmail', '') == resource.data.email
+            && request.resource.data.get('ownerUid', '') == request.auth.uid
+            && request.resource.data.get('id', '') == resource.data.get('id', ''))
+        // 「元に戻す」のあと。古いアドレスに届くリンクで認証のアドレスが前のものに戻った本人が、
+        // email を前のアドレスへ戻す。仕上げのときに残した口座の番号と同じ口座にしか通さない。
+        // 前のアドレスで勝手に口座を作った人は、口座の番号が違うので通らない
+        //（戻したあとに確認済みになるかは確かめられなかったので、email_verified には頼らない）
+        || (callerEmail() != ''
+            && resource.data.get('ownerUid', '') == request.auth.uid
+            && resource.data.get('previousEmail', '') == callerEmail()
             && request.resource.data.keys().hasOnly(['id', 'email'])
             && request.resource.data.email == callerEmail()
             && request.resource.data.get('id', '') == resource.data.get('id', ''));

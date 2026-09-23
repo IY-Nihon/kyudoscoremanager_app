@@ -97,9 +97,10 @@ test('公開の帳面へ書く項目が、決まりの hasOnly に収まって�
   assert.ok(書く.length > 0, 'アプリが公開の帳面へ書く箇所を1つも読み取れなかった（検査の側が壊れている）');
 
   for (const x of 書く) {
-    // 重ねて書く（merge）のは、在る帳面を直すとき。丸ごと書くのは、作るときか、
-    // メールアドレスの切り替えの仕上げ（src/groupLogin.js）。丸ごと書く方は create に収める
-    const 許す項目 = x.merge ? 許す.update : 許す.create;
+    // 重ねて書く（merge）のは、在る帳面を直すとき。src/groupLogin.js（メールアドレスの
+    // 切り替えの仕上げと「元に戻す」）は在る帳面を丸ごと書く。どちらも update に収める。
+    // それ以外の丸ごと書く所（登録）は create に収める
+    const 許す項目 = x.merge || x.ファイル === 'src/groupLogin.js' ? 許す.update : 許す.create;
     const はみ出し = x.鍵.filter((k) => !許す項目.includes(k));
     assert.deepStrictEqual(
       はみ出し,
@@ -111,14 +112,15 @@ test('公開の帳面へ書く項目が、決まりの hasOnly に収まって�
   }
 });
 
-test('update で create より多く許すのは、切り替え待ちのアドレス（pendingEmail）だけ', () => {
-  // メールアドレスの切り替え（2026-09-24）で、確認が済むまで新しいアドレスを置く所が要る。
-  // ログインが認証の前に引くので、誰でも読める帳面に置くしかない。置くのはアドレスだけで、
-  // 学校名のような「どこの誰か」になるものは入れない
+test('update で create より多く許すのは、メールアドレスの切り替えに要る 3 つだけ', () => {
+  // メールアドレスの切り替え（2026-09-24）で、確認が済むまで新しいアドレス（pendingEmail）、
+  // 切り替えて 30 日は「元に戻す」に備えて前のアドレス（previousEmail）と口座の番号（ownerUid）
+  // を置く。ログインが認証の前に引くので、誰でも読める帳面に置くしかない。置くのはアドレスと
+  // 番号だけで、学校名のような「どこの誰か」になるものは入れない
   const 許す = 決まりが許す項目(読む('firestore.rules'));
   assert.deepStrictEqual(
     [...許す.update].sort(),
-    [...許す.create, 'pendingEmail'].sort(),
+    [...許す.create, 'pendingEmail', 'previousEmail', 'ownerUid'].sort(),
     'create と update で許す項目が違う。' +
       'update が緩いと、作ったあとに書き足して同じ露出を作れる'
   );
