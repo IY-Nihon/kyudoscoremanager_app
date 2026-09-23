@@ -28,7 +28,7 @@ const { getShadowStyle } = require('./shadowStyle');
 // test/updateNotice.test.js が見張っている。
 const 最後に配信した版 = '2026-09-20-09';
 // お知らせの版。新しい項目を足したら、必ずこれを最新の項目の 版 に合わせる。
-const NOTICE_VERSION = '2026-09-24-01';
+const NOTICE_VERSION = '2026-09-20-09';
 const STORAGE_KEY = 'whatsNewDismissedVersion';
 // 最後に開いたときの版。閉じるたびに書く。
 // どこから下が「前に読んだぶん」かの線を引くためだけに使う。
@@ -39,14 +39,6 @@ const LAST_SEEN_KEY = 'whatsNewLastSeenVersion';
 // 新しい順に並べる。上から「前に見た版より新しいか」を数えて、
 // そこで線を引くため、順番が崩れると線の位置が狂う（検査で見ている）
 const NOTICE_ITEMS = [
-  {
-    date: '2026/09/24',
-    版: '2026-09-24-01',
-    title: '団体アカウントの登録メールアドレスを変えられるようにしました',
-    points: [
-      'ログイン画面の「メールアドレスを忘れた」から変えられます。新しいアドレスに届く確認のメールのリンクを開くと切り替わります。以前は変えようとするとエラーになっていました。',
-    ],
-  },
   {
     date: '2026/09/20',
     版: '2026-09-20-09',
