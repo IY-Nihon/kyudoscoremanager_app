@@ -12,7 +12,8 @@
  *      ——このアプリは部員向けに匿名ログインを開けているので、
  *        「認証を求める」だけでは総当たりを止められない
  *
- * 読むだけ。何も書かない。
+ * 読むだけ。何も書かない（④で作った匿名の口座は、終わったら消す。残すと
+ * 誰のものでもない口座が溜まる。scripts/prune-anonymous-users.mjs）。
  */
 import { configFor, signInAnonymously } from './fb-rest.mjs';
 
@@ -45,9 +46,10 @@ const 公開 = await 読む(`group_accounts/${団体}`);
 // ② 中身はログインに要る2つだけか
 if (公開.ok) {
   const 鍵 = Object.keys((await 公開.json()).fields || {}).sort();
-  const 余計 = 鍵.filter((k) => !['id', 'email'].includes(k));
+  // pendingEmail はメールアドレスの切り替え中だけ在る（src/groupLogin.js）
+  const 余計 = 鍵.filter((k) => !['id', 'email', 'pendingEmail'].includes(k));
   見る(
-    '公開の帳面は id と email だけ',
+    '公開の帳面は id と email だけ（切り替え中は pendingEmail も）',
     余計.length === 0,
     余計.length ? `まだ ${余計.join('・')} が入っている` : 鍵.join('・')
   );
@@ -60,9 +62,16 @@ const 未認証 = await 読む(`group_accounts/${団体}/private/consent`);
 // ④ 匿名で入ってから private
 //    このアプリは部員向けに匿名ログインを開けている。だから
 //    「認証を求める」だけでは、総当たりする側は匿名で入ればよいことになる
-const 匿名 = await signInAnonymously(apiKey);
+// signInAnonymously は { idToken, uid } を返す。前はそのまま鍵に渡していて、
+// 匿名ではなく「鍵が壊れている」ことで断られていた（HTTP 401。2026-09-24 に気づいた）
+const { idToken: 匿名 } = await signInAnonymously(apiKey);
 const 匿名で = await 読む(`group_accounts/${団体}/private/consent`, 匿名);
 見る('匿名で入っても private を読めない', !匿名で.ok, `HTTP ${匿名で.status}`);
+await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:delete?key=${apiKey}`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ idToken: 匿名 }),
+}).catch(() => {});
 
 console.log('');
 if (だめ) {

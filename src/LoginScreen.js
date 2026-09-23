@@ -16,6 +16,7 @@ const {
 const { useScoreStore } = require('./useScoreStore');
 const { IS_IOS, IS_WEB, SAFE_TOP_PADDING } = require('./IS_WEB');
 const { auth, db } = require('./db');
+const { 団体で入る, 切り替えを頼む } = require('./groupLogin');
 const FirebaseAuth = require('firebase/auth');
 const Firestore = require('firebase/firestore');
 const Icons = require('@expo/vector-icons');
@@ -62,7 +63,11 @@ const 誤りの文 = (誤り) => {
   if (符号 === 'auth/weak-password') {
     return 'パスワードは6文字以上で設定してください';
   }
-  if (符号 === 'auth/invalid-email') {
+  if (
+    符号 === 'auth/invalid-email' ||
+    符号 === 'auth/invalid-new-email' ||
+    符号 === 'auth/missing-new-email'
+  ) {
     return 'メールアドレスの形式が正しくありません';
   }
   if (符号 === 'auth/requires-recent-login') {
@@ -136,7 +141,7 @@ const LoginScreen = () => {
     ).catch((誤り) => console.warn('[Login] 団体名を置けませんでした', 誤り));
     Alert.alert(
       '【重要】登録完了と運用ガイド',
-      `団体アカウントを作成しました。\n\n■ 登録情報\n団体ID: ${団体ID}\n\n【運用ガイド - スクリーンショット推奨】\n・「団体ID」はメンバーがログインする際、必要です。メンバー全員に共有してください。\n・「パスワード」は管理者のみが知るものとして保存してください。\n・メールアドレスを変更すると、セキュリティのため旧アドレスに確認・無効化のメールが自動送信されます。\n\n※ この運用ガイドの内容は忘れないよう必ず保存をお願いします。`
+      `団体アカウントを作成しました。\n\n■ 登録情報\n団体ID: ${団体ID}\n\n【運用ガイド - スクリーンショット推奨】\n・「団体ID」はメンバーがログインする際、必要です。メンバー全員に共有してください。\n・「パスワード」は管理者のみが知るものとして保存してください。\n・ログインに使うメールアドレスは、ログイン画面の「メールアドレスを忘れた」から変えられます。新しいアドレスに届く確認のメールのリンクを開くと切り替わります。\n\n※ この運用ガイドの内容は忘れないよう必ず保存をお願いします。`
     );
     団体IDの入力を置く(団体ID);
     画面の種類を置く('login_group');
@@ -345,44 +350,21 @@ const LoginScreen = () => {
                       if (団体IDの入力 && 合言葉の入力 && 新しいメールの入力) {
                         処理中を置く(true);
                         try {
-                          const 団体ID = 整えたID(団体IDの入力);
-                          const 帳面の場所 = Firestore.doc(db, 'group_accounts', 団体ID);
-                          const 帳面 = await Firestore.getDoc(帳面の場所);
-                          if (!帳面.exists()) {
-                            throw new Error('入力内容を確認してください');
-                          }
-                          const { email } = 帳面.data();
-                          const 入った = await FirebaseAuth.signInWithEmailAndPassword(
-                            auth,
-                            email,
-                            合言葉の入力
+                          // 新しいアドレスへ確認のメールを送る。リンクを開くと切り替わる
+                          //（すぐには替えない。src/groupLogin.js の 切り替えを頼む）
+                          const { 宛先 } = await 切り替えを頼む(
+                            { Firestore, FirebaseAuth, db, auth },
+                            整えたID(団体IDの入力),
+                            合言葉の入力,
+                            新しいメールの入力
                           );
-                          if (入った.user) {
-                            // Firestore を先に書く。updateEmail は ID トークンの
-                            // メールアドレスを更新してしまい、その後だと
-                            // 「本人だけが変更できる」ルールに引っかかるため。
-                            await Firestore.setDoc(
-                              帳面の場所,
-                              { email: 新しいメールの入力 },
-                              { merge: true }
-                            );
-                            try {
-                              await FirebaseAuth.updateEmail(入った.user, 新しいメールの入力);
-                            } catch (err) {
-                              // 認証側が変わらなかったときは保存済みの値を戻す。
-                              // 放置すると保存メールと認証アカウントが食い違い、
-                              // その団体がログインできなくなる。
-                              await Firestore.setDoc(帳面の場所, { email }, { merge: true });
-                              throw err;
-                            }
-                            Alert.alert(
-                              '完了',
-                              'メールアドレスを変更しました。今後は新しいメールアドレスでログインできます。\n\n◆セキュリティ保護のため、古いメールアドレス宛に変更を通知するメールが自動送信されています。身に覚えのない変更だった場合は、そのメール内のリンクから変更を取り消すことができます。'
-                            );
-                            忘れた窓を置く('none');
-                          }
+                          Alert.alert(
+                            '確認のメールを送りました',
+                            `${宛先} に確認のメールを送りました。メールの中のリンクを開くと、ログインに使うメールアドレスが切り替わります。\n\n切り替わるまでは、今のメールアドレスのままです。切り替えたあとも、団体IDとパスワードでいつもどおりログインできます。\n\nメールが見当たらないときは、迷惑メールのフォルダーもご確認ください。`
+                          );
+                          忘れた窓を置く('none');
                         } catch (誤り) {
-                          Alert.alert('復旧失敗', 誤りの文(誤り));
+                          Alert.alert('送れませんでした', 誤りの文(誤り));
                         } finally {
                           処理中を置く(false);
                         }
@@ -392,7 +374,7 @@ const LoginScreen = () => {
                     }}
                     disabled={処理中}
                   >
-                    <Text style={styles.submitBtnText}>メールアドレスを更新</Text>
+                    <Text style={styles.submitBtnText}>確認のメールを送る</Text>
                   </Pressable>
                   <Pressable onPress={() => 忘れた窓を置く('none')}>
                     {function (state) {
@@ -663,20 +645,14 @@ const LoginScreen = () => {
                         if (団体IDの入力 && 合言葉の入力) {
                           処理中を置く(true);
                           try {
-                            const 帳面の場所 = Firestore.doc(db, 'group_accounts', 整えたID(団体IDの入力));
-                            const 帳面 = await Firestore.getDoc(帳面の場所);
-                            if (!帳面.exists()) {
-                              throw new Error('団体IDまたはパスワードが正しくありません');
-                            }
-                            const { email: 登録のメール, id } = 帳面.data();
-                            await FirebaseAuth.signInWithEmailAndPassword(auth, 登録のメール, 合言葉の入力);
-                            setAuth(
-                              id || 整えたID(団体IDの入力),
-                              'group',
-                              null,
-                              登録のメール,
-                              整えたID(団体IDの入力)
+                            // メールアドレスの切り替えが済んでいれば、新しいアドレスで入り直す
+                            //（src/groupLogin.js の 団体で入る）
+                            const { id, メール } = await 団体で入る(
+                              { Firestore, FirebaseAuth, db, auth },
+                              整えたID(団体IDの入力),
+                              合言葉の入力
                             );
+                            setAuth(id, 'group', null, メール, 整えたID(団体IDの入力));
                           } catch (誤り) {
                             Alert.alert('ログイン失敗', 誤りの文(誤り));
                           } finally {

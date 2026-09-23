@@ -97,22 +97,28 @@ test('公開の帳面へ書く項目が、決まりの hasOnly に収まって�
   assert.ok(書く.length > 0, 'アプリが公開の帳面へ書く箇所を1つも読み取れなかった（検査の側が壊れている）');
 
   for (const x of 書く) {
-    const はみ出し = x.鍵.filter((k) => !許す.create.includes(k));
+    // 重ねて書く（merge）のは、在る帳面を直すとき。丸ごと書くのは、作るときか、
+    // メールアドレスの切り替えの仕上げ（src/groupLogin.js）。丸ごと書く方は create に収める
+    const 許す項目 = x.merge ? 許す.update : 許す.create;
+    const はみ出し = x.鍵.filter((k) => !許す項目.includes(k));
     assert.deepStrictEqual(
       はみ出し,
       [],
       `${x.ファイル} が公開の帳面へ ${x.鍵.join('・')} を書いているが、` +
-        `決まりが許すのは ${許す.create.join('・')} だけ。` +
+        `決まりが許すのは ${許す項目.join('・')} だけ。` +
         `本番の新規登録が permission-denied で止まる（2026-08-27 と 2026-09-02 に実際に起きた）`
     );
   }
 });
 
-test('create と update で許す項目がそろっている', () => {
+test('update で create より多く許すのは、切り替え待ちのアドレス（pendingEmail）だけ', () => {
+  // メールアドレスの切り替え（2026-09-24）で、確認が済むまで新しいアドレスを置く所が要る。
+  // ログインが認証の前に引くので、誰でも読める帳面に置くしかない。置くのはアドレスだけで、
+  // 学校名のような「どこの誰か」になるものは入れない
   const 許す = 決まりが許す項目(読む('firestore.rules'));
   assert.deepStrictEqual(
     [...許す.update].sort(),
-    [...許す.create].sort(),
+    [...許す.create, 'pendingEmail'].sort(),
     'create と update で許す項目が違う。' +
       'update が緩いと、作ったあとに書き足して同じ露出を作れる'
   );

@@ -41,6 +41,9 @@ const firestore = (() => {
 })();
 console.log('[db] Firestore Instance:', firestore ? 'CREATED' : 'NULL');
 const auth = FirebaseAuth.getAuth(firebaseApp);
+// 認証から届くメール（パスワードの再設定・メールアドレスの確認）を日本語にする。
+// 指定しないと、Firebase の既定の雛形（英語）で届く（2026-09-24 に本番の設定で確かめた）
+auth.languageCode = 'ja';
 const rtdb = (() => {
   try {
     return 設定.databaseURL ? RTDB.getDatabase(firebaseApp) : null;
