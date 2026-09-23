@@ -15,6 +15,34 @@
  */
 import js from '@eslint/js';
 import globals from 'globals';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+
+// 別のフォルダーから呼ばれても src を見つけられるよう、この設定ファイルの場所から数える
+const 根 = import.meta.dirname;
+
+// import / export で書いてある .js（App.js・src/ocr など）は ESM として読む。
+// commonjs として読むと、構文の誤りで止まり、そのファイルは何も検査されない
+//（eslint.undef.mjs と同じ見分け方。2026-09-24 に src 全体へ当てて気づいた）
+const ESMのファイル = readdirSync(join(根, 'src'), { withFileTypes: true })
+  .flatMap((d) =>
+    d.isDirectory()
+      ? readdirSync(join(根, 'src', d.name))
+          .filter((f) => f.endsWith('.js'))
+          .map((f) => join('src', d.name, f))
+      : d.name.endsWith('.js')
+        ? [join('src', d.name)]
+        : []
+  )
+  .concat(['App.js'])
+  .filter((道) => {
+    try {
+      return /^\s*(import|export)[\s{]/m.test(readFileSync(join(根, 道), 'utf8'));
+    } catch {
+      return false;
+    }
+  })
+  .map((道) => 道.split('\\').join('/'));
 
 export default [
   { ignores: ['dist/**', 'node_modules/**', 'ios/**', 'android/**', '_archive/**'] },
@@ -41,6 +69,11 @@ export default [
   {
     // ESM で書いてある道具
     files: ['**/*.mjs'],
+    languageOptions: { sourceType: 'module' },
+  },
+  {
+    // ESM で書いてある画面の部品（上の ESMのファイル）
+    files: ESMのファイル,
     languageOptions: { sourceType: 'module' },
   },
   {
