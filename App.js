@@ -130,7 +130,8 @@ export default function App() {
   const setAuth = useScoreStore(e => e.setAuth);
   const 同意の確認が要る = useScoreStore(e => e.同意の確認が要る);
   const startPeriodicSync = useScoreStore(e => e.startPeriodicSync);
-  const fetchAndOverwriteFromCloud = useScoreStore(e => e.fetchAndOverwriteFromCloud);
+  // 起動のときの取り込み。前回から 7 日以内なら差分だけ、それ以外は全件（useScoreStore の 起動時に取り込む）
+  const 起動時に取り込む = useScoreStore(e => e.起動時に取り込む);
   const setupNetworkListener = useScoreStore(e => e.setupNetworkListener);
   const [hasMounted, setHasMounted] = useState(false);
   const [authReady, setAuthReady] = useState(false);
@@ -210,7 +211,7 @@ export default function App() {
       useScoreStore.getState().ライブの合言葉を用意する();
       (async () => {
         try {
-          await fetchAndOverwriteFromCloud();
+          await 起動時に取り込む();
           startPeriodicSync();
           // 同意の記録を確かめる。記録が無ければ静かに補い、
           // 版が古ければ取り直しの窓を出す（下の効果で拾う）

@@ -1127,6 +1127,11 @@ const useScoreStore = zustand.create()(
         viewScale: 1,
         syncStatus: '未同期',
         lastSyncTime: null,
+        // 差分の同期の境目（サーバーの時刻）。{ 団体, 記録, 部員, ごみ箱, 卒業生 }。
+        // 決め方は syncRules の 境目を進める。lastSyncTime（端末の時刻・画面の表示用）とは別
+        雲の境目: null,
+        // 最後に全件をそろえた時刻（端末の時刻）。7 日たったら起動のときに全件を取り直す
+        全部そろえた時刻: 0,
         offlineSaveWarning: null,
         // 入り直しが要るときの案内。permission-denied を拾ったときだけ立てる
         再ログインの案内: null,
@@ -1260,6 +1265,8 @@ const useScoreStore = zustand.create()(
                 trash: [],
                 archers: [],
                 activeSessionID: null,
+                雲の境目: null,
+                全部そろえた時刻: 0,
                 // 履歴の記録を直している途中の控えも、団体を離れるときに捨てる
                 履歴の編集: null,
                 analysisSelectedTags: [],
@@ -1276,7 +1283,18 @@ const useScoreStore = zustand.create()(
               状態().stopListeningToAlumni(),
               状態().stopListeningToTrash(),
               状態().configUnsubscribe && (状態().configUnsubscribe(), 書く({ configUnsubscribe: null })))
-            : (書く({
+            : (団体ID !== 状態().activeGroupId &&
+                // 別の団体へ入るときは、前の団体の控えと境目を持ち越さない
+                //（招待リンクで入り直すときなど、出ずに入ることがある）
+                書く({
+                  sessions: [],
+                  members: [],
+                  alumni: [],
+                  trash: [],
+                  雲の境目: null,
+                  全部そろえた時刻: 0,
+                }),
+              書く({
                 activeGroupId: 団体ID,
                 activeGroupName: 団体名 || 状態().activeGroupName,
                 activeRole: 役割,
@@ -3459,9 +3477,13 @@ const useScoreStore = zustand.create()(
             return void console.log('[syncSessions] Already syncing, skipping...');
           進級の確認を済ませた = true;
           const 前回の同期時刻 = 状態().lastSyncTime || 0;
+          // 差分で取れるのは、この団体で全件をそろえたあと（境目がある）ときだけ
+          const 始めの境目 = 状態().雲の境目;
+          const 差分で取れるか =
+            !!始めの境目 && 始めの境目.団体 === 状態().activeGroupId && 状態().全部そろえた時刻 > 0;
           console.log(
             '[Store] Syncing:',
-            `同期を開始中 (前回基準時刻: ${前回の同期時刻 ? new Date(前回の同期時刻).toLocaleString() : 'なし'})...`
+            `同期を開始中 (前回: ${前回の同期時刻 ? new Date(前回の同期時刻).toLocaleString() : 'なし'} / ${差分で取れるか ? '差分' : '全件'})...`
           );
           書く({ syncStatus: '同期中' });
           try {
@@ -3492,23 +3514,26 @@ const useScoreStore = zustand.create()(
             const 空 = { forEach: () => {} };
             if (選び && 選び.取りに行かない) {
               記録の返り = 部員の返り = ごみ箱の返り = 卒業生の返り = 空;
-            } else if (前回の同期時刻 > 0 && 状態().sessions.length > 0) {
+            } else if (差分で取れるか) {
+              // 集まりごとの境目より後に変わった文書だけを取る（境目の決め方は syncRules の 境目を進める）。
               // 境目は日時型で渡す。Firestore の範囲の問い合わせは同じ型の値にしか当たらず、
               // 数で渡すと serverTimestamp で書いた lastModified（日時型）の文書が 1 件も返らない。
               // 2026-08-03 に書き込みを serverTimestamp へ移してから、ここは何も取ってこなかった
-              //（見張りが代わりに届けていたので気づかなかった。2026-09-24 に本番で確かめて直した）
-              const 基準時刻 = Firestore.Timestamp.fromMillis(Math.max(0, 前回の同期時刻 - 1e4));
+              //（見張りが代わりに届けていたので気づかなかった。2026-09-24 に本番で確かめて直した）。
+              // 境目ちょうど（>=）から取る。同じ時刻の書き込みを取りこぼさないためで、読み直すのは
+              // 境目と同じ時刻の文書だけ（前は 10 秒の余裕を取り、その間の文書を毎回読み直していた）
+              const 基準 = (種) => Firestore.Timestamp.fromMillis(Math.max(0, 始めの境目[種] || 0));
               記録の返り = await Firestore.getDocs(
-                Firestore.query(記録の置き場, Firestore.where('lastModified', '>', 基準時刻))
+                Firestore.query(記録の置き場, Firestore.where('lastModified', '>=', 基準('記録')))
               );
               部員の返り = await Firestore.getDocs(
-                Firestore.query(部員の置き場, Firestore.where('lastModified', '>', 基準時刻))
+                Firestore.query(部員の置き場, Firestore.where('lastModified', '>=', 基準('部員')))
               );
               ごみ箱の返り = await Firestore.getDocs(
-                Firestore.query(ごみ箱の置き場, Firestore.where('lastModified', '>', 基準時刻))
+                Firestore.query(ごみ箱の置き場, Firestore.where('lastModified', '>=', 基準('ごみ箱')))
               );
               卒業生の返り = await Firestore.getDocs(
-                Firestore.query(卒業生の置き場, Firestore.where('lastModified', '>', 基準時刻))
+                Firestore.query(卒業生の置き場, Firestore.where('lastModified', '>=', 基準('卒業生')))
               );
             } else {
               記録の返り = await Firestore.getDocs(
@@ -3595,11 +3620,14 @@ const useScoreStore = zustand.create()(
             });
             // 戻した記録がまだクラウドへ届いていないときは、クラウド側のゴミ箱の
             // 写しで消し込まない。届くまでは手元の「戻した」状態を優先する。
-            const 復元待ち = new Set(
-              記録の合流
+            // ほかの端末が戻した記録（雲の記録のほうがゴミ箱の写しより新しい）も同じ。
+            // 手元のゴミ箱に古い写しが残っていても、履歴に出す（syncRules の 雲で戻された記録）
+            const 復元待ち = new Set([
+              ...記録の合流
                 .filter((記録1件) => 記録1件 && '未同期' === 記録1件.syncStatus)
-                .map((記録1件) => 記録1件.id)
-            );
+                .map((記録1件) => 記録1件.id),
+              ...同期規則.雲で戻された記録(雲の記録, ごみ箱の合流),
+            ]);
             const ごみ箱 = ごみ箱の合流.filter((記録1件) => 記録1件 && !復元待ち.has(記録1件.id));
             const ごみ箱のID = new Set(ごみ箱.map((記録1件) => 記録1件.id));
             const 記録 = 記録の合流.filter((記録1件) => !ごみ箱のID.has(記録1件.id));
@@ -3782,6 +3810,23 @@ const useScoreStore = zustand.create()(
                 console.error('[syncSessions] 卒業生の送り直しの組み立てに失敗:', 誤り);
               }
             }
+            // 境目を進める。差分で取ったときは 4 つとも、全件の道では記録を 100 件しか
+            // 取らないので記録以外だけ（記録の境目は全件取得でしか決めない）。
+            // いまの境目と比べて大きい方にする（途中で全件取得が走っていても下げない）
+            const 今の境目 = 状態().雲の境目;
+            const 境目の元 = 今の境目 && 今の境目.団体 === 団体ID ? 今の境目 : null;
+            const 新しい境目 =
+              差分で取れるか || 境目の元
+                ? {
+                    団体: 団体ID,
+                    記録: 差分で取れるか
+                      ? 同期規則.境目を進める((境目の元 || {}).記録, 雲の記録)
+                      : (境目の元 || {}).記録 || 0,
+                    部員: 同期規則.境目を進める((境目の元 || {}).部員, 雲の部員),
+                    ごみ箱: 同期規則.境目を進める((境目の元 || {}).ごみ箱, 雲のごみ箱),
+                    卒業生: 同期規則.境目を進める((境目の元 || {}).卒業生, 雲の卒業生),
+                  }
+                : 今の境目;
             書く({
               // 完全に消したものは、クラウドにまだ残っていても画面に出さない
               sessions: 記録の一覧.filter((記録1件) => 記録1件 && !完全削除ずみ.has(記録1件.id)),
@@ -3789,9 +3834,11 @@ const useScoreStore = zustand.create()(
               trash: ごみ箱.filter((記録1件) => 記録1件 && !完全削除ずみ.has(記録1件.id)),
               alumni: 卒業生,
               syncStatus: '同期済み',
-              lastSyncTime: 最新の時刻,
+              // 端末の時刻（画面の「最終同期」と、端末に残す記録の間引きに使う）
+              lastSyncTime: Date.now(),
+              雲の境目: 新しい境目,
             });
-            console.log(`[syncSessions] Finished. New lastSyncTime: ${最新の時刻}`);
+            console.log(`[syncSessions] Finished. 最新の変更: ${最新の時刻}`);
             setTimeout(() => {
               状態().ensurePersonalIds();
             }, 500);
@@ -3949,6 +3996,32 @@ const useScoreStore = zustand.create()(
           }
           return 状態().countUnsynced();
         },
+        /**
+         * 起動のときの取り込み。前に全件をそろえてから 7 日以内で、端末に控えがあれば、
+         * 差分（境目より後に変わった文書）だけを取る。それ以外は全件を取り直す。
+         *
+         * 全件取得は、記録・メンバー・ゴミ箱・卒業生をすべて読む（大きい団体で 1 回 250 件ほど）。
+         * そのあと付ける見張りも、メンバー・ゴミ箱・卒業生を丸ごと読み直すので、起動のたびに
+         * 同じものを 2 回読んでいた。差分なら、変わった文書だけで済む。
+         * 消えた文書は差分に出てこないが、メンバー・ゴミ箱・卒業生は見張りが丸ごと見ているので
+         * 届き、記録は消すときにゴミ箱へ移すので届く（syncRules の 起動のしかた）
+         */
+        起動時に取り込む: async () => {
+          const 様子 = 状態();
+          const しかた = 同期規則.起動のしかた({
+            団体: 様子.activeGroupId,
+            境目: 様子.雲の境目,
+            全部そろえた時刻: 様子.全部そろえた時刻,
+            記録の数: (様子.sessions || []).length,
+            部員の数: (様子.members || []).length,
+          });
+          if ('全部' === しかた) return 状態().fetchAndOverwriteFromCloud();
+          console.log('[Store] Loading: 前回からの差分だけを取り込みます');
+          await 状態().syncSessions();
+          // 差分で取れなかった（通信・権限など）ときは、全件で取り直す。
+          // 同じ理由で失敗するなら、全件取得のほうが帯や便りを出す
+          if ('同期エラー' === 状態().syncStatus) return 状態().fetchAndOverwriteFromCloud();
+        },
         fetchAndOverwriteFromCloud: async () => {
           console.log('[Store] Loading:', 'クラウドからの取得を開始...');
           書く({ syncStatus: '同期中' });
@@ -4098,6 +4171,15 @@ const useScoreStore = zustand.create()(
               lastPromotionYear,
               syncStatus: '同期済み',
               lastSyncTime: Date.now(),
+              // 4 つとも全件を読んだので、ここで境目を決め直せる（差分の同期と起動の判断に使う）
+              雲の境目: {
+                団体: 状態().activeGroupId,
+                記録: 同期規則.境目を進める(0, 記録),
+                部員: 同期規則.境目を進める(0, 部員),
+                ごみ箱: 同期規則.境目を進める(0, 雲のごみ箱),
+                卒業生: 同期規則.境目を進める(0, 卒業生),
+              },
+              全部そろえた時刻: Date.now(),
             });
             console.log('[Store] Loading:', '同期が完了しました');
           } catch (誤り) {
@@ -5542,6 +5624,8 @@ const useScoreStore = zustand.create()(
         currentFreshmanTerm: 状態の中身.currentFreshmanTerm,
         lastPromotionYear: 状態の中身.lastPromotionYear,
         lastSyncTime: 状態の中身.lastSyncTime,
+        雲の境目: 状態の中身.雲の境目,
+        全部そろえた時刻: 状態の中身.全部そろえた時刻,
         isAdminMode: 状態の中身.isAdminMode,
         autoPromotionEnabled: 状態の中身.autoPromotionEnabled,
         analysisRankingSettings: 状態の中身.analysisRankingSettings,
