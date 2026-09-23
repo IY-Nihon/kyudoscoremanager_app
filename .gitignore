@@ -65,3 +65,6 @@ users.json
 web-build/
 yarn-debug.*
 yarn-error.*
+
+# 誰のものでもない匿名を消したときの控え（scripts/prune-anonymous-users.mjs）
+anonymous-deleted-*.json

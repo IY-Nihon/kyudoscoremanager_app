@@ -1821,6 +1821,12 @@ const SettingsScreen = () => {
                       await Firestore.deleteDoc(
                         Firestore.doc(db, 'member_claims', auth.currentUser.uid)
                       ).catch(() => {});
+                      // 匿名の口座も消す。証を消して出るだけだと、誰のものでもない口座が
+                      // 認証に溜まる（2026-09-24 に本番で 164 人。scripts/prune-anonymous-users.mjs）。
+                      // 入ってから日が経つと「入り直しが要る」で断られるので、そのときは出るだけ
+                      if (auth.currentUser && auth.currentUser.isAnonymous) {
+                        await FirebaseAuth.deleteUser(auth.currentUser).catch(() => {});
+                      }
                     }
                     await FirebaseAuth.signOut(auth);
                     setAuth(null, null, null, null);
