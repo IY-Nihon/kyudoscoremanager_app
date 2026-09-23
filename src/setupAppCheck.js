@@ -2,13 +2,15 @@
  * App Check の用意（web）。
  *
  * Firestore・Realtime Database・認証へのアクセスが、このアプリから来たものかを
- * reCAPTCHA v3 で確かめる。プライバシーポリシー第16条第3項が安全管理措置として
+ * reCAPTCHA（Enterprise の方式。スコアで判定する）で確かめる。プライバシーポリシー第16条第3項が安全管理措置として
  * 挙げている「Firebase App Check による不正なアクセスの防止」の中身
  * （2026-09-24 まではログを出すだけの空の関数で、記載と実態が食い違っていた）。
  *
  * ■ 鍵
- * reCAPTCHA v3 のサイトキーを EXPO_PUBLIC_RECAPTCHA_SITE_KEY（.env）に置く。公開の鍵なので
- * 束に入ってよい。秘密の鍵は Firebase コンソールの App Check に登録するだけで、アプリには置かない。
+ * reCAPTCHA のサイトキーを EXPO_PUBLIC_RECAPTCHA_SITE_KEY（.env）に置く。公開の鍵なので束に入ってよい。
+ * 鍵は Google Cloud の本番のプロジェクト（kyudoteamscorenote）に作ってあり、Firebase コンソールの
+ * App Check には reCAPTCHA Enterprise として登録した（2026-09-24。reCAPTCHA v3 の方式は
+ * コンソールで「非推奨」と出る。Enterprise はシークレットキーが要らない）。月 10,000 件まで料金なし。
  * サイトキーが無い版（検証環境の束など）では何もしない。
  *
  * ■ 手元（localhost・127.0.0.1）
@@ -70,11 +72,11 @@ const setupAppCheck = (firebaseApp, 差し替え = {}) => {
     札を隠す(窓.document);
     const AppCheck = 差し替え.AppCheck || require('firebase/app-check');
     const 器 = AppCheck.initializeAppCheck(firebaseApp, {
-      provider: new AppCheck.ReCaptchaV3Provider(サイトキー),
+      provider: new AppCheck.ReCaptchaEnterpriseProvider(サイトキー),
       // 印は 1 時間ほどで切れる。切れる前に取り直させる
       isTokenAutoRefreshEnabled: true,
     });
-    console.log('[AppCheck] reCAPTCHA v3 で始めました');
+    console.log('[AppCheck] reCAPTCHA Enterprise で始めました');
     return 器;
   } catch (誤り) {
     // 用意できなくてもアプリは止めない（強制する前は、印が無くても通る）

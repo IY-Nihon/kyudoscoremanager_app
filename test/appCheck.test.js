@@ -25,7 +25,7 @@ function 用意(hostname) {
   const 窓 = { location: { hostname }, document: 文書 };
   const 呼ばれた = [];
   const AppCheck = {
-    ReCaptchaV3Provider: function (鍵) {
+    ReCaptchaEnterpriseProvider: function (鍵) {
       this.鍵 = 鍵;
     },
     initializeAppCheck: (app, 選び) => {
@@ -42,7 +42,7 @@ test('サイトキーが無ければ始めない（検証環境の束など）',
   assert.strictEqual(呼ばれた.length, 0);
 });
 
-test('サイトキーがあれば reCAPTCHA v3 で始め、右下の札を隠す', () => {
+test('サイトキーがあれば reCAPTCHA（Enterprise）で始め、右下の札を隠す', () => {
   const { 窓, 付けた, 呼ばれた, AppCheck } = 用意('kyudoscoremanager.web.app');
   const 器 = setupAppCheck({}, { 環境: { EXPO_PUBLIC_RECAPTCHA_SITE_KEY: 'site-key' }, 窓, AppCheck });
   assert.deepStrictEqual(器, { 器: true });
@@ -72,7 +72,7 @@ test('手元（localhost・127.0.0.1）では debug の印を使う', () => {
 test('始められなくてもアプリは止めない', () => {
   const { 窓 } = 用意('kyudoscoremanager.web.app');
   const 壊れた = {
-    ReCaptchaV3Provider: function () {},
+    ReCaptchaEnterpriseProvider: function () {},
     initializeAppCheck: () => {
       throw new Error('だめ');
     },

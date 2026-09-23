@@ -24,7 +24,7 @@ const { getShadowStyle } = require('./shadowStyle');
 const // 規約・プライバシーポリシーの住所と開き方。使っているのに読み込んでおらず、
   // リンクを押すと 法 is not defined になっていた
   法 = require('./legalDocs');
-// App Check（reCAPTCHA v3）を使っているか。使っているときは、右下の reCAPTCHA の札を隠す代わりに
+// App Check（reCAPTCHA）を使っているか。使っているときは、右下の reCAPTCHA の札を隠す代わりに
 // 下の断りを出す（Google の決まり。src/setupAppCheck.js）
 const { AppCheckを使うか } = require('./setupAppCheck');
 // 入れてもらったIDを整える。LINE やメモ帳から貼ると、前後に空白が
