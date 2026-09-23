@@ -177,11 +177,45 @@ function 記録の射手を整える(session) {
   );
 }
 
-/** 記録の一覧のタグをまとめて揃え、射手の形も整える */
+/**
+ * 記録（練習の記録・ゴミ箱の記録）の日時を、手元で使う形（ミリ秒の数）にそろえる。
+ *
+ * 雲では日時型（Timestamp）で持つことにした。管理画面（Firebase コンソール）で
+ * 「2026年9月24日 …」と読めるように（2026-09-24。scripts/convert-dates-to-timestamp.mjs）。
+ * 手元は数で持つ。並べ替え・期間の絞り込み・端末への控え（JSON）が数を前提にしている。
+ * 日時型のまま手元に入れると、引き算は秒の差になり（Timestamp の valueOf は文字）、
+ * 控えに通すと {seconds, nanoseconds} の入れ物になる（それを送り返して、ゴミ箱の
+ * deletedAt が入れ物で 2 件入っていた）。
+ *
+ * 見るのは date・lastModified・deletedAt と、射手ごとの lastModified。数や無いものは
+ * そのまま。直すところが無ければ同じものを返す（作り直さない）。
+ *
+ * @param {object} 記録
+ * @returns {object}
+ */
+function 記録の日時を数に(記録) {
+  if (!記録 || typeof 記録 !== 'object') return 記録;
+  const 日時か = (値) =>
+    値 !== null && typeof 値 === 'object' && (typeof 値.toMillis === 'function' || 値.seconds != null);
+  const 直し = {};
+  for (const 鍵 of ['date', 'lastModified', 'deletedAt']) if (日時か(記録[鍵])) 直し[鍵] = toMillis(記録[鍵]);
+  if (Array.isArray(記録.archers) && 記録.archers.some((射手) => 射手 && 日時か(射手.lastModified))) {
+    直し.archers = 記録.archers.map((射手) =>
+      射手 && 日時か(射手.lastModified)
+        ? Object.assign({}, 射手, { lastModified: toMillis(射手.lastModified) })
+        : 射手
+    );
+  }
+  return Object.keys(直し).length ? Object.assign({}, 記録, 直し) : 記録;
+}
+
+/** 記録の一覧のタグをまとめて揃え、射手の形と日時も整える */
 function cleanUpSessions(sessions) {
   if (!Array.isArray(sessions)) return sessions;
-  return sessions.map((session) => {
-    if (!session) return session;
+  return sessions.map((元の記録) => {
+    if (!元の記録) return 元の記録;
+    // 雲から日時型のまま入ってきたもの・控えで入れ物になったものも、ここで数に戻す
+    const session = 記録の日時を数に(元の記録);
     const 直し = {};
     if (Array.isArray(session.tags)) 直し.tags = cleanUpTagsArray(session.tags);
     // 端末に控えた記録にも、壊れたものが混ざっている。雲の取り込み口だけを
@@ -892,6 +926,7 @@ module.exports = {
   射の立番号,
   toMillis,
   trashedAtMillis,
+  記録の日時を数に,
   mergeById,
   mergeLiveArchers,
   印だけの差分,

@@ -72,23 +72,25 @@ function 偽Firestore() {
   const 保管庫 = new Map();
   const 記録 = []; // 何をしたかの履歴
   const 見張り = []; // onSnapshot の登録
-  /** query の where / limit を当てる（[id, 値] の並びに） */
+  /** where 1 つに当たるか */
+  const 当たる = (v, { 欄, 比べ, 値 }) => {
+    const 元 = v ? v[欄] : undefined;
+    if (値の型(元) !== 値の型(値)) return false;
+    const x = 比べる値(元);
+    const y = 比べる値(値);
+    if (比べ === '>') return x > y;
+    if (比べ === '>=') return x >= y;
+    if (比べ === '<') return x < y;
+    if (比べ === '<=') return x <= y;
+    if (比べ === '==') return x === y;
+    return true;
+  };
+  /** query の where / or / limit を当てる（[id, 値] の並びに） */
   const 絞る = (並び, 対象) => {
     let 出 = 並び;
-    for (const { 欄, 比べ, 値 } of (対象 && 対象.絞り) || []) {
-      出 = 出.filter(([, v]) => {
-        const 元 = v ? v[欄] : undefined;
-        if (値の型(元) !== 値の型(値)) return false;
-        const x = 比べる値(元);
-        const y = 比べる値(値);
-        if (比べ === '>') return x > y;
-        if (比べ === '>=') return x >= y;
-        if (比べ === '<') return x < y;
-        if (比べ === '<=') return x <= y;
-        if (比べ === '==') return x === y;
-        return true;
-      });
-    }
+    for (const 絞り of (対象 && 対象.絞り) || []) 出 = 出.filter(([, v]) => 当たる(v, 絞り));
+    // or(...) はどれか 1 つに当たればよい
+    for (const 組 of (対象 && 対象.または) || []) 出 = 出.filter(([, v]) => 組.some((絞り) => 当たる(v, 絞り)));
     if (対象 && 対象.上限) 出 = 出.slice(0, 対象.上限);
     return 出;
   };
@@ -176,9 +178,11 @@ function 偽Firestore() {
     query: (集まり, ...条件) => ({
       道: 集まり.道,
       絞り: 条件.filter((c) => c && c.絞り).map((c) => c.絞り),
+      または: 条件.filter((c) => c && c.または).map((c) => c.または),
       上限: (条件.find((c) => c && c.上限) || {}).上限,
     }),
     where: (欄, 比べ, 値) => ({ 絞り: { 欄, 比べ, 値 } }),
+    or: (...条件) => ({ または: 条件.map((c) => c.絞り) }),
     orderBy: () => ({}),
     limit: (n) => ({ 上限: n }),
     serverTimestamp: () => ({ __サーバー日時: true }),

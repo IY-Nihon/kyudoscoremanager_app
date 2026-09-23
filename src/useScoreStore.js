@@ -417,6 +417,8 @@ const cleanUpTagsArray = 同期規則.cleanUpTagsArray;
 const 参加できるライブ = 同期規則.参加できるライブ;
 const cleanUpSessions = 同期規則.cleanUpSessions;
 const 記録の射手を整える = 同期規則.記録の射手を整える;
+// 雲の記録の日時（日時型）を、手元の形（ミリ秒）にする。雲から受け取る口ではすべて通す
+const 記録の日時を数に = 同期規則.記録の日時を数に;
 const 印の列にそろえる = (値, 本数) => {
   if (!値) return 本数 ? Array(本数).fill('') : [];
   if (Array.isArray(値)) {
@@ -3520,7 +3522,7 @@ const useScoreStore = zustand.create()(
             const ミリ秒にする = (値) => (値?.toMillis ? 値.toMillis() : 値 || 0);
             const 雲の記録 = [];
             記録の返り.forEach((文書) => {
-              const 中身 = 文書.data();
+              const 中身 = 記録の日時を数に(文書.data());
               const 更新時刻 = ミリ秒にする(中身.lastModified);
               更新時刻 > 最新の時刻 && (最新の時刻 = 更新時刻);
               const cleanedTags =
@@ -3560,7 +3562,7 @@ const useScoreStore = zustand.create()(
             });
             const 雲のごみ箱 = [];
             ごみ箱の返り.forEach((文書) => {
-              const 中身 = 文書.data();
+              const 中身 = 記録の日時を数に(文書.data());
               const 更新時刻 = ミリ秒にする(中身.lastModified);
               更新時刻 > 最新の時刻 && (最新の時刻 = 更新時刻);
               雲のごみ箱.push(
@@ -3667,7 +3669,10 @@ const useScoreStore = zustand.create()(
                   // pendingDelete は端末の中だけの印。クラウドへは持ち込まない
                   delete 送る形.pendingDelete;
                   送る形.lastModified = Firestore.serverTimestamp();
-                  送る形.deletedAt = 送る形.deletedAt || Firestore.serverTimestamp();
+                  // 捨てた日時は日時型で送る。手元では数で持っている（記録の日時を数に）
+                  送る形.deletedAt = 送る形.deletedAt
+                    ? Firestore.Timestamp.fromMillis(同期規則.toMillis(送る形.deletedAt))
+                    : Firestore.serverTimestamp();
                   一括.set(
                     Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/trash`, 記録.id),
                     送る形
@@ -3965,13 +3970,13 @@ const useScoreStore = zustand.create()(
               Firestore.collection(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`)
             );
             let 記録 = [];
-            記録の返り.forEach((文書) => 記録.push(文書.data()));
+            記録の返り.forEach((文書) => 記録.push(記録の日時を数に(文書.data())));
             console.log('[Store] Loading:', `セッション ${記録.length}件を取得しました`);
             const ごみ箱の返り = await Firestore.getDocs(
               Firestore.collection(Firebaseの器.db, `groups/${状態().activeGroupId}/trash`)
             );
             let 雲のごみ箱 = [];
-            ごみ箱の返り.forEach((文書) => 雲のごみ箱.push(文書.data()));
+            ごみ箱の返り.forEach((文書) => 雲のごみ箱.push(記録の日時を数に(文書.data())));
             const 卒業生の返り = await Firestore.getDocs(
               Firestore.collection(Firebaseの器.db, `groups/${状態().activeGroupId}/alumni`)
             );
@@ -4890,9 +4895,15 @@ const useScoreStore = zustand.create()(
           console.log('[Store] Starting real-time session listener');
           const 記録の置き場 = Firestore.collection(Firebaseの器.db, `groups/${団体}/sessions`);
           const m_30 = Date.now() - 2592000000;
+          // 雲の date は数から日時型へ移している途中（2026-09-24〜）。範囲の問い合わせは
+          // 同じ型の値にしか当たらないので、数と日時型の両方で絞る。数だけで絞ると、
+          // 日時型になった記録が 1 件も届かず、画面から消える
           const 問い = Firestore.query(
             記録の置き場,
-            Firestore.where('date', '>', m_30),
+            Firestore.or(
+              Firestore.where('date', '>', m_30),
+              Firestore.where('date', '>', Firestore.Timestamp.fromMillis(m_30))
+            ),
             Firestore.orderBy('date', 'desc'),
             Firestore.limit(100)
           );
@@ -4901,7 +4912,7 @@ const useScoreStore = zustand.create()(
             (返り) => {
               const 雲の記録 = [];
               返り.forEach((文書) => {
-                const 中身 = 文書.data();
+                const 中身 = 記録の日時を数に(文書.data());
                 const cleanedTags =
                   中身.tags && Array.isArray(中身.tags)
                     ? Array.from(new Set(中身.tags.map(normalizeTag).filter(Boolean)))
@@ -5006,7 +5017,7 @@ const useScoreStore = zustand.create()(
             (返り) => {
               const 雲のごみ箱 = [];
               返り.forEach((文書) => {
-                const 中身 = 文書.data();
+                const 中身 = 記録の日時を数に(文書.data());
                 雲のごみ箱.push(
                   Object.assign({}, 中身, {
                     id: 文書.id,
