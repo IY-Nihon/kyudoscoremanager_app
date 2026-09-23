@@ -1,6 +1,8 @@
 'use strict';
 
 const React = require('react');
+// 招待リンクの欄（メンバーの編集。src/InviteModal.js）
+const { 招待リンクの欄 } = require('./InviteModal');
 const {
   View,
   Text,
@@ -371,6 +373,11 @@ const MemberScreen = () => {
                       </Text>
                     </View>
                   </>
+                ),
+                // 招待リンク（団体の持ち主が管理者モードのときだけ）。合言葉は逆引き表に置き、
+                // メンバーには一覧させない（src/memberInvite.js）
+                編集中の部員 && 'group' === activeRole && isAdminMode && (
+                  <招待リンクの欄 団体={activeGroupId} 部員={編集中の部員} />
                 ),
               ]
             : []),

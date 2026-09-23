@@ -188,4 +188,35 @@ async function 切り替えを頼む(道具, 団体ID, 合言葉, 新しいメ�
   return { 宛先 };
 }
 
-module.exports = { 団体で入る, 切り替えを頼む, 入り直してよい符号, 前のアドレスを残す日数 };
+/**
+ * メンバーとして入る。個人ID でも招待リンクの合言葉でも同じ道を通る（鍵が違うだけ）。
+ *
+ * 匿名で入り、逆引き表（groups/{団体}/member_lookup/{鍵}）から memberId を引き、所属の証
+ * （member_claims/{uid}）を書く。決まりは、証の memberId が逆引き表と一致するときだけ
+ * 書かせるので、正しい鍵を知っている人しか入れない（src/memberInvite.js）。
+ *
+ * @param {{Firestore: any, FirebaseAuth: any, db: any, auth: any}} 道具
+ * @param {string} 団体の鍵 groups/{団体の鍵}
+ * @param {string} 鍵 個人ID か招待の合言葉
+ * @param {string} [見つからないとき] 鍵が引けないときの知らせ
+ * @returns {Promise<{memberId: string, 名前: string}>}
+ */
+async function 部員として入る(道具, 団体の鍵, 鍵, 見つからないとき = '団体IDまたは個人IDが正しくありません') {
+  const { Firestore, FirebaseAuth, db, auth } = 道具;
+  await FirebaseAuth.signInAnonymously(auth);
+  // 1 件だけ直接引く。一覧（list）は使わないので、他団体の名簿は引けない
+  const 逆引き = await Firestore.getDoc(Firestore.doc(db, `groups/${団体の鍵}/member_lookup`, 鍵));
+  if (!逆引き.exists()) throw new Error(見つからないとき);
+  const { memberId } = 逆引き.data();
+  // 所属を宣言する。決まりが逆引き表と突き合わせる
+  await Firestore.setDoc(Firestore.doc(db, 'member_claims', auth.currentUser.uid), {
+    groupId: 団体の鍵,
+    memberId,
+    personalId: 鍵,
+    claimedAt: new Date(),
+  });
+  const 部員の帳面 = await Firestore.getDoc(Firestore.doc(db, `groups/${団体の鍵}/members`, memberId));
+  return { memberId, 名前: (部員の帳面.data() || {}).name || '' };
+}
+
+module.exports = { 団体で入る, 切り替えを頼む, 部員として入る, 入り直してよい符号, 前のアドレスを残す日数 };

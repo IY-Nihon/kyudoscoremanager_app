@@ -16,7 +16,7 @@ const {
 const { useScoreStore } = require('./useScoreStore');
 const { IS_IOS, IS_WEB, SAFE_TOP_PADDING } = require('./IS_WEB');
 const { auth, db } = require('./db');
-const { 団体で入る, 切り替えを頼む } = require('./groupLogin');
+const { 団体で入る, 切り替えを頼む, 部員として入る } = require('./groupLogin');
 const FirebaseAuth = require('firebase/auth');
 const Firestore = require('firebase/firestore');
 const Icons = require('@expo/vector-icons');
@@ -677,32 +677,14 @@ const LoginScreen = () => {
                                 throw new Error('団体IDまたは個人IDが正しくありません');
                               }
                               const { id: 団体の鍵 } = 帳面.data();
-                              await FirebaseAuth.signInAnonymously(auth);
-                              // 個人IDから1件だけ直接取得する。
-                              // 一覧(list)を使わないため、他団体の名簿は引けない。
-                              const 逆引き = await Firestore.getDoc(
-                                Firestore.doc(db, `groups/${団体の鍵}/member_lookup`, 整えたID(個人IDの入力))
+                              // 匿名で入り、個人IDで逆引きして所属の証を書く（招待リンクと同じ道。
+                              // src/groupLogin.js の 部員として入る）
+                              const { memberId, 名前 } = await 部員として入る(
+                                { Firestore, FirebaseAuth, db, auth },
+                                団体の鍵 || 団体ID,
+                                整えたID(個人IDの入力)
                               );
-                              if (!逆引き.exists()) {
-                                throw new Error('団体IDまたは個人IDが正しくありません');
-                              }
-                              const memberId = 逆引き.data().memberId;
-                              // 所属を宣言する。ルール側が逆引き表と突き合わせて検証するため、
-                              // 正しい個人IDを知っている場合しか作れない。
-                              await Firestore.setDoc(
-                                Firestore.doc(db, 'member_claims', auth.currentUser.uid),
-                                {
-                                  groupId: 団体の鍵,
-                                  memberId,
-                                  personalId: 整えたID(個人IDの入力),
-                                  claimedAt: new Date(),
-                                }
-                              );
-                              const 部員の帳面 = await Firestore.getDoc(
-                                Firestore.doc(db, `groups/${団体の鍵}/members`, memberId)
-                              );
-                              const 部員 = 部員の帳面.data() || {};
-                              setAuth(団体の鍵 || 団体ID, 'member', memberId, null, 団体ID, null, 部員.name);
+                              setAuth(団体の鍵 || 団体ID, 'member', memberId, null, 団体ID, null, 名前);
                               setMemberAuthVersion(MEMBER_AUTH_VERSION);
                             } catch (誤り) {
                               Alert.alert('ログイン失敗', 誤りの文(誤り));

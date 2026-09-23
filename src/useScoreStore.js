@@ -2330,7 +2330,19 @@ const useScoreStore = zustand.create()(
           Firestore.deleteDoc(
             Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/members`, 部員ID)
           )
-            .then(() => 状態().syncMemberLookup())
+            .then(() =>
+              Promise.all([
+                状態().syncMemberLookup(),
+                // その人の招待リンクを取り消す（名簿が空になっても残らないよう名指しで）
+                'group' === 状態().activeRole
+                  ? require('./memberInvite').招待を取り消す(
+                      { Firestore, db: Firebaseの器.db },
+                      状態().activeGroupId,
+                      部員ID
+                    )
+                  : null,
+              ])
+            )
             .catch((誤り) => console.error('Delete Member Sync Error:', 誤り));
         },
         syncMemberLookup: async () => {
@@ -2346,7 +2358,21 @@ const useScoreStore = zustand.create()(
             });
             const batch = Firestore.writeBatch(Firebaseの器.db);
             let 件数 = 0;
+            const 今いる部員 = new Set((members || []).filter((部員) => 部員 && 部員.id).map((部員) => 部員.id));
             snap.forEach((文書) => {
+              // 招待リンクの合言葉（src/memberInvite.js）は個人ID ではないので、下の突き合わせに
+              // かけない（かけると「知らない番号」として消してしまう）。メンバーから外れた人の
+              // 合言葉だけ片付ける。名簿が空のとき（まだ読めていないことがある）は消さない。
+              // 個人ID の文書は次の整理で作り直されるが、合言葉は作り直せないので。
+              // 最後の 1 人を消したときは deleteMember が名指しで取り消す
+              const 中身 = 文書.data() || {};
+              if (中身.招待 === true) {
+                if (今いる部員.size && !今いる部員.has(中身.memberId)) {
+                  batch.delete(文書.ref);
+                  件数++;
+                }
+                return;
+              }
               const 欲しい部員ID = want.get(文書.id);
               if (!欲しい部員ID) {
                 batch.delete(文書.ref);
