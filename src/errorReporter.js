@@ -77,7 +77,7 @@ const 係 = 決まり.送り係をつくる({
     await 決まり.間に合わなければ諦める(
       Firestore.addDoc(
         Firestore.collection(器.db, 'errorReports'),
-        Object.assign(決まり.外向きの形(便), {
+        Object.assign(決まり.送る形(便), {
           createdAt: new Date(),
           expireAt: new Date(Date.now() + 便りを置く日数 * 86400000),
         })

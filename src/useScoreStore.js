@@ -2338,7 +2338,8 @@ const useScoreStore = zustand.create()(
             want.forEach((memberId, pid) => {
               batch.set(Firestore.doc(Firebaseの器.db, `groups/${団体}/member_lookup`, pid), {
                 memberId,
-                updatedAt: Date.now(),
+                // Date で置く（管理画面で日時として読める。読むのは人だけ）
+                updatedAt: new Date(),
               });
               件数++;
             });
@@ -3490,7 +3491,11 @@ const useScoreStore = zustand.create()(
             if (選び && 選び.取りに行かない) {
               記録の返り = 部員の返り = ごみ箱の返り = 卒業生の返り = 空;
             } else if (前回の同期時刻 > 0 && 状態().sessions.length > 0) {
-              const 基準時刻 = Math.max(0, 前回の同期時刻 - 1e4);
+              // 境目は日時型で渡す。Firestore の範囲の問い合わせは同じ型の値にしか当たらず、
+              // 数で渡すと serverTimestamp で書いた lastModified（日時型）の文書が 1 件も返らない。
+              // 2026-08-03 に書き込みを serverTimestamp へ移してから、ここは何も取ってこなかった
+              //（見張りが代わりに届けていたので気づかなかった。2026-09-24 に本番で確かめて直した）
+              const 基準時刻 = Firestore.Timestamp.fromMillis(Math.max(0, 前回の同期時刻 - 1e4));
               記録の返り = await Firestore.getDocs(
                 Firestore.query(記録の置き場, Firestore.where('lastModified', '>', 基準時刻))
               );

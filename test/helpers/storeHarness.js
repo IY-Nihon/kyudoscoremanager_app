@@ -20,6 +20,51 @@ const SRC = path.resolve(__dirname, '../../src');
 const 決着しない = () => new Promise(() => {});
 
 /**
+ * 偽の日時（Firestore の Timestamp の代わり）。
+ *
+ * 本物は serverTimestamp() も Date も、日時型（Timestamp）にして返す。偽物が数で返していた
+ * ころは、「数で絞る問い合わせは日時型の文書に当たらない」ことが検査で見えなかった
+ * （差分の同期が 8/3 から空振りしていた。2026-09-24 に見つけた）。
+ * valueOf も本物に合わせて文字にする。数のつもりで引き算すると検査でも崩れる
+ */
+class 偽の日時 {
+  constructor(ミリ秒) {
+    this.ミリ秒 = Number(ミリ秒);
+    this.seconds = Math.floor(this.ミリ秒 / 1000);
+    this.nanoseconds = (this.ミリ秒 - this.seconds * 1000) * 1e6;
+  }
+  toMillis() {
+    return this.ミリ秒;
+  }
+  toDate() {
+    return new Date(this.ミリ秒);
+  }
+  valueOf() {
+    // 本物の Timestamp.valueOf と同じ形（秒を 12 桁に埋めた文字）
+    return String(this.seconds + 1e12).slice(1) + '.' + String(this.nanoseconds + 1e9).slice(1);
+  }
+  isEqual(他) {
+    return 他 instanceof 偽の日時 && 他.ミリ秒 === this.ミリ秒;
+  }
+  static fromMillis(ミリ秒) {
+    return new 偽の日時(ミリ秒);
+  }
+  static fromDate(日) {
+    return new 偽の日時(日.getTime());
+  }
+  static now() {
+    return new 偽の日時(Date.now());
+  }
+}
+
+/**
+ * 問い合わせの比べ方。本物は、範囲（> >= < <=）で比べると**同じ型の値だけ**に当たる
+ * （数で絞ると日時型の文書は返らない。本番で確かめた）。偽物も同じにする
+ */
+const 値の型 = (x) => (x instanceof 偽の日時 ? '日時' : typeof x);
+const 比べる値 = (x) => (x instanceof 偽の日時 ? x.toMillis() : x);
+
+/**
  * 偽の Firestore。
  * 保管庫は { 'groups/100001/sessions': Map<id, データ> } の形で持つ。
  */
@@ -32,12 +77,15 @@ function 偽Firestore() {
     let 出 = 並び;
     for (const { 欄, 比べ, 値 } of (対象 && 対象.絞り) || []) {
       出 = 出.filter(([, v]) => {
-        const x = v ? v[欄] : undefined;
-        if (比べ === '>') return x > 値;
-        if (比べ === '>=') return x >= 値;
-        if (比べ === '<') return x < 値;
-        if (比べ === '<=') return x <= 値;
-        if (比べ === '==') return x === 値;
+        const 元 = v ? v[欄] : undefined;
+        if (値の型(元) !== 値の型(値)) return false;
+        const x = 比べる値(元);
+        const y = 比べる値(値);
+        if (比べ === '>') return x > y;
+        if (比べ === '>=') return x >= y;
+        if (比べ === '<') return x < y;
+        if (比べ === '<=') return x <= y;
+        if (比べ === '==') return x === y;
         return true;
       });
     }
@@ -82,8 +130,11 @@ function 偽Firestore() {
    */
   const 解決 = (値) => {
     if (Array.isArray(値)) return 値.map(解決);
+    // Date も日時型で返す（本物と同じ）
+    if (値 instanceof Date) return new 偽の日時(値.getTime());
+    if (値 instanceof 偽の日時) return 値;
     if (値 && typeof 値 === 'object') {
-      if (値.__サーバー日時) return Date.now();
+      if (値.__サーバー日時) return new 偽の日時(Date.now());
       const out = {};
       for (const k in 値) out[k] = 解決(値[k]);
       return out;
@@ -131,6 +182,7 @@ function 偽Firestore() {
     orderBy: () => ({}),
     limit: (n) => ({ 上限: n }),
     serverTimestamp: () => ({ __サーバー日時: true }),
+    Timestamp: 偽の日時,
     getDoc: async (参照) => {
       const 値 = 取り出す(参照.道).get(参照.id);
       return { exists: () => 値 !== undefined, data: () => 値, id: 参照.id };
@@ -595,4 +647,4 @@ const 待つ = (ms = 0) => new Promise((r) => setTimeout(r, ms));
  */
 const 検査の合言葉 = 'test-live-secret-0123456789';
 
-module.exports = { ストアを用意する, 待つ, 決着しない, 検査の合言葉 };
+module.exports = { ストアを用意する, 待つ, 決着しない, 検査の合言葉, 偽の日時 };

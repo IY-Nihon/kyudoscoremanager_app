@@ -441,3 +441,18 @@ test('まとめ：中身が欠けていても落ちない', () => {
   assert.strictEqual(r[0].のべ回数, 1);
   assert.strictEqual(r[0].古い, 0);
 });
+
+test('送る形：時刻を Date にする（管理画面で日時として読める）。項目は外向きの形と同じ', () => {
+  const { 送る形, 不具合の便を組む: 組む, 外向きの形: 外 } = require('../src/errorReport');
+  const 便 = 組む(new Error('だめ'), { 時刻: 1790000000000 });
+  便.行動 = [{ 時刻: 1789999999000, 名: '押した', 中身: '' }, { 時刻: 0, 名: '?', 中身: '' }];
+  const 出 = 送る形(便);
+  assert.ok(出.at instanceof Date);
+  assert.strictEqual(出.at.getTime(), 1790000000000);
+  assert.ok(出.trail[0].at instanceof Date);
+  assert.strictEqual(出.trail[0].at.getTime(), 1789999999000);
+  assert.strictEqual(出.trail[1].at, null, '時刻の無いものは 1970 年にしない');
+  assert.deepStrictEqual(Object.keys(出).sort(), Object.keys(外(便)).sort());
+  assert.strictEqual(typeof 外(便).at, 'number', '外向きの形は数のまま（読み返す側と共有）');
+});
+

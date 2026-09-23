@@ -16,7 +16,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-const { ストアを用意する, 待つ } = require('./helpers/storeHarness');
+const { ストアを用意する, 待つ, 偽の日時 } = require('./helpers/storeHarness');
 
 const 団体 = '100001';
 const 記録の道 = `groups/${団体}/sessions`;
@@ -1004,3 +1004,24 @@ test('起動時の同期（取りに行かない）：雲から取らずに、�
   await store.getState().syncSessions();
   assert.ok(取りに行った > 0);
 });
+
+// ──────────────────────────────────────────────────────────────
+// 差分の同期（前回から変わったものだけ取りにいく）
+// ──────────────────────────────────────────────────────────────
+
+test('差分の同期：ほかの端末の編集（lastModified が日時型）を取ってくる', async () => {
+  // 境目を数で渡していたころは、日時型の lastModified に 1 件も当たらなかった
+  //（Firestore の範囲の問い合わせは同じ型にしか当たらない。偽物も同じにしてある）
+  const { store, 雲 } = 用意();
+  const 今 = Date.now();
+  store.setState({ lastSyncTime: 今 - 60000 });
+  雲.置く(記録の道, 'ses-1', Object.assign({}, 雲.値(記録の道, 'ses-1'), {
+    title: 'ほかの端末で直した',
+    lastModified: new 偽の日時(今),
+  }));
+  await store.getState().syncSessions();
+  await 待つ(50);
+  assert.equal(記録を見る(store, 'ses-1').title, 'ほかの端末で直した');
+  assert.equal(typeof 記録を見る(store, 'ses-1').lastModified, 'number', '手元はミリ秒で持つ');
+});
+
