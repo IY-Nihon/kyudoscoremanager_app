@@ -1,6 +1,6 @@
 /**
  * 認証から届くメール（パスワードの再設定・メールアドレスの確認・変更のお知らせ）を
- * 日本語にし、差出人名を「弓道部的中ノート」にする。既定は読むだけ。
+ * 日本語にし、差出人名を「弓道部的中ノート」、返信先を運営者の問い合わせ先にする。既定は読むだけ。
  *
  *   node scripts/set-auth-email-templates.mjs            （検証環境・読むだけ）
  *   node scripts/set-auth-email-templates.mjs prod       （本番・読むだけ）
@@ -10,6 +10,9 @@
  *   ・雛形の言語（notification.defaultLocale）… 変えられる。ja にすると Firebase の
  *     日本語の標準の文面になる。雛形は言語ごとに持っていて、ja にすると読み出しも日本語になる
  *   ・差出人名（senderDisplayName）… 変えられる。雛形ごとに 1 つで、言語には依らない
+ *   ・返信先（replyTo）… 変えられる。受け取った人が「返信」を押すと問い合わせ先へ届く
+ *   ・送信元のアドレス … noreply@（企画）.firebaseapp.com のまま。@gmail.com は自分のドメインに
+ *     できないので送信元にはできない（見せかけると、なりすましとして迷惑メールに入りやすい）
  *   ・件名（subject）… 変えられない（EMAIL_TEMPLATE_UPDATE_NOT_ALLOWED で断られる）
  *   ・本文（body）… 変えられない。200 が返るが、読み直すと元のまま（黙って捨てられる）
  *   管理画面（Authentication → テンプレート）でも同じ。本文の欄は「スパム防止のため編集できません」、
@@ -38,6 +41,8 @@ const 当てる = process.argv.includes('当てる');
 
 const 言語 = 'ja';
 const 差出人名 = '弓道部的中ノート';
+// 返信先は運営者の問い合わせ先（アプリのログイン画面・設定の案内と同じ）
+const 返信先 = 'kyudoteamscorenote.dev@gmail.com';
 const 雛形たち = ['resetPasswordTemplate', 'verifyEmailTemplate', 'changeEmailTemplate'];
 
 const 設定 = path.join(os.homedir(), '.config', 'configstore', 'firebase-tools.json');
@@ -91,6 +96,7 @@ const 見せる = (n) => {
     console.log(
       `  差出人: ${t.senderDisplayName || '(名前なし)'} <${t.senderLocalPart || 'noreply'}@${企画}.firebaseapp.com>`
     );
+    console.log(`  返信先: ${t.replyTo || '(なし)'}`);
     console.log(`  件名: ${t.subject}`);
     console.log(文にする(t.body).replace(/^/gm, '    '));
   }
@@ -101,7 +107,10 @@ console.log(`接続先: ${企画}${当てる ? '' : '（読むだけ）'}\n`);
 見せる(今);
 const 済み =
   今.defaultLocale === 言語 &&
-  雛形たち.every((名) => (今.sendEmail || {})[名]?.senderDisplayName === 差出人名);
+  雛形たち.every(
+    (名) =>
+      (今.sendEmail || {})[名]?.senderDisplayName === 差出人名 && (今.sendEmail || {})[名]?.replyTo === 返信先
+  );
 if (済み) {
   console.log('\nもう日本語・差出人名ありになっています。');
   process.exit(0);
@@ -119,16 +128,29 @@ console.log(`\n当てる前の設定を控えました: ${控え}`);
 
 // 言語を先に。雛形は言語ごとなので、差出人名はそのあと（どの言語でも同じ値になる）
 await 書く('notification.defaultLocale', { defaultLocale: 言語 });
-await 書く(雛形たち.map((名) => `notification.sendEmail.${名}.senderDisplayName`).join(','), {
-  sendEmail: Object.fromEntries(雛形たち.map((名) => [名, { senderDisplayName: 差出人名 }])),
-});
+await 書く(
+  雛形たち
+    .flatMap((名) => [
+      `notification.sendEmail.${名}.senderDisplayName`,
+      `notification.sendEmail.${名}.replyTo`,
+    ])
+    .join(','),
+  {
+    sendEmail: Object.fromEntries(
+      雛形たち.map((名) => [名, { senderDisplayName: 差出人名, replyTo: 返信先 }])
+    ),
+  }
+);
 
 const 後 = await 読む();
 console.log('\n── 当てたあと（これが届く）──\n');
 見せる(後);
 const 良い =
   後.defaultLocale === 言語 &&
-  雛形たち.every((名) => (後.sendEmail || {})[名]?.senderDisplayName === 差出人名);
+  雛形たち.every(
+    (名) =>
+      (後.sendEmail || {})[名]?.senderDisplayName === 差出人名 && (後.sendEmail || {})[名]?.replyTo === 返信先
+  );
 if (!良い) {
   console.error('\n★ 読み直すと当たっていません');
   process.exit(1);
