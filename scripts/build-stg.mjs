@@ -33,15 +33,25 @@ if (環境.EXPO_PUBLIC_FIREBASE_PROJECT_ID !== 'kyudoscoremanager-stg') {
 
 // 書き出し先は環境変数で差し替えられる。検査を流している最中に別の束を
 // 作りたいとき、dist を上書きすると走っている検査の足元が変わってしまう
+// App Check のサイトキーは本番の鍵（.env）。expo export は .env も読むので、検証環境の設定に
+// 無ければ空にしておく（環境変数にある値は .env で上書きされない）。入ると、検証環境の束が
+// 本番の鍵で App Check を始め、手元では debug の印を求めて console を汚す
+if (!/^EXPO_PUBLIC_RECAPTCHA_SITE_KEY=/m.test(fs.readFileSync(設定ファイル, 'utf8')))
+  環境.EXPO_PUBLIC_RECAPTCHA_SITE_KEY = '';
+
 const 書き出し先 = process.env.BUILD_OUT || 'dist';
 
 console.log(`検証環境向けに書き出します…（${書き出し先}/）`);
-const 結果 = spawnSync('npx', ['expo', 'export', '--platform', 'web', '--clear', '--output-dir', 書き出し先], {
-  cwd: fs.realpathSync(process.cwd()),
-  stdio: 'inherit',
-  env: 環境,
-  shell: process.platform === 'win32',
-});
+const 結果 = spawnSync(
+  'npx',
+  ['expo', 'export', '--platform', 'web', '--clear', '--output-dir', 書き出し先],
+  {
+    cwd: fs.realpathSync(process.cwd()),
+    stdio: 'inherit',
+    env: 環境,
+    shell: process.platform === 'win32',
+  }
+);
 if (結果.status !== 0) process.exit(結果.status ?? 1);
 
 // 焼き込まれた接続先を確かめる
@@ -51,6 +61,13 @@ const 中身 = fs.readFileSync(path.join(置き場, 束), 'utf8');
 const m = 中身.match(/projectId:"([a-z-]+)"/);
 if (!m || m[1] !== 'kyudoscoremanager-stg') {
   console.error(`停止：書き出した束の接続先が ${m ? m[1] : '不明'} になっています`);
+  process.exit(1);
+}
+// 本番の App Check の鍵が入っていないか（上で空にしたはず）
+const 本番の設定 = fs.existsSync('.env') ? fs.readFileSync('.env', 'utf8') : '';
+const 本番の鍵 = (本番の設定.match(/^EXPO_PUBLIC_RECAPTCHA_SITE_KEY=(.+)$/m) || [])[1];
+if (本番の鍵 && 中身.includes(本番の鍵.trim())) {
+  console.error('停止：検証環境の束に、本番の App Check の鍵が入っています');
   process.exit(1);
 }
 // expo が作る index.html の既定値を直す（lang="en" とタイトル）
