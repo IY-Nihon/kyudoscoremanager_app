@@ -37,6 +37,7 @@ const 書き出し先 = process.env.BUILD_OUT || 'dist';
 
 console.log(`検証環境向けに書き出します…（${書き出し先}/）`);
 const 結果 = spawnSync('npx', ['expo', 'export', '--platform', 'web', '--clear', '--output-dir', 書き出し先], {
+  cwd: fs.realpathSync(process.cwd()),
   stdio: 'inherit',
   env: 環境,
   shell: process.platform === 'win32',

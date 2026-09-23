@@ -22,6 +22,7 @@ const 本番 = 'kyudoscoremanager';
 
 console.log('本番向けに書き出します…');
 const 結果 = spawnSync('npx', ['expo', 'export', '--platform', 'web', '--clear'], {
+  cwd: fs.realpathSync(process.cwd()),
   stdio: 'inherit',
   shell: process.platform === 'win32',
 });
