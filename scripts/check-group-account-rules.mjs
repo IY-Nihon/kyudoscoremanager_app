@@ -46,10 +46,11 @@ const 公開 = await 読む(`group_accounts/${団体}`);
 // ② 中身はログインに要る2つだけか
 if (公開.ok) {
   const 鍵 = Object.keys((await 公開.json()).fields || {}).sort();
-  // pendingEmail はメールアドレスの切り替え中だけ在る（src/groupLogin.js）
-  const 余計 = 鍵.filter((k) => !['id', 'email', 'pendingEmail'].includes(k));
+  // pendingEmail はメールアドレスの切り替え中だけ、previousEmail・ownerUid は切り替えて
+  // 30 日だけ在る（src/groupLogin.js）
+  const 余計 = 鍵.filter((k) => !['id', 'email', 'pendingEmail', 'previousEmail', 'ownerUid'].includes(k));
   見る(
-    '公開の帳面は id と email だけ（切り替え中は pendingEmail も）',
+    '公開の帳面は id と email だけ（メールアドレスの切り替えの前後は、それに要るものも）',
     余計.length === 0,
     余計.length ? `まだ ${余計.join('・')} が入っている` : 鍵.join('・')
   );
