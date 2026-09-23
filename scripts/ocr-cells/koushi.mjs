@@ -256,6 +256,8 @@ export function 傾きを測る(印, 最小幅) {
  */
 export async function 格子を見つける(みち, 注文) {
   const o = 注文 || {};
+  // Node で測るときだけ使う。アプリからも読むファイルなので、読み込みはここで取る
+  const { 画素を読む } = await import('./gazou-node.mjs');
   const 生 = await 画素を読む(みち);
   const 境 = 暗さの境(生.画素);
   const かたまり = かたまりを拾う(生, 境);

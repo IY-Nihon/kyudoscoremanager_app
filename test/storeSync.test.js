@@ -892,23 +892,22 @@ test('見張り：30日より前の記録は、見張りが動いても手元か
   assert.ok(記録を見る(store, 'ses-9'), '新しい記録は届く');
 });
 
-test('見張り：30日以内の記録がクラウドで消されたら、手元からも消える（今までどおり）', async () => {
+// 前は「雲に在った印（serverCreatedTime）が付いていれば、見張りの窓から消えたら落とす」
+// 分岐と、その印を手で付けた検査があった。印はどの版も書いておらず（5 月に復元した元の
+// 圧縮コードでも読むだけ）、実際の端末では働いていなかったので分岐ごと外した（2026-09-24）。
+// 雲で消えた記録は、ゴミ箱へ移ったこと（ゴミ箱の見張り）と、全件のそろえ直しで手元から外れる
+test('見張り：ゴミ箱を通らずクラウドから消えた記録は、見張りでは落とさず、全件のそろえ直しで外れる', async () => {
   const { store, 雲 } = 用意();
-  const 今 = Date.now();
-  // クラウドに在った印（serverCreatedTime）は、クラウドの写しにも手元にも付いている
-  for (const s of store.getState().sessions)
-    雲.置く(記録の道, s.id, Object.assign({}, s, { serverCreatedTime: 今 - 86400000 }));
-  store.setState({
-    sessions: store
-      .getState()
-      .sessions.map((s) => Object.assign({}, s, { serverCreatedTime: 今 - 86400000 })),
-  });
+  for (const s of store.getState().sessions) 雲.置く(記録の道, s.id, Object.assign({}, s));
   await store.getState().listenToSessions();
   await 待つ(50);
   雲.消す(記録の道, 'ses-2');
   雲.通知();
   await 待つ(100);
-  assert.ok(!記録を見る(store, 'ses-2'), '消された記録が残っている');
+  assert.ok(記録を見る(store, 'ses-2'), '見張りの窓の外と見分けられないので、見張りでは落とさない');
+  await store.getState().fetchAndOverwriteFromCloud();
+  await 待つ(50);
+  assert.ok(!記録を見る(store, 'ses-2'), '全件のそろえ直しで外れていない');
   assert.ok(記録を見る(store, 'ses-1'));
 });
 
