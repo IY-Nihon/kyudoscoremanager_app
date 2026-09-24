@@ -12,6 +12,7 @@
  *   3. 境目ちょうどの文書も差分の問い合わせに返る（>=。マイクロ秒の端数があっても落ちない）
  *   4. 数・入れ物の lastModified は、日時型の問い合わせに返らない
  *   5. 直した文書は次の差分に返り、境目が進む
+ *   6. 控えから外した記録を id で取り直せる（documentId() の in。雲に無い id は返らない）
  *
  * 使い捨ての団体（997xxx）と口座を作り、終わったら消す。
  */
@@ -29,6 +30,7 @@ import {
   deleteDoc,
   serverTimestamp,
   Timestamp,
+  documentId,
 } from 'firebase/firestore';
 import { configFor, signIn } from './fb-rest.mjs';
 
@@ -114,6 +116,10 @@ try {
       次の境目 > 境目,
     `返った ${二回目のid.sort().join(',')}`
   );
+
+  const idで = await getDocs(query(記録の置き場, where(documentId(), 'in', ['a', 'c', '無い記録'])));
+  const idで取れた = idで.docs.map((文書) => 文書.id).sort();
+  見る('6. id で取り直せる。雲に無い id は返らない', idで取れた.join(',') === 'a,c', `返った ${idで取れた.join(',')}`);
 } finally {
   for (const id of new Set(置いた)) await deleteDoc(doc(記録の置き場, id)).catch(() => {});
   await deleteDoc(doc(db, 'group_accounts', 団体)).catch(() => {});

@@ -419,6 +419,31 @@ const cleanUpSessions = 同期規則.cleanUpSessions;
 const 記録の射手を整える = 同期規則.記録の射手を整える;
 // 雲の記録の日時（日時型）を、手元の形（ミリ秒）にする。雲から受け取る口ではすべて通す
 const 記録の日時を数に = 同期規則.記録の日時を数に;
+/** 控えから外した記録の id（外していなければ空） */
+const 外した記録のid = (記録たち, 残す記録) => {
+  const 全部 = Array.isArray(記録たち) ? 記録たち : [];
+  if (残す記録.length >= 全部.length) return [];
+  const 残す = new Set(残す記録.map((記録) => 記録 && 記録.id));
+  return 全部.filter((記録) => 記録 && 記録.id && !残す.has(記録.id)).map((記録) => 記録.id);
+};
+/**
+ * 記録を id で取る。in は 30 件までなので分けて問い合わせる。雲に無い id（ゴミ箱へ移った・
+ * 完全に消した）は返らない
+ */
+const idで記録を取る = async (置き場, ids) => {
+  const 一意 = [...new Set((ids || []).filter((id) => 'string' == typeof id && id))];
+  const 切れ端 = [];
+  for (let 頭 = 0; 頭 < 一意.length; 頭 += 30) 切れ端.push(一意.slice(頭, 頭 + 30));
+  // まとめて投げる（読み取りの数は同じ。順に待つと、外した記録が多い団体ほど起動が遅れる）
+  const 返りたち = await Promise.all(
+    切れ端.map((ids30) =>
+      Firestore.getDocs(Firestore.query(置き場, Firestore.where(Firestore.documentId(), 'in', ids30)))
+    )
+  );
+  const 出 = [];
+  for (const 返り of 返りたち) 返り.forEach((文書) => 出.push(文書));
+  return 出;
+};
 // 雲から読んだままの中身。差分の同期の境目は、数に直す前の形で決める（日時型だけを数える。
 // syncRules の 境目を進める）
 const 読んだままの中身 = (返り) => {
@@ -1139,9 +1164,9 @@ const useScoreStore = zustand.create()(
         雲の境目: null,
         // 最後に全件をそろえた時刻（端末の時刻）。7 日たったら起動のときに全件を取り直す
         全部そろえた時刻: 0,
-        // 端末の控えに入りきらず、古い記録を控えから外したか（src/localTrim.js）。
-        // 控えを書くときに決める（partialize）。外していれば、次の起動は全件にする
-        端末で記録を外した: false,
+        // 端末の控えに入りきらず、控えから外した記録の id（src/localTrim.js）。
+        // 控えを書くときに決める（partialize）。次の起動で、差分と一緒に id で取り直す
+        端末から外した記録: [],
         offlineSaveWarning: null,
         // 入り直しが要るときの案内。permission-denied を拾ったときだけ立てる
         再ログインの案内: null,
@@ -3547,6 +3572,8 @@ const useScoreStore = zustand.create()(
             let 部員の返り;
             let ごみ箱の返り;
             let 卒業生の返り;
+            // 起動のとき、控えから外した記録を id で取り直したもの（差分で届いたものと合わせて取り込む）
+            let 取り戻した記録 = [];
             const 空 = { forEach: () => {} };
             if (選び && 選び.取りに行かない) {
               記録の返り = 部員の返り = ごみ箱の返り = 卒業生の返り = 空;
@@ -3562,6 +3589,8 @@ const useScoreStore = zustand.create()(
               記録の返り = await Firestore.getDocs(
                 Firestore.query(記録の置き場, Firestore.where('lastModified', '>=', 基準('記録')))
               );
+              // 境目は差分の問い合わせの結果だけで決める（id で取った分は数えない）
+              取り戻した記録 = await idで記録を取る(記録の置き場, 選び && 選び.取り戻す記録);
               部員の返り = await Firestore.getDocs(
                 Firestore.query(部員の置き場, Firestore.where('lastModified', '>=', 基準('部員')))
               );
@@ -3582,7 +3611,12 @@ const useScoreStore = zustand.create()(
             let 最新の時刻 = 前回の同期時刻;
             const ミリ秒にする = (値) => (値?.toMillis ? 値.toMillis() : 値 || 0);
             const 雲の記録 = [];
-            記録の返り.forEach((文書) => {
+            // 差分（か全件）で届いた記録と、id で取り直した記録。同じ id は差分の方を使う
+            const 取り込む記録 = [];
+            const 届いたid = new Set();
+            記録の返り.forEach((文書) => (取り込む記録.push(文書), 届いたid.add(文書.id)));
+            for (const 文書 of 取り戻した記録) if (!届いたid.has(文書.id)) 取り込む記録.push(文書);
+            取り込む記録.forEach((文書) => {
               const 中身 = 記録の日時を数に(文書.data());
               const 更新時刻 = ミリ秒にする(中身.lastModified);
               更新時刻 > 最新の時刻 && (最新の時刻 = 更新時刻);
@@ -4055,11 +4089,15 @@ const useScoreStore = zustand.create()(
             全部そろえた時刻: 様子.全部そろえた時刻,
             記録の数: (様子.sessions || []).length,
             部員の数: (様子.members || []).length,
-            記録を外した: !!様子.端末で記録を外した,
           });
           if ('全部' === しかた) return 状態().fetchAndOverwriteFromCloud();
-          console.log('[Store] Loading: 前回からの差分だけを取り込みます');
-          await 状態().syncSessions();
+          // 控えに入りきらず外した記録は、差分に出てこないので id で取り直す
+          const 取り戻す記録 = Array.isArray(様子.端末から外した記録) ? 様子.端末から外した記録 : [];
+          console.log(
+            '[Store] Loading: 前回からの差分だけを取り込みます' +
+              (取り戻す記録.length ? `（控えから外した ${取り戻す記録.length} 件は id で取り直す）` : '')
+          );
+          await 状態().syncSessions({ 取り戻す記録 });
           // 差分で取れなかった（通信・権限など）ときは、全件で取り直す。
           // 同じ理由で失敗するなら、全件取得のほうが帯や便りを出す
           if ('同期エラー' === 状態().syncStatus) return 状態().fetchAndOverwriteFromCloud();
@@ -5638,9 +5676,9 @@ const useScoreStore = zustand.create()(
           archers: 状態の中身.archers,
           members: 状態の中身.members,
           sessions: 残す記録,
-          // 外した記録は差分の同期では戻ってこない（変わっていないので）。外したら印を残し、
-          // 次の起動を全件にする（syncRules の 起動のしかた）
-          端末で記録を外した: 残す記録.length < (状態の中身.sessions || []).length,
+          // 外した記録は差分の同期では戻ってこない（変わっていないので）。id だけ残し、
+          // 次の起動で id で取り直す（起動時に取り込む）。数百件でも数 KB
+          端末から外した記録: 外した記録のid(状態の中身.sessions, 残す記録),
           history: 状態の中身.history,
           alumni: 状態の中身.alumni,
           trash: 状態の中身.trash,
