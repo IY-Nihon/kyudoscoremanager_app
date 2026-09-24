@@ -29,6 +29,8 @@
  * 画面から切り離して、偽の Firestore・認証で検査できるようにしてある（test/groupLogin.test.js）。
  */
 
+const { 招待の期限切れか } = require('./memberInvite');
+
 /** パスワード違い・口座が無いときの符号。切り替え待ち・前のアドレスで入り直してよいもの */
 const 入り直してよい符号 = [
   'auth/invalid-credential',
@@ -199,14 +201,23 @@ async function 切り替えを頼む(道具, 団体ID, 合言葉, 新しいメ�
  * @param {string} 団体の鍵 groups/{団体の鍵}
  * @param {string} 鍵 個人ID か招待の合言葉
  * @param {string} [見つからないとき] 鍵が引けないときの知らせ
+ * @param {string} [期限切れのとき] 招待リンクの期限が切れているときの知らせ
  * @returns {Promise<{memberId: string, 名前: string}>}
  */
-async function 部員として入る(道具, 団体の鍵, 鍵, 見つからないとき = '団体IDまたは個人IDが正しくありません') {
+async function 部員として入る(
+  道具,
+  団体の鍵,
+  鍵,
+  見つからないとき = '団体IDまたは個人IDが正しくありません',
+  期限切れのとき = 見つからないとき
+) {
   const { Firestore, FirebaseAuth, db, auth } = 道具;
   await FirebaseAuth.signInAnonymously(auth);
   // 1 件だけ直接引く。一覧（list）は使わないので、他団体の名簿は引けない
   const 逆引き = await Firestore.getDoc(Firestore.doc(db, `groups/${団体の鍵}/member_lookup`, 鍵));
   if (!逆引き.exists()) throw new Error(見つからないとき);
+  // 招待リンクの期限（決まりでも止めるが、先に分かる理由で知らせる）
+  if (招待の期限切れか(逆引き.data())) throw new Error(期限切れのとき);
   const { memberId } = 逆引き.data();
   // 所属を宣言する。決まりが逆引き表と突き合わせる
   await Firestore.setDoc(Firestore.doc(db, 'member_claims', auth.currentUser.uid), {

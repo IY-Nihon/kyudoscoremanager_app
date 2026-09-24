@@ -153,11 +153,19 @@ service cloud.firestore {
     // つまり正しい個人IDを知っていることが条件になる。
     match /member_claims/{uid} {
       allow get, delete: if signedIn() && request.auth.uid == uid;
+      // 逆引き表の文書。個人ID（4 桁）か、招待リンクの合言葉（招待: true。src/memberInvite.js）
+      function lookupEntry() {
+        return get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)/member_lookup/$(request.resource.data.personalId)).data;
+      }
+      // 招待リンクの合言葉は、期限（expiresAt。作ってから 7 日）を過ぎると使えない。
+      // 期限の無い招待の文書も使えない（expiresAt が無いと評価が誤りになり、断られる）。
+      // 個人ID の文書（招待を持たない）は今までどおり。すでに入っている端末は、証がもう
+      // あるので期限の影響を受けない（isClaimedMember は逆引き表を見ない）
       allow create, update: if signedIn()
         && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['groupId', 'memberId', 'personalId', 'claimedAt'])
-        && get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)/member_lookup/$(request.resource.data.personalId)).data.memberId
-             == request.resource.data.memberId;
+        && lookupEntry().memberId == request.resource.data.memberId
+        && (lookupEntry().get('招待', false) != true || lookupEntry().expiresAt > request.time);
     }
 
     match /groups/{groupId} {
