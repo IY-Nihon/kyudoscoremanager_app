@@ -86,12 +86,24 @@ test('持ち主が作った招待リンクを別の端末で開くと、その�
   const 作る = 欄.getByText('招待リンクを作る', { exact: true });
   const 作り直す = 欄.getByText('作り直す', { exact: true });
   await expect(作る.or(作り直す)).toBeVisible({ timeout: 20_000 });
-  if (await 作る.isVisible()) await 作る.click();
+  // 続けて 2 回押しても、画面に出たリンクが雲に在ること（2 回目は受け付けない作り。
+  // 2 つ作ると画面に出したほうが片付けで消されうるが、その順番はここでは毎回は作れない）
+  if (await 作る.isVisible()) await 作る.dblclick();
   const リンクの字 = page.getByTestId('招待リンク');
   await expect(リンクの字).toBeVisible({ timeout: 20_000 });
   const 前のリンク = (await リンクの字.innerText()).trim();
   expect(前のリンク).toMatch(/#招待=100002\.[0-9a-f]{32}$/);
   作った合言葉.push(前のリンク.split('.').pop());
+  const 雲の鍵 = await 所有者の鍵();
+  if (雲の鍵) {
+    // 片付けが走り終わるのを待ってから、画面のリンクの合言葉が雲に在るかを見る
+    await page.waitForTimeout(3000);
+    const 在るか = await fetch(
+      `https://firestore.googleapis.com/v1/projects/kyudoscoremanager-stg/databases/(default)/documents/groups/${団体}/member_lookup/${前のリンク.split('.').pop()}`,
+      { headers: { Authorization: `Bearer ${雲の鍵}` } }
+    );
+    expect(在るか.status, '画面に出たリンクの合言葉が雲に無い').toBe(200);
+  }
   await expect(欄.getByTestId('招待リンクの期限')).toContainText('まで使えます');
 
   // ── 作り直す（確かめの窓を通る）。前のリンクは使えなくなる ──

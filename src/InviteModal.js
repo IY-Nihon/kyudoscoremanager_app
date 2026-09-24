@@ -49,9 +49,13 @@ const 配り元 = () =>
 const 招待の窓 = ({ 招待, onClose }) => {
   const 入っている = useScoreStore((状態) => 状態.activeGroupId);
   const [作業中, 作業中を置く] = React.useState(false);
+  // 続けて押されても 1 回だけ（作業中 はボタンに効くまで 1 回描き直しが要る）
+  const 走っている = React.useRef(false);
   const [難点, 難点を置く] = React.useState(null);
   if (!招待) return null;
   const 入る = async () => {
+    if (走っている.current) return;
+    走っている.current = true;
     難点を置く(null);
     作業中を置く(true);
     try {
@@ -84,6 +88,7 @@ const 招待の窓 = ({ 招待, onClose }) => {
             : (誤り && 誤り.message) || '入れませんでした。'
       );
     } finally {
+      走っている.current = false;
       作業中を置く(false);
     }
   };
@@ -123,6 +128,8 @@ const 招待リンクの欄 = ({ 団体, 部員 }) => {
   // { 合言葉, 期限 } か null。undefined は探している途中
   const [招待, 招待を置く] = React.useState(undefined);
   const [作業中, 作業中を置く] = React.useState(false);
+  // 続けて押されても 1 回だけ。2 つ作ると、画面に出したほうが片付けで消されることがある
+  const 走っている = React.useRef(false);
   const [知らせ, 知らせを置く] = React.useState(null);
   const memberId = 部員 && 部員.id;
   // リンクには人が打つ団体ID（公開の帳面の番号）を載せる
@@ -145,6 +152,8 @@ const 招待リンクの欄 = ({ 団体, 部員 }) => {
 
   const 作る = (作り直しか) => {
     const 進める = async () => {
+      if (走っている.current) return;
+      走っている.current = true;
       作業中を置く(true);
       知らせを置く(null);
       try {
@@ -156,6 +165,7 @@ const 招待リンクの欄 = ({ 団体, 部員 }) => {
       } catch (誤り) {
         知らせを置く('作れませんでした: ' + ((誤り && 誤り.message) || ''));
       } finally {
+        走っている.current = false;
         作業中を置く(false);
       }
     };
