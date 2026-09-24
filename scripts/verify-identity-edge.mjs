@@ -29,23 +29,20 @@ const lk1 = await listAll(projectId, `/groups/${G1}/member_lookup`, tokG1, ['mem
 const pid1 = lk1[0].id, mid1 = lk1[0].data.memberId;
 
 // ══ 1. メールアドレスの一致で団体を判定していることの確認 ══════
-// 団体アカウントは自分のメールを他団体のメールへ書き換えられるか
-check('同一性', '自団体のメールを他団体のメールに変える', 200,
-  (await setDoc(projectId, `/group_accounts/${G2}`, { email: 'nihonu.kouka@gmail.com' }, tokG2)).status,
-  '自分の団体の設定なので許可される');
-
-// その結果どうなるか
-check('同一性', '書き換え後、団体1の持ち主が団体2も読める', 200,
-  (await req(projectId, `/groups/${G2}/sessions`, { token: tokG1, query: '?pageSize=1' })).status,
-  'メール一致＝持ち主なので当然。乗っ取りではなく明け渡し');
-check('同一性', '書き換えた本人は自団体を読めなくなる', 403,
-  (await req(projectId, `/groups/${G2}/sessions`, { token: tokG2, query: '?pageSize=1' })).status,
-  '自分で自分を締め出す形');
-
-// 元に戻す（団体1の持ち主として書き戻す）
-check('同一性', '持ち主になった側から元のメールへ戻せる', 200,
-  (await setDoc(projectId, `/group_accounts/${G2}`, { email: 'stg-b@example.com' }, tokG1)).status);
-check('同一性', '戻した後、本来の持ち主が読める', 200,
+// 団体アカウントは自分のメールを他団体のメールへ書き換えられるか。
+// 2026-09-24 から、持ち主は帳面の email を直接変えられない（登録メールアドレスの切り替えは
+// 確認リンクを通す。src/groupLogin.js）。前はここで 200 を期待し、団体1 の持ち主（管理者）が
+// 書き戻していた。管理者の書き戻しは帳面を { email } だけにして id を落とすので、もう行わない
+const 書き換え = await setDoc(projectId, `/group_accounts/${G2}`, { id: G2, email: 'nihonu.kouka@gmail.com' }, tokG2);
+check('同一性', '自団体のメールを他団体のメールに変えられない', 403, 書き換え.status,
+  '明け渡し・乗っ取りの入口を塞いだ（9/24）');
+if (書き換え.status === 200) {
+  // 万一通ってしまったら、本人のままでは戻せないので、ここで止めて知らせる
+  console.error('★ 団体2の帳面の email が書き換わりました。検証環境の group_accounts/100002 を { id, email: stg-b@example.com } に戻してください');
+}
+check('同一性', '団体1の持ち主は団体2を読めない', 403,
+  (await req(projectId, `/groups/${G2}/sessions`, { token: tokG1, query: '?pageSize=1' })).status);
+check('同一性', '本来の持ち主は読めるまま', 200,
   (await req(projectId, `/groups/${G2}/sessions`, { token: tokG2, query: '?pageSize=1' })).status);
 
 // ══ 2. 個人IDをパスとして解釈させる細工 ═══════════════════════
@@ -111,9 +108,13 @@ check('欠落', '同じ団体の部員（クレーム済み）は読める', 200
   (await req(projectId, `/groups/${G2}/sessions`, { token: memberOfG2.idToken, query: '?pageSize=1' })).status,
   '部員はクレームで判定するので影響を受けない');
 
-// 復旧。create は「自分のメールと一致」が条件なので本人アカウントで行う
-await setDoc(projectId, `/group_accounts/${G2}`,
-  { id: G2, name: 'テスト団体B', email: 'stg-b@example.com', createdAt: Date.now() }, tokG2);
+// 復旧。create は「自分のメールと一致」かつ id と email の 2 つだけが条件なので本人アカウントで行う
+//（9/2 から公開の帳面は 2 つだけ。前は name・createdAt も付けていて断られ、帳面が消えたまま残った）
+const 復旧 = await setDoc(projectId, `/group_accounts/${G2}`, { id: G2, email: 'stg-b@example.com' }, tokG2);
+check('欠落', '本人が帳面を置き直せる', 200, 復旧.status);
+if (復旧.status !== 200) {
+  console.error('★ 団体2の帳面を置き直せませんでした。検証環境の group_accounts/100002 を { id, email: stg-b@example.com } に戻してください');
+}
 check('欠落', '復旧後、持ち主が再び読める', 200,
   (await req(projectId, `/groups/${G2}/sessions`, { token: tokG2, query: '?pageSize=1' })).status);
 await req(projectId, `/member_claims/${memberOfG2.uid}`, { token: memberOfG2.idToken, method: 'DELETE' });
