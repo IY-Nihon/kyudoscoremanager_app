@@ -420,3 +420,67 @@ test('控えに収まっていれば、外した記録の id は空', async () =
   assert.strictEqual(控え.sessions.length, 1);
   assert.deepStrictEqual(控え.端末から外した記録, []);
 });
+
+// ── 電波が無いとき・取り直す前に控えが書かれたとき（2026-09-25 の見直しで見つけたもの）────────
+
+test('取り直す前に控えが書かれても、外した記録の id は消えない。控えから答えたら残し、雲から取り直せたら空にする', async () => {
+  const { store, 雲 } = 用意();
+  const 今 = Date.now();
+  for (const id of ['s1', 's2', 's3']) 雲.置く(道.記録, id, 記録(id, 今 - 日, 今 - 5000));
+  await store.getState().fetchAndOverwriteFromCloud();
+  // s2・s3 を控えから外した端末を開いた直後（メモリにはまだ無い）
+  store.setState({ sessions: store.getState().sessions.filter((s) => s.id === 's1'), 端末から外した記録: ['s2', 's3'] });
+  const 書く形 = () => store.persist.getOptions().partialize(store.getState());
+  assert.deepStrictEqual(書く形().端末から外した記録.sort(), ['s2', 's3'], '取り直す前に控えを書くと一覧が消える');
+  // 電波が無い：端末の控えから答える
+  雲.状態.控えから答える = true;
+  await store.getState().syncSessions();
+  await 待つ(20);
+  assert.deepStrictEqual(store.getState().端末から外した記録.sort(), ['s2', 's3'], '控えから答えたのに一覧を空にした');
+  // 電波が戻った
+  雲.状態.控えから答える = false;
+  await store.getState().syncSessions();
+  await 待つ(20);
+  assert.deepStrictEqual(store.getState().端末から外した記録, [], '雲から取り直したのに一覧が残る');
+  assert.deepStrictEqual(store.getState().sessions.map((s) => s.id).sort(), ['s1', 's2', 's3']);
+  assert.deepStrictEqual(書く形().端末から外した記録, []);
+});
+
+test('端末の控えから答えた差分では境目を進めない（その間のほかの端末の直しを、電波が戻ってから取りこぼさない）', async () => {
+  const { store, 雲 } = 用意();
+  const 今 = Date.now();
+  雲.置く(道.記録, '古い', 記録('古い', 今 - 60 * 日, 今 - 60 * 日));
+  雲.置く(道.記録, '新しい', 記録('新しい', 今 - 日, 今 - 50000));
+  await store.getState().fetchAndOverwriteFromCloud();
+  const 前の境目 = store.getState().雲の境目.記録;
+  // ほかの端末が古い記録を直した（見張りの窓の外）。そのあと見張りで届いた新しい記録が端末の控えにある
+  雲.置く(道.記録, '古い', 記録('古い', 今 - 60 * 日, 今 - 3000, { title: 'ほかの端末で直した' }));
+  雲.置く(道.記録, '新しい', 記録('新しい', 今 - 日, 今 - 1000, { title: '見張りで届いた' }));
+  // 電波が無いまま周期の同期が走る。控えの答えには「古い」の直しが無いことを、ここでは消して作る
+  const 直した古い = 雲.値(道.記録, '古い');
+  雲.消す(道.記録, '古い');
+  雲.状態.控えから答える = true;
+  await store.getState().syncSessions();
+  await 待つ(20);
+  assert.strictEqual(store.getState().雲の境目.記録, 前の境目, '控えの答えで境目が進んだ');
+  // 電波が戻った
+  雲.状態.控えから答える = false;
+  雲.置く(道.記録, '古い', 直した古い);
+  await store.getState().syncSessions();
+  await 待つ(20);
+  assert.strictEqual(store.getState().sessions.find((s) => s.id === '古い').title, 'ほかの端末で直した');
+});
+
+test('端末の控えから答えた全件の取り込みは、全部そろえたことにしない（境目も決めない）', async () => {
+  const { store, 雲 } = 用意();
+  const 今 = Date.now();
+  雲.置く(道.記録, 's1', 記録('s1', 今 - 日, 今 - 5000));
+  雲.状態.控えから答える = true;
+  await store.getState().fetchAndOverwriteFromCloud();
+  assert.strictEqual(store.getState().全部そろえた時刻, 0, '控えの答えで全部そろえたことにした');
+  assert.strictEqual(store.getState().雲の境目, null, '控えの答えで境目を決めた');
+  雲.状態.控えから答える = false;
+  await store.getState().fetchAndOverwriteFromCloud();
+  assert.ok(store.getState().全部そろえた時刻 > 0);
+  assert.strictEqual(store.getState().雲の境目.記録, 今 - 5000);
+});
