@@ -3598,6 +3598,8 @@ const useScoreStore = zustand.create()(
             let 取り戻した記録 = [];
             const 取り戻す記録 = 差分で取れるか ? [...(状態().端末から外した記録 || [])] : [];
             let 雲から取り戻せた = false;
+            // 取り直しを頼んだ id（終わったら一覧から除く。数千件でも重くならないよう Set で持つ）
+            const 取り直したid = new Set(取り戻す記録);
             const 空 = { forEach: () => {} };
             if (選び && 選び.取りに行かない) {
               記録の返り = 部員の返り = ごみ箱の返り = 卒業生の返り = 空;
@@ -3941,7 +3943,7 @@ const useScoreStore = zustand.create()(
               ...(取り戻す記録.length && 雲から取り戻せた
                 ? {
                     端末から外した記録: (状態().端末から外した記録 || []).filter(
-                      (id) => !取り戻す記録.includes(id)
+                      (id) => !取り直したid.has(id)
                     ),
                   }
                 : {}),

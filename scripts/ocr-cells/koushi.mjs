@@ -251,14 +251,15 @@ export function 傾きを測る(印, 最小幅) {
 /**
  * 印の並びから格子を組み立てる。
  *
- * @param {string} みち 画像のみち
+ * 画は呼ぶ側が読んで渡す（Node は gazou-node.mjs の 画素を読む）。前は画像のみちを受け取り、
+ * 消えた 画素を読む を呼んでいた。ここで gazou-node.mjs を読み込むと、アプリの束に sharp を
+ * 抱えた塊が入る（2026-09-24 に一度そうしてしまい、9/25 に本番の束を組んで気づいた）
+ *
+ * @param {{画素: Uint8Array|number[], 幅: number, 高: number}} 生 明るさの画素
  * @param {{最小の大きさ?:number, 最大の大きさ?:number}} [注文]
  */
-export async function 格子を見つける(みち, 注文) {
+export async function 格子を見つける(生, 注文) {
   const o = 注文 || {};
-  // Node で測るときだけ使う。アプリからも読むファイルなので、読み込みはここで取る
-  const { 画素を読む } = await import('./gazou-node.mjs');
-  const 生 = await 画素を読む(みち);
   const 境 = 暗さの境(生.画素);
   const かたまり = かたまりを拾う(生, 境);
 
