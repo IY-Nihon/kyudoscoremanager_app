@@ -123,7 +123,7 @@ const 招待リンクの欄 = ({ 団体, 部員 }) => {
   if (!団体 || !memberId) return null;
   const リンク = 合言葉 ? 招.招待リンクを作る(配り元(), 団体ID, 合言葉) : null;
 
-  const 作る = async (作り直しか) => {
+  const 作る = (作り直しか) => {
     const 進める = async () => {
       作業中を置く(true);
       知らせを置く(null);
