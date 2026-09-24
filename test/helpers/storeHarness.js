@@ -72,9 +72,14 @@ function 偽Firestore() {
   const 保管庫 = new Map();
   const 記録 = []; // 何をしたかの履歴
   const 見張り = []; // onSnapshot の登録
-  /** where 1 つに当たるか */
-  const 当たる = (v, { 欄, 比べ, 値 }) => {
-    const 元 = v ? v[欄] : undefined;
+  /** where 1 つに当たるか。欄が documentId() なら文書の id で比べる */
+  const 当たる = (v, { 欄, 比べ, 値 }, id) => {
+    const 元 = 欄 && 欄.__文書のid ? id : v ? v[欄] : undefined;
+    // in は並べた値のどれかと等しいか（本物と同じく、型の違う値には当たらない。30 件まで）
+    if (比べ === 'in') {
+      if (!Array.isArray(値) || 値.length > 30) throw new Error('in は 30 件までの並び（本物と同じ）');
+      return 値.some((一つ) => 値の型(元) === 値の型(一つ) && 比べる値(元) === 比べる値(一つ));
+    }
     if (値の型(元) !== 値の型(値)) return false;
     const x = 比べる値(元);
     const y = 比べる値(値);
@@ -88,9 +93,10 @@ function 偽Firestore() {
   /** query の where / or / limit を当てる（[id, 値] の並びに） */
   const 絞る = (並び, 対象) => {
     let 出 = 並び;
-    for (const 絞り of (対象 && 対象.絞り) || []) 出 = 出.filter(([, v]) => 当たる(v, 絞り));
+    for (const 絞り of (対象 && 対象.絞り) || []) 出 = 出.filter(([id, v]) => 当たる(v, 絞り, id));
     // or(...) はどれか 1 つに当たればよい
-    for (const 組 of (対象 && 対象.または) || []) 出 = 出.filter(([, v]) => 組.some((絞り) => 当たる(v, 絞り)));
+    for (const 組 of (対象 && 対象.または) || [])
+      出 = 出.filter(([id, v]) => 組.some((絞り) => 当たる(v, 絞り, id)));
     if (対象 && 対象.上限) 出 = 出.slice(0, 対象.上限);
     return 出;
   };
@@ -182,6 +188,7 @@ function 偽Firestore() {
       上限: (条件.find((c) => c && c.上限) || {}).上限,
     }),
     where: (欄, 比べ, 値) => ({ 絞り: { 欄, 比べ, 値 } }),
+    documentId: () => ({ __文書のid: true }),
     or: (...条件) => ({ または: 条件.map((c) => c.絞り) }),
     orderBy: () => ({}),
     limit: (n) => ({ 上限: n }),

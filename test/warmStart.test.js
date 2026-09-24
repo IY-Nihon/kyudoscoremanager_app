@@ -51,13 +51,15 @@ const 部員 = (id, 更新) => ({
   lastModified: new 偽の日時(更新),
 });
 
-/** 読み取りを数える（どの問い合わせで読んだか） */
+/** 読み取りを数える（どの問い合わせで読んだか。id で取ったものは id に、その id の数を積む） */
 function 読み取りを数える(雲) {
   const 元 = 雲.api.getDocs;
-  const 数え = { 全件: [], 差分: [] };
+  const 数え = { 全件: [], 差分: [], id: [] };
   雲.api.getDocs = (対象) => {
+    const idで = ((対象 && 対象.絞り) || []).find((絞り) => 絞り.欄 && 絞り.欄.__文書のid);
     const 絞りあり = (対象 && 対象.絞り && 対象.絞り.length) || (対象 && 対象.または && 対象.または.length);
-    (絞りあり ? 数え.差分 : 数え.全件).push(対象.道);
+    if (idで) 数え.id.push(idで.値.length);
+    else (絞りあり ? 数え.差分 : 数え.全件).push(対象.道);
     return 元(対象);
   };
   return 数え;
@@ -99,7 +101,6 @@ test('起動のしかた：全件をそろえてから 7 日以内で控えが�
   );
   assert.strictEqual(起動のしかた({ ...基本, 全部そろえた時刻: 今 + 日 }), '全部', '端末の時計が戻った');
   assert.strictEqual(起動のしかた({ ...基本, 記録の数: 0, 部員の数: 0 }), '全部', '控えが空');
-  assert.strictEqual(起動のしかた({ ...基本, 記録を外した: true }), '全部', '控えから古い記録を外した');
 });
 
 test('境目を進める：日時型（サーバーの時刻）だけで最大を取り、下げない。数は数えない', () => {
@@ -359,7 +360,7 @@ test('クラウドへ同期は、更新日時をサーバーの時刻（日時�
 
 // ── 端末の控えから外した記録（2026-09-24 の見直しで見つけたもの）──────────
 
-test('控えに入りきらず古い記録を外したら印を残し、次の起動は全件で取り直す（外した記録が履歴に戻る）', async () => {
+test('控えに入りきらず古い記録を外したら id を残し、次の起動は差分と id だけで取り直す（全件は読まない）', async () => {
   const { store, 雲 } = 用意();
   const 今 = Date.now();
   // 1 件 60KB ほどの記録を 40 件（予算 1.5MB を超える）
@@ -370,25 +371,52 @@ test('控えに入りきらず古い記録を外したら印を残し、次の�
   }
   await store.getState().fetchAndOverwriteFromCloud();
   assert.strictEqual(store.getState().sessions.length, 40);
-  // 控えに書く形（partialize）。古いものが外れ、印が立つ
+  // 控えに書く形（partialize）。古いものが外れ、その id が残る
   const 控え = store.persist.getOptions().partialize(store.getState());
   assert.ok(控え.sessions.length < 40, '予算を超えても外していない（検査の前提が崩れた）');
-  assert.strictEqual(控え.端末で記録を外した, true);
+  const 外した = 控え.端末から外した記録;
+  assert.strictEqual(外した.length, 40 - 控え.sessions.length, '外した記録の id が残っていない');
+  assert.ok(!外した.some((id) => 控え.sessions.find((記録1件) => 記録1件.id === id)), '残した記録まで外した扱い');
   // 閉じて開き直した端末（控えから戻したもの）
-  store.setState({ sessions: 控え.sessions, 端末で記録を外した: 控え.端末で記録を外した });
+  store.setState({ sessions: 控え.sessions, 端末から外した記録: 外した });
   const 数え = 読み取りを数える(雲);
   await store.getState().起動時に取り込む();
   await 待つ(20);
-  assert.ok(数え.全件.includes(道.記録), '全件で取り直していない');
+  assert.deepStrictEqual(数え.全件, [], '全件を読んだ');
+  assert.deepStrictEqual(数え.id, [外した.length], '外した記録を id で取っていない');
   assert.strictEqual(store.getState().sessions.length, 40, '外した記録が履歴に戻っていない');
 });
 
-test('控えに収まっていれば印は立たない（差分で起動できる）', async () => {
+test('id で取り直すのは 30 件ずつ。閉じている間にゴミ箱へ移った記録は戻らない', async () => {
+  const { store, 雲 } = 用意();
+  const 今 = Date.now();
+  for (let 番 = 0; 番 < 70; 番++) {
+    const id = 's' + String(番).padStart(2, '0');
+    雲.置く(道.記録, id, 記録(id, 今 - (番 + 1) * 日, 今 - 100000 + 番));
+  }
+  await store.getState().fetchAndOverwriteFromCloud();
+  // 65 件を控えから外した端末（閉じている間に s69 がゴミ箱へ移った）
+  const 残す = store.getState().sessions.filter((記録1件) => ['s00', 's01', 's02', 's03', 's04'].includes(記録1件.id));
+  const 外した = store.getState().sessions.map((記録1件) => 記録1件.id).filter((id) => !残す.find((記録1件) => 記録1件.id === id));
+  const 元 = 雲.値(道.記録, 's69');
+  雲.消す(道.記録, 's69');
+  雲.置く(道.ごみ箱, 's69', Object.assign({}, 元, { lastModified: new 偽の日時(今 - 10), deletedAt: new 偽の日時(今 - 10) }));
+  store.setState({ sessions: 残す, 端末から外した記録: 外した });
+  const 数え = 読み取りを数える(雲);
+  await store.getState().起動時に取り込む();
+  await 待つ(20);
+  assert.deepStrictEqual(数え.全件, [], '全件を読んだ');
+  assert.deepStrictEqual(数え.id, [30, 30, 5], '30 件ずつに分けていない');
+  assert.strictEqual(store.getState().sessions.length, 69, '外した記録が戻っていない');
+  assert.ok(!store.getState().sessions.find((記録1件) => 記録1件.id === 's69'), 'ゴミ箱へ移った記録が戻った');
+});
+
+test('控えに収まっていれば、外した記録の id は空', async () => {
   const { store, 雲 } = 用意();
   const 今 = Date.now();
   雲.置く(道.記録, 's1', 記録('s1', 今 - 日, 今 - 5000));
   await store.getState().fetchAndOverwriteFromCloud();
   const 控え = store.persist.getOptions().partialize(store.getState());
   assert.strictEqual(控え.sessions.length, 1);
-  assert.strictEqual(控え.端末で記録を外した, false);
+  assert.deepStrictEqual(控え.端末から外した記録, []);
 });
