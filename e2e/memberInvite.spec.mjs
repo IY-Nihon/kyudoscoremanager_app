@@ -81,8 +81,26 @@ test('持ち主が作った招待リンクを別の端末で開くと、その�
   if (await 作る.isVisible()) await 作る.click();
   const リンクの字 = page.getByTestId('招待リンク');
   await expect(リンクの字).toBeVisible({ timeout: 20_000 });
+  const 前のリンク = (await リンクの字.innerText()).trim();
+  expect(前のリンク).toMatch(/#招待=100002\.[0-9a-f]{32}$/);
+
+  // ── 作り直す（確かめの窓を通る）。前のリンクは使えなくなる ──
+  await 欄.getByText('作り直す', { exact: true }).click();
+  await expect(page.getByText('作り直しますか？', { exact: true })).toBeVisible({ timeout: 10_000 });
+  await page.getByText('作り直す', { exact: true }).last().click();
+  await expect(リンクの字).not.toHaveText(前のリンク, { timeout: 20_000 });
   const リンク = (await リンクの字.innerText()).trim();
   expect(リンク).toMatch(/#招待=100002\.[0-9a-f]{32}$/);
+
+  // 前のリンクでは入れない
+  const 前の端末 = await browser.newContext();
+  const 前で開く = await 前の端末.newPage();
+  await 案内を止める(前で開く);
+  await 前で開く.goto(前のリンク.replace(/^https?:\/\/[^/]+/, ''));
+  await expect(前で開く.getByTestId('招待の窓')).toBeVisible({ timeout: 30_000 });
+  await 前で開く.getByTestId('招待の窓').getByText('入る', { exact: true }).click();
+  await expect(前で開く.getByText(/この招待リンクは使えません/)).toBeVisible({ timeout: 30_000 });
+  await 前の端末.close();
 
   // ── 新しい端末：リンクを開いて入る ──
   const 別の端末 = await browser.newContext();
