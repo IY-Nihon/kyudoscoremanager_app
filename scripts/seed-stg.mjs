@@ -7,7 +7,9 @@
  * できず、個人情報を検証環境へ持ち込む必要もないため）。
  * 代わりに本番と同じ構造・同じ分岐を踏めるデータを作る。
  *
- * 事前に rules/bootstrap.rules を適用しておくこと（既定は全拒否のため）。
+ * 事前に、投入のための緩い決まり（bootstrap.rules）を適用しておくこと（既定は全拒否のため）。
+ * bootstrap.rules は 2026-09-24 に倉庫から片付けた。要るときは git の履歴から出す
+ *（git show 1f8e0d9:rules/bootstrap.rules）。終わったら必ず firestore.rules を配り直す。
  */
 import { configFor, signIn, setDoc, req } from './fb-rest.mjs';
 
