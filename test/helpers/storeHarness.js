@@ -102,7 +102,9 @@ function 偽Firestore() {
   };
   // 遅延: 送信が決着するまでの時間(ms)。0 ならすぐ決着する。
   // 「送信中にもう一度編集する」場面を作るために要る。
-  const 状態 = { オフライン: false, 失敗させる: false, 遅延: 0 };
+  // 控えから答える: getDocs が雲ではなく端末の控え（IndexedDB）から答えた形にする
+  //（本物は電波が無いとエラーにせず控えから返し、metadata.fromCache が真になる）
+  const 状態 = { オフライン: false, 失敗させる: false, 遅延: 0, 控えから答える: false };
 
   const 取り出す = (道) => {
     if (!保管庫.has(道)) 保管庫.set(道, new Map());
@@ -207,7 +209,13 @@ function 偽Firestore() {
         ref: { 道: 集まり.道, id },
         metadata: { hasPendingWrites: false },
       }));
-      return { forEach: (f) => 一覧.forEach(f), docs: 一覧, empty: 一覧.length === 0, size: 一覧.length };
+      return {
+        forEach: (f) => 一覧.forEach(f),
+        docs: 一覧,
+        empty: 一覧.length === 0,
+        size: 一覧.length,
+        metadata: { fromCache: !!状態.控えから答える, hasPendingWrites: false },
+      };
     },
     setDoc: (参照, 値, 選び) =>
       送る({
