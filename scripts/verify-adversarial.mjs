@@ -83,9 +83,10 @@ check('権限昇格', '部員が group_accounts を書き換える', 403,
 check('権限昇格', '非管理者の団体が他団体のアカウントを削除', 403,
   (await req(projectId, `/group_accounts/${G1}`, { token: tokG2, method: 'DELETE' })).status);
 
-check('権限昇格', '非管理者の団体が自分のアカウントを削除', 403,
-  (await req(projectId, `/group_accounts/${G2}`, { token: tokG2, method: 'DELETE' })).status,
-  '削除は管理者のみ');
+// 自分の団体の口座を消すのは、2026-09-12 から持ち主本人にも許している（設定の「アカウントを
+// 削除する」。src/accountDeletion.js）。前はここで 403 を期待して本当に DELETE を送っていたので、
+// 決まりが変わってから流すと検証環境の団体2の帳面が消えた（2026-09-24 に踏んで戻した）。
+// 実データを消す検査はここでは行わない（test/accountDeletion.test.js が見る）
 
 check('権限昇格', '部員が団体アカウントを削除', 403,
   (await req(projectId, `/group_accounts/${G1}`, { token: anonA.idToken, method: 'DELETE' })).status);
