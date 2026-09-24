@@ -10,6 +10,7 @@
  *   3. 違う合言葉・別のメンバーを名乗る証は作れない
  *   4. メンバー（匿名）は逆引き表を一覧できない（他人の合言葉が見えない）
  *   5. 作り直す（前の合言葉を消す）と、前の合言葉では新しく入れない
+ *   6. 期限（expiresAt）を過ぎた合言葉・期限の無い招待の文書では入れない。個人ID は期限を見ない
  *
  * 使い捨ての団体（997xxx）と口座を作り、終わったら消す。
  */
@@ -49,6 +50,9 @@ const 新しい招待 = [...crypto.getRandomValues(new Uint8Array(16))]
   .map((b) => b.toString(16).padStart(2, '0'))
   .join('');
 const 部員 = 'mem-invite-1';
+const 七日後 = () => new Date(Date.now() + 7 * 86400000);
+const 切れた招待 = 'e'.repeat(31) + '1';
+const 期限の無い招待 = 'e'.repeat(31) + '2';
 
 let だめ = 0;
 const 見る = (題, 良いか, 添え) => {
@@ -89,7 +93,7 @@ try {
   const 置く = await setDoc(
     projectId,
     `/groups/${団体}/member_lookup/${招待}`,
-    { memberId: 部員, 招待: true },
+    { memberId: 部員, 招待: true, expiresAt: 七日後() },
     持ち主
   );
   見る('1. 持ち主は招待の合言葉を置ける', 置く.status === 200, `HTTP ${置く.status}`);
@@ -124,7 +128,7 @@ try {
   await setDoc(
     projectId,
     `/groups/${団体}/member_lookup/${新しい招待}`,
-    { memberId: 部員, 招待: true },
+    { memberId: 部員, 招待: true, expiresAt: 七日後() },
     持ち主
   );
   const 丙 = await signInAnonymously(apiKey);
@@ -133,10 +137,31 @@ try {
   見る('5. 作り直したあと、前の合言葉では新しく入れない', 古いので.status === 403, `HTTP ${古いので.status}`);
   const 新しいので = await 証を書く(丙, 新しい招待);
   見る('   新しい合言葉では入れる', 新しいので.status === 200, `HTTP ${新しいので.status}`);
+
+  // 6. 期限
+  await setDoc(
+    projectId,
+    `/groups/${団体}/member_lookup/${切れた招待}`,
+    { memberId: 部員, 招待: true, expiresAt: new Date(Date.now() - 60000) },
+    持ち主
+  );
+  await setDoc(projectId, `/groups/${団体}/member_lookup/${期限の無い招待}`, { memberId: 部員, 招待: true }, 持ち主);
+  await setDoc(projectId, `/groups/${団体}/member_lookup/4321`, { memberId: 部員 }, 持ち主);
+  const 丁 = await signInAnonymously(apiKey);
+  匿名たち.push(丁);
+  const 切れたので = await 証を書く(丁, 切れた招待);
+  見る('6. 期限を過ぎた合言葉では入れない', 切れたので.status === 403, `HTTP ${切れたので.status}`);
+  const 期限無しで = await 証を書く(丁, 期限の無い招待);
+  見る('   期限の無い招待の文書では入れない', 期限無しで.status === 403, `HTTP ${期限無しで.status}`);
+  const 個人IDで = await 証を書く(丁, '4321');
+  見る('   個人ID（期限を持たない）では今までどおり入れる', 個人IDで.status === 200, `HTTP ${個人IDで.status}`);
 } finally {
   for (const 道 of [
     `/groups/${団体}/member_lookup/${招待}`,
     `/groups/${団体}/member_lookup/${新しい招待}`,
+    `/groups/${団体}/member_lookup/${切れた招待}`,
+    `/groups/${団体}/member_lookup/${期限の無い招待}`,
+    `/groups/${団体}/member_lookup/4321`,
     `/groups/${団体}/members/${部員}`,
     `/groups/${団体}/sessions/ses-1`,
     `/groups/${団体}`,

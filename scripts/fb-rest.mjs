@@ -72,6 +72,8 @@ export function toValue(v) {
     ? { integerValue: String(v) } : { doubleValue: v };
   if (typeof v === 'string') return { stringValue: v };
   if (Array.isArray(v)) return { arrayValue: { values: v.map(toValue) } };
+  // 日時は日時型で（そのままだと中身の無い入れ物になる）
+  if (v instanceof Date) return { timestampValue: v.toISOString() };
   if (typeof v === 'object') return { mapValue: { fields: toFields(v) } };
   return { stringValue: String(v) };
 }

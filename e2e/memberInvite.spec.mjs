@@ -6,10 +6,14 @@
  * 持ち主は管理者モードでメンバーの編集を開き、「招待リンクを作る」でリンクを作る。
  * 新しい端末（別のブラウザ）でそのリンクを開き、「入る」を押すと、団体ID と個人ID を
  * 打たずにそのメンバーとして入れる（src/memberInvite.js・src/InviteModal.js）。
+ * リンクは作ってから 7 日で切れる。切れたリンクでは入れず、期限切れと知らせる。
  *
  * 記録と名簿には触らないので、並列の取り合いの意味では団体には書き込まない扱いにする。
- * 逆引き表に招待の合言葉を 1 件置き、終わったら所有者の権限（firebase login の控え）で消す
+ * 逆引き表に招待の合言葉を置き、終わったら所有者の権限（firebase login の控え）で消す
  * （ほかの検査は逆引き表の招待を読まない。個人ID での入り方は変わらない）。
+ * 端末の種類ごとに別のメンバーを使う。同じメンバーだと、並んで流れる相手が作り直して
+ * こちらのリンクを消してしまう（2026-09-24 にスマホと iPhone を並べて踏んだ）。
+ * 後片付けも、この検査が作った合言葉だけを消す。
  */
 import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
@@ -19,7 +23,10 @@ import { 案内を止める, 画面が出るまで待つ, 入り口が決まる�
 
 const 団体 = '100002';
 const 合言葉 = 'StgTest!2026';
-const 招待する人 = '部員5';
+/** 端末の種類ごとのメンバー（団体 100002 の名簿は 部員1〜部員5） */
+const 使うメンバー = { パソコン: '部員5', スマホ: '部員4', iPhone: '部員3' };
+/** この検査が作った合言葉（後片付けで消す） */
+const 作った合言葉 = [];
 
 async function 所有者の鍵() {
   const 設定 = path.join(os.homedir(), '.config', 'configstore', 'firebase-tools.json');
@@ -62,8 +69,9 @@ async function 管理者モードにする(page) {
   await expect(page.getByText('管理者認証', { exact: true })).toHaveCount(0, { timeout: 30_000 });
 }
 
-test('持ち主が作った招待リンクを別の端末で開くと、そのメンバーとして入れる', async ({ page, browser }) => {
+test('持ち主が作った招待リンクを別の端末で開くと、そのメンバーとして入れる', async ({ page, browser }, 情報) => {
   test.setTimeout(240_000);
+  const 招待する人 = 使うメンバー[情報.project.name] || '部員5';
   // ── 持ち主：リンクを作る ──
   await 案内を止める(page);
   await page.goto('/');
@@ -83,14 +91,18 @@ test('持ち主が作った招待リンクを別の端末で開くと、その�
   await expect(リンクの字).toBeVisible({ timeout: 20_000 });
   const 前のリンク = (await リンクの字.innerText()).trim();
   expect(前のリンク).toMatch(/#招待=100002\.[0-9a-f]{32}$/);
+  作った合言葉.push(前のリンク.split('.').pop());
+  await expect(欄.getByTestId('招待リンクの期限')).toContainText('まで使えます');
 
   // ── 作り直す（確かめの窓を通る）。前のリンクは使えなくなる ──
   await 欄.getByText('作り直す', { exact: true }).click();
   await expect(page.getByText('作り直しますか？', { exact: true })).toBeVisible({ timeout: 10_000 });
-  await page.getByText('作り直す', { exact: true }).last().click();
+  // 確かめの窓（src/AppDialog.js）のボタン。欄にも同じ字のボタンがあるので目印で選ぶ
+  await page.getByTestId('窓のボタン-作り直す').click();
   await expect(リンクの字).not.toHaveText(前のリンク, { timeout: 20_000 });
   const リンク = (await リンクの字.innerText()).trim();
   expect(リンク).toMatch(/#招待=100002\.[0-9a-f]{32}$/);
+  作った合言葉.push(リンク.split('.').pop());
 
   // 前のリンクでは入れない
   const 前の端末 = await browser.newContext();
@@ -125,19 +137,36 @@ test('持ち主が作った招待リンクを別の端末で開くと、その�
     )
     .toEqual([団体, 'member', 招待する人]);
   await 別の端末.close();
+
+  // ── 期限が切れたリンクでは入れない（期限を過去にして確かめる。所有者の権限）──
+  const 鍵 = await 所有者の鍵();
+  test.skip(!鍵, 'firebase login の控えが無いので、期限切れは確かめない');
+  const 招待の合言葉 = リンク.split('.').pop();
+  const 変える = await fetch(
+    `https://firestore.googleapis.com/v1/projects/kyudoscoremanager-stg/databases/(default)/documents/groups/${団体}/member_lookup/${招待の合言葉}?updateMask.fieldPaths=expiresAt`,
+    {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${鍵}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields: { expiresAt: { timestampValue: new Date(Date.now() - 60_000).toISOString() } } }),
+    }
+  );
+  expect(変える.status, '期限を過去にできない').toBe(200);
+  const 後の端末 = await browser.newContext();
+  const 後で開く = await 後の端末.newPage();
+  await 案内を止める(後で開く);
+  await 後で開く.goto(手元のリンク);
+  await expect(後で開く.getByTestId('招待の窓')).toBeVisible({ timeout: 30_000 });
+  await 後で開く.getByTestId('招待の窓').getByText('入る', { exact: true }).click();
+  await expect(後で開く.getByText(/期限が切れています/)).toBeVisible({ timeout: 30_000 });
+  await 後の端末.close();
 });
 
-// 片付け：逆引き表に置いた招待の合言葉を消す（検証環境の所有者の権限。firebase login の控え）
+// 片付け：この検査が作った招待の合言葉を消す（検証環境の所有者の権限。firebase login の控え）。
+// 作り直しで消えたものは 404 になるだけ
 test.afterAll(async () => {
   const 鍵 = await 所有者の鍵();
   if (!鍵) return;
   const 根 = `https://firestore.googleapis.com/v1/projects/kyudoscoremanager-stg/databases/(default)/documents/groups/${団体}/member_lookup`;
-  const j = await (await fetch(`${根}?pageSize=300`, { headers: { Authorization: `Bearer ${鍵}` } })).json();
-  for (const d of j.documents || []) {
-    if (d.fields && d.fields.招待 && d.fields.招待.booleanValue)
-      await fetch(`https://firestore.googleapis.com/v1/${d.name}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${鍵}` },
-      });
-  }
+  for (const 合言葉1つ of 作った合言葉.splice(0))
+    await fetch(`${根}/${合言葉1つ}`, { method: 'DELETE', headers: { Authorization: `Bearer ${鍵}` } });
 });

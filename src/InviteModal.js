@@ -22,6 +22,19 @@ const 道具を取る = () => {
   return { Firestore: require('firebase/firestore'), FirebaseAuth: require('firebase/auth'), db, auth };
 };
 
+/** 期限の見せ方（例: 9月30日 18:05） */
+const 期限の字 = (ミリ秒) => {
+  const 日 = new Date(ミリ秒);
+  const 分 = String(日.getMinutes()).padStart(2, '0');
+  return `${日.getMonth() + 1}月${日.getDate()}日 ${日.getHours()}:${分}`;
+};
+
+/** 入れなかったときの知らせ */
+const 使えないとき =
+  'この招待リンクは使えません。作り直されたか、メンバーから外れた可能性があります。団体の管理者に確かめてください。';
+const 期限切れのとき =
+  'この招待リンクは期限が切れています。団体の管理者に新しいリンクを作ってもらってください。';
+
 /** リンクの配り元。web では開いているサイト、それ以外は本番 */
 const 配り元 = () =>
   typeof window !== 'undefined' && window.location && /^https?:/.test(window.location.origin || '')
@@ -43,16 +56,17 @@ const 招待の窓 = ({ 招待, onClose }) => {
     作業中を置く(true);
     try {
       const 道具 = 道具を取る();
-      // リンクの団体は人が打つ団体ID（6 桁）。団体の鍵（groups/{鍵}）は、個人ID で入るときと
-      // 同じく公開の帳面から引く。古い団体は鍵と団体ID が違うことがある。帳面が無ければ
-      // 団体の鍵がそのまま載っているリンクとみなす
+      // リンクの団体は人が打つ団体ID（6 桁）。団体の鍵（groups/{鍵}）は、個人ID や団体ID で
+      // 入るときと同じく公開の帳面の id を正とする（src/groupLogin.js の 団体で入る）。
+      // 帳面が無ければ、団体の鍵がそのまま載っているリンクとみなす
       const 帳面 = await 道具.Firestore.getDoc(道具.Firestore.doc(道具.db, 'group_accounts', 招待.団体));
       const 団体の鍵 = (帳面.exists() && 帳面.data().id) || 招待.団体;
       const { memberId, 名前 } = await require('./groupLogin').部員として入る(
         道具,
         団体の鍵,
         招待.合言葉,
-        'この招待リンクは使えません。作り直されたか、メンバーから外れた可能性があります。団体の管理者に確かめてください。'
+        使えないとき,
+        期限切れのとき
       );
       const 店 = useScoreStore.getState();
       店.setAuth(団体の鍵, 'member', memberId, null, 招待.団体, null, 名前);
@@ -64,7 +78,10 @@ const 招待の窓 = ({ 招待, onClose }) => {
       難点を置く(
         /network|unavailable/.test(符号)
           ? '接続できませんでした。電波の良い場所でもう一度お試しください。'
-          : (誤り && 誤り.message) || '入れませんでした。'
+          : /permission-denied/.test(符号)
+            ? // 決まりが断った（期限が過ぎた・作り直された・端末の時計がずれている など）
+              使えないとき
+            : (誤り && 誤り.message) || '入れませんでした。'
       );
     } finally {
       作業中を置く(false);
@@ -99,36 +116,42 @@ const 招待の窓 = ({ 招待, onClose }) => {
 
 /**
  * メンバーの編集に出す、招待リンクの欄（団体の持ち主だけ）。
- * 開いたときに今の合言葉を探し、無ければ「作る」、あればリンクと「写す」「送る」「作り直す」を出す
+ * 開いたときに今の招待を探し、無ければ「作る」、あればリンクと期限、「写す」「送る」「作り直す」を出す。
+ * 期限（7 日）が切れていれば、そう出して「新しいリンクを作る」を出す
  */
 const 招待リンクの欄 = ({ 団体, 部員 }) => {
-  const [合言葉, 合言葉を置く] = React.useState(undefined); // undefined は探している途中
+  // { 合言葉, 期限 } か null。undefined は探している途中
+  const [招待, 招待を置く] = React.useState(undefined);
   const [作業中, 作業中を置く] = React.useState(false);
   const [知らせ, 知らせを置く] = React.useState(null);
   const memberId = 部員 && 部員.id;
-  // リンクには人が知っている団体ID を載せる（団体の鍵と違う古い団体がある）
+  // リンクには人が打つ団体ID（公開の帳面の番号）を載せる
   const 団体ID = useScoreStore((状態) => 状態.publicGroupId) || 団体;
   React.useEffect(() => {
     let 生きている = true;
-    合言葉を置く(undefined);
+    招待を置く(undefined);
     知らせを置く(null);
     if (!団体 || !memberId) return undefined;
     招.招待を探す(道具を取る(), 団体, memberId)
-      .then((x) => 生きている && 合言葉を置く(x))
-      .catch(() => 生きている && 合言葉を置く(null));
+      .then((x) => 生きている && 招待を置く(x))
+      .catch(() => 生きている && 招待を置く(null));
     return () => {
       生きている = false;
     };
   }, [団体, memberId]);
   if (!団体 || !memberId) return null;
-  const リンク = 合言葉 ? 招.招待リンクを作る(配り元(), 団体ID, 合言葉) : null;
+  const 切れている = !!招待 && !(招待.期限 > Date.now());
+  const リンク = 招待 && !切れている ? 招.招待リンクを作る(配り元(), 団体ID, 招待.合言葉) : null;
 
   const 作る = (作り直しか) => {
     const 進める = async () => {
       作業中を置く(true);
       知らせを置く(null);
       try {
-        合言葉を置く(await 招.招待を作り直す(道具を取る(), 団体, memberId));
+        // 前の合言葉（期限切れのものも）は名指しで消す（雲へ問い合わせずに済む）
+        招待を置く(
+          await 招.招待を作り直す(道具を取る(), 団体, memberId, { 前の合言葉: 招待 ? 招待.合言葉 : null })
+        );
         知らせを置く(作り直しか ? '作り直しました。前のリンクはもう使えません。' : '作りました。');
       } catch (誤り) {
         知らせを置く('作れませんでした: ' + ((誤り && 誤り.message) || ''));
@@ -159,14 +182,17 @@ const 招待リンクの欄 = ({ 団体, 部員 }) => {
     <View style={styles.欄} testID="招待リンクの欄">
       <Text style={styles.欄の題}>招待リンク</Text>
       <Text style={styles.欄の説明}>
-        このリンクを本人に送ると、団体IDと個人IDを打たずに、このメンバーとして入れます。本人以外に送らないでください。
+        このリンクを本人に送ると、団体IDと個人IDを打たずに、このメンバーとして入れます。作ってから{招.招待の期限の日数}日間使えます。本人以外に送らないでください。
       </Text>
-      {undefined === 合言葉 ? (
+      {undefined === 招待 ? (
         <Text style={styles.欄の説明}>確かめています…</Text>
       ) : リンク ? (
         <>
           <Text selectable style={styles.リンク} testID="招待リンク">
             {リンク}
+          </Text>
+          <Text style={styles.欄の説明} testID="招待リンクの期限">
+            {期限の字(招待.期限)} まで使えます
           </Text>
           <View style={styles.並び}>
             <Pressable style={styles.小ボタン} onPress={写す}>
@@ -183,9 +209,19 @@ const 招待リンクの欄 = ({ 団体, 部員 }) => {
           </View>
         </>
       ) : (
-        <Pressable style={[styles.ボタン, 作業中 && styles.作業中]} disabled={作業中} onPress={() => 作る(false)}>
-          <Text style={styles.ボタンの字}>{作業中 ? '作っています…' : '招待リンクを作る'}</Text>
-        </Pressable>
+        <>
+          {切れている ? (
+            <Text style={styles.欄の説明} testID="招待リンクの期限">
+              前のリンクは {期限の字(招待.期限)} に期限が切れました。
+            </Text>
+          ) : null}
+          {/* 切れたリンクはもう使えないので、作り直しの確かめは出さない */}
+          <Pressable style={[styles.ボタン, 作業中 && styles.作業中]} disabled={作業中} onPress={() => 作る(false)}>
+            <Text style={styles.ボタンの字}>
+              {作業中 ? '作っています…' : 切れている ? '新しいリンクを作る' : '招待リンクを作る'}
+            </Text>
+          </Pressable>
+        </>
       )}
       {知らせ ? <Text style={styles.知らせ}>{知らせ}</Text> : null}
     </View>
