@@ -99,9 +99,10 @@ test('起動のしかた：全件をそろえてから 7 日以内で控えが�
   );
   assert.strictEqual(起動のしかた({ ...基本, 全部そろえた時刻: 今 + 日 }), '全部', '端末の時計が戻った');
   assert.strictEqual(起動のしかた({ ...基本, 記録の数: 0, 部員の数: 0 }), '全部', '控えが空');
+  assert.strictEqual(起動のしかた({ ...基本, 記録を外した: true }), '全部', '控えから古い記録を外した');
 });
 
-test('境目を進める：日時型・数・入れ物のどれでも最大を取り、下げない', () => {
+test('境目を進める：日時型（サーバーの時刻）だけで最大を取り、下げない。数は数えない', () => {
   assert.strictEqual(
     境目を進める(500, [
       { lastModified: new 偽の日時(900) },
@@ -111,6 +112,14 @@ test('境目を進める：日時型・数・入れ物のどれでも最大を�
     ]),
     900
   );
+  // 時計の進んだ端末が数で書いたもの・日時型を JSON に通した入れ物は、差分の問い合わせに
+  // 当たらない。拾うと境目がサーバーの時刻より先へ飛ぶ
+  assert.strictEqual(
+    境目を進める(500, [{ lastModified: new 偽の日時(900) }, { lastModified: 99999 }]),
+    900,
+    '端末の時計の数で境目が進んだ'
+  );
+  assert.strictEqual(境目を進める(500, [{ lastModified: { seconds: 99, nanoseconds: 0 } }]), 500);
   assert.strictEqual(境目を進める(1000, [{ lastModified: new 偽の日時(900) }]), 1000);
   assert.strictEqual(境目を進める(undefined, []), 0);
 });
@@ -303,4 +312,83 @@ test('起動：閉じている間に空にされたゴミ箱は、ゴミ箱の�
   await 待つ(30);
   assert.ok(!store.getState().trash.find((s) => s.id === 't1'));
   store.getState().stopPeriodicSync();
+});
+
+// ── 端末の時計の数（2026-09-24 の見直しで見つけたもの）────────────────
+
+test('時計の進んだ端末が数で書いた文書があっても、境目は先へ飛ばず、そのあとの直しを取りこぼさない', async () => {
+  const { store, 雲 } = 用意();
+  const 今 = Date.now();
+  雲.置く(道.記録, 's1', 記録('s1', 今 - 2 * 日, 今 - 5000));
+  // 1 時間進んだ時計の端末が、前の「クラウドへ同期」で数のまま書いた記録
+  雲.置く(道.記録, 's2', Object.assign(記録('s2', 今 - 3 * 日, 0), { lastModified: 今 + 3600000 }));
+  await store.getState().fetchAndOverwriteFromCloud();
+  assert.strictEqual(store.getState().雲の境目.記録, 今 - 5000, '数で境目が進んだ');
+  // ほかの端末が s1 を直した（サーバーの時刻は、進んだ時計の数より前）
+  雲.置く(道.記録, 's1', 記録('s1', 今 - 2 * 日, 今 - 1000, { title: 'ほかの端末で直した' }));
+  await store.getState().syncSessions();
+  await 待つ(20);
+  assert.strictEqual(store.getState().sessions.find((s) => s.id === 's1').title, 'ほかの端末で直した');
+});
+
+test('クラウドへ同期は、更新日時をサーバーの時刻（日時型）で書く。捨てた日時も日時型', async () => {
+  const { store, 雲 } = 用意();
+  const 今 = Date.now();
+  store.setState({
+    sessions: [{ id: 's1', title: 's1', date: 今 - 日, lastModified: 今 + 3600000, tags: [], archers: [] }],
+    members: [{ id: 'm1', name: 'm1', personalId: '1001', lastModified: 今 }],
+    alumni: [{ id: 'g1', name: 'g1', lastModified: 今 }],
+    trash: [{ id: 't1', title: 't1', date: 今 - 2 * 日, deletedAt: 今 - 日, lastModified: 今, pendingDelete: true }],
+  });
+  await store.getState().syncAllToCloud();
+  await 待つ(20);
+  for (const [場所, id] of [
+    [道.記録, 's1'],
+    [道.部員, 'm1'],
+    [道.卒業生, 'g1'],
+    [道.ごみ箱, 't1'],
+  ]) {
+    const 中身 = 雲.値(場所, id);
+    assert.ok(中身, `${場所}/${id} が書かれていない`);
+    assert.ok(中身.lastModified instanceof 偽の日時, `${場所}/${id} の lastModified が日時型でない`);
+  }
+  assert.ok(雲.値(道.ごみ箱, 't1').deletedAt instanceof 偽の日時, '捨てた日時が日時型でない');
+  assert.strictEqual(雲.値(道.ごみ箱, 't1').deletedAt.toMillis(), 今 - 日);
+  assert.strictEqual(雲.値(道.ごみ箱, 't1').pendingDelete, undefined);
+});
+
+// ── 端末の控えから外した記録（2026-09-24 の見直しで見つけたもの）──────────
+
+test('控えに入りきらず古い記録を外したら印を残し、次の起動は全件で取り直す（外した記録が履歴に戻る）', async () => {
+  const { store, 雲 } = 用意();
+  const 今 = Date.now();
+  // 1 件 60KB ほどの記録を 40 件（予算 1.5MB を超える）
+  const 重い = 'x'.repeat(60000);
+  for (let 番 = 0; 番 < 40; 番++) {
+    const id = 's' + String(番).padStart(2, '0');
+    雲.置く(道.記録, id, 記録(id, 今 - (番 + 1) * 日, 今 - 100000 + 番, { memo: 重い }));
+  }
+  await store.getState().fetchAndOverwriteFromCloud();
+  assert.strictEqual(store.getState().sessions.length, 40);
+  // 控えに書く形（partialize）。古いものが外れ、印が立つ
+  const 控え = store.persist.getOptions().partialize(store.getState());
+  assert.ok(控え.sessions.length < 40, '予算を超えても外していない（検査の前提が崩れた）');
+  assert.strictEqual(控え.端末で記録を外した, true);
+  // 閉じて開き直した端末（控えから戻したもの）
+  store.setState({ sessions: 控え.sessions, 端末で記録を外した: 控え.端末で記録を外した });
+  const 数え = 読み取りを数える(雲);
+  await store.getState().起動時に取り込む();
+  await 待つ(20);
+  assert.ok(数え.全件.includes(道.記録), '全件で取り直していない');
+  assert.strictEqual(store.getState().sessions.length, 40, '外した記録が履歴に戻っていない');
+});
+
+test('控えに収まっていれば印は立たない（差分で起動できる）', async () => {
+  const { store, 雲 } = 用意();
+  const 今 = Date.now();
+  雲.置く(道.記録, 's1', 記録('s1', 今 - 日, 今 - 5000));
+  await store.getState().fetchAndOverwriteFromCloud();
+  const 控え = store.persist.getOptions().partialize(store.getState());
+  assert.strictEqual(控え.sessions.length, 1);
+  assert.strictEqual(控え.端末で記録を外した, false);
 });

@@ -419,6 +419,13 @@ const cleanUpSessions = 同期規則.cleanUpSessions;
 const 記録の射手を整える = 同期規則.記録の射手を整える;
 // 雲の記録の日時（日時型）を、手元の形（ミリ秒）にする。雲から受け取る口ではすべて通す
 const 記録の日時を数に = 同期規則.記録の日時を数に;
+// 雲から読んだままの中身。差分の同期の境目は、数に直す前の形で決める（日時型だけを数える。
+// syncRules の 境目を進める）
+const 読んだままの中身 = (返り) => {
+  const 出 = [];
+  返り.forEach((文書) => 出.push(文書.data()));
+  return 出;
+};
 const 印の列にそろえる = (値, 本数) => {
   if (!値) return 本数 ? Array(本数).fill('') : [];
   if (Array.isArray(値)) {
@@ -1132,6 +1139,9 @@ const useScoreStore = zustand.create()(
         雲の境目: null,
         // 最後に全件をそろえた時刻（端末の時刻）。7 日たったら起動のときに全件を取り直す
         全部そろえた時刻: 0,
+        // 端末の控えに入りきらず、古い記録を控えから外したか（src/localTrim.js）。
+        // 控えを書くときに決める（partialize）。外していれば、次の起動は全件にする
+        端末で記録を外した: false,
         offlineSaveWarning: null,
         // 入り直しが要るときの案内。permission-denied を拾ったときだけ立てる
         再ログインの案内: null,
@@ -3846,11 +3856,11 @@ const useScoreStore = zustand.create()(
                 ? {
                     団体: 団体ID,
                     記録: 差分で取れるか
-                      ? 同期規則.境目を進める((境目の元 || {}).記録, 雲の記録)
+                      ? 同期規則.境目を進める((境目の元 || {}).記録, 読んだままの中身(記録の返り))
                       : (境目の元 || {}).記録 || 0,
-                    部員: 同期規則.境目を進める((境目の元 || {}).部員, 雲の部員),
-                    ごみ箱: 同期規則.境目を進める((境目の元 || {}).ごみ箱, 雲のごみ箱),
-                    卒業生: 同期規則.境目を進める((境目の元 || {}).卒業生, 雲の卒業生),
+                    部員: 同期規則.境目を進める((境目の元 || {}).部員, 読んだままの中身(部員の返り)),
+                    ごみ箱: 同期規則.境目を進める((境目の元 || {}).ごみ箱, 読んだままの中身(ごみ箱の返り)),
+                    卒業生: 同期規則.境目を進める((境目の元 || {}).卒業生, 読んだままの中身(卒業生の返り)),
                   }
                 : 今の境目;
             書く({
@@ -3886,6 +3896,11 @@ const useScoreStore = zustand.create()(
               書く({ syncStatus: '同期中' });
               try {
                 const 写す = (値) => JSON.parse(JSON.stringify(値));
+                // 更新日時はサーバーの時刻で付ける（ほかの書き込みと同じ）。端末の時計の数で
+                // 書くと、差分の同期（日時型で問い合わせる）に当たらず、ほかの端末へ届かない。
+                // 写す（JSON）を通すと印が壊れるので、写したあとに付ける
+                const サーバーの時刻で = (中身) =>
+                  Object.assign(写す(中身), { lastModified: Firestore.serverTimestamp() });
                 const 書き込み = [];
                 // 送る時点の更新日時を控えておく。送り終えたあとに照合して、
                 // 送っている最中の編集に「同期済み」を付けないようにする
@@ -3898,29 +3913,25 @@ const useScoreStore = zustand.create()(
                 const 送った卒業生 = 控える(状態().alumni);
                 状態().members.forEach((部員) => {
                   if (部員 && 部員.id) {
-                    const 送る形 = Object.assign({}, 部員, { lastModified: Date.now() });
                     書き込み.push({
                       type: 'set',
                       ref: Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/members`, 部員.id),
-                      data: 写す(送る形),
+                      data: サーバーの時刻で(部員),
                     });
                   }
                 });
                 状態().alumni.forEach((卒業生) => {
                   if (卒業生 && 卒業生.id) {
-                    const 送る形 = Object.assign({}, 卒業生, { lastModified: Date.now() });
                     書き込み.push({
                       type: 'set',
                       ref: Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/alumni`, 卒業生.id),
-                      data: 写す(送る形),
+                      data: サーバーの時刻で(卒業生),
                     });
                   }
                 });
                 状態().sessions.forEach((記録) => {
                   if (記録 && 記録.id) {
-                    const 送る形 = 写す(
-                      Object.assign({}, 記録, { syncStatus: '同期済み', lastModified: Date.now() })
-                    );
+                    const 送る形 = サーバーの時刻で(Object.assign({}, 記録, { syncStatus: '同期済み' }));
                     書き込み.push({
                       type: 'set',
                       ref: Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, 記録.id),
@@ -3930,14 +3941,18 @@ const useScoreStore = zustand.create()(
                 });
                 状態().trash.forEach((記録) => {
                   if (記録 && 記録.id) {
-                    const 送る形 = Object.assign({}, 記録, { lastModified: Date.now() });
+                    const 送る形 = サーバーの時刻で(記録);
                     // pendingDelete は端末の中だけの印。クラウドへは持ち込まない
                     // （syncSessions の送り直しと同じ扱い）
                     delete 送る形.pendingDelete;
+                    // 捨てた日時は日時型で送る（syncSessions の送り直しと同じ）
+                    送る形.deletedAt = 送る形.deletedAt
+                      ? Firestore.Timestamp.fromMillis(同期規則.toMillis(送る形.deletedAt))
+                      : Firestore.serverTimestamp();
                     書き込み.push({
                       type: 'set',
                       ref: Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/trash`, 記録.id),
-                      data: 写す(送る形),
+                      data: 送る形,
                     });
                   }
                 });
@@ -4040,6 +4055,7 @@ const useScoreStore = zustand.create()(
             全部そろえた時刻: 様子.全部そろえた時刻,
             記録の数: (様子.sessions || []).length,
             部員の数: (様子.members || []).length,
+            記録を外した: !!様子.端末で記録を外した,
           });
           if ('全部' === しかた) return 状態().fetchAndOverwriteFromCloud();
           console.log('[Store] Loading: 前回からの差分だけを取り込みます');
@@ -4200,10 +4216,10 @@ const useScoreStore = zustand.create()(
               // 4 つとも全件を読んだので、ここで境目を決め直せる（差分の同期と起動の判断に使う）
               雲の境目: {
                 団体: 状態().activeGroupId,
-                記録: 同期規則.境目を進める(0, 記録),
-                部員: 同期規則.境目を進める(0, 部員),
-                ごみ箱: 同期規則.境目を進める(0, 雲のごみ箱),
-                卒業生: 同期規則.境目を進める(0, 卒業生),
+                記録: 同期規則.境目を進める(0, 読んだままの中身(記録の返り)),
+                部員: 同期規則.境目を進める(0, 読んだままの中身(部員の返り)),
+                ごみ箱: 同期規則.境目を進める(0, 読んだままの中身(ごみ箱の返り)),
+                卒業生: 同期規則.境目を進める(0, 読んだままの中身(卒業生の返り)),
               },
               全部そろえた時刻: Date.now(),
             });
@@ -5611,57 +5627,65 @@ const useScoreStore = zustand.create()(
       name: 'archery-score-storage',
       // JSON にする前の写しを受け取り、少しまとめてから書く（控えの書き出し）
       storage: 控えの置き場,
-      partialize: (状態の中身) => ({
-        archers: 状態の中身.archers,
-        members: 状態の中身.members,
+      partialize: (状態の中身) => {
         // 端末には、予算に収まるぶんだけ残す。雲には全部あるので、
         // 次に開いたときに取り直せる。まだ送れていない記録は必ず残す
         //（落とすとその練習ぶんがどこにも無くなる。src/localTrim.js）
-        sessions: 端.端末に残す記録(状態の中身.sessions, { 最後に送った時刻: 状態の中身.lastSyncTime || 0 }),
-        history: 状態の中身.history,
-        alumni: 状態の中身.alumni,
-        trash: 状態の中身.trash,
-        permanentlyDeleted: 状態の中身.permanentlyDeleted,
-        deletedMembers: 状態の中身.deletedMembers,
-        shotsPerRound: 状態の中身.shotsPerRound,
-        activeSessionID: 状態の中身.activeSessionID,
-        viewScale: 状態の中身.viewScale,
-        includeInStats: 状態の中身.includeInStats,
-        lastSessionTags: 状態の中身.tagTemplates,
-        currentSessionTags: 状態の中身.currentSessionTags,
-        activeGroupId: 状態の中身.activeGroupId,
-        activeGroupName: 状態の中身.activeGroupName,
-        publicGroupId: 状態の中身.publicGroupId,
-        activeRole: 状態の中身.activeRole,
-        activeUserEmail: 状態の中身.activeUserEmail,
-        myMemberId: 状態の中身.myMemberId,
-        myMemberName: 状態の中身.myMemberName,
-        memberAuthVersion: 状態の中身.memberAuthVersion,
-        analysisSelectedTags: 状態の中身.analysisSelectedTags,
-        analysisTagLogic: 状態の中身.analysisTagLogic,
-        historySelectedTags: 状態の中身.historySelectedTags,
-        historyTagLogic: 状態の中身.historyTagLogic,
-        tagTemplates: 状態の中身.tagTemplates,
-        currentFreshmanTerm: 状態の中身.currentFreshmanTerm,
-        lastPromotionYear: 状態の中身.lastPromotionYear,
-        lastSyncTime: 状態の中身.lastSyncTime,
-        雲の境目: 状態の中身.雲の境目,
-        全部そろえた時刻: 状態の中身.全部そろえた時刻,
-        isAdminMode: 状態の中身.isAdminMode,
-        autoPromotionEnabled: 状態の中身.autoPromotionEnabled,
-        analysisRankingSettings: 状態の中身.analysisRankingSettings,
-        enableArrowLocation: 状態の中身.enableArrowLocation,
-        自動ロックする: 状態の中身.自動ロックする,
-        保存時に出欠を確認する: 状態の中身.保存時に出欠を確認する,
-        横に並べる: 状態の中身.横に並べる,
-        帯を畳む: 状態の中身.帯を畳む,
-        帯の取っ手は左: 状態の中身.帯の取っ手は左,
-        arrowTargetType: 状態の中身.arrowTargetType,
-        比較のひな型: 状態の中身.比較のひな型,
-        ライブの合言葉: 状態の中身.ライブの合言葉,
-        ライブの続き: 状態の中身.ライブの続き,
-        履歴の編集: 状態の中身.履歴の編集,
-      }),
+        const 残す記録 = 端.端末に残す記録(状態の中身.sessions, {
+          最後に送った時刻: 状態の中身.lastSyncTime || 0,
+        });
+        return {
+          archers: 状態の中身.archers,
+          members: 状態の中身.members,
+          sessions: 残す記録,
+          // 外した記録は差分の同期では戻ってこない（変わっていないので）。外したら印を残し、
+          // 次の起動を全件にする（syncRules の 起動のしかた）
+          端末で記録を外した: 残す記録.length < (状態の中身.sessions || []).length,
+          history: 状態の中身.history,
+          alumni: 状態の中身.alumni,
+          trash: 状態の中身.trash,
+          permanentlyDeleted: 状態の中身.permanentlyDeleted,
+          deletedMembers: 状態の中身.deletedMembers,
+          shotsPerRound: 状態の中身.shotsPerRound,
+          activeSessionID: 状態の中身.activeSessionID,
+          viewScale: 状態の中身.viewScale,
+          includeInStats: 状態の中身.includeInStats,
+          lastSessionTags: 状態の中身.tagTemplates,
+          currentSessionTags: 状態の中身.currentSessionTags,
+          activeGroupId: 状態の中身.activeGroupId,
+          activeGroupName: 状態の中身.activeGroupName,
+          publicGroupId: 状態の中身.publicGroupId,
+          activeRole: 状態の中身.activeRole,
+          activeUserEmail: 状態の中身.activeUserEmail,
+          myMemberId: 状態の中身.myMemberId,
+          myMemberName: 状態の中身.myMemberName,
+          memberAuthVersion: 状態の中身.memberAuthVersion,
+          analysisSelectedTags: 状態の中身.analysisSelectedTags,
+          analysisTagLogic: 状態の中身.analysisTagLogic,
+          historySelectedTags: 状態の中身.historySelectedTags,
+          historyTagLogic: 状態の中身.historyTagLogic,
+          tagTemplates: 状態の中身.tagTemplates,
+          currentFreshmanTerm: 状態の中身.currentFreshmanTerm,
+          lastPromotionYear: 状態の中身.lastPromotionYear,
+          lastSyncTime: 状態の中身.lastSyncTime,
+          雲の境目: 状態の中身.雲の境目,
+          全部そろえた時刻: 状態の中身.全部そろえた時刻,
+          isAdminMode: 状態の中身.isAdminMode,
+          autoPromotionEnabled: 状態の中身.autoPromotionEnabled,
+          analysisRankingSettings: 状態の中身.analysisRankingSettings,
+          enableArrowLocation: 状態の中身.enableArrowLocation,
+          自動ロックする: 状態の中身.自動ロックする,
+          保存時に出欠を確認する: 状態の中身.保存時に出欠を確認する,
+          横に並べる: 状態の中身.横に並べる,
+          帯を畳む: 状態の中身.帯を畳む,
+          帯の取っ手は左: 状態の中身.帯の取っ手は左,
+          arrowTargetType: 状態の中身.arrowTargetType,
+          比較のひな型: 状態の中身.比較のひな型,
+          ライブの合言葉: 状態の中身.ライブの合言葉,
+          ライブの続き: 状態の中身.ライブの続き,
+          履歴の編集: 状態の中身.履歴の編集,
+        };
+      },
       onRehydrateStorage: () => {
         console.log('[Store] Hydration starting...');
         const 始めた時刻 = Date.now();
