@@ -113,12 +113,18 @@ if (stage === 'stage2') {
 
   // SEC-7：退部した部員はクレームが残っていてもアクセスできないこと。
   // members から消して、同じクレームで読めなくなることを確認する。
-  const backup = target1.data;
+  // 控えは REST の生の形（型付き）で取り、そのまま書き戻す。listAll の data（JS の値）で書き戻すと、
+  // 日時（timestampValue）が文字（stringValue）に化ける（2026-09-24 に気づいた）
+  const 生の控え = await req(projectId, `/groups/${G1}/members/${MID}`, { token: tokG1 });
+  if (生の控え.status !== 200 || !生の控え.json?.fields) throw new Error(`控えを取れませんでした (HTTP ${生の控え.status})`);
   await req(projectId, `/groups/${G1}/members/${MID}`, { token: tokG1, method: 'DELETE' });
   const revoked = await req(projectId, `/groups/${G1}/sessions`, { token: anon.idToken, query: '?pageSize=1' });
   rows.push({ 項目: 'SEC-7 退部した部員のクレーム', 期待: '403', 実際: revoked.status, 判定: revoked.status === 403 ? 'OK' : 'NG' });
   revoked.status === 403 ? pass++ : fail++;
-  await setDoc(projectId, `/groups/${G1}/members/${MID}`, backup, tokG1); // 復元
+  const 戻した = await req(projectId, `/groups/${G1}/members/${MID}`, {
+    token: tokG1, method: 'PATCH', body: { fields: 生の控え.json.fields },
+  }); // 復元
+  if (戻した.status !== 200) console.error(`★ メンバー ${MID} を戻せませんでした (HTTP ${戻した.status})。検証環境の団体 ${G1} を確かめてください`);
 
   await req(projectId, claimPath, { token: anon.idToken, method: 'DELETE' });
 }
