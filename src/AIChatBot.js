@@ -69,6 +69,15 @@ const 中継 = require('./geminiChukei');
  * SDK は「Failed to parse stream」を投げる（2026-09-24 に本番の便りで 2 通）。上限（429）・
  * 混雑（503）・証（401）などの誤りはここに入れない（別に扱う）
  */
+/**
+ * Gemini の SDK の誤りから、状態番号（400・503 など）を取り出す。無ければ 0。
+ * SDK の誤りは status を持つことがあり、無いときは文の「[503 Service Unavailable]」から読む
+ */
+const 誤りの状態番号 = (誤り) => {
+  if (誤り && Number.isInteger(誤り.status)) return 誤り.status;
+  const 合う = String((誤り && 誤り.message) || '').match(/\[(\d{3})[ \]]/);
+  return 合う ? Number(合う[1]) : 0;
+};
 const 流れが切れたか = (誤り) =>
   /Failed to parse stream|Error reading from the stream|network|Failed to fetch|Load failed|terminated|aborted/i.test(
     String((誤り && 誤り.message) || 誤り || '')
@@ -1488,11 +1497,15 @@ const AIChatBot = () => {
         const is429 = error.message?.includes('429');
         const isPerDay = error.message?.includes('PerDayPerProject');
         const isPerMinute = is429 && !isPerDay;
-        const is503 = error.message?.includes('503');
+        // 一時的な誤り（500・502・503・504）。503 は模型が混んでいる、502 は中継から Gemini に
+        // つながらなかった、500・504 は上流の一時の不具合
+        const 状態番号 = 誤りの状態番号(error);
+        const is503 = 状態番号 === 503 || error.message?.includes('503');
+        const 一時の誤りか = is503 || [500, 502, 504].includes(状態番号);
 
-        if (is503 && attempt < MAX_RETRY) {
-          // 混んでいる（503）。中継がすでに 2・4・8 秒待って送り直しているが、山が長いことがある。
-          // 利用者に送り直させる前に、もう少し待ってこちらで 1 回だけ送り直す
+        if (一時の誤りか && attempt < MAX_RETRY) {
+          // 混んでいる（503）などの一時の誤り。中継がすでに 503 は 2・4・8 秒待って送り直しているが、
+          // 山が長いことがある。利用者に送り直させる前に、もう少し待ってこちらで 1 回だけ送り直す
           const 待つ秒 = 10;
           let 残り = 待つ秒;
           setRetryCountdown(残り);
@@ -1551,8 +1564,13 @@ const AIChatBot = () => {
           errorMsg = 'ログインの証が確かめられませんでした。ログインし直してからもう一度送信してください。';
         } else if (流れが切れたか(error)) {
           errorMsg = '通信が途中で切れました。電波の良い場所でもう一度送信してください。';
+        } else if (一時の誤りか) {
+          errorMsg = 'AI の返事が届きませんでした。少し待ってからもう一度送信してください。';
+        } else if (状態番号 === 400) {
+          errorMsg = '送った内容を AI が受け付けませんでした。もう一度送信してください。続くときは、チャットを閉じて開き直してください。';
         } else {
-          errorMsg = `エラー: ${error.message}`;
+          // 英語の原文は出さない（読めないうえ、どうすればよいか分からない）。原文は記録と便りに残す
+          errorMsg = `AI からの返事を受け取れませんでした${状態番号 ? `（${状態番号}）` : ''}。もう一度送信してください。`;
         }
         setMessages([...newMessages, { id: generateMsgId(), role: 'model', text: errorMsg }]);
         break;
