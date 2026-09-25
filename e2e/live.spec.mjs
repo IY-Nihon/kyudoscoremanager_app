@@ -430,6 +430,94 @@ test('ライブ：同時に入れた○×が両方に届き、取り消しは1�
   expect(残り[1], 'A と B で見え方が違う').toBe(残り[3]);
 });
 
+/** 押せるますを全部 {印, x, y} で（一射目に限らない） */
+const 押せるますたち = (page) =>
+  page.evaluate(() => {
+    const 出 = [];
+    document.querySelectorAll('[data-testid^="ます-"]').forEach((el) => {
+      const r = el.getBoundingClientRect();
+      if (!(r.width > 0 && r.height > 0)) return;
+      const x = Math.round(r.x + r.width / 2);
+      const y = Math.round(r.y + r.height / 2);
+      if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) return;
+      const 前 = document.elementFromPoint(x, y);
+      if (!前 || !(el === 前 || el.contains(前))) return;
+      出.push({ 印: el.getAttribute('data-testid'), x, y });
+    });
+    return 出;
+  });
+/** 画面のますの中身を全部 */
+const 盤の中身 = (page) =>
+  page.evaluate(() => {
+    const 出 = {};
+    document.querySelectorAll('[data-testid^="ます-"]').forEach((el) => {
+      出[el.getAttribute('data-testid')] = (el.innerText || '').trim();
+    });
+    return 出;
+  });
+
+test('ライブ：2 台が同じ射手のますを同時に連打しても、2 台の見え方がそろう', async ({ browser }) => {
+  // 2026-09-26 に使う人から「ますを連打すると他の端末に反映されず、違う記録が出る」と報告。
+  // 雲には 1 ますずつ書くので両方の手が載るのに、受け取る側が射手の行まるごとを端末の
+  // 時計で新しいほうに決めていて、片方に相手のますが出なかった。いまは ○× は届いた盤面を
+  // 正にし、盤面をまとめて送る操作も変わったますだけを書く（src/useScoreStore.js の
+  // 印を盤面に合わせる・ライブへ盤面を送る）
+  test.setTimeout(300_000);
+  const 名 = ライブ名を作る('rapid');
+  const A = await (await browser.newContext()).newPage();
+  const B = await (await browser.newContext()).newPage();
+  await 入る(A);
+  await 射手を立てる(A, 3);
+  await ライブを始める(A, 名);
+  await 入る(B);
+  await ライブに参加する(B, 名);
+  await 盤面を待つ(B);
+
+  const 比べる = async () => {
+    const [a, b] = [await 盤の中身(A), await 盤の中身(B)];
+    return Object.keys(a)
+      .filter((k) => k in b && a[k] !== b[k])
+      .map((k) => `${k}: A=${a[k] || '空'} B=${b[k] || '空'}`);
+  };
+  const そろうまで = async () => {
+    let 違い = [];
+    for (let 回 = 0; 回 < 15; 回++) {
+      await A.waitForTimeout(1000);
+      違い = await 比べる();
+      if (!違い.length) break;
+    }
+    return 違い;
+  };
+
+  // 別々のますを同時に（同じ射手の別のますを含む）
+  const Aます = (await 押せるますたち(A)).slice(0, 8);
+  const Bます = (await 押せるますたち(B)).slice(8, 16);
+  await Promise.all([
+    (async () => {
+      for (const m of Aます) for (let k = 0; k < 2; k++) await A.mouse.click(m.x, m.y);
+    })(),
+    (async () => {
+      for (const m of Bます) for (let k = 0; k < 2; k++) await B.mouse.click(m.x, m.y);
+    })(),
+  ]);
+  const 違い1 = await そろうまで();
+  expect(違い1, '別々のますの連打で 2 台の見え方が食い違った').toEqual([]);
+
+  // 同じますを同時に（取り合い。雲の順番どおりに 2 台がそろう）
+  const 同じ = (await 押せるますたち(A)).slice(16, 20);
+  const B表 = Object.fromEntries((await 押せるますたち(B)).map((m) => [m.印, m]));
+  await Promise.all([
+    (async () => {
+      for (const m of 同じ) for (let k = 0; k < 3; k++) await A.mouse.click(m.x, m.y);
+    })(),
+    (async () => {
+      for (const m of 同じ) if (B表[m.印]) for (let k = 0; k < 2; k++) await B.mouse.click(B表[m.印].x, B表[m.印].y);
+    })(),
+  ]);
+  const 違い2 = await そろうまで();
+  expect(違い2, '同じますの連打で 2 台の見え方が食い違った').toEqual([]);
+});
+
 test('ライブ：3台が同時に入れても届き、取り消しは1手だけ戻す', async ({ browser }) => {
   // 3台を WebKit（iPhone）で動かすと重く、7分では足りずに時間切れになっていた。
   // 端末が1つ増えるぶん、参加の手順も突き合わせも増える
