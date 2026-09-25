@@ -23,6 +23,8 @@ const ひ = require('./comparePresets');
 const 弓 = require('./equipmentTrend');
 const { 出す } = require('./AppDialog');
 const { useScoreStore } = require('./useScoreStore');
+// 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
+const { useストアの一部 } = require('./storeSlice');
 const Icons = require('@expo/vector-icons');
 const { CustomCalendarModal } = require('./CustomCalendarModal');
 const { use横流し } = require('./yokoNagashi');
@@ -286,7 +288,7 @@ const AnalysisScreen = ({ navigation }) => {
     比較のひな型を消す,
     activeGroupId: いまの団体id,
     // 案内が見本を出しているあいだは、中身だけ見本に差し替わる
-  } = 案内.見本を重ねる(useScoreStore());
+  } = 案内.見本を重ねる(useストアの一部(['analysisSelectedTags', 'analysisTagLogic', 'tagTemplates', 'setAnalysisSelectedTags', 'toggleAnalysisTag', 'setAnalysisTagLogic', 'analysisRankingSettings', 'setAnalysisRankingSetting', 'activeRole', 'myMemberId', 'sessions', 'members', 'alumni', 'shotsPerRound', 'showAlumniInAnalysis', 'setShowAlumniInAnalysis', 'isHydrated', 'arrowTargetType', 'setSelectedHistorySessionId', 'setHistoryViewMode', 'setFocusedMemberId', '比較のひな型', '比較のひな型を足す', '比較のひな型を消す', 'activeGroupId']));
   const 自分の名前 = useScoreStore((状態) => 状態.myMemberName) || '';
   const [compareMembers, setCompareMembers] = React.useState([]);
   const [isSelectingCompareTarget, setIsSelectingCompareTarget] = React.useState(false);

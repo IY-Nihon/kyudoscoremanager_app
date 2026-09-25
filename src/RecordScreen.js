@@ -17,6 +17,8 @@ const {
 } = require('./rn');
 const { IS_WEB, SAFE_TOP_PADDING, WEB_TOP_PADDING } = require('./IS_WEB');
 const { useScoreStore, ライブ名に使えない字 } = require('./useScoreStore');
+// 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
+const { useストアの一部 } = require('./storeSlice');
 const 案内 = require('./TutorialGuide');
 const 在 = require('./livePresence');
 const { ArcherColumnView } = require('./ArcherColumnView');
@@ -136,7 +138,7 @@ const RecordScreen = () => {
     履歴の編集 = null,
     履歴の編集を終える,
     sessions: 記録たち = [],
-  } = useScoreStore();
+  } = useストアの一部(['activeSessionID', 'isAdminMode', 'archers', 'shotsPerRound', 'syncStatus', 'lastSyncTime', 'isNetworkOnline', 'offlineSaveWarning', '再ログインの案内', 'addArcher', 'addSeparator', 'setSeparatorTeam', 'toggleTotalScope', '列を動かす', '列を並べ替える', 'addTotalCalculator', 'undo', 'redo', 'historyStack', 'redoStack', 'clearArcherMarks', 'setArcherMember', 'saveSession', 'setShotsPerRound', 'viewScale', 'setViewScale', 'isLiveActive', 'setIsLiveActive', 'isHost', 'liveSessionName', 'includeInStats', 'setIncludeInStats', 'resetCurrentSession', 'members', 'isHydrated', 'lastResetHandled', 'historyNoticeAt', 'historyNoticeKind', 'historySharedLen', 'historySharedMax', 'activeGroupId', 'publicGroupId', 'activeArrowLocationEdit', 'setActiveArrowLocationEdit', '保存時に出欠を確認する', '鍵を開けた時刻', '閉じたますを押した時刻', '閲覧でますを押した時刻', '横に並べる', 'set横に並べる', '帯を畳む', 'set帯を畳む', '帯の取っ手は左', 'set帯の取っ手は左', 'ライブは見るだけ', '履歴の編集', '履歴の編集を終える', 'sessions']);
   const 航路 = 航.useNavigation();
   // ライブ中の帯。主催者は押して配る窓を開けるので、押せる部品にする
   const ライブの帯 = isHost ? TouchableOpacity : View;

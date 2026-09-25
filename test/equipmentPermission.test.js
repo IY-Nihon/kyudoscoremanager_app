@@ -37,14 +37,18 @@ test('弓具：画面が取り出すものが、すべてストアに在る', ()
   // ストア側に定義があるか突き合わせる。1 の再発を防ぐ
   const 画面 = 読む('src/MemberScreen.js');
   const 店 = 読む('src/useScoreStore.js');
-  // 読める形に直したので useScoreStore()。前の (0, x.useScoreStore)() も受ける
+  // 2026-09-26 から、画面は使う項目だけを購読する（useストアの一部(['名', …])。src/storeSlice.js）。
+  // 並べた名前が、画面の取り出すもの。前の useScoreStore() の分解の形も受ける
+  const 一部 = [...画面.matchAll(/useストアの一部\(\[([^\]]*)\]\)/g)];
   const m = 画面.match(/const\s*\{([^}]*)\}\s*=\s*(?:\(0,\s*x\.useScoreStore\)|useScoreStore)\(\)/);
-  assert.ok(m, 'MemberScreen が useScoreStore から取り出している所が見つかりません');
-  const 名たち = m[1]
-    .split(',')
-    // 「名: 別名 = 既定」「名 = 既定」のどちらも、名だけを取る
-    .map((x) => x.split(/[:=]/)[0].trim())
-    .filter(Boolean);
+  assert.ok(一部.length || m, 'MemberScreen が useScoreStore から取り出している所が見つかりません');
+  const 名たち = 一部.length
+    ? 一部.flatMap((合う) => [...合う[1].matchAll(/'([^']+)'/g)].map((x) => x[1]))
+    : m[1]
+        .split(',')
+        // 「名: 別名 = 既定」「名 = 既定」のどちらも、名だけを取る
+        .map((x) => x.split(/[:=]/)[0].trim())
+        .filter(Boolean);
   assert.ok(名たち.length, '取り出している名前が読めません');
   for (const 名 of 名たち) {
     assert.ok(
