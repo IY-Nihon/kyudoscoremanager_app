@@ -174,6 +174,8 @@ const AttendanceScreen = () => {
     return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
   };
   const handlePickPDF = async () => {
+    // アプリの改善のため、読ませたファイルと結果を、成功・失敗に関わらず取っておく（src/improvementLog.js）
+    let 予定表の記録 = null;
     try {
       const res = await docPicker.getDocumentAsync({
         type: ['application/pdf', 'image/*'],
@@ -185,8 +187,11 @@ const AttendanceScreen = () => {
         asset.mimeType || (asset.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
       setLoadingMsg('予定表を読み込み中...');
       let base64 = '';
+      // アプリの改善のために、送ったファイルも取っておく（src/improvementLog.js）
+      let 送ったファイル = null;
       if (IS_WEB) {
         const fileData = asset.file || (await fetch(asset.uri).then((返り) => 返り.blob()));
+        送ったファイル = fileData;
         base64 = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => {
@@ -201,6 +206,12 @@ const AttendanceScreen = () => {
       } else {
         base64 = await fs.readAsStringAsync(asset.uri, { encoding: fs.EncodingType.Base64 });
       }
+      予定表の記録 = {
+        中身: { 型: mimeType, 年月: `${selectedYear}-${selectedMonth}`, 結果: '失敗' },
+        ファイル: 送ったファイル,
+        base64,
+        型: mimeType,
+      };
       // 鍵はアプリに無い。中継（Cloudflare Workers）へログインの証を付けて呼ぶ。
       // 以前は模型の一覧を引いて 1.5-flash を探していたが、1.5 はもう一覧に無く、
       // 中継は決めた模型しか通さないので、写真の読み取り・チャットと同じ 3.6-flash に固定する
@@ -259,15 +270,34 @@ const AttendanceScreen = () => {
       const validatedItems = (Array.isArray(items) ? items : [])
         .map((項目) => ({ date: normalizeDate(項目.date), reason: 項目.reason }))
         .filter((項目) => !!項目.date);
+      if (予定表の記録) {
+        予定表の記録.中身.結果 = validatedItems.length > 0 ? '読んだ' : '見つからなかった';
+        予定表の記録.中身.読み取り = validatedItems;
+      }
       if (validatedItems.length > 0) {
         setAiPreviewItems(validatedItems);
       } else {
         Alert.alert('お知らせ', 'PDFから練習日を検出できませんでした。形式を確認してください。');
       }
     } catch (誤り) {
+      if (予定表の記録) 予定表の記録.中身.誤り = String((誤り && 誤り.message) || 誤り).slice(0, 300);
       Alert.alert('エラー', 誤り.message);
     } finally {
       setLoadingMsg(null);
+      // 読めたファイルは、結果に関わらず取っておく。待たない
+      if (予定表の記録) {
+        const { 中身, ファイル, base64: 元, 型 } = 予定表の記録;
+        (async () => {
+          const 記録 = require('./improvementLog');
+          // 種類が空の Blob は、選んだファイルの種類を付け直す（空だと写真の札で送ってしまう）
+          const 体 = ファイル
+            ? ファイル.type
+              ? ファイル
+              : new Blob([ファイル], { type: 型 })
+            : await 記録.base64をBlobに(元, 型);
+          記録.改善のために取っておく('予定表', 中身, [体]);
+        })().catch(() => {});
+      }
     }
   };
   const saveAiDates = async () => {

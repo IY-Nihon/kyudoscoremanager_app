@@ -106,6 +106,73 @@ test.describe('確認画面', () => {
     await page.getByText('この画像で解析する', { exact: true }).click();
   }
 
+  test('改善のため、読み取りの直後に写真と最初の結果を、反映したら直したあとを送る', async ({ page }) => {
+    test.setTimeout(300_000);
+    // 中継の /hozon を横取りして中身を見る（本物の置き場には送らない）
+    const 送った = [];
+    await page.route(/workers\.dev\/hozon/, async (route) => {
+      const r = route.request();
+      if (r.method() === 'OPTIONS')
+        return route.fulfill({
+          status: 204,
+          headers: {
+            'access-control-allow-origin': '*',
+            'access-control-allow-methods': 'POST, PUT, OPTIONS',
+            'access-control-allow-headers': 'Authorization, Content-Type',
+          },
+        });
+      送った.push({
+        道: new URL(r.url()).pathname,
+        方法: r.method(),
+        型: r.headers()['content-type'] || '',
+        体: r.method() === 'POST' ? r.postDataJSON() : null,
+        大きさ: (r.postDataBuffer() || Buffer.alloc(0)).length,
+      });
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'access-control-allow-origin': '*' },
+        body: '{"ok":true}',
+      });
+    });
+    // 送った写真の大きさは画面の中で控える（WebKit では Playwright が Blob の本文を拾えず 0 になる）
+    await page.addInitScript(() => {
+      const 元 = window.fetch;
+      window.__送った写真 = [];
+      window.fetch = (道, init) => {
+        if (String(道).includes('/hozon/photo/') && init && init.body && typeof init.body.size === 'number')
+          window.__送った写真.push({ 大きさ: init.body.size, 型: init.body.type });
+        return 元(道, init);
+      };
+    });
+    await 確認画面まで(page);
+    await expect(page.getByTestId('ocr-yomitori-tanmatsu')).toBeAttached({ timeout: 120_000 });
+    await expect
+      .poll(() => 送った.filter((x) => x.方法 === 'PUT').length, { timeout: 60_000, message: '写真を送っていない' })
+      .toBeGreaterThan(0);
+    const 読み = 送った.find((x) => x.方法 === 'POST' && x.体 && x.体.中身 && x.体.中身.段階 === '読み取り');
+    expect(読み, '読み取りの記録を送っていない').toBeTruthy();
+    expect(読み.体.種類).toBe('写真読み取り');
+    expect(読み.体.中身.結果).toBe('読んだ');
+    expect(読み.体.中身.最初.length, '最初の結果が空').toBeGreaterThan(0);
+    expect(読み.体.中身.団体).toBe('100007');
+    const 写真 = 送った.find((x) => x.方法 === 'PUT');
+    expect(写真.道).toBe(`/hozon/photo/${読み.体.id}/0`);
+    expect(写真.型).toBe('image/jpeg');
+    const 作った写真 = (await page.evaluate(() => window.__送った写真))[0];
+    expect(作った写真 && 作った写真.型).toBe('image/jpeg');
+    expect(作った写真.大きさ, `写真が小さすぎる（縮め方がおかしい）: ${作った写真.大きさ} バイト`).toBeGreaterThan(20_000);
+    expect(作った写真.大きさ, '写真を縮めていない').toBeLessThan(5 * 1024 * 1024);
+
+    await page.getByText('記録表に反映する', { exact: true }).click();
+    await expect
+      .poll(() => 送った.some((x) => x.体 && x.体.中身 && x.体.中身.段階 === '反映'), { timeout: 30_000 })
+      .toBe(true);
+    const 反映 = 送った.find((x) => x.体 && x.体.中身 && x.体.中身.段階 === '反映');
+    expect(反映.体.中身.元の読み取り, '反映の記録が読み取りの記録を指していない').toBe(読み.体.id);
+    expect(反映.体.中身.直したあと.length).toBeGreaterThan(0);
+  });
+
   test('「もしかして」の名前が残っていると、反映を押したときにその旨が窓で出る', async ({ page }) => {
     test.setTimeout(300_000);
     // 2人目を、Gemini が名簿の「部員1」に寄せたが読めた字は違う体（要選択になる）

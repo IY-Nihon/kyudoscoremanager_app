@@ -843,6 +843,14 @@ const AIChatBot = () => {
 
     let attempt = 0;
     const MAX_RETRY = 1;
+    // アプリの改善のための保存に添える、使った道具の名前（src/improvementLog.js）
+    const 使った道具 = [];
+    const 改善のために = (中身) => {
+      require('./improvementLog').改善のために取っておく(
+        'チャット',
+        Object.assign({ 質問: userMsg, 道具: 使った道具, 模型: 'gemini-3.6-flash' }, 中身)
+      );
+    };
 
     while (attempt <= MAX_RETRY) {
       try {
@@ -1182,6 +1190,7 @@ const AIChatBot = () => {
             // 引数の中身には部員の氏名が入る。共用端末で読まれるので、
             // どの引数が来たかだけにする（不具合を追うにはこれで足りる）
             console.log('[AIChatBot] Function Called:', call.name, Object.keys(call.args || {}));
+            if (call.name && !使った道具.includes(call.name)) 使った道具.push(call.name);
 
             if (call.name === 'getAllMembersStats') {
               const { dateFrom, dateTo, sortBy, limit, minShots } = call.args;
@@ -1492,6 +1501,7 @@ const AIChatBot = () => {
         // 途中に出していた札は捨て、確定した1件だけを残す。
         // 残したままだと、同じ答えが2つ並ぶ
         setMessages([...newMessages, { id: generateMsgId(), role: 'model', text: responseText }]);
+        改善のために({ 答え: responseText, 結果: '答えた' });
         break; // 成功
       } catch (error) {
         const is429 = error.message?.includes('429');
@@ -1573,6 +1583,7 @@ const AIChatBot = () => {
           errorMsg = `AI からの返事を受け取れませんでした${状態番号 ? `（${状態番号}）` : ''}。もう一度送信してください。`;
         }
         setMessages([...newMessages, { id: generateMsgId(), role: 'model', text: errorMsg }]);
+        改善のために({ 答え: errorMsg, 結果: '失敗', 誤り: String((error && error.message) || error).slice(0, 300) });
         break;
       }
     } // end while

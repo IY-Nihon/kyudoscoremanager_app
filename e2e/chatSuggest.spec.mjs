@@ -164,6 +164,46 @@ test('質問例：長い文が途中で切れていない', async ({ page }) => 
  * ボタンが途中で止まっていた。記録表の取っ手と同じ直し方をしてある。
  * 引き終わりに角へ吸い付き、置いた角は端末（localStorage）に残ること
  */
+test('改善のため、チャットの質問と答えを送る', async ({ page }) => {
+  test.setTimeout(180_000);
+  const 送った = [];
+  await page.route(/workers\.dev\/hozon/, async (route) => {
+    const r = route.request();
+    if (r.method() === 'OPTIONS')
+      return route.fulfill({
+        status: 204,
+        headers: {
+          'access-control-allow-origin': '*',
+          'access-control-allow-methods': 'POST, PUT, OPTIONS',
+          'access-control-allow-headers': 'Authorization, Content-Type',
+        },
+      });
+    送った.push(r.postDataJSON());
+    return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '{"ok":true}' });
+  });
+  // Gemini の返事は差し替える（本物は呼ばない）
+  await page.route(/workers\.dev\/v1beta\//, (route) =>
+    route.fulfill({
+      status: 200,
+      headers: { 'content-type': 'text/event-stream', 'access-control-allow-origin': '*' },
+      body:
+        'data: ' +
+        JSON.stringify({ candidates: [{ content: { role: 'model', parts: [{ text: '的中は矢が的に当たることです。' }] }, finishReason: 'STOP' }] }) +
+        '\n\n',
+    })
+  );
+  await AIを開く(page);
+  const 欄 = page.getByPlaceholder('メッセージを入力...');
+  await 欄.fill('的中とは？');
+  await page.getByTestId('AIに送る').click();
+  await expect(page.getByText('的中は矢が的に当たることです。')).toBeVisible({ timeout: 30_000 });
+  await expect.poll(() => 送った.length, { timeout: 15_000, message: 'チャットの記録を送っていない' }).toBeGreaterThan(0);
+  expect(送った[0].種類).toBe('チャット');
+  expect(送った[0].中身.質問).toBe('的中とは？');
+  expect(送った[0].中身.答え).toBe('的中は矢が的に当たることです。');
+  expect(送った[0].中身.結果).toBe('答えた');
+});
+
 test('浮くボタン：横へ引くと左の角へ動き、置いた角が残る', async ({ page }) => {
   await 入る(page);
   await page.getByText('履歴', { exact: true }).first().click();

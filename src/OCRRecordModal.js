@@ -186,6 +186,11 @@ const OCRRecordModal = ({
   記入済みの射数 = 0,
 }) => {
   const [step, setStep] = useState('pick'); // pick | analyzing | preview
+  // 最初に読んだ結果（利用者が直す前）と、それを取っておいた記録の id。
+  // アプリの改善のため、読み取りが終わったら（成功・失敗とも）送った写真と最初の結果を、
+  // 反映したら直したあとを、それぞれ取っておく（src/improvementLog.js）
+  const 最初の読み取り = React.useRef(null);
+  const 読み取りの記録id = React.useRef(null);
   // lineup: ホワイトボードの立ち順表（名前のみ）
   // record: 紙に取った的中記録（名前＋各射の○×）
   const [mode, setMode] = useState('lineup');
@@ -322,6 +327,26 @@ const OCRRecordModal = ({
       console.error('[OCRRecordModal] Camera capture error:', 誤り);
       setErrorMsg('カメラの起動に失敗しました。');
     }
+  };
+
+  // 読み取りが終わったら、送った写真と結果を取っておく。反映せずにやり直した・閉じた読み取りや、
+  // 読めなかった読み取りも残す（使えなかった読み取りほど改善に要る。2026-09-26 に運用者から）。待たない
+  const 読み取りを取っておく = (中身) => {
+    const 記録 = require('./improvementLog');
+    const id = 記録.新しいid();
+    読み取りの記録id.current = id;
+    const 写真たち = (images || []).map((一枚) => 一枚 && 一枚.base64).filter(Boolean);
+    // 縮められなければ（読めない形式など）元の写真をそのまま送る（5MB まで）
+    Promise.all(写真たち.map((b) => 記録.写真を縮める(b).then((小) => 小 || 記録.base64をBlobに(b, 'image/jpeg'))))
+      .then((縮めた) =>
+        記録.改善のために取っておく(
+          '写真読み取り',
+          Object.assign({ 段階: '読み取り', モード: mode, 写真の枚数: 写真たち.length }, 中身),
+          縮めた,
+          id
+        )
+      )
+      .catch(() => {});
   };
 
   const removeImage = (idx) => {
@@ -640,6 +665,7 @@ const OCRRecordModal = ({
         );
         if (rows.length === 0) {
           setErrorMsg('記録表を検出できませんでした。表全体が入るように撮り直してください。');
+          読み取りを取っておく({ 結果: '読めなかった', 知らせ: '記録表を検出できませんでした' });
           setStep('pick');
           return;
         }
@@ -650,6 +676,7 @@ const OCRRecordModal = ({
       const rawTachi = Array.isArray(parsed.tachi) ? parsed.tachi : [];
       if (rawTachi.length === 0) {
         setErrorMsg('立ち順表を検出できませんでした。写真を撮り直してください。');
+        読み取りを取っておく({ 結果: '読めなかった', 知らせ: '立ち順表を検出できませんでした' });
         setStep('pick');
         return;
       }
@@ -658,6 +685,7 @@ const OCRRecordModal = ({
     } catch (誤り) {
       console.error('[OCRRecordModal] Gemini analyze error:', 誤り);
       const msg = String(誤り?.message || 誤り);
+      読み取りを取っておく({ 結果: '失敗', 誤り: msg.slice(0, 300) });
       if (msg.includes('429')) {
         setErrorMsg('AIの利用制限に達しました。しばらく待ってから再度お試しください。');
       } else if (msg.includes('503')) {
@@ -711,6 +739,10 @@ const OCRRecordModal = ({
       });
       return { seats };
     });
+    最初の読み取り.current = matched.map((立) =>
+      立.seats.map((席) => ({ 読んだ字: 席.rawText, 名前: 席.name || '', 状態: 席.status || '' }))
+    );
+    読み取りを取っておく({ 結果: '読んだ', 最初: 最初の読み取り.current });
     setTachiList(matched);
     setStep('preview');
   };
@@ -753,6 +785,16 @@ const OCRRecordModal = ({
         チーム名: String(行?.チーム名 || '').trim(),
       };
     });
+    最初の読み取り.current = rows.map((行) => ({
+      読んだ字: 行.rawText,
+      名前: 行.name || '',
+      状態: 行.status || '',
+      印: 行.marks,
+      迷い: 行.迷い,
+      チーム番号: 行.チーム番号,
+      チーム名: 行.チーム名,
+    }));
+    読み取りを取っておく({ 結果: '読んだ', 最初: 最初の読み取り.current });
     setRecordRows(rows);
     setStep('preview');
   };
@@ -1041,6 +1083,20 @@ const OCRRecordModal = ({
   const 反映のしかた = '後ろに足す';
   const 確かめてから = (進む) => 進む();
 
+  // 反映したとき、直したあとを取っておく。写真と最初の結果は読み取りの記録（元の読み取り）にある。待たない
+  const 改善のために取っておく = (反映した射手たち) => {
+    require('./improvementLog').改善のために取っておく('写真読み取り', {
+      段階: '反映',
+      元の読み取り: 読み取りの記録id.current,
+      モード: mode,
+      読み取り元,
+      端末の断り: 端末の断り || '',
+      直したあと: (反映した射手たち || [])
+        .filter((射手) => 射手 && !射手.isSeparator && !射手.isTotalCalculator)
+        .map((射手) => ({ 名前: 射手.name || '', 印: 射手.marks || [] })),
+    });
+  };
+
   const handleApply = () => {
     if (mode === 'record') {
       if (recordRows.some((行) => 行.status === 'ambiguous')) {
@@ -1059,6 +1115,7 @@ const OCRRecordModal = ({
         // どちらの読み取りかを渡す。呼び出し側の知らせの文言が変わる。
         // 射数は、写真で読めた数といまの記録表で埋まっている数の多いほうに合わせる
         onApply && onApply(archers, 'record', 反映のしかた, 合わせる射数);
+        改善のために取っておく(archers);
         handleClose();
       });
       return;
@@ -1072,6 +1129,7 @@ const OCRRecordModal = ({
     const archers = buildArchersArray();
     確かめてから(() => {
       onApply && onApply(archers, 'tachi', 反映のしかた);
+      改善のために取っておく(archers);
       handleClose();
     });
   };
