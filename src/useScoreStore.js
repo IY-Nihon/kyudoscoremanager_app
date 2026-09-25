@@ -583,15 +583,25 @@ const ライブへ盤面を送る = (名前, 一覧, 本数) => {
   一覧.forEach((射手) => {
     射手 && 射手.id && (日時の表[射手.id] = 射手.lastModified || 0);
   });
-  // ○×は、前に載せたときから変わった射手のぶんだけ書く。
-  // marks_by_id を丸ごと差し替えると、まだ受け取っていない相手の
-  // 1射ぶんの送信を消してしまう
-  const 変わった印 = {};
+  // ○×は、雲に載っていると分かっている内容（載っている印）から変わったますだけ書く。
+  // marks_by_id を丸ごと差し替えると、まだ受け取っていない相手の1射ぶんの送信を
+  // 消してしまう。射手の行まるごとでも同じで、同じ射手の別のますに相手が入れた手を、
+  // それを受け取る前の古い行で消していた（2026-09-26。鍵・矢所・取り消しなど、盤面を
+  // まとめて送る操作で起きる）。雲に載っているか分からない射手と、ますの数が変わった
+  // 射手だけは行まるごと書く
+  const 変わった印 = {}; // 射手id → 行まるごと
+  const 変わったます = []; // [射手id, 番, 印]
+  const 日時を書く射手 = new Set();
   一覧.forEach((射手) => {
     if (!射手 || !射手.id || 射手.isSeparator) return;
     const 並び = 印を並べる(射手.marks);
-    if (載っている印[射手.id] === 並び) return;
-    変わった印[射手.id] = 射手.marks || [];
+    const 前の並び = 載っている印[射手.id];
+    if (前の並び === 並び) return;
+    const 今の印 = (Array.isArray(射手.marks) ? 射手.marks : []).map((一つ) => (一つ == null ? '' : 一つ));
+    const 前の印 = 'string' == typeof 前の並び ? 前の並び.split('\u0001') : null;
+    if (!前の印 || 前の印.length !== 今の印.length || !今の印.length) 変わった印[射手.id] = 今の印;
+    else 今の印.forEach((印, 番) => 印 !== 前の印[番] && 変わったます.push([射手.id, 番, 印]));
+    日時を書く射手.add(射手.id);
     載っている印[射手.id] = 並び;
   });
   const 中身 = {
@@ -609,14 +619,62 @@ const ライブへ盤面を送る = (名前, 一覧, 本数) => {
   // 書かない射手の日時に触ると、相手の新しい入力を古いと誤判定させる。
   // 射手そのものの新しさは archers[].lastModified が運び、受け取り側は
   // 両者の max を取るので、書かなくても取りこぼさない
+  // 同じ射手の行とますを同じ書き込みに入れない（親と子の道が重なると断られる）
   Object.keys(変わった印).forEach((id) => {
     中身[`marks_by_id/${id}`] = 変わった印[id];
+  });
+  変わったます.forEach(([id, 番, 印]) => {
+    中身[`marks_by_id/${id}/${番}`] = 印;
+  });
+  日時を書く射手.forEach((id) => {
     中身[`archer_timestamps/${id}`] = 日時の表[id] || 0;
   });
   console.log('[Store] pushLiveAll state updated, lastPushedTimestamp:', 今);
   useScoreStore.getState().updateState({ lastPushedTimestamp: 今 });
   RTDB.update(場所, 中身).catch((誤り) => console.error('[Store] pushLiveAll Error:', 誤り));
   写しへも流す(名前, 中身);
+};
+/**
+ * ライブの ○× は、届いた盤面（marks_by_id）をそのまま正とする。
+ *
+ * 前は射手の行まるごとを、端末の時計で付けた lastModified の新しいほうに決めていた
+ * （mergeLiveArchers）。雲には 1 ますずつ書くので、雲の上では 2 台の入力が混ざって
+ * いるのに、手元の行のほうが新しい端末は相手のますを捨てていた。2 台が同じ射手の
+ * 別のますを続けて押すと、片方にだけ相手の○×が出ないまま残った（2026-09-26 に
+ * 2 台の e2e で再現。端末の時計がずれていても同じ形になる）。
+ *
+ * 本物の Realtime Database が届ける値は、雲の最新に「まだ雲へ届いていない自分の
+ * 書き込み」を重ねたもの。○× は押すたびにすぐ書くので、届いた値を正にすれば、
+ * 自分の手も相手の手も入り、同じますの取り合いは雲の順番どおりに全員がそろう。
+ * ○× 以外（名前・鍵・矢所など）は、今までどおり mergeLiveArchers の新しいほう。
+ *
+ * @returns {{archers: Array, changed: boolean}}
+ */
+const 印を盤面に合わせる = (一覧, 印の表, 日時の表, 本数) => {
+  let 変わった = false;
+  const 出 = (Array.isArray(一覧) ? 一覧 : []).map((射手) => {
+    if (!射手 || !射手.id || 射手.isSeparator || 射手.isTotalCalculator) return 射手;
+    const 盤面の印 = 印の表 && 印の表[射手.id];
+    if (!盤面の印) return 射手; // 盤面にまだ無い射手（入れる前・立てた直後）は手元のまま
+    const 揃えた = 印の列にそろえる(盤面の印, 本数);
+    if (印を並べる(揃えた) === 印を並べる(射手.marks)) return 射手;
+    変わった = true;
+    return Object.assign({}, 射手, {
+      marks: 揃えた,
+      lastModified: Math.max(射手.lastModified || 0, (日時の表 && 日時の表[射手.id]) || 0),
+    });
+  });
+  return { archers: 出, changed: 変わった };
+};
+/** mergeLiveArchers の結果の ○× を、届いた盤面に合わせる */
+const 印は盤面を正に = (結果, 届いた, 本数) => {
+  const 合わせた = 印を盤面に合わせる(
+    結果.archers,
+    届いた && 届いた.marks_by_id,
+    届いた && 届いた.archer_timestamps,
+    本数
+  );
+  return { archers: 合わせた.archers, changed: 結果.changed || 合わせた.changed };
 };
 const // 自分の送信の返りから、的中の印だけを取り込む。
   //
@@ -630,24 +688,17 @@ const // 自分の送信の返りから、的中の印だけを取り込む。
     // 相手の○×を「まだ載っていない」と思い込んだままになる。
     // その状態で取り消すと「前と同じ」と見なして送らず、自分だけ戻る
     載っている印を控える((届いた状態 && 届いた状態.marks_by_id) || {});
-    const 印 = (届いた状態 && 届いた状態.marks_by_id) || {};
-    const 日時 = (届いた状態 && 届いた状態.archer_timestamps) || {};
-    const // 正規化は手元の射数で行う。相手の射数で揃えると、射数が食い違って
-      // いるときに手元の盤面と長さの合わない marks を入れてしまう。
-      // 射数そのものの変更は、返りではない通知のほうで届く
-      本数 = 状態().shotsPerRound;
-    let 変わった = false;
-    const 一覧 = (状態().archers || []).map((射手) => {
-      if (!射手 || !射手.id || 射手.isSeparator || 射手.isTotalCalculator) return 射手;
-      const 相手 = 印[射手.id];
-      const 相手の日時 = 日時[射手.id] || 0;
-      if (!相手 || 相手の日時 <= (射手.lastModified || 0)) return 射手;
-      return (
-        (変わった = true),
-        Object.assign({}, 射手, { marks: 印の列にそろえる(相手, 本数), lastModified: 相手の日時 })
-      );
-    });
-    if (変わった) 書く({ archers: 一覧 });
+    // 正規化は手元の射数で行う。相手の射数で揃えると、射数が食い違って
+    // いるときに手元の盤面と長さの合わない marks を入れてしまう。
+    // 射数そのものの変更は、返りではない通知のほうで届く。
+    // 相手の手かどうかを日時で選ばず、盤面の ○× に合わせる（印を盤面に合わせる）
+    const 合わせた = 印を盤面に合わせる(
+      状態().archers,
+      届いた状態 && 届いた状態.marks_by_id,
+      届いた状態 && 届いた状態.archer_timestamps,
+      状態().shotsPerRound
+    );
+    if (合わせた.changed) 書く({ archers: 合わせた.archers });
   };
 const ライブへ1射を送る = (名前, 射手ID, 添字, 印, 日時) => {
   const 今 = Date.now();
@@ -4473,7 +4524,7 @@ const useScoreStore = zustand.create()(
                     // 突き合わせは syncRules.js の mergeLiveArchers に出した。
                     // 主催者側と参加者側で同じ処理が二重に書かれていたため
                     const { archers: 受信, shotsPerRound: 本数 } = ライブの盤面を読み取る(届いた);
-                    const 結果 = mergeLiveArchers(状態().archers, 受信, 状態().shotsPerRound, 本数);
+                    const 結果 = 印は盤面を正に(mergeLiveArchers(状態().archers, 受信, 状態().shotsPerRound, 本数), 届いた, 本数);
                     // 受け取りの正規化は短い○×を伸ばすだけで、長いほうは切らない。
                     // 相手が射数を減らしたとき、手元の射手のほうが新しいと
                     // 射数だけ減って○×が伸びたまま残る（画面に出ないますの○が
@@ -4763,7 +4814,7 @@ const useScoreStore = zustand.create()(
               // ここで archers をそのまま入れていたころは、○×がいつまでも出なかった。
               // w() で組み直し、mergeLiveArchers で突き合わせる
               const { archers: 受信, shotsPerRound: 本数 } = ライブの盤面を読み取る(届いた);
-              const 結果 = mergeLiveArchers(状態().archers, 受信, 状態().shotsPerRound, 本数);
+              const 結果 = 印は盤面を正に(mergeLiveArchers(状態().archers, 受信, 状態().shotsPerRound, 本数), 届いた, 本数);
               if (結果.changed)
                 書く({
                   archers: 盤面を射数にそろえる(結果.archers, 本数),
@@ -4893,7 +4944,7 @@ const useScoreStore = zustand.create()(
               if (届いた.archers || Array.isArray(届いた.archers)) {
                 // 主催者側（startLiveSync）と同じ関数を使う
                 const { archers: 受信, shotsPerRound: 本数 } = ライブの盤面を読み取る(届いた);
-                const 結果 = mergeLiveArchers(状態().archers, 受信, 状態().shotsPerRound, 本数);
+                const 結果 = 印は盤面を正に(mergeLiveArchers(状態().archers, 受信, 状態().shotsPerRound, 本数), 届いた, 本数);
                 // 主催者側と同じ理由で、いまの射数にそろえる
                 if (結果.changed)
                   書く({ archers: 盤面を射数にそろえる(結果.archers, 本数), shotsPerRound: 本数 });
