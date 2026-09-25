@@ -18,6 +18,8 @@ const 案内 = require('./TutorialGuide');
 // 「自分が写っているか」の判定。案内の見本を出すかどうかにも同じものを使う
 const { 自分の射手か, 自分の記録か } = require('./syncRules');
 const { useScoreStore } = require('./useScoreStore');
+// 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
+const { useストアの一部 } = require('./storeSlice');
 const { newArcher, newSeparator, newTotalCalculator } = require('./archerFactory');
 const { ArcherColumnView } = require('./ArcherColumnView');
 const { LabelColumn } = require('./LabelColumn');
@@ -71,7 +73,7 @@ const HistoryScreen = () => {
     // 記録表でできることを全部使うため。詳細の画面で直せるのは○×と名前と鍵と削除だけ
     履歴の記録を記録画面で開く,
     // 案内が見本を出しているあいだは、中身だけ見本に差し替わる
-  } = 案内.見本を重ねる(useScoreStore());
+  } = 案内.見本を重ねる(useストアの一部(['members', 'activeRole', 'myMemberId', 'sessions', 'trash', 'isAdminMode', 'setAdminMode', 'historyViewMode', 'setHistoryViewMode', 'selectedHistorySessionId', 'setSelectedHistorySessionId', 'viewScale', 'deleteArcher', 'deleteSession', 'deleteMultipleSessions', 'restoreSession', 'emptyTrash', 'updateSession', 'isHydrated', 'historySelectedTags', 'historyTagLogic', 'setHistorySelectedTags', 'toggleHistoryTag', 'setHistoryTagLogic', 'focusedMemberId', 'setFocusedMemberId', '横に並べる', 'set横に並べる', '履歴の記録を記録画面で開く']));
   const 航路 = 航.useNavigation();
   // タグと月の並びは横に流す。パソコンの車の動きは横に読み替える
   const タグの横流し = use横流し();

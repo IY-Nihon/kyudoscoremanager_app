@@ -18,6 +18,8 @@ const {
 } = require('./rn');
 const { IS_WEB, SAFE_TOP_PADDING, WEB_TOP_PADDING } = require('./IS_WEB');
 const { useScoreStore } = require('./useScoreStore');
+// 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
+const { useストアの一部 } = require('./storeSlice');
 const 案内 = require('./TutorialGuide');
 const Icons = require('@expo/vector-icons');
 const { getShadowStyle } = require('./shadowStyle');
@@ -34,7 +36,7 @@ const MemberScreen = () => {
     isAdminMode,
     activeRole,
     myMemberId,
-  } = useScoreStore();
+  } = useストアの一部(['members', 'addMember', 'updateMember', 'deleteMember', 'incrementAllGrades', 'activeGroupId', 'publicGroupId', 'isAdminMode', 'activeRole', 'myMemberId']);
   // 使い方の案内が指す先
   const 案内の部員追加 = 案内.useTutorialTarget('メンバー.追加');
   const [検索の文, 検索の文を置く] = React.useState('');
@@ -56,7 +58,7 @@ const MemberScreen = () => {
   );
   const [弓具の覚え書き, 弓具の覚え書きを置く] = React.useState('');
   const [弓力の下書き, 弓力の下書きを置く] = React.useState('');
-  const { addEquipment, deleteEquipment } = useScoreStore();
+  const { addEquipment, deleteEquipment } = useストアの一部(['addEquipment', 'deleteEquipment']);
   const [isAlumniExpanded, setIsAlumniExpanded] = React.useState(false);
   const [calVis, setCalVis] = React.useState(false);
   // 個人ログインでは自分だけを出す。他人は開けない作りなので、並べても

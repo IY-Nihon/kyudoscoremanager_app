@@ -21,6 +21,8 @@ const {
 } = require('./rn');
 const { IS_IOS, IS_WEB, SAFE_TOP_PADDING, WEB_TOP_PADDING } = require('./IS_WEB');
 const { useScoreStore } = require('./useScoreStore');
+// 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
+const { useストアの一部 } = require('./storeSlice');
 const 規則 = require('./syncRules');
 const 案内 = require('./TutorialGuide');
 const Icons = require('@expo/vector-icons');
@@ -102,7 +104,7 @@ const SettingsScreen = () => {
     setEnableArrowLocation,
     setArrowTargetType,
     sessions: sList = [],
-  } = useScoreStore();
+  } = useストアの一部(['currentFreshmanTerm', 'alumni', 'trash', 'shotsPerRound', 'updateCurrentFreshmanTerm', 'syncStatus', 'lastSyncTime', 'isNetworkOnline', 'syncAllToCloud', 'activeGroupId', 'activeGroupName', 'updateGroupName', 'activeRole', 'myMemberId', 'myMemberName', 'members', 'setAuth', 'isAdminMode', '自動ロックする', 'set自動ロックする', '保存時に出欠を確認する', 'set保存時に出欠を確認する', 'setAdminMode', 'verifyGroupPassword', 'deleteGroupAccount', 'tagTemplates', 'addTagTemplate', 'removeTagTemplate', 'autoPromotionEnabled', 'setAutoPromotionEnabled', 'enableArrowLocation', 'arrowTargetType', 'setEnableArrowLocation', 'setArrowTargetType', 'sessions']);
   const [書き出しの窓, 書き出しの窓を出す] = React.useState(false);
   const [ガイドの窓, ガイドの窓を出す] = React.useState(false);
   const [ログアウトの窓, ログアウトの窓を出す] = React.useState(false);

@@ -14,6 +14,8 @@ const {
 } = require('./rn');
 const Icons = require('@expo/vector-icons');
 const { useScoreStore } = require('./useScoreStore');
+// 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
+const { useストアの一部 } = require('./storeSlice');
 const { IS_WEB } = require('./IS_WEB');
 const { getShadowStyle } = require('./shadowStyle');
 const { db } = require('./db');
@@ -36,7 +38,7 @@ try {
 const docPicker = _docPickerModule || { getDocumentAsync: async () => ({ canceled: true, assets: [] }) };
 const fs = _fsModule || { readAsStringAsync: async () => '', EncodingType: { Base64: 'base64' } };
 const AttendanceScreen = () => {
-  const { members, sessions, activeGroupId } = useScoreStore();
+  const { members, sessions, activeGroupId } = useストアの一部(['members', 'sessions', 'activeGroupId']);
   const [tab, setTab] = React.useState('stats');
   const [rangeType, setRangeType] = React.useState('month');
   const [practiceDays, setPracticeDays] = React.useState({});
