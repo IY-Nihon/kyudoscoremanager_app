@@ -95,6 +95,15 @@ for (let s = 8; s < 射数; s += 4) {
   await p.waitForTimeout(150);
 }
 await p.waitForTimeout(500);
+// PERF_TABS=1 のときは先に履歴と分析のタブを、PERF_TABS=全部 のときは全部のタブを開いてから戻る。タブは一度開くと裏でも
+// 生きたままなので、それらの画面の描き直しも押した手応えに乗るかを見る
+if (process.env.PERF_TABS) {
+  const 開く = process.env.PERF_TABS === '全部' ? ['履歴', '分析', 'メンバー', '出欠', '設定', '記録'] : ['履歴', '分析', '記録'];
+  for (const 名 of 開く) {
+    await p.getByText(名, { exact: true }).last().click();
+    await p.waitForTimeout(2500);
+  }
+}
 const 数 = await p.locator('[data-testid^="ます-"]').count();
 const 控え = await p.evaluate(() => {
   const s = localStorage.getItem('archery-score-storage') || '';
