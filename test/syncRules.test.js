@@ -25,7 +25,10 @@ const {
   cleanUpTagsArray,
   cleanUpSessions,
   generateUniquePersonalId,
-  mergeLiveArchers,
+  届いた射手に合わせる,
+  射手の一覧を重ねる,
+  射手の見比べ形,
+  見比べる文字,
   normalizeArrowLocations,
   ライブ名に使えない字,
   参加できるライブ,
@@ -280,97 +283,128 @@ test('normalizeArrowLocations: 無いときは undefined（「情報が無い」
   assert.equal(normalizeArrowLocations(null, 4), undefined);
 });
 
-test('mergeLiveArchers: 受信が新しければ受信が勝つ', () => {
-  const r = mergeLiveArchers(
-    [射手({ marks: ['○', '', '', ''], lastModified: 1000 })],
-    [射手({ marks: ['×', '×', '', ''], lastModified: 2000 })],
-    4,
-    4
-  );
-  assert.deepEqual(r.archers[0].marks, ['×', '×', '', '']);
+// ── ライブ：届いた射手に合わせる（○× 以外も届いた盤面を正にする。2026-09-26）──
+test('届いた射手に合わせる: 中身が違えば、日時が古くても届いたほうになる', () => {
+  // 前は lastModified の新しいほうを選んでいたため、雲と違う内容を持ち続ける端末が出た
+  const r = 届いた射手に合わせる([射手({ name: '手元', lastModified: 9000 })], [射手({ name: '雲', lastModified: 1000 })], 4, 4);
+  assert.equal(r.archers[0].name, '雲');
+  assert.equal(r.archers[0].lastModified, 9000, '日時は戻さない');
   assert.equal(r.changed, true);
 });
 
-test('mergeLiveArchers: 手元が新しければ、日時ごと手元が残る', () => {
-  // ここが崩れると、次の更新で手元の○×が古い内容に戻る。
-  // 日時まで手元のまま残すことが肝心（受信側の古い日時に巻き戻すと、
-  // 次の受信で「受信のほうが新しい」と誤判定されて消える）。
-  const r = mergeLiveArchers(
-    [射手({ marks: ['○', '○', '', ''], lastModified: 3000 })],
-    [射手({ marks: ['', '', '', ''], lastModified: 1000 })],
-    4,
-    4
-  );
-  assert.deepEqual(r.archers[0].marks, ['○', '○', '', '']);
-  assert.equal(r.archers[0].lastModified, 3000, '日時が巻き戻っていない');
-});
-
-test('mergeLiveArchers: 同着なら手元を優先する', () => {
-  const r = mergeLiveArchers(
-    [射手({ marks: ['○', '', '', ''], lastModified: 5000 })],
-    [射手({ marks: ['', '', '', ''], lastModified: 5000 })],
-    4,
-    4
-  );
-  assert.deepEqual(r.archers[0].marks, ['○', '', '', '']);
-});
-
-test('mergeLiveArchers: 手元に無い射手は受信から足す', () => {
-  const r = mergeLiveArchers([], [射手({ id: 'a2' })], 4, 4);
-  assert.equal(r.archers.length, 1);
-  assert.equal(r.archers[0].id, 'a2');
-  assert.equal(r.changed, true);
-});
-
-test('mergeLiveArchers: 受信に矢所が無ければ手元の矢所を残す', () => {
-  // 古い版のアプリは矢所を送らない。配信の途中で混在しても消さないための守り。
-  const 手元の矢所 = [{ x: 1, y: 1 }, null, null, null];
-  const r = mergeLiveArchers(
-    [射手({ lastModified: 1000, arrowLocations: 手元の矢所 })],
-    [射手({ lastModified: 2000 })],
-    4,
-    4
-  );
-  assert.deepEqual(r.archers[0].arrowLocations, 手元の矢所);
-});
-
-test('mergeLiveArchers: 受信が新しく矢所を持っていれば、受信の矢所になる', () => {
-  // 受け取った形（'' 混じり・添字のオブジェクト）を配列に直すのは
-  // normalizeArrowLocations の役目で、突き合わせに入る前に済んでいる。
-  // 電波に乗せてから戻すまでの一続きは test/liveSync.test.js で見る。
-  const r = mergeLiveArchers(
-    [射手({ lastModified: 1000, arrowLocations: [{ x: 1, y: 1 }, null, null, null] })],
-    [射手({ lastModified: 2000, arrowLocations: [null, { x: 9, y: 9 }, null, null] })],
-    4,
-    4
-  );
-  assert.deepEqual(r.archers[0].arrowLocations, [null, { x: 9, y: 9 }, null, null]);
-});
-
-test('mergeLiveArchers: 手元が新しければ矢所も手元のまま', () => {
-  const 手元の矢所 = [{ x: 2, y: 2 }, null, null, null];
-  const r = mergeLiveArchers(
-    [射手({ lastModified: 9000, arrowLocations: 手元の矢所 })],
-    [射手({ lastModified: 1000, arrowLocations: ['', '', '', ''] })],
-    4,
-    4
-  );
-  assert.deepEqual(r.archers[0].arrowLocations, 手元の矢所);
-});
-
-test('mergeLiveArchers: 中身が同じなら changed は false（無駄な描き直しをしない）', () => {
-  const r = mergeLiveArchers([射手({ lastModified: 1000 })], [射手({ lastModified: 1000 })], 4, 4);
+test('届いた射手に合わせる: 中身が同じなら手元の射手をそのまま返し、描き直さない', () => {
+  const 手元 = 射手({ lastModified: 5000, lockedBlocks: {} });
+  // 雲は空の {} や null を落として返す
+  const 雲 = 射手({ lastModified: 7000 });
+  delete 雲.lockedBlocks;
+  const r = 届いた射手に合わせる([手元], [雲], 4, 4);
+  assert.strictEqual(r.archers[0], 手元);
   assert.equal(r.changed, false);
 });
 
-test('mergeLiveArchers: 人数や本数が違えば changed は true', () => {
-  assert.equal(mergeLiveArchers([射手()], [], 4, 4).changed, true);
-  assert.equal(mergeLiveArchers([射手()], [射手()], 4, 8).changed, true);
+test('届いた射手に合わせる: 届いた射手に矢所が無ければ手元の矢所を残し、あれば届いたほうにする', () => {
+  const 矢所 = [{ x: 1, y: 2 }, null, null, null];
+  const 無い = 届いた射手に合わせる([射手({ arrowLocations: 矢所 })], [射手({ name: '雲' })], 4, 4);
+  assert.deepEqual(無い.archers[0].arrowLocations, 矢所);
+  assert.equal(無い.archers[0].name, '雲');
+  const ある = 届いた射手に合わせる(
+    [射手({ arrowLocations: 矢所 })],
+    [射手({ arrowLocations: [null, { x: 3, y: 4 }, null, null] })],
+    4,
+    4
+  );
+  assert.deepEqual(ある.archers[0].arrowLocations, [null, { x: 3, y: 4 }, null, null]);
 });
 
-test('mergeLiveArchers: 空でも落ちない', () => {
-  const r = mergeLiveArchers(null, null, 4, 4);
-  assert.deepEqual(r.archers, []);
+test('届いた射手に合わせる: 送らない項目（手元にしかないもの）と ○× は手元のまま', () => {
+  const r = 届いた射手に合わせる(
+    [射手({ marks: ['○', '', '', ''], 手元だけ: 'x' })],
+    [射手({ name: '雲', marks: ['', '', '', ''] })],
+    4,
+    4
+  );
+  assert.equal(r.archers[0].手元だけ, 'x');
+  assert.deepEqual(r.archers[0].marks, ['○', '', '', ''], '○× は 印を盤面に合わせる に任せる');
+});
+
+test('届いた射手に合わせる: 相手が外した部員は手元でも外れる（雲は null を落とす）', () => {
+  const r = 届いた射手に合わせる([射手({ memberId: 'm1', teamName: 'A大' })], [射手({ memberId: undefined, teamName: undefined })], 4, 4);
+  assert.equal(r.archers[0].memberId, undefined);
+  assert.equal(r.archers[0].teamName, undefined);
+});
+
+test('届いた射手に合わせる: 並びと顔ぶれは届いたほう。射数が違っても changed', () => {
+  const 甲 = 射手({ id: 'a1' });
+  const 乙 = 射手({ id: 'a2' });
+  const 入れ替え = 届いた射手に合わせる([甲, 乙], [射手({ id: 'a2' }), 射手({ id: 'a1' })], 4, 4);
+  assert.deepEqual(入れ替え.archers.map((a) => a.id), ['a2', 'a1']);
+  assert.equal(入れ替え.changed, true);
+  const 顔ぶれ = 届いた射手に合わせる([甲], [射手({ id: 'a3' })], 4, 4);
+  assert.deepEqual(顔ぶれ.archers.map((a) => a.id), ['a3']);
+  assert.equal(届いた射手に合わせる([甲], [射手({ id: 'a1' })], 4, 8).changed, true);
+});
+
+test('届いた射手に合わせる: 空でも落ちない', () => {
+  assert.deepEqual(届いた射手に合わせる(null, null, 4, 4).archers, []);
+});
+
+test('見比べる文字: 鍵の順・空の値・添字の配列とオブジェクトの違いを無くす', () => {
+  assert.equal(見比べる文字({ b: 1, a: { 1: true } }), 見比べる文字({ a: [null, true], b: 1, c: null, d: {} }));
+  assert.notEqual(見比べる文字({ a: 1 }), 見比べる文字({ a: 2 }));
+});
+
+// ── ライブ：射手の一覧を重ねる（runTransaction の中で、雲のいまの一覧に自分の変更だけを重ねる）──
+const 形 = (id, o) => Object.assign({ id, name: '', memberId: null, lastModified: 0 }, o);
+const 印 = (x) => 射手の見比べ形(x);
+const 並び = (一覧) => 一覧.map((x) => x.id + (x.name ? ':' + x.name : '')).join(' ');
+
+test('射手の一覧を重ねる: 基が分からなければ手元で置き換える（前と同じ）', () => {
+  assert.equal(並び(射手の一覧を重ねる(null, [形('a')], [形('b')], 印)), 'a');
+});
+
+test('射手の一覧を重ねる: 相手が別の射手を変えていても消さず、自分の変更だけを重ねる', () => {
+  const 基 = [形('a'), 形('b'), 形('c')];
+  const 手元 = [形('a', { name: '自分' }), 形('b'), 形('c')];
+  const いま = [形('a'), 形('b'), 形('c', { name: '相手' })];
+  assert.equal(並び(射手の一覧を重ねる(基, 手元, いま, 印)), 'a:自分 b c:相手');
+});
+
+test('射手の一覧を重ねる: 日時だけの違いは変更に数えない（相手の中身を古い内容で戻さない）', () => {
+  const 基 = [形('a')];
+  const 手元 = [形('a', { lastModified: 999 })]; // ○× を押しただけ
+  const いま = [形('a', { name: '相手' })];
+  assert.equal(並び(射手の一覧を重ねる(基, 手元, いま, 印)), 'a:相手');
+});
+
+test('射手の一覧を重ねる: 自分が消した射手は除き、相手が足した射手は残す', () => {
+  const 基 = [形('a'), 形('b'), 形('c')];
+  const 手元 = [形('a'), 形('c')];
+  const いま = [形('a'), 形('x'), 形('b'), 形('c')];
+  assert.equal(並び(射手の一覧を重ねる(基, 手元, いま, 印)), 'a x c');
+});
+
+test('射手の一覧を重ねる: 2 台が同時に人を足しても両方残る。自分の人は手元での左隣の後ろ', () => {
+  const 基 = [形('a'), 形('b')];
+  const 手元 = [形('a'), 形('自'), 形('b')];
+  const いま = [形('a'), 形('b'), 形('相')];
+  assert.equal(並び(射手の一覧を重ねる(基, 手元, いま, 印)), 'a 自 b 相');
+  // 左端に足したとき
+  assert.equal(並び(射手の一覧を重ねる(基, [形('自'), 形('a'), 形('b')], いま, 印)), '自 a b 相');
+});
+
+test('射手の一覧を重ねる: 並べ替えは自分の順にし、相手が足した射手の席は動かさない', () => {
+  const 基 = [形('a'), 形('b'), 形('c')];
+  const 手元 = [形('c'), 形('b'), 形('a')];
+  const いま = [形('a'), 形('x'), 形('b'), 形('c')];
+  assert.equal(並び(射手の一覧を重ねる(基, 手元, いま, 印)), 'c x b a');
+});
+
+test('射手の一覧を重ねる: 雲が添字のオブジェクトで返しても配列にする。空の雲には自分の分を足す', () => {
+  const 基 = [形('a')];
+  const 手元 = [形('a', { name: '自分' })];
+  assert.equal(並び(射手の一覧を重ねる(基, 手元, { 0: 形('a') }, 印)), 'a:自分');
+  // 相手が片付けた（雲が空）なら、基にあった射手は戻さない。足した射手だけ残る
+  assert.equal(並び(射手の一覧を重ねる(基, [形('a'), 形('新')], null, 印)), '新');
 });
 
 // ──────────────────────────────────────────────────────────────
@@ -548,15 +582,14 @@ test('参加できるライブ：期限ちょうどは切れている側', () =>
 // ── ライブ：見た目だけが変わる操作も、相手に届くこと ──────────────
 //
 // チーム名を付ける・計と総計を切り替える、は○×を変えない。それでも相手の
-// 画面に出ないと困る。どちらの操作も lastModified を打ち直しているので、
-// 受信側は「新しいほうが勝ち」で拾える。ここでは、拾ったうえで**中身が
-// 落ちない**ことを見る（勝ち負けだけ合っていても、項目が消えては意味がない）。
+// 画面に出ないと困る。受信側は届いた盤面を正にする（届いた射手に合わせる）。
+// ここでは、拾ったうえで**中身が落ちない**ことを見る。
 test('ライブ：チーム名を付けた更新が、相手にそのまま届く', () => {
   const 手元 = [{ id: 's1', isSeparator: true, name: '---', marks: [], lastModified: 100 }];
   const 受信 = [
     { id: 's1', isSeparator: true, name: '---', marks: [], teamName: 'A大学', lastModified: 200 },
   ];
-  const r = mergeLiveArchers(手元, 受信, 8, 8);
+  const r = 届いた射手に合わせる(手元, 受信, 8, 8);
   assert.equal(r.changed, true, '新しい更新が捨てられている');
   assert.equal(r.archers[0].teamName, 'A大学', 'チーム名が落ちている');
 });
@@ -564,23 +597,24 @@ test('ライブ：チーム名を付けた更新が、相手にそのまま届�
 test('ライブ：計から総計への切り替えが、相手にそのまま届く', () => {
   const 手元 = [{ id: 't1', isTotalCalculator: true, marks: [], またぐ合計: !1, lastModified: 100 }];
   const 受信 = [{ id: 't1', isTotalCalculator: true, marks: [], またぐ合計: !0, lastModified: 200 }];
-  const r = mergeLiveArchers(手元, 受信, 8, 8);
+  const r = 届いた射手に合わせる(手元, 受信, 8, 8);
   assert.equal(r.changed, true, '新しい更新が捨てられている');
   assert.equal(r.archers[0].またぐ合計, !0, '総計の印が落ちている');
 });
 
-test('ライブ：古い更新では、手元のチーム名を上書きしない', () => {
+test('ライブ：雲のチーム名が消えていれば、日時が古くても手元も消える（雲と食い違ったまま残さない）', () => {
+  // 前は「古い更新では上書きしない」決まりだった。2026-09-26 から届いた盤面を正にする
   const 手元 = [
     { id: 's1', isSeparator: true, name: '---', marks: [], teamName: 'A大学', lastModified: 300 },
   ];
   const 受信 = [{ id: 's1', isSeparator: true, name: '---', marks: [], lastModified: 100 }];
-  const r = mergeLiveArchers(手元, 受信, 8, 8);
-  assert.equal(r.archers[0].teamName, 'A大学', '古い更新に消されている');
+  const r = 届いた射手に合わせる(手元, 受信, 8, 8);
+  assert.equal(r.archers[0].teamName, undefined, '雲と食い違ったまま');
 });
 
 test('ライブ：本当に同じなら、変わったとは見なさない', () => {
   const 同じ = () => [{ id: 'a', name: '山田', marks: ['○', ''], teamName: 'A大学', lastModified: 1 }];
-  const r = mergeLiveArchers(同じ(), 同じ(), 8, 8);
+  const r = 届いた射手に合わせる(同じ(), 同じ(), 8, 8);
   assert.equal(r.changed, false, '同じ中身で描き直してはいけない');
 });
 
@@ -590,7 +624,7 @@ test('ライブ：並べ替えだけの更新（中身も日時も同じ）も�
   // 相手の画面に並びが届かなかった（2026-09-09 に踏んだ）
   const 甲 = { id: 'a', name: '甲', marks: ['○'], lastModified: 100 };
   const 乙 = { id: 'b', name: '乙', marks: ['×'], lastModified: 100 };
-  const r = mergeLiveArchers([甲, 乙], [乙, 甲], 8, 8);
+  const r = 届いた射手に合わせる([甲, 乙], [乙, 甲], 8, 8);
   assert.equal(r.changed, true, '並べ替えが捨てられている');
   assert.deepEqual(
     r.archers.map((x) => x.id),
@@ -604,7 +638,7 @@ test('ライブ：並びも中身も同じなら、変わったとは見なさ�
     { id: 'a', name: '甲', marks: ['○'], lastModified: 100 },
     { id: 'b', name: '乙', marks: ['×'], lastModified: 100 },
   ];
-  const r = mergeLiveArchers(作る(), 作る(), 8, 8);
+  const r = 届いた射手に合わせる(作る(), 作る(), 8, 8);
   assert.equal(r.changed, false, '同じ中身で描き直してはいけない');
 });
 

@@ -727,75 +727,208 @@ function 項目差分を当てる(いまの一覧, 差分, 向き) {
 }
 
 /**
- * ライブ記録で受け取った射手の一覧を、手元の一覧と突き合わせる。
+ * 見比べるための文字にする。鍵の順と、Realtime Database が落とす空の値
+ * （null・''・空の {}・添字の配列とオブジェクトの違い）を無くしてから並べる。
  *
- * 元は主催者側と参加者側に同じ処理が丸ごと二重に書かれていた
- * （useScoreStore.js の 2600 行目付近と 2700 行目付近）。
- * 片方だけ直す事故を防ぐためここへ出した。中身は次の3点を直してある。
- *
- * 1. 判定を `>=` から `>` にした。同着は手元を優先する
- * 2. 勝ったほうを土台にする。元は常に受信側が土台で、手元が新しいときも
- *    lastModified が受信側の古い値に巻き戻っていた。そのせいで次の受信で
- *    「受信のほうが新しい」と誤判定され、直したばかりの○×が消えていた
- * 3. 矢所は、受信に入っていなければ手元を残す。元は受信側が土台だったため、
- *    誰かが1本記録するたびに参加者全員の矢所が消えていた（矢所は送信の項目に
- *    そもそも入っていなかった）
- *
- * 一覧は受信側の並びで作る。誰が参加しているかはライブ側を正とするため。
- * changed は「画面を描き直す必要があるか」。無駄な描き直しを避けるために返す。
+ * 雲から読んだ射手と手元の射手は、同じ中身でも形が違う（雲は null を落とし、
+ * 添字だけのオブジェクトを配列で返す）。そのまま JSON で比べると、毎回
+ * 「変わった」と見なして描き直しや送り直しが起きる
  */
-function mergeLiveArchers(localList, remoteList, localShots, remoteShots) {
-  const 手元 = Array.isArray(localList) ? localList : [];
-  const 受信 = Array.isArray(remoteList) ? remoteList : [];
+function 見比べる文字(値) {
+  const 整える = (v) => {
+    if (v == null || v === '') return null;
+    if (Array.isArray(v)) {
+      const 出 = {};
+      v.forEach((x, 番) => {
+        const y = 整える(x);
+        if (y !== null) 出[番] = y;
+      });
+      return Object.keys(出).length ? 出 : null;
+    }
+    if (typeof v === 'object') {
+      const 出 = {};
+      Object.keys(v)
+        .sort()
+        .forEach((鍵) => {
+          const y = 整える(v[鍵]);
+          if (y !== null) 出[鍵] = y;
+        });
+      return Object.keys(出).length ? 出 : null;
+    }
+    return v;
+  };
+  return JSON.stringify(整える(値));
+}
 
+/** Realtime Database から読んだ射手の一覧を配列にする（添字のオブジェクトで来ることがある） */
+function 一覧の配列(値) {
+  if (Array.isArray(値)) return 値.filter((形) => 形 && 形.id);
+  if (値 && typeof 値 === 'object')
+    return Object.keys(値)
+      .filter((鍵) => !isNaN(Number(鍵)))
+      .sort((甲, 乙) => Number(甲) - Number(乙))
+      .map((鍵) => 値[鍵])
+      .filter((形) => 形 && 形.id);
+  return [];
+}
+
+/**
+ * ライブへ送る射手の形。○× は入れない（marks_by_id で別に送る）。
+ * （useScoreStore.js から移した。受け取りの突き合わせと同じ形で見比べるため）
+ */
+const ライブへ送る形の射手 = (一覧, 本数) =>
+  JSON.parse(
+    JSON.stringify(
+      一覧.map((射手) => ({
+        id: 射手.id,
+        name: 射手.name || '',
+        gender: 射手.gender || '未設定',
+        grade: 射手.grade || 0,
+        isSeparator: 射手.isSeparator || false,
+        isTotalCalculator: 射手.isTotalCalculator || false,
+        // 手前の計もまとめる合計かどうか。ライブでも相手に同じ数が出るようにする
+        またぐ合計: 射手.またぐ合計 || false,
+        isGuest: 射手.isGuest || false,
+        // 区切りのチーム名。ライブでも相手に伝わるようにする
+        teamName: 射手.teamName || null,
+        memberId: 射手.memberId || null,
+        lockedBlocks: 射手.lockedBlocks || {},
+        substitutions: 射手.substitutions || {},
+        lastModified: 射手.lastModified || 0,
+        substitutionIds: 射手.substitutionIds || {},
+        bowWeight: 射手.bowWeight || null,
+        // 空欄は '' で送る（○× と同じ）。null のままだと Realtime Database が
+        // 配列から落として添字のオブジェクトに変えてしまい、位置がずれる。
+        // 持っていないときは null にして、受け取り側が手元の値を残せるようにする
+        arrowLocations: Array.isArray(射手.arrowLocations)
+          ? 射手.arrowLocations.map((矢所) => (null == 矢所 ? '' : 矢所))
+          : null,
+      }))
+    )
+  );
+/** 射手の中身を見比べる文字（送る形から作る。日時は入れない。矢所は 矢所も が真のときだけ） */
+const 射手の見比べ形 = (形, 矢所も = true) => {
+  if (!形) return 'null';
+  const { lastModified, arrowLocations, ...残り } = 形;
+  return 見比べる文字(矢所も ? Object.assign(残り, { arrowLocations }) : 残り);
+};
+/** ライブへ送る項目の名前（○× は別に送る） */
+const 送る項目 = Object.keys(ライブへ送る形の射手([{}])[0]);
+/**
+ * ○× 以外（名前・部員・鍵・区切り・矢所など）も、届いた盤面を正にする。
+ *
+ * 前は射手ごとに lastModified の新しいほうを選んでいた（mergeLiveArchers）。雲の上では
+ * あとから着いた書き込みが残るのに、端末の時計で新しいほうを選ぶと、雲と違う内容を
+ * 持ち続ける端末が出る（2026-09-26）。本物の Realtime Database が届ける値は
+ * 「雲の最新＋まだ届いていない自分の書き込み」なので、正にしても自分の手は消えない。
+ * 送らない項目（手元にしかないもの）と、相手が持っていない矢所は手元のまま残す。
+ * 並びと顔ぶれも届いた盤面に合わせる。○× は 印を盤面に合わせる で合わせる。
+ *
+ * @returns {{archers: Array, changed: boolean}}
+ */
+const 届いた射手に合わせる = (手元の一覧, 受信, 手元の射数, 本数) => {
+  const 手元 = Array.isArray(手元の一覧) ? 手元の一覧 : [];
+  const 来た = Array.isArray(受信) ? 受信 : [];
   const 索引 = new Map();
-  手元.forEach((射手) => {
-    if (射手 && 射手.id) 索引.set(射手.id, 射手);
+  手元.forEach((射手) => 射手 && 射手.id && 索引.set(射手.id, 射手));
+  let 変わった = 来た.length !== 手元.length || 手元の射数 !== 本数;
+  const archers = 来た.map((相手, 番) => {
+    const 手 = 相手 && 相手.id ? 索引.get(相手.id) : undefined;
+    if (手元[番] !== 手) 変わった = true;
+    if (!手) return 相手;
+    const 矢所も = Array.isArray(相手.arrowLocations);
+    const 相手の形 = ライブへ送る形の射手([相手])[0];
+    if (射手の見比べ形(ライブへ送る形の射手([手])[0], 矢所も) === 射手の見比べ形(相手の形, 矢所も)) return 手;
+    変わった = true;
+    // 送る項目は届いたほうに（届いた射手に無い項目は、雲が null を落としたもの）。
+    // 送らない項目（手元にしかないもの）と ○× は手元のまま
+    const 出 = Object.assign({}, 手, {
+      lastModified: Math.max(手.lastModified || 0, 相手.lastModified || 0),
+    });
+    for (const 鍵 of 送る項目) {
+      if (鍵 === 'lastModified' || (鍵 === 'arrowLocations' && !矢所も)) continue;
+      if (相手[鍵] === undefined) delete 出[鍵];
+      else 出[鍵] = 相手[鍵];
+    }
+    return 出;
+  });
+  return { archers, changed: 変わった };
+};
+/**
+ * ライブの射手の一覧（archers）に、この端末がした変更だけを重ねる。
+ * runTransaction の中で、雲のいまの一覧（いま）に対して呼ぶ。
+ *
+ * 前は盤面をまとめて送る操作（人の選択・人の追加・射数など）のたびに、一覧を
+ * まるごと書いていた。2 台がほぼ同時に送ると、あとから着いたほうが、まだ
+ * 受け取っていない相手の変更を古い一覧で消す（2026-09-26 に 2 台の e2e で再現）。
+ * 変わった射手の添字だけを書く形も考えたが、相手が同時に人を足したり消したり
+ * すると添字がずれ、別の人を上書きする。そこで「最後に雲から受け取った一覧（基）」
+ * と「手元（手元）」の差を、雲のいまの一覧に当てる。雲が変わっていれば
+ * runTransaction が読み直してやり直すので、相手の変更は消えない。
+ *
+ * - 手元で消した射手（基にあって手元に無い）は除く
+ * - 中身を変えた射手（基と手元で違う）は手元の形にする。変えていない射手は雲のまま
+ * - 手元で並びを変えたら、手元にいる射手の席を手元の順で埋め直す（相手が足した射手の席は動かさない）
+ * - 手元で足した射手は、手元での左隣の後ろに入れる
+ *
+ * 基が分からないとき（入った直後・片付けた直後）は、前と同じく手元で置き換える。
+ *
+ * @param {Array|null} 基 最後に雲から受け取った一覧（送る形）
+ * @param {Array} 手元 手元の一覧（送る形）
+ * @param {*} いま 雲のいまの archers（配列・添字のオブジェクト・null）
+ * @param {(形: object) => string} 形の印 中身を見比べる文字（日時は含めない）
+ * @returns {Array}
+ */
+function 射手の一覧を重ねる(基, 手元, いま, 形の印) {
+  const 手 = 一覧の配列(手元);
+  if (!Array.isArray(基)) return 手;
+  const 元 = 一覧の配列(基);
+  const 基の索引 = new Map(元.map((形) => [形.id, 形]));
+  const 手元の索引 = new Map(手.map((形) => [形.id, 形]));
+  const 両方にいる = (id) => 基の索引.has(id) && 手元の索引.has(id);
+
+  // 手元で消した射手を除く
+  let 出 = 一覧の配列(いま).filter((形) => !(基の索引.has(形.id) && !手元の索引.has(形.id)));
+  // 重なった id は 1 つにする（壊れた一覧を広げない）
+  const 見た = new Set();
+  出 = 出.filter((形) => (見た.has(形.id) ? false : (見た.add(形.id), true)));
+
+  // 中身を変えた射手は手元の形に
+  出 = 出.map((形) => {
+    const 手元の形 = 手元の索引.get(形.id);
+    if (!手元の形) return 形;
+    const 基の形 = 基の索引.get(形.id);
+    if (!基の形) return 形の印(手元の形) === 形の印(形) ? 形 : 手元の形;
+    return 形の印(手元の形) !== 形の印(基の形) ? 手元の形 : 形;
   });
 
-  const archers = 受信.map((相手の射手) => {
-    if (!相手の射手 || !相手の射手.id) return 相手の射手;
-    const 手元の射手 = 索引.get(相手の射手.id);
-    if (!手元の射手) return 相手の射手;
+  // 並びを変えた
+  const 基の順 = 元.map((形) => 形.id).filter((id) => 手元の索引.has(id));
+  const 手元の順 = 手.map((形) => 形.id).filter((id) => 基の索引.has(id));
+  if (基の順.join('') !== 手元の順.join('')) {
+    const 席 = [];
+    出.forEach((形, 番) => 両方にいる(形.id) && 席.push(番));
+    const いまの形 = new Map(出.map((形) => [形.id, 形]));
+    const 並べる = 手元の順.filter((id) => いまの形.has(id));
+    席.forEach((番, i) => {
+      出[番] = いまの形.get(並べる[i]);
+    });
+  }
 
-    const 受信が新しい = (相手の射手.lastModified || 0) > (手元の射手.lastModified || 0);
-    const 勝ち = 受信が新しい ? 相手の射手 : 手元の射手;
-    // 受信に矢所が入っていなければ、手元の値を残す（古い版との混在対策）
-    const 矢所 = 相手の射手.arrowLocations === undefined ? 手元の射手.arrowLocations : 勝ち.arrowLocations;
-
-    const out = Object.assign({}, 勝ち);
-    if (矢所 === undefined) delete out.arrowLocations;
-    else out.arrowLocations = 矢所;
-    return out;
-  });
-
-  let changed = archers.length !== 手元.length || remoteShots !== localShots;
-  // 並びの順そのものを先に見る。
-  //
-  // 下の見比べは「同じ id の射手どうし」を突き合わせるので、中身が同じまま
-  // 順番だけ入れ替わった更新を「変わっていない」と取り違える。立ち順の
-  // 入れ替えは射手の中身を何も変えない（lastModified も動かさない）ため、
-  // これが無いと相手の画面に並びが届かない（2026-09-09 に踏んだ）。
-  if (!changed) {
-    for (let 番 = 0; 番 < archers.length; 番++) {
-      const 受 = archers[番] && archers[番].id;
-      const 手 = 手元[番] && 手元[番].id;
-      if (受 !== 手) {
-        changed = true;
+  // 手元で足した射手を、手元での左隣の後ろに入れる
+  手.forEach((形, 番) => {
+    if (基の索引.has(形.id) || 出.some((x) => x.id === 形.id)) return;
+    let 入れる所 = 0;
+    for (let i = 番 - 1; i >= 0; i--) {
+      const 左 = 出.findIndex((x) => x.id === 手[i].id);
+      if (左 >= 0) {
+        入れる所 = 左 + 1;
         break;
       }
     }
-  }
-  if (!changed) {
-    for (let 番 = 0; 番 < archers.length; 番++) {
-      const 射手 = archers[番];
-      if (!射手が同じ(射手, 索引.get(射手 && 射手.id))) {
-        changed = true;
-        break;
-      }
-    }
-  }
-  return { archers, changed };
+    出.splice(入れる所, 0, 形);
+  });
+  return 出;
 }
 
 /**
@@ -1022,7 +1155,12 @@ module.exports = {
   全部そろえ直す間隔,
   記録の日時を数に,
   mergeById,
-  mergeLiveArchers,
+  ライブへ送る形の射手,
+  射手の見比べ形,
+  届いた射手に合わせる,
+  見比べる文字,
+  一覧の配列,
+  射手の一覧を重ねる,
   印だけの差分,
   差分を当てる,
   項目の差分,

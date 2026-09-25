@@ -400,7 +400,11 @@ let 部員を送る予約 = {};
 const 同期規則 = require('./syncRules');
 const generateUniquePersonalId = 同期規則.generateUniquePersonalId;
 const mergeById = 同期規則.mergeById;
-const mergeLiveArchers = 同期規則.mergeLiveArchers;
+const 一覧の配列 = 同期規則.一覧の配列;
+const 射手の一覧を重ねる = 同期規則.射手の一覧を重ねる;
+const ライブへ送る形の射手 = 同期規則.ライブへ送る形の射手;
+const 射手の見比べ形 = 同期規則.射手の見比べ形;
+const 届いた射手に合わせる = 同期規則.届いた射手に合わせる;
 const 印だけの差分 = 同期規則.印だけの差分;
 const 差分を当てる = 同期規則.差分を当てる;
 const 射数の差分 = 同期規則.射数の差分;
@@ -521,36 +525,6 @@ const 射手の形にそろえる = (射手, 本数) =>
         arrowLocations: normalizeArrowLocations(射手.arrowLocations, 射手.isSeparator ? 0 : 本数 || 8),
       }
     : null;
-const ライブへ送る形の射手 = (一覧, 本数) =>
-  JSON.parse(
-    JSON.stringify(
-      一覧.map((射手) => ({
-        id: 射手.id,
-        name: 射手.name || '',
-        gender: 射手.gender || '未設定',
-        grade: 射手.grade || 0,
-        isSeparator: 射手.isSeparator || false,
-        isTotalCalculator: 射手.isTotalCalculator || false,
-        // 手前の計もまとめる合計かどうか。ライブでも相手に同じ数が出るようにする
-        またぐ合計: 射手.またぐ合計 || false,
-        isGuest: 射手.isGuest || false,
-        // 区切りのチーム名。ライブでも相手に伝わるようにする
-        teamName: 射手.teamName || null,
-        memberId: 射手.memberId || null,
-        lockedBlocks: 射手.lockedBlocks || {},
-        substitutions: 射手.substitutions || {},
-        lastModified: 射手.lastModified || 0,
-        substitutionIds: 射手.substitutionIds || {},
-        bowWeight: 射手.bowWeight || null,
-        // 空欄は '' で送る（○× と同じ）。null のままだと Realtime Database が
-        // 配列から落として添字のオブジェクトに変えてしまい、位置がずれる。
-        // 持っていないときは null にして、受け取り側が手元の値を残せるようにする
-        arrowLocations: Array.isArray(射手.arrowLocations)
-          ? 射手.arrowLocations.map((矢所) => (null == 矢所 ? '' : 矢所))
-          : null,
-      }))
-    )
-  );
 /**
  * サーバーに載っていると分かっている○×。射手id ごとに文字列で持つ。
  *
@@ -569,10 +543,40 @@ const 載っている印を控える = (印の表) => {
     載っている印[id] = 印を並べる(印の表[id]);
   });
 };
+/**
+ * サーバーに載っていると分かっている射手の一覧（送る形）と射数。null は分からない。
+ *
+ * 盤面をまとめて送る操作（人の選択・人の追加・射数・鍵など）は、前は archers と
+ * shotsPerRound を毎回まるごと書いていた。2 台がほぼ同時に送ると、あとから着いたほうが、
+ * まだ受け取っていない相手の変更を古い内容で消す（2026-09-26 に 2 台の e2e で再現。
+ * 片方が射数を増やす間にもう片方が連打すると、射数が片方だけ戻った）。
+ * 一覧はこの控えとの差だけを runTransaction で雲の一覧に重ね（射手の一覧を重ねる）、
+ * 射数は変えたときだけ書く。控えは届いた盤面で取り直し、出入りと片付けで捨てる
+ */
+let 載っている射手たち = null;
+let 載っている射数 = null;
 /** ライブに出入りしたら控えは捨てる */
 const 載っている印を捨てる = () => {
   載っている印 = {};
+  載っている射手たち = null;
+  載っている射数 = null;
 };
+/** 届いた盤面で、載っている射手と射数の控えを取り直す */
+const 載っている盤面を控える = (届いた状態) => {
+  if (!届いた状態) return;
+  載っている射手たち = ライブへ送る形の射手(一覧の配列(届いた状態.archers).map((射手) => 射手の形にそろえる(射手, 0)));
+  if ('number' == typeof 届いた状態.shotsPerRound) 載っている射数 = 届いた状態.shotsPerRound;
+};
+/**
+ * 自分の送信を組み立てているあいだは、届いた通知を見ない。
+ *
+ * 本物の Realtime Database は、書いた端末の見張りへ、その場で（書き込みの呼び出しの
+ * 中で）通知を配る。盤面をまとめて送るときは ○× と射数（update）と射手の一覧
+ * （runTransaction）を分けて書くので、1 つ目を書いた直後の通知は「半分だけ新しい」
+ * 盤面になる。届いた盤面を正にする作りでは、それで手元の変更を一度巻き戻してしまう。
+ * この間に届くのは自分の書き込みだけなので、見なくても相手の手は落ちない
+ */
+let 自分の送信中 = 0;
 const ライブへ盤面を送る = (名前, 一覧, 本数) => {
   const 今 = Date.now();
   const 枝 = ライブの枝();
@@ -587,8 +591,9 @@ const ライブへ盤面を送る = (名前, 一覧, 本数) => {
   // marks_by_id を丸ごと差し替えると、まだ受け取っていない相手の1射ぶんの送信を
   // 消してしまう。射手の行まるごとでも同じで、同じ射手の別のますに相手が入れた手を、
   // それを受け取る前の古い行で消していた（2026-09-26。鍵・矢所・取り消しなど、盤面を
-  // まとめて送る操作で起きる）。雲に載っているか分からない射手と、ますの数が変わった
-  // 射手だけは行まるごと書く
+  // まとめて送る操作で起きる）。雲に載っているか分からない射手だけは行まるごと書く。
+  // ますの数が変わったときも、増えたますを '' で足し、減ったますを null で消すだけにする
+  // （行まるごとだと、射数を変えた瞬間に相手が押したますを消す。2026-09-26 に再現）
   const 変わった印 = {}; // 射手id → 行まるごと
   const 変わったます = []; // [射手id, 番, 印]
   const 日時を書く射手 = new Set();
@@ -599,14 +604,16 @@ const ライブへ盤面を送る = (名前, 一覧, 本数) => {
     if (前の並び === 並び) return;
     const 今の印 = (Array.isArray(射手.marks) ? 射手.marks : []).map((一つ) => (一つ == null ? '' : 一つ));
     const 前の印 = 'string' == typeof 前の並び ? 前の並び.split('\u0001') : null;
-    if (!前の印 || 前の印.length !== 今の印.length || !今の印.length) 変わった印[射手.id] = 今の印;
-    else 今の印.forEach((印, 番) => 印 !== 前の印[番] && 変わったます.push([射手.id, 番, 印]));
+    if (!前の印 || !今の印.length) 変わった印[射手.id] = 今の印;
+    else
+      for (let 番 = 0; 番 < Math.max(今の印.length, 前の印.length); 番++) {
+        const 印 = 番 < 今の印.length ? 今の印[番] : null; // null は消す
+        if (印 !== (番 < 前の印.length ? 前の印[番] : undefined)) 変わったます.push([射手.id, 番, 印]);
+      }
     日時を書く射手.add(射手.id);
     載っている印[射手.id] = 並び;
   });
   const 中身 = {
-    archers: 送る射手,
-    shotsPerRound: 本数,
     timestamp: 今,
     // 参加一覧の「最終更新」はこちらを見る。timestamp は書いた端末の時計で、
     // 自分の送信の返りを見分けるのに使うため端末の値のままにしてある。
@@ -629,10 +636,43 @@ const ライブへ盤面を送る = (名前, 一覧, 本数) => {
   日時を書く射手.forEach((id) => {
     中身[`archer_timestamps/${id}`] = 日時の表[id] || 0;
   });
+  // 射数は変えたときだけ書く。毎回書くと、相手が変えたばかりの射数を、それを受け取る前の値で戻す
+  if (載っている射数 !== 本数) 中身.shotsPerRound = 本数;
+  載っている射数 = 本数;
   console.log('[Store] pushLiveAll state updated, lastPushedTimestamp:', 今);
   useScoreStore.getState().updateState({ lastPushedTimestamp: 今 });
-  RTDB.update(場所, 中身).catch((誤り) => console.error('[Store] pushLiveAll Error:', 誤り));
+  自分の送信中++;
+  try {
+    // 射手の一覧を先に書く。○× だけ先に載ると、受け取った側で、まだ一覧に居ない射手の ○× になる
+    射手の一覧を送る(名前, `live_sessions/${枝}/${名前}/state/archers`, 送る射手);
+    RTDB.update(場所, 中身).catch((誤り) => console.error('[Store] pushLiveAll Error:', 誤り));
+  } finally {
+    自分の送信中--;
+  }
   写しへも流す(名前, 中身);
+};
+/**
+ * 射手の一覧を、雲のいまの一覧に重ねて書く（syncRules.js の 射手の一覧を重ねる）。
+ * 載っている控えと、中身も並びも同じなら書かない
+ */
+const 射手の一覧を送る = (名前, 道, 送る射手) => {
+  const 基 = 載っている射手たち;
+  const 変わった =
+    !基 ||
+    基.length !== 送る射手.length ||
+    基.some(
+      (形, 番) =>
+        !形 || !送る射手[番] || 形.id !== 送る射手[番].id || 射手の見比べ形(形) !== 射手の見比べ形(送る射手[番])
+    );
+  if (!変わった) return;
+  載っている射手たち = 送る射手;
+  RTDB.runTransaction(RTDB.ref(Firebaseの器.rtdb, 道), (いま) =>
+    射手の一覧を重ねる(基, 送る射手, いま, (形) => 射手の見比べ形(形))
+  )
+    .then((結果) => {
+      if (結果 && 結果.committed) 写しへも流す(名前, { archers: 結果.snapshot.val() || [] });
+    })
+    .catch((誤り) => console.error('[Store] 射手の一覧を送れませんでした:', 誤り));
 };
 /**
  * ライブの ○× は、届いた盤面（marks_by_id）をそのまま正とする。
@@ -646,7 +686,7 @@ const ライブへ盤面を送る = (名前, 一覧, 本数) => {
  * 本物の Realtime Database が届ける値は、雲の最新に「まだ雲へ届いていない自分の
  * 書き込み」を重ねたもの。○× は押すたびにすぐ書くので、届いた値を正にすれば、
  * 自分の手も相手の手も入り、同じますの取り合いは雲の順番どおりに全員がそろう。
- * ○× 以外（名前・鍵・矢所など）は、今までどおり mergeLiveArchers の新しいほう。
+ * ○× 以外（名前・鍵・矢所など）も届いた盤面を正にする（届いた射手に合わせる）。
  *
  * @returns {{archers: Array, changed: boolean}}
  */
@@ -666,7 +706,7 @@ const 印を盤面に合わせる = (一覧, 印の表, 日時の表, 本数) =>
   });
   return { archers: 出, changed: 変わった };
 };
-/** mergeLiveArchers の結果の ○× を、届いた盤面に合わせる */
+/** 届いた射手に合わせた結果の ○× を、届いた盤面に合わせる */
 const 印は盤面を正に = (結果, 届いた, 本数) => {
   const 合わせた = 印を盤面に合わせる(
     結果.archers,
@@ -676,30 +716,6 @@ const 印は盤面を正に = (結果, 届いた, 本数) => {
   );
   return { archers: 合わせた.archers, changed: 結果.changed || 合わせた.changed };
 };
-const // 自分の送信の返りから、的中の印だけを取り込む。
-  //
-  // 返りの archers は自分が送った時点のもので、手元にしかない射手が
-  // 落ちるため、一覧は入れ替えられない。しかし同じ通知には、ほぼ同時に
-  // 書いた相手の marks_by_id が載っていることがある。丸ごと捨てると
-  // その手は永久に届かない（他に変化が無ければ次の通知が来ないため）。
-  // そこで一覧はそのままに、相手のほうが新しい射手の印だけを入れる。
-  返りの印を取り込む = (届いた状態, 書く, 状態) => {
-    // ここでも控えを取り直す。この経路は w() を通らないので、忘れると
-    // 相手の○×を「まだ載っていない」と思い込んだままになる。
-    // その状態で取り消すと「前と同じ」と見なして送らず、自分だけ戻る
-    載っている印を控える((届いた状態 && 届いた状態.marks_by_id) || {});
-    // 正規化は手元の射数で行う。相手の射数で揃えると、射数が食い違って
-    // いるときに手元の盤面と長さの合わない marks を入れてしまう。
-    // 射数そのものの変更は、返りではない通知のほうで届く。
-    // 相手の手かどうかを日時で選ばず、盤面の ○× に合わせる（印を盤面に合わせる）
-    const 合わせた = 印を盤面に合わせる(
-      状態().archers,
-      届いた状態 && 届いた状態.marks_by_id,
-      届いた状態 && 届いた状態.archer_timestamps,
-      状態().shotsPerRound
-    );
-    if (合わせた.changed) 書く({ archers: 合わせた.archers });
-  };
 const ライブへ1射を送る = (名前, 射手ID, 添字, 印, 日時) => {
   const 今 = Date.now();
   const 枝 = ライブの枝();
@@ -2163,7 +2179,16 @@ const useScoreStore = zustand.create()(
               'number' == typeof 盤面の値.history_max ? 盤面の値.history_max : 状態().historySharedMax || 0;
             const 読む番号 = 向き < 0 ? 位置 - 1 : 位置;
             if (向き < 0 ? 位置 <= 0 : 位置 >= 上限) return; // これ以上は戻せない／進めない
-            const 手 = await RTDB.get(RTDB.ref(Firebaseの器.rtdb, `${共有履歴の場所(枝, 名前)}/${読む番号}`));
+            const 手の場所 = RTDB.ref(Firebaseの器.rtdb, `${共有履歴の場所(枝, 名前)}/${読む番号}`);
+            let 手 = await RTDB.get(手の場所);
+            // 番号は取れているのに、中身がまだ雲に着いていないことがある。積むときは
+            // 番号を runTransaction で取ってから中身を書くので、2 台以上が同時に入れた
+            // 直後はその間だけ番号の先が空になる。空のまま帰ると、押した取り消しが
+            // 何も起こさずに消える（2026-09-26 に 3 台の e2e で 4 回に 1 回）。少し待って読み直す
+            for (let 回 = 0; !手.exists() && 回 < 10; 回++) {
+              await new Promise((r) => setTimeout(r, 200));
+              手 = await RTDB.get(手の場所);
+            }
             if (!手.exists()) return;
             const 中身 = 手.val() || {};
             const 次 = 位置 + 向き;
@@ -2205,9 +2230,9 @@ const useScoreStore = zustand.create()(
                 shotsPerRound: 盤面.shotsPerRound,
                 historySharedLen: 次,
                 historySharedMax: 上限,
-                // 押した本人にも知らせる。自分の送信の返りは弾く作りなので、
-                // ここで立てないと本人にだけ知らせが出ない。
-                // historyHandledAt を同じ値にしておくと、返りが届いても二重に出ない
+                // 押した本人にも知らせる。返りの history_at は historyHandledAt と同じなので
+                // 返りでは知らせが出ない。ここで立てないと本人にだけ知らせが出ない。
+                // （同じ値にしておくので、返りが届いても二重に出ない）
                 historyHandledAt: 知らせ時刻,
                 historyNoticeAt: 知らせ時刻,
                 historyNoticeKind: 向き < 0 ? '取り消し' : 'やり直し',
@@ -4464,7 +4489,9 @@ const useScoreStore = zustand.create()(
               在席を始める(名前, 書く),
               IS_WEB && console.log('ライブを開始しました: ' + 名前),
               RTDB.onValue(盤面の場所, (返り) => {
+                if (自分の送信中) return;
                 const 届いた = 返り.val();
+                載っている盤面を控える(届いた);
                 if (!届いた) {
                   const 今の名前 = 状態().liveSessionName;
                   return (
@@ -4485,8 +4512,11 @@ const useScoreStore = zustand.create()(
                 // 置くと、自分で配った主催者は自分の返りしか受けないので
                 // 一度も拾えない（カウントダウンが出なかった）
                 期限を控える(届いた, 書く, 状態);
-                if (届いた.timestamp === 状態().lastPushedTimestamp) 返りの印を取り込む(届いた, 書く, 状態);
-                if (届いた.timestamp !== 状態().lastPushedTimestamp) {
+                // 自分の送信の返りも、ほかの通知と同じに扱う。前は timestamp で返りを見分けて
+                // ○× だけを取り込んでいた。自分のまだ雲へ届いていない書き込みがあると、届く値の
+                // timestamp は自分のものに見えるので、同じ通知に載った相手の射数や人の選択を
+                // 捨て、そのあと通知が来ずに食い違ったまま残った（2026-09-26 に 2 台の e2e で再現）
+                {
                   if ('finished' === 届いた.status) {
                     const 今の名前 = 状態().liveSessionName;
                     return (
@@ -4521,10 +4551,10 @@ const useScoreStore = zustand.create()(
                       void 状態().resetCurrentSession(false)
                     );
                   if (届いた.archers || Array.isArray(届いた.archers)) {
-                    // 突き合わせは syncRules.js の mergeLiveArchers に出した。
+                    // 突き合わせは 届いた射手に合わせる（○× 以外）と 印は盤面を正に（○×）。
                     // 主催者側と参加者側で同じ処理が二重に書かれていたため
                     const { archers: 受信, shotsPerRound: 本数 } = ライブの盤面を読み取る(届いた);
-                    const 結果 = 印は盤面を正に(mergeLiveArchers(状態().archers, 受信, 状態().shotsPerRound, 本数), 届いた, 本数);
+                    const 結果 = 印は盤面を正に(届いた射手に合わせる(状態().archers, 受信, 状態().shotsPerRound, 本数), 届いた, 本数);
                     // 受け取りの正規化は短い○×を伸ばすだけで、長いほうは切らない。
                     // 相手が射数を減らしたとき、手元の射手のほうが新しいと
                     // 射数だけ減って○×が伸びたまま残る（画面に出ないますの○が
@@ -4812,9 +4842,9 @@ const useScoreStore = zustand.create()(
               //
               // ライブの archers に○×は入っていない（○×は marks_by_id で別に送る）。
               // ここで archers をそのまま入れていたころは、○×がいつまでも出なかった。
-              // w() で組み直し、mergeLiveArchers で突き合わせる
+              // w() で組み直し、届いた射手に合わせる で突き合わせる
               const { archers: 受信, shotsPerRound: 本数 } = ライブの盤面を読み取る(届いた);
-              const 結果 = 印は盤面を正に(mergeLiveArchers(状態().archers, 受信, 状態().shotsPerRound, 本数), 届いた, 本数);
+              const 結果 = 印は盤面を正に(届いた射手に合わせる(状態().archers, 受信, 状態().shotsPerRound, 本数), 届いた, 本数);
               if (結果.changed)
                 書く({
                   archers: 盤面を射数にそろえる(結果.archers, 本数),
@@ -4896,7 +4926,9 @@ const useScoreStore = zustand.create()(
           RTDB.onValue(
             盤面の場所,
             (返り) => {
+              if (自分の送信中) return;
               const 届いた = 返り.val();
+              載っている盤面を控える(届いた);
               if (!届いた) {
                 const 今の名前 = 状態().liveSessionName;
                 return (
@@ -4908,12 +4940,8 @@ const useScoreStore = zustand.create()(
                   void 書く({ isLiveActive: false, ライブの続き: null, isHost: false, liveSessionName: null })
                 );
               }
-              // 自分が送ったものの返りでは、一覧を入れ替えない。入れ替えると
-              // 手元の矢所が消え、まだ届いていない射手も落ちる（主催者側には
-              // 元からある判定で、参加者側だけ抜けていた）。
-              // ただし同じ通知に載った相手の印だけは取り込む
-              if (届いた.timestamp === 状態().lastPushedTimestamp)
-                return void 返りの印を取り込む(届いた, 書く, 状態);
+              // 自分の送信の返りも、ほかの通知と同じに扱う（主催者側の説明を参照）。
+              // 矢所は、届いた射手が持っていなければ手元を残す（届いた射手に合わせる）
               if ('finished' === 届いた.status) {
                 const 今の名前 = 状態().liveSessionName;
                 return (
@@ -4944,7 +4972,7 @@ const useScoreStore = zustand.create()(
               if (届いた.archers || Array.isArray(届いた.archers)) {
                 // 主催者側（startLiveSync）と同じ関数を使う
                 const { archers: 受信, shotsPerRound: 本数 } = ライブの盤面を読み取る(届いた);
-                const 結果 = 印は盤面を正に(mergeLiveArchers(状態().archers, 受信, 状態().shotsPerRound, 本数), 届いた, 本数);
+                const 結果 = 印は盤面を正に(届いた射手に合わせる(状態().archers, 受信, 状態().shotsPerRound, 本数), 届いた, 本数);
                 // 主催者側と同じ理由で、いまの射数にそろえる
                 if (結果.changed)
                   書く({ archers: 盤面を射数にそろえる(結果.archers, 本数), shotsPerRound: 本数 });

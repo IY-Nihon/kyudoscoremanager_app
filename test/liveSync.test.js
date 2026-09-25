@@ -147,10 +147,10 @@ test('矢所：自分の送信の返りで、自分の矢所を消さない', as
   assert.deepEqual(手元の射手(参.store).arrowLocations, [null, null, { x: 7, y: 8 }, null]);
 });
 
-test('返り：自分の送信の返りで、まだ届いていない射手を消さない', async () => {
-  // 統合後の一覧は受信側から作るので、自分の送信の返りを処理すると
-  // 「送信が届いていない手元だけの射手」が落ちる。主催者側には元から
-  // ある判定で、参加者側だけ抜けていた
+test('返り：雲に断られた射手の追加は、次の通知で雲に合わせて消える（相手と食い違ったまま残さない）', async () => {
+  // 前は「自分の送信の返りでは一覧を入れ替えない」決まりで、断られた射手を手元にだけ
+  // 残していた。本物の Realtime Database は断られた書き込みを手元からも取り消すので、
+  // 届いた盤面を正にすると、雲と同じ 1 人に戻る（2026-09-26）
   const 主 = 端末(null, [射手()]);
   await 主.store.getState().startLiveSync(ライブ名);
 
@@ -159,18 +159,113 @@ test('返り：自分の送信の返りで、まだ届いていない射手を�
   await 待つ(10);
   assert.equal(参.store.getState().archers.length, 1);
 
-  // 射手の追加が相手に届かなかった状態を作る
   主.ライブ.状態.失敗させる = true;
   参.store.getState().addArcher();
   await 待つ(10);
   主.ライブ.状態.失敗させる = false;
-  assert.equal(参.store.getState().archers.length, 2, '手元には2人いる');
 
-  // そのあと○を入れる。この送信は届き、返ってくる
   参.store.getState().updateMark('a1', 0, '○');
   await 待つ(20);
 
-  assert.equal(参.store.getState().archers.length, 2, '追加した射手が残っている');
+  assert.deepEqual(
+    参.store.getState().archers.map((a) => a.id),
+    主.store.getState().archers.map((a) => a.id),
+    '2 台の顔ぶれが食い違った'
+  );
+  assert.equal(手元の射手(主.store).marks[0], '○');
+});
+
+// ── 2 台が同時に操作したとき（2026-09-26 に 2 台の e2e で再現した不具合）─────────
+// 前は盤面をまとめて送る操作のたびに archers と shotsPerRound をまるごと書き、
+// 受け取る側は自分の送信の返り（timestamp が自分のもの）では ○× しか取り込まなかった。
+// 相手の連打の最中に射数を増やすと、相手の端末だけ射数が戻ったまま残った。
+// 遅延を入れて、互いの書き込みがまだ届いていないうちに次を送る形を作る
+
+/** 主催者と参加者の 2 台を、同じ射手たちで入れておく */
+async function 二台(射手たち) {
+  const 主 = 端末(null, 射手たち);
+  await 主.store.getState().startLiveSync(ライブ名);
+  const 参 = 端末(主.ライブ, []);
+  参.store.getState().joinLiveSync(ライブ名);
+  await 待つ(20);
+  return { 主, 参 };
+}
+/** 2 台の盤面（並び・名前・部員・射数・○×）がそろっているか */
+function そろっている(主, 参) {
+  const 形 = (store) =>
+    JSON.stringify({
+      射数: store.getState().shotsPerRound,
+      列: store.getState().archers.map((a) => [a.id, a.name || '', a.memberId || '', (a.marks || []).join('・')]),
+    });
+  assert.equal(形(参.store), 形(主.store), '2 台の盤面が食い違った');
+}
+
+test('同時：相手が連打している最中に射数を増やしても、2 台とも増えた射数になる', async () => {
+  const { 主, 参 } = await 二台([射手()]);
+  主.ライブ.状態.遅延 = 30;
+  参.store.getState().toggleMark('a1', 0);
+  主.store.getState().setShotsPerRound(8);
+  await 待つ(10);
+  // 主催者の射数が参加者に届くときも、参加者のまだ届いていない書き込みが残っている
+  参.store.getState().toggleMark('a1', 1);
+  await 待つ(150);
+  主.ライブ.状態.遅延 = 0;
+  assert.equal(参.store.getState().shotsPerRound, 8, '参加者の射数が戻ったまま');
+  assert.equal(手元の射手(参.store).marks.length, 8);
+  assert.deepEqual(手元の射手(主.store).marks.slice(0, 2), ['○', '○'], '連打の手が落ちた');
+  そろっている(主, 参);
+});
+
+test('同時：2 台が別々の射手の人を選んでも、両方の選択が残る', async () => {
+  const { 主, 参 } = await 二台([射手({ id: 'a1' }), 射手({ id: 'a2', name: '' })]);
+  主.ライブ.状態.遅延 = 30;
+  主.store.getState().setArcherMember('a1', { id: 'm1', name: '甲', gender: '男性', grade: 1 });
+  参.store.getState().setArcherMember('a2', { id: 'm2', name: '乙', gender: '女性', grade: 2 });
+  await 待つ(150);
+  主.ライブ.状態.遅延 = 0;
+  assert.equal(手元の射手(主.store, 'a1').memberId, 'm1');
+  assert.equal(手元の射手(主.store, 'a2').memberId, 'm2', '参加者の選択が主催者に届いていない');
+  assert.equal(手元の射手(参.store, 'a1').memberId, 'm1', '主催者の選択が参加者に届いていない');
+  そろっている(主, 参);
+});
+
+test('同時：2 台が人を足しても、両方の人が残り、並びもそろう', async () => {
+  const { 主, 参 } = await 二台([射手()]);
+  主.ライブ.状態.遅延 = 30;
+  主.store.getState().addArcher();
+  参.store.getState().addArcher();
+  await 待つ(150);
+  主.ライブ.状態.遅延 = 0;
+  assert.equal(主.store.getState().archers.length, 3, '足した人が消えた');
+  そろっている(主, 参);
+});
+
+test('同時：片方が人を消し、もう片方が別の人を選んでも、両方が効く', async () => {
+  const { 主, 参 } = await 二台([射手({ id: 'a1' }), 射手({ id: 'a2', name: '' }), 射手({ id: 'a3', name: '' })]);
+  主.ライブ.状態.遅延 = 30;
+  主.store.getState().deleteArcher('a3');
+  参.store.getState().setArcherMember('a2', { id: 'm2', name: '乙', gender: '女性', grade: 2 });
+  await 待つ(150);
+  主.ライブ.状態.遅延 = 0;
+  assert.deepEqual(
+    主.store.getState().archers.map((a) => a.id),
+    ['a1', 'a2'],
+    '消した人が戻った・残した人が消えた'
+  );
+  assert.equal(手元の射手(主.store, 'a2').memberId, 'm2');
+  そろっている(主, 参);
+});
+
+test('送信：○× だけを変える操作では、射手の一覧を書かない（相手の人の選択を古い一覧で戻さない）', async () => {
+  const { 主 } = await 二台([射手()]);
+  const 前 = 主.ライブ.記録.length;
+  主.store.getState().clearArcherMarks('a1');
+  主.store.getState().toggleMark('a1', 2);
+  await 待つ(10);
+  const 一覧を書いた = 主.ライブ.記録
+    .slice(前)
+    .filter((x) => (x.種別 === 'transaction' && /\/archers$/.test(x.道)) || (x.値 && 'archers' in x.値));
+  assert.equal(一覧を書いた.length, 0, '○× だけの操作で射手の一覧を書いた');
 });
 
 test('矢所：受信に矢所が無い（古い版の相手）ときも手元を消さない', async () => {
