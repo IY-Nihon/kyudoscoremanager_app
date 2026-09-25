@@ -118,7 +118,10 @@ test('空でも壊れない', () => {
 test('射手を作り直す所が、teamName を落とさない', () => {
   const fs = require('node:fs');
   const path = require('node:path');
-  const 店 = fs.readFileSync(path.join(__dirname, '..', 'src', 'useScoreStore.js'), 'utf8');
+  // ライブへ送る形は syncRules.js へ移した（受け取りの突き合わせと同じ形で見比べるため）
+  const 店 = ['useScoreStore.js', 'syncRules.js']
+    .map((名) => fs.readFileSync(path.join(__dirname, '..', 'src', 名), 'utf8'))
+    .join('\n');
 
   // 作り直しの型は isSeparator を必ず持つ。その一帯に teamName があるか見る
   const place = [];

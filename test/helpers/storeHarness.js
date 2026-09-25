@@ -288,17 +288,25 @@ function 偽Firestore() {
  */
 function 偽RTDB() {
   let 木 = {};
-  const 見張り = []; // { 道, 受け取る }
+  const 見張り = []; // { 道, 受け取る, 端末 }
   const 記録 = [];
   // 遅延: 書き込みが届くまでの時間(ms)。「送ったあとに相手が消した」順序を作るために要る
   const 状態 = { オフライン: false, 失敗させる: false, 遅延: 0 };
+  /**
+   * まだサーバーへ届いていない書き込み（端末ごと）。{ 端末, 書き込み: [[部分, 値]] }
+   *
+   * 本物の Realtime Database は、書いた端末の手元にはすぐ当てる。その端末へ届く値は
+   * 「サーバーの値＋自分のまだ届いていない書き込み」になる。ライブの盤面は届いた値を
+   * 正にするので、ここをまねないと、遅延を入れた検査で自分の書き込みが一度消えてから
+   * 戻るという、本物に無い動きになる
+   */
+  const 保留 = [];
 
   const 分解 = (道) => String(道).split('/').filter(Boolean);
-  const 読む = (部分) => 部分.reduce((o, k) => (o == null ? undefined : o[k]), 木);
   const 写し = (値) => (値 === undefined ? null : JSON.parse(JSON.stringify(値)));
-  const 書く = (部分, 値) => {
-    if (部分.length === 0) return void (木 = 値 == null ? {} : 値);
-    let 今 = 木;
+  const 木に書く = (根, 部分, 値) => {
+    if (部分.length === 0) return 値 == null ? {} : 値;
+    let 今 = 根;
     for (let i = 0; i < 部分.length - 1; i++) {
       if (今[部分[i]] == null || typeof 今[部分[i]] !== 'object') 今[部分[i]] = {};
       今 = 今[部分[i]];
@@ -306,7 +314,20 @@ function 偽RTDB() {
     const 末 = 部分[部分.length - 1];
     if (値 === undefined) delete 今[末];
     else 今[末] = 値;
+    return 根;
   };
+  const 書く = (部分, 値) => void (木 = 木に書く(木, 部分, 値));
+  /** その端末から見える木（サーバーの木＋その端末のまだ届いていない書き込み） */
+  const 見える木 = (端末) => {
+    const 自分の = 保留.filter((控え) => 控え.端末 === 端末);
+    if (!自分の.length) return 木;
+    let 根 = JSON.parse(JSON.stringify(木));
+    for (const 控え of 自分の)
+      for (const [部分, 値] of 控え.書き込み) 根 = 木に書く(根, 部分, 値 === undefined ? undefined : 写し(値));
+    return 根;
+  };
+  const 読む = (部分, 端末) =>
+    部分.reduce((o, k) => (o == null ? undefined : o[k]), 端末 === undefined ? 木 : 見える木(端末));
 
   /**
    * 本物に合わせる。Realtime Database は null の要素を保存しないので、
@@ -348,7 +369,7 @@ function 偽RTDB() {
    * 初回だけは、値が無くても必ず配る（本物と同じ）。
    */
   const 配る = (v, 初回) => {
-    const 値 = 読む(分解(v.道));
+    const 値 = 読む(分解(v.道), v.端末);
     const 印 = JSON.stringify(値 === undefined ? null : 値);
     if (!初回 && 印 === v.前の値) return;
     v.前の値 = 印;
@@ -358,17 +379,27 @@ function 偽RTDB() {
     for (const v of [...見張り]) 配る(v);
   };
 
-  const 送る = (やること) => {
+  const 送る = (やること, 端末) => {
     記録.push(やること);
     if (状態.失敗させる) return Promise.reject(new Error('偽の失敗'));
-    if (状態.オフライン) return 決着しない();
-    if (状態.遅延 > 0)
+    const 当てる = () => {
+      for (const [部分, 値] of やること.書き込み) 書く(部分, 値);
+    };
+    if (状態.オフライン || 状態.遅延 > 0) {
+      // 書いた端末の手元にはすぐ見える（本物と同じ）
+      const 控え = { 端末, 書き込み: やること.書き込み };
+      保留.push(控え);
+      通知();
+      if (状態.オフライン) return 決着しない();
       return new Promise((r) =>
         setTimeout(() => {
-          (やること.適用(), 通知(), r());
+          const 番 = 保留.indexOf(控え);
+          if (番 >= 0) 保留.splice(番, 1);
+          (当てる(), 通知(), r());
         }, 状態.遅延)
       );
-    やること.適用();
+    }
+    当てる();
     通知();
     return Promise.resolve();
   };
@@ -403,6 +434,46 @@ function 偽RTDB() {
     return e;
   };
 
+  // 端末ごとに分かれる操作。書いた端末と見張りの端末を結ぶ
+  const 端末ごと = {
+    runTransaction: (端末, 参照, 決める) => api.runTransaction(参照, 決める, 端末),
+    set: (端末, 参照, 値) =>
+      送る(
+        { 種別: 'set', 道: 参照.道, 書き込み: [[分解(参照.道), 値 == null ? undefined : 雲の形へ(値)]] },
+        端末
+      ),
+    remove: (端末, 参照) => 送る({ 種別: 'remove', 道: 参照.道, 書き込み: [[分解(参照.道), undefined]] }, 端末),
+    update: (端末, 参照, 値) =>
+      送る(
+        {
+          種別: 'update',
+          道: 参照.道,
+          値,
+          // 鍵に '/' を含められる（marks_by_id/xxx/0 のような形）
+          書き込み: Object.keys(値)
+            .filter((k) => 値[k] !== undefined)
+            // null は消す（本物と同じ）
+            .map((k) => [[...分解(参照.道), ...分解(k)], 値[k] === null ? undefined : 雲の形へ(値[k])]),
+        },
+        端末
+      ),
+    onValue: (端末, 参照, 受け取る, 弾かれたら) => {
+      // 期限の切れた枝は、決まりが見張りごと止める。本物と同じく
+      // 受け取る側ではなく、受けの側へ知らせる
+      if (期限で止まるか(参照.道)) {
+        if (弾かれたら) 弾かれたら(弾く());
+        return () => {};
+      }
+      const v = { 道: 参照.道, 受け取る, 端末 };
+      見張り.push(v);
+      配る(v, !0); // 初回は必ず配る
+      return () => {
+        const i = 見張り.indexOf(v);
+        if (i >= 0) 見張り.splice(i, 1);
+      };
+    },
+  };
+
   const api = {
     getDatabase: () => ({ __偽: true }),
     ref: (db, 道) => ({ 道: 道 === undefined ? '' : String(道) }),
@@ -412,20 +483,16 @@ function 偽RTDB() {
       const 値 = 読む(分解(参照.道));
       return { exists: () => 値 !== undefined, val: () => 写し(値) };
     },
-    set: (参照, 値) =>
-      送る({
-        種別: 'set',
-        道: 参照.道,
-        適用: () => 書く(分解(参照.道), 値 == null ? undefined : 雲の形へ(値)),
-      }),
-    remove: (参照) => 送る({ 種別: 'remove', 道: 参照.道, 適用: () => 書く(分解(参照.道), undefined) }),
+    set: (参照, 値) => 端末ごと.set(undefined, 参照, 値),
+    remove: (参照) => 端末ごと.remove(undefined, 参照),
     /**
      * 読んで書くまでを一息でやる。共有履歴の場所取りに使う。
      * 本物と同じく、いまの値を渡して、返った値を書き込む。
      * 2台が続けて呼んでも、後の呼び出しは先の結果を読む
      */
-    runTransaction: (参照, 決める) => {
-      const いま = 読む(分解(参照.道));
+    runTransaction: (参照, 決める, 端末) => {
+      // 本物と同じく、はじめはその端末の手元の値（まだ届いていない自分の書き込みを含む）で決める
+      const いま = 読む(分解(参照.道), 端末);
       const 新しい = 決める(いま === undefined ? null : 写し(いま));
       if (新しい === undefined) {
         return Promise.resolve({
@@ -439,7 +506,12 @@ function 偽RTDB() {
         snapshot: { exists: () => 新しい !== undefined, val: () => 写し(新しい) },
       };
       if (状態.失敗させる) return Promise.reject(new Error('偽の失敗'));
-      if (状態.オフライン) return 決着しない();
+      if (状態.オフライン) {
+        // 決着はしないが、書いた端末の手元には見える（本物と同じ）
+        保留.push({ 端末, 書き込み: [[分解(参照.道), 新しい == null ? undefined : 雲の形へ(新しい)]] });
+        通知();
+        return 決着しない();
+      }
       // 本物は場所取りを先に確定させる（手元に当て、ぶつかればサーバーが
       // 読み直させる）。遅延があっても、次の呼び出しは確定後の値を読む。
       // ここを遅らせると、2台が同じ番号を取れてしまい実物と食い違う
@@ -448,34 +520,8 @@ function 偽RTDB() {
       if (状態.遅延 > 0) return new Promise((r) => setTimeout(() => r(結果), 状態.遅延));
       return Promise.resolve(結果);
     },
-    update: (参照, 値) =>
-      送る({
-        種別: 'update',
-        道: 参照.道,
-        値,
-        適用: () => {
-          // 鍵に '/' を含められる（marks_by_id/xxx/0 のような形）
-          for (const k in 値) {
-            if (値[k] === undefined) continue;
-            書く([...分解(参照.道), ...分解(k)], 雲の形へ(値[k]));
-          }
-        },
-      }),
-    onValue: (参照, 受け取る, 弾かれたら) => {
-      // 期限の切れた枝は、決まりが見張りごと止める。本物と同じく
-      // 受け取る側ではなく、受けの側へ知らせる
-      if (期限で止まるか(参照.道)) {
-        if (弾かれたら) 弾かれたら(弾く());
-        return () => {};
-      }
-      const v = { 道: 参照.道, 受け取る };
-      見張り.push(v);
-      配る(v, !0); // 初回は必ず配る
-      return () => {
-        const i = 見張り.indexOf(v);
-        if (i >= 0) 見張り.splice(i, 1);
-      };
-    },
+    update: (参照, 値) => 端末ごと.update(undefined, 参照, 値),
+    onValue: (参照, 受け取る, 弾かれたら) => 端末ごと.onValue(undefined, 参照, 受け取る, 弾かれたら),
     /** 本物と同じく、その道に付いた見張りを全部外す */
     off: (参照) => {
       for (let i = 見張り.length - 1; i >= 0; i--) if (見張り[i].道 === 参照.道) 見張り.splice(i, 1);
@@ -500,8 +546,21 @@ function 偽RTDB() {
     }),
   };
 
+  let 端末の数 = 0;
   return {
     api,
+    /**
+     * 1 台ぶんの口を作る。書き込みと見張りがその端末のものになり、その端末には
+     * まだ届いていない自分の書き込みが見える。ほかの呼び出しは api へそのまま渡す
+     * （検査が api.get を差し替えても効くように、呼ぶときに引く）
+     */
+    口を作る: () => {
+      const 端末 = ++端末の数;
+      const 口 = {};
+      for (const 名 of Object.keys(api))
+        口[名] = (...引数) => (端末ごと[名] ? 端末ごと[名](端末, ...引数) : api[名](...引数));
+      return 口;
+    },
     状態,
     記録,
     見張りの数: () => 見張り.length,
@@ -611,7 +670,8 @@ function ストアを用意する(既存の雲, 既存のライブ) {
       },
     })
   );
-  横取り.set('firebase/database', 外部を差し替え('firebase/database', ライブ.api));
+  // 端末ごとに口を分ける（自分のまだ届いていない書き込みは自分にだけ見える）
+  横取り.set('firebase/database', 外部を差し替え('firebase/database', ライブ.口を作る()));
   差し替え('db', {
     db: { __偽: true },
     auth: { currentUser: { uid: 'test-uid' } },
