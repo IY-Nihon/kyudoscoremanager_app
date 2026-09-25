@@ -63,6 +63,16 @@ const { useScoreStore } = require('./useScoreStore');
 const { useNavigation } = require('@react-navigation/native');
 // 鍵はアプリに無い。中継（Cloudflare Workers）へログインの証を付けて呼ぶ
 const 中継 = require('./geminiChukei');
+
+/**
+ * 流し読みが途中で切れた誤りか。返事の途中で回線が切れる・中継や上流が流れを閉じると、
+ * SDK は「Failed to parse stream」を投げる（2026-09-24 に本番の便りで 2 通）。上限（429）・
+ * 混雑（503）・証（401）などの誤りはここに入れない（別に扱う）
+ */
+const 流れが切れたか = (誤り) =>
+  /Failed to parse stream|Error reading from the stream|network|Failed to fetch|Load failed|terminated|aborted/i.test(
+    String((誤り && 誤り.message) || 誤り || '')
+  ) && !/\b(4\d\d|5\d\d)\b/.test(String((誤り && 誤り.message) || ''));
 // 成績の集計・並べ替え・絞り込みは、模型ではなくここで済ませる。
 // 人数ぶんの表を渡して選ばせると取り違えるため（test/chatStats.test.js）
 const {
@@ -1086,10 +1096,40 @@ const AIChatBot = () => {
         const 送る = async (中身) => {
           途中の文 = '';
           会話.push({ role: 'user', parts: 中身 });
-          const 返り = await model.generateContentStream({ contents: 会話 });
           // 模型の返事の部品は、かけらのまま（thoughtSignature ごと）積む。次の送信で
           // そのまま返さないと「Function call is missing a thought_signature」になる
           const 模型の部品 = [];
+          let 返り;
+          try {
+            返り = await model.generateContentStream({ contents: 会話 });
+            // 流れが途中で切れると、返事全体の約束（response）も失敗する。ここで受け止めないと
+            // 誰も待っていない約束の失敗として便りに届く（本番で 2 通）。失敗そのものは
+            // 下の for await が投げるので、そちらで扱う
+            返り.response.catch(() => {});
+            await 流しながら出す(返り, 模型の部品);
+          } catch (誤り) {
+            if (!流れが切れたか(誤り)) throw 誤り;
+            // 流し読みが途中で切れたら、流さずに 1 回だけ送り直す。途中まで出した文は、
+            // 確定した答えで置き換わる（最後の setMessages）
+            console.warn('[AIChatBot] 流し読みが切れたので、流さずに送り直します', 誤り && 誤り.message);
+            模型の部品.length = 0;
+            途中の文 = '';
+            const 全部 = await model.generateContent({ contents: 会話 });
+            const 部品 =
+              (全部.response.candidates &&
+                全部.response.candidates[0] &&
+                全部.response.candidates[0].content &&
+                全部.response.candidates[0].content.parts) ||
+              [];
+            for (const 一つ of 部品) 模型の部品.push(一つ);
+            if (模型の部品.length) 会話.push({ role: 'model', parts: 模型の部品 });
+            return { response: Promise.resolve(全部.response) };
+          }
+          if (模型の部品.length) 会話.push({ role: 'model', parts: 模型の部品 });
+          return 返り;
+        };
+        // 流れてきたかけらを積み、文字があれば途中の札に出す
+        const 流しながら出す = async (返り, 模型の部品) => {
           for await (const かけら of 返り.stream) {
             const 部品 =
               (かけら.candidates &&
@@ -1113,8 +1153,6 @@ const AIChatBot = () => {
               return 最後 && 最後.id === 途中の札 ? [...前.slice(0, -1), 札付き] : [...前, 札付き];
             });
           }
-          if (模型の部品.length) 会話.push({ role: 'model', parts: 模型の部品 });
-          return 返り;
         };
 
         console.log('[AIChatBot] Sending message with Function Calling enabled...');
@@ -1450,6 +1488,25 @@ const AIChatBot = () => {
         const is429 = error.message?.includes('429');
         const isPerDay = error.message?.includes('PerDayPerProject');
         const isPerMinute = is429 && !isPerDay;
+        const is503 = error.message?.includes('503');
+
+        if (is503 && attempt < MAX_RETRY) {
+          // 混んでいる（503）。中継がすでに 2・4・8 秒待って送り直しているが、山が長いことがある。
+          // 利用者に送り直させる前に、もう少し待ってこちらで 1 回だけ送り直す
+          const 待つ秒 = 10;
+          let 残り = 待つ秒;
+          setRetryCountdown(残り);
+          const 時計 = setInterval(() => {
+            残り--;
+            setRetryCountdown((前) => Math.max(0, 前 - 1));
+            if (残り <= 0) clearInterval(時計);
+          }, 1000);
+          await new Promise((解く) => setTimeout(解く, 待つ秒 * 1000));
+          clearInterval(時計);
+          setRetryCountdown(0);
+          attempt++;
+          continue;
+        }
 
         if (isPerMinute && attempt < MAX_RETRY) {
           // 1分クォータ超過 → カウントダウン後に自動リトライ
@@ -1470,6 +1527,13 @@ const AIChatBot = () => {
         }
 
         console.error('AIChatBot Send Error:', error);
+        // 画面で受け止めた誤りも、種類だけを便りに送る（質問や答えの中身は送らない。
+        // 誤りの文言だけ）。送らないと、使う人に何が多く出ているのか運用側から見えない
+        try {
+          require('./errorReporter').不具合を送る('AIチャット', error);
+        } catch (便りの誤り) {
+          // 便りの仕組みが転んでも、チャットの知らせは出す
+        }
         let errorMsg = '通信エラーが発生しました。';
         if (error.message?.includes('503')) {
           errorMsg = 'ただいまAIが混み合っています。しばらく待ってからもう一度送信してください。';
@@ -1485,6 +1549,8 @@ const AIChatBot = () => {
           errorMsg = 'この出どころからは AI 機能を使えません。';
         } else if (error.message?.includes('401') || error.message?.includes('ログインしていない')) {
           errorMsg = 'ログインの証が確かめられませんでした。ログインし直してからもう一度送信してください。';
+        } else if (流れが切れたか(error)) {
+          errorMsg = '通信が途中で切れました。電波の良い場所でもう一度送信してください。';
         } else {
           errorMsg = `エラー: ${error.message}`;
         }
