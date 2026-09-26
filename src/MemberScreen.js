@@ -24,6 +24,27 @@ const 案内 = require('./TutorialGuide');
 const Icons = require('@expo/vector-icons');
 const { getShadowStyle } = require('./shadowStyle');
 const { CustomCalendarModal } = require('./CustomCalendarModal');
+/**
+ * メンバーの編集の本文の入れ物。窓のときだけ流す。
+ *
+ * 窓は流す仕組みを持っておらず、招待リンクの欄（2026-09-24）が加わって画面より長く
+ * なると、下の「保存する」「メンバーを削除」に届かなかった（2026-09-26 に使う人から
+ * 「メンバーの詳細のスクロールができない」）。画面として出すとき（個人ログインの
+ * 「自分の情報」）は外側の ScrollView が流すので、入れ子にしない（指の動きを取り合う）。
+ * 画面の部品の中で作ると描くたびに別物になり、名前の欄の字の入力が途切れるので、ここに置く
+ */
+function 本文の入れ物({ 流す, children }) {
+  if (!流す) return <View style={{ padding: 20 }}>{children}</View>;
+  return (
+    <ScrollView
+      style={{ flexGrow: 0, flexShrink: 1 }}
+      contentContainerStyle={{ padding: 20 }}
+      keyboardShouldPersistTaps="handled"
+    >
+      {children}
+    </ScrollView>
+  );
+}
 const MemberScreen = () => {
   const {
     members = [],
@@ -349,7 +370,7 @@ const MemberScreen = () => {
           </TouchableOpacity>
         </View>
       ) : null}
-      <View style={{ padding: 20 }}>
+      <本文の入れ物 流す={窓として出す}>
         {[
           // 個人ログインでは名前も変えられない。名簿は団体で管理する
           // ものなので、本人が動かすと記録の名寄せまでずれる
@@ -556,7 +577,7 @@ const MemberScreen = () => {
               ]
             : []),
         ]}
-      </View>
+      </本文の入れ物>
     </View>
   );
   // ── 個人ログインの画面 ──────────────────────────────
@@ -822,6 +843,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     width: '90%',
     maxWidth: 400,
+    // 画面より長くならないようにする。中身は 本文の入れ物 が流す
+    maxHeight: '90%',
     borderRadius: 20,
     overflow: 'hidden',
   },
