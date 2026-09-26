@@ -57,7 +57,18 @@ const MemberScreen = () => {
     isAdminMode,
     activeRole,
     myMemberId,
-  } = useストアの一部(['members', 'addMember', 'updateMember', 'deleteMember', 'incrementAllGrades', 'activeGroupId', 'publicGroupId', 'isAdminMode', 'activeRole', 'myMemberId']);
+  } = useストアの一部([
+    'members',
+    'addMember',
+    'updateMember',
+    'deleteMember',
+    'incrementAllGrades',
+    'activeGroupId',
+    'publicGroupId',
+    'isAdminMode',
+    'activeRole',
+    'myMemberId',
+  ]);
   // 使い方の案内が指す先
   const 案内の部員追加 = 案内.useTutorialTarget('メンバー.追加');
   const [検索の文, 検索の文を置く] = React.useState('');

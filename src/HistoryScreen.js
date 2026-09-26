@@ -73,7 +73,39 @@ const HistoryScreen = () => {
     // 記録表でできることを全部使うため。詳細の画面で直せるのは○×と名前と鍵と削除だけ
     履歴の記録を記録画面で開く,
     // 案内が見本を出しているあいだは、中身だけ見本に差し替わる
-  } = 案内.見本を重ねる(useストアの一部(['members', 'activeRole', 'myMemberId', 'sessions', 'trash', 'isAdminMode', 'setAdminMode', 'historyViewMode', 'setHistoryViewMode', 'selectedHistorySessionId', 'setSelectedHistorySessionId', 'viewScale', 'deleteArcher', 'deleteSession', 'deleteMultipleSessions', 'restoreSession', 'emptyTrash', 'updateSession', 'isHydrated', 'historySelectedTags', 'historyTagLogic', 'setHistorySelectedTags', 'toggleHistoryTag', 'setHistoryTagLogic', 'focusedMemberId', 'setFocusedMemberId', '横に並べる', 'set横に並べる', '履歴の記録を記録画面で開く']));
+  } = 案内.見本を重ねる(
+    useストアの一部([
+      'members',
+      'activeRole',
+      'myMemberId',
+      'sessions',
+      'trash',
+      'isAdminMode',
+      'setAdminMode',
+      'historyViewMode',
+      'setHistoryViewMode',
+      'selectedHistorySessionId',
+      'setSelectedHistorySessionId',
+      'viewScale',
+      'deleteArcher',
+      'deleteSession',
+      'deleteMultipleSessions',
+      'restoreSession',
+      'emptyTrash',
+      'updateSession',
+      'isHydrated',
+      'historySelectedTags',
+      'historyTagLogic',
+      'setHistorySelectedTags',
+      'toggleHistoryTag',
+      'setHistoryTagLogic',
+      'focusedMemberId',
+      'setFocusedMemberId',
+      '横に並べる',
+      'set横に並べる',
+      '履歴の記録を記録画面で開く',
+    ])
+  );
   const 航路 = 航.useNavigation();
   // タグと月の並びは横に流す。パソコンの車の動きは横に読み替える
   const タグの横流し = use横流し();
@@ -1095,167 +1127,184 @@ const HistoryScreen = () => {
               <Text style={styles.batchDeleteText}>{選んだ記録.size}件を削除</Text>
             </TouchableOpacity>
           )}
-          <View style={styles.searchContainer}>
-            <View style={styles.searchBar}>
-              <Icons.Ionicons name="search" size={18} color="#8E8E93" style={styles.searchIcon} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="日付や内容を検索（全期間対象）"
-                placeholderTextColor="#8E8E93"
-                value={検索の文}
-                onChangeText={検索の文を置く}
-              />
-            </View>
-          </View>
-          {タグの一覧.length > 0 && (
-            <View style={styles.tagFilterContainer}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginHorizontal: 16,
-                  marginBottom: 8,
-                }}
-              >
-                <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#8E8E93' }}>タグフィルター</Text>
-                <View
-                  style={{ flexDirection: 'row', backgroundColor: '#E5E5EA', borderRadius: 8, padding: 2 }}
-                >
-                  <TouchableOpacity
-                    onPress={() => setHistoryTagLogic('AND')}
-                    style={[
-                      { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-                      'AND' === historyTagLogic && { backgroundColor: '#FFF' },
-                    ]}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 'bold',
-                        color: 'AND' === historyTagLogic ? '#007AFF' : '#8E8E93',
-                      }}
-                    >
-                      すべて含む
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => setHistoryTagLogic('OR')}
-                    style={[
-                      { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-                      'OR' === historyTagLogic && { backgroundColor: '#FFF' },
-                    ]}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 'bold',
-                        color: 'OR' === historyTagLogic ? '#007AFF' : '#8E8E93',
-                      }}
-                    >
-                      いずれか含む
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-              <ScrollView
-                ref={タグの横流し}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
-              >
-                <Pressable
-                  style={({ hovered }) => [
-                    styles.tagChip,
-                    0 === historySelectedTags.length && styles.tagChipActive,
-                    { backgroundColor: 0 === historySelectedTags.length ? '#007AFF' : '#E5E5EA' },
-                    hovered && 0 !== historySelectedTags.length && { backgroundColor: '#D1D1D6' },
-                  ]}
-                  onPress={() => setHistorySelectedTags([])}
-                >
-                  <Text style={[styles.tagChipText, 0 === historySelectedTags.length && { color: '#FFF' }]}>
-                    すべて解除
-                  </Text>
-                </Pressable>
-                {タグの一覧.map((タグ, idx) => {
-                  const 選ばれている = historySelectedTags.includes(タグ);
-                  return (
-                    <Pressable
-                      key={typeof タグ === 'string' ? タグ : `tag-${idx}`}
-                      style={({ hovered }) => [
-                        styles.tagChip,
-                        選ばれている && styles.tagChipActive,
-                        { backgroundColor: 選ばれている ? '#007AFF' : '#F2F2F7' },
-                        hovered && !選ばれている && { backgroundColor: '#E5E5EA' },
-                      ]}
-                      onPress={() => toggleHistoryTag(タグ)}
-                    >
-                      <Text style={[styles.tagChipText, 選ばれている && { color: '#FFF' }]}>
-                        {typeof タグ === 'string' && タグ.startsWith('#') ? タグ.substring(1) : String(タグ)}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          )}
-          {!検索の文 && (
-            <>
-              <View style={styles.yearSelectorContainer}>
-                <Pressable
-                  style={({ hovered }) => [
-                    styles.yearButton,
-                    hovered && { backgroundColor: 'rgba(88,86,214,0.05)' },
-                  ]}
-                  onPress={() => 年度の窓を出す(true)}
-                >
-                  <Text style={styles.yearButtonText}>
-                    {年度の一覧.length > 0
-                      ? `${見ている年度}年度 (${見ている年度}/04 - ${見ている年度 + 1}/03)`
-                      : '記録なし'}
-                  </Text>
-                  <Icons.Ionicons name="chevron-expand" size={14} color="#5856D6" />
-                </Pressable>
-              </View>
-              <ScrollView // 月が多いと画面幅を超える。横スクロールにして
-                // 隠れた月へ届かせる（上のタグチップと同じ作り）
-                ref={月の横流し}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.monthTabsScroll}
-                contentContainerStyle={styles.monthTabsContent}
-              >
-                {月の一覧.map((月) => {
-                  const 選ばれている = 見ている月 === 月;
-                  return (
-                    <Pressable
-                      key={月}
-                      style={({ hovered }) => [
-                        styles.monthTab,
-                        選ばれている && styles.monthTabActive,
-                        hovered && !選ばれている && { backgroundColor: '#E5E5EA' },
-                      ]}
-                      onPress={() => 見ている月を置く(月)}
-                    >
-                      <Text style={[styles.monthTabText, 選ばれている && styles.monthTabTextActive]}>
-                        {月.split('/')[1]}月
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            </>
-          )}
-          {!!検索の文 && (
-            <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
-              <Text style={{ fontSize: 13, color: '#8E8E93' }}>
-                「{検索の文}
-                {'」の全期間検索結果: '}
-                {絞った記録.length}件
-              </Text>
-            </View>
-          )}
+          {/* 検索・タグ・年度・月は一覧の頭に入れて、記録と一緒に流す。外に置いていたころは、横向きの */
+          /* スマホでこれらが画面の高さを使い切り、一覧の高さが 0 になって記録が出なかった（2026-09-26） */}
           <FlatList
+            ListHeaderComponent={
+              <>
+                <View style={styles.searchContainer}>
+                  <View style={styles.searchBar}>
+                    <Icons.Ionicons name="search" size={18} color="#8E8E93" style={styles.searchIcon} />
+                    <TextInput
+                      style={styles.searchInput}
+                      placeholder="日付や内容を検索（全期間対象）"
+                      placeholderTextColor="#8E8E93"
+                      value={検索の文}
+                      onChangeText={検索の文を置く}
+                    />
+                  </View>
+                </View>
+                {タグの一覧.length > 0 && (
+                  <View style={styles.tagFilterContainer}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginHorizontal: 16,
+                        marginBottom: 8,
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#8E8E93' }}>
+                        タグフィルター
+                      </Text>
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          backgroundColor: '#E5E5EA',
+                          borderRadius: 8,
+                          padding: 2,
+                        }}
+                      >
+                        <TouchableOpacity
+                          onPress={() => setHistoryTagLogic('AND')}
+                          style={[
+                            { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+                            'AND' === historyTagLogic && { backgroundColor: '#FFF' },
+                          ]}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 'bold',
+                              color: 'AND' === historyTagLogic ? '#007AFF' : '#8E8E93',
+                            }}
+                          >
+                            すべて含む
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => setHistoryTagLogic('OR')}
+                          style={[
+                            { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+                            'OR' === historyTagLogic && { backgroundColor: '#FFF' },
+                          ]}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 'bold',
+                              color: 'OR' === historyTagLogic ? '#007AFF' : '#8E8E93',
+                            }}
+                          >
+                            いずれか含む
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                    <ScrollView
+                      ref={タグの横流し}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
+                    >
+                      <Pressable
+                        style={({ hovered }) => [
+                          styles.tagChip,
+                          0 === historySelectedTags.length && styles.tagChipActive,
+                          { backgroundColor: 0 === historySelectedTags.length ? '#007AFF' : '#E5E5EA' },
+                          hovered && 0 !== historySelectedTags.length && { backgroundColor: '#D1D1D6' },
+                        ]}
+                        onPress={() => setHistorySelectedTags([])}
+                      >
+                        <Text
+                          style={[styles.tagChipText, 0 === historySelectedTags.length && { color: '#FFF' }]}
+                        >
+                          すべて解除
+                        </Text>
+                      </Pressable>
+                      {タグの一覧.map((タグ, idx) => {
+                        const 選ばれている = historySelectedTags.includes(タグ);
+                        return (
+                          <Pressable
+                            key={typeof タグ === 'string' ? タグ : `tag-${idx}`}
+                            style={({ hovered }) => [
+                              styles.tagChip,
+                              選ばれている && styles.tagChipActive,
+                              { backgroundColor: 選ばれている ? '#007AFF' : '#F2F2F7' },
+                              hovered && !選ばれている && { backgroundColor: '#E5E5EA' },
+                            ]}
+                            onPress={() => toggleHistoryTag(タグ)}
+                          >
+                            <Text style={[styles.tagChipText, 選ばれている && { color: '#FFF' }]}>
+                              {typeof タグ === 'string' && タグ.startsWith('#')
+                                ? タグ.substring(1)
+                                : String(タグ)}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </ScrollView>
+                  </View>
+                )}
+                {!検索の文 && (
+                  <>
+                    <View style={styles.yearSelectorContainer}>
+                      <Pressable
+                        style={({ hovered }) => [
+                          styles.yearButton,
+                          hovered && { backgroundColor: 'rgba(88,86,214,0.05)' },
+                        ]}
+                        onPress={() => 年度の窓を出す(true)}
+                      >
+                        <Text style={styles.yearButtonText}>
+                          {年度の一覧.length > 0
+                            ? `${見ている年度}年度 (${見ている年度}/04 - ${見ている年度 + 1}/03)`
+                            : '記録なし'}
+                        </Text>
+                        <Icons.Ionicons name="chevron-expand" size={14} color="#5856D6" />
+                      </Pressable>
+                    </View>
+                    <ScrollView // 月が多いと画面幅を超える。横スクロールにして
+                      // 隠れた月へ届かせる（上のタグチップと同じ作り）
+                      ref={月の横流し}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={styles.monthTabsScroll}
+                      contentContainerStyle={styles.monthTabsContent}
+                    >
+                      {月の一覧.map((月) => {
+                        const 選ばれている = 見ている月 === 月;
+                        return (
+                          <Pressable
+                            key={月}
+                            style={({ hovered }) => [
+                              styles.monthTab,
+                              選ばれている && styles.monthTabActive,
+                              hovered && !選ばれている && { backgroundColor: '#E5E5EA' },
+                            ]}
+                            onPress={() => 見ている月を置く(月)}
+                          >
+                            <Text style={[styles.monthTabText, 選ばれている && styles.monthTabTextActive]}>
+                              {月.split('/')[1]}月
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </ScrollView>
+                  </>
+                )}
+                {!!検索の文 && (
+                  <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
+                    <Text style={{ fontSize: 13, color: '#8E8E93' }}>
+                      「{検索の文}
+                      {'」の全期間検索結果: '}
+                      {絞った記録.length}件
+                    </Text>
+                  </View>
+                )}
+              </>
+            }
             data={絞った記録}
             renderItem={記録の行}
             keyExtractor={(記録, idx) => (typeof 記録.id === 'string' ? 記録.id : `history-item-${idx}`)}

@@ -138,7 +138,66 @@ const RecordScreen = () => {
     履歴の編集 = null,
     履歴の編集を終える,
     sessions: 記録たち = [],
-  } = useストアの一部(['activeSessionID', 'isAdminMode', 'archers', 'shotsPerRound', 'syncStatus', 'lastSyncTime', 'isNetworkOnline', 'offlineSaveWarning', '再ログインの案内', 'addArcher', 'addSeparator', 'setSeparatorTeam', 'toggleTotalScope', '列を動かす', '列を並べ替える', 'addTotalCalculator', 'undo', 'redo', 'historyStack', 'redoStack', 'clearArcherMarks', 'setArcherMember', 'saveSession', 'setShotsPerRound', 'viewScale', 'setViewScale', 'isLiveActive', 'setIsLiveActive', 'isHost', 'liveSessionName', 'includeInStats', 'setIncludeInStats', 'resetCurrentSession', 'members', 'isHydrated', 'lastResetHandled', 'historyNoticeAt', 'historyNoticeKind', 'historySharedLen', 'historySharedMax', 'activeGroupId', 'publicGroupId', 'activeArrowLocationEdit', 'setActiveArrowLocationEdit', '保存時に出欠を確認する', '鍵を開けた時刻', '閉じたますを押した時刻', '閲覧でますを押した時刻', '横に並べる', 'set横に並べる', '帯を畳む', 'set帯を畳む', '帯の取っ手は左', 'set帯の取っ手は左', 'ライブは見るだけ', '履歴の編集', '履歴の編集を終える', 'sessions']);
+  } = useストアの一部([
+    'activeSessionID',
+    'isAdminMode',
+    'archers',
+    'shotsPerRound',
+    'syncStatus',
+    'lastSyncTime',
+    'isNetworkOnline',
+    'offlineSaveWarning',
+    '再ログインの案内',
+    'addArcher',
+    'addSeparator',
+    'setSeparatorTeam',
+    'toggleTotalScope',
+    '列を動かす',
+    '列を並べ替える',
+    'addTotalCalculator',
+    'undo',
+    'redo',
+    'historyStack',
+    'redoStack',
+    'clearArcherMarks',
+    'setArcherMember',
+    'saveSession',
+    'setShotsPerRound',
+    'viewScale',
+    'setViewScale',
+    'isLiveActive',
+    'setIsLiveActive',
+    'isHost',
+    'liveSessionName',
+    'includeInStats',
+    'setIncludeInStats',
+    'resetCurrentSession',
+    'members',
+    'isHydrated',
+    'lastResetHandled',
+    'historyNoticeAt',
+    'historyNoticeKind',
+    'historySharedLen',
+    'historySharedMax',
+    'activeGroupId',
+    'publicGroupId',
+    'activeArrowLocationEdit',
+    'setActiveArrowLocationEdit',
+    '保存時に出欠を確認する',
+    '鍵を開けた時刻',
+    '閉じたますを押した時刻',
+    '閲覧でますを押した時刻',
+    '横に並べる',
+    'set横に並べる',
+    '帯を畳む',
+    'set帯を畳む',
+    '帯の取っ手は左',
+    'set帯の取っ手は左',
+    'ライブは見るだけ',
+    '履歴の編集',
+    '履歴の編集を終える',
+    'sessions',
+  ]);
   const 航路 = 航.useNavigation();
   // ライブ中の帯。主催者は押して配る窓を開けるので、押せる部品にする
   const ライブの帯 = isHost ? TouchableOpacity : View;
@@ -1180,7 +1239,15 @@ const RecordScreen = () => {
       )}
       {/* 拡大率の選択。射数の選択と同じ形にしてある */}
       <Modal visible={拡大選択中} transparent animationType="fade" onRequestClose={() => 拡大を選ぶ(false)}>
-        <View style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 40 }}>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            paddingBottom: 40,
+            paddingTop: 16,
+          }}
+        >
           {/* 背景は「中身の親」ではなく「兄弟」にしてある。 */
           /* 親にすると、バーを掴んで離したときの click が背景まで伝わり、 */
           /* 倍率を合わせるたびに閉じてしまう */}
@@ -1195,10 +1262,13 @@ const RecordScreen = () => {
             }}
             onPress={() => 拡大を選ぶ(false)}
           />
+          {/* 横向きのスマホでは画面に収まらず、下の倍率とキャンセルに届かなかった（2026-09-26）。 */
+          /* 窓は画面の高さまでに縮め、倍率の並びだけを流す（見出しとバーは上に残す） */}
           <View
             style={{
               width: '90%',
               maxWidth: 400,
+              flexShrink: 1,
               backgroundColor: '#FFF',
               borderRadius: 14,
               overflow: 'hidden',
@@ -1260,45 +1330,47 @@ const RecordScreen = () => {
               </TouchableOpacity>
               <Text style={styles.バーの数字}>{Math.round(倍率 * 100)}%</Text>
             </View>
-            {[0.5, 0.75, 1, 1.25, 1.5, 2].map((倍) => (
-              <Pressable
-                key={`zoom-option-${倍}`}
-                style={({ hovered }) => [
-                  {
-                    padding: 16,
-                    alignItems: 'center',
-                    borderBottomWidth: StyleSheet.hairlineWidth,
-                    borderBottomColor: '#C6C6C8',
-                  },
-                  hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
-                  Math.abs(倍率 - 倍) < 0.01 && { backgroundColor: '#EAF3FF' },
-                ]}
-                onPress={() => {
-                  setViewScale(倍);
-                  ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
-                  拡大を選ぶ(false);
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 20,
-                    color: '#007AFF',
-                    fontWeight: Math.abs(倍率 - 倍) < 0.01 ? 'bold' : 'normal',
+            <ScrollView style={{ flexGrow: 0, flexShrink: 1 }}>
+              {[0.5, 0.75, 1, 1.25, 1.5, 2].map((倍) => (
+                <Pressable
+                  key={`zoom-option-${倍}`}
+                  style={({ hovered }) => [
+                    {
+                      padding: 16,
+                      alignItems: 'center',
+                      borderBottomWidth: StyleSheet.hairlineWidth,
+                      borderBottomColor: '#C6C6C8',
+                    },
+                    hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
+                    Math.abs(倍率 - 倍) < 0.01 && { backgroundColor: '#EAF3FF' },
+                  ]}
+                  onPress={() => {
+                    setViewScale(倍);
+                    ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
+                    拡大を選ぶ(false);
                   }}
                 >
-                  {Math.round(倍 * 100)}%{1 === 倍 ? '（標準）' : ''}
-                </Text>
+                  <Text
+                    style={{
+                      fontSize: 20,
+                      color: '#007AFF',
+                      fontWeight: Math.abs(倍率 - 倍) < 0.01 ? 'bold' : 'normal',
+                    }}
+                  >
+                    {Math.round(倍 * 100)}%{1 === 倍 ? '（標準）' : ''}
+                  </Text>
+                </Pressable>
+              ))}
+              <Pressable
+                style={({ hovered }) => [
+                  { padding: 16, alignItems: 'center' },
+                  hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
+                ]}
+                onPress={() => 拡大を選ぶ(false)}
+              >
+                <Text style={{ fontSize: 17, color: '#8E8E93' }}>キャンセル</Text>
               </Pressable>
-            ))}
-            <Pressable
-              style={({ hovered }) => [
-                { padding: 16, alignItems: 'center' },
-                hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
-              ]}
-              onPress={() => 拡大を選ぶ(false)}
-            >
-              <Text style={{ fontSize: 17, color: '#8E8E93' }}>キャンセル</Text>
-            </Pressable>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -1310,13 +1382,17 @@ const RecordScreen = () => {
             justifyContent: 'flex-end',
             alignItems: 'center',
             paddingBottom: 40,
+            paddingTop: 16,
           }}
           onPress={射数の窓を閉じる}
         >
+          {/* 横向きのスマホでは画面に収まらず、4射・8射に届かなかった（2026-09-26）。 */
+          /* 窓は画面の高さまでに縮め、射数の並びだけを流す（見出しとキャンセルは残す） */}
           <View
             style={{
               width: '90%',
               maxWidth: 400,
+              flexShrink: 1,
               backgroundColor: '#FFF',
               borderRadius: 14,
               overflow: 'hidden',
@@ -1332,41 +1408,43 @@ const RecordScreen = () => {
             >
               <Text style={{ fontSize: 13, color: '#8E8E93', fontWeight: '600' }}>射数の設定</Text>
             </View>
-            {[4, 8, 12, 16, 20].map((本数) => (
+            <ScrollView style={{ flexGrow: 0, flexShrink: 1 }}>
+              {[4, 8, 12, 16, 20].map((本数) => (
+                <Pressable
+                  key={`shot-option-${本数}`}
+                  style={({ hovered }) => [
+                    {
+                      padding: 18,
+                      alignItems: 'center',
+                      borderBottomWidth: StyleSheet.hairlineWidth,
+                      borderBottomColor: '#C6C6C8',
+                    },
+                    hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
+                  ]}
+                  onPress={() => {
+                    射数を変える(本数);
+                    射数の窓を閉じる();
+                  }}
+                >
+                  <Text style={{ fontSize: 20, color: '#007AFF' }}>{本数}射</Text>
+                </Pressable>
+              ))}
               <Pressable
-                key={`shot-option-${本数}`}
                 style={({ hovered }) => [
-                  {
-                    padding: 18,
-                    alignItems: 'center',
-                    borderBottomWidth: StyleSheet.hairlineWidth,
-                    borderBottomColor: '#C6C6C8',
-                  },
+                  { padding: 18, alignItems: 'center' },
                   hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
                 ]}
                 onPress={() => {
-                  射数を変える(本数);
                   射数の窓を閉じる();
+                  setTimeout(() => {
+                    射数の下書きを置く(String(shotsPerRound));
+                    射数の入力窓を出す(true);
+                  }, 100);
                 }}
               >
-                <Text style={{ fontSize: 20, color: '#007AFF' }}>{本数}射</Text>
+                <Text style={{ fontSize: 20, color: '#007AFF' }}>任意...</Text>
               </Pressable>
-            ))}
-            <Pressable
-              style={({ hovered }) => [
-                { padding: 18, alignItems: 'center' },
-                hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
-              ]}
-              onPress={() => {
-                射数の窓を閉じる();
-                setTimeout(() => {
-                  射数の下書きを置く(String(shotsPerRound));
-                  射数の入力窓を出す(true);
-                }, 100);
-              }}
-            >
-              <Text style={{ fontSize: 20, color: '#007AFF' }}>任意...</Text>
-            </Pressable>
+            </ScrollView>
           </View>
           <Pressable
             style={({ hovered }) => [
