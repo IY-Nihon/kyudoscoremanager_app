@@ -1577,13 +1577,18 @@ const AIChatBot = () => {
         } else if (一時の誤りか) {
           errorMsg = 'AI の返事が届きませんでした。少し待ってからもう一度送信してください。';
         } else if (状態番号 === 400) {
-          errorMsg = '送った内容を AI が受け付けませんでした。もう一度送信してください。続くときは、チャットを閉じて開き直してください。';
+          errorMsg =
+            '送った内容を AI が受け付けませんでした。もう一度送信してください。続くときは、チャットを閉じて開き直してください。';
         } else {
           // 英語の原文は出さない（読めないうえ、どうすればよいか分からない）。原文は記録と便りに残す
           errorMsg = `AI からの返事を受け取れませんでした${状態番号 ? `（${状態番号}）` : ''}。もう一度送信してください。`;
         }
         setMessages([...newMessages, { id: generateMsgId(), role: 'model', text: errorMsg }]);
-        改善のために({ 答え: errorMsg, 結果: '失敗', 誤り: String((error && error.message) || error).slice(0, 300) });
+        改善のために({
+          答え: errorMsg,
+          結果: '失敗',
+          誤り: String((error && error.message) || error).slice(0, 300),
+        });
         break;
       }
     } // end while
@@ -1616,7 +1621,12 @@ const AIChatBot = () => {
         </View>
       </Animated.View>
 
-      <Modal visible={modalVisible} animationType="slide" transparent={true}>
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalVisible(false)}
+      >
         <KeyboardAvoidingView behavior="height" style={styles.modalOverlay}>
           <View
             style={[

@@ -1526,7 +1526,12 @@ const RecordScreen = () => {
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
-      <Modal visible={ライブ名の窓} transparent animationType="fade">
+      <Modal
+        visible={ライブ名の窓}
+        transparent
+        animationType="fade"
+        onRequestClose={() => ライブ名の窓を出す(false)}
+      >
         <View
           style={{
             flex: 1,

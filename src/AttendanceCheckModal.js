@@ -118,7 +118,7 @@ const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
     </View>
   );
   return (
-    <Modal visible={visible} transparent animationType="fade">
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.container}>
           <View style={styles.header}>
