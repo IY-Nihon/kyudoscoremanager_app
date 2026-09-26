@@ -250,6 +250,21 @@ const OCRRecordModal = ({
     resetAll();
     onClose && onClose();
   };
+  // 戻るボタン（と web の Esc）で閉じるとき。読んでいる途中や読んだあとは、捨ててよいかを聞く。
+  // ×と違って戻るはうっかり押しやすく、読み直しには時間がかかる（2026-09-26、戻るで窓を閉じるようにしたとき）
+  const 戻るで閉じるとき = () => {
+    if ('pick' === step) return void handleClose();
+    Alert.alert(
+      '読み取った内容を捨てますか？',
+      'analyzing' === step
+        ? '読み取りをやめて閉じます。'
+        : '閉じると、読み取った結果と直した内容は残りません。',
+      [
+        { text: '続ける', style: 'cancel' },
+        { text: '捨てて閉じる', style: 'destructive', onPress: handleClose },
+      ]
+    );
+  };
 
   // Realtime同期の反映タイミング等で同一IDのメンバーが重複して配列に含まれるケースがあるため、
   // ID単位で重複除去してから名寄せ候補として使う（重複していると完全一致でも「要確認」に落ちてしまうため）
@@ -337,7 +352,9 @@ const OCRRecordModal = ({
     読み取りの記録id.current = id;
     const 写真たち = (images || []).map((一枚) => 一枚 && 一枚.base64).filter(Boolean);
     // 縮められなければ（読めない形式など）元の写真をそのまま送る（5MB まで）
-    Promise.all(写真たち.map((b) => 記録.写真を縮める(b).then((小) => 小 || 記録.base64をBlobに(b, 'image/jpeg'))))
+    Promise.all(
+      写真たち.map((b) => 記録.写真を縮める(b).then((小) => 小 || 記録.base64をBlobに(b, 'image/jpeg')))
+    )
       .then((縮めた) =>
         記録.改善のために取っておく(
           '写真読み取り',
@@ -1260,7 +1277,7 @@ const OCRRecordModal = ({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={handleClose}>
+    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={戻るで閉じるとき}>
       <View style={styles.overlay}>
         <View
           style={[styles.container, getShadowStyle({ shadowOpacity: 0.15, shadowRadius: 12, elevation: 12 })]}

@@ -30,6 +30,8 @@ const { UIConfig } = require('./uiConfig');
 const Icons = require('@expo/vector-icons');
 const ExpoHaptics = require('expo-haptics');
 const { EditSessionModal } = require('./EditSessionModal');
+// 戻るボタンで記録詳細を閉じる（窓は src/rn.js の Modal が同じことをする）
+const { 戻るで閉じる } = require('./backToClose');
 const { ArcherActionModal } = require('./ArcherActionModal');
 const { ManualSubstitutionModal } = require('./ManualSubstitutionModal');
 const { getShadowStyle } = require('./shadowStyle');
@@ -174,6 +176,14 @@ const HistoryScreen = () => {
       見ている記録.id === ゴミ箱の記録 &&
       !sessions.some((記録1件) => 記録1件 && 記録1件.id === 見ている記録.id) &&
       trash.some((記録1件) => 記録1件 && 記録1件.id === 見ている記録.id);
+  // 記録詳細から一覧へ戻る（画面の「戻る」と同じ）。ゴミ箱から来たなら、ゴミ箱へ戻す
+  const 一覧へ戻る = () => {
+    setHistoryViewMode('list');
+    if (ゴミ箱を見ている) (setゴミ箱の記録(null), ゴミ箱の窓を出す(true));
+    else if (!見ている記録) setゴミ箱の記録(null);
+  };
+  // 戻るボタンでも記録詳細を閉じる。閉じないと前のタブへ移り、履歴は詳細のまま残る（src/backToClose.js）
+  戻るで閉じる('detail' === historyViewMode, 一覧へ戻る);
   const mySessions = React.useMemo(() => {
     let 一覧 = sessions || [];
     const 部員ID = myMemberId;
@@ -376,10 +386,7 @@ const HistoryScreen = () => {
           }}
         >
           <Pressable // ゴミ箱から来たなら、ゴミ箱へ戻す
-            onPress={() => {
-              setHistoryViewMode('list');
-              ゴミ箱を見ている && (setゴミ箱の記録(null), ゴミ箱の窓を出す(true));
-            }}
+            onPress={一覧へ戻る}
             style={({ hovered }) => [
               { flexDirection: 'row', alignItems: 'center', paddingRight: 12, borderRadius: 8, padding: 4 },
               hovered && { backgroundColor: 'rgba(0,122,255,0.05)' },
@@ -1314,7 +1321,7 @@ const HistoryScreen = () => {
           />
         </View>
       )}
-      <Modal visible={年度の窓} transparent animationType="fade">
+      <Modal visible={年度の窓} transparent animationType="fade" onRequestClose={() => 年度の窓を出す(false)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => 年度の窓を出す(false)}>
           <View style={styles.yearModal}>
             <Text style={styles.yearModalTitle}>年度を選択</Text>
@@ -1337,7 +1344,12 @@ const HistoryScreen = () => {
           </View>
         </TouchableOpacity>
       </Modal>
-      <Modal visible={ゴミ箱の窓} transparent animationType="slide">
+      <Modal
+        visible={ゴミ箱の窓}
+        transparent
+        animationType="slide"
+        onRequestClose={() => ゴミ箱の窓を出す(false)}
+      >
         <View
           style={{
             flex: 1,
@@ -1566,7 +1578,12 @@ const HistoryScreen = () => {
           </View>
         </View>
       </Modal>
-      <Modal visible={削除の確認} transparent animationType="fade">
+      <Modal
+        visible={削除の確認}
+        transparent
+        animationType="fade"
+        onRequestClose={() => (削除の確認を出す(false), 消す記録IDを置く(null))}
+      >
         <View style={styles.confirmOverlay}>
           <View style={styles.confirmModal}>
             <Text style={styles.confirmTitle}>{消す記録ID ? '記録を削除' : '選択した記録を削除'}</Text>

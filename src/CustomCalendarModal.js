@@ -85,7 +85,7 @@ const CustomCalendarModal = ({ visible, onClose, selectedDate, onSelectDate, tit
     return Array.from({ length: 日数 }, (_, 番) => 番 + 1);
   }, [DateFns.getYear(選んでいる日), DateFns.getMonth(選んでいる日)]);
   return (
-    <Modal visible={visible} transparent animationType="slide">
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <TouchableOpacity style={styles.dismissOverlay} activeOpacity={1} onPress={onClose} />
         <View style={styles.container}>

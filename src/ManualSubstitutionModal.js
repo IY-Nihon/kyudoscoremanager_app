@@ -79,7 +79,7 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose }) => {
     onClose();
   };
   return visible ? (
-    <Modal visible={visible} transparent animationType="slide">
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={IS_IOS ? 'padding' : undefined} style={styles.overlay}>
         <TouchableWithoutFeedback onPress={入力を空にする}>
           <View style={StyleSheet.absoluteFill} />

@@ -24,8 +24,17 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
     alumni: alumniState = [],
   } = useScoreStore();
   const allMembers = React.useMemo(() => [...membersState, ...alumniState], [membersState, alumniState]);
+  // 下書きを作り直すのは、窓を開いたときと、別の記録に替わったときだけ。
+  // 同じ記録が雲から届き直すと（同期で記録の一覧が入れ替わると、中身が同じでも別のオブジェクトになる）、
+  // 打っている途中の題・タグ・出欠が開いたときの内容に戻っていた（2026-09-26 に e2e で踏んだ）
+  const 下書きの記録 = React.useRef(null);
   React.useEffect(() => {
-    if (session) {
+    if (!visible) {
+      下書きの記録.current = null;
+      return;
+    }
+    if (session && 下書きの記録.current !== session.id) {
+      下書きの記録.current = session.id;
       題を置く(session.title || '');
       覚え書きを置く(session.note || '');
       本数を置く(session.shotCount || 8);
@@ -419,7 +428,12 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
         }}
         onClose={() => 暦を出すを置く(false)}
       />
-      <Modal visible={射数の確認} transparent animationType="fade">
+      <Modal
+        visible={射数の確認}
+        transparent
+        animationType="fade"
+        onRequestClose={() => 射数の確認を出す(false)}
+      >
         <View style={styles.confirmBackdrop}>
           <View style={styles.confirmBox}>
             <Text style={styles.confirmTitle}>射数の変更</Text>

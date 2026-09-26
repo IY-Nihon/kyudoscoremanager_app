@@ -58,7 +58,7 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
       : 統計を聞いているを置く(true);
   };
   return (
-    <Modal visible={visible} transparent animationType="fade">
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={Keyboard.dismiss} />
         <KeyboardAvoidingView behavior={IS_IOS ? 'padding' : undefined} style={styles.container}>

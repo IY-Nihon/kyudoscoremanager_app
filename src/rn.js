@@ -68,7 +68,19 @@ StyleSheet.create = function create(styles) {
   return 出;
 };
 
-const 差し替え = { Text, TextInput, StyleSheet, Alert: require('./alertBridge').default };
+/**
+ * 窓。開いているあいだは、戻るボタンで onRequestClose を呼んで閉じる（src/backToClose.js）。
+ * 素のままだと、窓を開いたまま戻るを押すと前のタブへ移り、窓が開いたまま残る。
+ * 閉じる手（onRequestClose）を渡していない窓は、戻るで閉じない（今までどおり）
+ */
+const { 戻るで閉じる } = require('./backToClose');
+const Modal = React.forwardRef(function Modal(props, ref) {
+  戻るで閉じる(props.visible !== false, props.onRequestClose);
+  return React.createElement(RN.Modal, Object.assign({ ref }, props));
+});
+Modal.displayName = 'Modal';
+
+const 差し替え = { Text, TextInput, StyleSheet, Modal, Alert: require('./alertBridge').default };
 
 for (const 名 of Object.keys(RN)) {
   if (名 in 差し替え) continue;

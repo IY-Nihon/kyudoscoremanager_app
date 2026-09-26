@@ -740,10 +740,20 @@ const MemberScreen = () => {
           ) : null
         }
       />
-      <Modal visible={編集の窓} animationType="slide" transparent>
+      <Modal
+        visible={編集の窓}
+        animationType="slide"
+        transparent
+        onRequestClose={() => 編集の窓を出す(false)}
+      >
         <View style={styles.modalOverlay}>{編集の中身(true)}</View>
       </Modal>
-      <Modal visible={弓具の窓} animationType="slide" transparent>
+      <Modal
+        visible={弓具の窓}
+        animationType="slide"
+        transparent
+        onRequestClose={() => 弓具の窓を出す(false)}
+      >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { height: '80%', padding: 0 }]}>
             {弓具履歴の中身(編集中の部員?.id, true)}
