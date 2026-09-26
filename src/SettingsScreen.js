@@ -104,7 +104,43 @@ const SettingsScreen = () => {
     setEnableArrowLocation,
     setArrowTargetType,
     sessions: sList = [],
-  } = useストアの一部(['currentFreshmanTerm', 'alumni', 'trash', 'shotsPerRound', 'updateCurrentFreshmanTerm', 'syncStatus', 'lastSyncTime', 'isNetworkOnline', 'syncAllToCloud', 'activeGroupId', 'activeGroupName', 'updateGroupName', 'activeRole', 'myMemberId', 'myMemberName', 'members', 'setAuth', 'isAdminMode', '自動ロックする', 'set自動ロックする', '保存時に出欠を確認する', 'set保存時に出欠を確認する', 'setAdminMode', 'verifyGroupPassword', 'deleteGroupAccount', 'tagTemplates', 'addTagTemplate', 'removeTagTemplate', 'autoPromotionEnabled', 'setAutoPromotionEnabled', 'enableArrowLocation', 'arrowTargetType', 'setEnableArrowLocation', 'setArrowTargetType', 'sessions']);
+  } = useストアの一部([
+    'currentFreshmanTerm',
+    'alumni',
+    'trash',
+    'shotsPerRound',
+    'updateCurrentFreshmanTerm',
+    'syncStatus',
+    'lastSyncTime',
+    'isNetworkOnline',
+    'syncAllToCloud',
+    'activeGroupId',
+    'activeGroupName',
+    'updateGroupName',
+    'activeRole',
+    'myMemberId',
+    'myMemberName',
+    'members',
+    'setAuth',
+    'isAdminMode',
+    '自動ロックする',
+    'set自動ロックする',
+    '保存時に出欠を確認する',
+    'set保存時に出欠を確認する',
+    'setAdminMode',
+    'verifyGroupPassword',
+    'deleteGroupAccount',
+    'tagTemplates',
+    'addTagTemplate',
+    'removeTagTemplate',
+    'autoPromotionEnabled',
+    'setAutoPromotionEnabled',
+    'enableArrowLocation',
+    'arrowTargetType',
+    'setEnableArrowLocation',
+    'setArrowTargetType',
+    'sessions',
+  ]);
   const [書き出しの窓, 書き出しの窓を出す] = React.useState(false);
   const [ガイドの窓, ガイドの窓を出す] = React.useState(false);
   const [ログアウトの窓, ログアウトの窓を出す] = React.useState(false);
@@ -1575,101 +1611,111 @@ const SettingsScreen = () => {
             activeOpacity={1}
             onPress={() => !削除の段階 && 削除の窓を開く(false)}
           />
-          <View style={styles.modalContent}>
-            <Text style={[styles.modalTitle, { color: '#FF3B30' }]}>アカウントを削除する</Text>
-            <Text style={[styles.modalMessage, { textAlign: 'left' }]}>
-              {`団体「${activeGroupName || activeGroupId || ''}」のアカウントを削除します。\n\n` +
-                '・記録・部員・卒業生・ゴミ箱・設定がすべて消え、団体IDでログインできなくなります。\n' +
-                '・部員も、この団体には入れなくなります。\n' +
-                '・削除後30日間は復旧のために運営者が保管し、その後に消去します。この画面から戻すことはできません。\n' +
-                '・必要な記録は、先に「データ管理」から書き出してください。\n\n' +
-                '続けるには団体パスワードを入力してください。'}
-            </Text>
-            <View
-              style={[
-                styles.filterInput,
-                {
-                  width: '100%',
-                  marginBottom: 10,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingHorizontal: 12,
-                },
-              ]}
+          {/* 説明が長いので流せるようにする。横向きのスマホでは「キャンセル」に届かなかった（2026-09-26） */}
+          <View style={[styles.modalContent, { maxHeight: '90%', padding: 0 }]}>
+            <ScrollView
+              style={{ flexGrow: 0, flexShrink: 1 }}
+              contentContainerStyle={{ padding: 20, alignItems: 'center' }}
+              keyboardShouldPersistTaps="handled"
             >
-              <TextInput
-                style={{ flex: 1, height: 48, fontSize: 16 }}
-                placeholder="団体パスワード"
-                secureTextEntry={!showPw}
-                value={削除の合言葉}
-                onChangeText={削除の合言葉を設定}
-                editable={!削除の段階}
-              />
-              <Pressable
-                accessible
-                accessibilityRole="button"
-                accessibilityLabel="パスワードの表示を切り替える"
-                aria-label="パスワードの表示を切り替える"
-                onPress={() => setShowPw(!showPw)}
-                style={{ padding: 4 }}
-              >
-                <Icons.Ionicons name={showPw ? 'eye-off' : 'eye'} size={20} color="#8E8E93" />
-              </Pressable>
-            </View>
-            {!!削除の失敗 && (
-              <Text style={{ color: '#FF3B30', fontSize: 13, marginBottom: 10 }}>{削除の失敗}</Text>
-            )}
-            {!!削除の段階 && (
-              <Text style={{ color: '#8E8E93', fontSize: 13, marginBottom: 10 }}>{`${削除の段階}…`}</Text>
-            )}
-            <View style={styles.modalButtonsRow}>
-              <Pressable
-                style={({ hovered }) => [
-                  styles.modalBtn,
-                  { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
-                  hovered && { backgroundColor: '#E5E5EA' },
-                  IS_WEB && { cursor: 'pointer' },
+              <Text style={[styles.modalTitle, { color: '#FF3B30' }]}>アカウントを削除する</Text>
+              <Text style={[styles.modalMessage, { textAlign: 'left' }]}>
+                {`団体「${activeGroupName || activeGroupId || ''}」のアカウントを削除します。\n\n` +
+                  '・記録・部員・卒業生・ゴミ箱・設定がすべて消え、団体IDでログインできなくなります。\n' +
+                  '・部員も、この団体には入れなくなります。\n' +
+                  '・削除後30日間は復旧のために運営者が保管し、その後に消去します。この画面から戻すことはできません。\n' +
+                  '・必要な記録は、先に「データ管理」から書き出してください。\n\n' +
+                  '続けるには団体パスワードを入力してください。'}
+              </Text>
+              <View
+                style={[
+                  styles.filterInput,
+                  {
+                    width: '100%',
+                    marginBottom: 10,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingHorizontal: 12,
+                  },
                 ]}
-                onPress={() => 削除の窓を開く(false)}
-                disabled={!!削除の段階}
               >
-                <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
-              </Pressable>
-              <Pressable
-                style={({ hovered }) => [
-                  styles.modalBtn,
-                  { backgroundColor: '#FF3B30', flex: 1, marginLeft: 5 },
-                  hovered && { backgroundColor: '#D70015' },
-                  (!!削除の段階 || !削除の合言葉) && { opacity: 0.5 },
-                  IS_WEB && { cursor: 'pointer' },
-                ]}
-                onPress={async () => {
-                  if (!削除の合言葉 || 削除の段階) return;
-                  削除の失敗を設定('');
-                  削除の段階を設定('本人確認');
-                  const 結果 = await 団体を消す(削除の合言葉, (文) => 削除の段階を設定(文));
-                  if (!結果.ok) {
+                <TextInput
+                  style={{ flex: 1, height: 48, fontSize: 16 }}
+                  placeholder="団体パスワード"
+                  secureTextEntry={!showPw}
+                  value={削除の合言葉}
+                  onChangeText={削除の合言葉を設定}
+                  editable={!削除の段階}
+                />
+                <Pressable
+                  accessible
+                  accessibilityRole="button"
+                  accessibilityLabel="パスワードの表示を切り替える"
+                  aria-label="パスワードの表示を切り替える"
+                  onPress={() => setShowPw(!showPw)}
+                  style={{ padding: 4 }}
+                >
+                  <Icons.Ionicons name={showPw ? 'eye-off' : 'eye'} size={20} color="#8E8E93" />
+                </Pressable>
+              </View>
+              {!!削除の失敗 && (
+                <Text style={{ color: '#FF3B30', fontSize: 13, marginBottom: 10 }}>{削除の失敗}</Text>
+              )}
+              {!!削除の段階 && (
+                <Text style={{ color: '#8E8E93', fontSize: 13, marginBottom: 10 }}>{`${削除の段階}…`}</Text>
+              )}
+              <View style={styles.modalButtonsRow}>
+                <Pressable
+                  style={({ hovered }) => [
+                    styles.modalBtn,
+                    { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
+                    hovered && { backgroundColor: '#E5E5EA' },
+                    IS_WEB && { cursor: 'pointer' },
+                  ]}
+                  onPress={() => 削除の窓を開く(false)}
+                  disabled={!!削除の段階}
+                >
+                  <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
+                </Pressable>
+                <Pressable
+                  style={({ hovered }) => [
+                    styles.modalBtn,
+                    { backgroundColor: '#FF3B30', flex: 1, marginLeft: 5 },
+                    hovered && { backgroundColor: '#D70015' },
+                    (!!削除の段階 || !削除の合言葉) && { opacity: 0.5 },
+                    IS_WEB && { cursor: 'pointer' },
+                  ]}
+                  onPress={async () => {
+                    if (!削除の合言葉 || 削除の段階) return;
+                    削除の失敗を設定('');
+                    削除の段階を設定('本人確認');
+                    const 結果 = await 団体を消す(削除の合言葉, (文) => 削除の段階を設定(文));
+                    if (!結果.ok) {
+                      削除の段階を設定('');
+                      削除の失敗を設定(結果.訳 || '削除に失敗しました');
+                      return;
+                    }
+                    削除の窓を開く(false);
                     削除の段階を設定('');
-                    削除の失敗を設定(結果.訳 || '削除に失敗しました');
-                    return;
-                  }
-                  削除の窓を開く(false);
-                  削除の段階を設定('');
-                  try {
-                    await FirebaseAuth.signOut(auth);
-                  } catch (誤り) {
-                    // 口座はもう無いので、ここで失敗しても構わない
-                  }
-                  setAuth(null, null, null, null);
-                  Alert.alert('削除しました', '団体アカウントを削除しました。ご利用ありがとうございました。');
-                }}
-                disabled={!!削除の段階 || !削除の合言葉}
-              >
-                <Text style={[styles.modalBtnText, { color: '#FFF' }]}>
-                  {削除の段階 ? '削除中…' : '削除する'}
-                </Text>
-              </Pressable>
-            </View>
+                    try {
+                      await FirebaseAuth.signOut(auth);
+                    } catch (誤り) {
+                      // 口座はもう無いので、ここで失敗しても構わない
+                    }
+                    setAuth(null, null, null, null);
+                    Alert.alert(
+                      '削除しました',
+                      '団体アカウントを削除しました。ご利用ありがとうございました。'
+                    );
+                  }}
+                  disabled={!!削除の段階 || !削除の合言葉}
+                >
+                  <Text style={[styles.modalBtnText, { color: '#FFF' }]}>
+                    {削除の段階 ? '削除中…' : '削除する'}
+                  </Text>
+                </Pressable>
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
