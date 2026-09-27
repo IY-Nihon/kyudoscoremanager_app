@@ -54,14 +54,14 @@ if (IS_WEB && typeof window !== 'undefined') {
     },
     // 1マスの切り抜きと、網に届く形（20×20）を返す。読み違えたマスを Node と比べるため
     マスを見る: async (base64, 板の人数たち, 行数, 板, 列, 行, 箱たち) => {
-      const { 板ごとの格子, 箱の大きさ } = require('../scripts/ocr-cells/kiridasu.mjs');
+      const { 板ごとの格子, 箱の大きさ, マスの中心y, マスの中心x } = require('../scripts/ocr-cells/kiridasu.mjs');
       const { 形にする, 切り取る, 辺 } = require('../scripts/ocr-cells/manabu.mjs');
       const 元 = await 画像の道具.画を読む(base64);
       const 板たち = await 板ごとの格子(元, { 板の人数たち, 行数, 回す: 画像の道具.回す, 箱たち });
       const 格子 = 板たち[板].格子;
       const { 半幅, 半高 } = 箱の大きさ(格子);
-      const 左 = Math.max(0, Math.round(格子.列[列].中心) - 半幅);
-      const 上 = Math.max(0, Math.round(格子.行.位置[行] + (格子.列[列].ずれ || 0)) - 半高);
+      const 左 = Math.max(0, Math.round(マスの中心x(格子, 列, 行)) - 半幅);
+      const 上 = Math.max(0, Math.round(マスの中心y(格子, 列, 行)) - 半高);
       const 切 = 切り取る(格子.生.画素, 格子.生.幅, 格子.生.高, 左, 上, 半幅 * 2, 半高 * 2);
       // 板の印を読む と同じ注文で（印の幅が無いと、薄い輪の拾い直しが掛からず本番と違う形になる）
       const 形 = await 形にする(切.画, 切.幅, 切.高, 格子.立て方 ? 'ぎっしり' : undefined, {
