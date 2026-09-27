@@ -8,7 +8,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
-import { 箱の大きさ } from './kiridasu.mjs';
+import { 箱の大きさ, マスの中心y, マスの中心x } from './kiridasu.mjs';
 
 /** 写真を読む。明るさ（明暗を伸ばしたもの）と色を持つ */
 export async function 画を読む(みち) {
@@ -54,8 +54,8 @@ export async function マスを書き出す(格子の中身, 出し先, 札を�
   const 出 = [];
   for (let 列番 = 0; 列番 < 格子の中身.列.length; 列番++) {
     for (let 行番 = 0; 行番 < 格子の中身.行.位置.length; 行番++) {
-      const cx = Math.round(格子の中身.列[列番].中心);
-      const cy = Math.round(格子の中身.行.位置[行番] + (格子の中身.列[列番].ずれ || 0));
+      const cx = Math.round(マスの中心x(格子の中身, 列番, 行番));
+      const cy = Math.round(マスの中心y(格子の中身, 列番, 行番));
       const 左 = Math.max(0, cx - 半幅);
       const 上 = Math.max(0, cy - 半高);
       const w = Math.min(半幅 * 2, 格子の中身.幅 - 左);
