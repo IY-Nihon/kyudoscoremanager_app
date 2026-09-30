@@ -1616,7 +1616,7 @@ const AIChatBot = () => {
         accessibilityLabel="AIアシスタントを開く"
         aria-label="AIアシスタントを開く"
       >
-        <AIMascot マス={3.5} />
+        <AIMascot マス={3} />
         <View style={styles.badge}>
           <Text style={styles.badgeText}>AI</Text>
         </View>
@@ -1638,7 +1638,7 @@ const AIChatBot = () => {
           >
             <View style={styles.header}>
               <View style={styles.headerTitleRow}>
-                <AIMascot マス={2} 体="#007AFF" />
+                <AIMascot マス={2} 体="#007AFF" 弦="#8E8E93" />
                 <Text style={styles.headerTitle}>AIアシスタント</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
