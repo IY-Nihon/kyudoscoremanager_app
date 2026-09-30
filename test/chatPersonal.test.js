@@ -204,6 +204,9 @@ test('指示文：本人の分だけを扱う決まりと、断り方が入る�
 test('指示文：卒業生・名前が分からないときも壊れない', () => {
   const 基本 = 基本の指示文を読む();
   assert.ok(個人用.個人用の指示文(基本, { name: '山田', grade: 5 }).includes('（卒業生）'));
+  // 学年 0 は「その他」（画面と同じ。0年とは書かない）
+  const その他 = 個人用.個人用の指示文(基本, { name: '山田', grade: 0 });
+  assert.ok(その他.includes('（その他）') && !その他.includes('0年'));
   const 名無し = 個人用.個人用の指示文(基本, null);
   assert.ok(名無し.includes('本人'));
   assert.ok(!名無し.includes('undefined') && !名無し.includes('null'));
