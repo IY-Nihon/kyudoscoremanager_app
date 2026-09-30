@@ -11,6 +11,11 @@
  */
 'use strict';
 
+// ストアは作業ログを console.log で出す（日本語で始まる行もある）。node:test の子プロセスでは、
+// 標準出力の文字が結果の枠と同じ読み取りに入ると、親が読み違えてテストファイルごと落ちる
+// （Node v24.15.0 の不具合）。枠以外の出力を標準エラーへ回す（理由は quietStdout.cjs）
+require('./quietStdout.cjs');
+
 const path = require('path');
 const Module = require('module');
 
