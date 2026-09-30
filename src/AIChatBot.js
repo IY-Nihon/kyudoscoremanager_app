@@ -913,7 +913,7 @@ const AIChatBot = () => {
         // 部員一覧のみ渡す（トークン節約）。詳細成績はgetDetailedMemberStatsで取得
         const memberList = members
           .map((member) => {
-            const gradeLabel = member.grade >= 5 ? '卒業生' : `${member.grade}年`;
+            const gradeLabel = member.grade >= 5 ? '卒業生' : member.grade === 0 ? 'その他' : `${member.grade}年`;
             return `${member.name}(${gradeLabel})`;
           })
           .join(', ');

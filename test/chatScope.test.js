@@ -300,3 +300,49 @@ test('元のデータは書き換えない（画面の表示に影響しない�
   絞る();
   assert.strictEqual(JSON.stringify({ 部員たち, 記録たち }), 前);
 });
+
+test('想定外の形の記録が混ざっても落ちず、絞れなかった記録は渡さない（絞らずに渡す側へ倒さない）', () => {
+  // 読むと例外になる記録。絞る途中で落ちると、画面の描画ごと止まる
+  const 壊れた = {
+    id: 'bad',
+    get archers() {
+      throw new Error('壊れた記録');
+    },
+  };
+  // 中身の型が違う記録（列に null・文字・数、marks が文字、交代が文字・数）。落ちずに数えられること
+  const 変な形 = {
+    id: 'odd',
+    date: 1,
+    archers: [
+      null,
+      'あ',
+      42,
+      { id: 'x', name: '山田', marks: 'xxxx', substitutions: 'abc', substitutionIds: 7 },
+      { isSeparator: true },
+    ],
+  };
+  const 警告 = console.warn;
+  const 出た = [];
+  console.warn = (...引数) => 出た.push(引数.join(' '));
+  let 結果;
+  try {
+    結果 = 自分だけに絞る({
+      members: 部員たち,
+      sessions: [壊れた, null, undefined, 変な形, ...記録たち],
+      myMemberId: 'id-yamada',
+      myMemberName: '山田',
+    });
+  } finally {
+    console.warn = 警告;
+  }
+  const ids = 結果.sessions.map((s) => s.id);
+  assert.ok(!ids.includes('bad'), '絞れなかった記録を渡している');
+  assert.ok(ids.includes('odd'), '型が違うだけの記録まで捨てている');
+  for (const id of ['s1', 's3', 's4', 's5'])
+    assert.ok(ids.includes(id), `${id} が落ちている（1 件の失敗で全部を捨てた）`);
+  assert.strictEqual(出た.length, 1, '失敗を 1 件だけ知らせる');
+  assert.ok(出た[0].includes('壊れた記録'));
+  const 文 = JSON.stringify(結果);
+  for (const 他 of ['佐藤', '鈴木', '田中', 'id-sato', '2222'])
+    assert.ok(!文.includes(他), `「${他}」が残っている`);
+});

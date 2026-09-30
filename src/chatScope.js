@@ -123,21 +123,29 @@ function 自分だけに絞る(材料) {
     termKi: 本人 ? 本人.termKi : undefined,
   };
 
-  const 記録たち = (Array.isArray(素.sessions) ? 素.sessions : [])
-    .filter((記録) => 自分の記録か(記録, 自分id, 自分名))
-    .map((記録) => ({
-      id: 記録.id,
-      date: 記録.date,
-      title: 記録.title,
-      note: 記録.note,
-      tags: 記録.tags,
-      includeInStats: 記録.includeInStats,
-      // 並びはそのまま。自分の列（交代で入った列も）は氏名と他の人の射を落として残し、
-      // 他の人の列は空の列にする
-      archers: (Array.isArray(記録.archers) ? 記録.archers : []).map((射手) =>
-        自分の射手か(射手, 自分id, 自分名) ? 射手を絞る(射手, 自分id, 自分名) : 空の列にする(射手)
-      ),
-    }));
+  // 1 件ずつ絞る。想定外の形の記録で例外になっても、その記録を渡さずに捨てて先へ進む。
+  // 画面の描画ごと落とさず、絞れなかったものを「絞らずに渡す」側にも倒さない
+  const 記録たち = [];
+  for (const 記録 of Array.isArray(素.sessions) ? 素.sessions : []) {
+    try {
+      if (!自分の記録か(記録, 自分id, 自分名)) continue;
+      記録たち.push({
+        id: 記録.id,
+        date: 記録.date,
+        title: 記録.title,
+        note: 記録.note,
+        tags: 記録.tags,
+        includeInStats: 記録.includeInStats,
+        // 並びはそのまま。自分の列（交代で入った列も）は氏名と他の人の射を落として残し、
+        // 他の人の列は空の列にする
+        archers: (Array.isArray(記録.archers) ? 記録.archers : []).map((射手) =>
+          自分の射手か(射手, 自分id, 自分名) ? 射手を絞る(射手, 自分id, 自分名) : 空の列にする(射手)
+        ),
+      });
+    } catch (誤り) {
+      console.warn('[chatScope] 絞れなかった記録は渡しません:', 誤り && 誤り.message);
+    }
+  }
 
   return { members: [自分], sessions: 記録たち };
 }
