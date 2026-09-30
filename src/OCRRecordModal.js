@@ -399,6 +399,16 @@ const OCRRecordModal = ({
         await 中継.SDKの設定()
       );
 
+      // 試験用：globalThis.__OCR_STREAM があれば流し読みで読ませる（3.8 の比べ用。既定は通常の受け取り）。
+      // 流し読みは 3.8 で 27 秒、通常は 154 秒で 503 だった（2026-09-30）。まだ 15 枚の比べが済んでいない
+      const 生成する = async (parts) => {
+        if (typeof globalThis !== 'undefined' && globalThis.__OCR_STREAM) {
+          const 流れ = await model.generateContentStream(parts);
+          return { response: await 流れ.response };
+        }
+        return model.generateContent(parts);
+      };
+
       const 読ませる = async (指示文) => {
         const parts = [{ text: 指示文 }];
         images.forEach((img) => {
@@ -406,7 +416,7 @@ const OCRRecordModal = ({
         });
         let result;
         try {
-          result = await model.generateContent(parts);
+          result = await 生成する(parts);
         } catch (誤り) {
           // 503（模型が混んでいる）。中継が 2・4・8 秒待って 3 回送り直したうえでの 503 なので、
           // 山が長い。もう少し待ってから、もう一度だけ読む（配信した日に 2 回続けて出た。2026-09-20）
@@ -414,7 +424,7 @@ const OCRRecordModal = ({
           set混み待ち(true);
           try {
             await new Promise((r) => setTimeout(r, 8000));
-            result = await model.generateContent(parts);
+            result = await 生成する(parts);
           } finally {
             set混み待ち(false);
           }
