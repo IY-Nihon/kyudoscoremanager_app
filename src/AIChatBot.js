@@ -98,6 +98,9 @@ const { 練習日を読む } = require('./practiceDays');
 // 「何でも聞いてください」だけでは何を聞けるか分からない。
 // その団体の中身に合わせた質問例を出す（test/chatSuggestions.test.js）
 const { 質問例のすべて, 打ちかけの候補, 分類ごと } = require('./chatSuggestions');
+// 個人ログイン（部員）は、AI に本人の分だけを渡す（chatScope）。指示文・道具・Q&A も個人用にする（chatPersonal）
+const { 自分だけに絞る, 他の人 } = require('./chatScope');
+const 個人用 = require('./chatPersonal');
 // 「その射は誰のものか」は分析画面と共通の決まりを使う
 const 集 = require('./statsRules');
 // 言い換えて聞かれても当てるための、コードだけの近さ測り（外のAPIは使わない）
@@ -477,6 +480,10 @@ const qaData = [
     t: 'Q76: 個人（部員）で入ったとき、メンバーの画面では何ができる？\nA: 「自分の情報」が出て、自分の弓具の履歴を残せます。弓力や弦を変えたら、ここに足しておくと分析で前後の的中を比べられます。氏名・性別・学年・期は団体で管理する項目なので、見るだけです（直すときは団体の担当者に頼んでください）。他の人の情報は出ません。',
   },
   {
+    k: ['AIアシスタント', 'AIチャット', 'チャットボット', '個人でもAI', '部員もAI', '個人ログイン'],
+    t: 'Q77: 個人（部員）で入ったときも、AIアシスタントは使える？\nA: 使えます。個人で入っているときは、自分の成績・射位ごとの的中率・自分が参加した記録と、アプリの使い方だけ答えます。ほかの人の成績や順位、出欠は答えられません。部員の追加や、記録の編集・削除もできないので、団体の担当者に頼んでください。',
+  },
+  {
     k: ['表示', '大きさ', '小さい', '見えない', '拡大', '縮小', '文字', 'サイズ'],
     t: 'Q64: 文字やマスが小さくて見えない\nA: 記録画面の上にある「表示」の−と＋で、記録表の大きさを変えられます。押すといまの倍率（100%など）が出ます。人数が多くて横に収まらないときは小さく、手元で入れにくいときは大きくしてください。「表示の大きさ」はその端末に残ります。',
   },
@@ -495,6 +502,14 @@ const 基本のQA = ['Q0:', 'Q1:', 'Q52:'];
 // 本文に加えてキーワードも混ぜる（書き手が想定した言い方が入っている）
 const QAの引き = 引きをつくる(qaData.map((問答, 番) => ({ id: 番, 文: 問答.t + ' ' + 問答.k.join(' ') })));
 
+// 質問に関係する Q&A を選ぶときの候補。番は qaData の何番目か（近さの引きの id と同じ）。
+// 個人ログインには、団体の管理の操作（部員の追加・出欠・記録の編集や削除など）の案内は出さず、
+// タブの案内（Q0）は、個人が使えるタブに書き換える
+const QAの候補 = qaData.map((問答, 番) => ({ 問答, 番 }));
+const 個人用のQAの候補 = QAの候補
+  .filter(({ 問答 }) => 個人用.個人に案内してよいか(問答.t))
+  .map(({ 問答, 番 }) => ({ 問答: 問答.t.startsWith('Q0:') ? { ...問答, t: 個人用.個人用のQ0 } : 問答, 番 }));
+
 /**
  * 質問に関係するQ&Aを選ぶ。
  *
@@ -502,12 +517,13 @@ const QAの引き = 引きをつくる(qaData.map((問答, 番) => ({ id: 番, �
  * 文字の二つ組は言い換えに強いが、当てずっぽうも混じる。
  * 片方だけだと取りこぼすので、両方の点を足して並べる。
  */
-const selectQAs = (userMsg) => {
+const selectQAs = (userMsg, 個人 = false) => {
   const 近さ = new Map();
   近い順(QAの引き, userMsg, { 下限: 0.02 }).forEach((当たり) => 近さ.set(当たり.id, 当たり.近さ));
 
-  const scored = qaData
-    .map((問答, 番) => {
+  const 使うQA = 個人 ? 個人用のQAの候補 : QAの候補;
+  const scored = 使うQA
+    .map(({ 問答, 番 }) => {
       const 語の一致 = 問答.k.filter((語) => userMsg.includes(語)).length;
       // キーワード1つを、近さ0.1ぶんとして数える
       return { qa: 問答, 点: 語の一致 * 0.1 + (近さ.get(番) || 0) };
@@ -519,7 +535,7 @@ const selectQAs = (userMsg) => {
 
   // 当たりが薄いときは基本を足す。まったく無いまま送らない
   基本のQA.forEach((印) => {
-    const 基本 = qaData.find((問答) => 問答.t.startsWith(印));
+    const 基本 = 使うQA.map((候補) => 候補.問答).find((問答) => 問答.t.startsWith(印));
     if (基本 && !scored.includes(基本)) scored.push(基本);
   });
 
@@ -561,9 +577,15 @@ const saveButtonPos = (pos) => {
   }
 };
 
-const loadChatHistory = () => {
+/**
+ * 会話の控えの置き場。団体はこれまでどおり。個人は本人ごとに分ける（同じ端末で別の人が入っても見えない）。
+ * 本人がまだ分からない個人（読み込み中）には、団体の会話を読ませない
+ */
+const 会話の鍵 = (個人, 部員id) => (個人 ? `${CHAT_HISTORY_KEY}_member_${部員id || '-'}` : CHAT_HISTORY_KEY);
+
+const loadChatHistory = (鍵 = CHAT_HISTORY_KEY) => {
   try {
-    const saved = typeof localStorage !== 'undefined' && localStorage.getItem(CHAT_HISTORY_KEY);
+    const saved = typeof localStorage !== 'undefined' && localStorage.getItem(鍵);
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed)) {
@@ -576,11 +598,11 @@ const loadChatHistory = () => {
   return null;
 };
 
-const saveChatHistory = (messages) => {
+const saveChatHistory = (messages, 鍵 = CHAT_HISTORY_KEY) => {
   try {
     if (typeof localStorage !== 'undefined') {
       const toSave = messages.slice(-MAX_SAVED_MESSAGES);
-      localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(toSave));
+      localStorage.setItem(鍵, JSON.stringify(toSave));
     }
   } catch (誤り) {
     /* 控えられなくても、やり取りは続く。端末の空き不足は記録の保存側が知らせる */
@@ -588,7 +610,27 @@ const saveChatHistory = (messages) => {
 };
 
 const AIChatBot = () => {
-  const { activeRole, members = [], sessions = [], currentRouteName } = useScoreStore();
+  const {
+    activeRole,
+    members: 全部の部員 = [],
+    sessions: 全部の記録 = [],
+    currentRouteName,
+    myMemberId,
+    myMemberName,
+  } = useScoreStore();
+  // 個人ログインの端末には団体ぜんぶの部員・記録が入っている。AI に渡す前に、本人の分だけに絞る。
+  // 以降の members・sessions は、個人なら絞ったあとのもの（道具も質問例も、他の人には届かない）
+  const 個人 = activeRole === 'member';
+  const 見える = React.useMemo(
+    () =>
+      個人
+        ? 自分だけに絞る({ members: 全部の部員, sessions: 全部の記録, myMemberId, myMemberName })
+        : { members: 全部の部員, sessions: 全部の記録 },
+    [個人, 全部の部員, 全部の記録, myMemberId, myMemberName]
+  );
+  const members = 見える.members;
+  const sessions = 見える.sessions;
+  const 保存の鍵 = 会話の鍵(個人, myMemberId);
   const addMember = useScoreStore((state) => state.addMember);
   const navigation = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
@@ -598,8 +640,8 @@ const AIChatBot = () => {
   // ここでは呼ばない（chatSuggestions 側には残してある）。
   // 打ちかけの続きは、画面に出していない例からも探す
   const 候補の元 = React.useMemo(
-    () => 質問例のすべて({ 人たち: members, 記録たち: sessions, いま: new Date() }),
-    [members, sessions]
+    () => 質問例のすべて({ 人たち: members, 記録たち: sessions, いま: new Date(), 個人 }),
+    [members, sessions, 個人]
   );
   // 質問例は分類ごとに束ねて、全部出す。
   //
@@ -622,16 +664,29 @@ const AIChatBot = () => {
     {
       id: 'default-msg',
       role: 'model',
-      text: 'こんにちは！弓道部的中ノートのAIアシスタントです。選手選びの相談や、的中傾向の分析、アプリの使い方など、何でも聞いてください。',
+      text: 個人
+        ? 個人用.個人の挨拶
+        : 'こんにちは！弓道部的中ノートのAIアシスタントです。選手選びの相談や、的中傾向の分析、アプリの使い方など、何でも聞いてください。',
     },
   ];
-  const [messages, setMessages] = useState(() => loadChatHistory() || defaultMessages);
+  const [messages, setMessages] = useState(() => loadChatHistory(保存の鍵) || defaultMessages);
+  // いま持っている会話（messages）が、どの鍵のものか。入っている人が変わったとき（本人の id が
+  // 後から分かった、ログインし直した）は、その人の会話に入れ替える。入れ替わるまでの 1 回は、
+  // 前の人の会話を新しい鍵へ書かず、画面にも出さない
+  const [会話の持ち主, set会話の持ち主] = useState(保存の鍵);
+  const 入れ替え中 = 会話の持ち主 !== 保存の鍵;
+  useEffect(() => {
+    if (!入れ替え中) return;
+    setMessages(loadChatHistory(保存の鍵) || defaultMessages);
+    set会話の持ち主(保存の鍵);
+  }, [入れ替え中, 保存の鍵]);
   const [isLoading, setIsLoading] = useState(false);
   const [retryCountdown, setRetryCountdown] = useState(0);
 
   useEffect(() => {
-    saveChatHistory(messages);
-  }, [messages]);
+    if (入れ替え中) return;
+    saveChatHistory(messages, 保存の鍵);
+  }, [messages, 保存の鍵, 入れ替え中]);
   const scrollViewRef = useRef(null);
   // 末尾の近くを見ているか。流し読みの間は文字が来るたびに中身の高さが変わるので、
   // そのたびに末尾へ送ると、上へ戻って読み返している人を毎回引き戻してしまう。
@@ -751,7 +806,7 @@ const AIChatBot = () => {
     })
   ).current;
 
-  if (activeRole !== 'group' || currentRouteName === '記録') {
+  if ((activeRole !== 'group' && !(個人 && myMemberId)) || currentRouteName === '記録' || 入れ替え中) {
     return null;
   }
 
@@ -869,16 +924,18 @@ const AIChatBot = () => {
         yesterday.setDate(now.getDate() - 1);
         const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
 
-        const relevantQA = selectQAs(userMsg);
+        const relevantQA = selectQAs(userMsg, 個人);
         const qaSection = relevantQA ? `\n\n【アプリ操作・仕様Q&A（関連する項目のみ）】\n${relevantQA}` : '';
         // 基本の指示（systemInstructionBase）に、その日・その団体でしか
         // 決まらないものだけを足す。決まりごとを二重に書くと、食い違ったときに
         // どちらが効いているか分からなくなる
         const fullInstruction =
-          systemInstructionBase +
+          (個人 ? 個人用.個人用の指示文(systemInstructionBase, members[0]) : systemInstructionBase) +
           qaSection +
           `\n\n[今日の日付: ${todayStr} / 昨日: ${yesterdayStr}]` +
-          `\n[部員一覧（計${members.length}名）]\n${memberList}`;
+          (個人
+            ? `\n[話し相手（本人）: ${memberList}]`
+            : `\n[部員一覧（計${members.length}名）]\n${memberList}`);
 
         // 鍵の引数は飾り。中継が本物の鍵に付け替える（baseUrl と Authorization は SDKの設定 が足す）
         const genAI = new GoogleGenerativeAI('chukei');
@@ -1075,6 +1132,8 @@ const AIChatBot = () => {
             ],
           },
         ];
+        // 個人ログインには、全員の成績・出欠・部員の追加の道具は出さない。本人の分だけの道具にする
+        if (個人) tools[0].functionDeclarations = 個人用.個人向けの道具(tools[0].functionDeclarations);
 
         const model = genAI.getGenerativeModel(
           {
@@ -1111,8 +1170,25 @@ const AIChatBot = () => {
         // 道具を呼ぶときは文字が来ないので、その回は何も出ないだけで済む
         const 途中の札 = generateMsgId();
         let 途中の文 = '';
+        // 直前の返事で、模型が呼んできた道具。SDK の response.functionCalls() は使わない。
+        // 流れてきた 1 つのかけらに道具の呼び出しが 2 つ以上あると、SDK は最後の 1 つを
+        // 人数ぶん返す（集約で部品を使い回す不具合。@google/generative-ai 0.24.1）。
+        // 同じ道具を繰り返し動かし、返りの名前も食い違ってしまう。積んだ部品（模型の部品）から取る
+        let 呼ばれた道具 = [];
+        const 道具の呼び出しを取る = (部品たち) =>
+          部品たち.filter((一つ) => 一つ && 一つ.functionCall).map((一つ) => 一つ.functionCall);
+        // 直前の返事の文も、同じ理由で積んだ部品から取る。response.text() は、文と署名だけの空の部品など
+        // 2 つ以上が 1 つのかけらに来ると、同じ文を重ねたり（答えです答えです）、途中の文を落としたりする
+        let 返事の文 = '';
+        const 文を取る = (部品たち) =>
+          部品たち
+            .filter((一つ) => 一つ && typeof 一つ.text === 'string')
+            .map((一つ) => 一つ.text)
+            .join('');
         const 送る = async (中身) => {
           途中の文 = '';
+          呼ばれた道具 = [];
+          返事の文 = '';
           会話.push({ role: 'user', parts: 中身 });
           // 模型の返事の部品は、かけらのまま（thoughtSignature ごと）積む。次の送信で
           // そのまま返さないと「Function call is missing a thought_signature」になる
@@ -1141,9 +1217,13 @@ const AIChatBot = () => {
               [];
             for (const 一つ of 部品) 模型の部品.push(一つ);
             if (模型の部品.length) 会話.push({ role: 'model', parts: 模型の部品 });
+            呼ばれた道具 = 道具の呼び出しを取る(模型の部品);
+            返事の文 = 文を取る(模型の部品);
             return { response: Promise.resolve(全部.response) };
           }
           if (模型の部品.length) 会話.push({ role: 'model', parts: 模型の部品 });
+          呼ばれた道具 = 道具の呼び出しを取る(模型の部品);
+          返事の文 = 文を取る(模型の部品);
           return 返り;
         };
         // 流れてきたかけらを積み、文字があれば途中の札に出す
@@ -1178,7 +1258,7 @@ const AIChatBot = () => {
         let response = await result.response;
 
         // Function Calling の処理ループ
-        let calls = response.functionCalls ? response.functionCalls() : [];
+        let calls = 呼ばれた道具;
         let loopCount = 0;
 
         while (calls && calls.length > 0 && loopCount < 5) {
@@ -1192,6 +1272,21 @@ const AIChatBot = () => {
             // どの引数が来たかだけにする（不具合を追うにはこれで足りる）
             console.log('[AIChatBot] Function Called:', call.name, Object.keys(call.args || {}));
             if (call.name && !使った道具.includes(call.name)) 使った道具.push(call.name);
+
+            // 個人ログインは、出していない道具を模型が呼んできても動かさない。
+            // 「本人の分だけ」を、指示文の断りだけに頼らず、道具の側でも止める
+            if (個人 && !個人用.個人が使える道具.includes(call.name)) {
+              functionResponses.push({
+                functionResponse: {
+                  name: call.name,
+                  response: {
+                    success: false,
+                    message: '個人で入っているときは使えない操作です。団体の担当者に頼むよう伝えてください。',
+                  },
+                },
+              });
+              continue;
+            }
 
             if (call.name === 'getAllMembersStats') {
               const { dateFrom, dateTo, sortBy, limit, minShots } = call.args;
@@ -1377,6 +1472,8 @@ const AIChatBot = () => {
                 });
 
                 const archerList = Array.from(memberStatsMap.entries())
+                  // 個人ログインでは、交代の相手（他の人）の分は空にしてあるので、載せない
+                  .filter(([name]) => !(個人 && name === 他の人))
                   .map(([name, stat]) => {
                     return `${name}:${stat.marks.join('')}(${stat.hits}/${stat.total})`;
                   })
@@ -1411,11 +1508,11 @@ const AIChatBot = () => {
               // 個人（部員）で入っているときは、メンバーと設定の画面が無い。
               // 何を渡しても success を返していたため、移動していないのに
               // 「移動しました」と答えていた
-              const 団体だけの画面 = ['メンバー', '設定'];
-              const 行ける画面 =
-                activeRole === 'member'
-                  ? ['記録', '履歴', '分析', '出欠']
-                  : ['記録', '履歴', '分析', 'メンバー', '出欠', '設定'];
+              // 個人で開けるのは 記録・履歴・分析・メンバー・設定。出欠だけが団体の画面（MainNavigator と同じ）
+              const 団体だけの画面 = ['出欠'];
+              const 行ける画面 = 個人
+                ? 個人用.個人が行ける画面
+                : ['記録', '履歴', '分析', 'メンバー', '出欠', '設定'];
               const target = String(call.args.screenName || '');
               const 行けるか = 行ける画面.includes(target);
 
@@ -1439,7 +1536,7 @@ const AIChatBot = () => {
                         success: false,
                         行ける画面,
                         message:
-                          団体だけの画面.includes(target) && activeRole === 'member'
+                          団体だけの画面.includes(target) && 個人
                             ? `${target}画面は団体ログインのときだけ開けます。移動していません。その旨を伝えてください。`
                             : `${target}という画面はありません。移動していません。行ける画面の中から選び直してください。`,
                       },
@@ -1482,17 +1579,18 @@ const AIChatBot = () => {
             // 関数実行結果をモデルに返す
             result = await 送る(functionResponses);
             response = await result.response;
-            calls = response.functionCalls ? response.functionCalls() : [];
+            calls = 呼ばれた道具;
           } else {
             break;
           }
         }
 
-        let responseText = '';
-        try {
-          responseText = response.text();
-        } catch (誤り) {
-          console.warn('[AIChatBot] Text extraction failed:', 誤り);
+        // 答えの文は、積んだ部品から取る（response.text() は使わない。理由は 返事の文 のところ）
+        let responseText = 返事の文;
+        if (!responseText) {
+          // 止められた（安全の判定など）ときも空になる。理由を追えるよう、終わりの印だけ残す
+          const 候補 = response && response.candidates && response.candidates[0];
+          console.warn('[AIChatBot] 答えの文が空です。終わりの印:', 候補 && 候補.finishReason);
         }
 
         if (!responseText || responseText.trim() === '') {
