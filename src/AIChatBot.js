@@ -1616,7 +1616,7 @@ const AIChatBot = () => {
         accessibilityLabel="AIアシスタントを開く"
         aria-label="AIアシスタントを開く"
       >
-        <AIMascot マス={3} />
+        <AIMascot マス={3} 動く 考え中={isLoading} />
         <View style={styles.badge}>
           <Text style={styles.badgeText}>AI</Text>
         </View>
@@ -1638,7 +1638,7 @@ const AIChatBot = () => {
           >
             <View style={styles.header}>
               <View style={styles.headerTitleRow}>
-                <AIMascot マス={2} 体="#007AFF" 弦="#8E8E93" />
+                <AIMascot マス={2} 体="#007AFF" 弦="#8E8E93" 動く />
                 <Text style={styles.headerTitle}>AIアシスタント</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -1728,16 +1728,25 @@ const AIChatBot = () => {
                 ) : (
                   <View
                     key={idx}
-                    style={[
-                      styles.messageBubble,
-                      msg.role === 'user' ? styles.userBubble : styles.modelBubble,
-                    ]}
+                    style={msg.role === 'user' ? undefined : styles.答えの行}
                   >
-                    <Text
-                      style={[styles.messageText, msg.role === 'user' ? styles.userText : styles.modelText]}
+                    {msg.role !== 'user' && (
+                      <View style={styles.答えの絵}>
+                        <AIMascot マス={2} 体="#007AFF" 弦="#8E8E93" />
+                      </View>
+                    )}
+                    <View
+                      style={[
+                        styles.messageBubble,
+                        msg.role === 'user' ? styles.userBubble : [styles.modelBubble, styles.答えの吹き出し],
+                      ]}
                     >
-                      {msg.text}
-                    </Text>
+                      <Text
+                        style={[styles.messageText, msg.role === 'user' ? styles.userText : styles.modelText]}
+                      >
+                        {msg.text}
+                      </Text>
+                    </View>
                   </View>
                 )
               )}
@@ -1791,7 +1800,9 @@ const AIChatBot = () => {
                     { flexDirection: 'row', alignItems: 'center' },
                   ]}
                 >
-                  <ActivityIndicator size="small" color="#007AFF" style={{ marginRight: 8 }} />
+                  <View style={{ marginRight: 10, marginTop: 4 }}>
+                    <AIMascot マス={2} 体="#007AFF" 弦="#8E8E93" 考え中 />
+                  </View>
                   <Text style={styles.modelText}>
                     {retryCountdown > 0 ? `制限中... ${retryCountdown}秒後に再試行します` : '考え中...'}
                   </Text>
@@ -1926,6 +1937,10 @@ const styles = StyleSheet.create({
   messageBubble: { maxWidth: '85%', padding: 12, borderRadius: 18, marginBottom: 12 },
   userBubble: { alignSelf: 'flex-end', backgroundColor: '#007AFF', borderBottomRightRadius: 4 },
   modelBubble: { alignSelf: 'flex-start', backgroundColor: '#E5E5EA', borderBottomLeftRadius: 4 },
+  // 答えの吹き出しの左に、小さなキャラクターを置く（吹き出しの下の端にそろえる）
+  答えの行: { flexDirection: 'row', alignItems: 'flex-end', alignSelf: 'flex-start', maxWidth: '100%', marginBottom: 12 },
+  答えの絵: { marginRight: 6, marginBottom: 4 },
+  答えの吹き出し: { flexShrink: 1, maxWidth: '88%', marginBottom: 0 },
   // 質問例（入口）。何を聞けるかが分からないまま閉じられるのを防ぐ
   例の枠: { marginTop: 14, paddingHorizontal: 2 },
   例の前置き: { fontSize: 12, color: '#8E8E93', marginBottom: 8, paddingHorizontal: 4 },
