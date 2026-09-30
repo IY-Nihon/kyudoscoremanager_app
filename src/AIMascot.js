@@ -18,17 +18,18 @@ const まばたきの間 = () => 2600 + Math.random() * 2600;
 const 閉じている間 = 140;
 
 /**
- * @param {{マス?: number, 体?: string, 目?: string, 弦?: string, 動く?: boolean, 考え中?: boolean}} props
- *   マス … 1 マスの画面上の大きさ（px）。既定 3（幅 45 × 高さ 36）
+ * @param {{マス?: number, 体?: string, 目?: string, 弦?: string, 襟?: string, 動く?: boolean, 考え中?: boolean}} props
+ *   マス … 1 マスの画面上の大きさ（px）。既定 3（幅 48 × 高さ 36）
  *   体 … 体の色（既定は白。明るい地の上では '#007AFF' などにする）
  *   目 … 目の色
  *   弦 … 弦の色（明るい地の上では濃い灰色にする）
+ *   襟 … 道着の襟と帯の色（既定は、白い体の上で読める薄い青灰。青い体の上では薄い水色 '#BFDDFF' にする）
  *   動く … まばたきをする（既定 false。並べて出す小さな絵は止めておく）
  *   考え中 … 上下に弾んで、少し傾く（答えを待っている間）。あわせてまばたきもする
  */
-function AIMascot({ マス = 3, 体 = 色.W, 目 = 色.K, 弦 = 色.S, 動く = false, 考え中 = false }) {
-  // 袴（N・n）は紺のまま。白い体の上でも青い体の上でも読める
-  const 塗る = { W: 体, R: 色.R, K: 目, B: 色.B, S: 弦, N: 色.N, n: 色.n };
+function AIMascot({ マス = 3, 体 = 色.W, 目 = 色.K, 弦 = 色.S, 襟 = 色.C, 動く = false, 考え中 = false }) {
+  // 袴（N・n）は濃い紺のまま。白い体の上でも青い体の上でも読める
+  const 塗る = { W: 体, R: 色.R, K: 目, B: 色.B, S: 弦, C: 襟, N: 色.N, n: 色.n };
   const [閉じた, set閉じた] = useState(false);
   const 揺れ = useRef(new Animated.Value(0)).current;
 

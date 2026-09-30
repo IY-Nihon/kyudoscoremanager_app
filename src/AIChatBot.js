@@ -551,6 +551,10 @@ const CHAT_HISTORY_KEY = 'aiChatMessages_v1';
 const MAX_SAVED_MESSAGES = 50;
 const BUTTON_POS_KEY = 'aiButtonPos_v1';
 
+// キャラクターを明るい地（見出し・吹き出し）に置くときの色。体が白だと地に溶けるので青にし、
+// 弦は濃い灰色、道着の襟と帯は薄い水色にする（浮くボタンの上は、白い体の既定のまま）
+const 明るい地のキャラ = { 体: '#007AFF', 弦: '#8E8E93', 襟: '#BFDDFF' };
+
 // ドラッグで動かした角を覚えておく。無ければ右下から始める
 const loadButtonPos = () => {
   try {
@@ -1714,7 +1718,10 @@ const AIChatBot = () => {
         accessibilityLabel="AIアシスタントを開く"
         aria-label="AIアシスタントを開く"
       >
-        <AIMascot マス={3} 動く 考え中={isLoading} />
+        {/* 絵は体が左に寄り、弓が右に付く。袴の裾（左下）が丸いボタンの縁に付かないよう、1.5px 右へ寄せる */}
+        <View style={{ marginLeft: 3 }}>
+          <AIMascot マス={3} 動く 考え中={isLoading} />
+        </View>
         <View style={styles.badge}>
           <Text style={styles.badgeText}>AI</Text>
         </View>
@@ -1736,7 +1743,7 @@ const AIChatBot = () => {
           >
             <View style={styles.header}>
               <View style={styles.headerTitleRow}>
-                <AIMascot マス={2} 体="#007AFF" 弦="#8E8E93" 動く />
+                <AIMascot マス={2} {...明るい地のキャラ} 動く />
                 <Text style={styles.headerTitle}>AIアシスタント</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -1830,7 +1837,7 @@ const AIChatBot = () => {
                   >
                     {msg.role !== 'user' && (
                       <View style={styles.答えの絵}>
-                        <AIMascot マス={2} 体="#007AFF" 弦="#8E8E93" />
+                        <AIMascot マス={2} {...明るい地のキャラ} />
                       </View>
                     )}
                     <View
@@ -1899,7 +1906,7 @@ const AIChatBot = () => {
                   ]}
                 >
                   <View style={{ marginRight: 10, marginTop: 4 }}>
-                    <AIMascot マス={2} 体="#007AFF" 弦="#8E8E93" 考え中 />
+                    <AIMascot マス={2} {...明るい地のキャラ} 考え中 />
                   </View>
                   <Text style={styles.modelText}>
                     {retryCountdown > 0 ? `制限中... ${retryCountdown}秒後に再試行します` : '考え中...'}
