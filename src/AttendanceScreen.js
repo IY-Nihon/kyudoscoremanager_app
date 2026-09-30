@@ -101,6 +101,14 @@ const AttendanceScreen = () => {
       else await firestore.setDoc(docRef, { date: dateStr, created: new Date() });
     } catch (誤り) {
       console.error(誤り);
+      // 何も出ないと、押しても反応しないように見える。ログインが切れていると保存が断られる
+      const 権限 = /permission|unauthenticated|auth/i.test(String((誤り && (誤り.code || 誤り.message)) || ''));
+      Alert.alert(
+        '保存できませんでした',
+        権限
+          ? 'ログインの有効期限が切れているか、この操作の権限がありません。設定からログアウトして、もう一度ログインしてください。'
+          : '通信がつながっていないようです。電波の良い場所でもう一度お試しください。'
+      );
     }
   };
   const todayStr = getLocalDateString(new Date());
