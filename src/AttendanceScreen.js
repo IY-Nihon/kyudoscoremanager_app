@@ -506,14 +506,12 @@ const AttendanceScreen = () => {
                     const dStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(番 + 1).padStart(2, '0')}`;
                     const isP = !!practiceDays[dStr];
                     return (
-                      <TouchableOpacity
-                        key={dStr}
-                        style={[styles.calendarCell, isP && styles.calendarCellActive]}
-                        onPress={() => togglePracticeDay(dStr)}
-                      >
-                        <Text style={[styles.calendarCellText, isP && styles.calendarCellTextActive]}>
-                          {番 + 1}
-                        </Text>
+                      <TouchableOpacity key={dStr} style={styles.calendarCell} onPress={() => togglePracticeDay(dStr)}>
+                        <View // 日ごとに角丸の四角いタイル。すきまを空けて並べる
+                          style={[styles.calendarTile, isP && styles.calendarTileActive, dStr === todayStr && styles.calendarTileToday]}
+                        >
+                          <Text style={[styles.calendarCellText, isP && styles.calendarCellTextActive]}>{番 + 1}</Text>
+                        </View>
                       </TouchableOpacity>
                     );
                   })
@@ -750,9 +748,12 @@ const styles = StyleSheet.create({
   dowCell: { flex: 1, alignItems: 'center' },
   dowText: { fontSize: 12, color: '#8E8E93' },
   calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  calendarCell: { width: '14.28%', height: 48, justifyContent: 'center', alignItems: 'center' },
-  calendarCellEmpty: { width: '14.28%', height: 48 },
-  calendarCellActive: { backgroundColor: '#E1F0FF', borderRadius: 5 },
+  // 1 日 = 正方形のタイル（外側のすきま 3px ずつ）。空の日も同じ大きさで場所を取る
+  calendarCell: { width: '14.28%', aspectRatio: 1, padding: 3 },
+  calendarCellEmpty: { width: '14.28%', aspectRatio: 1 },
+  calendarTile: { flex: 1, borderRadius: 10, backgroundColor: '#F2F2F7', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: 'transparent' },
+  calendarTileActive: { backgroundColor: '#E1F0FF' },
+  calendarTileToday: { borderColor: '#007AFF' },
   calendarCellText: { fontSize: 14 },
   calendarCellTextActive: { color: '#007AFF', fontWeight: 'bold' },
   syncSection: { backgroundColor: '#FFF', margin: 15, padding: 15, borderRadius: 10 },
