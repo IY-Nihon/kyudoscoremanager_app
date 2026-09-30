@@ -22,6 +22,7 @@ const {
 } = require('./rn');
 
 const { Ionicons } = require('@expo/vector-icons');
+const { AIMascot } = require('./AIMascot');
 const IS_WEB = Platform.OS === 'web';
 
 /**
@@ -1615,7 +1616,7 @@ const AIChatBot = () => {
         accessibilityLabel="AIアシスタントを開く"
         aria-label="AIアシスタントを開く"
       >
-        <Ionicons name="chatbubble-ellipses" size={30} color="#FFF" />
+        <AIMascot マス={3.5} />
         <View style={styles.badge}>
           <Text style={styles.badgeText}>AI</Text>
         </View>
@@ -1637,7 +1638,7 @@ const AIChatBot = () => {
           >
             <View style={styles.header}>
               <View style={styles.headerTitleRow}>
-                <Ionicons name="sparkles" size={20} color="#007AFF" />
+                <AIMascot マス={2} 体="#007AFF" />
                 <Text style={styles.headerTitle}>AIアシスタント</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
