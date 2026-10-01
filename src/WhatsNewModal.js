@@ -28,7 +28,7 @@ const { getShadowStyle } = require('./shadowStyle');
 // test/updateNotice.test.js が見張っている。
 const 最後に配信した版 = '2026-09-30-01';
 // お知らせの版。新しい項目を足したら、必ずこれを最新の項目の 版 に合わせる。
-const NOTICE_VERSION = '2026-09-30-01';
+const NOTICE_VERSION = '2026-10-01-01';
 const STORAGE_KEY = 'whatsNewDismissedVersion';
 // 最後に開いたときの版。閉じるたびに書く。
 // どこから下が「前に読んだぶん」かの線を引くためだけに使う。
@@ -39,6 +39,15 @@ const LAST_SEEN_KEY = 'whatsNewLastSeenVersion';
 // 新しい順に並べる。上から「前に見た版より新しいか」を数えて、
 // そこで線を引くため、順番が崩れると線の位置が狂う（検査で見ている）
 const NOTICE_ITEMS = [
+  {
+    date: '2026/10/01',
+    版: '2026-10-01-01',
+    title: '個人ログインでも、AIアシスタントが使えるようになりました',
+    points: [
+      '個人でログインした部員も、右下のAIボタンから質問できます。自分の成績・射位・記録や、アプリの使い方を聞けます。',
+      '答えるのは自分の分だけです。ほかの人の成績や名前、団体全体のことは答えません。',
+    ],
+  },
   {
     date: '2026/09/30',
     版: '2026-09-30-01',
