@@ -319,3 +319,17 @@ test('射位を割り振る：区切りごとに大前から数え直し、計�
   ]);
   assert.deepStrictEqual(射位を割り振る(null), []);
 });
+
+test('射位を割り振る：立ごとの計でも数え直す（大前…落 [計] 大前…落 [計] [総計]）', () => {
+  const { 射位を割り振る } = require('../src/teamGrouping');
+  const 人 = (id) => ({ id });
+  const 計 = (id) => ({ id, isTotalCalculator: true });
+  const 並び = [人('a'), 人('b'), 人('c'), 人('d'), 計('t1'), 人('e'), 人('f'), 人('g'), 人('h'), 人('i'), 計('t2'), { id: 'all', isTotalCalculator: true, またぐ合計: true }];
+  assert.deepStrictEqual(射位を割り振る(並び), [
+    { 番: 0, 人数: 4 }, { 番: 1, 人数: 4 }, { 番: 2, 人数: 4 }, { 番: 3, 人数: 4 },
+    null,
+    { 番: 0, 人数: 5 }, { 番: 1, 人数: 5 }, { 番: 2, 人数: 5 }, { 番: 3, 人数: 5 }, { 番: 4, 人数: 5 },
+    null,
+    null,
+  ]);
+});
