@@ -495,7 +495,7 @@ const OCRRecordModal = ({
                   `[${チーム.name || ''} 立${チーム.tachiPeople} 大前${チーム.omae || '?'} ${(チーム.rows || []).map((行) => 行.name || '(無名)').join('・')}]`
               )
               .join(' ');
-          console.log('[OCRRecordModal] 読んだ板:', 板の様子(生のteams));
+          console.log('[OCRRecordModal] 読んだ板:', 板の様子(生のteams), 生のteams.map((チーム) => [チーム.cellStyle, チーム.layout, チーム.cell_count, チーム.bands, チーム.marks_per_band].join('/')).join(' '));
           // ○×のマスは端末で読み替える（板でも紙でも）。合わなければ Gemini のまま
           const 端末で = (チーム, 箱たち, 行数, 帯の数) =>
             IS_WEB
