@@ -16,6 +16,7 @@ const 個人が使える道具 = [
   'getPositionStats',
   'getSessionsByDate',
   'searchSessions',
+  'countSessionParticipation',
   'navigateToScreen',
 ];
 
@@ -136,6 +137,7 @@ function 個人用の指示文(基本, 本人) {
 ・本人の射位ごとの的中率 → getPositionStats
 ・日付が分かっている記録 → getSessionsByDate
 ・日付が分からない記録を言葉で探す → searchSessions
+・「自主練に何回出たか」など、タグや言葉で絞った記録に自分が何回出たか → countSessionParticipation（返ってきた回数をそのまま使う）
 ・画面を開く → navigateToScreen（開けるのは ${個人が行ける画面.join('・')}）`,
 
     `【射位や立ち順について】
@@ -169,6 +171,10 @@ function 個人向けの道具(宣言たち) {
     searchSessions: {
       description:
         '本人が参加した記録を言葉で探します。題・覚え書き・目印（タグ）を見ます。「雨で中断した練習はいつ」「審査のタグが付いた記録」など、日付が分からないときに使います。日付が分かっているときは getSessionsByDate を使ってください。',
+    },
+    countSessionParticipation: {
+      description:
+        '本人が、タグや言葉で絞った記録に何回出たかを数えます。「自主練に何回出た？」「合宿に何回出た？」などに使います。ゲストとして出た記録は数えません。',
     },
     getSessionsByDate: {
       description:
