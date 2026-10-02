@@ -2317,44 +2317,50 @@ const useScoreStore = zustand.create()(
           );
           書く({ members: 直した部員, lastLocalChange: Date.now() });
           if (undefined !== 変更.name || undefined !== 変更.gender || undefined !== 変更.grade) {
+            // 射手の並びに、直した名前・性別・学年を写す。部員に結び付いた射手（memberId）だけ。
+            // 途中交代で入った人は、名前だけ（交代の欄は名前しか持たない）
+            const 射手たちを直す = (射手たち) => {
+              let 触った = false;
+              const 直した射手 = 射手たち
+                .map((射手) =>
+                  射手 && 射手.memberId === 部員ID
+                    ? ((触った = true),
+                      Object.assign({}, 射手, {
+                        name: undefined !== 変更.name ? 変更.name : 射手.name,
+                        gender: undefined !== 変更.gender ? 変更.gender : 射手.gender,
+                        grade: undefined !== 変更.grade ? 変更.grade : 射手.grade,
+                        lastModified: Date.now(),
+                      }))
+                    : 射手
+                )
+                .map((射手) => {
+                  if (射手 && 射手.substitutionIds) {
+                    let 交代を直した = false;
+                    const 交代 = Object.assign({}, 射手.substitutions || {});
+                    if (
+                      (Object.entries(射手.substitutionIds).forEach(([番, id]) => {
+                        const 添字 = Number(番);
+                        id === 部員ID &&
+                          undefined !== 変更.name &&
+                          ((交代[添字] = 変更.name), (交代を直した = true));
+                      }),
+                      交代を直した)
+                    )
+                      return (
+                        (触った = true),
+                        Object.assign({}, 射手, { substitutions: 交代, lastModified: Date.now() })
+                      );
+                  }
+                  return 射手;
+                });
+              return { 直した射手, 触った };
+            };
             const 記録に写す = (一覧) => {
               let 変わった = false;
               return {
                 newList: 一覧.map((記録) => {
                   if (!記録 || !記録.archers) return 記録;
-                  let 触った = false;
-                  const 直した射手 = 記録.archers
-                    .map((射手) =>
-                      射手.memberId === 部員ID
-                        ? ((触った = true),
-                          Object.assign({}, 射手, {
-                            name: undefined !== 変更.name ? 変更.name : 射手.name,
-                            gender: undefined !== 変更.gender ? 変更.gender : 射手.gender,
-                            grade: undefined !== 変更.grade ? 変更.grade : 射手.grade,
-                            lastModified: Date.now(),
-                          }))
-                        : 射手
-                    )
-                    .map((射手) => {
-                      if (射手.substitutionIds) {
-                        let 交代を直した = false;
-                        const 交代 = Object.assign({}, 射手.substitutions || {});
-                        if (
-                          (Object.entries(射手.substitutionIds).forEach(([番, id]) => {
-                            const 添字 = Number(番);
-                            id === 部員ID &&
-                              undefined !== 変更.name &&
-                              ((交代[添字] = 変更.name), (交代を直した = true));
-                          }),
-                          交代を直した)
-                        )
-                          return (
-                            (触った = true),
-                            Object.assign({}, 射手, { substitutions: 交代, lastModified: Date.now() })
-                          );
-                      }
-                      return 射手;
-                    });
+                  const { 直した射手, 触った } = 射手たちを直す(記録.archers);
                   if (触った) {
                     変わった = true;
                     const 名前たち = Array.from(
@@ -2373,6 +2379,25 @@ const useScoreStore = zustand.create()(
                 changed: 変わった,
               };
             };
+            // いま記録している盤面（記録の画面）と、取り消しの控えにも写す。盤面は記録に保存するまで
+            // sessions に入らないので、写さないと、名前を直しても記録の画面は古い名前のまま残っていた。
+            // ライブ中なら、参加している人の画面にも新しい名前を送る
+            {
+              const 盤面 = Array.isArray(状態().archers) ? 状態().archers : [];
+              const 盤 = 射手たちを直す(盤面);
+              if (盤.触った) {
+                const 控えを直す = (控え) =>
+                  Array.isArray(控え) ? 控え.map((一枚) => (Array.isArray(一枚) ? 射手たちを直す(一枚).直した射手 : 一枚)) : 控え;
+                書く({
+                  archers: 盤.直した射手,
+                  historyStack: 控えを直す(状態().historyStack),
+                  redoStack: 控えを直す(状態().redoStack),
+                  lastLocalChange: Date.now(),
+                });
+                const { isLiveActive, liveSessionName, shotsPerRound } = 状態();
+                if (isLiveActive && liveSessionName) ライブへ盤面を送る(liveSessionName, 盤.直した射手, shotsPerRound);
+              }
+            }
             const 元の記録 = 状態().sessions;
             const 元のごみ箱 = 状態().trash;
             const { newList, changed } = 記録に写す(元の記録);
