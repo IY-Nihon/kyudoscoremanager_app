@@ -44,7 +44,7 @@ function 道具の名前を読む() {
   return [...塊.matchAll(/name: '(\w+)',\n\s+description:/g)].map((m) => m[1]);
 }
 
-const 団体だけの道具 = ['getAllMembersStats', 'getAttendanceStats', 'addMember', 'addMembers'];
+const 団体だけの道具 = ['getAllMembersStats', 'getAttendanceStats', 'countSessionParticipation', 'addMember', 'addMembers'];
 
 test('道具：宣言してある道具は、すべて「個人が使える」か「団体だけ」のどちらかに決めてある（新しい道具を足したら決める）', () => {
   const 名前たち = 道具の名前を読む();

@@ -89,6 +89,7 @@ const {
   全員の成績,
   出欠の集計,
   記録をさがす,
+  参加回数を数える,
   射位ごとの成績,
   一人の成績,
   期間にする,
@@ -135,6 +136,7 @@ const systemInstructionBase = `あなたは「弓道部的中ノート」専用�
 ・出欠・出席率 → getAttendanceStats
 ・日付が分かっている記録 → getSessionsByDate
 ・日付が分からない記録を言葉で探す → searchSessions
+・「自主練が一番多いのは誰」など、目印（タグ）や言葉で絞った記録に人ごとに何回出たか → countSessionParticipation（一覧を自分で数えず、返ってきた回数と順位をそのまま使う）
 ・画面を開く → navigateToScreen
 ・部員を追加 → addMember（1人）／addMembers（2人以上は必ずこちらで、1回にまとめて）
 部員一覧に載っていない人でも、過去の記録にゲストや交代相手として出ていることがあります。「見当たらない」と自分で決めつけず、必ずツールで確かめてください。
@@ -1027,6 +1029,24 @@ const AIChatBot = () => {
                 },
               },
               {
+                name: 'countSessionParticipation',
+                description:
+                  '目印（タグ）や言葉で絞った記録に、部員が何回出たかを人ごとに数えて、多い順に返します。「自主練が一番多いのは誰」「#審査の記録に出た回数」「合宿に何回出たか」などに使います。出欠の集計（getAttendanceStats）とは別で、正規練習日ではなく、言葉で絞った記録を数えます。ゲストは数えません。',
+                parameters: {
+                  type: 'OBJECT',
+                  properties: {
+                    keyword: {
+                      type: 'STRING',
+                      description: "記録を絞る言葉。題・覚え書き・目印・出ている人の名前を見ます。例: '#自主稽古'、'合宿'",
+                    },
+                    dateFrom: { type: 'STRING', description: '期間の開始日 (YYYY-MM-DD形式)' },
+                    dateTo: { type: 'STRING', description: '期間の終了日 (YYYY-MM-DD形式)' },
+                    limit: { type: 'INTEGER', description: '上位何人を返すか。省略すると全員' },
+                  },
+                  required: ['keyword'],
+                },
+              },
+              {
                 name: 'getPositionStats',
                 description:
                   '射位（大前・2番・落など）ごとの的中率を返します。立ち順を考えるときの材料です。「大前に向いているのは誰」「落で強いのは」「山田さんは大前と落でどちらが良い」などに使います。誰をどこに置くかはこのツールでは決めません。返した数字をもとに、根拠を添えて提案してください。射数が少ない射位は数字が揺れるので、射数も一緒に伝えてください。',
@@ -1189,7 +1209,10 @@ const AIChatBot = () => {
             .filter((一つ) => 一つ && typeof 一つ.text === 'string')
             .map((一つ) => 一つ.text)
             .join('');
+        // 最後に送った中身。答えの文が空だったとき、同じ内容で 1 回だけ送り直すために取っておく
+        let 最後に送った中身 = null;
         const 送る = async (中身) => {
+          最後に送った中身 = 中身;
           途中の文 = '';
           呼ばれた道具 = [];
           返事の文 = '';
@@ -1373,6 +1396,22 @@ const AIChatBot = () => {
                   response: Object.assign({}, 結果, {
                     message:
                       '新しい順に返しています。見つかった件数より少なく返している場合は、その旨を伝えてください。',
+                  }),
+                },
+              });
+            } else if (call.name === 'countSessionParticipation') {
+              const { keyword, dateFrom, dateTo, limit } = call.args;
+              const 結果 = 参加回数を数える(members, sessions, {
+                言葉: keyword,
+                期間: 期間にする(dateFrom, dateTo),
+                件数: limit,
+              });
+              functionResponses.push({
+                functionResponse: {
+                  name: call.name,
+                  response: Object.assign({}, 結果, {
+                    message:
+                      '同じ記録に何度出ても1回と数えています。ゲストと、部員に結び付いていない人は数えていません。順位と回数はそのまま使ってください。',
                   }),
                 },
               });
@@ -1587,6 +1626,21 @@ const AIChatBot = () => {
           } else {
             break;
           }
+        }
+
+        // 答えの文が空で、止められたのでもないとき（空の返事が来ることがある。2026-10-02 に本番で 1 回）は、
+        // 同じ内容で 1 回だけ送り直す。使う人に「もう一度お試しください」と押させない。
+        // 空の返事は会話に積んでいないので、会話の最後は送ったもの。送り直しがまた道具を呼んだときは動かさない
+        const 止められた = (返り) => {
+          const 候補 = 返り && 返り.candidates && 返り.candidates[0];
+          return !!(候補 && /SAFETY|PROHIBITED|BLOCKLIST|SPII|RECITATION/i.test(String(候補.finishReason || '')));
+        };
+        if (!返事の文.trim() && !(呼ばれた道具 && 呼ばれた道具.length) && !止められた(response) && 最後に送った中身 && 会話.length && 会話[会話.length - 1].role === 'user') {
+          console.warn('[AIChatBot] 答えの文が空だったので、もう一度送ります');
+          const 中身 = 最後に送った中身;
+          会話.pop();
+          result = await 送る(中身);
+          response = await result.response;
         }
 
         // 答えの文は、積んだ部品から取る（response.text() は使わない。理由は 返事の文 のところ）
