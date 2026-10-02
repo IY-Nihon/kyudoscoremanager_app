@@ -485,3 +485,32 @@ test('一人の成績：期間を渡せばその範囲だけ（皆中も同じ�
   assert.equal(九月.kaichuCount, 0);
   assert.equal(九月.totalSessions, 1);
 });
+
+test('参加回数：目印で絞った記録に、部員ごとに何回出たかを数える（交代で入った人も、同じ記録は 1 回）', () => {
+  const { 参加回数を数える } = require('../src/chatStats');
+  const 人たち = [
+    { id: 'm1', name: '甲', grade: 2 },
+    { id: 'm2', name: '乙', grade: 1 },
+    { id: 'm3', name: '丙', grade: 3 },
+  ];
+  const 記録たち = [
+    { id: 'r1', date: Date.UTC(2026, 8, 1), title: '自主練', tags: ['#自主稽古'], archers: [{ memberId: 'm1' }, { memberId: 'm2' }, { isSeparator: true }] },
+    { id: 'r2', date: Date.UTC(2026, 8, 2), title: '自主練', tags: ['#自主稽古'], archers: [{ memberId: 'm1' }, { memberId: 'm1' }] },
+    { id: 'r3', date: Date.UTC(2026, 8, 3), title: '練習', tags: [], archers: [{ memberId: 'm3' }] },
+    { id: 'r4', date: Date.UTC(2026, 8, 4), title: 'x', tags: ['#自主稽古'], archers: [{ memberId: 'm9', substitutionIds: { 0: 'm3' } }] },
+  ];
+  const 結果 = 参加回数を数える(人たち, 記録たち, { 言葉: '#自主稽古' });
+  assert.equal(結果.数えた記録, 3);
+  assert.deepEqual(
+    結果.一覧.map((行) => [行.名前, 行.回数, 行.順位]),
+    [['甲', 2, 1], ['乙', 1, 2], ['丙', 1, 3]],
+    '同じ記録に 2 回出ても 1 回。交代で入った人も数える。目印の無い記録は数えない'
+  );
+});
+
+test('参加回数：記録が 20 件を超えても、全部を数える', () => {
+  const { 参加回数を数える } = require('../src/chatStats');
+  const 記録たち = Array.from({ length: 30 }, (_, i) => ({ id: `r${i}`, date: 1000 + i, title: '自主練', tags: ['#自主稽古'], archers: [{ memberId: 'm1' }] }));
+  const 結果 = 参加回数を数える([{ id: 'm1', name: '甲', grade: 1 }], 記録たち, { 言葉: '#自主稽古' });
+  assert.equal(結果.一覧[0].回数, 30);
+});
