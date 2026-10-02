@@ -28,6 +28,7 @@ const 個人が使える道具 = [
   'getSessionsByDate',
   'navigateToScreen',
   'searchSessions',
+  'countSessionParticipation',
 ];
 
 /** 控えから、自分と、ほかの部員を読む */
