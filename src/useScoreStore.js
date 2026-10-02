@@ -2382,35 +2382,28 @@ const useScoreStore = zustand.create()(
               (書く({ sessions: newList, trash: ごみ箱の一覧, lastLocalChange: Date.now() }),
               状態().activeGroupId)
             ) {
-              const 一括 = Firestore.writeBatch(Firebaseの器.db);
-              let 件数 = 0;
-              if (changed)
-                newList.forEach((記録, 番) => {
-                  if (記録.lastModified !== 元の記録[番].lastModified) {
+              // 書き込みは 400 件ずつに分ける。Firestore の一括書き込みは 1 回 500 件までで、
+              // 記録が 500 件を超えるメンバーを直すと、1 回で送って丸ごと失敗していた
+              // （手元は新しい名前になり、クラウドと他の端末は古い名前のまま。2026-10-03）
+              const 書き込み = [];
+              const 集める = (一覧, 元の一覧, 置き場) => {
+                一覧.forEach((記録, 番) => {
+                  if (記録.lastModified !== 元の一覧[番].lastModified) {
                     const 送る中身 = JSON.parse(JSON.stringify(記録));
                     送る中身.lastModified = Firestore.serverTimestamp();
-                    一括.set(
-                      Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, 記録.id),
-                      送る中身,
-                      { merge: true }
-                    );
-                    件数++;
+                    書き込み.push({ 置き場, id: 記録.id, 送る中身 });
                   }
                 });
-              if (ごみ箱が変わった)
-                ごみ箱の一覧.forEach((記録, 番) => {
-                  if (記録.lastModified !== 元のごみ箱[番].lastModified) {
-                    const 送る中身 = JSON.parse(JSON.stringify(記録));
-                    送る中身.lastModified = Firestore.serverTimestamp();
-                    一括.set(
-                      Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/trash`, 記録.id),
-                      送る中身,
-                      { merge: true }
-                    );
-                    件数++;
-                  }
+              };
+              if (changed) 集める(newList, 元の記録, 'sessions');
+              if (ごみ箱が変わった) 集める(ごみ箱の一覧, 元のごみ箱, 'trash');
+              for (let 頭 = 0; 頭 < 書き込み.length; 頭 += 400) {
+                const 一括 = Firestore.writeBatch(Firebaseの器.db);
+                書き込み.slice(頭, 頭 + 400).forEach(({ 置き場, id, 送る中身 }) => {
+                  一括.set(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/${置き場}`, id), 送る中身, { merge: true });
                 });
-              if (件数 > 0) 一括.commit().catch((誤り) => console.error('Member Linkage Sync Error:', 誤り));
+                一括.commit().catch((誤り) => console.error('Member Linkage Sync Error:', 誤り));
+              }
             }
           }
           状態().activeGroupId &&
