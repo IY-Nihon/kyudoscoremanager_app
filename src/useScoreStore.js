@@ -395,9 +395,13 @@ const waitForDb = async () => {
   return undefined;
 };
 let 部員を送る予約 = {};
+// 記録の射手の名前を、メンバーのいまの名前に合わせている最中か。と、最後に合わせた時刻（名前のずれを直す）
+let 名前を合わせている = false;
+let 最後に名前を合わせた時刻 = 0;
 // 同期の判断に使う純粋な関数は syncRules.js へ移した。中身は変えていない。
 // 呼び出し側の書き換えを避けるため、従来の1文字の名前に割り当て直す。
 const 同期規則 = require('./syncRules');
+const 名前の整合 = require('./memberNameSync');
 const generateUniquePersonalId = 同期規則.generateUniquePersonalId;
 const mergeById = 同期規則.mergeById;
 const 一覧の配列 = 同期規則.一覧の配列;
@@ -2547,6 +2551,85 @@ const useScoreStore = zustand.create()(
             console.error('[Store] syncMemberLookup error:', 誤り);
           }
         },
+        /**
+         * 記録の射手の名前が、メンバーのいまの名前とずれていたら直す（団体ログインの端末だけ）。
+         *
+         * 名前を直したときの書き換え（updateMember）が一部の記録に届かず、前の名前が残ることがあった
+         * （団体 910280 で、94 件のうち 52 件。src/memberNameSync.js）。見つけて直す。
+         *
+         * ・クラウドの最新の記録を読み直して、射手の名前だけ変えて書く（トランザクション）。手元の古い写しで
+         *   ほかの端末の最新の○×を上書きしない
+         * ・手元に送信待ちの編集がある記録は触らない（こちらの書き込みで更新日時が進み、送信待ちの編集が
+         *   古い扱いにならないように。次の機会に直す）
+         * ・同期でメンバーも記録も雲から読んだあとだけ呼ぶ（古い名簿で名前を前の名前に戻さない）。
+         *   1 回に 100 件まで、60 秒より短い間隔では走らない
+         */
+        名前のずれを直す: async () => {
+          const 今 = 状態();
+          const 団体 = 今.activeGroupId;
+          if (!団体 || 'group' !== 今.activeRole || !今.isNetworkOnline || 今.isLiveActive) return;
+          if (名前を合わせている || Date.now() - 最後に名前を合わせた時刻 < 60 * 1000) return;
+          const 名前表 = 名前の整合.名前表を作る(今.members, 今.alumni);
+          const 対象 = [];
+          for (const [置き場, 一覧] of [
+            ['sessions', 今.sessions],
+            ['trash', 今.trash],
+          ]) {
+            const 送信待ち = new Set((一覧 || []).filter((記録) => 記録 && '未同期' === 記録.syncStatus).map((記録) => 記録.id));
+            for (const ずれ of 名前の整合.ずれのある記録たち(一覧, 名前表)) {
+              if (!送信待ち.has(ずれ.id)) 対象.push({ 置き場, id: ずれ.id });
+            }
+          }
+          if (!対象.length) return;
+          名前を合わせている = true;
+          最後に名前を合わせた時刻 = Date.now();
+          try {
+            if (!(await waitForDb())) return;
+            const 直した = new Map(); // 置き場/id → 雲に書いた archerNames
+            for (const { 置き場, id } of 対象.slice(0, 100)) {
+              try {
+                const 名前たち = await Firestore.runTransaction(Firebaseの器.db, async (取引) => {
+                  const 参照 = Firestore.doc(Firebaseの器.db, `groups/${団体}/${置き場}`, id);
+                  const 文書 = await 取引.get(参照);
+                  if (!文書.exists()) return null;
+                  const 中身 = 文書.data();
+                  const { 直した射手, 触った } = 名前の整合.射手たちを合わせる(中身.archers, 名前表);
+                  if (!触った) return null;
+                  const 名前たち = 名前の整合.射手の名前たち(直した射手);
+                  取引.update(参照, {
+                    archers: 直した射手,
+                    archerNames: 名前たち,
+                    lastModified: Firestore.serverTimestamp(),
+                  });
+                  return 名前たち;
+                });
+                if (名前たち) 直した.set(置き場 + '/' + id, 名前たち);
+              } catch (誤り) {
+                console.warn('[名前のずれを直す] 1 件直せませんでした:', id, 誤り && 誤り.message);
+              }
+            }
+            if (!直した.size) return;
+            // 手元にも写す。射手の名前だけ（手元の○×などは、雲の写しで置き換えない）
+            const 写す = (一覧, 置き場) =>
+              (一覧 || []).map((記録) => {
+                if (!記録 || !直した.has(置き場 + '/' + 記録.id) || '未同期' === 記録.syncStatus) return 記録;
+                const { 直した射手, 触った } = 名前の整合.射手たちを合わせる(記録.archers, 名前表);
+                return 触った
+                  ? Object.assign({}, 記録, {
+                      archers: 直した射手,
+                      archerNames: 名前の整合.射手の名前たち(直した射手),
+                      lastModified: Date.now(),
+                    })
+                  : 記録;
+              });
+            書く((前) => ({ sessions: 写す(前.sessions, 'sessions'), trash: 写す(前.trash, 'trash') }));
+            console.log(`[名前のずれを直す] ${直した.size} 件の記録の名前を、メンバーのいまの名前に合わせました`);
+          } catch (誤り) {
+            console.warn('[名前のずれを直す] 失敗:', 誤り && 誤り.message);
+          } finally {
+            名前を合わせている = false;
+          }
+        },
         ensurePersonalIds: async () => {
           const { members: 部員たち, alumni, activeGroupId: 団体 } = 状態();
           // 名簿を書けるのは団体アカウントだけ。部員の端末で走ると、他人の
@@ -4046,6 +4129,12 @@ const useScoreStore = zustand.create()(
             setTimeout(() => {
               状態().ensurePersonalIds();
             }, 500);
+            // メンバーも記録も雲から読めたときだけ、名前のずれを直す（古い名簿で前の名前に戻さない）
+            if (雲から読んだか(記録の返り) && 雲から読んだか(部員の返り)) {
+              setTimeout(() => {
+                状態().名前のずれを直す();
+              }, 2000);
+            }
           } catch (誤り) {
             console.error('[syncSessions] Error:', 誤り);
             不具合を控える('記録の同期', 誤り);

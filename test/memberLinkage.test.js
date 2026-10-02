@@ -121,3 +121,104 @@ test('盤面に出ていない人を直しても、盤面は触らない（無�
   await 待つ(100);
   assert.strictEqual(store.getState().archers, 盤, '同じ配列のまま');
 });
+
+// ───── 取りこぼしの自動修正（名前のずれを直す） ─────
+const 林 = () => 部員({ id: 'mem-1', name: '林 飛雄' });
+const 古い名前の記録 = (id, o) =>
+  記録(id, [射手({ id: id + 'a', name: '叡智な林 飛雄', marks: ['○', '×', '○'] }), 射手({ id: id + 'b', name: '山田 花子', memberId: 'mem-2', marks: ['×'] })], o);
+
+async function ずれた団体(記録たち, ごみ箱 = [], 手元だけの設定) {
+  const { store, 雲 } = ストアを用意する();
+  await 待つ(30);
+  雲.置く(名簿の道, 'mem-1', 林());
+  雲.置く(名簿の道, 'mem-2', 部員({ id: 'mem-2', name: '山田 花子' }));
+  for (const r of 記録たち) 雲.置く(記録の道, r.id, r);
+  for (const r of ごみ箱) 雲.置く(ごみ箱の道, r.id, r);
+  store.setState(
+    Object.assign(
+      {
+        activeGroupId: 団体,
+        activeRole: 'group',
+        isHydrated: true,
+        isNetworkOnline: true,
+        isLiveActive: false,
+        members: [林(), 部員({ id: 'mem-2', name: '山田 花子' })],
+        alumni: [],
+        sessions: 記録たち.map((r) => Object.assign({}, r)),
+        trash: ごみ箱.map((r) => Object.assign({}, r)),
+        permanentlyDeleted: {},
+        lastSyncTime: null,
+      },
+      手元だけの設定 || {}
+    )
+  );
+  return { store, 雲 };
+}
+
+test('取りこぼし：前の名前が残った記録を、雲の最新を読んで名前だけ直す（○× は残る）', async () => {
+  const { store, 雲 } = await ずれた団体([古い名前の記録('s1'), 古い名前の記録('s2')], [古い名前の記録('t1')]);
+  // 雲の ○× は手元より新しい（ほかの端末が足した）。手元の古い写しで上書きしてはいけない
+  雲.置く(記録の道, 's1', Object.assign({}, 古い名前の記録('s1'), { archers: [射手({ id: 's1a', name: '叡智な林 飛雄', marks: ['○', '×', '○', '○'] }), 射手({ id: 's1b', name: '山田 花子', memberId: 'mem-2', marks: ['×'] })] }));
+  await store.getState().名前のずれを直す();
+  await 待つ(50);
+  const s1 = 雲.値(記録の道, 's1');
+  assert.equal(s1.archers[0].name, '林 飛雄', '雲の名前');
+  assert.deepEqual(s1.archers[0].marks, ['○', '×', '○', '○'], '雲の最新の ○× が残る（手元の古い写しで上書きしない）');
+  assert.deepEqual(s1.archerNames, ['林 飛雄', '山田 花子']);
+  assert.equal(雲.値(記録の道, 's2').archers[0].name, '林 飛雄');
+  assert.equal(雲.値(ごみ箱の道, 't1').archers[0].name, '林 飛雄', 'ゴミ箱の記録も');
+  assert.equal(store.getState().sessions[0].archers[0].name, '林 飛雄', '手元にも写る');
+  assert.deepEqual(store.getState().sessions[0].archers[0].marks, ['○', '×', '○'], '手元の ○× は触らない');
+});
+
+test('取りこぼし：ゲスト（結び付き無し）と、名簿に居ない人は触らない', async () => {
+  const ゲスト入り = 記録('g1', [射手({ id: 'g1a', name: '叡智な林 飛雄', memberId: undefined, isGuest: true }), 射手({ id: 'g1b', name: '消えた人', memberId: 'mem-9' })]);
+  const { store, 雲 } = await ずれた団体([ゲスト入り]);
+  await store.getState().名前のずれを直す();
+  await 待つ(50);
+  assert.equal(雲.値(記録の道, 'g1').archers[0].name, '叡智な林 飛雄');
+  assert.equal(雲.値(記録の道, 'g1').archers[1].name, '消えた人');
+  assert.equal(雲.記録.filter((x) => x.種別 === 'transaction').length, 0, '書いていない');
+});
+
+test('取りこぼし：手元に送信待ちの編集がある記録は触らない（こちらの書き込みで古い扱いにしない）', async () => {
+  const { store, 雲 } = await ずれた団体([古い名前の記録('s1', { syncStatus: '未同期' }), 古い名前の記録('s2')]);
+  await store.getState().名前のずれを直す();
+  await 待つ(50);
+  assert.equal(雲.値(記録の道, 's1').archers[0].name, '叡智な林 飛雄', '送信待ちの記録は、そのまま');
+  assert.equal(雲.値(記録の道, 's2').archers[0].name, '林 飛雄');
+});
+
+test('取りこぼし：団体ログインの端末だけ・通信できるときだけ・ライブ中は動かない', async () => {
+  for (const [名, 設定] of [['個人ログイン', { activeRole: 'member' }], ['通信できない', { isNetworkOnline: false }], ['ライブ中', { isLiveActive: true }]]) {
+    const { store, 雲 } = await ずれた団体([古い名前の記録('s1')], [], 設定);
+    await store.getState().名前のずれを直す();
+    await 待つ(30);
+    assert.equal(雲.値(記録の道, 's1').archers[0].name, '叡智な林 飛雄', `${名}では書かない`);
+  }
+});
+
+test('取りこぼし：ずれが無ければ何も書かない。直したあとの 2 度目も書かない', async () => {
+  const { store, 雲 } = await ずれた団体([古い名前の記録('s1')]);
+  await store.getState().名前のずれを直す();
+  await 待つ(30);
+  const 回数 = () => 雲.記録.filter((x) => x.種別 === 'transaction').length;
+  assert.equal(回数(), 1);
+  await store.getState().名前のずれを直す(); // 60 秒の間隔と、ずれが無いことで書かない
+  await 待つ(30);
+  assert.equal(回数(), 1, '2 度目は書かない');
+});
+
+test('取りこぼし：同期で雲から読んだあと、自動で直る（団体の管理者が開くだけで直る）', async () => {
+  const { store, 雲 } = ストアを用意する();
+  await 待つ(30);
+  雲.置く(名簿の道, 'mem-1', 林());
+  雲.置く(名簿の道, 'mem-2', 部員({ id: 'mem-2', name: '山田 花子' }));
+  雲.置く(記録の道, 's1', 古い名前の記録('s1'));
+  store.setState({ activeGroupId: 団体, activeRole: 'group', isHydrated: true, isNetworkOnline: true, isLiveActive: false, members: [], alumni: [], sessions: [], trash: [], permanentlyDeleted: {}, lastSyncTime: null });
+  await store.getState().syncSessions();
+  assert.equal(store.getState().sessions.find((s) => s.id === 's1').archers[0].name, '叡智な林 飛雄', '同期の直後は、雲のまま（前の名前）');
+  await 待つ(2600); // 同期のあとの 2 秒の待ちを通す
+  assert.equal(雲.値(記録の道, 's1').archers[0].name, '林 飛雄', '雲が直る');
+  assert.equal(store.getState().sessions.find((s) => s.id === 's1').archers[0].name, '林 飛雄', '手元も直る');
+});

@@ -205,6 +205,20 @@ function 偽Firestore() {
       const 値 = 取り出す(参照.道).get(参照.id);
       return { exists: () => 値 !== undefined, data: () => 値, id: 参照.id };
     },
+    // Firestore の runTransaction。読んで、書く。実物は競合すると読み直してやり直すが、偽物は 1 回で通す
+    // （競合の検査はここではしない）。書き込みは一括と同じ道（送る）を通るので、オフラインなら決着しない
+    runTransaction: async (db, 決める) => {
+      const 操作 = [];
+      const 取引 = {
+        get: async (参照) => api.getDoc(参照),
+        update: (参照, 値) => 操作.push({ 種類: 'update', 道: 参照.道, id: 参照.id, 値 }),
+        set: (参照, 値, 選び) => 操作.push({ 種類: 'set', 道: 参照.道, id: 参照.id, 値, 重ねる: !!(選び && 選び.merge) }),
+        delete: (参照) => 操作.push({ 種類: 'delete', 道: 参照.道, id: 参照.id }),
+      };
+      const 結果 = await 決める(取引);
+      if (操作.length) await 送る({ 種別: 'transaction', 操作 });
+      return 結果;
+    },
     getDocs: async (集まり) => {
       const 表 = 取り出す(集まり.道);
       const 一覧 = 絞る([...表.entries()], 集まり).map(([id, 値]) => ({
