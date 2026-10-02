@@ -1,11 +1,11 @@
 /**
  * expo-clipboard への橋。
  *
- * 共有リンクを写すのに使う（src/LiveShareModal.js）。
+ * 共有リンクをコピーするのに使う（src/LiveShareModal.js）。
  * 端末では expo-clipboard、web ではそれが navigator.clipboard を使う。
  *
  * 読み込みそのものが失敗する場面（古い端末・部品が入っていないビルド）でも
- * 画面が落ちないように、包んで持つ。写せなかったときは false を返し、
+ * 画面が落ちないように、包んで持つ。コピーできなかったときは false を返し、
  * 呼ぶ側が「長押しで選んでください」と案内する。
  */
 'use strict';

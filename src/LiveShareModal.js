@@ -55,7 +55,7 @@ const LiveShareModal = ({ visible, onClose }) => {
   };
   const 写して知らせる = async (文字列, 何を) => {
     const 出来た = await 写.写す(文字列);
-    知らせを置く(出来た ? `${何を}のリンクを写しました` : '写せませんでした。長押しで選んでください');
+    知らせを置く(出来た ? `${何を}のリンクをコピーしました` : 'コピーできませんでした。長押しで選んでください');
   };
   return (
     <Modal visible={!!visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -162,7 +162,7 @@ function 出来たところ(出来上がり, 写して知らせる) {
         {URL}
       </Text>
       <TouchableOpacity style={styles.写すボタン} onPress={() => 写して知らせる(URL, 何を)}>
-        <Text style={styles.写すボタンの字}>リンクを写す</Text>
+        <Text style={styles.写すボタンの字}>コピー</Text>
       </TouchableOpacity>
     </View>
   );
