@@ -29,7 +29,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { View, Text, Platform, StyleSheet } from './rn';
-import { 束の名前, 新しい版が出たか, 見に行く間隔 } from './updateNotice';
+import { 束の名前, 新しい版が出たか, 束がもう無いか, 見に行く間隔 } from './updateNotice';
 import { useScoreStore } from './useScoreStore';
 import { use案内中 } from './TutorialGuide';
 
@@ -42,6 +42,24 @@ function いまの束() {
     .map((x) => x.getAttribute('src'))
     .filter((x) => x && /AppEntry-|\.js$/.test(x));
   return 札.length ? 札[0] : null;
+}
+
+/**
+ * 今動いている束のファイルが、サーバーにもう無いか。HEAD で聞く。
+ *
+ * 取り直した index.html は sw.js を通るので、通信できないと控えの古いものが返ることがある
+ * （src/updateNotice.js の説明）。HEAD は sw.js を通らず、控えの古い答えが返らない。
+ * 通信できなかった・読めなかったときは「分からない」なので false（帯は出さない）。
+ */
+async function 束がサーバーにもう無いか(束) {
+  try {
+    const 住所 = new URL(束, location.href);
+    if (住所.origin !== location.origin) return false;
+    const 返り = await fetch(住所.href, { method: 'HEAD', cache: 'no-store' });
+    return 束がもう無いか({ 状態: 返り.status, 種類: 返り.headers.get('content-type') });
+  } catch (e) {
+    return false;
+  }
 }
 
 export function UpdateBar() {
@@ -64,7 +82,10 @@ export function UpdateBar() {
         const 返り = await fetch('/index.html', { cache: 'no-store' });
         if (!返り || !返り.ok) return;
         const 文 = await 返り.text();
-        if (生きている && 新しい版が出たか(束, 文)) 出すかを置く(true);
+        if (!生きている || !新しい版が出たか(束, 文)) return;
+        // 取り直した index.html は、通信できないとき控えの古いものかもしれない。
+        // 今の束がサーバーにもう無いと確かめられたときだけ、新しい版が出たとする
+        if ((await 束がサーバーにもう無いか(束)) && 生きている) 出すかを置く(true);
       } catch (e) {
         /* 通信できないだけ。次の機会に見る */
       }

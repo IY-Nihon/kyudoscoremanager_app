@@ -11,7 +11,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-const { 束の名前, 新しい版が出たか, 名前だけにする, 見に行く間隔 } = require('../src/updateNotice');
+const { 束の名前, 新しい版が出たか, 束がもう無いか, 束の形か, 名前だけにする, 見に行く間隔 } = require('../src/updateNotice');
 
 const HTML = (束) => `<!DOCTYPE html><html><head><title>弓道記録アプリ</title></head>
 <body><div id="root"></div><script src="${束}" defer></script></body></html>`;
@@ -54,6 +54,33 @@ test('どちらかが読めないときは黙る', () => {
   assert.strictEqual(新しい版が出たか(束A, null), !1);
   assert.strictEqual(新しい版が出たか(束A, '<html>取れなかった</html>'), !1);
   assert.strictEqual(新しい版が出たか(undefined, undefined), !1);
+});
+
+test('AppEntry の束が無い HTML（Wi-Fi のログイン画面など）では、別の .js があっても「新しい版」と言わない', () => {
+  const ログイン画面 = HTML('/login/portal.js');
+  assert.strictEqual(新しい版が出たか(束A, ログイン画面), !1);
+  // いま動いている束が AppEntry でない（開発サーバー）ときも黙る
+  assert.strictEqual(新しい版が出たか('/index.bundle?platform=web', HTML(束B)), !1);
+});
+
+test('束の形：AppEntry-中身の印.js だけ', () => {
+  assert.strictEqual(束の形か('AppEntry-0123456789abcdef.js'), !0);
+  for (const x of ['other.js', 'AppEntry.js', 'AppEntry-x.css', null, '']) assert.strictEqual(束の形か(x), !1, String(x));
+});
+
+test('束がもう無いか：404・410、または 200 で HTML（index.html に回された）のとき', () => {
+  assert.strictEqual(束がもう無いか({ 状態: 404, 種類: 'text/html' }), !0);
+  assert.strictEqual(束がもう無いか({ 状態: 410 }), !0);
+  assert.strictEqual(束がもう無いか({ 状態: 200, 種類: 'text/html; charset=utf-8' }), !0);
+});
+
+test('束がもう無いか：束がまだある（javascript が返る）・分からないときは false', () => {
+  assert.strictEqual(束がもう無いか({ 状態: 200, 種類: 'text/javascript; charset=utf-8' }), !1);
+  assert.strictEqual(束がもう無いか({ 状態: 200, 種類: 'application/javascript' }), !1);
+  // サーバーの不調・読めない答えでは、帯を出さない（当てずっぽうで「新しい版」と言わない）
+  for (const x of /** @type {any[]} */ ([null, undefined, {}, { 状態: NaN }, { 状態: 500, 種類: 'text/html' }, { 状態: 503 }, { 状態: 0 }])) {
+    assert.strictEqual(束がもう無いか(x), !1, JSON.stringify(x));
+  }
 });
 
 test('名前だけにする：問い合わせも印も落とす', () => {
