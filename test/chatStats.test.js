@@ -514,3 +514,46 @@ test('参加回数：記録が 20 件を超えても、全部を数える', () =
   const 結果 = 参加回数を数える([{ id: 'm1', name: '甲', grade: 1 }], 記録たち, { 言葉: '#自主稽古' });
   assert.equal(結果.一覧[0].回数, 30);
 });
+
+test('タグで絞る：含まれる言葉で当てる。# は付けても付けなくてもよい', () => {
+  const { タグで絞る } = require('../src/chatStats');
+  const 記録たち = [
+    { id: 's1', tags: ['#自主稽古'] },
+    { id: 's2', tags: ['#試合', '#春季'] },
+    { id: 's3', tags: [] },
+    { id: 's4' },
+  ];
+  assert.deepEqual(タグで絞る(記録たち, ['自主']).記録たち.map((x) => x.id), ['s1'], '一部の言葉で当たる');
+  assert.deepEqual(タグで絞る(記録たち, ['#自主稽古']).記録たち.map((x) => x.id), ['s1'], '# 付きでも');
+  assert.deepEqual(タグで絞る(記録たち, '試合').記録たち.map((x) => x.id), ['s2'], '文字列 1 つでも');
+});
+
+test('タグで絞る：複数渡すと、すべてに当たる記録だけ。何も渡さなければ絞らない', () => {
+  const { タグで絞る } = require('../src/chatStats');
+  const 記録たち = [{ id: 's2', tags: ['#試合', '#春季'] }, { id: 's5', tags: ['#試合'] }];
+  assert.deepEqual(タグで絞る(記録たち, ['試合', '春季']).記録たち.map((x) => x.id), ['s2']);
+  const 絞らない = タグで絞る(記録たち, []);
+  assert.equal(絞らない.絞った, false);
+  assert.equal(絞らない.記録たち.length, 2);
+  assert.equal(タグで絞る(記録たち, ['  ', '#']).絞った, false, '空の言葉は無いのと同じ');
+});
+
+test('タグで絞る：当たる記録が無いとき、使えるタグを返す（模型が選び直せる）', () => {
+  const { タグで絞る } = require('../src/chatStats');
+  const 結果 = タグで絞る([{ id: 's1', tags: ['#自主稽古'] }, { id: 's2', tags: ['#試合'] }], ['合宿']);
+  assert.equal(結果.絞った, true);
+  assert.equal(結果.当たった件数, 0);
+  assert.deepEqual(結果.使えるタグ, ['#自主稽古', '#試合']);
+});
+
+test('タグで絞った記録で成績を数えると、そのタグの記録だけの的中率になる', () => {
+  const { タグで絞る, 全員の成績 } = require('../src/chatStats');
+  const 人 = { id: 'm1', name: '甲', grade: 1 };
+  const 記録 = (id, tags, marks) => ({ id, date: 1000, tags, archers: [{ memberId: 'm1', name: '甲', marks }] });
+  const 記録たち = [記録('s1', ['#自主稽古'], ['○', '○', '×', '○']), 記録('s2', ['#試合'], ['×', '×', '×', '○'])];
+  const 全部 = 全員の成績([人], 記録たち, { 最小射数: 1 });
+  const 自主 = 全員の成績([人], タグで絞る(記録たち, ['自主']).記録たち, { 最小射数: 1 });
+  assert.equal(全部.一覧[0].射数, 8);
+  assert.equal(自主.一覧[0].射数, 4);
+  assert.equal(自主.一覧[0].的中, 3);
+});
