@@ -137,6 +137,7 @@ function 個人用の指示文(基本, 本人) {
 ・本人の射位ごとの的中率 → getPositionStats
 ・日付が分かっている記録 → getSessionsByDate
 ・日付が分からない記録を言葉で探す → searchSessions
+・「自主練の的中率」「試合だけの成績」など、タグで分けた自分の成績 → getDetailedMemberStats・getPositionStats の tags にタグを渡す（返ってきた数字は「そのタグで絞った数字」と添える）
 ・「自主練に何回参加したか」など、タグや言葉で絞った記録に自分が何回参加したか → countSessionParticipation（返ってきた回数をそのまま使う）
 ・画面を開く → navigateToScreen（開けるのは ${個人が行ける画面.join('・')}）`,
 

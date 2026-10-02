@@ -89,6 +89,7 @@ const {
   全員の成績,
   出欠の集計,
   記録をさがす,
+  タグで絞る,
   参加回数を数える,
   射位ごとの成績,
   一人の成績,
@@ -136,6 +137,7 @@ const systemInstructionBase = `あなたは「弓道部的中ノート」専用�
 ・出欠・出席率 → getAttendanceStats
 ・日付が分かっている記録 → getSessionsByDate
 ・日付が分からない記録を言葉で探す → searchSessions
+・「自主練の的中率」「試合だけの成績」など、タグで分けた成績 → getAllMembersStats・getDetailedMemberStats・getPositionStats の tags にタグを渡す（返ってきた数字は「そのタグで絞った数字」と添える。タグの名前が分からないときは、先に tags を渡さずに呼ぶか searchSessions で確かめる）
 ・「自主練が一番多いのは誰」など、目印（タグ）や言葉で絞った記録に人ごとに何回参加したか → countSessionParticipation（一覧を自分で数えず、返ってきた回数と順位をそのまま使う）
 ・画面を開く → navigateToScreen
 ・部員を追加 → addMember（1人）／addMembers（2人以上は必ずこちらで、1回にまとめて）
@@ -962,6 +964,21 @@ const AIChatBot = () => {
           return Math.max(1, Math.floor(最多 * (Number(設定.value) || 0)));
         };
 
+        // タグで絞った成績。tags を渡されたときだけ絞る。当たる記録が無いときは、使えるタグを添えて返す
+        // （模型がタグの名前を選び直せるように）。成績の 3 つの道具が共通で使う
+        const タグで絞った記録 = (タグたち) => {
+          const 絞り = タグで絞る(sessions, タグたち);
+          const 表示 = 絞り.絞った
+            ? { タグ: 絞り.タグ, 当たった記録の件数: 絞り.当たった件数, ...(絞り.当たった件数 === 0 ? { 使えるタグ: 絞り.使えるタグ } : {}) }
+            : null;
+          const 添え書き = 絞り.絞った
+            ? 絞り.当たった件数 === 0
+              ? 'そのタグが付いた記録はありません。使えるタグの中から選び直すか、その旨を伝えてください。'
+              : `タグ「${絞り.タグ.join('」「')}」が付いた記録 ${絞り.当たった件数} 件だけで集計しています。「タグで絞った数字」であることを答えに添えてください。`
+            : '';
+          return { 記録たち: 絞り.記録たち, 表示, 添え書き };
+        };
+
         // Function Calling の宣言
         const tools = [
           {
@@ -993,6 +1010,12 @@ const AIChatBot = () => {
                       type: 'INTEGER',
                       description:
                         'この射数に満たない人を順位から外す。既定は1。少ない射数の高い的中率を上位に出したくないときは10〜20を指定する',
+                    },
+                    tags: {
+                      type: 'ARRAY',
+                      items: { type: 'STRING' },
+                      description:
+                        "タグで記録を絞り込む。例: ['自主稽古']。「自主練の的中率」「試合だけの成績」のように、タグで分けて聞かれたときに渡す。記録のタグの名前に含まれる言葉で当たる（# は付けても付けなくてもよい）。複数渡すと、すべてのタグが付いた記録だけ。タグの名前が分からないときは、先に何も渡さず呼ぶか、searchSessions で記録の目印を確かめる",
                     },
                   },
                 },
@@ -1061,6 +1084,12 @@ const AIChatBot = () => {
                       description: 'この人たちだけに絞る。省略すると全員',
                     },
                     minShots: { type: 'INTEGER', description: 'この射数に満たない人を外す。既定は1' },
+                    tags: {
+                      type: 'ARRAY',
+                      items: { type: 'STRING' },
+                      description:
+                        "タグで記録を絞り込む。例: ['自主稽古']。「自主練の的中率」「試合だけの成績」のように、タグで分けて聞かれたときに渡す。記録のタグの名前に含まれる言葉で当たる（# は付けても付けなくてもよい）。複数渡すと、すべてのタグが付いた記録だけ。タグの名前が分からないときは、先に何も渡さず呼ぶか、searchSessions で記録の目印を確かめる",
+                    },
                   },
                 },
               },
@@ -1094,6 +1123,12 @@ const AIChatBot = () => {
                     memberName: { type: 'STRING', description: '選手の名前' },
                     dateFrom: { type: 'STRING', description: '期間の開始日 (YYYY-MM-DD形式)。省くと全期間' },
                     dateTo: { type: 'STRING', description: '期間の終了日 (YYYY-MM-DD形式)。省くと全期間' },
+                    tags: {
+                      type: 'ARRAY',
+                      items: { type: 'STRING' },
+                      description:
+                        "タグで記録を絞り込む。例: ['自主稽古']。「自主練の的中率」「試合だけの成績」のように、タグで分けて聞かれたときに渡す。記録のタグの名前に含まれる言葉で当たる（# は付けても付けなくてもよい）。複数渡すと、すべてのタグが付いた記録だけ。タグの名前が分からないときは、先に何も渡さず呼ぶか、searchSessions で記録の目印を確かめる",
+                    },
                   },
                   required: ['memberName'],
                 },
@@ -1327,7 +1362,8 @@ const AIChatBot = () => {
               // チャットでは首位になった
               const 基準 = 分析の順位の基準(期間, dateFrom || dateTo ? '期間指定' : 'すべて');
               const 最小射数 = Number.isFinite(minShots) ? minShots : 基準;
-              const 結果 = 全員の成績(members, sessions, {
+              const タグ絞り = タグで絞った記録(call.args.tags);
+              const 結果 = 全員の成績(members, タグ絞り.記録たち, {
                 期間,
                 並び: sortBy,
                 件数: limit,
@@ -1345,7 +1381,9 @@ const AIChatBot = () => {
                     順位の基準の射数: 最小射数,
                     団体全体: 結果.全体,
                     順位: 結果.一覧,
+                    ...(タグ絞り.表示 ? { タグでの絞り込み: タグ絞り.表示 } : {}),
                     message:
+                      タグ絞り.添え書き +
                       (Number.isFinite(minShots)
                         ? `${最小射数} 射に満たない人は順位から外しました。`
                         : 最小射数 > 1
@@ -1417,7 +1455,8 @@ const AIChatBot = () => {
               });
             } else if (call.name === 'getPositionStats') {
               const { dateFrom, dateTo, memberNames, minShots } = call.args;
-              const 結果 = 射位ごとの成績(members, sessions, {
+              const タグ絞り = タグで絞った記録(call.args.tags);
+              const 結果 = 射位ごとの成績(members, タグ絞り.記録たち, {
                 期間: 期間にする(dateFrom, dateTo),
                 名前たち: memberNames,
                 最小射数: minShots,
@@ -1425,8 +1464,9 @@ const AIChatBot = () => {
               functionResponses.push({
                 functionResponse: {
                   name: call.name,
-                  response: Object.assign({}, 結果, {
+                  response: Object.assign({}, 結果, タグ絞り.表示 ? { タグでの絞り込み: タグ絞り.表示 } : {}, {
                     message:
+                      タグ絞り.添え書き +
                       '射位ごとの的中率です。射数の少ない射位は数字が揺れるので、率だけでなく射数も添えて伝えてください。' +
                       '誰をどこに置くかは決めていません。数字を根拠に提案してください。',
                   }),
@@ -1434,13 +1474,21 @@ const AIChatBot = () => {
               });
             } else if (call.name === 'getDetailedMemberStats') {
               // 中身は chatStats の 一人の成績（検査できる形にした。射位は区切りと計を除いた並びで見る）
+              const タグ絞り = タグで絞った記録(call.args.tags);
               const statsData = 一人の成績(
                 members,
-                sessions,
+                タグ絞り.記録たち,
                 String(call.args.memberName || ''),
                 期間にする(call.args.dateFrom, call.args.dateTo)
               );
-              functionResponses.push({ functionResponse: { name: call.name, response: statsData } });
+              functionResponses.push({
+                functionResponse: {
+                  name: call.name,
+                  response: タグ絞り.表示
+                    ? Object.assign({}, statsData, { タグでの絞り込み: タグ絞り.表示, message: タグ絞り.添え書き })
+                    : statsData,
+                },
+              });
             } else if (call.name === 'getSessionsByDate') {
               const { date, dateFrom, dateTo, recentCount } = call.args;
 
