@@ -98,3 +98,26 @@ test('記録が多いメンバー（600 件）でも、クラウドへの一括�
   const 届いた = 多い.filter((r) => 雲.値(記録の道, r.id).archers[0].name === '新姓 太郎').length;
   assert.equal(届いた, 600, 'クラウドにも全部届く');
 });
+
+test('いま記録している盤面と、取り消しの控えにも写る（保存前の記録の画面が古い名前のまま残らない）', async () => {
+  const { store } = await 用意([]);
+  const 盤 = [射手(), 射手({ id: 'a2', name: '他人', memberId: 'mem-2' })];
+  store.setState({ archers: 盤, historyStack: [[射手({ marks: [] })]], redoStack: [[射手({ marks: ['○'] })]] });
+  store.getState().updateMember('mem-1', { name: '新姓 太郎', gender: '女性' });
+  await 待つ(100);
+  const 今 = store.getState();
+  assert.equal(今.archers[0].name, '新姓 太郎', '盤面の名前');
+  assert.equal(今.archers[0].gender, '女性', '盤面の性別');
+  assert.equal(今.archers[1].name, '他人', '別の人は変わらない');
+  assert.equal(今.historyStack[0][0].name, '新姓 太郎', '取り消しの控え');
+  assert.equal(今.redoStack[0][0].name, '新姓 太郎', 'やり直しの控え');
+});
+
+test('盤面に出ていない人を直しても、盤面は触らない（無駄に書き換えない）', async () => {
+  const { store } = await 用意([]);
+  const 盤 = [射手({ id: 'a2', name: '他人', memberId: 'mem-2' })];
+  store.setState({ archers: 盤 });
+  store.getState().updateMember('mem-1', { name: '新姓 太郎' });
+  await 待つ(100);
+  assert.strictEqual(store.getState().archers, 盤, '同じ配列のまま');
+});
