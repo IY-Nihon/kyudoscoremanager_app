@@ -298,19 +298,25 @@ function 記録の印で数える(人たち, 対象) {
  *
  * @param {Array} 記録たち
  * @param {string[]|string|null|undefined} タグたち
- * @returns {{記録たち: Array, 絞った: boolean, タグ: string[], 当たった件数: number, 使えるタグ: string[]}}
+ * @returns {{記録たち: Array, 絞った: boolean, タグ: string[], 当たった件数: number, 使えるタグ: string[], 当たったタグ: string[]}}
+ *   当たったタグ … 絞った記録に付いていたタグのうち、渡した言葉に当たったもの（言葉は部分一致なので、
+ *   「練習」で「#正規練習」と「#自主練習」の両方に当たることがある。答えにどのタグで数えたかを書けるように返す）
  */
 function タグで絞る(記録たち, タグたち) {
   const 一覧 = Array.isArray(記録たち) ? 記録たち : [];
   const 正規 = (t) => String(t == null ? '' : t).replace(/^#/, '').replace(/\s/g, '');
   const 要る = (Array.isArray(タグたち) ? タグたち : タグたち ? [タグたち] : []).map(正規).filter(Boolean);
   const 使えるタグ = Array.from(new Set(一覧.flatMap((記録) => (記録 && Array.isArray(記録.tags) ? 記録.tags : [])).map(String))).sort();
-  if (!要る.length) return { 記録たち: 一覧, 絞った: false, タグ: [], 当たった件数: 一覧.length, 使えるタグ };
+  if (!要る.length) return { 記録たち: 一覧, 絞った: false, タグ: [], 当たった件数: 一覧.length, 使えるタグ, 当たったタグ: [] };
+  const 当たったタグ = new Set();
   const 当たる = 一覧.filter((記録) => {
-    const 付いている = (記録 && Array.isArray(記録.tags) ? 記録.tags : []).map(正規);
-    return 要る.every((t) => 付いている.some((x) => x.includes(t)));
+    const 元のタグ = 記録 && Array.isArray(記録.tags) ? 記録.tags.map(String) : [];
+    const 付いている = 元のタグ.map(正規);
+    const 全部に当たる = 要る.every((t) => 付いている.some((x) => x.includes(t)));
+    if (全部に当たる) 元のタグ.forEach((元, 番) => 要る.some((t) => 付いている[番].includes(t)) && 当たったタグ.add(元));
+    return 全部に当たる;
   });
-  return { 記録たち: 当たる, 絞った: true, タグ: 要る, 当たった件数: 当たる.length, 使えるタグ };
+  return { 記録たち: 当たる, 絞った: true, タグ: 要る, 当たった件数: 当たる.length, 使えるタグ, 当たったタグ: [...当たったタグ].sort() };
 }
 
 /**

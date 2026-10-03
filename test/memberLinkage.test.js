@@ -234,3 +234,27 @@ test('取りこぼし：同期で雲から読んだあと、自動で直る（�
   assert.equal(雲.値(記録の道, 's1').archers[0].name, '林 飛雄', '雲が直る');
   assert.equal(store.getState().sessions.find((s) => s.id === 's1').archers[0].name, '林 飛雄', '手元も直る');
 });
+
+test('取りこぼし：直している最中にメンバーの名前が直されても、前の名前に戻さない', async () => {
+  const 記録たち = Array.from({ length: 8 }, (_, i) => 古い名前の記録('s' + i));
+  const { store, 雲 } = await ずれた団体(記録たち);
+  // 直し始めてすぐ、メンバーの名前をさらに直す（雲の名簿と手元の名簿を、新しい名前にする）
+  const 走る = store.getState().名前のずれを直す();
+  store.setState({ members: store.getState().members.map((m) => (m.id === 'mem-1' ? { ...m, name: '林 飛雄 改' } : m)) });
+  await 走る;
+  await 待つ(100);
+  const 古い名前のまま = 記録たち.filter((r) => 雲.値(記録の道, r.id).archers[0].name === '林 飛雄').length;
+  assert.equal(古い名前のまま, 0, '直している最中に変わった名前を、前の名前で上書きした: ' + 古い名前のまま + ' 件');
+  assert.equal(雲.値(記録の道, 's7').archers[0].name, '林 飛雄 改');
+});
+
+test('取りこぼし：別の団体に入り直したら、続きは直さない', async () => {
+  const 記録たち = Array.from({ length: 30 }, (_, i) => 古い名前の記録('s' + i));
+  const { store, 雲 } = await ずれた団体(記録たち);
+  const 走る = store.getState().名前のずれを直す();
+  store.setState({ activeGroupId: '999999' });
+  await 走る;
+  await 待つ(100);
+  const 直った = 記録たち.filter((r) => 雲.値(記録の道, r.id).archers[0].name === '林 飛雄').length;
+  assert.ok(直った < 30, '別の団体に入ったあとも直し続けた（' + 直った + ' 件）');
+});
