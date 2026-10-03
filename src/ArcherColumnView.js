@@ -369,7 +369,6 @@ const ArcherColumnView = React.memo(
                     index={射番}
                     横並び={横}
                     mark={archer.marks?.[射番] || ''}
-                    矢所={archer.arrowLocations?.[射番] || null}
                     subName={交代の表示名}
                     isLocked={鍵}
                     isBlockBottom={切れ目(射番)}

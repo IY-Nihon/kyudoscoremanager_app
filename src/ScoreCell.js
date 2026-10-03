@@ -7,50 +7,6 @@ const { useShallow } = require('zustand/react/shallow');
 const ExpoHaptics = require('expo-haptics');
 const Icons = require('@expo/vector-icons');
 const React = require('react');
-/**
- * ますの隅に出す、矢所の小さな的（ミニの的）。置いた矢所の位置を、的の中に点で示す。
- *
- * 矢所の記録を ON にしていても、置いた矢所は窓を開き直さないと見えなかった（2026-10-04 の依頼）。
- * 記録画面のますに出して、ほかの人の分も含めて、どのますにどこへ外れたかを一覧できるようにする。
- *
- * 位置の決め方は ArrowLocationView と同じ：保存された座標（x・y）は的の半径に対する比率で、
- * 的の絵は入れ物の 0.82 倍（星的 24cm は 0.55 倍。小さいますでも読めるよう、ArrowLocationView の 0.75・0.5 より大きくしてある）。的の外へ外れた矢は、入れ物の縁までで止める。
- * 店は購読しない（ますは 400 個ある。的の種類と矢所は、持ち主から渡される）。
- */
-const ミニの的 = React.memo(({ 矢所, 印, 的の種類, 倍率 }) => {
-  const 入れ物 = 25 * 倍率;
-  const 星24 = '星' === 的の種類 || 'hoshi24' === 的の種類;
-  const 的の直径 = 入れ物 * (星24 ? 0.55 : 0.82);
-  const 的の半径 = 的の直径 / 2;
-  const 点 = Math.max(4, 5 * 倍率);
-  const 限り = 入れ物 / 2 - 点 / 2;
-  const 寄せる = (v) => Math.max(-限り, Math.min(限り, v));
-  const x = 寄せる((Number(矢所.x) || 0) * 的の半径);
-  const y = 寄せる((Number(矢所.y) || 0) * 的の半径);
-  return (
-    <View
-      pointerEvents="none"
-      testID="ミニの的"
-      style={{ position: 'absolute', top: 2 * 倍率, right: 2 * 倍率, width: 入れ物, height: 入れ物, alignItems: 'center', justifyContent: 'center' }}
-    >
-      <View style={{ position: 'absolute', width: 的の直径, height: 的の直径, borderRadius: 的の半径, borderWidth: 1.5, borderColor: '#48484A', backgroundColor: '#FFF' }} />
-      <View style={{ position: 'absolute', width: 的の直径 / 2, height: 的の直径 / 2, borderRadius: 的の直径 / 4, borderWidth: 1, borderColor: '#8E8E93' }} />
-      <View
-        style={{
-          position: 'absolute',
-          width: 点,
-          height: 点,
-          borderRadius: 点 / 2,
-          left: 入れ物 / 2 + x - 点 / 2,
-          top: 入れ物 / 2 + y - 点 / 2,
-          backgroundColor: '○' === 印 ? '#34C759' : '#FF3B30',
-          borderColor: '#FFF',
-          borderWidth: 0.8,
-        }}
-      />
-    </View>
-  );
-});
 const ScoreCell = React.memo(
   ({
     archerId,
@@ -69,8 +25,6 @@ const ScoreCell = React.memo(
     // 画面の字は「○」「×」だけなので、そのままだと
     //「まる」「かける」としか読まれず、どのますかも分からない
     読み,
-    // このますの矢所（{x, y}。置いていなければ null）。ますは店を購読しないので、持ち主（ArcherColumnView）が渡す
-    矢所 = null,
     onToggle,
   }) => {
     // ますは 20 人 × 20 射で 400 個ある。1 つのますが店（zustand）を 10 か所で
@@ -79,11 +33,10 @@ const ScoreCell = React.memo(
     // 呼ぶときに getState() から取る（手は変わらないので購読しなくてよい）
     const 店 = () => useScoreStore.getState();
     const 印を切り替える = (...引) => 店().toggleMark(...引);
-    const { viewScale, enableArrowLocation, arrowTargetType, 自動ロックする, 自動ロックまでの秒 } = useScoreStore(
+    const { viewScale, enableArrowLocation, 自動ロックする, 自動ロックまでの秒 } = useScoreStore(
       useShallow((状態) => ({
         viewScale: 状態.viewScale,
         enableArrowLocation: 状態.enableArrowLocation,
-        arrowTargetType: 状態.arrowTargetType,
         自動ロックする: 状態.自動ロックする,
         自動ロックまでの秒: 状態.自動ロックまでの秒,
       }))
@@ -363,9 +316,6 @@ const ScoreCell = React.memo(
             ) : null}
           </React.Fragment>
         </Pressable>
-        {enableArrowLocation && 矢所 && 'normal' === columnType && ('○' === 印 || '×' === 印) ? (
-          <ミニの的 矢所={矢所} 印={印} 的の種類={arrowTargetType} 倍率={倍率} />
-        ) : null}
         {isBlockTop && !isNormalArcher && (
           <View style={[styles.lockIconOverlay, { top: 3 * 倍率 }]}>
             <Icons.Ionicons
