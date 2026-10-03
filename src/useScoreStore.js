@@ -2579,7 +2579,9 @@ const useScoreStore = zustand.create()(
           const 団体 = 今.activeGroupId;
           if (!団体 || 'group' !== 今.activeRole || !今.isNetworkOnline || 今.isLiveActive) return;
           if (名前を合わせている || Date.now() - 最後に名前を合わせた時刻 < 60 * 1000) return;
-          const 名前表 = 名前の整合.名前表を作る(今.members, 今.alumni);
+          // 卒業生の一覧（古い）を先に、部員を後に渡す。同じ id が両方に居たら、いまの部員の名前が勝つ
+          const 名前表を作る = () => 名前の整合.名前表を作る(状態().alumni, 状態().members);
+          const 名前表 = 名前表を作る();
           const 対象 = [];
           for (const [置き場, 一覧] of [
             ['sessions', 今.sessions],
@@ -2597,13 +2599,17 @@ const useScoreStore = zustand.create()(
             if (!(await waitForDb())) return;
             const 直した = new Map(); // 置き場/id → 雲に書いた archerNames
             for (const { 置き場, id } of 対象.slice(0, 100)) {
+              // 途中で別の団体に入り直したり、ログアウトしたら、続きは直さない
+              if (状態().activeGroupId !== 団体) break;
               try {
                 const 名前たち = await Firestore.runTransaction(Firebaseの器.db, async (取引) => {
                   const 参照 = Firestore.doc(Firebaseの器.db, `groups/${団体}/${置き場}`, id);
                   const 文書 = await 取引.get(参照);
                   if (!文書.exists()) return null;
                   const 中身 = 文書.data();
-                  const { 直した射手, 触った } = 名前の整合.射手たちを合わせる(中身.archers, 名前表);
+                  // 名前表は、書く直前のいまの名簿から作り直す。直している最中にメンバーの名前が
+                  // 直されても、前の名前に戻さない（100 件を順に直すと、数十秒かかることがある）
+                  const { 直した射手, 触った } = 名前の整合.射手たちを合わせる(中身.archers, 名前表を作る());
                   if (!触った) return null;
                   const 名前たち = 名前の整合.射手の名前たち(直した射手);
                   取引.update(参照, {
@@ -2623,7 +2629,7 @@ const useScoreStore = zustand.create()(
             const 写す = (一覧, 置き場) =>
               (一覧 || []).map((記録) => {
                 if (!記録 || !直した.has(置き場 + '/' + 記録.id) || '未同期' === 記録.syncStatus) return 記録;
-                const { 直した射手, 触った } = 名前の整合.射手たちを合わせる(記録.archers, 名前表);
+                const { 直した射手, 触った } = 名前の整合.射手たちを合わせる(記録.archers, 名前表を作る());
                 return 触った
                   ? Object.assign({}, 記録, {
                       archers: 直した射手,
