@@ -86,17 +86,29 @@ test('学年を変えたときも、過去の記録の学年が写る（今の�
   assert.equal(store.getState().sessions[0].archers[0].grade, 3);
 });
 
-test('記録が多いメンバー（600 件）でも、クラウドへの一括書き込みは 1 回 500 件を超えない', async () => {
+test('記録が多いメンバー（600 件）でも、クラウドへは少しずつ（1 回 500 件を超えず、画面を止めない大きさ）全部届く', async () => {
   const 多い = Array.from({ length: 600 }, (_, i) => 記録(`s${i}`, [射手({ id: `a${i}` })]));
   const { store, 雲 } = await 用意(多い);
   store.getState().updateMember('mem-1', { name: '新姓 太郎' });
-  await 待つ(800);
-  assert.equal(store.getState().sessions.filter((s) => s.archers[0].name === '新姓 太郎').length, 600, '手元は全部');
+  assert.equal(store.getState().sessions.filter((s) => s.archers[0].name === '新姓 太郎').length, 600, '手元はすぐ全部');
+  const 届いた = () => 多い.filter((r) => 雲.値(記録の道, r.id).archers[0].name === '新姓 太郎').length;
+  // 5 件ずつ 30ms あけて送る：600 件で 120 回、4〜5 秒かかる
+  for (let i = 0; i < 100 && 届いた() < 600; i++) await 待つ(100);
+  assert.equal(届いた(), 600, 'クラウドにも全部届く');
   const 一括 = 雲.記録.filter((x) => x.種別 === 'batch');
-  assert.ok(一括.length >= 2, '何回かに分けて書く');
-  for (const 回 of 一括) assert.ok(回.操作.length <= 500, `1 回に ${回.操作.length} 件`);
+  assert.ok(一括.length >= 100, '小さく分けて送る');
+  for (const 回 of 一括) assert.ok(回.操作.length <= 5, `1 回に ${回.操作.length} 件（画面を止めない大きさにする）`);
+});
+
+test('メンバーを直した直後に、別の団体へ入り直したら、続きは送らない', async () => {
+  const 多い = Array.from({ length: 40 }, (_, i) => 記録(`s${i}`, [射手({ id: `a${i}` })]));
+  const { store, 雲 } = await 用意(多い);
+  store.getState().updateMember('mem-1', { name: '新姓 太郎' });
+  await 待つ(40);
+  store.setState({ activeGroupId: '999999' });
+  await 待つ(600);
   const 届いた = 多い.filter((r) => 雲.値(記録の道, r.id).archers[0].name === '新姓 太郎').length;
-  assert.equal(届いた, 600, 'クラウドにも全部届く');
+  assert.ok(届いた < 40, `別の団体に入ったあとも送り続けた（${届いた} 件）`);
 });
 
 test('いま記録している盤面と、取り消しの控えにも写る（保存前の記録の画面が古い名前のまま残らない）', async () => {
