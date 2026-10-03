@@ -6,9 +6,11 @@
  * 何を見て気づくかは src/updateNotice.js にある（純粋な関数なので検査できる）。
  * ここは出し方と、押されたときの読み込み直しだけ。
  *
- * ■ 勝手に読み込み直さない
+ * ■ 勝手に読み込み直さない（ただし、しばらく離れて戻ってきたときだけ自動で更新する）
  * 記録の途中で画面が入れ替わると、何が起きたのか分からない。
- * 押されたときだけ読み込み直す。閉じることもできる。
+ * ふだんは、押されたときだけ読み込み直す。閉じることもできる。
+ * 3 分以上画面を離れて戻ってきたときだけは、ライブ中・案内中・入力中でなければ、帯を出さずに
+ * 自動で読み込み直す（2026-10-03。条件と理由は src/updateNotice.js の 自動で更新してよいか）。
  *
  * ■ ライブ記録中と案内中は出さない
  * この帯は画面の流れの中に置いてあるので、出ると下が押し下がる。
@@ -27,9 +29,17 @@
  */
 'use strict';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Platform, StyleSheet } from './rn';
-import { 束の名前, 新しい版が出たか, 束がもう無いか, 見に行く間隔 } from './updateNotice';
+import {
+  束の名前,
+  新しい版が出たか,
+  束がもう無いか,
+  名前だけにする,
+  見に行く間隔,
+  自動更新の最短の離席,
+  自動で更新してよいか,
+} from './updateNotice';
 import { useScoreStore } from './useScoreStore';
 import { use案内中 } from './TutorialGuide';
 
@@ -62,12 +72,41 @@ async function 束がサーバーにもう無いか(束) {
   }
 }
 
+/** 自動で読み込み直した版の名前を控える鍵（タブごと。読み込み直しても版が変わらないとき、繰り返さない） */
+const 自動更新の控え = 'kyudo-auto-update-target';
+
+/** 字を入力している最中か（入力欄に印がある）。そのときは勝手に読み込み直さない */
+function 入力中か() {
+  if (typeof document === 'undefined') return false;
+  const 今 = document.activeElement;
+  return !!(今 && (/^(INPUT|TEXTAREA|SELECT)$/.test(今.tagName) || 今.isContentEditable));
+}
+
+/** Service Worker も新しくして、読み込み直す。押されたときと、自動で更新するときが共通で使う */
+async function 読み込み直す() {
+  try {
+    // Service Worker も新しいものに入れ替える。入れ替えないと、
+    // 通信できないときの後ろ盾が古いままになる
+    if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+      const 登録 = await navigator.serviceWorker.getRegistration();
+      if (登録) await 登録.update();
+    }
+  } catch (e) {
+    /* 入れ替えられなくても、読み込み直せば新しい束にはなる */
+  }
+  if (typeof location !== 'undefined') location.reload();
+}
+
 export function UpdateBar() {
   const [出すか, 出すかを置く] = useState(false);
   const [閉じたか, 閉じたかを置く] = useState(false);
   // 記録中と案内中は出さない（上の説明を参照）。見に行くのは続ける
   const ライブ中 = useScoreStore((状態) => 状態.isLiveActive);
   const 案内中 = use案内中();
+  // 見に行く処理は一度だけ作るので、いまの状態は参照から読む
+  const いまの状況 = useRef({ ライブ中, 案内中 });
+  いまの状況.current = { ライブ中, 案内中 };
+  const 離れた時刻 = useRef(0);
 
   useEffect(() => {
     if (!IS_WEB) return;
@@ -75,7 +114,8 @@ export function UpdateBar() {
     if (!束) return; // 何を比べればよいか分からない。黙る
     let 生きている = true;
 
-    const 見に行く = async () => {
+    // 離れていた時間（ミリ秒）。切り替えて戻っただけでなく、しばらく離れていたときだけ自動で更新する
+    const 見に行く = async (離れていた時間 = 0) => {
       if (!生きている || typeof fetch !== 'function') return;
       try {
         // 取り置きは使わない。使うと、まさに古いものを見て「変わっていない」と答える
@@ -85,18 +125,54 @@ export function UpdateBar() {
         if (!生きている || !新しい版が出たか(束, 文)) return;
         // 取り直した index.html は、通信できないとき控えの古いものかもしれない。
         // 今の束がサーバーにもう無いと確かめられたときだけ、新しい版が出たとする
-        if ((await 束がサーバーにもう無いか(束)) && 生きている) 出すかを置く(true);
+        if (!((await 束がサーバーにもう無いか(束)) && 生きている)) return;
+        // しばらく離れて戻ってきたときは、帯を出さずに自動で読み込み直す（updateNotice の説明）
+        const 新しい束 = 名前だけにする(束の名前(文));
+        let 前に試した束 = null;
+        try {
+          前に試した束 = sessionStorage.getItem(自動更新の控え);
+        } catch (e) {
+          /* 読めなければ、前に試していないとして扱う */
+        }
+        const 最短 = Number.isFinite(globalThis.__自動更新の離席ミリ秒) ? globalThis.__自動更新の離席ミリ秒 : 自動更新の最短の離席;
+        if (
+          自動で更新してよいか({
+            離れていた時間,
+            ライブ中: いまの状況.current.ライブ中,
+            案内中: いまの状況.current.案内中,
+            入力中: 入力中か(),
+            新しい束,
+            前に試した束,
+            最短,
+          })
+        ) {
+          try {
+            sessionStorage.setItem(自動更新の控え, 新しい束);
+          } catch (e) {
+            /* 控えられなくても、読み込み直しは 1 回だけなので続ける */
+          }
+          await 読み込み直す();
+          return;
+        }
+        出すかを置く(true);
       } catch (e) {
         /* 通信できないだけ。次の機会に見る */
       }
     };
 
-    // 画面が戻ってきたときに見る。裏に回っているあいだは見ない
+    // 画面が戻ってきたときに見る。裏に回っているあいだは見ない（離れた時刻だけ控える）
     const 戻ってきたら = () => {
-      if (typeof document !== 'undefined' && !document.hidden) 見に行く();
+      if (typeof document === 'undefined') return;
+      if (document.hidden) {
+        離れた時刻.current = Date.now();
+        return;
+      }
+      const 離れていた時間 = 離れた時刻.current ? Date.now() - 離れた時刻.current : 0;
+      離れた時刻.current = 0;
+      見に行く(離れていた時間);
     };
     if (typeof document !== 'undefined') document.addEventListener('visibilitychange', 戻ってきたら);
-    const 時計 = setInterval(見に行く, 見に行く間隔);
+    const 時計 = setInterval(() => 見に行く(0), 見に行く間隔);
     // node（検査）では、走り続ける時計があるとまとめて終われない
     if (時計 && typeof 時計.unref === 'function') 時計.unref();
 
@@ -108,20 +184,6 @@ export function UpdateBar() {
   }, []);
 
   if (!IS_WEB || !出すか || 閉じたか || ライブ中 || 案内中) return null;
-
-  const 読み込み直す = async () => {
-    try {
-      // Service Worker も新しいものに入れ替える。入れ替えないと、
-      // 通信できないときの後ろ盾が古いままになる
-      if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
-        const 登録 = await navigator.serviceWorker.getRegistration();
-        if (登録) await 登録.update();
-      }
-    } catch (e) {
-      /* 入れ替えられなくても、読み込み直せば新しい束にはなる */
-    }
-    if (typeof location !== 'undefined') location.reload();
-  };
 
   return (
     <View style={S.帯} accessibilityRole="alert">

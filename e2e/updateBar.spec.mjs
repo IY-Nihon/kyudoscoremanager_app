@@ -185,3 +185,98 @@ test('更新の帯：AppEntry の束が無い中身（Wi-Fi のログイン画�
 
   await expect(page.getByText(/新しい版が出ています/), '別の .js があるだけで帯が出た').toHaveCount(0);
 });
+
+// ───── 自動で更新する（しばらく離れて戻ってきたとき） ─────
+
+/** 画面を離れた・戻ったことにする（document.hidden を差し替えて、visibilitychange を出す） */
+async function 離れる(page) {
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+}
+async function 戻る(page) {
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => false });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await page.waitForTimeout(1500);
+}
+/** 離席の最短を 0 にして、すぐ戻っても「しばらく離れた」とみなす（本番は 3 分） */
+async function 離席を短くする(page) {
+  await page.addInitScript(() => {
+    globalThis.__自動更新の離席ミリ秒 = 0;
+  });
+}
+
+test('自動で更新：しばらく離れて戻ると、帯を出さずに読み込み直す', async ({ page }) => {
+  await 離席を短くする(page);
+  await page.goto('/');
+  await page.waitForTimeout(3000);
+  const 束 = await いまの束(page);
+  await 返す中身を決める(page, '/_expo/static/js/web/AppEntry-4444444444444444444444444444ffff.js');
+  await 束の有無を決める(page, 束, false);
+  await page.evaluate(() => {
+    window.__押す前の印 = 1;
+  });
+  await 離れる(page);
+  await 戻る(page);
+  await expect
+    .poll(() => page.evaluate(() => (typeof window.__押す前の印 === 'undefined' ? '消えた' : '残っている')), {
+      timeout: 30_000,
+      message: 'しばらく離れて戻っても、自動で読み込み直していない',
+    })
+    .toBe('消えた');
+});
+
+test('自動で更新：読み込み直しても版が変わらないときは、繰り返さず帯にする（読み込み直しの繰り返しを防ぐ）', async ({ page }) => {
+  await 離席を短くする(page);
+  await page.goto('/');
+  await page.waitForTimeout(3000);
+  const 束 = await いまの束(page);
+  // この検査では、何度読み込み直しても「新しい版が出ている」と答え続ける（版が変わらない場面）
+  await 返す中身を決める(page, '/_expo/static/js/web/AppEntry-5555555555555555555555555555ffff.js');
+  await 束の有無を決める(page, 束, false);
+  await 離れる(page);
+  await 戻る(page); // 1 回目：自動で読み込み直す
+  await page.waitForTimeout(4000);
+  await 離れる(page);
+  await 戻る(page); // 2 回目：同じ版へは繰り返さない → 帯
+  await expect(page.getByText(/新しい版が出ています/), '自動更新を繰り返したか、帯が出ない').toBeVisible({ timeout: 15_000 });
+});
+
+test('自動で更新：短い離席（3 分に満たない）は、読み込み直さず帯のまま', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForTimeout(3000);
+  const 束 = await いまの束(page);
+  await 返す中身を決める(page, '/_expo/static/js/web/AppEntry-6666666666666666666666666666ffff.js');
+  await 束の有無を決める(page, 束, false);
+  await page.evaluate(() => {
+    window.__押す前の印 = 1;
+  });
+  await 離れる(page);
+  await 戻る(page);
+  await expect(page.getByText(/新しい版が出ています/), '帯が出ない').toBeVisible({ timeout: 10_000 });
+  expect(await page.evaluate(() => typeof window.__押す前の印), '短い離席で勝手に読み込み直した').toBe('number');
+});
+
+test('自動で更新：字を入力している最中は、読み込み直さず帯にする', async ({ page }) => {
+  await 離席を短くする(page);
+  await page.goto('/');
+  await page.waitForTimeout(3000);
+  const 束 = await いまの束(page);
+  await 返す中身を決める(page, '/_expo/static/js/web/AppEntry-7777777777777777777777777777ffff.js');
+  await 束の有無を決める(page, 束, false);
+  await page.evaluate(() => {
+    window.__押す前の印 = 1;
+  });
+  // ログイン前の画面の入力欄に、字を打っている最中にする
+  const 欄 = page.getByPlaceholder('例: 123456');
+  await 欄.click();
+  await 欄.pressSequentially('1234', { delay: 20 });
+  await 離れる(page);
+  await 戻る(page);
+  await expect(page.getByText(/新しい版が出ています/), '帯が出ない').toBeVisible({ timeout: 10_000 });
+  expect(await page.evaluate(() => typeof window.__押す前の印), '入力中に勝手に読み込み直した').toBe('number');
+  expect(await 欄.inputValue(), '打っていた字が消えた').toBe('1234');
+});
