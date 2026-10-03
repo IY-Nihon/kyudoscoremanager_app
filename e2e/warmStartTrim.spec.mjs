@@ -16,6 +16,14 @@
  *
  * ■ 団体には書き込まない
  * 読むだけ。100001 に書く他の検査と並べてよい（件数ではなく、外した id が戻るかで見る）。
+ *
+ * ■ 待ち時間が長い理由（2026-10-03 に測った）
+ * iPhone（WebKit）では、Firestore の応答が約 30 秒おきにまとめて届く回がある（トレースでは、
+ * 開いて 33 秒後に最初の応答、その 30 秒後に次の応答）。同じ検査を続けて流すと、15 秒で済む回と、
+ * 遅れて落ちる回が混ざる。差分の取り込みは 集まりごとに順に問い合わせる（5 回）ので、遅れる回は
+ * 60 秒では足りず「外した記録が戻らない」で落ちていた。今日の変更が入る前の束（9/27）でも
+ * 3 回中 2 回、同じ落ち方をしたので、アプリの退行ではなく環境の遅れ。本当に戻らないときだけ
+ * 落ちるよう、待ちを長く取る。
  */
 import { test, expect } from '@playwright/test';
 import { 案内を止める, 画面が出るまで待つ } from './helpers.mjs';
@@ -27,7 +35,7 @@ const 控えを読む = (page) =>
   page.evaluate(() => JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {});
 
 test('控えから外した記録は、開き直すと全件を読まずに id で戻る', async ({ page }) => {
-  test.setTimeout(150_000);
+  test.setTimeout(420_000);
   let 記録 = [];
   page.on('console', (m) => 記録.push(m.text()));
   await 案内を止める(page);
@@ -57,7 +65,7 @@ test('控えから外した記録は、開き直すと全件を読まずに id �
         const s = await 控えを読む(page);
         return !!(s.雲の境目 && s.全部そろえた時刻 && (s.sessions || []).length >= 3);
       },
-      { timeout: 90_000, message: '起動の取り込みが済まない（境目が控えに書かれない）' }
+      { timeout: 150_000, message: '起動の取り込みが済まない（境目が控えに書かれない）' }
     )
     .toBe(true);
   await page.evaluate(() => globalThis.__弓道の控えを書く?.());
@@ -76,7 +84,7 @@ test('控えから外した記録は、開き直すと全件を読まずに id �
         const 記録たち = ((await 控えを読む(page)).sessions || []).map((記録1件) => 記録1件 && 記録1件.id);
         return 外した.filter((id) => 記録たち.includes(id)).length;
       },
-      { timeout: 60_000, message: '外した記録が戻らない' }
+      { timeout: 180_000, message: '外した記録が戻らない' }
     )
     .toBe(外した.length);
   expect(
