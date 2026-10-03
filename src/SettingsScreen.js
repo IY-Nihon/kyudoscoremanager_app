@@ -100,6 +100,8 @@ const SettingsScreen = () => {
     autoPromotionEnabled = true,
     setAutoPromotionEnabled,
     enableArrowLocation,
+    矢所の窓を自動で開く,
+    set矢所の窓を自動で開く,
     arrowTargetType,
     setEnableArrowLocation,
     setArrowTargetType,
@@ -136,6 +138,8 @@ const SettingsScreen = () => {
     'autoPromotionEnabled',
     'setAutoPromotionEnabled',
     'enableArrowLocation',
+    '矢所の窓を自動で開く',
+    'set矢所の窓を自動で開く',
     'arrowTargetType',
     'setEnableArrowLocation',
     'setArrowTargetType',
@@ -1062,52 +1066,21 @@ const SettingsScreen = () => {
               />
             </View>
             {enableArrowLocation && (
-              <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
-                <View style={[styles.itemLeft, { marginBottom: 8 }]}>
-                  <Icons.Ionicons name="disc-outline" size={22} color="#34C759" style={styles.itemIcon} />
-                  <Text style={styles.itemText}>使用する的の種類</Text>
+              <View style={styles.item}>
+                <View style={[styles.itemLeft, { flex: 1 }]}>
+                  <Icons.Ionicons name="open-outline" size={22} color="#34C759" style={styles.itemIcon} />
+                  <View style={{ flex: 1, paddingRight: 8 }}>
+                    <Text style={styles.itemText}>○×のあと、窓を自動で開く</Text>
+                    <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 2 }}>
+                      切っておくと、○×は押すだけで入ります。矢所は、マスの長押しで置けます
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.flexRow}>
-                  <TouchableOpacity
-                    onPress={() => setArrowTargetType('kasumi36')}
-                    style={[styles.radioBtn, 'kasumi36' === arrowTargetType && styles.radioBtnActive]}
-                  >
-                    <Text
-                      style={[
-                        styles.radioBtnText,
-                        'kasumi36' === arrowTargetType && styles.radioBtnTextActive,
-                      ]}
-                    >
-                      霞的
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => setArrowTargetType('hoshi36')}
-                    style={[styles.radioBtn, 'hoshi36' === arrowTargetType && styles.radioBtnActive]}
-                  >
-                    <Text
-                      style={[
-                        styles.radioBtnText,
-                        'hoshi36' === arrowTargetType && styles.radioBtnTextActive,
-                      ]}
-                    >
-                      星的
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => setArrowTargetType('hoshi24')}
-                    style={[styles.radioBtn, 'hoshi24' === arrowTargetType && styles.radioBtnActive]}
-                  >
-                    <Text
-                      style={[
-                        styles.radioBtnText,
-                        'hoshi24' === arrowTargetType && styles.radioBtnTextActive,
-                      ]}
-                    >
-                      星的(八寸)
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+                <Switch
+                  value={!!矢所の窓を自動で開く}
+                  onValueChange={set矢所の窓を自動で開く}
+                  trackColor={{ false: '#D1D1D6', true: '#34C759' }}
+                />
               </View>
             )}
           </>
