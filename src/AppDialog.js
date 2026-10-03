@@ -18,34 +18,78 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 const React = require('react');
 const { useState, useEffect, useRef } = React;
-const { Text, StyleSheet, View, Modal, Pressable, ScrollView } = require('./rn');
+const { Text, StyleSheet, View, Modal, Pressable, ScrollView, Platform, Animated } = require('./rn');
 // 帯か窓かの決まりは純粋な関数なので外に出してある。
 // 43か所ぶんの実際の文で、node --test から確かめている（test/dialogRules.test.js）
 const { 窓で止めるか, 帯の長さ, 帯の時計をつくる } = require('./dialogRules');
 
+const IS_WEB = Platform.OS === 'web';
+
 /**
- * 帯を包んでいる Modal の容器を、指が素通りする状態にする。
+ * 帯を出す層。web では body の直下に、画面いっぱいの固定の箱を作って、その中へ描く。
  *
- * Modal に pointerEvents="none" を渡しても、react-native-web は中の View に
- * しか渡さない。容器（画面いっぱいの position:fixed の箱）は指を吸ったまま
- * なので、帯が出ているあいだ、下の入力欄や釦が押せなくなる。
- * 実際、新規作成で「すべての項目を入力してください」の帯が出ているあいだ、
- * メールアドレスの欄を押せなかった。
+ * ■ なぜ Modal に入れないか（2026-10-03）
+ * 以前は帯も Modal の中に描いていた（あとから開く窓より手前に出すため）。ところが
+ * react-native-web の Modal は、いちばん手前の Modal の外へ焦点が移ると、中へ戻す囲い
+ * （ModalFocusTrap）を持つ。帯が出ている 2.6〜6 秒のあいだ、下の入力欄を押しても焦点が取れず、
+ * キーボードが出ない・字が打てなかった（ログインに失敗した帯が出ている間は、IDを打ち直せない。
+ * 窓の中でも同じで、メンバーの編集の窓で名前を空にして保存した帯のあいだ、名前の欄に打てない）。
+ * 帯の Modal に role=dialog・aria-modal が付き、読み上げでも窓として扱われていた。
  *
- * 帯は読ませるだけで押させないので、容器ごと素通りにしてよい。
- * 中の View で受け取った節から親をたどって、画面いっぱいの箱に印を付ける。
+ * 2026-08-29 には「帯の下の入力欄が押せない」を、容器に pointer-events: none を付けて直した。
+ * 押せても焦点が戻される、という残りがこちら。帯は読ませるだけで、押させない・焦点も取らない。
+ * 焦点にも指にも関わらない箱に描く。
+ *
+ * ■ 重なり
+ * 箱は帯を出すときに作って body の末尾に置き、消すときに外す。RNW の Modal は 9999 なので、
+ * 10000 にして、帯が出ている間に開いた窓にも隠れないようにする（Modal のままだと DOM の順で、
+ * あとから開いた窓が上に来た）。
+ *
+ * 端末（web 以外）では箱を作らず、そのまま重ねる。
  */
-function 帯を素通りにする(節) {
-  if (!節 || typeof window === 'undefined') return;
-  let n = 節;
-  for (let i = 0; i < 6 && n; i++) {
-    if (n.style) n.style.pointerEvents = 'none';
-    const 親 = n.parentNode;
-    // 画面いっぱいの箱まで来たら、そこで止める
-    if (!親 || 親 === document.body) break;
-    n = 親;
-  }
-}
+const 帯の層 = ({ children }) => {
+  const [箱, 箱を置く] = useState(null);
+  useEffect(() => {
+    if (!IS_WEB || typeof document === 'undefined') return undefined;
+    const 新しい箱 = document.createElement('div');
+    新しい箱.setAttribute('data-testid', 'アプリの帯の層');
+    Object.assign(新しい箱.style, {
+      position: 'fixed',
+      top: '0',
+      right: '0',
+      bottom: '0',
+      left: '0',
+      zIndex: '10000',
+      pointerEvents: 'none',
+    });
+    document.body.appendChild(新しい箱);
+    箱を置く(新しい箱);
+    return () => {
+      if (新しい箱.parentNode) 新しい箱.parentNode.removeChild(新しい箱);
+    };
+  }, []);
+  if (!IS_WEB) return children;
+  return 箱 ? require('react-dom').createPortal(children, 箱) : null;
+};
+
+/** 帯の見た目。出るとき 300 ミリ秒かけて濃くなる（前の Modal の fade と同じ） */
+const 帯の見た目 = ({ 字 }) => {
+  const 濃さ = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(濃さ, { toValue: 1, duration: 300, useNativeDriver: false }).start();
+  }, [濃さ]);
+  return (
+    <Animated.View
+      style={[styles.帯, { opacity: 濃さ }]}
+      pointerEvents="none"
+      testID="アプリの帯"
+      role="status"
+      aria-live="polite"
+    >
+      <Text style={styles.帯の字}>{字}</Text>
+    </Animated.View>
+  );
+};
 
 // 画面側（アプリの窓）が入れ替わっても届くよう、購読の形にしておく
 let 聞き手 = null;
@@ -91,24 +135,15 @@ const アプリの窓 = () => {
   return (
     <>
       {/*
-        Modal は「置かれたとき」に body の末尾へ場所を作る。場所には重なりの
-        指定が無いので、先に置いたものほど下になる。ずっと置いておくと、
-        あとから開いた部員の窓などに隠れて、見えているのに押せなくなる。
-        だから出すときだけ置く。帯は押す邪魔をしないよう素通しにする。
+        どちらも「出すときだけ置く」。Modal は置かれたときに body の末尾へ場所を作る。場所には
+        重なりの指定が無いので、先に置いたものほど下になる。ずっと置いておくと、あとから開いた
+        部員の窓などに隠れて、見えているのに押せなくなる。
+        帯は Modal に入れない。焦点も指も取らない専用の箱（帯の層）に描く（理由は帯の層の説明）。
       */}
       {帯 ? (
-        <Modal visible transparent animationType="fade" pointerEvents="none">
-          <View
-            style={styles.帯}
-            pointerEvents="none"
-            testID="アプリの帯"
-            /* pointerEvents は容器まで届かないので、描かれた節から親をたどって
-               素通りにする。これが無いと、帯が出ているあいだ下が押せない */
-            ref={帯を素通りにする}
-          >
-            <Text style={styles.帯の字}>{帯}</Text>
-          </View>
-        </Modal>
+        <帯の層>
+          <帯の見た目 字={帯} />
+        </帯の層>
       ) : null}
       {いま ? (
       <Modal

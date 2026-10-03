@@ -39,6 +39,34 @@ function 窓を見張る(page) {
   return 数;
 }
 
+/**
+ * 打って、入ったかを確かめ、違えば打ち直す（入力欄は controlled で、打ち込みの途中の描き直しで字が落ちる。
+ * 焦点が取れないと、何度打っても 0 字のまま）。入ったら true
+ */
+async function 確かに打つ(欄, 文字) {
+  for (let 回 = 0; 回 < 3; 回++) {
+    await 欄.click();
+    await 欄.pressSequentially(文字, { delay: 20 });
+    if ((await 欄.inputValue()) === 文字) return true;
+    await 欄.fill('');
+  }
+  return false;
+}
+
+/**
+ * 帯が出きるのを待つ。Modal のころの囲いは、出る動き（300 ミリ秒）が終わってから働いたので、
+ * 帯が見えた直後に打つと、囲いのある古い作りでも通ってしまう（この検査が何も見ない）。
+ * 帯の最短は 2.6 秒なので、そのうち 0.8 秒だけ置く
+ */
+function 帯が出きるのを待つ(page) {
+  return page.waitForTimeout(800);
+}
+
+/** いま焦点が当たっている欄の placeholder（欄でなければ空） */
+function 焦点の欄の印(page) {
+  return page.evaluate(() => (document.activeElement && document.activeElement.getAttribute('placeholder')) || '');
+}
+
 async function 入る(page) {
   // 案内とお知らせは開く前に止める。開いてから止めて reload すると、
   // アプリを2回起動することになる（遅い機種ほど効く）
@@ -92,6 +120,23 @@ test.describe('確認とお知らせ', () => {
     const 帯 = page.getByTestId('アプリの帯');
     await expect(帯).toBeVisible({ timeout: 10_000 });
     await expect(帯).toBeHidden({ timeout: 10_000 });
+  });
+
+  test('帯が出ている間も、下の入力欄を押して字が打てる（帯は焦点を取らない）', async ({ page }) => {
+    // 帯が Modal の中にあったころ（〜2026-10-03）は、react-native-web の Modal が窓の外へ移った焦点を
+    // 中へ戻すので、帯の 2.6〜6 秒のあいだ入力欄に打てなかった（ログイン失敗の帯の間は打ち直せない）
+    await page.goto('/');
+    await 画面が出るまで待つ(page);
+    await page.getByText('ログイン', { exact: true }).click();
+    const 帯 = page.getByTestId('アプリの帯');
+    await expect(帯).toBeVisible({ timeout: 10_000 });
+    await 帯が出きるのを待つ(page);
+
+    const 欄 = page.getByPlaceholder('例: 123456');
+    expect(await 確かに打つ(欄, '123'), '帯が出ている間に、団体IDの欄へ字が打てない').toBe(true);
+    // 打てたのは帯が出ている間のこと（帯が先に消えていたら、この検査は何も見ていない）
+    await expect(帯, '打っている間に帯が消えた（検査が成り立たない）').toBeVisible();
+    expect(await 焦点の欄の印(page)).toBe('例: 123456');
   });
 
   test('長い知らせは流さず、窓で止めて読ませる', async ({ page }) => {
@@ -197,4 +242,59 @@ test.describe('帯は窓の上に出る', () => {
     await expect(page.getByTestId('アプリの窓')).toBeVisible({ timeout: 10_000 });
     await page.getByTestId('窓のボタン-キャンセル').click();
   });
+  test('部員の窓の中でも、帯が出ている間に名前欄へ字が打てる。帯は窓より手前の専用の箱に出る', async ({ page }) => {
+    // 窓（Modal）の中の入力欄は、帯が Modal だったころは「いちばん手前の Modal」が帯に替わるため、
+    // 帯の間は焦点を取れなかった。今は帯が Modal ではない箱に出るので、窓の中でそのまま打てる
+    await 入る(page);
+    await page.getByText('メンバー', { exact: true }).first().click();
+
+    // 新規登録の窓（名前が空）。保存を押すと「名前を入力してください」の帯が出て、保存は止まる
+    // （団体には何も書き込まない）。追加の釦は絵だけなので、読み上げの名前で探す
+    const 追加 = page.getByLabel('部員を追加', { exact: true });
+    await expect(追加, '部員を追加の釦が出ない').toBeVisible({ timeout: 20_000 });
+    await 追加.click();
+    await expect(page.getByText('保存する', { exact: true }).first(), '新規登録の窓が開かない').toBeVisible({ timeout: 15_000 });
+    await page.getByText('保存する', { exact: true }).first().click();
+
+    const 帯 = page.getByTestId('アプリの帯');
+    await expect(帯).toBeVisible({ timeout: 10_000 });
+    await expect(帯).toContainText('名前を入力してください');
+    await 帯が出きるのを待つ(page);
+
+    // 窓の中の名前欄（うしろの検索欄ではなく）
+    const 名前欄 = page.getByPlaceholder('例: 山田 太郎');
+    expect(await 確かに打つ(名前欄, 'ab'), '帯が出ている間に、窓の中の名前欄へ字が打てない').toBe(true);
+    await expect(帯, '打っている間に帯が消えた（検査が成り立たない）').toBeVisible();
+    expect(await 焦点の欄の印(page)).toBe('例: 山田 太郎');
+
+    // 帯は Modal ではない専用の箱（body の直下）にあり、窓（react-native-web の Modal は 9999）より手前
+    const 重なり = await page.evaluate(() => {
+      const 層 = document.querySelector('[data-testid="アプリの帯の層"]');
+      if (!層) return { 層あり: false };
+      const 窓たち = [...document.querySelectorAll('[aria-modal="true"]')].map((m) => {
+        let n = m;
+        while (n && n !== document.body && getComputedStyle(n).zIndex === 'auto') n = n.parentElement;
+        return n && n !== document.body ? Number(getComputedStyle(n).zIndex) : 0;
+      });
+      return {
+        層あり: true,
+        直下: 層.parentElement === document.body,
+        層の重なり: Number(getComputedStyle(層).zIndex),
+        指を通す: getComputedStyle(層).pointerEvents === 'none',
+        帯は窓の中: !!層.closest('[aria-modal]') || !!層.querySelector('[aria-modal]'),
+        窓の数: 窓たち.length,
+        窓の重なりの最大: Math.max(0, ...窓たち),
+      };
+    });
+    expect(重なり.層あり, '帯の専用の箱が無い').toBe(true);
+    expect(重なり.直下, '帯の箱が body の直下に無い').toBe(true);
+    expect(重なり.指を通す, '帯の箱が指を通さない').toBe(true);
+    expect(重なり.帯は窓の中, '帯が窓（aria-modal）の中にある').toBe(false);
+    expect(重なり.窓の数, '新規登録の窓が数えられない').toBeGreaterThan(0);
+    expect(重なり.層の重なり, '帯が窓より手前にない').toBeGreaterThan(重なり.窓の重なりの最大);
+
+    // 窓を閉じる（保存はしない）
+    await page.keyboard.press('Escape');
+  });
+
 });

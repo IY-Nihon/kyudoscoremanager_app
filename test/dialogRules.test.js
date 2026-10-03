@@ -166,28 +166,34 @@ test('掛け直しても、時計は1つしか持たない', () => {
   assert.strictEqual(時.残り(), 1, '掛け直したぶんが溜まっている');
 });
 
-test('帯は、包んでいる Modal の容器ごと指を通す', () => {
-  // 2026-08-29 に踏んだ。Modal に pointerEvents="none" を渡しても
-  // react-native-web は中の View にしか渡さない。容器（画面いっぱいの
-  // position:fixed の箱）は指を吸ったままなので、帯が出ているあいだ
-  // 下の入力欄が押せなかった（新規作成のメールアドレスの欄で発覚）。
-  //
-  // 帯は読ませるだけで押させないので、容器ごと素通りにしてよい。
-  // 窓（ボタン付き）は押させるので、こちらは素通りにしてはいけない。
+test('帯は Modal に入れない：焦点も指も取らない箱に描き、窓より手前に置く', () => {
+  // 2026-08-29 に踏んだ「帯が出ている間、下の入力欄が押せない」は、Modal の容器に
+  // pointer-events: none を付けて直した。2026-10-03 に残りが分かった：react-native-web の Modal は
+  // 窓の外へ焦点が移ると中へ戻す囲い（ModalFocusTrap）を持つので、押せても焦点が取れず、帯が出ている
+  // 2.6〜6 秒のあいだ字が打てなかった（ログイン失敗の帯の間はIDを打ち直せない）。
+  // 帯は読ませるだけなので、Modal を使わず、焦点にも指にも関わらない箱（帯の層）に描く。
+  // 窓（ボタン付き）は押させるので、Modal のまま。
   const 本体 = require('fs').readFileSync(
     require('path').join(__dirname, '..', 'src', 'AppDialog.js'),
     'utf8'
   );
-  assert.ok(
-    /function 帯を素通りにする/.test(本体),
-    '容器を素通りにする手当てが無い（帯の下が押せなくなる）'
-  );
-  // 帯にだけ付いていること
   const 帯の所 = 本体.slice(本体.indexOf('{帯 ?'), 本体.indexOf('{いま ?'));
-  assert.ok(帯の所.includes('ref={帯を素通りにする}'), '帯に手当てが付いていない');
-  const 窓の所 = 本体.slice(本体.indexOf('{いま ?'));
+  assert.ok(帯の所.includes('<帯の層>'), '帯が専用の箱（帯の層）に描かれていない');
   assert.ok(
-    !窓の所.includes('帯を素通りにする'),
-    '窓まで素通りにすると、ボタンが押せなくなる'
+    !/<Modal/.test(帯の所),
+    '帯が Modal に入っている：Modal は窓の外へ焦点が移ると中へ戻すので、帯の間は入力欄に打てなくなる'
   );
+  // 箱は指を通し、窓（react-native-web の Modal は 9999）より手前
+  const 層の所 = 本体.slice(本体.indexOf('const 帯の層'), 本体.indexOf('const 帯の見た目'));
+  assert.ok(/pointerEvents: *'none'/.test(層の所), '帯の箱が指を通さない（帯の下が押せなくなる）');
+  const z = Number((層の所.match(/zIndex: *'?([0-9]+)'?/) || [])[1]);
+  assert.ok(z > 9999, `帯の箱の重なり(${z})が窓の 9999 より手前にない`);
+  // 帯そのものも指を通す
+  const 見た目の所 = 本体.slice(本体.indexOf('const 帯の見た目'), 本体.indexOf('// 画面側（アプリの窓）'));
+  assert.ok(/pointerEvents="none"/.test(見た目の所), '帯が指を通さない');
+  assert.ok(/testID="アプリの帯"/.test(見た目の所), '検査が見る印（アプリの帯）が無い');
+  // 窓は Modal のまま
+  const 窓の所 = 本体.slice(本体.indexOf('{いま ?'));
+  assert.ok(/<Modal/.test(窓の所), '窓が Modal でなくなっている');
+  assert.ok(!窓の所.includes('帯の層'), '窓まで帯の箱に入れると、焦点が囲われず背面が操作できてしまう');
 });
