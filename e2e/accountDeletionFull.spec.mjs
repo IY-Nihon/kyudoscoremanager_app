@@ -81,15 +81,30 @@ test('団体アカウントを作って、設定から削除すると、その�
   印('削除を押した');
   await expect(page.getByText('団体アカウントを削除しました', { exact: false })).toBeVisible({ timeout: 180_000 });
   印('削除できた');
-  // 知らせの窓は、入口に戻る描き直しで消えることがある。出ていれば閉じる
-  const ok = page.getByText('OK', { exact: true });
-  if (await ok.isVisible().catch(() => false)) await ok.click().catch(() => {});
-
-  印('OK を押した');
   // ── 入口へ戻り、その団体IDでは入れない ──
   await expect(page.getByPlaceholder('例: 123456')).toBeVisible({ timeout: 30_000 });
-  await page.getByPlaceholder('例: 123456').fill(団体ID);
-  await page.locator('input[type="password"]').first().fill(合言葉);
+  // 「削除しました」は OK の窓ではなく、画面下の帯（トースト）で出て自動で消える。帯は Modal の中に
+  // あり、react-native-web の Modal は窓の外に焦点が移ると中へ戻す。帯が出ている間は入力欄を
+  // 押しても焦点が取れず、字が打てない（Chromium で確かめた。iPhone では fill() の値も消えて落ちていた。
+  // 2026-10-03）。帯が消えるのを待ってから打つ
+  await expect(page.getByTestId('アプリの帯'), '削除の帯が消えない').toHaveCount(0, { timeout: 30_000 });
+  印('帯が消えた');
+  // 1 字ずつ打って、入ったかを確かめ、違えば打ち直す（e2e-iphone-failures-are-contention）
+  const 確かに打つ = async (欄, 文字) => {
+    for (let 回 = 0; 回 < 3; 回++) {
+      await 欄.click();
+      await 欄.fill('');
+      await 欄.pressSequentially(文字, { delay: 20 });
+      if ((await 欄.inputValue()) === 文字) return;
+    }
+    throw new Error('入力欄に打った字が残らない');
+  };
+  const ID欄 = page.getByPlaceholder('例: 123456');
+  await 確かに打つ(ID欄, 団体ID);
+  await 確かに打つ(page.locator('input[type="password"]').first(), 合言葉);
+  // 打ち終わったあとの描き直しで消えていないか、押す直前にもう一度確かめる
+  if ((await ID欄.inputValue()) !== 団体ID) await 確かに打つ(ID欄, 団体ID);
   await page.getByText('ログイン', { exact: true }).click();
-  await expect(page.getByText('団体IDまたはパスワードが正しくありません', { exact: false })).toBeVisible({ timeout: 30_000 });
+  // 団体IDから入れるか調べるのに雲へ聞く（getDoc）。iPhone では応答が遅れる回があるので長めに待つ
+  await expect(page.getByText('団体IDまたはパスワードが正しくありません', { exact: false })).toBeVisible({ timeout: 120_000 });
 });
