@@ -28,6 +28,8 @@ async function 入る(page) {
   // 案内とお知らせは開く前に止める。開いてから止めて reload すると、
   // アプリを2回起動することになる（遅い機種ほど効く）
   await 案内を止める(page);
+  // 開く前の時刻。これより後に同期が終わったことで、「雲から取り直した」と言える
+  const 開く前 = Date.now();
   await page.goto('/');
   await 画面が出るまで待つ(page);
   // 読み込み中の画面でも「出た」になるので、ログイン欄が出るか、
@@ -50,20 +52,26 @@ async function 入る(page) {
   // ため）ので、雲から取り直すまで分析は空のまま。団体IDが入っただけで
   // 先へ進むと、弓具の節も的中の型も「まだ何も無い」画面を見ることになる。
   // 決まった秒数を置くやり方だと、取り直しが間に合った回だけ通る。
+  //
+  // 記録の数だけを見ると、端末の控えに残っていた一部（検査が前に作った記録など）で
+  // 「届いた」になり、雲からの取り込みが終わる前に先へ進んでしまう。iPhone（WebKit）では
+  // Firestore の最初の応答が約 30 秒遅れる回があり（e2e-iphone-failures-are-contention）、
+  // そのとき部員の一覧が一部しか無いまま「部員1が見つからない」で落ちていた（2026-10-03）。
+  // 同期の終わりの時刻（lastSyncTime）が、開く前より後になるのを待つ。
   await expect
     .poll(
       () =>
-        page.evaluate(() => {
+        page.evaluate((前) => {
           try {
             const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
-            return (s.sessions || []).length;
+            return (s.lastSyncTime || 0) >= 前 && (s.sessions || []).length > 0;
           } catch (e) {
-            return 0;
+            return false;
           }
-        }),
-      { timeout: 60_000, message: '記録が手元に届かない（分析が空のまま進む）' }
+        }, 開く前),
+      { timeout: 150_000, message: '記録が手元に届かない（雲からの取り込みが終わらない。分析が空のまま進む）' }
     )
-    .toBeGreaterThan(0);
+    .toBe(true);
   // ここで書いて reload していたのをやめた（上の 案内を止める が代わり）
 }
 
