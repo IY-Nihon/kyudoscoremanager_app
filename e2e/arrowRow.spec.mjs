@@ -15,16 +15,17 @@ import { 案内を止める, 画面が出るまで待つ, 入り口が決まる�
 
 test.use({ storageState: 'e2e/.auth/100007.json' });
 
-async function 始める(page, 矢所を使う) {
+async function 始める(page, 矢所を使う, 自動で開く = false) {
   await 案内を止める(page);
-  await page.addInitScript((使う) => {
+  await page.addInitScript(([使う, 自動]) => {
     const 鍵 = 'archery-score-storage';
     const 中 = JSON.parse(localStorage.getItem(鍵) || '{}');
     const 状態 = (中 && 中.state) || {};
     状態.enableArrowLocation = 使う;
     状態.矢所の行 = '全部';
+    状態.矢所の窓を自動で開く = 自動;
     localStorage.setItem(鍵, JSON.stringify(Object.assign({}, 中, { state: 状態 })));
-  }, 矢所を使う);
+  }, [矢所を使う, 自動で開く]);
   await page.goto('/');
   await 画面が出るまで待つ(page);
   await 入り口が決まるまで待つ(page);
@@ -40,7 +41,7 @@ test('矢所の記録が OFF のときは、矢所の行を出さない', async 
 });
 
 test('矢所を置くと、その列の下の的に点が載る。見出しで見せ方が変わり、的を押すと窓が開く', async ({ page }) => {
-  await 始める(page, true);
+  await 始める(page, true, true); // 自動で開く設定を入れて、○×のあと窓が開くところから始める
   const ます = page.locator('[data-testid^="ます-"]');
   const 見出し = page.getByTestId('矢所の行の見出し');
   const 的 = page.locator('[data-testid^="矢所の行-"]');
@@ -83,4 +84,28 @@ test('矢所を置くと、その列の下の的に点が載る。見出しで�
   await page.getByTestId('矢所の窓-範囲-全部').click();
   await page.getByTestId('矢所の窓-範囲-立').click();
   await page.getByText('完了', { exact: true }).click();
+});
+
+test('既定では、○×を押しても矢所の窓は開かない。マスを長押しすると開き、置くと列の下の的に載る', async ({ page }) => {
+  // 矢所の記録を ON にすると○×を押すたびに窓が開き、素早く入れたいときに止められた（2026-10-04）。
+  // 既定は開かない。置きたいマスを長押しする
+  await 始める(page, true, false);
+  const ます = page.locator('[data-testid^="ます-"]');
+  const 的 = page.locator('[data-testid^="矢所の行-"]');
+  await ます.nth(0).click();
+  await page.waitForTimeout(1200); // 自動で開く設定なら、0.5 秒で開く
+  await expect(page.getByText('矢所の記録', { exact: false }), '既定なのに、○×のあと窓が開いた').toHaveCount(0);
+
+  // 長押し（0.5 秒）で開く
+  const 枠 = await ます.nth(0).boundingBox();
+  await page.mouse.move(枠.x + 枠.width / 2, 枠.y + 枠.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(800);
+  await page.mouse.up();
+  await expect(page.getByText('矢所の記録', { exact: false }).first(), '長押しで窓が開かない').toBeVisible({ timeout: 10_000 });
+  const 窓 = page.viewportSize();
+  await page.mouse.click(窓.width / 2 + 40, 窓.height / 2 + 30);
+  await page.getByText('完了', { exact: true }).click();
+  await 的.first().click();
+  await expect(page.getByText('置き済みです', { exact: false }), '置いた矢所が的に載らず、窓にも出ない').toBeVisible({ timeout: 10_000 });
 });

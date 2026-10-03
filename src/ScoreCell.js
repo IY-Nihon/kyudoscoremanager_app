@@ -33,10 +33,11 @@ const ScoreCell = React.memo(
     // 呼ぶときに getState() から取る（手は変わらないので購読しなくてよい）
     const 店 = () => useScoreStore.getState();
     const 印を切り替える = (...引) => 店().toggleMark(...引);
-    const { viewScale, enableArrowLocation, 自動ロックする, 自動ロックまでの秒 } = useScoreStore(
+    const { viewScale, enableArrowLocation, 矢所の窓を自動で開く, 自動ロックする, 自動ロックまでの秒 } = useScoreStore(
       useShallow((状態) => ({
         viewScale: 状態.viewScale,
         enableArrowLocation: 状態.enableArrowLocation,
+        矢所の窓を自動で開く: !!状態.矢所の窓を自動で開く,
         自動ロックする: 状態.自動ロックする,
         自動ロックまでの秒: 状態.自動ロックまでの秒,
       }))
@@ -244,7 +245,8 @@ const ScoreCell = React.memo(
         if (timerRef.current) clearTimeout(timerRef.current);
         if (nextMark === '') {
           updateArrowLocation(archerId, index, null);
-        } else {
+        } else if (矢所の窓を自動で開く) {
+          // 既定では開かない（設定で入れたときだけ）。置きたいマスは長押し、置いたものは列の下の的で見る
           timerRef.current = setTimeout(() => {
             // 射手は購読せず、要るときに取りに行く（上の 射手を取る の説明）。
             // ここだけ差し替え漏れがあり、矢所を出す設定のときに落ちていた
