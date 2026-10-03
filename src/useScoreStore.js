@@ -2411,9 +2411,14 @@ const useScoreStore = zustand.create()(
               (書く({ sessions: newList, trash: ごみ箱の一覧, lastLocalChange: Date.now() }),
               状態().activeGroupId)
             ) {
-              // 書き込みは 400 件ずつに分ける。Firestore の一括書き込みは 1 回 500 件までで、
-              // 記録が 500 件を超えるメンバーを直すと、1 回で送って丸ごと失敗していた
-              // （手元は新しい名前になり、クラウドと他の端末は古い名前のまま。2026-10-03）
+              // 書き込みは少しずつ（5 件ずつ、間を空けて）送る。
+              // ・一括書き込みは 1 回 500 件までで、記録が 500 件を超えるメンバーを直すと、1 回で送って
+              //   丸ごと失敗していた（手元は新しい名前になり、クラウドと他の端末は古い名前のまま）
+              // ・Firestore は、書く前に中身を端末の保存領域（IndexedDB）へ控える。記録 151 件を 1 回で渡すと、
+              //   控えるのに約 4 秒、画面が止まった（保存を押したあと固まる。2026-10-03 に再現）。
+              //   少しずつなら 1 回あたり 0.1 秒ほどで、止まって見えない
+              // 途中で閉じても、送れなかった記録は雲に前の名前が残るだけで、次に団体の端末が
+              // 開いたときの「名前のずれを直す」が直す
               const 書き込み = [];
               const 集める = (一覧, 元の一覧, 置き場) => {
                 一覧.forEach((記録, 番) => {
@@ -2426,13 +2431,18 @@ const useScoreStore = zustand.create()(
               };
               if (changed) 集める(newList, 元の記録, 'sessions');
               if (ごみ箱が変わった) 集める(ごみ箱の一覧, 元のごみ箱, 'trash');
-              for (let 頭 = 0; 頭 < 書き込み.length; 頭 += 400) {
+              const 団体ID = 状態().activeGroupId;
+              const 少しずつ送る = (頭) => {
+                // 途中で別の団体に入り直したら、続きは送らない
+                if (頭 >= 書き込み.length || 状態().activeGroupId !== 団体ID) return;
                 const 一括 = Firestore.writeBatch(Firebaseの器.db);
-                書き込み.slice(頭, 頭 + 400).forEach(({ 置き場, id, 送る中身 }) => {
-                  一括.set(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/${置き場}`, id), 送る中身, { merge: true });
+                書き込み.slice(頭, 頭 + 5).forEach(({ 置き場, id, 送る中身 }) => {
+                  一括.set(Firestore.doc(Firebaseの器.db, `groups/${団体ID}/${置き場}`, id), 送る中身, { merge: true });
                 });
                 一括.commit().catch((誤り) => console.error('Member Linkage Sync Error:', 誤り));
-              }
+                setTimeout(() => 少しずつ送る(頭 + 5), 30);
+              };
+              少しずつ送る(0);
             }
           }
           状態().activeGroupId &&
