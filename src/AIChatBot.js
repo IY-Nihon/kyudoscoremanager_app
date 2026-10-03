@@ -61,6 +61,7 @@ function 横に流せる行({ children, style }) {
 }
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { useScoreStore } = require('./useScoreStore');
+const { useストアの一部 } = require('./storeSlice');
 const { useNavigation } = require('@react-navigation/native');
 // 鍵はアプリに無い。中継（Cloudflare Workers）へログインの証を付けて呼ぶ
 const 中継 = require('./geminiChukei');
@@ -625,7 +626,7 @@ const AIChatBot = () => {
     currentRouteName,
     myMemberId,
     myMemberName,
-  } = useScoreStore();
+  } = useストアの一部(['activeRole', 'members', 'sessions', 'currentRouteName', 'myMemberId', 'myMemberName']);
   // 個人ログインの端末には団体ぜんぶの部員・記録が入っている。AI に渡す前に、本人の分だけに絞る。
   // 以降の members・sessions は、個人なら絞ったあとのもの（道具も質問例も、他の人には届かない）
   const 個人 = activeRole === 'member';

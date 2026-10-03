@@ -15,6 +15,7 @@ const {
 } = require('./rn');
 const Icons = require('@expo/vector-icons');
 const { useScoreStore } = require('./useScoreStore');
+const { useストアの一部 } = require('./storeSlice');
 const { getShadowStyle } = require('./shadowStyle');
 const ArcherActionModal = ({
   visible,
@@ -60,7 +61,7 @@ const ArcherActionModal = ({
     addSeparator,
     addTotalCalculator,
     deleteArcher,
-  } = useScoreStore();
+  } = useストアの一部(['members', 'alumni', 'archers', 'setArcherMember', 'setSubstitution', 'addArcher', 'addSeparator', 'addTotalCalculator', 'deleteArcher']);
   const [検索の文, 検索の文を置く] = React.useState('');
   const [客名の入力中, 客名の入力中を置く] = React.useState(false);
   const [客名の下書き, 客名の下書きを置く] = React.useState('');

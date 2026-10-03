@@ -14,6 +14,7 @@ const {
   Image,
 } = require('./rn');
 const { useScoreStore } = require('./useScoreStore');
+const { useストアの一部 } = require('./storeSlice');
 const { IS_IOS, IS_WEB, SAFE_TOP_PADDING } = require('./IS_WEB');
 const { auth, db } = require('./db');
 const { 団体で入る, 切り替えを頼む, 部員として入る } = require('./groupLogin');
@@ -88,7 +89,7 @@ const 誤りの文 = (誤り) => {
 // 起動時にこの値が古い端末はログアウトさせ、個人IDで入り直してもらう。
 const MEMBER_AUTH_VERSION = 2;
 const LoginScreen = () => {
-  const { setAuth, fetchAndOverwriteFromCloud, startPeriodicSync, setMemberAuthVersion } = useScoreStore();
+  const { setAuth, fetchAndOverwriteFromCloud, startPeriodicSync, setMemberAuthVersion } = useストアの一部(['setAuth', 'fetchAndOverwriteFromCloud', 'startPeriodicSync', 'setMemberAuthVersion']);
   const [画面の種類, 画面の種類を置く] = React.useState('login_group');
   const [処理中, 処理中を置く] = React.useState(false);
   const [団体IDの入力, 団体IDの入力を置く] = React.useState('');

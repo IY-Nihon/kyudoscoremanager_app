@@ -13,11 +13,12 @@ const {
   ScrollView,
 } = require('./rn');
 const { useScoreStore } = require('./useScoreStore');
+const { useストアの一部 } = require('./storeSlice');
 const Icons = require('@expo/vector-icons');
 const { IS_IOS } = require('./IS_WEB');
 const { 立の数, 立の頭の射, 学年でまとめる } = require('./syncRules');
 const ManualSubstitutionModal = ({ visible, archerId, onClose }) => {
-  const { members, shotsPerRound, setArcherMember, setArcherGuestName, setSubstitution } = useScoreStore();
+  const { members, shotsPerRound, setArcherMember, setArcherGuestName, setSubstitution } = useストアの一部(['members', 'shotsPerRound', 'setArcherMember', 'setArcherGuestName', 'setSubstitution']);
   const [番号の入力, 番号の入力を置く] = React.useState('');
   const // 交代は立の切れ目ですることが多い。射目でも入れられるよう、単位を選べる
     [単位, 単位を置く] = React.useState('立目');

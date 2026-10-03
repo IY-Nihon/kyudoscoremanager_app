@@ -4,11 +4,12 @@
 import React from 'react';
 import { View, Text, StyleSheet } from './rn';
 import { useScoreStore } from './useScoreStore';
+import { useストアの一部 } from './storeSlice';
 
 const CIRCLED_NUMBERS = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳'];
 
 export const ArrowLocationView = ({ arrowLocations = [], size = 200, targetType, hideNumbers = false }) => {
-  const { arrowTargetType: storeTargetType } = useScoreStore();
+  const { arrowTargetType: storeTargetType } = useストアの一部(['arrowTargetType']);
   const arrowTargetType = targetType || storeTargetType;
 
   const radius = size / 2;

@@ -5,6 +5,7 @@ import React, { useRef, useState } from 'react';
 import { View, Text, Modal, TouchableOpacity, Pressable, Alert, Dimensions, StyleSheet } from './rn';
 import { Ionicons } from '@expo/vector-icons';
 import { useScoreStore } from './useScoreStore';
+import { useストアの一部 } from './storeSlice';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -20,7 +21,7 @@ export const ArrowLocationPopover = ({
   arrowLocations = [],
   onSave
 }) => {
-  const { arrowTargetType, setArrowTargetType, updateArrowLocation, archers: storeArchers } = useScoreStore();
+  const { arrowTargetType, setArrowTargetType, updateArrowLocation, archers: storeArchers } = useストアの一部(['arrowTargetType', 'setArrowTargetType', 'updateArrowLocation', 'archers']);
   const touchAreaRef = useRef(null);
   
   // 該当する射手のマーク情報を取得して、○/×判定に用いる
