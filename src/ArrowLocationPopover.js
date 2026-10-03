@@ -1,7 +1,7 @@
 /**
  * 矢所記録入力用ポップアップモーダルコンポーネント
  */
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Modal, TouchableOpacity, Pressable, Alert, Dimensions, StyleSheet } from './rn';
 import { Ionicons } from '@expo/vector-icons';
 import { useScoreStore } from './useScoreStore';
@@ -23,6 +23,11 @@ export const ArrowLocationPopover = ({
 }) => {
   const { arrowTargetType, setArrowTargetType, updateArrowLocation, archers: storeArchers } = useストアの一部(['arrowTargetType', 'setArrowTargetType', 'updateArrowLocation', 'archers']);
   const touchAreaRef = useRef(null);
+  // 的に載せる矢所の範囲。既定は、いま置く射と同じ立（4 本）だけ。全部の射を載せると 20 本で見づらい（2026-10-04）
+  const [範囲, 範囲を置く] = useState('立');
+  useEffect(() => {
+    if (visible) 範囲を置く('立');
+  }, [visible, archerId, shotIndex]);
   
   // 該当する射手のマーク情報を取得して、○/×判定に用いる
   const archer = storeArchers.find(a => a.id === archerId);
@@ -206,6 +211,7 @@ export const ArrowLocationPopover = ({
           <View style={styles.header}>
             <Text style={styles.headerTitle}>
               矢所の記録 ({CIRCLED_NUMBERS[shotIndex] || `${shotIndex + 1}射目`})
+              {archer && archer.name ? `　${archer.name}` : ''}
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <Ionicons name="close" size={24} color="#8E8E93" />
@@ -219,6 +225,21 @@ export const ArrowLocationPopover = ({
                 ? '【的中 ○】的の内側を押してください'
                 : '【外れ ×】的の外側（グレーの領域）を押してください'}
             </Text>
+            {表示する矢所[shotIndex] ? <Text style={[styles.guideText, { fontWeight: 'normal', color: '#8E8E93', fontSize: 12, marginTop: 2 }]}>置き済みです。もう一度押すと、置き直せます</Text> : null}
+          </View>
+
+          {/* 的に載せる範囲：この立 / 全部の射 */}
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, paddingBottom: 6 }}>
+            {[['立', 'この立（' + (Math.floor(shotIndex / 4) + 1) + '立）'], ['全部', '全部の射']].map(([値, 字]) => (
+              <TouchableOpacity
+                key={値}
+                testID={`矢所の窓-範囲-${値}`}
+                onPress={() => 範囲を置く(値)}
+                style={{ paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, backgroundColor: 範囲 === 値 ? '#007AFF' : '#E5E5EA' }}
+              >
+                <Text style={{ fontSize: 12, color: 範囲 === 値 ? '#FFF' : '#3C3C43', fontWeight: 範囲 === 値 ? 'bold' : 'normal' }}>{字}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
           {/* 的種類のクイック切り替え */}
@@ -262,7 +283,9 @@ export const ArrowLocationPopover = ({
               {/* 登録済みの矢所をプレビュー（現在の的種類と一致するものだけ表示） */}
               {表示する矢所.map((loc, idx) => {
                 if (!loc) return null;
-                
+                // 「この立」のときは、いま置く射と同じ立の矢所だけ（立をまたぐと的が埋まって見づらい）
+                if ('立' === 範囲 && Math.floor(idx / 4) !== Math.floor(shotIndex / 4)) return null;
+
                 // 的の種類が異なる矢所は表示しない
                 // loc.targetType がない古いデータはデフォルトの 'kasumi36' とみなす
                 const locTargetType = loc.targetType || 'kasumi36';

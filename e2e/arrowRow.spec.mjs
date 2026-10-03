@@ -77,5 +77,10 @@ test('矢所を置くと、その列の下の的に点が載る。見出しで�
   // 的を押すと、その人の矢所の窓が開く
   await 的.first().click();
   await expect(page.getByText('矢所の記録', { exact: false }).first(), '的を押しても窓が開かない').toBeVisible({ timeout: 10_000 });
+  // 窓：置き済みの案内と、的に載せる範囲（この立 / 全部の射）の切り替え
+  await expect(page.getByText('置き済みです', { exact: false }), '置き済みの案内が出ない').toBeVisible();
+  await expect(page.getByTestId('矢所の窓-範囲-立')).toBeVisible();
+  await page.getByTestId('矢所の窓-範囲-全部').click();
+  await page.getByTestId('矢所の窓-範囲-立').click();
   await page.getByText('完了', { exact: true }).click();
 });
