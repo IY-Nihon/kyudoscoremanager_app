@@ -37,7 +37,7 @@
       },
       {
         "//": "アプリの画面の道（/record など）は index.html に回される（rewrites）が、上の2つに当たらず、何も指定が無いと Firebase の既定の max-age=3600 になる。Chrome を閉じて開き直すと、その1時間のあいだ前の版の HTML を確かめずに使い、前の版のまま動いていた（更新の帯がまた出る。2026-10-03）。道は src/MainNavigator.js の リンクの決まり と同じ（test/hostingHeaders.test.js が見張る）",
-        "source": "@(/record|/history|/analysis|/members|/attendance|/settings)",
+        "source": "/@(record|history|analysis|members|attendance|settings)",
         "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }]
       },
       {
