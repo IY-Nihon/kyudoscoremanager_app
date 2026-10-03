@@ -14,11 +14,13 @@ const {
   AppState,
   Animated,
   PanResponder,
+  useWindowDimensions,
 } = require('./rn');
 const { IS_WEB, SAFE_TOP_PADDING, WEB_TOP_PADDING } = require('./IS_WEB');
 const { useScoreStore, ライブ名に使えない字 } = require('./useScoreStore');
 // 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
 const { useストアの一部 } = require('./storeSlice');
+const { 矢所パネル } = require('./ArrowPanel');
 const 案内 = require('./TutorialGuide');
 const 在 = require('./livePresence');
 const { ArcherColumnView } = require('./ArcherColumnView');
@@ -115,6 +117,7 @@ const RecordScreen = () => {
     publicGroupId,
     activeArrowLocationEdit,
     setActiveArrowLocationEdit,
+    enableArrowLocation = false,
     // 「終了・保存」で出欠確認を出すか（設定で切れる）
     保存時に出欠を確認する = true,
     // 長押しでますを開けた時刻。知らせを出す合図
@@ -183,6 +186,7 @@ const RecordScreen = () => {
     'publicGroupId',
     'activeArrowLocationEdit',
     'setActiveArrowLocationEdit',
+    'enableArrowLocation',
     '保存時に出欠を確認する',
     '鍵を開けた時刻',
     '閉じたますを押した時刻',
@@ -262,6 +266,8 @@ const RecordScreen = () => {
   const [showAttendance, setShowAttendance] = React.useState(false);
   const [tempAttendance, setTempAttendance] = React.useState(null);
   const [showOCRModal, setShowOCRModal] = React.useState(false);
+  const 画面の幅 = useWindowDimensions().width;
+  const 矢所パネルを右に = 画面の幅 >= 900;
   const // 上下の帯を畳んでいるか。記録表を広く使いたいときに畳む。
     // 画面を移る帯（記録/履歴/…）はここでは隠さない（移動できなくなるため）
     _畳みは使わない = null;
@@ -1736,8 +1742,10 @@ const RecordScreen = () => {
           </View>
         </View>
       </Modal>
+      {/* 記録表。矢所の記録が ON のときは、広い画面なら右、狭い画面なら下に、矢所パネルを並べる */}
+      <View style={{ flex: 1, minHeight: 0, flexDirection: 矢所パネルを右に ? 'row' : 'column' }}>
       <View
-        style={[styles.gridArea, { justifyContent: 'center', alignItems: 'center' }]}
+        style={[styles.gridArea, { justifyContent: 'center', alignItems: 'center', minWidth: 0 }]}
         onLayout={(出来事) => {
           取っ手の区画の幅.current = 出来事.nativeEvent.layout.width;
         }}
@@ -2031,6 +2039,8 @@ const RecordScreen = () => {
             <Text style={styles.emptyHint}>下の「人」ボタンで射手を追加</Text>
           </View>
         )}
+      </View>
+      {enableArrowLocation ? <矢所パネル 広い={矢所パネルを右に} /> : null}
       </View>
       {帯を畳む ? null : (
         <View style={styles.toolbar}>
