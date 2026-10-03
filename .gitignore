@@ -41,7 +41,7 @@ auth_test_result.txt
 backup-output-old/
 backup-output/
 diagnostic_*
-dist-stg/
+dist-*/
 dist/
 dist2/
 dist3/
