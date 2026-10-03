@@ -3,8 +3,10 @@
 const { View, Text, StyleSheet } = require('./rn');
 const { UIConfig } = require('./uiConfig');
 const { useScoreStore } = require('./useScoreStore');
+const { 矢所の行の見出し } = require('./ArrowRow');
 const LabelColumn = ({ shots, showFooter = true, 横並び: 横 = false }) => {
   const viewScale = useScoreStore((状態) => 状態.viewScale);
+  const 矢所を使う = useScoreStore((状態) => !!状態.enableArrowLocation);
   const 倍率 = 'number' == typeof viewScale && !isNaN(viewScale) && viewScale > 0 ? viewScale : 1;
   const 番号たち = [];
   // 縦の表は下から上へ数える（1射目が下）。横の表は左から右へ数える
@@ -74,6 +76,7 @@ const LabelColumn = ({ shots, showFooter = true, 横並び: 横 = false }) => {
             );
           })}
         </View>
+        {矢所を使う && !横 ? <矢所の行の見出し 倍率={倍率} /> : null}
       </View>
       {showFooter && (
         <View style={[styles.footer, { height: UIConfig.footerHeight * 倍率 }]}>

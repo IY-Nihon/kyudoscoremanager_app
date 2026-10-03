@@ -19,6 +19,7 @@ const { IS_WEB, SAFE_TOP_PADDING, WEB_TOP_PADDING } = require('./IS_WEB');
 const { useScoreStore, ライブ名に使えない字 } = require('./useScoreStore');
 // 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
 const { useストアの一部 } = require('./storeSlice');
+const { いまの立 } = require('./arrowRowRules');
 const 案内 = require('./TutorialGuide');
 const 在 = require('./livePresence');
 const { ArcherColumnView } = require('./ArcherColumnView');
@@ -262,6 +263,8 @@ const RecordScreen = () => {
   const [showAttendance, setShowAttendance] = React.useState(false);
   const [tempAttendance, setTempAttendance] = React.useState(null);
   const [showOCRModal, setShowOCRModal] = React.useState(false);
+  // 矢所の行を「立だけ」で見せるときの立。全員そろえて、印が入っている最後の立にする
+  const 矢所の立 = React.useMemo(() => いまの立(archers, shotsPerRound), [archers, shotsPerRound]);
   const // 上下の帯を畳んでいるか。記録表を広く使いたいときに畳む。
     // 画面を移る帯（記録/履歴/…）はここでは隠さない（移動できなくなるため）
     _畳みは使わない = null;
@@ -1801,6 +1804,7 @@ const RecordScreen = () => {
                             // 数えた見立てを渡す。計もチームもその並びで数え直るので、離す前に出来上がりが見える
                             {...列の見立て[順]}
                             showFooter={false}
+                            矢所の立={矢所の立}
                             isReadOnly={見るだけ中}
                             onPressName={名前を押した}
                             onDelete={列を消す}

@@ -1187,6 +1187,8 @@ const useScoreStore = zustand.create()(
       return {
         // 矢所の記録は既定でオフ。要る団体だけが設定で入れる
         enableArrowLocation: false,
+        // 記録表の「矢所の行」の見せ方（全部の射・いまの立だけ・隠す）。src/arrowRowRules.js
+        矢所の行: '全部',
         // 誤タップ防止。入れたますを少し経ってから閉じる。
         // 同期する中身ではなく、画面の上の守りなので archers には持たせない。
         // 既定はオフ（2026-09-13、使う人の指示。以前はオンだった。端末に残っている
@@ -1887,6 +1889,7 @@ const useScoreStore = zustand.create()(
                 鍵を開けた時刻: Date.now(),
               })),
         setEnableArrowLocation: (値) => 書く({ enableArrowLocation: 値 }),
+        set矢所の行: (値) => 書く({ 矢所の行: 値 }),
         setArrowTargetType: (値) => 書く({ arrowTargetType: 値 }),
         setActiveArrowLocationEdit: (値) => 書く({ activeArrowLocationEdit: 値 }),
         updateArrowLocation: (射手ID, 番, 矢所) => {
@@ -5961,6 +5964,7 @@ const useScoreStore = zustand.create()(
           autoPromotionEnabled: 状態の中身.autoPromotionEnabled,
           analysisRankingSettings: 状態の中身.analysisRankingSettings,
           enableArrowLocation: 状態の中身.enableArrowLocation,
+          矢所の行: 状態の中身.矢所の行,
           自動ロックする: 状態の中身.自動ロックする,
           保存時に出欠を確認する: 状態の中身.保存時に出欠を確認する,
           横に並べる: 状態の中身.横に並べる,
