@@ -272,8 +272,6 @@ export default function App() {
     }
   }, [isHydrated, activeGroupId, authReady]);
 
-  console.log(`[App] Rendering. hasMounted: ${hasMounted}, isHydrated: ${isHydrated}, activeGroupId: ${activeGroupId}`);
-
   if (!hasMounted || !isHydrated) {
     return <LoadingScreen />;
   }

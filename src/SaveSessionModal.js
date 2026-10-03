@@ -13,6 +13,7 @@ const {
   ScrollView,
 } = require('./rn');
 const { useScoreStore } = require('./useScoreStore');
+const { useストアの一部 } = require('./storeSlice');
 const { IS_IOS } = require('./IS_WEB');
 const { getShadowStyle } = require('./shadowStyle');
 const { normalizeTag, タグの見た目 } = require('./syncRules');
@@ -37,7 +38,7 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
     currentSessionTags = [],
     setCurrentSessionTags,
     toggleCurrentSessionTag,
-  } = useScoreStore();
+  } = useストアの一部(['includeInStats', 'setIncludeInStats', 'tagTemplates', 'currentSessionTags', 'setCurrentSessionTags', 'toggleCurrentSessionTag']);
   const 出すタグ = tagTemplates.length > 0 ? tagTemplates : 既定のタグ;
   const [題, 題を置く] = React.useState('');
   const [覚え書き, 覚え書きを置く] = React.useState('');

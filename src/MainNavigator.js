@@ -154,11 +154,6 @@ const 下の帯 = React.memo(({ state, descriptors, navigation: nav }) => {
     useScoreStore((状態) => 状態.setCurrentSessionTags),
     state.routes[state.index].name);
   const X要素 = IS_WEB ? View : ReactNativeSafeAreaContext.SafeAreaView;
-  console.log('[CustomTabBar] Active Route:', 今の画面, 'Tags:', {
-    current: 記録のタグ.length,
-    history: 履歴のタグ.length,
-    analysis: 分析のタグ.length,
-  });
   return (
     <X要素 style={[styles.tabBarWrapper, IS_WEB && { paddingTop: 0 }]} edges={['top', 'left', 'right']}>
       <View

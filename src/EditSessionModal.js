@@ -5,6 +5,7 @@ const Icons = require('@expo/vector-icons');
 const ExpoHaptics = require('expo-haptics');
 const { CustomCalendarModal } = require('./CustomCalendarModal');
 const { useScoreStore } = require('./useScoreStore');
+const { useストアの一部 } = require('./storeSlice');
 const { normalizeTag, タグの見た目 } = require('./syncRules');
 const EditSessionModal = ({ visible, session, onClose, onSave }) => {
   const [題, 題を置く] = React.useState('');
@@ -22,7 +23,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
     tagTemplates = [],
     members: membersState = [],
     alumni: alumniState = [],
-  } = useScoreStore();
+  } = useストアの一部(['isAdminMode', 'tagTemplates', 'members', 'alumni']);
   const allMembers = React.useMemo(() => [...membersState, ...alumniState], [membersState, alumniState]);
   // 下書きを作り直すのは、窓を開いたときと、別の記録に替わったときだけ。
   // 同じ記録が雲から届き直すと（同期で記録の一覧が入れ替わると、中身が同じでも別のオブジェクトになる）、
