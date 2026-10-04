@@ -7,6 +7,7 @@ const { useShallow } = require('zustand/react/shallow');
 const ExpoHaptics = require('expo-haptics');
 const Icons = require('@expo/vector-icons');
 const React = require('react');
+const { 小さな的 } = require('./ArrowRow');
 const ScoreCell = React.memo(
   ({
     archerId,
@@ -25,6 +26,8 @@ const ScoreCell = React.memo(
     // 画面の字は「○」「×」だけなので、そのままだと
     //「まる」「かける」としか読まれず、どのますかも分からない
     読み,
+    // 矢所ノートで、このますの矢所（{x, y}）。持ち主（ArcherColumnView）が渡す。ますは店を購読しない
+    矢所 = null,
     onToggle,
   }) => {
     // ますは 20 人 × 20 射で 400 個ある。1 つのますが店（zustand）を 10 か所で
@@ -33,10 +36,12 @@ const ScoreCell = React.memo(
     // 呼ぶときに getState() から取る（手は変わらないので購読しなくてよい）
     const 店 = () => useScoreStore.getState();
     const 印を切り替える = (...引) => 店().toggleMark(...引);
-    const { viewScale, enableArrowLocation, 矢所の窓を自動で開く, 自動ロックする, 自動ロックまでの秒 } = useScoreStore(
+    const { viewScale, enableArrowLocation, 矢所の窓を自動で開く, 矢所ノート, arrowTargetType, 自動ロックする, 自動ロックまでの秒 } = useScoreStore(
       useShallow((状態) => ({
         viewScale: 状態.viewScale,
         enableArrowLocation: 状態.enableArrowLocation,
+        矢所ノート: !!状態.矢所ノート,
+        arrowTargetType: 状態.arrowTargetType,
         矢所の窓を自動で開く: !!状態.矢所の窓を自動で開く,
         自動ロックする: 状態.自動ロックする,
         自動ロックまでの秒: 状態.自動ロックまでの秒,
@@ -221,7 +226,27 @@ const ScoreCell = React.memo(
         節点.removeEventListener('contextmenu', suppressContext);
       };
     }, []);
-    const handlePress = () => {
+    // 矢所ノート：マスを的にして、的を直接押す。押した位置が矢所、的の円の内側なら○・外側なら×
+    //（○は内側・×は外側という窓の決まりと同じ）。履歴の直し（onToggle）では使わない
+    const ノート = enableArrowLocation && 矢所ノート && 'normal' === columnType && !onToggle;
+    const 的の大きさ = Math.min(幅, 高さ);
+    const 的の割合 = 'hoshi24' === arrowTargetType ? 0.55 : 0.82;
+    const ノートで押した = (出来事) => {
+      const 元の出来事 = 出来事 && (出来事.nativeEvent || 出来事);
+      const 節 = cellRef.current;
+      const x = 元の出来事 && (元の出来事.clientX ?? 元の出来事.pageX);
+      const y = 元の出来事 && (元の出来事.clientY ?? 元の出来事.pageY);
+      if (!節 || 'function' !== typeof 節.getBoundingClientRect || 'number' !== typeof x || 'number' !== typeof y) return false;
+      const 枠 = 節.getBoundingClientRect();
+      const 半径 = (的の大きさ * 的の割合) / 2;
+      if (!(半径 > 0)) return false;
+      const 横ずれ = (x - (枠.left + 枠.width / 2)) / 半径;
+      const 縦ずれ = (y - (枠.top + 枠.height / 2)) / 半径;
+      const 内側 = Math.sqrt(横ずれ * 横ずれ + 縦ずれ * 縦ずれ) <= 1;
+      店().矢所を置いて印を入れる(archerId, index, 内側 ? '○' : '\xd7', { x: 横ずれ, y: 縦ずれ, targetType: arrowTargetType });
+      return true;
+    };
+    const handlePress = (出来事) => {
       // 「計」と「間隔」の列には○×を入れない。押しても何もしない。
       // 鍵の印はこの上に別に重ねてあるので、そちらは今までどおり押せる
       if (!印を入れる列) return;
@@ -231,6 +256,10 @@ const ScoreCell = React.memo(
       if (閉じている) return void 閉じたますが押された();
       if (isLongPressedRef.current) {
         isLongPressedRef.current = false;
+        return;
+      }
+      if (ノート && ノートで押した(出来事)) {
+        ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
         return;
       }
       const currentMark = mark ?? '';
@@ -295,7 +324,19 @@ const ScoreCell = React.memo(
           ]}
         >
           <React.Fragment>
-            {!hideMark && (
+            {!hideMark && ノート ? (
+              <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
+                <小さな的
+                  点たち={矢所 && 印 ? [{ x: Number(矢所.x) || 0, y: Number(矢所.y) || 0, 印, 射番: index }] : []}
+                  的の種類={arrowTargetType}
+                  大きさ={的の大きさ}
+                />
+                {印 ? (
+                  <Text style={{ position: 'absolute', top: 1, left: 3, fontSize: 11 * 倍率, fontWeight: '900', color: '○' === 印 ? '#FF3B30' : '#000' }}>{印}</Text>
+                ) : null}
+              </View>
+            ) : null}
+            {!hideMark && !ノート && (
               <Text
                 style={[
                   styles.markText,
