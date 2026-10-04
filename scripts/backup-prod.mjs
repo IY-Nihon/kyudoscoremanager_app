@@ -184,7 +184,7 @@ fs.writeFileSync(path.join(OUT, 'rtdb.json'), JSON.stringify(rtdb, null, 1));
 // ── ルールと設定 ─────────────────────────────────────────────────
 console.log('\n■ ルールと設定');
 fs.mkdirSync(path.join(OUT, 'rules'), { recursive: true });
-for (const f of ['firestore.rules', 'database.rules.json', 'storage.rules', 'firestore.indexes.json',
+for (const f of ['firestore.rules', 'database.rules.json', 'firestore.indexes.json',
                  'firebase.json', '_archive/restore-open.rules']) {
   if (!fs.existsSync(f)) { console.log(`  ${f} … なし`); continue; }
   fs.copyFileSync(f, path.join(OUT, 'rules', path.basename(f)));

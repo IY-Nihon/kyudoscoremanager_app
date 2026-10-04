@@ -7,7 +7,7 @@
  * ルールはクライアント経由でしか効かないため、Admin SDK ではなく
  * Identity Toolkit で取得した実トークンで検証する。
  */
-import { configFor, signIn, signInAnonymously, req, setDoc, listAll, readEnv, toFields } from './fb-rest.mjs';
+import { configFor, signIn, signInAnonymously, req, setDoc, listAll, toFields } from './fb-rest.mjs';
 
 const [stage, target = 'stg'] = process.argv.slice(2);
 if (!['stage1', 'stage2'].includes(stage)) {
@@ -132,7 +132,9 @@ if (stage === 'stage2') {
 // ── 異常系：断られるべき書き込み（どちらの段階でも流す。通ってしまえば NG）──────────
 // 診断（2026-10-02 の別 AI のレビュー）が「異常系の自動検査が無い」と指摘したぶん。
 // どれも 403 が正しい。ルールが緩んでいると検証環境に紛れ込みが残るので、NG が出たら団体の
-// 外の入れ物（inquiries / errorReports / storage の inquiries）を見て消す。
+// 外の入れ物（inquiries / errorReports）を見て消す。
+// Storage の検査は外した（2026-10-05）。本番・検証環境とも Storage の入れ物が無く（一覧を引くと 404）、
+// アプリも使っていない（問い合わせの写真は、文字に直して Firestore の inquiries に入れている）
 {
   const 断られる = async (項目, 結果) => {
     const ok = 結果.status === 403;
@@ -151,27 +153,6 @@ if (stage === 'stage2') {
   await 断られる('匿名：member_lookup へ書く（逆引き表を偽る）', await setDoc(projectId, `/groups/${G1}/member_lookup/9999`, { memberId: MID }, anon.idToken));
   await 断られる('匿名：他団体の group_accounts を書き換える', await setDoc(projectId, `/group_accounts/${G1}`, { id: G1, email: 'evil@example.com' }, anon.idToken));
 
-  // Storage の inquiries/ は誰でも書けるが、画像・10MB 未満だけ。画像でないものと大きすぎるものは断られる
-  const バケット = readEnv(target === 'stg' ? '.env.development.local' : '.env').EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET;
-  // 検証環境には Storage の入れ物が無い（一覧を引くと 404）。無ければ飛ばす（本番では 403 が返り、流れる）
-  const 在る = バケット
-    ? (await fetch(`https://firebasestorage.googleapis.com/v0/b/${バケット}/o?maxResults=1`)).status !== 404
-    : false;
-  if (!在る) rows.push({ 項目: 'storage の異常系（画像でない・11MB・別の道）', 期待: '403', 実際: '入れ物が無い', 判定: '飛ばした' });
-  if (在る) {
-    const 上げる = async (名, 型, 中身) => {
-      const r = await fetch(`https://firebasestorage.googleapis.com/v0/b/${バケット}/o?name=${encodeURIComponent('inquiries/verify-' + 名)}`, {
-        method: 'POST', headers: { 'Content-Type': 型 }, body: 中身,
-      });
-      return { status: r.status };
-    };
-    await 断られる('未認証：storage inquiries へ画像でないもの', await 上げる('text', 'text/plain', 'hello'));
-    await 断られる('未認証：storage inquiries へ 11MB の画像', await 上げる('big', 'image/png', new Uint8Array(11 * 1024 * 1024)));
-    await 断られる('未認証：storage の inquiries 以外へ書く', await (async () => {
-      const r = await fetch(`https://firebasestorage.googleapis.com/v0/b/${バケット}/o?name=other%2Fverify`, { method: 'POST', headers: { 'Content-Type': 'image/png' }, body: new Uint8Array(10) });
-      return { status: r.status };
-    })());
-  }
 }
 
 console.table(rows);
