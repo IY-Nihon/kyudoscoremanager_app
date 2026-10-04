@@ -22,7 +22,8 @@ const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const 店 = fs.readFileSync(path.join(__dirname, '..', 'src', 'useScoreStore.js'), 'utf8');
+// 店は 2026-10-05 に幾つかのファイルに分けた。店ぜんぶの字を読む
+const 店 = require('./helpers/storeSource').店の字();
 
 /** 店の中の見分けの関数を、そのまま取り出して動かす */
 function 見分けを取り出す() {

@@ -36,6 +36,7 @@ test('登録で groups/{団体} に groupName を置く', () => {
 });
 
 test('アプリは団体名を groups/{団体}.groupName から読む（置き場所が変わったらこの検査も直す）', () => {
-  const 店 = 読む('src/useScoreStore.js');
+  // 店は 2026-10-05 に幾つかのファイルに分けた。店ぜんぶの字を読む
+  const 店 = require('./helpers/storeSource').店の字();
   assert.match(店, /Firestore\.doc\(Firebaseの器\.db, 'groups', 団体\)[\s\S]{0,400}groupName/);
 });

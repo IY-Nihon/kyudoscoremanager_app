@@ -723,9 +723,13 @@ function ストアを用意する(既存の雲, 既存のライブ) {
     default: { alert: (見出し, 文) => 知らせ.push(String(文 || 見出し)) },
   }); // Alert
 
-  // ストア本体は毎回読み直す
+  // ストア本体は毎回読み直す。店は 2026-10-05 に幾つかのファイル（storeShared.js・storeBoard.js など）に
+  // 分けたので、それらも読み直す。残すと、前の検査の偽物（雲・ライブ）と書き換える値の入れ物を使い続ける
   const 場所 = path.join(SRC, 'useScoreStore.js');
   delete require.cache[場所];
+  for (const 名 of require('fs').readdirSync(SRC)) {
+    if (/^store.*\.js$/.test(名)) delete require.cache[path.join(SRC, 名)];
+  }
   const { useScoreStore, 控えの待ちを変える } = require(場所);
   // 端末への控えは本番では少しまとめて書くが、検査は書いた直後を読むので待たない
   控えの待ちを変える(0);

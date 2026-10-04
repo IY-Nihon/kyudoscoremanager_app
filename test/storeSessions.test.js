@@ -25,10 +25,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { 記録の射手を整える, cleanUpSessions } = require('../src/syncRules');
 
-const 店の中身 = fs.readFileSync(
-  path.join(__dirname, '..', 'src', 'useScoreStore.js'),
-  'utf8'
-);
+// 店は 2026-10-05 に幾つかのファイルに分けた。店ぜんぶの字を読む
+const 店の中身 = require('./helpers/storeSource').店の字();
 
 /**
  * 記録を組み立てている塊を切り出す。
