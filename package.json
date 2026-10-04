@@ -27,6 +27,8 @@
     "ops:prune-live:run": "node scripts/prune-old-live-branches.mjs prod 消す",
     "ops:prune-reports": "node scripts/prune-error-reports.mjs prod",
     "ops:prune-reports:run": "node scripts/prune-error-reports.mjs prod 消す",
+    "ops:prune-inquiries": "node scripts/prune-inquiries.mjs prod",
+    "ops:prune-inquiries:run": "node scripts/prune-inquiries.mjs prod 消す",
     "typecheck": "tsc -p tsconfig.check.json",
     "ops:expiry-rules": "node scripts/check-share-expiry-rules.mjs",
     "ops:scan-japanese": "node scripts/scan-japanese-strings.mjs",

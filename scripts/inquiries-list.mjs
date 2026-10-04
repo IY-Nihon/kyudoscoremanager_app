@@ -99,7 +99,7 @@ for (const d of 行たち) {
   const 中身 = String(値(f.content)).replace(/\s+/g, ' ');
   console.log(
     `- ${日時}  団体 ${値(f.groupId) || '-'}（${値(f.groupName) || '-'}） ${値(f.role) || '-'}` +
-      `  メール ${値(f.email) ? 'あり' : 'なし'}  写真 ${値(f.imagesBase64) || '0枚'}` +
+      `  メール ${値(f.email) ? 'あり' : 'なし'}  写真 ${値(f.imagesBase64) || '0枚'}  ID ${d.name.split('/').pop()}` +
       `\n    ${中身.slice(0, 40)}${中身.length > 40 ? '…' : ''}`
   );
 }
