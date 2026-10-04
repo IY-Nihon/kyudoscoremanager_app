@@ -102,6 +102,8 @@ const SettingsScreen = () => {
     enableArrowLocation,
     矢所の窓を自動で開く,
     set矢所の窓を自動で開く,
+    矢所ノート,
+    set矢所ノート,
     arrowTargetType,
     setEnableArrowLocation,
     setArrowTargetType,
@@ -140,6 +142,8 @@ const SettingsScreen = () => {
     'enableArrowLocation',
     '矢所の窓を自動で開く',
     'set矢所の窓を自動で開く',
+    '矢所ノート',
+    'set矢所ノート',
     'arrowTargetType',
     'setEnableArrowLocation',
     'setArrowTargetType',
@@ -1079,6 +1083,24 @@ const SettingsScreen = () => {
                 <Switch
                   value={!!矢所の窓を自動で開く}
                   onValueChange={set矢所の窓を自動で開く}
+                  trackColor={{ false: '#D1D1D6', true: '#34C759' }}
+                />
+              </View>
+            )}
+            {enableArrowLocation && (
+              <View style={styles.item}>
+                <View style={[styles.itemLeft, { flex: 1 }]}>
+                  <Icons.Ionicons name="disc-outline" size={22} color="#34C759" style={styles.itemIcon} />
+                  <View style={{ flex: 1, paddingRight: 8 }}>
+                    <Text style={styles.itemText}>矢所ノート（マスを的にする）</Text>
+                    <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 2 }}>
+                      弓道の的中記録帳のように、マスに的が出ます。的を押すと、矢所と○×が一度に入ります（円の内側は○、外側は×）。置き直しは押し直し、消すのは長押し。表示倍率を上げると押しやすくなります
+                    </Text>
+                  </View>
+                </View>
+                <Switch
+                  value={!!矢所ノート}
+                  onValueChange={set矢所ノート}
                   trackColor={{ false: '#D1D1D6', true: '#34C759' }}
                 />
               </View>

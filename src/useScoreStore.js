@@ -1192,6 +1192,8 @@ const useScoreStore = zustand.create()(
         // ○×を入れたあと、矢所の窓を自動で開くか。既定は開かない（○×だけ素早く入れたい場面で、毎回止められるため。
         // 2026-10-04）。開きたいマスは長押し、列の下の的を押して直す
         矢所の窓を自動で開く: false,
+        // 矢所ノート：マスを的にして、的を直接押すと矢所と○×が一度に入る（弓道の的中記録帳のように。2026-10-04）
+        矢所ノート: false,
         // 誤タップ防止。入れたますを少し経ってから閉じる。
         // 同期する中身ではなく、画面の上の守りなので archers には持たせない。
         // 既定はオフ（2026-09-13、使う人の指示。以前はオンだった。端末に残っている
@@ -1894,6 +1896,29 @@ const useScoreStore = zustand.create()(
         setEnableArrowLocation: (値) => 書く({ enableArrowLocation: 値 }),
         set矢所の行: (値) => 書く({ 矢所の行: 値 }),
         set矢所の窓を自動で開く: (値) => 書く({ 矢所の窓を自動で開く: !!値 }),
+        set矢所ノート: (値) => 書く({ 矢所ノート: !!値 }),
+        // 矢所ノート：的を押した位置と○×を、取り消し 1 回で戻せるよう一度に書く（ライブ中は盤面ごと送る）
+        矢所を置いて印を入れる: (射手ID, 番, 印, 矢所) => {
+          if (状態().書き換えを止めるか()) return void 書く({ 閲覧でますを押した時刻: Date.now() });
+          const { archers: 元, isLiveActive, liveSessionName, shotsPerRound } = 状態();
+          const 今 = Date.now();
+          const 直した = (元 || []).map((射手) => {
+            if (射手.id !== 射手ID) return 射手;
+            const 印たち = [...(射手.marks || [])];
+            const 矢所たち = [...(射手.arrowLocations || [])];
+            印たち[番] = 印;
+            矢所たち[番] = 矢所;
+            return Object.assign({}, 射手, { marks: 印たち, arrowLocations: 矢所たち, lastModified: 今 });
+          });
+          書く({
+            archers: 直した,
+            historyStack: [...状態().historyStack, 元],
+            redoStack: [],
+            lastLocalChange: 今,
+            入れた時刻: Object.assign({}, 状態().入れた時刻, { [射手ID + ':' + 番]: 今 }),
+          });
+          if (isLiveActive && liveSessionName) ライブへ盤面を送る(liveSessionName, 直した, shotsPerRound);
+        },
         setArrowTargetType: (値) => 書く({ arrowTargetType: 値 }),
         setActiveArrowLocationEdit: (値) => 書く({ activeArrowLocationEdit: 値 }),
         updateArrowLocation: (射手ID, 番, 矢所) => {
@@ -5970,6 +5995,7 @@ const useScoreStore = zustand.create()(
           enableArrowLocation: 状態の中身.enableArrowLocation,
           矢所の行: 状態の中身.矢所の行,
           矢所の窓を自動で開く: 状態の中身.矢所の窓を自動で開く,
+          矢所ノート: 状態の中身.矢所ノート,
           自動ロックする: 状態の中身.自動ロックする,
           保存時に出欠を確認する: 状態の中身.保存時に出欠を確認する,
           横に並べる: 状態の中身.横に並べる,

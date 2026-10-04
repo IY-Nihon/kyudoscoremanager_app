@@ -60,7 +60,7 @@ const ArcherColumnView = React.memo(
       useShallow((状態) => ({
         viewScale: 状態.viewScale,
         members: 状態.members,
-        矢所を使う: !!状態.enableArrowLocation,
+        矢所を使う: !!状態.enableArrowLocation && !状態.矢所ノート,
         矢所の見せ方: 見せ方を整える(状態.矢所の行),
         的の種類: 状態.arrowTargetType,
         自動ロックする: 状態.自動ロックする,
@@ -387,6 +387,7 @@ const ArcherColumnView = React.memo(
                     index={射番}
                     横並び={横}
                     mark={archer.marks?.[射番] || ''}
+                    矢所={archer.arrowLocations?.[射番] || null}
                     subName={交代の表示名}
                     isLocked={鍵}
                     isBlockBottom={切れ目(射番)}

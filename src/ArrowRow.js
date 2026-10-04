@@ -150,4 +150,4 @@ const S = StyleSheet.create({
   見出しの小: { color: '#007AFF', marginTop: 1 },
 });
 
-module.exports = { 矢所の行のます, 矢所の行の見出し, 行の高さ };
+module.exports = { 矢所の行のます, 矢所の行の見出し, 行の高さ, 小さな的 };
