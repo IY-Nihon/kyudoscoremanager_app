@@ -1143,6 +1143,7 @@ const HistoryScreen = () => {
                   <View style={styles.searchBar}>
                     <Icons.Ionicons name="search" size={18} color="#8E8E93" style={styles.searchIcon} />
                     <TextInput
+                      aria-label="記録を検索"
                       style={styles.searchInput}
                       placeholder="日付や内容を検索（全期間対象）"
                       placeholderTextColor="#8E8E93"

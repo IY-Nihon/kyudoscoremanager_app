@@ -97,6 +97,7 @@ const LiveShareModal = ({ visible, onClose }) => {
         {合言葉を使うか ? (
           <View>
             <TextInput
+              aria-label="合言葉"
               style={styles.入力}
               value={合言葉}
               onChangeText={(x) => {
@@ -338,6 +339,7 @@ const 来客の窓 = ({ 荷, onClose }) => {
           >{`「${中身.名前}」に${中身.役 === 共.閲覧 ? '見るだけで' : '記録する側で'}入ります。`}</Text>
           {中身.鍵が要るか ? (
             <TextInput
+              aria-label="合言葉"
               style={styles.入力}
               value={合言葉}
               onChangeText={(x) => {

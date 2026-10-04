@@ -1629,6 +1629,7 @@ const OCRRecordModal = ({
               {isEnteringGuest ? (
                 <View style={styles.guestInputRow}>
                   <TextInput
+                    aria-label="ゲスト名"
                     style={styles.guestInput}
                     placeholder="ゲスト名を入力"
                     value={guestNameInput}
@@ -1652,6 +1653,7 @@ const OCRRecordModal = ({
               ) : (
                 <View style={styles.pickerToolbarRow}>
                   <TextInput
+                    aria-label="名前で検索"
                     style={[styles.pickerSearchInput, { flex: 1, marginBottom: 0 }]}
                     placeholder="名前で検索"
                     value={pickerSearch}

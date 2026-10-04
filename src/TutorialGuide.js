@@ -21,6 +21,15 @@ const 控えキー = 'tutorialBoardSnapshot';
 // ─────────────────────────────────────────
 const 目印帳 = new Map();
 /** 画面側で使う。返ってきた ref を、指してほしい要素に付ける */
+/**
+ * 触られると困るところに置く蓋（暗幕の帯・説明だけの手順で指した先）。指を受け止めるだけで、押せる部品ではない。
+ * 前は空の onPress の TouchableOpacity で、Web ではキーボードの焦点が当たり、読み上げでは名前の無いボタンとして
+ * 読まれていた（2026-10-05・U-3）。蓋の下の本物の部品には、前と同じく指が届かない
+ */
+function 蓋({ style }) {
+  return <View style={style} onStartShouldSetResponder={() => true} aria-hidden={true} />;
+}
+
 function useTutorialTarget(名前) {
   const ref = useRef(null);
   useEffect(() => {
@@ -575,12 +584,7 @@ const TutorialOverlay = ({ navRef }) => {
   return (
     <View ref={根ref} style={styles.根} pointerEvents="box-none">
       {暗幕.map(({ key, 透明, ...位置 }) => (
-        <TouchableOpacity
-          key={key}
-          activeOpacity={1}
-          onPress={() => {}}
-          style={[styles.暗幕, 位置, 透明 && { backgroundColor: 'transparent' }]}
-        />
+        <蓋 key={key} style={[styles.暗幕, 位置, 透明 && { backgroundColor: 'transparent' }]} />
       ))}
 
       {/* 初めての人には、履歴も分析もまだ空。空の画面を指しても何も伝わらず、
@@ -599,9 +603,7 @@ const TutorialOverlay = ({ navRef }) => {
           終了・保存なら本物の記録が残り、ライブなら立ち上がってしまう。
           どちらも案内の片付けでは取り消せない */}
       {枠 && !触ってもらう && (
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={() => {}}
+        <蓋
           style={{
             position: 'absolute',
             top: 枠.y - 4,

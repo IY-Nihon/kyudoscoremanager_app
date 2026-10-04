@@ -145,6 +145,7 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose }) => {
             </View>
             <Text style={styles.sectionTitle}>交代相手（メンバーまたはゲスト）</Text>
             <TextInput
+              aria-label="メンバーを名前で検索"
               style={styles.searchBar}
               placeholder="名前で検索..."
               value={検索の文}
@@ -153,6 +154,7 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose }) => {
             <View style={styles.guestRow}>
               <Icons.Ionicons name="person-add" size={20} color="#007AFF" />
               <TextInput
+                aria-label="ゲスト名"
                 style={styles.guestInput}
                 placeholder="ゲスト名を入力"
                 value={客名の入力}

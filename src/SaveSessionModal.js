@@ -93,6 +93,7 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
               <Text style={styles.subTitle}>保存内容を入力してください。</Text>
               <View style={styles.inputContainer}>
                 <TextInput
+                  aria-label="大会名・練習名"
                   style={styles.input}
                   placeholder="大会名・練習名（例: ○○大会）"
                   placeholderTextColor="#C7C7CC"
@@ -103,6 +104,7 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
               </View>
               <View style={styles.inputContainer}>
                 <TextInput
+                  aria-label="練習メモ"
                   style={styles.input}
                   placeholder="練習メモ（例: 合宿1日目）"
                   placeholderTextColor="#C7C7CC"
@@ -113,6 +115,7 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
               </View>
               <View style={styles.tagsAreaContainer}>
                 <TextInput
+                  aria-label="タグ"
                   style={styles.input}
                   placeholder="タグ（例: 審査前 雨天）"
                   placeholderTextColor="#C7C7CC"

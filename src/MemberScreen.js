@@ -271,6 +271,7 @@ const MemberScreen = () => {
             </TouchableOpacity>
             <View style={[styles.eqWeightInputWrapper, { flex: 1, minWidth: 0 }]}>
               <TextInput
+                aria-label="弓力"
                 style={styles.eqInputInside}
                 placeholder="弓力"
                 value={弓力の下書き}
@@ -295,6 +296,7 @@ const MemberScreen = () => {
             </View>
           </View>
           <TextInput
+            aria-label="弓具の記録の内容"
             style={[styles.eqInput, { height: 60 }]}
             placeholder="内容 (弦交換、弓の変更など)"
             value={弓具の覚え書き}
@@ -389,6 +391,7 @@ const MemberScreen = () => {
             ? [
                 <Text style={styles.label}>名前</Text>,
                 <TextInput
+                  aria-label="名前"
                   style={styles.input}
                   value={名前の下書き}
                   onChangeText={名前の下書きを置く}
@@ -478,6 +481,7 @@ const MemberScreen = () => {
             </View>
             <Text style={styles.label}>期</Text>
             <TextInput
+              aria-label="期"
               style={styles.input}
               value={期の下書き}
               onChangeText={期の下書きを置く}
@@ -685,6 +689,7 @@ const MemberScreen = () => {
       <View style={styles.searchBar}>
         <Icons.Ionicons name="search" size={18} color="#8E8E93" />
         <TextInput
+          aria-label="メンバーを検索"
           style={styles.searchInput}
           placeholder="メンバーを検索..."
           value={検索の文}

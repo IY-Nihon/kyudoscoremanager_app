@@ -1176,6 +1176,7 @@ const AnalysisScreen = ({ navigation }) => {
               </View>
               <View style={styles.customShotsRow}>
                 <TextInput
+                  aria-label="ランキング対象の最低射数"
                   style={styles.customShotsInput}
                   value={customShotsInput}
                   onChangeText={setCustomShotsInput}
@@ -1393,6 +1394,7 @@ const AnalysisScreen = ({ navigation }) => {
             <View style={styles.searchBar}>
               <Icons.Ionicons name="search" size={18} color="#007AFF" style={styles.searchIcon} />
               <TextInput
+                aria-label="メンバー名で検索"
                 style={styles.searchInput}
                 placeholder="メンバー名を検索..."
                 placeholderTextColor="#8E8E93"
@@ -1726,6 +1728,7 @@ const AnalysisScreen = ({ navigation }) => {
                       {compareMembers.length > 0 ? (
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
                           <TextInput
+                            aria-label="組み合わせの名前"
                             style={{
                               flex: 1,
                               height: 34,
