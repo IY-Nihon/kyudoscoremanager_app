@@ -24,10 +24,11 @@ const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const 中身 = fs.readFileSync(
-  path.join(__dirname, '..', 'src', 'HistoryScreen.js'),
-  'utf8'
-);
+// 履歴画面は 2026-10-05 にいくつかのファイルに分けた（ゴミ箱の窓・見た目の決まり）。
+// 履歴画面ぜんぶの字として、まとめて読む
+const 中身 = ['HistoryScreen.js', 'HistoryTrash.js', 'historyStyles.js']
+  .map((名) => fs.readFileSync(path.join(__dirname, '..', 'src', 名), 'utf8'))
+  .join('\n');
 
 /** 名前で型を1つ取り出す。`名: { … }` の形 */
 function 型を取る(名) {

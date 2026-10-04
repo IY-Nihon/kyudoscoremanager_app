@@ -15,8 +15,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 const 個人用 = require('../src/chatPersonal');
 
-const ソース = fs
-  .readFileSync(path.join(__dirname, '..', 'src', 'AIChatBot.js'), 'utf8')
+// 指示文と Q&A は 2026-10-05 に src/chatKnowledge.js へ移した。道具の宣言は AIChatBot.js のまま。
+// チャットボットぜんぶの字として、まとめて読む
+const ソース = ['AIChatBot.js', 'chatKnowledge.js']
+  .map((名) => fs.readFileSync(path.join(__dirname, '..', 'src', 名), 'utf8'))
+  .join('\n')
   .replace(/\r\n/g, '\n');
 
 /** 団体用の指示文（systemInstructionBase）。中に逆斜線も ${} も無い静的な文 */

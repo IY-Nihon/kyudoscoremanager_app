@@ -1,24 +1,23 @@
 'use strict';
 
 const React = require('react');
-const {
-  View,
-  ScrollView,
-  StyleSheet,
-  Text,
-  Modal,
-  TextInput,
-  Alert,
-  Pressable,
-  TouchableOpacity,
-  AppState,
-  Animated,
-  PanResponder,
-} = require('./rn');
-const { IS_WEB, SAFE_TOP_PADDING, WEB_TOP_PADDING } = require('./IS_WEB');
-const { useScoreStore, ライブ名に使えない字 } = require('./useScoreStore');
+const { View, ScrollView, Text, Pressable, TouchableOpacity, AppState, Animated, PanResponder } = require('./rn');
+const { IS_WEB } = require('./IS_WEB');
+const { useScoreStore } = require('./useScoreStore');
 // 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
 const { useストアの一部 } = require('./storeSlice');
+// 見た目の決まりは、切り出した窓と分け合うので別のファイル（2026-10-05）
+const { styles } = require('./recordStyles');
+// ライブを始める・入るときの名前の窓は別のファイル（2026-10-05）
+const { ライブ名を決める窓 } = require('./RecordLiveName');
+// 表示の拡大率（バーと一覧）の窓も別のファイル（2026-10-05）
+const { 拡大率の窓 } = require('./RecordZoom');
+// 射数の窓（一覧・自由入力・減らすときの確認）も別のファイル（2026-10-05）
+const { 射数の窓たち } = require('./RecordShots');
+// ライブを始めるか入るかの窓と、入り方（記録する・見るだけ）の窓も別のファイル（2026-10-05）
+const { ライブの入り口の窓 } = require('./RecordLiveJoin');
+// リセット・アプリ内の確認・チーム名の窓も別のファイル（2026-10-05）
+const { 記録画面の確認の窓たち } = require('./RecordDialogs');
 const { いまの立 } = require('./arrowRowRules');
 const 案内 = require('./TutorialGuide');
 const 在 = require('./livePresence');
@@ -35,7 +34,6 @@ const { ManualSubstitutionModal } = require('./ManualSubstitutionModal');
 const 窓 = require('./AppDialog');
 const 航 = require('@react-navigation/native');
 const { formatMemberName } = require('./formatMemberName');
-const { getShadowStyle } = require('./shadowStyle');
 const { ArrowLocationPopover } = require('./ArrowLocationPopover');
 const { OCRRecordModal } = require('./OCRRecordModal');
 const { LiveShareModal } = require('./LiveShareModal');
@@ -215,7 +213,6 @@ const RecordScreen = () => {
   const よその団体 = useScoreStore((状態) => 状態.よその団体のライブ);
   // 配ったリンクの期限。帯に「あと30分」を出す（期限の帯。数え直しはあちらの中で起きる）
   const ライブの期限 = useScoreStore((状態) => 状態.いまのライブの期限);
-  const ライブの一覧 = useScoreStore((状態) => 状態.liveSessionsList);
   const [人の窓, 人の窓を出す] = React.useState(false);
   const [選んだ射手ID, 選んだ射手IDを置く] = React.useState(null);
   const [選んだ射手の順, 選んだ射手の順を置く] = React.useState(0);
@@ -259,7 +256,6 @@ const RecordScreen = () => {
   const [ライブの種類, ライブの種類を置く] = React.useState(null);
   const [ライブ名の下書き, ライブ名の下書きを置く] = React.useState('');
   const [ライブ名の窓, ライブ名の窓を出す] = React.useState(false);
-  const [ライブ名の注意, ライブ名の注意を置く] = React.useState(null);
   const [showAttendance, setShowAttendance] = React.useState(false);
   const [tempAttendance, setTempAttendance] = React.useState(null);
   const [showOCRModal, setShowOCRModal] = React.useState(false);
@@ -416,23 +412,9 @@ const RecordScreen = () => {
   const [射数の窓, 射数の窓を出す] = React.useState(false);
   const // 拡大率の選択が出ているか（Excel の倍率と同じ考え方）
     [拡大選択中, 拡大を選ぶ] = React.useState(false);
-  const // 拡大率のバーの幅。指の位置を倍率に直すのに使う
-    [溝の幅, 溝の幅を置く] = React.useState(0);
   const // 拡大率の下限・上限。バーも一覧もこの幅で動かす
     拡大の下 = 0.5;
   const 拡大の上 = 2;
-  const // バーのどこを触ったかを倍率に直す。1%きざみで止める
-    触った所を倍率に = (横の位置) => {
-      if (!溝の幅) return 倍率;
-      const 割合 = Math.min(1, Math.max(0, 横の位置 / 溝の幅));
-      const 生 = 拡大の下 + 割合 * (拡大の上 - 拡大の下);
-      return Math.round(生 * 100) / 100;
-    };
-  const 倍率を割合に = (倍) => Math.min(1, Math.max(0, (倍 - 拡大の下) / (拡大の上 - 拡大の下)));
-  const バーを動かす = (出来事) => {
-    const 倍 = 触った所を倍率に(出来事.nativeEvent.locationX);
-    if (Math.abs(倍 - 倍率) > 0.001) setViewScale(倍);
-  };
   const 射数の窓を閉じる = () => 射数の窓を出す(false);
   const 射数を変える = (本数) => {
     本数 < shotsPerRound &&
@@ -1241,505 +1223,49 @@ const RecordScreen = () => {
         </View>
       )}
       {/* 拡大率の選択。射数の選択と同じ形にしてある */}
-      <Modal visible={拡大選択中} transparent animationType="fade" onRequestClose={() => 拡大を選ぶ(false)}>
-        <View
-          style={{
-            flex: 1,
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-            paddingBottom: 40,
-            paddingTop: 16,
-          }}
-        >
-          {/* 背景は「中身の親」ではなく「兄弟」にしてある。 */
-          /* 親にすると、バーを掴んで離したときの click が背景まで伝わり、 */
-          /* 倍率を合わせるたびに閉じてしまう */}
-          <Pressable
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(0,0,0,0.4)',
-            }}
-            onPress={() => 拡大を選ぶ(false)}
-          />
-          {/* 横向きのスマホでは画面に収まらず、下の倍率とキャンセルに届かなかった（2026-09-26）。 */
-          /* 窓は画面の高さまでに縮め、倍率の並びだけを流す（見出しとバーは上に残す） */}
-          <View
-            style={{
-              width: '90%',
-              maxWidth: 400,
-              flexShrink: 1,
-              backgroundColor: '#FFF',
-              borderRadius: 14,
-              overflow: 'hidden',
-            }}
-          >
-            <View
-              style={{
-                padding: 16,
-                borderBottomWidth: StyleSheet.hairlineWidth,
-                borderBottomColor: '#C6C6C8',
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{ fontSize: 13, color: '#8E8E93', fontWeight: '600' }}>表示の大きさ</Text>
-            </View>
-            {/* バーでも動かせるようにする。⊖ ⊕ は 5% ずつ */}
-            <View style={styles.バーの行}>
-              <TouchableOpacity
-                onPress={() => setViewScale(Math.max(拡大の下, Math.round((倍率 - 0.05) * 20) / 20))}
-                disabled={倍率 <= 拡大の下 + 0.001}
-                accessible
-                accessibilityRole="button"
-                accessibilityLabel="表示を小さくする"
-                aria-label="表示を小さくする"
-                style={styles.zoomBtn}
-              >
-                <Icons.Ionicons
-                  name="remove-circle-outline"
-                  size={24}
-                  color={倍率 <= 拡大の下 + 0.001 ? '#C7C7CC' : '#007AFF'}
-                />
-              </TouchableOpacity>
-              <View
-                style={styles.溝の当たり}
-                onLayout={(出来事) => 溝の幅を置く(出来事.nativeEvent.layout.width)}
-                onStartShouldSetResponder={() => true}
-                onMoveShouldSetResponder={() => true}
-                onResponderGrant={バーを動かす}
-                onResponderMove={バーを動かす}
-              >
-                <View style={styles.溝} />
-                <View style={[styles.溝の済み, { width: `${倍率を割合に(倍率) * 100}%` }]} />
-                <View style={[styles.つまみ, { left: `${倍率を割合に(倍率) * 100}%` }]} />
-              </View>
-              <TouchableOpacity
-                onPress={() => setViewScale(Math.min(拡大の上, Math.round((倍率 + 0.05) * 20) / 20))}
-                disabled={倍率 >= 拡大の上 - 0.001}
-                accessible
-                accessibilityRole="button"
-                accessibilityLabel="表示を大きくする"
-                aria-label="表示を大きくする"
-                style={styles.zoomBtn}
-              >
-                <Icons.Ionicons
-                  name="add-circle-outline"
-                  size={24}
-                  color={倍率 >= 拡大の上 - 0.001 ? '#C7C7CC' : '#007AFF'}
-                />
-              </TouchableOpacity>
-              <Text style={styles.バーの数字}>{Math.round(倍率 * 100)}%</Text>
-            </View>
-            <ScrollView style={{ flexGrow: 0, flexShrink: 1 }}>
-              {[0.5, 0.75, 1, 1.25, 1.5, 2].map((倍) => (
-                <Pressable
-                  key={`zoom-option-${倍}`}
-                  style={({ hovered }) => [
-                    {
-                      padding: 16,
-                      alignItems: 'center',
-                      borderBottomWidth: StyleSheet.hairlineWidth,
-                      borderBottomColor: '#C6C6C8',
-                    },
-                    hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
-                    Math.abs(倍率 - 倍) < 0.01 && { backgroundColor: '#EAF3FF' },
-                  ]}
-                  onPress={() => {
-                    setViewScale(倍);
-                    ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
-                    拡大を選ぶ(false);
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 20,
-                      color: '#007AFF',
-                      fontWeight: Math.abs(倍率 - 倍) < 0.01 ? 'bold' : 'normal',
-                    }}
-                  >
-                    {Math.round(倍 * 100)}%{1 === 倍 ? '（標準）' : ''}
-                  </Text>
-                </Pressable>
-              ))}
-              <Pressable
-                style={({ hovered }) => [
-                  { padding: 16, alignItems: 'center' },
-                  hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
-                ]}
-                onPress={() => 拡大を選ぶ(false)}
-              >
-                <Text style={{ fontSize: 17, color: '#8E8E93' }}>キャンセル</Text>
-              </Pressable>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-      <Modal visible={射数の窓} transparent animationType="fade" onRequestClose={射数の窓を閉じる}>
-        <Pressable
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.4)',
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-            paddingBottom: 40,
-            paddingTop: 16,
-          }}
-          onPress={射数の窓を閉じる}
-        >
-          {/* 横向きのスマホでは画面に収まらず、4射・8射に届かなかった（2026-09-26）。 */
-          /* 窓は画面の高さまでに縮め、射数の並びだけを流す（見出しとキャンセルは残す） */}
-          <View
-            style={{
-              width: '90%',
-              maxWidth: 400,
-              flexShrink: 1,
-              backgroundColor: '#FFF',
-              borderRadius: 14,
-              overflow: 'hidden',
-            }}
-          >
-            <View
-              style={{
-                padding: 16,
-                borderBottomWidth: StyleSheet.hairlineWidth,
-                borderBottomColor: '#C6C6C8',
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{ fontSize: 13, color: '#8E8E93', fontWeight: '600' }}>射数の設定</Text>
-            </View>
-            <ScrollView style={{ flexGrow: 0, flexShrink: 1 }}>
-              {[4, 8, 12, 16, 20].map((本数) => (
-                <Pressable
-                  key={`shot-option-${本数}`}
-                  style={({ hovered }) => [
-                    {
-                      padding: 18,
-                      alignItems: 'center',
-                      borderBottomWidth: StyleSheet.hairlineWidth,
-                      borderBottomColor: '#C6C6C8',
-                    },
-                    hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
-                  ]}
-                  onPress={() => {
-                    射数を変える(本数);
-                    射数の窓を閉じる();
-                  }}
-                >
-                  <Text style={{ fontSize: 20, color: '#007AFF' }}>{本数}射</Text>
-                </Pressable>
-              ))}
-              <Pressable
-                style={({ hovered }) => [
-                  { padding: 18, alignItems: 'center' },
-                  hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
-                ]}
-                onPress={() => {
-                  射数の窓を閉じる();
-                  setTimeout(() => {
-                    射数の下書きを置く(String(shotsPerRound));
-                    射数の入力窓を出す(true);
-                  }, 100);
-                }}
-              >
-                <Text style={{ fontSize: 20, color: '#007AFF' }}>任意...</Text>
-              </Pressable>
-            </ScrollView>
-          </View>
-          <Pressable
-            style={({ hovered }) => [
-              {
-                width: '90%',
-                maxWidth: 400,
-                backgroundColor: '#FFF',
-                borderRadius: 14,
-                marginTop: 8,
-                padding: 18,
-                alignItems: 'center',
-              },
-              hovered && IS_WEB && { opacity: 0.8 },
-            ]}
-            onPress={射数の窓を閉じる}
-          >
-            <Text style={{ fontSize: 20, color: '#007AFF', fontWeight: 'bold' }}>キャンセル</Text>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      <拡大率の窓
+        setViewScale={setViewScale}
+        倍率={倍率}
+        拡大選択中={拡大選択中}
+        拡大を選ぶ={拡大を選ぶ}
+        拡大の下={拡大の下}
+        拡大の上={拡大の上}
+      />
+      <射数の窓たち
+        setShotsPerRound={setShotsPerRound}
+        shotsPerRound={shotsPerRound}
+        射数を減らす確認={射数を減らす確認}
+        射数を減らす確認を出す={射数を減らす確認を出す}
+        減らす先の射数={減らす先の射数}
+        射数の入力窓={射数の入力窓}
+        射数の入力窓を出す={射数の入力窓を出す}
+        射数の下書き={射数の下書き}
+        射数の下書きを置く={射数の下書きを置く}
+        射数の窓={射数の窓}
+        射数の窓を閉じる={射数の窓を閉じる}
+        射数を変える={射数を変える}
+        入力した射数で決める={入力した射数で決める}
+      />
       <LiveShareModal visible={共有の窓} onClose={() => 共有の窓を出す(false)} />
-      <Modal
-        visible={ライブの選び窓}
-        transparent
-        animationType="fade"
-        onRequestClose={() => ライブの選び窓を出す(false)}
-      >
-        <TouchableOpacity
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.4)',
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-            paddingBottom: 40,
-          }}
-          activeOpacity={1}
-          onPress={() => ライブの選び窓を出す(false)}
-        >
-          <View
-            style={{
-              width: '90%',
-              maxWidth: 400,
-              backgroundColor: '#FFF',
-              borderRadius: 14,
-              overflow: 'hidden',
-            }}
-          >
-            <TouchableOpacity
-              style={{
-                padding: 18,
-                alignItems: 'center',
-                borderBottomWidth: StyleSheet.hairlineWidth,
-                borderBottomColor: '#C6C6C8',
-              }}
-              onPress={() => ライブを始める窓へ('host')}
-            >
-              <Text style={{ fontSize: 20, color: '#007AFF' }}>ライブ記録を開始</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={{ padding: 18, alignItems: 'center' }}
-              onPress={() => ライブを始める窓へ('join')}
-            >
-              <Text style={{ fontSize: 20, color: '#007AFF' }}>ライブ記録に参加</Text>
-            </TouchableOpacity>
-          </View>
-          <TouchableOpacity
-            style={{
-              width: '90%',
-              maxWidth: 400,
-              backgroundColor: '#FFF',
-              borderRadius: 14,
-              marginTop: 8,
-              padding: 18,
-              alignItems: 'center',
-            }}
-            onPress={() => ライブの選び窓を出す(false)}
-          >
-            <Text style={{ fontSize: 20, color: '#007AFF', fontWeight: 'bold' }}>キャンセル</Text>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
-      <Modal
-        visible={ライブ名の窓}
-        transparent
-        animationType="fade"
-        onRequestClose={() => ライブ名の窓を出す(false)}
-      >
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.4)',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <View
-            style={{
-              width: 300,
-              backgroundColor: '#FFF',
-              borderRadius: 12,
-              padding: 20,
-              alignItems: 'center',
-              maxHeight: '80%',
-            }}
-          >
-            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>
-              {'host' === ライブの種類 ? 'ライブを開始' : 'ライブに参加'}
-            </Text>
-            {'host' === ライブの種類 ? (
-              <>
-                <Text style={{ fontSize: 14, color: '#666', marginBottom: 16 }}>
-                  セッション名を入力してください
-                </Text>
-                <TextInput
-                  aria-label="セッション名"
-                  style={{
-                    width: '100%',
-                    borderWidth: 1,
-                    borderColor: '#CCC',
-                    borderRadius: 8,
-                    padding: 12,
-                    fontSize: 16,
-                    marginBottom: 20,
-                  }}
-                  value={ライブ名の下書き} // 名前を直したら注意書きも消す。残すと、直したのに
-                  // 「使えません」が出たままで、何が悪いのか分からない
-                  onChangeText={(文) => {
-                    ライブ名の下書きを置く(文);
-                    ライブ名の注意を置く(null);
-                  }}
-                  placeholder="session_name_123"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  autoFocus
-                />
-                {ライブ名の注意 && (
-                  <Text
-                    style={{
-                      color: '#FF3B30',
-                      fontSize: 13,
-                      textAlign: 'center',
-                      marginBottom: 12,
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    {ライブ名の注意}
-                  </Text>
-                )}
-              </>
-            ) : (
-              <View style={{ width: '100%' }}>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 12,
-                  }}
-                >
-                  <Text style={{ fontSize: 14, color: '#666' }}>アクティブなセッション一覧</Text>
-                  <TouchableOpacity
-                    onPress={() => {
-                      useScoreStore.getState().fetchActiveLiveSessions();
-                      知らせる('更新しました');
-                    }}
-                  >
-                    <Icons.Ionicons name="refresh" size={20} color="#007AFF" />
-                  </TouchableOpacity>
-                </View>
-                <ScrollView style={{ width: '100%', maxHeight: 300, marginBottom: 20 }}>
-                  {Array.isArray(ライブの一覧) && 0 !== ライブの一覧.length ? (
-                    ライブの一覧.map((名前) => (
-                      <View
-                        key={`live-session-${名前}`}
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          borderBottomWidth: 1,
-                          borderBottomColor: '#EEE',
-                          backgroundColor: ライブ名の下書き === 名前 ? '#E5F1FF' : '#FFF',
-                        }}
-                      >
-                        <TouchableOpacity
-                          style={{ flex: 1, padding: 16 }} // 選び直したら注意書きも消す（入力欄と揃える）
-                          onPress={() => {
-                            ライブ名の下書きを置く(名前);
-                            ライブ名の注意を置く(null);
-                          }}
-                        >
-                          <Text style={{ fontSize: 16, color: '#333' }}>{名前}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={{ padding: 16 }}
-                          onPress={() => {
-                            Alert.alert('セッション削除', `セッション「${名前}」を完全に削除しますか？`, [
-                              { text: 'キャンセル', style: 'cancel' },
-                              {
-                                text: '削除',
-                                style: 'destructive',
-                                onPress: () => useScoreStore.getState().deleteLiveSession(名前),
-                              },
-                            ]);
-                          }} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
-                          accessible
-                          accessibilityRole="button"
-                          accessibilityLabel="このライブを消す"
-                          aria-label="このライブを消す"
-                        >
-                          <Icons.Ionicons name="trash-outline" size={20} color="#FF3B30" />
-                        </TouchableOpacity>
-                      </View>
-                    ))
-                  ) : (
-                    <Text style={{ textAlign: 'center', color: '#888', padding: 20 }}>
-                      現在アクティブな記録はありません
-                    </Text>
-                  )}
-                </ScrollView>
-              </View>
-            )}
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <TouchableOpacity
-                style={{
-                  flex: 1,
-                  padding: 12,
-                  borderRadius: 8,
-                  backgroundColor: '#F2F2F7',
-                  alignItems: 'center',
-                }}
-                onPress={() => ライブ名の窓を出す(false)}
-              >
-                <Text style={{ fontSize: 16, color: '#007AFF', fontWeight: 'bold' }}>キャンセル</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{
-                  flex: 1,
-                  padding: 12,
-                  borderRadius: 8,
-                  backgroundColor: ライブ名の下書き.trim() ? '#007AFF' : '#CCC',
-                  alignItems: 'center',
-                }}
-                onPress={async () => {
-                  if (!ライブ名の下書き.trim()) return;
-                  const 名前 = ライブ名の下書き.trim();
-                  // Realtime Database の枝の名前に使えない字を弾く。
-                  // とくに「/」は例外にならず階層の区切りとして通ってしまい、
-                  // 「5/8」のような日付を入れると 5 の下に 8 が作られる。
-                  // そうなると参加一覧にも出ず、参加も削除もできないライブが残る
-                  const 使えない字 = ライブ名に使えない字(名前);
-                  if (使えない字)
-                    return void (ライブ名の注意を置く(
-                      `ライブ名に ${使えない字} は使えません。別の名前を入力してください。`
-                    ),
-                    ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Heavy));
-                  if ((ライブ名の注意を置く(null), 'host' === ライブの種類)) {
-                    知らせる('ライブを開始しています...');
-                    const 結果 = await useScoreStore.getState().startLiveSync(名前);
-                    if ('開始した' === 結果)
-                      return void (ライブ名の窓を出す(false),
-                      ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Success));
-                    // 「同名あり」と「確かめられなかった」を区別する。
-                    // 元はどちらも「既に使用されています」と出していて、
-                    // 通信が乱れただけのときに誤った案内になっていた
-                    return void (ライブ名の注意を置く(
-                      '同名あり' === 結果
-                        ? `'${名前}' は既に使用されています。別の名前を入力してください。`
-                        : '通信が不安定なため開始できませんでした。電波の良い場所でもう一度お試しください。'
-                    ),
-                    ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Heavy));
-                  }
-                  if ('join' === ライブの種類) {
-                    if (!useScoreStore.getState().liveSessionsList.includes(名前))
-                      return void ライブ名の注意を置く(`'${名前}' というセッションは見つかりませんでした。`);
-                    // 参加のしかたを選ぶ。見るだけなら盤面を書き換えない
-                    // 参加のしかたは画面の中のポップアップで選ぶ
-                    const 聞く = () => 参加のしかたを聞くを置く(名前);
-                    if (archers.length > 0) {
-                      確認を置く({
-                        文: '手元の記録が消去され、ライブ参加データで上書きされます。よろしいですか？',
-                        実行: 聞く,
-                      });
-                    } else 聞く();
-                  }
-                }}
-                disabled={!ライブ名の下書き.trim()}
-              >
-                <Text style={{ fontSize: 16, color: '#FFF', fontWeight: 'bold' }}>決定</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <ライブの入り口の窓
+        ライブの選び窓={ライブの選び窓}
+        ライブの選び窓を出す={ライブの選び窓を出す}
+        参加のしかたを聞く={参加のしかたを聞く}
+        参加のしかたを聞くを置く={参加のしかたを聞くを置く}
+        ライブに入る={ライブに入る}
+        ライブを始める窓へ={ライブを始める窓へ}
+      />
+      <ライブ名を決める窓
+        archers={archers}
+        ライブの種類={ライブの種類}
+        ライブ名の下書き={ライブ名の下書き}
+        ライブ名の下書きを置く={ライブ名の下書きを置く}
+        ライブ名の窓={ライブ名の窓}
+        ライブ名の窓を出す={ライブ名の窓を出す}
+        参加のしかたを聞くを置く={参加のしかたを聞くを置く}
+        確認を置く={確認を置く}
+        知らせる={知らせる}
+      />
       <View
         style={[styles.gridArea, { justifyContent: 'center', alignItems: 'center' }]}
         onLayout={(出来事) => {
@@ -2329,300 +1855,24 @@ const RecordScreen = () => {
         archerId={選んだ射手ID}
         onClose={() => 交代の窓を出す(false)}
       />
-      <Modal
-        visible={リセットの窓}
-        transparent
-        animationType="fade"
-        onRequestClose={() => リセットの窓を出す(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <TouchableOpacity
-            style={StyleSheet.absoluteFill}
-            activeOpacity={1}
-            onPress={() => リセットの窓を出す(false)}
-          />
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>すべての記録をリセット</Text>
-            <Text style={styles.modalMessage}>
-              現在入力されているすべての的中記録と交代設定、およびすべてのデータが削除されます。リセットしてよろしいですか？
-            </Text>
-            <View style={styles.modalButtonsRow}>
-              <Pressable
-                style={({ hovered }) => [
-                  styles.modalBtn,
-                  { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
-                  hovered && IS_WEB && { backgroundColor: '#E5E5EA' },
-                ]}
-                onPress={() => リセットの窓を出す(false)}
-              >
-                <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
-              </Pressable>
-              <Pressable
-                style={({ hovered }) => [
-                  styles.modalBtn,
-                  { backgroundColor: '#FF3B30', flex: 1, marginLeft: 5 },
-                  hovered && IS_WEB && { opacity: 0.8 },
-                ]}
-                onPress={() => {
-                  リセットの窓を出す(false);
-                  resetCurrentSession();
-                  ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning);
-                  知らせる('リセットしました。');
-                }}
-              >
-                <Text style={[styles.modalBtnText, { color: '#FFF' }]}>リセット</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
-      <Modal
-        visible={射数を減らす確認}
-        transparent
-        animationType="fade"
-        onRequestClose={() => 射数を減らす確認を出す(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <TouchableOpacity
-            style={StyleSheet.absoluteFill}
-            activeOpacity={1}
-            onPress={() => 射数を減らす確認を出す(false)}
-          />
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>射数を減らしますか？</Text>
-            <Text style={styles.modalMessage}>
-              射数を{減らす先の射数}射に減らすと、後ろの入力済みデータがすべて削除されます。よろしいですか？
-            </Text>
-            <View style={styles.modalButtonsRow}>
-              <TouchableOpacity
-                style={[styles.modalBtn, { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 }]}
-                onPress={() => 射数を減らす確認を出す(false)}
-              >
-                <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalBtn, { backgroundColor: '#FF3B30', flex: 1, marginLeft: 5 }]}
-                onPress={() => {
-                  射数を減らす確認を出す(false);
-                  setShotsPerRound(減らす先の射数);
-                  ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Medium);
-                }}
-              >
-                <Text style={[styles.modalBtnText, { color: '#FFF' }]}>削除して変更</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-      <Modal
-        visible={射数の入力窓}
-        transparent
-        animationType="fade"
-        onRequestClose={() => 射数の入力窓を出す(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <TouchableOpacity
-            style={StyleSheet.absoluteFill}
-            activeOpacity={1}
-            onPress={() => 射数の入力窓を出す(false)}
-          />
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>射数の詳細設定</Text>
-            <Text style={styles.modalMessage}>1〜500本の間で入力してください</Text>
-            <TextInput
-              aria-label="射数"
-              style={styles.modalInput}
-              keyboardType="number-pad"
-              value={射数の下書き}
-              onChangeText={射数の下書きを置く}
-              onSubmitEditing={入力した射数で決める}
-              autoFocus
-            />
-            <View style={styles.modalButtonsRow}>
-              <Pressable
-                style={({ hovered }) => [
-                  styles.modalBtn,
-                  { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
-                  hovered && IS_WEB && { backgroundColor: '#E5E5EA' },
-                ]}
-                onPress={() => 射数の入力窓を出す(false)}
-              >
-                <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
-              </Pressable>
-              <Pressable
-                style={({ hovered }) => [
-                  styles.modalBtn,
-                  { backgroundColor: '#007AFF', flex: 1, marginLeft: 5 },
-                  hovered && IS_WEB && { opacity: 0.8 },
-                ]}
-                onPress={入力した射数で決める}
-              >
-                <Text style={[styles.modalBtnText, { color: '#FFF' }]}>決定</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <記録画面の確認の窓たち
+        区切りにチーム名を付ける={区切りにチーム名を付ける}
+        resetCurrentSession={resetCurrentSession}
+        リセットの窓={リセットの窓}
+        リセットの窓を出す={リセットの窓を出す}
+        チーム名を付ける区切り={チーム名を付ける区切り}
+        setチーム名を付ける区切り={setチーム名を付ける区切り}
+        チーム名の下書き={チーム名の下書き}
+        setチーム名の下書き={setチーム名の下書き}
+        確認={確認}
+        確認を置く={確認を置く}
+        知らせる={知らせる}
+      />
       {知らせ ? (
         <View style={styles.feedbackOverlay}>
           <Text style={styles.feedbackText}>{知らせ}</Text>
         </View>
       ) : null}
-      <Modal
-        visible={null !== 参加のしかたを聞く}
-        transparent
-        animationType="fade"
-        onRequestClose={() => 参加のしかたを聞くを置く(null)}
-      >
-        <Pressable
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.4)',
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-            paddingBottom: 40,
-          }}
-          onPress={() => 参加のしかたを聞くを置く(null)}
-        >
-          <View
-            style={{
-              width: '90%',
-              maxWidth: 400,
-              backgroundColor: '#FFF',
-              borderRadius: 14,
-              overflow: 'hidden',
-            }}
-          >
-            <View
-              style={{
-                padding: 16,
-                borderBottomWidth: StyleSheet.hairlineWidth,
-                borderBottomColor: '#C6C6C8',
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{ fontSize: 13, color: '#8E8E93', fontWeight: '600' }}>参加のしかた</Text>
-              <Text style={{ fontSize: 15, color: '#3C3C43', marginTop: 4 }}>{参加のしかたを聞く || ''}</Text>
-            </View>
-            <Pressable
-              style={({ hovered }) => [
-                {
-                  padding: 16,
-                  alignItems: 'center',
-                  borderBottomWidth: StyleSheet.hairlineWidth,
-                  borderBottomColor: '#C6C6C8',
-                },
-                hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
-              ]}
-              onPress={() => {
-                const 名 = 参加のしかたを聞く;
-                参加のしかたを聞くを置く(null);
-                if (名) ライブに入る(名, false);
-              }}
-            >
-              <Text style={{ fontSize: 20, color: '#007AFF', fontWeight: 'bold' }}>記録用</Text>
-              <Text style={{ fontSize: 13, color: '#8E8E93', marginTop: 2 }}>○×を入れられます</Text>
-            </Pressable>
-            <Pressable
-              style={({ hovered }) => [
-                { padding: 16, alignItems: 'center' },
-                hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
-              ]}
-              onPress={() => {
-                const 名 = 参加のしかたを聞く;
-                参加のしかたを聞くを置く(null);
-                if (名) ライブに入る(名, true);
-              }}
-            >
-              <Text style={{ fontSize: 20, color: '#007AFF', fontWeight: 'bold' }}>閲覧用</Text>
-              <Text style={{ fontSize: 13, color: '#8E8E93', marginTop: 2 }}>
-                画面を見るだけ。○×は入れません
-              </Text>
-            </Pressable>
-          </View>
-          <Pressable
-            style={({ hovered }) => [
-              {
-                width: '90%',
-                maxWidth: 400,
-                backgroundColor: '#FFF',
-                borderRadius: 14,
-                marginTop: 8,
-                padding: 18,
-                alignItems: 'center',
-              },
-              hovered && IS_WEB && { opacity: 0.8 },
-            ]}
-            onPress={() => 参加のしかたを聞くを置く(null)}
-          >
-            <Text style={{ fontSize: 20, color: '#007AFF', fontWeight: 'bold' }}>キャンセル</Text>
-          </Pressable>
-        </Pressable>
-      </Modal>
-      <Modal visible={null !== 確認} transparent animationType="fade" onRequestClose={() => 確認を置く(null)}>
-        <Pressable
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.4)',
-            justifyContent: 'center',
-            alignItems: 'center',
-            paddingHorizontal: 24,
-          }}
-          onPress={() => 確認を置く(null)}
-        >
-          <View
-            style={{
-              width: '100%',
-              maxWidth: 400,
-              backgroundColor: '#FFF',
-              borderRadius: 14,
-              overflow: 'hidden',
-            }}
-          >
-            <View style={{ padding: 20 }}>
-              <Text style={{ fontSize: 15, color: '#1C1C1E', lineHeight: 22 }}>
-                {(確認 && 確認.文) || ''}
-              </Text>
-            </View>
-            <View
-              style={{
-                flexDirection: 'row',
-                borderTopWidth: StyleSheet.hairlineWidth,
-                borderTopColor: '#C6C6C8',
-              }}
-            >
-              <Pressable
-                style={({ hovered }) => [
-                  { flex: 1, padding: 16, alignItems: 'center' },
-                  hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
-                ]}
-                onPress={() => 確認を置く(null)}
-              >
-                <Text style={{ fontSize: 17, color: '#007AFF' }}>キャンセル</Text>
-              </Pressable>
-              <Pressable
-                style={({ hovered }) => [
-                  {
-                    flex: 1,
-                    padding: 16,
-                    alignItems: 'center',
-                    borderLeftWidth: StyleSheet.hairlineWidth,
-                    borderLeftColor: '#C6C6C8',
-                  },
-                  hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
-                ]}
-                onPress={() => {
-                  const 手 = 確認 && 確認.実行;
-                  確認を置く(null);
-                  if (手) 手();
-                }}
-              >
-                <Text style={{ fontSize: 17, color: '#007AFF', fontWeight: 'bold' }}>OK</Text>
-              </Pressable>
-            </View>
-          </View>
-        </Pressable>
-      </Modal>
       <OCRRecordModal
         visible={showOCRModal}
         onClose={() => setShowOCRModal(false)}
@@ -2693,393 +1943,8 @@ const RecordScreen = () => {
       {/* 区切りにチーム名を付ける窓。リーグで大学名を出すため。 */
       /* 区切りより左（並びでは後ろ）がそのチームになるので、 */
       /* 1回入れれば複数人に付く */}
-      <Modal
-        visible={!!チーム名を付ける区切り}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setチーム名を付ける区切り(null)}
-      >
-        <View style={styles.modalBackdrop}>
-          <TouchableOpacity
-            style={StyleSheet.absoluteFill}
-            activeOpacity={1}
-            onPress={() => setチーム名を付ける区切り(null)}
-          />
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>チーム名</Text>
-            <Text style={styles.modalMessage}>
-              {/* 記録表は右から左へ並ぶ（row-reverse）。並びで「後ろ」の */
-              /* 射手は、画面では区切りの左に出る。「右」と書いていたころは */
-              /* 案内と逆の側に色が付いて見えた */}
-              この区切りより左の射手が、そのチームになります。大学名などを入れてください。空にすると、ただの間隔に戻ります。
-            </Text>
-            <TextInput
-              aria-label="チーム名"
-              style={styles.チーム名の入力}
-              value={チーム名の下書き}
-              onChangeText={setチーム名の下書き}
-              placeholder="例: ◯◯大学"
-              maxLength={20}
-              autoFocus
-              returnKeyType="done"
-              onSubmitEditing={() => {
-                区切りにチーム名を付ける(チーム名を付ける区切り, チーム名の下書き);
-                setチーム名を付ける区切り(null);
-              }}
-            />
-            <View style={styles.modalButtonsRow}>
-              <Pressable
-                style={({ hovered }) => [
-                  styles.modalBtn,
-                  { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
-                  hovered && IS_WEB && { backgroundColor: '#E5E5EA' },
-                ]}
-                onPress={() => setチーム名を付ける区切り(null)}
-              >
-                <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
-              </Pressable>
-              <Pressable
-                style={({ hovered }) => [
-                  styles.modalBtn,
-                  { backgroundColor: '#007AFF', flex: 1, marginLeft: 5 },
-                  hovered && IS_WEB && { opacity: 0.9 },
-                ]}
-                onPress={() => {
-                  区切りにチーム名を付ける(チーム名を付ける区切り, チーム名の下書き);
-                  setチーム名を付ける区切り(null);
-                }}
-              >
-                <Text style={[styles.modalBtnText, { color: '#FFF' }]}>決定</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </Et要素>
   );
 };
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#FFF', paddingTop: IS_WEB ? WEB_TOP_PADDING : SAFE_TOP_PADDING },
-  navBar: {
-    minHeight: 48,
-    backgroundColor: '#FFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    // 細い画面では右の群が下の段へ回る。
-    // 一列に詰め込むと端が切れて、押せないボタンが出てしまう
-    flexWrap: 'wrap',
-    rowGap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
-  },
-  navLeft: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 },
-  syncContainer: { flexDirection: 'row', alignItems: 'center' },
-  syncTimeText: { fontSize: 9, color: '#8E8E93' },
-  // 群（ライブ／立ちの増減／表示の大きさ）どうしは離し、群の中はくっつける
-  navRight: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  resetBtn: {
-    zIndex: 10001,
-    backgroundColor: '#FF3B30',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 6,
-    marginRight: 2,
-  },
-  resetBtnText: { color: '#FFF', fontWeight: 'bold', fontSize: 12 },
-  groupBadge: {
-    marginLeft: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F2F2F7',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  groupBadgeWeb: Object.assign(
-    {
-      backgroundColor: 'rgba(0,122,255,0.1)',
-      borderColor: 'rgba(0,122,255,0.2)',
-      borderWidth: 1,
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-      borderRadius: 8,
-    },
-    getShadowStyle({
-      shadowColor: '#007AFF',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 12,
-      elevation: 8,
-    })
-  ),
-  // ライブをリンクで配るボタン。ライブ中だけ出る
-  shareBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,122,255,0.1)',
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    borderRadius: 6,
-    gap: 3,
-    marginRight: 6,
-  },
-  shareBtnText: { color: '#007AFF', fontSize: 11, fontWeight: 'bold' },
-  liveBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,122,255,0.1)',
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    borderRadius: 6,
-    gap: 3,
-  },
-  liveBtnActive: { backgroundColor: '#FF3B30' },
-  liveBtnText: { fontSize: 12, color: '#007AFF', fontWeight: 'bold' },
-  liveBtnTextActive: { color: '#FFF' },
-  zoomContainer: { flexDirection: 'row', alignItems: 'center', gap: 0 },
-  zoomBtn: { padding: 1 },
-  shotsToggle: {
-    paddingHorizontal: 2,
-    paddingVertical: 4,
-    zIndex: 10001,
-    minWidth: 34,
-    alignItems: 'center',
-  },
-  shotsText: { fontSize: 13, color: '#5856D6', fontWeight: 'bold' },
-  // 拡大率。押せることが分かるよう、軽く枠で囲う
-  zoomToggle: {
-    flexDirection: 'column',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#C7C7CC',
-    minWidth: 62,
-    minHeight: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  zoomLabel: { fontSize: 9, color: '#8E8E93', fontWeight: '600' },
-  zoomValue: { flexDirection: 'row', alignItems: 'center', gap: 1 },
-  zoomText: { fontSize: 12, color: '#007AFF', fontWeight: 'bold' },
-  // 拡大率のバー。溝そのものは細いので、当たり判定だけ広く取る
-  バーの行: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EFEFF4',
-  },
-  溝の当たり: { flex: 1, height: 36, justifyContent: 'center' },
-  溝: { height: 4, borderRadius: 2, backgroundColor: '#E5E5EA' },
-  溝の済み: { position: 'absolute', left: 0, height: 4, borderRadius: 2, backgroundColor: '#007AFF' },
-  つまみ: {
-    position: 'absolute',
-    width: 22,
-    height: 22,
-    marginLeft: -11,
-    borderRadius: 11,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#C7C7CC',
-    ...(IS_WEB ? { boxShadow: '0 1px 4px rgba(0,0,0,0.3)' } : { elevation: 3 }),
-  },
-  バーの数字: { fontSize: 13, color: '#3C3C43', fontWeight: 'bold', minWidth: 44, textAlign: 'right' },
-  liveStatusHeader: {
-    height: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#8E8E93',
-    gap: 6,
-  },
-  liveHostHeader: { backgroundColor: '#007AFF' },
-  liveJoinHeader: { backgroundColor: '#007AFF' },
-  liveActiveHeader: { backgroundColor: '#007AFF' },
-  // ライブ名が長いときは、名前のほうを縮めて台数を残す。
-  // 台数は「相手に届いているか」を見るためのもので、消えると意味が無い
-  liveStatusText: { color: '#FFF', fontSize: 11, fontWeight: 'bold', flexShrink: 1 },
-  liveCount: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 },
-  liveCountText: { color: '#FFF', fontSize: 11, fontWeight: 'bold' },
-  // 期限が近いことの札。台数と同じ形にして、狭いときはライブ名の側を縮ませる。
-  // 帯そのものが青（主催者）か灰（参加者）なので、札は赤地で浮かせる
-  liveLimit: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    flexShrink: 0,
-    backgroundColor: '#FF3B30',
-    paddingHorizontal: 5,
-    borderRadius: 8,
-  },
-  liveLimitText: { color: '#FFF', fontSize: 10, fontWeight: 'bold' },
-  gridArea: { flex: 1, backgroundColor: '#FFF' },
-  tallWrapper: { flex: 1, flexDirection: 'column' },
-  gridRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', minWidth: '100%' },
-  fixedFooter: {
-    flexDirection: 'row',
-    height: UIConfig.footerHeight,
-    backgroundColor: '#F2F2F7',
-    borderTopWidth: 1,
-    borderTopColor: '#C6C6C8',
-  },
-  footerLabelCell: {
-    width: UIConfig.headerWidth,
-    height: UIConfig.footerHeight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F2F2F7',
-    borderRightWidth: 1,
-    borderRightColor: '#000',
-  },
-  footerLabelText: { fontSize: 10, fontWeight: 'bold', color: '#3C3C43' },
-  footerNameCell: {
-    height: UIConfig.footerHeight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRightWidth: 1,
-    borderRightColor: '#000',
-    borderBottomWidth: 1,
-    borderBottomColor: '#000',
-    padding: 4,
-  },
-  footerName: { fontSize: 14, fontWeight: 'bold', textAlign: 'center' },
-  guestLabel: { fontSize: 9, color: '#8E8E93' },
-  emptyOverlay: Object.assign({}, StyleSheet.absoluteFillObject, {
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFF',
-  }),
-  emptyTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
-  emptyHint: { fontSize: 14, color: '#8E8E93' },
-  // 帯を畳む取っ手の置き場。畳んでいても押せるように浮かせる。
-  // 左右どちらに置くか（left / right）は描くときに足す
-  帯の取っ手の置き場: {
-    position: 'absolute',
-    top: 8,
-    // 引き始めで字の選択が始まらないように
-    userSelect: 'none',
-    // 表より上、他の画面より下。記録画面は他のタブへ移っても裏で生きているので、
-    // 1e4 のように高くすると履歴のごみ箱など別の画面のボタンの上に乗る
-    zIndex: 5,
-  },
-  帯の取っ手: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(242,242,247,0.95)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#C6C6C8',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  toolbar: {
-    height: IS_WEB ? 70 : 80,
-    backgroundColor: '#FFF',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#C6C6C8',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-  },
-  // はみ出しても隣を覆わないように、この箱の中で切る（念のための二重の備え）
-  addBtns: {
-    flexDirection: 'row',
-    gap: 4,
-    flex: 1,
-    justifyContent: 'center',
-    minWidth: 0,
-    overflow: 'hidden',
-  },
-  addBtn: {
-    flex: 1,
-    // 狭い画面では縮ませる。minWidth を置くと入り切らないぶんが枠の外へ
-    // あふれ、justifyContent: center のせいで左右へ均等に漏れて、
-    // 隣のボタンを覆う。320px幅の端末で「並べ方」が押せなくなっていた
-    minWidth: 0,
-    maxWidth: 62,
-    height: 56,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addLabel: { fontSize: 10, marginTop: 4, fontWeight: 'bold' },
-  historyBtns: { flexDirection: 'row', gap: 2 },
-  historyBtn: { padding: 4 },
-  saveBtn: {
-    // 保存は肯定的な操作。赤は「リセット」など戻せない操作のために取っておく。
-    // 同じ赤だと、色から手がかりが取れない
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 8,
-    paddingVertical: 10,
-    borderRadius: 8,
-    minWidth: 64,
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  saveBtnText: { color: '#FFF', fontSize: 13, fontWeight: 'bold', textAlign: 'center' },
-  // 区切りに付けるチーム名の入力欄
-  チーム名の入力: {
-    borderWidth: 1,
-    borderColor: '#D1D1D6',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    color: '#000',
-    marginTop: 4,
-    marginBottom: 14,
-  },
-  feedbackOverlay: {
-    position: 'absolute',
-    bottom: 100,
-    // 知らせの帯は見せるだけ。指は下の記録表へ通す。
-    // 長押しで鍵を開けた直後は、まさにその下のますを押したいことが多い
-    pointerEvents: 'none',
-    alignSelf: 'center',
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  feedbackText: { color: '#FFF', fontSize: 14, fontWeight: 'bold' },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    width: '85%',
-    maxWidth: 350,
-    backgroundColor: '#FFF',
-    borderRadius: 14,
-    padding: 20,
-    alignItems: 'center',
-  },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 8 },
-  modalMessage: { fontSize: 14, color: '#3C3C43', textAlign: 'center', marginBottom: 20 },
-  modalInput: {
-    width: '100%',
-    height: 44,
-    borderWidth: 1,
-    borderColor: '#C6C6C8',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    fontSize: 18,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  modalButtonsRow: { flexDirection: 'row', width: '100%' },
-  modalBtn: { paddingVertical: 12, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  modalBtnText: { fontSize: 16, fontWeight: 'bold' },
-});
 Object.defineProperty(exports, '__esModule', { value: true });
 exports.RecordScreen = RecordScreen;
