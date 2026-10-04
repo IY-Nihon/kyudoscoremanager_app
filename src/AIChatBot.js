@@ -2057,6 +2057,7 @@ const AIChatBot = () => {
                   </View>
                 ) : null}
                 <TextInput
+                  aria-label="AIへの質問"
                   style={styles.input}
                   onKeyPress={(出来事) => {
                     // Tab か → で続きを取り込む（Claude Code と同じ操作）

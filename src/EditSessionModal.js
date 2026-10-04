@@ -122,6 +122,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                 </TouchableOpacity>
                 <Text style={styles.label}>タイトル</Text>
                 <TextInput
+                  aria-label="大会名・練習名"
                   style={styles.input}
                   value={題}
                   onChangeText={題を置く}
@@ -129,6 +130,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                 />
                 <Text style={styles.label}>メモ</Text>
                 <TextInput
+                  aria-label="練習メモ"
                   style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
                   value={覚え書き}
                   onChangeText={覚え書きを置く}
@@ -156,6 +158,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                     <View style={{ marginBottom: 16 }}>
                       <View style={styles.tagInputContainer}>
                         <TextInput
+                          aria-label="タグを追加"
                           style={styles.tagInput}
                           value={タグの下書き}
                           onChangeText={タグの下書きを置く}
@@ -212,6 +215,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                       {(session && session.shotCount) || 8}射)
                     </Text>
                     <TextInput
+                      aria-label="総矢数"
                       style={styles.input}
                       value={String(本数)}
                       onChangeText={(文) => 本数を置く(parseInt(文) || 0)}

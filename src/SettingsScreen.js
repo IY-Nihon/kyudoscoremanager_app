@@ -825,6 +825,7 @@ const SettingsScreen = () => {
                     <Text style={styles.itemText}>団体名</Text>
                   </View>
                   <TextInput
+                    aria-label="団体名"
                     style={styles.filterInput}
                     placeholder="団体名を入力"
                     value={activeGroupName || ''}
@@ -868,6 +869,7 @@ const SettingsScreen = () => {
                   </View>
                   <View style={styles.stepperContainer}>
                     <TextInput
+                      aria-label="新入生の期"
                       style={[styles.stepperValue, { width: 40, textAlign: 'center', padding: 0 }]}
                       value={String(currentFreshmanTerm)}
                       onChangeText={(文) => {
@@ -966,6 +968,7 @@ const SettingsScreen = () => {
                   </View>
                   <View style={{ flexDirection: 'row', gap: 8 }}>
                     <TextInput
+                      aria-label="新しいタグ"
                       style={[styles.filterInput, { flex: 1, paddingVertical: 8 }]}
                       placeholder="新しいタグを追加"
                       value={タグの下書き}
@@ -1305,6 +1308,7 @@ const SettingsScreen = () => {
                 <View style={styles.filterGroup}>
                   <Text style={styles.filterLabel}>キーワード (タイトル・メモ)</Text>
                   <TextInput
+                    aria-label="キーワードで絞り込み"
                     style={styles.filterInput}
                     placeholder="キーワードで絞り込み"
                     value={言葉の絞り}
@@ -1350,6 +1354,7 @@ const SettingsScreen = () => {
                   <View style={styles.filterGroup}>
                     <Text style={styles.filterLabel}>メンバー名</Text>
                     <TextInput
+                      aria-label="メンバー名で絞り込み"
                       style={styles.filterInput}
                       placeholder="未入力ですべて対象"
                       value={'all' === 部員名の絞り ? '' : 部員名の絞り}
@@ -1635,6 +1640,8 @@ const SettingsScreen = () => {
                 ]}
               >
                 <TextInput
+                  aria-label="団体パスワード"
+                  autoComplete="current-password"
                   style={{ flex: 1, height: 48, fontSize: 16 }}
                   placeholder="団体パスワード"
                   secureTextEntry={!showPw}
@@ -1742,6 +1749,7 @@ const SettingsScreen = () => {
               ]}
             >
               <TextInput
+                aria-label="管理者モードのパスワード"
                 style={{ flex: 1, height: 48, fontSize: 16 }}
                 placeholder="パスワード"
                 secureTextEntry={!showPw}
@@ -1979,6 +1987,8 @@ const SettingsScreen = () => {
                 メールアドレスは書かなくても送れます。書いていただくと、こちらから返事ができます。
               </Text>
               <TextInput
+                aria-label="メールアドレス（任意）"
+                autoComplete="email"
                 style={[styles.filterInput, { width: '100%', marginBottom: 10 }]}
                 placeholder="メールアドレス（任意）"
                 value={inquiryEmail}
@@ -1988,6 +1998,7 @@ const SettingsScreen = () => {
                 editable={!inquirySending}
               />
               <TextInput
+                aria-label="お問い合わせ内容"
                 style={[
                   styles.filterInput,
                   { width: '100%', marginBottom: 15, height: 120, textAlignVertical: 'top' },

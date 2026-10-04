@@ -303,6 +303,8 @@ const LoginScreen = () => {
                     <Text style={styles.label}>団体ID</Text>
                     <View style={styles.inputWrapper}>
                       <TextInput
+                        aria-label="団体ID"
+                        autoComplete="username"
                         style={styles.input}
                         placeholder="例: 123456"
                         placeholderTextColor="#8E8E93"
@@ -316,6 +318,8 @@ const LoginScreen = () => {
                     <Text style={styles.label}>現在のパスワード</Text>
                     <View style={styles.inputWrapper}>
                       <TextInput
+                        aria-label="現在のパスワード"
+                        autoComplete="current-password"
                         style={styles.input}
                         placeholder="••••••••"
                         placeholderTextColor="#8E8E93"
@@ -332,6 +336,8 @@ const LoginScreen = () => {
                     <Text style={styles.label}>新しいメールアドレス</Text>
                     <View style={styles.inputWrapper}>
                       <TextInput
+                        aria-label="新しいメールアドレス"
+                        autoComplete="email"
                         style={styles.input}
                         placeholder="new@example.com"
                         placeholderTextColor="#8E8E93"
@@ -402,6 +408,8 @@ const LoginScreen = () => {
                     <Text style={styles.label}>団体ID</Text>
                     <View style={styles.inputWrapper}>
                       <TextInput
+                        aria-label="団体ID"
+                        autoComplete="username"
                         style={styles.input}
                         placeholder="例: 123456"
                         placeholderTextColor="#8E8E93"
@@ -473,6 +481,8 @@ const LoginScreen = () => {
                       <View style={styles.inputWrapper}>
                         <Icons.Ionicons name="business" size={20} color="#8E8E93" style={styles.inputIcon} />
                         <TextInput
+                          aria-label="団体ID"
+                          autoComplete="username"
                           style={styles.input}
                           placeholder="例: 123456"
                           placeholderTextColor="#8E8E93"
@@ -494,6 +504,8 @@ const LoginScreen = () => {
                           style={styles.inputIcon}
                         />
                         <TextInput
+                          aria-label="パスワード"
+                          autoComplete="current-password"
                           style={styles.input}
                           placeholder="••••••••"
                           placeholderTextColor="#8E8E93"
@@ -520,6 +532,7 @@ const LoginScreen = () => {
                       <View style={styles.inputWrapper}>
                         <Icons.Ionicons name="person" size={20} color="#8E8E93" style={styles.inputIcon} />
                         <TextInput
+                          aria-label="個人ID（4桁）"
                           style={styles.input}
                           placeholder="例: 1234"
                           placeholderTextColor="#8E8E93"
@@ -538,6 +551,8 @@ const LoginScreen = () => {
                         <View style={styles.inputWrapper}>
                           <Icons.Ionicons name="ribbon" size={20} color="#8E8E93" style={styles.inputIcon} />
                           <TextInput
+                            aria-label="団体名"
+                            autoComplete="organization"
                             style={styles.input}
                             placeholder="例: ○○弓道部"
                             placeholderTextColor="#8E8E93"
@@ -551,6 +566,8 @@ const LoginScreen = () => {
                         <View style={styles.inputWrapper}>
                           <Icons.Ionicons name="mail" size={20} color="#8E8E93" style={styles.inputIcon} />
                           <TextInput
+                            aria-label="メールアドレス"
+                            autoComplete="email"
                             style={styles.input}
                             placeholder="example@mail.com"
                             placeholderTextColor="#8E8E93"
@@ -576,6 +593,8 @@ const LoginScreen = () => {
                             style={styles.inputIcon}
                           />
                           <TextInput
+                            aria-label="パスワード"
+                            autoComplete="new-password"
                             style={styles.input}
                             placeholder="••••••••"
                             placeholderTextColor="#8E8E93"

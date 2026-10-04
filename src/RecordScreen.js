@@ -1562,6 +1562,7 @@ const RecordScreen = () => {
                   セッション名を入力してください
                 </Text>
                 <TextInput
+                  aria-label="セッション名"
                   style={{
                     width: '100%',
                     borderWidth: 1,
@@ -2429,6 +2430,7 @@ const RecordScreen = () => {
             <Text style={styles.modalTitle}>射数の詳細設定</Text>
             <Text style={styles.modalMessage}>1〜500本の間で入力してください</Text>
             <TextInput
+              aria-label="射数"
               style={styles.modalInput}
               keyboardType="number-pad"
               value={射数の下書き}
@@ -2712,6 +2714,7 @@ const RecordScreen = () => {
               この区切りより左の射手が、そのチームになります。大学名などを入れてください。空にすると、ただの間隔に戻ります。
             </Text>
             <TextInput
+              aria-label="チーム名"
               style={styles.チーム名の入力}
               value={チーム名の下書き}
               onChangeText={setチーム名の下書き}

@@ -251,6 +251,7 @@ const ArcherActionModal = ({
                   {客名の入力中 ? (
                     <View style={styles.guestInputRow}>
                       <TextInput
+                        aria-label="ゲスト名"
                         style={styles.guestInput}
                         placeholder="ゲスト名"
                         value={客名の下書き}
@@ -369,6 +370,7 @@ const ArcherActionModal = ({
                 <View style={styles.searchRow}>
                   <Icons.Ionicons name="search" size={18} color="#8E8E93" style={{ marginRight: 8 }} />
                   <TextInput
+                    aria-label="メンバーを検索"
                     style={styles.searchInput}
                     placeholder="メンバーを検索"
                     value={検索の文}
