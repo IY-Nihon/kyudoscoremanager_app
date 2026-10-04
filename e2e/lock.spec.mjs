@@ -9,7 +9,6 @@ import {
   ますが増えるまで待つ,
 } from './helpers.mjs';
 
-
 // ライブの検査（100006）とは別の団体を使う。混ざる余地をなくすため。
 // メンバーのいる団体にする。0人の団体だと射手を足すたびにゲストが残る。
 //
@@ -95,7 +94,10 @@ async function 入る(page) {
       .poll(
         () =>
           page.evaluate(() => {
-            const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+            const s =
+              JSON.parse(
+                (globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}'
+              )?.state || {};
             return s.activeGroupId || null;
           }),
         { timeout: 60_000, message: 'ログインが通らない（団体IDが入らない）' }
@@ -109,7 +111,12 @@ async function 入る(page) {
 
   // 射手の列が無ければ1つ足す。名前は選ばない（メンバーを作らないため）。
   // 保存もしないので、団体の中身には触れない
-  if (await page.getByText('記録を始めましょう').isVisible().catch(() => false)) {
+  if (
+    await page
+      .getByText('記録を始めましょう')
+      .isVisible()
+      .catch(() => false)
+  ) {
     await page.getByText('人', { exact: true }).first().click();
     await ますが増えるまで待つ(page, 1);
   }
@@ -317,10 +324,36 @@ test('矢所：ますを押すと、500ミリ秒後に矢所の窓が出る（�
   await page.waitForTimeout(1200);
   expect(
     await page.evaluate(() => {
-      const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+      const s =
+        JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+          ?.state || {};
       return !!s.enableArrowLocation;
     }),
     '矢所の設定が入らない'
+  ).toBe(true);
+
+  // ○×のあとに窓を自動で開くのは、2026-10-04 から既定でオフ（素早く入れたい場面で止められていた）。
+  // この検査は「開くときに落ちない」を見るので、設定の「○×のあと、窓を自動で開く」も入れる
+  await page.evaluate(() => {
+    const 行 = [...document.querySelectorAll('div')].find(
+      (e) => (e.textContent || '').trim() === '○×のあと、窓を自動で開く'
+    );
+    let 親 = 行;
+    for (let i = 0; i < 5 && 親; i++) {
+      const 切替 = 親.querySelector('input[type="checkbox"], [role="switch"]');
+      if (切替) return void 切替.click();
+      親 = 親.parentElement;
+    }
+  });
+  await page.waitForTimeout(1200);
+  expect(
+    await page.evaluate(() => {
+      const s =
+        JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+          ?.state || {};
+      return !!s.矢所の窓を自動で開く;
+    }),
+    '「○×のあと、窓を自動で開く」が入らない'
   ).toBe(true);
 
   // 記録へ戻って、ますを押す
