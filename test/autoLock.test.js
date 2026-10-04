@@ -245,8 +245,9 @@ test('お知らせ：「見たところ」の印がまだ無い人は、今後�
 test('「鍵を開けました」の帯は、指を下のますへ通す', () => {
   // 帯は記録表の上に浮く。長押しで開けた直後は、その下のますを
   // すぐ押したいので、帯が指を吸うと「開いたのに書けない」になる
+  // 記録画面の見た目の決まりは src/recordStyles.js にある（2026-10-05 に RecordScreen.js から移した）
   const 本体 = require('fs').readFileSync(
-    require('path').join(__dirname, '..', 'src', 'RecordScreen.js'),
+    require('path').join(__dirname, '..', 'src', 'recordStyles.js'),
     'utf8'
   );
   const 始 = 本体.indexOf('feedbackOverlay: {');

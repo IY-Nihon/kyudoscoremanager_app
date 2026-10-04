@@ -131,7 +131,8 @@ test('ログイン画面の文字は、地に対して十分な濃さがある',
 test('設定の法的情報のリンクは、そばのバージョン表記と同じ濃さ', () => {
   // 目立たせない方針だが、探して見つからないほど薄くはしない。
   // #C7C7CC だと明るい地との比が 1.5 しかなく、事実上見えなかった
-  const 本体 = fs.readFileSync(場所('SettingsScreen.js'), 'utf8');
+  // 設定画面の見た目の決まりは src/settingsStyles.js にある（2026-10-05 に SettingsScreen.js から移した）
+  const 本体 = fs.readFileSync(場所('settingsStyles.js'), 'utf8');
   const 拾う = (名) => {
     const m = 本体.match(new RegExp(名 + ":\\s*\\{[^}]*color:\\s*'(#[0-9a-fA-F]{3,6})'"));
     return m ? m[1].toLowerCase() : null;
@@ -167,8 +168,11 @@ test('分析の比較で使う色が、暗いテーマで消えない', () => {
   // （実際それで一度、この検査が素通りした）
   const 背景に使える = new Set([...鍵たち('ACCENT'), ...鍵たち('BG_MAP')]);
 
-  const 分析 = fs.readFileSync(場所('AnalysisScreen.js'), 'utf8');
-  const 並び = (分析.match(/const 比較の色たち = \[([^\]]+)\]/) || [])[1];
+  // 分析画面は 2026-10-05 にいくつかのファイルに分けた。分析画面ぜんぶの字として、まとめて読む
+  const 分析 = ['AnalysisScreen.js', 'AnalysisMemberDetail.js', 'analysisParts.js', 'analysisStyles.js']
+    .map((名) => fs.readFileSync(場所(名), 'utf8'))
+    .join('\n');
+  const 並び =(分析.match(/const 比較の色たち = \[([^\]]+)\]/) || [])[1];
   assert.ok(並び, '比較の色たち が見つからない');
   const 色たち = [...並び.matchAll(/'(#[0-9a-fA-F]{6})'/g)].map((m) => m[1].toLowerCase());
   const 本人 = [...分析.matchAll(/色: '(#[0-9a-fA-F]{6})'/g)].map((m) => m[1].toLowerCase());
