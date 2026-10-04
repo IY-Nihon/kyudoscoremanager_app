@@ -21,7 +21,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const 根 = path.join(__dirname, '..');
-const 店の中身 = fs.readFileSync(path.join(根, 'src', 'useScoreStore.js'), 'utf8');
+// 店は 2026-10-05 に幾つかのファイルに分けた。店ぜんぶの字を読む
+const { 店の字, 店のファイル } = require('./helpers/storeSource');
+const 店の中身 = 店の字();
 
 /** ストアに在る名前（関数も、状態の項目も） */
 function ストアに在る名前() {
@@ -39,7 +41,7 @@ test('画面が取り出しているストアの名前は、すべて実在す�
 
   const 画面たち = fs
     .readdirSync(path.join(根, 'src'))
-    .filter((f) => f.endsWith('.js') && f !== 'useScoreStore.js');
+    .filter((f) => f.endsWith('.js') && !店のファイル().includes(f));
 
   const 抜け = [];
   for (const f of 画面たち) {

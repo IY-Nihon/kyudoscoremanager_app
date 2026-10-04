@@ -21,9 +21,11 @@ const path = require('node:path');
 
 const 根 = path.resolve(__dirname, '..');
 const 読む = (p) => fs.readFileSync(path.join(根, p), 'utf8');
+// 店は 2026-10-05 に幾つかのファイルに分けた。店ぜんぶの字を読む（test/helpers/storeSource.js）
+const { 店の字, 店のファイル } = require('./helpers/storeSource');
 
 test('弓具：足すほうと消すほうが、どちらもストアに在る', () => {
-  const 店 = 読む('src/useScoreStore.js');
+  const 店 = 店の字();
   for (const 名 of ['addEquipment', 'deleteEquipment']) {
     assert.ok(
       new RegExp(名 + '\\s*:').test(店),
@@ -36,7 +38,7 @@ test('弓具：画面が取り出すものが、すべてストアに在る', ()
   // MemberScreen が useScoreStore から取り出している名前を拾い、
   // ストア側に定義があるか突き合わせる。1 の再発を防ぐ
   const 画面 = 読む('src/MemberScreen.js');
-  const 店 = 読む('src/useScoreStore.js');
+  const 店 = 店の字();
   // 2026-09-26 から、画面は使う項目だけを購読する（useストアの一部(['名', …])。src/storeSlice.js）。
   // 並べた名前が、画面の取り出すもの。前の useScoreStore() の分解の形も受ける
   const 一部 = [...画面.matchAll(/useストアの一部\(\[([^\]]*)\]\)/g)];
@@ -59,7 +61,7 @@ test('弓具：画面が取り出すものが、すべてストアに在る', ()
 });
 
 test('弓具：足す・消すが、根元の判定を通っている', () => {
-  const 店 = 読む('src/useScoreStore.js');
+  const 店 = 店の字();
   // 判定そのものが在る
   assert.ok(/弓具を触れるか\s*:/.test(店), '弓具を触れるか がありません');
   // 足すほう・消すほうの入口で呼んでいる
@@ -75,7 +77,7 @@ test('弓具：足す・消すが、根元の判定を通っている', () => {
 });
 
 test('弓具：個人ログインでは、自分のぶんだけ通す', () => {
-  const 店 = 読む('src/useScoreStore.js');
+  const 店 = 店の字();
   const i = 店.indexOf('弓具を触れるか');
   const 節 = 店.slice(i, i + 700);
   // 団体は全員ぶん

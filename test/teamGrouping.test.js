@@ -119,9 +119,8 @@ test('射手を作り直す所が、teamName を落とさない', () => {
   const fs = require('node:fs');
   const path = require('node:path');
   // ライブへ送る形は syncRules.js へ移した（受け取りの突き合わせと同じ形で見比べるため）
-  const 店 = ['useScoreStore.js', 'syncRules.js']
-    .map((名) => fs.readFileSync(path.join(__dirname, '..', 'src', 名), 'utf8'))
-    .join('\n');
+  // 店は 2026-10-05 に幾つかのファイルに分けた。店ぜんぶの字と syncRules.js を読む
+  const 店 = [require('./helpers/storeSource').店の字(), fs.readFileSync(path.join(__dirname, '..', 'src', 'syncRules.js'), 'utf8')].join('\n');
 
   // 作り直しの型は isSeparator を必ず持つ。その一帯に teamName があるか見る
   const place = [];
@@ -144,7 +143,8 @@ test('射手を作り直す所が、teamName を落とさない', () => {
 test('区切りにチーム名を付ける処理が、ストアに在る', () => {
   const fs = require('node:fs');
   const path = require('node:path');
-  const 店 = fs.readFileSync(path.join(__dirname, '..', 'src', 'useScoreStore.js'), 'utf8');
+  // 店は 2026-10-05 に幾つかのファイルに分けた。店ぜんぶの字を読む
+  const 店 = require('./helpers/storeSource').店の字();
   assert.ok(/setSeparatorTeam\s*:/.test(店), 'setSeparatorTeam がありません');
   const i = 店.indexOf('setSeparatorTeam:');
   const 節 = 店.slice(i, i + 1200);
