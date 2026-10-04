@@ -1,0 +1,28 @@
+# 検査の関門（2026-10-05）：push と pull request のたびに、型・lint・単体テストを流す。
+# 落ちたら GitHub に赤い印が付き、壊れた変更にすぐ気づける。配信（Firebase Hosting）は手元から出すので、
+# ここで配信を止めることはしない。E2E（playwright）は時間がかかり、検証環境のログインも要るので、ここでは流さない。
+#   npm test     … 型（tsc）・未定義の名前（eslint.undef.mjs）・単体テスト（node:test）
+#   npm run lint … 道具（scripts・test）と一部の画面の lint。警告は通し、エラーだけで落とす
+name: 検査
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # 手元と同じ 24 系。test/helpers/quietStdout.cjs は 24.15.0 の node:test の不具合よけ
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: 型・未定義の名前・単体テスト
+        run: npm test
+      - name: lint
+        run: npm run lint

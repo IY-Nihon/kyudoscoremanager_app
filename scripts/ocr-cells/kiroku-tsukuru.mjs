@@ -29,7 +29,7 @@ const j = await (
   await fetch(`${根}/groups/910280/sessions?pageSize=300`, { headers: { Authorization: `Bearer ${access_token}` } })
 ).json();
 const 素 = (v) => {
-  if (!v || 'object' != typeof v) return v;
+  if (!v || 'object' !== typeof v) return v;
   if ('stringValue' in v) return v.stringValue;
   if ('arrayValue' in v) return (v.arrayValue.values || []).map(素);
   if ('mapValue' in v) {

@@ -56,7 +56,7 @@ async function 見本をあつめる(枚数, 別のペン = 0.5, 種の頭 = 300
     await sharp(Buffer.from(b.色), { raw: { width: b.幅, height: b.高, channels: 3 } })
       .jpeg({ quality: 88 })
       .toFile(みち);
-    let g = null;
+    let g;
     try {
       g = await 格子(await 画を読む(みち), { 人数, 行数, 回す });
     } catch (e) {
