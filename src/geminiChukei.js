@@ -35,6 +35,16 @@ async function ログインの証() {
   } catch (e) {
     return null;
   }
+  // 開いてすぐは、ログインの復元（端末の控えから読む）が終わっておらず currentUser が空のことがある。
+  // そのまま断ると、ログインしているのに「ログインし直して」と出る（E2E で開いてすぐ送ると、ときどき落ちていた。
+  // 2026-10-05）。復元が終わるのを待ってから（長くても 5 秒）、もう一度見る
+  if (auth && !auth.currentUser && typeof auth.authStateReady === 'function') {
+    try {
+      await Promise.race([auth.authStateReady(), new Promise((r) => setTimeout(r, 5000))]);
+    } catch (e) {
+      // 待てなければ、そのまま見る
+    }
+  }
   const 人 = auth && auth.currentUser;
   if (!人 || typeof 人.getIdToken !== 'function') return null;
   try {
