@@ -183,3 +183,53 @@ test('入れ方：既定は 的で。まとめては立の中で同じ人へ、�
   assert.equal(決まり.入れ方の進み方('的で'), '人を回る');
   assert.equal(決まり.入れ方の進み方('○×のあと'), '人を回る');
 });
+
+test('的の点たち：的の種類を渡すと、その的で置いた矢だけ（種類の無い古い矢所は霞的）', () => {
+  const 射手 = 人(
+    'a',
+    ['○', '○', '×', '○'],
+    [
+      { x: 0, y: 0 },
+      { x: 0.1, y: 0, targetType: 'hoshi36' },
+      { x: 1.5, y: 0, targetType: 'kasumi36' },
+      { x: 0.2, y: 0, targetType: 'hoshi24' },
+    ]
+  );
+  assert.deepEqual(
+    決まり.的の点たち(射手, null, 'kasumi36').map((p) => p.射番),
+    [0, 2]
+  );
+  assert.deepEqual(
+    決まり.的の点たち(射手, null, 'hoshi36').map((p) => p.射番),
+    [1]
+  );
+  assert.deepEqual(
+    決まり.的の点たち(射手, 0, 'hoshi24').map((p) => p.射番),
+    [3]
+  );
+  // 種類を渡さなければ全部
+  assert.equal(決まり.的の点たち(射手).length, 4);
+  assert.equal(決まり.射の的(射手, 0), 'kasumi36');
+  assert.equal(決まり.射の的(射手, 1), 'hoshi36');
+  assert.equal(決まり.射の的(人('b', [''], [{ x: 0, y: 0, targetType: 'hoshi36' }]), 0), null);
+});
+
+test('集まり：中心は矢の平均、輪は中心からの距離の二乗平均の平方根。矢が無ければ null', () => {
+  const 群れ = 決まり.集まり([
+    { x: 1, y: 0 },
+    { x: -1, y: 0 },
+    { x: 0, y: 2 },
+    { x: 0, y: -2 },
+  ]);
+  assert.equal(群れ.x, 0);
+  assert.equal(群れ.y, 0);
+  assert.ok(Math.abs(群れ.半径 - Math.sqrt(2.5)) < 1e-9);
+  assert.equal(群れ.本数, 4);
+  const 偏り = 決まり.集まり([
+    { x: 0.5, y: -0.5 },
+    { x: 0.7, y: -0.3 },
+  ]);
+  assert.ok(Math.abs(偏り.x - 0.6) < 1e-9 && Math.abs(偏り.y + 0.4) < 1e-9);
+  assert.equal(決まり.集まり([]), null);
+  assert.equal(決まり.集まり(null), null);
+});

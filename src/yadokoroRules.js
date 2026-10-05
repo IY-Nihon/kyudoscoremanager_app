@@ -205,16 +205,50 @@ function 食い違っているか(矢所, 印) {
  * 立を渡せばその立ちだけ
  * @returns {{x:number, y:number, 印:string, 射番:number}[]}
  */
-function 的の点たち(射手, 立 = null) {
+function 的の点たち(射手, 立 = null, 的の種類 = null) {
   const 矢所たち = Array.isArray(射手 && 射手.arrowLocations) ? 射手.arrowLocations : [];
   const 出 = [];
   for (let 番 = 0; 番 < 矢所たち.length; 番++) {
     if (!置いてあるか(射手, 番)) continue;
     if (null !== 立 && 立の番(番) !== 立) continue;
+    // 的の種類を渡したら、その的で置いた矢だけ（同じ記録でも射ごとに的が違うことがある。10/3 の本番と同じ分け方）
+    if (null !== 的の種類 && 矢所の的(矢所たち[番]) !== 的の種類) continue;
     const 矢所 = 矢所たち[番];
     出.push({ x: Number(矢所.x) || 0, y: Number(矢所.y) || 0, 印: 射手.marks[番], 射番: 番 });
   }
   return 出;
+}
+
+/**
+ * 矢所を置いた的の種類。射ごとに置いたときの的が残る。種類の無い古い矢所は霞的とみなす
+ * （分析の的 ArrowLocationView と、10/3 までの窓と同じ）
+ */
+function 矢所の的(矢所) {
+  return (矢所 && 矢所.targetType) || 'kasumi36';
+}
+
+/** その射に置いた矢所の的の種類。置いていなければ null */
+function 射の的(射手, 番) {
+  return 置いてあるか(射手, 番) ? 矢所の的(射手.arrowLocations[番]) : null;
+}
+
+/**
+ * 矢の集まり：中心（矢の平均の位置）と、散らばりの大きさ（中心からの距離の二乗平均の平方根）。
+ * 的中も外れも全部の矢で数える（使う人が決めた。2026-10-05）。点が無ければ null
+ * @param {{x:number, y:number}[]} 点たち 的の縁が 1 の位置
+ * @returns {{x:number, y:number, 半径:number, 本数:number} | null}
+ */
+function 集まり(点たち) {
+  const 点 = (Array.isArray(点たち) ? 点たち : []).filter(
+    (p) => p && Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y))
+  );
+  if (!点.length) return null;
+  const x = 点.reduce((和, p) => 和 + Number(p.x), 0) / 点.length;
+  const y = 点.reduce((和, p) => 和 + Number(p.y), 0) / 点.length;
+  const 半径 = Math.sqrt(
+    点.reduce((和, p) => 和 + (Number(p.x) - x) ** 2 + (Number(p.y) - y) ** 2, 0) / 点.length
+  );
+  return { x, y, 半径, 本数: 点.length };
 }
 
 /** その範囲（立を渡せばその立ち、null なら全部）の、○×の入った射・中り・置いた矢所の数 */
@@ -278,6 +312,9 @@ module.exports = {
   置き方,
   食い違っているか,
   的の点たち,
+  矢所の的,
+  射の的,
+  集まり,
   数える,
   画面の分け方,
 };

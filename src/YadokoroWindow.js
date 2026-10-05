@@ -44,7 +44,16 @@ function 矢所の窓() {
   const 閉じる = () => 店().set矢所の窓(null);
   const 窓 = useWindowDimensions();
   const [知らせ, 知らせを置く] = React.useState('');
-  React.useEffect(() => 知らせを置く(''), [開く射 && 開く射.射手ID, 開く射 && 開く射.射番]);
+  // 開いた射がほかの的で置いてあれば、的もその種類にする（いまの的の矢しか出さないので）
+  React.useEffect(() => {
+    知らせを置く('');
+    const 一人 = 開く射
+      ? 決まり.射手だけ(useScoreStore.getState().archers).find((x) => x.id === 開く射.射手ID)
+      : null;
+    const 的 = 一人 ? 決まり.射の的(一人, 開く射.射番) : null;
+    if (的 && 的 !== useScoreStore.getState().arrowTargetType)
+      useScoreStore.getState().setArrowTargetType(的);
+  }, [開く射 && 開く射.射手ID, 開く射 && 開く射.射番]);
 
   const 射手 = 開く射 ? 決まり.射手だけ(archers).find((一人) => 一人.id === 開く射.射手ID) : null;
   const 見えている = !!(開く射 && 射手);
@@ -159,7 +168,7 @@ function 矢所の窓() {
               読み={`${名} ${番 + 1}射目の矢所を置く的`}
               大きさ={的の大きさ}
               的の種類={arrowTargetType}
-              点たち={決まり.的の点たち(射手, 立)}
+              点たち={決まり.的の点たち(射手, 立, arrowTargetType)}
               いまの番={番}
               使える={!見るだけ}
               合う側={決まり.印か(印) ? 印 : null}

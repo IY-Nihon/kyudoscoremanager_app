@@ -296,3 +296,51 @@ test('飛ばす・消す・立ちの移り', async ({ page }) => {
   await page.getByTestId('矢所-立-前').click();
   await expect(page.getByTestId('矢所-立')).toContainText('1立目');
 });
+
+test('的の切り替え：いまの的の矢だけ出し、ほかの的で置いた射を選ぶと的も切り替わる', async ({ page }) => {
+  await 始める(page);
+  const 的の種類 = () =>
+    page.evaluate(
+      () =>
+        JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+          ?.state?.arrowTargetType
+    );
+  await 開く(page);
+  await expect(page.getByTestId('矢所-いまの射')).toContainText('1射目');
+  // 霞的で 1 射目を置く（2 射目へ進む）
+  await 的を押す(page, 0.2, 0.2);
+  await expect(page.getByTestId('矢所-いまの射')).toContainText('2射目', { timeout: 10_000 });
+  // 星的へ切り替える（狭い画面は「全員」の中にある）
+  const 全員の札 = page.getByTestId('矢所-全員');
+  if (await 全員の札.isVisible().catch(() => false)) await 全員の札.click();
+  await page.getByTestId('矢所-的の種類').click();
+  await expect.poll(的の種類, { timeout: 10_000 }).toBe('hoshi36');
+  const 入れる札 = page.getByTestId('矢所-入れる');
+  if (await 入れる札.isVisible().catch(() => false)) await 入れる札.click();
+  // 1 射目は霞的で置いたので、射のボタンに的の名前が出る
+  await expect(page.getByTestId('矢所-射-0'), 'ほかの的で置いた射に的の名前が出ない').toContainText('霞的');
+  // 2 射目は星的で置く。種類が残る
+  await 的を押す(page, -0.2, 0.1);
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const s =
+            JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+              ?.state || {};
+          const 人 = (s.archers || []).find((x) => x && !x.isSeparator && !x.isTotalCalculator);
+          return (人.arrowLocations || [])
+            .slice(0, 2)
+            .map((l) => l && l.targetType)
+            .join(',');
+        }),
+      { timeout: 10_000 }
+    )
+    .toBe('kasumi36,hoshi36');
+  // 1 射目を選ぶと、的が霞的に戻る
+  await page.getByTestId('矢所-射-0').click();
+  await expect
+    .poll(的の種類, { timeout: 10_000, message: '射を選んでも的が切り替わらない' })
+    .toBe('kasumi36');
+  await expect(page.getByTestId('矢所-知らせ')).toContainText('的を切り替えました');
+});
