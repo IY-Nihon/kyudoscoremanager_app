@@ -102,3 +102,35 @@ test('Gemini を直接呼ぶ道（generativelanguage.googleapis.com）が、ア�
   const 直接 = 見る(SRC).filter((f) => /generativelanguage\.googleapis\.com/.test(fs.readFileSync(f, 'utf8')));
   assert.deepEqual(直接, []);
 });
+
+test('開いてすぐでログインの復元が終わっていなければ、終わるのを待ってから証を取る', async () => {
+  // 復元が終わると currentUser が入る偽物の auth
+  const auth = {
+    currentUser: null,
+    authStateReady: () =>
+      new Promise((r) =>
+        setTimeout(() => {
+          auth.currentUser = ログイン済み;
+          r();
+        }, 20)
+      ),
+  };
+  const 場所 = path.join(SRC, 'db.js');
+  const m = new Module(場所, null);
+  ((m.filename = 場所), (m.loaded = true), (m.exports = { auth }));
+  require.cache[場所] = m;
+  delete require.cache[path.join(SRC, 'geminiChukei.js')];
+  const c = require('../src/geminiChukei');
+  assert.equal(await c.ログインの証(), 'ID.TOKEN.x');
+});
+
+test('復元が終わってもログインしていなければ、待ったあとで断る', async () => {
+  const auth = { currentUser: null, authStateReady: async () => {} };
+  const 場所 = path.join(SRC, 'db.js');
+  const m = new Module(場所, null);
+  ((m.filename = 場所), (m.loaded = true), (m.exports = { auth }));
+  require.cache[場所] = m;
+  delete require.cache[path.join(SRC, 'geminiChukei.js')];
+  const c = require('../src/geminiChukei');
+  assert.equal(await c.ログインの証(), null);
+});
