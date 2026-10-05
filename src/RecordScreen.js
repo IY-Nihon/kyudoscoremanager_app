@@ -34,6 +34,7 @@ const 窓 = require('./AppDialog');
 const 航 = require('@react-navigation/native');
 const { formatMemberName } = require('./formatMemberName');
 const { 矢所の画面: 矢所の画面の中身 } = require('./YadokoroView');
+const { 矢所の窓 } = require('./YadokoroWindow');
 const { OCRRecordModal } = require('./OCRRecordModal');
 const { LiveShareModal } = require('./LiveShareModal');
 const 期限 = require('./liveShare');
@@ -1281,6 +1282,8 @@ const RecordScreen = () => {
           testID="帯の取っ手の置き場"
           style={[
             styles.帯の取っ手の置き場,
+            // 取っ手が右にあるときは逆向きに並べ、丸いボタンを取っ手の内側（左）に置く
+            { flexDirection: 帯の取っ手は左 ? 'row' : 'row-reverse', gap: 8 },
             帯の取っ手は左 ? { left: 8 } : { right: 8 },
             { transform: [{ translateX: 取っ手のずれ }] },
           ]}
@@ -1302,6 +1305,27 @@ const RecordScreen = () => {
           >
             <Icons.Ionicons name={帯を畳む ? 'chevron-down' : 'chevron-up'} size={18} color="#8E8E93" />
           </Pressable>
+          {/* 矢所の画面の入り口。下の道具は増やさない（2026-10-05 の聞き取り）ので、取っ手の横に置く。 */
+          /* 取っ手と一緒に左右へ動く。見るだけで入っていても開ける（全員の矢所を見るため） */}
+          {enableArrowLocation ? (
+            <Pressable
+              testID="矢所の画面を開く"
+              onPress={() => {
+                if (取っ手を引いた.current) return;
+                ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
+                矢所の画面を出す(true);
+              }}
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel="矢所"
+              aria-label="矢所"
+              accessibilityHint="大きな的で矢所を置く画面と、全員の矢所に替わります"
+              hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+              style={({ hovered }) => [styles.帯の取っ手, hovered && IS_WEB && { opacity: 0.85 }]}
+            >
+              <Icons.Ionicons name="locate" size={20} color="#AF52DE" />
+            </Pressable>
+          ) : null}
         </Animated.View>
         <View ref={案内の記録表} style={{ maxHeight: '100%', flexDirection: 'column', maxWidth: '100%' }}>
           {横に並べる
@@ -1714,30 +1738,6 @@ const RecordScreen = () => {
                 <Icons.Ionicons name="camera" size={24} color="#8E8E93" />
                 <Text style={[styles.addLabel, { color: '#8E8E93' }]}>画像</Text>
               </Pressable>
-              {/* 矢所の記録を使う団体だけ。押すと、大きな的で矢所を置く画面に替わる（src/YadokoroView.js）。 */
-              /* 見るだけで入っていても開ける（全員の矢所を見るため） */}
-              {enableArrowLocation ? (
-                <Pressable
-                  testID="矢所の画面を開く"
-                  style={({ hovered }) => [
-                    styles.addBtn,
-                    { backgroundColor: 'rgba(175,82,222,0.1)' },
-                    hovered && IS_WEB && { backgroundColor: 'rgba(175,82,222,0.2)' },
-                  ]}
-                  accessible
-                  accessibilityRole="button"
-                  accessibilityLabel="矢所"
-                  aria-label="矢所"
-                  accessibilityHint="大きな的で矢所を置く画面に替わります"
-                  onPress={() => {
-                    ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
-                    矢所の画面を出す(true);
-                  }}
-                >
-                  <Icons.Ionicons name="locate" size={24} color="#AF52DE" />
-                  <Text style={[styles.addLabel, { color: '#AF52DE' }]}>矢所</Text>
-                </Pressable>
-              ) : null}
             </View>
             <Pressable
               ref={案内の保存ボタン}
@@ -2007,6 +2007,7 @@ const RecordScreen = () => {
           ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Success);
         }}
       />
+      <矢所の窓 />
       <チーム名の窓
         区切りにチーム名を付ける={区切りにチーム名を付ける}
         resetCurrentSession={resetCurrentSession}

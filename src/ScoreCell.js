@@ -25,6 +25,8 @@ const ScoreCell = React.memo(
     // 画面の字は「○」「×」だけなので、そのままだと
     //「まる」「かける」としか読まれず、どのますかも分からない
     読み,
+    // この射に矢所が置いてあるか。置いたマスにだけ小さな点を出す（矢所の記録を使うときだけ持ち主が渡す）
+    矢所あり = false,
     onToggle,
   }) => {
     // ますは 20 人 × 20 射で 400 個ある。1 つのますが店（zustand）を 10 か所で
@@ -33,10 +35,12 @@ const ScoreCell = React.memo(
     // 呼ぶときに getState() から取る（手は変わらないので購読しなくてよい）
     const 店 = () => useScoreStore.getState();
     const 印を切り替える = (...引) => 店().toggleMark(...引);
-    // 矢所はますでは扱わない（記録画面の「矢所」の画面で置く。src/YadokoroView.js）
-    const { viewScale, 自動ロックする, 自動ロックまでの秒 } = useScoreStore(
+    // 矢所：置いたマスに小さな点・長押しでその射の窓・入れ方が「○×のあと」なら○×の 0.5 秒後に窓（src/YadokoroWindow.js）
+    const { viewScale, 自動ロックする, 自動ロックまでの秒, 矢所を使う, 矢所の入れ方 } = useScoreStore(
       useShallow((状態) => ({
         viewScale: 状態.viewScale,
+        矢所を使う: !!状態.enableArrowLocation,
+        矢所の入れ方: 状態.矢所の入れ方,
         自動ロックする: 状態.自動ロックする,
         自動ロックまでの秒: 状態.自動ロックまでの秒,
       }))
@@ -115,17 +119,23 @@ const ScoreCell = React.memo(
       isLocked,
       自動で閉じている,
       ますを開ける,
+      窓を開ける: false,
     });
+    // 長押しで矢所の窓を開けるのは、記録中の板の射手のマスだけ（履歴の直しの画面では開かない）
+    const 窓を開ける = 矢所を使う && 鍵をかける板 && 印を入れる列;
     latestPropsRef.current = {
       archerId,
       shotIndex: index,
       isLocked,
       自動で閉じている,
       ますを開ける,
+      窓を開ける,
     };
+    const 窓の札 = React.useRef(null);
     React.useEffect(() => {
       return () => {
         if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+        if (窓の札.current) clearTimeout(窓の札.current);
       };
     }, []);
     React.useEffect(() => {
@@ -134,12 +144,13 @@ const ScoreCell = React.memo(
       const startPress = (出来事) => {
         const props = latestPropsRef.current;
         if (props.isLocked) return;
-        // 自動で閉じたますは、長押しで1つだけ開ける
-        if (!props.自動で閉じている) return;
+        // 自動で閉じたますは、長押しで1つだけ開ける。矢所を使うときは、長押しでその射の矢所の窓も開く
+        if (!props.自動で閉じている && !props.窓を開ける) return;
         isLongPressedRef.current = false;
         longPressTimerRef.current = setTimeout(() => {
           isLongPressedRef.current = true;
-          props.ますを開ける(props.archerId, props.shotIndex);
+          if (props.自動で閉じている) props.ますを開ける(props.archerId, props.shotIndex);
+          if (props.窓を開ける) useScoreStore.getState().set矢所の窓({ 射手ID: props.archerId, 射番: props.shotIndex });
         }, 500);
       };
       const endPress = () => {
@@ -198,6 +209,13 @@ const ScoreCell = React.memo(
           const 射手 = useScoreStore.getState().archers.find((一人) => 一人 && 一人.id === archerId);
           if (射手 && Array.isArray(射手.arrowLocations) && 射手.arrowLocations[index]) 店().updateArrowLocation(archerId, index, null);
         }
+        // 入れ方が「○×のあと」なら、○×を入れて 0.5 秒後にその射の矢所の窓を開く（10/3 まで本番にあった開き方）
+        if (窓の札.current) clearTimeout(窓の札.current);
+        if (窓を開ける && '' !== nextMark && '○×のあと' === 矢所の入れ方) {
+          窓の札.current = setTimeout(() => {
+            if (!useScoreStore.getState().書き換えを止めるか()) useScoreStore.getState().set矢所の窓({ 射手ID: archerId, 射番: index });
+          }, 500);
+        }
       }
       ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
     };
@@ -247,6 +265,21 @@ const ScoreCell = React.memo(
                 {印}
               </Text>
             )}
+            {矢所あり && 印 ? (
+              <View
+                testID={'矢所の点-' + archerId + '-' + index}
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  top: 3 * 倍率,
+                  right: 3 * 倍率,
+                  width: 7 * 倍率,
+                  height: 7 * 倍率,
+                  borderRadius: 4 * 倍率,
+                  backgroundColor: '○' === 印 ? '#34C759' : '#FF3B30',
+                }}
+              />
+            ) : null}
             {subName ? (
               <View style={[styles.subContainer, { bottom: 2 * 倍率 }]}>
                 <Text style={[styles.subText, { fontSize: 9 * 倍率 }]} numberOfLines={1}>
