@@ -18,7 +18,6 @@ const { 射数の一覧の窓, 射数を減らす確認の窓, 射数の自由�
 const { ライブを始めるか入るかの窓, 参加のしかたの窓 } = require('./RecordLiveJoin');
 // リセット・アプリ内の確認・チーム名の窓も別のファイル（2026-10-05）
 const { リセットの確認の窓, アプリ内の確認の窓, チーム名の窓 } = require('./RecordDialogs');
-const { いまの立 } = require('./arrowRowRules');
 const 案内 = require('./TutorialGuide');
 const 在 = require('./livePresence');
 const { ArcherColumnView } = require('./ArcherColumnView');
@@ -34,7 +33,7 @@ const { ManualSubstitutionModal } = require('./ManualSubstitutionModal');
 const 窓 = require('./AppDialog');
 const 航 = require('@react-navigation/native');
 const { formatMemberName } = require('./formatMemberName');
-const { ArrowLocationPopover } = require('./ArrowLocationPopover');
+const { 矢所の画面: 矢所の画面の中身 } = require('./YadokoroView');
 const { OCRRecordModal } = require('./OCRRecordModal');
 const { LiveShareModal } = require('./LiveShareModal');
 const 期限 = require('./liveShare');
@@ -112,8 +111,8 @@ const RecordScreen = () => {
     historySharedMax: 共有履歴の上限,
     activeGroupId,
     publicGroupId,
-    activeArrowLocationEdit,
-    setActiveArrowLocationEdit,
+    // 矢所の記録を使うか（設定）。使うときだけ、下の道具に「矢所」を出す
+    enableArrowLocation = false,
     // 「終了・保存」で出欠確認を出すか（設定で切れる）
     保存時に出欠を確認する = true,
     // 長押しでますを開けた時刻。知らせを出す合図
@@ -180,8 +179,7 @@ const RecordScreen = () => {
     'historySharedMax',
     'activeGroupId',
     'publicGroupId',
-    'activeArrowLocationEdit',
-    'setActiveArrowLocationEdit',
+    'enableArrowLocation',
     '保存時に出欠を確認する',
     '鍵を開けた時刻',
     '閉じたますを押した時刻',
@@ -259,8 +257,12 @@ const RecordScreen = () => {
   const [showAttendance, setShowAttendance] = React.useState(false);
   const [tempAttendance, setTempAttendance] = React.useState(null);
   const [showOCRModal, setShowOCRModal] = React.useState(false);
-  // 矢所の行を「立だけ」で見せるときの立。全員そろえて、印が入っている最後の立にする
-  const 矢所の立 = React.useMemo(() => いまの立(archers, shotsPerRound), [archers, shotsPerRound]);
+  // 矢所の画面（記録表の上にかぶせる。表は裏に置いたままなので、流した位置も鍵の数えも続く）。
+  // 開いている間は下の道具を隠して、的を大きくする（戻るのは画面の「表へ」）
+  const [矢所の画面, 矢所の画面を出す] = React.useState(false);
+  React.useEffect(() => {
+    if (!enableArrowLocation) 矢所の画面を出す(false);
+  }, [enableArrowLocation]);
   const // 上下の帯を畳んでいるか。記録表を広く使いたいときに畳む。
     // 画面を移る帯（記録/履歴/…）はここでは隠さない（移動できなくなるため）
     _畳みは使わない = null;
@@ -1331,7 +1333,6 @@ const RecordScreen = () => {
                             // 数えた見立てを渡す。計もチームもその並びで数え直るので、離す前に出来上がりが見える
                             {...列の見立て[順]}
                             showFooter={false}
-                            矢所の立={矢所の立}
                             isReadOnly={見るだけ中}
                             onPressName={名前を押した}
                             onDelete={列を消す}
@@ -1562,8 +1563,9 @@ const RecordScreen = () => {
             <Text style={styles.emptyHint}>下の「人」ボタンで射手を追加</Text>
           </View>
         )}
+        {矢所の画面 && enableArrowLocation ? <矢所の画面の中身 閉じる={() => 矢所の画面を出す(false)} /> : null}
       </View>
-      {帯を畳む ? null : (
+      {帯を畳む || 矢所の画面 ? null : (
         <View style={styles.toolbar}>
           <>
             <View ref={案内の取り消し} style={styles.historyBtns}>
@@ -1712,6 +1714,30 @@ const RecordScreen = () => {
                 <Icons.Ionicons name="camera" size={24} color="#8E8E93" />
                 <Text style={[styles.addLabel, { color: '#8E8E93' }]}>画像</Text>
               </Pressable>
+              {/* 矢所の記録を使う団体だけ。押すと、大きな的で矢所を置く画面に替わる（src/YadokoroView.js）。 */
+              /* 見るだけで入っていても開ける（全員の矢所を見るため） */}
+              {enableArrowLocation ? (
+                <Pressable
+                  testID="矢所の画面を開く"
+                  style={({ hovered }) => [
+                    styles.addBtn,
+                    { backgroundColor: 'rgba(175,82,222,0.1)' },
+                    hovered && IS_WEB && { backgroundColor: 'rgba(175,82,222,0.2)' },
+                  ]}
+                  accessible
+                  accessibilityRole="button"
+                  accessibilityLabel="矢所"
+                  aria-label="矢所"
+                  accessibilityHint="大きな的で矢所を置く画面に替わります"
+                  onPress={() => {
+                    ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
+                    矢所の画面を出す(true);
+                  }}
+                >
+                  <Icons.Ionicons name="locate" size={24} color="#AF52DE" />
+                  <Text style={[styles.addLabel, { color: '#AF52DE' }]}>矢所</Text>
+                </Pressable>
+              ) : null}
             </View>
             <Pressable
               ref={案内の保存ボタン}
@@ -1980,16 +2006,6 @@ const RecordScreen = () => {
           );
           ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Success);
         }}
-      />
-      <ArrowLocationPopover
-        visible={!!activeArrowLocationEdit}
-        onClose={() => setActiveArrowLocationEdit(null)}
-        archerId={activeArrowLocationEdit?.archerId}
-        shotIndex={activeArrowLocationEdit?.shotIndex}
-        currentMark={activeArrowLocationEdit?.currentMark}
-        arrowLocations={activeArrowLocationEdit?.arrowLocations} // 矢所を押しただけでは閉じない。置いた場所を見て、ずれていれば
-        // 置き直せるようにするため。閉じるのは「完了」を押したとき
-        onSave={() => {}}
       />
       <チーム名の窓
         区切りにチーム名を付ける={区切りにチーム名を付ける}
