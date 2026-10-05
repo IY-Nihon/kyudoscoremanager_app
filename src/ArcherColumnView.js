@@ -11,8 +11,6 @@ const // 読み上げが読む言葉。射位の呼び方もここが持つ
 const Icons = require('@expo/vector-icons');
 const { formatMemberName } = require('./formatMemberName');
 const 組 = require('./teamGrouping');
-const { 矢所の行のます } = require('./ArrowRow');
-const { 見せ方を整える, 開く射番 } = require('./arrowRowRules');
 /**
  * 記録表の 1 列（射手・区切り・計）。
  *
@@ -47,8 +45,6 @@ const ArcherColumnView = React.memo(
     onToggleLock,
     // 区切りを長押ししたとき（チーム名を付ける）。onPressName・onDelete と同じく、列の id を渡して呼ぶ
     onLongPressSeparator: 区切りを長押し,
-    // 矢所の行で「立だけ」のとき出す立（全員そろえて親が決める）。無ければ、その人の最後の立
-    矢所の立 = null,
   }) => {
     const 区切りの名 = 組.区切りのチーム名(archer);
     // 途中交代があると、計は「山田 3, 交代太郎 2」と内訳で出る。
@@ -56,13 +52,10 @@ const ArcherColumnView = React.memo(
     const [合算で見る, 合算を置く] = React.useState(false);
     // 店（zustand）の購読は 1 つにまとめる（ます と同じ理由。列は 30 本ほど並ぶ）。
     // 店の手（toggleLock・立を閉じる）は呼ぶときに getState() から取る
-    const { viewScale, members, 自動ロックする, 自動ロックまでの秒, 矢所を使う, 矢所の見せ方, 的の種類 } = useScoreStore(
+    const { viewScale, members, 自動ロックする, 自動ロックまでの秒 } = useScoreStore(
       useShallow((状態) => ({
         viewScale: 状態.viewScale,
         members: 状態.members,
-        矢所を使う: !!状態.enableArrowLocation && !状態.矢所ノート,
-        矢所の見せ方: 見せ方を整える(状態.矢所の行),
-        的の種類: 状態.arrowTargetType,
         自動ロックする: 状態.自動ロックする,
         自動ロックまでの秒: 状態.自動ロックまでの秒,
       }))
@@ -108,17 +101,6 @@ const ArcherColumnView = React.memo(
           射番,
           印: (archer.marks || [])[射番],
         });
-    // 的を押したら、その人の矢所を窓で開く（置いた最後の射。窓には番号つきで全部の矢所が出る）
-    const 矢所を窓で開く = (射手) => {
-      const 番 = 開く射番(射手);
-      if (null === 番) return;
-      useScoreStore.getState().setActiveArrowLocationEdit({
-        archerId: 射手.id,
-        shotIndex: 番,
-        currentMark: (射手.marks || [])[番],
-        arrowLocations: 射手.arrowLocations || [],
-      });
-    };
     const 鍵を押した = (射手ID, 立) => {
       if (onToggleLock) onToggleLock(射手ID, 立);
       else 鍵を切り替える(射手ID, 立);
@@ -387,7 +369,6 @@ const ArcherColumnView = React.memo(
                     index={射番}
                     横並び={横}
                     mark={archer.marks?.[射番] || ''}
-                    矢所={archer.arrowLocations?.[射番] || null}
                     subName={交代の表示名}
                     isLocked={鍵}
                     isBlockBottom={切れ目(射番)}
@@ -402,19 +383,6 @@ const ArcherColumnView = React.memo(
               })}
             </View>
           )}
-          {矢所を使う && !横 ? (
-            <矢所の行のます
-              射手={archer}
-              見せ方={矢所の見せ方}
-              立={null === 矢所の立 ? Math.floor(Math.max(0, (archer.marks || []).map((印, 番) => (印 ? 番 : -1)).reduce((最大, 番) => Math.max(最大, 番), -1)) / 4) : 矢所の立}
-              倍率={倍率}
-              的の種類={的の種類}
-              幅={列の幅}
-              右の線={枠の太さ}
-              左の線={枠の左}
-              押された={isReadOnly ? null : 矢所を窓で開く}
-            />
-          ) : null}
         </View>
         {showFooter && (
           <View

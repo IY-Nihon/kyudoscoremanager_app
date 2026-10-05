@@ -33,7 +33,6 @@ const SRC = 'src';
  * いずれも元から読める形（最長でも418字）なので、整形の必要も薄い。
  */
 const 対象外 = new Set([
-  'ArrowLocationPopover.js',
   'ArrowLocationView.js',
   'AIChatBot.js',
   'OCRRecordModal.js',
