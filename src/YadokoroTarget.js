@@ -19,6 +19,9 @@ const 外の色 = '#E5E5EA';
 const 中りの色 = '#34C759';
 const 外れの色 = '#FF3B30';
 
+/** 下絵の色。置けない側（○×と合わない）は灰色 */
+const 下絵の色 = (下絵) => (下絵.置けない ? '#8E8E93' : 下絵.内側 ? 中りの色 : 外れの色);
+
 /** 的の輪。霞的は外から黒・白を 6 つ重ねる。星的は白の的に黒い星 */
 function 輪たち(直径, 的の種類) {
   const 輪 = (割合, 色, 鍵, 枠) => (
@@ -110,6 +113,33 @@ const 的の絵 = React.memo(
           />
         ) : null}
         {下絵 ? (
+          // 指で隠れても位置が分かるように、点を通る縦と横の線を的いっぱいに引く
+          <>
+            <View
+              pointerEvents="none"
+              style={{
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                width: 1.5,
+                left: 置き場(下絵.x, 下絵.y, 0).left,
+                backgroundColor: 下絵の色(下絵),
+              }}
+            />
+            <View
+              pointerEvents="none"
+              style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                height: 1.5,
+                top: 置き場(下絵.x, 下絵.y, 0).top,
+                backgroundColor: 下絵の色(下絵),
+              }}
+            />
+          </>
+        ) : null}
+        {下絵 ? (
           <View
             pointerEvents="none"
             style={{
@@ -119,13 +149,19 @@ const 的の絵 = React.memo(
               height: 34,
               borderRadius: 17,
               borderWidth: 2,
-              borderColor: 下絵.内側 ? 中りの色 : 外れの色,
-              backgroundColor: 下絵.内側 ? 'rgba(52,199,89,0.45)' : 'rgba(255,59,48,0.45)',
+              borderColor: 下絵の色(下絵),
+              backgroundColor: 下絵.置けない
+                ? 'rgba(142,142,147,0.45)'
+                : 下絵.内側
+                  ? 'rgba(52,199,89,0.45)'
+                  : 'rgba(255,59,48,0.45)',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Text style={{ color: 白, fontSize: 15, fontWeight: '900' }}>{下絵.内側 ? '○' : '\xd7'}</Text>
+            <Text style={{ color: 白, fontSize: 15, fontWeight: '900' }}>
+              {下絵.置けない ? '—' : 下絵.内側 ? '○' : '\xd7'}
+            </Text>
           </View>
         ) : null}
       </View>
@@ -137,12 +173,12 @@ const 的の絵 = React.memo(
  * 押して置く大きな的。置く(位置) は離したときに 1 回だけ呼ぶ（位置は {x, y, 内側}）。
  * 使える が偽のとき（見るだけ・メンバーがいない）は、押しても何もしない
  */
-function 押せる的({ 大きさ, 的の種類, 点たち, いまの番, 使える, 置く, 待ち, testID, 読み }) {
+function 押せる的({ 大きさ, 的の種類, 点たち, いまの番, 使える, 置く, 待ち, testID, 読み, 合う側 = null }) {
   const 節 = React.useRef(null);
   const [下絵, 下絵を置く] = React.useState(null);
   // 出来事は一度だけ付ける。中で読む値は ref から（付けたときの値で固まらないように）
   const 最新 = React.useRef({});
-  最新.current = { 的の種類, 使える, 置く };
+  最新.current = { 的の種類, 使える, 置く, 合う側 };
   React.useEffect(() => {
     const 箱 = 節.current;
     if (!箱 || 'function' !== typeof 箱.addEventListener) return undefined;
@@ -154,7 +190,11 @@ function 押せる的({ 大きさ, 的の種類, 点たち, いまの番, 使え
       箱.style.webkitTouchCallout = 'none';
     }
     let 押している = false;
-    const 位置 = (e) => 押した所(e.clientX, e.clientY, 箱.getBoundingClientRect(), 最新.current.的の種類);
+    const 位置 = (e) => {
+      const 所 = 押した所(e.clientX, e.clientY, 箱.getBoundingClientRect(), 最新.current.的の種類);
+      const 合う = 最新.current.合う側;
+      return 所 && 合う ? Object.assign(所, { 置けない: 所.内側 !== ('○' === 合う) }) : 所;
+    };
     const 下 = (e) => {
       if (!最新.current.使える || (null != e.button && e.button > 0)) return;
       押している = true;

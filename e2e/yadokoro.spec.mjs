@@ -1,14 +1,14 @@
 /**
- * 矢所の画面（記録画面の下の「矢所」で替わる画面）の検査（2026-10-05 に作り直した）。
+ * 矢所の検査（2026-10-05 の聞き取りで決めた形）。
  *
  *   npx playwright test e2e/yadokoro.spec.mjs
  *
- * 前の形（○×のあとに開く窓・表の下の矢所の行・矢所ノート）は、入れるのが手間で遅い・表がごちゃごちゃ・
- * 全員の矢所が分からない・スマホで小さい、が困りごとだった。いまは記録表に矢所を出さず、専用の画面で
- * 大きな的を押す（src/YadokoroView.js・決まりは src/yadokoroRules.js）。
+ * 入れ方は設定で 3 つ（的で入れる＝既定／○×のあと的が開く／あとでまとめて）。どれでも○×に合わない側には
+ * 置けない。表は置いたマスに小さな点だけ、マスの長押しでその射の窓。矢所の画面へは表の上の取っ手の横の
+ * 丸いボタンから（下の道具は増やさない）。src/YadokoroView.js・src/YadokoroWindow.js・src/yadokoroRules.js
  *
  * ■ 団体には書き込まない
- * 盤面は端末の中だけ（保存しない）。矢所の ON と進み方は端末の設定で、雲へは送られない。
+ * 盤面は端末の中だけ（保存しない）。矢所の ON と入れ方は端末の設定で、雲へは送られない。
  */
 import { test, expect } from '@playwright/test';
 import {
@@ -20,21 +20,21 @@ import {
 
 test.use({ storageState: 'e2e/.auth/100007.json' });
 
-async function 始める(page, { 使う = true, 人数 = 1, 進み方 = '人を回る' } = {}) {
+async function 始める(page, { 使う = true, 人数 = 1, 入れ方 = '的で' } = {}) {
   await 案内を止める(page);
   await page.addInitScript(
-    ([使う, 進み方]) => {
+    ([使う, 入れ方]) => {
       const 鍵 = 'archery-score-storage';
       const 中 = JSON.parse(localStorage.getItem(鍵) || '{}');
       const 状態 = (中 && 中.state) || {};
       状態.enableArrowLocation = 使う;
-      状態.矢所の進み方 = 進み方;
+      状態.矢所の入れ方 = 入れ方;
       状態.arrowTargetType = 'kasumi36';
       状態.archers = [];
       状態.shotsPerRound = 8;
       localStorage.setItem(鍵, JSON.stringify(Object.assign({}, 中, { state: 状態 })));
     },
-    [使う, 進み方]
+    [使う, 入れ方]
   );
   await page.goto('/');
   await 画面が出るまで待つ(page);
@@ -61,9 +61,18 @@ const 控えを読む = (page) =>
       }));
   });
 
+/** マスを長押しする（0.5 秒で窓が開く） */
+async function 長押し(page, testID) {
+  const 枠 = await page.getByTestId(testID).boundingBox();
+  await page.mouse.move(枠.x + 枠.width / 2, 枠.y + 枠.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(900);
+  await page.mouse.up();
+}
+
 /** 的の中心から（的の半径を 1 として）ずらした所を押す */
-async function 的を押す(page, 横ずれ, 縦ずれ) {
-  const 枠 = await page.getByTestId('矢所-的').boundingBox();
+async function 的を押す(page, 横ずれ, 縦ずれ, 的 = '矢所-的') {
+  const 枠 = await page.getByTestId(的).boundingBox();
   const 半径 = (枠.width * 0.75) / 2;
   await page.mouse.click(枠.x + 枠.width / 2 + 横ずれ * 半径, 枠.y + 枠.height / 2 + 縦ずれ * 半径);
 }
@@ -73,7 +82,7 @@ const 開く = async (page) => {
   await expect(page.getByTestId('矢所の画面'), '矢所の画面が出ない').toBeVisible({ timeout: 10_000 });
 };
 
-test('矢所の記録が OFF のときは、下の道具に「矢所」を出さない', async ({ page }) => {
+test('矢所の記録が OFF のときは、丸いボタンを出さない', async ({ page }) => {
   await 始める(page, { 使う: false });
   await expect(page.locator('[data-testid^="ます-"]').first()).toBeVisible();
   await expect(page.getByTestId('矢所の画面を開く')).toHaveCount(0);
@@ -144,9 +153,12 @@ test('的を押すと矢所と○×が入って次の射へ進む。外は×。�
   await expect(page.getByTestId('矢所の画面')).toHaveCount(0);
   const id = (await 控えを読む(page))[0].id;
   await expect(page.getByTestId(`ます-${id}-0`)).toContainText('○');
+  // 置いたマスにだけ小さな点（2 射目は取り消したので点が無い）
+  await expect(page.getByTestId(`矢所の点-${id}-0`), '置いたマスに点が無い').toBeVisible();
+  await expect(page.getByTestId(`矢所の点-${id}-1`)).toHaveCount(0);
 });
 
-test('○×と合わない側を押すと、黙って変えずに聞く。「×に直して置く」で直る', async ({ page }) => {
+test('○×に合わない側には置けない（○の射の的の外を押しても、何も変わらない）', async ({ page }) => {
   await 始める(page);
   const id = (await 控えを読む(page))[0].id;
   // 表で 1 射目に○を入れておく
@@ -156,65 +168,42 @@ test('○×と合わない側を押すと、黙って変えずに聞く。「×�
   // ○だけ入っていて矢所が無いので、開いたときは 1 射目
   await expect(page.getByTestId('矢所-いまの射')).toContainText('1射目');
   await 的を押す(page, 1.2, 0.2);
-  await expect(page.getByTestId('矢所-食い違い'), '食い違いを聞かない').toBeVisible({ timeout: 10_000 });
-  await page.waitForTimeout(500);
-  expect((await 控えを読む(page))[0].印[0], '聞く前に○×が変わった').toBe('○');
-  expect((await 控えを読む(page))[0].矢所[0], '聞く前に置いた').toBeNull();
-
-  // やめると何も変わらない。もう一度押して、今度は直す
-  await page.getByTestId('矢所-食い違い-やめる').click();
-  await expect(page.getByTestId('矢所-食い違い')).toHaveCount(0);
-  await 的を押す(page, 1.2, 0.2);
-  await page.getByTestId('矢所-食い違い-直す').click();
-  await expect
-    .poll(async () => (await 控えを読む(page))[0].印[0], {
+  await expect(page.getByTestId('矢所-知らせ'), '置けないことを知らせない').toContainText(
+    '的の中に置いてください',
+    {
       timeout: 10_000,
-      message: '直して置いたのに×にならない',
-    })
-    .toBe('\xd7');
-  expect((await 控えを読む(page))[0].矢所[0].x).toBeGreaterThan(1);
+    }
+  );
+  await page.waitForTimeout(500);
+  expect((await 控えを読む(page))[0].印[0], '○×が変わった').toBe('○');
+  expect((await 控えを読む(page))[0].矢所[0], '合わない側に置いた').toBeNull();
+  // 中なら置ける
+  await 的を押す(page, 0.2, 0.2);
+  await expect
+    .poll(async () => (await 控えを読む(page))[0].矢所[0]?.x, { timeout: 10_000 })
+    .toBeGreaterThan(0.1);
 });
 
-test('進み方：隣の人（既定）は次の人の同じ射、同じ人はその人の次の射。全員で人を選べる', async ({ page }) => {
+test('的で入れる（既定）は隣の人の同じ射へ進む。全員で人を選べる', async ({ page }) => {
   await 始める(page, { 人数: 2 });
   const [甲, 乙] = await 控えを読む(page);
   await 開く(page);
   await expect(page.getByTestId(`矢所-人-${甲.id}`)).toHaveAttribute('aria-selected', 'true');
-
-  // 隣の人：甲の 1 射目 → 乙の 1 射目
   await 的を押す(page, 0, 0);
   await expect(page.getByTestId(`矢所-人-${乙.id}`), '隣の人へ進まない').toHaveAttribute(
     'aria-selected',
     'true',
-    { timeout: 10_000 }
+    {
+      timeout: 10_000,
+    }
   );
   await expect(page.getByTestId('矢所-いまの射')).toContainText('1射目');
-
-  // 同じ人へ切り替える：乙の 1 射目 → 乙の 2 射目
-  await page.getByTestId('矢所-進み方').click();
-  await expect(page.getByTestId('矢所-進み方')).toContainText('次は同じ人');
-  await 的を押す(page, 0, 0.5);
-  await expect(page.getByTestId('矢所-いまの射')).toContainText('2射目', { timeout: 10_000 });
-  await expect(page.getByTestId(`矢所-人-${乙.id}`)).toHaveAttribute('aria-selected', 'true');
-  // 進み方は端末に残る
-  await expect
-    .poll(
-      () =>
-        page.evaluate(
-          () =>
-            JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
-              ?.state?.矢所の進み方
-        ),
-      { timeout: 10_000 }
-    )
-    .toBe('同じ人');
 
   // 全員：狭い画面は「全員」に切り替える。広い画面は最初から並んでいる
   const 全員の札 = page.getByTestId('矢所-全員');
   if (await 全員の札.isVisible().catch(() => false)) await 全員の札.click();
   await expect(page.getByTestId(`矢所-全員-${甲.id}`)).toBeVisible();
   await expect(page.getByTestId(`矢所-全員-${乙.id}`)).toBeVisible();
-  // 全部の射へ切り替えても出る。甲を押すと、甲の射へ（入れる側へ戻る）
   await page.getByTestId('矢所-範囲-全部').click();
   await page.getByTestId(`矢所-全員-${甲.id}`).click();
   await expect(page.getByTestId(`矢所-人-${甲.id}`)).toHaveAttribute('aria-selected', 'true', {
@@ -223,6 +212,66 @@ test('進み方：隣の人（既定）は次の人の同じ射、同じ人は�
   await expect(page.getByTestId('矢所-的')).toBeVisible();
   // 甲は 1 射目が置いてあるので、この立ちで置いていない最初の射（2 射目）
   await expect(page.getByTestId('矢所-いまの射')).toContainText('2射目');
+});
+
+test('あとでまとめて：名前を押すと、その人のその立ちの 4 本を続けて置ける', async ({ page }) => {
+  await 始める(page, { 人数: 2, 入れ方: 'まとめて' });
+  const [, 乙] = await 控えを読む(page);
+  await 開く(page);
+  await page.getByTestId(`矢所-人-${乙.id}`).click();
+  await expect(page.getByTestId(`矢所-人-${乙.id}`)).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByTestId('矢所-いまの射')).toContainText('1射目');
+  await 的を押す(page, 0, 0);
+  await expect(page.getByTestId('矢所-いまの射'), '同じ人の次の射へ進まない').toContainText('2射目', {
+    timeout: 10_000,
+  });
+  await expect(page.getByTestId(`矢所-人-${乙.id}`)).toHaveAttribute('aria-selected', 'true');
+  await 的を押す(page, 1.2, 0);
+  await expect(page.getByTestId('矢所-いまの射')).toContainText('3射目', { timeout: 10_000 });
+  const 乙の控え = (await 控えを読む(page))[1];
+  expect(乙の控え.印.slice(0, 2)).toEqual(['○', String.fromCharCode(0xd7)]);
+});
+
+test('○×のあと的が開く：○×を押すと大きな窓が開き、置いても閉じず「完了」で閉じる', async ({ page }) => {
+  await 始める(page, { 入れ方: '○×のあと' });
+  const id = (await 控えを読む(page))[0].id;
+  await page.getByTestId(`ます-${id}-0`).click();
+  await expect(page.getByTestId('矢所の窓'), '○×のあとに窓が開かない').toBeVisible({ timeout: 10_000 });
+  const 枠 = await page.getByTestId('矢所の窓-的').boundingBox();
+  expect(枠.width, '窓の的が小さい').toBeGreaterThanOrEqual(260);
+  // ○なので外には置けない。中に置くと置ける。置いても閉じない
+  await 的を押す(page, 1.2, 0, '矢所の窓-的');
+  await expect(page.getByTestId('矢所の窓-知らせ')).toContainText('的の中に置いてください');
+  await 的を押す(page, -0.2, 0.1, '矢所の窓-的');
+  await expect
+    .poll(async () => (await 控えを読む(page))[0].矢所[0]?.x, { timeout: 10_000 })
+    .toBeLessThan(-0.1);
+  await expect(page.getByTestId('矢所の窓')).toBeVisible();
+  await page.getByTestId('矢所の窓-完了').click();
+  await expect(page.getByTestId('矢所の窓')).toHaveCount(0);
+  await expect(page.getByTestId(`矢所の点-${id}-0`)).toBeVisible();
+});
+
+test('マスの長押しでその射の窓が開く（的で入れるでも）。空の射なら置くと○×も入る', async ({ page }) => {
+  await 始める(page);
+  const id = (await 控えを読む(page))[0].id;
+  // 押すだけでは窓は開かない（的で入れるとき）
+  await page.getByTestId(`ます-${id}-1`).click();
+  await page.waitForTimeout(1200);
+  await expect(page.getByTestId('矢所の窓')).toHaveCount(0);
+  await 長押し(page, `ます-${id}-2`);
+  await expect(page.getByTestId('矢所の窓'), '長押しで窓が開かない').toBeVisible({ timeout: 10_000 });
+  await expect(page.getByTestId('矢所の窓-射')).toContainText('3射目');
+  await 的を押す(page, 1.3, -0.2, '矢所の窓-的');
+  await expect
+    .poll(async () => (await 控えを読む(page))[0].印[2], { timeout: 10_000 })
+    .toBe(String.fromCharCode(0xd7));
+  // 長押しは○×を切り替えない（ほかの射は変わらない）
+  expect((await 控えを読む(page))[0].印[1]).toBe('○');
+  await page.getByTestId('矢所の窓-消す').click();
+  await expect.poll(async () => (await 控えを読む(page))[0].矢所[2], { timeout: 10_000 }).toBeNull();
+  await page.getByTestId('矢所の窓-完了').click();
+  await expect(page.getByTestId('矢所の窓')).toHaveCount(0);
 });
 
 test('飛ばす・消す・立ちの移り', async ({ page }) => {
