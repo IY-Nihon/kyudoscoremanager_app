@@ -310,6 +310,7 @@ test('団体：道具は全部・部員一覧が入り、会話は前の鍵に�
       'getSessionsByDate',
       'navigateToScreen',
       'searchSessions',
+      'startTutorial',
     ].sort()
   );
   const 指示 = JSON.stringify((依頼 && 依頼.systemInstruction) || {});

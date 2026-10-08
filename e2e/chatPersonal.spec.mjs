@@ -29,6 +29,7 @@ const 個人が使える道具 = [
   'navigateToScreen',
   'searchSessions',
   'countSessionParticipation',
+  'startTutorial',
 ];
 
 /** 控えから、自分と、ほかの部員を読む */
