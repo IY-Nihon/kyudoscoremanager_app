@@ -11,7 +11,7 @@ const { IS_WEB } = require('./IS_WEB');
 const { 手順を作る, 手が出せない: 手が出せないか, 見本の中身を作る } = require('./tutorialSteps');
 const { 見える記録数 } = require('./syncRules');
 // 案内の版。手順を作り直したら上げる。上げると、一度見た人にもまた出る
-const TUTORIAL_VERSION = '2026-08-13-01';
+const TUTORIAL_VERSION = '2026-10-08-01';
 const 保存キー = 'tutorialDoneVersion';
 // 案内の途中で読み込み直されても片付けられるよう、控えは端末にも書いておく。
 // 手元に持つだけだと、再読み込みで控えが消え、案内で足した列が残り続ける
@@ -159,10 +159,12 @@ const use案内 = create((set) => ({
   // 差し替えるのは中身だけで、記録ストアにも通信にも触れない
   見本データ: null,
   見本を置く: (値) => set({ 見本データ: 値 }),
-  始める: (控え) => set({ 進行中: true, 番号: 0, 続きも見る: false, 控え, 最高到達: 0, 見本データ: null }),
+  AI開いている: false,
+  AI開く: (値) => set({ AI開いている: !!値 }),
+  始める: (控え) => set({ 進行中: true, 番号: 0, 続きも見る: false, 控え, 最高到達: 0, 見本データ: null, AI開いている: false }),
   進める: (番) => set((状態) => ({ 番号: 番, 最高到達: Math.max(状態.最高到達, 番) })),
   続きへ: (番) => set((状態) => ({ 続きも見る: true, 番号: 番, 最高到達: Math.max(状態.最高到達, 番) })),
-  終える: () => set({ 進行中: false, 番号: 0, 続きも見る: false, 控え: null, 最高到達: 0, 見本データ: null }),
+  終える: () => set({ 進行中: false, 番号: 0, 続きも見る: false, 控え: null, 最高到達: 0, 見本データ: null, AI開いている: false }),
 }));
 /**
  * 案内を始める。
@@ -511,7 +513,8 @@ const TutorialOverlay = ({ navRef }) => {
       console.error('[TutorialGuide] 保存領域に書けませんでした:', 誤り);
     }
   }, [終える, 控え]);
-  if (!進行中 || !いまの手順) return null;
+  const AI開いている = use案内((状態) => 状態.AI開いている);
+  if (!進行中 || !いまの手順 || AI開いている) return null;
   // 指す先を測り終わるまでは、中身を出さない。
   // 途中で出すと、枠がまだ無いぶん中央に描かれ、位置が決まった瞬間に飛ぶ。
   //
@@ -889,5 +892,24 @@ function use案内中() {
   return use案内((状態) => 状態.進行中);
 }
 exports.use案内中 = use案内中;
+/** AIチャットの窓が開いているかを伝える */
+function AI開く(開く) {
+  use案内.getState().AI開く(開く);
+}
+exports.AI開く = AI開く;
+/** いまチュートリアルで部員登録を案内中か */
+function useチュートリアル部員登録中() {
+  const 進行中 = use案内((状態) => 状態.進行中);
+  const 番号 = use案内((状態) => 状態.番号);
+  const 役割 = useScoreStore((状態) => 状態.activeRole);
+  const 部員数 = useScoreStore((状態) => (Array.isArray(状態.members) ? 状態.members.length : 0));
+  return React.useMemo(() => {
+    if (!進行中 || 役割 !== 'group' || 部員数 > 0) return false;
+    const { 基本 } = 手順を作る('group', { 部員数: 0 });
+    const いまの手順 = 基本[番号];
+    return !!(いまの手順 && いまの手順.操作 && いまの手順.操作.種類 === '部員を増やす');
+  }, [進行中, 番号, 役割, 部員数]);
+}
+exports.useチュートリアル部員登録中 = useチュートリアル部員登録中;
 exports.見本を重ねる = 見本を重ねる;
 exports.TUTORIAL_VERSION = TUTORIAL_VERSION;

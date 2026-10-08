@@ -49,8 +49,44 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { useScoreStore } = require('./useScoreStore');
 const { useストアの一部 } = require('./storeSlice');
 const { useNavigation } = require('@react-navigation/native');
+const 案内 = require('./TutorialGuide');
 // 鍵はアプリに無い。中継（Cloudflare Workers）へログインの証を付けて呼ぶ
 const 中継 = require('./geminiChukei');
+
+/**
+ * チュートリアル等で、入力文から部員情報（名前・学年・性別）を読み取るフォールバック。
+ * 「1年の山田 太郎 男子 を追加して」などから解析する。
+ */
+function 入力から部員を読み取る(文) {
+  if (!文 || typeof 文 !== 'string') return null;
+  const テキスト = 文.trim();
+  const 追加の意図 = /追加|登録|足して|入れて|入部|加える/i.test(テキスト) || /[1-4１-４]\s*年/.test(テキスト);
+  if (!追加の意図) return null;
+
+  let grade = 1;
+  const 学年合致 = テキスト.match(/([1-4１-４])\s*年/);
+  if (学年合致) {
+    const 字 = 学年合致[1];
+    grade = Number(字.replace(/[１-４]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))) || 1;
+  }
+
+  let gender = '未設定';
+  if (/男子|男/i.test(テキスト)) gender = '男子';
+  else if (/女子|女/i.test(テキスト)) gender = '女子';
+
+  let name = テキスト
+    .replace(/こんにちは|よろしく|お願いします|おねがい|します/g, '')
+    .replace(/[1-4１-４]\s*年[生]?/g, '')
+    .replace(/男子|女子/g, '')
+    .replace(/を?追加(して|お願いします|頼む)?/g, '')
+    .replace(/を?登録(して|お願いします|頼む)?/g, '')
+    .replace(/さん|くん|君|様/g, '')
+    .replace(/メンバー|部員/g, '')
+    .trim();
+
+  if (!name) name = '山田 太郎';
+  return { name, grade, gender };
+}
 
 /**
  * 流し読みが途中で切れた誤りか。返事の途中で回線が切れる・中継や上流が流れを閉じると、
@@ -189,15 +225,37 @@ const AIChatBot = () => {
   const 保存の鍵 = 会話の鍵(個人, myMemberId);
   const addMember = useScoreStore((state) => state.addMember);
   const navigation = useNavigation();
+  const チュートリアル部員登録中 = 案内.useチュートリアル部員登録中 ? 案内.useチュートリアル部員登録中() : false;
+  const 案内のAIボタン = 案内.useTutorialTarget ? 案内.useTutorialTarget('AI.ボタン') : null;
   const [modalVisible, setModalVisible] = useState(false);
   const [inputText, setInputText] = useState('');
+  const autoCloseTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (案内 && typeof 案内.AI開く === 'function') {
+      案内.AI開く(modalVisible);
+    }
+  }, [modalVisible]);
+
   // 質問例は、分類ごとに全部出すようになった（下の 分類たち）。
   // 「分類ごとに1件だけ」を選ぶ 質問例() は、打ちかけの続きにも使わないので
   // ここでは呼ばない（chatSuggestions 側には残してある）。
   // 打ちかけの続きは、画面に出していない例からも探す
   const 候補の元 = React.useMemo(
-    () => 質問例のすべて({ 人たち: members, 記録たち: sessions, いま: new Date(), 個人 }),
-    [members, sessions, 個人]
+    () => {
+      const もと = 質問例のすべて({ 人たち: members, 記録たち: sessions, いま: new Date(), 個人 });
+      if (チュートリアル部員登録中) {
+        return [{ 分類: '操作', 文: '1年の山田 太郎 男子 を追加して' }, ...もと];
+      }
+      return もと;
+    },
+    [members, sessions, 個人, チュートリアル部員登録中]
   );
   // 質問例は分類ごとに束ねて、全部出す。
   //
@@ -220,12 +278,29 @@ const AIChatBot = () => {
     {
       id: 'default-msg',
       role: 'model',
-      text: 個人
-        ? 個人用.個人の挨拶
-        : 'こんにちは！弓道部的中ノートのAIアシスタントです。選手選びの相談や、的中傾向の分析、アプリの使い方など、何でも聞いてください。',
+      text: チュートリアル部員登録中
+        ? 'こんにちは！メンバー登録をお手伝いします。🎯\n例えば「1年の山田 太郎 男子 を追加して」のように入力して送信してみてください。'
+        : 個人
+          ? 個人用.個人の挨拶
+          : 'こんにちは！弓道部的中ノートのAIアシスタントです。選手選びの相談や、的中傾向の分析、アプリの使い方など、何でも聞いてください。',
     },
   ];
   const [messages, setMessages] = useState(() => loadChatHistory(保存の鍵) || defaultMessages);
+  // チュートリアルで開いたときは、必ず部員登録の案内を出す
+  useEffect(() => {
+    if (チュートリアル部員登録中 && modalVisible) {
+      const 案内文あり = messages.some((m) => m.text && m.text.includes('メンバー登録をお手伝いします'));
+      if (!案内文あり) {
+        setMessages([
+          {
+            id: 'tutorial-welcome-msg',
+            role: 'model',
+            text: 'こんにちは！メンバー登録をお手伝いします。🎯\n例えば「1年の山田 太郎 男子 を追加して」のように入力して送信してみてください。',
+          },
+        ]);
+      }
+    }
+  }, [チュートリアル部員登録中, modalVisible]);
   // いま持っている会話（messages）が、どの鍵のものか。入っている人が変わったとき（本人の id が
   // 後から分かった、ログインし直した）は、その人の会話に入れ替える。入れ替わるまでの 1 回は、
   // 前の人の会話を新しい鍵へ書かず、画面にも出さない
@@ -400,9 +475,17 @@ const AIChatBot = () => {
           id: generateMsgId(),
           role: 'model',
           text: 名
-            ? `${名}さんをメンバーに追加しました。`
+            ? (チュートリアル部員登録中
+                ? `${名}さんをメンバーに追加しました！登録が完了しました。`
+                : `${名}さんをメンバーに追加しました。`)
             : 'メンバーの追加は団体ログインのときだけできます。追加していません。',
         });
+        if (名 && チュートリアル部員登録中) {
+          if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
+          autoCloseTimerRef.current = setTimeout(() => {
+            setModalVisible(false);
+          }, 1200);
+        }
       }
     } else {
       updatedMessages.push({ id: generateMsgId(), role: 'model', text: `操作をキャンセルしました。` });
@@ -434,8 +517,16 @@ const AIChatBot = () => {
         ? `${待ち.length}件の操作をキャンセルしました。`
         : 断られた
           ? 'メンバーの追加は団体ログインのときだけできます。追加していません。'
-          : `${追加した.length}人をメンバーに追加しました：${追加した.join('、')}`,
+          : (チュートリアル部員登録中
+              ? `${追加した.length}人をメンバーに追加しました！登録が完了しました：${追加した.join('、')}`
+              : `${追加した.length}人をメンバーに追加しました：${追加した.join('、')}`),
     });
+    if (isApproved && 追加した.length > 0 && チュートリアル部員登録中) {
+      if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
+      autoCloseTimerRef.current = setTimeout(() => {
+        setModalVisible(false);
+      }, 1200);
+    }
     setMessages(updatedMessages);
     setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
   };
@@ -1251,6 +1342,25 @@ const AIChatBot = () => {
           console.warn('[AIChatBot] 答えの文が空です。終わりの印:', 候補 && 候補.finishReason);
         }
 
+        if (チュートリアル部員登録中) {
+          const 抽出 = 入力から部員を読み取る(userMsg);
+          if (抽出) {
+            const fallbackCard = {
+              id: generateMsgId(),
+              role: 'actionCard',
+              actionType: 'addMember',
+              actionTitle: 'メンバーの追加',
+              args: 抽出,
+              status: 'pending',
+            };
+            setMessages([...newMessages, fallbackCard]);
+            setIsLoading(false);
+            setRetryCountdown(0);
+            改善のために({ 答え: 'チュートリアルフォールバック追加', 結果: '答えた' });
+            return;
+          }
+        }
+
         if (!responseText || responseText.trim() === '') {
           responseText = '（回答を生成できませんでした。もう一度お試しください）';
         }
@@ -1261,6 +1371,24 @@ const AIChatBot = () => {
         改善のために({ 答え: responseText, 結果: '答えた' });
         break; // 成功
       } catch (error) {
+        if (チュートリアル部員登録中) {
+          const 抽出 = 入力から部員を読み取る(userMsg);
+          if (抽出) {
+            const fallbackCard = {
+              id: generateMsgId(),
+              role: 'actionCard',
+              actionType: 'addMember',
+              actionTitle: 'メンバーの追加',
+              args: 抽出,
+              status: 'pending',
+            };
+            setMessages([...newMessages, fallbackCard]);
+            setIsLoading(false);
+            setRetryCountdown(0);
+            return;
+          }
+        }
+
         const is429 = error.message?.includes('429');
         const isPerDay = error.message?.includes('PerDayPerProject');
         const isPerMinute = is429 && !isPerDay;
@@ -1361,6 +1489,7 @@ const AIChatBot = () => {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none" onLayout={onLayout}>
       <Animated.View
+        ref={案内のAIボタン}
         style={[
           styles.floatingButton,
           getShadowStyle({ shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 }),
