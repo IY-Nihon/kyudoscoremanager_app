@@ -1085,9 +1085,6 @@ const 部員の詳細の窓 = ({
                         targetType={modalTargetType}
                         hideNumbers
                       />
-                      <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 6, textAlign: 'center' }}>
-                        ＋は矢の集まりの中心、点線の輪は散らばりの大きさ（○×すべての矢で数えます）
-                      </Text>
                     </View>
                     <View style={{ marginBottom: 16 }}>
                       <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 8 }}>

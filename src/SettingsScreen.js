@@ -73,8 +73,6 @@ const SettingsScreen = () => {
     autoPromotionEnabled = true,
     setAutoPromotionEnabled,
     enableArrowLocation,
-    矢所の入れ方 = '的で',
-    set矢所の入れ方,
     arrowTargetType,
     setEnableArrowLocation,
     setArrowTargetType,
@@ -109,8 +107,6 @@ const SettingsScreen = () => {
     'autoPromotionEnabled',
     'setAutoPromotionEnabled',
     'enableArrowLocation',
-    '矢所の入れ方',
-    'set矢所の入れ方',
     'arrowTargetType',
     'setEnableArrowLocation',
     'setArrowTargetType',
@@ -538,7 +534,7 @@ const SettingsScreen = () => {
                 <View style={{ flex: 1, paddingRight: 8 }}>
                   <Text style={styles.itemText}>矢所の記録機能を有効化</Text>
                   <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 2 }}>
-                    的のどこに当たったかも記録します。入れ方は下で選べます。表の上の丸いボタン（的の絵）で、全員の矢所も見られます
+                    記録時に矢所も記録できるようにします
                   </Text>
                 </View>
               </View>
@@ -548,48 +544,55 @@ const SettingsScreen = () => {
                 trackColor={{ false: '#D1D1D6', true: '#34C759' }}
               />
             </View>
-            {enableArrowLocation ? (
-              // 入れ方は練習の前に決めておく（記録中には切り替えない。2026-10-05 の聞き取り）
-              <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch', gap: 8 }]}>
-                <Text style={styles.itemText}>矢所の入れ方</Text>
-                {[
-                  ['的で', '的で入れる', '表の上の丸いボタンで大きな的の画面に替わります。的を押すと矢所と○×が一緒に入り、次の人へ進みます'],
-                  ['○×のあと', '○×のあと的が開く', '○×を押すと、少しして大きな的の窓が開きます。「完了」で閉じます'],
-                  ['まとめて', 'あとでまとめて', '引いている間は○×だけ。丸いボタンの画面で名前を押すと、その人のその立ちの 4 本を続けて置けます'],
-                ].map(([値, 名, 説明]) => {
-                  const 選んだ = 値 === 矢所の入れ方;
-                  return (
-                    <Pressable
-                      key={値}
-                      testID={'設定-矢所の入れ方-' + 値}
-                      onPress={() => set矢所の入れ方(値)}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected: 選んだ }}
-                      aria-checked={選んだ}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'flex-start',
-                        gap: 8,
-                        padding: 10,
-                        borderRadius: 10,
-                        borderWidth: 1.5,
-                        borderColor: 選んだ ? '#007AFF' : '#C6C6C8',
-                        backgroundColor: 選んだ ? '#E1F0FF' : '#FFFFFF',
-                      }}
+            {enableArrowLocation && (
+              <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
+                <View style={[styles.itemLeft, { marginBottom: 8 }]}>
+                  <Icons.Ionicons name="disc-outline" size={22} color="#34C759" style={styles.itemIcon} />
+                  <Text style={styles.itemText}>使用する的の種類</Text>
+                </View>
+                <View style={styles.flexRow}>
+                  <TouchableOpacity
+                    onPress={() => setArrowTargetType('kasumi36')}
+                    style={[styles.radioBtn, 'kasumi36' === arrowTargetType && styles.radioBtnActive]}
+                  >
+                    <Text
+                      style={[
+                        styles.radioBtnText,
+                        'kasumi36' === arrowTargetType && styles.radioBtnTextActive,
+                      ]}
                     >
-                      <Icons.Ionicons name={選んだ ? 'radio-button-on' : 'radio-button-off'} size={20} color={選んだ ? '#007AFF' : '#8E8E93'} />
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 14, fontWeight: '600', color: '#000' }}>{名}</Text>
-                        <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 2 }}>{説明}</Text>
-                      </View>
-                    </Pressable>
-                  );
-                })}
-                <Text style={{ fontSize: 11, color: '#8E8E93' }}>
-                  どの入れ方でも、マスを長押しするとその射の的が開きます。○×に合わない側（○の射の的の外など）には置けません
-                </Text>
+                      霞的
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setArrowTargetType('hoshi36')}
+                    style={[styles.radioBtn, 'hoshi36' === arrowTargetType && styles.radioBtnActive]}
+                  >
+                    <Text
+                      style={[
+                        styles.radioBtnText,
+                        'hoshi36' === arrowTargetType && styles.radioBtnTextActive,
+                      ]}
+                    >
+                      星的
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setArrowTargetType('hoshi24')}
+                    style={[styles.radioBtn, 'hoshi24' === arrowTargetType && styles.radioBtnActive]}
+                  >
+                    <Text
+                      style={[
+                        styles.radioBtnText,
+                        'hoshi24' === arrowTargetType && styles.radioBtnTextActive,
+                      ]}
+                    >
+                      星的(八寸)
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            ) : null}
+            )}
           </>
         )}
         {'member' !== activeRole &&

@@ -33,8 +33,7 @@ const { ManualSubstitutionModal } = require('./ManualSubstitutionModal');
 const 窓 = require('./AppDialog');
 const 航 = require('@react-navigation/native');
 const { formatMemberName } = require('./formatMemberName');
-const { 矢所の画面: 矢所の画面の中身 } = require('./YadokoroView');
-const { 矢所の窓 } = require('./YadokoroWindow');
+const { ArrowLocationPopover } = require('./ArrowLocationPopover');
 const { OCRRecordModal } = require('./OCRRecordModal');
 const { LiveShareModal } = require('./LiveShareModal');
 const 期限 = require('./liveShare');
@@ -112,8 +111,8 @@ const RecordScreen = () => {
     historySharedMax: 共有履歴の上限,
     activeGroupId,
     publicGroupId,
-    // 矢所の記録を使うか（設定）。使うときだけ、下の道具に「矢所」を出す
-    enableArrowLocation = false,
+    activeArrowLocationEdit,
+    setActiveArrowLocationEdit,
     // 「終了・保存」で出欠確認を出すか（設定で切れる）
     保存時に出欠を確認する = true,
     // 長押しでますを開けた時刻。知らせを出す合図
@@ -180,7 +179,8 @@ const RecordScreen = () => {
     'historySharedMax',
     'activeGroupId',
     'publicGroupId',
-    'enableArrowLocation',
+    'activeArrowLocationEdit',
+    'setActiveArrowLocationEdit',
     '保存時に出欠を確認する',
     '鍵を開けた時刻',
     '閉じたますを押した時刻',
@@ -258,12 +258,6 @@ const RecordScreen = () => {
   const [showAttendance, setShowAttendance] = React.useState(false);
   const [tempAttendance, setTempAttendance] = React.useState(null);
   const [showOCRModal, setShowOCRModal] = React.useState(false);
-  // 矢所の画面（記録表の上にかぶせる。表は裏に置いたままなので、流した位置も鍵の数えも続く）。
-  // 開いている間は下の道具を隠して、的を大きくする（戻るのは画面の「表へ」）
-  const [矢所の画面, 矢所の画面を出す] = React.useState(false);
-  React.useEffect(() => {
-    if (!enableArrowLocation) 矢所の画面を出す(false);
-  }, [enableArrowLocation]);
   const // 上下の帯を畳んでいるか。記録表を広く使いたいときに畳む。
     // 画面を移る帯（記録/履歴/…）はここでは隠さない（移動できなくなるため）
     _畳みは使わない = null;
@@ -1282,8 +1276,6 @@ const RecordScreen = () => {
           testID="帯の取っ手の置き場"
           style={[
             styles.帯の取っ手の置き場,
-            // 取っ手が右にあるときは逆向きに並べ、丸いボタンを取っ手の内側（左）に置く
-            { flexDirection: 帯の取っ手は左 ? 'row' : 'row-reverse', gap: 8 },
             帯の取っ手は左 ? { left: 8 } : { right: 8 },
             { transform: [{ translateX: 取っ手のずれ }] },
           ]}
@@ -1305,27 +1297,6 @@ const RecordScreen = () => {
           >
             <Icons.Ionicons name={帯を畳む ? 'chevron-down' : 'chevron-up'} size={18} color="#8E8E93" />
           </Pressable>
-          {/* 矢所の画面の入り口。下の道具は増やさない（2026-10-05 の聞き取り）ので、取っ手の横に置く。 */
-          /* 取っ手と一緒に左右へ動く。見るだけで入っていても開ける（全員の矢所を見るため） */}
-          {enableArrowLocation ? (
-            <Pressable
-              testID="矢所の画面を開く"
-              onPress={() => {
-                if (取っ手を引いた.current) return;
-                ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
-                矢所の画面を出す(true);
-              }}
-              accessible
-              accessibilityRole="button"
-              accessibilityLabel="矢所"
-              aria-label="矢所"
-              accessibilityHint="大きな的で矢所を置く画面と、全員の矢所に替わります"
-              hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
-              style={({ hovered }) => [styles.帯の取っ手, hovered && IS_WEB && { opacity: 0.85 }]}
-            >
-              <Icons.Ionicons name="locate" size={20} color="#AF52DE" />
-            </Pressable>
-          ) : null}
         </Animated.View>
         <View ref={案内の記録表} style={{ maxHeight: '100%', flexDirection: 'column', maxWidth: '100%' }}>
           {横に並べる
@@ -1587,9 +1558,8 @@ const RecordScreen = () => {
             <Text style={styles.emptyHint}>下の「人」ボタンで射手を追加</Text>
           </View>
         )}
-        {矢所の画面 && enableArrowLocation ? <矢所の画面の中身 閉じる={() => 矢所の画面を出す(false)} /> : null}
       </View>
-      {帯を畳む || 矢所の画面 ? null : (
+      {帯を畳む ? null : (
         <View style={styles.toolbar}>
           <>
             <View ref={案内の取り消し} style={styles.historyBtns}>
@@ -2007,7 +1977,16 @@ const RecordScreen = () => {
           ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Success);
         }}
       />
-      <矢所の窓 />
+      <ArrowLocationPopover
+        visible={!!activeArrowLocationEdit}
+        onClose={() => setActiveArrowLocationEdit(null)}
+        archerId={activeArrowLocationEdit?.archerId}
+        shotIndex={activeArrowLocationEdit?.shotIndex}
+        currentMark={activeArrowLocationEdit?.currentMark}
+        arrowLocations={activeArrowLocationEdit?.arrowLocations} // 矢所を押しただけでは閉じない。置いた場所を見て、ずれていれば
+        // 置き直せるようにするため。閉じるのは「完了」を押したとき
+        onSave={() => {}}
+      />
       <チーム名の窓
         区切りにチーム名を付ける={区切りにチーム名を付ける}
         resetCurrentSession={resetCurrentSession}

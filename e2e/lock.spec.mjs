@@ -9,6 +9,7 @@ import {
   ますが増えるまで待つ,
 } from './helpers.mjs';
 
+
 // ライブの検査（100006）とは別の団体を使う。混ざる余地をなくすため。
 // メンバーのいる団体にする。0人の団体だと射手を足すたびにゲストが残る。
 //
@@ -94,10 +95,7 @@ async function 入る(page) {
       .poll(
         () =>
           page.evaluate(() => {
-            const s =
-              JSON.parse(
-                (globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}'
-              )?.state || {};
+            const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
             return s.activeGroupId || null;
           }),
         { timeout: 60_000, message: 'ログインが通らない（団体IDが入らない）' }
@@ -111,12 +109,7 @@ async function 入る(page) {
 
   // 射手の列が無ければ1つ足す。名前は選ばない（メンバーを作らないため）。
   // 保存もしないので、団体の中身には触れない
-  if (
-    await page
-      .getByText('記録を始めましょう')
-      .isVisible()
-      .catch(() => false)
-  ) {
+  if (await page.getByText('記録を始めましょう').isVisible().catch(() => false)) {
     await page.getByText('人', { exact: true }).first().click();
     await ますが増えるまで待つ(page, 1);
   }
@@ -278,18 +271,17 @@ test('鍵がかかったますを押すと、開け方を知らせる', async ({
   expect(印.trim(), '知らせるだけのはずが、○×まで変わっている').toBe('○');
 });
 
-// ── 矢所（設定で入れると、記録画面の下に「矢所」が出る）─────────────
+// ── 矢所（ますを押してから500ミリ秒後に出る窓）─────────────
 //
-// 矢所の道は検査がまったく無く、2026-08-30 まで**本番で落ちていた**。
+// ここは検査がまったく無く、2026-08-30 まで**本番で落ちていた**。
 // 射手を取りに行く形へ直したとき、押したときの道だけ古い変数（archer）が
 // 残っていて、矢所を出す設定の団体では○×を入れるたびに赤画面になっていた。
-// 2026-10-05 に矢所の入れ方を作り直した（○×のあとに開く窓をやめ、記録画面の「矢所」で
-// 大きな的の画面に替わる。src/YadokoroView.js）。ここでは、設定の切り替えから開くまでを
-// 落ちずに通れるかを見る。画面の中の動きは e2e/yadokoro.spec.mjs。
+// 未定義の変数そのものは npm test（eslint.undef.mjs）で止まるようになったが、
+// この道が一度も動かされていなかったこと自体が穴だった。
 //
 // 矢所の設定は端末にだけ残る（クラウドへは行かない）ので、団体は汚さない。
 
-test('矢所：設定で入れると、記録画面に「矢所」が出て、開いて置いても落ちない', async ({ page }) => {
+test('矢所：ますを押すと、500ミリ秒後に矢所の窓が出る（落ちない）', async ({ page }) => {
   const 落ちた = [];
   // 拾うのは「書き間違いで落ちた」ものだけ。
   // WebKit は Firestore の長い通信に due to access control checks という
@@ -325,31 +317,23 @@ test('矢所：設定で入れると、記録画面に「矢所」が出て、�
   await page.waitForTimeout(1200);
   expect(
     await page.evaluate(() => {
-      const s =
-        JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
-          ?.state || {};
+      const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
       return !!s.enableArrowLocation;
     }),
     '矢所の設定が入らない'
   ).toBe(true);
 
-  // 記録へ戻って、ますを押す（○×の表は今までどおり、押すだけで○が入る）
+  // 記録へ戻って、ますを押す
   await page.getByText('記録', { exact: true }).first().click();
   await page.waitForTimeout(1500);
   const ます = page.locator('[data-testid^="ます-"]').first();
   await expect(ます, '盤面が出ていない').toBeVisible({ timeout: 15_000 });
   await 押す(page, await 真ん中(ます));
-  await page.waitForTimeout(800);
-  await expect(page.getByTestId('矢所の画面'), '○×を押しただけで矢所の画面が出た').toHaveCount(0);
 
-  // 下の「矢所」で、矢所の画面に替わる。的の真ん中を押すと置ける
-  await page.getByTestId('矢所の画面を開く').click();
-  await expect(page.getByTestId('矢所の画面'), '矢所の画面が出ない').toBeVisible({ timeout: 15_000 });
-  const 的 = page.getByTestId('矢所-的');
-  await expect(的).toBeVisible();
-  await 押す(page, await 真ん中(的));
-  await expect(page.getByTestId('矢所-知らせ'), '置いたのに知らせが出ない').toContainText('置きました', { timeout: 10_000 });
-  await page.getByTestId('矢所-表へ').click();
-  await expect(page.getByTestId('矢所の画面')).toHaveCount(0);
-  expect(落ちた, '矢所の画面で落ちた: ' + 落ちた.join(' / ')).toEqual([]);
+  // 窓は500ミリ秒後に出る。落ちるのもこのとき
+  // 設定の行（矢所の記録機能を有効化）とも当たるので、完全一致で選ぶ
+  await expect(page.getByText('矢所の記録', { exact: true }), '矢所の窓が出ない').toBeVisible({
+    timeout: 15_000,
+  });
+  expect(落ちた, '矢所の窓を出すときに落ちた: ' + 落ちた.join(' / ')).toEqual([]);
 });

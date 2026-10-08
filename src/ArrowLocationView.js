@@ -5,13 +5,10 @@ import React from 'react';
 import { View, Text, StyleSheet } from './rn';
 import { useScoreStore } from './useScoreStore';
 import { useストアの一部 } from './storeSlice';
-import { 集まり as 集まりを数える } from './yadokoroRules';
 
 const CIRCLED_NUMBERS = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳'];
 
-// 集まり：矢の平均の位置に十字（＋）、散らばりの大きさ（中心からの距離の二乗平均の平方根）の輪。
-// 的中も外れも全部の矢で数える（2026-10-05 に使う人が決めた）。2 本以上あるときだけ出す
-export const ArrowLocationView = ({ arrowLocations = [], size = 200, targetType, hideNumbers = false, showGroup = true }) => {
+export const ArrowLocationView = ({ arrowLocations = [], size = 200, targetType, hideNumbers = false }) => {
   const { arrowTargetType: storeTargetType } = useストアの一部(['arrowTargetType']);
   const arrowTargetType = targetType || storeTargetType;
 
@@ -79,39 +76,6 @@ export const ArrowLocationView = ({ arrowLocations = [], size = 200, targetType,
   const useDot = hideNumbers || filteredLocations.filter(Boolean).length > 12;
   const markerSize = useDot ? 8 : 18;
 
-  const 群れ = showGroup ? 集まりを数える(filteredLocations.filter(Boolean)) : null;
-  const 集まりの絵 =
-    群れ && 群れ.本数 >= 2 ? (
-      <>
-        <View
-          pointerEvents="none"
-          testID="矢所の集まり-輪"
-          style={{
-            position: 'absolute',
-            left: radius + 群れ.x * targetRadius - Math.max(4, 群れ.半径 * targetRadius),
-            top: radius + 群れ.y * targetRadius - Math.max(4, 群れ.半径 * targetRadius),
-            width: 2 * Math.max(4, 群れ.半径 * targetRadius),
-            height: 2 * Math.max(4, 群れ.半径 * targetRadius),
-            borderRadius: Math.max(4, 群れ.半径 * targetRadius),
-            borderWidth: 2,
-            borderStyle: 'dashed',
-            borderColor: '#007AFF',
-            backgroundColor: 'rgba(0,122,255,0.08)',
-            zIndex: 11,
-          }}
-        />
-        <View
-          pointerEvents="none"
-          testID="矢所の集まり-中心"
-          style={{ position: 'absolute', left: radius + 群れ.x * targetRadius - 9, top: radius + 群れ.y * targetRadius - 1.5, width: 18, height: 3, backgroundColor: '#007AFF', zIndex: 12 }}
-        />
-        <View
-          pointerEvents="none"
-          style={{ position: 'absolute', left: radius + 群れ.x * targetRadius - 1.5, top: radius + 群れ.y * targetRadius - 9, width: 3, height: 18, backgroundColor: '#007AFF', zIndex: 12 }}
-        />
-      </>
-    ) : null;
-
   return (
     <View style={[styles.container, { width: size, height: size }]}>
       {renderTarget()}
@@ -173,7 +137,6 @@ export const ArrowLocationView = ({ arrowLocations = [], size = 200, targetType,
           );
         }
       })}
-      {集まりの絵}
     </View>
   );
 };

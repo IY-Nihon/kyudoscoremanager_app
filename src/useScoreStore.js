@@ -67,11 +67,6 @@ const useScoreStore = zustand.create()(
       return {
         // 矢所の記録は既定でオフ。要る団体だけが設定で入れる
         enableArrowLocation: false,
-        // 矢所の入れ方（設定）。的で＝矢所の画面の的で○×も一緒に（既定）／○×のあと＝○×の 0.5 秒後に的の窓／
-        // まとめて＝あとで人ごとに 4 本ずつ。2026-10-05 の聞き取りで決めた（src/yadokoroRules.js）
-        矢所の入れ方: '的で',
-        // 開いている矢所の窓（{ 射手ID, 射番 }）。○×のあと・マスの長押しで開く。端末に残さない
-        矢所の窓: null,
         // 誤タップ防止。入れたますを少し経ってから閉じる。
         // 同期する中身ではなく、画面の上の守りなので archers には持たせない。
         // 既定はオフ（2026-09-13、使う人の指示。以前はオンだった。端末に残っている
@@ -108,6 +103,7 @@ const useScoreStore = zustand.create()(
         // 起動のたびにクラウドの記録から数え直すので、端末には残さない
         同意の確認が要る: false,
         arrowTargetType: 'kasumi36',
+        activeArrowLocationEdit: null,
         activeGroupId: null,
         activeGroupName: null,
         publicGroupId: null,
@@ -1079,7 +1075,6 @@ const useScoreStore = zustand.create()(
           autoPromotionEnabled: 状態の中身.autoPromotionEnabled,
           analysisRankingSettings: 状態の中身.analysisRankingSettings,
           enableArrowLocation: 状態の中身.enableArrowLocation,
-          矢所の入れ方: 状態の中身.矢所の入れ方,
           自動ロックする: 状態の中身.自動ロックする,
           保存時に出欠を確認する: 状態の中身.保存時に出欠を確認する,
           横に並べる: 状態の中身.横に並べる,
