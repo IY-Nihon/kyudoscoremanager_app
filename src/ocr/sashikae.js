@@ -284,6 +284,15 @@ async function 板を読む(teams, images, 設定) {
       const 帯で = await 板を読む(teams, images, { ...設定, 行数: 帯の段 });
       if (Array.isArray(帯で)) return 帯で;
     }
+    // 途中の板（書いた段が板によって違う）は、Gemini が空の段を cells に入れたり入れなかったりで、
+    // cells の数も帯の数も当てにならない（10/4 の日大工科の途中の板：左 4 段・右 6 段なのに cells は 7 と 8、
+    // 帯は 2）。中身の入ったマスがいちばん多い人の数（書いた段の数）でも読んでみる。書いていない上の段は、
+    // 端末が空として読む（板ごとの格子の 名札の行を外して上へ）
+    const 書いた段 = Math.max(...teams.flatMap((t) => t.rows.map((r) => (Array.isArray(r.cells) ? r.cells.filter((c) => String(c || '').trim()).length : 0))));
+    if (書いた段 >= 2 && 書いた段 !== 行数 && 書いた段 !== 帯の段) {
+      const 書いた段で = await 板を読む(teams, images, { ...設定, 行数: 書いた段 });
+      if (Array.isArray(書いた段で)) return 書いた段で;
+    }
   }
   if (images.length > teams.length) return `写真（${images.length}枚）が板（${teams.length}枚）より多い`;
 
@@ -346,7 +355,9 @@ async function 板を読む(teams, images, 設定) {
           }
           return 欠け;
         };
-        const 行が違う = (b) => b.格子 && ((b.格子.行の欠け != null && b.格子.行の欠け >= 2 && 読みの欠け(b) >= 2) || b.格子.上の字の行 >= 1 || 段が少ない(b));
+        // 行と行の間に印が 2 割以上ある＝段の数が少なすぎて行の間隔が倍になっている（6 段の板を 4 段で）
+        const 間に印 = (b) => b.格子 && b.格子.間の印 != null && b.格子.間の印 >= Math.max(3, (b.格子.範囲の印 || 0) * 0.2);
+        const 行が違う = (b) => b.格子 && ((b.格子.行の欠け != null && b.格子.行の欠け >= 2 && 読みの欠け(b) >= 2) || b.格子.上の字の行 >= 1 || 段が少ない(b) || 間に印(b));
         const 合わない = (b, n) =>
           b.列たち.length !== n ||
           (b.格子 && b.格子.列の見当 != null && b.格子.列の見当 < n) ||
