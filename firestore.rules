@@ -185,7 +185,16 @@ service cloud.firestore {
       match /members/{docId}              { allow read, write: if canAccess(groupId); }
       match /alumni/{docId}               { allow read, write: if canAccess(groupId); }
       match /trash/{docId}                { allow read, write: if canAccess(groupId); }
-      match /config/{docId}               { allow read, write: if canAccess(groupId); }
+      // config のうち listing（紹介に載せてよいかの許可・2026-10-09）は、団体の持ち主だけが書ける。
+      // 部員の端末から団体の答えを変えられないように。読むのは部員も可（画面には出さない）。src/listingConsent.js
+      match /config/{docId} {
+        allow read: if canAccess(groupId);
+        allow write: if canAccess(groupId) && docId != 'listing';
+      }
+      match /config/listing {
+        allow read: if canAccess(groupId);
+        allow write: if isGroupOwner(groupId);
+      }
       match /officialPracticeDays/{docId} { allow read, write: if canAccess(groupId); }
     }
 

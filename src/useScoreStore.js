@@ -19,6 +19,8 @@ const { 部員の操作 } = require('./storeMembers');
 const { 記録の操作 } = require('./storeSessions');
 const { 同期の操作 } = require('./storeSync');
 const { ライブの操作 } = require('./storeLive');
+// 紹介に載せてよいかの許可（2026-10-09。src/listingConsent.js）
+const { 掲載の操作 } = require('./storeListing');
 Object.defineProperty(exports, '__esModule', { value: true });
 // 端末への控えを待たずに書く／待ちを変える（検査と、閉じる前に確実に書きたいとき用）
 exports.控えを今すぐ書く = () => 控えの書き出し.今すぐ();
@@ -435,6 +437,7 @@ const useScoreStore = zustand.create()(
         ...ライブの操作(書く, 状態, そのまま書く),
         ...部員の操作(書く, 状態, そのまま書く),
         ...記録の操作(書く, 状態, そのまま書く),
+        ...掲載の操作(書く, 状態, そのまま書く),
         // 同意の記録を確かめる。起動のたびに1回だけ呼ぶ。
         // ・記録が無い団体（同意の画面を入れる前から使っている）
         //     運営者が口頭で同意を得ているので、記録だけを静かに補う
@@ -1085,6 +1088,7 @@ const useScoreStore = zustand.create()(
           ライブの合言葉: 状態の中身.ライブの合言葉,
           ライブの続き: 状態の中身.ライブの続き,
           履歴の編集: 状態の中身.履歴の編集,
+          掲載の許可: 状態の中身.掲載の許可,
         };
       },
       onRehydrateStorage: () => {
