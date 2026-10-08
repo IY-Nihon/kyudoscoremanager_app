@@ -17,15 +17,17 @@ import { 息継ぎ } from '../../scripts/ocr-cells/ikitsugi.mjs';
 import { 紙の表を探す, 紙の格子, 紙の箱 } from '../../scripts/ocr-cells/kami.mjs';
 import { 種類, 形にする, 前へ, 切り取る, 輪の覆い } from '../../scripts/ocr-cells/manabu.mjs';
 import { 重みを組む } from '../../scripts/ocr-cells/omomi.mjs';
+import { 畳みの網を組む, 畳みで見分ける } from '../../scripts/ocr-cells/tatami.mjs';
 
 // 重みの JSON は呼ぶ側が渡す（アプリは require、Node の試験は fs）。
 // ここで import すると、Node は import 属性が要り、Metro は要らない、で食い違う。
-// 組んだ網は JSON ごとに覚える（板と紙で別の JSON）
+// 組んだ網は JSON ごとに覚える（板と紙で別の JSON）。
+// 形 が 'CNN' の JSON は畳み込みの網（群れ.畳み に入れる。scripts/ocr-cells/tatami.mjs）
 const 組んだもの = new WeakMap();
 function 網の群れ(重み) {
   let 群れ = 組んだもの.get(重み);
   if (!群れ) {
-    群れ = 重みを組む(重み);
+    群れ = 重み && 重み.形 === 'CNN' ? Object.assign([], { 畳み: 畳みの網を組む(重み) }) : 重みを組む(重み);
     組んだもの.set(重み, 群れ);
   }
   return 群れ;
@@ -93,10 +95,16 @@ export async function 板の印を読む(元, 注文) {
         // 箱や罫線で立てた格子（印がマスいっぱいの板）は、箱いっぱいの印を外さない
         const 形 = await 形にする(対象切.画, 対象切.幅, 対象切.高, g.立て方 ? 'ぎっしり' : undefined, { 印の幅: g.箱の幅 || g.印の幅 });
         if (++読んだ数 % 8 === 0) await 息継ぎ();
-        const 合 = new Float32Array(種類.length);
-        for (const 網 of 板の群れ) {
-          const { o } = 前へ(網, 形);
-          for (let k = 0; k < 種類.length; k++) 合[k] += o[k] / 板の群れ.length;
+        let 合;
+        if (板の群れ.畳み) {
+          // 畳み込みの網（重みの JSON の 形 が 'CNN'）。切り抜きそのものを見る（scripts/ocr-cells/tatami.mjs）
+          合 = 畳みで見分ける(板の群れ.畳み, 対象切.画, 対象切.幅, 対象切.高, 形);
+        } else {
+          合 = new Float32Array(種類.length);
+          for (const 網 of 板の群れ) {
+            const { o } = 前へ(網, 形);
+            for (let k = 0; k < 種類.length; k++) 合[k] += o[k] / 板の群れ.length;
+          }
         }
         let 最 = 0;
         for (let k = 1; k < 種類.length; k++) if (合[k] > 合[最]) 最 = k;

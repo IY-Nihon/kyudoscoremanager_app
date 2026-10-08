@@ -33,7 +33,8 @@ const { マスを開く, 一射目からの順にする, 迷いを開く } = req
 // 板と紙の○×は端末で読む（Gemini は線の向きを読めない）。名前と並びは Gemini のまま
 const { マスを端末で差し替える } = require('./ocr/sashikae');
 const 画像の道具 = require('./ocr/gazou-web');
-const 板の重み = require('../scripts/ocr-cells/omomi-chiisai.json');
+// 板のマスは畳み込みの網（2026-10-09。板ごとに外して測って全結合 98.2% → 99.6〜99.9%。scripts/ocr-cells/tatami.mjs）
+const 板の重み = require('../scripts/ocr-cells/omomi-tatami.json');
 const 紙の重み = require('../scripts/ocr-cells/kami-omomi.json');
 // 検査（e2e/ocrTanmatsu.spec.mjs）から、ブラウザの canvas の道で読めるかを確かめるための入口。
 // アプリの動きには関わらない

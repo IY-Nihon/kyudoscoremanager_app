@@ -354,8 +354,7 @@ test('縁からはみ出す大きな丸：内側の印を囲む大きな丸は�
 
 test('途中交代のマス：上に小さな ×、中ほどに横線、下に小さなかけら 3 つ → 交代のマスとみなされ、ずらすと × が取れる', async () => {
   const { 交代のマスか } = await import('../src/ocr/yomu.js');
-  const { 形にする, 種類, 前へ } = await import('../scripts/ocr-cells/manabu.mjs');
-  const { 重みを組む } = await import('../scripts/ocr-cells/omomi.mjs');
+  const { 形にする, 種類 } = await import('../scripts/ocr-cells/manabu.mjs');
   const fs = require('node:fs');
 
   const 幅 = 160, 高 = 120;
@@ -396,13 +395,10 @@ test('途中交代のマス：上に小さな ×、中ほどに横線、下に�
   }
 
   const 形 = await 形にする(新画, 幅, 高);
-  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-chiisai.json', 'utf8'));
-  const 網たち = 重みを組む(重み);
-  const 合 = new Float32Array(種類.length);
-  for (const 網 of 網たち) {
-    const { o } = 前へ(網, 形);
-    for (let k = 0; k < 種類.length; k++) 合[k] += o[k] / 網たち.length;
-  }
+  // アプリと同じ畳み込みの網で見分ける（scripts/ocr-cells/tatami.mjs）
+  const { 畳みの網を組む, 畳みで見分ける } = await import('../scripts/ocr-cells/tatami.mjs');
+  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-tatami.json', 'utf8'));
+  const 合 = 畳みで見分ける(畳みの網を組む(重み), 新画, 幅, 高, 形);
   let 最 = 0;
   for (let k = 1; k < 種類.length; k++) if (合[k] > 合[最]) 最 = k;
 
