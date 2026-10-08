@@ -566,10 +566,30 @@ const AIChatBot = () => {
           .join(', ');
 
         const now = new Date();
-        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const y = now.getFullYear();
+        const m = now.getMonth();
+        const todayStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         const yesterday = new Date(now);
         yesterday.setDate(now.getDate() - 1);
         const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+
+        // 今月（1日〜末日）
+        const thisMonthStart = `${y}-${String(m + 1).padStart(2, '0')}-01`;
+        const lastDayOfThisMonth = new Date(y, m + 1, 0).getDate();
+        const thisMonthEnd = `${y}-${String(m + 1).padStart(2, '0')}-${String(lastDayOfThisMonth).padStart(2, '0')}`;
+
+        // 先月（先月1日〜先月末日）
+        const lastMonthDate = new Date(y, m - 1, 1);
+        const lmY = lastMonthDate.getFullYear();
+        const lmM = lastMonthDate.getMonth();
+        const lastMonthStart = `${lmY}-${String(lmM + 1).padStart(2, '0')}-01`;
+        const lastDayOfLastMonth = new Date(lmY, lmM + 1, 0).getDate();
+        const lastMonthEnd = `${lmY}-${String(lmM + 1).padStart(2, '0')}-${String(lastDayOfLastMonth).padStart(2, '0')}`;
+
+        // 今年度（4月1日〜翌3月31日）
+        const fiscalYearStartYear = m >= 3 ? y : y - 1;
+        const fiscalYearStart = `${fiscalYearStartYear}-04-01`;
+        const fiscalYearEnd = `${fiscalYearStartYear + 1}-03-31`;
 
         const relevantQA = selectQAs(userMsg, 個人);
         const qaSection = relevantQA ? `\n\n【アプリ操作・仕様Q&A（関連する項目のみ）】\n${relevantQA}` : '';
@@ -579,7 +599,7 @@ const AIChatBot = () => {
         const fullInstruction =
           (個人 ? 個人用.個人用の指示文(systemInstructionBase, members[0]) : systemInstructionBase) +
           qaSection +
-          `\n\n[今日の日付: ${todayStr} / 昨日: ${yesterdayStr}]` +
+          `\n\n[日付の目安 (YYYY-MM-DD)]\n- 今日: ${todayStr} / 昨日: ${yesterdayStr}\n- 今月: ${thisMonthStart} 〜 ${thisMonthEnd}\n- 先月: ${lastMonthStart} 〜 ${lastMonthEnd}\n- 今年度: ${fiscalYearStart} 〜 ${fiscalYearEnd}` +
           (個人
             ? `\n[話し相手（本人）: ${memberList}]`
             : `\n[部員一覧（計${members.length}名）]\n${memberList}`);
@@ -788,6 +808,15 @@ const AIChatBot = () => {
                     },
                   },
                   required: ['screenName'],
+                },
+              },
+              {
+                name: 'startTutorial',
+                description:
+                  '初めての人向けの使い方の案内（チュートリアル）を開始します。「チュートリアルを見せて」「使い方ツアーを始めて」「案内をもう一度見たい」などの依頼で呼び出してください。',
+                parameters: {
+                  type: 'OBJECT',
+                  properties: {},
                 },
               },
               {
@@ -1276,6 +1305,35 @@ const AIChatBot = () => {
                       },
                 },
               });
+            } else if (call.name === 'startTutorial') {
+              let 開始結果 = '';
+              try {
+                開始結果 = 案内 && typeof 案内.startTutorial === 'function' ? 案内.startTutorial() : '';
+              } catch (誤り) {
+                console.warn('[AIChatBot] startTutorial failed', 誤り);
+              }
+              const ライブ中 = 開始結果 === 'ライブ中';
+              if (!ライブ中) {
+                setTimeout(() => {
+                  setModalVisible(false);
+                }, 500);
+              }
+              functionResponses.push({
+                functionResponse: {
+                  name: call.name,
+                  response: ライブ中
+                    ? {
+                        success: false,
+                        message:
+                          'ライブ記録中は、使い方の案内を始められません。ライブを止めてからお試しください。',
+                      }
+                    : {
+                        success: true,
+                        message:
+                          '使い方の案内（チュートリアル）を開始します。チャットを閉じて画面の案内をご覧ください。',
+                      },
+                },
+              });
             } else if (call.name === 'addMember' || call.name === 'addMembers') {
               // addMembers は人ごとにカードにする（1枚ずつ見て、まとめて承認できる）
               const 人たち =
@@ -1536,11 +1594,22 @@ const AIChatBot = () => {
                     setMessages(defaultMessages);
                     saveChatHistory(defaultMessages);
                   }}
+                  accessible
+                  accessibilityRole="button"
+                  accessibilityLabel="会話履歴を消去"
+                  aria-label="会話履歴を消去"
                   style={{ padding: 4 }}
                 >
                   <Ionicons name="trash-outline" size={20} color="#8E8E93" />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
+                <TouchableOpacity
+                  onPress={() => setModalVisible(false)}
+                  accessible
+                  accessibilityRole="button"
+                  accessibilityLabel="閉じる"
+                  aria-label="閉じる"
+                  style={styles.closeBtn}
+                >
                   <Ionicons name="close" size={24} color="#8E8E93" />
                 </TouchableOpacity>
               </View>

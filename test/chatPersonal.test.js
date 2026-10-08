@@ -141,15 +141,15 @@ test('Q&A：個人から外した番号は、どれも実在する（番号を�
     'Q42',
     'Q51',
     'Q52',
+    'Q78',
   ])
     assert.ok(番号たち.includes(番), `外した番号 ${番} が Q&A に無い（振り直された？）`);
 });
 
-test('Q&A：番号が 2 つの Q70 は、団体アカウントの削除だけを外し、弓具の前後の的中は残す', () => {
-  const Q70 = Q_Aを読む().filter((t) => t.startsWith('Q70:'));
-  assert.strictEqual(Q70.length, 2);
-  const 消す = Q70.find((t) => t.startsWith('Q70: 団体アカウント'));
-  const 弓具 = Q70.find((t) => t.startsWith('Q70: 弓や矢'));
+test('Q&A：団体アカウントの削除（Q78）は外し、弓具の前後の的中（Q70）は残す', () => {
+  const 全部 = Q_Aを読む();
+  const 消す = 全部.find((t) => t.startsWith('Q78: 団体アカウント'));
+  const 弓具 = 全部.find((t) => t.startsWith('Q70: 弓や矢'));
   assert.ok(消す && 弓具);
   assert.strictEqual(個人用.個人に案内してよいか(消す), false);
   assert.strictEqual(個人用.個人に案内してよいか(弓具), true);
@@ -247,4 +247,21 @@ test('参加回数：個人ログインでも使え、数えるのは本人だ�
   assert.deepStrictEqual(結果.一覧.map((x) => [x.名前, x.回数]), [['自分 太郎', 2]]);
   const 文字列 = JSON.stringify(結果);
   assert.ok(!文字列.includes('他人') && !文字列.includes('別人'), 'ほかの人の名前が出ない');
+});
+
+test('Q&A：Q83〜Q86（タグ、履歴消去、ダークモード、全員の矢所）が正しく登録され、個人にも案内される', () => {
+  const qa = Q_Aを読む();
+  for (const 番 of ['Q83', 'Q84', 'Q85', 'Q86']) {
+    const 項目 = qa.find((t) => t.startsWith(`${番}:`));
+    assert.ok(項目, `${番} が見つからない`);
+    assert.ok(個人用.個人に案内してよいか(項目), `${番} が個人から除外されている`);
+  }
+});
+
+test('Q&A：矢所の検索で「メンバーの矢所」「全員の矢所」がヒットする', () => {
+  const { selectQAs } = require('../src/chatKnowledge');
+  const メンバー = selectQAs('メンバーの矢所をみたい');
+  assert.ok(メンバー.includes('Q86:'), 'メンバーの矢所で Q86 が選ばれていない');
+  const 全員 = selectQAs('全員の矢所を見たい');
+  assert.ok(全員.includes('Q86:'), '全員の矢所で Q86 が選ばれていない');
 });
