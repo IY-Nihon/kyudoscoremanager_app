@@ -278,3 +278,19 @@ test('板の並びを確かめる: はっきりしないとき・人数の並び
   const 読んだ = [{ 列たち: [['◎'], ['◎'], ['◎']] }, { 列たち: [['×']] }];
   assert.deepStrictEqual(板の並びを確かめる([三人, 一人], 読んだ, { 向き: '左から' }).板の番, [0, 1]);
 });
+
+test('マスを端末で差し替える: ◎や丸に線がある板を Gemini が「1射」（紙）と言っても、板として端末で読む', async () => {
+  const { マスを端末で差し替える } = await import('../src/ocr/sashikae.js');
+  const { 射手たち } = await import('../scripts/ocr-cells/kiroku.mjs');
+  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-tatami.json', 'utf8'));
+  const 紙の重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/kami-omomi.json', 'utf8'));
+  const teams = [0, 1].map((i) => ({
+    name: '', cellStyle: '1射', tachiPeople: 4,
+    rows: 射手たち.slice(i * 8, i * 8 + 8).map((s) => ({ name: s.名, cells: ['◎', '○/', '×', '◎', '◎', '×', '◎', '◎', '◎', '×'] })),
+  }));
+  const 出 = await マスを端末で差し替える(teams, [{ base64: 'docs/ocr-samples/PXL_20260906_081921509.jpg' }], {
+    向き: '左右から', 道具: await 道具をつくる(), 重み, 紙の重み,
+  });
+  assert.strictEqual(出.読み取り元, '端末', 出.訳);
+  assert.strictEqual(出.teams[0].cellStyle, '2射');
+});
