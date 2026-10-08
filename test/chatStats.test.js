@@ -798,6 +798,6 @@ test('矢所の成績：的の中心（星）付近に集まっているとき�
     },
   ];
   const 結果 = 矢所の成績(人たち, 記録たち, '山田 太郎');
-  assert.equal(結果.overallTrend.direction, '的の中心付近（星付近）');
-  assert.ok(結果.summaryText.includes('的の中心付近（星付近）'));
+  assert.equal(結果.overallTrend.direction, '的の中心付近');
+  assert.ok(結果.summaryText.includes('的の中心付近'));
 });

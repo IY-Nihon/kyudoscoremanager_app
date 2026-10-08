@@ -11,7 +11,7 @@ const { IS_WEB } = require('./IS_WEB');
 const { 手順を作る, 手が出せない: 手が出せないか, 見本の中身を作る } = require('./tutorialSteps');
 const { 見える記録数 } = require('./syncRules');
 // 案内の版。手順を作り直したら上げる。上げると、一度見た人にもまた出る
-const TUTORIAL_VERSION = '2026-10-08-01';
+const TUTORIAL_VERSION = '2026-08-13-01';
 const 保存キー = 'tutorialDoneVersion';
 // 案内の途中で読み込み直されても片付けられるよう、控えは端末にも書いておく。
 // 手元に持つだけだと、再読み込みで控えが消え、案内で足した列が残り続ける
