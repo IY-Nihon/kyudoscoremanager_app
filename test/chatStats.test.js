@@ -779,3 +779,25 @@ test('矢所の成績：同姓同名・複数候補やゲスト、不在選手�
   const 不在 = 矢所の成績(人たち, 記録たち, '鈴木');
   assert.equal(不在.error, '選手が見つかりませんでした。');
 });
+
+test('矢所の成績：的の中心（星）付近に集まっているときの判定', () => {
+  const { 矢所の成績 } = require('../src/chatStats');
+  const 人たち = [{ id: 'm1', name: '山田 太郎', grade: 2 }];
+  const 記録たち = [
+    {
+      id: 's1',
+      date: 1000,
+      archers: [
+        {
+          memberId: 'm1',
+          name: '山田 太郎',
+          marks: ['○', '○'],
+          arrowLocations: [{ x: 0.02, y: -0.03 }, { x: -0.01, y: 0.04 }],
+        },
+      ],
+    },
+  ];
+  const 結果 = 矢所の成績(人たち, 記録たち, '山田 太郎');
+  assert.equal(結果.overallTrend.direction, '的の中心付近（星付近）');
+  assert.ok(結果.summaryText.includes('的の中心付近（星付近）'));
+});
