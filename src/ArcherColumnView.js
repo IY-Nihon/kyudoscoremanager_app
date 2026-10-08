@@ -52,12 +52,10 @@ const ArcherColumnView = React.memo(
     const [合算で見る, 合算を置く] = React.useState(false);
     // 店（zustand）の購読は 1 つにまとめる（ます と同じ理由。列は 30 本ほど並ぶ）。
     // 店の手（toggleLock・立を閉じる）は呼ぶときに getState() から取る
-    const { viewScale, members, 自動ロックする, 自動ロックまでの秒, 矢所を使う } = useScoreStore(
+    const { viewScale, members, 自動ロックする, 自動ロックまでの秒 } = useScoreStore(
       useShallow((状態) => ({
         viewScale: 状態.viewScale,
         members: 状態.members,
-        // 矢所を使うときは、置いたマスに小さな点を出す
-        矢所を使う: !!状態.enableArrowLocation,
         自動ロックする: 状態.自動ロックする,
         自動ロックまでの秒: 状態.自動ロックまでの秒,
       }))
@@ -371,7 +369,6 @@ const ArcherColumnView = React.memo(
                     index={射番}
                     横並び={横}
                     mark={archer.marks?.[射番] || ''}
-                    矢所あり={矢所を使う && !!archer.arrowLocations?.[射番]}
                     subName={交代の表示名}
                     isLocked={鍵}
                     isBlockBottom={切れ目(射番)}

@@ -17,7 +17,6 @@ const 集 = require('./statsRules');
 const { 日付の文字, 練習日で数える, 出ていた部員たち } = require('./attendanceRules');
 // 射位は区切りごとに数え直す（記録画面の読み上げと同じ決まり）
 const { 射位を割り振る } = require('./teamGrouping');
-const { 集まり, 印か, 矢所の的 } = require('./yadokoroRules');
 
 /** 空白を落とす。名前で絞り込むとき（表示の突き合わせ）にだけ使う */
 const 詰める = (文) => String(文 || '').replace(/\s/g, '');
@@ -596,6 +595,29 @@ function 一人の成績(人たち, 記録たち, 名前, 期間) {
     ochiHitRate: 率(落),
     recentSessionsDetail: 直近の記録,
   };
+}
+
+/** ○か×か（空・その他の印は数えない） */
+const 印か = (印) => '○' === 印 || '\xd7' === 印;
+
+/** 矢所を置いた的の種類。種類の無い古い矢所は霞的とみなす（分析の的 ArrowLocationView と同じ） */
+const 矢所の的 = (矢所) => (矢所 && 矢所.targetType) || 'kasumi36';
+
+/**
+ * 矢の集まり：中心（矢の平均の位置）と、散らばりの大きさ（中心からの距離の二乗平均の平方根）。
+ * 位置は的の縁が 1。点が無ければ null
+ * @param {{x:number, y:number}[]} 点たち
+ * @returns {{x:number, y:number, 半径:number, 本数:number} | null}
+ */
+function 集まり(点たち) {
+  const 点 = (Array.isArray(点たち) ? 点たち : []).filter(
+    (p) => p && Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y))
+  );
+  if (!点.length) return null;
+  const x = 点.reduce((和, p) => 和 + Number(p.x), 0) / 点.length;
+  const y = 点.reduce((和, p) => 和 + Number(p.y), 0) / 点.length;
+  const 半径 = Math.sqrt(点.reduce((和, p) => 和 + (Number(p.x) - x) ** 2 + (Number(p.y) - y) ** 2, 0) / 点.length);
+  return { x, y, 半径, 本数: 点.length };
 }
 
 /**

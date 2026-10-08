@@ -159,7 +159,7 @@ src/OCRRecordModal.js        写真から立ち順を読み取るOCRモーダル
 src/AttendanceScreen.js         出欠管理
 src/AttendanceCheckModal.js     出欠入力モーダル
 src/ArrowLocationView.js        矢所記録ビュー
-src/YadokoroView.js             矢所の画面（記録画面の「矢所」。大きな的で置く）
+src/ArrowLocationPopover.js     矢所入力ポップオーバー
 src/KyudoBackgroundAnimation.js ログイン画面の背景アニメーション
 src/db.js                   Firebase 初期化
 ```

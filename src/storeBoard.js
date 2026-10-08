@@ -353,31 +353,8 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => ({
           鍵を開けた時刻: Date.now(),
         })),
   setEnableArrowLocation: (値) => 書く({ enableArrowLocation: 値 }),
-  set矢所の入れ方: (値) => 書く({ 矢所の入れ方: 値 }),
-  set矢所の窓: (値) => 書く({ 矢所の窓: 値 || null }),
-  // 矢所の画面で、○×が空の射に置いたとき：位置と○×を、取り消し 1 回で戻せるよう一度に書く（ライブ中は盤面ごと送る）
-  矢所を置いて印を入れる: (射手ID, 番, 印, 矢所) => {
-    if (状態().書き換えを止めるか()) return void 書く({ 閲覧でますを押した時刻: Date.now() });
-    const { archers: 元, isLiveActive, liveSessionName, shotsPerRound } = 状態();
-    const 今 = Date.now();
-    const 直した = (元 || []).map((射手) => {
-      if (射手.id !== 射手ID) return 射手;
-      const 印たち = [...(射手.marks || [])];
-      const 矢所たち = [...(射手.arrowLocations || [])];
-      印たち[番] = 印;
-      矢所たち[番] = 矢所;
-      return Object.assign({}, 射手, { marks: 印たち, arrowLocations: 矢所たち, lastModified: 今 });
-    });
-    書く({
-      archers: 直した,
-      historyStack: [...状態().historyStack, 元],
-      redoStack: [],
-      lastLocalChange: 今,
-      入れた時刻: Object.assign({}, 状態().入れた時刻, { [射手ID + ':' + 番]: 今 }),
-    });
-    if (isLiveActive && liveSessionName) ライブへ盤面を送る(liveSessionName, 直した, shotsPerRound);
-  },
   setArrowTargetType: (値) => 書く({ arrowTargetType: 値 }),
+  setActiveArrowLocationEdit: (値) => 書く({ activeArrowLocationEdit: 値 }),
   updateArrowLocation: (射手ID, 番, 矢所) => {
     if (状態().書き換えを止めるか()) return; // 閲覧用では矢所（ライブにも送られる）も止める
     const { archers } = 状態();
