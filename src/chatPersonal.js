@@ -13,6 +13,7 @@
 /** 個人ログインが使える道具。全員の成績（getAllMembersStats）・出欠・部員の追加は使えない */
 const 個人が使える道具 = [
   'getDetailedMemberStats',
+  'getArrowLocationStats',
   'getPositionStats',
   'getSessionsByDate',
   'searchSessions',
@@ -134,10 +135,11 @@ function 個人用の指示文(基本, 本人) {
 
     `【どのツールを使うか】
 ・本人の詳しい成績（1射ごと、大前・落など） → getDetailedMemberStats（memberName は ${名前の引数}）
+・本人の矢所の傾向（着弾位置、まとまり具合、外れ矢の抜ける方向） → getArrowLocationStats（memberName は ${名前の引数}）
 ・本人の射位ごとの的中率 → getPositionStats
 ・日付が分かっている記録 → getSessionsByDate
 ・日付が分からない記録を言葉で探す → searchSessions
-・「自主練の的中率」「試合だけの成績」など、タグで分けた自分の成績 → getDetailedMemberStats・getPositionStats の tags にタグを渡す（返ってきた数字は「そのタグで絞った数字」と添える）
+・「自主練の的中率」「試合だけの成績」など、タグで分けた自分の成績 → getDetailedMemberStats・getPositionStats・getArrowLocationStats の tags にタグを渡す（返ってきた数字は「そのタグで絞った数字」と添える）
 ・「自主練に何回参加したか」など、タグや言葉で絞った記録に自分が何回参加したか → countSessionParticipation（返ってきた回数をそのまま使う）
 ・画面を開く → navigateToScreen（開けるのは ${個人が行ける画面.join('・')}）
 ・使い方の案内（チュートリアル）を開始 → startTutorial`,
@@ -167,6 +169,10 @@ function 個人向けの道具(宣言たち) {
     getDetailedMemberStats: {
       description:
         '本人の詳細な成績データを取得します。初矢から4本目（留矢）まで何本目の矢が当たりやすいか、また大前や落など立順ごとの成績などを分析する際に呼び出してください。memberName には本人の名前を渡してください。「9月の」「今年度の」のように期間が付いていれば dateFrom / dateTo を渡してください（省くと全期間）。',
+    },
+    getArrowLocationStats: {
+      description:
+        '本人の矢所の着弾位置や傾向（全体の集まり・中心位置・まとまり具合・外れ矢の抜ける方向など）を集計して返します。「自分の矢所の傾向を教えて」「矢所がどこに集まっているか」「外れ矢はどこに抜けているか」などに使います。memberName には本人の名前を渡してください。返された中心位置や方位、散らばりをもとに自然言語で分かりやすく解説やアドバイスを行ってください。',
     },
     getPositionStats: {
       description:
