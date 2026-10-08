@@ -304,6 +304,7 @@ test('団体：道具は全部・部員一覧が入り、会話は前の鍵に�
       'addMembers',
       'countSessionParticipation',
       'getAllMembersStats',
+      'getArrowLocationStats',
       'getAttendanceStats',
       'getDetailedMemberStats',
       'getPositionStats',

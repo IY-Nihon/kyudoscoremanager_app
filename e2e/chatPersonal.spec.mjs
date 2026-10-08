@@ -24,6 +24,7 @@ test.use({ storageState: 'e2e/.auth/100002-個人.json' });
 
 const 個人が使える道具 = [
   'getDetailedMemberStats',
+  'getArrowLocationStats',
   'getPositionStats',
   'getSessionsByDate',
   'navigateToScreen',

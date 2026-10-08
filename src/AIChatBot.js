@@ -116,6 +116,7 @@ const {
   参加回数を数える,
   射位ごとの成績,
   一人の成績,
+  矢所の成績,
   期間にする,
   日付の始まり,
 } = require('./chatStats');
@@ -797,6 +798,30 @@ const AIChatBot = () => {
                 },
               },
               {
+                name: 'getArrowLocationStats',
+                description:
+                  '部員の矢所の着弾位置や傾向（全体の集まり・中心位置・まとまり具合・外れ矢の抜ける方向など）を集計して返します。「矢所の傾向を教えて」「矢所がどこに集まっているか」「外れ矢はどこに抜けているか」などに使います。返された中心位置や方位、散らばりをもとに自然言語で分かりやすく解説やアドバイスを行ってください。',
+                parameters: {
+                  type: 'OBJECT',
+                  properties: {
+                    memberName: { type: 'STRING', description: '選手の名前' },
+                    dateFrom: { type: 'STRING', description: '期間の開始日 (YYYY-MM-DD形式)。省くと全期間' },
+                    dateTo: { type: 'STRING', description: '期間の終了日 (YYYY-MM-DD形式)。省くと全期間' },
+                    targetType: {
+                      type: 'STRING',
+                      description: "的の種類（'kasumi36', 'hoshi36', 'hoshi24' のいずれか）。省略するとすべての的",
+                    },
+                    tags: {
+                      type: 'ARRAY',
+                      items: { type: 'STRING' },
+                      description:
+                        "タグで記録を絞り込む。例: ['自主稽古']。「自主練の矢所」「試合だけの矢所」のように、タグで分けて聞かれたときに渡す",
+                    },
+                  },
+                  required: ['memberName'],
+                },
+              },
+              {
                 name: 'navigateToScreen',
                 description: '指定した画面タブへ遷移します。',
                 parameters: {
@@ -1158,6 +1183,31 @@ const AIChatBot = () => {
                   name: call.name,
                   response: タグ絞り.表示
                     ? Object.assign({}, statsData, { タグでの絞り込み: タグ絞り.表示, message: タグ絞り.添え書き })
+                    : statsData,
+                },
+              });
+            } else if (call.name === 'getArrowLocationStats') {
+              const { memberName, dateFrom, dateTo, targetType, tags } = call.args;
+              const タグ絞り = タグで絞った記録(tags);
+              const statsData = 矢所の成績(
+                members,
+                タグ絞り.記録たち,
+                String(memberName || ''),
+                {
+                  dateFrom,
+                  dateTo,
+                  targetType,
+                  tags,
+                }
+              );
+              functionResponses.push({
+                functionResponse: {
+                  name: call.name,
+                  response: タグ絞り.表示
+                    ? Object.assign({}, statsData, {
+                        タグでの絞り込み: タグ絞り.表示,
+                        message: (statsData.message || '') + (タグ絞り.添え書き ? ' ' + タグ絞り.添え書き : ''),
+                      })
                     : statsData,
                 },
               });

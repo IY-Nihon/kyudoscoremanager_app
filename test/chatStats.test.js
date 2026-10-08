@@ -11,7 +11,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-const { 全員の成績, その射を引いた人 } = require('../src/chatStats');
+const { 全員の成績 } = require('../src/chatStats');
 
 const 人 = (name, o) => Object.assign({ id: name, name, grade: 1 }, o);
 const 記録 = (date, archers) => ({ date, archers });
@@ -569,4 +569,47 @@ test('タグで絞る：どのタグに当たったかを返す（部分一致�
   assert.equal(結果.当たった件数, 2);
   assert.deepEqual(結果.当たったタグ, ['#正規練習', '#自主練習'], '付いていても当たらないタグ（#春季）は入れない');
   assert.deepEqual(タグで絞る(記録たち, []).当たったタグ, []);
+});
+
+test('矢所の成績：部員の矢所の着弾位置・まとまり・外れ矢の傾向が正しく計算される', () => {
+  const { 矢所の成績 } = require('../src/chatStats');
+  const 人たち = [{ id: 'm1', name: '山田 太郎', grade: 2 }];
+  const 記録たち = [
+    {
+      id: 's1',
+      date: new Date('2026-10-01').getTime(),
+      archers: [
+        {
+          memberId: 'm1',
+          name: '山田 太郎',
+          marks: ['○', '○', '×', '×'],
+          arrowLocations: [
+            { x: 0.2, y: -0.3 }, // 右上 ○
+            { x: 0.1, y: -0.2 }, // 右上 ○
+            { x: 0.5, y: -0.6 }, // 右上（大きく外れ） ×
+            { x: 0.4, y: -0.5 }, // 右上（外れ） ×
+          ],
+        },
+      ],
+    },
+  ];
+
+  const 結果 = 矢所の成績(人たち, 記録たち, '山田 太郎');
+  assert.equal(結果.arrowCount, 4);
+  assert.equal(結果.hitCount, 2);
+  assert.equal(結果.missCount, 2);
+  assert.equal(結果.hitRate, '50%');
+  assert.equal(結果.overallTrend.direction, '右上寄り');
+  assert.ok(結果.overallTrend.grouping.includes('集まり') || 結果.overallTrend.grouping.includes('まとま'));
+  assert.equal(結果.missTrend.direction, '右上寄り');
+  assert.ok(結果.summaryText.includes('右上寄り'));
+});
+
+test('矢所の成績：矢所が無い部員には適切なメッセージが返る', () => {
+  const { 矢所の成績 } = require('../src/chatStats');
+  const 人たち = [{ id: 'm1', name: '佐藤 花子', grade: 1 }];
+  const 記録たち = [{ id: 's1', date: 1000, archers: [{ memberId: 'm1', name: '佐藤 花子', marks: ['○'] }] }];
+  const 結果 = 矢所の成績(人たち, 記録たち, '佐藤 花子');
+  assert.equal(結果.arrowCount, 0);
+  assert.ok(結果.message.includes('矢所の記録はありません'));
 });

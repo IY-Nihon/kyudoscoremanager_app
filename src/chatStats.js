@@ -17,6 +17,7 @@ const 集 = require('./statsRules');
 const { 日付の文字, 練習日で数える, 出ていた部員たち } = require('./attendanceRules');
 // 射位は区切りごとに数え直す（記録画面の読み上げと同じ決まり）
 const { 射位を割り振る } = require('./teamGrouping');
+const { 集まり, 印か, 矢所の的 } = require('./yadokoroRules');
 
 /** 空白を落とす。名前で絞り込むとき（表示の突き合わせ）にだけ使う */
 const 詰める = (文) => String(文 || '').replace(/\s/g, '');
@@ -597,7 +598,198 @@ function 一人の成績(人たち, 記録たち, 名前, 期間) {
   };
 }
 
+/**
+ * 矢所の中心位置（x, y）から八方位または中心を判定する
+ */
+function 矢所の方位(x, y) {
+  const 距離 = Math.hypot(x, y);
+  if (距離 < 0.15) {
+    return '中心付近';
+  }
+  const deg = (Math.atan2(y, x) * 180) / Math.PI;
+  if (deg >= -22.5 && deg < 22.5) return '右寄り';
+  if (deg >= 22.5 && deg < 67.5) return '右下寄り';
+  if (deg >= 67.5 && deg < 112.5) return '下寄り';
+  if (deg >= 112.5 && deg < 157.5) return '左下寄り';
+  if (deg >= 157.5 || deg < -157.5) return '左寄り';
+  if (deg >= -157.5 && deg < -112.5) return '左上寄り';
+  if (deg >= -112.5 && deg < -67.5) return '上寄り';
+  if (deg >= -67.5 && deg < -22.5) return '右上寄り';
+  return '中心付近';
+}
+
+/**
+ * 散らばり（半径）からまとまり具合を判定する
+ */
+function 矢所のまとまり(半径) {
+  if (半径 < 0.25) return 'まとまりが非常に高い（集約している）';
+  if (半径 < 0.40) return 'まとまりが良好（矢所が安定している）';
+  if (半径 < 0.60) return '標準的な散らばり';
+  return '散らばりがやや大きい（ばらつきがある）';
+}
+
+/**
+ * ある部員の矢所（着弾位置、まとまり具合、外れ矢の傾向）を集計する
+ */
+function 矢所の成績(名簿, 記録たち, 名前, 条件 = {}) {
+  const { 人, 候補 } = 名前で選ぶ(名簿, 名前);
+  if (!人) {
+    if (候補.length > 1) {
+      return {
+        error: `「${名前}」に当てはまる部員が ${候補.length} 人います：${候補.map((x) => x.name).join('、')}。どの人か聞き返してください。`,
+        候補: 候補.map((x) => x.name),
+      };
+    }
+    const 求める = 詰める(名前);
+    const 記録に出ている = (Array.isArray(記録たち) ? 記録たち : []).some((記録) =>
+      Array.isArray(記録 && 記録.archers) &&
+      記録.archers.some((射手) => {
+        if (!射手) return false;
+        const 名たち = [射手.name || ''].concat(Object.values(射手.substitutions || {}));
+        return 名たち.some((名) => {
+          const 名を詰めた = 詰める(名);
+          return 名を詰めた && (名を詰めた.includes(求める) || 求める.includes(名を詰めた));
+        });
+      })
+    );
+    return {
+      error: 記録に出ている
+        ? `「${名前}」は部員名簿にありません。記録に名前は出ていますが、ゲストとして入力されているため成績は集計できません。`
+        : '選手が見つかりませんでした。',
+    };
+  }
+
+  let 使える記録 = Array.isArray(記録たち) ? 記録たち : [];
+  const 期間 = 期間にする(
+    条件.dateFrom || (条件.期間 && 条件.期間.始め),
+    条件.dateTo || (条件.期間 && 条件.期間.終わり)
+  );
+  if (期間 && (期間.始め || (期間.終わり && 期間.終わり !== Infinity))) {
+    使える記録 = 使える記録.filter((r) => {
+      const d = r && r.date ? r.date : 0;
+      return d >= (期間.始め || 0) && d <= (期間.終わり || Infinity);
+    });
+  }
+  if (条件.tags || 条件.タグ) {
+    使える記録 = タグで絞る(使える記録, 条件.tags || 条件.タグ).記録たち;
+  }
+
+  const 点たち = [];
+  for (const 記録 of 使える記録) {
+    const archers = Array.isArray(記録.archers) ? 記録.archers : [];
+    for (const archer of archers) {
+      if (!archer || archer.isSeparator || archer.isTotalCalculator) continue;
+      const arrowLocations = Array.isArray(archer.arrowLocations) ? archer.arrowLocations : [];
+      const marks = Array.isArray(archer.marks) ? archer.marks : [];
+      const 本数 = Math.max(arrowLocations.length, marks.length);
+      for (let idx = 0; idx < 本数; idx++) {
+        if (!その人の射か(人, その射を引いた人(archer, idx))) continue;
+        const loc = arrowLocations[idx];
+        const mark = marks[idx];
+        if (!loc || !印か(mark)) continue;
+        if (loc.x === undefined || loc.y === undefined || loc.x === null || loc.y === null) continue;
+        const 的 = 矢所の的(loc);
+        if (条件.targetType && 的 !== 条件.targetType) continue;
+
+        点たち.push({
+          x: Number(loc.x) || 0,
+          y: Number(loc.y) || 0,
+          印: mark,
+          targetType: 的,
+          date: 記録.date,
+          sessionTitle: 記録.title,
+        });
+      }
+    }
+  }
+
+  if (点たち.length === 0) {
+    return {
+      name: 人.name,
+      arrowCount: 0,
+      hitCount: 0,
+      missCount: 0,
+      hitRate: '0%',
+      message: `${人.name}さんの矢所の記録はありません。記録画面で矢所を記録すると、ここに傾向が表示されます。`,
+    };
+  }
+
+  const 中り点 = 点たち.filter((p) => '○' === p.印);
+  const 外れ点 = 点たち.filter((p) => '×' === p.印);
+
+  const 全体集まり = 集まり(点たち);
+  const 中り集まり = 集まり(中り点);
+  const 外れ集まり = 集まり(外れ点);
+
+  const arrowCount = 点たち.length;
+  const hitCount = 中り点.length;
+  const missCount = 外れ点.length;
+  const hitRateNum = (hitCount / arrowCount) * 100;
+  const hitRate = (hitRateNum % 1 === 0 ? hitRateNum.toFixed(0) : hitRateNum.toFixed(1)) + '%';
+
+  const overallTrend = {
+    direction: 矢所の方位(全体集まり.x, 全体集まり.y),
+    grouping: 矢所のまとまり(全体集まり.半径),
+    centerX: Number(全体集まり.x.toFixed(2)),
+    centerY: Number(全体集まり.y.toFixed(2)),
+    radius: Number(全体集まり.半径.toFixed(2)),
+  };
+
+  const hitTrend = 中り集まり
+    ? {
+        direction: 矢所の方位(中り集まり.x, 中り集まり.y),
+        count: hitCount,
+        centerX: Number(中り集まり.x.toFixed(2)),
+        centerY: Number(中り集まり.y.toFixed(2)),
+        radius: Number(中り集まり.半径.toFixed(2)),
+      }
+    : { direction: '的中なし', count: 0 };
+
+  const missTrend = 外れ集まり
+    ? {
+        direction: 矢所の方位(外れ集まり.x, 外れ集まり.y),
+        count: missCount,
+        centerX: Number(外れ集まり.x.toFixed(2)),
+        centerY: Number(外れ集まり.y.toFixed(2)),
+        radius: Number(外れ集まり.半径.toFixed(2)),
+      }
+    : { direction: 'なし（すべて的中）', count: 0 };
+
+  let 右上 = 0, 右下 = 0, 左上 = 0, 左下 = 0;
+  for (const p of 点たち) {
+    if (p.x >= 0 && p.y <= 0) 右上++;
+    else if (p.x >= 0 && p.y > 0) 右下++;
+    else if (p.x < 0 && p.y <= 0) 左上++;
+    else 左下++;
+  }
+
+  let summaryText = `${人.name}さんの矢所傾向（計${arrowCount}射、的中${hitCount}・外れ${missCount}、的中率${hitRate}）：\n`;
+  summaryText += `・全体の矢所：中心は【${overallTrend.direction}】、${overallTrend.grouping}。\n`;
+  if (missCount > 0) {
+    summaryText += `・外れ矢（${missCount}本）：【${missTrend.direction}】に抜ける傾向があります。\n`;
+  } else {
+    summaryText += `・外れ矢：外れ矢はありません（皆中）。\n`;
+  }
+  if (hitCount > 0) {
+    summaryText += `・的中矢（${hitCount}本）：中心は【${hitTrend.direction}】付近です。\n`;
+  }
+
+  return {
+    name: 人.name,
+    arrowCount,
+    hitCount,
+    missCount,
+    hitRate,
+    overallTrend,
+    hitTrend,
+    missTrend,
+    quadrants: { 右上, 右下, 左上, 左下 },
+    summaryText,
+  };
+}
+
 module.exports = {
+  矢所の成績,
   全員の成績,
   出欠の集計,
   記録をさがす,
