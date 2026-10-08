@@ -18,6 +18,7 @@ const 個人が使える道具 = [
   'searchSessions',
   'countSessionParticipation',
   'navigateToScreen',
+  'startTutorial',
 ];
 
 /** 個人ログインで開ける画面（出欠は団体だけ。MainNavigator と同じ） */
@@ -51,14 +52,13 @@ const 団体だけのQA番号 = new Set([
   'Q42', // 落に向いている選手
   'Q51', // メンバーアカウントでログインする方法（管理者が個人IDを見る）
   'Q52', // 管理者モード
+  'Q78', // 団体アカウントの削除
 ]);
 
 /** その Q&A（t は「Qn: …」で始まる文）を個人に案内してよいか */
 function 個人に案内してよいか(t) {
   const m = /^(Q\d+):/.exec(String(t || ''));
   if (!m) return true;
-  // 番号が 2 つの Q&A で重なっている（Q70：団体アカウントの削除／弓具の前後の的中）ので、前者は文で見る
-  if (m[1] === 'Q70' && String(t).startsWith('Q70: 団体アカウント')) return false;
   return !団体だけのQA番号.has(m[1]);
 }
 
@@ -139,7 +139,8 @@ function 個人用の指示文(基本, 本人) {
 ・日付が分からない記録を言葉で探す → searchSessions
 ・「自主練の的中率」「試合だけの成績」など、タグで分けた自分の成績 → getDetailedMemberStats・getPositionStats の tags にタグを渡す（返ってきた数字は「そのタグで絞った数字」と添える）
 ・「自主練に何回参加したか」など、タグや言葉で絞った記録に自分が何回参加したか → countSessionParticipation（返ってきた回数をそのまま使う）
-・画面を開く → navigateToScreen（開けるのは ${個人が行ける画面.join('・')}）`,
+・画面を開く → navigateToScreen（開けるのは ${個人が行ける画面.join('・')}）
+・使い方の案内（チュートリアル）を開始 → startTutorial`,
 
     `【射位や立ち順について】
 ・本人の射位ごとの的中率は getPositionStats の数字を根拠に伝え、射数が少ないときはその旨を添えてください。誰をどこに置くかは団体の担当者が決めることなので、本人には決められません。`,
@@ -159,6 +160,10 @@ function 個人用の指示文(基本, 本人) {
  */
 function 個人向けの道具(宣言たち) {
   const 直す = {
+    startTutorial: {
+      description:
+        '使い方の案内（チュートリアル）を開始します。「チュートリアルを見せて」「使い方ツアーを始めて」「案内をもう一度見たい」などの質問に使います。',
+    },
     getDetailedMemberStats: {
       description:
         '本人の詳細な成績データを取得します。初矢から4本目（留矢）まで何本目の矢が当たりやすいか、また大前や落など立順ごとの成績などを分析する際に呼び出してください。memberName には本人の名前を渡してください。「9月の」「今年度の」のように期間が付いていれば dateFrom / dateTo を渡してください（省くと全期間）。',
