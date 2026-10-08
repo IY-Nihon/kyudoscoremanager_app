@@ -8,6 +8,7 @@
  *   ・札：何を載せるかは未選択、載せる先は最初どちらもチェック、名前は団体名。足りないと決められない
  *   ・決めると雲（groups/{団体ID}/config/listing）に残り、設定に項目が出て、選んだとおりに映る
  *   ・設定で「載せない」に変えると、載せる先も外れて雲に残る
+ *   ・一度聞いて答えていない団体（あとで・✕）には、アプリを開いたときに札が出る（保存を待たない）。閉じても、開き直すとまた出る
  *
  * ■ 札の開き方
  * 札を出すかの決まり（記録 10 回・14 日・あとでは次に開くまで）は test/listingConsent.test.js で見る。
@@ -19,7 +20,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { 案内を止める, 画面が出るまで待つ, 入り口が決まるまで待つ } from './helpers.mjs';
-import { configFor, signIn, req, fromFields } from '../scripts/fb-rest.mjs';
+import { configFor, signIn, req, fromFields, setDoc } from '../scripts/fb-rest.mjs';
 
 const 団体 = '100003';
 const 団体のメール = 'stg-c@example.com';
@@ -162,4 +163,28 @@ test('雲：聞いていない団体には設定を出さない。札で決め�
   expect(後.ホームページ).toBe(false);
   expect(後.他校への案内).toBe(false);
   expect(後.載せる名前).toBe('');
+});
+
+test('開いた時：一度聞いてまだ答えていない団体には、開いたときに札が出る。閉じても開き直すとまた出る', async ({ page }, 情報) => {
+  test.skip(情報.project.name !== 雲の機種, '雲の文書は 1 つなので 1 機種だけ');
+  test.setTimeout(150_000);
+  await 雲の答えを消す();
+  // 前に札で聞いて「あとで」にした形を雲に置く（端末の控えには何も無い＝別の端末で聞いた形）
+  await setDoc(設定.projectId, 道, { 聞いた回数: 1, 聞いた文の版: '2026-10-09' }, await 証());
+  await 開く(page);
+  const 札 = page.getByTestId('掲載の札');
+  await expect(札, '開いたときに札が出ない').toBeVisible({ timeout: 20_000 });
+  await page.getByTestId('掲載-あとで').click();
+  await expect(札).toHaveCount(0);
+  await expect.poll(async () => (await 雲の答え())?.聞いた回数, { timeout: 15_000 }).toBe(2);
+  // 同じ起動のうちはもう出ない
+  await page.waitForTimeout(6000);
+  await expect(札).toHaveCount(0);
+  // 開き直すとまた出る
+  await page.reload();
+  await 画面が出るまで待つ(page);
+  await expect(札, '開き直しても札が出ない').toBeVisible({ timeout: 20_000 });
+  await page.getByTestId('掲載-閉じる').click();
+  await expect(札).toHaveCount(0);
+  await 雲の答えを消す();
 });

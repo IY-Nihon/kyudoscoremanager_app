@@ -387,6 +387,21 @@ const RecordScreen = () => {
   // 閲覧用で入っているあいだは、鍵ボタンなども触れないようにする
   const 見るだけ中 = !!(isLiveActive && ライブは見るだけ);
   const 掲載の札を出す = useScoreStore((状態) => 状態.掲載の札);
+  // 「紹介に載せてよいか」をあとで・✕ にした団体には、次にアプリを開いたときにまた聞く（保存は待たない）。
+  // 開いてすぐは画面の準備やログインの復元があるので、少し置いてから（出すかは店が決める）
+  const 役割 = useScoreStore((状態) => 状態.activeRole);
+  const 札を止める = React.useRef(false);
+  札を止める.current = 案内中 || 見るだけ中;
+  React.useEffect(() => {
+    if ('group' !== 役割) return undefined;
+    const 時計 = setTimeout(() => {
+      useScoreStore
+        .getState()
+        .掲載の札を開いた時に確かめる({ 止める: 札を止める.current })
+        .catch(() => {});
+    }, 3000);
+    return () => clearTimeout(時計);
+  }, [役割, activeGroupId]);
   const 人を選ぶ = (射手ID, _, 順) => {
     // 閲覧用のときは人の選択も開かない。開いても名前も交代も削除も
     // 止めてあるので、開くだけ無駄に迷わせる
