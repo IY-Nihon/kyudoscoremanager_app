@@ -28,6 +28,8 @@ const ExpoHaptics = require('expo-haptics');
 const { ArcherActionModal } = require('./ArcherActionModal');
 const Icons = require('@expo/vector-icons');
 const { SaveSessionModal } = require('./SaveSessionModal');
+// 使い慣れた団体に、保存の直後に「紹介に載せてよいか」を 1 回聞く札（2026-10-09。src/listingConsent.js）
+const { 掲載の札 } = require('./ListingConsentCard');
 const AttendanceCheckModal = require('./AttendanceCheckModal').AttendanceCheckModal;
 const { ManualSubstitutionModal } = require('./ManualSubstitutionModal');
 const 窓 = require('./AppDialog');
@@ -384,6 +386,7 @@ const RecordScreen = () => {
   };
   // 閲覧用で入っているあいだは、鍵ボタンなども触れないようにする
   const 見るだけ中 = !!(isLiveActive && ライブは見るだけ);
+  const 掲載の札を出す = useScoreStore((状態) => 状態.掲載の札);
   const 人を選ぶ = (射手ID, _, 順) => {
     // 閲覧用のときは人の選択も開かない。開いても名前も交代も削除も
     // 止めてあるので、開くだけ無駄に迷わせる
@@ -1841,9 +1844,14 @@ const RecordScreen = () => {
             .map((タグ1つ) => (タグ1つ.startsWith('#') ? タグ1つ : `#${タグ1つ}`))
             .map((タグ1つ) => タグ1つ.trim())
             .filter((タグ1つ) => '#' !== タグ1つ);
-          saveSession(題, 覚え書き, 統計に入れる, タグ, tempAttendance);
+          const 保存 = saveSession(題, 覚え書き, 統計に入れる, タグ, tempAttendance);
           useScoreStore.getState().setCurrentSessionTags([]);
           知らせる('保存しました');
+          // 使い慣れた団体には、保存の知らせが消えてから「紹介に載せてよいか」の札を出す（出すかは店が決める）
+          Promise.resolve(保存)
+            .then(() => useScoreStore.getState().掲載の札を出すか確かめる({ 止める: 案内中 || 見るだけ中 }))
+            .then((出す) => 出す && setTimeout(() => useScoreStore.getState().掲載の札を開く(), 1600))
+            .catch(() => {});
         }}
       />
       <ManualSubstitutionModal
@@ -1920,6 +1928,11 @@ const RecordScreen = () => {
           <Text style={styles.feedbackText}>{知らせ}</Text>
         </View>
       ) : null}
+      <掲載の札
+        見える={!!掲載の札を出す && !案内中}
+        閉じる={() => useScoreStore.getState().掲載の札を閉じる()}
+        知らせる={知らせる}
+      />
       <OCRRecordModal
         visible={showOCRModal}
         onClose={() => setShowOCRModal(false)}

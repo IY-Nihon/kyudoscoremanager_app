@@ -28,6 +28,8 @@ const ReactNativeSafeAreaContext = require('react-native-safe-area-context');
 const { データの書き出し窓 } = require('./SettingsExport');
 // お問い合わせの窓も別のファイル（2026-10-05）
 const { 問い合わせの窓 } = require('./SettingsInquiry');
+// 紹介への掲載（札で一度聞いた団体にだけ出す。2026-10-09）
+const { 掲載の設定 } = require('./ListingConsentCard');
 const { auth, db } = require('./db');
 const FirebaseAuth = require('firebase/auth');
 const Firestore = require('firebase/firestore');
@@ -483,6 +485,7 @@ const SettingsScreen = () => {
               )}
             </>
           )}
+        <掲載の設定 />
         {節(
           '入力の保護',
           <View ref={(node) => 案内.setTutorialTargetNode('設定.自動ロック', node)} style={styles.item}>
