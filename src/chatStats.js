@@ -604,7 +604,7 @@ function 一人の成績(人たち, 記録たち, 名前, 期間) {
 function 矢所の方位(x, y) {
   const 距離 = Math.hypot(x, y);
   if (距離 < 0.15) {
-    return '的の中心付近（星付近）';
+    return '的の中心付近';
   }
   const deg = (Math.atan2(y, x) * 180) / Math.PI;
   if (deg >= -22.5 && deg < 22.5) return '右寄り';
@@ -615,7 +615,7 @@ function 矢所の方位(x, y) {
   if (deg >= -157.5 && deg < -112.5) return '左上寄り';
   if (deg >= -112.5 && deg < -67.5) return '上寄り';
   if (deg >= -67.5 && deg < -22.5) return '右上寄り';
-  return '的の中心付近（星付近）';
+  return '的の中心付近';
 }
 
 /**
