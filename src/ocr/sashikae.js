@@ -55,6 +55,13 @@ export async function マスを端末で差し替える(teams, images, 設定) {
   const そのまま = (訳) => ({ teams, 読み取り元: 'AI', 訳 });
   if (!Array.isArray(teams) || !teams.length) return そのまま('板が無い');
   if (!Array.isArray(images) || !images.length) return そのまま('写真が無い');
+  // 板（1マス2射）にしか無い印（◎・丸に線）が cells にあるのに「1射」（紙）と言ってきた板は、板として読む。
+  // 10/4 の千葉商科大学の白板で、Gemini が 1射 と答え、紙の読み方で読めずに Gemini の○×のまま（160 射中 26 射）になった
+  teams = teams.map((t) =>
+    t && t.cellStyle === '1射' && (t.rows || []).some((r) => (r.cells || []).some((c) => /◎|[○◯〇].*[\\/／＼]/.test(String(c || ''))))
+      ? { ...t, cellStyle: '2射' }
+      : t
+  );
   const 人数たち = teams.map((t) => (Array.isArray(t && t.rows) ? t.rows.length : 0));
   if (人数たち.some((n) => n < 1)) return そのまま('行が無い板がある');
   const 紙 = teams.every((t) => t && t.cellStyle === '1射');
@@ -280,16 +287,23 @@ async function 板を読む(teams, images, 設定) {
   if (!(Number(設定.行数) >= 2)) {
     const 帯の段たち = teams.map((t) => (Number(t && t.bands) > 0 && Number(t && t.marks_per_band) > 0 ? Number(t.bands) * Number(t.marks_per_band) : 0));
     const 帯の段 = 帯の段たち.every((n) => n >= 2) ? Math.max(...帯の段たち) : 0;
+    // 途中の板（書いた段が板によって違う）は、Gemini が空の段を cells に入れたり入れなかったりで、
+    // cells の数も帯の数も当てにならない（10/4 の日大工科の途中の板：左 4 段・右 6 段なのに、cells は 7 と 8・帯 2 と
+    // 答えた回と、cells は 7 と 8・帯 5 と答えた回があった）。中身の入ったマスがいちばん多い人の数（書いた段の数）が、
+    // cells の数と帯の段のどちらよりも少ないなら途中の板とみて、先にその段数で読む。書いていない上の段は、
+    // 端末が空として読む（板ごとの格子の 名札の行を外して上へ）。書き終えた板は、どこかの人のマスが全部埋まって
+    // いるので、書いた段は cells の数と同じになり、ここは通らない
+    const 書いた段 = Math.max(...teams.flatMap((t) => t.rows.map((r) => (Array.isArray(r.cells) ? r.cells.filter((c) => String(c || '').trim()).length : 0))));
+    const 途中の板 = 書いた段 >= 2 && 書いた段 < 行数 && (!帯の段 || 書いた段 < 帯の段);
+    if (途中の板) {
+      const 書いた段で = await 板を読む(teams, images, { ...設定, 行数: 書いた段 });
+      if (Array.isArray(書いた段で)) return 書いた段で;
+    }
     if (帯の段 && 帯の段 !== 行数) {
       const 帯で = await 板を読む(teams, images, { ...設定, 行数: 帯の段 });
       if (Array.isArray(帯で)) return 帯で;
     }
-    // 途中の板（書いた段が板によって違う）は、Gemini が空の段を cells に入れたり入れなかったりで、
-    // cells の数も帯の数も当てにならない（10/4 の日大工科の途中の板：左 4 段・右 6 段なのに cells は 7 と 8、
-    // 帯は 2）。中身の入ったマスがいちばん多い人の数（書いた段の数）でも読んでみる。書いていない上の段は、
-    // 端末が空として読む（板ごとの格子の 名札の行を外して上へ）
-    const 書いた段 = Math.max(...teams.flatMap((t) => t.rows.map((r) => (Array.isArray(r.cells) ? r.cells.filter((c) => String(c || '').trim()).length : 0))));
-    if (書いた段 >= 2 && 書いた段 !== 行数 && 書いた段 !== 帯の段) {
+    if (!途中の板 && 書いた段 >= 2 && 書いた段 !== 行数 && 書いた段 !== 帯の段) {
       const 書いた段で = await 板を読む(teams, images, { ...設定, 行数: 書いた段 });
       if (Array.isArray(書いた段で)) return 書いた段で;
     }
