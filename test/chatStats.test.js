@@ -613,3 +613,169 @@ test('矢所の成績：矢所が無い部員には適切なメッセージが�
   assert.equal(結果.arrowCount, 0);
   assert.ok(結果.message.includes('矢所の記録はありません'));
 });
+
+test('矢所の成績：期間やタグ、的の種類で絞り込みができる', () => {
+  const { 矢所の成績 } = require('../src/chatStats');
+  const 人たち = [{ id: 'm1', name: '山田 太郎', grade: 2 }];
+  const 記録たち = [
+    {
+      id: 's1',
+      date: new Date('2026-10-01T10:00:00').getTime(),
+      tags: ['#自主稽古'],
+      archers: [
+        {
+          memberId: 'm1',
+          name: '山田 太郎',
+          marks: ['○', '○'],
+          arrowLocations: [
+            { x: 0.1, y: 0.1, targetType: 'kasumi36' },
+            { x: 0.2, y: 0.2, targetType: 'kasumi36' },
+          ],
+        },
+      ],
+    },
+    {
+      id: 's2',
+      date: new Date('2026-10-05T10:00:00').getTime(),
+      tags: ['#試合'],
+      archers: [
+        {
+          memberId: 'm1',
+          name: '山田 太郎',
+          marks: ['○', '×'],
+          arrowLocations: [
+            { x: -0.1, y: -0.1, targetType: 'hoshi24' },
+            { x: -0.5, y: -0.5, targetType: 'hoshi24' },
+          ],
+        },
+      ],
+    },
+  ];
+
+  // 期間で絞る（10/05 だけ）
+  const 期間結果 = 矢所の成績(人たち, 記録たち, '山田 太郎', { dateFrom: '2026-10-05', dateTo: '2026-10-05' });
+  assert.equal(期間結果.arrowCount, 2);
+  assert.equal(期間結果.hitCount, 1);
+  assert.equal(期間結果.missCount, 1);
+
+  // タグで絞る（#自主稽古 だけ）
+  const タグ結果 = 矢所の成績(人たち, 記録たち, '山田 太郎', { tags: ['自主'] });
+  assert.equal(タグ結果.arrowCount, 2);
+  assert.equal(タグ結果.hitCount, 2);
+
+  // 的の種類で絞る（hoshi24 だけ）
+  const 的結果 = 矢所の成績(人たち, 記録たち, '山田 太郎', { targetType: 'hoshi24' });
+  assert.equal(的結果.arrowCount, 2);
+  assert.equal(的結果.overallTrend.direction, '左上寄り');
+});
+
+test('矢所の成績：交代で途中から引いた射手の矢所が正しく集計される', () => {
+  const { 矢所の成績 } = require('../src/chatStats');
+  const 人たち = [
+    { id: 'm1', name: '山田 太郎', grade: 2 },
+    { id: 'm2', name: '佐藤 次郎', grade: 1 },
+  ];
+  const 記録たち = [
+    {
+      id: 's1',
+      date: 1000,
+      archers: [
+        {
+          memberId: 'm2',
+          name: '佐藤 次郎',
+          marks: ['○', '×', '○', '○'],
+          substitutionIds: { 2: 'm1', 3: 'm1' }, // 3本目と4本目は山田
+          arrowLocations: [
+            { x: 0.1, y: 0.1 }, // 佐藤
+            { x: 0.2, y: 0.2 }, // 佐藤
+            { x: -0.2, y: -0.2 }, // 山田
+            { x: -0.3, y: -0.3 }, // 山田
+          ],
+        },
+      ],
+    },
+  ];
+
+  const 山田結果 = 矢所の成績(人たち, 記録たち, '山田 太郎');
+  assert.equal(山田結果.arrowCount, 2, '交代で引いた2本だけ集計される');
+  assert.equal(山田結果.overallTrend.direction, '左上寄り');
+
+  const 佐藤結果 = 矢所の成績(人たち, 記録たち, '佐藤 次郎');
+  assert.equal(佐藤結果.arrowCount, 2, '交代前の2本だけ集計される');
+  assert.equal(佐藤結果.overallTrend.direction, '右下寄り');
+});
+
+test('矢所の成績：皆中（外れ矢なし）と全外れ（的中なし）の傾向が正しく判定される', () => {
+  const { 矢所の成績 } = require('../src/chatStats');
+  const 人たち = [{ id: 'm1', name: '山田 太郎', grade: 2 }];
+
+  // 皆中
+  const 皆中記録 = [
+    {
+      id: 's1',
+      date: 1000,
+      archers: [
+        {
+          memberId: 'm1',
+          name: '山田 太郎',
+          marks: ['○', '○'],
+          arrowLocations: [{ x: 0.05, y: 0.05 }, { x: 0.08, y: 0.02 }],
+        },
+      ],
+    },
+  ];
+  const 皆中結果 = 矢所の成績(人たち, 皆中記録, '山田 太郎');
+  assert.equal(皆中結果.hitRate, '100%');
+  assert.equal(皆中結果.missCount, 0);
+  assert.equal(皆中結果.missTrend.direction, 'なし（すべて的中）');
+  assert.ok(皆中結果.summaryText.includes('皆中'));
+
+  // 全外れ
+  const 全外れ記録 = [
+    {
+      id: 's2',
+      date: 2000,
+      archers: [
+        {
+          memberId: 'm1',
+          name: '山田 太郎',
+          marks: ['×', '×'],
+          arrowLocations: [{ x: 0.8, y: -0.8 }, { x: 0.9, y: -0.7 }],
+        },
+      ],
+    },
+  ];
+  const 全外れ結果 = 矢所の成績(人たち, 全外れ記録, '山田 太郎');
+  assert.equal(全外れ結果.hitRate, '0%');
+  assert.equal(全外れ結果.hitCount, 0);
+  assert.equal(全外れ結果.hitTrend.direction, '的中なし');
+  assert.equal(全外れ結果.missTrend.direction, '右上寄り');
+});
+
+test('矢所の成績：同姓同名・複数候補やゲスト、不在選手への対応', () => {
+  const { 矢所の成績 } = require('../src/chatStats');
+  const 人たち = [
+    { id: 'm1', name: '山田 太郎', grade: 2 },
+    { id: 'm2', name: '山田 花子', grade: 1 },
+  ];
+  const 記録たち = [
+    {
+      id: 's1',
+      date: 1000,
+      archers: [{ name: 'ゲスト選手', marks: ['○'], arrowLocations: [{ x: 0, y: 0 }] }],
+    },
+  ];
+
+  // 複数候補
+  const 迷う = 矢所の成績(人たち, 記録たち, '山田');
+  assert.match(迷う.error, /2 人います/);
+  assert.deepEqual(迷う.候補, ['山田 太郎', '山田 花子']);
+
+  // ゲスト
+  const ゲスト = 矢所の成績(人たち, 記録たち, 'ゲスト');
+  assert.match(ゲスト.error, /ゲストとして入力されているため/);
+
+  // 不在
+  const 不在 = 矢所の成績(人たち, 記録たち, '鈴木');
+  assert.equal(不在.error, '選手が見つかりませんでした。');
+});
