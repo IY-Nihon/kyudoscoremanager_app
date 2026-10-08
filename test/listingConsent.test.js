@@ -126,3 +126,14 @@ test('決まり：config/listing は団体の持ち主だけが書ける（部�
   assert.match(決まりの字, /match \/config\/\{docId\} \{\s*allow read: if canAccess\(groupId\);\s*allow write: if canAccess\(groupId\) && docId != 'listing';/);
   assert.match(決まりの字, /match \/config\/listing \{\s*allow read: if canAccess\(groupId\);\s*allow write: if isGroupOwner\(groupId\);/);
 });
+
+test('開いた時：一度聞いてまだ答えていない団体だけ（記録の数は見ない）。同じ起動で出したら出さない', () => {
+  const 一回目 = 決まり.聞いた記録(null, いま);
+  assert.equal(決まり.開いた時に出すか({ 役割: 'group', 許可: 一回目 }), true);
+  assert.equal(決まり.開いた時に出すか({ 役割: 'group', 許可: null }), false, '一度も聞いていない団体に開いた時に出した');
+  assert.equal(決まり.開いた時に出すか({ 役割: 'group', 許可: 一回目, この起動で聞いた: true }), false);
+  assert.equal(決まり.開いた時に出すか({ 役割: 'member', 許可: 一回目 }), false);
+  assert.equal(決まり.開いた時に出すか({ 役割: 'group', 許可: 一回目, 止める: true }), false);
+  const 答え = Object.assign({}, 一回目, 決まり.答えを整える({ 載せ方: '載せない' }, いま).中身);
+  assert.equal(決まり.開いた時に出すか({ 役割: 'group', 許可: 答え }), false, '答えた団体に出した');
+});
