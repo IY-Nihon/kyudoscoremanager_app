@@ -265,3 +265,9 @@ test('Q&A：矢所の検索で「メンバーの矢所」「全員の矢所」�
   const 全員 = selectQAs('全員の矢所を見たい');
   assert.ok(全員.includes('Q86:'), '全員の矢所で Q86 が選ばれていない');
 });
+
+test('Q&A：サジェスト質問「弓や矢を変えた前後で的中は変わった？」で Q81 がヒットする', () => {
+  const { selectQAs } = require('../src/chatKnowledge');
+  const 弓具 = selectQAs('弓や矢を変えた前後で的中は変わった？');
+  assert.ok(弓具.includes('Q81:'), '弓や矢の質問で Q81 が選ばれていない');
+});
