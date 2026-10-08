@@ -59,7 +59,7 @@ test('紙の写真をページ全体から canvas で読むと、80射のうち7
 
 // ── 確認画面まで通す ─────────────────────────────────────────
 // Gemini の返事は差し替える（名前と並びだけ返し、マスは空）。○×は端末が読む。
-// 途中交代の段（射手10の4段目、確からしさ 0.42）が「迷ったマス」として色付きで出て、
+// 迷ったマス（確からしさが低いマス）は色付きで出て、
 // タップすると色が消えることを見る
 import { 画面が出るまで待つ, 入り口が決まるまで待つ, 団体で入る } from './helpers.mjs';
 
@@ -195,20 +195,24 @@ test.describe('確認画面', () => {
     await expect(page.getByTestId('ocr-yomitori-tanmatsu')).toBeAttached({ timeout: 120_000 });
     // 射数は写真に合わせる（団体の設定は8射、板は20射）
     await expect(page.getByText('射数を8射から20射に合わせます', { exact: false })).toBeVisible();
-    await expect(page.getByText('読み取りが迷ったマス', { exact: true })).toBeVisible();
-    // 迷ったマスには途中交代の段（2射）が入る。canvas の復号はブラウザで少し違い、
-    // 際どいマスがほかに数個入ることがある（Chromium で3マス）。多すぎなければよい
+    // 迷ったマス（確からしさ 0.55 未満）。畳み込みの網（2026-10-09）は、全結合の網が 0.42 で迷っていた
+    // 途中交代の段も自信を持って正しく読むので、この板では 0 のこともある。canvas の復号はブラウザで
+    // 少し違い、際どいマスが数個入ることもある。多すぎなければよい
     const 迷い = page.getByTestId('ocr-mayoi-cell');
     const 数 = await 迷い.count();
-    expect(数, `迷ったマスが ${数}射`).toBeGreaterThanOrEqual(2);
     expect(数, `迷ったマスが ${数}射（多すぎる）`).toBeLessThanOrEqual(12);
-    if (process.env.PW_SHOT) {
-      await 迷い.first().scrollIntoViewIfNeeded();
-      await page.screenshot({ path: process.env.PW_SHOT });
+    if (数 > 0) {
+      await expect(page.getByText('読み取りが迷ったマス', { exact: true })).toBeVisible();
+      if (process.env.PW_SHOT) {
+        await 迷い.first().scrollIntoViewIfNeeded();
+        await page.screenshot({ path: process.env.PW_SHOT });
+      }
+      // タップして直すと、そのマスの色は消える
+      await 迷い.first().click();
+      await expect(迷い).toHaveCount(数 - 1);
+    } else {
+      await expect(page.getByText('読み取りが迷ったマス', { exact: true })).toHaveCount(0);
     }
-    // タップして直すと、そのマスの色は消える
-    await 迷い.first().click();
-    await expect(迷い).toHaveCount(数 - 1);
 
     // 反映すると、記録表の射数が写真に合わせて 8 → 20 に広がり、16人が後ろに足される。
     // 手元の盤面が変わるだけで、クラウドには書かない（終了・保存は押さない）

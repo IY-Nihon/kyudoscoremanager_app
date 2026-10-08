@@ -12,7 +12,7 @@ test('写真1枚まるごとを端末の読み取りで読むと、320射のう�
   const { 画を読む, 回す } = await import('../scripts/ocr-cells/gazou-node.mjs');
   const { 射手たち } = await import('../scripts/ocr-cells/kiroku.mjs');
   const { マスを開く, 一射目からの順にする } = require('../src/ocrCells');
-  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-chiisai.json', 'utf8'));
+  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-tatami.json', 'utf8'));
 
   const 元 = await 画を読む('docs/ocr-samples/PXL_20260906_081921509.jpg');
   const 板たち = await 板の印を読む(元, { 板の人数たち: [8, 8], 行数: 10, 回す, 重み });
@@ -65,7 +65,7 @@ test('マスを端末で差し替える: 紙（1射）の teams を端末の読�
   const { マスを端末で差し替える } = await import('../src/ocr/sashikae.js');
   const { 紙の射手たち } = await import('../scripts/ocr-cells/kiroku.mjs');
   const { マスを開く, 一射目からの順にする } = require('../src/ocrCells');
-  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-chiisai.json', 'utf8'));
+  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-tatami.json', 'utf8'));
   const 紙の重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/kami-omomi.json', 'utf8'));
   // Gemini が返したつもりの teams。マスは全部空（読めなかった体）
   const teams = [{ name: '', cellStyle: '1射', tachiPeople: 4, rows: 紙の射手たち.map((s) => ({ name: s.名, cells: Array(20).fill('') })) }];
@@ -91,7 +91,7 @@ test('マスを端末で差し替える: 写真2枚に板が1枚ずつでも、�
   const { 画を読む, 回す } = await import('../scripts/ocr-cells/gazou-node.mjs');
   const { 射手たち } = await import('../scripts/ocr-cells/kiroku.mjs');
   const { マスを開く, 一射目からの順にする } = require('../src/ocrCells');
-  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-chiisai.json', 'utf8'));
+  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-tatami.json', 'utf8'));
 
   // 板2枚の写真を、板と板の間で左右に切って2枚の写真にする
   const みち = 'docs/ocr-samples/PXL_20260906_081921509.jpg';
@@ -127,7 +127,7 @@ test('マスを端末で差し替える: 写真2枚に板が1枚ずつでも、�
 test('マスを端末で差し替える: Gemini の行の数が板の列の数と違えば、端末の読み取りは使わない', async () => {
   const { マスを端末で差し替える } = await import('../src/ocr/sashikae.js');
   const { 画を読む, 回す } = await import('../scripts/ocr-cells/gazou-node.mjs');
-  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-chiisai.json', 'utf8'));
+  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-tatami.json', 'utf8'));
   // 左の板は8列なのに、Gemini が10人と言ってきた体（相手校の板で実際に 14〜17 に揺れた）
   const teams = [10, 8].map((n) => ({
     name: '', cellStyle: '2射', tachiPeople: 4,
@@ -143,7 +143,7 @@ test('マスを端末で差し替える: Gemini の行の数が板の列の数�
 test('マスを端末で差し替える: Gemini のマスの数（段数）が板と違えば、端末の読み取りは使わない', async () => {
   const { マスを端末で差し替える } = await import('../src/ocr/sashikae.js');
   const { 画を読む, 回す } = await import('../scripts/ocr-cells/gazou-node.mjs');
-  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-chiisai.json', 'utf8'));
+  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-tatami.json', 'utf8'));
   // 10段の板なのに、28射の設定に引かれて 14 マスと答えてきた体（本番で実際に起きた）。
   // 余った段は板の上に置かれ、各人の的中数の数字の行がマスになる。「上に字の行がある」で弾く
   const teams = [8, 8].map((n) => ({
@@ -162,7 +162,7 @@ test('マスを端末で差し替える: Gemini が板を割りすぎても、�
   const { 画を読む, 回す } = await import('../scripts/ocr-cells/gazou-node.mjs');
   const { 射手たち } = await import('../scripts/ocr-cells/kiroku.mjs');
   const { マスを開く, 一射目からの順にする } = require('../src/ocrCells');
-  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-chiisai.json', 'utf8'));
+  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-tatami.json', 'utf8'));
   // 板2枚（8人＋8人）なのに、右の板を「5人・2人・1人」に割って 4 teams で返してきた体
   //（2026-09-13 の板で本番に出た。行そのものは板ごとに前から順で、総数は合っている）
   let 番 = 0;
@@ -204,7 +204,7 @@ test('箱で格子: 板ごとの○×の範囲（箱）を渡すと、その中�
   const { 画を読む, 回す } = await import('../scripts/ocr-cells/gazou-node.mjs');
   const { 射手たち } = await import('../scripts/ocr-cells/kiroku.mjs');
   const { マスを開く, 一射目からの順にする } = require('../src/ocrCells');
-  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-chiisai.json', 'utf8'));
+  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-tatami.json', 'utf8'));
   const 元 = await 画を読む('docs/ocr-samples/PXL_20260906_081921509.jpg');
   // [上, 左, 下, 右]（0〜1000）。かたまりの格子の外側の列・行から半マスずつ広げたもの
   const 箱たち = [[335, 67, 621, 387], [335, 648, 636, 964]];
@@ -228,7 +228,7 @@ test('箱で格子: 板ごとの○×の範囲（箱）を渡すと、その中�
 test('マスを端末で差し替える: 箱たち を渡すと、写真1枚・板の数が合うときだけ箱で読む', async () => {
   const { マスを端末で差し替える } = await import('../src/ocr/sashikae.js');
   const { 画を読む, 回す } = await import('../scripts/ocr-cells/gazou-node.mjs');
-  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-chiisai.json', 'utf8'));
+  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-tatami.json', 'utf8'));
   const teams = [8, 8].map((n) => ({
     name: '', cellStyle: '2射', tachiPeople: 4,
     rows: Array.from({ length: n }, (_, i) => ({ name: String(i + 1), roster: null, cells: Array(10).fill('') })),
