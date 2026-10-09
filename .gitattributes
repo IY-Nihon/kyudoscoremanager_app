@@ -34,3 +34,4 @@
 *.pdf binary
 *.zip binary
 *.xlsx binary
+*.bin binary
