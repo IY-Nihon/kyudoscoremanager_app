@@ -17,6 +17,7 @@ const 元 = 'docs/ocr-samples/1788683956272.jpg';
 const 人数 = 4, 立数 = 5, 立のマス = 4;
 // 表の場所は写真から探す（アプリと同じ道）。OCR_TEDE=1 なら手で決めた四角
 const 手で = { left: 380, top: 528, width: 260, height: 640 };
+// 全結合の網（kami-omomi.json）だけを読む道具。アプリの網（kami-tatami.json）は kami-tameshi.mjs で測る
 const 群れ = 重みを読む(process.env.OCR_KAMI_OMOMI || 'scripts/ocr-cells/kami-omomi.json');
 
 const 全体 = await 画を読む(元);

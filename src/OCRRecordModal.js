@@ -35,7 +35,8 @@ const { マスを端末で差し替える } = require('./ocr/sashikae');
 const 画像の道具 = require('./ocr/gazou-web');
 // 板のマスは畳み込みの網（2026-10-09。板ごとに外して測って全結合 98.2% → 99.6〜99.9%。scripts/ocr-cells/tatami.mjs）
 const 板の重み = require('../scripts/ocr-cells/omomi-tatami.json');
-const 紙の重み = require('../scripts/ocr-cells/kami-omomi.json');
+// 紙のマスも畳み込みの網（2026-10-10。本物の用紙 2 枚を混ぜて学んだ。scripts/ocr-cells/cnn/README.md）
+const 紙の重み = require('../scripts/ocr-cells/kami-tatami.json');
 // 畳み込みの網が迷ったマスだけ、写真で学習済みの網（0.79MB）と混ぜる。重みは読み取りを使うときだけ取りに行く
 const { 写真の網の重みを待つ } = require('./ocr/shashinNoMou');
 // 検査（e2e/ocrTanmatsu.spec.mjs）から、ブラウザの canvas の道で読めるかを確かめるための入口。
@@ -83,6 +84,12 @@ if (IS_WEB && typeof window !== 'undefined') {
       const { 紙の印を読む } = require('./ocr/yomu');
       const 元 = await 画像の道具.画を読む(base64);
       return 紙の印を読む(元, { 人数, 立数, 立のマス, 重み: 紙の重み });
+    },
+    // 1 枚の用紙に表が並ぶ紙（男子の記録用紙）
+    紙の表たちの印を読む: async (base64, 人数たち, 立数, 立のマス) => {
+      const { 紙の表たちの印を読む } = require('./ocr/yomu');
+      const 元 = await 画像の道具.画を読む(base64);
+      return 紙の表たちの印を読む(元, { 人数たち, 立数, 立のマス, 重み: 紙の重み });
     },
   };
 }

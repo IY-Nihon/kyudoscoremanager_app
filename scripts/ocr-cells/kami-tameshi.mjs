@@ -6,16 +6,22 @@
  * 板の tameshi.mjs と同じ。表の切り抜きを崩してから、紙の格子と網を通し、
  * 本番の記録と射ごとに比べる。数字での辻褄合わせは使わない。
  */
+import fs from 'node:fs';
 import sharp from 'sharp';
 import { 紙の格子, 紙の箱, 紙の表を探す } from './kami.mjs';
 import { 紙の射手たち } from './kiroku.mjs';
 import { 形にする, 前へ, 切り取る } from './manabu.mjs';
 import { 重みを読む } from './chiisaku.mjs';
 import { 崩し方, ゆがませる } from './kuzusu.mjs';
+import { 畳みの網を組む, 畳みで見分ける } from './tatami.mjs';
 
 const 元 = 'docs/ocr-samples/1788683956272.jpg';
 const 人数 = 4, 立数 = 5, 立のマス = 4;
-const 群れ = 重みを読む(process.env.OCR_KAMI_OMOMI || 'scripts/ocr-cells/kami-omomi.json');
+// 既定はアプリと同じ畳み込みの網（kami-tatami.json）。OCR_KAMI_OMOMI で全結合の網（kami-omomi.json）なども測れる
+const 重みの道 = process.env.OCR_KAMI_OMOMI || 'scripts/ocr-cells/kami-tatami.json';
+const 中身 = JSON.parse(fs.readFileSync(重みの道, 'utf8'));
+const 畳み = 中身.形 === 'CNN' ? 畳みの網を組む(中身) : null;
+const 群れ = 畳み ? null : 重みを読む(重みの道);
 
 // ページ全体を崩し、表の場所は写真から探す（アプリと同じ道）
 const 生 = await sharp(元).greyscale().raw().toBuffer({ resolveWithObject: true });
@@ -42,9 +48,12 @@ async function 読んでみる(崩し, 味) {
       const l = Math.max(0, Math.round(m.x) - 半幅);
       const t = Math.max(0, Math.round(m.y) - 半高);
       const 切2 = 切り取る(g.生.画素, g.生.幅, g.生.高, l, t, 半幅 * 2, 半高 * 2);
-      const 形 = await 形にする(切2.画, 切2.幅, 切2.高, 'そのまま');
       let 丸 = 0;
-      for (const 網 of 群れ) 丸 += 前へ(網, 形).o[1] / 群れ.length;
+      if (畳み) 丸 = 畳みで見分ける(畳み, 切2.画, 切2.幅, 切2.高)[1];
+      else {
+        const 形 = await 形にする(切2.画, 切2.幅, 切2.高, 'そのまま');
+        for (const 網 of 群れ) 丸 += 前へ(網, 形).o[1] / 群れ.length;
+      }
       全数++;
       if ((丸 > 0.5 ? '○' : '×') === 射手.印[s]) 当++;
     }

@@ -37,7 +37,7 @@ test('紙の写真をページ全体から読むと、80射のうち79以上が�
   const { 画を読む } = await import('../scripts/ocr-cells/gazou-node.mjs');
   const { 紙の射手たち } = await import('../scripts/ocr-cells/kiroku.mjs');
   const { マスを開く, 一射目からの順にする } = require('../src/ocrCells');
-  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/kami-omomi.json', 'utf8'));
+  const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/kami-tatami.json', 'utf8'));
 
   const 元 = await 画を読む('docs/ocr-samples/1788683956272.jpg');
   const 紙 = await 紙の印を読む(元, { 人数: 4, 立数: 5, 立のマス: 4, 重み });
@@ -66,7 +66,7 @@ test('マスを端末で差し替える: 紙（1射）の teams を端末の読�
   const { 紙の射手たち } = await import('../scripts/ocr-cells/kiroku.mjs');
   const { マスを開く, 一射目からの順にする } = require('../src/ocrCells');
   const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-tatami.json', 'utf8'));
-  const 紙の重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/kami-omomi.json', 'utf8'));
+  const 紙の重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/kami-tatami.json', 'utf8'));
   // Gemini が返したつもりの teams。マスは全部空（読めなかった体）
   const teams = [{ name: '', cellStyle: '1射', tachiPeople: 4, rows: 紙の射手たち.map((s) => ({ name: s.名, cells: Array(20).fill('') })) }];
   const 出 = await マスを端末で差し替える(teams, [{ base64: 'docs/ocr-samples/1788683956272.jpg' }], {
@@ -283,7 +283,7 @@ test('マスを端末で差し替える: ◎や丸に線がある板を Gemini �
   const { マスを端末で差し替える } = await import('../src/ocr/sashikae.js');
   const { 射手たち } = await import('../scripts/ocr-cells/kiroku.mjs');
   const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-tatami.json', 'utf8'));
-  const 紙の重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/kami-omomi.json', 'utf8'));
+  const 紙の重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/kami-tatami.json', 'utf8'));
   const teams = [0, 1].map((i) => ({
     name: '', cellStyle: '1射', tachiPeople: 4,
     rows: 射手たち.slice(i * 8, i * 8 + 8).map((s) => ({ name: s.名, cells: ['◎', '○/', '×', '◎', '◎', '×', '◎', '◎', '◎', '×'] })),
