@@ -36,6 +36,8 @@ const 画像の道具 = require('./ocr/gazou-web');
 // 板のマスは畳み込みの網（2026-10-09。板ごとに外して測って全結合 98.2% → 99.6〜99.9%。scripts/ocr-cells/tatami.mjs）
 const 板の重み = require('../scripts/ocr-cells/omomi-tatami.json');
 const 紙の重み = require('../scripts/ocr-cells/kami-omomi.json');
+// 畳み込みの網が迷ったマスだけ、写真で学習済みの網（0.79MB）と混ぜる。重みは読み取りを使うときだけ取りに行く
+const { 写真の網の重みを待つ } = require('./ocr/shashinNoMou');
 // 検査（e2e/ocrTanmatsu.spec.mjs）から、ブラウザの canvas の道で読めるかを確かめるための入口。
 // アプリの動きには関わらない
 if (IS_WEB && typeof window !== 'undefined') {
@@ -44,7 +46,8 @@ if (IS_WEB && typeof window !== 'undefined') {
     板の印を読む: async (base64, 板の人数たち, 行数) => {
       const { 板の印を読む } = require('./ocr/yomu');
       const 元 = await 画像の道具.画を読む(base64);
-      return 板の印を読む(元, { 板の人数たち, 行数, 回す: 画像の道具.回す, 重み: 板の重み });
+      const 薄い重み = await 写真の網の重みを待つ();
+      return 板の印を読む(元, { 板の人数たち, 行数, 回す: 画像の道具.回す, 重み: 板の重み, 薄い重み });
     },
     // 1マスの切り抜きと、網に届く形（20×20）を返す。読み違えたマスを Node と比べるため
     マスを見る: async (base64, 板の人数たち, 行数, 板, 列, 行, 箱たち) => {
@@ -379,6 +382,8 @@ const OCRRecordModal = ({
     }
 
     const prompt = buildPrompt();
+    // 写真で学習済みの網の重みは、Gemini を待つあいだに取り寄せる（待つのは 8 秒まで。取れなければ畳み込みの網だけ）
+    const 写真の網の重み = IS_WEB ? 写真の網の重みを待つ() : Promise.resolve(null);
 
     try {
       // 鍵の引数は飾り。中継が本物の鍵に付け替える（baseUrl と Authorization は SDKの設定 が足す）
@@ -441,13 +446,14 @@ const OCRRecordModal = ({
             .join(' ');
         console.log('[OCRRecordModal] 読んだ板:', 板の様子(生のteams));
         // ○×のマスは端末で読み替える（板でも紙でも）。合わなければ Gemini のまま
-        const 端末で = (チーム, 箱たち, 行数, 帯の数) =>
+        const 端末で = async (チーム, 箱たち, 行数, 帯の数) =>
           IS_WEB
             ? マスを端末で差し替える(チーム, images, {
                 向き,
                 道具: 画像の道具,
                 重み: 板の重み,
                 紙の重み,
+                薄い重み: await 写真の網の重み,
                 箱たち,
                 行数,
                 帯の数,
