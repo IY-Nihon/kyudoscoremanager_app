@@ -42,8 +42,9 @@ import { 板の印を読む, 紙の印を読む, 大前から並べる } from '.
 /**
  * @param {object[]} teams Gemini の返した teams（rows[].cells を持つ）
  * @param {{base64:string}[]} images
- * @param {{向き:string, 道具:{画を読む:Function, 回す:Function}, 重み:object, 紙の重み?:object, 箱たち?:number[][]}} 設定
- *   重み … 板の網（omomi-chiisai.json）、紙の重み … 紙の網（kami-omomi.json）
+ * @param {{向き:string, 道具:{画を読む:Function, 回す:Function}, 重み:object, 紙の重み?:object, 薄い重み?:Uint8Array, 箱たち?:number[][]}} 設定
+ *   重み … 板の網（omomi-tatami.json）、紙の重み … 紙の網（kami-omomi.json）、
+ *   薄い重み … 写真で学習済みの網（omomi-mobilenet.bin の中身。無ければ畳み込みの網だけ）
  *   箱たち … 板ごとの○×の範囲（Gemini の box_2d）。写真1枚のときだけ。あれば格子は箱の等分で立てる
  *   行数 … 1列のマスの数の指定。無ければ Gemini の cells の数から決める（箱で読むときは
  *          Gemini が段を数え違えるので、帯の数×帯の中の印の数を渡す）
@@ -331,6 +332,7 @@ async function 板を読む(teams, images, 設定) {
           行数,
           回す: 設定.道具.回す,
           重み: 設定.重み,
+          薄い重み: 設定.薄い重み,
           // 箱は写真1枚・板の数が合うときだけ渡す（板ごとの格子 が数を見て使う）。
           // teams は写真の左の板から順（指示文で決めている）なので、箱も左から順にそろえる
           箱たち:

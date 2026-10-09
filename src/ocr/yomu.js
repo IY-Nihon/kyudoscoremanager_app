@@ -18,6 +18,7 @@ import { 紙の表を探す, 紙の格子, 紙の箱 } from '../../scripts/ocr-c
 import { 種類, 形にする, 前へ, 切り取る, 輪の覆い } from '../../scripts/ocr-cells/manabu.mjs';
 import { 重みを組む } from '../../scripts/ocr-cells/omomi.mjs';
 import { 畳みの網を組む, 畳みで見分ける } from '../../scripts/ocr-cells/tatami.mjs';
+import { 薄い網を組む, 薄い網で見分ける } from '../../scripts/ocr-cells/mobilenet.mjs';
 
 // 重みの JSON は呼ぶ側が渡す（アプリは require、Node の試験は fs）。
 // ここで import すると、Node は import 属性が要り、Metro は要らない、で食い違う。
@@ -33,14 +34,28 @@ function 網の群れ(重み) {
   return 群れ;
 }
 
+// 写真で学習済みの網（omomi-mobilenet.bin の中身。scripts/ocr-cells/mobilenet.mjs）。無ければ畳み込みの網だけで読む
+const 組んだ薄い網 = new WeakMap();
+function 薄い網(中身) {
+  if (!中身) return null;
+  let 網 = 組んだ薄い網.get(中身);
+  if (!網) {
+    網 = 薄い網を組む(中身);
+    組んだ薄い網.set(中身, 網);
+  }
+  return 網;
+}
+
 /**
  * @param {object} 元 画像の道具の 画を読む が返したもの
- * @param {{板の人数たち:number[], 行数:number, 回す:Function, 重み:object}} 注文
- *   重み … scripts/ocr-cells/omomi-chiisai.json を読んだもの
+ * @param {{板の人数たち:number[], 行数:number, 回す:Function, 重み:object, 薄い重み?:Uint8Array}} 注文
+ *   重み … scripts/ocr-cells/omomi-tatami.json を読んだもの
+ *   薄い重み … scripts/ocr-cells/omomi-mobilenet.bin の中身。あれば畳み込みの網が迷ったマスだけ混ぜる
  * @returns {Promise<{列たち:string[][], 確からしさ:number[][]}[]>} 板ごと
  */
 export async function 板の印を読む(元, 注文) {
   const 板の群れ = 網の群れ(注文.重み);
+  const 写真の網 = 板の群れ.畳み ? 薄い網(注文.薄い重み) : null;
   元 = 黒板なら裏返す(元);
   const 板たち = await 板ごとの格子(元, { 板の人数たち: 注文.板の人数たち, 行数: 注文.行数, 回す: 注文.回す, 箱たち: 注文.箱たち, 帯の数: 注文.帯の数 });
   const 出 = [];
@@ -55,6 +70,7 @@ export async function 板の印を読む(元, 注文) {
     //（10段の板を 5 段と数えた Gemini）、1行が2段ぶんになり、こうなる。呼ぶ側が
     // 「段の数が少なすぎる」と見分けるのに使う（sashikae）
     let 二段 = 0;
+    let 写真の網で見た = 0; // 写真で学習済みの網に回したマスの数
     for (let c = 0; c < g.列.length; c++) {
       const 列 = [];
       const 確 = [];
@@ -99,6 +115,13 @@ export async function 板の印を読む(元, 注文) {
         if (板の群れ.畳み) {
           // 畳み込みの網（重みの JSON の 形 が 'CNN'）。切り抜きそのものを見る（scripts/ocr-cells/tatami.mjs）
           合 = 畳みで見分ける(板の群れ.畳み, 対象切.画, 対象切.幅, 対象切.高, 形);
+          // 迷ったマス（7% ほど）だけ、写真で学習済みの網 2 枚の答えと混ぜる（畳み 1・写真 2 の重さ）。
+          // 畳み込みの網の読み違いはほぼ全部が迷ったマスにある（板ごとに外して 5 回学んで、0.8 未満）
+          if (写真の網 && Math.max(...合) < 写真の網.迷いの境) {
+            const 写 = 薄い網で見分ける(写真の網, 対象切.画, 対象切.幅, 対象切.高);
+            for (let k = 0; k < 合.length; k++) 合[k] = (合[k] + 2 * 写[k]) / 3;
+            写真の網で見た++;
+          }
         } else {
           合 = new Float32Array(種類.length);
           for (const 網 of 板の群れ) {
@@ -174,7 +197,7 @@ export async function 板の印を読む(元, 注文) {
       列たち,
       確からしさ,
       // 確かめ用。どこに格子を立てたか
-      格子: { 角度: g.角度, 列: g.列.map((c) => Math.round(c.中心)), 列の見当: g.列の見当, 並びの人数: g.並びの人数, 外した強い列: g.外した強い列, 列の点: g.列の点, 行: g.行.位置.map((v) => Math.round(v)), 行の欠け: g.行の欠け, 上の字の行: g.上の字の行, 行ごとの列数: g.行ごとの列数, 印の幅: g.印の幅, 立て方: g.立て方 || null, 二段のマス: 二段, 間の印, 範囲の印 },
+      格子: { 角度: g.角度, 列: g.列.map((c) => Math.round(c.中心)), 列の見当: g.列の見当, 並びの人数: g.並びの人数, 外した強い列: g.外した強い列, 列の点: g.列の点, 行: g.行.位置.map((v) => Math.round(v)), 行の欠け: g.行の欠け, 上の字の行: g.上の字の行, 行ごとの列数: g.行ごとの列数, 印の幅: g.印の幅, 立て方: g.立て方 || null, 二段のマス: 二段, 間の印, 範囲の印, 写真の網で見た },
     });
   }
   return 出;

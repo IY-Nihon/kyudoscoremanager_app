@@ -10,4 +10,8 @@ config.resolver.extraNodeModules = {
   'theme-jsx': path.resolve(__dirname, 'src/theme-runtime'),
 };
 
+// 写真で学習済みの網の重み（scripts/ocr-cells/omomi-mobilenet.bin）を、束に入れず asset として配る。
+// 読み取りを使うときだけ src/ocr/shashinNoMou.js が取りに行く
+config.resolver.assetExts = [...config.resolver.assetExts, 'bin'];
+
 module.exports = config;
