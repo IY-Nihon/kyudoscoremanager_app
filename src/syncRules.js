@@ -299,6 +299,33 @@ function 記録の日時を数に(記録) {
   return Object.keys(直し).length ? Object.assign({}, 記録, 直し) : 記録;
 }
 
+/**
+ * 記録（練習の記録・ゴミ箱の記録）を雲へ書く形にする。日付（date）と、射手ごとの更新日時（archers の
+ * lastModified）を日時型にする。記録の日時を数に の逆向き。
+ *
+ * 2026-10-10、日時型へそろえる 2 段目の後半。2026-09-24 に「日時型の date も読めるアプリ」を配り、行き渡ってから
+ * 書く側も日時型にした（雲の古い記録は scripts/convert-dates-to-timestamp.mjs の「記録の日付も」で直す）。
+ * 手元は数で持つ（並べ替え・期間の絞り込み・端末への控えが数を前提にしている）。
+ *
+ * 直すのは数だけ（文字や日時型や無いものはそのまま）。lastModified と deletedAt は、呼ぶ側が serverTimestamp や
+ * 日時型を入れているので触らない。渡された記録は書き換えず、直すところが無ければ同じものを返す。
+ *
+ * @param {object} 記録 JSON で写したあとの記録（日時型の印が JSON で壊れないように、写したあとに通す）
+ * @param {(ミリ秒:number) => any} 日時にする Firestore.Timestamp.fromMillis
+ */
+function 記録を雲の形に(記録, 日時にする) {
+  if (!記録 || typeof 記録 !== 'object') return 記録;
+  const 数か = (値) => typeof 値 === 'number' && Number.isFinite(値);
+  const 直し = {};
+  if (数か(記録.date)) 直し.date = 日時にする(記録.date);
+  if (Array.isArray(記録.archers) && 記録.archers.some((射手) => 射手 && 数か(射手.lastModified))) {
+    直し.archers = 記録.archers.map((射手) =>
+      射手 && 数か(射手.lastModified) ? Object.assign({}, 射手, { lastModified: 日時にする(射手.lastModified) }) : 射手
+    );
+  }
+  return Object.keys(直し).length ? Object.assign({}, 記録, 直し) : 記録;
+}
+
 /** 記録の一覧のタグをまとめて揃え、射手の形と日時も整える */
 function cleanUpSessions(sessions) {
   if (!Array.isArray(sessions)) return sessions;
@@ -1154,6 +1181,7 @@ module.exports = {
   雲で戻された記録,
   全部そろえ直す間隔,
   記録の日時を数に,
+  記録を雲の形に,
   mergeById,
   ライブへ送る形の射手,
   射手の見比べ形,
