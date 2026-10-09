@@ -15,6 +15,7 @@ const {
   ライブへ盤面を送る,
   名前の整合,
   場,
+  雲へ書く記録,
 } = require('./storeShared');
 
 const 部員の操作 = (書く, 状態, そのまま書く) => ({
@@ -183,7 +184,7 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
         const 集める = (一覧, 元の一覧, 置き場) => {
           一覧.forEach((記録, 番) => {
             if (記録.lastModified !== 元の一覧[番].lastModified) {
-              const 送る中身 = JSON.parse(JSON.stringify(記録));
+              const 送る中身 = 雲へ書く記録(JSON.parse(JSON.stringify(記録)));
               送る中身.lastModified = Firestore.serverTimestamp();
               書き込み.push({ 置き場, id: 記録.id, 送る中身 });
             }

@@ -24,6 +24,7 @@ const {
   秘,
   行動を控える,
   記録の射手を整える,
+  雲へ書く記録,
 } = require('./storeShared');
 
 const 記録の操作 = (書く, 状態, そのまま書く) => ({
@@ -130,7 +131,8 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     // 届くまでは「未同期」のままにしておく。そうすれば syncSessions の
     // 再送で拾われ、通信が戻ったときに自動で送られる。
     if (activeGroupId) {
-      const 送る形 = JSON.parse(JSON.stringify(記録));
+      // 日付と射手の更新日時は日時型で送る（雲へ書く記録）
+      const 送る形 = 雲へ書く記録(JSON.parse(JSON.stringify(記録)));
       送る形.syncStatus = '同期済み';
       送る形.lastModified = Firestore.serverTimestamp();
       Firestore.setDoc(Firestore.doc(Firebaseの器.db, `groups/${activeGroupId}/sessions`, 記録ID), 送る形, {
@@ -258,8 +260,8 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
         (一括.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, 記録ID)),
         消す記録)
       ) {
-        const ごみ箱に置く形 = JSON.parse(
-          JSON.stringify(Object.assign({}, 消す記録, { syncStatus: 'trashed' }))
+        const ごみ箱に置く形 = 雲へ書く記録(
+          JSON.parse(JSON.stringify(Object.assign({}, 消す記録, { syncStatus: 'trashed' })))
         );
         ごみ箱に置く形.lastModified = Firestore.serverTimestamp();
         ごみ箱に置く形.deletedAt = Firestore.serverTimestamp();
@@ -351,7 +353,7 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
         一括.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, id))
       );
       消す記録.forEach((記録) => {
-        const ごみ箱に置く形 = JSON.parse(JSON.stringify(Object.assign({}, 記録, { syncStatus: 'trashed' })));
+        const ごみ箱に置く形 = 雲へ書く記録(JSON.parse(JSON.stringify(Object.assign({}, 記録, { syncStatus: 'trashed' }))));
         ごみ箱に置く形.lastModified = Firestore.serverTimestamp();
         ごみ箱に置く形.deletedAt = Firestore.serverTimestamp();
         一括.set(
@@ -388,7 +390,7 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     try {
       const 一括 = Firestore.writeBatch(Firebaseの器.db);
       一括.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/trash`, 記録ID));
-      const 送る形 = JSON.parse(JSON.stringify(戻した形));
+      const 送る形 = 雲へ書く記録(JSON.parse(JSON.stringify(戻した形)));
       送る形.lastModified = Firestore.serverTimestamp();
       一括.set(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, 記録ID), 送る形);
       一括.commit().catch((誤り) => console.error('Restore Session Error:', 誤り));
@@ -418,7 +420,7 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
         一括.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/trash`, id))
       );
       戻した形.forEach((記録) => {
-        const 送る形 = JSON.parse(JSON.stringify(記録));
+        const 送る形 = 雲へ書く記録(JSON.parse(JSON.stringify(記録)));
         送る形.lastModified = Firestore.serverTimestamp();
         一括.set(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, 記録.id), 送る形);
       });
@@ -467,7 +469,7 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
       // 「同じ物を指しているか」では駄目。リスナーが中身はそのままに
       // 記録を作り直すことがあり、変わっていなくても別物になる。
       const 送った版 = 記録.lastModified;
-      const 送る形 = JSON.parse(JSON.stringify(記録));
+      const 送る形 = 雲へ書く記録(JSON.parse(JSON.stringify(記録)));
       // 送信の完了は待たない。通信できないときは Firestore の待ち行列に
       // 入り、つながった時点で送られる。
       送る形.lastModified = Firestore.serverTimestamp();

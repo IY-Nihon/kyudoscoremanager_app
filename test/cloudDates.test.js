@@ -13,6 +13,7 @@
  *     同じ型にしか当たらない。数だけで絞ると日時型の記録が届かず、画面から消える）
  *   ・端末の控え（JSON）に通って入れ物（{seconds, nanoseconds}）になったものも数に戻す
  *   ・ゴミ箱の捨てた日時は日時型で送る（数や入れ物で送り返さない）
+ *   ・記録とゴミ箱の日付・射手の更新日時は日時型で送る（2026-10-10。2 段目の後半）
  *
  * 偽の Firestore は本物に合わせ、日時を日時型で返し、型の違う値を範囲に当てない
  * （test/helpers/storeHarness.js）。本物の SDK の or() は、2026-09-24 に検証環境で
@@ -26,7 +27,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const { ストアを用意する, 待つ, 偽の日時 } = require('./helpers/storeHarness');
-const { 記録の日時を数に, cleanUpSessions } = require('../src/syncRules');
+const { 記録の日時を数に, 記録を雲の形に, cleanUpSessions } = require('../src/syncRules');
 
 const 団体 = '100001';
 const 記録の道 = `groups/${団体}/sessions`;
@@ -183,4 +184,53 @@ test('ゴミ箱の送り直し：捨てた日時は日時型で送る（数や�
   assert.ok(雲のt1, 'ゴミ箱へ届く');
   assert.ok(雲のt1.deletedAt instanceof 偽の日時, '日時型で入る');
   assert.strictEqual(雲のt1.deletedAt.toMillis(), 今 - 1000, '捨てた日時は変えない');
+});
+
+// ── 書く側（2 段目の後半・2026-10-10）────────────────────────
+
+test('記録を雲の形に：日付と射手の更新日時を日時型にする。文字・日時型・無いものはそのまま、元は書き換えない', () => {
+  const 元 = 記録('s1', 1790000000000);
+  const 出 = 記録を雲の形に(元, 偽の日時.fromMillis);
+  assert.ok(出.date instanceof 偽の日時);
+  assert.strictEqual(出.date.toMillis(), 1790000000000);
+  assert.ok(出.archers[0].lastModified instanceof 偽の日時);
+  assert.strictEqual(出.lastModified, 1790000000000, 'lastModified は呼ぶ側が入れる');
+  assert.strictEqual(元.date, 1790000000000, '元は書き換えない');
+  assert.strictEqual(typeof 元.archers[0].lastModified, 'number');
+  // 直すところが無ければ同じもの
+  const 文字 = { id: 'x', date: '2026-10-10', archers: [{ id: 'a', marks: [] }] };
+  assert.strictEqual(記録を雲の形に(文字, 偽の日時.fromMillis), 文字);
+  // 雲の形にしてから読む口を通すと、元の数に戻る
+  assert.deepStrictEqual(記録の日時を数に(出), 元);
+});
+
+test('記録の保存：雲へは日付と射手の更新日時を日時型で書き、手元は数のまま', async () => {
+  const { store, 雲 } = 用意();
+  const 今 = Date.now();
+  store.setState({ sessions: [Object.assign(記録('s1', 今 - 日), { syncStatus: '未同期' })], lastSyncTime: 今 - 60000 });
+  await store.getState().syncSessions();
+  await 待つ(30);
+  const 雲のs1 = 雲.値(記録の道, 's1');
+  assert.ok(雲のs1, '雲へ届く');
+  assert.ok(雲のs1.date instanceof 偽の日時, '日付は日時型');
+  assert.strictEqual(雲のs1.date.toMillis(), 今 - 日);
+  assert.ok(雲のs1.archers[0].lastModified instanceof 偽の日時, '射手の更新日時も日時型');
+  const 手元 = store.getState().sessions.find((s) => s.id === 's1');
+  assert.strictEqual(手元.date, 今 - 日, '手元は数');
+  assert.strictEqual(typeof 手元.archers[0].lastModified, 'number');
+});
+
+test('ゴミ箱へ移す・クラウドへまとめて送る：日付は日時型で書く', async () => {
+  const { store, 雲 } = 用意();
+  const 今 = Date.now();
+  store.setState({ sessions: [記録('s1', 今 - 日), 記録('s2', 今 - 2 * 日)] });
+  await store.getState().deleteSession('s1');
+  await 待つ(30);
+  const 雲のt1 = 雲.値(ゴミ箱の道, 's1');
+  assert.ok(雲のt1 && 雲のt1.date instanceof 偽の日時, 'ゴミ箱の日付は日時型');
+  await store.getState().syncAllToCloud();
+  await 待つ(30);
+  const 雲のs2 = 雲.値(記録の道, 's2');
+  assert.ok(雲のs2 && 雲のs2.date instanceof 偽の日時, 'まとめて送った記録の日付も日時型');
+  assert.strictEqual(雲のs2.date.toMillis(), 今 - 2 * 日);
 });
