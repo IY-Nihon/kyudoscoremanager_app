@@ -3,3 +3,4 @@ __pycache__/
 *.mihon.json
 probs/
 models/
+kdata/

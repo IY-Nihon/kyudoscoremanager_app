@@ -61,6 +61,37 @@ test('紙の写真をページ全体から canvas で読むと、80射のうち7
   expect(合, `合ったのは ${合}/80`).toBeGreaterThanOrEqual(79);
 });
 
+test('男子の記録用紙（表が 2 つ並ぶ紙）を canvas で読むと、160 射が合う', async ({ page }) => {
+  test.setTimeout(240_000);
+  await 案内を止める(page);
+  await page.goto('/');
+  await page.waitForFunction(() => window.端末の読み取り != null, null, { timeout: 60_000 });
+  // 本物の写真は名前入りなので、合成の用紙（kami-ban.mjs の 並び）を JPEG にして渡す。4 度傾ける
+  const { 紙をえがく } = await import('../scripts/ocr-cells/kami-ban.mjs');
+  const { 崩し方, ゆがませる } = await import('../scripts/ocr-cells/kuzusu.mjs');
+  const sharp = (await import('sharp')).default;
+  const b = 紙をえがく({ 種: 9004, 並び: [4, 4], マス幅: 45 });
+  const 余 = 60;
+  const W = b.幅 + 余 * 2;
+  const H = b.高 + 余 * 2;
+  const 画 = new Uint8Array(W * H).fill(235);
+  for (let y = 0; y < b.高; y++) 画.set(b.白黒.subarray(y * b.幅, (y + 1) * b.幅), (y + 余) * W + 余);
+  const 歪み = ゆがませる({ 画, 幅: W, 高: H, 面: 1 }, { 明るさ: 1, 締まり: 1, ざらつき: 0, 崩し: 崩し方({ 幅: W, 高: H, 回す: 4, 台形: 0, 種: 12345 }), 種: 9004 });
+  const base64 = (await sharp(Buffer.from(歪み.画), { raw: { width: 歪み.幅, height: 歪み.高, channels: 1 } }).jpeg({ quality: 90 }).toBuffer()).toString('base64');
+
+  const 表たち = await page.evaluate(([b64]) => window.端末の読み取り.紙の表たちの印を読む(b64, [4, 4], 5, 4), [base64]);
+  expect(表たち.length).toBe(2);
+  let 合 = 0;
+  表たち.forEach((表, k) =>
+    表.列たち.forEach((列, i) => {
+      const 真 = b.答え.マス[k * 4 + i];
+      const 読 = 列.slice().reverse();
+      for (let s = 0; s < 真.length; s++) if (読[s] === 真[s]) 合++;
+    })
+  );
+  expect(合, `合ったのは ${合}/160`).toBe(160);
+});
+
 // ── 確認画面まで通す ─────────────────────────────────────────
 // Gemini の返事は差し替える（名前と並びだけ返し、マスは空）。○×は端末が読む。
 // 迷ったマス（確からしさが低いマス）は色付きで出て、

@@ -37,13 +37,13 @@
  *   突き合わせ、はっきり合うほうを取る（板の並びを確かめる）。Gemini の線の向きは当てにならないので、
  *   マスごとの的中数（◎=2・丸に線=1・×=0）で比べる。teams の順（記録表の順）は変えない。
  */
-import { 板の印を読む, 紙の印を読む, 大前から並べる } from './yomu.js';
+import { 板の印を読む, 紙の印を読む, 紙の表たちの印を読む, 大前から並べる } from './yomu.js';
 
 /**
  * @param {object[]} teams Gemini の返した teams（rows[].cells を持つ）
  * @param {{base64:string}[]} images
  * @param {{向き:string, 道具:{画を読む:Function, 回す:Function}, 重み:object, 紙の重み?:object, 薄い重み?:Uint8Array, 箱たち?:number[][]}} 設定
- *   重み … 板の網（omomi-tatami.json）、紙の重み … 紙の網（kami-omomi.json）、
+ *   重み … 板の網（omomi-tatami.json）、紙の重み … 紙の網（kami-tatami.json）、
  *   薄い重み … 写真で学習済みの網（omomi-mobilenet.bin の中身。無ければ畳み込みの網だけ）
  *   箱たち … 板ごとの○×の範囲（Gemini の box_2d）。写真1枚のときだけ。あれば格子は箱の等分で立てる
  *   行数 … 1列のマスの数の指定。無ければ Gemini の cells の数から決める（箱で読むときは
@@ -68,6 +68,9 @@ export async function マスを端末で差し替える(teams, images, 設定) {
   const 紙 = teams.every((t) => t && t.cellStyle === '1射');
   const 板 = teams.every((t) => !t || t.cellStyle !== '1射');
   if (!紙 && !板) return そのまま('板と紙が混ざっている');
+  // 紙の記録用紙は、表ごとに右の列が大前（scripts/ocr-cells/kami.mjs の決まり）。「左右から」（板 2 枚が外向き）は
+  // 紙には無いので「右から」で読む。男子の用紙は 後立・前立 の 2 つの表が 1 枚にあり、左右からだと左の表が逆さになる
+  if (紙 && 設定.向き === '左右から') 設定 = { ...設定, 向き: '右から' };
 
   // 板の数を Gemini が違えたとき（右の板を 2人・1人・1人 に割るなど）は、行を板に組み直して読む。
   // 「板が2つ」と選んでいるのに 2 より多ければ、Gemini の板のまま読む前に 2 枚として試す。
@@ -111,8 +114,9 @@ export async function マスを端末で差し替える(teams, images, 設定) {
     }
     return { teams, 読み取り元: 'AI', 訳: 読んだ.訳, 列の見当たち: 読んだ.列の見当たち };
   }
-  // 写真 1 枚に板が 2 つ以上なら、Gemini の板の順が写真の左からになっているかを中身で確かめる
-  const 並び = 板 && images.length === 1 && teams.length >= 2 ? 板の並びを確かめる(teams, 読んだ, 設定) : null;
+  // 写真 1 枚に板（紙なら表）が 2 つ以上なら、Gemini の板の順が写真の左からになっているかを中身で確かめる。
+  // 男子の記録用紙は、Gemini が前立（右の表）を先に返した（10/1 の写真）
+  const 並び = images.length === 1 && teams.length >= 2 ? 板の並びを確かめる(teams, 読んだ, 設定) : null;
   const 逆にした = !!(並び && 並び.板の番.some((b, i) => b !== i));
   return {
     teams: 差し替えた(teams, 読んだ, 設定, 紙, 並び && 並び.板の番),
@@ -412,11 +416,21 @@ async function 板を読む(teams, images, 設定) {
   return 出;
 }
 
-/** 紙。写真1枚に表1つ。teams が1つなら1枚目、写真と teams が同数なら順に */
+/**
+ * 紙。写真1枚に表1つ。teams が1つなら1枚目、写真と teams が同数なら順に。
+ * 写真が 1 枚で表が 2 つ以上なら、1 枚の用紙に表が並ぶ（男子の記録用紙は 後立・前立）。左の表から返す
+ */
 async function 紙を読む(teams, images, 設定) {
   if (!設定.紙の重み) return '紙の網が無い';
-  if (images.length !== teams.length) return `写真（${images.length}枚）と表（${teams.length}つ）の数が合わない`;
   const 立のマス = 4;
+  if (images.length === 1 && teams.length > 1) {
+    const 立数たち = teams.map((t) => マスの数(t.rows) / 立のマス);
+    const 立数 = 立数たち[0];
+    if (!立数たち.every((n) => n === 立数) || !Number.isInteger(立数) || 立数 < 1) return `表ごとのマスの数（${teams.map((t) => マスの数(t.rows)).join('・')}）がそろわない`;
+    const 元 = await 設定.道具.画を読む(images[0].base64);
+    return 紙の表たちの印を読む(元, { 人数たち: teams.map((t) => t.rows.length), 立数, 立のマス, 重み: 設定.紙の重み });
+  }
+  if (images.length !== teams.length) return `写真（${images.length}枚）と表（${teams.length}つ）の数が合わない`;
   const 出 = [];
   for (let k = 0; k < images.length; k++) {
     const 人数 = teams[k].rows.length;

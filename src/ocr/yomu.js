@@ -14,7 +14,7 @@
  */
 import { 板ごとの格子, 箱の大きさ, マスの中心y, マスの中心x } from '../../scripts/ocr-cells/kiridasu.mjs';
 import { 息継ぎ } from '../../scripts/ocr-cells/ikitsugi.mjs';
-import { 紙の表を探す, 紙の格子, 紙の箱 } from '../../scripts/ocr-cells/kami.mjs';
+import { 紙の表を探す, 紙の表たちを探す, 紙の格子, 紙の箱 } from '../../scripts/ocr-cells/kami.mjs';
 import { 種類, 形にする, 前へ, 切り取る, 輪の覆い } from '../../scripts/ocr-cells/manabu.mjs';
 import { 重みを組む } from '../../scripts/ocr-cells/omomi.mjs';
 import { 畳みの網を組む, 畳みで見分ける } from '../../scripts/ocr-cells/tatami.mjs';
@@ -650,7 +650,7 @@ function 印のかたまりを探す(切) {
  * 紙（1マス1射）の写真の○×を読む。
  *
  * ページ全体から射手の列の表を探し（紙の表を探す）、外枠で遠近を戻して格子を
- * 立て（紙の格子）、マスごとに ○/× を見立てる。網は2種類（kami-omomi.json）。
+ * 立て（紙の格子）、マスごとに ○/× を見立てる。網は × と ○ の 2 種類（kami-tatami.json。畳み込み）。
  *
  * 紙の表は「列が射手、立ごとのかたまりが縦に積まれ、かたまりの中も縦に4射」。
  * 1射目は下から（いちばん下のかたまりの、いちばん下のマス）。
@@ -659,23 +659,40 @@ function 印のかたまりを探す(切) {
  *
  * @param {object} 元 画像の道具の 画を読む が返したもの（ページ全体）
  * @param {{人数:number, 立数:number, 立のマス:number, 重み:object}} 注文
- *   重み … scripts/ocr-cells/kami-omomi.json を読んだもの
+ *   重み … scripts/ocr-cells/kami-tatami.json を読んだもの（全結合の kami-omomi.json も読める）
  * @returns {Promise<{列たち:string[][], 確からしさ:number[][], 四角:object}>}
  *   列たち … 写真の左から右の列ごとに、上から下のマス（'○' | '×'）
  */
 export async function 紙の印を読む(元, 注文) {
-  const 群れ = 網の群れ(注文.重み);
   const 四角 = 紙の表を探す(元, { 人数: 注文.人数 });
   if (!四角) throw new Error('紙の表が見つかりません');
+  return 四角の紙を読む(元, 四角, 注文.人数, 注文);
+}
+
+/**
+ * 1 枚の用紙に表が並ぶとき（男子の記録用紙は 後立・前立 の 4 人ずつが、合計の列をはさんで並ぶ）。
+ * 表ごとに 紙の印を読む と同じ形で、写真の左の表から返す
+ * @param {{人数たち:number[], 立数:number, 立のマス:number, 重み:object}} 注文 人数たち … 表ごとの人数（左から）
+ */
+export async function 紙の表たちの印を読む(元, 注文) {
+  const 四角たち = 紙の表たちを探す(元, { 人数たち: 注文.人数たち });
+  if (!四角たち) throw new Error('紙の表が見つかりません');
+  const 出 = [];
+  for (let k = 0; k < 四角たち.length; k++) 出.push(await 四角の紙を読む(元, 四角たち[k], 注文.人数たち[k], { ...注文, 上を探す: true }));
+  return 出;
+}
+
+async function 四角の紙を読む(元, 四角, 人数, 注文) {
+  const 群れ = 網の群れ(注文.重み);
   const 切 = 切り取る(元.画素, 元.幅, 元.高, 四角.left, 四角.top, 四角.width, 四角.height);
   const g = await 紙の格子(
     { 画素: 切.画, 幅: 切.幅, 高: 切.高 },
-    { 人数: 注文.人数, 立数: 注文.立数, 立のマス: 注文.立のマス, 枠: 四角.枠 }
+    { 人数, 立数: 注文.立数, 立のマス: 注文.立のマス, 枠: 四角.枠, 上を探す: 注文.上を探す }
   );
   const 列たち = [];
   const 確からしさ = [];
   let 読んだ数 = 0; // 息継ぎ のため（8 マスごと）
-  for (let c = 0; c < 注文.人数; c++) {
+  for (let c = 0; c < 人数; c++) {
     const 列 = [];
     const 確 = [];
     // g.マス は1射目から（下のかたまりから、かたまりの中も下から）。見た目の順に戻す
@@ -684,10 +701,16 @@ export async function 紙の印を読む(元, 注文) {
       const 左 = Math.max(0, Math.round(m.x) - 半幅);
       const 上 = Math.max(0, Math.round(m.y) - 半高);
       const 切2 = 切り取る(g.生.画素, g.生.幅, g.生.高, 左, 上, 半幅 * 2, 半高 * 2);
-      const 形 = await 形にする(切2.画, 切2.幅, 切2.高, 'そのまま');
       if (++読んだ数 % 8 === 0) await 息継ぎ();
       let 丸 = 0;
-      for (const 網 of 群れ) 丸 += 前へ(網, 形).o[1] / 群れ.length;
+      if (群れ.畳み) {
+        // 畳み込みの網（kami-tatami.json。2026-10-10。種類は ×・○ の順）。描いた紙に本物の用紙 2 枚を混ぜて学んだ。
+        // 用紙ごとに外して測ると、全結合の網は 10/1 の男子の用紙で 157/160、これは 160/160（9/6 も 80/80）
+        丸 = 畳みで見分ける(群れ.畳み, 切2.画, 切2.幅, 切2.高)[1];
+      } else {
+        const 形 = await 形にする(切2.画, 切2.幅, 切2.高, 'そのまま');
+        for (const 網 of 群れ) 丸 += 前へ(網, 形).o[1] / 群れ.length;
+      }
       列.push(丸 > 0.5 ? '○' : '×');
       確.push(丸 > 0.5 ? 丸 : 1 - 丸);
     }
