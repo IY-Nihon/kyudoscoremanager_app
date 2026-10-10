@@ -14,6 +14,7 @@ const {
 } = require('./rn');
 const Icons = require('@expo/vector-icons');
 const { useScoreStore } = require('./useScoreStore');
+const { use引いて更新 } = require('./hikiOroshi');
 // 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
 const { useストアの一部 } = require('./storeSlice');
 const { IS_WEB } = require('./IS_WEB');
@@ -38,6 +39,9 @@ try {
 const docPicker = _docPickerModule || { getDocumentAsync: async () => ({ canceled: true, assets: [] }) };
 const fs = _fsModule || { readAsStringAsync: async () => '', EncodingType: { Base64: 'base64' } };
 const AttendanceScreen = () => {
+  // 上から引っ張って更新（src/hikiOroshi.js）。雲から取り直す
+  const 引く = use引いて更新(() => useScoreStore.getState().雲から取り直す());
+  const 引く予定 = use引いて更新(() => useScoreStore.getState().雲から取り直す());
   const { members, sessions, activeGroupId } = useストアの一部(['members', 'sessions', 'activeGroupId']);
   const [tab, setTab] = React.useState('stats');
   const [rangeType, setRangeType] = React.useState('month');
@@ -399,7 +403,9 @@ const AttendanceScreen = () => {
       )}
       {tab === 'stats' ? (
         <View style={{ flex: 1 }}>
+          {引く.しるし}
           <FlatList
+            ref={引く.ref}
             data={stats}
             keyExtractor={(部員, idx) =>
               部員.id && typeof 部員.id === 'string' ? 部員.id : `attendance-member-${idx}`
@@ -442,7 +448,8 @@ const AttendanceScreen = () => {
           />
         </View>
       ) : (
-        <ScrollView style={styles.scroll}>
+        <ScrollView ref={引く予定.ref} style={styles.scroll}>
+          {引く予定.しるし}
           <View style={styles.aiSection}>
             <View style={styles.aiTextContainer}>
               <Text style={styles.aiTitle}>AIで予定表をスキャンして自動入力</Text>

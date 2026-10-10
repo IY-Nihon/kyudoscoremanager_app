@@ -37,6 +37,11 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
    *   起動時は直前に fetchAndOverwriteFromCloud が全部取っていて、見張りも
    *   これから届くので、ここでもう一度取るのは同じものを 3 回読むことになる
    */
+  // 上から引っ張って更新（src/hikiOroshi.js）。送っていない記録を送り、ほかの端末の変更（記録・名簿・ゴミ箱・卒業生）を取る
+  雲から取り直す: async () => {
+    行動を控える('引いて更新', '');
+    await 状態().syncSessions();
+  },
   syncSessions: async (選び) => {
     if (!状態().activeGroupId) return;
     const _syncDb = await waitForDb();
