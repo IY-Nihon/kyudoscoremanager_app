@@ -153,15 +153,48 @@ function 貯まっている数() {
  * 約束の投げっぱなし（unhandledrejection）は、同期の失敗のように
  * catch を書き忘れた場所で出る。ここで拾わないと誰にも届かない。
  */
+const Firestoreが止まったか = 決まり.Firestoreが止まったか;
+let 止まりを伝えた = false;
+function 止まりを伝える(出どころ, 中身) {
+  if (止まりを伝えた) return;
+  止まりを伝えた = true;
+  不具合を送る(出どころ, 中身);
+  try {
+    const Alert = require('./alertBridge').default;
+    Alert.alert('通信が止まりました', '画面を読み込み直してください。記録は端末に残っています。', [
+      { text: 'あとで', style: 'cancel' },
+      {
+        text: '読み込み直す',
+        onPress: () => {
+          try {
+            if (typeof globalThis.__弓道の控えを書く === 'function') globalThis.__弓道の控えを書く();
+          } catch (e) {
+            /* 控えが書けなくても読み込み直す */
+          }
+          window.location.reload();
+        },
+      },
+    ]);
+  } catch (e) {
+    /* 案内が出せなくても、便りは送ってある */
+  }
+}
+
 function 見張りを始める() {
   if ('undefined' == typeof window || !window.addEventListener) return () => {};
   const 誤り = (出来事) => {
     // 別の出どころ（拡張機能など）の script の失敗は、ブラウザが中身を隠して
     // 「Script error.」とだけ告げる。何も分からない便りなので送らない（9 月に 4 通）
     if (出来事 && !出来事.error && 'Script error.' === 出来事.message) return;
-    不具合を送る('画面の外', (出来事 && 出来事.error) || (出来事 && 出来事.message) || 出来事);
+    const 中身 = (出来事 && 出来事.error) || (出来事 && 出来事.message) || 出来事;
+    if (Firestoreが止まったか(中身)) return 止まりを伝える('画面の外', 中身);
+    不具合を送る('画面の外', 中身);
   };
-  const 投げっぱなし = (出来事) => 不具合を送る('約束の投げっぱなし', (出来事 && 出来事.reason) || 出来事);
+  const 投げっぱなし = (出来事) => {
+    const 中身 = (出来事 && 出来事.reason) || 出来事;
+    if (Firestoreが止まったか(中身)) return 止まりを伝える('約束の投げっぱなし', 中身);
+    不具合を送る('約束の投げっぱなし', 中身);
+  };
   window.addEventListener('error', 誤り);
   window.addEventListener('unhandledrejection', 投げっぱなし);
   return () => {
@@ -175,6 +208,7 @@ module.exports = {
   溜まりを流す,
   貯まっている数,
   見張りを始める,
+  Firestoreが止まったか,
   行動を残す: 決まり.行動を残す,
   行動を捨てる: 決まり.行動を捨てる,
 };
