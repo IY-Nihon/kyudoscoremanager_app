@@ -18,6 +18,7 @@ const {
 } = require('./rn');
 const { IS_WEB, SAFE_TOP_PADDING, WEB_TOP_PADDING } = require('./IS_WEB');
 const { useScoreStore } = require('./useScoreStore');
+const { use引いて更新 } = require('./hikiOroshi');
 // 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
 const { useストアの一部 } = require('./storeSlice');
 const 案内 = require('./TutorialGuide');
@@ -46,6 +47,8 @@ function 本文の入れ物({ 流す, children }) {
   );
 }
 const MemberScreen = () => {
+  // 上から引っ張って更新（src/hikiOroshi.js）。雲から取り直す
+  const 引く = use引いて更新(() => useScoreStore.getState().雲から取り直す());
   const {
     members = [],
     addMember,
@@ -707,7 +710,10 @@ const MemberScreen = () => {
           </TouchableOpacity>
         )}
       </View>
+      {引く.しるし}
       <FlatList
+        ref={引く.ref}
+        testID="メンバーの一覧"
         data={activeMembers}
         keyExtractor={(部員, index) =>
           typeof 部員.id === 'string' ? 部員.id : `member-${index}-${部員.name}`

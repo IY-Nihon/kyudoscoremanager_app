@@ -7,6 +7,7 @@ const 案内 = require('./TutorialGuide');
 // 「自分が写っているか」の判定。案内の見本を出すかどうかにも同じものを使う
 const { 自分の射手か, 自分の記録か } = require('./syncRules');
 const { useScoreStore } = require('./useScoreStore');
+const { use引いて更新 } = require('./hikiOroshi');
 // 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
 const { useストアの一部 } = require('./storeSlice');
 const { newArcher, newSeparator, newTotalCalculator } = require('./archerFactory');
@@ -32,6 +33,8 @@ const { styles } = require('./historyStyles');
 const { ゴミ箱の中身の窓 } = require('./HistoryTrash');
 const 仕切り線 = () => <View style={{ height: 1, backgroundColor: '#E5E5EA', marginLeft: 16 }} />;
 const HistoryScreen = () => {
+  // 上から引っ張って更新（src/hikiOroshi.js）。雲から取り直す
+  const 引く = use引いて更新(() => useScoreStore.getState().雲から取り直す());
   const {
     members,
     activeRole,
@@ -1128,7 +1131,10 @@ const HistoryScreen = () => {
           )}
           {/* 検索・タグ・年度・月は一覧の頭に入れて、記録と一緒に流す。外に置いていたころは、横向きの */
           /* スマホでこれらが画面の高さを使い切り、一覧の高さが 0 になって記録が出なかった（2026-09-26） */}
+          {引く.しるし}
           <FlatList
+            ref={引く.ref}
+            testID="履歴の一覧"
             ListHeaderComponent={
               <>
                 <View style={styles.searchContainer}>

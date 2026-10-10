@@ -8,6 +8,7 @@ const { 自分の記録か } = require('./syncRules');
 // 「その射は誰のものか」の決まりは1か所に寄せてある（src/statsRules.js）
 const 集 = require('./statsRules');
 const { useScoreStore } = require('./useScoreStore');
+const { use引いて更新 } = require('./hikiOroshi');
 // 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
 const { useストアの一部 } = require('./storeSlice');
 const Icons = require('@expo/vector-icons');
@@ -23,6 +24,8 @@ const { 型の節 } = require('./analysisParts');
 const { 部員の詳細の窓 } = require('./AnalysisMemberDetail');
 
 const AnalysisScreen = ({ navigation }) => {
+  // 上から引っ張って更新（src/hikiOroshi.js）。雲から取り直す
+  const 引く = use引いて更新(() => useScoreStore.getState().雲から取り直す());
   const {
     analysisSelectedTags = [],
     analysisTagLogic = 'AND',
@@ -578,7 +581,8 @@ const AnalysisScreen = ({ navigation }) => {
       <View style={styles.header}>
         <Text style={styles.title}>的中分析</Text>
       </View>
-      <ScrollView contentContainerStyle={styles.content}>
+      {引く.しるし}
+      <ScrollView ref={引く.ref} contentContainerStyle={styles.content}>
         <View style={styles.filtersCard}>
           <View style={{ marginBottom: 16 }}>
             <View
