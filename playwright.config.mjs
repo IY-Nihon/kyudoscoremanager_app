@@ -23,12 +23,16 @@ const 配り元 = process.env.PW_DIST || 'dist';
 
 export default defineConfig({
   testDir: './e2e',
-  // 案内は手順を順に踏むので、1つの検査の中は順番どおりに流す
-  fullyParallel: false,
+  // ファイルの中の検査も別々の列に配る（1つの検査の中の手順は、どの設定でも順番どおり）。
+  // 順番に頼るファイルは、ファイルの中で test.describe.configure({ mode: 'serial' }) を指定してある。
+  // 2026-10-10：ファイルごとに 1 列だと、iPhone（WebKit）のライブの検査 12 件が 1 列に並んで 45 分かかり、
+  // 全体が 51 分だった（WebKit は 2 台・3 台のライブで応答がまとまって遅れ、1 件 5〜15 倍遅い）。
+  // 分けて 6 並列で 15.8 分。落ちる数は変わらない（iPhone の時間切れが 2〜3 件、単独では通る）。
+  // 並列だけ 6 に上げても 49 分だった（ライブの 1 列が決める）
+  fullyParallel: process.env.PW_FULLY !== '0',
   // 検査の束（ファイル）どうしは並列でよい。団体を分けてあるので取り合わない
-  //（scripts/stg-fixtures.mjs、test/e2eSetup.test.js で決まりを押さえている）。
-  // 1並列だと3機種で50分、2並列で23分だった
-  workers: Number(process.env.PW_WORKERS) || 2,
+  //（scripts/stg-fixtures.mjs、test/e2eSetup.test.js で決まりを押さえている）
+  workers: Number(process.env.PW_WORKERS) || 6,
   retries: 0,
   // 案内は27手順あり、手順ごとに位置を測る間がある。既定の30秒では足りない
   timeout: 180_000,
