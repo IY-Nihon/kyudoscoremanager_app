@@ -310,6 +310,9 @@ function 入り直せば直るか(誤り) {
 const 入り直しの案内 =
   'ログインの有効期限が切れています。設定からログアウトして、もう一度ログインしてください。（記録は残ります）';
 function 不具合を控える(出どころ, 誤り) {
+  // 通信が切れていただけ（unavailable）は不具合として送らない。Firestore はつながると自分で続きを取る。
+  // 10/7 に記録の見張りが電波の弱い所で 4 回送っていた（差分の同期の問い合わせが unavailable）
+  if (誤り && (誤り.code === 'unavailable' || 誤り.code === 'firestore/unavailable')) return;
   try {
     require('./errorReporter').不具合を送る(出どころ, 誤り);
   } catch (中の誤り) {

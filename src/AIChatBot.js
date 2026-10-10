@@ -86,6 +86,8 @@ const {
   矢所の成績,
   期間にする,
   日付の始まり,
+  題で絞る,
+  チームごとの的中,
 } = require('./chatStats');
 const { 練習日を読む } = require('./practiceDays');
 // 「何でも聞いてください」だけでは何を聞けるか分からない。
@@ -641,6 +643,11 @@ const AIChatBot = () => {
                       description:
                         'この射数に満たない人を順位から外す。既定は1。少ない射数の高い的中率を上位に出したくないときは10〜20を指定する',
                     },
+                    keyword: {
+                      type: 'STRING',
+                      description:
+                        "記録の題・覚え書きに含まれる言葉で記録を絞り込む。例: 'リーグ戦'。「リーグ戦に出た選手の的中率」「〇〇大会の成績」のように、タグではなく大会名・練習名で分けて聞かれたときに渡す",
+                    },
                     tags: {
                       type: 'ARRAY',
                       items: { type: 'STRING' },
@@ -1026,7 +1033,9 @@ const AIChatBot = () => {
               const 基準 = 分析の順位の基準(期間, dateFrom || dateTo ? '期間指定' : 'すべて');
               const 最小射数 = Number.isFinite(minShots) ? minShots : 基準;
               const タグ絞り = タグで絞った記録(call.args.tags);
-              const 結果 = 全員の成績(members, タグ絞り.記録たち, {
+              // 題・覚え書きの言葉でも絞る（「リーグ戦に出た選手」など。タグに無く題にだけある）
+              const 題絞り = 題で絞る(タグ絞り.記録たち, call.args.keyword);
+              const 結果 = 全員の成績(members, 題絞り.記録たち, {
                 期間,
                 並び: sortBy,
                 件数: limit,
@@ -1045,8 +1054,14 @@ const AIChatBot = () => {
                     団体全体: 結果.全体,
                     順位: 結果.一覧,
                     ...(タグ絞り.表示 ? { タグでの絞り込み: タグ絞り.表示 } : {}),
+                    ...(題絞り.絞った ? { 題での絞り込み: { 言葉: 題絞り.言葉, 当たった記録の件数: 題絞り.当たった件数 } } : {}),
                     message:
                       タグ絞り.添え書き +
+                      (題絞り.絞った
+                        ? 題絞り.当たった件数 === 0
+                          ? `題や覚え書きに「${題絞り.言葉}」を含む記録はありません。searchSessions で記録の題を確かめるか、その旨を伝えてください。`
+                          : `題や覚え書きに「${題絞り.言葉}」を含む記録 ${題絞り.当たった件数} 件だけで集計しています。そのことを答えに添えてください。`
+                        : '') +
                       (Number.isFinite(minShots)
                         ? `${最小射数} 射に満たない人は順位から外しました。`
                         : 最小射数 > 1
@@ -1218,7 +1233,7 @@ const AIChatBot = () => {
                 const hitRate = total > 0 ? ((hits / total) * 100).toFixed(1) + '%' : 'データなし';
                 const memberStatsMap = new Map(); // メンバーごとの集計マップ
                 記録.archers.forEach((射手) => {
-                  if (!射手 || !射手.marks) return;
+                  if (!射手 || !射手.marks || 射手.isSeparator || 射手.isTotalCalculator) return;
                   const subs = 射手.substitutions || {};
                   const subIndices = Object.keys(subs)
                     .map(Number)
@@ -1257,12 +1272,15 @@ const AIChatBot = () => {
                     return `${name}:${stat.marks.join('')}(${stat.hits}/${stat.total})`;
                   })
                   .join(', ');
+                // チーム（区切り）ごとの的中数。「何中対何中」に答えるため。個人ログインでは他の人の列が空なので載せない
+                const チームごと = 個人 ? null : チームごとの的中(記録);
                 return {
                   date: dateStr,
                   title: 記録.title || '無題',
                   hitRate,
                   totalArrows: total,
                   archers: archerList,
+                  ...(チームごと ? { チームごと } : {}),
                 };
               });
 
@@ -1279,7 +1297,10 @@ const AIChatBot = () => {
                         ? '該当する記録が見つかりませんでした。'
                         : 当たった件数 > sessionData.length
                           ? `${当たった件数}件のうち、新しい順に${sessionData.length}件だけ返しました。全部を数えたいときは getAllMembersStats を期間付きで使ってください。返していない記録があることを利用者に伝えてください。`
-                          : `${sessionData.length}件の記録を取得しました。`,
+                          : `${sessionData.length}件の記録を取得しました。` +
+                            (sessionData.some((記録) => 記録.チームごと)
+                              ? 'チームごと はチーム（区切り）ごとに数えた的中数・射数・的中率です。「何中対何中」「どちらが勝ったか」はこの数字で答えてください（的中数の多いほうが上。同数のときや、競射などで決めた勝敗は記録に無いので決めつけない）。'
+                              : ''),
                   },
                 },
               });
