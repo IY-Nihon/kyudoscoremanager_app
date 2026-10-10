@@ -161,7 +161,7 @@ function 止まりを伝える(出どころ, 中身) {
   不具合を送る(出どころ, 中身);
   try {
     const Alert = require('./alertBridge').default;
-    Alert.alert('通信が止まりました', '画面を読み込み直してください。記録は端末に残っています。', [
+    Alert.alert('データの読み書きが止まりました', '画面を読み込み直してください。記録は端末に残っています。', [
       { text: 'あとで', style: 'cancel' },
       {
         text: '読み込み直す',
