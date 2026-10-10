@@ -801,3 +801,29 @@ test('矢所の成績：的の中心（星）付近に集まっているとき�
   assert.equal(結果.overallTrend.direction, '的の中心付近');
   assert.ok(結果.summaryText.includes('的の中心付近'));
 });
+
+test('チームごとの的中：区切りのチーム名ごとに ○× を数え、計の列は数えない。区切りが無ければ null', () => {
+  const { チームごとの的中 } = require('../src/chatStats');
+  const 記録 = {
+    archers: [
+      { isSeparator: true, teamName: 'A大' },
+      { marks: ['○', '×', '○', ''] },
+      { marks: ['○'] },
+      { isTotalCalculator: true, marks: ['', ''] },
+      { isSeparator: true, teamName: 'B大' },
+      { marks: ['×', '×'] },
+    ],
+  };
+  assert.deepStrictEqual(チームごとの的中(記録), [
+    { チーム: 'A大', 人数: 2, 的中: 3, 射数: 4, 的中率: '75%' },
+    { チーム: 'B大', 人数: 1, 的中: 0, 射数: 2, 的中率: '0%' },
+  ]);
+  assert.strictEqual(チームごとの的中({ archers: [{ marks: ['○'] }] }), null);
+});
+
+test('題で絞る：題・覚え書きの言葉で記録を絞る（全角半角・空白は無視）', () => {
+  const { 題で絞る } = require('../src/chatStats');
+  const 記録たち = [{ title: '男子リーグ戦 第五節' }, { title: '練習', memo: 'リーグ戦の前' }, { title: '自主練' }];
+  assert.strictEqual(題で絞る(記録たち, 'リーグ戦').当たった件数, 2);
+  assert.strictEqual(題で絞る(記録たち, '').絞った, false);
+});
