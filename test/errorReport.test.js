@@ -456,3 +456,11 @@ test('送る形：時刻を Date にする（管理画面で日時として読�
   assert.strictEqual(typeof 外(便).at, 'number', '外向きの形は数のまま（読み返す側と共有）');
 });
 
+
+test('Firestore の部品の中の失敗（INTERNAL ASSERTION FAILED）を見分ける', () => {
+  const { Firestoreが止まったか } = require('../src/errorReport');
+  assert.strictEqual(Firestoreが止まったか(new Error('FIRESTORE (12.18.0) INTERNAL ASSERTION FAILED: Unexpected state (ID: b815)')), true);
+  assert.strictEqual(Firestoreが止まったか('FIRESTORE (12.19.0) INTERNAL ASSERTION FAILED: x'), true);
+  assert.strictEqual(Firestoreが止まったか(new Error('Missing or insufficient permissions.')), false);
+  assert.strictEqual(Firestoreが止まったか(null), false);
+});

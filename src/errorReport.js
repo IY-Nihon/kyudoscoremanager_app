@@ -353,7 +353,17 @@ function 便りをまとめる(便たち) {
     .sort((甲, 乙) => 乙.のべ回数 - 甲.のべ回数 || 乙.新しい - 甲.新しい);
 }
 
+/**
+ * Firestore の部品の中の失敗（INTERNAL ASSERTION FAILED）か。起きると、その画面では Firestore が止まったままになり、
+ * 同じ便りが何百回も出る（2026-10-05、1 台で 374 回。端末に控えた IndexedDB を読む途中で落ちた）。
+ * 部品は 12.19 に上げたが、起きたときは 1 回だけ送り、読み込み直すよう案内する
+ */
+function Firestoreが止まったか(中身) {
+  const 文 = String((中身 && (中身.message || 中身)) || '');
+  return /FIRESTORE.*INTERNAL ASSERTION FAILED/i.test(文);
+}
 module.exports = {
+  Firestoreが止まったか,
   便りをまとめる,
   行動を残す,
   行動の控え,
