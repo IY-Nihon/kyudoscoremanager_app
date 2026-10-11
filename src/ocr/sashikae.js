@@ -37,7 +37,7 @@
  *   突き合わせ、はっきり合うほうを取る（板の並びを確かめる）。Gemini の線の向きは当てにならないので、
  *   マスごとの的中数（◎=2・丸に線=1・×=0）で比べる。teams の順（記録表の順）は変えない。
  */
-import { 板の印を読む, 紙の印を読む, 紙の表たちの印を読む, 大前から並べる, ノートの印を読む, ノートの向き } from './yomu.js';
+import { 板の印を読む, 紙の印を読む, 紙の表たちの印を読む, 大前から並べる, ノートの印を読む, ノートの向き, ノートらしいか } from './yomu.js';
 
 /**
  * @param {object[]} teams Gemini の返した teams（rows[].cells を持つ）
@@ -56,6 +56,9 @@ export async function マスを端末で差し替える(teams, images, 設定) {
   const そのまま = (訳) => ({ teams, 読み取り元: 'AI', 訳 });
   if (!Array.isArray(teams) || !teams.length) return そのまま('板が無い');
   if (!Array.isArray(images) || !images.length) return そのまま('写真が無い');
+  // 手書きのノートは「1射」で返り、斜線で塗った ○ を ◎ と書くことがある（10/11）。板として読めなかったときに
+  // ノートとして読み直すため、直す前の teams を取っておく
+  const 一射の答え = teams.every((t) => t && t.cellStyle === '1射') ? teams : null;
   // 板（1マス2射）にしか無い印（◎・丸に線）が cells にあるのに「1射」（紙）と言ってきた板は、板として読む。
   // 10/4 の千葉商科大学の白板で、Gemini が 1射 と答え、紙の読み方で読めずに Gemini の○×のまま（160 射中 26 射）になった
   teams = teams.map((t) =>
@@ -68,6 +71,9 @@ export async function マスを端末で差し替える(teams, images, 設定) {
   const 紙 = teams.every((t) => t && t.cellStyle === '1射');
   const 板 = teams.every((t) => !t || t.cellStyle !== '1射');
   if (!紙 && !板) return そのまま('板と紙が混ざっている');
+  // ◎ で板に回したもののうち、帯の中の印が 1〜2 個と答えたもの（白板）はノートとして読まない（ノートは 4 か 0 と返る）。
+  // AI が板（2射）と答えたノートもある（114943071）。そのときは端末の読みがはっきりノートらしいときだけ採る（厳しく）
+  const 一射でノート = !!一射の答え && (紙 || 一射の答え.every((t) => ![1, 2].includes(Number(t.marks_per_band))));
   // 紙の記録用紙は、表ごとに右の列が大前（scripts/ocr-cells/kami.mjs の決まり）。「左右から」（板 2 枚が外向き）は
   // 紙には無いので「右から」で読む。男子の用紙は 後立・前立 の 2 つの表が 1 枚にあり、左右からだと左の表が逆さになる
   if (紙 && 設定.向き === '左右から') 設定 = { ...設定, 向き: '右から' };
@@ -105,16 +111,19 @@ export async function マスを端末で差し替える(teams, images, 設定) {
   } catch (e) {
     読んだ = '読めなかった: ' + String((e && e.message) || e);
   }
-  // 紙の記録用紙として読めなければ、手書きのノート（1 人 1 列・4 射ずつのかたまり）として読んでみる（2026-10-11）
-  if (typeof 読んだ === 'string' && 紙 && 設定.ノートの重み && images.length === 1) {
+  // 紙の記録用紙（◎ で板に回したものは板）として読めなければ、手書きのノート（1 人 1 列・4 射ずつのかたまり）として
+  // 読んでみる（2026-10-11）
+  const 読めなかった = typeof 読んだ === 'string' || !!(読んだ && 読んだ.訳);
+  if (読めなかった && 設定.ノートの重み && images.length === 1) {
     let ノート;
     try {
-      ノート = await ノートで読む(teams, images, 設定);
+      ノート = await ノートで読む(一射でノート ? 一射の答え : teams, images, 設定, !一射でノート);
     } catch (e) {
       ノート = { 訳: 'ノートとして読めなかった: ' + String((e && e.message) || e) };
     }
-    if (Array.isArray(ノート)) return { teams: 差し替えた(teams, ノート, 設定, true), 読み取り元: '端末', ノート: true };
-    return { teams, 読み取り元: 'AI', 訳: 読んだ + '。' + ノート.訳, 列の見当たち: ノート.列の見当たち || null };
+    if (ノート && ノート.teams) return { teams: ノート.teams, 読み取り元: '端末', ノート: true };
+    if (Array.isArray(ノート)) return { teams: 差し替えた(一射でノート ? 一射の答え : teams, ノート, 設定, true), 読み取り元: '端末', ノート: true };
+    if (typeof 読んだ === 'string') return { teams, 読み取り元: 'AI', 訳: 読んだ + '。' + ノート.訳, 列の見当たち: ノート.列の見当たち || null };
   }
   if (typeof 読んだ === 'string') return そのまま(読んだ);
   if (読んだ && 読んだ.訳) {
@@ -461,33 +470,134 @@ async function 紙を読む(teams, images, 設定) {
  * AI の cells とも 8 割以上合えば採る。そうでなければ逆の向きでも読み、合うほうを採る
  * @returns {Promise<{列たち:string[][], 確からしさ:number[][]}[] | {訳:string, 列の見当たち?:number[]}>}
  */
-async function ノートで読む(teams, images, 設定) {
+async function ノートで読む(teams, images, 設定, 厳しく = false) {
   const 総 = teams.reduce((a, t) => a + t.rows.length, 0);
   const 元 = await 設定.道具.画を読む(images[0].base64);
-  const 正しい向き = await ノートの向き(元);
+  const 正しい向き = await ノートの向き(元, 設定.ノートの向きの重み);
   const 逆さたち = 正しい向き === false ? [true, false] : [false, true];
-  let 最良 = null;
+  // AI が行ごとに列の横の位置（x：左端 0〜右端 1000）を返していれば、位置で筋と行を合わせる。
+  // 人数の食い違い（端末が字の列を拾った・AI が名前の無い列を落とした）にも、AI の行の順の間違いにも崩れない
+  const 行たち = [];
+  teams.forEach((t, i) => t.rows.forEach((r, j) => 行たち.push({ i, j, x: Number(r && r.x) })));
+  const 位置あり = 行たち.length > 0 && 行たち.every((r) => Number.isFinite(r.x) && r.x >= 0 && r.x <= 1000);
   const 数たち = [];
+  let 最良 = null;
   for (const 逆さ of 逆さたち) {
     const 読み = await ノートの印を読む(元, { 重み: 設定.ノートの重み, 逆さ });
     数たち.push(読み.列たち.length);
+    if (厳しく && !ノートらしいか(読み)) continue;
+    if (位置あり) {
+      const 合わせ = 位置で合わせる(行たち, 読み, 逆さ);
+      if (!最良 || 合わせ.良さ > 最良.合わせ.良さ) 最良 = { 読み, 合わせ };
+      // 向きの網の向きで、8 割以上の行が近い位置の筋と合えば、逆の向きは読まない
+      if (合わせ.合った数 >= 行たち.length * 0.8 && 合わせ.平均の差 <= 0.35) break;
+      continue;
+    }
     if (読み.列たち.length !== 総) continue;
     const 読んだ = ノートを割り当てる(teams, 読み.列たち);
     // Gemini は omae を「右」と答えながら、行を左の人から並べることがある（逆さの写真で起きた）。
-    // 組ごとに列の並びを逆にしたものとも比べる
+    // 組ごとに列の並びを逆にしたものが、AI の cells とはっきりよく合う（1 割以上）ときだけ逆にする。
+    // Gemini の ○× はこのノートでは当てにならない（正しい並びでも 6 割ほどしか合わない）ので、差が小さければそのまま
     const 逆に = 読んだ.map((b) => ({ 列たち: b.列たち.slice().reverse(), 確からしさ: b.確からしさ.slice().reverse() }));
-    for (const 候補 of [読んだ, 逆に]) {
-      const 率 = ノートの合い具合(teams, 候補, 設定);
-      if (globalThis.__ノートの記録) globalThis.__ノートの記録.push({ 逆さ, 逆: 候補 === 逆に, 率 });
-      if (!最良 || 率 > 最良.率) 最良 = { 読んだ: 候補, 率 };
-    }
-    if (最良 && 最良.率 >= 0.85) break;
+    const 率 = ノートの合い具合(teams, 読んだ, 設定);
+    const 逆の率 = ノートの合い具合(teams, 逆に, 設定);
+    return 逆の率 - 率 >= 0.1 ? 逆に : 読んだ;
   }
-  if (最良) return 最良.読んだ;
+  if (最良 && 最良.合わせ.合った数 >= 行たち.length * 0.6) return { teams: 位置で差し替えた(teams, 行たち, 最良.読み, 最良.合わせ) };
   return {
-    訳: `ノートの射手の列の数が合わない（端末${数たち.join('・')}、AI${総}）`,
+    訳: 位置あり
+      ? `ノートの射手の列と、AI の名前の位置が合わない（端末${数たち.join('・')}列、AI${総}人）`
+      : `ノートの射手の列の数が合わない（端末${数たち.join('・')}、AI${総}）`,
     列の見当たち: teams.length === 1 && 数たち.length ? [数たち[0]] : null,
   };
+}
+
+/**
+ * AI の行（x：写真の左端 0〜右端 1000）と端末の筋（写真を整えた幅での x。逆さなら回したあと）を、左右の順を保って合わせる。
+ * AI の x は目分量で、列 1〜2 本ぶんずれ、間隔も等しく並べてくる（115538301 は 30 ずつ）。そこで AI の x を
+ * 伸び縮み（0.85〜1.15 倍）と横のずれ（±150）で写してから合わせ、いちばん良く合う写しを採る
+ * @returns {{組:Map<number,object>, 合った数:number, 平均の差:number, 良さ:number}} 組 … 行の番号 → 筋
+ */
+function 位置で合わせる(行たち, 読み, 逆さ) {
+  const W = 読み.幅 || 1600;
+  const 間 = ((読み.間 || 48) / W) * 1000;
+  const 筋たち = 読み.列たち
+    .map((c) => ({ c, x: ((逆さ ? W - c.x : c.x) / W) * 1000 }))
+    .sort((a, b) => a.x - b.x);
+  const 行の並び = 行たち.map((r, k) => ({ k, x: r.x })).sort((a, b) => a.x - b.x);
+  if (!行の並び.length || !筋たち.length) return { 組: new Map(), 合った数: 0, 平均の差: Infinity, 良さ: -Infinity };
+  // 伸び縮みは行の真ん中を軸にする（端が大きく動かないように）
+  const 軸 = (行の並び[0].x + 行の並び[行の並び.length - 1].x) / 2;
+  let 最良 = null;
+  for (let 倍 = 0.85; 倍 <= 1.151; 倍 += 0.025) {
+    for (let ずれ = -150; ずれ <= 150; ずれ += 間 / 4) {
+      const 写し = 行の並び.map((r) => ({ k: r.k, x: 軸 + (r.x - 軸) * 倍 + ずれ }));
+      const 合わせ = 並びで合わせる(写し, 筋たち, 間);
+      // 同じ良さなら、写しの小さいほう
+      合わせ.良さ -= (Math.abs(倍 - 1) + Math.abs(ずれ) / 1000) * 0.01;
+      if (!最良 || 合わせ.良さ > 最良.良さ) 最良 = 合わせ;
+    }
+  }
+  return 最良;
+}
+
+/** 位置で合わせる の中身：写した行と筋を、左右の順を保って合わせる。差は列の間隔で測り、1.5 列まで。合わない行・筋はそれぞれ 0.8 の損 */
+function 並びで合わせる(行の並び, 筋たち, 間) {
+  const n = 行の並び.length, m = 筋たち.length, 外す = 0.8;
+  const 費 = Array.from({ length: n + 1 }, () => new Float64Array(m + 1));
+  const 元 = Array.from({ length: n + 1 }, () => new Int8Array(m + 1));
+  for (let a = 1; a <= n; a++) (費[a][0] = a * 外す), (元[a][0] = 1);
+  for (let b = 1; b <= m; b++) (費[0][b] = b * 外す), (元[0][b] = 2);
+  for (let a = 1; a <= n; a++) for (let b = 1; b <= m; b++) {
+    const d = Math.abs(行の並び[a - 1].x - 筋たち[b - 1].x) / 間;
+    const 合 = d <= 1.5 ? 費[a - 1][b - 1] + d : Infinity;
+    const 上 = 費[a - 1][b] + 外す, 左 = 費[a][b - 1] + 外す;
+    if (合 <= 上 && 合 <= 左) (費[a][b] = 合), (元[a][b] = 0);
+    else if (上 <= 左) (費[a][b] = 上), (元[a][b] = 1);
+    else (費[a][b] = 左), (元[a][b] = 2);
+  }
+  const 組 = new Map();
+  let 差の和 = 0;
+  for (let a = n, b = m; a > 0 || b > 0; ) {
+    if (a > 0 && b > 0 && 元[a][b] === 0) {
+      組.set(行の並び[a - 1].k, 筋たち[b - 1].c);
+      差の和 += Math.abs(行の並び[a - 1].x - 筋たち[b - 1].x) / 間;
+      a--;
+      b--;
+    } else if (a > 0 && (b === 0 || 元[a][b] === 1)) a--;
+    else b--;
+  }
+  const 合った数 = 組.size;
+  const 平均の差 = 合った数 ? 差の和 / 合った数 : Infinity;
+  return { 組, 合った数, 平均の差, 良さ: 合った数 - 差の和 };
+}
+
+/**
+ * 位置で合わせた筋で、teams の cells を差し替える（マスの見た目＝上から下）。長さは組ごとに 4 射ずつ、書いた分まで。
+ * 合わなかった行は AI の cells のまま、印のあるマスを迷ったマス（0.5）にする
+ */
+function 位置で差し替えた(teams, 行たち, 読み, 合わせ) {
+  let 番 = 0;
+  const 行の番 = teams.map((t) => t.rows.map(() => 番++));
+  return teams.map((t, i) => {
+    const 筋たち = 行の番[i].map((k) => 合わせ.組.get(k)).filter(Boolean);
+    let 書いた = 0;
+    for (const c of 筋たち) c.射.forEach((印, k) => { if (印) 書いた = Math.max(書いた, k + 1); });
+    const 長さ = Math.max(4, Math.ceil(書いた / 4) * 4);
+    const 見た目 = (並び, 空) => Array.from({ length: 長さ }, (_, k) => (k < 並び.length ? 並び[k] : 空)).reverse();
+    return {
+      ...t,
+      cellStyle: '1射',
+      layout: '縦',
+      rows: t.rows.map((r, j) => {
+        const c = 合わせ.組.get(行の番[i][j]);
+        if (c) return { ...r, cells: 見た目(c.射, ''), 確からしさ: 見た目(c.確, 1), marks: undefined };
+        // 斜線で塗った ○ を AI は ◎・丸に線と書くことがある。ノートでは ○（1射のマスに ◎ は無く、空に倒れる）
+        const cells = (Array.isArray(r.cells) ? r.cells : []).map((v) => (/◎|[○◯〇].*[\\/／＼]/.test(String(v || '')) ? '○' : v));
+        return { ...r, cells, 確からしさ: cells.map((v) => (String(v || '').trim() ? 0.5 : 1)), marks: undefined };
+      }),
+    };
+  });
 }
 
 /** 筋（射は 1 射目から上へ）を teams へ順に割り当て、マスの見た目（上から下）にする。長さは 4 射ずつ、書いた分まで */

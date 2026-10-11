@@ -144,4 +144,23 @@ export async function 回す(生, 度) {
   return { 画素, 幅, 高 };
 }
 
+/**
+ * 写真（base64 の JPEG）を 180 度回した JPEG（base64）にする。逆さに撮った手書きのノートを、AI に読ませる前に起こす。
+ * iOS の canvas の上限（1600 万画素）を超える写真は縮める
+ */
+export async function 写真を逆さにする(base64, mime) {
+  const img = await 画像にする(base64, mime);
+  const 倍 = Math.min(1, Math.sqrt(16_000_000 / (img.width * img.height)));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.floor(img.width * 倍));
+  canvas.height = Math.max(1, Math.floor(img.height * 倍));
+  const ctx = canvas.getContext('2d');
+  ctx.translate(canvas.width, canvas.height);
+  ctx.rotate(Math.PI);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  const url = canvas.toDataURL('image/jpeg', 0.92);
+  canvas.width = canvas.height = 0;
+  return url.slice(url.indexOf(',') + 1);
+}
+
 export const 道具 = { 画を読む, 回す };
