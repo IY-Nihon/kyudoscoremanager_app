@@ -37,6 +37,10 @@ const 画像の道具 = require('./ocr/gazou-web');
 const 板の重み = require('../scripts/ocr-cells/omomi-tatami.json');
 // 紙のマスも畳み込みの網（2026-10-10。本物の用紙 2 枚を混ぜて学んだ。scripts/ocr-cells/cnn/README.md）
 const 紙の重み = require('../scripts/ocr-cells/kami-tatami.json');
+// 手書きのノート（1 人 1 列・4 射ずつ）のマスは 3 種類（× ○ 他）の網（2026-10-11。ノートの写真 103 枚で学んだ。scripts/ocr-cells/noto.mjs）
+const ノートの重み = require('../scripts/ocr-cells/noto-tatami.json');
+// AI の JSON が少し壊れていたら（閉じ括弧の不足など）直してから読む
+const { AIのJSONを読む } = require('./ocr/jsonNaoshi');
 // 畳み込みの網が迷ったマスだけ、写真で学習済みの網（0.79MB）と混ぜる。重みは読み取りを使うときだけ取りに行く
 const { 写真の網の重みを待つ } = require('./ocr/shashinNoMou');
 // 検査（e2e/ocrTanmatsu.spec.mjs）から、ブラウザの canvas の道で読めるかを確かめるための入口。
@@ -85,6 +89,12 @@ if (IS_WEB && typeof window !== 'undefined') {
       const 元 = await 画像の道具.画を読む(base64);
       return 紙の印を読む(元, { 人数, 立数, 立のマス, 重み: 紙の重み });
     },
+    // 手書きのノート（逆さ … 写真を 180 度回して読む）
+    ノートの印を読む: async (base64, 逆さ) => {
+      const { ノートの印を読む } = require('./ocr/yomu');
+      const 元 = await 画像の道具.画を読む(base64);
+      return ノートの印を読む(元, { 重み: ノートの重み, 逆さ });
+    },
     // 1 枚の用紙に表が並ぶ紙（男子の記録用紙）
     紙の表たちの印を読む: async (base64, 人数たち, 立数, 立のマス) => {
       const { 紙の表たちの印を読む } = require('./ocr/yomu');
@@ -92,6 +102,12 @@ if (IS_WEB && typeof window !== 'undefined') {
       return 紙の表たちの印を読む(元, { 人数たち, 立数, 立のマス, 重み: 紙の重み });
     },
   };
+}
+
+/** AI が返した組の日付を「月/日」にそろえる（"4月6日"・"4/6(土)"・"04/06" など）。読めなければ '' */
+function 日付をそろえる(日付) {
+  const m = String(日付 == null ? '' : 日付).match(/(\d{1,2})\s*[月/／.]\s*(\d{1,2})/);
+  return m ? `${Number(m[1])}/${Number(m[2])}` : '';
 }
 
 // ─────────────────────────────────────────
@@ -189,7 +205,9 @@ const OCRRecordModal = ({
   // いまの記録表で埋まっている射数（いちばん後ろの○×の位置）。射数を合わせるのに使う
   記入済みの射数 = 0,
 }) => {
-  const [step, setStep] = useState('pick'); // pick | analyzing | preview
+  const [step, setStep] = useState('pick'); // pick | analyzing | dates | preview
+  // 写真に日付の違う組が並んでいたとき（ノートの見開き）、どの日を読むか選ぶまで行を取っておく
+  const [日付ごとの行, set日付ごとの行] = useState(null);
   // 最初に読んだ結果（利用者が直す前）と、それを取っておいた記録の id。
   // アプリの改善のため、読み取りが終わったら（成功・失敗とも）送った写真と最初の結果を、
   // 反映したら直したあとを、それぞれ取っておく（src/improvementLog.js）
@@ -425,7 +443,7 @@ const OCRRecordModal = ({
             set混み待ち(false);
           }
         }
-        return JSON.parse(result.response.text());
+        return AIのJSONを読む(result.response.text());
       };
       let parsed = await 読ませる(prompt);
 
@@ -460,6 +478,7 @@ const OCRRecordModal = ({
                 道具: 画像の道具,
                 重み: 板の重み,
                 紙の重み,
+                ノートの重み,
                 薄い重み: await 写真の網の重み,
                 箱たち,
                 行数,
@@ -678,6 +697,7 @@ const OCRRecordModal = ({
               チーム番号: チームの番,
               立の人数,
               チーム名: (チーム && チーム.name) || '',
+              日付: 日付をそろえる(チーム && チーム.date),
             });
           });
         });
@@ -691,6 +711,13 @@ const OCRRecordModal = ({
           setErrorMsg('記録表を検出できませんでした。表全体が入るように撮り直してください。');
           読み取りを取っておく({ 結果: '読めなかった', 知らせ: '記録表を検出できませんでした' });
           setStep('pick');
+          return;
+        }
+        // 日付の違う組が並んでいたら（ノートの見開き）、どの日を読むか選んでもらう
+        const 日付たち = [...new Set(rows.map((行) => 行.日付).filter(Boolean))];
+        if (日付たち.length >= 2) {
+          set日付ごとの行({ 日付たち, rows });
+          setStep('dates');
           return;
         }
         applyRecordMatching(rows);
@@ -1421,6 +1448,31 @@ const OCRRecordModal = ({
                     : 'AIが立ち順表を読み取っています...'}
               </Text>
             </View>
+          )}
+
+          {step === 'dates' && 日付ごとの行 && (
+            <ScrollView style={styles.body} contentContainerStyle={{ padding: 16 }} testID="ocr-hidzuke">
+              <Text style={styles.hint}>写真に日付の違う記録が写っています。どの日の記録を読みますか？</Text>
+              {[...日付ごとの行.日付たち, ''].map((日) => {
+                const 選んだ行 = 日 ? 日付ごとの行.rows.filter((行) => 行.日付 === 日) : 日付ごとの行.rows;
+                return (
+                  <TouchableOpacity
+                    key={日 || '全部'}
+                    style={[styles.footerBtnPrimary, { marginTop: 12, flex: 0 }]}
+                    onPress={() => {
+                      // 選んだ日の組だけ。組の番号は詰め直す（区切りと計は、残った組のあいだにだけ入る）
+                      const 番たち = [...new Set(選んだ行.map((行) => 行.チーム番号))];
+                      set日付ごとの行(null);
+                      applyRecordMatching(選んだ行.map((行) => ({ ...行, チーム番号: 番たち.indexOf(行.チーム番号) })));
+                    }}
+                  >
+                    <Text style={styles.footerBtnPrimaryText}>
+                      {日 ? `${日}（${選んだ行.length}人）` : `全部（${選んだ行.length}人）`}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
           )}
 
           {step === 'preview' && mode === 'record' && (
