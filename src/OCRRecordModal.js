@@ -598,8 +598,11 @@ const OCRRecordModal = ({
             const 箱の返事 = await 読ませる(板の箱の指示文({ 板の数: 生のteams.length }));
             console.log('[OCRRecordModal] 箱の返事:', JSON.stringify(箱の返事).slice(0, 400));
             // {"boards":[…]} と頼んでも、配列だけを返してくることがある
+            // [{"boards":[…]}] と配列に包んでくることもある（10/12）
             const boards = Array.isArray(箱の返事)
-              ? 箱の返事
+              ? 箱の返事.length === 1 && Array.isArray(箱の返事[0] && 箱の返事[0].boards)
+                ? 箱の返事[0].boards
+                : 箱の返事
               : Array.isArray(箱の返事 && 箱の返事.boards)
                 ? 箱の返事.boards
                 : [];

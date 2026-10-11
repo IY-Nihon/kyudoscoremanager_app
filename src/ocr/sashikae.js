@@ -37,7 +37,15 @@
  *   突き合わせ、はっきり合うほうを取る（板の並びを確かめる）。Gemini の線の向きは当てにならないので、
  *   マスごとの的中数（◎=2・丸に線=1・×=0）で比べる。teams の順（記録表の順）は変えない。
  */
-import { 板の印を読む, 紙の印を読む, 紙の表たちの印を読む, 大前から並べる, ノートの印を読む, ノートの向き, ノートらしいか } from './yomu.js';
+import {
+  板の印を読む,
+  紙の印を読む,
+  紙の表たちの印を読む,
+  大前から並べる,
+  ノートの印を読む,
+  ノートの向き,
+  ノートらしいか,
+} from './yomu.js';
 
 /**
  * @param {object[]} teams Gemini の返した teams（rows[].cells を持つ）
@@ -62,7 +70,9 @@ export async function マスを端末で差し替える(teams, images, 設定) {
   // 板（1マス2射）にしか無い印（◎・丸に線）が cells にあるのに「1射」（紙）と言ってきた板は、板として読む。
   // 10/4 の千葉商科大学の白板で、Gemini が 1射 と答え、紙の読み方で読めずに Gemini の○×のまま（160 射中 26 射）になった
   teams = teams.map((t) =>
-    t && t.cellStyle === '1射' && (t.rows || []).some((r) => (r.cells || []).some((c) => /◎|[○◯〇].*[\\/／＼]/.test(String(c || ''))))
+    t &&
+    t.cellStyle === '1射' &&
+    (t.rows || []).some((r) => (r.cells || []).some((c) => /◎|[○◯〇].*[\\/／＼]/.test(String(c || ''))))
       ? { ...t, cellStyle: '2射' }
       : t
   );
@@ -73,7 +83,8 @@ export async function マスを端末で差し替える(teams, images, 設定) {
   if (!紙 && !板) return そのまま('板と紙が混ざっている');
   // ◎ で板に回したもののうち、帯の中の印が 1〜2 個と答えたもの（白板）はノートとして読まない（ノートは 4 か 0 と返る）。
   // AI が板（2射）と答えたノートもある（114943071）。そのときは端末の読みがはっきりノートらしいときだけ採る（厳しく）
-  const 一射でノート = !!一射の答え && (紙 || 一射の答え.every((t) => ![1, 2].includes(Number(t.marks_per_band))));
+  const 一射でノート =
+    !!一射の答え && (紙 || 一射の答え.every((t) => ![1, 2].includes(Number(t.marks_per_band))));
   // 紙の記録用紙は、表ごとに右の列が大前（scripts/ocr-cells/kami.mjs の決まり）。「左右から」（板 2 枚が外向き）は
   // 紙には無いので「右から」で読む。男子の用紙は 後立・前立 の 2 つの表が 1 枚にあり、左右からだと左の表が逆さになる
   if (紙 && 設定.向き === '左右から') 設定 = { ...設定, 向き: '右から' };
@@ -122,7 +133,12 @@ export async function マスを端末で差し替える(teams, images, 設定) {
       ノート = { 訳: 'ノートとして読めなかった: ' + String((e && e.message) || e) };
     }
     if (ノート && ノート.teams) return { teams: ノート.teams, 読み取り元: '端末', ノート: true };
-    if (Array.isArray(ノート)) return { teams: 差し替えた(一射でノート ? 一射の答え : teams, ノート, 設定, true), 読み取り元: '端末', ノート: true };
+    if (Array.isArray(ノート))
+      return {
+        teams: 差し替えた(一射でノート ? 一射の答え : teams, ノート, 設定, true),
+        読み取り元: '端末',
+        ノート: true,
+      };
     // 白板を「1射」（紙）と答えることもある（10/12：10 マス・帯の中の印 10 と答えた）。紙でもノートでもなければ板として読む
     if (紙) {
       let 板で;
@@ -133,7 +149,13 @@ export async function マスを端末で差し替える(teams, images, 設定) {
       }
       if (Array.isArray(板で)) return { teams: 差し替えた(teams, 板で, 設定, false), 読み取り元: '端末' };
     }
-    if (typeof 読んだ === 'string') return { teams, 読み取り元: 'AI', 訳: 読んだ + '。' + ノート.訳, 列の見当たち: ノート.列の見当たち || null };
+    if (typeof 読んだ === 'string')
+      return {
+        teams,
+        読み取り元: 'AI',
+        訳: 読んだ + '。' + ノート.訳,
+        列の見当たち: ノート.列の見当たち || null,
+      };
   }
   if (typeof 読んだ === 'string') return そのまま(読んだ);
   if (読んだ && 読んだ.訳) {
@@ -214,9 +236,23 @@ export function 板の並びを確かめる(teams, 読んだ, 設定) {
   if (n < 2) return { 板の番: そのまま, 合ったマス: [今.合], 比べたマス: 今.比べた };
   const 人数が合う = teams.every((t, i) => (t.rows || []).length === (teams[n - 1 - i].rows || []).length);
   if (!人数が合う) return { 板の番: そのまま, 合ったマス: [今.合], 比べたマス: 今.比べた };
+  // 行に横の位置（x：左端 0〜右端 1000）があれば、それで決める。組の x の範囲が重ならず、右から左へ並んでいれば逆。
+  // 中身（AI の○×）で比べると、白板の ◎・丸に線を AI が読み違えて差がはっきりせず、右の板を先に返した回で
+  // 板と組が入れ替わった（10/12 の白板 2 枚の写真）
+  const 範囲たち = teams.map((t) => (t.rows || []).map((r) => Number(r && r.x)));
+  if (範囲たち.every((xs) => xs.length && xs.every((x) => Number.isFinite(x) && x >= 0 && x <= 1000))) {
+    const 右から左 = 範囲たち.every((xs, i) => i === 0 || Math.max(...xs) < Math.min(...範囲たち[i - 1]));
+    if (右から左) return { 板の番: 逆, 合ったマス: [今.合], 比べたマス: 今.比べた };
+    const 左から右 = 範囲たち.every((xs, i) => i === 0 || Math.min(...xs) > Math.max(...範囲たち[i - 1]));
+    if (左から右) return { 板の番: そのまま, 合ったマス: [今.合], 比べたマス: 今.比べた };
+  }
   const 返し = 数える(逆);
   const はっきり = 返し.合 - 今.合 >= Math.max(4, 0.2 * Math.max(今.比べた, 返し.比べた));
-  return { 板の番: はっきり ? 逆 : そのまま, 合ったマス: [今.合, 返し.合], 比べたマス: Math.max(今.比べた, 返し.比べた) };
+  return {
+    板の番: はっきり ? 逆 : そのまま,
+    合ったマス: [今.合, 返し.合],
+    比べたマス: Math.max(今.比べた, 返し.比べた),
+  };
 }
 
 /** 端末で読んだ列を teams の rows へ入れる。板の番 … teams の i 番目に当てる端末の板（無ければ i） */
@@ -230,7 +266,12 @@ function 差し替えた(teams, 読んだ, 設定, 紙, 板の番) {
       ...t,
       cellStyle: 紙 ? '1射' : '2射',
       // 確からしさ は cells と同じ並び。確認画面で迷ったマスに色を付けるのに使う
-      rows: t.rows.map((r, j) => ({ ...r, cells: 列たち[j].slice(), 確からしさ: 確たち[j].slice(), marks: undefined })),
+      rows: t.rows.map((r, j) => ({
+        ...r,
+        cells: 列たち[j].slice(),
+        確からしさ: 確たち[j].slice(),
+        marks: undefined,
+      })),
     };
   });
 }
@@ -303,7 +344,7 @@ function マスの数(rows) {
   }
   let 最多 = 0;
   let 票 = -1;
-  for (const [n, c] of 数え) if (c > 票 || (c === 票 && n > 最多)) (最多 = n), (票 = c);
+  for (const [n, c] of 数え) if (c > 票 || (c === 票 && n > 最多)) ((最多 = n), (票 = c));
   return 最多;
 }
 
@@ -315,12 +356,68 @@ async function 板を読む(teams, images, 設定) {
   // 下の段が落ちる）
   const 行数 = Number(設定.行数) >= 2 ? Number(設定.行数) : Math.max(...teams.map((t) => マスの数(t.rows)));
   if (!(行数 >= 2)) return `1列のマスの数が少なすぎる（${行数}）`;
+  // 段の数は、端末が数えた「段の見当」（射手の列ごとの印の数の真ん中）に近い順に試し、見張りを通った最初のものを採る。
+  // Gemini の段の数は同じ写真でも揺れる（10/12 の 10 段の白板で 8・10・5・20 と答えた）。少なく頼むと上の帯が落ち、
+  // 倍にすると印が 2 マスに割れて数が倍の記録になった。写真 1 枚・箱なしのときだけ（箱の道は帯の線で段を決める）
+  if (!(Number(設定.行数) >= 2) && images.length === 1 && !設定.箱たち) {
+    let 見当 = null;
+    try {
+      const 元 = await 設定.道具.画を読む(images[0].base64);
+      const 下見 = await 板の印を読む(元, {
+        板の人数たち: 人数たち,
+        行数,
+        回す: 設定.道具.回す,
+        重み: 設定.重み,
+        薄い重み: 設定.薄い重み,
+      });
+      const 見当たち = 下見.map((b) => b.格子 && b.格子.段の見当).filter((v) => Number.isFinite(v));
+      if (見当たち.length) 見当 = Math.max(...見当たち);
+    } catch (e) {
+      見当 = null;
+    }
+    if (見当 != null && 見当 >= 2) {
+      const 帯の段 = Math.max(
+        0,
+        ...teams.map((t) => Number(t && t.bands) * Number(t && t.marks_per_band) || 0)
+      );
+      const 候補 = [];
+      for (const n of [行数, 帯の段, Math.floor(見当), Math.ceil(見当), 10, 8, 12, 6, 5, 4, 16, 20]) {
+        if (Number.isInteger(n) && n >= 2 && n <= 24 && !候補.includes(n) && Math.abs(n - 見当) <= 2.5)
+          候補.push(n);
+      }
+      // 見当は縮め方や計の数字で ±2 ほどぶれる（ブラウザでは 10 段の白板が 12 段の見当になった）。候補を全部読み、
+      // 見張りを通ったうちで、どの板も範囲の中の丸い印（範囲の丸）が候補の中の最多の 92% 以上になるいちばん少ない段を採る。
+      // 少ない段は上の帯を外に残して範囲の印が減り（10 段の白板で 8 段は 78、10 段は 94）、多い段は余った上の行が
+      // 計の数字を足すだけで、ほとんど増えない（12 段で 98）。9/6 の板（印が小さく、外の印の行が出ない）も同じ形
+      候補.sort((a, b) => a - b);
+      const 読めた = [];
+      for (const n of 候補) {
+        let r;
+        try {
+          r = await 板を読む(teams, images, { ...設定, 行数: n });
+        } catch (e) {
+          r = null;
+        }
+        if (Array.isArray(r)) 読めた.push({ n, r });
+      }
+      if (読めた.length) {
+        const 範囲 = (x, i) => Number((x.r[i] && x.r[i].格子 && x.r[i].格子.範囲の丸) || 0);
+        const 最多 = 読めた[0].r.map((_, i) => Math.max(...読めた.map((x) => 範囲(x, i))));
+        const 採る = 読めた.find((x) => x.r.every((_, i) => 範囲(x, i) >= 最多[i] * 0.92)) || 読めた[0];
+        return 採る.r;
+      }
+    }
+  }
   // Gemini は cells を並べるとき段を数え違えることがある（9/6 の板は 10 段なのに 8 マスで返し、端末も 8 段の格子を
   // 当てて見張りを通り、上の 2 段を読まずに 16 射の記録になった。3 回とも同じ）。帯の数 × 帯の中のマスの数は
   // 相手校の板の箱の問い合わせで 5 回とも正しかったので、cells の数と食い違えば、まずそちらの段数で読む。
   // 見張りを通らなければ、今までどおり cells の数で読む
   if (!(Number(設定.行数) >= 2)) {
-    const 帯の段たち = teams.map((t) => (Number(t && t.bands) > 0 && Number(t && t.marks_per_band) > 0 ? Number(t.bands) * Number(t.marks_per_band) : 0));
+    const 帯の段たち = teams.map((t) =>
+      Number(t && t.bands) > 0 && Number(t && t.marks_per_band) > 0
+        ? Number(t.bands) * Number(t.marks_per_band)
+        : 0
+    );
     const 帯の段 = 帯の段たち.every((n) => n >= 2) ? Math.max(...帯の段たち) : 0;
     // 途中の板（書いた段が板によって違う）は、Gemini が空の段を cells に入れたり入れなかったりで、
     // cells の数も帯の数も当てにならない（10/4 の日大工科の途中の板：左 4 段・右 6 段なのに、cells は 7 と 8・帯 2 と
@@ -328,7 +425,11 @@ async function 板を読む(teams, images, 設定) {
     // cells の数と帯の段のどちらよりも少ないなら途中の板とみて、先にその段数で読む。書いていない上の段は、
     // 端末が空として読む（板ごとの格子の 名札の行を外して上へ）。書き終えた板は、どこかの人のマスが全部埋まって
     // いるので、書いた段は cells の数と同じになり、ここは通らない
-    const 書いた段 = Math.max(...teams.flatMap((t) => t.rows.map((r) => (Array.isArray(r.cells) ? r.cells.filter((c) => String(c || '').trim()).length : 0))));
+    const 書いた段 = Math.max(
+      ...teams.flatMap((t) =>
+        t.rows.map((r) => (Array.isArray(r.cells) ? r.cells.filter((c) => String(c || '').trim()).length : 0))
+      )
+    );
     const 途中の板 = 書いた段 >= 2 && 書いた段 < 行数 && (!帯の段 || 書いた段 < 帯の段);
     if (途中の板) {
       const 書いた段で = await 板を読む(teams, images, { ...設定, 行数: 書いた段 });
@@ -389,7 +490,8 @@ async function 板を読む(teams, images, 設定) {
         // 二段のマス（1マスの切り抜きに印が縦に2つ）が板のマスの 25% 以上＝段の数が少なすぎる。
         // 印が 10 段並ぶ板を Gemini が 5 段と数えると、1行が2段ぶんになる（本物で 35〜70%。
         // 段が合っていれば 10% 以下）。行の欠けでは見つからない（どの行にも印が乗る）
-        const 段が少ない = (b) => b.格子 && b.格子.二段のマス != null && b.格子.二段のマス >= b.列たち.length * 行数 * 0.25;
+        const 段が少ない = (b) =>
+          b.格子 && b.格子.二段のマス != null && b.格子.二段のマス >= b.列たち.length * 行数 * 0.25;
         // 行の欠けは、読んだマスでも確かめる。印がマスいっぱいで太い罫線に触れる板（9/20 の SNS の白板）では、
         // 格子が印を半分ほどの行でしか数えられず「空の行が 4 つ」と出るのに、マスを読むとどの段にも印があり
         // 正しく読めていた（96/96）。行の欠けを信じて箱の道へ回し、そちらで崩れていた。
@@ -406,8 +508,15 @@ async function 板を読む(teams, images, 設定) {
           return 欠け;
         };
         // 行と行の間に印が 2 割以上ある＝段の数が少なすぎて行の間隔が倍になっている（6 段の板を 4 段で）
-        const 間に印 = (b) => b.格子 && b.格子.間の印 != null && b.格子.間の印 >= Math.max(3, (b.格子.範囲の印 || 0) * 0.2);
-        const 行が違う = (b) => b.格子 && ((b.格子.行の欠け != null && b.格子.行の欠け >= 2 && 読みの欠け(b) >= 2) || b.格子.上の字の行 >= 1 || 段が少ない(b) || 間に印(b));
+        const 間に印 = (b) =>
+          b.格子 && b.格子.間の印 != null && b.格子.間の印 >= Math.max(3, (b.格子.範囲の印 || 0) * 0.2);
+        const 行が違う = (b) =>
+          b.格子 &&
+          ((b.格子.行の欠け != null && b.格子.行の欠け >= 2 && 読みの欠け(b) >= 2) ||
+            b.格子.上の字の行 >= 1 ||
+            b.格子.外の印の行 >= 1 ||
+            段が少ない(b) ||
+            間に印(b));
         const 合わない = (b, n) =>
           b.列たち.length !== n ||
           (b.格子 && b.格子.列の見当 != null && b.格子.列の見当 < n) ||
@@ -419,7 +528,11 @@ async function 板を読む(teams, images, 設定) {
           break;
         }
         // 列の数が合わないときの、端末の見当（板ごと）。全部の板に見当があるときだけ返す
-        if (外れ >= 0 && !行が違う(板たち[外れ]) && 板たち.every((b) => b.格子 && b.格子.並びの人数 != null)) {
+        if (
+          外れ >= 0 &&
+          !行が違う(板たち[外れ]) &&
+          板たち.every((b) => b.格子 && b.格子.並びの人数 != null)
+        ) {
           列の見当たち = 板たち.map((b) => b.格子.並びの人数);
         }
         訳 =
@@ -437,7 +550,8 @@ async function 板を読む(teams, images, 設定) {
     if (!取れた) {
       return {
         訳: `${k + 1}枚目の写真: ${訳}`,
-        列の見当たち: 列の見当たち && 列の見当たち.some((n, i) => n !== 人数たち[次の板 + i]) ? 列の見当たち : null,
+        列の見当たち:
+          列の見当たち && 列の見当たち.some((n, i) => n !== 人数たち[次の板 + i]) ? 列の見当たち : null,
       };
     }
     出.push(...取れた);
@@ -456,11 +570,18 @@ async function 紙を読む(teams, images, 設定) {
   if (images.length === 1 && teams.length > 1) {
     const 立数たち = teams.map((t) => マスの数(t.rows) / 立のマス);
     const 立数 = 立数たち[0];
-    if (!立数たち.every((n) => n === 立数) || !Number.isInteger(立数) || 立数 < 1) return `表ごとのマスの数（${teams.map((t) => マスの数(t.rows)).join('・')}）がそろわない`;
+    if (!立数たち.every((n) => n === 立数) || !Number.isInteger(立数) || 立数 < 1)
+      return `表ごとのマスの数（${teams.map((t) => マスの数(t.rows)).join('・')}）がそろわない`;
     const 元 = await 設定.道具.画を読む(images[0].base64);
-    return 紙の表たちの印を読む(元, { 人数たち: teams.map((t) => t.rows.length), 立数, 立のマス, 重み: 設定.紙の重み });
+    return 紙の表たちの印を読む(元, {
+      人数たち: teams.map((t) => t.rows.length),
+      立数,
+      立のマス,
+      重み: 設定.紙の重み,
+    });
   }
-  if (images.length !== teams.length) return `写真（${images.length}枚）と表（${teams.length}つ）の数が合わない`;
+  if (images.length !== teams.length)
+    return `写真（${images.length}枚）と表（${teams.length}つ）の数が合わない`;
   const 出 = [];
   for (let k = 0; k < images.length; k++) {
     const 人数 = teams[k].rows.length;
@@ -508,12 +629,16 @@ async function ノートで読む(teams, images, 設定, 厳しく = false) {
     // Gemini は omae を「右」と答えながら、行を左の人から並べることがある（逆さの写真で起きた）。
     // 組ごとに列の並びを逆にしたものが、AI の cells とはっきりよく合う（1 割以上）ときだけ逆にする。
     // Gemini の ○× はこのノートでは当てにならない（正しい並びでも 6 割ほどしか合わない）ので、差が小さければそのまま
-    const 逆に = 読んだ.map((b) => ({ 列たち: b.列たち.slice().reverse(), 確からしさ: b.確からしさ.slice().reverse() }));
+    const 逆に = 読んだ.map((b) => ({
+      列たち: b.列たち.slice().reverse(),
+      確からしさ: b.確からしさ.slice().reverse(),
+    }));
     const 率 = ノートの合い具合(teams, 読んだ, 設定);
     const 逆の率 = ノートの合い具合(teams, 逆に, 設定);
     return 逆の率 - 率 >= 0.1 ? 逆に : 読んだ;
   }
-  if (最良 && 最良.合わせ.合った数 >= 行たち.length * 0.6) return { teams: 位置で差し替えた(teams, 行たち, 最良.読み, 最良.合わせ) };
+  if (最良 && 最良.合わせ.合った数 >= 行たち.length * 0.6)
+    return { teams: 位置で差し替えた(teams, 行たち, 最良.読み, 最良.合わせ) };
   return {
     訳: 位置あり
       ? `ノートの射手の列と、AI の名前の位置が合わない（端末${数たち.join('・')}列、AI${総}人）`
@@ -535,7 +660,8 @@ function 位置で合わせる(行たち, 読み, 逆さ) {
     .map((c) => ({ c, x: ((逆さ ? W - c.x : c.x) / W) * 1000 }))
     .sort((a, b) => a.x - b.x);
   const 行の並び = 行たち.map((r, k) => ({ k, x: r.x })).sort((a, b) => a.x - b.x);
-  if (!行の並び.length || !筋たち.length) return { 組: new Map(), 合った数: 0, 平均の差: Infinity, 良さ: -Infinity };
+  if (!行の並び.length || !筋たち.length)
+    return { 組: new Map(), 合った数: 0, 平均の差: Infinity, 良さ: -Infinity };
   // 伸び縮みは行の真ん中を軸にする（端が大きく動かないように）
   const 軸 = (行の並び[0].x + 行の並び[行の並び.length - 1].x) / 2;
   let 最良 = null;
@@ -553,22 +679,26 @@ function 位置で合わせる(行たち, 読み, 逆さ) {
 
 /** 位置で合わせる の中身：写した行と筋を、左右の順を保って合わせる。差は列の間隔で測り、1.5 列まで。合わない行・筋はそれぞれ 0.8 の損 */
 function 並びで合わせる(行の並び, 筋たち, 間) {
-  const n = 行の並び.length, m = 筋たち.length, 外す = 0.8;
+  const n = 行の並び.length,
+    m = 筋たち.length,
+    外す = 0.8;
   const 費 = Array.from({ length: n + 1 }, () => new Float64Array(m + 1));
   const 元 = Array.from({ length: n + 1 }, () => new Int8Array(m + 1));
-  for (let a = 1; a <= n; a++) (費[a][0] = a * 外す), (元[a][0] = 1);
-  for (let b = 1; b <= m; b++) (費[0][b] = b * 外す), (元[0][b] = 2);
-  for (let a = 1; a <= n; a++) for (let b = 1; b <= m; b++) {
-    const d = Math.abs(行の並び[a - 1].x - 筋たち[b - 1].x) / 間;
-    const 合 = d <= 1.5 ? 費[a - 1][b - 1] + d : Infinity;
-    const 上 = 費[a - 1][b] + 外す, 左 = 費[a][b - 1] + 外す;
-    if (合 <= 上 && 合 <= 左) (費[a][b] = 合), (元[a][b] = 0);
-    else if (上 <= 左) (費[a][b] = 上), (元[a][b] = 1);
-    else (費[a][b] = 左), (元[a][b] = 2);
-  }
+  for (let a = 1; a <= n; a++) ((費[a][0] = a * 外す), (元[a][0] = 1));
+  for (let b = 1; b <= m; b++) ((費[0][b] = b * 外す), (元[0][b] = 2));
+  for (let a = 1; a <= n; a++)
+    for (let b = 1; b <= m; b++) {
+      const d = Math.abs(行の並び[a - 1].x - 筋たち[b - 1].x) / 間;
+      const 合 = d <= 1.5 ? 費[a - 1][b - 1] + d : Infinity;
+      const 上 = 費[a - 1][b] + 外す,
+        左 = 費[a][b - 1] + 外す;
+      if (合 <= 上 && 合 <= 左) ((費[a][b] = 合), (元[a][b] = 0));
+      else if (上 <= 左) ((費[a][b] = 上), (元[a][b] = 1));
+      else ((費[a][b] = 左), (元[a][b] = 2));
+    }
   const 組 = new Map();
   let 差の和 = 0;
-  for (let a = n, b = m; a > 0 || b > 0; ) {
+  for (let a = n, b = m; a > 0 || b > 0;) {
     if (a > 0 && b > 0 && 元[a][b] === 0) {
       組.set(行の並び[a - 1].k, 筋たち[b - 1].c);
       差の和 += Math.abs(行の並び[a - 1].x - 筋たち[b - 1].x) / 間;
@@ -592,9 +722,13 @@ function 位置で差し替えた(teams, 行たち, 読み, 合わせ) {
   return teams.map((t, i) => {
     const 筋たち = 行の番[i].map((k) => 合わせ.組.get(k)).filter(Boolean);
     let 書いた = 0;
-    for (const c of 筋たち) c.射.forEach((印, k) => { if (印) 書いた = Math.max(書いた, k + 1); });
+    for (const c of 筋たち)
+      c.射.forEach((印, k) => {
+        if (印) 書いた = Math.max(書いた, k + 1);
+      });
     const 長さ = Math.max(4, Math.ceil(書いた / 4) * 4);
-    const 見た目 = (並び, 空) => Array.from({ length: 長さ }, (_, k) => (k < 並び.length ? 並び[k] : 空)).reverse();
+    const 見た目 = (並び, 空) =>
+      Array.from({ length: 長さ }, (_, k) => (k < 並び.length ? 並び[k] : 空)).reverse();
     return {
       ...t,
       cellStyle: '1射',
@@ -603,8 +737,15 @@ function 位置で差し替えた(teams, 行たち, 読み, 合わせ) {
         const c = 合わせ.組.get(行の番[i][j]);
         if (c) return { ...r, cells: 見た目(c.射, ''), 確からしさ: 見た目(c.確, 1), marks: undefined };
         // 斜線で塗った ○ を AI は ◎・丸に線と書くことがある。ノートでは ○（1射のマスに ◎ は無く、空に倒れる）
-        const cells = (Array.isArray(r.cells) ? r.cells : []).map((v) => (/◎|[○◯〇].*[\\/／＼]/.test(String(v || '')) ? '○' : v));
-        return { ...r, cells, 確からしさ: cells.map((v) => (String(v || '').trim() ? 0.5 : 1)), marks: undefined };
+        const cells = (Array.isArray(r.cells) ? r.cells : []).map((v) =>
+          /◎|[○◯〇].*[\\/／＼]/.test(String(v || '')) ? '○' : v
+        );
+        return {
+          ...r,
+          cells,
+          確からしさ: cells.map((v) => (String(v || '').trim() ? 0.5 : 1)),
+          marks: undefined,
+        };
       }),
     };
   });
@@ -617,9 +758,13 @@ function ノートを割り当てる(teams, 筋たち) {
     const 筋 = 筋たち.slice(i, i + t.rows.length);
     i += t.rows.length;
     let 書いた = 0;
-    for (const c of 筋) c.射.forEach((印, k) => { if (印) 書いた = Math.max(書いた, k + 1); });
+    for (const c of 筋)
+      c.射.forEach((印, k) => {
+        if (印) 書いた = Math.max(書いた, k + 1);
+      });
     const 長さ = Math.max(4, Math.ceil(書いた / 4) * 4);
-    const 見た目 = (並び, 空) => Array.from({ length: 長さ }, (_, k) => (k < 並び.length ? 並び[k] : 空)).reverse();
+    const 見た目 = (並び, 空) =>
+      Array.from({ length: 長さ }, (_, k) => (k < 並び.length ? 並び[k] : 空)).reverse();
     return { 列たち: 筋.map((c) => 見た目(c.射, '')), 確からしさ: 筋.map((c) => 見た目(c.確, 1)) };
   });
 }
