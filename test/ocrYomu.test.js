@@ -140,12 +140,14 @@ test('マスを端末で差し替える: Gemini の行の数が板の列の数�
   assert.match(出.訳 || '', /列の数が合わない/);
 });
 
-test('マスを端末で差し替える: Gemini のマスの数（段数）が板と違えば、端末の読み取りは使わない', async () => {
+test('マスを端末で差し替える: Gemini のマスの数（段数）が板と違っても、端末が段の数を探して正しく読む', async () => {
   const { マスを端末で差し替える } = await import('../src/ocr/sashikae.js');
   const { 画を読む, 回す } = await import('../scripts/ocr-cells/gazou-node.mjs');
+  const { 射手たち } = await import('../scripts/ocr-cells/kiroku.mjs');
+  const { マスを開く, 一射目からの順にする } = require('../src/ocrCells');
   const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-tatami.json', 'utf8'));
   // 10段の板なのに、28射の設定に引かれて 14 マスと答えてきた体（本番で実際に起きた）。
-  // 余った段は板の上に置かれ、各人の的中数の数字の行がマスになる。「上に字の行がある」で弾く
+  // 端末の段の見当（列ごとの印の数）に近い 10 段で読む（2026-10-12 から。前は Gemini の○×のままにした）
   const teams = [8, 8].map((n) => ({
     name: '', cellStyle: '2射', tachiPeople: 4,
     rows: Array.from({ length: n }, (_, i) => ({ name: String(i + 1), roster: null, cells: Array(14).fill('') })),
@@ -153,8 +155,15 @@ test('マスを端末で差し替える: Gemini のマスの数（段数）が�
   const 出 = await マスを端末で差し替える(teams, [{ base64: 'docs/ocr-samples/PXL_20260906_081921509.jpg' }], {
     向き: '左右から', 道具: { 画を読む: (p) => 画を読む(p), 回す }, 重み,
   });
-  assert.strictEqual(出.読み取り元, 'AI');
-  assert.match(出.訳 || '', /行の数が合わない/);
+  assert.strictEqual(出.読み取り元, '端末', 出.訳);
+  let 合 = 0;
+  let k = 0;
+  for (const t of 出.teams) for (const r of t.rows) {
+    const 印 = マスを開く(一射目からの順にする(r.cells, '下から'), '2射');
+    const 真 = [...射手たち[k++].印];
+    for (let j = 0; j < 真.length; j++) if (印[j] === 真[j]) 合++;
+  }
+  assert.ok(合 >= 317, `合ったのは ${合}/320`);
 });
 
 test('マスを端末で差し替える: Gemini が板を割りすぎても、端末の見当で行を組み直して読む', async () => {

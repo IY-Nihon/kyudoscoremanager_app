@@ -58,7 +58,13 @@ export async function 板の印を読む(元, 注文) {
   const 板の群れ = 網の群れ(注文.重み);
   const 写真の網 = 板の群れ.畳み ? 薄い網(注文.薄い重み) : null;
   元 = 黒板なら裏返す(元);
-  const 板たち = await 板ごとの格子(元, { 板の人数たち: 注文.板の人数たち, 行数: 注文.行数, 回す: 注文.回す, 箱たち: 注文.箱たち, 帯の数: 注文.帯の数 });
+  const 板たち = await 板ごとの格子(元, {
+    板の人数たち: 注文.板の人数たち,
+    行数: 注文.行数,
+    回す: 注文.回す,
+    箱たち: 注文.箱たち,
+    帯の数: 注文.帯の数,
+  });
   const 出 = [];
   let 読んだ数 = 0; // 息継ぎ のため（8 マスごと）
   let 板の番号 = 0; // 確かめ用の口（__OCR_MASU）に渡す板の番号
@@ -110,7 +116,9 @@ export async function 板の印を読む(元, 注文) {
         }
         if (二段か(対象切)) 二段++;
         // 箱や罫線で立てた格子（印がマスいっぱいの板）は、箱いっぱいの印を外さない
-        const 形 = await 形にする(対象切.画, 対象切.幅, 対象切.高, g.立て方 ? 'ぎっしり' : undefined, { 印の幅: g.箱の幅 || g.印の幅 });
+        const 形 = await 形にする(対象切.画, 対象切.幅, 対象切.高, g.立て方 ? 'ぎっしり' : undefined, {
+          印の幅: g.箱の幅 || g.印の幅,
+        });
         if (++読んだ数 % 8 === 0) await 息継ぎ();
         let 合;
         if (板の群れ.畳み) {
@@ -137,8 +145,16 @@ export async function 板の印を読む(元, 注文) {
         // 倒したマスは確からしさを 0.5 にして、確認画面で「迷った」の色を付ける
         let 確からしさの値 = 合[最];
         if (typeof globalThis.__OCR_MASU === 'function') {
-           const 残り = 直線を抜いた残り(対象切);
-           globalThis.__OCR_MASU({ 板: 現在の板, 列: c, 行: r, 種類: 種類[最], 点: 合[最], 輪の覆い: 輪の覆い(形), 残り });
+          const 残り = 直線を抜いた残り(対象切);
+          globalThis.__OCR_MASU({
+            板: 現在の板,
+            列: c,
+            行: r,
+            種類: 種類[最],
+            点: 合[最],
+            輪の覆い: 輪の覆い(形),
+            残り,
+          });
         }
 
         // ただし直線を抜いて線が 1 本しか無いものは倒さない（丸に線 1 本で、丸がマスの外へはみ出して輪が写らない）。
@@ -186,7 +202,8 @@ export async function 板の印を読む(元, 注文) {
     let 間の印 = 0;
     let 範囲の印 = 0;
     const 行の並び = g.行.位置;
-    const 行の間 = 行の並び.length >= 2 ? (行の並び[行の並び.length - 1] - 行の並び[0]) / (行の並び.length - 1) : 0;
+    const 行の間 =
+      行の並び.length >= 2 ? (行の並び[行の並び.length - 1] - 行の並び[0]) / (行の並び.length - 1) : 0;
     if (行の間 > 0 && Array.isArray(g.印)) {
       for (const p of g.印) {
         if (p.y < 行の並び[0] - 行の間 * 0.5 || p.y > 行の並び[行の並び.length - 1] + 行の間 * 0.5) continue;
@@ -198,7 +215,29 @@ export async function 板の印を読む(元, 注文) {
       列たち,
       確からしさ,
       // 確かめ用。どこに格子を立てたか
-      格子: { 角度: g.角度, 列: g.列.map((c) => Math.round(c.中心)), 列の見当: g.列の見当, 並びの人数: g.並びの人数, 外した強い列: g.外した強い列, 列の点: g.列の点, 行: g.行.位置.map((v) => Math.round(v)), 行の欠け: g.行の欠け, 上の字の行: g.上の字の行, 行ごとの列数: g.行ごとの列数, 印の幅: g.印の幅, 立て方: g.立て方 || null, 二段のマス: 二段, 間の印, 範囲の印, 写真の網で見た },
+      格子: {
+        角度: g.角度,
+        列: g.列.map((c) => Math.round(c.中心)),
+        列の見当: g.列の見当,
+        並びの人数: g.並びの人数,
+        外した強い列: g.外した強い列,
+        列の点: g.列の点,
+        行: g.行.位置.map((v) => Math.round(v)),
+        行の欠け: g.行の欠け,
+        上の字の行: g.上の字の行,
+        外の印の行: g.外の印の行 || 0,
+        乗らない印: g.乗らない印 || 0,
+        段の見当: g.段の見当 == null ? null : g.段の見当,
+        行のずれ: g.行のずれ == null ? null : g.行のずれ,
+        範囲の丸: g.範囲の丸 || 0,
+        行ごとの列数: g.行ごとの列数,
+        印の幅: g.印の幅,
+        立て方: g.立て方 || null,
+        二段のマス: 二段,
+        間の印,
+        範囲の印,
+        写真の網で見た,
+      },
     });
   }
   return 出;
@@ -284,10 +323,15 @@ export function 交代のマスか(切) {
     for (let x0 = 0; x0 < 幅; x0++) {
       const 始 = y0 * 幅 + x0;
       if (見た[始] || !横線マスク[始]) continue;
-      let 頭 = 0, 尻 = 0;
+      let 頭 = 0,
+        尻 = 0;
       積[尻++] = 始;
       見た[始] = 1;
-      let minX = x0, maxX = x0, minY = y0, maxY = y0, 数 = 0;
+      let minX = x0,
+        maxX = x0,
+        minY = y0,
+        maxY = y0,
+        数 = 0;
       while (頭 < 尻) {
         const p = 積[頭++];
         const x = p % 幅;
@@ -297,12 +341,25 @@ export function 交代のマスか(切) {
         if (x > maxX) maxX = x;
         if (y < minY) minY = y;
         if (y > maxY) maxY = y;
-        if (x > 0 && !見た[p - 1] && 横線マスク[p - 1]) { 見た[p - 1] = 1; 積[尻++] = p - 1; }
-        if (x + 1 < 幅 && !見た[p + 1] && 横線マスク[p + 1]) { 見た[p + 1] = 1; 積[尻++] = p + 1; }
-        if (y > 0 && !見た[p - 幅] && 横線マスク[p - 幅]) { 見た[p - 幅] = 1; 積[尻++] = p - 幅; }
-        if (y + 1 < 高 && !見た[p + 幅] && 横線マスク[p + 幅]) { 見た[p + 幅] = 1; 積[尻++] = p + 幅; }
+        if (x > 0 && !見た[p - 1] && 横線マスク[p - 1]) {
+          見た[p - 1] = 1;
+          積[尻++] = p - 1;
+        }
+        if (x + 1 < 幅 && !見た[p + 1] && 横線マスク[p + 1]) {
+          見た[p + 1] = 1;
+          積[尻++] = p + 1;
+        }
+        if (y > 0 && !見た[p - 幅] && 横線マスク[p - 幅]) {
+          見た[p - 幅] = 1;
+          積[尻++] = p - 幅;
+        }
+        if (y + 1 < 高 && !見た[p + 幅] && 横線マスク[p + 幅]) {
+          見た[p + 幅] = 1;
+          積[尻++] = p + 幅;
+        }
       }
-      const w = maxX - minX + 1, h = maxY - minY + 1;
+      const w = maxX - minX + 1,
+        h = maxY - minY + 1;
       // 幅がマスの 6 割以上、高さがマスの 1 割以下、上から 25〜75% の所
       // かつ、交代マスは上端に押し上げられた印のすぐ下に線があるため、上寄り（minY <= 高 * 0.55）
       if (w >= 幅 * 0.6 && h <= 高 * 0.1 && minY >= 高 * 0.25 && maxY <= 高 * 0.75 && minY <= 高 * 0.55) {
@@ -329,10 +386,14 @@ export function 交代のマスか(切) {
     for (let x0 = 0; x0 < 幅; x0++) {
       const 始 = y0 * 幅 + x0;
       if (上見た[始] || 画[始] >= 境) continue;
-      let 頭 = 0, 尻 = 0;
+      let 頭 = 0,
+        尻 = 0;
       積[尻++] = 始;
       上見た[始] = 1;
-      let minX = x0, maxX = x0, minY = y0, maxY = y0;
+      let minX = x0,
+        maxX = x0,
+        minY = y0,
+        maxY = y0;
       while (頭 < 尻) {
         const p = 積[頭++];
         const x = p % 幅;
@@ -341,10 +402,22 @@ export function 交代のマスか(切) {
         if (x > maxX) maxX = x;
         if (y < minY) minY = y;
         if (y > maxY) maxY = y;
-        if (x > 0 && !上見た[p - 1] && 画[p - 1] < 境) { 上見た[p - 1] = 1; 積[尻++] = p - 1; }
-        if (x + 1 < 幅 && !上見た[p + 1] && 画[p + 1] < 境) { 上見た[p + 1] = 1; 積[尻++] = p + 1; }
-        if (y > 0 && !上見た[p - 幅] && 画[p - 幅] < 境) { 上見た[p - 幅] = 1; 積[尻++] = p - 幅; }
-        if (y + 1 < 見つかった線.minY && !上見た[p + 幅] && 画[p + 幅] < 境) { 上見た[p + 幅] = 1; 積[尻++] = p + 幅; }
+        if (x > 0 && !上見た[p - 1] && 画[p - 1] < 境) {
+          上見た[p - 1] = 1;
+          積[尻++] = p - 1;
+        }
+        if (x + 1 < 幅 && !上見た[p + 1] && 画[p + 1] < 境) {
+          上見た[p + 1] = 1;
+          積[尻++] = p + 1;
+        }
+        if (y > 0 && !上見た[p - 幅] && 画[p - 幅] < 境) {
+          上見た[p - 幅] = 1;
+          積[尻++] = p - 幅;
+        }
+        if (y + 1 < 見つかった線.minY && !上見た[p + 幅] && 画[p + 幅] < 境) {
+          上見た[p + 幅] = 1;
+          積[尻++] = p + 幅;
+        }
       }
       if (maxX - minX + 1 >= 幅 * 0.45 && maxY - minY + 1 >= 高 * 0.45) return null;
     }
@@ -359,10 +432,15 @@ export function 交代のマスか(切) {
     for (let x0 = 0; x0 < 幅; x0++) {
       const 始 = y0 * 幅 + x0;
       if (下見た[始] || 画[始] >= 境) continue;
-      let 頭 = 0, 尻 = 0;
+      let 頭 = 0,
+        尻 = 0;
       積[尻++] = 始;
       下見た[始] = 1;
-      let minX = x0, maxX = x0, minY = y0, maxY = y0, 数 = 0;
+      let minX = x0,
+        maxX = x0,
+        minY = y0,
+        maxY = y0,
+        数 = 0;
       while (頭 < 尻) {
         const p = 積[頭++];
         const x = p % 幅;
@@ -372,10 +450,22 @@ export function 交代のマスか(切) {
         if (x > maxX) maxX = x;
         if (y < minY) minY = y;
         if (y > maxY) maxY = y;
-        if (x > 0 && !下見た[p - 1] && 画[p - 1] < 境) { 下見た[p - 1] = 1; 積[尻++] = p - 1; }
-        if (x + 1 < 幅 && !下見た[p + 1] && 画[p + 1] < 境) { 下見た[p + 1] = 1; 積[尻++] = p + 1; }
-        if (y > 下開始y && !下見た[p - 幅] && 画[p - 幅] < 境) { 下見た[p - 幅] = 1; 積[尻++] = p - 幅; }
-        if (y + 1 < 高 && !下見た[p + 幅] && 画[p + 幅] < 境) { 下見た[p + 幅] = 1; 積[尻++] = p + 幅; }
+        if (x > 0 && !下見た[p - 1] && 画[p - 1] < 境) {
+          下見た[p - 1] = 1;
+          積[尻++] = p - 1;
+        }
+        if (x + 1 < 幅 && !下見た[p + 1] && 画[p + 1] < 境) {
+          下見た[p + 1] = 1;
+          積[尻++] = p + 1;
+        }
+        if (y > 下開始y && !下見た[p - 幅] && 画[p - 幅] < 境) {
+          下見た[p - 幅] = 1;
+          積[尻++] = p - 幅;
+        }
+        if (y + 1 < 高 && !下見た[p + 幅] && 画[p + 幅] < 境) {
+          下見た[p + 幅] = 1;
+          積[尻++] = p + 幅;
+        }
       }
       // 字のかけら：小さめのかたまり（ノイズ除外かつ巨大な印の弧を除外）
       if (数 >= 8 && (maxX - minX + 1 <= 幅 * 0.4 || maxY - minY + 1 <= 高 * 0.4)) 字のかけら数++;
@@ -410,7 +500,8 @@ export function 空のマスか(切, 厳しく = false) {
   // は印ではない（9/20 の SNS の板の「打っていない」段）
   const { 幅, 高 } = 切;
   const 印らしい大きさ = (k) => {
-    const w = k.右 - k.左 + 1, h = k.下 - k.上 + 1;
+    const w = k.右 - k.左 + 1,
+      h = k.下 - k.上 + 1;
     if (!厳しく) return w >= 幅 * 0.5 || h >= 高 * 0.5;
     const 横に大きい = w >= 幅 * 0.5 && h >= 高 * 0.3 && !(k.下 <= 高 * 0.35 || k.上 >= 高 * 0.65);
     const 縦に大きい = h >= 高 * 0.5 && w >= 幅 * 0.3 && !(k.右 <= 幅 * 0.35 || k.左 >= 幅 * 0.65);
@@ -507,10 +598,22 @@ export function 内側の線の向き(切) {
       if (x > k.右) k.右 = x;
       if (y < k.上) k.上 = y;
       if (y > k.下) k.下 = y;
-      if (x > 0 && !見た[p - 1] && 画[p - 1] < 境) { 見た[p - 1] = 1; 積[尻++] = p - 1; }
-      if (x + 1 < 幅 && !見た[p + 1] && 画[p + 1] < 境) { 見た[p + 1] = 1; 積[尻++] = p + 1; }
-      if (y > 0 && !見た[p - 幅] && 画[p - 幅] < 境) { 見た[p - 幅] = 1; 積[尻++] = p - 幅; }
-      if (y + 1 < 高 && !見た[p + 幅] && 画[p + 幅] < 境) { 見た[p + 幅] = 1; 積[尻++] = p + 幅; }
+      if (x > 0 && !見た[p - 1] && 画[p - 1] < 境) {
+        見た[p - 1] = 1;
+        積[尻++] = p - 1;
+      }
+      if (x + 1 < 幅 && !見た[p + 1] && 画[p + 1] < 境) {
+        見た[p + 1] = 1;
+        積[尻++] = p + 1;
+      }
+      if (y > 0 && !見た[p - 幅] && 画[p - 幅] < 境) {
+        見た[p - 幅] = 1;
+        積[尻++] = p - 幅;
+      }
+      if (y + 1 < 高 && !見た[p + 幅] && 画[p + 幅] < 境) {
+        見た[p + 幅] = 1;
+        積[尻++] = p + 幅;
+      }
     }
     if (k.n >= 15) たち.push(k);
   }
@@ -533,7 +636,12 @@ export function 内側の線の向き(切) {
     if (k.左 <= 輪.左 && k.右 >= 輪.右 && k.上 <= 輪.上 && k.下 >= 輪.下) return false;
     const cx = k.sx / k.n;
     const cy = k.sy / k.n;
-    return cx > 輪.左 + 輪の幅 * 0.2 && cx < 輪.右 - 輪の幅 * 0.2 && cy > 輪.上 + 輪の高 * 0.2 && cy < 輪.下 - 輪の高 * 0.2;
+    return (
+      cx > 輪.左 + 輪の幅 * 0.2 &&
+      cx < 輪.右 - 輪の幅 * 0.2 &&
+      cy > 輪.上 + 輪の高 * 0.2 &&
+      cy < 輪.下 - 輪の高 * 0.2
+    );
   });
   if (内.length !== 1) return null;
   const k = 内[0];
@@ -590,10 +698,22 @@ function 印のかたまりを探す(切) {
         if (x > 右) 右 = x;
         if (y < 上) 上 = y;
         if (y > 下) 下 = y;
-        if (x > 0 && !見た[p - 1] && 切.画[p - 1] < 境) { 見た[p - 1] = 1; 積[尻++] = p - 1; }
-        if (x + 1 < 幅 && !見た[p + 1] && 切.画[p + 1] < 境) { 見た[p + 1] = 1; 積[尻++] = p + 1; }
-        if (y > 0 && !見た[p - 幅] && 切.画[p - 幅] < 境) { 見た[p - 幅] = 1; 積[尻++] = p - 幅; }
-        if (y + 1 < 高 && !見た[p + 幅] && 切.画[p + 幅] < 境) { 見た[p + 幅] = 1; 積[尻++] = p + 幅; }
+        if (x > 0 && !見た[p - 1] && 切.画[p - 1] < 境) {
+          見た[p - 1] = 1;
+          積[尻++] = p - 1;
+        }
+        if (x + 1 < 幅 && !見た[p + 1] && 切.画[p + 1] < 境) {
+          見た[p + 1] = 1;
+          積[尻++] = p + 1;
+        }
+        if (y > 0 && !見た[p - 幅] && 切.画[p - 幅] < 境) {
+          見た[p - 幅] = 1;
+          積[尻++] = p - 幅;
+        }
+        if (y + 1 < 高 && !見た[p + 幅] && 切.画[p + 幅] < 境) {
+          見た[p + 幅] = 1;
+          積[尻++] = p + 幅;
+        }
       }
       if (数 < 40 || 右 - 左 + 1 < 最小の辺 || 下 - 上 + 1 < 最小の辺) continue;
       // 罫線（消し残った縦線や、マスの角で交わった L の形）は、墨がどこか1本の縦の帯と
@@ -620,7 +740,11 @@ function 印のかたまりを探す(切) {
       const 行帯 = 帯の最大(行の数);
       // 細長い（幅が箱の 1/4 以下で高さが 6 割以上、またはその逆）かたまりは罫線。
       // 波打った線や、線に小さなかけらが付いたものは帯に 85% 集まらない（実測 42%）
-      if ((右 - 左 + 1 <= 幅 * 0.25 && 下 - 上 + 1 >= 高 * 0.6) || (下 - 上 + 1 <= 高 * 0.25 && 右 - 左 + 1 >= 幅 * 0.6)) continue;
+      if (
+        (右 - 左 + 1 <= 幅 * 0.25 && 下 - 上 + 1 >= 高 * 0.6) ||
+        (下 - 上 + 1 <= 高 * 0.25 && 右 - 左 + 1 >= 幅 * 0.6)
+      )
+        continue;
       if (列帯 / 数 >= 0.5) {
         let 上2 = -1;
         let 下2 = -1;
@@ -679,7 +803,8 @@ export async function 紙の表たちの印を読む(元, 注文) {
   const 四角たち = 紙の表たちを探す(元, { 人数たち: 注文.人数たち });
   if (!四角たち) throw new Error('紙の表が見つかりません');
   const 出 = [];
-  for (let k = 0; k < 四角たち.length; k++) 出.push(await 四角の紙を読む(元, 四角たち[k], 注文.人数たち[k], { ...注文, 上を探す: true }));
+  for (let k = 0; k < 四角たち.length; k++)
+    出.push(await 四角の紙を読む(元, 四角たち[k], 注文.人数たち[k], { ...注文, 上を探す: true }));
   return 出;
 }
 
@@ -791,7 +916,7 @@ function 直線を抜いた残り(切) {
   const 見た = new Uint8Array(幅 * 高);
   const 積 = new Int32Array(幅 * 高);
   const たち = [];
-  
+
   for (let 始 = 0; 始 < 幅 * 高; 始++) {
     if (見た[始] || 画[始] >= 境) continue;
     let 頭 = 0;
@@ -804,22 +929,34 @@ function 直線を抜いた残り(切) {
       const x = p % 幅;
       const y = (p - x) / 幅;
       k.n++;
-      k.画素たち.push({x, y, p});
+      k.画素たち.push({ x, y, p });
       if (x === 0 || x === 幅 - 1 || y === 0 || y === 高 - 1) k.縁に触れた = true;
-      if (x > 0 && !見た[p - 1] && 画[p - 1] < 境) { 見た[p - 1] = 1; 積[尻++] = p - 1; }
-      if (x + 1 < 幅 && !見た[p + 1] && 画[p + 1] < 境) { 見た[p + 1] = 1; 積[尻++] = p + 1; }
-      if (y > 0 && !見た[p - 幅] && 画[p - 幅] < 境) { 見た[p - 幅] = 1; 積[尻++] = p - 幅; }
-      if (y + 1 < 高 && !見た[p + 幅] && 画[p + 幅] < 境) { 見た[p + 幅] = 1; 積[尻++] = p + 幅; }
+      if (x > 0 && !見た[p - 1] && 画[p - 1] < 境) {
+        見た[p - 1] = 1;
+        積[尻++] = p - 1;
+      }
+      if (x + 1 < 幅 && !見た[p + 1] && 画[p + 1] < 境) {
+        見た[p + 1] = 1;
+        積[尻++] = p + 1;
+      }
+      if (y > 0 && !見た[p - 幅] && 画[p - 幅] < 境) {
+        見た[p - 幅] = 1;
+        積[尻++] = p - 幅;
+      }
+      if (y + 1 < 高 && !見た[p + 幅] && 画[p + 幅] < 境) {
+        見た[p + 幅] = 1;
+        積[尻++] = p + 幅;
+      }
     }
     if (k.n >= 15) たち.push(k);
   }
-  
+
   if (たち.length === 0) return { 線の数: 0, 線たち: [], 残りの割合: 0, 残りの弧: 0 };
-  
+
   たち.sort((a, b) => b.n - a.n);
   const 残す画素 = new Set();
   const 墨のリスト = [];
-  
+
   for (let i = 0; i < たち.length; i++) {
     if (i === 0 || !たち[i].縁に触れた) {
       for (const p of たち[i].画素たち) {
@@ -828,49 +965,57 @@ function 直線を抜いた残り(切) {
       }
     }
   }
-  
+
   const もとの墨 = 墨のリスト.length;
   if (もとの墨 === 0) return { 線の数: 0, 線たち: [], 残りの割合: 0, 残りの弧: 0 };
-  
+
   const 走り = [];
-  for(let y=0; y<高; y++) {
+  for (let y = 0; y < 高; y++) {
     let len = 0;
-    for(let x=0; x<幅; x++) {
+    for (let x = 0; x < 幅; x++) {
       if (残す画素.has(y * 幅 + x)) len++;
-      else { if(len>0) 走り.push(len); len=0; }
+      else {
+        if (len > 0) 走り.push(len);
+        len = 0;
+      }
     }
-    if(len>0) 走り.push(len);
+    if (len > 0) 走り.push(len);
   }
-  for(let x=0; x<幅; x++) {
+  for (let x = 0; x < 幅; x++) {
     let len = 0;
-    for(let y=0; y<高; y++) {
+    for (let y = 0; y < 高; y++) {
       if (残す画素.has(y * 幅 + x)) len++;
-      else { if(len>0) 走り.push(len); len=0; }
+      else {
+        if (len > 0) 走り.push(len);
+        len = 0;
+      }
     }
-    if(len>0) 走り.push(len);
+    if (len > 0) 走り.push(len);
   }
-  走り.sort((a,b)=>a-b);
-  const 太さ = 走り.length > 0 ? 走り[Math.floor(走り.length/2)] : 1;
+  走り.sort((a, b) => a - b);
+  const 太さ = 走り.length > 0 ? 走り[Math.floor(走り.length / 2)] : 1;
   const 線とみなす長さ = Math.min(幅, 高) * 0.6;
-  
+
   const 角度リスト = [];
   for (let d = 20; d <= 70; d++) 角度リスト.push(d);
   for (let d = 110; d <= 160; d++) 角度リスト.push(d);
-  
+
   const 線たち = [];
   let 残りリスト = [...墨のリスト];
-  
+
   for (let step = 0; step < 2; step++) {
     if (残りリスト.length === 0) break;
     const 投票 = new Map();
     const 精度 = 2;
-    const rad = (d) => d * Math.PI / 180;
-    const coss = 角度リスト.map(d => Math.cos(rad(d)));
-    const sins = 角度リスト.map(d => Math.sin(rad(d)));
-    
-    const cx = 幅/2, cy = 高/2;
+    const rad = (d) => (d * Math.PI) / 180;
+    const coss = 角度リスト.map((d) => Math.cos(rad(d)));
+    const sins = 角度リスト.map((d) => Math.sin(rad(d)));
+
+    const cx = 幅 / 2,
+      cy = 高 / 2;
     for (const p of 残りリスト) {
-      const dx = p.x - cx, dy = p.y - cy;
+      const dx = p.x - cx,
+        dy = p.y - cy;
       for (let i = 0; i < 角度リスト.length; i++) {
         const d = 角度リスト[i];
         const ρ = Math.round((dx * coss[i] + dy * sins[i]) / 精度) * 精度;
@@ -880,18 +1025,19 @@ function 直線を抜いた残り(切) {
         投票.set(key, val);
       }
     }
-    
+
     let 最大の票数 = 0;
     let ベスト線 = null;
-    
+
     for (const [key, pts] of 投票.entries()) {
       if (pts.length > 最大の票数) {
         const [d, ρ] = key.split('_').map(Number);
         const theta = rad(d);
         const dirX = Math.sin(theta);
         const dirY = -Math.cos(theta);
-        
-        let minT = Infinity, maxT = -Infinity;
+
+        let minT = Infinity,
+          maxT = -Infinity;
         for (const p of pts) {
           const t = (p.x - cx) * dirX + (p.y - cy) * dirY;
           if (t < minT) minT = t;
@@ -904,7 +1050,7 @@ function 直線を抜いた残り(切) {
         }
       }
     }
-    
+
     if (ベスト線) {
       線たち.push({ 角度: ベスト線.角度, 長さ: ベスト線.長さ });
       const 閾値 = 太さ * 1.5;
@@ -912,7 +1058,8 @@ function 直線を抜いた残り(切) {
       const sin = Math.sin(rad(ベスト線.角度));
       const 新残り = [];
       for (const p of 残りリスト) {
-        const dx = p.x - cx, dy = p.y - cy;
+        const dx = p.x - cx,
+          dy = p.y - cy;
         const 距離 = Math.abs(dx * cos + dy * sin - ベスト線.ρ);
         if (距離 > 閾値) {
           新残り.push(p);
@@ -923,23 +1070,25 @@ function 直線を抜いた残り(切) {
       break;
     }
   }
-  
+
   const 抜いた後の墨 = 残りリスト.length;
   const 残りの割合 = 抜いた後の墨 / もとの墨;
-  
+
   const 弧 = new Uint8Array(36);
-  const cx = 幅/2, cy = 高/2;
+  const cx = 幅 / 2,
+    cy = 高 / 2;
   for (const p of 残りリスト) {
-    const dx = p.x - cx, dy = p.y - cy;
-    let deg = Math.atan2(dy, dx) * 180 / Math.PI;
+    const dx = p.x - cx,
+      dy = p.y - cy;
+    let deg = (Math.atan2(dy, dx) * 180) / Math.PI;
     if (deg < 0) deg += 360;
     const index = Math.floor(deg / 10) % 36;
     弧[index] = 1;
   }
   let うまった = 0;
-  for(let i=0; i<36; i++) if(弧[i]) うまった++;
+  for (let i = 0; i < 36; i++) if (弧[i]) うまった++;
   const 残りの弧 = うまった / 36;
-  
+
   return { 線の数: 線たち.length, 線たち, 残りの割合, 残りの弧 };
 }
 export { 直線を抜いた残り };
