@@ -39,6 +39,8 @@ const 板の重み = require('../scripts/ocr-cells/omomi-tatami.json');
 const 紙の重み = require('../scripts/ocr-cells/kami-tatami.json');
 // 手書きのノート（1 人 1 列・4 射ずつ）のマスは 3 種類（× ○ 他）の網（2026-10-11。ノートの写真 103 枚で学んだ。scripts/ocr-cells/noto.mjs）
 const ノートの重み = require('../scripts/ocr-cells/noto-tatami.json');
+// ノートの写真の向き（逆さに撮った写真がある）。下の名前・上の数字の字が正しい向きか（scripts/ocr-cells/noto.mjs）
+const ノートの向きの重み = require('../scripts/ocr-cells/noto-muki.json');
 // AI の JSON が少し壊れていたら（閉じ括弧の不足など）直してから読む
 const { AIのJSONを読む } = require('./ocr/jsonNaoshi');
 // 畳み込みの網が迷ったマスだけ、写真で学習済みの網（0.79MB）と混ぜる。重みは読み取りを使うときだけ取りに行く
@@ -56,7 +58,12 @@ if (IS_WEB && typeof window !== 'undefined') {
     },
     // 1マスの切り抜きと、網に届く形（20×20）を返す。読み違えたマスを Node と比べるため
     マスを見る: async (base64, 板の人数たち, 行数, 板, 列, 行, 箱たち) => {
-      const { 板ごとの格子, 箱の大きさ, マスの中心y, マスの中心x } = require('../scripts/ocr-cells/kiridasu.mjs');
+      const {
+        板ごとの格子,
+        箱の大きさ,
+        マスの中心y,
+        マスの中心x,
+      } = require('../scripts/ocr-cells/kiridasu.mjs');
       const { 形にする, 切り取る, 辺 } = require('../scripts/ocr-cells/manabu.mjs');
       const 元 = await 画像の道具.画を読む(base64);
       const 板たち = await 板ごとの格子(元, { 板の人数たち, 行数, 回す: 画像の道具.回す, 箱たち });
@@ -409,6 +416,23 @@ const OCRRecordModal = ({
     const prompt = buildPrompt();
     // 写真で学習済みの網の重みは、Gemini を待つあいだに取り寄せる（待つのは 8 秒まで。取れなければ畳み込みの網だけ）
     const 写真の網の重み = IS_WEB ? 写真の網の重みを待つ() : Promise.resolve(null);
+    // Gemini に見せる写真。逆さに撮った手書きのノートなら、起こしたものに替えて読み直す。
+    // ノートかどうかは端末で見る（Gemini はノートを板（2射）と答えることがある）。Gemini を待つあいだに見ておく
+    let 読む写真 = images;
+    const 逆さのノート =
+      IS_WEB && mode === 'record' && images.length === 1
+        ? (async () => {
+            const { 逆さのノートか } = require('./ocr/yomu');
+            const 元 = await 画像の道具.画を読む(images[0].base64);
+            return 逆さのノートか(元, { 重み: ノートの重み, 向きの重み: ノートの向きの重み });
+          })().catch((誤り) => {
+            console.log(
+              '[OCRRecordModal] ノートの向きを見られなかった:',
+              String((誤り && 誤り.message) || 誤り)
+            );
+            return false;
+          })
+        : Promise.resolve(false);
 
     try {
       // 鍵の引数は飾り。中継が本物の鍵に付け替える（baseUrl と Authorization は SDKの設定 が足す）
@@ -425,7 +449,7 @@ const OCRRecordModal = ({
 
       const 読ませる = async (指示文) => {
         const parts = [{ text: 指示文 }];
-        images.forEach((img) => {
+        読む写真.forEach((img) => {
           parts.push({ inlineData: { mimeType: 'image/jpeg', data: img.base64 } });
         });
         let result;
@@ -450,18 +474,38 @@ const OCRRecordModal = ({
       if (mode === 'record') {
         // 新しい形は teams（板ごと）。古い形（rows だけ）も受ける。
         // 板が2つ写っているときは、間に区切りを入れるために team の番号を持たせる
+        // teams の配列だけを返してくることがある（起こしたノートの読み直しで出た。10/11）
         const teamsにする = (読み取り) =>
-          Array.isArray(読み取り.teams) && 読み取り.teams.length
-            ? 読み取り.teams
-            : [
-                {
-                  name: '',
-                  cellStyle: '1射',
-                  tachiPeople: 0,
-                  rows: Array.isArray(読み取り.rows) ? 読み取り.rows : [],
-                },
-              ];
+          Array.isArray(読み取り) && 読み取り.length && 読み取り.every((t) => t && Array.isArray(t.rows))
+            ? 読み取り
+            : Array.isArray(読み取り.teams) && 読み取り.teams.length
+              ? 読み取り.teams
+              : [
+                  {
+                    name: '',
+                    cellStyle: '1射',
+                    tachiPeople: 0,
+                    rows: Array.isArray(読み取り.rows) ? 読み取り.rows : [],
+                  },
+                ];
         let 生のteams = teamsにする(parsed);
+        // 端末が逆さのノートと見たら、起こして読み直す。逆さのままだと Gemini は名前を読み違え、
+        // 列の位置（x）も組ごとに左右がばらばらになった（10/11）
+        if (await 逆さのノート) {
+          try {
+            const 起こした = await 画像の道具.写真を逆さにする(images[0].base64);
+            読む写真 = [{ ...images[0], base64: 起こした }];
+            parsed = await 読ませる(prompt);
+            生のteams = teamsにする(parsed);
+            console.log('[OCRRecordModal] 逆さのノートを起こして読み直した');
+          } catch (誤り) {
+            読む写真 = images;
+            console.log(
+              '[OCRRecordModal] 逆さのノートを起こせなかった:',
+              String((誤り && 誤り.message) || 誤り)
+            );
+          }
+        }
         const 板の様子 = (チームたち) =>
           チームたち
             .map(
@@ -473,12 +517,13 @@ const OCRRecordModal = ({
         // ○×のマスは端末で読み替える（板でも紙でも）。合わなければ Gemini のまま
         const 端末で = async (チーム, 箱たち, 行数, 帯の数) =>
           IS_WEB
-            ? マスを端末で差し替える(チーム, images, {
+            ? マスを端末で差し替える(チーム, 読む写真, {
                 向き,
                 道具: 画像の道具,
                 重み: 板の重み,
                 紙の重み,
                 ノートの重み,
+                ノートの向きの重み,
                 薄い重み: await 写真の網の重み,
                 箱たち,
                 行数,
@@ -1463,7 +1508,9 @@ const OCRRecordModal = ({
                       // 選んだ日の組だけ。組の番号は詰め直す（区切りと計は、残った組のあいだにだけ入る）
                       const 番たち = [...new Set(選んだ行.map((行) => 行.チーム番号))];
                       set日付ごとの行(null);
-                      applyRecordMatching(選んだ行.map((行) => ({ ...行, チーム番号: 番たち.indexOf(行.チーム番号) })));
+                      applyRecordMatching(
+                        選んだ行.map((行) => ({ ...行, チーム番号: 番たち.indexOf(行.チーム番号) }))
+                      );
                     }}
                   >
                     <Text style={styles.footerBtnPrimaryText}>
@@ -1694,4 +1741,3 @@ const OCRRecordModal = ({
 };
 
 exports.OCRRecordModal = OCRRecordModal;
-

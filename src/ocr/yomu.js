@@ -19,7 +19,7 @@ import { 種類, 形にする, 前へ, 切り取る, 輪の覆い } from '../../
 import { 重みを組む } from '../../scripts/ocr-cells/omomi.mjs';
 import { 畳みの網を組む, 畳みで見分ける } from '../../scripts/ocr-cells/tatami.mjs';
 import { 薄い網を組む, 薄い網で見分ける } from '../../scripts/ocr-cells/mobilenet.mjs';
-import { 写真を整える, ノートを読む, 下に名前があるか } from '../../scripts/ocr-cells/noto.mjs';
+import { 写真を整える, ノートを読む, ノートは正しい向きか } from '../../scripts/ocr-cells/noto.mjs';
 
 // 重みの JSON は呼ぶ側が渡す（アプリは require、Node の試験は fs）。
 // ここで import すると、Node は import 属性が要り、Metro は要らない、で食い違う。
@@ -739,9 +739,35 @@ export async function ノートの印を読む(元, 注文) {
   return ノートを読む(写真を整える(元, !!注文.逆さ), 群れ.畳み);
 }
 
-/** ノートの写真が正しい向きか（いちばん下のかたまりの下に名前が並ぶか）。見当なので、AI の読みとも比べて決める */
-export async function ノートの向き(元) {
-  return 下に名前があるか(写真を整える(元, false));
+/**
+ * ノートの写真が正しい向きか（字の向きの網。無ければ、いちばん下のかたまりの下に名前が並ぶか）。null は分からない
+ * @param {object} [向きの重み] scripts/ocr-cells/noto-muki.json
+ */
+export async function ノートの向き(元, 向きの重み) {
+  return ノートは正しい向きか(写真を整える(元, false), 向きの重み ? 網の群れ(向きの重み).畳み : null);
+}
+
+/**
+ * 逆さに撮った手書きのノートか。AI に読ませる前に起こすかを決める（逆さの写真では AI が名前を読み違え、列の位置も
+ * 組ごとに左右がばらばらになった。10/11 の 115538301・115427293）。
+ * 向きの網だけでは、板・白板・紙の写真 30 枚のうち 10 枚を「逆さ」と言う。ノートらしいとき（ノートらしいか）だけ信じる
+ * @param {{重み:object, 向きの重み:object}} 注文 noto-tatami.json と noto-muki.json
+ */
+export async function 逆さのノートか(元, 注文) {
+  const 生 = 写真を整える(元, false);
+  if ((await ノートは正しい向きか(生, 網の群れ(注文.向きの重み).畳み)) !== false) return false;
+  const 群れ = 網の群れ(注文.重み);
+  if (!群れ.畳み) return false;
+  return ノートらしいか(await ノートを読む(生, 群れ.畳み));
+}
+
+/**
+ * ノートを読む の返りが、本当にノートらしいか：かたまりが 2 つ以上・射手の筋が 8 本以上。
+ * ノートの写真は 103 枚のほとんどで 2〜5 かたまり・8〜27 本。板・白板・紙の写真 47 枚は、写したままの向きでは
+ * どれも当てはまらなかった（白板で 1 かたまり 14 本・11 本はあった。逆さに読むと 2 かたまり 35 本の白板が 1 枚）
+ */
+export function ノートらしいか(読み) {
+  return !!読み && 読み.帯数 >= 2 && 読み.列たち.length >= 8;
 }
 
 /**

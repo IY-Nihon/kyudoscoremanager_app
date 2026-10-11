@@ -281,7 +281,9 @@ export async function ノートの格子(生) {
     差.sort((a, b) => a - b);
     return 差.length ? 差[差.length >> 1] : 0;
   });
-  const 候補線 = 横の山.map((n, i) => ({ n, 濃: 濃さ[i] })).filter((c) => c.濃 >= 15);
+  // 濃さ 11 以上。手で引いた線は 14〜（鉛筆の薄い線は 14〜29）、ノートの印刷の横罫は 0〜8。15 にしていたころは、
+  // 縮め方の違い（回してから縮めるか、縮めてから回すか）だけで 17 → 14 になって線が抜け、帯が 1 つになった（115538301）
+  const 候補線 = 横の山.map((n, i) => ({ n, 濃: 濃さ[i] })).filter((c) => c.濃 >= 11);
   const 最小 = 間 * 2.4, 最大 = 間 * 6;
   const k = 候補線.length;
   const 良 = Array.from({ length: k }, () => new Float64Array(k).fill(-1));
@@ -467,6 +469,24 @@ export function ノートのマスを見る(生, m, 網) {
 }
 
 /**
+ * 薄い印（鉛筆）の ○ の割合。墨の境を 45 から 25 に下げ、内側に 3% 以上あれば網に見せる。字（他）か墨が無ければ null
+ */
+function 薄い印を見る(生, m, 網) {
+  const 切 = 真ん中で切る(生, m.x, m.y, m.幅 * 0.92, m.高);
+  const v = Array.from(切.画).sort((a, b) => a - b);
+  const 紙 = v[Math.floor(v.length * 0.9)];
+  let 墨 = 0, n = 0;
+  for (let y = Math.floor(切.高 * 0.1); y < 切.高 * 0.9; y++) for (let x = Math.floor(切.幅 * 0.1); x < 切.幅 * 0.9; x++) {
+    n++;
+    if (紙 - 切.画[y * 切.幅 + x] > 25) 墨++;
+  }
+  if (!n || 墨 / n < 0.03) return null;
+  const q = 畳みで見分ける(網, 切.画, 切.幅, 切.高);
+  if (q.length >= 3 && q[2] > Math.max(q[0], q[1])) return null;
+  return q[1] / Math.max(1e-6, q[0] + q[1]);
+}
+
+/**
  * ノートを読む。返す 列たち は射手の筋（写真の左から）。射 は 1 射目（いちばん下）から上へ '○' | '×' | ''、
  * 確 はその確からしさ（他は 0.5）
  * @param {{画素:Uint8Array, 幅:number, 高:number}} 生 写真を整える の返り
@@ -475,7 +495,7 @@ export function ノートのマスを見る(生, m, 網) {
 export async function ノートを読む(生, 網) {
   const 格 = await ノートの格子(生);
   const 帯数 = 格.横線.length - 1;
-  if (帯数 < 1) return { 列たち: [], 帯数: 0 };
+  if (帯数 < 1) return { 列たち: [], 帯数: 0, 幅: 生.幅, 間: 格.間 };
   const マス = ノートのマスたち(格);
   const 見たち = [];
   for (let i = 0; i < マス.length; i++) {
@@ -509,11 +529,11 @@ export async function ノートを読む(生, 網) {
       const 四 = [0, 1, 2, 3].map((r) => 引く.get(j + ',' + i + ',' + r));
       const 印 = 四.filter((q) => q && q.p != null);
       const 確 = 印.filter((q) => Math.max(q.p, 1 - q.p) > 0.8).length;
-      if (印.length >= 2 && 確 >= 1) 出.push({ x: 四.reduce((s, q) => s + (q ? q.x : 0), 0) / 4, 四 });
+      if (印.length >= 2 && 確 >= 1) 出.push({ x: 四.reduce((s, q) => s + (q ? q.x : 0), 0) / 4, 列: i, 四 });
     }
     帯の列.push(出);
   }
-  // 下のかたまりから上へ、列を人の筋につなぐ。ずれは 1.3 列まで・左右の順は崩さない（並びの合わせ）
+  // 下のかたまりから上へ、列を人の筋につなぐ。ずれは 1 列まで・左右の順は崩さない（並びの合わせ）
   const 筋たち = [];
   let 前 = [];
   for (let jj = b - 1; jj >= a; jj--) {
@@ -525,7 +545,9 @@ export async function ノートを読む(生, 網) {
     for (let x = 1; x <= n; x++) (費[x][0] = x * 外す), (元[x][0] = 1);
     for (let y = 1; y <= m; y++) (費[0][y] = y * 外す), (元[0][y] = 2);
     for (let x = 1; x <= n; x++) for (let y = 1; y <= m; y++) {
-      const d = Math.abs(前[x - 1].x - 今[y - 1].x);
+      // 罫の列の番号で比べる。x で比べると、斜めに撮った写真では同じ罫の列がかたまりごとに 0.7 列ほど横へずれ、
+      // 隣の列のほうが近くなる（10/11 の 115021007 で右の組の上のかたまりが 1 人ずつずれた）
+      const d = Math.abs(前[x - 1].列 - 今[y - 1].列) * 間;
       const 合 = d <= 間 * 1.3 ? 費[x - 1][y - 1] + d : 1e9;
       const 上 = 費[x - 1][y] + 外す, 左 = 費[x][y - 1] + 外す;
       if (合 <= 上 && 合 <= 左) (費[x][y] = 合), (元[x][y] = 0);
@@ -549,22 +571,59 @@ export async function ノートを読む(生, 網) {
         筋たち.push(筋);
       }
       筋.set(jj, c);
-      次.push({ x: c.x, 筋 });
+      次.push({ x: c.x, 列: c.列, 筋 });
     }
     // 今のかたまりに無かった筋も、上のかたまりで続くことがある。x はそのまま持ち越す
     for (const p0 of 前) if (!次.some((q) => q.筋 === p0.筋)) 次.push(p0);
-    次.sort((u, v) => u.x - v.x);
+    次.sort((u, v) => u.列 - v.列);
     前 = 次;
   }
   const 列たち = [];
+  const 使った = new Set();
+  for (const 筋 of 筋たち) for (const [j, c] of 筋) 使った.add(j + ',' + c.列);
   for (const 筋 of 筋たち) {
     const 射 = [];
+    // 筋の途中で抜けたかたまり（上下のかたまりには筋がある）：薄い鉛筆で書いたかたまりは列として拾えない。
+    // 下のかたまりと同じ罫の列の 4 マスを薄い墨でも見て、印が 2 つ以上なら入れる（迷ったマス）
+    const 補った = new Set();
+    const 筋のj = [...筋.keys()];
     for (let j = b - 1; j >= a; j--) {
-      const c = 筋.get(j);
+      let c = 筋.get(j);
+      if (!c && j > Math.min(...筋のj) && j < Math.max(...筋のj)) {
+        let 下j = j + 1;
+        while (!筋.has(下j)) 下j++;
+        const 列 = 筋.get(下j).列;
+        if (!使った.has(j + ',' + 列)) {
+          const 四 = [0, 1, 2, 3].map((r) => {
+            const q = 引く.get(j + ',' + 列 + ',' + r);
+            return q && { ...q, p: q.p != null && !q.他 ? q.p : 薄い印を見る(生, q, 網), 他: false };
+          });
+          if (四.filter((q) => q && q.p != null).length >= 2) {
+            c = { 四 };
+            for (let r = 0; r < 4; r++) 補った.add(射.length + r);
+          }
+        }
+      }
       for (let r = 3; r >= 0; r--) 射.push(c ? c.四[r] : null);
+    }
+    // 本体より上のかたまり：一部の組だけが引き続けたかたまりは、ほかの列のところに計の分数（4/8 など）が並び、
+    // 確かな印の割合が 6 割を切って本体に入らない（114943071）。本体のいちばん上と同じ罫の列の 4 マスに、
+    // 字でない印が 3 つ以上（確か 0.8 が 2 つ以上・字は 1 つまで）あれば、筋を上へ延ばす
+    if (筋.has(a)) {
+      const 列 = 筋.get(a).列;
+      for (let j = a - 1; j >= 0; j--) {
+        const 四 = [0, 1, 2, 3].map((r) => 引く.get(j + ',' + 列 + ',' + r));
+        const 印4 = 四.filter((q) => q && q.p != null && !q.他);
+        if (印4.length < 3 || 印4.filter((q) => Math.max(q.p, 1 - q.p) > 0.8).length < 2) break;
+        if (四.filter((q) => q && q.他).length > 1) break;
+        for (let r = 3; r >= 0; r--) 射.push(四[r]);
+      }
     }
     const 印 = 射.filter((q) => q && q.p != null);
     if (印.filter((q) => Math.max(q.p, 1 - q.p) > 0.9).length < 3) continue;
+    // 字の列（縦書きの日付「4月9日(火)」や小計の数字が、罫の列に入っている）：他 が 2 つ以上・印の 4 分の 1 以上
+    const 他の数 = 印.filter((q) => q.他).length;
+    if (他の数 >= 2 && 他の数 >= 印.length * 0.25) continue;
     // 上の数字：いちばん上の印が、かたまりのいちばん下のマスにだけあり（上の 3 つが空）、その下が埋まっていれば外す
     let 最上 = -1;
     for (let k2 = 射.length - 1; k2 >= 0; k2--) if (射[k2] && 射[k2].p != null) {
@@ -576,34 +635,44 @@ export async function ノートを読む(生, 網) {
       const 下の4 = [1, 2, 3, 4].every((d) => 射[最上 - d] && 射[最上 - d].p != null);
       if (上の3 && 下の4) 射[最上] = { ...射[最上], p: null };
     }
-    // 他（字・数字・訂正）：筋の端（下の名前・上の数字）なら外し、内側なら迷ったマス
+    // 他（字・数字・訂正）：筋の上の端（計の数字）なら外し、ほかは迷ったマス（確認画面で黄色）。
+    // 下の端の他は 103 枚で 17 マス、ほとんどが ○ に「当」と書き足した訂正だった（10/11）。上の端は 102 マスの大半が計の数字
     const 印の番 = 射.map((q, k2) => (q && q.p != null ? k2 : -1)).filter((k2) => k2 >= 0);
-    for (const k2 of 印の番) {
-      if (射[k2].他) 射[k2] = { ...射[k2], p: null };
-      else break;
-    }
     for (const k2 of 印の番.slice().reverse()) {
       if (!射[k2] || 射[k2].p == null) continue;
       if (射[k2].他) 射[k2] = { ...射[k2], p: null };
       else break;
     }
+    // 筋の中の空き（同じかたまりに印があるのに空のマス）。1 射も飛ばさないので、薄い鉛筆の印を見落としたことが多い
+    // （115353708 の右の組）。薄い墨でも網に見せて ○× を推し、空でも当てても迷ったマス（確認画面で黄色）にする
+    const 番 = 射.map((q, k2) => (q && q.p != null ? k2 : -1)).filter((k2) => k2 >= 0);
+    const 空き = new Set();
+    for (let k2 = 番.length ? 番[0] + 1 : 0; 番.length && k2 < 番[番.length - 1]; k2++) {
+      const q = 射[k2];
+      if (!q || q.p != null) continue;
+      const 頭 = k2 - (k2 % 4);
+      if (![0, 1, 2, 3].some((d) => 射[頭 + d] && 射[頭 + d].p != null)) continue;
+      射[k2] = { ...q, p: 薄い印を見る(生, q, 網), 他: false };
+      空き.add(k2);
+    }
     const 底 = 射.find(Boolean);
     列たち.push({
       x: 底 ? 底.x : 0,
       射: 射.map((q) => (q && q.p != null ? (q.p > 0.5 ? '○' : '×') : '')),
-      確: 射.map((q) => (q && q.p != null ? (q.他 ? 0.5 : Math.max(q.p, 1 - q.p)) : 1)),
+      // 8 割に満たない印も迷ったマスにする（115538301 で 0.63・0.71 の読み違い。103 枚で 1 枚 2 マスほど増える）
+      確: 射.map((q, k2) => (空き.has(k2) || 補った.has(k2) ? 0.5 : q && q.p != null ? (q.他 || Math.max(q.p, 1 - q.p) < 0.8 ? 0.5 : Math.max(q.p, 1 - q.p)) : 1)),
     });
   }
   列たち.sort((u, v) => u.x - v.x);
-  return { 列たち, 帯数: b - a };
+  return { 列たち, 帯数: b - a, 幅: 生.幅, 間 };
 }
 
 /**
  * 向きの手がかり：いちばん下のかたまりの下（名前が並ぶ）と、いちばん上のかたまりの上（数字だけ）の墨を比べる。
  * 下のほうが多ければ正しい向き。ページの絵（10/10 の 103 枚）で 87 枚当たった。当てにしすぎない（AI の読みとも比べる）
  */
-export async function 下に名前があるか(生) {
-  const 格 = await ノートの格子(生);
+export async function 下に名前があるか(生, 格) {
+  格 = 格 || (await ノートの格子(生));
   if (格.横線.length < 2) return null;
   const { 画素, 幅: W, 高: H } = 生;
   const 上n = 格.横線[0], 下n = 格.横線[格.横線.length - 1];
@@ -624,4 +693,61 @@ export async function 下に名前があるか(生) {
     return n ? 墨 / n : 0;
   };
   return 数える(下n, +1) >= 数える(上n, -1);
+}
+
+/**
+ * 字の切り抜きたち：いちばん下のかたまりの下（名前）と、いちばん上のかたまりの上（的中数の数字）を、罫の列ごとに切る。
+ * 墨の少ないもの（何も書いていない）は除く。向きの網（字が正しい向きか）に渡す
+ */
+export async function 字の切り抜きたち(生, 格) {
+  格 = 格 || (await ノートの格子(生));
+  if (格.横線.length < 2) return [];
+  const 帯高 = (格.横線[格.横線.length - 1] - 格.横線[0]) / (格.横線.length - 1);
+  const 出 = [];
+  const 場たち = [
+    { 場: '下', 線: 格.横線[格.横線.length - 1], 向き: +1, 長さ: 0.9 },
+    { 場: '上', 線: 格.横線[0], 向き: -1, 長さ: 0.6 },
+  ];
+  for (const { 場, 線, 向き, 長さ } of 場たち) {
+    for (let i = 0; i + 1 < 格.縦線.length; i++) {
+      const a = 格.交点(格.縦線[i], 線), b = 格.交点(格.縦線[i + 1], 線);
+      const 幅 = b[0] - a[0];
+      if (!(幅 > 10)) continue;
+      const 高 = 帯高 * 長さ;
+      const x = (a[0] + b[0]) / 2, y = (a[1] + b[1]) / 2 + 向き * (帯高 * 0.06 + 高 / 2);
+      const 切 = 真ん中で切る(生, x, y, 幅, 高);
+      const v = Array.from(切.画).sort((p, q) => p - q);
+      const 紙 = v[Math.floor(v.length * 0.9)];
+      let 墨 = 0;
+      for (const p of 切.画) if (紙 - p > 45) 墨++;
+      if (墨 / 切.画.length >= 0.03 && 紙 >= 120) 出.push({ ...切, 場 });
+    }
+  }
+  return 出;
+}
+
+/**
+ * 写真が正しい向きか。字の切り抜き（下の名前・上の数字）を向きの網（noto-muki.json。字が正しい向きなら「正」）に
+ * そのままと 180 度回したものとで読ませ、正しい向きらしさを比べる（10/10 の写真を写真ごとに外して 97/100）。
+ * 切り抜きが少ないか差が小さいときは、下に名前が並ぶか（墨の量）で決める。決められなければ null
+ * @param {{画素:Uint8Array, 幅:number, 高:number}} 生 写真を整える の返り（回していないもの）
+ * @param {object} [向きの網] 畳みの網を組む の返り
+ */
+export async function ノートは正しい向きか(生, 向きの網) {
+  const 格 = await ノートの格子(生);
+  if (向きの網) {
+    const 切たち = await 字の切り抜きたち(生, 格);
+    if (切たち.length >= 4) {
+      let そのまま = 0;
+      let 回した = 0;
+      for (const c of 切たち) {
+        そのまま += 畳みで見分ける(向きの網, c.画, c.幅, c.高)[1];
+        回した += 畳みで見分ける(向きの網, Uint8Array.from(c.画).reverse(), c.幅, c.高)[1];
+        await 息継ぎ();
+      }
+      const 差 = (そのまま - 回した) / 切たち.length;
+      if (Math.abs(差) >= 0.05) return 差 > 0;
+    }
+  }
+  return 下に名前があるか(生, 格);
 }
