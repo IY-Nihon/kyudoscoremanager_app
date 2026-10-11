@@ -19,6 +19,7 @@ import { 種類, 形にする, 前へ, 切り取る, 輪の覆い } from '../../
 import { 重みを組む } from '../../scripts/ocr-cells/omomi.mjs';
 import { 畳みの網を組む, 畳みで見分ける } from '../../scripts/ocr-cells/tatami.mjs';
 import { 薄い網を組む, 薄い網で見分ける } from '../../scripts/ocr-cells/mobilenet.mjs';
+import { 写真を整える, ノートを読む, 下に名前があるか } from '../../scripts/ocr-cells/noto.mjs';
 
 // 重みの JSON は呼ぶ側が渡す（アプリは require、Node の試験は fs）。
 // ここで import すると、Node は import 属性が要り、Metro は要らない、で食い違う。
@@ -722,6 +723,25 @@ async function 四角の紙を読む(元, 四角, 人数, 注文) {
     確からしさ,
     四角: { left: 四角.left, top: 四角.top, width: 四角.width, height: 四角.height, 角度: g.角度 },
   };
+}
+
+/**
+ * 手書きのノート（1 人 1 列・1 マス 1 射・4 射ずつのかたまり。scripts/ocr-cells/noto.mjs）を読む。
+ * 写真が逆さのこともあるので、逆さ を指定する（ノートの向き で見当を付ける）。
+ * @param {object} 元 画像の道具の 画を読む が返したもの
+ * @param {{重み:object, 逆さ?:boolean}} 注文 重み … scripts/ocr-cells/noto-tatami.json（× ○ 他 の 3 種類）
+ * @returns {Promise<{列たち:{射:string[], 確:number[]}[], 帯数:number}>} 列たちは写真の左から（逆さなら回したあとの左から）。
+ *   射 は 1 射目（いちばん下）から上へ '○' | '×' | ''
+ */
+export async function ノートの印を読む(元, 注文) {
+  const 群れ = 網の群れ(注文.重み);
+  if (!群れ.畳み) throw new Error('ノートの網が畳み込みではない');
+  return ノートを読む(写真を整える(元, !!注文.逆さ), 群れ.畳み);
+}
+
+/** ノートの写真が正しい向きか（いちばん下のかたまりの下に名前が並ぶか）。見当なので、AI の読みとも比べて決める */
+export async function ノートの向き(元) {
+  return 下に名前があるか(写真を整える(元, false));
 }
 
 /**

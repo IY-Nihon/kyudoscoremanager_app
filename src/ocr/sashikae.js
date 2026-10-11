@@ -37,7 +37,7 @@
  *   突き合わせ、はっきり合うほうを取る（板の並びを確かめる）。Gemini の線の向きは当てにならないので、
  *   マスごとの的中数（◎=2・丸に線=1・×=0）で比べる。teams の順（記録表の順）は変えない。
  */
-import { 板の印を読む, 紙の印を読む, 紙の表たちの印を読む, 大前から並べる } from './yomu.js';
+import { 板の印を読む, 紙の印を読む, 紙の表たちの印を読む, 大前から並べる, ノートの印を読む, ノートの向き } from './yomu.js';
 
 /**
  * @param {object[]} teams Gemini の返した teams（rows[].cells を持つ）
@@ -103,7 +103,18 @@ export async function マスを端末で差し替える(teams, images, 設定) {
   try {
     読んだ = 紙 ? await 紙を読む(teams, images, 設定) : await 板を読む(teams, images, 設定);
   } catch (e) {
-    return そのまま('読めなかった: ' + String((e && e.message) || e));
+    読んだ = '読めなかった: ' + String((e && e.message) || e);
+  }
+  // 紙の記録用紙として読めなければ、手書きのノート（1 人 1 列・4 射ずつのかたまり）として読んでみる（2026-10-11）
+  if (typeof 読んだ === 'string' && 紙 && 設定.ノートの重み && images.length === 1) {
+    let ノート;
+    try {
+      ノート = await ノートで読む(teams, images, 設定);
+    } catch (e) {
+      ノート = { 訳: 'ノートとして読めなかった: ' + String((e && e.message) || e) };
+    }
+    if (Array.isArray(ノート)) return { teams: 差し替えた(teams, ノート, 設定, true), 読み取り元: '端末', ノート: true };
+    return { teams, 読み取り元: 'AI', 訳: 読んだ + '。' + ノート.訳, 列の見当たち: ノート.列の見当たち || null };
   }
   if (typeof 読んだ === 'string') return そのまま(読んだ);
   if (読んだ && 読んだ.訳) {
@@ -442,4 +453,74 @@ async function 紙を読む(teams, images, 設定) {
     出.push(await 紙の印を読む(元, { 人数, 立数, 立のマス, 重み: 設定.紙の重み }));
   }
   return 出;
+}
+
+/**
+ * 手書きのノート。写真 1 枚。端末が見つけた射手の筋（写真の左から）を、teams（左の組から）へ順に、行の数ずつ割り当てる。
+ * 写真が逆さのこともある（10/10 の 103 枚中 39 枚）。端末の見当の向きで先に読み、筋の数が AI の行の総数と合い、
+ * AI の cells とも 8 割以上合えば採る。そうでなければ逆の向きでも読み、合うほうを採る
+ * @returns {Promise<{列たち:string[][], 確からしさ:number[][]}[] | {訳:string, 列の見当たち?:number[]}>}
+ */
+async function ノートで読む(teams, images, 設定) {
+  const 総 = teams.reduce((a, t) => a + t.rows.length, 0);
+  const 元 = await 設定.道具.画を読む(images[0].base64);
+  const 正しい向き = await ノートの向き(元);
+  const 逆さたち = 正しい向き === false ? [true, false] : [false, true];
+  let 最良 = null;
+  const 数たち = [];
+  for (const 逆さ of 逆さたち) {
+    const 読み = await ノートの印を読む(元, { 重み: 設定.ノートの重み, 逆さ });
+    数たち.push(読み.列たち.length);
+    if (読み.列たち.length !== 総) continue;
+    const 読んだ = ノートを割り当てる(teams, 読み.列たち);
+    // Gemini は omae を「右」と答えながら、行を左の人から並べることがある（逆さの写真で起きた）。
+    // 組ごとに列の並びを逆にしたものとも比べる
+    const 逆に = 読んだ.map((b) => ({ 列たち: b.列たち.slice().reverse(), 確からしさ: b.確からしさ.slice().reverse() }));
+    for (const 候補 of [読んだ, 逆に]) {
+      const 率 = ノートの合い具合(teams, 候補, 設定);
+      if (globalThis.__ノートの記録) globalThis.__ノートの記録.push({ 逆さ, 逆: 候補 === 逆に, 率 });
+      if (!最良 || 率 > 最良.率) 最良 = { 読んだ: 候補, 率 };
+    }
+    if (最良 && 最良.率 >= 0.85) break;
+  }
+  if (最良) return 最良.読んだ;
+  return {
+    訳: `ノートの射手の列の数が合わない（端末${数たち.join('・')}、AI${総}）`,
+    列の見当たち: teams.length === 1 && 数たち.length ? [数たち[0]] : null,
+  };
+}
+
+/** 筋（射は 1 射目から上へ）を teams へ順に割り当て、マスの見た目（上から下）にする。長さは 4 射ずつ、書いた分まで */
+function ノートを割り当てる(teams, 筋たち) {
+  let i = 0;
+  return teams.map((t) => {
+    const 筋 = 筋たち.slice(i, i + t.rows.length);
+    i += t.rows.length;
+    let 書いた = 0;
+    for (const c of 筋) c.射.forEach((印, k) => { if (印) 書いた = Math.max(書いた, k + 1); });
+    const 長さ = Math.max(4, Math.ceil(書いた / 4) * 4);
+    const 見た目 = (並び, 空) => Array.from({ length: 長さ }, (_, k) => (k < 並び.length ? 並び[k] : 空)).reverse();
+    return { 列たち: 筋.map((c) => 見た目(c.射, '')), 確からしさ: 筋.map((c) => 見た目(c.確, 1)) };
+  });
+}
+
+/** 端末の読みと AI の cells の、1 射目からそろえたマスごとの的中の一致の割合（比べられたマスが無ければ 0） */
+function ノートの合い具合(teams, 読んだ, 設定) {
+  let 合 = 0;
+  let 比べた = 0;
+  teams.forEach((t, i) => {
+    const 列たち = 大前から並べる(読んだ[i].列たち, 板の向き(t, 設定), i, teams.length);
+    t.rows.forEach((r, j) => {
+      const g = Array.isArray(r.cells) ? r.cells : [];
+      const d = 列たち[j] || [];
+      for (let k = 0; k < Math.min(g.length, d.length); k++) {
+        const a = マスの的中(g[g.length - 1 - k]);
+        const b = マスの的中(d[d.length - 1 - k]);
+        if (a == null || b == null) continue;
+        比べた++;
+        if (a === b) 合++;
+      }
+    });
+  });
+  return 比べた ? 合 / 比べた : 0;
 }
