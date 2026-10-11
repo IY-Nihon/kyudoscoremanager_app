@@ -123,6 +123,16 @@ export async function マスを端末で差し替える(teams, images, 設定) {
     }
     if (ノート && ノート.teams) return { teams: ノート.teams, 読み取り元: '端末', ノート: true };
     if (Array.isArray(ノート)) return { teams: 差し替えた(一射でノート ? 一射の答え : teams, ノート, 設定, true), 読み取り元: '端末', ノート: true };
+    // 白板を「1射」（紙）と答えることもある（10/12：10 マス・帯の中の印 10 と答えた）。紙でもノートでもなければ板として読む
+    if (紙) {
+      let 板で;
+      try {
+        板で = await 板を読む(teams, images, 設定);
+      } catch (e) {
+        板で = null;
+      }
+      if (Array.isArray(板で)) return { teams: 差し替えた(teams, 板で, 設定, false), 読み取り元: '端末' };
+    }
     if (typeof 読んだ === 'string') return { teams, 読み取り元: 'AI', 訳: 読んだ + '。' + ノート.訳, 列の見当たち: ノート.列の見当たち || null };
   }
   if (typeof 読んだ === 'string') return そのまま(読んだ);
