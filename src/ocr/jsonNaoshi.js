@@ -42,6 +42,8 @@ function AIのJSONを読む(文) {
     let 直し = String(文 == null ? '' : 文).trim();
     直し = 直し.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
     直し = 直し.replace(/,\s*([\]}])/g, '$1');
+    // 丸に線の逆斜線をそのまま書いた "○\"（10/12 の白板 2 枚の写真。逆斜線が次の " を逃がして壊れた）
+    直し = 直し.replace(/([○◯〇])\\(?=")/g, '$1\\\\');
     try {
       return JSON.parse(直し);
     } catch (e) {
