@@ -788,7 +788,7 @@ const AIChatBot = () => {
                     keyword: {
                       type: 'STRING',
                       description:
-                        '記録の題・覚え書き・目印（タグ）で絞る言葉。「○○戦」「リーグ戦」など。日付と一緒に使うこともできます',
+                        '記録の題・メモ・目印（タグ）で絞る言葉。「○○戦」「リーグ戦」など。日付と一緒に使うこともできます',
                     },
                     sessionId: {
                       type: 'STRING',
@@ -1341,6 +1341,9 @@ const AIChatBot = () => {
                   id: 記録.id,
                   date: dateStr,
                   title: 記録.title || '無題',
+                  // メモとタグも返す。「この記録のメモは」「どのタグが付いている」に答えられるように
+                  ...(記録.note ? { memo: 記録.note } : {}),
+                  ...(Array.isArray(記録.tags) && 記録.tags.length ? { tags: 記録.tags } : {}),
                   hitRate,
                   totalArrows: total,
                   archers: archerList,
