@@ -879,9 +879,16 @@ async function 紙を読む(teams, images, 設定) {
   for (let k = 0; k < images.length; k++) {
     const 人数 = teams[k].rows.length;
     // 立数は Gemini の cells の数（1マス1射）から。4で割れなければ表の形が違う
+    // 4 で割れなければ、Gemini の帯の数（立の数）で読む（9/6 の紙：20 射の用紙を cells 10・帯 5 と答えた）
     const マス数 = マスの数(teams[k].rows);
-    const 立数 = マス数 / 立のマス;
-    if (!Number.isInteger(立数) || 立数 < 1) return `マスの数（${マス数}）が4で割れない`;
+    const 帯 = Number(teams[k].bands);
+    const 立数 =
+      Number.isInteger(マス数 / 立のマス) && マス数 >= 立のマス
+        ? マス数 / 立のマス
+        : Number.isInteger(帯) && 帯 >= 1 && 帯 <= 10
+          ? 帯
+          : 0;
+    if (!立数) return `マスの数（${マス数}）が4で割れない`;
     const 元 = await 設定.道具.画を読む(images[k].base64);
     出.push(await 紙の印を読む(元, { 人数, 立数, 立のマス, 重み: 設定.紙の重み }));
   }
