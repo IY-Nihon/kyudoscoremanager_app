@@ -21,6 +21,7 @@ const { 団体で入る, 切り替えを頼む, 部員として入る } = requir
 const FirebaseAuth = require('firebase/auth');
 const Firestore = require('firebase/firestore');
 const Icons = require('@expo/vector-icons');
+const { GoogleLogo } = require('./GoogleLogo');
 const { getShadowStyle } = require('./shadowStyle');
 const // 規約・プライバシーポリシーの住所と開き方。使っているのに読み込んでおらず、
   // リンクを押すと 法 is not defined になっていた
@@ -89,7 +90,12 @@ const 誤りの文 = (誤り) => {
 // 起動時にこの値が古い端末はログアウトさせ、個人IDで入り直してもらう。
 const MEMBER_AUTH_VERSION = 2;
 const LoginScreen = () => {
-  const { setAuth, fetchAndOverwriteFromCloud, startPeriodicSync, setMemberAuthVersion } = useストアの一部(['setAuth', 'fetchAndOverwriteFromCloud', 'startPeriodicSync', 'setMemberAuthVersion']);
+  const { setAuth, fetchAndOverwriteFromCloud, startPeriodicSync, setMemberAuthVersion } = useストアの一部([
+    'setAuth',
+    'fetchAndOverwriteFromCloud',
+    'startPeriodicSync',
+    'setMemberAuthVersion',
+  ]);
   const [画面の種類, 画面の種類を置く] = React.useState('login_group');
   const [処理中, 処理中を置く] = React.useState(false);
   const [団体IDの入力, 団体IDの入力を置く] = React.useState('');
@@ -105,6 +111,8 @@ const LoginScreen = () => {
   // その責任をここで伝えないと、知らないまま部員を登録できてしまう
   const [規約に同意, 規約に同意を置く] = React.useState(false);
   const [部員の同意を取る, 部員の同意を取るを置く] = React.useState(false);
+  // Google で選んだアカウントのメール。あるあいだは、メール欄の無い専用の入力画面にする
+  const [Googleのメール, Googleのメールを置く] = React.useState(null);
   /**
    * 認証が済んだあと、団体の帳面を作る。
    *
@@ -160,6 +168,45 @@ const LoginScreen = () => {
    * パスワードは画面で入れてもらう。Google だけで作ると、部員へ配る
    * パスワードが存在しなくなってしまうため。
    */
+  // 先に Google のアカウントを選んでもらい、そのあと専用の入力画面（メール欄なし）で団体名と
+  // パスワードを入れてもらう。前は入力の前に押すと注意だけが出て、入力が要ることが伝わらなかった
+  const Googleを選ぶ = async () => {
+    処理中を置く(true);
+    try {
+      const 結果 = await FirebaseAuth.signInWithPopup(auth, new FirebaseAuth.GoogleAuthProvider());
+      const メール = 結果?.user?.email;
+      if (!メール) throw new Error('Google からメールアドレスを受け取れませんでした');
+      // 同じメールでもう団体を持っていないか。持っていれば作らずに知らせる
+      const 既に = await Firestore.getDocs(
+        Firestore.query(Firestore.collection(db, 'group_accounts'), Firestore.where('email', '==', メール))
+      ).catch(() => null);
+      if (既に && !既に.empty) {
+        await FirebaseAuth.signOut(auth).catch(() => {});
+        Alert.alert(
+          'すでにあります',
+          `このメールアドレス（${メール}）では、もう団体が作られています。ログインからお入りください。`
+        );
+        return;
+      }
+      Googleのメールを置く(メール);
+    } catch (誤り) {
+      // 利用者が窓を閉じただけのときは、失敗として騒がない
+      const 符号 = 誤り && 誤り.code ? String(誤り.code) : '';
+      if (符号.includes('popup-closed') || 符号.includes('cancelled')) return;
+      Alert.alert('登録失敗', 誤りの文(誤り));
+    } finally {
+      処理中を置く(false);
+    }
+  };
+  // Google を選んだあとにやめたら、団体の無い認証の利用者を残さない
+  const Googleをやめる = async () => {
+    try {
+      if (auth && auth.currentUser) await FirebaseAuth.deleteUser(auth.currentUser);
+    } catch (消せなかった) {
+      await FirebaseAuth.signOut(auth).catch(() => {});
+    }
+    Googleのメールを置く(null);
+  };
   const Googleで作る = async () => {
     if (!規約に同意 || !部員の同意を取る) {
       Alert.alert(
@@ -179,32 +226,23 @@ const LoginScreen = () => {
       );
       return;
     }
+    if (!auth || !auth.currentUser || auth.currentUser.email !== Googleのメール) {
+      Alert.alert(
+        'もう一度お選びください',
+        'Google のアカウントの選択が切れました。もう一度お選びください。'
+      );
+      Googleのメールを置く(null);
+      return;
+    }
     処理中を置く(true);
     try {
-      const 提供元 = new FirebaseAuth.GoogleAuthProvider();
-      const 結果 = await FirebaseAuth.signInWithPopup(auth, 提供元);
-      const メール = 結果?.user?.email;
-      if (!メール) throw new Error('Google からメールアドレスを受け取れませんでした');
-      // 同じメールでもう団体を持っていないか。持っていれば作らずに知らせる
-      const 既に = await Firestore.getDocs(
-        Firestore.query(Firestore.collection(db, 'group_accounts'), Firestore.where('email', '==', メール))
-      ).catch(() => null);
-      if (既に && !既に.empty) {
-        Alert.alert(
-          'すでにあります',
-          `このメールアドレス（${メール}）では、もう団体が作られています。ログインからお入りください。`
-        );
-        return;
-      }
       // Google で入った人にも、部員へ配るパスワードを持たせる
-      await FirebaseAuth.updatePassword(結果.user, 合言葉の入力).catch(() => {
+      await FirebaseAuth.updatePassword(auth.currentUser, 合言葉の入力).catch(() => {
         // 直後なので普通は通る。通らなくても団体は作れるので止めない
       });
-      await 団体を作る(メール);
+      await 団体を作る(Googleのメール);
+      Googleのメールを置く(null);
     } catch (誤り) {
-      // 利用者が窓を閉じただけのときは、失敗として騒がない
-      const 符号 = 誤り && 誤り.code ? String(誤り.code) : '';
-      if (符号.includes('popup-closed') || 符号.includes('cancelled')) return;
       Alert.alert('登録失敗', 誤りの文(誤り));
     } finally {
       処理中を置く(false);
@@ -561,30 +599,46 @@ const LoginScreen = () => {
                           />
                         </View>
                       </View>
-                      <View style={styles.inputGroup}>
-                        <Text style={styles.label}>メールアドレス</Text>
-                        <View style={styles.inputWrapper}>
-                          <Icons.Ionicons name="mail" size={20} color="#8E8E93" style={styles.inputIcon} />
-                          <TextInput
-                            aria-label="メールアドレス"
-                            autoComplete="email"
-                            style={styles.input}
-                            placeholder="example@mail.com"
-                            placeholderTextColor="#8E8E93"
-                            value={メールの入力}
-                            onChangeText={メールの入力を置く}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                          />
+                      {Googleのメール ? (
+                        <View style={styles.inputGroup}>
+                          <Text style={styles.label}>Google のアカウント</Text>
+                          <View style={styles.inputWrapper}>
+                            <View style={styles.inputIcon}>
+                              <GoogleLogo size={18} />
+                            </View>
+                            <Text style={styles.input} numberOfLines={1}>
+                              {Googleのメール}
+                            </Text>
+                          </View>
                         </View>
-                        {メールの形が変か(メールの入力) ? (
-                          <Text style={styles.入力の注意}>
-                            @ を含む形で入れてください（例: example@mail.com）
-                          </Text>
-                        ) : null}
-                      </View>
+                      ) : (
+                        <View style={styles.inputGroup}>
+                          <Text style={styles.label}>メールアドレス</Text>
+                          <View style={styles.inputWrapper}>
+                            <Icons.Ionicons name="mail" size={20} color="#8E8E93" style={styles.inputIcon} />
+                            <TextInput
+                              aria-label="メールアドレス"
+                              autoComplete="email"
+                              style={styles.input}
+                              placeholder="example@mail.com"
+                              placeholderTextColor="#8E8E93"
+                              value={メールの入力}
+                              onChangeText={メールの入力を置く}
+                              keyboardType="email-address"
+                              autoCapitalize="none"
+                            />
+                          </View>
+                          {メールの形が変か(メールの入力) ? (
+                            <Text style={styles.入力の注意}>
+                              @ を含む形で入れてください（例: example@mail.com）
+                            </Text>
+                          ) : null}
+                        </View>
+                      )}
                       <View style={styles.inputGroup}>
-                        <Text style={styles.label}>パスワード</Text>
+                        <Text style={styles.label}>
+                          {Googleのメール ? 'パスワード（部員がログインに使う）' : 'パスワード'}
+                        </Text>
                         <View style={styles.inputWrapper}>
                           <Icons.Ionicons
                             name="lock-closed"
@@ -715,7 +769,9 @@ const LoginScreen = () => {
                             Alert.alert('エラー', '団体IDと個人IDを入力してください');
                           }
                         }
-                      : メールで作る
+                      : Googleのメール
+                        ? Googleで作る
+                        : メールで作る
                 }
                 disabled={処理中}
               >
@@ -729,7 +785,12 @@ const LoginScreen = () => {
               </Pressable>
               {/* Google で作る道。作るときだけ使う。 */
               /* 作ったあとは今までどおり、団体IDとパスワードで全員が入る */}
-              {'register' === 画面の種類 && (
+              {'register' === 画面の種類 && Googleのメール && (
+                <Pressable onPress={Googleをやめる} disabled={処理中}>
+                  <Text style={styles.cancelLink}>別のアカウント・メールアドレスで作る</Text>
+                </Pressable>
+              )}
+              {'register' === 画面の種類 && !Googleのメール && (
                 <View>
                   <View style={styles.区切りの行}>
                     <View style={styles.区切りの線} />
@@ -738,16 +799,16 @@ const LoginScreen = () => {
                   </View>
                   <Pressable
                     style={styles.Googleのボタン}
-                    onPress={Googleで作る}
+                    onPress={Googleを選ぶ}
                     disabled={処理中}
                     accessibilityRole="button"
                     accessibilityLabel="Google で団体アカウントを作る"
                   >
-                    <Text style={styles.Googleの印}>G</Text>
+                    <GoogleLogo size={18} />
                     <Text style={styles.Googleの字}>Google で作る</Text>
                   </Pressable>
                   <Text style={styles.Googleの添え}>
-                    メールアドレスの入力を省けます。パスワードは部員が入るときに使うので、上の欄に入れてください。
+                    アカウントを選んだあと、団体名とパスワードを入れます。メールアドレスの入力は要りません。
                   </Text>
                 </View>
               )}
@@ -819,7 +880,12 @@ const LoginScreen = () => {
           )}
           <View style={styles.footer}>
             {'register' === 画面の種類 ? (
-              <Pressable onPress={() => 画面の種類を置く('login_group')}>
+              <Pressable
+                onPress={() => {
+                  if (Googleのメール) Googleをやめる();
+                  画面の種類を置く('login_group');
+                }}
+              >
                 {function (state) {
                   return (
                     <Text
@@ -955,10 +1021,8 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     gap: 10,
   },
-  // Google の頭文字。青で置いて、それと分かるようにする。
   // 本家の #4285F4 は白地で比 3.56 しかなく薄い。濃いほうの青にして
   // 読めるようにした（検査 loginTheme が見ている）
-  Googleの印: { fontSize: 18, fontWeight: 'bold', color: '#1A5FCC' },
   Googleの字: { fontSize: 16, fontWeight: '600', color: '#1F1F1F' },
   Googleの添え: { color: 'rgba(255,255,255,0.6)', fontSize: 11, marginTop: 8, lineHeight: 16 },
   footer: { alignItems: 'center', marginTop: 24 },
