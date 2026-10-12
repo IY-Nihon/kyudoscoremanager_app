@@ -49,6 +49,7 @@ test('AI の JSON の直し：閉じ括弧の不足・囲み・余計なカン�
   assert.deepStrictEqual(AIのJSONを読む('{"a":[1,2,],}'), { a: [1, 2] });
   assert.deepStrictEqual(AIのJSONを読む('{"a":"x]}"'), { a: 'x]}' });
   assert.deepStrictEqual(AIのJSONを読む('{"a":["○\\","×"]}'), { a: ['○\\', '×'] });
-  assert.deepStrictEqual(AIのJSONを読む('{"a":["×","○\\""]}'), { a: ['×', '○\\'] });
+  // 同じ返事の中に "○\"（閉じない）と "○\""（行の最後）が混ざる
+  assert.deepStrictEqual(AIのJSONを読む('{"a":["○\\",\n"○\\""\n]}'), { a: ['○\\', '○\\'] });
   assert.throws(() => AIのJSONを読む('読めません'), SyntaxError);
 });
