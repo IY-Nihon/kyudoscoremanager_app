@@ -69,12 +69,13 @@ export async function マスを端末で差し替える(teams, images, 設定) {
   const 一射の答え = teams.every((t) => t && t.cellStyle === '1射') ? teams : null;
   // 板（1マス2射）にしか無い印（◎・丸に線）が cells にあるのに「1射」（紙）と言ってきた板は、板として読む。
   // 10/4 の千葉商科大学の白板で、Gemini が 1射 と答え、紙の読み方で読めずに Gemini の○×のまま（160 射中 26 射）になった
+  // 写真 1 枚なら、どれかの組に板の印があれば全部の組を板にする（片方の組にだけ ◎ があり「板と紙が混ざっている」で
+  // 端末が読まなかった。10/11 の白板 2 枚の写真）
+  const 板の印 = (t) =>
+    t && (t.rows || []).some((r) => (r.cells || []).some((c) => /◎|[○◯〇].*[\\/／＼]/.test(String(c || ''))));
+  const どれかが板 = images.length === 1 && teams.some(板の印);
   teams = teams.map((t) =>
-    t &&
-    t.cellStyle === '1射' &&
-    (t.rows || []).some((r) => (r.cells || []).some((c) => /◎|[○◯〇].*[\\/／＼]/.test(String(c || ''))))
-      ? { ...t, cellStyle: '2射' }
-      : t
+    t && t.cellStyle === '1射' && (板の印(t) || どれかが板) ? { ...t, cellStyle: '2射' } : t
   );
   // 同じ板に同じ名前の行が 2 つあれば、後のほうは Gemini の読み違え（10/11 の白板 2 枚の写真で「坪井」を 2 回返し、
   // 右の板が 9 人になって列がずれた）。写真 1 枚の板だけ。紙・ノートは同じ人が 2 回書かれることがあるので触らない
@@ -152,6 +153,43 @@ export async function マスを端末で差し替える(teams, images, 設定) {
     if (先に) return 先に;
   }
 
+  // Gemini の段の数の答え 2 つ（cells の数と 帯×帯の中の印）がそろっているのに、端末が別の段で読んだときは、
+  // 人の割り振りが違うのかもしれない。Gemini の段のまま組み直して読めれば、そちらを採る（9/27 の商大の右の板：
+  // 4 人ずつの板 2 枚を 8 人 1 組で返し、1 枚として読むと高さのずれた 2 枚に 10 段が当たらず、11・12 段が通ってしまった）
+  const 答えの段 = (() => {
+    const 行たち = teams.flatMap((t) => (t && Array.isArray(t.rows) ? t.rows : []));
+    const c = マスの数(行たち);
+    const 帯 = teams.map((t) => Number(t && t.bands) * Number(t && t.marks_per_band) || 0);
+    return c >= 2 && 帯.every((n) => n === c) ? c : 0;
+  })();
+  const 段を確かめる = async (読み) => {
+    if (!組み直せる || !答えの段 || 設定.行数 || !Array.isArray(読み) || !読み.length) return null;
+    const 段 = 読み[0] && Array.isArray(読み[0].列たち) && 読み[0].列たち[0] ? 読み[0].列たち[0].length : 0;
+    if (!段 || 段 === 答えの段) return null;
+    // 3 つ以上に割って返したときは、端末に段を探させても試す（Gemini の段の答えごと違っていることがある）
+    const 段たち = teams.length > 2 ? [答えの段, undefined] : [答えの段];
+    for (const 試す段 of 段たち)
+      for (const 見当 of 組み直しの候補(teams, 板の数, null)) {
+        const 組み直し = 行を組み直す(teams, 見当);
+        if (!組み直し) continue;
+        let 二度目;
+        try {
+          二度目 = await 板を読む(組み直し, images, { ...設定, 行数: 試す段 });
+        } catch (e) {
+          二度目 = null;
+        }
+        if (Array.isArray(二度目)) {
+          const 並び = 組み直し.length >= 2 ? 板の並びを確かめる(組み直し, 二度目, 設定) : null;
+          return {
+            teams: 差し替えた(組み直し, 二度目, 設定, false, 並び && 並び.板の番),
+            読み取り元: '端末',
+            組み直した: 見当,
+          };
+        }
+      }
+    return null;
+  };
+
   let 読んだ;
   try {
     読んだ = 紙 ? await 紙を読む(teams, images, 設定) : await 板を読む(teams, images, 設定);
@@ -183,7 +221,11 @@ export async function マスを端末で差し替える(teams, images, 設定) {
       } catch (e) {
         板で = null;
       }
-      if (Array.isArray(板で)) return { teams: 差し替えた(teams, 板で, 設定, false), 読み取り元: '端末' };
+      if (Array.isArray(板で)) {
+        const 組み直して = await 段を確かめる(板で);
+        if (組み直して) return 組み直して;
+        return { teams: 差し替えた(teams, 板で, 設定, false), 読み取り元: '端末' };
+      }
     }
     if (typeof 読んだ === 'string')
       return {
@@ -199,8 +241,38 @@ export async function マスを端末で差し替える(teams, images, 設定) {
     if (組み直せる) {
       const 後で = await 組み直して読む(組み直しの候補(teams, 板の数, 読んだ.列の見当たち));
       if (後で) return 後で;
+      // 1 つの板だけ端末の列が 1 本少ない（端末の見当が無ければ、1 つの板だけほかの板より 1 人多い）ときは、その板の
+      // 落の端の行（Gemini は大前から並べるので最後の行）が、計の列を人と読んだもの（10/11：8 人の板に「小井」を
+      // 9 人目として返した）。外して読めれば採る
+      const 見当 = 読んだ.列の見当たち;
+      const 人数 = teams.map((t) => t.rows.length);
+      const ほかより多い = (i) => 人数.every((n, k) => k === i || n === 人数[i] - 1);
+      const 違う板 =
+        Array.isArray(見当) && 見当.length === teams.length
+          ? 見当.map((n, i) => n - 人数[i])
+          : teams.length >= 2 && 人数.filter((_, i) => ほかより多い(i)).length === 1
+            ? 人数.map((_, i) => (ほかより多い(i) ? -1 : 0))
+            : null;
+      if (違う板 && 違う板.filter((d) => d === -1).length === 1 && 違う板.every((d) => d === 0 || d === -1)) {
+        const i = 違う板.indexOf(-1);
+        const 外した = teams.map((t, k) => (k === i ? { ...t, rows: t.rows.slice(0, -1) } : t));
+        let 三度目;
+        try {
+          三度目 = await 板を読む(外した, images, 設定);
+        } catch (e) {
+          三度目 = null;
+        }
+        if (Array.isArray(三度目)) {
+          const 並び = 外した.length >= 2 ? 板の並びを確かめる(外した, 三度目, 設定) : null;
+          return { teams: 差し替えた(外した, 三度目, 設定, 紙, 並び && 並び.板の番), 読み取り元: '端末' };
+        }
+      }
     }
     return { teams, 読み取り元: 'AI', 訳: 読んだ.訳, 列の見当たち: 読んだ.列の見当たち };
+  }
+  if (!紙) {
+    const 組み直して = await 段を確かめる(読んだ);
+    if (組み直して) return 組み直して;
   }
   // 写真 1 枚に板（紙なら表）が 2 つ以上なら、Gemini の板の順が写真の左からになっているかを中身で確かめる。
   // 男子の記録用紙は、Gemini が前立（右の表）を先に返した（10/1 の写真）
@@ -352,7 +424,10 @@ export function 組み直しの候補(teams, 板の数, 見当) {
   if (Array.isArray(見当)) 足す(見当);
   // 板 2 枚を 1 つの teams にまとめて返してきたとき（Gemini はときどきそうする）は、半々に分ける。
   // 指示文の並び（左の板を左から、右の板を右から）で 1 つに並べてあれば、半々で板ごとの順になる
-  if (板の数 === 2 && teams.length === 1 && 総 >= 4) 足す([Math.ceil(総 / 2), Math.floor(総 / 2)]);
+  // 板の数を選んでいなくても、読めなかったときは半々も試す（10/4 の途中の板：左右 4 人ずつの板を Gemini が 8 人 1 枚で返し、
+  // 端末は 7 列しか見つけられなかった）。1 枚の板を 2 つに割っても、列の並びは同じなので ○× は変わらない
+  if ((板の数 === 2 || 板の数 == null) && teams.length === 1 && 総 >= 4 && (板の数 === 2 || 総 % 2 === 0))
+    足す([Math.ceil(総 / 2), Math.floor(総 / 2)]);
   if (板の数 === 2 && teams.length > 2) {
     const 境目 = [];
     let 積 = 0;
@@ -366,6 +441,8 @@ export function 組み直しの候補(teams, 板の数, 見当) {
   // 板の数は合っていて、人の割り振りだけ違えることもある（10/11 の白板 2 枚の写真：8 人と 8 人を 4 人と 12 人で返した）。
   // 割れれば等分も試す（読めて見張りを通ったときだけ採られる）
   if (teams.length >= 2 && 総 % teams.length === 0) 足す(teams.map(() => 総 / teams.length));
+  // 3 つ以上に割って返したとき（10/11：8 人ずつの板 2 枚を 4・4・8 で返した）は、半々も試す
+  if (板の数 == null && teams.length > 2 && 総 % 2 === 0 && 総 >= 4) 足す([総 / 2, 総 / 2]);
   return 出;
 }
 
@@ -441,10 +518,17 @@ async function 板を読む(teams, images, 設定) {
       );
       const 候補 = [];
       for (const n of [行数, 帯の段, Math.floor(見当), Math.ceil(見当), 10, 8, 12, 6, 5, 4, 16, 20]) {
-        if (Number.isInteger(n) && n >= 2 && n <= 24 && !候補.includes(n) && Math.abs(n - 見当) <= 2.5)
+        if (
+          Number.isInteger(n) &&
+          n >= 2 &&
+          n <= 24 &&
+          !候補.includes(n) &&
+          (Math.abs(n - 見当) <= 2.5 || n === 行数 || n === 帯の段)
+        )
           候補.push(n);
       }
-      // 見当は縮め方や計の数字で ±2 ほどぶれる（ブラウザでは 10 段の白板が 12 段の見当になった）。候補を全部読み、
+      // 見当は縮め方や計の数字で ±2 ほどぶれる（ブラウザでは 10 段の白板が 12 段の見当になった。10/4 の両方の板は 14.5）。
+      // Gemini の答え（cells の数・帯×帯の中の印）は見当から離れていても候補に入れる。候補を全部読み、
       // 見張りを通ったうちで、範囲の中の丸い印（範囲の丸）が段を増やしても伸びなくなったところの段を採る。
       // 少ない段は上の帯を外に残して範囲の印が減り（10 段の白板で 8 段は 78、10 段は 94）、多い段は余った上の行が
       // 計の数字を足すだけで、ほとんど増えない（12 段で 98）。9/6 の板（印が小さく、外の印の行が出ない）も同じ形
@@ -461,13 +545,13 @@ async function 板を読む(teams, images, 設定) {
       }
       if (読めた.length) {
         const 範囲 = (x, i) => Number((x.r[i] && x.r[i].格子 && x.r[i].格子.範囲の丸) || 0);
-        // 少ない段から、1 段増やして増えた丸が 1 段あたりの丸の半分以上ある間だけ進む（ブラウザの左の白板は
-        // 10 段 85・11 段 88・12 段 95。余った 11 段目は 3 しか足さない）
+        // 少ない段から、1 段増やして増えた丸が 1 段あたりの丸の 4 分の 3 以上ある間だけ進む（ブラウザの左の白板は
+        // 10 段 85・11 段 88・12 段 95。余った 11 段目は 3 しか足さない。10/4 の商科の板は 10 段 81・12 段 92 で、半分では 12 段を採った）
         const 合計 = (x) => x.r.reduce((s, _, i) => s + 範囲(x, i), 0);
         let 採る = 読めた[0];
         for (const 次 of 読めた.slice(1)) {
           const 増え = 合計(次) - 合計(採る);
-          if (増え < (合計(採る) / 採る.n) * (次.n - 採る.n) * 0.5) break;
+          if (増え < (合計(採る) / 採る.n) * (次.n - 採る.n) * 0.75) break;
           採る = 次;
         }
         return 採る.r;
