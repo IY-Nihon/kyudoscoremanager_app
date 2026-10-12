@@ -5,7 +5,20 @@ exports.AIChatBot = undefined;
 
 const React = require('react');
 const { useState, useRef, useEffect } = React;
-const { Text, StyleSheet, TextInput, View, TouchableOpacity, Modal, ScrollView, KeyboardAvoidingView, Dimensions, Animated, PanResponder, Platform } = require('./rn');
+const {
+  Text,
+  StyleSheet,
+  TextInput,
+  View,
+  TouchableOpacity,
+  Modal,
+  ScrollView,
+  KeyboardAvoidingView,
+  Dimensions,
+  Animated,
+  PanResponder,
+  Platform,
+} = require('./rn');
 
 const { Ionicons } = require('@expo/vector-icons');
 const { AIMascot } = require('./AIMascot');
@@ -178,7 +191,18 @@ const AIChatBot = () => {
     currentRouteName,
     myMemberId,
     myMemberName,
-  } = useストアの一部(['activeRole', 'members', 'sessions', 'currentRouteName', 'myMemberId', 'myMemberName']);
+    historyViewMode,
+    selectedHistorySessionId,
+  } = useストアの一部([
+    'activeRole',
+    'members',
+    'sessions',
+    'currentRouteName',
+    'myMemberId',
+    'myMemberName',
+    'historyViewMode',
+    'selectedHistorySessionId',
+  ]);
   // 個人ログインの端末には団体ぜんぶの部員・記録が入っている。AI に渡す前に、本人の分だけに絞る。
   // 以降の members・sessions は、個人なら絞ったあとのもの（道具も質問例も、他の人には届かない）
   const 個人 = activeRole === 'member';
@@ -194,7 +218,9 @@ const AIChatBot = () => {
   const 保存の鍵 = 会話の鍵(個人, myMemberId);
   const addMember = useScoreStore((state) => state.addMember);
   const navigation = useNavigation();
-  const チュートリアル部員登録中 = 案内.useチュートリアル部員登録中 ? 案内.useチュートリアル部員登録中() : false;
+  const チュートリアル部員登録中 = 案内.useチュートリアル部員登録中
+    ? 案内.useチュートリアル部員登録中()
+    : false;
   const 案内のAIボタン = 案内.useTutorialTarget ? 案内.useTutorialTarget('AI.ボタン') : null;
   const [modalVisible, setModalVisible] = useState(false);
   const [inputText, setInputText] = useState('');
@@ -216,16 +242,13 @@ const AIChatBot = () => {
   // 「分類ごとに1件だけ」を選ぶ 質問例() は、打ちかけの続きにも使わないので
   // ここでは呼ばない（chatSuggestions 側には残してある）。
   // 打ちかけの続きは、画面に出していない例からも探す
-  const 候補の元 = React.useMemo(
-    () => {
-      const もと = 質問例のすべて({ 人たち: members, 記録たち: sessions, いま: new Date(), 個人 });
-      if (チュートリアル部員登録中) {
-        return [{ 分類: '操作', 文: '1年の山田 太郎 男子 を追加して' }, ...もと];
-      }
-      return もと;
-    },
-    [members, sessions, 個人, チュートリアル部員登録中]
-  );
+  const 候補の元 = React.useMemo(() => {
+    const もと = 質問例のすべて({ 人たち: members, 記録たち: sessions, いま: new Date(), 個人 });
+    if (チュートリアル部員登録中) {
+      return [{ 分類: '操作', 文: '1年の山田 太郎 男子 を追加して' }, ...もと];
+    }
+    return もと;
+  }, [members, sessions, 個人, チュートリアル部員登録中]);
   // 質問例は分類ごとに束ねて、全部出す。
   //
   // 前は分類ごとに1件ずつ・5件だけ出していた。11件あるうちの5件なので、
@@ -444,9 +467,9 @@ const AIChatBot = () => {
           id: generateMsgId(),
           role: 'model',
           text: 名
-            ? (チュートリアル部員登録中
-                ? `${名}さんをメンバーに追加しました！登録が完了しました。`
-                : `${名}さんをメンバーに追加しました。`)
+            ? チュートリアル部員登録中
+              ? `${名}さんをメンバーに追加しました！登録が完了しました。`
+              : `${名}さんをメンバーに追加しました。`
             : 'メンバーの追加は団体ログインのときだけできます。追加していません。',
         });
         if (名 && チュートリアル部員登録中) {
@@ -486,9 +509,9 @@ const AIChatBot = () => {
         ? `${待ち.length}件の操作をキャンセルしました。`
         : 断られた
           ? 'メンバーの追加は団体ログインのときだけできます。追加していません。'
-          : (チュートリアル部員登録中
-              ? `${追加した.length}人をメンバーに追加しました！登録が完了しました：${追加した.join('、')}`
-              : `${追加した.length}人をメンバーに追加しました：${追加した.join('、')}`),
+          : チュートリアル部員登録中
+            ? `${追加した.length}人をメンバーに追加しました！登録が完了しました：${追加した.join('、')}`
+            : `${追加した.length}人をメンバーに追加しました：${追加した.join('、')}`,
     });
     if (isApproved && 追加した.length > 0 && チュートリアル部員登録中) {
       if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
@@ -529,7 +552,8 @@ const AIChatBot = () => {
         // 部員一覧のみ渡す（トークン節約）。詳細成績はgetDetailedMemberStatsで取得
         const memberList = members
           .map((member) => {
-            const gradeLabel = member.grade >= 5 ? '卒業生' : member.grade === 0 ? 'その他' : `${member.grade}年`;
+            const gradeLabel =
+              member.grade >= 5 ? '卒業生' : member.grade === 0 ? 'その他' : `${member.grade}年`;
             return `${member.name}(${gradeLabel})`;
           })
           .join(', ');
@@ -560,6 +584,16 @@ const AIChatBot = () => {
         const fiscalYearStart = `${fiscalYearStartYear}-04-01`;
         const fiscalYearEnd = `${fiscalYearStartYear + 1}-03-31`;
 
+        // 履歴で開いている記録。「この記録」「この試合」と聞かれたときに、どれを指すか分かるように渡す
+        //（AI のボタンは記録の画面では出さないので、開いている記録は履歴の詳細だけ）
+        const 開いている記録の案内 = () => {
+          if (currentRouteName !== '履歴' || historyViewMode !== 'detail' || !selectedHistorySessionId)
+            return '';
+          const 記録 = sessions.find((記録1件) => 記録1件 && 記録1件.id === selectedHistorySessionId);
+          if (!記録) return '';
+          const 日付 = new Date(記録.date || 0);
+          return `\n\n[いま開いている記録]\n- 日付: ${日付.getFullYear()}-${日付.getMonth() + 1}-${日付.getDate()} / 題: ${記録.title || '無題'} / id: ${記録.id}\n- 「この記録」「この試合」「今見ている記録」など、どの記録か言わずに聞かれたら、この記録のことです。getSessionsByDate の sessionId にこの id を渡して読んでください。`;
+        };
         const relevantQA = selectQAs(userMsg, 個人);
         const qaSection = relevantQA ? `\n\n【アプリ操作・仕様Q&A（関連する項目のみ）】\n${relevantQA}` : '';
         // 基本の指示（systemInstructionBase）に、その日・その団体でしか
@@ -569,6 +603,7 @@ const AIChatBot = () => {
           (個人 ? 個人用.個人用の指示文(systemInstructionBase, members[0]) : systemInstructionBase) +
           qaSection +
           `\n\n[日付の目安 (YYYY-MM-DD)]\n- 今日: ${todayStr} / 昨日: ${yesterdayStr}\n- 今月: ${thisMonthStart} 〜 ${thisMonthEnd}\n- 先月: ${lastMonthStart} 〜 ${lastMonthEnd}\n- 今年度: ${fiscalYearStart} 〜 ${fiscalYearEnd}` +
+          開いている記録の案内() +
           (個人
             ? `\n[話し相手（本人）: ${memberList}]`
             : `\n[部員一覧（計${members.length}名）]\n${memberList}`);
@@ -600,7 +635,9 @@ const AIChatBot = () => {
             ? {
                 タグ: 絞り.タグ,
                 当たった記録の件数: 絞り.当たった件数,
-                ...(絞り.当たった件数 === 0 ? { 使えるタグ: 絞り.使えるタグ } : { 当たったタグ: 絞り.当たったタグ }),
+                ...(絞り.当たった件数 === 0
+                  ? { 使えるタグ: 絞り.使えるタグ }
+                  : { 当たったタグ: 絞り.当たったタグ }),
               }
             : null;
           const 添え書き = 絞り.絞った
@@ -697,7 +734,8 @@ const AIChatBot = () => {
                   properties: {
                     keyword: {
                       type: 'STRING',
-                      description: "記録を絞る言葉。題・覚え書き・目印・出ている人の名前を見ます。例: '#自主稽古'、'合宿'",
+                      description:
+                        "記録を絞る言葉。題・覚え書き・目印・出ている人の名前を見ます。例: '#自主稽古'、'合宿'",
                     },
                     dateFrom: { type: 'STRING', description: '期間の開始日 (YYYY-MM-DD形式)' },
                     dateTo: { type: 'STRING', description: '期間の終了日 (YYYY-MM-DD形式)' },
@@ -733,7 +771,7 @@ const AIChatBot = () => {
               {
                 name: 'getSessionsByDate',
                 description:
-                  '日付や期間を指定して練習記録を取得します。「昨日の記録」「今週の練習」「5月の記録」「直近3回」などの質問に使います。dateとdateFrom/dateToとrecentCountはいずれか一つを指定してください。',
+                  '日付・期間・題・id を指定して練習記録を取得します。「昨日の記録」「今週の練習」「5月の記録」「直近3回」「○○戦の結果」「この試合」などの質問に使います。dateとdateFrom/dateToとrecentCountはいずれか一つを指定してください（keyword・sessionId は単独でも、日付と一緒でも使えます）。',
                 parameters: {
                   type: 'OBJECT',
                   properties: {
@@ -746,6 +784,16 @@ const AIChatBot = () => {
                     recentCount: {
                       type: 'INTEGER',
                       description: '直近N件取得する場合の件数。例: 3 → 直近3回分',
+                    },
+                    keyword: {
+                      type: 'STRING',
+                      description:
+                        '記録の題・覚え書き・目印（タグ）で絞る言葉。「○○戦」「リーグ戦」など。日付と一緒に使うこともできます',
+                    },
+                    sessionId: {
+                      type: 'STRING',
+                      description:
+                        '記録の id。いま開いている記録（「この記録」「この試合」）や、searchSessions で見つけた記録を読むときに渡します',
                     },
                   },
                 },
@@ -782,7 +830,8 @@ const AIChatBot = () => {
                     dateTo: { type: 'STRING', description: '期間の終了日 (YYYY-MM-DD形式)。省くと全期間' },
                     targetType: {
                       type: 'STRING',
-                      description: "的の種類（'kasumi36', 'hoshi36', 'hoshi24' のいずれか）。省略するとすべての的",
+                      description:
+                        "的の種類（'kasumi36', 'hoshi36', 'hoshi24' のいずれか）。省略するとすべての的",
                     },
                     tags: {
                       type: 'ARRAY',
@@ -1054,7 +1103,9 @@ const AIChatBot = () => {
                     団体全体: 結果.全体,
                     順位: 結果.一覧,
                     ...(タグ絞り.表示 ? { タグでの絞り込み: タグ絞り.表示 } : {}),
-                    ...(題絞り.絞った ? { 題での絞り込み: { 言葉: 題絞り.言葉, 当たった記録の件数: 題絞り.当たった件数 } } : {}),
+                    ...(題絞り.絞った
+                      ? { 題での絞り込み: { 言葉: 題絞り.言葉, 当たった記録の件数: 題絞り.当たった件数 } }
+                      : {}),
                     message:
                       タグ絞り.添え書き +
                       (題絞り.絞った
@@ -1142,12 +1193,17 @@ const AIChatBot = () => {
               functionResponses.push({
                 functionResponse: {
                   name: call.name,
-                  response: Object.assign({}, 結果, タグ絞り.表示 ? { タグでの絞り込み: タグ絞り.表示 } : {}, {
-                    message:
-                      タグ絞り.添え書き +
-                      '射位ごとの的中率です。射数の少ない射位は数字が揺れるので、率だけでなく射数も添えて伝えてください。' +
-                      '誰をどこに置くかは決めていません。数字を根拠に提案してください。',
-                  }),
+                  response: Object.assign(
+                    {},
+                    結果,
+                    タグ絞り.表示 ? { タグでの絞り込み: タグ絞り.表示 } : {},
+                    {
+                      message:
+                        タグ絞り.添え書き +
+                        '射位ごとの的中率です。射数の少ない射位は数字が揺れるので、率だけでなく射数も添えて伝えてください。' +
+                        '誰をどこに置くかは決めていません。数字を根拠に提案してください。',
+                    }
+                  ),
                 },
               });
             } else if (call.name === 'getDetailedMemberStats') {
@@ -1163,43 +1219,50 @@ const AIChatBot = () => {
                 functionResponse: {
                   name: call.name,
                   response: タグ絞り.表示
-                    ? Object.assign({}, statsData, { タグでの絞り込み: タグ絞り.表示, message: タグ絞り.添え書き })
+                    ? Object.assign({}, statsData, {
+                        タグでの絞り込み: タグ絞り.表示,
+                        message: タグ絞り.添え書き,
+                      })
                     : statsData,
                 },
               });
             } else if (call.name === 'getArrowLocationStats') {
               const { memberName, dateFrom, dateTo, targetType, tags } = call.args;
               const タグ絞り = タグで絞った記録(tags);
-              const statsData = 矢所の成績(
-                members,
-                タグ絞り.記録たち,
-                String(memberName || ''),
-                {
-                  dateFrom,
-                  dateTo,
-                  targetType,
-                  tags,
-                }
-              );
+              const statsData = 矢所の成績(members, タグ絞り.記録たち, String(memberName || ''), {
+                dateFrom,
+                dateTo,
+                targetType,
+                tags,
+              });
               functionResponses.push({
                 functionResponse: {
                   name: call.name,
                   response: タグ絞り.表示
                     ? Object.assign({}, statsData, {
                         タグでの絞り込み: タグ絞り.表示,
-                        message: (statsData.message || '') + (タグ絞り.添え書き ? ' ' + タグ絞り.添え書き : ''),
+                        message:
+                          (statsData.message || '') + (タグ絞り.添え書き ? ' ' + タグ絞り.添え書き : ''),
                       })
                     : statsData,
                 },
               });
             } else if (call.name === 'getSessionsByDate') {
-              const { date, dateFrom, dateTo, recentCount } = call.args;
+              const { date, dateFrom, dateTo, recentCount, keyword, sessionId } = call.args;
 
               // 記録が無い・壊れているものを先に外す。archers が無い記録が1件でも
               // 混ざると、この道具ごと落ちて「エラー」しか返せなくなる
               let filtered = sessions
                 .filter((記録) => 記録 && Array.isArray(記録.archers))
                 .sort((甲, 乙) => (乙.date || 0) - (甲.date || 0));
+              if (sessionId) filtered = filtered.filter((記録) => String(記録.id) === String(sessionId));
+              if (keyword) {
+                // 題・覚え書き・目印の当たり方は searchSessions と同じにする
+                const 当たり = new Set(
+                  記録をさがす(filtered, { 言葉: keyword, 件数: filtered.length }).一覧.map((記録) => 記録.id)
+                );
+                filtered = filtered.filter((記録) => 当たり.has(記録.id));
+              }
 
               if (recentCount) {
                 filtered = filtered.slice(0, recentCount);
@@ -1275,6 +1338,7 @@ const AIChatBot = () => {
                 // チーム（区切り）ごとの的中数。「何中対何中」に答えるため。個人ログインでは他の人の列が空なので載せない
                 const チームごと = 個人 ? null : チームごとの的中(記録);
                 return {
+                  id: 記録.id,
                   date: dateStr,
                   title: 記録.title || '無題',
                   hitRate,
@@ -1419,9 +1483,18 @@ const AIChatBot = () => {
         // 空の返事は会話に積んでいないので、会話の最後は送ったもの。送り直しがまた道具を呼んだときは動かさない
         const 止められた = (返り) => {
           const 候補 = 返り && 返り.candidates && 返り.candidates[0];
-          return !!(候補 && /SAFETY|PROHIBITED|BLOCKLIST|SPII|RECITATION/i.test(String(候補.finishReason || '')));
+          return !!(
+            候補 && /SAFETY|PROHIBITED|BLOCKLIST|SPII|RECITATION/i.test(String(候補.finishReason || ''))
+          );
         };
-        if (!返事の文.trim() && !(呼ばれた道具 && 呼ばれた道具.length) && !止められた(response) && 最後に送った中身 && 会話.length && 会話[会話.length - 1].role === 'user') {
+        if (
+          !返事の文.trim() &&
+          !(呼ばれた道具 && 呼ばれた道具.length) &&
+          !止められた(response) &&
+          最後に送った中身 &&
+          会話.length &&
+          会話[会話.length - 1].role === 'user'
+        ) {
           console.warn('[AIChatBot] 答えの文が空だったので、もう一度送ります');
           const 中身 = 最後に送った中身;
           会話.pop();
@@ -1704,10 +1777,7 @@ const AIChatBot = () => {
                     )}
                   </View>
                 ) : (
-                  <View
-                    key={idx}
-                    style={msg.role === 'user' ? undefined : styles.答えの行}
-                  >
+                  <View key={idx} style={msg.role === 'user' ? undefined : styles.答えの行}>
                     {msg.role !== 'user' && (
                       <View style={styles.答えの絵}>
                         <AIMascot マス={2} {...明るい地のキャラ} />
@@ -1857,4 +1927,3 @@ const AIChatBot = () => {
 };
 
 exports.AIChatBot = AIChatBot;
-
