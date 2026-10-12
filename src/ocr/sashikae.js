@@ -91,6 +91,20 @@ export async function マスを端末で差し替える(teams, images, 設定) {
       });
       return rows.length === t.rows.length ? t : { ...t, rows };
     });
+    // 名前の無い行を足して 1 人多く返すこともある（同じ写真で「9 人と 8 人」の 9 人目が無名）。ほかの板がみな同じ人数で、
+    // 無名の行を外すとその人数になる板だけ外す
+    if (teams.length >= 2) {
+      const 無名 = (r) => !String((r && r.name) || '').trim();
+      teams = teams.map((t, i) => {
+        if (!t || !Array.isArray(t.rows)) return t;
+        const ほか = teams
+          .filter((_, ii) => ii !== i)
+          .map((u) => (u && Array.isArray(u.rows) ? u.rows.length : 0));
+        const 名あり = t.rows.filter((r) => !無名(r));
+        const そろう = ほか.every((n) => n === ほか[0]) && 名あり.length === ほか[0];
+        return そろう && 名あり.length < t.rows.length ? { ...t, rows: 名あり } : t;
+      });
+    }
   }
   const 人数たち = teams.map((t) => (Array.isArray(t && t.rows) ? t.rows.length : 0));
   if (人数たち.some((n) => n < 1)) return そのまま('行が無い板がある');
