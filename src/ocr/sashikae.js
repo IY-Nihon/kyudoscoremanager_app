@@ -76,6 +76,22 @@ export async function マスを端末で差し替える(teams, images, 設定) {
       ? { ...t, cellStyle: '2射' }
       : t
   );
+  // 同じ板に同じ名前の行が 2 つあれば、後のほうは Gemini の読み違え（10/11 の白板 2 枚の写真で「坪井」を 2 回返し、
+  // 右の板が 9 人になって列がずれた）。写真 1 枚の板だけ。紙・ノートは同じ人が 2 回書かれることがあるので触らない
+  if (images.length === 1 && teams.every((t) => t && t.cellStyle !== '1射')) {
+    teams = teams.map((t) => {
+      if (!t || !Array.isArray(t.rows)) return t;
+      const 見た = new Set();
+      const rows = t.rows.filter((r) => {
+        const 名 = String((r && r.name) || '').trim();
+        if (!名) return true;
+        if (見た.has(名)) return false;
+        見た.add(名);
+        return true;
+      });
+      return rows.length === t.rows.length ? t : { ...t, rows };
+    });
+  }
   const 人数たち = teams.map((t) => (Array.isArray(t && t.rows) ? t.rows.length : 0));
   if (人数たち.some((n) => n < 1)) return そのまま('行が無い板がある');
   const 紙 = teams.every((t) => t && t.cellStyle === '1射');
@@ -106,7 +122,13 @@ export async function マスを端末で差し替える(teams, images, 設定) {
         二度目 = null;
       }
       if (Array.isArray(二度目)) {
-        return { teams: 差し替えた(組み直し, 二度目, 設定, 紙), 読み取り元: '端末', 組み直した: 見当 };
+        // 組み直した板も、Gemini の順が写真の左からかを確かめる（右の板を先に返した回で、組み直したあと左右が入れ替わった）
+        const 並び = 組み直し.length >= 2 ? 板の並びを確かめる(組み直し, 二度目, 設定) : null;
+        return {
+          teams: 差し替えた(組み直し, 二度目, 設定, 紙, 並び && 並び.板の番),
+          読み取り元: '端末',
+          組み直した: 見当,
+        };
       }
     }
     return null;
@@ -288,7 +310,7 @@ export function 組み直しの候補(teams, 板の数, 見当) {
   const 総 = 人数たち.reduce((a, b) => a + b, 0);
   const 出 = [];
   const 足す = (割り方) => {
-    if (割り方.length === teams.length) return;
+    if (割り方.length === teams.length && 割り方.every((n, i) => n === 人数たち[i])) return;
     if (割り方.some((n) => !(Number.isInteger(n) && n >= 1))) return;
     if (割り方.reduce((a, b) => a + b, 0) !== 総) return;
     if (出.some((x) => x.length === 割り方.length && x.every((n, i) => n === 割り方[i]))) return;
@@ -308,6 +330,9 @@ export function 組み直しの候補(teams, 板の数, 見当) {
     境目.sort((a, b) => Math.abs(a - 総 / 2) - Math.abs(b - 総 / 2));
     for (const b of 境目) 足す([b, 総 - b]);
   }
+  // 板の数は合っていて、人の割り振りだけ違えることもある（10/11 の白板 2 枚の写真：8 人と 8 人を 4 人と 12 人で返した）。
+  // 割れれば等分も試す（読めて見張りを通ったときだけ採られる）
+  if (teams.length >= 2 && 総 % teams.length === 0) 足す(teams.map(() => 総 / teams.length));
   return 出;
 }
 
@@ -319,7 +344,8 @@ export function 組み直しの候補(teams, 板の数, 見当) {
  * 「2人」「1人」と言ってくることがある）。それが無ければ見当の人数
  */
 export function 行を組み直す(teams, 見当) {
-  if (!Array.isArray(見当) || !見当.length || 見当.length === teams.length) return null;
+  if (!Array.isArray(見当) || !見当.length) return null;
+  if (見当.length === teams.length && 見当.every((n, i) => n === (teams[i].rows || []).length)) return null;
   if (!見当.every((n) => Number.isInteger(n) && n >= 1)) return null;
   const 行たち = teams.flatMap((t) => (Array.isArray(t && t.rows) ? t.rows : []));
   if (見当.reduce((a, b) => a + b, 0) !== 行たち.length) return null;
