@@ -288,12 +288,31 @@ function 差し替えた(teams, 読んだ, 設定, 紙, 板の番) {
       ...t,
       cellStyle: 紙 ? '1射' : '2射',
       // 確からしさ は cells と同じ並び。確認画面で迷ったマスに色を付けるのに使う
-      rows: t.rows.map((r, j) => ({
-        ...r,
-        cells: 列たち[j].slice(),
-        確からしさ: 確たち[j].slice(),
-        marks: undefined,
-      })),
+      rows: t.rows.map((r, j) => {
+        const 列 = 列たち[j].slice();
+        const 確 = Array.isArray(確たち[j]) ? 確たち[j].slice() : [];
+        // 板は下から書くので、書いていない段は上に固まる。書いた段より下に空のマスがあれば、途中終了ではなく
+        // 照り返しなどで端末が印を拾えなかったマス（10/11 の白板で 11 マス）。Gemini の読みがあれば入れ、どちらでも
+        // 迷いの色を付けて確かめてもらう
+        // いちばん上の段でも、同じ板のほかの人の半分以上が書いてある段の空は、迷いにする（途中でやめた人かもしれないので
+        // 中身は入れない。途中終了は空のまま）
+        if (!紙) {
+          const 空 = (c) => !String(c == null ? '' : c).trim();
+          const 最初 = 列.findIndex((c) => !空(c));
+          const AIのマス = Array.isArray(r.cells) && r.cells.length === 列.length ? r.cells : null;
+          const ほかの列 = 列たち.filter((_, jj) => jj !== j);
+          for (let k = 0; k < 列.length; k++) {
+            if (!空(列[k])) continue;
+            const 書いた人 = ほかの列.filter((c) => c && !空(c[k])).length;
+            const 埋まった段 = ほかの列.length > 0 && 書いた人 >= ほかの列.length * 0.5;
+            const 間の空 = 最初 >= 0 && k > 最初;
+            if (!間の空 && !埋まった段) continue;
+            if (間の空 && AIのマス && !空(AIのマス[k])) 列[k] = String(AIのマス[k]).trim();
+            確[k] = 0.3;
+          }
+        }
+        return { ...r, cells: 列, 確からしさ: 確, marks: undefined };
+      }),
     };
   });
 }
