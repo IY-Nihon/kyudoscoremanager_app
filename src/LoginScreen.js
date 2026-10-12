@@ -162,10 +162,10 @@ const LoginScreen = () => {
    * Google で団体アカウントを作る。
    *
    * 作るときだけ Google を使う。作ったあとは今までどおり、団体IDと
-   * パスワードで部員全員が入る——この共有の仕組みは変えない。
+   * パスワードで団体ログインする（部員は団体IDと個人IDで入る）。
    * Google は個人に紐づくので、共有の入口にすると誰の端末でも入れなくなる。
    *
-   * パスワードは画面で入れてもらう。Google だけで作ると、部員へ配る
+   * パスワードは画面で入れてもらう。Google だけで作ると、団体ログインの
    * パスワードが存在しなくなってしまうため。
    */
   // 先に Google のアカウントを選んでもらい、そのあと専用の入力画面（メール欄なし）で団体名と
@@ -222,7 +222,7 @@ const LoginScreen = () => {
     if (!合言葉の入力) {
       Alert.alert(
         'エラー',
-        'パスワードを入れてください。部員はこのパスワードで入るので、Google で作る場合も必要です。'
+        'パスワードを入れてください。団体ログインに使うので、Google で作る場合も必要です。'
       );
       return;
     }
@@ -236,7 +236,7 @@ const LoginScreen = () => {
     }
     処理中を置く(true);
     try {
-      // Google で入った人にも、部員へ配るパスワードを持たせる
+      // Google で入った人にも、団体ログインのパスワードを持たせる
       await FirebaseAuth.updatePassword(auth.currentUser, 合言葉の入力).catch(() => {
         // 直後なので普通は通る。通らなくても団体は作れるので止めない
       });
@@ -637,7 +637,7 @@ const LoginScreen = () => {
                       )}
                       <View style={styles.inputGroup}>
                         <Text style={styles.label}>
-                          {Googleのメール ? 'パスワード（部員がログインに使う）' : 'パスワード'}
+                          {Googleのメール ? 'パスワード（団体ログインに使う）' : 'パスワード'}
                         </Text>
                         <View style={styles.inputWrapper}>
                           <Icons.Ionicons
