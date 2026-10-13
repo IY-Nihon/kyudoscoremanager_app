@@ -28,7 +28,7 @@ const { getShadowStyle } = require('./shadowStyle');
 // test/updateNotice.test.js が見張っている。
 const 最後に配信した版 = '2026-10-13-03';
 // お知らせの版。新しい項目を足したら、必ずこれを最新の項目の 版 に合わせる。
-const NOTICE_VERSION = '2026-10-13-03';
+const NOTICE_VERSION = '2026-10-13-04';
 const STORAGE_KEY = 'whatsNewDismissedVersion';
 // 最後に開いたときの版。閉じるたびに書く。
 // どこから下が「前に読んだぶん」かの線を引くためだけに使う。
@@ -39,6 +39,14 @@ const LAST_SEEN_KEY = 'whatsNewLastSeenVersion';
 // 新しい順に並べる。上から「前に見た版より新しいか」を数えて、
 // そこで線を引くため、順番が崩れると線の位置が狂う（検査で見ている）
 const NOTICE_ITEMS = [
+  {
+    date: '2026/10/13',
+    版: '2026-10-13-04',
+    title: '記録の表を25%まで小さく表示できるようになりました',
+    points: [
+      '記録画面の「表示」で、これまでの50%より小さい25%を選べます。人数が多い記録を一度に見渡すときに使えます。',
+    ],
+  },
   {
     date: '2026/10/13',
     版: '2026-10-13-03',
