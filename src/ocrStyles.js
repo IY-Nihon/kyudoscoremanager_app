@@ -152,6 +152,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerBtnPrimaryText: { color: '#FFF', fontSize: 15, fontWeight: 'bold' },
+  // 日付を選ぶボタン。footerBtnPrimary に flex: 0 を重ねると、RN-web では高さが余白だけになり、
+  // 字がボタンの下へはみ出していた（2026-10-13、本番の Pixel 8a）。高さは中身で決める
+  日付のボタン: {
+    marginTop: 12,
+    paddingVertical: 14,
+    borderRadius: 8,
+    backgroundColor: '#FF3B30',
+    alignItems: 'center',
+  },
   pickerOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',

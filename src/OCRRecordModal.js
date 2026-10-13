@@ -202,7 +202,7 @@ function normalizeMarks(rawMarks, shotsPerRound) {
 
 // かかった時間を、保存に添える秒の形にする（全部・Gemini・端末など残り）
 const 秒にする = (時間) => {
-  const 全部 = 時間 && 時間.始め ? Date.now() - 時間.始め : 0;
+  const 全部 = 時間 && 時間.始め ? (時間.終わり || Date.now()) - 時間.始め : 0;
   const 丸める = (ms) => Math.round(ms / 100) / 10;
   return {
     全部: 丸める(全部),
@@ -790,6 +790,8 @@ const OCRRecordModal = ({
         // 日付の違う組が並んでいたら（ノートの見開き）、どの日を読むか選んでもらう
         const 日付たち = [...new Set(rows.map((行) => 行.日付).filter(Boolean))];
         if (日付たち.length >= 2) {
+          // 日を選ぶあいだ待った時間は、読み取りの時間に入れない
+          かかった時間.current.終わり = Date.now();
           set日付ごとの行({ 日付たち, rows });
           setStep('dates');
           return;
@@ -1532,7 +1534,7 @@ const OCRRecordModal = ({
                 return (
                   <TouchableOpacity
                     key={日 || '全部'}
-                    style={[styles.footerBtnPrimary, { marginTop: 12, flex: 0 }]}
+                    style={styles.日付のボタン}
                     onPress={() => {
                       // 選んだ日の組だけ。組の番号は詰め直す（区切りと計は、残った組のあいだにだけ入る）
                       const 番たち = [...new Set(選んだ行.map((行) => 行.チーム番号))];
