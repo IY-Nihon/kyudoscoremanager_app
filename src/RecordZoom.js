@@ -122,7 +122,7 @@ const 拡大率の窓 = ({ setViewScale, 倍率, 拡大選択中, 拡大を選�
               <Text style={styles.バーの数字}>{Math.round(倍率 * 100)}%</Text>
             </View>
             <ScrollView style={{ flexGrow: 0, flexShrink: 1 }}>
-              {[0.5, 0.75, 1, 1.25, 1.5, 2].map((倍) => (
+              {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 2].map((倍) => (
                 <Pressable
                   key={`zoom-option-${倍}`}
                   style={({ hovered }) => [

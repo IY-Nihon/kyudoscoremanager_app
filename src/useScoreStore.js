@@ -668,7 +668,7 @@ const useScoreStore = zustand.create()(
         setIsAdminModePending: (値) => 書く({ isAdminModePending: 値 }),
         setHistoryViewMode: (値) => 書く({ historyViewMode: 値 }),
         setSelectedHistorySessionId: (値) => 書く({ selectedHistorySessionId: 値 }),
-        setViewScale: (値) => 書く({ viewScale: Math.max(0.5, Math.min(2, 値)) }),
+        setViewScale: (値) => 書く({ viewScale: Math.max(0.25, Math.min(2, 値)) }),
         setIsLiveActive: (入れる) => {
           if ((書く({ isLiveActive: 入れる }), 入れる)) {
             const 記録ID = 状態().activeSessionID || 'live-current';
