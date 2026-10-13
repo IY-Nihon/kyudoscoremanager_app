@@ -428,7 +428,7 @@ const RecordScreen = () => {
   const // 拡大率の選択が出ているか（Excel の倍率と同じ考え方）
     [拡大選択中, 拡大を選ぶ] = React.useState(false);
   const // 拡大率の下限・上限。バーも一覧もこの幅で動かす
-    拡大の下 = 0.5;
+    拡大の下 = 0.25;
   const 拡大の上 = 2;
   const 射数の窓を閉じる = () => 射数の窓を出す(false);
   const 射数を変える = (本数) => {
