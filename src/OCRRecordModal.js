@@ -31,7 +31,7 @@ const { getShadowStyle } = require('./shadowStyle');
 const { 記録の指示文, 立ち順の指示文, 名簿の手がかり, 板の箱の指示文 } = require('./ocrPrompts');
 const { マスを開く, 一射目からの順にする, 迷いを開く } = require('./ocrCells');
 // 板と紙の○×は端末で読む（Gemini は線の向きを読めない）。名前と並びは Gemini のまま
-const { マスを端末で差し替える } = require('./ocr/sashikae');
+const { マスを端末で差し替える, ノートの先読みを作る } = require('./ocr/sashikae');
 const 画像の道具 = require('./ocr/gazou-web');
 // 板のマスは畳み込みの網（2026-10-09。板ごとに外して測って全結合 98.2% → 99.6〜99.9%。scripts/ocr-cells/tatami.mjs）
 const 板の重み = require('../scripts/ocr-cells/omomi-tatami.json');
@@ -460,6 +460,13 @@ const OCRRecordModal = ({
             return false;
           })
         : Promise.resolve(false);
+    // ノートの先読み。逆さでなければ、Gemini を待つあいだにノートの印まで読んでおく（答えが来てからの端末の時間を省く）。
+    // ノートでない写真でも読むが、待つあいだのことで、答えが来たあとの時間は延びない
+    const ノートの先読み =
+      IS_WEB && mode === 'record' && images.length === 1
+        ? ノートの先読みを作る(images[0].base64, { 道具: 画像の道具, ノートの重み, ノートの向きの重み })
+        : null;
+    if (ノートの先読み) 逆さのノート.then((逆さ) => !逆さ && ノートの先読み.始める());
 
     try {
       // 鍵の引数は飾り。中継が本物の鍵に付け替える（baseUrl と Authorization は SDKの設定 が足す）
@@ -558,6 +565,7 @@ const OCRRecordModal = ({
                 紙の重み,
                 ノートの重み,
                 ノートの向きの重み,
+                ノートの先読み,
                 薄い重み: await 写真の網の重み,
                 箱たち,
                 行数,
