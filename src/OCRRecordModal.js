@@ -200,6 +200,18 @@ function normalizeMarks(rawMarks, shotsPerRound) {
   return out;
 }
 
+// かかった時間を、保存に添える秒の形にする（全部・Gemini・端末など残り）
+const 秒にする = (時間) => {
+  const 全部 = 時間 && 時間.始め ? Date.now() - 時間.始め : 0;
+  const 丸める = (ms) => Math.round(ms / 100) / 10;
+  return {
+    全部: 丸める(全部),
+    Gemini: 丸める(時間.Gemini),
+    Geminiの回数: 時間.Geminiの回数,
+    端末など: 丸める(Math.max(0, 全部 - 時間.Gemini)),
+  };
+};
+
 const OCRRecordModal = ({
   visible,
   onClose,
@@ -220,6 +232,8 @@ const OCRRecordModal = ({
   // 反映したら直したあとを、それぞれ取っておく（src/improvementLog.js）
   const 最初の読み取り = React.useRef(null);
   const 読み取りの記録id = React.useRef(null);
+  // かかった時間（ミリ秒）。遅いときに、Gemini を待ったのか端末で読むのに掛かったのかを後から分けて見る
+  const かかった時間 = React.useRef({ 始め: 0, Gemini: 0, Geminiの回数: 0 });
   // lineup: ホワイトボードの立ち順表（名前のみ）
   // record: 紙に取った的中記録（名前＋各射の○×）
   const [mode, setMode] = useState('lineup');
@@ -387,7 +401,15 @@ const OCRRecordModal = ({
       .then((縮めた) =>
         記録.改善のために取っておく(
           '写真読み取り',
-          Object.assign({ 段階: '読み取り', モード: mode, 写真の枚数: 写真たち.length }, 中身),
+          Object.assign(
+            {
+              段階: '読み取り',
+              モード: mode,
+              写真の枚数: 写真たち.length,
+              秒: 秒にする(かかった時間.current),
+            },
+            中身
+          ),
           縮めた,
           id
         )
@@ -404,6 +426,7 @@ const OCRRecordModal = ({
   // ─────────────────────────────────────────
   const analyzeImages = async () => {
     if (images.length === 0) return;
+    かかった時間.current = { 始め: Date.now(), Gemini: 0, Geminiの回数: 0 };
     setStep('analyzing');
     setErrorMsg('');
 
@@ -453,6 +476,7 @@ const OCRRecordModal = ({
           parts.push({ inlineData: { mimeType: 'image/jpeg', data: img.base64 } });
         });
         let result;
+        const 送った時刻 = Date.now();
         try {
           result = await model.generateContent(parts);
         } catch (誤り) {
@@ -467,6 +491,8 @@ const OCRRecordModal = ({
             set混み待ち(false);
           }
         }
+        かかった時間.current.Gemini += Date.now() - 送った時刻;
+        かかった時間.current.Geminiの回数++;
         return AIのJSONを読む(result.response.text());
       };
       let parsed = await 読ませる(prompt);

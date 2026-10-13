@@ -540,10 +540,27 @@ const AIChatBot = () => {
     const MAX_RETRY = 1;
     // アプリの改善のための保存に添える、使った道具の名前（src/improvementLog.js）
     const 使った道具 = [];
+    // かかった時間（ミリ秒）。遅いときに、最初の字が出るまでか・Gemini の何回目かを後から見る
+    const 始めた時刻 = Date.now();
+    let 最初の字の時刻 = 0;
+    const Geminiの時間 = [];
     const 改善のために = (中身) => {
+      const 秒 = (ms) => Math.round(ms / 100) / 10;
       require('./improvementLog').改善のために取っておく(
         'チャット',
-        Object.assign({ 質問: userMsg, 道具: 使った道具, 模型: 'gemini-3.6-flash' }, 中身)
+        Object.assign(
+          {
+            質問: userMsg,
+            道具: 使った道具,
+            模型: 'gemini-3.6-flash',
+            秒: {
+              全部: 秒(Date.now() - 始めた時刻),
+              最初の字まで: 最初の字の時刻 ? 秒(最初の字の時刻 - 始めた時刻) : null,
+              Gemini: Geminiの時間.map(秒),
+            },
+          },
+          中身
+        )
       );
     };
 
@@ -975,6 +992,7 @@ const AIChatBot = () => {
           // そのまま返さないと「Function call is missing a thought_signature」になる
           const 模型の部品 = [];
           let 返り;
+          const 送った時刻 = Date.now();
           try {
             返り = await model.generateContentStream({ contents: 会話 });
             // 流れが途中で切れると、返事全体の約束（response）も失敗する。ここで受け止めないと
@@ -1000,11 +1018,13 @@ const AIChatBot = () => {
             if (模型の部品.length) 会話.push({ role: 'model', parts: 模型の部品 });
             呼ばれた道具 = 道具の呼び出しを取る(模型の部品);
             返事の文 = 文を取る(模型の部品);
+            Geminiの時間.push(Date.now() - 送った時刻);
             return { response: Promise.resolve(全部.response) };
           }
           if (模型の部品.length) 会話.push({ role: 'model', parts: 模型の部品 });
           呼ばれた道具 = 道具の呼び出しを取る(模型の部品);
           返事の文 = 文を取る(模型の部品);
+          Geminiの時間.push(Date.now() - 送った時刻);
           return 返り;
         };
         // 流れてきたかけらを積み、文字があれば途中の札に出す
@@ -1024,6 +1044,7 @@ const AIChatBot = () => {
               文 = ''; // 道具の呼び出しだけのかけらは文字を持たない
             }
             if (!文) continue;
+            if (!最初の字の時刻) 最初の字の時刻 = Date.now();
             途中の文 += 文;
             const いま = 途中の文;
             setMessages((前) => {
