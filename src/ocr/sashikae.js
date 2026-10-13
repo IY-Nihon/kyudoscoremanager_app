@@ -208,6 +208,22 @@ export async function マスを端末で差し替える(teams, images, 設定) {
     return null;
   };
 
+  // 「1射」と答えた写真は、先にノートとして厳しく読む（端末の読みがはっきりノートらしいときだけ採る）。
+  // ノートを最後に回すと、板として読む重い処理（段の数を探して MobileNet で何度も読む）をやり終えてからノートに
+  // たどり着き、Pixel 8a で数分かかった（2026-10-13 の本番：PC でも 54 秒のうち 50 秒が板の読み）。
+  // 厳しく読むので、「1射」と答えた白板（9/27 の商大・10/4 の途中の板）はここで採らず、今までどおり板として読む
+  if (紙 && 一射でノート && 設定.ノートの重み && images.length === 1) {
+    let 先のノート = null;
+    try {
+      先のノート = await ノートで読む(一射の答え, images, 設定, true);
+    } catch (e) {
+      先のノート = null;
+    }
+    if (先のノート && 先のノート.teams) return { teams: 先のノート.teams, 読み取り元: '端末', ノート: true };
+    if (Array.isArray(先のノート))
+      return { teams: 差し替えた(一射の答え, 先のノート, 設定, true), 読み取り元: '端末', ノート: true };
+  }
+
   let 読んだ;
   try {
     読んだ = 紙 ? await 紙を読む(teams, images, 設定) : await 板を読む(teams, images, 設定);

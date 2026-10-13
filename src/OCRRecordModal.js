@@ -234,6 +234,8 @@ const OCRRecordModal = ({
   const 読み取りの記録id = React.useRef(null);
   // かかった時間（ミリ秒）。遅いときに、Gemini を待ったのか端末で読むのに掛かったのかを後から分けて見る
   const かかった時間 = React.useRef({ 始め: 0, Gemini: 0, Geminiの回数: 0 });
+  // Gemini の答え（生の文）。本番で読み違えた写真を、同じ答えで手元に再現して直すために保存に添える（10/13 のノートで要った）
+  const Geminiの答えたち = React.useRef([]);
   // lineup: ホワイトボードの立ち順表（名前のみ）
   // record: 紙に取った的中記録（名前＋各射の○×）
   const [mode, setMode] = useState('lineup');
@@ -407,6 +409,7 @@ const OCRRecordModal = ({
               モード: mode,
               写真の枚数: 写真たち.length,
               秒: 秒にする(かかった時間.current),
+              Geminiの答え: Geminiの答えたち.current,
             },
             中身
           ),
@@ -427,6 +430,7 @@ const OCRRecordModal = ({
   const analyzeImages = async () => {
     if (images.length === 0) return;
     かかった時間.current = { 始め: Date.now(), Gemini: 0, Geminiの回数: 0 };
+    Geminiの答えたち.current = [];
     setStep('analyzing');
     setErrorMsg('');
 
@@ -493,7 +497,11 @@ const OCRRecordModal = ({
         }
         かかった時間.current.Gemini += Date.now() - 送った時刻;
         かかった時間.current.Geminiの回数++;
-        return AIのJSONを読む(result.response.text());
+        const 答えの文 = result.response.text();
+        // 保存は 1 件 256KB まで（中継の決まり）。日本語は 1 字 3 バイトなので 1 答え 1 万 5 千字・3 つまで
+        if (Geminiの答えたち.current.length < 3)
+          Geminiの答えたち.current.push(String(答えの文 || '').slice(0, 15000));
+        return AIのJSONを読む(答えの文);
       };
       let parsed = await 読ませる(prompt);
 
