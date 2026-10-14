@@ -28,7 +28,13 @@ const 中継 = require('./geminiChukei');
 const { generateUUID } = require('./uuid');
 const { formatMemberName } = require('./formatMemberName');
 const { getShadowStyle } = require('./shadowStyle');
-const { 記録の指示文, 立ち順の指示文, 名簿の手がかり, 板の箱の指示文 } = require('./ocrPrompts');
+const {
+  記録の指示文,
+  記録の形の指示文,
+  立ち順の指示文,
+  名簿の手がかり,
+  板の箱の指示文,
+} = require('./ocrPrompts');
 const { マスを開く, 一射目からの順にする, 迷いを開く } = require('./ocrCells');
 // 板と紙の○×は端末で読む（Gemini は線の向きを読めない）。名前と並びは Gemini のまま
 const { マスを端末で差し替える, ノートの先読みを作る } = require('./ocr/sashikae');
@@ -529,7 +535,26 @@ const OCRRecordModal = ({
                     rows: Array.isArray(読み取り.rows) ? 読み取り.rows : [],
                   },
                 ];
-        let 生のteams = teamsにする(parsed);
+        // 形の指示文の答えは cells の代わりに ncells（マスの数）。端末の読み取りはマスの数を cells の長さで見るので、
+        // 空のマスを並べて渡す（印は端末が読む）
+        const マスを並べる = (チームたち) =>
+          チームたち.map((チーム) =>
+            チーム && Array.isArray(チーム.rows)
+              ? {
+                  ...チーム,
+                  rows: チーム.rows.map((行) =>
+                    行 &&
+                    !Array.isArray(行.cells) &&
+                    Number.isInteger(Number(行.ncells)) &&
+                    Number(行.ncells) > 0
+                      ? { ...行, cells: Array(Math.min(60, Number(行.ncells))).fill('') }
+                      : 行
+                  ),
+                }
+              : チーム
+          );
+        const 形で読んだ = (読み取り) => マスを並べる(teamsにする(読み取り));
+        let 生のteams = 形で読んだ(parsed);
         // 端末が逆さのノートと見たら、起こして読み直す。逆さのままだと Gemini は名前を読み違え、
         // 列の位置（x）も組ごとに左右がばらばらになった（10/11）
         if (await 逆さのノート) {
@@ -537,7 +562,7 @@ const OCRRecordModal = ({
             const 起こした = await 画像の道具.写真を逆さにする(images[0].base64);
             読む写真 = [{ ...images[0], base64: 起こした }];
             parsed = await 読ませる(prompt);
-            生のteams = teamsにする(parsed);
+            生のteams = 形で読んだ(parsed);
             console.log('[OCRRecordModal] 逆さのノートを起こして読み直した');
           } catch (誤り) {
             読む写真 = images;
@@ -602,15 +627,14 @@ const OCRRecordModal = ({
           console.log('[OCRRecordModal] 読み直す:', 差し替え.訳 || '板の数が違う', 注文);
           try {
             const 二度目 = await 読ませる(
-              記録の指示文({
+              記録の形の指示文({
                 手がかり: buildNameHint(),
-                射数: shotsPerRound,
                 枚数: images.length,
                 向き,
                 ...注文,
               })
             );
-            const 二度目のteams = teamsにする(二度目);
+            const 二度目のteams = 形で読んだ(二度目);
             console.log('[OCRRecordModal] 読み直した板:', 板の様子(二度目のteams));
             const 二度目の差し替え = await 端末で(二度目のteams);
             // 端末で読めたら採る。板の数だけ直ったときも、次の読み直しの土台として採る
@@ -679,11 +703,10 @@ const OCRRecordModal = ({
                   生のteams.map((チーム) => チーム.rows.length)
                 );
                 try {
-                  const 三度目 = teamsにする(
+                  const 三度目 = 形で読んだ(
                     await 読ませる(
-                      記録の指示文({
+                      記録の形の指示文({
                         手がかり: buildNameHint(),
-                        射数: shotsPerRound,
                         枚数: images.length,
                         向き,
                         列の数たち: 人数たち,
@@ -728,6 +751,28 @@ const OCRRecordModal = ({
                 (/429/.test(String((誤り && 誤り.message) || 誤り)) ? 'AIの利用制限' : '通信エラー') +
                 '）',
             };
+          }
+        }
+        // 印つきで読み直す：端末が最後まで ○× を読めなかったら、○× つきの指示文でもう一度だけ読む。
+        // 端末がその答え（cells の印・段の数）を手がかりに読めればそれを、読めなければ Gemini の ○× を
+        // 黄色の断りつきで出す（形の指示文に替える前と同じ）
+        if (差し替え.読み取り元 !== '端末') {
+          console.log('[OCRRecordModal] 端末で読めないので、○× つきで読み直す:', 差し替え.訳 || '');
+          try {
+            const 印つき = teamsにする(
+              await 読ませる(
+                記録の指示文({ 手がかり: buildNameHint(), 射数: shotsPerRound, 枚数: images.length, 向き })
+              )
+            );
+            const 印つきの差し替え = await 端末で(印つき);
+            parsed = { teams: 印つき };
+            生のteams = 印つき;
+            差し替え =
+              印つきの差し替え.読み取り元 === '端末'
+                ? 印つきの差し替え
+                : { ...印つきの差し替え, 訳: 差し替え.訳 || 印つきの差し替え.訳 };
+          } catch (誤り) {
+            console.log('[OCRRecordModal] ○× つきの読み直しに失敗:', String((誤り && 誤り.message) || 誤り));
           }
         }
         if (差し替え.訳) console.log('[OCRRecordModal] 端末の読み取りを使わなかった:', 差し替え.訳);
@@ -864,8 +909,10 @@ const OCRRecordModal = ({
 
   // 指示文そのものは src/ocrPrompts.js に置いてある。画面から切り離してあるので、
   // 実物の写真で試して正解と突き合わせられる（scripts/try-ocr.mjs）
-  const buildRecordPrompt = () =>
-    記録の指示文({ 手がかり: buildNameHint(), 射数: shotsPerRound, 枚数: images.length, 向き });
+  // 記録表は「形」だけを読ませる（○× は端末の網で読む。2026-10-15）。○× を書かせないと答えが短く速くなり、
+  // 人数・組の分け方・列の位置（x）もよく合った（3.8・3.7 で確かめた。3.6 は混雑で測れていない）。
+  // 端末が ○× を読めなかったときだけ、○× つきの 記録の指示文 で読み直す（下の 印つきで読み直す）
+  const buildRecordPrompt = () => 記録の形の指示文({ 手がかり: buildNameHint(), 枚数: images.length, 向き });
 
   const buildLineupPrompt = () => 立ち順の指示文({ 手がかり: buildNameHint(), 枚数: images.length, 向き });
 
