@@ -364,9 +364,9 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     });
     try {
       const 一括 = 分けた一括(Firebaseの器.db);
-      消すID.forEach((id) =>
-        一括.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, id))
-      );
+      // 1 件ごとに「ゴミ箱へ置く」と「記録から消す」を並べて積む。束は 400 件ごとに分かれるので、
+      // 消すだけ先にまとめると、あとの束が失敗したとき雲にゴミ箱の写しの無いまま記録が消える
+      const 手元にある = new Set(消す記録.map((記録) => 記録.id));
       消す記録.forEach((記録) => {
         const ごみ箱に置く形 = 雲へ書く記録(
           JSON.parse(JSON.stringify(Object.assign({}, 記録, { syncStatus: 'trashed' })))
@@ -377,7 +377,13 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
           Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/trash`, 記録.id),
           ごみ箱に置く形
         );
+        一括.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, 記録.id));
       });
+      消すID
+        .filter((id) => !手元にある.has(id))
+        .forEach((id) =>
+          一括.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, id))
+        );
       一括.commit().catch((誤り) => console.error('Batch Delete Error:', 誤り));
     } catch (誤り) {
       console.error('Batch Delete Error:', 誤り);
