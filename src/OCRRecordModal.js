@@ -347,8 +347,12 @@ const OCRRecordModal = ({
         }
       });
     });
+    // 紙の記録は行ごとに名前を合わせる。立ち順だけ見ていると、選んだ人に印が付かない
+    recordRows.forEach((row) => {
+      if (row && row.status === 'matched' && row.match?.id) ids.add(row.match.id);
+    });
     return ids;
-  }, [tachiList]);
+  }, [tachiList, recordRows]);
 
   // ─────────────────────────────────────────
   // 画像選択（追加撮影で複数枚対応）

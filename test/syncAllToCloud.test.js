@@ -154,7 +154,9 @@ test('送り直し：ゴミ箱の内部用の印をクラウドへ持ち出さ�
   // pendingDelete は「消す指示がまだ届いていない」ことを表す手元だけの印。
   // クラウドへ書くと、他の端末のゴミ箱の見え方が狂う。
   const { store, 雲 } = await 用意();
-  store.setState({ trash: [記録({ id: 'tr-1', deletedAt: 500, pendingDelete: true, syncStatus: '未同期' })] });
+  store.setState({
+    trash: [記録({ id: 'tr-1', deletedAt: 500, pendingDelete: true, syncStatus: '未同期' })],
+  });
 
   await store.getState().syncAllToCloud();
   await 待つ(50);
@@ -162,4 +164,18 @@ test('送り直し：ゴミ箱の内部用の印をクラウドへ持ち出さ�
   const 雲の中身 = 雲.値(ゴミ箱の道, 'tr-1');
   assert.ok(雲の中身, '前提：ゴミ箱が届いている');
   assert.equal(雲の中身.pendingDelete, undefined, '内部用の印は持ち出さない');
+});
+
+test('送り直し：団体の設定は重ねて書き、順位の基準や自動進級の設定を消さない', async () => {
+  const { store, 雲 } = await 用意();
+  雲.置く(設定の道, 'app_settings', {
+    analysisRankingSettings: { 年度: { type: 'count', value: 40 } },
+    autoPromotionEnabled: false,
+  });
+  await store.getState().syncAllToCloud();
+  await 待つ(50);
+  const 設定 = 雲.値(設定の道, 'app_settings');
+  assert.deepEqual(設定.analysisRankingSettings, { 年度: { type: 'count', value: 40 } }, '順位の基準が残る');
+  assert.equal(設定.autoPromotionEnabled, false, '自動進級の設定が残る');
+  assert.equal(設定.currentFreshmanTerm, 53, '送った分は入る');
 });
