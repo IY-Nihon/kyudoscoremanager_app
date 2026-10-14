@@ -28,6 +28,18 @@ const {
   分けた一括,
 } = require('./storeShared');
 
+// 送った版のまま手元に残っている記録だけ、同期済みにする（送信中に直された記録は未同期のまま）
+const 届いた記録を同期済みに = (書く, 送った記録たち) => {
+  const 版 = new Map(送った記録たち.map((記録) => [記録.id, 記録.lastModified]));
+  書く((前) => ({
+    sessions: 前.sessions.map((記録) =>
+      記録 && 版.has(記録.id) && 版.get(記録.id) === 記録.lastModified
+        ? Object.assign({}, 記録, { syncStatus: '同期済み' })
+        : 記録
+    ),
+  }));
+};
+
 const 記録の操作 = (書く, 状態, そのまま書く) => ({
   saveSession: async (題, 覚え書き, 統計に入れる, タグ, attendanceData) => {
     行動を控える('記録を保存', (状態().archers || []).length + '人');
@@ -389,16 +401,22 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     delete 控え[記録ID];
     書く({
       trash: ごみ箱.filter((記録) => 記録 && 記録.id !== 記録ID),
-      sessions: [戻した形, ...今の記録],
+      // 同じ id が手元にも残っていれば（未同期のまま別の端末で捨てられた）入れ替える。足すと二重になる
+      sessions: [戻した形, ...今の記録.filter((記録) => !記録 || 記録.id !== 記録ID)],
       permanentlyDeleted: 控え,
     });
     try {
       const 一括 = Firestore.writeBatch(Firebaseの器.db);
       一括.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/trash`, 記録ID));
       const 送る形 = 雲へ書く記録(JSON.parse(JSON.stringify(戻した形)));
+      // 雲には同期済みとして書き、届いたら手元も同期済みにする（saveSession と同じ）。
+      // 未同期のまま雲に書くと、ほかの端末が取り込んだ写しまで未同期になり、捨てても戻ってきた
+      送る形.syncStatus = '同期済み';
       送る形.lastModified = Firestore.serverTimestamp();
       一括.set(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, 記録ID), 送る形);
-      一括.commit().catch((誤り) => console.error('Restore Session Error:', 誤り));
+      一括.commit()
+        .then(() => 届いた記録を同期済みに(書く, [戻した形]))
+        .catch((誤り) => console.error('Restore Session Error:', 誤り));
     } catch (誤り) {
       console.error('Restore Session Error:', 誤り);
     }
@@ -418,7 +436,15 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     // restoreSession と同じく、完全に消した控えから外す
     const 控え = Object.assign({}, 状態().permanentlyDeleted);
     戻すID.forEach((id) => delete 控え[id]);
-    書く({ trash: 残り, sessions: [...戻した形, ...状態().sessions], permanentlyDeleted: 控え });
+    書く({
+      trash: 残り,
+      // 同じ id が手元にも残っていれば入れ替える（restoreSession と同じ）
+      sessions: [
+        ...戻した形,
+        ...(状態().sessions || []).filter((記録) => !記録 || !戻すID.includes(記録.id)),
+      ],
+      permanentlyDeleted: 控え,
+    });
     try {
       const 一括 = Firestore.writeBatch(Firebaseの器.db);
       戻すID.forEach((id) =>
@@ -426,10 +452,13 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
       );
       戻した形.forEach((記録) => {
         const 送る形 = 雲へ書く記録(JSON.parse(JSON.stringify(記録)));
+        送る形.syncStatus = '同期済み';
         送る形.lastModified = Firestore.serverTimestamp();
         一括.set(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, 記録.id), 送る形);
       });
-      一括.commit().catch((誤り) => console.error('Restore Trash Items Error:', 誤り));
+      一括.commit()
+        .then(() => 届いた記録を同期済みに(書く, 戻した形))
+        .catch((誤り) => console.error('Restore Trash Items Error:', 誤り));
     } catch (誤り) {
       console.error('Restore Trash Items Error:', 誤り);
     }
