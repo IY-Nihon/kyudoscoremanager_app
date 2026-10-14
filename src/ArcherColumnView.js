@@ -235,7 +235,7 @@ const ArcherColumnView = React.memo(
                       });
                     }
                     return (
-                      <Text style={[styles.hitCountSub, { fontSize: 8 * 倍率 }]}>
+                      <Text style={[styles.hitCountSub, { fontSize: 8 * 倍率, paddingHorizontal: 2 * 倍率 }]}>
                         {内訳.map((一人, 番) => (
                           <React.Fragment key={番}>
                             <Text>
