@@ -309,7 +309,10 @@ const ScoreCell = React.memo(
             )}
             {subName ? (
               <View style={[styles.subContainer, { bottom: 2 * 倍率 }]}>
-                <Text style={[styles.subText, { fontSize: 9 * 倍率 }]} numberOfLines={1}>
+                <Text
+                  style={[styles.subText, { fontSize: 9 * 倍率, paddingHorizontal: 2 * 倍率 }]}
+                  numberOfLines={1}
+                >
                   {subName}
                 </Text>
               </View>
