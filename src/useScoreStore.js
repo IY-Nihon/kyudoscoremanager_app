@@ -235,7 +235,8 @@ const useScoreStore = zustand.create()(
           '月ごと': { type: 'ratio', value: 0 },
           '期間指定': { type: 'ratio', value: 0 },
           '直近30日': { type: 'ratio', value: 0 },
-          '今年度': { type: 'ratio', value: 0 },
+          // 分析の期間タブの名前に合わせる（'今年度' だと読まれず、既定に落ちていた）
+          '年度': { type: 'ratio', value: 0 },
           'すべて': { type: 'ratio', value: 0 },
         },
         focusedMemberId: null,
