@@ -1038,3 +1038,43 @@ test('まとめて消す：300 件（1 件で 2 操作）でも、1 回 500 件�
   for (const 回 of 雲.記録.filter((x) => x.種別 === 'batch'))
     assert.ok(回.操作.length <= 500, `1 回に ${回.操作.length} 件`);
 });
+
+test('全件取得：電波が無く端末の控えから答えたときは、控えに無い手元の記録を消さない', async () => {
+  // 控えに無い＝雲に無い、ではない。消すと差分の同期では戻らなかった（2026-10-15、Gemini の見直し）
+  const { store, 雲 } = 用意();
+  store.setState({
+    sessions: [
+      ...store.getState().sessions,
+      {
+        id: 'ses-old',
+        title: '古い練習',
+        date: 1000,
+        lastModified: 1000,
+        syncStatus: '同期済み',
+        archers: [],
+      },
+    ],
+    permanentlyDeleted: { 'ses-gone': Date.now() },
+  });
+  雲.状態.控えから答える = true;
+  await store.getState().fetchAndOverwriteFromCloud();
+  await 待つ(50);
+  assert.ok(記録を見る(store, 'ses-old'), '控えに無い古い記録が消えた');
+  assert.ok(store.getState().permanentlyDeleted['ses-gone'], '完全削除の控えを捨てた（よみがえる）');
+  // 雲から読めたときは、これまでどおり雲に無いものを外す
+  雲.状態.控えから答える = false;
+  await store.getState().fetchAndOverwriteFromCloud();
+  await 待つ(50);
+  assert.equal(記録を見る(store, 'ses-old'), undefined, '雲から読めたのに外さない');
+});
+
+test('復元：手元に同じ記録が残っていても（未同期のまま別の端末で捨てられた）二重にならず、届けば同期済みになる', async () => {
+  const { store, 雲 } = 用意();
+  const 元 = 記録を見る(store, 'ses-1');
+  store.setState({ trash: [Object.assign({}, 元, { syncStatus: '同期済み' })] });
+  await store.getState().restoreSession('ses-1');
+  await 待つ(50);
+  assert.equal(store.getState().sessions.filter((s) => s.id === 'ses-1').length, 1, '二重になった');
+  assert.equal(記録を見る(store, 'ses-1').syncStatus, '同期済み', '届いたのに未同期のまま');
+  assert.equal(雲.値(記録の道, 'ses-1').syncStatus, '同期済み', '雲に未同期と書いた');
+});

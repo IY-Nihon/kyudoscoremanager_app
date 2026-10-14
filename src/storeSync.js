@@ -680,9 +680,12 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
           undefined !== 設定.tagTemplates && (tagTemplates = 設定.tagTemplates),
           undefined !== 設定.lastPromotionYear && (lastPromotionYear = 設定.lastPromotionYear));
       }
-      const 記録の合流 = mergeById(状態().sessions, 記録, false, true);
-      const 部員の合流 = mergeById(状態().members, 部員, false, true);
-      const ごみ箱の合流 = mergeById(状態().trash, 雲のごみ箱, false, true);
+      // 雲に無いものを手元から外す（purge）のは、雲から全件を読めたときだけ。
+      // 電波が無いと Firestore は端末の控え（見張っていた直近の分だけ）から答えるので、
+      // 外すと控えに無い古い記録が手元から消え、差分の同期では戻らなかった（Gemini の見直し）
+      const 記録の合流 = mergeById(状態().sessions, 記録, false, 雲から読んだか(記録の返り));
+      const 部員の合流 = mergeById(状態().members, 部員, false, 雲から読んだか(部員の返り));
+      const ごみ箱の合流 = mergeById(状態().trash, 雲のごみ箱, false, 雲から読んだか(ごみ箱の返り));
       // ゴミ箱に入っているものは履歴に出さない。削除がまだクラウドへ届いて
       // いないとき、ここで書き戻すと記録が復活してしまう。
       // 逆に、戻したばかりでまだ送信できていない記録は、クラウドのゴミ箱の
@@ -703,7 +706,8 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       const 控え = 状態().permanentlyDeleted || {};
       const 控えのid = Object.keys(控え);
       let 完全削除ずみ = new Set(控えのid);
-      if (控えのid.length > 0) {
+      // 端末の控えからの答えでは「もう無い」と決められない。そのときは控えを整理しない
+      if (控えのid.length > 0 && 雲から読んだか(記録の返り) && 雲から読んだか(ごみ箱の返り)) {
         const 期限 = Date.now() - 2592e6;
         const クラウドに有る = new Set(
           [...記録, ...雲のごみ箱].filter((記録1件) => 記録1件 && 記録1件.id).map((記録1件) => 記録1件.id)
@@ -740,7 +744,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       const メンバーの控え = 状態().deletedMembers || {};
       const メンバーの控えのid = Object.keys(メンバーの控え);
       let 削除ずみのメンバー = new Set(メンバーの控えのid);
-      if (メンバーの控えのid.length > 0) {
+      if (メンバーの控えのid.length > 0 && 雲から読んだか(部員の返り)) {
         const 期限 = Date.now() - 2592e6;
         const クラウドに有る = new Set(
           (部員 || []).filter((部員1人) => 部員1人 && 部員1人.id).map((部員1人) => 部員1人.id)
@@ -773,7 +777,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         members: 部員の合流.filter((部員1人) => 部員1人 && !削除ずみのメンバー.has(部員1人.id)),
         sessions: 残る記録.filter((記録1件) => 記録1件 && !完全削除ずみ.has(記録1件.id)),
         trash: ごみ箱.filter((記録1件) => 記録1件 && !完全削除ずみ.has(記録1件.id)),
-        alumni: mergeById(状態().alumni, 卒業生, false, true),
+        alumni: mergeById(状態().alumni, 卒業生, false, 雲から読んだか(卒業生の返り)),
         currentFreshmanTerm,
         tagTemplates,
         lastPromotionYear,
