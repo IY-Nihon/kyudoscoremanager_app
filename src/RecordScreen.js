@@ -1,16 +1,7 @@
 'use strict';
 
 const React = require('react');
-const {
-  View,
-  ScrollView,
-  Text,
-  Pressable,
-  TouchableOpacity,
-  AppState,
-  Animated,
-  PanResponder,
-} = require('./rn');
+const { View, ScrollView, Text, Pressable, TouchableOpacity, AppState, Animated, PanResponder } = require('./rn');
 const { IS_WEB } = require('./IS_WEB');
 const { useScoreStore } = require('./useScoreStore');
 // 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
@@ -1291,13 +1282,7 @@ const RecordScreen = () => {
         知らせる={知らせる}
       />
       <View
-        // 表は区画の真ん中に置く。ただし小さく表示する（75% 未満）ときは上に寄せる。真ん中のままだと、
-        // 25% で表が画面の中ほどに小さく浮き、上下に大きな空白ができた（2026-10-15）
-        style={[
-          styles.gridArea,
-          { justifyContent: 倍率 < 0.75 ? 'flex-start' : 'center', alignItems: 'center' },
-          倍率 < 0.75 && { paddingTop: 56 },
-        ]}
+        style={[styles.gridArea, { justifyContent: 'center', alignItems: 'center' }]}
         onLayout={(出来事) => {
           取っ手の区画の幅.current = 出来事.nativeEvent.layout.width;
         }}
