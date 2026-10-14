@@ -528,8 +528,10 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
               currentFreshmanTerm: 状態().currentFreshmanTerm,
               tagTemplates: 状態().tagTemplates,
               lastPromotionYear: 状態().lastPromotionYear,
-              lastModified: Date.now(),
+              lastModified: Firestore.serverTimestamp(),
             },
+            // 重ねて書く。上書きすると、ここで送らない順位の基準や自動進級の設定が消える
+            重ねる: true,
           });
           const 一括の上限 = 400;
           for (let 頭 = 0; 頭 < 書き込み.length; 頭 += 一括の上限) {
@@ -537,7 +539,9 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
             const 一括 = Firestore.writeBatch(Firebaseの器.db);
             切れ端.forEach((書き込み1件) => {
               'set' === 書き込み1件.type
-                ? 一括.set(書き込み1件.ref, 書き込み1件.data)
+                ? 書き込み1件.重ねる
+                  ? 一括.set(書き込み1件.ref, 書き込み1件.data, { merge: true })
+                  : 一括.set(書き込み1件.ref, 書き込み1件.data)
                 : 'delete' === 書き込み1件.type && 一括.delete(書き込み1件.ref);
             });
             await 一括.commit();
