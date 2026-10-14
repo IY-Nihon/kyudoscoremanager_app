@@ -195,7 +195,9 @@ function そろっている(主, 参) {
   const 形 = (store) =>
     JSON.stringify({
       射数: store.getState().shotsPerRound,
-      列: store.getState().archers.map((a) => [a.id, a.name || '', a.memberId || '', (a.marks || []).join('・')]),
+      列: store
+        .getState()
+        .archers.map((a) => [a.id, a.name || '', a.memberId || '', (a.marks || []).join('・')]),
     });
   assert.equal(形(参.store), 形(主.store), '2 台の盤面が食い違った');
 }
@@ -241,7 +243,11 @@ test('同時：2 台が人を足しても、両方の人が残り、並びもそ
 });
 
 test('同時：片方が人を消し、もう片方が別の人を選んでも、両方が効く', async () => {
-  const { 主, 参 } = await 二台([射手({ id: 'a1' }), 射手({ id: 'a2', name: '' }), 射手({ id: 'a3', name: '' })]);
+  const { 主, 参 } = await 二台([
+    射手({ id: 'a1' }),
+    射手({ id: 'a2', name: '' }),
+    射手({ id: 'a3', name: '' }),
+  ]);
   主.ライブ.状態.遅延 = 30;
   主.store.getState().deleteArcher('a3');
   参.store.getState().setArcherMember('a2', { id: 'm2', name: '乙', gender: '女性', grade: 2 });
@@ -336,7 +342,10 @@ test('○×：2 台が同じ射手の別のますを同時に入れても、両�
   参.store.getState().toggleMark('a1', 2);
   await 待つ(120);
   主.ライブ.状態.遅延 = 0;
-  for (const [名, 端] of [['主', 主], ['参', 参]]) {
+  for (const [名, 端] of [
+    ['主', 主],
+    ['参', 参],
+  ]) {
     assert.deepStrictEqual(手元の射手(端.store).marks, ['○', '', '○', ''], `${名}に両方の手が出ていない`);
   }
   assert.deepStrictEqual(主.ライブ.値(道).marks_by_id.a1, ['○', '', '○', '']);
@@ -356,7 +365,10 @@ test('○×：盤面をまとめて送る操作でも変わったますだけを
   主.ライブ.状態.遅延 = 0;
   // 主催者が消したのは自分に見えていた × だけ。届いていなかった ○ は残り、2 台がそろう
   assert.deepStrictEqual(主.ライブ.値(道).marks_by_id.a1, ['○', '', '', ''], '古い行で相手の手を消した');
-  for (const [名, 端] of [['主', 主], ['参', 参]]) {
+  for (const [名, 端] of [
+    ['主', 主],
+    ['参', 参],
+  ]) {
     assert.deepStrictEqual(手元の射手(端.store).marks, ['○', '', '', ''], `${名}の見え方が雲と違う`);
   }
 });
@@ -426,7 +438,10 @@ test('一覧：最終更新から14日を過ぎたライブは出さず、消す
   // ものが溜まり続ける
   const 端 = 端末();
   const いま = Date.now();
-  端.ライブ.置く(`live_sessions/${検査の合言葉}/先月の練習/state`, { status: 'active', timestamp: いま - 20 * 日 });
+  端.ライブ.置く(`live_sessions/${検査の合言葉}/先月の練習/state`, {
+    status: 'active',
+    timestamp: いま - 20 * 日,
+  });
   端.ライブ.置く(`live_sessions/${検査の合言葉}/今朝/state`, { status: 'active', timestamp: いま - 60000 });
 
   await 端.store.getState().fetchActiveLiveSessions();
@@ -467,7 +482,10 @@ test('一覧：サーバーの時計に合わせられないときは、古く�
 test('一覧：最終更新が新しい順に並べる', async () => {
   const 端 = 端末();
   const いま = Date.now();
-  端.ライブ.置く(`live_sessions/${検査の合言葉}/おととい/state`, { status: 'active', timestamp: いま - 2 * 日 });
+  端.ライブ.置く(`live_sessions/${検査の合言葉}/おととい/state`, {
+    status: 'active',
+    timestamp: いま - 2 * 日,
+  });
   端.ライブ.置く(`live_sessions/${検査の合言葉}/さっき/state`, { status: 'active', timestamp: いま - 60000 });
   端.ライブ.置く(`live_sessions/${検査の合言葉}/昨日/state`, { status: 'active', timestamp: いま - 1 * 日 });
 
@@ -500,7 +518,11 @@ test('一覧：判定にはサーバーが打った日時を使う（端末の�
   );
   assert.notEqual(端.ライブ.値(`live_sessions/${検査の合言葉}/時計がずれた端末`), null, '節点も残す');
   assert.ok(!端.store.getState().liveSessionsList.includes('本当に古い'), 'サーバー基準で古いものは出さない');
-  assert.equal(端.ライブ.値(`live_sessions/${検査の合言葉}/本当に古い`), null, 'サーバー基準で古いものは消す');
+  assert.equal(
+    端.ライブ.値(`live_sessions/${検査の合言葉}/本当に古い`),
+    null,
+    'サーバー基準で古いものは消す'
+  );
 });
 
 test('一覧：最終更新が分からないライブは消さない', async () => {
@@ -571,7 +593,11 @@ test('入り直し：最後に書いたのが自分でも、参加した直後�
   // 参加者が最後の書き込み手になる
   参.store.getState().updateMark('a1', 0, '○');
   await 待つ(20);
-  assert.equal(参.ライブ.値(道).timestamp, 参.store.getState().lastPushedTimestamp, '前提：最後に書いたのは参加者');
+  assert.equal(
+    参.ライブ.値(道).timestamp,
+    参.store.getState().lastPushedTimestamp,
+    '前提：最後に書いたのは参加者'
+  );
 
   // 退出して入り直す
   参.store.getState().stopLiveSync();
@@ -686,7 +712,10 @@ test('返り：自分の返りでも、同じ通知に載った相手の○×は
   ライブ.置く(道, {
     status: 'active',
     timestamp: 送った時刻, // 自分の返り
-    archers: [射手({ id: 'a1', marks: ['', '', '', ''] }), 射手({ id: 'a2', name: '二人目', marks: ['', '', '', ''] })],
+    archers: [
+      射手({ id: 'a1', marks: ['', '', '', ''] }),
+      射手({ id: 'a2', name: '二人目', marks: ['', '', '', ''] }),
+    ],
     // 相手（a2 を持つ端末）の手が同じ通知に載っている
     marks_by_id: { a2: ['○', '', '', ''] },
     archer_timestamps: { a2: Date.now() + 5000 },
@@ -833,7 +862,8 @@ test('台数：ライブが終わったら在席の見張りも在席も残さ�
   // 残ると、抜けたあとも書き続けて、相手の画面に居ないはずの台が出る。
   // 時差の見張り（.info/serverTimeOffset）はわざと外さない作りなので、
   // 在席の道に付いた見張りだけを見る
-  const 在席の見張り = (ライブ) => ライブ.見張りの道().filter((道) => String(道).includes('live_presence')).length;
+  const 在席の見張り = (ライブ) =>
+    ライブ.見張りの道().filter((道) => String(道).includes('live_presence')).length;
   const 主 = 端末(null, [射手()]);
   await 主.store.getState().startLiveSync(ライブ名);
   await 待つ(10);
@@ -843,4 +873,35 @@ test('台数：ライブが終わったら在席の見張りも在席も残さ�
   await 待つ(10);
   assert.equal(在席の見張り(主.ライブ), 0, '在席の見張りが残っている');
   assert.equal(在席の数(主.ライブ), 0, '在席が残っている');
+});
+
+test('○×：雲が空きの多い行を { "3": "○" } の形で返しても、盤面をまとめて送るとき触っていない射手のますを書かない', async () => {
+  // 控えを雲の生の形のまま取ると手元の並びと食い違い、別の射手を触っただけで
+  // この射手の空きますまで '' で書いて、届く前の相手の手を消していた（2026-10-15、Gemini の見直し）
+  const 主 = 端末(null, [射手(), 射手({ id: 'a2', name: '二人目' })]);
+  await 主.store.getState().startLiveSync(ライブ名);
+  await 待つ(10);
+  const 今の = 主.ライブ.値(道);
+  主.ライブ.置く(
+    道,
+    Object.assign({}, 今の, {
+      timestamp: Date.now() + 1000,
+      marks_by_id: Object.assign({}, 今の.marks_by_id, { a1: { 3: '○' } }),
+    })
+  );
+  await 待つ(10);
+  assert.deepStrictEqual(手元の射手(主.store).marks, ['', '', '', '○'], '前提：受け取っている');
+  const 参 = 端末(主.ライブ, []);
+  参.store.getState().joinLiveSync(ライブ名);
+  await 待つ(20);
+  // 参加者の a1 の 2 射目が主催者へ届く前に、主催者が別の射手（a2）の○×を消す
+  主.ライブ.状態.遅延 = 30;
+  参.store.getState().toggleMark('a1', 1);
+  主.store.getState().clearArcherMarks('a2');
+  await 待つ(120);
+  主.ライブ.状態.遅延 = 0;
+  const 雲の行 = 主.ライブ.値(道).marks_by_id.a1;
+  const 行 = Array.isArray(雲の行) ? 雲の行 : Object.assign(['', '', '', ''], 雲の行);
+  assert.equal(行[1], '○', '触っていない射手の、届く前の相手の手を消した');
+  assert.equal(行[3], '○');
 });
