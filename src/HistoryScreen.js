@@ -611,7 +611,8 @@ const HistoryScreen = () => {
                               borderBottomColor: '#000',
                               borderRightWidth: 1.5,
                               borderRightColor: '#000',
-                              paddingHorizontal: 4,
+                              // 余白も表示の大きさに合わせる（25% で中身が隣の行へはみ出した）
+                              paddingHorizontal: 4 * viewScale,
                               // チームの色。横のときは名前の左に細い帯で出す
                               ...(() => {
                                 const 色 = (
@@ -837,7 +838,11 @@ const HistoryScreen = () => {
                                     </Text>
                                     {射手.isGuest ? (
                                       <Text
-                                        style={{ fontSize: 9 * viewScale, color: '#3C3C43', marginTop: 2 }}
+                                        style={{
+                                          fontSize: 9 * viewScale,
+                                          color: '#3C3C43',
+                                          marginTop: 2 * viewScale,
+                                        }}
                                       >
                                         (ゲスト)
                                       </Text>
@@ -845,10 +850,10 @@ const HistoryScreen = () => {
                                     {射手.isTotalCalculator || '' === 射手.name ? null : (
                                       <View
                                         style={{
-                                          marginTop: 2,
-                                          paddingHorizontal: 4,
-                                          paddingVertical: 2,
-                                          borderRadius: 10,
+                                          marginTop: 2 * viewScale,
+                                          paddingHorizontal: 4 * viewScale,
+                                          paddingVertical: 2 * viewScale,
+                                          borderRadius: 10 * viewScale,
                                           backgroundColor:
                                             射手.isGuest ||
                                             !射手.gender ||

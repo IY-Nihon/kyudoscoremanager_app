@@ -765,7 +765,8 @@ const RecordScreen = () => {
         borderTopColor: '#000',
         borderRightWidth: 1.5,
         borderRightColor: '#000',
-        paddingHorizontal: 4,
+        // 余白も表示の大きさに合わせる（25% で中身が隣の行へはみ出した）
+        paddingHorizontal: 4 * 倍率,
         justifyContent: 'center',
         alignItems: 'center',
         // チームの色。縦では名前の上に細い帯で出しているので、横では
@@ -828,16 +829,16 @@ const RecordScreen = () => {
                 : '選択'}
           </Text>
           {射手.isGuest || (!射手.isTotalCalculator && '' !== 射手.name) ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 * 倍率, marginTop: 1 * 倍率 }}>
               {射手.isGuest ? (
                 <Text style={[styles.guestLabel, { fontSize: 9 * 倍率 }]}>(ゲスト)</Text>
               ) : null}
               {!射手.isTotalCalculator && '' !== 射手.name ? (
                 <View
                   style={{
-                    paddingHorizontal: 4,
-                    paddingVertical: 1,
-                    borderRadius: 10,
+                    paddingHorizontal: 4 * 倍率,
+                    paddingVertical: 1 * 倍率,
+                    borderRadius: 10 * 倍率,
                     backgroundColor:
                       射手.isGuest ||
                       !射手.gender ||
