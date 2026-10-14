@@ -1,7 +1,16 @@
 'use strict';
 
 const React = require('react');
-const { View, ScrollView, Text, Pressable, TouchableOpacity, AppState, Animated, PanResponder } = require('./rn');
+const {
+  View,
+  ScrollView,
+  Text,
+  Pressable,
+  TouchableOpacity,
+  AppState,
+  Animated,
+  PanResponder,
+} = require('./rn');
 const { IS_WEB } = require('./IS_WEB');
 const { useScoreStore } = require('./useScoreStore');
 // 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
@@ -1432,7 +1441,8 @@ const RecordScreen = () => {
                                 borderRightColor: '#000',
                                 borderLeftWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 0,
                                 borderLeftColor: '#000',
-                                padding: 4,
+                                // 余白も表示の大きさに合わせる。4px のままだと 25% でマスの幅（約 7px）を超え、名前の行が上の列とずれた
+                                padding: 4 * 倍率,
                                 justifyContent: 'center',
                                 alignItems: 'center',
                                 // 掴んでいる列は、抜けた跡として薄く残す。

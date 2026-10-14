@@ -778,7 +778,8 @@ const HistoryScreen = () => {
                                 borderRightColor: '#000',
                                 borderLeftWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 0,
                                 borderLeftColor: '#000',
-                                padding: 4,
+                                // 余白も表示の大きさに合わせる。4px のままだと 25% でマスの幅（約 7px）を超え、名前の行が上の列とずれた
+                                padding: 4 * viewScale,
                                 justifyContent: 'center',
                                 alignItems: 'center',
                                 // チームの色。記録中と同じ見え方にする
