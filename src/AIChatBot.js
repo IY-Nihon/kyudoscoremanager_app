@@ -1709,7 +1709,7 @@ const AIChatBot = () => {
                 <TouchableOpacity
                   onPress={() => {
                     setMessages(defaultMessages);
-                    saveChatHistory(defaultMessages);
+                    saveChatHistory(defaultMessages, 保存の鍵);
                   }}
                   accessible
                   accessibilityRole="button"

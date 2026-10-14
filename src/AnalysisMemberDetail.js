@@ -285,10 +285,11 @@ const 部員の詳細の窓 = ({
                     <View style={styles.比較の的中率}>
                       {[
                         {
+                          // 本人もグラフで押した点の期間にそろえる（相手だけ期間の成績になっていた）
                           名: 詳細の部員.name,
-                          hits: 詳細の部員.hits,
-                          shots: 詳細の部員.shots,
-                          rate: 詳細の部員.rate,
+                          hits: (詳細の期間の成績 || 詳細の部員).hits,
+                          shots: (詳細の期間の成績 || 詳細の部員).shots,
+                          rate: (詳細の期間の成績 || 詳細の部員).rate,
                         },
                         ...compareMembers.map((相手) => {
                           const 成績 = 比較の成績.get(相手.id) || {};

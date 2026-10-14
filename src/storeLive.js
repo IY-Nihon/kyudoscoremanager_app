@@ -46,6 +46,33 @@ const {
   項目差分を当てる,
 } = require('./storeShared');
 
+// ライブ 1 つを、団体の枝・共有の枝・閲覧の写し・期限まで消す。
+// 古いライブの片付けと、参加一覧から手で消すときの両方で使う
+async function ライブを枝ごと消す(枝, 名, 印) {
+  const 落とす = (道) => RTDB.remove(RTDB.ref(Firebaseの器.rtdb, 道)).catch(() => {});
+  await Promise.all([
+    落とす(`live_sessions/${枝}/${名}`),
+    落とす(共有履歴の場所(枝, 名)),
+    落とす(在席の場所(枝, 名)),
+  ]);
+  if (!印) return;
+  const 編 = 印.共有の枝;
+  const 閲 = 印.閲覧の枝;
+  if (秘.枝として使えるか(編))
+    await Promise.all([
+      落とす(`live_sessions/${編}`),
+      落とす(`live_history/${編}`),
+      落とす(`live_presence/${編}`),
+    ]);
+  if (秘.枝として使えるか(閲)) await 落とす(`live_view/${閲}`);
+  // 期限は最後。データが残っているうちは決まりが消させない
+  // （消せると、期限を外してリンクをよみがえらせられてしまう）
+  await Promise.all([
+    秘.枝として使えるか(編) ? 落とす(期限の場所(編)) : null,
+    秘.枝として使えるか(閲) ? 落とす(期限の場所(閲)) : null,
+  ]);
+}
+
 const ライブの操作 = (書く, 状態, そのまま書く) => ({
   /**
    * ライブ中の取り消し（向き -1）・やり直し（向き +1）。
@@ -820,7 +847,18 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
     在席を終える(書く);
     写しを見るのをやめる();
     if (!記録を残す) 状態().resetCurrentSession(false);
-    書く({ isLiveActive: false, ライブの続き: null, isHost: false, liveSessionName: null });
+    // 共有や閲覧の印も戻す。閲覧リンクで見てから出ると「写しを見ている」が残り、
+    // ライブの枝() が null を返し続けて、次の操作が団体の枝に届かなかった
+    書く({
+      isLiveActive: false,
+      ライブの続き: null,
+      isHost: false,
+      liveSessionName: null,
+      写しを見ているか: false,
+      よその団体のライブ: false,
+      いまのライブの枝: null,
+      いまのライブの閲覧枝: null,
+    });
   },
   // 参加一覧を取り直す。ここでだけ、古いライブの片付けもする。
   // 購読側（listenToLiveSessions）は変化のたびに呼ばれるので、
@@ -852,30 +890,7 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
         // 期限の切れた枝は、決まりの側が「枝ごと消す」ときしか書かせない
         // （中の1件だけ消すのは通らない）。共有の枝はライブ1つ専用なので、
         // 枝ごと消すのが正しい。消し終えてから期限そのものを片付ける
-        const 消す = async () => {
-          const 落とす = (道) => RTDB.remove(RTDB.ref(Firebaseの器.rtdb, 道)).catch(() => {});
-          await Promise.all([
-            落とす(`live_sessions/${枝}/${名}`),
-            落とす(共有履歴の場所(枝, 名)),
-            落とす(在席の場所(枝, 名)),
-          ]);
-          if (!印) return;
-          const 編 = 印.共有の枝;
-          const 閲 = 印.閲覧の枝;
-          if (秘.枝として使えるか(編))
-            await Promise.all([
-              落とす(`live_sessions/${編}`),
-              落とす(`live_history/${編}`),
-              落とす(`live_presence/${編}`),
-            ]);
-          if (秘.枝として使えるか(閲)) await 落とす(`live_view/${閲}`);
-          // 期限は最後。データが残っているうちは決まりが消させない
-          // （消せると、期限を外してリンクをよみがえらせられてしまう）
-          await Promise.all([
-            秘.枝として使えるか(編) ? 落とす(期限の場所(編)) : null,
-            秘.枝として使えるか(閲) ? 落とす(期限の場所(閲)) : null,
-          ]);
-        };
+        const 消す = () => ライブを枝ごと消す(枝, 名, 印);
         消す();
         console.log(`[Store] 使われなくなったライブを片付けました: ${名}`);
       });
@@ -922,11 +937,10 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
         // 一覧から消すのは団体のライブ。共有の枝ではなく団体の枝を見る
         const 枝 = 団体の枝();
         if (!枝) return;
-        const 節点 = RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${名前}`);
-        await RTDB.set(節点, null);
-        // 共有履歴と在席は別の枝にあるので、そちらも消す
-        RTDB.remove(RTDB.ref(Firebaseの器.rtdb, 共有履歴の場所(枝, 名前))).catch(() => {});
-        RTDB.remove(RTDB.ref(Firebaseの器.rtdb, 在席の場所(枝, 名前))).catch(() => {});
+        // 共有していたライブは、共有の枝と閲覧の写しも消す。
+        // 道しるべだけ消すと、誰も辿り着けないまま的中・氏名・立ち順が残り続けた
+        const 印 = (状態().共有のライブたち || {})[名前];
+        await ライブを枝ごと消す(枝, 名前, 印);
         書く({ liveSessionsList: 状態().liveSessionsList.filter((名) => 名 !== 名前) });
       } catch (誤り) {
         console.error('Delete live session error:', 誤り);

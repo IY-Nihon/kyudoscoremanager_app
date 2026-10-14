@@ -28,6 +28,7 @@ const {
   雲へ書く記録,
   読んだままの中身,
   雲から読んだか,
+  分けた一括,
 } = require('./storeShared');
 
 const 同期の操作 = (書く, 状態, そのまま書く) => ({
@@ -223,7 +224,8 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       const 反映 = 書く;
       if (未送信の記録.length > 0) {
         console.log(`[syncSessions] Syncing ${未送信の記録.length} pending sessions...`);
-        const 一括 = Firestore.writeBatch(Firebaseの器.db);
+        // 1 件で set と delete の 2 つ使う。250 件を超えると 1 つの束に収まらないので分ける
+        const 一括 = 分けた一括(Firebaseの器.db);
         const 今 = Date.now();
         const 送った版 = new Map(未送信の記録.map((記録) => [記録.id, 記録.lastModified]));
         未送信の記録.forEach((記録) => {
@@ -284,7 +286,10 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
             送る形.deletedAt = 送る形.deletedAt
               ? Firestore.Timestamp.fromMillis(同期規則.toMillis(送る形.deletedAt))
               : Firestore.serverTimestamp();
-            一括.set(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/trash`, 記録.id), 雲へ書く記録(送る形));
+            一括.set(
+              Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/trash`, 記録.id),
+              雲へ書く記録(送る形)
+            );
           });
           // 記録の送信と同じ理由で完了は待たない。印を付けるのも
           // 送った版だけにする。
@@ -489,7 +494,9 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
           });
           状態().sessions.forEach((記録) => {
             if (記録 && 記録.id) {
-              const 送る形 = 雲へ書く記録(サーバーの時刻で(Object.assign({}, 記録, { syncStatus: '同期済み' })));
+              const 送る形 = 雲へ書く記録(
+                サーバーの時刻で(Object.assign({}, 記録, { syncStatus: '同期済み' }))
+              );
               書き込み.push({
                 type: 'set',
                 ref: Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, 記録.id),

@@ -414,8 +414,11 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
               </View>
             </ScrollView>
             <TouchableOpacity
-              style={styles.saveButton}
+              // 射数が空や 0 のまま保存すると、全員の○×が消える。1 射以上のときだけ押せる
+              style={[styles.saveButton, !(本数 >= 1) && { opacity: 0.4 }]}
+              disabled={!(本数 >= 1)}
               onPress={() => {
+                if (!(本数 >= 1)) return;
                 if (session && 本数 < session.shotCount) 射数の確認を出す(true);
                 else 保存する(日付.getTime());
               }}

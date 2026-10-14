@@ -432,7 +432,12 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => ({
     const 今 = Date.now();
     const 直した = 元.map((射手) =>
       射手 && 射手.id === 射手ID
-        ? Object.assign({}, 射手, { marks: Array(状態().shotsPerRound).fill(''), lastModified: 今 })
+        ? // 矢所も一緒に消す。○×だけ消すと、消した射の矢所が分析に残る
+          Object.assign({}, 射手, {
+            marks: Array(状態().shotsPerRound).fill(''),
+            arrowLocations: Array(状態().shotsPerRound).fill(null),
+            lastModified: 今,
+          })
         : 射手
     );
     書く({
