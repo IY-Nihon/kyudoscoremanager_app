@@ -1014,13 +1014,27 @@ test('差分の同期：ほかの端末の編集（lastModified が日時型）�
   const { store, 雲 } = 用意();
   const 今 = Date.now();
   store.setState({ lastSyncTime: 今 - 60000 });
-  雲.置く(記録の道, 'ses-1', Object.assign({}, 雲.値(記録の道, 'ses-1'), {
-    title: 'ほかの端末で直した',
-    lastModified: new 偽の日時(今),
-  }));
+  雲.置く(
+    記録の道,
+    'ses-1',
+    Object.assign({}, 雲.値(記録の道, 'ses-1'), {
+      title: 'ほかの端末で直した',
+      lastModified: new 偽の日時(今),
+    })
+  );
   await store.getState().syncSessions();
   await 待つ(50);
   assert.equal(記録を見る(store, 'ses-1').title, 'ほかの端末で直した');
   assert.equal(typeof 記録を見る(store, 'ses-1').lastModified, 'number', '手元はミリ秒で持つ');
 });
 
+test('まとめて消す：300 件（1 件で 2 操作）でも、1 回 500 件を超えずに全部クラウドへ届く', async () => {
+  const { store, 雲 } = 用意(300);
+  const ids = store.getState().sessions.map((s) => s.id);
+  await store.getState().deleteMultipleSessions(ids);
+  await 待つ(100);
+  assert.deepEqual(雲.中身(記録の道), [], '記録は全部消える');
+  assert.equal(雲.中身(ゴミ箱の道).length, 300, 'ゴミ箱に全部入る');
+  for (const 回 of 雲.記録.filter((x) => x.種別 === 'batch'))
+    assert.ok(回.操作.length <= 500, `1 回に ${回.操作.length} 件`);
+});

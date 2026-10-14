@@ -1986,15 +1986,7 @@ const RecordScreen = () => {
           // 埋まった○×は縮めても消えない）。先に合わせないと、いまの並びと読み取った
           // 並びで○×の長さが食い違う
           if (Number.isInteger(射数) && 射数 >= 1 && 射数 !== shotsPerRound) setShotsPerRound(射数);
-          const store = useScoreStore.getState();
-          if (store.historyStack && store.historyStack.length >= 0)
-            useScoreStore.setState({
-              // 履歴には射手の一覧をそのまま積む（店の中の積み方と同じ）。
-              // ここだけ { archers, activeSessionID } という形で積んでいたため、
-              // 取り込んだ直後に取り消しを押すと盤面が空になっていた
-              historyStack: [...store.historyStack, [...archers]],
-              redoStack: [],
-            }); // 読み取った○×は「いま入れたもの」として扱う。
+          // 読み取った○×は「いま入れたもの」として扱う。
           // 印を付けないと初めから閉じてしまい、直すのが全部長押しになる。
           // 盤面より先に印を付ける。逆にすると印の無い盤面が一度描かれ、
           // 読み取った○×が一瞬すべて灰色に光ってから戻る
@@ -2007,7 +1999,9 @@ const RecordScreen = () => {
               ? [...(Array.isArray(いまの並び) ? いまの並び : []), ...newArchers]
               : newArchers;
           useScoreStore.getState().入れた印をまとめて付ける(newArchers);
-          useScoreStore.setState({ archers: 入れる並び });
+          // 店の applyOCRResult を通す。取り消しの履歴に積み、ライブ中は盤面を送る
+          //（setState で直に差し替えると、ほかの端末に届かず、次の 1 射で読み取った分が消えた）
+          useScoreStore.getState().applyOCRResult(入れる並び);
           // 紙の記録は氏名と○×を、立ち順表は並びだけを読む。
           // どちらも同じ処理を通るので、文言は種類で分ける
           知らせる(

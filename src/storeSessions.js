@@ -25,6 +25,7 @@ const {
   行動を控える,
   記録の射手を整える,
   雲へ書く記録,
+  分けた一括,
 } = require('./storeShared');
 
 const 記録の操作 = (書く, 状態, そのまま書く) => ({
@@ -72,6 +73,10 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     // 待つと、通信できないときに射手が消えず履歴にも出ないうえ、
     // 画面には何も知らされないままになる。
     const 元のライブ名 = 状態().liveSessionName;
+    // 枝はライブを止める前に控える。stopLiveSync が共有と閲覧の枝を片付けるので、
+    // あとで読むと団体の枝になり、共有の枝と写しが消えずに残る
+    const 枝 = ライブの枝();
+    const 閲覧枝 = 状態().いまのライブの閲覧枝;
     状態().stopLiveSync(true);
     書く((前) => ({
       sessions: [記録, ...前.sessions.filter((記録1件) => 記録1件.id !== 記録ID)],
@@ -91,11 +96,9 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
       historySharedLen: 0,
       historySharedMax: 0,
     })); // ライブ記録の後始末。届かなくても保存には影響させない
-    const 枝 = ライブの枝();
     // 共有していたライブは、団体の枝の道しるべと閲覧用の写しも残る。
     // 消さないと、参加一覧に入れないライブが並び、写しも読めたままになる
     const 団 = 団体の枝();
-    const 閲覧枝 = 状態().いまのライブの閲覧枝;
     if (元のライブ名 && Firebaseの器.rtdb && 枝) {
       const ライブの節点 = RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${元のライブ名}`);
       RTDB.update(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${元のライブ名}/state`), {
@@ -296,7 +299,7 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
       団体)
     )
       try {
-        const 一括 = Firestore.writeBatch(Firebaseの器.db);
+        const 一括 = 分けた一括(Firebaseの器.db);
         消すID.forEach((id) => {
           一括.delete(Firestore.doc(Firebaseの器.db, `groups/${団体}/trash`, id));
         });
@@ -348,12 +351,14 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
       ],
     });
     try {
-      const 一括 = Firestore.writeBatch(Firebaseの器.db);
+      const 一括 = 分けた一括(Firebaseの器.db);
       消すID.forEach((id) =>
         一括.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, id))
       );
       消す記録.forEach((記録) => {
-        const ごみ箱に置く形 = 雲へ書く記録(JSON.parse(JSON.stringify(Object.assign({}, 記録, { syncStatus: 'trashed' }))));
+        const ごみ箱に置く形 = 雲へ書く記録(
+          JSON.parse(JSON.stringify(Object.assign({}, 記録, { syncStatus: 'trashed' })))
+        );
         ごみ箱に置く形.lastModified = Firestore.serverTimestamp();
         ごみ箱に置く形.deletedAt = Firestore.serverTimestamp();
         一括.set(
@@ -559,7 +564,15 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
       const 新しい印 = [...今の印];
       return (
         本数 > 今の印.length ? 新しい印.push(...Array(本数 - 今の印.length).fill('')) : 新しい印.splice(本数),
-        Object.assign({}, 射手, { marks: 新しい印, lastModified: Date.now() })
+        Object.assign(
+          {},
+          射手,
+          { marks: 新しい印, lastModified: Date.now() },
+          // 減らしたときは、切り捨てた射の矢所も落とす（残すと分析に混ざる）
+          Array.isArray(射手.arrowLocations) && 射手.arrowLocations.length > 本数
+            ? { arrowLocations: 射手.arrowLocations.slice(0, 本数) }
+            : null
+        )
       );
     });
     書く(

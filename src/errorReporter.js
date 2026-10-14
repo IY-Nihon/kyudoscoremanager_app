@@ -47,7 +47,9 @@ async function 貯めを読み込む() {
     const 文 = await 蔵.default.getItem(貯めの鍵);
     if (文) {
       const 読んだ = JSON.parse(文);
-      if (Array.isArray(読んだ)) 貯めの控え = 読んだ;
+      // 読み終わる前に貯めた分は後ろに残す（上書きすると、起動直後の不具合と
+      // 前回までの控えのどちらかが消える）
+      if (Array.isArray(読んだ)) 貯めの控え = [...読んだ, ...貯めの控え];
     }
   } catch (誤り) {
     // 壊れていたら捨てる。不具合の控えのために起動を止める意味はない
@@ -161,20 +163,24 @@ function 止まりを伝える(出どころ, 中身) {
   不具合を送る(出どころ, 中身);
   try {
     const Alert = require('./alertBridge').default;
-    Alert.alert('データの読み書きが止まりました', '画面を読み込み直してください。記録は端末に残っています。', [
-      { text: 'あとで', style: 'cancel' },
-      {
-        text: '読み込み直す',
-        onPress: () => {
-          try {
-            if (typeof globalThis.__弓道の控えを書く === 'function') globalThis.__弓道の控えを書く();
-          } catch (e) {
-            /* 控えが書けなくても読み込み直す */
-          }
-          window.location.reload();
+    Alert.alert(
+      'データの読み書きが止まりました',
+      '画面を読み込み直してください。記録は端末に残っています。',
+      [
+        { text: 'あとで', style: 'cancel' },
+        {
+          text: '読み込み直す',
+          onPress: () => {
+            try {
+              if (typeof globalThis.__弓道の控えを書く === 'function') globalThis.__弓道の控えを書く();
+            } catch (e) {
+              /* 控えが書けなくても読み込み直す */
+            }
+            window.location.reload();
+          },
         },
-      },
-    ]);
+      ]
+    );
   } catch (e) {
     /* 案内が出せなくても、便りは送ってある */
   }
