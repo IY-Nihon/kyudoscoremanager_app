@@ -448,14 +448,15 @@ const ArcherColumnView = React.memo(
                     width: '100%',
                     height: '100%',
                     justifyContent: 'center',
-                    padding: 4,
+                    // 余白も表示の大きさに合わせる（25% で中身が隣の行へはみ出した）
+                    padding: 4 * 倍率,
                   },
                   // チームの色を、名前の欄の上に細い帯で出す。
                   // 名前の字を染めると読みにくくなるので、帯にする
                   チームの色 && {
                     borderTopWidth: 3 * 倍率,
                     borderTopColor: チームの色,
-                    paddingTop: 4 - Math.min(3 * 倍率, 4),
+                    paddingTop: 4 * 倍率 - Math.min(3 * 倍率, 4 * 倍率),
                   },
                 ]}
                 onPress={() => onPressName && onPressName(archer.id, archer.name, indexInList)}
@@ -497,10 +498,10 @@ const ArcherColumnView = React.memo(
                 {archer.isTotalCalculator || '' === archer.name ? null : (
                   <View
                     style={{
-                      marginTop: 2,
-                      paddingHorizontal: 4,
-                      paddingVertical: 2,
-                      borderRadius: 10,
+                      marginTop: 2 * 倍率,
+                      paddingHorizontal: 4 * 倍率,
+                      paddingVertical: 2 * 倍率,
+                      borderRadius: 10 * 倍率,
                       backgroundColor:
                         archer.isGuest ||
                         !archer.gender ||
