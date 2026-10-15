@@ -20,7 +20,7 @@
 |---|---|
 | **記録** | 立ち順に並べた盤面で ○× を押すだけ。間隔・計・総計、途中交代、矢所（的のどこに当たったか）、鍵（押し間違い防止）、取り消し・やり直し |
 | **ライブ** | 1 台で記録すると、同じ団体の全員の端末に即時に映る。リンクや QR で部外の人にも見せられる（見るだけ） |
-| **写真から読む** | 板や紙の記録を撮ると、名前を Gemini が、○× を端末の小さな網（自前で学習）が読む。板の名前は名簿と照合して部員に寄せる |
+| **写真から読む** | 板・紙・手書きのノートの記録を撮ると、名前と表の形を Gemini が、○× を端末の網（自前で学習）が読む。迷ったマスは黄色で知らせる。板の名前は名簿と照合して部員に寄せる |
 | **履歴・分析** | 日ごとの記録、タグで絞り込み、個人と団体の的中率の推移、順位、期間の比較 |
 | **出欠** | 記録から出欠を自動で付け、月ごとのカレンダーで見る |
 | **AI の相談役** | 記録を読んだうえで「今月の調子は？」に答えるチャット |
@@ -30,8 +30,8 @@
 
 - **Expo / React Native Web** の 1 つのコードで Web（PWA）と iOS を配信。状態は zustand、同期は Firebase（Firestore・Realtime Database）
 - **オフライン優先**：手元に確定してから雲へ送る。通信が切れても記録は止まらず、つながったときに突き合わせる
-- **○× の読み取りは端末の中で**：20×20 の小さな MLP（`scripts/ocr-cells/`、自分で描いた見本で学習）を int8 で束ね、写真を外に出さずに読む。名前だけ Gemini（鍵は Cloudflare Workers の中継が持ち、アプリには置かない）
-- **検査**：単体 817 件（`node --test`）と、3 機種の Playwright e2e（検証用の Firebase 企画に対して本物の流れを通す）
+- **○× の読み取りは端末の中で**：マスを畳み込みの網（`scripts/ocr-cells/omomi-tatami.json`、描いた見本と本物の写真で学習・int8）で読み、迷ったマスだけ写真で学習した MobileNet 2 枚（`omomi-mobilenet.bin`、読み取りのときだけ取る）と混ぜる（詳しくは `scripts/ocr-cells/cnn/README.md`）。Gemini には ○× を書かせず、名前・表の形・日付だけ答えさせる（`src/ocrPrompts.js` の 記録の形の指示文。端末が読めなかったときだけ ○× つきで読み直す）。鍵は Cloudflare Workers の中継が持ち、アプリには置かない
+- **検査**：単体 1100 件あまり（`node --test`）と、3 機種の Playwright e2e（検証用の Firebase 企画に対して本物の流れを通す）
 - **お知らせ・法務文書・バックアップ**：更新はアプリ内のお知らせで届け、利用規約とプライバシーポリシーはアプリと紹介ページの両方に、データは毎日暗号化して控える（別リポジトリ `kyudoscoremanager_backup`）
 
 ---
@@ -46,12 +46,12 @@
 
 | 領域 | 採用技術 |
 |---|---|
-| フレームワーク | Expo SDK 55 / React Native 0.83.6 / React 19.2 |
+| フレームワーク | Expo SDK 55 / React Native 0.83 / React 19.2 |
 | Web対応 | react-native-web 0.21 (Metro bundler, `output: single`) |
 | 状態管理 | zustand 5 (`src/useScoreStore.js`) |
 | ナビゲーション | React Navigation 7 (bottom-tabs) |
-| バックエンド | Firebase 9.23 — Auth / Firestore / Realtime Database / Storage |
-| AI | Google Gemini API (AIチャットボット・OCR立ち順読み取り)。鍵はアプリに置かず、Cloudflare Workers の中継（別フォルダー `kyudo-chukei`、`src/geminiChukei.js` から呼ぶ）が付ける |
+| バックエンド | Firebase 13 — Auth / Firestore / Realtime Database / Storage |
+| AI | Google Gemini API (AIチャットボット・写真の読み取りの名前と表の形)。鍵はアプリに置かず、Cloudflare Workers の中継（別フォルダー `kyudo-chukei`、`src/geminiChukei.js` から呼ぶ）が付ける |
 
 ## 画面構成
 
@@ -155,7 +155,7 @@ src/AnalysisScreen.js   分析画面
 src/MemberScreen.js     メンバー管理
 src/SettingsScreen.js   設定・お問い合わせ
 src/AIChatBot.js        AIチャットボット
-src/OCRRecordModal.js        写真から立ち順を読み取るOCRモーダル
+src/OCRRecordModal.js        写真から記録・立ち順を読み取る窓（○× は src/ocr/ の端末の読み取り）
 src/AttendanceScreen.js         出欠管理
 src/AttendanceCheckModal.js     出欠入力モーダル
 src/ArrowLocationView.js        矢所記録ビュー
