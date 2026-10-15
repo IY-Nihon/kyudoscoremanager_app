@@ -304,19 +304,40 @@ function 記録の印で数える(人たち, 対象) {
  */
 function タグで絞る(記録たち, タグたち) {
   const 一覧 = Array.isArray(記録たち) ? 記録たち : [];
-  const 正規 = (t) => String(t == null ? '' : t).replace(/^#/, '').replace(/\s/g, '');
+  const 正規 = (t) =>
+    String(t == null ? '' : t)
+      .replace(/^#/, '')
+      .replace(/\s/g, '');
   const 要る = (Array.isArray(タグたち) ? タグたち : タグたち ? [タグたち] : []).map(正規).filter(Boolean);
-  const 使えるタグ = Array.from(new Set(一覧.flatMap((記録) => (記録 && Array.isArray(記録.tags) ? 記録.tags : [])).map(String))).sort();
-  if (!要る.length) return { 記録たち: 一覧, 絞った: false, タグ: [], 当たった件数: 一覧.length, 使えるタグ, 当たったタグ: [] };
+  const 使えるタグ = Array.from(
+    new Set(一覧.flatMap((記録) => (記録 && Array.isArray(記録.tags) ? 記録.tags : [])).map(String))
+  ).sort();
+  if (!要る.length)
+    return {
+      記録たち: 一覧,
+      絞った: false,
+      タグ: [],
+      当たった件数: 一覧.length,
+      使えるタグ,
+      当たったタグ: [],
+    };
   const 当たったタグ = new Set();
   const 当たる = 一覧.filter((記録) => {
     const 元のタグ = 記録 && Array.isArray(記録.tags) ? 記録.tags.map(String) : [];
     const 付いている = 元のタグ.map(正規);
     const 全部に当たる = 要る.every((t) => 付いている.some((x) => x.includes(t)));
-    if (全部に当たる) 元のタグ.forEach((元, 番) => 要る.some((t) => 付いている[番].includes(t)) && 当たったタグ.add(元));
+    if (全部に当たる)
+      元のタグ.forEach((元, 番) => 要る.some((t) => 付いている[番].includes(t)) && 当たったタグ.add(元));
     return 全部に当たる;
   });
-  return { 記録たち: 当たる, 絞った: true, タグ: 要る, 当たった件数: 当たる.length, 使えるタグ, 当たったタグ: [...当たったタグ].sort() };
+  return {
+    記録たち: 当たる,
+    絞った: true,
+    タグ: 要る,
+    当たった件数: 当たる.length,
+    使えるタグ,
+    当たったタグ: [...当たったタグ].sort(),
+  };
 }
 
 /**
@@ -327,10 +348,16 @@ function タグで絞る(記録たち, タグたち) {
  */
 function 題で絞る(記録たち, 言葉) {
   const 一覧 = Array.isArray(記録たち) ? 記録たち : [];
-  const 整える = (t) => String(t == null ? '' : t).normalize('NFKC').replace(/\s/g, '').toLowerCase();
+  const 整える = (t) =>
+    String(t == null ? '' : t)
+      .normalize('NFKC')
+      .replace(/\s/g, '')
+      .toLowerCase();
   const 探す = 整える(言葉);
   if (!探す) return { 記録たち: 一覧, 絞った: false, 言葉: '', 当たった件数: 一覧.length };
-  const 当たる = 一覧.filter((記録) => 記録 && (整える(記録.title).includes(探す) || 整える(記録.memo).includes(探す)));
+  const 当たる = 一覧.filter(
+    (記録) => 記録 && (整える(記録.title).includes(探す) || 整える(記録.memo).includes(探す))
+  );
   return { 記録たち: 当たる, 絞った: true, 言葉: String(言葉), 当たった件数: 当たる.length };
 }
 
@@ -348,7 +375,12 @@ function チームごとの的中(記録) {
   for (const 射手 of 射手たち) {
     if (!射手) continue;
     if (射手.isSeparator) {
-      今 = { チーム: String(射手.teamName || 射手.name || '').trim() || `${組たち.length + 1}組目`, 人数: 0, 的中: 0, 射数: 0 };
+      今 = {
+        チーム: String(射手.teamName || 射手.name || '').trim() || `${組たち.length + 1}組目`,
+        人数: 0,
+        的中: 0,
+        射数: 0,
+      };
       組たち.push(今);
       continue;
     }
@@ -360,12 +392,18 @@ function チームごとの的中(記録) {
     const 印たち = Array.isArray(射手.marks) ? 射手.marks : [];
     今.人数++;
     for (const 印 of 印たち) {
-      if (印 === '○') { 今.的中++; 今.射数++; } else if (印 === '\xd7') 今.射数++;
+      if (印 === '○') {
+        今.的中++;
+        今.射数++;
+      } else if (印 === '\xd7') 今.射数++;
     }
   }
   return 組たち
     .filter((組) => 組.人数 > 0)
-    .map((組) => ({ ...組, 的中率: 組.射数 ? Math.round((組.的中 / 組.射数) * 1000) / 10 + '%' : 'データなし' }));
+    .map((組) => ({
+      ...組,
+      的中率: 組.射数 ? Math.round((組.的中 / 組.射数) * 1000) / 10 + '%' : 'データなし',
+    }));
 }
 
 /**
@@ -580,7 +618,9 @@ function 一人の成績(人たち, 記録たち, 名前, 期間) {
     const 並び = 記録.archers;
     const 射位たち = 射位を割り振る(並び);
     let 出た = false;
-    let 射位 = '';
+    // 1 つの記録に 2 回出た（区切りの前後で別の射位など）ときは、立った射位を全部並べる。
+    // 最初の射位だけにすると、2 回目の射もその射位で引いたように見えた
+    const 射位たちの名 = [];
     let 印の並び = '';
     const この記録 = { 的中: 0, 射数: 0 };
     並び.forEach((射手, i) => {
@@ -591,7 +631,8 @@ function 一人の成績(人たち, 記録たち, 名前, 期間) {
       射手.marks.forEach((印, 射目) => {
         if (!集.引いた射か(印)) return;
         if (!集.その人の射か(射手, 射目, 部員id)) return;
-        if (!出た) 射位 = 射位の名前(番, 人数);
+        const この射位 = 射位の名前(番, 人数);
+        if (!射位たちの名.includes(この射位)) 射位たちの名.push(この射位);
         出た = true;
         const 位置 = 射目 % 4;
         射ごと[位置].射数++;
@@ -620,7 +661,7 @@ function 一人の成績(人たち, 記録たち, 名前, 期間) {
       直近の記録.push({
         date: 端末の日付(記録.date || 0),
         title: 記録.title || '無題',
-        position: 射位,
+        position: 射位たちの名.join('・'),
         marks: 印の並び,
         result: `${この記録.的中}/${この記録.射数}`,
       });
@@ -665,7 +706,9 @@ function 集まり(点たち) {
   if (!点.length) return null;
   const x = 点.reduce((和, p) => 和 + Number(p.x), 0) / 点.length;
   const y = 点.reduce((和, p) => 和 + Number(p.y), 0) / 点.length;
-  const 半径 = Math.sqrt(点.reduce((和, p) => 和 + (Number(p.x) - x) ** 2 + (Number(p.y) - y) ** 2, 0) / 点.length);
+  const 半径 = Math.sqrt(
+    点.reduce((和, p) => 和 + (Number(p.x) - x) ** 2 + (Number(p.y) - y) ** 2, 0) / 点.length
+  );
   return { x, y, 半径, 本数: 点.length };
 }
 
@@ -694,8 +737,8 @@ function 矢所の方位(x, y) {
  */
 function 矢所のまとまり(半径) {
   if (半径 < 0.25) return 'まとまりが非常に高い（集約している）';
-  if (半径 < 0.40) return 'まとまりが良好（矢所が安定している）';
-  if (半径 < 0.60) return '標準的な散らばり';
+  if (半径 < 0.4) return 'まとまりが良好（矢所が安定している）';
+  if (半径 < 0.6) return '標準的な散らばり';
   return '散らばりがやや大きい（ばらつきがある）';
 }
 
@@ -712,16 +755,17 @@ function 矢所の成績(名簿, 記録たち, 名前, 条件 = {}) {
       };
     }
     const 求める = 詰める(名前);
-    const 記録に出ている = (Array.isArray(記録たち) ? 記録たち : []).some((記録) =>
-      Array.isArray(記録 && 記録.archers) &&
-      記録.archers.some((射手) => {
-        if (!射手) return false;
-        const 名たち = [射手.name || ''].concat(Object.values(射手.substitutions || {}));
-        return 名たち.some((名) => {
-          const 名を詰めた = 詰める(名);
-          return 名を詰めた && (名を詰めた.includes(求める) || 求める.includes(名を詰めた));
-        });
-      })
+    const 記録に出ている = (Array.isArray(記録たち) ? 記録たち : []).some(
+      (記録) =>
+        Array.isArray(記録 && 記録.archers) &&
+        記録.archers.some((射手) => {
+          if (!射手) return false;
+          const 名たち = [射手.name || ''].concat(Object.values(射手.substitutions || {}));
+          return 名たち.some((名) => {
+            const 名を詰めた = 詰める(名);
+            return 名を詰めた && (名を詰めた.includes(求める) || 求める.includes(名を詰めた));
+          });
+        })
     );
     return {
       error: 記録に出ている
@@ -730,7 +774,10 @@ function 矢所の成績(名簿, 記録たち, 名前, 条件 = {}) {
     };
   }
 
-  let 使える記録 = Array.isArray(記録たち) ? 記録たち : [];
+  // 「統計に含めない」にした記録は、ほかの集計と同じく矢所からも外す
+  let 使える記録 = (Array.isArray(記録たち) ? 記録たち : []).filter(
+    (記録) => 記録 && 集.集計に入れるか(記録)
+  );
   const 期間 = 期間にする(
     条件.dateFrom || (条件.期間 && 条件.期間.始め),
     条件.dateTo || (条件.期間 && 条件.期間.終わり)
@@ -826,7 +873,10 @@ function 矢所の成績(名簿, 記録たち, 名前, 条件 = {}) {
       }
     : { direction: 'なし（すべて的中）', count: 0 };
 
-  let 右上 = 0, 右下 = 0, 左上 = 0, 左下 = 0;
+  let 右上 = 0,
+    右下 = 0,
+    左上 = 0,
+    左下 = 0;
   for (const p of 点たち) {
     if (p.x >= 0 && p.y <= 0) 右上++;
     else if (p.x >= 0 && p.y > 0) 右下++;

@@ -53,7 +53,35 @@ const AnalysisScreen = ({ navigation }) => {
     比較のひな型を消す,
     activeGroupId: いまの団体id,
     // 案内が見本を出しているあいだは、中身だけ見本に差し替わる
-  } = 案内.見本を重ねる(useストアの一部(['analysisSelectedTags', 'analysisTagLogic', 'tagTemplates', 'setAnalysisSelectedTags', 'toggleAnalysisTag', 'setAnalysisTagLogic', 'analysisRankingSettings', 'setAnalysisRankingSetting', 'activeRole', 'myMemberId', 'sessions', 'members', 'alumni', 'shotsPerRound', 'showAlumniInAnalysis', 'setShowAlumniInAnalysis', 'isHydrated', 'arrowTargetType', 'setSelectedHistorySessionId', 'setHistoryViewMode', 'setFocusedMemberId', '比較のひな型', '比較のひな型を足す', '比較のひな型を消す', 'activeGroupId']));
+  } = 案内.見本を重ねる(
+    useストアの一部([
+      'analysisSelectedTags',
+      'analysisTagLogic',
+      'tagTemplates',
+      'setAnalysisSelectedTags',
+      'toggleAnalysisTag',
+      'setAnalysisTagLogic',
+      'analysisRankingSettings',
+      'setAnalysisRankingSetting',
+      'activeRole',
+      'myMemberId',
+      'sessions',
+      'members',
+      'alumni',
+      'shotsPerRound',
+      'showAlumniInAnalysis',
+      'setShowAlumniInAnalysis',
+      'isHydrated',
+      'arrowTargetType',
+      'setSelectedHistorySessionId',
+      'setHistoryViewMode',
+      'setFocusedMemberId',
+      '比較のひな型',
+      '比較のひな型を足す',
+      '比較のひな型を消す',
+      'activeGroupId',
+    ])
+  );
   const 自分の名前 = useScoreStore((状態) => 状態.myMemberName) || '';
   const [compareMembers, setCompareMembers] = React.useState([]);
   // 320px の端末では、名前と立数の柱を引くと1マスが40pxほどしか残らない。
@@ -275,27 +303,22 @@ const AnalysisScreen = ({ navigation }) => {
               } else if (`${部員.grade}年` !== 学年の絞り) return false;
             }
           }
-          return !(名前の検索 && !(部員.name || '').toLowerCase().includes(名前の検索.toLowerCase()));
+          // 名前の検索はここでは絞らない（順位と射数の下限は検索の前の全員で決める）
+          return true;
         })
         .sort((甲, 乙) => (Math.abs(乙.rate - 甲.rate) > 0.01 ? 乙.rate - 甲.rate : 乙.shots - 甲.shots)),
-    [
-      members,
-      alumni,
-      showAlumniInAnalysis,
-      学年の絞り,
-      activeRole,
-      myMemberId,
-      性別の絞り,
-      名前の検索,
-      絞った記録,
-    ]
+    [members, alumni, showAlumniInAnalysis, 学年の絞り, activeRole, myMemberId, 性別の絞り, 絞った記録]
   );
+  // 名前の検索は、順位を付けたあとの表示だけを絞る。先に絞ると、検索で残った人だけで
+  // 最多の射数と順位を数え直し、射数の足りない人が 1 位に見えた
+  const 名前で残す = (部員) =>
+    !名前の検索 || (部員.name || '').toLowerCase().includes(名前の検索.toLowerCase());
   const rankingConfig = analysisRankingSettings[期間の種類] || { type: 'ratio', value: 0 };
   const 割合 = 'ratio' === rankingConfig.type ? rankingConfig.value : 0;
   const 最多の射数 = Math.max(...順位の元.map((人) => 人.shots), 0);
   const 射数の下限 = 'count' === rankingConfig.type ? rankingConfig.value : Math.floor(最多の射数 * 割合);
   const 順位に入る = 順位の元.filter((人) => 人.shots >= 射数の下限);
-  const 順位に入らない = 順位の元.filter((人) => 人.shots < 射数の下限);
+  const 順位に入らない = 順位の元.filter((人) => 人.shots < 射数の下限).filter(名前で残す);
   const 順位つき = ((一覧) => {
     let 順位 = 1;
     return 一覧.map((部員, 番) => {
@@ -307,7 +330,7 @@ const AnalysisScreen = ({ navigation }) => {
       }
       return Object.assign({}, 部員, { displayRank: 順位 });
     });
-  })(順位に入る);
+  })(順位に入る).filter(名前で残す);
   const 推移を数える = React.useCallback(
     (部員id, 名前) => {
       if (!部員id && !名前) return [];

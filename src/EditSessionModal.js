@@ -7,6 +7,29 @@ const { CustomCalendarModal } = require('./CustomCalendarModal');
 const { useScoreStore } = require('./useScoreStore');
 const { useストアの一部 } = require('./storeSlice');
 const { normalizeTag, タグの見た目 } = require('./syncRules');
+/**
+ * 記録に出ている部員の id。部員は memberId で引き、無ければ名前で引く。途中交代で入った人
+ * （substitutionIds）も入れる。前は personalId 同士も比べていて、どちらも未設定（undefined）だと
+ * 一致し、名簿の先頭の人が誰でも出席になった。射手の id は列の id なので部員とは比べない
+ */
+function 記録に出た部員のid(session, allMembers) {
+  const 出 = new Set();
+  const 部員たち = Array.isArray(allMembers) ? allMembers : [];
+  ((session && session.archers) || []).forEach((archer) => {
+    if (!archer || archer.isSeparator || archer.isTotalCalculator) return;
+    const 本人 = archer.memberId
+      ? 部員たち.find((member) => member.id === archer.memberId)
+      : archer.name
+        ? 部員たち.find((member) => member.name === archer.name)
+        : null;
+    if (本人) 出.add(本人.id);
+    Object.values(archer.substitutionIds || {}).forEach((id) => {
+      if (部員たち.some((member) => member.id === id)) 出.add(id);
+    });
+  });
+  return [...出];
+}
+
 const EditSessionModal = ({ visible, session, onClose, onSave }) => {
   const [題, 題を置く] = React.useState('');
   const [覚え書き, 覚え書きを置く] = React.useState('');
@@ -45,17 +68,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
       タグたちを置く(cleanedTags);
       let initialAtt = session.attendance ? Object.assign({}, session.attendance) : {};
       if (session.archers && Object.keys(initialAtt).length === 0) {
-        session.archers.forEach((archer) => {
-          if (!archer.isSeparator && archer.name) {
-            const 部員 = allMembers.find(
-              (member) =>
-                member.name === archer.name ||
-                member.id === archer.id ||
-                member.personalId === archer.personalId
-            );
-            if (部員) initialAtt[部員.id] = 'present';
-          }
-        });
+        記録に出た部員のid(session, allMembers).forEach((id) => (initialAtt[id] = 'present'));
       }
       setAttendanceEdit(initialAtt);
     }
@@ -74,10 +87,16 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
       本数 !== session.shotCount &&
       (変更.archers = session.archers.map((射手) => {
         if (射手.isSeparator || 射手.isTotalCalculator) return 射手;
-        const 印 = [...射手.marks];
-        return (
-          本数 > 射手.marks.length ? 印.push(...Array(本数 - 射手.marks.length).fill('')) : 印.splice(本数),
-          Object.assign({}, 射手, { marks: 印 })
+        const 印 = [...(射手.marks || [])];
+        本数 > 印.length ? 印.push(...Array(本数 - 印.length).fill('')) : 印.splice(本数);
+        return Object.assign(
+          {},
+          射手,
+          { marks: 印 },
+          // 減らしたときは、切り捨てた射の矢所も落とす（記録画面の射数の変更と同じ）
+          Array.isArray(射手.arrowLocations) && 射手.arrowLocations.length > 本数
+            ? { arrowLocations: 射手.arrowLocations.slice(0, 本数) }
+            : null
         );
       }));
     onSave(変更);
@@ -255,19 +274,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                           onPress={() =>
                             setAttendanceEdit((prev) => {
                               const 次 = Object.assign({}, prev);
-                              if (session && session.archers) {
-                                session.archers.forEach((archer) => {
-                                  if (!archer.isSeparator && archer.name) {
-                                    const 部員 = allMembers.find(
-                                      (member) =>
-                                        member.name === archer.name ||
-                                        member.id === archer.id ||
-                                        member.personalId === archer.personalId
-                                    );
-                                    if (部員) 次[部員.id] = 'present';
-                                  }
-                                });
-                              }
+                              記録に出た部員のid(session, allMembers).forEach((id) => (次[id] = 'present'));
                               return 次;
                             })
                           }

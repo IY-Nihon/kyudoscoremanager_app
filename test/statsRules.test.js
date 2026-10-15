@@ -86,10 +86,7 @@ test('集計に入れるかは、false のときだけ外す', () => {
 const 記 = (archers) => ({ date: 1, includeInStats: true, archers });
 
 test('成績を数える：的中・射数・率を数える', () => {
-  const r = 集計(
-    [記([{ memberId: 'm1', marks: ['○', '×', '○', '×'] }])],
-    'm1'
-  );
+  const r = 集計([記([{ memberId: 'm1', marks: ['○', '×', '○', '×'] }])], 'm1');
   assert.strictEqual(r.shots, 4);
   assert.strictEqual(r.hits, 2);
   assert.strictEqual(r.rate, 50);
@@ -103,10 +100,7 @@ test('成績を数える：一射も無ければ 0 で、率も 0（0除算し�
 
 test('成績を数える：立ち順別は4射ずつの位置で分ける', () => {
   // 8射。1射目と5射目が同じ「1射目」に入る
-  const r = 集計(
-    [記([{ memberId: 'm1', marks: ['○', '×', '×', '×', '○', '×', '×', '×'] }])],
-    'm1'
-  );
+  const r = 集計([記([{ memberId: 'm1', marks: ['○', '×', '×', '×', '○', '×', '×', '×'] }])], 'm1');
   assert.deepStrictEqual(
     r.perShotStats.map((x) => x.shots),
     [2, 2, 2, 2]
@@ -148,8 +142,16 @@ test('成績を数える：立ちの途中で交代したら、どちらの分�
   );
   assert.strictEqual(r1.shots, 2, '交代前の2射だけ');
   assert.strictEqual(r2.shots, 2, '交代後の2射だけ');
-  assert.strictEqual(Object.values(r1.patterns).reduce((a, b) => a + b, 0), 0, 'またぐ立ちを数えている');
-  assert.strictEqual(Object.values(r2.patterns).reduce((a, b) => a + b, 0), 0, 'またぐ立ちを数えている');
+  assert.strictEqual(
+    Object.values(r1.patterns).reduce((a, b) => a + b, 0),
+    0,
+    'またぐ立ちを数えている'
+  );
+  assert.strictEqual(
+    Object.values(r2.patterns).reduce((a, b) => a + b, 0),
+    0,
+    'またぐ立ちを数えている'
+  );
 });
 
 test('成績を数える：区切りと計の列は数えない（部員IDを持たない）', () => {
@@ -241,7 +243,11 @@ test('成績を数える：4射に満たない末尾は、結果分布に数え�
   // 6射。1立目（4射）は数え、残る2射は分類できないので数えない
   const r = 集計([記([{ memberId: 'm1', marks: ['○', '○', '×', '×', '○', '○'] }])], 'm1');
   assert.strictEqual(r.shots, 6, '的中率の分母には入る');
-  assert.strictEqual(Object.values(r.patterns).reduce((a, b) => a + b, 0), 1, '完全な立ちだけ');
+  assert.strictEqual(
+    Object.values(r.patterns).reduce((a, b) => a + b, 0),
+    1,
+    '完全な立ちだけ'
+  );
   assert.strictEqual(r.patterns.hake, 1);
   assert.strictEqual(r.端数の射, 2, '断り書きを出すために数えておく');
 });
@@ -249,7 +255,10 @@ test('成績を数える：4射に満たない末尾は、結果分布に数え�
 test('成績を数える：4の倍数なら端数は出ない', () => {
   const r = 集計([記([{ memberId: 'm1', marks: ['○', '○', '×', '×', '○', '○', '×', '×'] }])], 'm1');
   assert.strictEqual(r.端数の射, 0);
-  assert.strictEqual(Object.values(r.patterns).reduce((a, b) => a + b, 0), 2);
+  assert.strictEqual(
+    Object.values(r.patterns).reduce((a, b) => a + b, 0),
+    2
+  );
 });
 
 test('成績を数える：端数が他人の射なら数えない', () => {
@@ -285,9 +294,12 @@ test('型の合計は、結果分布と必ず一致する', () => {
 
 test('4射そろわない末尾は、型に数えない', () => {
   // 6射＝1立と半端2射。半端は分類できない
-  const r = 集計([型で記録(['○○○×']).archers[0].marks.concat(['○', '○'])].map((marks) => ({
-    archers: [{ memberId: 'm1', marks }],
-  })), 'm1');
+  const r = 集計(
+    [型で記録(['○○○×']).archers[0].marks.concat(['○', '○'])].map((marks) => ({
+      archers: [{ memberId: 'm1', marks }],
+    })),
+    'm1'
+  );
   assert.deepStrictEqual(r.型, { '○○○×': 1 }, '半端が型に混ざっている');
   assert.strictEqual(r.端数の射, 2);
 });
@@ -295,7 +307,12 @@ test('4射そろわない末尾は、型に数えない', () => {
 test('立ちの途中で交代していたら、どちらの型にも数えない', () => {
   const 記録 = {
     archers: [
-      { memberId: 'm1', marks: ['○', '○', '○', '×'], substitutions: { 2: '交代太郎' }, substitutionIds: { 2: 'm9' } },
+      {
+        memberId: 'm1',
+        marks: ['○', '○', '○', '×'],
+        substitutions: { 2: '交代太郎' },
+        substitutionIds: { 2: 'm9' },
+      },
     ],
   };
   assert.deepStrictEqual(集計([記録], 'm1').型, {}, '交代をまたいだ立ちを数えている');
@@ -390,7 +407,11 @@ test('一射・一手のとき：交代した分は、その人の射だけを�
 
 test('一手の型を並べる：決まった順で、割合はすべての手の中', () => {
   const 並び = 一手の型を並べる({ '××': 1, '○○': 2, '×○': 1 });
-  assert.deepStrictEqual(並び.map((x) => x.型), ['○○', '×○', '××'], '無い型（○×）は出さず、順は固定');
+  assert.deepStrictEqual(
+    並び.map((x) => x.型),
+    ['○○', '×○', '××'],
+    '無い型（○×）は出さず、順は固定'
+  );
   const 引く = (型) => 並び.find((x) => x.型 === 型);
   assert.strictEqual(引く('○○').呼び名, '皆中');
   assert.strictEqual(引く('○○').要点, null, '皆中は要点を出さない');
@@ -405,4 +426,21 @@ test('一手の型を並べる：決まった順で、割合はすべての手�
 test('一手の矢の名前と呼び名', () => {
   assert.deepStrictEqual(一手の矢の名前, ['甲矢', '乙矢']);
   assert.deepStrictEqual([2, 1, 0].map(一手の呼び名), ['皆中', '一中', '残念']);
+});
+
+test('成績を数える：8 射の記録で 2 立目を途中までしか入れていなければ、その射も端数に数える', () => {
+  // 型の合計×4 が射数より少ないのに断り書きが出なかった（2026-10-16、Gemini の見直し）
+  const r = 集計([記([{ memberId: 'm1', marks: ['○', '○', '○', '×', '○', '×', '', ''] }])], 'm1');
+  assert.strictEqual(r.shots, 6);
+  assert.strictEqual(
+    Object.values(r.patterns).reduce((a, b) => a + b, 0),
+    1
+  );
+  assert.strictEqual(r.端数の射, 2);
+});
+
+test('成績を数える：立ちの途中で交代したときは、それぞれ自分の射だけ端数に数える', () => {
+  const 記録 = [記([{ memberId: 'm1', marks: ['○', '○', '×', '×'], substitutionIds: { 2: 'm9' } }])];
+  assert.strictEqual(集計(記録, 'm1').端数の射, 2);
+  assert.strictEqual(集計(記録, 'm9').端数の射, 2);
 });
