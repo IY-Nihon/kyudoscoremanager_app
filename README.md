@@ -88,7 +88,7 @@
 - 展開されていた npm ライブラリは npm パッケージへ戻し済みです。1行転送するだけの
   中継ファイルも削除し、`require('firebase/firestore')` のように直接呼んでいます
 
-現在の `src/` 直下は **75ファイル・1,756KB**で、すべて自作コードです（2026-09-19 時点）。
+`src/` 直下は 2026-09-19 時点で **75ファイル・1,756KB**、大きいファイルを分けたあとの 2026-10-16 時点で **122ファイル・約2.4MB**（`src/ocr/` などの下の階層は別）。すべて自作コードです。
 
 かつては npm パッケージを1行転送するだけのファイルが20個あり、`require('./module_188')`
 のように**番号で**呼んでいました。react を使うのに `module_37` → `module_38` → `react` と
@@ -105,8 +105,8 @@ const { View, Text, StyleSheet } = require('./rn');
 の 1 行で取ります。`Text` `TextInput` `StyleSheet` はダークモードの既定色を当てた
 包みで、`Alert` はブラウザでは何も出ない素のものではなくアプリの中の窓（`AppDialog`）へ
 流すもの、それ以外は react-native のものをそのまま通します（遅延の getter）。
-`src/` で `react-native` を直接呼ぶのは `theme.js`（rn.js が依存するので逆向きにできない）と
-`useScoreStore.js`（画面に触れない）だけです。素の `Text` や `Alert` をうっかり使って
+`src/` で `react-native` を直接呼ぶのは `rn.js` 自身と `theme.js`（rn.js が依存するので逆向きにできない）、
+`storeShared.js`（店の共通部分。画面に触れず `AppState` だけ使う。10/5 に useScoreStore.js から分けた）だけです。素の `Text` や `Alert` をうっかり使って
 ダークモードで字が黒くなる・ブラウザで警告が出ない、という取り違えはこれで起きません。
 
 ### npm パッケージへ戻したライブラリ
