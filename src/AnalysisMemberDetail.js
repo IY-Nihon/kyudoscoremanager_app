@@ -91,9 +91,16 @@ const 部員の詳細の窓 = ({
     ];
     const allLabels = Array.from(new Set(allDataSets.flatMap((set) => set.data.map((点) => 点.label)))).sort(
       (甲, 乙) => {
-        const aDate = new Date(甲.replace('年度', '/4/1'));
-        const bDate = new Date(乙.replace('年度', '/4/1'));
-        return aDate - bDate;
+        // 'YYYY/MM' を new Date に渡すと、Safari（iPhone）では読めず NaN になり、
+        // 比べる相手だけにある月が並びの外へ飛んだ。数字を取り出して比べる
+        const 並びの値 = (ラベル) => {
+          const 数 = String(ラベル).match(/\d+/g) || [];
+          const 年 = Number(数[0]) || 0;
+          const 月 = String(ラベル).includes('年度') ? 4 : Number(数[1]) || 1;
+          const 日 = Number(数[2]) || 1;
+          return 年 * 10000 + 月 * 100 + 日;
+        };
+        return 並びの値(甲) - 並びの値(乙);
       }
     );
     if (allLabels.length === 0) {

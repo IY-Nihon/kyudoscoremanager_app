@@ -482,10 +482,28 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     // 送信が済むまでは「未同期」にしておく。こうしないと、通信できない
     // ときに編集がクラウドへ届かないまま同期済み扱いになり、他の記録が
     // 更新された拍子にクラウドの古い写しで上書きされて編集が消える。
-    const 直した記録 = Object.assign({}, 今の記録[位置], 変更, {
-      lastModified: Date.now(),
-      syncStatus: '未同期',
-    });
+    const 直した記録 = Object.assign(
+      {},
+      今の記録[位置],
+      変更,
+      // 射手を直したら、名前の一覧も作り直す（保存と同じ作り方）。作り直さないと、
+      // 履歴で人を差し替えたり消したりしても、前の人の名前で検索に引っかかり続けた
+      変更.archers && !変更.archerNames
+        ? {
+            archerNames: Array.from(
+              new Set(
+                変更.archers
+                  .map((射手) => (射手 && 射手.name ? String(射手.name).trim() : ''))
+                  .filter(Boolean)
+              )
+            ),
+          }
+        : null,
+      {
+        lastModified: Date.now(),
+        syncStatus: '未同期',
+      }
+    );
     const 直した一覧 = [...今の記録];
     直した一覧[位置] = 直した記録;
     書く({ sessions: 直した一覧 });

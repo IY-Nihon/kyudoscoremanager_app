@@ -1078,3 +1078,11 @@ test('復元：手元に同じ記録が残っていても（未同期のまま�
   assert.equal(記録を見る(store, 'ses-1').syncStatus, '同期済み', '届いたのに未同期のまま');
   assert.equal(雲.値(記録の道, 'ses-1').syncStatus, '同期済み', '雲に未同期と書いた');
 });
+
+test('履歴の編集：射手を直したら名前の一覧（archerNames）も作り直す', async () => {
+  const { store } = 用意();
+  await store
+    .getState()
+    .updateSession('ses-1', { archers: [{ id: 'a1', name: '差し替えた人', marks: ['○'] }] });
+  assert.deepEqual(記録を見る(store, 'ses-1').archerNames, ['差し替えた人']);
+});

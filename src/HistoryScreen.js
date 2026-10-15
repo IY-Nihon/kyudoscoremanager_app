@@ -1027,10 +1027,33 @@ const HistoryScreen = () => {
             memberId: 部員.id,
             gender: 部員.gender,
             grade: 部員.grade,
+            // 弓力も当てた人のものにする（記録画面の selectMemberForArcher と同じ）。
+            // 前の人の弓力が残ると、弓力ごとの成績に別の人の弓が混ざる
+            bowWeight: 部員.bowWeight || '',
             isGuest: false,
           })
         : 射手
     );
+    updateSession(見ている記録.id, { archers: 直した });
+  };
+  // 途中交代を、いま見ている記録に書く。記録画面の setSubstitution は盤面（記録画面）を
+  // 書き換えるので、履歴から使うと見ている記録には残らず、記録画面のほうが変わっていた
+  const 交代を書く = (射手ID, 番, 名前, 部員ID) => {
+    if (!見ている記録 || !isAdminMode) return;
+    const 直した = 見ている記録.archers.map((射手) => {
+      if (!射手 || 射手.id !== 射手ID) return 射手;
+      const 交代 = Object.assign({}, 射手.substitutions || {});
+      const 交代の部員 = Object.assign({}, 射手.substitutionIds || {});
+      if ('' !== 名前) {
+        交代[番] = 名前;
+        if (部員ID) 交代の部員[番] = 部員ID;
+        else delete 交代の部員[番];
+      } else {
+        delete 交代[番];
+        delete 交代の部員[番];
+      }
+      return Object.assign({}, 射手, { substitutions: 交代, substitutionIds: 交代の部員 });
+    });
     updateSession(見ている記録.id, { archers: 直した });
   };
   const 客の名を付ける = (射手ID, 名前) => {
@@ -1518,6 +1541,8 @@ const HistoryScreen = () => {
         visible={交代の窓}
         archerId={選んだ射手ID}
         onClose={() => 交代の窓を出す(false)}
+        本数={(見ている記録 && 見ている記録.shotCount) || 8}
+        交代を書く={交代を書く}
       />
     </外枠>
   );

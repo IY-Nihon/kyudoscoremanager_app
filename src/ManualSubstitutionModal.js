@@ -17,8 +17,14 @@ const { useストアの一部 } = require('./storeSlice');
 const Icons = require('@expo/vector-icons');
 const { IS_IOS } = require('./IS_WEB');
 const { 立の数, 立の頭の射, 学年でまとめる } = require('./syncRules');
-const ManualSubstitutionModal = ({ visible, archerId, onClose }) => {
-  const { members, shotsPerRound, setArcherMember, setArcherGuestName, setSubstitution } = useストアの一部(['members', 'shotsPerRound', 'setArcherMember', 'setArcherGuestName', 'setSubstitution']);
+// 本数・交代を書く … 履歴の詳細から開くときに渡す。渡さなければ記録画面の盤面に書く
+const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を書く }) => {
+  const {
+    members,
+    shotsPerRound: 盤面の射数,
+    setSubstitution,
+  } = useストアの一部(['members', 'shotsPerRound', 'setSubstitution']);
+  const shotsPerRound = 本数 || 盤面の射数;
   const [番号の入力, 番号の入力を置く] = React.useState('');
   const // 交代は立の切れ目ですることが多い。射目でも入れられるよう、単位を選べる
     [単位, 単位を置く] = React.useState('立目');
@@ -70,7 +76,9 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose }) => {
     };
   const 交代を入れる = (名前, 部員ID) => {
     const 射番 = 何射目();
-    null !== 射番 && archerId && (setSubstitution(archerId, 射番, 名前, 部員ID), 入力を空にする());
+    null !== 射番 &&
+      archerId &&
+      ((交代を書く || setSubstitution)(archerId, 射番, 名前, 部員ID), 入力を空にする());
   };
   const 入力を空にする = () => {
     番号の入力を置く('');

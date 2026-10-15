@@ -494,23 +494,51 @@ test('参加回数：目印で絞った記録に、部員ごとに何回出た�
     { id: 'm3', name: '丙', grade: 3 },
   ];
   const 記録たち = [
-    { id: 'r1', date: Date.UTC(2026, 8, 1), title: '自主練', tags: ['#自主稽古'], archers: [{ memberId: 'm1' }, { memberId: 'm2' }, { isSeparator: true }] },
-    { id: 'r2', date: Date.UTC(2026, 8, 2), title: '自主練', tags: ['#自主稽古'], archers: [{ memberId: 'm1' }, { memberId: 'm1' }] },
+    {
+      id: 'r1',
+      date: Date.UTC(2026, 8, 1),
+      title: '自主練',
+      tags: ['#自主稽古'],
+      archers: [{ memberId: 'm1' }, { memberId: 'm2' }, { isSeparator: true }],
+    },
+    {
+      id: 'r2',
+      date: Date.UTC(2026, 8, 2),
+      title: '自主練',
+      tags: ['#自主稽古'],
+      archers: [{ memberId: 'm1' }, { memberId: 'm1' }],
+    },
     { id: 'r3', date: Date.UTC(2026, 8, 3), title: '練習', tags: [], archers: [{ memberId: 'm3' }] },
-    { id: 'r4', date: Date.UTC(2026, 8, 4), title: 'x', tags: ['#自主稽古'], archers: [{ memberId: 'm9', substitutionIds: { 0: 'm3' } }] },
+    {
+      id: 'r4',
+      date: Date.UTC(2026, 8, 4),
+      title: 'x',
+      tags: ['#自主稽古'],
+      archers: [{ memberId: 'm9', substitutionIds: { 0: 'm3' } }],
+    },
   ];
   const 結果 = 参加回数を数える(人たち, 記録たち, { 言葉: '#自主稽古' });
   assert.equal(結果.数えた記録, 3);
   assert.deepEqual(
     結果.一覧.map((行) => [行.名前, 行.回数, 行.順位]),
-    [['甲', 2, 1], ['乙', 1, 2], ['丙', 1, 3]],
+    [
+      ['甲', 2, 1],
+      ['乙', 1, 2],
+      ['丙', 1, 3],
+    ],
     '同じ記録に 2 回出ても 1 回。交代で入った人も数える。目印の無い記録は数えない'
   );
 });
 
 test('参加回数：記録が 20 件を超えても、全部を数える', () => {
   const { 参加回数を数える } = require('../src/chatStats');
-  const 記録たち = Array.from({ length: 30 }, (_, i) => ({ id: `r${i}`, date: 1000 + i, title: '自主練', tags: ['#自主稽古'], archers: [{ memberId: 'm1' }] }));
+  const 記録たち = Array.from({ length: 30 }, (_, i) => ({
+    id: `r${i}`,
+    date: 1000 + i,
+    title: '自主練',
+    tags: ['#自主稽古'],
+    archers: [{ memberId: 'm1' }],
+  }));
   const 結果 = 参加回数を数える([{ id: 'm1', name: '甲', grade: 1 }], 記録たち, { 言葉: '#自主稽古' });
   assert.equal(結果.一覧[0].回数, 30);
 });
@@ -523,15 +551,33 @@ test('タグで絞る：含まれる言葉で当てる。# は付けても付け
     { id: 's3', tags: [] },
     { id: 's4' },
   ];
-  assert.deepEqual(タグで絞る(記録たち, ['自主']).記録たち.map((x) => x.id), ['s1'], '一部の言葉で当たる');
-  assert.deepEqual(タグで絞る(記録たち, ['#自主稽古']).記録たち.map((x) => x.id), ['s1'], '# 付きでも');
-  assert.deepEqual(タグで絞る(記録たち, '試合').記録たち.map((x) => x.id), ['s2'], '文字列 1 つでも');
+  assert.deepEqual(
+    タグで絞る(記録たち, ['自主']).記録たち.map((x) => x.id),
+    ['s1'],
+    '一部の言葉で当たる'
+  );
+  assert.deepEqual(
+    タグで絞る(記録たち, ['#自主稽古']).記録たち.map((x) => x.id),
+    ['s1'],
+    '# 付きでも'
+  );
+  assert.deepEqual(
+    タグで絞る(記録たち, '試合').記録たち.map((x) => x.id),
+    ['s2'],
+    '文字列 1 つでも'
+  );
 });
 
 test('タグで絞る：複数渡すと、すべてに当たる記録だけ。何も渡さなければ絞らない', () => {
   const { タグで絞る } = require('../src/chatStats');
-  const 記録たち = [{ id: 's2', tags: ['#試合', '#春季'] }, { id: 's5', tags: ['#試合'] }];
-  assert.deepEqual(タグで絞る(記録たち, ['試合', '春季']).記録たち.map((x) => x.id), ['s2']);
+  const 記録たち = [
+    { id: 's2', tags: ['#試合', '#春季'] },
+    { id: 's5', tags: ['#試合'] },
+  ];
+  assert.deepEqual(
+    タグで絞る(記録たち, ['試合', '春季']).記録たち.map((x) => x.id),
+    ['s2']
+  );
   const 絞らない = タグで絞る(記録たち, []);
   assert.equal(絞らない.絞った, false);
   assert.equal(絞らない.記録たち.length, 2);
@@ -540,7 +586,13 @@ test('タグで絞る：複数渡すと、すべてに当たる記録だけ。�
 
 test('タグで絞る：当たる記録が無いとき、使えるタグを返す（模型が選び直せる）', () => {
   const { タグで絞る } = require('../src/chatStats');
-  const 結果 = タグで絞る([{ id: 's1', tags: ['#自主稽古'] }, { id: 's2', tags: ['#試合'] }], ['合宿']);
+  const 結果 = タグで絞る(
+    [
+      { id: 's1', tags: ['#自主稽古'] },
+      { id: 's2', tags: ['#試合'] },
+    ],
+    ['合宿']
+  );
   assert.equal(結果.絞った, true);
   assert.equal(結果.当たった件数, 0);
   assert.deepEqual(結果.使えるタグ, ['#自主稽古', '#試合']);
@@ -549,8 +601,16 @@ test('タグで絞る：当たる記録が無いとき、使えるタグを返�
 test('タグで絞った記録で成績を数えると、そのタグの記録だけの的中率になる', () => {
   const { タグで絞る, 全員の成績 } = require('../src/chatStats');
   const 人 = { id: 'm1', name: '甲', grade: 1 };
-  const 記録 = (id, tags, marks) => ({ id, date: 1000, tags, archers: [{ memberId: 'm1', name: '甲', marks }] });
-  const 記録たち = [記録('s1', ['#自主稽古'], ['○', '○', '×', '○']), 記録('s2', ['#試合'], ['×', '×', '×', '○'])];
+  const 記録 = (id, tags, marks) => ({
+    id,
+    date: 1000,
+    tags,
+    archers: [{ memberId: 'm1', name: '甲', marks }],
+  });
+  const 記録たち = [
+    記録('s1', ['#自主稽古'], ['○', '○', '×', '○']),
+    記録('s2', ['#試合'], ['×', '×', '×', '○']),
+  ];
   const 全部 = 全員の成績([人], 記録たち, { 最小射数: 1 });
   const 自主 = 全員の成績([人], タグで絞る(記録たち, ['自主']).記録たち, { 最小射数: 1 });
   assert.equal(全部.一覧[0].射数, 8);
@@ -567,7 +627,11 @@ test('タグで絞る：どのタグに当たったかを返す（部分一致�
   ];
   const 結果 = タグで絞る(記録たち, ['練習']);
   assert.equal(結果.当たった件数, 2);
-  assert.deepEqual(結果.当たったタグ, ['#正規練習', '#自主練習'], '付いていても当たらないタグ（#春季）は入れない');
+  assert.deepEqual(
+    結果.当たったタグ,
+    ['#正規練習', '#自主練習'],
+    '付いていても当たらないタグ（#春季）は入れない'
+  );
   assert.deepEqual(タグで絞る(記録たち, []).当たったタグ, []);
 });
 
@@ -653,7 +717,10 @@ test('矢所の成績：期間やタグ、的の種類で絞り込みができ�
   ];
 
   // 期間で絞る（10/05 だけ）
-  const 期間結果 = 矢所の成績(人たち, 記録たち, '山田 太郎', { dateFrom: '2026-10-05', dateTo: '2026-10-05' });
+  const 期間結果 = 矢所の成績(人たち, 記録たち, '山田 太郎', {
+    dateFrom: '2026-10-05',
+    dateTo: '2026-10-05',
+  });
   assert.equal(期間結果.arrowCount, 2);
   assert.equal(期間結果.hitCount, 1);
   assert.equal(期間結果.missCount, 1);
@@ -719,7 +786,10 @@ test('矢所の成績：皆中（外れ矢なし）と全外れ（的中なし�
           memberId: 'm1',
           name: '山田 太郎',
           marks: ['○', '○'],
-          arrowLocations: [{ x: 0.05, y: 0.05 }, { x: 0.08, y: 0.02 }],
+          arrowLocations: [
+            { x: 0.05, y: 0.05 },
+            { x: 0.08, y: 0.02 },
+          ],
         },
       ],
     },
@@ -740,7 +810,10 @@ test('矢所の成績：皆中（外れ矢なし）と全外れ（的中なし�
           memberId: 'm1',
           name: '山田 太郎',
           marks: ['×', '×'],
-          arrowLocations: [{ x: 0.8, y: -0.8 }, { x: 0.9, y: -0.7 }],
+          arrowLocations: [
+            { x: 0.8, y: -0.8 },
+            { x: 0.9, y: -0.7 },
+          ],
         },
       ],
     },
@@ -792,7 +865,10 @@ test('矢所の成績：的の中心（星）付近に集まっているとき�
           memberId: 'm1',
           name: '山田 太郎',
           marks: ['○', '○'],
-          arrowLocations: [{ x: 0.02, y: -0.03 }, { x: -0.01, y: 0.04 }],
+          arrowLocations: [
+            { x: 0.02, y: -0.03 },
+            { x: -0.01, y: 0.04 },
+          ],
         },
       ],
     },
@@ -823,7 +899,34 @@ test('チームごとの的中：区切りのチーム名ごとに ○× を数�
 
 test('題で絞る：題・覚え書きの言葉で記録を絞る（全角半角・空白は無視）', () => {
   const { 題で絞る } = require('../src/chatStats');
-  const 記録たち = [{ title: '男子リーグ戦 第五節' }, { title: '練習', memo: 'リーグ戦の前' }, { title: '自主練' }];
+  const 記録たち = [
+    { title: '男子リーグ戦 第五節' },
+    { title: '練習', memo: 'リーグ戦の前' },
+    { title: '自主練' },
+  ];
   assert.strictEqual(題で絞る(記録たち, 'リーグ戦').当たった件数, 2);
   assert.strictEqual(題で絞る(記録たち, '').絞った, false);
+});
+
+test('矢所の成績：「統計に含めない」にした記録の矢所は数えない（ほかの集計とそろえる）', () => {
+  const { 矢所の成績 } = require('../src/chatStats');
+  const 人たち = [{ id: 'm1', name: '山田 太郎', grade: 2 }];
+  const 射手 = (o) =>
+    Object.assign(
+      {
+        memberId: 'm1',
+        name: '山田 太郎',
+        marks: ['○', '×'],
+        arrowLocations: [
+          { x: 0.1, y: 0.1 },
+          { x: 0.5, y: 0.5 },
+        ],
+      },
+      o
+    );
+  const 記録たち = [
+    { id: 's1', date: new Date('2026-10-01').getTime(), archers: [射手()] },
+    { id: 's2', date: new Date('2026-10-02').getTime(), includeInStats: false, archers: [射手()] },
+  ];
+  assert.equal(矢所の成績(人たち, 記録たち, '山田 太郎').arrowCount, 2);
 });
