@@ -42,6 +42,51 @@
 - Firebase プロジェクト: `kyudoscoremanager`
 - 紹介ページ: 別リポジトリ `IY-Nihon/kyudoscoremanager-homepage`
 
+## 設計の考え方
+
+ここに書くのは「なぜこの作りにしたか」。細かい決まりはそれぞれの場所に書いてある。
+
+### 記録は手元が先、雲はあと（同期）
+
+的場は電波が弱い。押した○×を雲の返事を待ってから出すと、その間押せなくなる。そこで
+**手元に確定してから雲へ送る**。送れていない記録は「未同期」の印を付けて持ち、つながったときに送り直す。
+
+- 手元と雲の突き合わせの決まりは [src/syncRules.js](src/syncRules.js) にまとめ、画面にも Firebase にも触れない関数だけにした（`node --test` で確かめられる）。雲のほうが新しければ雲、送れていない手元は手元を守る
+- 起動のたびに全件を読まない。前回読んだ境目（雲の時刻 `lastModified`）より新しいものだけ取り、7 日ごとに全件でそろえ直す（[src/storeSync.js](src/storeSync.js)）
+- 電波が無いとき Firestore は端末の控えから答える。そのときは「雲に無い＝消えた」とみなさない
+- 消したものは控え（`permanentlyDeleted`）に残し、雲から消えたのを確かめてから手放す。消したはずの記録がよみがえらないように
+
+### ライブは「届いた盤面が正」
+
+複数の端末が同じ記録表に同時に打つ。Realtime Database に、射手ごと・1 射ごとの道（`marks_by_id/{射手}/{番}`）で
+書くので、2 台が別のますを押しても互いを消さない。盤面をまとめて送る操作でも、雲に載っていると分かっている内容
+（控え）から変わったますだけ書く。受け取った側は届いた盤面をそのまま正にし、食い違ったまま残さない
+（[src/storeShared.js](src/storeShared.js)・[src/storeLive.js](src/storeLive.js)）。団体のライブは推測できない合言葉の枝に置き（[src/liveSecret.js](src/liveSecret.js)）、
+部外へはリンクで期限付きに配る（下の「ライブをリンクで配る」）。
+
+### 写真の読み取りは、○×を端末、名前と表の形を AI
+
+○×を生成 AI に読ませると遅く（答えが長い）、読み違いも混ざる。マス目の○×は形が決まっているので、
+**端末の小さな網で読む**（畳み込みの網、迷ったマスだけ MobileNet。[scripts/ocr-cells/cnn/README.md](scripts/ocr-cells/cnn/README.md)）。
+AI（Gemini）には名前・何人の何射か・板の左右の端・日付だけを答えさせる（[src/ocrPrompts.js](src/ocrPrompts.js) の 記録の形の指示文）。
+二つを突き合わせるのが [src/ocr/sashikae.js](src/ocr/sashikae.js)。端末が迷ったマスは黄色で出し、
+確認画面で人が見てから取り込む。読み違えるくらいなら空のまま黄色にする。
+
+### AI の鍵はアプリに置かない（中継）
+
+Gemini の鍵はアプリの束に入れると誰でも取り出せる。Cloudflare Workers の中継（別フォルダー `kyudo-chukei`）だけが
+鍵を持ち、アプリの Firebase のログインの証を確かめてから Gemini へ流す。模型が混んでいれば次の模型へ切り替え、
+答えの頭が来なければ打ち切る（中継の README）。
+
+### 入り方は 2 つ、見える範囲は決まりで縛る（守り）
+
+- **団体ログイン**（メールとパスワード）… 記録係。団体の記録・名簿を読み書きする
+- **個人ログイン**（団体 ID と 4 桁の個人 ID）… 部員。逆引き表で団体の名簿の自分に結び付き、自分の記録だけを見る
+- 団体の外からは読み書きできないよう、Firestore と Realtime Database の決まり（[firestore.rules](firestore.rules)・[database.rules.json](database.rules.json)）で
+  団体の本人か所属を証明した部員に限っている。App Check（[src/setupAppCheck.js](src/setupAppCheck.js)）も入れてある
+- 団体の中の「部員は自分の記録だけ」は、決まりではなく端末で絞っている（記録 1 件に団体全員の射手が並ぶ形のため）。
+  決まりで分けるなら、記録に出た部員の一覧を持たせて問い合わせで絞る形に変える必要がある
+
 ## 技術スタック
 
 | 領域 | 採用技術 |
@@ -119,9 +164,11 @@ react-native-svg / expo-haptics / expo-file-system(legacy) / zustand(middleware)
 @react-native-community/netinfo / @google/generative-ai / expo-sharing /
 zustand / react / react/jsx-runtime
 
-firebase/app-check は取り込んでいた場所が結果を捨てるだけで、App Check 自体も
-ReCAPTCHA キー未設定で無効だったため、取り込みごと外しました（配信物が26KB減）。
-App Check を実装するときは `firebase/app-check` を直接読み込みます。
+firebase/app-check は、取り戻した当初は取り込んでいた場所が結果を捨てるだけで、App Check 自体も
+ReCAPTCHA キー未設定で無効だったため、いったん取り込みごと外しました（配信物が26KB減）。
+2026-09-24 に `src/setupAppCheck.js` から `firebase/app-check` を直接読み込む形で入れ直し、本番へ配信済みです
+（reCAPTCHA Enterprise。検証環境の束では使わない。Firestore・Realtime Database への**強制はまだ**で、
+検証済みの割合を見てから決める）。
 
 かつて package.json に無い「隠れ依存」だった netinfo と generative-ai は、
 正式な依存として追加済みです（`@react-native-community/netinfo@11.5.2` は
@@ -726,7 +773,7 @@ localStorage に書いて `reload` して効かせる作りだと、1つの検�
 | かつての課題 | いまの状態 |
 |---|---|
 | Firestore の `groups` が `auth != null` だけ | `canAccess()`（団体アカウント本人か、所属を証明した部員）に。**本番へ配信済み** |
-| RTDB の `live_sessions` が認証不要 | 認証必須にしたうえで、枝を団体ごとの推測できない合言葉に変更（`src/liveSecret.js`）。**認証必須は配信済み・合言葉はまだ未配信** |
+| RTDB の `live_sessions` が認証不要 | 認証必須にしたうえで、枝を団体ごとの推測できない合言葉に変更（`src/liveSecret.js`）。**どちらも本番へ配信済み**（2026-08-31） |
 | `src/db.js` の `ADMIN_EMAIL` / `ADMIN_PASSWORD` | 撤去済み。本番の束にも入っていないことを確認済み |
 
 未配信のぶんは `npm run ops:check` で確かめられます。
