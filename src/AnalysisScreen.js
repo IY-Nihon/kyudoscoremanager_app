@@ -10,6 +10,7 @@ const { 自分の記録か } = require('./syncRules');
 const 集 = require('./statsRules');
 const { useScoreStore } = require('./useScoreStore');
 const 学 = require('./gakunen');
+const { use団体の決まり } = require('./useGakunen');
 const { use引いて更新 } = require('./hikiOroshi');
 // 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
 const { useストアの一部 } = require('./storeSlice');
@@ -125,7 +126,7 @@ const AnalysisScreen = ({ navigation }) => {
     const 日付 = new Date(記録.date);
     let 札 = '';
     if (ラベル.endsWith('年度')) {
-      札 = `${日付.getMonth() + 1 >= 4 ? 日付.getFullYear() : 日付.getFullYear() - 1}年度`;
+      札 = `${学.年度(日付)}年度`;
     } else if (ラベル.includes('/') && ラベル.split('/').length === 2) {
       札 = `${日付.getFullYear()}/${日付.getMonth() + 1}`;
     } else {
@@ -163,9 +164,9 @@ const AnalysisScreen = ({ navigation }) => {
   // 区分の絞り（区分の id。'全区分' は絞らない）。消された区分を選んだままなら絞らない
   const [選んだ区分, 区分の絞りを置く] = React.useState('全区分');
   const 区分の絞り = 区分たち.some((区分) => 区分.id === 選んだ区分) ? 選んだ区分 : '全区分';
-  const 決まり = 学.決まりを作る(groupType);
+  const 決まり = use団体の決まり();
   const 今日 = new Date();
-  const 今の年度 = 今日.getMonth() + 1 >= 4 ? 今日.getFullYear() : 今日.getFullYear() - 1;
+  const 今の年度 = 学.年度(今日);
   const [見ている年, 見ている年を置く] = React.useState(今日.getFullYear());
   const [見ている月, 見ている月を置く] = React.useState(今日.getMonth() + 1);
   const [見ている年度, 見ている年度を置く] = React.useState(今の年度);
@@ -274,7 +275,7 @@ const AnalysisScreen = ({ navigation }) => {
         if ('年度' === 期間の種類) {
           const 日 = new Date(日付);
           const 年 = 日.getFullYear();
-          return (日.getMonth() + 1 >= 4 ? 年 : 年 - 1) === 見ている年度;
+          return 学.年度(日) === 見ている年度;
         }
         if ('期間指定' === 期間の種類) {
           const 日 = new Date(日付);
@@ -369,7 +370,7 @@ const AnalysisScreen = ({ navigation }) => {
         } else if ('month' === 推移の刻み) {
           札 = `${日付.getFullYear()}/${日付.getMonth() + 1}`;
         } else {
-          札 = `${日付.getMonth() + 1 >= 4 ? 日付.getFullYear() : 日付.getFullYear() - 1}年度`;
+          札 = `${学.年度(日付)}年度`;
         }
         if (!期間ごと[札]) {
           // 結果分布はここでは数えない。点を押したときは 期間の成績 が
@@ -752,7 +753,7 @@ const AnalysisScreen = ({ navigation }) => {
                 <Icons.Ionicons name="chevron-back" size={20} color={色.青} />
               </TouchableOpacity>
               <Text style={styles.monthNavText}>
-                {見ている月 >= 4 ? `${見ている年}年度` : 見ている年 - 1 + '年度'} {見ている月}月
+                {`${学.年度(new Date(見ている年, 見ている月 - 1, 1))}年度`} {見ている月}月
               </Text>
               <TouchableOpacity style={styles.monthNavBtn} onPress={() => 月を動かす(1)}>
                 <Icons.Ionicons name="chevron-forward" size={20} color={色.青} />

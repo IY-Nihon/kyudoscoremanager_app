@@ -1,5 +1,7 @@
 'use strict';
 
+const 学 = require('./gakunen');
+
 const { 色: 基本色 } = require('./iro.js');
 const React = require('react');
 const { View, Text, FlatList, TouchableOpacity, TextInput, Modal, ScrollView, Pressable } = require('./rn');
@@ -113,7 +115,7 @@ const HistoryScreen = () => {
   const [見ている月, 見ている月を置く] = React.useState('');
   const [見ている年度, 見ている年度を置く] = React.useState(() => {
     const 今日 = new Date();
-    return 今日.getMonth() + 1 >= 4 ? 今日.getFullYear() : 今日.getFullYear() - 1;
+    return 学.年度(今日);
   });
   const [年度の窓, 年度の窓を出す] = React.useState(false);
   const [選択中, 選択中を置く] = React.useState(false);
@@ -207,14 +209,14 @@ const HistoryScreen = () => {
   const 年度の一覧 = React.useMemo(() => {
     const 集めた = new Set();
     const 今日 = new Date();
-    const 今の年度 = 今日.getMonth() + 1 >= 4 ? 今日.getFullYear() : 今日.getFullYear() - 1;
+    const 今の年度 = 学.年度(今日);
     集めた.add(今の年度);
     mySessions.forEach((記録) => {
       const 日時 = 'number' == typeof 記録.date ? 記録.date : Number(記録.date);
       if (isNaN(日時)) return;
       const 日付 = new Date(日時);
       const 年 = 日付.getFullYear();
-      const 年度 = 日付.getMonth() + 1 >= 4 ? 年 : 年 - 1;
+      const 年度 = 学.年度(日付);
       集めた.add(年度);
     });
     return Array.from(集めた).sort((甲, 乙) => 乙 - 甲);
@@ -239,7 +241,7 @@ const HistoryScreen = () => {
         const 日付 = new Date(記録.date);
         const 年 = 日付.getFullYear();
         const 月 = 日付.getMonth() + 1;
-        if ((月 >= 4 ? 年 : 年 - 1) === 見ている年度) 集めた.add(`${年}/${String(月).padStart(2, '0')}`);
+        if (学.年度(new Date(年, 月 - 1, 1)) === 見ている年度) 集めた.add(`${年}/${String(月).padStart(2, '0')}`);
       }),
       Array.from(集めた).sort((甲, 乙) => 甲.localeCompare(乙))
     );
@@ -285,7 +287,7 @@ const HistoryScreen = () => {
         const 日付 = new Date(日時);
         const 年 = 日付.getFullYear();
         const 月 = 日付.getMonth() + 1;
-        const 年度 = 月 >= 4 ? 年 : 年 - 1;
+        const 年度 = 学.年度(new Date(年, 月 - 1, 1));
         const 検索中 = 検索の文.trim().length > 0;
         if (historySelectedTags.length > 0) {
           const タグたち = 記録.tags || [];

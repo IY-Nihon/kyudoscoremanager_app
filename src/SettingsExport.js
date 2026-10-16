@@ -84,7 +84,7 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
   const titleRefCallback = use横流し();
   const memberRefCallback = use横流し();
   const 今日 = new Date();
-  const 今の年度 = 今日.getMonth() + 1 >= 4 ? 今日.getFullYear() : 今日.getFullYear() - 1;
+  const 今の年度 = 学.年度(今日);
   const [書き出す年度, 書き出す年度を置く] = React.useState(今の年度);
   const 年度を動かす = (差) => {
     書き出す年度を置く((今) => 今 + 差);
@@ -194,7 +194,7 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
         const 日付 = new Date(記録.date);
         if ('fiscal' === 範囲) {
           const 年 = 日付.getFullYear();
-          return (日付.getMonth() + 1 >= 4 ? 年 : 年 - 1) === 書き出す年度;
+          return 学.年度(日付) === 書き出す年度;
         }
         if ('custom' === 範囲) {
           const 始め = new Date(期間の始め);
@@ -326,7 +326,8 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                 dateStr,
                 記録.title || '',
                 名を整える(区間.名前 || 射手.name),
-                gradeV,
+                // 学年は名前で（高1・M1・自分で決めた名前。値のままだと中高一貫の高1 が 4 と出る）
+                '' === gradeV ? '' : 学.学年の名前(Object.assign({}, 部員の情報 || {}, { grade: gradeV })),
                 genderV,
                 termV,
                 hits,
@@ -422,7 +423,9 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
               : 日ごと.push('');
           });
           const 率 = 射数の計 > 0 ? Number(((的中の計 / 射数の計) * 100).toFixed(1)) : 0;
-          xlsxRows.push([人.name, null != 人.grade ? 人.grade : '', 率, 的中の計, 射数の計].concat(日ごと));
+          xlsxRows.push(
+            [人.name, null != 人.grade ? 学.学年の名前(人) : '', 率, 的中の計, 射数の計].concat(日ごと)
+          );
         });
       }
       const stamp = csvDate(Date.now());

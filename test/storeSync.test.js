@@ -1157,3 +1157,18 @@ test('履歴の編集：射手を直したら名前の一覧（archerNames）も
     .updateSession('ses-1', { archers: [{ id: 'a1', name: '差し替えた人', marks: ['○'] }] });
   assert.deepEqual(記録を見る(store, 'ses-1').archerNames, ['差し替えた人']);
 });
+
+test('進級：院生もいる部は、選んだ 4 年が M1 へ、ほかの 4 年と M2 は卒業', async () => {
+  const { store, 雲 } = 用意();
+  名簿を置く(store, 雲, [4, 4, 6]);
+  store.setState({ groupType: 'univGrad' });
+  try {
+    await store.getState().進級する({ 'mem-1': '院へ' });
+    assert.equal(学年(雲, 'mem-1'), 5, 'M1 へ');
+    assert.equal(部員(雲, 'mem-1').enrollment, undefined);
+    assert.equal(部員(雲, 'mem-2').enrollment, '卒業');
+    assert.equal(部員(雲, 'mem-3').enrollment, '卒業', 'M2 は卒業');
+  } finally {
+    store.setState({ groupType: null });
+  }
+});

@@ -24,7 +24,7 @@ const { useストアの一部 } = require('./storeSlice');
 const 規則 = require('./syncRules');
 const 学 = require('./gakunen');
 const { 団体の種類を選ぶ } = require('./GroupTypePicker');
-const { 区分の設定 } = require('./DivisionSettings');
+const { 区分の設定, 学年の並びの設定 } = require('./DivisionSettings');
 const 案内 = require('./TutorialGuide');
 const Icons = require('@expo/vector-icons');
 const ReactNativeSafeAreaContext = require('react-native-safe-area-context');
@@ -82,6 +82,13 @@ const SettingsScreen = () => {
     setPromotionCheck,
     useTerm = false,
     setUseTerm,
+    customGraduate = true,
+    setCustomGraduate,
+    customWording = 'school',
+    setCustomWording,
+    customGrades = [],
+    yearStartMonth = 4,
+    setYearStartMonth,
     enableArrowLocation,
     arrowTargetType,
     setEnableArrowLocation,
@@ -120,6 +127,13 @@ const SettingsScreen = () => {
     'setPromotionCheck',
     'useTerm',
     'setUseTerm',
+    'customGraduate',
+    'setCustomGraduate',
+    'customWording',
+    'setCustomWording',
+    'customGrades',
+    'yearStartMonth',
+    'setYearStartMonth',
     'enableArrowLocation',
     'arrowTargetType',
     'setEnableArrowLocation',
@@ -144,10 +158,22 @@ const SettingsScreen = () => {
   const [inquiryVisible, setInquiryVisible] = React.useState(false);
   const [種類の窓, 種類の窓を出す] = React.useState(false);
   // 学年の無い団体（社会人の会・道場）には、進級の確認・期を使う・現在の期を出さない
-  const 学年なし = 学.決まりを作る(groupType).学年なし;
+  const 今の決まり = 学.決まりを作る(groupType);
+  const 学年なし = 今の決まり.学年なし;
+  const [月の窓, 月の窓を出す] = React.useState(false);
   // 種類を選んだとき。新しい種類に無い学年の人がいれば、「その他」になることを確かめてから変える
   const 種類を選んだ = (種類) => {
     if (種類 === (groupType || 学.既定の種類)) return void 種類の窓を出す(false);
+    // 「自分で決める」は、まだ学年を並べていなければ今の種類の学年・卒業・呼び方を写して始める（見た目が変わらない）
+    if ('custom' === 種類 && !学.自分の学年たち(customGrades).length) {
+      useScoreStore.getState().学年の設定を書く({
+        customGrades: 今の決まり.在籍の学年.map((値) => ({ value: 値, name: 今の決まり.学年の表.get(値) })),
+        customGraduate: 学年なし || 今の決まり.卒業する学年.length > 0,
+        customWording: '会員' === 今の決まり.呼び方.部員 ? 'club' : 'school',
+      });
+      setGroupType(種類);
+      return void 種類の窓を出す(false);
+    }
     const 決まり = 学.決まりを作る(種類);
     const はみ出す人 = 学.学年がはみ出す人(members, 決まり);
     const 変える = () => {
@@ -167,7 +193,7 @@ const SettingsScreen = () => {
     if (!はみ出す人.length) return void 変える();
     const 学年たち = Array.from(new Set(はみ出す人.map((部員) => 学.学年の値(部員, 決まり))))
       .sort((甲, 乙) => 甲 - 乙)
-      .map((学年) => 学年 + '年')
+      .map((学年) => 学.学年だけの名前(学年, 今の決まり))
       .join('・');
     Alert.alert(
       '団体の種類を変える',
@@ -412,14 +438,14 @@ const SettingsScreen = () => {
                       style={styles.itemIcon}
                     />
                     <View style={{ flex: 1, paddingRight: 8 }}>
-                      <Text style={styles.itemText}>4月1日の進級の確認</Text>
+                      <Text style={styles.itemText}>{`${yearStartMonth}月1日の進級の確認`}</Text>
                       <Text style={{ fontSize: 11, color: 基本色.灰, marginTop: 2 }}>
-                        4月1日に進級の窓を出します。卒業・留年する人を選んでから、全員の学年を上げます
+                        {`${yearStartMonth}月1日に進級の窓を出します。卒業・留年する人を選んでから、全員の学年を上げます`}
                       </Text>
                     </View>
                   </View>
                   <Switch
-                    aria-label="4月1日の進級の確認"
+                    aria-label={`${yearStartMonth}月1日の進級の確認`}
                     value={promotionCheck}
                     onValueChange={setPromotionCheck}
                     trackColor={{ false: 基本色.灰_明るい, true: 基本色.緑 }}
@@ -504,6 +530,110 @@ const SettingsScreen = () => {
                     </View>
                   </View>
                 </View>
+              )}
+              {'group' === activeRole && 今の決まり.自分で決める ? (
+                <>
+                  <学年の並びの設定 />
+                  <View style={styles.item}>
+                    <View style={[styles.itemLeft, { flex: 1 }]}>
+                      <Icons.Ionicons
+                        name="school-outline"
+                        size={22}
+                        color={基本色.紫}
+                        style={styles.itemIcon}
+                      />
+                      <View style={{ flex: 1, paddingRight: 8 }}>
+                        <Text style={styles.itemText}>最後の学年の次は卒業</Text>
+                        <Text style={{ fontSize: 11, color: 基本色.灰, marginTop: 2 }}>
+                          切ると、最後の学年の人は進級してもそのまま残ります
+                        </Text>
+                      </View>
+                    </View>
+                    <Switch
+                      aria-label="最後の学年の次は卒業"
+                      value={customGraduate}
+                      onValueChange={setCustomGraduate}
+                      trackColor={{ false: 基本色.灰_明るい, true: 基本色.緑 }}
+                    />
+                  </View>
+                  <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
+                    <View style={[styles.itemLeft, { marginBottom: 8 }]}>
+                      <Icons.Ionicons
+                        name="people-outline"
+                        size={22}
+                        color={基本色.青}
+                        style={styles.itemIcon}
+                      />
+                      <Text style={styles.itemText}>呼び方</Text>
+                    </View>
+                    <View
+                      style={{ flexDirection: 'row', gap: 8 }}
+                      accessibilityRole="radiogroup"
+                      aria-label="呼び方"
+                    >
+                      {[
+                        { 値: 'school', 名: '部員・男子／女子・退部' },
+                        { 値: 'club', 名: '会員・男性／女性・退会' },
+                      ].map(({ 値, 名 }) => (
+                        <Pressable
+                          key={値}
+                          accessibilityRole="radio"
+                          aria-checked={customWording === 値}
+                          onPress={() => setCustomWording(値)}
+                          style={({ hovered }) => [
+                            {
+                              flex: 1,
+                              paddingVertical: 10,
+                              paddingHorizontal: 6,
+                              borderRadius: 8,
+                              alignItems: 'center',
+                              backgroundColor: customWording === 値 ? 基本色.青 : 基本色.地,
+                            },
+                            hovered && customWording !== 値 && { backgroundColor: 基本色.地_濃い },
+                            IS_WEB && { cursor: 'pointer' },
+                          ]}
+                        >
+                          <Text
+                            style={{ fontSize: 12, color: customWording === 値 ? 基本色.白 : 基本色.文字 }}
+                          >
+                            {名}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                </>
+              ) : null}
+              {'group' === activeRole && (
+                <Pressable
+                  style={({ hovered }) => [
+                    styles.item,
+                    hovered && { backgroundColor: 基本色.地_F7F7FA },
+                    IS_WEB && { cursor: 'pointer' },
+                  ]}
+                  accessibilityRole="button"
+                  aria-label={`年度の始まり ${yearStartMonth}月`}
+                  onPress={() => 月の窓を出す(true)}
+                >
+                  <View style={[styles.itemLeft, { flex: 1 }]}>
+                    <Icons.Ionicons
+                      name="calendar-outline"
+                      size={22}
+                      color={基本色.青}
+                      style={styles.itemIcon}
+                    />
+                    <View style={{ flex: 1, paddingRight: 8 }}>
+                      <Text style={styles.itemText}>年度の始まり</Text>
+                      <Text style={{ fontSize: 11, color: 基本色.灰, marginTop: 2 }}>
+                        進級の窓を出す日と、分析・出欠・書き出しの「年度」の区切り
+                      </Text>
+                    </View>
+                  </View>
+                  <Text
+                    style={{ fontSize: 15, color: 基本色.灰, marginRight: 4 }}
+                  >{`${yearStartMonth}月`}</Text>
+                  <Icons.Ionicons name="chevron-forward" size={18} color={基本色.灰_薄い} />
+                </Pressable>
               )}
               {'group' === activeRole && <区分の設定 />}
               {'group' === activeRole && (
@@ -1217,6 +1347,63 @@ const SettingsScreen = () => {
                 IS_WEB && { cursor: 'pointer' },
               ]}
               onPress={() => 種類の窓を出す(false)}
+            >
+              <Text style={[styles.modalBtnText, { color: 基本色.青 }]}>閉じる</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+      <Modal visible={月の窓} transparent animationType="fade" onRequestClose={() => 月の窓を出す(false)}>
+        <View style={styles.modalBackdrop}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => 月の窓を出す(false)}
+          />
+          <View style={styles.modalContent} testID="月の窓">
+            <Text style={styles.modalTitle}>年度の始まり</Text>
+            <Text style={{ fontSize: 13, color: 基本色.灰, marginBottom: 12, alignSelf: 'stretch' }}>
+              選んだ月の 1 日に進級の窓が出て、そこから 1
+              年を「年度」として数えます。過去の記録は消えず、区切り方だけが変わります
+            </Text>
+            <View
+              style={{ flexDirection: 'row', flexWrap: 'wrap', alignSelf: 'stretch', marginBottom: 16 }}
+              accessibilityRole="radiogroup"
+              aria-label="年度の始まりの月"
+            >
+              {Array.from({ length: 12 }, (_, 番) => 番 + 1).map((月) => (
+                <View key={月} style={{ width: '25%', padding: 4 }}>
+                  <Pressable
+                    accessibilityRole="radio"
+                    aria-checked={yearStartMonth === 月}
+                    onPress={() => (setYearStartMonth(月), 月の窓を出す(false))}
+                    style={({ hovered }) => [
+                      {
+                        height: 40,
+                        borderRadius: 8,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: yearStartMonth === 月 ? 基本色.青 : 基本色.地,
+                      },
+                      hovered && yearStartMonth !== 月 && { backgroundColor: 基本色.地_濃い },
+                      IS_WEB && { cursor: 'pointer' },
+                    ]}
+                  >
+                    <Text
+                      style={{ fontSize: 15, color: yearStartMonth === 月 ? 基本色.白 : 基本色.文字 }}
+                    >{`${月}月`}</Text>
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+            <Pressable
+              style={({ hovered }) => [
+                styles.modalBtn,
+                { backgroundColor: 基本色.地, width: '100%' },
+                hovered && { backgroundColor: 基本色.地_濃い },
+                IS_WEB && { cursor: 'pointer' },
+              ]}
+              onPress={() => 月の窓を出す(false)}
             >
               <Text style={[styles.modalBtnText, { color: 基本色.青 }]}>閉じる</Text>
             </Pressable>
