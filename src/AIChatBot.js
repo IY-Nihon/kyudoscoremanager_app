@@ -616,10 +616,12 @@ const AIChatBot = () => {
         const lastDayOfLastMonth = new Date(lmY, lmM + 1, 0).getDate();
         const lastMonthEnd = `${lmY}-${String(lmM + 1).padStart(2, '0')}-${String(lastDayOfLastMonth).padStart(2, '0')}`;
 
-        // 今年度（4月1日〜翌3月31日）
-        const fiscalYearStartYear = m >= 3 ? y : y - 1;
-        const fiscalYearStart = `${fiscalYearStartYear}-04-01`;
-        const fiscalYearEnd = `${fiscalYearStartYear + 1}-03-31`;
+        // 今年度（団体の年度の始まりの月から。既定は 4月1日〜翌3月31日。src/gakunen.js）
+        const 年度の範囲 = 学.年度の範囲(学.年度(now));
+        const 日付の字 = (日) =>
+          `${日.getFullYear()}-${String(日.getMonth() + 1).padStart(2, '0')}-${String(日.getDate()).padStart(2, '0')}`;
+        const fiscalYearStart = 日付の字(年度の範囲.始め);
+        const fiscalYearEnd = 日付の字(年度の範囲.終わり);
 
         // 履歴で開いている記録。「この記録」「この試合」と聞かれたときに、どれを指すか分かるように渡す
         //（AI のボタンは記録の画面では出さないので、開いている記録は履歴の詳細だけ）

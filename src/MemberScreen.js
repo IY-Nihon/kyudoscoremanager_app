@@ -20,6 +20,7 @@ const {
 const { IS_WEB, SAFE_TOP_PADDING, WEB_TOP_PADDING } = require('./IS_WEB');
 const { useScoreStore } = require('./useScoreStore');
 const 学 = require('./gakunen');
+const { use団体の決まり } = require('./useGakunen');
 const 区 = require('./kubun');
 const { use引いて更新 } = require('./hikiOroshi');
 // 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
@@ -87,7 +88,7 @@ const MemberScreen = () => {
   const 今の一年生の期 = useScoreStore((状態) => 状態.currentFreshmanTerm);
   // 団体の種類で、選べる学年・呼び方が変わる。学年の無い団体（社会人の会・道場）は学年と期の代わりに入会した年
   const 種類 = useScoreStore((状態) => 状態.groupType);
-  const 決まり = React.useMemo(() => 学.決まりを作る(種類), [種類]);
+  const 決まり = use団体の決まり();
   const 呼 = 決まり.呼び方;
   // 期を使わない団体・学年の無い団体では、期をどこにも出さない
   const 期を使う = useScoreStore((状態) => 状態.useTerm) && !決まり.学年なし;

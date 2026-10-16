@@ -6,7 +6,7 @@
  * 見るのは
  *   ・進級の窓：最後の学年の組だけ開いている。人を押すと「4年のまま」に変わり、組の頭に「1人そのまま」が出る。
  *     もう一度押すと戻る。閉じた組は頭を押すと開く。「あとで」で閉じると記録画面の上に帯が出て、押すと窓が開き直す
- *   ・設定：団体の種類・4月1日の進級の確認・期を使う が出る。種類の窓に 6 つの種類が出て、今の種類が選ばれている
+ *   ・設定：団体の種類・4月1日の進級の確認・期を使う が出る。種類の窓に 9 つの種類が出て、今の種類が選ばれている
  *   ・メンバー：学年は札（1年〜4年・その他）。足すときは在籍を出さず、いる人を直すときは在籍（在籍・卒業・退部）を出す
  *
  * ■ 窓の開き方
@@ -80,7 +80,7 @@ test('進級の窓：上げない人だけ名前を押して選べ、「あと�
   await expect(窓).toHaveCount(0);
 });
 
-test('設定：団体の種類・進級の確認・期を使うが出て、種類の窓に 6 つの種類が並ぶ', async ({ page }) => {
+test('設定：団体の種類・進級の確認・期を使うが出て、種類の窓に 9 つの種類が並ぶ', async ({ page }) => {
   await 開く(page);
   await page.getByRole('tab', { name: '設定' }).click();
   await expect(page.getByText('ログアウト', { exact: true })).toBeVisible({ timeout: 15_000 });
@@ -91,11 +91,11 @@ test('設定：団体の種類・進級の確認・期を使うが出て、種�
   const 種類の窓 = page.getByTestId('種類の窓');
   await expect(種類の窓).toBeVisible();
   const 種類 = 種類の窓.getByRole('radio');
-  await expect(種類).toHaveCount(6);
-  await expect(種類の窓.getByRole('radio', { name: /^大学/ })).toHaveAttribute('aria-checked', 'true');
+  await expect(種類).toHaveCount(9);
+  await expect(種類の窓.getByRole('radio', { name: /^大学 ?1年/ })).toHaveAttribute('aria-checked', 'true');
   await expect(種類の窓.getByRole('radio', { name: /^高専/ })).toHaveAttribute('aria-checked', 'false');
   // 今の種類を押しても何も変えずに閉じる
-  await 種類の窓.getByRole('radio', { name: /^大学/ }).click();
+  await 種類の窓.getByRole('radio', { name: /^大学 ?1年/ }).click();
   await expect(種類の窓).toHaveCount(0);
 });
 

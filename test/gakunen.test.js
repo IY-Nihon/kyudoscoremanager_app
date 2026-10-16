@@ -7,6 +7,13 @@ const assert = require('node:assert');
 const 学 = require('../src/gakunen.js');
 
 const 人 = (grade, o) => Object.assign({ grade }, o);
+// 設定から読むの段 1・2 の項目だけ（段 3 の項目は別のテストで見る）
+const 段2まで = (読んだ) => ({
+  groupType: 読んだ.groupType,
+  promotionCheck: 読んだ.promotionCheck,
+  useTerm: 読んだ.useTerm,
+  divisions: 読んだ.divisions,
+});
 const 高専 = 学.決まりを作る('kosen5');
 const 高校 = 学.決まりを作る('school3');
 
@@ -183,9 +190,9 @@ test('今の決まりを置くと、省いたときの決まりが変わる', ()
 
 test('設定から読む：段 1 より前の団体は前の項目から決める', () => {
   const 空 = { groupType: null, promotionCheck: true, useTerm: false, divisions: [] };
-  assert.deepStrictEqual(学.設定から読む({}), 空);
-  assert.deepStrictEqual(学.設定から読む(null), 空);
-  assert.deepStrictEqual(学.設定から読む({ autoPromotionEnabled: false, currentFreshmanTerm: 53 }), {
+  assert.deepStrictEqual(段2まで(学.設定から読む({})), 空);
+  assert.deepStrictEqual(段2まで(学.設定から読む(null)), 空);
+  assert.deepStrictEqual(段2まで(学.設定から読む({ autoPromotionEnabled: false, currentFreshmanTerm: 53 })), {
     groupType: null,
     promotionCheck: false,
     useTerm: true,
@@ -200,12 +207,14 @@ test('設定から読む：段 1 より前の団体は前の項目から決め�
     '既定の 1 期のままは使っていない'
   );
   assert.deepStrictEqual(
-    学.設定から読む({
-      groupType: 'kosen5',
-      promotionCheck: false,
-      useTerm: true,
-      autoPromotionEnabled: false,
-    }),
+    段2まで(
+      学.設定から読む({
+        groupType: 'kosen5',
+        promotionCheck: false,
+        useTerm: true,
+        autoPromotionEnabled: false,
+      })
+    ),
     { groupType: 'kosen5', promotionCheck: false, useTerm: true, divisions: [] }
   );
   assert.strictEqual(学.設定を書き足すか({}), true);
@@ -242,4 +251,93 @@ test('期の計算と卒業の年度', () => {
   assert.strictEqual(学.卒業の年度(50, 54, 2027), 2026);
   assert.strictEqual(学.年度(new Date(2027, 2, 31)), 2026);
   assert.strictEqual(学.年度(new Date(2027, 3, 1)), 2027);
+});
+
+test('段 3：中高一貫・院生もいる大学', () => {
+  const 一貫 = 学.決まりを作る('ikkan6', {});
+  assert.deepStrictEqual(学.学年の名前たち(一貫), ['中1', '中2', '中3', '高1', '高2', '高3']);
+  assert.strictEqual(学.学年の名前(人(4), 一貫, { 生: true }), '高1', '中1・高1 には「生」を付けない');
+  assert.deepStrictEqual(学.進級の変更(人(3), null, 2026, 一貫), { grade: 4 }, '中3 → 高1');
+  assert.deepStrictEqual(学.進級の変更(人(6), null, 2026, 一貫), { enrollment: '卒業', leftYear: 2026 });
+  assert.strictEqual(学.学年の幅の名前(一貫), '中1〜高3');
+
+  const 院 = 学.決まりを作る('univGrad', {});
+  assert.deepStrictEqual(学.学年の名前たち(院), ['1年', '2年', '3年', '4年', 'M1', 'M2']);
+  assert.strictEqual(学.学年の幅の名前(院), '1年〜4年・M1・M2');
+  assert.deepStrictEqual(
+    学.進級の変更(人(4), null, 2026, 院),
+    { enrollment: '卒業', leftYear: 2026 },
+    '4 年は卒業が既定'
+  );
+  assert.deepStrictEqual(学.進級の変更(人(4), '院へ', 2026, 院), { grade: 5 }, '押すと M1 へ');
+  assert.strictEqual(学.進級の変更(人(4), '残す', 2026, 院), null);
+  assert.deepStrictEqual(学.進級の変更(人(5), null, 2026, 院), { grade: 6 }, 'M1 → M2');
+  assert.deepStrictEqual(学.進級の変更(人(6), null, 2026, 院), { enrollment: '卒業', leftYear: 2026 });
+  assert.strictEqual(学.院へ進む先(人(4), 院), 5);
+  assert.strictEqual(学.院へ進む先(人(3), 院), null);
+  assert.strictEqual(学.院へ進む先(人(4)), null, '大学（4 年）には院が無い');
+  assert.strictEqual(学.卒業する学年か(人(4), 院), true);
+  assert.strictEqual(学.卒業する学年か(人(5), 院), false);
+  assert.strictEqual(学.学年の名前(人(5), 院), 'M1');
+  assert.strictEqual(学.学年の期(53, 5, 院), 49, 'M1 は 1 年生の 4 つ前の期');
+});
+
+test('段 3：自分で決める（名前・並び・卒業するか・呼び方）', () => {
+  const 学年 = [
+    { value: 3, name: '初級' },
+    { value: 1, name: '中級' },
+    { value: 7, name: '上級' },
+  ];
+  const 自分 = 学.決まりを作る('custom', { customGrades: 学年 });
+  assert.deepStrictEqual(学.学年の名前たち(自分), ['初級', '中級', '上級'], '並びの順');
+  assert.strictEqual(学.学年の名前(人(7), 自分), '上級');
+  assert.deepStrictEqual(学.進級の変更(人(3), null, 2026, 自分), { grade: 1 }, '値ではなく並びの次へ');
+  assert.deepStrictEqual(学.進級の変更(人(7), null, 2026, 自分), { enrollment: '卒業', leftYear: 2026 });
+  assert.strictEqual(学.学年の期(53, 1, 自分), 52, '期は並びの位置で数える');
+  assert.strictEqual(学.学年の幅の名前(自分), '初級・中級・上級');
+  assert.strictEqual(学.呼び方(自分).部員, '部員');
+  const 残る = 学.決まりを作る('custom', {
+    customGrades: 学年,
+    customGraduate: false,
+    customWording: 'club',
+  });
+  assert.strictEqual(学.進級の変更(人(7), null, 2026, 残る), null, '卒業しない団体は最後の学年に留まる');
+  assert.strictEqual(学.卒業する学年か(人(7), 残る), false);
+  assert.strictEqual(学.呼び方(残る).部員, '会員');
+  const 空 = 学.決まりを作る('custom', {});
+  assert.strictEqual(空.学年なし, true, '学年を並べていなければ学年なし');
+  assert.strictEqual(学.学年の幅の名前(空), '学年を自分で並べる');
+  assert.deepStrictEqual(
+    学.自分の学年たち([
+      { value: 1, name: ' A ' },
+      { value: 1, name: 'B' },
+      { value: 0, name: 'C' },
+      { value: 2, name: '' },
+    ]),
+    [{ value: 1, name: 'A' }]
+  );
+});
+
+test('段 3：年度の始まりの月', () => {
+  assert.strictEqual(学.年度(new Date(2027, 7, 31), 9), 2026);
+  assert.strictEqual(学.年度(new Date(2027, 8, 1), 9), 2027);
+  assert.strictEqual(学.年度(new Date(2027, 0, 5), 1), 2027);
+  assert.strictEqual(
+    学.進級待ちの年(new Date(2027, 7, 31), 2026, true, 9),
+    null,
+    '9 月始まりなら 8 月はまだ'
+  );
+  assert.strictEqual(学.進級待ちの年(new Date(2027, 8, 1), 2026, true, 9), 2027);
+  const 範囲 = 学.年度の範囲(2026, 9);
+  assert.strictEqual(範囲.始め.getMonth(), 8);
+  assert.strictEqual(範囲.終わり.getFullYear(), 2027);
+  assert.strictEqual(範囲.終わり.getMonth(), 7);
+  assert.strictEqual(範囲.終わり.getDate(), 31);
+  assert.strictEqual(学.設定から読む({ yearStartMonth: 13 }).yearStartMonth, 4, 'おかしい月は 4 月');
+  try {
+    学.決まりを置く('univ4', { yearStartMonth: 9 });
+    assert.strictEqual(学.年度(new Date(2027, 7, 31)), 2026, '省くと今の団体の月');
+  } finally {
+    学.決まりを置く(学.既定の種類, {});
+  }
 });

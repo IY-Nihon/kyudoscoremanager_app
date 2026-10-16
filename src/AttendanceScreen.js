@@ -16,6 +16,7 @@ const {
 const Icons = require('@expo/vector-icons');
 const { useScoreStore } = require('./useScoreStore');
 const 学 = require('./gakunen');
+const { use団体の決まり } = require('./useGakunen');
 const 区 = require('./kubun');
 const { use引いて更新 } = require('./hikiOroshi');
 // 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
@@ -53,7 +54,7 @@ const AttendanceScreen = () => {
     groupType,
     useTerm: 期を使う,
   } = useストアの一部(['members', 'sessions', 'activeGroupId', 'divisions', 'groupType', 'useTerm']);
-  const 決まり = 学.決まりを作る(groupType);
+  const 決まり = use団体の決まり();
   // 区分の絞り（区分の id。null は全員）。消された区分を選んだままなら絞らない
   const [選んだ区分, 区分の絞りを置く] = React.useState(null);
   const 区分の絞り = 区分たち.some((区分) => 区分.id === 選んだ区分) ? 選んだ区分 : null;
@@ -66,7 +67,7 @@ const AttendanceScreen = () => {
   const now = React.useMemo(() => new Date(), []);
   const [selectedYear, setSelectedYear] = React.useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = React.useState(now.getMonth() + 1);
-  const currentFiscalYear = selectedMonth >= 4 ? selectedYear : selectedYear - 1;
+  const currentFiscalYear = 学.年度(new Date(selectedYear, selectedMonth - 1, 1));
   // 日付の文字と出欠の決まりは attendanceRules に置く。AI チャットの出欠の集計も同じ決まりで数える
   const getLocalDateString = 日付の文字;
   const changeMonth = (offset) => {
@@ -142,7 +143,7 @@ const AttendanceScreen = () => {
       if (tab === 'days' || rangeType === 'month')
         return 日付.getFullYear() === selectedYear && 日付.getMonth() + 1 === selectedMonth;
       if (rangeType === 'year') {
-        const 年度 = 日付.getMonth() + 1 >= 4 ? 日付.getFullYear() : 日付.getFullYear() - 1;
+        const 年度 = 学.年度(日付);
         return 年度 === currentFiscalYear;
       }
       return true;
@@ -158,7 +159,7 @@ const AttendanceScreen = () => {
     if (学.卒業生か(部員) && 部員.termKi) {
       // 記録がない場合の救済：期から卒業した年度を推測する（今日の年度と今の 1 年生の期から。src/gakunen.js）
       const 今日 = new Date();
-      const 今日の年度 = 今日.getMonth() + 1 >= 4 ? 今日.getFullYear() : 今日.getFullYear() - 1;
+      const 今日の年度 = 学.年度(今日);
       const 卒業年度 = 学.卒業の年度(部員.termKi, useScoreStore.getState().currentFreshmanTerm, 今日の年度);
       return currentFiscalYear <= 卒業年度;
     }

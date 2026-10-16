@@ -94,6 +94,12 @@ const 学年まわりの初めの値 = Object.freeze({
   useTerm: false,
   // 区分（団体が作る分け方。[{ id, name }] の並び。src/kubun.js）
   divisions: [],
+  // 自分で決める団体の学年（[{ value, name }] の並び）・最後の学年の次に卒業するか・呼び方（'school' か 'club'）
+  customGrades: [],
+  customGraduate: true,
+  customWording: 'school',
+  // 年度の始まりの月（進級の窓を出す日・分析・出欠・書き出しの年度の区切り）
+  yearStartMonth: 4,
   // 進級を待っている年（団体ログインで進級の窓を出す）。押されるまで全員の学年は前の年度のまま
   進級待ちの年: null,
   // 進級の窓を「あとで」で閉じたか（その起動のあいだ。記録画面の帯は出し続ける）
@@ -775,6 +781,54 @@ const useScoreStore = zustand.create()(
         区分を消す: (id) => 状態().学年の設定を書く({ divisions: 区.区分を消す(状態().divisions, id) }),
         区分を動かす: (id, 向き) =>
           状態().学年の設定を書く({ divisions: 区.区分を動かす(状態().divisions, id, 向き) }),
+        // 自分で決める学年（値は学年ごとに持ち、名前を直しても並べ替えても変えない。src/gakunen.js）。
+        // 足す・直すは、断るとき（空・同じ名前）に画面へ出す文を返す
+        学年を足す: (名前) => {
+          const 今 = 学.自分の学年たち(状態().customGrades);
+          const 名 = String(名前 || '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .slice(0, 8);
+          if (!名) return '学年の名前を入れてください';
+          if (今.some((学年) => 学年.name === 名)) return `「${名}」はもうあります`;
+          const 値 = Math.max(0, ...今.map((学年) => 学年.value)) + 1;
+          状態().学年の設定を書く({ customGrades: [...今, { value: 値, name: 名 }] });
+          return null;
+        },
+        学年の名前を直す: (値, 名前) => {
+          const 今 = 学.自分の学年たち(状態().customGrades);
+          const 名 = String(名前 || '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .slice(0, 8);
+          if (!名) return '学年の名前を入れてください';
+          if (今.some((学年) => 学年.value !== 値 && 学年.name === 名)) return `「${名}」はもうあります`;
+          状態().学年の設定を書く({
+            customGrades: 今.map((学年) => (学年.value === 値 ? { value: 値, name: 名 } : 学年)),
+          });
+          return null;
+        },
+        学年を動かす: (値, 向き) => {
+          const 今 = 学.自分の学年たち(状態().customGrades);
+          const 番 = 今.findIndex((学年) => 学年.value === 値);
+          const 先 = 番 + (向き < 0 ? -1 : 1);
+          if (番 < 0 || 先 < 0 || 先 >= 今.length) return;
+          const 次 = [...今];
+          [次[番], 次[先]] = [次[先], 次[番]];
+          状態().学年の設定を書く({ customGrades: 次 });
+        },
+        // 消した学年の人は「その他」にする（画面で確かめてから呼ぶ）
+        学年を消す: (値) => {
+          const 今 = 学.自分の学年たち(状態().customGrades);
+          状態().学年の設定を書く({ customGrades: 今.filter((学年) => 学年.value !== 値) });
+          (状態().members || [])
+            .filter((部員) => 学.現役か(部員) && 値 === 学.学年の値(部員))
+            .forEach((部員) => 状態().updateMember(部員.id, { grade: 0 }));
+        },
+        setCustomGraduate: (卒業する) => 状態().学年の設定を書く({ customGraduate: !!卒業する }),
+        setCustomWording: (呼び方) =>
+          状態().学年の設定を書く({ customWording: 'club' === 呼び方 ? 'club' : 'school' }),
+        setYearStartMonth: (月) => 状態().学年の設定を書く({ yearStartMonth: Number(月) || 4 }),
         setUseTerm: (使う) => 状態().学年の設定を書く({ useTerm: !!使う }),
         /**
          * 団体の種類を変える。新しい種類に無い学年の人（6 年制から高校へ変えたときの 4〜6 年など）は「その他」にする
@@ -851,7 +905,7 @@ const useScoreStore = zustand.create()(
           }
           if (!設定 || 'number' != typeof 設定.lastPromotionYear) {
             // 進級した年が無い団体（作ったばかり）は、今年の分を済んだことにして書き留めるだけ
-            const 基準 = 今日.getMonth() + 1 >= 4 ? 今日.getFullYear() : 今日.getFullYear() - 1;
+            const 基準 = 学.年度(今日);
             console.log(`[進級] 進級した年が無いので ${基準} 年を書き留めます（進級はしない）`);
             書く({ lastPromotionYear: 基準, 進級待ちの年: null });
             // 送信の完了は待たない。この関数は syncSessions の先頭で待たれて
@@ -876,7 +930,8 @@ const useScoreStore = zustand.create()(
 
         /**
          * 進級の窓の「進級する」。全員を 1 つ上げ、最後の学年は卒業にする（src/gakunen.js の 進級の変更）。
-         * 残す人 … 「上げない／卒業しない」を選んだ部員の id。
+         * 選んだ人 … 部員の id → '残す'（上げない・卒業しない）か '院へ'（院生もいる部の 4 年 → M1）。
+         * id の並び（配列）を渡したときは、みな '残す'（段 1 の形）。
          * 書く前に雲で今年の進級が済んでいないかを確かめる（ほかの端末で先に押されていたら何もしない）。
          * 返すのは { 済んだ: true, 人数 }・{ 済んでいた: true }・{ 誤り: 画面に出す文 } のどれか
          */
@@ -908,10 +963,12 @@ const useScoreStore = zustand.create()(
             不具合を控える('進級の読み込み', 誤り);
             return { 誤り: '雲から名簿を読めませんでした。時間をおいて、もう一度押してください。' };
           }
-          const 残す = new Set(残す人 || []);
+          const 選び = Array.isArray(残す人)
+            ? new Map(残す人.map((id) => [id, '残す']))
+            : new Map(Object.entries(残す人 || {}));
           const 変更たち = [];
           雲の部員.forEach((部員) => {
-            const 変更 = 学.進級の変更(部員, 残す.has(部員.id), 前の年度);
+            const 変更 = 学.進級の変更(部員, 選び.get(部員.id) || null, 前の年度);
             if (変更) 変更たち.push({ id: 部員.id, 変更 });
           });
           // 期は使う団体だけ進める（使わない団体の値を動かすと、使っているように見える）
@@ -1171,6 +1228,10 @@ const useScoreStore = zustand.create()(
           groupType: 状態の中身.groupType,
           promotionCheck: 状態の中身.promotionCheck,
           useTerm: 状態の中身.useTerm,
+          customGrades: 状態の中身.customGrades,
+          customGraduate: 状態の中身.customGraduate,
+          customWording: 状態の中身.customWording,
+          yearStartMonth: 状態の中身.yearStartMonth,
           divisions: 状態の中身.divisions,
           analysisRankingSettings: 状態の中身.analysisRankingSettings,
           enableArrowLocation: 状態の中身.enableArrowLocation,
@@ -1252,10 +1313,24 @@ const useScoreStore = zustand.create()(
 // 外側の部品（storeShared.js）が店を読むところ。読み込みを輪にしないため、できたあとに入れる
 場.店 = useScoreStore;
 // 学年の決まり（src/gakunen.js）を今の団体の種類にそろえる。決まりを省いた判定（卒業生か・学年の名前など）はこれを使う。
-// 控えから戻したとき・設定を受け取ったとき・種類を変えたとき、どれも groupType が変わるのでここで拾える
-学.決まりを置く(useScoreStore.getState().groupType);
+// 控えから戻したとき・設定を受け取ったとき・種類を変えたとき、どれもここで拾える。
+// 自分で決める学年・卒業するか・呼び方・年度の始まりの月も決まりに効く
+const 決まりの元 = (状態の中身) => ({
+  customGrades: 状態の中身.customGrades,
+  customGraduate: 状態の中身.customGraduate,
+  customWording: 状態の中身.customWording,
+  yearStartMonth: 状態の中身.yearStartMonth,
+});
+学.決まりを置く(useScoreStore.getState().groupType, 決まりの元(useScoreStore.getState()));
 useScoreStore.subscribe((今, 前) => {
-  if (今.groupType !== 前.groupType) 学.決まりを置く(今.groupType);
+  if (
+    今.groupType !== 前.groupType ||
+    今.customGrades !== 前.customGrades ||
+    今.customGraduate !== 前.customGraduate ||
+    今.customWording !== 前.customWording ||
+    今.yearStartMonth !== 前.yearStartMonth
+  )
+    学.決まりを置く(今.groupType, 決まりの元(今));
 });
 // 検査（e2e/promotion.spec.mjs）から進級の窓を出す口。4 月 1 日を待たずに窓と帯を確かめるため。
 // 「進級する」は検査では押さない（検証環境の名簿が上がってしまう。進級そのものは test/storeSync.test.js で見る）

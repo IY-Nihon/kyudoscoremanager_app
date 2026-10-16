@@ -12,6 +12,7 @@ const React = require('react');
 const { Text, View, Pressable, ScrollView, Modal, ActivityIndicator, StyleSheet } = require('./rn');
 const { 色 } = require('./iro.js');
 const 学 = require('./gakunen');
+const { use団体の決まり } = require('./useGakunen');
 const { IS_WEB } = require('./IS_WEB');
 const { useScoreStore } = require('./useScoreStore');
 
@@ -19,12 +20,12 @@ const { useScoreStore } = require('./useScoreStore');
 function 学年の組(部員たち, 決まりを渡す) {
   const 決まり = 決まりを渡す || 学.今の決まりを見る();
   const 在籍 = (部員たち || []).filter((部員) => 学.現役か(部員, 決まり) && !学.その他か(部員, 決まり));
-  const 最後 = 決まり.在籍の学年[決まり.在籍の学年.length - 1];
   return [...決まり.在籍の学年]
     .reverse()
     .map((学年) => ({
       学年,
-      最後: 学年 === 最後,
+      // 何もしなければ卒業する学年か（ふつうは最後の学年。院生もいる部は 4 年と M2）
+      最後: 決まり.卒業する学年.includes(学年),
       人たち: 在籍
         .filter((部員) => 学.学年の値(部員, 決まり) === 学年)
         .sort((甲, 乙) => (甲.name || '').localeCompare(乙.name || '', 'ja')),
@@ -42,26 +43,50 @@ function 進級の窓({ 見える, 知らせる }) {
   if (待ちの年) 出した年.current = 待ちの年;
   const 年 = 出した年.current;
   const 部員たち = useScoreStore((状態) => 状態.members);
-  const 種類 = useScoreStore((状態) => 状態.groupType);
-  const 決まり = React.useMemo(() => 学.決まりを作る(種類), [種類]);
-  const 最後の学年 = 決まり.在籍の学年[決まり.在籍の学年.length - 1];
+  const 決まり = use団体の決まり();
+  const 名 = (学年) => 学.学年だけの名前(学年, 決まり);
+  // 説明の 1 行目（「4年生は卒業」「4年生とM2は卒業」）
+  const 卒業の説明 = 決まり.卒業する学年
+    .map((学年) => 学.学年だけの名前(学年, 決まり, { 生: true }))
+    .join('と');
+  const 院へ進める = Object.keys(決まり.院へ).length > 0;
   const 組たち = React.useMemo(() => 学年の組(部員たち, 決まり), [部員たち, 決まり]);
   const その他の人数 = React.useMemo(
     () => (部員たち || []).filter((部員) => 学.その他か(部員, 決まり)).length,
     [部員たち, 決まり]
   );
-  // 上げない・卒業しない人の id
-  const [残す, 残すを置く] = React.useState(() => new Set());
-  // 開いている組（学年）。最後の学年だけ初めから開く（卒業か残るかを確かめてほしいので）
+  // 選んだこと（部員の id → '残す'（上げない・卒業しない）か '院へ'（院生もいる部の 4 年 → M1））
+  const [選び, 選びを置く] = React.useState(() => new Map());
+  // 開いている組（学年）。卒業する学年だけ初めから開く（卒業か残るかを確かめてほしいので）
   const [開いた組, 開いた組を置く] = React.useState(() => new Set());
   const [押した, 押したを置く] = React.useState(false);
   const [誤り, 誤りを置く] = React.useState('');
   React.useEffect(() => {
     if (!見える) return;
-    残すを置く(new Set());
-    開いた組を置く(new Set([決まり.在籍の学年[決まり.在籍の学年.length - 1]]));
+    選びを置く(new Map());
+    開いた組を置く(new Set(決まり.卒業する学年));
     誤りを置く('');
   }, [見える, 決まり]);
+  /** 押したときの次の選び（卒業する学年で院へ進めるなら 卒業 → 院へ → そのまま → 卒業） */
+  const 次の選び = (部員, 今) => {
+    const 順 = null !== 学.院へ進む先(部員, 決まり) ? [null, '院へ', '残す'] : [null, '残す'];
+    return 順[(順.indexOf(今 || null) + 1) % 順.length];
+  };
+  const 選ぶ = (部員) => {
+    const 次 = new Map(選び);
+    const 選んだ = 次の選び(部員, 選び.get(部員.id));
+    選んだ ? 次.set(部員.id, 選んだ) : 次.delete(部員.id);
+    選びを置く(次);
+  };
+  /** その人の札（「卒業」「M1へ」「4年のまま」「2年へ」） */
+  const 札の字 = (部員, 学年, 卒業) => {
+    const 今 = 選び.get(部員.id);
+    if ('残す' === 今) return `${名(学年)}のまま`;
+    if ('院へ' === 今) return `${名(学.院へ進む先(部員, 決まり))}へ`;
+    if (卒業) return '卒業';
+    const 次 = 学.次の学年の値(学年, 決まり);
+    return null === 次 ? 'そのまま' : `${名(次)}へ`;
+  };
 
   const 切り替える = (集まり, 置く, 鍵) => {
     const 次 = new Set(集まり);
@@ -73,7 +98,7 @@ function 進級の窓({ 見える, 知らせる }) {
     if (押した) return;
     押したを置く(true);
     誤りを置く('');
-    const 結果 = await useScoreStore.getState().進級する([...残す]);
+    const 結果 = await useScoreStore.getState().進級する(Object.fromEntries(選び));
     押したを置く(false);
     if (結果.誤り) return void 誤りを置く(結果.誤り);
     知らせる(結果.済んでいた ? 'ほかの端末で進級が済んでいました' : `${年}年度の進級を済ませました`);
@@ -85,13 +110,20 @@ function 進級の窓({ 見える, 知らせる }) {
         <View style={styles.窓} accessibilityViewIsModal aria-modal testID="進級の窓">
           <Text style={styles.題} accessibilityRole="header">{`${年}年度の進級`}</Text>
           <Text style={styles.説明}>
-            {`全員の学年を1つ上げ、${最後の学年}年生は卒業にします。\n留年などで上げない人は、名前を押してください。`}
+            {(卒業の説明
+              ? `全員の学年を1つ上げ、${卒業の説明}は卒業にします。`
+              : '全員の学年を1つ上げます。') +
+              (院へ進める
+                ? '\n院へ進む人・上げない人は、名前を押してください。'
+                : '\n留年などで上げない人は、名前を押してください。')}
           </Text>
           <ScrollView style={styles.一覧} contentContainerStyle={{ paddingBottom: 4 }}>
             {組たち.map((組) => {
               const 開いた = 開いた組.has(組.学年);
-              const 行き先 = 組.最後 ? '卒業' : `${組.学年 + 1}年`;
-              const 残す数 = 組.人たち.filter((部員) => 残す.has(部員.id)).length;
+              const 次 = 学.次の学年の値(組.学年, 決まり);
+              const 行き先 = 組.最後 ? '卒業' : null === 次 ? 'そのまま' : 名(次);
+              const 残す数 = 組.人たち.filter((部員) => '残す' === 選び.get(部員.id)).length;
+              const 院へ数 = 組.人たち.filter((部員) => '院へ' === 選び.get(部員.id)).length;
               return (
                 <View key={組.学年} style={styles.組}>
                   <Pressable
@@ -104,7 +136,8 @@ function 進級の窓({ 見える, 知らせる }) {
                       IS_WEB && { cursor: 'pointer' },
                     ]}
                   >
-                    <Text style={styles.組の題}>{`${組.学年}年 → ${行き先}（${組.人たち.length}人）`}</Text>
+                    <Text style={styles.組の題}>{`${名(組.学年)} → ${行き先}（${組.人たち.length}人）`}</Text>
+                    {院へ数 ? <Text style={styles.院へ数}>{`${院へ数}人院へ`}</Text> : null}
                     {残す数 ? <Text style={styles.残す数}>{`${残す数}人そのまま`}</Text> : null}
                     <Text style={styles.開け閉め} aria-hidden>
                       {開いた ? '▲' : '▼'}
@@ -112,14 +145,15 @@ function 進級の窓({ 見える, 知らせる }) {
                   </Pressable>
                   {開いた
                     ? 組.人たち.map((部員) => {
-                        const そのまま = 残す.has(部員.id);
-                        const 札 = そのまま ? `${組.学年}年のまま` : 組.最後 ? '卒業' : `${組.学年 + 1}年へ`;
+                        const そのまま = '残す' === 選び.get(部員.id);
+                        const 院へ = '院へ' === 選び.get(部員.id);
+                        const 札 = 札の字(部員, 組.学年, 組.最後);
                         return (
                           <Pressable
                             key={部員.id}
                             accessibilityRole="button"
                             aria-label={`${部員.name || ''} ${札}`}
-                            onPress={() => 切り替える(残す, 残すを置く, 部員.id)}
+                            onPress={() => 選ぶ(部員)}
                             style={({ hovered }) => [
                               styles.行,
                               hovered && styles.触れた,
@@ -129,8 +163,16 @@ function 進級の窓({ 見える, 知らせる }) {
                             <Text style={styles.名前} numberOfLines={1}>
                               {部員.name || '名前なし'}
                             </Text>
-                            <View style={[styles.札, そのまま && styles.札_そのまま]}>
-                              <Text style={[styles.札の字, そのまま && styles.札の字_そのまま]}>{札}</Text>
+                            <View style={[styles.札, そのまま && styles.札_そのまま, 院へ && styles.札_院へ]}>
+                              <Text
+                                style={[
+                                  styles.札の字,
+                                  そのまま && styles.札の字_そのまま,
+                                  院へ && styles.札の字_院へ,
+                                ]}
+                              >
+                                {札}
+                              </Text>
                             </View>
                           </Pressable>
                         );
@@ -258,6 +300,9 @@ const styles = StyleSheet.create({
     backgroundColor: 色.白,
   },
   札_そのまま: { borderColor: 色.橙, backgroundColor: 色.橙の地 },
+  札_院へ: { borderColor: 色.青, backgroundColor: 色.青の地 },
+  札の字_院へ: { color: 色.青, fontWeight: 'bold' },
+  院へ数: { fontSize: 12, color: 色.青, marginRight: 8 },
   札の字: { fontSize: 13, color: 色.文字_二 },
   札の字_そのまま: { color: 色.橙_濃い, fontWeight: 'bold' },
   注: { fontSize: 12, color: 色.灰, marginTop: 4 },
