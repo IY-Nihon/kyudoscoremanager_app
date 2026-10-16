@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const { View, Text, StyleSheet } = require('./rn');
 const { UIConfig } = require('./uiConfig');
 const { useScoreStore } = require('./useScoreStore');
@@ -22,7 +23,7 @@ const LabelColumn = ({ shots, showFooter = true, 横並び: 横 = false }) => {
               flexShrink: 0,
               borderLeftWidth: 0,
               borderTopWidth: 1.5,
-              borderTopColor: '#000',
+              borderTopColor: 色.黒,
             }
           : { width: UIConfig.headerWidth * 倍率 },
       ]}
@@ -38,7 +39,7 @@ const LabelColumn = ({ shots, showFooter = true, 横並び: 横 = false }) => {
                   borderBottomWidth: 0,
                   borderRightWidth: 0,
                   borderLeftWidth: 1.5,
-                  borderLeftColor: '#000',
+                  borderLeftColor: 色.黒,
                 }
               : { height: UIConfig.headerHeight * 倍率 },
           ]}
@@ -60,12 +61,12 @@ const LabelColumn = ({ shots, showFooter = true, 横並び: 横 = false }) => {
                         width: UIConfig.cellWidth * 倍率,
                         height: UIConfig.cellHeight * 倍率,
                         borderRightWidth: 切れ目 ? 2 : 1,
-                        borderRightColor: '#000',
+                        borderRightColor: 色.黒,
                       }
                     : {
                         height: UIConfig.cellHeight * 倍率,
                         borderBottomWidth: 縦の切れ目 ? 2 : 1,
-                        borderBottomColor: '#000',
+                        borderBottomColor: 色.黒,
                       },
                 ]}
               >
@@ -89,7 +90,7 @@ const LabelColumn = ({ shots, showFooter = true, 横並び: 横 = false }) => {
             bottom: 0,
             // 見出しと本体の区切りなので、ますの線（1px）より太くする
             height: 3,
-            backgroundColor: '#000',
+            backgroundColor: 色.黒,
           }}
         />
       ) : null}
@@ -99,40 +100,40 @@ const LabelColumn = ({ shots, showFooter = true, 横並び: 横 = false }) => {
 const styles = StyleSheet.create({
   column: {
     width: UIConfig.headerWidth,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     borderLeftWidth: 1.5,
-    borderLeftColor: '#000',
+    borderLeftColor: 色.黒,
   },
   header: {
     height: UIConfig.headerHeight,
     justifyContent: 'center',
     alignItems: 'center',
     borderBottomWidth: 1.5,
-    borderBottomColor: '#000',
+    borderBottomColor: 色.黒,
     borderRightWidth: 1.5,
-    borderRightColor: '#000',
+    borderRightColor: 色.黒,
   },
-  headerText: { color: '#3C3C43', fontSize: 10, fontWeight: 'bold' },
+  headerText: { color: 色.文字_二, fontSize: 10, fontWeight: 'bold' },
   cell: {
     height: UIConfig.cellHeight,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     borderRightWidth: 1.5,
-    borderRightColor: '#000',
+    borderRightColor: 色.黒,
   },
-  numText: { color: '#3C3C43', fontSize: 10 },
+  numText: { color: 色.文字_二, fontSize: 10 },
   footer: {
     height: UIConfig.footerHeight,
     justifyContent: 'center',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#000',
+    borderTopColor: 色.黒,
     borderRightWidth: 1.5,
-    borderRightColor: '#000',
-    backgroundColor: '#F2F2F7',
+    borderRightColor: 色.黒,
+    backgroundColor: 色.地,
   },
-  footerText: { color: '#3C3C43', fontSize: 10, fontWeight: 'bold' },
+  footerText: { color: 色.文字_二, fontSize: 10, fontWeight: 'bold' },
 });
 Object.defineProperty(exports, '__esModule', { value: true });
 exports.LabelColumn = LabelColumn;

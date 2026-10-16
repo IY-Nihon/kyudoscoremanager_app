@@ -1,3 +1,5 @@
+import iroの組 from './iro.js';
+const { 色 } = iroの組;
 /**
  * 矢所記録入力用ポップアップモーダルコンポーネント
  */
@@ -10,7 +12,28 @@ import { useストアの一部 } from './storeSlice';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // 漢数字・丸数字の変換テーブル（1〜8射用）
-const CIRCLED_NUMBERS = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳'];
+const CIRCLED_NUMBERS = [
+  '①',
+  '②',
+  '③',
+  '④',
+  '⑤',
+  '⑥',
+  '⑦',
+  '⑧',
+  '⑨',
+  '⑩',
+  '⑪',
+  '⑫',
+  '⑬',
+  '⑭',
+  '⑮',
+  '⑯',
+  '⑰',
+  '⑱',
+  '⑲',
+  '⑳',
+];
 
 export const ArrowLocationPopover = ({
   visible,
@@ -19,14 +42,19 @@ export const ArrowLocationPopover = ({
   shotIndex,
   currentMark, // '○' または '×'
   arrowLocations = [],
-  onSave
+  onSave,
 }) => {
-  const { arrowTargetType, setArrowTargetType, updateArrowLocation, archers: storeArchers } = useストアの一部(['arrowTargetType', 'setArrowTargetType', 'updateArrowLocation', 'archers']);
+  const {
+    arrowTargetType,
+    setArrowTargetType,
+    updateArrowLocation,
+    archers: storeArchers,
+  } = useストアの一部(['arrowTargetType', 'setArrowTargetType', 'updateArrowLocation', 'archers']);
   const touchAreaRef = useRef(null);
-  
+
   // 該当する射手のマーク情報を取得して、○/×判定に用いる
-  const archer = storeArchers.find(a => a.id === archerId);
-  const archerMarks = archer ? (archer.marks || []) : [];
+  const archer = storeArchers.find((a) => a.id === archerId);
+  const archerMarks = archer ? archer.marks || [] : [];
 
   // 矢所は帳簿から直に読む。prop の arrowLocations は窓を開いた時の写しなので、
   // 置いた直後の点が出ない。指を離すと下絵（previewPos）も消えるので、
@@ -75,8 +103,18 @@ export const ArrowLocationPopover = ({
     if (pageX === undefined || pageY === undefined || isNaN(pageX) || isNaN(pageY)) return null;
 
     const rect = touchAreaNode.getBoundingClientRect();
-    const scrollX = window.scrollX ?? window.pageXOffset ?? document.documentElement.scrollLeft ?? document.body.scrollLeft ?? 0;
-    const scrollY = window.scrollY ?? window.pageYOffset ?? document.documentElement.scrollTop ?? document.body.scrollTop ?? 0;
+    const scrollX =
+      window.scrollX ??
+      window.pageXOffset ??
+      document.documentElement.scrollLeft ??
+      document.body.scrollLeft ??
+      0;
+    const scrollY =
+      window.scrollY ??
+      window.pageYOffset ??
+      document.documentElement.scrollTop ??
+      document.body.scrollTop ??
+      0;
 
     const elemAbsoluteX = rect.left + scrollX;
     const elemAbsoluteY = rect.top + scrollY;
@@ -166,38 +204,85 @@ export const ArrowLocationPopover = ({
     if (arrowTargetType === 'kasumi36') {
       // 霞的の描画 (中心から白・黒交互に重ねる)
       return (
-        <View style={[styles.targetBase, { width: 240, height: 240, borderRadius: 120, backgroundColor: '#000', pointerEvents: 'none' }]}>
-          <View style={[styles.targetLayer, { width: 200, height: 200, borderRadius: 100, backgroundColor: '#fff', pointerEvents: 'none' }]} />
-          <View style={[styles.targetLayer, { width: 160, height: 160, borderRadius: 80, backgroundColor: '#000', pointerEvents: 'none' }]} />
-          <View style={[styles.targetLayer, { width: 120, height: 120, borderRadius: 60, backgroundColor: '#fff', pointerEvents: 'none' }]} />
-          <View style={[styles.targetLayer, { width: 80, height: 80, borderRadius: 40, backgroundColor: '#000', pointerEvents: 'none' }]} />
-          <View style={[styles.targetLayer, { width: 40, height: 40, borderRadius: 20, backgroundColor: '#fff', pointerEvents: 'none' }]} />
+        <View
+          style={[
+            styles.targetBase,
+            { width: 240, height: 240, borderRadius: 120, backgroundColor: 色.黒, pointerEvents: 'none' },
+          ]}
+        >
+          <View
+            style={[
+              styles.targetLayer,
+              { width: 200, height: 200, borderRadius: 100, backgroundColor: 色.白, pointerEvents: 'none' },
+            ]}
+          />
+          <View
+            style={[
+              styles.targetLayer,
+              { width: 160, height: 160, borderRadius: 80, backgroundColor: 色.黒, pointerEvents: 'none' },
+            ]}
+          />
+          <View
+            style={[
+              styles.targetLayer,
+              { width: 120, height: 120, borderRadius: 60, backgroundColor: 色.白, pointerEvents: 'none' },
+            ]}
+          />
+          <View
+            style={[
+              styles.targetLayer,
+              { width: 80, height: 80, borderRadius: 40, backgroundColor: 色.黒, pointerEvents: 'none' },
+            ]}
+          />
+          <View
+            style={[
+              styles.targetLayer,
+              { width: 40, height: 40, borderRadius: 20, backgroundColor: 色.白, pointerEvents: 'none' },
+            ]}
+          />
         </View>
       );
     } else if (arrowTargetType === 'hoshi36') {
       // 星的36cm (白い円に中心の黒丸)
       return (
-        <View style={[styles.targetBase, styles.hoshiBase, { width: 240, height: 240, borderRadius: 120, pointerEvents: 'none' }]}>
-          <View style={[styles.targetLayer, { width: 60, height: 60, borderRadius: 30, backgroundColor: '#000', pointerEvents: 'none' }]} />
+        <View
+          style={[
+            styles.targetBase,
+            styles.hoshiBase,
+            { width: 240, height: 240, borderRadius: 120, pointerEvents: 'none' },
+          ]}
+        >
+          <View
+            style={[
+              styles.targetLayer,
+              { width: 60, height: 60, borderRadius: 30, backgroundColor: 色.黒, pointerEvents: 'none' },
+            ]}
+          />
         </View>
       );
     } else {
       // 星的24cm
       return (
-        <View style={[styles.targetBase, styles.hoshiBase, { width: 160, height: 160, borderRadius: 80, pointerEvents: 'none' }]}>
-          <View style={[styles.targetLayer, { width: 40, height: 40, borderRadius: 20, backgroundColor: '#000', pointerEvents: 'none' }]} />
+        <View
+          style={[
+            styles.targetBase,
+            styles.hoshiBase,
+            { width: 160, height: 160, borderRadius: 80, pointerEvents: 'none' },
+          ]}
+        >
+          <View
+            style={[
+              styles.targetLayer,
+              { width: 40, height: 40, borderRadius: 20, backgroundColor: 色.黒, pointerEvents: 'none' },
+            ]}
+          />
         </View>
       );
     }
   };
 
   return (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent={true} animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
         <Pressable style={styles.backdropTouch} onPress={onClose} />
 
@@ -208,7 +293,7 @@ export const ArrowLocationPopover = ({
               矢所の記録 ({CIRCLED_NUMBERS[shotIndex] || `${shotIndex + 1}射目`})
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={24} color="#8E8E93" />
+              <Ionicons name="close" size={24} color={色.灰} />
             </TouchableOpacity>
           </View>
 
@@ -227,19 +312,25 @@ export const ArrowLocationPopover = ({
               onPress={() => setArrowTargetType('kasumi36')}
               style={[styles.typeBtn, arrowTargetType === 'kasumi36' && styles.typeBtnActive]}
             >
-              <Text style={[styles.typeBtnText, arrowTargetType === 'kasumi36' && styles.typeBtnTextActive]}>霞的(尺二寸)</Text>
+              <Text style={[styles.typeBtnText, arrowTargetType === 'kasumi36' && styles.typeBtnTextActive]}>
+                霞的(尺二寸)
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setArrowTargetType('hoshi36')}
               style={[styles.typeBtn, arrowTargetType === 'hoshi36' && styles.typeBtnActive]}
             >
-              <Text style={[styles.typeBtnText, arrowTargetType === 'hoshi36' && styles.typeBtnTextActive]}>星的(尺二寸)</Text>
+              <Text style={[styles.typeBtnText, arrowTargetType === 'hoshi36' && styles.typeBtnTextActive]}>
+                星的(尺二寸)
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setArrowTargetType('hoshi24')}
               style={[styles.typeBtn, arrowTargetType === 'hoshi24' && styles.typeBtnActive]}
             >
-              <Text style={[styles.typeBtnText, arrowTargetType === 'hoshi24' && styles.typeBtnTextActive]}>星的(八寸)</Text>
+              <Text style={[styles.typeBtnText, arrowTargetType === 'hoshi24' && styles.typeBtnTextActive]}>
+                星的(八寸)
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -262,7 +353,7 @@ export const ArrowLocationPopover = ({
               {/* 登録済みの矢所をプレビュー（現在の的種類と一致するものだけ表示） */}
               {表示する矢所.map((loc, idx) => {
                 if (!loc) return null;
-                
+
                 // 的の種類が異なる矢所は表示しない
                 // loc.targetType がない古いデータはデフォルトの 'kasumi36' とみなす
                 const locTargetType = loc.targetType || 'kasumi36';
@@ -271,17 +362,17 @@ export const ArrowLocationPopover = ({
                 const mark = archerMarks[idx];
                 const isHit = mark === '○' || mark === '○'; // 的中
                 const isCurrent = idx === shotIndex;
-                
+
                 // 正規化座標からピクセル座標へ逆変換
                 const posX = touchAreaRadius + loc.x * targetRadius;
                 const posY = touchAreaRadius + loc.y * targetRadius;
-                
+
                 // 的中は緑系、外れは赤・オレンジ系にする
                 let markerBgColor = 'rgba(0, 122, 255, 0.7)';
                 if (isHit) {
-                  markerBgColor = isCurrent ? '#34C759' : 'rgba(52, 199, 89, 0.75)';
+                  markerBgColor = isCurrent ? 色.緑 : 'rgba(52, 199, 89, 0.75)';
                 } else {
-                  markerBgColor = isCurrent ? '#FF3B30' : 'rgba(255, 149, 0, 0.75)';
+                  markerBgColor = isCurrent ? 色.赤 : 'rgba(255, 149, 0, 0.75)';
                 }
 
                 return (
@@ -294,16 +385,14 @@ export const ArrowLocationPopover = ({
                         left: posX - 12,
                         top: posY - 12,
                         backgroundColor: markerBgColor,
-                        borderColor: '#fff',
+                        borderColor: 色.白,
                         borderWidth: 1.5,
                         zIndex: isCurrent ? 10 : 5,
-                        transform: [{ scale: isCurrent ? 1.2 : 1.0 }]
-                      }
+                        transform: [{ scale: isCurrent ? 1.2 : 1.0 }],
+                      },
                     ]}
                   >
-                    <Text style={styles.markerText}>
-                      {CIRCLED_NUMBERS[idx] || idx + 1}
-                    </Text>
+                    <Text style={styles.markerText}>{CIRCLED_NUMBERS[idx] || idx + 1}</Text>
                   </View>
                 );
               })}
@@ -317,9 +406,11 @@ export const ArrowLocationPopover = ({
                     {
                       left: touchAreaRadius + previewPos.normalizedX * targetRadius - 14,
                       top: touchAreaRadius + previewPos.normalizedY * targetRadius - 14,
-                      backgroundColor: previewPos.isInside ? 'rgba(52, 199, 89, 0.55)' : 'rgba(255, 59, 48, 0.55)',
-                      borderColor: previewPos.isInside ? '#34C759' : '#FF3B30'
-                    }
+                      backgroundColor: previewPos.isInside
+                        ? 'rgba(52, 199, 89, 0.55)'
+                        : 'rgba(255, 59, 48, 0.55)',
+                      borderColor: previewPos.isInside ? 色.緑 : 色.赤,
+                    },
                   ]}
                 />
               )}
@@ -361,11 +452,11 @@ const styles = StyleSheet.create({
   popoverContainer: {
     width: SCREEN_WIDTH * 0.88,
     maxWidth: 360,
-    backgroundColor: '#fff',
+    backgroundColor: 色.白,
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: 色.黒,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -378,13 +469,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5EA',
+    borderBottomColor: 色.地_濃い,
     paddingBottom: 8,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#000',
+    color: 色.黒,
   },
   closeBtn: {
     padding: 4,
@@ -393,7 +484,7 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     alignItems: 'center',
     marginBottom: 16,
   },
@@ -402,21 +493,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   guideHit: {
-    color: '#34C759',
+    color: 色.緑,
   },
   guideMiss: {
-    color: '#FF3B30',
+    color: 色.赤,
   },
   targetWrapper: {
     width: 320,
     height: 320,
-    backgroundColor: '#E5E5EA', // 的外タップ領域を視覚化するための背景
+    backgroundColor: 色.地_濃い, // 的外タップ領域を視覚化するための背景
     borderRadius: 16, // 角丸の四角形にしてタップ面積を広げる
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#C6C6C8',
+    borderColor: 色.区切り,
     marginTop: 8,
   },
   touchArea: {
@@ -437,9 +528,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0,0,0,0.1)',
   },
   hoshiBase: {
-    backgroundColor: '#fff',
+    backgroundColor: 色.白,
     borderWidth: 1,
-    borderColor: '#000',
+    borderColor: 色.黒,
   },
   arrowMarker: {
     position: 'absolute',
@@ -448,14 +539,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: 色.黒,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 2.5,
     elevation: 4,
   },
   markerText: {
-    color: '#fff',
+    color: 色.白,
     fontSize: 11,
     fontWeight: 'bold',
   },
@@ -466,7 +557,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 2,
     zIndex: 20,
-    shadowColor: '#000',
+    shadowColor: 色.黒,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
@@ -483,26 +574,26 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 8,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     alignItems: 'center',
     justifyContent: 'center',
   },
   deleteBtnText: {
     fontSize: 15,
-    color: '#FF3B30',
+    color: 色.赤,
     fontWeight: 'bold',
   },
   saveBtn: {
     flex: 1.5,
     paddingVertical: 12,
     borderRadius: 8,
-    backgroundColor: '#007AFF',
+    backgroundColor: 色.青,
     alignItems: 'center',
     justifyContent: 'center',
   },
   saveBtnText: {
     fontSize: 15,
-    color: '#fff',
+    color: 色.白,
     fontWeight: 'bold',
   },
   targetTypeSelector: {
@@ -515,22 +606,22 @@ const styles = StyleSheet.create({
   typeBtn: {
     flex: 1,
     paddingVertical: 8,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: 色.地_濃い,
   },
   typeBtnActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: 色.青,
+    borderColor: 色.青,
   },
   typeBtnText: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: 色.灰,
     fontWeight: 'bold',
   },
   typeBtnTextActive: {
-    color: '#fff',
+    color: 色.白,
   },
 });

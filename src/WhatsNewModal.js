@@ -1,8 +1,10 @@
+'use strict';
+
+const { 色 } = require('./iro.js');
 /**
  * Module ID: WhatsNewModal (hand-written, not bundler-generated)
  * アプリ起動時に最近の変更点をお知らせするモーダル
  */
-'use strict';
 
 Object.defineProperty(exports, '__esModule', { value: true });
 exports.WhatsNewModal = undefined;
@@ -1074,11 +1076,11 @@ const WhatsNewModal = () => {
         >
           <View style={styles.header}>
             <View style={styles.headerTitleRow}>
-              <Ionicons name="megaphone-outline" size={20} color="#007AFF" />
+              <Ionicons name="megaphone-outline" size={20} color={色.青} />
               <Text style={styles.headerTitle}>お知らせ</Text>
             </View>
             <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={24} color="#8E8E93" />
+              <Ionicons name="close" size={24} color={色.灰} />
             </TouchableOpacity>
           </View>
 
@@ -1127,7 +1129,7 @@ const WhatsNewModal = () => {
           <View style={styles.footer}>
             <TouchableOpacity style={styles.checkboxRow} onPress={() => setDontShowAgain((prev) => !prev)}>
               <View style={[styles.checkbox, dontShowAgain && styles.checkboxChecked]}>
-                {dontShowAgain && <Ionicons name="checkmark" size={14} color="#FFF" />}
+                {dontShowAgain && <Ionicons name="checkmark" size={14} color={色.白} />}
               </View>
               <Text style={styles.checkboxLabel}>次のお知らせが来るまで表示しない</Text>
             </TouchableOpacity>
@@ -1148,44 +1150,44 @@ exports.NOTICE_VERSION = NOTICE_VERSION;
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
-  container: { width: '90%', maxWidth: 420, maxHeight: '80%', backgroundColor: '#FFF', borderRadius: 16 },
+  container: { width: '90%', maxWidth: 420, maxHeight: '80%', backgroundColor: 色.白, borderRadius: 16 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEE',
+    borderBottomColor: 色.罫_薄い,
   },
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 16, fontWeight: 'bold', color: '#1C1C1E' },
+  headerTitle: { fontSize: 16, fontWeight: 'bold', color: 色.文字 },
   closeBtn: { padding: 4 },
   body: { flexGrow: 0 },
   section: { marginBottom: 20 },
-  sectionDate: { fontSize: 11, color: '#8E8E93', fontWeight: '600', marginBottom: 2 },
-  sectionTitle: { fontSize: 14, fontWeight: 'bold', color: '#1C1C1E', marginBottom: 8 },
+  sectionDate: { fontSize: 11, color: 色.灰, fontWeight: '600', marginBottom: 2 },
+  sectionTitle: { fontSize: 14, fontWeight: 'bold', color: 色.文字, marginBottom: 8 },
   pointRow: { flexDirection: 'row', marginBottom: 4, paddingLeft: 4 },
-  pointBullet: { fontSize: 13, color: '#007AFF', marginRight: 4 },
-  pointText: { fontSize: 13, color: '#3C3C43', flex: 1, lineHeight: 19 },
-  pointTextBold: { fontWeight: 'bold', color: '#1C1C1E' },
+  pointBullet: { fontSize: 13, color: 色.青, marginRight: 4 },
+  pointText: { fontSize: 13, color: 色.文字_二, flex: 1, lineHeight: 19 },
+  pointTextBold: { fontWeight: 'bold', color: 色.文字 },
   // 「ここから下は前回までのお知らせ」の線。左右に細い線を渡し、間に字を置く
   読んだ境目: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, marginTop: 4 },
-  読んだ線: { flex: 1, height: 1, backgroundColor: '#E5E5EA' },
-  読んだ文字: { fontSize: 11, color: '#8E8E93', marginHorizontal: 8 },
-  footer: { padding: 16, borderTopWidth: 1, borderTopColor: '#EEE' },
+  読んだ線: { flex: 1, height: 1, backgroundColor: 色.地_濃い },
+  読んだ文字: { fontSize: 11, color: 色.灰, marginHorizontal: 8 },
+  footer: { padding: 16, borderTopWidth: 1, borderTopColor: 色.罫_薄い },
   checkboxRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   checkbox: {
     width: 20,
     height: 20,
     borderRadius: 5,
     borderWidth: 1.5,
-    borderColor: '#C7C7CC',
+    borderColor: 色.灰_薄い,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,
   },
-  checkboxChecked: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
-  checkboxLabel: { fontSize: 13, color: '#3C3C43' },
-  closeFooterBtn: { backgroundColor: '#007AFF', borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
-  closeFooterBtnText: { color: '#FFF', fontSize: 15, fontWeight: 'bold' },
+  checkboxChecked: { backgroundColor: 色.青, borderColor: 色.青 },
+  checkboxLabel: { fontSize: 13, color: 色.文字_二 },
+  closeFooterBtn: { backgroundColor: 色.青, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
+  closeFooterBtnText: { color: 色.白, fontSize: 15, fontWeight: 'bold' },
 });

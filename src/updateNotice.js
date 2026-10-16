@@ -133,7 +133,15 @@ function 名前だけにする(道) {
  * @returns {boolean}
  */
 function 自動で更新してよいか(状況) {
-  const { 離れていた時間 = 0, ライブ中 = false, 案内中 = false, 入力中 = false, 窓が開いている = false, 新しい束 = null, 前に試した束 = null } = 状況 || {};
+  const {
+    離れていた時間 = 0,
+    ライブ中 = false,
+    案内中 = false,
+    入力中 = false,
+    窓が開いている = false,
+    新しい束 = null,
+    前に試した束 = null,
+  } = 状況 || {};
   const 最短 = Number.isFinite(状況 && 状況.最短) ? 状況.最短 : 自動更新の最短の離席;
   if (!(Number(離れていた時間) >= 最短)) return false;
   if (ライブ中 || 案内中 || 入力中 || 窓が開いている) return false;

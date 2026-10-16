@@ -1,3 +1,6 @@
+'use strict';
+
+const { 色 } = require('./iro.js');
 /**
  * アプリの中で出す確認・お知らせの窓。
  *
@@ -12,7 +15,6 @@
  * ボタンが無い／1つだけのものは「知らせ」なので、押す手間を増やさないよう
  * 画面下の帯（トースト）で出して自動で消す。2つ以上あるものだけ窓で止める。
  */
-'use strict';
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
@@ -146,51 +148,46 @@ const アプリの窓 = () => {
         </帯の層>
       ) : null}
       {いま ? (
-      <Modal
-        visible
-        transparent
-        animationType="fade"
-        onRequestClose={() => 置く(null)}
-      >
-        <View style={styles.背景}>
-          <View style={styles.札} testID="アプリの窓">
-            {いま && いま.題 ? <Text style={styles.題}>{いま.題}</Text> : null}
-            {/* 登録完了の控えのように長い文が来る。画面からはみ出して
+        <Modal visible transparent animationType="fade" onRequestClose={() => 置く(null)}>
+          <View style={styles.背景}>
+            <View style={styles.札} testID="アプリの窓">
+              {いま && いま.題 ? <Text style={styles.題}>{いま.題}</Text> : null}
+              {/* 登録完了の控えのように長い文が来る。画面からはみ出して
                 ボタンが押せなくならないよう、文だけを中でスクロールさせる */}
-            {いま && いま.文 ? (
-              <ScrollView style={styles.文の枠} contentContainerStyle={styles.文の中}>
-                <Text style={styles.文}>{いま.文}</Text>
-              </ScrollView>
-            ) : null}
-            <View style={[styles.ボタンの列, (いま.ボタン || []).length > 2 && styles.ボタンの列縦]}>
-              {(いま ? いま.ボタン : []).map((b, i) => (
-                <Pressable
-                  key={`${b.text}-${i}`}
-                  testID={`窓のボタン-${b.text}`}
-                  style={[
-                    styles.ボタン,
-                    (いま.ボタン || []).length > 2 ? i > 0 && styles.仕切り縦 : i > 0 && styles.仕切り,
-                  ]}
-                  onPress={() => {
-                    置く(null);
-                    b.onPress && b.onPress();
-                  }}
-                >
-                  <Text
+              {いま && いま.文 ? (
+                <ScrollView style={styles.文の枠} contentContainerStyle={styles.文の中}>
+                  <Text style={styles.文}>{いま.文}</Text>
+                </ScrollView>
+              ) : null}
+              <View style={[styles.ボタンの列, (いま.ボタン || []).length > 2 && styles.ボタンの列縦]}>
+                {(いま ? いま.ボタン : []).map((b, i) => (
+                  <Pressable
+                    key={`${b.text}-${i}`}
+                    testID={`窓のボタン-${b.text}`}
                     style={[
-                      styles.ボタンの字,
-                      b.style === 'cancel' && styles.打ち消し,
-                      b.style === 'destructive' && styles.危ない,
+                      styles.ボタン,
+                      (いま.ボタン || []).length > 2 ? i > 0 && styles.仕切り縦 : i > 0 && styles.仕切り,
                     ]}
+                    onPress={() => {
+                      置く(null);
+                      b.onPress && b.onPress();
+                    }}
                   >
-                    {b.text}
-                  </Text>
-                </Pressable>
-              ))}
+                    <Text
+                      style={[
+                        styles.ボタンの字,
+                        b.style === 'cancel' && styles.打ち消し,
+                        b.style === 'destructive' && styles.危ない,
+                      ]}
+                    >
+                      {b.text}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
       ) : null}
     </>
   );
@@ -204,24 +201,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
   },
-  札: { width: '100%', maxWidth: 400, backgroundColor: '#FFF', borderRadius: 14, overflow: 'hidden' },
-  題: { fontSize: 17, fontWeight: 'bold', color: '#1C1C1E', paddingHorizontal: 20, paddingTop: 20 },
+  札: { width: '100%', maxWidth: 400, backgroundColor: 色.白, borderRadius: 14, overflow: 'hidden' },
+  題: { fontSize: 17, fontWeight: 'bold', color: 色.文字, paddingHorizontal: 20, paddingTop: 20 },
   文の枠: { maxHeight: 320 },
   文の中: { padding: 20 },
-  文: { fontSize: 15, color: '#1C1C1E', lineHeight: 22 },
+  文: { fontSize: 15, color: 色.文字, lineHeight: 22 },
   ボタンの列: {
     flexDirection: 'row',
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#C6C6C8',
+    borderTopColor: 色.区切り,
   },
   // ボタンが3つ以上のときは縦に積む。横3等分だと長い文字が折り返して詰まる
   ボタンの列縦: { flexDirection: 'column' },
   ボタン: { flex: 1, padding: 16, alignItems: 'center' },
-  仕切り: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: '#C6C6C8' },
-  仕切り縦: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#C6C6C8' },
-  ボタンの字: { fontSize: 17, color: '#007AFF', fontWeight: 'bold' },
+  仕切り: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: 色.区切り },
+  仕切り縦: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 色.区切り },
+  ボタンの字: { fontSize: 17, color: 色.青, fontWeight: 'bold' },
   打ち消し: { fontWeight: 'normal' },
-  危ない: { color: '#FF3B30' },
+  危ない: { color: 色.赤 },
   帯: {
     position: 'absolute',
     // 記録画面には自前の帯（bottom:100）がある。近いと同時に出たとき
@@ -234,7 +231,7 @@ const styles = StyleSheet.create({
   },
   帯の字: {
     backgroundColor: 'rgba(0,0,0,0.8)',
-    color: '#FFF',
+    color: 色.白,
     fontSize: 14,
     fontWeight: 'bold',
     paddingHorizontal: 16,

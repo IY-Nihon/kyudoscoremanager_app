@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const React = require('react');
 const { View, ScrollView, StyleSheet, Text, Modal, Pressable, TouchableOpacity } = require('./rn');
 const { IS_WEB } = require('./IS_WEB');
@@ -60,7 +61,7 @@ const 拡大率の窓 = ({ setViewScale, 倍率, 拡大選択中, 拡大を選�
               width: '90%',
               maxWidth: 400,
               flexShrink: 1,
-              backgroundColor: '#FFF',
+              backgroundColor: 色.白,
               borderRadius: 14,
               overflow: 'hidden',
             }}
@@ -69,11 +70,11 @@ const 拡大率の窓 = ({ setViewScale, 倍率, 拡大選択中, 拡大を選�
               style={{
                 padding: 16,
                 borderBottomWidth: StyleSheet.hairlineWidth,
-                borderBottomColor: '#C6C6C8',
+                borderBottomColor: 色.区切り,
                 alignItems: 'center',
               }}
             >
-              <Text style={{ fontSize: 13, color: '#8E8E93', fontWeight: '600' }}>表示の大きさ</Text>
+              <Text style={{ fontSize: 13, color: 色.灰, fontWeight: '600' }}>表示の大きさ</Text>
             </View>
             {/* バーでも動かせるようにする。⊖ ⊕ は 5% ずつ */}
             <View style={styles.バーの行}>
@@ -89,7 +90,7 @@ const 拡大率の窓 = ({ setViewScale, 倍率, 拡大選択中, 拡大を選�
                 <Icons.Ionicons
                   name="remove-circle-outline"
                   size={24}
-                  color={倍率 <= 拡大の下 + 0.001 ? '#C7C7CC' : '#007AFF'}
+                  color={倍率 <= 拡大の下 + 0.001 ? 色.灰_薄い : 色.青}
                 />
               </TouchableOpacity>
               <View
@@ -116,7 +117,7 @@ const 拡大率の窓 = ({ setViewScale, 倍率, 拡大選択中, 拡大を選�
                 <Icons.Ionicons
                   name="add-circle-outline"
                   size={24}
-                  color={倍率 >= 拡大の上 - 0.001 ? '#C7C7CC' : '#007AFF'}
+                  color={倍率 >= 拡大の上 - 0.001 ? 色.灰_薄い : 色.青}
                 />
               </TouchableOpacity>
               <Text style={styles.バーの数字}>{Math.round(倍率 * 100)}%</Text>
@@ -130,10 +131,10 @@ const 拡大率の窓 = ({ setViewScale, 倍率, 拡大選択中, 拡大を選�
                       padding: 16,
                       alignItems: 'center',
                       borderBottomWidth: StyleSheet.hairlineWidth,
-                      borderBottomColor: '#C6C6C8',
+                      borderBottomColor: 色.区切り,
                     },
-                    hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
-                    Math.abs(倍率 - 倍) < 0.01 && { backgroundColor: '#EAF3FF' },
+                    hovered && IS_WEB && { backgroundColor: 色.地 },
+                    Math.abs(倍率 - 倍) < 0.01 && { backgroundColor: 色.青の地_4 },
                   ]}
                   onPress={() => {
                     setViewScale(倍);
@@ -144,7 +145,7 @@ const 拡大率の窓 = ({ setViewScale, 倍率, 拡大選択中, 拡大を選�
                   <Text
                     style={{
                       fontSize: 20,
-                      color: '#007AFF',
+                      color: 色.青,
                       fontWeight: Math.abs(倍率 - 倍) < 0.01 ? 'bold' : 'normal',
                     }}
                   >
@@ -155,11 +156,11 @@ const 拡大率の窓 = ({ setViewScale, 倍率, 拡大選択中, 拡大を選�
               <Pressable
                 style={({ hovered }) => [
                   { padding: 16, alignItems: 'center' },
-                  hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
+                  hovered && IS_WEB && { backgroundColor: 色.地 },
                 ]}
                 onPress={() => 拡大を選ぶ(false)}
               >
-                <Text style={{ fontSize: 17, color: '#8E8E93' }}>キャンセル</Text>
+                <Text style={{ fontSize: 17, color: 色.灰 }}>キャンセル</Text>
               </Pressable>
             </ScrollView>
           </View>

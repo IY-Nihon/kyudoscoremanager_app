@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const React = require('react');
 const {
   View,
@@ -139,7 +140,7 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
                       {番号}
                       {単位}
                     </Text>
-                    {番号 === 選んだ ? <Icons.Ionicons name="checkmark" size={20} color="#007AFF" /> : null}
+                    {番号 === 選んだ ? <Icons.Ionicons name="checkmark" size={20} color={色.青} /> : null}
                   </TouchableOpacity>
                 ))}
               </View>
@@ -160,7 +161,7 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
               onChangeText={検索の文を置く}
             />
             <View style={styles.guestRow}>
-              <Icons.Ionicons name="person-add" size={20} color="#007AFF" />
+              <Icons.Ionicons name="person-add" size={20} color={色.青} />
               <TextInput
                 aria-label="ゲスト名"
                 style={styles.guestInput}
@@ -193,7 +194,7 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
                     <Icons.Ionicons
                       name={開いているか(組.学年) ? 'chevron-up' : 'chevron-down'}
                       size={16}
-                      color="#8E8E93"
+                      color={色.灰}
                     />
                   </TouchableOpacity>
                   {[
@@ -230,7 +231,7 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
 const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
   container: {
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     height: '80%',
@@ -242,22 +243,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#C6C6C8',
+    borderBottomColor: 色.区切り,
   },
   headerTitle: { fontSize: 17, fontWeight: 'bold' },
   headerBtn: { width: 60 },
-  headerBtnTxt: { fontSize: 17, color: '#007AFF' },
+  headerBtnTxt: { fontSize: 17, color: 色.青 },
   content: { flex: 1 },
   中身: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8 },
   // 貼り付ける側。流れる中身が下からのぞかないよう背景を敷く
-  貼り付け: { backgroundColor: '#F2F2F7', paddingBottom: 4 },
+  貼り付け: { backgroundColor: 色.地, paddingBottom: 4 },
   sectionTitle: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: 色.灰,
     marginBottom: 8,
     marginLeft: 4,
     textTransform: 'uppercase',
@@ -271,7 +272,7 @@ const styles = StyleSheet.create({
   // 貼り付ける側が大きくなりすぎないよう高さを縛る。射目にすると
   // 8〜20行に伸び、相手の一覧が画面の外へ押し出されていた
   番号の一覧: {
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     borderRadius: 10,
     marginBottom: 6,
     maxHeight: 148,
@@ -284,11 +285,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#C6C6C8',
+    borderBottomColor: 色.区切り,
   },
   番号の行選択中: { backgroundColor: 'rgba(0,122,255,0.08)' },
-  番号の字: { fontSize: 16, color: '#000' },
-  番号の字選択中: { color: '#007AFF', fontWeight: 'bold' },
+  番号の字: { fontSize: 16, color: 色.黒 },
+  番号の字選択中: { color: 色.青, fontWeight: 'bold' },
   // 学年の見出し。人の選択（termHeader / termTitle）と同じ見た目
   学年の見出し: {
     flexDirection: 'row',
@@ -296,26 +297,26 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#EEE',
+    borderBottomColor: 色.罫_薄い,
   },
-  学年の字: { fontSize: 15, color: '#333', fontWeight: '600' },
+  学年の字: { fontSize: 15, color: 色.墨_33, fontWeight: '600' },
   単位ボタン: {
     flex: 1,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     borderWidth: 1.5,
-    borderColor: '#D1D1D6',
+    borderColor: 色.灰_明るい,
     alignItems: 'center',
   },
-  単位ボタン選択中: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
-  単位の字: { fontSize: 16, fontWeight: 'bold', color: '#007AFF' },
-  単位の字選択中: { color: '#FFF' },
-  案内: { fontSize: 13, color: '#8E8E93', marginLeft: 4, marginBottom: 24 },
+  単位ボタン選択中: { backgroundColor: 色.青, borderColor: 色.青 },
+  単位の字: { fontSize: 16, fontWeight: 'bold', color: 色.青 },
+  単位の字選択中: { color: 色.白 },
+  案内: { fontSize: 13, color: 色.灰, marginLeft: 4, marginBottom: 24 },
   searchBar: {
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 10,
@@ -325,16 +326,16 @@ const styles = StyleSheet.create({
   guestRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 10,
     marginBottom: 16,
     gap: 8,
   },
-  guestInput: { flex: 1, fontSize: 16, color: '#000', height: 40 },
+  guestInput: { flex: 1, fontSize: 16, color: 色.黒, height: 40 },
   confirmBtn: {
-    backgroundColor: '#007AFF',
+    backgroundColor: 色.青,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
@@ -343,9 +344,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginLeft: 4,
   },
-  confirmBtnDisabled: { backgroundColor: '#A2C8F2' },
-  confirmTxt: { color: '#FFF', fontWeight: 'bold', fontSize: 15 },
-  list: { backgroundColor: '#FFF', borderRadius: 10, marginBottom: 20, overflow: 'hidden' },
+  confirmBtnDisabled: { backgroundColor: 色.青_淡い },
+  confirmTxt: { color: 色.白, fontWeight: 'bold', fontSize: 15 },
+  list: { backgroundColor: 色.白, borderRadius: 10, marginBottom: 20, overflow: 'hidden' },
   memberItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -353,10 +354,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#C6C6C8',
+    borderBottomColor: 色.区切り,
   },
-  memberName: { fontSize: 16, color: '#000' },
-  memberSub: { fontSize: 12, color: '#8E8E93' },
+  memberName: { fontSize: 16, color: 色.黒 },
+  memberSub: { fontSize: 12, color: 色.灰 },
 });
 Object.defineProperty(exports, '__esModule', { value: true });
 exports.ManualSubstitutionModal = ManualSubstitutionModal;

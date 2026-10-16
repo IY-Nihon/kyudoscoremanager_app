@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const React = require('react');
 // 招待リンクの欄（メンバーの編集。src/InviteModal.js）
 const { 招待リンクの欄 } = require('./InviteModal');
@@ -164,7 +165,7 @@ const MemberScreen = () => {
               style={[
                 styles.genderDot,
                 {
-                  color: '男子' === 部員.gender ? '#007AFF' : '女子' === 部員.gender ? '#FF2D55' : '#8E8E93',
+                  color: '男子' === 部員.gender ? 色.青 : '女子' === 部員.gender ? 色.桃 : 色.灰,
                 },
               ]}
             >
@@ -194,7 +195,7 @@ const MemberScreen = () => {
           ) : (
             <Text style={styles.noEqText}>弓具未登録</Text>
           )}
-          <Icons.Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
+          <Icons.Ionicons name="chevron-forward" size={16} color={色.灰_薄い} />
         </View>
       </Pressable>
     );
@@ -260,7 +261,7 @@ const MemberScreen = () => {
                 setCalVis(false);
               }}
             >
-              <Icons.Ionicons name="close" size={24} color="#8E8E93" />
+              <Icons.Ionicons name="close" size={24} color={色.灰} />
             </TouchableOpacity>
           </View>
         ) : null}
@@ -270,7 +271,7 @@ const MemberScreen = () => {
               style={[styles.eqInput, { flex: 1, minWidth: 0, justifyContent: 'center' }]}
               onPress={() => setCalVis(true)}
             >
-              <Text style={{ fontSize: 15, color: '#000' }}>{弓具の日付}</Text>
+              <Text style={{ fontSize: 15, color: 色.黒 }}>{弓具の日付}</Text>
             </TouchableOpacity>
             <View style={[styles.eqWeightInputWrapper, { flex: 1, minWidth: 0 }]}>
               <TextInput
@@ -352,7 +353,7 @@ const MemberScreen = () => {
                 onPress={() => deleteEquipment(部員.id, item.id)}
                 style={{ padding: 4 }}
               >
-                <Icons.Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                <Icons.Ionicons name="trash-outline" size={20} color={色.赤} />
               </TouchableOpacity>
             </View>
           )}
@@ -375,14 +376,14 @@ const MemberScreen = () => {
   const 編集の中身 = (窓として出す) => (
     <View // 窓のときは窓の見た目、画面のときは画面いっぱいに広げる。
       // 窓の枠のまま画面に置くと、右half が空いたままになる
-      style={窓として出す ? styles.modalContent : { flex: 1, width: '100%', backgroundColor: '#FFF' }}
+      style={窓として出す ? styles.modalContent : { flex: 1, width: '100%', backgroundColor: 色.白 }}
     >
       {/* 見出しと×は窓のときだけ。画面のときは上に「自分の情報」が在る */}
       {窓として出す ? (
         <View style={styles.modalHeader}>
           <Text style={styles.modalTitle}>{編集中の部員 ? 'メンバー編集' : '新規登録'}</Text>
           <TouchableOpacity onPress={() => 編集の窓を出す(false)} style={styles.closeBtn}>
-            <Icons.Ionicons name="close" size={24} color="#8E8E93" />
+            <Icons.Ionicons name="close" size={24} color={色.灰} />
           </TouchableOpacity>
         </View>
       ) : null}
@@ -399,7 +400,7 @@ const MemberScreen = () => {
                   value={名前の下書き}
                   onChangeText={名前の下書きを置く}
                   placeholder="例: 山田 太郎"
-                  placeholderTextColor="#C7C7CC"
+                  placeholderTextColor={色.灰_薄い}
                 />,
                 <Text style={styles.inputHelperText}>姓名の間にスペースを入力してください</Text>,
                 編集中の部員 && 編集中の部員.personalId && (
@@ -435,7 +436,7 @@ const MemberScreen = () => {
                   style={({ hovered }) => [
                     styles.genderBtn,
                     性別の下書き === 性別 && styles.genderBtnActive,
-                    hovered && 性別の下書き !== 性別 && { backgroundColor: '#E5E5EA' },
+                    hovered && 性別の下書き !== 性別 && { backgroundColor: 色.地_濃い },
                   ]}
                   onPress={() => 性別の下書きを置く(性別)}
                 >
@@ -452,7 +453,7 @@ const MemberScreen = () => {
               </Text>
               <View style={styles.stepperControls}>
                 <Pressable
-                  style={({ hovered }) => [styles.stepperBtn, hovered && { backgroundColor: '#D1D1D6' }]}
+                  style={({ hovered }) => [styles.stepperBtn, hovered && { backgroundColor: 色.灰_明るい }]}
                   onPress={() => {
                     const 今の学年 = parseInt(学年の下書き) || 0;
                     if (今の学年 > 0) {
@@ -463,11 +464,11 @@ const MemberScreen = () => {
                     }
                   }}
                 >
-                  <Icons.Ionicons name="remove" size={24} color="#007AFF" />
+                  <Icons.Ionicons name="remove" size={24} color={色.青} />
                 </Pressable>
                 <View style={styles.stepperDivider} />
                 <Pressable
-                  style={({ hovered }) => [styles.stepperBtn, hovered && { backgroundColor: '#D1D1D6' }]}
+                  style={({ hovered }) => [styles.stepperBtn, hovered && { backgroundColor: 色.灰_明るい }]}
                   onPress={() => {
                     const 今の学年 = parseInt(学年の下書き) || 0;
                     if (今の学年 < 5) {
@@ -478,7 +479,7 @@ const MemberScreen = () => {
                     }
                   }}
                 >
-                  <Icons.Ionicons name="add" size={24} color="#007AFF" />
+                  <Icons.Ionicons name="add" size={24} color={色.青} />
                 </Pressable>
               </View>
             </View>
@@ -490,7 +491,7 @@ const MemberScreen = () => {
               onChangeText={期の下書きを置く}
               placeholder="例: 70"
               keyboardType="number-pad"
-              placeholderTextColor="#C7C7CC"
+              placeholderTextColor={色.灰_薄い}
             />
           </>
         ) : (
@@ -543,10 +544,10 @@ const MemberScreen = () => {
               弓具履歴の中身(編集中の部員?.id, false)
             ) : (
               <Pressable
-                style={({ hovered }) => [styles.eqHistoryBtn, hovered && { backgroundColor: '#E5E5EA' }]}
+                style={({ hovered }) => [styles.eqHistoryBtn, hovered && { backgroundColor: 色.地_濃い }]}
                 onPress={() => 弓具の窓を出す(true)}
               >
-                <Icons.Ionicons name="construct-outline" size={20} color="#007AFF" />
+                <Icons.Ionicons name="construct-outline" size={20} color={色.青} />
                 <Text style={styles.eqHistoryBtnText}>弓具変更履歴を表示・編集</Text>
               </Pressable>
             )}
@@ -564,7 +565,7 @@ const MemberScreen = () => {
                       <Icons.Ionicons
                         name="trash-outline"
                         size={18}
-                        color="#FF3B30"
+                        color={色.赤}
                         style={{ marginRight: 4 }}
                       />
                       <Text style={styles.deleteBtnText}>メンバーを削除</Text>
@@ -684,13 +685,13 @@ const MemberScreen = () => {
                 編集の窓を出す(true);
               }}
             >
-              <Icons.Ionicons name="person-add" size={24} color="#007AFF" />
+              <Icons.Ionicons name="person-add" size={24} color={色.青} />
             </Pressable>
           )}
         </View>
       </View>
       <View style={styles.searchBar}>
-        <Icons.Ionicons name="search" size={18} color="#8E8E93" />
+        <Icons.Ionicons name="search" size={18} color={色.灰} />
         <TextInput
           aria-label="メンバーを検索"
           style={styles.searchInput}
@@ -706,7 +707,7 @@ const MemberScreen = () => {
             aria-label="絞り込みを消す"
             onPress={() => 検索の文を置く('')}
           >
-            <Icons.Ionicons name="close-circle" size={18} color="#8E8E93" />
+            <Icons.Ionicons name="close-circle" size={18} color={色.灰} />
           </TouchableOpacity>
         )}
       </View>
@@ -735,7 +736,7 @@ const MemberScreen = () => {
                 <Icons.Ionicons
                   name={isAlumniExpanded ? 'chevron-up' : 'chevron-down'}
                   size={20}
-                  color="#8E8E93"
+                  color={色.灰}
                 />
               </Pressable>
               {isAlumniExpanded &&
@@ -789,7 +790,7 @@ const MemberScreen = () => {
   );
 };
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F2F2F7', paddingTop: IS_WEB ? WEB_TOP_PADDING : SAFE_TOP_PADDING },
+  safeArea: { flex: 1, backgroundColor: 色.地, paddingTop: IS_WEB ? WEB_TOP_PADDING : SAFE_TOP_PADDING },
   header: {
     minHeight: IS_WEB ? 60 : 70,
     paddingVertical: 10,
@@ -797,29 +798,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#C6C6C8',
+    borderBottomColor: 色.区切り,
   },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#1a1a1a' },
+  title: { fontSize: 24, fontWeight: 'bold', color: 色.墨_1A },
   addBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  addText: { fontSize: 16, color: '#007AFF', fontWeight: '600' },
+  addText: { fontSize: 16, color: 色.青, fontWeight: '600' },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     margin: 12,
     paddingHorizontal: 10,
     height: 40,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: 色.地_濃い,
   },
   searchInput: { flex: 1, marginLeft: 8, fontSize: 16 },
   listContent: { padding: 12 },
   memberCard: Object.assign(
     {
-      backgroundColor: '#FFF',
+      backgroundColor: 色.白,
       padding: 16,
       borderRadius: 12,
       marginBottom: 10,
@@ -828,7 +829,7 @@ const styles = StyleSheet.create({
       justifyContent: 'space-between',
     },
     getShadowStyle({
-      shadowColor: '#000',
+      shadowColor: 色.黒,
       shadowOpacity: 0.05,
       shadowOffset: { width: 0, height: 2 },
       shadowRadius: 4,
@@ -838,33 +839,33 @@ const styles = StyleSheet.create({
   memberInfoMain: { flex: 1, marginRight: 8 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
   genderDot: { fontSize: 12 },
-  memberName: { fontSize: 17, fontWeight: 'bold', color: '#1C1C1E' },
-  memberSub: { fontSize: 12, color: '#8E8E93' },
-  memberPersonalId: { fontSize: 11, color: '#007AFF', fontWeight: 'bold', marginTop: 2 },
+  memberName: { fontSize: 17, fontWeight: 'bold', color: 色.文字 },
+  memberSub: { fontSize: 12, color: 色.灰 },
+  memberPersonalId: { fontSize: 11, color: 色.青, fontWeight: 'bold', marginTop: 2 },
   headerGroupIdBadge: {
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
     marginTop: 2,
     alignSelf: 'flex-start',
   },
-  headerGroupIdText: { fontSize: 10, color: '#8E8E93', fontWeight: 'bold' },
+  headerGroupIdText: { fontSize: 10, color: 色.灰, fontWeight: 'bold' },
   memberEqInfo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   listWeightBadge: {
-    backgroundColor: '#E1F0FF',
+    backgroundColor: 色.青の地,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: 色.青,
     minWidth: 45,
     alignItems: 'center',
   },
-  listWeightText: { fontSize: 13, color: '#007AFF', fontWeight: 'bold' },
-  noEqText: { fontSize: 11, color: '#C7C7CC' },
+  listWeightText: { fontSize: 13, color: 色.青, fontWeight: 'bold' },
+  noEqText: { fontSize: 11, color: 色.灰_薄い },
   empty: { padding: 40, alignItems: 'center' },
-  emptyText: { color: '#8E8E93' },
+  emptyText: { color: 色.灰 },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -872,7 +873,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     width: '90%',
     maxWidth: 400,
     // 画面より長くならないようにする。中身は 本文の入れ物 が流す
@@ -886,18 +887,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#C6C6C8',
-    backgroundColor: '#F9F9F9',
+    borderBottomColor: 色.区切り,
+    backgroundColor: 色.地_F9F9F9,
   },
-  modalTitle: { fontSize: 17, fontWeight: '600', color: '#000' },
+  modalTitle: { fontSize: 17, fontWeight: '600', color: 色.黒 },
   closeBtn: { position: 'absolute', right: 16 },
   // 個人ログインで「見るだけ」の項目を並べる一枚。
   // 入力欄と見た目を分けて、触れないことがひと目で分かるようにする
   きまり: {
-    backgroundColor: '#F7F7FA',
+    backgroundColor: 色.地_F7F7FA,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: 色.地_濃い,
     paddingHorizontal: 12,
     paddingVertical: 2,
     marginTop: 4,
@@ -908,41 +909,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+    borderBottomColor: 色.地_濃い,
   },
-  きまりの名: { fontSize: 14, color: '#8E8E93' },
-  きまりの値: { fontSize: 15, color: '#000', fontWeight: '600' },
-  きまりの但し書き: { fontSize: 11, color: '#8E8E93', paddingVertical: 8 },
+  きまりの名: { fontSize: 14, color: 色.灰 },
+  きまりの値: { fontSize: 15, color: 色.黒, fontWeight: '600' },
+  きまりの但し書き: { fontSize: 11, color: 色.灰, paddingVertical: 8 },
   label: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: 色.灰,
     marginBottom: 8,
     marginTop: 12,
     fontWeight: '500',
     textTransform: 'uppercase',
   },
   input: {
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     height: 44,
     borderRadius: 10,
     paddingHorizontal: 12,
     fontSize: 16,
-    color: '#000',
+    color: 色.黒,
   },
-  inputHelperText: { fontSize: 11, color: '#8E8E93', marginTop: 4, marginLeft: 4 },
+  inputHelperText: { fontSize: 11, color: 色.灰, marginTop: 4, marginLeft: 4 },
   genderRow: { flexDirection: 'row', gap: 10 },
   genderBtn: {
     flex: 1,
     height: 40,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  genderBtnActive: { backgroundColor: '#007AFF' },
-  genderBtnText: { color: '#000', fontWeight: '500' },
-  genderBtnTextActive: { color: '#FFF' },
-  saveBtnText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
+  genderBtnActive: { backgroundColor: 色.青 },
+  genderBtnText: { color: 色.黒, fontWeight: '500' },
+  genderBtnTextActive: { color: 色.白 },
+  saveBtnText: { color: 色.白, fontWeight: 'bold', fontSize: 16 },
   modalFooter: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -951,20 +952,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   deleteBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
-  deleteBtnText: { color: '#FF3B30', fontSize: 15, fontWeight: '500' },
+  deleteBtnText: { color: 色.赤, fontSize: 15, fontWeight: '500' },
   cancelBtn: {
     flex: 1,
     height: 44,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  cancelBtnText: { color: '#007AFF', fontSize: 16, fontWeight: '600' },
+  cancelBtnText: { color: 色.青, fontSize: 16, fontWeight: '600' },
   saveBtn: {
     paddingHorizontal: 24,
     height: 44,
-    backgroundColor: '#007AFF',
+    backgroundColor: 色.青,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -974,66 +975,66 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     borderRadius: 8,
     height: 44,
     paddingLeft: 16,
   },
-  stepperValue: { fontSize: 16, color: '#000' },
+  stepperValue: { fontSize: 16, color: 色.黒 },
   stepperControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E5E5EA',
+    backgroundColor: 色.地_濃い,
     borderRadius: 8,
     marginRight: 2,
     height: 40,
   },
   stepperBtn: { paddingHorizontal: 16, height: '100%', justifyContent: 'center', alignItems: 'center' },
-  stepperDivider: { width: 1, height: 24, backgroundColor: '#C6C6C8' },
+  stepperDivider: { width: 1, height: 24, backgroundColor: 色.区切り },
   eqHistoryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     padding: 12,
     borderRadius: 10,
     marginTop: 8,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: 色.地_濃い,
   },
-  eqHistoryBtnText: { fontSize: 16, color: '#007AFF', fontWeight: '500' },
+  eqHistoryBtnText: { fontSize: 16, color: 色.青, fontWeight: '500' },
   eqModalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 15,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#C6C6C8',
+    borderBottomColor: 色.区切り,
   },
   eqForm: {
     padding: 15,
-    backgroundColor: '#F9F9F9',
+    backgroundColor: 色.地_F9F9F9,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#C6C6C8',
+    borderBottomColor: 色.区切り,
   },
   eqInputRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
   eqInput: {
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: 色.地_濃い,
     borderRadius: 8,
     padding: 8,
     fontSize: 15,
     height: 40,
   },
-  eqAddBtn: { backgroundColor: '#34C759', padding: 10, borderRadius: 8, alignItems: 'center', marginTop: 10 },
-  eqAddBtnText: { color: '#FFF', fontWeight: 'bold', fontSize: 15 },
+  eqAddBtn: { backgroundColor: 色.緑, padding: 10, borderRadius: 8, alignItems: 'center', marginTop: 10 },
+  eqAddBtnText: { color: 色.白, fontWeight: 'bold', fontSize: 15 },
   eqItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#C6C6C8',
+    borderBottomColor: 色.区切り,
   },
   eqItemHeader: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
   headerTitle: {
@@ -1042,16 +1043,16 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 20,
     marginBottom: 10,
-    color: '#1a1a1a',
+    color: 色.墨_1A,
   },
-  eqItemDate: { fontSize: 14, color: '#8E8E93', fontWeight: '600' },
-  eqItemNote: { fontSize: 16, color: '#000' },
-  eqWeightBadge: { backgroundColor: '#E5E5EA', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  eqWeightText: { fontSize: 12, color: '#000', fontWeight: '700' },
+  eqItemDate: { fontSize: 14, color: 色.灰, fontWeight: '600' },
+  eqItemNote: { fontSize: 16, color: 色.黒 },
+  eqWeightBadge: { backgroundColor: 色.地_濃い, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  eqWeightText: { fontSize: 12, color: 色.黒, fontWeight: '700' },
   eqWeightInputWrapper: {
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: 色.地_濃い,
     borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
@@ -1059,23 +1060,23 @@ const styles = StyleSheet.create({
     height: 40,
   },
   eqInputInside: { flex: 1, minWidth: 0, height: 40, fontSize: 15 },
-  kgUnit: { marginLeft: 4, color: '#8E8E93', fontSize: 14, fontWeight: 'bold' },
+  kgUnit: { marginLeft: 4, color: 色.灰, fontSize: 14, fontWeight: 'bold' },
   alumniHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     borderRadius: 12,
     marginTop: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F7',
+    borderBottomColor: 色.地,
   },
-  alumniHeaderText: { fontSize: 15, fontWeight: 'bold', color: '#8E8E93' },
+  alumniHeaderText: { fontSize: 15, fontWeight: 'bold', color: 色.灰 },
   alumniGroupTitle: {
     fontSize: 13,
     fontWeight: 'bold',
-    color: '#8E8E93',
+    color: 色.灰,
     marginLeft: 4,
     marginBottom: 8,
     marginTop: 12,

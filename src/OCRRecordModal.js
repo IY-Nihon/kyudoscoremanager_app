@@ -1,8 +1,10 @@
+'use strict';
+
+const { 色 } = require('./iro.js');
 /**
  * Module ID: OCRRecordModal (hand-written, not bundler-generated)
  * ホワイトボードの立ち順写真から記録表を自動構築するモーダル
  */
-'use strict';
 
 Object.defineProperty(exports, '__esModule', { value: true });
 exports.OCRRecordModal = undefined;
@@ -1332,11 +1334,11 @@ const OCRRecordModal = ({
   // セルの色分け（ステータス別）
   // ─────────────────────────────────────────
   const seatColor = (seat) => {
-    if (!seat) return '#F2F2F7';
-    if (seat.status === 'matched') return seat.fuzzy ? '#FFF3CD' : '#E5F1FF';
-    if (seat.status === 'ambiguous') return '#FFE5E5';
-    if (seat.status === 'guest') return '#F0F0F0';
-    return '#F9F9F9'; // empty
+    if (!seat) return 色.地;
+    if (seat.status === 'matched') return seat.fuzzy ? 色.黄の地_2 : 色.青の地_2;
+    if (seat.status === 'ambiguous') return 色.赤の地;
+    if (seat.status === 'guest') return 色.地_F0F0F0;
+    return 色.地_F9F9F9; // empty
   };
   const seatLabel = (seat) => {
     if (!seat) return '選択';
@@ -1461,13 +1463,13 @@ const OCRRecordModal = ({
         >
           <View style={styles.header}>
             <View style={styles.headerTitleRow}>
-              <Ionicons name="camera" size={20} color="#007AFF" />
+              <Ionicons name="camera" size={20} color={色.青} />
               <Text style={styles.headerTitle}>
                 {mode === 'record' ? '画像から記録を読み取る' : '画像から立ち順を登録'}
               </Text>
             </View>
             <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={24} color="#8E8E93" />
+              <Ionicons name="close" size={24} color={色.灰} />
             </TouchableOpacity>
           </View>
 
@@ -1541,7 +1543,7 @@ const OCRRecordModal = ({
                     <View key={idx} style={styles.thumbWrap}>
                       <Image source={{ uri: img.uri }} style={styles.thumb} />
                       <TouchableOpacity style={styles.thumbRemove} onPress={() => removeImage(idx)}>
-                        <Ionicons name="close-circle" size={20} color="#FF3B30" />
+                        <Ionicons name="close-circle" size={20} color={色.赤} />
                       </TouchableOpacity>
                       <Text style={styles.thumbLabel}>{idx + 1}枚目</Text>
                     </View>
@@ -1551,11 +1553,11 @@ const OCRRecordModal = ({
 
               <View style={styles.pickBtnRow}>
                 <TouchableOpacity style={[styles.pickBtn, { flex: 1 }]} onPress={captureImage}>
-                  <Ionicons name="camera-outline" size={22} color="#007AFF" />
+                  <Ionicons name="camera-outline" size={22} color={色.青} />
                   <Text style={styles.pickBtnText}>撮影する</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.pickBtn, { flex: 1 }]} onPress={pickImage}>
-                  <Ionicons name="images-outline" size={22} color="#007AFF" />
+                  <Ionicons name="images-outline" size={22} color={色.青} />
                   <Text style={styles.pickBtnText}>
                     {images.length === 0 ? '画像を選択' : '写真を追加する'}
                   </Text>
@@ -1564,7 +1566,7 @@ const OCRRecordModal = ({
 
               {!!errorMsg && (
                 <View style={styles.errorBox}>
-                  <Ionicons name="warning" size={16} color="#FF3B30" />
+                  <Ionicons name="warning" size={16} color={色.赤} />
                   <Text style={styles.errorText}>{errorMsg}</Text>
                 </View>
               )}
@@ -1574,7 +1576,7 @@ const OCRRecordModal = ({
                 onPress={analyzeImages}
                 disabled={images.length === 0}
               >
-                <Ionicons name="sparkles" size={18} color="#FFF" />
+                <Ionicons name="sparkles" size={18} color={色.白} />
                 <Text style={styles.analyzeBtnText}>この画像で解析する</Text>
               </TouchableOpacity>
             </ScrollView>
@@ -1582,7 +1584,7 @@ const OCRRecordModal = ({
 
           {step === 'analyzing' && (
             <View style={styles.centerBox}>
-              <ActivityIndicator size="large" color="#007AFF" />
+              <ActivityIndicator size="large" color={色.青} />
               <Text style={styles.centerText}>
                 {混み待ち
                   ? 'AIが混み合っています。少し待ってからもう一度読みます...'
@@ -1633,13 +1635,13 @@ const OCRRecordModal = ({
                   style={{ height: 0 }}
                 />
                 {読み取り元 !== '端末' && mode === 'record' && (
-                  <Text style={[styles.hint, { color: '#B25000' }]} testID="ocr-ai-kotowari">
+                  <Text style={[styles.hint, { color: 色.橙_文字 }]} testID="ocr-ai-kotowari">
                     ○×はAIが読みました（端末では読めませんでした：{端末の断り}
                     ）。AIは丸に線の向きを取り違えやすいので、○×をよく確かめてください。しばらくして撮り直すと端末で読めることがあります。
                   </Text>
                 )}
                 {!!列の断り && (
-                  <Text style={[styles.hint, { color: '#B25000' }]} testID="ocr-retsu-kotowari">
+                  <Text style={[styles.hint, { color: 色.橙_文字 }]} testID="ocr-retsu-kotowari">
                     {列の断り}
                   </Text>
                 )}
@@ -1652,15 +1654,15 @@ const OCRRecordModal = ({
 
                 <View style={styles.legendRow}>
                   <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: '#E5F1FF' }]} />
+                    <View style={[styles.legendDot, { backgroundColor: 色.青の地_2 }]} />
                     <Text style={styles.legendText}>一致</Text>
                   </View>
                   <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: '#FFE5E5' }]} />
+                    <View style={[styles.legendDot, { backgroundColor: 色.赤の地 }]} />
                     <Text style={styles.legendText}>要確認</Text>
                   </View>
                   <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: '#F0F0F0' }]} />
+                    <View style={[styles.legendDot, { backgroundColor: 色.地_F0F0F0 }]} />
                     <Text style={styles.legendText}>ゲスト</Text>
                   </View>
                   {recordRows.some((行) => Array.isArray(行.迷い) && 行.迷い.some(Boolean)) && (
@@ -1697,7 +1699,7 @@ const OCRRecordModal = ({
                           onPress={() => removeRecordRow(rIdx)}
                           style={styles.recordRemoveBtn}
                         >
-                          <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+                          <Ionicons name="trash-outline" size={18} color={色.赤} />
                         </TouchableOpacity>
                       </View>
                       <View style={styles.markRow}>
@@ -1749,15 +1751,15 @@ const OCRRecordModal = ({
                 </Text>
                 <View style={styles.legendRow}>
                   <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: '#E5F1FF' }]} />
+                    <View style={[styles.legendDot, { backgroundColor: 色.青の地_2 }]} />
                     <Text style={styles.legendText}>一致</Text>
                   </View>
                   <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: '#FFE5E5' }]} />
+                    <View style={[styles.legendDot, { backgroundColor: 色.赤の地 }]} />
                     <Text style={styles.legendText}>要確認</Text>
                   </View>
                   <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: '#F0F0F0' }]} />
+                    <View style={[styles.legendDot, { backgroundColor: 色.地_F0F0F0 }]} />
                     <Text style={styles.legendText}>ゲスト</Text>
                   </View>
                 </View>

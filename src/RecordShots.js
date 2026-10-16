@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const { View, ScrollView, StyleSheet, Text, Modal, TextInput, Pressable, TouchableOpacity } = require('./rn');
 const { IS_WEB } = require('./IS_WEB');
 // 見た目の決まりは、切り出した窓と分け合うので別のファイル（2026-10-05）
@@ -46,7 +47,7 @@ const 射数の一覧の窓 = ({
           width: '90%',
           maxWidth: 400,
           flexShrink: 1,
-          backgroundColor: '#FFF',
+          backgroundColor: 色.白,
           borderRadius: 14,
           overflow: 'hidden',
         }}
@@ -55,11 +56,11 @@ const 射数の一覧の窓 = ({
           style={{
             padding: 16,
             borderBottomWidth: StyleSheet.hairlineWidth,
-            borderBottomColor: '#C6C6C8',
+            borderBottomColor: 色.区切り,
             alignItems: 'center',
           }}
         >
-          <Text style={{ fontSize: 13, color: '#8E8E93', fontWeight: '600' }}>射数の設定</Text>
+          <Text style={{ fontSize: 13, color: 色.灰, fontWeight: '600' }}>射数の設定</Text>
         </View>
         <ScrollView style={{ flexGrow: 0, flexShrink: 1 }}>
           {[4, 8, 12, 16, 20].map((本数) => (
@@ -70,22 +71,22 @@ const 射数の一覧の窓 = ({
                   padding: 18,
                   alignItems: 'center',
                   borderBottomWidth: StyleSheet.hairlineWidth,
-                  borderBottomColor: '#C6C6C8',
+                  borderBottomColor: 色.区切り,
                 },
-                hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
+                hovered && IS_WEB && { backgroundColor: 色.地 },
               ]}
               onPress={() => {
                 射数を変える(本数);
                 射数の窓を閉じる();
               }}
             >
-              <Text style={{ fontSize: 20, color: '#007AFF' }}>{本数}射</Text>
+              <Text style={{ fontSize: 20, color: 色.青 }}>{本数}射</Text>
             </Pressable>
           ))}
           <Pressable
             style={({ hovered }) => [
               { padding: 18, alignItems: 'center' },
-              hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
+              hovered && IS_WEB && { backgroundColor: 色.地 },
             ]}
             onPress={() => {
               射数の窓を閉じる();
@@ -95,7 +96,7 @@ const 射数の一覧の窓 = ({
               }, 100);
             }}
           >
-            <Text style={{ fontSize: 20, color: '#007AFF' }}>任意...</Text>
+            <Text style={{ fontSize: 20, color: 色.青 }}>任意...</Text>
           </Pressable>
         </ScrollView>
       </View>
@@ -104,7 +105,7 @@ const 射数の一覧の窓 = ({
           {
             width: '90%',
             maxWidth: 400,
-            backgroundColor: '#FFF',
+            backgroundColor: 色.白,
             borderRadius: 14,
             marginTop: 8,
             padding: 18,
@@ -114,7 +115,7 @@ const 射数の一覧の窓 = ({
         ]}
         onPress={射数の窓を閉じる}
       >
-        <Text style={{ fontSize: 20, color: '#007AFF', fontWeight: 'bold' }}>キャンセル</Text>
+        <Text style={{ fontSize: 20, color: 色.青, fontWeight: 'bold' }}>キャンセル</Text>
       </Pressable>
     </Pressable>
   </Modal>
@@ -155,20 +156,20 @@ const 射数を減らす確認の窓 = ({
         </Text>
         <View style={styles.modalButtonsRow}>
           <TouchableOpacity
-            style={[styles.modalBtn, { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 }]}
+            style={[styles.modalBtn, { backgroundColor: 色.地, flex: 1, marginRight: 5 }]}
             onPress={() => 射数を減らす確認を出す(false)}
           >
-            <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
+            <Text style={[styles.modalBtnText, { color: 色.青 }]}>キャンセル</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.modalBtn, { backgroundColor: '#FF3B30', flex: 1, marginLeft: 5 }]}
+            style={[styles.modalBtn, { backgroundColor: 色.赤, flex: 1, marginLeft: 5 }]}
             onPress={() => {
               射数を減らす確認を出す(false);
               setShotsPerRound(減らす先の射数);
               ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Medium);
             }}
           >
-            <Text style={[styles.modalBtnText, { color: '#FFF' }]}>削除して変更</Text>
+            <Text style={[styles.modalBtnText, { color: 色.白 }]}>削除して変更</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -220,22 +221,22 @@ const 射数の自由入力の窓 = ({
           <Pressable
             style={({ hovered }) => [
               styles.modalBtn,
-              { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
-              hovered && IS_WEB && { backgroundColor: '#E5E5EA' },
+              { backgroundColor: 色.地, flex: 1, marginRight: 5 },
+              hovered && IS_WEB && { backgroundColor: 色.地_濃い },
             ]}
             onPress={() => 射数の入力窓を出す(false)}
           >
-            <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
+            <Text style={[styles.modalBtnText, { color: 色.青 }]}>キャンセル</Text>
           </Pressable>
           <Pressable
             style={({ hovered }) => [
               styles.modalBtn,
-              { backgroundColor: '#007AFF', flex: 1, marginLeft: 5 },
+              { backgroundColor: 色.青, flex: 1, marginLeft: 5 },
               hovered && IS_WEB && { opacity: 0.8 },
             ]}
             onPress={入力した射数で決める}
           >
-            <Text style={[styles.modalBtnText, { color: '#FFF' }]}>決定</Text>
+            <Text style={[styles.modalBtnText, { color: 色.白 }]}>決定</Text>
           </Pressable>
         </View>
       </View>

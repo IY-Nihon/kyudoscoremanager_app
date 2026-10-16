@@ -40,11 +40,7 @@ function 入力から部員を読み取る(文) {
     .replace(/(を|に)?(足して|入れて|加えて)/g, ' ')
     .replace(/メンバー|部員/g, ' ')
     .replace(/[、。,.!！?？「」]/g, ' ');
-  const name = 残り
-    .split(/\s+/)
-    .map(字を整える)
-    .filter(Boolean)
-    .join(' ');
+  const name = 残り.split(/\s+/).map(字を整える).filter(Boolean).join(' ');
   if (!name) return null;
   return { name, grade, gender };
 }

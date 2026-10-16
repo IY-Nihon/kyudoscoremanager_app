@@ -2,7 +2,7 @@
  * 開発ビルド用の JSX ランタイム（jsx-runtime.js と対になる）
  * 詳細は同フォルダの jsx-runtime.js を参照。
  */
-"use strict";
+'use strict';
 
 const devRuntime = require('react/jsx-dev-runtime');
 const theme = require('../theme');

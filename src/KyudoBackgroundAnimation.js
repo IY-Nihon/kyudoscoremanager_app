@@ -1,3 +1,5 @@
+import iroの組 from './iro.js';
+const { 色 } = iroの組;
 import React, { useEffect, useRef } from 'react';
 import { StyleSheet, View, Platform, Dimensions } from './rn';
 
@@ -274,73 +276,81 @@ if (Platform.OS === 'web') {
         <Animated.View style={[styles.animationWrapper, animatedStyle, { transform: [{ scale }] }]}>
           <Svg width="480" height="480" viewBox="0 0 480 480">
             {/* Concentric Circles (Concentric Rings / Mato) */}
-            <Circle cx="240" cy="240" r="239" stroke="#b8965a" strokeWidth="1" strokeOpacity="0.25" />
-            <Circle cx="240" cy="240" r="186" stroke="#8b5cf6" strokeWidth="1" strokeOpacity="0.3" />
-            <Circle cx="240" cy="240" r="133" stroke="#b8965a" strokeWidth="1" strokeOpacity="0.4" />
-            <Circle cx="240" cy="240" r="84" stroke="#8b5cf6" strokeWidth="1" strokeOpacity="0.5" />
-            <Circle cx="240" cy="240" r="42" stroke="#e5c184" strokeWidth="1.5" strokeOpacity="0.75" />
-            <Circle cx="240" cy="240" r="10" fill="#e5c184" fillOpacity="0.8" />
+            <Circle cx="240" cy="240" r="239" stroke={色.金} strokeWidth="1" strokeOpacity="0.25" />
+            <Circle cx="240" cy="240" r="186" stroke={色.紫_明るい} strokeWidth="1" strokeOpacity="0.3" />
+            <Circle cx="240" cy="240" r="133" stroke={色.金} strokeWidth="1" strokeOpacity="0.4" />
+            <Circle cx="240" cy="240" r="84" stroke={色.紫_明るい} strokeWidth="1" strokeOpacity="0.5" />
+            <Circle cx="240" cy="240" r="42" stroke={色.金_明るい} strokeWidth="1.5" strokeOpacity="0.75" />
+            <Circle cx="240" cy="240" r="10" fill={色.金_明るい} fillOpacity="0.8" />
 
             {/* Grid Lines */}
-            <Line x1="240" y1="0" x2="240" y2="480" stroke="#8b5cf6" strokeWidth="0.5" strokeOpacity="0.15" />
-            <Line x1="0" y1="240" x2="480" y2="240" stroke="#8b5cf6" strokeWidth="0.5" strokeOpacity="0.15" />
+            <Line
+              x1="240"
+              y1="0"
+              x2="240"
+              y2="480"
+              stroke={色.紫_明るい}
+              strokeWidth="0.5"
+              strokeOpacity="0.15"
+            />
+            <Line
+              x1="0"
+              y1="240"
+              x2="480"
+              y2="240"
+              stroke={色.紫_明るい}
+              strokeWidth="0.5"
+              strokeOpacity="0.15"
+            />
 
             {/* Vector Arrow 1 (手前の矢) */}
             <G transform="translate(225, 240) rotate(-35)">
-              {/* シャフト */}
-              <Line x1="0" y1="-120" x2="0" y2="120" stroke="#e5c184" strokeWidth="1.8" strokeOpacity="0.9" />
-              {/* 筈 */}
-              <Path
-                d="M-2.5,-120 L-2.5,-126 L0,-123 L2.5,-126 L2.5,-120"
-                stroke="#e5c184"
-                strokeWidth="1.5"
-                fill="none"
-              />
-              {/* 矢尻 */}
-              <Path d="M0,120 L-4,112 L4,112 Z" fill="#e5c184" />
-              {/* 矧糸 */}
-              <Line x1="-3" y1="-110" x2="3" y2="-110" stroke="#e5c184" strokeWidth="2" />
-              <Line x1="-3" y1="-60" x2="3" y2="-60" stroke="#e5c184" strokeWidth="2" />
-              {/* 矢羽根 (左・右のフラット表現) */}
-              <Path d="M0,-100 L12,-115 L8,-117 L0,-120" fill="#e5c184" fillOpacity="0.85" />
-              <Path d="M0,-100 L-12,-115 L-8,-117 L0,-120" fill="#e5c184" fillOpacity="0.85" />
-              {/* 羽軸 */}
-              <Line x1="1" y1="-100" x2="1" y2="-119" stroke="#b8965a" strokeWidth="1" strokeOpacity="0.5" />
-              <Line
-                x1="-1"
-                y1="-100"
-                x2="-1"
-                y2="-119"
-                stroke="#b8965a"
-                strokeWidth="1"
-                strokeOpacity="0.5"
-              />
-            </G>
-
-            {/* Vector Arrow 2 (奥の矢) */}
-            <G transform="translate(255, 220) rotate(-35)" opacity="0.6">
               {/* シャフト */}
               <Line
                 x1="0"
                 y1="-120"
                 x2="0"
                 y2="120"
-                stroke="#b8965a"
-                strokeWidth="1.5"
-                strokeOpacity="0.75"
+                stroke={色.金_明るい}
+                strokeWidth="1.8"
+                strokeOpacity="0.9"
               />
               {/* 筈 */}
               <Path
+                d="M-2.5,-120 L-2.5,-126 L0,-123 L2.5,-126 L2.5,-120"
+                stroke={色.金_明るい}
+                strokeWidth="1.5"
+                fill="none"
+              />
+              {/* 矢尻 */}
+              <Path d="M0,120 L-4,112 L4,112 Z" fill={色.金_明るい} />
+              {/* 矧糸 */}
+              <Line x1="-3" y1="-110" x2="3" y2="-110" stroke={色.金_明るい} strokeWidth="2" />
+              <Line x1="-3" y1="-60" x2="3" y2="-60" stroke={色.金_明るい} strokeWidth="2" />
+              {/* 矢羽根 (左・右のフラット表現) */}
+              <Path d="M0,-100 L12,-115 L8,-117 L0,-120" fill={色.金_明るい} fillOpacity="0.85" />
+              <Path d="M0,-100 L-12,-115 L-8,-117 L0,-120" fill={色.金_明るい} fillOpacity="0.85" />
+              {/* 羽軸 */}
+              <Line x1="1" y1="-100" x2="1" y2="-119" stroke={色.金} strokeWidth="1" strokeOpacity="0.5" />
+              <Line x1="-1" y1="-100" x2="-1" y2="-119" stroke={色.金} strokeWidth="1" strokeOpacity="0.5" />
+            </G>
+
+            {/* Vector Arrow 2 (奥の矢) */}
+            <G transform="translate(255, 220) rotate(-35)" opacity="0.6">
+              {/* シャフト */}
+              <Line x1="0" y1="-120" x2="0" y2="120" stroke={色.金} strokeWidth="1.5" strokeOpacity="0.75" />
+              {/* 筈 */}
+              <Path
                 d="M-2,-120 L-2,-126 L0,-123 L2,-126 L2,-120"
-                stroke="#b8965a"
+                stroke={色.金}
                 strokeWidth="1.2"
                 fill="none"
               />
               {/* 矢尻 */}
-              <Path d="M0,120 L-3,112 L3,112 Z" fill="#b8965a" />
+              <Path d="M0,120 L-3,112 L3,112 Z" fill={色.金} />
               {/* 矢羽根 */}
-              <Path d="M0,-100 L10,-115 L7,-117 L0,-120" fill="#b8965a" fillOpacity="0.7" />
-              <Path d="M0,-100 L-10,-115 L-7,-117 L0,-120" fill="#b8965a" fillOpacity="0.7" />
+              <Path d="M0,-100 L10,-115 L7,-117 L0,-120" fill={色.金} fillOpacity="0.7" />
+              <Path d="M0,-100 L-10,-115 L-7,-117 L0,-120" fill={色.金} fillOpacity="0.7" />
             </G>
           </Svg>
         </Animated.View>
@@ -366,7 +376,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: -1,
-    backgroundColor: '#030508',
+    backgroundColor: 色.夜,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',

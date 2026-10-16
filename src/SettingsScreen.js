@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色: 基本色 } = require('./iro.js');
 const themeMod = require('./theme');
 const React = require('react');
 const {
@@ -136,7 +137,7 @@ const SettingsScreen = () => {
       <View style={styles.sectionContainer}>{中身}</View>
     </View>
   );
-  const 行 = (絵, 題, 押したとき, 色 = '#007AFF', 右の中身, 赤字 = false) => (
+  const 行 = (絵, 題, 押したとき, 色 = 基本色.青, 右の中身, 赤字 = false) => (
     <Pressable // 使い方の案内が指す先。行の名前をそのまま目印にする
       ref={(node) => 案内.setTutorialTargetNode(`設定.${題}`, node)}
       style={({ hovered }) => [
@@ -149,10 +150,10 @@ const SettingsScreen = () => {
     >
       <View style={styles.itemLeft}>
         <Icons.Ionicons name={絵} size={22} color={色} style={styles.itemIcon} />
-        <Text style={[styles.itemText, 赤字 && { color: '#FF3B30' }]}>{題}</Text>
+        <Text style={[styles.itemText, 赤字 && { color: 基本色.赤 }]}>{題}</Text>
       </View>
       <View style={styles.itemRight}>
-        {右の中身 || <Icons.Ionicons name="chevron-forward" size={18} color="#C6C6C8" />}
+        {右の中身 || <Icons.Ionicons name="chevron-forward" size={18} color={基本色.区切り} />}
       </View>
     </Pressable>
   );
@@ -165,7 +166,7 @@ const SettingsScreen = () => {
           <>
             <View style={[styles.item, styles.itemStack]}>
               <View style={styles.itemLeft}>
-                <Icons.Ionicons name="business-outline" size={22} color="#007AFF" style={styles.itemIcon} />
+                <Icons.Ionicons name="business-outline" size={22} color={基本色.青} style={styles.itemIcon} />
                 <Text style={styles.itemText}>団体ID / 団体名</Text>
               </View>
               <Text style={[styles.timestamp, styles.timestampStack]}>
@@ -176,7 +177,7 @@ const SettingsScreen = () => {
             </View>
             <View style={styles.item}>
               <View style={styles.itemLeft}>
-                <Icons.Ionicons name="person-outline" size={22} color="#5856D6" style={styles.itemIcon} />
+                <Icons.Ionicons name="person-outline" size={22} color={基本色.藍} style={styles.itemIcon} />
                 <Text style={styles.itemText}>ログイン種別</Text>
               </View>
               <Text style={styles.timestamp}>
@@ -210,7 +211,7 @@ const SettingsScreen = () => {
                 ログアウトの段階を設定('確認');
                 ログアウトの窓を出す(true);
               },
-              '#FF3B30',
+              基本色.赤,
               null,
               true
             )}
@@ -226,7 +227,7 @@ const SettingsScreen = () => {
                   削除の段階を設定('');
                   削除の窓を開く(true);
                 },
-                '#FF3B30',
+                基本色.赤,
                 null,
                 true
               )}
@@ -236,12 +237,10 @@ const SettingsScreen = () => {
           '表示',
           <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
             <View style={[styles.itemLeft, { marginBottom: 10 }]}>
-              <Icons.Ionicons name="contrast-outline" size={22} color="#5856D6" style={{ marginRight: 12 }} />
+              <Icons.Ionicons name="contrast-outline" size={22} color={基本色.藍} style={{ marginRight: 12 }} />
               <View>
                 <Text style={styles.itemText}>外観</Text>
-                <Text style={{ fontSize: 12, color: '#8E8E93', marginTop: 2 }}>
-                  画面全体の配色を切り替えます
-                </Text>
+                <Text style={{ fontSize: 12, color: 基本色.灰, marginTop: 2 }}>画面全体の配色を切り替えます</Text>
               </View>
             </View>
             <View style={{ flexDirection: 'row', marginHorizontal: -4 }}>
@@ -279,12 +278,7 @@ const SettingsScreen = () => {
               {'group' === activeRole && (
                 <View style={styles.item}>
                   <View style={[styles.itemLeft, { flex: 1 }]}>
-                    <Icons.Ionicons
-                      name="business-outline"
-                      size={22}
-                      color="#007AFF"
-                      style={styles.itemIcon}
-                    />
+                    <Icons.Ionicons name="business-outline" size={22} color={基本色.青} style={styles.itemIcon} />
                     <Text style={styles.itemText}>
                       {'団体ID: '}
                       {activeGroupId}
@@ -295,7 +289,7 @@ const SettingsScreen = () => {
               {'group' === activeRole && (
                 <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
                   <View style={[styles.itemLeft, { marginBottom: 8 }]}>
-                    <Icons.Ionicons name="pencil-outline" size={22} color="#007AFF" style={styles.itemIcon} />
+                    <Icons.Ionicons name="pencil-outline" size={22} color={基本色.青} style={styles.itemIcon} />
                     <Text style={styles.itemText}>団体名</Text>
                   </View>
                   <TextInput
@@ -310,15 +304,10 @@ const SettingsScreen = () => {
               {'group' === activeRole && (
                 <View style={styles.item}>
                   <View style={[styles.itemLeft, { flex: 1 }]}>
-                    <Icons.Ionicons
-                      name="sparkles-outline"
-                      size={22}
-                      color="#5856D6"
-                      style={styles.itemIcon}
-                    />
+                    <Icons.Ionicons name="sparkles-outline" size={22} color={基本色.藍} style={styles.itemIcon} />
                     <View style={{ flex: 1, paddingRight: 8 }}>
                       <Text style={styles.itemText}>4月1日の自動進級</Text>
-                      <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 2 }}>
+                      <Text style={{ fontSize: 11, color: 基本色.灰, marginTop: 2 }}>
                         毎年4月1日に自動で学年を更新し、4年生を卒業生へ移動します
                       </Text>
                     </View>
@@ -326,17 +315,17 @@ const SettingsScreen = () => {
                   <Switch
                     value={autoPromotionEnabled}
                     onValueChange={setAutoPromotionEnabled}
-                    trackColor={{ false: '#D1D1D6', true: '#34C759' }}
+                    trackColor={{ false: 基本色.灰_明るい, true: 基本色.緑 }}
                   />
                 </View>
               )}
               {'group' === activeRole && (
                 <View style={styles.item}>
                   <View style={[styles.itemLeft, { flex: 1 }]}>
-                    <Icons.Ionicons name="school-outline" size={22} color="#AF52DE" style={styles.itemIcon} />
+                    <Icons.Ionicons name="school-outline" size={22} color={基本色.紫} style={styles.itemIcon} />
                     <View style={{ flex: 1, paddingRight: 8 }}>
                       <Text style={styles.itemText}>現在の期 (新入生)</Text>
-                      <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 2 }}>
+                      <Text style={{ fontSize: 11, color: 基本色.灰, marginTop: 2 }}>
                         新入生（1年生）が何期生にあたるかを設定します
                       </Text>
                     </View>
@@ -352,12 +341,12 @@ const SettingsScreen = () => {
                       }}
                       keyboardType="number-pad"
                     />
-                    <Text style={{ fontSize: 14, color: '#8E8E93', marginRight: 8 }}>期</Text>
+                    <Text style={{ fontSize: 14, color: 基本色.灰, marginRight: 8 }}>期</Text>
                     <View style={styles.stepperControls}>
                       <Pressable
                         style={({ hovered }) => [
                           styles.stepperBtn,
-                          hovered && { backgroundColor: '#D1D1D6' },
+                          hovered && { backgroundColor: 基本色.灰_明るい },
                         ]} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                         accessible
                         accessibilityRole="button"
@@ -365,13 +354,13 @@ const SettingsScreen = () => {
                         aria-label="減らす"
                         onPress={() => updateCurrentFreshmanTerm(Math.max(1, currentFreshmanTerm - 1))}
                       >
-                        <Icons.Ionicons name="remove" size={20} color="#007AFF" />
+                        <Icons.Ionicons name="remove" size={20} color={基本色.青} />
                       </Pressable>
                       <View style={styles.stepperDivider} />
                       <Pressable
                         style={({ hovered }) => [
                           styles.stepperBtn,
-                          hovered && { backgroundColor: '#D1D1D6' },
+                          hovered && { backgroundColor: 基本色.灰_明るい },
                         ]} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                         accessible
                         accessibilityRole="button"
@@ -379,7 +368,7 @@ const SettingsScreen = () => {
                         aria-label="増やす"
                         onPress={() => updateCurrentFreshmanTerm(currentFreshmanTerm + 1)}
                       >
-                        <Icons.Ionicons name="add" size={20} color="#007AFF" />
+                        <Icons.Ionicons name="add" size={20} color={基本色.青} />
                       </Pressable>
                     </View>
                   </View>
@@ -399,7 +388,7 @@ const SettingsScreen = () => {
                       <Icons.Ionicons
                         name="pricetags-outline"
                         size={22}
-                        color="#FF9500"
+                        color={基本色.橙}
                         style={styles.itemIcon}
                       />
                       <Text style={styles.itemText}>タグの定型文</Text>
@@ -410,7 +399,7 @@ const SettingsScreen = () => {
                       <View
                         key={`template-${タグ}`}
                         style={{
-                          backgroundColor: '#E5E5EA',
+                          backgroundColor: 基本色.地_濃い,
                           borderRadius: 16,
                           paddingLeft: 12,
                           paddingRight: 6,
@@ -420,7 +409,7 @@ const SettingsScreen = () => {
                           gap: 4,
                         }}
                       >
-                        <Text style={{ fontSize: 13, color: '#000' }}>
+                        <Text style={{ fontSize: 13, color: 基本色.黒 }}>
                           {/* しまう形は「#合宿」だが、画面では # を付けない */}
                           {規則.タグの見た目(タグ)}
                         </Text>
@@ -435,7 +424,7 @@ const SettingsScreen = () => {
                             IS_WEB && { cursor: 'pointer' },
                           ]}
                         >
-                          <Icons.Ionicons name="close-circle" size={18} color="#8E8E93" />
+                          <Icons.Ionicons name="close-circle" size={18} color={基本色.灰} />
                         </Pressable>
                       </View>
                     ))}
@@ -460,12 +449,12 @@ const SettingsScreen = () => {
                     <Pressable
                       style={({ hovered }) => [
                         {
-                          backgroundColor: '#007AFF',
+                          backgroundColor: 基本色.青,
                           borderRadius: 8,
                           paddingHorizontal: 16,
                           justifyContent: 'center',
                         },
-                        hovered && { backgroundColor: '#0062CC' },
+                        hovered && { backgroundColor: 基本色.青_濃い },
                         IS_WEB && { cursor: 'pointer' },
                       ]}
                       onPress={() => {
@@ -478,7 +467,7 @@ const SettingsScreen = () => {
                           タグの下書きを置く(''));
                       }}
                     >
-                      <Text style={{ color: '#FFF', fontWeight: 'bold' }}>追加</Text>
+                      <Text style={{ color: 基本色.白, fontWeight: 'bold' }}>追加</Text>
                     </Pressable>
                   </View>
                 </View>
@@ -490,10 +479,10 @@ const SettingsScreen = () => {
           '入力の保護',
           <View ref={(node) => 案内.setTutorialTargetNode('設定.自動ロック', node)} style={styles.item}>
             <View style={[styles.itemLeft, { flex: 1 }]}>
-              <Icons.Ionicons name="lock-closed-outline" size={22} color="#34C759" style={styles.itemIcon} />
+              <Icons.Ionicons name="lock-closed-outline" size={22} color={基本色.緑} style={styles.itemIcon} />
               <View style={{ flex: 1, paddingRight: 8 }}>
                 <Text style={styles.itemText}>入れたマスを自動でロック</Text>
-                <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 2 }}>
+                <Text style={{ fontSize: 11, color: 基本色.灰, marginTop: 2 }}>
                   入れて3秒たつと押しても変わらなくなります。直すときは長押しで、そのマスだけ開きます。1立が全部埋まったときは、間隔・計の鍵も自動でかかります
                 </Text>
               </View>
@@ -501,7 +490,7 @@ const SettingsScreen = () => {
             <Switch
               value={自動ロックする}
               onValueChange={set自動ロックする}
-              trackColor={{ false: '#D1D1D6', true: '#34C759' }}
+              trackColor={{ false: 基本色.灰_明るい, true: 基本色.緑 }}
             />
           </View>
         )}
@@ -509,10 +498,10 @@ const SettingsScreen = () => {
           '保存のしかた',
           <View style={styles.item}>
             <View style={[styles.itemLeft, { flex: 1 }]}>
-              <Icons.Ionicons name="checkbox-outline" size={22} color="#34C759" style={styles.itemIcon} />
+              <Icons.Ionicons name="checkbox-outline" size={22} color={基本色.緑} style={styles.itemIcon} />
               <View style={{ flex: 1, paddingRight: 8 }}>
                 <Text style={styles.itemText}>保存のときに出欠を確認する</Text>
-                <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 2 }}>
+                <Text style={{ fontSize: 11, color: 基本色.灰, marginTop: 2 }}>
                   「終了・保存」を押したときに出欠の確認を出します。切ると、そのまま保存の画面へ進みます。記録に出ている人は出欠画面で出席として数えられますが、遅刻・早退の区別は付かなくなります
                 </Text>
               </View>
@@ -520,7 +509,7 @@ const SettingsScreen = () => {
             <Switch
               value={保存時に出欠を確認する}
               onValueChange={set保存時に出欠を確認する}
-              trackColor={{ false: '#D1D1D6', true: '#34C759' }}
+              trackColor={{ false: 基本色.灰_明るい, true: 基本色.緑 }}
             />
           </View>
         )}
@@ -533,10 +522,10 @@ const SettingsScreen = () => {
               style={styles.item}
             >
               <View style={[styles.itemLeft, { flex: 1 }]}>
-                <Icons.Ionicons name="location-outline" size={22} color="#34C759" style={styles.itemIcon} />
+                <Icons.Ionicons name="location-outline" size={22} color={基本色.緑} style={styles.itemIcon} />
                 <View style={{ flex: 1, paddingRight: 8 }}>
                   <Text style={styles.itemText}>矢所の記録機能を有効化</Text>
-                  <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 2 }}>
+                  <Text style={{ fontSize: 11, color: 基本色.灰, marginTop: 2 }}>
                     記録時に矢所も記録できるようにします
                   </Text>
                 </View>
@@ -544,13 +533,13 @@ const SettingsScreen = () => {
               <Switch
                 value={enableArrowLocation}
                 onValueChange={setEnableArrowLocation}
-                trackColor={{ false: '#D1D1D6', true: '#34C759' }}
+                trackColor={{ false: 基本色.灰_明るい, true: 基本色.緑 }}
               />
             </View>
             {enableArrowLocation && (
               <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
                 <View style={[styles.itemLeft, { marginBottom: 8 }]}>
-                  <Icons.Ionicons name="disc-outline" size={22} color="#34C759" style={styles.itemIcon} />
+                  <Icons.Ionicons name="disc-outline" size={22} color={基本色.緑} style={styles.itemIcon} />
                   <Text style={styles.itemText}>使用する的の種類</Text>
                 </View>
                 <View style={styles.flexRow}>
@@ -609,15 +598,12 @@ const SettingsScreen = () => {
                 <Icons.Ionicons
                   name="shield-checkmark-outline"
                   size={22}
-                  color="#FF3B30"
+                  color={基本色.赤}
                   style={styles.itemIcon}
                 />
                 <View style={{ flex: 1, paddingRight: 8 }}>
                   <Text style={styles.itemText}>管理者モード</Text>
-                  <Text
-                    style={{ fontSize: 11, color: '#8E8E93', marginTop: 2, flexShrink: 1 }}
-                    numberOfLines={0}
-                  >
+                  <Text style={{ fontSize: 11, color: 基本色.灰, marginTop: 2, flexShrink: 1 }} numberOfLines={0}>
                     オンにすると、保存済みの記録をあとから直せます。各メンバーの個人ID（数字）も表示されます
                   </Text>
                 </View>
@@ -627,7 +613,7 @@ const SettingsScreen = () => {
                 onValueChange={async (入れる) => {
                   入れる ? (管理者の合言葉を置く(''), 管理者の合言葉の窓を出す(true)) : setAdminMode(false);
                 }}
-                trackColor={{ false: '#D1D1D6', true: '#FF3B30' }}
+                trackColor={{ false: 基本色.灰_明るい, true: 基本色.赤 }}
               />
             </View>
           )}
@@ -639,19 +625,19 @@ const SettingsScreen = () => {
                 style={{
                   paddingHorizontal: 16,
                   paddingVertical: 12,
-                  backgroundColor: '#FFF9E6',
+                  backgroundColor: 基本色.黄の地_3,
                   marginBottom: 8,
                   borderRadius: 8,
                   marginHorizontal: 16,
                 }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                  <Icons.Ionicons name="information-circle-outline" size={18} color="#FF9500" />
-                  <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#FF9500', marginLeft: 4 }}>
+                  <Icons.Ionicons name="information-circle-outline" size={18} color={基本色.橙} />
+                  <Text style={{ fontSize: 13, fontWeight: 'bold', color: 基本色.橙, marginLeft: 4 }}>
                     個人用モードの同期について
                   </Text>
                 </View>
-                <Text style={{ fontSize: 12, color: '#666', lineHeight: 18 }}>
+                <Text style={{ fontSize: 12, color: 基本色.墨_66, lineHeight: 18 }}>
                   同期時、クラウドには自分を含む全員の記録が送信されますが、完了後にこの端末からは自分以外の氏名や的中データが自動的に削除されます。これにより、履歴や分析には自分のデータのみが表示されるようになります。
                 </Text>
               </View>
@@ -662,9 +648,9 @@ const SettingsScreen = () => {
               async () => {
                 書き出しの窓を出す(true);
               },
-              '#34C759'
+              基本色.緑
             )}
-            {行('mail-outline', 'お問い合わせ', () => setInquiryVisible(true), '#FF9500')}
+            {行('mail-outline', 'お問い合わせ', () => setInquiryVisible(true), 基本色.橙)}
             <Pressable
               style={({ hovered }) => [
                 styles.item,
@@ -674,12 +660,7 @@ const SettingsScreen = () => {
               onPress={syncAllToCloud}
             >
               <View style={styles.itemLeft}>
-                <Icons.Ionicons
-                  name="cloud-upload-outline"
-                  size={22}
-                  color="#5856D6"
-                  style={styles.itemIcon}
-                />
+                <Icons.Ionicons name="cloud-upload-outline" size={22} color={基本色.藍} style={styles.itemIcon} />
                 <Text style={styles.itemText}>クラウドへ同期</Text>
               </View>
               <View style={styles.itemRight}>
@@ -690,7 +671,7 @@ const SettingsScreen = () => {
                       ? ''
                       : syncStatus}
                 </Text>
-                <Icons.Ionicons name="chevron-forward" size={18} color="#C6C6C8" />
+                <Icons.Ionicons name="chevron-forward" size={18} color={基本色.区切り} />
               </View>
             </Pressable>
           </>
@@ -740,7 +721,7 @@ const SettingsScreen = () => {
               contentContainerStyle={{ padding: 20, alignItems: 'center' }}
               keyboardShouldPersistTaps="handled"
             >
-              <Text style={[styles.modalTitle, { color: '#FF3B30' }]}>アカウントを削除する</Text>
+              <Text style={[styles.modalTitle, { color: 基本色.赤 }]}>アカウントを削除する</Text>
               <Text style={[styles.modalMessage, { textAlign: 'left' }]}>
                 {`団体「${activeGroupName || activeGroupId || ''}」のアカウントを削除します。\n\n` +
                   '・記録・部員・卒業生・ゴミ箱・設定がすべて消え、団体IDでログインできなくなります。\n' +
@@ -779,33 +760,33 @@ const SettingsScreen = () => {
                   onPress={() => setShowPw(!showPw)}
                   style={{ padding: 4 }}
                 >
-                  <Icons.Ionicons name={showPw ? 'eye-off' : 'eye'} size={20} color="#8E8E93" />
+                  <Icons.Ionicons name={showPw ? 'eye-off' : 'eye'} size={20} color={基本色.灰} />
                 </Pressable>
               </View>
               {!!削除の失敗 && (
-                <Text style={{ color: '#FF3B30', fontSize: 13, marginBottom: 10 }}>{削除の失敗}</Text>
+                <Text style={{ color: 基本色.赤, fontSize: 13, marginBottom: 10 }}>{削除の失敗}</Text>
               )}
               {!!削除の段階 && (
-                <Text style={{ color: '#8E8E93', fontSize: 13, marginBottom: 10 }}>{`${削除の段階}…`}</Text>
+                <Text style={{ color: 基本色.灰, fontSize: 13, marginBottom: 10 }}>{`${削除の段階}…`}</Text>
               )}
               <View style={styles.modalButtonsRow}>
                 <Pressable
                   style={({ hovered }) => [
                     styles.modalBtn,
-                    { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
-                    hovered && { backgroundColor: '#E5E5EA' },
+                    { backgroundColor: 基本色.地, flex: 1, marginRight: 5 },
+                    hovered && { backgroundColor: 基本色.地_濃い },
                     IS_WEB && { cursor: 'pointer' },
                   ]}
                   onPress={() => 削除の窓を開く(false)}
                   disabled={!!削除の段階}
                 >
-                  <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
+                  <Text style={[styles.modalBtnText, { color: 基本色.青 }]}>キャンセル</Text>
                 </Pressable>
                 <Pressable
                   style={({ hovered }) => [
                     styles.modalBtn,
-                    { backgroundColor: '#FF3B30', flex: 1, marginLeft: 5 },
-                    hovered && { backgroundColor: '#D70015' },
+                    { backgroundColor: 基本色.赤, flex: 1, marginLeft: 5 },
+                    hovered && { backgroundColor: 基本色.赤_D700 },
                     (!!削除の段階 || !削除の合言葉) && { opacity: 0.5 },
                     IS_WEB && { cursor: 'pointer' },
                   ]}
@@ -834,7 +815,7 @@ const SettingsScreen = () => {
                   }}
                   disabled={!!削除の段階 || !削除の合言葉}
                 >
-                  <Text style={[styles.modalBtnText, { color: '#FFF' }]}>
+                  <Text style={[styles.modalBtnText, { color: 基本色.白 }]}>
                     {削除の段階 ? '削除中…' : '削除する'}
                   </Text>
                 </Pressable>
@@ -887,27 +868,27 @@ const SettingsScreen = () => {
                 onPress={() => setShowPw(!showPw)}
                 style={{ padding: 4 }}
               >
-                <Icons.Ionicons name={showPw ? 'eye-off' : 'eye'} size={20} color="#8E8E93" />
+                <Icons.Ionicons name={showPw ? 'eye-off' : 'eye'} size={20} color={基本色.灰} />
               </Pressable>
             </View>
             <View style={styles.modalButtonsRow}>
               <Pressable
                 style={({ hovered }) => [
                   styles.modalBtn,
-                  { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
-                  hovered && { backgroundColor: '#E5E5EA' },
+                  { backgroundColor: 基本色.地, flex: 1, marginRight: 5 },
+                  hovered && { backgroundColor: 基本色.地_濃い },
                   IS_WEB && { cursor: 'pointer' },
                 ]}
                 onPress={() => 管理者の合言葉の窓を出す(false)}
                 disabled={合言葉を確かめ中}
               >
-                <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
+                <Text style={[styles.modalBtnText, { color: 基本色.青 }]}>キャンセル</Text>
               </Pressable>
               <Pressable
                 style={({ hovered }) => [
                   styles.modalBtn,
-                  { backgroundColor: '#007AFF', flex: 1, marginLeft: 5 },
-                  hovered && { backgroundColor: '#0062CC' },
+                  { backgroundColor: 基本色.青, flex: 1, marginLeft: 5 },
+                  hovered && { backgroundColor: 基本色.青_濃い },
                   IS_WEB && { cursor: 'pointer' },
                 ]}
                 onPress={async () => {
@@ -926,7 +907,7 @@ const SettingsScreen = () => {
                 }}
                 disabled={合言葉を確かめ中 || !管理者の合言葉}
               >
-                <Text style={[styles.modalBtnText, { color: '#FFF' }]}>
+                <Text style={[styles.modalBtnText, { color: 基本色.白 }]}>
                   {合言葉を確かめ中 ? '認証中...' : '認証'}
                 </Text>
               </Pressable>
@@ -953,21 +934,21 @@ const SettingsScreen = () => {
               <Pressable
                 style={({ hovered }) => [
                   styles.modalBtn,
-                  { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
-                  hovered && { backgroundColor: '#E5E5EA' },
+                  { backgroundColor: 基本色.地, flex: 1, marginRight: 5 },
+                  hovered && { backgroundColor: 基本色.地_濃い },
                   IS_WEB && { cursor: 'pointer' },
                   ログアウトのボタンを止める(ログアウトの段階) && { opacity: 0.4 },
                 ]}
                 disabled={ログアウトのボタンを止める(ログアウトの段階)}
                 onPress={() => ログアウトの窓を出す(false)}
               >
-                <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
+                <Text style={[styles.modalBtnText, { color: 基本色.青 }]}>キャンセル</Text>
               </Pressable>
               <Pressable
                 style={({ hovered }) => [
                   styles.modalBtn,
-                  { backgroundColor: '#FF3B30', flex: 1, marginLeft: 5 },
-                  hovered && { backgroundColor: '#D63027' },
+                  { backgroundColor: 基本色.赤, flex: 1, marginLeft: 5 },
+                  hovered && { backgroundColor: 基本色.赤_D630 },
                   IS_WEB && { cursor: 'pointer' },
                   ログアウトのボタンを止める(ログアウトの段階) && { opacity: 0.4 },
                 ]}
@@ -1008,7 +989,7 @@ const SettingsScreen = () => {
                   }
                 }}
               >
-                <Text style={[styles.modalBtnText, { color: '#FFF' }]}>
+                <Text style={[styles.modalBtnText, { color: 基本色.白 }]}>
                   {ログアウトのボタン名(ログアウトの段階, 残った未送信)}
                 </Text>
               </Pressable>
@@ -1034,21 +1015,21 @@ const SettingsScreen = () => {
               style={{
                 width: '100%',
                 marginBottom: 20,
-                backgroundColor: '#FFF9E6',
+                backgroundColor: 基本色.黄の地_3,
                 padding: 16,
                 borderRadius: 12,
                 borderWidth: 1,
-                borderColor: '#FFE066',
+                borderColor: 基本色.黄_明るい,
                 marginTop: 8,
               }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                <Icons.Ionicons name="alert-circle" size={18} color="#FF9500" />
-                <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#FF9500', marginLeft: 6 }}>
+                <Icons.Ionicons name="alert-circle" size={18} color={基本色.橙} />
+                <Text style={{ fontSize: 14, fontWeight: 'bold', color: 基本色.橙, marginLeft: 6 }}>
                   セキュリティとログイン
                 </Text>
               </View>
-              <Text style={{ fontSize: 13, color: '#666', lineHeight: 20 }}>
+              <Text style={{ fontSize: 13, color: 基本色.墨_66, lineHeight: 20 }}>
                 ・「団体ID」はメンバーログインに必要です。メンバー全員に共有してください。{'\n'}
                 ・「パスワード」は管理者のみが知るものとして厳重に保管してください。{'\n'}
                 ・登録メールアドレスは、ログイン画面の「メールアドレスを忘れた」から変えられます。新しいアドレスに届く確認のメールのリンクを開くと切り替わります。
@@ -1057,13 +1038,13 @@ const SettingsScreen = () => {
             <Pressable
               style={({ hovered }) => [
                 styles.modalBtn,
-                { backgroundColor: '#F2F2F7', width: '100%' },
-                hovered && { backgroundColor: '#E5E5EA' },
+                { backgroundColor: 基本色.地, width: '100%' },
+                hovered && { backgroundColor: 基本色.地_濃い },
                 IS_WEB && { cursor: 'pointer' },
               ]}
               onPress={() => ガイドの窓を出す(false)}
             >
-              <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>閉じる</Text>
+              <Text style={[styles.modalBtnText, { color: 基本色.青 }]}>閉じる</Text>
             </Pressable>
           </View>
         </View>

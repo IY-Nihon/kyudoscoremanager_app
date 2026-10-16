@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const React = require('react');
 const { Text, StyleSheet, TextInput, View, TouchableOpacity, Modal, ScrollView } = require('./rn');
 const { Ionicons } = require('@expo/vector-icons');
@@ -68,7 +69,7 @@ const 名前を割り当てる窓 = ({
                   }}
                   style={{ marginLeft: 8 }}
                 >
-                  <Ionicons name="close" size={24} color="#8E8E93" />
+                  <Ionicons name="close" size={24} color={色.灰} />
                 </TouchableOpacity>
               </View>
             ) : (
@@ -82,7 +83,7 @@ const 名前を割り当てる窓 = ({
                   autoFocus={true}
                 />
                 <TouchableOpacity style={styles.guestToggleBtn} onPress={() => setIsEnteringGuest(true)}>
-                  <Ionicons name="person-add-outline" size={18} color="#5856D6" />
+                  <Ionicons name="person-add-outline" size={18} color={色.藍} />
                   <Text style={styles.guestToggleBtnText}>ゲスト</Text>
                 </TouchableOpacity>
               </View>
@@ -104,20 +105,20 @@ const 名前を割り当てる窓 = ({
                       <Text style={styles.accordionTitle}>
                         {group.title} ({group.members.length}人)
                       </Text>
-                      <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color="#8E8E93" />
+                      <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color={色.灰} />
                     </TouchableOpacity>
                     {isOpen &&
                       group.members.map((部員) => {
                         const isSelected = selectedMemberIds.has(部員.id);
                         const isMale = 部員.gender === '男子';
                         const isFemale = 部員.gender === '女子';
-                        const textColor = isMale ? '#007AFF' : isFemale ? '#FF2D55' : '#1C1C1E';
+                        const textColor = isMale ? 色.青 : isFemale ? 色.桃 : 色.文字;
                         return (
                           <TouchableOpacity
                             key={部員.id}
                             style={[
                               styles.pickerRowIndent,
-                              isSelected && { backgroundColor: '#F0F0F5', opacity: 0.8 },
+                              isSelected && { backgroundColor: 色.地_F0F0F5, opacity: 0.8 },
                             ]}
                             onPress={() => pickAssign(部員)}
                           >
@@ -165,20 +166,20 @@ const 名前を割り当てる窓 = ({
                           <Text style={styles.accordionTitle}>
                             {tStr === '999' ? '期生不明' : `${tStr}期`} ({group.members.length}人)
                           </Text>
-                          <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color="#8E8E93" />
+                          <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color={色.灰} />
                         </TouchableOpacity>
                         {isOpen &&
                           group.members.map((卒業生) => {
                             const isSelected = selectedMemberIds.has(卒業生.id);
                             const isMale = 卒業生.gender === '男子';
                             const isFemale = 卒業生.gender === '女子';
-                            const textColor = isMale ? '#007AFF' : isFemale ? '#FF2D55' : '#1C1C1E';
+                            const textColor = isMale ? 色.青 : isFemale ? 色.桃 : 色.文字;
                             return (
                               <TouchableOpacity
                                 key={卒業生.id}
                                 style={[
                                   styles.pickerRowIndent,
-                                  isSelected && { backgroundColor: '#F0F0F5', opacity: 0.8 },
+                                  isSelected && { backgroundColor: 色.地_F0F0F5, opacity: 0.8 },
                                 ]}
                                 onPress={() => pickAssign(卒業生)}
                               >

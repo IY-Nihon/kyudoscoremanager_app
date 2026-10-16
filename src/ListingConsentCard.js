@@ -1,3 +1,6 @@
+'use strict';
+
+const { 色 } = require('./iro.js');
 /**
  * 「使っている部として、紹介に載せてもよいですか？」の札と、設定でも使う選び（2026-10-09）。
  *
@@ -8,7 +11,6 @@
  *
  * いつ出すか・どう残すかは src/listingConsent.js と src/storeListing.js。
  */
-'use strict';
 
 const React = require('react');
 const { View, Text, TextInput, Pressable } = require('./rn');
@@ -17,8 +19,8 @@ const { useScoreStore } = require('./useScoreStore');
 const 決まり = require('./listingConsent');
 const { styles: 設定の見た目 } = require('./settingsStyles');
 
-const 青 = '#007AFF';
-const 薄い = '#8E8E93';
+const 青 = 色.青;
+const 薄い = 色.灰;
 
 /** 何を載せるか・どこに載せるか（札と設定で同じ） */
 function 掲載の選び({ 選び, 選びを置く, 置き場 = '掲載' }) {
@@ -29,11 +31,15 @@ function 掲載の選び({ 選び, 選びを置く, 置き場 = '掲載' }) {
     ['載せない', '載せない'],
   ];
   const 印 = (入っている) => (
-    <Icons.Ionicons name={入っている ? 'checkbox' : 'square-outline'} size={20} color={入っている ? 青 : 薄い} />
+    <Icons.Ionicons
+      name={入っている ? 'checkbox' : 'square-outline'}
+      size={20}
+      color={入っている ? 青 : 薄い}
+    />
   );
   return (
     <View style={{ gap: 6 }}>
-      <Text style={{ fontSize: 12, color: '#3C3C43' }}>何を載せるか</Text>
+      <Text style={{ fontSize: 12, color: 色.文字_二 }}>何を載せるか</Text>
       <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 6 }}>
         {載せ方の札.map(([値, 名]) => {
           const 選んだ = 選び.載せ方 === 値;
@@ -50,12 +56,12 @@ function 掲載の選び({ 選び, 選びを置く, 置き場 = '掲載' }) {
                 paddingVertical: 8,
                 borderRadius: 8,
                 borderWidth: 1,
-                borderColor: 選んだ ? 青 : '#C6C6C8',
-                backgroundColor: 選んだ ? '#E1F0FF' : '#FFFFFF',
+                borderColor: 選んだ ? 青 : 色.区切り,
+                backgroundColor: 選んだ ? 色.青の地 : 色.白,
                 alignItems: 'center',
               }}
             >
-              <Text style={{ fontSize: 13, color: 選んだ ? 青 : '#000000', fontWeight: 選んだ ? '600' : '400' }}>
+              <Text style={{ fontSize: 13, color: 選んだ ? 青 : 色.黒, fontWeight: 選んだ ? '600' : '400' }}>
                 {名}
               </Text>
             </Pressable>
@@ -64,7 +70,7 @@ function 掲載の選び({ 選び, 選びを置く, 置き場 = '掲載' }) {
       </View>
       {'団体名' === 選び.載せ方 ? (
         <View style={{ gap: 4 }}>
-          <Text style={{ fontSize: 12, color: '#3C3C43' }}>載せる名前（正式な名前に直せます）</Text>
+          <Text style={{ fontSize: 12, color: 色.文字_二 }}>載せる名前（正式な名前に直せます）</Text>
           <TextInput
             testID={`${置き場}-名前`}
             value={選び.載せる名前}
@@ -74,20 +80,20 @@ function 掲載の選び({ 選び, 選びを置く, 置き場 = '掲載' }) {
             autoComplete="off"
             style={{
               borderWidth: 1,
-              borderColor: '#C6C6C8',
+              borderColor: 色.区切り,
               borderRadius: 8,
               paddingHorizontal: 10,
               paddingVertical: 8,
               fontSize: 14,
-              color: '#000000',
-              backgroundColor: '#FFFFFF',
+              color: 色.黒,
+              backgroundColor: 色.白,
             }}
           />
         </View>
       ) : null}
       {'地域' === 選び.載せ方 ? (
         <View style={{ gap: 4 }}>
-          <Text style={{ fontSize: 12, color: '#3C3C43' }}>地域</Text>
+          <Text style={{ fontSize: 12, color: 色.文字_二 }}>地域</Text>
           <TextInput
             testID={`${置き場}-地域`}
             value={選び.地域}
@@ -98,20 +104,20 @@ function 掲載の選び({ 選び, 選びを置く, 置き場 = '掲載' }) {
             autoComplete="off"
             style={{
               borderWidth: 1,
-              borderColor: '#C6C6C8',
+              borderColor: 色.区切り,
               borderRadius: 8,
               paddingHorizontal: 10,
               paddingVertical: 8,
               fontSize: 14,
-              color: '#000000',
-              backgroundColor: '#FFFFFF',
+              color: 色.黒,
+              backgroundColor: 色.白,
             }}
           />
         </View>
       ) : null}
       {選び.載せ方 && '載せない' !== 選び.載せ方 ? (
         <View style={{ gap: 2 }}>
-          <Text style={{ fontSize: 12, color: '#3C3C43' }}>どこに載せるか</Text>
+          <Text style={{ fontSize: 12, color: 色.文字_二 }}>どこに載せるか</Text>
           {[
             ['ホームページ', 'ホームページ'],
             ['他校への案内', '他校へのご案内（DM）'],
@@ -126,7 +132,7 @@ function 掲載の選び({ 選び, 選びを置く, 置き場 = '掲載' }) {
               style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 }}
             >
               {印(!!選び[鍵])}
-              <Text style={{ fontSize: 13, color: '#000000' }}>{名}</Text>
+              <Text style={{ fontSize: 13, color: 色.黒 }}>{名}</Text>
             </Pressable>
           ))}
         </View>
@@ -179,16 +185,16 @@ function 掲載の札({ 見える, 閉じる, 知らせる }) {
         style={{
           width: '100%',
           maxWidth: 480,
-          backgroundColor: '#FFFFFF',
+          backgroundColor: 色.白,
           borderRadius: 14,
           borderWidth: 1,
-          borderColor: '#C6C6C8',
+          borderColor: 色.区切り,
           padding: 14,
           gap: 10,
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
-          <Text style={{ flex: 1, fontSize: 15, fontWeight: 'bold', color: '#000000', lineHeight: 21 }}>
+          <Text style={{ flex: 1, fontSize: 15, fontWeight: 'bold', color: 色.黒, lineHeight: 21 }}>
             使っている部として、紹介に載せてもよいですか？
           </Text>
           <Pressable
@@ -202,12 +208,12 @@ function 掲載の札({ 見える, 閉じる, 知らせる }) {
             <Icons.Ionicons name="close" size={22} color={薄い} />
           </Pressable>
         </View>
-        <Text style={{ fontSize: 12, color: '#3C3C43', lineHeight: 18 }}>
+        <Text style={{ fontSize: 12, color: 色.文字_二, lineHeight: 18 }}>
           載せるのは団体名か地域だけです。記録や部員の名前は出しません。あとから設定で変えられます。
         </Text>
         <掲載の選び 選び={選び} 選びを置く={選びを置く} />
         {誤り ? (
-          <Text testID="掲載-誤り" style={{ fontSize: 12, color: '#FF3B30' }}>
+          <Text testID="掲載-誤り" style={{ fontSize: 12, color: 色.赤 }}>
             {誤り}
           </Text>
         ) : null}
@@ -228,7 +234,7 @@ function 掲載の札({ 見える, 閉じる, 知らせる }) {
               opacity: 送っている ? 0.5 : 1,
             }}
           >
-            <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#FFFFFF' }}>決める</Text>
+            <Text style={{ fontSize: 14, fontWeight: 'bold', color: 色.白 }}>決める</Text>
           </Pressable>
         </View>
       </View>
@@ -266,28 +272,41 @@ function 掲載の設定() {
     送っているを置く(false);
     知らせを置く(結果.誤り || '保存しました');
   };
-  const いつ = 決まり.答えたか(許可) && 決まり.ミリ秒(許可.答えた日時)
-    ? new Date(決まり.ミリ秒(許可.答えた日時)).toLocaleDateString('ja-JP') + ' に答えました'
-    : 'まだ答えていません（何も選ばなければ載せません）';
+  const いつ =
+    決まり.答えたか(許可) && 決まり.ミリ秒(許可.答えた日時)
+      ? new Date(決まり.ミリ秒(許可.答えた日時)).toLocaleDateString('ja-JP') + ' に答えました'
+      : 'まだ答えていません（何も選ばなければ載せません）';
   return (
     <View style={設定の見た目.section} testID="設定-紹介への掲載">
       <Text style={設定の見た目.sectionTitle}>紹介への掲載</Text>
       <View style={設定の見た目.sectionContainer}>
         <View style={[設定の見た目.item, { flexDirection: 'column', alignItems: 'stretch', gap: 10 }]}>
-          <Text style={{ fontSize: 12, color: '#3C3C43', lineHeight: 18 }}>
+          <Text style={{ fontSize: 12, color: 色.文字_二, lineHeight: 18 }}>
             使っている部として、ホームページや他校へのご案内に載せてよいかを選べます。載せるのは団体名か地域だけで、記録や部員の名前は出しません。
           </Text>
-          <掲載の選び 選び={選び} 選びを置く={(次) => (知らせを置く(''), 選びを置く(次))} 置き場="設定-掲載" />
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <掲載の選び
+            選び={選び}
+            選びを置く={(次) => (知らせを置く(''), 選びを置く(次))}
+            置き場="設定-掲載"
+          />
+          <View
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}
+          >
             <Text style={{ flex: 1, fontSize: 12, color: 薄い }}>{知らせ || いつ}</Text>
             <Pressable
               testID="設定-掲載-保存"
               onPress={保存する}
               accessibilityRole="button"
               aria-label="紹介への掲載を保存"
-              style={{ paddingHorizontal: 18, paddingVertical: 8, borderRadius: 8, backgroundColor: 青, opacity: 送っている ? 0.5 : 1 }}
+              style={{
+                paddingHorizontal: 18,
+                paddingVertical: 8,
+                borderRadius: 8,
+                backgroundColor: 青,
+                opacity: 送っている ? 0.5 : 1,
+              }}
             >
-              <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#FFFFFF' }}>保存</Text>
+              <Text style={{ fontSize: 14, fontWeight: 'bold', color: 色.白 }}>保存</Text>
             </Pressable>
           </View>
         </View>

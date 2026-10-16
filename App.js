@@ -15,6 +15,7 @@ import { getShadowStyle } from './src/shadowStyle';
 import { initTheme, useThemeMode } from './src/theme';
 import { auth } from './src/db';
 import { onAuthStateChanged } from 'firebase/auth';
+import { 色 } from './src/iro';
 import { 見張りを始める, 溜まりを流す, 行動を残す } from './src/errorReporter';
 import { 来客の窓 } from './src/LiveShareModal';
 import { 招待の窓 } from './src/InviteModal';
@@ -280,9 +281,9 @@ export default function App() {
   // styles 側の色は StyleSheet（src/rn.js）が変換するため、ここでは上書きしない
   // （上書きするとダーク色がもう一度変換されて元に戻ってしまう）。
   // 下の <style> は生のCSSで props を通らないため、変換対象外＝直接指定でよい。
-  const rootBg = isDarkTheme ? '#000000' : '#F2F2F7';
-  const scrollTrack = isDarkTheme ? '#1C1C1E' : '#F2F2F7';
-  const scrollThumb = isDarkTheme ? '#48484A' : '#C7C7CC';
+  const rootBg = isDarkTheme ? 色.暗所_地 : 色.地;
+  const scrollTrack = isDarkTheme ? 色.暗所_面 : 色.地;
+  const scrollThumb = isDarkTheme ? 色.暗所_つまみ : 色.灰_薄い;
 
   return (
     <View style={styles.appContainer}>
@@ -338,7 +339,7 @@ export default function App() {
 const styles = StyleSheet.create({
   appContainer: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     alignItems: 'center',
     justifyContent: 'center'
   },
@@ -346,9 +347,9 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     maxWidth: IS_WEB ? 1000 : undefined,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 色.白,
     ...getShadowStyle({
-      shadowColor: '#000',
+      shadowColor: 色.黒,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: IS_WEB ? 0.1 : 0,
       shadowRadius: 12,

@@ -1,3 +1,5 @@
+import iroの組 from '../iro.js';
+const { 色: 基本色 } = iroの組;
 /**
  * ブラウザ（canvas）で画を読む・回す。
  * scripts/ocr-cells/gazou-node.mjs と同じ形を返す。読み取りの中身はどちらも知らない。
@@ -131,7 +133,7 @@ export async function 回す(生, 度) {
   canvas.width = 幅;
   canvas.height = 高;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = 基本色.白;
   ctx.fillRect(0, 0, 幅, 高);
   ctx.translate(幅 / 2, 高 / 2);
   ctx.rotate(rad);

@@ -21,7 +21,7 @@ const path = require('node:path');
 // 分析画面は 2026-10-05 にいくつかのファイルに分けた（部員の詳細の窓・部品・見た目の決まり）。
 // 分析画面ぜんぶの字として、まとめて読む
 const 本体 = ['AnalysisScreen.js', 'AnalysisMemberDetail.js', 'analysisParts.js', 'analysisStyles.js']
-  .map((名) => fs.readFileSync(path.join(__dirname, '..', 'src', 名), 'utf8'))
+  .map((名) => require('./helpers/iroNoAtai.cjs').色の名を値に(fs.readFileSync(path.join(__dirname, '..', 'src', 名), 'utf8')))
   .join('\n');
 
 test('順位の行：名前が長くても的中率を押しのけない', () => {

@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 // 成績の数え方は分析画面と共通（src/statsRules.js）
 const 集 = require('./statsRules');
 const _xlsx = require('./excelExport');
@@ -567,7 +568,7 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                     placeholder="キーワードで絞り込み"
                     value={言葉の絞り}
                     onChangeText={言葉の絞りを置く}
-                    placeholderTextColor="#C6C6C8"
+                    placeholderTextColor={色.区切り}
                   />
                   {titleSuggestions.length > 0 && (
                     <ScrollView
@@ -587,9 +588,9 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                                 今の.includes(題) ? 今の.filter((題1つ) => 題1つ !== 題) : [...今の, 題]
                               )
                             }
-                            style={[styles.suggestionChip, 選択中 && { backgroundColor: '#007AFF' }]}
+                            style={[styles.suggestionChip, 選択中 && { backgroundColor: 色.青 }]}
                           >
-                            <Text style={[styles.suggestionText, 選択中 && { color: '#FFF' }]}>{題}</Text>
+                            <Text style={[styles.suggestionText, 選択中 && { color: 色.白 }]}>{題}</Text>
                           </TouchableOpacity>
                         );
                       })}
@@ -600,7 +601,7 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                       onPress={() => setSelectedKeywords([])}
                       style={{ marginTop: 4, alignSelf: 'flex-start' }}
                     >
-                      <Text style={{ fontSize: 12, color: '#007AFF' }}>選択をクリア</Text>
+                      <Text style={{ fontSize: 12, color: 色.青 }}>選択をクリア</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -613,7 +614,7 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                       placeholder="未入力ですべて対象"
                       value={'all' === 部員名の絞り ? '' : 部員名の絞り}
                       onChangeText={(文) => 部員名の絞りを置く(文 || 'all')}
-                      placeholderTextColor="#C6C6C8"
+                      placeholderTextColor={色.区切り}
                     />
                     {memberSuggestions.length > 0 && (
                       <ScrollView
@@ -635,9 +636,9 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                                     : [...今の, 名前]
                                 )
                               }
-                              style={[styles.suggestionChip, 選択中 && { backgroundColor: '#007AFF' }]}
+                              style={[styles.suggestionChip, 選択中 && { backgroundColor: 色.青 }]}
                             >
-                              <Text style={[styles.suggestionText, 選択中 && { color: '#FFF' }]}>{名前}</Text>
+                              <Text style={[styles.suggestionText, 選択中 && { color: 色.白 }]}>{名前}</Text>
                             </TouchableOpacity>
                           );
                         })}
@@ -648,7 +649,7 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                         onPress={() => setSelectedMembers([])}
                         style={{ marginTop: 4, alignSelf: 'flex-start' }}
                       >
-                        <Text style={{ fontSize: 12, color: '#007AFF' }}>選択をクリア</Text>
+                        <Text style={{ fontSize: 12, color: 色.青 }}>選択をクリア</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -666,7 +667,7 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                     <View
                       style={{
                         flexDirection: 'row',
-                        backgroundColor: '#E5E5EA',
+                        backgroundColor: 色.地_濃い,
                         borderRadius: 8,
                         padding: 2,
                       }}
@@ -675,14 +676,14 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                         onPress={() => タグの論理を置く('AND')}
                         style={[
                           { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-                          'AND' === タグの論理 && { backgroundColor: '#FFF' },
+                          'AND' === タグの論理 && { backgroundColor: 色.白 },
                         ]}
                       >
                         <Text
                           style={{
                             fontSize: 11,
                             fontWeight: 'bold',
-                            color: 'AND' === タグの論理 ? '#007AFF' : '#8E8E93',
+                            color: 'AND' === タグの論理 ? 色.青 : 色.灰,
                           }}
                         >
                           すべて含む
@@ -692,14 +693,14 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                         onPress={() => タグの論理を置く('OR')}
                         style={[
                           { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-                          'OR' === タグの論理 && { backgroundColor: '#FFF' },
+                          'OR' === タグの論理 && { backgroundColor: 色.白 },
                         ]}
                       >
                         <Text
                           style={{
                             fontSize: 11,
                             fontWeight: 'bold',
-                            color: 'OR' === タグの論理 ? '#007AFF' : '#8E8E93',
+                            color: 'OR' === タグの論理 ? 色.青 : 色.灰,
                           }}
                         >
                           いずれか含む
@@ -719,25 +720,25 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                               styles.tagChip,
                               選択中 && styles.tagChipActive,
                               {
-                                backgroundColor: 選択中 ? '#007AFF' : '#F2F2F7',
+                                backgroundColor: 選択中 ? 色.青 : 色.地,
                                 paddingVertical: 6,
                                 marginVertical: 2,
                               },
                             ]}
                           >
-                            <Text style={[styles.tagChipText, 選択中 && { color: '#FFF' }]}>
+                            <Text style={[styles.tagChipText, 選択中 && { color: 色.白 }]}>
                               {タグ.replace(/^#/, '')}
                             </Text>
                           </TouchableOpacity>
                         );
                       })
                     ) : (
-                      <Text style={{ fontSize: 12, color: '#8E8E93' }}>使用されているタグがありません</Text>
+                      <Text style={{ fontSize: 12, color: 色.灰 }}>使用されているタグがありません</Text>
                     )}
                   </View>
                   {選んだタグ.length > 0 && (
                     <TouchableOpacity onPress={() => 選んだタグを置く([])} style={{ marginTop: 8 }}>
-                      <Text style={{ fontSize: 12, color: '#007AFF' }}>選択をクリア</Text>
+                      <Text style={{ fontSize: 12, color: 色.青 }}>選択をクリア</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -745,8 +746,8 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                   <Pressable
                     style={({ hovered }) => [
                       styles.modalBtn,
-                      { backgroundColor: '#007AFF' },
-                      hovered && { backgroundColor: '#0062CC' },
+                      { backgroundColor: 色.青 },
+                      hovered && { backgroundColor: 色.青_濃い },
                       IS_WEB && { cursor: 'pointer' },
                     ]}
                     onPress={() => {
@@ -755,18 +756,18 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                       書き出す('custom');
                     }}
                   >
-                    <Text style={[styles.modalBtnText, { color: '#FFF' }]}>この条件で書き出す</Text>
+                    <Text style={[styles.modalBtnText, { color: 色.白 }]}>この条件で書き出す</Text>
                   </Pressable>
                   <Pressable
                     style={({ hovered }) => [
                       styles.modalBtn,
-                      { backgroundColor: '#F2F2F7' },
-                      hovered && { backgroundColor: '#E5E5EA' },
+                      { backgroundColor: 色.地 },
+                      hovered && { backgroundColor: 色.地_濃い },
                       IS_WEB && { cursor: 'pointer' },
                     ]}
                     onPress={() => 絞り込みを開くを置く(false)}
                   >
-                    <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>戻る</Text>
+                    <Text style={[styles.modalBtnText, { color: 色.青 }]}>戻る</Text>
                   </Pressable>
                 </View>
               </ScrollView>
@@ -777,13 +778,13 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                   <Pressable
                     style={({ hovered }) => [
                       styles.modalBtn,
-                      { backgroundColor: '#F2F2F7' },
-                      hovered && { backgroundColor: '#E5E5EA' },
+                      { backgroundColor: 色.地 },
+                      hovered && { backgroundColor: 色.地_濃い },
                       IS_WEB && { cursor: 'pointer' },
                     ]}
                     onPress={() => 閉じる()}
                   >
-                    <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
+                    <Text style={[styles.modalBtnText, { color: 色.青 }]}>キャンセル</Text>
                   </Pressable>
                   <View style={styles.monthNav}>
                     <TouchableOpacity
@@ -794,7 +795,7 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                       aria-label="前へ"
                       onPress={() => 年度を動かす(-1)}
                     >
-                      <Icons.Ionicons name="chevron-back" size={20} color="#007AFF" />
+                      <Icons.Ionicons name="chevron-back" size={20} color={色.青} />
                     </TouchableOpacity>
                     <Text style={styles.monthNavText}>{書き出す年度}年度のデータ</Text>
                     <TouchableOpacity
@@ -805,14 +806,14 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                       aria-label="次へ"
                       onPress={() => 年度を動かす(1)}
                     >
-                      <Icons.Ionicons name="chevron-forward" size={20} color="#007AFF" />
+                      <Icons.Ionicons name="chevron-forward" size={20} color={色.青} />
                     </TouchableOpacity>
                   </View>
                   <Pressable
                     style={({ hovered }) => [
                       styles.modalBtn,
-                      { backgroundColor: '#007AFF', marginTop: 8 },
-                      hovered && { backgroundColor: '#0062CC' },
+                      { backgroundColor: 色.青, marginTop: 8 },
+                      hovered && { backgroundColor: 色.青_濃い },
                       IS_WEB && { cursor: 'pointer' },
                     ]}
                     onPress={() => {
@@ -820,13 +821,13 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                       書き出す('fiscal');
                     }}
                   >
-                    <Text style={[styles.modalBtnText, { color: '#FFF' }]}>{書き出す年度}年度を書き出す</Text>
+                    <Text style={[styles.modalBtnText, { color: 色.白 }]}>{書き出す年度}年度を書き出す</Text>
                   </Pressable>
                   <Pressable
                     style={({ hovered }) => [
                       styles.modalBtn,
-                      { backgroundColor: '#34C759' },
-                      hovered && { backgroundColor: '#28A745' },
+                      { backgroundColor: 色.緑 },
+                      hovered && { backgroundColor: 色.緑_28A7 },
                       IS_WEB && { cursor: 'pointer' },
                     ]}
                     onPress={() => {
@@ -834,18 +835,18 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                       書き出す('all');
                     }}
                   >
-                    <Text style={[styles.modalBtnText, { color: '#FFF' }]}>すべてのデータ</Text>
+                    <Text style={[styles.modalBtnText, { color: 色.白 }]}>すべてのデータ</Text>
                   </Pressable>
                   <Pressable
                     style={({ hovered }) => [
                       styles.modalBtn,
-                      { backgroundColor: '#5856D6' },
-                      hovered && { backgroundColor: '#4845C6' },
+                      { backgroundColor: 色.藍 },
+                      hovered && { backgroundColor: 色.藍_濃い },
                       IS_WEB && { cursor: 'pointer' },
                     ]}
                     onPress={() => 絞り込みを開くを置く(true)}
                   >
-                    <Text style={[styles.modalBtnText, { color: '#FFF' }]}>詳細な条件で絞り込む...</Text>
+                    <Text style={[styles.modalBtnText, { color: 色.白 }]}>詳細な条件で絞り込む...</Text>
                   </Pressable>
                 </View>
               </>

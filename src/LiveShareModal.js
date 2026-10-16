@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const React = require('react');
 const { View, Text, StyleSheet, Modal, TextInput, TouchableOpacity, ScrollView } = require('./rn');
 const { useScoreStore } = require('./useScoreStore');
@@ -55,7 +56,9 @@ const LiveShareModal = ({ visible, onClose }) => {
   };
   const 写して知らせる = async (文字列, 何を) => {
     const 出来た = await 写.写す(文字列);
-    知らせを置く(出来た ? `${何を}のリンクをコピーしました` : 'コピーできませんでした。長押しで選んでください');
+    知らせを置く(
+      出来た ? `${何を}のリンクをコピーしました` : 'コピーできませんでした。長押しで選んでください'
+    );
   };
   return (
     <Modal visible={!!visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -105,7 +108,7 @@ const LiveShareModal = ({ visible, onClose }) => {
                 難点を置く(null);
               }}
               placeholder={`${共.合言葉の最短}文字以上`}
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={色.灰}
               autoCapitalize="none"
               autoCorrect={false}
             />
@@ -212,14 +215,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-  箱: { width: '100%', maxWidth: 420, backgroundColor: '#FFF', borderRadius: 14, padding: 18 },
-  見出し: { fontSize: 18, fontWeight: 'bold', color: '#1C1C1E', marginBottom: 10 },
-  説明: { fontSize: 13, color: '#3C3C43', lineHeight: 19, marginBottom: 14 },
-  小見出し: { fontSize: 13, fontWeight: 'bold', color: '#1C1C1E', marginTop: 14, marginBottom: 6 },
+  箱: { width: '100%', maxWidth: 420, backgroundColor: 色.白, borderRadius: 14, padding: 18 },
+  見出し: { fontSize: 18, fontWeight: 'bold', color: 色.文字, marginBottom: 10 },
+  説明: { fontSize: 13, color: 色.文字_二, lineHeight: 19, marginBottom: 14 },
+  小見出し: { fontSize: 13, fontWeight: 'bold', color: 色.文字, marginTop: 14, marginBottom: 6 },
   期限の列: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 6 },
   期限の札: {
     borderWidth: 1,
-    borderColor: '#C6C6C8',
+    borderColor: 色.区切り,
     borderRadius: 14,
     paddingVertical: 6,
     paddingHorizontal: 12,
@@ -228,53 +231,53 @@ const styles = StyleSheet.create({
   },
   // 選ばれていることを、色だけでなく枠の太さでも示す。
   // 色の見え方は人によって違う（src/theme.js と同じ考え方）
-  期限の札が入り: { backgroundColor: '#0A84FF', borderColor: '#0A84FF', borderWidth: 2 },
-  期限の札の字: { fontSize: 13, color: '#3C3C43' },
-  期限の札の字が入り: { color: '#FFF', fontWeight: 'bold' },
+  期限の札が入り: { backgroundColor: 色.青_暗所, borderColor: 色.青_暗所, borderWidth: 2 },
+  期限の札の字: { fontSize: 13, color: 色.文字_二 },
+  期限の札の字が入り: { color: 色.白, fontWeight: 'bold' },
   選び: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
   印: {
     width: 22,
     height: 22,
     borderRadius: 5,
     borderWidth: 1,
-    borderColor: '#C6C6C8',
+    borderColor: 色.区切り,
     marginRight: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  印が入り: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
-  印の字: { color: '#FFF', fontSize: 14, fontWeight: 'bold' },
-  選びの字: { fontSize: 15, color: '#1C1C1E' },
+  印が入り: { backgroundColor: 色.青, borderColor: 色.青 },
+  印の字: { color: 色.白, fontSize: 14, fontWeight: 'bold' },
+  選びの字: { fontSize: 15, color: 色.文字 },
   入力: {
     borderWidth: 1,
-    borderColor: '#C6C6C8',
+    borderColor: 色.区切り,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
-    color: '#1C1C1E',
+    color: 色.文字,
     marginTop: 6,
   },
-  注意: { fontSize: 12, color: '#3C3C43', lineHeight: 18, marginTop: 8 },
-  難点: { fontSize: 13, color: '#FF3B30', marginTop: 8 },
+  注意: { fontSize: 12, color: 色.文字_二, lineHeight: 18, marginTop: 8 },
+  難点: { fontSize: 13, color: 色.赤, marginTop: 8 },
   作るボタン: {
-    backgroundColor: '#007AFF',
+    backgroundColor: 色.青,
     borderRadius: 10,
     paddingVertical: 13,
     alignItems: 'center',
     marginTop: 16,
   },
-  作業中: { backgroundColor: '#8E8E93' },
-  作るボタンの字: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
-  一本: { borderWidth: 1, borderColor: '#C6C6C8', borderRadius: 10, padding: 12, marginBottom: 12 },
-  一本の題: { fontSize: 15, fontWeight: 'bold', color: '#1C1C1E' },
-  一本の説明: { fontSize: 12, color: '#3C3C43', marginTop: 2, marginBottom: 8, lineHeight: 18 },
-  URL: { fontSize: 11, color: '#007AFF', marginBottom: 10 },
-  写すボタン: { backgroundColor: '#F2F2F7', borderRadius: 8, paddingVertical: 9, alignItems: 'center' },
-  写すボタンの字: { color: '#007AFF', fontSize: 14, fontWeight: 'bold' },
-  知らせ: { fontSize: 13, color: '#248A3D', marginTop: 10, textAlign: 'center' },
+  作業中: { backgroundColor: 色.灰 },
+  作るボタンの字: { color: 色.白, fontSize: 16, fontWeight: 'bold' },
+  一本: { borderWidth: 1, borderColor: 色.区切り, borderRadius: 10, padding: 12, marginBottom: 12 },
+  一本の題: { fontSize: 15, fontWeight: 'bold', color: 色.文字 },
+  一本の説明: { fontSize: 12, color: 色.文字_二, marginTop: 2, marginBottom: 8, lineHeight: 18 },
+  URL: { fontSize: 11, color: 色.青, marginBottom: 10 },
+  写すボタン: { backgroundColor: 色.地, borderRadius: 8, paddingVertical: 9, alignItems: 'center' },
+  写すボタンの字: { color: 色.青, fontSize: 14, fontWeight: 'bold' },
+  知らせ: { fontSize: 13, color: 色.緑_濃い, marginTop: 10, textAlign: 'center' },
   閉じる: { paddingVertical: 13, alignItems: 'center', marginTop: 8 },
-  閉じるの字: { color: '#007AFF', fontSize: 16, fontWeight: 'bold' },
+  閉じるの字: { color: 色.青, fontSize: 16, fontWeight: 'bold' },
 });
 /**
  * 共有リンクで来た人を迎える窓。
@@ -347,7 +350,7 @@ const 来客の窓 = ({ 荷, onClose }) => {
                 難点を置く(null);
               }}
               placeholder="合言葉"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={色.灰}
               autoCapitalize="none"
               autoCorrect={false}
               secureTextEntry

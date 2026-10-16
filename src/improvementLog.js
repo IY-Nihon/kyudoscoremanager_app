@@ -58,7 +58,9 @@ async function 改善のために取っておく(種類, 中身, 添付たち = 
       body: JSON.stringify({ id, 種類, 中身: Object.assign(いまの様子(), 中身) }),
     });
     if (!返り.ok) return null;
-    const 付ける = (添付たち || []).filter((体) => 体 && 体.size > 0 && 体.size <= 添付の上限).slice(0, 添付の数の上限);
+    const 付ける = (添付たち || [])
+      .filter((体) => 体 && 体.size > 0 && 体.size <= 添付の上限)
+      .slice(0, 添付の数の上限);
     for (let 番 = 0; 番 < 付ける.length; 番++) {
       const 体 = 付ける[番];
       await 中継

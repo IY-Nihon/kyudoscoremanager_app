@@ -9,7 +9,7 @@
  *
  * ライトモード時 mapProps は引数をそのまま返すため、実質ノーコスト。
  */
-"use strict";
+'use strict';
 
 const runtime = require('react/jsx-runtime');
 const theme = require('../theme');

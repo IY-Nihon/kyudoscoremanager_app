@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色: 基本色 } = require('./iro.js');
 const React = require('react');
 const { View, Text, FlatList, TouchableOpacity, TextInput, Modal, ScrollView, Pressable } = require('./rn');
 const { IS_WEB } = require('./IS_WEB');
@@ -31,7 +32,7 @@ const { 列の見立てを作る } = require('./retsuNoMitate');
 const { styles } = require('./historyStyles');
 // ゴミ箱の窓（戻す・まとめて消す・中身を見る）は別のファイル（2026-10-05）
 const { ゴミ箱の中身の窓 } = require('./HistoryTrash');
-const 仕切り線 = () => <View style={{ height: 1, backgroundColor: '#E5E5EA', marginLeft: 16 }} />;
+const 仕切り線 = () => <View style={{ height: 1, backgroundColor: 基本色.地_濃い, marginLeft: 16 }} />;
 const HistoryScreen = () => {
   // 上から引っ張って更新（src/hikiOroshi.js）。雲から取り直す
   const 引く = use引いて更新(() => useScoreStore.getState().雲から取り直す());
@@ -337,7 +338,7 @@ const HistoryScreen = () => {
             }}
             style={{ marginTop: 20 }}
           >
-            <Text style={{ color: '#007AFF' }}>一覧に戻る</Text>
+            <Text style={{ color: 基本色.青 }}>一覧に戻る</Text>
           </TouchableOpacity>
         </View>
       );
@@ -375,9 +376,9 @@ const HistoryScreen = () => {
             paddingHorizontal: 16,
             paddingTop: IS_WEB ? 0 : 12,
             paddingBottom: 12,
-            backgroundColor: '#FFF',
+            backgroundColor: 基本色.白,
             borderBottomWidth: 1,
-            borderBottomColor: '#F2F2F7',
+            borderBottomColor: 基本色.地,
           }}
         >
           <Pressable // ゴミ箱から来たなら、ゴミ箱へ戻す
@@ -387,10 +388,10 @@ const HistoryScreen = () => {
               hovered && { backgroundColor: 'rgba(0,122,255,0.05)' },
             ]}
           >
-            <Icons.Ionicons name="chevron-back" size={24} color="#007AFF" />
-            <Text style={{ fontSize: 17, color: '#007AFF' }}>戻る</Text>
+            <Icons.Ionicons name="chevron-back" size={24} color={基本色.青} />
+            <Text style={{ fontSize: 17, color: 基本色.青 }}>戻る</Text>
           </Pressable>
-          <Text style={{ fontSize: 17, fontWeight: 'bold', color: '#000', flex: 1, textAlign: 'center' }}>
+          <Text style={{ fontSize: 17, fontWeight: 'bold', color: 基本色.黒, flex: 1, textAlign: 'center' }}>
             {ゴミ箱を見ている ? 'ゴミ箱の記録' : '記録詳細'}
           </Text>
           {/* 前後へ送るのは一覧の並び。ゴミ箱の中では出さない（幅だけ残して題を中央に保つ） */}
@@ -405,7 +406,7 @@ const HistoryScreen = () => {
                   hovered && { backgroundColor: 'rgba(0,122,255,0.05)' },
                 ]}
               >
-                <Icons.Ionicons name="chevron-back" size={24} color="#007AFF" />
+                <Icons.Ionicons name="chevron-back" size={24} color={基本色.青} />
               </Pressable>
               <Pressable
                 onPress={() => 前後へ('next')}
@@ -414,7 +415,7 @@ const HistoryScreen = () => {
                   hovered && { backgroundColor: 'rgba(0,122,255,0.05)' },
                 ]}
               >
-                <Icons.Ionicons name="chevron-forward" size={24} color="#007AFF" />
+                <Icons.Ionicons name="chevron-forward" size={24} color={基本色.青} />
               </Pressable>
             </View>
           )}
@@ -423,7 +424,7 @@ const HistoryScreen = () => {
         /* 復元と完全な削除はここからもできる（見てから決めるのが自然な流れ） */}
         {ゴミ箱を見ている && (
           <View testID="ゴミ箱の帯" style={styles.trashBanner}>
-            <Icons.Ionicons name="trash-outline" size={18} color="#FFF" />
+            <Icons.Ionicons name="trash-outline" size={18} color={基本色.白} />
             <Text style={styles.trashBannerText}>ゴミ箱の中の記録です。見るだけで、直せません</Text>
             {(isAdminMode || 'group' === activeRole) && (
               <Pressable
@@ -466,16 +467,16 @@ const HistoryScreen = () => {
                 }}
                 style={({ hovered }) => [
                   styles.trashBannerBtn,
-                  { backgroundColor: '#FF3B30' },
+                  { backgroundColor: 基本色.赤 },
                   hovered && { opacity: 0.85 },
                 ]}
               >
-                <Text style={[styles.trashBannerBtnText, { color: '#FFF' }]}>完全に削除</Text>
+                <Text style={[styles.trashBannerBtnText, { color: 基本色.白 }]}>完全に削除</Text>
               </Pressable>
             )}
           </View>
         )}
-        <View style={{ paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#F9F9F9' }}>
+        <View style={{ paddingHorizontal: 16, paddingVertical: 12, backgroundColor: 基本色.地_F9F9F9 }}>
           <View
             style={{
               flexDirection: 'row',
@@ -502,9 +503,9 @@ const HistoryScreen = () => {
                 <Icons.Ionicons
                   name={横に並べる ? 'phone-portrait-outline' : 'phone-landscape-outline'}
                   size={20}
-                  color="#8E8E93"
+                  color={基本色.灰}
                 />
-                <Text style={{ fontSize: 9, color: '#8E8E93', marginTop: 1 }}>
+                <Text style={{ fontSize: 9, color: 基本色.灰, marginTop: 1 }}>
                   {横に並べる ? '縦へ' : '横へ'}
                 </Text>
               </Pressable>
@@ -524,7 +525,7 @@ const HistoryScreen = () => {
                       hovered && { backgroundColor: 'rgba(255,59,48,0.05)' },
                     ]}
                   >
-                    <Icons.Ionicons name="trash-outline" size={22} color="#FF3B30" />
+                    <Icons.Ionicons name="trash-outline" size={22} color={基本色.赤} />
                   </Pressable>
                   {isAdminMode && (
                     <Pressable
@@ -538,7 +539,7 @@ const HistoryScreen = () => {
                         hovered && { backgroundColor: 'rgba(0,122,255,0.05)' },
                       ]}
                     >
-                      <Icons.Ionicons name="menu" size={26} color="#007AFF" />
+                      <Icons.Ionicons name="menu" size={26} color={基本色.青} />
                     </Pressable>
                   )}
                 </>
@@ -551,13 +552,13 @@ const HistoryScreen = () => {
               style={{
                 marginTop: 8,
                 padding: 8,
-                backgroundColor: '#FFF',
+                backgroundColor: 基本色.白,
                 borderRadius: 8,
                 borderWidth: 1,
-                borderColor: '#E5E5EA',
+                borderColor: 基本色.地_濃い,
               }}
             >
-              <Text style={{ fontSize: 13, color: '#3C3C43' }}>{見ている記録.note}</Text>
+              <Text style={{ fontSize: 13, color: 基本色.文字_二 }}>{見ている記録.note}</Text>
             </View>
           )}
         </View>
@@ -576,23 +577,23 @@ const HistoryScreen = () => {
                     style={{ flexGrow: 0 }}
                   >
                     <View style={{ flexDirection: 'row', minWidth: '100%' }}>
-                      <View style={{ backgroundColor: '#F2F2F7', zIndex: 10 }}>
+                      <View style={{ backgroundColor: 基本色.地, zIndex: 10 }}>
                         <View
                           style={{
                             width: 100 * viewScale,
                             height: UIConfig.cellHeight * viewScale,
                             justifyContent: 'center',
                             alignItems: 'center',
-                            backgroundColor: '#F2F2F7',
+                            backgroundColor: 基本色.地,
                             borderTopWidth: 1.5,
-                            borderTopColor: '#000',
+                            borderTopColor: 基本色.黒,
                             borderBottomWidth: 3,
-                            borderBottomColor: '#000',
+                            borderBottomColor: 基本色.黒,
                             borderRightWidth: 1.5,
-                            borderRightColor: '#000',
+                            borderRightColor: 基本色.黒,
                           }}
                         >
-                          <Text style={{ fontSize: 10 * viewScale, fontWeight: 'bold', color: '#3C3C43' }}>
+                          <Text style={{ fontSize: 10 * viewScale, fontWeight: 'bold', color: 基本色.文字_二 }}>
                             名
                           </Text>
                         </View>
@@ -606,11 +607,11 @@ const HistoryScreen = () => {
                                 viewScale,
                               justifyContent: 'center',
                               alignItems: 'center',
-                              backgroundColor: 射手.isTotalCalculator ? 'rgba(0,122,255,0.05)' : '#F2F2F7',
+                              backgroundColor: 射手.isTotalCalculator ? 'rgba(0,122,255,0.05)' : 基本色.地,
                               borderBottomWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 1,
-                              borderBottomColor: '#000',
+                              borderBottomColor: 基本色.黒,
                               borderRightWidth: 1.5,
-                              borderRightColor: '#000',
+                              borderRightColor: 基本色.黒,
                               // 余白も表示の大きさに合わせる（25% で中身が隣の行へはみ出した）
                               paddingHorizontal: 4 * viewScale,
                               // チームの色。横のときは名前の左に細い帯で出す
@@ -628,7 +629,7 @@ const HistoryScreen = () => {
                                   style={{
                                     fontSize: 11 * viewScale,
                                     fontWeight: '700',
-                                    color: 組.チームの色(組.区切りのチーム名(射手)) || '#8E8E93',
+                                    color: 組.チームの色(組.区切りのチーム名(射手)) || 基本色.灰,
                                   }} // 横の表の区切りは高さ 35 で 2 行入る。1 行では長い大学名が切れた
                                   numberOfLines={2}
                                 >
@@ -647,7 +648,7 @@ const HistoryScreen = () => {
                                 disabled={!isAdminMode}
                               >
                                 <Text
-                                  style={{ fontSize: 13 * viewScale, color: 射手.name ? '#000' : '#8E8E93' }}
+                                  style={{ fontSize: 13 * viewScale, color: 射手.name ? 基本色.黒 : 基本色.灰 }}
                                   numberOfLines={1}
                                 >
                                   {射手.isTotalCalculator
@@ -700,7 +701,7 @@ const HistoryScreen = () => {
               : [
                   <ScrollView showsVerticalScrollIndicator={false} bounces={false} style={{ flexGrow: 0 }}>
                     <View style={{ flexDirection: 'row-reverse', minWidth: '100%' }}>
-                      <View style={{ backgroundColor: '#F2F2F7', zIndex: 10 }}>
+                      <View style={{ backgroundColor: 基本色.地, zIndex: 10 }}>
                         <LabelColumn shots={本数} showFooter={false} />
                       </View>
                       <ScrollView
@@ -737,7 +738,7 @@ const HistoryScreen = () => {
                       height: UIConfig.footerHeight * viewScale,
                       flexDirection: 'row-reverse',
                       borderTopWidth: 1.5,
-                      borderTopColor: '#000',
+                      borderTopColor: 基本色.黒,
                     }}
                   >
                     <View
@@ -745,14 +746,14 @@ const HistoryScreen = () => {
                         width: UIConfig.headerWidth * viewScale,
                         justifyContent: 'center',
                         alignItems: 'center',
-                        backgroundColor: '#F2F2F7',
+                        backgroundColor: 基本色.地,
                         borderLeftWidth: 1.5,
-                        borderLeftColor: '#000',
+                        borderLeftColor: 基本色.黒,
                         borderRightWidth: 1.5,
-                        borderRightColor: '#000',
+                        borderRightColor: 基本色.黒,
                       }}
                     >
-                      <Text style={{ fontSize: 10 * viewScale, fontWeight: 'bold', color: '#3C3C43' }}>
+                      <Text style={{ fontSize: 10 * viewScale, fontWeight: 'bold', color: 基本色.文字_二 }}>
                         名
                       </Text>
                     </View>
@@ -774,11 +775,11 @@ const HistoryScreen = () => {
                                   (射手.isSeparator ? UIConfig.separatorWidth : UIConfig.cellWidth) *
                                   viewScale,
                                 height: UIConfig.footerHeight * viewScale,
-                                backgroundColor: 射手.isTotalCalculator ? 'rgba(0,122,255,0.05)' : '#F2F2F7',
+                                backgroundColor: 射手.isTotalCalculator ? 'rgba(0,122,255,0.05)' : 基本色.地,
                                 borderRightWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 1,
-                                borderRightColor: '#000',
+                                borderRightColor: 基本色.黒,
                                 borderLeftWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 0,
-                                borderLeftColor: '#000',
+                                borderLeftColor: 基本色.黒,
                                 // 余白も表示の大きさに合わせる。4px のままだと 25% でマスの幅（約 7px）を超え、名前の行が上の列とずれた
                                 padding: 4 * viewScale,
                                 justifyContent: 'center',
@@ -803,7 +804,7 @@ const HistoryScreen = () => {
                                       lineHeight: 組.区切りの名の字(viewScale, UIConfig).lineHeight,
                                       fontWeight: '700',
                                       textAlign: 'center',
-                                      color: 組.チームの色(組.区切りのチーム名(射手)) || '#8E8E93',
+                                      color: 組.チームの色(組.区切りのチーム名(射手)) || 基本色.灰,
                                     }} // 記録中と同じく、欄の高さに入るだけ行を使う
                                     numberOfLines={組.区切りの名の字(viewScale, UIConfig).numberOfLines}
                                   >
@@ -826,7 +827,7 @@ const HistoryScreen = () => {
                                       style={{
                                         fontSize: 14 * viewScale,
                                         fontWeight: '400',
-                                        color: 射手.name ? '#000' : '#8E8E93',
+                                        color: 射手.name ? 基本色.黒 : 基本色.灰,
                                       }}
                                       numberOfLines={2}
                                     >
@@ -840,7 +841,7 @@ const HistoryScreen = () => {
                                       <Text
                                         style={{
                                           fontSize: 9 * viewScale,
-                                          color: '#3C3C43',
+                                          color: 基本色.文字_二,
                                           marginTop: 2 * viewScale,
                                         }}
                                       >
@@ -859,13 +860,13 @@ const HistoryScreen = () => {
                                             !射手.gender ||
                                             射手.gender === '未設定' ||
                                             !['男子', '女子'].includes(射手.gender)
-                                              ? '#8E8E93'
+                                              ? 基本色.灰
                                               : '男子' === 射手.gender
-                                                ? '#007AFF'
-                                                : '#FF2D55',
+                                                ? 基本色.青
+                                                : 基本色.桃,
                                         }}
                                       >
-                                        <Icons.Ionicons name="person" size={10 * viewScale} color="#FFF" />
+                                        <Icons.Ionicons name="person" size={10 * viewScale} color={基本色.白} />
                                       </View>
                                     )}
                                   </TouchableOpacity>
@@ -905,7 +906,7 @@ const HistoryScreen = () => {
             <Icons.Ionicons
               name={選ばれている ? 'checkmark-circle' : 'ellipse-outline'}
               size={24}
-              color={選ばれている ? '#007AFF' : '#C7C7CC'}
+              color={選ばれている ? 基本色.青 : 基本色.灰_薄い}
             />
           </View>
         )}
@@ -921,20 +922,20 @@ const HistoryScreen = () => {
             <Icons.Ionicons
               name={'未同期' === item.syncStatus ? 'cloud-upload-outline' : 'cloud-done-outline'}
               size={14}
-              color={'未同期' === item.syncStatus ? '#FF9500' : '#007AFF'}
+              color={'未同期' === item.syncStatus ? 基本色.橙 : 基本色.青}
               style={{ marginLeft: 6 }}
             />
             {!item.includeInStats && (
               <View
                 style={{
-                  backgroundColor: '#C7C7CC',
+                  backgroundColor: 基本色.灰_薄い,
                   paddingHorizontal: 6,
                   paddingVertical: 2,
                   borderRadius: 4,
                   marginLeft: 8,
                 }}
               >
-                <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold' }}>統計除外</Text>
+                <Text style={{ color: 基本色.白, fontSize: 10, fontWeight: 'bold' }}>統計除外</Text>
               </View>
             )}
           </View>
@@ -943,7 +944,7 @@ const HistoryScreen = () => {
             {item.shotCount}
             {'本 '}
             {!!item.note && (
-              <Text style={{ color: '#FF9500' }}>
+              <Text style={{ color: 基本色.橙 }}>
                 {' \ud83d\uddd3\ufe0f '}
                 {item.note}
               </Text>
@@ -968,7 +969,7 @@ const HistoryScreen = () => {
           <View style={styles.countBadge}>
             <Text style={styles.countBadgeText}>{人数}人</Text>
           </View>
-          {!選択中 && <Icons.Ionicons name="chevron-forward" size={18} color="#C7C7CC" />}
+          {!選択中 && <Icons.Ionicons name="chevron-forward" size={18} color={基本色.灰_薄い} />}
         </View>
       </Pressable>
     );
@@ -1129,7 +1130,7 @@ const HistoryScreen = () => {
                       hovered && { backgroundColor: 'rgba(0,122,255,0.05)' },
                     ]}
                   >
-                    <Text style={{ color: '#007AFF', fontSize: 16, fontWeight: '600' }}>
+                    <Text style={{ color: 基本色.青, fontSize: 16, fontWeight: '600' }}>
                       {選択中 ? '完了' : '編集'}
                     </Text>
                   </Pressable>
@@ -1146,7 +1147,7 @@ const HistoryScreen = () => {
                       hovered && { backgroundColor: 'rgba(255,59,48,0.05)' },
                     ]}
                   >
-                    <Icons.Ionicons name="trash-outline" size={22} color="#FF3B30" />
+                    <Icons.Ionicons name="trash-outline" size={22} color={基本色.赤} />
                   </Pressable>
                 )}
               </View>
@@ -1154,7 +1155,7 @@ const HistoryScreen = () => {
           </View>
           {選択中 && 選んだ記録.size > 0 && (
             <TouchableOpacity style={styles.batchDeleteBar} onPress={選んだ記録を消す}>
-              <Icons.Ionicons name="trash" size={18} color="#FFF" />
+              <Icons.Ionicons name="trash" size={18} color={基本色.白} />
               <Text style={styles.batchDeleteText}>{選んだ記録.size}件を削除</Text>
             </TouchableOpacity>
           )}
@@ -1168,12 +1169,12 @@ const HistoryScreen = () => {
               <>
                 <View style={styles.searchContainer}>
                   <View style={styles.searchBar}>
-                    <Icons.Ionicons name="search" size={18} color="#8E8E93" style={styles.searchIcon} />
+                    <Icons.Ionicons name="search" size={18} color={基本色.灰} style={styles.searchIcon} />
                     <TextInput
                       aria-label="記録を検索"
                       style={styles.searchInput}
                       placeholder="日付や内容を検索（全期間対象）"
-                      placeholderTextColor="#8E8E93"
+                      placeholderTextColor={基本色.灰}
                       value={検索の文}
                       onChangeText={検索の文を置く}
                     />
@@ -1190,13 +1191,11 @@ const HistoryScreen = () => {
                         marginBottom: 8,
                       }}
                     >
-                      <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#8E8E93' }}>
-                        タグフィルター
-                      </Text>
+                      <Text style={{ fontSize: 13, fontWeight: 'bold', color: 基本色.灰 }}>タグフィルター</Text>
                       <View
                         style={{
                           flexDirection: 'row',
-                          backgroundColor: '#E5E5EA',
+                          backgroundColor: 基本色.地_濃い,
                           borderRadius: 8,
                           padding: 2,
                         }}
@@ -1205,14 +1204,14 @@ const HistoryScreen = () => {
                           onPress={() => setHistoryTagLogic('AND')}
                           style={[
                             { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-                            'AND' === historyTagLogic && { backgroundColor: '#FFF' },
+                            'AND' === historyTagLogic && { backgroundColor: 基本色.白 },
                           ]}
                         >
                           <Text
                             style={{
                               fontSize: 11,
                               fontWeight: 'bold',
-                              color: 'AND' === historyTagLogic ? '#007AFF' : '#8E8E93',
+                              color: 'AND' === historyTagLogic ? 基本色.青 : 基本色.灰,
                             }}
                           >
                             すべて含む
@@ -1222,14 +1221,14 @@ const HistoryScreen = () => {
                           onPress={() => setHistoryTagLogic('OR')}
                           style={[
                             { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-                            'OR' === historyTagLogic && { backgroundColor: '#FFF' },
+                            'OR' === historyTagLogic && { backgroundColor: 基本色.白 },
                           ]}
                         >
                           <Text
                             style={{
                               fontSize: 11,
                               fontWeight: 'bold',
-                              color: 'OR' === historyTagLogic ? '#007AFF' : '#8E8E93',
+                              color: 'OR' === historyTagLogic ? 基本色.青 : 基本色.灰,
                             }}
                           >
                             いずれか含む
@@ -1247,13 +1246,13 @@ const HistoryScreen = () => {
                         style={({ hovered }) => [
                           styles.tagChip,
                           0 === historySelectedTags.length && styles.tagChipActive,
-                          { backgroundColor: 0 === historySelectedTags.length ? '#007AFF' : '#E5E5EA' },
-                          hovered && 0 !== historySelectedTags.length && { backgroundColor: '#D1D1D6' },
+                          { backgroundColor: 0 === historySelectedTags.length ? 基本色.青 : 基本色.地_濃い },
+                          hovered && 0 !== historySelectedTags.length && { backgroundColor: 基本色.灰_明るい },
                         ]}
                         onPress={() => setHistorySelectedTags([])}
                       >
                         <Text
-                          style={[styles.tagChipText, 0 === historySelectedTags.length && { color: '#FFF' }]}
+                          style={[styles.tagChipText, 0 === historySelectedTags.length && { color: 基本色.白 }]}
                         >
                           すべて解除
                         </Text>
@@ -1266,12 +1265,12 @@ const HistoryScreen = () => {
                             style={({ hovered }) => [
                               styles.tagChip,
                               選ばれている && styles.tagChipActive,
-                              { backgroundColor: 選ばれている ? '#007AFF' : '#F2F2F7' },
-                              hovered && !選ばれている && { backgroundColor: '#E5E5EA' },
+                              { backgroundColor: 選ばれている ? 基本色.青 : 基本色.地 },
+                              hovered && !選ばれている && { backgroundColor: 基本色.地_濃い },
                             ]}
                             onPress={() => toggleHistoryTag(タグ)}
                           >
-                            <Text style={[styles.tagChipText, 選ばれている && { color: '#FFF' }]}>
+                            <Text style={[styles.tagChipText, 選ばれている && { color: 基本色.白 }]}>
                               {typeof タグ === 'string' && タグ.startsWith('#')
                                 ? タグ.substring(1)
                                 : String(タグ)}
@@ -1297,7 +1296,7 @@ const HistoryScreen = () => {
                             ? `${見ている年度}年度 (${見ている年度}/04 - ${見ている年度 + 1}/03)`
                             : '記録なし'}
                         </Text>
-                        <Icons.Ionicons name="chevron-expand" size={14} color="#5856D6" />
+                        <Icons.Ionicons name="chevron-expand" size={14} color={基本色.藍} />
                       </Pressable>
                     </View>
                     <ScrollView // 月が多いと画面幅を超える。横スクロールにして
@@ -1316,7 +1315,7 @@ const HistoryScreen = () => {
                             style={({ hovered }) => [
                               styles.monthTab,
                               選ばれている && styles.monthTabActive,
-                              hovered && !選ばれている && { backgroundColor: '#E5E5EA' },
+                              hovered && !選ばれている && { backgroundColor: 基本色.地_濃い },
                             ]}
                             onPress={() => 見ている月を置く(月)}
                           >
@@ -1331,7 +1330,7 @@ const HistoryScreen = () => {
                 )}
                 {!!検索の文 && (
                   <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
-                    <Text style={{ fontSize: 13, color: '#8E8E93' }}>
+                    <Text style={{ fontSize: 13, color: 基本色.灰 }}>
                       「{検索の文}
                       {'」の全期間検索結果: '}
                       {絞った記録.length}件
@@ -1399,16 +1398,16 @@ const HistoryScreen = () => {
             <Text style={styles.confirmMessage}>選択した記録をゴミ箱に移動しますか？</Text>
             <View style={styles.modalButtonsRow}>
               <TouchableOpacity
-                style={[styles.modalBtn, { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 }]}
+                style={[styles.modalBtn, { backgroundColor: 基本色.地, flex: 1, marginRight: 5 }]}
                 onPress={() => {
                   削除の確認を出す(false);
                   消す記録IDを置く(null);
                 }}
               >
-                <Text style={{ color: '#007AFF', fontWeight: 'bold' }}>キャンセル</Text>
+                <Text style={{ color: 基本色.青, fontWeight: 'bold' }}>キャンセル</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalBtn, { backgroundColor: '#FF3B30', flex: 1, marginLeft: 5 }]}
+                style={[styles.modalBtn, { backgroundColor: 基本色.赤, flex: 1, marginLeft: 5 }]}
                 onPress={async () => {
                   消す記録ID
                     ? (deleteSession(消す記録ID), 消す記録IDを置く(null), setHistoryViewMode('list'))
@@ -1418,7 +1417,7 @@ const HistoryScreen = () => {
                   削除の確認を出す(false);
                 }}
               >
-                <Text style={{ color: '#FFF', fontWeight: 'bold' }}>移動する</Text>
+                <Text style={{ color: 基本色.白, fontWeight: 'bold' }}>移動する</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1461,10 +1460,10 @@ const HistoryScreen = () => {
                   航路.navigate('記録');
                 }}
               >
-                <Icons.Ionicons name="open-outline" size={20} color="#FF9500" />
+                <Icons.Ionicons name="open-outline" size={20} color={基本色.橙} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.adminMenuText}>記録画面で直す</Text>
-                  <Text style={{ fontSize: 11, color: '#8E8E93', marginLeft: 12 }}>
+                  <Text style={{ fontSize: 11, color: 基本色.灰, marginLeft: 12 }}>
                     並べ替え・矢所・射数など、記録表の道具をすべて使う
                   </Text>
                 </View>
@@ -1482,12 +1481,10 @@ const HistoryScreen = () => {
                 記録の情報の窓を出す(true);
               }}
             >
-              <Icons.Ionicons name="create-outline" size={20} color="#5856D6" />
+              <Icons.Ionicons name="create-outline" size={20} color={基本色.藍} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.adminMenuText}>記録の情報を変える</Text>
-                <Text style={{ fontSize: 11, color: '#8E8E93', marginLeft: 12 }}>
-                  日付・題・メモ・タグ・出欠
-                </Text>
+                <Text style={{ fontSize: 11, color: 基本色.灰, marginLeft: 12 }}>日付・題・メモ・タグ・出欠</Text>
               </View>
             </TouchableOpacity>
           </View>

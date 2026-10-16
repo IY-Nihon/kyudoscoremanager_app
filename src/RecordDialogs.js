@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const { View, StyleSheet, Text, Modal, TextInput, Pressable, TouchableOpacity } = require('./rn');
 const { IS_WEB } = require('./IS_WEB');
 // 見た目の決まりは、切り出した窓と分け合うので別のファイル（2026-10-05）
@@ -46,17 +47,17 @@ const リセットの確認の窓 = ({
           <Pressable
             style={({ hovered }) => [
               styles.modalBtn,
-              { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
-              hovered && IS_WEB && { backgroundColor: '#E5E5EA' },
+              { backgroundColor: 色.地, flex: 1, marginRight: 5 },
+              hovered && IS_WEB && { backgroundColor: 色.地_濃い },
             ]}
             onPress={() => リセットの窓を出す(false)}
           >
-            <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
+            <Text style={[styles.modalBtnText, { color: 色.青 }]}>キャンセル</Text>
           </Pressable>
           <Pressable
             style={({ hovered }) => [
               styles.modalBtn,
-              { backgroundColor: '#FF3B30', flex: 1, marginLeft: 5 },
+              { backgroundColor: 色.赤, flex: 1, marginLeft: 5 },
               hovered && IS_WEB && { opacity: 0.8 },
             ]}
             onPress={() => {
@@ -66,7 +67,7 @@ const リセットの確認の窓 = ({
               知らせる('リセットしました。');
             }}
           >
-            <Text style={[styles.modalBtnText, { color: '#FFF' }]}>リセット</Text>
+            <Text style={[styles.modalBtnText, { color: 色.白 }]}>リセット</Text>
           </Pressable>
         </View>
       </View>
@@ -103,29 +104,29 @@ const アプリ内の確認の窓 = ({
         style={{
           width: '100%',
           maxWidth: 400,
-          backgroundColor: '#FFF',
+          backgroundColor: 色.白,
           borderRadius: 14,
           overflow: 'hidden',
         }}
       >
         <View style={{ padding: 20 }}>
-          <Text style={{ fontSize: 15, color: '#1C1C1E', lineHeight: 22 }}>{(確認 && 確認.文) || ''}</Text>
+          <Text style={{ fontSize: 15, color: 色.文字, lineHeight: 22 }}>{(確認 && 確認.文) || ''}</Text>
         </View>
         <View
           style={{
             flexDirection: 'row',
             borderTopWidth: StyleSheet.hairlineWidth,
-            borderTopColor: '#C6C6C8',
+            borderTopColor: 色.区切り,
           }}
         >
           <Pressable
             style={({ hovered }) => [
               { flex: 1, padding: 16, alignItems: 'center' },
-              hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
+              hovered && IS_WEB && { backgroundColor: 色.地 },
             ]}
             onPress={() => 確認を置く(null)}
           >
-            <Text style={{ fontSize: 17, color: '#007AFF' }}>キャンセル</Text>
+            <Text style={{ fontSize: 17, color: 色.青 }}>キャンセル</Text>
           </Pressable>
           <Pressable
             style={({ hovered }) => [
@@ -134,9 +135,9 @@ const アプリ内の確認の窓 = ({
                 padding: 16,
                 alignItems: 'center',
                 borderLeftWidth: StyleSheet.hairlineWidth,
-                borderLeftColor: '#C6C6C8',
+                borderLeftColor: 色.区切り,
               },
-              hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
+              hovered && IS_WEB && { backgroundColor: 色.地 },
             ]}
             onPress={() => {
               const 手 = 確認 && 確認.実行;
@@ -144,7 +145,7 @@ const アプリ内の確認の窓 = ({
               if (手) 手();
             }}
           >
-            <Text style={{ fontSize: 17, color: '#007AFF', fontWeight: 'bold' }}>OK</Text>
+            <Text style={{ fontSize: 17, color: 色.青, fontWeight: 'bold' }}>OK</Text>
           </Pressable>
         </View>
       </View>
@@ -204,17 +205,17 @@ const チーム名の窓 = ({
           <Pressable
             style={({ hovered }) => [
               styles.modalBtn,
-              { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
-              hovered && IS_WEB && { backgroundColor: '#E5E5EA' },
+              { backgroundColor: 色.地, flex: 1, marginRight: 5 },
+              hovered && IS_WEB && { backgroundColor: 色.地_濃い },
             ]}
             onPress={() => setチーム名を付ける区切り(null)}
           >
-            <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
+            <Text style={[styles.modalBtnText, { color: 色.青 }]}>キャンセル</Text>
           </Pressable>
           <Pressable
             style={({ hovered }) => [
               styles.modalBtn,
-              { backgroundColor: '#007AFF', flex: 1, marginLeft: 5 },
+              { backgroundColor: 色.青, flex: 1, marginLeft: 5 },
               hovered && IS_WEB && { opacity: 0.9 },
             ]}
             onPress={() => {
@@ -222,7 +223,7 @@ const チーム名の窓 = ({
               setチーム名を付ける区切り(null);
             }}
           >
-            <Text style={[styles.modalBtnText, { color: '#FFF' }]}>決定</Text>
+            <Text style={[styles.modalBtnText, { color: 色.白 }]}>決定</Text>
           </Pressable>
         </View>
       </View>

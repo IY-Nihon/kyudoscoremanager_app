@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const React = require('react');
 const { View, Text, StyleSheet, Animated } = require('./rn');
 const { useScoreStore } = require('./useScoreStore');
@@ -29,7 +30,7 @@ const OfflineIndicator = () => {
       >
         <View style={styles.badge}>
           {/* Ionicons にそろえる。MaterialCommunityIcons はこの 1 つのために 1.3MB の字体を取り寄せていた */}
-          <Icons.Ionicons name="cloud-offline-outline" size={16} color="#FFFFFF" />
+          <Icons.Ionicons name="cloud-offline-outline" size={16} color={色.白} />
           <Text style={styles.text}>オフラインモード</Text>
         </View>
       </Animated.View>
@@ -42,21 +43,21 @@ const styles = StyleSheet.create({
     {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#FF3B30',
+      backgroundColor: 色.赤,
       paddingHorizontal: 12,
       paddingVertical: 6,
       borderRadius: 20,
       gap: 6,
     },
     getShadowStyle({
-      shadowColor: '#000',
+      shadowColor: 色.黒,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.2,
       shadowRadius: 4,
       elevation: 4,
     })
   ),
-  text: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
+  text: { color: 色.白, fontSize: 12, fontWeight: '700' },
 });
 Object.defineProperty(exports, '__esModule', { value: true });
 exports.OfflineIndicator = OfflineIndicator;

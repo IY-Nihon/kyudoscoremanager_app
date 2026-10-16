@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const { View, StyleSheet, Text, Modal, Pressable, TouchableOpacity } = require('./rn');
 const { IS_WEB } = require('./IS_WEB');
 
@@ -38,7 +39,7 @@ const ライブを始めるか入るかの窓 = ({
         style={{
           width: '90%',
           maxWidth: 400,
-          backgroundColor: '#FFF',
+          backgroundColor: 色.白,
           borderRadius: 14,
           overflow: 'hidden',
         }}
@@ -48,24 +49,24 @@ const ライブを始めるか入るかの窓 = ({
             padding: 18,
             alignItems: 'center',
             borderBottomWidth: StyleSheet.hairlineWidth,
-            borderBottomColor: '#C6C6C8',
+            borderBottomColor: 色.区切り,
           }}
           onPress={() => ライブを始める窓へ('host')}
         >
-          <Text style={{ fontSize: 20, color: '#007AFF' }}>ライブ記録を開始</Text>
+          <Text style={{ fontSize: 20, color: 色.青 }}>ライブ記録を開始</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={{ padding: 18, alignItems: 'center' }}
           onPress={() => ライブを始める窓へ('join')}
         >
-          <Text style={{ fontSize: 20, color: '#007AFF' }}>ライブ記録に参加</Text>
+          <Text style={{ fontSize: 20, color: 色.青 }}>ライブ記録に参加</Text>
         </TouchableOpacity>
       </View>
       <TouchableOpacity
         style={{
           width: '90%',
           maxWidth: 400,
-          backgroundColor: '#FFF',
+          backgroundColor: 色.白,
           borderRadius: 14,
           marginTop: 8,
           padding: 18,
@@ -73,7 +74,7 @@ const ライブを始めるか入るかの窓 = ({
         }}
         onPress={() => ライブの選び窓を出す(false)}
       >
-        <Text style={{ fontSize: 20, color: '#007AFF', fontWeight: 'bold' }}>キャンセル</Text>
+        <Text style={{ fontSize: 20, color: 色.青, fontWeight: 'bold' }}>キャンセル</Text>
       </TouchableOpacity>
     </TouchableOpacity>
   </Modal>
@@ -108,7 +109,7 @@ const 参加のしかたの窓 = ({
         style={{
           width: '90%',
           maxWidth: 400,
-          backgroundColor: '#FFF',
+          backgroundColor: 色.白,
           borderRadius: 14,
           overflow: 'hidden',
         }}
@@ -117,12 +118,12 @@ const 参加のしかたの窓 = ({
           style={{
             padding: 16,
             borderBottomWidth: StyleSheet.hairlineWidth,
-            borderBottomColor: '#C6C6C8',
+            borderBottomColor: 色.区切り,
             alignItems: 'center',
           }}
         >
-          <Text style={{ fontSize: 13, color: '#8E8E93', fontWeight: '600' }}>参加のしかた</Text>
-          <Text style={{ fontSize: 15, color: '#3C3C43', marginTop: 4 }}>{参加のしかたを聞く || ''}</Text>
+          <Text style={{ fontSize: 13, color: 色.灰, fontWeight: '600' }}>参加のしかた</Text>
+          <Text style={{ fontSize: 15, color: 色.文字_二, marginTop: 4 }}>{参加のしかたを聞く || ''}</Text>
         </View>
         <Pressable
           style={({ hovered }) => [
@@ -130,9 +131,9 @@ const 参加のしかたの窓 = ({
               padding: 16,
               alignItems: 'center',
               borderBottomWidth: StyleSheet.hairlineWidth,
-              borderBottomColor: '#C6C6C8',
+              borderBottomColor: 色.区切り,
             },
-            hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
+            hovered && IS_WEB && { backgroundColor: 色.地 },
           ]}
           onPress={() => {
             const 名 = 参加のしかたを聞く;
@@ -140,13 +141,13 @@ const 参加のしかたの窓 = ({
             if (名) ライブに入る(名, false);
           }}
         >
-          <Text style={{ fontSize: 20, color: '#007AFF', fontWeight: 'bold' }}>記録用</Text>
-          <Text style={{ fontSize: 13, color: '#8E8E93', marginTop: 2 }}>○×を入れられます</Text>
+          <Text style={{ fontSize: 20, color: 色.青, fontWeight: 'bold' }}>記録用</Text>
+          <Text style={{ fontSize: 13, color: 色.灰, marginTop: 2 }}>○×を入れられます</Text>
         </Pressable>
         <Pressable
           style={({ hovered }) => [
             { padding: 16, alignItems: 'center' },
-            hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
+            hovered && IS_WEB && { backgroundColor: 色.地 },
           ]}
           onPress={() => {
             const 名 = 参加のしかたを聞く;
@@ -154,8 +155,8 @@ const 参加のしかたの窓 = ({
             if (名) ライブに入る(名, true);
           }}
         >
-          <Text style={{ fontSize: 20, color: '#007AFF', fontWeight: 'bold' }}>閲覧用</Text>
-          <Text style={{ fontSize: 13, color: '#8E8E93', marginTop: 2 }}>画面を見るだけ。○×は入れません</Text>
+          <Text style={{ fontSize: 20, color: 色.青, fontWeight: 'bold' }}>閲覧用</Text>
+          <Text style={{ fontSize: 13, color: 色.灰, marginTop: 2 }}>画面を見るだけ。○×は入れません</Text>
         </Pressable>
       </View>
       <Pressable
@@ -163,7 +164,7 @@ const 参加のしかたの窓 = ({
           {
             width: '90%',
             maxWidth: 400,
-            backgroundColor: '#FFF',
+            backgroundColor: 色.白,
             borderRadius: 14,
             marginTop: 8,
             padding: 18,
@@ -173,7 +174,7 @@ const 参加のしかたの窓 = ({
         ]}
         onPress={() => 参加のしかたを聞くを置く(null)}
       >
-        <Text style={{ fontSize: 20, color: '#007AFF', fontWeight: 'bold' }}>キャンセル</Text>
+        <Text style={{ fontSize: 20, color: 色.青, fontWeight: 'bold' }}>キャンセル</Text>
       </Pressable>
     </Pressable>
   </Modal>
