@@ -56,7 +56,6 @@ const MemberScreen = () => {
     addMember,
     updateMember,
     deleteMember,
-    incrementAllGrades,
     activeGroupId,
     publicGroupId,
     isAdminMode,
@@ -67,7 +66,6 @@ const MemberScreen = () => {
     'addMember',
     'updateMember',
     'deleteMember',
-    'incrementAllGrades',
     'activeGroupId',
     'publicGroupId',
     'isAdminMode',
@@ -83,7 +81,17 @@ const MemberScreen = () => {
   const [性別の下書き, 性別の下書きを置く] = React.useState('未設定');
   const [学年の下書き, 学年の下書きを置く] = React.useState('1');
   const [期の下書き, 期の下書きを置く] = React.useState('');
+  // 在籍・卒業・退部（src/gakunen.js の 在籍）
+  const [在籍の下書き, 在籍の下書きを置く] = React.useState('在籍');
   const 今の一年生の期 = useScoreStore((状態) => 状態.currentFreshmanTerm);
+  // 期を使わない団体では、期をどこにも出さない
+  const 期を使う = useScoreStore((状態) => 状態.useTerm);
+  // 団体の種類で、選べる学年が変わる
+  const 種類 = useScoreStore((状態) => 状態.groupType);
+  const 決まり = React.useMemo(() => 学.決まりを作る(種類), [種類]);
+  // 学年の札（在籍の学年とその他）。5 つまでは 1 段、それより多い（高専・6 年制）と 2 段に均等に割る
+  const 学年の札 = [...決まり.在籍の学年.map(String), '0'];
+  const 札の列の数 = 学年の札.length <= 5 ? 学年の札.length : Math.ceil(学年の札.length / 2);
   const [弓具の窓, 弓具の窓を出す] = React.useState(false);
   // 端末の日付で出す。toISOString は世界標準時なので、日本では
   // 朝9時より前に開くと前の日が入ってしまう（弓具を変えた日がずれる）
@@ -133,12 +141,18 @@ const MemberScreen = () => {
       const 性別の差 = 性別の順(甲.gender) - 性別の順(乙.gender);
       return 0 !== 性別の差 ? 性別の差 : (甲.name || '').localeCompare(乙.name || '', 'ja');
     });
+  // 卒業生は期ごと（期を使わない団体は卒業した年度ごと）にまとめる
+  const 卒業の組の名 = (部員) =>
+    期を使う && 部員.termKi ? `${部員.termKi}期` : 部員.leftYear ? `${部員.leftYear}年度` : '不明';
   const graduateGroups = graduateMembers.reduce((groups, member) => {
-    const 期 = member.termKi || '期不明';
-    if (!groups[期]) groups[期] = [];
-    groups[期].push(member);
+    const 名 = 卒業の組の名(member);
+    if (!groups[名]) groups[名] = [];
+    groups[名].push(member);
     return groups;
   }, {});
+  const 退部した人たち = filteredMembers
+    .filter((部員) => 学.退部した人か(部員))
+    .sort((甲, 乙) => (甲.name || '').localeCompare(乙.name || '', 'ja'));
   const renderMemberCard = (部員) => {
     const 最新の弓具 =
       部員.equipments && 部員.equipments.length > 0
@@ -174,7 +188,7 @@ const MemberScreen = () => {
             </Text>
           </View>
           <Text style={styles.memberSub}>
-            {部員.termKi ? `${部員.termKi}期 / ` : ''}
+            {期を使う && 部員.termKi ? `${部員.termKi}期 / ` : ''}
             {部員.gender}
             {' / '}
             {学.学年の名前(部員)}
@@ -214,11 +228,12 @@ const MemberScreen = () => {
       (編集中の部員を置く(部員),
       名前の下書きを置く(部員.name),
       性別の下書きを置く(部員.gender),
-      学年の下書きを置く(部員.grade.toString()),
-      !部員.termKi && 今の一年生の期)
+      学年の下書きを置く(String(学.学年の値(部員, 決まり))),
+      在籍の下書きを置く(学.在籍の状態(部員, 決まり)),
+      !部員.termKi && 期を使う && 今の一年生の期)
     ) {
-      const 学年 = 部員.grade || 1;
-      期の下書きを置く(学.期を付ける学年か(学年) ? String(学.学年の期(今の一年生の期, 学年)) : '');
+      const 学年 = 学.学年の値(部員, 決まり);
+      期の下書きを置く(学.期を付ける学年か(学年, 決まり) ? String(学.学年の期(今の一年生の期, 学年)) : '');
     } else 期の下書きを置く(部員.termKi?.toString() || '');
     編集の窓を出す(true);
   };
@@ -380,7 +395,12 @@ const MemberScreen = () => {
       {窓として出す ? (
         <View style={styles.modalHeader}>
           <Text style={styles.modalTitle}>{編集中の部員 ? 'メンバー編集' : '新規登録'}</Text>
-          <TouchableOpacity onPress={() => 編集の窓を出す(false)} style={styles.closeBtn}>
+          <TouchableOpacity
+            onPress={() => 編集の窓を出す(false)}
+            style={styles.closeBtn}
+            accessibilityRole="button"
+            aria-label="閉じる"
+          >
             <Icons.Ionicons name="close" size={24} color={色.灰} />
           </TouchableOpacity>
         </View>
@@ -445,50 +465,81 @@ const MemberScreen = () => {
               ))}
             </View>
             <Text style={styles.label}>学年</Text>
-            <View style={styles.stepperContainer}>
-              <Text style={styles.stepperValue}>{学.学年の値の名前(学年の下書き, null, { 生: true })}</Text>
-              <View style={styles.stepperControls}>
-                <Pressable
-                  style={({ hovered }) => [styles.stepperBtn, hovered && { backgroundColor: 色.灰_明るい }]}
-                  onPress={() => {
-                    const 今の学年 = parseInt(学年の下書き) || 0;
-                    if (今の学年 > 学.学年の幅().下) {
-                      const 次の学年 = 今の学年 - 1;
-                      学年の下書きを置く(String(次の学年));
-                      if (今の一年生の期 && 学.期を付ける学年か(次の学年))
-                        期の下書きを置く(String(学.学年の期(今の一年生の期, 次の学年)));
-                    }
-                  }}
-                >
-                  <Icons.Ionicons name="remove" size={24} color={色.青} />
-                </Pressable>
-                <View style={styles.stepperDivider} />
-                <Pressable
-                  style={({ hovered }) => [styles.stepperBtn, hovered && { backgroundColor: 色.灰_明るい }]}
-                  onPress={() => {
-                    const 今の学年 = parseInt(学年の下書き) || 0;
-                    if (今の学年 < 学.学年の幅().上) {
-                      const 次の学年 = 今の学年 + 1;
-                      学年の下書きを置く(String(次の学年));
-                      if (今の一年生の期 && 学.期を付ける学年か(次の学年))
-                        期の下書きを置く(String(学.学年の期(今の一年生の期, 次の学年)));
-                    }
-                  }}
-                >
-                  <Icons.Ionicons name="add" size={24} color={色.青} />
-                </Pressable>
-              </View>
+            <View style={styles.札の列} accessibilityRole="radiogroup" aria-label="学年">
+              {学年の札.map((値) => {
+                const 選んだ = 学年の下書き === 値;
+                return (
+                  <View key={値} style={[styles.札の枠, { width: `${100 / 札の列の数}%` }]}>
+                    <Pressable
+                      accessibilityRole="radio"
+                      aria-checked={選んだ}
+                      style={({ hovered }) => [
+                        styles.札,
+                        選んだ && styles.genderBtnActive,
+                        hovered && !選んだ && { backgroundColor: 色.地_濃い },
+                      ]}
+                      onPress={() => {
+                        学年の下書きを置く(値);
+                        // 期を使う団体では、学年に合わせて期も入れ直す（その他は空）
+                        if (期を使う && 今の一年生の期)
+                          期の下書きを置く(
+                            学.期を付ける学年か(値, 決まり) ? String(学.学年の期(今の一年生の期, 値)) : ''
+                          );
+                      }}
+                    >
+                      <Text style={[styles.genderBtnText, 選んだ && styles.genderBtnTextActive]}>
+                        {学.学年だけの名前(値, 決まり)}
+                      </Text>
+                    </Pressable>
+                  </View>
+                );
+              })}
             </View>
-            <Text style={styles.label}>期</Text>
-            <TextInput
-              aria-label="期"
-              style={styles.input}
-              value={期の下書き}
-              onChangeText={期の下書きを置く}
-              placeholder="例: 70"
-              keyboardType="number-pad"
-              placeholderTextColor={色.灰_薄い}
-            />
+            {/* 在籍は、いる人を直すときだけ（足すときは在籍） */}
+            {編集中の部員 ? (
+              <>
+                <Text style={styles.label}>在籍</Text>
+                <View style={styles.genderRow} accessibilityRole="radiogroup" aria-label="在籍">
+                  {[学.在籍.在籍, 学.在籍.卒業, 学.在籍.退部].map((状態) => {
+                    const 選んだ = 在籍の下書き === 状態;
+                    return (
+                      <Pressable
+                        key={状態}
+                        accessibilityRole="radio"
+                        aria-checked={選んだ}
+                        style={({ hovered }) => [
+                          styles.genderBtn,
+                          選んだ && styles.genderBtnActive,
+                          hovered && !選んだ && { backgroundColor: 色.地_濃い },
+                        ]}
+                        onPress={() => 在籍の下書きを置く(状態)}
+                      >
+                        <Text style={[styles.genderBtnText, 選んだ && styles.genderBtnTextActive]}>
+                          {状態}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                <Text style={styles.inputHelperText}>
+                  卒業・退部の人は名簿の下にまとめます。記録は残ります
+                </Text>
+              </>
+            ) : null}
+            {期を使う ? (
+              <>
+                <Text style={styles.label}>期</Text>
+                <TextInput
+                  aria-label="期"
+                  style={styles.input}
+                  value={期の下書き}
+                  onChangeText={期の下書きを置く}
+                  placeholder="例: 70"
+                  keyboardType="number-pad"
+                  placeholderTextColor={色.灰_薄い}
+                />
+              </>
+            ) : null}
           </>
         ) : (
           <View style={styles.きまり}>
@@ -506,24 +557,30 @@ const MemberScreen = () => {
               <Text style={styles.きまりの名}>性別</Text>
               <Text style={styles.きまりの値}>{(いまの自分 || {}).gender || 性別の下書き || '未設定'}</Text>
             </View>
-            <View style={styles.きまりの行}>
+            <View style={[styles.きまりの行, !期を使う && { borderBottomWidth: 0 }]}>
               <Text style={styles.きまりの名}>学年</Text>
               <Text style={styles.きまりの値}>
-                {学.学年の値の名前(
-                  (いまの自分 && いまの自分.grade != null ? いまの自分.grade : 学年の下書き) ?? ''
-                )}
+                {いまの自分 && いまの自分.grade != null
+                  ? 学.学年の名前(いまの自分, 決まり)
+                  : 学.学年の値の名前(学年の下書き ?? '', 決まり)}
               </Text>
             </View>
-            <View style={[styles.きまりの行, { borderBottomWidth: 0 }]}>
-              <Text style={styles.きまりの名}>期</Text>
-              <Text style={styles.きまりの値}>
-                {(() => {
-                  const 期 = (いまの自分 && いまの自分.termKi) || 期の下書き;
-                  return 期 ? `${期}期` : '未設定';
-                })()}
-              </Text>
-            </View>
-            <Text style={styles.きまりの但し書き}>名前・性別・学年・期は団体の担当者が直します</Text>
+            {期を使う ? (
+              <View style={[styles.きまりの行, { borderBottomWidth: 0 }]}>
+                <Text style={styles.きまりの名}>期</Text>
+                <Text style={styles.きまりの値}>
+                  {(() => {
+                    const 期 = (いまの自分 && いまの自分.termKi) || 期の下書き;
+                    return 期 ? `${期}期` : '未設定';
+                  })()}
+                </Text>
+              </View>
+            ) : null}
+            <Text style={styles.きまりの但し書き}>
+              {期を使う
+                ? '名前・性別・学年・期は団体の担当者が直します'
+                : '名前・性別・学年は団体の担当者が直します'}
+            </Text>
           </View>
         )}
         {/* 弓具は、団体アカウントか本人だけ。個人ログインで他人の */
@@ -571,14 +628,20 @@ const MemberScreen = () => {
                     onPress={() => {
                       if (!名前の下書き.trim()) return void Alert.alert('お知らせ', '名前を入力してください');
                       const 学年 = parseInt(学年の下書き) || 0;
-                      const 期 = '' === 期の下書き ? undefined : parseInt(期の下書き) || undefined;
+                      // 期を使わない団体では期を送らない（店が学年に合わせて空にする）
+                      const 期 =
+                        !期を使う || '' === 期の下書き ? undefined : parseInt(期の下書き) || undefined;
                       if (編集中の部員)
-                        updateMember(編集中の部員.id, {
-                          name: 名前の下書き,
-                          gender: 性別の下書き,
-                          grade: 学年,
-                          termKi: 期,
-                        });
+                        updateMember(
+                          編集中の部員.id,
+                          Object.assign(
+                            { name: 名前の下書き, gender: 性別の下書き, grade: 学年, termKi: 期 },
+                            // 在籍は変えたときだけ送る（送ると卒業・退部した年度を今年度で書き直すため）
+                            在籍の下書き !== 学.在籍の状態(編集中の部員, 決まり)
+                              ? { enrollment: 在籍の下書き }
+                              : {}
+                          )
+                        );
                       else addMember(名前の下書き, 性別の下書き, 学年, 期);
                       編集の窓を出す(false);
                     }}
@@ -674,7 +737,8 @@ const MemberScreen = () => {
                 名前の下書きを置く('');
                 性別の下書きを置く('未設定');
                 学年の下書きを置く('1');
-                期の下書きを置く(今の一年生の期 ? String(今の一年生の期) : '');
+                在籍の下書きを置く('在籍');
+                期の下書きを置く(期を使う && 今の一年生の期 ? String(今の一年生の期) : '');
                 編集の窓を出す(true);
               }}
             >
@@ -714,7 +778,7 @@ const MemberScreen = () => {
         }
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
-          activeMembers.length === 0 && graduateMembers.length === 0 ? (
+          activeMembers.length === 0 && graduateMembers.length === 0 && 退部した人たち.length === 0 ? (
             <View style={styles.empty}>
               <Text style={styles.emptyText}>メンバーがいません</Text>
             </View>
@@ -722,10 +786,14 @@ const MemberScreen = () => {
         }
         renderItem={({ item: 部員 }) => renderMemberCard(部員)}
         ListFooterComponent={
-          graduateMembers.length > 0 ? (
+          graduateMembers.length > 0 || 退部した人たち.length > 0 ? (
             <View style={{ marginTop: 10 }}>
               <Pressable style={styles.alumniHeader} onPress={() => setIsAlumniExpanded(!isAlumniExpanded)}>
-                <Text style={styles.alumniHeaderText}>{`卒業生を表示 (${graduateMembers.length}名)`}</Text>
+                <Text style={styles.alumniHeaderText}>
+                  {退部した人たち.length
+                    ? `卒業・退部した人を表示 (${graduateMembers.length + 退部した人たち.length}名)`
+                    : `卒業生を表示 (${graduateMembers.length}名)`}
+                </Text>
                 <Icons.Ionicons
                   name={isAlumniExpanded ? 'chevron-up' : 'chevron-down'}
                   size={20}
@@ -734,13 +802,28 @@ const MemberScreen = () => {
               </Pressable>
               {isAlumniExpanded &&
                 Object.keys(graduateGroups)
-                  .sort((甲, 乙) => 乙.localeCompare(甲, undefined, { numeric: true }))
-                  .map((期) => (
-                    <View key={`group-${期}`} style={{ marginTop: 10 }}>
-                      <Text style={styles.alumniGroupTitle}>{期 === '期不明' ? '期不明' : `${期}期`}</Text>
-                      {graduateGroups[期].map(renderMemberCard)}
+                  // 新しい期・年度から。分からない人はいちばん後ろ
+                  .sort((甲, 乙) =>
+                    '不明' === 甲
+                      ? 1
+                      : '不明' === 乙
+                        ? -1
+                        : 乙.localeCompare(甲, undefined, { numeric: true })
+                  )
+                  .map((名) => (
+                    <View key={`group-${名}`} style={{ marginTop: 10 }}>
+                      <Text style={styles.alumniGroupTitle}>
+                        {'不明' === 名 ? '卒業（期・年度不明）' : 名.endsWith('年度') ? `${名}卒業` : 名}
+                      </Text>
+                      {graduateGroups[名].map(renderMemberCard)}
                     </View>
                   ))}
+              {isAlumniExpanded && 退部した人たち.length > 0 && (
+                <View style={{ marginTop: 10 }}>
+                  <Text style={styles.alumniGroupTitle}>退部</Text>
+                  {退部した人たち.map(renderMemberCard)}
+                </View>
+              )}
             </View>
           ) : null
         }
@@ -925,6 +1008,17 @@ const styles = StyleSheet.create({
   },
   inputHelperText: { fontSize: 11, color: 色.灰, marginTop: 4, marginLeft: 4 },
   genderRow: { flexDirection: 'row', gap: 10 },
+  // 学年の札。6 年制とその他で 7 つ並ぶので折り返す
+  // 札の枠を列の数で均等に割り、枠の内側の余白で札の間をあける（段がそろう）
+  札の列: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -4 },
+  札の枠: { padding: 4 },
+  札: {
+    height: 40,
+    backgroundColor: 色.地,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   genderBtn: {
     flex: 1,
     height: 40,

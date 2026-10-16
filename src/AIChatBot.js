@@ -449,7 +449,9 @@ const AIChatBot = () => {
     // 確かめずに「追加しました」と出していたため、個人で入っている人には
     // 権限エラーの帯と「追加しました」が同時に出ていた
     if (activeRole !== 'group') return null;
-    addMember(name, finalGender, Number(grade) || 1);
+    // 学年 0 はその他（コーチ・ゲスト）。数でなければ 1 年として足す
+    const 学年 = Number(grade);
+    addMember(name, finalGender, Number.isFinite(学年) && grade !== null && grade !== '' ? 学年 : 1);
     return name;
   };
 
@@ -891,7 +893,10 @@ const AIChatBot = () => {
                   type: 'OBJECT',
                   properties: {
                     name: { type: 'STRING', description: '追加する部員の名前' },
-                    grade: { type: 'INTEGER', description: '学年（1〜4など）' },
+                    grade: {
+                      type: 'INTEGER',
+                      description: `学年（1〜${学.今の決まりを見る().在籍の学年.length} の数。コーチ・ゲストなど学年の無い人は 0）`,
+                    },
                     gender: { type: 'STRING', description: "性別（'male', 'female', '未設定' のいずれか）" },
                   },
                   required: ['name', 'grade', 'gender'],
@@ -911,7 +916,10 @@ const AIChatBot = () => {
                         type: 'OBJECT',
                         properties: {
                           name: { type: 'STRING', description: '名前' },
-                          grade: { type: 'INTEGER', description: '学年（1〜4など）' },
+                          grade: {
+                            type: 'INTEGER',
+                            description: `学年（1〜${学.今の決まりを見る().在籍の学年.length} の数。コーチ・ゲストなど学年の無い人は 0）`,
+                          },
                           gender: {
                             type: 'STRING',
                             description: "性別（'male', 'female', '未設定' のいずれか）",
@@ -1758,7 +1766,8 @@ const AIChatBot = () => {
                     <Text style={styles.modelText}>
                       名前: {msg.args.name}
                       {'\n'}
-                      学年: {msg.args.grade}年{'\n'}
+                      学年: {学.学年の値の名前(msg.args.grade)}
+                      {'\n'}
                       性別:{' '}
                       {msg.args.gender === 'male'
                         ? '男性'

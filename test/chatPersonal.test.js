@@ -142,6 +142,7 @@ test('Q&A：個人から外した番号は、どれも実在する（番号を�
     'Q51',
     'Q52',
     'Q78',
+    'Q88',
   ])
     assert.ok(番号たち.includes(番), `外した番号 ${番} が Q&A に無い（振り直された？）`);
 });
@@ -232,7 +233,13 @@ test('参加回数：個人ログインでも使え、数えるのは本人だ�
   const { 自分だけに絞る } = require('../src/chatScope');
   const { 参加回数を数える } = require('../src/chatStats');
   assert.ok(個人用.個人が使える道具.includes('countSessionParticipation'));
-  const 宣言 = 個人用.個人向けの道具([{ name: 'countSessionParticipation', description: '団体向けの説明', parameters: { type: 'OBJECT', properties: { keyword: { type: 'STRING' } } } }]);
+  const 宣言 = 個人用.個人向けの道具([
+    {
+      name: 'countSessionParticipation',
+      description: '団体向けの説明',
+      parameters: { type: 'OBJECT', properties: { keyword: { type: 'STRING' } } },
+    },
+  ]);
   assert.strictEqual(宣言.length, 1);
   assert.ok(!宣言[0].description.includes('団体向け'), '個人向けの言い回しに直す');
   const members = [
@@ -240,11 +247,20 @@ test('参加回数：個人ログインでも使え、数えるのは本人だ�
     { id: 'o1', name: '他人 花子', grade: 1 },
     { id: 'o2', name: '別人 次郎', grade: 3 },
   ];
-  const 記録 = (id, ids) => ({ id, date: 1000 + Number(id.slice(1)), title: '練習', tags: ['#自主稽古'], archers: ids.map((m, i) => ({ id: id + i, memberId: m, name: members.find((x) => x.id === m).name })) });
+  const 記録 = (id, ids) => ({
+    id,
+    date: 1000 + Number(id.slice(1)),
+    title: '練習',
+    tags: ['#自主稽古'],
+    archers: ids.map((m, i) => ({ id: id + i, memberId: m, name: members.find((x) => x.id === m).name })),
+  });
   const sessions = [記録('s1', ['me', 'o1']), 記録('s2', ['me', 'o2']), 記録('s3', ['o1', 'o2'])];
   const 絞った = 自分だけに絞る({ members, sessions, myMemberId: 'me', myMemberName: '自分 太郎' });
   const 結果 = 参加回数を数える(絞った.members, 絞った.sessions, { 言葉: '#自主稽古' });
-  assert.deepStrictEqual(結果.一覧.map((x) => [x.名前, x.回数]), [['自分 太郎', 2]]);
+  assert.deepStrictEqual(
+    結果.一覧.map((x) => [x.名前, x.回数]),
+    [['自分 太郎', 2]]
+  );
   const 文字列 = JSON.stringify(結果);
   assert.ok(!文字列.includes('他人') && !文字列.includes('別人'), 'ほかの人の名前が出ない');
 });

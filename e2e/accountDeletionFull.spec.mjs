@@ -33,6 +33,9 @@ test('団体アカウントを作って、設定から削除すると、その�
   // リンクに当たって別の頁が開き、印が付かない（iPhone で実際に）
   const 印を押す = async (文) => {
     const 字 = page.getByText(文, { exact: false }).first();
+    // 団体の種類の選択が入ってフォームが長くなり、スマホでは同意の行が画面の外に出る（2026-10-16）。
+    // 外のままだと座標で押しても当たらないので、先に画面へ寄せる
+    await 字.scrollIntoViewIfNeeded();
     const 枠 = await 字.boundingBox();
     await page.mouse.click(Math.round(枠.x - 14), Math.round(枠.y + 枠.height / 2));
   };

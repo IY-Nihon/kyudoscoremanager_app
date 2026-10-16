@@ -324,7 +324,8 @@ const OCRRecordModal = ({
   // ID単位で重複除去してから名寄せ候補として使う（重複していると完全一致でも「要確認」に落ちてしまうため）
   const allCandidates = useMemo(() => {
     const raw = [
-      ...members.map((部員) => ({ ...部員, isAlumni: false })),
+      // 名簿の中の卒業・退部した人にも卒業生の印を付ける（名前が同じなら現役を先に当てる。src/ocrNamae.js）
+      ...members.map((部員) => ({ ...部員, isAlumni: !学.現役か(部員) })),
       ...alumni.map((卒業生) => ({ ...卒業生, isAlumni: true })),
     ];
     const dedupMap = new Map();
@@ -908,10 +909,18 @@ const OCRRecordModal = ({
    * 候補を先に見せると、迷ったときに名簿の側へ寄る。
    * 読み取ったあとの名寄せ（matchArcherName）は残す。両方効く。
    */
+  // 名簿の中の卒業・退部した人は、卒業生の表の人と一緒に後ろの組へ（現役を先に寄せる）
   const buildNameHint = () =>
     名簿の手がかり(
-      members.map((部員) => formatMemberName(部員.name, members)).filter(Boolean),
-      alumni.map((卒業生) => formatMemberName(卒業生.name, alumni)).filter(Boolean)
+      members
+        .filter((部員) => 学.現役か(部員))
+        .map((部員) => formatMemberName(部員.name, members))
+        .filter(Boolean),
+      members
+        .filter((部員) => !学.現役か(部員))
+        .map((部員) => formatMemberName(部員.name, members))
+        .concat(alumni.map((卒業生) => formatMemberName(卒業生.name, alumni)))
+        .filter(Boolean)
     );
 
   // 指示文そのものは src/ocrPrompts.js に置いてある。画面から切り離してあるので、
@@ -1381,9 +1390,11 @@ const OCRRecordModal = ({
   }, [activeMembersSorted]);
 
   const alumniByTerm = useMemo(() => {
-    const list = alumni.filter(
-      (卒業生) => !pickerSearch.trim() || normalize(卒業生.name).includes(normalize(pickerSearch))
-    );
+    // 卒業生は名簿（在籍が卒業の人）と、前の形の卒業生の表の両方から（射手の選択と同じ。src/ArcherActionModal.js）
+    const list = members
+      .filter((部員) => 学.卒業生か(部員))
+      .concat(alumni)
+      .filter((卒業生) => !pickerSearch.trim() || normalize(卒業生.name).includes(normalize(pickerSearch)));
     const termMap = {};
     list.forEach((卒業生) => {
       const term = 卒業生.termKi || 999;
@@ -1396,7 +1407,7 @@ const OCRRecordModal = ({
         term,
         members: termMap[term].sort((甲, 乙) => (甲.name || '').localeCompare(乙.name || '', 'ja')),
       }));
-  }, [alumni, pickerSearch]);
+  }, [members, alumni, pickerSearch]);
 
   const toggleActiveGrade = (gStr) => {
     setExpandedActiveGrades((prev) => {

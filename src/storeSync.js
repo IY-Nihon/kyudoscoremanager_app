@@ -30,6 +30,7 @@ const {
   雲から読んだか,
   分けた一括,
 } = require('./storeShared');
+const 学 = require('./gakunen');
 
 const 同期の操作 = (書く, 状態, そのまま書く) => ({
   /**
@@ -673,12 +674,15 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       let currentFreshmanTerm = 状態().currentFreshmanTerm;
       let tagTemplates = 状態().tagTemplates;
       let lastPromotionYear = 状態().lastPromotionYear;
+      // 学年まわり（団体の種類・進級の確認・期を使う。src/gakunen.js の 設定から読む）
+      let 学年まわり = {};
       if (設定の帳面.exists()) {
         const 設定 = 設定の帳面.data();
         設定 &&
           (undefined !== 設定.currentFreshmanTerm && (currentFreshmanTerm = 設定.currentFreshmanTerm),
           undefined !== 設定.tagTemplates && (tagTemplates = 設定.tagTemplates),
-          undefined !== 設定.lastPromotionYear && (lastPromotionYear = 設定.lastPromotionYear));
+          undefined !== 設定.lastPromotionYear && (lastPromotionYear = 設定.lastPromotionYear),
+          (学年まわり = 学.設定から読む(設定)));
       }
       // 雲に無いものを手元から外す（purge）のは、雲から全件を読めたときだけ。
       // 電波が無いと Firestore は端末の控え（見張っていた直近の分だけ）から答えるので、
@@ -781,6 +785,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         currentFreshmanTerm,
         tagTemplates,
         lastPromotionYear,
+        ...学年まわり,
         syncStatus: '同期済み',
         lastSyncTime: Date.now(),
         // 4 つとも雲から全件を読んだときだけ、境目を決め直し、全部そろえたことにする

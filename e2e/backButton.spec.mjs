@@ -63,8 +63,8 @@ test('×で閉じたあとは、戻る 1 回でタブを離れる（余計な履
   await page.getByText('案内 確認用', { exact: true }).first().click();
   const 見出し = page.getByText('メンバー編集', { exact: true });
   await expect(見出し).toBeVisible({ timeout: 15_000 });
-  // 見出しの右の×（窓の中の最初の閉じるボタン）
-  await page.locator('[aria-modal="true"]').last().locator('[tabindex="0"]').first().click();
+  // 見出しの右の×（2026-10-16 に「閉じる」の名前を付けた。それまでは窓の中の最初の押せる要素として押していた）
+  await page.locator('[aria-modal="true"]').last().getByRole('button', { name: '閉じる' }).first().click();
   await expect(見出し).toBeHidden({ timeout: 5_000 });
   await page.waitForTimeout(500);
 

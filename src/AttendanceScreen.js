@@ -139,11 +139,11 @@ const AttendanceScreen = () => {
   // その年度に現役だったか（留年等も考慮）。出席率の分母を「期間の練習日数」にするかどうか
   const isActiveInYear = (部員) => {
     if (学.現役か(部員)) return true; // 現在現役なら基本真
-    if (部員.graduationYear) {
-      // 卒業年度が記録されていれば、表示年度がそれ以前なら現役扱い
-      return currentFiscalYear <= 部員.graduationYear;
-    }
-    if (部員.termKi) {
+    // 卒業・退部した年度（現役だった最後の年度）が記録されていれば、表示年度がそれ以前なら現役扱い。
+    // graduationYear は前の形の卒業年度
+    const 最後の年度 = 部員.leftYear || 部員.graduationYear;
+    if (最後の年度) return currentFiscalYear <= 最後の年度;
+    if (学.卒業生か(部員) && 部員.termKi) {
       // 記録がない場合の救済：期から卒業した年度を推測する（今日の年度と今の 1 年生の期から。src/gakunen.js）
       const 今日 = new Date();
       const 今日の年度 = 今日.getMonth() + 1 >= 4 ? 今日.getFullYear() : 今日.getFullYear() - 1;

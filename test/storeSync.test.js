@@ -653,57 +653,107 @@ function 名簿を置く(store, 雲, 学年一覧) {
 }
 const 学年 = (雲, id) => 雲.値(メンバーの道, id).grade;
 
+const 部員 = (雲, id) => 雲.値(メンバーの道, id);
+const 今年 = new Date().getFullYear();
+const 前の年度 = (new Date().getMonth() + 1 >= 4 ? 今年 : 今年 - 1) - 1;
+
 test('進級：1〜3年は1つ上がる', async () => {
   const { store, 雲 } = 用意();
   名簿を置く(store, 雲, [1, 2, 3]);
-  await store.getState().incrementAllGrades();
-  await 待つ(50);
+  const 結果 = await store.getState().進級する([]);
+  assert.deepEqual(結果, { 済んだ: true, 人数: 3 });
   assert.equal(学年(雲, 'mem-1'), 2);
   assert.equal(学年(雲, 'mem-2'), 3);
   assert.equal(学年(雲, 'mem-3'), 4);
+  assert.equal(store.getState().members.find((m) => m.id === 'mem-3').grade, 4, '手元も上がる');
 });
 
-test('進級：4年は卒業生（5）になる', async () => {
+test('進級：最後の学年は卒業（学年はそのまま、在籍を卒業に、現役だった最後の年度を残す）', async () => {
   const { store, 雲 } = 用意();
   名簿を置く(store, 雲, [4]);
-  await store.getState().incrementAllGrades();
-  await 待つ(50);
-  assert.equal(学年(雲, 'mem-1'), 5);
+  await store.getState().進級する([]);
+  assert.equal(学年(雲, 'mem-1'), 4, '学年 5 を作らない');
+  assert.equal(部員(雲, 'mem-1').enrollment, '卒業');
+  assert.equal(部員(雲, 'mem-1').leftYear, 前の年度);
+  assert.equal(store.getState().members[0].enrollment, '卒業', '手元も卒業');
 });
 
-test('進級：卒業済み（5）は据え置き', async () => {
+test('進級：窓で選んだ人（上げない・卒業しない）はそのまま', async () => {
   const { store, 雲 } = 用意();
-  名簿を置く(store, 雲, [5]);
-  await store.getState().incrementAllGrades();
-  await 待つ(50);
-  assert.equal(学年(雲, 'mem-1'), 5, '6年生を作らない');
+  名簿を置く(store, 雲, [2, 4, 4]);
+  await store.getState().進級する(['mem-1', 'mem-2']);
+  assert.equal(学年(雲, 'mem-1'), 2, '上げない');
+  assert.equal(部員(雲, 'mem-2').enrollment, undefined, '卒業しない');
+  assert.equal(部員(雲, 'mem-3').enrollment, '卒業');
 });
 
-test('進級：学年0（その他）は据え置き', async () => {
+test('進級：その他・卒業生（前の形の 5）・退部した人は据え置き', async () => {
   // 「その他」は現役扱いだが進級も卒業もしない、という仕様
   const { store, 雲 } = 用意();
-  名簿を置く(store, 雲, [0]);
-  await store.getState().incrementAllGrades();
-  await 待つ(50);
+  名簿を置く(store, 雲, [0, 5, 2]);
+  雲.置く(メンバーの道, 'mem-3', Object.assign({}, 部員(雲, 'mem-3'), { enrollment: '退部' }));
+  const 結果 = await store.getState().進級する([]);
+  assert.equal(結果.人数, 0);
   assert.equal(学年(雲, 'mem-1'), 0);
+  assert.equal(学年(雲, 'mem-2'), 5, '6年生を作らない');
+  assert.equal(学年(雲, 'mem-3'), 2);
 });
 
 test('進級：学年が空や数値でないものは据え置き', async () => {
   const { store, 雲 } = 用意();
   名簿を置く(store, 雲, [null, '', 'ふりがな']);
-  await store.getState().incrementAllGrades();
-  await 待つ(50);
+  await store.getState().進級する([]);
   assert.equal(学年(雲, 'mem-1'), null);
   assert.equal(学年(雲, 'mem-2'), '');
   assert.equal(学年(雲, 'mem-3'), 'ふりがな', '勝手に1年にしない');
 });
 
-test('進級：現在の期が1つ進む', async () => {
+test('進級：高専（5 年）は 4 年が 5 年へ上がり、5 年が卒業', async () => {
+  const { store, 雲 } = 用意();
+  名簿を置く(store, 雲, [4, 5]);
+  store.setState({ groupType: 'kosen5' });
+  try {
+    await store.getState().進級する([]);
+    assert.equal(学年(雲, 'mem-1'), 5);
+    assert.equal(部員(雲, 'mem-1').enrollment, undefined);
+    assert.equal(部員(雲, 'mem-2').enrollment, '卒業');
+  } finally {
+    store.setState({ groupType: null });
+  }
+});
+
+test('進級：期を使う団体だけ現在の期が1つ進む。進級した年を書き、古い版の自動進級を切る', async () => {
   const { store, 雲 } = 用意();
   名簿を置く(store, 雲, [1]);
-  await store.getState().incrementAllGrades();
-  await 待つ(50);
-  assert.equal(雲.値(設定の道, 'app_settings').currentFreshmanTerm, 51);
+  雲.置く(設定の道, 'app_settings', { useTerm: true, currentFreshmanTerm: 50, lastPromotionYear: 今年 - 1 });
+  await store.getState().進級する([]);
+  const 設定 = 雲.値(設定の道, 'app_settings');
+  assert.equal(設定.currentFreshmanTerm, 51);
+  assert.equal(設定.lastPromotionYear, 今年);
+  assert.equal(設定.autoPromotionEnabled, false);
+  assert.equal(store.getState().進級待ちの年, null, '窓を閉じる');
+
+  const 次 = 用意();
+  名簿を置く(次.store, 次.雲, [1]);
+  次.雲.置く(設定の道, 'app_settings', {
+    useTerm: false,
+    currentFreshmanTerm: 1,
+    lastPromotionYear: 今年 - 1,
+  });
+  await 次.store.getState().進級する([]);
+  assert.equal(次.雲.値(設定の道, 'app_settings').currentFreshmanTerm, 1, '期を使わない団体の期は動かさない');
+});
+
+test('進級：手元にしか無い（送る前の）部員を名簿から落とさない', async () => {
+  const { store, 雲 } = 用意();
+  名簿を置く(store, 雲, [1]);
+  store.setState({
+    members: [...store.getState().members, { id: 'mem-new', name: '新入生', grade: 1, syncStatus: '未同期' }],
+  });
+  await store.getState().進級する([]);
+  const 新入生 = store.getState().members.find((m) => m.id === 'mem-new');
+  assert.ok(新入生, '残る');
+  assert.equal(新入生.grade, 1, '雲に無い人は上げない（入ったばかりの 1 年生）');
 });
 
 test('進級：通信できないときは何もしない', async () => {
@@ -713,8 +763,8 @@ test('進級：通信できないときは何もしない', async () => {
   名簿を置く(store, 雲, [1, 2]);
   const 期 = store.getState().currentFreshmanTerm;
   store.setState({ isNetworkOnline: false });
-  await store.getState().incrementAllGrades();
-  await 待つ(50);
+  const 結果 = await store.getState().進級する([]);
+  assert.ok(結果.誤り, '画面に出す文を返す');
   assert.equal(学年(雲, 'mem-1'), 1, 'クラウドの学年が動かない');
   assert.equal(学年(雲, 'mem-2'), 2);
   const 手元 = store.getState().members;
@@ -723,51 +773,72 @@ test('進級：通信できないときは何もしない', async () => {
   assert.equal(store.getState().currentFreshmanTerm, 期, '現在の期も動かない');
 });
 
-test('進級：同じ年に二度は動かない', async () => {
+test('進級：同じ年に二度は動かない（ほかの端末で先に押されていた）', async () => {
   const { store, 雲 } = 用意();
   名簿を置く(store, 雲, [1]);
-  雲.置く(設定の道, 'app_settings', { lastPromotionYear: new Date().getFullYear() });
-  await store.getState().incrementAllGrades();
-  await 待つ(50);
+  雲.置く(設定の道, 'app_settings', { lastPromotionYear: 今年 });
+  store.setState({ 進級待ちの年: 今年 });
+  const 結果 = await store.getState().進級する([]);
+  assert.deepEqual(結果, { 済んでいた: true });
   assert.equal(学年(雲, 'mem-1'), 1, '二重に上がらない');
+  assert.equal(store.getState().進級待ちの年, null, '窓を閉じる');
 });
 
-test('自動進級：記録が無いときは基準年を控えるだけで進級しない', async () => {
-  // これが無いと、初めて使う団体がいきなり全員進級してしまう
+test('進級の確かめ：記録が無いときは基準年を控えるだけで、窓も出さない', async () => {
+  // これが無いと、初めて使う団体がいきなり進級の窓を出してしまう
   const { store, 雲 } = 用意();
   名簿を置く(store, 雲, [1, 2]);
   await store.getState().checkAndAutoIncrementGrades();
   await 待つ(50);
   assert.equal(学年(雲, 'mem-1'), 1, '進級しない');
-  assert.ok(
-    雲.値(設定の道, 'app_settings') && 雲.値(設定の道, 'app_settings').lastPromotionYear,
-    '基準年だけ控える'
-  );
+  assert.ok(雲.値(設定の道, 'app_settings').lastPromotionYear, '基準年だけ控える');
+  assert.equal(store.getState().進級待ちの年, null);
 });
 
-test('自動進級：4月より前は動かない', async () => {
+test('進級の確かめ：去年進級した団体は、4 月からは窓を出す（学年は押すまで動かない）', async () => {
   const { store, 雲 } = 用意();
   名簿を置く(store, 雲, [1]);
-  const 今年 = new Date().getFullYear();
-  // 去年の記録があり、まだ4月を迎えていない状態にする
+  // 前の版で「4月1日の自動進級」を入れていた団体
   雲.置く(設定の道, 'app_settings', { lastPromotionYear: 今年 - 1, autoPromotionEnabled: true });
-  store.setState({ lastPromotionYear: 今年 - 1, autoPromotionEnabled: true });
   const 四月以降 = new Date().getMonth() + 1 >= 4;
   await store.getState().checkAndAutoIncrementGrades();
   await 待つ(50);
-  if (四月以降) assert.equal(学年(雲, 'mem-1'), 2, '4月以降なら進級する');
-  else assert.equal(学年(雲, 'mem-1'), 1, '4月より前なら進級しない');
+  assert.equal(学年(雲, 'mem-1'), 1, '自動では進級しない');
+  assert.equal(store.getState().進級待ちの年, 四月以降 ? 今年 : null);
 });
 
-test('自動進級：切っていれば動かない', async () => {
+test('進級の確かめ：進級の確認を切っていれば窓を出さない', async () => {
   const { store, 雲 } = 用意();
   名簿を置く(store, 雲, [1]);
-  const 今年 = new Date().getFullYear();
-  雲.置く(設定の道, 'app_settings', { lastPromotionYear: 今年 - 1, autoPromotionEnabled: false });
-  store.setState({ lastPromotionYear: 今年 - 1, autoPromotionEnabled: false });
+  雲.置く(設定の道, 'app_settings', { lastPromotionYear: 今年 - 1, promotionCheck: false });
   await store.getState().checkAndAutoIncrementGrades();
   await 待つ(50);
-  assert.equal(学年(雲, 'mem-1'), 1);
+  assert.equal(store.getState().進級待ちの年, null);
+  assert.equal(store.getState().promotionCheck, false);
+});
+
+test('進級の確かめ：段 1 より前の団体には項目を書き足し、古い版の自動進級を切る（団体ログインのときだけ）', async () => {
+  const { store, 雲 } = 用意();
+  名簿を置く(store, 雲, [1]);
+  雲.置く(設定の道, 'app_settings', { lastPromotionYear: 今年 - 1, currentFreshmanTerm: 53 });
+  await store.getState().checkAndAutoIncrementGrades();
+  await 待つ(50);
+  const 設定 = 雲.値(設定の道, 'app_settings');
+  assert.equal(設定.autoPromotionEnabled, false);
+  assert.equal(設定.promotionCheck, true, '前の既定（自動進級が入）を引き継ぐ');
+  assert.equal(設定.useTerm, true, '期を 2 以上に決めてある団体は期を使う');
+
+  const 部員の端末 = 用意();
+  名簿を置く(部員の端末.store, 部員の端末.雲, [1]);
+  部員の端末.store.setState({ activeRole: 'member' });
+  部員の端末.雲.置く(設定の道, 'app_settings', { lastPromotionYear: 今年 - 1 });
+  await 部員の端末.store.getState().checkAndAutoIncrementGrades();
+  await 待つ(50);
+  assert.equal(
+    部員の端末.雲.値(設定の道, 'app_settings').promotionCheck,
+    undefined,
+    '部員の端末からは書かない'
+  );
 });
 
 // ──────────────────────────────────────────────────────────────

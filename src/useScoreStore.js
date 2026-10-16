@@ -83,6 +83,19 @@ const {
 const { 盤面の操作 } = require('./storeBoard');
 const { 部員の操作 } = require('./storeMembers');
 const 学 = require('./gakunen');
+// 学年まわりの団体の設定の初めの値。出たとき・別の団体へ入るときもここへ戻す
+const 学年まわりの初めの値 = Object.freeze({
+  // 団体の種類（src/gakunen.js の 種類たち）。null は大学（4 年）
+  groupType: null,
+  // 4 月 1 日に進級の窓を出すか（前の「4月1日の自動進級」に代わるもの）
+  promotionCheck: true,
+  // 期を使うか。使わない団体では期をどこにも出さない
+  useTerm: false,
+  // 進級を待っている年（団体ログインで進級の窓を出す）。押されるまで全員の学年は前の年度のまま
+  進級待ちの年: null,
+  // 進級の窓を「あとで」で閉じたか（その起動のあいだ。記録画面の帯は出し続ける）
+  進級の窓を閉じた: false,
+});
 const { 記録の操作 } = require('./storeSessions');
 const { 同期の操作 } = require('./storeSync');
 const { ライブの操作 } = require('./storeLive');
@@ -222,7 +235,7 @@ const useScoreStore = zustand.create()(
         deletedMembers: {},
         isNetworkOnline: true,
         isAdminMode: false,
-        autoPromotionEnabled: true,
+        ...学年まわりの初めの値,
         _pendingUpdateTimers: {},
         includeInStats: true,
         lastLocalChange: 0,
@@ -353,6 +366,7 @@ const useScoreStore = zustand.create()(
                 initializationLogs: [],
                 isAdminMode: false,
                 isAdminModePending: false,
+                ...学年まわりの初めの値,
               }),
               状態().stopPeriodicSync(),
               状態().stopListeningToSessions(),
@@ -371,6 +385,7 @@ const useScoreStore = zustand.create()(
                   雲の境目: null,
                   全部そろえた時刻: 0,
                   端末から外した記録: [],
+                  ...学年まわりの初めの値,
                 }),
               書く({
                 activeGroupId: 団体ID,
@@ -719,21 +734,42 @@ const useScoreStore = zustand.create()(
             }
           }
         },
-        setAutoPromotionEnabled: async (入れる) => {
+        // 学年まわりの団体の設定を書く（進級の確認・期を使う・団体の種類）。
+        // 古い版のアプリの自動進級（autoPromotionEnabled）はいつも切って書く（src/gakunen.js の 設定を書き足すか）
+        学年の設定を書く: async (変更) => {
           const { activeGroupId } = 状態();
-          if (activeGroupId) {
-            書く({ autoPromotionEnabled: 入れる });
-            try {
-              await Firestore.setDoc(
-                Firestore.doc(Firebaseの器.db, `groups/${activeGroupId}/config`, 'app_settings'),
-                { autoPromotionEnabled: 入れる },
-                { merge: true }
-              );
-            } catch (誤り) {
-              console.error('[Store] setAutoPromotionEnabled error:', 誤り);
-            }
+          if (!activeGroupId) return;
+          書く(変更);
+          try {
+            await Firestore.setDoc(
+              Firestore.doc(Firebaseの器.db, `groups/${activeGroupId}/config`, 'app_settings'),
+              Object.assign({}, 変更, {
+                autoPromotionEnabled: false,
+                lastModified: Firestore.serverTimestamp(),
+              }),
+              { merge: true }
+            );
+          } catch (誤り) {
+            console.error('[Store] 学年の設定を書けませんでした:', 誤り);
+            不具合を控える('学年の設定', 誤り);
           }
         },
+        setPromotionCheck: (入れる) => 状態().学年の設定を書く({ promotionCheck: !!入れる }),
+        setUseTerm: (使う) => 状態().学年の設定を書く({ useTerm: !!使う }),
+        /**
+         * 団体の種類を変える。新しい種類に無い学年の人（6 年制から高校へ変えたときの 4〜6 年など）は「その他」にする
+         * （画面で確かめてから呼ぶ）。返すのは「その他」にした人数
+         */
+        setGroupType: async (種類) => {
+          const 決まり = 学.決まりを作る(種類);
+          const はみ出す人 = (状態().members || []).filter(
+            (部員) => 学.現役か(部員, 決まり) && 学.その他か(部員, 決まり) && 0 !== 学.学年の値(部員, 決まり)
+          );
+          await 状態().学年の設定を書く({ groupType: 決まり.種類 });
+          はみ出す人.forEach((部員) => 状態().updateMember(部員.id, { grade: 0 }));
+          return はみ出す人.length;
+        },
+        進級の窓を後にする: () => 書く({ 進級の窓を閉じた: true }),
         setIsAdminModePending: (値) => 書く({ isAdminModePending: 値 }),
         setHistoryViewMode: (値) => 書く({ historyViewMode: 値 }),
         setSelectedHistorySessionId: (値) => 書く({ selectedHistorySessionId: 値 }),
@@ -757,182 +793,155 @@ const useScoreStore = zustand.create()(
               ).catch((誤り) => console.error('Live Sync Error:', 誤り));
           }
         },
+        /**
+         * 学年まわりの団体の設定を読み、進級を待っているかを決める（同期の初めに 1 度）。
+         * 4 月 1 日を過ぎ、その年の進級がまだなら 進級待ちの年 を置く。団体ログインの画面が進級の窓を出す。
+         * 前の版のように全員を自動で進級させることはしない（docs/plans/group-types-and-grades.md）
+         */
         checkAndAutoIncrementGrades: async () => {
           const { activeGroupId: 団体 } = 状態();
           if (!団体) return;
           const 今日 = new Date();
-          const 年 = 今日.getFullYear();
-          const 月 = 今日.getMonth() + 1;
-          const 日 = 今日.getDate();
-          const 四月を過ぎた = 月 > 4 || (4 === 月 && 日 >= 1);
-          let hasPromotionRecord = false;
+          let 設定 = null;
           try {
-            console.log('[AutoPromotion] Fetching latest app_settings...');
             const 設定の帳面 = await Firestore.getDoc(
               Firestore.doc(Firebaseの器.db, `groups/${団体}/config`, 'app_settings')
             );
             if (設定の帳面.exists()) {
-              const 設定 = 設定の帳面.data();
-              const 取り込む = {};
+              設定 = 設定の帳面.data();
+              const 取り込む = Object.assign({}, 学.設定から読む(設定));
               'number' == typeof 設定.currentFreshmanTerm &&
                 (取り込む.currentFreshmanTerm = 設定.currentFreshmanTerm);
               Array.isArray(設定.tagTemplates) && (取り込む.tagTemplates = 設定.tagTemplates);
               'number' == typeof 設定.lastPromotionYear &&
-                ((hasPromotionRecord = true), (取り込む.lastPromotionYear = 設定.lastPromotionYear));
-              'boolean' == typeof 設定.autoPromotionEnabled &&
-                (取り込む.autoPromotionEnabled = 設定.autoPromotionEnabled);
+                (取り込む.lastPromotionYear = 設定.lastPromotionYear);
               書く(取り込む);
             }
           } catch (誤り) {
-            return void console.error('[AutoPromotion] Failed to fetch config:', 誤り);
+            return void console.error('[進級] 団体の設定を読めませんでした:', 誤り);
           }
-          if (!hasPromotionRecord) {
-            const base = 四月を過ぎた ? 年 : 年 - 1;
-            console.log(`[AutoPromotion] No record yet. Storing baseline year ${base} without promoting.`);
-            書く({ lastPromotionYear: base });
+          // 段 1 より前の団体には 進級の確認・期を使う を書き足し、古い版のアプリの自動進級を止める。
+          // 部員の端末からは書かない（団体ログインのときだけ）。送信の完了は待たない（下の理由と同じ）
+          if ('group' === 状態().activeRole && 学.設定を書き足すか(設定)) {
+            const 読んだ = 学.設定から読む(設定);
+            Firestore.setDoc(
+              Firestore.doc(Firebaseの器.db, `groups/${団体}/config`, 'app_settings'),
+              { promotionCheck: 読んだ.promotionCheck, useTerm: 読んだ.useTerm, autoPromotionEnabled: false },
+              { merge: true }
+            ).catch((誤り) => console.error('[進級] 設定を書き足せませんでした:', 誤り));
+          }
+          if (!設定 || 'number' != typeof 設定.lastPromotionYear) {
+            // 進級した年が無い団体（作ったばかり）は、今年の分を済んだことにして書き留めるだけ
+            const 基準 = 今日.getMonth() + 1 >= 4 ? 今日.getFullYear() : 今日.getFullYear() - 1;
+            console.log(`[進級] 進級した年が無いので ${基準} 年を書き留めます（進級はしない）`);
+            書く({ lastPromotionYear: 基準, 進級待ちの年: null });
             // 送信の完了は待たない。この関数は syncSessions の先頭で待たれて
             // いるため、通信できないときにここで止まると同期そのものが動かなく
             // なる。手元の値は先に入れてあり、送信は待ち行列に任せる。
             Firestore.setDoc(
               Firestore.doc(Firebaseの器.db, `groups/${団体}/config`, 'app_settings'),
-              { lastPromotionYear: base, lastModified: Firestore.serverTimestamp() },
+              { lastPromotionYear: 基準, lastModified: Firestore.serverTimestamp() },
               { merge: true }
             ).catch((誤り) => {
-              console.error('[AutoPromotion] Failed to store baseline year:', 誤り);
+              console.error('[進級] 進級した年を書き留められませんでした:', 誤り);
             });
             return;
           }
-          const { autoPromotionEnabled, lastPromotionYear } = 状態();
-          if (autoPromotionEnabled && 四月を過ぎた && lastPromotionYear < 年) {
-            console.log(`[AutoPromotion] Performing annual promotion for year ${年}...`);
-            try {
-              await 状態().incrementAllGrades();
-            } catch (誤り) {
-              console.error('[AutoPromotion] Failed:', 誤り);
-            }
-          }
+          書く({
+            進級待ちの年:
+              // 検査の口で開いた年（下の __進級の窓を開く）は、同期のたびの確かめで消さない
+              場.検査の進級待ちの年 || 学.進級待ちの年(今日, 状態().lastPromotionYear, 状態().promotionCheck),
+          });
         },
         ...同期の操作(書く, 状態, そのまま書く),
 
-        incrementAllGrades: async () => {
-          const { activeGroupId: 団体, alumni: 卒業生, currentFreshmanTerm, isNetworkOnline } = 状態();
-          if (!団体) return;
+        /**
+         * 進級の窓の「進級する」。全員を 1 つ上げ、最後の学年は卒業にする（src/gakunen.js の 進級の変更）。
+         * 残す人 … 「上げない／卒業しない」を選んだ部員の id。
+         * 書く前に雲で今年の進級が済んでいないかを確かめる（ほかの端末で先に押されていたら何もしない）。
+         * 返すのは { 済んだ: true, 人数 }・{ 済んでいた: true }・{ 誤り: 画面に出す文 } のどれか
+         */
+        進級する: async (残す人) => {
+          const { activeGroupId: 団体, isNetworkOnline } = 状態();
+          if (!団体) return { 誤り: '団体に入っていません。' };
+          if (!isNetworkOnline) return { 誤り: '電波のある場所で、もう一度押してください。' };
           const 今 = Date.now();
           const 今年 = new Date().getFullYear();
-          if (!isNetworkOnline)
-            return void console.warn('[incrementAllGrades] Offline. Skipping promotion until online.');
+          // 進級する前の年度（2027 年 4 月の進級なら 2026）。卒業した人の leftYear に書く
+          const 前の年度 = 学.年度() - 1;
+          const 設定の道 = Firestore.doc(Firebaseの器.db, `groups/${団体}/config`, 'app_settings');
+          let 設定 = {};
+          let 雲の部員 = [];
           try {
-            const 設定の帳面 = await Firestore.getDoc(
-              Firestore.doc(Firebaseの器.db, `groups/${団体}/config`, 'app_settings')
-            );
-            if (設定の帳面.exists()) {
-              const 設定 = 設定の帳面.data();
-              if (設定.lastPromotionYear && 設定.lastPromotionYear >= 今年)
-                return (
-                  console.log(
-                    `[incrementAllGrades] Skipped: Promotion for year ${今年} already completed according to Firestore.`
-                  ),
-                  void 書く({ lastPromotionYear: 設定.lastPromotionYear })
-                );
+            const 設定の帳面 = await Firestore.getDoc(設定の道);
+            設定 = 設定の帳面.exists() ? 設定の帳面.data() : {};
+            if (設定.lastPromotionYear && 設定.lastPromotionYear >= 今年) {
+              console.log(`[進級] ${今年} 年の進級はほかの端末で済んでいました`);
+              書く({ lastPromotionYear: 設定.lastPromotionYear, 進級待ちの年: null });
+              return { 済んでいた: true };
             }
-          } catch (誤り) {
-            return void console.error('[incrementAllGrades] Failed to re-verify settings:', 誤り);
-          }
-          let 雲の部員;
-          try {
             const 返り = await Firestore.getDocs(
               Firestore.collection(Firebaseの器.db, `groups/${団体}/members`)
             );
-            雲の部員 = [];
             返り.forEach((文書) => 雲の部員.push(Object.assign({}, 文書.data(), { id: 文書.id })));
           } catch (誤り) {
-            return void console.error('[incrementAllGrades] Failed to fetch members:', 誤り);
+            console.error('[進級] 雲から読めませんでした:', 誤り);
+            不具合を控える('進級の読み込み', 誤り);
+            return { 誤り: '雲から名簿を読めませんでした。時間をおいて、もう一度押してください。' };
           }
-          console.log(
-            `[Store] incrementAllGrades: Starting atomic promotion process... (${雲の部員.length} members from cloud)`
-          );
-          const dropUndefined = (元) => {
-            const 出 = {};
-            for (const 鍵 in 元) undefined !== 元[鍵] && (出[鍵] = 元[鍵]);
-            return 出;
-          };
-          const gradeOf = (部員) => {
-            const 値 = 部員 ? 部員.grade : null;
-            if (null == 値 || '' === 値) return NaN;
-            const 数 = Number(値);
-            return isNaN(数) ? NaN : 数;
-          };
-          const skippedGrades = 雲の部員
-            .filter((部員1人) => isNaN(gradeOf(部員1人)))
-            .map((部員1人) => 部員1人.name || 部員1人.id);
-          if (skippedGrades.length)
-            console.warn('[incrementAllGrades] 学年が未設定のため据え置いたメンバー:', skippedGrades);
-          const 進級後の部員 = [];
+          const 残す = new Set(残す人 || []);
+          const 変更たち = [];
           雲の部員.forEach((部員) => {
-            const 学年 = gradeOf(部員);
-            // 1〜3 年は 1 つ上がり、4 年は卒業（src/gakunen.js）。その他・卒業生・学年の無い人はそのまま
-            const 次 = isNaN(学年) ? 学年 : 学.次の学年(学年);
-            進級後の部員.push(
-              Object.assign({}, 部員, 次 === 学年 || isNaN(次) ? {} : { grade: 次 }, {
-                lastModified: 今,
-                syncStatus: '同期済み',
-              })
-            );
+            const 変更 = 学.進級の変更(部員, 残す.has(部員.id), 前の年度);
+            if (変更) 変更たち.push({ id: 部員.id, 変更 });
           });
-          const 次の期 = (currentFreshmanTerm || 0) + 1;
-          if (isNetworkOnline)
-            try {
-              const 書き込み = [];
-              進級後の部員.forEach((部員) => {
-                書き込み.push({
-                  type: 'set',
-                  ref: Firestore.doc(Firebaseの器.db, `groups/${団体}/members`, 部員.id),
-                  data: dropUndefined(Object.assign({}, 部員, { lastModified: Firestore.serverTimestamp() })),
-                });
-              });
-              書き込み.push({
-                type: 'set',
-                ref: Firestore.doc(Firebaseの器.db, `groups/${団体}/config`, 'app_settings'),
-                data: {
-                  currentFreshmanTerm: 次の期,
+          // 期は使う団体だけ進める（使わない団体の値を動かすと、使っているように見える）
+          const 期を使う = 学.設定から読む(設定).useTerm;
+          const 次の期 = (Number(設定.currentFreshmanTerm) || 状態().currentFreshmanTerm || 0) + 1;
+          try {
+            const 書き込み = 変更たち.map(({ id, 変更 }) => ({
+              道: Firestore.doc(Firebaseの器.db, `groups/${団体}/members`, id),
+              中身: Object.assign({}, 変更, { lastModified: Firestore.serverTimestamp() }),
+            }));
+            // 設定は最後の束に入れる。途中で失敗したときに「済んだ」と書き留めないように
+            書き込み.push({
+              道: 設定の道,
+              中身: Object.assign(
+                {
                   lastPromotionYear: 今年,
+                  autoPromotionEnabled: false,
                   lastModified: Firestore.serverTimestamp(),
                 },
-              });
-              for (let 頭 = 0; 頭 < 書き込み.length; 頭 += 400) {
-                const 切れ端 = 書き込み.slice(頭, 頭 + 400);
-                const 一括 = Firestore.writeBatch(Firebaseの器.db);
-                切れ端.forEach((書き込み1件) => {
-                  'set' === 書き込み1件.type
-                    ? 一括.set(書き込み1件.ref, 書き込み1件.data, { merge: true })
-                    : 'delete' === 書き込み1件.type && 一括.delete(書き込み1件.ref);
-                });
-                await 一括.commit();
-              }
-              console.log('[Store] incrementAllGrades: Cloud sync successful.');
-            } catch (誤り) {
-              return (
-                console.error('[incrementAllGrades] Cloud sync failed:', 誤り),
-                void Alert.alert(
-                  '進級処理エラー',
-                  'クラウドとの同期に失敗しました。時間をおいて再度お試しください。'
-                )
-              );
+                期を使う ? { currentFreshmanTerm: 次の期 } : {}
+              ),
+            });
+            for (let 頭 = 0; 頭 < 書き込み.length; 頭 += 400) {
+              const 一括 = Firestore.writeBatch(Firebaseの器.db);
+              書き込み.slice(頭, 頭 + 400).forEach((一件) => 一括.set(一件.道, 一件.中身, { merge: true }));
+              await 一括.commit();
             }
-          const 卒業生の写し = 卒業生;
+          } catch (誤り) {
+            console.error('[進級] 雲へ書けませんでした:', 誤り);
+            不具合を控える('進級の書き込み', 誤り);
+            return { 誤り: '雲へ書けませんでした。時間をおいて、もう一度押してください。' };
+          }
+          const 変更の表 = new Map(変更たち.map(({ id, 変更 }) => [id, 変更]));
           書く({
-            members: 進級後の部員,
-            alumni: 卒業生の写し,
-            currentFreshmanTerm: 次の期,
+            members: (状態().members || []).map((部員) =>
+              変更の表.has(部員.id)
+                ? Object.assign({}, 部員, 変更の表.get(部員.id), { lastModified: 今, syncStatus: '同期済み' })
+                : 部員
+            ),
+            ...(期を使う ? { currentFreshmanTerm: 次の期 } : {}),
             lastPromotionYear: 今年,
+            進級待ちの年: null,
             lastLocalChange: 今,
-            lastSyncTime: 今,
           });
-          console.log('[Store] incrementAllGrades: Promotion process completed.');
+          console.log(`[進級] ${今年} 年の進級を済ませました（${変更たち.length} 人）`);
+          return { 済んだ: true, 人数: 変更たち.length };
         },
         updateCurrentFreshmanTerm: async (期) => {
-          const { activeGroupId, autoPromotionEnabled, tagTemplates, lastPromotionYear, isNetworkOnline } =
-            状態();
+          const { activeGroupId, tagTemplates, lastPromotionYear, isNetworkOnline } = 状態();
           if (
             (書く({ currentFreshmanTerm: 期, lastLocalChange: Date.now() }), isNetworkOnline && activeGroupId)
           )
@@ -941,7 +950,6 @@ const useScoreStore = zustand.create()(
                 Firestore.doc(Firebaseの器.db, `groups/${activeGroupId}/config`, 'app_settings'),
                 {
                   currentFreshmanTerm: 期,
-                  autoPromotionEnabled,
                   tagTemplates,
                   lastPromotionYear,
                   lastModified: Firestore.serverTimestamp(),
@@ -1029,7 +1037,7 @@ const useScoreStore = zustand.create()(
               const 設定 = 設定の帳面.data();
               console.log('[Store] Config initial fetch from cloud:', 設定);
               書く({
-                autoPromotionEnabled: false !== 設定.autoPromotionEnabled,
+                ...学.設定から読む(設定),
                 currentFreshmanTerm: 設定.currentFreshmanTerm || 状態().currentFreshmanTerm,
                 tagTemplates: 設定.tagTemplates || 状態().tagTemplates,
                 lastPromotionYear: 設定.lastPromotionYear || 状態().lastPromotionYear,
@@ -1056,7 +1064,7 @@ const useScoreStore = zustand.create()(
                 const 設定 = 返り.data();
                 console.log('[Store] Config updated from cloud (snapshot):', 設定);
                 書く({
-                  autoPromotionEnabled: false !== 設定.autoPromotionEnabled,
+                  ...学.設定から読む(設定),
                   currentFreshmanTerm: 設定.currentFreshmanTerm || 状態().currentFreshmanTerm,
                   tagTemplates: 設定.tagTemplates || 状態().tagTemplates,
                   lastPromotionYear: 設定.lastPromotionYear || 状態().lastPromotionYear,
@@ -1141,7 +1149,9 @@ const useScoreStore = zustand.create()(
           雲の境目: 状態の中身.雲の境目,
           全部そろえた時刻: 状態の中身.全部そろえた時刻,
           isAdminMode: 状態の中身.isAdminMode,
-          autoPromotionEnabled: 状態の中身.autoPromotionEnabled,
+          groupType: 状態の中身.groupType,
+          promotionCheck: 状態の中身.promotionCheck,
+          useTerm: 状態の中身.useTerm,
           analysisRankingSettings: 状態の中身.analysisRankingSettings,
           enableArrowLocation: 状態の中身.enableArrowLocation,
           自動ロックする: 状態の中身.自動ロックする,
@@ -1221,3 +1231,17 @@ const useScoreStore = zustand.create()(
 );
 // 外側の部品（storeShared.js）が店を読むところ。読み込みを輪にしないため、できたあとに入れる
 場.店 = useScoreStore;
+// 学年の決まり（src/gakunen.js）を今の団体の種類にそろえる。決まりを省いた判定（卒業生か・学年の名前など）はこれを使う。
+// 控えから戻したとき・設定を受け取ったとき・種類を変えたとき、どれも groupType が変わるのでここで拾える
+学.決まりを置く(useScoreStore.getState().groupType);
+useScoreStore.subscribe((今, 前) => {
+  if (今.groupType !== 前.groupType) 学.決まりを置く(今.groupType);
+});
+// 検査（e2e/promotion.spec.mjs）から進級の窓を出す口。4 月 1 日を待たずに窓と帯を確かめるため。
+// 「進級する」は検査では押さない（検証環境の名簿が上がってしまう。進級そのものは test/storeSync.test.js で見る）
+if (typeof globalThis !== 'undefined') {
+  globalThis.__進級の窓を開く = (年) => {
+    場.検査の進級待ちの年 = 年 || new Date().getFullYear();
+    useScoreStore.setState({ 進級待ちの年: 場.検査の進級待ちの年, 進級の窓を閉じた: false });
+  };
+}
