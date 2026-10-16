@@ -14,6 +14,7 @@ const {
   ScrollView,
 } = require('./rn');
 const { useScoreStore } = require('./useScoreStore');
+const 学 = require('./gakunen');
 const { useストアの一部 } = require('./storeSlice');
 const Icons = require('@expo/vector-icons');
 const { IS_IOS } = require('./IS_WEB');
@@ -40,11 +41,8 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
       ? [...members]
       : members.filter((部員) => (部員.name || '').toLowerCase().includes(検索の文.toLowerCase()))
   ).sort((甲, 乙) => {
-    const 甲の学年 = undefined === 甲.grade || null === 甲.grade ? 99 : Number(甲.grade);
-    const 乙の学年 = undefined === 乙.grade || null === 乙.grade ? 99 : Number(乙.grade);
-    const 甲の順 = 0 === 甲の学年 ? 99 : 甲の学年;
-    const 乙の順 = 0 === 乙の学年 ? 99 : 乙の学年;
-    if (甲の順 !== 乙の順) return 甲の順 - 乙の順;
+    const 学年の差 = 学.学年の順(甲) - 学.学年の順(乙);
+    if (学年の差) return 学年の差;
     const 性別の順 = (性別) => {
       const 整えた = (性別 || '').trim();
       return '男子' === 整えた ? 0 : '女子' === 整えた ? 1 : 2;

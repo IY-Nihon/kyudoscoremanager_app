@@ -10,6 +10,7 @@ const IS_WEB = require('./IS_WEB');
 const shadowStyle = require('./shadowStyle');
 // 出欠の自動判定。交代で入った人も数えるため、決まりは切り出してある
 const { 出ていた部員たち } = require('./attendanceRules');
+const 学 = require('./gakunen');
 const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
   const { members, archers } = useストアの一部(['members', 'archers']);
   const [attendance, setAttendance] = React.useState({});
@@ -46,12 +47,9 @@ const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
     );
   };
   const sortMembers = (甲, 乙) => {
-    // 1. 学年順 (1→4年、卒業生は末尾)
-    const gradeA = 甲.grade === undefined || 甲.grade === null ? 99 : Number(甲.grade);
-    const gradeB = 乙.grade === undefined || 乙.grade === null ? 99 : Number(乙.grade);
-    const 甲の順 = gradeA === 0 ? 99 : gradeA;
-    const 乙の順 = gradeB === 0 ? 99 : gradeB;
-    if (甲の順 !== 乙の順) return 甲の順 - 乙の順;
+    // 1. 学年順 (1→4年、その他、卒業生は末尾)
+    const 学年の差 = 学.学年の順(甲) - 学.学年の順(乙);
+    if (学年の差) return 学年の差;
     // 2. 男女順 (男子→女子→未設定)
     const genderOrder = (性別) => {
       const 整えた = (性別 || '').trim();
@@ -84,7 +82,8 @@ const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
           {部員.termKi ? `${部員.termKi}期 / ` : ''}
           {部員.gender}
           {' / '}
-          {部員.grade > 0 ? `${部員.grade}年` : '卒業生'}
+          {/* 前は 学年 0（その他）を「卒業生」、卒業生（学年 5）を「5年」と出していた */}
+          {学.学年の名前(部員)}
         </Text>
       </View>
       <View style={styles.statusGroup}>

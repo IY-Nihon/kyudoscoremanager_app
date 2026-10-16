@@ -30,6 +30,7 @@ const 中継 = require('./geminiChukei');
 const { generateUUID } = require('./uuid');
 const { formatMemberName } = require('./formatMemberName');
 const { getShadowStyle } = require('./shadowStyle');
+const 学 = require('./gakunen');
 const {
   記録の指示文,
   記録の形の指示文,
@@ -1351,14 +1352,11 @@ const OCRRecordModal = ({
   // メンバーピッカー（アコーディオン表示用）
   const activeMembersSorted = useMemo(() => {
     return members
-      .filter((部員) => (部員.grade || 0) < 5)
+      .filter((部員) => 学.現役か(部員))
       .filter((部員) => !pickerSearch.trim() || normalize(部員.name).includes(normalize(pickerSearch)))
       .sort((甲, 乙) => {
-        const gradeA = undefined === 甲.grade || null === 甲.grade ? 99 : Number(甲.grade);
-        const gradeB = undefined === 乙.grade || null === 乙.grade ? 99 : Number(乙.grade);
-        const 甲の順 = gradeA === 0 ? 99 : gradeA;
-        const 乙の順 = gradeB === 0 ? 99 : gradeB;
-        if (甲の順 !== 乙の順) return 甲の順 - 乙の順;
+        const 学年の差 = 学.学年の順(甲) - 学.学年の順(乙);
+        if (学年の差) return 学年の差;
         const genderVal = (性別) => ('男子' === 性別 ? 0 : '女子' === 性別 ? 1 : 2);
         const genDiff = genderVal(甲.gender) - genderVal(乙.gender);
         return 0 !== genDiff ? genDiff : (甲.name || '').localeCompare(乙.name || '', 'ja');
@@ -1368,20 +1366,16 @@ const OCRRecordModal = ({
   const activeGroups = useMemo(() => {
     const groups = {};
     activeMembersSorted.forEach((部員) => {
-      const 学年 = undefined === 部員.grade || null === 部員.grade ? 0 : Number(部員.grade);
+      const 学年 = 学.その他か(部員) ? 学.四年制.その他の学年 : 学.学年の値(部員);
       groups[学年] || (groups[学年] = []);
       groups[学年].push(部員);
     });
     const sortedGrades = Object.keys(groups)
       .map(Number)
-      .sort((甲, 乙) => {
-        if (甲 === 0) return 1;
-        if (乙 === 0) return -1;
-        return 甲 - 乙;
-      });
+      .sort((甲, 乙) => 学.学年の順({ grade: 甲 }) - 学.学年の順({ grade: 乙 }));
     return sortedGrades.map((学年) => ({
       grade: 学年,
-      title: 学年 === 0 ? 'その他/ゲスト' : `${学年}年生`,
+      title: 学.学年の値の名前(学年, null, { 生: true, その他: 'その他/ゲスト' }),
       members: groups[学年],
     }));
   }, [activeMembersSorted]);

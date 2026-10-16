@@ -10,6 +10,8 @@
  */
 'use strict';
 
+const 学 = require('./gakunen');
+
 /** 個人ログインが使える道具。全員の成績（getAllMembersStats）・出欠・部員の追加は使えない */
 const 個人が使える道具 = [
   'getDetailedMemberStats',
@@ -94,14 +96,7 @@ function 節を取る(基本, 見出し) {
 function 個人用の指示文(基本, 本人) {
   const 名前 = (本人 && 本人.name) || '';
   // 学年 0 は「その他」（画面と同じ。0年とは書かない）
-  const 学年 =
-    本人 && typeof 本人.grade === 'number'
-      ? 本人.grade >= 5
-        ? '卒業生'
-        : 本人.grade === 0
-          ? 'その他'
-          : `${本人.grade}年`
-      : '';
+  const 学年 = 本人 && typeof 本人.grade === 'number' ? 学.学年の名前(本人) : '';
   const 呼び名 = 名前 ? `「${名前}」${学年 ? `（${学年}）` : ''}` : '本人';
   const 名前の引数 = 名前 ? `「${名前}」` : '本人の名前';
 

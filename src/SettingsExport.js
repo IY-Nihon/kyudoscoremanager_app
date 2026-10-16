@@ -18,6 +18,7 @@ const {
 } = require('./rn');
 const { IS_WEB } = require('./IS_WEB');
 const { useScoreStore } = require('./useScoreStore');
+const 学 = require('./gakunen');
 // 見た目の決まりは設定画面と同じ
 const { styles } = require('./settingsStyles');
 // 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
@@ -118,11 +119,8 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
     try {
       if ('member' === activeRole) return myMemberName ? [myMemberName] : [];
       const sortMembers = (甲, 乙) => {
-        const 甲の学年 = 甲.grade === undefined || 甲.grade === null ? 99 : Number(甲.grade);
-        const 乙の学年 = 乙.grade === undefined || 乙.grade === null ? 99 : Number(乙.grade);
-        const 甲の順 = 0 === 甲の学年 ? 99 : 甲の学年;
-        const 乙の順 = 0 === 乙の学年 ? 99 : 乙の学年;
-        if (甲の順 !== 乙の順) return 甲の順 - 乙の順;
+        const 学年の差 = 学.学年の順(甲) - 学.学年の順(乙);
+        if (学年の差) return 学年の差;
         const 性別の順 = (性別) => {
           const 整えた = (性別 || '').trim();
           return '男子' === 整えた ? 0 : '女子' === 整えた ? 1 : 2;
@@ -384,8 +382,8 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
           const 部員 = 名簿.find((部員1人) => 部員1人.id === 人.id || 部員1人.name === 人.name);
           部員 && ((人.grade = 部員.grade), (人.name = 部員.name));
         });
-        const 並べた人たち = Array.from(人たち.values()).sort((甲, 乙) =>
-          甲.grade !== 乙.grade ? (甲.grade || 9) - (乙.grade || 9) : 甲.name.localeCompare(乙.name, 'ja-JP')
+        const 並べた人たち = Array.from(人たち.values()).sort(
+          (甲, 乙) => 学.学年の順(甲) - 学.学年の順(乙) || 甲.name.localeCompare(乙.name, 'ja-JP')
         );
         const 日付の見出し = 日付たち.map((日付) => {
           const 片 = 日付.split('/');

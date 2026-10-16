@@ -82,6 +82,7 @@ const {
 // 操作の固まりは別のファイル（2026-10-05 に分けた）
 const { 盤面の操作 } = require('./storeBoard');
 const { 部員の操作 } = require('./storeMembers');
+const 学 = require('./gakunen');
 const { 記録の操作 } = require('./storeSessions');
 const { 同期の操作 } = require('./storeSync');
 const { ライブの操作 } = require('./storeLive');
@@ -869,16 +870,14 @@ const useScoreStore = zustand.create()(
           const 進級後の部員 = [];
           雲の部員.forEach((部員) => {
             const 学年 = gradeOf(部員);
-            if (isNaN(学年) || 学年 < 1 || 学年 >= 5)
-              進級後の部員.push(Object.assign({}, 部員, { lastModified: 今, syncStatus: '同期済み' }));
-            else if (学年 >= 4)
-              進級後の部員.push(
-                Object.assign({}, 部員, { grade: 5, lastModified: 今, syncStatus: '同期済み' })
-              );
-            else
-              進級後の部員.push(
-                Object.assign({}, 部員, { grade: 学年 + 1, lastModified: 今, syncStatus: '同期済み' })
-              );
+            // 1〜3 年は 1 つ上がり、4 年は卒業（src/gakunen.js）。その他・卒業生・学年の無い人はそのまま
+            const 次 = isNaN(学年) ? 学年 : 学.次の学年(学年);
+            進級後の部員.push(
+              Object.assign({}, 部員, 次 === 学年 || isNaN(次) ? {} : { grade: 次 }, {
+                lastModified: 今,
+                syncStatus: '同期済み',
+              })
+            );
           });
           const 次の期 = (currentFreshmanTerm || 0) + 1;
           if (isNetworkOnline)

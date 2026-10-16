@@ -6,6 +6,7 @@ const Icons = require('@expo/vector-icons');
 const ExpoHaptics = require('expo-haptics');
 const { CustomCalendarModal } = require('./CustomCalendarModal');
 const { useScoreStore } = require('./useScoreStore');
+const 学 = require('./gakunen');
 const { useストアの一部 } = require('./storeSlice');
 const { normalizeTag, タグの見た目 } = require('./syncRules');
 /**
@@ -335,13 +336,8 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                     >
                       {[...allMembers]
                         .sort((甲, 乙) => {
-                          const 甲の学年 =
-                            undefined === 甲.grade || null === 甲.grade ? 99 : Number(甲.grade);
-                          const 乙の学年 =
-                            undefined === 乙.grade || null === 乙.grade ? 99 : Number(乙.grade);
-                          const 甲の順 = 0 === 甲の学年 ? 99 : 甲の学年;
-                          const 乙の順 = 0 === 乙の学年 ? 99 : 乙の学年;
-                          if (甲の順 !== 乙の順) return 甲の順 - 乙の順;
+                          const 学年の差 = 学.学年の順(甲) - 学.学年の順(乙);
+                          if (学年の差) return 学年の差;
                           const 性別の順 = (性別) => {
                             const 整えた = (性別 || '').trim();
                             return '男子' === 整えた ? 0 : '女子' === 整えた ? 1 : 2;
@@ -370,13 +366,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                               <Text style={{ fontSize: 14, color: 色.文字, flex: 1 }}>
                                 {member.name || member.personalId || member.id}
                                 <Text style={{ fontSize: 11, color: 色.灰, marginLeft: 4 }}>
-                                  (
-                                  {member.grade === 5
-                                    ? '卒業生'
-                                    : member.grade === 0
-                                      ? 'その他'
-                                      : `${member.grade}年`}
-                                  )
+                                  ({学.学年の名前(member)})
                                 </Text>
                               </Text>
                               <View style={{ flexDirection: 'row', gap: 4 }}>

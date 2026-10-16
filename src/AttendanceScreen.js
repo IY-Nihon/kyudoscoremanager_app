@@ -15,6 +15,7 @@ const {
 } = require('./rn');
 const Icons = require('@expo/vector-icons');
 const { useScoreStore } = require('./useScoreStore');
+const 学 = require('./gakunen');
 const { use引いて更新 } = require('./hikiOroshi');
 // 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
 const { useストアの一部 } = require('./storeSlice');
@@ -137,17 +138,17 @@ const AttendanceScreen = () => {
     .sort((甲, 乙) => 乙.localeCompare(甲));
   // その年度に現役だったか（留年等も考慮）。出席率の分母を「期間の練習日数」にするかどうか
   const isActiveInYear = (部員) => {
-    if (部員.grade !== 5) return (部員.grade || 0) < 5; // 現在現役なら基本真
+    if (学.現役か(部員)) return true; // 現在現役なら基本真
     if (部員.graduationYear) {
       // 卒業年度が記録されていれば、表示年度がそれ以前なら現役扱い
       return currentFiscalYear <= 部員.graduationYear;
     }
     if (部員.termKi) {
-      // 記録がない場合の救済：期から推測 (現在の1年生の期から逆算)
-      // 卒業年度 ≒ (現在の年度) + (卒業代の期 - 現在の1年生の期)
-      const currentFreshmanTerm = useScoreStore.getState().currentFreshmanTerm;
-      const gradYear = currentFiscalYear + (currentFreshmanTerm - 3 - 部員.termKi);
-      return currentFiscalYear <= gradYear;
+      // 記録がない場合の救済：期から卒業した年度を推測する（今日の年度と今の 1 年生の期から。src/gakunen.js）
+      const 今日 = new Date();
+      const 今日の年度 = 今日.getMonth() + 1 >= 4 ? 今日.getFullYear() : 今日.getFullYear() - 1;
+      const 卒業年度 = 学.卒業の年度(部員.termKi, useScoreStore.getState().currentFreshmanTerm, 今日の年度);
+      return currentFiscalYear <= 卒業年度;
     }
     return false;
   };
@@ -164,17 +165,14 @@ const AttendanceScreen = () => {
     }))
     .filter((部員) => {
       // 現役生、またはその期間内に一度でも出席実績がある卒業生を表示
-      return (部員.grade || 0) < 5 || 部員.presentCount > 0;
+      return 学.現役か(部員) || 部員.presentCount > 0;
     })
     .sort((甲, 乙) => {
       // 出席率順は維持
       if (Math.abs(乙.rate - 甲.rate) > 0.001) return 乙.rate - 甲.rate;
       // 出席率が同じ場合の基本の並び順（メンバー管理画面と一致）
-      const n_grade = undefined === 甲.grade || null === 甲.grade ? 99 : Number(甲.grade);
-      const l_grade = undefined === 乙.grade || null === 乙.grade ? 99 : Number(乙.grade);
-      const s_idx = 0 === n_grade ? 99 : n_grade;
-      const a_idx = 0 === l_grade ? 99 : l_grade;
-      if (s_idx !== a_idx) return s_idx - a_idx;
+      const 学年の差 = 学.学年の順(甲) - 学.学年の順(乙);
+      if (学年の差) return 学年の差;
       const c_func = (g_val) => {
         const t_gen = (g_val || '').trim();
         return '男子' === t_gen ? 0 : '女子' === t_gen ? 1 : 2;
@@ -432,7 +430,7 @@ const AttendanceScreen = () => {
                   </View>
                   <Text
                     style={styles.memberSub}
-                  >{`${部員.termKi ? 部員.termKi + '期 / ' : ''}${部員.gender} / ${部員.grade === 5 ? '卒業生' : 部員.grade === 0 ? 'その他' : 部員.grade + '年'}`}</Text>
+                  >{`${部員.termKi ? 部員.termKi + '期 / ' : ''}${部員.gender} / ${学.学年の名前(部員)}`}</Text>
                 </View>
                 <View style={styles.statInfo}>
                   <Text style={styles.rateText}>{部員.rate.toFixed(1)}%</Text>
@@ -582,7 +580,7 @@ const AttendanceScreen = () => {
                   <Text style={styles.modalTitle}>{selectedMember.name}</Text>
                   <Text
                     style={styles.memberSub}
-                  >{`${selectedMember.gender} / ${selectedMember.grade === 5 ? '卒業生' : selectedMember.grade === 0 ? 'その他' : selectedMember.grade + '年'}`}</Text>
+                  >{`${selectedMember.gender} / ${学.学年の名前(selectedMember)}`}</Text>
                 </View>
                 <TouchableOpacity
                   style={styles.closeBtn} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
