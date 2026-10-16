@@ -304,36 +304,65 @@ const ArcherColumnView = React.memo(
             />
           </TouchableOpacity>
           {archer.isSeparator ? (
+            // 間隔の列も立ごとに 1 つの箱にして、中のマス目は引かない。
+            // 鍵が効くときは箱の端に鍵のアイコンを出し、箱のどこを押しても鍵が切り替わる（今までは端のマスだけ）
             <View style={横 ? { flexDirection: 'row' } : undefined}>
-              {Array.from({ length: shots }, (無し, 番) => (横 ? 番 : shots - 1 - 番)).map((射番) => {
-                const 立 = Math.floor(射番 / 4);
-                const 太線 = 切れ目(射番);
-                const 立の端 = 射番 === Math.min(shots - 1, 4 * 立 + 3);
+              {Array.from({ length: Math.ceil(shots / 4) }, (無し, 番) =>
+                横 ? 番 : Math.ceil(shots / 4) - 1 - 番
+              ).map((立) => {
+                const 頭 = 4 * 立;
+                const 本数 = Math.min(shots, 頭 + 4) - 頭;
                 const 鍵 = !(isReadOnly && !isAdminMode) && (archer.lockedBlocks?.[立] || false);
+                const 太線 = 横 ? 頭 + 本数 < shots : 0 !== 立;
+                const 線 = 横
+                  ? {
+                      borderRightWidth: 太線 ? 2 : 1,
+                      borderRightColor: 色.黒,
+                      borderBottomWidth: 1,
+                      borderBottomColor: 色.黒,
+                      borderTopWidth: 1,
+                      borderTopColor: 色.黒,
+                    }
+                  : {
+                      borderBottomWidth: 太線 ? 2 : 1,
+                      borderBottomColor: 色.黒,
+                      borderRightWidth: 1,
+                      borderRightColor: 色.黒,
+                      borderLeftWidth: 1,
+                      borderLeftColor: 色.黒,
+                    };
                 return (
-                  <View key={射番} style={{ width: ます幅, height: ます高 }}>
-                    <ScoreCell
-                      archerId={archer.id}
-                      index={射番}
-                      横並び={横}
-                      isLocked={鍵}
-                      isBlockBottom={太線}
-                      isBlockTop={立の端}
-                      isFirst={0 === 射番}
-                      hideMark
-                      isNormalArcher={!鍵が効く}
-                      columnType="separator"
-                      mark={archer.marks?.[射番]}
-                      onToggle={onToggleMark}
-                    />
-                    {立の端 && (
-                      <TouchableOpacity
-                        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10 }}
-                        disabled={isReadOnly && !isAdminMode}
-                        onPress={() => 鍵を押した(archer.id, 立)}
+                  <TouchableOpacity
+                    key={立}
+                    testID={'間隔の箱-' + archer.id + '-' + 立}
+                    disabled={!鍵が効く || (isReadOnly && !isAdminMode)}
+                    onPress={() => 鍵を押した(archer.id, 立)}
+                    activeOpacity={0.7}
+                    accessible={鍵が効く}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${立 + 1}立目の鍵を${鍵 ? '開ける' : '掛ける'}`}
+                    aria-label={鍵が効く ? `${立 + 1}立目の鍵を${鍵 ? '開ける' : '掛ける'}` : undefined}
+                    style={[
+                      {
+                        width: 横 ? ます幅 * 本数 : ます幅,
+                        height: 横 ? ます高 : ます高 * 本数,
+                        backgroundColor: 'rgba(142,142,147,0.1)',
+                        alignItems: 横 ? 'flex-end' : 'center',
+                        justifyContent: 横 ? 'center' : 'flex-start',
+                        paddingTop: 横 ? 0 : 3 * 倍率,
+                        paddingRight: 横 ? 8 * 倍率 : 0,
+                      },
+                      線,
+                    ]}
+                  >
+                    {鍵が効く && (
+                      <Icons.Ionicons
+                        name={鍵 ? 'lock-closed' : 'lock-open'}
+                        size={16 * 倍率}
+                        color={鍵 ? 色.赤 : 色.灰}
                       />
                     )}
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
             </View>
