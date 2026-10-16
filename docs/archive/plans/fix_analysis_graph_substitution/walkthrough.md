@@ -5,7 +5,7 @@
 ## 1. 実施した変更内容
 
 ### 1.1. 設定画面における時系列集計ロジックの改善
-- **対象ファイル**: [src/JP_AnalysisScreen_1000.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_AnalysisScreen_1000.js)
+- **対象ファイル**: [src/JP_AnalysisScreen_1000.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_AnalysisScreen_1000.js)
 - **変更内容**:
   - `Se` 関数内の `o.archers.find` 処理を `o.archers.forEach` ループに変更しました。
   - セッション内の最初の1行だけを取得していたロジックを、すべての行を走査する形に変更し、交代後のメンバー ID/名前、および2つ目以降の立ち（行）もすべて漏れなく集計するようにしました。

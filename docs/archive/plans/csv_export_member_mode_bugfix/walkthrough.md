@@ -5,7 +5,7 @@
 ## 1. 実施した変更内容
 
 ### 1.1. 設定画面におけるフィルタリングロジックの改善
-- **対象ファイル**: [JP_SettingsScreen_1023.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)
+- **対象ファイル**: [JP_SettingsScreen_1023.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)
 - **変更内容**:
   - `memberId` が未設定になっている古いセッションデータに対しても個人フィルタが機能するよう、`myMemberName`（ログイン名）と射手名（`name`）を比較するフォールバックロジックを追加しました。
   - 以下の5箇所でフィルタ条件を拡張しました：

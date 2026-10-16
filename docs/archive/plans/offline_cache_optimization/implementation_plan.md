@@ -12,7 +12,7 @@
 
 ### 1. データベース層 (Database Layer)
 
-#### [MODIFY] [db_178.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/db_178.js)
+#### [MODIFY] [db_178.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/db_178.js)
 Firebase Firestore のオフライン永続化（IndexedDB Persistence）を有効にします。
 - アプリ起動時にサーバーからの応答を待たずに、ローカルキャッシュからデータを即座に提供できるようにします。
 - オフライン中の書き込みを、再接続時に自動でサーバーへ同期するよう設定します。
@@ -21,7 +21,7 @@ Firebase Firestore のオフライン永続化（IndexedDB Persistence）を有�
 
 ### 2. ストア層 (Store Layer)
 
-#### [MODIFY] [JP_useScoreStore_174.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_useScoreStore_174.js)
+#### [MODIFY] [JP_useScoreStore_174.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_useScoreStore_174.js)
 リアルタイム監視（`onSnapshot`）と同期ロジックを最適化します。
 - **`listenToSessions`**: 
   - 監視クエリに `where('date', '>', 直近1ヶ月)` を追加し、通信維持コストを削減します。
@@ -34,7 +34,7 @@ Firebase Firestore のオフライン永続化（IndexedDB Persistence）を有�
 
 ### 3. UI層 (UI Layer)
 
-#### [MODIFY] [HistoryScreen.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/HistoryScreen.js) (調査後に必要であれば)
+#### [MODIFY] [HistoryScreen.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/HistoryScreen.js) (調査後に必要であれば)
 過去ログ表示の際の挙動を調整します。
 - キャッシュからデータを読み込んでいる間のスケルトン表示や、オフライン時のインジケーター表示などを検討します。
 

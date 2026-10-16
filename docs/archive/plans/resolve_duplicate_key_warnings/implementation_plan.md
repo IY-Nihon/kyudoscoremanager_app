@@ -16,21 +16,21 @@
 
 ---
 
-#### [MODIFY] [JP_AnalysisScreen_1000.js](file:///C:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_AnalysisScreen_1000.js)
+#### [MODIFY] [JP_AnalysisScreen_1000.js](file:///C:/Users/…/Documents/kyudoscoremanager_app/src/JP_AnalysisScreen_1000.js)
 - メンバーランキングリスト (`Fe.map`, `pe.map`) の `key` を `e.id` 優先、フォールバックとしてインデックス付き名前に修正。
 - タグチップ (`ge.map`) の `key` をタグ名そのもの（文字列）に。
 - グラフ詳細の行 (`details.map`) の `key` をインデックスから一意な文字列に。
 - 単位選択ボタン (`['day','month','year'].map`) の `key` を単位文字列に。
 
-#### [MODIFY] [JP_RecordScreen_593.js](file:///C:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_RecordScreen_593.js)
+#### [MODIFY] [JP_RecordScreen_593.js](file:///C:/Users/…/Documents/kyudoscoremanager_app/src/JP_RecordScreen_593.js)
 - フッターのアーチャー名表示 (`k.map`) の `key` を `footer-${e.id}` に修正。
 - 射数設定の選択肢 (`[4,8,12,16,20].map`) の `key` を数値文字列に。
 
-#### [MODIFY] [JP_SettingsScreen_1023.js](file:///C:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)
+#### [MODIFY] [JP_SettingsScreen_1023.js](file:///C:/Users/…/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)
 - タグテンプレート (`q.map`) の `key` をテンプレート文字列に。
 - CSVエクスポートのタグ選択 (`Oe.map`) の `key` をタグ名に。
 
-#### [MODIFY] [JP_CustomCalendarModal_695.js](file:///C:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_CustomCalendarModal_695.js)
+#### [MODIFY] [JP_CustomCalendarModal_695.js](file:///C:/Users/…/Documents/kyudoscoremanager_app/src/JP_CustomCalendarModal_695.js)
 - ホイールピッカーの項目 (`e.map`) の `key` を `item-${index}-${value}` に修正。
 
 ## 検証計画

@@ -7,7 +7,7 @@
 ## 🛠️ 実施された変更内容
 
 ### 1. ロード画面コンポーネントの書き換え
-- **ファイル**: [JP_LoadingScreen_1037.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_LoadingScreen_1037.js)
+- **ファイル**: [JP_LoadingScreen_1037.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_LoadingScreen_1037.js)
 - **テキスト修正**:
   英語表記の `"Archery Record"` を、日本語の正式名称である **`"弓道的中管理アプリ"`** に修正しました。
 - **デバッグ遅延処理の検証**:
@@ -37,6 +37,6 @@
 ## 📂 作成されたドキュメント（docs/loading_screen_improvement/）
 
 ルールに基づき、日本語のドキュメントをプロジェクト内に作成・保存しました。
-1. **[implementation_plan.md](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/docs/loading_screen_improvement/implementation_plan.md)**: 変更の設計・アプローチに関する日本語の実装計画書。
-2. **[task.md](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/docs/loading_screen_improvement/task.md)**: 進捗管理用の日本語タスクリスト。
-3. **[walkthrough.md](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/docs/loading_screen_improvement/walkthrough.md)**: 本ドキュメント（変更履歴とデプロイ結果）。
+1. **[implementation_plan.md](file:///c:/Users/…/Documents/kyudoscoremanager_app/docs/loading_screen_improvement/implementation_plan.md)**: 変更の設計・アプローチに関する日本語の実装計画書。
+2. **[task.md](file:///c:/Users/…/Documents/kyudoscoremanager_app/docs/loading_screen_improvement/task.md)**: 進捗管理用の日本語タスクリスト。
+3. **[walkthrough.md](file:///c:/Users/…/Documents/kyudoscoremanager_app/docs/loading_screen_improvement/walkthrough.md)**: 本ドキュメント（変更履歴とデプロイ結果）。

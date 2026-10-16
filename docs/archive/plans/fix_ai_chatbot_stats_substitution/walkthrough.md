@@ -1,6 +1,6 @@
 # AIチャットボット集計交代対応バグ修正（完了報告）
 
-AIチャットボット（[JP_AIChatBot_1034.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_AIChatBot_1034.js)）において、メンバー途中交代（`substitutions`）が的中集計に正しく反映されていなかった問題に対する修正および検証が完了しました。
+AIチャットボット（[JP_AIChatBot_1034.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_AIChatBot_1034.js)）において、メンバー途中交代（`substitutions`）が的中集計に正しく反映されていなかった問題に対する修正および検証が完了しました。
 
 ## 修正内容
 
@@ -22,8 +22,8 @@ AIチャットボット（[JP_AIChatBot_1034.js](file:///c:/Users/yutoi/Document
 ## 検証結果
 
 - **集計整合性の検証**:
-  - `extract_all_members_data.mjs` を用いたFirestoreの実データ集計検証により、交代処理（部員A選手と石上裕人選手の5月26日の相互交代など）を考慮した5月の正しい的中率は以下の通りになることが実証されており、今回の修正によってAIチャットボットでもこれと同じ数値で回答されるようになります。
+  - `extract_all_members_data.mjs` を用いたFirestoreの実データ集計検証により、交代処理（部員A選手と部員B選手の5月26日の相互交代など）を考慮した5月の正しい的中率は以下の通りになることが実証されており、今回の修正によってAIチャットボットでもこれと同じ数値で回答されるようになります。
     - **部員A**: `65.3% (98/150)` (従来は交代後の3中が反映されず、95中となっていました)
-    - **石上 裕人**: `34.7% (25/72)`
+    - **部員B**: `34.7% (25/72)`
 - **ビルド検証**:
   - Expo Webプラットフォーム用のエクスポートビルド（`npx expo export --platform web`）を正常にパスし、追加したツールのコードを含めて構文・ビルドエラーがないことを確認しました。

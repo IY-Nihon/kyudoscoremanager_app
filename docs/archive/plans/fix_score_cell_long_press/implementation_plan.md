@@ -5,7 +5,7 @@
 
 ## 提案される変更
 
-### [MODIFY] [JP_ScoreCell_596.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_ScoreCell_596.js)
+### [MODIFY] [JP_ScoreCell_596.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_ScoreCell_596.js)
 
 #### 修正方針
 1. `default_218`（Pressable）をインポートに追加します。

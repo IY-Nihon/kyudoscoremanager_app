@@ -18,17 +18,17 @@
 ## 2. 実装された「3つの防衛線」
 
 ### 【防衛線1】既存データの完全標準化＆マージ（読み込み時の防衛）
-- **対象ファイル**: [JP_EditSessionModal_694.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_EditSessionModal_694.js)
+- **対象ファイル**: [JP_EditSessionModal_694.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_EditSessionModal_694.js)
 - 既存セッションの編集画面を開いた際、過去データに表記揺れ（シャープなし、全角シャープ、余分なスペース）が含まれていても、読み込みの瞬間にすべて「半角シャープ付き・空白トリム」形式に自動正規化します。重複したタグは即座にマージ（単一化）されます。
 
 ### 【防衛線2】新規入力・トグル動作のリアルタイム正規化（入力・編集時の防衛）
-- **対象ファイル**: [JP_SaveSessionModal_690.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_SaveSessionModal_690.js) / [JP_EditSessionModal_694.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_EditSessionModal_694.js)
+- **対象ファイル**: [JP_SaveSessionModal_690.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_SaveSessionModal_690.js) / [JP_EditSessionModal_694.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_EditSessionModal_694.js)
 - タグの正規化ユーティリティ `normalizeTag` 関数を定義し、以下の制御を実装しました：
   - **手入力（手動タイピング）**: 空白やカンマで区切って入力されたタグに対し、リアルタイムで `normalizeTag` を適用。前後の空白を除去し、全角の `＃` を半角 `#` に変換。シャープが抜けている場合は自動的に先頭に `#` を補完します。
   - **プリセット連携（トグル動作）**: 定型タグのトグルボタンをクリックした際、手入力側の表記揺れ（例: `#大会` と `大会`）を同一タグとして完璧に認識します。同一タグが存在する場合はトグルオフ（消去）、存在しない場合は自動正規化された形でトグルオン（追加）され、プレビューとボタンのアクティブ状態が 100% 同期します。
 
 ### 【防衛線3】保存直前の最終クリーンアップ（保存・同期時の防衛）
-- **対象ファイル**: [JP_useScoreStore_174.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_useScoreStore_174.js)
+- **対象ファイル**: [JP_useScoreStore_174.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_useScoreStore_174.js)
 - ユーザーが保存ボタンを押した瞬間、およびクラウドとリアルタイム同期する直前に、状態管理ストアのセーブ処理内でタグ文字列を再度スペース区切りでクリーンアップします。これにより、表記揺れや重複が永続データ（Firestore）に絶対に混入しないよう徹底的に保護します。
 
 ---
@@ -50,7 +50,7 @@ Babelエラー解消後、`browser_subagent` による実機検証テストを�
 
 ### 実証エビデンス（検証画面スクリーンショット）
 
-![検証画面スクリーンショット](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/docs/tag_normalization_fix/tag_verification.png)
+![検証画面スクリーンショット](file:///c:/Users/…/Documents/kyudoscoremanager_app/docs/tag_normalization_fix/tag_verification.png)
 
 > [!NOTE]
 > 上図は、手入力で「テストタグ」「#スペースありタグ」を追加し、プリセットから「#練習試合」をトグルオン、「#大会」をトグルオフした直後の状態です。

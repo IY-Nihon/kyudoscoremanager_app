@@ -7,7 +7,7 @@
 ## 1. 実施した変更内容
 
 ### 1.1. 送信データ構造の拡張
-- **対象ファイル**: [src/JP_SettingsScreen_1023.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)
+- **対象ファイル**: [src/JP_SettingsScreen_1023.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)
 - **変更内容**:
   - お問い合わせデータを Firestore の `inquiries` コレクションへ追加する際、以下のログインアカウントの属性情報（メタデータ）を合わせて追加するように送信ロジックを修正しました。
     ```javascript
@@ -24,7 +24,7 @@
     ```
 
 ### 1.2. Firestore セキュリティルールの追加とデプロイ
-- **対象ファイル**: [firestore.rules](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/firestore.rules)
+- **対象ファイル**: [firestore.rules](file:///c:/Users/…/Documents/kyudoscoremanager_app/firestore.rules)
 - **変更内容**:
   - `inquiries` コレクションに対し、外部（アプリ）からの新規作成（`create`）のみを許可し、読み取りや更新・削除は完全に拒否（制限）するルールを追加しました。これにより、送信されたお問い合わせ情報は一般ユーザーから覗かれることなく、セキュリティが担保されます。
   - `firebase deploy --only firestore:rules` コマンドで、ルールを本番環境に反映しました。

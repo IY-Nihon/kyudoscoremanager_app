@@ -4,7 +4,7 @@
 現在使用している必要なコード（ソースコードおよび各種構成ファイル）のみを特定し、指定の新しいフォルダーを作成してコピーします。
 
 ## コピー先フォルダの候補
-- **`c:\Users\yutoi\Documents\kyudoscoremanager_app_clean`**
+- **`c:\Users\…\Documents\kyudoscoremanager_app_clean`**
 
 ## 1. コピー対象ファイル・フォルダ（現在使用しているコード）
 
@@ -67,7 +67,7 @@
 
 ## 3. コピー手順
 
-1. コピー先フォルダ（`c:\Users\yutoi\Documents\kyudoscoremanager_app_clean`）を新規作成します。
+1. コピー先フォルダ（`c:\Users\…\Documents\kyudoscoremanager_app_clean`）を新規作成します。
 2. コピー対象のファイル・フォルダを PowerShell の `Copy-Item` またはファイル操作を通じてコピーします。
 3. コピー先フォルダに移動し、`npm install` を実行して必要な依存関係をインストールします。
 4. コピー先で `npx expo export --platform web` を実行し、正しくビルドできることを検証します。

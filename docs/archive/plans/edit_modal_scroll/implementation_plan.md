@@ -11,7 +11,7 @@
 
 ### [Component: UI]
 
-#### [MODIFY] [JP_EditSessionModal_694.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_EditSessionModal_694.js)
+#### [MODIFY] [JP_EditSessionModal_694.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_EditSessionModal_694.js)
 - `ScrollView` コンポーネント (`default_297`) をインポートに追加します。
 - モーダル内のメインコンテンツ部分を `ScrollView` でラップし、高さが溢れた場合にスクロールできるようにします。
 - スクロール時でも「変更を保存」ボタンが押しやすいよう、レイアウトを調整します。

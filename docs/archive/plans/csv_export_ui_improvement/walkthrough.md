@@ -4,7 +4,7 @@ CSV書き出しモーダルにおける「タグ絞り込み」の表示崩れ�
 
 ## 変更内容
 
-### [JP_SettingsScreen_1023.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)
+### [JP_SettingsScreen_1023.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)
 * **日本語化の対応:**
   - タグ絞り込みのAND/ORトグルについて、英語表記の `AND` / `OR` を日本語の `すべて含む` / `いずれか含む` に置き換えました。
 * **タグ表示崩れの修正:**
@@ -21,11 +21,11 @@ CSV書き出しモーダルにおける「タグ絞り込み」の表示崩れ�
 
 ### 他のタグフィルターへの適用
 
-#### [JP_HistoryScreen_692.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_HistoryScreen_692.js)
+#### [JP_HistoryScreen_692.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_HistoryScreen_692.js)
 * **日本語化の対応:**
   - 履歴一覧画面のタグフィルターにある `AND` / `OR` トグルを、それぞれ `すべて含む` / `いずれか含む` に変更しました。
 
-#### [JP_AnalysisScreen_1000.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_AnalysisScreen_1000.js)
+#### [JP_AnalysisScreen_1000.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_AnalysisScreen_1000.js)
 * **日本語化の対応:**
   - 的中分析画面のタグフィルターにある `AND` / `OR` トグルを、それぞれ `すべて含む` / `いずれか含む` に変更しました。
 

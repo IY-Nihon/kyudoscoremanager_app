@@ -5,7 +5,7 @@
 ## 1. 実施した変更内容
 
 ### 1.1. 設定画面における長押し検知ロジックの改善
-- **対象ファイル**: [src/JP_ScoreCell_596.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_ScoreCell_596.js)
+- **対象ファイル**: [src/JP_ScoreCell_596.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_ScoreCell_596.js)
 - **変更内容**:
   - 最初は React Native の `Pressable` の `onPressIn`/`onPressOut` での実装を試みましたが、Web環境ではイベントが正常に発火しないことが確認されました。
   - そのため、コンポーネントに `cellRef` を設定し、`useEffect` 内でブラウザのネイティブ DOM イベント (`mousedown`, `mouseup`, `mouseleave`, `touchstart`, `touchend`, `touchcancel`, `contextmenu`) を直接登録する実装に変更しました。

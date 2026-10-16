@@ -18,16 +18,16 @@
 ### 1. 画面コンポーネント名の正規化
 React Navigationの警告を解消するため、各画面の関数名と `displayName` を設定します。
 
-- **[MODIFY] [JP_RecordScreen_593.js](file:///C:/Users/yutoi/Documents/復元アプリ/AppBase/src/JP_RecordScreen_593.js)**: `k` を `RecordScreen` に変更。
-- **[MODIFY] [JP_HistoryScreen_692.js](file:///C:/Users/yutoi/Documents/復元アプリ/AppBase/src/JP_HistoryScreen_692.js)**: `w` を `HistoryScreen` に変更。
-- **[MODIFY] [JP_AnalysisScreen_1000.js](file:///C:/Users/yutoi/Documents/復元アプリ/AppBase/src/JP_AnalysisScreen_1000.js)**: `j` を `AnalysisScreen` に変更。
-- **[MODIFY] [JP_MemberScreen_1022.js](file:///C:/Users/yutoi/Documents/復元アプリ/AppBase/src/JP_MemberScreen_1022.js)**: `v` を `MemberScreen` に変更。
-- **[MODIFY] [JP_SettingsScreen_1023.js](file:///C:/Users/yutoi/Documents/復元アプリ/AppBase/src/JP_SettingsScreen_1023.js)**: `w` を `SettingsScreen` に変更。
+- **[MODIFY] [JP_RecordScreen_593.js](file:///C:/Users/…/Documents/復元アプリ/AppBase/src/JP_RecordScreen_593.js)**: `k` を `RecordScreen` に変更。
+- **[MODIFY] [JP_HistoryScreen_692.js](file:///C:/Users/…/Documents/復元アプリ/AppBase/src/JP_HistoryScreen_692.js)**: `w` を `HistoryScreen` に変更。
+- **[MODIFY] [JP_AnalysisScreen_1000.js](file:///C:/Users/…/Documents/復元アプリ/AppBase/src/JP_AnalysisScreen_1000.js)**: `j` を `AnalysisScreen` に変更。
+- **[MODIFY] [JP_MemberScreen_1022.js](file:///C:/Users/…/Documents/復元アプリ/AppBase/src/JP_MemberScreen_1022.js)**: `v` を `MemberScreen` に変更。
+- **[MODIFY] [JP_SettingsScreen_1023.js](file:///C:/Users/…/Documents/復元アプリ/AppBase/src/JP_SettingsScreen_1023.js)**: `w` を `SettingsScreen` に変更。
 
 ### 2. 非推奨のShadowプロパティの修正
 React Native Webの警告 `"shadow*" style props are deprecated` を解消します。
 
-- **[MODIFY] [App.js](file:///C:/Users/yutoi/Documents/復元アプリ/AppBase/App.js)**: `responsiveWrapper` のスタイルをWeb環境では `boxShadow` を使用するように修正。
+- **[MODIFY] [App.js](file:///C:/Users/…/Documents/復元アプリ/AppBase/App.js)**: `responsiveWrapper` のスタイルをWeb環境では `boxShadow` を使用するように修正。
 
 ## 検証計画
 

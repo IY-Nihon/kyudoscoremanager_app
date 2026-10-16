@@ -1,11 +1,11 @@
 # 矢所記録の設定UI復旧完了レポート（Walkthrough）
 
-設定画面（[JP_SettingsScreen_1023.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)）において消失していた「矢所記録の有効化トグル」および「的種類選択UI」の復旧作業が完了しました。
+設定画面（[JP_SettingsScreen_1023.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)）において消失していた「矢所記録の有効化トグル」および「的種類選択UI」の復旧作業が完了しました。
 
 ## 1. 実施した変更内容
 
 ### 1.1. 設定画面の設定UIパッチの適用
-- **対象ファイル**: [JP_SettingsScreen_1023.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)
+- **対象ファイル**: [JP_SettingsScreen_1023.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)
 - **変更内容**:
   - `enableArrowLocation`（有効化フラグ）と `arrowTargetType`（的の種類）の状態および更新アクションをZustandストアから正しくデストラクションするようコードを修正。
   - 一般ユーザー（一般メンバーロール）でも閲覧・設定できるように、権限制御（`'member'!==V&&`）を解除して「矢所の記録」設定項目を追加。

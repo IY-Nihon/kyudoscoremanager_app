@@ -15,7 +15,7 @@
 
 ### [Component: UI]
 
-#### [MODIFY] [JP_EditSessionModal_694.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_EditSessionModal_694.js)
+#### [MODIFY] [JP_EditSessionModal_694.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_EditSessionModal_694.js)
 - 84行目付近の `key` 属性の指定を、JSX オブジェクトから `member.id` に修正します。
 
 ## 検証計画

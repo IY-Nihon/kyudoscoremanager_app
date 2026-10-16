@@ -26,7 +26,7 @@
 
 各フィルタ箇所において、`memberId` での一致に加え、`memberId` が存在しない場合にはログイン名（`myMemberName`）と archer の名前が一致しているかどうかを判定するフォールバックロジックを追加する。
 
-### [MODIFY] [JP_SettingsScreen_1023.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)
+### [MODIFY] [JP_SettingsScreen_1023.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)
 
 #### 1. `titleSuggestions` の `useMemo` フィルタ修正
 ```javascript

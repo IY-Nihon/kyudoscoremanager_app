@@ -12,7 +12,7 @@
 ### [Component: Analysis]
 個人分析モーダルにおいて、複数人のメンバーを選択・比較できるようにします。
 
-#### [MODIFY] [JP_AnalysisScreen_1000.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_AnalysisScreen_1000.js)
+#### [MODIFY] [JP_AnalysisScreen_1000.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_AnalysisScreen_1000.js)
 - `compareMember` (単一) ステートを `compareMembers` (配列) ステートに変更。
 - `CompareGraph` を拡張し、基準メンバー ＋ 選択された複数メンバーの的中率推移を異なる色で重ね合わせて描画。
 - メンバー選択ポップアップで、トグル方式（タップで追加・削除）に変更し、選択済みのメンバーに「✓」を表示するUIを追加。
@@ -24,7 +24,7 @@
 ### [Component: Record Archer Selection]
 記録画面の射手選択モーダルにおいて、メンバーリストを学年やその他で折りたためるようにします。
 
-#### [MODIFY] [JP_ArcherActionModal_689_fixed.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_ArcherActionModal_689_fixed.js)
+#### [MODIFY] [JP_ArcherActionModal_689_fixed.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_ArcherActionModal_689_fixed.js)
 - 現役メンバー `L` を `grade` ごとにグループ化する `activeGroups` の `useMemo` を追加（1年、2年、3年、4年、その他/ゲスト）。
 - 各学年グループの展開・非展開を管理する `expandedActiveGrades` ステートを追加（初期値は全展開）。
 - 卒業生の期アコーディオンと同様のスタイルで、各学年のヘッダーと開閉用アイコンを描画。開いている場合のみメンバーリストを展開する。
