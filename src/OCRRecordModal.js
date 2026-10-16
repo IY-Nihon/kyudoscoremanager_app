@@ -226,6 +226,8 @@ const OCRRecordModal = ({
   onClose,
   members = [],
   alumni = [],
+  // 区分（学年の無い団体では、人の選択を区分ごとの組にする。src/gakunen.js の 選ぶ組）
+  区分たち = [],
   shotsPerRound = 8,
   onApply,
   // 記録表にすでに中身があるか。あるときは置き換わることを確かめる
@@ -257,7 +259,8 @@ const OCRRecordModal = ({
   const [混み待ち, set混み待ち] = useState(false);
   const [pickerTarget, setPickerTarget] = useState(null); // {tachiIdx, seatIdx}
   const [pickerSearch, setPickerSearch] = useState('');
-  const [expandedActiveGrades, setExpandedActiveGrades] = useState(new Set(['1', '2', '3', '4', '0']));
+  // 閉じた組（学年・区分の鍵）。初めはどの組も開いている（高専・6 年制の 5・6 年や区分の組も）
+  const [閉じた組, 閉じた組を置く] = useState(() => new Set());
   const [expandedTerms, setExpandedTerms] = useState(new Set());
 
   // 大前がどちらの端かは、道場や大会で違う。1枚の写真に板が2つ写り、
@@ -294,7 +297,7 @@ const OCRRecordModal = ({
     setErrorMsg('');
     setPickerTarget(null);
     setPickerSearch('');
-    setExpandedActiveGrades(new Set(['1', '2', '3', '4', '0']));
+    閉じた組を置く(new Set());
     setExpandedTerms(new Set());
     setIsEnteringGuest(false);
     setGuestNameInput('');
@@ -1372,22 +1375,16 @@ const OCRRecordModal = ({
       });
   }, [members, pickerSearch]);
 
-  const activeGroups = useMemo(() => {
-    const groups = {};
-    activeMembersSorted.forEach((部員) => {
-      const 学年 = 学.その他か(部員) ? 学.四年制.その他の学年 : 学.学年の値(部員);
-      groups[学年] || (groups[学年] = []);
-      groups[学年].push(部員);
-    });
-    const sortedGrades = Object.keys(groups)
-      .map(Number)
-      .sort((甲, 乙) => 学.学年の順({ grade: 甲 }) - 学.学年の順({ grade: 乙 }));
-    return sortedGrades.map((学年) => ({
-      grade: 学年,
-      title: 学.学年の値の名前(学年, null, { 生: true, その他: 'その他/ゲスト' }),
-      members: groups[学年],
-    }));
-  }, [activeMembersSorted]);
+  // 学年ごと（学年の無い団体は区分ごと）の組
+  const activeGroups = useMemo(
+    () =>
+      学.選ぶ組(activeMembersSorted, null, 区分たち).map((組) => ({
+        grade: 組.鍵,
+        title: 組.題,
+        members: 組.人たち,
+      })),
+    [activeMembersSorted, 区分たち]
+  );
 
   const alumniByTerm = useMemo(() => {
     // 卒業生は名簿（在籍が卒業の人）と、前の形の卒業生の表の両方から（射手の選択と同じ。src/ArcherActionModal.js）
@@ -1410,7 +1407,7 @@ const OCRRecordModal = ({
   }, [members, alumni, pickerSearch]);
 
   const toggleActiveGrade = (gStr) => {
-    setExpandedActiveGrades((prev) => {
+    閉じた組を置く((prev) => {
       const next = new Set(prev);
       next.has(gStr) ? next.delete(gStr) : next.add(gStr);
       return next;
@@ -1825,7 +1822,7 @@ const OCRRecordModal = ({
           setPickerTarget={setPickerTarget}
           pickerSearch={pickerSearch}
           setPickerSearch={setPickerSearch}
-          expandedActiveGrades={expandedActiveGrades}
+          閉じた組={閉じた組}
           expandedTerms={expandedTerms}
           isEnteringGuest={isEnteringGuest}
           setIsEnteringGuest={setIsEnteringGuest}

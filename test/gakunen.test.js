@@ -93,6 +93,82 @@ test('進級の変更：1 つ上がり、最後の学年は卒業。上げない
   assert.strictEqual(学.最後の学年か(人(0)), false);
 });
 
+test('学年の無い団体（社会人の会・道場）：全員が会員。進級も期も無い。呼び方が変わる', () => {
+  const 会 = 学.決まりを作る('club');
+  assert.strictEqual(会.学年なし, true);
+  assert.deepStrictEqual(学.学年の名前たち(会), []);
+  assert.strictEqual(学.種類の説明('club'), '社会人の会・道場（学年なし）');
+  assert.strictEqual(学.学年の幅の名前('univ4'), '1年〜4年');
+  assert.strictEqual(学.学年の名前(人(3), 会), '会員', '前に学校だった団体の学年は出さない');
+  assert.strictEqual(学.学年の名前(人(0), 会), '会員');
+  assert.strictEqual(学.学年の名前(人(2, { enrollment: '退部' }), 会), '退会');
+  assert.strictEqual(学.学年の名前(人(2, { enrollment: '退部' })), '退部', '学校の部では退部');
+  assert.strictEqual(学.現役か(人(3), 会), true);
+  assert.strictEqual(学.その他か(人(3), 会), true);
+  assert.strictEqual(学.進級の変更(人(3), false, 2026, 会), null);
+  assert.strictEqual(学.最後の学年か(人(3), 会), false);
+  assert.strictEqual(学.期を付ける学年か(1, 会), false);
+  assert.strictEqual(学.性別の名前('男子', 会), '男性');
+  assert.strictEqual(学.性別の名前('女子', 会), '女性');
+  assert.strictEqual(学.性別の名前('男子'), '男子');
+  assert.strictEqual(学.性別の名前(undefined, 会), '未設定');
+  assert.deepStrictEqual(学.在籍の選び(会), ['在籍', '退部']);
+  assert.deepStrictEqual(学.在籍の選び(), ['在籍', '卒業', '退部']);
+  assert.strictEqual(学.在籍の名前('退部', 会), '退会');
+  assert.strictEqual(学.在籍の名前('卒業', 会), '卒業');
+  assert.strictEqual(学.呼び方(会).部員, '会員');
+  assert.strictEqual(学.呼び方().部員, '部員');
+});
+
+test('選ぶ組：学校の部は学年ごと（その他/ゲストは後ろ）。学年の無い団体は区分ごと', () => {
+  const 人たち = [人(2, { id: 'a' }), 人(0, { id: 'b' }), 人(1, { id: 'c' }), 人(2, { id: 'd' })];
+  assert.deepStrictEqual(
+    学.選ぶ組(人たち).map((組) => [組.鍵, 組.題, 組.人たち.map((x) => x.id)]),
+    [
+      ['1', '1年生', ['c']],
+      ['2', '2年生', ['a', 'd']],
+      ['0', 'その他/ゲスト', ['b']],
+    ]
+  );
+  const 会 = 学.決まりを作る('club');
+  assert.deepStrictEqual(
+    学.選ぶ組(人たち, 会, []).map((組) => [組.鍵, 組.題, 組.人たち.length]),
+    [['全員', '会員', 4]],
+    '区分が無ければ全員を 1 組'
+  );
+  const 区分 = [{ id: 'k1', name: '一般' }];
+  const 区分つき = [人(0, { id: 'e', divisionIds: ['k1'] }), 人(0, { id: 'f' })];
+  assert.deepStrictEqual(
+    学.選ぶ組(区分つき, 会, 区分).map((組) => [組.鍵, 組.題, 組.人たち.map((x) => x.id)]),
+    [
+      ['k1', '一般', ['e']],
+      ['なし', '区分なし', ['f']],
+    ]
+  );
+  assert.deepStrictEqual(学.選ぶ組([], 会, []), []);
+  assert.deepStrictEqual(
+    学.選ぶ組([人(5, { id: 'g' })], 学.決まりを作る('kosen5')).map((組) => 組.題),
+    ['5年生'],
+    '高専の 5 年生'
+  );
+});
+
+test('人の説明：期は使う団体だけ。学年の無い団体は入会した年と男性・女性', () => {
+  const 区分たち = [{ id: 'k1', name: '一般' }];
+  const 太郎 = 人(3, { termKi: 52, gender: '男子', divisionIds: ['k1'] });
+  assert.strictEqual(学.人の説明(太郎, null, { 期を使う: true, 区分たち }), '52期 / 男子 / 3年 / 一般');
+  assert.strictEqual(学.人の説明(太郎, null, { 区分たち }), '男子 / 3年 / 一般', '期を使わない団体');
+  assert.strictEqual(学.人の説明(太郎), '男子 / 3年');
+  const 会 = 学.決まりを作る('club');
+  assert.strictEqual(
+    学.人の説明(Object.assign({}, 太郎, { joinedYear: 2019 }), 会, { 期を使う: true, 区分たち }),
+    '2019年入会 / 男性 / 一般',
+    '学年の無い団体には期も学年も出さない'
+  );
+  assert.strictEqual(学.人の説明(人(0, { gender: '女子', enrollment: '退部' }), 会), '女性 / 退会');
+  assert.strictEqual(学.人の説明(null), '');
+});
+
 test('今の決まりを置くと、省いたときの決まりが変わる', () => {
   try {
     学.決まりを置く('kosen5');
@@ -106,13 +182,18 @@ test('今の決まりを置くと、省いたときの決まりが変わる', ()
 });
 
 test('設定から読む：段 1 より前の団体は前の項目から決める', () => {
-  assert.deepStrictEqual(学.設定から読む({}), { groupType: null, promotionCheck: true, useTerm: false });
-  assert.deepStrictEqual(学.設定から読む(null), { groupType: null, promotionCheck: true, useTerm: false });
+  const 空 = { groupType: null, promotionCheck: true, useTerm: false, divisions: [] };
+  assert.deepStrictEqual(学.設定から読む({}), 空);
+  assert.deepStrictEqual(学.設定から読む(null), 空);
   assert.deepStrictEqual(学.設定から読む({ autoPromotionEnabled: false, currentFreshmanTerm: 53 }), {
     groupType: null,
     promotionCheck: false,
     useTerm: true,
+    divisions: [],
   });
+  assert.deepStrictEqual(学.設定から読む({ divisions: [{ id: 'a', name: '一般' }, { id: '' }] }).divisions, [
+    { id: 'a', name: '一般' },
+  ]);
   assert.strictEqual(
     学.設定から読む({ currentFreshmanTerm: 1 }).useTerm,
     false,
@@ -125,7 +206,7 @@ test('設定から読む：段 1 より前の団体は前の項目から決め�
       useTerm: true,
       autoPromotionEnabled: false,
     }),
-    { groupType: 'kosen5', promotionCheck: false, useTerm: true }
+    { groupType: 'kosen5', promotionCheck: false, useTerm: true, divisions: [] }
   );
   assert.strictEqual(学.設定を書き足すか({}), true);
   assert.strictEqual(

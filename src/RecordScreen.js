@@ -419,6 +419,8 @@ const RecordScreen = () => {
   const 進級の窓を閉じた = useScoreStore((状態) => 状態.進級の窓を閉じた);
   // 学年のある人が 1 人もいない団体（全員がその他）では、上げる人がいないので窓も帯も出さない
   const 団体の種類 = useScoreStore((状態) => 状態.groupType);
+  // 区分（写真の読み取りの人の選択を、学年の無い団体では区分ごとの組にする）
+  const 区分たち = useScoreStore((状態) => 状態.divisions);
   const 進級する人がいる = React.useMemo(() => 学年の組(members).length > 0, [members, 団体の種類]);
   const 進級の窓を出す =
     'group' === 役割 &&
@@ -1986,6 +1988,7 @@ const RecordScreen = () => {
         onClose={() => setShowOCRModal(false)}
         members={members}
         alumni={useScoreStore((状態) => 状態.alumni) || []}
+        区分たち={区分たち || []}
         shotsPerRound={shotsPerRound}
         hasExistingRecord={archers.length > 0} // いまの記録表で埋まっている射数（いちばん後ろの○×の位置）。
         // 窓の側で、写真で読めた射数と比べて多いほうに射数を合わせる

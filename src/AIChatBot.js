@@ -24,6 +24,7 @@ const {
 const { Ionicons } = require('@expo/vector-icons');
 const { AIMascot } = require('./AIMascot');
 const 学 = require('./gakunen');
+const 区 = require('./kubun');
 const IS_WEB = Platform.OS === 'web';
 
 /**
@@ -571,11 +572,28 @@ const AIChatBot = () => {
     while (attempt <= MAX_RETRY) {
       try {
         // 部員一覧のみ渡す（トークン節約）。詳細成績はgetDetailedMemberStatsで取得
+        // 名前（学年・区分）。学年の無い団体では学年の代わりに「会員」と出る
+        const 区分たち = useScoreStore.getState().divisions || [];
         const memberList = members
           .map((member) => {
-            return `${member.name}(${学.学年の名前(member)})`;
+            const 区分の名前 = 区.人の区分の名前(member, 区分たち);
+            return `${member.name}(${学.学年の名前(member)}${区分の名前 ? '・' + 区分の名前 : ''})`;
           })
           .join(', ');
+        // 団体の種類・呼び方・区分。大学（4 年）で区分の無い団体（これまでの形）には足さない
+        const 団体の案内 = () => {
+          const 決 = 学.今の決まりを見る();
+          const 区分 = 区.区分たち(区分たち).map((一つ) => 一つ.name);
+          if (!決.学年なし && 学.既定の種類 === 決.種類 && !区分.length) return '';
+          const 呼 = 決.呼び方;
+          return (
+            `\n\n[この団体]\n- 種類: ${学.種類の説明(決)}` +
+            (決.学年なし
+              ? `\n- 学年・期・進級・卒業はありません。メンバーは「${呼.部員}」、性別は「${呼.男子}・${呼.女子}」、抜けた人は「${呼.退部}した人」と呼んでください（道具が返す性別の値は男子・女子のまま）`
+              : '') +
+            (区分.length ? `\n- 区分: ${区分.join('・')}（団体が作った分け方。一人にいくつでも付く）` : '')
+          );
+        };
 
         const now = new Date();
         const y = now.getFullYear();
@@ -623,6 +641,7 @@ const AIChatBot = () => {
           qaSection +
           `\n\n[日付の目安 (YYYY-MM-DD)]\n- 今日: ${todayStr} / 昨日: ${yesterdayStr}\n- 今月: ${thisMonthStart} 〜 ${thisMonthEnd}\n- 先月: ${lastMonthStart} 〜 ${lastMonthEnd}\n- 今年度: ${fiscalYearStart} 〜 ${fiscalYearEnd}` +
           開いている記録の案内() +
+          団体の案内() +
           (個人
             ? `\n[話し相手（本人）: ${memberList}]`
             : `\n[部員一覧（計${members.length}名）]\n${memberList}`);
