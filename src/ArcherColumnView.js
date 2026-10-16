@@ -33,6 +33,7 @@ const ArcherColumnView = React.memo(
     人数 = 0,
     合計の的中 = 0,
     立の的中 = '',
+    立の射数 = '',
     埋まった立: 受け持ちの埋まった立 = '',
     showFooter = true,
     // 横に並べる（名前が左、○×が右へ伸びる）。鍵も交代も規則は同じで、置き方だけ変える
@@ -53,9 +54,10 @@ const ArcherColumnView = React.memo(
     const [合算で見る, 合算を置く] = React.useState(false);
     // 店（zustand）の購読は 1 つにまとめる（ます と同じ理由。列は 30 本ほど並ぶ）。
     // 店の手（toggleLock・立を閉じる）は呼ぶときに getState() から取る
-    const { viewScale, members, 自動ロックする, 自動ロックまでの秒 } = useScoreStore(
+    const { viewScale, members, 自動ロックする, 自動ロックまでの秒, 計の見せ方 } = useScoreStore(
       useShallow((状態) => ({
         viewScale: 状態.viewScale,
+        計の見せ方: 状態.計の見せ方,
         members: 状態.members,
         自動ロックする: 状態.自動ロックする,
         自動ロックまでの秒: 状態.自動ロックまでの秒,
@@ -92,6 +94,27 @@ const ArcherColumnView = React.memo(
     // 「3,2,4」の形で渡してくる
     const 立ごとの的中 = 立の的中 ? 立の的中.split(',').map(Number) : [];
     const 立の的中数を出す = (立) => 立ごとの的中[立] || 0;
+    // 計の見せ方（useScoreStore の 計の見せ方）。射数は ○ か × が入ったマスだけ数える。
+    // 累計は 1 立目からその立までの足し上げ
+    const 立ごとの射数 = 立の射数 ? 立の射数.split(',').map(Number) : [];
+    const 見せ方 = Number(計の見せ方) || 0;
+    const 率 = (中, 射) => (射 > 0 ? Math.round((中 / 射) * 100) + '%' : '-');
+    const 足し上げ = (並び, 立) => 並び.slice(0, 立 + 1).reduce((和, 数) => 和 + (数 || 0), 0);
+    const 立の計の字 = (立) => {
+      const 中 = 立の的中数を出す(立);
+      const 射 = 立ごとの射数[立] || 0;
+      if (1 === 見せ方) return `${中}/${射}`;
+      if (2 === 見せ方) return `${中}/${足し上げ(立ごとの的中, 立)}`;
+      if (3 === 見せ方) return 率(中, 射);
+      if (4 === 見せ方) return 率(足し上げ(立ごとの的中, 立), 足し上げ(立ごとの射数, 立));
+      return String(中);
+    };
+    const 全部の射数 = 立ごとの射数.reduce((和, 数) => 和 + (数 || 0), 0);
+    const 合計の字 =
+      1 === 見せ方 ? `${的中の数}/${全部の射数}` : 3 <= 見せ方 ? 率(的中の数, 全部の射数) : String(的中の数);
+    // 的中数のとき以外は、何を出しているかを合計の上に小さく書く
+    const 見せ方の名 = ['', '中/射', '立/累計', '立の率', '累計の率'][見せ方] || '';
+    const 計の見せ方を次へ = () => useScoreStore.getState().計の見せ方を次へ();
     const // 読み上げ（VoiceOver / TalkBack）が読む言葉。
       // 画面の字は「○」「×」だけで、そのままだと「まる」「かける」と読まれる
       読み上げの言葉 = (射番) =>
@@ -203,14 +226,14 @@ const ArcherColumnView = React.memo(
                     borderLeftColor: 色.黒,
                   },
             ]} // 内訳が出ているときだけ押せる。押すと合算とを行き来する
+            // 計の列は押すと見せ方が次へ進む
             disabled={
               !(
-                !archer.isSeparator &&
-                !archer.isTotalCalculator &&
-                Object.keys(archer.substitutions || {}).length > 0
+                archer.isTotalCalculator ||
+                (!archer.isSeparator && Object.keys(archer.substitutions || {}).length > 0)
               )
             }
-            onPress={() => 合算を置く((前) => !前)}
+            onPress={() => (archer.isTotalCalculator ? 計の見せ方を次へ() : 合算を置く((前) => !前))}
           >
             {archer.isSeparator || archer.isTotalCalculator
               ? null
@@ -251,7 +274,19 @@ const ArcherColumnView = React.memo(
                   return <Text style={[styles.hitCount, { fontSize: 22 * 倍率 }]}>{的中の数}</Text>;
                 })()}
             {archer.isTotalCalculator ? (
-              <Text style={[styles.hitCount, { color: 色.青, fontSize: 22 * 倍率 }]}>{的中の数}</Text>
+              <View style={{ alignItems: 'center' }} testID="計の見せ方">
+                {!!見せ方の名 && (
+                  <Text style={{ fontSize: 9 * 倍率, color: 色.青, fontWeight: 'bold' }}>{見せ方の名}</Text>
+                )}
+                <Text
+                  style={[
+                    styles.hitCount,
+                    { color: 色.青, fontSize: (合計の字.length > 4 ? 15 : 見せ方の名 ? 18 : 22) * 倍率 },
+                  ]}
+                >
+                  {合計の字}
+                </Text>
+              </View>
             ) : null}
             <View
               style={
@@ -303,54 +338,92 @@ const ArcherColumnView = React.memo(
               })}
             </View>
           ) : archer.isTotalCalculator ? (
+            // 計の列は立ごとに 1 つの箱。中のマス目は引かず、数を立の真ん中に置く。
+            // 鍵は箱の端（縦は上・横は右）のアイコンを押したときだけ。ほかを押すと見せ方が次へ進む
             <View style={横 ? { flexDirection: 'row' } : undefined}>
-              {射番の並び.map((射番) => {
-                const 立 = Math.floor(射番 / 4);
-                const 立の的中数 = 立の的中数を出す(立);
-                const // 立ごとの合計を出すます。縦なら立の一番下、横なら立の左端
-                  合計を出すます = 射番 % 4 == 0;
-                const 立の端 = 射番 === Math.min(shots - 1, 4 * 立 + 3);
+              {Array.from({ length: Math.ceil(shots / 4) }, (無し, 番) =>
+                横 ? 番 : Math.ceil(shots / 4) - 1 - 番
+              ).map((立) => {
+                const 頭 = 4 * 立;
+                const 本数 = Math.min(shots, 頭 + 4) - 頭;
                 const 鍵 = !(isReadOnly && !isAdminMode) && (archer.lockedBlocks?.[立] || false);
+                // 立の切れ目の太線。縦は箱の下（1 立目の下は細い）、横は箱の右（最後の立の右は細い）
+                const 太線 = 横 ? 頭 + 本数 < shots : 0 !== 立;
+                const 線 = 横
+                  ? {
+                      borderRightWidth: 太線 ? 2 : 1,
+                      borderRightColor: 色.黒,
+                      borderBottomWidth: 1,
+                      borderBottomColor: 色.黒,
+                      borderTopWidth: 1,
+                      borderTopColor: 色.黒,
+                    }
+                  : {
+                      borderBottomWidth: 太線 ? 2 : 1,
+                      borderBottomColor: 色.黒,
+                      borderRightWidth: 1,
+                      borderRightColor: 色.黒,
+                      borderLeftWidth: 1,
+                      borderLeftColor: 色.黒,
+                    };
+                const 字 = 立の計の字(立);
                 return (
-                  <View key={射番} style={{ width: ます幅, height: ます高 }}>
-                    <ScoreCell
-                      archerId={archer.id}
-                      index={射番}
-                      横並び={横}
-                      mark={archer.marks?.[射番]}
-                      isLocked={鍵}
-                      isBlockBottom={横 ? 切れ目(射番) : 射番 % 4 == 0 && (0 !== 射番 || shots > 4)}
-                      isBlockTop={立の端}
-                      isFirst={0 === 射番}
-                      hideMark
-                      isNormalArcher={!鍵が効く}
-                      columnType="total"
-                      onToggle={onToggleMark}
-                    />
-                    {合計を出すます && (
-                      <View
+                  <TouchableOpacity
+                    key={立}
+                    testID={'計の箱-' + archer.id + '-' + 立}
+                    onPress={計の見せ方を次へ}
+                    activeOpacity={0.7}
+                    accessible
+                    accessibilityRole="button"
+                    accessibilityLabel={`${立 + 1}立目の計 ${字}。押すと見せ方が変わります`}
+                    aria-label={`${立 + 1}立目の計 ${字}。押すと見せ方が変わります`}
+                    style={[
+                      {
+                        width: 横 ? ます幅 * 本数 : ます幅,
+                        height: 横 ? ます高 : ます高 * 本数,
+                        backgroundColor: 'rgba(0,122,255,0.08)',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      },
+                      線,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.blockTotalText,
+                        { fontSize: (字.length > 4 ? 16 : 字.length > 2 ? 20 : 24) * 倍率 },
+                      ]}
+                    >
+                      {字}
+                    </Text>
+                    {鍵が効く && (
+                      <TouchableOpacity
+                        testID={'計の鍵-' + archer.id + '-' + 立}
+                        disabled={isReadOnly && !isAdminMode}
+                        onPress={() => 鍵を押した(archer.id, 立)}
+                        accessible
+                        accessibilityRole="button"
+                        accessibilityLabel={`${立 + 1}立目の鍵を${鍵 ? '開ける' : '掛ける'}`}
+                        aria-label={`${立 + 1}立目の鍵を${鍵 ? '開ける' : '掛ける'}`}
                         style={{
                           position: 'absolute',
                           top: 0,
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          justifyContent: 'center',
+                          width: ます幅,
+                          height: 26 * 倍率,
                           alignItems: 'center',
+                          justifyContent: 'center',
+                          zIndex: 10,
+                          ...(横 ? { right: 0 } : { left: 0, right: 0 }),
                         }}
-                        pointerEvents="none"
                       >
-                        <Text style={[styles.blockTotalText, { fontSize: 24 * 倍率 }]}>{立の的中数}</Text>
-                      </View>
+                        <Icons.Ionicons
+                          name={鍵 ? 'lock-closed' : 'lock-open'}
+                          size={16 * 倍率}
+                          color={鍵 ? 色.赤 : 色.灰}
+                        />
+                      </TouchableOpacity>
                     )}
-                    {立の端 && (
-                      <TouchableOpacity
-                        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10 }}
-                        disabled={isReadOnly && !isAdminMode}
-                        onPress={() => 鍵を押した(archer.id, 立)}
-                      />
-                    )}
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
             </View>

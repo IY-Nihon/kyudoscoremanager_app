@@ -19,7 +19,8 @@ const 組 = require('./teamGrouping');
 /**
  * @param {Array} 一覧 記録表の並び（射手・区切り・計）
  * @param {number} 射数
- * @returns {Array<{チームの色: string|null, 鍵が効く: boolean, 射位の番: number, 人数: number, 合計の的中: number, 立の的中: string, 埋まった立: string}>}
+ * @returns {Array<{チームの色: string|null, 鍵が効く: boolean, 射位の番: number, 人数: number, 合計の的中: number, 立の的中: string, 立の射数: string, 埋まった立: string}>}
+ *   立の射数 は計の列だけ、立ごとに ○ か × が入ったマスの数（計の見せ方の 射数・率 に使う）
  *   一覧と同じ並びの見立て。立の的中 は計の列だけ「3,2,4」のように立ごとの数。
  *   埋まった立 は間隔・計の列だけ、受け持つ射手の全員が入れ終えた立の番号「0,2」
  */
@@ -41,6 +42,7 @@ function 列の見立てを作る(一覧, 射数) {
         人数: 0,
         合計の的中: 0,
         立の的中: '',
+        立の射数: '',
         埋まった立: '',
       };
     const 間隔か合計 = !!(列.isSeparator || 列.isTotalCalculator);
@@ -50,23 +52,31 @@ function 列の見立てを作る(一覧, 射数) {
     const 鍵が効く = !!(位置 > 0 && 右どなり && !右どなり.isSeparator && !右どなり.isTotalCalculator);
     let 合計の的中 = 0;
     let 立の的中 = '';
+    let 立の射数 = '';
     let 埋まった立 = '';
     if (間隔か合計) {
       const 仲間 = 組.合計が受け持つ射手(並び, 位置);
       if (列.isTotalCalculator) {
         合計の的中 = 組.合計を数える(並び, 位置);
         const 立ごと = [];
+        const 射数ごと = [];
         for (let 立 = 0; 4 * 立 < 本数; 立++) {
           const 頭 = 4 * 立;
           const 尻 = Math.min(頭 + 4, 本数);
           let 計 = 0;
+          let 引いた = 0;
           for (const 射手 of 仲間) {
             const 印たち = 射手.marks || [];
-            for (let 射番 = 頭; 射番 < 尻; 射番++) if ('○' === 印たち[射番]) 計++;
+            for (let 射番 = 頭; 射番 < 尻; 射番++) {
+              if ('○' === 印たち[射番]) 計++;
+              if ('○' === 印たち[射番] || '\xd7' === 印たち[射番]) 引いた++;
+            }
           }
           立ごと.push(計);
+          射数ごと.push(引いた);
         }
         立の的中 = 立ごと.join(',');
+        立の射数 = 射数ごと.join(',');
       }
       if (鍵が効く && 仲間.length) {
         const 出 = [];
@@ -93,6 +103,7 @@ function 列の見立てを作る(一覧, 射数) {
       人数: 射位たち[位置] ? 射位たち[位置].人数 : 0,
       合計の的中,
       立の的中,
+      立の射数,
       埋まった立,
     };
   });
