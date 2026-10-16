@@ -198,6 +198,22 @@ npm start
 
 ## デプロイ
 
+### 配信の前に E2E を全部流す
+
+E2E は検証用の Firebase 企画で流すので、検証向けの束を作ってから、それを配らせる。
+
+```bash
+BUILD_OUT=dist-stg-e2e node scripts/build-stg.mjs
+PW_DIST=dist-stg-e2e npx playwright test --reporter=line
+```
+
+- `PW_DIST` を付けないと `dist` を配る。`dist` は `deploy:web` で作った**本番向け**の束なので、
+  ログインの下ごしらえ（`e2e/auth.setup.mjs`）が全部落ちる
+- 8091 番を別のもの（写真の読み取りの試しなど）が使っていると始まらない
+- 3 機種を一度に流すと、iPhone（WebKit）の検査が取り合いで落ちることがある。落ちたものだけ
+  `--workers=1` で単独に流し直し、通れば取り合い。単独でも落ちるものが本物
+- 下ごしらえのログインが 1 回通らず全体が止まることもある（検証環境の混み）。流し直す
+
 ### 順序（守ること）
 
 **アプリを先、決まりを後**に出します。
