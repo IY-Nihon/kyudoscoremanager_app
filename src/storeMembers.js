@@ -30,7 +30,10 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
       name: 整えた名前,
       gender: 性別,
       grade: 学年,
-      termKi: 期 || 学.学年の期(状態().currentFreshmanTerm, 学年),
+      // 期を使わない団体・その他の人には期を付けない（前は既定の 1 期から逆算して 0 期・−1 期が入っていた）
+      termKi:
+        期 ||
+        (状態().useTerm && 学.期を付ける学年か(学年) ? 学.学年の期(状態().currentFreshmanTerm, 学年) : null),
       lastModified: Date.now(),
       syncStatus: '未同期',
     };
@@ -63,18 +66,18 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
   updateMember: (部員ID, 変更) => {
     if (!状態().activeGroupId || 'group' !== 状態().activeRole)
       return void Alert.alert('権限エラー', 'メンバーの編集は団体ログイン時のみ可能です。');
-    if (undefined !== 変更.grade) {
-      const 今日 = new Date();
-      const 年 = 今日.getFullYear();
-      const 月 = 今日.getMonth() + 1;
-      const 年度 = 月 >= 4 ? 年 : 年 - 1;
-      学.卒業生か({ grade: 変更.grade }) ? (変更.graduationYear = 年度) : (変更.graduationYear = null);
-    }
-    状態().members.find((部員) => 部員.id === 部員ID);
     let 直す中身 = Object.assign({}, 変更);
+    // 卒業・退部にしたら、現役だった最後の年度を書き留める（出欠の画面が年度ごとの現役を決めるのに使う）。
+    // 在籍に戻したら消す。前の形の卒業の印（graduationYear）も消す（src/gakunen.js の 在籍の状態）
+    if (undefined !== 変更.enrollment) {
+      const 抜けた = 学.在籍.卒業 === 変更.enrollment || 学.在籍.退部 === 変更.enrollment;
+      if (undefined === 変更.leftYear) 直す中身.leftYear = 抜けた ? 学.年度() : null;
+      直す中身.graduationYear = null;
+    }
     if (undefined !== 変更.grade && undefined === 変更.termKi) {
-      const 期 = 学.学年の期(状態().currentFreshmanTerm, 変更.grade);
-      直す中身.termKi = 期;
+      // 学年を変えたら期も合わせる（期を使う団体の在籍の学年だけ。その他にしたら期を空にする）
+      if (!学.期を付ける学年か(変更.grade)) 直す中身.termKi = null;
+      else if (状態().useTerm) 直す中身.termKi = 学.学年の期(状態().currentFreshmanTerm, 変更.grade);
     }
     const 直した部員 = 状態().members.map((部員) =>
       部員.id === 部員ID

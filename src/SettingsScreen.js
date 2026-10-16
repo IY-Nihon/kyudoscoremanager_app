@@ -22,6 +22,8 @@ const { styles } = require('./settingsStyles');
 // 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
 const { useストアの一部 } = require('./storeSlice');
 const 規則 = require('./syncRules');
+const 学 = require('./gakunen');
+const { 団体の種類を選ぶ } = require('./GroupTypePicker');
 const 案内 = require('./TutorialGuide');
 const Icons = require('@expo/vector-icons');
 const ReactNativeSafeAreaContext = require('react-native-safe-area-context');
@@ -73,8 +75,12 @@ const SettingsScreen = () => {
     tagTemplates = [],
     addTagTemplate,
     removeTagTemplate,
-    autoPromotionEnabled = true,
-    setAutoPromotionEnabled,
+    groupType,
+    setGroupType,
+    promotionCheck = true,
+    setPromotionCheck,
+    useTerm = false,
+    setUseTerm,
     enableArrowLocation,
     arrowTargetType,
     setEnableArrowLocation,
@@ -107,8 +113,12 @@ const SettingsScreen = () => {
     'tagTemplates',
     'addTagTemplate',
     'removeTagTemplate',
-    'autoPromotionEnabled',
-    'setAutoPromotionEnabled',
+    'groupType',
+    'setGroupType',
+    'promotionCheck',
+    'setPromotionCheck',
+    'useTerm',
+    'setUseTerm',
     'enableArrowLocation',
     'arrowTargetType',
     'setEnableArrowLocation',
@@ -131,6 +141,37 @@ const SettingsScreen = () => {
   const [削除の段階, 削除の段階を設定] = React.useState('');
   const [削除の失敗, 削除の失敗を設定] = React.useState('');
   const [inquiryVisible, setInquiryVisible] = React.useState(false);
+  const [種類の窓, 種類の窓を出す] = React.useState(false);
+  // 種類を選んだとき。新しい種類に無い学年の人がいれば、「その他」になることを確かめてから変える
+  const 種類を選んだ = (種類) => {
+    if (種類 === (groupType || 学.既定の種類)) return void 種類の窓を出す(false);
+    const 決まり = 学.決まりを作る(種類);
+    const はみ出す人 = (members || []).filter(
+      (部員) => 学.現役か(部員, 決まり) && 学.その他か(部員, 決まり) && 0 !== 学.学年の値(部員, 決まり)
+    );
+    const 変える = () => {
+      setGroupType(種類);
+      種類の窓を出す(false);
+    };
+    if (!はみ出す人.length) return void 変える();
+    const 学年たち = Array.from(new Set(はみ出す人.map((部員) => 学.学年の値(部員, 決まり))))
+      .sort((甲, 乙) => 甲 - 乙)
+      .map((学年) => 学年 + '年')
+      .join('・');
+    Alert.alert(
+      '団体の種類を変える',
+      学.種類の説明(種類) +
+        'には ' +
+        学年たち +
+        ' がありません。' +
+        はみ出す人.length +
+        '人の学年が「その他」になります。',
+      [
+        { text: 'やめる', style: 'cancel' },
+        { text: '変える', onPress: 変える },
+      ]
+    );
+  };
   const 節 = (題, 中身) => (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{題}</Text>
@@ -237,10 +278,17 @@ const SettingsScreen = () => {
           '表示',
           <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
             <View style={[styles.itemLeft, { marginBottom: 10 }]}>
-              <Icons.Ionicons name="contrast-outline" size={22} color={基本色.藍} style={{ marginRight: 12 }} />
+              <Icons.Ionicons
+                name="contrast-outline"
+                size={22}
+                color={基本色.藍}
+                style={{ marginRight: 12 }}
+              />
               <View>
                 <Text style={styles.itemText}>外観</Text>
-                <Text style={{ fontSize: 12, color: 基本色.灰, marginTop: 2 }}>画面全体の配色を切り替えます</Text>
+                <Text style={{ fontSize: 12, color: 基本色.灰, marginTop: 2 }}>
+                  画面全体の配色を切り替えます
+                </Text>
               </View>
             </View>
             <View style={{ flexDirection: 'row', marginHorizontal: -4 }}>
@@ -278,7 +326,12 @@ const SettingsScreen = () => {
               {'group' === activeRole && (
                 <View style={styles.item}>
                   <View style={[styles.itemLeft, { flex: 1 }]}>
-                    <Icons.Ionicons name="business-outline" size={22} color={基本色.青} style={styles.itemIcon} />
+                    <Icons.Ionicons
+                      name="business-outline"
+                      size={22}
+                      color={基本色.青}
+                      style={styles.itemIcon}
+                    />
                     <Text style={styles.itemText}>
                       {'団体ID: '}
                       {activeGroupId}
@@ -289,7 +342,12 @@ const SettingsScreen = () => {
               {'group' === activeRole && (
                 <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
                   <View style={[styles.itemLeft, { marginBottom: 8 }]}>
-                    <Icons.Ionicons name="pencil-outline" size={22} color={基本色.青} style={styles.itemIcon} />
+                    <Icons.Ionicons
+                      name="pencil-outline"
+                      size={22}
+                      color={基本色.青}
+                      style={styles.itemIcon}
+                    />
                     <Text style={styles.itemText}>団体名</Text>
                   </View>
                   <TextInput
@@ -302,19 +360,51 @@ const SettingsScreen = () => {
                 </View>
               )}
               {'group' === activeRole && (
+                <Pressable
+                  style={({ hovered }) => [
+                    styles.item,
+                    hovered && { backgroundColor: 基本色.地_F7F7FA },
+                    IS_WEB && { cursor: 'pointer' },
+                  ]}
+                  accessibilityRole="button"
+                  aria-label={'団体の種類 ' + 学.種類の説明(groupType || 学.既定の種類)}
+                  onPress={() => 種類の窓を出す(true)}
+                >
+                  <View style={[styles.itemLeft, { flex: 1 }]}>
+                    <Icons.Ionicons
+                      name="school-outline"
+                      size={22}
+                      color={基本色.紫}
+                      style={styles.itemIcon}
+                    />
+                    <Text style={styles.itemText}>団体の種類</Text>
+                  </View>
+                  <Text style={{ fontSize: 14, color: 基本色.灰, marginRight: 4 }}>
+                    {学.種類の説明(groupType || 学.既定の種類)}
+                  </Text>
+                  <Icons.Ionicons name="chevron-forward" size={18} color={基本色.灰_薄い} />
+                </Pressable>
+              )}
+              {'group' === activeRole && (
                 <View style={styles.item}>
                   <View style={[styles.itemLeft, { flex: 1 }]}>
-                    <Icons.Ionicons name="sparkles-outline" size={22} color={基本色.藍} style={styles.itemIcon} />
+                    <Icons.Ionicons
+                      name="sparkles-outline"
+                      size={22}
+                      color={基本色.藍}
+                      style={styles.itemIcon}
+                    />
                     <View style={{ flex: 1, paddingRight: 8 }}>
-                      <Text style={styles.itemText}>4月1日の自動進級</Text>
+                      <Text style={styles.itemText}>4月1日の進級の確認</Text>
                       <Text style={{ fontSize: 11, color: 基本色.灰, marginTop: 2 }}>
-                        毎年4月1日に自動で学年を更新し、4年生を卒業生へ移動します
+                        4月1日に進級の窓を出します。卒業・留年する人を選んでから、全員の学年を上げます
                       </Text>
                     </View>
                   </View>
                   <Switch
-                    value={autoPromotionEnabled}
-                    onValueChange={setAutoPromotionEnabled}
+                    aria-label="4月1日の進級の確認"
+                    value={promotionCheck}
+                    onValueChange={setPromotionCheck}
                     trackColor={{ false: 基本色.灰_明るい, true: 基本色.緑 }}
                   />
                 </View>
@@ -322,7 +412,31 @@ const SettingsScreen = () => {
               {'group' === activeRole && (
                 <View style={styles.item}>
                   <View style={[styles.itemLeft, { flex: 1 }]}>
-                    <Icons.Ionicons name="school-outline" size={22} color={基本色.紫} style={styles.itemIcon} />
+                    <Icons.Ionicons
+                      name="ribbon-outline"
+                      size={22}
+                      color={基本色.紫}
+                      style={styles.itemIcon}
+                    />
+                    <View style={{ flex: 1, paddingRight: 8 }}>
+                      <Text style={styles.itemText}>期を使う</Text>
+                      <Text style={{ fontSize: 11, color: 基本色.灰, marginTop: 2 }}>
+                        切ると、期をどこにも出しません
+                      </Text>
+                    </View>
+                  </View>
+                  <Switch
+                    aria-label="期を使う"
+                    value={useTerm}
+                    onValueChange={setUseTerm}
+                    trackColor={{ false: 基本色.灰_明るい, true: 基本色.緑 }}
+                  />
+                </View>
+              )}
+              {'group' === activeRole && useTerm && (
+                <View style={styles.item}>
+                  <View style={[styles.itemLeft, { flex: 1 }]}>
+                    <View style={[styles.itemIcon, { width: 22 }]} />
                     <View style={{ flex: 1, paddingRight: 8 }}>
                       <Text style={styles.itemText}>現在の期 (新入生)</Text>
                       <Text style={{ fontSize: 11, color: 基本色.灰, marginTop: 2 }}>
@@ -479,7 +593,12 @@ const SettingsScreen = () => {
           '入力の保護',
           <View ref={(node) => 案内.setTutorialTargetNode('設定.自動ロック', node)} style={styles.item}>
             <View style={[styles.itemLeft, { flex: 1 }]}>
-              <Icons.Ionicons name="lock-closed-outline" size={22} color={基本色.緑} style={styles.itemIcon} />
+              <Icons.Ionicons
+                name="lock-closed-outline"
+                size={22}
+                color={基本色.緑}
+                style={styles.itemIcon}
+              />
               <View style={{ flex: 1, paddingRight: 8 }}>
                 <Text style={styles.itemText}>入れたマスを自動でロック</Text>
                 <Text style={{ fontSize: 11, color: 基本色.灰, marginTop: 2 }}>
@@ -603,7 +722,10 @@ const SettingsScreen = () => {
                 />
                 <View style={{ flex: 1, paddingRight: 8 }}>
                   <Text style={styles.itemText}>管理者モード</Text>
-                  <Text style={{ fontSize: 11, color: 基本色.灰, marginTop: 2, flexShrink: 1 }} numberOfLines={0}>
+                  <Text
+                    style={{ fontSize: 11, color: 基本色.灰, marginTop: 2, flexShrink: 1 }}
+                    numberOfLines={0}
+                  >
                     オンにすると、保存済みの記録をあとから直せます。各メンバーの個人ID（数字）も表示されます
                   </Text>
                 </View>
@@ -660,7 +782,12 @@ const SettingsScreen = () => {
               onPress={syncAllToCloud}
             >
               <View style={styles.itemLeft}>
-                <Icons.Ionicons name="cloud-upload-outline" size={22} color={基本色.藍} style={styles.itemIcon} />
+                <Icons.Ionicons
+                  name="cloud-upload-outline"
+                  size={22}
+                  color={基本色.藍}
+                  style={styles.itemIcon}
+                />
                 <Text style={styles.itemText}>クラウドへ同期</Text>
               </View>
               <View style={styles.itemRight}>
@@ -1043,6 +1170,35 @@ const SettingsScreen = () => {
                 IS_WEB && { cursor: 'pointer' },
               ]}
               onPress={() => ガイドの窓を出す(false)}
+            >
+              <Text style={[styles.modalBtnText, { color: 基本色.青 }]}>閉じる</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+      <Modal visible={種類の窓} transparent animationType="fade" onRequestClose={() => 種類の窓を出す(false)}>
+        <View style={styles.modalBackdrop}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => 種類の窓を出す(false)}
+          />
+          <View style={styles.modalContent} testID="種類の窓">
+            <Text style={styles.modalTitle}>団体の種類</Text>
+            <Text style={{ fontSize: 13, color: 基本色.灰, marginBottom: 12, alignSelf: 'stretch' }}>
+              選べる学年と、卒業する学年が変わります
+            </Text>
+            <View style={{ alignSelf: 'stretch', marginBottom: 16 }}>
+              <団体の種類を選ぶ 選んだ={groupType} 選ぶ={種類を選んだ} />
+            </View>
+            <Pressable
+              style={({ hovered }) => [
+                styles.modalBtn,
+                { backgroundColor: 基本色.地, width: '100%' },
+                hovered && { backgroundColor: 基本色.地_濃い },
+                IS_WEB && { cursor: 'pointer' },
+              ]}
+              onPress={() => 種類の窓を出す(false)}
             >
               <Text style={[styles.modalBtnText, { color: 基本色.青 }]}>閉じる</Text>
             </Pressable>

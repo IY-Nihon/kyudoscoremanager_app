@@ -40,6 +40,7 @@ const Icons = require('@expo/vector-icons');
 const { SaveSessionModal } = require('./SaveSessionModal');
 // 使い慣れた団体に、保存の直後に「紹介に載せてよいか」を 1 回聞く札（2026-10-09。src/listingConsent.js）
 const { 掲載の札 } = require('./ListingConsentCard');
+const { 進級の窓, 進級待ちの帯, 学年の組 } = require('./PromotionModal');
 const AttendanceCheckModal = require('./AttendanceCheckModal').AttendanceCheckModal;
 const { ManualSubstitutionModal } = require('./ManualSubstitutionModal');
 const 窓 = require('./AppDialog');
@@ -412,6 +413,22 @@ const RecordScreen = () => {
     }, 3000);
     return () => clearTimeout(時計);
   }, [役割, activeGroupId]);
+  // 年度の始まりの進級（src/PromotionModal.js）。団体ログインで、案内・閲覧・ライブ・紹介の札と重ならないときに窓を出す。
+  // 「あとで」で閉じたら、進級するまで上に帯を出し続ける
+  const 進級待ち = useScoreStore((状態) => 状態.進級待ちの年);
+  const 進級の窓を閉じた = useScoreStore((状態) => 状態.進級の窓を閉じた);
+  // 学年のある人が 1 人もいない団体（全員がその他）では、上げる人がいないので窓も帯も出さない
+  const 団体の種類 = useScoreStore((状態) => 状態.groupType);
+  const 進級する人がいる = React.useMemo(() => 学年の組(members).length > 0, [members, 団体の種類]);
+  const 進級の窓を出す =
+    'group' === 役割 &&
+    !!進級待ち &&
+    進級する人がいる &&
+    !進級の窓を閉じた &&
+    !案内中 &&
+    !見るだけ中 &&
+    !isLiveActive &&
+    !掲載の札を出す;
   const 人を選ぶ = (射手ID, _, 順) => {
     // 閲覧用のときは人の選択も開かない。開いても名前も交代も削除も
     // 止めてあるので、開くだけ無駄に迷わせる
@@ -1008,6 +1025,9 @@ const RecordScreen = () => {
           </Text>
         </TouchableOpacity>
       ) : null}
+      <進級待ちの帯
+        見える={'group' === 役割 && !!進級待ち && 進級する人がいる && !進級の窓を出す && !見るだけ中}
+      />
       {/* 履歴の記録を直しているあいだの帯。ここから保存して履歴へ戻るか、やめて戻る。 */
       /* 「終了・保存」とライブはこの間は出さない（記録が二重になる・ライブに結びつく） */}
       {履歴の編集
@@ -1960,6 +1980,7 @@ const RecordScreen = () => {
         閉じる={() => useScoreStore.getState().掲載の札を閉じる()}
         知らせる={知らせる}
       />
+      <進級の窓 見える={進級の窓を出す} 知らせる={知らせる} />
       <OCRRecordModal
         visible={showOCRModal}
         onClose={() => setShowOCRModal(false)}

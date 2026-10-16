@@ -16,6 +16,8 @@ const {
 } = require('./rn');
 const { useScoreStore } = require('./useScoreStore');
 const { useストアの一部 } = require('./storeSlice');
+const 学 = require('./gakunen');
+const { 団体の種類を選ぶ } = require('./GroupTypePicker');
 const { IS_IOS, IS_WEB, SAFE_TOP_PADDING } = require('./IS_WEB');
 const { auth, db } = require('./db');
 const { 団体で入る, 切り替えを頼む, 部員として入る } = require('./groupLogin');
@@ -104,6 +106,8 @@ const LoginScreen = () => {
   const [メールの入力, メールの入力を置く] = React.useState('');
   const [合言葉の入力, 合言葉の入力を置く] = React.useState('');
   const [団体名の入力, 団体名の入力を置く] = React.useState('');
+  // 団体の種類（src/gakunen.js の 種類たち）。あとで設定から変えられる
+  const [種類の入力, 種類の入力を置く] = React.useState(学.既定の種類);
   const [忘れた窓, 忘れた窓を置く] = React.useState('none');
   const [新しいメールの入力, 新しいメールの入力を置く] = React.useState('');
   const [合言葉を見せる, 合言葉を見せるを置く] = React.useState(false);
@@ -152,6 +156,14 @@ const LoginScreen = () => {
       { groupName: 団体名の入力 },
       { merge: true }
     ).catch((誤り) => console.warn('[Login] 団体名を置けませんでした', 誤り));
+    // 学年まわりの設定。新しい団体は、期を使わず、4 月 1 日に進級の窓を出す。
+    // 古い版のアプリの自動進級は切っておく（src/gakunen.js の 設定を書き足すか）。
+    // 書けなくても団体は使える（大学として動き、設定から変えられる）
+    await Firestore.setDoc(
+      Firestore.doc(db, 'groups', 団体ID, 'config', 'app_settings'),
+      { groupType: 種類の入力, promotionCheck: true, useTerm: false, autoPromotionEnabled: false },
+      { merge: true }
+    ).catch((誤り) => console.warn('[Login] 団体の種類を置けませんでした', 誤り));
     Alert.alert(
       '【重要】登録完了と運用ガイド',
       `団体アカウントを作成しました。\n\n■ 登録情報\n団体ID: ${団体ID}\n\n【運用ガイド - スクリーンショット推奨】\n・「団体ID」はメンバーがログインする際、必要です。メンバー全員に共有してください。\n・「パスワード」は管理者のみが知るものとして保存してください。\n・登録メールアドレスは、ログイン画面の「メールアドレスを忘れた」から変えられます。新しいアドレスに届く確認のメールのリンクを開くと切り替わります。\n\n※ この運用ガイドの内容は忘れないよう必ず保存をお願いします。`
@@ -591,6 +603,11 @@ const LoginScreen = () => {
                           />
                         </View>
                       </View>
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>団体の種類</Text>
+                        <団体の種類を選ぶ 選んだ={種類の入力} 選ぶ={種類の入力を置く} 暗い />
+                        <Text style={styles.種類の注}>あとで設定から変えられます</Text>
+                      </View>
                       {Googleのメール ? (
                         <View style={styles.inputGroup}>
                           <Text style={styles.label}>Google のアカウント</Text>
@@ -979,6 +996,7 @@ const styles = StyleSheet.create({
   form: { gap: 20 },
   inputGroup: { gap: 8 },
   label: { fontSize: 14, color: 色.金_明るい, fontWeight: 'bold', marginLeft: 4 },
+  種類の注: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginLeft: 4 },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',

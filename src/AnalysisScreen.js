@@ -54,6 +54,8 @@ const AnalysisScreen = ({ navigation }) => {
     比較のひな型を足す,
     比較のひな型を消す,
     activeGroupId: いまの団体id,
+    // 団体の種類で、学年の絞り込みの選びが変わる（src/gakunen.js）
+    groupType,
     // 案内が見本を出しているあいだは、中身だけ見本に差し替わる
   } = 案内.見本を重ねる(
     useストアの一部([
@@ -78,6 +80,7 @@ const AnalysisScreen = ({ navigation }) => {
       'setSelectedHistorySessionId',
       'setHistoryViewMode',
       'setFocusedMemberId',
+      'groupType',
       '比較のひな型',
       '比較のひな型を足す',
       '比較のひな型を消す',
@@ -831,7 +834,7 @@ const AnalysisScreen = ({ navigation }) => {
               <View style={styles.filterDivider} />
               <選択肢の帯
                 label="学年:"
-                options={['全学年', ...学.学年の名前たち()]}
+                options={['全学年', ...学.学年の名前たち(学.決まりを作る(groupType))]}
                 selected={学年の絞り}
                 onSelect={学年の絞りを置く}
               />
