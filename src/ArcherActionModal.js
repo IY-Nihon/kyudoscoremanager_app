@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 exports.ArcherActionModal = undefined;
 const React = require('react');
 const {
@@ -61,7 +62,17 @@ const ArcherActionModal = ({
     addSeparator,
     addTotalCalculator,
     deleteArcher,
-  } = useストアの一部(['members', 'alumni', 'archers', 'setArcherMember', 'setSubstitution', 'addArcher', 'addSeparator', 'addTotalCalculator', 'deleteArcher']);
+  } = useストアの一部([
+    'members',
+    'alumni',
+    'archers',
+    'setArcherMember',
+    'setSubstitution',
+    'addArcher',
+    'addSeparator',
+    'addTotalCalculator',
+    'deleteArcher',
+  ]);
   const [検索の文, 検索の文を置く] = React.useState('');
   const [客名の入力中, 客名の入力中を置く] = React.useState(false);
   const [客名の下書き, 客名の下書きを置く] = React.useState('');
@@ -189,7 +200,7 @@ const ArcherActionModal = ({
                   <Pressable
                     style={({ pressed, hovered }) => [
                       styles.actionBtn,
-                      hovered && { backgroundColor: '#E5E5EA' },
+                      hovered && { backgroundColor: 色.地_濃い },
                       pressed && { opacity: 0.7 },
                     ]}
                     onPress={() => {
@@ -198,13 +209,13 @@ const ArcherActionModal = ({
                       onClose();
                     }}
                   >
-                    <Icons.Ionicons name="close-circle-outline" size={18} color="#FF3B30" />
-                    <Text style={[styles.actionBtnText, { color: '#FF3B30' }]}>名前クリア</Text>
+                    <Icons.Ionicons name="close-circle-outline" size={18} color={色.赤} />
+                    <Text style={[styles.actionBtnText, { color: 色.赤 }]}>名前クリア</Text>
                   </Pressable>
                   <Pressable
                     style={({ pressed, hovered }) => [
                       styles.actionBtn,
-                      hovered && { backgroundColor: '#E5E5EA' },
+                      hovered && { backgroundColor: 色.地_濃い },
                       pressed && { opacity: 0.7 },
                     ]}
                     onPress={() => {
@@ -212,8 +223,8 @@ const ArcherActionModal = ({
                       onSubstitution();
                     }}
                   >
-                    <Icons.Ionicons name="repeat" size={18} color="#007AFF" />
-                    <Text style={[styles.actionBtnText, { color: '#007AFF' }]}>途中交代</Text>
+                    <Icons.Ionicons name="repeat" size={18} color={色.青} />
+                    <Text style={[styles.actionBtnText, { color: 色.青 }]}>途中交代</Text>
                   </Pressable>
                   {[
                     // 交代が入っているときだけ、取り消す道を出す。
@@ -229,7 +240,7 @@ const ArcherActionModal = ({
                               // 文が長いので1行いっぱいを使う。space-around の
                               // 折り返しに任せると右へ寄って見える
                               { flexBasis: '100%', justifyContent: 'center' },
-                              hovered && { backgroundColor: '#FFE5E5' },
+                              hovered && { backgroundColor: 色.赤の地 },
                               pressed && { opacity: 0.7 },
                             ]}
                             onPress={() => {
@@ -237,8 +248,8 @@ const ArcherActionModal = ({
                               onClose();
                             }}
                           >
-                            <Icons.Ionicons name="close-circle" size={18} color="#FF3B30" />
-                            <Text style={[styles.actionBtnText, { color: '#FF3B30' }]}>
+                            <Icons.Ionicons name="close-circle" size={18} color={色.赤} />
+                            <Text style={[styles.actionBtnText, { color: 色.赤 }]}>
                               {交代.位置 + 1}
                               {'射目〜 '}
                               {交代.名}
@@ -268,22 +279,22 @@ const ArcherActionModal = ({
                           客名の下書きを置く('');
                         }}
                       >
-                        <Icons.Ionicons name="close" size={20} color="#8E8E93" />
+                        <Icons.Ionicons name="close" size={20} color={色.灰} />
                       </TouchableOpacity>
                     </View>
                   ) : (
                     <Pressable
                       style={({ pressed, hovered }) => [
                         styles.actionBtn,
-                        hovered && { backgroundColor: '#E5E5EA' },
+                        hovered && { backgroundColor: 色.地_濃い },
                         pressed && { opacity: 0.7 },
                       ]}
                       onPress={() => {
                         客名の入力中を置く(true);
                       }}
                     >
-                      <Icons.Ionicons name="person-outline" size={18} color="#5856D6" />
-                      <Text style={[styles.actionBtnText, { color: '#5856D6' }]}>ゲスト登録</Text>
+                      <Icons.Ionicons name="person-outline" size={18} color={色.藍} />
+                      <Text style={[styles.actionBtnText, { color: 色.藍 }]}>ゲスト登録</Text>
                     </Pressable>
                   )}
                 </View>
@@ -295,22 +306,22 @@ const ArcherActionModal = ({
               <Pressable
                 style={({ pressed, hovered }) => [
                   styles.menuItem,
-                  hovered && { backgroundColor: '#F2F7FF' },
+                  hovered && { backgroundColor: 色.青の地_3 },
                   pressed && { opacity: 0.7 },
                 ]}
                 onPress={onチーム名}
               >
                 <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={[styles.menuText, { color: '#007AFF', fontWeight: 'bold' }]}>
+                  <Text style={[styles.menuText, { color: 色.青, fontWeight: 'bold' }]}>
                     {いまのチーム名 ? 'チーム名を変える' : 'チーム名を付ける'}
                   </Text>
-                  <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 2 }}>
+                  <Text style={{ fontSize: 11, color: 色.灰, marginTop: 2 }}>
                     {いまのチーム名
                       ? `いまは「${いまのチーム名}」`
                       : '大学名などを入れると、この区切りより左に色が付きます'}
                   </Text>
                 </View>
-                <Icons.Ionicons name="pricetag-outline" size={20} color="#007AFF" />
+                <Icons.Ionicons name="pricetag-outline" size={20} color={色.青} />
               </Pressable>
             )}
             {/* 立ち順の入れ替え。矢印のとおりに、画面で1つ動く。 */
@@ -323,13 +334,13 @@ const ArcherActionModal = ({
               <Pressable
                 style={({ pressed, hovered }) => [
                   styles.menuItem,
-                  hovered && { backgroundColor: '#F2F7FF' },
+                  hovered && { backgroundColor: 色.青の地_3 },
                   pressed && { opacity: 0.7 },
                 ]}
                 onPress={() => on動かす('前')}
                 accessibilityLabel="立ち順で1つ前へ動かす"
               >
-                <Text style={[styles.menuText, { color: '#007AFF' }]}>
+                <Text style={[styles.menuText, { color: 色.青 }]}>
                   {横に並べている ? '上へ動かす' : '右へ動かす'}
                 </Text>
                 {/* 矢印は動く向きに合わせる。縦の表は右から左へ並ぶので */
@@ -337,7 +348,7 @@ const ArcherActionModal = ({
                 <Icons.Ionicons
                   name={横に並べている ? 'arrow-up' : 'arrow-forward'}
                   size={20}
-                  color="#007AFF"
+                  color={色.青}
                 />
               </Pressable>
             )}
@@ -345,20 +356,16 @@ const ArcherActionModal = ({
               <Pressable
                 style={({ pressed, hovered }) => [
                   styles.menuItem,
-                  hovered && { backgroundColor: '#F2F7FF' },
+                  hovered && { backgroundColor: 色.青の地_3 },
                   pressed && { opacity: 0.7 },
                 ]}
                 onPress={() => on動かす('後')}
                 accessibilityLabel="立ち順で1つ後ろへ動かす"
               >
-                <Text style={[styles.menuText, { color: '#007AFF' }]}>
+                <Text style={[styles.menuText, { color: 色.青 }]}>
                   {横に並べている ? '下へ動かす' : '左へ動かす'}
                 </Text>
-                <Icons.Ionicons
-                  name={横に並べている ? 'arrow-down' : 'arrow-back'}
-                  size={20}
-                  color="#007AFF"
-                />
+                <Icons.Ionicons name={横に並べている ? 'arrow-down' : 'arrow-back'} size={20} color={色.青} />
               </Pressable>
             )}
             <View style={styles.dividerFull} />
@@ -368,18 +375,18 @@ const ArcherActionModal = ({
                   <Text style={styles.sectionHeaderText}>メンバーを選択</Text>
                 </View>
                 <View style={styles.searchRow}>
-                  <Icons.Ionicons name="search" size={18} color="#8E8E93" style={{ marginRight: 8 }} />
+                  <Icons.Ionicons name="search" size={18} color={色.灰} style={{ marginRight: 8 }} />
                   <TextInput
                     aria-label="メンバーを検索"
                     style={styles.searchInput}
                     placeholder="メンバーを検索"
                     value={検索の文}
                     onChangeText={検索の文を置く}
-                    placeholderTextColor="#8E8E93"
+                    placeholderTextColor={色.灰}
                   />
                   {'' !== 検索の文 && (
                     <TouchableOpacity onPress={() => 検索の文を置く('')}>
-                      <Icons.Ionicons name="close-circle" size={18} color="#C6C6C8" />
+                      <Icons.Ionicons name="close-circle" size={18} color={色.区切り} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -417,7 +424,7 @@ const ArcherActionModal = ({
                           <Icons.Ionicons
                             name={isOpen ? 'chevron-up' : 'chevron-down'}
                             size={16}
-                            color="#8E8E93"
+                            color={色.灰}
                           />
                         </TouchableOpacity>
                         {isOpen &&
@@ -430,8 +437,8 @@ const ArcherActionModal = ({
                                   style={({ pressed, hovered }) => [
                                     styles.menuItem,
                                     { paddingLeft: 32 },
-                                    sVal && { backgroundColor: '#F0F0F5', opacity: 0.8 },
-                                    !sVal && hovered && { backgroundColor: '#F2F2F7' },
+                                    sVal && { backgroundColor: 色.地_F0F0F5, opacity: 0.8 },
+                                    !sVal && hovered && { backgroundColor: 色.地 },
                                     pressed && { opacity: 0.7 },
                                   ]}
                                   onPress={() => 部員を当てる(部員)}
@@ -439,13 +446,13 @@ const ArcherActionModal = ({
                                   <Text
                                     style={[
                                       styles.menuText,
-                                      '男子' === 部員.gender && { color: '#007AFF' },
-                                      '女子' === 部員.gender && { color: '#FF2D55' },
+                                      '男子' === 部員.gender && { color: 色.青 },
+                                      '女子' === 部員.gender && { color: 色.桃 },
                                       sVal && { opacity: 0.5 },
                                     ]}
                                   >
                                     {部員.name}{' '}
-                                    <Text style={{ fontSize: 11, color: '#8E8E93' }}>
+                                    <Text style={{ fontSize: 11, color: 色.灰 }}>
                                       {部員.termKi ? `(${部員.termKi}期)` : ''}
                                     </Text>
                                   </Text>
@@ -483,7 +490,7 @@ const ArcherActionModal = ({
                       <Icons.Ionicons
                         name={expandedTerms.has(期の組.term) ? 'chevron-up' : 'chevron-down'}
                         size={16}
-                        color="#8E8E93"
+                        color={色.灰}
                       />
                     </TouchableOpacity>
                     {expandedTerms.has(期の組.term) &&
@@ -496,8 +503,8 @@ const ArcherActionModal = ({
                               style={({ pressed, hovered }) => [
                                 styles.menuItem,
                                 { paddingLeft: 32 },
-                                sVal && { backgroundColor: '#F0F0F5', opacity: 0.8 },
-                                !sVal && hovered && { backgroundColor: '#F2F2F7' },
+                                sVal && { backgroundColor: 色.地_F0F0F5, opacity: 0.8 },
+                                !sVal && hovered && { backgroundColor: 色.地 },
                                 pressed && { opacity: 0.7 },
                               ]}
                               onPress={() => 部員を当てる(部員)}
@@ -505,12 +512,12 @@ const ArcherActionModal = ({
                               <Text
                                 style={[
                                   styles.menuText,
-                                  '男子' === 部員.gender && { color: '#007AFF' },
-                                  '女子' === 部員.gender && { color: '#FF2D55' },
+                                  '男子' === 部員.gender && { color: 色.青 },
+                                  '女子' === 部員.gender && { color: 色.桃 },
                                   sVal && { opacity: 0.5 },
                                 ]}
                               >
-                                {部員.name} <Text style={{ fontSize: 11, color: '#8E8E93' }}>(卒業生)</Text>
+                                {部員.name} <Text style={{ fontSize: 11, color: 色.灰 }}>(卒業生)</Text>
                               </Text>
                               {sVal && (
                                 <View style={styles.selectedBadge}>
@@ -530,7 +537,7 @@ const ArcherActionModal = ({
               <Pressable
                 style={({ pressed, hovered }) => [
                   styles.menuItem,
-                  hovered && { backgroundColor: '#F2F2F7' },
+                  hovered && { backgroundColor: 色.地 },
                   pressed && { opacity: 0.7 },
                 ]}
                 onPress={() => {
@@ -540,13 +547,13 @@ const ArcherActionModal = ({
                 }}
               >
                 <Text style={styles.menuText}>左に射手を追加</Text>
-                <Icons.Ionicons name="person-add-outline" size={20} color="#8E8E93" />
+                <Icons.Ionicons name="person-add-outline" size={20} color={色.灰} />
               </Pressable>
               <View style={styles.divider} />
               <Pressable
                 style={({ pressed, hovered }) => [
                   styles.menuItem,
-                  hovered && { backgroundColor: '#F2F2F7' },
+                  hovered && { backgroundColor: 色.地 },
                   pressed && { opacity: 0.7 },
                 ]}
                 onPress={() => {
@@ -556,13 +563,13 @@ const ArcherActionModal = ({
                 }}
               >
                 <Text style={styles.menuText}>左に間隔を追加</Text>
-                <Icons.Ionicons name="reorder-four-outline" size={20} color="#8E8E93" />
+                <Icons.Ionicons name="reorder-four-outline" size={20} color={色.灰} />
               </Pressable>
               <View style={styles.divider} />
               <Pressable
                 style={({ pressed, hovered }) => [
                   styles.menuItem,
-                  hovered && { backgroundColor: '#F2F2F7' },
+                  hovered && { backgroundColor: 色.地 },
                   pressed && { opacity: 0.7 },
                 ]}
                 onPress={() => {
@@ -572,7 +579,7 @@ const ArcherActionModal = ({
                 }}
               >
                 <Text style={styles.menuText}>左に計を追加</Text>
-                <Icons.Ionicons name="calculator-outline" size={20} color="#8E8E93" />
+                <Icons.Ionicons name="calculator-outline" size={20} color={色.灰} />
               </Pressable>
               <View style={styles.divider} />
               {/* 合計の列だけに出す。数える範囲を切り替える。 */
@@ -581,28 +588,28 @@ const ArcherActionModal = ({
                 <Pressable
                   style={({ pressed, hovered }) => [
                     styles.menuItem,
-                    hovered && { backgroundColor: '#F2F7FF' },
+                    hovered && { backgroundColor: 色.青の地_3 },
                     pressed && { opacity: 0.7 },
                   ]}
                   onPress={on合計の範囲}
                 >
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={[styles.menuText, { color: '#007AFF', fontWeight: 'bold' }]}>
+                    <Text style={[styles.menuText, { color: 色.青, fontWeight: 'bold' }]}>
                       {またぐ合計 ? 'この立ちだけの合計にする' : '手前の計もまとめた総計にする'}
                     </Text>
-                    <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 2 }}>
+                    <Text style={{ fontSize: 11, color: 色.灰, marginTop: 2 }}>
                       {またぐ合計
                         ? 'いまは手前の計もまとめて数えています（間隔で止まります）'
                         : 'いまはこの立ちだけを数えています'}
                     </Text>
                   </View>
-                  <Icons.Ionicons name="swap-horizontal" size={20} color="#007AFF" />
+                  <Icons.Ionicons name="swap-horizontal" size={20} color={色.青} />
                 </Pressable>
               )}
               <Pressable
                 style={({ pressed, hovered }) => [
                   styles.menuItem,
-                  hovered && { backgroundColor: '#FFF0F0' },
+                  hovered && { backgroundColor: 色.赤の地_2 },
                   pressed && { opacity: 0.7 },
                 ]}
                 onPress={() => {
@@ -611,8 +618,8 @@ const ArcherActionModal = ({
                   onClose();
                 }}
               >
-                <Text style={[styles.menuText, { color: '#FF3B30', fontWeight: 'bold' }]}>削除</Text>
-                <Icons.Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                <Text style={[styles.menuText, { color: 色.赤, fontWeight: 'bold' }]}>削除</Text>
+                <Icons.Ionicons name="trash-outline" size={20} color={色.赤} />
               </Pressable>
             </View>
           </ScrollView>
@@ -626,9 +633,9 @@ const styles = StyleSheet.create({
   fullScreen: { flex: 1 },
   backdrop: Object.assign({}, StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.15)' }),
   menuContainer: Object.assign(
-    { position: 'absolute', top: 60, right: 20, width: 280, backgroundColor: '#FFF', borderRadius: 14 },
+    { position: 'absolute', top: 60, right: 20, width: 280, backgroundColor: 色.白, borderRadius: 14 },
     getShadowStyle({
-      shadowColor: '#000',
+      shadowColor: 色.黒,
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.15,
       shadowRadius: 20,
@@ -636,27 +643,27 @@ const styles = StyleSheet.create({
     }),
     { overflow: 'hidden' }
   ),
-  section: { backgroundColor: '#FFF', paddingVertical: 4 },
+  section: { backgroundColor: 色.白, paddingVertical: 4 },
   sectionHeader: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: '#C6C6C8',
+    borderColor: 色.区切り,
   },
-  sectionHeaderText: { fontSize: 13, color: '#8E8E93', fontWeight: '600' },
+  sectionHeaderText: { fontSize: 13, color: 色.灰, fontWeight: '600' },
   termHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#EEE',
+    borderBottomColor: 色.罫_薄い,
   },
-  termTitle: { fontSize: 15, color: '#333', fontWeight: '600' },
+  termTitle: { fontSize: 15, color: 色.墨_33, fontWeight: '600' },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -665,9 +672,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     minHeight: 48,
   },
-  menuText: { fontSize: 17, color: '#000', flex: 1 },
-  dividerFull: { height: 8, backgroundColor: '#F2F2F7' },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: '#C6C6C8', marginHorizontal: 16 },
+  menuText: { fontSize: 17, color: 色.黒, flex: 1 },
+  dividerFull: { height: 8, backgroundColor: 色.地 },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: 色.区切り, marginHorizontal: 16 },
   actionRow: {
     flexDirection: 'row',
     paddingHorizontal: 12,
@@ -679,7 +686,7 @@ const styles = StyleSheet.create({
   actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 8,
@@ -691,47 +698,47 @@ const styles = StyleSheet.create({
     minWidth: 160,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     borderRadius: 8,
     paddingHorizontal: 10,
     height: 38,
     gap: 10,
     marginVertical: 2,
   },
-  guestInput: { flex: 1, fontSize: 15, color: '#000', paddingVertical: 4 },
-  guestConfirmText: { color: '#007AFF', fontWeight: 'bold', fontSize: 15, paddingHorizontal: 4 },
+  guestInput: { flex: 1, fontSize: 15, color: 色.黒, paddingVertical: 4 },
+  guestConfirmText: { color: 色.青, fontWeight: 'bold', fontSize: 15, paddingHorizontal: 4 },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
   },
-  searchInput: { flex: 1, fontSize: 16, color: '#000' },
+  searchInput: { flex: 1, fontSize: 16, color: 色.黒 },
   // 男女の絞り込み。検索欄のすぐ下に、3つ並べる
   男女の絞りの列: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingBottom: 10,
     gap: 8,
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
   },
   男女の絞りのボタン: {
     flex: 1,
     paddingVertical: 7,
     borderRadius: 8,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     alignItems: 'center',
   },
-  男女の絞りのボタン選択中: { backgroundColor: '#007AFF' },
-  男女の絞りの字: { fontSize: 14, color: '#3A3A3C', fontWeight: '600' },
-  男女の絞りの字選択中: { color: '#FFF' },
+  男女の絞りのボタン選択中: { backgroundColor: 色.青 },
+  男女の絞りの字: { fontSize: 14, color: 色.文字_三, fontWeight: '600' },
+  男女の絞りの字選択中: { color: 色.白 },
   selectedBadge: {
-    backgroundColor: '#E0E0E0',
+    backgroundColor: 色.地_E0E0E0,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
     marginLeft: 8,
   },
-  selectedBadgeText: { fontSize: 10, color: '#666', fontWeight: 'bold' },
+  selectedBadgeText: { fontSize: 10, color: 色.墨_66, fontWeight: 'bold' },
 });

@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色: 基本色 } = require('./iro.js');
 const themeMod = require('./theme');
 const React = require('react');
 const { View, Text, StyleSheet, Pressable, useWindowDimensions } = require('./rn');
@@ -39,16 +40,16 @@ const リンクの決まり = {
 };
 const Tab = BottomTabs.createBottomTabNavigator();
 /** 今いないタブの文字と絵の色 */
-const タブの字の色 = '#3A3A3C';
+const タブの字の色 = 基本色.文字_三;
 /** 今いるタブの文字と絵の色 */
-const 今のタブの字の色 = '#000';
+const 今のタブの字の色 = 基本色.黒;
 const 画面の色 = () =>
   Object.assign({}, Navigation.DefaultTheme, {
     colors: Object.assign({}, Navigation.DefaultTheme.colors, {
-      background: themeMod.mapColor('#FFFFFF', 'bg'),
-      card: themeMod.mapColor('#FFFFFF', 'bg'),
-      text: themeMod.mapColor('#1C1C1E', 'text'),
-      border: themeMod.mapColor('#C6C6C8', 'border'),
+      background: themeMod.mapColor(基本色.白, 'bg'),
+      card: themeMod.mapColor(基本色.白, 'bg'),
+      text: themeMod.mapColor(基本色.文字, 'text'),
+      border: themeMod.mapColor(基本色.区切り, 'border'),
     }),
   });
 const styles = StyleSheet.create({
@@ -62,10 +63,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 8,
     height: 54,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 基本色.白,
   },
   leftActions: { display: 'none' },
-  tabItems: { flexDirection: 'row', backgroundColor: '#E5E5EA', borderRadius: 24, padding: 3 },
+  tabItems: { flexDirection: 'row', backgroundColor: 基本色.地_濃い, borderRadius: 24, padding: 3 },
   // 左右の余白は、帯の幅に合わせて並べ方（tabBarLayout）が決める
   tabButton: {
     paddingVertical: 8,
@@ -74,7 +75,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tabButtonActive: Object.assign(
-    { backgroundColor: '#FFFFFF' },
+    { backgroundColor: 基本色.白 },
     getShadowStyle({
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.1,
@@ -89,8 +90,16 @@ const styles = StyleSheet.create({
   tabIconBox: { width: 絵の大きさ, height: 絵の大きさ, alignItems: 'center', justifyContent: 'center' },
   // 絵だけのときの、今いないタブの名前。見えないが、押す先（ボタンぜんぶを覆う）と
   // 読み上げ・検査が名前で探す先として、字そのものは置いておく
-  tabTextHidden: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, opacity: 0, fontSize: 字の大きさ },
-  tabTextActive: { fontWeight: 'bold', color: '#000' },
+  tabTextHidden: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    opacity: 0,
+    fontSize: 字の大きさ,
+  },
+  tabTextActive: { fontWeight: 'bold', color: 基本色.黒 },
   tabButtonHover: { backgroundColor: 'rgba(255, 255, 255, 0.5)' },
   tabTextHoverable: {},
   rightActions: { display: 'none' },
@@ -98,14 +107,14 @@ const styles = StyleSheet.create({
   pageBtn: { padding: 4 },
   adminActions: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   editBtn: { paddingVertical: 4 },
-  editText: { color: '#5856D6', fontSize: 17, fontWeight: '400' },
+  editText: { color: 基本色.藍, fontSize: 17, fontWeight: '400' },
   trashBtn: { padding: 4 },
   // 絵が無いタブ（今は無い）の印。名前のとなりに小さく出す
   badgeDotBesideText: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#007AFF',
+    backgroundColor: 基本色.青,
     marginLeft: 2,
     marginTop: -8,
   },
@@ -117,7 +126,7 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: '#007AFF',
+    backgroundColor: 基本色.青,
   },
 });
 const 下の帯 = React.memo(({ state, descriptors, navigation: nav }) => {

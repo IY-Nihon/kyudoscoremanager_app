@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const React = require('react');
 const { View, Text, StyleSheet, TouchableOpacity } = require('./rn');
 const { UIConfig } = require('./uiConfig');
@@ -86,7 +87,7 @@ const ArcherColumnView = React.memo(
       ? 'rgba(142,142,147,0.15)'
       : archer.isTotalCalculator
         ? 'rgba(0,122,255,0.1)'
-        : '#F2F2F7';
+        : 色.地;
     // 立ごとの行に出す数。親が「計」の欄と同じ規則（合計が受け持つ射手）で数えて、
     // 「3,2,4」の形で渡してくる
     const 立ごとの的中 = 立の的中 ? 立の的中.split(',').map(Number) : [];
@@ -187,9 +188,9 @@ const ArcherColumnView = React.memo(
                     backgroundColor: 背景の色,
                     marginBottom: 0,
                     borderBottomWidth: 枠の太さ,
-                    borderBottomColor: '#000',
+                    borderBottomColor: 色.黒,
                     borderTopWidth: 枠の左,
-                    borderTopColor: '#000',
+                    borderTopColor: 色.黒,
                   }
                 : {
                     width: 列の幅,
@@ -197,9 +198,9 @@ const ArcherColumnView = React.memo(
                     backgroundColor: 背景の色,
                     marginBottom: 0,
                     borderRightWidth: 枠の太さ,
-                    borderRightColor: '#000',
+                    borderRightColor: 色.黒,
                     borderLeftWidth: 枠の左,
-                    borderLeftColor: '#000',
+                    borderLeftColor: 色.黒,
                   },
             ]} // 内訳が出ているときだけ押せる。押すと合算とを行き来する
             disabled={
@@ -250,19 +251,19 @@ const ArcherColumnView = React.memo(
                   return <Text style={[styles.hitCount, { fontSize: 22 * 倍率 }]}>{的中の数}</Text>;
                 })()}
             {archer.isTotalCalculator ? (
-              <Text style={[styles.hitCount, { color: '#007AFF', fontSize: 22 * 倍率 }]}>{的中の数}</Text>
+              <Text style={[styles.hitCount, { color: 色.青, fontSize: 22 * 倍率 }]}>{的中の数}</Text>
             ) : null}
             <View
               style={
                 横
-                  ? { position: 'absolute', top: 0, bottom: 0, left: 0, width: 1.5, backgroundColor: '#000' }
+                  ? { position: 'absolute', top: 0, bottom: 0, left: 0, width: 1.5, backgroundColor: 色.黒 }
                   : {
                       position: 'absolute',
                       bottom: 0,
                       left: 0,
                       right: 0,
                       height: 1.5,
-                      backgroundColor: '#000',
+                      backgroundColor: 色.黒,
                     }
               }
             />
@@ -391,12 +392,12 @@ const ArcherColumnView = React.memo(
               {
                 width: 列の幅,
                 height: UIConfig.footerHeight * 倍率,
-                backgroundColor: archer.isTotalCalculator ? 'rgba(0,122,255,0.05)' : '#F2F2F7',
+                backgroundColor: archer.isTotalCalculator ? 'rgba(0,122,255,0.05)' : 色.地,
                 padding: 0,
                 borderRightWidth: 枠の太さ,
-                borderRightColor: '#000',
+                borderRightColor: 色.黒,
                 borderLeftWidth: 枠の左,
-                borderLeftColor: '#000',
+                borderLeftColor: 色.黒,
               },
             ]}
           >
@@ -429,7 +430,7 @@ const ArcherColumnView = React.memo(
                       fontSize: 組.区切りの名の字(倍率, UIConfig).fontSize,
                       lineHeight: 組.区切りの名の字(倍率, UIConfig).lineHeight,
                       fontWeight: '700',
-                      color: 組.チームの色(区切りの名) || '#8E8E93',
+                      color: 組.チームの色(区切りの名) || 色.灰,
                       textAlign: 'center',
                     }} // 欄の高さに入るだけ行を使う（3 行では大学名が切れた）
                     numberOfLines={組.区切りの名の字(倍率, UIConfig).numberOfLines}
@@ -437,7 +438,7 @@ const ArcherColumnView = React.memo(
                     {区切りの名}
                   </Text>
                 ) : (
-                  <Icons.Ionicons name="close-circle" size={24 * 倍率} color="#8E8E93" />
+                  <Icons.Ionicons name="close-circle" size={24 * 倍率} color={色.灰} />
                 )}
               </TouchableOpacity>
             ) : (
@@ -489,7 +490,7 @@ const ArcherColumnView = React.memo(
                   archer.isTotalCalculator ? undefined : '押すと名前を選べます。長押しで交代や削除ができます'
                 }
               >
-                <Text style={[styles.footerName, { color: '#000', fontSize: 12 * 倍率 }]} numberOfLines={2}>
+                <Text style={[styles.footerName, { color: 色.黒, fontSize: 12 * 倍率 }]} numberOfLines={2}>
                   {見出しの字()}
                 </Text>
                 {archer.isGuest ? (
@@ -507,13 +508,13 @@ const ArcherColumnView = React.memo(
                         !archer.gender ||
                         archer.gender === '未設定' ||
                         !['男子', '女子'].includes(archer.gender)
-                          ? '#8E8E93'
+                          ? 色.灰
                           : '男子' === archer.gender
-                            ? '#007AFF'
-                            : '#FF2D55',
+                            ? 色.青
+                            : 色.桃,
                     }}
                   >
-                    <Icons.Ionicons name="person" size={10 * 倍率} color="#FFF" />
+                    <Icons.Ionicons name="person" size={10 * 倍率} color={色.白} />
                   </View>
                 )}
               </TouchableOpacity>
@@ -530,10 +531,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#000',
+    borderBottomColor: 色.黒,
   },
   hitCount: { fontSize: 22, fontWeight: 'bold' },
-  hitCountSub: { fontSize: 8, fontWeight: 'bold', color: '#000', textAlign: 'center', paddingHorizontal: 2 },
+  hitCountSub: { fontSize: 8, fontWeight: 'bold', color: 色.黒, textAlign: 'center', paddingHorizontal: 2 },
   sepCell: {
     width: UIConfig.separatorWidth,
     height: UIConfig.cellHeight,
@@ -548,17 +549,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  blockTotalText: { fontSize: 24, fontWeight: '900', color: '#007AFF' },
+  blockTotalText: { fontSize: 24, fontWeight: '900', color: 色.青 },
   footer: {
     height: UIConfig.footerHeight,
     justifyContent: 'center',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#000',
+    borderTopColor: 色.黒,
     padding: 4,
   },
   footerName: { fontSize: 14, fontWeight: 'bold', textAlign: 'center' },
-  guestLabel: { fontSize: 9, color: '#8E8E93' },
+  guestLabel: { fontSize: 9, color: 色.灰 },
 });
 Object.defineProperty(exports, '__esModule', { value: true });
 exports.ArcherColumnView = ArcherColumnView;

@@ -1,3 +1,6 @@
+'use strict';
+
+const { 色 } = require('./iro.js');
 /**
  * react-native の部品を、ここ 1 か所から取る。
  *
@@ -26,14 +29,13 @@
  * theme.js はここを使わない（こちらが theme.js を使うので、逆向きにすると輪になる）。
  * useScoreStore.js も画面に触れないので、AppState だけ素の react-native から取る。
  */
-'use strict';
 
 const RN = require('react-native');
 const React = require('react');
 const theme = require('./theme');
 
-const 暗い字 = { color: '#FFFFFF' };
-const 暗い書き入れの薄字 = '#8E8E93';
+const 暗い字 = { color: 色.白 };
+const 暗い書き入れの薄字 = 色.灰;
 
 const Text = React.forwardRef(function Text(props, ref) {
   if (!theme.isDark()) return React.createElement(RN.Text, Object.assign({ ref }, props));

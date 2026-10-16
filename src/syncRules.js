@@ -320,7 +320,9 @@ function 記録を雲の形に(記録, 日時にする) {
   if (数か(記録.date)) 直し.date = 日時にする(記録.date);
   if (Array.isArray(記録.archers) && 記録.archers.some((射手) => 射手 && 数か(射手.lastModified))) {
     直し.archers = 記録.archers.map((射手) =>
-      射手 && 数か(射手.lastModified) ? Object.assign({}, 射手, { lastModified: 日時にする(射手.lastModified) }) : 射手
+      射手 && 数か(射手.lastModified)
+        ? Object.assign({}, 射手, { lastModified: 日時にする(射手.lastModified) })
+        : 射手
     );
   }
   return Object.keys(直し).length ? Object.assign({}, 記録, 直し) : 記録;

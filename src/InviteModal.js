@@ -1,3 +1,6 @@
+'use strict';
+
+const { 色 } = require('./iro.js');
 /**
  * メンバーの招待リンクの画面。
  *
@@ -6,7 +9,6 @@
  *
  * 仕組みは src/memberInvite.js、入る道は src/groupLogin.js の 部員として入る。
  */
-'use strict';
 
 const React = require('react');
 const { Alert, Modal, Pressable, Text, View, StyleSheet } = require('./rn');
@@ -170,19 +172,29 @@ const 招待リンクの欄 = ({ 団体, 部員 }) => {
       }
     };
     if (!作り直しか) return 進める();
-    Alert.alert('作り直しますか？', '前の招待リンクは使えなくなります（すでに入っている端末はそのままです）。', [
-      { text: 'やめる', style: 'cancel' },
-      { text: '作り直す', style: 'destructive', onPress: 進める },
-    ]);
+    Alert.alert(
+      '作り直しますか？',
+      '前の招待リンクは使えなくなります（すでに入っている端末はそのままです）。',
+      [
+        { text: 'やめる', style: 'cancel' },
+        { text: '作り直す', style: 'destructive', onPress: 進める },
+      ]
+    );
   };
   const 写す = async () => {
     const 出来た = await 写.写す(リンク);
-    知らせを置く(出来た ? 'コピーしました。' : 'コピーできませんでした。リンクを長押ししてコピーしてください。');
+    知らせを置く(
+      出来た ? 'コピーしました。' : 'コピーできませんでした。リンクを長押ししてコピーしてください。'
+    );
   };
   const 送れるか = typeof navigator !== 'undefined' && navigator && typeof navigator.share === 'function';
   const 送る = async () => {
     try {
-      await navigator.share({ title: '弓道部的中ノートの招待', text: `${部員.name || ''} さんの招待リンク`, url: リンク });
+      await navigator.share({
+        title: '弓道部的中ノートの招待',
+        text: `${部員.name || ''} さんの招待リンク`,
+        url: リンク,
+      });
     } catch {
       // 閉じただけのときも投げる。何もしない
     }
@@ -192,7 +204,8 @@ const 招待リンクの欄 = ({ 団体, 部員 }) => {
     <View style={styles.欄} testID="招待リンクの欄">
       <Text style={styles.欄の題}>招待リンク</Text>
       <Text style={styles.欄の説明}>
-        このリンクを本人に送ると、団体IDと個人IDを打たずに、このメンバーとして入れます。作ってから{招.招待の期限の日数}日間使えます。本人以外に送らないでください。
+        このリンクを本人に送ると、団体IDと個人IDを打たずに、このメンバーとして入れます。作ってから
+        {招.招待の期限の日数}日間使えます。本人以外に送らないでください。
       </Text>
       {undefined === 招待 ? (
         <Text style={styles.欄の説明}>確かめています…</Text>
@@ -226,7 +239,11 @@ const 招待リンクの欄 = ({ 団体, 部員 }) => {
             </Text>
           ) : null}
           {/* 切れたリンクはもう使えないので、作り直しの確かめは出さない */}
-          <Pressable style={[styles.ボタン, 作業中 && styles.作業中]} disabled={作業中} onPress={() => 作る(false)}>
+          <Pressable
+            style={[styles.ボタン, 作業中 && styles.作業中]}
+            disabled={作業中}
+            onPress={() => 作る(false)}
+          >
             <Text style={styles.ボタンの字}>
               {作業中 ? '作っています…' : 切れている ? '新しいリンクを作る' : '招待リンクを作る'}
             </Text>
@@ -246,37 +263,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-  箱: { width: '100%', maxWidth: 420, backgroundColor: '#FFF', borderRadius: 14, padding: 18 },
-  見出し: { fontSize: 18, fontWeight: 'bold', color: '#1C1C1E', marginBottom: 10 },
-  説明: { fontSize: 14, color: '#3C3C43', lineHeight: 20, marginBottom: 6 },
-  難点: { fontSize: 13, color: '#FF3B30', marginTop: 8 },
+  箱: { width: '100%', maxWidth: 420, backgroundColor: 色.白, borderRadius: 14, padding: 18 },
+  見出し: { fontSize: 18, fontWeight: 'bold', color: 色.文字, marginBottom: 10 },
+  説明: { fontSize: 14, color: 色.文字_二, lineHeight: 20, marginBottom: 6 },
+  難点: { fontSize: 13, color: 色.赤, marginTop: 8 },
   ボタン: {
-    backgroundColor: '#007AFF',
+    backgroundColor: 色.青,
     borderRadius: 10,
     paddingVertical: 13,
     alignItems: 'center',
     marginTop: 14,
   },
-  作業中: { backgroundColor: '#8E8E93' },
-  ボタンの字: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+  作業中: { backgroundColor: 色.灰 },
+  ボタンの字: { color: 色.白, fontSize: 16, fontWeight: 'bold' },
   閉じる: { paddingVertical: 13, alignItems: 'center', marginTop: 6 },
-  閉じるの字: { color: '#007AFF', fontSize: 15 },
-  欄: { marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#E5E5EA' },
-  欄の題: { fontSize: 14, fontWeight: 'bold', color: '#1C1C1E', marginBottom: 4 },
-  欄の説明: { fontSize: 12, color: '#3C3C43', lineHeight: 18, marginBottom: 6 },
-  リンク: { fontSize: 12, color: '#007AFF', marginVertical: 6 },
+  閉じるの字: { color: 色.青, fontSize: 15 },
+  欄: { marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: 色.地_濃い },
+  欄の題: { fontSize: 14, fontWeight: 'bold', color: 色.文字, marginBottom: 4 },
+  欄の説明: { fontSize: 12, color: 色.文字_二, lineHeight: 18, marginBottom: 6 },
+  リンク: { fontSize: 12, color: 色.青, marginVertical: 6 },
   並び: { flexDirection: 'row', flexWrap: 'wrap' },
   小ボタン: {
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     borderRadius: 8,
     paddingVertical: 9,
     paddingHorizontal: 12,
     marginRight: 8,
     marginTop: 6,
   },
-  小ボタンの字: { color: '#007AFF', fontSize: 14, fontWeight: 'bold' },
-  危ない字: { color: '#FF3B30' },
-  知らせ: { fontSize: 13, color: '#248A3D', marginTop: 8 },
+  小ボタンの字: { color: 色.青, fontSize: 14, fontWeight: 'bold' },
+  危ない字: { color: 色.赤 },
+  知らせ: { fontSize: 13, color: 色.緑_濃い, marginTop: 8 },
 });
 
 Object.defineProperty(exports, '__esModule', { value: true });

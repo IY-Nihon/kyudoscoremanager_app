@@ -85,7 +85,6 @@ function 口頭で済んでいるか(同意した版) {
   return 口頭で済んでいる移り[String(同意した版)] === 同意の版;
 }
 
-
 /** 文書をブラウザで開く。アプリの外へ出るので、別の窓で開く */
 function 開く(URL) {
   if (typeof window !== 'undefined' && window.open) {

@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const React = require('react');
 const {
   Alert,
@@ -106,7 +107,9 @@ const AttendanceScreen = () => {
     } catch (誤り) {
       console.error(誤り);
       // 何も出ないと、押しても反応しないように見える。ログインが切れていると保存が断られる
-      const 権限 = /permission|unauthenticated|auth/i.test(String((誤り && (誤り.code || 誤り.message)) || ''));
+      const 権限 = /permission|unauthenticated|auth/i.test(
+        String((誤り && (誤り.code || 誤り.message)) || '')
+      );
       Alert.alert(
         '保存できませんでした',
         権限
@@ -383,7 +386,7 @@ const AttendanceScreen = () => {
             aria-label="前の月へ"
             onPress={() => (tab === 'days' || rangeType === 'month' ? changeMonth(-1) : changeYear(-1))}
           >
-            <Icons.Ionicons name="chevron-back" size={24} color="#007AFF" />
+            <Icons.Ionicons name="chevron-back" size={24} color={色.青} />
           </TouchableOpacity>
           <Text style={styles.monthText}>
             {tab === 'days' || rangeType === 'month'
@@ -397,7 +400,7 @@ const AttendanceScreen = () => {
             aria-label="次の月へ"
             onPress={() => (tab === 'days' || rangeType === 'month' ? changeMonth(1) : changeYear(1))}
           >
-            <Icons.Ionicons name="chevron-forward" size={24} color="#007AFF" />
+            <Icons.Ionicons name="chevron-forward" size={24} color={色.青} />
           </TouchableOpacity>
         </View>
       )}
@@ -419,12 +422,7 @@ const AttendanceScreen = () => {
                       style={[
                         styles.genderDot,
                         {
-                          color:
-                            部員.gender === '男子'
-                              ? '#007AFF'
-                              : 部員.gender === '女子'
-                                ? '#FF2D55'
-                                : '#8E8E93',
+                          color: 部員.gender === '男子' ? 色.青 : 部員.gender === '女子' ? 色.桃 : 色.灰,
                         },
                       ]}
                     >
@@ -442,7 +440,12 @@ const AttendanceScreen = () => {
                     {部員.presentCount}/{filteredPracticeDays.length}
                   </Text>
                 </View>
-                <Icons.Ionicons name="chevron-forward" size={16} color="#C7C7CC" style={{ marginLeft: 8 }} />
+                <Icons.Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={色.灰_薄い}
+                  style={{ marginLeft: 8 }}
+                />
               </TouchableOpacity>
             )}
           />
@@ -470,10 +473,10 @@ const AttendanceScreen = () => {
             <View
               style={[
                 styles.aiSection,
-                { backgroundColor: '#F0F0FF', borderLeftWidth: 4, borderLeftColor: '#5856D6' },
+                { backgroundColor: 色.藍の地, borderLeftWidth: 4, borderLeftColor: 色.藍 },
               ]}
             >
-              <Text style={[styles.aiTitle, { color: '#5856D6', marginBottom: 10 }]}>解析結果プレビュー</Text>
+              <Text style={[styles.aiTitle, { color: 色.藍, marginBottom: 10 }]}>解析結果プレビュー</Text>
               {aiPreviewItems.map((item, idx) => (
                 <View
                   key={idx}
@@ -482,22 +485,22 @@ const AttendanceScreen = () => {
                     justifyContent: 'space-between',
                     paddingVertical: 5,
                     borderBottomWidth: 0.5,
-                    borderBottomColor: '#CCC',
+                    borderBottomColor: 色.罫,
                   }}
                 >
                   <Text style={{ fontSize: 13 }}>{item.date}</Text>
-                  <Text style={{ fontSize: 13, color: '#666' }}>{item.reason || '練習日'}</Text>
+                  <Text style={{ fontSize: 13, color: 色.墨_66 }}>{item.reason || '練習日'}</Text>
                 </View>
               ))}
               <View style={{ flexDirection: 'row', gap: 10, marginTop: 15 }}>
                 <TouchableOpacity
-                  style={[styles.aiActionBtn, { flex: 1, backgroundColor: '#5856D6' }]}
+                  style={[styles.aiActionBtn, { flex: 1, backgroundColor: 色.藍 }]}
                   onPress={saveAiDates}
                 >
                   <Text style={styles.aiActionBtnText}>これらを保存する</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.aiActionBtn, { flex: 1, backgroundColor: '#8E8E93' }]}
+                  style={[styles.aiActionBtn, { flex: 1, backgroundColor: 色.灰 }]}
                   onPress={() => setAiPreviewItems(null)}
                 >
                   <Text style={styles.aiActionBtnText}>キャンセル</Text>
@@ -521,11 +524,21 @@ const AttendanceScreen = () => {
                     const dStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(番 + 1).padStart(2, '0')}`;
                     const isP = !!practiceDays[dStr];
                     return (
-                      <TouchableOpacity key={dStr} style={styles.calendarCell} onPress={() => togglePracticeDay(dStr)}>
+                      <TouchableOpacity
+                        key={dStr}
+                        style={styles.calendarCell}
+                        onPress={() => togglePracticeDay(dStr)}
+                      >
                         <View // 日ごとに角丸の四角いタイル。すきまを空けて並べる
-                          style={[styles.calendarTile, isP && styles.calendarTileActive, dStr === todayStr && styles.calendarTileToday]}
+                          style={[
+                            styles.calendarTile,
+                            isP && styles.calendarTileActive,
+                            dStr === todayStr && styles.calendarTileToday,
+                          ]}
                         >
-                          <Text style={[styles.calendarCellText, isP && styles.calendarCellTextActive]}>{番 + 1}</Text>
+                          <Text style={[styles.calendarCellText, isP && styles.calendarCellTextActive]}>
+                            {番 + 1}
+                          </Text>
                         </View>
                       </TouchableOpacity>
                     );
@@ -541,7 +554,7 @@ const AttendanceScreen = () => {
       )}
       {loadingMsg && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={色.青} />
           <Text style={styles.loadingText}>{loadingMsg}</Text>
         </View>
       )}
@@ -579,7 +592,7 @@ const AttendanceScreen = () => {
                   aria-label="閉じる"
                   onPress={() => setSelectedMember(null)}
                 >
-                  <Icons.Ionicons name="close" size={24} color="#8E8E93" />
+                  <Icons.Ionicons name="close" size={24} color={色.灰} />
                 </TouchableOpacity>
               </View>
               <View style={styles.modalStatRow}>
@@ -588,23 +601,19 @@ const AttendanceScreen = () => {
                   <Text style={styles.modalStatLab}>出席率</Text>
                 </View>
                 <View style={styles.modalStatItem}>
-                  <Text style={[styles.modalStatVal, { color: '#34C759' }]}>
-                    {selectedMember.presentCount}
-                  </Text>
+                  <Text style={[styles.modalStatVal, { color: 色.緑 }]}>{selectedMember.presentCount}</Text>
                   <Text style={styles.modalStatLab}>出席</Text>
                 </View>
                 <View style={styles.modalStatItem}>
-                  <Text style={[styles.modalStatVal, { color: '#FF9500' }]}>{selectedMember.lateCount}</Text>
+                  <Text style={[styles.modalStatVal, { color: 色.橙 }]}>{selectedMember.lateCount}</Text>
                   <Text style={styles.modalStatLab}>遅刻</Text>
                 </View>
                 <View style={styles.modalStatItem}>
-                  <Text style={[styles.modalStatVal, { color: '#FF9500' }]}>{selectedMember.earlyCount}</Text>
+                  <Text style={[styles.modalStatVal, { color: 色.橙 }]}>{selectedMember.earlyCount}</Text>
                   <Text style={styles.modalStatLab}>早退</Text>
                 </View>
                 <View style={styles.modalStatItem}>
-                  <Text style={[styles.modalStatVal, { color: '#FF3B30' }]}>
-                    {selectedMember.absentCount}
-                  </Text>
+                  <Text style={[styles.modalStatVal, { color: 色.赤 }]}>{selectedMember.absentCount}</Text>
                   <Text style={styles.modalStatLab}>欠席</Text>
                 </View>
               </View>
@@ -631,16 +640,16 @@ const AttendanceScreen = () => {
                           size={20}
                           color={
                             出欠 === 'present'
-                              ? '#34C759'
+                              ? 色.緑
                               : 出欠 === 'late' || 出欠 === 'early'
-                                ? '#FF9500'
+                                ? 色.橙
                                 : 出欠 === 'absent'
-                                  ? '#FF3B30'
-                                  : '#C7C7CC'
+                                  ? 色.赤
+                                  : 色.灰_薄い
                           }
                           style={{ marginRight: 10 }}
                         />
-                        <Text style={{ fontSize: 15, color: isFuture ? '#8E8E93' : '#000' }}>{日}</Text>
+                        <Text style={{ fontSize: 15, color: isFuture ? 色.灰 : 色.黒 }}>{日}</Text>
                       </View>
                       <Text
                         style={{
@@ -648,14 +657,14 @@ const AttendanceScreen = () => {
                           fontWeight: '600',
                           color:
                             出欠 === 'present'
-                              ? '#34C759'
+                              ? 色.緑
                               : 出欠 === 'late'
-                                ? '#FF9500'
+                                ? 色.橙
                                 : 出欠 === 'early'
-                                  ? '#FF9500'
+                                  ? 色.橙
                                   : 出欠 === 'absent'
-                                    ? '#FF3B30'
-                                    : '#8E8E93',
+                                    ? 色.赤
+                                    : 色.灰,
                         }}
                       >
                         {出欠 === 'present'
@@ -682,47 +691,47 @@ const AttendanceScreen = () => {
   );
 };
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F2F2F7' },
-  header: { backgroundColor: '#FFF', paddingHorizontal: 20, paddingTop: 60, paddingBottom: 15 },
+  container: { flex: 1, backgroundColor: 色.地 },
+  header: { backgroundColor: 色.白, paddingHorizontal: 20, paddingTop: 60, paddingBottom: 15 },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 15 },
-  tabRow: { flexDirection: 'row', backgroundColor: '#F2F2F7', borderRadius: 8, padding: 2 },
+  tabRow: { flexDirection: 'row', backgroundColor: 色.地, borderRadius: 8, padding: 2 },
   tab: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 6 },
-  tabActive: { backgroundColor: '#FFF' },
-  tabText: { fontSize: 13, color: '#8E8E93' },
-  tabTextActive: { color: '#007AFF', fontWeight: 'bold' },
-  rangeSelector: { flexDirection: 'row', backgroundColor: '#FFF', padding: 10, gap: 10 },
+  tabActive: { backgroundColor: 色.白 },
+  tabText: { fontSize: 13, color: 色.灰 },
+  tabTextActive: { color: 色.青, fontWeight: 'bold' },
+  rangeSelector: { flexDirection: 'row', backgroundColor: 色.白, padding: 10, gap: 10 },
   rangeBtn: {
     flex: 1,
     paddingVertical: 6,
     borderRadius: 10,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     alignItems: 'center',
   },
-  rangeBtnActive: { backgroundColor: '#007AFF' },
-  rangeBtnText: { fontSize: 12, color: '#8E8E93' },
-  rangeBtnTextActive: { color: '#FFF' },
+  rangeBtnActive: { backgroundColor: 色.青 },
+  rangeBtnText: { fontSize: 12, color: 色.灰 },
+  rangeBtnTextActive: { color: 色.白 },
   monthNav: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     paddingVertical: 10,
   },
   monthText: { fontSize: 17, fontWeight: 'bold', marginHorizontal: 20 },
   debugInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     paddingHorizontal: 20,
     paddingVertical: 8,
     gap: 5,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+    borderBottomColor: 色.地_濃い,
   },
-  debugText: { fontSize: 13, color: '#8E8E93' },
+  debugText: { fontSize: 13, color: 色.灰 },
   listContent: { padding: 16 },
   memberCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     borderRadius: 10,
     padding: 15,
     marginBottom: 10,
@@ -734,24 +743,24 @@ const styles = StyleSheet.create({
   genderDot: { fontSize: 10 },
   // 長い名前は折り返す。縮まない字だと、右の数字と矢印を画面の外へ押し出す
   memberName: { fontSize: 16, fontWeight: 'bold', flexShrink: 1, minWidth: 0 },
-  memberSub: { fontSize: 11, color: '#8E8E93' },
+  memberSub: { fontSize: 11, color: 色.灰 },
   statInfo: { alignItems: 'flex-end', flexShrink: 0 },
-  rateText: { fontSize: 16, fontWeight: 'bold', color: '#007AFF' },
-  countsText: { fontSize: 12, color: '#8E8E93' },
+  rateText: { fontSize: 16, fontWeight: 'bold', color: 色.青 },
+  countsText: { fontSize: 12, color: 色.灰 },
   scroll: { flex: 1 },
-  aiSection: { backgroundColor: '#FFF', margin: 15, padding: 15, borderRadius: 10 },
+  aiSection: { backgroundColor: 色.白, margin: 15, padding: 15, borderRadius: 10 },
   aiTitle: { fontSize: 15, fontWeight: 'bold' },
-  aiDescription: { fontSize: 12, color: '#8E8E93' },
+  aiDescription: { fontSize: 12, color: 色.灰 },
   aiActionBtn: {
-    backgroundColor: '#5856D6',
+    backgroundColor: 色.藍,
     marginTop: 10,
     padding: 10,
     borderRadius: 8,
     alignItems: 'center',
   },
-  aiActionBtnText: { color: '#FFF', fontWeight: 'bold' },
+  aiActionBtnText: { color: 色.白, fontWeight: 'bold' },
   calendarContainer: {
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     marginHorizontal: 15,
     borderRadius: 10,
     padding: 10,
@@ -761,22 +770,30 @@ const styles = StyleSheet.create({
   },
   dowRow: { flexDirection: 'row', marginBottom: 5 },
   dowCell: { flex: 1, alignItems: 'center' },
-  dowText: { fontSize: 12, color: '#8E8E93' },
+  dowText: { fontSize: 12, color: 色.灰 },
   calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   // 1 日 = 正方形のタイル（外側のすきま 3px ずつ）。空の日も同じ大きさで場所を取る
   calendarCell: { width: '14.28%', aspectRatio: 1, padding: 3 },
   calendarCellEmpty: { width: '14.28%', aspectRatio: 1 },
-  calendarTile: { flex: 1, borderRadius: 10, backgroundColor: '#F2F2F7', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: 'transparent' },
-  calendarTileActive: { backgroundColor: '#E1F0FF' },
-  calendarTileToday: { borderColor: '#007AFF' },
+  calendarTile: {
+    flex: 1,
+    borderRadius: 10,
+    backgroundColor: 色.地,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  calendarTileActive: { backgroundColor: 色.青の地 },
+  calendarTileToday: { borderColor: 色.青 },
   calendarCellText: { fontSize: 14 },
-  calendarCellTextActive: { color: '#007AFF', fontWeight: 'bold' },
-  syncSection: { backgroundColor: '#FFF', margin: 15, padding: 15, borderRadius: 10 },
+  calendarCellTextActive: { color: 色.青, fontWeight: 'bold' },
+  syncSection: { backgroundColor: 色.白, margin: 15, padding: 15, borderRadius: 10 },
   syncTitle: { fontSize: 15, fontWeight: 'bold', marginBottom: 10 },
-  syncBtn: { backgroundColor: '#34C759', padding: 12, borderRadius: 8, alignItems: 'center' },
-  syncBtnText: { color: '#FFF', fontWeight: 'bold' },
-  summaryCard: { backgroundColor: '#FFF', margin: 15, padding: 15, borderRadius: 10, alignItems: 'center' },
-  summaryTitle: { fontSize: 13, color: '#8E8E93' },
+  syncBtn: { backgroundColor: 色.緑, padding: 12, borderRadius: 8, alignItems: 'center' },
+  syncBtnText: { color: 色.白, fontWeight: 'bold' },
+  summaryCard: { backgroundColor: 色.白, margin: 15, padding: 15, borderRadius: 10, alignItems: 'center' },
+  summaryTitle: { fontSize: 13, color: 色.灰 },
   summaryValue: { fontSize: 20, fontWeight: 'bold' },
   modalOverlay: {
     flex: 1,
@@ -785,9 +802,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: Object.assign(
-    { backgroundColor: '#FFF', width: '95%', padding: 20, borderRadius: 20 },
+    { backgroundColor: 色.白, width: '95%', padding: 20, borderRadius: 20 },
     getShadowStyle({
-      shadowColor: '#000',
+      shadowColor: 色.黒,
       shadowOffset: { width: 0, height: 5 },
       shadowOpacity: 0.3,
       shadowRadius: 10,
@@ -801,18 +818,18 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalHeaderMain: { flex: 1, minWidth: 0, marginRight: 12 },
-  modalTitle: { fontSize: 22, fontWeight: 'bold', color: '#1C1C1E', flexShrink: 1 },
+  modalTitle: { fontSize: 22, fontWeight: 'bold', color: 色.文字, flexShrink: 1 },
   modalStatRow: {
     flexDirection: 'row',
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     borderRadius: 12,
     padding: 15,
     marginBottom: 20,
     justifyContent: 'space-around',
   },
   modalStatItem: { alignItems: 'center' },
-  modalStatVal: { fontSize: 18, fontWeight: 'bold', color: '#007AFF' },
-  modalStatLab: { fontSize: 11, color: '#8E8E93', marginTop: 4 },
+  modalStatVal: { fontSize: 18, fontWeight: 'bold', color: 色.青 },
+  modalStatLab: { fontSize: 11, color: 色.灰, marginTop: 4 },
   closeBtn: { padding: 4, flexShrink: 0 },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -820,13 +837,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: { marginTop: 10, color: '#8E8E93' },
+  loadingText: { marginTop: 10, color: 色.灰 },
   historyRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F7',
+    borderBottomColor: 色.地,
   },
 });
 Object.defineProperty(exports, '__esModule', { value: true });

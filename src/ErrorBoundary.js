@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const React = require('react');
 const { View, Text, TouchableOpacity, StyleSheet } = require('./rn');
 const { useScoreStore } = require('./useScoreStore');
@@ -64,27 +65,27 @@ class ErrorBoundary extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
   },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16, color: '#000' },
-  message: { fontSize: 16, textAlign: 'center', marginBottom: 8, color: '#3C3C43' },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16, color: 色.黒 },
+  message: { fontSize: 16, textAlign: 'center', marginBottom: 8, color: 色.文字_二 },
   errorText: {
     fontSize: 12,
-    color: '#FF3B30',
-    backgroundColor: '#FFF',
+    color: 色.赤,
+    backgroundColor: 色.白,
     padding: 8,
     borderRadius: 8,
     marginBottom: 24,
     fontFamily: 'Courier',
   },
-  button: { backgroundColor: '#007AFF', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8 },
-  buttonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
-  dangerButton: { backgroundColor: '#FF3B30' },
+  button: { backgroundColor: 色.青, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8 },
+  buttonText: { color: 色.白, fontSize: 16, fontWeight: 'bold' },
+  dangerButton: { backgroundColor: 色.赤 },
   subButton: { paddingHorizontal: 24, paddingVertical: 12, marginTop: 8 },
-  subButtonText: { color: '#007AFF', fontSize: 15 },
+  subButtonText: { color: 色.青, fontSize: 15 },
 });
 Object.defineProperty(exports, '__esModule', { value: true });
 exports.ErrorBoundary = ErrorBoundary;

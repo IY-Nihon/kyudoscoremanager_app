@@ -1,3 +1,5 @@
+import iroの組 from './iro.js';
+const { 色 } = iroの組;
 /**
  * 矢所を的の上にプロットして表示する読み取り専用コンポーネント
  */
@@ -6,7 +8,28 @@ import { View, Text, StyleSheet } from './rn';
 import { useScoreStore } from './useScoreStore';
 import { useストアの一部 } from './storeSlice';
 
-const CIRCLED_NUMBERS = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳'];
+const CIRCLED_NUMBERS = [
+  '①',
+  '②',
+  '③',
+  '④',
+  '⑤',
+  '⑥',
+  '⑦',
+  '⑧',
+  '⑨',
+  '⑩',
+  '⑪',
+  '⑫',
+  '⑬',
+  '⑭',
+  '⑮',
+  '⑯',
+  '⑰',
+  '⑱',
+  '⑲',
+  '⑳',
+];
 
 export const ArrowLocationView = ({ arrowLocations = [], size = 200, targetType, hideNumbers = false }) => {
   const { arrowTargetType: storeTargetType } = useストアの一部(['arrowTargetType']);
@@ -16,7 +39,7 @@ export const ArrowLocationView = ({ arrowLocations = [], size = 200, targetType,
   const isHoshi24 = arrowTargetType === 'hoshi24';
   const targetVisualSize = isHoshi24 ? size * 0.5 : size * 0.75;
   const targetVisualRadius = targetVisualSize / 2;
-  
+
   // 保存された正規化座標（的の半径に対する比率）からピクセル座標を復元する基準半径
   const targetRadius = isHoshi24 ? radius * 0.5 : radius * 0.75;
 
@@ -24,27 +47,109 @@ export const ArrowLocationView = ({ arrowLocations = [], size = 200, targetType,
   const renderTarget = () => {
     if (arrowTargetType === 'kasumi36') {
       return (
-        <View style={[styles.targetBase, { width: targetVisualSize, height: targetVisualSize, borderRadius: targetVisualRadius, backgroundColor: '#000' }]}>
-          <View style={[styles.targetLayer, { width: targetVisualSize * (5/6), height: targetVisualSize * (5/6), borderRadius: targetVisualRadius * (5/6), backgroundColor: '#fff' }]} />
-          <View style={[styles.targetLayer, { width: targetVisualSize * (4/6), height: targetVisualSize * (4/6), borderRadius: targetVisualRadius * (4/6), backgroundColor: '#000' }]} />
-          <View style={[styles.targetLayer, { width: targetVisualSize * (3/6), height: targetVisualSize * (3/6), borderRadius: targetVisualRadius * (3/6), backgroundColor: '#fff' }]} />
-          <View style={[styles.targetLayer, { width: targetVisualSize * (2/6), height: targetVisualSize * (2/6), borderRadius: targetVisualRadius * (2/6), backgroundColor: '#000' }]} />
-          <View style={[styles.targetLayer, { width: targetVisualSize * (1/6), height: targetVisualSize * (1/6), borderRadius: targetVisualRadius * (1/6), backgroundColor: '#fff' }]} />
+        <View
+          style={[
+            styles.targetBase,
+            {
+              width: targetVisualSize,
+              height: targetVisualSize,
+              borderRadius: targetVisualRadius,
+              backgroundColor: 色.黒,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.targetLayer,
+              {
+                width: targetVisualSize * (5 / 6),
+                height: targetVisualSize * (5 / 6),
+                borderRadius: targetVisualRadius * (5 / 6),
+                backgroundColor: 色.白,
+              },
+            ]}
+          />
+          <View
+            style={[
+              styles.targetLayer,
+              {
+                width: targetVisualSize * (4 / 6),
+                height: targetVisualSize * (4 / 6),
+                borderRadius: targetVisualRadius * (4 / 6),
+                backgroundColor: 色.黒,
+              },
+            ]}
+          />
+          <View
+            style={[
+              styles.targetLayer,
+              {
+                width: targetVisualSize * (3 / 6),
+                height: targetVisualSize * (3 / 6),
+                borderRadius: targetVisualRadius * (3 / 6),
+                backgroundColor: 色.白,
+              },
+            ]}
+          />
+          <View
+            style={[
+              styles.targetLayer,
+              {
+                width: targetVisualSize * (2 / 6),
+                height: targetVisualSize * (2 / 6),
+                borderRadius: targetVisualRadius * (2 / 6),
+                backgroundColor: 色.黒,
+              },
+            ]}
+          />
+          <View
+            style={[
+              styles.targetLayer,
+              {
+                width: targetVisualSize * (1 / 6),
+                height: targetVisualSize * (1 / 6),
+                borderRadius: targetVisualRadius * (1 / 6),
+                backgroundColor: 色.白,
+              },
+            ]}
+          />
         </View>
       );
     } else if (arrowTargetType === 'hoshi36') {
       const starSize = targetVisualSize * 0.25;
       return (
-        <View style={[styles.targetBase, styles.hoshiBase, { width: targetVisualSize, height: targetVisualSize, borderRadius: targetVisualRadius }]}>
-          <View style={[styles.targetLayer, { width: starSize, height: starSize, borderRadius: starSize / 2, backgroundColor: '#000' }]} />
+        <View
+          style={[
+            styles.targetBase,
+            styles.hoshiBase,
+            { width: targetVisualSize, height: targetVisualSize, borderRadius: targetVisualRadius },
+          ]}
+        >
+          <View
+            style={[
+              styles.targetLayer,
+              { width: starSize, height: starSize, borderRadius: starSize / 2, backgroundColor: 色.黒 },
+            ]}
+          />
         </View>
       );
     } else {
       // 星的24cm
       const starSize = targetVisualSize * 0.25;
       return (
-        <View style={[styles.targetBase, styles.hoshiBase, { width: targetVisualSize, height: targetVisualSize, borderRadius: targetVisualRadius }]}>
-          <View style={[styles.targetLayer, { width: starSize, height: starSize, borderRadius: starSize / 2, backgroundColor: '#000' }]} />
+        <View
+          style={[
+            styles.targetBase,
+            styles.hoshiBase,
+            { width: targetVisualSize, height: targetVisualSize, borderRadius: targetVisualRadius },
+          ]}
+        >
+          <View
+            style={[
+              styles.targetLayer,
+              { width: starSize, height: starSize, borderRadius: starSize / 2, backgroundColor: 色.黒 },
+            ]}
+          />
         </View>
       );
     }
@@ -52,7 +157,7 @@ export const ArrowLocationView = ({ arrowLocations = [], size = 200, targetType,
 
   // 的の種類が一致する矢所のみをフィルタリング
   // loc.targetType がない古いデータはデフォルトの 'kasumi36' とみなす
-  const filteredLocations = arrowLocations.map(loc => {
+  const filteredLocations = arrowLocations.map((loc) => {
     if (!loc) return null;
     const locTargetType = loc.targetType || 'kasumi36';
     if (locTargetType !== arrowTargetType) return null;
@@ -60,7 +165,7 @@ export const ArrowLocationView = ({ arrowLocations = [], size = 200, targetType,
   });
 
   // 矢所があるか確認（フィルタリング後のデータで判定）
-  const hasLocations = filteredLocations.some(loc => loc !== null && loc !== undefined);
+  const hasLocations = filteredLocations.some((loc) => loc !== null && loc !== undefined);
   if (!hasLocations) {
     return (
       <View style={[styles.container, { width: size, height: size }]}>
@@ -104,8 +209,8 @@ export const ArrowLocationView = ({ arrowLocations = [], size = 200, targetType,
                 width: 8,
                 height: 8,
                 borderRadius: 4,
-                backgroundColor: isHit ? '#34C759' : '#FF3B30',
-                borderColor: '#fff',
+                backgroundColor: isHit ? 色.緑 : 色.赤,
+                borderColor: 色.白,
                 borderWidth: 0.8,
                 zIndex: 10,
               }}
@@ -124,15 +229,13 @@ export const ArrowLocationView = ({ arrowLocations = [], size = 200, targetType,
                   width: markerSize,
                   height: markerSize,
                   borderRadius: markerSize / 2,
-                  backgroundColor: isHit ? '#34C759' : '#FF3B30',
-                  borderColor: '#fff',
+                  backgroundColor: isHit ? 色.緑 : 色.赤,
+                  borderColor: 色.白,
                   borderWidth: 1,
-                }
+                },
               ]}
             >
-              <Text style={styles.markerText}>
-                {CIRCLED_NUMBERS[shotIndex] || shotIndex + 1}
-              </Text>
+              <Text style={styles.markerText}>{CIRCLED_NUMBERS[shotIndex] || shotIndex + 1}</Text>
             </View>
           );
         }
@@ -147,10 +250,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
-    backgroundColor: '#E5E5EA', // 外れ(×)のグレー領域を視覚化
+    backgroundColor: 色.地_濃い, // 外れ(×)のグレー領域を視覚化
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#C6C6C8',
+    borderColor: 色.区切り,
     overflow: 'hidden',
   },
   targetBase: {
@@ -158,8 +261,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#C6C6C8',
-    backgroundColor: '#fff',
+    borderColor: 色.区切り,
+    backgroundColor: 色.白,
   },
   targetLayer: {
     position: 'absolute',
@@ -167,9 +270,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0,0,0,0.05)',
   },
   hoshiBase: {
-    backgroundColor: '#fff',
+    backgroundColor: 色.白,
     borderWidth: 1,
-    borderColor: '#000',
+    borderColor: 色.黒,
   },
   marker: {
     position: 'absolute',
@@ -178,7 +281,7 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: 色.黒,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 1.5,
@@ -186,7 +289,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   markerText: {
-    color: '#fff',
+    color: 色.白,
     fontSize: 9,
     fontWeight: 'bold',
   },
@@ -198,7 +301,7 @@ const styles = StyleSheet.create({
   },
   noDataText: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: 色.灰,
     fontWeight: 'bold',
   },
 });

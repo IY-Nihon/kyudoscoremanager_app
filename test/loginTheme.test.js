@@ -14,7 +14,11 @@ const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
 
+const { 色の名を値に } = require('./helpers/iroNoAtai.cjs');
+
 const 場所 = (名) => path.join(__dirname, '..', 'src', 名);
+// 画面のコードは色を 色.名前 で書くので、値に戻してから読む
+const 読む = (名) => 色の名を値に(fs.readFileSync(場所(名), 'utf8'));
 
 /** 注記の中に色名を書くことがあるので、コメントを外してから数える */
 function 色を拾う(本体) {
@@ -28,7 +32,7 @@ function 色を拾う(本体) {
  * ひとまとめにすると、正しい使い方まで咎めてしまう
  */
 function 変換表たち() {
-  const 本体 = fs.readFileSync(場所('theme.js'), 'utf8');
+  const 本体 = 読む('theme.js');
   const 拾う = (名) => {
     const 始 = 本体.indexOf('const ' + 名 + ' = ');
     assert.ok(始 > 0, 'theme.js に ' + 名 + ' が無い');
@@ -96,7 +100,7 @@ const 地の色たち = new Set(['#030508']);
 
 test('ログイン画面は、テーマ変換表の色を使わない', () => {
   const 表 = 変換表たち();
-  const 使用 = 役割ごとの色(fs.readFileSync(場所('LoginScreen.js'), 'utf8'));
+  const 使用 = 役割ごとの色(読む('LoginScreen.js'));
   const 混入 = [];
   for (const 役 of ['text', 'bg', 'border']) {
     for (const c of 使用[役]) if (表[役].has(c)) 混入.push(役 + ': ' + c);
@@ -109,7 +113,7 @@ test('ログイン画面は、テーマ変換表の色を使わない', () => {
 });
 
 test('ログイン画面の文字は、地に対して十分な濃さがある', () => {
-  const 使用 = 色を拾う(fs.readFileSync(場所('LoginScreen.js'), 'utf8'));
+  const 使用 = 色を拾う(読む('LoginScreen.js'));
   // 白いボタンの上に置く文字は、画面の地ではなく白に対して読む。
   // 「Google で作る」のボタンがそれ（白地に濃い字と Google の青）。
   // 地の色で測ると、読めているのに薄いと言われてしまうので分けて見る
@@ -132,7 +136,7 @@ test('設定の法的情報のリンクは、そばのバージョン表記と�
   // 目立たせない方針だが、探して見つからないほど薄くはしない。
   // #C7C7CC だと明るい地との比が 1.5 しかなく、事実上見えなかった
   // 設定画面の見た目の決まりは src/settingsStyles.js にある（2026-10-05 に SettingsScreen.js から移した）
-  const 本体 = fs.readFileSync(場所('settingsStyles.js'), 'utf8');
+  const 本体 = 読む('settingsStyles.js');
   const 拾う = (名) => {
     const m = 本体.match(new RegExp(名 + ":\\s*\\{[^}]*color:\\s*'(#[0-9a-fA-F]{3,6})'"));
     return m ? m[1].toLowerCase() : null;
@@ -155,7 +159,7 @@ test('分析の比較で使う色が、暗いテーマで消えない', () => {
   // 明るい色は変換表に無くても暗い面では読めるので咎めない。
   // 既存の配色（緑や黄が明るい面でやや薄い等）まで咎めると、
   // この検査は「今あるものが全部だめ」と言うだけの役に立たないものになる。
-  const 本体 = fs.readFileSync(場所('theme.js'), 'utf8');
+  const 本体 = 読む('theme.js');
   const 鍵たち = (名) => {
     const 始 = 本体.indexOf('const ' + 名 + ' = ');
     assert.ok(始 > 0, 'theme.js に ' + 名 + ' が無い');
@@ -170,7 +174,7 @@ test('分析の比較で使う色が、暗いテーマで消えない', () => {
 
   // 分析画面は 2026-10-05 にいくつかのファイルに分けた。分析画面ぜんぶの字として、まとめて読む
   const 分析 = ['AnalysisScreen.js', 'AnalysisMemberDetail.js', 'analysisParts.js', 'analysisStyles.js']
-    .map((名) => fs.readFileSync(場所(名), 'utf8'))
+    .map((名) => 読む(名))
     .join('\n');
   const 並び =(分析.match(/const 比較の色たち = \[([^\]]+)\]/) || [])[1];
   assert.ok(並び, '比較の色たち が見つからない');
@@ -193,7 +197,7 @@ test('ログイン画面：使っている名前が、すべて読み込まれ�
   // const 法 = require('./legalDocs') が無く、押すと
   // ReferenceError: 法 is not defined になっていた。
   // 押さない限り現れないので、画面を開くだけの確認では見つからない。
-  const 本体 = fs.readFileSync(場所('LoginScreen.js'), 'utf8');
+  const 本体 = 読む('LoginScreen.js');
   const 素 = 本体.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
   // 「漢字の名前.なにか」の形で使っている入れ物を集める
@@ -227,7 +231,7 @@ test('ログイン画面：IDは整えてから使い、パスワードは整え
   //
   // 逆にパスワードを整えてはいけない。空白も文字のうちで、末尾に空白を
   // 含むパスワードを設定した人が入れなくなる。
-  const 本体 = fs.readFileSync(場所('LoginScreen.js'), 'utf8');
+  const 本体 = 読む('LoginScreen.js');
   const 素 = 本体.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
   assert.ok(/const 整えたID = /.test(素), '整えたID が無い');

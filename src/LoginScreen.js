@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const React = require('react');
 const {
   ActivityIndicator,
@@ -345,7 +346,7 @@ const LoginScreen = () => {
                         autoComplete="username"
                         style={styles.input}
                         placeholder="例: 123456"
-                        placeholderTextColor="#8E8E93"
+                        placeholderTextColor={色.灰}
                         value={団体IDの入力}
                         onChangeText={団体IDの入力を置く}
                         keyboardType="number-pad"
@@ -360,13 +361,13 @@ const LoginScreen = () => {
                         autoComplete="current-password"
                         style={styles.input}
                         placeholder="••••••••"
-                        placeholderTextColor="#8E8E93"
+                        placeholderTextColor={色.灰}
                         value={合言葉の入力}
                         onChangeText={合言葉の入力を置く}
                         secureTextEntry={!合言葉を見せる}
                       />
                       <Pressable onPress={() => 合言葉を見せるを置く(!合言葉を見せる)} style={{ padding: 4 }}>
-                        <Icons.Ionicons name={合言葉を見せる ? 'eye-off' : 'eye'} size={20} color="#8E8E93" />
+                        <Icons.Ionicons name={合言葉を見せる ? 'eye-off' : 'eye'} size={20} color={色.灰} />
                       </Pressable>
                     </View>
                   </View>
@@ -378,7 +379,7 @@ const LoginScreen = () => {
                         autoComplete="email"
                         style={styles.input}
                         placeholder="new@example.com"
-                        placeholderTextColor="#8E8E93"
+                        placeholderTextColor={色.灰}
                         value={新しいメールの入力}
                         onChangeText={新しいメールの入力を置く}
                         keyboardType="email-address"
@@ -450,7 +451,7 @@ const LoginScreen = () => {
                         autoComplete="username"
                         style={styles.input}
                         placeholder="例: 123456"
-                        placeholderTextColor="#8E8E93"
+                        placeholderTextColor={色.灰}
                         value={団体IDの入力}
                         onChangeText={団体IDの入力を置く}
                         keyboardType="number-pad"
@@ -517,13 +518,13 @@ const LoginScreen = () => {
                     <View style={styles.inputGroup}>
                       <Text style={styles.label}>団体ID</Text>
                       <View style={styles.inputWrapper}>
-                        <Icons.Ionicons name="business" size={20} color="#8E8E93" style={styles.inputIcon} />
+                        <Icons.Ionicons name="business" size={20} color={色.灰} style={styles.inputIcon} />
                         <TextInput
                           aria-label="団体ID"
                           autoComplete="username"
                           style={styles.input}
                           placeholder="例: 123456"
-                          placeholderTextColor="#8E8E93"
+                          placeholderTextColor={色.灰}
                           value={団体IDの入力}
                           onChangeText={団体IDの入力を置く}
                           keyboardType="number-pad"
@@ -535,18 +536,13 @@ const LoginScreen = () => {
                     <View style={styles.inputGroup}>
                       <Text style={styles.label}>パスワード</Text>
                       <View style={styles.inputWrapper}>
-                        <Icons.Ionicons
-                          name="lock-closed"
-                          size={20}
-                          color="#8E8E93"
-                          style={styles.inputIcon}
-                        />
+                        <Icons.Ionicons name="lock-closed" size={20} color={色.灰} style={styles.inputIcon} />
                         <TextInput
                           aria-label="パスワード"
                           autoComplete="current-password"
                           style={styles.input}
                           placeholder="••••••••"
-                          placeholderTextColor="#8E8E93"
+                          placeholderTextColor={色.灰}
                           value={合言葉の入力}
                           onChangeText={合言葉の入力を置く}
                           secureTextEntry={!合言葉を見せる}
@@ -555,11 +551,7 @@ const LoginScreen = () => {
                           onPress={() => 合言葉を見せるを置く(!合言葉を見せる)}
                           style={{ padding: 4 }}
                         >
-                          <Icons.Ionicons
-                            name={合言葉を見せる ? 'eye-off' : 'eye'}
-                            size={20}
-                            color="#8E8E93"
-                          />
+                          <Icons.Ionicons name={合言葉を見せる ? 'eye-off' : 'eye'} size={20} color={色.灰} />
                         </Pressable>
                       </View>
                     </View>
@@ -568,12 +560,12 @@ const LoginScreen = () => {
                     <View style={styles.inputGroup}>
                       <Text style={styles.label}>個人ID（4桁）</Text>
                       <View style={styles.inputWrapper}>
-                        <Icons.Ionicons name="person" size={20} color="#8E8E93" style={styles.inputIcon} />
+                        <Icons.Ionicons name="person" size={20} color={色.灰} style={styles.inputIcon} />
                         <TextInput
                           aria-label="個人ID（4桁）"
                           style={styles.input}
                           placeholder="例: 1234"
-                          placeholderTextColor="#8E8E93"
+                          placeholderTextColor={色.灰}
                           value={個人IDの入力}
                           onChangeText={個人IDの入力を置く}
                           keyboardType="number-pad"
@@ -587,13 +579,13 @@ const LoginScreen = () => {
                       <View style={styles.inputGroup}>
                         <Text style={styles.label}>団体名</Text>
                         <View style={styles.inputWrapper}>
-                          <Icons.Ionicons name="ribbon" size={20} color="#8E8E93" style={styles.inputIcon} />
+                          <Icons.Ionicons name="ribbon" size={20} color={色.灰} style={styles.inputIcon} />
                           <TextInput
                             aria-label="団体名"
                             autoComplete="organization"
                             style={styles.input}
                             placeholder="例: ○○弓道部"
-                            placeholderTextColor="#8E8E93"
+                            placeholderTextColor={色.灰}
                             value={団体名の入力}
                             onChangeText={団体名の入力を置く}
                           />
@@ -615,13 +607,13 @@ const LoginScreen = () => {
                         <View style={styles.inputGroup}>
                           <Text style={styles.label}>メールアドレス</Text>
                           <View style={styles.inputWrapper}>
-                            <Icons.Ionicons name="mail" size={20} color="#8E8E93" style={styles.inputIcon} />
+                            <Icons.Ionicons name="mail" size={20} color={色.灰} style={styles.inputIcon} />
                             <TextInput
                               aria-label="メールアドレス"
                               autoComplete="email"
                               style={styles.input}
                               placeholder="example@mail.com"
-                              placeholderTextColor="#8E8E93"
+                              placeholderTextColor={色.灰}
                               value={メールの入力}
                               onChangeText={メールの入力を置く}
                               keyboardType="email-address"
@@ -643,7 +635,7 @@ const LoginScreen = () => {
                           <Icons.Ionicons
                             name="lock-closed"
                             size={20}
-                            color="#8E8E93"
+                            color={色.灰}
                             style={styles.inputIcon}
                           />
                           <TextInput
@@ -651,7 +643,7 @@ const LoginScreen = () => {
                             autoComplete="new-password"
                             style={styles.input}
                             placeholder="••••••••"
-                            placeholderTextColor="#8E8E93"
+                            placeholderTextColor={色.灰}
                             value={合言葉の入力}
                             onChangeText={合言葉の入力を置く}
                             secureTextEntry={!合言葉を見せる}
@@ -663,7 +655,7 @@ const LoginScreen = () => {
                             <Icons.Ionicons
                               name={合言葉を見せる ? 'eye-off' : 'eye'}
                               size={20}
-                              color="#8E8E93"
+                              color={色.灰}
                             />
                           </Pressable>
                         </View>
@@ -776,7 +768,7 @@ const LoginScreen = () => {
                 disabled={処理中}
               >
                 {処理中 ? (
-                  <ActivityIndicator color="#FFF" />
+                  <ActivityIndicator color={色.白} />
                 ) : (
                   <Text style={styles.submitBtnText}>
                     {'register' === 画面の種類 ? 'アカウント作成' : 'ログイン'}
@@ -817,7 +809,7 @@ const LoginScreen = () => {
                   <Pressable key={'email'} onPress={() => 忘れた窓を置く('email')}>
                     {function (state) {
                       return (
-                        <Text style={[styles.helpLink, state.hovered && IS_WEB && { color: '#e5c184' }]}>
+                        <Text style={[styles.helpLink, state.hovered && IS_WEB && { color: 色.金_明るい }]}>
                           メールアドレスを忘れた
                         </Text>
                       );
@@ -834,7 +826,7 @@ const LoginScreen = () => {
                   >
                     {function (state) {
                       return (
-                        <Text style={[styles.helpLink, state.hovered && IS_WEB && { color: '#e5c184' }]}>
+                        <Text style={[styles.helpLink, state.hovered && IS_WEB && { color: 色.金_明るい }]}>
                           団体IDを忘れた
                         </Text>
                       );
@@ -843,7 +835,7 @@ const LoginScreen = () => {
                   <Pressable key={'password'} onPress={() => 忘れた窓を置く('password')}>
                     {function (state) {
                       return (
-                        <Text style={[styles.helpLink, state.hovered && IS_WEB && { color: '#e5c184' }]}>
+                        <Text style={[styles.helpLink, state.hovered && IS_WEB && { color: 色.金_明るい }]}>
                           パスワードを忘れた
                         </Text>
                       );
@@ -922,7 +914,7 @@ const LoginScreen = () => {
   );
 };
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#030508' },
+  container: { flex: 1, backgroundColor: 色.夜 },
   keyboardView: { flex: 1 },
   scrollContent: { flexGrow: 1, padding: 24, paddingTop: SAFE_TOP_PADDING || 24, justifyContent: 'center' },
   header: { alignItems: 'center', marginBottom: 32 },
@@ -939,15 +931,15 @@ const styles = StyleSheet.create({
       marginBottom: 16,
     },
     getShadowStyle({
-      shadowColor: '#000',
+      shadowColor: 色.黒,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.2,
       shadowRadius: 10,
       elevation: 5,
     })
   ),
-  title: { fontSize: 24, fontWeight: 'bold', color: '#FFFFFF', marginBottom: 8 },
-  subtitle: { fontSize: 16, color: '#b8965a' },
+  title: { fontSize: 24, fontWeight: 'bold', color: 色.白, marginBottom: 8 },
+  subtitle: { fontSize: 16, color: 色.金 },
   card: Object.assign(
     {
       backgroundColor: 'rgba(255,255,255,0.04)',
@@ -957,7 +949,7 @@ const styles = StyleSheet.create({
       padding: 24,
     },
     getShadowStyle({
-      shadowColor: '#000',
+      shadowColor: 色.黒,
       shadowOffset: { width: 0, height: 10 },
       shadowOpacity: 0.3,
       shadowRadius: 20,
@@ -973,9 +965,9 @@ const styles = StyleSheet.create({
   },
   tab: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 10 },
   activeTab: Object.assign(
-    { backgroundColor: '#b8965a' },
+    { backgroundColor: 色.金 },
     getShadowStyle({
-      shadowColor: '#000',
+      shadowColor: 色.黒,
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.2,
       shadowRadius: 2,
@@ -983,10 +975,10 @@ const styles = StyleSheet.create({
     })
   ),
   tabText: { fontSize: 14, color: 'rgba(255,255,255,0.5)', fontWeight: 'bold' },
-  activeTabText: { color: '#030508' },
+  activeTabText: { color: 色.夜 },
   form: { gap: 20 },
   inputGroup: { gap: 8 },
-  label: { fontSize: 14, color: '#e5c184', fontWeight: 'bold', marginLeft: 4 },
+  label: { fontSize: 14, color: 色.金_明るい, fontWeight: 'bold', marginLeft: 4 },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -997,9 +989,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   inputIcon: { marginRight: 8 },
-  input: { flex: 1, height: 48, fontSize: 16, color: '#FFFFFF' },
+  input: { flex: 1, height: 48, fontSize: 16, color: 色.白 },
   submitBtn: {
-    backgroundColor: '#b8965a',
+    backgroundColor: 色.金,
     height: 52,
     borderRadius: 12,
     justifyContent: 'center',
@@ -1007,7 +999,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   disabledBtn: { backgroundColor: 'rgba(184,150,90,0.25)' },
-  submitBtnText: { color: '#030508', fontSize: 17, fontWeight: 'bold' },
+  submitBtnText: { color: 色.夜, fontSize: 17, fontWeight: 'bold' },
   // Google で作る道。作るときだけ使う
   区切りの行: { flexDirection: 'row', alignItems: 'center', marginTop: 18, marginBottom: 12 },
   区切りの線: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.18)' },
@@ -1016,31 +1008,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     borderRadius: 10,
     paddingVertical: 13,
     gap: 10,
   },
   // 本家の #4285F4 は白地で比 3.56 しかなく薄い。濃いほうの青にして
   // 読めるようにした（検査 loginTheme が見ている）
-  Googleの字: { fontSize: 16, fontWeight: '600', color: '#1F1F1F' },
+  Googleの字: { fontSize: 16, fontWeight: '600', color: 色.墨_1F },
   Googleの添え: { color: 'rgba(255,255,255,0.6)', fontSize: 11, marginTop: 8, lineHeight: 16 },
   footer: { alignItems: 'center', marginTop: 24 },
   法の帯: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 20 },
   // 目立たせないが、探して見つからないほど薄くはしない。
   // 地 #030508 に対して #a09880 は比 6.0 ある
-  法のリンク: { color: '#a09880', fontSize: 12, textDecorationLine: 'underline' },
-  法の仕切り: { color: '#a09880', fontSize: 12, marginHorizontal: 8 },
+  法のリンク: { color: 色.金_灰, fontSize: 12, textDecorationLine: 'underline' },
+  法の仕切り: { color: 色.金_灰, fontSize: 12, marginHorizontal: 8 },
   reCAPTCHAの断り: {
-    color: '#a09880',
+    color: 色.金_灰,
     fontSize: 11,
     lineHeight: 16,
     textAlign: 'center',
     marginTop: 8,
     marginHorizontal: 16,
   },
-  入力の注意: { color: '#ff8a80', fontSize: 12, marginTop: 6, marginLeft: 2 },
-  footerLink: { color: '#e5c184', fontSize: 15, fontWeight: '600' },
+  入力の注意: { color: 色.赤_淡い, fontSize: 12, marginTop: 6, marginLeft: 2 },
+  footerLink: { color: 色.金_明るい, fontSize: 15, fontWeight: '600' },
   // 登録時の同意の欄
   同意の枠: { marginTop: 4, marginBottom: 12, gap: 10 },
   同意の行: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
@@ -1052,20 +1044,20 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 5,
     borderWidth: 1.5,
-    borderColor: '#a09880',
+    borderColor: 色.金_灰,
     textAlign: 'center',
     lineHeight: 20,
     fontSize: 15,
     color: 'transparent',
     overflow: 'hidden',
   },
-  同意の印つき: { backgroundColor: '#b8965a', borderColor: '#b8965a', color: '#030508' },
+  同意の印つき: { backgroundColor: 色.金, borderColor: 色.金, color: 色.夜 },
   // 押す前に読んでもらう文なので、補助の #a09880 より明るくする
-  同意の字: { flex: 1, fontSize: 13, color: '#c9c1ae', lineHeight: 20 },
-  同意のリンク: { color: '#e5c184', textDecorationLine: 'underline' },
+  同意の字: { flex: 1, fontSize: 13, color: 色.生成り, lineHeight: 20 },
+  同意のリンク: { color: 色.金_明るい, textDecorationLine: 'underline' },
   helpLinks: { marginTop: 20, gap: 12, alignItems: 'center' },
-  helpLink: { color: '#a09880', fontSize: 13, textDecorationLine: 'underline' },
-  cancelLink: { color: '#FF453A', fontSize: 14, textAlign: 'center', marginTop: 16 },
+  helpLink: { color: 色.金_灰, fontSize: 13, textDecorationLine: 'underline' },
+  cancelLink: { color: 色.赤_暗所, fontSize: 14, textAlign: 'center', marginTop: 16 },
 });
 Object.defineProperty(exports, '__esModule', { value: true });
 exports.LoginScreen = LoginScreen;

@@ -46,8 +46,7 @@ let いまの言葉 = 既定の言葉;
  * @returns {string}
  */
 function 端末の言葉を見立てる(端末) {
-  const n =
-    端末 || (typeof globalThis !== 'undefined' && globalThis.navigator ? globalThis.navigator : null);
+  const n = 端末 || (typeof globalThis !== 'undefined' && globalThis.navigator ? globalThis.navigator : null);
   const 生 = (n && (n.language || (Array.isArray(n.languages) && n.languages[0]))) || '';
   const 符号 = String(生).toLowerCase().split('-')[0];
   return 辞書.言葉たち[符号] ? 符号 : 既定の言葉;
@@ -55,7 +54,9 @@ function 端末の言葉を見立てる(端末) {
 
 /** 言葉を選ぶ。知らない符号なら日本語のまま */
 function 言葉を選ぶ(符号) {
-  const s = String(符号 == null ? '' : 符号).toLowerCase().split('-')[0];
+  const s = String(符号 == null ? '' : 符号)
+    .toLowerCase()
+    .split('-')[0];
   いまの言葉 = 辞書.言葉たち[s] ? s : 既定の言葉;
   return いまの言葉;
 }
@@ -93,8 +94,7 @@ function 訳(鍵, 差し込み) {
   const 差 = 差し込み && 'object' == typeof 差し込み ? 差し込み : {};
   const 数 = 'number' == typeof 差.n ? 差.n : null;
   let 出 = 形を選ぶ((辞書.言葉たち[いまの言葉] || {})[鍵], 数);
-  if (null == 出 && いまの言葉 !== 既定の言葉)
-    出 = 形を選ぶ((辞書.言葉たち[既定の言葉] || {})[鍵], 数);
+  if (null == 出 && いまの言葉 !== 既定の言葉) 出 = 形を選ぶ((辞書.言葉たち[既定の言葉] || {})[鍵], 数);
   if (null == 出) return String(鍵);
   // \w は半角英数しか拾わない。差し込みの名前は日本語なので、波かっこの中を丸ごと拾う
   return String(出).replace(/\{([^{}]+)\}/g, (丸ごと, 名) =>

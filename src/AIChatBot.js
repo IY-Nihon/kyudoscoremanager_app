@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 Object.defineProperty(exports, '__esModule', { value: true });
 exports.AIChatBot = undefined;
 
@@ -123,7 +124,7 @@ const BUTTON_POS_KEY = 'aiButtonPos_v1';
 
 // キャラクターを明るい地（見出し・吹き出し）に置くときの色。体が白だと地に溶けるので青にし、
 // 弦は濃い灰色、道着の襟は白にする（浮くボタンの上は、白い体の既定のまま）
-const 明るい地のキャラ = { 体: '#007AFF', 弦: '#8E8E93', 襟: '#FFFFFF', 道着: '#7DBBFF' };
+const 明るい地のキャラ = { 体: 色.青, 弦: 色.灰, 襟: 色.白, 道着: 色.青_明るい };
 
 // ドラッグで動かした角を覚えておく。無ければ右下から始める
 const loadButtonPos = () => {
@@ -1717,7 +1718,7 @@ const AIChatBot = () => {
                   aria-label="会話履歴を消去"
                   style={{ padding: 4 }}
                 >
-                  <Ionicons name="trash-outline" size={20} color="#8E8E93" />
+                  <Ionicons name="trash-outline" size={20} color={色.灰} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setModalVisible(false)}
@@ -1727,7 +1728,7 @@ const AIChatBot = () => {
                   aria-label="閉じる"
                   style={styles.closeBtn}
                 >
-                  <Ionicons name="close" size={24} color="#8E8E93" />
+                  <Ionicons name="close" size={24} color={色.灰} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -1771,13 +1772,13 @@ const AIChatBot = () => {
                         style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12, gap: 8 }}
                       >
                         <TouchableOpacity
-                          style={[styles.actionBtn, { backgroundColor: '#FF3B30' }]}
+                          style={[styles.actionBtn, { backgroundColor: 色.赤 }]}
                           onPress={() => handleActionResponse(msg.id, false)}
                         >
                           <Text style={styles.actionBtnText}>キャンセル</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                          style={[styles.actionBtn, { backgroundColor: '#34C759' }]}
+                          style={[styles.actionBtn, { backgroundColor: 色.緑 }]}
                           onPress={() => handleActionResponse(msg.id, true)}
                         >
                           <Text style={styles.actionBtnText}>承認</Text>
@@ -1789,7 +1790,7 @@ const AIChatBot = () => {
                           style={[
                             styles.modelText,
                             {
-                              color: msg.status === 'approved' ? '#34C759' : '#FF3B30',
+                              color: msg.status === 'approved' ? 色.緑 : 色.赤,
                               fontWeight: 'bold',
                               textAlign: 'right',
                             },
@@ -1886,13 +1887,13 @@ const AIChatBot = () => {
               <View style={styles.まとめて承認の段} testID="chat-bulk-approve">
                 <Text style={styles.まとめて承認の文}>{待っているカードの数}件の追加が待っています</Text>
                 <TouchableOpacity
-                  style={[styles.actionBtn, { backgroundColor: '#FF3B30' }]}
+                  style={[styles.actionBtn, { backgroundColor: 色.赤 }]}
                   onPress={() => handleAllPending(false)}
                 >
                   <Text style={styles.actionBtnText}>すべてキャンセル</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.actionBtn, { backgroundColor: '#34C759' }]}
+                  style={[styles.actionBtn, { backgroundColor: 色.緑 }]}
                   onPress={() => handleAllPending(true)}
                 >
                   <Text style={styles.actionBtnText}>すべて承認</Text>
@@ -1940,7 +1941,7 @@ const AIChatBot = () => {
                 onPress={handleSend}
                 disabled={!inputText.trim() || isLoading}
               >
-                <Ionicons name="send" size={20} color="#FFF" />
+                <Ionicons name="send" size={20} color={色.白} />
               </TouchableOpacity>
             </View>
           </View>

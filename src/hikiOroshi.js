@@ -1,3 +1,6 @@
+'use strict';
+
+const { 色 } = require('./iro.js');
 /**
  * 上から引っ張って更新（履歴・分析・メンバー・出欠の一覧。2026-10-10）。
  *
@@ -12,7 +15,6 @@
  *   {引く.しるし}
  *   <FlatList ref={引く.ref} ... />   （ScrollView でもよい）
  */
-'use strict';
 
 const React = require('react');
 const { useRef, useState, useEffect, useCallback } = React;
@@ -122,10 +124,17 @@ function use引いて更新(更新する) {
     高さ > 0 ? (
       <View
         testID="引いて更新"
-        style={{ height: 高さ, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexDirection: 'row', gap: 8 }}
+        style={{
+          height: 高さ,
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          flexDirection: 'row',
+          gap: 8,
+        }}
       >
-        {更新中 ? <ActivityIndicator size="small" color="#007AFF" /> : null}
-        <Text style={{ fontSize: 13, color: '#8E8E93' }}>
+        {更新中 ? <ActivityIndicator size="small" color={色.青} /> : null}
+        <Text style={{ fontSize: 13, color: 色.灰 }}>
           {更新中 ? '更新中…' : 引き >= 更新の引き ? '離すと更新' : '引いて更新'}
         </Text>
       </View>

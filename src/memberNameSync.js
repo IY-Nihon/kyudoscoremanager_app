@@ -29,7 +29,8 @@ function 名前表を作る(...一覧たち) {
   const 表 = new Map();
   for (const 一覧 of 一覧たち) {
     for (const 人 of Array.isArray(一覧) ? 一覧 : []) {
-      if (人 && 人.id != null && typeof 人.name === 'string' && 人.name.trim()) 表.set(String(人.id), 人.name);
+      if (人 && 人.id != null && typeof 人.name === 'string' && 人.name.trim())
+        表.set(String(人.id), 人.name);
     }
   }
   return 表;

@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const { View, Text, StyleSheet, Pressable } = require('./rn');
 const { UIConfig } = require('./uiConfig');
 const { useScoreStore } = require('./useScoreStore');
@@ -49,8 +50,8 @@ const ScoreCell = React.memo(
         : 'separator' === columnType
           ? 'rgba(142,142,147,0.1)'
           : isLocked
-            ? '#F2F2F7'
-            : '#FFFFFF';
+            ? 色.地
+            : 色.白;
     const 下線の太さ = isFirst ? 1 : isBlockBottom ? 2 : 1;
     const 間隔か合計 = 'separator' === columnType || 'total' === columnType;
     const 枠の太さ = 間隔か合計 ? 1 : 0;
@@ -61,19 +62,19 @@ const ScoreCell = React.memo(
       線 = 横
         ? {
             borderRightWidth: 下線の太さ,
-            borderRightColor: '#000',
+            borderRightColor: 色.黒,
             borderBottomWidth: 1,
-            borderBottomColor: '#000',
+            borderBottomColor: 色.黒,
             borderTopWidth: 枠の太さ,
-            borderTopColor: '#000',
+            borderTopColor: 色.黒,
           }
         : {
             borderBottomWidth: 下線の太さ,
-            borderBottomColor: '#000',
+            borderBottomColor: 色.黒,
             borderRightWidth: 1,
-            borderRightColor: '#000',
+            borderRightColor: 色.黒,
             borderLeftWidth: 枠の太さ,
-            borderLeftColor: '#000',
+            borderLeftColor: 色.黒,
           };
     const timerRef = React.useRef(null);
     const longPressTimerRef = React.useRef(null);
@@ -270,7 +271,7 @@ const ScoreCell = React.memo(
         }}
         style={[
           styles.cell,
-          { width: 幅, height: 高さ, backgroundColor: 自動で閉じている ? '#F2F2F7' : 背景の色 },
+          { width: 幅, height: 高さ, backgroundColor: 自動で閉じている ? 色.地 : 背景の色 },
           線,
         ]}
       >
@@ -298,7 +299,7 @@ const ScoreCell = React.memo(
                 style={[
                   styles.markText,
                   {
-                    color: '○' === 印 ? '#FF3B30' : '\xd7' === 印 ? '#000000' : 'transparent',
+                    color: '○' === 印 ? 色.赤 : '\xd7' === 印 ? 色.黒 : 'transparent',
                     fontSize: 34 * 倍率,
                     lineHeight: 高さ,
                   },
@@ -324,7 +325,7 @@ const ScoreCell = React.memo(
             <Icons.Ionicons
               name={isLocked ? 'lock-closed' : 'lock-open'}
               size={16 * 倍率}
-              color={isLocked ? '#FF3B30' : '#8E8E93'}
+              color={isLocked ? 色.赤 : 色.灰}
             />
           </View>
         )}
@@ -338,7 +339,7 @@ const styles = StyleSheet.create({
     height: UIConfig.cellHeight,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRightColor: '#000',
+    borderRightColor: 色.黒,
     position: 'relative',
     // 閉じたますは長押しで開ける。押さえたままにすると、ブラウザ側が
     // 文字を選び始めたり長押しメニューを出したりして、こちらの長押しと
@@ -350,7 +351,7 @@ const styles = StyleSheet.create({
   markText: Object.assign({ fontSize: 28, fontWeight: '900' }, {}),
   lockIconOverlay: { position: 'absolute', top: 2, alignItems: 'center', width: '100%', zIndex: 1 },
   subContainer: { position: 'absolute', bottom: 2, width: '100%', alignItems: 'center' },
-  subText: { fontSize: 9, color: '#8E8E93', textAlign: 'center', paddingHorizontal: 2 },
+  subText: { fontSize: 9, color: 色.灰, textAlign: 'center', paddingHorizontal: 2 },
 });
 Object.defineProperty(exports, '__esModule', { value: true });
 exports.ScoreCell = ScoreCell;

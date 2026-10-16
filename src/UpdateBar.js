@@ -1,3 +1,7 @@
+'use strict';
+
+import iroの組 from './iro.js';
+const { 色 } = iroの組;
 /**
  * Module ID: UpdateBar
  *
@@ -27,7 +31,6 @@
  * 盤面も名簿も端末に残してあるので（ストアの 端末の置き場）、
  * 読み込み直しても戻ってくる。帯にもそう書いてある。
  */
-'use strict';
 
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Platform, StyleSheet } from './rn';
@@ -135,7 +138,9 @@ export function UpdateBar() {
         } catch (e) {
           /* 読めなければ、前に試していないとして扱う */
         }
-        const 最短 = Number.isFinite(globalThis.__自動更新の離席ミリ秒) ? globalThis.__自動更新の離席ミリ秒 : 自動更新の最短の離席;
+        const 最短 = Number.isFinite(globalThis.__自動更新の離席ミリ秒)
+          ? globalThis.__自動更新の離席ミリ秒
+          : 自動更新の最短の離席;
         if (
           自動で更新してよいか({
             離れていた時間,
@@ -218,14 +223,14 @@ const S = StyleSheet.create({
   帯: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0A84FF',
+    backgroundColor: 色.青_暗所,
     paddingVertical: 8,
     paddingHorizontal: 12,
   },
-  字: { flex: 1, color: '#FFF', fontSize: 12, lineHeight: 17 },
+  字: { flex: 1, color: 色.白, fontSize: 12, lineHeight: 17 },
   押す: {
-    color: '#0A84FF',
-    backgroundColor: '#FFF',
+    color: 色.青_暗所,
+    backgroundColor: 色.白,
     fontSize: 13,
     fontWeight: 'bold',
     paddingVertical: 6,
@@ -234,5 +239,5 @@ const S = StyleSheet.create({
     marginLeft: 10,
     overflow: 'hidden',
   },
-  閉じる: { color: '#FFF', fontSize: 16, paddingHorizontal: 10, paddingVertical: 4 },
+  閉じる: { color: 色.白, fontSize: 16, paddingHorizontal: 10, paddingVertical: 4 },
 });

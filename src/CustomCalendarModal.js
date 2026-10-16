@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const React = require('react');
 const { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } = require('./rn');
 const { getShadowStyle } = require('./shadowStyle');
@@ -158,14 +159,14 @@ const styles = StyleSheet.create({
   dismissOverlay: Object.assign({}, StyleSheet.absoluteFillObject),
   container: Object.assign(
     {
-      backgroundColor: '#FFF',
+      backgroundColor: 色.白,
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
       paddingBottom: 20,
       width: '100%',
     },
     getShadowStyle({
-      shadowColor: '#000',
+      shadowColor: 色.黒,
       shadowOffset: { width: 0, height: -2 },
       shadowOpacity: 0.1,
       shadowRadius: 10,
@@ -179,18 +180,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F7',
+    borderBottomColor: 色.地,
   },
   headerBtn: { padding: 4 },
-  modalTitle: { fontSize: 17, fontWeight: '600', color: '#1C1C1E' },
-  cancelText: { fontSize: 17, color: '#8E8E93' },
-  confirmText: { fontSize: 17, fontWeight: '600', color: '#007AFF' },
-  pickerArea: { flexDirection: 'row', height: 220, paddingHorizontal: 20, backgroundColor: '#FFF' },
+  modalTitle: { fontSize: 17, fontWeight: '600', color: 色.文字 },
+  cancelText: { fontSize: 17, color: 色.灰 },
+  confirmText: { fontSize: 17, fontWeight: '600', color: 色.青 },
+  pickerArea: { flexDirection: 'row', height: 220, paddingHorizontal: 20, backgroundColor: 色.白 },
   wheelContainer: { height: '100%' },
   wheelLabel: {
     textAlign: 'center',
     fontSize: 12,
-    color: '#8E8E93',
+    color: 色.灰,
     fontWeight: 'bold',
     marginTop: 10,
     marginBottom: -10,
@@ -203,22 +204,22 @@ const styles = StyleSheet.create({
     right: 4,
     top: 88,
     height: 一段の高さ,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     borderRadius: 8,
     zIndex: 0,
   },
   wheelItem: { height: 一段の高さ, justifyContent: 'center', alignItems: 'center' },
-  wheelItemText: { fontSize: 20, color: '#8E8E93' },
-  wheelItemTextSelected: { color: '#000', fontWeight: '600', fontSize: 22 },
+  wheelItemText: { fontSize: 20, color: 色.灰 },
+  wheelItemTextSelected: { color: 色.黒, fontWeight: '600', fontSize: 22 },
   todayBtn: {
     marginTop: 10,
     marginHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     borderRadius: 12,
     alignItems: 'center',
   },
-  todayBtnText: { fontSize: 16, color: '#007AFF', fontWeight: '600' },
+  todayBtnText: { fontSize: 16, color: 色.青, fontWeight: '600' },
 });
 Object.defineProperty(exports, '__esModule', { value: true });
 exports.CustomCalendarModal = CustomCalendarModal;

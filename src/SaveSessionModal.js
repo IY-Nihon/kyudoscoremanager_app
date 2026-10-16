@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const React = require('react');
 const {
   View,
@@ -38,7 +39,14 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
     currentSessionTags = [],
     setCurrentSessionTags,
     toggleCurrentSessionTag,
-  } = useストアの一部(['includeInStats', 'setIncludeInStats', 'tagTemplates', 'currentSessionTags', 'setCurrentSessionTags', 'toggleCurrentSessionTag']);
+  } = useストアの一部([
+    'includeInStats',
+    'setIncludeInStats',
+    'tagTemplates',
+    'currentSessionTags',
+    'setCurrentSessionTags',
+    'toggleCurrentSessionTag',
+  ]);
   const 出すタグ = tagTemplates.length > 0 ? tagTemplates : 既定のタグ;
   const [題, 題を置く] = React.useState('');
   const [覚え書き, 覚え書きを置く] = React.useState('');
@@ -72,7 +80,7 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
               </Text>
               <View style={styles.separator} />
               <TouchableOpacity
-                style={[styles.mainSaveBtn, { backgroundColor: '#FF3B30' }]}
+                style={[styles.mainSaveBtn, { backgroundColor: 色.赤 }]}
                 onPress={() => {
                   setIncludeInStats(false);
                   onSave(題.trim(), 覚え書き.trim(), false, currentSessionTags.join(' '));
@@ -96,7 +104,7 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
                   aria-label="大会名・練習名"
                   style={styles.input}
                   placeholder="大会名・練習名（例: ○○大会）"
-                  placeholderTextColor="#C7C7CC"
+                  placeholderTextColor={色.灰_薄い}
                   value={題}
                   onChangeText={題を置く}
                   returnKeyType="next"
@@ -107,7 +115,7 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
                   aria-label="練習メモ"
                   style={styles.input}
                   placeholder="練習メモ（例: 合宿1日目）"
-                  placeholderTextColor="#C7C7CC"
+                  placeholderTextColor={色.灰_薄い}
                   value={覚え書き}
                   onChangeText={覚え書きを置く}
                   returnKeyType="done"
@@ -118,7 +126,7 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
                   aria-label="タグ"
                   style={styles.input}
                   placeholder="タグ（例: 審査前 雨天）"
-                  placeholderTextColor="#C7C7CC"
+                  placeholderTextColor={色.灰_薄い}
                   value={タグの文}
                   onChangeText={(文) => {
                     タグの文を置く(文);
@@ -191,53 +199,53 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   container: Object.assign(
-    { width: '100%', maxWidth: 400, backgroundColor: '#FFF', borderRadius: 14, padding: 20 },
-    getShadowStyle({ shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, elevation: 10 })
+    { width: '100%', maxWidth: 400, backgroundColor: 色.白, borderRadius: 14, padding: 20 },
+    getShadowStyle({ shadowColor: 色.黒, shadowOpacity: 0.15, shadowRadius: 20, elevation: 10 })
   ),
   headerTitle: { fontSize: 17, fontWeight: 'bold', textAlign: 'center', marginBottom: 4 },
-  subTitle: { fontSize: 13, color: '#8E8E93', textAlign: 'center', marginBottom: 16 },
+  subTitle: { fontSize: 13, color: 色.灰, textAlign: 'center', marginBottom: 16 },
   inputContainer: { marginBottom: 10 },
   tagsAreaContainer: { marginBottom: 8 },
   input: {
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#000',
+    color: 色.黒,
   },
   presetTagsScroll: { marginTop: 8 },
   presetTagsContainer: { paddingRight: 10, gap: 8, flexDirection: 'row' },
   presetTagBtn: {
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: 色.地_濃い,
   },
-  presetTagBtnActive: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
-  presetTagTxt: { fontSize: 13, color: '#666' },
-  presetTagTxtActive: { color: '#FFF', fontWeight: 'bold' },
-  separator: { height: StyleSheet.hairlineWidth, backgroundColor: '#E5E5EA', marginVertical: 10 },
+  presetTagBtnActive: { backgroundColor: 色.青, borderColor: 色.青 },
+  presetTagTxt: { fontSize: 13, color: 色.墨_66 },
+  presetTagTxtActive: { color: 色.白, fontWeight: 'bold' },
+  separator: { height: StyleSheet.hairlineWidth, backgroundColor: 色.地_濃い, marginVertical: 10 },
   mainSaveBtn: {
     paddingVertical: 14,
     alignItems: 'center',
     borderRadius: 10,
-    backgroundColor: '#007AFF',
+    backgroundColor: 色.青,
     marginBottom: 8,
   },
-  mainSaveTxt: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
+  mainSaveTxt: { color: 色.白, fontWeight: 'bold', fontSize: 16 },
   secondaryBtn: {
     paddingVertical: 14,
     alignItems: 'center',
     borderRadius: 10,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     marginBottom: 8,
   },
-  secondaryTxt: { color: '#FF3B30', fontWeight: '600', fontSize: 15 },
-  cancelBtn: { paddingVertical: 14, alignItems: 'center', borderRadius: 10, backgroundColor: '#F2F2F7' },
-  cancelTxt: { color: '#007AFF', fontWeight: '600', fontSize: 16 },
+  secondaryTxt: { color: 色.赤, fontWeight: '600', fontSize: 15 },
+  cancelBtn: { paddingVertical: 14, alignItems: 'center', borderRadius: 10, backgroundColor: 色.地 },
+  cancelTxt: { color: 色.青, fontWeight: '600', fontSize: 16 },
 });
 Object.defineProperty(exports, '__esModule', { value: true });
 exports.SaveSessionModal = SaveSessionModal;

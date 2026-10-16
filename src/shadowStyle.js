@@ -1,9 +1,11 @@
+'use strict';
+
+const { 色: 基本色 } = require('./iro.js');
 /**
  * 影の見た目を組み立てる。色の16進表記を rgba へ直す。
  *
  * （ソースマップからの復元時は module_592.js という名前だった）
  */
-'use strict';
 
 /**
  * @param {number|object} config 数なら elevation。object なら shadowColor などをそのまま受ける
@@ -12,7 +14,7 @@
 const getShadowStyle = (config) => {
   const 指定 = 'number' == typeof config ? { elevation: config } : config;
   const {
-    shadowColor: 色 = '#000000',
+    shadowColor: 色 = 基本色.黒,
     shadowOffset: ずれ = { width: 0, height: Math.floor((指定.elevation || 4) / 2) },
     shadowOpacity: 濃さ = 0.2,
     shadowRadius: ぼかし = 指定.elevation || 4,

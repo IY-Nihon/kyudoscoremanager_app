@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const React = require('react');
 const { View, ScrollView, Text, Modal, TextInput, Alert, TouchableOpacity } = require('./rn');
 const { useScoreStore, ライブ名に使えない字 } = require('./useScoreStore');
@@ -43,7 +44,7 @@ const ライブ名を決める窓 = ({
           <View
             style={{
               width: 300,
-              backgroundColor: '#FFF',
+              backgroundColor: 色.白,
               borderRadius: 12,
               padding: 20,
               alignItems: 'center',
@@ -55,7 +56,7 @@ const ライブ名を決める窓 = ({
             </Text>
             {'host' === ライブの種類 ? (
               <>
-                <Text style={{ fontSize: 14, color: '#666', marginBottom: 16 }}>
+                <Text style={{ fontSize: 14, color: 色.墨_66, marginBottom: 16 }}>
                   セッション名を入力してください
                 </Text>
                 <TextInput
@@ -63,7 +64,7 @@ const ライブ名を決める窓 = ({
                   style={{
                     width: '100%',
                     borderWidth: 1,
-                    borderColor: '#CCC',
+                    borderColor: 色.罫,
                     borderRadius: 8,
                     padding: 12,
                     fontSize: 16,
@@ -83,7 +84,7 @@ const ライブ名を決める窓 = ({
                 {ライブ名の注意 && (
                   <Text
                     style={{
-                      color: '#FF3B30',
+                      color: 色.赤,
                       fontSize: 13,
                       textAlign: 'center',
                       marginBottom: 12,
@@ -104,14 +105,14 @@ const ライブ名を決める窓 = ({
                     marginBottom: 12,
                   }}
                 >
-                  <Text style={{ fontSize: 14, color: '#666' }}>アクティブなセッション一覧</Text>
+                  <Text style={{ fontSize: 14, color: 色.墨_66 }}>アクティブなセッション一覧</Text>
                   <TouchableOpacity
                     onPress={() => {
                       useScoreStore.getState().fetchActiveLiveSessions();
                       知らせる('更新しました');
                     }}
                   >
-                    <Icons.Ionicons name="refresh" size={20} color="#007AFF" />
+                    <Icons.Ionicons name="refresh" size={20} color={色.青} />
                   </TouchableOpacity>
                 </View>
                 <ScrollView style={{ width: '100%', maxHeight: 300, marginBottom: 20 }}>
@@ -123,8 +124,8 @@ const ライブ名を決める窓 = ({
                           flexDirection: 'row',
                           alignItems: 'center',
                           borderBottomWidth: 1,
-                          borderBottomColor: '#EEE',
-                          backgroundColor: ライブ名の下書き === 名前 ? '#E5F1FF' : '#FFF',
+                          borderBottomColor: 色.罫_薄い,
+                          backgroundColor: ライブ名の下書き === 名前 ? 色.青の地_2 : 色.白,
                         }}
                       >
                         <TouchableOpacity
@@ -134,7 +135,7 @@ const ライブ名を決める窓 = ({
                             ライブ名の注意を置く(null);
                           }}
                         >
-                          <Text style={{ fontSize: 16, color: '#333' }}>{名前}</Text>
+                          <Text style={{ fontSize: 16, color: 色.墨_33 }}>{名前}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={{ padding: 16 }}
@@ -153,12 +154,12 @@ const ライブ名を決める窓 = ({
                           accessibilityLabel="このライブを消す"
                           aria-label="このライブを消す"
                         >
-                          <Icons.Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                          <Icons.Ionicons name="trash-outline" size={20} color={色.赤} />
                         </TouchableOpacity>
                       </View>
                     ))
                   ) : (
-                    <Text style={{ textAlign: 'center', color: '#888', padding: 20 }}>
+                    <Text style={{ textAlign: 'center', color: 色.墨_88, padding: 20 }}>
                       現在アクティブな記録はありません
                     </Text>
                   )}
@@ -171,19 +172,19 @@ const ライブ名を決める窓 = ({
                   flex: 1,
                   padding: 12,
                   borderRadius: 8,
-                  backgroundColor: '#F2F2F7',
+                  backgroundColor: 色.地,
                   alignItems: 'center',
                 }}
                 onPress={() => ライブ名の窓を出す(false)}
               >
-                <Text style={{ fontSize: 16, color: '#007AFF', fontWeight: 'bold' }}>キャンセル</Text>
+                <Text style={{ fontSize: 16, color: 色.青, fontWeight: 'bold' }}>キャンセル</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={{
                   flex: 1,
                   padding: 12,
                   borderRadius: 8,
-                  backgroundColor: ライブ名の下書き.trim() ? '#007AFF' : '#CCC',
+                  backgroundColor: ライブ名の下書き.trim() ? 色.青 : 色.罫,
                   alignItems: 'center',
                 }}
                 onPress={async () => {
@@ -231,7 +232,7 @@ const ライブ名を決める窓 = ({
                 }}
                 disabled={!ライブ名の下書き.trim()}
               >
-                <Text style={{ fontSize: 16, color: '#FFF', fontWeight: 'bold' }}>決定</Text>
+                <Text style={{ fontSize: 16, color: 色.白, fontWeight: 'bold' }}>決定</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -1,3 +1,4 @@
+const { 色 } = require('./iro.js');
 const React = require('react');
 const { View, Modal, StyleSheet, Text, TouchableOpacity, TextInput, Switch, ScrollView } = require('./rn');
 const { IS_IOS } = require('./IS_WEB');
@@ -104,10 +105,10 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
     ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Success);
   };
   const attStyles = {
-    present: { label: '出席', color: '#34C759', icon: 'checkmark-circle' },
-    late: { label: '遅刻', color: '#FF9500', icon: 'time' },
-    early: { label: '早退', color: '#5856D6', icon: 'exit' },
-    absent: { label: '欠席', color: '#8E8E93', icon: 'ellipse-outline' },
+    present: { label: '出席', color: 色.緑, icon: 'checkmark-circle' },
+    late: { label: '遅刻', color: 色.橙, icon: 'time' },
+    early: { label: '早退', color: 色.藍, icon: 'exit' },
+    absent: { label: '欠席', color: 色.灰, icon: 'ellipse-outline' },
   };
   return (
     <>
@@ -123,7 +124,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                 aria-label="閉じる"
                 onPress={onClose}
               >
-                <Icons.Ionicons name="close" size={24} color="#000" />
+                <Icons.Ionicons name="close" size={24} color={色.黒} />
               </TouchableOpacity>
             </View>
             <ScrollView style={{ flex: 1 }}>
@@ -137,7 +138,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                     {'月 '}
                     {日付.getDate()}日
                   </Text>
-                  <Icons.Ionicons name="calendar-outline" size={20} color="#007AFF" />
+                  <Icons.Ionicons name="calendar-outline" size={20} color={色.青} />
                 </TouchableOpacity>
                 <Text style={styles.label}>タイトル</Text>
                 <TextInput
@@ -167,11 +168,11 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                           onPress={() => タグたちを置く(タグたち.filter((無し, 位置) => 位置 !== 番))}
                         >
                           <Text style={styles.selectedTagText}>{タグの見た目(タグ)}</Text>
-                          <Icons.Ionicons name="close-circle" size={16} color="#FFF" />
+                          <Icons.Ionicons name="close-circle" size={16} color={色.白} />
                         </TouchableOpacity>
                       ))}
                       {0 === タグたち.length && (
-                        <Text style={{ color: '#C7C7CC', fontSize: 13, marginBottom: 4 }}>設定なし</Text>
+                        <Text style={{ color: 色.灰_薄い, fontSize: 13, marginBottom: 4 }}>設定なし</Text>
                       )}
                     </View>
                     <View style={{ marginBottom: 16 }}>
@@ -247,7 +248,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                     <Switch
                       value={統計に入れる}
                       onValueChange={統計に入れるを置く}
-                      trackColor={{ false: '#767577', true: '#34C759' }}
+                      trackColor={{ false: 色.スイッチの地, true: 色.緑 }}
                     />
                   </View>
                 </View>
@@ -268,7 +269,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                           style={{
                             paddingVertical: 4,
                             paddingHorizontal: 8,
-                            backgroundColor: '#E3F2FD',
+                            backgroundColor: 色.青の地_5,
                             borderRadius: 8,
                           }}
                           onPress={() =>
@@ -279,7 +280,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                             })
                           }
                         >
-                          <Text style={{ color: '#2196F3', fontSize: 11, fontWeight: 'bold' }}>
+                          <Text style={{ color: 色.青_2196, fontSize: 11, fontWeight: 'bold' }}>
                             記録にいる人を出席
                           </Text>
                         </TouchableOpacity>
@@ -287,7 +288,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                           style={{
                             paddingVertical: 4,
                             paddingHorizontal: 8,
-                            backgroundColor: '#E8F5E9',
+                            backgroundColor: 色.緑の地,
                             borderRadius: 8,
                           }}
                           onPress={() =>
@@ -300,13 +301,13 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                             })
                           }
                         >
-                          <Text style={{ color: '#34C759', fontSize: 11, fontWeight: 'bold' }}>全員出席</Text>
+                          <Text style={{ color: 色.緑, fontSize: 11, fontWeight: 'bold' }}>全員出席</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={{
                             paddingVertical: 4,
                             paddingHorizontal: 8,
-                            backgroundColor: '#F2F2F7',
+                            backgroundColor: 色.地,
                             borderRadius: 8,
                           }}
                           onPress={() =>
@@ -319,14 +320,14 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                             })
                           }
                         >
-                          <Text style={{ color: '#8E8E93', fontSize: 11, fontWeight: 'bold' }}>全員欠席</Text>
+                          <Text style={{ color: 色.灰, fontSize: 11, fontWeight: 'bold' }}>全員欠席</Text>
                         </TouchableOpacity>
                       </View>
                     </View>
                     <View
                       style={{
                         borderWidth: 1,
-                        borderColor: '#E5E5EA',
+                        borderColor: 色.地_濃い,
                         borderRadius: 10,
                         marginBottom: 16,
                         overflow: 'hidden',
@@ -361,14 +362,14 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                                 justifyContent: 'space-between',
                                 paddingVertical: 10,
                                 paddingHorizontal: 12,
-                                backgroundColor: idx % 2 === 0 ? '#FAFAFA' : '#FFF',
+                                backgroundColor: idx % 2 === 0 ? 色.地_FAFAFA : 色.白,
                                 borderBottomWidth: idx < allMembers.length - 1 ? 1 : 0,
-                                borderBottomColor: '#E5E5EA',
+                                borderBottomColor: 色.地_濃い,
                               }}
                             >
-                              <Text style={{ fontSize: 14, color: '#1C1C1E', flex: 1 }}>
+                              <Text style={{ fontSize: 14, color: 色.文字, flex: 1 }}>
                                 {member.name || member.personalId || member.id}
-                                <Text style={{ fontSize: 11, color: '#8E8E93', marginLeft: 4 }}>
+                                <Text style={{ fontSize: 11, color: 色.灰, marginLeft: 4 }}>
                                   (
                                   {member.grade === 5
                                     ? '卒業生'
@@ -394,7 +395,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                                         paddingVertical: 4,
                                         paddingHorizontal: 6,
                                         borderRadius: 6,
-                                        backgroundColor: active ? info.color : '#F2F2F7',
+                                        backgroundColor: active ? info.color : 色.地,
                                         minWidth: 40,
                                         alignItems: 'center',
                                       }}
@@ -403,7 +404,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                                         style={{
                                           fontSize: 11,
                                           fontWeight: 'bold',
-                                          color: active ? '#FFF' : '#8E8E93',
+                                          color: active ? 色.白 : 色.灰,
                                         }}
                                       >
                                         {info.label}
@@ -457,19 +458,19 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
             </Text>
             <View style={styles.confirmButtons}>
               <TouchableOpacity
-                style={[styles.confirmBtn, { backgroundColor: '#F2F2F7' }]}
+                style={[styles.confirmBtn, { backgroundColor: 色.地 }]}
                 onPress={() => 射数の確認を出す(false)}
               >
-                <Text style={{ color: '#007AFF', fontWeight: 'bold' }}>キャンセル</Text>
+                <Text style={{ color: 色.青, fontWeight: 'bold' }}>キャンセル</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.confirmBtn, { backgroundColor: '#FF3B30' }]}
+                style={[styles.confirmBtn, { backgroundColor: 色.赤 }]}
                 onPress={() => {
                   射数の確認を出す(false);
                   保存する(日付.getTime());
                 }}
               >
-                <Text style={{ color: '#FFF', fontWeight: 'bold' }}>変更する</Text>
+                <Text style={{ color: 色.白, fontWeight: 'bold' }}>変更する</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -481,7 +482,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   container: {
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
@@ -493,35 +494,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#CCC',
+    borderBottomColor: 色.罫,
     paddingBottom: 10,
   },
   headerTitle: { fontSize: 20, fontWeight: 'bold' },
   body: { marginBottom: 20 },
-  label: { fontSize: 14, color: '#666', marginBottom: 6, fontWeight: '600' },
+  label: { fontSize: 14, color: 色.墨_66, marginBottom: 6, fontWeight: '600' },
   input: {
     borderWidth: 1,
-    borderColor: '#CCC',
+    borderColor: 色.罫,
     borderRadius: 8,
     padding: 10,
     fontSize: 16,
     marginBottom: 16,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: 色.地_FAFAFA,
   },
   dateSelector: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#CCC',
+    borderColor: 色.罫,
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: 色.地_FAFAFA,
   },
-  dateSelectorText: { fontSize: 16, color: '#000' },
+  dateSelectorText: { fontSize: 16, color: 色.黒 },
   selectedTagChip: {
-    backgroundColor: '#007AFF',
+    backgroundColor: 色.青,
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 4,
@@ -529,49 +530,49 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 4,
   },
-  selectedTagText: { color: '#FFF', fontSize: 13 },
+  selectedTagText: { color: 色.白, fontSize: 13 },
   tagInputContainer: { flexDirection: 'row', gap: 8 },
   tagInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#CCC',
+    borderColor: 色.罫,
     borderRadius: 8,
     padding: 8,
     fontSize: 14,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: 色.地_FAFAFA,
   },
   tagAddButton: {
-    backgroundColor: '#34C759',
+    backgroundColor: 色.緑,
     justifyContent: 'center',
     paddingHorizontal: 12,
     borderRadius: 8,
   },
-  tagAddButtonText: { color: '#FFF', fontWeight: 'bold' },
+  tagAddButtonText: { color: 色.白, fontWeight: 'bold' },
   templateTagChip: {
-    backgroundColor: '#E5E5EA',
+    backgroundColor: 色.地_濃い,
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 12,
   },
-  templateTagText: { color: '#3C3C43', fontSize: 13 },
+  templateTagText: { color: 色.文字_二, fontSize: 13 },
   row: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 16 },
   saveButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: 色.青,
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
     marginBottom: IS_IOS ? 20 : 0,
   },
-  saveButtonText: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
+  saveButtonText: { color: 色.白, fontSize: 18, fontWeight: 'bold' },
   confirmBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  confirmBox: { width: '85%', backgroundColor: '#FFF', borderRadius: 14, padding: 24, alignItems: 'center' },
+  confirmBox: { width: '85%', backgroundColor: 色.白, borderRadius: 14, padding: 24, alignItems: 'center' },
   confirmTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 8 },
-  confirmMessage: { fontSize: 14, color: '#3C3C43', textAlign: 'center', marginBottom: 24 },
+  confirmMessage: { fontSize: 14, color: 色.文字_二, textAlign: 'center', marginBottom: 24 },
   confirmButtons: { flexDirection: 'row', width: '100%', gap: 12 },
   confirmBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
 });

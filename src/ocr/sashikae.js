@@ -261,7 +261,8 @@ export async function マスを端末で差し替える(teams, images, 設定) {
         // 答えたとき、左右の板の○×が丸ごと入れ替わる（2026-10-15、Gemini の見直し）
         const 並び = 段 && 組.length >= 2 ? 板の並びを確かめる(組, 板で, 設定) : null;
         const 板の番 = 並び && 並び.板の番;
-        if (段 && 段 === 答え) return { teams: 差し替えた(組, 板で, 設定, false, 板の番), 読み取り元: '端末' };
+        if (段 && 段 === 答え)
+          return { teams: 差し替えた(組, 板で, 設定, false, 板の番), 読み取り元: '端末' };
         const 組み直して = await 段を確かめる(Array.isArray(板で) ? 板で : [{ 列たち: [[0]] }], 組, true);
         if (組み直して) return 組み直して;
         if (段 && !予備) 予備 = { teams: 差し替えた(組, 板で, 設定, false, 板の番), 読み取り元: '端末' };

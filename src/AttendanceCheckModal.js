@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const React = require('react');
 const { TouchableOpacity, Text, View, Modal, ScrollView, StyleSheet } = require('./rn');
 const Icons = require('@expo/vector-icons');
@@ -40,7 +41,7 @@ const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
         onPress={() => updateStatus(memberId, status)}
         style={[styles.statusBtn, isActive && { backgroundColor: color, borderColor: color }]}
       >
-        <Text style={[styles.statusBtnText, isActive && { color: '#FFF' }]}>{label}</Text>
+        <Text style={[styles.statusBtnText, isActive && { color: 色.白 }]}>{label}</Text>
       </TouchableOpacity>
     );
   };
@@ -72,7 +73,7 @@ const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
           <Text
             style={[
               styles.genderDot,
-              { color: 部員.gender === '男子' ? '#007AFF' : 部員.gender === '女子' ? '#FF2D55' : '#8E8E93' },
+              { color: 部員.gender === '男子' ? 色.青 : 部員.gender === '女子' ? 色.桃 : 色.灰 },
             ]}
           >
             ●
@@ -92,28 +93,28 @@ const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
           status="present"
           current={attendance[部員.id]}
           label="出席"
-          color="#34C759"
+          color={色.緑}
         />
         <StatusButton
           memberId={部員.id}
           status="late"
           current={attendance[部員.id]}
           label="遅刻"
-          color="#FF9500"
+          color={色.橙}
         />
         <StatusButton
           memberId={部員.id}
           status="early"
           current={attendance[部員.id]}
           label="早退"
-          color="#5856D6"
+          color={色.藍}
         />
         <StatusButton
           memberId={部員.id}
           status="absent"
           current={attendance[部員.id]}
           label="欠席"
-          color="#8E8E93"
+          color={色.灰}
         />
       </View>
     </View>
@@ -162,18 +163,18 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 600,
     maxHeight: '90%',
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     borderRadius: 20,
     padding: 20,
   },
   header: { marginBottom: 15, alignItems: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#000' },
-  subTitle: { fontSize: 13, color: '#8E8E93', marginTop: 4, textAlign: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: 色.黒 },
+  subTitle: { fontSize: 13, color: 色.灰, marginTop: 4, textAlign: 'center' },
   scroll: { flex: 1 },
   sectionTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: 色.灰,
     marginBottom: 8,
     marginTop: 10,
     textTransform: 'uppercase',
@@ -184,31 +185,31 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5EA',
+    borderBottomColor: 色.地_濃い,
   },
   memberNameContainer: { flex: 1, marginRight: 10 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
   genderDot: { fontSize: 10 },
-  memberName: { fontSize: 16, color: '#000', fontWeight: 'bold' },
-  memberSub: { fontSize: 11, color: '#8E8E93' },
+  memberName: { fontSize: 16, color: 色.黒, fontWeight: 'bold' },
+  memberSub: { fontSize: 11, color: 色.灰 },
   statusGroup: { flexDirection: 'row', gap: 4 },
   statusBtn: {
     paddingHorizontal: 6,
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: 色.地_濃い,
     minWidth: 42,
     alignItems: 'center',
   },
-  statusBtnText: { fontSize: 11, color: '#666', fontWeight: 'bold' },
-  emptyText: { textAlign: 'center', color: '#C6C6C8', paddingVertical: 20, fontSize: 14 },
-  separator: { height: 1, backgroundColor: '#E5E5EA', marginVertical: 15 },
+  statusBtnText: { fontSize: 11, color: 色.墨_66, fontWeight: 'bold' },
+  emptyText: { textAlign: 'center', color: 色.区切り, paddingVertical: 20, fontSize: 14 },
+  separator: { height: 1, backgroundColor: 色.地_濃い, marginVertical: 15 },
   footer: { marginTop: 20, gap: 10 },
-  confirmBtn: { backgroundColor: '#007AFF', paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
-  confirmBtnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+  confirmBtn: { backgroundColor: 色.青, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
+  confirmBtnText: { color: 色.白, fontSize: 16, fontWeight: 'bold' },
   cancelBtn: { paddingVertical: 12, alignItems: 'center' },
-  cancelBtnText: { color: '#007AFF', fontSize: 16, fontWeight: '600' },
+  cancelBtnText: { color: 色.青, fontSize: 16, fontWeight: '600' },
 });
 Object.defineProperty(exports, '__esModule', { value: true });
 exports.AttendanceCheckModal = AttendanceCheckModal;

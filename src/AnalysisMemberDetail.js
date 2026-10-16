@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色: 基本色 } = require('./iro.js');
 const React = require('react');
 const { View, Text, ScrollView, TouchableOpacity, Modal, TextInput } = require('./rn');
 // 「自分が写っているか」の判定。履歴画面・案内の見本と同じものを使う
@@ -81,7 +82,7 @@ const 部員の詳細の窓 = ({
   const CompareGraph = ({ baseData, baseName, compareTargets, selectedLabel, onSelectLabel }) => {
     const COLORS = 比較の色たち;
     const allDataSets = [
-      { name: baseName, data: baseData, color: '#007AFF', isBase: true },
+      { name: baseName, data: baseData, color: 基本色.青, isBase: true },
       ...compareTargets.map((target, idx) => ({
         name: target.name,
         data: target.data,
@@ -106,7 +107,7 @@ const 部員の詳細の窓 = ({
     if (allLabels.length === 0) {
       return (
         <View style={styles.noDataGraph}>
-          <Text style={{ color: '#8E8E93' }}>比較するデータがありません</Text>
+          <Text style={{ color: 基本色.灰 }}>比較するデータがありません</Text>
         </View>
       );
     }
@@ -163,7 +164,7 @@ const 部員の詳細の窓 = ({
                 <View
                   style={{ width: 8, height: 8, backgroundColor: 組.color, borderRadius: 4, marginRight: 4 }}
                 />
-                <Text style={{ fontSize: 9, color: '#3C3C43' }}>{組.name}</Text>
+                <Text style={{ fontSize: 9, color: 基本色.文字_二 }}>{組.name}</Text>
               </View>
             ))}
           </View>
@@ -176,14 +177,14 @@ const 部員の詳細の窓 = ({
                 y1={hHeight - (paddingY + (目盛 / 100) * usableHeight)}
                 x2={280}
                 y2={hHeight - (paddingY + (目盛 / 100) * usableHeight)}
-                stroke="#E5E5EA"
+                stroke={基本色.地_濃い}
                 strokeWidth="1"
               />
               <Svgの部品.Text
                 x={20}
                 y={hHeight - (paddingY + (目盛 / 100) * usableHeight) + 3}
                 fontSize="8"
-                fill="#8E8E93"
+                fill={基本色.灰}
                 textAnchor="end"
               >
                 {目盛}
@@ -216,7 +217,7 @@ const 部員の詳細の窓 = ({
                   usableWidth
               }
               y2={hHeight - paddingY}
-              stroke="#FF9500"
+              stroke={基本色.橙}
               strokeWidth="2"
               strokeDasharray="3 3"
             />
@@ -341,11 +342,11 @@ const 部員の詳細の窓 = ({
                         style={{
                           paddingVertical: 6,
                           paddingHorizontal: 12,
-                          backgroundColor: '#E5E5EA',
+                          backgroundColor: 基本色.地_濃い,
                           borderRadius: 8,
                         }}
                       >
-                        <Text style={{ color: '#8E8E93', fontSize: 13, fontWeight: 'bold' }}>
+                        <Text style={{ color: 基本色.灰, fontSize: 13, fontWeight: 'bold' }}>
                           比較をすべて解除
                         </Text>
                       </TouchableOpacity>
@@ -354,11 +355,11 @@ const 部員の詳細の窓 = ({
                         style={{
                           paddingVertical: 6,
                           paddingHorizontal: 12,
-                          backgroundColor: '#E1F0FF',
+                          backgroundColor: 基本色.青の地,
                           borderRadius: 8,
                         }}
                       >
-                        <Text style={{ color: '#007AFF', fontSize: 13, fontWeight: 'bold' }}>
+                        <Text style={{ color: 基本色.青, fontSize: 13, fontWeight: 'bold' }}>
                           比較メンバーを追加
                         </Text>
                       </TouchableOpacity>
@@ -370,11 +371,11 @@ const 部員の詳細の窓 = ({
                         alignSelf: 'flex-start',
                         paddingVertical: 6,
                         paddingHorizontal: 12,
-                        backgroundColor: '#E1F0FF',
+                        backgroundColor: 基本色.青の地,
                         borderRadius: 8,
                       }}
                     >
-                      <Text style={{ color: '#007AFF', fontSize: 13, fontWeight: 'bold' }}>
+                      <Text style={{ color: 基本色.青, fontSize: 13, fontWeight: 'bold' }}>
                         他のメンバーと比較
                       </Text>
                     </TouchableOpacity>
@@ -393,7 +394,7 @@ const 部員の詳細の窓 = ({
                         <View
                           style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}
                         >
-                          <Text style={{ fontSize: 12, color: '#8E8E93', marginRight: 2 }}>ひな型</Text>
+                          <Text style={{ fontSize: 12, color: 基本色.灰, marginRight: 2 }}>ひな型</Text>
                           {[
                             ...この団体の.map((型) => (
                               <View
@@ -401,7 +402,7 @@ const 部員の詳細の窓 = ({
                                 style={{
                                   flexDirection: 'row',
                                   alignItems: 'center',
-                                  backgroundColor: '#F2F2F7',
+                                  backgroundColor: 基本色.地,
                                   borderRadius: 8,
                                 }}
                               >
@@ -425,7 +426,7 @@ const 部員の詳細の窓 = ({
                                   }}
                                   style={{ paddingVertical: 6, paddingLeft: 10, paddingRight: 4 }}
                                 >
-                                  <Text style={{ color: '#007AFF', fontSize: 13, fontWeight: 'bold' }}>
+                                  <Text style={{ color: 基本色.青, fontSize: 13, fontWeight: 'bold' }}>
                                     {型.名前}
                                     {' ('}
                                     {型.部員idたち.length})
@@ -444,9 +445,7 @@ const 部員の詳細の窓 = ({
                                   }
                                   style={{ paddingVertical: 6, paddingRight: 8, paddingLeft: 2 }}
                                 >
-                                  <Text style={{ color: '#8E8E93', fontSize: 13, fontWeight: 'bold' }}>
-                                    ×
-                                  </Text>
+                                  <Text style={{ color: 基本色.灰, fontSize: 13, fontWeight: 'bold' }}>×</Text>
                                 </TouchableOpacity>
                               </View>
                             )),
@@ -462,14 +461,14 @@ const 部員の詳細の窓 = ({
                               height: 34,
                               paddingHorizontal: 10,
                               borderWidth: 1,
-                              borderColor: '#E5E5EA',
+                              borderColor: 基本色.地_濃い,
                               borderRadius: 8,
                               fontSize: 13,
-                              color: '#1C1C1E',
-                              backgroundColor: '#FFF',
+                              color: 基本色.文字,
+                              backgroundColor: 基本色.白,
                             }}
                             placeholder="この組み合わせに名前を付けて残す"
-                            placeholderTextColor="#C7C7CC"
+                            placeholderTextColor={基本色.灰_薄い}
                             value={ひな型の名前}
                             onChangeText={ひな型の名前を置く}
                             maxLength={20}
@@ -487,11 +486,11 @@ const 部員の詳細の窓 = ({
                             style={{
                               paddingVertical: 8,
                               paddingHorizontal: 14,
-                              backgroundColor: '#E1F0FF',
+                              backgroundColor: 基本色.青の地,
                               borderRadius: 8,
                             }}
                           >
-                            <Text style={{ color: '#007AFF', fontSize: 13, fontWeight: 'bold' }}>保存</Text>
+                            <Text style={{ color: 基本色.青, fontSize: 13, fontWeight: 'bold' }}>保存</Text>
                           </TouchableOpacity>
                         </View>
                       ) : null}
@@ -502,10 +501,10 @@ const 部員の詳細の窓 = ({
                   <View
                     style={{
                       padding: 12,
-                      backgroundColor: '#FFF',
+                      backgroundColor: 基本色.白,
                       borderRadius: 12,
                       borderWidth: 1,
-                      borderColor: '#E5E5EA',
+                      borderColor: 基本色.地_濃い,
                       marginBottom: 16,
                     }}
                   >
@@ -517,11 +516,11 @@ const 部員の詳細の窓 = ({
                         marginBottom: 12,
                       }}
                     >
-                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#1C1C1E' }}>
+                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: 基本色.文字 }}>
                         比較するメンバーを選択
                       </Text>
                       <TouchableOpacity onPress={() => setIsSelectingCompareTarget(false)}>
-                        <Text style={{ color: '#007AFF', fontSize: 13, fontWeight: 'bold' }}>完了</Text>
+                        <Text style={{ color: 基本色.青, fontSize: 13, fontWeight: 'bold' }}>完了</Text>
                       </TouchableOpacity>
                     </View>
                     <ScrollView style={{ maxHeight: 240 }}>
@@ -542,10 +541,10 @@ const 部員の詳細の窓 = ({
                                   alignItems: 'center',
                                   paddingVertical: 10,
                                   borderBottomWidth: 1,
-                                  borderBottomColor: '#F2F2F7',
+                                  borderBottomColor: 基本色.地,
                                 }}
                               >
-                                <Text style={{ fontSize: 14, fontWeight: '600', color: '#3A3A3C' }}>
+                                <Text style={{ fontSize: 14, fontWeight: '600', color: 基本色.文字_三 }}>
                                   {題}
                                   {' ('}
                                   {束[印].length}人)
@@ -553,7 +552,7 @@ const 部員の詳細の窓 = ({
                                 <Icons.Ionicons
                                   name={開 ? 'chevron-up' : 'chevron-down'}
                                   size={14}
-                                  color="#8E8E93"
+                                  color={基本色.灰}
                                 />
                               </TouchableOpacity>
                               {[
@@ -575,7 +574,7 @@ const 部員の詳細の窓 = ({
                                         paddingVertical: 10,
                                         paddingLeft: 12,
                                         borderBottomWidth: 1,
-                                        borderBottomColor: '#F2F2F7',
+                                        borderBottomColor: 基本色.地,
                                         flexDirection: 'row',
                                         justifyContent: 'space-between',
                                         alignItems: 'center',
@@ -597,10 +596,10 @@ const 部員の詳細の窓 = ({
                                             marginRight: 6,
                                             color:
                                               '男子' === item.gender
-                                                ? '#007AFF'
+                                                ? 基本色.青
                                                 : '女子' === item.gender
-                                                  ? '#FF2D55'
-                                                  : '#8E8E93',
+                                                  ? 基本色.桃
+                                                  : 基本色.灰,
                                           }}
                                         >
                                           ●
@@ -608,7 +607,7 @@ const 部員の詳細の窓 = ({
                                         <Text
                                           style={{
                                             fontSize: 14,
-                                            color: isSelected ? '#007AFF' : '#1C1C1E',
+                                            color: isSelected ? 基本色.青 : 基本色.文字,
                                             fontWeight: isSelected ? 'bold' : 'normal',
                                             flexShrink: 1,
                                           }}
@@ -618,7 +617,7 @@ const 部員の詳細の窓 = ({
                                         </Text>
                                       </View>
                                       {isSelected && (
-                                        <Text style={{ color: '#007AFF', fontSize: 14, fontWeight: 'bold' }}>
+                                        <Text style={{ color: 基本色.青, fontSize: 14, fontWeight: 'bold' }}>
                                           ✓
                                         </Text>
                                       )}
@@ -651,7 +650,7 @@ const 部員の詳細の窓 = ({
                         style={{
                           fontSize: 14,
                           fontWeight: 'bold',
-                          color: '#3A3A3C',
+                          color: 基本色.文字_三,
                           marginBottom: 8,
                           alignSelf: 'flex-start',
                         }}
@@ -688,7 +687,7 @@ const 部員の詳細の窓 = ({
                               fontSize: 10,
                               fontWeight: 'bold',
                               marginBottom: 4,
-                              color: '#3C3C43',
+                              color: 基本色.文字_二,
                               textAlign: 'center',
                             }}
                             numberOfLines={1}
@@ -750,7 +749,7 @@ const 部員の詳細の窓 = ({
                     /* 見比べることになって読めなかった。 */
                     /* 1人1行の表にして、横に射目を並べる */}
                     <View style={{ marginBottom: 20 }}>
-                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 12 }}>
+                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: 基本色.文字_三, marginBottom: 12 }}>
                         {selectedModalTrendLabel
                           ? `立ち順別の的中率 (${selectedModalTrendLabel})`
                           : '立ち順別の的中率 (1-4射目)'}
@@ -761,7 +760,7 @@ const 部員の詳細の窓 = ({
                         const 並び = [
                           {
                             name: 詳細の部員.name,
-                            色: '#007AFF',
+                            色: 基本色.青,
                             表: (詳細の期間の成績 || 詳細の部員).perShotStats || 空,
                           },
                           ...compareMembers.map((相手, 番) => ({
@@ -784,14 +783,14 @@ const 部員の詳細の窓 = ({
                               {[
                                 ...[0, 1, 2, 3].map((番) => (
                                   <View key={`head-shot-${番}`} style={{ flex: 1, alignItems: 'center' }}>
-                                    <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#3A3A3C' }}>
+                                    <Text style={{ fontSize: 10, fontWeight: 'bold', color: 基本色.文字_三 }}>
                                       {番 + 1}射目
                                     </Text>
                                   </View>
                                 )),
                               ]}
                               <View style={{ width: 狭い画面 ? 28 : 34, alignItems: 'flex-end' }}>
-                                <Text style={{ fontSize: 10, color: '#8E8E93' }}>射数</Text>
+                                <Text style={{ fontSize: 10, color: 基本色.灰 }}>射数</Text>
                               </View>
                             </View>
                             {[
@@ -827,7 +826,7 @@ const 部員の詳細の窓 = ({
                                           flex: 1,
                                           fontSize: 11,
                                           fontWeight: 'bold',
-                                          color: '#1C1C1E',
+                                          color: 基本色.文字,
                                         }}
                                         numberOfLines={1}
                                       >
@@ -857,7 +856,7 @@ const 部員の詳細の窓 = ({
                                               style={{
                                                 fontSize: 狭い画面 ? 12 : 13,
                                                 fontWeight: '600',
-                                                color: 枡.shots > 0 ? '#1C1C1E' : '#C7C7CC',
+                                                color: 枡.shots > 0 ? 基本色.文字 : 基本色.灰_薄い,
                                               }}
                                               numberOfLines={1}
                                             >
@@ -866,7 +865,7 @@ const 部員の詳細の窓 = ({
                                             {狭い画面 ? null : (
                                               <Text // 副次テキスト。暗いテーマでは #EBEBF5 に変わる。
                                                 // #48484A は変換表に無く、暗い面の上で沈む
-                                                style={{ fontSize: 9, color: '#3C3C43' }}
+                                                style={{ fontSize: 9, color: 基本色.文字_二 }}
                                                 numberOfLines={1}
                                               >
                                                 {枡.hits}/{枡.shots}
@@ -877,7 +876,7 @@ const 部員の詳細の窓 = ({
                                       }),
                                     ]}
                                     <View style={{ width: 狭い画面 ? 28 : 34, alignItems: 'flex-end' }}>
-                                      <Text style={{ fontSize: 11, color: '#8E8E93' }}>{String(総射数)}</Text>
+                                      <Text style={{ fontSize: 11, color: 基本色.灰 }}>{String(総射数)}</Text>
                                     </View>
                                   </View>
                                 );
@@ -895,18 +894,18 @@ const 部員の詳細の窓 = ({
                     /* マスの濃さでその人の中での多い少ないを見せる。 */
                     /* 回数そのものは書いてあるので、濃さは目安でよい */}
                     <View style={{ marginBottom: 20 }}>
-                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 12 }}>
+                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: 基本色.文字_三, marginBottom: 12 }}>
                         {selectedModalTrendLabel
                           ? `立ちの結果分布 (${selectedModalTrendLabel})`
                           : '立ちの結果分布 (4射単位)'}
                       </Text>
                       {(() => {
                         const 区分たち = [
-                          { label: '皆中', key: 'kaichu', color: '#FF9500' },
-                          { label: '三中', key: 'sanchu', color: '#34C759' },
-                          { label: '羽分', key: 'hake', color: '#007AFF' },
-                          { label: '一中', key: 'icchu', color: '#5856D6' },
-                          { label: '残念', key: 'zannen', color: '#FF3B30' },
+                          { label: '皆中', key: 'kaichu', color: 基本色.橙 },
+                          { label: '三中', key: 'sanchu', color: 基本色.緑 },
+                          { label: '羽分', key: 'hake', color: 基本色.青 },
+                          { label: '一中', key: 'icchu', color: 基本色.藍 },
+                          { label: '残念', key: 'zannen', color: 基本色.赤 },
                         ];
                         const COLORS = 比較の色たち;
                         const 空 = { kaichu: 0, sanchu: 0, hake: 0, icchu: 0, zannen: 0 };
@@ -914,7 +913,7 @@ const 部員の詳細の窓 = ({
                           {
                             name: 詳細の部員.name,
                             // 立ち順別の比較と同じ。同じ画面で同じ人の色が変わると迷う
-                            色: '#007AFF',
+                            色: 基本色.青,
                             表: (詳細の期間の成績 || 詳細の部員).patterns || 空,
                           },
                           ...compareMembers.map((相手, 番) => ({
@@ -945,7 +944,7 @@ const 部員の詳細の窓 = ({
                                 )),
                               ]}
                               <View style={{ width: 狭い画面 ? 28 : 34, alignItems: 'flex-end' }}>
-                                <Text style={{ fontSize: 10, color: '#8E8E93' }}>立数</Text>
+                                <Text style={{ fontSize: 10, color: 基本色.灰 }}>立数</Text>
                               </View>
                             </View>
                             {[
@@ -978,7 +977,7 @@ const 部員の詳細の窓 = ({
                                           flex: 1,
                                           fontSize: 11,
                                           fontWeight: 'bold',
-                                          color: '#1C1C1E',
+                                          color: 基本色.文字,
                                         }}
                                         numberOfLines={1}
                                       >
@@ -1006,7 +1005,7 @@ const 部員の詳細の窓 = ({
                                               style={{
                                                 fontSize: 13,
                                                 fontWeight: '600',
-                                                color: 回 > 0 ? '#1C1C1E' : '#C7C7CC',
+                                                color: 回 > 0 ? 基本色.文字 : 基本色.灰_薄い,
                                               }}
                                             >
                                               {String(回)}
@@ -1016,7 +1015,7 @@ const 部員の詳細の窓 = ({
                                       }),
                                     ]}
                                     <View style={{ width: 狭い画面 ? 28 : 34, alignItems: 'flex-end' }}>
-                                      <Text style={{ fontSize: 11, color: '#8E8E93' }}>{String(全)}</Text>
+                                      <Text style={{ fontSize: 11, color: 基本色.灰 }}>{String(全)}</Text>
                                     </View>
                                   </View>
                                 );
@@ -1036,7 +1035,7 @@ const 部員の詳細の窓 = ({
                           );
                         return 端 > 0 ? (
                           <Text
-                            style={{ fontSize: 11, color: '#8E8E93', marginTop: 8, lineHeight: 16 }}
+                            style={{ fontSize: 11, color: 基本色.灰, marginTop: 8, lineHeight: 16 }}
                           >{`※ 4射に満たない射（この画面の全員で ${端} 射）は皆中・残念などに分けられないため、この分布に入れていません（的中率には入っています）。`}</Text>
                         ) : null;
                       })()}
@@ -1061,7 +1060,7 @@ const 部員の詳細の窓 = ({
                           {
                             fontSize: 14,
                             fontWeight: 'bold',
-                            color: '#3A3A3C',
+                            color: 基本色.文字_三,
                             marginBottom: 8,
                             alignSelf: 'flex-start',
                           },
@@ -1095,7 +1094,7 @@ const 部員の詳細の窓 = ({
                       />
                     </View>
                     <View style={{ marginBottom: 16 }}>
-                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 8 }}>
+                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: 基本色.文字_三, marginBottom: 8 }}>
                         {selectedModalTrendLabel
                           ? `立ち順別の的中率 (${selectedModalTrendLabel})`
                           : '立ち順別の的中率 (1-4射目)'}
@@ -1118,18 +1117,18 @@ const 部員の詳細の窓 = ({
                       </View>
                     </View>
                     <View style={{ marginBottom: 24 }}>
-                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 12 }}>
+                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: 基本色.文字_三, marginBottom: 12 }}>
                         {selectedModalTrendLabel
                           ? `立ちの結果分布 (${selectedModalTrendLabel})`
                           : '立ちの結果分布 (4射単位)'}
                       </Text>
                       <View style={styles.patternsCard}>
                         {[
-                          { label: '皆中', key: 'kaichu', color: '#FF9500' },
-                          { label: '三中', key: 'sanchu', color: '#34C759' },
-                          { label: '羽分', key: 'hake', color: '#007AFF' },
-                          { label: '一中', key: 'icchu', color: '#5856D6' },
-                          { label: '残念', key: 'zannen', color: '#FF3B30' },
+                          { label: '皆中', key: 'kaichu', color: 基本色.橙 },
+                          { label: '三中', key: 'sanchu', color: 基本色.緑 },
+                          { label: '羽分', key: 'hake', color: 基本色.青 },
+                          { label: '一中', key: 'icchu', color: 基本色.藍 },
+                          { label: '残念', key: 'zannen', color: 基本色.赤 },
                         ].map((区分) => {
                           const 元 = 詳細の期間の成績 || 詳細の部員;
                           const 回数 = 元.patterns[区分.key] || 0;
@@ -1166,7 +1165,7 @@ const 部員の詳細の窓 = ({
                         const 端 = (詳細の期間の成績 || 詳細の部員).端数の射 || 0;
                         return 端 > 0 ? (
                           <Text
-                            style={{ fontSize: 11, color: '#8E8E93', marginTop: 8, lineHeight: 16 }}
+                            style={{ fontSize: 11, color: 基本色.灰, marginTop: 8, lineHeight: 16 }}
                           >{`※ 4射に満たない ${端} 射は皆中・残念などに分けられないため、この分布に入れていません（的中率には入っています）。`}</Text>
                         ) : null;
                       })()}

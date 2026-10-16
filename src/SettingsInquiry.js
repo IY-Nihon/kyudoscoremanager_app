@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const React = require('react');
 const {
   View,
@@ -114,10 +115,10 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
             keyboardShouldPersistTaps="handled"
           >
             <Text style={styles.modalTitle}>お問い合わせ</Text>
-            <Text style={{ fontSize: 13, color: '#8E8E93', marginBottom: 12, textAlign: 'center' }}>
+            <Text style={{ fontSize: 13, color: 色.灰, marginBottom: 12, textAlign: 'center' }}>
               開発者へお問い合わせを送信します
             </Text>
-            <Text style={{ fontSize: 12, color: '#8E8E93', marginBottom: 10, lineHeight: 17 }}>
+            <Text style={{ fontSize: 12, color: 色.灰, marginBottom: 10, lineHeight: 17 }}>
               メールアドレスは書かなくても送れます。書いていただくと、こちらから返事ができます。
             </Text>
             <TextInput
@@ -155,7 +156,7 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
                   <View key={`inquiry-img-${idx}`} style={{ width: 100, height: 100, position: 'relative' }}>
                     <Image
                       source={{ uri }}
-                      style={{ width: 100, height: 100, borderRadius: 8, backgroundColor: '#F2F2F7' }}
+                      style={{ width: 100, height: 100, borderRadius: 8, backgroundColor: 色.地 }}
                       resizeMode="cover"
                     />
                     <Pressable
@@ -170,7 +171,7 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
                         padding: 3,
                       }}
                     >
-                      <Icons.Ionicons name="close" size={14} color="#FFF" />
+                      <Icons.Ionicons name="close" size={14} color={色.白} />
                     </Pressable>
                   </View>
                 ))}
@@ -189,17 +190,17 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
                     justifyContent: 'center',
                     gap: 6,
                     borderWidth: 1,
-                    borderColor: '#C6C6C8',
+                    borderColor: 色.区切り,
                     borderStyle: 'dashed',
                     borderRadius: 8,
                     paddingVertical: 12,
                   },
-                  hovered && { backgroundColor: '#F2F2F7' },
+                  hovered && { backgroundColor: 色.地 },
                   IS_WEB && { cursor: 'pointer' },
                 ]}
               >
-                <Icons.Ionicons name="image-outline" size={18} color="#8E8E93" />
-                <Text style={{ fontSize: 13, color: '#8E8E93' }}>
+                <Icons.Ionicons name="image-outline" size={18} color={色.灰} />
+                <Text style={{ fontSize: 13, color: 色.灰 }}>
                   {inquiryImages.length > 0 ? '画像を追加（任意・最大3枚）' : '画像を添付（任意・最大3枚）'}
                 </Text>
               </Pressable>
@@ -208,8 +209,8 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
               <Pressable
                 style={({ hovered }) => [
                   styles.modalBtn,
-                  { backgroundColor: '#F2F2F7', flex: 1, marginRight: 5 },
-                  hovered && { backgroundColor: '#E5E5EA' },
+                  { backgroundColor: 色.地, flex: 1, marginRight: 5 },
+                  hovered && { backgroundColor: 色.地_濃い },
                   IS_WEB && { cursor: 'pointer' },
                 ]}
                 onPress={() => {
@@ -220,13 +221,13 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
                 }}
                 disabled={inquirySending}
               >
-                <Text style={[styles.modalBtnText, { color: '#007AFF' }]}>キャンセル</Text>
+                <Text style={[styles.modalBtnText, { color: 色.青 }]}>キャンセル</Text>
               </Pressable>
               <Pressable
                 style={({ hovered }) => [
                   styles.modalBtn,
-                  { backgroundColor: '#FF9500', flex: 1, marginLeft: 5 },
-                  hovered && { backgroundColor: '#E68A00' },
+                  { backgroundColor: 色.橙, flex: 1, marginLeft: 5 },
+                  hovered && { backgroundColor: 色.橙_押した },
                   IS_WEB && { cursor: 'pointer' },
                 ]}
                 onPress={async () => {
@@ -273,7 +274,7 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
                 }}
                 disabled={inquirySending}
               >
-                <Text style={[styles.modalBtnText, { color: '#FFF' }]}>
+                <Text style={[styles.modalBtnText, { color: 色.白 }]}>
                   {inquirySending ? '送信中...' : '送信'}
                 </Text>
               </Pressable>

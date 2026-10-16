@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色: 基本色 } = require('./iro.js');
 const React = require('react');
 const {
   View,
@@ -71,7 +72,7 @@ const 期限の帯 = React.memo(({ ライブの期限 }) => {
   // 字は最小限にして、意味は色で持たせる。帯は1行なので、長い文を入れるとライブ名が潰れる
   return (
     <View style={styles.liveLimit}>
-      <Icons.Ionicons name="time-outline" size={10} color="#FFF" />
+      <Icons.Ionicons name="time-outline" size={10} color={基本色.白} />
       <Text style={styles.liveLimitText}>{期限の残り}</Text>
     </View>
   );
@@ -758,13 +759,13 @@ const RecordScreen = () => {
       style={{
         width: 名前の幅,
         height: 行の高さ(射手),
-        backgroundColor: 射手.isTotalCalculator ? 'rgba(0,122,255,0.05)' : '#F2F2F7',
+        backgroundColor: 射手.isTotalCalculator ? 'rgba(0,122,255,0.05)' : 基本色.地,
         borderBottomWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 1,
-        borderBottomColor: '#000',
+        borderBottomColor: 基本色.黒,
         borderTopWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 0,
-        borderTopColor: '#000',
+        borderTopColor: 基本色.黒,
         borderRightWidth: 1.5,
-        borderRightColor: '#000',
+        borderRightColor: 基本色.黒,
         // 余白も表示の大きさに合わせる（25% で中身が隣の行へはみ出した）
         paddingHorizontal: 4 * 倍率,
         justifyContent: 'center',
@@ -796,14 +797,14 @@ const RecordScreen = () => {
                 fontSize: 11 * 倍率,
                 fontWeight: '700',
                 textAlign: 'center',
-                color: 組.チームの色(組.区切りのチーム名(射手)) || '#8E8E93',
+                color: 組.チームの色(組.区切りのチーム名(射手)) || 基本色.灰,
               }}
               numberOfLines={2}
             >
               {組.区切りのチーム名(射手)}
             </Text>
           ) : (
-            <Icons.Ionicons name="ellipsis-horizontal" size={20 * 倍率} color="#8E8E93" />
+            <Icons.Ionicons name="ellipsis-horizontal" size={20 * 倍率} color={基本色.灰} />
           )}
         </TouchableOpacity>
       ) : (
@@ -815,7 +816,7 @@ const RecordScreen = () => {
           delayLongPress={400}
         >
           <Text
-            style={[styles.footerName, { color: 射手.name ? '#000' : '#8E8E93', fontSize: 13 * 倍率 }]}
+            style={[styles.footerName, { color: 射手.name ? 基本色.黒 : 基本色.灰, fontSize: 13 * 倍率 }]}
             numberOfLines={1}
           >
             {/* 手前の計もまとめる合計は「総計」。ふつうの「計」と */
@@ -844,13 +845,13 @@ const RecordScreen = () => {
                       !射手.gender ||
                       射手.gender === '未設定' ||
                       !['男子', '女子'].includes(射手.gender)
-                        ? '#8E8E93'
+                        ? 基本色.灰
                         : '男子' === 射手.gender
-                          ? '#007AFF'
-                          : '#FF2D55',
+                          ? 基本色.青
+                          : 基本色.桃,
                   }}
                 >
-                  <Icons.Ionicons name="person" size={9 * 倍率} color="#FFF" />
+                  <Icons.Ionicons name="person" size={9 * 倍率} color={基本色.白} />
                 </View>
               ) : null}
             </View>
@@ -873,7 +874,7 @@ const RecordScreen = () => {
       >
         <View style={{ flexDirection: 'row', minWidth: '100%' }}>
           <View
-            style={{ backgroundColor: '#F2F2F7', zIndex: 10 }} // 掴んでいる間だけ、縦の動きを並べ替えに使う。
+            style={{ backgroundColor: 基本色.地, zIndex: 10 }} // 掴んでいる間だけ、縦の動きを並べ替えに使う。
             //
             // 横では PanResponder が指の動きを受け取れなかった（掴めるのに
             // 動かせない）。縦のときは横の動きなので取り合いにならないが、
@@ -896,17 +897,17 @@ const RecordScreen = () => {
                 height: UIConfig.cellHeight * 倍率,
                 justifyContent: 'center',
                 alignItems: 'center',
-                backgroundColor: '#F2F2F7',
+                backgroundColor: 基本色.地,
                 borderTopWidth: 1.5,
-                borderTopColor: '#000',
+                borderTopColor: 基本色.黒,
                 // 見出しと本体の区切り。射数の見出しの線（3px）と太さをそろえる
                 borderBottomWidth: 3,
-                borderBottomColor: '#000',
+                borderBottomColor: 基本色.黒,
                 borderRightWidth: 1.5,
-                borderRightColor: '#000',
+                borderRightColor: 基本色.黒,
               }}
             >
-              <Text style={{ fontSize: 10 * 倍率, fontWeight: 'bold', color: '#3C3C43' }}>名</Text>
+              <Text style={{ fontSize: 10 * 倍率, fontWeight: 'bold', color: 基本色.文字_二 }}>名</Text>
             </View>
             {一覧.map((射手, 順) => 横の名前セル(射手, 順))}
           </View>
@@ -968,16 +969,16 @@ const RecordScreen = () => {
         style={{
           position: 'absolute',
           ...置き方,
-          backgroundColor: '#FFF',
+          backgroundColor: 基本色.白,
           borderWidth: 2,
-          borderColor: '#007AFF',
+          borderColor: 基本色.青,
           borderRadius: 6,
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 50,
           // 影は直に書く。この部品の中では shadowStyle の読み込み名が
           // 別の変数に隠れていて、呼ぶと落ちる（実際に落ちた）
-          shadowColor: '#000',
+          shadowColor: 基本色.黒,
           shadowOffset: { width: 0, height: 3 },
           shadowOpacity: 0.25,
           shadowRadius: 6,
@@ -985,7 +986,7 @@ const RecordScreen = () => {
         }}
       >
         <Text
-          style={{ fontSize: 13 * 倍率, fontWeight: '700', color: '#007AFF', textAlign: 'center' }}
+          style={{ fontSize: 13 * 倍率, fontWeight: '700', color: 基本色.青, textAlign: 'center' }}
           numberOfLines={2}
         >
           {名}
@@ -999,10 +1000,10 @@ const RecordScreen = () => {
       /* 何をすればよいか分からず、記録が届かないまま使い続けることになる */}
       {再ログインの案内 || (オフライン保存の警告 && !警告を閉じた) ? (
         <TouchableOpacity
-          style={{ backgroundColor: '#B00020', paddingVertical: 8, paddingHorizontal: 12 }}
+          style={{ backgroundColor: 基本色.赤_濃い, paddingVertical: 8, paddingHorizontal: 12 }}
           onPress={() => 警告を閉じる(true)}
         >
-          <Text style={{ color: '#FFF', fontSize: 12, lineHeight: 17, textAlign: 'center' }}>
+          <Text style={{ color: 基本色.白, fontSize: 12, lineHeight: 17, textAlign: 'center' }}>
             {再ログインの案内 ? 再ログインの案内 : `${オフライン保存の警告}（タップで閉じる）`}
           </Text>
         </TouchableOpacity>
@@ -1025,7 +1026,7 @@ const RecordScreen = () => {
                 style={[
                   styles.liveStatusHeader,
                   {
-                    backgroundColor: '#FF9500',
+                    backgroundColor: 基本色.橙,
                     height: 'auto',
                     paddingVertical: 5,
                     paddingHorizontal: 10,
@@ -1035,21 +1036,21 @@ const RecordScreen = () => {
                 ]}
                 testID="履歴の編集の帯"
               >
-                <Icons.Ionicons name="create-outline" size={13} color="#FFF" />
+                <Icons.Ionicons name="create-outline" size={13} color={基本色.白} />
                 <Text style={[styles.liveStatusText, { flex: 1 }]} numberOfLines={1}>
                   履歴の記録を直しています{題 ? '：' + 題 : ''}
                 </Text>
                 <TouchableOpacity
                   onPress={() => 戻る(true)}
                   style={{
-                    backgroundColor: '#FFF',
+                    backgroundColor: 基本色.白,
                     borderRadius: 6,
                     paddingHorizontal: 10,
                     paddingVertical: 3,
                   }}
                   accessibilityRole="button"
                 >
-                  <Text style={{ color: '#FF9500', fontSize: 12, fontWeight: 'bold' }}>保存して戻る</Text>
+                  <Text style={{ color: 基本色.橙, fontSize: 12, fontWeight: 'bold' }}>保存して戻る</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() =>
@@ -1059,7 +1060,7 @@ const RecordScreen = () => {
                     ])
                   }
                   style={{
-                    borderColor: '#FFF',
+                    borderColor: 基本色.白,
                     borderWidth: 1,
                     borderRadius: 6,
                     paddingHorizontal: 10,
@@ -1067,7 +1068,7 @@ const RecordScreen = () => {
                   }}
                   accessibilityRole="button"
                 >
-                  <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>やめる</Text>
+                  <Text style={{ color: 基本色.白, fontSize: 12, fontWeight: 'bold' }}>やめる</Text>
                 </TouchableOpacity>
               </View>
             );
@@ -1080,16 +1081,16 @@ const RecordScreen = () => {
           style={[styles.liveStatusHeader, styles.liveActiveHeader, { marginHorizontal: 8, borderRadius: 8 }]}
           onPress={isHost ? () => 共有の窓を出す(true) : undefined}
         >
-          <Icons.Ionicons name="radio-outline" size={12} color="#FFF" />
+          <Icons.Ionicons name="radio-outline" size={12} color={基本色.白} />
           <Text style={styles.liveStatusText} numberOfLines={1}>
             ライブ中{ライブは見るだけ ? '（閲覧用）' : ''}
             {': '}
             {liveSessionName}
           </Text>
-          {isHost ? <Icons.Ionicons name="share-outline" size={12} color="#FFF" /> : null}
+          {isHost ? <Icons.Ionicons name="share-outline" size={12} color={基本色.白} /> : null}
           {接続の文言 ? (
             <View style={styles.liveCount}>
-              <Icons.Ionicons name="ellipse" size={7} color="#34C759" />
+              <Icons.Ionicons name="ellipse" size={7} color={基本色.緑} />
               <Text style={styles.liveCountText}>{接続の文言}</Text>
             </View>
           ) : null}
@@ -1124,14 +1125,14 @@ const RecordScreen = () => {
             <View style={styles.syncContainer}>
               {isNetworkOnline && '同期エラー' !== syncStatus ? (
                 '同期中' === syncStatus ? (
-                  <Icons.Ionicons name="cloud-upload-outline" size={14} color="#007AFF" />
+                  <Icons.Ionicons name="cloud-upload-outline" size={14} color={基本色.青} />
                 ) : '同期済み' === syncStatus ? (
-                  <Icons.Ionicons name="cloud-done-outline" size={14} color="#34C759" />
+                  <Icons.Ionicons name="cloud-done-outline" size={14} color={基本色.緑} />
                 ) : (
-                  <Icons.Ionicons name="cloud-outline" size={14} color="#8E8E93" />
+                  <Icons.Ionicons name="cloud-outline" size={14} color={基本色.灰} />
                 )
               ) : (
-                <Icons.Ionicons name="cloud-offline-outline" size={14} color="#FF3B30" />
+                <Icons.Ionicons name="cloud-offline-outline" size={14} color={基本色.赤} />
               )}
               {false}
             </View>
@@ -1158,7 +1159,7 @@ const RecordScreen = () => {
                 aria-label="ライブをリンクで配る"
                 onPress={() => 共有の窓を出す(true)}
               >
-                <Icons.Ionicons name="share-outline" size={16} color="#007AFF" />
+                <Icons.Ionicons name="share-outline" size={16} color={基本色.青} />
                 <Text style={styles.shareBtnText}>配る</Text>
               </TouchableOpacity>
             ) : null}
@@ -1179,7 +1180,7 @@ const RecordScreen = () => {
                 }}
                 style={[styles.liveBtn, isLiveActive && styles.liveBtnActive]}
               >
-                <Icons.Ionicons name="radio-outline" size={16} color={isLiveActive ? '#FFF' : '#007AFF'} />
+                <Icons.Ionicons name="radio-outline" size={16} color={isLiveActive ? 基本色.白 : 基本色.青} />
                 <Text style={[styles.liveBtnText, isLiveActive && styles.liveBtnTextActive]}>
                   {isLiveActive ? (isHost ? '停止' : '退出') : 'ライブ'}
                 </Text>
@@ -1206,7 +1207,7 @@ const RecordScreen = () => {
                 <Icons.Ionicons
                   name="remove-circle-outline"
                   size={22}
-                  color={shotsPerRound <= 4 ? '#C7C7CC' : '#007AFF'}
+                  color={shotsPerRound <= 4 ? 基本色.灰_薄い : 基本色.青}
                 />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => 射数の窓を出す(true)} style={styles.shotsToggle}>
@@ -1229,7 +1230,7 @@ const RecordScreen = () => {
                 <Icons.Ionicons
                   name="add-circle-outline"
                   size={22}
-                  color={shotsPerRound >= 500 ? '#C7C7CC' : '#007AFF'}
+                  color={shotsPerRound >= 500 ? 基本色.灰_薄い : 基本色.青}
                 />
               </TouchableOpacity>
             </View>
@@ -1241,7 +1242,7 @@ const RecordScreen = () => {
               <Text style={styles.zoomLabel}>表示</Text>
               <View style={styles.zoomValue}>
                 <Text style={styles.zoomText}>{Math.round(倍率 * 100)}%</Text>
-                <Icons.Ionicons name="chevron-down" size={10} color="#007AFF" />
+                <Icons.Ionicons name="chevron-down" size={10} color={基本色.青} />
               </View>
             </TouchableOpacity>
           </View>
@@ -1323,7 +1324,7 @@ const RecordScreen = () => {
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={({ hovered }) => [styles.帯の取っ手, hovered && IS_WEB && { opacity: 0.85 }]}
           >
-            <Icons.Ionicons name={帯を畳む ? 'chevron-down' : 'chevron-up'} size={18} color="#8E8E93" />
+            <Icons.Ionicons name={帯を畳む ? 'chevron-down' : 'chevron-up'} size={18} color={基本色.灰} />
           </Pressable>
         </Animated.View>
         <View ref={案内の記録表} style={{ maxHeight: '100%', flexDirection: 'column', maxWidth: '100%' }}>
@@ -1332,7 +1333,7 @@ const RecordScreen = () => {
             : [
                 <ScrollView showsVerticalScrollIndicator={false} bounces={false} style={{ flexGrow: 0 }}>
                   <View style={{ flexDirection: 'row-reverse', minWidth: '100%' }}>
-                    <View style={{ backgroundColor: '#F2F2F7', zIndex: 10 }}>
+                    <View style={{ backgroundColor: 基本色.地, zIndex: 10 }}>
                       <LabelColumn shots={shotsPerRound} showFooter={false} />
                     </View>
                     <ScrollView
@@ -1371,7 +1372,7 @@ const RecordScreen = () => {
                     height: UIConfig.footerHeight * 倍率,
                     flexDirection: 'row-reverse',
                     borderTopWidth: 1.5,
-                    borderTopColor: '#000',
+                    borderTopColor: 基本色.黒,
                   }}
                 >
                   <View
@@ -1379,14 +1380,14 @@ const RecordScreen = () => {
                       width: UIConfig.headerWidth * 倍率,
                       justifyContent: 'center',
                       alignItems: 'center',
-                      backgroundColor: '#F2F2F7',
+                      backgroundColor: 基本色.地,
                       borderLeftWidth: 1.5,
-                      borderLeftColor: '#000',
+                      borderLeftColor: 基本色.黒,
                       borderRightWidth: 1.5,
-                      borderRightColor: '#000',
+                      borderRightColor: 基本色.黒,
                     }}
                   >
-                    <Text style={{ fontSize: 10 * 倍率, fontWeight: 'bold', color: '#3C3C43' }}>名</Text>
+                    <Text style={{ fontSize: 10 * 倍率, fontWeight: 'bold', color: 基本色.文字_二 }}>名</Text>
                   </View>
                   <ScrollView
                     horizontal
@@ -1437,11 +1438,11 @@ const RecordScreen = () => {
                                 width:
                                   (射手.isSeparator ? UIConfig.separatorWidth : UIConfig.cellWidth) * 倍率,
                                 height: UIConfig.footerHeight * 倍率,
-                                backgroundColor: 射手.isTotalCalculator ? 'rgba(0,122,255,0.05)' : '#F2F2F7',
+                                backgroundColor: 射手.isTotalCalculator ? 'rgba(0,122,255,0.05)' : 基本色.地,
                                 borderRightWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 1,
-                                borderRightColor: '#000',
+                                borderRightColor: 基本色.黒,
                                 borderLeftWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 0,
-                                borderLeftColor: '#000',
+                                borderLeftColor: 基本色.黒,
                                 // 余白も表示の大きさに合わせる。4px のままだと 25% でマスの幅（約 7px）を超え、名前の行が上の列とずれた
                                 padding: 4 * 倍率,
                                 justifyContent: 'center',
@@ -1483,7 +1484,7 @@ const RecordScreen = () => {
                                         lineHeight: 組.区切りの名の字(倍率, UIConfig).lineHeight,
                                         fontWeight: '700',
                                         textAlign: 'center',
-                                        color: 組.チームの色(組.区切りのチーム名(射手)) || '#8E8E93',
+                                        color: 組.チームの色(組.区切りのチーム名(射手)) || 基本色.灰,
                                       }} // 欄の高さに入るだけ行を使う。3 行では
                                       // 「日本大学工科」が「日本大.」に切れて分からなかった
                                       numberOfLines={組.区切りの名の字(倍率, UIConfig).numberOfLines}
@@ -1494,7 +1495,7 @@ const RecordScreen = () => {
                                     <Icons.Ionicons
                                       name="ellipsis-horizontal"
                                       size={24 * 倍率}
-                                      color="#8E8E93"
+                                      color={基本色.灰}
                                     />
                                   )}
                                 </TouchableOpacity>
@@ -1532,7 +1533,7 @@ const RecordScreen = () => {
                                   <Text
                                     style={[
                                       styles.footerName,
-                                      { color: 射手.name ? '#000' : '#8E8E93', fontSize: 14 * 倍率 },
+                                      { color: 射手.name ? 基本色.黒 : 基本色.灰, fontSize: 14 * 倍率 },
                                     ]}
                                     numberOfLines={2}
                                   >
@@ -1561,13 +1562,13 @@ const RecordScreen = () => {
                                           !射手.gender ||
                                           射手.gender === '未設定' ||
                                           !['男子', '女子'].includes(射手.gender)
-                                            ? '#8E8E93'
+                                            ? 基本色.灰
                                             : '男子' === 射手.gender
-                                              ? '#007AFF'
-                                              : '#FF2D55',
+                                              ? 基本色.青
+                                              : 基本色.桃,
                                       }}
                                     >
-                                      <Icons.Ionicons name="person" size={10 * 倍率} color="#FFF" />
+                                      <Icons.Ionicons name="person" size={10 * 倍率} color={基本色.白} />
                                     </View>
                                   ) : null}
                                 </TouchableOpacity>
@@ -1596,7 +1597,7 @@ const RecordScreen = () => {
                 style={({ hovered }) => [
                   styles.historyBtn,
                   { opacity: 戻せる ? 1 : 0.3 },
-                  hovered && 戻せる && IS_WEB && { backgroundColor: '#F2F2F7' },
+                  hovered && 戻せる && IS_WEB && { backgroundColor: 基本色.地 },
                 ]}
                 onPress={() => {
                   // ライブ中は共有の知らせ（「取り消しされました。」）が
@@ -1613,13 +1614,13 @@ const RecordScreen = () => {
                 accessibilityLabel="取り消し"
                 aria-label="取り消し"
               >
-                <Icons.Ionicons name="arrow-undo" size={24} color="#8E8E93" />
+                <Icons.Ionicons name="arrow-undo" size={24} color={基本色.灰} />
               </Pressable>
               <Pressable
                 style={({ hovered }) => [
                   styles.historyBtn,
                   { opacity: 進める ? 1 : 0.3 },
-                  hovered && 進める && IS_WEB && { backgroundColor: '#F2F2F7' },
+                  hovered && 進める && IS_WEB && { backgroundColor: 基本色.地 },
                 ]}
                 onPress={() => {
                   進める &&
@@ -1634,7 +1635,7 @@ const RecordScreen = () => {
                 accessibilityLabel="やり直し"
                 aria-label="やり直し"
               >
-                <Icons.Ionicons name="arrow-redo" size={24} color="#8E8E93" />
+                <Icons.Ionicons name="arrow-redo" size={24} color={基本色.灰} />
               </Pressable>
               {/* 記録表の並べ方を変える。絵だけでは向きが読み取りにくいので、 */
               /* 押したあとに何になったかを短く知らせる */}
@@ -1644,7 +1645,7 @@ const RecordScreen = () => {
                   // 取り消し・やり直しと同じ幅にそろえる。絵が小さいぶん
                   // 放っておくと28pxになり、この並びで一番押しにくいボタンになる
                   { alignItems: 'center', minWidth: 32 },
-                  hovered && IS_WEB && { backgroundColor: '#F2F2F7' },
+                  hovered && IS_WEB && { backgroundColor: 基本色.地 },
                 ]}
                 onPress={() => {
                   const 次 = !横に並べる;
@@ -1657,9 +1658,9 @@ const RecordScreen = () => {
                 <Icons.Ionicons
                   name={横に並べる ? 'phone-portrait-outline' : 'phone-landscape-outline'}
                   size={20}
-                  color="#8E8E93"
+                  color={基本色.灰}
                 />
-                <Text style={{ fontSize: 9, color: '#8E8E93', marginTop: 1 }}>
+                <Text style={{ fontSize: 9, color: 基本色.灰, marginTop: 1 }}>
                   {横に並べる ? '縦へ' : '横へ'}
                 </Text>
               </Pressable>
@@ -1684,8 +1685,8 @@ const RecordScreen = () => {
                   addArcher();
                 }}
               >
-                <Icons.Ionicons name="person-add" size={24} color="#007AFF" />
-                <Text style={[styles.addLabel, { color: '#007AFF' }]}>人</Text>
+                <Icons.Ionicons name="person-add" size={24} color={基本色.青} />
+                <Text style={[styles.addLabel, { color: 基本色.青 }]}>人</Text>
               </Pressable>
               <Pressable
                 ref={案内の間隔}
@@ -1700,8 +1701,8 @@ const RecordScreen = () => {
                   addSeparator();
                 }}
               >
-                <Icons.Ionicons name="pause" size={24} color="#FF9500" />
-                <Text style={[styles.addLabel, { color: '#FF9500' }]}>間隔</Text>
+                <Icons.Ionicons name="pause" size={24} color={基本色.橙} />
+                <Text style={[styles.addLabel, { color: 基本色.橙 }]}>間隔</Text>
               </Pressable>
               <Pressable
                 ref={案内の計}
@@ -1718,8 +1719,8 @@ const RecordScreen = () => {
                 // 「手前の計もまとめた総計」を切り替えられる
                 accessibilityHint="合計の列を足します。入れたあと列を押すと、数える範囲を変えられます"
               >
-                <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#34C759' }}>Σ</Text>
-                <Text style={[styles.addLabel, { color: '#34C759' }]}>計</Text>
+                <Text style={{ fontSize: 22, fontWeight: 'bold', color: 基本色.緑 }}>Σ</Text>
+                <Text style={[styles.addLabel, { color: 基本色.緑 }]}>計</Text>
               </Pressable>
               <Pressable
                 ref={案内の画像}
@@ -1734,15 +1735,15 @@ const RecordScreen = () => {
                   setShowOCRModal(true);
                 }}
               >
-                <Icons.Ionicons name="camera" size={24} color="#8E8E93" />
-                <Text style={[styles.addLabel, { color: '#8E8E93' }]}>画像</Text>
+                <Icons.Ionicons name="camera" size={24} color={基本色.灰} />
+                <Text style={[styles.addLabel, { color: 基本色.灰 }]}>画像</Text>
               </Pressable>
             </View>
             <Pressable
               ref={案内の保存ボタン}
               style={({ hovered }) => [
                 styles.saveBtn,
-                履歴の編集 && { backgroundColor: '#FF9500' },
+                履歴の編集 && { backgroundColor: 基本色.橙 },
                 (見るだけ中 || よその団体) && { opacity: 0.4 },
                 hovered && IS_WEB && { opacity: 0.9, transform: [{ scale: 1.02 }] },
               ]} // 絵だけのボタンは読み上げに何も伝わらない。端末は accessibilityLabel、

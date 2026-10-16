@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const React = require('react');
 const { View, Text, ScrollView, TouchableOpacity, TextInput, useWindowDimensions } = require('./rn');
 const 案内 = require('./TutorialGuide');
@@ -425,7 +426,7 @@ const AnalysisScreen = ({ navigation }) => {
     if (0 === data.length) {
       return (
         <View style={styles.noDataGraph}>
-          <Text style={{ color: '#8E8E93' }}>データが足りません</Text>
+          <Text style={{ color: 色.灰 }}>データが足りません</Text>
         </View>
       );
     }
@@ -480,14 +481,14 @@ const AnalysisScreen = ({ navigation }) => {
                 y1={高さ - (余白 + (目盛 / 100) * 描く高さ)}
                 x2={280}
                 y2={高さ - (余白 + (目盛 / 100) * 描く高さ)}
-                stroke="#E5E5EA"
+                stroke={色.地_濃い}
                 strokeWidth="1"
               />
               <Svgの部品.Text
                 x={15}
                 y={高さ - (余白 + (目盛 / 100) * 描く高さ) + 4}
                 fontSize="8"
-                fill="#8E8E93"
+                fill={色.灰}
                 textAnchor="end"
               >
                 {目盛}
@@ -497,7 +498,7 @@ const AnalysisScreen = ({ navigation }) => {
           <Svgの部品.Path
             d={線}
             fill="none"
-            stroke="#007AFF"
+            stroke={色.青}
             strokeWidth="3"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -508,7 +509,7 @@ const AnalysisScreen = ({ navigation }) => {
               cx={点.x}
               cy={点.y}
               r={選んだ番 === 番 ? '6' : '4'}
-              fill={選んだ番 === 番 ? '#FF9500' : '#007AFF'}
+              fill={選んだ番 === 番 ? 色.橙 : 色.青}
               onPress={() => 点を選ぶ(番)}
             />
           ))}
@@ -528,7 +529,7 @@ const AnalysisScreen = ({ navigation }) => {
                 {' の詳細'}
               </Text>
               <TouchableOpacity onPress={() => 点を選ぶ(null)}>
-                <Icons.Ionicons name="close-circle" size={20} color="#C7C7CC" />
+                <Icons.Ionicons name="close-circle" size={20} color={色.灰_薄い} />
               </TouchableOpacity>
             </View>
             <ScrollView style={{ maxHeight: 120 }} showsVerticalScrollIndicator>
@@ -544,7 +545,7 @@ const AnalysisScreen = ({ navigation }) => {
                     styles.detailRow,
                     番 < data[選んだ番].details.length - 1 && {
                       borderBottomWidth: 1,
-                      borderBottomColor: '#F2F2F7',
+                      borderBottomColor: 色.地,
                       paddingBottom: 6,
                       marginBottom: 6,
                     },
@@ -555,7 +556,7 @@ const AnalysisScreen = ({ navigation }) => {
                   </Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <Text style={styles.detailStats}>{明細.stats}</Text>
-                    <Icons.Ionicons name="chevron-forward" size={14} color="#C7C7CC" />
+                    <Icons.Ionicons name="chevron-forward" size={14} color={色.灰_薄い} />
                   </View>
                 </TouchableOpacity>
               ))}
@@ -617,19 +618,21 @@ const AnalysisScreen = ({ navigation }) => {
               }}
             >
               <Text style={[styles.segmentLabel, { width: 'auto', marginRight: 0 }]}>タグフィルター</Text>
-              <View style={{ flexDirection: 'row', backgroundColor: '#E5E5EA', borderRadius: 8, padding: 2 }}>
+              <View
+                style={{ flexDirection: 'row', backgroundColor: 色.地_濃い, borderRadius: 8, padding: 2 }}
+              >
                 <TouchableOpacity
                   onPress={() => setAnalysisTagLogic('AND')}
                   style={[
                     { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-                    'AND' === analysisTagLogic && { backgroundColor: '#FFF' },
+                    'AND' === analysisTagLogic && { backgroundColor: 色.白 },
                   ]}
                 >
                   <Text
                     style={{
                       fontSize: 11,
                       fontWeight: 'bold',
-                      color: 'AND' === analysisTagLogic ? '#007AFF' : '#8E8E93',
+                      color: 'AND' === analysisTagLogic ? 色.青 : 色.灰,
                     }}
                   >
                     すべて含む
@@ -639,14 +642,14 @@ const AnalysisScreen = ({ navigation }) => {
                   onPress={() => setAnalysisTagLogic('OR')}
                   style={[
                     { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-                    'OR' === analysisTagLogic && { backgroundColor: '#FFF' },
+                    'OR' === analysisTagLogic && { backgroundColor: 色.白 },
                   ]}
                 >
                   <Text
                     style={{
                       fontSize: 11,
                       fontWeight: 'bold',
-                      color: 'OR' === analysisTagLogic ? '#007AFF' : '#8E8E93',
+                      color: 'OR' === analysisTagLogic ? 色.青 : 色.灰,
                     }}
                   >
                     いずれか含む
@@ -665,11 +668,11 @@ const AnalysisScreen = ({ navigation }) => {
                 style={[
                   styles.tagChip,
                   0 === analysisSelectedTags.length && styles.tagChipActive,
-                  { backgroundColor: 0 === analysisSelectedTags.length ? '#007AFF' : '#E5E5EA' },
+                  { backgroundColor: 0 === analysisSelectedTags.length ? 色.青 : 色.地_濃い },
                 ]}
                 onPress={() => setAnalysisSelectedTags([])}
               >
-                <Text style={[styles.tagChipText, 0 === analysisSelectedTags.length && { color: '#FFF' }]}>
+                <Text style={[styles.tagChipText, 0 === analysisSelectedTags.length && { color: 色.白 }]}>
                   すべて解除
                 </Text>
               </TouchableOpacity>
@@ -681,11 +684,11 @@ const AnalysisScreen = ({ navigation }) => {
                     style={[
                       styles.tagChip,
                       選択中 && styles.tagChipActive,
-                      { backgroundColor: 選択中 ? '#007AFF' : '#F2F2F7' },
+                      { backgroundColor: 選択中 ? 色.青 : 色.地 },
                     ]}
                     onPress={() => toggleAnalysisTag(タグ)}
                   >
-                    <Text style={[styles.tagChipText, 選択中 && { color: '#FFF' }]}>
+                    <Text style={[styles.tagChipText, 選択中 && { color: 色.白 }]}>
                       {タグ.replace(/^#/, '')}
                     </Text>
                   </TouchableOpacity>
@@ -709,7 +712,7 @@ const AnalysisScreen = ({ navigation }) => {
                   {期間の始め.toLocaleDateString('ja-JP')}
                 </Text>
               </TouchableOpacity>
-              <Icons.Ionicons name="arrow-forward" size={16} color="#8E8E93" />
+              <Icons.Ionicons name="arrow-forward" size={16} color={色.灰} />
               <TouchableOpacity style={styles.dateBtn} onPress={() => 暦を開く('end')}>
                 <Text style={styles.dateLabel}>
                   {'終了: '}
@@ -721,24 +724,24 @@ const AnalysisScreen = ({ navigation }) => {
           {'月ごと' === 期間の種類 && (
             <View style={styles.monthNav}>
               <TouchableOpacity style={styles.monthNavBtn} onPress={() => 月を動かす(-1)}>
-                <Icons.Ionicons name="chevron-back" size={20} color="#007AFF" />
+                <Icons.Ionicons name="chevron-back" size={20} color={色.青} />
               </TouchableOpacity>
               <Text style={styles.monthNavText}>
                 {見ている月 >= 4 ? `${見ている年}年度` : 見ている年 - 1 + '年度'} {見ている月}月
               </Text>
               <TouchableOpacity style={styles.monthNavBtn} onPress={() => 月を動かす(1)}>
-                <Icons.Ionicons name="chevron-forward" size={20} color="#007AFF" />
+                <Icons.Ionicons name="chevron-forward" size={20} color={色.青} />
               </TouchableOpacity>
             </View>
           )}
           {'年度' === 期間の種類 && (
             <View style={styles.monthNav}>
               <TouchableOpacity style={styles.monthNavBtn} onPress={() => 年度を動かす(-1)}>
-                <Icons.Ionicons name="chevron-back" size={20} color="#007AFF" />
+                <Icons.Ionicons name="chevron-back" size={20} color={色.青} />
               </TouchableOpacity>
               <Text style={styles.monthNavText}>{見ている年度}年度</Text>
               <TouchableOpacity style={styles.monthNavBtn} onPress={() => 年度を動かす(1)}>
-                <Icons.Ionicons name="chevron-forward" size={20} color="#007AFF" />
+                <Icons.Ionicons name="chevron-forward" size={20} color={色.青} />
               </TouchableOpacity>
             </View>
           )}
@@ -778,7 +781,7 @@ const AnalysisScreen = ({ navigation }) => {
                   onChangeText={setCustomShotsInput}
                   placeholder="例: 20"
                   keyboardType="numeric"
-                  placeholderTextColor="#C7C7CC"
+                  placeholderTextColor={色.灰_薄い}
                 />
                 <Text style={styles.customShotsUnit}>射以上</Text>
                 <TouchableOpacity
@@ -864,7 +867,7 @@ const AnalysisScreen = ({ navigation }) => {
                 <Text style={styles.mainStatLabel}>的中/射数</Text>
                 <Text style={styles.mainStatValue}>
                   {順位つき[0].hits}
-                  <Text style={{ fontSize: 16, color: '#8E8E93' }}>
+                  <Text style={{ fontSize: 16, color: 色.灰 }}>
                     {' / '}
                     {順位つき[0].shots}
                   </Text>
@@ -934,11 +937,11 @@ const AnalysisScreen = ({ navigation }) => {
               </Text>
               <View style={styles.patternsCardDash}>
                 {[
-                  { label: '皆中', key: 'kaichu', color: '#FF9500' },
-                  { label: '三中', key: 'sanchu', color: '#34C759' },
-                  { label: '羽分', key: 'hake', color: '#007AFF' },
-                  { label: '一中', key: 'icchu', color: '#5856D6' },
-                  { label: '残念', key: 'zannen', color: '#FF3B30' },
+                  { label: '皆中', key: 'kaichu', color: 色.橙 },
+                  { label: '三中', key: 'sanchu', color: 色.緑 },
+                  { label: '羽分', key: 'hake', color: 色.青 },
+                  { label: '一中', key: 'icchu', color: 色.藍 },
+                  { label: '残念', key: 'zannen', color: 色.赤 },
                 ].map((区分) => {
                   const 元 = 自分の期間の成績 || 順位つき[0];
                   const 回数 = 元.patterns[区分.key] || 0;
@@ -975,7 +978,7 @@ const AnalysisScreen = ({ navigation }) => {
                 const 端 = (自分の期間の成績 || 順位つき[0] || {}).端数の射 || 0;
                 return 端 > 0 ? (
                   <Text
-                    style={{ fontSize: 11, color: '#8E8E93', marginTop: 8, lineHeight: 16 }}
+                    style={{ fontSize: 11, color: 色.灰, marginTop: 8, lineHeight: 16 }}
                   >{`※ 4射に満たない ${端} 射は皆中・残念などに分けられないため、この分布に入れていません（的中率には入っています）。`}</Text>
                 ) : null;
               })()}
@@ -988,18 +991,18 @@ const AnalysisScreen = ({ navigation }) => {
         {'member' !== activeRole && (
           <View style={styles.searchBarContainer}>
             <View style={styles.searchBar}>
-              <Icons.Ionicons name="search" size={18} color="#007AFF" style={styles.searchIcon} />
+              <Icons.Ionicons name="search" size={18} color={色.青} style={styles.searchIcon} />
               <TextInput
                 aria-label="メンバー名で検索"
                 style={styles.searchInput}
                 placeholder="メンバー名を検索..."
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={色.灰}
                 value={名前の検索}
                 onChangeText={名前の検索を置く}
               />
               {!!名前の検索 && (
                 <TouchableOpacity onPress={() => 名前の検索を置く('')} style={{ padding: 4 }}>
-                  <Icons.Ionicons name="close-circle" size={18} color="#C7C7CC" />
+                  <Icons.Ionicons name="close-circle" size={18} color={色.灰_薄い} />
                 </TouchableOpacity>
               )}
             </View>
@@ -1019,7 +1022,7 @@ const AnalysisScreen = ({ navigation }) => {
                   </View>
                   <View style={styles.nameContainer}>
                     <Text
-                      style={[styles.memberName, { color: '#000' }]} // 長い名前は2行まで。それ以上は…で切る。
+                      style={[styles.memberName, { color: 色.黒 }]} // 長い名前は2行まで。それ以上は…で切る。
                       // 切らないと右の的中率へ食い込む
                       numberOfLines={2}
                       ellipsizeMode="tail"
@@ -1040,7 +1043,7 @@ const AnalysisScreen = ({ navigation }) => {
                   </View>
                 </View>
                 <View style={styles.rowRight}>
-                  <Text style={[styles.rateText, { color: 部員.rate >= 50 ? '#D32F2F' : '#000' }]}>
+                  <Text style={[styles.rateText, { color: 部員.rate >= 50 ? 色.赤_D32F : 色.黒 }]}>
                     {部員.rate.toFixed(1)}%
                   </Text>
                   <Text style={styles.shotScoreText}>
@@ -1054,7 +1057,7 @@ const AnalysisScreen = ({ navigation }) => {
                 <View
                   style={{
                     padding: 10,
-                    backgroundColor: '#F2F2F7',
+                    backgroundColor: 色.地,
                     borderRadius: 8,
                     marginBottom: 8,
                     flexDirection: 'row',
@@ -1064,10 +1067,10 @@ const AnalysisScreen = ({ navigation }) => {
                   <Icons.Ionicons
                     name="information-circle-outline"
                     size={14}
-                    color="#8E8E93"
+                    color={色.灰}
                     style={{ marginRight: 6 }}
                   />
-                  <Text style={{ fontSize: 11, color: '#8E8E93', fontWeight: 'bold' }}>
+                  <Text style={{ fontSize: 11, color: 色.灰, fontWeight: 'bold' }}>
                     ランキング選外 ({射数の下限}射未満)
                   </Text>
                 </View>
@@ -1079,7 +1082,7 @@ const AnalysisScreen = ({ navigation }) => {
                   >
                     <View style={styles.rowLeft}>
                       <View style={styles.nameContainer}>
-                        <Text style={[styles.memberName, { color: '#000' }]}>{部員.name}</Text>
+                        <Text style={[styles.memberName, { color: 色.黒 }]}>{部員.name}</Text>
                         <Text style={styles.memberSub}>
                           {'group' === activeRole && (部員.termKi ? `${部員.termKi}期 / ` : '')}
                           {'group' === activeRole &&

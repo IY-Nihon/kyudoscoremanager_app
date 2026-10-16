@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 /**
  * AI チャットの見た目の決まり（2026-10-05 に AIChatBot.js から移した）。
  */
@@ -13,7 +14,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#007AFF',
+    backgroundColor: 色.青,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 9999,
@@ -24,14 +25,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -5,
     right: -5,
-    backgroundColor: '#FF3B30',
+    backgroundColor: 色.赤,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#FFF',
+    borderColor: 色.白,
   },
-  badgeText: { color: '#FFF', fontSize: 10, fontWeight: 'bold' },
+  badgeText: { color: 色.白, fontSize: 10, fontWeight: 'bold' },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
@@ -39,7 +40,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   chatContainer: {
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     overflow: 'hidden',
@@ -50,19 +51,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F7',
-    backgroundColor: '#FFF',
+    borderBottomColor: 色.地,
+    backgroundColor: 色.白,
   },
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 17, fontWeight: 'bold', color: '#1C1C1E' },
+  headerTitle: { fontSize: 17, fontWeight: 'bold', color: 色.文字 },
   closeBtn: { padding: 4 },
   // 背景は #F8F8F8 ではなくアプリ標準の #F2F2F7 を使う。
   // #F8F8F8 はダーク時に #2C2C2E へ変換され、AI側の吹き出し(#E5E5EA→#2C2C2E)と
   // 同色になって吹き出しの輪郭が消えてしまうため。
-  messageArea: { flex: 1, backgroundColor: '#F2F2F7' },
+  messageArea: { flex: 1, backgroundColor: 色.地 },
   messageBubble: { maxWidth: '85%', padding: 12, borderRadius: 18, marginBottom: 12 },
-  userBubble: { alignSelf: 'flex-end', backgroundColor: '#007AFF', borderBottomRightRadius: 4 },
-  modelBubble: { alignSelf: 'flex-start', backgroundColor: '#E5E5EA', borderBottomLeftRadius: 4 },
+  userBubble: { alignSelf: 'flex-end', backgroundColor: 色.青, borderBottomRightRadius: 4 },
+  modelBubble: { alignSelf: 'flex-start', backgroundColor: 色.地_濃い, borderBottomLeftRadius: 4 },
   // 答えの吹き出しの左に、小さなキャラクターを置く（吹き出しの下の端にそろえる）
   答えの行: {
     flexDirection: 'row',
@@ -75,24 +76,24 @@ const styles = StyleSheet.create({
   答えの吹き出し: { flexShrink: 1, maxWidth: '88%', marginBottom: 0 },
   // 質問例（入口）。何を聞けるかが分からないまま閉じられるのを防ぐ
   例の枠: { marginTop: 14, paddingHorizontal: 2 },
-  例の前置き: { fontSize: 12, color: '#8E8E93', marginBottom: 8, paddingHorizontal: 4 },
+  例の前置き: { fontSize: 12, color: 色.灰, marginBottom: 8, paddingHorizontal: 4 },
   // 分類ごとの1段。左に分類、右に横へ流す札
   例の段: { marginBottom: 8 },
-  例の分類: { fontSize: 11, color: '#8E8E93', marginBottom: 3, paddingHorizontal: 4 },
+  例の分類: { fontSize: 11, color: 色.灰, marginBottom: 3, paddingHorizontal: 4 },
   例の並び: { paddingRight: 12 },
   例の行: {
     paddingVertical: 7,
     paddingHorizontal: 12,
     borderRadius: 16,
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     borderWidth: 1,
-    borderColor: '#D1D1D6',
+    borderColor: 色.灰_明るい,
     marginRight: 6,
     // 幅は決めない。決めると長い文の末尾が切れる。
     // 1行のまま札を伸ばし、はみ出したぶんは横へ流して見てもらう
   },
-  例の字: { fontSize: 13, color: '#007AFF' },
-  例の断り: { fontSize: 11, color: '#8E8E93', marginTop: 2, paddingHorizontal: 4 },
+  例の字: { fontSize: 13, color: 色.青 },
+  例の断り: { fontSize: 11, color: 色.灰, marginTop: 2, paddingHorizontal: 4 },
   // 打ちかけの続き（入力欄の中に重ねる層）。
   // 入力欄と同じ位置・同じ字の大きさにしないと、文字がずれて二重に見える
   // 入力欄をぴったり包む枠。重ねる層はこの中で位置を決める
@@ -100,22 +101,22 @@ const styles = StyleSheet.create({
   // 入力欄と同じ余白（左右16・上下8）にそろえる
   続きの層: { position: 'absolute', left: 16, right: 16, top: 8, bottom: 8, zIndex: 1 },
   // 字の大きさと行の高さも入力欄と同じにする。違うと重ならない
-  続きの字: { fontSize: 15, lineHeight: 20, color: '#C7C7CC' },
+  続きの字: { fontSize: 15, lineHeight: 20, color: 色.灰_薄い },
   messageText: { fontSize: 15, lineHeight: 20 },
-  userText: { color: '#FFF' },
-  modelText: { color: '#1C1C1E' },
+  userText: { color: 色.白 },
+  modelText: { color: 色.文字 },
   inputArea: {
     flexDirection: 'row',
     padding: 12,
     paddingBottom: 12,
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     borderTopWidth: 1,
-    borderTopColor: '#F2F2F7',
+    borderTopColor: 色.地,
     alignItems: 'center',
   },
   input: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 色.地,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -127,7 +128,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#007AFF',
+    backgroundColor: 色.青,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -140,11 +141,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: '#E5E5EA',
-    backgroundColor: '#F9F9FB',
+    borderTopColor: 色.地_濃い,
+    backgroundColor: 色.地_F9F9FB,
   },
-  まとめて承認の文: { flex: 1, fontSize: 13, color: '#3A3A3C' },
-  actionBtnText: { color: '#FFF', fontSize: 13, fontWeight: 'bold' },
+  まとめて承認の文: { flex: 1, fontSize: 13, color: 色.文字_三 },
+  actionBtnText: { color: 色.白, fontSize: 13, fontWeight: 'bold' },
 });
 
 module.exports = { styles };

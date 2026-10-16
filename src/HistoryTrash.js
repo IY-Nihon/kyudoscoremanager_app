@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Alert, Pressable } = require('./rn');
 const { IS_WEB } = require('./IS_WEB');
 const { useScoreStore } = require('./useScoreStore');
@@ -45,7 +46,7 @@ const ゴミ箱の中身の窓 = ({
             style={{
               width: '90%',
               height: '80%',
-              backgroundColor: '#F2F2F7',
+              backgroundColor: 色.地,
               borderRadius: 12,
               overflow: 'hidden',
             }}
@@ -66,7 +67,7 @@ const ゴミ箱の中身の窓 = ({
                   ゴミ箱で選んだを置く(new Set());
                 }}
               >
-                <Text style={{ fontSize: 16, color: '#007AFF', fontWeight: '500' }}>
+                <Text style={{ fontSize: 16, color: 色.青, fontWeight: '500' }}>
                   {ゴミ箱を編集中 ? '完了' : '編集'}
                 </Text>
               </TouchableOpacity>
@@ -86,7 +87,7 @@ const ゴミ箱の中身の窓 = ({
                     <Text
                       style={{
                         fontSize: 16,
-                        color: ゴミ箱で選んだ.size > 0 ? '#007AFF' : '#C6C6C8',
+                        color: ゴミ箱で選んだ.size > 0 ? 色.青 : 色.区切り,
                         fontWeight: '500',
                       }}
                     >
@@ -114,7 +115,7 @@ const ゴミ箱の中身の窓 = ({
                     <Text
                       style={{
                         fontSize: 16,
-                        color: ゴミ箱で選んだ.size > 0 ? '#FF3B30' : '#C6C6C8',
+                        color: ゴミ箱で選んだ.size > 0 ? 色.赤 : 色.区切り,
                         fontWeight: '500',
                       }}
                     >
@@ -147,7 +148,7 @@ const ゴミ箱の中身の窓 = ({
                     <Text
                       style={{
                         fontSize: 16,
-                        color: trash.length > 0 ? '#FF3B30' : '#C6C6C8',
+                        color: trash.length > 0 ? 色.赤 : 色.区切り,
                         fontWeight: '500',
                       }}
                     >
@@ -155,7 +156,7 @@ const ゴミ箱の中身の窓 = ({
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => ゴミ箱の窓を出す(false)}>
-                    <Icons.Ionicons name="close" size={24} color="#000" />
+                    <Icons.Ionicons name="close" size={24} color={色.黒} />
                   </TouchableOpacity>
                 </View>
               )}
@@ -166,7 +167,7 @@ const ゴミ箱の中身の窓 = ({
             <View style={{ paddingHorizontal: 16, flex: 1 }}>
               <View
                 style={{
-                  backgroundColor: '#FFF',
+                  backgroundColor: 色.白,
                   borderRadius: 10,
                   overflow: 'hidden',
                   paddingHorizontal: 16,
@@ -177,12 +178,10 @@ const ゴミ箱の中身の窓 = ({
                   data={trash}
                   keyExtractor={(記録) => 記録.id}
                   ItemSeparatorComponent={() => (
-                    <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: '#E5E5EA' }} />
+                    <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: 色.地_濃い }} />
                   )}
                   ListEmptyComponent={
-                    <Text
-                      style={{ textAlign: 'center', color: '#8E8E93', paddingVertical: 40, fontSize: 16 }}
-                    >
+                    <Text style={{ textAlign: 'center', color: 色.灰, paddingVertical: 40, fontSize: 16 }}>
                       ゴミ箱は空です
                     </Text>
                   }
@@ -225,30 +224,30 @@ const ゴミ箱の中身の窓 = ({
                             <Icons.Ionicons
                               name={ゴミ箱で選んだ.has(記録.id) ? 'checkmark-circle' : 'ellipse-outline'}
                               size={22}
-                              color={ゴミ箱で選んだ.has(記録.id) ? '#007AFF' : '#C7C7CC'}
+                              color={ゴミ箱で選んだ.has(記録.id) ? 色.青 : 色.灰_薄い}
                             />
                           </TouchableOpacity>
                         )}
                         <View style={{ flex: 1, paddingRight: 8 }}>
-                          <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#000' }}>
+                          <Text style={{ fontSize: 16, fontWeight: 'bold', color: 色.黒 }}>
                             {日付の文} {記録.title ? `[${記録.title}]` : ''}
                           </Text>
                           {!!記録.note && (
-                            <Text style={{ fontSize: 12, color: '#000', marginTop: 4 }} numberOfLines={1}>
+                            <Text style={{ fontSize: 12, color: 色.黒, marginTop: 4 }} numberOfLines={1}>
                               {記録.note}
                             </Text>
                           )}
                         </View>
                         {!ゴミ箱を編集中 && (
                           <TouchableOpacity onPress={() => restoreSession(記録.id)}>
-                            <Text style={{ color: '#007AFF', fontSize: 16, fontWeight: '500' }}>復元</Text>
+                            <Text style={{ color: 色.青, fontSize: 16, fontWeight: '500' }}>復元</Text>
                           </TouchableOpacity>
                         )}
                         {!ゴミ箱を編集中 && (
                           <Icons.Ionicons
                             name="chevron-forward"
                             size={18}
-                            color="#C7C7CC"
+                            color={色.灰_薄い}
                             style={{ marginLeft: 8 }}
                           />
                         )}

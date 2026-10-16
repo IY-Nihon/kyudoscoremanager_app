@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const React = require('react');
 const { View, Text, TouchableOpacity } = require('./rn');
 // 「その射は誰のものか」の決まりは1か所に寄せてある（src/statsRules.js）
@@ -41,10 +42,10 @@ const { styles } = require('./analysisStyles');
 function 弓具の案内() {
   return (
     <View style={{ marginBottom: 20 }}>
-      <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 4 }}>
+      <Text style={{ fontSize: 14, fontWeight: 'bold', color: 色.文字_三, marginBottom: 4 }}>
         弓具を変えた前後
       </Text>
-      <Text style={{ fontSize: 11, color: '#8E8E93', lineHeight: 16 }}>
+      <Text style={{ fontSize: 11, color: 色.灰, lineHeight: 16 }}>
         まだ弓具の記録がありません。メンバーの画面で「弓具管理」から弓力・矢・弦の変更を残すと、その前後の的中がここに並びます。
       </Text>
     </View>
@@ -131,7 +132,7 @@ function 型の節の部品({ 成績, 期間の名, 誰の }) {
             </Text>
           )}
         </View>
-        <Icons.Ionicons name={開いている ? 'chevron-up' : 'chevron-down'} size={18} color="#8E8E93" />
+        <Icons.Ionicons name={開いている ? 'chevron-up' : 'chevron-down'} size={18} color={色.灰} />
       </TouchableOpacity>
       {開いている && (
         <View style={[styles.patternsCardDash, { marginTop: 12 }]}>
@@ -197,7 +198,7 @@ function 型の節の部品({ 成績, 期間の名, 誰の }) {
         </View>
       )}
       {開いている && (
-        <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 8, lineHeight: 16 }}>
+        <Text style={{ fontSize: 11, color: 色.灰, marginTop: 8, lineHeight: 16 }}>
           ※
           4射単位の割合は同じ中り数の中での割合です（三中のうち、その抜き方が何割か）。一手のときの型の割合は、その手すべての中での割合です。
         </Text>
@@ -213,27 +214,27 @@ function 弓具の節(人, 記録たち) {
   if (!並び.length) return 弓具の案内();
   return (
     <View style={{ marginBottom: 20 }}>
-      <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#3A3A3C', marginBottom: 4 }}>
+      <Text style={{ fontSize: 14, fontWeight: 'bold', color: 色.文字_三, marginBottom: 4 }}>
         弓具を変えた前後
       </Text>
-      <Text style={{ fontSize: 11, color: '#8E8E93', marginBottom: 10, lineHeight: 16 }}>
+      <Text style={{ fontSize: 11, color: 色.灰, marginBottom: 10, lineHeight: 16 }}>
         その弓具を使っていた間の成績です。次に変えた日の前日までを数えます。的中の動きが弓具のせいとは限りません。
       </Text>
       {[
         ...並び.map((一件) => (
           <View
             key={一件.変更.id || String(一件.変更.date)}
-            style={{ backgroundColor: '#F2F2F7', borderRadius: 8, padding: 10, marginBottom: 8 }}
+            style={{ backgroundColor: 色.地, borderRadius: 8, padding: 10, marginBottom: 8 }}
           >
-            <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#1C1C1E' }}>
+            <Text style={{ fontSize: 13, fontWeight: 'bold', color: 色.文字 }}>
               {new Date(一件.変更.date).toLocaleDateString() +
                 '　' +
                 (一件.変更.weight ? 一件.変更.weight + 'kg へ' : 一件.種類)}
             </Text>
             {一件.変更.note ? (
-              <Text style={{ fontSize: 12, color: '#3C3C43', marginTop: 2 }}>{一件.変更.note}</Text>
+              <Text style={{ fontSize: 12, color: 色.文字_二, marginTop: 2 }}>{一件.変更.note}</Text>
             ) : null}
-            <Text style={{ fontSize: 12, color: '#3C3C43', marginTop: 4, lineHeight: 17 }}>
+            <Text style={{ fontSize: 12, color: 色.文字_二, marginTop: 4, lineHeight: 17 }}>
               {弓.見立ての言葉(一件)}
             </Text>
           </View>
@@ -242,6 +243,6 @@ function 弓具の節(人, 記録たち) {
     </View>
   );
 }
-const 比較の色たち = ['#FF2D55', '#248A3D', '#C93400', '#AF52DE', '#056B7A', '#5856D6', '#0000CF'];
+const 比較の色たち = [色.桃, 色.緑_濃い, 色.橙_濃い, 色.紫, 色.青緑, 色.藍, 色.青_極];
 
 module.exports = { 弓具の案内, 型の節, 型の節の部品, 弓具の節, 比較の色たち };

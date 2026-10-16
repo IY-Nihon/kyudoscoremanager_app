@@ -1,5 +1,6 @@
 'use strict';
 
+const { 色 } = require('./iro.js');
 const React = require('react');
 const { useState, useEffect, useRef, useCallback } = React;
 const { Text, StyleSheet, View, TouchableOpacity, ScrollView, Dimensions } = require('./rn');
@@ -161,10 +162,28 @@ const use案内 = create((set) => ({
   見本を置く: (値) => set({ 見本データ: 値 }),
   AI開いている: false,
   AI開く: (値) => set({ AI開いている: !!値 }),
-  始める: (控え) => set({ 進行中: true, 番号: 0, 続きも見る: false, 控え, 最高到達: 0, 見本データ: null, AI開いている: false }),
+  始める: (控え) =>
+    set({
+      進行中: true,
+      番号: 0,
+      続きも見る: false,
+      控え,
+      最高到達: 0,
+      見本データ: null,
+      AI開いている: false,
+    }),
   進める: (番) => set((状態) => ({ 番号: 番, 最高到達: Math.max(状態.最高到達, 番) })),
   続きへ: (番) => set((状態) => ({ 続きも見る: true, 番号: 番, 最高到達: Math.max(状態.最高到達, 番) })),
-  終える: () => set({ 進行中: false, 番号: 0, 続きも見る: false, 控え: null, 最高到達: 0, 見本データ: null, AI開いている: false }),
+  終える: () =>
+    set({
+      進行中: false,
+      番号: 0,
+      続きも見る: false,
+      控え: null,
+      最高到達: 0,
+      見本データ: null,
+      AI開いている: false,
+    }),
 }));
 /**
  * 案内を始める。
@@ -596,7 +615,7 @@ const TutorialOverlay = ({ navRef }) => {
           直してもズレない）。本物と間違えないよう、上に帯を出しておく */}
       {いまの手順.見本 && (
         <View style={styles.見本の帯} pointerEvents="none">
-          <Ionicons name="eye-outline" size={13} color="#FFF" />
+          <Ionicons name="eye-outline" size={13} color={色.白} />
           <Text style={styles.見本の帯文字}>見本です（実際の中身ではありません）</Text>
         </View>
       )}
@@ -661,7 +680,7 @@ const TutorialOverlay = ({ navRef }) => {
 
             {触ってもらう && (
               <View style={styles.やってみる}>
-                <Ionicons name="hand-left-outline" size={16} color="#FF9500" />
+                <Ionicons name="hand-left-outline" size={16} color={色.橙} />
                 <Text style={styles.やってみる文字}>{いまの手順.操作.案内}</Text>
               </View>
             )}
@@ -675,7 +694,7 @@ const TutorialOverlay = ({ navRef }) => {
             <View style={styles.操作行}>
               {番号 > 0 ? (
                 <TouchableOpacity onPress={() => 進める(番号 - 1)} style={styles.戻るボタン}>
-                  <Ionicons name="chevron-back" size={16} color="#007AFF" />
+                  <Ionicons name="chevron-back" size={16} color={色.青} />
                   <Text style={styles.戻る文字}>戻る</Text>
                 </TouchableOpacity>
               ) : (
@@ -713,17 +732,17 @@ const TutorialOverlay = ({ navRef }) => {
 const styles = StyleSheet.create({
   根: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999 },
   暗幕: { position: 'absolute', backgroundColor: 'rgba(0,0,0,0.55)' },
-  強調: { position: 'absolute', borderWidth: 2, borderColor: '#007AFF', borderRadius: 10 },
+  強調: { position: 'absolute', borderWidth: 2, borderColor: 色.青, borderRadius: 10 },
   吹き出し: {
     position: 'absolute',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 色.白,
     borderRadius: 14,
     // 余白は中身側（ScrollView の contentContainerStyle）で持つ
     overflow: 'hidden',
     ...(IS_WEB ? { boxShadow: '0 6px 24px rgba(0,0,0,0.25)' } : { elevation: 8 }),
   },
   見出し行: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  番号: { fontSize: 12, color: '#8E8E93', fontWeight: '600' },
+  番号: { fontSize: 12, color: 色.灰, fontWeight: '600' },
   // 指で押す目安は44。文字を大きくせずに、押せる範囲だけ広げる
   閉じるボタン: {
     minHeight: 44,
@@ -732,22 +751,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'flex-end',
   },
-  閉じる文字: { fontSize: 13, color: '#8E8E93' },
-  題: { fontSize: 17, fontWeight: 'bold', color: '#1C1C1E', marginBottom: 8 },
-  文: { fontSize: 14, color: '#3A3A3C', lineHeight: 21, marginBottom: 3 },
+  閉じる文字: { fontSize: 13, color: 色.灰 },
+  題: { fontSize: 17, fontWeight: 'bold', color: 色.文字, marginBottom: 8 },
+  文: { fontSize: 14, color: 色.文字_三, lineHeight: 21, marginBottom: 3 },
   やってみる: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF6E5',
+    backgroundColor: 色.橙の地,
     borderRadius: 8,
     paddingVertical: 7,
     paddingHorizontal: 10,
     marginTop: 10,
   },
-  やってみる文字: { fontSize: 14, color: '#B26A00', fontWeight: 'bold', marginLeft: 6, flexShrink: 1 },
-  補足: { fontSize: 11, color: '#8E8E93', lineHeight: 16, marginTop: 10 },
+  やってみる文字: { fontSize: 14, color: 色.黄土, fontWeight: 'bold', marginLeft: 6, flexShrink: 1 },
+  補足: { fontSize: 11, color: 色.灰, lineHeight: 16, marginTop: 10 },
   // 見本。画面をまるごと覆う。本物と間違えないよう、上に帯を出す
-  全面の紙: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#F2F2F7' },
+  全面の紙: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 色.地 },
   // 上に置くとタブ列に被る。下端に寄せる
   見本の帯: {
     position: 'absolute',
@@ -759,92 +778,92 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 8,
-    backgroundColor: '#FF9500',
+    backgroundColor: 色.橙,
   },
-  見本の帯文字: { fontSize: 12, color: '#FFF', fontWeight: 'bold' },
+  見本の帯文字: { fontSize: 12, color: 色.白, fontWeight: 'bold' },
   全面: { paddingHorizontal: 16, paddingTop: 14 },
-  全面の題: { fontSize: 22, fontWeight: 'bold', color: '#1C1C1E' },
+  全面の題: { fontSize: 22, fontWeight: 'bold', color: 色.文字 },
   頭の右: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  編集文字: { fontSize: 14, color: '#007AFF', fontWeight: 'bold' },
-  小見出し: { fontSize: 12, color: '#8E8E93' },
-  切替: { flexDirection: 'row', backgroundColor: '#EDEDF5', borderRadius: 7, padding: 2 },
+  編集文字: { fontSize: 14, color: 色.青, fontWeight: 'bold' },
+  小見出し: { fontSize: 12, color: 色.灰 },
+  切替: { flexDirection: 'row', backgroundColor: 色.地_EDEDF5, borderRadius: 7, padding: 2 },
   切替の片: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 5 },
-  切替の選択: { backgroundColor: '#FFF' },
-  切替文字: { fontSize: 11, color: '#8E8E93' },
-  切替の選択文字: { fontSize: 11, color: '#1C1C1E', fontWeight: 'bold' },
+  切替の選択: { backgroundColor: 色.白 },
+  切替文字: { fontSize: 11, color: 色.灰 },
+  切替の選択文字: { fontSize: 11, color: 色.文字, fontWeight: 'bold' },
   札の並び: { flexDirection: 'row', gap: 8, marginTop: 8 },
   札: { borderRadius: 14, paddingHorizontal: 12, paddingVertical: 5 },
-  札の選択: { backgroundColor: '#007AFF' },
-  札の灰: { backgroundColor: '#EDEDF5' },
-  札文字: { fontSize: 12, color: '#3C3C43' },
-  札文字の選択: { color: '#FFF', fontWeight: 'bold' },
-  切り札: { backgroundColor: '#E5E5EA', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 3 },
-  切り札文字: { fontSize: 11, color: '#8E8E93', fontWeight: 'bold' },
-  期間の枠: { flexDirection: 'row', backgroundColor: '#F2F2F7', borderRadius: 8, padding: 3, marginTop: 10 },
+  札の選択: { backgroundColor: 色.青 },
+  札の灰: { backgroundColor: 色.地_EDEDF5 },
+  札文字: { fontSize: 12, color: 色.文字_二 },
+  札文字の選択: { color: 色.白, fontWeight: 'bold' },
+  切り札: { backgroundColor: 色.地_濃い, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 3 },
+  切り札文字: { fontSize: 11, color: 色.灰, fontWeight: 'bold' },
+  期間の枠: { flexDirection: 'row', backgroundColor: 色.地, borderRadius: 8, padding: 3, marginTop: 10 },
   期間の片: { flex: 1, alignItems: 'center', paddingVertical: 5, borderRadius: 6 },
-  期間の選択: { backgroundColor: '#FFF' },
-  期間文字: { fontSize: 11, color: '#8E8E93' },
-  期間文字の選択: { fontSize: 11, color: '#007AFF', fontWeight: 'bold' },
-  基準札: { backgroundColor: '#F7F7FA', borderRadius: 8, padding: 10, marginTop: 10 },
+  期間の選択: { backgroundColor: 色.白 },
+  期間文字: { fontSize: 11, color: 色.灰 },
+  期間文字の選択: { fontSize: 11, color: 色.青, fontWeight: 'bold' },
+  基準札: { backgroundColor: 色.地_F7F7FA, borderRadius: 8, padding: 10, marginTop: 10 },
   基準の並び: { flexDirection: 'row', gap: 6, marginTop: 8 },
   基準の片: {
     flex: 1,
     alignItems: 'center',
-    backgroundColor: '#EDEDF5',
+    backgroundColor: 色.地_EDEDF5,
     borderRadius: 6,
     paddingVertical: 6,
   },
-  基準文字: { fontSize: 11, color: '#3C3C43' },
+  基準文字: { fontSize: 11, color: 色.文字_二 },
   基準の入力行: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
   基準の入力: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     borderRadius: 6,
     paddingHorizontal: 10,
     paddingVertical: 7,
   },
-  基準の入力文字: { fontSize: 11, color: '#C7C7CC' },
-  絞り込みボタン: { backgroundColor: '#E5E5EA', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 7 },
-  絞り込み文字: { fontSize: 11, color: '#8E8E93', fontWeight: 'bold' },
-  基準の注: { fontSize: 10, color: '#8E8E93', textAlign: 'center', marginTop: 8 },
+  基準の入力文字: { fontSize: 11, color: 色.灰_薄い },
+  絞り込みボタン: { backgroundColor: 色.地_濃い, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 7 },
+  絞り込み文字: { fontSize: 11, color: 色.灰, fontWeight: 'bold' },
+  基準の注: { fontSize: 10, color: 色.灰, textAlign: 'center', marginTop: 8 },
   選ぶ行: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 },
-  選ぶ見出し: { fontSize: 12, color: '#3C3C43', width: 34 },
-  選ぶ枠: { flex: 1, flexDirection: 'row', backgroundColor: '#F2F2F7', borderRadius: 8, padding: 3 },
+  選ぶ見出し: { fontSize: 12, color: 色.文字_二, width: 34 },
+  選ぶ枠: { flex: 1, flexDirection: 'row', backgroundColor: 色.地, borderRadius: 8, padding: 3 },
   選ぶ片: { flex: 1, alignItems: 'center', paddingVertical: 5, borderRadius: 6 },
-  選ぶ片の選択: { backgroundColor: '#FFF' },
-  選ぶ文字: { fontSize: 11, color: '#8E8E93' },
-  選ぶ文字の選択: { fontSize: 11, color: '#007AFF', fontWeight: 'bold' },
-  一覧: { backgroundColor: '#FFF', borderRadius: 10, marginTop: 12, overflow: 'hidden' },
+  選ぶ片の選択: { backgroundColor: 色.白 },
+  選ぶ文字: { fontSize: 11, color: 色.灰 },
+  選ぶ文字の選択: { fontSize: 11, color: 色.青, fontWeight: 'bold' },
+  一覧: { backgroundColor: 色.白, borderRadius: 10, marginTop: 12, overflow: 'hidden' },
   記録行: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10 },
-  記録の区切り: { borderTopWidth: 1, borderTopColor: '#EFEFF4' },
+  記録の区切り: { borderTopWidth: 1, borderTopColor: 色.区切り_薄い },
   題の行: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   偽の検索: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#FFF',
+    backgroundColor: 色.白,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  偽の検索文字: { fontSize: 13, color: '#8E8E93' },
+  偽の検索文字: { fontSize: 13, color: 色.灰 },
   年度札: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     alignSelf: 'center',
     marginTop: 12,
-    backgroundColor: '#EDEDF5',
+    backgroundColor: 色.地_EDEDF5,
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 6,
   },
-  年度札文字: { fontSize: 13, color: '#3C3C43', fontWeight: 'bold' },
+  年度札文字: { fontSize: 13, color: 色.文字_二, fontWeight: 'bold' },
   月の並び: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 10, flexWrap: 'wrap' },
-  絞り込み札: { backgroundColor: '#FFF', borderRadius: 12, padding: 12, marginTop: 10 },
-  見本の題行: { fontSize: 12, color: '#1C1C1E', fontWeight: 'bold' },
-  見本の題: { color: '#007AFF', fontWeight: 'bold' },
-  見本の小字: { fontSize: 10, color: '#8E8E93', marginTop: 2 },
+  絞り込み札: { backgroundColor: 色.白, borderRadius: 12, padding: 12, marginTop: 10 },
+  見本の題行: { fontSize: 12, color: 色.文字, fontWeight: 'bold' },
+  見本の題: { color: 色.青, fontWeight: 'bold' },
+  見本の小字: { fontSize: 10, color: 色.灰, marginTop: 2 },
   見本のタグ: {
     alignSelf: 'flex-start',
     marginTop: 3,
@@ -852,36 +871,36 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
     borderRadius: 3,
     borderWidth: 1,
-    borderColor: '#C7C7CC',
+    borderColor: 色.灰_薄い,
   },
-  見本のタグ文字: { fontSize: 9, color: '#8E8E93' },
-  見本の人数: { backgroundColor: '#E8F6EC', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
-  見本の人数文字: { fontSize: 11, color: '#34A853', fontWeight: 'bold' },
+  見本のタグ文字: { fontSize: 9, color: 色.灰 },
+  見本の人数: { backgroundColor: 色.緑の地_2, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
+  見本の人数文字: { fontSize: 11, color: 色.Google_緑, fontWeight: 'bold' },
   見本の順: {
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: '#E5E5EA',
+    backgroundColor: 色.地_濃い,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  見本の順文字: { fontSize: 10, color: '#8E8E93', fontWeight: 'bold' },
-  見本の名: { fontSize: 12, color: '#1C1C1E', fontWeight: 'bold' },
-  見本の率: { fontSize: 13, color: '#D93025', fontWeight: 'bold' },
+  見本の順文字: { fontSize: 10, color: 色.灰, fontWeight: 'bold' },
+  見本の名: { fontSize: 12, color: 色.文字, fontWeight: 'bold' },
+  見本の率: { fontSize: 13, color: 色.赤_D930, fontWeight: 'bold' },
   操作行: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 },
   戻るボタン: { flexDirection: 'row', alignItems: 'center', minHeight: 44, paddingHorizontal: 8 },
-  戻る文字: { fontSize: 15, color: '#007AFF' },
+  戻る文字: { fontSize: 15, color: 色.青 },
   分かれ道行: { flexDirection: 'row', alignItems: 'center' },
   とばすボタン: { minHeight: 44, paddingHorizontal: 14, justifyContent: 'center' },
-  とばす文字: { fontSize: 15, color: '#8E8E93' },
+  とばす文字: { fontSize: 15, color: 色.灰 },
   次へボタン: {
-    backgroundColor: '#007AFF',
+    backgroundColor: 色.青,
     borderRadius: 10,
     minHeight: 44,
     paddingHorizontal: 24,
     justifyContent: 'center',
   },
-  次へ文字: { fontSize: 15, color: '#FFFFFF', fontWeight: 'bold' },
+  次へ文字: { fontSize: 15, color: 色.白, fontWeight: 'bold' },
 });
 exports.TutorialOverlay = TutorialOverlay;
 exports.useTutorialTarget = useTutorialTarget;
