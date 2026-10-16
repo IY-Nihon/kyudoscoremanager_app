@@ -19,6 +19,7 @@ const {
 } = require('./rn');
 const { IS_WEB, SAFE_TOP_PADDING, WEB_TOP_PADDING } = require('./IS_WEB');
 const { useScoreStore } = require('./useScoreStore');
+const 学 = require('./gakunen');
 const { use引いて更新 } = require('./hikiOroshi');
 // 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
 const { useストアの一部 } = require('./storeSlice');
@@ -108,13 +109,10 @@ const MemberScreen = () => {
     (部員) => 部員 && 部員.name && 部員.name.toLowerCase().includes(検索の文.toLowerCase())
   );
   const activeMembers = filteredMembers
-    .filter((部員) => (部員.grade || 0) < 5)
+    .filter((部員) => 学.現役か(部員))
     .sort((甲, 乙) => {
-      const 甲の学年 = undefined === 甲.grade || null === 甲.grade ? 99 : Number(甲.grade);
-      const 乙の学年 = undefined === 乙.grade || null === 乙.grade ? 99 : Number(乙.grade);
-      const 甲の順 = 0 === 甲の学年 ? 99 : 甲の学年;
-      const 乙の順 = 0 === 乙の学年 ? 99 : 乙の学年;
-      if (甲の順 !== 乙の順) return 甲の順 - 乙の順;
+      const 学年の差 = 学.学年の順(甲) - 学.学年の順(乙);
+      if (学年の差) return 学年の差;
       const 性別の順 = (性別) => {
         const 整えた = (性別 || '').trim();
         return '男子' === 整えた ? 0 : '女子' === 整えた ? 1 : 2;
@@ -123,7 +121,7 @@ const MemberScreen = () => {
       return 0 !== 性別の差 ? 性別の差 : (甲.name || '').localeCompare(乙.name || '', 'ja');
     });
   const graduateMembers = filteredMembers
-    .filter((部員) => 部員.grade === 5)
+    .filter((部員) => 学.卒業生か(部員))
     .sort((甲, 乙) => {
       const kiA = 甲.termKi || 0;
       const kiB = 乙.termKi || 0;
@@ -179,7 +177,7 @@ const MemberScreen = () => {
             {部員.termKi ? `${部員.termKi}期 / ` : ''}
             {部員.gender}
             {' / '}
-            {部員.grade === 5 ? '卒業生' : 部員.grade > 0 ? `${部員.grade}年` : 'その他'}
+            {学.学年の名前(部員)}
           </Text>
         </View>
         <View style={styles.memberEqInfo}>
@@ -220,7 +218,7 @@ const MemberScreen = () => {
       !部員.termKi && 今の一年生の期)
     ) {
       const 学年 = 部員.grade || 1;
-      期の下書きを置く(学年 >= 1 && 学年 <= 5 ? String(今の一年生の期 - (学年 - 1)) : '');
+      期の下書きを置く(学.期を付ける学年か(学年) ? String(学.学年の期(今の一年生の期, 学年)) : '');
     } else 期の下書きを置く(部員.termKi?.toString() || '');
     編集の窓を出す(true);
   };
@@ -448,19 +446,17 @@ const MemberScreen = () => {
             </View>
             <Text style={styles.label}>学年</Text>
             <View style={styles.stepperContainer}>
-              <Text style={styles.stepperValue}>
-                {'0' === 学年の下書き ? 'その他' : '5' === 学年の下書き ? '卒業生' : `${学年の下書き}年生`}
-              </Text>
+              <Text style={styles.stepperValue}>{学.学年の値の名前(学年の下書き, null, { 生: true })}</Text>
               <View style={styles.stepperControls}>
                 <Pressable
                   style={({ hovered }) => [styles.stepperBtn, hovered && { backgroundColor: 色.灰_明るい }]}
                   onPress={() => {
                     const 今の学年 = parseInt(学年の下書き) || 0;
-                    if (今の学年 > 0) {
+                    if (今の学年 > 学.学年の幅().下) {
                       const 次の学年 = 今の学年 - 1;
                       学年の下書きを置く(String(次の学年));
-                      if (今の一年生の期 && 次の学年 >= 1 && 次の学年 <= 5)
-                        期の下書きを置く(String(今の一年生の期 - (次の学年 - 1)));
+                      if (今の一年生の期 && 学.期を付ける学年か(次の学年))
+                        期の下書きを置く(String(学.学年の期(今の一年生の期, 次の学年)));
                     }
                   }}
                 >
@@ -471,11 +467,11 @@ const MemberScreen = () => {
                   style={({ hovered }) => [styles.stepperBtn, hovered && { backgroundColor: 色.灰_明るい }]}
                   onPress={() => {
                     const 今の学年 = parseInt(学年の下書き) || 0;
-                    if (今の学年 < 5) {
+                    if (今の学年 < 学.学年の幅().上) {
                       const 次の学年 = 今の学年 + 1;
                       学年の下書きを置く(String(次の学年));
-                      if (今の一年生の期 && 次の学年 >= 1 && 次の学年 <= 5)
-                        期の下書きを置く(String(今の一年生の期 - (次の学年 - 1)));
+                      if (今の一年生の期 && 学.期を付ける学年か(次の学年))
+                        期の下書きを置く(String(学.学年の期(今の一年生の期, 次の学年)));
                     }
                   }}
                 >
@@ -513,12 +509,9 @@ const MemberScreen = () => {
             <View style={styles.きまりの行}>
               <Text style={styles.きまりの名}>学年</Text>
               <Text style={styles.きまりの値}>
-                {(() => {
-                  const 学 = String(
-                    (いまの自分 && いまの自分.grade != null ? いまの自分.grade : 学年の下書き) ?? ''
-                  );
-                  return '5' === 学 ? '卒業生' : '0' === 学 ? 'その他' : `${学}年`;
-                })()}
+                {学.学年の値の名前(
+                  (いまの自分 && いまの自分.grade != null ? いまの自分.grade : 学年の下書き) ?? ''
+                )}
               </Text>
             </View>
             <View style={[styles.きまりの行, { borderBottomWidth: 0 }]}>

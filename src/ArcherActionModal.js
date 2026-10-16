@@ -16,6 +16,7 @@ const {
 } = require('./rn');
 const Icons = require('@expo/vector-icons');
 const { useScoreStore } = require('./useScoreStore');
+const 学 = require('./gakunen');
 const { useストアの一部 } = require('./storeSlice');
 const { getShadowStyle } = require('./shadowStyle');
 const ArcherActionModal = ({
@@ -96,7 +97,7 @@ const ArcherActionModal = ({
   const 現役の候補 = React.useMemo(() => {
     return (
       members
-        .filter((部員) => (部員.grade || 0) < 5)
+        .filter((部員) => 学.現役か(部員))
         .filter((部員) => '' === 検索の文 || (部員.name || '').includes(検索の文))
         // 男女で絞る。男女別の立ちを組むとき、毎回名前を探さずに済む
         .filter((部員) => '全員' === 男女の絞り || (部員.gender || '') === 男女の絞り)
@@ -104,13 +105,10 @@ const ArcherActionModal = ({
           const 甲は入っている = 今の射手たち.some((一人) => 一人.memberId === 甲.id);
           if (甲は入っている !== 今の射手たち.some((一人) => 一人.memberId === 乙.id))
             return 甲は入っている ? 1 : -1;
-          const 甲の学年 = undefined === 甲.grade || null === 甲.grade ? 99 : Number(甲.grade);
-          const 乙の学年 = undefined === 乙.grade || null === 乙.grade ? 99 : Number(乙.grade);
           // 「その他」（学年0）は後ろへ。乙の側は、以前は o（入っているか）を
           // 見ていて学年の比べ合いになっておらず、一覧が学年順に並ばなかった
-          const 甲の順 = 0 === 甲の学年 ? 99 : 甲の学年;
-          const 乙の順 = 0 === 乙の学年 ? 99 : 乙の学年;
-          if (甲の順 !== 乙の順) return 甲の順 - 乙の順;
+          const 学年の差 = 学.学年の順(甲) - 学.学年の順(乙);
+          if (学年の差) return 学年の差;
           const cVal = (性別) => {
             const 整えた = (性別 || '').trim();
             return '男子' === 整えた ? 0 : '女子' === 整えた ? 1 : 2;
@@ -123,26 +121,21 @@ const ArcherActionModal = ({
   const activeGroups = React.useMemo(() => {
     const groups = {};
     現役の候補.forEach((部員) => {
-      const gVal = undefined === 部員.grade || null === 部員.grade ? 0 : Number(部員.grade);
+      const gVal = 学.その他か(部員) ? 0 : 学.学年の値(部員);
       groups[gVal] || (groups[gVal] = []);
       groups[gVal].push(部員);
     });
     const sortedGrades = Object.keys(groups)
       .map(Number)
-      .sort((甲, 乙) => {
-        if (甲 === 0) return 1;
-        if (乙 === 0) return -1;
-        return 甲 - 乙;
-      });
+      .sort((甲, 乙) => 学.学年の順({ grade: 甲 }) - 学.学年の順({ grade: 乙 }));
     return sortedGrades.map((gVal) => {
-      let title = `${gVal}年生`;
-      if (gVal === 0) title = 'その他/ゲスト';
+      const title = 学.学年の値の名前(gVal, null, { 生: true, その他: 'その他/ゲスト' });
       return { grade: gVal, title, members: groups[gVal] };
     });
   }, [現役の候補]);
   const alumniByTerm = React.useMemo(() => {
     const 候補 = members
-      .filter((部員) => 部員.grade === 5 || 部員.isAlumni)
+      .filter((部員) => 学.卒業生か(部員))
       .concat(alumniState || [])
       .filter((部員) => '' === 検索の文 || (部員.name || '').includes(検索の文));
     const tVal = {};

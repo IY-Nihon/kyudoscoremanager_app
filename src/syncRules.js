@@ -11,6 +11,8 @@
  */
 'use strict';
 
+const 学 = require('./gakunen');
+
 /** クラウドが新しいと見なす最小の差（ミリ秒）。時計のずれを吸収する */
 const CLOUD_NEWER_MARGIN_MS = 1000;
 
@@ -1110,9 +1112,8 @@ function 射の立番号(位置) {
 /**
  * 人を学年でまとめる。記録表の人の選択と同じ分け方にそろえる。
  *
- * ・進級で 4年生は grade:5 になる（ストアの進級処理）。5以上、または
- *   isAlumni / graduationYear を持つ人は「卒業生」としてひとまとめ。
- * ・学年の無い人は「その他/ゲスト」。
+ * ・卒業生（進級で 4年生は grade:5 になる。卒業生の印を持つ人も）はひとまとめ。
+ * ・学年の無い人は「その他/ゲスト」。卒業生か・その他かは src/gakunen.js で決める。
  * ・並びは 1年生→…→その他/ゲスト→卒業生。
  *
  * 返す印は文字（'1' '2' … '0' '卒'）。開け閉めの覚えに使うため、
@@ -1122,22 +1123,14 @@ function 学年でまとめる(人たち) {
   const 束 = {};
   (Array.isArray(人たち) ? 人たち : []).forEach((人) => {
     if (!人) return;
-    const 卒 = 5 <= Number(人.grade) || 人.isAlumni || 人.graduationYear;
-    const 印 = 卒 ? '卒' : String(人.grade === undefined || 人.grade === null ? 0 : Number(人.grade));
+    const 印 = 学.卒業生か(人) ? '卒' : 学.その他か(人) ? '0' : String(学.学年の値(人));
     (束[印] || (束[印] = [])).push(人);
   });
   return Object.keys(束)
-    .sort((甲, 乙) => {
-      if (甲 === 乙) return 0;
-      if ('卒' === 甲) return 1;
-      if ('卒' === 乙) return -1;
-      if ('0' === 甲) return 1;
-      if ('0' === 乙) return -1;
-      return Number(甲) - Number(乙);
-    })
+    .sort((甲, 乙) => 学.学年の順(束[甲][0]) - 学.学年の順(束[乙][0]))
     .map((印) => ({
       学年: 印,
-      題: '卒' === 印 ? '卒業生' : '0' === 印 ? 'その他/ゲスト' : `${印}年生`,
+      題: 学.学年の名前(束[印][0], null, { 生: true, その他: 'その他/ゲスト' }),
       人たち: 束[印],
     }));
 }

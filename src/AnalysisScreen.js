@@ -9,6 +9,7 @@ const { 自分の記録か } = require('./syncRules');
 // 「その射は誰のものか」の決まりは1か所に寄せてある（src/statsRules.js）
 const 集 = require('./statsRules');
 const { useScoreStore } = require('./useScoreStore');
+const 学 = require('./gakunen');
 const { use引いて更新 } = require('./hikiOroshi');
 // 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
 const { useストアの一部 } = require('./storeSlice');
@@ -288,7 +289,7 @@ const AnalysisScreen = ({ navigation }) => {
   const 順位の元 = React.useMemo(
     () =>
       [
-        ...(members || []).filter((部員1人) => showAlumniInAnalysis || (部員1人.grade || 0) < 5),
+        ...(members || []).filter((部員1人) => showAlumniInAnalysis || 学.現役か(部員1人)),
         ...(((学年の絞り === '卒業生' || showAlumniInAnalysis) && alumni) || []),
       ]
         .filter((部員1人) => !!部員1人)
@@ -300,8 +301,8 @@ const AnalysisScreen = ({ navigation }) => {
             if (性別の絞り !== '全員' && 部員.gender !== 性別の絞り) return false;
             if (学年の絞り !== '全学年') {
               if (学年の絞り === '卒業生') {
-                if (!(5 === 部員.grade || 部員.graduationYear || 部員.isAlumni)) return false;
-              } else if (`${部員.grade}年` !== 学年の絞り) return false;
+                if (!学.卒業生か(部員)) return false;
+              } else if (学.学年の名前(部員) !== 学年の絞り) return false;
             }
           }
           // 名前の検索はここでは絞らない（順位と射数の下限は検索の前の全員で決める）
@@ -830,7 +831,7 @@ const AnalysisScreen = ({ navigation }) => {
               <View style={styles.filterDivider} />
               <選択肢の帯
                 label="学年:"
-                options={['全学年', '1年', '2年', '3年', '4年']}
+                options={['全学年', ...学.学年の名前たち()]}
                 selected={学年の絞り}
                 onSelect={学年の絞りを置く}
               />
@@ -1031,12 +1032,7 @@ const AnalysisScreen = ({ navigation }) => {
                     </Text>
                     <Text style={styles.memberSub} numberOfLines={1}>
                       {'group' === activeRole && (部員.termKi ? `${部員.termKi}期 / ` : '')}
-                      {'group' === activeRole &&
-                        (部員.grade === 5 || 部員.graduationYear
-                          ? '卒業生'
-                          : 部員.grade === 0
-                            ? 'その他'
-                            : `${部員.grade}年`)}
+                      {'group' === activeRole && 学.学年の名前(部員)}
                       {' / '}
                       {'group' === activeRole && `${部員.gender}`}
                     </Text>
@@ -1085,12 +1081,7 @@ const AnalysisScreen = ({ navigation }) => {
                         <Text style={[styles.memberName, { color: 色.黒 }]}>{部員.name}</Text>
                         <Text style={styles.memberSub}>
                           {'group' === activeRole && (部員.termKi ? `${部員.termKi}期 / ` : '')}
-                          {'group' === activeRole &&
-                            (部員.grade === 5 || 部員.graduationYear
-                              ? '卒業生'
-                              : 部員.grade === 0
-                                ? 'その他'
-                                : `${部員.grade}年`)}
+                          {'group' === activeRole && 学.学年の名前(部員)}
                           {' / '}
                           {'group' === activeRole && `${部員.gender}`}
                         </Text>

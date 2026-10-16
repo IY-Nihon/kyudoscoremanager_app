@@ -23,6 +23,7 @@ const {
 
 const { Ionicons } = require('@expo/vector-icons');
 const { AIMascot } = require('./AIMascot');
+const 学 = require('./gakunen');
 const IS_WEB = Platform.OS === 'web';
 
 /**
@@ -570,9 +571,7 @@ const AIChatBot = () => {
         // 部員一覧のみ渡す（トークン節約）。詳細成績はgetDetailedMemberStatsで取得
         const memberList = members
           .map((member) => {
-            const gradeLabel =
-              member.grade >= 5 ? '卒業生' : member.grade === 0 ? 'その他' : `${member.grade}年`;
-            return `${member.name}(${gradeLabel})`;
+            return `${member.name}(${学.学年の名前(member)})`;
           })
           .join(', ');
 

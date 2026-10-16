@@ -17,6 +17,7 @@ const {
   場,
   雲へ書く記録,
 } = require('./storeShared');
+const 学 = require('./gakunen');
 
 const 部員の操作 = (書く, 状態, そのまま書く) => ({
   addMember: (名前, 性別, 学年, 期) => {
@@ -29,7 +30,7 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
       name: 整えた名前,
       gender: 性別,
       grade: 学年,
-      termKi: 期 || 状態().currentFreshmanTerm - (学年 - 1),
+      termKi: 期 || 学.学年の期(状態().currentFreshmanTerm, 学年),
       lastModified: Date.now(),
       syncStatus: '未同期',
     };
@@ -67,12 +68,12 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
       const 年 = 今日.getFullYear();
       const 月 = 今日.getMonth() + 1;
       const 年度 = 月 >= 4 ? 年 : 年 - 1;
-      5 === Number(変更.grade) ? (変更.graduationYear = 年度) : (変更.graduationYear = null);
+      学.卒業生か({ grade: 変更.grade }) ? (変更.graduationYear = 年度) : (変更.graduationYear = null);
     }
     状態().members.find((部員) => 部員.id === 部員ID);
     let 直す中身 = Object.assign({}, 変更);
     if (undefined !== 変更.grade && undefined === 変更.termKi) {
-      const 期 = 状態().currentFreshmanTerm - (変更.grade - 1);
+      const 期 = 学.学年の期(状態().currentFreshmanTerm, 変更.grade);
       直す中身.termKi = 期;
     }
     const 直した部員 = 状態().members.map((部員) =>
