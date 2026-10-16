@@ -16,6 +16,7 @@ const {
 const Icons = require('@expo/vector-icons');
 const { useScoreStore } = require('./useScoreStore');
 const 学 = require('./gakunen');
+const 区 = require('./kubun');
 const { use引いて更新 } = require('./hikiOroshi');
 // 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
 const { useストアの一部 } = require('./storeSlice');
@@ -44,7 +45,18 @@ const AttendanceScreen = () => {
   // 上から引っ張って更新（src/hikiOroshi.js）。雲から取り直す
   const 引く = use引いて更新(() => useScoreStore.getState().雲から取り直す());
   const 引く予定 = use引いて更新(() => useScoreStore.getState().雲から取り直す());
-  const { members, sessions, activeGroupId } = useストアの一部(['members', 'sessions', 'activeGroupId']);
+  const {
+    members,
+    sessions,
+    activeGroupId,
+    divisions: 区分たち = [],
+    groupType,
+    useTerm: 期を使う,
+  } = useストアの一部(['members', 'sessions', 'activeGroupId', 'divisions', 'groupType', 'useTerm']);
+  const 決まり = 学.決まりを作る(groupType);
+  // 区分の絞り（区分の id。null は全員）。消された区分を選んだままなら絞らない
+  const [選んだ区分, 区分の絞りを置く] = React.useState(null);
+  const 区分の絞り = 区分たち.some((区分) => 区分.id === 選んだ区分) ? 選んだ区分 : null;
   const [tab, setTab] = React.useState('stats');
   const [rangeType, setRangeType] = React.useState('month');
   const [practiceDays, setPracticeDays] = React.useState({});
@@ -154,7 +166,11 @@ const AttendanceScreen = () => {
   };
   // 表示している期間の練習日だけで数える（練習日で数える は日付の範囲で絞るので、絞った練習日をそのまま渡す）
   const 絞った練習日 = Object.fromEntries(filteredPracticeDays.map((日) => [日, practiceDays[日]]));
-  const stats = 練習日で数える(members, sessions, 絞った練習日, { 今日: todayStr, 現役か: isActiveInYear })
+  // 区分で絞るのは人だけ（出席率の分母の練習日は同じ）
+  const stats = 練習日で数える(区.区分で絞る(members, 区分の絞り), sessions, 絞った練習日, {
+    今日: todayStr,
+    現役か: isActiveInYear,
+  })
     .map(({ 部員, 出席, 遅刻, 早退, 欠席, 来た回数, 出席率 }) => ({
       ...部員,
       rate: 出席率,
@@ -404,6 +420,29 @@ const AttendanceScreen = () => {
       )}
       {tab === 'stats' ? (
         <View style={{ flex: 1 }}>
+          {区分たち.length ? (
+            <View style={styles.区分の列} aria-label="区分で絞る">
+              {[{ id: null, name: '全員' }, ...区分たち].map((区分) => {
+                const 選んだ = 区分の絞り === 区分.id;
+                return (
+                  <TouchableOpacity
+                    key={区分.id || '全員'}
+                    accessibilityRole="button"
+                    aria-pressed={選んだ}
+                    style={[styles.rangeBtn, styles.区分の札, 選んだ && styles.rangeBtnActive]}
+                    onPress={() => 区分の絞りを置く(区分.id)}
+                  >
+                    <Text
+                      style={[styles.rangeBtnText, 選んだ && styles.rangeBtnTextActive]}
+                      numberOfLines={1}
+                    >
+                      {区分.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ) : null}
           {引く.しるし}
           <FlatList
             ref={引く.ref}
@@ -428,9 +467,7 @@ const AttendanceScreen = () => {
                     </Text>
                     <Text style={styles.memberName}>{部員.name}</Text>
                   </View>
-                  <Text
-                    style={styles.memberSub}
-                  >{`${部員.termKi ? 部員.termKi + '期 / ' : ''}${部員.gender} / ${学.学年の名前(部員)}`}</Text>
+                  <Text style={styles.memberSub}>{学.人の説明(部員, 決まり, { 期を使う, 区分たち })}</Text>
                 </View>
                 <View style={styles.statInfo}>
                   <Text style={styles.rateText}>{部員.rate.toFixed(1)}%</Text>
@@ -578,9 +615,7 @@ const AttendanceScreen = () => {
                   style={styles.modalHeaderMain}
                 >
                   <Text style={styles.modalTitle}>{selectedMember.name}</Text>
-                  <Text
-                    style={styles.memberSub}
-                  >{`${selectedMember.gender} / ${学.学年の名前(selectedMember)}`}</Text>
+                  <Text style={styles.memberSub}>{学.人の説明(selectedMember, 決まり, { 区分たち })}</Text>
                 </View>
                 <TouchableOpacity
                   style={styles.closeBtn} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
@@ -708,6 +743,16 @@ const styles = StyleSheet.create({
   rangeBtnActive: { backgroundColor: 色.青 },
   rangeBtnText: { fontSize: 12, color: 色.灰 },
   rangeBtnTextActive: { color: 色.白 },
+  // 区分の絞り（区分が多いと折り返す）
+  区分の列: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    backgroundColor: 色.白,
+    paddingHorizontal: 10,
+    paddingBottom: 10,
+    gap: 8,
+  },
+  区分の札: { flex: 0, minWidth: 64, paddingHorizontal: 12 },
   monthNav: {
     flexDirection: 'row',
     alignItems: 'center',

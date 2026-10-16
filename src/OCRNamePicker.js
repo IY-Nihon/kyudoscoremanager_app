@@ -15,7 +15,7 @@ const 名前を割り当てる窓 = ({
   setPickerTarget,
   pickerSearch,
   setPickerSearch,
-  expandedActiveGrades,
+  閉じた組,
   expandedTerms,
   isEnteringGuest,
   setIsEnteringGuest,
@@ -98,7 +98,7 @@ const 名前を割り当てる窓 = ({
               {activeGroups.map((group) => {
                 const gStr = group.grade.toString();
                 // 検索中（要確認セルからの自動絞り込み含む）は、折りたたみ状態に関わらず候補を表示する
-                const isOpen = pickerSearch.trim() ? true : expandedActiveGrades.has(gStr);
+                const isOpen = pickerSearch.trim() ? true : !閉じた組.has(gStr);
                 return (
                   <React.Fragment key={`grade-${gStr}`}>
                     <TouchableOpacity style={styles.accordionHeader} onPress={() => toggleActiveGrade(gStr)}>

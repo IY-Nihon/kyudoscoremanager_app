@@ -83,6 +83,7 @@ const {
 const { 盤面の操作 } = require('./storeBoard');
 const { 部員の操作 } = require('./storeMembers');
 const 学 = require('./gakunen');
+const 区 = require('./kubun');
 // 学年まわりの団体の設定の初めの値。出たとき・別の団体へ入るときもここへ戻す
 const 学年まわりの初めの値 = Object.freeze({
   // 団体の種類（src/gakunen.js の 種類たち）。null は大学（4 年）
@@ -91,6 +92,8 @@ const 学年まわりの初めの値 = Object.freeze({
   promotionCheck: true,
   // 期を使うか。使わない団体では期をどこにも出さない
   useTerm: false,
+  // 区分（団体が作る分け方。[{ id, name }] の並び。src/kubun.js）
+  divisions: [],
   // 進級を待っている年（団体ログインで進級の窓を出す）。押されるまで全員の学年は前の年度のまま
   進級待ちの年: null,
   // 進級の窓を「あとで」で閉じたか（その起動のあいだ。記録画面の帯は出し続ける）
@@ -755,16 +758,32 @@ const useScoreStore = zustand.create()(
           }
         },
         setPromotionCheck: (入れる) => 状態().学年の設定を書く({ promotionCheck: !!入れる }),
+        // 区分（src/kubun.js）。足す・直すは、断るとき（空・同じ名前）に画面へ出す文を返す
+        区分を足す: (名前) => {
+          const 結果 = 区.区分を足す(状態().divisions, 名前, generateUUID());
+          if (結果.誤り) return 結果.誤り;
+          状態().学年の設定を書く({ divisions: 結果.一覧 });
+          return null;
+        },
+        区分の名前を直す: (id, 名前) => {
+          const 結果 = 区.区分の名前を直す(状態().divisions, id, 名前);
+          if (結果.誤り) return 結果.誤り;
+          状態().学年の設定を書く({ divisions: 結果.一覧 });
+          return null;
+        },
+        // 消しても部員の divisionIds は書き換えない（今の一覧に無い id は無いものとして読む）
+        区分を消す: (id) => 状態().学年の設定を書く({ divisions: 区.区分を消す(状態().divisions, id) }),
+        区分を動かす: (id, 向き) =>
+          状態().学年の設定を書く({ divisions: 区.区分を動かす(状態().divisions, id, 向き) }),
         setUseTerm: (使う) => 状態().学年の設定を書く({ useTerm: !!使う }),
         /**
          * 団体の種類を変える。新しい種類に無い学年の人（6 年制から高校へ変えたときの 4〜6 年など）は「その他」にする
-         * （画面で確かめてから呼ぶ）。返すのは「その他」にした人数
+         * （画面で確かめてから呼ぶ）。返すのは「その他」にした人数。
+         * 学年の無い団体（社会人の会・道場）にするときは学年を書き換えない（出さないだけ。学校に戻せば元の学年が出る）
          */
         setGroupType: async (種類) => {
           const 決まり = 学.決まりを作る(種類);
-          const はみ出す人 = (状態().members || []).filter(
-            (部員) => 学.現役か(部員, 決まり) && 学.その他か(部員, 決まり) && 0 !== 学.学年の値(部員, 決まり)
-          );
+          const はみ出す人 = 学.学年がはみ出す人(状態().members, 決まり);
           await 状態().学年の設定を書く({ groupType: 決まり.種類 });
           はみ出す人.forEach((部員) => 状態().updateMember(部員.id, { grade: 0 }));
           return はみ出す人.length;
@@ -1152,6 +1171,7 @@ const useScoreStore = zustand.create()(
           groupType: 状態の中身.groupType,
           promotionCheck: 状態の中身.promotionCheck,
           useTerm: 状態の中身.useTerm,
+          divisions: 状態の中身.divisions,
           analysisRankingSettings: 状態の中身.analysisRankingSettings,
           enableArrowLocation: 状態の中身.enableArrowLocation,
           自動ロックする: 状態の中身.自動ロックする,

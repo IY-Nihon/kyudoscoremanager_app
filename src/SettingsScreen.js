@@ -24,6 +24,7 @@ const { useストアの一部 } = require('./storeSlice');
 const 規則 = require('./syncRules');
 const 学 = require('./gakunen');
 const { 団体の種類を選ぶ } = require('./GroupTypePicker');
+const { 区分の設定 } = require('./DivisionSettings');
 const 案内 = require('./TutorialGuide');
 const Icons = require('@expo/vector-icons');
 const ReactNativeSafeAreaContext = require('react-native-safe-area-context');
@@ -142,17 +143,27 @@ const SettingsScreen = () => {
   const [削除の失敗, 削除の失敗を設定] = React.useState('');
   const [inquiryVisible, setInquiryVisible] = React.useState(false);
   const [種類の窓, 種類の窓を出す] = React.useState(false);
+  // 学年の無い団体（社会人の会・道場）には、進級の確認・期を使う・現在の期を出さない
+  const 学年なし = 学.決まりを作る(groupType).学年なし;
   // 種類を選んだとき。新しい種類に無い学年の人がいれば、「その他」になることを確かめてから変える
   const 種類を選んだ = (種類) => {
     if (種類 === (groupType || 学.既定の種類)) return void 種類の窓を出す(false);
     const 決まり = 学.決まりを作る(種類);
-    const はみ出す人 = (members || []).filter(
-      (部員) => 学.現役か(部員, 決まり) && 学.その他か(部員, 決まり) && 0 !== 学.学年の値(部員, 決まり)
-    );
+    const はみ出す人 = 学.学年がはみ出す人(members, 決まり);
     const 変える = () => {
       setGroupType(種類);
       種類の窓を出す(false);
     };
+    // 学年の無い団体へ変えるときは学年を書き換えない（出さないだけ）。そのことを確かめてから変える
+    if (決まり.学年なし)
+      return void Alert.alert(
+        '団体の種類を変える',
+        '学年と期を出さなくなり、代わりに入会した年を出します。呼び方は「会員」「男性・女性」「退会」になります。今の学年は消えないので、学校に戻すとまた出ます。',
+        [
+          { text: 'やめる', style: 'cancel' },
+          { text: '変える', onPress: 変える },
+        ]
+      );
     if (!はみ出す人.length) return void 変える();
     const 学年たち = Array.from(new Set(はみ出す人.map((部員) => 学.学年の値(部員, 決まり))))
       .sort((甲, 乙) => 甲 - 乙)
@@ -370,7 +381,8 @@ const SettingsScreen = () => {
                   aria-label={'団体の種類 ' + 学.種類の説明(groupType || 学.既定の種類)}
                   onPress={() => 種類の窓を出す(true)}
                 >
-                  <View style={[styles.itemLeft, { flex: 1 }]}>
+                  {/* 値（「社会人の会・道場（学年なし）」）が長いので、名前は縮めず、値の側を縮めて折り返す */}
+                  <View style={[styles.itemLeft, { flexShrink: 0, marginRight: 12 }]}>
                     <Icons.Ionicons
                       name="school-outline"
                       size={22}
@@ -379,13 +391,18 @@ const SettingsScreen = () => {
                     />
                     <Text style={styles.itemText}>団体の種類</Text>
                   </View>
-                  <Text style={{ fontSize: 14, color: 基本色.灰, marginRight: 4 }}>
-                    {学.種類の説明(groupType || 学.既定の種類)}
-                  </Text>
+                  <View style={{ flex: 1, alignItems: 'flex-end', marginRight: 4 }}>
+                    <Text style={{ fontSize: 14, color: 基本色.灰, textAlign: 'right' }}>
+                      {学.決まりを作る(groupType).種類の名前}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: 基本色.灰, textAlign: 'right' }}>
+                      {学.学年の幅の名前(groupType || 学.既定の種類)}
+                    </Text>
+                  </View>
                   <Icons.Ionicons name="chevron-forward" size={18} color={基本色.灰_薄い} />
                 </Pressable>
               )}
-              {'group' === activeRole && (
+              {'group' === activeRole && !学年なし && (
                 <View style={styles.item}>
                   <View style={[styles.itemLeft, { flex: 1 }]}>
                     <Icons.Ionicons
@@ -409,7 +426,7 @@ const SettingsScreen = () => {
                   />
                 </View>
               )}
-              {'group' === activeRole && (
+              {'group' === activeRole && !学年なし && (
                 <View style={styles.item}>
                   <View style={[styles.itemLeft, { flex: 1 }]}>
                     <Icons.Ionicons
@@ -433,7 +450,7 @@ const SettingsScreen = () => {
                   />
                 </View>
               )}
-              {'group' === activeRole && useTerm && (
+              {'group' === activeRole && !学年なし && useTerm && (
                 <View style={styles.item}>
                   <View style={[styles.itemLeft, { flex: 1 }]}>
                     <View style={[styles.itemIcon, { width: 22 }]} />
@@ -488,6 +505,7 @@ const SettingsScreen = () => {
                   </View>
                 </View>
               )}
+              {'group' === activeRole && <区分の設定 />}
               {'group' === activeRole && (
                 <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
                   <View

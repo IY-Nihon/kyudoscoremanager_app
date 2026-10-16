@@ -156,12 +156,17 @@ const LoginScreen = () => {
       { groupName: 団体名の入力 },
       { merge: true }
     ).catch((誤り) => console.warn('[Login] 団体名を置けませんでした', 誤り));
-    // 学年まわりの設定。新しい団体は、期を使わず、4 月 1 日に進級の窓を出す。
+    // 学年まわりの設定。新しい団体は、期を使わず、4 月 1 日に進級の窓を出す（学年の無い団体は出さない）。
     // 古い版のアプリの自動進級は切っておく（src/gakunen.js の 設定を書き足すか）。
     // 書けなくても団体は使える（大学として動き、設定から変えられる）
     await Firestore.setDoc(
       Firestore.doc(db, 'groups', 団体ID, 'config', 'app_settings'),
-      { groupType: 種類の入力, promotionCheck: true, useTerm: false, autoPromotionEnabled: false },
+      {
+        groupType: 種類の入力,
+        promotionCheck: !学.決まりを作る(種類の入力).学年なし,
+        useTerm: false,
+        autoPromotionEnabled: false,
+      },
       { merge: true }
     ).catch((誤り) => console.warn('[Login] 団体の種類を置けませんでした', 誤り));
     Alert.alert(

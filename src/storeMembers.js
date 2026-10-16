@@ -18,9 +18,14 @@ const {
   雲へ書く記録,
 } = require('./storeShared');
 const 学 = require('./gakunen');
+const 区 = require('./kubun');
 
 const 部員の操作 = (書く, 状態, そのまま書く) => ({
-  addMember: (名前, 性別, 学年, 期) => {
+  /**
+   * 部員を足す。足すもの … 区分（divisionIds）・入会した年（joinedYear。学年の無い団体）。
+   * 区分は今の一覧にある id だけを残す（src/kubun.js の 付けられる区分）
+   */
+  addMember: (名前, 性別, 学年, 期, 足すもの) => {
     if (!状態().activeGroupId || 'group' !== 状態().activeRole)
       return void Alert.alert('権限エラー', 'メンバーの追加は団体ログイン、かつ管理者のみ可能です。');
     const 整えた名前 = 名前 ? 名前.trim() : '';
@@ -37,6 +42,10 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
       lastModified: Date.now(),
       syncStatus: '未同期',
     };
+    const 足す = 足すもの || {};
+    if (Array.isArray(足す.divisionIds) && 足す.divisionIds.length)
+      新しい部員.divisionIds = 区.付けられる区分(足す.divisionIds, 状態().divisions);
+    if (Number.isFinite(足す.joinedYear)) 新しい部員.joinedYear = 足す.joinedYear;
     if (
       (書く({ members: [...状態().members, 新しい部員], lastLocalChange: Date.now() }), 状態().activeGroupId)
     ) {

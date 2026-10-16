@@ -54,8 +54,12 @@ const AnalysisScreen = ({ navigation }) => {
     比較のひな型を足す,
     比較のひな型を消す,
     activeGroupId: いまの団体id,
-    // 団体の種類で、学年の絞り込みの選びが変わる（src/gakunen.js）
+    // 団体の種類で、学年の絞り込みの選びと呼び方が変わる（src/gakunen.js）
     groupType,
+    // 区分（src/kubun.js）。あれば絞り込みに出す
+    divisions: 区分たち = [],
+    // 期を使う団体だけ、一覧に期を出す
+    useTerm: 期を使う,
     // 案内が見本を出しているあいだは、中身だけ見本に差し替わる
   } = 案内.見本を重ねる(
     useストアの一部([
@@ -81,6 +85,8 @@ const AnalysisScreen = ({ navigation }) => {
       'setHistoryViewMode',
       'setFocusedMemberId',
       'groupType',
+      'divisions',
+      'useTerm',
       '比較のひな型',
       '比較のひな型を足す',
       '比較のひな型を消す',
@@ -154,6 +160,10 @@ const AnalysisScreen = ({ navigation }) => {
   const [期間の種類, 期間の種類を置く] = React.useState('すべて');
   const [性別の絞り, 性別の絞りを置く] = React.useState('全員');
   const [学年の絞り, 学年の絞りを置く] = React.useState('全学年');
+  // 区分の絞り（区分の id。'全区分' は絞らない）。消された区分を選んだままなら絞らない
+  const [選んだ区分, 区分の絞りを置く] = React.useState('全区分');
+  const 区分の絞り = 区分たち.some((区分) => 区分.id === 選んだ区分) ? 選んだ区分 : '全区分';
+  const 決まり = 学.決まりを作る(groupType);
   const 今日 = new Date();
   const 今の年度 = 今日.getMonth() + 1 >= 4 ? 今日.getFullYear() : 今日.getFullYear() - 1;
   const [見ている年, 見ている年を置く] = React.useState(今日.getFullYear());
@@ -176,7 +186,7 @@ const AnalysisScreen = ({ navigation }) => {
   // 期間・集計単位・射手が変更されたらグラフの選択を解除する
   React.useEffect(() => {
     setSelectedTrendLabel(null);
-  }, [期間の種類, 推移の刻み, 性別の絞り, 学年の絞り, myMemberId]);
+  }, [期間の種類, 推移の刻み, 性別の絞り, 学年の絞り, 区分の絞り, myMemberId]);
   // モーダル対象が切り替わったら選択を解除する
   React.useEffect(() => {
     setSelectedModalTrendLabel(null);
@@ -302,6 +312,7 @@ const AnalysisScreen = ({ navigation }) => {
           if (0 === 部員.shots) return false;
           if (activeRole === 'group') {
             if (性別の絞り !== '全員' && 部員.gender !== 性別の絞り) return false;
+            if (区分の絞り !== '全区分' && !(部員.divisionIds || []).includes(区分の絞り)) return false;
             if (学年の絞り !== '全学年') {
               if (学年の絞り === '卒業生') {
                 if (!学.卒業生か(部員)) return false;
@@ -312,7 +323,17 @@ const AnalysisScreen = ({ navigation }) => {
           return true;
         })
         .sort((甲, 乙) => (Math.abs(乙.rate - 甲.rate) > 0.01 ? 乙.rate - 甲.rate : 乙.shots - 甲.shots)),
-    [members, alumni, showAlumniInAnalysis, 学年の絞り, activeRole, myMemberId, 性別の絞り, 絞った記録]
+    [
+      members,
+      alumni,
+      showAlumniInAnalysis,
+      学年の絞り,
+      区分の絞り,
+      activeRole,
+      myMemberId,
+      性別の絞り,
+      絞った記録,
+    ]
   );
   // 名前の検索は、順位を付けたあとの表示だけを絞る。先に絞ると、検索で残った人だけで
   // 最多の射数と順位を数え直し、射数の足りない人が 1 位に見えた
@@ -827,20 +848,42 @@ const AnalysisScreen = ({ navigation }) => {
               <View style={styles.filterDivider} />
               <選択肢の帯
                 label="性別:"
-                options={['全員', '男子', '女子']}
+                // 値は名簿の性別（男子・女子）のまま。学年の無い団体では「男性・女性」と出す
+                options={[
+                  '全員',
+                  { label: 学.性別の名前('男子', 決まり), value: '男子' },
+                  { label: 学.性別の名前('女子', 決まり), value: '女子' },
+                ]}
                 selected={性別の絞り}
                 onSelect={性別の絞りを置く}
               />
-              <View style={styles.filterDivider} />
-              <選択肢の帯
-                label="学年:"
-                options={['全学年', ...学.学年の名前たち(学.決まりを作る(groupType))]}
-                selected={学年の絞り}
-                onSelect={学年の絞りを置く}
-              />
+              {決まり.学年なし ? null : (
+                <>
+                  <View style={styles.filterDivider} />
+                  <選択肢の帯
+                    label="学年:"
+                    options={['全学年', ...学.学年の名前たち(決まり)]}
+                    selected={学年の絞り}
+                    onSelect={学年の絞りを置く}
+                  />
+                </>
+              )}
+              {区分たち.length ? (
+                <>
+                  <View style={styles.filterDivider} />
+                  <選択肢の帯
+                    label="区分:"
+                    options={['全区分', ...区分たち.map((区分) => ({ label: 区分.name, value: 区分.id }))]}
+                    selected={区分の絞り}
+                    onSelect={区分の絞りを置く}
+                  />
+                </>
+              ) : null}
               <View style={styles.filterDivider} />
               <View style={styles.toggleRow}>
-                <Text style={styles.toggleLabel}>卒業生を表示</Text>
+                <Text style={styles.toggleLabel}>
+                  {決まり.学年なし ? `${決まり.呼び方.退部}した人を表示` : '卒業生を表示'}
+                </Text>
                 <TouchableOpacity
                   style={[styles.miniBtn, showAlumniInAnalysis && styles.miniBtnActive]}
                   onPress={() => setAlumni(!showAlumniInAnalysis)}
@@ -1034,10 +1077,7 @@ const AnalysisScreen = ({ navigation }) => {
                       {部員.name}
                     </Text>
                     <Text style={styles.memberSub} numberOfLines={1}>
-                      {'group' === activeRole && (部員.termKi ? `${部員.termKi}期 / ` : '')}
-                      {'group' === activeRole && 学.学年の名前(部員)}
-                      {' / '}
-                      {'group' === activeRole && `${部員.gender}`}
+                      {'group' === activeRole && 学.人の説明(部員, 決まり, { 期を使う, 区分たち })}
                     </Text>
                   </View>
                 </View>
@@ -1083,10 +1123,7 @@ const AnalysisScreen = ({ navigation }) => {
                       <View style={styles.nameContainer}>
                         <Text style={[styles.memberName, { color: 色.黒 }]}>{部員.name}</Text>
                         <Text style={styles.memberSub}>
-                          {'group' === activeRole && (部員.termKi ? `${部員.termKi}期 / ` : '')}
-                          {'group' === activeRole && 学.学年の名前(部員)}
-                          {' / '}
-                          {'group' === activeRole && `${部員.gender}`}
+                          {'group' === activeRole && 学.人の説明(部員, 決まり, { 期を使う, 区分たち })}
                         </Text>
                       </View>
                     </View>

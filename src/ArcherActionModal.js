@@ -63,6 +63,9 @@ const ArcherActionModal = ({
     addSeparator,
     addTotalCalculator,
     deleteArcher,
+    // 団体の種類と区分（学年の無い団体は区分ごとの組・男性／女性の呼び方。src/gakunen.js の 選ぶ組）
+    groupType,
+    divisions: 区分たち = [],
   } = useストアの一部([
     'members',
     'alumni',
@@ -73,12 +76,16 @@ const ArcherActionModal = ({
     'addSeparator',
     'addTotalCalculator',
     'deleteArcher',
+    'groupType',
+    'divisions',
   ]);
+  const 決まり = React.useMemo(() => 学.決まりを作る(groupType), [groupType]);
   const [検索の文, 検索の文を置く] = React.useState('');
   const [客名の入力中, 客名の入力中を置く] = React.useState(false);
   const [客名の下書き, 客名の下書きを置く] = React.useState('');
   const [expandedTerms, setExpandedTerms] = React.useState(new Set());
-  const [expandedActiveGrades, setExpandedActiveGrades] = React.useState(new Set(['1', '2', '3', '4', '0']));
+  // 閉じた組（学年・区分の鍵）。初めはどの組も開いている（高専・6 年制の 5・6 年や区分の組も）
+  const [閉じた組, 閉じた組を置く] = React.useState(() => new Set());
   // いまこの射手に入っている途中交代。1つでもあれば取り消す道を出す。
   // これまで解除する口がどこにも無く、履歴にも積んでいないので取り消しでも
   // 戻らなかった（間違えるとリセットするしかなかった）
@@ -118,21 +125,16 @@ const ArcherActionModal = ({
         })
     );
   }, [members, archers, 検索の文, 今の射手たち, 男女の絞り]);
-  const activeGroups = React.useMemo(() => {
-    const groups = {};
-    現役の候補.forEach((部員) => {
-      const gVal = 学.その他か(部員) ? 0 : 学.学年の値(部員);
-      groups[gVal] || (groups[gVal] = []);
-      groups[gVal].push(部員);
-    });
-    const sortedGrades = Object.keys(groups)
-      .map(Number)
-      .sort((甲, 乙) => 学.学年の順({ grade: 甲 }) - 学.学年の順({ grade: 乙 }));
-    return sortedGrades.map((gVal) => {
-      const title = 学.学年の値の名前(gVal, null, { 生: true, その他: 'その他/ゲスト' });
-      return { grade: gVal, title, members: groups[gVal] };
-    });
-  }, [現役の候補]);
+  // 学年ごと（学年の無い団体は区分ごと）の組
+  const activeGroups = React.useMemo(
+    () =>
+      学.選ぶ組(現役の候補, 決まり, 区分たち).map((組) => ({
+        grade: 組.鍵,
+        title: 組.題,
+        members: 組.人たち,
+      })),
+    [現役の候補, 決まり, 区分たち]
+  );
   const alumniByTerm = React.useMemo(() => {
     const 候補 = members
       .filter((部員) => 学.卒業生か(部員))
@@ -165,7 +167,7 @@ const ArcherActionModal = ({
     });
   };
   const toggleActiveGrade = (gVal) => {
-    setExpandedActiveGrades((prev) => {
+    閉じた組を置く((prev) => {
       const next = new Set(prev);
       if (next.has(gVal)) next.delete(gVal);
       else next.add(gVal);
@@ -397,7 +399,7 @@ const ArcherActionModal = ({
                       accessibilityState={{ selected: 男女の絞り === 名 }}
                     >
                       <Text style={[styles.男女の絞りの字, 男女の絞り === 名 && styles.男女の絞りの字選択中]}>
-                        {名}
+                        {'全員' === 名 ? 名 : 学.性別の名前(名, 決まり)}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -405,7 +407,7 @@ const ArcherActionModal = ({
                 <View style={styles.section}>
                   {activeGroups.map((group) => {
                     const gStr = group.grade.toString();
-                    const isOpen = expandedActiveGrades.has(gStr);
+                    const isOpen = !閉じた組.has(gStr);
                     return (
                       <React.Fragment key={`group-${group.grade}`}>
                         <TouchableOpacity style={styles.termHeader} onPress={() => toggleActiveGrade(gStr)}>
