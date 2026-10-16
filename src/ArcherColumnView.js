@@ -388,14 +388,34 @@ const ArcherColumnView = React.memo(
                       線,
                     ]}
                   >
-                    <Text
-                      style={[
-                        styles.blockTotalText,
-                        { fontSize: (字.length > 4 ? 16 : 字.length > 2 ? 20 : 24) * 倍率 },
-                      ]}
-                    >
-                      {字}
-                    </Text>
+                    {!横 && 字.includes('/') ? (
+                      // 縦の表の分数は、上に分子・横線・下に分母と積む（箱が縦に長いので読みやすい）
+                      <View style={{ alignItems: 'center' }}>
+                        <Text style={[styles.blockTotalText, { fontSize: 22 * 倍率, lineHeight: 26 * 倍率 }]}>
+                          {字.split('/')[0]}
+                        </Text>
+                        <View
+                          style={{
+                            width: 30 * 倍率,
+                            height: Math.max(1, 2 * 倍率),
+                            backgroundColor: 色.青,
+                            marginVertical: 2 * 倍率,
+                          }}
+                        />
+                        <Text style={[styles.blockTotalText, { fontSize: 22 * 倍率, lineHeight: 26 * 倍率 }]}>
+                          {字.split('/')[1]}
+                        </Text>
+                      </View>
+                    ) : (
+                      <Text
+                        style={[
+                          styles.blockTotalText,
+                          { fontSize: (字.length > 4 ? 16 : 字.length > 2 ? 20 : 24) * 倍率 },
+                        ]}
+                      >
+                        {字}
+                      </Text>
+                    )}
                     {鍵が効く && (
                       <TouchableOpacity
                         testID={'計の鍵-' + archer.id + '-' + 立}
