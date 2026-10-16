@@ -15,10 +15,10 @@
 ### 2. マニュアル定義のシャドウをユーティリティへ移行
 以下のファイルに含まれる `shadowColor`, `shadowOffset`, `shadowOpacity`, `shadowRadius`, `elevation` の直接定義を `getShadowStyle` の呼び出しに置き換えます。
 
-- [MODIFY] [AttendanceScreen.js](file:///C:/Users/yutoi/Documents/kyudoscoremanager_app/src/AttendanceScreen.js)
-- [MODIFY] [JP_LoadingScreen_1037.js](file:///C:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_LoadingScreen_1037.js)
-- [MODIFY] [JP_SettingsScreen_1023.js](file:///C:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js) (一部残存している可能性の確認)
-- [MODIFY] [JP_RecordScreen_593.js](file:///C:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_RecordScreen_593.js)
+- [MODIFY] [AttendanceScreen.js](file:///C:/Users/…/Documents/kyudoscoremanager_app/src/AttendanceScreen.js)
+- [MODIFY] [JP_LoadingScreen_1037.js](file:///C:/Users/…/Documents/kyudoscoremanager_app/src/JP_LoadingScreen_1037.js)
+- [MODIFY] [JP_SettingsScreen_1023.js](file:///C:/Users/…/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js) (一部残存している可能性の確認)
+- [MODIFY] [JP_RecordScreen_593.js](file:///C:/Users/…/Documents/kyudoscoremanager_app/src/JP_RecordScreen_593.js)
 - その他、`grep` で特定された箇所の修正
 
 ### 3. セキュリティ強化 (オプション/要確認)

@@ -24,7 +24,7 @@
 - **アプリ全体の起動:** エラー画面（ErrorBoundary等）になることなく正常に起動しました。
 - **UIコンポーネント:** 「設定」タブに移動し、「詳細な条件で絞り込む...」ボタンのクリック後、モーダル内に**「メンバー名」と「タグ絞り込み」のUI要素が正しく表示されること**を確認しました。
 
-![動作確認時の録画](file:///C:/Users/yutoi/.gemini/antigravity/brain/19071e5a-7776-4981-825c-7d5d3672dc88/expo_test_retry_v5_1778445909550.webp)
+![動作確認時の録画](file:///C:/Users/…/.gemini/antigravity/brain/19071e5a-7776-4981-825c-7d5d3672dc88/expo_test_retry_v5_1778445909550.webp)
 
 ## 💡 今後の開発について
 

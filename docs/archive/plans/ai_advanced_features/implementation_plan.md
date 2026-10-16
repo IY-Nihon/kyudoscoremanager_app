@@ -20,7 +20,7 @@
 ### JP_AIChatBot_1034.js
 AIChatBotコンポーネントを大幅に拡張し、次世代アシスタントとしての機能を実装します。
 
-#### [MODIFY] [JP_AIChatBot_1034.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_AIChatBot_1034.js)
+#### [MODIFY] [JP_AIChatBot_1034.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_AIChatBot_1034.js)
 - **Google Search機能**: Gemini API呼び出しの `tools` 配列にGoogle検索ツールを追加。
 - **ナビゲーション機能**: `useNavigation` フックを追加し、AIに画面遷移を行わせるためのFunction Calling（`navigateToScreen`）を定義。
 - **データ編集機能**: メンバーの追加などを行うFunction Callingツールを定義。

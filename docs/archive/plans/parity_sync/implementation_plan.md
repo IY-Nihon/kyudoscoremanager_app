@@ -11,7 +11,7 @@
 
 ---
 
-### 1. 設定画面 ([JP_SettingsScreen_1023.js](file:///C:/Users/yutoi/Documents/%E5%BE%A9%E5%85%83%E3%82%A2%E3%83%97%E3%83%AA/AppBase/src/JP_SettingsScreen_1023.js))
+### 1. 設定画面 ([JP_SettingsScreen_1023.js](file:///C:/Users/…/Documents/%E5%BE%A9%E5%85%83%E3%82%A2%E3%83%97%E3%83%AA/AppBase/src/JP_SettingsScreen_1023.js))
 
 #### [MODIFY]
 - **管理者モードトグルの表示条件**: メンバーログイン時（`V === 'member'`）でも非表示にせず、表示するように戻します。
@@ -21,14 +21,14 @@
 
 ---
 
-### 2. 分析画面 ([JP_AnalysisScreen_1000.js](file:///C:/Users/yutoi/Documents/%E5%BE%A9%E5%85%83%E3%82%A2%E3%83%97%E3%83%AA/AppBase/src/JP_AnalysisScreen_1000.js))
+### 2. 分析画面 ([JP_AnalysisScreen_1000.js](file:///C:/Users/…/Documents/%E5%BE%A9%E5%85%83%E3%82%A2%E3%83%97%E3%83%AA/AppBase/src/JP_AnalysisScreen_1000.js))
 
 #### [CONFIRMED]
 - **卒業生表示トグルの存在**: 既に本番同様のロジック（`'member' !== k` での表示制御）が実装されていることを確認しました。追加の修正は不要です。
 
 ---
 
-### 3. メンバー管理画面 ([JP_MemberScreen_1022.js](file:///C:/Users/yutoi/Documents/%E5%BE%A9%E5%85%83%E3%82%A2%E3%83%97%E3%83%AA/AppBase/src/JP_MemberScreen_1022.js))
+### 3. メンバー管理画面 ([JP_MemberScreen_1022.js](file:///C:/Users/…/Documents/%E5%BE%A9%E5%85%83%E3%82%A2%E3%83%97%E3%83%AA/AppBase/src/JP_MemberScreen_1022.js))
 
 #### [MODIFY]
 - **ソートロジックの修正**: 一部誤って削除していた「性別順」のソートロジックを復元し、本番コードと完全に一致（学年 -> 性別 -> 五十音）させます。

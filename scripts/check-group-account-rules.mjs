@@ -26,7 +26,12 @@ const { apiKey, projectId } = configFor(対象);
 const 根 = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
 
 /** 確かめたい団体を1つ選ぶ（公開の帳面が読めるものなら何でもよい） */
-const 団体 = process.env.CHECK_GROUP || (対象 === 'stg' ? '100001' : '698098');
+// 本番の団体 ID は倉庫に書かない。本番を見るときは CHECK_GROUP で渡す
+const 団体 = process.env.CHECK_GROUP || (対象 === 'stg' ? '100001' : '');
+if (!団体) {
+  console.error('本番を見るときは CHECK_GROUP に団体 ID を渡してください');
+  process.exit(1);
+}
 
 const 読む = async (道, token) =>
   fetch(`${根}/${道}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });

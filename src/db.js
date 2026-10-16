@@ -25,7 +25,7 @@ setupAppCheck(firebaseApp);
 // 「Failed to obtain exclusive access to the persistence layer」で弾かれて
 // 記憶だけの控えに落ちる。落ちるだけならまだしも、本番では
 // FIRESTORE INTERNAL ASSERTION FAILED (ID: b815) に化けて、その窓の
-// 同期がまるごと死んでいた（2026/9/6、団体910280 で10回）。
+// 同期がまるごと死んでいた（2026/9/6、本番の団体A で10回）。
 // 新しい作りは窓どうしで控えを分け合うので、2つ開いても両方が控えを持てる。
 const firestore = (() => {
   try {

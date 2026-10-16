@@ -4,7 +4,7 @@
  *   node scripts/ocr-cells/kiroku-tsukuru.mjs
  *
  * 手で写すと一字ずれる（実測で10番の列が丸ごと違っていた）。読むのは
- * 団体910280 の 9/6「男子リーグ戦第一節」ひとつだけ。並びは記録のまま。
+ * 本番の団体A の 9/6「男子リーグ戦第一節」ひとつだけ。並びは記録のまま。
  */
 import fs from 'node:fs';
 import os from 'node:os';
@@ -25,8 +25,11 @@ const { access_token } = await (
   })
 ).json();
 const 根 = 'https://firestore.googleapis.com/v1/projects/kyudoscoremanager/databases/(default)/documents';
+// 団体 ID は倉庫に書かない。KIROKU_GROUP で渡す
+const 取る団体 = process.env.KIROKU_GROUP;
+if (!取る団体) throw new Error('KIROKU_GROUP に団体 ID を渡してください');
 const j = await (
-  await fetch(`${根}/groups/910280/sessions?pageSize=300`, { headers: { Authorization: `Bearer ${access_token}` } })
+  await fetch(`${根}/groups/${取る団体}/sessions?pageSize=300`, { headers: { Authorization: `Bearer ${access_token}` } })
 ).json();
 const 素 = (v) => {
   if (!v || 'object' !== typeof v) return v;
@@ -81,7 +84,7 @@ const 紙の数字 = [12, 10, 11, 16];
 
 const 逃 = (s) => [...s].map((c) => '\\u' + c.codePointAt(0).toString(16).padStart(4, '0')).join('');
 const 本文 = `/**
- * 確かめ用の答え。団体910280 の 9/6「男子リーグ戦第一節」の記録そのもの。
+ * 確かめ用の答え。本番の団体A の 9/6「男子リーグ戦第一節」の記録そのもの。
  *
  * このファイルは scripts/ocr-cells/kiroku-tsukuru.mjs が書き出す。手で直さないこと。
  * 並びは記録のまま（1〜8が自校の大前→落、9〜16が相手校の大前→落）。

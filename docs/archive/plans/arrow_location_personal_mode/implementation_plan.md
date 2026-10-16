@@ -5,7 +5,7 @@
 ## 変更内容と方針
 
 ### 1. 設定画面での矢所記録設定の有効化
-- **対象ファイル**: [JP_SettingsScreen_1023.js](file:///C:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)
+- **対象ファイル**: [JP_SettingsScreen_1023.js](file:///C:/Users/…/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)
 - **変更内容**: 
   現在、矢所記録セクションの表示条件として `member` ロール以外を対象とする `'member' !== V` という条件がついています。個人ID（`member`ロール）でのログイン時も有効にするため、この条件チェックを外します。
 - **具体例**:
@@ -15,7 +15,7 @@
   ```
 
 ### 2. メンバー選択時にログインユーザー（自分）を最上部に表示
-- **対象ファイル**: [JP_ArcherActionModal_689.js](file:///C:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_ArcherActionModal_689.js)
+- **対象ファイル**: [JP_ArcherActionModal_689.js](file:///C:/Users/…/Documents/kyudoscoremanager_app/src/JP_ArcherActionModal_689.js)
 - **変更内容**: 
   - `useScoreStore()` から `activeRole` と `myMemberId` を追加で取得します。
   - メンバー一覧を表示する `L` の `sort` 処理に条件を追加し、個人ID（`member`ロール）でのログイン中、かつ自身のメンバーIDが判定された場合、自分のメンバーID（`myMemberId`）に一致するメンバーを最優先してソート順の先頭にします。

@@ -2,7 +2,7 @@
  * 画像の読み取りを、実物の写真で試す道具。
  *
  *   node scripts/try-ocr.mjs docs/ocr-samples/板.jpg 右から 20
- *   node scripts/try-ocr.mjs docs/ocr-samples/板.jpg 左右から 20 --正解 910280:男子
+ *   node scripts/try-ocr.mjs docs/ocr-samples/板.jpg 左右から 20 --正解 {団体ID}:男子
  *
  * 引数
  *   1. 画像のみち（複数枚は , で並べる）

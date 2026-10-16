@@ -11,7 +11,7 @@
 
 ### 射手選択モーダルコンポーネント
 
-#### [MODIFY] [ArcherActionModal.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_ArcherActionModal_689.js)
+#### [MODIFY] [ArcherActionModal.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_ArcherActionModal_689.js)
 
 - **グループ化ロジックの追加**:
   - `members` から卒業生（`isAlumni` が true）を抽出し、`termKi` ごとにグループ化します。

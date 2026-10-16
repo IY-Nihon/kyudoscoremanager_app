@@ -11,14 +11,14 @@
 
 ### 1. ナビゲーションコンポーネントの修正
 
-#### [MODIFY] [src/JP_MainNavigator_216.js](file:///C:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_MainNavigator_216.js)
+#### [MODIFY] [src/JP_MainNavigator_216.js](file:///C:/Users/…/Documents/kyudoscoremanager_app/src/JP_MainNavigator_216.js)
 
 - インポートしたスクリーンコンポーネントを、大文字で始まるラッパーコンポーネントとして定義し直します。これにより、React Navigation がコンポーネント名として小文字（`k`, `j` など）を認識して警告を出すのを防ぎます。
 
 ### 2. 重複キー警告の修正
 
-#### [MODIFY] [src/JP_HistoryScreen_692.js](file:///C:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_HistoryScreen_692.js)
-#### [MODIFY] [src/AttendanceScreen.js](file:///C:/Users/yutoi/Documents/kyudoscoremanager_app/src/AttendanceScreen.js)
+#### [MODIFY] [src/JP_HistoryScreen_692.js](file:///C:/Users/…/Documents/kyudoscoremanager_app/src/JP_HistoryScreen_692.js)
+#### [MODIFY] [src/AttendanceScreen.js](file:///C:/Users/…/Documents/kyudoscoremanager_app/src/AttendanceScreen.js)
 
 - `keyExtractor` や `map` 内の `key` 指定において、ID がオブジェクトとして評価される可能性がある箇所を特定し、文字列への変換やユニークな値の生成を確実に行うように修正します。
 

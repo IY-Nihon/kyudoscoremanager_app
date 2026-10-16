@@ -10,8 +10,8 @@
 
 ### ① 新規保存画面（SaveSessionModal & RecordScreen）の連携ギャップ
 * **対象ファイル**: 
-  * [JP_SaveSessionModal_690.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_SaveSessionModal_690.js)
-  * [JP_RecordScreen_593.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_RecordScreen_593.js)
+  * [JP_SaveSessionModal_690.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_SaveSessionModal_690.js)
+  * [JP_RecordScreen_593.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_RecordScreen_593.js)
 * **メカニズム**:
   1. `SaveSessionModal` では、ユーザーが手入力したタグ文字列 `_` を読点やスペースで分割し、Zustandストアの `currentSessionTags` 配列（ステート `z`）に反映しています。
   2. しかし、テンプレートタグ（プリセット）のチップをタップした際、`toggleCurrentSessionTag(e)` が呼び出されます。このとき、プリセットに `#` が付いていない古いデータ（例: `"立"`）が含まれている場合、ステート `z` には `#` のない `"立"` がそのまま入ってしまいます。
@@ -24,7 +24,7 @@
   5. **問題点**: プリセットタップ時に一時的に `#` のないタグがテキスト入力欄 `_` に同期されるため、画面表示上のプレビュー（ハッシュタグの有無）が揺れる原因になります。また、ストアの `tagTemplates` に登録されているプリセット自体が統一されていない場合、トグル処理の判定ロジックが正常に一致しなくなります。
 
 ### ② 編集画面（EditSessionModal）起動時における既存タグの非標準化読み込み（最悪の原因）
-* **対象ファイル**: [JP_EditSessionModal_694.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_EditSessionModal_694.js)
+* **対象ファイル**: [JP_EditSessionModal_694.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_EditSessionModal_694.js)
 * **メカニズム**:
   1. `EditSessionModal` を起動した際、`useEffect` 内で既存セッションのタグ配列 `l.tags` をそのまま編集用ステート `D` にセットしています：
      ```javascript
@@ -43,7 +43,7 @@
   4. さらに、そのまま保存処理（`H`）を走らせると、未正規化 of タグが含まれた状態の配列 `D` がそのまま `tags` フィールドとしてデータベースに書き戻されてしまいます。これが、不整合データが永久に残り続け、増殖していく最大の元凶です。
 
 ### ③ クラウドデータベース（Firestore）の生データ同期ラグ
-* **対象ファイル**: [JP_useScoreStore_174.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_useScoreStore_174.js)
+* **対象ファイル**: [JP_useScoreStore_174.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_useScoreStore_174.js)
 * **メカニズム**:
   1. ストア内には `cleanUpSessions` 処理があり、ハイドレーション時などにセッション全体のタグを標準化する仕組みがあります。
   2. **問題点**: しかし、リアルタイム同期リスナー（`listenToSessions` 等）でクラウドから直接ドキュメントを受信した際、あるいはFirestoreへのバッチ保存時に、この標準化が即座に同期・保存されません。結果として、ローカル状態だけで綺麗に見えても、クラウド側のデータは表記揺れしたままになり、他端末やブラウザのリロード時に再び表記揺れとなって出現します。
@@ -70,7 +70,7 @@ const normalizeTag = (e) => {
 ## 3. コンポーネントごとの具体的な修正ステップ
 
 ### 【防衛線 1】 編集画面起動時の完全標準化（データ侵入の防止）
-* **対象ファイル**: [JP_EditSessionModal_694.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_EditSessionModal_694.js)
+* **対象ファイル**: [JP_EditSessionModal_694.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_EditSessionModal_694.js)
 * **修正内容**: セッションのタグをステート `D` に読み込む際、必ずすべてのタグを `normalizeTag` で綺麗にパースし、重複を排除した状態で初期化します。これにより、クラウド上の古い表記揺れデータが編集画面に持ち込まれるのを完全にシャットアウトします。
 * **具体的なコード修正箇所** (79行目付近):
   ```javascript
@@ -83,11 +83,11 @@ const normalizeTag = (e) => {
   ```
 
 ### 【防衛線 2】 定型タグ（プリセット）選択時の正規化適用の統一
-* **対象ファイル**: [JP_SaveSessionModal_690.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_SaveSessionModal_690.js) / [JP_EditSessionModal_694.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_EditSessionModal_694.js)
+* **対象ファイル**: [JP_SaveSessionModal_690.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_SaveSessionModal_690.js) / [JP_EditSessionModal_694.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_EditSessionModal_694.js)
 * **修正内容**: テンプレートからタグをタップして選択・追加する際、テンプレート定義のシャープの有無に関わらず、必ず `normalizeTag` を通した統一タグで選択判定およびトグル操作（`toggleCurrentSessionTag` 等）を行います。
 
 ### 【防衛線 3】 バックグラウンドでの自動クリーンアップとクラウドへの保存同期
-* **対象ファイル**: [JP_useScoreStore_174.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_useScoreStore_174.js)
+* **対象ファイル**: [JP_useScoreStore_174.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_useScoreStore_174.js)
 * **修正内容**: `cleanUpSessions` 処理をさらに強化し、表記揺れのあるセッションが検知された場合、ローカルのメモリ状態を美しくクリーンアップするだけでなく、自動的にクラウド（Firestore）にもクリーンアップ後のデータを同期・保存するようにします（過去データの自動クリーンアップ）。
 
 ---

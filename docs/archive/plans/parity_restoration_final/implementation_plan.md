@@ -11,7 +11,7 @@
 
 ### 設定画面 (SettingsScreen)
 
-#### [MODIFY] [JP_SettingsScreen_1023.js](file:///C:/Users/yutoi/Documents/復元アプリ/AppBase/src/JP_SettingsScreen_1023.js)
+#### [MODIFY] [JP_SettingsScreen_1023.js](file:///C:/Users/…/Documents/復元アプリ/AppBase/src/JP_SettingsScreen_1023.js)
 - **タグテンプレート追加欄のプレースホルダー修正**:
   - 現在: `placeholder: "日付やメモで検索"`（履歴画面の誤混入）
   - 修正後: `placeholder: "新しいタグを追加"`（本番と一致）

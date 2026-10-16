@@ -1,6 +1,6 @@
 # AIチャットボット集計ロジックの交代メンバー対応化（実装計画）
 
-AIチャットボット（[JP_AIChatBot_1034.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_AIChatBot_1034.js)）のデータ分析ツール（Function Calling用の関数）において、メンバーの途中交代（`substitutions`）が反映されておらず、的中率の集計にズレが生じていたバグを修正します。
+AIチャットボット（[JP_AIChatBot_1034.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_AIChatBot_1034.js)）のデータ分析ツール（Function Calling用の関数）において、メンバーの途中交代（`substitutions`）が反映されておらず、的中率の集計にズレが生じていたバグを修正します。
 
 ## ユーザーレビュー要求事項
 
@@ -19,7 +19,7 @@ AIチャットボット（[JP_AIChatBot_1034.js](file:///c:/Users/yutoi/Document
 
 ### 1. AIチャットボット内部ツールの修正
 
-#### [MODIFY] [JP_AIChatBot_1034.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_AIChatBot_1034.js)
+#### [MODIFY] [JP_AIChatBot_1034.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_AIChatBot_1034.js)
 
 1. **`getAllMembersStats` の修正**:
    - `sessions` の各行で交代マッピング `substitutions` と `substitutionIds` をループ内で参照し、各射が実際に引いた射手の成績としてカウントされるよう修正。

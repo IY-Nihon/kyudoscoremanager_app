@@ -2,7 +2,7 @@
  * 板の写真から、マスを1つずつ切り出す。学習用の札も一緒に貼る。
  *
  *   node scripts/ocr-cells/kiridasu.mjs <画像> <射手の人数> <1人あたりのマス数> [出し先]
- *   node scripts/ocr-cells/kiridasu.mjs 板.jpg 8 10 out --正解 910280:男子リーグ --起点 下から --列 0-7
+ *   node scripts/ocr-cells/kiridasu.mjs 板.jpg 8 10 out --正解 {団体ID}:男子リーグ --起点 下から --列 0-7
  *
  * ■ どうやって格子を見つけるか
  * 罫線は薄くて写真では拾えない（実測）。○×そのものが規則正しく並んでいるので、

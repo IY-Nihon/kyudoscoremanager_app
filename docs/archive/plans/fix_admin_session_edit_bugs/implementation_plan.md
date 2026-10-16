@@ -12,14 +12,14 @@
 
 ## 提案される変更
 
-### [MODIFY] [JP_EditSessionModal_694.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_EditSessionModal_694.js)
+### [MODIFY] [JP_EditSessionModal_694.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_EditSessionModal_694.js)
 - 射数を減らす際の確認ダイアログModalをJSXに追加。
 - 合計計算行 (`isTotalCalculator: true`) を射数伸縮の対象外とする。
 
-### [MODIFY] [JP_useScoreStore_174.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_useScoreStore_174.js)
+### [MODIFY] [JP_useScoreStore_174.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_useScoreStore_174.js)
 - `listenToSessions` の `onSnapshot` にて、`_pendingUpdateTimers` に存在するセッションはローカルデータを最優先するマージ処理を記述。
 
-### [MODIFY] [JP_AnalysisScreen_1000.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_AnalysisScreen_1000.js)
+### [MODIFY] [JP_AnalysisScreen_1000.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_AnalysisScreen_1000.js)
 - 「ランキング対象の基準 (最多比)」の計算部で、`C[R]?.type === 'count'` に対応する。
 - 描画部分にTextInput（射数入力）と「絞り込む」ボタンを配置し、入力された数値で `C[R]` を `{ type: 'count', value: 数値 }` としてストア保存・クラウド同期する。
 

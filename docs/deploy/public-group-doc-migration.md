@@ -31,9 +31,9 @@
 認証なしで実際に読める中身の例：
 
 ```
-団体 265294
-  name        : 学習院大学弓道部
-  email       : mak***@gmail.com
+本番の団体B
+  name        : （団体の正式名）
+  email       : （頭の 3 文字だけ見える形の連絡先）
   同意の取り方 : 口頭（2026-08-31 版の内容を説明のうえ同意。前の記録は 2026-08-28）
 ```
 
@@ -146,7 +146,7 @@ node scripts/move-consent-to-private.mjs prod 消す
 
 ### 3. 全団体が新しいアプリで開いたか
 
-本番の団体は4つ（265294 / 698098 / 897977 / 910280）。
+本番の団体は4つ（ここでは A〜D と呼ぶ。ID は倉庫に書かない）。
 `private/consent` に新しいアプリだけが書く形の記録が入っていれば、開かれた証拠になる。
 
 ### 4. 移行B
@@ -168,7 +168,7 @@ npm run deploy:rules
 ```bash
 node scripts/check-release-state.mjs
 node scripts/check-group-account-rules.mjs
-curl -s "https://firestore.googleapis.com/v1/projects/kyudoscoremanager/databases/(default)/documents/group_accounts/265294"
+curl -s "https://firestore.googleapis.com/v1/projects/kyudoscoremanager/databases/(default)/documents/group_accounts/{団体ID}"
 ```
 
 最後の1つは、認証なしで何が読めるかを実際に見るもの。`id` と `email` だけになって

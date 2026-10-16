@@ -64,7 +64,13 @@ const 検査 = (分類, 内容, 期待, 実際) => {
   rows.push({ '#': ++n, 分類, 確認内容: 内容, 期待: Array.isArray(期待) ? 期待.join('か') : 期待, 実際, 判定: ok ? 'OK' : 'NG' });
 };
 
-const MY = '910280', OTHER = '265294';
+// 本番の団体 ID は倉庫に書かない。PROD_GROUPS="A,B,C,D" の順で渡す（A は自分の団体）
+const 本番の団体 = String(process.env.PROD_GROUPS || '').split(',').map((x) => x.trim()).filter(Boolean);
+if (本番の団体.length < 4) {
+  console.error('PROD_GROUPS に本番の団体 ID を 4 つ（自分の団体を先頭に）, 区切りで渡してください');
+  process.exit(1);
+}
+const [MY, OTHER, 団体C, 団体D] = 本番の団体;
 const a = await anon();
 
 // ── 1. 誰でも読めた穴が閉じているか ──────────────────────────
@@ -87,7 +93,7 @@ const a = await anon();
   await st(`/groups/${MY}/sessions/zzz-acc-probe`, { token: a.token, method: 'PATCH', body: { fields: { t: { stringValue: 'x' } } } }));
 
 // ── 4. 部員ログインの経路（3団体） ───────────────────────────
-for (const [g, other] of [[MY, OTHER], [OTHER, '897977'], ['897977', MY]]) {
+for (const [g, other] of [[MY, OTHER], [OTHER, 団体D], [団体D, MY]]) {
   const ms = JSON.parse(fs.readFileSync(`${BK}/firestore/groups__${g}__members.json`, 'utf8')).documents || [];
   const m = ms.find((d) => /^\d{4}$/.test(d.fields?.personalId?.stringValue || ''));
   const pid = m.fields.personalId.stringValue, mid = m.name.split('/').pop();
@@ -127,7 +133,7 @@ const 検証の枝 = 'verify-live-branch-0000000000';
   const s = await anon();
   // 団体本人でないと名簿は読めないので、控えと逆引き表（get）で照合する
   let 総逆引き = 0, 総名簿 = 0, 一致 = 0;
-  for (const g of ['265294', '698098', '897977', '910280']) {
+  for (const g of [OTHER, 団体C, 団体D, MY]) {
     const ms = JSON.parse(fs.readFileSync(`${BK}/firestore/groups__${g}__members.json`, 'utf8')).documents || [];
     const 有効 = ms.filter((d) => /^\d{4}$/.test(d.fields?.personalId?.stringValue || ''));
     総名簿 += 有効.length;

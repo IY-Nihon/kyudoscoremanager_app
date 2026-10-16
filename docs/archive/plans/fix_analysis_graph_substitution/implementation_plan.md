@@ -10,7 +10,7 @@
 
 ## 提案される変更
 
-### [MODIFY] [JP_AnalysisScreen_1000.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_AnalysisScreen_1000.js)
+### [MODIFY] [JP_AnalysisScreen_1000.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_AnalysisScreen_1000.js)
 
 #### 修正方針
 1. `Se` 関数内の `o.archers.find` 処理を `o.archers.forEach` ループに変更します。

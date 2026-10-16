@@ -7,12 +7,12 @@
 ## 実施した変更内容
 
 ### 1. 新しいアニメーションコンポーネントの追加
-- [KyudoBackgroundAnimation.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/KyudoBackgroundAnimation.js) [NEW]
+- [KyudoBackgroundAnimation.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/KyudoBackgroundAnimation.js) [NEW]
   - **Webプラットフォーム**: `Three.js`（CDN動的ロード）を使用。HTMLのCTAエリアから抽出した、甲矢・乙矢の3Dペア構造（筈、矧糸、矢羽根の3Dベクトル線画）が自転・公転し、さらに同心円の的と黄金の星屑が舞い落ちるアニメーションを完全に再現。
   - **Nativeプラットフォーム**: `react-native-svg` と `react-native-reanimated` を使用。同心円の的（Concentric Rings / Mato）と美しい2Dベクトル矢を描画し、デバイスに負荷を与えないよう、ゆっくりと回転・上下に浮遊するスムーズなアニメーションを実装。
 
 ### 2. ログイン画面コンポーネントの改修
-- [JP_LoginScreen_1036.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_LoginScreen_1036.js) [MODIFY]
+- [JP_LoginScreen_1036.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_LoginScreen_1036.js) [MODIFY]
   - コンポーネントの最背面に絶対配置で `KyudoBackgroundAnimation` をマウントしました。
   - スタイル定義をHTMLのダークテーマ基準（#030508）に適合させました。
     - **背景色**: `#030508`（ディープスペースブラック）。

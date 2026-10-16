@@ -13,7 +13,7 @@
 
 ## 影響を受けるコンポーネント
 
-### 1. LoadingScreen ([JP_LoadingScreen_1037.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_LoadingScreen_1037.js))
+### 1. LoadingScreen ([JP_LoadingScreen_1037.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_LoadingScreen_1037.js))
 - **表示内容のアップデート**: 青い四角形を廃止し、`Image` コンポーネントを用いて `kyudo_icon.png` を描画。
 - **テキストのアップデート**: `Archery Record` ➔ `弓道的中管理`
 - **インジケーターの配置調整**: アイコンの下部に青色の `ActivityIndicator` を美しく配置。

@@ -14,8 +14,9 @@
 (async () => {
   const STAGE = 1;                                  // ← 1 か 2 に変える
   const PROJECT = 'kyudoscoremanager';
-  const MY_GROUP = '910280';                        // ← 自分がログインしている団体
-  const OTHER_GROUP = '265294';                     // ← 他団体（読めてはいけない）
+  const MY_GROUP = '';                              // ← 自分がログインしている団体の ID を入れる（倉庫には書かない）
+  const OTHER_GROUP = '';                           // ← 他団体の ID（読めてはいけない）を入れる
+  if (!MY_GROUP || !OTHER_GROUP) throw new Error('MY_GROUP と OTHER_GROUP に団体 ID を入れてください');
 
   const base = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents`;
 

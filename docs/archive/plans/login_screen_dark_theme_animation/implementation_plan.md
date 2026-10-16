@@ -13,7 +13,7 @@
 
 ### ログイン画面のコンポーネント
 
-#### [MODIFY] [JP_LoginScreen_1036.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_LoginScreen_1036.js)
+#### [MODIFY] [JP_LoginScreen_1036.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_LoginScreen_1036.js)
 
 - **ダークテーマ対応のスタイル定義**:
   - `container` 背景色を `#030508` に変更。

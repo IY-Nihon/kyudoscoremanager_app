@@ -1,6 +1,6 @@
 # 矢所記録の設定UI復旧の実装計画
 
-設定画面（[JP_SettingsScreen_1023.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)）において消失してしまっている「矢所記録の有効化トグル」および「使用する的の種類」の選択UIを復旧します。
+設定画面（[JP_SettingsScreen_1023.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)）において消失してしまっている「矢所記録の有効化トグル」および「使用する的の種類」の選択UIを復旧します。
 
 ## ユーザーレビュー要求事項
 
@@ -15,7 +15,7 @@
 
 ### 1. 設定画面コンポーネントの修正
 
-#### [MODIFY] [JP_SettingsScreen_1023.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)
+#### [MODIFY] [JP_SettingsScreen_1023.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)
 
 1. **Zustandストアからの状態・アクションのデストラクション追加**
    - 以下の変数・関数を `useScoreStore` のデストラクションに追加します。

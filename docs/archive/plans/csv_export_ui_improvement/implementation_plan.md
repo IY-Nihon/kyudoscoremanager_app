@@ -14,7 +14,7 @@ CSV書き出しモーダルにおける「タグ絞り込み」の表示崩れ�
 
 ### CSV書き出しモーダルのUI改善
 
-#### [MODIFY] [JP_SettingsScreen_1023.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)
+#### [MODIFY] [JP_SettingsScreen_1023.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)
 * **トグルのテキスト変更:**
   - `AND` → `すべて含む`
   - `OR` → `いずれか含む`
@@ -29,17 +29,17 @@ CSV書き出しモーダルにおける「タグ絞り込み」の表示崩れ�
 
 ### 他のタグフィルターへの適用
 
-#### [MODIFY] [JP_HistoryScreen_692.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_HistoryScreen_692.js)
+#### [MODIFY] [JP_HistoryScreen_692.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_HistoryScreen_692.js)
 * **トグルのテキスト変更:**
   - タグフィルター内の `AND` / `OR` トグルを、それぞれ `すべて含む` / `いずれか含む` に変更します。
 
-#### [MODIFY] [JP_AnalysisScreen_1000.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_AnalysisScreen_1000.js)
+#### [MODIFY] [JP_AnalysisScreen_1000.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_AnalysisScreen_1000.js)
 * **トグルのテキスト変更:**
   - 分析画面のタグフィルター内の `AND` / `OR` トグルを、それぞれ `すべて含む` / `いずれか含む` に変更します。
 
 ### 複数選択・PCスクロールの対応
 
-#### [MODIFY] [JP_SettingsScreen_1023.js](file:///c:/Users/yutoi/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)
+#### [MODIFY] [JP_SettingsScreen_1023.js](file:///c:/Users/…/Documents/kyudoscoremanager_app/src/JP_SettingsScreen_1023.js)
 * **複数選択ステートの追加:**
   - `selectedKeywords` (配列) と `selectedMembers` (配列) の状態管理を追加します。
   - 候補チップをタップした際、配列に追加・削除（トグル）されるように変更します。

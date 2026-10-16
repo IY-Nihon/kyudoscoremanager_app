@@ -20,5 +20,5 @@
 3. LINE等でURLを共有した際の説明文が「団体弓道の...」に変わっていることを確認してください。（※キャッシュの関係で反映に時間がかかる場合があります）
 
 ## 開発環境について
-- 今後の開発は `C:\Users\yutoi\Documents\kyudoscoremanager_app` で行ってください。
+- 今後の開発は `C:\Users\…\Documents\kyudoscoremanager_app` で行ってください。
 - デプロイ時は `npm run deploy:web` を実行してください。（※Firebaseのプロジェクト設定エラーが出る場合は `firebase deploy --only hosting --project kyudoscoremanager` を直接実行してください）
