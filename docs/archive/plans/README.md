@@ -10,10 +10,10 @@
 - **ファイル名と道が当時のもの**：`src/JP_SettingsScreen_1023.js`・`src/module_592.js` のような名前は、元のソースを失って
   自分の配信物から取り戻した直後の名前です（本体の README「src/ の成り立ち」）。いまは `src/SettingsScreen.js` のように
   中身に合わせた名前へ直してあります。手元の道（`C:\Users\…\Documents\kyudoscoremanager_app\…`）も当時のものです
-- **当時の環境の名前**：`AppBase`（当時の作業用の手元のフォルダー）、`RecordAppExpo`（当時あった別の作業用の倉庫）など。
-  いまの倉庫とは別物です
+- **当時の名前**：`RecordAppExpo` は、「弓道部的中ノート」と名前を付ける前のこのアプリの呼び名です。`AppBase` は当時の
+  作業用の手元のフォルダーです
 - **版やライブラリが当時のもの**：Firebase 9・NativeWind・`module_*` の転送ファイルなどは、いまは使っていません
-- **うまくいかなかった作業も残してある**：たとえば `production_parity_sync`（別の倉庫と同じ形にそろえる）は環境を壊し、
+- **うまくいかなかった作業も残してある**：たとえば `production_parity_sync`（`RecordAppExpo` の形にそろえる）は環境を壊し、
   `restore_app_environment` で元へ戻しました。計画に書いてあっても、そのとおりになっていないことがあります
 - 実名・団体の ID・手元のユーザー名は、2026-10-16 に伏せました（部員A・部員B、`…`）
 
