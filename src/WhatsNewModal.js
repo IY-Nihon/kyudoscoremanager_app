@@ -28,9 +28,9 @@ const { getShadowStyle } = require('./shadowStyle');
 // 「配信済みの版のまま項目を足していない」ことは test/autoLock.test.js が、
 // 「NOTICE_VERSION が最新の項目と一致し、形がそろっている」ことは
 // test/updateNotice.test.js が見張っている。
-const 最後に配信した版 = '2026-10-16-04';
+const 最後に配信した版 = '2026-10-17-01';
 // お知らせの版。新しい項目を足したら、必ずこれを最新の項目の 版 に合わせる。
-const NOTICE_VERSION = '2026-10-16-04';
+const NOTICE_VERSION = '2026-10-17-01';
 const STORAGE_KEY = 'whatsNewDismissedVersion';
 // 最後に開いたときの版。閉じるたびに書く。
 // どこから下が「前に読んだぶん」かの線を引くためだけに使う。
@@ -41,6 +41,15 @@ const LAST_SEEN_KEY = 'whatsNewLastSeenVersion';
 // 新しい順に並べる。上から「前に見た版より新しいか」を数えて、
 // そこで線を引くため、順番が崩れると線の位置が狂う（検査で見ている）
 const NOTICE_ITEMS = [
+  {
+    date: '2026/10/17',
+    版: '2026-10-17-01',
+    title: '立ち順の写真で、立の分かれ目を読めるようになりました',
+    points: [
+      '線の無い板に名札を並べただけでも、名札の間を空けておけば、そこで立を分けて読みます。',
+      '「壱之立」「A立」「女子選手立」のような札は、名前として読まなくなりました。',
+    ],
+  },
   {
     date: '2026/10/16',
     版: '2026-10-16-04',
