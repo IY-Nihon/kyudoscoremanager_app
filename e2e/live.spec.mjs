@@ -801,17 +801,12 @@ test('ライブ：鍵の取り消しが、相手の○×を巻き込まない', 
 
   await 入る(A);
   await 射手を立てる(A, 2);
-  // 間隔の列を足す。鍵ボタンはこの列に付く
-  const 前の印 = (await 一射目たち(A)).map((x) => x.印);
+  // 間隔の列を足す。鍵ボタンはこの列に付く。
+  // 間隔の列は立ごとに 1 つの箱で、中のマス目（ます-…）は無い（2026-10-17）。箱の目印から列の id を取る
   await A.getByText('間隔', { exact: true }).first().click();
-  await こうなるまで待つ(
-    async () => (await 一射目たち(A)).map((x) => x.印),
-    (x) => x.some((k) => !前の印.includes(k)),
-    20000
-  );
-  const 間隔の印 = (await 一射目たち(A)).map((x) => x.印).find((k) => !前の印.includes(k));
-  expect(間隔の印, '間隔の列が増えていない').toBeTruthy();
-  const 間隔id = 間隔の印.slice('ます-'.length, -2);
+  const 間隔の箱 = A.locator('[data-testid^="間隔の箱-"]').first();
+  await expect(間隔の箱, '間隔の列が増えていない').toBeAttached({ timeout: 20000 });
+  const 間隔id = (await 間隔の箱.getAttribute('data-testid')).slice('間隔の箱-'.length).replace(/-\d+$/, '');
 
   await ライブを始める(A, 名);
 
@@ -826,9 +821,9 @@ test('ライブ：鍵の取り消しが、相手の○×を巻き込まない', 
     .sort()[0];
   expect(B鍵, '参加側に射手が届いていない').toBeTruthy();
 
-  // A が押す鍵の位置（間隔の列の、立ちの上端のます）
+  // A が押す鍵の位置（間隔の列の、2 立目＝5〜8 射目の箱。押すとその立の鍵が切り替わる）
   const 鍵の場所 = await A.evaluate((id) => {
-    const el = document.querySelector(`[data-testid="ます-${id}-7"]`);
+    const el = document.querySelector(`[data-testid="間隔の箱-${id}-1"]`);
     if (!el) return null;
     const r = el.getBoundingClientRect();
     return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) };
