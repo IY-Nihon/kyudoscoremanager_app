@@ -35,8 +35,17 @@ test('使い方：項目を押すとその場で動画が流れ、「画面で�
 
 test('使い方：動画の無い手順は、動画の枠を出さずに文だけ見せる', async ({ page }) => {
   await 一覧を開く(page);
-  await page.getByTestId('使い方の組-記録表の便利な機能').click();
-  await page.getByTestId('使い方の項目-記録表は横にも並べられます').click();
+  await page.getByTestId('使い方の組-ライブ（複数の端末）').click();
+  await page.getByTestId('使い方の項目-ライブは見るだけでも入れます').click();
   await expect(page.getByTestId('使い方の中身')).toBeVisible();
   await expect(page.getByTestId('使い方の動画')).toHaveCount(0, { timeout: 15_000 });
+});
+
+test('使い方：一覧にだけある項目と困りごとは、文（と動画）だけで「画面でやってみる」は出さない', async ({ page }) => {
+  await 一覧を開く(page);
+  await page.getByTestId('使い方の組-よくある困りごと').click();
+  await page.getByTestId('使い方の項目-x:入れた○×が手や袖で消えてしまう').click();
+  await expect(page.getByTestId('使い方の中身')).toContainText('長押し');
+  await expect(page.getByTestId('使い方の動画')).toBeVisible();
+  await expect(page.getByTestId('使い方-やってみる')).toHaveCount(0);
 });
