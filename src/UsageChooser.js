@@ -3,52 +3,35 @@
  * 毎回最初から全部見るのは面倒・いちいち画面を操作させられるのも面倒）。
  *   ・最初から順に案内を見る（今までどおり、画面の上で押しながら進む）
  *   ・まとまり（メンバーの登録・記録表の便利な機能…）を押すと開き、項目を押すとその場で開いて
- *     短い動画と説明が出る。一覧ごとスクロールできる（別の窓には移らない）
- *   ・項目の「画面でやってみる」で、その手順だけ画面の上の案内を始める。見終えたらそこで終わる（TutorialGuide の 選んだ題）
- * 一覧の名は 一覧の名を引く（案内の題は語りかける言い方で、一覧では分かりにくい）。
- * 動画は public/usage/<名>.mp4（scripts/usage-videos.mjs）。説明だけの手順は動画が無く、読めなければ隠して文だけ出す。
+ *     小見出しごとに短い動画と説明が出る。一覧ごとスクロールできる（別の窓には移らない）
+ *   ・「画面でやってみる」で、その項目の手順だけ画面の上の案内を始める。見終えたらそこで終わる（TutorialGuide の 選んだ題）
+ * 一覧の中身は usageList.js。動画は public/usage/<名>.mp4（scripts/usage-videos.mjs）。読めなければ隠して文だけ出す。
  */
 const React = require('react');
 const { View, Text, TouchableOpacity, ScrollView, Modal, StyleSheet, Alert } = require('./rn');
 const Icons = require('@expo/vector-icons');
 const { useScoreStore } = require('./useScoreStore');
-const { 手順を作る, まとまりの一覧, 動画の名, 一覧の名を引く } = require('./tutorialSteps');
+const { 手順を作る } = require('./tutorialSteps');
 const { 見える記録数 } = require('./syncRules');
-const { 使い方の一覧 } = require('./usageExtras');
+const { 使い方の一覧 } = require('./usageList');
 const 案内 = require('./TutorialGuide');
 const { 色 } = require('./iro.js');
-
-const まとまりの絵 = {
-  メンバーの登録: 'people',
-  記録の取り方: 'create',
-  記録表の便利な機能: 'grid',
-  写真から取り込む: 'camera',
-  'ライブ（複数の端末）': 'radio',
-  '履歴・分析': 'stats-chart',
-  '弓具・出欠・設定': 'settings',
-  よくある困りごと: 'help-buoy',
-};
-
-// 案内のための言い回し（画面の上で押してもらう前提の文）は、一覧で読むときには要らない
-// 「いま6人が登録されています」のような、案内を始めたときの数も一覧では要らない
-const 一覧では出さない文 = /押せないようにしてあります|押してみましょう|^いま\d+(人|件)/;
 
 const 使い方の選び窓 = ({ 見える, 閉じる }) => {
   const 役割 = useScoreStore((状態) => 状態.activeRole);
   const 部員数 = useScoreStore((状態) => (Array.isArray(状態.members) ? 状態.members.length : 0));
   const 記録数 = useScoreStore((状態) => 見える記録数(状態));
-  const { 一覧, 題で } = React.useMemo(() => {
+  const 一覧 = React.useMemo(() => 使い方の一覧(役割), [役割]);
+  // 「画面でやってみる」で始められる案内の題。指す先（目印）のある手順だけ（説明だけの手順で始めても、
+  // 一覧と同じ文が吹き出しに出るだけ。2026-10-19 本人）。役割や中身で出ない手順もここで外れる
+  const 案内できる題 = React.useMemo(() => {
     const { 基本, 続き } = 手順を作る(役割, { 部員数, 記録数 });
-    return {
-      一覧: 使い方の一覧(まとまりの一覧(基本, 続き), 役割),
-      題で: new Map([...基本, ...続き].map((一つ) => [一つ.題, 一つ])),
-    };
+    return new Set([...基本, ...続き].filter((一つ) => 一つ.目印).map((一つ) => 一つ.題));
   }, [役割, 部員数, 記録数]);
   const [開いた組, 組を置く] = React.useState(null);
   const [開いた項目, 項目を置く] = React.useState(null);
   // 動画が無い（取りに行くと index.html が返る）ものは覚えて隠す
   const [読めない, 読めないを置く] = React.useState({});
-  // 動画は操作のあたりだけを切り抜いてあり、縦横の比が一本ずつ違う。読み込んだときの大きさで枠を合わせる
   const [縦横, 縦横を置く] = React.useState({});
 
   const 始める = (題たち) => {
@@ -60,6 +43,28 @@ const 使い方の選び窓 = ({ 見える, 閉じる }) => {
       );
     }
   };
+
+  const 動画 = (名) =>
+    名 && !読めない[名] ? (
+      <View style={[styles.動画の枠, { aspectRatio: 縦横[名] || 720 / 1332 }]}>
+        {React.createElement('video', {
+          key: 名,
+          src: `/usage/${名}.mp4`,
+          autoPlay: true,
+          loop: true,
+          muted: true,
+          playsInline: true,
+          preload: 'auto',
+          onError: () => 読めないを置く((前) => ({ ...前, [名]: true })),
+          onLoadedMetadata: (e) => {
+            const { videoWidth: 幅, videoHeight: 高さ } = e.currentTarget;
+            if (幅 && 高さ) 縦横を置く((前) => ({ ...前, [名]: 幅 / 高さ }));
+          },
+          'data-testid': '使い方の動画',
+          style: { width: '100%', height: '100%', objectFit: 'contain', display: 'block' },
+        })}
+      </View>
+    ) : null;
 
   return (
     <Modal visible={見える} transparent animationType="fade" onRequestClose={閉じる}>
@@ -96,39 +101,23 @@ const 使い方の選び窓 = ({ 見える, 閉じる }) => {
                     testID={'使い方の組-' + 組.名}
                   >
                     <View style={styles.組の絵}>
-                      <Icons.Ionicons name={まとまりの絵[組.名] || 'help'} size={18} color={色.青} />
+                      <Icons.Ionicons name={組.絵 || 'help'} size={18} color={色.青} />
                     </View>
                     <Text style={styles.組の名}>{組.名}</Text>
                     <Icons.Ionicons name={開 ? 'chevron-up' : 'chevron-down'} size={18} color={色.灰} />
                   </TouchableOpacity>
                   {開 &&
-                    [
-                      // 画面の上の案内がある手順
-                      ...組.案内の題たち.map((題) => ({
-                        鍵: 題,
-                        名: 一覧の名を引く(題),
-                        文: ((題で.get(題) || {}).文 || []).filter((行) => !一覧では出さない文.test(行)),
-                        動画: 動画の名(題),
-                        // 画面の上の案内は、指す先（目印）がある手順だけ。説明だけの手順で始めても、
-                        // 一覧と同じ文が吹き出しに出るだけで意味が無い（2026-10-19 本人）
-                        案内の題: (題で.get(題) || {}).目印 ? 題 : null,
-                      })),
-                      // 一覧にだけある項目（usageExtras）
-                      ...組.足す,
-                    ].map((項) => {
-                      const 題 = 項.鍵;
-                      const 項目が開 = 開いた項目 === 題;
-                      const 名 = 項.動画;
-                      const 動画あり = !!名 && !読めない[名];
-                      const 文 = 項.文;
+                    組.項目.map((項) => {
+                      const 項目が開 = 開いた項目 === 項.名;
+                      const 案内の題たち = (項.案内 || []).filter((題) => 案内できる題.has(題));
                       return (
-                        <View key={題} style={styles.項目}>
+                        <View key={項.名} style={styles.項目}>
                           <TouchableOpacity
                             style={styles.項目の行}
-                            onPress={() => 項目を置く(項目が開 ? null : 題)}
+                            onPress={() => 項目を置く(項目が開 ? null : 項.名)}
                             accessibilityRole="button"
                             accessibilityState={{ expanded: 項目が開 }}
-                            testID={'使い方の項目-' + 題}
+                            testID={'使い方の項目-' + 項.名}
                           >
                             <Text style={[styles.項目の名, 項目が開 && { color: 色.青, fontWeight: 'bold' }]}>
                               {項.名}
@@ -141,40 +130,21 @@ const 使い方の選び窓 = ({ 見える, 閉じる }) => {
                           </TouchableOpacity>
                           {項目が開 && (
                             <View style={styles.中身} testID="使い方の中身">
-                              {動画あり && (
-                                <View style={[styles.動画の枠, { aspectRatio: 縦横[名] || 393 / 360 }]}>
-                                  {React.createElement('video', {
-                                    key: 名,
-                                    src: `/usage/${名}.mp4`,
-                                    autoPlay: true,
-                                    loop: true,
-                                    muted: true,
-                                    playsInline: true,
-                                    preload: 'auto',
-                                    onError: () => 読めないを置く((前) => ({ ...前, [名]: true })),
-                                    onLoadedMetadata: (e) => {
-                                      const { videoWidth: 幅, videoHeight: 高さ } = e.currentTarget;
-                                      if (幅 && 高さ) 縦横を置く((前) => ({ ...前, [名]: 幅 / 高さ }));
-                                    },
-                                    'data-testid': '使い方の動画',
-                                    style: {
-                                      width: '100%',
-                                      height: '100%',
-                                      objectFit: 'contain',
-                                      display: 'block',
-                                    },
-                                  })}
+                              {項.部分.map((部, 番) => (
+                                <View key={番} style={番 > 0 ? styles.部分の間 : null}>
+                                  {!!部.見出し && <Text style={styles.小見出し}>{部.見出し}</Text>}
+                                  {動画(部.動画)}
+                                  {部.文.map((行, i) => (
+                                    <Text key={i} style={styles.説明}>
+                                      {行}
+                                    </Text>
+                                  ))}
                                 </View>
-                              )}
-                              {文.map((行, i) => (
-                                <Text key={i} style={styles.説明}>
-                                  {行}
-                                </Text>
                               ))}
-                              {項.案内の題 && (
+                              {案内の題たち.length > 0 && (
                                 <TouchableOpacity
                                   style={styles.やってみる}
-                                  onPress={() => 始める([項.案内の題])}
+                                  onPress={() => 始める(案内の題たち)}
                                   testID="使い方-やってみる"
                                 >
                                   <Icons.Ionicons name="hand-left-outline" size={16} color={色.青} />
@@ -186,13 +156,6 @@ const 使い方の選び窓 = ({ 見える, 閉じる }) => {
                         </View>
                       );
                     })}
-                  {開 && 組.案内の題たち.length > 1 && (
-                    <TouchableOpacity style={styles.組を通す} onPress={() => 始める(組.案内の題たち)}>
-                      <Text
-                        style={styles.組を通すの字}
-                      >{`このまとまりを画面で順に見る（${組.案内の題たち.length}）`}</Text>
-                    </TouchableOpacity>
-                  )}
                 </View>
               );
             })}
@@ -264,9 +227,15 @@ const styles = StyleSheet.create({
   項目の名: { flex: 1, fontSize: 15, color: 色.黒 },
   // 項目の名は左に字下げしているが、中身は箱の幅いっぱいに使う（動画の字を大きく見せる）
   中身: { marginLeft: -40, paddingRight: 12, paddingBottom: 14 },
+  小見出し: { fontSize: 14, fontWeight: 'bold', color: 色.黒, marginBottom: 6 },
+  部分の間: {
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 色.灰_薄い,
+  },
   動画の枠: {
-    // 小さく縮めると字が掠れて読めない（2026-10-19 本人）ので幅いっぱいに出す。
-    // 動画は操作のあたりだけの切り抜きなので、文と一緒に画面に収まる
+    // 小さく縮めると字が掠れて読めない（2026-10-19 本人）ので幅いっぱいに出す
     width: '100%',
     backgroundColor: 色.地,
     borderRadius: 10,
@@ -281,20 +250,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    marginTop: 8,
+    marginTop: 12,
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: 色.青,
   },
   やってみるの字: { color: 色.青, fontSize: 14, fontWeight: 'bold' },
-  組を通す: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 色.灰_薄い,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  組を通すの字: { color: 色.青, fontSize: 13 },
 });
 
 module.exports = { 使い方の選び窓 };
