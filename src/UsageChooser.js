@@ -253,12 +253,13 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   項目の名: { flex: 1, fontSize: 15, color: 色.黒 },
-  中身: { paddingRight: 14, paddingBottom: 14 },
+  // 項目の名は左に字下げしているが、中身は箱の幅いっぱいに使う（動画の字を大きく見せる）
+  中身: { marginLeft: -40, paddingRight: 12, paddingBottom: 14 },
   動画の枠: {
-    // 動画は縦長の画面まるごと（540×999）
-    height: 320,
-    aspectRatio: 540 / 999,
-    alignSelf: 'center',
+    // 動画は縦長の画面まるごと（720×1332）。小さく縮めると字が掠れて読めない（2026-10-19 本人）ので、
+    // 幅いっぱいに出して縦は一覧ごとスクロールで見る
+    width: '100%',
+    aspectRatio: 720 / 1332,
     backgroundColor: 色.地,
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
