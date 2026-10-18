@@ -120,7 +120,7 @@ for (const { 組, 題, 手順 } of 一覧) {
       .locator('[testID="使い方の選び窓"], [data-testid="使い方の選び窓"]')
       .getByText(題, { exact: true })
       .click();
-    // 選ぶと動画の窓が開く。撮るのは画面の上の案内なので「実際にやってみる」へ進む
+    // 項目を押すとその場で動画が開く。撮るのは画面の上の案内なので「実際にやってみる」へ進む
     await page.getByTestId('使い方-やってみる').click();
     // 枠が測り終わるまで待ってから撮り始める
     await page.waitForTimeout(1500);
