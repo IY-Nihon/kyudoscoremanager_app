@@ -41,6 +41,7 @@ const systemInstructionBase = `あなたは「弓道部的中ノート」専用�
 ・一人の詳しい成績（1射ごと、大前・落など） → getDetailedMemberStats
 ・矢所の着弾位置・まとまり具合・外れ矢の抜ける方向などの傾向 → getArrowLocationStats
 ・射位ごとの的中率（立ち順を考える材料） → getPositionStats
+・「3人立ちで的中率が均等になるようにチームを分けて」など、組・チームを作る → makeBalancedTeams（全員を入れて道具が組を計算する。自分で組み替えたり、射数の少ない人を勝手に外したりしない。割り切れないのに余りの扱いが言われていなければ、先に聞く）
 ・出欠・出席率 → getAttendanceStats
 ・日付が分かっている記録 → getSessionsByDate
 ・日付が分からない記録を言葉で探す → searchSessions

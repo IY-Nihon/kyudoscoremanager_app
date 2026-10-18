@@ -735,6 +735,37 @@ const AIChatBot = () => {
                 },
               },
               {
+                name: 'makeBalancedTeams',
+                description:
+                  '部員を、組ごとの的中率がそろうように何人ずつかの組に分けます。「3人立ちでチームの的中率が均等になるように分けて」「〇〇以外で5人ずつのチームを作って」などに使います。外す人以外の全員を入れます（射数の少ない人も外しません）。組分け・人数・組の的中率の見込みはこのツールが計算するので、自分で組み替えたり足し算したりせず、返ってきた組と数字をそのまま伝えてください。人数が割り切れないのに、余りの扱いを利用者が言っていないときは、先に「余った人をどこかの組に足す／余りとして別にする／1人少ない組を作る」のどれにするかを聞いてください。',
+                parameters: {
+                  type: 'OBJECT',
+                  properties: {
+                    teamSize: {
+                      type: 'INTEGER',
+                      description: '1 組の人数。「3人立ち」なら 3、「5人立ち」なら 5',
+                    },
+                    excludeNames: {
+                      type: 'ARRAY',
+                      items: { type: 'STRING' },
+                      description:
+                        '組に入れない人の名前（利用者が言った書き方のまま。コーチなども、外すと言われたらここに）',
+                    },
+                    remainder: {
+                      type: 'STRING',
+                      description:
+                        "人数が割り切れないときの扱い。'足す'（余った人をどこかの組に1人ずつ足す）、'別に'（組に入れず余りとして別に出す）、'少ない組'（1人少ない組を作る）のいずれか",
+                    },
+                    dateFrom: {
+                      type: 'STRING',
+                      description: '的中率を見る期間の開始日 (YYYY-MM-DD)。「直近2ヶ月」なら今日から2か月前',
+                    },
+                    dateTo: { type: 'STRING', description: '的中率を見る期間の終了日 (YYYY-MM-DD)' },
+                  },
+                  required: ['teamSize'],
+                },
+              },
+              {
                 name: 'getAttendanceStats',
                 description:
                   '部員の出欠を集計し、順位を付けて返します。「今月いちばん練習に来ているのは誰」「◯◯さんの出席率は」「休みが多いのは誰」などに使います。出欠画面と同じ数え方（正規練習日ごとに、記録に出ていれば来た、無ければ欠席。出席率＝来た日数÷今日までの練習日数）です。遅刻・早退は「来た」に数えます。順位・並べ替えはこのツールが行うので、返った順番と数字をそのまま使ってください。',
@@ -1113,6 +1144,41 @@ const AIChatBot = () => {
                   response: {
                     success: false,
                     message: '個人で入っているときは使えない操作です。団体の担当者に頼むよう伝えてください。',
+                  },
+                },
+              });
+              continue;
+            }
+
+            if (call.name === 'makeBalancedTeams') {
+              // 組分けは src/chatTeams.js で済ませる（10/17 に AI が自分で組んで、人を外し・数え違え・ばらついた）
+              const { 組を均等に分ける } = require('./chatTeams');
+              const 結果 = 組を均等に分ける(members, タグで絞った記録().記録たち, {
+                期間: 期間にする(call.args.dateFrom, call.args.dateTo),
+                一組の人数: call.args.teamSize,
+                外す: Array.isArray(call.args.excludeNames) ? call.args.excludeNames : [],
+                余り: call.args.remainder,
+              });
+              functionResponses.push({
+                functionResponse: {
+                  name: call.name,
+                  response: {
+                    ...結果,
+                    message:
+                      '組分けは計算済みです。組の順番・顔ぶれ・数字をそのまま伝え、自分で組み替えたり計算し直したりしないでください。' +
+                      '「見込みの的中率」は、次に組で立ったときの組の的中率の見込み（一人ひとりの期間の的中率を、射数が少ないほど部全体の的中率に寄せたものの平均）で、組どうしの差が 組の見込みの開き です。' +
+                      (結果.見積もった人.length
+                        ? '見積もった人 には、期間に記録が無いので期間の外の記録から見込んだことを必ず添えてください。'
+                        : '') +
+                      (結果.見つからない名前.length
+                        ? '見つからない名前 は外せていません。利用者に名前を確かめてください。'
+                        : '') +
+                      (結果.同じ名前が複数.length
+                        ? '同じ名前が複数 の人は外せていません。どの人か利用者に聞いてください。'
+                        : '') +
+                      (結果.余った人.length
+                        ? '余った人 は組に入れていません。そのことを伝えてください。'
+                        : ''),
                   },
                 },
               });
