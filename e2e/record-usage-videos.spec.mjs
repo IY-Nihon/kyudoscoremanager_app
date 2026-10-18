@@ -44,7 +44,7 @@ function 道具(page) {
     page.evaluate(
       ([x, y]) => {
         const 丸 = document.createElement('div');
-        丸.style.cssText = `position:fixed;left:${x - 22}px;top:${y - 22}px;width:44px;height:44px;border-radius:22px;background:rgba(255,255,255,.55);border:3px solid rgba(255,90,60,.95);z-index:2147483647;pointer-events:none;transition:transform .25s, opacity .4s;transform:scale(1.3)`;
+        丸.style.cssText = `position:fixed;left:${x - 22}px;top:${y - 22}px;width:44px;height:44px;border-radius:22px;background:rgba(255,90,60,.12);border:2px solid rgba(255,90,60,.9);z-index:2147483647;pointer-events:none;transition:transform .25s, opacity .4s;transform:scale(1.3)`;
         document.body.appendChild(丸);
         requestAnimationFrame(() => (丸.style.transform = 'scale(1)'));
         setTimeout(() => (丸.style.opacity = '0'), 700);
@@ -54,8 +54,14 @@ function 道具(page) {
     );
   const 箱 = async (loc) => {
     await loc.scrollIntoViewIfNeeded({ timeout: 5000 }).catch(() => {});
-    const b = await loc.boundingBox({ timeout: 8000 });
-    if (!b) throw new Error('見つからない: ' + loc);
+    await loc.waitFor({ state: 'visible', timeout: 8000 });
+    // 字だけでなく、押せる部品ごと（タブなら絵と名前の両方）を囲む（2026-10-19 本人：「記録」の字だけ囲んでいた）
+    const b = await loc.evaluate((e) => {
+      const 部品 = e.closest('[role="button"],[role="tab"],[role="link"],button,a,[tabindex]') || e;
+      const r = (部品.getBoundingClientRect().width > window.innerWidth * 0.9 ? e : 部品).getBoundingClientRect();
+      return { x: r.x, y: r.y, width: r.width, height: r.height };
+    });
+    if (!b || !b.width) throw new Error('見つからない: ' + loc);
     return b;
   };
   const 見える = (loc) => loc.locator('visible=true').first();
