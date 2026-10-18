@@ -30,7 +30,8 @@ const まとまりの絵 = {
 };
 
 // 案内のための言い回し（画面の上で押してもらう前提の文）は、一覧で読むときには要らない
-const 一覧では出さない文 = /押せないようにしてあります|押してみましょう/;
+// 「いま6人が登録されています」のような、案内を始めたときの数も一覧では要らない
+const 一覧では出さない文 = /押せないようにしてあります|押してみましょう|^いま\d+(人|件)/;
 
 const 使い方の選び窓 = ({ 見える, 閉じる }) => {
   const 役割 = useScoreStore((状態) => 状態.activeRole);
@@ -47,6 +48,8 @@ const 使い方の選び窓 = ({ 見える, 閉じる }) => {
   const [開いた項目, 項目を置く] = React.useState(null);
   // 動画が無い（取りに行くと index.html が返る）ものは覚えて隠す
   const [読めない, 読めないを置く] = React.useState({});
+  // 動画は操作のあたりだけを切り抜いてあり、縦横の比が一本ずつ違う。読み込んだときの大きさで枠を合わせる
+  const [縦横, 縦横を置く] = React.useState({});
 
   const 始める = (題たち) => {
     閉じる();
@@ -137,7 +140,7 @@ const 使い方の選び窓 = ({ 見える, 閉じる }) => {
                           {項目が開 && (
                             <View style={styles.中身} testID="使い方の中身">
                               {動画あり && (
-                                <View style={styles.動画の枠}>
+                                <View style={[styles.動画の枠, { aspectRatio: 縦横[名] || 393 / 360 }]}>
                                   {React.createElement('video', {
                                     key: 名,
                                     src: `/usage/${名}.mp4`,
@@ -147,6 +150,10 @@ const 使い方の選び窓 = ({ 見える, 閉じる }) => {
                                     playsInline: true,
                                     preload: 'auto',
                                     onError: () => 読めないを置く((前) => ({ ...前, [名]: true })),
+                                    onLoadedMetadata: (e) => {
+                                      const { videoWidth: 幅, videoHeight: 高さ } = e.currentTarget;
+                                      if (幅 && 高さ) 縦横を置く((前) => ({ ...前, [名]: 幅 / 高さ }));
+                                    },
                                     'data-testid': '使い方の動画',
                                     style: {
                                       width: '100%',
@@ -256,10 +263,9 @@ const styles = StyleSheet.create({
   // 項目の名は左に字下げしているが、中身は箱の幅いっぱいに使う（動画の字を大きく見せる）
   中身: { marginLeft: -40, paddingRight: 12, paddingBottom: 14 },
   動画の枠: {
-    // 動画は縦長の画面まるごと（720×1332）。小さく縮めると字が掠れて読めない（2026-10-19 本人）ので、
-    // 幅いっぱいに出して縦は一覧ごとスクロールで見る
+    // 小さく縮めると字が掠れて読めない（2026-10-19 本人）ので幅いっぱいに出す。
+    // 動画は操作のあたりだけの切り抜きなので、文と一緒に画面に収まる
     width: '100%',
-    aspectRatio: 720 / 1332,
     backgroundColor: 色.地,
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,

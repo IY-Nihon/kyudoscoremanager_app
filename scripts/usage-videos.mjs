@@ -13,6 +13,32 @@ import { execFileSync } from 'node:child_process';
 const 元 = process.env.USAGE_RAW || path.join('e2e', '.usage-raw');
 const 先 = path.join('public', 'usage');
 fs.mkdirSync(先, { recursive: true });
+/** 撮ったときの crop.json（CSS の px）を、絵の px に直した ffmpeg の crop にする */
+function 切り抜く(置き場) {
+  const 道 = path.join(置き場, 'crop.json');
+  if (!fs.existsSync(道)) return '';
+  const { 画面, 切り抜き } = JSON.parse(fs.readFileSync(道, 'utf8'));
+  if (!切り抜き) return '';
+  const 一枚 = fs.readdirSync(置き場).find((f) => f.endsWith('.jpg'));
+  const 幅 = Number(
+    execFileSync('ffprobe', [
+      '-v',
+      'error',
+      '-show_entries',
+      'stream=width',
+      '-of',
+      'csv=p=0',
+      path.join(置き場, 一枚),
+    ])
+      .toString()
+      .trim()
+  );
+  const 倍 = 幅 / 画面.width;
+  const [y, h] = 切り抜き;
+  const 偶数 = (数) => Math.floor((数 * 倍) / 2) * 2;
+  return `crop=${偶数(画面.width)}:${偶数(Math.min(h, 画面.height - y))}:0:${偶数(y)},`;
+}
+
 const 名たち = process.argv.slice(2).length ? process.argv.slice(2) : fs.readdirSync(元);
 
 for (const 名 of 名たち) {
@@ -45,7 +71,7 @@ for (const 名 of 名たち) {
       '-i',
       台帳,
       '-vf',
-      'scale=720:-2:flags=lanczos,fps=24',
+      切り抜く(path.join(元, 名)) + 'scale=720:-2:flags=lanczos,fps=24',
       '-c:v',
       'libx264',
       '-preset',

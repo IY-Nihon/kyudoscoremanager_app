@@ -23,6 +23,51 @@ test.use({ storageState: 'e2e/.auth/100007.json' });
 const 置き場 = process.env.USAGE_RAW || path.join('e2e', '.usage-raw');
 const 絞り = process.env.USAGE_ONLY ? new Set(process.env.USAGE_ONLY.split(',')) : null;
 
+/**
+ * 動画の切り抜き（上の端 y と高さ h。CSS の px で、画面は 393×727）。操作しているあたりだけを横長に切り、
+ * 一覧で文と一緒に見えるようにする（2026-10-19 本人：文と動画を一緒に見たい）。書いていないものは画面まるごと。
+ * 画面の並び：上のタブ 0〜50・操作の帯 60〜100・記録表 110〜620・下のボタン 630〜727
+ */
+const 切り抜き = {
+  u01: [0, 360],
+  u02: [330, 397],
+  x01: [40, 380],
+  u03: [0, 360],
+  u04: [367, 360],
+  u05: [300, 400],
+  u06: [40, 330],
+  u07: [330, 397],
+  x03: [330, 397],
+  u08: [367, 360],
+  u09: [0, 360],
+  u10: [280, 447],
+  u11: [0, 460],
+  u12: [40, 440],
+  u13: [40, 330],
+  u14: [367, 360],
+  u15: [367, 360],
+  u16: [367, 360],
+  x06: [40, 360],
+  x07: [100, 420],
+  u17: [40, 330],
+  x05: [367, 360],
+  u19: [0, 300],
+  u20: [400, 327],
+  u22: [300, 427],
+  u23: [0, 480],
+  x08: [0, 360],
+  u25: [0, 420],
+  x09: [120, 420],
+  u28: [0, 360],
+  x10: [0, 480],
+  u29: [0, 360],
+  u30: [200, 420],
+  u31: [180, 360],
+  u32: [0, 440],
+  x12: [180, 420],
+  x13: [250, 400],
+};
+
 /** 道具一式。台本はこれだけで書く */
 function 道具(page) {
   const 待つ = (ms) => page.waitForTimeout(ms);
@@ -333,9 +378,9 @@ const 台本 = {
     用意: async (t) => {
       await 射手を並べる(t, 3);
       await 入れておく(t, [
-        [0, 0],
-        [0, 1],
-        [0, 2],
+        [0, 5],
+        [0, 6],
+        [0, 7],
       ]);
     },
     見せる: async (t) => {
@@ -487,6 +532,11 @@ for (const [名, 本] of Object.entries(台本)) {
     const 絵の置き場 = path.join(置き場, 名);
     fs.rmSync(絵の置き場, { recursive: true, force: true });
     fs.mkdirSync(絵の置き場, { recursive: true });
+    const 画面 = page.viewportSize();
+    fs.writeFileSync(
+      path.join(絵の置き場, 'crop.json'),
+      JSON.stringify({ 画面, 切り抜き: 切り抜き[名] || null })
+    );
     絵.forEach((一枚, 番) =>
       fs.writeFileSync(
         path.join(絵の置き場, `${String(番).padStart(4, '0')}_${一枚.時.toFixed(3)}.jpg`),
