@@ -95,6 +95,19 @@ function 道具(page) {
       await page.mouse.click(x, y);
       await 待つ(後);
     },
+    長押し: async (loc, { 後 = 900 } = {}) => {
+      const b = await 箱(loc);
+      const x = b.x + b.width / 2;
+      const y = b.y + b.height / 2;
+      await 枠を描く(b, 900);
+      await 待つ(600);
+      await 指(x, y);
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      await 待つ(900);
+      await page.mouse.up();
+      await 待つ(後);
+    },
     長押しで動かす: async (loc, 先x, 先y) => {
       const b = await 箱(loc);
       const x = b.x + b.width / 2;
@@ -121,6 +134,30 @@ function 道具(page) {
       await 待つ(500);
     },
   };
+}
+
+/** 並べた射手に、左から部員を割り当てる（撮る前の下ごしらえ） */
+async function 名前を決めておく(t, 人数) {
+  // 窓の一覧の並び（学年の順）。先に割り当てた人は「選択済」になるので、毎回ちがう人を名指しする。
+  // 記録表の名前のマスにも同じ字が出るので、窓の側（あとに描かれる方）を押す
+  const 名たち = ['部員4', '部員1', '部員2', '部員3'];
+  for (let 番 = 0; 番 < 人数; 番++) {
+    await t.字('選択').click();
+    await t.待つ(700);
+    await t.page.getByText(new RegExp('^' + 名たち[番] + ' ')).locator('visible=true').last().click();
+    await t.待つ(500);
+  }
+}
+/** testID がその頭で始まる箱のうち、いちばん下（1立目）のもの */
+async function 下の箱(t, 頭) {
+  const 箱たち = t.page.locator(`[data-testid^="${頭}"]`).locator('visible=true');
+  let 一番 = null;
+  let 下 = -1;
+  for (let 番 = 0; 番 < (await 箱たち.count()); 番++) {
+    const b = await 箱たち.nth(番).boundingBox();
+    if (b && b.y > 下) ((下 = b.y), (一番 = 箱たち.nth(番)));
+  }
+  return 一番;
 }
 
 /** 記録表に射手を並べる（撮る前の下ごしらえ） */
@@ -193,6 +230,7 @@ const 台本 = {
   u07: {
     用意: async (t) => {
       await 射手を並べる(t, 2);
+      await 名前を決めておく(t, 2);
       await 入れておく(t, [
         [0, 0],
         [1, 1],
@@ -251,6 +289,8 @@ const 台本 = {
       await t.押す(t.マス(0, 0), { 後: 400 });
       await t.押す(t.マス(1, 0), { 囲まない: true, 後: 3800 });
       await t.押す(t.マス(0, 0), { 後: 1500 });
+      // 直したいときは長押しで開く
+      await t.長押し(t.マス(0, 0), { 後: 1800 });
     },
   },
   u14: { 用意: (t) => 射手を並べる(t, 2), 見せる: async (t) => t.押す(t.字('間隔'), { 後: 1800 }) },
@@ -316,12 +356,20 @@ const 台本 = {
   },
   u17: {
     用意: async (t) => {
-      await 射手を並べる(t, 2);
       await t.字('間隔').click();
       await t.待つ(300);
+      await 射手を並べる(t, 2);
+      await 入れておく(t, [
+        [0, 0],
+        [0, 1],
+        [0, 2],
+        [1, 0],
+        [1, 2],
+        [1, 3],
+      ]);
     },
-    見せる: async (t) =>
-      t.押す(t.page.locator('[data-testid^="間隔の箱-"]').locator('visible=true').first(), { 後: 2000 }),
+    // 数え終わった 1立目（いちばん下の箱）を固定する
+    見せる: async (t) => t.押す(await 下の箱(t, '間隔の箱-'), { 後: 2200 }),
   },
   u18: {
     用意: (t) => 射手を並べる(t, 2),
@@ -395,8 +443,12 @@ const 台本 = {
           .getByText(/練習日/)
           .locator('visible=true')
           .first(),
-        { 後: 1800 }
+        { 後: 1200 }
       );
+      const 日 = t.page.getByText('25', { exact: true }).locator('visible=true').first();
+      await t.押す(日, { 後: 1500 });
+      // 検証環境の練習日を残さないよう、もう一度押して戻す（映すのはここまで）
+      await t.押す(日, { 囲まない: true, 後: 600 });
     },
   },
   x11: {
@@ -417,10 +469,7 @@ const 台本 = {
     始め: '設定',
     見せる: async (t) =>
       t.囲む(
-        t.page
-          .getByText(/矢所の記録/)
-          .locator('visible=true')
-          .first(),
+        t.page.getByText('矢所の記録機能を有効化', { exact: true }).locator('visible=true').first(),
         2200
       ),
   },
