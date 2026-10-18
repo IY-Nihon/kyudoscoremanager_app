@@ -23,50 +23,8 @@ test.use({ storageState: 'e2e/.auth/100007.json' });
 const 置き場 = process.env.USAGE_RAW || path.join('e2e', '.usage-raw');
 const 絞り = process.env.USAGE_ONLY ? new Set(process.env.USAGE_ONLY.split(',')) : null;
 
-/**
- * 動画の切り抜き（上の端 y と高さ h。CSS の px で、画面は 393×727）。操作しているあたりだけを横長に切り、
- * 一覧で文と一緒に見えるようにする（2026-10-19 本人：文と動画を一緒に見たい）。書いていないものは画面まるごと。
- * 画面の並び：上のタブ 0〜50・操作の帯 60〜100・記録表 110〜620・下のボタン 630〜727
- */
-const 切り抜き = {
-  u01: [0, 360],
-  u02: [330, 397],
-  x01: [40, 380],
-  u03: [0, 360],
-  u04: [367, 360],
-  u05: [300, 400],
-  u06: [40, 330],
-  u07: [330, 397],
-  x03: [330, 397],
-  u08: [367, 360],
-  u09: [0, 360],
-  u10: [280, 447],
-  u11: [0, 460],
-  u12: [40, 440],
-  u13: [40, 330],
-  u14: [367, 360],
-  u15: [367, 360],
-  u16: [367, 360],
-  x06: [40, 360],
-  x07: [100, 420],
-  u17: [40, 330],
-  x05: [367, 360],
-  u19: [0, 300],
-  u20: [400, 327],
-  u22: [300, 427],
-  u23: [0, 480],
-  x08: [0, 360],
-  u25: [0, 420],
-  x09: [120, 420],
-  u28: [0, 360],
-  x10: [0, 480],
-  u29: [0, 360],
-  u30: [200, 420],
-  u31: [180, 360],
-  u32: [0, 440],
-  x12: [180, 420],
-  x13: [250, 400],
-};
+// 動画は画面まるごと。操作のあたりだけに切り抜いた版は「全画面に戻して」となった（2026-10-19）
+const 切り抜き = {};
 
 /** 道具一式。台本はこれだけで書く */
 function 道具(page) {
@@ -112,11 +70,12 @@ function 道具(page) {
         .locator('text=' + 名)
         .locator('visible=true')
         .last(),
+    // 段は射の順。1射目はいちばん下のマス（記録表は下から入れていく。上から押すと見た人が戸惑う。2026-10-19 本人）
     マス: (列 = 0, 段 = 0) =>
       page
         .locator('[data-testid^="ます-"]')
         .locator('visible=true')
-        .nth(列 * 8 + 段),
+        .nth(列 * 8 + (7 - 段)),
     /** 囲んで見せるだけ（押さない） */
     囲む: async (loc, 長さ = 1800) => {
       await 枠を描く(await 箱(loc), 長さ);
@@ -378,9 +337,9 @@ const 台本 = {
     用意: async (t) => {
       await 射手を並べる(t, 3);
       await 入れておく(t, [
-        [0, 5],
-        [0, 6],
-        [0, 7],
+        [0, 0],
+        [0, 1],
+        [0, 2],
       ]);
     },
     見せる: async (t) => {
@@ -497,14 +456,39 @@ const 台本 = {
   },
 };
 
-for (const [名, 本] of Object.entries(台本)) {
+/**
+ * ログインしていない端末で撮る台本。個人IDは検証環境の合成の値（scripts/seed-stg.mjs の 100007 の部員1）
+ */
+const 入る前の台本 = {
+  x14: {
+    見せる: async (t) => {
+      await t.押す(t.字('個人'), { 後: 800 });
+      await t.押す(t.page.getByPlaceholder('例: 123456', { exact: true }), { 後: 200 });
+      await t.page.keyboard.type('100007', { delay: 120 });
+      await t.押す(t.page.getByPlaceholder('例: 1234', { exact: true }), { 後: 200 });
+      await t.page.keyboard.type('1071', { delay: 150 });
+      await t.待つ(500);
+      await t.押す(t.字('ログイン'), { 後: 5000 });
+    },
+  },
+};
+
+for (const [名, 本] of [
+  ...Object.entries(台本),
+  ...Object.entries(入る前の台本).map(([名, 本]) => [名, { ...本, 入る前: true }]),
+]) {
   if (絞り && !絞り.has(名)) continue;
-  test(`動画：${名}`, async ({ page }) => {
+  test(`動画：${名}`, async ({ page, browser }) => {
+    if (本.入る前) {
+      // 団体の控えを読まない、まっさらの端末
+      const 端末 = await browser.newContext({ ...test.info().project.use, storageState: undefined });
+      page = await 端末.newPage();
+    }
     test.setTimeout(120_000);
     await 案内を止める(page);
     if (本.自動ロック) await 自動ロックを入れる(page);
     await page.goto('/');
-    await page.waitForTimeout(4000);
+    await page.waitForTimeout(本.入る前 ? 6000 : 4000);
     const t = 道具(page);
     if (本.用意) await 本.用意(t);
     if (本.始め === '設定') {
