@@ -53,6 +53,8 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (BYPASS_HOSTS.some((host) => url.hostname.includes(host))) return;
   if (url.origin !== self.location.origin) return;
+  // 使い方の動画は少しずつ（Range・206）取りに来る。206 は控えられないので素通し
+  if (url.pathname.startsWith('/usage/')) return;
 
   // 名前に中身の印（ハッシュ）が付いた束と字体・画像（/_expo/static/…、/assets/…）は中身が変わらないので、
   // キャッシュ優先。前はここもネットワーク優先で、電波の弱い端末では 390KB の Ionicons の字体を毎回
