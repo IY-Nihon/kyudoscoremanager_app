@@ -162,11 +162,14 @@ const use案内 = create((set) => ({
   見本を置く: (値) => set({ 見本データ: 値 }),
   AI開いている: false,
   AI開く: (値) => set({ AI開いている: !!値 }),
-  始める: (控え) =>
+  // 「使い方を見る」で選んだ手順の題。null なら最初から全部（基本 → 続きを見るか尋ねる）
+  選んだ題: null,
+  始める: (控え, 選んだ題 = null) =>
     set({
       進行中: true,
       番号: 0,
       続きも見る: false,
+      選んだ題: Array.isArray(選んだ題) && 選んだ題.length ? 選んだ題 : null,
       控え,
       最高到達: 0,
       見本データ: null,
@@ -179,6 +182,7 @@ const use案内 = create((set) => ({
       進行中: false,
       番号: 0,
       続きも見る: false,
+      選んだ題: null,
       控え: null,
       最高到達: 0,
       見本データ: null,
@@ -195,7 +199,7 @@ const use案内 = create((set) => ({
  * ライブ中は始めない。案内中の書き換えが全員の画面に流れてしまうため。
  * 戻り値は 'はじめた' か 'ライブ中'。
  */
-function startTutorial() {
+function startTutorial(選んだ題) {
   const 店 = useScoreStore.getState();
   if (店.isLiveActive) return 'ライブ中';
   const 控え = {
@@ -203,7 +207,7 @@ function startTutorial() {
     shotsPerRound: 店.shotsPerRound,
     viewScale: 店.viewScale,
   };
-  use案内.getState().始める(控え);
+  use案内.getState().始める(控え, 選んだ題);
   AsyncStorage.setItem(控えキー, JSON.stringify(控え)).catch((誤り) =>
     console.error('[TutorialGuide] 控えを書けませんでした:', 誤り)
   );
@@ -381,10 +385,16 @@ const TutorialOverlay = ({ navRef }) => {
     }),
     []
   );
-  const 手順 = React.useMemo(
-    () => (続きも見る ? [...基本, ...続き] : [...基本, 分かれ道]),
-    [基本, 続き, 続きも見る, 分かれ道]
-  );
+  // 「使い方を見る」で選んだときは、選んだ手順だけを見せる順に並べ、最後の手順で終わる
+  const 選んだ題 = use案内((状態) => 状態.選んだ題);
+  const 手順 = React.useMemo(() => {
+    if (選んだ題) {
+      const 選び = new Set(選んだ題);
+      const 並び = [...基本, ...続き].filter((一つ) => 選び.has(一つ.題));
+      if (並び.length) return 並び;
+    }
+    return 続きも見る ? [...基本, ...続き] : [...基本, 分かれ道];
+  }, [基本, 続き, 続きも見る, 分かれ道, 選んだ題]);
   const いまの手順 = 進行中 ? 手順[番号] : null;
   // 「戻る」で前の手順を読み返しているところ。
   // ここでもう一度操作を求めると、行き止まりになることがある。たとえば部員が
@@ -719,7 +729,7 @@ const TutorialOverlay = ({ navRef }) => {
                   onPress={() => (最後 ? 閉じる() : 進める(番号 + 1))}
                   style={styles.次へボタン}
                 >
-                  <Text style={styles.次へ文字}>{最後 ? '始める' : '次へ'}</Text>
+                  <Text style={styles.次へ文字}>{最後 ? (選んだ題 ? '終わる' : '始める') : '次へ'}</Text>
                 </TouchableOpacity>
               )}
             </View>

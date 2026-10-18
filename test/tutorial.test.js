@@ -322,3 +322,17 @@ test('案内：部員がいる場合といない場合のAI手順の整合性', 
   assert.ok(部員ありの手順, '部員がいるときもAIで追加できる説明がある');
   assert.equal(部員ありの手順.操作, undefined, '部員がいるときは操作を求めない');
 });
+
+test('使い方を選んで見る：「ようこそ」「以上です」以外の手順は、どれかのまとまりに入る（新しい手順を足したら tutorialSteps.js の 題とまとまり に足す）', () => {
+  const { 手順を作る: 作る, まとまりの一覧 } = require('../src/tutorialSteps');
+  for (const 役割 of ['group', 'member'])
+    for (const 手持ち of [{ 部員数: 0, 記録数: 0 }, { 部員数: 5, 記録数: 3 }]) {
+      const { 基本, 続き } = 作る(役割, 手持ち);
+      const 漏れ = [...基本, ...続き].filter((一つ) => !一つ.まとまり && !['ようこそ', '以上です'].includes(一つ.題));
+      assert.deepEqual(漏れ.map((一つ) => 一つ.題), [], `${役割} でまとまりの無い手順`);
+      const 一覧 = まとまりの一覧(基本, 続き);
+      assert.ok(一覧.length >= 5);
+      const 題たち = 一覧.flatMap((組) => 組.題たち);
+      assert.equal(new Set(題たち).size, 題たち.length, '同じ題が 2 つのまとまりに入らない');
+    }
+});

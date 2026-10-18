@@ -26,6 +26,7 @@ const 学 = require('./gakunen');
 const { 団体の種類を選ぶ } = require('./GroupTypePicker');
 const { 区分の設定, 学年の並びの設定 } = require('./DivisionSettings');
 const 案内 = require('./TutorialGuide');
+const { 使い方の選び窓 } = require('./UsageChooser');
 const Icons = require('@expo/vector-icons');
 const ReactNativeSafeAreaContext = require('react-native-safe-area-context');
 // 書き出しの窓（期間・形・絞り込み・CSV と Excel）は別のファイル（2026-10-05）
@@ -141,6 +142,7 @@ const SettingsScreen = () => {
   ]);
   const [書き出しの窓, 書き出しの窓を出す] = React.useState(false);
   const [ガイドの窓, ガイドの窓を出す] = React.useState(false);
+  const [使い方の窓, 使い方の窓を出す] = React.useState(false);
   const [ログアウトの窓, ログアウトの窓を出す] = React.useState(false);
   const // ログアウトの確認の段階。'確認' → '送信中' → '送信済み' / '失敗'
     [ログアウトの段階, ログアウトの段階を設定] = React.useState('確認');
@@ -271,12 +273,8 @@ const SettingsScreen = () => {
             </View>
             {/* 初めての人向けの案内。初回は自動で出るが、ここからいつでも見返せる。 */
             /* ライブ中は始めない（案内中の書き換えが全員の画面に流れてしまう） */}
-            {行('school-outline', '使い方を見る', () => {
-              if ('ライブ中' === 案内.startTutorial()) {
-                const 文 = 'ライブ記録中は、使い方の案内を始められません。ライブを止めてからお試しください。';
-                Alert.alert('使い方を見る', 文);
-              }
-            })}
+            {/* 最初から全部か、知りたいところだけかを選ぶ窓を開く（src/UsageChooser.js） */}
+            {行('school-outline', '使い方を見る', () => 使い方の窓を出す(true))}
             {行('help-circle-outline', '運用ガイド・ヘルプ', () => ガイドの窓を出す(true))}
             {行(
               'log-out-outline',
@@ -1272,6 +1270,7 @@ const SettingsScreen = () => {
           </View>
         </View>
       </Modal>
+      <使い方の選び窓 見える={使い方の窓} 閉じる={() => 使い方の窓を出す(false)} />
       <Modal
         visible={ガイドの窓}
         transparent
