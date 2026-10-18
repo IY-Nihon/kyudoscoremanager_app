@@ -516,6 +516,30 @@ const 題とまとまり = [
 ];
 const まとまりを引く = new Map(題とまとまり.flatMap(([題たち, 名]) => 題たち.map((題) => [題, 名])));
 
+/**
+ * 「使い方を見る」の動画（public/usage/<名>.mp4）の名。言い回しが分かれる手順は同じ動画を使う。
+ * 並びは 題とまとまり の順の通し番号（u01…）。撮り方は e2e/record-usage-videos.spec.mjs
+ */
+const 同じ動画 = [
+  ['はじめにメンバーを登録します', 'メンバーはここで管理します'],
+  ['AIに話しかけて登録します', 'AIでもメンバーを登録できます'],
+  ['自分の的中率がここに出ます', '的中率の高い順に並びます'],
+];
+const 動画の通し = (() => {
+  const 代わり = new Map(同じ動画);
+  const 名 = new Map();
+  let 番 = 0;
+  for (const [題たち] of 題とまとまり)
+    for (const 題 of 題たち) {
+      if (代わり.has(題)) continue;
+      番 += 1;
+      名.set(題, 'u' + String(番).padStart(2, '0'));
+    }
+  for (const [元, 先] of 同じ動画) 名.set(元, 名.get(先));
+  return 名;
+})();
+const 動画の名 = (題) => 動画の通し.get(題) || null;
+
 /** 手順に まとまり を付ける（「ようこそ」「以上です」は付けない＝全部を見るときだけ出る） */
 function 組を付ける(手順たち) {
   return 手順たち.map((一つ) =>
@@ -639,4 +663,4 @@ function 見本の中身を作る(今 = new Date(), 自分 = null) {
   return { members: 部員, alumni: [], sessions, trash: [] };
 }
 
-module.exports = { 手順を作る, 手が出せない, 見本の中身を作る, まとまりの一覧, まとまりの順 };
+module.exports = { 手順を作る, 手が出せない, 見本の中身を作る, まとまりの一覧, まとまりの順, 動画の名 };

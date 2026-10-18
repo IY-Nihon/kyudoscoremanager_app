@@ -68,3 +68,6 @@ yarn-error.*
 
 # 誰のものでもない匿名を消したときの控え（scripts/prune-anonymous-users.mjs）
 anonymous-deleted-*.json
+
+# 使い方の動画を撮った元の絵（scripts/usage-videos.mjs で public/usage へまとめる）
+e2e/.usage-raw/
