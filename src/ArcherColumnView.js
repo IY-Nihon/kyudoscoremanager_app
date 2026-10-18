@@ -417,34 +417,56 @@ const ArcherColumnView = React.memo(
                       線,
                     ]}
                   >
-                    {!横 && 字.includes('/') ? (
-                      // 縦の表の分数は、上に分子・横線・下に分母と積む（箱が縦に長いので読みやすい）
-                      <View style={{ alignItems: 'center' }}>
-                        <Text style={[styles.blockTotalText, { fontSize: 22 * 倍率, lineHeight: 26 * 倍率 }]}>
-                          {字.split('/')[0]}
+                    {/* 数と、見せ方の名前（的中数のとき以外）。縦は数の下、横は数の右に小さく出す。
+                        立が多いと一番上の名前が見えなくなるため、どの箱でも何を出しているか分かるようにする */}
+                    <View style={{ flexDirection: 横 ? 'row' : 'column', alignItems: 'center' }}>
+                      {!横 && 字.includes('/') ? (
+                        // 縦の表の分数は、上に分子・横線・下に分母と積む（箱が縦に長いので読みやすい）
+                        <View style={{ alignItems: 'center' }}>
+                          <Text
+                            style={[styles.blockTotalText, { fontSize: 22 * 倍率, lineHeight: 26 * 倍率 }]}
+                          >
+                            {字.split('/')[0]}
+                          </Text>
+                          <View
+                            style={{
+                              width: 30 * 倍率,
+                              height: Math.max(1, 2 * 倍率),
+                              backgroundColor: 色.青,
+                              marginVertical: 2 * 倍率,
+                            }}
+                          />
+                          <Text
+                            style={[styles.blockTotalText, { fontSize: 22 * 倍率, lineHeight: 26 * 倍率 }]}
+                          >
+                            {字.split('/')[1]}
+                          </Text>
+                        </View>
+                      ) : (
+                        <Text
+                          style={[
+                            styles.blockTotalText,
+                            { fontSize: (字.length > 4 ? 16 : 字.length > 2 ? 20 : 24) * 倍率 },
+                          ]}
+                        >
+                          {字}
                         </Text>
-                        <View
+                      )}
+                      {!!見せ方の名 && (
+                        <Text
                           style={{
-                            width: 30 * 倍率,
-                            height: Math.max(1, 2 * 倍率),
-                            backgroundColor: 色.青,
-                            marginVertical: 2 * 倍率,
+                            fontSize: 9 * 倍率,
+                            fontWeight: 'bold',
+                            color: 色.青,
+                            marginTop: 横 ? 0 : 3 * 倍率,
+                            marginLeft: 横 ? 6 * 倍率 : 0,
                           }}
-                        />
-                        <Text style={[styles.blockTotalText, { fontSize: 22 * 倍率, lineHeight: 26 * 倍率 }]}>
-                          {字.split('/')[1]}
+                          testID={'計の見せ方の名-' + 立}
+                        >
+                          {見せ方の名}
                         </Text>
-                      </View>
-                    ) : (
-                      <Text
-                        style={[
-                          styles.blockTotalText,
-                          { fontSize: (字.length > 4 ? 16 : 字.length > 2 ? 20 : 24) * 倍率 },
-                        ]}
-                      >
-                        {字}
-                      </Text>
-                    )}
+                      )}
+                    </View>
                     {鍵が効く && (
                       <TouchableOpacity
                         testID={'計の鍵-' + archer.id + '-' + 立}

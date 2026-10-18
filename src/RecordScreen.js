@@ -51,6 +51,8 @@ const { OCRRecordModal } = require('./OCRRecordModal');
 const { LiveShareModal } = require('./LiveShareModal');
 const 期限 = require('./liveShare');
 const { 列の見立てを作る } = require('./retsuNoMitate');
+// 計の見せ方の名前（履歴の詳細の帯と同じものを使う）
+const { 見せ方の名 } = require('./keiNoMisekataObi');
 /**
  * ライブの帯に出す「あと30分で期限切れ」。
  *
@@ -292,9 +294,7 @@ const RecordScreen = () => {
   React.useEffect(() => {
     if (前の計の見せ方.current === 計の見せ方) return;
     前の計の見せ方.current = 計の見せ方;
-    const 名 = ['的中数', '的中数/射数', '的中数/累計', '立ごとの的中率', '累計の的中率'][
-      Number(計の見せ方) || 0
-    ];
+    const 名 = 見せ方の名[Number(計の見せ方) || 0];
     知らせる(`計を「${名}」で表示します`);
   }, [計の見せ方]);
   React.useEffect(() => {

@@ -30,6 +30,8 @@ const { ManualSubstitutionModal } = require('./ManualSubstitutionModal');
 const { formatMemberName } = require('./formatMemberName');
 const { use横流し } = require('./yokoNagashi');
 const { 列の見立てを作る } = require('./retsuNoMitate');
+// 計の列を押して見せ方が変わったら帯で知らせる（記録画面と同じ）
+const { 計の見せ方の帯 } = require('./keiNoMisekataObi');
 // 見た目の決まりは別のファイル（2026-10-05）
 const { styles } = require('./historyStyles');
 // ゴミ箱の窓（戻す・まとめて消す・中身を見る）は別のファイル（2026-10-05）
@@ -241,7 +243,8 @@ const HistoryScreen = () => {
         const 日付 = new Date(記録.date);
         const 年 = 日付.getFullYear();
         const 月 = 日付.getMonth() + 1;
-        if (学.年度(new Date(年, 月 - 1, 1)) === 見ている年度) 集めた.add(`${年}/${String(月).padStart(2, '0')}`);
+        if (学.年度(new Date(年, 月 - 1, 1)) === 見ている年度)
+          集めた.add(`${年}/${String(月).padStart(2, '0')}`);
       }),
       Array.from(集めた).sort((甲, 乙) => 甲.localeCompare(乙))
     );
@@ -595,7 +598,9 @@ const HistoryScreen = () => {
                             borderRightColor: 基本色.黒,
                           }}
                         >
-                          <Text style={{ fontSize: 10 * viewScale, fontWeight: 'bold', color: 基本色.文字_二 }}>
+                          <Text
+                            style={{ fontSize: 10 * viewScale, fontWeight: 'bold', color: 基本色.文字_二 }}
+                          >
                             名
                           </Text>
                         </View>
@@ -650,7 +655,10 @@ const HistoryScreen = () => {
                                 disabled={!isAdminMode}
                               >
                                 <Text
-                                  style={{ fontSize: 13 * viewScale, color: 射手.name ? 基本色.黒 : 基本色.灰 }}
+                                  style={{
+                                    fontSize: 13 * viewScale,
+                                    color: 射手.name ? 基本色.黒 : 基本色.灰,
+                                  }}
                                   numberOfLines={1}
                                 >
                                   {射手.isTotalCalculator
@@ -868,7 +876,11 @@ const HistoryScreen = () => {
                                                 : 基本色.桃,
                                         }}
                                       >
-                                        <Icons.Ionicons name="person" size={10 * viewScale} color={基本色.白} />
+                                        <Icons.Ionicons
+                                          name="person"
+                                          size={10 * viewScale}
+                                          color={基本色.白}
+                                        />
                                       </View>
                                     )}
                                   </TouchableOpacity>
@@ -883,6 +895,7 @@ const HistoryScreen = () => {
                 ]}
           </View>
         </View>
+        <計の見せ方の帯 />
       </View>
     );
   };
@@ -1193,7 +1206,9 @@ const HistoryScreen = () => {
                         marginBottom: 8,
                       }}
                     >
-                      <Text style={{ fontSize: 13, fontWeight: 'bold', color: 基本色.灰 }}>タグフィルター</Text>
+                      <Text style={{ fontSize: 13, fontWeight: 'bold', color: 基本色.灰 }}>
+                        タグフィルター
+                      </Text>
                       <View
                         style={{
                           flexDirection: 'row',
@@ -1249,12 +1264,16 @@ const HistoryScreen = () => {
                           styles.tagChip,
                           0 === historySelectedTags.length && styles.tagChipActive,
                           { backgroundColor: 0 === historySelectedTags.length ? 基本色.青 : 基本色.地_濃い },
-                          hovered && 0 !== historySelectedTags.length && { backgroundColor: 基本色.灰_明るい },
+                          hovered &&
+                            0 !== historySelectedTags.length && { backgroundColor: 基本色.灰_明るい },
                         ]}
                         onPress={() => setHistorySelectedTags([])}
                       >
                         <Text
-                          style={[styles.tagChipText, 0 === historySelectedTags.length && { color: 基本色.白 }]}
+                          style={[
+                            styles.tagChipText,
+                            0 === historySelectedTags.length && { color: 基本色.白 },
+                          ]}
                         >
                           すべて解除
                         </Text>
@@ -1486,7 +1505,9 @@ const HistoryScreen = () => {
               <Icons.Ionicons name="create-outline" size={20} color={基本色.藍} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.adminMenuText}>記録の情報を変える</Text>
-                <Text style={{ fontSize: 11, color: 基本色.灰, marginLeft: 12 }}>日付・題・メモ・タグ・出欠</Text>
+                <Text style={{ fontSize: 11, color: 基本色.灰, marginLeft: 12 }}>
+                  日付・題・メモ・タグ・出欠
+                </Text>
               </View>
             </TouchableOpacity>
           </View>
