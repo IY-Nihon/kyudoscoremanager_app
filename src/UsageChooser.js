@@ -14,6 +14,7 @@ const Icons = require('@expo/vector-icons');
 const { useScoreStore } = require('./useScoreStore');
 const { 手順を作る, まとまりの一覧, 動画の名, 一覧の名を引く } = require('./tutorialSteps');
 const { 見える記録数 } = require('./syncRules');
+const { 使い方の一覧 } = require('./usageExtras');
 const 案内 = require('./TutorialGuide');
 const { 色 } = require('./iro.js');
 
@@ -25,6 +26,7 @@ const まとまりの絵 = {
   'ライブ（複数の端末）': 'radio',
   '履歴・分析': 'stats-chart',
   '弓具・出欠・設定': 'settings',
+  よくある困りごと: 'help-buoy',
 };
 
 // 案内のための言い回し（画面の上で押してもらう前提の文）は、一覧で読むときには要らない
@@ -37,7 +39,7 @@ const 使い方の選び窓 = ({ 見える, 閉じる }) => {
   const { 一覧, 題で } = React.useMemo(() => {
     const { 基本, 続き } = 手順を作る(役割, { 部員数, 記録数 });
     return {
-      一覧: まとまりの一覧(基本, 続き),
+      一覧: 使い方の一覧(まとまりの一覧(基本, 続き), 役割),
       題で: new Map([...基本, ...続き].map((一つ) => [一つ.題, 一つ])),
     };
   }, [役割, 部員数, 記録数]);
@@ -97,14 +99,23 @@ const 使い方の選び窓 = ({ 見える, 閉じる }) => {
                     <Icons.Ionicons name={開 ? 'chevron-up' : 'chevron-down'} size={18} color={色.灰} />
                   </TouchableOpacity>
                   {開 &&
-                    組.題たち.map((題) => {
+                    [
+                      // 画面の上の案内がある手順
+                      ...組.案内の題たち.map((題) => ({
+                        鍵: 題,
+                        名: 一覧の名を引く(題),
+                        文: ((題で.get(題) || {}).文 || []).filter((行) => !一覧では出さない文.test(行)),
+                        動画: 動画の名(題),
+                        案内の題: 題,
+                      })),
+                      // 一覧にだけある項目（usageExtras）
+                      ...組.足す,
+                    ].map((項) => {
+                      const 題 = 項.鍵;
                       const 項目が開 = 開いた項目 === 題;
-                      const 手順 = 題で.get(題) || {};
-                      const 名 = 動画の名(題);
+                      const 名 = 項.動画;
                       const 動画あり = !!名 && !読めない[名];
-                      const 文 = (Array.isArray(手順.文) ? 手順.文 : []).filter(
-                        (行) => !一覧では出さない文.test(行)
-                      );
+                      const 文 = 項.文;
                       return (
                         <View key={題} style={styles.項目}>
                           <TouchableOpacity
@@ -115,7 +126,7 @@ const 使い方の選び窓 = ({ 見える, 閉じる }) => {
                             testID={'使い方の項目-' + 題}
                           >
                             <Text style={[styles.項目の名, 項目が開 && { color: 色.青, fontWeight: 'bold' }]}>
-                              {一覧の名を引く(題)}
+                              {項.名}
                             </Text>
                             <Icons.Ionicons
                               name={項目が開 ? 'remove' : 'add'}
@@ -151,24 +162,26 @@ const 使い方の選び窓 = ({ 見える, 閉じる }) => {
                                   {行}
                                 </Text>
                               ))}
-                              <TouchableOpacity
-                                style={styles.やってみる}
-                                onPress={() => 始める([題])}
-                                testID="使い方-やってみる"
-                              >
-                                <Icons.Ionicons name="hand-left-outline" size={16} color={色.青} />
-                                <Text style={styles.やってみるの字}>画面でやってみる</Text>
-                              </TouchableOpacity>
+                              {項.案内の題 && (
+                                <TouchableOpacity
+                                  style={styles.やってみる}
+                                  onPress={() => 始める([項.案内の題])}
+                                  testID="使い方-やってみる"
+                                >
+                                  <Icons.Ionicons name="hand-left-outline" size={16} color={色.青} />
+                                  <Text style={styles.やってみるの字}>画面でやってみる</Text>
+                                </TouchableOpacity>
+                              )}
                             </View>
                           )}
                         </View>
                       );
                     })}
-                  {開 && 組.題たち.length > 1 && (
-                    <TouchableOpacity style={styles.組を通す} onPress={() => 始める(組.題たち)}>
+                  {開 && 組.案内の題たち.length > 1 && (
+                    <TouchableOpacity style={styles.組を通す} onPress={() => 始める(組.案内の題たち)}>
                       <Text
                         style={styles.組を通すの字}
-                      >{`このまとまりを画面で順に見る（${組.題たち.length}）`}</Text>
+                      >{`このまとまりを画面で順に見る（${組.案内の題たち.length}）`}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
