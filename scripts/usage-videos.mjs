@@ -4,7 +4,7 @@
  *   node scripts/usage-videos.mjs [名 ...]
  *
  * 絵は画面が変わったときだけ届くので、届いた時刻の差をそのまま 1 枚の長さにする。
- * 古い端末でも軽く流れるよう、幅 540・H.264・音なし。
+ * 古い端末でも軽く流れるよう、幅 720・H.264・音なし。
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -45,13 +45,16 @@ for (const 名 of 名たち) {
       '-i',
       台帳,
       '-vf',
-      'scale=540:-2:flags=lanczos,fps=24',
+      'scale=720:-2:flags=lanczos,fps=24',
       '-c:v',
       'libx264',
       '-preset',
       'slow',
+      // 画面の字を潰さない（28 では小さな字が掠れた。2026-10-19 本人）
+      '-tune',
+      'animation',
       '-crf',
-      '28',
+      '20',
       '-pix_fmt',
       'yuv420p',
       '-movflags',
