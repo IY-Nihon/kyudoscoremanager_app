@@ -58,7 +58,9 @@ function 道具(page) {
     // 字だけでなく、押せる部品ごと（タブなら絵と名前の両方）を囲む（2026-10-19 本人：「記録」の字だけ囲んでいた）
     const b = await loc.evaluate((e) => {
       const 部品 = e.closest('[role="button"],[role="tab"],[role="link"],button,a,[tabindex]') || e;
-      const r = (部品.getBoundingClientRect().width > window.innerWidth * 0.9 ? e : 部品).getBoundingClientRect();
+      const r = (
+        部品.getBoundingClientRect().width > window.innerWidth * 0.9 ? e : 部品
+      ).getBoundingClientRect();
       return { x: r.x, y: r.y, width: r.width, height: r.height };
     });
     if (!b || !b.width) throw new Error('見つからない: ' + loc);
@@ -150,7 +152,11 @@ async function 名前を決めておく(t, 人数) {
   for (let 番 = 0; 番 < 人数; 番++) {
     await t.字('選択').click();
     await t.待つ(700);
-    await t.page.getByText(new RegExp('^' + 名たち[番] + ' ')).locator('visible=true').last().click();
+    await t.page
+      .getByText(new RegExp('^' + 名たち[番] + ' '))
+      .locator('visible=true')
+      .last()
+      .click();
     await t.待つ(500);
   }
 }
@@ -192,11 +198,18 @@ const 部員の行 = (t) =>
  */
 const 台本 = {
   // ── メンバーの登録
-  u01: { 見せる: async (t) => t.押す(t.タブ('メンバー'), { 後: 1800 }) },
   u02: {
     見せる: async (t) => {
       await t.押す(t.タブ('メンバー'), { 後: 1000 });
       await t.押す(t.印('AIを開く'), { 後: 2000 });
+    },
+  },
+  // AIに聞く：分析の画面から開き、聞けることの例を見せる（記録の画面には AI の印が無い。
+  // 送ると本番と同じ枠の模型を使うので送らない）
+  x16: {
+    見せる: async (t) => {
+      await t.押す(t.タブ('分析'), { 後: 1000 });
+      await t.押す(t.印('AIを開く'), { 後: 2600 });
     },
   },
   x01: {
@@ -206,7 +219,6 @@ const 台本 = {
     },
   },
   // ── 記録の取り方
-  u03: { 始め: '設定', 見せる: async (t) => t.押す(t.タブ('記録'), { 後: 1800 }) },
   u04: {
     見せる: async (t) => {
       await t.押す(t.札('射手を追加'), { 後: 700 });
@@ -299,7 +311,6 @@ const 台本 = {
       await t.長押し(t.マス(0, 0), { 後: 1800 });
     },
   },
-  u14: { 用意: (t) => 射手を並べる(t, 2), 見せる: async (t) => t.押す(t.字('間隔'), { 後: 1800 }) },
   u15: {
     用意: (t) => 射手を並べる(t, 2),
     見せる: async (t) => {
@@ -470,7 +481,6 @@ const 台本 = {
       );
     },
   },
-  u29: { 見せる: async (t) => t.押す(t.タブ('設定'), { 後: 1800 }) },
   u30: {
     始め: '設定',
     見せる: async (t) =>

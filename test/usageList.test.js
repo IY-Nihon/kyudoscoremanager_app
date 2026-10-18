@@ -38,6 +38,17 @@ test('動画の名を書いたものは、public/usage に動画がある', () =
   assert.deepEqual(無い, [], '撮り忘れ（e2e/record-usage-videos.spec.mjs で撮る）');
 });
 
+test('public/usage の動画は、どれも一覧のどこかで使っている（使わない動画を配らない）', () => {
+  const 使う = new Set(全項目.flatMap((項) => 項.部分.map((部) => 部.動画)).filter(Boolean));
+  const 置き場 = path.join(__dirname, '..', 'public', 'usage');
+  const 余り = fs
+    .readdirSync(置き場)
+    .filter((f) => f.endsWith('.mp4'))
+    .map((f) => f.replace(/\.mp4$/, ''))
+    .filter((名) => !使う.has(名));
+  assert.deepEqual(余り, [], '使っていない動画（消すか、台本ごと外す）');
+});
+
 test('「画面でやってみる」の案内の題は、案内に在って指す先がある', () => {
   const 題たち = new Set();
   for (const 役割 of ['group', 'member'])
@@ -52,7 +63,11 @@ test('「画面でやってみる」の案内の題は、案内に在って指�
 test('個人で入ったときは、管理者や団体ログインが要る項目を出さない。困りごとは最後', () => {
   const 名たち = 使い方の一覧('member').flatMap((組) => 組.項目.map((項) => 項.名));
   assert.ok(!名たち.includes('管理者モード'));
-  assert.ok(!名たち.includes('パスワードを忘れた'));
+  assert.ok(!名たち.includes('パスワード・団体IDを忘れた'));
+  const 部分の見出し = 使い方の一覧('member').flatMap((組) =>
+    組.項目.flatMap((項) => 項.部分.map((部) => 部.見出し))
+  );
+  assert.ok(!部分の見出し.includes('練習日を登録する'), '団体だけの部分も外す');
   assert.ok(名たち.includes('ログインのしかた（団体・個人）'));
   assert.equal(使い方の一覧('group').at(-1).名, 困りごと);
 });
