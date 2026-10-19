@@ -144,22 +144,6 @@ function 道具(page) {
   };
 }
 
-/** 並べた射手に、左から部員を割り当てる（撮る前の下ごしらえ） */
-async function 名前を決めておく(t, 人数) {
-  // 窓の一覧の並び（学年の順）。先に割り当てた人は「選択済」になるので、毎回ちがう人を名指しする。
-  // 記録表の名前のマスにも同じ字が出るので、窓の側（あとに描かれる方）を押す
-  const 名たち = ['部員4', '部員1', '部員2', '部員3'];
-  for (let 番 = 0; 番 < 人数; 番++) {
-    await t.字('選択').click();
-    await t.待つ(700);
-    await t.page
-      .getByText(new RegExp('^' + 名たち[番] + ' '))
-      .locator('visible=true')
-      .last()
-      .click();
-    await t.待つ(500);
-  }
-}
 /** testID がその頭で始まる箱のうち、いちばん下（1立目）のもの */
 async function 下の箱(t, 頭) {
   const 箱たち = t.page.locator(`[data-testid^="${頭}"]`).locator('visible=true');
@@ -227,6 +211,57 @@ const 部員の行 = (t) =>
  * 始め: '設定' … 設定の画面から始める（既定は記録の画面）
  */
 const 台本 = {
+  // 立ちごとの計と総計（本番の組み方：人…・計・人…・計・総計）
+  y05: {
+    用意: async (t) => {
+      await 射手を並べる(t, 2);
+      await 入れておく(t, [
+        [0, 0],
+        [0, 1],
+        [1, 0],
+        [1, 2],
+      ]);
+    },
+    見せる: async (t) => {
+      await t.押す(t.字('Σ'), { 後: 900 });
+      await t.押す(t.札('射手を追加'), { 後: 500 });
+      await t.押す(t.札('射手を追加'), { 囲まない: true, 後: 600 });
+      // 2立目の○×。足した射手は記録表の左に並ぶが、マスの並びは足した順（3・4 列目が新しい射手）
+      await t.押す(t.マス(2, 0), { 囲まない: true, 後: 300 });
+      await t.押す(t.マス(3, 1), { 囲まない: true, 後: 300 });
+      await t.押す(t.マス(3, 0), { 囲まない: true, 後: 600 });
+      await t.押す(t.字('Σ'), { 後: 900 });
+      await t.押す(t.字('Σ'), { 後: 900 });
+      // いちばん左の計（いま足した計）の名前のマス
+      const 計たち = t.page.locator('[data-testid^="名の欄-合計-"]').locator('visible=true');
+      let 左 = null;
+      let 左のx = 1e9;
+      for (let 番 = 0; 番 < (await 計たち.count()); 番++) {
+        const b = await 計たち.nth(番).boundingBox();
+        if (b && b.x < 左のx) ((左のx = b.x), (左 = 計たち.nth(番)));
+      }
+      await t.押す(左, { 後: 1100 });
+      await t.押す(t.字('手前の計もまとめた総計にする'), { 後: 2400 });
+    },
+  },
+  // チームを分ける：間隔・次のチーム・区切りの「⋯」からチーム名
+  y04: {
+    用意: (t) => 射手を並べる(t, 2),
+    見せる: async (t) => {
+      await t.押す(t.字('間隔'), { 後: 700 });
+      await t.押す(t.札('射手を追加'), { 後: 500 });
+      await t.押す(t.札('射手を追加'), { 囲まない: true, 後: 800 });
+      await t.押す(t.page.locator('[data-testid^="名の欄-区切り-"]').locator('visible=true').first(), {
+        後: 1000,
+      });
+      await t.押す(t.字('チーム名を付ける'), { 後: 900 });
+      // 窓が開いた直後は欄に焦点が来ておらず、最初の字が落ちた。欄を押してから打つ
+      await t.page.getByPlaceholder('例: ◯◯大学').click();
+      await t.page.keyboard.type('A大学', { delay: 150 });
+      await t.待つ(500);
+      await t.押す(t.字('決定'), { 後: 2400 });
+    },
+  },
   // 過去の記録を編集する：管理者モードを入れ、履歴の記録を開いて○×を押す。
   // 撮ったあと、押したマスを元に戻す（○→×→空→○ と 3 回で一周する）
   y01: {
@@ -267,13 +302,6 @@ const 台本 = {
       await t.字('キャンセル').click();
     },
   },
-  // ── メンバーの登録
-  u02: {
-    見せる: async (t) => {
-      await t.押す(t.タブ('メンバー'), { 後: 1000 });
-      await t.押す(t.印('AIを開く'), { 後: 2000 });
-    },
-  },
   // AIに聞く：分析の画面から開き、聞けることの例を見せる（記録の画面には AI の印が無い。
   // 送ると本番と同じ枠の模型を使うので送らない）
   x16: {
@@ -282,62 +310,11 @@ const 台本 = {
       await t.押す(t.印('AIを開く'), { 後: 2600 });
     },
   },
-  x01: {
-    見せる: async (t) => {
-      await t.押す(t.タブ('メンバー'), { 後: 1000 });
-      await t.押す(部員の行(t), { 後: 2000 });
-    },
-  },
-  // ── 記録の取り方
-  u04: {
-    見せる: async (t) => {
-      await t.押す(t.札('射手を追加'), { 後: 700 });
-      await t.押す(t.札('射手を追加'), { 囲まない: true, 後: 700 });
-      await t.押す(t.札('射手を追加'), { 囲まない: true, 後: 1300 });
-    },
-  },
   u05: {
     用意: (t) => 射手を並べる(t, 1),
     見せる: async (t) => {
       await t.押す(t.字('選択'), { 後: 1200 });
       await t.押す(部員の行(t), { 後: 1800 });
-    },
-  },
-  u06: {
-    用意: (t) => 射手を並べる(t, 3),
-    見せる: async (t) => {
-      await t.押す(t.マス(0, 0), { 後: 700 });
-      await t.押す(t.マス(0, 0), { 囲まない: true, 後: 700 });
-      await t.押す(t.マス(0, 0), { 囲まない: true, 後: 700 });
-      await t.押す(t.マス(0, 0), { 囲まない: true, 後: 600 });
-      await t.押す(t.マス(1, 0), { 囲まない: true, 後: 500 });
-      await t.押す(t.マス(2, 0), { 囲まない: true, 後: 500 });
-      await t.押す(t.マス(2, 0), { 囲まない: true, 後: 1500 });
-    },
-  },
-  u07: {
-    用意: async (t) => {
-      await 射手を並べる(t, 2);
-      await 名前を決めておく(t, 2);
-      await 入れておく(t, [
-        [0, 0],
-        [1, 1],
-      ]);
-    },
-    見せる: async (t) => t.押す(t.札('終了して保存'), { 後: 2400 }),
-  },
-  x03: {
-    用意: async (t) => {
-      await 射手を並べる(t, 1);
-      await t.字('選択').click();
-      await t.待つ(800);
-      await 部員の行(t).click();
-      await t.待つ(600);
-      await 入れておく(t, [[0, 0]]);
-    },
-    見せる: async (t) => {
-      await t.押す(t.札('終了して保存'), { 後: 1500 });
-      await t.押す(t.字('遅刻'), { 後: 2000 });
     },
   },
   // ── 記録表の便利な機能
@@ -363,13 +340,6 @@ const 台本 = {
       await t.押す(t.字('12射'), { 後: 1700 });
     },
   },
-  u12: {
-    用意: (t) => 射手を並べる(t, 3),
-    見せる: async (t) => {
-      await t.押す(t.page.getByText(/^100%/).locator('visible=true').first(), { 後: 1000 });
-      await t.押す(t.字('150%'), { 後: 1700 });
-    },
-  },
   u13: {
     自動ロック: true,
     用意: (t) => 射手を並べる(t, 3),
@@ -380,26 +350,6 @@ const 台本 = {
       // 直したいときは長押しで開く
       await t.長押し(t.マス(0, 0), { 後: 1800 });
     },
-  },
-  u15: {
-    用意: (t) => 射手を並べる(t, 2),
-    見せる: async (t) => {
-      await t.押す(t.字('間隔'), { 後: 800 });
-      await t.押す(t.札('射手を追加'), { 後: 600 });
-      await t.押す(t.札('射手を追加'), { 囲まない: true, 後: 1500 });
-    },
-  },
-  u16: {
-    用意: async (t) => {
-      await 射手を並べる(t, 3);
-      await 入れておく(t, [
-        [0, 0],
-        [1, 0],
-        [1, 1],
-        [2, 2],
-      ]);
-    },
-    見せる: async (t) => t.押す(t.字('Σ'), { 後: 2000 }),
   },
   x06: {
     用意: async (t) => {
@@ -419,28 +369,6 @@ const 台本 = {
       for (let 回 = 0; 回 < 5; 回++) await t.押す(計, { 囲まない: 回 > 0, 後: 1400 });
     },
   },
-  x07: {
-    用意: async (t) => {
-      await 射手を並べる(t, 2);
-      await t.字('間隔').click();
-      await t.待つ(200);
-      await 射手を並べる(t, 2);
-      await 入れておく(t, [
-        [0, 0],
-        [1, 0],
-        [1, 1],
-      ]);
-      await t.字('Σ').click();
-      await t.待つ(400);
-    },
-    見せる: async (t) => {
-      // 計の列のいちばん下（名前の欄）
-      await t.押す(t.page.locator('[data-testid^="名の欄-合計-"]').locator('visible=true').last(), {
-        後: 1200,
-      });
-      await t.押す(t.字('手前の計もまとめた総計にする'), { 後: 2000 });
-    },
-  },
   u17: {
     用意: async (t) => {
       await t.字('間隔').click();
@@ -457,15 +385,6 @@ const 台本 = {
     },
     // 数え終わった 1立目（いちばん下の箱）を固定する
     見せる: async (t) => t.押す(await 下の箱(t, '間隔の箱-'), { 後: 2200 }),
-  },
-  u18: {
-    用意: (t) => 射手を並べる(t, 2),
-    見せる: async (t) => {
-      await t.押す(t.マス(0, 0), { 後: 500 });
-      await t.押す(t.マス(0, 1), { 囲まない: true, 後: 800 });
-      await t.押す(t.印('取り消し'), { 後: 1000 });
-      await t.押す(t.印('取り消し'), { 囲まない: true, 後: 1500 });
-    },
   },
   x05: {
     // 動いたのが分かるよう、先頭の列にだけ○を入れておく
@@ -484,60 +403,6 @@ const 台本 = {
       await t.待つ(800);
     },
   },
-  u19: { 用意: (t) => 射手を並べる(t, 2), 見せる: async (t) => t.囲む(t.札('リセット'), 2400) },
-  // ── 写真・ライブ
-  u20: { 用意: (t) => 射手を並べる(t, 2), 見せる: async (t) => t.囲む(t.字('画像'), 2400) },
-  u22: { 用意: (t) => 射手を並べる(t, 2), 見せる: async (t) => t.押す(t.字('ライブ'), { 後: 2400 }) },
-  // ── 履歴・分析
-  u23: {
-    見せる: async (t) => {
-      await t.押す(t.タブ('履歴'), { 後: 1200 });
-      await t.巻く(500);
-      await t.待つ(700);
-    },
-  },
-  x08: {
-    見せる: async (t) => {
-      await t.押す(t.タブ('履歴'), { 後: 1000 });
-      await t.押す(t.page.getByPlaceholder(/検索/).locator('visible=true').first(), { 後: 300 });
-      await t.page.keyboard.type('練習', { delay: 200 });
-      await t.待つ(2000);
-    },
-  },
-  u25: {
-    見せる: async (t) => {
-      await t.押す(t.タブ('分析'), { 後: 1200 });
-      await t.巻く(700);
-      await t.待つ(700);
-    },
-  },
-  x09: {
-    見せる: async (t) => {
-      await t.押す(t.タブ('分析'), { 後: 1000 });
-      await t.巻く(2400);
-      await t.押す(部員の行(t), { 後: 1300 });
-      await t.巻く(1200);
-      await t.待つ(900);
-    },
-  },
-  // ── 弓具・出欠・設定
-  u28: { 見せる: async (t) => t.押す(t.タブ('出欠'), { 後: 1800 }) },
-  x10: {
-    見せる: async (t) => {
-      await t.押す(t.タブ('出欠'), { 後: 1000 });
-      await t.押す(
-        t.page
-          .getByText(/練習日/)
-          .locator('visible=true')
-          .first(),
-        { 後: 1200 }
-      );
-      const 日 = t.page.getByText('25', { exact: true }).locator('visible=true').first();
-      await t.押す(日, { 後: 1500 });
-      // 検証環境の練習日を残さないよう、もう一度押して戻す（映すのはここまで）
-      await t.押す(日, { 囲まない: true, 後: 600 });
-    },
-  },
   x11: {
     見せる: async (t) => {
       await t.押す(t.タブ('メンバー'), { 後: 900 });
@@ -551,79 +416,16 @@ const 台本 = {
       );
     },
   },
-  u30: {
-    始め: '設定',
-    見せる: async (t) =>
-      t.囲む(
-        t.page.getByText('矢所の記録機能を有効化', { exact: true }).locator('visible=true').first(),
-        2200
-      ),
-  },
-  u31: {
-    始め: '設定',
-    見せる: async (t) =>
-      t.囲む(
-        t.page
-          .getByText(/^管理者モード/)
-          .locator('visible=true')
-          .first(),
-        2200
-      ),
-  },
-  u32: { 始め: '設定', 見せる: async (t) => t.囲む(t.字('運用ガイド・ヘルプ'), 2200) },
-  x12: {
-    始め: '設定',
-    見せる: async (t) =>
-      t.押す(
-        t.page
-          .getByText(/Excel形式で書き出し/)
-          .locator('visible=true')
-          .first(),
-        { 後: 2200 }
-      ),
-  },
-  x13: {
-    始め: '設定',
-    見せる: async (t) => {
-      await t.押す(t.字('ダーク'), { 後: 1600 });
-      await t.押す(t.字('ライト'), { 後: 1200 });
-    },
-  },
 };
 
-/**
- * ログインしていない端末で撮る台本。個人IDは検証環境の合成の値（scripts/seed-stg.mjs の 100007 の部員1）
- */
-const 入る前の台本 = {
-  x14: {
-    見せる: async (t) => {
-      await t.押す(t.字('個人'), { 後: 800 });
-      await t.押す(t.page.getByPlaceholder('例: 123456', { exact: true }), { 後: 200 });
-      await t.page.keyboard.type('100007', { delay: 120 });
-      await t.押す(t.page.getByPlaceholder('例: 1234', { exact: true }), { 後: 200 });
-      await t.page.keyboard.type('1071', { delay: 150 });
-      await t.待つ(500);
-      await t.押す(t.字('ログイン'), { 後: 5000 });
-    },
-  },
-};
-
-for (const [名, 本] of [
-  ...Object.entries(台本),
-  ...Object.entries(入る前の台本).map(([名, 本]) => [名, { ...本, 入る前: true }]),
-]) {
+for (const [名, 本] of Object.entries(台本)) {
   if (絞り && !絞り.has(名)) continue;
-  test(`動画：${名}`, async ({ page, browser }) => {
-    if (本.入る前) {
-      // 団体の控えを読まない、まっさらの端末
-      const 端末 = await browser.newContext({ ...test.info().project.use, storageState: undefined });
-      page = await 端末.newPage();
-    }
+  test(`動画：${名}`, async ({ page }) => {
     test.setTimeout(120_000);
     await 案内を止める(page);
     if (本.自動ロック) await 自動ロックを入れる(page);
     await page.goto('/');
-    await page.waitForTimeout(本.入る前 ? 6000 : 4000);
+    await page.waitForTimeout(4000);
     const t = 道具(page);
     if (本.用意) await 本.用意(t);
     if (本.始め === '設定') {
