@@ -211,6 +211,44 @@ const 部員の行 = (t) =>
  * 始め: '設定' … 設定の画面から始める（既定は記録の画面）
  */
 const 台本 = {
+  u02: {
+    見せる: async (t) => {
+      await t.押す(t.タブ('メンバー'), { 後: 1000 });
+      await t.押す(t.印('AIを開く'), { 後: 2000 });
+    },
+  },
+  x03: {
+    用意: async (t) => {
+      await 射手を並べる(t, 1);
+      await t.字('選択').click();
+      await t.待つ(800);
+      await 部員の行(t).click();
+      await t.待つ(600);
+      await 入れておく(t, [[0, 0]]);
+    },
+    見せる: async (t) => {
+      await t.押す(t.札('終了して保存'), { 後: 1500 });
+      await t.押す(t.字('遅刻'), { 後: 2000 });
+    },
+  },
+  u22: { 用意: (t) => 射手を並べる(t, 2), 見せる: async (t) => t.押す(t.字('ライブ'), { 後: 2400 }) },
+  x08: {
+    見せる: async (t) => {
+      await t.押す(t.タブ('履歴'), { 後: 1000 });
+      await t.押す(t.page.getByPlaceholder(/検索/).locator('visible=true').first(), { 後: 300 });
+      await t.page.keyboard.type('練習', { delay: 200 });
+      await t.待つ(2000);
+    },
+  },
+  x09: {
+    見せる: async (t) => {
+      await t.押す(t.タブ('分析'), { 後: 1000 });
+      await t.巻く(2400);
+      await t.押す(部員の行(t), { 後: 1300 });
+      await t.巻く(1200);
+      await t.待つ(900);
+    },
+  },
   // 立ちごとの計と総計（本番の組み方：人…・計・人…・計・総計）
   y05: {
     用意: async (t) => {
@@ -246,19 +284,41 @@ const 台本 = {
   },
   // チームを分ける：間隔・次のチーム・区切りの「⋯」からチーム名
   y04: {
-    用意: (t) => 射手を並べる(t, 2),
+    // 右から 間隔・人・人・間隔・人・人（記録表は右から並ぶ。足した順に左へ伸びる）
     見せる: async (t) => {
-      await t.押す(t.字('間隔'), { 後: 700 });
-      await t.押す(t.札('射手を追加'), { 後: 500 });
+      await t.押す(t.字('間隔'), { 後: 600 });
+      await t.押す(t.札('射手を追加'), { 後: 400 });
+      await t.押す(t.札('射手を追加'), { 囲まない: true, 後: 600 });
+      await t.押す(t.字('間隔'), { 後: 600 });
+      await t.押す(t.札('射手を追加'), { 後: 400 });
       await t.押す(t.札('射手を追加'), { 囲まない: true, 後: 800 });
-      await t.押す(t.page.locator('[data-testid^="名の欄-区切り-"]').locator('visible=true').first(), {
-        後: 1000,
-      });
+      // 右の区切りに名前を付ける
+      const 区切り = t.page.locator('[data-testid^="名の欄-区切り-"]').locator('visible=true');
+      let 右 = null;
+      let 右のx = -1;
+      for (let 番 = 0; 番 < (await 区切り.count()); 番++) {
+        const b = await 区切り.nth(番).boundingBox();
+        if (b && b.x > 右のx) ((右のx = b.x), (右 = 区切り.nth(番)));
+      }
+      await t.押す(右, { 後: 1000 });
       await t.押す(t.字('チーム名を付ける'), { 後: 900 });
       // 窓が開いた直後は欄に焦点が来ておらず、最初の字が落ちた。欄を押してから打つ
       await t.page.getByPlaceholder('例: ◯◯大学').click();
       await t.page.keyboard.type('A大学', { delay: 150 });
       await t.待つ(500);
+      await t.押す(t.字('決定'), { 後: 1000 });
+      // 左の区切りにも名前を付けると、そこから左が別のチームになる
+      let 左 = null;
+      let 左のx = 1e9;
+      for (let 番 = 0; 番 < (await 区切り.count()); 番++) {
+        const b = await 区切り.nth(番).boundingBox();
+        if (b && b.x < 左のx) ((左のx = b.x), (左 = 区切り.nth(番)));
+      }
+      await t.押す(左, { 後: 900 });
+      await t.押す(t.字('チーム名を付ける'), { 後: 800 });
+      await t.page.getByPlaceholder('例: ◯◯大学').click();
+      await t.page.keyboard.type('B大学', { delay: 150 });
+      await t.待つ(400);
       await t.押す(t.字('決定'), { 後: 2400 });
     },
   },
@@ -370,21 +430,29 @@ const 台本 = {
     },
   },
   u17: {
+    // 右から 人・人・計。1立目（下の4マス）を全部埋めてから、計の列の1立目の鍵を押す
     用意: async (t) => {
-      await t.字('間隔').click();
-      await t.待つ(300);
       await 射手を並べる(t, 2);
       await 入れておく(t, [
         [0, 0],
         [0, 1],
         [0, 2],
+        [0, 3],
         [1, 0],
+        [1, 1],
         [1, 2],
         [1, 3],
       ]);
+      // ○ と × を混ぜる（もう一度押すと ×）
+      await 入れておく(t, [
+        [0, 1],
+        [1, 3],
+        [1, 0],
+      ]);
+      await t.字('Σ').click();
+      await t.待つ(500);
     },
-    // 数え終わった 1立目（いちばん下の箱）を固定する
-    見せる: async (t) => t.押す(await 下の箱(t, '間隔の箱-'), { 後: 2200 }),
+    見せる: async (t) => t.押す(await 下の箱(t, '計の鍵-'), { 後: 2200 }),
   },
   x05: {
     // 動いたのが分かるよう、先頭の列にだけ○を入れておく
@@ -418,14 +486,37 @@ const 台本 = {
   },
 };
 
-for (const [名, 本] of Object.entries(台本)) {
+/** ログインしていない端末で撮る台本。個人IDは検証環境の合成の値（scripts/seed-stg.mjs の 100007 の部員1） */
+const 入る前の台本 = {
+  x14: {
+    見せる: async (t) => {
+      await t.押す(t.字('個人'), { 後: 800 });
+      await t.押す(t.page.getByPlaceholder('例: 123456', { exact: true }), { 後: 200 });
+      await t.page.keyboard.type('100007', { delay: 120 });
+      await t.押す(t.page.getByPlaceholder('例: 1234', { exact: true }), { 後: 200 });
+      await t.page.keyboard.type('1071', { delay: 150 });
+      await t.待つ(500);
+      await t.押す(t.字('ログイン'), { 後: 5000 });
+    },
+  },
+};
+
+for (const [名, 本] of [
+  ...Object.entries(台本),
+  ...Object.entries(入る前の台本).map(([名, 本]) => [名, { ...本, 入る前: true }]),
+]) {
   if (絞り && !絞り.has(名)) continue;
-  test(`動画：${名}`, async ({ page }) => {
+  test(`動画：${名}`, async ({ page, browser }) => {
+    if (本.入る前) {
+      // 団体の控えを読まない、まっさらの端末
+      const 端末 = await browser.newContext({ ...test.info().project.use, storageState: undefined });
+      page = await 端末.newPage();
+    }
     test.setTimeout(120_000);
     await 案内を止める(page);
     if (本.自動ロック) await 自動ロックを入れる(page);
     await page.goto('/');
-    await page.waitForTimeout(4000);
+    await page.waitForTimeout(本.入る前 ? 6000 : 4000);
     const t = 道具(page);
     if (本.用意) await 本.用意(t);
     if (本.始め === '設定') {
