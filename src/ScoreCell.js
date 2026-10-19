@@ -271,7 +271,8 @@ const ScoreCell = React.memo(
         }}
         style={[
           styles.cell,
-          { width: 幅, height: 高さ, backgroundColor: 自動で閉じている ? 色.地 : 背景の色 },
+          // 鍵のかかったマスの地。色.地（#F2F2F7）では白とほとんど見分けがつかなかった（2026-10-19 本人）
+          { width: 幅, height: 高さ, backgroundColor: 自動で閉じている ? 色.地_濃い : 背景の色 },
           線,
         ]}
       >

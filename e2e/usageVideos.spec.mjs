@@ -18,7 +18,7 @@ async function 一覧を開く(page) {
 
 test('使い方：項目を押すとその場で動画が流れ、「画面でやってみる」でその手順だけ案内が始まる', async ({ page }) => {
   await 一覧を開く(page);
-  await page.getByTestId('使い方の組-記録の取り方').click();
+  await page.getByTestId('使い方の組-記録を取る').click();
   // 一覧では短い名で出す
   await expect(page.getByText('射手を並べて名前を決める', { exact: true })).toBeVisible();
   await page.getByTestId('使い方の項目-射手を並べて名前を決める').click();

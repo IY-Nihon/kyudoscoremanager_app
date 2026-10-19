@@ -187,6 +187,34 @@ async function 管理者モードを入れる(t, { 映す = false } = {}) {
   await t.待つ(2500);
 }
 
+/**
+ * 射手の 1 立目（1〜4 射目）を埋める。押す回数の並びは 射手ごと（右から数えた順）・1射目から。1＝○、2＝×。
+ * null の射手は飛ばす。射手は名前の欄の位置（右から）で数える（ますの並びは足した順と一致しないことがあった）
+ */
+async function 一立目を埋める(t, 回数たち, { 見せる = false } = {}) {
+  const 名の欄 = t.page.locator('[data-testid^="名の欄-射手-"]').locator('visible=true');
+  const 射手たち = [];
+  for (let 番 = 0; 番 < (await 名の欄.count()); 番++) {
+    const b = await 名の欄.nth(番).boundingBox();
+    const id = ((await 名の欄.nth(番).getAttribute('data-testid')) || '').replace('名の欄-射手-', '');
+    if (b) 射手たち.push({ id, x: b.x });
+  }
+  射手たち.sort((甲, 乙) => 乙.x - 甲.x);
+  for (const [番, 回数] of 回数たち.entries()) {
+    if (!回数 || !射手たち[番]) continue;
+    for (const [射, 回] of 回数.entries()) {
+      const マス = t.page.getByTestId(`ます-${射手たち[番].id}-${射}`);
+      for (let 何 = 0; 何 < 回; 何++) {
+        if (見せる) await t.押す(マス, { 囲まない: true, 後: 120 });
+        else {
+          await マス.click();
+          await t.待つ(120);
+        }
+      }
+    }
+  }
+}
+
 async function 射手を並べる(t, 人数 = 3) {
   for (let 回 = 0; 回 < 人数; 回++) {
     await t.札('射手を追加').click();
@@ -251,23 +279,24 @@ const 台本 = {
   },
   // 立ちごとの計と総計（本番の組み方：人…・計・人…・計・総計）
   y05: {
+    // 本番の組み方：右から 人・人・計・人・人・計・総計。どの射手も1立目（1〜4射目）を全部埋める（○以外は×）
     用意: async (t) => {
+      // 列が7本になり画面に収まらない（右の射手が隠れた）ので、表示を 75% にしておく
+      await t.page.getByText(/^100%/).locator('visible=true').first().click();
+      await t.待つ(500);
+      await t.字('75%').click();
+      await t.待つ(500);
       await 射手を並べる(t, 2);
-      await 入れておく(t, [
-        [0, 0],
-        [0, 1],
-        [1, 0],
-        [1, 2],
+      await 一立目を埋める(t, [
+        [1, 2, 1, 2],
+        [2, 1, 1, 2],
       ]);
     },
     見せる: async (t) => {
       await t.押す(t.字('Σ'), { 後: 900 });
       await t.押す(t.札('射手を追加'), { 後: 500 });
       await t.押す(t.札('射手を追加'), { 囲まない: true, 後: 600 });
-      // 2立目の○×。足した射手は記録表の左に並ぶが、マスの並びは足した順（3・4 列目が新しい射手）
-      await t.押す(t.マス(2, 0), { 囲まない: true, 後: 300 });
-      await t.押す(t.マス(3, 1), { 囲まない: true, 後: 300 });
-      await t.押す(t.マス(3, 0), { 囲まない: true, 後: 600 });
+      await 一立目を埋める(t, [null, null, [1, 1, 2, 2], [2, 1, 2, 1]], { 見せる: true });
       await t.押す(t.字('Σ'), { 後: 900 });
       await t.押す(t.字('Σ'), { 後: 900 });
       // いちばん左の計（いま足した計）の名前のマス
