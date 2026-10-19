@@ -173,6 +173,36 @@ async function 下の箱(t, 頭) {
 }
 
 /** 記録表に射手を並べる（撮る前の下ごしらえ） */
+// 検証環境の団体の合言葉（scripts/seed-stg.mjs・e2e/tutorial.spec.mjs と同じ。検証専用）
+const 合言葉 = 'StgTest!2026';
+
+/** 設定で管理者モードを入れる。映す＝押すところを囲む */
+async function 管理者モードを入れる(t, { 映す = false } = {}) {
+  await t.タブ('設定').click();
+  await t.待つ(800);
+  const 名 = t.page.getByText('管理者モード', { exact: true }).locator('visible=true').first();
+  await 名.scrollIntoViewIfNeeded();
+  await t.待つ(400);
+  // 同じ行の切り替え（名前と高さがいちばん近い switch）
+  const 名の箱 = await 名.boundingBox();
+  const 切り替えたち = t.page.getByRole('switch').locator('visible=true');
+  let 近い = null;
+  let 差 = 1e9;
+  for (let 番 = 0; 番 < (await 切り替えたち.count()); 番++) {
+    const b = await 切り替えたち.nth(番).boundingBox();
+    if (b && Math.abs(b.y - 名の箱.y) < 差) ((差 = Math.abs(b.y - 名の箱.y)), (近い = 切り替えたち.nth(番)));
+  }
+  if (映す) await t.押す(近い, { 後: 800 });
+  else await 近い.click();
+  await t.待つ(600);
+  const 欄 = t.page.getByLabel('管理者モードのパスワード');
+  await 欄.click();
+  await t.page.keyboard.type(合言葉, { delay: 映す ? 60 : 0 });
+  if (映す) await t.押す(t.字('認証'), { 後: 1500 });
+  else await t.字('認証').click();
+  await t.待つ(2500);
+}
+
 async function 射手を並べる(t, 人数 = 3) {
   for (let 回 = 0; 回 < 人数; 回++) {
     await t.札('射手を追加').click();
@@ -197,6 +227,46 @@ const 部員の行 = (t) =>
  * 始め: '設定' … 設定の画面から始める（既定は記録の画面）
  */
 const 台本 = {
+  // 過去の記録を編集する：管理者モードを入れ、履歴の記録を開いて○×を押す。
+  // 撮ったあと、押したマスを元に戻す（○→×→空→○ と 3 回で一周する）
+  y01: {
+    見せる: async (t) => {
+      await 管理者モードを入れる(t, { 映す: true });
+      await t.押す(t.タブ('履歴'), { 後: 1200 });
+      await t.押す(
+        t.page
+          .getByText(/^2026\/\d\d\/\d\d/)
+          .locator('visible=true')
+          .first(),
+        { 後: 1500 }
+      );
+      t.元の印 = ((await t.マス(0, 0).textContent()) || '').trim();
+      await t.押す(t.マス(0, 0), { 後: 1800 });
+    },
+    // 検証環境の記録を元に戻す（locator の click では届かなかったので、座標で押して確かめる）
+    後始末: async (t) => {
+      for (let 回 = 0; 回 < 3; 回++) {
+        if (((await t.マス(0, 0).textContent()) || '').trim() === t.元の印) return;
+        const b = await t.マス(0, 0).boundingBox();
+        await t.page.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
+        await t.待つ(1200);
+      }
+      throw new Error('撮影で変えたマスを戻せなかった');
+    },
+  },
+  // 団体アカウントを削除する：警告の窓が出るところまで（削除はしない）
+  y02: {
+    用意: (t) => 管理者モードを入れる(t),
+    見せる: async (t) => {
+      await t.page.mouse.move(190, 300);
+      await t.page.mouse.wheel(0, -3000);
+      await t.待つ(600);
+      await t.押す(t.字('アカウントを削除する'), { 後: 3000 });
+    },
+    後始末: async (t) => {
+      await t.字('キャンセル').click();
+    },
+  },
   // ── メンバーの登録
   u02: {
     見せる: async (t) => {
@@ -576,6 +646,7 @@ for (const [名, 本] of [
     } finally {
       撮る = false;
       await 連写;
+      if (本.後始末) await 本.後始末(t);
     }
 
     const 絵の置き場 = path.join(置き場, 名);
