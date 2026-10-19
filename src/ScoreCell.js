@@ -49,8 +49,8 @@ const ScoreCell = React.memo(
         ? 'rgba(0,122,255,0.08)'
         : 'separator' === columnType
           ? 'rgba(142,142,147,0.1)'
-          : isLocked
-            ? 色.地
+          : isLocked // 立の鍵も、自動ロックと同じ濃さの灰色（#F2F2F7 では白と見分けられなかった）
+            ? 色.地_濃い
             : 色.白;
     const 下線の太さ = isFirst ? 1 : isBlockBottom ? 2 : 1;
     const 間隔か合計 = 'separator' === columnType || 'total' === columnType;
