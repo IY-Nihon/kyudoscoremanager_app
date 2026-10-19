@@ -38,6 +38,8 @@ const {
   名簿の手がかり,
   板の箱の指示文,
 } = require('./ocrPrompts');
+// 空きごとの組を、立の番号の札で立にまとめる
+const { 札で立にまとめる } = require('./ocrTachiFuda');
 const { マスを開く, 一射目からの順にする, 迷いを開く } = require('./ocrCells');
 // 板と紙の○×は端末で読む（Gemini は線の向きを読めない）。名前と並びは Gemini のまま
 const { マスを端末で差し替える, ノートの先読みを作る } = require('./ocr/sashikae');
@@ -872,7 +874,8 @@ const OCRRecordModal = ({
         return;
       }
 
-      const rawTachi = Array.isArray(parsed.tachi) ? parsed.tachi : [];
+      // 空きごとの組を、立の番号の札で立にまとめる（src/ocrTachiFuda.js）
+      const rawTachi = 札で立にまとめる(Array.isArray(parsed.tachi) ? parsed.tachi : []);
       if (rawTachi.length === 0) {
         setErrorMsg('立ち順表を検出できませんでした。写真を撮り直してください。');
         読み取りを取っておく({ 結果: '読めなかった', 知らせ: '立ち順表を検出できませんでした' });
