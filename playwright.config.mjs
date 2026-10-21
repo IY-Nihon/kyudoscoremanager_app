@@ -32,7 +32,12 @@ export default defineConfig({
   fullyParallel: process.env.PW_FULLY !== '0',
   // 検査の束（ファイル）どうしは並列でよい。団体を分けてあるので取り合わない
   //（scripts/stg-fixtures.mjs、test/e2eSetup.test.js で決まりを押さえている）
-  workers: Number(process.env.PW_WORKERS) || 6,
+  // 2026-10-21 に測り直した（28 スレッドの PC・全 490 件）：
+  //   6 並列 20.0 分・落ち 3 ／ 9 並列 14.4 分・落ち 2 ／ 12 並列 11.7 分・落ち 5
+  // 6 並列のときは、検査の合計時間を 6 列で割った値とほぼ同じ（列は隙間なく埋まっていた）。
+  // 12 では、ライブを開き直す検査（3 機種とも団体 100006）と端末での読み取り（CPU を食う）が新たに落ちた。
+  // 9 で落ちた 2 件は、単独で流すと通った
+  workers: Number(process.env.PW_WORKERS) || 9,
   retries: 0,
   // 案内は27手順あり、手順ごとに位置を測る間がある。既定の30秒では足りない
   timeout: 180_000,
