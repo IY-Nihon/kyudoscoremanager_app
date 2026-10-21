@@ -124,10 +124,12 @@ const AttendanceScreen = () => {
       const 権限 = /permission|unauthenticated|auth/i.test(
         String((誤り && (誤り.code || 誤り.message)) || '')
       );
+      // ログアウトさせずに入り直す窓を出す（src/ReloginModal.js）。ログアウトすると送れていない記録が控えに回る
+      if (権限 && !useScoreStore.getState().入り直しをあとに) useScoreStore.setState({ 入り直しが要る: true });
       Alert.alert(
         '保存できませんでした',
         権限
-          ? 'ログインの有効期限が切れているか、この操作の権限がありません。設定からログアウトして、もう一度ログインしてください。'
+          ? 'ログインの有効期限が切れているか、この操作の権限がありません。ログインし直してから、もう一度お試しください。'
           : '通信がつながっていないようです。電波の良い場所でもう一度お試しください。'
       );
     }

@@ -19,6 +19,7 @@ import { 色 } from './src/iro';
 import { 見張りを始める, 溜まりを流す, 行動を残す } from './src/errorReporter';
 import { 来客の窓 } from './src/LiveShareModal';
 import { 招待の窓 } from './src/InviteModal';
+import { 入り直しの窓 } from './src/ReloginModal';
 import { URLから招待を取る } from './src/memberInvite';
 import { UpdateBar } from './src/UpdateBar';
 import { URLから荷を取る } from './src/liveShare';
@@ -212,6 +213,14 @@ export default function App() {
     return () => unsub();
   }, []);
 
+  // 団体で入っているのに、端末の Firebase のログインが無い（接続の設定が変わった・消えた）。
+  // そのままだと雲への読み書きが全部断られ、記録が届かない。開いたらすぐログインし直しの窓を出す。
+  // ログアウトはさせない（送れていない記録が消える。2026-10-17 に部内戦 27 人分が消えた）
+  useEffect(() => {
+    if (!isHydrated || !authReady || !activeGroupId || 共有の来客 || !auth) return;
+    if (!auth.currentUser) useScoreStore.setState({ 入り直しが要る: true });
+  }, [isHydrated, authReady, activeGroupId, 共有の来客]);
+
   // 部員の認証方式を変更したため、古い方式でログイン中の端末は一度だけ入り直してもらう。
   // 端末に個人IDを保存していない＝所属を証明できないため、そのままでは全ての
   // 読み書きが拒否される。黙って失敗させず、明示的にログイン画面へ戻す。
@@ -319,6 +328,8 @@ export default function App() {
             ) : (
               <LoginScreen />
             )}
+            {/* ログインが外れたときの、ログインし直しの窓（ログアウトさせない） */}
+            {activeGroupId && !共有の来客 ? <入り直しの窓 /> : null}
             {/* 招待リンクで来た人を迎える窓 */}
             {招待 ? <招待の窓 招待={招待} onClose={招待を閉じる} /> : null}
             {/* 共有リンクで来た人を迎える窓。団体に入る前に出す */}
