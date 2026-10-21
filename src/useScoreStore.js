@@ -84,6 +84,7 @@ const { 盤面の操作 } = require('./storeBoard');
 const { 部員の操作 } = require('./storeMembers');
 const 学 = require('./gakunen');
 const 区 = require('./kubun');
+const 未送信 = require('./unsentStash');
 // 学年まわりの団体の設定の初めの値。出たとき・別の団体へ入るときもここへ戻す
 const 学年まわりの初めの値 = Object.freeze({
   // 団体の種類（src/gakunen.js の 種類たち）。null は大学（4 年）
@@ -234,6 +235,12 @@ const useScoreStore = zustand.create()(
         offlineSaveWarning: null,
         // 入り直しが要るときの案内。permission-denied を拾ったときだけ立てる
         再ログインの案内: null,
+        // ログインし直しの窓を出すか（src/ReloginModal.js）。開いたときにログインが無い・雲に断られたときに立てる
+        入り直しが要る: false,
+        // 「あとで」を押したら、この起動のあいだは窓を自動では出さない（帯から開ける）。端末には残さない
+        入り直しをあとに: false,
+        // ログアウトしても残す、送れていない記録の控え（団体ごと。src/unsentStash.js）
+        未送信の控え: {},
         // 完全に消した記録の控え（id → 消した時刻）。ゴミ箱から完全に削除した
         // けれど、その削除がまだクラウドへ届いていないものを覚えておく。
         // これが無いと、通信できないときに「削除 → ゴミ箱を空にする」と操作し、
@@ -345,7 +352,17 @@ const useScoreStore = zustand.create()(
           null === 団体ID
             ? // 出たら行動の控えも捨てる。次に入った人の不具合の便りに、
               // 前の人が何をしていたかが付いていくのは筋が悪い
-              (行動の控えを捨てる(),
+              (書く({
+                // 送れていない記録は捨てずに、団体ごとの控えへ移す（次に同じ団体で入ったら戻して送る）
+                未送信の控え: 未送信.控えに入れる(
+                  状態().未送信の控え,
+                  未送信.控えの鍵(状態().publicGroupId, 状態().activeGroupId),
+                  状態()
+                ),
+                入り直しが要る: false,
+                再ログインの案内: null,
+              }),
+              行動の控えを捨てる(),
               (場.合言葉の取り寄せ = null),
               書く({
                 // ライブの合言葉も捨てる。団体を見て弾いてはいるが、
@@ -409,12 +426,25 @@ const useScoreStore = zustand.create()(
                 publicGroupId: 公開の団体ID || ('group' === 役割 ? 団体ID : 状態().publicGroupId),
                 isAdminMode: false,
                 isAdminModePending: false,
+                入り直しが要る: false,
+                再ログインの案内: null,
               }),
+              状態().未送信の控えを戻す(),
               状態().listenToConfig(),
               状態().listenToSessions(),
               状態().listenToMembers(),
               状態().listenToAlumni(),
               状態().listenToTrash());
+        },
+        /** 入った団体の控え（ログアウトのときに残した、送れていない記録）を手元へ戻す */
+        未送信の控えを戻す: () => {
+          const 様子 = 状態();
+          const 鍵 = 未送信.控えの鍵(様子.publicGroupId, 様子.activeGroupId);
+          const { 控え, 手元, 戻した数 } = 未送信.控えを戻す(様子.未送信の控え, 鍵, 様子);
+          if (!手元) return 0;
+          console.log(`[Store] ログアウトのときに残した ${戻した数} 件を戻します`);
+          書く(Object.assign({ 未送信の控え: 控え }, 手元));
+          return 戻した数;
         },
         setAnalysisSelectedTags: (タグたち) => 書く({ analysisSelectedTags: タグたち }),
         toggleAnalysisTag: (タグ) => {
@@ -1217,6 +1247,7 @@ const useScoreStore = zustand.create()(
           myMemberId: 状態の中身.myMemberId,
           myMemberName: 状態の中身.myMemberName,
           memberAuthVersion: 状態の中身.memberAuthVersion,
+          未送信の控え: 状態の中身.未送信の控え,
           analysisSelectedTags: 状態の中身.analysisSelectedTags,
           analysisTagLogic: 状態の中身.analysisTagLogic,
           historySelectedTags: 状態の中身.historySelectedTags,

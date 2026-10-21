@@ -1031,7 +1031,11 @@ const RecordScreen = () => {
       {再ログインの案内 || (オフライン保存の警告 && !警告を閉じた) ? (
         <TouchableOpacity
           style={{ backgroundColor: 基本色.赤_濃い, paddingVertical: 8, paddingHorizontal: 12 }}
-          onPress={() => 警告を閉じる(true)}
+          onPress={() =>
+            // 入り直しの帯は、押すとログインし直しの窓を出す（ログアウトさせない。src/ReloginModal.js）
+            再ログインの案内 ? useScoreStore.setState({ 入り直しが要る: true }) : 警告を閉じる(true)
+          }
+          testID={再ログインの案内 ? '入り直しの帯' : undefined}
         >
           <Text style={{ color: 基本色.白, fontSize: 12, lineHeight: 17, textAlign: 'center' }}>
             {再ログインの案内 ? 再ログインの案内 : `${オフライン保存の警告}（タップで閉じる）`}

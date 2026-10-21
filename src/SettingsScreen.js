@@ -1227,8 +1227,8 @@ const SettingsScreen = () => {
                 ]}
                 disabled={ログアウトのボタンを止める(ログアウトの段階)}
                 onPress={async () => {
-                  // 未送信があるうちは、まず送信を試す。送れなかったときだけ
-                  // 「捨てて抜ける」を選べるようにする
+                  // 未送信があるうちは、まず送信を試す。送れなかったぶんは捨てずに端末へ残す
+                  //（setAuth(null) が団体ごとの控えへ移す。src/unsentStash.js）
                   if (先に送信すべきか(ログアウトの段階, 残った未送信)) {
                     ログアウトの段階を設定('送信中');
                     let 残り = 残った未送信;
@@ -1238,9 +1238,8 @@ const SettingsScreen = () => {
                       残り = useScoreStore.getState().countUnsynced();
                     }
                     残った未送信を設定(残り);
-                    if (残り > 0) return void ログアウトの段階を設定('失敗');
-                    ログアウトの段階を設定('送信済み');
-                    await new Promise((解く) => setTimeout(解く, 900));
+                    ログアウトの段階を設定(残り > 0 ? '失敗' : '送信済み');
+                    await new Promise((解く) => setTimeout(解く, 残り > 0 ? 2500 : 900));
                   }
                   ログアウトの窓を出す(false);
                   try {
@@ -1263,7 +1262,7 @@ const SettingsScreen = () => {
                 }}
               >
                 <Text style={[styles.modalBtnText, { color: 基本色.白 }]}>
-                  {ログアウトのボタン名(ログアウトの段階, 残った未送信)}
+                  {ログアウトのボタン名(ログアウトの段階)}
                 </Text>
               </Pressable>
             </View>
