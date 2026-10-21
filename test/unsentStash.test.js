@@ -42,10 +42,12 @@ test('別の団体で入ったときは戻さない（記録が混ざる）', ()
   assert.equal(控.件数(結果.控え.G1), 1, '控えは残ったまま');
 });
 
-test('鍵は団体の見える ID を先に使い、大文字にそろえる（個人ログインでも同じ鍵）', () => {
-  assert.equal(控.控えの鍵('abc123', 'secret-branch'), 'ABC123');
-  assert.equal(控.控えの鍵(null, 'g1'), 'G1');
-  assert.equal(控.控えの鍵(null, null), null);
+test('鍵は団体の見える ID（大文字）と入り方。団体と個人では別の控えになる', () => {
+  assert.equal(控.控えの鍵('abc123', 'secret-branch', 'member'), 'ABC123:member');
+  assert.equal(控.控えの鍵(null, 'g1', 'group'), 'G1:group');
+  assert.equal(控.控えの鍵(null, 'g1'), 'G1:group');
+  assert.equal(控.控えの鍵(null, null, 'group'), null);
+  assert.notEqual(控.控えの鍵('G1', null, 'group'), 控.控えの鍵('G1', null, 'member'));
 });
 
 test('同じ id が手元にもあれば、新しいほうを残す', () => {

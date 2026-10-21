@@ -1075,12 +1075,19 @@ const SettingsScreen = () => {
                     }
                     削除の窓を開く(false);
                     削除の段階を設定('');
+                    const 団体の控えの鍵 = require('./unsentStash').控えの鍵(
+                      useScoreStore.getState().publicGroupId,
+                      useScoreStore.getState().activeGroupId,
+                      useScoreStore.getState().activeRole
+                    );
                     try {
                       await FirebaseAuth.signOut(auth);
                     } catch (誤り) {
                       // 口座はもう無いので、ここで失敗しても構わない
                     }
                     setAuth(null, null, null, null);
+                    // 消した団体の送れていない記録は、もう送り先が無いので控えに残さない
+                    useScoreStore.getState().未送信の控えを捨てる(団体の控えの鍵);
                     Alert.alert(
                       '削除しました',
                       '団体アカウントを削除しました。ご利用ありがとうございました。'

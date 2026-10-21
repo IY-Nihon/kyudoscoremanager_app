@@ -18,9 +18,14 @@
 const 種類 = ['sessions', 'members', 'alumni', 'trash'];
 const 未同期 = '未同期';
 
-/** 控えの鍵。団体の見える ID（個人ログインでも同じになる）を先に使う */
-function 控えの鍵(公開の団体ID, 団体ID) {
-  return String(公開の団体ID || 団体ID || '').toUpperCase() || null;
+/**
+ * 控えの鍵。団体の見える ID（個人ログインでも同じになる）と、入り方（group / member）。
+ * 入り方も分けるのは、団体で入って残した記録を個人ログインで送ると決まりに断られ、
+ * 断られるたびにログインし直しの窓が出続けるため
+ */
+function 控えの鍵(公開の団体ID, 団体ID, 役割) {
+  const id = String(公開の団体ID || 団体ID || '').toUpperCase();
+  return id ? `${id}:${役割 || 'group'}` : null;
 }
 
 /** 送れていないものだけを抜き出す */
