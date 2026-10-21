@@ -356,7 +356,7 @@ const useScoreStore = zustand.create()(
                 // 送れていない記録は捨てずに、団体ごとの控えへ移す（次に同じ団体で入ったら戻して送る）
                 未送信の控え: 未送信.控えに入れる(
                   状態().未送信の控え,
-                  未送信.控えの鍵(状態().publicGroupId, 状態().activeGroupId),
+                  未送信.控えの鍵(状態().publicGroupId, 状態().activeGroupId, 状態().activeRole),
                   状態()
                 ),
                 入り直しが要る: false,
@@ -436,10 +436,17 @@ const useScoreStore = zustand.create()(
               状態().listenToAlumni(),
               状態().listenToTrash());
         },
+        /** 控えを捨てる（団体アカウントを消したとき。送り先がもう無い） */
+        未送信の控えを捨てる: (鍵) => {
+          if (!鍵 || !(状態().未送信の控え || {})[鍵]) return;
+          const 残り = Object.assign({}, 状態().未送信の控え);
+          delete 残り[鍵];
+          書く({ 未送信の控え: 残り });
+        },
         /** 入った団体の控え（ログアウトのときに残した、送れていない記録）を手元へ戻す */
         未送信の控えを戻す: () => {
           const 様子 = 状態();
-          const 鍵 = 未送信.控えの鍵(様子.publicGroupId, 様子.activeGroupId);
+          const 鍵 = 未送信.控えの鍵(様子.publicGroupId, 様子.activeGroupId, 様子.activeRole);
           const { 控え, 手元, 戻した数 } = 未送信.控えを戻す(様子.未送信の控え, 鍵, 様子);
           if (!手元) return 0;
           console.log(`[Store] ログアウトのときに残した ${戻した数} 件を戻します`);
