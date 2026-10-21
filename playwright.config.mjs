@@ -44,7 +44,9 @@ export default defineConfig({
   reporter: [['list']],
   use: {
     baseURL: `http://127.0.0.1:${港}`,
-    trace: 'retain-on-failure',
+    // 全件の流しでは記録（trace）を取らない。取ると CPU の仕事が 3 割増える（10/21：12 並列で合計 7616→5831 秒）。
+    // 落ちた検査を単独で流し直すときに PW_TRACE=retain-on-failure を付けて取る
+    trace: process.env.PW_TRACE || 'off',
     screenshot: 'only-on-failure',
   },
   // iPhone は WebKit で回す。日本では利用者の多くが Safari で開くうえ、
