@@ -81,6 +81,8 @@ async function 管理で消す(道) {
   // 前はここで .cmd を呼んで毎回失敗しており、しかも例外を握りつぶして
   // いたので「消しました」とだけ出て、実際には消えていなかった
   const CLI = [
+    // GitHub Actions では置き場が違うので、.github/workflows/e2e.yml が渡す
+    process.env.FIREBASE_CLI,
     path.join(process.env.APPDATA || '', 'npm/node_modules/firebase-tools/lib/bin/firebase.js'),
     '/usr/local/lib/node_modules/firebase-tools/lib/bin/firebase.js',
     '/usr/lib/node_modules/firebase-tools/lib/bin/firebase.js',

@@ -1,0 +1,97 @@
+# E2E（playwright）を GitHub で 20 台に分けて流す（2026-10-21）。
+# 手元の PC（28 スレッド）では CPU が天井で、全件に 9〜14 分かかる。20 台に分けて 5〜7 分を狙う。
+#
+# ■ 押したときだけ動く（Actions → E2E → Run workflow）
+# 検証環境の雲には 1 日の枠があり、全件を何度も流すと 429 で落ちる（10/21 に 5 回で使い切った）。
+# push のたびには流さない。配信の前に 1 回。
+#
+# ■ 要る Secrets（Settings → Secrets and variables → Actions）
+#   STG_ENV                 … .env.development.local の EXPO_PUBLIC_ の行（検証環境の接続先）
+#   STG_SERVICE_ACCOUNT_KEY … 検証環境（kyudoscoremanager-stg）のサービスアカウントの鍵（JSON）。
+#                             ライブの後片付け（firebase CLI）と、招待リンクの雲の確かめに使う
+# Secrets は fork からの pull request には渡らない。ここは workflow_dispatch だけなので、書ける人しか流せない。
+#
+# ■ 公開リポジトリなので、ログは誰でも読める。失敗の写真や trace は上げない（落ちたら手元で単独で流し直す）
+name: E2E
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: e2e
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: 検証環境向けに書き出す
+        env:
+          STG_ENV: ${{ secrets.STG_ENV }}
+        run: |
+          printf '%s\n' "$STG_ENV" > .env.development.local
+          BUILD_OUT=dist-stg-e2e npm run build:stg
+          rm .env.development.local
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-stg-e2e
+          path: dist-stg-e2e
+          retention-days: 1
+
+  e2e:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+    env:
+      PW_DIST: dist-stg-e2e
+      # 1 台は 4 コア。3 並列までにする（端末での読み取りが CPU を食う）
+      PW_WORKERS: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-stg-e2e
+          path: dist-stg-e2e
+      - name: ブラウザと日本語の字体
+        run: |
+          npx playwright install --with-deps chromium webkit
+          sudo apt-get install -y --no-install-recommends fonts-noto-cjk
+      - name: 管理の資格（firebase CLI とサービスアカウント）
+        env:
+          KEY: ${{ secrets.STG_SERVICE_ACCOUNT_KEY }}
+        run: |
+          npm i -g firebase-tools --no-audit --no-fund
+          echo "FIREBASE_CLI=$(npm root -g)/firebase-tools/lib/bin/firebase.js" >> "$GITHUB_ENV"
+          printf '%s' "$KEY" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - uses: google-github-actions/auth@v2
+        id: auth
+        with:
+          credentials_json: ${{ secrets.STG_SERVICE_ACCOUNT_KEY }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/datastore,https://www.googleapis.com/auth/cloud-platform
+          create_credentials_file: false
+      # 下ごしらえ（団体ごとのログイン）は台ごとに 1 回。分ける対象には入れない
+      - name: 下ごしらえ
+        run: npx playwright test --project=下ごしらえ
+      - name: 検査（${{ matrix.shard }}/20）
+        env:
+          STG_OWNER_TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: npx playwright test --project=スマホ --project=iPhone --project=パソコン --no-deps --shard=${{ matrix.shard }}/20
+      - if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
