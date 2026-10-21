@@ -29,6 +29,8 @@ const 使うメンバー = { パソコン: '部員5', スマホ: '部員4', iPho
 const 作った合言葉 = [];
 
 async function 所有者の鍵() {
+  // GitHub Actions では、検証環境のサービスアカウントの鍵（.github/workflows/e2e.yml が渡す）
+  if (process.env.STG_OWNER_TOKEN) return process.env.STG_OWNER_TOKEN;
   const 設定 = path.join(os.homedir(), '.config', 'configstore', 'firebase-tools.json');
   if (!fs.existsSync(設定)) return null;
   const refresh = JSON.parse(fs.readFileSync(設定, 'utf8')).tokens?.refresh_token;
