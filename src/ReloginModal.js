@@ -19,7 +19,16 @@ const { 色 } = require('./iro.js');
  */
 
 const React = require('react');
-const { Modal, Pressable, Text, TextInput, View, StyleSheet } = require('./rn');
+const {
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+  StyleSheet,
+  useWindowDimensions,
+} = require('./rn');
 const { useScoreStore } = require('./useScoreStore');
 const { 団体で入る, 部員として入る } = require('./groupLogin');
 
@@ -60,6 +69,8 @@ const 入り直しの窓 = () => {
   const [作業中, 作業中を置く] = React.useState(false);
   const [難点, 難点を置く] = React.useState(null);
   const 走っている = React.useRef(false);
+  // 横向きのスマホなど高さが低い画面では、余白を詰めて 1 画面に収める
+  const 低い = useWindowDimensions().height < 480;
   const 部員 = 'member' === 役割;
   if (!要る || !団体の鍵) return null;
 
@@ -113,54 +124,64 @@ const 入り直しの窓 = () => {
   return (
     <Modal visible transparent animationType="fade" onRequestClose={あとで}>
       <View style={styles.外}>
-        <View style={styles.箱} testID="入り直しの窓">
-          <Text style={styles.見出し}>ログインし直してください</Text>
-          <Text style={styles.説明}>
-            ログインの有効期限が切れました。この端末の記録はそのまま残っています。
-            {未送信 > 0 ? `ログインし直すと、送れていない${未送信}件も送られます。` : ''}
-          </Text>
-          <Text style={styles.ラベル}>団体ID</Text>
-          <View style={styles.固定の欄}>
-            <Text style={styles.固定の字}>{見える団体ID}</Text>
+        {/* 横向きのスマホや、キーボードが出て高さが足りないときは流せるように（窓が画面からはみ出さない） */}
+        <ScrollView
+          style={styles.流し}
+          contentContainerStyle={[styles.流しの中, 低い && styles.流しの中_低い]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={[styles.箱, 低い && styles.箱_低い]} testID="入り直しの窓">
+            <Text style={[styles.見出し, 低い && { marginBottom: 4 }]}>ログインし直してください</Text>
+            <Text style={[styles.説明, 低い && { marginBottom: 4 }]}>
+              ログインの有効期限が切れました。この端末の記録はそのまま残っています。
+              {未送信 > 0 ? `ログインし直すと、送れていない${未送信}件も送られます。` : ''}
+            </Text>
+            <Text style={styles.ラベル}>団体ID</Text>
+            <View style={styles.固定の欄}>
+              <Text style={styles.固定の字}>{見える団体ID}</Text>
+            </View>
+            <Text style={styles.ラベル}>{部員 ? '個人ID' : 'パスワード'}</Text>
+            <TextInput
+              testID="入り直しの入力"
+              accessibilityLabel={部員 ? '個人ID' : 'パスワード'}
+              style={styles.欄}
+              value={入力}
+              onChangeText={(値) => {
+                入力を置く(値);
+                難点 && 難点を置く(null);
+              }}
+              secureTextEntry={!部員}
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholder={部員 ? '例: 1234' : ''}
+              onSubmitEditing={入り直す}
+            />
+            {難点 ? <Text style={styles.難点}>{難点}</Text> : null}
+            <Pressable
+              style={[styles.ボタン, 低い && styles.ボタン_低い, 作業中 && styles.作業中]}
+              disabled={作業中}
+              onPress={入り直す}
+            >
+              <Text style={styles.ボタンの字}>{作業中 ? 'ログインしています…' : 'ログインし直す'}</Text>
+            </Pressable>
+            <Pressable style={[styles.あとで, 低い && { paddingVertical: 8, marginTop: 2 }]} onPress={あとで}>
+              <Text style={styles.あとでの字}>あとで（記録は続けられます）</Text>
+            </Pressable>
           </View>
-          <Text style={styles.ラベル}>{部員 ? '個人ID' : 'パスワード'}</Text>
-          <TextInput
-            testID="入り直しの入力"
-            accessibilityLabel={部員 ? '個人ID' : 'パスワード'}
-            style={styles.欄}
-            value={入力}
-            onChangeText={(値) => {
-              入力を置く(値);
-              難点 && 難点を置く(null);
-            }}
-            secureTextEntry={!部員}
-            autoCapitalize="none"
-            autoCorrect={false}
-            placeholder={部員 ? '例: 1234' : ''}
-            onSubmitEditing={入り直す}
-          />
-          {難点 ? <Text style={styles.難点}>{難点}</Text> : null}
-          <Pressable style={[styles.ボタン, 作業中 && styles.作業中]} disabled={作業中} onPress={入り直す}>
-            <Text style={styles.ボタンの字}>{作業中 ? 'ログインしています…' : 'ログインし直す'}</Text>
-          </Pressable>
-          <Pressable style={styles.あとで} onPress={あとで}>
-            <Text style={styles.あとでの字}>あとで（記録は続けられます）</Text>
-          </Pressable>
-        </View>
+        </ScrollView>
       </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  外: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
+  外: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
+  流し: { flex: 1, width: '100%' },
+  流しの中: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  流しの中_低い: { padding: 8 },
   箱: { width: '100%', maxWidth: 420, backgroundColor: 色.白, borderRadius: 14, padding: 18 },
+  箱_低い: { paddingVertical: 10 },
+  ボタン_低い: { paddingVertical: 9, marginTop: 8 },
   見出し: { fontSize: 18, fontWeight: 'bold', color: 色.文字, marginBottom: 10, textAlign: 'center' },
   説明: { fontSize: 14, color: 色.文字_二, lineHeight: 20, marginBottom: 12 },
   ラベル: { fontSize: 13, color: 色.文字_二, marginBottom: 4, marginTop: 6 },
