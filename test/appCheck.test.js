@@ -93,3 +93,30 @@ test('db.js が Firebase を用意した直後に App Check を始める', () =>
   const db = fs.readFileSync(path.join(__dirname, '..', 'src', 'db.js'), 'utf8');
   assert.match(db, /setupAppCheck\(firebaseApp\)/);
 });
+
+test('印が取れなかったら、1 起動に 1 回だけ不具合の便りで知らせる（手元では知らせない）', () => {
+  const 試す = (hostname) => {
+    const 自 = 用意(hostname);
+    let 失敗 = null;
+    自.AppCheck.onTokenChanged = (器, 次, 誤り) => {
+      失敗 = 誤り;
+    };
+    const 送った = [];
+    setupAppCheck({}, {
+      環境: { EXPO_PUBLIC_RECAPTCHA_SITE_KEY: 'k' },
+      窓: 自.窓,
+      AppCheck: 自.AppCheck,
+      送る: (出どころ, 中身) => 送った.push([出どころ, 中身.code]),
+    });
+    if (失敗) {
+      失敗({ code: 'appCheck/recaptcha-error' });
+      失敗({ code: 'appCheck/recaptcha-error' });
+    }
+    return { 送った, 見張った: !!失敗 };
+  };
+  const 本番 = 試す('kyudoscoremanager.web.app');
+  assert.deepStrictEqual(本番.送った, [['App Check の印', 'appCheck/recaptcha-error']]);
+  const 手元 = 試す('127.0.0.1');
+  assert.strictEqual(手元.見張った, false);
+  assert.strictEqual(手元.送った.length, 0);
+});

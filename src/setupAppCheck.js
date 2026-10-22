@@ -52,6 +52,31 @@ function 札を隠す(文書) {
 }
 
 /**
+ * 印が取れなかったら、不具合の便りで 1 起動に 1 回だけ知らせる。
+ *
+ * 2026-10-23 にコンソールで見ると、Firestore への呼び出しの 5% が「無効な印」だった。
+ * 黙って失敗するので、どの端末で何が起きているか分からない。強制する前にそこを知る。
+ * 手元（debug の印）は数えない。
+ */
+function 印の失敗を知らせる(AppCheck, 器, 窓, 送る) {
+  if (!器 || 手元か(窓 && 窓.location) || 'function' !== typeof AppCheck.onTokenChanged) return;
+  let 知らせた = false;
+  AppCheck.onTokenChanged(
+    器,
+    () => {},
+    (誤り) => {
+      if (知らせた) return;
+      知らせた = true;
+      try {
+        (送る || require('./errorReporter').不具合を送る)('App Check の印', 誤り);
+      } catch (e) {
+        /* 知らせられなくてもアプリは止めない */
+      }
+    }
+  );
+}
+
+/**
  * @param {object} firebaseApp
  * @param {{環境?: object, 窓?: any, AppCheck?: any}} [差し替え] 検査用
  * @returns {object|null} App Check の器（使わないときは null）
@@ -77,6 +102,7 @@ const setupAppCheck = (firebaseApp, 差し替え = {}) => {
       isTokenAutoRefreshEnabled: true,
     });
     console.log('[AppCheck] reCAPTCHA Enterprise で始めました');
+    印の失敗を知らせる(AppCheck, 器, 窓, 差し替え.送る);
     return 器;
   } catch (誤り) {
     // 用意できなくてもアプリは止めない（強制する前は、印が無くても通る）
