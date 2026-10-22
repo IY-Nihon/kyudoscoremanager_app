@@ -1064,24 +1064,16 @@ const AIChatBot = () => {
             await 流しながら出す(返り, 模型の部品);
           } catch (誤り) {
             if (!流れが切れたか(誤り)) throw 誤り;
-            // 流し読みが途中で切れたら、流さずに 1 回だけ送り直す。途中まで出した文は、
-            // 確定した答えで置き換わる（最後の setMessages）
-            console.warn('[AIChatBot] 流し読みが切れたので、流さずに送り直します', 誤り && 誤り.message);
+            // 流し読みが途中で切れたら、もう 1 回だけ流し読みで送り直す。途中まで出した文は消して出し直す。
+            // 前は流さずに（generateContent で）送り直していたが、流さない道は答え全部ができるまで
+            // 1 字も届かず、中継も写真用の並び（1 つ 45 秒まで待つ）を通る。2026-10-20・21 に本番で
+            // 70〜100 秒無言のまま iPhone の Safari に切られ（Load failed）、3 回とも答えが出なかった
+            console.warn('[AIChatBot] 流し読みが切れたので、もう一度流し読みで送り直します', 誤り && 誤り.message);
             模型の部品.length = 0;
             途中の文 = '';
-            const 全部 = await model.generateContent({ contents: 会話 });
-            const 部品 =
-              (全部.response.candidates &&
-                全部.response.candidates[0] &&
-                全部.response.candidates[0].content &&
-                全部.response.candidates[0].content.parts) ||
-              [];
-            for (const 一つ of 部品) 模型の部品.push(一つ);
-            if (模型の部品.length) 会話.push({ role: 'model', parts: 模型の部品 });
-            呼ばれた道具 = 道具の呼び出しを取る(模型の部品);
-            返事の文 = 文を取る(模型の部品);
-            Geminiの時間.push(Date.now() - 送った時刻);
-            return { response: Promise.resolve(全部.response) };
+            返り = await model.generateContentStream({ contents: 会話 });
+            返り.response.catch(() => {});
+            await 流しながら出す(返り, 模型の部品);
           }
           if (模型の部品.length) 会話.push({ role: 'model', parts: 模型の部品 });
           呼ばれた道具 = 道具の呼び出しを取る(模型の部品);
