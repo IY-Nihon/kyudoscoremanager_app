@@ -164,7 +164,20 @@ test('個人ログインの画面は、履歴が増えても下まで流せる',
     });
 
   const 前 = await 流れ();
-  expect(前, '縦に流れる入れ物が無い（下の履歴に届かない）').not.toBeNull();
+  // GitHub の台でだけ落ちる（10/22）。原因を見るため、画面の高さと一番高い入れ物を書き出す
+  const 様子 = 前
+    ? ''
+    : await page.evaluate(() => {
+        const 高い = [...document.querySelectorAll('*')]
+          .filter((x) => x.clientHeight > 150)
+          .sort((a, b) => b.scrollHeight - b.clientHeight - (a.scrollHeight - a.clientHeight))[0];
+        return JSON.stringify({
+          窓: innerHeight,
+          字体: getComputedStyle(document.body).fontFamily,
+          高い: 高い && { 中: 高い.scrollHeight, 見える: 高い.clientHeight, 流れ: getComputedStyle(高い).overflowY },
+        });
+      });
+  expect(前, '縦に流れる入れ物が無い（下の履歴に届かない）' + 様子).not.toBeNull();
   expect(前.幅, '流せる余地が無い').toBeGreaterThan(0);
 
   // ホイールは使わない。モバイル WebKit では動かせず、iPhone の検査だけが
