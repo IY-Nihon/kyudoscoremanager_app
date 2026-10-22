@@ -220,12 +220,13 @@ function 出欠の集計(人たち, 記録たち, 注文) {
   );
   const 練習日で = Object.keys(練習日).length > 0;
 
-  /** @type {Array<{名前:string, 学年:any, 出席:number, 遅刻:number, 早退:number, 欠席:number, 来た回数:number, 練習日数?:number, 出席率:number|null, 順位?:number}>} */
+  /** @type {Array<{名前:string, 学年:any, 性別?:string, 出席:number, 遅刻:number, 早退:number, 欠席:number, 来た回数:number, 練習日数?:number, 出席率:number|null, 順位?:number}>} */
   const 全部 = 練習日で
     ? 練習日で数える(人たち, 記録たち, 練習日, { 今日: 設定.今日 }).map(
         ({ 部員, 出席, 遅刻, 早退, 欠席, 来た回数, 練習日数, 出席率 }) => ({
           名前: 部員.name || '',
           学年: 部員.grade,
+          性別: 部員.gender,
           出席,
           遅刻,
           早退,
@@ -239,7 +240,13 @@ function 出欠の集計(人たち, 記録たち, 注文) {
 
   // 現役は練習日が 1 日でも有れば載せる（来ていない人も「休みが多いのは誰」の答えになる）。
   // 記録の印で数えたときは、一度も名前が出ない人は載せない
-  const 残す = 全部.filter((人) => (練習日で && 学.現役か({ grade: 人.学年 })) || 人.来た回数 + 人.欠席 > 0);
+  const 載せる = 全部
+    .filter((人) => (練習日で && 学.現役か({ grade: 人.学年 })) || 人.来た回数 + 人.欠席 > 0)
+    .filter((人) => 性別が合う(人.性別, 設定.性別) && 学年が合う(人.学年, 設定.学年));
+  // 期間に一度も来ていない人は順位に入れず、別に返す。「欠席が多いのは誰」の上位が、
+  // コーチやもう来ていない部員（106 日中 106 回欠席など）で埋まった（2026-10 の AI のログ）
+  const 来ていない = 練習日で ? 載せる.filter((人) => 人.来た回数 === 0) : [];
+  const 残す = 練習日で ? 載せる.filter((人) => 人.来た回数 > 0) : 載せる;
   const 並び = 設定.並び || '出席率';
   const 比べ = {
     出席率: (甲, 乙) => 乙.出席率 - 甲.出席率 || 乙.来た回数 - 甲.来た回数,
@@ -260,8 +267,24 @@ function 出欠の集計(人たち, 記録たち, 注文) {
     練習日数: 練習日で ? Object.keys(練習日).length : 0,
     出欠を付けた記録の件数: 印つき.length,
     出欠が付いていない記録の件数: 対象.length - 印つき.length,
+    絞り込み: { 性別: 設定.性別 || null, 学年: 設定.学年 == null || 設定.学年 === '' ? null : 設定.学年 },
     一覧: 残す.slice(0, 件数),
+    一度も来ていない人: 来ていない.map(({ 名前, 学年, 欠席, 練習日数 }) => ({ 名前, 学年, 欠席, 練習日数 })),
   };
+}
+
+/** 性別で絞る。何も渡さなければ絞らない（'男子'・'male' のどちらでもよい） */
+function 性別が合う(性別, 注文) {
+  if (!注文) return true;
+  const 欲しい = /男|^male$/i.test(注文) ? 'male' : /女|^female$/i.test(注文) ? 'female' : null;
+  return !欲しい || 性別 === 欲しい;
+}
+
+/** 学年で絞る。1 や '1年' を渡す。何も渡さなければ絞らない */
+function 学年が合う(学年, 注文) {
+  if (注文 == null || 注文 === '') return true;
+  const 数 = Number(String(注文).replace(/[^0-9]/g, ''));
+  return !Number.isFinite(数) || Number(学年) === 数;
 }
 
 /** 記録に付いた出欠の印だけで数える（練習日が無いとき） */
@@ -276,9 +299,10 @@ function 記録の印で数える(人たち, 対象) {
     const 来た = 数.出席 + 数.遅刻 + 数.早退;
     const 数えた = 来た + 数.欠席;
     // 順位はあとから足す（出欠の集計 の 残す.forEach）
-    return /** @type {{名前:string, 学年:any, 出席:number, 遅刻:number, 早退:number, 欠席:number, 来た回数:number, 出席率:number|null, 順位?:number}} */ ({
+    return /** @type {{名前:string, 学年:any, 性別?:string, 出席:number, 遅刻:number, 早退:number, 欠席:number, 来た回数:number, 出席率:number|null, 順位?:number}} */ ({
       名前: 人.name || '',
       学年: 人.grade,
+      性別: 人.gender,
       出席: 数.出席,
       遅刻: 数.遅刻,
       早退: 数.早退,

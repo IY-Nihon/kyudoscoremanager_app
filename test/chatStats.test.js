@@ -229,6 +229,41 @@ test('出欠：正規練習日があれば、出欠画面と同じく練習日�
   assert.equal(r.一覧[0].名前, '山田', '出席率の順');
 });
 
+test('出欠：期間に一度も来ていない人は順位に入れず、別に返す。性別・学年で絞れる（2026-10 の AI のログ）', () => {
+  // 「欠席が多いのは誰」の上位が、106 日中 106 回欠席の人（コーチ・もう来ていない部員）で埋まっていた。
+  // 「男子で欠席が多いのは誰」には、絞る道具が無くて答えられなかった
+  const 日 = (文) => new Date(文 + 'T10:00:00').getTime();
+  const 部員たち = [
+    Object.assign(人('山田'), { gender: 'male', grade: 1 }),
+    Object.assign(人('佐藤'), { gender: 'female', grade: 2 }),
+    Object.assign(人('鈴木'), { gender: 'male', grade: 2 }),
+    Object.assign(人('幽霊'), { gender: 'male', grade: 3 }),
+  ];
+  const 記録たち = [
+    { date: 日('2026-09-06'), archers: [{ memberId: '山田' }, { memberId: '佐藤' }, { memberId: '鈴木' }] },
+    { date: 日('2026-09-13'), archers: [{ memberId: '佐藤' }] },
+  ];
+  const 注文 = {
+    期間: { 始め: 日('2026-09-01'), 終わり: new Date('2026-09-30').getTime() + 86400000 },
+    練習日: { '2026-09-06': {}, '2026-09-13': {} },
+    今日: '2026-09-20',
+    並び: '欠席',
+  };
+  const r = 出欠の集計(部員たち, 記録たち, 注文);
+  assert.deepEqual(r.一覧.map((x) => x.名前).sort(), ['佐藤', '山田', '鈴木']);
+  assert.deepEqual(r.一度も来ていない人, [{ 名前: '幽霊', 学年: 3, 欠席: 2, 練習日数: 2 }]);
+
+  const 男子 = 出欠の集計(部員たち, 記録たち, Object.assign({}, 注文, { 性別: '男子' }));
+  assert.deepEqual(男子.一覧.map((x) => x.名前).sort(), ['山田', '鈴木']);
+  assert.equal(男子.一度も来ていない人.length, 1);
+  assert.equal(男子.絞り込み.性別, '男子');
+
+  const 二年 = 出欠の集計(部員たち, 記録たち, Object.assign({}, 注文, { 学年: 2 }));
+  assert.deepEqual(二年.一覧.map((x) => x.名前).sort(), ['佐藤', '鈴木']);
+  assert.equal(二年.一度も来ていない人.length, 0);
+  assert.equal(出欠の集計(部員たち, 記録たち, Object.assign({}, 注文, { 性別: 'female' })).一覧[0].名前, '佐藤');
+});
+
 test('出欠：練習日が期間に無ければ、前のまま記録の出欠の印で数える', () => {
   const r = 出欠の集計([人('山田')], [{ date: 1, attendance: { 山田: 'present' } }], {
     練習日: { '2030-01-01': {} },
