@@ -48,6 +48,10 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    # ブラウザと依存はこの写しに入っている（10/22 は apt が数十 KB/秒で 4 台が 25 分切れた）。
+    # 版は package.json の playwright とそろえる
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
     strategy:
       fail-fast: false
       matrix:
@@ -67,10 +71,11 @@ jobs:
         with:
           name: dist-stg-e2e
           path: dist-stg-e2e
-      - name: ブラウザと日本語の字体
+      - name: 日本語の字体
+        timeout-minutes: 6
         run: |
-          npx playwright install --with-deps chromium webkit
-          sudo apt-get install -y --no-install-recommends fonts-noto-cjk
+          apt-get update -qq
+          apt-get install -y -qq --no-install-recommends fonts-noto-cjk
       - name: 管理の資格（firebase CLI とサービスアカウント）
         env:
           KEY: ${{ secrets.STG_SERVICE_ACCOUNT_KEY }}
@@ -79,13 +84,24 @@ jobs:
           echo "FIREBASE_CLI=$(npm root -g)/firebase-tools/lib/bin/firebase.js" >> "$GITHUB_ENV"
           printf '%s' "$KEY" > "$RUNNER_TEMP/sa.json"
           echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
-      - uses: google-github-actions/auth@v2
+      # 鍵の JSON から直接トークンを作る（google-github-actions/auth は iamcredentials API が要り、
+      # 検証環境では切ってあるので 10/22 に 16 台が落ちた）
+      - name: 雲の確かめ用のトークン
         id: auth
-        with:
-          credentials_json: ${{ secrets.STG_SERVICE_ACCOUNT_KEY }}
-          token_format: access_token
-          access_token_scopes: https://www.googleapis.com/auth/datastore,https://www.googleapis.com/auth/cloud-platform
-          create_credentials_file: false
+        run: |
+          node -e '
+          const k = require(process.env.GOOGLE_APPLICATION_CREDENTIALS), c = require("crypto");
+          const b = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
+          const t = Math.floor(Date.now() / 1000);
+          const 中 = b({ alg: "RS256", typ: "JWT" }) + "." + b({ iss: k.client_email, aud: k.token_uri,
+            scope: "https://www.googleapis.com/auth/datastore https://www.googleapis.com/auth/cloud-platform", iat: t, exp: t + 3600 });
+          const 署名 = c.sign("RSA-SHA256", Buffer.from(中), k.private_key).toString("base64url");
+          fetch(k.token_uri, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" },
+            body: "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=" + 中 + "." + 署名 })
+            .then((r) => r.json()).then((j) => { if (!j.access_token) { console.error(j.error); process.exit(1); }
+              console.log("::add-mask::" + j.access_token);
+              require("fs").appendFileSync(process.env.GITHUB_OUTPUT, "access_token=" + j.access_token + require("os").EOL); });
+          '
       # 下ごしらえ（団体ごとのログイン）は台ごとに 1 回。分ける対象には入れない
       - name: 下ごしらえ
         run: npx playwright test --project=下ごしらえ
