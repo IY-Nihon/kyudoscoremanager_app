@@ -173,7 +173,7 @@ test('個人ログインの画面は、履歴が増えても下まで流せる',
           .sort((a, b) => b.scrollHeight - b.clientHeight - (a.scrollHeight - a.clientHeight))[0];
         return JSON.stringify({
           窓: innerHeight,
-          字: document.body.innerText.replace(/s+/g, " ").slice(0, 300),
+          字: document.body.innerText.replace(/\s+/g, ' ').slice(0, 300),
           字体: getComputedStyle(document.body).fontFamily,
           高い: 高い && { 中: 高い.scrollHeight, 見える: 高い.clientHeight, 流れ: getComputedStyle(高い).overflowY },
         });
