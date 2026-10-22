@@ -71,11 +71,21 @@ jobs:
         with:
           name: dist-stg-e2e
           path: dist-stg-e2e
+      # apt は Azure の写しが遅く、10/22 は 2 回とも数台が詰まった。字体は GitHub から直接取る
       - name: 日本語の字体
-        timeout-minutes: 6
+        timeout-minutes: 3
         run: |
-          apt-get update -qq
-          apt-get install -y -qq --no-install-recommends fonts-noto-cjk
+          mkdir -p /usr/share/fonts/noto-cjk
+          for w in Regular Bold; do
+            curl -fsSL --retry 3 -o /usr/share/fonts/noto-cjk/NotoSansCJKjp-$w.otf \
+              https://github.com/notofonts/noto-cjk/raw/main/Sans/OTF/Japanese/NotoSansCJKjp-$w.otf
+          done
+          fc-cache -f
+      # 検査の一部（scripts/fb-rest.mjs）は .env.development.local から検証環境の接続先を読む
+      - name: 検証環境の接続先
+        env:
+          STG_ENV: ${{ secrets.STG_ENV }}
+        run: printf '%s\n' "$STG_ENV" > .env.development.local
       - name: 管理の資格（firebase CLI とサービスアカウント）
         env:
           KEY: ${{ secrets.STG_SERVICE_ACCOUNT_KEY }}
@@ -110,4 +120,4 @@ jobs:
           STG_OWNER_TOKEN: ${{ steps.auth.outputs.access_token }}
         run: npx playwright test --project=スマホ --project=iPhone --project=パソコン --no-deps --shard=${{ matrix.shard }}/20
       - if: always()
-        run: rm -f "$RUNNER_TEMP/sa.json"
+        run: rm -f "$RUNNER_TEMP/sa.json" .env.development.local
