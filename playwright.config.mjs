@@ -61,7 +61,14 @@ export default defineConfig({
     // iPhone(WebKit) も通っている。ここでしか出ない差が実際にあるので外さないこと
     // （例：localStorage のメソッドは WebKit では差し替えられず、検査が
     //  空振りしていた。パソコンだけ見ていると気づけない）
-    { name: 'iPhone', dependencies: ['下ごしらえ'], use: { ...devices['iPhone 13'] } },
+    // PW_IPHONE_NO_LIVE=1（GitHub の台）では iPhone のライブを外す。4 コアの台では WebKit を
+    // 何台も同時に動かすライブが 5〜15 分かかって落ちた（10/22）。ライブの iPhone は手元で流す
+    {
+      name: 'iPhone',
+      dependencies: ['下ごしらえ'],
+      use: { ...devices['iPhone 13'] },
+      ...(process.env.PW_IPHONE_NO_LIVE === '1' ? { testIgnore: /live\.spec\.mjs/ } : {}),
+    },
     { name: 'パソコン', dependencies: ['下ごしらえ'], use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: {
