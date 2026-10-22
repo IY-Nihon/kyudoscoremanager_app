@@ -58,8 +58,8 @@ jobs:
         shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
     env:
       PW_DIST: dist-stg-e2e
-      # 1 台は 4 コア。3 並列までにする（端末での読み取りが CPU を食う）
-      PW_WORKERS: 3
+      # 1 台は 4 コア。3 並列では iPhone（WebKit）が取り合って 10〜15 分かかり落ちた（10/22）。2 並列にする
+      PW_WORKERS: 2
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
