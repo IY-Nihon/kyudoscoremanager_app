@@ -15,6 +15,11 @@
 name: E2E
 on:
   workflow_dispatch:
+    inputs:
+      grep:
+        description: 一部だけ流すとき、検査名の一部（空なら全件）
+        required: false
+        default: ""
 
 concurrency:
   group: e2e
@@ -60,6 +65,8 @@ jobs:
       PW_DIST: dist-stg-e2e
       # 1 台は 4 コア。3 並列では iPhone（WebKit）が取り合って 10〜15 分かかり落ちた（10/22）。2 並列にする
       PW_WORKERS: 2
+      # iPhone のライブ（live.spec.mjs）は手元で流す：PW_DIST=dist-stg-e2e npx playwright test e2e/live.spec.mjs --project=iPhone
+      PW_IPHONE_NO_LIVE: 1
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -118,6 +125,7 @@ jobs:
       - name: 検査（${{ matrix.shard }}/20）
         env:
           STG_OWNER_TOKEN: ${{ steps.auth.outputs.access_token }}
-        run: npx playwright test --project=スマホ --project=iPhone --project=パソコン --no-deps --shard=${{ matrix.shard }}/20
+          GREP: ${{ inputs.grep }}
+        run: npx playwright test --project=スマホ --project=iPhone --project=パソコン --no-deps --shard=${{ matrix.shard }}/20 --pass-with-no-tests ${GREP:+--grep="$GREP"}
       - if: always()
         run: rm -f "$RUNNER_TEMP/sa.json" .env.development.local
