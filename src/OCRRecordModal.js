@@ -43,6 +43,7 @@ const { 札で立にまとめる } = require('./ocrTachiFuda');
 const { マスを開く, 一射目からの順にする, 迷いを開く } = require('./ocrCells');
 // 板と紙の○×は端末で読む（Gemini は線の向きを読めない）。名前と並びは Gemini のまま
 const { マスを端末で差し替える, ノートの先読みを作る } = require('./ocr/sashikae');
+const { 明暗を伸ばす, 平らにする } = require('../scripts/ocr-cells/koushi.mjs');
 const { 締め切りを置く, 締め切りを外す, 時間切れか, 時間切れの訳 } = require('../scripts/ocr-cells/ikitsugi.mjs');
 
 /**
@@ -517,6 +518,19 @@ const OCRRecordModal = ({
         ? ノートの先読みを作る(images[0].base64, { 道具: 画像の道具, ノートの重み, ノートの向きの重み })
         : null;
     if (ノートの先読み) 逆さのノート.then((逆さ) => !逆さ && ノートの先読み.始める());
+    // 板の下ごしらえも、Gemini を待つあいだに済ませておく（写真を読む・明暗を伸ばす・平らにする。どれも Gemini の答えを使わない）。
+    // 答えが来てから同じ写真・同じ形でかけると控えが返る（koushi.mjs・gazou-web.js）。答えは変わらない
+    // 写真の控えは 1 枚ぶんなので、1 枚のときだけ（2 枚だと先に読んだ 1 枚目を 2 枚目が追い出す）
+    if (IS_WEB && mode === 'record' && images.length === 1)
+      images.forEach((img) => {
+        画像の道具
+          .画を読む(img.base64)
+          .then((元) => {
+            const 生 = { 画素: 明暗を伸ばす(元.画素), 幅: 元.幅, 高: 元.高 };
+            平らにする(生, Math.round(生.幅 / 12));
+          })
+          .catch(() => {});
+      });
 
     try {
       // 鍵の引数は飾り。中継が本物の鍵に付け替える（baseUrl と Authorization は SDKの設定 が足す）

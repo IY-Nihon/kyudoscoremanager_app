@@ -437,13 +437,46 @@ function 縁に沿っているか(積, 始, 終, 幅, 高) {
 
 /** 画素の列 積[始..終) の周り 隙間 画素ぶんを塗った札（幅×高）。札 を渡せばそこへ塗り足す */
 function 近くを塗る(積, 始, 終, 幅, 高, 隙間, 札 = new Uint8Array(幅 * 高)) {
+  // 点ごとに (2隙間+1) 四方を塗る代わりに、横に広げてから縦に広げる（塗られる所は同じ。点が多いと速い。2026-10-23）
+  if (終 <= 始) return 札;
+  const 点 = new Uint8Array(幅 * 高);
+  let 左 = 幅, 右 = -1, 上 = 高, 下 = -1;
   for (let i = 始; i < 終; i++) {
     const p = 積[i];
     const x = p % 幅;
     const y = (p - x) / 幅;
-    const y0 = Math.max(0, y - 隙間), y1 = Math.min(高 - 1, y + 隙間);
-    const x0 = Math.max(0, x - 隙間), x1 = Math.min(幅 - 1, x + 隙間);
-    for (let yy = y0; yy <= y1; yy++) 札.fill(1, yy * 幅 + x0, yy * 幅 + x1 + 1);
+    点[p] = 1;
+    if (x < 左) 左 = x;
+    if (x > 右) 右 = x;
+    if (y < 上) 上 = y;
+    if (y > 下) 下 = y;
+  }
+  const x0 = Math.max(0, 左 - 隙間), x1 = Math.min(幅 - 1, 右 + 隙間);
+  const y0 = Math.max(0, 上 - 隙間), y1 = Math.min(高 - 1, 下 + 隙間);
+  const 横 = new Uint8Array(幅 * 高);
+  for (let y = 上; y <= 下; y++) {
+    const 行 = y * 幅;
+    // 窓 [x-隙間, x+隙間] の中の点の数を、ずらしながら数える
+    let 数 = 0;
+    for (let x = x0 - 隙間; x < x0 + 隙間; x++) if (x >= 0 && x < 幅 && 点[行 + x]) 数++;
+    for (let x = x0; x <= x1; x++) {
+      const 入 = x + 隙間;
+      if (入 < 幅 && 点[行 + 入]) 数++;
+      if (数) 横[行 + x] = 1;
+      const 出 = x - 隙間;
+      if (出 >= 0 && 点[行 + 出]) 数--;
+    }
+  }
+  for (let x = x0; x <= x1; x++) {
+    let 数 = 0;
+    for (let y = y0 - 隙間; y < y0 + 隙間; y++) if (y >= 0 && y < 高 && 横[y * 幅 + x]) 数++;
+    for (let y = y0; y <= y1; y++) {
+      const 入 = y + 隙間;
+      if (入 < 高 && 横[入 * 幅 + x]) 数++;
+      if (数) 札[y * 幅 + x] = 1;
+      const 出 = y - 隙間;
+      if (出 >= 0 && 横[出 * 幅 + x]) 数--;
+    }
   }
   return 札;
 }
@@ -736,6 +769,8 @@ const 濃いところの割 = Number(process.env.OCR_KOI) || 0.3;
 function 縮める(画, 幅, 高, 左, 上, w, h, 出幅, 出高, 濃い割 = 1) {
   const 出 = new Float32Array(出幅 * 出高);
   const 値 = [];
+  const 整数の画 = 画 instanceof Uint8Array || 画 instanceof Uint8ClampedArray;
+  const 数え = 整数の画 ? new Uint32Array(256) : null;
   for (let y = 0; y < 出高; y++) {
     const y0 = 上 + (y * h) / 出高;
     const y1 = 上 + ((y + 1) * h) / 出高;
@@ -755,6 +790,24 @@ function 縮める(画, 幅, 高, 左, 上, w, h, 出幅, 出高, 濃い割 = 1)
             合 += 画[基 + xx];
             数++;
           }
+        }
+      } else if (整数の画) {
+        // 0〜255 の整数なので、並べ替えの代わりに数え上げて暗いほうから足す（同じ値を同じ数だけ足すので答えは同じ。2026-10-23）
+        数え.fill(0);
+        let 全 = 0;
+        for (let yy = ya; yy < yb; yy++) {
+          const 基 = yy * 幅;
+          for (let xx = xa; xx < xb; xx++) {
+            数え[画[基 + xx]]++;
+            全++;
+          }
+        }
+        数 = Math.max(1, Math.round(全 * 濃い割));
+        let 残り = 数;
+        for (let v = 0; v < 256 && 残り > 0; v++) {
+          const 取る = 数え[v] < 残り ? 数え[v] : 残り;
+          for (let k = 0; k < 取る; k++) 合 += v;
+          残り -= 取る;
         }
       } else {
         値.length = 0;
