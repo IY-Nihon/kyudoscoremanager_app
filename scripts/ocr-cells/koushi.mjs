@@ -201,11 +201,14 @@ export function 明暗を伸ばす(画素) {
     }
   }
   const 幅 = Math.max(20, 明るい端 - 暗い端);
-  const 出 = new Uint8Array(画素.length);
-  for (let i = 0; i < 画素.length; i++) {
-    const v = Math.round(((画素[i] - 暗い端) * 230) / 幅 + 20);
-    出[i] = v < 0 ? 0 : v > 255 ? 255 : v;
+  // 値は 0〜255 の 256 通りしか無いので、先に表を作って引く（画素ごとに割り算をしない。答えは同じ）
+  const 表 = new Uint8Array(256);
+  for (let 元 = 0; 元 < 256; 元++) {
+    const v = Math.round(((元 - 暗い端) * 230) / 幅 + 20);
+    表[元] = v < 0 ? 0 : v > 255 ? 255 : v;
   }
+  const 出 = new Uint8Array(画素.length);
+  for (let i = 0; i < 画素.length; i++) 出[i] = 表[画素[i]];
   return 出;
 }
 
