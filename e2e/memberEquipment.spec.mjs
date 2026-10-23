@@ -139,18 +139,13 @@ test('個人ログインの画面は、履歴が増えても下まで流せる',
   await page.getByText('メンバー', { exact: true }).first().click();
   await 画面が変わるまで待つ(page, '自分の情報');
 
-  // 履歴がいくつか要る。窓を挟まない作りにしたぶん、下へ伸びるようになった。
-  // 流せないと、増やしたそばから画面の外に出て届かなくなる（実際そうなった）
-  await こうなるまで待つ(
-    () =>
-      page.evaluate(() => {
-        const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
-        const 自分 = (s.members || []).find((x) => x && x.id === s.myMemberId);
-        return ((自分 && 自分.equipments) || []).length;
-      }),
-    (n) => n >= 3,
-    30000
-  );
+  // 窓を挟まない作りにしたぶん、履歴が増えると下へ伸びる。流せないと、増やしたそばから画面の外に出て
+  // 届かなくなる（実際そうなった）。
+  // 前は団体の履歴が 3 件以上あるのを待っていたが、検証環境の名簿から履歴が消えていて（2026-10-23 に確かめて 0 件）、
+  // 待ちは黙って時間切れになっていた。手元では字体が大きく偶然はみ出して通り、GitHub の台（Noto）では収まって落ちた。
+  // この束は団体に書き込まないので履歴は足さず、画面を低くして中身がはみ出す形を作る
+  await page.setViewportSize({ width: 360, height: 420 });
+  await page.waitForTimeout(500);
 
   const 流れ = () =>
     page.evaluate(() => {
