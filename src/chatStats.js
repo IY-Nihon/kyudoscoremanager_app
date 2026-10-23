@@ -706,6 +706,7 @@ function 一人の成績(人たち, 記録たち, 名前, 期間) {
     }
   }
   const 率 = (x) => (x.射数 > 0 ? ((x.的中 / x.射数) * 100).toFixed(1) + '%' : 'データなし');
+  const 画面の成績 = 集.成績を数える(使える記録, 部員id);
   return {
     name: 人.name,
     期間: 期間 && (期間.始め || (期間.終わり && 期間.終わり !== Infinity)) ? '指定の期間だけ' : '全期間',
@@ -714,7 +715,10 @@ function 一人の成績(人たち, 記録たち, 名前, 期間) {
     totalArrows: 全体.射数,
     recentHitRate: 率(直近),
     // 皆中は分析画面と同じ決まりで数える
-    kaichuCount: 集.成績を数える(使える記録, 部員id).patterns.kaichu,
+    kaichuCount: 画面の成績.patterns.kaichu,
+    // 一射（1 本だけ）・一手（2 本だけ）引いた行。分析の「的中の型」と同じ数え方（statsRules の 成績を数える）。
+    // 2026-10-13、画面に「一手 0中／2射」と出ているのに、AI はこれを持たず「見当たらない」と答えて撤回した
+    ...一射と一手(新しい順, 部員id),
     firstShotHitRate: 率(射ごと[0]),
     secondShotHitRate: 率(射ごと[1]),
     thirdShotHitRate: 率(射ごと[2]),
@@ -722,6 +726,41 @@ function 一人の成績(人たち, 記録たち, 名前, 期間) {
     omaeHitRate: 率(大前),
     ochiHitRate: 率(落),
     recentSessionsDetail: 直近の記録,
+  };
+}
+
+/**
+ * 一射・一手（立の 4 射に満たない行）の成績と、それがいつの記録か。
+ * 行ごとに、その人が引いた印が 1 つなら一射、2 つなら一手、3 つなら三射（成績を数える と同じ見分け方。三射はそこでは端数）
+ */
+function 一射と一手(新しい順の記録, 部員id) {
+  // 途中交代のある列は数えない。個人ログインでは同じ列の他の人の射が空で渡るため、列で引いた本数が
+  // 絞る前と変わり、一射・一手の見分けが食い違う（分析の画面はその列も数える。めったに無い）
+  const 束 = { 1: { 射数: 0, 的中: 0, 記録: [] }, 2: { 射数: 0, 的中: 0, 記録: [] }, 3: { 射数: 0, 的中: 0, 記録: [] } };
+  /** @type {Record<string, number>} */
+  const 一手の型 = {};
+  for (const 記録 of 新しい順の記録) {
+    for (const 射手 of 記録.archers || []) {
+      if (!射手 || !Array.isArray(射手.marks)) continue;
+      if (Object.keys(射手.substitutions || {}).length) continue;
+      const 印たち = 射手.marks.filter((印, 射目) => 集.引いた射か(印) && 集.その人の射か(射手, 射目, 部員id));
+      const 置き場 = 束[印たち.length];
+      if (!置き場 || 印たち.length !== 射手.marks.filter((印) => 集.引いた射か(印)).length) continue;
+      置き場.射数 += 印たち.length;
+      置き場.的中 += 印たち.filter((印) => 印 === '○').length;
+      if (印たち.length === 2) 一手の型[印たち.join('')] = (一手の型[印たち.join('')] || 0) + 1;
+      if (置き場.記録.length < 10)
+        置き場.記録.push({ date: 端末の日付(記録.date || 0), title: 記録.title || '無題', marks: 印たち.join('') });
+    }
+  }
+  const 率 = (x) => (x.射数 > 0 ? ((x.的中 / x.射数) * 100).toFixed(1) + '%' : 'データなし');
+  const 形 = (x) => ({ 射数: x.射数, 的中: x.的中, 的中率: 率(x), 記録: x.記録 });
+  return {
+    oneShot: 形(束[1]),
+    oneHand: Object.assign({ 手の数: 束[2].射数 / 2 }, 形(束[2]), {
+      型: 集.一手の型を並べる(一手の型).map((x) => ({ 型: x.型, 呼び名: x.呼び名, 回数: x.回数, 要点: x.要点 })),
+    }),
+    threeShots: 形(束[3]),
   };
 }
 

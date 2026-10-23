@@ -965,3 +965,27 @@ test('矢所の成績：「統計に含めない」にした記録の矢所は�
   ];
   assert.equal(矢所の成績(人たち, 記録たち, '山田 太郎').arrowCount, 2);
 });
+
+test('一人の成績：一射・一手・三射の成績と、いつの記録かを返す（分析の「的中の型」と同じ数え方）', () => {
+  // 2026-10-13、画面に「一手 0中／2射」と出ているのに、AI は道具に無くて「見当たらない」と答え、撤回した
+  const { 一人の成績: 一人 } = require('../src/chatStats');
+  const 日 = (文) => new Date(文 + 'T10:00:00').getTime();
+  const 名簿 = [{ id: '笹', name: '笹原' }];
+  const 記録たち = [
+    { id: 'a', date: 日('2026-09-01'), title: '合宿', archers: [{ memberId: '笹', name: '笹原', marks: ['×', '×'] }] },
+    { id: 'b', date: 日('2026-09-02'), title: '一本', archers: [{ memberId: '笹', name: '笹原', marks: ['○'] }] },
+    { id: 'c', date: 日('2026-09-03'), title: '三本', archers: [{ memberId: '笹', name: '笹原', marks: ['○', '×', '○'] }] },
+    { id: 'd', date: 日('2026-09-04'), title: '四本', archers: [{ memberId: '笹', name: '笹原', marks: ['○', '○', '○', '○'] }] },
+  ];
+  const r = 一人(名簿, 記録たち, '笹原');
+  assert.equal(r.oneHand.手の数, 1);
+  assert.equal(r.oneHand.的中率, '0.0%');
+  assert.deepEqual(r.oneHand.記録.map((x) => [x.title, x.marks]), [['合宿', '××']]);
+  assert.equal(r.oneHand.型[0].型, '××');
+  assert.equal(r.oneShot.射数, 1);
+  assert.equal(r.oneShot.的中率, '100.0%');
+  assert.deepEqual(r.oneShot.記録.map((x) => x.title), ['一本']);
+  assert.deepEqual(r.threeShots.記録.map((x) => [x.title, x.marks]), [['三本', '○×○']]);
+  assert.equal(r.threeShots.的中率, '66.7%');
+  assert.equal(r.kaichuCount, 1);
+});
