@@ -909,7 +909,16 @@ export function 大前から並べる(列たち, 向き, 板の番号, 板の数
   return 右が大前 ? 列たち.slice().reverse() : 列たち.slice();
 }
 
+// 同じマスに 3 回まで呼ぶ（倒す・倒さないの見分けで）。答えは切り抜きだけで決まるので、1 回目を取っておく
+const 直線の控え = new WeakMap();
 function 直線を抜いた残り(切) {
+  if (切 && typeof 切 === 'object') {
+    if (!直線の控え.has(切)) 直線の控え.set(切, 直線を抜いた残りを数える(切));
+    return 直線の控え.get(切);
+  }
+  return 直線を抜いた残りを数える(切);
+}
+function 直線を抜いた残りを数える(切) {
   const { 幅, 高, 画 } = 切;
   if (幅 < 12 || 高 < 12) return { 線の数: 0, 線たち: [], 残りの割合: 1, 残りの弧: 0 };
   const 境 = 九割点(画) - 35;
@@ -954,13 +963,14 @@ function 直線を抜いた残り(切) {
   if (たち.length === 0) return { 線の数: 0, 線たち: [], 残りの割合: 0, 残りの弧: 0 };
 
   たち.sort((a, b) => b.n - a.n);
-  const 残す画素 = new Set();
+  // 残す画素は Set でなく画素ごとの印で持つ（下で全画素を 2 回なめるので、Set の has が重かった）
+  const 残す画素 = new Uint8Array(幅 * 高);
   const 墨のリスト = [];
 
   for (let i = 0; i < たち.length; i++) {
     if (i === 0 || !たち[i].縁に触れた) {
       for (const p of たち[i].画素たち) {
-        残す画素.add(p.p);
+        残す画素[p.p] = 1;
         墨のリスト.push(p);
       }
     }
@@ -973,7 +983,7 @@ function 直線を抜いた残り(切) {
   for (let y = 0; y < 高; y++) {
     let len = 0;
     for (let x = 0; x < 幅; x++) {
-      if (残す画素.has(y * 幅 + x)) len++;
+      if (残す画素[y * 幅 + x]) len++;
       else {
         if (len > 0) 走り.push(len);
         len = 0;
@@ -984,7 +994,7 @@ function 直線を抜いた残り(切) {
   for (let x = 0; x < 幅; x++) {
     let len = 0;
     for (let y = 0; y < 高; y++) {
-      if (残す画素.has(y * 幅 + x)) len++;
+      if (残す画素[y * 幅 + x]) len++;
       else {
         if (len > 0) 走り.push(len);
         len = 0;
@@ -1005,7 +1015,6 @@ function 直線を抜いた残り(切) {
 
   for (let step = 0; step < 2; step++) {
     if (残りリスト.length === 0) break;
-    const 投票 = new Map();
     const 精度 = 2;
     const rad = (d) => (d * Math.PI) / 180;
     const coss = 角度リスト.map((d) => Math.cos(rad(d)));
@@ -1013,40 +1022,47 @@ function 直線を抜いた残り(切) {
 
     const cx = 幅 / 2,
       cy = 高 / 2;
+    // 投票は（角度・ρ）ごとの数と、線に沿った端（minT・maxT）だけを持つ。前は "角度_ρ" の文字の鍵で
+    // 点の配列を Map に積んでいて、端末の読み取りでいちばん重い所だった（2026-10-23：1 枚 2 秒）。
+    // 選び方は前と同じ：最初に票が入った順に見て、票数が今までより多く、線の長さが足りるもの
+    const ρの幅 = Math.ceil(Math.hypot(幅, 高) / 2 / 精度) + 2;
+    const 段 = ρの幅 * 2 + 1;
+    const 箱数 = 角度リスト.length * 段;
+    const 票 = new Int32Array(箱数);
+    const 始め = new Float64Array(箱数);
+    const 終わり = new Float64Array(箱数);
+    const 入った順 = [];
     for (const p of 残りリスト) {
       const dx = p.x - cx,
         dy = p.y - cy;
       for (let i = 0; i < 角度リスト.length; i++) {
-        const d = 角度リスト[i];
         const ρ = Math.round((dx * coss[i] + dy * sins[i]) / 精度) * 精度;
-        const key = `${d}_${ρ}`;
-        const val = 投票.get(key) || [];
-        val.push(p);
-        投票.set(key, val);
+        const 箱 = i * 段 + (ρ / 精度 + ρの幅);
+        const t = dx * sins[i] + dy * -coss[i];
+        if (票[箱] === 0) {
+          入った順.push(箱);
+          始め[箱] = t;
+          終わり[箱] = t;
+        } else {
+          if (t < 始め[箱]) 始め[箱] = t;
+          if (t > 終わり[箱]) 終わり[箱] = t;
+        }
+        票[箱]++;
       }
     }
 
     let 最大の票数 = 0;
     let ベスト線 = null;
 
-    for (const [key, pts] of 投票.entries()) {
-      if (pts.length > 最大の票数) {
-        const [d, ρ] = key.split('_').map(Number);
-        const theta = rad(d);
-        const dirX = Math.sin(theta);
-        const dirY = -Math.cos(theta);
-
-        let minT = Infinity,
-          maxT = -Infinity;
-        for (const p of pts) {
-          const t = (p.x - cx) * dirX + (p.y - cy) * dirY;
-          if (t < minT) minT = t;
-          if (t > maxT) maxT = t;
-        }
-        const len = maxT - minT;
-        if (len >= 線とみなす長さ && pts.length >= len * 1.0) {
-          最大の票数 = pts.length;
-          ベスト線 = { 角度: d, ρ, dirX, dirY, cx, cy, 長さ: len };
+    for (const 箱 of 入った順) {
+      if (票[箱] > 最大の票数) {
+        const i = Math.floor(箱 / 段);
+        const d = 角度リスト[i];
+        const ρ = (箱 - i * 段 - ρの幅) * 精度;
+        const len = 終わり[箱] - 始め[箱];
+        if (len >= 線とみなす長さ && 票[箱] >= len * 1.0) {
+          最大の票数 = 票[箱];
+          ベスト線 = { 角度: d, ρ, 長さ: len };
         }
       }
     }
