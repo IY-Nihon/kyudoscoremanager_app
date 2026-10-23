@@ -37,6 +37,31 @@ const 長辺の上限 = 4800;
  * canvas に縮めてもらう（そこは仕方がない）
  */
 export async function 画を読む(base64, mime) {
+  // 同じ写真を、先読み・板・紙・ノート・読み直しのたびに読み直していた（Gemini の答えのあとだけで 1 枚 0.7 秒・PC）。
+  // 直近の 1 枚を取っておき、写しを返す（受け取った側が画素を書き換えても、控えは汚れない）。
+  // 大きな写真（400 万画素を超える）は取っておかない。色の板だけで 16MB を超え、古い端末の記憶を圧す
+  const 鍵 = (mime || '') + ':' + base64;
+  let 控え = 画の控え.find((x) => x.鍵 === 鍵);
+  if (!控え) {
+    控え = { 鍵, 約束: 写真を読む(base64, mime) };
+    画の控え.unshift(控え);
+    画の控え.length = 1;
+    控え.約束.catch(() => {
+      const 番 = 画の控え.indexOf(控え);
+      if (番 >= 0) 画の控え.splice(番, 1);
+    });
+  }
+  const 画 = await 控え.約束;
+  if (画.幅 * 画.高 > 4_000_000) {
+    const 番 = 画の控え.indexOf(控え);
+    if (番 >= 0) 画の控え.splice(番, 1);
+    return 画;
+  }
+  return { 画素: 画.画素.slice(), 幅: 画.幅, 高: 画.高, 色: { data: 画.色.data.slice(), ch: 画.色.ch } };
+}
+const 画の控え = [];
+
+async function 写真を読む(base64, mime) {
   const img = await 画像にする(base64, mime);
   const 元幅 = img.width;
   const 元高 = img.height;
