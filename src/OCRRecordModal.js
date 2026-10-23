@@ -43,6 +43,14 @@ const { 札で立にまとめる } = require('./ocrTachiFuda');
 const { マスを開く, 一射目からの順にする, 迷いを開く } = require('./ocrCells');
 // 板と紙の○×は端末で読む（Gemini は線の向きを読めない）。名前と並びは Gemini のまま
 const { マスを端末で差し替える, ノートの先読みを作る } = require('./ocr/sashikae');
+const { 締め切りを置く, 締め切りを外す, 時間切れか, 時間切れの訳 } = require('../scripts/ocr-cells/ikitsugi.mjs');
+
+/**
+ * 端末の読み取り 1 回にかけてよい長さ（ms）。普段は PC で 4 秒、古い端末（CPU 6 倍遅い見当）でも 25 秒ほど。
+ * 読めない写真（アプリの画面を逆さに撮ったもの）では 1 回 5 分かかって読めず、1 枚に 11 分かかった（2026-10-23）。
+ * 過ぎたら端末をあきらめ、その読み取りの残りでは端末を使わずに AI の ○× を出す
+ */
+const 端末の時間の上限 = 90 * 1000;
 const 画像の道具 = require('./ocr/gazou-web');
 // 板のマスは畳み込みの網（2026-10-09。板ごとに外して測って全結合 98.2% → 99.6〜99.9%。scripts/ocr-cells/tatami.mjs）
 const 板の重み = require('../scripts/ocr-cells/omomi-tatami.json');
@@ -594,8 +602,26 @@ const OCRRecordModal = ({
             .join(' ');
         console.log('[OCRRecordModal] 読んだ板:', 板の様子(生のteams));
         // ○×のマスは端末で読み替える（板でも紙でも）。合わなければ Gemini のまま
-        const 端末で = async (チーム, 箱たち, 行数, 帯の数) =>
-          IS_WEB
+        let 端末をあきらめた = false;
+        const 端末で = async (チーム, 箱たち, 行数, 帯の数) => {
+          if (!IS_WEB || 端末をあきらめた) return 端末で読む(チーム, 箱たち, 行数, 帯の数);
+          締め切りを置く(端末の時間の上限);
+          try {
+            const 結果 = await 端末で読む(チーム, 箱たち, 行数, 帯の数);
+            // 段ごとに受け止めて「訳」に入れて返す所もある。そのときもあきらめる
+            if (結果 && 結果.読み取り元 !== '端末' && 時間切れか(結果.訳)) 端末をあきらめた = true;
+            return 結果;
+          } catch (誤り) {
+            if (!時間切れか(誤り)) throw 誤り;
+            端末をあきらめた = true;
+            console.log('[OCRRecordModal] 端末の読み取りが時間切れ。AI の答えを使う');
+            return { teams: チーム, 読み取り元: 'AI', 訳: 時間切れの訳 };
+          } finally {
+            締め切りを外す();
+          }
+        };
+        const 端末で読む = async (チーム, 箱たち, 行数, 帯の数) =>
+          IS_WEB && !端末をあきらめた
             ? マスを端末で差し替える(チーム, 読む写真, {
                 向き,
                 道具: 画像の道具,
@@ -612,7 +638,7 @@ const OCRRecordModal = ({
             : Promise.resolve({
                 teams: チーム,
                 読み取り元: 'AI',
-                訳: 'Web でないので端末の読み取りは使わない',
+                訳: 端末をあきらめた ? 時間切れの訳 : 'Web でないので端末の読み取りは使わない',
               });
         let 差し替え = await 端末で(生のteams);
         // 端末が数えた列の数（板ごと）。あとで AI の人数と食い違ったままなら、確認画面で断る
