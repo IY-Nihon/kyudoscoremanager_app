@@ -1031,7 +1031,10 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         });
         // 消したのにクラウドへ届いていないメンバーは、受け取っても戻さない
         const 削除ずみ = new Set(Object.keys(状態().deletedMembers || {}));
-        const 合流した = mergeById(状態().members, 雲の部員, false, true).filter(
+        // 端末の控え（fromCache）から来た一覧は途中までのことがある。そのときは「雲に無い」を理由に消さない。
+        // 個人ログインの「自分の情報」が一瞬「読み込んでいます」に戻った（2026-10-24、E2E で 5 回に 1 回）
+        const 控えからか = !!(返り.metadata && 返り.metadata.fromCache);
+        const 合流した = mergeById(状態().members, 雲の部員, false, !控えからか).filter(
           (部員1人) => 部員1人 && !削除ずみ.has(部員1人.id)
         );
         if (同期規則.一覧が同じか(状態().members, 合流した)) {
