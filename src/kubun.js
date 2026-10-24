@@ -29,7 +29,11 @@ function 区分たち(値) {
   const 見た = new Set();
   return 値
     .filter((区分) => 区分 && typeof 区分.id === 'string' && 区分.id && 名前を整える(区分.name))
-    .filter((区分) => (見た.has(区分.id) ? false : (見た.add(区分.id), true)))
+    .filter((区分) => {
+      if (見た.has(区分.id)) return false;
+      見た.add(区分.id);
+      return true;
+    })
     .map((区分) => ({ id: 区分.id, name: 名前を整える(区分.name) }));
 }
 

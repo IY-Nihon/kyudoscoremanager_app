@@ -671,47 +671,44 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
     // 無いまま進むと「参加中」の表示だけ出て何も届かないので、先に止める
     const 枝 = 差し込み || (道しるべ ? 道しるべ.共有の枝 : 団体の枝());
     if (!枝) return;
-    if (
-      (状態().stopLiveSync(true),
-      書く({
-        // 共有のライブに入るときは、そのライブ専用の枝を据える
-        いまのライブの枝: 差し込み || 道しるべ ? 枝 : null,
-        // 参加一覧から入ったのなら自分の団体のライブ。
-        // 共有リンクから来たときは、呼ぶ側があとで決め直す
-        よその団体のライブ: false,
-        いまのライブの閲覧枝: 差し込み ? (共有 && 共有.閲覧枝) || null : 道しるべ ? 道しるべ.閲覧の枝 : null,
-        写しを見ているか: false,
-        isLiveActive: true,
-        isHost: false,
-        ライブは見るだけ: !!見るだけ,
-        liveSessionName: 名前,
-        isIncomingLiveSync: false,
-        lastLocalChange: 0,
-        // 参加して最初に届く1通は必ず取り込む。
-        // 自分の送信の返りを無視する判定（timestamp の一致）は、
-        // 最後に書き込んだのが自分自身だと1通目にも当たってしまう。
-        // 当たると盤面が空のまま、誰かが次に何かするまで何も出ない
-        lastPushedTimestamp: 0,
-        // 主催者側と同じ理由。目印は参加したライブのものを受け取り直す
-        historySharedLen: 0,
-        historySharedMax: 0,
-        historyIsFirstSnapshot: true,
-        resetIsFirstSnapshot: true,
-        // アプリを閉じて戻ったときに、このライブへ戻るための控え（端末に残す）。
-        // 主催・よその団体は、呼ぶ側があとで据え直すことがある（ライブに戻る で拾う）
-        ライブの続き: {
-          名前,
-          枝: 差し込み || 道しるべ ? 枝 : null,
-          閲覧枝: 差し込み ? (共有 && 共有.閲覧枝) || null : 道しるべ ? 道しるべ.閲覧の枝 : null,
-          主催: false,
-          見るだけ: !!見るだけ,
-          よそ: false,
-          団体: 状態().activeGroupId || null,
-        },
-      }),
-      !Firebaseの器.rtdb)
-    )
-      return;
+    状態().stopLiveSync(true);
+    書く({
+      // 共有のライブに入るときは、そのライブ専用の枝を据える
+      いまのライブの枝: 差し込み || 道しるべ ? 枝 : null,
+      // 参加一覧から入ったのなら自分の団体のライブ。
+      // 共有リンクから来たときは、呼ぶ側があとで決め直す
+      よその団体のライブ: false,
+      いまのライブの閲覧枝: 差し込み ? (共有 && 共有.閲覧枝) || null : 道しるべ ? 道しるべ.閲覧の枝 : null,
+      写しを見ているか: false,
+      isLiveActive: true,
+      isHost: false,
+      ライブは見るだけ: !!見るだけ,
+      liveSessionName: 名前,
+      isIncomingLiveSync: false,
+      lastLocalChange: 0,
+      // 参加して最初に届く1通は必ず取り込む。
+      // 自分の送信の返りを無視する判定（timestamp の一致）は、
+      // 最後に書き込んだのが自分自身だと1通目にも当たってしまう。
+      // 当たると盤面が空のまま、誰かが次に何かするまで何も出ない
+      lastPushedTimestamp: 0,
+      // 主催者側と同じ理由。目印は参加したライブのものを受け取り直す
+      historySharedLen: 0,
+      historySharedMax: 0,
+      historyIsFirstSnapshot: true,
+      resetIsFirstSnapshot: true,
+      // アプリを閉じて戻ったときに、このライブへ戻るための控え（端末に残す）。
+      // 主催・よその団体は、呼ぶ側があとで据え直すことがある（ライブに戻る で拾う）
+      ライブの続き: {
+        名前,
+        枝: 差し込み || 道しるべ ? 枝 : null,
+        閲覧枝: 差し込み ? (共有 && 共有.閲覧枝) || null : 道しるべ ? 道しるべ.閲覧の枝 : null,
+        主催: false,
+        見るだけ: !!見るだけ,
+        よそ: false,
+        団体: 状態().activeGroupId || null,
+      },
+    });
+    if (!Firebaseの器.rtdb) return;
     const 盤面の場所 = RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${名前}/state`);
     RTDB.onValue(
       盤面の場所,

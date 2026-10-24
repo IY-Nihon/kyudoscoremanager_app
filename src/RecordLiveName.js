@@ -195,26 +195,32 @@ const ライブ名を決める窓 = ({
                   // 「5/8」のような日付を入れると 5 の下に 8 が作られる。
                   // そうなると参加一覧にも出ず、参加も削除もできないライブが残る
                   const 使えない字 = ライブ名に使えない字(名前);
-                  if (使えない字)
-                    return void (ライブ名の注意を置く(
+                  if (使えない字) {
+                    ライブ名の注意を置く(
                       `ライブ名に ${使えない字} は使えません。別の名前を入力してください。`
-                    ),
-                    ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Heavy));
-                  if ((ライブ名の注意を置く(null), ライブの種類 === 'host')) {
+                    );
+                    ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Heavy);
+                    return;
+                  }
+                  ライブ名の注意を置く(null);
+                  if (ライブの種類 === 'host') {
                     知らせる('ライブを開始しています...');
                     const 結果 = await useScoreStore.getState().startLiveSync(名前);
-                    if (結果 === '開始した')
-                      return void (ライブ名の窓を出す(false),
-                      ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Success));
+                    if (結果 === '開始した') {
+                      ライブ名の窓を出す(false);
+                      ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Success);
+                      return;
+                    }
                     // 「同名あり」と「確かめられなかった」を区別する。
                     // 元はどちらも「既に使用されています」と出していて、
                     // 通信が乱れただけのときに誤った案内になっていた
-                    return void (ライブ名の注意を置く(
+                    ライブ名の注意を置く(
                       結果 === '同名あり'
                         ? `'${名前}' は既に使用されています。別の名前を入力してください。`
                         : '通信が不安定なため開始できませんでした。電波の良い場所でもう一度お試しください。'
-                    ),
-                    ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Heavy));
+                    );
+                    ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Heavy);
+                    return;
                   }
                   if (ライブの種類 === 'join') {
                     if (!useScoreStore.getState().liveSessionsList.includes(名前))

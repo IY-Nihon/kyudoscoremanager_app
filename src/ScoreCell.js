@@ -58,24 +58,24 @@ const ScoreCell = React.memo(
     const 細い = columnType === 'separator' ? UIConfig.separatorWidth : null;
     const 幅 = (横 ? UIConfig.cellWidth : (細い ?? UIConfig.cellWidth)) * 倍率;
     const 高さ = (横 ? (細い ?? UIConfig.cellHeight) : UIConfig.cellHeight) * 倍率;
-    const // 縦は「下に太線・右に細線」。横はそれを90度まわして「右に太線・下に細線」
-      線 = 横
-        ? {
-            borderRightWidth: 下線の太さ,
-            borderRightColor: 色.黒,
-            borderBottomWidth: 1,
-            borderBottomColor: 色.黒,
-            borderTopWidth: 枠の太さ,
-            borderTopColor: 色.黒,
-          }
-        : {
-            borderBottomWidth: 下線の太さ,
-            borderBottomColor: 色.黒,
-            borderRightWidth: 1,
-            borderRightColor: 色.黒,
-            borderLeftWidth: 枠の太さ,
-            borderLeftColor: 色.黒,
-          };
+    // 縦は「下に太線・右に細線」。横はそれを90度まわして「右に太線・下に細線」
+    const 線 = 横
+      ? {
+          borderRightWidth: 下線の太さ,
+          borderRightColor: 色.黒,
+          borderBottomWidth: 1,
+          borderBottomColor: 色.黒,
+          borderTopWidth: 枠の太さ,
+          borderTopColor: 色.黒,
+        }
+      : {
+          borderBottomWidth: 下線の太さ,
+          borderBottomColor: 色.黒,
+          borderRightWidth: 1,
+          borderRightColor: 色.黒,
+          borderLeftWidth: 枠の太さ,
+          borderLeftColor: 色.黒,
+        };
     const timerRef = React.useRef(null);
     const longPressTimerRef = React.useRef(null);
     const isLongPressedRef = React.useRef(false);

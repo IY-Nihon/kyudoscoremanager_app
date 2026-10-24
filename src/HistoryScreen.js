@@ -127,9 +127,9 @@ const HistoryScreen = () => {
   const [選んだ射手ID, 選んだ射手IDを置く] = React.useState(null);
   const [選んだ射手の順, 選んだ射手の順を置く] = React.useState(0);
   const [交代の窓, 交代の窓を出す] = React.useState(false);
-  const // ゴミ箱から開いて見ている記録の id。ゴミ箱の中は見るだけ（直す・消す・
-    // 前後へ送るは出さない）で、画面にもゴミ箱の中だと分かる帯を出す
-    [ゴミ箱の記録, setゴミ箱の記録] = React.useState(null);
+  // ゴミ箱から開いて見ている記録の id。ゴミ箱の中は見るだけ（直す・消す・
+  // 前後へ送るは出さない）で、画面にもゴミ箱の中だと分かる帯を出す
+  const [ゴミ箱の記録, setゴミ箱の記録] = React.useState(null);
   const 上の横流し = React.useRef(null);
   const 下の横流し = React.useRef(null);
   const 上に合わせる = (出来事) => {
@@ -163,13 +163,13 @@ const HistoryScreen = () => {
     }
     return 記録;
   }, [sessions, trash, selectedHistorySessionId, ゴミ箱の記録, activeRole, myMemberId, 自分の名前]);
-  const // いま見ている記録がゴミ箱の中か。復元されて記録に戻ったら、ふつうの詳細になる
-    ゴミ箱を見ている =
-      !!見ている記録 &&
-      !!ゴミ箱の記録 &&
-      見ている記録.id === ゴミ箱の記録 &&
-      !sessions.some((記録1件) => 記録1件 && 記録1件.id === 見ている記録.id) &&
-      trash.some((記録1件) => 記録1件 && 記録1件.id === 見ている記録.id);
+  // いま見ている記録がゴミ箱の中か。復元されて記録に戻ったら、ふつうの詳細になる
+  const ゴミ箱を見ている =
+    !!見ている記録 &&
+    !!ゴミ箱の記録 &&
+    見ている記録.id === ゴミ箱の記録 &&
+    !sessions.some((記録1件) => 記録1件 && 記録1件.id === 見ている記録.id) &&
+    trash.some((記録1件) => 記録1件 && 記録1件.id === 見ている記録.id);
   // 記録詳細から一覧へ戻る（画面の「戻る」と同じ）。ゴミ箱から来たなら、ゴミ箱へ戻す
   const 一覧へ戻る = () => {
     setHistoryViewMode('list');

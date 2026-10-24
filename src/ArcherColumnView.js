@@ -7,8 +7,8 @@ const { UIConfig } = require('./uiConfig');
 const { ScoreCell } = require('./ScoreCell');
 const { useScoreStore } = require('./useScoreStore');
 const { useShallow } = require('zustand/react/shallow');
-const // 読み上げが読む言葉。射位の呼び方もここが持つ
-  読み = require('./a11yLabels');
+// 読み上げが読む言葉。射位の呼び方もここが持つ
+const 読み = require('./a11yLabels');
 const Icons = require('@expo/vector-icons');
 const { formatMemberName } = require('./formatMemberName');
 const 組 = require('./teamGrouping');
@@ -115,30 +115,30 @@ const ArcherColumnView = React.memo(
     // 的中数のとき以外は、何を出しているかを合計の上に小さく書く
     const 見せ方の名 = ['', '中/射', '立/累計', '立の率', '累計の率'][見せ方] || '';
     const 計の見せ方を次へ = () => useScoreStore.getState().計の見せ方を次へ();
-    const // 読み上げ（VoiceOver / TalkBack）が読む言葉。
-      // 画面の字は「○」「×」だけで、そのままだと「まる」「かける」と読まれる
-      読み上げの言葉 = (射番) =>
-        読み.ますの読み({
-          射手名: archer.name,
-          番: 射位の番,
-          人数,
-          射番,
-          印: (archer.marks || [])[射番],
-        });
+    // 読み上げ（VoiceOver / TalkBack）が読む言葉。
+    // 画面の字は「○」「×」だけで、そのままだと「まる」「かける」と読まれる
+    const 読み上げの言葉 = (射番) =>
+      読み.ますの読み({
+        射手名: archer.name,
+        番: 射位の番,
+        人数,
+        射番,
+        印: (archer.marks || [])[射番],
+      });
     const 鍵を押した = (射手ID, 立) => {
       if (onToggleLock) onToggleLock(射手ID, 立);
       else 鍵を切り替える(射手ID, 立);
     };
     const 名前を整える = (名) => formatMemberName(名, 部員たち);
-    const // 手前の計もまとめる合計は「総計」。ふつうの「計」と見分けるため
-      見出しの字 = () =>
-        archer.isTotalCalculator
-          ? archer.またぐ合計
-            ? '総計'
-            : '合計'
-          : archer.name
-            ? 名前を整える(archer.name)
-            : '選択';
+    // 手前の計もまとめる合計は「総計」。ふつうの「計」と見分けるため
+    const 見出しの字 = () =>
+      archer.isTotalCalculator
+        ? archer.またぐ合計
+          ? '総計'
+          : '合計'
+        : archer.name
+          ? 名前を整える(archer.name)
+          : '選択';
     const 間隔か合計 = archer.isSeparator || archer.isTotalCalculator;
     const 枠の太さ = 間隔か合計 ? 1.5 : 1;
     const 枠の左 = 間隔か合計 ? 1.5 : 0;

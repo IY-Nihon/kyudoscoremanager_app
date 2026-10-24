@@ -28,12 +28,12 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
   } = useストアの一部(['members', 'shotsPerRound', 'setSubstitution']);
   const shotsPerRound = 本数 || 盤面の射数;
   const [番号の入力, 番号の入力を置く] = React.useState('');
-  const // 交代は立の切れ目ですることが多い。射目でも入れられるよう、単位を選べる
-    [単位, 単位を置く] = React.useState('立目');
-  const // 閉じた学年を覚える（開いた学年ではなく）。初めは全部開く。
-    // 開く側を決め打ちすると、進級で出る5年生のように想定外の学年が
-    // 閉じたまま出て、中の人に辿り着けなくなる
-    [閉じた学年, 閉じた学年を置く] = React.useState(new Set());
+  // 交代は立の切れ目ですることが多い。射目でも入れられるよう、単位を選べる
+  const [単位, 単位を置く] = React.useState('立目');
+  // 閉じた学年を覚える（開いた学年ではなく）。初めは全部開く。
+  // 開く側を決め打ちすると、進級で出る5年生のように想定外の学年が
+  // 閉じたまま出て、中の人に辿り着けなくなる
+  const [閉じた学年, 閉じた学年を置く] = React.useState(new Set());
   const [検索の文, 検索の文を置く] = React.useState('');
   const [客名の入力, 客名の入力を置く] = React.useState('');
   const 候補 = (
@@ -63,21 +63,21 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
       return 次;
     });
   };
-  const // 名前で絞り込んでいるあいだは開いておく。閉じたままだと
-    // 探した人が隠れたままで「居ない」と見えてしまう
-    開いているか = (学年) => 検索の文.trim() !== '' || !閉じた学年.has(String(学年));
-  const // 交代相手を学年でまとめる。人の選択と同じで、0年（学年なし）は
-    // 「その他/ゲスト」として最後に置く
-    学年ごと = 学年でまとめる(候補);
-  const // 選べる番号。1立目、2立目…（射目のときは 1射目、2射目…）
-    番号たち = Array.from({ length: 上限 }, (_, 番) => 番 + 1);
+  // 名前で絞り込んでいるあいだは開いておく。閉じたままだと
+  // 探した人が隠れたままで「居ない」と見えてしまう
+  const 開いているか = (学年) => 検索の文.trim() !== '' || !閉じた学年.has(String(学年));
+  // 交代相手を学年でまとめる。人の選択と同じで、0年（学年なし）は
+  // 「その他/ゲスト」として最後に置く
+  const 学年ごと = 学年でまとめる(候補);
+  // 選べる番号。1立目、2立目…（射目のときは 1射目、2射目…）
+  const 番号たち = Array.from({ length: 上限 }, (_, 番) => 番 + 1);
   const 選んだ = parseInt(番号の入力, 10);
-  const // 入れた番号が何射目にあたるか。立なら、その立の1本目
-    何射目 = () => {
-      const 番号 = parseInt(番号の入力, 10);
-      if (isNaN(番号) || 番号 < 1 || 番号 > 上限) return null;
-      return 立か ? 立の頭の射(番号, shotsPerRound) : 番号 - 1;
-    };
+  // 入れた番号が何射目にあたるか。立なら、その立の1本目
+  const 何射目 = () => {
+    const 番号 = parseInt(番号の入力, 10);
+    if (isNaN(番号) || 番号 < 1 || 番号 > 上限) return null;
+    return 立か ? 立の頭の射(番号, shotsPerRound) : 番号 - 1;
+  };
   const 交代を入れる = (名前, 部員ID) => {
     const 射番 = 何射目();
     if (射番 !== null && archerId) {

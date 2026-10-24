@@ -8,7 +8,7 @@ const BottomTabs = require('@react-navigation/bottom-tabs');
 const Navigation = require('@react-navigation/native');
 const ReactNativeSafeAreaContext = require('react-native-safe-area-context');
 const { useScoreStore } = require('./useScoreStore');
-const { IS_WEB, WEB_TOP_PADDING } = require('./IS_WEB');
+const { IS_WEB } = require('./IS_WEB');
 const { getShadowStyle } = require('./shadowStyle');
 const { RecordScreen } = require('./RecordScreen');
 const { HistoryScreen } = require('./HistoryScreen');
@@ -130,7 +130,6 @@ const styles = StyleSheet.create({
   },
 });
 const 下の帯 = React.memo(({ state, descriptors, navigation: nav }) => {
-  ReactNativeSafeAreaContext.useSafeAreaInsets();
   // 帯の幅で並べ方を決める。どのタブも「絵＋名前」にすると、団体の 6 タブは 340〜360px、
   // 個人の 5 タブは 305px ほど要る（最近の携帯の 360px 以上は収まる）。収まらない狭い端末だけ、
   // 絵だけにして、今いるタブだけ名前を出す（tabBarLayout）。前は名前だけの 6 タブが 320px の端末に
@@ -256,15 +255,12 @@ const MemberScreenComp = (props) => <MemberScreen {...props} />;
 const AttendanceScreenComp = (props) => <AttendanceScreen {...props} />;
 const SettingsScreenComp = (props) => <SettingsScreen {...props} />;
 const MainNavigator = () => {
-  const 余白 = ReactNativeSafeAreaContext.useSafeAreaInsets();
   const 役割 = useScoreStore((状態) => 状態.activeRole);
-  const // 共有リンクだけで来ている人。団体のデータを何も持っていないので、
-    // 履歴・分析・設定を出しても中身が無い。記録の画面だけにする
-    来客 = useScoreStore((状態) => 状態.共有の来客);
+  // 共有リンクだけで来ている人。団体のデータを何も持っていないので、
+  // 履歴・分析・設定を出しても中身が無い。記録の画面だけにする
+  const 来客 = useScoreStore((状態) => 状態.共有の来客);
   const 画面名を控える = useScoreStore((状態) => 状態.setCurrentRouteName);
-  const 帯を描く =
-    (IS_WEB ? WEB_TOP_PADDING : Math.max(余白.top, 20),
-    React.useCallback((渡す) => <下の帯 {...渡す} />, []));
+  const 帯を描く = React.useCallback((渡す) => <下の帯 {...渡す} />, []);
   const リンク = React.useMemo(() => リンクの決まり, []);
   const 航路のref = Navigation.useNavigationContainerRef();
   return (

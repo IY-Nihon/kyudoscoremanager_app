@@ -760,13 +760,12 @@ const ライブの盤面を読み取る = (盤面) => {
       .map((元) => {
         if (!元) return null;
         const 射手 = 射手の形にそろえる(元, 本数);
-        return 射手
-          ? (!元.isSeparator &&
-              印の表[元.id] &&
-              ((射手.marks = 印の列にそろえる(印の表[元.id], 本数)),
-              (射手.lastModified = Math.max(射手.lastModified || 0, 日時の表[元.id] || 0))),
-            射手)
-          : null;
+        if (!射手) return null;
+        if (!元.isSeparator && 印の表[元.id]) {
+          射手.marks = 印の列にそろえる(印の表[元.id], 本数);
+          射手.lastModified = Math.max(射手.lastModified || 0, 日時の表[元.id] || 0);
+        }
+        return 射手;
       })
       .filter(Boolean),
     shotsPerRound: 本数,

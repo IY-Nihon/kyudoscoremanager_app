@@ -122,8 +122,34 @@ function 書き換えを集める(code, ast) {
         足す(p.node.start, p.node.end, 包む(文にする(code, e, comments)), '&&・|| の文');
       else if (e.type === 'ConditionalExpression') 足す(p.node.start, p.node.end, 包む(文にする(code, e, comments)), '? : の文');
     },
+    VariableDeclaration(p) {
+      // const // 説明 \n 名前 = … → // 説明 \n const 名前 = …（コメントを const の前へ）
+      const 最初 = p.node.declarations[0];
+      const 間 = comments.filter((c) => c.start > p.node.start && c.end <= 最初.start);
+      if (!間.length) return;
+      const 説明 = 間.map((c) => code.slice(c.start, c.end)).join('\n');
+      足す(p.node.start, 最初.start, 説明 + '\n' + p.node.kind + ' ', 'const の中のコメント');
+    },
+    IfStatement(p) {
+      // if ((a(), b)) … → a(); if (b) …
+      const t = p.node.test;
+      if (t.type !== 'SequenceExpression') return;
+      const 文の中 = ['BlockStatement', 'Program', 'SwitchCase'].includes(p.parent.type);
+      const { 前の文, 最後 } = 最後の値と前の文(code, t, comments);
+      const 残り = code.slice(t.end + (t.extra && t.extra.parenthesized ? 1 : 0), p.node.end);
+      // 残り は「) 本体…」。if の括弧を閉じ直す
+      const s = 前の文 + '\nif (' + 最後 + 残り;
+      足す(p.node.start, p.node.end, 文の中 ? s : '{\n' + s + '\n}', 'if のカンマ');
+    },
     ReturnStatement(p) {
       const a = p.node.argument;
+      // return void (a(), b()); → a(); b(); return;
+      if (a && a.type === 'UnaryExpression' && a.operator === 'void' && a.argument.type === 'SequenceExpression') {
+        const 文の中 = ['BlockStatement', 'Program', 'SwitchCase'].includes(p.parent.type);
+        const s = 文にする(code, a.argument, comments) + '\nreturn;';
+        足す(p.node.start, p.node.end, 文の中 ? s : '{\n' + s + '\n}', 'return void のカンマ');
+        return;
+      }
       if (!a || a.type !== 'SequenceExpression') return;
       const 文の中 = ['BlockStatement', 'Program', 'SwitchCase'].includes(p.parent.type);
       const { 前の文, 最後 } = 最後の値と前の文(code, a, comments);
