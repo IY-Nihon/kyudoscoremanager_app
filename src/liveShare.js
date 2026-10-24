@@ -122,13 +122,6 @@ function 期限切れか(期限, 今) {
 }
 
 /**
- * 期限を人の言葉にする。期限が無ければ null。
- *
- * @param {number|null|undefined} 期限
- * @param {number} [今]
- * @returns {string|null}
- */
-/**
  * 帯に出すのは、期限がこれより近いときだけ（ミリ秒）。1時間。
  *
  * ずっと出していると場所を取るだけで読まれなくなる。
@@ -185,6 +178,13 @@ function 次に数え直すまで(期限, 今) {
   return 30000;
 }
 
+/**
+ * 期限を人の言葉にする。期限が無ければ null。
+ *
+ * @param {number|null|undefined} 期限
+ * @param {number} [今]
+ * @returns {string|null}
+ */
 function 期限の文言(期限, 今) {
   if (typeof 期限 !== 'number' || !isFinite(期限) || 期限 <= 0) return null;
   const 今の時刻 = typeof 今 === 'number' ? 今 : Date.now();
