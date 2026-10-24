@@ -252,7 +252,6 @@ const styles = StyleSheet.create({
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
   detailText: { fontSize: 12, color: 色.文字_三 },
   detailStats: { fontSize: 12, fontWeight: 'bold', color: 色.文字 },
-  detailMore: { fontSize: 10, color: 色.灰, marginTop: 4, textAlign: 'center' },
 });
 
 module.exports = { styles };

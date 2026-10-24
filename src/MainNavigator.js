@@ -103,12 +103,6 @@ const styles = StyleSheet.create({
   tabButtonHover: { backgroundColor: 'rgba(255, 255, 255, 0.5)' },
   tabTextHoverable: {},
   rightActions: { display: 'none' },
-  pagination: { flexDirection: 'row', gap: 20, marginRight: 4 },
-  pageBtn: { padding: 4 },
-  adminActions: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  editBtn: { paddingVertical: 4 },
-  editText: { color: 基本色.藍, fontSize: 17, fontWeight: '400' },
-  trashBtn: { padding: 4 },
   // 絵が無いタブ（今は無い）の印。名前のとなりに小さく出す
   badgeDotBesideText: {
     width: 6,
