@@ -218,7 +218,7 @@ src/HistoryScreen.js     履歴画面
 src/AnalysisScreen.js   分析画面
 src/MemberScreen.js     メンバー管理
 src/SettingsScreen.js   設定・お問い合わせ
-src/AIChatBot.js        AIチャットボット
+src/AIChatBot.js        AIチャットボット（指示文と Q&A は chatKnowledge.js、道具の宣言は chatTools.js、見た目は chatStyles.js）
 src/OCRRecordModal.js        写真から記録・立ち順を読み取る窓（○× は src/ocr/ の端末の読み取り）
 src/AttendanceScreen.js         出欠管理
 src/AttendanceCheckModal.js     出欠入力モーダル
@@ -247,7 +247,8 @@ src/i18n.js            言葉の差し替え（既定は日本語）
 src/updateNotice.js    新しい版が出たかの見分け
 src/messages/          言語ごとの言葉（画面ごとに分ける）
 src/statsRules.js      集計の決まり
-src/chatStats.js       AIの答えのための集計
+src/chatStats.js       AIの答えのための集計（記録の要約も）
+src/chatTools.js       AIの道具（Function Calling）の宣言
 src/syncRules.js       同期の突き合わせ
 src/retsuNoMitate.js  記録表の列ごとの見立て（チームの色・鍵・射位・計の数）。列の描き直しを減らす
 ```
