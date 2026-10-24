@@ -135,6 +135,9 @@ test('個人ログインでは、他人も出ず、部員も足せない', async
 });
 
 test('個人ログインの画面は、履歴が増えても下まで流せる', async ({ page }) => {
+  await page.addInitScript(() => {
+    globalThis.__名簿の見張り = 1;
+  });
   await 入る(page);
   await page.getByText('メンバー', { exact: true }).first().click();
   await 画面が変わるまで待つ(page, '自分の情報');
@@ -204,5 +207,11 @@ test('個人ログインの画面は、履歴が増えても下まで流せる',
     (x) => x === 0,
     20000
   );
-  await expect(page.getByText('弓具管理', { exact: true }), '上に戻っても弓具管理が出ない').toBeVisible();
+  // 落ちたときに、手元の名簿に自分がいるかを書き出す（2026-10-24：自分の情報が「読み込んでいます」に戻る回の調べ）
+  const 名簿の様子 = await page.evaluate(() => {
+    const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+    const 部員 = s.members || [];
+    return JSON.stringify({ 数: 部員.length, 自分: s.myMemberId, いる: 部員.some((x) => x && x.id === s.myMemberId), 役: s.activeRole, 団体: s.activeGroupId, 空にした所: (globalThis.__名簿が空になった || []).map((x) => x.split(String.fromCharCode(10)).slice(1, 9).join(' | ')) });
+  });
+  await expect(page.getByText('弓具管理', { exact: true }), '上に戻っても弓具管理が出ない ' + 名簿の様子).toBeVisible();
 });
