@@ -20,12 +20,11 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 const React = require('react');
 const { useState, useEffect, useRef } = React;
-const { Text, StyleSheet, View, Modal, Pressable, ScrollView, Platform, Animated } = require('./rn');
+const { Text, StyleSheet, View, Modal, Pressable, ScrollView, Animated } = require('./rn');
+const { IS_WEB } = require('./IS_WEB');
 // 帯か窓かの決まりは純粋な関数なので外に出してある。
-// 43か所ぶんの実際の文で、node --test から確かめている（test/dialogRules.test.js）
+// アプリが実際に出す文から選んだもので、node --test から確かめている（test/dialogRules.test.js）
 const { 窓で止めるか, 帯の長さ, 帯の時計をつくる } = require('./dialogRules');
-
-const IS_WEB = Platform.OS === 'web';
 
 /**
  * 帯を出す層。web では body の直下に、画面いっぱいの固定の箱を作って、その中へ描く。
@@ -129,12 +128,14 @@ const アプリの窓 = () => {
     };
     const 残り = 待ち;
     待ち = [];
-    残り.forEach((x) => 聞き手(x));
+    残り.forEach((要求) => 聞き手(要求));
     return () => {
       聞き手 = null;
       時計.current.片付ける();
     };
   }, []);
+  // ボタンが3つ以上のときは縦に積む
+  const 縦に積む = !!いま && いま.ボタン.length > 2;
 
   return (
     <>
@@ -153,38 +154,33 @@ const アプリの窓 = () => {
         <Modal visible transparent animationType="fade" onRequestClose={() => 置く(null)}>
           <View style={styles.背景}>
             <View style={styles.札} testID="アプリの窓">
-              {いま && いま.題 ? <Text style={styles.題}>{いま.題}</Text> : null}
+              {いま.題 ? <Text style={styles.題}>{いま.題}</Text> : null}
               {/* 登録完了の控えのように長い文が来る。画面からはみ出して
                 ボタンが押せなくならないよう、文だけを中でスクロールさせる */}
-              {いま && いま.文 ? (
+              {いま.文 ? (
                 <ScrollView style={styles.文の枠} contentContainerStyle={styles.文の中}>
                   <Text style={styles.文}>{いま.文}</Text>
                 </ScrollView>
               ) : null}
-              <View style={[styles.ボタンの列, (いま.ボタン || []).length > 2 && styles.ボタンの列縦]}>
-                {(いま ? いま.ボタン : []).map((b, i) => (
+              <View style={[styles.ボタンの列, 縦に積む && styles.ボタンの列縦]}>
+                {いま.ボタン.map((ボタン, 番) => (
                   <Pressable
-                    key={`${b.text}-${i}`}
-                    testID={`窓のボタン-${b.text}`}
-                    style={[
-                      styles.ボタン,
-                      (いま.ボタン || []).length > 2 ? i > 0 && styles.仕切り縦 : i > 0 && styles.仕切り,
-                    ]}
+                    key={`${ボタン.text}-${番}`}
+                    testID={`窓のボタン-${ボタン.text}`}
+                    style={[styles.ボタン, 番 > 0 && (縦に積む ? styles.仕切り縦 : styles.仕切り)]}
                     onPress={() => {
                       置く(null);
-                      if (b.onPress) {
-                        b.onPress();
-                      }
+                      if (ボタン.onPress) ボタン.onPress();
                     }}
                   >
                     <Text
                       style={[
                         styles.ボタンの字,
-                        b.style === 'cancel' && styles.打ち消し,
-                        b.style === 'destructive' && styles.危ない,
+                        ボタン.style === 'cancel' && styles.打ち消し,
+                        ボタン.style === 'destructive' && styles.危ない,
                       ]}
                     >
-                      {b.text}
+                      {ボタン.text}
                     </Text>
                   </Pressable>
                 ))}
