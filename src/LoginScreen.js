@@ -32,11 +32,11 @@ const 法 = require('./legalDocs');
 // App Check（reCAPTCHA）を使っているか。使っているときは、右下の reCAPTCHA の札を隠す代わりに
 // 下の断りを出す（Google の決まり。src/setupAppCheck.js）
 const { AppCheckを使うか } = require('./setupAppCheck');
+const KyudoBackgroundAnimation = require('./KyudoBackgroundAnimation').default;
 // 入れてもらったIDを整える。LINE やメモ帳から貼ると、前後に空白が
 // 混じることがある。そのまま照合すると「合っているのに入れない」になり、
 // 見た目では気づけない。使うたびに整えるのではなく、ここを通す。
 // パスワードには使わないこと（空白も文字のうち）
-const KyudoBackgroundAnimation = require('./KyudoBackgroundAnimation').default;
 const 整えたID = (値) =>
   String(値 || '')
     .trim()
@@ -140,12 +140,7 @@ function キャンセルの字({ 押す }) {
 }
 
 const LoginScreen = () => {
-  const { setAuth, setMemberAuthVersion } = useストアの一部([
-    'setAuth',
-    'fetchAndOverwriteFromCloud',
-    'startPeriodicSync',
-    'setMemberAuthVersion',
-  ]);
+  const { setAuth, setMemberAuthVersion } = useストアの一部(['setAuth', 'setMemberAuthVersion']);
   const [画面の種類, 画面の種類を置く] = React.useState('login_group');
   const [処理中, 処理中を置く] = React.useState(false);
   const [団体IDの入力, 団体IDの入力を置く] = React.useState('');
@@ -203,7 +198,8 @@ const LoginScreen = () => {
       { groupName: 団体名の入力 },
       { merge: true }
     ).catch((誤り) => console.warn('[Login] 団体名を置けませんでした', 誤り));
-    // 学年まわりの設定。新しい団体は、期を使わず、4 月 1 日に進級の窓を出す（学年の無い団体は出さない）。
+    // 学年まわりの設定。新しい団体は、期を使わず、年度の始まり（既定は 4 月）の 1 日に進級の窓を出す
+    //（学年の無い団体は出さない）。
     // 古い版のアプリの自動進級は切っておく（src/gakunen.js の 設定を書き足すか）。
     // 書けなくても団体は使える（大学として動き、設定から変えられる）
     await Firestore.setDoc(
@@ -364,16 +360,13 @@ const LoginScreen = () => {
             {画面の種類 !== 'register' && 忘れた窓 === 'none' && (
               <View style={styles.tabContainer}>
                 <Pressable
-                  key={'tab-group'}
-                  style={function (state) {
-                    return [
-                      styles.tab,
-                      画面の種類 === 'login_group' && styles.activeTab,
-                      state.hovered &&
-                        IS_WEB &&
-                        !styles.activeTab && { backgroundColor: 'rgba(255,255,255,0.1)' },
-                    ];
-                  }}
+                  style={(state) => [
+                    styles.tab,
+                    画面の種類 === 'login_group' && styles.activeTab,
+                    state.hovered &&
+                      IS_WEB &&
+                      画面の種類 !== 'login_group' && { backgroundColor: 'rgba(255,255,255,0.1)' },
+                  ]}
                   onPress={() => 画面の種類を置く('login_group')}
                 >
                   <Text style={[styles.tabText, 画面の種類 === 'login_group' && styles.activeTabText]}>
@@ -381,16 +374,13 @@ const LoginScreen = () => {
                   </Text>
                 </Pressable>
                 <Pressable
-                  key={'tab-member'}
-                  style={function (state) {
-                    return [
-                      styles.tab,
-                      画面の種類 === 'login_member' && styles.activeTab,
-                      state.hovered &&
-                        IS_WEB &&
-                        !styles.activeTab && { backgroundColor: 'rgba(255,255,255,0.1)' },
-                    ];
-                  }}
+                  style={(state) => [
+                    styles.tab,
+                    画面の種類 === 'login_member' && styles.activeTab,
+                    state.hovered &&
+                      IS_WEB &&
+                      画面の種類 !== 'login_member' && { backgroundColor: 'rgba(255,255,255,0.1)' },
+                  ]}
                   onPress={() => 画面の種類を置く('login_member')}
                 >
                   <Text style={[styles.tabText, 画面の種類 === 'login_member' && styles.activeTabText]}>
@@ -736,7 +726,7 @@ const LoginScreen = () => {
               )}
               {画面の種類 === 'login_group' && (
                 <View style={styles.helpLinks}>
-                  <Pressable key={'email'} onPress={() => 忘れた窓を置く('email')}>
+                  <Pressable onPress={() => 忘れた窓を置く('email')}>
                     {function (state) {
                       return (
                         <Text style={[styles.helpLink, state.hovered && IS_WEB && { color: 色.金_明るい }]}>
@@ -746,7 +736,6 @@ const LoginScreen = () => {
                     }}
                   </Pressable>
                   <Pressable
-                    key={'groupid'}
                     onPress={() =>
                       Alert.alert(
                         '通知',
@@ -762,7 +751,7 @@ const LoginScreen = () => {
                       );
                     }}
                   </Pressable>
-                  <Pressable key={'password'} onPress={() => 忘れた窓を置く('password')}>
+                  <Pressable onPress={() => 忘れた窓を置く('password')}>
                     {function (state) {
                       return (
                         <Text style={[styles.helpLink, state.hovered && IS_WEB && { color: 色.金_明るい }]}>
@@ -944,8 +933,8 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     gap: 10,
   },
-  // 本家の #4285F4 は白地で比 3.56 しかなく薄い。濃いほうの青にして
-  // 読めるようにした（検査 loginTheme が見ている）
+  // 字は濃い墨。本家の青 #4285F4 は白地で比 3.56 しかなく、字には薄い（青は絵 GoogleLogo だけ）。
+  // 白いボタンの上の字の濃さは、検査 loginTheme が見ている
   Googleの字: { fontSize: 16, fontWeight: '600', color: 色.墨_1F },
   Googleの添え: { color: 'rgba(255,255,255,0.6)', fontSize: 11, marginTop: 8, lineHeight: 16 },
   footer: { alignItems: 'center', marginTop: 24 },
