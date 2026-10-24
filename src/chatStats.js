@@ -93,6 +93,39 @@ function その射を引いた人(射手, 射目) {
   return { id: 集.その射の部員id(射手, 射目), 名前: 集.その射の名前(射手, 射目) };
 }
 
+/**
+ * 名前で部員が決まらなかったときの答え（一人の成績・矢所の成績）。
+ * 当てはまる人が何人も居れば聞き返させる。名簿に無い名前（ゲストなど）は、記録に名前が
+ * 出ていても成績を出せない。0 を並べるより、その旨を返す
+ * @returns {{error: string, 候補?: string[]}}
+ */
+function 見つからない人の答え(名前, 候補, 記録たち) {
+  if (候補.length > 1) {
+    return {
+      error: `「${名前}」に当てはまる部員が ${候補.length} 人います：${候補.map((x) => x.name).join('、')}。どの人か聞き返してください。`,
+      候補: 候補.map((x) => x.name),
+    };
+  }
+  const 求める = 詰める(名前);
+  const 記録に出ている = (Array.isArray(記録たち) ? 記録たち : []).some(
+    (記録) =>
+      Array.isArray(記録 && 記録.archers) &&
+      記録.archers.some((射手) => {
+        if (!射手) return false;
+        const 名たち = [射手.name || ''].concat(Object.values(射手.substitutions || {}));
+        return 名たち.some((名) => {
+          const 名を詰めた = 詰める(名);
+          return 名を詰めた && (名を詰めた.includes(求める) || 求める.includes(名を詰めた));
+        });
+      })
+  );
+  return {
+    error: 記録に出ている
+      ? `「${名前}」は部員名簿にありません。記録に名前は出ていますが、ゲストとして入力されているため成績は集計できません。`
+      : '選手が見つかりませんでした。',
+  };
+}
+
 /** その人の1射かどうか。部員IDだけで判定する */
 function その人の射か(人, 引いた人) {
   return !!(人 && 人.id && 引いた人 && 引いた人.id !== undefined && String(引いた人.id) === String(人.id));
@@ -669,31 +702,7 @@ function 一人の成績(人たち, 記録たち, 名前, 期間) {
   const 使える記録 = 期間で絞る(記録たち, 期間).filter(
     (記録) => 記録 && Array.isArray(記録.archers) && 集.集計に入れるか(記録)
   );
-  if (!人) {
-    if (候補.length > 1) {
-      return {
-        error: `「${名前}」に当てはまる部員が ${候補.length} 人います：${候補.map((x) => x.name).join('、')}。どの人か聞き返してください。`,
-        候補: 候補.map((x) => x.name),
-      };
-    }
-    // 名簿に無い名前（ゲストなど）は、記録に名前が出ていても成績を出せない。0 を並べるより、その旨を返す
-    const 求める = 詰める(名前);
-    const 記録に出ている = 使える記録.some((記録) =>
-      記録.archers.some((射手) => {
-        if (!射手) return false;
-        const 名たち = [射手.name || ''].concat(Object.values(射手.substitutions || {}));
-        return 名たち.some((名) => {
-          const 名を詰めた = 詰める(名);
-          return 名を詰めた && (名を詰めた.includes(求める) || 求める.includes(名を詰めた));
-        });
-      })
-    );
-    return {
-      error: 記録に出ている
-        ? `「${名前}」は部員名簿にありません。記録に名前は出ていますが、ゲストとして入力されているため成績は集計できません。`
-        : '選手が見つかりませんでした。',
-    };
-  }
+  if (!人) return 見つからない人の答え(名前, 候補, 使える記録);
   const 部員id = 人.id;
   const 射ごと = [0, 0, 0, 0].map(() => ({ 的中: 0, 射数: 0 }));
   const 大前 = { 的中: 0, 射数: 0 };
@@ -887,32 +896,7 @@ function 矢所のまとまり(半径) {
  */
 function 矢所の成績(名簿, 記録たち, 名前, 条件 = {}) {
   const { 人, 候補 } = 名前で選ぶ(名簿, 名前);
-  if (!人) {
-    if (候補.length > 1) {
-      return {
-        error: `「${名前}」に当てはまる部員が ${候補.length} 人います：${候補.map((x) => x.name).join('、')}。どの人か聞き返してください。`,
-        候補: 候補.map((x) => x.name),
-      };
-    }
-    const 求める = 詰める(名前);
-    const 記録に出ている = (Array.isArray(記録たち) ? 記録たち : []).some(
-      (記録) =>
-        Array.isArray(記録 && 記録.archers) &&
-        記録.archers.some((射手) => {
-          if (!射手) return false;
-          const 名たち = [射手.name || ''].concat(Object.values(射手.substitutions || {}));
-          return 名たち.some((名) => {
-            const 名を詰めた = 詰める(名);
-            return 名を詰めた && (名を詰めた.includes(求める) || 求める.includes(名を詰めた));
-          });
-        })
-    );
-    return {
-      error: 記録に出ている
-        ? `「${名前}」は部員名簿にありません。記録に名前は出ていますが、ゲストとして入力されているため成績は集計できません。`
-        : '選手が見つかりませんでした。',
-    };
-  }
+  if (!人) return 見つからない人の答え(名前, 候補, 記録たち);
 
   // 「統計に含めない」にした記録は、ほかの集計と同じく矢所からも外す
   let 使える記録 = (Array.isArray(記録たち) ? 記録たち : []).filter(
