@@ -44,6 +44,10 @@ export const ArrowLocationPopover = ({
     archers: storeArchers,
   } = useストアの一部(['arrowTargetType', 'setArrowTargetType', 'updateArrowLocation', 'archers']);
   const touchAreaRef = useRef(null);
+  // 閉じるとき、窓が消えていくあいだに射番が空になって題が「NaN射目」になる。出していた射番を覚えておく
+  const 出した射番 = useRef(shotIndex);
+  if (Number.isInteger(shotIndex)) 出した射番.current = shotIndex;
+  const 題の射番 = 出した射番.current;
 
   // 該当する射手のマーク情報を取得して、○/×判定に用いる
   const archer = storeArchers.find((a) => a.id === archerId);
@@ -251,7 +255,7 @@ export const ArrowLocationPopover = ({
           {/* ヘッダー */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>
-              矢所の記録 ({CIRCLED_NUMBERS[shotIndex] || `${shotIndex + 1}射目`})
+              矢所の記録 ({CIRCLED_NUMBERS[題の射番] || `${題の射番 + 1}射目`})
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <Ionicons name="close" size={24} color={色.灰} />
