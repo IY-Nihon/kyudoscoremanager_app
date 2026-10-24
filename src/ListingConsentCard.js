@@ -5,7 +5,7 @@ const { 色 } = require('./iro.js');
  * 「使っている部として、紹介に載せてもよいですか？」の札と、設定でも使う選び（2026-10-09）。
  *
  *   掲載の選び … 何を載せるか（団体名／地域だけ／載せない）と、どこに載せるか（ホームページ／他校へのご案内）。
- *                 載せる先は最初どちらもチェック（本人の指示）。札と設定で同じものを使う
+ *                 載せる先は最初どちらもチェック（2026-10-09 本人）。札と設定で同じものを使う
  *   掲載の札   … 記録を保存した直後、使い慣れた団体に 1 回だけ出す。窓（Modal）にはせず、閉じられる札にする
  *                 （作業を止めない。帯は Modal に入れない、の決まりとも合わせる）
  *
@@ -21,6 +21,17 @@ const { styles: 設定の見た目 } = require('./settingsStyles');
 
 const 青 = 色.青;
 const 薄い = 色.灰;
+/** 載せる名前・地域の入力欄 */
+const 入力欄の形 = {
+  borderWidth: 1,
+  borderColor: 色.区切り,
+  borderRadius: 8,
+  paddingHorizontal: 10,
+  paddingVertical: 8,
+  fontSize: 14,
+  color: 色.黒,
+  backgroundColor: 色.白,
+};
 
 /** 何を載せるか・どこに載せるか（札と設定で同じ） */
 function 掲載の選び({ 選び, 選びを置く, 置き場 = '掲載' }) {
@@ -78,16 +89,7 @@ function 掲載の選び({ 選び, 選びを置く, 置き場 = '掲載' }) {
             accessibilityLabel="載せる名前"
             aria-label="載せる名前"
             autoComplete="off"
-            style={{
-              borderWidth: 1,
-              borderColor: 色.区切り,
-              borderRadius: 8,
-              paddingHorizontal: 10,
-              paddingVertical: 8,
-              fontSize: 14,
-              color: 色.黒,
-              backgroundColor: 色.白,
-            }}
+            style={入力欄の形}
           />
         </View>
       ) : null}
@@ -102,16 +104,7 @@ function 掲載の選び({ 選び, 選びを置く, 置き場 = '掲載' }) {
             accessibilityLabel="地域"
             aria-label="地域"
             autoComplete="off"
-            style={{
-              borderWidth: 1,
-              borderColor: 色.区切り,
-              borderRadius: 8,
-              paddingHorizontal: 10,
-              paddingVertical: 8,
-              fontSize: 14,
-              color: 色.黒,
-              backgroundColor: 色.白,
-            }}
+            style={入力欄の形}
           />
         </View>
       ) : null}
@@ -246,7 +239,7 @@ function 掲載の札({ 見える, 閉じる, 知らせる }) {
 }
 
 /**
- * 設定の「紹介への掲載」。札で一度でも聞いた団体の団体ログインにだけ出す（案内が来ていない団体には出さない。本人）。
+ * 設定の「紹介への掲載」。札で一度でも聞いた団体の団体ログインにだけ出す（案内が来ていない団体には出さない。2026-10-09 本人）。
  * 開いたときに雲から読み直す（別の端末で答えているかもしれない）。
  */
 function 掲載の設定() {
