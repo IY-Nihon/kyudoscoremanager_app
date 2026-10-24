@@ -27,10 +27,17 @@ const Firestore = require('firebase/firestore');
 const ExpoImagePicker = require('expo-image-picker');
 const _IM = require('expo-image-manipulator');
 
+// 付けられる写真は 3 枚まで。1 枚は文字に直して 30 万字まで（3 枚でも Firestore の 1 件 1MiB に収まる）
+const 写真の枚数の上限 = 3;
+const 写真の字数の上限 = 300000;
+// 窓の見た目（設定の modalContent）から、中身の並べ方（alignItems）を外したもの。この窓は ScrollView で、
+// 中身の並べ方は contentContainerStyle でしか受け取らない（style に入れると開発のときに落ちる。本番は通る）
+const { alignItems: _中身の並べ方, ...流す窓の形 } = StyleSheet.flatten(styles.modalContent);
+
 /**
- * 設定画面の「お問い合わせ」の窓（2026-10-05 に SettingsScreen.js から切り出した。動きは変えていない）。
- * メールアドレス（任意）・内容・写真（3 枚まで、縮めて文字に直す）を Firestore の inquiries に書く。
- * 書きかけの文と写真は窓の中で持つので、閉じて開き直しても残る（前と同じ）
+ * 設定画面の「お問い合わせ」の窓（2026-10-05 に SettingsScreen.js から切り出した）。
+ * メールアドレス（任意）・内容・写真（縮めて文字に直す）を Firestore の inquiries に書く。
+ * 書きかけの文と写真は窓の中で持つ。外を押して閉じたときは残り、キャンセルと送ったあとは空にする
  */
 const 問い合わせの窓 = ({ 見える, 閉じる }) => {
   const { activeGroupId, activeGroupName, activeRole, myMemberId, myMemberName } = useストアの一部([
@@ -44,19 +51,23 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
   const [inquiryContent, setInquiryContent] = React.useState('');
   const [inquirySending, setInquirySending] = React.useState(false);
   const [inquiryImages, setInquiryImages] = React.useState([]);
-  // 問い合わせに付ける写真の並びも同じ
+  // 付ける写真の並びは横に流す。パソコンの車の動きは横に読み替える（src/yokoNagashi.js）
   const 写真の横流し = use横流し();
+  const 空にして閉じる = () => {
+    閉じる();
+    setInquiryEmail('');
+    setInquiryContent('');
+    setInquiryImages([]);
+  };
   const pickInquiryImage = async () => {
     try {
-      if (inquiryImages.length >= 3) {
-        const msg = '画像は最大3枚まで添付できます。';
-        Alert.alert('エラー', msg);
+      if (inquiryImages.length >= 写真の枚数の上限) {
+        Alert.alert('エラー', '画像は最大3枚まで添付できます。');
         return;
       }
       const perm = await ExpoImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
-        const msg = '画像ライブラリへのアクセスが許可されていません。';
-        Alert.alert('エラー', msg);
+        Alert.alert('エラー', '画像ライブラリへのアクセスが許可されていません。');
         return;
       }
       const res = await ExpoImagePicker.launchImageLibraryAsync({
@@ -65,6 +76,7 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
       });
       if (res.canceled || !res.assets || !res.assets.length) return;
       const asset = res.assets[0];
+      // 上限の字数に収まるまで、幅と画質を下げて縮め直す（5 回まで）
       let quality = 0.5;
       let width = 1000;
       let base64 = null;
@@ -75,23 +87,58 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
           base64: true,
         });
         base64 = manipulated.base64;
-        if (!base64 || base64.length <= 300000) break;
+        if (!base64 || base64.length <= 写真の字数の上限) break;
         width = Math.round(width * 0.75);
         quality = Math.max(0.3, quality - 0.1);
       }
       if (!base64) {
-        const msg = '画像の読み込みに失敗しました。';
-        Alert.alert('エラー', msg);
+        Alert.alert('エラー', '画像の読み込みに失敗しました。');
         return;
       }
-      if (base64.length > 300000) {
-        const msg = '画像サイズが大きすぎます。別の画像（より小さいサイズ・低解像度）を選んでください。';
-        Alert.alert('エラー', msg);
+      if (base64.length > 写真の字数の上限) {
+        Alert.alert(
+          'エラー',
+          '画像サイズが大きすぎます。別の画像（より小さいサイズ・低解像度）を選んでください。'
+        );
         return;
       }
       setInquiryImages((prev) => [...prev, `data:image/jpeg;base64,${base64}`]);
     } catch (誤り) {
       console.error('[Settings] Inquiry image pick error:', 誤り);
+    }
+  };
+  const 送る = async () => {
+    const メール = inquiryEmail.trim();
+    // メールアドレスは任意。書いていないことより、
+    // 困っていることが伝わらないままになるほうが困る
+    if (メール && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(メール)) {
+      Alert.alert('エラー', 'メールアドレスの形が正しくありません。空のままでも送れます');
+      return;
+    }
+    if (!inquiryContent.trim()) {
+      Alert.alert('エラー', 'お問い合わせ内容を入力してください');
+      return;
+    }
+    setInquirySending(true);
+    try {
+      await Firestore.addDoc(Firestore.collection(db, 'inquiries'), {
+        email: メール,
+        content: inquiryContent,
+        imagesBase64: inquiryImages,
+        createdAt: new Date(),
+        groupId: activeGroupId || '',
+        groupName: activeGroupName || '',
+        role: activeRole || '',
+        memberId: activeRole === 'member' ? myMemberId || '' : '',
+        memberName: activeRole === 'member' ? myMemberName || '' : '',
+      });
+      Alert.alert('完了', 'お問い合わせを送信しました');
+      空にして閉じる();
+    } catch (err) {
+      console.error('Inquiry send error:', err);
+      Alert.alert('エラー', '送信に失敗しました。再度お試しください。');
+    } finally {
+      setInquirySending(false);
     }
   };
   return (
@@ -104,7 +151,7 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
       {/* スマホで本文の欄を押すとキーボードが出て、下の「送信」 */
       /* 「キャンセル」が隠れる。窓ごと持ち上げ、中身は流せるようにする。 */
       /* keyboardShouldPersistTaps を handled にしないと、キーボードが */
-      /* 出ているあいだ、釦を押しても1回目は閉じるだけで終わる */}
+      /* 出ているあいだ、ボタンを押しても1回目は閉じるだけで終わる */}
       <KeyboardAvoidingView behavior={IS_IOS ? 'padding' : 'height'} style={{ flex: 1 }}>
         <View style={styles.modalBackdrop}>
           <TouchableOpacity
@@ -112,9 +159,9 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
             activeOpacity={1}
             onPress={() => !inquirySending && 閉じる()}
           />
-          <ScrollView // 巻物にするので高さの上限が要る。無いと中身のぶんだけ
-            // 伸びて、キーボードに押し上げても釦が画面の外へ出る
-            style={[styles.modalContent, { maxHeight: '80%', flexGrow: 0 }]}
+          <ScrollView // 流すので高さの上限が要る。無いと中身のぶんだけ
+            // 伸びて、キーボードに押し上げてもボタンが画面の外へ出る
+            style={[流す窓の形, { maxHeight: '80%', flexGrow: 0 }]}
             contentContainerStyle={{ alignItems: 'center' }}
             keyboardShouldPersistTaps="handled"
           >
@@ -131,7 +178,7 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
               style={[styles.filterInput, { width: '100%', marginBottom: 10 }]}
               placeholder="メールアドレス（任意）"
               value={inquiryEmail}
-              onChangeText={(文) => setInquiryEmail(文)}
+              onChangeText={setInquiryEmail}
               keyboardType="email-address"
               autoCapitalize="none"
               editable={!inquirySending}
@@ -144,7 +191,7 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
               ]}
               placeholder="お問い合わせ内容"
               value={inquiryContent}
-              onChangeText={(文) => setInquiryContent(文)}
+              onChangeText={setInquiryContent}
               multiline
               editable={!inquirySending}
             />
@@ -181,7 +228,7 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
                 ))}
               </ScrollView>
             ) : null}
-            {inquiryImages.length < 3 ? (
+            {inquiryImages.length < 写真の枚数の上限 ? (
               <Pressable
                 onPress={pickInquiryImage}
                 disabled={inquirySending}
@@ -217,12 +264,7 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
                   hovered && { backgroundColor: 色.地_濃い },
                   IS_WEB && { cursor: 'pointer' },
                 ]}
-                onPress={() => {
-                  閉じる();
-                  setInquiryEmail('');
-                  setInquiryContent('');
-                  setInquiryImages([]);
-                }}
+                onPress={空にして閉じる}
                 disabled={inquirySending}
               >
                 <Text style={[styles.modalBtnText, { color: 色.青 }]}>キャンセル</Text>
@@ -234,48 +276,7 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
                   hovered && { backgroundColor: 色.橙_押した },
                   IS_WEB && { cursor: 'pointer' },
                 ]}
-                onPress={async () => {
-                  const emailVal = inquiryEmail;
-                  const contentVal = inquiryContent;
-                  // メールアドレスは任意。書いていないことより、
-                  // 困っていることが伝わらないままになるほうが困る
-                  if (emailVal.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal.trim())) {
-                    const msg = 'メールアドレスの形が正しくありません。空のままでも送れます';
-                    Alert.alert('エラー', msg);
-                    return;
-                  }
-                  if (!contentVal.trim()) {
-                    const msg = 'お問い合わせ内容を入力してください';
-                    Alert.alert('エラー', msg);
-                    return;
-                  }
-                  setInquirySending(true);
-                  try {
-                    await Firestore.addDoc(Firestore.collection(db, 'inquiries'), {
-                      email: emailVal.trim(),
-                      content: contentVal,
-                      imagesBase64: inquiryImages || [],
-                      createdAt: new Date(),
-                      groupId: activeGroupId || '',
-                      groupName: activeGroupName || '',
-                      role: activeRole || '',
-                      memberId: activeRole === 'member' ? myMemberId || '' : '',
-                      memberName: activeRole === 'member' ? myMemberName || '' : '',
-                    });
-                    const msg = 'お問い合わせを送信しました';
-                    Alert.alert('完了', msg);
-                    閉じる();
-                    setInquiryEmail('');
-                    setInquiryContent('');
-                    setInquiryImages([]);
-                  } catch (err) {
-                    console.error('Inquiry send error:', err);
-                    const msg = '送信に失敗しました。再度お試しください。';
-                    Alert.alert('エラー', msg);
-                  } finally {
-                    setInquirySending(false);
-                  }
-                }}
+                onPress={送る}
                 disabled={inquirySending}
               >
                 <Text style={[styles.modalBtnText, { color: 色.白 }]}>
