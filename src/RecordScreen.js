@@ -1033,7 +1033,7 @@ const RecordScreen = () => {
           testID={再ログインの案内 ? '入り直しの帯' : undefined}
         >
           <Text style={{ color: 基本色.白, fontSize: 12, lineHeight: 17, textAlign: 'center' }}>
-            {再ログインの案内 ? 再ログインの案内 : `${オフライン保存の警告}（タップで閉じる）`}
+            {再ログインの案内 ? 再ログインの案内 : `${オフライン保存の警告}（押すと閉じる）`}
           </Text>
         </TouchableOpacity>
       ) : null}
@@ -1971,7 +1971,6 @@ const RecordScreen = () => {
         alumni={卒業生たち || []}
         区分たち={区分たち || []}
         shotsPerRound={shotsPerRound}
-        hasExistingRecord={archers.length > 0}
         // いまの記録表で埋まっている射数（いちばん後ろの○×の位置）。
         // 窓の側で、写真で読めた射数と比べて多いほうに射数を合わせる
         記入済みの射数={Math.max(

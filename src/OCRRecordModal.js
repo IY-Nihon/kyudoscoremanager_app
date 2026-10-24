@@ -2,21 +2,22 @@
 
 const { 色 } = require('./iro.js');
 /**
- * Module ID: OCRRecordModal (hand-written, not bundler-generated)
- * ホワイトボードの立ち順写真から記録表を自動構築するモーダル
+ * 写真から記録表を作る窓。2 通りある:
+ *   立ち順表 … ホワイトボードの立ち順の写真から、名前の並びだけを読む
+ *   紙の記録 … 板・紙・手書きのノートの写真から、名前と 1 射ごとの ○× を読む
+ * 名前と表の形は Gemini（中継を通す）、○× は端末の網が読む（読めなければ Gemini の ○×）。
+ * 読んだ結果は確かめの画面で直してから、いまの記録表の後ろに足す
  */
 
 Object.defineProperty(exports, '__esModule', { value: true });
-exports.OCRRecordModal = undefined;
 
 const React = require('react');
 const { useState, useMemo } = React;
+// Alert は ./rn のもの（アプリの中の窓へ流す橋渡し）。React Native の Alert はブラウザでは何も出ず、
+// 「候補が複数ある名前が残っています」を出したつもりで黙っていて、反映を押しても何も起きないように見えた
 const { Text, Alert, View, TouchableOpacity, Modal, ScrollView, ActivityIndicator, Image } = require('./rn');
 
 const { use入れ替える組 } = require('./useIrekae');
-// React Native の Alert はブラウザでは何も出ない。「候補が複数ある名前が残っています」を
-// 出したつもりで黙っていて、反映を押しても何も起きないように見えた（検証環境で実際に）。
-// アプリの中の窓へ流す橋渡しを使う（機種を問わず同じ見た目で出る）
 
 const DocumentPicker = require('expo-document-picker');
 const ImagePicker = require('expo-image-picker');
@@ -311,8 +312,6 @@ const OCRRecordModal = ({
   区分たち = [],
   shotsPerRound = 8,
   onApply,
-  // 記録表にすでに中身があるか。あるときは置き換わることを確かめる
-  hasExistingRecord = false,
   // いまの記録表で埋まっている射数（いちばん後ろの○×の位置）。射数を合わせるのに使う
   記入済みの射数 = 0,
 }) => {
@@ -350,13 +349,12 @@ const OCRRecordModal = ({
   //   '左から' … 左端が大前。左から右へ読む
   //   '左右から' … 板が2つ。それぞれ外側が大前（左の板は左から、右の板は右から）
   const [向き, set向き] = useState('右から');
-  // すでに記録表に人が居るときの入れ方。'置き換える' か '後ろに足す'
-  // 読み取った人は、いまの記録表の後ろに足す（置き換えは無くした）
-  // 縦の表で、1射目がどちら側か。板は下から書き足されることがある。
-  // 実物で確かめた（本番の団体A の板は下から。合計欄も下から 22→44→65→88→107 と増える）。
-  // 取り違えると、その人の○×が丸ごと逆順になる
-  // 1射目は「下から」で固定（ヒアリング 2026-09-11：板も紙も黒板も下から）。
-  // 横書きの紙（1行1人・左から1射目）だけは、Gemini が返す layout で見分ける
+  // 前は選ばせていたが、今は決めてあるもの:
+  // ・入れ方 … 読み取った人は、いまの記録表の後ろに足す（置き換えは無くした）
+  // ・1射目の側 … 縦の表は「下から」で固定（ヒアリング 2026-09-11：板も紙も黒板も下から。
+  //   本番の団体A の板は下から書き足し、合計欄も下から 22→44→65→88→107 と増える）。
+  //   取り違えると、その人の○×が丸ごと逆順になる。横書きの紙（1行1人・左から1射目）だけは、
+  //   Gemini が返す layout で見分ける
   // ○×をどこで読んだか。'端末' なら板の印を端末で読み替えた。'AI' は Gemini のまま
   const [読み取り元, set読み取り元] = useState('AI');
   // 端末が数えた列の数と、AI の人数が合わなかったときの断り（名札の無い列を AI が落とすことがある）
@@ -418,19 +416,19 @@ const OCRRecordModal = ({
       ...alumni.map((卒業生) => ({ ...卒業生, isAlumni: true })),
     ];
     const dedupMap = new Map();
-    raw.forEach((一字) => {
-      const key = 一字.id != null ? `${一字.isAlumni ? 'a' : 'm'}:${一字.id}` : null;
+    raw.forEach((人) => {
+      const key = 人.id != null ? `${人.isAlumni ? 'a' : 'm'}:${人.id}` : null;
       if (key) {
-        dedupMap.set(key, 一字);
+        dedupMap.set(key, 人);
       } else {
         // idが無い異常データは念のため残す（除外すると登録漏れになるため）
-        dedupMap.set(`no-id:${dedupMap.size}`, 一字);
+        dedupMap.set(`no-id:${dedupMap.size}`, 人);
       }
     });
     return Array.from(dedupMap.values());
   }, [members, alumni]);
 
-  // すでに選択されているメンバーID of Set（ピッカーでのスタイル同期用）
+  // すでに選ばれているメンバーの ID（人の選択の窓で、選んだ人に印を付ける）
   const selectedMemberIds = useMemo(() => {
     const ids = new Set();
     tachiList.forEach((tachi) => {
@@ -1094,21 +1092,18 @@ const OCRRecordModal = ({
     const rows = rawRows.map((行, 番) => {
       const rawText = String(行?.name || '');
       const 名寄せの結果 = 名寄せ[番];
+      // 確認画面では写真で読めた射数のぶんを見せる（設定の射数で切らない）
+      const 見せる射数 = Math.max(
+        1,
+        Array.isArray(行?.marks) ? 行.marks.length : 0,
+        Number(記入済みの射数) || 0
+      );
       return {
         rawText,
         ...名寄せの結果,
-        // 確認画面では写真で読めた射数のぶんを見せる（設定の射数で切らない）
-        marks: normalizeMarks(
-          行?.marks,
-          Math.max(1, Array.isArray(行?.marks) ? 行.marks.length : 0, Number(記入済みの射数) || 0)
-        ),
-        // 端末の読み取りが迷ったマス（射ごと）。タップして直したら消える
-        迷い: Array.from(
-          {
-            length: Math.max(1, Array.isArray(行?.marks) ? 行.marks.length : 0, Number(記入済みの射数) || 0),
-          },
-          (_, 番) => Boolean(行?.迷い?.[番])
-        ),
+        marks: normalizeMarks(行?.marks, 見せる射数),
+        // 端末の読み取りが迷ったマス（射ごと）。押して直したら消える
+        迷い: Array.from({ length: 見せる射数 }, (_, 番) => Boolean(行?.迷い?.[番])),
         // AI が読み取った実際の列数。設定と食い違う場合に警告を出すため保持する
         detectedShots: Array.isArray(行?.marks) ? 行.marks.length : 0,
         // 板が2つ写っていたときの、どちらの板か。立の切れ目に「計」を入れるための人数
@@ -1394,7 +1389,6 @@ const OCRRecordModal = ({
 
   // 読み取った人は、いまの記録表の後ろに足す。何も消えないので確かめは要らない
   const 反映のしかた = '後ろに足す';
-  const 確かめてから = (進む) => 進む();
 
   // 反映したとき、直したあとを取っておく。写真と最初の結果は読み取りの記録（元の読み取り）にある。待たない
   const 改善のために取っておく = (反映した射手たち) => {
@@ -1424,15 +1418,11 @@ const OCRRecordModal = ({
         Alert.alert('反映できません', '読み取れた射手がいません。写真を撮り直してください。');
         return;
       }
-      確かめてから(() => {
-        // どちらの読み取りかを渡す。呼び出し側の知らせの文言が変わる。
-        // 射数は、写真で読めた数といまの記録表で埋まっている数の多いほうに合わせる
-        if (onApply) {
-          onApply(archers, 'record', 反映のしかた, 合わせる射数);
-        }
-        改善のために取っておく(archers);
-        handleClose();
-      });
+      // どちらの読み取りかを渡す。呼び出し側の知らせの文言が変わる。
+      // 射数は、写真で読めた数といまの記録表で埋まっている数の多いほうに合わせる
+      if (onApply) onApply(archers, 'record', 反映のしかた, 合わせる射数);
+      改善のために取っておく(archers);
+      handleClose();
       return;
     }
 
@@ -1442,13 +1432,9 @@ const OCRRecordModal = ({
       return;
     }
     const archers = buildArchersArray();
-    確かめてから(() => {
-      if (onApply) {
-        onApply(archers, 'tachi', 反映のしかた);
-      }
-      改善のために取っておく(archers);
-      handleClose();
-    });
+    if (onApply) onApply(archers, 'tachi', 反映のしかた);
+    改善のために取っておく(archers);
+    handleClose();
   };
 
   // ─────────────────────────────────────────
@@ -1716,7 +1702,7 @@ const OCRRecordModal = ({
             <>
               <ScrollView style={styles.body} contentContainerStyle={{ padding: 16 }}>
                 <Text style={styles.hint}>
-                  内容を確認してください。氏名をタップすると変更、○×のマスをタップすると 「○ → × →
+                  内容を確認してください。氏名を押すと変更、○×のマスを押すと「○ → × →
                   未記録」の順で切り替わります。
                 </Text>
                 {/* 検査が「端末で読めたか」を見るための印。画面には出ない */}
@@ -1812,9 +1798,7 @@ const OCRRecordModal = ({
           {step === 'preview' && mode !== 'record' && (
             <>
               <ScrollView style={styles.body} contentContainerStyle={{ padding: 16 }}>
-                <Text style={styles.hint}>
-                  内容を確認してください。色付きのセルはタップして修正できます。
-                </Text>
+                <Text style={styles.hint}>内容を確認してください。色の付いた名前を押して直せます。</Text>
                 <名前の色の凡例 />
 
                 {tachiList.map((tachi, tIdx) => {
