@@ -1,5 +1,5 @@
 /**
- * 言葉の差し替え（src/i18n.js / src/messages.js）。
+ * 言葉の差し替え（src/i18n.js / src/messages/）。
  *
  *   npm test
  *
