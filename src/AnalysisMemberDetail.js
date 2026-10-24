@@ -64,6 +64,8 @@ const 部員の詳細の窓 = ({
     () => (詳細の部員 ? 期間の成績(詳細の部員.id, selectedModalTrendLabel) : null),
     [詳細の部員, 絞った記録, selectedModalTrendLabel]
   );
+  // 比較相手の成績。1〜4射目のマスごとに数え直すと、記録の数だけ何度も
+  // 走って重くなる。相手が変わったときだけ数える
   const 比較の成績 = React.useMemo(() => {
     const 表 = new Map();
     const 記録たち = 点の期間で絞る(絞った記録, selectedModalTrendLabel);
@@ -72,7 +74,7 @@ const 部員の詳細の窓 = ({
     return 表;
   }, [compareMembers, 絞った記録, selectedModalTrendLabel]);
   const 詳細の推移 = React.useMemo(
-    () => (詳細の部員 ? 推移を数える(詳細の部員.id, 詳細の部員.name) : []),
+    () => (詳細の部員 ? 推移を数える(詳細の部員.id) : []),
     [詳細の部員, 推移を数える]
   );
   const CompareGraph = ({ baseData, baseName, compareTargets, selectedLabel, onSelectLabel }) => {
@@ -643,7 +645,7 @@ const 部員の詳細の窓 = ({
                       compareTargets={compareMembers.map((相手) => ({
                         id: 相手.id,
                         name: 相手.name,
-                        data: 推移を数える(相手.id, 相手.name),
+                        data: 推移を数える(相手.id),
                       }))}
                       selectedLabel={selectedModalTrendLabel}
                       onSelectLabel={setSelectedModalTrendLabel}
@@ -694,11 +696,7 @@ const 部員の詳細の窓 = ({
                             {詳細の部員.name}
                           </Text>
                           <ArrowLocationView
-                            arrowLocations={gatherAllArrowLocations(
-                              詳細の部員.id,
-                              詳細の部員.name,
-                              selectedModalTrendLabel
-                            )}
+                            arrowLocations={gatherAllArrowLocations(詳細の部員.id, selectedModalTrendLabel)}
                             size={100}
                             targetType={modalTargetType}
                             hideNumbers
@@ -726,11 +724,7 @@ const 部員の詳細の窓 = ({
                                   {相手.name}
                                 </Text>
                                 <ArrowLocationView
-                                  arrowLocations={gatherAllArrowLocations(
-                                    相手.id,
-                                    相手.name,
-                                    selectedModalTrendLabel
-                                  )}
+                                  arrowLocations={gatherAllArrowLocations(相手.id, selectedModalTrendLabel)}
                                   size={100}
                                   targetType={modalTargetType}
                                   hideNumbers
@@ -1082,11 +1076,7 @@ const 部員の詳細の窓 = ({
                         />
                       </View>
                       <ArrowLocationView
-                        arrowLocations={gatherAllArrowLocations(
-                          詳細の部員.id,
-                          詳細の部員.name,
-                          selectedModalTrendLabel
-                        )}
+                        arrowLocations={gatherAllArrowLocations(詳細の部員.id, selectedModalTrendLabel)}
                         size={200}
                         targetType={modalTargetType}
                         hideNumbers

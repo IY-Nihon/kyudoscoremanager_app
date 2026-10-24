@@ -58,7 +58,6 @@ const HistoryScreen = () => {
     restoreSession,
     emptyTrash,
     updateSession,
-    isHydrated = false,
     historySelectedTags,
     historyTagLogic = 'AND',
     setHistorySelectedTags,
@@ -89,7 +88,6 @@ const HistoryScreen = () => {
       'restoreSession',
       'emptyTrash',
       'updateSession',
-      'isHydrated',
       'historySelectedTags',
       'historyTagLogic',
       'setHistorySelectedTags',
@@ -337,7 +335,6 @@ const HistoryScreen = () => {
           ? Object.values(値).filter(Boolean)
           : []
       : [];
-  if (!isHydrated) return null;
   const 詳細を描く = () => {
     if (!見ている記録)
       return (

@@ -108,7 +108,6 @@ const RecordScreen = () => {
     liveSessionName,
     resetCurrentSession,
     members = [],
-    isHydrated,
     lastResetHandled,
     historyNoticeAt: 共有履歴の知らせ,
     historyNoticeKind: 共有履歴の種類,
@@ -166,7 +165,6 @@ const RecordScreen = () => {
     'setIncludeInStats',
     'resetCurrentSession',
     'members',
-    'isHydrated',
     'lastResetHandled',
     'historyNoticeAt',
     'historyNoticeKind',
@@ -195,7 +193,8 @@ const RecordScreen = () => {
   // ライブ中の帯。主催者は押して配る窓を開けるので、押せる部品にする
   const ライブの帯 = isHost ? TouchableOpacity : View;
   const 倍率 = typeof viewScale === 'number' && !isNaN(viewScale) && viewScale > 0 ? viewScale : 1;
-  if (!isHydrated) return null;
+  // 読み込み（isHydrated）を待つのは App.js。読み込むまで画面ごと出さないので、ここでは待たない
+  //（ここで return すると、下のフックの数が描画ごとに変わって落ちる）
   // ライブに何台つないでいるか。電波の切れる弓道場で、
   // 相手に届いているかをその場で見るために出す（src/livePresence.js）
   const 接続の文言 = 在.台数の文言(useScoreStore((状態) => 状態.ライブの接続台数));
