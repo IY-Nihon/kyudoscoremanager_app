@@ -13,19 +13,7 @@ const ExpoHaptics = require('expo-haptics');
  * 状態と処理は記録画面が持ち、ここは描くだけ
  */
 /** 記録表のリセットの確認 */
-const リセットの確認の窓 = ({
-  区切りにチーム名を付ける,
-  resetCurrentSession,
-  リセットの窓,
-  リセットの窓を出す,
-  チーム名を付ける区切り,
-  setチーム名を付ける区切り,
-  チーム名の下書き,
-  setチーム名の下書き,
-  確認,
-  確認を置く,
-  知らせる,
-}) => (
+const リセットの確認の窓 = ({ resetCurrentSession, リセットの窓, リセットの窓を出す, 知らせる }) => (
   <Modal
     visible={リセットの窓}
     transparent
@@ -76,19 +64,7 @@ const リセットの確認の窓 = ({
 );
 
 /** アプリ内の確認（{ 文, 実行 }。ブラウザの確認窓は使わない） */
-const アプリ内の確認の窓 = ({
-  区切りにチーム名を付ける,
-  resetCurrentSession,
-  リセットの窓,
-  リセットの窓を出す,
-  チーム名を付ける区切り,
-  setチーム名を付ける区切り,
-  チーム名の下書き,
-  setチーム名の下書き,
-  確認,
-  確認を置く,
-  知らせる,
-}) => (
+const アプリ内の確認の窓 = ({ 確認, 確認を置く }) => (
   <Modal visible={確認 !== null} transparent animationType="fade" onRequestClose={() => 確認を置く(null)}>
     <Pressable
       style={{
@@ -156,16 +132,10 @@ const アプリ内の確認の窓 = ({
 /** 区切りのチーム名 */
 const チーム名の窓 = ({
   区切りにチーム名を付ける,
-  resetCurrentSession,
-  リセットの窓,
-  リセットの窓を出す,
   チーム名を付ける区切り,
   setチーム名を付ける区切り,
   チーム名の下書き,
   setチーム名の下書き,
-  確認,
-  確認を置く,
-  知らせる,
 }) => (
   <Modal
     visible={!!チーム名を付ける区切り}
