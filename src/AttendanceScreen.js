@@ -54,7 +54,7 @@ const AttendanceScreen = () => {
     activeGroupId,
     divisions: 区分たち = [],
     useTerm: 期を使う,
-  } = useストアの一部(['members', 'sessions', 'activeGroupId', 'divisions', 'groupType', 'useTerm']);
+  } = useストアの一部(['members', 'sessions', 'activeGroupId', 'divisions', 'useTerm']);
   const 決まり = use団体の決まり();
   // 区分の絞り（区分の id。null は全員）。消された区分を選んだままなら絞らない
   const [選んだ区分, 区分の絞りを置く] = React.useState(null);
@@ -239,13 +239,10 @@ const AttendanceScreen = () => {
         base64,
         型: mimeType,
       };
-      // 鍵はアプリに無い。中継（Cloudflare Workers）へログインの証を付けて呼ぶ。
-      // 以前は模型の一覧を引いて 1.5-flash を探していたが、1.5 はもう一覧に無く、
-      // 中継は決めた模型しか通さないので、写真の読み取り・チャットと同じ 3.6-flash に固定する
+      // 鍵はアプリに無い。中継（Cloudflare Workers）へログインの証を付けて呼ぶ（宛先が無い・ログインしていない
+      // ときは 中継へfetch が分かる文で投げる）。以前は模型の一覧を引いて 1.5-flash を探していたが、1.5 はもう
+      // 一覧に無く、中継は決めた模型しか通さないので、写真の読み取り・チャットと同じ 3.6-flash に固定する
       const 中継 = require('./geminiChukei');
-      if (!中継.中継がある()) {
-        throw new Error('AI機能の設定（中継の宛先）が見つかりません。');
-      }
       const aiResponse = await 中継.中継へfetch('/v1beta/models/gemini-3.6-flash:generateContent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -274,16 +271,17 @@ const AttendanceScreen = () => {
         } catch {
           /* 便りに残せなくても、利用者への知らせは下で出す */
         }
-        if (aiResponse.status === 429) {
-          alert('APIリクエスト回数の上限に達しました。1分ほど待ってから再度お試しください。');
-        } else if (aiResponse.status === 401) {
-          alert('ログインの証が確かめられませんでした。ログインし直してから再度お試しください。');
-        } else if (aiResponse.status === 503) {
-          alert('AI解析サーバーが混み合っています。少し待ってから再度お試しください。');
-        } else {
-          alert(`AI解析エラー (${aiResponse.status}): APIの設定を確認してください。`);
-        }
-        throw new Error(`AI解析失敗(Status: ${aiResponse.status})`);
+        // 知らせは下の catch で 1 回だけ出す（前はここでも出して、2 回続けて窓が開いていた）。
+        // 言い方は写真の読み取り（OCRRecordModal）とそろえる
+        throw new Error(
+          aiResponse.status === 429
+            ? 'AIの利用制限に達しました。しばらく待ってから再度お試しください。'
+            : aiResponse.status === 401
+              ? 'ログインの証が確かめられませんでした。ログインし直してから再度お試しください。'
+              : aiResponse.status === 503
+                ? 'ただいまAIが混み合っています。しばらく待ってからもう一度お試しください。'
+                : `AIが予定表を読めませんでした（${aiResponse.status}）。しばらく待ってから再度お試しください。`
+        );
       }
       const data = await aiResponse.json();
       let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -293,7 +291,13 @@ const AttendanceScreen = () => {
       if (!text || text.trim() === '') {
         throw new Error('AIからの応答内容が空、またはJSON形式ではありませんでした。');
       }
-      let items = JSON.parse(text);
+      let items;
+      try {
+        items = JSON.parse(text);
+      } catch {
+        // 壊れた JSON の英文（Unexpected token …）は見せない
+        throw new Error('AIの答えを読み取れませんでした。もう一度お試しください。');
+      }
       const validatedItems = (Array.isArray(items) ? items : [])
         .map((項目) => ({ date: normalizeDate(項目.date), reason: 項目.reason }))
         .filter((項目) => !!項目.date);
@@ -304,11 +308,21 @@ const AttendanceScreen = () => {
       if (validatedItems.length > 0) {
         setAiPreviewItems(validatedItems);
       } else {
-        Alert.alert('お知らせ', 'PDFから練習日を検出できませんでした。形式を確認してください。');
+        Alert.alert(
+          'お知らせ',
+          '予定表から練習日を見つけられませんでした。日付の入った予定表か確かめてください。'
+        );
       }
     } catch (誤り) {
-      if (予定表の記録) 予定表の記録.中身.誤り = String((誤り && 誤り.message) || 誤り).slice(0, 300);
-      Alert.alert('エラー', 誤り.message);
+      const 文 = String((誤り && 誤り.message) || 誤り);
+      if (予定表の記録) 予定表の記録.中身.誤り = 文.slice(0, 300);
+      // 通信が切れたときの英文（Failed to fetch など）は、分かる文に替える
+      Alert.alert(
+        '予定表を読めませんでした',
+        /network|failed to fetch|load failed/i.test(文)
+          ? '通信エラーが発生しました。電波の良い場所で再度お試しください。'
+          : 文
+      );
     } finally {
       setLoadingMsg(null);
       // 読めたファイルは、結果に関わらず取っておく。待たない
@@ -487,7 +501,7 @@ const AttendanceScreen = () => {
         <ScrollView ref={引く予定.ref} style={styles.scroll}>
           {引く予定.しるし}
           <View style={styles.aiSection}>
-            <View style={styles.aiTextContainer}>
+            <View>
               <Text style={styles.aiTitle}>AIで予定表をスキャンして自動入力</Text>
               <Text style={styles.aiDescription}>
                 練習予定表（PDF/画像）をAIが解析し、カレンダーへ自動的に登録します。
@@ -614,7 +628,9 @@ const AttendanceScreen = () => {
                   style={styles.modalHeaderMain}
                 >
                   <Text style={styles.modalTitle}>{selectedMember.name}</Text>
-                  <Text style={styles.memberSub}>{学.人の説明(selectedMember, 決まり, { 区分たち })}</Text>
+                  <Text style={styles.memberSub}>
+                    {学.人の説明(selectedMember, 決まり, { 期を使う, 区分たち })}
+                  </Text>
                 </View>
                 <TouchableOpacity
                   style={styles.closeBtn}
@@ -761,17 +777,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   monthText: { fontSize: 17, fontWeight: 'bold', marginHorizontal: 20 },
-  debugInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 色.白,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    gap: 5,
-    borderBottomWidth: 1,
-    borderBottomColor: 色.地_濃い,
-  },
-  debugText: { fontSize: 13, color: 色.灰 },
   listContent: { padding: 16 },
   memberCard: {
     backgroundColor: 色.白,
@@ -831,10 +836,6 @@ const styles = StyleSheet.create({
   calendarTileToday: { borderColor: 色.青 },
   calendarCellText: { fontSize: 14 },
   calendarCellTextActive: { color: 色.青, fontWeight: 'bold' },
-  syncSection: { backgroundColor: 色.白, margin: 15, padding: 15, borderRadius: 10 },
-  syncTitle: { fontSize: 15, fontWeight: 'bold', marginBottom: 10 },
-  syncBtn: { backgroundColor: 色.緑, padding: 12, borderRadius: 8, alignItems: 'center' },
-  syncBtnText: { color: 色.白, fontWeight: 'bold' },
   summaryCard: { backgroundColor: 色.白, margin: 15, padding: 15, borderRadius: 10, alignItems: 'center' },
   summaryTitle: { fontSize: 13, color: 色.灰 },
   summaryValue: { fontSize: 20, fontWeight: 'bold' },
