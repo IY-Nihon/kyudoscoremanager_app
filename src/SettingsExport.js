@@ -1,8 +1,8 @@
 'use strict';
 
 const { 色 } = require('./iro.js');
-// 成績の数え方は分析画面と共通（src/statsRules.js）
-const 集 = require('./statsRules');
+// 記録の選び方とシートの組み方は src/kakidashiNoHyou.js（数え方は分析画面と同じ statsRules）
+const { 書き出しのシートを作る, 自分の分がある記録か, csvDate } = require('./kakidashiNoHyou');
 const _xlsx = require('./excelExport');
 const React = require('react');
 const {
@@ -27,36 +27,62 @@ const Icons = require('@expo/vector-icons');
 const { CustomCalendarModal } = require('./CustomCalendarModal');
 const { use横流し } = require('./yokoNagashi');
 
+/** 窓のボタンの形。上に乗せると地が濃くなる */
+const ボタンの形 =
+  (地, 乗せた地, 足す) =>
+  ({ hovered }) => [
+    styles.modalBtn,
+    { backgroundColor: 地 },
+    足す,
+    hovered && { backgroundColor: 乗せた地 },
+    IS_WEB && { cursor: 'pointer' },
+  ];
+
+/** 選べる候補の札を横に並べる（題・メンバー名）。押すと選ぶ／外す。選んでいれば「選択をクリア」も出す */
+const 候補の並び = ({ 候補, 選んだもの, 選んだものを置く, 流しの手, 鍵の頭 }) => (
+  <>
+    {候補.length > 0 && (
+      <ScrollView
+        ref={流しの手}
+        horizontal
+        keyboardShouldPersistTaps="always"
+        showsHorizontalScrollIndicator={false}
+        style={[styles.suggestionsContainer, IS_WEB && { overflowX: 'auto' }]}
+      >
+        {候補.map((字) => {
+          const 選択中 = 選んだもの.includes(字);
+          return (
+            <TouchableOpacity
+              key={`${鍵の頭}-${字}`}
+              onPress={() =>
+                選んだものを置く((今の) =>
+                  今の.includes(字) ? 今の.filter((一つ) => 一つ !== 字) : [...今の, 字]
+                )
+              }
+              style={[styles.suggestionChip, 選択中 && { backgroundColor: 色.青 }]}
+            >
+              <Text style={[styles.suggestionText, 選択中 && { color: 色.白 }]}>{字}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    )}
+    {選んだもの.length > 0 && (
+      <TouchableOpacity
+        onPress={() => 選んだものを置く([])}
+        style={{ marginTop: 4, alignSelf: 'flex-start' }}
+      >
+        <Text style={{ fontSize: 12, color: 色.青 }}>選択をクリア</Text>
+      </TouchableOpacity>
+    )}
+  </>
+);
+
 /**
- * 設定画面の「書き出し」の窓（2026-10-05 に SettingsScreen.js から切り出した。動きは変えていない）。
- * 期間・年度・形（標準／表）・タグ・言葉・部員名で絞り、CSV か Excel で書き出す。
- * 期間を選ぶ暦の窓は、前は同じ条件で 2 つ描かれていた（9/19 の書き換えから）。上に出ていたほう
- * （日付を選んでも閉じない）だけを残した
+ * 設定画面の「書き出し」の窓（2026-10-05 に SettingsScreen.js から切り出した）。
+ * 年度・すべて・詳しい条件（期間・形（標準／印刷向け）・タグ・言葉・メンバー名）で選び、Excel で書き出す。
+ * 個人ログインでは自分の分だけ
  */
-// ─────────────────────────────────────────
-// 書き出しの共通ヘルパー
-// ─────────────────────────────────────────
-
-// Excel が日付として解釈でき、文字列ソートも崩れない形式にする。
-function csvDate(時刻) {
-  const 日付 = new Date(時刻);
-  const 二桁 = (数) => String(数).padStart(2, '0');
-  return 日付.getFullYear() + '-' + 二桁(日付.getMonth() + 1) + '-' + 二桁(日付.getDate());
-}
-// memberId（無ければ氏名）でメンバーを引く。学年・性別・期の補完に使う。
-function findMemberInfo(archer, memberList, alumniList, normalizeName) {
-  const all = [].concat(memberList || [], alumniList || []);
-  const 整えた名 = normalizeName(archer.name || '');
-  return (
-    all.find(function (部員) {
-      return (
-        (archer.memberId && 部員.id === archer.memberId) ||
-        (部員.name && normalizeName(部員.name) === 整えた名)
-      );
-    }) || null
-  );
-}
-
 const データの書き出し窓 = ({ 見える, 閉じる }) => {
   const {
     activeRole,
@@ -83,409 +109,74 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
   // 候補の並びは横に流す。パソコンの車の動きは横に読み替える（src/yokoNagashi.js）
   const titleRefCallback = use横流し();
   const memberRefCallback = use横流し();
-  const 今日 = new Date();
-  const 今の年度 = 学.年度(今日);
-  const [書き出す年度, 書き出す年度を置く] = React.useState(今の年度);
-  const 年度を動かす = (差) => {
-    書き出す年度を置く((今) => 今 + 差);
-  };
+  const [書き出す年度, 書き出す年度を置く] = React.useState(() => 学.年度(new Date()));
+  const 年度を動かす = (差) => 書き出す年度を置く((今) => 今 + 差);
+  // 候補（題・タグ）の元。個人ログインなら自分の分がある記録だけ
+  const 見える記録 = React.useMemo(
+    () =>
+      activeRole === 'member' && myMemberId
+        ? sList.filter((記録) => 自分の分がある記録か(記録, myMemberId, myMemberName))
+        : sList.filter(Boolean),
+    [sList, activeRole, myMemberId, myMemberName]
+  );
   const titleSuggestions = React.useMemo(() => {
-    try {
-      const src =
-        activeRole === 'member' && myMemberId
-          ? sList.filter(
-              (記録) =>
-                記録 &&
-                記録.archers &&
-                記録.archers.some(
-                  (射手) =>
-                    射手 &&
-                    (射手.memberId === myMemberId ||
-                      (myMemberName &&
-                        !射手.memberId &&
-                        射手.name &&
-                        射手.name.replace(/\s*\(\d+\)$/, '').trim() === myMemberName))
-                )
-            )
-          : sList;
-      if (!src) return [];
-      const titles = src.map((記録) => 記録.title).filter((x) => x && x.trim() !== '');
-      return Array.from(new Set(titles)).slice(0, 10);
-    } catch {
-      return [];
-    }
-  }, [sList, activeRole, myMemberId, myMemberName]);
+    const 題たち = 見える記録.map((記録) => 記録.title).filter((題) => 題 && 題.trim() !== '');
+    return Array.from(new Set(題たち)).slice(0, 10);
+  }, [見える記録]);
   const memberSuggestions = React.useMemo(() => {
-    try {
-      if (activeRole === 'member') return myMemberName ? [myMemberName] : [];
-      const list = [...members, ...alumni]
-        .sort(学.名簿の順に比べる)
-        .map((部員) => 部員.name)
-        .filter((名) => 名 && 名.trim() !== '');
-      return Array.from(new Set(list));
-    } catch {
-      return [];
-    }
+    if (activeRole === 'member') return myMemberName ? [myMemberName] : [];
+    const 名前たち = [...members, ...alumni]
+      .sort(学.名簿の順に比べる)
+      .map((部員) => 部員.name)
+      .filter((名) => 名 && 名.trim() !== '');
+    return Array.from(new Set(名前たち));
   }, [members, alumni, activeRole, myMemberName]);
   const タグの一覧 = React.useMemo(() => {
     const 集めた = new Set();
-    const src =
-      activeRole === 'member' && myMemberId
-        ? sList.filter(
-            (記録) =>
-              記録 &&
-              記録.archers &&
-              記録.archers.some(
-                (射手) =>
-                  射手 &&
-                  (射手.memberId === myMemberId ||
-                    (myMemberName &&
-                      !射手.memberId &&
-                      射手.name &&
-                      射手.name.replace(/\s*\(\d+\)$/, '').trim() === myMemberName))
-              )
-          )
-        : sList;
-    src.forEach((記録) => {
-      if (記録.tags && Array.isArray(記録.tags)) 記録.tags.forEach((タグ) => 集めた.add(タグ));
+    見える記録.forEach((記録) => {
+      if (Array.isArray(記録.tags)) 記録.tags.forEach((タグ) => 集めた.add(タグ));
     });
     return Array.from(集めた).sort((甲, 乙) => 甲.localeCompare(乙));
-  }, [sList, activeRole, myMemberId, myMemberName]);
-  const タグを切り替える = (タグ) => {
-    選んだタグを置く((今の) =>
-      今の.includes(タグ) ? 今の.filter((タグ1つ) => タグ1つ !== タグ) : [...今の, タグ]
-    );
-  };
+  }, [見える記録]);
   const 書き出す = async (範囲) => {
+    if (!IS_WEB) {
+      Alert.alert('未対応', '書き出しはWeb版のみ対応しています。');
+      return;
+    }
     try {
       const { sessions, members: 部員たち } = useScoreStore.getState();
-      const 自分の部員ID = activeRole === 'member' ? myMemberId : null;
-      const rSessions = 自分の部員ID
-        ? sessions.filter(
-            (記録) =>
-              記録 &&
-              記録.archers &&
-              記録.archers.some(
-                (射手) =>
-                  射手 &&
-                  (射手.memberId === 自分の部員ID ||
-                    (myMemberName &&
-                      !射手.memberId &&
-                      射手.name &&
-                      射手.name.replace(/\s*\(\d+\)$/, '').trim() === myMemberName))
-              )
-          )
-        : sessions;
-      const 対象の記録 = rSessions.filter((記録) => {
-        if (範囲 === 'all') return true;
-        const 日付 = new Date(記録.date);
-        if (範囲 === 'fiscal') return 学.年度(日付) === 書き出す年度;
-        if (範囲 === 'custom') {
-          const 始め = new Date(期間の始め);
-          始め.setHours(0, 0, 0, 0);
-          const 終わり = new Date(期間の終わり);
-          終わり.setHours(23, 59, 59, 999);
-          if (日付 < 始め || 日付 > 終わり) return false;
-          if (選んだタグ.length > 0) {
-            const タグたち = 記録.tags || [];
-            if (タグの論理 === 'AND') {
-              if (!選んだタグ.every((タグ1つ) => タグたち.includes(タグ1つ))) return false;
-            } else if (!選んだタグ.some((タグ1つ) => タグたち.includes(タグ1つ))) return false;
-          }
-          if (selectedKeywords.length > 0) {
-            const 題 = 記録.title?.toLowerCase() || '';
-            const 覚え書き = 記録.note?.toLowerCase() || '';
-            const 日付 = new Date(記録.date);
-            const 日付の文 = `${日付.getFullYear()}/${String(日付.getMonth() + 1).padStart(2, '0')}/${String(日付.getDate()).padStart(2, '0')}`;
-            const 当たった = selectedKeywords.some((言葉) => {
-              const 小文字 = 言葉.toLowerCase();
-              return 題.includes(小文字) || 覚え書き.includes(小文字) || 日付の文.includes(小文字);
-            });
-            if (!当たった) return false;
-          }
-          if (言葉の絞り) {
-            const 言葉 = 言葉の絞り.toLowerCase();
-            const 題に有る = 記録.title?.toLowerCase().includes(言葉);
-            const 覚え書きに有る = 記録.note?.toLowerCase().includes(言葉);
-            const 日付 = new Date(記録.date);
-            const 日付に有る =
-              `${日付.getFullYear()}/${String(日付.getMonth() + 1).padStart(2, '0')}/${String(日付.getDate()).padStart(2, '0')}`.includes(
-                言葉
-              );
-            if (!(題に有る || 覚え書きに有る || 日付に有る)) return false;
-          }
-          return true;
-        }
-        return true;
-      });
-      if (対象の記録.length === 0) {
-        const 文 = '対象期間のデータがありません';
-        Alert.alert('通知', 文);
-        return;
-      }
-      // 「集計に含めない」にした記録は、本表から外して別のシートに回す。
-      // 混ぜると分析画面の数字と食い違う（画面はこれを外して数えている）
-      const 集計しない記録 = 対象の記録.filter((記録) => !集.集計に入れるか(記録));
-      const 集計する記録 = 対象の記録.filter((記録) => 集.集計に入れるか(記録));
-      const 名を整える = (名) => (名 || '').replace(/\s*\(\d+\)$/, '').trim();
-      let xlsxHeaders = [];
-      let xlsxRows = [];
-      if (書き出しの形 !== 'matrix') {
-        const mList = 部員たち;
-        const aList = alumni;
-        xlsxHeaders = [
-          '日付',
-          'タイトル',
-          '射手名',
-          '学年',
-          '性別',
-          '期',
-          '的中数',
-          '総矢数',
-          '的中率',
-          'タグ',
-          'メモ',
-          '集計対象',
-        ];
-        集計する記録.forEach((記録) => {
-          if (!記録 || !記録.archers || !Array.isArray(記録.archers)) return;
-          const dateStr = csvDate(記録.date);
-          記録.archers.forEach((射手) => {
-            if (!射手 || 射手.isSeparator || 射手.isTotalCalculator) return;
-            // 途中交代があると1つの列に2人ぶんが入る。区間に分けて人ごとの行にする。
-            // 分けないと、交代後の射も交代前の人の行に入ってしまう
-            const 区間たち = 集.射手を区間に分ける(射手);
-            // ○×が1つも入っていない列も、誰が立っていたかは残す
-            const 書く区間 = 区間たち.length
-              ? 区間たち
-              : [{ 部員id: 射手.memberId, 名前: 射手.name || '', 的中: 0, 射数: 0 }];
-            const tagsV = (記録.tags || []).join(' ');
-            const noteV = 記録.note || '';
-            // TRUE / FALSE では何の真偽か伝わらない。日本語で書く
-            const statV = 集.集計に入れるか(記録) ? '対象' : '対象外';
-            書く区間.forEach((区間) => {
-              // 絞り込みは列ではなく人ごとに見る。列で見ると、交代で入った人が
-              // 自分の書き出しから丸ごと落ちる（列の持ち主は別人のため）
-              if (自分の部員ID) {
-                const 自分か =
-                  String(区間.部員id || '') === String(自分の部員ID) ||
-                  (myMemberName &&
-                    !区間.部員id &&
-                    区間.名前 &&
-                    区間.名前.replace(/\s*\(\d+\)$/, '').trim() === myMemberName);
-                if (!自分か) return;
-              } else if (範囲 === 'custom') {
-                if (selectedMembers.length > 0) {
-                  if (!selectedMembers.includes(名を整える(区間.名前))) return;
-                } else if (!(
-                  部員名の絞り === 'all' ||
-                  (区間.名前 && 区間.名前.toLowerCase().includes(部員名の絞り.toLowerCase()))
-                ))
-                  return;
-              }
-              // 分母は実際に引いた数。記録の射数（割り当て）だと、
-              // 途中で帰った人の的中率が低く出る（分析画面は実射数で数えている）
-              const hits = 区間.的中;
-              const shots = 区間.射数;
-              const rateNum = shots > 0 ? Number(((hits / shots) * 100).toFixed(1)) : 0;
-              // 交代で入った人の学年や性別は、その人の名簿から引く
-              const 部員の情報 = findMemberInfo(
-                { memberId: 区間.部員id, name: 区間.名前 },
-                mList,
-                aList,
-                名を整える
-              );
-              // 名簿に無いときは射手側の値を使うが、それが使えるのは
-              // 列の持ち主のときだけ。交代で入った人に列の持ち主の学年を
-              // 当てると別人の情報になる
-              const 列の持ち主か = 区間.名前 === (射手.name || '');
-              const gradeV =
-                部員の情報 && 部員の情報.grade != null
-                  ? 部員の情報.grade
-                  : 列の持ち主か && 射手.grade != null
-                    ? 射手.grade
-                    : '';
-              const genderV =
-                部員の情報 && 部員の情報.gender ? 部員の情報.gender : 列の持ち主か ? 射手.gender || '' : '';
-              const termV = 部員の情報 && 部員の情報.termKi != null ? 部員の情報.termKi : '';
-              xlsxRows.push([
-                dateStr,
-                記録.title || '',
-                名を整える(区間.名前 || 射手.name),
-                // 学年は名前で（高1・M1・自分で決めた名前。値のままだと中高一貫の高1 が 4 と出る）
-                gradeV === '' ? '' : 学.学年の名前(Object.assign({}, 部員の情報 || {}, { grade: gradeV })),
-                genderV,
-                termV,
-                hits,
-                shots,
-                rateNum,
-                tagsV,
-                noteV,
-                statV,
-              ]);
-            });
-          });
-        });
-      } else {
-        const 日付の集まり = new Set();
-        対象の記録.forEach((記録) => {
-          const 日付 = new Date(記録.date);
-          日付の集まり.add(
-            `${日付.getFullYear()}/${(日付.getMonth() + 1).toString().padStart(2, '0')}/${日付.getDate().toString().padStart(2, '0')}`
-          );
-        });
-        const 日付たち = Array.from(日付の集まり).sort();
-        const 人たち = new Map();
-        対象の記録.forEach((記録) => {
-          記録.archers.forEach((射手) => {
-            if (!射手 || 射手.isSeparator || 射手.isTotalCalculator) return;
-            if (自分の部員ID) {
-              if (
-                射手.memberId !== 自分の部員ID &&
-                !(
-                  myMemberName &&
-                  !射手.memberId &&
-                  射手.name &&
-                  射手.name.replace(/\s*\(\d+\)$/, '').trim() === myMemberName
-                )
-              )
-                return;
-            } else if (範囲 === 'custom') {
-              if (selectedMembers.length > 0) {
-                if (!selectedMembers.includes(名を整える(射手.name || '不明'))) return;
-              } else if (!(
-                部員名の絞り === 'all' ||
-                (射手.name && 射手.name.toLowerCase().includes(部員名の絞り.toLowerCase()))
-              ))
-                return;
-            }
-            const 名 = 名を整える(射手.name || '不明');
-            const 鍵 = 射手.memberId || 名 || 'unknown';
-            if (!人たち.has(鍵)) 人たち.set(鍵, { id: 射手.memberId || '', name: 名 });
-          });
-        });
-        const 名簿 = [...部員たち, ...alumni];
-        人たち.forEach((人, _) => {
-          const 部員 = 名簿.find((部員1人) => 部員1人.id === 人.id || 部員1人.name === 人.name);
-          if (部員) {
-            人.grade = 部員.grade;
-            人.name = 部員.name;
-          }
-        });
-        const 並べた人たち = Array.from(人たち.values()).sort(
-          (甲, 乙) => 学.学年の順(甲) - 学.学年の順(乙) || 甲.name.localeCompare(乙.name, 'ja-JP')
-        );
-        const 日付の見出し = 日付たち.map((日付) => {
-          const 片 = 日付.split('/');
-          return `${parseInt(片[1])}月${parseInt(片[2])}日`;
-        });
-        xlsxHeaders = ['氏名', '学年', '的中率', '的中数', '総矢数'].concat(日付の見出し);
-        並べた人たち.forEach((人) => {
-          let 的中の計 = 0;
-          let 射数の計 = 0;
-          const 日ごと = [];
-          日付たち.forEach((その日) => {
-            let 的中 = 0;
-            let 射数 = 0;
-            let 引いた = false;
-            集計する記録.forEach((記録) => {
-              const 日付 = new Date(記録.date);
-              if (
-                `${日付.getFullYear()}/${(日付.getMonth() + 1).toString().padStart(2, '0')}/${日付.getDate().toString().padStart(2, '0')}` ===
-                その日
-              )
-                記録.archers.forEach((射手) => {
-                  if (!射手 || 射手.isSeparator || 射手.isTotalCalculator) return;
-                  // 分析画面と同じ数え方をする。部員IDだけで判定し、途中交代を
-                  // 踏まえ、分母は実際に引いた数にする。以前は氏名でも拾い、
-                  // 交代を見ず、割り当ての射数を分母にしていたため画面と食い違っていた
-                  集.射手を区間に分ける(射手).forEach((区間) => {
-                    if (!人.id || String(区間.部員id) !== String(人.id)) return;
-                    引いた = true;
-                    的中 += 区間.的中;
-                    射数 += 区間.射数;
-                  });
-                });
-            });
-            if (引いた) {
-              日ごと.push(`${的中}/${射数}`);
-              的中の計 += 的中;
-              射数の計 += 射数;
-            } else {
-              日ごと.push('');
-            }
-          });
-          const 率 = 射数の計 > 0 ? Number(((的中の計 / 射数の計) * 100).toFixed(1)) : 0;
-          xlsxRows.push(
-            [人.name, 人.grade != null ? 学.学年の名前(人) : '', 率, 的中の計, 射数の計].concat(日ごと)
-          );
-        });
-      }
-      const stamp = csvDate(Date.now());
-      const rangeLabel = 範囲 === 'fiscal' ? `${書き出す年度}nendo` : 範囲 === 'custom' ? 'filtered' : 'all';
-      const fname = `kyudo_records_${rangeLabel}_${stamp}.xlsx`;
-      if (!IS_WEB) {
-        Alert.alert('未対応', '書き出しはWeb版のみ対応しています。');
-        return;
-      }
-      if (xlsxRows.length === 0) {
-        const msg = '対象のデータがありません';
-        Alert.alert('書き出し', msg);
-        return;
-      }
-      const 幅 =
-        書き出しの形 === 'matrix'
-          ? [16, 7, 9, 9, 9].concat(xlsxHeaders.slice(5).map(() => 9))
-          : [12, 22, 14, 6, 8, 6, 9, 9, 10, 18, 26, 10];
-      // 的中率の列は「38.9%」と見せる。中身は 38.9 のままなので、
-      // 表計算の式や並べ替えはこれまでどおり使える
-      const 見た目 = 書き出しの形 === 'matrix' ? ['', '', '率'] : ['', '', '', '', '', '', '', '', '率'];
-      const シートたち = [
+      const { 記録の数, シートたち } = 書き出しのシートを作る(
+        sessions,
         {
-          name: 書き出しの形 === 'matrix' ? '集計' : '記録',
-          headers: xlsxHeaders,
-          rows: xlsxRows,
-          widths: 幅,
-          formats: 見た目,
+          範囲,
+          年度: 書き出す年度,
+          始め: 期間の始め,
+          終わり: 期間の終わり,
+          選んだタグ,
+          タグの論理,
+          選んだ言葉: selectedKeywords,
+          言葉の絞り,
+          選んだ部員: selectedMembers,
+          部員名の絞り,
+          自分id: activeRole === 'member' ? myMemberId : null,
+          自分名: myMemberName,
+          形: 書き出しの形,
         },
-      ];
-      // 「集計に含めない」にした記録は、本表から外したぶんを別のシートに残す。
-      // 消してしまうと、何が外れたのかを確かめる手立てが無くなる
-      if (集計しない記録.length > 0) {
-        const 除外の見出し = ['日付', '題', '氏名', '的中数', '射数', '的中率', 'タグ', 'メモ'];
-        const 除外の行 = [];
-        集計しない記録.forEach((記録) => {
-          if (!記録 || !Array.isArray(記録.archers)) return;
-          const dateStr = csvDate(記録.date);
-          記録.archers.forEach((射手) => {
-            if (!射手 || 射手.isSeparator || 射手.isTotalCalculator) return;
-            集.射手を区間に分ける(射手).forEach((区間) => {
-              除外の行.push([
-                dateStr,
-                記録.title || '',
-                名を整える(区間.名前 || 射手.name),
-                区間.的中,
-                区間.射数,
-                区間.射数 > 0 ? Number(((区間.的中 / 区間.射数) * 100).toFixed(1)) : 0,
-                (記録.tags || []).join(' '),
-                記録.note || '',
-              ]);
-            });
-          });
-        });
-        シートたち.push({
-          name: '集計に含めない記録',
-          headers: 除外の見出し,
-          rows: 除外の行,
-          widths: [12, 22, 14, 9, 9, 10, 18, 26],
-          formats: ['', '', '', '', '', '率'],
-        });
+        [...部員たち, ...alumni]
+      );
+      if (記録の数 === 0) {
+        Alert.alert('通知', '対象期間のデータがありません');
+        return;
       }
-      await _xlsx.exportXlsxSheets(シートたち, fname);
+      if (シートたち[0].rows.length === 0) {
+        Alert.alert('書き出し', '対象のデータがありません');
+        return;
+      }
+      const 範囲の名 = 範囲 === 'fiscal' ? `${書き出す年度}nendo` : 範囲 === 'custom' ? 'filtered' : 'all';
+      await _xlsx.exportXlsxSheets(シートたち, `kyudo_records_${範囲の名}_${csvDate(Date.now())}.xlsx`);
     } catch (誤り) {
       console.error('Export Error:', 誤り);
-      const 文 = 'ファイルの生成に失敗しました。';
-      Alert.alert('エラー', 文);
+      Alert.alert('エラー', 'ファイルの生成に失敗しました。');
     }
   };
   return (
@@ -564,40 +255,13 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                     onChangeText={言葉の絞りを置く}
                     placeholderTextColor={色.区切り}
                   />
-                  {titleSuggestions.length > 0 && (
-                    <ScrollView
-                      ref={titleRefCallback}
-                      horizontal
-                      keyboardShouldPersistTaps="always"
-                      showsHorizontalScrollIndicator={false}
-                      style={[styles.suggestionsContainer, IS_WEB && { overflowX: 'auto' }]}
-                    >
-                      {titleSuggestions.map((題) => {
-                        const 選択中 = selectedKeywords.includes(題);
-                        return (
-                          <TouchableOpacity
-                            key={`suggest-title-${題}`}
-                            onPress={() =>
-                              setSelectedKeywords((今の) =>
-                                今の.includes(題) ? 今の.filter((題1つ) => 題1つ !== 題) : [...今の, 題]
-                              )
-                            }
-                            style={[styles.suggestionChip, 選択中 && { backgroundColor: 色.青 }]}
-                          >
-                            <Text style={[styles.suggestionText, 選択中 && { color: 色.白 }]}>{題}</Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </ScrollView>
-                  )}
-                  {selectedKeywords.length > 0 && (
-                    <TouchableOpacity
-                      onPress={() => setSelectedKeywords([])}
-                      style={{ marginTop: 4, alignSelf: 'flex-start' }}
-                    >
-                      <Text style={{ fontSize: 12, color: 色.青 }}>選択をクリア</Text>
-                    </TouchableOpacity>
-                  )}
+                  <候補の並び
+                    候補={titleSuggestions}
+                    選んだもの={selectedKeywords}
+                    選んだものを置く={setSelectedKeywords}
+                    流しの手={titleRefCallback}
+                    鍵の頭="suggest-title"
+                  />
                 </View>
                 {activeRole !== 'member' && (
                   <View style={styles.filterGroup}>
@@ -610,42 +274,13 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                       onChangeText={(文) => 部員名の絞りを置く(文 || 'all')}
                       placeholderTextColor={色.区切り}
                     />
-                    {memberSuggestions.length > 0 && (
-                      <ScrollView
-                        ref={memberRefCallback}
-                        horizontal
-                        keyboardShouldPersistTaps="always"
-                        showsHorizontalScrollIndicator={false}
-                        style={[styles.suggestionsContainer, IS_WEB && { overflowX: 'auto' }]}
-                      >
-                        {memberSuggestions.map((名前) => {
-                          const 選択中 = selectedMembers.includes(名前);
-                          return (
-                            <TouchableOpacity
-                              key={`suggest-member-${名前}`}
-                              onPress={() =>
-                                setSelectedMembers((今の) =>
-                                  今の.includes(名前)
-                                    ? 今の.filter((名前1つ) => 名前1つ !== 名前)
-                                    : [...今の, 名前]
-                                )
-                              }
-                              style={[styles.suggestionChip, 選択中 && { backgroundColor: 色.青 }]}
-                            >
-                              <Text style={[styles.suggestionText, 選択中 && { color: 色.白 }]}>{名前}</Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </ScrollView>
-                    )}
-                    {selectedMembers.length > 0 && (
-                      <TouchableOpacity
-                        onPress={() => setSelectedMembers([])}
-                        style={{ marginTop: 4, alignSelf: 'flex-start' }}
-                      >
-                        <Text style={{ fontSize: 12, color: 色.青 }}>選択をクリア</Text>
-                      </TouchableOpacity>
-                    )}
+                    <候補の並び
+                      候補={memberSuggestions}
+                      選んだもの={selectedMembers}
+                      選んだものを置く={setSelectedMembers}
+                      流しの手={memberRefCallback}
+                      鍵の頭="suggest-member"
+                    />
                   </View>
                 )}
                 <View style={styles.filterGroup}>
@@ -666,40 +301,29 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                         padding: 2,
                       }}
                     >
-                      <TouchableOpacity
-                        onPress={() => タグの論理を置く('AND')}
-                        style={[
-                          { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-                          タグの論理 === 'AND' && { backgroundColor: 色.白 },
-                        ]}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 'bold',
-                            color: タグの論理 === 'AND' ? 色.青 : 色.灰,
-                          }}
+                      {[
+                        ['AND', 'すべて含む'],
+                        ['OR', 'いずれか含む'],
+                      ].map(([論理, 字]) => (
+                        <TouchableOpacity
+                          key={論理}
+                          onPress={() => タグの論理を置く(論理)}
+                          style={[
+                            { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+                            タグの論理 === 論理 && { backgroundColor: 色.白 },
+                          ]}
                         >
-                          すべて含む
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => タグの論理を置く('OR')}
-                        style={[
-                          { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-                          タグの論理 === 'OR' && { backgroundColor: 色.白 },
-                        ]}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 'bold',
-                            color: タグの論理 === 'OR' ? 色.青 : 色.灰,
-                          }}
-                        >
-                          いずれか含む
-                        </Text>
-                      </TouchableOpacity>
+                          <Text
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 'bold',
+                              color: タグの論理 === 論理 ? 色.青 : 色.灰,
+                            }}
+                          >
+                            {字}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
                     </View>
                   </View>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
@@ -709,7 +333,11 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                         return (
                           <TouchableOpacity
                             key={`export-tag-${タグ}`}
-                            onPress={() => タグを切り替える(タグ)}
+                            onPress={() =>
+                              選んだタグを置く((今の) =>
+                                今の.includes(タグ) ? 今の.filter((一つ) => 一つ !== タグ) : [...今の, タグ]
+                              )
+                            }
                             style={[
                               styles.tagChip,
                               選択中 && styles.tagChipActive,
@@ -738,12 +366,7 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                 </View>
                 <View style={[styles.modalButtons, { marginTop: 20 }]}>
                   <Pressable
-                    style={({ hovered }) => [
-                      styles.modalBtn,
-                      { backgroundColor: 色.青 },
-                      hovered && { backgroundColor: 色.青_濃い },
-                      IS_WEB && { cursor: 'pointer' },
-                    ]}
+                    style={ボタンの形(色.青, 色.青_濃い)}
                     onPress={() => {
                       閉じる();
                       絞り込みを開くを置く(false);
@@ -753,12 +376,7 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                     <Text style={[styles.modalBtnText, { color: 色.白 }]}>この条件で書き出す</Text>
                   </Pressable>
                   <Pressable
-                    style={({ hovered }) => [
-                      styles.modalBtn,
-                      { backgroundColor: 色.地 },
-                      hovered && { backgroundColor: 色.地_濃い },
-                      IS_WEB && { cursor: 'pointer' },
-                    ]}
+                    style={ボタンの形(色.地, 色.地_濃い)}
                     onPress={() => 絞り込みを開くを置く(false)}
                   >
                     <Text style={[styles.modalBtnText, { color: 色.青 }]}>戻る</Text>
@@ -769,21 +387,13 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
               <>
                 <Text style={styles.modalMessage}>書き出すデータの範囲を選択してください。</Text>
                 <View style={styles.modalButtons}>
-                  <Pressable
-                    style={({ hovered }) => [
-                      styles.modalBtn,
-                      { backgroundColor: 色.地 },
-                      hovered && { backgroundColor: 色.地_濃い },
-                      IS_WEB && { cursor: 'pointer' },
-                    ]}
-                    onPress={() => 閉じる()}
-                  >
+                  <Pressable style={ボタンの形(色.地, 色.地_濃い)} onPress={() => 閉じる()}>
                     <Text style={[styles.modalBtnText, { color: 色.青 }]}>キャンセル</Text>
                   </Pressable>
                   <View style={styles.monthNav}>
+                    {/* 年度を前後に動かす。絵だけのボタンなので、読み上げのために名前を付ける */}
                     <TouchableOpacity
                       style={styles.monthNavBtn}
-                      // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                       accessible
                       accessibilityRole="button"
                       accessibilityLabel="前へ"
@@ -795,7 +405,6 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                     <Text style={styles.monthNavText}>{書き出す年度}年度のデータ</Text>
                     <TouchableOpacity
                       style={styles.monthNavBtn}
-                      // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                       accessible
                       accessibilityRole="button"
                       accessibilityLabel="次へ"
@@ -806,12 +415,7 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                     </TouchableOpacity>
                   </View>
                   <Pressable
-                    style={({ hovered }) => [
-                      styles.modalBtn,
-                      { backgroundColor: 色.青, marginTop: 8 },
-                      hovered && { backgroundColor: 色.青_濃い },
-                      IS_WEB && { cursor: 'pointer' },
-                    ]}
+                    style={ボタンの形(色.青, 色.青_濃い, { marginTop: 8 })}
                     onPress={() => {
                       閉じる();
                       書き出す('fiscal');
@@ -820,12 +424,7 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                     <Text style={[styles.modalBtnText, { color: 色.白 }]}>{書き出す年度}年度を書き出す</Text>
                   </Pressable>
                   <Pressable
-                    style={({ hovered }) => [
-                      styles.modalBtn,
-                      { backgroundColor: 色.緑 },
-                      hovered && { backgroundColor: 色.緑_28A7 },
-                      IS_WEB && { cursor: 'pointer' },
-                    ]}
+                    style={ボタンの形(色.緑, 色.緑_28A7)}
                     onPress={() => {
                       閉じる();
                       書き出す('all');
@@ -833,15 +432,7 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                   >
                     <Text style={[styles.modalBtnText, { color: 色.白 }]}>すべてのデータ</Text>
                   </Pressable>
-                  <Pressable
-                    style={({ hovered }) => [
-                      styles.modalBtn,
-                      { backgroundColor: 色.藍 },
-                      hovered && { backgroundColor: 色.藍_濃い },
-                      IS_WEB && { cursor: 'pointer' },
-                    ]}
-                    onPress={() => 絞り込みを開くを置く(true)}
-                  >
+                  <Pressable style={ボタンの形(色.藍, 色.藍_濃い)} onPress={() => 絞り込みを開くを置く(true)}>
                     <Text style={[styles.modalBtnText, { color: 色.白 }]}>詳細な条件で絞り込む...</Text>
                   </Pressable>
                 </View>
