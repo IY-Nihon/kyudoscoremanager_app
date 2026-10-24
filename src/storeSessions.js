@@ -26,26 +26,18 @@ const {
   記録の射手を整える,
   雲へ書く記録,
   分けた一括,
+  名前の整合,
+  送った版に印を付ける,
+  送った版の表,
 } = require('./storeShared');
 
 // 中身だけを写す（undefined の項目は落ちる。Firestore は undefined を受け付けない）
 const 深く写す = (値) => JSON.parse(JSON.stringify(値));
 
-/**
- * 送った版のまま手元に残っている記録だけ、同期済みにする。
- * 送信中に直された記録は更新日時が変わるので未同期のまま（次の突き合わせで雲の古い写しに負けないため）。
- * 「同じ物を指しているか」で見ては駄目。見張りが中身はそのままに記録を作り直すことがある
- */
+/** 雲へ届いた記録を、送った版のまま手元に残っていれば同期済みにする（送った版に印を付ける） */
 const 届いた記録を同期済みに = (書く, 送った記録たち, 足す = {}) => {
-  const 版 = new Map(送った記録たち.map((記録) => [記録.id, 記録.lastModified]));
-  書く((前) => ({
-    sessions: 前.sessions.map((記録) =>
-      記録 && 版.has(記録.id) && 版.get(記録.id) === 記録.lastModified
-        ? Object.assign({}, 記録, { syncStatus: '同期済み' })
-        : 記録
-    ),
-    ...足す,
-  }));
+  const 版 = 送った版の表(送った記録たち);
+  書く((前) => ({ sessions: 送った版に印を付ける(前.sessions, 版), ...足す }));
 };
 
 /**
@@ -65,15 +57,8 @@ const ゴミ箱へ送る記録 = (記録) =>
     deletedAt: Firestore.serverTimestamp(),
   });
 
-/** 記録に載せる射手の名前の一覧（検索に使う）。空と重なりは除く */
-const 名前の一覧 = (射手たち) =>
-  Array.from(
-    new Set(
-      (Array.isArray(射手たち) ? 射手たち : [])
-        .map((射手) => (射手 && 射手.name ? String(射手.name).trim() : ''))
-        .filter(Boolean)
-    )
-  );
+/** 記録に載せる射手の名前の一覧（archerNames。検索に使う）。空と重なりは除く */
+const 名前の一覧 = 名前の整合.射手の名前たち;
 
 const 記録の操作 = (書く, 状態, そのまま書く) => ({
   saveSession: async (題, 覚え書き, 統計に入れる, タグ, attendanceData) => {
