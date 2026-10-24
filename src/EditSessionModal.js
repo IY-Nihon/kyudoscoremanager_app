@@ -1,3 +1,5 @@
+'use strict';
+
 const { 色 } = require('./iro.js');
 const React = require('react');
 const { View, Modal, StyleSheet, Text, TouchableOpacity, TextInput, Switch, ScrollView } = require('./rn');
@@ -32,6 +34,18 @@ function 記録に出た部員のid(session, allMembers) {
   return [...出];
 }
 
+/** 出欠の 4 つの状態の、札の字と色（並びは札の並び） */
+const 出欠の見た目 = {
+  present: { label: '出席', color: 色.緑 },
+  late: { label: '遅刻', color: 色.橙 },
+  early: { label: '早退', color: 色.藍 },
+  absent: { label: '欠席', color: 色.灰 },
+};
+
+/**
+ * 履歴の記録詳細の「記録の情報を変える」窓。日付・題・メモ・タグ・射数・統計に含めるか・出欠を直す。
+ * ○× や人は記録画面に載せて直す（「記録画面で直す」）
+ */
 const EditSessionModal = ({ visible, session, onClose, onSave }) => {
   const [題, 題を置く] = React.useState('');
   const [覚え書き, 覚え書きを置く] = React.useState('');
@@ -66,20 +80,36 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
       本数を置く(session.shotCount || 8);
       統計に入れるを置く(session.includeInStats);
       日付を置く(new Date(session.date));
-      const cleanedTags = Array.from(new Set((session.tags || []).map(normalizeTag).filter(Boolean)));
-      タグたちを置く(cleanedTags);
-      let initialAtt = session.attendance ? Object.assign({}, session.attendance) : {};
-      if (session.archers && Object.keys(initialAtt).length === 0) {
-        記録に出た部員のid(session, allMembers).forEach((id) => (initialAtt[id] = 'present'));
+      タグたちを置く(Array.from(new Set((session.tags || []).map(normalizeTag).filter(Boolean))));
+      // 出欠がまだ無い記録は、記録に出ている人を出席にしておく
+      const 出欠 = session.attendance ? Object.assign({}, session.attendance) : {};
+      if (session.archers && Object.keys(出欠).length === 0) {
+        記録に出た部員のid(session, allMembers).forEach((id) => (出欠[id] = 'present'));
       }
-      setAttendanceEdit(initialAtt);
+      setAttendanceEdit(出欠);
     }
   }, [session, visible, allMembers]);
-  const 保存する = (日付) => {
+  /** タグを 1 つ足す（整えて、同じものがあれば足さない） */
+  const タグを足す = (文) => {
+    const 整えた = normalizeTag(文);
+    if (整えた && !タグたち.map(normalizeTag).includes(整えた)) タグたちを置く([...タグたち, 整えた]);
+  };
+  const 下書きのタグを足す = () => {
+    タグを足す(タグの下書き);
+    タグの下書きを置く('');
+  };
+  /** 出欠をまとめて置く。ids の人を 状態 に（ほかの人はそのまま） */
+  const まとめて置く = (ids, 状態) =>
+    setAttendanceEdit((前) => {
+      const 次 = Object.assign({}, 前);
+      ids.forEach((id) => (次[id] = 状態));
+      return 次;
+    });
+  const 保存する = () => {
     const 変更 = {
       title: 題,
       note: 覚え書き,
-      date: 日付,
+      date: 日付.getTime(),
       includeInStats: 統計に入れる,
       shotCount: 本数,
       tags: タグたち,
@@ -111,12 +141,15 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
     onClose();
     ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Success);
   };
-  const attStyles = {
-    present: { label: '出席', color: 色.緑, icon: 'checkmark-circle' },
-    late: { label: '遅刻', color: 色.橙, icon: 'time' },
-    early: { label: '早退', color: 色.藍, icon: 'exit' },
-    absent: { label: '欠席', color: 色.灰, icon: 'ellipse-outline' },
-  };
+  /** 出席管理の見出しの横の、まとめて置くボタン */
+  const まとめのボタン = (字, 字の色, 地, 押した) => (
+    <TouchableOpacity
+      style={{ paddingVertical: 4, paddingHorizontal: 8, backgroundColor: 地, borderRadius: 8 }}
+      onPress={押した}
+    >
+      <Text style={{ color: 字の色, fontSize: 11, fontWeight: 'bold' }}>{字}</Text>
+    </TouchableOpacity>
+  );
   return (
     <>
       <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -139,11 +172,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                 <Text style={styles.label}>日付</Text>
                 <TouchableOpacity style={styles.dateSelector} onPress={() => 暦を出すを置く(true)}>
                   <Text style={styles.dateSelectorText}>
-                    {日付.getFullYear()}
-                    {'年 '}
-                    {日付.getMonth() + 1}
-                    {'月 '}
-                    {日付.getDate()}日
+                    {`${日付.getFullYear()}年 ${日付.getMonth() + 1}月 ${日付.getDate()}日`}
                   </Text>
                   <Icons.Ionicons name="calendar-outline" size={20} color={色.青} />
                 </TouchableOpacity>
@@ -170,9 +199,9 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
                       {タグたち.map((タグ, 番) => (
                         <TouchableOpacity
-                          key={番}
+                          key={タグ}
                           style={styles.selectedTagChip}
-                          onPress={() => タグたちを置く(タグたち.filter((無し, 位置) => 位置 !== 番))}
+                          onPress={() => タグたちを置く(タグたち.filter((_, 位置) => 位置 !== 番))}
                         >
                           <Text style={styles.selectedTagText}>{タグの見た目(タグ)}</Text>
                           <Icons.Ionicons name="close-circle" size={16} color={色.白} />
@@ -190,26 +219,9 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                           value={タグの下書き}
                           onChangeText={タグの下書きを置く}
                           placeholder="新規追加"
-                          onSubmitEditing={() => {
-                            const 整えた = normalizeTag(タグの下書き);
-                            if (整えた) {
-                              const normalizedD = タグたち.map(normalizeTag).filter(Boolean);
-                              if (!normalizedD.includes(整えた)) タグたちを置く([...タグたち, 整えた]);
-                            }
-                            タグの下書きを置く('');
-                          }}
+                          onSubmitEditing={下書きのタグを足す}
                         />
-                        <TouchableOpacity
-                          style={styles.tagAddButton}
-                          onPress={() => {
-                            const 整えた = normalizeTag(タグの下書き);
-                            if (整えた) {
-                              const normalizedD = タグたち.map(normalizeTag).filter(Boolean);
-                              if (!normalizedD.includes(整えた)) タグたちを置く([...タグたち, 整えた]);
-                            }
-                            タグの下書きを置く('');
-                          }}
-                        >
+                        <TouchableOpacity style={styles.tagAddButton} onPress={下書きのタグを足す}>
                           <Text style={styles.tagAddButtonText}>追加</Text>
                         </TouchableOpacity>
                       </View>
@@ -219,13 +231,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                             <TouchableOpacity
                               key={タグ}
                               style={styles.templateTagChip}
-                              onPress={() => {
-                                const 整えた = normalizeTag(タグ);
-                                if (整えた) {
-                                  const normalizedD = タグたち.map(normalizeTag).filter(Boolean);
-                                  if (!normalizedD.includes(整えた)) タグたちを置く([...タグたち, 整えた]);
-                                }
-                              }}
+                              onPress={() => タグを足す(タグ)}
                             >
                               <Text style={styles.templateTagText}>{タグの見た目(タグ)}</Text>
                             </TouchableOpacity>
@@ -237,10 +243,9 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                 )}
                 <View style={styles.row}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.label}>
-                      {'総矢数 (現在: '}
-                      {(session && session.shotCount) || 8}射)
-                    </Text>
+                    <Text
+                      style={styles.label}
+                    >{`総矢数 (現在: ${(session && session.shotCount) || 8}射)`}</Text>
                     <TextInput
                       aria-label="総矢数"
                       style={styles.input}
@@ -262,7 +267,6 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                 {isAdminMode && allMembers.length > 0 && (
                   <>
                     <View
-                      key={undefined}
                       style={{
                         flexDirection: 'row',
                         justifyContent: 'space-between',
@@ -272,63 +276,21 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                     >
                       <Text style={styles.label}>出席管理</Text>
                       <View style={{ flexDirection: 'row', gap: 6 }}>
-                        <TouchableOpacity
-                          style={{
-                            paddingVertical: 4,
-                            paddingHorizontal: 8,
-                            backgroundColor: 色.青の地_5,
-                            borderRadius: 8,
-                          }}
-                          onPress={() =>
-                            setAttendanceEdit((prev) => {
-                              const 次 = Object.assign({}, prev);
-                              記録に出た部員のid(session, allMembers).forEach((id) => (次[id] = 'present'));
-                              return 次;
-                            })
-                          }
-                        >
-                          <Text style={{ color: 色.青_2196, fontSize: 11, fontWeight: 'bold' }}>
-                            記録にいる人を出席
-                          </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={{
-                            paddingVertical: 4,
-                            paddingHorizontal: 8,
-                            backgroundColor: 色.緑の地,
-                            borderRadius: 8,
-                          }}
-                          onPress={() =>
-                            setAttendanceEdit((prev) => {
-                              const 次 = Object.assign({}, prev);
-                              allMembers.forEach((部員) => {
-                                次[部員.id] = 'present';
-                              });
-                              return 次;
-                            })
-                          }
-                        >
-                          <Text style={{ color: 色.緑, fontSize: 11, fontWeight: 'bold' }}>全員出席</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={{
-                            paddingVertical: 4,
-                            paddingHorizontal: 8,
-                            backgroundColor: 色.地,
-                            borderRadius: 8,
-                          }}
-                          onPress={() =>
-                            setAttendanceEdit((prev) => {
-                              const 次 = Object.assign({}, prev);
-                              allMembers.forEach((部員) => {
-                                次[部員.id] = 'absent';
-                              });
-                              return 次;
-                            })
-                          }
-                        >
-                          <Text style={{ color: 色.灰, fontSize: 11, fontWeight: 'bold' }}>全員欠席</Text>
-                        </TouchableOpacity>
+                        {まとめのボタン('記録にいる人を出席', 色.青_2196, 色.青の地_5, () =>
+                          まとめて置く(記録に出た部員のid(session, allMembers), 'present')
+                        )}
+                        {まとめのボタン('全員出席', 色.緑, 色.緑の地, () =>
+                          まとめて置く(
+                            allMembers.map((部員) => 部員.id),
+                            'present'
+                          )
+                        )}
+                        {まとめのボタン('全員欠席', 色.灰, 色.地, () =>
+                          まとめて置く(
+                            allMembers.map((部員) => 部員.id),
+                            'absent'
+                          )
+                        )}
                       </View>
                     </View>
                     <View
@@ -341,7 +303,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                       }}
                     >
                       {[...allMembers].sort(学.名簿の順に比べる).map((member, idx) => {
-                        const status = attendanceEdit[member.id] || 'absent';
+                        const いまの状態 = attendanceEdit[member.id] || 'absent';
                         return (
                           <View
                             key={member.id}
@@ -363,22 +325,19 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                               </Text>
                             </Text>
                             <View style={{ flexDirection: 'row', gap: 4 }}>
-                              {['present', 'late', 'early', 'absent'].map((sVal) => {
-                                const active = status === sVal;
-                                const info = attStyles[sVal];
+                              {Object.entries(出欠の見た目).map(([状態, 見た目]) => {
+                                const active = いまの状態 === 状態;
                                 return (
                                   <TouchableOpacity
-                                    key={sVal}
+                                    key={状態}
                                     onPress={() =>
-                                      setAttendanceEdit((prev) =>
-                                        Object.assign({}, prev, { [member.id]: sVal })
-                                      )
+                                      setAttendanceEdit((前) => Object.assign({}, 前, { [member.id]: 状態 }))
                                     }
                                     style={{
                                       paddingVertical: 4,
                                       paddingHorizontal: 6,
                                       borderRadius: 6,
-                                      backgroundColor: active ? info.color : 色.地,
+                                      backgroundColor: active ? 見た目.color : 色.地,
                                       minWidth: 40,
                                       alignItems: 'center',
                                     }}
@@ -390,7 +349,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                                         color: active ? 色.白 : 色.灰,
                                       }}
                                     >
-                                      {info.label}
+                                      {見た目.label}
                                     </Text>
                                   </TouchableOpacity>
                                 );
@@ -411,7 +370,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
               onPress={() => {
                 if (!(本数 >= 1)) return;
                 if (session && 本数 < session.shotCount) 射数の確認を出す(true);
-                else 保存する(日付.getTime());
+                else 保存する();
               }}
             >
               <Text style={styles.saveButtonText}>変更を保存</Text>
@@ -422,9 +381,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
       <CustomCalendarModal
         visible={暦を出す}
         selectedDate={日付}
-        onSelectDate={(日付) => {
-          日付を置く(日付);
-        }}
+        onSelectDate={日付を置く}
         onClose={() => 暦を出すを置く(false)}
       />
       <Modal
@@ -437,7 +394,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
           <View style={styles.confirmBox}>
             <Text style={styles.confirmTitle}>射数の変更</Text>
             <Text style={styles.confirmMessage}>
-              射数を減らすと、減らした分の○╳記録が削除されます。よろしいですか？
+              射数を減らすと、減らした分の○×記録が削除されます。よろしいですか？
             </Text>
             <View style={styles.confirmButtons}>
               <TouchableOpacity
@@ -450,7 +407,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                 style={[styles.confirmBtn, { backgroundColor: 色.赤 }]}
                 onPress={() => {
                   射数の確認を出す(false);
-                  保存する(日付.getTime());
+                  保存する();
                 }}
               >
                 <Text style={{ color: 色.白, fontWeight: 'bold' }}>変更する</Text>
