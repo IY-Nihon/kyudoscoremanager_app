@@ -2,7 +2,6 @@
 
 const { 色 } = require('./iro.js');
 Object.defineProperty(exports, '__esModule', { value: true });
-exports.AIChatBot = undefined;
 
 const React = require('react');
 const { useState, useRef, useEffect } = React;
@@ -18,14 +17,13 @@ const {
   Dimensions,
   Animated,
   PanResponder,
-  Platform,
 } = require('./rn');
 
 const { Ionicons } = require('@expo/vector-icons');
 const { AIMascot } = require('./AIMascot');
 const 学 = require('./gakunen');
 const 区 = require('./kubun');
-const IS_WEB = Platform.OS === 'web';
+const { IS_WEB } = require('./IS_WEB');
 
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { useScoreStore } = require('./useScoreStore');
@@ -166,6 +164,10 @@ const 部員登録の挨拶 =
  * 会話の控えの置き場。団体はこれまでどおり。個人は本人ごとに分ける（同じ端末で別の人が入っても見えない）。
  * 本人がまだ分からない個人（読み込み中）には、団体の会話を読ませない
  */
+/** AI が返す性別（male・female・男子・女子）をアプリの値（男子・女子・未設定）にそろえる */
+const 性別にそろえる = (性別) =>
+  性別 === 'male' || 性別 === '男子' ? '男子' : 性別 === 'female' || 性別 === '女子' ? '女子' : '未設定';
+
 const 会話の鍵 = (個人, 部員id) => (個人 ? `${CHAT_HISTORY_KEY}_member_${部員id || '-'}` : CHAT_HISTORY_KEY);
 
 const loadChatHistory = (鍵 = CHAT_HISTORY_KEY) => {
@@ -229,10 +231,8 @@ const AIChatBot = () => {
   const 保存の鍵 = 会話の鍵(個人, myMemberId);
   const addMember = useScoreStore((state) => state.addMember);
   const navigation = useNavigation();
-  const チュートリアル部員登録中 = 案内.useチュートリアル部員登録中
-    ? 案内.useチュートリアル部員登録中()
-    : false;
-  const 案内のAIボタン = 案内.useTutorialTarget ? 案内.useTutorialTarget('AI.ボタン') : null;
+  const チュートリアル部員登録中 = 案内.useチュートリアル部員登録中();
+  const 案内のAIボタン = 案内.useTutorialTarget('AI.ボタン');
   const [modalVisible, setModalVisible] = useState(false);
   const [inputText, setInputText] = useState('');
   const autoCloseTimerRef = useRef(null);
@@ -244,9 +244,7 @@ const AIChatBot = () => {
   }, []);
 
   useEffect(() => {
-    if (案内 && typeof 案内.AI開く === 'function') {
-      案内.AI開く(modalVisible);
-    }
+    案内.AI開く(modalVisible);
   }, [modalVisible]);
 
   // 質問例の元（その団体の中身に合わせたもの全部）。画面には分類ごとに全部出し（下の 分類たち）、
@@ -332,7 +330,7 @@ const AIChatBot = () => {
   // --- ドラッグ移動用のステート ＆ 追従ロジック ---
   const pan = useRef(new Animated.ValueXY()).current;
   const currentPos = useRef({ x: 0, y: 0 });
-  const savedButtonPos = loadButtonPos();
+  const [savedButtonPos] = useState(loadButtonPos);
   const snapXRef = useRef(savedButtonPos?.x || 'right');
   const snapYRef = useRef(savedButtonPos?.y || 'bottom');
   const isDragging = useRef(false);
@@ -435,13 +433,7 @@ const AIChatBot = () => {
   /** カード1枚ぶんの部員を追加する。追加できたら名前を返す（団体ログインでなければ null） */
   const カードの人を追加する = (card) => {
     const { name, grade, gender } = card.args;
-    // 性別の値をアプリの定義（男子・女子・未設定）にマッピング変換
-    let finalGender = '未設定';
-    if (gender === 'male' || gender === '男子') {
-      finalGender = '男子';
-    } else if (gender === 'female' || gender === '女子') {
-      finalGender = '女子';
-    }
+    const finalGender = 性別にそろえる(gender);
     // 部員の追加は団体ログインのときだけ通る（ストア側で止めている）。
     // 確かめずに「追加しました」と出していたため、個人で入っている人には
     // 権限エラーの帯と「追加しました」が同時に出ていた
@@ -1166,7 +1158,7 @@ const AIChatBot = () => {
             } else if (call.name === 'startTutorial') {
               let 開始結果 = '';
               try {
-                開始結果 = 案内 && typeof 案内.startTutorial === 'function' ? 案内.startTutorial() : '';
+                開始結果 = 案内.startTutorial();
               } catch (誤り) {
                 console.warn('[AIChatBot] startTutorial failed', 誤り);
               }
@@ -1360,7 +1352,8 @@ const AIChatBot = () => {
             errorMsg = 'AIの利用制限（クォータ）に達しました。しばらく時間をおいてから再度お試しください。';
           }
         } else if (error.message?.includes('404')) {
-          errorMsg = 'AIモデルが見つかりません。API設定を確認してください。';
+          errorMsg =
+            'AI につながりませんでした（404）。続くときは、設定タブの「お問い合わせ」から知らせてください。';
         } else if (error.message?.includes('403')) {
           errorMsg = 'この出どころからは AI 機能を使えません。';
         } else if (error.message?.includes('401') || error.message?.includes('ログインしていない')) {
@@ -1484,7 +1477,10 @@ const AIChatBot = () => {
             >
               {messages.map((msg, idx) =>
                 msg.role === 'actionCard' ? (
-                  <View key={idx} style={[styles.messageBubble, styles.modelBubble, { minWidth: 200 }]}>
+                  <View
+                    key={msg.id || idx}
+                    style={[styles.messageBubble, styles.modelBubble, { minWidth: 200 }]}
+                  >
                     <Text style={[styles.modelText, { fontWeight: 'bold', marginBottom: 8 }]}>
                       データの追加提案
                     </Text>
@@ -1493,12 +1489,7 @@ const AIChatBot = () => {
                       {'\n'}
                       学年: {学.学年の値の名前(msg.args.grade)}
                       {'\n'}
-                      性別:{' '}
-                      {msg.args.gender === 'male'
-                        ? '男性'
-                        : msg.args.gender === 'female'
-                          ? '女性'
-                          : msg.args.gender}
+                      性別: {学.性別の名前(性別にそろえる(msg.args.gender))}
                     </Text>
                     {msg.status === 'pending' ? (
                       <View
@@ -1535,7 +1526,7 @@ const AIChatBot = () => {
                     )}
                   </View>
                 ) : (
-                  <View key={idx} style={msg.role === 'user' ? undefined : styles.答えの行}>
+                  <View key={msg.id || idx} style={msg.role === 'user' ? undefined : styles.答えの行}>
                     {msg.role !== 'user' && (
                       <View style={styles.答えの絵}>
                         <AIMascot マス={2} {...明るい地のキャラ} />
@@ -1610,7 +1601,9 @@ const AIChatBot = () => {
                     <AIMascot マス={2} {...明るい地のキャラ} 考え中 />
                   </View>
                   <Text style={styles.modelText}>
-                    {retryCountdown > 0 ? `制限中... ${retryCountdown}秒後に再試行します` : '考え中...'}
+                    {retryCountdown > 0
+                      ? `少し待っています... ${retryCountdown}秒後にもう一度送ります`
+                      : '考え中...'}
                   </Text>
                 </View>
               )}
