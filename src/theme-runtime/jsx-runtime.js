@@ -3,9 +3,8 @@
  *
  * babel.config.js の jsxImportSource でこのフォルダを指定しているため、
  * プロジェクト内の **すべての** JSX がここを通る。
- * これにより、手書きファイル（OCRRecordModal / WhatsNewModal /
- * ArrowLocationPopover など、復元コードの themedJsx を経由しないもの）の
- * インラインスタイルもダークモードの対象になる。
+ * これにより、どのファイルのインラインスタイル（JSX に直に書いた style・color など）も
+ * ダークモードの対象になる。
  *
  * ライトモード時 mapProps は引数をそのまま返すため、実質ノーコスト。
  */
