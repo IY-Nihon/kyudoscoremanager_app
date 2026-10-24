@@ -1,6 +1,4 @@
 /**
- * Module ID: attendanceRules
- *
  * 出欠を記録から自動で判定するときの決まり。
  * 画面から切り離してあるので、そのまま検査できる（test/attendanceRules.test.js）。
  */

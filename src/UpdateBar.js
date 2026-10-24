@@ -3,8 +3,6 @@
 import iroの組 from './iro.js';
 const { 色 } = iroの組;
 /**
- * Module ID: UpdateBar
- *
  * 新しい版が出たことを、画面の上に細く知らせる帯。web だけ。
  *
  * 何を見て気づくかは src/updateNotice.js にある（純粋な関数なので検査できる）。
@@ -33,7 +31,8 @@ const { 色 } = iroの組;
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, Platform, StyleSheet } from './rn';
+import { View, Text, StyleSheet } from './rn';
+import { IS_WEB } from './IS_WEB';
 import {
   束の名前,
   新しい版が出たか,
@@ -47,14 +46,12 @@ import { useScoreStore } from './useScoreStore';
 import { use案内中 } from './TutorialGuide';
 import { 窓が開いているか } from './backToClose';
 
-const IS_WEB = Platform.OS === 'web';
-
 /** いま動いている束の名前。読めなければ null（そのときは何も知らせない） */
 function いまの束() {
   if (typeof document === 'undefined') return null;
   const 札 = [...document.querySelectorAll('script[src]')]
-    .map((x) => x.getAttribute('src'))
-    .filter((x) => x && /AppEntry-|\.js$/.test(x));
+    .map((札) => 札.getAttribute('src'))
+    .filter((住所) => 住所 && /AppEntry-|\.js$/.test(住所));
   return 札.length ? 札[0] : null;
 }
 
