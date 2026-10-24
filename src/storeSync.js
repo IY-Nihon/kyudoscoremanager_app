@@ -29,6 +29,8 @@ const {
   読んだままの中身,
   雲から読んだか,
   分けた一括,
+  送った版に印を付ける,
+  送った版の表,
 } = require('./storeShared');
 const 学 = require('./gakunen');
 
@@ -230,7 +232,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         // 1 件で set と delete の 2 つ使う。250 件を超えると 1 つの束に収まらないので分ける
         const 一括 = 分けた一括(Firebaseの器.db);
         const 今 = Date.now();
-        const 送った版 = new Map(未送信の記録.map((記録) => [記録.id, 記録.lastModified]));
+        const 送った版 = 送った版の表(未送信の記録);
         未送信の記録.forEach((記録) => {
           const 送る形 = JSON.parse(
             JSON.stringify(Object.assign({}, 記録, { syncStatus: '同期済み', lastModified: 今 }))
@@ -245,20 +247,14 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         });
         // 送信の完了は待たない。通信できないと一括送信は終わらないため、
         // 待つとこの関数自体が返らず、同期中の目印が立ったままになって
-        // 以後の同期がすべて飛ばされる。届いた時点で印を付け替える。
-        //
-        // 印を付けるのは送った版だけ。送信中に編集されると更新日時が
-        // 変わるので、一致する場合に限る。これをしないと、まだ届いて
-        // いない新しい内容が同期済みに見え、次の突き合わせでクラウドの
-        // 古い写しに負けて編集が消える。
+        // 以後の同期がすべて飛ばされる。届いた時点で、送った版だけ印を付け替える（送った版に印を付ける）
         一括.commit()
           .then(() => {
             書く((前) => ({
-              sessions: 前.sessions.map((記録) =>
-                記録 && 送った版.has(記録.id) && 記録.lastModified === 送った版.get(記録.id)
-                  ? Object.assign({}, 記録, { syncStatus: '同期済み', lastModified: 今 })
-                  : 記録
-              ),
+              sessions: 送った版に印を付ける(前.sessions, 送った版, {
+                syncStatus: '同期済み',
+                lastModified: 今,
+              }),
             }));
           })
           .catch((誤り) => {
@@ -278,7 +274,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         console.log(`[syncSessions] Syncing ${未送信の削除.length} pending deletions...`);
         try {
           const 一括 = Firestore.writeBatch(Firebaseの器.db);
-          const 送った削除 = new Map(未送信の削除.map((記録) => [記録.id, 記録.lastModified]));
+          const 送った削除 = 送った版の表(未送信の削除);
           未送信の削除.forEach((記録) => {
             一括.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, 記録.id));
             const 送る形 = dropUndefinedDeep(Object.assign({}, 記録, { syncStatus: 'trashed' }));
@@ -299,11 +295,10 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
           一括.commit()
             .then(() => {
               書く((前) => ({
-                trash: 前.trash.map((記録) =>
-                  記録 && 送った削除.has(記録.id) && 記録.lastModified === 送った削除.get(記録.id)
-                    ? Object.assign({}, 記録, { syncStatus: '同期済み', pendingDelete: false })
-                    : 記録
-                ),
+                trash: 送った版に印を付ける(前.trash, 送った削除, {
+                  syncStatus: '同期済み',
+                  pendingDelete: false,
+                }),
               }));
             })
             .catch((誤り) => {
@@ -332,7 +327,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         console.log(`[syncSessions] Syncing ${未送信.length} pending ${置き場}...`);
         try {
           const 一括 = Firestore.writeBatch(Firebaseの器.db);
-          const 送った版 = new Map(未送信.map((一人) => [一人.id, 一人.lastModified]));
+          const 送った版 = 送った版の表(未送信);
           未送信.forEach((一人) => {
             const 送る形 = dropUndefinedDeep(Object.assign({}, 一人, { syncStatus: '同期済み' }));
             送る形.lastModified = Firestore.serverTimestamp();
@@ -343,13 +338,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
           });
           一括.commit()
             .then(() => {
-              書く((前) => ({
-                [店の鍵]: 前[店の鍵].map((一人) =>
-                  一人 && 送った版.has(一人.id) && 一人.lastModified === 送った版.get(一人.id)
-                    ? Object.assign({}, 一人, { syncStatus: '同期済み' })
-                    : 一人
-                ),
-              }));
+              書く((前) => ({ [店の鍵]: 送った版に印を付ける(前[店の鍵], 送った版) }));
               if (届いたら) 届いたら();
             })
             .catch((誤り) => {
@@ -445,12 +434,10 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         Object.assign(写す(中身), { lastModified: Firestore.serverTimestamp() });
       const 書き込み = [];
       // 送る時点の更新日時を控えておく。送り終えたあとに照合して、
-      // 送っている最中の編集に「同期済み」を付けないようにする
-      const 控える = (一覧) =>
-        new Map((一覧 || []).filter((一つ) => 一つ && 一つ.id).map((一つ) => [一つ.id, 一つ.lastModified]));
-      const 送った記録 = 控える(状態().sessions);
-      const 送った名簿 = 控える(状態().members);
-      const 送った卒業生 = 控える(状態().alumni);
+      // 送っている最中の編集に「同期済み」を付けないようにする（送った版に印を付ける）
+      const 送った記録 = 送った版の表(状態().sessions || []);
+      const 送った名簿 = 送った版の表(状態().members || []);
+      const 送った卒業生 = 送った版の表(状態().alumni || []);
       状態().members.forEach((部員) => {
         if (部員 && 部員.id) {
           書き込み.push({
@@ -513,22 +500,11 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         });
         await 一括.commit();
       }
-      // 印を付けるのは「送った版」だけ。送っている最中に編集された
-      // ものまで送信済みにすると、その新しい内容が送り直しの対象から
-      // 外れてクラウドへ届かないままになる（記録の保存や編集と同じ考え方）
-      const 済ませる = (一覧, 送った版) =>
-        一覧.map((一つ) =>
-          一つ && 送った版.has(一つ.id) && 一つ.lastModified === 送った版.get(一つ.id)
-            ? Object.assign({}, 一つ, { syncStatus: '同期済み' })
-            : 一つ
-        );
-      const 記録 = 済ませる(状態().sessions, 送った記録);
-      const 部員 = 済ませる(状態().members, 送った名簿);
-      const 卒業生 = 済ませる(状態().alumni, 送った卒業生);
+      // 印を付けるのは「送った版」だけ（送った版に印を付ける）
       書く({
-        sessions: 記録,
-        members: 部員,
-        alumni: 卒業生,
+        sessions: 送った版に印を付ける(状態().sessions, 送った記録),
+        members: 送った版に印を付ける(状態().members, 送った名簿),
+        alumni: 送った版に印を付ける(状態().alumni, 送った卒業生),
         syncStatus: '同期済み',
         lastSyncTime: Date.now(),
       });

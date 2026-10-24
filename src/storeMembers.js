@@ -16,9 +16,21 @@ const {
   名前の整合,
   場,
   雲へ書く記録,
+  送った版に印を付ける,
+  送った版の表,
 } = require('./storeShared');
 const 学 = require('./gakunen');
 const 区 = require('./kubun');
+
+/** メンバー（卒業生も）を雲へ書く形にする。雲には「同期済み」として書く（記録と同じ） */
+const 雲へ送る人 = (人) =>
+  Object.assign({}, 人, { lastModified: Firestore.serverTimestamp(), syncStatus: '同期済み' });
+
+/** 雲へ届いたメンバーを、送った版のまま手元に残っていれば同期済みにする */
+const 届いた人を同期済みに = (書く, 送った人たち) => {
+  const 版 = 送った版の表(送った人たち);
+  書く((前) => ({ members: 送った版に印を付ける(前.members, 版) }));
+};
 
 const 部員の操作 = (書く, 状態, そのまま書く) => ({
   /**
@@ -50,25 +62,13 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
     if (Number.isFinite(足す.joinedYear)) 新しい部員.joinedYear = 足す.joinedYear;
     書く({ members: [...状態().members, 新しい部員], lastLocalChange: Date.now() });
     if (状態().activeGroupId) {
-      const 送る中身 = Object.assign({}, 新しい部員, {
-        lastModified: Firestore.serverTimestamp(),
-        syncStatus: '同期済み',
-      });
       Firestore.setDoc(
         Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/members`, 新しい部員.id),
-        送る中身
+        雲へ送る人(新しい部員)
       )
         .then(() => {
           状態().syncMemberLookup();
-          // 印を付けるのは送った版だけ。送信中に編集されると更新日時が
-          // 変わるので、一致する場合に限る（記録側と同じ考え方）。
-          書く((前) => ({
-            members: 前.members.map((部員) =>
-              部員 && 部員.id === 新しい部員.id && 部員.lastModified === 新しい部員.lastModified
-                ? Object.assign({}, 部員, { syncStatus: '同期済み' })
-                : 部員
-            ),
-          }));
+          届いた人を同期済みに(書く, [新しい部員]);
         })
         .catch((誤り) => console.error('Add Member Sync Error:', 誤り));
     }
@@ -135,25 +135,18 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
       };
       const 記録に写す = (一覧) => {
         let 変わった = false;
-        return {
-          newList: 一覧.map((記録) => {
-            if (!記録 || !記録.archers) return 記録;
-            const { 直した射手, 触った } = 射手たちを直す(記録.archers);
-            if (触った) {
-              変わった = true;
-              const 名前たち = Array.from(
-                new Set(直した射手.map((射手) => (射手 && 射手.name ? 射手.name.trim() : '')).filter(Boolean))
-              );
-              return Object.assign({}, 記録, {
-                archers: 直した射手,
-                archerNames: 名前たち,
-                lastModified: Date.now(),
-              });
-            }
-            return 記録;
-          }),
-          changed: 変わった,
-        };
+        const 直した一覧 = 一覧.map((記録) => {
+          if (!記録 || !記録.archers) return 記録;
+          const { 直した射手, 触った } = 射手たちを直す(記録.archers);
+          if (!触った) return 記録;
+          変わった = true;
+          return Object.assign({}, 記録, {
+            archers: 直した射手,
+            archerNames: 名前の整合.射手の名前たち(直した射手),
+            lastModified: Date.now(),
+          });
+        });
+        return { 直した一覧, 変わった };
       };
       // いま記録している盤面（記録の画面）と、取り消しの控えにも写す。盤面は記録に保存するまで
       // sessions に入らないので、写さないと、名前を直しても記録の画面は古い名前のまま残っていた。
@@ -179,10 +172,10 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
       }
       const 元の記録 = 状態().sessions;
       const 元のごみ箱 = 状態().trash;
-      const { newList, changed } = 記録に写す(元の記録);
-      const { newList: ごみ箱の一覧, changed: ごみ箱が変わった } = 記録に写す(元のごみ箱);
-      const 変わった = changed || ごみ箱が変わった;
-      if (変わった) 書く({ sessions: newList, trash: ごみ箱の一覧, lastLocalChange: Date.now() });
+      const { 直した一覧: 記録の一覧, 変わった: 記録が変わった } = 記録に写す(元の記録);
+      const { 直した一覧: ごみ箱の一覧, 変わった: ごみ箱が変わった } = 記録に写す(元のごみ箱);
+      const 変わった = 記録が変わった || ごみ箱が変わった;
+      if (変わった) 書く({ sessions: 記録の一覧, trash: ごみ箱の一覧, lastLocalChange: Date.now() });
       if (変わった && 状態().activeGroupId) {
         // 書き込みは少しずつ（5 件ずつ、間を空けて）送る。
         // ・一括書き込みは 1 回 500 件までで、記録が 500 件を超えるメンバーを直すと、1 回で送って
@@ -202,7 +195,7 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
             }
           });
         };
-        if (changed) 集める(newList, 元の記録, 'sessions');
+        if (記録が変わった) 集める(記録の一覧, 元の記録, 'sessions');
         if (ごみ箱が変わった) 集める(ごみ箱の一覧, 元のごみ箱, 'trash');
         const 団体ID = 状態().activeGroupId;
         const 少しずつ送る = (頭) => {
@@ -221,39 +214,23 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
       }
     }
     if (状態().activeGroupId) {
-      if (場.部員を送る予約[部員ID]) {
-        clearTimeout(場.部員を送る予約[部員ID]);
-      }
-      場.部員を送る予約[部員ID] = setTimeout(async () => {
+      // 続けて直したときは、最後の 1 回だけ送る
+      if (場.部員を送る予約[部員ID]) clearTimeout(場.部員を送る予約[部員ID]);
+      場.部員を送る予約[部員ID] = setTimeout(() => {
         const 部員 = 状態().members.find((部員1人) => 部員1人.id === 部員ID);
-        if (部員) {
-          // 送った版の更新日時。送信中にもう一度編集された場合、その
-          // 新しい内容に「同期済み」を付けないための目印。
-          const 送った版 = 部員.lastModified;
-          const 送る中身 = Object.assign({}, 部員, {
-            lastModified: Firestore.serverTimestamp(),
-            syncStatus: '同期済み',
+        if (!部員) return;
+        Firestore.updateDoc(
+          Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/members`, 部員ID),
+          雲へ送る人(部員)
+        )
+          .then(() => {
+            console.log(`[Store] Debounced Member Sync Success: ${部員.name}`);
+            届いた人を同期済みに(書く, [部員]);
+          })
+          .catch((誤り) => console.error('Update Member Sync Error:', 誤り))
+          .finally(() => {
+            delete 場.部員を送る予約[部員ID];
           });
-          Firestore.updateDoc(
-            Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/members`, 部員ID),
-            送る中身
-          )
-            .then(() => {
-              console.log(`[Store] Debounced Member Sync Success: ${部員.name}`);
-              書く((前) => ({
-                members: 前.members.map((部員1人) =>
-                  部員1人 && 部員1人.id === 部員ID && 部員1人.lastModified === 送った版
-                    ? Object.assign({}, 部員1人, { syncStatus: '同期済み' })
-                    : 部員1人
-                ),
-              }));
-              delete 場.部員を送る予約[部員ID];
-            })
-            .catch((誤り) => {
-              console.error('Update Member Sync Error:', 誤り);
-              delete 場.部員を送る予約[部員ID];
-            });
-        }
       }, 300);
     }
   },
@@ -291,16 +268,18 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
     const { activeGroupId: 団体, activeRole, members } = 状態();
     if (!団体 || activeRole !== 'group' || !Firebaseの器.db) return;
     try {
-      const col = Firestore.collection(Firebaseの器.db, `groups/${団体}/member_lookup`);
-      const snap = await Firestore.getDocs(col);
-      const want = new Map();
+      const 返り = await Firestore.getDocs(
+        Firestore.collection(Firebaseの器.db, `groups/${団体}/member_lookup`)
+      );
+      // 個人ID → メンバーの id。雲にまだ無い（か違う）ものが残り、最後に書く
+      const 作る表 = new Map();
       (members || []).forEach((部員) => {
-        if (部員 && 部員.id && /^\d{4}$/.test(部員.personalId || '')) want.set(部員.personalId, 部員.id);
+        if (部員 && 部員.id && /^\d{4}$/.test(部員.personalId || '')) 作る表.set(部員.personalId, 部員.id);
       });
-      const batch = Firestore.writeBatch(Firebaseの器.db);
+      const 一括 = Firestore.writeBatch(Firebaseの器.db);
       let 件数 = 0;
       const 今いる部員 = new Set((members || []).filter((部員) => 部員 && 部員.id).map((部員) => 部員.id));
-      snap.forEach((文書) => {
+      返り.forEach((文書) => {
         // 招待リンクの合言葉（src/memberInvite.js）は個人ID ではないので、下の突き合わせに
         // かけない（かけると「知らない番号」として消してしまう）。メンバーから外れた人の
         // 合言葉だけ片付ける。名簿が空のとき（まだ読めていないことがある）は消さない。
@@ -309,21 +288,21 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
         const 中身 = 文書.data() || {};
         if (中身.招待 === true) {
           if (今いる部員.size && !今いる部員.has(中身.memberId)) {
-            batch.delete(文書.ref);
+            一括.delete(文書.ref);
             件数++;
           }
           return;
         }
-        const 欲しい部員ID = want.get(文書.id);
+        const 欲しい部員ID = 作る表.get(文書.id);
         if (!欲しい部員ID) {
-          batch.delete(文書.ref);
+          一括.delete(文書.ref);
           件数++;
-        } else if (文書.data().memberId === 欲しい部員ID) {
-          want.delete(文書.id);
+        } else if (中身.memberId === 欲しい部員ID) {
+          作る表.delete(文書.id);
         }
       });
-      want.forEach((memberId, pid) => {
-        batch.set(Firestore.doc(Firebaseの器.db, `groups/${団体}/member_lookup`, pid), {
+      作る表.forEach((memberId, pid) => {
+        一括.set(Firestore.doc(Firebaseの器.db, `groups/${団体}/member_lookup`, pid), {
           memberId,
           // Date で置く（管理画面で日時として読める。読むのは人だけ）
           updatedAt: new Date(),
@@ -331,7 +310,7 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
         件数++;
       });
       if (件数 > 0) {
-        await batch.commit();
+        await 一括.commit();
         console.log('[Store] member_lookup synced:', 件数);
       }
     } catch (誤り) {
@@ -426,7 +405,7 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
     }
   },
   ensurePersonalIds: async () => {
-    const { members: 部員たち, alumni, activeGroupId: 団体 } = 状態();
+    const 団体 = 状態().activeGroupId;
     // 名簿を書けるのは団体アカウントだけ。部員の端末で走ると、他人の
     // 個人IDを勝手に振ってしまう。しかも逆引き表（こちらは団体限定）は
     // 更新されないため、その人がログインできなくなる。
@@ -436,9 +415,9 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
       console.warn('[Store] ensurePersonalIds: db still undefined after await, aborting');
       return;
     }
-    const 部員の写し = [...部員たち];
-    const 卒業生の写し = [...alumni];
-    let 変わった = false;
+    // 名簿は待ったあとで読む。待つ前の写しで書くと、その間に届いた名簿の変更を古い一覧で消す
+    const 部員の写し = [...(状態().members || [])];
+    const 卒業生の写し = [...(状態().alumni || [])];
     const 使われている個人ID = () =>
       [
         ...部員の写し.map((部員) => 部員.personalId),
@@ -456,161 +435,88 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
     };
     const 一括 = Firestore.writeBatch(Firebaseの器.db);
     let 件数 = 0;
-    for (let 番 = 0; 番 < 部員の写し.length; 番++)
-      if (!形が正しい(部員の写し[番].personalId)) {
-        const 使われている = 使われている個人ID();
-        const 今 = Date.now();
-        // 送信が済むまでは「未同期」にしておく。送信が失われた場合、
-        // 「同期済み」だと送り直しの対象にならず、クラウドにIDが無いまま
-        // 固定される。すると別の端末が別のIDを振り、端末ごとに食い違う。
-        部員の写し[番] = Object.assign({}, 部員の写し[番], {
-          personalId: 空いている番号を作る(使われている),
-          lastModified: 今,
+    // 形の正しくない個人ID を振り直す。手元は送信が済むまで「未同期」にしておく。送信が失われた場合、
+    // 「同期済み」だと送り直しの対象にならず、クラウドにIDが無いまま固定される。
+    // すると別の端末が別のIDを振り、端末ごとに食い違う
+    const 振り直す = (写し, 置き場) => {
+      for (let 番 = 0; 番 < 写し.length; 番++) {
+        if (形が正しい(写し[番].personalId)) continue;
+        写し[番] = Object.assign({}, 写し[番], {
+          personalId: 空いている番号を作る(使われている個人ID()),
+          lastModified: Date.now(),
           syncStatus: '未同期',
         });
         一括.set(
-          Firestore.doc(Firebaseの器.db, `groups/${団体}/members`, 部員の写し[番].id),
-          Object.assign({}, 部員の写し[番], {
-            syncStatus: '同期済み',
-            lastModified: Firestore.serverTimestamp(),
-          })
+          Firestore.doc(Firebaseの器.db, `groups/${団体}/${置き場}`, 写し[番].id),
+          雲へ送る人(写し[番])
         );
         件数++;
-        変わった = true;
       }
-    for (let 番 = 0; 番 < 卒業生の写し.length; 番++)
-      if (!形が正しい(卒業生の写し[番].personalId)) {
-        const 使われている = 使われている個人ID();
-        const 今 = Date.now();
-        // メンバーと同じ理由で「未同期」にする
-        卒業生の写し[番] = Object.assign({}, 卒業生の写し[番], {
-          personalId: 空いている番号を作る(使われている),
-          lastModified: 今,
-          syncStatus: '未同期',
-        });
-        一括.set(
-          Firestore.doc(Firebaseの器.db, `groups/${団体}/alumni`, 卒業生の写し[番].id),
-          Object.assign({}, 卒業生の写し[番], {
-            syncStatus: '同期済み',
-            lastModified: Firestore.serverTimestamp(),
-          })
-        );
-        件数++;
-        変わった = true;
-      }
-    if (変わった) {
+    };
+    振り直す(部員の写し, 'members');
+    振り直す(卒業生の写し, 'alumni');
+    if (件数 > 0) {
       書く({ members: 部員の写し, alumni: 卒業生の写し, lastLocalChange: Date.now() });
-      if (件数 > 0) {
-        // 完了は待たない。通信できないと終わらず、この先の逆引き表の
-        // 更新まで止まってしまう。届いた分は syncSessions が印を
-        // 付け替え、届かなければ送り直す。
-        const 送った版 = new Map(
-          [...部員の写し, ...卒業生の写し].filter((人) => 人 && 人.id).map((人) => [人.id, 人.lastModified])
-        );
-        一括.commit()
-          .then(() => {
-            書く((前) => ({
-              members: 前.members.map((部員) =>
-                部員 && 送った版.has(部員.id) && 部員.lastModified === 送った版.get(部員.id)
-                  ? Object.assign({}, 部員, { syncStatus: '同期済み' })
-                  : 部員
-              ),
-              alumni: 前.alumni.map((卒業生) =>
-                卒業生 && 送った版.has(卒業生.id) && 卒業生.lastModified === 送った版.get(卒業生.id)
-                  ? Object.assign({}, 卒業生, { syncStatus: '同期済み' })
-                  : 卒業生
-              ),
-            }));
-          })
-          .catch((誤り) => console.error('[Store] 個人IDの送信に失敗:', 誤り));
-      }
+      // 完了は待たない。通信できないと終わらず、この先の逆引き表の
+      // 更新まで止まってしまう。届かなければ syncSessions が送り直す
+      const 送った版 = 送った版の表([...部員の写し, ...卒業生の写し]);
+      一括.commit()
+        .then(() =>
+          書く((前) => ({
+            members: 送った版に印を付ける(前.members, 送った版),
+            alumni: 送った版に印を付ける(前.alumni, 送った版),
+          }))
+        )
+        .catch((誤り) => console.error('[Store] 個人IDの送信に失敗:', 誤り));
       console.log(`Ensured personal IDs: Updated ${件数} non-compliant IDs.`);
     }
     await 状態().syncMemberLookup();
   },
-  // 弓具の履歴を足す。
-  //
-  // ここが無いまま MemberScreen が addEquipment を取り出していたため、
-  // 「履歴を追加」を押しても何も起きなかった（消すほうだけ在った）。
-  // 消すほうと同じ形にそろえてある：手元を先に直し、送れたら印を下ろす。
+  /** 弓具の履歴を足す。新しいものが上に来るように、日付の降順で並べておく（画面もそう見せている） */
   addEquipment: (memberId, 中身) => {
     if (!状態().弓具を触れるか(memberId)) return;
-    const 今 = Date.now();
     const 新しい記録 = {
       id: generateUUID(),
-      date: Number(中身?.date) || 今,
+      date: Number(中身?.date) || Date.now(),
       note: (中身?.note || '').trim(),
       weight: (中身?.weight || '').trim(),
     };
-    const 直した = 状態().members.map((部員) => {
-      if (部員.id !== memberId) return 部員;
-      // 新しいものが上に来るように、日付の降順で並べておく。
-      // 画面側もそう並べて見せている
-      const 並び = [...(部員.equipments || []), 新しい記録].sort((a, b) => b.date - a.date);
-      return Object.assign({}, 部員, { equipments: 並び, lastModified: 今, syncStatus: '未同期' });
-    });
-    書く({ members: 直した, lastLocalChange: 今 });
-    const 本人 = 直した.find((部員) => 部員.id === memberId);
-    if (本人 && 状態().activeGroupId) {
-      const 送る形 = Object.assign({}, 本人, {
-        lastModified: Firestore.serverTimestamp(),
-        syncStatus: '同期済み',
-      });
-      Firestore.updateDoc(
-        Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/members`, memberId),
-        送る形
-      )
-        .then(() => {
-          // 印を付けるのは送った版だけ（消すほうと同じ考え方）
-          書く((前) => ({
-            members: 前.members.map((部員) =>
-              部員 && 部員.id === memberId && 部員.lastModified === 本人.lastModified
-                ? Object.assign({}, 部員, { syncStatus: '同期済み' })
-                : 部員
-            ),
-          }));
-        })
-        .catch((err) => console.error('Add Equipment Sync Error:', err));
-    }
+    弓具を書き換える(書く, 状態, memberId, 'Add Equipment', (弓具) =>
+      [...弓具, 新しい記録].sort((a, b) => b.date - a.date)
+    );
   },
   deleteEquipment: (memberId, 記録ID) => {
     if (!状態().弓具を触れるか(memberId)) return;
-    const 今 = Date.now();
-    const 直した = 状態().members.map((部員) => {
-      if (部員.id === memberId) {
-        const 今の弓具 = 部員.equipments || [];
-        return Object.assign({}, 部員, {
-          equipments: 今の弓具.filter((記録) => 記録.id !== 記録ID),
-          lastModified: 今,
-          syncStatus: '未同期',
-        });
-      }
-      return 部員;
-    });
-    書く({ members: 直した, lastLocalChange: 今 });
-    const 本人 = 直した.find((部員) => 部員.id === memberId);
-    if (本人 && 状態().activeGroupId) {
-      const 送る形 = Object.assign({}, 本人, {
-        lastModified: Firestore.serverTimestamp(),
-        syncStatus: '同期済み',
-      });
-      Firestore.updateDoc(
-        Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/members`, memberId),
-        送る形
-      )
-        .then(() => {
-          // 印を付けるのは送った版だけ（記録側と同じ考え方）
-          書く((前) => ({
-            members: 前.members.map((部員) =>
-              部員 && 部員.id === memberId && 部員.lastModified === 本人.lastModified
-                ? Object.assign({}, 部員, { syncStatus: '同期済み' })
-                : 部員
-            ),
-          }));
-        })
-        .catch((誤り) => console.error('Delete Equipment Sync Error:', 誤り));
-    }
+    弓具を書き換える(書く, 状態, memberId, 'Delete Equipment', (弓具) =>
+      弓具.filter((記録) => 記録.id !== 記録ID)
+    );
   },
 });
+
+/**
+ * その人の弓具の履歴を書き換える。手元を先に直し（未同期）、雲へ送れたら同期済みにする。
+ * 扱ってよいか（弓具を触れるか）は呼ぶ側の入口で確かめる
+ */
+function 弓具を書き換える(書く, 状態, memberId, 名, 直し方) {
+  const 今 = Date.now();
+  const 直した = 状態().members.map((部員) =>
+    部員.id === memberId
+      ? Object.assign({}, 部員, {
+          equipments: 直し方(部員.equipments || []),
+          lastModified: 今,
+          syncStatus: '未同期',
+        })
+      : 部員
+  );
+  書く({ members: 直した, lastLocalChange: 今 });
+  const 本人 = 直した.find((部員) => 部員.id === memberId);
+  if (!本人 || !状態().activeGroupId) return;
+  Firestore.updateDoc(
+    Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/members`, memberId),
+    雲へ送る人(本人)
+  )
+    .then(() => 届いた人を同期済みに(書く, [本人]))
+    .catch((誤り) => console.error(`${名} Sync Error:`, 誤り));
+}
 
 module.exports = { 部員の操作 };
