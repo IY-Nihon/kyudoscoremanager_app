@@ -1,35 +1,16 @@
 import iroの組 from './iro.js';
 const { 色 } = iroの組;
 /**
- * 矢所を的の上にプロットして表示する読み取り専用コンポーネント
+ * 矢所を的の上に点で見せる部品（見るだけ。置くのは ArrowLocationPopover）。
+ * 矢所は的の中心を 0・半径を 1 とした座標。いまの的の種類のものだけを出す
  */
 
 import { View, Text, StyleSheet } from './rn';
 
 import { useストアの一部 } from './storeSlice';
 
-const CIRCLED_NUMBERS = [
-  '①',
-  '②',
-  '③',
-  '④',
-  '⑤',
-  '⑥',
-  '⑦',
-  '⑧',
-  '⑨',
-  '⑩',
-  '⑪',
-  '⑫',
-  '⑬',
-  '⑭',
-  '⑮',
-  '⑯',
-  '⑰',
-  '⑱',
-  '⑲',
-  '⑳',
-];
+// 射の番号の丸数字（1〜20 射。それより多いときは数字のまま）。矢所を置く窓でも使う
+export const CIRCLED_NUMBERS = [...'①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳'];
 
 export const ArrowLocationView = ({ arrowLocations = [], size = 200, targetType, hideNumbers = false }) => {
   const { arrowTargetType: storeTargetType } = useストアの一部(['arrowTargetType']);
@@ -58,83 +39,25 @@ export const ArrowLocationView = ({ arrowLocations = [], size = 200, targetType,
             },
           ]}
         >
-          <View
-            style={[
-              styles.targetLayer,
-              {
-                width: targetVisualSize * (5 / 6),
-                height: targetVisualSize * (5 / 6),
-                borderRadius: targetVisualRadius * (5 / 6),
-                backgroundColor: 色.白,
-              },
-            ]}
-          />
-          <View
-            style={[
-              styles.targetLayer,
-              {
-                width: targetVisualSize * (4 / 6),
-                height: targetVisualSize * (4 / 6),
-                borderRadius: targetVisualRadius * (4 / 6),
-                backgroundColor: 色.黒,
-              },
-            ]}
-          />
-          <View
-            style={[
-              styles.targetLayer,
-              {
-                width: targetVisualSize * (3 / 6),
-                height: targetVisualSize * (3 / 6),
-                borderRadius: targetVisualRadius * (3 / 6),
-                backgroundColor: 色.白,
-              },
-            ]}
-          />
-          <View
-            style={[
-              styles.targetLayer,
-              {
-                width: targetVisualSize * (2 / 6),
-                height: targetVisualSize * (2 / 6),
-                borderRadius: targetVisualRadius * (2 / 6),
-                backgroundColor: 色.黒,
-              },
-            ]}
-          />
-          <View
-            style={[
-              styles.targetLayer,
-              {
-                width: targetVisualSize * (1 / 6),
-                height: targetVisualSize * (1 / 6),
-                borderRadius: targetVisualRadius * (1 / 6),
-                backgroundColor: 色.白,
-              },
-            ]}
-          />
-        </View>
-      );
-    } else if (arrowTargetType === 'hoshi36') {
-      const starSize = targetVisualSize * 0.25;
-      return (
-        <View
-          style={[
-            styles.targetBase,
-            styles.hoshiBase,
-            { width: targetVisualSize, height: targetVisualSize, borderRadius: targetVisualRadius },
-          ]}
-        >
-          <View
-            style={[
-              styles.targetLayer,
-              { width: starSize, height: starSize, borderRadius: starSize / 2, backgroundColor: 色.黒 },
-            ]}
-          />
+          {/* 外の黒の内側に、白と黒を交互に重ねる（直径は 5/6・4/6…1/6） */}
+          {[5, 4, 3, 2, 1].map((六分の) => (
+            <View
+              key={六分の}
+              style={[
+                styles.targetLayer,
+                {
+                  width: (targetVisualSize * 六分の) / 6,
+                  height: (targetVisualSize * 六分の) / 6,
+                  borderRadius: (targetVisualRadius * 六分の) / 6,
+                  backgroundColor: 六分の % 2 === 1 ? 色.白 : 色.黒,
+                },
+              ]}
+            />
+          ))}
         </View>
       );
     } else {
-      // 星的24cm
+      // 星的（尺二寸・八寸。大きさは上の targetVisualSize で変わる）。中の黒丸は的の 1/4
       const starSize = targetVisualSize * 0.25;
       return (
         <View
@@ -193,22 +116,21 @@ export const ArrowLocationView = ({ arrowLocations = [], size = 200, targetType,
         const posX = radius + loc.x * targetRadius;
         const posY = radius + loc.y * targetRadius;
 
-        const mark = loc.mark;
-        const isHit = mark === '○' || mark === '○'; // 的中
+        const isHit = loc.mark === '○';
         const shotIndex = loc.shotIndex !== undefined ? loc.shotIndex : idx;
 
         if (useDot) {
-          // ドット表示（12本超）：的中は丸、外れも丸ドット
+          // 小さな点（12 本を超えるとき）。番号は出さない
           return (
             <View
               key={`view-marker-${idx}`}
               style={{
                 position: 'absolute',
-                left: posX - 4,
-                top: posY - 4,
-                width: 8,
-                height: 8,
-                borderRadius: 4,
+                left: posX - markerSize / 2,
+                top: posY - markerSize / 2,
+                width: markerSize,
+                height: markerSize,
+                borderRadius: markerSize / 2,
                 backgroundColor: isHit ? 色.緑 : 色.赤,
                 borderColor: 色.白,
                 borderWidth: 0.8,
@@ -217,7 +139,7 @@ export const ArrowLocationView = ({ arrowLocations = [], size = 200, targetType,
             />
           );
         } else {
-          // 通常表示（12本以下）：的中は丸、外れも丸
+          // 番号つきの丸（12 本まで）。的中は緑、外れは赤
           return (
             <View
               key={`view-marker-${idx}`}

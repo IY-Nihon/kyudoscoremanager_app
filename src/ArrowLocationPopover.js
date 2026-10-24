@@ -10,11 +10,10 @@ import { View, Text, Modal, TouchableOpacity, Pressable, Alert, Dimensions, Styl
 import { Ionicons } from '@expo/vector-icons';
 
 import { useストアの一部 } from './storeSlice';
+import { CIRCLED_NUMBERS } from './ArrowLocationView';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// 射の番号の丸数字（1〜20 射。それより多いときは数字のまま）
-const CIRCLED_NUMBERS = [...'①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳'];
 // 的の種類と、選ぶボタンの名前
 const 的の種類たち = [
   ['kasumi36', '霞的(尺二寸)'],
