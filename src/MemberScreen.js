@@ -665,67 +665,57 @@ const MemberScreen = () => {
             )}
           </>
         )}
-        {[
-          ...(窓として出す
-            ? [
-                <View style={styles.modalFooter}>
-                  {編集中の部員 && activeRole !== 'member' ? (
-                    <TouchableOpacity
-                      style={styles.deleteBtn}
-                      onPress={() => 削除を確かめる(編集中の部員.id, 編集中の部員.name)}
-                    >
-                      <Icons.Ionicons
-                        name="trash-outline"
-                        size={18}
-                        color={色.赤}
-                        style={{ marginRight: 4 }}
-                      />
-                      <Text style={styles.deleteBtnText}>メンバーを削除</Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <View />
-                  )}
-                  <TouchableOpacity
-                    style={styles.saveBtn}
-                    onPress={() => {
-                      if (!名前の下書き.trim()) {
-                        Alert.alert('お知らせ', '名前を入力してください');
-                        return;
-                      }
-                      const 学年 = parseInt(学年の下書き) || 0;
-                      // 期を使わない団体では期を送らない（店が学年に合わせて空にする）
-                      const 期 =
-                        !期を使う || 期の下書き === '' ? undefined : parseInt(期の下書き) || undefined;
-                      const 区分 = 区.付けられる区分(区分の下書き, 区分たち);
-                      const 入会年 = parseInt(入会年の下書き, 10);
-                      const 入会した年 = 入会年 >= 1900 && 入会年 <= 2100 ? 入会年 : null;
-                      if (編集中の部員)
-                        updateMember(
-                          編集中の部員.id,
-                          Object.assign(
-                            { name: 名前の下書き, gender: 性別の下書き, grade: 学年, termKi: 期 },
-                            // 在籍は変えたときだけ送る（送ると卒業・退部した年度を今年度で書き直すため）
-                            在籍の下書き !== 学.在籍の状態(編集中の部員, 決まり)
-                              ? { enrollment: 在籍の下書き }
-                              : {},
-                            { divisionIds: 区分 },
-                            決まり.学年なし ? { joinedYear: 入会した年 } : {}
-                          )
-                        );
-                      else
-                        addMember(名前の下書き, 性別の下書き, 学年, 期, {
-                          divisionIds: 区分,
-                          joinedYear: 決まり.学年なし ? 入会した年 : null,
-                        });
-                      編集の窓を出す(false);
-                    }}
-                  >
-                    <Text style={styles.saveBtnText}>保存する</Text>
-                  </TouchableOpacity>
-                </View>,
-              ]
-            : []),
-        ]}
+        {窓として出す ? (
+          <View style={styles.modalFooter}>
+            {編集中の部員 && activeRole !== 'member' ? (
+              <TouchableOpacity
+                style={styles.deleteBtn}
+                onPress={() => 削除を確かめる(編集中の部員.id, 編集中の部員.name)}
+              >
+                <Icons.Ionicons name="trash-outline" size={18} color={色.赤} style={{ marginRight: 4 }} />
+                <Text style={styles.deleteBtnText}>メンバーを削除</Text>
+              </TouchableOpacity>
+            ) : (
+              <View />
+            )}
+            <TouchableOpacity
+              style={styles.saveBtn}
+              onPress={() => {
+                if (!名前の下書き.trim()) {
+                  Alert.alert('お知らせ', '名前を入力してください');
+                  return;
+                }
+                const 学年 = parseInt(学年の下書き) || 0;
+                // 期を使わない団体では期を送らない（店が学年に合わせて空にする）
+                const 期 = !期を使う || 期の下書き === '' ? undefined : parseInt(期の下書き) || undefined;
+                const 区分 = 区.付けられる区分(区分の下書き, 区分たち);
+                const 入会年 = parseInt(入会年の下書き, 10);
+                const 入会した年 = 入会年 >= 1900 && 入会年 <= 2100 ? 入会年 : null;
+                if (編集中の部員)
+                  updateMember(
+                    編集中の部員.id,
+                    Object.assign(
+                      { name: 名前の下書き, gender: 性別の下書き, grade: 学年, termKi: 期 },
+                      // 在籍は変えたときだけ送る（送ると卒業・退部した年度を今年度で書き直すため）
+                      在籍の下書き !== 学.在籍の状態(編集中の部員, 決まり)
+                        ? { enrollment: 在籍の下書き }
+                        : {},
+                      { divisionIds: 区分 },
+                      決まり.学年なし ? { joinedYear: 入会した年 } : {}
+                    )
+                  );
+                else
+                  addMember(名前の下書き, 性別の下書き, 学年, 期, {
+                    divisionIds: 区分,
+                    joinedYear: 決まり.学年なし ? 入会した年 : null,
+                  });
+                編集の窓を出す(false);
+              }}
+            >
+              <Text style={styles.saveBtnText}>保存する</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
       </本文の入れ物>
     </View>
   );

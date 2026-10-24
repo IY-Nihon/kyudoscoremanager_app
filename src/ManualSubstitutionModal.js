@@ -184,28 +184,26 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
                       color={色.灰}
                     />
                   </TouchableOpacity>
-                  {[
-                    ...(開いているか(組.学年) ? 組.人たち : []).map((部員, 順) => {
-                      if (!部員 || !部員.name || typeof 部員.name !== 'string') return null;
-                      const 名の片 = 部員.name.trim().split(/[\s\u3000]+/);
-                      const 姓 = 名の片 && 名の片.length > 0 ? 名の片[0] || '' : '不明';
-                      const 名前 = (名の片 && 名の片.length > 1 && 名の片[1]) || '';
-                      return (
-                        <TouchableOpacity
-                          key={typeof 部員.id === 'string' ? 部員.id : `subst-${組.学年}-${順}-${部員.name}`}
-                          style={styles.memberItem}
-                          onPress={() => {
-                            交代を入れる(部員.name, 部員.id);
-                          }}
-                        >
-                          <Text style={styles.memberName}>
-                            {姓} {名前}
-                          </Text>
-                          <Text style={styles.memberSub}>{部員.gender}</Text>
-                        </TouchableOpacity>
-                      );
-                    }),
-                  ]}
+                  {(開いているか(組.学年) ? 組.人たち : []).map((部員, 順) => {
+                    if (!部員 || !部員.name || typeof 部員.name !== 'string') return null;
+                    const 名の片 = 部員.name.trim().split(/[\s\u3000]+/);
+                    const 姓 = 名の片 && 名の片.length > 0 ? 名の片[0] || '' : '不明';
+                    const 名前 = (名の片 && 名の片.length > 1 && 名の片[1]) || '';
+                    return (
+                      <TouchableOpacity
+                        key={typeof 部員.id === 'string' ? 部員.id : `subst-${組.学年}-${順}-${部員.name}`}
+                        style={styles.memberItem}
+                        onPress={() => {
+                          交代を入れる(部員.name, 部員.id);
+                        }}
+                      >
+                        <Text style={styles.memberName}>
+                          {姓} {名前}
+                        </Text>
+                        <Text style={styles.memberSub}>{部員.gender}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               ))}
             </View>
