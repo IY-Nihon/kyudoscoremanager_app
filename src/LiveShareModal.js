@@ -12,6 +12,10 @@ function 配り元() {
     return window.location.origin;
   return 'https://kyudoscoremanager.web.app';
 }
+/**
+ * ライブをリンクで配る窓（主催者が開く）。合言葉と有効期限を選び、編集用と閲覧用の 2 本のリンクを作る。
+ * リンクで来た人を迎えるのは下の 来客の窓
+ */
 const LiveShareModal = ({ visible, onClose }) => {
   const [合言葉, 合言葉を置く] = React.useState('');
   const [合言葉を使うか, 使うかを置く] = React.useState(true);
@@ -110,8 +114,8 @@ const LiveShareModal = ({ visible, onClose }) => {
               aria-label="合言葉"
               style={styles.入力}
               value={合言葉}
-              onChangeText={(x) => {
-                合言葉を置く(x);
+              onChangeText={(文) => {
+                合言葉を置く(文);
                 難点を置く(null);
               }}
               placeholder={`${共.合言葉の最短}文字以上`}
@@ -310,7 +314,7 @@ const 来客の窓 = ({ 荷, onClose }) => {
   const 消えるもの =
     !!団体 &&
     (手元の射手 || []).some(
-      (a) => a && !a.isSeparator && !a.isTotalCalculator && (a.marks || []).some((m) => m)
+      (射手) => 射手 && !射手.isSeparator && !射手.isTotalCalculator && (射手.marks || []).some(Boolean)
     );
   if (!中身) return null;
   const 入る = async () => {
@@ -357,8 +361,8 @@ const 来客の窓 = ({ 荷, onClose }) => {
               aria-label="合言葉"
               style={styles.入力}
               value={合言葉}
-              onChangeText={(x) => {
-                合言葉を置く(x);
+              onChangeText={(文) => {
+                合言葉を置く(文);
                 難点を置く(null);
               }}
               placeholder="合言葉"
