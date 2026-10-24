@@ -120,7 +120,10 @@ test('射手を作り直す所が、teamName を落とさない', () => {
   const path = require('node:path');
   // ライブへ送る形は syncRules.js へ移した（受け取りの突き合わせと同じ形で見比べるため）
   // 店は 2026-10-05 に幾つかのファイルに分けた。店ぜんぶの字と syncRules.js を読む
-  const 店 = [require('./helpers/storeSource').店の字(), fs.readFileSync(path.join(__dirname, '..', 'src', 'syncRules.js'), 'utf8')].join('\n');
+  const 店 = [
+    require('./helpers/storeSource').店の字(),
+    fs.readFileSync(path.join(__dirname, '..', 'src', 'syncRules.js'), 'utf8'),
+  ].join('\n');
 
   // 作り直しの型は isSeparator を必ず持つ。その一帯に teamName があるか見る
   const place = [];
@@ -139,16 +142,32 @@ test('射手を作り直す所が、teamName を落とさない', () => {
   }
 });
 
-test('区切りにチーム名を付ける処理が、ストアに在る', () => {
-  const fs = require('node:fs');
-  const path = require('node:path');
-  // 店は 2026-10-05 に幾つかのファイルに分けた。店ぜんぶの字を読む
-  const 店 = require('./helpers/storeSource').店の字();
-  assert.ok(/setSeparatorTeam\s*:/.test(店), 'setSeparatorTeam がありません');
-  const i = 店.indexOf('setSeparatorTeam:');
-  const 節 = 店.slice(i, i + 1200);
-  assert.ok(/書き換えを止めるか/.test(節), '見るだけのライブ中に書き換えられてはいけない');
-  assert.ok(/historyStack/.test(節), '取り消しできるよう、履歴に積む必要がある');
+test('区切りにチーム名を付ける：取り消しで戻り、見るだけのライブ中は付かない', () => {
+  const { ストアを用意する } = require('./helpers/storeHarness');
+  const { store } = ストアを用意する();
+  store.setState({
+    archers: [
+      { id: 'a', marks: ['○', '○'] },
+      { id: 's1', name: '---', marks: [], isSeparator: true },
+      { id: 'b', marks: ['○', '○'] },
+    ],
+    shotsPerRound: 2,
+    historyStack: [],
+    redoStack: [],
+    isLiveActive: false,
+  });
+  const 区切りを見る = () => store.getState().archers.find((列) => 列.id === 's1');
+  store.getState().setSeparatorTeam('s1', '  A大  ');
+  assert.strictEqual(区切りを見る().teamName, 'A大');
+  assert.strictEqual(区切りを見る().name, 'A大', '名前の付いた区切りは見出しになる');
+  // 取り消しできるよう、履歴に積む
+  store.getState().undo();
+  assert.strictEqual(区切りを見る().teamName, undefined, '取り消しで外れる');
+  assert.strictEqual(区切りを見る().name, '---');
+  // 見るだけのライブ中は書き換えない
+  store.setState({ isLiveActive: true, ライブは見るだけ: true, liveSessionName: null });
+  store.getState().setSeparatorTeam('s1', 'B大');
+  assert.strictEqual(区切りを見る().teamName, undefined, '見るだけのライブ中に書き換えられてはいけない');
 });
 
 // ── 合計の数え方 ──────────────────────────────
@@ -323,11 +342,31 @@ test('射位を割り振る：立ごとの計でも数え直す（大前…落 [
   const { 射位を割り振る } = require('../src/teamGrouping');
   const 人 = (id) => ({ id });
   const 計 = (id) => ({ id, isTotalCalculator: true });
-  const 並び = [人('a'), 人('b'), 人('c'), 人('d'), 計('t1'), 人('e'), 人('f'), 人('g'), 人('h'), 人('i'), 計('t2'), { id: 'all', isTotalCalculator: true, またぐ合計: true }];
+  const 並び = [
+    人('a'),
+    人('b'),
+    人('c'),
+    人('d'),
+    計('t1'),
+    人('e'),
+    人('f'),
+    人('g'),
+    人('h'),
+    人('i'),
+    計('t2'),
+    { id: 'all', isTotalCalculator: true, またぐ合計: true },
+  ];
   assert.deepStrictEqual(射位を割り振る(並び), [
-    { 番: 0, 人数: 4 }, { 番: 1, 人数: 4 }, { 番: 2, 人数: 4 }, { 番: 3, 人数: 4 },
+    { 番: 0, 人数: 4 },
+    { 番: 1, 人数: 4 },
+    { 番: 2, 人数: 4 },
+    { 番: 3, 人数: 4 },
     null,
-    { 番: 0, 人数: 5 }, { 番: 1, 人数: 5 }, { 番: 2, 人数: 5 }, { 番: 3, 人数: 5 }, { 番: 4, 人数: 5 },
+    { 番: 0, 人数: 5 },
+    { 番: 1, 人数: 5 },
+    { 番: 2, 人数: 5 },
+    { 番: 3, 人数: 5 },
+    { 番: 4, 人数: 5 },
     null,
     null,
   ]);
