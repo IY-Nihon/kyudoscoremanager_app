@@ -840,7 +840,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
   },
 
   listenToSessions: async () => {
-    const { activeGroupId: 団体, activeRole: 役割, myMemberId: 自分の部員ID, myMemberName } = 状態();
+    const { activeGroupId: 団体, activeRole: 役割 } = 状態();
     if (!団体) return;
     const _sessDb = await waitForDb();
     if (!_sessDb) {

@@ -842,7 +842,7 @@ const ライブへ送る形の射手 = (一覧, 本数) =>
 /** 射手の中身を見比べる文字（送る形から作る。日時は入れない。矢所は 矢所も が真のときだけ） */
 const 射手の見比べ形 = (形, 矢所も = true) => {
   if (!形) return 'null';
-  const { lastModified, arrowLocations, ...残り } = 形;
+  const { lastModified: _時刻, arrowLocations, ...残り } = 形;
   return 見比べる文字(矢所も ? Object.assign(残り, { arrowLocations }) : 残り);
 };
 /** ライブへ送る項目の名前（○× は別に送る） */
@@ -1006,6 +1006,7 @@ function ライブ名に使えない字(名前) {
     if (文.includes(字)) 見つかった.push(字);
   }
   // 制御文字はまとめて1つの案内にする
+  // eslint-disable-next-line no-control-regex -- 制御文字をわざと探す
   if (/[\u0000-\u001F\u007F]/.test(文)) 見つかった.push('改行などの制御文字');
   return 見つかった.length ? 見つかった.join(' ') : null;
 }

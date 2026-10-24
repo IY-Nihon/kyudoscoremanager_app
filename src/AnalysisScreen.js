@@ -32,7 +32,6 @@ const AnalysisScreen = ({ navigation }) => {
   const {
     analysisSelectedTags = [],
     analysisTagLogic = 'AND',
-    tagTemplates = [],
     setAnalysisSelectedTags,
     toggleAnalysisTag,
     setAnalysisTagLogic,
@@ -43,7 +42,6 @@ const AnalysisScreen = ({ navigation }) => {
     sessions = [],
     members = [],
     alumni = [],
-    shotsPerRound = 8,
     showAlumniInAnalysis,
     setShowAlumniInAnalysis: setAlumni,
     isHydrated,
@@ -55,13 +53,8 @@ const AnalysisScreen = ({ navigation }) => {
     比較のひな型を足す,
     比較のひな型を消す,
     activeGroupId: いまの団体id,
-    // 団体の種類で、学年の絞り込みの選びと呼び方が変わる（src/gakunen.js）
-    groupType,
-    // 区分（src/kubun.js）。あれば絞り込みに出す
     divisions: 区分たち = [],
-    // 期を使う団体だけ、一覧に期を出す
     useTerm: 期を使う,
-    // 案内が見本を出しているあいだは、中身だけ見本に差し替わる
   } = 案内.見本を重ねる(
     useストアの一部([
       'analysisSelectedTags',
@@ -124,7 +117,7 @@ const AnalysisScreen = ({ navigation }) => {
     if (!ラベル) return true;
     if (!記録) return false;
     const 日付 = new Date(記録.date);
-    let 札 = '';
+    let 札;
     if (ラベル.endsWith('年度')) {
       札 = `${学.年度(日付)}年度`;
     } else if (ラベル.includes('/') && ラベル.split('/').length === 2) {
@@ -283,9 +276,7 @@ const AnalysisScreen = ({ navigation }) => {
           return 日.getFullYear() === 見ている年 && 日.getMonth() + 1 === 見ている月;
         }
         if (期間の種類 === '年度') {
-          const 日 = new Date(日付);
-          const 年 = 日.getFullYear();
-          return 学.年度(日) === 見ている年度;
+          return 学.年度(new Date(日付)) === 見ている年度;
         }
         if (期間の種類 === '期間指定') {
           const 日 = new Date(日付);

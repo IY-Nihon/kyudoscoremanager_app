@@ -28,6 +28,7 @@ const { getShadowStyle } = require('./shadowStyle');
 // 「配信済みの版のまま項目を足していない」ことは test/autoLock.test.js が、
 // 「NOTICE_VERSION が最新の項目と一致し、形がそろっている」ことは
 // test/updateNotice.test.js が見張っている。
+// eslint-disable-next-line no-unused-vars -- 画面では使わない。検査（test/autoLock.test.js）が字で読む
 const 最後に配信した版 = '2026-10-23-03';
 // お知らせの版。新しい項目を足したら、必ずこれを最新の項目の 版 に合わせる。
 const NOTICE_VERSION = '2026-10-23-03';

@@ -14,7 +14,7 @@ const {
   TextInput,
   Image,
 } = require('./rn');
-const { useScoreStore } = require('./useScoreStore');
+
 const { useストアの一部 } = require('./storeSlice');
 const 学 = require('./gakunen');
 const { 団体の種類を選ぶ } = require('./GroupTypePicker');
@@ -93,7 +93,7 @@ const 誤りの文 = (誤り) => {
 // 起動時にこの値が古い端末はログアウトさせ、個人IDで入り直してもらう。
 const MEMBER_AUTH_VERSION = 2;
 const LoginScreen = () => {
-  const { setAuth, fetchAndOverwriteFromCloud, startPeriodicSync, setMemberAuthVersion } = useストアの一部([
+  const { setAuth, setMemberAuthVersion } = useストアの一部([
     'setAuth',
     'fetchAndOverwriteFromCloud',
     'startPeriodicSync',
@@ -143,7 +143,7 @@ const LoginScreen = () => {
       // 認証の利用者だけが残ると、同じアドレスで作り直せなくなる
       try {
         if (auth && auth.currentUser) await FirebaseAuth.deleteUser(auth.currentUser);
-      } catch (消せなかった) {
+      } catch {
         /* 消せなくても、元の失敗をそのまま伝える */
       }
       throw 書けなかった;
@@ -220,7 +220,7 @@ const LoginScreen = () => {
   const Googleをやめる = async () => {
     try {
       if (auth && auth.currentUser) await FirebaseAuth.deleteUser(auth.currentUser);
-    } catch (消せなかった) {
+    } catch {
       await FirebaseAuth.signOut(auth).catch(() => {});
     }
     Googleのメールを置く(null);

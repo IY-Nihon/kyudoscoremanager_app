@@ -3,11 +3,9 @@
 const { 色 } = require('./iro.js');
 const React = require('react');
 const { TouchableOpacity, Text, View, Modal, ScrollView, StyleSheet } = require('./rn');
-const Icons = require('@expo/vector-icons');
-const { useScoreStore } = require('./useScoreStore');
+
 const { useストアの一部 } = require('./storeSlice');
-const IS_WEB = require('./IS_WEB');
-const shadowStyle = require('./shadowStyle');
+
 // 出欠の自動判定。交代で入った人も数えるため、決まりは切り出してある
 const { 出ていた部員たち } = require('./attendanceRules');
 const 学 = require('./gakunen');

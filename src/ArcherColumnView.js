@@ -79,7 +79,7 @@ const ArcherColumnView = React.memo(
       else for (let 射番 = shots - 1; 射番 >= 0; 射番--) 射番の並び.push(射番);
     }
     // 立の切れ目に引く太線。縦は「その立の1本目の下」、横は「その立の4本目の右」
-    const 切れ目 = (位置) => (横 ? 位置 % 4 == 3 && 位置 !== shots - 1 : 位置 % 4 == 0 && 位置 !== 0);
+    const 切れ目 = (位置) => (横 ? 位置 % 4 === 3 && 位置 !== shots - 1 : 位置 % 4 === 0 && 位置 !== 0);
     // 1ますの外枠。横のとき、間隔は細い列ではなく細い行になる
     const ます幅 =
       (横 ? UIConfig.cellWidth : archer.isSeparator ? UIConfig.separatorWidth : UIConfig.cellWidth) * 倍率;

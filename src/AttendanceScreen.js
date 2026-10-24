@@ -32,12 +32,12 @@ var _docPickerModule = null;
 var _fsModule = null;
 try {
   _docPickerModule = require('expo-document-picker');
-} catch (誤り) {
+} catch {
   /* この部品が無い場（Web）でも、下の代わりの品で動く */
 }
 try {
   _fsModule = require('expo-file-system');
-} catch (誤り) {
+} catch {
   /* この部品が無い場（Web）でも、下の代わりの品で動く */
 }
 const docPicker = _docPickerModule || { getDocumentAsync: async () => ({ canceled: true, assets: [] }) };
@@ -51,7 +51,6 @@ const AttendanceScreen = () => {
     sessions,
     activeGroupId,
     divisions: 区分たち = [],
-    groupType,
     useTerm: 期を使う,
   } = useストアの一部(['members', 'sessions', 'activeGroupId', 'divisions', 'groupType', 'useTerm']);
   const 決まり = use団体の決まり();
@@ -103,7 +102,7 @@ const AttendanceScreen = () => {
         console.warn('[Attendance] 練習日の見張りが止まりました:', 誤り);
         try {
           require('./errorReporter').不具合を送る('練習日の受信', 誤り);
-        } catch (_) {
+        } catch {
           /* 便りが出せなくても、画面は続ける */
         }
       }
@@ -277,7 +276,7 @@ const AttendanceScreen = () => {
             'AI解析の失敗',
             `${aiResponse.status} ${errText.slice(0, 200)}`
           );
-        } catch (_) {
+        } catch {
           /* 便りに残せなくても、利用者への知らせは下で出す */
         }
         if (aiResponse.status === 429) {

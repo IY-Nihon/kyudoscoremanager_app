@@ -32,7 +32,7 @@ async function ログインの証() {
   let auth;
   try {
     auth = require('./db').auth;
-  } catch (e) {
+  } catch {
     return null;
   }
   // 開いてすぐは、ログインの復元（端末の控えから読む）が終わっておらず currentUser が空のことがある。
@@ -41,7 +41,7 @@ async function ログインの証() {
   if (auth && !auth.currentUser && typeof auth.authStateReady === 'function') {
     try {
       await Promise.race([auth.authStateReady(), new Promise((r) => setTimeout(r, 5000))]);
-    } catch (e) {
+    } catch {
       // 待てなければ、そのまま見る
     }
   }
@@ -49,7 +49,7 @@ async function ログインの証() {
   if (!人 || typeof 人.getIdToken !== 'function') return null;
   try {
     return await 人.getIdToken();
-  } catch (e) {
+  } catch {
     return null;
   }
 }

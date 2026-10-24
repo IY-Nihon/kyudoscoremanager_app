@@ -15,7 +15,7 @@ class ErrorBoundary extends React.Component {
     // 画面ごと落ちたときこそ、何が起きたか残らないと直せない
     try {
       require('./errorReporter').不具合を送る('画面が落ちた', 誤り);
-    } catch (_) {
+    } catch {
       /* 控えられなくても、復旧の画面は出す */
     }
   }

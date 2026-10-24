@@ -32,7 +32,7 @@ let 次の印 = 1;
 function 積む(窓) {
   try {
     window.history.pushState(Object.assign({}, window.history.state, { __窓: 窓.印 }), '');
-  } catch (e) {
+  } catch {
     /* 積めなくても窓は使える（戻るで閉じないだけ） */
   }
 }
@@ -81,7 +81,7 @@ function 見張る() {
       上.戻るで外れた = true;
       try {
         if (上.閉じる.current) 上.閉じる.current();
-      } catch (e) {
+      } catch {
         /* 閉じる手の失敗は、次の確かめで積み直す */
       }
       // 閉じる手が断ったとき（削除の途中など）は窓が残る。積み直して、次の戻るも窓で受ける
@@ -136,7 +136,7 @@ function 戻るで閉じる(開いている, 閉じる) {
             自分で戻した++;
             window.history.back();
           }
-        } catch (e) {
+        } catch {
           /* 消せなくても、戻るを 1 回余計に押すだけ */
         }
       }, 50);

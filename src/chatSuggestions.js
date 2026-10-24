@@ -11,8 +11,6 @@
  */
 'use strict';
 
-const 二桁 = (数) => String(数).padStart(2, '0');
-
 /**
  * 質問例を作る。
  *

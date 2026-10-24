@@ -35,7 +35,7 @@ async function アイコンの字体を読んでおく(道具 = {}) {
     try {
       await 読む();
       return true;
-    } catch (誤り) {
+    } catch {
       if (回 >= 読み直す間.length) return false;
       await 待つ(読み直す間[回]);
     }

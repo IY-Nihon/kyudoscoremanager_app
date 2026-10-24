@@ -19,7 +19,8 @@ const 数字 = { 一: 1, 壱: 1, 二: 2, 弐: 2, 貳: 2, 三: 3, 参: 3, 四: 4,
 
 /** 札の字から番号を取る。読めなければ null */
 function 札の番号(札) {
-  const 字 = String(札 == null ? '' : 札).replace(/[\s　]/g, '');
+  // \s は全角空白（U+3000）も含む
+  const 字 = String(札 == null ? '' : 札).replace(/\s/g, '');
   if (!字) return null;
   const 算 = 字.match(/\d+/);
   if (算) return Number(算[0]);

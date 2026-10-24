@@ -5,7 +5,7 @@ const { IS_IOS } = require('./IS_WEB');
 const Icons = require('@expo/vector-icons');
 const ExpoHaptics = require('expo-haptics');
 const { CustomCalendarModal } = require('./CustomCalendarModal');
-const { useScoreStore } = require('./useScoreStore');
+
 const 学 = require('./gakunen');
 const { useストアの一部 } = require('./storeSlice');
 const { normalizeTag, タグの見た目 } = require('./syncRules');

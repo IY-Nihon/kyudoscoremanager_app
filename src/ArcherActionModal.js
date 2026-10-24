@@ -64,8 +64,6 @@ const ArcherActionModal = ({
     addSeparator,
     addTotalCalculator,
     deleteArcher,
-    // 団体の種類と区分（学年の無い団体は区分ごとの組・男性／女性の呼び方。src/gakunen.js の 選ぶ組）
-    groupType,
     divisions: 区分たち = [],
   } = useストアの一部([
     'members',

@@ -53,7 +53,6 @@ const HistoryScreen = () => {
     selectedHistorySessionId,
     setSelectedHistorySessionId,
     viewScale,
-    deleteArcher,
     deleteSession,
     deleteMultipleSessions,
     restoreSession,
@@ -67,14 +66,9 @@ const HistoryScreen = () => {
     setHistoryTagLogic,
     focusedMemberId,
     setFocusedMemberId,
-    // 縦横の並べ方。記録画面と同じ設定を使う。
-    // 画面ごとに別々に覚えると、同じ表なのに向きが食い違う
     横に並べる = false,
     set横に並べる,
-    // 履歴の記録を記録画面に載せて直す（管理者モード）。人・間隔・計・並べ替え・矢所など、
-    // 記録表でできることを全部使うため。詳細の画面で直せるのは○×と名前と鍵と削除だけ
     履歴の記録を記録画面で開く,
-    // 案内が見本を出しているあいだは、中身だけ見本に差し替わる
   } = 案内.見本を重ねる(
     useストアの一部([
       'members',
@@ -223,10 +217,7 @@ const HistoryScreen = () => {
     mySessions.forEach((記録) => {
       const 日時 = typeof 記録.date === 'number' ? 記録.date : Number(記録.date);
       if (isNaN(日時)) return;
-      const 日付 = new Date(日時);
-      const 年 = 日付.getFullYear();
-      const 年度 = 学.年度(日付);
-      集めた.add(年度);
+      集めた.add(学.年度(new Date(日時)));
     });
     return Array.from(集めた).sort((甲, 乙) => 乙 - 甲);
   }, [mySessions]);

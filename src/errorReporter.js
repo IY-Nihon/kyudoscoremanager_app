@@ -53,7 +53,7 @@ async function 貯めを読み込む() {
       // 前回までの控えのどちらかが消える）
       if (Array.isArray(読んだ)) 貯めの控え = [...読んだ, ...貯めの控え];
     }
-  } catch (誤り) {
+  } catch {
     // 壊れていたら捨てる。不具合の控えのために起動を止める意味はない
     //（読み終わる前に貯めた分は残す）
   }
@@ -71,7 +71,7 @@ function 貯めを書く(貯め) {
     // また貯めに書きにいく。控えの保存が不具合を生む形になるので、必ず受ける
     const 約束 = 蔵.default.setItem(貯めの鍵, JSON.stringify(貯め));
     if (約束 && 約束.catch) 約束.catch(() => {});
-  } catch (誤り) {
+  } catch {
     /* 保存できなくても、この起動のあいだは控えに残る */
   }
 }
@@ -104,7 +104,7 @@ function いまの様子() {
     // 循環参照を避けるため、必要になった時点で読む
     const 店 = require('./useScoreStore').useScoreStore.getState();
     状態 = { 団体id: 店.activeGroupId || '', 役割: 店.activeRole || '', 回線: 店.isNetworkOnline !== false };
-  } catch (誤り) {
+  } catch {
     /* 起動のごく初期は取れない */
   }
   let 端末 = '';
@@ -115,13 +115,13 @@ function いまの様子() {
         : typeof process !== 'undefined' && process.platform
           ? process.platform
           : '';
-  } catch (誤り) {
+  } catch {
     /* 端末が分からなくても送る */
   }
   let 版 = '';
   try {
     版 = require('./WhatsNewModal').NOTICE_VERSION || '';
-  } catch (誤り) {
+  } catch {
     /* 版が分からなくても送る */
   }
   return Object.assign({ 版, 端末 }, 状態);
@@ -179,7 +179,7 @@ function 止まりを伝える(出どころ, 中身) {
           onPress: () => {
             try {
               if (typeof globalThis.__弓道の控えを書く === 'function') globalThis.__弓道の控えを書く();
-            } catch (e) {
+            } catch {
               /* 控えが書けなくても読み込み直す */
             }
             window.location.reload();
@@ -187,7 +187,7 @@ function 止まりを伝える(出どころ, 中身) {
         },
       ]
     );
-  } catch (e) {
+  } catch {
     /* 案内が出せなくても、便りは送ってある */
   }
 }

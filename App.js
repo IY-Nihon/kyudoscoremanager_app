@@ -101,12 +101,12 @@ export default function App() {
       if (URLの招待) {
         try {
           window.sessionStorage.setItem(招待の鍵, JSON.stringify(URLの招待));
-        } catch (e) {
+        } catch {
           // 控えられなくても、この画面のあいだは持っている
         }
         try {
           window.history.replaceState(null, '', window.location.pathname + window.location.search);
-        } catch (e) {
+        } catch {
           // 消せなくても、読めているので先へ進む
         }
         招待を置く(URLの招待);
@@ -115,7 +115,7 @@ export default function App() {
       let 控え = null;
       try {
         控え = JSON.parse(window.sessionStorage.getItem(招待の鍵) || 'null');
-      } catch (e) {
+      } catch {
         // 読めなければ、招待リンクでは来ていない扱いにする
       }
       if (控え && 控え.団体 && 控え.合言葉) 招待を置く(控え);
@@ -126,7 +126,7 @@ export default function App() {
   const 招待を閉じる = () => {
     try {
       window.sessionStorage.removeItem(招待の鍵);
-    } catch (e) {
+    } catch {
       // 消せなくても、窓は閉じる
     }
     招待を置く(null);
@@ -152,12 +152,12 @@ export default function App() {
       if (URLの荷) {
         try {
           window.sessionStorage.setItem(共有の荷の鍵, URLの荷);
-        } catch (e) {
+        } catch {
           // 控えられなくても、この画面のあいだは荷を持っている
         }
         try {
           window.history.replaceState(null, '', window.location.pathname + window.location.search);
-        } catch (e) {
+        } catch {
           // 消せなくても、荷は読めているので先へ進む
         }
         共有の荷を置く(URLの荷);
@@ -167,7 +167,7 @@ export default function App() {
       let 控え = null;
       try {
         控え = window.sessionStorage.getItem(共有の荷の鍵);
-      } catch (e) {
+      } catch {
         // 読めなければ、共有リンクでは来ていない扱いにする
       }
       if (控え) 共有の荷を置く(控え);

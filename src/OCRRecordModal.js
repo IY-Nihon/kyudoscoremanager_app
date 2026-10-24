@@ -1289,7 +1289,7 @@ const OCRRecordModal = ({
         for (const 射手 of 板.人) {
           立の人数 = 射手.立の人数 || 0;
           // 射手そのものには、組み立て用の目印を残さない
-          const { チーム番号, 立の人数: _人数, チーム名: _名, ...中身 } = 射手;
+          const { チーム番号: _番号, 立の人数: _人数, チーム名: _名, ...中身 } = 射手;
           出.push(中身);
           この立++;
           if (立の人数 > 0 && この立 >= 立の人数) 立を閉じる();
@@ -1807,7 +1807,7 @@ const OCRRecordModal = ({
                               印 === '×' && styles.markCellMiss,
                               Boolean(row.迷い?.[mIdx]) && styles.markCellMayoi,
                             ]}
-                            testID={Boolean(row.迷い?.[mIdx]) ? 'ocr-mayoi-cell' : undefined}
+                            testID={row.迷い?.[mIdx] ? 'ocr-mayoi-cell' : undefined}
                             onPress={() => toggleRecordMark(rIdx, mIdx)}
                           >
                             <Text

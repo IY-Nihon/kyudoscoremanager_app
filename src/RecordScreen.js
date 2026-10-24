@@ -82,12 +82,9 @@ const 期限の帯 = React.memo(({ ライブの期限 }) => {
 });
 const RecordScreen = () => {
   const {
-    activeSessionID,
-    isAdminMode = false,
     archers = [],
     shotsPerRound = 8,
     syncStatus = 'IDLE',
-    lastSyncTime,
     isNetworkOnline = true,
     offlineSaveWarning: オフライン保存の警告 = null,
     再ログインの案内 = null,
@@ -102,52 +99,35 @@ const RecordScreen = () => {
     redo,
     historyStack = [],
     redoStack = [],
-    clearArcherMarks,
-    setArcherMember,
     saveSession,
     setShotsPerRound,
     viewScale = 1,
     setViewScale,
     isLiveActive = false,
-    setIsLiveActive,
     isHost = false,
     liveSessionName,
-    includeInStats = true,
-    setIncludeInStats,
     resetCurrentSession,
     members = [],
     isHydrated,
     lastResetHandled,
-    // 誰かがライブ中に取り消し／やり直しをしたときの知らせ
     historyNoticeAt: 共有履歴の知らせ,
     historyNoticeKind: 共有履歴の種類,
-    // 共有履歴の目印。取り消し・やり直しが押せるかの判定に使う
     historySharedLen: 共有履歴の位置,
     historySharedMax: 共有履歴の上限,
     activeGroupId,
-    publicGroupId,
     activeArrowLocationEdit,
     setActiveArrowLocationEdit,
-    // 「終了・保存」で出欠確認を出すか（設定で切れる）
     保存時に出欠を確認する = true,
-    // 長押しでますを開けた時刻。知らせを出す合図
     鍵を開けた時刻 = 0,
-    // 閉じたますを押した時刻。開け方を知らせる合図
     閉じたますを押した時刻 = 0,
-    // 閲覧用でますを押した時刻。閲覧用だと知らせる合図
     閲覧でますを押した時刻 = 0,
-    // 記録表の並べ方。真なら名前が左、○×が右へ伸びる
     横に並べる = false,
     set横に並べる,
-    // 上下の帯を畳んでいるか。端末に残す（並べ方と同じ扱い）
     帯を畳む: 畳む覚え = false,
     set帯を畳む,
-    // 畳む取っ手を左上に置いているか。指で引いて左右へ動かせる（端末に残す）
     帯の取っ手は左 = false,
     set帯の取っ手は左,
-    // ライブに「見るだけ」で入っているか
     ライブは見るだけ = false,
-    // 履歴の記録を記録画面で直しているあいだの目印（管理者モードの履歴から）
     履歴の編集 = null,
     履歴の編集を終える,
     sessions: 記録たち = [],
@@ -543,7 +523,7 @@ const RecordScreen = () => {
           try {
             const 選択 = window.getSelection();
             if (選択 && !選択.isCollapsed) 選択.removeAllRanges();
-          } catch (誤り) {
+          } catch {
             /* 解けなくても引く動きは続く */
           }
         }

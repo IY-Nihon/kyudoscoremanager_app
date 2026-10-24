@@ -154,14 +154,6 @@ const 下の帯 = React.memo(({ state, descriptors, navigation: nav }) => {
   const 履歴のタグ = useScoreStore((状態) => 状態.historySelectedTags || []);
   const 分析のタグ = useScoreStore((状態) => 状態.analysisSelectedTags || []);
   const 記録のタグ = useScoreStore((状態) => 状態.currentSessionTags || []);
-  const 今の画面 =
-    (useScoreStore((状態) => 状態.toggleHistoryTag),
-    useScoreStore((状態) => 状態.toggleAnalysisTag),
-    useScoreStore((状態) => 状態.toggleCurrentSessionTag),
-    useScoreStore((状態) => 状態.setHistorySelectedTags),
-    useScoreStore((状態) => 状態.setAnalysisSelectedTags),
-    useScoreStore((状態) => 状態.setCurrentSessionTags),
-    state.routes[state.index].name);
   const X要素 = IS_WEB ? View : ReactNativeSafeAreaContext.SafeAreaView;
   return (
     <X要素 style={[styles.tabBarWrapper, IS_WEB && { paddingTop: 0 }]} edges={['top', 'left', 'right']}>
@@ -203,7 +195,7 @@ const 下の帯 = React.memo(({ state, descriptors, navigation: nav }) => {
                   // 不具合の便りに載せる。どの画面で起きたかが分かると原因を絞れる
                   try {
                     require('./errorReporter').行動を残す('画面を移る', 道.name);
-                  } catch (_) {
+                  } catch {
                     /* 控えられなくても、画面の移動は止めない */
                   }
                   if (!(今ここ || 合図.defaultPrevented)) nav.navigate(道.name);

@@ -49,7 +49,7 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     // よその団体のライブも、自分の記録には残さない（保存を止めるか を参照）
     if (状態().保存を止めるか()) return;
     const 記録ID = 状態().activeSessionID || generateUUID();
-    const { archers, shotsPerRound, activeGroupId, activeRole, myMemberId } = 状態();
+    const { archers, shotsPerRound, activeGroupId, activeRole } = 状態();
     const 射手たち = Array.isArray(archers) ? archers : [];
     const 記録 = {
       id: 記録ID,

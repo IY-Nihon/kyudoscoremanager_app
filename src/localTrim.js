@@ -119,7 +119,7 @@ function 目方(記録) {
   try {
     計 = JSON.stringify(記録).length;
   } catch {
-    計 = 0;
+    // 循環しているなど JSON にできないものは 0 と見る
   }
   if (覚え) 覚え.set(記録, 計);
   return 計;

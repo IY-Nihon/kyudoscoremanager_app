@@ -111,7 +111,7 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
       if (!src) return [];
       const titles = src.map((記録) => 記録.title).filter((x) => x && x.trim() !== '');
       return Array.from(new Set(titles)).slice(0, 10);
-    } catch (_) {
+    } catch {
       return [];
     }
   }, [sList, activeRole, myMemberId, myMemberName]);
@@ -134,7 +134,7 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
         .map((部員) => 部員.name)
         .filter((名) => 名 && 名.trim() !== '');
       return Array.from(new Set(list));
-    } catch (_) {
+    } catch {
       return [];
     }
   }, [members, alumni, activeRole, myMemberName]);
@@ -190,10 +190,7 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
       const 対象の記録 = rSessions.filter((記録) => {
         if (範囲 === 'all') return true;
         const 日付 = new Date(記録.date);
-        if (範囲 === 'fiscal') {
-          const 年 = 日付.getFullYear();
-          return 学.年度(日付) === 書き出す年度;
-        }
+        if (範囲 === 'fiscal') return 学.年度(日付) === 書き出す年度;
         if (範囲 === 'custom') {
           const 始め = new Date(期間の始め);
           始め.setHours(0, 0, 0, 0);

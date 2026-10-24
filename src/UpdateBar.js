@@ -32,7 +32,7 @@ const { 色 } = iroの組;
  * 読み込み直しても戻ってくる。帯にもそう書いてある。
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, Text, Platform, StyleSheet } from './rn';
 import {
   束の名前,
@@ -71,7 +71,7 @@ async function 束がサーバーにもう無いか(束) {
     if (住所.origin !== location.origin) return false;
     const 返り = await fetch(住所.href, { method: 'HEAD', cache: 'no-store' });
     return 束がもう無いか({ 状態: 返り.status, 種類: 返り.headers.get('content-type') });
-  } catch (e) {
+  } catch {
     return false;
   }
 }
@@ -95,7 +95,7 @@ async function 読み込み直す() {
       const 登録 = await navigator.serviceWorker.getRegistration();
       if (登録) await 登録.update();
     }
-  } catch (e) {
+  } catch {
     /* 入れ替えられなくても、読み込み直せば新しい束にはなる */
   }
   if (typeof location !== 'undefined') location.reload();
@@ -135,7 +135,7 @@ export function UpdateBar() {
         let 前に試した束 = null;
         try {
           前に試した束 = sessionStorage.getItem(自動更新の控え);
-        } catch (e) {
+        } catch {
           /* 読めなければ、前に試していないとして扱う */
         }
         const 最短 = Number.isFinite(globalThis.__自動更新の離席ミリ秒)
@@ -155,14 +155,14 @@ export function UpdateBar() {
         ) {
           try {
             sessionStorage.setItem(自動更新の控え, 新しい束);
-          } catch (e) {
+          } catch {
             /* 控えられなくても、読み込み直しは 1 回だけなので続ける */
           }
           await 読み込み直す();
           return;
         }
         出すかを置く(true);
-      } catch (e) {
+      } catch {
         /* 通信できないだけ。次の機会に見る */
       }
     };

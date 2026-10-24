@@ -45,7 +45,7 @@ function 書けないことを一度だけ知らせる() {
       '端末に保存できませんでした',
       '端末の空きが足りないようです。このまま続けると、入れた記録が次に開いたときに消えていることがあります。ほかのアプリやブラウザの保存領域を空けてから、もう一度お試しください。'
     );
-  } catch (_) {
+  } catch {
     /* 知らせが出せなくても、本来の動きは続ける */
   }
 }
@@ -129,7 +129,7 @@ try {
       if (様子 !== 'active') 控えの書き出し.今すぐ();
     });
   }
-} catch (誤り) {
+} catch {
   /* 聞き手が付けられない場でも、時間で書くほうは動く */
 }
 // 検査（e2e）は「端末に書かれる中身」を localStorage から読む。書くのを遅らせたので、
@@ -160,7 +160,7 @@ const 控えの置き場 = {
 function 行動を控える(名, 中身) {
   try {
     require('./errorReporter').行動を残す(名, 中身);
-  } catch (誤り) {
+  } catch {
     /* 控えられなくても、本来の動きは続ける */
   }
 }
@@ -275,7 +275,7 @@ function 道しるべたちを拾う(節点) {
 function 行動の控えを捨てる() {
   try {
     require('./errorReporter').行動を捨てる();
-  } catch (誤り) {
+  } catch {
     /* 捨てられなくても、ログアウトそのものは進める */
   }
 }
@@ -283,7 +283,7 @@ function 行動の控えを捨てる() {
 function 溜まりを流し直す() {
   try {
     require('./errorReporter').溜まりを流す();
-  } catch (誤り) {
+  } catch {
     /* 便りを出せなくても、同期は続ける */
   }
 }
@@ -314,7 +314,7 @@ function 不具合を控える(出どころ, 誤り) {
   if (誤り && (誤り.code === 'unavailable' || 誤り.code === 'firestore/unavailable')) return;
   try {
     require('./errorReporter').不具合を送る(出どころ, 誤り);
-  } catch (中の誤り) {
+  } catch {
     /* 控えられなくても、同期そのものは続ける */
   }
 }
@@ -349,7 +349,7 @@ const Firebaseの器 = {
         Firebaseの器.dbInstance = firestore;
         return firestore;
       }
-    } catch (誤り) {
+    } catch {
       /* まだ用意できていないだけ。undefined を返すと waitForDb が待つ */
     }
     return undefined;
@@ -368,7 +368,7 @@ const Firebaseの器 = {
         Firebaseの器.authInstance = auth;
         return auth;
       }
-    } catch (誤り) {
+    } catch {
       /* まだ用意できていないだけ。undefined を返すと waitForDb が待つ */
     }
     return undefined;
@@ -819,7 +819,7 @@ function 在席を始める(名前, 書く) {
           .remove()
           .catch(() => {});
         RTDB.set(自分, { at: RTDB.serverTimestamp() }).catch(() => {});
-      } catch (誤り) {
+      } catch {
         /* 台数が出ないだけ。ライブそのものは続ける */
       }
     };
@@ -856,7 +856,7 @@ function 在席を始める(名前, 書く) {
           .cancel()
           .catch(() => {});
         RTDB.remove(自分).catch(() => {});
-      } catch (誤り) {
+      } catch {
         /* 消せなくても、古いとみなす時間で数から落ちる */
       }
     };
@@ -931,7 +931,7 @@ const 時差を見張る = () => {
       );
       // つながっていなければ来ない。待ち続けない
       setTimeout(終わる, 2e3);
-    } catch (誤り) {
+    } catch {
       終わる();
     }
   });
@@ -968,7 +968,7 @@ function つなげなくなった(誤り, 書く, 状態) {
       'このライブには入れません',
       '共有の期限が切れたか、すでに終わっているようです。配った方にお確かめください。'
     );
-  } catch (中の誤り) {
+  } catch {
     /* 知らせが出せなくても、離れることはできている */
   }
 }
@@ -1032,7 +1032,7 @@ function 期限で閉じるか(届いた状態, 書く, 状態) {
         '共有の期限が切れました',
         'このライブは、配った方も含めて全員がつながらなくなりました。お手元の記録は残っています。保存するか、ライブを始め直してください。'
       );
-    } catch (誤り) {
+    } catch {
       /* 知らせが出せなくても、離れることはできている */
     }
   }
