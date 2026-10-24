@@ -16,8 +16,7 @@ const { useScoreStore } = require('./useScoreStore');
 const 招 = require('./memberInvite');
 const 写 = require('./clipboard_bridge');
 
-/** 部員の認証方式の版（src/LoginScreen.js と App.js の MEMBER_AUTH_VERSION と同じ） */
-const 部員のログインの版 = 2;
+const { 部員のログインの版 } = require('./groupLogin');
 
 const 道具を取る = () => {
   const { auth, db } = require('./db');

@@ -20,7 +20,7 @@ const 学 = require('./gakunen');
 const { 団体の種類を選ぶ } = require('./GroupTypePicker');
 const { IS_IOS, IS_WEB, SAFE_TOP_PADDING } = require('./IS_WEB');
 const { auth, db } = require('./db');
-const { 団体で入る, 切り替えを頼む, 部員として入る } = require('./groupLogin');
+const { 団体で入る, 切り替えを頼む, 部員として入る, 部員のログインの版 } = require('./groupLogin');
 const FirebaseAuth = require('firebase/auth');
 const Firestore = require('firebase/firestore');
 const Icons = require('@expo/vector-icons');
@@ -89,9 +89,6 @@ const 誤りの文 = (誤り) => {
   }
   return 誤り.message || '予期しないエラーが発生しました。時間を置いて再試行してください';
 };
-// 部員の認証方式の版。所属クレームを使う方式に切り替えたので 2。
-// 起動時にこの値が古い端末はログアウトさせ、個人IDで入り直してもらう。
-const MEMBER_AUTH_VERSION = 2;
 /**
  * 見出しの付いた入力欄の段。読み上げの名前（aria-label）は、渡さなければ見出しと同じ。
  * 絵 … 左に出す絵の名前（Ionicons）。見せる・見せるを置く を渡すとパスワードの欄にして、見せる／隠すボタンを付ける。
@@ -684,7 +681,7 @@ const LoginScreen = () => {
                                 整えたID(個人IDの入力)
                               );
                               setAuth(団体の鍵 || 団体ID, 'member', memberId, null, 団体ID, null, 名前);
-                              setMemberAuthVersion(MEMBER_AUTH_VERSION);
+                              setMemberAuthVersion(部員のログインの版);
                             } catch (誤り) {
                               Alert.alert('ログイン失敗', 誤りの文(誤り));
                             } finally {

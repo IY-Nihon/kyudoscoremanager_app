@@ -30,10 +30,7 @@ const {
   useWindowDimensions,
 } = require('./rn');
 const { useScoreStore } = require('./useScoreStore');
-const { 団体で入る, 部員として入る } = require('./groupLogin');
-
-/** 部員の認証方式の版（src/LoginScreen.js・App.js の MEMBER_AUTH_VERSION と同じ） */
-const 部員のログインの版 = 2;
+const { 団体で入る, 部員として入る, 部員のログインの版 } = require('./groupLogin');
 
 const 道具を取る = () => {
   const { auth, db } = require('./db');
