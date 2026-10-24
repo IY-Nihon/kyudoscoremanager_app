@@ -261,7 +261,10 @@ test('出欠：期間に一度も来ていない人は順位に入れず、別�
   const 二年 = 出欠の集計(部員たち, 記録たち, Object.assign({}, 注文, { 学年: 2 }));
   assert.deepEqual(二年.一覧.map((x) => x.名前).sort(), ['佐藤', '鈴木']);
   assert.equal(二年.一度も来ていない人.length, 0);
-  assert.equal(出欠の集計(部員たち, 記録たち, Object.assign({}, 注文, { 性別: 'female' })).一覧[0].名前, '佐藤');
+  assert.equal(
+    出欠の集計(部員たち, 記録たち, Object.assign({}, 注文, { 性別: 'female' })).一覧[0].名前,
+    '佐藤'
+  );
 });
 
 test('出欠：練習日が期間に無ければ、前のまま記録の出欠の印で数える', () => {
@@ -972,20 +975,91 @@ test('一人の成績：一射・一手・三射の成績と、いつの記録�
   const 日 = (文) => new Date(文 + 'T10:00:00').getTime();
   const 名簿 = [{ id: '笹', name: '笹原' }];
   const 記録たち = [
-    { id: 'a', date: 日('2026-09-01'), title: '合宿', archers: [{ memberId: '笹', name: '笹原', marks: ['×', '×'] }] },
-    { id: 'b', date: 日('2026-09-02'), title: '一本', archers: [{ memberId: '笹', name: '笹原', marks: ['○'] }] },
-    { id: 'c', date: 日('2026-09-03'), title: '三本', archers: [{ memberId: '笹', name: '笹原', marks: ['○', '×', '○'] }] },
-    { id: 'd', date: 日('2026-09-04'), title: '四本', archers: [{ memberId: '笹', name: '笹原', marks: ['○', '○', '○', '○'] }] },
+    {
+      id: 'a',
+      date: 日('2026-09-01'),
+      title: '合宿',
+      archers: [{ memberId: '笹', name: '笹原', marks: ['×', '×'] }],
+    },
+    {
+      id: 'b',
+      date: 日('2026-09-02'),
+      title: '一本',
+      archers: [{ memberId: '笹', name: '笹原', marks: ['○'] }],
+    },
+    {
+      id: 'c',
+      date: 日('2026-09-03'),
+      title: '三本',
+      archers: [{ memberId: '笹', name: '笹原', marks: ['○', '×', '○'] }],
+    },
+    {
+      id: 'd',
+      date: 日('2026-09-04'),
+      title: '四本',
+      archers: [{ memberId: '笹', name: '笹原', marks: ['○', '○', '○', '○'] }],
+    },
   ];
   const r = 一人(名簿, 記録たち, '笹原');
   assert.equal(r.oneHand.手の数, 1);
   assert.equal(r.oneHand.的中率, '0.0%');
-  assert.deepEqual(r.oneHand.記録.map((x) => [x.title, x.marks]), [['合宿', '××']]);
+  assert.deepEqual(
+    r.oneHand.記録.map((x) => [x.title, x.marks]),
+    [['合宿', '××']]
+  );
   assert.equal(r.oneHand.型[0].型, '××');
   assert.equal(r.oneShot.射数, 1);
   assert.equal(r.oneShot.的中率, '100.0%');
-  assert.deepEqual(r.oneShot.記録.map((x) => x.title), ['一本']);
-  assert.deepEqual(r.threeShots.記録.map((x) => [x.title, x.marks]), [['三本', '○×○']]);
+  assert.deepEqual(
+    r.oneShot.記録.map((x) => x.title),
+    ['一本']
+  );
+  assert.deepEqual(
+    r.threeShots.記録.map((x) => [x.title, x.marks]),
+    [['三本', '○×○']]
+  );
   assert.equal(r.threeShots.的中率, '66.7%');
   assert.equal(r.kaichuCount, 1);
+});
+
+// ── 記録の要約（getSessionsByDate が AI に渡す形） ──
+const { 記録の要約 } = require('../src/chatStats');
+
+test('記録の要約：人ごとの並びと的中数。途中交代は交代した人に、区切りと計の列は数えない', () => {
+  const 要約 = 記録の要約({
+    id: 'r1',
+    date: new Date(2026, 9, 3, 7, 0).getTime(),
+    title: '朝練',
+    tags: ['#立'],
+    archers: [
+      { name: '山田', marks: ['○', '×', '○', '○'], substitutions: { 2: '佐藤' } },
+      { isSeparator: true, name: 'A大', teamName: 'A大', marks: [] },
+      { name: '', marks: ['×', ''] },
+      // 計の列に ○× が入っている記録が本番にある。全体の的中率に足さない
+      { isTotalCalculator: true, name: '計', marks: ['○', '○', '○', '○'] },
+    ],
+  });
+  assert.strictEqual(要約.date, '2026/10/3');
+  assert.strictEqual(要約.archers, '山田:○×(1/2), 佐藤:○○(2/2), ゲスト:×(0/1)');
+  assert.strictEqual(要約.totalArrows, 5);
+  assert.strictEqual(要約.hitRate, '60.0%');
+  assert.deepStrictEqual(要約.tags, ['#立']);
+  assert.ok(要約.チームごと, 'チームに分けた記録はチームごとの的中も添える');
+});
+
+test('記録の要約：載せない名前は人ごとの一覧から外し、チームも を偽にするとチームごとを添えない', () => {
+  const 要約 = 記録の要約(
+    {
+      id: 'r2',
+      date: 0,
+      archers: [
+        { name: '山田', marks: ['○', '○'], substitutions: { 1: '（他の人）' } },
+        { isSeparator: true, name: '---', marks: [] },
+      ],
+    },
+    { 載せない名前: '（他の人）', チームも: false }
+  );
+  assert.strictEqual(要約.archers, '山田:○(1/1)');
+  assert.strictEqual(要約.title, '無題');
+  assert.strictEqual(要約.チームごと, undefined);
 });
