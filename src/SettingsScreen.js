@@ -167,11 +167,11 @@ const SettingsScreen = () => {
   const 種類を選んだ = (種類) => {
     if (種類 === (groupType || 学.既定の種類)) return void 種類の窓を出す(false);
     // 「自分で決める」は、まだ学年を並べていなければ今の種類の学年・卒業・呼び方を写して始める（見た目が変わらない）
-    if ('custom' === 種類 && !学.自分の学年たち(customGrades).length) {
+    if (種類 === 'custom' && !学.自分の学年たち(customGrades).length) {
       useScoreStore.getState().学年の設定を書く({
         customGrades: 今の決まり.在籍の学年.map((値) => ({ value: 値, name: 今の決まり.学年の表.get(値) })),
         customGraduate: 学年なし || 今の決まり.卒業する学年.length > 0,
-        customWording: '会員' === 今の決まり.呼び方.部員 ? 'club' : 'school',
+        customWording: 今の決まり.呼び方.部員 === '会員' ? 'club' : 'school',
       });
       setGroupType(種類);
       return void 種類の窓を出す(false);
@@ -261,7 +261,7 @@ const SettingsScreen = () => {
                 <Text style={styles.itemText}>ログイン種別</Text>
               </View>
               <Text style={styles.timestamp}>
-                {'group' === activeRole
+                {activeRole === 'group'
                   ? '団体アカウント'
                   : `メンバー (${(() => {
                       const 自分 = members.find((部員) => 部員.id === myMemberId);
@@ -292,7 +292,7 @@ const SettingsScreen = () => {
               true
             )}
             {/* 団体アカウントで、管理者モードのときだけ出す。押すと警告の窓へ */}
-            {'group' === activeRole &&
+            {activeRole === 'group' &&
               isAdminMode &&
               行(
                 'trash-outline',
@@ -354,11 +354,11 @@ const SettingsScreen = () => {
             </View>
           </View>
         )}
-        {'member' !== activeRole &&
+        {activeRole !== 'member' &&
           節(
             '基本設定',
             <>
-              {'group' === activeRole && (
+              {activeRole === 'group' && (
                 <View style={styles.item}>
                   <View style={[styles.itemLeft, { flex: 1 }]}>
                     <Icons.Ionicons
@@ -374,7 +374,7 @@ const SettingsScreen = () => {
                   </View>
                 </View>
               )}
-              {'group' === activeRole && (
+              {activeRole === 'group' && (
                 <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
                   <View style={[styles.itemLeft, { marginBottom: 8 }]}>
                     <Icons.Ionicons
@@ -394,7 +394,7 @@ const SettingsScreen = () => {
                   />
                 </View>
               )}
-              {'group' === activeRole && (
+              {activeRole === 'group' && (
                 <Pressable
                   style={({ hovered }) => [
                     styles.item,
@@ -426,7 +426,7 @@ const SettingsScreen = () => {
                   <Icons.Ionicons name="chevron-forward" size={18} color={基本色.灰_薄い} />
                 </Pressable>
               )}
-              {'group' === activeRole && !学年なし && (
+              {activeRole === 'group' && !学年なし && (
                 <View style={styles.item}>
                   <View style={[styles.itemLeft, { flex: 1 }]}>
                     <Icons.Ionicons
@@ -450,7 +450,7 @@ const SettingsScreen = () => {
                   />
                 </View>
               )}
-              {'group' === activeRole && !学年なし && (
+              {activeRole === 'group' && !学年なし && (
                 <View style={styles.item}>
                   <View style={[styles.itemLeft, { flex: 1 }]}>
                     <Icons.Ionicons
@@ -474,7 +474,7 @@ const SettingsScreen = () => {
                   />
                 </View>
               )}
-              {'group' === activeRole && !学年なし && useTerm && (
+              {activeRole === 'group' && !学年なし && useTerm && (
                 <View style={styles.item}>
                   <View style={[styles.itemLeft, { flex: 1 }]}>
                     <View style={[styles.itemIcon, { width: 22 }]} />
@@ -492,7 +492,13 @@ const SettingsScreen = () => {
                       value={String(currentFreshmanTerm)}
                       onChangeText={(文) => {
                         const 数 = parseInt(文.replace(/[^0-9]/g, ''));
-                        isNaN(数) ? '' === 文 && updateCurrentFreshmanTerm(0) : updateCurrentFreshmanTerm(数);
+                        if (isNaN(数)) {
+                          if (文 === '') {
+                            updateCurrentFreshmanTerm(0);
+                          }
+                        } else {
+                          updateCurrentFreshmanTerm(数);
+                        }
                       }}
                       keyboardType="number-pad"
                     />
@@ -529,7 +535,7 @@ const SettingsScreen = () => {
                   </View>
                 </View>
               )}
-              {'group' === activeRole && 今の決まり.自分で決める ? (
+              {activeRole === 'group' && 今の決まり.自分で決める ? (
                 <>
                   <学年の並びの設定 />
                   <View style={styles.item}>
@@ -602,7 +608,7 @@ const SettingsScreen = () => {
                   </View>
                 </>
               ) : null}
-              {'group' === activeRole && (
+              {activeRole === 'group' && (
                 <Pressable
                   style={({ hovered }) => [
                     styles.item,
@@ -633,8 +639,8 @@ const SettingsScreen = () => {
                   <Icons.Ionicons name="chevron-forward" size={18} color={基本色.灰_薄い} />
                 </Pressable>
               )}
-              {'group' === activeRole && <区分の設定 />}
-              {'group' === activeRole && (
+              {activeRole === 'group' && <区分の設定 />}
+              {activeRole === 'group' && (
                 <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
                   <View
                     style={{
@@ -697,13 +703,14 @@ const SettingsScreen = () => {
                       value={タグの下書き}
                       onChangeText={タグの下書きを置く}
                       onSubmitEditing={() => {
-                        タグの下書き.trim() &&
-                          (addTagTemplate(
+                        if (タグの下書き.trim()) {
+                          addTagTemplate(
                             タグの下書き.trim().startsWith('#')
                               ? タグの下書き.trim()
                               : `#${タグの下書き.trim()}`
-                          ),
-                          タグの下書きを置く(''));
+                          );
+                          タグの下書きを置く('');
+                        }
                       }}
                     />
                     <Pressable
@@ -718,13 +725,14 @@ const SettingsScreen = () => {
                         IS_WEB && { cursor: 'pointer' },
                       ]}
                       onPress={() => {
-                        タグの下書き.trim() &&
-                          (addTagTemplate(
+                        if (タグの下書き.trim()) {
+                          addTagTemplate(
                             タグの下書き.trim().startsWith('#')
                               ? タグの下書き.trim()
                               : `#${タグの下書き.trim()}`
-                          ),
-                          タグの下書きを置く(''));
+                          );
+                          タグの下書きを置く('');
+                        }
                       }}
                     >
                       <Text style={{ color: 基本色.白, fontWeight: 'bold' }}>追加</Text>
@@ -810,12 +818,12 @@ const SettingsScreen = () => {
                 <View style={styles.flexRow}>
                   <TouchableOpacity
                     onPress={() => setArrowTargetType('kasumi36')}
-                    style={[styles.radioBtn, 'kasumi36' === arrowTargetType && styles.radioBtnActive]}
+                    style={[styles.radioBtn, arrowTargetType === 'kasumi36' && styles.radioBtnActive]}
                   >
                     <Text
                       style={[
                         styles.radioBtnText,
-                        'kasumi36' === arrowTargetType && styles.radioBtnTextActive,
+                        arrowTargetType === 'kasumi36' && styles.radioBtnTextActive,
                       ]}
                     >
                       霞的
@@ -823,12 +831,12 @@ const SettingsScreen = () => {
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => setArrowTargetType('hoshi36')}
-                    style={[styles.radioBtn, 'hoshi36' === arrowTargetType && styles.radioBtnActive]}
+                    style={[styles.radioBtn, arrowTargetType === 'hoshi36' && styles.radioBtnActive]}
                   >
                     <Text
                       style={[
                         styles.radioBtnText,
-                        'hoshi36' === arrowTargetType && styles.radioBtnTextActive,
+                        arrowTargetType === 'hoshi36' && styles.radioBtnTextActive,
                       ]}
                     >
                       星的
@@ -836,12 +844,12 @@ const SettingsScreen = () => {
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => setArrowTargetType('hoshi24')}
-                    style={[styles.radioBtn, 'hoshi24' === arrowTargetType && styles.radioBtnActive]}
+                    style={[styles.radioBtn, arrowTargetType === 'hoshi24' && styles.radioBtnActive]}
                   >
                     <Text
                       style={[
                         styles.radioBtnText,
-                        'hoshi24' === arrowTargetType && styles.radioBtnTextActive,
+                        arrowTargetType === 'hoshi24' && styles.radioBtnTextActive,
                       ]}
                     >
                       星的(八寸)
@@ -852,7 +860,7 @@ const SettingsScreen = () => {
             )}
           </>
         )}
-        {'member' !== activeRole &&
+        {activeRole !== 'member' &&
           節(
             '管理者設定',
             <View
@@ -879,7 +887,12 @@ const SettingsScreen = () => {
               <Switch
                 value={isAdminMode}
                 onValueChange={async (入れる) => {
-                  入れる ? (管理者の合言葉を置く(''), 管理者の合言葉の窓を出す(true)) : setAdminMode(false);
+                  if (入れる) {
+                    管理者の合言葉を置く('');
+                    管理者の合言葉の窓を出す(true);
+                  } else {
+                    setAdminMode(false);
+                  }
                 }}
                 trackColor={{ false: 基本色.灰_明るい, true: 基本色.赤 }}
               />
@@ -888,7 +901,7 @@ const SettingsScreen = () => {
         {節(
           'データ管理',
           <>
-            {'member' === activeRole && (
+            {activeRole === 'member' && (
               <View
                 style={{
                   paddingHorizontal: 16,
@@ -940,7 +953,7 @@ const SettingsScreen = () => {
                 <Text style={styles.timestamp}>
                   {lastSyncTime
                     ? new Date(lastSyncTime).toLocaleTimeString('ja-JP')
-                    : '同期済み' === syncStatus
+                    : syncStatus === '同期済み'
                       ? ''
                       : syncStatus}
                 </Text>
@@ -1175,9 +1188,13 @@ const SettingsScreen = () => {
                   if (管理者の合言葉) {
                     合言葉を確かめ中を置く(true);
                     try {
-                      (await verifyGroupPassword(管理者の合言葉))
-                        ? (setAdminMode(true), 管理者の合言葉の窓を出す(false), 管理者の合言葉を置く(''))
-                        : Alert.alert('エラー', 'パスワードが正しくありません。');
+                      if (await verifyGroupPassword(管理者の合言葉)) {
+                        setAdminMode(true);
+                        管理者の合言葉の窓を出す(false);
+                        管理者の合言葉を置く('');
+                      } else {
+                        Alert.alert('エラー', 'パスワードが正しくありません。');
+                      }
                     } catch (誤り) {
                       Alert.alert('エラー', '認証に失敗しました。');
                     } finally {
@@ -1250,7 +1267,7 @@ const SettingsScreen = () => {
                   }
                   ログアウトの窓を出す(false);
                   try {
-                    if ('member' === activeRole && auth.currentUser) {
+                    if (activeRole === 'member' && auth.currentUser) {
                       await Firestore.deleteDoc(
                         Firestore.doc(db, 'member_claims', auth.currentUser.uid)
                       ).catch(() => {});
@@ -1381,7 +1398,10 @@ const SettingsScreen = () => {
                   <Pressable
                     accessibilityRole="radio"
                     aria-checked={yearStartMonth === 月}
-                    onPress={() => (setYearStartMonth(月), 月の窓を出す(false))}
+                    onPress={() => {
+                      setYearStartMonth(月);
+                      return 月の窓を出す(false);
+                    }}
                     style={({ hovered }) => [
                       {
                         height: 40,

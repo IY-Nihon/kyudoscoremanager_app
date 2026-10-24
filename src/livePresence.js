@@ -70,7 +70,7 @@ function 端末の名前を作る(乱数源) {
  */
 function 在席を数える(節点, 今) {
   if (!節点 || typeof 節点 !== 'object') return 0;
-  const 数えるだけ = 'number' != typeof 今;
+  const 数えるだけ = typeof 今 !== 'number';
   let 数 = 0;
   for (const 鍵 of Object.keys(節点)) {
     const x = 節点[鍵];
@@ -90,7 +90,7 @@ function 在席を数える(節点, 今) {
  * 相手が居るのか自分だけなのか読み取れない。
  */
 function 台数の文言(台数) {
-  return 'number' == typeof 台数 && 台数 >= 2 ? 訳('在席.台数', { n: 台数 }) : null;
+  return typeof 台数 === 'number' && 台数 >= 2 ? 訳('在席.台数', { n: 台数 }) : null;
 }
 
 module.exports = {

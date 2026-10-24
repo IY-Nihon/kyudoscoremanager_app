@@ -42,20 +42,20 @@ const ScoreCell = React.memo(
         自動ロックまでの秒: 状態.自動ロックまでの秒,
       }))
     );
-    const 倍率 = 'number' == typeof viewScale && !isNaN(viewScale) && viewScale > 0 ? viewScale : 1;
+    const 倍率 = typeof viewScale === 'number' && !isNaN(viewScale) && viewScale > 0 ? viewScale : 1;
     const 印 = mark ?? '';
     const 背景の色 =
-      'total' === columnType
+      columnType === 'total'
         ? 'rgba(0,122,255,0.08)'
-        : 'separator' === columnType
+        : columnType === 'separator'
           ? 'rgba(142,142,147,0.1)'
           : isLocked // 立の鍵も、自動ロックと同じ濃さの灰色（#F2F2F7 では白と見分けられなかった）
             ? 色.地_濃い
             : 色.白;
     const 下線の太さ = isFirst ? 1 : isBlockBottom ? 2 : 1;
-    const 間隔か合計 = 'separator' === columnType || 'total' === columnType;
+    const 間隔か合計 = columnType === 'separator' || columnType === 'total';
     const 枠の太さ = 間隔か合計 ? 1 : 0;
-    const 細い = 'separator' === columnType ? UIConfig.separatorWidth : null;
+    const 細い = columnType === 'separator' ? UIConfig.separatorWidth : null;
     const 幅 = (横 ? UIConfig.cellWidth : (細い ?? UIConfig.cellWidth)) * 倍率;
     const 高さ = (横 ? (細い ?? UIConfig.cellHeight) : UIConfig.cellHeight) * 倍率;
     const // 縦は「下に太線・右に細線」。横はそれを90度まわして「右に太線・下に細線」
@@ -103,7 +103,7 @@ const ScoreCell = React.memo(
     // 「計」と「間隔」の列は、数字や区切りを出すだけで○×を入れる場所ではない。
     // ここを普通のますとして扱うと、押しただけで見えない○が入り（hideMark が
     // 立っているので画面には出ない）、3秒後に灰色になる
-    const 印を入れる列 = 'total' !== columnType && 'separator' !== columnType;
+    const 印を入れる列 = columnType !== 'total' && columnType !== 'separator';
     // 空のますは閉じない（これから入れるところなので）。
     // 手元に入れた覚えが無い○×は、読み込み直後かライブで届いたもの。
     // どちらも「もう入れ終わったます」なので、初めから閉じておく
@@ -161,7 +161,7 @@ const ScoreCell = React.memo(
             // 開けるだけで終わると、矢所を出すのに二度長押しさせることになる
             const 印 = props.mark ?? '';
             const 射手 = 射手を取る();
-            if (props.enableArrowLocation && '' !== 印 && 射手) {
+            if (props.enableArrowLocation && 印 !== '' && 射手) {
               setActiveArrowLocationEdit({
                 archerId: props.archerId,
                 shotIndex: props.shotIndex,
@@ -300,7 +300,7 @@ const ScoreCell = React.memo(
                 style={[
                   styles.markText,
                   {
-                    color: '○' === 印 ? 色.赤 : '\xd7' === 印 ? 色.黒 : 'transparent',
+                    color: 印 === '○' ? 色.赤 : 印 === '\xd7' ? 色.黒 : 'transparent',
                     fontSize: 34 * 倍率,
                     lineHeight: 高さ,
                   },

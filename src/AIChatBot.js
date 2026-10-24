@@ -661,7 +661,7 @@ const AIChatBot = () => {
             type: 'ratio',
             value: 0,
           };
-          if ('count' === 設定.type) return Math.max(1, Number(設定.value) || 0);
+          if (設定.type === 'count') return Math.max(1, Number(設定.value) || 0);
           const 下見 = 全員の成績(members, sessions, { 期間, 最小射数: 0 });
           const 最多 = Math.max(0, ...下見.一覧.map((人) => 人.射数));
           return Math.max(1, Math.floor(最多 * (Number(設定.value) || 0)));
@@ -1068,7 +1068,10 @@ const AIChatBot = () => {
             // 前は流さずに（generateContent で）送り直していたが、流さない道は答え全部ができるまで
             // 1 字も届かず、中継も写真用の並び（1 つ 45 秒まで待つ）を通る。2026-10-20・21 に本番で
             // 70〜100 秒無言のまま iPhone の Safari に切られ（Load failed）、3 回とも答えが出なかった
-            console.warn('[AIChatBot] 流し読みが切れたので、もう一度流し読みで送り直します', 誤り && 誤り.message);
+            console.warn(
+              '[AIChatBot] 流し読みが切れたので、もう一度流し読みで送り直します',
+              誤り && 誤り.message
+            );
             模型の部品.length = 0;
             途中の文 = '';
             返り = await model.generateContentStream({ contents: 会話 });
@@ -2039,7 +2042,9 @@ const AIChatBot = () => {
                     // Tab か → で続きを取り込む（Claude Code と同じ操作）
                     const 鍵 = 出来事.nativeEvent?.key;
                     if (続きの候補 && (鍵 === 'Tab' || 鍵 === 'ArrowRight')) {
-                      出来事.preventDefault && 出来事.preventDefault();
+                      if (出来事.preventDefault) {
+                        出来事.preventDefault();
+                      }
                       setInputText(続きの候補);
                     }
                   }}

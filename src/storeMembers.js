@@ -26,7 +26,7 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
    * 区分は今の一覧にある id だけを残す（src/kubun.js の 付けられる区分）
    */
   addMember: (名前, 性別, 学年, 期, 足すもの) => {
-    if (!状態().activeGroupId || 'group' !== 状態().activeRole)
+    if (!状態().activeGroupId || 状態().activeRole !== 'group')
       return void Alert.alert('権限エラー', 'メンバーの追加は団体ログイン、かつ管理者のみ可能です。');
     const 整えた名前 = 名前 ? 名前.trim() : '';
     const 新しい部員 = {
@@ -73,17 +73,17 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
     }
   },
   updateMember: (部員ID, 変更) => {
-    if (!状態().activeGroupId || 'group' !== 状態().activeRole)
+    if (!状態().activeGroupId || 状態().activeRole !== 'group')
       return void Alert.alert('権限エラー', 'メンバーの編集は団体ログイン時のみ可能です。');
     let 直す中身 = Object.assign({}, 変更);
     // 卒業・退部にしたら、現役だった最後の年度を書き留める（出欠の画面が年度ごとの現役を決めるのに使う）。
     // 在籍に戻したら消す。前の形の卒業の印（graduationYear）も消す（src/gakunen.js の 在籍の状態）
-    if (undefined !== 変更.enrollment) {
+    if (変更.enrollment !== undefined) {
       const 抜けた = 学.在籍.卒業 === 変更.enrollment || 学.在籍.退部 === 変更.enrollment;
-      if (undefined === 変更.leftYear) 直す中身.leftYear = 抜けた ? 学.年度() : null;
+      if (変更.leftYear === undefined) 直す中身.leftYear = 抜けた ? 学.年度() : null;
       直す中身.graduationYear = null;
     }
-    if (undefined !== 変更.grade && undefined === 変更.termKi) {
+    if (変更.grade !== undefined && 変更.termKi === undefined) {
       // 学年を変えたら期も合わせる（期を使う団体の在籍の学年だけ。その他にしたら期を空にする）
       if (!学.期を付ける学年か(変更.grade)) 直す中身.termKi = null;
       else if (状態().useTerm) 直す中身.termKi = 学.学年の期(状態().currentFreshmanTerm, 変更.grade);
@@ -94,7 +94,7 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
         : 部員
     );
     書く({ members: 直した部員, lastLocalChange: Date.now() });
-    if (undefined !== 変更.name || undefined !== 変更.gender || undefined !== 変更.grade) {
+    if (変更.name !== undefined || 変更.gender !== undefined || 変更.grade !== undefined) {
       // 射手の並びに、直した名前・性別・学年を写す。部員に結び付いた射手（memberId）だけ。
       // 途中交代で入った人は、名前だけ（交代の欄は名前しか持たない）
       const 射手たちを直す = (射手たち) => {
@@ -104,9 +104,9 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
             射手 && 射手.memberId === 部員ID
               ? ((触った = true),
                 Object.assign({}, 射手, {
-                  name: undefined !== 変更.name ? 変更.name : 射手.name,
-                  gender: undefined !== 変更.gender ? 変更.gender : 射手.gender,
-                  grade: undefined !== 変更.grade ? 変更.grade : 射手.grade,
+                  name: 変更.name !== undefined ? 変更.name : 射手.name,
+                  gender: 変更.gender !== undefined ? 変更.gender : 射手.gender,
+                  grade: 変更.grade !== undefined ? 変更.grade : 射手.grade,
                   lastModified: Date.now(),
                 }))
               : 射手
@@ -118,16 +118,16 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
               if (
                 (Object.entries(射手.substitutionIds).forEach(([番, id]) => {
                   const 添字 = Number(番);
-                  id === 部員ID &&
-                    undefined !== 変更.name &&
-                    ((交代[添字] = 変更.name), (交代を直した = true));
+                  if (id === 部員ID && 変更.name !== undefined) {
+                    交代[添字] = 変更.name;
+                    交代を直した = true;
+                  }
                 }),
                 交代を直した)
-              )
-                return (
-                  (触った = true),
-                  Object.assign({}, 射手, { substitutions: 交代, lastModified: Date.now() })
-                );
+              ) {
+                触った = true;
+                return Object.assign({}, 射手, { substitutions: 交代, lastModified: Date.now() });
+              }
             }
             return 射手;
           });
@@ -221,9 +221,11 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
         少しずつ送る(0);
       }
     }
-    状態().activeGroupId &&
-      (場.部員を送る予約[部員ID] && clearTimeout(場.部員を送る予約[部員ID]),
-      (場.部員を送る予約[部員ID] = setTimeout(async () => {
+    if (状態().activeGroupId) {
+      if (場.部員を送る予約[部員ID]) {
+        clearTimeout(場.部員を送る予約[部員ID]);
+      }
+      場.部員を送る予約[部員ID] = setTimeout(async () => {
         const 部員 = 状態().members.find((部員1人) => 部員1人.id === 部員ID);
         if (部員) {
           // 送った版の更新日時。送信中にもう一度編集された場合、その
@@ -253,10 +255,11 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
               delete 場.部員を送る予約[部員ID];
             });
         }
-      }, 300)));
+      }, 300);
+    }
   },
   deleteMember: (部員ID) => {
-    if (!状態().activeGroupId || 'group' !== 状態().activeRole)
+    if (!状態().activeGroupId || 状態().activeRole !== 'group')
       return void Alert.alert('権限エラー', 'メンバーの削除は団体ログイン時のみ可能です。');
     // 消したことを控えに残す。送信が失われても、次の受け取りで
     // 復活させないため。クラウドから消えたのを確かめてから控えを外す
@@ -272,7 +275,7 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
         Promise.all([
           状態().syncMemberLookup(),
           // その人の招待リンクを取り消す（名簿が空になっても残らないよう名指しで）
-          'group' === 状態().activeRole
+          状態().activeRole === 'group'
             ? require('./memberInvite').招待を取り消す(
                 { Firestore, db: Firebaseの器.db },
                 状態().activeGroupId,
@@ -285,7 +288,7 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
   },
   syncMemberLookup: async () => {
     const { activeGroupId: 団体, activeRole, members } = 状態();
-    if (!団体 || 'group' !== activeRole || !Firebaseの器.db) return;
+    if (!団体 || activeRole !== 'group' || !Firebaseの器.db) return;
     try {
       const col = Firestore.collection(Firebaseの器.db, `groups/${団体}/member_lookup`);
       const snap = await Firestore.getDocs(col);
@@ -350,7 +353,7 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
   名前のずれを直す: async () => {
     const 今 = 状態();
     const 団体 = 今.activeGroupId;
-    if (!団体 || 'group' !== 今.activeRole || !今.isNetworkOnline || 今.isLiveActive) return;
+    if (!団体 || 今.activeRole !== 'group' || !今.isNetworkOnline || 今.isLiveActive) return;
     if (場.名前を合わせている || Date.now() - 場.最後に名前を合わせた時刻 < 60 * 1000) return;
     // 卒業生の一覧（古い）を先に、部員を後に渡す。同じ id が両方に居たら、いまの部員の名前が勝つ
     const 名前表を作る = () => 名前の整合.名前表を作る(状態().alumni, 状態().members);
@@ -361,7 +364,7 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
       ['trash', 今.trash],
     ]) {
       const 送信待ち = new Set(
-        (一覧 || []).filter((記録) => 記録 && '未同期' === 記録.syncStatus).map((記録) => 記録.id)
+        (一覧 || []).filter((記録) => 記録 && 記録.syncStatus === '未同期').map((記録) => 記録.id)
       );
       for (const ずれ of 名前の整合.ずれのある記録たち(一覧, 名前表)) {
         if (!送信待ち.has(ずれ.id)) 対象.push({ 置き場, id: ずれ.id });
@@ -403,7 +406,7 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
       // 手元にも写す。射手の名前だけ（手元の○×などは、雲の写しで置き換えない）
       const 写す = (一覧, 置き場) =>
         (一覧 || []).map((記録) => {
-          if (!記録 || !直した.has(置き場 + '/' + 記録.id) || '未同期' === 記録.syncStatus) return 記録;
+          if (!記録 || !直した.has(置き場 + '/' + 記録.id) || 記録.syncStatus === '未同期') return 記録;
           const { 直した射手, 触った } = 名前の整合.射手たちを合わせる(記録.archers, 名前表を作る());
           return 触った
             ? Object.assign({}, 記録, {
@@ -426,7 +429,7 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
     // 名簿を書けるのは団体アカウントだけ。部員の端末で走ると、他人の
     // 個人IDを勝手に振ってしまう。しかも逆引き表（こちらは団体限定）は
     // 更新されないため、その人がログインできなくなる。
-    if (!団体 || 'group' !== 状態().activeRole) return;
+    if (!団体 || 状態().activeRole !== 'group') return;
     const _ensureDb = await waitForDb();
     if (!_ensureDb) {
       console.warn('[Store] ensurePersonalIds: db still undefined after await, aborting');

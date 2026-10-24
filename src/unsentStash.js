@@ -59,7 +59,7 @@ function 重ねる(前, 後) {
  * 送れていないものが無ければ、控えはそのまま。
  */
 function 控えに入れる(控え, 鍵, 状態) {
-  const 元 = 控え && 'object' === typeof 控え ? 控え : {};
+  const 元 = 控え && typeof 控え === 'object' ? 控え : {};
   if (!鍵) return 元;
   const 足す = 送れていないもの(状態);
   if (!件数(足す)) return 元;
@@ -75,7 +75,7 @@ function 控えに入れる(控え, 鍵, 状態) {
  * 返り値: { 控え, 手元: { sessions, members, alumni, trash } | null, 戻した数 }
  */
 function 控えを戻す(控え, 鍵, 状態) {
-  const 元 = 控え && 'object' === typeof 控え ? 控え : {};
+  const 元 = 控え && typeof 控え === 'object' ? 控え : {};
   const 箱 = 鍵 ? 元[鍵] : null;
   if (!箱 || !件数(箱)) return { 控え: 元, 手元: null, 戻した数: 0 };
   const 手元 = {};

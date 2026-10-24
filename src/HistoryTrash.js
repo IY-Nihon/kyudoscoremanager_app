@@ -75,7 +75,7 @@ const ゴミ箱の中身の窓 = ({
                 <View style={{ flexDirection: 'row', gap: 16 }}>
                   <TouchableOpacity
                     onPress={() => {
-                      if (0 === ゴミ箱で選んだ.size) return;
+                      if (ゴミ箱で選んだ.size === 0) return;
                       // まとめて戻す。1件ずつ待つと、通信できないときに
                       // 1件目の送信が終わらず、残りが戻らないまま画面も
                       // 反応しなくなる。
@@ -98,7 +98,7 @@ const ゴミ箱の中身の窓 = ({
                     activeOpacity={0.6}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     onPress={() => {
-                      if (0 === ゴミ箱で選んだ.size) return;
+                      if (ゴミ箱で選んだ.size === 0) return;
                       const 消す = () => {
                         const 消すID = Array.from(ゴミ箱で選んだ);
                         useScoreStore.getState().deleteTrashItems(消すID);
@@ -127,7 +127,7 @@ const ゴミ箱の中身の窓 = ({
                 <View style={{ flexDirection: 'row', gap: 16 }}>
                   <TouchableOpacity
                     onPress={() => {
-                      if (0 !== trash.length)
+                      if (trash.length !== 0)
                         Alert.alert(
                           'ゴミ箱を空にする',
                           'ゴミ箱内のすべての記録を完全に削除します。よろしいですか？',

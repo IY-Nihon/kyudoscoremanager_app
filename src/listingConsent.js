@@ -33,11 +33,11 @@ const 載せ方たち = ['団体名', '地域', '載せない'];
 
 /** 日時を数（ミリ秒）に。Firestore の日時型・Date・数・文字のどれでも */
 function ミリ秒(値) {
-  if (null == 値 || '' === 値) return null;
-  if ('number' === typeof 値) return Number.isFinite(値) ? 値 : null;
+  if (値 == null || 値 === '') return null;
+  if (typeof 値 === 'number') return Number.isFinite(値) ? 値 : null;
   if (値 instanceof Date) return 値.getTime();
-  if ('function' === typeof 値.toMillis) return 値.toMillis();
-  if ('number' === typeof 値.seconds) return 値.seconds * 1000 + Math.floor((値.nanoseconds || 0) / 1e6);
+  if (typeof 値.toMillis === 'function') return 値.toMillis();
+  if (typeof 値.seconds === 'number') return 値.seconds * 1000 + Math.floor((値.nanoseconds || 0) / 1e6);
   const t = Date.parse(String(値));
   return Number.isFinite(t) ? t : null;
 }
@@ -50,7 +50,7 @@ function 記録の数と始まり(記録たち) {
     if (!記録 || 記録.deletedAt || 記録.isDeleted) continue;
     数 += 1;
     const t = ミリ秒(記録.date);
-    if (null != t && (null == 始まり || t < 始まり)) 始まり = t;
+    if (t != null && (始まり == null || t < 始まり)) 始まり = t;
   }
   return { 数, 始まり };
 }
@@ -68,10 +68,10 @@ function 答えたか(許可) {
  */
 function 札を出すか(材料) {
   const { 役割, 記録たち, 許可, いま = Date.now(), 止める = false, この起動で聞いた = false } = 材料 || {};
-  if (止める || この起動で聞いた || 'group' !== 役割) return false;
+  if (止める || この起動で聞いた || 役割 !== 'group') return false;
   if (答えたか(許可)) return false;
   const { 数, 始まり } = 記録の数と始まり(記録たち);
-  if (数 < 聞く記録数 || null == 始まり) return false;
+  if (数 < 聞く記録数 || 始まり == null) return false;
   return いま - 始まり >= 聞く日数 * 一日;
 }
 
@@ -81,7 +81,7 @@ function 札を出すか(材料) {
  */
 function 開いた時に出すか(材料) {
   const { 役割, 許可, 止める = false, この起動で聞いた = false } = 材料 || {};
-  if (止める || この起動で聞いた || 'group' !== 役割) return false;
+  if (止める || この起動で聞いた || 役割 !== 'group') return false;
   if (答えたか(許可)) return false;
   return Number((許可 && 許可.聞いた回数) || 0) >= 1;
 }
@@ -98,7 +98,7 @@ function 聞いた記録(許可, いま = Date.now()) {
 
 /** 設定に「紹介への掲載」を出すか（一度でも札で聞いた団体だけ） */
 function 設定に出すか(役割, 許可) {
-  return 'group' === 役割 && !!(許可 && (ミリ秒(許可.初めて聞いた日時) || 答えたか(許可)));
+  return 役割 === 'group' && !!(許可 && (ミリ秒(許可.初めて聞いた日時) || 答えたか(許可)));
 }
 
 /** 札・設定の最初の選び。載せる先は最初はどちらもチェック（本人の指示） */
@@ -123,17 +123,17 @@ function 答えを整える(選び, いま = Date.now()) {
   if (!載せ方たち.includes(選.載せ方)) return { 誤り: '何を載せるかを選んでください' };
   const 名前 = String(選.載せる名前 || '').trim();
   const 地域 = String(選.地域 || '').trim();
-  if ('載せない' !== 選.載せ方) {
-    if ('団体名' === 選.載せ方 && !名前) return { 誤り: '載せる名前を入れてください' };
-    if ('地域' === 選.載せ方 && !地域) return { 誤り: '地域を入れてください（例：関東の大学）' };
+  if (選.載せ方 !== '載せない') {
+    if (選.載せ方 === '団体名' && !名前) return { 誤り: '載せる名前を入れてください' };
+    if (選.載せ方 === '地域' && !地域) return { 誤り: '地域を入れてください（例：関東の大学）' };
     if (!選.ホームページ && !選.他校への案内) return { 誤り: '載せる先を1つ以上選んでください' };
   }
-  const 載せる = '載せない' !== 選.載せ方;
+  const 載せる = 選.載せ方 !== '載せない';
   return {
     中身: {
       載せ方: 選.載せ方,
-      載せる名前: '団体名' === 選.載せ方 ? 名前 : '',
-      地域: '地域' === 選.載せ方 ? 地域 : '',
+      載せる名前: 選.載せ方 === '団体名' ? 名前 : '',
+      地域: 選.載せ方 === '地域' ? 地域 : '',
       ホームページ: 載せる && !!選.ホームページ,
       他校への案内: 載せる && !!選.他校への案内,
       答えた日時: いま,
@@ -147,9 +147,9 @@ function 答えを整える(選び, いま = Date.now()) {
  * @returns {{ 表示: string, ホームページ: boolean, 他校への案内: boolean } | null}
  */
 function 載せる表示(許可) {
-  if (!答えたか(許可) || '載せない' === 許可.載せ方) return null;
+  if (!答えたか(許可) || 許可.載せ方 === '載せない') return null;
   const 表示 =
-    '団体名' === 許可.載せ方 ? String(許可.載せる名前 || '').trim() : String(許可.地域 || '').trim();
+    許可.載せ方 === '団体名' ? String(許可.載せる名前 || '').trim() : String(許可.地域 || '').trim();
   if (!表示 || (!許可.ホームページ && !許可.他校への案内)) return null;
   return { 表示, ホームページ: !!許可.ホームページ, 他校への案内: !!許可.他校への案内 };
 }

@@ -74,9 +74,9 @@ function 選ばれている言葉() {
  * 0 は「多」に入れる（英語の 0 records は複数形）
  */
 function 形を選ぶ(訳, 数) {
-  if ('string' == typeof 訳) return 訳;
-  if (!訳 || 'object' != typeof 訳) return null;
-  return 1 === 数 ? 訳.一 : 訳.多;
+  if (typeof 訳 === 'string') return 訳;
+  if (!訳 || typeof 訳 !== 'object') return null;
+  return 数 === 1 ? 訳.一 : 訳.多;
 }
 
 /**
@@ -91,11 +91,11 @@ function 形を選ぶ(訳, 数) {
  * @returns {string}
  */
 function 訳(鍵, 差し込み) {
-  const 差 = 差し込み && 'object' == typeof 差し込み ? 差し込み : {};
-  const 数 = 'number' == typeof 差.n ? 差.n : null;
+  const 差 = 差し込み && typeof 差し込み === 'object' ? 差し込み : {};
+  const 数 = typeof 差.n === 'number' ? 差.n : null;
   let 出 = 形を選ぶ((辞書.言葉たち[いまの言葉] || {})[鍵], 数);
-  if (null == 出 && いまの言葉 !== 既定の言葉) 出 = 形を選ぶ((辞書.言葉たち[既定の言葉] || {})[鍵], 数);
-  if (null == 出) return String(鍵);
+  if (出 == null && いまの言葉 !== 既定の言葉) 出 = 形を選ぶ((辞書.言葉たち[既定の言葉] || {})[鍵], 数);
+  if (出 == null) return String(鍵);
   // \w は半角英数しか拾わない。差し込みの名前は日本語なので、波かっこの中を丸ごと拾う
   return String(出).replace(/\{([^{}]+)\}/g, (丸ごと, 名) =>
     Object.prototype.hasOwnProperty.call(差, 名) ? String(差[名]) : 丸ごと

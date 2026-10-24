@@ -38,11 +38,11 @@ const 記録の予算 = 1500000;
  */
 function 送れていないか(記録, 最後に送った時刻) {
   if (!記録) return false;
-  if ('未同期' === 記録.syncStatus) return true;
+  if (記録.syncStatus === '未同期') return true;
   // 送った時刻より後に触られていれば、まだ届いていない見込み。
   // syncStatus が付かない道（一括の同期）でもここで拾える
-  const 触った = 'number' == typeof 記録.lastModified ? 記録.lastModified : 0;
-  return 触った > ('number' == typeof 最後に送った時刻 ? 最後に送った時刻 : 0);
+  const 触った = typeof 記録.lastModified === 'number' ? 記録.lastModified : 0;
+  return 触った > (typeof 最後に送った時刻 === 'number' ? 最後に送った時刻 : 0);
 }
 
 /** 記録の新しさ。日付が読めないものは0にして、古い側へ寄せる */
@@ -50,8 +50,8 @@ function 新しさ(記録) {
   if (!記録) return 0;
   for (const 鍵 of ['lastModified', 'date', 'createdAt']) {
     const 値 = 記録[鍵];
-    if ('number' == typeof 値) return 値;
-    if ('string' == typeof 値) {
+    if (typeof 値 === 'number') return 値;
+    if (typeof 値 === 'string') {
       const 時刻 = Date.parse(値);
       if (!isNaN(時刻)) return 時刻;
     }
@@ -94,7 +94,8 @@ function 端末に残す記録(記録たち, 選び) {
   for (const 記録 of 残り) {
     const 重さ = 目方(記録);
     if (使った + 重さ > 予算) break;
-    (残す.add(記録), (使った += 重さ));
+    残す.add(記録);
+    使った += 重さ;
   }
 
   return 一覧.filter((一つ) => 残す.has(一つ));
@@ -112,7 +113,7 @@ const 覚え = typeof WeakMap === 'function' ? new WeakMap() : null;
 
 /** その記録が端末で占める見当（バイト） */
 function 目方(記録) {
-  if (!記録 || 'object' != typeof 記録) return 0;
+  if (!記録 || typeof 記録 !== 'object') return 0;
   if (覚え && 覚え.has(記録)) return 覚え.get(記録);
   let 計 = 0;
   try {

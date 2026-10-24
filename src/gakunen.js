@@ -125,10 +125,10 @@ function 決まりを作る(種類ID, 付け足し) {
   const 名前たち = 種類.自分で
     ? 自分の.map((学年) => 学年.name)
     : 種類.名前たち || 値たち.map((値) => `${値}年`);
-  const 学年なし = 0 === 値たち.length;
+  const 学年なし = 値たち.length === 0;
   // 卒業するか（自分で決めるは団体が選ぶ。既定は卒業する）。卒業しないなら最後の学年に留まる
-  const 卒業あり = 種類.自分で ? false !== 足し.customGraduate : !学年なし;
-  const 会風 = 種類.自分で ? 'club' === 足し.customWording : 学年なし;
+  const 卒業あり = 種類.自分で ? 足し.customGraduate !== false : !学年なし;
+  const 会風 = 種類.自分で ? 足し.customWording === 'club' : 学年なし;
   return Object.freeze({
     種類: 種類.id,
     種類の名前: 種類.名前,
@@ -262,7 +262,7 @@ function 学年の幅の名前(決まりか種類) {
   if (決.幅の名前) return 決.幅の名前;
   const 名前 = 学年の名前たち(決);
   if (決.自分で決める && 名前.length <= 4) return 名前.join('・');
-  return 1 === 名前.length ? 名前[0] : `${名前[0]}〜${名前[名前.length - 1]}`;
+  return 名前.length === 1 ? 名前[0] : `${名前[0]}〜${名前[名前.length - 1]}`;
 }
 
 /** 種類の名前と学年の幅（「大学（1年〜4年）」「社会人の会・道場（学年なし）」）。決まり か種類の id を渡す */
@@ -279,7 +279,7 @@ function 呼び方(決まり) {
 /** 性別の値（男子・女子・未設定）の、画面に出す名前 */
 function 性別の名前(値, 決まり) {
   const 呼 = 呼び方(決まり);
-  return '男子' === 値 ? 呼.男子 : '女子' === 値 ? 呼.女子 : 値 || '未設定';
+  return 値 === '男子' ? 呼.男子 : 値 === '女子' ? 呼.女子 : 値 || '未設定';
 }
 
 /** メンバーの編集で選べる在籍（学年の無い団体には卒業が無い） */
@@ -402,15 +402,15 @@ function 次の学年の値(学年, 決まり) {
  */
 function 進級の変更(人, 選び, 前の年度, 決まり) {
   const 決 = 決まりを使う(決まり);
-  if (true === 選び || '残す' === 選び || !現役か(人, 決) || その他か(人, 決)) return null;
+  if (選び === true || 選び === '残す' || !現役か(人, 決) || その他か(人, 決)) return null;
   const 学年 = 学年の値(人, 決);
-  if ('院へ' === 選び) {
+  if (選び === '院へ') {
     const 先 = 院へ進む先(人, 決);
-    if (null !== 先) return { grade: 先 };
+    if (先 !== null) return { grade: 先 };
   }
   if (決.卒業する学年.includes(学年)) return { enrollment: 在籍.卒業, leftYear: 前の年度 };
   const 次 = 次の学年の値(学年, 決);
-  return null === 次 ? null : { grade: 次 };
+  return 次 === null ? null : { grade: 次 };
 }
 
 /** 今の 1 年生の期から、その学年の期（並びの 2 番目の学年なら 1 つ前の期） */
@@ -438,13 +438,13 @@ function 卒業の年度(期, 今の一年生の期, 今年度, 決まり) {
 /** その日の年度（年度の始まりの月から。省くと今の団体の月、既定は 4 月） */
 function 年度(日, 始まりの月) {
   const 日付 = 日 || new Date();
-  const 月 = undefined === 始まりの月 ? 今の決まり.始まりの月 : 始まりの月を整える(始まりの月);
+  const 月 = 始まりの月 === undefined ? 今の決まり.始まりの月 : 始まりの月を整える(始まりの月);
   return 日付.getMonth() + 1 >= 月 ? 日付.getFullYear() : 日付.getFullYear() - 1;
 }
 
 /** その年度の初めの日と終わりの日（終わりは次の年度の始まりの前の日） */
 function 年度の範囲(年度の年, 始まりの月) {
-  const 月 = undefined === 始まりの月 ? 今の決まり.始まりの月 : 始まりの月を整える(始まりの月);
+  const 月 = 始まりの月 === undefined ? 今の決まり.始まりの月 : 始まりの月を整える(始まりの月);
   return { 始め: new Date(年度の年, 月 - 1, 1), 終わり: new Date(年度の年 + 1, 月 - 1, 0) };
 }
 
@@ -466,8 +466,8 @@ function 設定から読む(設定) {
         : typeof 中身.currentFreshmanTerm === 'number' && 中身.currentFreshmanTerm > 1,
     divisions: 区.区分たち(中身.divisions),
     customGrades: 自分の学年たち(中身.customGrades),
-    customGraduate: false !== 中身.customGraduate,
-    customWording: 'club' === 中身.customWording ? 'club' : 'school',
+    customGraduate: 中身.customGraduate !== false,
+    customWording: 中身.customWording === 'club' ? 'club' : 'school',
     yearStartMonth: 始まりの月を整える(中身.yearStartMonth),
   };
 }
@@ -495,7 +495,7 @@ function 進級待ちの年(今日, 前に進級した年, 進級の確認, 始�
   if (!進級の確認 || typeof 前に進級した年 !== 'number') return null;
   const 日付 = 今日 || new Date();
   const 年 = 日付.getFullYear();
-  const 月 = undefined === 始まりの月 ? 今の決まり.始まりの月 : 始まりの月を整える(始まりの月);
+  const 月 = 始まりの月 === undefined ? 今の決まり.始まりの月 : 始まりの月を整える(始まりの月);
   if (日付.getMonth() + 1 < 月) return null;
   return 前に進級した年 < 年 ? 年 : null;
 }

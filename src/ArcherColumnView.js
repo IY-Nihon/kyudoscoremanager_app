@@ -65,13 +65,13 @@ const ArcherColumnView = React.memo(
     );
     const 鍵を切り替える = (...引) => useScoreStore.getState().toggleLock(...引);
     const 立を閉じる = (...引) => useScoreStore.getState().立を閉じる(...引);
-    const 倍率 = 'number' == typeof viewScale && !isNaN(viewScale) && viewScale > 0 ? viewScale : 1;
+    const 倍率 = typeof viewScale === 'number' && !isNaN(viewScale) && viewScale > 0 ? viewScale : 1;
     const 部員たち = members || [];
     // 計の列の数は親が数えて渡す（どこまで数えるかの規則は teamGrouping に1つだけ）。
     // 射手の列は自分の○×を数えるだけ
     const 的中の数 = archer.isTotalCalculator
       ? 合計の的中
-      : (archer.marks || []).filter((印) => '○' === 印).length;
+      : (archer.marks || []).filter((印) => 印 === '○').length;
     const 射番の並び = [];
     // 縦の表は下から上へ数える（1射目が下）。横の表は左から右へ数える
     if (!archer.isSeparator) {
@@ -79,7 +79,7 @@ const ArcherColumnView = React.memo(
       else for (let 射番 = shots - 1; 射番 >= 0; 射番--) 射番の並び.push(射番);
     }
     // 立の切れ目に引く太線。縦は「その立の1本目の下」、横は「その立の4本目の右」
-    const 切れ目 = (位置) => (横 ? 位置 % 4 == 3 && 位置 !== shots - 1 : 位置 % 4 == 0 && 0 !== 位置);
+    const 切れ目 = (位置) => (横 ? 位置 % 4 == 3 && 位置 !== shots - 1 : 位置 % 4 == 0 && 位置 !== 0);
     // 1ますの外枠。横のとき、間隔は細い列ではなく細い行になる
     const ます幅 =
       (横 ? UIConfig.cellWidth : archer.isSeparator ? UIConfig.separatorWidth : UIConfig.cellWidth) * 倍率;
@@ -103,15 +103,15 @@ const ArcherColumnView = React.memo(
     const 立の計の字 = (立) => {
       const 中 = 立の的中数を出す(立);
       const 射 = 立ごとの射数[立] || 0;
-      if (1 === 見せ方) return `${中}/${射}`;
-      if (2 === 見せ方) return `${中}/${足し上げ(立ごとの的中, 立)}`;
-      if (3 === 見せ方) return 率(中, 射);
-      if (4 === 見せ方) return 率(足し上げ(立ごとの的中, 立), 足し上げ(立ごとの射数, 立));
+      if (見せ方 === 1) return `${中}/${射}`;
+      if (見せ方 === 2) return `${中}/${足し上げ(立ごとの的中, 立)}`;
+      if (見せ方 === 3) return 率(中, 射);
+      if (見せ方 === 4) return 率(足し上げ(立ごとの的中, 立), 足し上げ(立ごとの射数, 立));
       return String(中);
     };
     const 全部の射数 = 立ごとの射数.reduce((和, 数) => 和 + (数 || 0), 0);
     const 合計の字 =
-      1 === 見せ方 ? `${的中の数}/${全部の射数}` : 3 <= 見せ方 ? 率(的中の数, 全部の射数) : String(的中の数);
+      見せ方 === 1 ? `${的中の数}/${全部の射数}` : 3 <= 見せ方 ? 率(的中の数, 全部の射数) : String(的中の数);
     // 的中数のとき以外は、何を出しているかを合計の上に小さく書く
     const 見せ方の名 = ['', '中/射', '立/累計', '立の率', '累計の率'][見せ方] || '';
     const 計の見せ方を次へ = () => useScoreStore.getState().計の見せ方を次へ();
@@ -247,7 +247,7 @@ const ArcherColumnView = React.memo(
                   if (交代の射番.length > 0 && !合算で見る) {
                     const 内訳 = [];
                     const 最初の交代 = 交代の射番[0];
-                    const 最初の中り = 印たち.slice(0, 最初の交代).filter((印) => '○' === 印).length;
+                    const 最初の中り = 印たち.slice(0, 最初の交代).filter((印) => 印 === '○').length;
                     内訳.push({ name: 見出しの字(), hits: 最初の中り });
                     for (let 番 = 0; 番 < 交代の射番.length; 番++) {
                       const 始め = 交代の射番[番];
@@ -255,7 +255,7 @@ const ArcherColumnView = React.memo(
                       const 交代の名 = 交代[始め] || '?';
                       内訳.push({
                         name: 名前を整える(交代の名),
-                        hits: 印たち.slice(始め, 終わり).filter((印) => '○' === 印).length,
+                        hits: 印たち.slice(始め, 終わり).filter((印) => 印 === '○').length,
                       });
                     }
                     return (
@@ -313,7 +313,7 @@ const ArcherColumnView = React.memo(
                 const 頭 = 4 * 立;
                 const 本数 = Math.min(shots, 頭 + 4) - 頭;
                 const 鍵 = !(isReadOnly && !isAdminMode) && (archer.lockedBlocks?.[立] || false);
-                const 太線 = 横 ? 頭 + 本数 < shots : 0 !== 立;
+                const 太線 = 横 ? 頭 + 本数 < shots : 立 !== 0;
                 const 線 = 横
                   ? {
                       borderRightWidth: 太線 ? 2 : 1,
@@ -377,7 +377,7 @@ const ArcherColumnView = React.memo(
                 const 本数 = Math.min(shots, 頭 + 4) - 頭;
                 const 鍵 = !(isReadOnly && !isAdminMode) && (archer.lockedBlocks?.[立] || false);
                 // 立の切れ目の太線。縦は箱の下（1 立目の下は細い）、横は箱の右（最後の立の右は細い）
-                const 太線 = 横 ? 頭 + 本数 < shots : 0 !== 立;
+                const 太線 = 横 ? 頭 + 本数 < shots : 立 !== 0;
                 const 線 = 横
                   ? {
                       borderRightWidth: 太線 ? 2 : 1,
@@ -503,7 +503,9 @@ const ArcherColumnView = React.memo(
               {射番の並び.map((射番) => {
                 const 交代の名 = archer.substitutions?.[射番];
                 let 交代の表示名 = '';
-                交代の名 && (交代の表示名 = 名前を整える(交代の名));
+                if (交代の名) {
+                  交代の表示名 = 名前を整える(交代の名);
+                }
                 const 立 = Math.floor(射番 / 4);
                 const 立の端 = 射番 === Math.min(shots - 1, 4 * 立 + 3);
                 const 鍵 = !(isReadOnly && !isAdminMode) && (archer.lockedBlocks?.[立] || false);
@@ -518,7 +520,7 @@ const ArcherColumnView = React.memo(
                     isLocked={鍵}
                     isBlockBottom={切れ目(射番)}
                     isBlockTop={立の端}
-                    isFirst={0 === 射番}
+                    isFirst={射番 === 0}
                     isNormalArcher
                     columnType="normal"
                     読み={読み上げの言葉(射番)}
@@ -640,7 +642,7 @@ const ArcherColumnView = React.memo(
                 {archer.isGuest ? (
                   <Text style={[styles.guestLabel, { fontSize: 9 * 倍率 }]}>(ゲスト)</Text>
                 ) : null}
-                {archer.isTotalCalculator || '' === archer.name ? null : (
+                {archer.isTotalCalculator || archer.name === '' ? null : (
                   <View
                     style={{
                       marginTop: 2 * 倍率,
@@ -653,7 +655,7 @@ const ArcherColumnView = React.memo(
                         archer.gender === '未設定' ||
                         !['男子', '女子'].includes(archer.gender)
                           ? 色.灰
-                          : '男子' === archer.gender
+                          : archer.gender === '男子'
                             ? 色.青
                             : 色.桃,
                     }}

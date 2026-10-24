@@ -84,13 +84,18 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
       shotCount: 本数,
       tags: タグたち,
     };
-    isAdminMode && (変更.attendance = attendanceEdit);
-    session &&
-      本数 !== session.shotCount &&
-      (変更.archers = session.archers.map((射手) => {
+    if (isAdminMode) {
+      変更.attendance = attendanceEdit;
+    }
+    if (session && 本数 !== session.shotCount) {
+      変更.archers = session.archers.map((射手) => {
         if (射手.isSeparator || 射手.isTotalCalculator) return 射手;
         const 印 = [...(射手.marks || [])];
-        本数 > 印.length ? 印.push(...Array(本数 - 印.length).fill('')) : 印.splice(本数);
+        if (本数 > 印.length) {
+          印.push(...Array(本数 - 印.length).fill(''));
+        } else {
+          印.splice(本数);
+        }
         return Object.assign(
           {},
           射手,
@@ -100,7 +105,8 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
             ? { arrowLocations: 射手.arrowLocations.slice(0, 本数) }
             : null
         );
-      }));
+      });
+    }
     onSave(変更);
     onClose();
     ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Success);
@@ -172,7 +178,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                           <Icons.Ionicons name="close-circle" size={16} color={色.白} />
                         </TouchableOpacity>
                       ))}
-                      {0 === タグたち.length && (
+                      {タグたち.length === 0 && (
                         <Text style={{ color: 色.灰_薄い, fontSize: 13, marginBottom: 4 }}>設定なし</Text>
                       )}
                     </View>
@@ -340,10 +346,10 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                           if (学年の差) return 学年の差;
                           const 性別の順 = (性別) => {
                             const 整えた = (性別 || '').trim();
-                            return '男子' === 整えた ? 0 : '女子' === 整えた ? 1 : 2;
+                            return 整えた === '男子' ? 0 : 整えた === '女子' ? 1 : 2;
                           };
                           const 性別の差 = 性別の順(甲.gender) - 性別の順(乙.gender);
-                          return 0 !== 性別の差
+                          return 性別の差 !== 0
                             ? 性別の差
                             : (甲.name || '').localeCompare(乙.name || '', 'ja');
                         })

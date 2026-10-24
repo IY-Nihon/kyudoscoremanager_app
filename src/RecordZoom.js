@@ -149,7 +149,7 @@ const 拡大率の窓 = ({ setViewScale, 倍率, 拡大選択中, 拡大を選�
                       fontWeight: Math.abs(倍率 - 倍) < 0.01 ? 'bold' : 'normal',
                     }}
                   >
-                    {Math.round(倍 * 100)}%{1 === 倍 ? '（標準）' : ''}
+                    {Math.round(倍 * 100)}%{倍 === 1 ? '（標準）' : ''}
                   </Text>
                 </Pressable>
               ))}

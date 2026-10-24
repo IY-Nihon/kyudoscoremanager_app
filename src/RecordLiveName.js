@@ -52,9 +52,9 @@ const ライブ名を決める窓 = ({
             }}
           >
             <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>
-              {'host' === ライブの種類 ? 'ライブを開始' : 'ライブに参加'}
+              {ライブの種類 === 'host' ? 'ライブを開始' : 'ライブに参加'}
             </Text>
-            {'host' === ライブの種類 ? (
+            {ライブの種類 === 'host' ? (
               <>
                 <Text style={{ fontSize: 14, color: 色.墨_66, marginBottom: 16 }}>
                   セッション名を入力してください
@@ -116,7 +116,7 @@ const ライブ名を決める窓 = ({
                   </TouchableOpacity>
                 </View>
                 <ScrollView style={{ width: '100%', maxHeight: 300, marginBottom: 20 }}>
-                  {Array.isArray(ライブの一覧) && 0 !== ライブの一覧.length ? (
+                  {Array.isArray(ライブの一覧) && ライブの一覧.length !== 0 ? (
                     ライブの一覧.map((名前) => (
                       <View
                         key={`live-session-${名前}`}
@@ -200,23 +200,23 @@ const ライブ名を決める窓 = ({
                       `ライブ名に ${使えない字} は使えません。別の名前を入力してください。`
                     ),
                     ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Heavy));
-                  if ((ライブ名の注意を置く(null), 'host' === ライブの種類)) {
+                  if ((ライブ名の注意を置く(null), ライブの種類 === 'host')) {
                     知らせる('ライブを開始しています...');
                     const 結果 = await useScoreStore.getState().startLiveSync(名前);
-                    if ('開始した' === 結果)
+                    if (結果 === '開始した')
                       return void (ライブ名の窓を出す(false),
                       ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Success));
                     // 「同名あり」と「確かめられなかった」を区別する。
                     // 元はどちらも「既に使用されています」と出していて、
                     // 通信が乱れただけのときに誤った案内になっていた
                     return void (ライブ名の注意を置く(
-                      '同名あり' === 結果
+                      結果 === '同名あり'
                         ? `'${名前}' は既に使用されています。別の名前を入力してください。`
                         : '通信が不安定なため開始できませんでした。電波の良い場所でもう一度お試しください。'
                     ),
                     ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Heavy));
                   }
-                  if ('join' === ライブの種類) {
+                  if (ライブの種類 === 'join') {
                     if (!useScoreStore.getState().liveSessionsList.includes(名前))
                       return void ライブ名の注意を置く(`'${名前}' というセッションは見つかりませんでした。`);
                     // 参加のしかたを選ぶ。見るだけなら盤面を書き換えない

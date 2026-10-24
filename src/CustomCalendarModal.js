@@ -12,10 +12,12 @@ const 回す選択 = ({ data, value, onValueChange, label, flex = 1 }) => {
   const [指で動かし中, 指で動かし中を置く] = React.useState(false);
   const 選んだ番 = React.useMemo(() => {
     const 番 = data.indexOf(value);
-    return -1 !== 番 ? 番 : 0;
+    return 番 !== -1 ? 番 : 0;
   }, [data, value]);
   React.useEffect(() => {
-    指で動かし中 || 流しのref.current?.scrollTo({ y: 選んだ番 * 一段の高さ, animated: true });
+    if (!指で動かし中) {
+      流しのref.current?.scrollTo({ y: 選んだ番 * 一段の高さ, animated: true });
+    }
   }, [選んだ番, 指で動かし中]);
   const 止まった所で決める = (縦の位置) => {
     const 近い番 = Math.round(縦の位置 / 一段の高さ);
@@ -78,7 +80,11 @@ const CustomCalendarModal = ({ visible, onClose, selectedDate, onSelectDate, tit
     const 一覧 = [];
     for (let 年 = 今年 - 5; 年 <= 今年 + 5; 年++) 一覧.push(年);
     const 選んだ年 = DateFns.getYear(選んでいる日);
-    return (一覧.includes(選んだ年) || (一覧.push(選んだ年), 一覧.sort((甲, 乙) => 甲 - 乙)), 一覧);
+    if (!一覧.includes(選んだ年)) {
+      一覧.push(選んだ年);
+      一覧.sort((甲, 乙) => 甲 - 乙);
+    }
+    return 一覧;
   }, [選んでいる日]);
   const 月の一覧 = React.useMemo(() => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], []);
   const 日の一覧 = React.useMemo(() => {

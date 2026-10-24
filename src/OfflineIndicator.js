@@ -9,32 +9,30 @@ const { getShadowStyle } = require('./shadowStyle');
 const OfflineIndicator = () => {
   const つながっている = useScoreStore((状態) => 状態.isNetworkOnline);
   const [見え具合] = React.useState(new Animated.Value(0));
-  return (
-    React.useEffect(() => {
-      Animated.timing(見え具合, {
-        toValue: つながっている ? 0 : 1,
-        duration: 300,
-        useNativeDriver: typeof window === 'undefined',
-      }).start();
-    }, [つながっている]),
-    つながっている ? null : (
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.container,
-          {
-            opacity: 見え具合,
-            transform: [{ translateY: 見え具合.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }],
-          },
-        ]}
-      >
-        <View style={styles.badge}>
-          {/* Ionicons にそろえる。MaterialCommunityIcons はこの 1 つのために 1.3MB の字体を取り寄せていた */}
-          <Icons.Ionicons name="cloud-offline-outline" size={16} color={色.白} />
-          <Text style={styles.text}>オフラインモード</Text>
-        </View>
-      </Animated.View>
-    )
+  React.useEffect(() => {
+    Animated.timing(見え具合, {
+      toValue: つながっている ? 0 : 1,
+      duration: 300,
+      useNativeDriver: typeof window === 'undefined',
+    }).start();
+  }, [つながっている]);
+  return つながっている ? null : (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.container,
+        {
+          opacity: 見え具合,
+          transform: [{ translateY: 見え具合.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }],
+        },
+      ]}
+    >
+      <View style={styles.badge}>
+        {/* Ionicons にそろえる。MaterialCommunityIcons はこの 1 つのために 1.3MB の字体を取り寄せていた */}
+        <Icons.Ionicons name="cloud-offline-outline" size={16} color={色.白} />
+        <Text style={styles.text}>オフラインモード</Text>
+      </View>
+    </Animated.View>
   );
 };
 const styles = StyleSheet.create({

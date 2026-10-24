@@ -94,9 +94,9 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
       const 届いた状態 = await RTDB.get(RTDB.ref(Firebaseの器.rtdb, `${根}/state`));
       const 盤面の値 = 届いた状態.exists() ? 届いた状態.val() || {} : {};
       const 位置 =
-        'number' == typeof 盤面の値.history_len ? 盤面の値.history_len : 状態().historySharedLen || 0;
+        typeof 盤面の値.history_len === 'number' ? 盤面の値.history_len : 状態().historySharedLen || 0;
       const 上限 =
-        'number' == typeof 盤面の値.history_max ? 盤面の値.history_max : 状態().historySharedMax || 0;
+        typeof 盤面の値.history_max === 'number' ? 盤面の値.history_max : 状態().historySharedMax || 0;
       const 読む番号 = 向き < 0 ? 位置 - 1 : 位置;
       if (向き < 0 ? 位置 <= 0 : 位置 >= 上限) return; // これ以上は戻せない／進めない
       const 手の場所 = RTDB.ref(Firebaseの器.rtdb, `${共有履歴の場所(枝, 名前)}/${読む番号}`);
@@ -120,7 +120,7 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
       const 差分 = Array.isArray(中身.差分) ? 中身.差分 : null;
       const 項目 = Array.isArray(中身.項目) ? 中身.項目 : null;
       // 射数の控えは射手ごとの表を持つので、配列ではなく object
-      const 射数 = !差分 && !項目 && 中身.射数 && 'number' == typeof 中身.射数.前 ? 中身.射数 : null;
+      const 射数 = !差分 && !項目 && 中身.射数 && typeof 中身.射数.前 === 'number' ? 中身.射数 : null;
       const 盤面 = 差分
         ? {
             archers: 差分を当てる(状態().archers, 差分, 向き).archers,
@@ -203,7 +203,8 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
     } catch (誤り) {
       // 確かめられないまま作ると、進行中の同名ライブを上書きして潰す。
       // 元はここで握りつぶして、そのまま作成へ進んでいた
-      return (console.error('Session Name Check Error:', 誤り), '確認できない');
+      console.error('Session Name Check Error:', 誤り);
+      return '確認できない';
     }
     状態().stopLiveSync(true);
     書く({
@@ -248,112 +249,112 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
     const 盤面の場所 = RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${名前}/state`);
     const 射手たち = Array.isArray(いま.archers) ? いま.archers : [];
     try {
-      return (
-        ライブへ盤面を送る(名前, 射手たち, いま.shotsPerRound),
-        // 閲覧用の枝を、共有の枝の state にも載せておく。
-        // リンクで入った記録係も写しへ流せるようにするため。
-        // 載せないと、その人の○×だけ見ている人に出ない。
-        // ここを読めるのは編集の枝を知っている人だけなので、閲覧の人には見えない
-        共有 &&
-          RTDB.update(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${名前}/state`), {
-            閲覧の枝: 共有.閲覧の枝 || null,
-          }).catch(() => {}),
-        // 共有のライブは別の枝にあるので、参加一覧に出すための道しるべを
-        // 団体の枝へ置く。部員はこれを辿って共有の枝へ入る
-        共有 &&
-          RTDB.set(RTDB.ref(Firebaseの器.rtdb, 道しるべの場所(団, 名前)), {
-            共有の枝: 枝,
-            閲覧の枝: 共有.閲覧の枝 || null,
-            status: 'active',
-            timestamp: Date.now(),
-            updated_at: RTDB.serverTimestamp(),
-          }).catch((誤り) => console.error('[Store] 道しるべを置けませんでした', 誤り)),
-        在席を始める(名前, 書く),
-        IS_WEB && console.log('ライブを開始しました: ' + 名前),
-        RTDB.onValue(盤面の場所, (返り) => {
-          if (場.自分の送信中) return;
-          const 届いた = 返り.val();
-          載っている盤面を控える(届いた);
-          if (!届いた) {
+      ライブへ盤面を送る(名前, 射手たち, いま.shotsPerRound);
+      // 閲覧用の枝を、共有の枝の state にも載せておく。
+      // リンクで入った記録係も写しへ流せるようにするため。
+      // 載せないと、その人の○×だけ見ている人に出ない。
+      // ここを読めるのは編集の枝を知っている人だけなので、閲覧の人には見えない
+      if (共有) {
+        RTDB.update(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${名前}/state`), {
+          閲覧の枝: 共有.閲覧の枝 || null,
+        }).catch(() => {});
+      }
+      // 共有のライブは別の枝にあるので、参加一覧に出すための道しるべを
+      // 団体の枝へ置く。部員はこれを辿って共有の枝へ入る
+      if (共有) {
+        RTDB.set(RTDB.ref(Firebaseの器.rtdb, 道しるべの場所(団, 名前)), {
+          共有の枝: 枝,
+          閲覧の枝: 共有.閲覧の枝 || null,
+          status: 'active',
+          timestamp: Date.now(),
+          updated_at: RTDB.serverTimestamp(),
+        }).catch((誤り) => console.error('[Store] 道しるべを置けませんでした', 誤り));
+      }
+      在席を始める(名前, 書く);
+      if (IS_WEB) {
+        console.log('ライブを開始しました: ' + 名前);
+      }
+      RTDB.onValue(盤面の場所, (返り) => {
+        if (場.自分の送信中) return;
+        const 届いた = 返り.val();
+        載っている盤面を控える(届いた);
+        if (!届いた) {
+          const 今の名前 = 状態().liveSessionName;
+          if (今の名前 && Firebaseの器.rtdb) {
+            RTDB.off(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${今の名前}/state`));
+          }
+          在席を終える(書く);
+          写しを見るのをやめる();
+          return void 書く({
+            isLiveActive: false,
+            ライブの続き: null,
+            isHost: false,
+            liveSessionName: null,
+          });
+        }
+        // 期限は枝分かれの前に控える。下の「他人の書き込み」の枝だけに
+        // 置くと、自分で配った主催者は自分の返りしか受けないので
+        // 一度も拾えない（カウントダウンが出なかった）
+        期限を控える(届いた, 書く, 状態);
+        // 自分の送信の返りも、ほかの通知と同じに扱う。前は timestamp で返りを見分けて
+        // ○× だけを取り込んでいた。自分のまだ雲へ届いていない書き込みがあると、届く値の
+        // timestamp は自分のものに見えるので、同じ通知に載った相手の射数や人の選択を
+        // 捨て、そのあと通知が来ずに食い違ったまま残った（2026-09-26 に 2 台の e2e で再現）
+        {
+          if (届いた.status === 'finished') {
             const 今の名前 = 状態().liveSessionName;
-            return (
-              今の名前 &&
-                Firebaseの器.rtdb &&
-                RTDB.off(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${今の名前}/state`)),
-              在席を終える(書く),
-              写しを見るのをやめる(),
-              void 書く({
-                isLiveActive: false,
-                ライブの続き: null,
-                isHost: false,
-                liveSessionName: null,
-              })
+            if (今の名前 && Firebaseの器.rtdb) {
+              RTDB.off(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${今の名前}/state`));
+            }
+            在席を終える(書く);
+            写しを見るのをやめる();
+            return void 書く({
+              isLiveActive: false,
+              ライブの続き: null,
+              isHost: false,
+              liveSessionName: null,
+            });
+          }
+          // 誰かが配ったら、その枝へ付いていく
+          // 期限より先に見る。切れているのに付いていくと、行った先でも切れている
+          if (期限で閉じるか(届いた, 書く, 状態)) return;
+          if (移ったら付いていく(届いた, 書く, 状態)) return;
+          共有履歴の目印を受け取る(届いた, 書く, 状態);
+          // 参加者側と同じ。始め直したとき、節点に前回の片付けが
+          // 残っていることがあるので、最初の1通ぶんは知らせない
+          const 主のリセット初回 = 状態().resetIsFirstSnapshot;
+          if (主のリセット初回) 書く({ resetIsFirstSnapshot: false });
+          if (届いた.reset_at && 届いた.reset_at > (状態().lastResetHandled || 0)) {
+            書く({ lastResetHandled: 届いた.reset_at });
+            if (主のリセット初回) {
+              書く({ lastPushedTimestamp: 届いた.timestamp || 0 });
+            }
+            // 送信はしない。受け取ったリセットを送り返すと、相手の画面に
+            // 「リセットしました」が二度出るうえ、無駄な書き込みが増える
+            return void 状態().resetCurrentSession(false);
+          }
+          if (届いた.archers || Array.isArray(届いた.archers)) {
+            // 突き合わせは 届いた射手に合わせる（○× 以外）と 印は盤面を正に（○×）。
+            // 主催者側と参加者側で同じ処理が二重に書かれていたため
+            const { archers: 受信, shotsPerRound: 本数 } = ライブの盤面を読み取る(届いた);
+            const 結果 = 印は盤面を正に(
+              届いた射手に合わせる(状態().archers, 受信, 状態().shotsPerRound, 本数),
+              届いた,
+              本数
             );
+            // 受け取りの正規化は短い○×を伸ばすだけで、長いほうは切らない。
+            // 相手が射数を減らしたとき、手元の射手のほうが新しいと
+            // 射数だけ減って○×が伸びたまま残る（画面に出ないますの○が
+            // 的中数に入る）。射数が変わればここは必ず通る
+            if (結果.changed)
+              書く({ archers: 盤面を射数にそろえる(結果.archers, 本数), shotsPerRound: 本数 });
           }
-          // 期限は枝分かれの前に控える。下の「他人の書き込み」の枝だけに
-          // 置くと、自分で配った主催者は自分の返りしか受けないので
-          // 一度も拾えない（カウントダウンが出なかった）
-          期限を控える(届いた, 書く, 状態);
-          // 自分の送信の返りも、ほかの通知と同じに扱う。前は timestamp で返りを見分けて
-          // ○× だけを取り込んでいた。自分のまだ雲へ届いていない書き込みがあると、届く値の
-          // timestamp は自分のものに見えるので、同じ通知に載った相手の射数や人の選択を
-          // 捨て、そのあと通知が来ずに食い違ったまま残った（2026-09-26 に 2 台の e2e で再現）
-          {
-            if ('finished' === 届いた.status) {
-              const 今の名前 = 状態().liveSessionName;
-              return (
-                今の名前 &&
-                  Firebaseの器.rtdb &&
-                  RTDB.off(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${今の名前}/state`)),
-                在席を終える(書く),
-                写しを見るのをやめる(),
-                void 書く({
-                  isLiveActive: false,
-                  ライブの続き: null,
-                  isHost: false,
-                  liveSessionName: null,
-                })
-              );
-            }
-            // 誰かが配ったら、その枝へ付いていく
-            // 期限より先に見る。切れているのに付いていくと、行った先でも切れている
-            if (期限で閉じるか(届いた, 書く, 状態)) return;
-            if (移ったら付いていく(届いた, 書く, 状態)) return;
-            共有履歴の目印を受け取る(届いた, 書く, 状態);
-            // 参加者側と同じ。始め直したとき、節点に前回の片付けが
-            // 残っていることがあるので、最初の1通ぶんは知らせない
-            const 主のリセット初回 = 状態().resetIsFirstSnapshot;
-            if (主のリセット初回) 書く({ resetIsFirstSnapshot: false });
-            if (届いた.reset_at && 届いた.reset_at > (状態().lastResetHandled || 0))
-              return (
-                書く({ lastResetHandled: 届いた.reset_at }),
-                主のリセット初回 && 書く({ lastPushedTimestamp: 届いた.timestamp || 0 }),
-                // 送信はしない。受け取ったリセットを送り返すと、相手の画面に
-                // 「リセットしました」が二度出るうえ、無駄な書き込みが増える
-                void 状態().resetCurrentSession(false)
-              );
-            if (届いた.archers || Array.isArray(届いた.archers)) {
-              // 突き合わせは 届いた射手に合わせる（○× 以外）と 印は盤面を正に（○×）。
-              // 主催者側と参加者側で同じ処理が二重に書かれていたため
-              const { archers: 受信, shotsPerRound: 本数 } = ライブの盤面を読み取る(届いた);
-              const 結果 = 印は盤面を正に(
-                届いた射手に合わせる(状態().archers, 受信, 状態().shotsPerRound, 本数),
-                届いた,
-                本数
-              );
-              // 受け取りの正規化は短い○×を伸ばすだけで、長いほうは切らない。
-              // 相手が射数を減らしたとき、手元の射手のほうが新しいと
-              // 射数だけ減って○×が伸びたまま残る（画面に出ないますの○が
-              // 的中数に入る）。射数が変わればここは必ず通る
-              if (結果.changed)
-                書く({ archers: 盤面を射数にそろえる(結果.archers, 本数), shotsPerRound: 本数 });
-            }
-          }
-        }),
-        '開始した'
-      );
+        }
+      });
+      return '開始した';
     } catch (誤り) {
-      return (console.error('Start Live Sync Error:', 誤り), '確認できない');
+      console.error('Start Live Sync Error:', 誤り);
+      return '確認できない';
     }
   },
   /**
@@ -395,14 +396,15 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
       const 返り = await RTDB.get(RTDB.ref(Firebaseの器.rtdb, 状態の道));
       今の中身 = 返り.exists() ? 返り.val() || {} : {};
     } catch (誤り) {
-      return (console.error('[Store] ライブを読めませんでした', 誤り), null);
+      console.error('[Store] ライブを読めませんでした', 誤り);
+      return null;
     }
     // すでに配られている
     const 種 = 今の中身.種;
     if (種 && 種.編集 && 種.閲覧) {
       // 期限は配ったときのものを引き継ぐ。ここで付け直すと期限が延び、
       // 決まりの側（延ばせない）と食い違って、画面だけが嘘をつく
-      const 元の期限 = 'number' == typeof 今の中身.期限 ? 今の中身.期限 : null;
+      const 元の期限 = typeof 今の中身.期限 === 'number' ? 今の中身.期限 : null;
       return {
         編集の荷: 共.共有の荷を組む({
           種: 種.編集,
@@ -433,7 +435,7 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
     if (!秘.枝として使えるか(団)) return null;
     // 期限はサーバーの時計で決める。手元の時計が進んでいると、
     // 配った瞬間に切れているリンクを渡してしまう
-    const 期限 = 共.期限の時刻('number' == typeof 持ち ? 持ち : 共.期限の既定, await サーバー時刻());
+    const 期限 = 共.期限の時刻(typeof 持ち === 'number' ? 持ち : 共.期限の既定, await サーバー時刻());
     try {
       // 期限は盤面より先に置く。あとにすると、途中で失敗したときに
       // 「期限の無いリンク」が残る。逆なら残るのは読むもののない期限だけ
@@ -492,7 +494,8 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
           updated_at: RTDB.serverTimestamp(),
         });
     } catch (誤り) {
-      return (console.error('[Store] ライブを配れませんでした', 誤り), null);
+      console.error('[Store] ライブを配れませんでした', 誤り);
+      return null;
     }
     // 自分も新しい枝へ移る。主催者かどうかは変えない
     const 主催だった = 状態().isHost;
@@ -551,11 +554,12 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
         try {
           const 限 = await RTDB.get(RTDB.ref(Firebaseの器.rtdb, 期限の場所(枝)));
           const 期限の値 = 限.exists() ? 限.val() : null;
-          if ('number' == typeof 期限の値 && (await サーバー時刻()) >= 期限の値) return '期限切れ';
+          if (typeof 期限の値 === 'number' && (await サーバー時刻()) >= 期限の値) return '期限切れ';
         } catch (e2) {
           /* 期限も読めない。理由が分からないので、下の「確認できない」に落とす */
         }
-      return (console.error('[Store] 共有リンクの確認に失敗:', 誤り), '確認できない');
+      console.error('[Store] 共有リンクの確認に失敗:', 誤り);
+      return '確認できない';
     }
     // 自分の団体のライブか、よその団体のライブかを見分ける。
     //
@@ -614,7 +618,7 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
       (返り) => {
         const 届いた = 返り.val();
         if (!届いた) return;
-        if ('finished' === 届いた.status)
+        if (届いた.status === 'finished')
           return void 書く({
             isLiveActive: false,
             ライブの続き: null,
@@ -717,30 +721,26 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
         載っている盤面を控える(届いた);
         if (!届いた) {
           const 今の名前 = 状態().liveSessionName;
-          return (
-            今の名前 &&
-              Firebaseの器.rtdb &&
-              RTDB.off(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${今の名前}/state`)),
-            在席を終える(書く),
-            写しを見るのをやめる(),
-            void 書く({ isLiveActive: false, ライブの続き: null, isHost: false, liveSessionName: null })
-          );
+          if (今の名前 && Firebaseの器.rtdb) {
+            RTDB.off(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${今の名前}/state`));
+          }
+          在席を終える(書く);
+          写しを見るのをやめる();
+          return void 書く({ isLiveActive: false, ライブの続き: null, isHost: false, liveSessionName: null });
         }
         // 自分の送信の返りも、ほかの通知と同じに扱う（主催者側の説明を参照）。
         // 矢所は、届いた射手が持っていなければ手元を残す（届いた射手に合わせる）
-        if ('finished' === 届いた.status) {
+        if (届いた.status === 'finished') {
           const 今の名前 = 状態().liveSessionName;
-          return (
-            今の名前 &&
-              Firebaseの器.rtdb &&
-              RTDB.off(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${今の名前}/state`)),
-            在席を終える(書く),
-            写しを見るのをやめる(),
-            // 送信しない。ここで送ると、主催者が2秒後に消す節点を書き戻してしまい、
-            // 届くのが遅れた場合は「終わったはずのライブ」が一覧に残り続ける
-            状態().resetCurrentSession(false),
-            void 書く({ isLiveActive: false, ライブの続き: null, isHost: false, liveSessionName: null })
-          );
+          if (今の名前 && Firebaseの器.rtdb) {
+            RTDB.off(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${今の名前}/state`));
+          }
+          在席を終える(書く);
+          写しを見るのをやめる();
+          // 送信しない。ここで送ると、主催者が2秒後に消す節点を書き戻してしまい、
+          // 届くのが遅れた場合は「終わったはずのライブ」が一覧に残り続ける
+          状態().resetCurrentSession(false);
+          return void 書く({ isLiveActive: false, ライブの続き: null, isHost: false, liveSessionName: null });
         }
         // 誰かが配ったら、その枝へ付いていく
         // 期限より先に見る。切れているのに付いていくと、行った先でも切れている
@@ -818,10 +818,10 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
     if (状態().isLiveActive) return '無い';
     const 切れた =
       届いた状態 &&
-      'number' === typeof 届いた状態.期限 &&
+      typeof 届いた状態.期限 === 'number' &&
       届いた状態.期限 > 0 &&
       いまの見当() >= 届いた状態.期限;
-    if (!届いた状態 || 'finished' === 届いた状態.status || 切れた) {
+    if (!届いた状態 || 届いた状態.status === 'finished' || 切れた) {
       // 終わっていた。ライブを始めた時点の○×が記録表に残っているので片付ける
       状態().resetCurrentSession(false);
       書く({ ライブの続き: null });

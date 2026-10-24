@@ -627,7 +627,11 @@ function マスの数(rows) {
   }
   let 最多 = 0;
   let 票 = -1;
-  for (const [n, c] of 数え) if (c > 票 || (c === 票 && n > 最多)) ((最多 = n), (票 = c));
+  for (const [n, c] of 数え)
+    if (c > 票 || (c === 票 && n > 最多)) {
+      最多 = n;
+      票 = c;
+    }
   return 最多;
 }
 
@@ -1034,17 +1038,30 @@ function 並びで合わせる(行の並び, 筋たち, 間) {
     外す = 0.8;
   const 費 = Array.from({ length: n + 1 }, () => new Float64Array(m + 1));
   const 元 = Array.from({ length: n + 1 }, () => new Int8Array(m + 1));
-  for (let a = 1; a <= n; a++) ((費[a][0] = a * 外す), (元[a][0] = 1));
-  for (let b = 1; b <= m; b++) ((費[0][b] = b * 外す), (元[0][b] = 2));
+  for (let a = 1; a <= n; a++) {
+    費[a][0] = a * 外す;
+    元[a][0] = 1;
+  }
+  for (let b = 1; b <= m; b++) {
+    費[0][b] = b * 外す;
+    元[0][b] = 2;
+  }
   for (let a = 1; a <= n; a++)
     for (let b = 1; b <= m; b++) {
       const d = Math.abs(行の並び[a - 1].x - 筋たち[b - 1].x) / 間;
       const 合 = d <= 1.5 ? 費[a - 1][b - 1] + d : Infinity;
       const 上 = 費[a - 1][b] + 外す,
         左 = 費[a][b - 1] + 外す;
-      if (合 <= 上 && 合 <= 左) ((費[a][b] = 合), (元[a][b] = 0));
-      else if (上 <= 左) ((費[a][b] = 上), (元[a][b] = 1));
-      else ((費[a][b] = 左), (元[a][b] = 2));
+      if (合 <= 上 && 合 <= 左) {
+        費[a][b] = 合;
+        元[a][b] = 0;
+      } else if (上 <= 左) {
+        費[a][b] = 上;
+        元[a][b] = 1;
+      } else {
+        費[a][b] = 左;
+        元[a][b] = 2;
+      }
     }
   const 組 = new Map();
   let 差の和 = 0;

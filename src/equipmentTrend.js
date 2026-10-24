@@ -92,7 +92,7 @@ function 弓具の移り変わり(人, 記録たち) {
   const 弓具 = Array.isArray(人 && 人.equipments) ? 人.equipments : [];
   // 古い順に並べて、隣どうしで期間を切る
   const 並び = 弓具
-    .filter((変更) => 変更 && 'number' == typeof 変更.date)
+    .filter((変更) => 変更 && typeof 変更.date === 'number')
     .slice()
     .sort((甲, 乙) => 甲.date - 乙.date);
 

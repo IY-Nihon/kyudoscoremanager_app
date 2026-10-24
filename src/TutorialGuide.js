@@ -455,7 +455,7 @@ const TutorialOverlay = ({ navRef }) => {
             const 状態 = useScoreStore.getState();
             return 見本の中身を作る(
               new Date(),
-              'member' === 状態.activeRole && 状態.myMemberId
+              状態.activeRole === 'member' && 状態.myMemberId
                 ? { memberId: 状態.myMemberId, name: 状態.myMemberName }
                 : null
             );

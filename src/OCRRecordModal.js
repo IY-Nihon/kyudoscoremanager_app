@@ -44,7 +44,12 @@ const { マスを開く, 一射目からの順にする, 迷いを開く } = req
 // 板と紙の○×は端末で読む（Gemini は線の向きを読めない）。名前と並びは Gemini のまま
 const { マスを端末で差し替える, ノートの先読みを作る } = require('./ocr/sashikae');
 const { 明暗を伸ばす, 平らにする } = require('../scripts/ocr-cells/koushi.mjs');
-const { 締め切りを置く, 締め切りを外す, 時間切れか, 時間切れの訳 } = require('../scripts/ocr-cells/ikitsugi.mjs');
+const {
+  締め切りを置く,
+  締め切りを外す,
+  時間切れか,
+  時間切れの訳,
+} = require('../scripts/ocr-cells/ikitsugi.mjs');
 
 /**
  * 端末の読み取り 1 回にかけてよい長さ（ms）。端末の速さで伸ばす。
@@ -339,15 +344,17 @@ const OCRRecordModal = ({
 
   const handleClose = () => {
     resetAll();
-    onClose && onClose();
+    if (onClose) {
+      onClose();
+    }
   };
   // 戻るボタン（と web の Esc）で閉じるとき。読んでいる途中や読んだあとは、捨ててよいかを聞く。
   // ×と違って戻るはうっかり押しやすく、読み直しには時間がかかる（2026-09-26、戻るで窓を閉じるようにしたとき）
   const 戻るで閉じるとき = () => {
-    if ('pick' === step) return void handleClose();
+    if (step === 'pick') return void handleClose();
     Alert.alert(
       '読み取った内容を捨てますか？',
-      'analyzing' === step
+      step === 'analyzing'
         ? '読み取りをやめて閉じます。'
         : '閉じると、読み取った結果と直した内容は残りません。',
       [
@@ -1175,16 +1182,16 @@ const OCRRecordModal = ({
   // 種 … "区切り"（チーム名を付けられる）、"計"（その立の合計）、"総計"（手前の計もまとめる。間隔で止まる）
   const 仕切りを作る = (種, チーム名) => ({
     id: generateUUID(),
-    name: '区切り' === 種 ? '---' : 種,
+    name: 種 === '区切り' ? '---' : 種,
     marks: Array(合わせる射数).fill(''),
     arrowLocations: Array(合わせる射数).fill(null),
     gender: '未設定',
     grade: 0,
     isGuest: false,
-    isSeparator: '区切り' === 種,
-    isTotalCalculator: '計' === 種 || '総計' === 種,
-    またぐ合計: '総計' === 種,
-    ...('区切り' === 種 && チーム名 ? { teamName: チーム名 } : null),
+    isSeparator: 種 === '区切り',
+    isTotalCalculator: 種 === '計' || 種 === '総計',
+    またぐ合計: 種 === '総計',
+    ...(種 === '区切り' && チーム名 ? { teamName: チーム名 } : null),
     lockedBlocks: {},
     lastModified: Date.now(),
   });
@@ -1395,7 +1402,9 @@ const OCRRecordModal = ({
       確かめてから(() => {
         // どちらの読み取りかを渡す。呼び出し側の知らせの文言が変わる。
         // 射数は、写真で読めた数といまの記録表で埋まっている数の多いほうに合わせる
-        onApply && onApply(archers, 'record', 反映のしかた, 合わせる射数);
+        if (onApply) {
+          onApply(archers, 'record', 反映のしかた, 合わせる射数);
+        }
         改善のために取っておく(archers);
         handleClose();
       });
@@ -1409,7 +1418,9 @@ const OCRRecordModal = ({
     }
     const archers = buildArchersArray();
     確かめてから(() => {
-      onApply && onApply(archers, 'tachi', 反映のしかた);
+      if (onApply) {
+        onApply(archers, 'tachi', 反映のしかた);
+      }
       改善のために取っておく(archers);
       handleClose();
     });
@@ -1441,9 +1452,9 @@ const OCRRecordModal = ({
       .sort((甲, 乙) => {
         const 学年の差 = 学.学年の順(甲) - 学.学年の順(乙);
         if (学年の差) return 学年の差;
-        const genderVal = (性別) => ('男子' === 性別 ? 0 : '女子' === 性別 ? 1 : 2);
+        const genderVal = (性別) => (性別 === '男子' ? 0 : 性別 === '女子' ? 1 : 2);
         const genDiff = genderVal(甲.gender) - genderVal(乙.gender);
-        return 0 !== genDiff ? genDiff : (甲.name || '').localeCompare(乙.name || '', 'ja');
+        return genDiff !== 0 ? genDiff : (甲.name || '').localeCompare(乙.name || '', 'ja');
       });
   }, [members, pickerSearch]);
 
@@ -1467,7 +1478,9 @@ const OCRRecordModal = ({
     const termMap = {};
     list.forEach((卒業生) => {
       const term = 卒業生.termKi || 999;
-      termMap[term] || (termMap[term] = []);
+      if (!termMap[term]) {
+        termMap[term] = [];
+      }
       termMap[term].push(卒業生);
     });
     return Object.keys(termMap)
@@ -1481,7 +1494,11 @@ const OCRRecordModal = ({
   const toggleActiveGrade = (gStr) => {
     閉じた組を置く((prev) => {
       const next = new Set(prev);
-      next.has(gStr) ? next.delete(gStr) : next.add(gStr);
+      if (next.has(gStr)) {
+        next.delete(gStr);
+      } else {
+        next.add(gStr);
+      }
       return next;
     });
   };
@@ -1489,7 +1506,11 @@ const OCRRecordModal = ({
   const toggleTerm = (termStr) => {
     setExpandedTerms((prev) => {
       const next = new Set(prev);
-      next.has(termStr) ? next.delete(termStr) : next.add(termStr);
+      if (next.has(termStr)) {
+        next.delete(termStr);
+      } else {
+        next.add(termStr);
+      }
       return next;
     });
   };

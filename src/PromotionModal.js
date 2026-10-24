@@ -69,28 +69,36 @@ function 進級の窓({ 見える, 知らせる }) {
   }, [見える, 決まり]);
   /** 押したときの次の選び（卒業する学年で院へ進めるなら 卒業 → 院へ → そのまま → 卒業） */
   const 次の選び = (部員, 今) => {
-    const 順 = null !== 学.院へ進む先(部員, 決まり) ? [null, '院へ', '残す'] : [null, '残す'];
+    const 順 = 学.院へ進む先(部員, 決まり) !== null ? [null, '院へ', '残す'] : [null, '残す'];
     return 順[(順.indexOf(今 || null) + 1) % 順.length];
   };
   const 選ぶ = (部員) => {
     const 次 = new Map(選び);
     const 選んだ = 次の選び(部員, 選び.get(部員.id));
-    選んだ ? 次.set(部員.id, 選んだ) : 次.delete(部員.id);
+    if (選んだ) {
+      次.set(部員.id, 選んだ);
+    } else {
+      次.delete(部員.id);
+    }
     選びを置く(次);
   };
   /** その人の札（「卒業」「M1へ」「4年のまま」「2年へ」） */
   const 札の字 = (部員, 学年, 卒業) => {
     const 今 = 選び.get(部員.id);
-    if ('残す' === 今) return `${名(学年)}のまま`;
-    if ('院へ' === 今) return `${名(学.院へ進む先(部員, 決まり))}へ`;
+    if (今 === '残す') return `${名(学年)}のまま`;
+    if (今 === '院へ') return `${名(学.院へ進む先(部員, 決まり))}へ`;
     if (卒業) return '卒業';
     const 次 = 学.次の学年の値(学年, 決まり);
-    return null === 次 ? 'そのまま' : `${名(次)}へ`;
+    return 次 === null ? 'そのまま' : `${名(次)}へ`;
   };
 
   const 切り替える = (集まり, 置く, 鍵) => {
     const 次 = new Set(集まり);
-    次.has(鍵) ? 次.delete(鍵) : 次.add(鍵);
+    if (次.has(鍵)) {
+      次.delete(鍵);
+    } else {
+      次.add(鍵);
+    }
     置く(次);
   };
   const 後にする = () => useScoreStore.getState().進級の窓を後にする();
@@ -121,9 +129,9 @@ function 進級の窓({ 見える, 知らせる }) {
             {組たち.map((組) => {
               const 開いた = 開いた組.has(組.学年);
               const 次 = 学.次の学年の値(組.学年, 決まり);
-              const 行き先 = 組.最後 ? '卒業' : null === 次 ? 'そのまま' : 名(次);
-              const 残す数 = 組.人たち.filter((部員) => '残す' === 選び.get(部員.id)).length;
-              const 院へ数 = 組.人たち.filter((部員) => '院へ' === 選び.get(部員.id)).length;
+              const 行き先 = 組.最後 ? '卒業' : 次 === null ? 'そのまま' : 名(次);
+              const 残す数 = 組.人たち.filter((部員) => 選び.get(部員.id) === '残す').length;
+              const 院へ数 = 組.人たち.filter((部員) => 選び.get(部員.id) === '院へ').length;
               return (
                 <View key={組.学年} style={styles.組}>
                   <Pressable
@@ -145,8 +153,8 @@ function 進級の窓({ 見える, 知らせる }) {
                   </Pressable>
                   {開いた
                     ? 組.人たち.map((部員) => {
-                        const そのまま = '残す' === 選び.get(部員.id);
-                        const 院へ = '院へ' === 選び.get(部員.id);
+                        const そのまま = 選び.get(部員.id) === '残す';
+                        const 院へ = 選び.get(部員.id) === '院へ';
                         const 札 = 札の字(部員, 組.学年, 組.最後);
                         return (
                           <Pressable

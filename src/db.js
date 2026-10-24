@@ -48,7 +48,8 @@ const rtdb = (() => {
   try {
     return 設定.databaseURL ? RTDB.getDatabase(firebaseApp) : null;
   } catch (誤り) {
-    return (console.warn('[Firebase] RTDB initialization failed:', 誤り), null);
+    console.warn('[Firebase] RTDB initialization failed:', 誤り);
+    return null;
   }
 })();
 // db/auth/rtdb を先に exports に設定してから、永続化を非同期で行う
@@ -78,12 +79,12 @@ exports.dbReady = Promise.resolve(firestore);
 // ここは同期を待たせない。答えが返らない端末もあるので、時間で見切る。
 // 見切ったときは「持てている」に倒す。持てているのに警告を出すほうが害が大きい。
 (function 控えを持てるか見る() {
-  if ('undefined' == typeof window) {
+  if (typeof window === 'undefined') {
     exports.persistence = { state: 'ok', code: null };
     return;
   }
   const 決める = (状態) => {
-    if ('pending' === exports.persistence.state) exports.persistence = 状態;
+    if (exports.persistence.state === 'pending') exports.persistence = 状態;
   };
   const 見切り = setTimeout(() => 持てているとする(), 3000);
   function 持てているとする() {

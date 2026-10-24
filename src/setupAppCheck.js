@@ -59,7 +59,7 @@ function 札を隠す(文書) {
  * 手元（debug の印）は数えない。
  */
 function 印の失敗を知らせる(AppCheck, 器, 窓, 送る) {
-  if (!器 || 手元か(窓 && 窓.location) || 'function' !== typeof AppCheck.onTokenChanged) return;
+  if (!器 || 手元か(窓 && 窓.location) || typeof AppCheck.onTokenChanged !== 'function') return;
   let 知らせた = false;
   AppCheck.onTokenChanged(
     器,
@@ -83,7 +83,7 @@ function 印の失敗を知らせる(AppCheck, 器, 窓, 送る) {
  */
 const setupAppCheck = (firebaseApp, 差し替え = {}) => {
   const 環境 = 差し替え.環境 || 焼き込み();
-  const 窓 = 'undefined' !== typeof 差し替え.窓 ? 差し替え.窓 : 'undefined' !== typeof window ? window : null;
+  const 窓 = typeof 差し替え.窓 !== 'undefined' ? 差し替え.窓 : typeof window !== 'undefined' ? window : null;
   try {
     const サイトキー = 環境.EXPO_PUBLIC_RECAPTCHA_SITE_KEY;
     if (!窓 || !サイトキー) {

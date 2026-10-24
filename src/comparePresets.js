@@ -24,7 +24,7 @@ const 名前の長さ = 20;
 
 /** その団体のぶんだけ取り出す */
 function この団体のひな型(一覧, 団体id) {
-  const id = null == 団体id ? '' : String(団体id);
+  const id = 団体id == null ? '' : String(団体id);
   return (Array.isArray(一覧) ? 一覧 : []).filter((ひな型) => ひな型 && String(ひな型.団体id || '') === id);
 }
 
@@ -42,9 +42,9 @@ function ひな型を足す(一覧, 新しいの, いま) {
   const 名前 = String(新しい.名前 || '')
     .trim()
     .slice(0, 名前の長さ);
-  const 団体id = null == 新しい.団体id ? '' : String(新しい.団体id);
+  const 団体id = 新しい.団体id == null ? '' : String(新しい.団体id);
   const 部員idたち = [...new Set((Array.isArray(新しい.部員idたち) ? 新しい.部員idたち : []).map(String))];
-  if (!名前 || 0 === 部員idたち.length) return 元;
+  if (!名前 || 部員idたち.length === 0) return 元;
 
   const 時 = いま || Date.now();
   const 残り = 元.filter(
@@ -79,11 +79,11 @@ function ひな型を当てはめる(ひな型, 選べる人たち, 本人id) {
   const 欲しい = (ひな型 && Array.isArray(ひな型.部員idたち) ? ひな型.部員idたち : []).map(String);
   const 表 = new Map();
   for (const 一人 of Array.isArray(選べる人たち) ? 選べる人たち : [])
-    if (一人 && null != 一人.id) 表.set(String(一人.id), 一人);
+    if (一人 && 一人.id != null) 表.set(String(一人.id), 一人);
   const 人たち = [];
   let 見つからない = 0;
   for (const id of 欲しい) {
-    if (null != 本人id && String(本人id) === id) continue;
+    if (本人id != null && String(本人id) === id) continue;
     const 人 = 表.get(id);
     if (人) 人たち.push(人);
     else 見つからない++;

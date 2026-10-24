@@ -211,15 +211,25 @@ const AnalysisScreen = ({ navigation }) => {
     暦を出すを置く(true);
   };
   React.useEffect(() => {
-    '月ごと' === 期間の種類 || '直近30日' === 期間の種類
-      ? 推移の刻みを置く('day')
-      : '年度' === 期間の種類 && 'year' === 推移の刻み && 推移の刻みを置く('month');
+    if (期間の種類 === '月ごと' || 期間の種類 === '直近30日') {
+      推移の刻みを置く('day');
+    } else {
+      if (期間の種類 === '年度' && 推移の刻み === 'year') {
+        推移の刻みを置く('month');
+      }
+    }
   }, [期間の種類, 推移の刻み]);
   const 月を動かす = (差) => {
     let 月 = 見ている月 + 差;
     let 年 = 見ている年;
-    月 > 12 && ((月 = 1), (年 += 1));
-    月 < 1 && ((月 = 12), (年 -= 1));
+    if (月 > 12) {
+      月 = 1;
+      年 += 1;
+    }
+    if (月 < 1) {
+      月 = 12;
+      年 -= 1;
+    }
     見ている月を置く(月);
     見ている年を置く(年);
   };
@@ -233,7 +243,7 @@ const AnalysisScreen = ({ navigation }) => {
     // おらず、メンバーを選ばずに氏名だけで入れた記録が落ちていた。
     // 履歴画面の絞り込み（あちらは氏名も見る）とも食い違っていた
     const src =
-      'member' === activeRole && myMemberId
+      activeRole === 'member' && myMemberId
         ? sessions.filter((記録1件) => 自分の記録か(記録1件, myMemberId, 自分の名前))
         : sessions;
     src.forEach((記録) => {
@@ -261,29 +271,30 @@ const AnalysisScreen = ({ navigation }) => {
         if (!集.集計に入れるか(記録)) return false; // 未設定の古い記録は含める（Excel の書き出しと揃える）
         if (analysisSelectedTags.length > 0) {
           const タグたち = 記録.tags || [];
-          if ('AND' === analysisTagLogic) {
+          if (analysisTagLogic === 'AND') {
             if (!analysisSelectedTags.every((タグ) => タグたち.includes(タグ))) return false;
           } else if (!analysisSelectedTags.some((タグ) => タグたち.includes(タグ))) return false;
         }
         const 今 = Date.now();
         const 日付 = 記録.date;
-        if ('直近30日' === 期間の種類) return 今 - 日付 <= 2592e6;
-        if ('月ごと' === 期間の種類) {
+        if (期間の種類 === '直近30日') return 今 - 日付 <= 2592e6;
+        if (期間の種類 === '月ごと') {
           const 日 = new Date(日付);
           return 日.getFullYear() === 見ている年 && 日.getMonth() + 1 === 見ている月;
         }
-        if ('年度' === 期間の種類) {
+        if (期間の種類 === '年度') {
           const 日 = new Date(日付);
           const 年 = 日.getFullYear();
           return 学.年度(日) === 見ている年度;
         }
-        if ('期間指定' === 期間の種類) {
+        if (期間の種類 === '期間指定') {
           const 日 = new Date(日付);
           日.setHours(0, 0, 0, 0);
           const 始め = new Date(期間の始め);
           始め.setHours(0, 0, 0, 0);
           const 終わり = new Date(期間の終わり);
-          return (終わり.setHours(23, 59, 59, 999), 日 >= 始め && 日 <= 終わり);
+          終わり.setHours(23, 59, 59, 999);
+          return 日 >= 始め && 日 <= 終わり;
         }
         return true;
       }),
@@ -310,7 +321,7 @@ const AnalysisScreen = ({ navigation }) => {
         .filter((部員1人) => activeRole !== 'member' || !myMemberId || 部員1人.id === myMemberId)
         .map((部員) => Object.assign({}, 部員, 集.成績を数える(絞った記録, 部員.id)))
         .filter((部員) => {
-          if (0 === 部員.shots) return false;
+          if (部員.shots === 0) return false;
           if (activeRole === 'group') {
             if (性別の絞り !== '全員' && 部員.gender !== 性別の絞り) return false;
             if (区分の絞り !== '全区分' && !(部員.divisionIds || []).includes(区分の絞り)) return false;
@@ -341,9 +352,9 @@ const AnalysisScreen = ({ navigation }) => {
   const 名前で残す = (部員) =>
     !名前の検索 || (部員.name || '').toLowerCase().includes(名前の検索.toLowerCase());
   const rankingConfig = analysisRankingSettings[期間の種類] || { type: 'ratio', value: 0 };
-  const 割合 = 'ratio' === rankingConfig.type ? rankingConfig.value : 0;
+  const 割合 = rankingConfig.type === 'ratio' ? rankingConfig.value : 0;
   const 最多の射数 = Math.max(...順位の元.map((人) => 人.shots), 0);
-  const 射数の下限 = 'count' === rankingConfig.type ? rankingConfig.value : Math.floor(最多の射数 * 割合);
+  const 射数の下限 = rankingConfig.type === 'count' ? rankingConfig.value : Math.floor(最多の射数 * 割合);
   const 順位に入る = 順位の元.filter((人) => 人.shots >= 射数の下限);
   const 順位に入らない = 順位の元.filter((人) => 人.shots < 射数の下限).filter(名前で残す);
   const 順位つき = ((一覧) => {
@@ -365,9 +376,9 @@ const AnalysisScreen = ({ navigation }) => {
       絞った記録.forEach((記録) => {
         const 日付 = new Date(記録.date);
         let 札 = '';
-        if ('day' === 推移の刻み) {
+        if (推移の刻み === 'day') {
           札 = `${日付.getFullYear()}/${日付.getMonth() + 1}/${日付.getDate()}`;
-        } else if ('month' === 推移の刻み) {
+        } else if (推移の刻み === 'month') {
           札 = `${日付.getFullYear()}/${日付.getMonth() + 1}`;
         } else {
           札 = `${学.年度(日付)}年度`;
@@ -386,13 +397,13 @@ const AnalysisScreen = ({ navigation }) => {
           let 中り = 0;
           let 射数 = 0;
           射手.marks.forEach((oVal, lVal) => {
-            if ('○' !== oVal && '\xd7' !== oVal) return;
+            if (oVal !== '○' && oVal !== '\xd7') return;
             // 氏名では拾わない。ID一致「または」氏名一致だったため、
             // 1つの射が2人に数えられることがあった
             if (集.その人の射か(射手, lVal, 部員id)) {
               期間ごと[札].shots++;
               射数++;
-              if ('○' === oVal) {
+              if (oVal === '○') {
                 期間ごと[札].hits++;
                 中り++;
               }
@@ -432,24 +443,24 @@ const AnalysisScreen = ({ navigation }) => {
     部員id ? 集.成績を数える(点の期間で絞る(絞った記録, ラベル), 部員id) : null;
   // 部員として入っているときの、自分の成績
   const 自分の期間の成績 = React.useMemo(
-    () => ('member' === activeRole && myMemberId ? 期間の成績(myMemberId, selectedTrendLabel) : null),
+    () => (activeRole === 'member' && myMemberId ? 期間の成績(myMemberId, selectedTrendLabel) : null),
     [activeRole, myMemberId, 絞った記録, selectedTrendLabel]
   );
   const 自分の推移 = React.useMemo(
-    () => ('member' === activeRole && myMemberId ? 推移を数える(myMemberId, 自分の名前) : []),
+    () => (activeRole === 'member' && myMemberId ? 推移を数える(myMemberId, 自分の名前) : []),
     [activeRole, myMemberId, 自分の名前, 推移を数える]
   );
   const 推移の図 = ({ data, selectedLabel, onSelectLabel, onJumpToRecord }) => {
     const 選んだ番 = selectedLabel ? data.findIndex((item) => item.label === selectedLabel) : null;
     const 点を選ぶ = (index) => {
-      if (null === index) {
+      if (index === null) {
         if (onSelectLabel) onSelectLabel(null);
       } else {
         const item = data[index];
         if (onSelectLabel && item) onSelectLabel(item.label);
       }
     };
-    if (0 === data.length) {
+    if (data.length === 0) {
       return (
         <View style={styles.noDataGraph}>
           <Text style={{ color: 色.灰 }}>データが足りません</Text>
@@ -465,7 +476,7 @@ const AnalysisScreen = ({ navigation }) => {
     }));
     let 線 = '';
     点たち.forEach((点, 番) => {
-      線 += 0 === 番 ? `M ${点.x} ${点.y}` : ` L ${点.x} ${点.y}`;
+      線 += 番 === 0 ? `M ${点.x} ${点.y}` : ` L ${点.x} ${点.y}`;
     });
     return (
       <View style={styles.graphContainer}>
@@ -478,10 +489,10 @@ const AnalysisScreen = ({ navigation }) => {
           }}
         >
           <Text style={styles.graphTitle}>的中率推移 (%)</Text>
-          {!('月ごと' === 期間の種類 || '直近30日' === 期間の種類) && (
+          {!(期間の種類 === '月ごと' || 期間の種類 === '直近30日') && (
             <View style={styles.trendUnitSelector}>
               {['day', 'month', 'year']
-                .filter((刻み) => '年度' !== 期間の種類 || 'year' !== 刻み)
+                .filter((刻み) => 期間の種類 !== '年度' || 刻み !== 'year')
                 .map((刻み) => (
                   <TouchableOpacity
                     key={`unit-${刻み}`}
@@ -492,7 +503,7 @@ const AnalysisScreen = ({ navigation }) => {
                     style={[styles.unitBtn, 推移の刻み === 刻み && styles.unitBtnActive]}
                   >
                     <Text style={[styles.unitBtnText, 推移の刻み === 刻み && styles.unitBtnTextActive]}>
-                      {'day' === 刻み ? '日' : 'month' === 刻み ? '月' : '年度'}
+                      {刻み === 'day' ? '日' : 刻み === 'month' ? '月' : '年度'}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -540,7 +551,7 @@ const AnalysisScreen = ({ navigation }) => {
             />
           ))}
         </Svg>
-        {null !== 選んだ番 && data[選んだ番] && (
+        {選んだ番 !== null && data[選んだ番] && (
           <View style={styles.pointDetailCard}>
             <View
               style={{
@@ -607,8 +618,8 @@ const AnalysisScreen = ({ navigation }) => {
         ]}
       >
         {options.map((選択肢) => {
-          const 字 = 'string' == typeof 選択肢 ? 選択肢 : 選択肢.label;
-          const 値 = 'string' == typeof 選択肢 ? 選択肢 : 選択肢.value;
+          const 字 = typeof 選択肢 === 'string' ? 選択肢 : 選択肢.label;
+          const 値 = typeof 選択肢 === 'string' ? 選択肢 : 選択肢.value;
           const 選ばれている = selected === 値;
           return (
             <TouchableOpacity
@@ -651,14 +662,14 @@ const AnalysisScreen = ({ navigation }) => {
                   onPress={() => setAnalysisTagLogic('AND')}
                   style={[
                     { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-                    'AND' === analysisTagLogic && { backgroundColor: 色.白 },
+                    analysisTagLogic === 'AND' && { backgroundColor: 色.白 },
                   ]}
                 >
                   <Text
                     style={{
                       fontSize: 11,
                       fontWeight: 'bold',
-                      color: 'AND' === analysisTagLogic ? 色.青 : 色.灰,
+                      color: analysisTagLogic === 'AND' ? 色.青 : 色.灰,
                     }}
                   >
                     すべて含む
@@ -668,14 +679,14 @@ const AnalysisScreen = ({ navigation }) => {
                   onPress={() => setAnalysisTagLogic('OR')}
                   style={[
                     { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-                    'OR' === analysisTagLogic && { backgroundColor: 色.白 },
+                    analysisTagLogic === 'OR' && { backgroundColor: 色.白 },
                   ]}
                 >
                   <Text
                     style={{
                       fontSize: 11,
                       fontWeight: 'bold',
-                      color: 'OR' === analysisTagLogic ? 色.青 : 色.灰,
+                      color: analysisTagLogic === 'OR' ? 色.青 : 色.灰,
                     }}
                   >
                     いずれか含む
@@ -693,12 +704,12 @@ const AnalysisScreen = ({ navigation }) => {
               <TouchableOpacity
                 style={[
                   styles.tagChip,
-                  0 === analysisSelectedTags.length && styles.tagChipActive,
-                  { backgroundColor: 0 === analysisSelectedTags.length ? 色.青 : 色.地_濃い },
+                  analysisSelectedTags.length === 0 && styles.tagChipActive,
+                  { backgroundColor: analysisSelectedTags.length === 0 ? 色.青 : 色.地_濃い },
                 ]}
                 onPress={() => setAnalysisSelectedTags([])}
               >
-                <Text style={[styles.tagChipText, 0 === analysisSelectedTags.length && { color: 色.白 }]}>
+                <Text style={[styles.tagChipText, analysisSelectedTags.length === 0 && { color: 色.白 }]}>
                   すべて解除
                 </Text>
               </TouchableOpacity>
@@ -730,7 +741,7 @@ const AnalysisScreen = ({ navigation }) => {
               isWrap
             />
           </View>
-          {'期間指定' === 期間の種類 && (
+          {期間の種類 === '期間指定' && (
             <View style={styles.customRangeContainer}>
               <TouchableOpacity style={styles.dateBtn} onPress={() => 暦を開く('start')}>
                 <Text style={styles.dateLabel}>
@@ -747,7 +758,7 @@ const AnalysisScreen = ({ navigation }) => {
               </TouchableOpacity>
             </View>
           )}
-          {'月ごと' === 期間の種類 && (
+          {期間の種類 === '月ごと' && (
             <View style={styles.monthNav}>
               <TouchableOpacity style={styles.monthNavBtn} onPress={() => 月を動かす(-1)}>
                 <Icons.Ionicons name="chevron-back" size={20} color={色.青} />
@@ -760,7 +771,7 @@ const AnalysisScreen = ({ navigation }) => {
               </TouchableOpacity>
             </View>
           )}
-          {'年度' === 期間の種類 && (
+          {期間の種類 === '年度' && (
             <View style={styles.monthNav}>
               <TouchableOpacity style={styles.monthNavBtn} onPress={() => 年度を動かす(-1)}>
                 <Icons.Ionicons name="chevron-back" size={20} color={色.青} />
@@ -771,7 +782,7 @@ const AnalysisScreen = ({ navigation }) => {
               </TouchableOpacity>
             </View>
           )}
-          {'member' !== activeRole && (
+          {activeRole !== 'member' && (
             <View style={styles.rankingSettingsContainer}>
               <Text style={styles.rankingSettingsLabel}>ランキング対象の基準 (最多比)</Text>
               <View style={styles.ratioButtonRow}>
@@ -844,7 +855,7 @@ const AnalysisScreen = ({ navigation }) => {
               )}
             </View>
           )}
-          {'member' !== activeRole && (
+          {activeRole !== 'member' && (
             <>
               <View style={styles.filterDivider} />
               <選択肢の帯
@@ -897,7 +908,7 @@ const AnalysisScreen = ({ navigation }) => {
             </>
           )}
         </View>
-        {'member' === activeRole && 順位つき[0] && (
+        {activeRole === 'member' && 順位つき[0] && (
           <View style={styles.memberDashboard}>
             <View style={styles.dashboardHeader}>
               <Text style={styles.dashboardTitle}>マイ・パフォーマンス統計</Text>
@@ -1036,7 +1047,7 @@ const AnalysisScreen = ({ navigation }) => {
             {型の節(自分の期間の成績 || 順位つき[0], selectedTrendLabel)}
           </View>
         )}
-        {'member' !== activeRole && (
+        {activeRole !== 'member' && (
           <View style={styles.searchBarContainer}>
             <View style={styles.searchBar}>
               <Icons.Ionicons name="search" size={18} color={色.青} style={styles.searchIcon} />
@@ -1056,7 +1067,7 @@ const AnalysisScreen = ({ navigation }) => {
             </View>
           </View>
         )}
-        {'member' !== activeRole && (
+        {activeRole !== 'member' && (
           <View style={styles.listContainer}>
             {順位つき.map((部員) => (
               <TouchableOpacity
@@ -1066,7 +1077,7 @@ const AnalysisScreen = ({ navigation }) => {
               >
                 <View style={styles.rowLeft}>
                   <View style={styles.rankBadge}>
-                    <Text style={styles.rankText}>{'member' === activeRole ? '-' : 部員.displayRank}</Text>
+                    <Text style={styles.rankText}>{activeRole === 'member' ? '-' : 部員.displayRank}</Text>
                   </View>
                   <View style={styles.nameContainer}>
                     <Text
@@ -1078,7 +1089,7 @@ const AnalysisScreen = ({ navigation }) => {
                       {部員.name}
                     </Text>
                     <Text style={styles.memberSub} numberOfLines={1}>
-                      {'group' === activeRole && 学.人の説明(部員, 決まり, { 期を使う, 区分たち })}
+                      {activeRole === 'group' && 学.人の説明(部員, 決まり, { 期を使う, 区分たち })}
                     </Text>
                   </View>
                 </View>
@@ -1124,7 +1135,7 @@ const AnalysisScreen = ({ navigation }) => {
                       <View style={styles.nameContainer}>
                         <Text style={[styles.memberName, { color: 色.黒 }]}>{部員.name}</Text>
                         <Text style={styles.memberSub}>
-                          {'group' === activeRole && 学.人の説明(部員, 決まり, { 期を使う, 区分たち })}
+                          {activeRole === 'group' && 学.人の説明(部員, 決まり, { 期を使う, 区分たち })}
                         </Text>
                       </View>
                     </View>
@@ -1138,7 +1149,7 @@ const AnalysisScreen = ({ navigation }) => {
                 ))}
               </View>
             )}
-            {0 === 順位に入る.length && (
+            {順位に入る.length === 0 && (
               <Text style={styles.noDataText}>条件に一致するメンバーがいません</Text>
             )}
           </View>
@@ -1147,13 +1158,13 @@ const AnalysisScreen = ({ navigation }) => {
       <CustomCalendarModal
         visible={暦を出す}
         onClose={() => 暦を出すを置く(false)}
-        selectedDate={'start' === 暦の対象 ? 期間の始め : 期間の終わり}
+        selectedDate={暦の対象 === 'start' ? 期間の始め : 期間の終わり}
         onSelectDate={(日付) => {
-          if ('start' === 暦の対象) 期間の始めを置く(日付);
+          if (暦の対象 === 'start') 期間の始めを置く(日付);
           else 期間の終わりを置く(日付);
           暦を出すを置く(false);
         }}
-        title={'start' === 暦の対象 ? '開始日を選択' : '終了日を選択'}
+        title={暦の対象 === 'start' ? '開始日を選択' : '終了日を選択'}
       />
       <部員の詳細の窓
         比較のひな型を足す={比較のひな型を足す}

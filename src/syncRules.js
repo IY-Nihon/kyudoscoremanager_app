@@ -631,7 +631,7 @@ function 自分の記録か(記録, 自分id, 自分名) {
  */
 function 見える記録数(状態) {
   const 一覧 = Array.isArray(状態 && 状態.sessions) ? 状態.sessions : [];
-  if (!状態 || 'member' !== 状態.activeRole || !状態.myMemberId) return 一覧.length;
+  if (!状態 || 状態.activeRole !== 'member' || !状態.myMemberId) return 一覧.length;
   return 一覧.filter((記録) => 自分の記録か(記録, 状態.myMemberId, 状態.myMemberName)).length;
 }
 
@@ -666,8 +666,10 @@ function 射数の差分(前, 後) {
       if ((前の印[射番] == null ? '' : 前の印[射番]) !== (後の印[射番] == null ? '' : 後の印[射番]))
         return null;
     }
-    if (前の数 === null) ((前の数 = 前の印.length), (後の数 = 後の印.length));
-    else if (前の数 !== 前の印.length || 後の数 !== 後の印.length) return null;
+    if (前の数 === null) {
+      前の数 = 前の印.length;
+      後の数 = 後の印.length;
+    } else if (前の数 !== 前の印.length || 後の数 !== 後の印.length) return null;
     切った[後の射手.id] =
       前の印.length > 後の印.length ? 前の印.slice(後の印.length).map((印) => (印 == null ? '' : 印)) : [];
   }
@@ -832,7 +834,7 @@ const ライブへ送る形の射手 = (一覧, 本数) =>
         // 配列から落として添字のオブジェクトに変えてしまい、位置がずれる。
         // 持っていないときは null にして、受け取り側が手元の値を残せるようにする
         arrowLocations: Array.isArray(射手.arrowLocations)
-          ? 射手.arrowLocations.map((矢所) => (null == 矢所 ? '' : 矢所))
+          ? 射手.arrowLocations.map((矢所) => (矢所 == null ? '' : 矢所))
           : null,
       }))
     )

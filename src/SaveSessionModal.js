@@ -59,12 +59,14 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
     タグの文を置く(currentSessionTags.map(タグの見た目).join(' '));
   }, [currentSessionTags, visible]);
   const 統計の答え = (入れる) => {
-    入れる
-      ? (setIncludeInStats(true),
-        onSave(題.trim(), 覚え書き.trim(), true, currentSessionTags.join(' ')),
-        題を置く(''),
-        覚え書きを置く(''))
-      : 統計を聞いているを置く(true);
+    if (入れる) {
+      setIncludeInStats(true);
+      onSave(題.trim(), 覚え書き.trim(), true, currentSessionTags.join(' '));
+      題を置く('');
+      覚え書きを置く('');
+    } else {
+      統計を聞いているを置く(true);
+    }
   };
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>

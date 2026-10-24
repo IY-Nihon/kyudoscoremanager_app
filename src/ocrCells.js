@@ -78,11 +78,11 @@ function 記号を整える(生) {
  * @returns {string[]} '○' | '×' | '' の並び
  */
 function マスを開く(マスたち, 一マスの射数) {
-  const 表 = '1射' === 一マスの射数 ? 一射のマス : 二射のマス;
+  const 表 = 一マスの射数 === '1射' ? 一射のマス : 二射のマス;
   const 出 = [];
   for (const 生 of Array.isArray(マスたち) ? マスたち : []) {
     const 記号 = 記号を整える(生);
-    const 開いた = 表[記号] || ('1射' === 一マスの射数 ? [''] : ['', '']);
+    const 開いた = 表[記号] || (一マスの射数 === '1射' ? [''] : ['', '']);
     for (const x of 開いた) 出.push(x);
   }
   return 出;
@@ -103,7 +103,7 @@ function マスを開く(マスたち, 一マスの射数) {
 const 迷いの境 = 0.55;
 function 迷いを開く(確からしさ, 一マスの射数) {
   const 出 = [];
-  const 数 = '1射' === 一マスの射数 ? 1 : 2;
+  const 数 = 一マスの射数 === '1射' ? 1 : 2;
   for (const 確 of Array.isArray(確からしさ) ? 確からしさ : []) {
     const 迷い = typeof 確 === 'number' && 確 < 迷いの境;
     for (let i = 0; i < 数; i++) 出.push(迷い);
@@ -138,7 +138,7 @@ function 射数にそろえる(印たち, 射数) {
  */
 function 一射目からの順にする(マスたち, 起点) {
   const 並び = Array.isArray(マスたち) ? マスたち.slice() : [];
-  return '下から' === 起点 ? 並び.reverse() : 並び;
+  return 起点 === '下から' ? 並び.reverse() : 並び;
 }
 
 module.exports = {
