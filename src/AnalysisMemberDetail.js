@@ -3,6 +3,8 @@
 const { 色: 基本色 } = require('./iro.js');
 const React = require('react');
 const { View, Text, ScrollView, TouchableOpacity, Modal, TextInput } = require('./rn');
+
+const { use入れ替える組 } = require('./useIrekae');
 // 「自分が写っているか」の判定。履歴画面・案内の見本と同じものを使う
 const { 学年でまとめる } = require('./syncRules');
 // 「その射は誰のものか」の決まりは1か所に寄せてある（src/statsRules.js）
@@ -56,18 +58,7 @@ const 部員の詳細の窓 = ({
   // 比較する相手も学年でまとめる。記録表の人の選択と同じ形にしてある。
   // 覚えるのは「閉じた学年」。開く側を決め打ちすると、想定外の学年が
   // 閉じたまま出て、中の人に辿り着けなくなる
-  const [閉じた学年, 閉じた学年を置く] = React.useState(new Set());
-  const 学年を開け閉め = (印) => {
-    閉じた学年を置く((前) => {
-      const 次 = new Set(前);
-      if (次.has(印)) {
-        次.delete(印);
-      } else {
-        次.add(印);
-      }
-      return 次;
-    });
-  };
+  const [閉じた学年, 学年を開け閉め] = use入れ替える組();
   // 個人の詳細を開いているときの、その人の成績
   const 詳細の期間の成績 = React.useMemo(
     () => (詳細の部員 ? 期間の成績(詳細の部員.id, selectedModalTrendLabel) : null),

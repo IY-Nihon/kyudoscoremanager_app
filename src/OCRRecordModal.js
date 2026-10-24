@@ -12,6 +12,8 @@ exports.OCRRecordModal = undefined;
 const React = require('react');
 const { useState, useMemo } = React;
 const { Text, Alert, View, TouchableOpacity, Modal, ScrollView, ActivityIndicator, Image } = require('./rn');
+
+const { use入れ替える組 } = require('./useIrekae');
 // React Native の Alert はブラウザでは何も出ない。「候補が複数ある名前が残っています」を
 // 出したつもりで黙っていて、反映を押しても何も起きないように見えた（検証環境で実際に）。
 // アプリの中の窓へ流す橋渡しを使う（機種を問わず同じ見た目で出る）
@@ -339,8 +341,8 @@ const OCRRecordModal = ({
   const [pickerTarget, setPickerTarget] = useState(null); // {tachiIdx, seatIdx}
   const [pickerSearch, setPickerSearch] = useState('');
   // 閉じた組（学年・区分の鍵）。初めはどの組も開いている（高専・6 年制の 5・6 年や区分の組も）
-  const [閉じた組, 閉じた組を置く] = useState(() => new Set());
-  const [expandedTerms, setExpandedTerms] = useState(new Set());
+  const [閉じた組, toggleActiveGrade, 閉じた組を置く] = use入れ替える組();
+  const [expandedTerms, toggleTerm, setExpandedTerms] = use入れ替える組();
 
   // 大前がどちらの端かは、道場や大会で違う。1枚の写真に板が2つ写り、
   // それぞれ外側が大前ということもある（リーグの対戦）。読む前に選んでもらう。
@@ -1507,30 +1509,6 @@ const OCRRecordModal = ({
         members: termMap[term].sort((甲, 乙) => (甲.name || '').localeCompare(乙.name || '', 'ja')),
       }));
   }, [members, alumni, pickerSearch]);
-
-  const toggleActiveGrade = (gStr) => {
-    閉じた組を置く((prev) => {
-      const next = new Set(prev);
-      if (next.has(gStr)) {
-        next.delete(gStr);
-      } else {
-        next.add(gStr);
-      }
-      return next;
-    });
-  };
-
-  const toggleTerm = (termStr) => {
-    setExpandedTerms((prev) => {
-      const next = new Set(prev);
-      if (next.has(termStr)) {
-        next.delete(termStr);
-      } else {
-        next.add(termStr);
-      }
-      return next;
-    });
-  };
 
   // ピッカーは立ち順モード（{tachiIdx, seatIdx}）と記録モード（{rowIdx}）で
   // 対象の指し方が違うため、ここで振り分ける
