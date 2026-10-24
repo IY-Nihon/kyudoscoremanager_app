@@ -77,7 +77,7 @@ async function 一覧へ戻す(page) {
 /** ゴミ箱の一覧を開き、題の記録の詳細へ */
 async function ゴミ箱の詳細へ(page) {
   await 一覧へ戻す(page);
-  await page.getByRole('button', { name: '選んだ記録を消す' }).click();
+  await page.getByRole('button', { name: 'ゴミ箱を開く' }).click();
   await expect(page.getByText('ゴミ箱', { exact: true })).toBeVisible({ timeout: 15_000 });
   const { ゴミ箱 } = await 手元の記録(page);
   const 行 = page.getByTestId(`ゴミ箱の記録-${ゴミ箱.id}`);

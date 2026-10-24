@@ -29,7 +29,7 @@ test('ゴミ箱の記録は、押すと見るだけで開き、戻るとゴミ�
 
   await page.getByText('履歴', { exact: true }).first().click();
   await expect(page.getByText('過去の記録表', { exact: true })).toBeVisible({ timeout: 20_000 });
-  await page.getByRole('button', { name: '選んだ記録を消す' }).click();
+  await page.getByRole('button', { name: 'ゴミ箱を開く' }).click();
   await expect(page.getByText('ゴミ箱', { exact: true })).toBeVisible({ timeout: 15_000 });
 
   // 種の記録（削除済み）が一覧に無ければ、この団体では見られない

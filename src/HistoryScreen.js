@@ -37,6 +37,15 @@ const { styles } = require('./historyStyles');
 // ゴミ箱の窓（戻す・まとめて消す・中身を見る）は別のファイル（2026-10-05）
 const { ゴミ箱の中身の窓 } = require('./HistoryTrash');
 const 仕切り線 = () => <View style={{ height: 1, backgroundColor: 基本色.地_濃い, marginLeft: 16 }} />;
+/** 記録の archers を並びにする（古い記録は配列でなく、番号を鍵にした入れ物のことがある）。空きは落とす */
+const 並びにする = (値) =>
+  値
+    ? Array.isArray(値)
+      ? 値.filter(Boolean)
+      : typeof 値 === 'object'
+        ? Object.values(値).filter(Boolean)
+        : []
+    : [];
 const HistoryScreen = () => {
   // 上から引っ張って更新（src/hikiOroshi.js）。雲から取り直す
   const 引く = use引いて更新(() => useScoreStore.getState().雲から取り直す());
@@ -82,7 +91,6 @@ const HistoryScreen = () => {
       'selectedHistorySessionId',
       'setSelectedHistorySessionId',
       'viewScale',
-      'deleteArcher',
       'deleteSession',
       'deleteMultipleSessions',
       'restoreSession',
@@ -152,7 +160,7 @@ const HistoryScreen = () => {
       null;
     if (記録 && activeRole === 'member' && 部員ID) {
       // 判定は syncRules の 自分の射手か に出した。ここは交代の判定で
-      // 射手ではなく記録のほう(o)を見ていて、交代で入った自分を拾えず、
+      // 射手ではなく記録のほうを見ていて、交代で入った自分を拾えず、
       // すぐ下の mySessions とも食い違っていた
       const 自分か = (射手) => 自分の射手か(射手, 部員ID, 名前);
       const 自分 = 記録.archers.find(自分か);
@@ -239,8 +247,7 @@ const HistoryScreen = () => {
       const 日付 = new Date(記録.date);
       const 年 = 日付.getFullYear();
       const 月 = 日付.getMonth() + 1;
-      if (学.年度(new Date(年, 月 - 1, 1)) === 見ている年度)
-        集めた.add(`${年}/${String(月).padStart(2, '0')}`);
+      if (学.年度(日付) === 見ている年度) 集めた.add(`${年}/${String(月).padStart(2, '0')}`);
     });
     return Array.from(集めた).sort((甲, 乙) => 甲.localeCompare(乙));
   }, [mySessions, 見ている年度, 年度の始まりの月]);
@@ -295,7 +302,7 @@ const HistoryScreen = () => {
         const 日付 = new Date(日時);
         const 年 = 日付.getFullYear();
         const 月 = 日付.getMonth() + 1;
-        const 年度 = 学.年度(new Date(年, 月 - 1, 1));
+        const 年度 = 学.年度(日付);
         const 検索中 = 検索の文.trim().length > 0;
         if (historySelectedTags.length > 0) {
           const タグたち = 記録.tags || [];
@@ -327,14 +334,6 @@ const HistoryScreen = () => {
       })
       .sort((甲, 乙) => 乙.date - 甲.date);
   }, [mySessions, 検索の文, 見ている月, 見ている年度, historySelectedTags, historyTagLogic]);
-  const 並びにする = (値) =>
-    値
-      ? Array.isArray(値)
-        ? 値.filter(Boolean)
-        : typeof 値 === 'object'
-          ? Object.values(値).filter(Boolean)
-          : []
-      : [];
   const 詳細を描く = () => {
     if (!見ている記録)
       return (
@@ -372,13 +371,10 @@ const HistoryScreen = () => {
     const 前後へ = (向き) => {
       const 位置 = 絞った記録.findIndex((記録1件) => 記録1件.id === 見ている記録.id);
       if (位置 !== -1) {
-        if (向き === 'prev' && 位置 < 絞った記録.length - 1) {
+        // 一覧は新しい順。前（prev）は一つ古い記録
+        if (向き === 'prev' && 位置 < 絞った記録.length - 1)
           setSelectedHistorySessionId(絞った記録[位置 + 1].id);
-        } else {
-          if (向き === 'next' && 位置 > 0) {
-            setSelectedHistorySessionId(絞った記録[位置 - 1].id);
-          }
-        }
+        else if (向き === 'next' && 位置 > 0) setSelectedHistorySessionId(絞った記録[位置 - 1].id);
       }
     };
     return (
@@ -579,77 +575,239 @@ const HistoryScreen = () => {
         </View>
         <View style={[styles.detailTableArea, { justifyContent: 'center', alignItems: 'center' }]}>
           <View style={{ flexDirection: 'column', maxWidth: '100%', maxHeight: '100%' }}>
-            {横に並べる
-              ? [
-                  // ── 横に並べた表 ──
-                  // 記録画面の横並びと同じ形。名前を左に固定し、○×は右へ伸びる。
-                  // 部品（LabelColumn / ArcherColumnView）は縦と同じものを、
-                  // 横並びの印を付けて使う
-                  <ScrollView
-                    key={'横の表'}
-                    showsVerticalScrollIndicator={false}
-                    bounces={false}
-                    style={{ flexGrow: 0 }}
-                  >
-                    <View style={{ flexDirection: 'row', minWidth: '100%' }}>
-                      <View style={{ backgroundColor: 基本色.地, zIndex: 10 }}>
-                        <View
-                          style={{
-                            width: 100 * viewScale,
-                            height: UIConfig.cellHeight * viewScale,
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            backgroundColor: 基本色.地,
-                            borderTopWidth: 1.5,
-                            borderTopColor: 基本色.黒,
-                            borderBottomWidth: 3,
-                            borderBottomColor: 基本色.黒,
-                            borderRightWidth: 1.5,
-                            borderRightColor: 基本色.黒,
-                          }}
-                        >
-                          <Text
-                            style={{ fontSize: 10 * viewScale, fontWeight: 'bold', color: 基本色.文字_二 }}
-                          >
-                            名
-                          </Text>
-                        </View>
-                        {射手たち.map((射手, 順) => (
-                          <View
-                            key={typeof 射手.id === 'string' ? `名-${射手.id}` : `名-${順}`}
+            {横に並べる ? (
+              // ── 横に並べた表 ──
+              // 記録画面の横並びと同じ形。名前を左に固定し、○×は右へ伸びる。
+              // 部品（LabelColumn / ArcherColumnView）は縦と同じものを、
+              // 横並びの印を付けて使う
+              <ScrollView showsVerticalScrollIndicator={false} bounces={false} style={{ flexGrow: 0 }}>
+                <View style={{ flexDirection: 'row', minWidth: '100%' }}>
+                  <View style={{ backgroundColor: 基本色.地, zIndex: 10 }}>
+                    <View
+                      style={{
+                        width: 100 * viewScale,
+                        height: UIConfig.cellHeight * viewScale,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        backgroundColor: 基本色.地,
+                        borderTopWidth: 1.5,
+                        borderTopColor: 基本色.黒,
+                        borderBottomWidth: 3,
+                        borderBottomColor: 基本色.黒,
+                        borderRightWidth: 1.5,
+                        borderRightColor: 基本色.黒,
+                      }}
+                    >
+                      <Text style={{ fontSize: 10 * viewScale, fontWeight: 'bold', color: 基本色.文字_二 }}>
+                        名
+                      </Text>
+                    </View>
+                    {射手たち.map((射手, 順) => (
+                      <View
+                        key={typeof 射手.id === 'string' ? `名-${射手.id}` : `名-${順}`}
+                        style={{
+                          width: 100 * viewScale,
+                          height:
+                            (射手.isSeparator ? UIConfig.separatorWidth : UIConfig.cellHeight) * viewScale,
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          backgroundColor: 射手.isTotalCalculator ? 'rgba(0,122,255,0.05)' : 基本色.地,
+                          borderBottomWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 1,
+                          borderBottomColor: 基本色.黒,
+                          borderRightWidth: 1.5,
+                          borderRightColor: 基本色.黒,
+                          // 余白も表示の大きさに合わせる（25% で中身が隣の行へはみ出した）
+                          paddingHorizontal: 4 * viewScale,
+                          // チームの色。横のときは名前の左に細い帯で出す
+                          ...(見立て[順].チームの色
+                            ? { borderLeftWidth: 3 * viewScale, borderLeftColor: 見立て[順].チームの色 }
+                            : null),
+                        }}
+                      >
+                        {射手.isSeparator ? (
+                          組.区切りのチーム名(射手) ? (
+                            <Text
+                              style={{
+                                fontSize: 11 * viewScale,
+                                fontWeight: '700',
+                                color: 組.チームの色(組.区切りのチーム名(射手)) || 基本色.灰,
+                              }}
+                              // 横の表の区切りは高さ 35 で 2 行入る。1 行では長い大学名が切れた
+                              numberOfLines={2}
+                            >
+                              {組.区切りのチーム名(射手)}
+                            </Text>
+                          ) : null
+                        ) : (
+                          <TouchableOpacity
                             style={{
-                              width: 100 * viewScale,
-                              height:
-                                (射手.isSeparator ? UIConfig.separatorWidth : UIConfig.cellHeight) *
-                                viewScale,
+                              width: '100%',
+                              height: '100%',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                            onPress={() => 人を選ぶ(射手.id, 順)}
+                            disabled={!isAdminMode}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 13 * viewScale,
+                                color: 射手.name ? 基本色.黒 : 基本色.灰,
+                              }}
+                              numberOfLines={1}
+                            >
+                              {射手.isTotalCalculator
+                                ? 射手.またぐ合計
+                                  ? '総計'
+                                  : '合計'
+                                : 射手.name
+                                  ? formatMemberName(射手.name, members || [])
+                                  : '選択'}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    ))}
+                  </View>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator
+                    style={{ flexGrow: 0, flexShrink: 1 }}
+                  >
+                    <View
+                      style={{
+                        flexDirection: 'column',
+                        width: UIConfig.cellWidth * (本数 + 1) * viewScale,
+                      }}
+                    >
+                      <LabelColumn shots={本数} showFooter={false} 横並び />
+                      {射手たち.map((射手, 順) => (
+                        <ArcherColumnView
+                          key={typeof 射手.id === 'string' ? `行-${射手.id}` : `行-${順}`}
+                          archer={射手}
+                          shots={本数}
+                          indexInList={順}
+                          {...見立て[順]}
+                          showFooter={false}
+                          横並び
+                          isReadOnly={!isAdminMode}
+                          isAdminMode={isAdminMode}
+                          onPressName={(射手ID, 名前, 位置) => 人を選ぶ(射手ID, 位置)}
+                          onDelete={射手を消す}
+                          onToggleMark={印を切り替える}
+                          onToggleLock={鍵を切り替える}
+                        />
+                      ))}
+                    </View>
+                  </ScrollView>
+                </View>
+              </ScrollView>
+            ) : (
+              <>
+                <ScrollView showsVerticalScrollIndicator={false} bounces={false} style={{ flexGrow: 0 }}>
+                  <View style={{ flexDirection: 'row-reverse', minWidth: '100%' }}>
+                    <View style={{ backgroundColor: 基本色.地, zIndex: 10 }}>
+                      <LabelColumn shots={本数} showFooter={false} />
+                    </View>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator
+                      style={{ flexGrow: 0, flexShrink: 1 }}
+                      ref={上の横流し}
+                      onScroll={上に合わせる}
+                      scrollEventThrottle={16}
+                    >
+                      <View style={{ flexDirection: 'row-reverse' }}>
+                        {射手たち.map((射手, 順) => (
+                          <ArcherColumnView
+                            key={typeof 射手.id === 'string' ? 射手.id : `archer-${順}`}
+                            archer={射手}
+                            shots={本数}
+                            indexInList={順}
+                            {...見立て[順]}
+                            showFooter={false}
+                            isReadOnly={!isAdminMode}
+                            isAdminMode={isAdminMode}
+                            onPressName={(射手ID, 名前, 位置) => 人を選ぶ(射手ID, 位置)}
+                            onDelete={射手を消す}
+                            onToggleMark={印を切り替える}
+                            onToggleLock={鍵を切り替える}
+                          />
+                        ))}
+                      </View>
+                    </ScrollView>
+                  </View>
+                </ScrollView>
+                <View
+                  style={{
+                    height: UIConfig.footerHeight * viewScale,
+                    flexDirection: 'row-reverse',
+                    borderTopWidth: 1.5,
+                    borderTopColor: 基本色.黒,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: UIConfig.headerWidth * viewScale,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      backgroundColor: 基本色.地,
+                      borderLeftWidth: 1.5,
+                      borderLeftColor: 基本色.黒,
+                      borderRightWidth: 1.5,
+                      borderRightColor: 基本色.黒,
+                    }}
+                  >
+                    <Text style={{ fontSize: 10 * viewScale, fontWeight: 'bold', color: 基本色.文字_二 }}>
+                      名
+                    </Text>
+                  </View>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={{ flexGrow: 0, flexShrink: 1 }}
+                    ref={下の横流し}
+                    onScroll={下に合わせる}
+                    scrollEventThrottle={16}
+                  >
+                    <View style={{ flexDirection: 'row-reverse' }}>
+                      {射手たち.map((射手, 順) => {
+                        return (
+                          <View
+                            key={typeof 射手.id === 'string' ? `footer-${射手.id}` : `footer-${順}`}
+                            style={{
+                              width:
+                                (射手.isSeparator ? UIConfig.separatorWidth : UIConfig.cellWidth) * viewScale,
+                              height: UIConfig.footerHeight * viewScale,
+                              backgroundColor: 射手.isTotalCalculator ? 'rgba(0,122,255,0.05)' : 基本色.地,
+                              borderRightWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 1,
+                              borderRightColor: 基本色.黒,
+                              borderLeftWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 0,
+                              borderLeftColor: 基本色.黒,
+                              // 余白も表示の大きさに合わせる。4px のままだと 25% でマスの幅（約 7px）を超え、名前の行が上の列とずれた
+                              padding: 4 * viewScale,
                               justifyContent: 'center',
                               alignItems: 'center',
-                              backgroundColor: 射手.isTotalCalculator ? 'rgba(0,122,255,0.05)' : 基本色.地,
-                              borderBottomWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 1,
-                              borderBottomColor: 基本色.黒,
-                              borderRightWidth: 1.5,
-                              borderRightColor: 基本色.黒,
-                              // 余白も表示の大きさに合わせる（25% で中身が隣の行へはみ出した）
-                              paddingHorizontal: 4 * viewScale,
-                              // チームの色。横のときは名前の左に細い帯で出す
-                              ...(() => {
-                                const 色 = (
-                                  組.チームを割り当てる(射手たち).find((列) => 列 && 列.id === 射手.id) || {}
-                                ).色;
-                                return 色 ? { borderLeftWidth: 3 * viewScale, borderLeftColor: 色 } : null;
-                              })(),
+                              // チームの色。記録中と同じ見え方にする
+                              ...(見立て[順].チームの色
+                                ? { borderTopWidth: 3 * viewScale, borderTopColor: 見立て[順].チームの色 }
+                                : null),
                             }}
                           >
                             {射手.isSeparator ? (
+                              // 区切りに付けたチーム名。保存はされているのに
+                              // 履歴では出していなかった
                               組.区切りのチーム名(射手) ? (
                                 <Text
                                   style={{
-                                    fontSize: 11 * viewScale,
+                                    fontSize: 組.区切りの名の字(viewScale, UIConfig).fontSize,
+                                    lineHeight: 組.区切りの名の字(viewScale, UIConfig).lineHeight,
                                     fontWeight: '700',
+                                    textAlign: 'center',
                                     color: 組.チームの色(組.区切りのチーム名(射手)) || 基本色.灰,
                                   }}
-                                  // 横の表の区切りは高さ 35 で 2 行入る。1 行では長い大学名が切れた
-                                  numberOfLines={2}
+                                  // 記録中と同じく、欄の高さに入るだけ行を使う
+                                  numberOfLines={組.区切りの名の字(viewScale, UIConfig).numberOfLines}
                                 >
                                   {組.区切りのチーム名(射手)}
                                 </Text>
@@ -657,9 +815,9 @@ const HistoryScreen = () => {
                             ) : (
                               <TouchableOpacity
                                 style={{
+                                  alignItems: 'center',
                                   width: '100%',
                                   height: '100%',
-                                  alignItems: 'center',
                                   justifyContent: 'center',
                                 }}
                                 onPress={() => 人を選ぶ(射手.id, 順)}
@@ -667,10 +825,11 @@ const HistoryScreen = () => {
                               >
                                 <Text
                                   style={{
-                                    fontSize: 13 * viewScale,
+                                    fontSize: 14 * viewScale,
+                                    fontWeight: '400',
                                     color: 射手.name ? 基本色.黒 : 基本色.灰,
                                   }}
-                                  numberOfLines={1}
+                                  numberOfLines={2}
                                 >
                                   {射手.isTotalCalculator
                                     ? 射手.またぐ合計
@@ -680,231 +839,48 @@ const HistoryScreen = () => {
                                       ? formatMemberName(射手.name, members || [])
                                       : '選択'}
                                 </Text>
+                                {射手.isGuest ? (
+                                  <Text
+                                    style={{
+                                      fontSize: 9 * viewScale,
+                                      color: 基本色.文字_二,
+                                      marginTop: 2 * viewScale,
+                                    }}
+                                  >
+                                    (ゲスト)
+                                  </Text>
+                                ) : null}
+                                {射手.isTotalCalculator || 射手.name === '' ? null : (
+                                  <View
+                                    style={{
+                                      marginTop: 2 * viewScale,
+                                      paddingHorizontal: 4 * viewScale,
+                                      paddingVertical: 2 * viewScale,
+                                      borderRadius: 10 * viewScale,
+                                      backgroundColor:
+                                        射手.isGuest ||
+                                        !射手.gender ||
+                                        射手.gender === '未設定' ||
+                                        !['男子', '女子'].includes(射手.gender)
+                                          ? 基本色.灰
+                                          : 射手.gender === '男子'
+                                            ? 基本色.青
+                                            : 基本色.桃,
+                                    }}
+                                  >
+                                    <Icons.Ionicons name="person" size={10 * viewScale} color={基本色.白} />
+                                  </View>
+                                )}
                               </TouchableOpacity>
                             )}
                           </View>
-                        ))}
-                      </View>
-                      <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator
-                        style={{ flexGrow: 0, flexShrink: 1 }}
-                      >
-                        <View
-                          style={{
-                            flexDirection: 'column',
-                            width: UIConfig.cellWidth * (本数 + 1) * viewScale,
-                          }}
-                        >
-                          <LabelColumn shots={本数} showFooter={false} 横並び />
-                          {射手たち.map((射手, 順) => (
-                            <ArcherColumnView
-                              key={typeof 射手.id === 'string' ? `行-${射手.id}` : `行-${順}`}
-                              archer={射手}
-                              shots={本数}
-                              indexInList={順}
-                              {...見立て[順]}
-                              showFooter={false}
-                              横並び
-                              isReadOnly={!isAdminMode}
-                              isAdminMode={isAdminMode}
-                              onPressName={(射手ID, 名前, 位置) => 人を選ぶ(射手ID, 位置)}
-                              onDelete={射手を消す}
-                              onToggleMark={印を切り替える}
-                              onToggleLock={鍵を切り替える}
-                            />
-                          ))}
-                        </View>
-                      </ScrollView>
+                        );
+                      })}
                     </View>
-                  </ScrollView>,
-                ]
-              : [
-                  <ScrollView showsVerticalScrollIndicator={false} bounces={false} style={{ flexGrow: 0 }}>
-                    <View style={{ flexDirection: 'row-reverse', minWidth: '100%' }}>
-                      <View style={{ backgroundColor: 基本色.地, zIndex: 10 }}>
-                        <LabelColumn shots={本数} showFooter={false} />
-                      </View>
-                      <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator
-                        style={{ flexGrow: 0, flexShrink: 1 }}
-                        ref={上の横流し}
-                        onScroll={上に合わせる}
-                        scrollEventThrottle={16}
-                      >
-                        <View style={{ flexDirection: 'row-reverse' }}>
-                          {射手たち.map((射手, 順) => (
-                            <ArcherColumnView
-                              key={typeof 射手.id === 'string' ? 射手.id : `archer-${順}`}
-                              archer={射手}
-                              shots={本数}
-                              indexInList={順}
-                              {...見立て[順]}
-                              showFooter={false}
-                              isReadOnly={!isAdminMode}
-                              isAdminMode={isAdminMode}
-                              onPressName={(射手ID, 名前, 位置) => 人を選ぶ(射手ID, 位置)}
-                              onDelete={射手を消す}
-                              onToggleMark={印を切り替える}
-                              onToggleLock={鍵を切り替える}
-                            />
-                          ))}
-                        </View>
-                      </ScrollView>
-                    </View>
-                  </ScrollView>,
-                  <View
-                    style={{
-                      height: UIConfig.footerHeight * viewScale,
-                      flexDirection: 'row-reverse',
-                      borderTopWidth: 1.5,
-                      borderTopColor: 基本色.黒,
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: UIConfig.headerWidth * viewScale,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        backgroundColor: 基本色.地,
-                        borderLeftWidth: 1.5,
-                        borderLeftColor: 基本色.黒,
-                        borderRightWidth: 1.5,
-                        borderRightColor: 基本色.黒,
-                      }}
-                    >
-                      <Text style={{ fontSize: 10 * viewScale, fontWeight: 'bold', color: 基本色.文字_二 }}>
-                        名
-                      </Text>
-                    </View>
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      style={{ flexGrow: 0, flexShrink: 1 }}
-                      ref={下の横流し}
-                      onScroll={下に合わせる}
-                      scrollEventThrottle={16}
-                    >
-                      <View style={{ flexDirection: 'row-reverse' }}>
-                        {射手たち.map((射手, 順) => {
-                          return (
-                            <View
-                              key={typeof 射手.id === 'string' ? `footer-${射手.id}` : `footer-${順}`}
-                              style={{
-                                width:
-                                  (射手.isSeparator ? UIConfig.separatorWidth : UIConfig.cellWidth) *
-                                  viewScale,
-                                height: UIConfig.footerHeight * viewScale,
-                                backgroundColor: 射手.isTotalCalculator ? 'rgba(0,122,255,0.05)' : 基本色.地,
-                                borderRightWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 1,
-                                borderRightColor: 基本色.黒,
-                                borderLeftWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 0,
-                                borderLeftColor: 基本色.黒,
-                                // 余白も表示の大きさに合わせる。4px のままだと 25% でマスの幅（約 7px）を超え、名前の行が上の列とずれた
-                                padding: 4 * viewScale,
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                // チームの色。記録中と同じ見え方にする
-                                ...(() => {
-                                  const 色 = (
-                                    組.チームを割り当てる(射手たち).find((列) => 列 && 列.id === 射手.id) ||
-                                    {}
-                                  ).色;
-                                  return 色 ? { borderTopWidth: 3 * viewScale, borderTopColor: 色 } : null;
-                                })(),
-                              }}
-                            >
-                              {射手.isSeparator ? (
-                                // 区切りに付けたチーム名。保存はされているのに
-                                // 履歴では出していなかった
-                                組.区切りのチーム名(射手) ? (
-                                  <Text
-                                    style={{
-                                      fontSize: 組.区切りの名の字(viewScale, UIConfig).fontSize,
-                                      lineHeight: 組.区切りの名の字(viewScale, UIConfig).lineHeight,
-                                      fontWeight: '700',
-                                      textAlign: 'center',
-                                      color: 組.チームの色(組.区切りのチーム名(射手)) || 基本色.灰,
-                                    }}
-                                    // 記録中と同じく、欄の高さに入るだけ行を使う
-                                    numberOfLines={組.区切りの名の字(viewScale, UIConfig).numberOfLines}
-                                  >
-                                    {組.区切りのチーム名(射手)}
-                                  </Text>
-                                ) : null
-                              ) : (
-                                !射手.isSeparator && (
-                                  <TouchableOpacity
-                                    style={{
-                                      alignItems: 'center',
-                                      width: '100%',
-                                      height: '100%',
-                                      justifyContent: 'center',
-                                    }}
-                                    onPress={() => 人を選ぶ(射手.id, 順)}
-                                    disabled={!isAdminMode}
-                                  >
-                                    <Text
-                                      style={{
-                                        fontSize: 14 * viewScale,
-                                        fontWeight: '400',
-                                        color: 射手.name ? 基本色.黒 : 基本色.灰,
-                                      }}
-                                      numberOfLines={2}
-                                    >
-                                      {射手.isTotalCalculator
-                                        ? '合計'
-                                        : 射手.name
-                                          ? formatMemberName(射手.name, members || [])
-                                          : '選択'}
-                                    </Text>
-                                    {射手.isGuest ? (
-                                      <Text
-                                        style={{
-                                          fontSize: 9 * viewScale,
-                                          color: 基本色.文字_二,
-                                          marginTop: 2 * viewScale,
-                                        }}
-                                      >
-                                        (ゲスト)
-                                      </Text>
-                                    ) : null}
-                                    {射手.isTotalCalculator || 射手.name === '' ? null : (
-                                      <View
-                                        style={{
-                                          marginTop: 2 * viewScale,
-                                          paddingHorizontal: 4 * viewScale,
-                                          paddingVertical: 2 * viewScale,
-                                          borderRadius: 10 * viewScale,
-                                          backgroundColor:
-                                            射手.isGuest ||
-                                            !射手.gender ||
-                                            射手.gender === '未設定' ||
-                                            !['男子', '女子'].includes(射手.gender)
-                                              ? 基本色.灰
-                                              : 射手.gender === '男子'
-                                                ? 基本色.青
-                                                : 基本色.桃,
-                                        }}
-                                      >
-                                        <Icons.Ionicons
-                                          name="person"
-                                          size={10 * viewScale}
-                                          color={基本色.白}
-                                        />
-                                      </View>
-                                    )}
-                                  </TouchableOpacity>
-                                )
-                              )}
-                            </View>
-                          );
-                        })}
-                      </View>
-                    </ScrollView>
-                  </View>,
-                ]}
+                  </ScrollView>
+                </View>
+              </>
+            )}
           </View>
         </View>
         <計の見せ方の帯 />
@@ -1004,14 +980,10 @@ const HistoryScreen = () => {
   const ゴミ箱を開く = () => {
     ゴミ箱の窓を出す(true);
   };
+  // 編集（選ぶ）を始めるときも終えるときも、選んだものは空にする
   const 選択を切り替える = () => {
-    if (選択中) {
-      選択中を置く(false);
-      選んだ記録を置く(new Set());
-    } else {
-      選択中を置く(true);
-      選んだ記録を置く(new Set());
-    }
+    選択中を置く(!選択中);
+    選んだ記録を置く(new Set());
   };
   const 選んだ記録を消す = () => {
     if (選んだ記録.size !== 0) 削除の確認を出す(true);
@@ -1129,9 +1101,8 @@ const HistoryScreen = () => {
       人の窓を出す(true);
     }
   };
-  const 外枠 = View;
   return (
-    <外枠 style={styles.safeArea}>
+    <View style={styles.safeArea}>
       {historyViewMode === 'detail' ? (
         詳細を描く()
       ) : (
@@ -1171,8 +1142,8 @@ const HistoryScreen = () => {
                   <Pressable // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                     accessible
                     accessibilityRole="button"
-                    accessibilityLabel="選んだ記録を消す"
-                    aria-label="選んだ記録を消す"
+                    accessibilityLabel="ゴミ箱を開く"
+                    aria-label="ゴミ箱を開く"
                     onPress={ゴミ箱を開く}
                     style={({ hovered }) => [
                       { padding: 4, borderRadius: 20 },
@@ -1426,7 +1397,7 @@ const HistoryScreen = () => {
         animationType="fade"
         onRequestClose={() => {
           削除の確認を出す(false);
-          return 消す記録IDを置く(null);
+          消す記録IDを置く(null);
         }}
       >
         <View style={styles.confirmOverlay}>
@@ -1584,7 +1555,7 @@ const HistoryScreen = () => {
         本数={(見ている記録 && 見ている記録.shotCount) || 8}
         交代を書く={交代を書く}
       />
-    </外枠>
+    </View>
   );
 };
 Object.defineProperty(exports, '__esModule', { value: true });
