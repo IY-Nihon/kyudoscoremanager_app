@@ -92,6 +92,56 @@ const 誤りの文 = (誤り) => {
 // 部員の認証方式の版。所属クレームを使う方式に切り替えたので 2。
 // 起動時にこの値が古い端末はログアウトさせ、個人IDで入り直してもらう。
 const MEMBER_AUTH_VERSION = 2;
+/**
+ * 見出しの付いた入力欄の段。読み上げの名前（aria-label）は、渡さなければ見出しと同じ。
+ * 絵 … 左に出す絵の名前（Ionicons）。見せる・見せるを置く を渡すとパスワードの欄にして、見せる／隠すボタンを付ける。
+ * 注意 … 欄の下に出す注意（無ければ null）。ほかは TextInput にそのまま渡す
+ */
+function 入力の段({ 名, 絵, 見せる, 見せるを置く, 注意, ...入力 }) {
+  const 合言葉 = typeof 見せるを置く === 'function';
+  return (
+    <View style={styles.inputGroup}>
+      <Text style={styles.label}>{名}</Text>
+      <View style={styles.inputWrapper}>
+        {絵 ? <Icons.Ionicons name={絵} size={20} color={色.灰} style={styles.inputIcon} /> : null}
+        <TextInput
+          aria-label={名}
+          style={styles.input}
+          placeholderTextColor={色.灰}
+          {...(合言葉 ? { secureTextEntry: !見せる } : null)}
+          {...入力}
+        />
+        {合言葉 ? (
+          <Pressable onPress={() => 見せるを置く(!見せる)} style={{ padding: 4 }}>
+            <Icons.Ionicons name={見せる ? 'eye-off' : 'eye'} size={20} color={色.灰} />
+          </Pressable>
+        ) : null}
+      </View>
+      {注意 ? <Text style={styles.入力の注意}>{注意}</Text> : null}
+    </View>
+  );
+}
+
+/** 送るボタンの形（処理中は薄く、パソコンで上に乗せると少し薄く） */
+const 送るボタンの形 = (処理中) => (状態) => [
+  styles.submitBtn,
+  処理中 && styles.disabledBtn,
+  状態.hovered && !処理中 && IS_WEB && { opacity: 0.8 },
+];
+
+/** 窓を閉じる「キャンセル」の字（パソコンで上に乗せると下線） */
+function キャンセルの字({ 押す }) {
+  return (
+    <Pressable onPress={押す}>
+      {(状態) => (
+        <Text style={[styles.cancelLink, 状態.hovered && IS_WEB && { textDecorationLine: 'underline' }]}>
+          キャンセル
+        </Text>
+      )}
+    </Pressable>
+  );
+}
+
 const LoginScreen = () => {
   const { setAuth, setMemberAuthVersion } = useストアの一部([
     'setAuth',
@@ -355,63 +405,34 @@ const LoginScreen = () => {
             <View style={styles.form}>
               {忘れた窓 === 'email' && (
                 <>
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>団体ID</Text>
-                    <View style={styles.inputWrapper}>
-                      <TextInput
-                        aria-label="団体ID"
-                        autoComplete="username"
-                        style={styles.input}
-                        placeholder="例: 123456"
-                        placeholderTextColor={色.灰}
-                        value={団体IDの入力}
-                        onChangeText={団体IDの入力を置く}
-                        keyboardType="number-pad"
-                      />
-                    </View>
-                  </View>
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>現在のパスワード</Text>
-                    <View style={styles.inputWrapper}>
-                      <TextInput
-                        aria-label="現在のパスワード"
-                        autoComplete="current-password"
-                        style={styles.input}
-                        placeholder="••••••••"
-                        placeholderTextColor={色.灰}
-                        value={合言葉の入力}
-                        onChangeText={合言葉の入力を置く}
-                        secureTextEntry={!合言葉を見せる}
-                      />
-                      <Pressable onPress={() => 合言葉を見せるを置く(!合言葉を見せる)} style={{ padding: 4 }}>
-                        <Icons.Ionicons name={合言葉を見せる ? 'eye-off' : 'eye'} size={20} color={色.灰} />
-                      </Pressable>
-                    </View>
-                  </View>
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>新しいメールアドレス</Text>
-                    <View style={styles.inputWrapper}>
-                      <TextInput
-                        aria-label="新しいメールアドレス"
-                        autoComplete="email"
-                        style={styles.input}
-                        placeholder="new@example.com"
-                        placeholderTextColor={色.灰}
-                        value={新しいメールの入力}
-                        onChangeText={新しいメールの入力を置く}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                      />
-                    </View>
-                  </View>
+                  <入力の段
+                    名="団体ID"
+                    autoComplete="username"
+                    placeholder="例: 123456"
+                    value={団体IDの入力}
+                    onChangeText={団体IDの入力を置く}
+                    keyboardType="number-pad"
+                  />
+                  <入力の段
+                    名="現在のパスワード"
+                    見せる={合言葉を見せる}
+                    見せるを置く={合言葉を見せるを置く}
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    value={合言葉の入力}
+                    onChangeText={合言葉の入力を置く}
+                  />
+                  <入力の段
+                    名="新しいメールアドレス"
+                    autoComplete="email"
+                    placeholder="new@example.com"
+                    value={新しいメールの入力}
+                    onChangeText={新しいメールの入力を置く}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
                   <Pressable
-                    style={function (state) {
-                      return [
-                        styles.submitBtn,
-                        処理中 && styles.disabledBtn,
-                        state.hovered && !処理中 && IS_WEB && { opacity: 0.8 },
-                      ];
-                    }}
+                    style={送るボタンの形(処理中)}
                     onPress={async () => {
                       if (団体IDの入力 && 合言葉の入力 && 新しいメールの入力) {
                         処理中を置く(true);
@@ -442,47 +463,21 @@ const LoginScreen = () => {
                   >
                     <Text style={styles.submitBtnText}>確認のメールを送る</Text>
                   </Pressable>
-                  <Pressable onPress={() => 忘れた窓を置く('none')}>
-                    {function (state) {
-                      return (
-                        <Text
-                          style={[
-                            styles.cancelLink,
-                            state.hovered && IS_WEB && { textDecorationLine: 'underline' },
-                          ]}
-                        >
-                          キャンセル
-                        </Text>
-                      );
-                    }}
-                  </Pressable>
+                  <キャンセルの字 押す={() => 忘れた窓を置く('none')} />
                 </>
               )}
               {忘れた窓 === 'password' && (
                 <>
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>団体ID</Text>
-                    <View style={styles.inputWrapper}>
-                      <TextInput
-                        aria-label="団体ID"
-                        autoComplete="username"
-                        style={styles.input}
-                        placeholder="例: 123456"
-                        placeholderTextColor={色.灰}
-                        value={団体IDの入力}
-                        onChangeText={団体IDの入力を置く}
-                        keyboardType="number-pad"
-                      />
-                    </View>
-                  </View>
+                  <入力の段
+                    名="団体ID"
+                    autoComplete="username"
+                    placeholder="例: 123456"
+                    value={団体IDの入力}
+                    onChangeText={団体IDの入力を置く}
+                    keyboardType="number-pad"
+                  />
                   <Pressable
-                    style={function (state) {
-                      return [
-                        styles.submitBtn,
-                        処理中 && styles.disabledBtn,
-                        state.hovered && !処理中 && IS_WEB && { opacity: 0.8 },
-                      ];
-                    }}
+                    style={送るボタンの形(処理中)}
                     onPress={async () => {
                       if (団体IDの入力) {
                         処理中を置く(true);
@@ -513,101 +508,55 @@ const LoginScreen = () => {
                   >
                     <Text style={styles.submitBtnText}>パスワード再設定メールを送信</Text>
                   </Pressable>
-                  <Pressable onPress={() => 忘れた窓を置く('none')}>
-                    {function (state) {
-                      return (
-                        <Text
-                          style={[
-                            styles.cancelLink,
-                            state.hovered && IS_WEB && { textDecorationLine: 'underline' },
-                          ]}
-                        >
-                          キャンセル
-                        </Text>
-                      );
-                    }}
-                  </Pressable>
+                  <キャンセルの字 押す={() => 忘れた窓を置く('none')} />
                 </>
               )}
               {忘れた窓 === 'none' && (
                 <>
                   {(画面の種類 === 'login_group' || 画面の種類 === 'login_member') && (
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.label}>団体ID</Text>
-                      <View style={styles.inputWrapper}>
-                        <Icons.Ionicons name="business" size={20} color={色.灰} style={styles.inputIcon} />
-                        <TextInput
-                          aria-label="団体ID"
-                          autoComplete="username"
-                          style={styles.input}
-                          placeholder="例: 123456"
-                          placeholderTextColor={色.灰}
-                          value={団体IDの入力}
-                          onChangeText={団体IDの入力を置く}
-                          keyboardType="number-pad"
-                        />
-                      </View>
-                    </View>
+                    <入力の段
+                      名="団体ID"
+                      絵="business"
+                      autoComplete="username"
+                      placeholder="例: 123456"
+                      value={団体IDの入力}
+                      onChangeText={団体IDの入力を置く}
+                      keyboardType="number-pad"
+                    />
                   )}
                   {画面の種類 === 'login_group' && (
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.label}>パスワード</Text>
-                      <View style={styles.inputWrapper}>
-                        <Icons.Ionicons name="lock-closed" size={20} color={色.灰} style={styles.inputIcon} />
-                        <TextInput
-                          aria-label="パスワード"
-                          autoComplete="current-password"
-                          style={styles.input}
-                          placeholder="••••••••"
-                          placeholderTextColor={色.灰}
-                          value={合言葉の入力}
-                          onChangeText={合言葉の入力を置く}
-                          secureTextEntry={!合言葉を見せる}
-                        />
-                        <Pressable
-                          onPress={() => 合言葉を見せるを置く(!合言葉を見せる)}
-                          style={{ padding: 4 }}
-                        >
-                          <Icons.Ionicons name={合言葉を見せる ? 'eye-off' : 'eye'} size={20} color={色.灰} />
-                        </Pressable>
-                      </View>
-                    </View>
+                    <入力の段
+                      名="パスワード"
+                      絵="lock-closed"
+                      見せる={合言葉を見せる}
+                      見せるを置く={合言葉を見せるを置く}
+                      autoComplete="current-password"
+                      placeholder="••••••••"
+                      value={合言葉の入力}
+                      onChangeText={合言葉の入力を置く}
+                    />
                   )}
                   {画面の種類 === 'login_member' && (
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.label}>個人ID（4桁）</Text>
-                      <View style={styles.inputWrapper}>
-                        <Icons.Ionicons name="person" size={20} color={色.灰} style={styles.inputIcon} />
-                        <TextInput
-                          aria-label="個人ID（4桁）"
-                          style={styles.input}
-                          placeholder="例: 1234"
-                          placeholderTextColor={色.灰}
-                          value={個人IDの入力}
-                          onChangeText={個人IDの入力を置く}
-                          keyboardType="number-pad"
-                          maxLength={4}
-                        />
-                      </View>
-                    </View>
+                    <入力の段
+                      名="個人ID（4桁）"
+                      絵="person"
+                      placeholder="例: 1234"
+                      value={個人IDの入力}
+                      onChangeText={個人IDの入力を置く}
+                      keyboardType="number-pad"
+                      maxLength={4}
+                    />
                   )}
                   {画面の種類 === 'register' && (
                     <>
-                      <View style={styles.inputGroup}>
-                        <Text style={styles.label}>団体名</Text>
-                        <View style={styles.inputWrapper}>
-                          <Icons.Ionicons name="ribbon" size={20} color={色.灰} style={styles.inputIcon} />
-                          <TextInput
-                            aria-label="団体名"
-                            autoComplete="organization"
-                            style={styles.input}
-                            placeholder="例: ○○弓道部"
-                            placeholderTextColor={色.灰}
-                            value={団体名の入力}
-                            onChangeText={団体名の入力を置く}
-                          />
-                        </View>
-                      </View>
+                      <入力の段
+                        名="団体名"
+                        絵="ribbon"
+                        autoComplete="organization"
+                        placeholder="例: ○○弓道部"
+                        value={団体名の入力}
+                        onChangeText={団体名の入力を置く}
+                      />
                       <View style={styles.inputGroup}>
                         <Text style={styles.label}>団体の種類</Text>
                         <団体の種類を選ぶ 選んだ={種類の入力} 選ぶ={種類の入力を置く} 暗い />
@@ -626,72 +575,40 @@ const LoginScreen = () => {
                           </View>
                         </View>
                       ) : (
-                        <View style={styles.inputGroup}>
-                          <Text style={styles.label}>メールアドレス</Text>
-                          <View style={styles.inputWrapper}>
-                            <Icons.Ionicons name="mail" size={20} color={色.灰} style={styles.inputIcon} />
-                            <TextInput
-                              aria-label="メールアドレス"
-                              autoComplete="email"
-                              style={styles.input}
-                              placeholder="example@mail.com"
-                              placeholderTextColor={色.灰}
-                              value={メールの入力}
-                              onChangeText={メールの入力を置く}
-                              keyboardType="email-address"
-                              autoCapitalize="none"
-                            />
-                          </View>
-                          {メールの形が変か(メールの入力) ? (
-                            <Text style={styles.入力の注意}>
-                              @ を含む形で入れてください（例: example@mail.com）
-                            </Text>
-                          ) : null}
-                        </View>
+                        <入力の段
+                          名="メールアドレス"
+                          絵="mail"
+                          注意={
+                            メールの形が変か(メールの入力)
+                              ? '@ を含む形で入れてください（例: example@mail.com）'
+                              : null
+                          }
+                          autoComplete="email"
+                          placeholder="example@mail.com"
+                          value={メールの入力}
+                          onChangeText={メールの入力を置く}
+                          keyboardType="email-address"
+                          autoCapitalize="none"
+                        />
                       )}
-                      <View style={styles.inputGroup}>
-                        <Text style={styles.label}>
-                          {Googleのメール ? 'パスワード（団体ログインに使う）' : 'パスワード'}
-                        </Text>
-                        <View style={styles.inputWrapper}>
-                          <Icons.Ionicons
-                            name="lock-closed"
-                            size={20}
-                            color={色.灰}
-                            style={styles.inputIcon}
-                          />
-                          <TextInput
-                            aria-label="パスワード"
-                            autoComplete="new-password"
-                            style={styles.input}
-                            placeholder="••••••••"
-                            placeholderTextColor={色.灰}
-                            value={合言葉の入力}
-                            onChangeText={合言葉の入力を置く}
-                            secureTextEntry={!合言葉を見せる}
-                          />
-                          <Pressable
-                            onPress={() => 合言葉を見せるを置く(!合言葉を見せる)}
-                            style={{ padding: 4 }}
-                          >
-                            <Icons.Ionicons
-                              name={合言葉を見せる ? 'eye-off' : 'eye'}
-                              size={20}
-                              color={色.灰}
-                            />
-                          </Pressable>
-                        </View>
-                        {パスワードが短いか(合言葉の入力) ? (
-                          <Text style={styles.入力の注意}>6文字以上にしてください</Text>
-                        ) : null}
-                      </View>
+                      <入力の段
+                        名={Googleのメール ? 'パスワード（団体ログインに使う）' : 'パスワード'}
+                        aria-label="パスワード"
+                        絵="lock-closed"
+                        見せる={合言葉を見せる}
+                        見せるを置く={合言葉を見せるを置く}
+                        注意={パスワードが短いか(合言葉の入力) ? '6文字以上にしてください' : null}
+                        autoComplete="new-password"
+                        placeholder="••••••••"
+                        value={合言葉の入力}
+                        onChangeText={合言葉の入力を置く}
+                      />
                     </>
                   )}
                 </>
               )}
-              {/* 登録の前に同意を取る。規約 第10条2項は、団体が部員本人から */
-              /* 同意を得る責任を負うと定めている。ここで伝えないと、 */
-              /* その責任を知らないまま部員を登録できてしまう */}
+              {/* 登録の前に同意を取る。規約 第10条2項は、団体が部員本人から同意を得る責任を負うと定めている。
+                ここで伝えないと、その責任を知らないまま部員を登録できてしまう */}
               {画面の種類 === 'register' && (
                 <View style={styles.同意の枠}>
                   <Pressable style={styles.同意の行} onPress={() => 規約に同意を置く(!規約に同意)}>
@@ -723,13 +640,7 @@ const LoginScreen = () => {
                 </View>
               )}
               <Pressable
-                style={function (state) {
-                  return [
-                    styles.submitBtn,
-                    処理中 && styles.disabledBtn,
-                    state.hovered && !処理中 && IS_WEB && { opacity: 0.8 },
-                  ];
-                }}
+                style={送るボタンの形(処理中)}
                 onPress={
                   画面の種類 === 'login_group'
                     ? async () => {
