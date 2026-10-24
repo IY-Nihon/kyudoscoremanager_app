@@ -203,3 +203,60 @@ test('部員として入る：合言葉で逆引きして所属の証を書き�
   );
   assert.strictEqual(雲.値('member_claims', 'anon-2'), undefined, '期限切れなのに所属の証を書いた');
 });
+
+// ── 何度か送る（2026-10-24：雲の返事が戻らない回への予防）──
+const { 何度か送る } = require('../src/memberInvite');
+
+test('何度か送る：返事が戻らないときは上限で切って送り直し、通れば答えを返す', async () => {
+  let 回 = 0;
+  const 答え = await 何度か送る(
+    () => {
+      回++;
+      return 回 < 3 ? new Promise(() => {}) : Promise.resolve('通った');
+    },
+    { 上限: 30, 間: 0 }
+  );
+  assert.equal(答え, '通った');
+  assert.equal(回, 3);
+});
+
+test('何度か送る：通信の誤りは送り直し、決まりに断られたときは送り直さない', async () => {
+  let 回 = 0;
+  const 答え = await 何度か送る(
+    () => {
+      回++;
+      return 回 === 1 ? Promise.reject(Object.assign(new Error('x'), { code: 'unavailable' })) : Promise.resolve(1);
+    },
+    { 上限: 1000, 間: 0 }
+  );
+  assert.equal(答え, 1);
+  assert.equal(回, 2);
+
+  let 断られた回 = 0;
+  await assert.rejects(
+    何度か送る(
+      () => {
+        断られた回++;
+        return Promise.reject(Object.assign(new Error('この招待リンクは使えません'), { code: 'permission-denied' }));
+      },
+      { 上限: 1000, 間: 0 }
+    ),
+    /使えません/
+  );
+  assert.equal(断られた回, 1);
+});
+
+test('何度か送る：何度送っても戻らなければ「つながらない」として投げる', async () => {
+  let 回 = 0;
+  await assert.rejects(
+    何度か送る(
+      () => {
+        回++;
+        return new Promise(() => {});
+      },
+      { 回数: 3, 上限: 20, 間: 0 }
+    ),
+    (誤り) => 誤り.code === 'unavailable'
+  );
+  assert.equal(回, 3);
+});
