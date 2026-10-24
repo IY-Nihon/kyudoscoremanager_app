@@ -27,12 +27,10 @@ import { 見張りを作る } from './src/backgroundSaver';
 import { アイコンの字体を読んでおく } from './src/iconFont';
 import { goOffline, goOnline } from 'firebase/database';
 import { rtdb } from './src/db';
+// 部員の認証方式の版（上げると、古い方式でログイン中の部員は次に開いたときにログアウトされる）
+import { 部員のログインの版 } from './src/groupLogin';
 
 const IS_WEB = Platform.OS === 'web';
-
-// 部員の認証方式の版。LoginScreen.js の同名の定数と必ず揃えること。
-// 値を上げると、古い方式でログイン中の部員は次回起動時にログアウトされる。
-const MEMBER_AUTH_VERSION = 2;
 
 // 共有リンクの荷を、タブ限りで控えておく鍵。
 // URL から消したあとも、再読み込みで入り直せるようにするために持つ。
@@ -230,7 +228,7 @@ export default function App() {
   // 読み書きが拒否される。黙って失敗させず、明示的にログイン画面へ戻す。
   useEffect(() => {
     if (!isHydrated) return;
-    if (activeRole === 'member' && memberAuthVersion !== MEMBER_AUTH_VERSION) {
+    if (activeRole === 'member' && memberAuthVersion !== 部員のログインの版) {
       console.log('[App] 部員の認証方式が更新されたため再ログインを求めます');
       setAuth(null, null, null, null);
       const msg = 'セキュリティ強化のため、お手数ですが個人IDで再度ログインしてください。';
