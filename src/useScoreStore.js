@@ -750,10 +750,7 @@ const useScoreStore = zustand.create()(
         // 足す・直すは、断るとき（空・同じ名前）に画面へ出す文を返す
         学年を足す: (名前) => {
           const 今 = 学.自分の学年たち(状態().customGrades);
-          const 名 = String(名前 || '')
-            .replace(/\s+/g, ' ')
-            .trim()
-            .slice(0, 8);
+          const 名 = 学.学年の名前を整える(名前);
           if (!名) return '学年の名前を入れてください';
           if (今.some((学年) => 学年.name === 名)) return `「${名}」はもうあります`;
           const 値 = Math.max(0, ...今.map((学年) => 学年.value)) + 1;
@@ -762,10 +759,7 @@ const useScoreStore = zustand.create()(
         },
         学年の名前を直す: (値, 名前) => {
           const 今 = 学.自分の学年たち(状態().customGrades);
-          const 名 = String(名前 || '')
-            .replace(/\s+/g, ' ')
-            .trim()
-            .slice(0, 8);
+          const 名 = 学.学年の名前を整える(名前);
           if (!名) return '学年の名前を入れてください';
           if (今.some((学年) => 学年.value !== 値 && 学年.name === 名)) return `「${名}」はもうあります`;
           状態().学年の設定を書く({
