@@ -147,47 +147,41 @@ function 型の節の部品({ 成績, 期間の名, 誰の }) {
               {一手.shots > 0 ? 率(一手) + '（' + 一手.hits + '中／' + 一手.shots + '射）' : 'まだありません'}
             </Text>
           </View>
-          {[
-            ...手の並び.map((型1つ) => (
-              <View key={'手' + 型1つ.型} style={styles.型の行}>
-                <Text style={styles.型の印}>{型1つ.型}</Text>
-                <Text style={styles.型の要点} numberOfLines={1}>
-                  {型1つ.要点 ? 型1つ.呼び名 + '　' + 型1つ.要点 : 型1つ.呼び名}
-                </Text>
-                <Text style={styles.型の回数}>
-                  {型1つ.回数}
-                  {'手 '}
-                  {Math.round(型1つ.割合)}%
-                </Text>
-              </View>
-            )),
-          ]}
+          {手の並び.map((型1つ) => (
+            <View key={'手' + 型1つ.型} style={styles.型の行}>
+              <Text style={styles.型の印}>{型1つ.型}</Text>
+              <Text style={styles.型の要点} numberOfLines={1}>
+                {型1つ.要点 ? 型1つ.呼び名 + '　' + 型1つ.要点 : 型1つ.呼び名}
+              </Text>
+              <Text style={styles.型の回数}>
+                {型1つ.回数}
+                {'手 '}
+                {Math.round(型1つ.割合)}%
+              </Text>
+            </View>
+          ))}
           {/* 4射単位。立ちの型 */}
           {束.length > 0 && <Text style={styles.型の区切り}>{'4射単位（立ち）　' + 立ちの数 + '立'}</Text>}
-          {[
-            ...束.map((組) => (
-              <View key={組.中り} style={styles.型の組}>
-                <Text style={styles.型の見出し}>
-                  {組.呼び名} {組.型たち.reduce((計, 型1つ) => 計 + 型1つ.回数, 0)}立
-                </Text>
-                {[
-                  ...組.型たち.map((型1つ) => (
-                    <View key={型1つ.型} style={styles.型の行}>
-                      <Text style={styles.型の印}>{型1つ.型}</Text>
-                      <Text style={styles.型の要点} numberOfLines={1}>
-                        {型1つ.要点 || ''}
-                      </Text>
-                      <Text style={styles.型の回数}>
-                        {型1つ.回数}
-                        {'立 '}
-                        {Math.round(型1つ.割合)}%
-                      </Text>
-                    </View>
-                  )),
-                ]}
-              </View>
-            )),
-          ]}
+          {束.map((組) => (
+            <View key={組.中り} style={styles.型の組}>
+              <Text style={styles.型の見出し}>
+                {組.呼び名} {組.型たち.reduce((計, 型1つ) => 計 + 型1つ.回数, 0)}立
+              </Text>
+              {組.型たち.map((型1つ) => (
+                <View key={型1つ.型} style={styles.型の行}>
+                  <Text style={styles.型の印}>{型1つ.型}</Text>
+                  <Text style={styles.型の要点} numberOfLines={1}>
+                    {型1つ.要点 || ''}
+                  </Text>
+                  <Text style={styles.型の回数}>
+                    {型1つ.回数}
+                    {'立 '}
+                    {Math.round(型1つ.割合)}%
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ))}
         </View>
       )}
       {開いている && (
@@ -220,26 +214,24 @@ function 弓具の節(人, 記録たち) {
       <Text style={{ fontSize: 11, color: 色.灰, marginBottom: 10, lineHeight: 16 }}>
         その弓具を使っていた間の成績です。次に変えた日の前日までを数えます。的中の動きが弓具のせいとは限りません。
       </Text>
-      {[
-        ...並び.map((一件) => (
-          <View
-            key={一件.変更.id || String(一件.変更.date)}
-            style={{ backgroundColor: 色.地, borderRadius: 8, padding: 10, marginBottom: 8 }}
-          >
-            <Text style={{ fontSize: 13, fontWeight: 'bold', color: 色.文字 }}>
-              {new Date(一件.変更.date).toLocaleDateString() +
-                '　' +
-                (一件.変更.weight ? 一件.変更.weight + 'kg へ' : 一件.種類)}
-            </Text>
-            {一件.変更.note ? (
-              <Text style={{ fontSize: 12, color: 色.文字_二, marginTop: 2 }}>{一件.変更.note}</Text>
-            ) : null}
-            <Text style={{ fontSize: 12, color: 色.文字_二, marginTop: 4, lineHeight: 17 }}>
-              {弓.見立ての言葉(一件)}
-            </Text>
-          </View>
-        )),
-      ]}
+      {並び.map((一件) => (
+        <View
+          key={一件.変更.id || String(一件.変更.date)}
+          style={{ backgroundColor: 色.地, borderRadius: 8, padding: 10, marginBottom: 8 }}
+        >
+          <Text style={{ fontSize: 13, fontWeight: 'bold', color: 色.文字 }}>
+            {new Date(一件.変更.date).toLocaleDateString() +
+              '　' +
+              (一件.変更.weight ? 一件.変更.weight + 'kg へ' : 一件.種類)}
+          </Text>
+          {一件.変更.note ? (
+            <Text style={{ fontSize: 12, color: 色.文字_二, marginTop: 2 }}>{一件.変更.note}</Text>
+          ) : null}
+          <Text style={{ fontSize: 12, color: 色.文字_二, marginTop: 4, lineHeight: 17 }}>
+            {弓.見立ての言葉(一件)}
+          </Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -294,4 +286,13 @@ function 立ちの結果の棒たち({ patterns }) {
   });
 }
 
-module.exports = { 弓具の案内, 型の節, 型の節の部品, 弓具の節, 比較の色たち, 立ちの結果の棒たち, 的の選び };
+module.exports = {
+  弓具の案内,
+  型の節,
+  型の節の部品,
+  弓具の節,
+  比較の色たち,
+  立ちの結果の区分,
+  立ちの結果の棒たち,
+  的の選び,
+};

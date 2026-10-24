@@ -1468,179 +1468,176 @@ const RecordScreen = () => {
                       }}
                     >
                       {運ぶ札()}
-                      {[
-                        ...見えている並び.map((射手, 順) => {
-                          return (
-                            <View
-                              key={typeof 射手.id === 'string' ? `footer-${射手.id}` : `footer-${順}`}
-                              // 使い方の案内が指す先。まだ名前の入っていない列を選ぶ。
-                              // 名前入りの列を指すと、押しても名前の数が増えず先へ進めない。
-                              // 繰り返しの中なのでフックは使えない
-                              ref={(node) => {
-                                // 指の下にどの列が居るかを測るために、節を覚えておく
-                                if (node) 名の欄のnode.current[射手.id] = node;
-                                else delete 名の欄のnode.current[射手.id];
-                                const 一覧 = (Array.isArray(archers) ? archers : []).filter(
-                                  (射手1人) => !!射手1人
-                                );
-                                let 指す = 一覧.findIndex(
-                                  (射手1人) =>
-                                    射手1人 &&
-                                    !射手1人.name &&
-                                    !射手1人.isSeparator &&
-                                    !射手1人.isTotalCalculator
-                                );
-                                if (指す < 0) 指す = 0;
-                                if (順 === 指す) 案内.setTutorialTargetNode('記録.射手選択', node);
-                              }}
-                              style={{
-                                width:
-                                  (射手.isSeparator ? UIConfig.separatorWidth : UIConfig.cellWidth) * 倍率,
-                                height: UIConfig.footerHeight * 倍率,
-                                backgroundColor: 射手.isTotalCalculator ? 'rgba(0,122,255,0.05)' : 基本色.地,
-                                borderRightWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 1,
-                                borderRightColor: 基本色.黒,
-                                borderLeftWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 0,
-                                borderLeftColor: 基本色.黒,
-                                // 余白も表示の大きさに合わせる。4px のままだと 25% でマスの幅（約 7px）を超え、名前の行が上の列とずれた
-                                padding: 4 * 倍率,
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                // 掴んでいる列は、抜けた跡として薄く残す。
-                                // どこへ入るかは並びそのもので見せるので、
-                                // 落とす先を別に光らせる必要はない
-                                ...(掴んだ列 === 射手.id
-                                  ? { opacity: 0.35, backgroundColor: 'rgba(0,122,255,0.10)' }
-                                  : null),
-                              }}
-                            >
-                              {射手.isSeparator ? (
-                                <TouchableOpacity
-                                  style={{
+                      {見えている並び.map((射手, 順) => {
+                        return (
+                          <View
+                            key={typeof 射手.id === 'string' ? `footer-${射手.id}` : `footer-${順}`}
+                            // 使い方の案内が指す先。まだ名前の入っていない列を選ぶ。
+                            // 名前入りの列を指すと、押しても名前の数が増えず先へ進めない。
+                            // 繰り返しの中なのでフックは使えない
+                            ref={(node) => {
+                              // 指の下にどの列が居るかを測るために、節を覚えておく
+                              if (node) 名の欄のnode.current[射手.id] = node;
+                              else delete 名の欄のnode.current[射手.id];
+                              const 一覧 = (Array.isArray(archers) ? archers : []).filter(
+                                (射手1人) => !!射手1人
+                              );
+                              let 指す = 一覧.findIndex(
+                                (射手1人) =>
+                                  射手1人 &&
+                                  !射手1人.name &&
+                                  !射手1人.isSeparator &&
+                                  !射手1人.isTotalCalculator
+                              );
+                              if (指す < 0) 指す = 0;
+                              if (順 === 指す) 案内.setTutorialTargetNode('記録.射手選択', node);
+                            }}
+                            style={{
+                              width: (射手.isSeparator ? UIConfig.separatorWidth : UIConfig.cellWidth) * 倍率,
+                              height: UIConfig.footerHeight * 倍率,
+                              backgroundColor: 射手.isTotalCalculator ? 'rgba(0,122,255,0.05)' : 基本色.地,
+                              borderRightWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 1,
+                              borderRightColor: 基本色.黒,
+                              borderLeftWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 0,
+                              borderLeftColor: 基本色.黒,
+                              // 余白も表示の大きさに合わせる。4px のままだと 25% でマスの幅（約 7px）を超え、名前の行が上の列とずれた
+                              padding: 4 * 倍率,
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              // 掴んでいる列は、抜けた跡として薄く残す。
+                              // どこへ入るかは並びそのもので見せるので、
+                              // 落とす先を別に光らせる必要はない
+                              ...(掴んだ列 === 射手.id
+                                ? { opacity: 0.35, backgroundColor: 'rgba(0,122,255,0.10)' }
+                                : null),
+                            }}
+                          >
+                            {射手.isSeparator ? (
+                              <TouchableOpacity
+                                style={{
+                                  alignItems: 'center',
+                                  width: '100%',
+                                  height: '100%',
+                                  justifyContent: 'center',
+                                }}
+                                // 位置ではなく列のIDで名づける。並べ替えても
+                                // 同じ列を追える（ます-<射手ID>-<射番> と同じ流儀）
+                                testID={'名の欄-区切り-' + 射手.id}
+                                // 押すと窓が開く。以前は押す＝そのまま消すで、
+                                // チーム名は長押しでしか入れられなかった。
+                                // 消す道は窓の中の「削除」に移してある
+                                onPress={() => 人を選ぶ(射手.id, 射手.name, 順)}
+                                // 長押しは「掴む」。チーム名は窓から入れる
+                                //（長押ししか道が無くて気づけなかった）
+                                onLongPress={() => 掴む(射手.id)}
+                                onPressOut={() => 掴みを見直す()}
+                                delayLongPress={400}
+                                disabled={見るだけ中}
+                              >
+                                {/* 名前が付いていれば名前を、なければ「⋯」。 */
+                                /* ×印だったころは押す＝消すに見えて、名前を */
+                                /* 入れられることに気づけなかった */}
+                                {組.区切りのチーム名(射手) ? (
+                                  <Text
+                                    style={{
+                                      fontSize: 組.区切りの名の字(倍率, UIConfig).fontSize,
+                                      lineHeight: 組.区切りの名の字(倍率, UIConfig).lineHeight,
+                                      fontWeight: '700',
+                                      textAlign: 'center',
+                                      color: 組.チームの色(組.区切りのチーム名(射手)) || 基本色.灰,
+                                    }}
+                                    // 欄の高さに入るだけ行を使う。3 行では
+                                    // 「日本大学工科」が「日本大.」に切れて分からなかった
+                                    numberOfLines={組.区切りの名の字(倍率, UIConfig).numberOfLines}
+                                  >
+                                    {組.区切りのチーム名(射手)}
+                                  </Text>
+                                ) : (
+                                  <Icons.Ionicons
+                                    name="ellipsis-horizontal"
+                                    size={24 * 倍率}
+                                    color={基本色.灰}
+                                  />
+                                )}
+                              </TouchableOpacity>
+                            ) : (
+                              <TouchableOpacity
+                                style={[
+                                  {
                                     alignItems: 'center',
                                     width: '100%',
                                     height: '100%',
                                     justifyContent: 'center',
-                                  }}
-                                  // 位置ではなく列のIDで名づける。並べ替えても
-                                  // 同じ列を追える（ます-<射手ID>-<射番> と同じ流儀）
-                                  testID={'名の欄-区切り-' + 射手.id}
-                                  // 押すと窓が開く。以前は押す＝そのまま消すで、
-                                  // チーム名は長押しでしか入れられなかった。
-                                  // 消す道は窓の中の「削除」に移してある
-                                  onPress={() => 人を選ぶ(射手.id, 射手.name, 順)}
-                                  // 長押しは「掴む」。チーム名は窓から入れる
-                                  //（長押ししか道が無くて気づけなかった）
-                                  onLongPress={() => 掴む(射手.id)}
-                                  onPressOut={() => 掴みを見直す()}
-                                  delayLongPress={400}
-                                  disabled={見るだけ中}
-                                >
-                                  {/* 名前が付いていれば名前を、なければ「⋯」。 */
-                                  /* ×印だったころは押す＝消すに見えて、名前を */
-                                  /* 入れられることに気づけなかった */}
-                                  {組.区切りのチーム名(射手) ? (
-                                    <Text
-                                      style={{
-                                        fontSize: 組.区切りの名の字(倍率, UIConfig).fontSize,
-                                        lineHeight: 組.区切りの名の字(倍率, UIConfig).lineHeight,
-                                        fontWeight: '700',
-                                        textAlign: 'center',
-                                        color: 組.チームの色(組.区切りのチーム名(射手)) || 基本色.灰,
-                                      }}
-                                      // 欄の高さに入るだけ行を使う。3 行では
-                                      // 「日本大学工科」が「日本大.」に切れて分からなかった
-                                      numberOfLines={組.区切りの名の字(倍率, UIConfig).numberOfLines}
-                                    >
-                                      {組.区切りのチーム名(射手)}
-                                    </Text>
-                                  ) : (
-                                    <Icons.Ionicons
-                                      name="ellipsis-horizontal"
-                                      size={24 * 倍率}
-                                      color={基本色.灰}
-                                    />
-                                  )}
-                                </TouchableOpacity>
-                              ) : (
-                                <TouchableOpacity
+                                  },
+                                  // チームの色を、名前の欄の上に細い帯で出す。
+                                  // 字を染めると読みにくいので帯にする
+                                  (() => {
+                                    const 色 = (
+                                      組
+                                        .チームを割り当てる(見えている並び)
+                                        .find((列) => 列 && 列.id === 射手.id) || {}
+                                    ).色;
+                                    return 色 ? { borderTopWidth: 3 * 倍率, borderTopColor: 色 } : null;
+                                  })(),
+                                ]}
+                                // 押すと窓が開く。合計の列なら、そこで
+                                // 数える範囲を変えたり消したりできる。
+                                // ここで範囲の切り替えだけを行うと、
+                                // 窓が開かなくなって消せなくなる（実際そうなった）
+                                testID={
+                                  '名の欄-' + (射手.isTotalCalculator ? '合計' : '射手') + '-' + 射手.id
+                                }
+                                onPress={() => 人を選ぶ(射手.id, 射手.name, 順)}
+                                onLongPress={() => 掴む(射手.id)}
+                                onPressOut={() => 掴みを見直す()}
+                                delayLongPress={400}
+                              >
+                                <Text
                                   style={[
-                                    {
-                                      alignItems: 'center',
-                                      width: '100%',
-                                      height: '100%',
-                                      justifyContent: 'center',
-                                    },
-                                    // チームの色を、名前の欄の上に細い帯で出す。
-                                    // 字を染めると読みにくいので帯にする
-                                    (() => {
-                                      const 色 = (
-                                        組
-                                          .チームを割り当てる(見えている並び)
-                                          .find((列) => 列 && 列.id === 射手.id) || {}
-                                      ).色;
-                                      return 色 ? { borderTopWidth: 3 * 倍率, borderTopColor: 色 } : null;
-                                    })(),
+                                    styles.footerName,
+                                    { color: 射手.name ? 基本色.黒 : 基本色.灰, fontSize: 14 * 倍率 },
                                   ]}
-                                  // 押すと窓が開く。合計の列なら、そこで
-                                  // 数える範囲を変えたり消したりできる。
-                                  // ここで範囲の切り替えだけを行うと、
-                                  // 窓が開かなくなって消せなくなる（実際そうなった）
-                                  testID={
-                                    '名の欄-' + (射手.isTotalCalculator ? '合計' : '射手') + '-' + 射手.id
-                                  }
-                                  onPress={() => 人を選ぶ(射手.id, 射手.name, 順)}
-                                  onLongPress={() => 掴む(射手.id)}
-                                  onPressOut={() => 掴みを見直す()}
-                                  delayLongPress={400}
+                                  numberOfLines={2}
                                 >
-                                  <Text
-                                    style={[
-                                      styles.footerName,
-                                      { color: 射手.name ? 基本色.黒 : 基本色.灰, fontSize: 14 * 倍率 },
-                                    ]}
-                                    numberOfLines={2}
+                                  {/* 手前の計もまとめる合計は「総計」。 */
+                                  /* どちらを見ているか、見出しで分かるようにする */}
+                                  {射手.isTotalCalculator
+                                    ? 射手.またぐ合計
+                                      ? '総計'
+                                      : '合計'
+                                    : 射手.name
+                                      ? formatMemberName(射手.name, members)
+                                      : '選択'}
+                                </Text>
+                                {!!射手.isGuest && (
+                                  <Text style={[styles.guestLabel, { fontSize: 9 * 倍率 }]}>(ゲスト)</Text>
+                                )}
+                                {!射手.isTotalCalculator && 射手.name !== '' ? (
+                                  <View
+                                    style={{
+                                      marginTop: 2,
+                                      paddingHorizontal: 4,
+                                      paddingVertical: 2,
+                                      borderRadius: 10,
+                                      backgroundColor:
+                                        射手.isGuest ||
+                                        !射手.gender ||
+                                        射手.gender === '未設定' ||
+                                        !['男子', '女子'].includes(射手.gender)
+                                          ? 基本色.灰
+                                          : 射手.gender === '男子'
+                                            ? 基本色.青
+                                            : 基本色.桃,
+                                    }}
                                   >
-                                    {/* 手前の計もまとめる合計は「総計」。 */
-                                    /* どちらを見ているか、見出しで分かるようにする */}
-                                    {射手.isTotalCalculator
-                                      ? 射手.またぐ合計
-                                        ? '総計'
-                                        : '合計'
-                                      : 射手.name
-                                        ? formatMemberName(射手.name, members)
-                                        : '選択'}
-                                  </Text>
-                                  {!!射手.isGuest && (
-                                    <Text style={[styles.guestLabel, { fontSize: 9 * 倍率 }]}>(ゲスト)</Text>
-                                  )}
-                                  {!射手.isTotalCalculator && 射手.name !== '' ? (
-                                    <View
-                                      style={{
-                                        marginTop: 2,
-                                        paddingHorizontal: 4,
-                                        paddingVertical: 2,
-                                        borderRadius: 10,
-                                        backgroundColor:
-                                          射手.isGuest ||
-                                          !射手.gender ||
-                                          射手.gender === '未設定' ||
-                                          !['男子', '女子'].includes(射手.gender)
-                                            ? 基本色.灰
-                                            : 射手.gender === '男子'
-                                              ? 基本色.青
-                                              : 基本色.桃,
-                                      }}
-                                    >
-                                      <Icons.Ionicons name="person" size={10 * 倍率} color={基本色.白} />
-                                    </View>
-                                  ) : null}
-                                </TouchableOpacity>
-                              )}
-                            </View>
-                          );
-                        }),
-                      ]}
+                                    <Icons.Ionicons name="person" size={10 * 倍率} color={基本色.白} />
+                                  </View>
+                                ) : null}
+                              </TouchableOpacity>
+                            )}
+                          </View>
+                        );
+                      })}
                     </View>
                   </ScrollView>
                 </View>,
