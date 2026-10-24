@@ -145,7 +145,7 @@ test.describe('確認画面', () => {
     test.setTimeout(300_000);
     // 中継の /hozon を横取りして中身を見る（本物の置き場には送らない）
     const 送った = [];
-    await page.route(/workers\.dev\/hozon/, async (route) => {
+    await page.route(/workers\.dev\/hozon/, (route) => {
       const r = route.request();
       if (r.method() === 'OPTIONS')
         return route.fulfill({
@@ -292,7 +292,7 @@ test.describe('確認画面', () => {
   });
 
   /** 記録表の並びを、人・計・総計・|名前 の字に直して返す */
-  async function 並びを読む(page) {
+  function 並びを読む(page) {
     return page.evaluate(() => {
       const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}').state || {};
       return (s.archers || []).map((a) =>

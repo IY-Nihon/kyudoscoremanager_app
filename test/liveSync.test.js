@@ -84,7 +84,7 @@ test('開始：確かめられなければ開始しない（進行中のライ�
   ライブ.置く(道, { status: 'active', timestamp: 1, archers: [射手({ marks: ['○', '', '', ''] })] });
   ライブ.状態.失敗させる = true;
   const 元の = ライブ.api.get;
-  ライブ.api.get = async () => {
+  ライブ.api.get = () => {
     throw new Error('偽の通信失敗');
   };
   assert.equal(await store.getState().startLiveSync(ライブ名), '確認できない');

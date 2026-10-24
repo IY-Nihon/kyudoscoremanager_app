@@ -136,7 +136,7 @@ if (stage === 'stage2') {
 // Storage の検査は外した（2026-10-05）。本番・検証環境とも Storage の入れ物が無く（一覧を引くと 404）、
 // アプリも使っていない（問い合わせの写真は、文字に直して Firestore の inquiries に入れている）
 {
-  const 断られる = async (項目, 結果) => {
+  const 断られる = (項目, 結果) => {
     const ok = 結果.status === 403;
     rows.push({ 項目, 期待: '403', 実際: 結果.status, 判定: ok ? 'OK' : 'NG' });
     ok ? pass++ : fail++;

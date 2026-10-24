@@ -19,7 +19,7 @@ test.use({ storageState: 'e2e/.auth/100008.json' });
 // 3 機種が同じ団体で同時に走るので、題は機種ごとに変える（雲で互いの記録が見える）
 let 題 = 'e2e ゴミ箱の巡り';
 
-async function 手元の記録(page) {
+function 手元の記録(page) {
   return page.evaluate((題) => {
     const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}').state || {};
     const 探す = (xs) => (xs || []).find((x) => x && x.title === 題);

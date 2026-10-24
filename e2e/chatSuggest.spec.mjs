@@ -167,7 +167,7 @@ test('質問例：長い文が途中で切れていない', async ({ page }) => 
 test('改善のため、チャットの質問と答えを送る', async ({ page }) => {
   test.setTimeout(180_000);
   const 送った = [];
-  await page.route(/workers\.dev\/hozon/, async (route) => {
+  await page.route(/workers\.dev\/hozon/, (route) => {
     const r = route.request();
     if (r.method() === 'OPTIONS')
       return route.fulfill({
@@ -259,7 +259,7 @@ test('浮くボタン：横へ引くと左の角へ動き、置いた角が残�
 // その絞りが団体に効いていないこと（道具は 9 つ全部・部員一覧が入る・団体の会話の控えの鍵は前のまま）
 test('団体：道具は全部・部員一覧が入り、会話は前の鍵に残る（個人用の絞りが効かない）', async ({ page }) => {
   test.setTimeout(180_000);
-  await page.route(/workers\.dev\/hozon/, async (route) => {
+  await page.route(/workers\.dev\/hozon/, (route) => {
     if (route.request().method() === 'OPTIONS')
       return route.fulfill({
         status: 204,
@@ -272,7 +272,7 @@ test('団体：道具は全部・部員一覧が入り、会話は前の鍵に�
     return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '{"ok":true}' });
   });
   let 依頼 = null;
-  await page.route(/workers\.dev\/v1beta\//, async (route) => {
+  await page.route(/workers\.dev\/v1beta\//, (route) => {
     if (route.request().method() === 'OPTIONS')
       return route.fulfill({
         status: 204,

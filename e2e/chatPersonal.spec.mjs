@@ -34,7 +34,7 @@ const 個人が使える道具 = [
 ];
 
 /** 控えから、自分と、ほかの部員を読む */
-async function 控えを読む(page) {
+function 控えを読む(page) {
   return page.evaluate(() => {
     const s =
       JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
@@ -88,7 +88,7 @@ async function AIを開く(page) {
 /** 改善のための保存（本物の置き場へ送らない）。送ろうとした中身は控えて返す */
 async function 保存を偽にする(page) {
   const 送った = [];
-  await page.route(/workers\.dev\/hozon/, async (route) => {
+  await page.route(/workers\.dev\/hozon/, (route) => {
     if (route.request().method() === 'OPTIONS')
       return route.fulfill({
         status: 204,
@@ -122,7 +122,7 @@ async function 偽のGemini(page, 返事たち) {
   const 送った = [];
   const 返事を作る =
     typeof 返事たち === 'function' ? 返事たち : (番) => 返事たち[Math.min(番, 返事たち.length - 1)];
-  await page.route(/workers\.dev\/v1beta\//, async (route) => {
+  await page.route(/workers\.dev\/v1beta\//, (route) => {
     const 依頼 = route.request();
     if (依頼.method() === 'OPTIONS')
       return route.fulfill({

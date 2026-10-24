@@ -170,7 +170,7 @@ test('部員として入る：合言葉で逆引きして所属の証を書き�
   雲.置く(`groups/${団体}/members`, 'm1', { id: 'm1', name: '山田 太郎' });
   const 認証 = { currentUser: null };
   const FirebaseAuth = {
-    signInAnonymously: async (auth) => {
+    signInAnonymously: (auth) => {
       auth.currentUser = { uid: 'anon-1', isAnonymous: true };
     },
   };
@@ -194,7 +194,7 @@ test('部員として入る：合言葉で逆引きして所属の証を書き�
   const 切れた = 'e'.repeat(32);
   雲.置く(逆引きの道, 切れた, { memberId: 'm1', 招待: true, expiresAt: new Date(Date.now() - 1000) });
   認証.currentUser = null;
-  FirebaseAuth.signInAnonymously = async (auth) => {
+  FirebaseAuth.signInAnonymously = (auth) => {
     auth.currentUser = { uid: 'anon-2', isAnonymous: true };
   };
   await assert.rejects(

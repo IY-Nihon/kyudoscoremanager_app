@@ -207,7 +207,7 @@ async function 入る(page) {
  * testID は ます-<射手id>-<射番>。射手idにも「-」が入るので、
  * 後ろから読む（最後が射番、あいだが射手id）
  */
-async function 一射目たち(page) {
+function 一射目たち(page) {
   return page.evaluate(() => {
     // その座標で本当に押せる ます だけを拾う。
     // iPhone のように縦が短い画面では、1射目の行が下端で切れていたり、

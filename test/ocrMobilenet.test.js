@@ -68,7 +68,7 @@ test('重みの取り寄せ：取れたら中身、取れなければ null で�
   try {
     assert.strictEqual(await 写真の網の重みを読む(だめ), null);
     const 中身 = new Uint8Array([1, 2, 3]);
-    const よい = { 場所: () => '/assets/x.bin', fetch: async () => (呼んだ++, { ok: true, arrayBuffer: async () => 中身.buffer }) };
+    const よい = { 場所: () => '/assets/x.bin', fetch: async () => (呼んだ++, { ok: true, arrayBuffer: () => 中身.buffer }) };
     assert.deepStrictEqual(Array.from(await 写真の網の重みを読む(よい)), [1, 2, 3]);
     // 取れたあとは取りに行かない
     await 写真の網の重みを読む(よい);
@@ -85,7 +85,7 @@ test('重みの取り寄せ：上限を過ぎたら待たずに null（取り寄
   let 渡す;
   const 遅い = { 場所: () => '/assets/x.bin', fetch: () => new Promise((r) => (渡す = r)) };
   assert.strictEqual(await 写真の網の重みを待つ(20, 遅い), null);
-  渡す({ ok: true, arrayBuffer: async () => new Uint8Array([7]).buffer });
+  渡す({ ok: true, arrayBuffer: () => new Uint8Array([7]).buffer });
   assert.deepStrictEqual(Array.from(await 写真の網の重みを読む()), [7]);
   写真の網の控えを捨てる();
 });

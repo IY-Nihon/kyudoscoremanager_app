@@ -39,7 +39,7 @@ async function 入る(page) {
 }
 
 /** 帯と、タブごとの様子（名前が見えるか、絵があるか）を読む */
-async function 帯を読む(page) {
+function 帯を読む(page) {
   return page.evaluate(() => {
     const 帯 = document.querySelector('[role="tablist"]');
     const r = 帯.getBoundingClientRect();

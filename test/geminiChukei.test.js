@@ -37,7 +37,7 @@ function 読み込む({ 宛先, 人 }) {
 }
 
 const 中継 = 'https://chukei.example.workers.dev';
-const ログイン済み = { uid: 'u1', getIdToken: async () => 'ID.TOKEN.x' };
+const ログイン済み = { uid: 'u1', getIdToken: () => 'ID.TOKEN.x' };
 
 test('SDK の設定は、中継の宛先とログインの証だけ（末尾の / は落とす）', async () => {
   const c = 読み込む({ 宛先: 中継 + '/', 人: ログイン済み });
@@ -63,7 +63,7 @@ test('fetch は Authorization を足して、道をそのまま中継へ向け�
   const c = 読み込む({ 宛先: 中継, 人: ログイン済み });
   const 元 = global.fetch;
   const 呼ばれた = [];
-  global.fetch = async (url, init) => {
+  global.fetch = (url, init) => {
     呼ばれた.push({ url, method: init.method, auth: init.headers.get('Authorization'), type: init.headers.get('Content-Type') });
     return { ok: true, status: 200 };
   };
@@ -125,7 +125,7 @@ test('開いてすぐでログインの復元が終わっていなければ、�
 });
 
 test('復元が終わってもログインしていなければ、待ったあとで断る', async () => {
-  const auth = { currentUser: null, authStateReady: async () => {} };
+  const auth = { currentUser: null, authStateReady: () => {} };
   const 場所 = path.join(SRC, 'db.js');
   const m = new Module(場所, null);
   ((m.filename = 場所), (m.loaded = true), (m.exports = { auth }));

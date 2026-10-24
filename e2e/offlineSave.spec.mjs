@@ -24,7 +24,7 @@ test.use({ storageState: 'e2e/.auth/100002-個人.json' });
 async function 出欠の確認を切る(page) {
   await page.addInitScript(() => {
     const 鍵 = 'archery-score-storage';
-    let 中 = {};
+    let 中;
     try {
       中 = JSON.parse(localStorage.getItem(鍵) || '{}') || {};
     } catch {
