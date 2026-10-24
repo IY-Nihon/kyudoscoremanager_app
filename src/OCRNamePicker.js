@@ -30,207 +30,148 @@ const 名前を割り当てる窓 = ({
   pickAssignGuest,
   submitGuest,
 }) => {
-  return (
-    <>
-      <Modal
-        visible={true}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setPickerTarget(null)}
+  /** 人の行（メンバーも卒業生も同じ形）。男女で字の色を分け、選んである人は薄く「選択済」 */
+  const 人の行 = (人, 添え書き = '') => {
+    const isSelected = selectedMemberIds.has(人.id);
+    const textColor = 人.gender === '男子' ? 色.青 : 人.gender === '女子' ? 色.桃 : 色.文字;
+    return (
+      <TouchableOpacity
+        key={人.id}
+        style={[styles.pickerRowIndent, isSelected && { backgroundColor: 色.地_F0F0F5, opacity: 0.8 }]}
+        onPress={() => pickAssign(人)}
       >
-        <View style={styles.pickerOverlay}>
-          <TouchableOpacity
-            style={StyleSheet.absoluteFill}
-            activeOpacity={1}
-            onPress={() => setPickerTarget(null)}
-          />
-          <View style={styles.pickerBox}>
-            <Text style={styles.pickerTitle}>メンバーを選択</Text>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            width: '100%',
+          }}
+        >
+          <Text style={[styles.pickerRowText, { color: textColor }, isSelected && { opacity: 0.5 }]}>
+            {人.name}
+            {添え書き}
+          </Text>
+          {isSelected && (
+            <View style={styles.selectedBadge}>
+              <Text style={styles.selectedBadgeText}>選択済</Text>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={() => setPickerTarget(null)}>
+      <View style={styles.pickerOverlay}>
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={() => setPickerTarget(null)}
+        />
+        <View style={styles.pickerBox}>
+          <Text style={styles.pickerTitle}>メンバーを選択</Text>
 
-            {/* ゲスト登録切り替えエリア */}
-            {isEnteringGuest ? (
-              <View style={styles.guestInputRow}>
-                <TextInput
-                  aria-label="ゲスト名"
-                  style={styles.guestInput}
-                  placeholder="ゲスト名を入力"
-                  value={guestNameInput}
-                  onChangeText={setGuestNameInput}
-                  autoFocus={true}
-                  onSubmitEditing={submitGuest}
-                />
-                <TouchableOpacity onPress={submitGuest} style={styles.guestSubmitBtn}>
-                  <Text style={styles.guestSubmitBtnText}>決定</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setIsEnteringGuest(false);
-                    setGuestNameInput('');
-                  }}
-                  style={{ marginLeft: 8 }}
-                >
-                  <Ionicons name="close" size={24} color={色.灰} />
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={styles.pickerToolbarRow}>
-                <TextInput
-                  aria-label="名前で検索"
-                  style={[styles.pickerSearchInput, { flex: 1, marginBottom: 0 }]}
-                  placeholder="名前で検索"
-                  value={pickerSearch}
-                  onChangeText={setPickerSearch}
-                  autoFocus={true}
-                />
-                <TouchableOpacity style={styles.guestToggleBtn} onPress={() => setIsEnteringGuest(true)}>
-                  <Ionicons name="person-add-outline" size={18} color={色.藍} />
-                  <Text style={styles.guestToggleBtnText}>ゲスト</Text>
-                </TouchableOpacity>
+          {/* ゲスト登録切り替えエリア */}
+          {isEnteringGuest ? (
+            <View style={styles.guestInputRow}>
+              <TextInput
+                aria-label="ゲスト名"
+                style={styles.guestInput}
+                placeholder="ゲスト名を入力"
+                value={guestNameInput}
+                onChangeText={setGuestNameInput}
+                autoFocus
+                onSubmitEditing={submitGuest}
+              />
+              <TouchableOpacity onPress={submitGuest} style={styles.guestSubmitBtn}>
+                <Text style={styles.guestSubmitBtnText}>決定</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setIsEnteringGuest(false);
+                  setGuestNameInput('');
+                }}
+                style={{ marginLeft: 8 }}
+              >
+                <Ionicons name="close" size={24} color={色.灰} />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.pickerToolbarRow}>
+              <TextInput
+                aria-label="名前で検索"
+                style={[styles.pickerSearchInput, { flex: 1, marginBottom: 0 }]}
+                placeholder="名前で検索"
+                value={pickerSearch}
+                onChangeText={setPickerSearch}
+                autoFocus
+              />
+              <TouchableOpacity style={styles.guestToggleBtn} onPress={() => setIsEnteringGuest(true)}>
+                <Ionicons name="person-add-outline" size={18} color={色.藍} />
+                <Text style={styles.guestToggleBtnText}>ゲスト</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <ScrollView style={styles.pickerList}>
+            <TouchableOpacity style={styles.pickerRow} onPress={() => pickAssign(null)}>
+              <Text style={styles.pickerRowTextMuted}>（空欄にする）</Text>
+            </TouchableOpacity>
+
+            {/* 現役生グループアコーディオン */}
+            {activeGroups.map((group) => {
+              const gStr = group.grade.toString();
+              // 検索中（要確認セルからの自動絞り込み含む）は、折りたたみ状態に関わらず候補を表示する
+              const isOpen = pickerSearch.trim() ? true : !閉じた組.has(gStr);
+              return (
+                <React.Fragment key={`grade-${gStr}`}>
+                  <TouchableOpacity style={styles.accordionHeader} onPress={() => toggleActiveGrade(gStr)}>
+                    <Text style={styles.accordionTitle}>
+                      {group.title} ({group.members.length}人)
+                    </Text>
+                    <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color={色.灰} />
+                  </TouchableOpacity>
+                  {isOpen &&
+                    group.members.map((部員) => 人の行(部員, 部員.termKi ? ` (${部員.termKi}期)` : ''))}
+                </React.Fragment>
+              );
+            })}
+
+            {/* 卒業生グループ期別アコーディオン */}
+            {alumniByTerm.length > 0 && (
+              <View style={{ marginTop: 12 }}>
+                <Text style={styles.sectionDividerText}>卒業生</Text>
+                {alumniByTerm.map((group) => {
+                  const tStr = group.term.toString();
+                  const isOpen = pickerSearch.trim() ? true : expandedTerms.has(tStr);
+                  return (
+                    <React.Fragment key={`term-${tStr}`}>
+                      <TouchableOpacity style={styles.accordionHeader} onPress={() => toggleTerm(tStr)}>
+                        <Text style={styles.accordionTitle}>
+                          {tStr === '999' ? '期生不明' : `${tStr}期`} ({group.members.length}人)
+                        </Text>
+                        <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color={色.灰} />
+                      </TouchableOpacity>
+                      {isOpen && group.members.map((卒業生) => 人の行(卒業生))}
+                    </React.Fragment>
+                  );
+                })}
               </View>
             )}
 
-            <ScrollView style={styles.pickerList}>
-              <TouchableOpacity style={styles.pickerRow} onPress={() => pickAssign(null)}>
-                <Text style={styles.pickerRowTextMuted}>（空欄にする）</Text>
+            {!!pickerSearch.trim() && (
+              <TouchableOpacity style={styles.pickerRow} onPress={() => pickAssignGuest(pickerSearch.trim())}>
+                <Text style={styles.pickerRowTextGuest}>「{pickerSearch.trim()}」をゲストとして登録</Text>
               </TouchableOpacity>
-
-              {/* 現役生グループアコーディオン */}
-              {activeGroups.map((group) => {
-                const gStr = group.grade.toString();
-                // 検索中（要確認セルからの自動絞り込み含む）は、折りたたみ状態に関わらず候補を表示する
-                const isOpen = pickerSearch.trim() ? true : !閉じた組.has(gStr);
-                return (
-                  <React.Fragment key={`grade-${gStr}`}>
-                    <TouchableOpacity style={styles.accordionHeader} onPress={() => toggleActiveGrade(gStr)}>
-                      <Text style={styles.accordionTitle}>
-                        {group.title} ({group.members.length}人)
-                      </Text>
-                      <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color={色.灰} />
-                    </TouchableOpacity>
-                    {isOpen &&
-                      group.members.map((部員) => {
-                        const isSelected = selectedMemberIds.has(部員.id);
-                        const isMale = 部員.gender === '男子';
-                        const isFemale = 部員.gender === '女子';
-                        const textColor = isMale ? 色.青 : isFemale ? 色.桃 : 色.文字;
-                        return (
-                          <TouchableOpacity
-                            key={部員.id}
-                            style={[
-                              styles.pickerRowIndent,
-                              isSelected && { backgroundColor: 色.地_F0F0F5, opacity: 0.8 },
-                            ]}
-                            onPress={() => pickAssign(部員)}
-                          >
-                            <View
-                              style={{
-                                flexDirection: 'row',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                width: '100%',
-                              }}
-                            >
-                              <Text
-                                style={[
-                                  styles.pickerRowText,
-                                  { color: textColor },
-                                  isSelected && { opacity: 0.5 },
-                                ]}
-                              >
-                                {部員.name}
-                                {部員.termKi ? ` (${部員.termKi}期)` : ''}
-                              </Text>
-                              {isSelected && (
-                                <View style={styles.selectedBadge}>
-                                  <Text style={styles.selectedBadgeText}>選択済</Text>
-                                </View>
-                              )}
-                            </View>
-                          </TouchableOpacity>
-                        );
-                      })}
-                  </React.Fragment>
-                );
-              })}
-
-              {/* 卒業生グループ期別アコーディオン */}
-              {alumniByTerm.length > 0 && (
-                <View style={{ marginTop: 12 }}>
-                  <Text style={styles.sectionDividerText}>卒業生</Text>
-                  {alumniByTerm.map((group) => {
-                    const tStr = group.term.toString();
-                    const isOpen = pickerSearch.trim() ? true : expandedTerms.has(tStr);
-                    return (
-                      <React.Fragment key={`term-${tStr}`}>
-                        <TouchableOpacity style={styles.accordionHeader} onPress={() => toggleTerm(tStr)}>
-                          <Text style={styles.accordionTitle}>
-                            {tStr === '999' ? '期生不明' : `${tStr}期`} ({group.members.length}人)
-                          </Text>
-                          <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color={色.灰} />
-                        </TouchableOpacity>
-                        {isOpen &&
-                          group.members.map((卒業生) => {
-                            const isSelected = selectedMemberIds.has(卒業生.id);
-                            const isMale = 卒業生.gender === '男子';
-                            const isFemale = 卒業生.gender === '女子';
-                            const textColor = isMale ? 色.青 : isFemale ? 色.桃 : 色.文字;
-                            return (
-                              <TouchableOpacity
-                                key={卒業生.id}
-                                style={[
-                                  styles.pickerRowIndent,
-                                  isSelected && { backgroundColor: 色.地_F0F0F5, opacity: 0.8 },
-                                ]}
-                                onPress={() => pickAssign(卒業生)}
-                              >
-                                <View
-                                  style={{
-                                    flexDirection: 'row',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    width: '100%',
-                                  }}
-                                >
-                                  <Text
-                                    style={[
-                                      styles.pickerRowText,
-                                      { color: textColor },
-                                      isSelected && { opacity: 0.5 },
-                                    ]}
-                                  >
-                                    {卒業生.name}
-                                  </Text>
-                                  {isSelected && (
-                                    <View style={styles.selectedBadge}>
-                                      <Text style={styles.selectedBadgeText}>選択済</Text>
-                                    </View>
-                                  )}
-                                </View>
-                              </TouchableOpacity>
-                            );
-                          })}
-                      </React.Fragment>
-                    );
-                  })}
-                </View>
-              )}
-
-              {!!pickerSearch.trim() && (
-                <TouchableOpacity
-                  style={styles.pickerRow}
-                  onPress={() => pickAssignGuest(pickerSearch.trim())}
-                >
-                  <Text style={styles.pickerRowTextGuest}>「{pickerSearch.trim()}」をゲストとして登録</Text>
-                </TouchableOpacity>
-              )}
-            </ScrollView>
-            <TouchableOpacity style={styles.pickerCloseBtn} onPress={() => setPickerTarget(null)}>
-              <Text style={styles.pickerCloseBtnText}>閉じる</Text>
-            </TouchableOpacity>
-          </View>
+            )}
+          </ScrollView>
+          <TouchableOpacity style={styles.pickerCloseBtn} onPress={() => setPickerTarget(null)}>
+            <Text style={styles.pickerCloseBtnText}>閉じる</Text>
+          </TouchableOpacity>
         </View>
-      </Modal>
-    </>
+      </View>
+    </Modal>
   );
 };
 
