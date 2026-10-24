@@ -51,6 +51,8 @@ export default [
   { ignores: ['dist/**', 'node_modules/**', 'ios/**', 'android/**', '_archive/**'] },
   {
     files: ['src/**/*.js', 'App.js'],
+    // ここで見ない規則（全角空白・制御文字など）を止める eslint-disable は、eslint.config.mjs のためにある
+    linterOptions: { reportUnusedDisableDirectives: 'off' },
     languageOptions: {
       ecmaVersion: 2024,
       sourceType: 'commonjs',
