@@ -515,7 +515,8 @@ const SettingsScreen = () => {
                         style={({ hovered }) => [
                           styles.stepperBtn,
                           hovered && { backgroundColor: 基本色.灰_明るい },
-                        ]} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                        ]}
+                        // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                         accessible
                         accessibilityRole="button"
                         accessibilityLabel="減らす"
@@ -529,7 +530,8 @@ const SettingsScreen = () => {
                         style={({ hovered }) => [
                           styles.stepperBtn,
                           hovered && { backgroundColor: 基本色.灰_明るい },
-                        ]} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                        ]}
+                        // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                         accessible
                         accessibilityRole="button"
                         accessibilityLabel="増やす"
@@ -871,7 +873,8 @@ const SettingsScreen = () => {
           節(
             '管理者設定',
             <View
-              style={styles.item} // 使い方の案内から指せるように登録する
+              style={styles.item}
+              // 使い方の案内から指せるように登録する
               ref={(node) => 案内.setTutorialTargetNode('設定.管理者モード', node)}
             >
               <View style={[styles.itemLeft, { flex: 1 }]}>

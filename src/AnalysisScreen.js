@@ -1072,7 +1072,8 @@ const AnalysisScreen = ({ navigation }) => {
                   </View>
                   <View style={styles.nameContainer}>
                     <Text
-                      style={[styles.memberName, { color: 色.黒 }]} // 長い名前は2行まで。それ以上は…で切る。
+                      style={[styles.memberName, { color: 色.黒 }]}
+                      // 長い名前は2行まで。それ以上は…で切る。
                       // 切らないと右の的中率へ食い込む
                       numberOfLines={2}
                       ellipsizeMode="tail"

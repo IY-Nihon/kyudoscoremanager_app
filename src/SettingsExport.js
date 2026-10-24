@@ -793,7 +793,8 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                   </Pressable>
                   <View style={styles.monthNav}>
                     <TouchableOpacity
-                      style={styles.monthNavBtn} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                      style={styles.monthNavBtn}
+                      // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                       accessible
                       accessibilityRole="button"
                       accessibilityLabel="前へ"
@@ -804,7 +805,8 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                     </TouchableOpacity>
                     <Text style={styles.monthNavText}>{書き出す年度}年度のデータ</Text>
                     <TouchableOpacity
-                      style={styles.monthNavBtn} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                      style={styles.monthNavBtn}
+                      // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                       accessible
                       accessibilityRole="button"
                       accessibilityLabel="次へ"

@@ -600,7 +600,8 @@ const AttendanceScreen = () => {
         <Modal
           visible
           transparent
-          animationType="slide" // 見るだけの窓。端末の戻るでも、外を押しても閉じる
+          animationType="slide"
+          // 見るだけの窓。端末の戻るでも、外を押しても閉じる
           onRequestClose={() => setSelectedMember(null)}
         >
           <View style={styles.modalOverlay}>
@@ -621,7 +622,8 @@ const AttendanceScreen = () => {
                   <Text style={styles.memberSub}>{学.人の説明(selectedMember, 決まり, { 区分たち })}</Text>
                 </View>
                 <TouchableOpacity
-                  style={styles.closeBtn} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                  style={styles.closeBtn}
+                  // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                   accessible
                   accessibilityRole="button"
                   accessibilityLabel="閉じる"

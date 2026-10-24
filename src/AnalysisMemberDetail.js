@@ -232,7 +232,8 @@ const 部員の詳細の窓 = ({
               <Svgの部品.Circle
                 key={`pt-${dsIdx}-${idx}`}
                 cx={点.x}
-                cy={点.y} // 選んでいる期間の点は大きくする。押せることが伝わるよう、
+                cy={点.y}
+                // 選んでいる期間の点は大きくする。押せることが伝わるよう、
                 // 押す的も見た目より広く取る（下の透明な丸）
                 r={点.label === selectedLabel ? (組.isBase ? '5.5' : '5.0') : 組.isBase ? '3.5' : '3.0'}
                 fill={組.color}
@@ -260,7 +261,8 @@ const 部員の詳細の窓 = ({
       <Modal
         visible={!!詳細の部員}
         transparent
-        animationType="fade" // 見るだけの窓。端末の戻るでも、外を押しても閉じる
+        animationType="fade"
+        // 見るだけの窓。端末の戻るでも、外を押しても閉じる
         onRequestClose={() => 詳細の部員を置く(null)}
       >
         <View style={styles.modalOverlay}>

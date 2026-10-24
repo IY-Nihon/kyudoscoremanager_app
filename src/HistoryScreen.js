@@ -538,7 +538,8 @@ const HistoryScreen = () => {
                   </Pressable>
                   {isAdminMode && (
                     <Pressable
-                      onPress={() => 管理者の品書きを出す(true)} // 絵だけのボタン。読み上げと検査のために名前を付ける
+                      onPress={() => 管理者の品書きを出す(true)}
+                      // 絵だけのボタン。読み上げと検査のために名前を付ける
                       accessible
                       accessibilityRole="button"
                       accessibilityLabel="記録の道具"
@@ -641,7 +642,8 @@ const HistoryScreen = () => {
                                     fontSize: 11 * viewScale,
                                     fontWeight: '700',
                                     color: 組.チームの色(組.区切りのチーム名(射手)) || 基本色.灰,
-                                  }} // 横の表の区切りは高さ 35 で 2 行入る。1 行では長い大学名が切れた
+                                  }}
+                                  // 横の表の区切りは高さ 35 で 2 行入る。1 行では長い大学名が切れた
                                   numberOfLines={2}
                                 >
                                   {組.区切りのチーム名(射手)}
@@ -819,7 +821,8 @@ const HistoryScreen = () => {
                                       fontWeight: '700',
                                       textAlign: 'center',
                                       color: 組.チームの色(組.区切りのチーム名(射手)) || 基本色.灰,
-                                    }} // 記録中と同じく、欄の高さに入るだけ行を使う
+                                    }}
+                                    // 記録中と同じく、欄の高さに入るだけ行を使う
                                     numberOfLines={組.区切りの名の字(viewScale, UIConfig).numberOfLines}
                                   >
                                     {組.区切りのチーム名(射手)}

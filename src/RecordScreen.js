@@ -813,7 +813,8 @@ const RecordScreen = () => {
     >
       {射手.isSeparator ? (
         <TouchableOpacity
-          style={{ alignItems: 'center', width: '100%', height: '100%', justifyContent: 'center' }} // 縦の表と同じにする。押すと窓が開き、そこでチーム名を付けたり
+          style={{ alignItems: 'center', width: '100%', height: '100%', justifyContent: 'center' }}
+          // 縦の表と同じにする。押すと窓が開き、そこでチーム名を付けたり
           // 消したりできる。横だけ「押す＝そのまま消す」のままだと、
           // 向きを変えただけで振る舞いが変わって驚く
           onPress={() => 人を選ぶ(射手.id, 射手.name, 順)}
@@ -898,14 +899,16 @@ const RecordScreen = () => {
       <ScrollView
         key={'横の表'}
         showsVerticalScrollIndicator={false}
-        bounces={false} // 掴んでいる間は流さない。流すと、表が動くのか列が動くのか
+        bounces={false}
+        // 掴んでいる間は流さない。流すと、表が動くのか列が動くのか
         // 分からなくなる
         scrollEnabled={!掴んだ列}
         style={{ flexGrow: 0 }}
       >
         <View style={{ flexDirection: 'row', minWidth: '100%' }}>
           <View
-            style={{ backgroundColor: 基本色.地, zIndex: 10 }} // 掴んでいる間だけ、縦の動きを並べ替えに使う。
+            style={{ backgroundColor: 基本色.地, zIndex: 10 }}
+            // 掴んでいる間だけ、縦の動きを並べ替えに使う。
             //
             // 横では PanResponder が指の動きを受け取れなかった（掴めるのに
             // 動かせない）。縦のときは横の動きなので取り合いにならないが、
@@ -1148,7 +1151,8 @@ const RecordScreen = () => {
                 }
                 リセットの窓を出す(true);
               }}
-              hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} // 絵だけのボタンは読み上げに何も伝わらない。端末は accessibilityLabel、
+              hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+              // 絵だけのボタンは読み上げに何も伝わらない。端末は accessibilityLabel、
               // web の TouchableOpacity は aria-label を見るので、両方渡す
               accessible
               accessibilityRole="button"
@@ -1192,7 +1196,8 @@ const RecordScreen = () => {
             /* 直すときは帯（onPress: X ? … ）と揃えること。 */}
             {isLiveActive && !来客 ? (
               <TouchableOpacity
-                style={styles.shareBtn} // 絵だけのボタンは読み上げに何も伝わらない。端末は accessibilityLabel、
+                style={styles.shareBtn}
+                // 絵だけのボタンは読み上げに何も伝わらない。端末は accessibilityLabel、
                 // web の TouchableOpacity は aria-label を見るので、両方渡す
                 accessible
                 accessibilityRole="button"
@@ -1234,7 +1239,8 @@ const RecordScreen = () => {
             {/* 立ちの増減。1立ち＝4射なので、4射ずつ動かす。 */
             /* 真ん中の「8射」を押せば、これまでどおり一覧から選べる */}
             <View
-              ref={案内の射数} // 閲覧用のときは射数だけ薄くする。表示（大きさ）は触れてよい
+              ref={案内の射数}
+              // 閲覧用のときは射数だけ薄くする。表示（大きさ）は触れてよい
               style={[styles.zoomContainer, 見るだけ中 && { opacity: 0.4 }]}
             >
               <TouchableOpacity
@@ -1404,7 +1410,8 @@ const RecordScreen = () => {
                             key={typeof 射手.id === 'string' ? 射手.id : `archer-${順}`}
                             archer={射手}
                             shots={shotsPerRound}
-                            indexInList={順} // ドラッグ中は「入れた結果」の並び（見えている並び）で
+                            indexInList={順}
+                            // ドラッグ中は「入れた結果」の並び（見えている並び）で
                             // 数えた見立てを渡す。計もチームもその並びで数え直るので、離す前に出来上がりが見える
                             {...列の見立て[順]}
                             showFooter={false}
@@ -1442,7 +1449,8 @@ const RecordScreen = () => {
                   </View>
                   <ScrollView
                     horizontal
-                    showsHorizontalScrollIndicator={false} // 掴んでいる間は流さない。流すと、表が動くのか列が動くのか
+                    showsHorizontalScrollIndicator={false}
+                    // 掴んでいる間は流さない。流すと、表が動くのか列が動くのか
                     // 分からなくなる
                     scrollEnabled={!掴んだ列}
                     style={{ flexGrow: 0, flexShrink: 1 }}
@@ -1465,7 +1473,8 @@ const RecordScreen = () => {
                         ...見えている並び.map((射手, 順) => {
                           return (
                             <View
-                              key={typeof 射手.id === 'string' ? `footer-${射手.id}` : `footer-${順}`} // 使い方の案内が指す先。まだ名前の入っていない列を選ぶ。
+                              key={typeof 射手.id === 'string' ? `footer-${射手.id}` : `footer-${順}`}
+                              // 使い方の案内が指す先。まだ名前の入っていない列を選ぶ。
                               // 名前入りの列を指すと、押しても名前の数が増えず先へ進めない。
                               // 繰り返しの中なのでフックは使えない
                               ref={(node) => {
@@ -1513,12 +1522,15 @@ const RecordScreen = () => {
                                     width: '100%',
                                     height: '100%',
                                     justifyContent: 'center',
-                                  }} // 位置ではなく列のIDで名づける。並べ替えても
+                                  }}
+                                  // 位置ではなく列のIDで名づける。並べ替えても
                                   // 同じ列を追える（ます-<射手ID>-<射番> と同じ流儀）
-                                  testID={'名の欄-区切り-' + 射手.id} // 押すと窓が開く。以前は押す＝そのまま消すで、
+                                  testID={'名の欄-区切り-' + 射手.id}
+                                  // 押すと窓が開く。以前は押す＝そのまま消すで、
                                   // チーム名は長押しでしか入れられなかった。
                                   // 消す道は窓の中の「削除」に移してある
-                                  onPress={() => 人を選ぶ(射手.id, 射手.name, 順)} // 長押しは「掴む」。チーム名は窓から入れる
+                                  onPress={() => 人を選ぶ(射手.id, 射手.name, 順)}
+                                  // 長押しは「掴む」。チーム名は窓から入れる
                                   //（長押ししか道が無くて気づけなかった）
                                   onLongPress={() => 掴む(射手.id)}
                                   onPressOut={() => 掴みを見直す()}
@@ -1536,7 +1548,8 @@ const RecordScreen = () => {
                                         fontWeight: '700',
                                         textAlign: 'center',
                                         color: 組.チームの色(組.区切りのチーム名(射手)) || 基本色.灰,
-                                      }} // 欄の高さに入るだけ行を使う。3 行では
+                                      }}
+                                      // 欄の高さに入るだけ行を使う。3 行では
                                       // 「日本大学工科」が「日本大.」に切れて分からなかった
                                       numberOfLines={組.区切りの名の字(倍率, UIConfig).numberOfLines}
                                     >
@@ -1569,7 +1582,8 @@ const RecordScreen = () => {
                                       ).色;
                                       return 色 ? { borderTopWidth: 3 * 倍率, borderTopColor: 色 } : null;
                                     })(),
-                                  ]} // 押すと窓が開く。合計の列なら、そこで
+                                  ]}
+                                  // 押すと窓が開く。合計の列なら、そこで
                                   // 数える範囲を変えたり消したりできる。
                                   // ここで範囲の切り替えだけを行うと、
                                   // 窓が開かなくなって消せなくなる（実際そうなった）
@@ -1661,7 +1675,8 @@ const RecordScreen = () => {
                     ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
                   }
                 }}
-                disabled={!戻せる} // 自動での確かめ用。絵だけのボタンは外から指せない
+                disabled={!戻せる}
+                // 自動での確かめ用。絵だけのボタンは外から指せない
                 testID="取り消し"
                 accessible
                 accessibilityRole="button"
@@ -1729,7 +1744,8 @@ const RecordScreen = () => {
                   styles.addBtn,
                   { backgroundColor: 'rgba(0,122,255,0.1)' },
                   hovered && IS_WEB && { backgroundColor: 'rgba(0,122,255,0.2)' },
-                ]} // 絵だけのボタンは読み上げに何も伝わらない。端末は accessibilityLabel、
+                ]}
+                // 絵だけのボタンは読み上げに何も伝わらない。端末は accessibilityLabel、
                 // web の TouchableOpacity は aria-label を見るので、両方渡す
                 accessible
                 accessibilityRole="button"
@@ -1781,7 +1797,8 @@ const RecordScreen = () => {
                   }
                   ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
                   addTotalCalculator();
-                }} // 入れたあと、その列を押すと「この立ちだけ」と
+                }}
+                // 入れたあと、その列を押すと「この立ちだけ」と
                 // 「手前の計もまとめた総計」を切り替えられる
                 accessibilityHint="合計の列を足します。入れたあと列を押すと、数える範囲を変えられます"
               >
@@ -1815,7 +1832,8 @@ const RecordScreen = () => {
                 履歴の編集 && { backgroundColor: 基本色.橙 },
                 (見るだけ中 || よその団体) && { opacity: 0.4 },
                 hovered && IS_WEB && { opacity: 0.9, transform: [{ scale: 1.02 }] },
-              ]} // 絵だけのボタンは読み上げに何も伝わらない。端末は accessibilityLabel、
+              ]}
+              // 絵だけのボタンは読み上げに何も伝わらない。端末は accessibilityLabel、
               // web の TouchableOpacity は aria-label を見るので、両方渡す
               accessible
               accessibilityRole="button"
@@ -1885,7 +1903,8 @@ const RecordScreen = () => {
           合計の範囲を切り替える(選んだ射手ID);
           知らせる(列?.またぐ合計 ? 'この立ちだけの合計にしました' : '手前の計もまとめた総計にしました');
           人の窓を出す(false);
-        }} // 区切りにチーム名を付ける道。窓からも入れるようにした
+        }}
+        // 区切りにチーム名を付ける道。窓からも入れるようにした
         いまのチーム名={
           組.区切りのチーム名(
             (Array.isArray(archers) ? archers : []).find((射手) => 射手 && 射手.id === 選んだ射手ID) || {}
@@ -1900,7 +1919,8 @@ const RecordScreen = () => {
           setチーム名の下書き((列 && 列.teamName) || '');
           setチーム名を付ける区切り(選んだ射手ID);
           人の窓を出す(false);
-        }} // 立ち順の入れ替え。store には並びの向き（前・後）で渡す。
+        }}
+        // 立ち順の入れ替え。store には並びの向き（前・後）で渡す。
         // 字をどう出すかは並べ方しだいなので、それは窓へ伝える
         //（縦は右／左、横は上／下）。端の列では、その向きを出さない
         横に並べている={!!横に並べる}
@@ -2051,7 +2071,8 @@ const RecordScreen = () => {
         alumni={useScoreStore((状態) => 状態.alumni) || []}
         区分たち={区分たち || []}
         shotsPerRound={shotsPerRound}
-        hasExistingRecord={archers.length > 0} // いまの記録表で埋まっている射数（いちばん後ろの○×の位置）。
+        hasExistingRecord={archers.length > 0}
+        // いまの記録表で埋まっている射数（いちばん後ろの○×の位置）。
         // 窓の側で、写真で読めた射数と比べて多いほうに射数を合わせる
         記入済みの射数={Math.max(
           0,
@@ -2075,18 +2096,18 @@ const RecordScreen = () => {
           // 埋まった○×は縮めても消えない）。先に合わせないと、いまの並びと読み取った
           // 並びで○×の長さが食い違う
           if (Number.isInteger(射数) && 射数 >= 1 && 射数 !== shotsPerRound) setShotsPerRound(射数);
-          // 読み取った○×は「いま入れたもの」として扱う。
-          // 印を付けないと初めから閉じてしまい、直すのが全部長押しになる。
-          // 盤面より先に印を付ける。逆にすると印の無い盤面が一度描かれ、
-          // 読み取った○×が一瞬すべて灰色に光ってから戻る
           // 後ろに足すときは、いまの並びの後ろへ繋ぐ。区切りは入れない
-          //（区切るかどうかは、写真の中に板が2つ在るときだけ窓の側で決める）
-          // 射数を合わせたあとの並びを店から取り直す（k は合わせる前の写し）
+          //（区切るかどうかは、写真の中に板が2つ在るときだけ窓の側で決める）。
+          // いまの並びは、射数を合わせたあとのものを店から取り直す（画面の archers は合わせる前の写し）
           const いまの並び = useScoreStore.getState().archers;
           const 入れる並び =
             入れ方 === '後ろに足す'
               ? [...(Array.isArray(いまの並び) ? いまの並び : []), ...newArchers]
               : newArchers;
+          // 読み取った○×は「いま入れたもの」として扱う。
+          // 印を付けないと初めから閉じてしまい、直すのが全部長押しになる。
+          // 盤面より先に印を付ける。逆にすると印の無い盤面が一度描かれ、
+          // 読み取った○×が一瞬すべて灰色に光ってから戻る
           useScoreStore.getState().入れた印をまとめて付ける(newArchers);
           // 店の applyOCRResult を通す。取り消しの履歴に積み、ライブ中は盤面を送る
           //（setState で直に差し替えると、ほかの端末に届かず、次の 1 射で読み取った分が消えた）
@@ -2105,7 +2126,8 @@ const RecordScreen = () => {
         archerId={activeArrowLocationEdit?.archerId}
         shotIndex={activeArrowLocationEdit?.shotIndex}
         currentMark={activeArrowLocationEdit?.currentMark}
-        arrowLocations={activeArrowLocationEdit?.arrowLocations} // 矢所を押しただけでは閉じない。置いた場所を見て、ずれていれば
+        arrowLocations={activeArrowLocationEdit?.arrowLocations}
+        // 矢所を押しただけでは閉じない。置いた場所を見て、ずれていれば
         // 置き直せるようにするため。閉じるのは「完了」を押したとき
         onSave={() => {}}
       />

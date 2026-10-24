@@ -225,7 +225,8 @@ const ArcherColumnView = React.memo(
                     borderLeftWidth: 枠の左,
                     borderLeftColor: 色.黒,
                   },
-            ]} // 内訳が出ているときだけ押せる。押すと合算とを行き来する
+            ]}
+            // 内訳が出ているときだけ押せる。押すと合算とを行き来する
             // 計の列は押すと見せ方が次へ進む
             disabled={
               !(
@@ -550,7 +551,8 @@ const ArcherColumnView = React.memo(
             {archer.isSeparator ? (
               <TouchableOpacity
                 style={{ alignItems: 'center', width: '100%', height: '100%', justifyContent: 'center' }}
-                onPress={() => onDelete && onDelete(archer.id)} // 長押しでチーム名を付ける（リーグの大学名）。
+                onPress={() => onDelete && onDelete(archer.id)}
+                // 長押しでチーム名を付ける（リーグの大学名）。
                 // 押す＝外す は今までどおりにして、覚え直さずに済むようにする
                 onLongPress={() => 区切りを長押し && 区切りを長押し(archer.id)}
                 delayLongPress={500}
@@ -578,7 +580,8 @@ const ArcherColumnView = React.memo(
                       fontWeight: '700',
                       color: 組.チームの色(区切りの名) || 色.灰,
                       textAlign: 'center',
-                    }} // 欄の高さに入るだけ行を使う（3 行では大学名が切れた）
+                    }}
+                    // 欄の高さに入るだけ行を使う（3 行では大学名が切れた）
                     numberOfLines={組.区切りの名の字(倍率, UIConfig).numberOfLines}
                   >
                     {区切りの名}
@@ -608,7 +611,8 @@ const ArcherColumnView = React.memo(
                 ]}
                 onPress={() => onPressName && onPressName(archer.id, archer.name, indexInList)}
                 onLongPress={() => onLongPressName && onLongPressName(archer.id, archer.name, indexInList)}
-                delayLongPress={500} // 読み上げには射位と名前と成績をまとめて読ませる。
+                delayLongPress={500}
+                // 読み上げには射位と名前と成績をまとめて読ませる。
                 // 名前だけだと、その人が何番目に立っているのか分からない
                 accessible
                 accessibilityRole="button"
