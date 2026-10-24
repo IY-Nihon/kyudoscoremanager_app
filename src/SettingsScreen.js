@@ -94,8 +94,6 @@ const SettingsScreen = () => {
     setArrowTargetType,
   } = useストアの一部([
     'currentFreshmanTerm',
-    'trash',
-    'shotsPerRound',
     'updateCurrentFreshmanTerm',
     'syncStatus',
     'lastSyncTime',
@@ -368,79 +366,64 @@ const SettingsScreen = () => {
             </View>
           </View>
         )}
-        {activeRole !== 'member' &&
+        {/* 団体アカウントだけの節（個人ログインでは出さない） */}
+        {activeRole === 'group' &&
           節(
             '基本設定',
             <>
-              {activeRole === 'group' && (
-                <View style={styles.item}>
-                  <View style={[styles.itemLeft, { flex: 1 }]}>
-                    <Icons.Ionicons
-                      name="business-outline"
-                      size={22}
-                      color={基本色.青}
-                      style={styles.itemIcon}
-                    />
-                    <Text style={styles.itemText}>
-                      {'団体ID: '}
-                      {activeGroupId}
-                    </Text>
-                  </View>
-                </View>
-              )}
-              {activeRole === 'group' && (
-                <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
-                  <View style={[styles.itemLeft, { marginBottom: 8 }]}>
-                    <Icons.Ionicons
-                      name="pencil-outline"
-                      size={22}
-                      color={基本色.青}
-                      style={styles.itemIcon}
-                    />
-                    <Text style={styles.itemText}>団体名</Text>
-                  </View>
-                  <TextInput
-                    aria-label="団体名"
-                    style={styles.filterInput}
-                    placeholder="団体名を入力"
-                    value={activeGroupName || ''}
-                    onChangeText={updateGroupName}
+              <View style={styles.item}>
+                <View style={[styles.itemLeft, { flex: 1 }]}>
+                  <Icons.Ionicons
+                    name="business-outline"
+                    size={22}
+                    color={基本色.青}
+                    style={styles.itemIcon}
                   />
+                  <Text style={styles.itemText}>
+                    {'団体ID: '}
+                    {activeGroupId}
+                  </Text>
                 </View>
-              )}
-              {activeRole === 'group' && (
-                <Pressable
-                  style={({ hovered }) => [
-                    styles.item,
-                    hovered && { backgroundColor: 基本色.地_F7F7FA },
-                    IS_WEB && { cursor: 'pointer' },
-                  ]}
-                  accessibilityRole="button"
-                  aria-label={'団体の種類 ' + 学.種類の説明(groupType || 学.既定の種類)}
-                  onPress={() => 種類の窓を出す(true)}
-                >
-                  {/* 値（「社会人の会・道場（学年なし）」）が長いので、名前は縮めず、値の側を縮めて折り返す */}
-                  <View style={[styles.itemLeft, { flexShrink: 0, marginRight: 12 }]}>
-                    <Icons.Ionicons
-                      name="school-outline"
-                      size={22}
-                      color={基本色.紫}
-                      style={styles.itemIcon}
-                    />
-                    <Text style={styles.itemText}>団体の種類</Text>
-                  </View>
-                  <View style={{ flex: 1, alignItems: 'flex-end', marginRight: 4 }}>
-                    <Text style={{ fontSize: 14, color: 基本色.灰, textAlign: 'right' }}>
-                      {学.決まりを作る(groupType).種類の名前}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: 基本色.灰, textAlign: 'right' }}>
-                      {学.学年の幅の名前(groupType || 学.既定の種類)}
-                    </Text>
-                  </View>
-                  <Icons.Ionicons name="chevron-forward" size={18} color={基本色.灰_薄い} />
-                </Pressable>
-              )}
-              {activeRole === 'group' && !学年なし && (
+              </View>
+              <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
+                <View style={[styles.itemLeft, { marginBottom: 8 }]}>
+                  <Icons.Ionicons name="pencil-outline" size={22} color={基本色.青} style={styles.itemIcon} />
+                  <Text style={styles.itemText}>団体名</Text>
+                </View>
+                <TextInput
+                  aria-label="団体名"
+                  style={styles.filterInput}
+                  placeholder="団体名を入力"
+                  value={activeGroupName || ''}
+                  onChangeText={updateGroupName}
+                />
+              </View>
+              <Pressable
+                style={({ hovered }) => [
+                  styles.item,
+                  hovered && { backgroundColor: 基本色.地_F7F7FA },
+                  IS_WEB && { cursor: 'pointer' },
+                ]}
+                accessibilityRole="button"
+                aria-label={'団体の種類 ' + 学.種類の説明(groupType || 学.既定の種類)}
+                onPress={() => 種類の窓を出す(true)}
+              >
+                {/* 値（「社会人の会・道場（学年なし）」）が長いので、名前は縮めず、値の側を縮めて折り返す */}
+                <View style={[styles.itemLeft, { flexShrink: 0, marginRight: 12 }]}>
+                  <Icons.Ionicons name="school-outline" size={22} color={基本色.紫} style={styles.itemIcon} />
+                  <Text style={styles.itemText}>団体の種類</Text>
+                </View>
+                <View style={{ flex: 1, alignItems: 'flex-end', marginRight: 4 }}>
+                  <Text style={{ fontSize: 14, color: 基本色.灰, textAlign: 'right' }}>
+                    {学.決まりを作る(groupType).種類の名前}
+                  </Text>
+                  <Text style={{ fontSize: 11, color: 基本色.灰, textAlign: 'right' }}>
+                    {学.学年の幅の名前(groupType || 学.既定の種類)}
+                  </Text>
+                </View>
+                <Icons.Ionicons name="chevron-forward" size={18} color={基本色.灰_薄い} />
+              </Pressable>
+              {!学年なし && (
                 <View style={styles.item}>
                   <View style={[styles.itemLeft, { flex: 1 }]}>
                     <Icons.Ionicons
@@ -464,7 +447,7 @@ const SettingsScreen = () => {
                   />
                 </View>
               )}
-              {activeRole === 'group' && !学年なし && (
+              {!学年なし && (
                 <View style={styles.item}>
                   <View style={[styles.itemLeft, { flex: 1 }]}>
                     <Icons.Ionicons
@@ -488,7 +471,7 @@ const SettingsScreen = () => {
                   />
                 </View>
               )}
-              {activeRole === 'group' && !学年なし && useTerm && (
+              {!学年なし && useTerm && (
                 <View style={styles.item}>
                   <View style={[styles.itemLeft, { flex: 1 }]}>
                     <View style={[styles.itemIcon, { width: 22 }]} />
@@ -551,7 +534,7 @@ const SettingsScreen = () => {
                   </View>
                 </View>
               )}
-              {activeRole === 'group' && 今の決まり.自分で決める ? (
+              {今の決まり.自分で決める ? (
                 <>
                   <学年の並びの設定 />
                   <View style={styles.item}>
@@ -624,120 +607,116 @@ const SettingsScreen = () => {
                   </View>
                 </>
               ) : null}
-              {activeRole === 'group' && (
-                <Pressable
-                  style={({ hovered }) => [
-                    styles.item,
-                    hovered && { backgroundColor: 基本色.地_F7F7FA },
-                    IS_WEB && { cursor: 'pointer' },
-                  ]}
-                  accessibilityRole="button"
-                  aria-label={`年度の始まり ${yearStartMonth}月`}
-                  onPress={() => 月の窓を出す(true)}
-                >
-                  <View style={[styles.itemLeft, { flex: 1 }]}>
-                    <Icons.Ionicons
-                      name="calendar-outline"
-                      size={22}
-                      color={基本色.青}
-                      style={styles.itemIcon}
-                    />
-                    <View style={{ flex: 1, paddingRight: 8 }}>
-                      <Text style={styles.itemText}>年度の始まり</Text>
-                      <Text style={{ fontSize: 11, color: 基本色.灰, marginTop: 2 }}>
-                        進級の窓を出す日と、分析・出欠・書き出しの「年度」の区切り
-                      </Text>
-                    </View>
-                  </View>
-                  <Text
-                    style={{ fontSize: 15, color: 基本色.灰, marginRight: 4 }}
-                  >{`${yearStartMonth}月`}</Text>
-                  <Icons.Ionicons name="chevron-forward" size={18} color={基本色.灰_薄い} />
-                </Pressable>
-              )}
-              {activeRole === 'group' && <区分の設定 />}
-              {activeRole === 'group' && (
-                <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: 12,
-                    }}
-                  >
-                    <View style={styles.itemLeft}>
-                      <Icons.Ionicons
-                        name="pricetags-outline"
-                        size={22}
-                        color={基本色.橙}
-                        style={styles.itemIcon}
-                      />
-                      <Text style={styles.itemText}>タグの定型文</Text>
-                    </View>
-                  </View>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-                    {tagTemplates.map((タグ) => (
-                      <View
-                        key={`template-${タグ}`}
-                        style={{
-                          backgroundColor: 基本色.地_濃い,
-                          borderRadius: 16,
-                          paddingLeft: 12,
-                          paddingRight: 6,
-                          paddingVertical: 4,
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: 4,
-                        }}
-                      >
-                        <Text style={{ fontSize: 13, color: 基本色.黒 }}>
-                          {/* しまう形は「#合宿」だが、画面では # を付けない */}
-                          {規則.タグの見た目(タグ)}
-                        </Text>
-                        <Pressable // 絵だけのボタン。どのタグを消すのかまで読ませる
-                          accessible
-                          accessibilityRole="button"
-                          accessibilityLabel={規則.タグの見た目(タグ) + ' を消す'}
-                          aria-label={タグ + ' を消す'}
-                          onPress={() => removeTagTemplate(タグ)}
-                          style={({ hovered }) => [
-                            hovered && { opacity: 0.7 },
-                            IS_WEB && { cursor: 'pointer' },
-                          ]}
-                        >
-                          <Icons.Ionicons name="close-circle" size={18} color={基本色.灰} />
-                        </Pressable>
-                      </View>
-                    ))}
-                  </View>
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <TextInput
-                      aria-label="新しいタグ"
-                      style={[styles.filterInput, { flex: 1, paddingVertical: 8 }]}
-                      placeholder="新しいタグを追加"
-                      value={タグの下書き}
-                      onChangeText={タグの下書きを置く}
-                      onSubmitEditing={下書きのタグを足す}
-                    />
-                    <Pressable
-                      style={({ hovered }) => [
-                        {
-                          backgroundColor: 基本色.青,
-                          borderRadius: 8,
-                          paddingHorizontal: 16,
-                          justifyContent: 'center',
-                        },
-                        hovered && { backgroundColor: 基本色.青_濃い },
-                        IS_WEB && { cursor: 'pointer' },
-                      ]}
-                      onPress={下書きのタグを足す}
-                    >
-                      <Text style={{ color: 基本色.白, fontWeight: 'bold' }}>追加</Text>
-                    </Pressable>
+              <Pressable
+                style={({ hovered }) => [
+                  styles.item,
+                  hovered && { backgroundColor: 基本色.地_F7F7FA },
+                  IS_WEB && { cursor: 'pointer' },
+                ]}
+                accessibilityRole="button"
+                aria-label={`年度の始まり ${yearStartMonth}月`}
+                onPress={() => 月の窓を出す(true)}
+              >
+                <View style={[styles.itemLeft, { flex: 1 }]}>
+                  <Icons.Ionicons
+                    name="calendar-outline"
+                    size={22}
+                    color={基本色.青}
+                    style={styles.itemIcon}
+                  />
+                  <View style={{ flex: 1, paddingRight: 8 }}>
+                    <Text style={styles.itemText}>年度の始まり</Text>
+                    <Text style={{ fontSize: 11, color: 基本色.灰, marginTop: 2 }}>
+                      進級の窓を出す日と、分析・出欠・書き出しの「年度」の区切り
+                    </Text>
                   </View>
                 </View>
-              )}
+                <Text
+                  style={{ fontSize: 15, color: 基本色.灰, marginRight: 4 }}
+                >{`${yearStartMonth}月`}</Text>
+                <Icons.Ionicons name="chevron-forward" size={18} color={基本色.灰_薄い} />
+              </Pressable>
+              <区分の設定 />
+              <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 12,
+                  }}
+                >
+                  <View style={styles.itemLeft}>
+                    <Icons.Ionicons
+                      name="pricetags-outline"
+                      size={22}
+                      color={基本色.橙}
+                      style={styles.itemIcon}
+                    />
+                    <Text style={styles.itemText}>タグの定型文</Text>
+                  </View>
+                </View>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                  {tagTemplates.map((タグ) => (
+                    <View
+                      key={`template-${タグ}`}
+                      style={{
+                        backgroundColor: 基本色.地_濃い,
+                        borderRadius: 16,
+                        paddingLeft: 12,
+                        paddingRight: 6,
+                        paddingVertical: 4,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, color: 基本色.黒 }}>
+                        {/* しまう形は「#合宿」だが、画面では # を付けない */}
+                        {規則.タグの見た目(タグ)}
+                      </Text>
+                      <Pressable // 絵だけのボタン。どのタグを消すのかまで読ませる
+                        accessible
+                        accessibilityRole="button"
+                        accessibilityLabel={規則.タグの見た目(タグ) + ' を消す'}
+                        aria-label={規則.タグの見た目(タグ) + ' を消す'}
+                        onPress={() => removeTagTemplate(タグ)}
+                        style={({ hovered }) => [
+                          hovered && { opacity: 0.7 },
+                          IS_WEB && { cursor: 'pointer' },
+                        ]}
+                      >
+                        <Icons.Ionicons name="close-circle" size={18} color={基本色.灰} />
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TextInput
+                    aria-label="新しいタグ"
+                    style={[styles.filterInput, { flex: 1, paddingVertical: 8 }]}
+                    placeholder="新しいタグを追加"
+                    value={タグの下書き}
+                    onChangeText={タグの下書きを置く}
+                    onSubmitEditing={下書きのタグを足す}
+                  />
+                  <Pressable
+                    style={({ hovered }) => [
+                      {
+                        backgroundColor: 基本色.青,
+                        borderRadius: 8,
+                        paddingHorizontal: 16,
+                        justifyContent: 'center',
+                      },
+                      hovered && { backgroundColor: 基本色.青_濃い },
+                      IS_WEB && { cursor: 'pointer' },
+                    ]}
+                    onPress={下書きのタグを足す}
+                  >
+                    <Text style={{ color: 基本色.白, fontWeight: 'bold' }}>追加</Text>
+                  </Pressable>
+                </View>
+              </View>
             </>
           )}
         <掲載の設定 />
@@ -787,7 +766,7 @@ const SettingsScreen = () => {
         {節(
           '矢所の記録',
           <>
-            <View // 使い方の案内が指す先。この行は Je() を通らない作りなので、
+            <View // 使い方の案内が指す先。この行は 行() を通らない作りなので、
               // ここで直接登録する
               ref={(node) => 案内.setTutorialTargetNode('設定.矢所の記録機能を有効化', node)}
               style={styles.item}
@@ -1399,7 +1378,7 @@ const SettingsScreen = () => {
                     aria-checked={yearStartMonth === 月}
                     onPress={() => {
                       setYearStartMonth(月);
-                      return 月の窓を出す(false);
+                      月の窓を出す(false);
                     }}
                     style={({ hovered }) => [
                       {
