@@ -146,4 +146,4 @@ const 掲載の操作 = (書く, 状態) => {
   };
 };
 
-module.exports = { 掲載の操作, 店の形, 雲の形 };
+module.exports = { 掲載の操作 };
