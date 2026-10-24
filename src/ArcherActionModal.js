@@ -111,16 +111,8 @@ const ArcherActionModal = ({
           const 甲は入っている = 今の射手たち.some((一人) => 一人.memberId === 甲.id);
           if (甲は入っている !== 今の射手たち.some((一人) => 一人.memberId === 乙.id))
             return 甲は入っている ? 1 : -1;
-          // 「その他」（学年0）は後ろへ。乙の側は、以前は o（入っているか）を
-          // 見ていて学年の比べ合いになっておらず、一覧が学年順に並ばなかった
-          const 学年の差 = 学.学年の順(甲) - 学.学年の順(乙);
-          if (学年の差) return 学年の差;
-          const cVal = (性別) => {
-            const 整えた = (性別 || '').trim();
-            return 整えた === '男子' ? 0 : 整えた === '女子' ? 1 : 2;
-          };
-          const uVal = cVal(甲.gender) - cVal(乙.gender);
-          return uVal !== 0 ? uVal : (甲.name || '').localeCompare(乙.name || '', 'ja');
+          // 残りは名簿の並び（「その他」（学年0）は後ろへ）
+          return 学.名簿の順に比べる(甲, 乙);
         })
     );
   }, [members, archers, 検索の文, 今の射手たち, 男女の絞り]);

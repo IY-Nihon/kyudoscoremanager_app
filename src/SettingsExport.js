@@ -118,19 +118,8 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
   const memberSuggestions = React.useMemo(() => {
     try {
       if (activeRole === 'member') return myMemberName ? [myMemberName] : [];
-      const sortMembers = (甲, 乙) => {
-        const 学年の差 = 学.学年の順(甲) - 学.学年の順(乙);
-        if (学年の差) return 学年の差;
-        const 性別の順 = (性別) => {
-          const 整えた = (性別 || '').trim();
-          return 整えた === '男子' ? 0 : 整えた === '女子' ? 1 : 2;
-        };
-        return (
-          性別の順(甲.gender) - 性別の順(乙.gender) || (甲.name || '').localeCompare(乙.name || '', 'ja')
-        );
-      };
       const list = [...members, ...alumni]
-        .sort(sortMembers)
+        .sort(学.名簿の順に比べる)
         .map((部員) => 部員.name)
         .filter((名) => 名 && 名.trim() !== '');
       return Array.from(new Set(list));

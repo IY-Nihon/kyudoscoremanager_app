@@ -340,78 +340,65 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                         overflow: 'hidden',
                       }}
                     >
-                      {[...allMembers]
-                        .sort((甲, 乙) => {
-                          const 学年の差 = 学.学年の順(甲) - 学.学年の順(乙);
-                          if (学年の差) return 学年の差;
-                          const 性別の順 = (性別) => {
-                            const 整えた = (性別 || '').trim();
-                            return 整えた === '男子' ? 0 : 整えた === '女子' ? 1 : 2;
-                          };
-                          const 性別の差 = 性別の順(甲.gender) - 性別の順(乙.gender);
-                          return 性別の差 !== 0
-                            ? 性別の差
-                            : (甲.name || '').localeCompare(乙.name || '', 'ja');
-                        })
-                        .map((member, idx) => {
-                          const status = attendanceEdit[member.id] || 'absent';
-                          return (
-                            <View
-                              key={member.id}
-                              style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                paddingVertical: 10,
-                                paddingHorizontal: 12,
-                                backgroundColor: idx % 2 === 0 ? 色.地_FAFAFA : 色.白,
-                                borderBottomWidth: idx < allMembers.length - 1 ? 1 : 0,
-                                borderBottomColor: 色.地_濃い,
-                              }}
-                            >
-                              <Text style={{ fontSize: 14, color: 色.文字, flex: 1 }}>
-                                {member.name || member.personalId || member.id}
-                                <Text style={{ fontSize: 11, color: 色.灰, marginLeft: 4 }}>
-                                  ({学.学年の名前(member)})
-                                </Text>
+                      {[...allMembers].sort(学.名簿の順に比べる).map((member, idx) => {
+                        const status = attendanceEdit[member.id] || 'absent';
+                        return (
+                          <View
+                            key={member.id}
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              paddingVertical: 10,
+                              paddingHorizontal: 12,
+                              backgroundColor: idx % 2 === 0 ? 色.地_FAFAFA : 色.白,
+                              borderBottomWidth: idx < allMembers.length - 1 ? 1 : 0,
+                              borderBottomColor: 色.地_濃い,
+                            }}
+                          >
+                            <Text style={{ fontSize: 14, color: 色.文字, flex: 1 }}>
+                              {member.name || member.personalId || member.id}
+                              <Text style={{ fontSize: 11, color: 色.灰, marginLeft: 4 }}>
+                                ({学.学年の名前(member)})
                               </Text>
-                              <View style={{ flexDirection: 'row', gap: 4 }}>
-                                {['present', 'late', 'early', 'absent'].map((sVal) => {
-                                  const active = status === sVal;
-                                  const info = attStyles[sVal];
-                                  return (
-                                    <TouchableOpacity
-                                      key={sVal}
-                                      onPress={() =>
-                                        setAttendanceEdit((prev) =>
-                                          Object.assign({}, prev, { [member.id]: sVal })
-                                        )
-                                      }
+                            </Text>
+                            <View style={{ flexDirection: 'row', gap: 4 }}>
+                              {['present', 'late', 'early', 'absent'].map((sVal) => {
+                                const active = status === sVal;
+                                const info = attStyles[sVal];
+                                return (
+                                  <TouchableOpacity
+                                    key={sVal}
+                                    onPress={() =>
+                                      setAttendanceEdit((prev) =>
+                                        Object.assign({}, prev, { [member.id]: sVal })
+                                      )
+                                    }
+                                    style={{
+                                      paddingVertical: 4,
+                                      paddingHorizontal: 6,
+                                      borderRadius: 6,
+                                      backgroundColor: active ? info.color : 色.地,
+                                      minWidth: 40,
+                                      alignItems: 'center',
+                                    }}
+                                  >
+                                    <Text
                                       style={{
-                                        paddingVertical: 4,
-                                        paddingHorizontal: 6,
-                                        borderRadius: 6,
-                                        backgroundColor: active ? info.color : 色.地,
-                                        minWidth: 40,
-                                        alignItems: 'center',
+                                        fontSize: 11,
+                                        fontWeight: 'bold',
+                                        color: active ? 色.白 : 色.灰,
                                       }}
                                     >
-                                      <Text
-                                        style={{
-                                          fontSize: 11,
-                                          fontWeight: 'bold',
-                                          color: active ? 色.白 : 色.灰,
-                                        }}
-                                      >
-                                        {info.label}
-                                      </Text>
-                                    </TouchableOpacity>
-                                  );
-                                })}
-                              </View>
+                                      {info.label}
+                                    </Text>
+                                  </TouchableOpacity>
+                                );
+                              })}
                             </View>
-                          );
-                        })}
+                          </View>
+                        );
+                      })}
                     </View>
                   </>
                 )}

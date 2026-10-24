@@ -40,16 +40,7 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
     検索の文.trim() === ''
       ? [...members]
       : members.filter((部員) => (部員.name || '').toLowerCase().includes(検索の文.toLowerCase()))
-  ).sort((甲, 乙) => {
-    const 学年の差 = 学.学年の順(甲) - 学.学年の順(乙);
-    if (学年の差) return 学年の差;
-    const 性別の順 = (性別) => {
-      const 整えた = (性別 || '').trim();
-      return 整えた === '男子' ? 0 : 整えた === '女子' ? 1 : 2;
-    };
-    const 性別の差 = 性別の順(甲.gender) - 性別の順(乙.gender);
-    return 性別の差 !== 0 ? 性別の差 : (甲.name || '').localeCompare(乙.name || '', 'ja');
-  });
+  ).sort(学.名簿の順に比べる);
   const 立か = 単位 === '立目';
   const 上限 = 立か ? 立の数(shotsPerRound) : shotsPerRound;
   const 学年を開け閉め = (印) => {

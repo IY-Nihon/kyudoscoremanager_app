@@ -1472,13 +1472,7 @@ const OCRRecordModal = ({
     return members
       .filter((部員) => 学.現役か(部員))
       .filter((部員) => !pickerSearch.trim() || normalize(部員.name).includes(normalize(pickerSearch)))
-      .sort((甲, 乙) => {
-        const 学年の差 = 学.学年の順(甲) - 学.学年の順(乙);
-        if (学年の差) return 学年の差;
-        const genderVal = (性別) => (性別 === '男子' ? 0 : 性別 === '女子' ? 1 : 2);
-        const genDiff = genderVal(甲.gender) - genderVal(乙.gender);
-        return genDiff !== 0 ? genDiff : (甲.name || '').localeCompare(乙.name || '', 'ja');
-      });
+      .sort(学.名簿の順に比べる);
   }, [members, pickerSearch]);
 
   // 学年ごと（学年の無い団体は区分ごと）の組

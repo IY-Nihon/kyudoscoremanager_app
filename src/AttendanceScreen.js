@@ -190,14 +190,7 @@ const AttendanceScreen = () => {
       // 出席率順は維持
       if (Math.abs(乙.rate - 甲.rate) > 0.001) return 乙.rate - 甲.rate;
       // 出席率が同じ場合の基本の並び順（メンバー管理画面と一致）
-      const 学年の差 = 学.学年の順(甲) - 学.学年の順(乙);
-      if (学年の差) return 学年の差;
-      const c_func = (g_val) => {
-        const t_gen = (g_val || '').trim();
-        return t_gen === '男子' ? 0 : t_gen === '女子' ? 1 : 2;
-      };
-      const u_val = c_func(甲.gender) - c_func(乙.gender);
-      return u_val !== 0 ? u_val : (甲.name || '').localeCompare(乙.name || '', 'ja');
+      return 学.名簿の順に比べる(甲, 乙);
     });
   const normalizeDate = (dStr) => {
     if (!dStr) return null;
