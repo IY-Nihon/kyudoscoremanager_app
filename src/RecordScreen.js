@@ -131,12 +131,9 @@ const RecordScreen = () => {
     履歴の編集を終える,
     sessions: 記録たち = [],
   } = useストアの一部([
-    'activeSessionID',
-    'isAdminMode',
     'archers',
     'shotsPerRound',
     'syncStatus',
-    'lastSyncTime',
     'isNetworkOnline',
     'offlineSaveWarning',
     '再ログインの案内',
@@ -151,18 +148,13 @@ const RecordScreen = () => {
     'redo',
     'historyStack',
     'redoStack',
-    'clearArcherMarks',
-    'setArcherMember',
     'saveSession',
     'setShotsPerRound',
     'viewScale',
     'setViewScale',
     'isLiveActive',
-    'setIsLiveActive',
     'isHost',
     'liveSessionName',
-    'includeInStats',
-    'setIncludeInStats',
     'resetCurrentSession',
     'members',
     'lastResetHandled',
@@ -171,7 +163,6 @@ const RecordScreen = () => {
     'historySharedLen',
     'historySharedMax',
     'activeGroupId',
-    'publicGroupId',
     'activeArrowLocationEdit',
     'setActiveArrowLocationEdit',
     '保存時に出欠を確認する',
@@ -231,7 +222,7 @@ const RecordScreen = () => {
   // ライブ中は全員で1本の共有履歴を使うので、押せるかどうかも
   // 共有の目印で決める。手元の履歴だけで見ると、ライブ中に
   // やり直しが永久に押せないままになる
-  const ライブの知らせに任せる = !(!isLiveActive || !liveSessionName);
+  const ライブの知らせに任せる = !!(isLiveActive && liveSessionName);
   const 戻せる = ライブの知らせに任せる ? (共有履歴の位置 || 0) > 0 : historyStack.length > 0;
   const 進める = ライブの知らせに任せる
     ? (共有履歴の位置 || 0) < (共有履歴の上限 || 0)
@@ -252,9 +243,6 @@ const RecordScreen = () => {
   const [showAttendance, setShowAttendance] = React.useState(false);
   const [tempAttendance, setTempAttendance] = React.useState(null);
   const [showOCRModal, setShowOCRModal] = React.useState(false);
-  // 上下の帯を畳んでいるか。記録表を広く使いたいときに畳む。
-  // 画面を移る帯（記録/履歴/…）はここでは隠さない（移動できなくなるため）
-  const _畳みは使わない = null;
   // 参加のしかたを聞いている最中のライブ名。null なら聞いていない
   const [参加のしかたを聞く, 参加のしかたを聞くを置く] = React.useState(null);
   // アプリ内の確認。{ 文, 実行 } を入れると出る。ブラウザの確認窓は使わない
@@ -364,6 +352,8 @@ const RecordScreen = () => {
       if (止める) 止める();
     };
   }, [ライブ名の窓, ライブの種類]);
+  // 上下の帯を畳んでいるか。記録表を広く使いたいときに畳む。
+  // 画面を移る帯（記録/履歴/…）はここでは隠さない（移動できなくなるため）。
   // 案内の最中は畳まない。案内が指す先は全部この帯の中にあり、
   // 畳んだままだと指せないうえ、押す操作そのものができない
   // フックは必ず呼ぶ。&& の右に置くと、畳む・戻すでフックの数が変わり、
@@ -409,6 +399,8 @@ const RecordScreen = () => {
   const 団体の種類 = useScoreStore((状態) => 状態.groupType);
   // 区分（写真の読み取りの人の選択を、学年の無い団体では区分ごとの組にする）
   const 区分たち = useScoreStore((状態) => 状態.divisions);
+  // 写真の読み取りの人の選択に、卒業生も出す
+  const 卒業生たち = useScoreStore((状態) => 状態.alumni);
   const 進級する人がいる = React.useMemo(() => 学年の組(members).length > 0, [members, 団体の種類]);
   const 進級の窓を出す =
     役割 === 'group' &&
@@ -419,6 +411,10 @@ const RecordScreen = () => {
     !見るだけ中 &&
     !isLiveActive &&
     !掲載の札を出す;
+  // 人の窓で触っている列（並びの中の位置も）。窓の中のいくつもの所で使う
+  const 並んだ列 = (Array.isArray(archers) ? archers : []).filter((射手) => !!射手);
+  const 選んだ列の順 = 並んだ列.findIndex((射手) => 射手.id === 選んだ射手ID);
+  const 選んだ列 = 選んだ列の順 >= 0 ? 並んだ列[選んだ列の順] : null;
   const 人を選ぶ = (射手ID, _, 順) => {
     // 閲覧用のときは人の選択も開かない。開いても名前も交代も削除も
     // 止めてあるので、開くだけ無駄に迷わせる
@@ -476,8 +472,7 @@ const RecordScreen = () => {
       射数の入力窓を出す(false);
       射数を変える(本数);
     } else {
-      知らせを置く('1〜500までの数字を入力してください');
-      setTimeout(() => 知らせを置く(null), 1500);
+      知らせる('1〜500までの数字を入力してください');
     }
   };
   const ライブを始める窓へ = (種類) => {
@@ -488,7 +483,6 @@ const RecordScreen = () => {
       ライブ名の窓を出す(true);
     }, 100);
   };
-  const Et要素 = View;
   // ── 帯を畳む取っ手を、指で左上・右上へ動かす仕掛け ───────────────
   //
   // AI チャットの丸いボタンと同じ考え方。取っ手を横へ引いて離すと、近いほうの
@@ -767,7 +761,7 @@ const RecordScreen = () => {
   const 名前の幅 = 100 * 倍率;
   const 行の高さ = (射手) =>
     (射手 && 射手.isSeparator ? UIConfig.separatorWidth : UIConfig.cellHeight) * 倍率;
-  // 案内が指す先。縦の足元と同じ決まりで、まだ名前の入っていない人を選ぶ
+  // 案内が指す先。まだ名前の入っていない人を選ぶ（縦の足元・横の名前の欄で同じものを使う）
   const 案内が指す順 = () => {
     const 一覧 = (Array.isArray(archers) ? archers : []).filter((射手) => !!射手);
     const 指す = 一覧.findIndex((射手) => 射手 && !射手.name && !射手.isSeparator && !射手.isTotalCalculator);
@@ -802,10 +796,9 @@ const RecordScreen = () => {
         alignItems: 'center',
         // チームの色。縦では名前の上に細い帯で出しているので、横では
         // 名前の左に出す（並べ方を変えても、どのチームかは分かるように）
-        ...(() => {
-          const 色 = (組.チームを割り当てる(見えている並び).find((列) => 列 && 列.id === 射手.id) || {}).色;
-          return 色 ? { borderLeftWidth: 3 * 倍率, borderLeftColor: 色 } : null;
-        })(),
+        ...(列の見立て[順].チームの色
+          ? { borderLeftWidth: 3 * 倍率, borderLeftColor: 列の見立て[順].チームの色 }
+          : null),
         // 掴んでいる列は、抜けた跡として薄く残す（縦と同じ）
         ...(掴んだ列 === 射手.id ? { opacity: 0.35, backgroundColor: 'rgba(0,122,255,0.10)' } : null),
       }}
@@ -894,9 +887,8 @@ const RecordScreen = () => {
   const 横の表 = () => {
     // 掴んでいる間は「離したらこうなる」並びを先に描く（縦と同じ）
     const 一覧 = 見えている並び;
-    return [
+    return (
       <ScrollView
-        key={'横の表'}
         showsVerticalScrollIndicator={false}
         bounces={false}
         // 掴んでいる間は流さない。流すと、表が動くのか列が動くのか
@@ -965,8 +957,8 @@ const RecordScreen = () => {
             </View>
           </ScrollView>
         </View>
-      </ScrollView>,
-    ];
+      </ScrollView>
+    );
   };
   /**
    * 運ぶ札。掴んだ列の名前が指に付いてくる。
@@ -1009,8 +1001,8 @@ const RecordScreen = () => {
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 50,
-          // 影は直に書く。この部品の中では shadowStyle の読み込み名が
-          // 別の変数に隠れていて、呼ぶと落ちる（実際に落ちた）
+          // 影は直に書く。縮めた名前のころ、この画面では shadowStyle の読み込み名が
+          // 別の変数に隠れていて、呼ぶと落ちた（いまは読み込んでいない）
           shadowColor: 基本色.黒,
           shadowOffset: { width: 0, height: 3 },
           shadowOpacity: 0.25,
@@ -1028,7 +1020,7 @@ const RecordScreen = () => {
     );
   };
   return (
-    <Et要素 style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
+    <View style={styles.safeArea}>
       {/* 入り直しが要るときは、そちらを先に出す。同期エラーの帯だけでは */
       /* 何をすればよいか分からず、記録が届かないまま使い続けることになる */}
       {再ログインの案内 || (オフライン保存の警告 && !警告を閉じた) ? (
@@ -1178,7 +1170,6 @@ const RecordScreen = () => {
               ) : (
                 <Icons.Ionicons name="cloud-offline-outline" size={14} color={基本色.赤} />
               )}
-              {false}
             </View>
             {/* 団体IDはここに出さない。細い画面でヘッダーが2段になり、 */
             /* 記録表の見える範囲を削っていた。記録中に見るものでもないので */
@@ -1187,12 +1178,11 @@ const RecordScreen = () => {
           <View style={styles.navRight}>
             {/* ライブ中だけ出す「配る」。帯を押しても開くが、 */
             /* 押せると分かる形が無いと見つけられない。 */
-            /*  */
             /* 帯は主催者しか押せないのに、こちらは部員にも出す。食い違いに */
             /* 見えるが、2026-08-31 に承知のうえでこうすると決めた。 */
             /* 先に押した部員が合言葉と期限を決め、期限はあとからは主催者でも */
             /* 延ばせない。それでも部員なら誰が配ってもよい、という判断。 */
-            /* 直すときは帯（onPress: X ? … ）と揃えること。 */}
+            /* 直すときは帯（onPress: isHost ? … ）と揃えること。 */}
             {isLiveActive && !来客 ? (
               <TouchableOpacity
                 style={styles.shareBtn}
@@ -1314,27 +1304,17 @@ const RecordScreen = () => {
         拡大の上={拡大の上}
       />
       <射数の一覧の窓
-        setShotsPerRound={setShotsPerRound}
         shotsPerRound={shotsPerRound}
-        射数を減らす確認={射数を減らす確認}
-        射数を減らす確認を出す={射数を減らす確認を出す}
-        減らす先の射数={減らす先の射数}
-        射数の入力窓={射数の入力窓}
         射数の入力窓を出す={射数の入力窓を出す}
-        射数の下書き={射数の下書き}
         射数の下書きを置く={射数の下書きを置く}
         射数の窓={射数の窓}
         射数の窓を閉じる={射数の窓を閉じる}
         射数を変える={射数を変える}
-        入力した射数で決める={入力した射数で決める}
       />
       <LiveShareModal visible={共有の窓} onClose={() => 共有の窓を出す(false)} />
       <ライブを始めるか入るかの窓
         ライブの選び窓={ライブの選び窓}
         ライブの選び窓を出す={ライブの選び窓を出す}
-        参加のしかたを聞く={参加のしかたを聞く}
-        参加のしかたを聞くを置く={参加のしかたを聞くを置く}
-        ライブに入る={ライブに入る}
         ライブを始める窓へ={ライブを始める窓へ}
       />
       <ライブ名を決める窓
@@ -1384,264 +1364,248 @@ const RecordScreen = () => {
           </Pressable>
         </Animated.View>
         <View ref={案内の記録表} style={{ maxHeight: '100%', flexDirection: 'column', maxWidth: '100%' }}>
-          {横に並べる
-            ? 横の表()
-            : [
-                <ScrollView showsVerticalScrollIndicator={false} bounces={false} style={{ flexGrow: 0 }}>
-                  <View style={{ flexDirection: 'row-reverse', minWidth: '100%' }}>
-                    <View style={{ backgroundColor: 基本色.地, zIndex: 10 }}>
-                      <LabelColumn shots={shotsPerRound} showFooter={false} />
-                    </View>
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator
-                      style={{ flexGrow: 0, flexShrink: 1 }}
-                      ref={上の横流し}
-                      onScroll={(出来事) => {
-                        const 横の位置 = 出来事.nativeEvent.contentOffset.x;
-                        下の横流し.current?.scrollTo({ x: 横の位置, animated: false });
-                      }}
-                      scrollEventThrottle={16}
-                    >
-                      <View style={[styles.gridRow, { flexDirection: 'row-reverse' }]}>
-                        {見えている並び.map((射手, 順) => (
-                          <ArcherColumnView
-                            key={typeof 射手.id === 'string' ? 射手.id : `archer-${順}`}
-                            archer={射手}
-                            shots={shotsPerRound}
-                            indexInList={順}
-                            // ドラッグ中は「入れた結果」の並び（見えている並び）で
-                            // 数えた見立てを渡す。計もチームもその並びで数え直るので、離す前に出来上がりが見える
-                            {...列の見立て[順]}
-                            showFooter={false}
-                            isReadOnly={見るだけ中}
-                            onPressName={名前を押した}
-                            onDelete={列を消す}
-                            onLongPressSeparator={区切りを長押しした}
-                          />
-                        ))}
-                      </View>
-                    </ScrollView>
-                  </View>
-                </ScrollView>,
-                <View
-                  style={{
-                    height: UIConfig.footerHeight * 倍率,
-                    flexDirection: 'row-reverse',
-                    borderTopWidth: 1.5,
-                    borderTopColor: 基本色.黒,
-                  }}
-                >
-                  <View
-                    style={{
-                      width: UIConfig.headerWidth * 倍率,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      backgroundColor: 基本色.地,
-                      borderLeftWidth: 1.5,
-                      borderLeftColor: 基本色.黒,
-                      borderRightWidth: 1.5,
-                      borderRightColor: 基本色.黒,
-                    }}
-                  >
-                    <Text style={{ fontSize: 10 * 倍率, fontWeight: 'bold', color: 基本色.文字_二 }}>名</Text>
+          {横に並べる ? (
+            横の表()
+          ) : (
+            <>
+              <ScrollView showsVerticalScrollIndicator={false} bounces={false} style={{ flexGrow: 0 }}>
+                <View style={{ flexDirection: 'row-reverse', minWidth: '100%' }}>
+                  <View style={{ backgroundColor: 基本色.地, zIndex: 10 }}>
+                    <LabelColumn shots={shotsPerRound} showFooter={false} />
                   </View>
                   <ScrollView
                     horizontal
-                    showsHorizontalScrollIndicator={false}
-                    // 掴んでいる間は流さない。流すと、表が動くのか列が動くのか
-                    // 分からなくなる
-                    scrollEnabled={!掴んだ列}
+                    showsHorizontalScrollIndicator
                     style={{ flexGrow: 0, flexShrink: 1 }}
-                    ref={下の横流し}
+                    ref={上の横流し}
                     onScroll={(出来事) => {
                       const 横の位置 = 出来事.nativeEvent.contentOffset.x;
-                      上の横流し.current?.scrollTo({ x: 横の位置, animated: false });
+                      下の横流し.current?.scrollTo({ x: 横の位置, animated: false });
                     }}
                     scrollEventThrottle={16}
                   >
-                    <View
-                      style={[styles.gridRow, { flexDirection: 'row-reverse' }]}
-                      {...(並べ替えの手.current ? 並べ替えの手.current.panHandlers : {})}
-                      ref={(node) => {
-                        名の行のnode.current = node;
-                      }}
-                    >
-                      {運ぶ札()}
-                      {見えている並び.map((射手, 順) => {
-                        return (
-                          <View
-                            key={typeof 射手.id === 'string' ? `footer-${射手.id}` : `footer-${順}`}
-                            // 使い方の案内が指す先。まだ名前の入っていない列を選ぶ。
-                            // 名前入りの列を指すと、押しても名前の数が増えず先へ進めない。
-                            // 繰り返しの中なのでフックは使えない
-                            ref={(node) => {
-                              // 指の下にどの列が居るかを測るために、節を覚えておく
-                              if (node) 名の欄のnode.current[射手.id] = node;
-                              else delete 名の欄のnode.current[射手.id];
-                              const 一覧 = (Array.isArray(archers) ? archers : []).filter(
-                                (射手1人) => !!射手1人
-                              );
-                              let 指す = 一覧.findIndex(
-                                (射手1人) =>
-                                  射手1人 &&
-                                  !射手1人.name &&
-                                  !射手1人.isSeparator &&
-                                  !射手1人.isTotalCalculator
-                              );
-                              if (指す < 0) 指す = 0;
-                              if (順 === 指す) 案内.setTutorialTargetNode('記録.射手選択', node);
-                            }}
-                            style={{
-                              width: (射手.isSeparator ? UIConfig.separatorWidth : UIConfig.cellWidth) * 倍率,
-                              height: UIConfig.footerHeight * 倍率,
-                              backgroundColor: 射手.isTotalCalculator ? 'rgba(0,122,255,0.05)' : 基本色.地,
-                              borderRightWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 1,
-                              borderRightColor: 基本色.黒,
-                              borderLeftWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 0,
-                              borderLeftColor: 基本色.黒,
-                              // 余白も表示の大きさに合わせる。4px のままだと 25% でマスの幅（約 7px）を超え、名前の行が上の列とずれた
-                              padding: 4 * 倍率,
-                              justifyContent: 'center',
-                              alignItems: 'center',
-                              // 掴んでいる列は、抜けた跡として薄く残す。
-                              // どこへ入るかは並びそのもので見せるので、
-                              // 落とす先を別に光らせる必要はない
-                              ...(掴んだ列 === 射手.id
-                                ? { opacity: 0.35, backgroundColor: 'rgba(0,122,255,0.10)' }
-                                : null),
-                            }}
-                          >
-                            {射手.isSeparator ? (
-                              <TouchableOpacity
-                                style={{
+                    <View style={[styles.gridRow, { flexDirection: 'row-reverse' }]}>
+                      {見えている並び.map((射手, 順) => (
+                        <ArcherColumnView
+                          key={typeof 射手.id === 'string' ? 射手.id : `archer-${順}`}
+                          archer={射手}
+                          shots={shotsPerRound}
+                          indexInList={順}
+                          // ドラッグ中は「入れた結果」の並び（見えている並び）で
+                          // 数えた見立てを渡す。計もチームもその並びで数え直るので、離す前に出来上がりが見える
+                          {...列の見立て[順]}
+                          showFooter={false}
+                          isReadOnly={見るだけ中}
+                          onPressName={名前を押した}
+                          onDelete={列を消す}
+                          onLongPressSeparator={区切りを長押しした}
+                        />
+                      ))}
+                    </View>
+                  </ScrollView>
+                </View>
+              </ScrollView>
+              <View
+                style={{
+                  height: UIConfig.footerHeight * 倍率,
+                  flexDirection: 'row-reverse',
+                  borderTopWidth: 1.5,
+                  borderTopColor: 基本色.黒,
+                }}
+              >
+                <View
+                  style={{
+                    width: UIConfig.headerWidth * 倍率,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    backgroundColor: 基本色.地,
+                    borderLeftWidth: 1.5,
+                    borderLeftColor: 基本色.黒,
+                    borderRightWidth: 1.5,
+                    borderRightColor: 基本色.黒,
+                  }}
+                >
+                  <Text style={{ fontSize: 10 * 倍率, fontWeight: 'bold', color: 基本色.文字_二 }}>名</Text>
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  // 掴んでいる間は流さない。流すと、表が動くのか列が動くのか
+                  // 分からなくなる
+                  scrollEnabled={!掴んだ列}
+                  style={{ flexGrow: 0, flexShrink: 1 }}
+                  ref={下の横流し}
+                  onScroll={(出来事) => {
+                    const 横の位置 = 出来事.nativeEvent.contentOffset.x;
+                    上の横流し.current?.scrollTo({ x: 横の位置, animated: false });
+                  }}
+                  scrollEventThrottle={16}
+                >
+                  <View
+                    style={[styles.gridRow, { flexDirection: 'row-reverse' }]}
+                    {...(並べ替えの手.current ? 並べ替えの手.current.panHandlers : {})}
+                    ref={(node) => {
+                      名の行のnode.current = node;
+                    }}
+                  >
+                    {運ぶ札()}
+                    {見えている並び.map((射手, 順) => {
+                      return (
+                        <View
+                          key={typeof 射手.id === 'string' ? `footer-${射手.id}` : `footer-${順}`}
+                          // 使い方の案内が指す先。まだ名前の入っていない列を選ぶ（案内が指す順）。
+                          // 名前入りの列を指すと、押しても名前の数が増えず先へ進めない。
+                          // 繰り返しの中なのでフックは使えない
+                          ref={(node) => {
+                            // 指の下にどの列が居るかを測るために、節を覚えておく
+                            if (node) 名の欄のnode.current[射手.id] = node;
+                            else delete 名の欄のnode.current[射手.id];
+                            if (順 === 案内が指す順()) 案内.setTutorialTargetNode('記録.射手選択', node);
+                          }}
+                          style={{
+                            width: (射手.isSeparator ? UIConfig.separatorWidth : UIConfig.cellWidth) * 倍率,
+                            height: UIConfig.footerHeight * 倍率,
+                            backgroundColor: 射手.isTotalCalculator ? 'rgba(0,122,255,0.05)' : 基本色.地,
+                            borderRightWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 1,
+                            borderRightColor: 基本色.黒,
+                            borderLeftWidth: 射手.isSeparator || 射手.isTotalCalculator ? 1.5 : 0,
+                            borderLeftColor: 基本色.黒,
+                            // 余白も表示の大きさに合わせる。4px のままだと 25% でマスの幅（約 7px）を超え、名前の行が上の列とずれた
+                            padding: 4 * 倍率,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            // 掴んでいる列は、抜けた跡として薄く残す。
+                            // どこへ入るかは並びそのもので見せるので、
+                            // 落とす先を別に光らせる必要はない
+                            ...(掴んだ列 === 射手.id
+                              ? { opacity: 0.35, backgroundColor: 'rgba(0,122,255,0.10)' }
+                              : null),
+                          }}
+                        >
+                          {射手.isSeparator ? (
+                            <TouchableOpacity
+                              style={{
+                                alignItems: 'center',
+                                width: '100%',
+                                height: '100%',
+                                justifyContent: 'center',
+                              }}
+                              // 位置ではなく列のIDで名づける。並べ替えても
+                              // 同じ列を追える（ます-<射手ID>-<射番> と同じ流儀）
+                              testID={'名の欄-区切り-' + 射手.id}
+                              // 押すと窓が開く。以前は押す＝そのまま消すで、
+                              // チーム名は長押しでしか入れられなかった。
+                              // 消す道は窓の中の「削除」に移してある
+                              onPress={() => 人を選ぶ(射手.id, 射手.name, 順)}
+                              // 長押しは「掴む」。チーム名は窓から入れる
+                              //（長押ししか道が無くて気づけなかった）
+                              onLongPress={() => 掴む(射手.id)}
+                              onPressOut={() => 掴みを見直す()}
+                              delayLongPress={400}
+                              disabled={見るだけ中}
+                            >
+                              {/* 名前が付いていれば名前を、なければ「⋯」。 */
+                              /* ×印だったころは押す＝消すに見えて、名前を */
+                              /* 入れられることに気づけなかった */}
+                              {組.区切りのチーム名(射手) ? (
+                                <Text
+                                  style={{
+                                    fontSize: 組.区切りの名の字(倍率, UIConfig).fontSize,
+                                    lineHeight: 組.区切りの名の字(倍率, UIConfig).lineHeight,
+                                    fontWeight: '700',
+                                    textAlign: 'center',
+                                    color: 組.チームの色(組.区切りのチーム名(射手)) || 基本色.灰,
+                                  }}
+                                  // 欄の高さに入るだけ行を使う。3 行では
+                                  // 「日本大学工科」が「日本大.」に切れて分からなかった
+                                  numberOfLines={組.区切りの名の字(倍率, UIConfig).numberOfLines}
+                                >
+                                  {組.区切りのチーム名(射手)}
+                                </Text>
+                              ) : (
+                                <Icons.Ionicons
+                                  name="ellipsis-horizontal"
+                                  size={24 * 倍率}
+                                  color={基本色.灰}
+                                />
+                              )}
+                            </TouchableOpacity>
+                          ) : (
+                            <TouchableOpacity
+                              style={[
+                                {
                                   alignItems: 'center',
                                   width: '100%',
                                   height: '100%',
                                   justifyContent: 'center',
-                                }}
-                                // 位置ではなく列のIDで名づける。並べ替えても
-                                // 同じ列を追える（ます-<射手ID>-<射番> と同じ流儀）
-                                testID={'名の欄-区切り-' + 射手.id}
-                                // 押すと窓が開く。以前は押す＝そのまま消すで、
-                                // チーム名は長押しでしか入れられなかった。
-                                // 消す道は窓の中の「削除」に移してある
-                                onPress={() => 人を選ぶ(射手.id, 射手.name, 順)}
-                                // 長押しは「掴む」。チーム名は窓から入れる
-                                //（長押ししか道が無くて気づけなかった）
-                                onLongPress={() => 掴む(射手.id)}
-                                onPressOut={() => 掴みを見直す()}
-                                delayLongPress={400}
-                                disabled={見るだけ中}
-                              >
-                                {/* 名前が付いていれば名前を、なければ「⋯」。 */
-                                /* ×印だったころは押す＝消すに見えて、名前を */
-                                /* 入れられることに気づけなかった */}
-                                {組.区切りのチーム名(射手) ? (
-                                  <Text
-                                    style={{
-                                      fontSize: 組.区切りの名の字(倍率, UIConfig).fontSize,
-                                      lineHeight: 組.区切りの名の字(倍率, UIConfig).lineHeight,
-                                      fontWeight: '700',
-                                      textAlign: 'center',
-                                      color: 組.チームの色(組.区切りのチーム名(射手)) || 基本色.灰,
-                                    }}
-                                    // 欄の高さに入るだけ行を使う。3 行では
-                                    // 「日本大学工科」が「日本大.」に切れて分からなかった
-                                    numberOfLines={組.区切りの名の字(倍率, UIConfig).numberOfLines}
-                                  >
-                                    {組.区切りのチーム名(射手)}
-                                  </Text>
-                                ) : (
-                                  <Icons.Ionicons
-                                    name="ellipsis-horizontal"
-                                    size={24 * 倍率}
-                                    color={基本色.灰}
-                                  />
-                                )}
-                              </TouchableOpacity>
-                            ) : (
-                              <TouchableOpacity
+                                },
+                                // チームの色を、名前の欄の上に細い帯で出す。
+                                // 字を染めると読みにくいので帯にする
+                                列の見立て[順].チームの色
+                                  ? { borderTopWidth: 3 * 倍率, borderTopColor: 列の見立て[順].チームの色 }
+                                  : null,
+                              ]}
+                              // 押すと窓が開く。合計の列なら、そこで
+                              // 数える範囲を変えたり消したりできる。
+                              // ここで範囲の切り替えだけを行うと、
+                              // 窓が開かなくなって消せなくなる（実際そうなった）
+                              testID={'名の欄-' + (射手.isTotalCalculator ? '合計' : '射手') + '-' + 射手.id}
+                              onPress={() => 人を選ぶ(射手.id, 射手.name, 順)}
+                              onLongPress={() => 掴む(射手.id)}
+                              onPressOut={() => 掴みを見直す()}
+                              delayLongPress={400}
+                            >
+                              <Text
                                 style={[
-                                  {
-                                    alignItems: 'center',
-                                    width: '100%',
-                                    height: '100%',
-                                    justifyContent: 'center',
-                                  },
-                                  // チームの色を、名前の欄の上に細い帯で出す。
-                                  // 字を染めると読みにくいので帯にする
-                                  (() => {
-                                    const 色 = (
-                                      組
-                                        .チームを割り当てる(見えている並び)
-                                        .find((列) => 列 && 列.id === 射手.id) || {}
-                                    ).色;
-                                    return 色 ? { borderTopWidth: 3 * 倍率, borderTopColor: 色 } : null;
-                                  })(),
+                                  styles.footerName,
+                                  { color: 射手.name ? 基本色.黒 : 基本色.灰, fontSize: 14 * 倍率 },
                                 ]}
-                                // 押すと窓が開く。合計の列なら、そこで
-                                // 数える範囲を変えたり消したりできる。
-                                // ここで範囲の切り替えだけを行うと、
-                                // 窓が開かなくなって消せなくなる（実際そうなった）
-                                testID={
-                                  '名の欄-' + (射手.isTotalCalculator ? '合計' : '射手') + '-' + 射手.id
-                                }
-                                onPress={() => 人を選ぶ(射手.id, 射手.name, 順)}
-                                onLongPress={() => 掴む(射手.id)}
-                                onPressOut={() => 掴みを見直す()}
-                                delayLongPress={400}
+                                numberOfLines={2}
                               >
-                                <Text
-                                  style={[
-                                    styles.footerName,
-                                    { color: 射手.name ? 基本色.黒 : 基本色.灰, fontSize: 14 * 倍率 },
-                                  ]}
-                                  numberOfLines={2}
+                                {/* 手前の計もまとめる合計は「総計」。 */
+                                /* どちらを見ているか、見出しで分かるようにする */}
+                                {射手.isTotalCalculator
+                                  ? 射手.またぐ合計
+                                    ? '総計'
+                                    : '合計'
+                                  : 射手.name
+                                    ? formatMemberName(射手.name, members)
+                                    : '選択'}
+                              </Text>
+                              {!!射手.isGuest && (
+                                <Text style={[styles.guestLabel, { fontSize: 9 * 倍率 }]}>(ゲスト)</Text>
+                              )}
+                              {!射手.isTotalCalculator && 射手.name !== '' ? (
+                                <View
+                                  style={{
+                                    marginTop: 2,
+                                    paddingHorizontal: 4,
+                                    paddingVertical: 2,
+                                    borderRadius: 10,
+                                    backgroundColor:
+                                      射手.isGuest ||
+                                      !射手.gender ||
+                                      射手.gender === '未設定' ||
+                                      !['男子', '女子'].includes(射手.gender)
+                                        ? 基本色.灰
+                                        : 射手.gender === '男子'
+                                          ? 基本色.青
+                                          : 基本色.桃,
+                                  }}
                                 >
-                                  {/* 手前の計もまとめる合計は「総計」。 */
-                                  /* どちらを見ているか、見出しで分かるようにする */}
-                                  {射手.isTotalCalculator
-                                    ? 射手.またぐ合計
-                                      ? '総計'
-                                      : '合計'
-                                    : 射手.name
-                                      ? formatMemberName(射手.name, members)
-                                      : '選択'}
-                                </Text>
-                                {!!射手.isGuest && (
-                                  <Text style={[styles.guestLabel, { fontSize: 9 * 倍率 }]}>(ゲスト)</Text>
-                                )}
-                                {!射手.isTotalCalculator && 射手.name !== '' ? (
-                                  <View
-                                    style={{
-                                      marginTop: 2,
-                                      paddingHorizontal: 4,
-                                      paddingVertical: 2,
-                                      borderRadius: 10,
-                                      backgroundColor:
-                                        射手.isGuest ||
-                                        !射手.gender ||
-                                        射手.gender === '未設定' ||
-                                        !['男子', '女子'].includes(射手.gender)
-                                          ? 基本色.灰
-                                          : 射手.gender === '男子'
-                                            ? 基本色.青
-                                            : 基本色.桃,
-                                    }}
-                                  >
-                                    <Icons.Ionicons name="person" size={10 * 倍率} color={基本色.白} />
-                                  </View>
-                                ) : null}
-                              </TouchableOpacity>
-                            )}
-                          </View>
-                        );
-                      })}
-                    </View>
-                  </ScrollView>
-                </View>,
-              ]}
+                                  <Icons.Ionicons name="person" size={10 * 倍率} color={基本色.白} />
+                                </View>
+                              ) : null}
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
+                </ScrollView>
+              </View>
+            </>
+          )}
         </View>
         {archers.length === 0 && (
           <View style={styles.emptyOverlay}>
@@ -1652,225 +1616,223 @@ const RecordScreen = () => {
       </View>
       {帯を畳む ? null : (
         <View style={styles.toolbar}>
-          <>
-            <View ref={案内の取り消し} style={styles.historyBtns}>
-              <Pressable
-                style={({ hovered }) => [
-                  styles.historyBtn,
-                  { opacity: 戻せる ? 1 : 0.3 },
-                  hovered && 戻せる && IS_WEB && { backgroundColor: 基本色.地 },
-                ]}
-                onPress={() => {
-                  // ライブ中は共有の知らせ（「取り消しされました。」）が
-                  // 押した本人にも出る。ここでも出すと二つ重なる
-                  if (戻せる) {
-                    undo();
-                    if (!ライブの知らせに任せる) {
-                      知らせる('元に戻しました');
-                    }
-                    ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
-                  }
-                }}
-                disabled={!戻せる}
-                // 自動での確かめ用。絵だけのボタンは外から指せない
-                testID="取り消し"
-                accessible
-                accessibilityRole="button"
-                accessibilityLabel="取り消し"
-                aria-label="取り消し"
-              >
-                <Icons.Ionicons name="arrow-undo" size={24} color={基本色.灰} />
-              </Pressable>
-              <Pressable
-                style={({ hovered }) => [
-                  styles.historyBtn,
-                  { opacity: 進める ? 1 : 0.3 },
-                  hovered && 進める && IS_WEB && { backgroundColor: 基本色.地 },
-                ]}
-                onPress={() => {
-                  if (進める) {
-                    redo();
-                    if (!ライブの知らせに任せる) {
-                      知らせる('やり直しました');
-                    }
-                    ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
-                  }
-                }}
-                disabled={!進める}
-                testID="やり直し"
-                accessible
-                accessibilityRole="button"
-                accessibilityLabel="やり直し"
-                aria-label="やり直し"
-              >
-                <Icons.Ionicons name="arrow-redo" size={24} color={基本色.灰} />
-              </Pressable>
-              {/* 記録表の並べ方を変える。絵だけでは向きが読み取りにくいので、 */
-              /* 押したあとに何になったかを短く知らせる */}
-              <Pressable
-                style={({ hovered }) => [
-                  styles.historyBtn,
-                  // 取り消し・やり直しと同じ幅にそろえる。絵が小さいぶん
-                  // 放っておくと28pxになり、この並びで一番押しにくいボタンになる
-                  { alignItems: 'center', minWidth: 32 },
-                  hovered && IS_WEB && { backgroundColor: 基本色.地 },
-                ]}
-                onPress={() => {
-                  const 次 = !横に並べる;
-                  if (set横に並べる) set横に並べる(次);
-                  知らせる(次 ? '横に並べました' : '縦に並べました');
-                  ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
-                }}
-                testID="並べ方"
-              >
-                <Icons.Ionicons
-                  name={横に並べる ? 'phone-portrait-outline' : 'phone-landscape-outline'}
-                  size={20}
-                  color={基本色.灰}
-                />
-                <Text style={{ fontSize: 9, color: 基本色.灰, marginTop: 1 }}>
-                  {横に並べる ? '縦へ' : '横へ'}
-                </Text>
-              </Pressable>
-            </View>
-            <View style={[styles.addBtns, 見るだけ中 && { opacity: 0.4 }]}>
-              <Pressable
-                ref={案内の人ボタン}
-                style={({ hovered }) => [
-                  styles.addBtn,
-                  { backgroundColor: 'rgba(0,122,255,0.1)' },
-                  hovered && IS_WEB && { backgroundColor: 'rgba(0,122,255,0.2)' },
-                ]}
-                // 絵だけのボタンは読み上げに何も伝わらない。端末は accessibilityLabel、
-                // web の TouchableOpacity は aria-label を見るので、両方渡す
-                accessible
-                accessibilityRole="button"
-                accessibilityLabel="射手を追加"
-                aria-label="射手を追加"
-                accessibilityHint="記録表にひとり足します"
-                onPress={() => {
-                  if (見るだけ中) {
-                    閲覧中に押された();
-                    return;
-                  }
-                  ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Medium);
-                  addArcher();
-                }}
-              >
-                <Icons.Ionicons name="person-add" size={24} color={基本色.青} />
-                <Text style={[styles.addLabel, { color: 基本色.青 }]}>人</Text>
-              </Pressable>
-              <Pressable
-                ref={案内の間隔}
-                style={({ hovered }) => [
-                  styles.addBtn,
-                  { backgroundColor: 'rgba(255,149,0,0.1)' },
-                  hovered && IS_WEB && { backgroundColor: 'rgba(255,149,0,0.2)' },
-                ]}
-                onPress={() => {
-                  if (見るだけ中) {
-                    閲覧中に押された();
-                    return;
-                  }
-                  ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
-                  addSeparator();
-                }}
-              >
-                <Icons.Ionicons name="pause" size={24} color={基本色.橙} />
-                <Text style={[styles.addLabel, { color: 基本色.橙 }]}>間隔</Text>
-              </Pressable>
-              <Pressable
-                ref={案内の計}
-                style={({ hovered }) => [
-                  styles.addBtn,
-                  { backgroundColor: 'rgba(52,199,89,0.1)' },
-                  hovered && IS_WEB && { backgroundColor: 'rgba(52,199,89,0.2)' },
-                ]}
-                onPress={() => {
-                  if (見るだけ中) {
-                    閲覧中に押された();
-                    return;
-                  }
-                  ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
-                  addTotalCalculator();
-                }}
-                // 入れたあと、その列を押すと「この立ちだけ」と
-                // 「手前の計もまとめた総計」を切り替えられる
-                accessibilityHint="合計の列を足します。入れたあと列を押すと、数える範囲を変えられます"
-              >
-                <Text style={{ fontSize: 22, fontWeight: 'bold', color: 基本色.緑 }}>Σ</Text>
-                <Text style={[styles.addLabel, { color: 基本色.緑 }]}>計</Text>
-              </Pressable>
-              <Pressable
-                ref={案内の画像}
-                style={({ hovered }) => [
-                  styles.addBtn,
-                  { backgroundColor: 'rgba(142,142,147,0.1)' },
-                  hovered && IS_WEB && { backgroundColor: 'rgba(142,142,147,0.2)' },
-                ]}
-                onPress={() => {
-                  if (見るだけ中) {
-                    閲覧中に押された();
-                    return;
-                  }
-                  ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Medium);
-                  setShowOCRModal(true);
-                }}
-              >
-                <Icons.Ionicons name="camera" size={24} color={基本色.灰} />
-                <Text style={[styles.addLabel, { color: 基本色.灰 }]}>画像</Text>
-              </Pressable>
-            </View>
+          <View ref={案内の取り消し} style={styles.historyBtns}>
             <Pressable
-              ref={案内の保存ボタン}
               style={({ hovered }) => [
-                styles.saveBtn,
-                履歴の編集 && { backgroundColor: 基本色.橙 },
-                (見るだけ中 || よその団体) && { opacity: 0.4 },
-                hovered && IS_WEB && { opacity: 0.9, transform: [{ scale: 1.02 }] },
+                styles.historyBtn,
+                { opacity: 戻せる ? 1 : 0.3 },
+                hovered && 戻せる && IS_WEB && { backgroundColor: 基本色.地 },
+              ]}
+              onPress={() => {
+                // ライブ中は共有の知らせ（「取り消しされました。」）が
+                // 押した本人にも出る。ここでも出すと二つ重なる
+                if (戻せる) {
+                  undo();
+                  if (!ライブの知らせに任せる) {
+                    知らせる('元に戻しました');
+                  }
+                  ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
+                }
+              }}
+              disabled={!戻せる}
+              // 自動での確かめ用。絵だけのボタンは外から指せない
+              testID="取り消し"
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel="取り消し"
+              aria-label="取り消し"
+            >
+              <Icons.Ionicons name="arrow-undo" size={24} color={基本色.灰} />
+            </Pressable>
+            <Pressable
+              style={({ hovered }) => [
+                styles.historyBtn,
+                { opacity: 進める ? 1 : 0.3 },
+                hovered && 進める && IS_WEB && { backgroundColor: 基本色.地 },
+              ]}
+              onPress={() => {
+                if (進める) {
+                  redo();
+                  if (!ライブの知らせに任せる) {
+                    知らせる('やり直しました');
+                  }
+                  ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
+                }
+              }}
+              disabled={!進める}
+              testID="やり直し"
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel="やり直し"
+              aria-label="やり直し"
+            >
+              <Icons.Ionicons name="arrow-redo" size={24} color={基本色.灰} />
+            </Pressable>
+            {/* 記録表の並べ方を変える。絵だけでは向きが読み取りにくいので、 */
+            /* 押したあとに何になったかを短く知らせる */}
+            <Pressable
+              style={({ hovered }) => [
+                styles.historyBtn,
+                // 取り消し・やり直しと同じ幅にそろえる。絵が小さいぶん
+                // 放っておくと28pxになり、この並びで一番押しにくいボタンになる
+                { alignItems: 'center', minWidth: 32 },
+                hovered && IS_WEB && { backgroundColor: 基本色.地 },
+              ]}
+              onPress={() => {
+                const 次 = !横に並べる;
+                if (set横に並べる) set横に並べる(次);
+                知らせる(次 ? '横に並べました' : '縦に並べました');
+                ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
+              }}
+              testID="並べ方"
+            >
+              <Icons.Ionicons
+                name={横に並べる ? 'phone-portrait-outline' : 'phone-landscape-outline'}
+                size={20}
+                color={基本色.灰}
+              />
+              <Text style={{ fontSize: 9, color: 基本色.灰, marginTop: 1 }}>
+                {横に並べる ? '縦へ' : '横へ'}
+              </Text>
+            </Pressable>
+          </View>
+          <View style={[styles.addBtns, 見るだけ中 && { opacity: 0.4 }]}>
+            <Pressable
+              ref={案内の人ボタン}
+              style={({ hovered }) => [
+                styles.addBtn,
+                { backgroundColor: 'rgba(0,122,255,0.1)' },
+                hovered && IS_WEB && { backgroundColor: 'rgba(0,122,255,0.2)' },
               ]}
               // 絵だけのボタンは読み上げに何も伝わらない。端末は accessibilityLabel、
               // web の TouchableOpacity は aria-label を見るので、両方渡す
               accessible
               accessibilityRole="button"
-              accessibilityLabel={履歴の編集 ? '履歴に保存して戻る' : '終了して保存'}
-              aria-label={履歴の編集 ? '履歴に保存して戻る' : '終了して保存'}
-              accessibilityHint={
-                履歴の編集 ? '直した内容を履歴の記録に書き戻します' : 'いまの記録表を履歴に残します'
-              }
+              accessibilityLabel="射手を追加"
+              aria-label="射手を追加"
+              accessibilityHint="記録表にひとり足します"
               onPress={() => {
-                // 履歴の記録を直しているあいだは、新しい記録にせず元の記録へ書き戻す
-                if (履歴の編集) {
-                  履歴の編集を終える(true);
-                  知らせる('履歴の記録に保存しました');
-                  航路.navigate('履歴');
-                  return;
-                }
                 if (見るだけ中) {
                   閲覧中に押された();
                   return;
                 }
-                // よその団体のライブは、自分の記録として残さない。
-                // 押しても無反応だと壊れたのか決まりなのか分からないので、理由を言う
-                if (よその団体) {
-                  知らせる('共有されたライブは、主催者の側で保存されます');
-                  ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning);
-                  return;
-                }
-                if (archers.length === 0) return;
-                // 設定で出欠確認を切っていれば、窓を飛ばして保存へ進む。
-                // 出欠は空のまま保存する。記録に出ている人は出欠画面で
-                // そのまま出席として数えられる（遅刻・早退の区別は付かない）
-                if (保存時に出欠を確認する) setShowAttendance(true);
-                else {
-                  setTempAttendance(null);
-                  保存の窓を出す(true);
-                }
+                ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Medium);
+                addArcher();
               }}
             >
-              <Text style={styles.saveBtnText}>{履歴の編集 ? '保存して戻る' : '終了・保存'}</Text>
+              <Icons.Ionicons name="person-add" size={24} color={基本色.青} />
+              <Text style={[styles.addLabel, { color: 基本色.青 }]}>人</Text>
             </Pressable>
-          </>
+            <Pressable
+              ref={案内の間隔}
+              style={({ hovered }) => [
+                styles.addBtn,
+                { backgroundColor: 'rgba(255,149,0,0.1)' },
+                hovered && IS_WEB && { backgroundColor: 'rgba(255,149,0,0.2)' },
+              ]}
+              onPress={() => {
+                if (見るだけ中) {
+                  閲覧中に押された();
+                  return;
+                }
+                ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
+                addSeparator();
+              }}
+            >
+              <Icons.Ionicons name="pause" size={24} color={基本色.橙} />
+              <Text style={[styles.addLabel, { color: 基本色.橙 }]}>間隔</Text>
+            </Pressable>
+            <Pressable
+              ref={案内の計}
+              style={({ hovered }) => [
+                styles.addBtn,
+                { backgroundColor: 'rgba(52,199,89,0.1)' },
+                hovered && IS_WEB && { backgroundColor: 'rgba(52,199,89,0.2)' },
+              ]}
+              onPress={() => {
+                if (見るだけ中) {
+                  閲覧中に押された();
+                  return;
+                }
+                ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
+                addTotalCalculator();
+              }}
+              // 入れたあと、その列を押すと「この立ちだけ」と
+              // 「手前の計もまとめた総計」を切り替えられる
+              accessibilityHint="合計の列を足します。入れたあと列を押すと、数える範囲を変えられます"
+            >
+              <Text style={{ fontSize: 22, fontWeight: 'bold', color: 基本色.緑 }}>Σ</Text>
+              <Text style={[styles.addLabel, { color: 基本色.緑 }]}>計</Text>
+            </Pressable>
+            <Pressable
+              ref={案内の画像}
+              style={({ hovered }) => [
+                styles.addBtn,
+                { backgroundColor: 'rgba(142,142,147,0.1)' },
+                hovered && IS_WEB && { backgroundColor: 'rgba(142,142,147,0.2)' },
+              ]}
+              onPress={() => {
+                if (見るだけ中) {
+                  閲覧中に押された();
+                  return;
+                }
+                ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Medium);
+                setShowOCRModal(true);
+              }}
+            >
+              <Icons.Ionicons name="camera" size={24} color={基本色.灰} />
+              <Text style={[styles.addLabel, { color: 基本色.灰 }]}>画像</Text>
+            </Pressable>
+          </View>
+          <Pressable
+            ref={案内の保存ボタン}
+            style={({ hovered }) => [
+              styles.saveBtn,
+              履歴の編集 && { backgroundColor: 基本色.橙 },
+              (見るだけ中 || よその団体) && { opacity: 0.4 },
+              hovered && IS_WEB && { opacity: 0.9, transform: [{ scale: 1.02 }] },
+            ]}
+            // 絵だけのボタンは読み上げに何も伝わらない。端末は accessibilityLabel、
+            // web の TouchableOpacity は aria-label を見るので、両方渡す
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel={履歴の編集 ? '履歴に保存して戻る' : '終了して保存'}
+            aria-label={履歴の編集 ? '履歴に保存して戻る' : '終了して保存'}
+            accessibilityHint={
+              履歴の編集 ? '直した内容を履歴の記録に書き戻します' : 'いまの記録表を履歴に残します'
+            }
+            onPress={() => {
+              // 履歴の記録を直しているあいだは、新しい記録にせず元の記録へ書き戻す
+              if (履歴の編集) {
+                履歴の編集を終える(true);
+                知らせる('履歴の記録に保存しました');
+                航路.navigate('履歴');
+                return;
+              }
+              if (見るだけ中) {
+                閲覧中に押された();
+                return;
+              }
+              // よその団体のライブは、自分の記録として残さない。
+              // 押しても無反応だと壊れたのか決まりなのか分からないので、理由を言う
+              if (よその団体) {
+                知らせる('共有されたライブは、主催者の側で保存されます');
+                ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning);
+                return;
+              }
+              if (archers.length === 0) return;
+              // 設定で出欠確認を切っていれば、窓を飛ばして保存へ進む。
+              // 出欠は空のまま保存する。記録に出ている人は出欠画面で
+              // そのまま出席として数えられる（遅刻・早退の区別は付かない）
+              if (保存時に出欠を確認する) setShowAttendance(true);
+              else {
+                setTempAttendance(null);
+                保存の窓を出す(true);
+              }
+            }}
+          >
+            <Text style={styles.saveBtnText}>{履歴の編集 ? '保存して戻る' : '終了・保存'}</Text>
+          </Pressable>
         </View>
       )}
       <ArcherActionModal
@@ -1878,41 +1840,29 @@ const RecordScreen = () => {
         visible={人の窓}
         archerId={選んだ射手ID || ''}
         archerOrigIdx={選んだ射手の順}
-        isSeparator={
-          (Array.isArray(archers) ? archers : []).find((射手) => 射手 && 射手.id === 選んだ射手ID)
-            ?.isSeparator || false
-        }
-        isTotalCalculator={
-          (Array.isArray(archers) ? archers : []).find((射手) => 射手 && 射手.id === 選んだ射手ID)
-            ?.isTotalCalculator || false
-        } // 合計の列が、いま手前の計もまとめて数えているか。窓の中で切り替える
-        またぐ合計={
-          (Array.isArray(archers) ? archers : []).find((射手) => 射手 && 射手.id === 選んだ射手ID)
-            ?.またぐ合計 || false
-        }
+        isSeparator={!!(選んだ列 && 選んだ列.isSeparator)}
+        isTotalCalculator={!!(選んだ列 && 選んだ列.isTotalCalculator)}
+        // 合計の列が、いま手前の計もまとめて数えているか。窓の中で切り替える
+        またぐ合計={!!(選んだ列 && 選んだ列.またぐ合計)}
         on合計の範囲={() => {
           if (見るだけ中) {
             閲覧中に押された();
             return;
           }
-          const 列 = (Array.isArray(archers) ? archers : []).find((射手) => 射手 && 射手.id === 選んだ射手ID);
           合計の範囲を切り替える(選んだ射手ID);
-          知らせる(列?.またぐ合計 ? 'この立ちだけの合計にしました' : '手前の計もまとめた総計にしました');
+          知らせる(
+            選んだ列?.またぐ合計 ? 'この立ちだけの合計にしました' : '手前の計もまとめた総計にしました'
+          );
           人の窓を出す(false);
         }}
         // 区切りにチーム名を付ける道。窓からも入れるようにした
-        いまのチーム名={
-          組.区切りのチーム名(
-            (Array.isArray(archers) ? archers : []).find((射手) => 射手 && 射手.id === 選んだ射手ID) || {}
-          ) || ''
-        }
+        いまのチーム名={組.区切りのチーム名(選んだ列 || {}) || ''}
         onチーム名={() => {
           if (見るだけ中) {
             閲覧中に押された();
             return;
           }
-          const 列 = (Array.isArray(archers) ? archers : []).find((射手) => 射手 && 射手.id === 選んだ射手ID);
-          setチーム名の下書き((列 && 列.teamName) || '');
+          setチーム名の下書き((選んだ列 && 選んだ列.teamName) || '');
           setチーム名を付ける区切り(選んだ射手ID);
           人の窓を出す(false);
         }}
@@ -1920,15 +1870,8 @@ const RecordScreen = () => {
         // 字をどう出すかは並べ方しだいなので、それは窓へ伝える
         //（縦は右／左、横は上／下）。端の列では、その向きを出さない
         横に並べている={!!横に並べる}
-        手前へ動かせる={(() => {
-          const 並び = (Array.isArray(archers) ? archers : []).filter((射手) => !!射手);
-          return 並び.findIndex((射手) => 射手.id === 選んだ射手ID) > 0;
-        })()}
-        奥へ動かせる={(() => {
-          const 並び = (Array.isArray(archers) ? archers : []).filter((射手) => !!射手);
-          const 順 = 並び.findIndex((射手) => 射手.id === 選んだ射手ID);
-          return 順 >= 0 && 順 < 並び.length - 1;
-        })()}
+        手前へ動かせる={選んだ列の順 > 0}
+        奥へ動かせる={選んだ列の順 >= 0 && 選んだ列の順 < 並んだ列.length - 1}
         on動かす={(向き) => {
           if (見るだけ中) {
             閲覧中に押された();
@@ -1986,69 +1929,30 @@ const RecordScreen = () => {
         onClose={() => 交代の窓を出す(false)}
       />
       <リセットの確認の窓
-        区切りにチーム名を付ける={区切りにチーム名を付ける}
         resetCurrentSession={resetCurrentSession}
         リセットの窓={リセットの窓}
         リセットの窓を出す={リセットの窓を出す}
-        チーム名を付ける区切り={チーム名を付ける区切り}
-        setチーム名を付ける区切り={setチーム名を付ける区切り}
-        チーム名の下書き={チーム名の下書き}
-        setチーム名の下書き={setチーム名の下書き}
-        確認={確認}
-        確認を置く={確認を置く}
         知らせる={知らせる}
       />
       <射数を減らす確認の窓
         setShotsPerRound={setShotsPerRound}
-        shotsPerRound={shotsPerRound}
         射数を減らす確認={射数を減らす確認}
         射数を減らす確認を出す={射数を減らす確認を出す}
         減らす先の射数={減らす先の射数}
-        射数の入力窓={射数の入力窓}
-        射数の入力窓を出す={射数の入力窓を出す}
-        射数の下書き={射数の下書き}
-        射数の下書きを置く={射数の下書きを置く}
-        射数の窓={射数の窓}
-        射数の窓を閉じる={射数の窓を閉じる}
-        射数を変える={射数を変える}
-        入力した射数で決める={入力した射数で決める}
       />
       <射数の自由入力の窓
-        setShotsPerRound={setShotsPerRound}
-        shotsPerRound={shotsPerRound}
-        射数を減らす確認={射数を減らす確認}
-        射数を減らす確認を出す={射数を減らす確認を出す}
-        減らす先の射数={減らす先の射数}
         射数の入力窓={射数の入力窓}
         射数の入力窓を出す={射数の入力窓を出す}
         射数の下書き={射数の下書き}
         射数の下書きを置く={射数の下書きを置く}
-        射数の窓={射数の窓}
-        射数の窓を閉じる={射数の窓を閉じる}
-        射数を変える={射数を変える}
         入力した射数で決める={入力した射数で決める}
       />
       <参加のしかたの窓
-        ライブの選び窓={ライブの選び窓}
-        ライブの選び窓を出す={ライブの選び窓を出す}
         参加のしかたを聞く={参加のしかたを聞く}
         参加のしかたを聞くを置く={参加のしかたを聞くを置く}
         ライブに入る={ライブに入る}
-        ライブを始める窓へ={ライブを始める窓へ}
       />
-      <アプリ内の確認の窓
-        区切りにチーム名を付ける={区切りにチーム名を付ける}
-        resetCurrentSession={resetCurrentSession}
-        リセットの窓={リセットの窓}
-        リセットの窓を出す={リセットの窓を出す}
-        チーム名を付ける区切り={チーム名を付ける区切り}
-        setチーム名を付ける区切り={setチーム名を付ける区切り}
-        チーム名の下書き={チーム名の下書き}
-        setチーム名の下書き={setチーム名の下書き}
-        確認={確認}
-        確認を置く={確認を置く}
-        知らせる={知らせる}
-      />
+      <アプリ内の確認の窓 確認={確認} 確認を置く={確認を置く} />
       {知らせ ? (
         <View style={styles.feedbackOverlay}>
           <Text style={styles.feedbackText}>{知らせ}</Text>
@@ -2064,7 +1968,7 @@ const RecordScreen = () => {
         visible={showOCRModal}
         onClose={() => setShowOCRModal(false)}
         members={members}
-        alumni={useScoreStore((状態) => 状態.alumni) || []}
+        alumni={卒業生たち || []}
         区分たち={区分たち || []}
         shotsPerRound={shotsPerRound}
         hasExistingRecord={archers.length > 0}
@@ -2127,23 +2031,17 @@ const RecordScreen = () => {
         // 置き直せるようにするため。閉じるのは「完了」を押したとき
         onSave={() => {}}
       />
+      {/* 区切りにチーム名を付ける窓。リーグで大学名を出すため。 */
+      /* 区切りより左（並びでは後ろ）がそのチームになるので、 */
+      /* 1回入れれば複数人に付く */}
       <チーム名の窓
         区切りにチーム名を付ける={区切りにチーム名を付ける}
-        resetCurrentSession={resetCurrentSession}
-        リセットの窓={リセットの窓}
-        リセットの窓を出す={リセットの窓を出す}
         チーム名を付ける区切り={チーム名を付ける区切り}
         setチーム名を付ける区切り={setチーム名を付ける区切り}
         チーム名の下書き={チーム名の下書き}
         setチーム名の下書き={setチーム名の下書き}
-        確認={確認}
-        確認を置く={確認を置く}
-        知らせる={知らせる}
       />
-      {/* 区切りにチーム名を付ける窓。リーグで大学名を出すため。 */
-      /* 区切りより左（並びでは後ろ）がそのチームになるので、 */
-      /* 1回入れれば複数人に付く */}
-    </Et要素>
+    </View>
   );
 };
 Object.defineProperty(exports, '__esModule', { value: true });
