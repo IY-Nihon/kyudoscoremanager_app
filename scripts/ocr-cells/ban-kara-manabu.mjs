@@ -43,7 +43,7 @@ for (let i = 0; i < 板の枚数; i++) {
   let g;
   try {
     g = await 格子(みち, { 人数, 行数 });
-  } catch (e) {
+  } catch {
     立たなかった++;
     continue;
   }

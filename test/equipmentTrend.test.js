@@ -12,13 +12,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-const {
-  期間の成績,
-  弓具の期間の成績,
-  弓具の移り変わり,
-  見立ての言葉,
-  率を出す最小射数,
-} = require('../src/equipmentTrend');
+const { 期間の成績, 弓具の移り変わり, 見立ての言葉, 率を出す最小射数 } = require('../src/equipmentTrend');
 
 const 一日 = 86400000;
 const 基準 = Date.parse('2026-06-01T00:00:00Z');

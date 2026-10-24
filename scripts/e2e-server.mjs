@@ -64,7 +64,7 @@ function 解く(求め) {
   let 道;
   try {
     道 = decodeURIComponent(new URL(求め, 'http://x').pathname);
-  } catch (e) {
+  } catch {
     return null;
   }
   const 先 = path.resolve(配り元, '.' + 道);
@@ -77,7 +77,7 @@ function 解く(求め) {
       const 中 = path.join(先, 'index.html');
       if (fs.existsSync(中)) return 中;
     }
-  } catch (e) {
+  } catch {
     /* 無ければ下の index.html へ回す */
   }
   return null;

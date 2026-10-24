@@ -11,7 +11,6 @@
 import { test, expect } from '@playwright/test';
 import { 案内を止める, 画面が出るまで待つ } from './helpers.mjs';
 
-const 団体 = '100001';
 test.use({ storageState: 'e2e/.auth/100001.json' });
 
 test('履歴の検索：1 字ずつ打っても字が途切れず、結果が出る', async ({ page }) => {

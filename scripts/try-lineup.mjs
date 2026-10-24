@@ -65,7 +65,7 @@ for (const みち of process.argv.slice(2)) {
           .map((立) => (立.seats || []).length)
           .join('+')
       );
-    } catch (誤り) {
+    } catch {
       分け方.push('読めない');
     }
   }

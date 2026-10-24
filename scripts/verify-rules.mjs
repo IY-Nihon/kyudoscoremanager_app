@@ -19,13 +19,11 @@ const { apiKey, projectId } = configFor(target);
 const PW = '＊＊＊＊';
 const G1 = '100001',
   G2 = '100002';
-const EMAIL1 = 'kanri@example.com',
-  EMAIL2 = 'stg-b@example.com';
+const EMAIL1 = 'kanri@example.com';
 
 console.log(`対象: ${projectId} / ${stage}\n`);
 
 const tokG1 = await signIn(apiKey, EMAIL1, PW);
-const tokG2 = await signIn(apiKey, EMAIL2, PW);
 const anon = await signInAnonymously(apiKey);
 
 // 団体1の有効な個人ID と memberId を、団体1のトークンで取得しておく

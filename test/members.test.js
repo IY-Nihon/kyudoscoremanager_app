@@ -14,7 +14,6 @@ const { ストアを用意する, 待つ } = require('./helpers/storeHarness');
 
 const 団体 = '100001';
 const 名簿の道 = `groups/${団体}/members`;
-const 卒業生の道 = `groups/${団体}/alumni`;
 const 逆引きの道 = `groups/${団体}/member_lookup`;
 
 const 部員 = (o) =>
@@ -264,7 +263,7 @@ test('弓具：通信できないときは未同期のまま残り、送り直�
 
 // ──────────────────────────────────────────────────────────────
 test('受信：クラウドで消えたメンバーは手元からも消える', async () => {
-  const { store, 雲 } = await 用意();
+  const { store } = await 用意();
   store.setState({ members: [部員()] });
   // クラウドには居ない状態で全件取得する
   await store.getState().fetchAndOverwriteFromCloud();
@@ -273,7 +272,7 @@ test('受信：クラウドで消えたメンバーは手元からも消える',
 });
 
 test('受信：送信前のメンバーは、クラウドに無くても消さない', async () => {
-  const { store, 雲 } = await 用意();
+  const { store } = await 用意();
   store.setState({ members: [部員({ id: 'mem-9', syncStatus: '未同期' })] });
   await store.getState().fetchAndOverwriteFromCloud();
   await 待つ(50);

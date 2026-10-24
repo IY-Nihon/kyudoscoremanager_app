@@ -18,8 +18,7 @@ const 正解の置き場 = process.env.SEIKAI || 'C:/Users/yutoi/Documents/kyudo
 const 出の置き場 = process.env.CNN_DATA || path.join(ここ, 'data');
 fs.mkdirSync(出の置き場, { recursive: true });
 const imp = (p) => import('file:///' + 本体 + p);
-const { 板の印を読む, 黒板なら裏返す, 交代のマスか, 空のマスか, 大前から並べる } =
-  await imp('src/ocr/yomu.js');
+const { 板の印を読む, 黒板なら裏返す, 交代のマスか, 空のマスか } = await imp('src/ocr/yomu.js');
 const { 板ごとの格子, 箱の大きさ, マスの中心y, マスの中心x, 格子 } = await imp(
   'scripts/ocr-cells/kiridasu.mjs'
 );
@@ -317,7 +316,7 @@ for (let i = 0; i < 枚数; i++) {
   let g;
   try {
     g = await 格子(await 画を読む(みち), { 人数, 行数, 回す });
-  } catch (e) {
+  } catch {
     g = null;
   }
   const 合う =

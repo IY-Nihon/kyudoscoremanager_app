@@ -15,7 +15,7 @@
  * 右に小計の列が写っていても、幅が違うので等間隔の当てはめから外れる。
  */
 import { 明暗を伸ばす, 暗さの境 } from './koushi.mjs';
-import { 墨の量, 罫線を拾う } from './kiridasu.mjs';
+import { 罫線を拾う } from './kiridasu.mjs';
 import { 写す式 } from './kuzusu.mjs';
 
 /**

@@ -53,7 +53,7 @@ function 差し替わっているか(page) {
     try {
       window.localStorage.setItem('archery-score-storage', 'x');
       return false; // 投げなかった＝差し替わっていない
-    } catch (e) {
+    } catch {
       return true;
     }
   });

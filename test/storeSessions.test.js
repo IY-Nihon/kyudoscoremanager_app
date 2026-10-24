@@ -21,8 +21,6 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-const fs = require('node:fs');
-const path = require('node:path');
 const { 記録の射手を整える, cleanUpSessions } = require('../src/syncRules');
 
 // 店は 2026-10-05 に幾つかのファイルに分けた。店ぜんぶの字を読む

@@ -17,7 +17,6 @@ import { 格子, 箱の大きさ } from './kiridasu.mjs';
 import { 画を読む, 回す } from './gazou-node.mjs';
 import { 種類, 形にする, 前へ, 切り取る } from './manabu.mjs';
 import { 射手たち } from './kiroku.mjs';
-import { 的中数 } from './tsujitsuma.mjs';
 import { 縦横で合わせる } from './tsujitsuma2.mjs';
 import { 重みを読む } from './chiisaku.mjs';
 

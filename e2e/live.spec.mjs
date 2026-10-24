@@ -727,7 +727,7 @@ test('ライブ：2 台が同時に高速でいろいろな操作を続けても
           記録.push('列を消す');
           await 列を消す(page, 列1);
         }
-      } catch (誤り) {
+      } catch {
         // 画面の都合で押せなかった手は飛ばす（同期の食い違いは最後にまとめて見る）
         記録.push('（押せなかった）');
         await 一覧を閉じる(page);
@@ -1157,7 +1157,7 @@ test('ライブ：URLで配ると、編集用は記録でき、閲覧用は見�
   const 控え = await B.evaluate(() => {
     try {
       return window.sessionStorage.getItem('kyudo.共有の荷');
-    } catch (e) {
+    } catch {
       return null;
     }
   });

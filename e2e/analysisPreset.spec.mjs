@@ -12,10 +12,6 @@
  */
 import { test, expect } from '@playwright/test';
 import { 案内を止める, 画面が出るまで待つ, 入り口が決まるまで待つ } from './helpers.mjs';
-import fs from 'node:fs';
-
-const お知らせの版 = (fs.readFileSync('src/WhatsNewModal.js', 'utf8').match(/NOTICE_VERSION = '([^']+)'/) ||
-  [])[1];
 
 // 部員6人と記録が入っている団体。読むだけで、書き込みはしない
 const 団体 = '100001';
@@ -67,7 +63,7 @@ async function 入る(page) {
                 (globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}'
               )?.state || {};
             return (s.lastSyncTime || 0) >= 前 && (s.sessions || []).length > 0;
-          } catch (e) {
+          } catch {
             return false;
           }
         }, 開く前),
@@ -94,7 +90,7 @@ async function 押す(page, 文) {
   // まだ一覧が無いうちに数えてしまい、候補0件のまま「押せない」と答える
   try {
     await 群.first().waitFor({ state: 'attached', timeout: 15000 });
-  } catch (e) {
+  } catch {
     return false;
   }
   const 数 = await 群.count();
@@ -117,7 +113,7 @@ async function 押す(page, 文) {
         if (!手前) continue;
         await 群.nth(i).click({ timeout: 5000 });
         return true;
-      } catch (e) {
+      } catch {
         /* 次へ */
       }
     }

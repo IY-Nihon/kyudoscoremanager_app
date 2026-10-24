@@ -18,10 +18,6 @@ import {
   画面が変わるまで待つ,
   入り口が決まるまで待つ,
 } from './helpers.mjs';
-import fs from 'node:fs';
-
-const お知らせの版 = (fs.readFileSync('src/WhatsNewModal.js', 'utf8').match(/NOTICE_VERSION = '([^']+)'/) ||
-  [])[1];
 
 // 鍵(100003)・ライブ(100006)・交代(100005)とは別の団体を使う
 const 団体 = '100001';
@@ -178,7 +174,6 @@ test.describe('確認とお知らせ', () => {
 
     // 一覧の先頭の部員を開く。1人もいない団体ではこの検査は流す
     const 削除ボタン = page.getByText('メンバーを削除', { exact: true }).first();
-    const 一覧 = page.locator('[data-testid^="メンバー-"], text=/年生/');
     await page
       .locator('div')
       .filter({ hasText: /^\S+$/ })

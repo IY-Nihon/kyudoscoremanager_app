@@ -885,7 +885,7 @@ const SettingsScreen = () => {
               </View>
               <Switch
                 value={isAdminMode}
-                onValueChange={async (入れる) => {
+                onValueChange={(入れる) => {
                   if (入れる) {
                     管理者の合言葉を置く('');
                     管理者の合言葉の窓を出す(true);
@@ -925,7 +925,7 @@ const SettingsScreen = () => {
             {行(
               'share-outline',
               'データをExcel形式で書き出し',
-              async () => {
+              () => {
                 書き出しの窓を出す(true);
               },
               基本色.緑

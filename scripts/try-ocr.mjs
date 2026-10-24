@@ -167,7 +167,7 @@ console.log('── かかった時間:', ((Date.now() - 始め) / 1000).toFixed
 let 読み;
 try {
   読み = JSON.parse(生);
-} catch (_e) {
+} catch {
   console.log('JSONとして読めませんでした:');
   console.log(生.slice(0, 2000));
   process.exit(1);

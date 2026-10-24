@@ -37,7 +37,7 @@ async function 読んでみる(崩し, 味) {
     if (!四角) return { 立った: false, 当: 0, 全: 人数 * 立数 * 立のマス };
     const 切 = 切り取る(歪み.画, 歪み.幅, 歪み.高, 四角.left, 四角.top, 四角.width, 四角.height);
     g = await 紙の格子({ 画素: 切.画, 幅: 切.幅, 高: 切.高 }, { 人数, 立数, 立のマス, 枠: 四角.枠 });
-  } catch (e) {
+  } catch {
     return { 立った: false, 当: 0, 全: 人数 * 立数 * 立のマス };
   }
   let 当 = 0;

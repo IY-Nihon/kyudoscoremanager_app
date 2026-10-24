@@ -33,7 +33,7 @@ if (!団体) {
   process.exit(1);
 }
 
-const 読む = async (道, token) =>
+const 読む = (道, token) =>
   fetch(`${根}/${道}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
 
 let だめ = 0;

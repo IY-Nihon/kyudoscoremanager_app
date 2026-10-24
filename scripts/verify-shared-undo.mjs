@@ -106,7 +106,7 @@ try {
   let getで読めた = true;
   try {
     await get(ref(db, '.info/serverTimeOffset'));
-  } catch (e) {
+  } catch {
     getで読めた = false;
   }
   check('時差は get では読めない', false, getで読めた, 'onValue を使うこと');

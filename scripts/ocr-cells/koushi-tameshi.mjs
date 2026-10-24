@@ -31,7 +31,7 @@ for (let i = 0; i < 30; i++) {
   let g;
   try {
     g = await 格子(await 画を読む(みち), { 人数, 行数, 回す });
-  } catch (e) {
+  } catch {
     continue;
   }
   立++;

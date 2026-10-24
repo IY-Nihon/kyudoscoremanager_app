@@ -15,7 +15,6 @@ const { ストアを用意する, 検査の合言葉, 待つ } = require('./help
 
 const 団体 = '100001';
 const ライブ名 = '朝練';
-const 道 = `live_sessions/${検査の合言葉}/${ライブ名}/state`;
 
 function 端末(既存のライブ) {
   const { store, ライブ } = ストアを用意する(undefined, 既存のライブ);

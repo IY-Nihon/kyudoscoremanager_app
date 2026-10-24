@@ -217,7 +217,6 @@ export async function 読みやすく(元, 名札) {
   // ── 1. 読み込みの別名 ───────────────────────────────────
   // 別名 → { 道, 種: 'default' | 'namespace' }
   const 読み込み = new Map();
-  const reactの別名 = new Set();
   for (const 節 of 本体) {
     if (!t.isVariableDeclaration(節)) continue;
     for (const d of 節.declarations) {

@@ -72,21 +72,6 @@ const st = async (p, { token, method = 'GET', body } = {}) =>
       body: body ? JSON.stringify(body) : undefined,
     })
   ).status;
-const all = async (p, token) => {
-  const o = [];
-  let t = '';
-  for (;;) {
-    const r = await fetch(`${B}${p}?pageSize=300${t ? `&pageToken=${t}` : ''}`, {
-      headers: token ? { Authorization: 'Bearer ' + token } : {},
-    });
-    if (!r.ok) return o;
-    const j = await r.json();
-    (j.documents || []).forEach((d) => o.push(d));
-    if (!j.nextPageToken) break;
-    t = j.nextPageToken;
-  }
-  return o;
-};
 
 const rows = [];
 let n = 0;

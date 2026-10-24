@@ -16,7 +16,7 @@
  *
  * 答え（どのマスが何か、列と行がどこか）も一緒に返す。
  */
-import { 乱数をつくる, 押す, 線をひく, 印をそこへ描く, 画にする } from './egaku.mjs';
+import { 乱数をつくる, 線をひく, 印をそこへ描く, 画にする } from './egaku.mjs';
 
 const 逆 = String.fromCharCode(92);
 const 種類 = ['×', '◎', '○' + 逆, '○/'];

@@ -32,7 +32,6 @@ const env = Object.fromEntries(
     })
 );
 const PID = env.EXPO_PUBLIC_FIREBASE_PROJECT_ID;
-const KEY = env.EXPO_PUBLIC_FIREBASE_API_KEY;
 const RTDB = env.EXPO_PUBLIC_FIREBASE_DATABASE_URL;
 const BASE = `https://firestore.googleapis.com/v1/projects/${PID}/databases/(default)/documents`;
 
@@ -237,7 +236,7 @@ try {
   );
   利用者数 = (JSON.parse(fs.readFileSync(path.join(OUT, 'auth', 'users.json'), 'utf8')).users || []).length;
   console.log(`  利用者 … ${利用者数}件（パスワードのハッシュを含むため取り扱い注意）`);
-} catch (e) {
+} catch {
   失敗.push({ パス: 'auth:export', 理由: 'Firebase CLI にログインしていない可能性' });
   console.log('  利用者 … 取得できませんでした（npx firebase login を確認してください）');
 }

@@ -163,7 +163,6 @@ test('襟は目の真下に来ない。顔と襟の間に首の段がある（�
   const 目の列 = 列たち(体の絵[目の段], 'K');
   assert.strictEqual(目の列.length, 2);
   const 首 = 目の段 + 2;
-  const 肩 = 首 + 1;
   assert.ok(!体の絵[首].includes('C'), '首の段に襟がある');
   // 襟は、白い体の上で読める濃さ（紺）。青い体の上では白にする（AIChatBot）
   assert.ok(明るさ(色.C) < 80);

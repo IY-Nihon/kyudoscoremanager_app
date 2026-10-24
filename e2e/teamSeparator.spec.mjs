@@ -206,7 +206,7 @@ test('立ち順：窓から1つずつ動かせて、端では出ない', async (
   await 射手を立てる(page, 3);
 
   /** 名前の欄を、画面の右から左の順で返す */
-  const 並び = async () =>
+  const 並び = () =>
     page.evaluate(() =>
       [...document.querySelectorAll('[data-testid^="名の欄-射手-"]')]
         .map((el) => ({ 名: el.getAttribute('data-testid'), x: el.getBoundingClientRect().x }))
@@ -330,7 +330,7 @@ test('立ち順：横に並べても、長押しから指で動かせる', async
   );
 
   /** 名前の欄を、画面の上から下の順で返す */
-  const 並び = async () =>
+  const 並び = () =>
     page.evaluate(() =>
       [...document.querySelectorAll('[data-testid^="名の欄-射手-"]')]
         .map((el) => ({ 名: el.getAttribute('data-testid'), y: el.getBoundingClientRect().y }))

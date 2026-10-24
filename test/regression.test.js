@@ -270,7 +270,7 @@ test('メンバーの控えは、消していないメンバーに影響しな�
 });
 
 test('メンバーの控えがあっても、新しく足したメンバーは消えない', async () => {
-  const { store, 雲 } = await 用意();
+  const { store } = await 用意();
   store.setState({ deletedMembers: { 'mem-old': Date.now() } });
 
   store.getState().addMember('新入部員', '男性', 1);

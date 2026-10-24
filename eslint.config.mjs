@@ -4,10 +4,8 @@
  *   npm run lint
  *
  * ■ どこを見るか
- * 見る対象は package.json の lint スクリプトで明示している。
- * src/ は配信物から取り戻したコードで、2026-09-19 に読める形へ直すまでは圧縮されたまま
- * （変数が e, t, o … の類）だった。そのころ一般的な規則を当てると数千件の警告が出たので、
- * いまも一部のファイルと、道具・検査だけを見る（src 全体の未定義の変数は eslint.undef.mjs）。
+ * 見る対象は package.json の lint スクリプトで明示している（src・App.js・e2e・道具・検査。2026-10-24 に広げた）。
+ * src の未定義の変数は eslint.undef.mjs で見る（npm test でも通す）。
  *
  * ■ 何を見ないか
  * 見た目や書き方の好みは prettier に任せる。ここでは「黙って壊れる書き方」
@@ -61,7 +59,7 @@ export default [
       'no-empty': ['error', { allowEmptyCatch: false }],
       // == は型が違うと黙って通る。日時や個人IDの比較で効く
       eqeqeq: ['error', 'always', { null: 'ignore' }],
-      // 付け忘れの await は、同期の順番が狂う原因になる
+      // 中で一度も待たない async は、await の付け忘れか、要らない async
       'require-await': 'warn',
       'no-console': 'off',
     },
@@ -75,6 +73,22 @@ export default [
     // ESM で書いてある画面の部品（上の ESMのファイル）
     files: ESMのファイル,
     languageOptions: { sourceType: 'module' },
+  },
+  {
+    // 呼ぶ側がそろって await できるよう、約束を返す決まりにしている操作（中では待たないものもある）。
+    // 店の操作（記録の保存など。検査は .then でつなぐ）と、写真の読み取りの道具（画を読む は .then でつなぐ）
+    files: ['src/store*.js', 'src/useScoreStore.js', 'src/ocr/**/*.js', 'scripts/ocr-cells/**/*.mjs'],
+    rules: { 'require-await': 'off' },
+  },
+  {
+    // 検査の偽物（Firestore・fetch・端末の保存など）は、本物と同じく約束を返す
+    files: ['test/**/*.js'],
+    rules: { 'require-await': 'off' },
+  },
+  {
+    // Playwright は、第一引数の分割から使う道具（page など）を読む。何も使わないときは空の分割 {} を書く決まり
+    files: ['e2e/**/*.mjs'],
+    rules: { 'no-empty-pattern': ['error', { allowObjectPatternsAsParameters: true }] },
   },
   {
     // 全角スペースを含む文字列をわざと扱うので、そこだけ外す

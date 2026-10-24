@@ -116,7 +116,7 @@ for (const 団体 of 団体たち) {
             JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
               ?.state || {};
           return { 名簿: (s.members || []).length, 記録: (s.sessions || []).length };
-        } catch (e) {
+        } catch {
           return { 名簿: 0, 記録: 0 };
         }
       });
@@ -130,7 +130,7 @@ for (const 団体 of 団体たち) {
                 (globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}'
               )?.state || {};
             return (s.members || []).length > 0 || (s.sessions || []).length > 0;
-          } catch (e) {
+          } catch {
             return false;
           }
         },

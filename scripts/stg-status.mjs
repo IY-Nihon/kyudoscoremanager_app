@@ -53,7 +53,7 @@ for (const g of 団体たち) {
         備考 = ' ←ズレ';
       }
     }
-  } catch (e) {
+  } catch {
     備考 = ' ←入れませんでした';
   }
   console.log(

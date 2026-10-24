@@ -22,7 +22,7 @@ const path = require('node:path');
 const 根 = path.resolve(__dirname, '..');
 const 読む = (p) => fs.readFileSync(path.join(根, p), 'utf8');
 // 店は 2026-10-05 に幾つかのファイルに分けた。店ぜんぶの字を読む（test/helpers/storeSource.js）
-const { 店の字, 店のファイル } = require('./helpers/storeSource');
+const { 店の字 } = require('./helpers/storeSource');
 
 test('弓具：足すほうと消すほうが、どちらもストアに在る', () => {
   const 店 = 店の字();
