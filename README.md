@@ -31,7 +31,7 @@
 - **Expo / React Native Web** の 1 つのコードで Web（PWA）と iOS を配信。状態は zustand、同期は Firebase（Firestore・Realtime Database）
 - **オフライン優先**：手元に確定してから雲へ送る。通信が切れても記録は止まらず、つながったときに突き合わせる
 - **○× の読み取りは端末の中で**：マスを畳み込みの網（`scripts/ocr-cells/omomi-tatami.json`、描いた見本と本物の写真で学習・int8）で読み、迷ったマスだけ写真で学習した MobileNet 2 枚（`omomi-mobilenet.bin`、読み取りのときだけ取る）と混ぜる（詳しくは `scripts/ocr-cells/cnn/README.md`）。Gemini には ○× を書かせず、名前・表の形・日付だけ答えさせる（`src/ocrPrompts.js` の 記録の形の指示文。端末が読めなかったときだけ ○× つきで読み直す）。鍵は Cloudflare Workers の中継が持ち、アプリには置かない
-- **検査**：単体 1100 件あまり（`node --test`）と、3 機種の Playwright e2e（検証用の Firebase 企画に対して本物の流れを通す）
+- **検査**：単体 1180 件あまり（`node --test`。push のたびに GitHub Actions の「検査」で流れる）と、3 機種の Playwright e2e（検証用の Firebase 企画に対して本物の流れを通す。手元か、GitHub Actions の「E2E」で 20 台に分けて流す）
 - **お知らせ・法務文書・バックアップ**：更新はアプリ内のお知らせで届け、利用規約とプライバシーポリシーはアプリと紹介ページの両方に、データは毎日暗号化して控える（別リポジトリ `kyudoscoremanager_backup`）
 
 ---
@@ -80,12 +80,23 @@ Gemini の鍵はアプリの束に入れると誰でも取り出せる。Cloudfl
 
 ### 入り方は 2 つ、見える範囲は決まりで縛る（守り）
 
-- **団体ログイン**（メールとパスワード）… 記録係。団体の記録・名簿を読み書きする
-- **個人ログイン**（団体 ID と 4 桁の個人 ID）… 部員。逆引き表で団体の名簿の自分に結び付き、自分の記録だけを見る
+- **団体ログイン**（団体 ID とパスワード。中ではその団体の登録メールアドレスで Firebase に入る）… 記録係。団体の記録・名簿を読み書きする
+- **個人ログイン**（団体 ID と 4 桁の個人 ID、または招待リンク）… 部員。逆引き表で団体の名簿の自分に結び付き、自分の記録だけを見る
 - 団体の外からは読み書きできないよう、Firestore と Realtime Database の決まり（[firestore.rules](firestore.rules)・[database.rules.json](database.rules.json)）で
   団体の本人か所属を証明した部員に限っている。App Check（[src/setupAppCheck.js](src/setupAppCheck.js)）も入れてある
 - 団体の中の「部員は自分の記録だけ」は、決まりではなく端末で絞っている（記録 1 件に団体全員の射手が並ぶ形のため）。
   決まりで分けるなら、記録に出た部員の一覧を持たせて問い合わせで絞る形に変える必要がある
+
+### ログインが外れても記録は消さない
+
+2026-10-17、端末の Firebase のログインが外れ、案内どおりにログアウトしたら、送れていない記録（部内戦 27 人分）が
+ログアウトで手元ごと消えた。いまは次のようにしてある（2026-10-24 に配信）。
+
+- 開いたときに団体で入っているのに Firebase のログインが無い、または雲に `permission-denied` で断られたら、
+  その場でログインし直す窓を出す（[src/ReloginModal.js](src/ReloginModal.js)）。入れるのは今の団体だけで、手元の記録には触らない
+- 「あとで」を押してもよい。記録の画面の赤い帯から、また窓を開ける
+- ログアウトしても、送れていない記録（`syncStatus` が `未同期`）は団体と入り方（団体・個人）ごとの控えに残し、
+  次に同じ団体・同じ入り方で入ったら手元へ戻して送る（[src/unsentStash.js](src/unsentStash.js)）。団体アカウントを消したときだけ捨てる
 
 ## 技術スタック
 
@@ -101,7 +112,8 @@ Gemini の鍵はアプリの束に入れると誰でも取り出せる。Cloudfl
 ## 画面構成
 
 `src/MainNavigator.js` が定義する6タブ + オーバーレイのAIチャットボット。
-「メンバー」「出欠」タブは `activeRole === 'group'`（団体ログイン）のときのみ表示されます。
+「出欠」タブは `activeRole === 'group'`（団体ログイン）のときのみ表示されます。個人ログインの「メンバー」は、一覧ではなく自分の情報（弓具・招待なし）の画面です。
+ライブのリンクで来た人（来客）には「記録」だけを出します。
 
 | タブ | 実装ファイル |
 |---|---|
@@ -194,7 +206,11 @@ ReCAPTCHA キー未設定で無効だったため、いったん取り込みご�
 ### 自作コード（編集対象になるファイル）
 
 ```
-src/useScoreStore.js     状態管理の中核。Firebase同期・履歴・分析ロジック
+src/useScoreStore.js     店（状態）の中核。初めの値・ログインの切り替え（setAuth）・端末への控え
+src/store*.js            店の操作を分野ごとに分けたもの（2026-10-05）：storeSync（雲との同期と見張り）・
+                         storeSessions（記録）・storeMembers（名簿）・storeBoard（記録表の盤面）・
+                         storeLive（ライブ）・storeListing（紹介への掲載）・storeShared（共通の部品）・
+                         storeSlice（画面が使う項目だけを購読）
 src/MainNavigator.js     タブ定義・ディープリンク設定
 src/LoginScreen.js      団体/メンバーログイン・メールアドレス復旧
 src/RecordScreen.js      記録画面
@@ -261,6 +277,17 @@ PW_DIST=dist-stg-e2e npx playwright test --reporter=line
 - 3 機種を一度に流すと、iPhone（WebKit）の検査が取り合いで落ちることがある。落ちたものだけ
   `--workers=1` で単独に流し直し、通れば取り合い。単独でも落ちるものが本物
 - 下ごしらえのログインが 1 回通らず全体が止まることもある（検証環境の混み）。流し直す
+- 全件を 1 日に何度も流すと、検証環境の雲の 1 日の枠を使い切って 429 で落ちる（日本時間 16 時ごろに戻る）。全件は配信の前に 1 回
+
+#### GitHub Actions で流す（手元の PC を空ける）
+
+Actions → **E2E** → Run workflow。書き出しのあと 20 台に分け、1 台 2 並列で流す（全体で 8〜10 分）。
+`grep` の欄に検査名の一部を入れると、その検査だけを流せる。
+
+- iPhone のライブ（`e2e/live.spec.mjs`）は GitHub では流さない（`PW_IPHONE_NO_LIVE=1`）。4 コアの台では WebKit を何台も同時に動かすライブが詰まって落ちるため。配信の前は手元で流す：
+  `PW_DIST=dist-stg-e2e npx playwright test e2e/live.spec.mjs --project=iPhone`
+- 要る Secrets は `.github/workflows/e2e.yml` の頭に書いてある
+- 公開リポジトリなので、ログは誰でも読める。失敗の写真や trace は上げない
 
 ### 順序（守ること）
 
@@ -427,7 +454,7 @@ test/                  単体検査（node --test。npm test で走る）
 e2e/                   本物のブラウザでの検査（Playwright。npm run e2e）
 rules/                 決まりの控え（bootstrap / stage1 / stage2 / rollback）
 docs/                  法務文書（legal/）、配信の手順（deploy/）、画面写真（images/）、OCR の見本（ocr-samples/）。archive/plans/ は昔の計画書
-.github/workflows/     EAS Build (iOS) の CI
+.github/workflows/     検査（push のたび）・E2E（押したときだけ、20 台に分ける）・EAS Build (iOS)
 *.rules, firebase.json Firebase の設定・セキュリティルール
 ```
 
@@ -677,6 +704,17 @@ npm run ops:scan-japanese
 | ますと列の購読を 1 つにまとめる | `ScoreCell.js`、`ArcherColumnView.js` | 差は測れる範囲になかったが、購読の数は減る |
 | 端末の読み取り（○×の OCR）が主スレッドを塞がないように | `scripts/ocr-cells/ikitsugi.mjs`、`yomu.js`、`gazou-web.js` | 320 射の写真で 13.9 秒 → 9.0 秒。読んでいる間に画面が描き変わる回数 1 → 40 以上、一息に塞ぐ最長 13 秒 → 0.9 秒。マスの 9 割点を並べ替えでなく度数で取る、Float32 の板と板ごとの色の写し（合わせて 130MB）をやめる |
 | 見張り（onSnapshot）が同じ中身を届けたときは書かない。起動時の同期は取りに行かない | `useScoreStore.js`、`syncRules.js` の `一覧が同じか` | 起動時に同じものを 3 回読み、そのたびに画面ぜんぶの描き直しと 2MB の控えの書き直しをしていたのをやめる |
+
+2026-10-23 に、写真の読み取りの端末の時間も詰めた（答えは変えていない。過去の写真 10522 マスを Node・Chromium・WebKit で数えて違い 0）：
+
+| 直したもの | どこ | 効き目 |
+|---|---|---|
+| Gemini を待つあいだに、写真を読む・明暗を伸ばす・平らにする を済ませる（同じ写真・同じ形には控えを返す） | `OCRRecordModal.js`、`gazou-web.js`、`koushi.mjs` | Gemini の答えのあとの CPU（PC）：10/11 の板 12.6 → 6.1 秒、9/6 の板 9.1 → 1.8 秒 |
+| 直線を抜く投票を数の配列に・同じマスの計算を 1 回に | `yomu.js` の `直線を抜いた残り` | その関数が 6.6 倍速い |
+| 明暗を伸ばすを 256 通りの表で、近くを塗るを縦横に分けて、縮めるを数え上げで | `koushi.mjs`、`manabu.mjs` | 4.3 倍・4.5 倍・3.1 倍 |
+| 端末の読み取り 1 回に上限（端末の速さで伸ばす。PC で 60 秒〜） | `OCRRecordModal.js`、`ikitsugi.mjs` の締め切り | 読めない写真（記録画面を逆さに撮ったもの）で 688 秒 → 145 秒。普通の写真は遅い端末でも切らない |
+
+写真を縮めて読む案は採らなかった。長辺 3200 で外れが 23 → 537 マスに増える（大きさの見当が画素で決め打ちのため）。
 
 控えの書き込みを遅らせたので、画面が隠れる・閉じるときは待たずに書く
 （`visibilitychange`・`pagehide`・`beforeunload`・`AppState`）。雲への同期と
