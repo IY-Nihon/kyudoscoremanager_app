@@ -260,6 +260,46 @@ const 秒にする = (時間) => {
   };
 };
 
+/** 確かめの画面の、名前の色の見方（一致・要確認・ゲスト。紙の記録なら、迷ったマスも） */
+function 名前の色の凡例({ 迷いあり = false }) {
+  return (
+    <View style={styles.legendRow}>
+      <View style={styles.legendItem}>
+        <View style={[styles.legendDot, { backgroundColor: 色.青の地_2 }]} />
+        <Text style={styles.legendText}>一致</Text>
+      </View>
+      <View style={styles.legendItem}>
+        <View style={[styles.legendDot, { backgroundColor: 色.赤の地 }]} />
+        <Text style={styles.legendText}>要確認</Text>
+      </View>
+      <View style={styles.legendItem}>
+        <View style={[styles.legendDot, { backgroundColor: 色.地_F0F0F0 }]} />
+        <Text style={styles.legendText}>ゲスト</Text>
+      </View>
+      {迷いあり && (
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, styles.legendDotMayoi]} />
+          <Text style={styles.legendText}>読み取りが迷ったマス</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+/** 確かめの画面の下の段（撮り直す・記録表に反映する） */
+function 確かめの下の段({ 撮り直す, 反映する }) {
+  return (
+    <View style={styles.previewFooter}>
+      <TouchableOpacity style={styles.footerBtnSecondary} onPress={撮り直す}>
+        <Text style={styles.footerBtnSecondaryText}>撮り直す</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.footerBtnPrimary} onPress={反映する}>
+        <Text style={styles.footerBtnPrimaryText}>記録表に反映する</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 const OCRRecordModal = ({
   visible,
   onClose,
@@ -1197,6 +1237,22 @@ const OCRRecordModal = ({
     lastModified: Date.now(),
   });
 
+  /** 記録表の 1 列（射手）を作る。名簿の人を渡せば、その人の名前・性別・学年を当てる */
+  const 射手を作る = (本数, 人 = null) => ({
+    id: generateUUID(),
+    name: 人 ? 人.name : '',
+    marks: Array(本数).fill(''),
+    arrowLocations: Array(本数).fill(null),
+    gender: (人 && 人.gender) || '未設定',
+    grade: 人 && typeof 人.grade === 'number' ? 人.grade : 1,
+    ...(人 ? { memberId: 人.id } : null),
+    isGuest: false,
+    isSeparator: false,
+    isTotalCalculator: false,
+    lockedBlocks: {},
+    lastModified: Date.now(),
+  });
+
   /**
    * 紙の記録から射手配列を作る。
    * 立ち順モードと違い「立」の概念がないため、セパレータは挟まず読み取った順に並べる。
@@ -1210,19 +1266,6 @@ const OCRRecordModal = ({
         (row) => row.status === 'matched' || (row.rawText && row.rawText.trim() !== '') || 印がある(row)
       )
       .map((row) => {
-        const base = {
-          id: generateUUID(),
-          name: '',
-          marks: normalizeMarks(row.marks, 合わせる射数),
-          arrowLocations: Array(合わせる射数).fill(null),
-          gender: '未設定',
-          grade: 1,
-          isGuest: false,
-          isSeparator: false,
-          isTotalCalculator: false,
-          lockedBlocks: {},
-          lastModified: Date.now(),
-        };
         // 板の番号と立の人数は、名簿の人でもゲストでも付ける。前は名簿の人に付けておらず、
         // 全員が部員だと（本番の自校の板）区切りも計も入らなかった（検証環境ではゲストなので出ていた）
         const 組 = {
@@ -1230,21 +1273,17 @@ const OCRRecordModal = ({
           立の人数: row.立の人数 || 0,
           チーム名: String(row.チーム名 || '').trim(),
         };
-        if (row.status === 'matched' && row.match) {
-          return {
-            ...base,
-            name: row.match.name,
-            gender: row.match.gender || '未設定',
-            grade: typeof row.match.grade === 'number' ? row.match.grade : 1,
-            memberId: row.match.id,
-            isGuest: false,
-            ...組,
-          };
-        }
+        const 名簿の人 = row.status === 'matched' && row.match ? row.match : null;
         return {
-          ...base,
-          name: row.rawText && row.rawText.trim() !== '' ? row.rawText : '（名前なし）',
-          isGuest: true,
+          ...射手を作る(合わせる射数, 名簿の人),
+          marks: normalizeMarks(row.marks, 合わせる射数),
+          // 名簿に当たらなかった人はゲスト（名前が読めなければ「（名前なし）」）
+          ...(名簿の人
+            ? null
+            : {
+                name: row.rawText && row.rawText.trim() !== '' ? row.rawText : '（名前なし）',
+                isGuest: true,
+              }),
           ...組,
         };
       });
@@ -1317,31 +1356,10 @@ const OCRRecordModal = ({
           return;
         }
 
-        const base = {
-          id: generateUUID(),
-          name: '',
-          marks: Array(shotsPerRound).fill(''),
-          arrowLocations: Array(shotsPerRound).fill(null),
-          gender: '未設定',
-          grade: 1,
-          isGuest: false,
-          isSeparator: false,
-          isTotalCalculator: false,
-          lockedBlocks: {},
-          lastModified: Date.now(),
-        };
-
         if (seat.status === 'matched' && seat.match) {
-          listForThisTachi.push({
-            ...base,
-            name: seat.match.name,
-            gender: seat.match.gender || '未設定',
-            grade: typeof seat.match.grade === 'number' ? seat.match.grade : 1,
-            memberId: seat.match.id,
-            isGuest: false,
-          });
+          listForThisTachi.push(射手を作る(shotsPerRound, seat.match));
         } else if ((seat.status === 'guest' || seat.status === 'ambiguous') && seat.rawText) {
-          listForThisTachi.push({ ...base, name: seat.rawText, isGuest: true });
+          listForThisTachi.push({ ...射手を作る(shotsPerRound), name: seat.rawText, isGuest: true });
         }
       });
       activeTachiLists.push(listForThisTachi);
@@ -1752,26 +1770,9 @@ const OCRRecordModal = ({
                   </Text>
                 )}
 
-                <View style={styles.legendRow}>
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: 色.青の地_2 }]} />
-                    <Text style={styles.legendText}>一致</Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: 色.赤の地 }]} />
-                    <Text style={styles.legendText}>要確認</Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: 色.地_F0F0F0 }]} />
-                    <Text style={styles.legendText}>ゲスト</Text>
-                  </View>
-                  {recordRows.some((行) => Array.isArray(行.迷い) && 行.迷い.some(Boolean)) && (
-                    <View style={styles.legendItem}>
-                      <View style={[styles.legendDot, styles.legendDotMayoi]} />
-                      <Text style={styles.legendText}>読み取りが迷ったマス</Text>
-                    </View>
-                  )}
-                </View>
+                <名前の色の凡例
+                  迷いあり={recordRows.some((行) => Array.isArray(行.迷い) && 行.迷い.some(Boolean))}
+                />
 
                 {recordRows.map((row, rIdx) => {
                   const hits = row.marks.filter((印) => 印 === '○').length;
@@ -1832,14 +1833,7 @@ const OCRRecordModal = ({
                 })}
               </ScrollView>
 
-              <View style={styles.previewFooter}>
-                <TouchableOpacity style={styles.footerBtnSecondary} onPress={() => setStep('pick')}>
-                  <Text style={styles.footerBtnSecondaryText}>撮り直す</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.footerBtnPrimary} onPress={handleApply}>
-                  <Text style={styles.footerBtnPrimaryText}>記録表に反映する</Text>
-                </TouchableOpacity>
-              </View>
+              <確かめの下の段 撮り直す={() => setStep('pick')} 反映する={handleApply} />
             </>
           )}
 
@@ -1849,20 +1843,7 @@ const OCRRecordModal = ({
                 <Text style={styles.hint}>
                   内容を確認してください。色付きのセルはタップして修正できます。
                 </Text>
-                <View style={styles.legendRow}>
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: 色.青の地_2 }]} />
-                    <Text style={styles.legendText}>一致</Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: 色.赤の地 }]} />
-                    <Text style={styles.legendText}>要確認</Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: 色.地_F0F0F0 }]} />
-                    <Text style={styles.legendText}>ゲスト</Text>
-                  </View>
-                </View>
+                <名前の色の凡例 />
 
                 {tachiList.map((tachi, tIdx) => {
                   // 空欄（status === "empty"）のセルを除外した有効な的のみをカウント
@@ -1902,14 +1883,7 @@ const OCRRecordModal = ({
                 })}
               </ScrollView>
 
-              <View style={styles.previewFooter}>
-                <TouchableOpacity style={styles.footerBtnSecondary} onPress={() => setStep('pick')}>
-                  <Text style={styles.footerBtnSecondaryText}>撮り直す</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.footerBtnPrimary} onPress={handleApply}>
-                  <Text style={styles.footerBtnPrimaryText}>記録表に反映する</Text>
-                </TouchableOpacity>
-              </View>
+              <確かめの下の段 撮り直す={() => setStep('pick')} 反映する={handleApply} />
             </>
           )}
         </View>
