@@ -3,7 +3,7 @@
 /**
  * 店の操作のうち、記録（練習・試合）を扱うもの：保存する・開く・履歴の記録を記録画面で直す・消す・ゴミ箱・戻す、
  * 交代、射数、端末の記録を読む／片付ける。
- * （2026-10-05 に useScoreStore.js から分けた。中身は変えていない。店の名指しは 場.店 にした）
+ * （2026-10-05 に useScoreStore.js から分けた。店の名指しは 場.店 にした）
  * 店（useScoreStore.js）が ...記録の操作(書く, 状態, そのまま書く) で広げる。
  */
 const {
@@ -95,10 +95,6 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
       sessions: [記録, ...前.sessions.filter((記録1件) => 記録1件.id !== 記録ID)],
       activeSessionID: null,
       archers: [],
-      isLiveActive: false,
-      ライブの続き: null,
-      isHost: false,
-      liveSessionName: null,
       lastLocalChange: Date.now(),
       syncStatus: '未同期',
       // 盤面を片付けたので、遡れる手も捨てる。リセットと同じ扱い。

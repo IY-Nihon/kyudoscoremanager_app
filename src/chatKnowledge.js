@@ -2,7 +2,7 @@
 
 /**
  * AI チャットの知識：団体用の指示文（systemInstructionBase）、アプリの使い方の Q&A（qaData）、
- * 質問に近い Q&A を選ぶ selectQAs（2026-10-05 に AIChatBot.js から移した。中身は変えていない）。
+ * 質問に近い Q&A を選ぶ selectQAs（2026-10-05 に AIChatBot.js から移した）。
  * 画面の部品を持たないので、Node からそのまま読める（検査で使える）。
  */
 // 言い換えて聞かれても当てるための、コードだけの近さ測り（外のAPIは使わない）

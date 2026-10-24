@@ -3,7 +3,7 @@
 /**
  * 店の操作のうち、ライブ（複数の端末で同じ記録表を共有する）：始める・共有のリンクを配る／で入る・入る・戻る・やめる、
  * 開いているライブの一覧、共有の取り消し。
- * （2026-10-05 に useScoreStore.js から分けた。中身は変えていない。店の名指しは 場.店 にした）
+ * （2026-10-05 に useScoreStore.js から分けた。店の名指しは 場.店 にした）
  * 店（useScoreStore.js）が ...ライブの操作(書く, 状態, そのまま書く) で広げる。
  */
 const {
@@ -14,6 +14,7 @@ const {
   いまの見当,
   つなげなくなった,
   サーバー時刻,
+  ライブから離れる,
   ライブの枝,
   ライブの盤面を読み取る,
   ライブへ盤面を送る,
@@ -27,7 +28,6 @@ const {
   団体の枝,
   在席の場所,
   在席を始める,
-  在席を終える,
   場,
   射数差を当てる,
   届いた射手に合わせる,
@@ -279,18 +279,7 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
         const 届いた = 返り.val();
         載っている盤面を控える(届いた);
         if (!届いた) {
-          const 今の名前 = 状態().liveSessionName;
-          if (今の名前 && Firebaseの器.rtdb) {
-            RTDB.off(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${今の名前}/state`));
-          }
-          在席を終える(書く);
-          写しを見るのをやめる();
-          書く({
-            isLiveActive: false,
-            ライブの続き: null,
-            isHost: false,
-            liveSessionName: null,
-          });
+          ライブから離れる(書く, 状態, { 枝 });
           return;
         }
         // 期限は枝分かれの前に控える。下の「他人の書き込み」の枝だけに
@@ -303,18 +292,7 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
         // 捨て、そのあと通知が来ずに食い違ったまま残った（2026-09-26 に 2 台の e2e で再現）
         {
           if (届いた.status === 'finished') {
-            const 今の名前 = 状態().liveSessionName;
-            if (今の名前 && Firebaseの器.rtdb) {
-              RTDB.off(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${今の名前}/state`));
-            }
-            在席を終える(書く);
-            写しを見るのをやめる();
-            書く({
-              isLiveActive: false,
-              ライブの続き: null,
-              isHost: false,
-              liveSessionName: null,
-            });
+            ライブから離れる(書く, 状態, { 枝 });
             return;
           }
           // 誰かが配ったら、その枝へ付いていく
@@ -722,28 +700,16 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
         const 届いた = 返り.val();
         載っている盤面を控える(届いた);
         if (!届いた) {
-          const 今の名前 = 状態().liveSessionName;
-          if (今の名前 && Firebaseの器.rtdb) {
-            RTDB.off(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${今の名前}/state`));
-          }
-          在席を終える(書く);
-          写しを見るのをやめる();
-          書く({ isLiveActive: false, ライブの続き: null, isHost: false, liveSessionName: null });
+          ライブから離れる(書く, 状態, { 枝 });
           return;
         }
         // 自分の送信の返りも、ほかの通知と同じに扱う（主催者側の説明を参照）。
         // 矢所は、届いた射手が持っていなければ手元を残す（届いた射手に合わせる）
         if (届いた.status === 'finished') {
-          const 今の名前 = 状態().liveSessionName;
-          if (今の名前 && Firebaseの器.rtdb) {
-            RTDB.off(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${今の名前}/state`));
-          }
-          在席を終える(書く);
-          写しを見るのをやめる();
-          // 送信しない。ここで送ると、主催者が2秒後に消す節点を書き戻してしまい、
+          // 盤面を片付けるが、送信しない。ここで送ると、主催者が2秒後に消す節点を書き戻してしまい、
           // 届くのが遅れた場合は「終わったはずのライブ」が一覧に残り続ける
           状態().resetCurrentSession(false);
-          書く({ isLiveActive: false, ライブの続き: null, isHost: false, liveSessionName: null });
+          ライブから離れる(書く, 状態, { 枝 });
           return;
         }
         // 誰かが配ったら、その枝へ付いていく
@@ -847,24 +813,17 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
     // ライブを移ったら控えは捨てる。前のライブで載せた○×を覚えたままだと、
     // 次のライブで「前と同じ」と見なして送らず、相手の画面に出ない
     載っている印を捨てる();
-    const いま = 状態();
-    const 枝 = ライブの枝();
-    if (いま.liveSessionName && Firebaseの器.rtdb && 枝)
-      RTDB.off(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${いま.liveSessionName}/state`));
-    在席を終える(書く);
-    写しを見るのをやめる();
+    // 盤面の片付けは「ライブ中」を倒す前に。見るだけのライブでは書き換えを止めているので、片付けない
     if (!記録を残す) 状態().resetCurrentSession(false);
     // 共有や閲覧の印も戻す。閲覧リンクで見てから出ると「写しを見ている」が残り、
     // ライブの枝() が null を返し続けて、次の操作が団体の枝に届かなかった
-    書く({
-      isLiveActive: false,
-      ライブの続き: null,
-      isHost: false,
-      liveSessionName: null,
-      写しを見ているか: false,
-      よその団体のライブ: false,
-      いまのライブの枝: null,
-      いまのライブの閲覧枝: null,
+    ライブから離れる(書く, 状態, {
+      足す: {
+        写しを見ているか: false,
+        よその団体のライブ: false,
+        いまのライブの枝: null,
+        いまのライブの閲覧枝: null,
+      },
     });
   },
   // 参加一覧を取り直す。ここでだけ、古いライブの片付けもする。
