@@ -16,6 +16,8 @@ const {
 } = require('./rn');
 const Icons = require('@expo/vector-icons');
 const { useScoreStore } = require('./useScoreStore');
+
+const { use入れ替える組 } = require('./useIrekae');
 const 学 = require('./gakunen');
 const { use団体の決まり } = require('./useGakunen');
 const { useストアの一部 } = require('./storeSlice');
@@ -82,9 +84,9 @@ const ArcherActionModal = ({
   const [検索の文, 検索の文を置く] = React.useState('');
   const [客名の入力中, 客名の入力中を置く] = React.useState(false);
   const [客名の下書き, 客名の下書きを置く] = React.useState('');
-  const [expandedTerms, setExpandedTerms] = React.useState(new Set());
-  // 閉じた組（学年・区分の鍵）。初めはどの組も開いている（高専・6 年制の 5・6 年や区分の組も）
-  const [閉じた組, 閉じた組を置く] = React.useState(() => new Set());
+  // 開いた期（卒業生）と、閉じた組（学年・区分の鍵）。初めは期は閉じ、組はどれも開いている（高専・6 年制の 5・6 年や区分の組も）
+  const [expandedTerms, toggleTerm] = use入れ替える組();
+  const [閉じた組, toggleActiveGrade] = use入れ替える組();
   // いまこの射手に入っている途中交代。1つでもあれば取り消す道を出す。
   // これまで解除する口がどこにも無く、履歴にも積んでいないので取り消しでも
   // 戻らなかった（間違えるとリセットするしかなかった）
@@ -150,22 +152,6 @@ const ArcherActionModal = ({
     if (onSetMember) onSetMember(部員);
     else setArcherMember(archerId, 部員);
     onClose();
-  };
-  const toggleTerm = (期) => {
-    setExpandedTerms((前) => {
-      const 次 = new Set(前);
-      if (次.has(期)) 次.delete(期);
-      else 次.add(期);
-      return 次;
-    });
-  };
-  const toggleActiveGrade = (gVal) => {
-    閉じた組を置く((prev) => {
-      const next = new Set(prev);
-      if (next.has(gVal)) next.delete(gVal);
-      else next.add(gVal);
-      return next;
-    });
   };
   const 客名で決める = () => {
     const 名前 = 客名の下書き.trim();

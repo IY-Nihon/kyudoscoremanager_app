@@ -15,6 +15,8 @@ const {
 } = require('./rn');
 
 const 学 = require('./gakunen');
+
+const { use入れ替える組 } = require('./useIrekae');
 const { useストアの一部 } = require('./storeSlice');
 const Icons = require('@expo/vector-icons');
 const { IS_IOS } = require('./IS_WEB');
@@ -33,7 +35,7 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
   // 閉じた学年を覚える（開いた学年ではなく）。初めは全部開く。
   // 開く側を決め打ちすると、進級で出る5年生のように想定外の学年が
   // 閉じたまま出て、中の人に辿り着けなくなる
-  const [閉じた学年, 閉じた学年を置く] = React.useState(new Set());
+  const [閉じた学年, 学年を開け閉め] = use入れ替える組();
   const [検索の文, 検索の文を置く] = React.useState('');
   const [客名の入力, 客名の入力を置く] = React.useState('');
   const 候補 = (
@@ -43,17 +45,6 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
   ).sort(学.名簿の順に比べる);
   const 立か = 単位 === '立目';
   const 上限 = 立か ? 立の数(shotsPerRound) : shotsPerRound;
-  const 学年を開け閉め = (印) => {
-    閉じた学年を置く((前) => {
-      const 次 = new Set(前);
-      if (次.has(印)) {
-        次.delete(印);
-      } else {
-        次.add(印);
-      }
-      return 次;
-    });
-  };
   // 名前で絞り込んでいるあいだは開いておく。閉じたままだと
   // 探した人が隠れたままで「居ない」と見えてしまう
   const 開いているか = (学年) => 検索の文.trim() !== '' || !閉じた学年.has(String(学年));
