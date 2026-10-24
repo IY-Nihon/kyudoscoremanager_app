@@ -672,20 +672,6 @@ const styles = StyleSheet.create({
   },
   hitCount: { fontSize: 22, fontWeight: 'bold' },
   hitCountSub: { fontSize: 8, fontWeight: 'bold', color: 色.黒, textAlign: 'center', paddingHorizontal: 2 },
-  sepCell: {
-    width: UIConfig.separatorWidth,
-    height: UIConfig.cellHeight,
-    backgroundColor: 'rgba(142,142,147,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  totalCell: {
-    width: UIConfig.cellWidth,
-    height: UIConfig.cellHeight,
-    backgroundColor: 'rgba(0,122,255,0.08)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   blockTotalText: { fontSize: 24, fontWeight: '900', color: 色.青 },
   footer: {
     height: UIConfig.footerHeight,

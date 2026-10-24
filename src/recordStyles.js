@@ -7,8 +7,6 @@ const { 色 } = require('./iro.js');
  */
 const { StyleSheet } = require('./rn');
 const { IS_WEB, SAFE_TOP_PADDING, WEB_TOP_PADDING } = require('./IS_WEB');
-const { UIConfig } = require('./uiConfig');
-const { getShadowStyle } = require('./shadowStyle');
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: 色.白, paddingTop: IS_WEB ? WEB_TOP_PADDING : SAFE_TOP_PADDING },
@@ -29,7 +27,6 @@ const styles = StyleSheet.create({
   },
   navLeft: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 },
   syncContainer: { flexDirection: 'row', alignItems: 'center' },
-  syncTimeText: { fontSize: 9, color: 色.灰 },
   // 群（ライブ／立ちの増減／表示の大きさ）どうしは離し、群の中はくっつける
   navRight: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   resetBtn: {
@@ -41,32 +38,6 @@ const styles = StyleSheet.create({
     marginRight: 2,
   },
   resetBtnText: { color: 色.白, fontWeight: 'bold', fontSize: 12 },
-  groupBadge: {
-    marginLeft: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 色.地,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  groupBadgeWeb: Object.assign(
-    {
-      backgroundColor: 'rgba(0,122,255,0.1)',
-      borderColor: 'rgba(0,122,255,0.2)',
-      borderWidth: 1,
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-      borderRadius: 8,
-    },
-    getShadowStyle({
-      shadowColor: 色.青,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 12,
-      elevation: 8,
-    })
-  ),
   // ライブをリンクで配るボタン。ライブ中だけ出る
   shareBtn: {
     flexDirection: 'row',
@@ -150,8 +121,6 @@ const styles = StyleSheet.create({
     backgroundColor: 色.灰,
     gap: 6,
   },
-  liveHostHeader: { backgroundColor: 色.青 },
-  liveJoinHeader: { backgroundColor: 色.青 },
   liveActiveHeader: { backgroundColor: 色.青 },
   // ライブ名が長いときは、名前のほうを縮めて台数を残す。
   // 台数は「相手に届いているか」を見るためのもので、消えると意味が無い
@@ -171,35 +140,7 @@ const styles = StyleSheet.create({
   },
   liveLimitText: { color: 色.白, fontSize: 10, fontWeight: 'bold' },
   gridArea: { flex: 1, backgroundColor: 色.白 },
-  tallWrapper: { flex: 1, flexDirection: 'column' },
   gridRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', minWidth: '100%' },
-  fixedFooter: {
-    flexDirection: 'row',
-    height: UIConfig.footerHeight,
-    backgroundColor: 色.地,
-    borderTopWidth: 1,
-    borderTopColor: 色.区切り,
-  },
-  footerLabelCell: {
-    width: UIConfig.headerWidth,
-    height: UIConfig.footerHeight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 色.地,
-    borderRightWidth: 1,
-    borderRightColor: 色.黒,
-  },
-  footerLabelText: { fontSize: 10, fontWeight: 'bold', color: 色.文字_二 },
-  footerNameCell: {
-    height: UIConfig.footerHeight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRightWidth: 1,
-    borderRightColor: 色.黒,
-    borderBottomWidth: 1,
-    borderBottomColor: 色.黒,
-    padding: 4,
-  },
   footerName: { fontSize: 14, fontWeight: 'bold', textAlign: 'center' },
   guestLabel: { fontSize: 9, color: 色.灰 },
   emptyOverlay: Object.assign({}, StyleSheet.absoluteFillObject, {

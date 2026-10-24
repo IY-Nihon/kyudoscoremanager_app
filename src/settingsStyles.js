@@ -3,11 +3,10 @@
 const { 色 } = require('./iro.js');
 /**
  * 設定画面の見た目の決まり。設定画面（SettingsScreen.js）と、そこから切り出した窓
- * （書き出し・問い合わせ・アカウントの削除など）で分け合う（2026-10-05 に SettingsScreen.js から移した）。
+ * （書き出し・問い合わせ・紹介への掲載の選び）で分け合う（2026-10-05 に SettingsScreen.js から移した）。
  */
 const { StyleSheet } = require('./rn');
 const { IS_WEB, SAFE_TOP_PADDING, WEB_TOP_PADDING } = require('./IS_WEB');
-const { getShadowStyle } = require('./shadowStyle');
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: 色.地, paddingTop: IS_WEB ? WEB_TOP_PADDING : SAFE_TOP_PADDING },
@@ -49,7 +48,6 @@ const styles = StyleSheet.create({
   itemLeft: { flexDirection: 'row', alignItems: 'center' },
   itemIcon: { width: 24, marginRight: 12 },
   itemText: { fontSize: 17, color: 色.黒 },
-  iconContainer: { width: 32, height: 32, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
   itemRight: { flexDirection: 'row', alignItems: 'center' },
   timestamp: { fontSize: 12, color: 色.灰 },
   // 団体ID/団体名は値が長く、狭い画面ではラベルと同じ行に収まらない。
@@ -144,29 +142,6 @@ const styles = StyleSheet.create({
     borderColor: 色.地_濃い,
   },
   flexRow: { flexDirection: 'row', alignItems: 'center' },
-  supportButton: Object.assign(
-    {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      backgroundColor: 色.桃,
-      marginHorizontal: 16,
-      marginVertical: 8,
-      paddingVertical: 14,
-      paddingHorizontal: 16,
-      borderRadius: 12,
-    },
-    getShadowStyle({
-      shadowColor: 色.桃,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 8,
-      elevation: 4,
-    })
-  ),
-  supportButtonHovered: { backgroundColor: 色.桃_濃い, transform: [{ scale: 0.99 }] },
-  supportButtonContent: { flexDirection: 'row', alignItems: 'center' },
-  supportButtonText: { color: 色.白, fontSize: 16, fontWeight: 'bold', marginLeft: 10 },
   tagChip: {
     backgroundColor: 色.地,
     borderRadius: 16,

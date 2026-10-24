@@ -24,7 +24,6 @@ const styles = StyleSheet.create({
   trashBannerText: { flex: 1, minWidth: 0, color: 色.白, fontSize: 13, fontWeight: '600' },
   trashBannerBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14, backgroundColor: 色.白 },
   trashBannerBtnText: { color: 色.青, fontSize: 14, fontWeight: 'bold' },
-  detailHeader: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 6 },
   detailDate: { fontSize: 24, fontWeight: 'bold', color: 色.黒 },
   detailTitle: { fontSize: 20, color: 色.黒, marginTop: 4, fontWeight: '600' },
   detailTableArea: { flex: 1, padding: 0 },
@@ -87,28 +86,6 @@ const styles = StyleSheet.create({
   monthTabText: { fontSize: 15, color: 色.黒, fontWeight: '500' },
   monthTabTextActive: { color: 色.白 },
   tagFilterContainer: { paddingVertical: 8, backgroundColor: 色.白 },
-  tagAndLogicRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  logicToggleWrapper: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(118,118,128,0.12)',
-    borderRadius: 8,
-    padding: 2,
-    marginRight: 16,
-    marginLeft: 8,
-  },
-  logicBtn: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  logicBtnActive: Object.assign(
-    { backgroundColor: 色.白 },
-    getShadowStyle({
-      shadowColor: 色.黒,
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 1,
-      elevation: 2,
-    })
-  ),
-  logicBtnText: { fontSize: 10, fontWeight: 'bold', color: 色.灰 },
-  logicBtnTextActive: { color: 色.青 },
   tagChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -120,7 +97,6 @@ const styles = StyleSheet.create({
   },
   tagChipActive: { backgroundColor: 色.青の地, borderColor: 色.青 },
   tagChipText: { fontSize: 13, color: 色.文字_三 },
-  tagChipTextActive: { color: 色.青, fontWeight: '600' },
   listContent: { paddingHorizontal: 0 },
   recordItem: {
     flexDirection: 'row',
@@ -152,7 +128,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   countBadgeText: { color: 色.緑, fontSize: 14, fontWeight: 'bold' },
-  separator: { height: StyleSheet.hairlineWidth, backgroundColor: 色.区切り, marginLeft: 20 },
   emptyText: { textAlign: 'center', color: 色.灰, marginTop: 100, fontSize: 17 },
   modalOverlay: {
     flex: 1,
