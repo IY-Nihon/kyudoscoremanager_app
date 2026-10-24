@@ -106,9 +106,9 @@ const ArcherActionModal = ({
     return (
       members
         .filter((部員) => 学.現役か(部員))
-        .filter((部員) => '' === 検索の文 || (部員.name || '').includes(検索の文))
+        .filter((部員) => 検索の文 === '' || (部員.name || '').includes(検索の文))
         // 男女で絞る。男女別の立ちを組むとき、毎回名前を探さずに済む
-        .filter((部員) => '全員' === 男女の絞り || (部員.gender || '') === 男女の絞り)
+        .filter((部員) => 男女の絞り === '全員' || (部員.gender || '') === 男女の絞り)
         .sort((甲, 乙) => {
           const 甲は入っている = 今の射手たち.some((一人) => 一人.memberId === 甲.id);
           if (甲は入っている !== 今の射手たち.some((一人) => 一人.memberId === 乙.id))
@@ -119,10 +119,10 @@ const ArcherActionModal = ({
           if (学年の差) return 学年の差;
           const cVal = (性別) => {
             const 整えた = (性別 || '').trim();
-            return '男子' === 整えた ? 0 : '女子' === 整えた ? 1 : 2;
+            return 整えた === '男子' ? 0 : 整えた === '女子' ? 1 : 2;
           };
           const uVal = cVal(甲.gender) - cVal(乙.gender);
-          return 0 !== uVal ? uVal : (甲.name || '').localeCompare(乙.name || '', 'ja');
+          return uVal !== 0 ? uVal : (甲.name || '').localeCompare(乙.name || '', 'ja');
         })
     );
   }, [members, archers, 検索の文, 今の射手たち, 男女の絞り]);
@@ -140,11 +140,13 @@ const ArcherActionModal = ({
     const 候補 = members
       .filter((部員) => 学.卒業生か(部員))
       .concat(alumniState || [])
-      .filter((部員) => '' === 検索の文 || (部員.name || '').includes(検索の文));
+      .filter((部員) => 検索の文 === '' || (部員.name || '').includes(検索の文));
     const tVal = {};
     候補.forEach((部員) => {
       const 期 = 部員.termKi || 999;
-      tVal[期] || (tVal[期] = []);
+      if (!tVal[期]) {
+        tVal[期] = [];
+      }
       tVal[期].push(部員);
     });
     return Object.keys(tVal)
@@ -177,8 +179,13 @@ const ArcherActionModal = ({
   };
   const 客名で決める = () => {
     const 名前 = 客名の下書き.trim();
-    名前 &&
-      (onSetGuestName ? onSetGuestName(名前) : useScoreStore.getState().setArcherGuestName(archerId, 名前));
+    if (名前) {
+      if (onSetGuestName) {
+        onSetGuestName(名前);
+      } else {
+        useScoreStore.getState().setArcherGuestName(archerId, 名前);
+      }
+    }
     客名の入力中を置く(false);
     客名の下書きを置く('');
     onClose();
@@ -380,7 +387,7 @@ const ArcherActionModal = ({
                     onChangeText={検索の文を置く}
                     placeholderTextColor={色.灰}
                   />
-                  {'' !== 検索の文 && (
+                  {検索の文 !== '' && (
                     <TouchableOpacity onPress={() => 検索の文を置く('')}>
                       <Icons.Ionicons name="close-circle" size={18} color={色.区切り} />
                     </TouchableOpacity>
@@ -400,7 +407,7 @@ const ArcherActionModal = ({
                       accessibilityState={{ selected: 男女の絞り === 名 }}
                     >
                       <Text style={[styles.男女の絞りの字, 男女の絞り === 名 && styles.男女の絞りの字選択中]}>
-                        {'全員' === 名 ? 名 : 学.性別の名前(名, 決まり)}
+                        {名 === '全員' ? 名 : 学.性別の名前(名, 決まり)}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -442,8 +449,8 @@ const ArcherActionModal = ({
                                   <Text
                                     style={[
                                       styles.menuText,
-                                      '男子' === 部員.gender && { color: 色.青 },
-                                      '女子' === 部員.gender && { color: 色.桃 },
+                                      部員.gender === '男子' && { color: 色.青 },
+                                      部員.gender === '女子' && { color: 色.桃 },
                                       sVal && { opacity: 0.5 },
                                     ]}
                                   >
@@ -481,7 +488,7 @@ const ArcherActionModal = ({
                   <React.Fragment key={期の組.term}>
                     <TouchableOpacity style={styles.termHeader} onPress={() => toggleTerm(期の組.term)}>
                       <Text style={styles.termTitle}>
-                        {999 === Number(期の組.term) ? '不明' : 期の組.term}期
+                        {Number(期の組.term) === 999 ? '不明' : 期の組.term}期
                       </Text>
                       <Icons.Ionicons
                         name={expandedTerms.has(期の組.term) ? 'chevron-up' : 'chevron-down'}
@@ -508,8 +515,8 @@ const ArcherActionModal = ({
                               <Text
                                 style={[
                                   styles.menuText,
-                                  '男子' === 部員.gender && { color: 色.青 },
-                                  '女子' === 部員.gender && { color: 色.桃 },
+                                  部員.gender === '男子' && { color: 色.青 },
+                                  部員.gender === '女子' && { color: 色.桃 },
                                   sVal && { opacity: 0.5 },
                                 ]}
                               >

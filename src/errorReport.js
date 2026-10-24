@@ -53,7 +53,7 @@ function 行動を残す(名, 中身) {
   行動たち.push({
     時刻: Date.now(),
     名: String(名).slice(0, 60),
-    中身: null == 中身 ? '' : String(中身).slice(0, 120),
+    中身: 中身 == null ? '' : String(中身).slice(0, 120),
   });
   if (行動たち.length > 控えの数) 行動たち = 行動たち.slice(-控えの数);
 }
@@ -71,7 +71,7 @@ function 行動を捨てる() {
 // ── 便りを組む ───────────────────────────────────
 
 function 短く(値, 長さ) {
-  const 文 = null == 値 ? '' : String(値);
+  const 文 = 値 == null ? '' : String(値);
   return 文.length > 長さ ? 文.slice(0, 長さ) + '…' : 文;
 }
 
@@ -84,7 +84,7 @@ function 短く(値, 長さ) {
  */
 function 不具合の便を組む(誤り, 付帯) {
   const 付帯の中身 = 付帯 || {};
-  const 中 = 誤り && 'object' == typeof 誤り ? 誤り : { message: 誤り };
+  const 中 = 誤り && typeof 誤り === 'object' ? 誤り : { message: 誤り };
   const 時刻 = 付帯の中身.時刻 || Date.now();
   return {
     id: 付帯の中身.id || 時刻 + '-' + Math.random().toString(36).slice(2, 8),
@@ -98,7 +98,7 @@ function 不具合の便を組む(誤り, 付帯) {
     役割: 短く(付帯の中身.役割 || '', 20),
     版: 短く(付帯の中身.版 || '', 40),
     端末: 短く(付帯の中身.端末 || '', 200),
-    回線: false === 付帯の中身.回線 ? 'つながっていない' : 'つながっている',
+    回線: 付帯の中身.回線 === false ? 'つながっていない' : 'つながっている',
     回数: 1,
   };
 }
@@ -159,11 +159,15 @@ function 間に合わなければ諦める(約束, ミリ秒, 仕掛け) {
     Promise.resolve(約束).then(
       (返り) => {
         if (済み) return;
-        ((済み = true), clearTimeout(札), 応(返り));
+        済み = true;
+        clearTimeout(札);
+        応(返り);
       },
       (誤り) => {
         if (済み) return;
-        ((済み = true), clearTimeout(札), 否(誤り));
+        済み = true;
+        clearTimeout(札);
+        否(誤り);
       }
     );
   });
@@ -270,7 +274,7 @@ function 外向きの形(便) {
     role: 便の中身.役割 || '',
     version: 便の中身.版 || '',
     device: 便の中身.端末 || '',
-    online: 'つながっていない' !== 便の中身.回線,
+    online: 便の中身.回線 !== 'つながっていない',
     count: 便の中身.回数 || 1,
   };
 }

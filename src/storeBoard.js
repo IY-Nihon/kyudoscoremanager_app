@@ -34,8 +34,8 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => ({
       lockedBlocks: {},
       lastModified: Date.now(),
     };
-    const 直した = 'number' != typeof 位置 || isNaN(位置) ? [...元, 新しい射手] : [...元];
-    if ('number' == typeof 位置 && !isNaN(位置)) {
+    const 直した = typeof 位置 !== 'number' || isNaN(位置) ? [...元, 新しい射手] : [...元];
+    if (typeof 位置 === 'number' && !isNaN(位置)) {
       const 差し込む場所 = Math.max(0, Math.min(位置, 直した.length));
       直した.splice(差し込む場所, 0, 新しい射手);
     }
@@ -63,8 +63,8 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => ({
       lockedBlocks: {},
       lastModified: Date.now(),
     };
-    const 直した = 'number' == typeof 位置 ? [...元] : [...元, 区切り];
-    if ('number' == typeof 位置) 直した.splice(位置, 0, 区切り);
+    const 直した = typeof 位置 === 'number' ? [...元] : [...元, 区切り];
+    if (typeof 位置 === 'number') 直した.splice(位置, 0, 区切り);
     書く({
       archers: 直した,
       historyStack: [...状態().historyStack, 元],
@@ -165,7 +165,7 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => ({
     const 元 = Array.isArray(状態().archers) ? 状態().archers : [];
     const いま = 元.findIndex((列) => 列 && 列.id === 列のid);
     if (いま < 0) return;
-    const 先 = '後' === 向き ? いま + 1 : いま - 1;
+    const 先 = 向き === '後' ? いま + 1 : いま - 1;
     if (先 < 0 || 先 >= 元.length) return;
     const 直した = [...元];
     直した[いま] = 元[先];
@@ -240,8 +240,8 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => ({
       lockedBlocks: {},
       lastModified: Date.now(),
     };
-    const 直した = 'number' == typeof 位置 ? [...元] : [...元, 合計の列];
-    if ('number' == typeof 位置) 直した.splice(位置, 0, 合計の列);
+    const 直した = typeof 位置 === 'number' ? [...元] : [...元, 合計の列];
+    if (typeof 位置 === 'number') 直した.splice(位置, 0, 合計の列);
     書く({
       archers: 直した,
       historyStack: [...状態().historyStack, 元],
@@ -308,8 +308,8 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => ({
   弓具を触れるか: (memberId, 黙って) => {
     const { activeGroupId: 団体, activeRole: 役, myMemberId: 自分 } = 状態();
     if (!団体) return false;
-    if ('group' === 役) return true;
-    if ('member' === 役 && 自分 && String(自分) === String(memberId)) return true;
+    if (役 === 'group') return true;
+    if (役 === 'member' && 自分 && String(自分) === String(memberId)) return true;
     if (!黙って) Alert.alert('権限エラー', '弓具を扱えるのは、団体アカウントか、本人だけです。');
     return false;
   },
@@ -364,7 +364,8 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => ({
     const 直した = (archers || []).map((射手) => {
       if (射手.id === 射手ID) {
         const 列 = [...(射手.arrowLocations || [])];
-        return ((列[番] = 矢所), Object.assign({}, 射手, { arrowLocations: 列, lastModified: 今 }));
+        列[番] = 矢所;
+        return Object.assign({}, 射手, { arrowLocations: 列, lastModified: 今 });
       }
       return 射手;
     });
@@ -386,7 +387,8 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => ({
     const 直した = (元 || []).map((射手) => {
       if (射手.id === 射手ID) {
         const 列 = [...(射手.marks || [])];
-        return ((列[番] = 印), Object.assign({}, 射手, { marks: 列, lastModified: 今 }));
+        列[番] = 印;
+        return Object.assign({}, 射手, { marks: 列, lastModified: 今 });
       }
       return 射手;
     });
@@ -408,12 +410,10 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => ({
       if (射手.id === 射手ID) {
         const 列 = [...(射手.marks || [])];
         const 前の印 = 列[番];
-        const 次の印 = '' === 前の印 ? '○' : '○' === 前の印 ? '\xd7' : '';
-        return (
-          (列[番] = 次の印),
-          (新しい印 = 次の印),
-          Object.assign({}, 射手, { marks: 列, lastModified: 今 })
-        );
+        const 次の印 = 前の印 === '' ? '○' : 前の印 === '○' ? '\xd7' : '';
+        列[番] = 次の印;
+        新しい印 = 次の印;
+        return Object.assign({}, 射手, { marks: 列, lastModified: 今 });
       }
       return 射手;
     });
@@ -459,7 +459,7 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => ({
     const { archers } = 状態();
     const 元 = Array.isArray(archers) ? archers : [];
     const 押した列 = 元.findIndex((射手) => 射手 && 射手.id === 射手ID);
-    if (-1 === 押した列) return;
+    if (押した列 === -1) return;
     if (元[押した列].lockedBlocks?.[塊]) return;
     let 塊の頭 = 押した列;
     for (; 塊の頭 > 0 && 元[塊の頭 - 1] && !元[塊の頭 - 1].isSeparator && !元[塊の頭 - 1].isTotalCalculator;)
@@ -468,7 +468,8 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => ({
     const 直した = 元.map((射手, 番) => {
       if (射手 && 番 >= 塊の頭 && 番 <= 押した列) {
         const 鍵の表 = Object.assign({}, 射手.lockedBlocks || {});
-        return ((鍵の表[塊] = true), Object.assign({}, 射手, { lockedBlocks: 鍵の表, lastModified: 今 }));
+        鍵の表[塊] = true;
+        return Object.assign({}, 射手, { lockedBlocks: 鍵の表, lastModified: 今 });
       }
       return 射手;
     });
@@ -480,7 +481,7 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => ({
     const { archers } = 状態();
     const 元 = Array.isArray(archers) ? archers : [];
     const 押した列 = 元.findIndex((射手) => 射手 && 射手.id === 射手ID);
-    if (-1 === 押した列) return;
+    if (押した列 === -1) return;
     const その射手 = 元[押した列];
     const 掛ける = !その射手.lockedBlocks?.[塊];
     let 塊の頭 = 押した列;
@@ -490,7 +491,8 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => ({
     const 直した = 元.map((射手, 番) => {
       if (射手 && 番 >= 塊の頭 && 番 <= 押した列) {
         const 鍵の表 = Object.assign({}, 射手.lockedBlocks || {});
-        return ((鍵の表[塊] = 掛ける), Object.assign({}, 射手, { lockedBlocks: 鍵の表, lastModified: 今 }));
+        鍵の表[塊] = 掛ける;
+        return Object.assign({}, 射手, { lockedBlocks: 鍵の表, lastModified: 今 });
       }
       return 射手;
     });
@@ -578,7 +580,7 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => ({
     if (状態().書き換えを止めるか()) return;
     if (状態().isLiveActive && 状態().liveSessionName) return void 状態().sharedUndo(-1);
     const { historyStack, archers: 今の射手 } = 状態();
-    if (0 === historyStack.length) return;
+    if (historyStack.length === 0) return;
     // 中身が変わった射手には新しい日時を打ち直す。打たないと、ライブ中の
     // 取り消しが相手に届かず、主催者の画面だけ戻る食い違いになる
     const 戻す元 = 履歴の一手(historyStack[historyStack.length - 1]);
@@ -599,7 +601,7 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => ({
     if (状態().書き換えを止めるか()) return;
     if (状態().isLiveActive && 状態().liveSessionName) return void 状態().sharedUndo(1);
     const { redoStack, archers: 今の射手 } = 状態();
-    if (0 === redoStack.length) return;
+    if (redoStack.length === 0) return;
     // 取り消しと同じ理由で日時を打ち直す。射数を戻すのも同じ
     const 戻す元 = 履歴の一手(redoStack[redoStack.length - 1]);
     const 射数 = 控えの射数(戻す元) ?? 状態().shotsPerRound;

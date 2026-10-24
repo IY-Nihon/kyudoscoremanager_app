@@ -99,7 +99,7 @@ const MemberScreen = () => {
   // 一覧のまとめ方（学校の部で区分があるとき切り替える。学年の無い団体は区分ごと）
   const [まとめ方, まとめ方を置く] = React.useState('学年');
   const 区分で並べる =
-    区分たち.length > 0 && 'member' !== activeRole && (決まり.学年なし || '区分' === まとめ方);
+    区分たち.length > 0 && activeRole !== 'member' && (決まり.学年なし || まとめ方 === '区分');
   // 学年の札（在籍の学年とその他）。5 つまでは 1 段、それより多い（高専・6 年制）と 2 段に均等に割る
   const 学年の札 = [...決まり.在籍の学年.map(String), '0'];
   const 札の列の数 = 学年の札.length <= 5 ? 学年の札.length : Math.ceil(学年の札.length / 2);
@@ -121,7 +121,7 @@ const MemberScreen = () => {
   // 押せない行が続くだけだった。人数の多い団体ほど自分を探しにくい。
   // 弓具を登録しに来る人にとって、この画面に用があるのは自分の行だけ
   const 見せる名簿 =
-    'member' === activeRole
+    activeRole === 'member'
       ? (members || []).filter((部員1人) => 部員1人 && 部員1人.id === myMemberId)
       : members || [];
   const filteredMembers = 見せる名簿.filter(
@@ -134,10 +134,10 @@ const MemberScreen = () => {
       if (学年の差) return 学年の差;
       const 性別の順 = (性別) => {
         const 整えた = (性別 || '').trim();
-        return '男子' === 整えた ? 0 : '女子' === 整えた ? 1 : 2;
+        return 整えた === '男子' ? 0 : 整えた === '女子' ? 1 : 2;
       };
       const 性別の差 = 性別の順(甲.gender) - 性別の順(乙.gender);
-      return 0 !== 性別の差 ? 性別の差 : (甲.name || '').localeCompare(乙.name || '', 'ja');
+      return 性別の差 !== 0 ? 性別の差 : (甲.name || '').localeCompare(乙.name || '', 'ja');
     });
   const graduateMembers = filteredMembers
     .filter((部員) => 学.卒業生か(部員))
@@ -147,10 +147,10 @@ const MemberScreen = () => {
       if (kiB !== kiA) return kiB - kiA;
       const 性別の順 = (性別) => {
         const 整えた = (性別 || '').trim();
-        return '男子' === 整えた ? 0 : '女子' === 整えた ? 1 : 2;
+        return 整えた === '男子' ? 0 : 整えた === '女子' ? 1 : 2;
       };
       const 性別の差 = 性別の順(甲.gender) - 性別の順(乙.gender);
-      return 0 !== 性別の差 ? 性別の差 : (甲.name || '').localeCompare(乙.name || '', 'ja');
+      return 性別の差 !== 0 ? 性別の差 : (甲.name || '').localeCompare(乙.name || '', 'ja');
     });
   // 卒業生は期ごと（期を使わない団体は卒業した年度ごと）にまとめる
   const 卒業の組の名 = (部員) =>
@@ -178,7 +178,7 @@ const MemberScreen = () => {
           IS_WEB && { cursor: 'pointer' },
         ]}
         onPress={() => {
-          if ('member' !== activeRole || 部員.id === myMemberId) 編集を開く(部員);
+          if (activeRole !== 'member' || 部員.id === myMemberId) 編集を開く(部員);
           else Alert.alert('制限', 'メンバーモードでは自分以外の情報は編集できません。');
         }}
       >
@@ -188,7 +188,7 @@ const MemberScreen = () => {
               style={[
                 styles.genderDot,
                 {
-                  color: '男子' === 部員.gender ? 色.青 : '女子' === 部員.gender ? 色.桃 : 色.灰,
+                  color: 部員.gender === '男子' ? 色.青 : 部員.gender === '女子' ? 色.桃 : 色.灰,
                 },
               ]}
             >
@@ -203,7 +203,7 @@ const MemberScreen = () => {
         <View style={styles.memberEqInfo}>
           {/* 弓力は弓具の中身。個人ログインでは自分のぶんだけ見せる。 */
           /* 他人の行では「弓具未登録」も出さない（登録の有無も中身のうち） */}
-          {'member' === activeRole && 部員.id !== myMemberId ? null : 最新の弓具?.weight ? (
+          {activeRole === 'member' && 部員.id !== myMemberId ? null : 最新の弓具?.weight ? (
             <View style={styles.listWeightBadge}>
               <Text style={styles.listWeightText}>
                 {最新の弓具.weight}
@@ -223,7 +223,7 @@ const MemberScreen = () => {
   // 名簿は雲から遅れて届くので、届いたところで一度だけ開く
   const 自分を開いた = React.useRef(false);
   React.useEffect(() => {
-    if ('member' !== activeRole || 自分を開いた.current) return;
+    if (activeRole !== 'member' || 自分を開いた.current) return;
     const 自分 = (members || []).find((部員1人) => 部員1人 && 部員1人.id === myMemberId);
     if (!自分) return;
     自分を開いた.current = true;
@@ -331,14 +331,15 @@ const MemberScreen = () => {
           <TouchableOpacity
             style={styles.eqAddBtn}
             onPress={() => {
-              (弓具の覚え書き.trim() || 弓力の下書き.trim()) &&
-                (addEquipment(部員.id, {
+              if (弓具の覚え書き.trim() || 弓力の下書き.trim()) {
+                addEquipment(部員.id, {
                   date: new Date(弓具の日付 + 'T12:00:00').getTime() || Date.now(),
                   note: 弓具の覚え書き,
                   weight: 弓力の下書き,
-                }),
-                弓具の覚え書きを置く(''),
-                弓力の下書きを置く(''));
+                });
+                弓具の覚え書きを置く('');
+                弓力の下書きを置く('');
+              }
             }}
           >
             <Text style={styles.eqAddBtnText}>履歴を追加</Text>
@@ -393,7 +394,7 @@ const MemberScreen = () => {
   // 写した値のままだと、団体側で名前や学年を直しても
   // 読み込み直すまで古いまま出る
   const いまの自分 =
-    'member' === activeRole ? (members || []).find((部員1人) => 部員1人 && 部員1人.id === myMemberId) : null;
+    activeRole === 'member' ? (members || []).find((部員1人) => 部員1人 && 部員1人.id === myMemberId) : null;
   const 編集の中身 = (窓として出す) => (
     <View // 窓のときは窓の見た目、画面のときは画面いっぱいに広げる。
       // 窓の枠のまま画面に置くと、右half が空いたままになる
@@ -443,7 +444,7 @@ const MemberScreen = () => {
                 ),
                 // 招待リンク（団体の持ち主が管理者モードのときだけ）。合言葉は逆引き表に置き、
                 // メンバーには一覧させない（src/memberInvite.js）
-                編集中の部員 && 'group' === activeRole && isAdminMode && (
+                編集中の部員 && activeRole === 'group' && isAdminMode && (
                   <招待リンクの欄 団体={activeGroupId} 部員={編集中の部員} />
                 ),
               ]
@@ -665,12 +666,12 @@ const MemberScreen = () => {
         )}
         {/* 弓具は、団体アカウントか本人だけ。個人ログインで他人の */
         /* 画面を開く道は塞いであるが、ここでも確かめる */}
-        {編集中の部員 && ('member' !== activeRole || 編集中の部員.id === myMemberId) && (
+        {編集中の部員 && (activeRole !== 'member' || 編集中の部員.id === myMemberId) && (
           <>
             <Text style={styles.label}>弓具管理</Text>
             {/* 個人ログインでは、窓を挟まずにそのまま履歴を出す。 */
             /* 自分のぶんしか触れないので、隠す意味がない */}
-            {'member' === activeRole ? (
+            {activeRole === 'member' ? (
               弓具履歴の中身(編集中の部員?.id, false)
             ) : (
               <Pressable
@@ -687,7 +688,7 @@ const MemberScreen = () => {
           ...(窓として出す
             ? [
                 <View style={styles.modalFooter}>
-                  {編集中の部員 && 'member' !== activeRole ? (
+                  {編集中の部員 && activeRole !== 'member' ? (
                     <TouchableOpacity
                       style={styles.deleteBtn}
                       onPress={() => 削除を確かめる(編集中の部員.id, 編集中の部員.name)}
@@ -710,7 +711,7 @@ const MemberScreen = () => {
                       const 学年 = parseInt(学年の下書き) || 0;
                       // 期を使わない団体では期を送らない（店が学年に合わせて空にする）
                       const 期 =
-                        !期を使う || '' === 期の下書き ? undefined : parseInt(期の下書き) || undefined;
+                        !期を使う || 期の下書き === '' ? undefined : parseInt(期の下書き) || undefined;
                       const 区分 = 区.付けられる区分(区分の下書き, 区分たち);
                       const 入会年 = parseInt(入会年の下書き, 10);
                       const 入会した年 = 入会年 >= 1900 && 入会年 <= 2100 ? 入会年 : null;
@@ -751,7 +752,7 @@ const MemberScreen = () => {
   // 情報と弓具だけを、そのまま並べた画面にする。
   // 中身（編集の欄・弓具の履歴）は団体ログインと同じものを呼んでいるので、
   // 直すところは1か所で済む。
-  if ('member' === activeRole) {
+  if (activeRole === 'member') {
     const 自分 = (members || []).find((部員1人) => 部員1人 && 部員1人.id === myMemberId);
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -810,7 +811,7 @@ const MemberScreen = () => {
           )}
         </View>
         <View style={{ flexDirection: 'row', gap: 16 }}>
-          {'member' !== activeRole && (
+          {activeRole !== 'member' && (
             <Pressable
               ref={案内の部員追加}
               style={({ hovered }) => [
@@ -849,7 +850,7 @@ const MemberScreen = () => {
           value={検索の文}
           onChangeText={検索の文を置く}
         />
-        {'' !== 検索の文 && (
+        {検索の文 !== '' && (
           <TouchableOpacity // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
             accessible
             accessibilityRole="button"
@@ -861,7 +862,7 @@ const MemberScreen = () => {
           </TouchableOpacity>
         )}
       </View>
-      {区分たち.length > 0 && !決まり.学年なし && 'member' !== activeRole ? (
+      {区分たち.length > 0 && !決まり.学年なし && activeRole !== 'member' ? (
         <View style={styles.まとめ方の列} accessibilityRole="tablist" aria-label="一覧のまとめ方">
           {['学年', '区分'].map((方) => (
             <Pressable
@@ -934,16 +935,16 @@ const MemberScreen = () => {
                 Object.keys(graduateGroups)
                   // 新しい期・年度から。分からない人はいちばん後ろ
                   .sort((甲, 乙) =>
-                    '不明' === 甲
+                    甲 === '不明'
                       ? 1
-                      : '不明' === 乙
+                      : 乙 === '不明'
                         ? -1
                         : 乙.localeCompare(甲, undefined, { numeric: true })
                   )
                   .map((名) => (
                     <View key={`group-${名}`} style={{ marginTop: 10 }}>
                       <Text style={styles.alumniGroupTitle}>
-                        {'不明' === 名 ? '卒業（期・年度不明）' : 名.endsWith('年度') ? `${名}卒業` : 名}
+                        {名 === '不明' ? '卒業（期・年度不明）' : 名.endsWith('年度') ? `${名}卒業` : 名}
                       </Text>
                       {graduateGroups[名].map(renderMemberCard)}
                     </View>

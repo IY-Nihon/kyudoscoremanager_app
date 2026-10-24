@@ -89,7 +89,7 @@ const アプリ内の確認の窓 = ({
   確認を置く,
   知らせる,
 }) => (
-  <Modal visible={null !== 確認} transparent animationType="fade" onRequestClose={() => 確認を置く(null)}>
+  <Modal visible={確認 !== null} transparent animationType="fade" onRequestClose={() => 確認を置く(null)}>
     <Pressable
       style={{
         flex: 1,

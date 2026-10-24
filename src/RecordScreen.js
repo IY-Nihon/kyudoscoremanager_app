@@ -214,7 +214,7 @@ const RecordScreen = () => {
   const 航路 = 航.useNavigation();
   // ライブ中の帯。主催者は押して配る窓を開けるので、押せる部品にする
   const ライブの帯 = isHost ? TouchableOpacity : View;
-  const 倍率 = 'number' == typeof viewScale && !isNaN(viewScale) && viewScale > 0 ? viewScale : 1;
+  const 倍率 = typeof viewScale === 'number' && !isNaN(viewScale) && viewScale > 0 ? viewScale : 1;
   if (!isHydrated) return null;
   // ライブに何台つないでいるか。電波の切れる弓道場で、
   // 相手に届いているかをその場で見るために出す（src/livePresence.js）
@@ -301,15 +301,16 @@ const RecordScreen = () => {
     // 同期の失敗はいつも知らせる。切り替えで消せるようにしていたころは、
     // 切っていることを忘れたまま何日も同期できていない状態になり得た。
     // しかも切り替えは保存されておらず、開き直すと勝手に戻っていた
-    if ('同期エラー' === syncStatus) 知らせを置く('同期エラー: クラウドとの同期に失敗しました');
+    if (syncStatus === '同期エラー') 知らせを置く('同期エラー: クラウドとの同期に失敗しました');
   }, [syncStatus]);
   React.useEffect(() => {
     if (lastResetHandled > 0 && 扱ったリセット.current < lastResetHandled) {
       const 自分のリセット = lastResetHandled === useScoreStore.getState().lastPushedTimestamp;
       扱ったリセット.current = lastResetHandled;
-      自分のリセット ||
-        (知らせる('リセットしました。'),
-        ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning));
+      if (!自分のリセット) {
+        知らせる('リセットしました。');
+        ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning);
+      }
     }
   }, [lastResetHandled]);
   // 誰かがライブ中に取り消し／やり直しをしたら短く知らせる。
@@ -358,14 +359,14 @@ const RecordScreen = () => {
     const 試す = () => {
       if (止めた) return;
       const 店 = useScoreStore.getState();
-      if (店.isLiveActive || !店.ライブの続き || 'function' !== typeof 店.ライブに戻る) return;
+      if (店.isLiveActive || !店.ライブの続き || typeof 店.ライブに戻る !== 'function') return;
       Promise.resolve(店.ライブに戻る()).catch(() => {});
     };
     試す();
     const 後で = setTimeout(試す, 4000);
     const もっと後で = setTimeout(試す, 15000);
     const 見張り = AppState.addEventListener('change', (状態) => {
-      if ('active' === 状態) 試す();
+      if (状態 === 'active') 試す();
     });
     return () => {
       止めた = true;
@@ -376,15 +377,13 @@ const RecordScreen = () => {
   }, []);
   React.useEffect(() => {
     let 止める;
-    return (
-      ライブ名の窓 &&
-        'join' === ライブの種類 &&
-        (useScoreStore.getState().fetchActiveLiveSessions(),
-        (止める = useScoreStore.getState().listenToLiveSessions())),
-      () => {
-        if (止める) 止める();
-      }
-    );
+    if (ライブ名の窓 && ライブの種類 === 'join') {
+      useScoreStore.getState().fetchActiveLiveSessions();
+      止める = useScoreStore.getState().listenToLiveSessions();
+    }
+    return () => {
+      if (止める) 止める();
+    };
   }, [ライブ名の窓, ライブの種類]);
   new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
   // 案内の最中は畳まない。案内が指す先は全部この帯の中にあり、
@@ -415,7 +414,7 @@ const RecordScreen = () => {
   const 札を止める = React.useRef(false);
   札を止める.current = 案内中 || 見るだけ中;
   React.useEffect(() => {
-    if ('group' !== 役割) return undefined;
+    if (役割 !== 'group') return undefined;
     const 時計 = setTimeout(() => {
       useScoreStore
         .getState()
@@ -434,7 +433,7 @@ const RecordScreen = () => {
   const 区分たち = useScoreStore((状態) => 状態.divisions);
   const 進級する人がいる = React.useMemo(() => 学年の組(members).length > 0, [members, 団体の種類]);
   const 進級の窓を出す =
-    'group' === 役割 &&
+    役割 === 'group' &&
     !!進級待ち &&
     進級する人がいる &&
     !進級の窓を閉じた &&
@@ -452,8 +451,11 @@ const RecordScreen = () => {
       return void (知らせる('共有リンクでは名前を選べません'),
       ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning));
     ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Medium);
-    archers.find((射手) => 射手.id === 射手ID) &&
-      (選んだ射手IDを置く(射手ID), 選んだ射手の順を置く(順), 人の窓を出す(true));
+    if (archers.find((射手) => 射手.id === 射手ID)) {
+      選んだ射手IDを置く(射手ID);
+      選んだ射手の順を置く(順);
+      人の窓を出す(true);
+    }
   };
   const // ── 立ち順を指で動かす（長押しで掴んで、滑らせて、離す）───────────
     //
@@ -472,18 +474,28 @@ const RecordScreen = () => {
   const 拡大の上 = 2;
   const 射数の窓を閉じる = () => 射数の窓を出す(false);
   const 射数を変える = (本数) => {
-    本数 < shotsPerRound &&
-    archers.some(
-      (射手) => 射手 && Array.isArray(射手.marks) && 射手.marks.slice(本数).some((印) => '' !== 印)
-    )
-      ? (減らす先の射数を置く(本数), 射数を減らす確認を出す(true))
-      : (setShotsPerRound(本数), ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Medium));
+    if (
+      本数 < shotsPerRound &&
+      archers.some(
+        (射手) => 射手 && Array.isArray(射手.marks) && 射手.marks.slice(本数).some((印) => 印 !== '')
+      )
+    ) {
+      減らす先の射数を置く(本数);
+      射数を減らす確認を出す(true);
+    } else {
+      setShotsPerRound(本数);
+      ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Medium);
+    }
   };
   const 入力した射数で決める = () => {
     const 本数 = parseInt(射数の下書き, 10);
-    !isNaN(本数) && 本数 >= 1 && 本数 <= 500
-      ? (射数の入力窓を出す(false), 射数を変える(本数))
-      : (知らせを置く('1〜500までの数字を入力してください'), setTimeout(() => 知らせを置く(null), 1500));
+    if (!isNaN(本数) && 本数 >= 1 && 本数 <= 500) {
+      射数の入力窓を出す(false);
+      射数を変える(本数);
+    } else {
+      知らせを置く('1〜500までの数字を入力してください');
+      setTimeout(() => 知らせを置く(null), 1500);
+    }
   };
   const ライブを始める窓へ = (種類) => {
     ライブの選び窓を出す(false);
@@ -585,7 +597,7 @@ const RecordScreen = () => {
   // 掴んだ列は抜けた跡として薄く残し、指には別の札（下の 運ぶ札）が付いてくる
   const 見えている並び = (() => {
     const 一覧 = (Array.isArray(archers) ? archers : []).filter((射手) => !!射手);
-    if (!掴んだ列 || null === 落とす先) return 一覧;
+    if (!掴んだ列 || 落とす先 === null) return 一覧;
     const いま = 一覧.findIndex((列) => 列.id === 掴んだ列);
     if (いま < 0 || いま === 落とす先) return 一覧;
     const 写し = [...一覧];
@@ -625,9 +637,9 @@ const RecordScreen = () => {
     const 箱 = [];
     for (let 番 = 0; 番 < 一覧.length; 番++) {
       const node = 名の欄のnode.current[一覧[番].id];
-      if (!node || 'function' != typeof node.getBoundingClientRect) continue;
+      if (!node || typeof node.getBoundingClientRect !== 'function') continue;
       const 枠 = node.getBoundingClientRect();
-      const ずれ = 'undefined' == typeof window ? 0 : (横に並べる ? window.scrollY : window.scrollX) || 0;
+      const ずれ = typeof window === 'undefined' ? 0 : (横に並べる ? window.scrollY : window.scrollX) || 0;
       箱.push({
         i: 番,
         頭: (横に並べる ? 枠.top : 枠.left) + ずれ,
@@ -654,13 +666,13 @@ const RecordScreen = () => {
     if (縦位置 == null) return;
     動かし始めた.current = true;
     const 行 = 名の行のnode.current;
-    if (行 && 'function' == typeof 行.getBoundingClientRect) {
+    if (行 && typeof 行.getBoundingClientRect === 'function') {
       const 枠 = 行.getBoundingClientRect();
-      const ずれ = 'undefined' != typeof window && window.scrollY ? window.scrollY : 0;
+      const ずれ = typeof window !== 'undefined' && window.scrollY ? window.scrollY : 0;
       set指の横(縦位置 - (枠.top + ずれ));
     }
     const 番 = 測る手.current ? 測る手.current(縦位置) : null;
-    if (null !== 番 && 番 !== 落とす先のref.current) {
+    if (番 !== null && 番 !== 落とす先のref.current) {
       落とす先のref.current = 番;
       set落とす先(番);
     }
@@ -699,7 +711,7 @@ const RecordScreen = () => {
     const id = 掴んだ列のref.current;
     const 先 = 落とす先のref.current;
     掴むのをやめる();
-    if (!id || null === 先) return;
+    if (!id || 先 === null) return;
     // 画面にはもう「離したらこうなる」並びが出ている。その並びのとおりに
     // 決めるだけなので、指していた番号をそのまま渡す
     const 元の一覧 = (Array.isArray(archers) ? archers : []).filter((射手) => !!射手);
@@ -716,7 +728,7 @@ const RecordScreen = () => {
   // 押していない指に札が付いてくる（2026-09-09 に踏んだ）。
   // 窓ごと受け止めれば、どこで離しても必ず終わる。
   React.useEffect(() => {
-    if (!掴んだ列 || !IS_WEB || 'undefined' == typeof window) return;
+    if (!掴んだ列 || !IS_WEB || typeof window === 'undefined') return;
     const 終わる = () => 離す手.current && 離す手.current();
     window.addEventListener('mouseup', 終わる);
     window.addEventListener('touchend', 終わる);
@@ -743,13 +755,14 @@ const RecordScreen = () => {
       onPanResponderMove: (_e, 動き) => {
         // 札を指に付いてこさせる。名前の並びの端からの座標に直して置く
         const 行 = 名の行のnode.current;
-        if (行 && 'function' == typeof 行.getBoundingClientRect) {
+        if (行 && typeof 行.getBoundingClientRect === 'function') {
           const 枠 = 行.getBoundingClientRect();
-          const ずれ = 'undefined' == typeof window ? 0 : (横に並べる ? window.scrollY : window.scrollX) || 0;
+          const ずれ =
+            typeof window === 'undefined' ? 0 : (横に並べる ? window.scrollY : window.scrollX) || 0;
           set指の横((横に並べる ? 動き.moveY : 動き.moveX) - ((横に並べる ? 枠.top : 枠.left) + ずれ));
         }
         const 番 = 測る手.current ? 測る手.current(横に並べる ? 動き.moveY : 動き.moveX) : null;
-        if (null !== 番 && 番 !== 落とす先のref.current) {
+        if (番 !== null && 番 !== 落とす先のref.current) {
           落とす先のref.current = 番;
           set落とす先(番);
         }
@@ -859,12 +872,12 @@ const RecordScreen = () => {
                 ? formatMemberName(射手.name, members)
                 : '選択'}
           </Text>
-          {射手.isGuest || (!射手.isTotalCalculator && '' !== 射手.name) ? (
+          {射手.isGuest || (!射手.isTotalCalculator && 射手.name !== '') ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 * 倍率, marginTop: 1 * 倍率 }}>
               {射手.isGuest ? (
                 <Text style={[styles.guestLabel, { fontSize: 9 * 倍率 }]}>(ゲスト)</Text>
               ) : null}
-              {!射手.isTotalCalculator && '' !== 射手.name ? (
+              {!射手.isTotalCalculator && 射手.name !== '' ? (
                 <View
                   style={{
                     paddingHorizontal: 4 * 倍率,
@@ -876,7 +889,7 @@ const RecordScreen = () => {
                       射手.gender === '未設定' ||
                       !['男子', '女子'].includes(射手.gender)
                         ? 基本色.灰
-                        : '男子' === 射手.gender
+                        : 射手.gender === '男子'
                           ? 基本色.青
                           : 基本色.桃,
                   }}
@@ -974,7 +987,7 @@ const RecordScreen = () => {
    * 中身は同じなので、2か所に書き写さずここ1つにする。
    */
   const 運ぶ札 = () => {
-    if (!掴んだ列 || null === 指の横) return null;
+    if (!掴んだ列 || 指の横 === null) return null;
     const 持ち物 = 見えている並び.find((列) => 列 && 列.id === 掴んだ列);
     if (!持ち物) return null;
     const 名 = 持ち物.isTotalCalculator
@@ -1043,7 +1056,7 @@ const RecordScreen = () => {
         </TouchableOpacity>
       ) : null}
       <進級待ちの帯
-        見える={'group' === 役割 && !!進級待ち && 進級する人がいる && !進級の窓を出す && !見るだけ中}
+        見える={役割 === 'group' && !!進級待ち && 進級する人がいる && !進級の窓を出す && !見るだけ中}
       />
       {/* 履歴の記録を直しているあいだの帯。ここから保存して履歴へ戻るか、やめて戻る。 */
       /* 「終了・保存」とライブはこの間は出さない（記録が二重になる・ライブに結びつく） */}
@@ -1160,10 +1173,10 @@ const RecordScreen = () => {
               <Text style={styles.resetBtnText}>リセット</Text>
             </Pressable>
             <View style={styles.syncContainer}>
-              {isNetworkOnline && '同期エラー' !== syncStatus ? (
-                '同期中' === syncStatus ? (
+              {isNetworkOnline && syncStatus !== '同期エラー' ? (
+                syncStatus === '同期中' ? (
                   <Icons.Ionicons name="cloud-upload-outline" size={14} color={基本色.青} />
-                ) : '同期済み' === syncStatus ? (
+                ) : syncStatus === '同期済み' ? (
                   <Icons.Ionicons name="cloud-done-outline" size={14} color={基本色.緑} />
                 ) : (
                   <Icons.Ionicons name="cloud-outline" size={14} color={基本色.灰} />
@@ -1208,12 +1221,16 @@ const RecordScreen = () => {
                   // 共有リンクで来た人は、抜けたら見るものが無い。
                   // ライブから出るだけだと空の記録表に取り残されるので、
                   // 入口の画面まで戻す
-                  isLiveActive
-                    ? (来客
-                        ? useScoreStore.getState().共有の来客をやめる()
-                        : useScoreStore.getState().stopLiveSync(),
-                      ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning))
-                    : ライブの選び窓を出す(true);
+                  if (isLiveActive) {
+                    if (来客) {
+                      useScoreStore.getState().共有の来客をやめる();
+                    } else {
+                      useScoreStore.getState().stopLiveSync();
+                    }
+                    ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning);
+                  } else {
+                    ライブの選び窓を出す(true);
+                  }
                 }}
                 style={[styles.liveBtn, isLiveActive && styles.liveBtnActive]}
               >
@@ -1587,7 +1604,7 @@ const RecordScreen = () => {
                                   {!!射手.isGuest && (
                                     <Text style={[styles.guestLabel, { fontSize: 9 * 倍率 }]}>(ゲスト)</Text>
                                   )}
-                                  {!射手.isTotalCalculator && '' !== 射手.name ? (
+                                  {!射手.isTotalCalculator && 射手.name !== '' ? (
                                     <View
                                       style={{
                                         marginTop: 2,
@@ -1600,7 +1617,7 @@ const RecordScreen = () => {
                                           射手.gender === '未設定' ||
                                           !['男子', '女子'].includes(射手.gender)
                                             ? 基本色.灰
-                                            : '男子' === 射手.gender
+                                            : 射手.gender === '男子'
                                               ? 基本色.青
                                               : 基本色.桃,
                                       }}
@@ -1619,7 +1636,7 @@ const RecordScreen = () => {
                 </View>,
               ]}
         </View>
-        {0 === archers.length && (
+        {archers.length === 0 && (
           <View style={styles.emptyOverlay}>
             <Text style={styles.emptyTitle}>記録を始めましょう</Text>
             <Text style={styles.emptyHint}>下の「人」ボタンで射手を追加</Text>
@@ -1639,10 +1656,13 @@ const RecordScreen = () => {
                 onPress={() => {
                   // ライブ中は共有の知らせ（「取り消しされました。」）が
                   // 押した本人にも出る。ここでも出すと二つ重なる
-                  戻せる &&
-                    (undo(),
-                    ライブの知らせに任せる || 知らせる('元に戻しました'),
-                    ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light));
+                  if (戻せる) {
+                    undo();
+                    if (!ライブの知らせに任せる) {
+                      知らせる('元に戻しました');
+                    }
+                    ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
+                  }
                 }}
                 disabled={!戻せる} // 自動での確かめ用。絵だけのボタンは外から指せない
                 testID="取り消し"
@@ -1660,10 +1680,13 @@ const RecordScreen = () => {
                   hovered && 進める && IS_WEB && { backgroundColor: 基本色.地 },
                 ]}
                 onPress={() => {
-                  進める &&
-                    (redo(),
-                    ライブの知らせに任せる || 知らせる('やり直しました'),
-                    ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light));
+                  if (進める) {
+                    redo();
+                    if (!ライブの知らせに任せる) {
+                      知らせる('やり直しました');
+                    }
+                    ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
+                  }
                 }}
                 disabled={!進める}
                 testID="やり直し"
@@ -1806,7 +1829,7 @@ const RecordScreen = () => {
                 if (よその団体)
                   return void (知らせる('共有されたライブは、主催者の側で保存されます'),
                   ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning));
-                if (0 === archers.length) return;
+                if (archers.length === 0) return;
                 // 設定で出欠確認を切っていれば、窓を飛ばして保存へ進む。
                 // 出欠は空のまま保存する。記録に出ている人は出欠画面で
                 // そのまま出席として数えられる（遅刻・早退の区別は付かない）
@@ -1874,7 +1897,7 @@ const RecordScreen = () => {
           if (見るだけ中) return void 閲覧中に押された();
           列を動かす(選んだ射手ID, 向き);
           知らせる(
-            '前' === 向き
+            向き === '前'
               ? 横に並べる
                 ? '上へ動かしました'
                 : '右へ動かしました'
@@ -1907,7 +1930,7 @@ const RecordScreen = () => {
             .split(/[,\u3001\s]+/)
             .map((タグ1つ) => (タグ1つ.startsWith('#') ? タグ1つ : `#${タグ1つ}`))
             .map((タグ1つ) => タグ1つ.trim())
-            .filter((タグ1つ) => '#' !== タグ1つ);
+            .filter((タグ1つ) => タグ1つ !== '#');
           const 保存 = saveSession(題, 覚え書き, 統計に入れる, タグ, tempAttendance);
           useScoreStore.getState().setCurrentSessionTags([]);
           知らせる('保存しました');
@@ -2035,7 +2058,7 @@ const RecordScreen = () => {
           // 射数を合わせたあとの並びを店から取り直す（k は合わせる前の写し）
           const いまの並び = useScoreStore.getState().archers;
           const 入れる並び =
-            '後ろに足す' === 入れ方
+            入れ方 === '後ろに足す'
               ? [...(Array.isArray(いまの並び) ? いまの並び : []), ...newArchers]
               : newArchers;
           useScoreStore.getState().入れた印をまとめて付ける(newArchers);
@@ -2045,7 +2068,7 @@ const RecordScreen = () => {
           // 紙の記録は氏名と○×を、立ち順表は並びだけを読む。
           // どちらも同じ処理を通るので、文言は種類で分ける
           知らせる(
-            'record' === 読み取りの種類 ? '画像から記録を読み取りました' : '画像から立ち順を登録しました'
+            読み取りの種類 === 'record' ? '画像から記録を読み取りました' : '画像から立ち順を登録しました'
           );
           ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Success);
         }}

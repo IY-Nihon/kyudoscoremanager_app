@@ -142,15 +142,15 @@ const 下の帯 = React.memo(({ state, descriptors, navigation: nav }) => {
   const 名前たち = state.routes.map((道) => {
     const { options } = descriptors[道.key];
     const 字 =
-      undefined !== options.tabBarLabel
+      options.tabBarLabel !== undefined
         ? options.tabBarLabel
-        : undefined !== options.title
+        : options.title !== undefined
           ? options.title
           : 道.name;
     return String(字);
   });
   const 並べ方 = 並べ方を決める({ 名前たち, 幅: 測った幅 ?? 窓.width, 拡大: 窓.fontScale || 1 });
-  const 絵だけ = '絵だけ' === 並べ方.型;
+  const 絵だけ = 並べ方.型 === '絵だけ';
   const 履歴のタグ = useScoreStore((状態) => 状態.historySelectedTags || []);
   const 分析のタグ = useScoreStore((状態) => 状態.analysisSelectedTags || []);
   const 記録のタグ = useScoreStore((状態) => 状態.currentSessionTags || []);
@@ -174,9 +174,9 @@ const 下の帯 = React.memo(({ state, descriptors, navigation: nav }) => {
           {state.routes.map((道, 番) => {
             const { options } = descriptors[道.key];
             const 字 =
-              undefined !== options.tabBarLabel
+              options.tabBarLabel !== undefined
                 ? options.tabBarLabel
-                : undefined !== options.title
+                : options.title !== undefined
                   ? options.title
                   : 道.name;
             const 今ここ = state.index === 番;
@@ -185,9 +185,15 @@ const 下の帯 = React.memo(({ state, descriptors, navigation: nav }) => {
             const 名前を出す = !絵だけ || 今ここ || !絵がある;
             const 色 = 今ここ ? 今のタブの字の色 : タブの字の色;
             let 印を出す = false;
-            '記録' === 道.name && 記録のタグ.length > 0 && (印を出す = true);
-            '履歴' === 道.name && 履歴のタグ.length > 0 && (印を出す = true);
-            '分析' === 道.name && 分析のタグ.length > 0 && (印を出す = true);
+            if (道.name === '記録' && 記録のタグ.length > 0) {
+              印を出す = true;
+            }
+            if (道.name === '履歴' && 履歴のタグ.length > 0) {
+              印を出す = true;
+            }
+            if (道.name === '分析' && 分析のタグ.length > 0) {
+              印を出す = true;
+            }
             return (
               <Pressable
                 key={番} // 使い方の案内が指す先。繰り返しの中なのでフックは使えない
@@ -292,7 +298,7 @@ const MainNavigator = () => {
         /* 一覧で他人を開こうとすると MemberScreen 側が断り、弓具の欄も */
         /* 自分のぶんしか出さない */}
         {!来客 && <Tab.Screen name="メンバー" component={MemberScreenComp} />}
-        {!来客 && 'group' === 役割 && <Tab.Screen name="出欠" component={AttendanceScreenComp} />}
+        {!来客 && 役割 === 'group' && <Tab.Screen name="出欠" component={AttendanceScreenComp} />}
         {!来客 && <Tab.Screen name="設定" component={SettingsScreenComp} />}
       </Tab.Navigator>
       {/* 来客には出さない。相談役は団体の記録を見て答える作りで、 */

@@ -37,7 +37,7 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
   const [検索の文, 検索の文を置く] = React.useState('');
   const [客名の入力, 客名の入力を置く] = React.useState('');
   const 候補 = (
-    '' === 検索の文.trim()
+    検索の文.trim() === ''
       ? [...members]
       : members.filter((部員) => (部員.name || '').toLowerCase().includes(検索の文.toLowerCase()))
   ).sort((甲, 乙) => {
@@ -45,22 +45,27 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
     if (学年の差) return 学年の差;
     const 性別の順 = (性別) => {
       const 整えた = (性別 || '').trim();
-      return '男子' === 整えた ? 0 : '女子' === 整えた ? 1 : 2;
+      return 整えた === '男子' ? 0 : 整えた === '女子' ? 1 : 2;
     };
     const 性別の差 = 性別の順(甲.gender) - 性別の順(乙.gender);
-    return 0 !== 性別の差 ? 性別の差 : (甲.name || '').localeCompare(乙.name || '', 'ja');
+    return 性別の差 !== 0 ? 性別の差 : (甲.name || '').localeCompare(乙.name || '', 'ja');
   });
-  const 立か = '立目' === 単位;
+  const 立か = 単位 === '立目';
   const 上限 = 立か ? 立の数(shotsPerRound) : shotsPerRound;
   const 学年を開け閉め = (印) => {
     閉じた学年を置く((前) => {
       const 次 = new Set(前);
-      return (次.has(印) ? 次.delete(印) : 次.add(印), 次);
+      if (次.has(印)) {
+        次.delete(印);
+      } else {
+        次.add(印);
+      }
+      return 次;
     });
   };
   const // 名前で絞り込んでいるあいだは開いておく。閉じたままだと
     // 探した人が隠れたままで「居ない」と見えてしまう
-    開いているか = (学年) => '' !== 検索の文.trim() || !閉じた学年.has(String(学年));
+    開いているか = (学年) => 検索の文.trim() !== '' || !閉じた学年.has(String(学年));
   const // 交代相手を学年でまとめる。人の選択と同じで、0年（学年なし）は
     // 「その他/ゲスト」として最後に置く
     学年ごと = 学年でまとめる(候補);
@@ -75,9 +80,10 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
     };
   const 交代を入れる = (名前, 部員ID) => {
     const 射番 = 何射目();
-    null !== 射番 &&
-      archerId &&
-      ((交代を書く || setSubstitution)(archerId, 射番, 名前, 部員ID), 入力を空にする());
+    if (射番 !== null && archerId) {
+      (交代を書く || setSubstitution)(archerId, 射番, 名前, 部員ID);
+      入力を空にする();
+    }
   };
   const 入力を空にする = () => {
     番号の入力を置く('');
@@ -143,7 +149,7 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
                 ))}
               </View>
               <Text style={styles.案内}>
-                {null === 何射目()
+                {何射目() === null
                   ? '上から交代するところを選んでください'
                   : 立か
                     ? `${選んだ}立目（${何射目() + 1}射目）から交代します`
@@ -168,11 +174,11 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
                 onChangeText={客名の入力を置く}
               />
               <TouchableOpacity
-                style={[styles.confirmBtn, (!客名の入力 || null === 何射目()) && styles.confirmBtnDisabled]}
+                style={[styles.confirmBtn, (!客名の入力 || 何射目() === null) && styles.confirmBtnDisabled]}
                 onPress={() => {
-                  if ('' !== 客名の入力.trim()) 交代を入れる(客名の入力.trim());
+                  if (客名の入力.trim() !== '') 交代を入れる(客名の入力.trim());
                 }}
-                disabled={!客名の入力 || null === 何射目()}
+                disabled={!客名の入力 || 何射目() === null}
               >
                 <Text style={styles.confirmTxt}>確定</Text>
               </TouchableOpacity>
@@ -197,7 +203,7 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
                   </TouchableOpacity>
                   {[
                     ...(開いているか(組.学年) ? 組.人たち : []).map((部員, 順) => {
-                      if (!部員 || !部員.name || 'string' != typeof 部員.name) return null;
+                      if (!部員 || !部員.name || typeof 部員.name !== 'string') return null;
                       const 名の片 = 部員.name.trim().split(/[\s\u3000]+/);
                       const 姓 = 名の片 && 名の片.length > 0 ? 名の片[0] || '' : '不明';
                       const 名前 = (名の片 && 名の片.length > 1 && 名の片[1]) || '';

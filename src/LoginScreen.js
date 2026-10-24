@@ -304,24 +304,24 @@ const LoginScreen = () => {
             </View>
             <Text style={styles.title}>弓道部的中ノート</Text>
             <Text style={styles.subtitle}>
-              {'none' !== 忘れた窓
+              {忘れた窓 !== 'none'
                 ? 'アカウントの復旧'
-                : 'login_group' === 画面の種類
+                : 画面の種類 === 'login_group'
                   ? '団体ログイン'
-                  : 'login_member' === 画面の種類
+                  : 画面の種類 === 'login_member'
                     ? '個人ログイン'
                     : '団体アカウント作成'}
             </Text>
           </View>
           <View style={styles.card}>
-            {'register' !== 画面の種類 && 'none' === 忘れた窓 && (
+            {画面の種類 !== 'register' && 忘れた窓 === 'none' && (
               <View style={styles.tabContainer}>
                 <Pressable
                   key={'tab-group'}
                   style={function (state) {
                     return [
                       styles.tab,
-                      'login_group' === 画面の種類 && styles.activeTab,
+                      画面の種類 === 'login_group' && styles.activeTab,
                       state.hovered &&
                         IS_WEB &&
                         !styles.activeTab && { backgroundColor: 'rgba(255,255,255,0.1)' },
@@ -329,7 +329,7 @@ const LoginScreen = () => {
                   }}
                   onPress={() => 画面の種類を置く('login_group')}
                 >
-                  <Text style={[styles.tabText, 'login_group' === 画面の種類 && styles.activeTabText]}>
+                  <Text style={[styles.tabText, 画面の種類 === 'login_group' && styles.activeTabText]}>
                     団体
                   </Text>
                 </Pressable>
@@ -338,7 +338,7 @@ const LoginScreen = () => {
                   style={function (state) {
                     return [
                       styles.tab,
-                      'login_member' === 画面の種類 && styles.activeTab,
+                      画面の種類 === 'login_member' && styles.activeTab,
                       state.hovered &&
                         IS_WEB &&
                         !styles.activeTab && { backgroundColor: 'rgba(255,255,255,0.1)' },
@@ -346,14 +346,14 @@ const LoginScreen = () => {
                   }}
                   onPress={() => 画面の種類を置く('login_member')}
                 >
-                  <Text style={[styles.tabText, 'login_member' === 画面の種類 && styles.activeTabText]}>
+                  <Text style={[styles.tabText, 画面の種類 === 'login_member' && styles.activeTabText]}>
                     個人
                   </Text>
                 </Pressable>
               </View>
             )}
             <View style={styles.form}>
-              {'email' === 忘れた窓 && (
+              {忘れた窓 === 'email' && (
                 <>
                   <View style={styles.inputGroup}>
                     <Text style={styles.label}>団体ID</Text>
@@ -458,7 +458,7 @@ const LoginScreen = () => {
                   </Pressable>
                 </>
               )}
-              {'password' === 忘れた窓 && (
+              {忘れた窓 === 'password' && (
                 <>
                   <View style={styles.inputGroup}>
                     <Text style={styles.label}>団体ID</Text>
@@ -529,9 +529,9 @@ const LoginScreen = () => {
                   </Pressable>
                 </>
               )}
-              {'none' === 忘れた窓 && (
+              {忘れた窓 === 'none' && (
                 <>
-                  {('login_group' === 画面の種類 || 'login_member' === 画面の種類) && (
+                  {(画面の種類 === 'login_group' || 画面の種類 === 'login_member') && (
                     <View style={styles.inputGroup}>
                       <Text style={styles.label}>団体ID</Text>
                       <View style={styles.inputWrapper}>
@@ -549,7 +549,7 @@ const LoginScreen = () => {
                       </View>
                     </View>
                   )}
-                  {'login_group' === 画面の種類 && (
+                  {画面の種類 === 'login_group' && (
                     <View style={styles.inputGroup}>
                       <Text style={styles.label}>パスワード</Text>
                       <View style={styles.inputWrapper}>
@@ -573,7 +573,7 @@ const LoginScreen = () => {
                       </View>
                     </View>
                   )}
-                  {'login_member' === 画面の種類 && (
+                  {画面の種類 === 'login_member' && (
                     <View style={styles.inputGroup}>
                       <Text style={styles.label}>個人ID（4桁）</Text>
                       <View style={styles.inputWrapper}>
@@ -591,7 +591,7 @@ const LoginScreen = () => {
                       </View>
                     </View>
                   )}
-                  {'register' === 画面の種類 && (
+                  {画面の種類 === 'register' && (
                     <>
                       <View style={styles.inputGroup}>
                         <Text style={styles.label}>団体名</Text>
@@ -692,7 +692,7 @@ const LoginScreen = () => {
               {/* 登録の前に同意を取る。規約 第10条2項は、団体が部員本人から */
               /* 同意を得る責任を負うと定めている。ここで伝えないと、 */
               /* その責任を知らないまま部員を登録できてしまう */}
-              {'register' === 画面の種類 && (
+              {画面の種類 === 'register' && (
                 <View style={styles.同意の枠}>
                   <Pressable style={styles.同意の行} onPress={() => 規約に同意を置く(!規約に同意)}>
                     <Text style={[styles.同意の印, 規約に同意 && styles.同意の印つき]}>
@@ -731,7 +731,7 @@ const LoginScreen = () => {
                   ];
                 }}
                 onPress={
-                  'login_group' === 画面の種類
+                  画面の種類 === 'login_group'
                     ? async () => {
                         if (団体IDの入力 && 合言葉の入力) {
                           処理中を置く(true);
@@ -753,7 +753,7 @@ const LoginScreen = () => {
                           Alert.alert('エラー', '団体IDとパスワードを入力してください');
                         }
                       }
-                    : 'login_member' === 画面の種類
+                    : 画面の種類 === 'login_member'
                       ? async () => {
                           if (団体IDの入力 && 個人IDの入力) {
                             処理中を置く(true);
@@ -793,18 +793,18 @@ const LoginScreen = () => {
                   <ActivityIndicator color={色.白} />
                 ) : (
                   <Text style={styles.submitBtnText}>
-                    {'register' === 画面の種類 ? 'アカウント作成' : 'ログイン'}
+                    {画面の種類 === 'register' ? 'アカウント作成' : 'ログイン'}
                   </Text>
                 )}
               </Pressable>
               {/* Google で作る道。作るときだけ使う。 */
               /* 作ったあとは今までどおり、団体IDとパスワードで全員が入る */}
-              {'register' === 画面の種類 && Googleのメール && (
+              {画面の種類 === 'register' && Googleのメール && (
                 <Pressable onPress={Googleをやめる} disabled={処理中}>
                   <Text style={styles.cancelLink}>別のアカウント・メールアドレスで作る</Text>
                 </Pressable>
               )}
-              {'register' === 画面の種類 && !Googleのメール && (
+              {画面の種類 === 'register' && !Googleのメール && (
                 <View>
                   <View style={styles.区切りの行}>
                     <View style={styles.区切りの線} />
@@ -826,7 +826,7 @@ const LoginScreen = () => {
                   </Text>
                 </View>
               )}
-              {'login_group' === 画面の種類 && (
+              {画面の種類 === 'login_group' && (
                 <View style={styles.helpLinks}>
                   <Pressable key={'email'} onPress={() => 忘れた窓を置く('email')}>
                     {function (state) {
@@ -893,7 +893,7 @@ const LoginScreen = () => {
             </Text>
           )}
           <View style={styles.footer}>
-            {'register' === 画面の種類 ? (
+            {画面の種類 === 'register' ? (
               <Pressable
                 onPress={() => {
                   if (Googleのメール) Googleをやめる();

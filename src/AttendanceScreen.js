@@ -125,7 +125,8 @@ const AttendanceScreen = () => {
         String((誤り && (誤り.code || 誤り.message)) || '')
       );
       // ログアウトさせずに入り直す窓を出す（src/ReloginModal.js）。ログアウトすると送れていない記録が控えに回る
-      if (権限 && !useScoreStore.getState().入り直しをあとに) useScoreStore.setState({ 入り直しが要る: true });
+      if (権限 && !useScoreStore.getState().入り直しをあとに)
+        useScoreStore.setState({ 入り直しが要る: true });
       Alert.alert(
         '保存できませんでした',
         権限
@@ -194,10 +195,10 @@ const AttendanceScreen = () => {
       if (学年の差) return 学年の差;
       const c_func = (g_val) => {
         const t_gen = (g_val || '').trim();
-        return '男子' === t_gen ? 0 : '女子' === t_gen ? 1 : 2;
+        return t_gen === '男子' ? 0 : t_gen === '女子' ? 1 : 2;
       };
       const u_val = c_func(甲.gender) - c_func(乙.gender);
-      return 0 !== u_val ? u_val : (甲.name || '').localeCompare(乙.name || '', 'ja');
+      return u_val !== 0 ? u_val : (甲.name || '').localeCompare(乙.name || '', 'ja');
     });
   const normalizeDate = (dStr) => {
     if (!dStr) return null;

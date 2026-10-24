@@ -38,8 +38,8 @@ const 一立ちの射数 = 4;
  * （1人で「落」と呼ぶことはない）。
  */
 function 射位の名前(番, 人数) {
-  const 数 = 'number' == typeof 番 ? 番 : 0;
-  const 全 = 'number' == typeof 人数 ? 人数 : 0;
+  const 数 = typeof 番 === 'number' ? 番 : 0;
+  const 全 = typeof 人数 === 'number' ? 人数 : 0;
   if (数 === 0) return 訳('射位.大前');
   if (数 === 全 - 1 && 全 > 1) return 訳('射位.落');
   return 訳('射位.番', { n: 数 + 1 });
@@ -47,14 +47,14 @@ function 射位の名前(番, 人数) {
 
 /** ○×の読み。「まる」「かける」と読まれないように言い換える */
 function 印の読み(印) {
-  if ('○' === 印) return 訳('印.的中');
-  if ('×' === 印 || '☓' === 印) return 訳('印.はずれ');
+  if (印 === '○') return 訳('印.的中');
+  if (印 === '×' || 印 === '☓') return 訳('印.はずれ');
   return 訳('印.未記入');
 }
 
 /** 射番（0から）から「N立目 M射目」を作る */
 function 立ちと射の読み(射番) {
-  const 位置 = 'number' == typeof 射番 && 射番 >= 0 ? 射番 : 0;
+  const 位置 = typeof 射番 === 'number' && 射番 >= 0 ? 射番 : 0;
   return { 立ち: Math.floor(位置 / 一立ちの射数) + 1, 射: (位置 % 一立ちの射数) + 1 };
 }
 
@@ -95,8 +95,8 @@ function 名を整える(射手名) {
  */
 function 射手の読み({ 射手名, 番, 人数, marks } = {}) {
   const 一覧 = Array.isArray(marks) ? marks : [];
-  const 射数 = 一覧.filter((印) => '○' === 印 || '×' === 印 || '☓' === 印).length;
-  const 的中 = 一覧.filter((印) => '○' === 印).length;
+  const 射数 = 一覧.filter((印) => 印 === '○' || 印 === '×' || 印 === '☓').length;
+  const 的中 = 一覧.filter((印) => 印 === '○').length;
   return 訳('射手.読み', {
     射位: 射位の名前(番, 人数),
     名前: 名を整える(射手名),
@@ -106,8 +106,8 @@ function 射手の読み({ 射手名, 番, 人数, marks } = {}) {
 
 /** 立ちの合計の読み。例：「この立ち 20射中13的中」 */
 function 合計の読み(射数, 的中) {
-  const 射数の数 = 'number' == typeof 射数 ? 射数 : 0;
-  const 的中の数 = 'number' == typeof 的中 ? 的中 : 0;
+  const 射数の数 = typeof 射数 === 'number' ? 射数 : 0;
+  const 的中の数 = typeof 的中 === 'number' ? 的中 : 0;
   // n は単数・複数を選ぶのに使う（英語の 1 hit / 2 hits）
   return 射数の数 > 0 ? 訳('成績.あり', { 射数: 射数の数, 的中: 的中の数, n: 的中の数 }) : 訳('成績.なし');
 }

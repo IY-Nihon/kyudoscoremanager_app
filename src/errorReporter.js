@@ -103,16 +103,16 @@ function いまの様子() {
   try {
     // 循環参照を避けるため、必要になった時点で読む
     const 店 = require('./useScoreStore').useScoreStore.getState();
-    状態 = { 団体id: 店.activeGroupId || '', 役割: 店.activeRole || '', 回線: false !== 店.isNetworkOnline };
+    状態 = { 団体id: 店.activeGroupId || '', 役割: 店.activeRole || '', 回線: 店.isNetworkOnline !== false };
   } catch (誤り) {
     /* 起動のごく初期は取れない */
   }
   let 端末 = '';
   try {
     端末 =
-      'undefined' != typeof navigator && navigator.userAgent
+      typeof navigator !== 'undefined' && navigator.userAgent
         ? navigator.userAgent
-        : 'undefined' != typeof process && process.platform
+        : typeof process !== 'undefined' && process.platform
           ? process.platform
           : '';
   } catch (誤り) {
@@ -193,11 +193,11 @@ function 止まりを伝える(出どころ, 中身) {
 }
 
 function 見張りを始める() {
-  if ('undefined' == typeof window || !window.addEventListener) return () => {};
+  if (typeof window === 'undefined' || !window.addEventListener) return () => {};
   const 誤り = (出来事) => {
     // 別の出どころ（拡張機能など）の script の失敗は、ブラウザが中身を隠して
     // 「Script error.」とだけ告げる。何も分からない便りなので送らない（9 月に 4 通）
-    if (出来事 && !出来事.error && 'Script error.' === 出来事.message) return;
+    if (出来事 && !出来事.error && 出来事.message === 'Script error.') return;
     const 中身 = (出来事 && 出来事.error) || (出来事 && 出来事.message) || 出来事;
     if (Firestoreが止まったか(中身)) return 止まりを伝える('画面の外', 中身);
     不具合を送る('画面の外', 中身);

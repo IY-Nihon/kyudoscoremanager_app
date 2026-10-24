@@ -100,9 +100,9 @@ const 期限の既定 = (期限の選択肢.find((選択肢) => 選択肢.既定
  * @returns {number|null}
  */
 function 期限の時刻(持ち, 今) {
-  const 分 = 'number' == typeof 持ち && isFinite(持ち) && 持ち > 0 ? 持ち : 0;
+  const 分 = typeof 持ち === 'number' && isFinite(持ち) && 持ち > 0 ? 持ち : 0;
   if (!分) return null;
-  const 今の時刻 = 'number' == typeof 今 ? 今 : Date.now();
+  const 今の時刻 = typeof 今 === 'number' ? 今 : Date.now();
   return 今の時刻 + 分;
 }
 
@@ -117,8 +117,8 @@ function 期限の時刻(持ち, 今) {
  * @returns {boolean}
  */
 function 期限切れか(期限, 今) {
-  if ('number' != typeof 期限 || !isFinite(期限) || 期限 <= 0) return false;
-  return ('number' == typeof 今 ? 今 : Date.now()) >= 期限;
+  if (typeof 期限 !== 'number' || !isFinite(期限) || 期限 <= 0) return false;
+  return (typeof 今 === 'number' ? 今 : Date.now()) >= 期限;
 }
 
 /**
@@ -152,8 +152,8 @@ const 帯に出す残り = 60 * 60 * 1000;
  * @returns {string|null}
  */
 function 期限の短い文言(期限, 今) {
-  if ('number' != typeof 期限 || !isFinite(期限) || 期限 <= 0) return null;
-  const 今の時刻 = 'number' == typeof 今 ? 今 : Date.now();
+  if (typeof 期限 !== 'number' || !isFinite(期限) || 期限 <= 0) return null;
+  const 今の時刻 = typeof 今 === 'number' ? 今 : Date.now();
   const 残り = 期限 - 今の時刻;
   if (残り <= 0 || 残り > 帯に出す残り) return null;
   const 分 = Math.ceil(残り / 60000);
@@ -176,8 +176,8 @@ function 期限の短い文言(期限, 今) {
  * @returns {number|null}
  */
 function 次に数え直すまで(期限, 今) {
-  if ('number' != typeof 期限 || !isFinite(期限) || 期限 <= 0) return null;
-  const 今の時刻 = 'number' == typeof 今 ? 今 : Date.now();
+  if (typeof 期限 !== 'number' || !isFinite(期限) || 期限 <= 0) return null;
+  const 今の時刻 = typeof 今 === 'number' ? 今 : Date.now();
   const 残り = 期限 - 今の時刻;
   if (残り <= 0) return null;
   // 出る少しあとに起きる（ちょうどだと、起きた時点でまだ出ない見当になる）
@@ -186,8 +186,8 @@ function 次に数え直すまで(期限, 今) {
 }
 
 function 期限の文言(期限, 今) {
-  if ('number' != typeof 期限 || !isFinite(期限) || 期限 <= 0) return null;
-  const 今の時刻 = 'number' == typeof 今 ? 今 : Date.now();
+  if (typeof 期限 !== 'number' || !isFinite(期限) || 期限 <= 0) return null;
+  const 今の時刻 = typeof 今 === 'number' ? 今 : Date.now();
   if (今の時刻 >= 期限) return '期限切れ';
   const 残り = 期限 - 今の時刻;
   const 時 = Math.floor(残り / 3600000);
@@ -264,8 +264,12 @@ function ほどく(文字列) {
   for (const 一字 of 文) {
     const 値 = 字.indexOf(一字);
     if (値 < 0) return null; // 知らない字が混じっていたら、荷ではない
-    ((溜め = (溜め << 6) | 値), (桁 += 6));
-    if (桁 >= 8) ((桁 -= 8), 出.push((溜め >> 桁) & 255));
+    溜め = (溜め << 6) | 値;
+    桁 += 6;
+    if (桁 >= 8) {
+      桁 -= 8;
+      出.push((溜め >> 桁) & 255);
+    }
   }
   return 出;
 }
@@ -275,23 +279,26 @@ function 文字列にする(バイト) {
   let 出 = '';
   for (let 位置 = 0; 位置 < バイト.length;) {
     const 先頭 = バイト[位置];
-    if (先頭 < 0x80) ((出 += String.fromCharCode(先頭)), 位置++);
-    else if (先頭 < 0xe0)
-      ((出 += String.fromCharCode(((先頭 & 31) << 6) | (バイト[位置 + 1] & 63))), (位置 += 2));
-    else if (先頭 < 0xf0)
-      ((出 += String.fromCharCode(
+    if (先頭 < 0x80) {
+      出 += String.fromCharCode(先頭);
+      位置++;
+    } else if (先頭 < 0xe0) {
+      出 += String.fromCharCode(((先頭 & 31) << 6) | (バイト[位置 + 1] & 63));
+      位置 += 2;
+    } else if (先頭 < 0xf0) {
+      出 += String.fromCharCode(
         ((先頭 & 15) << 12) | ((バイト[位置 + 1] & 63) << 6) | (バイト[位置 + 2] & 63)
-      )),
-        (位置 += 3));
-    else {
+      );
+      位置 += 3;
+    } else {
       const 符号 =
         ((先頭 & 7) << 18) |
         ((バイト[位置 + 1] & 63) << 12) |
         ((バイト[位置 + 2] & 63) << 6) |
         (バイト[位置 + 3] & 63);
       const ずらした符号 = 符号 - 0x10000;
-      ((出 += String.fromCharCode(0xd800 + (ずらした符号 >> 10), 0xdc00 + (ずらした符号 & 1023))),
-        (位置 += 4));
+      出 += String.fromCharCode(0xd800 + (ずらした符号 >> 10), 0xdc00 + (ずらした符号 & 1023));
+      位置 += 4;
     }
   }
   return 出;
@@ -317,7 +324,7 @@ function 共有の荷を組む({ 種, 名前, 役, 鍵が要るか, 期限 }) {
   };
   // 期限は表示のためだけに載せる。無いときは鍵ごと置かない
   // （古い読み手が「期限0＝即切れ」と読むのを避ける）
-  if ('number' == typeof 期限 && isFinite(期限) && 期限 > 0) 中身.e = 期限;
+  if (typeof 期限 === 'number' && isFinite(期限) && 期限 > 0) 中身.e = 期限;
   return 詰める(ハッシュ.バイト列にする(JSON.stringify(中身)));
 }
 
@@ -343,7 +350,7 @@ function 共有の荷を解く(文字列) {
     役: 中身.r === 閲覧 ? 閲覧 : 編集,
     鍵が要るか: !!中身.k,
     // 表示のためだけ。通してよいかの判断に使わないこと
-    期限: 'number' == typeof 中身.e && isFinite(中身.e) && 中身.e > 0 ? 中身.e : null,
+    期限: typeof 中身.e === 'number' && isFinite(中身.e) && 中身.e > 0 ? 中身.e : null,
   };
 }
 

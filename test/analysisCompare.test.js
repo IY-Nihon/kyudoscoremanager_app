@@ -89,11 +89,11 @@ test('比較中：全体の的中率を、人数ぶんまとめて出す', () =>
 });
 
 test('比較の相手を選ぶ一覧：男女が色で分かる', () => {
-  const i = 本体.indexOf("'男子' === item.gender");
+  const i = 本体.indexOf("item.gender === '男子'");
   assert.ok(i > 0, '比較の選択の一覧に男女の色分けがありません');
   const 節 = 本体.slice(Math.max(0, i - 900), i + 900);
-  assert.ok(/'男子' === item\.gender/.test(節), '男子の色分けがありません');
-  assert.ok(/'女子' === item\.gender/.test(節), '女子の色分けがありません');
+  assert.ok(/item\.gender === '男子'/.test(節), '男子の色分けがありません');
+  assert.ok(/item\.gender === '女子'/.test(節), '女子の色分けがありません');
   // メンバー画面と同じ色にそろえる
   assert.ok(/#007AFF/.test(節) && /#FF2D55/.test(節), '色がメンバー画面とそろっていません');
 });

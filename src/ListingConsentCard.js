@@ -68,7 +68,7 @@ function 掲載の選び({ 選び, 選びを置く, 置き場 = '掲載' }) {
           );
         })}
       </View>
-      {'団体名' === 選び.載せ方 ? (
+      {選び.載せ方 === '団体名' ? (
         <View style={{ gap: 4 }}>
           <Text style={{ fontSize: 12, color: 色.文字_二 }}>載せる名前（正式な名前に直せます）</Text>
           <TextInput
@@ -91,7 +91,7 @@ function 掲載の選び({ 選び, 選びを置く, 置き場 = '掲載' }) {
           />
         </View>
       ) : null}
-      {'地域' === 選び.載せ方 ? (
+      {選び.載せ方 === '地域' ? (
         <View style={{ gap: 4 }}>
           <Text style={{ fontSize: 12, color: 色.文字_二 }}>地域</Text>
           <TextInput
@@ -115,7 +115,7 @@ function 掲載の選び({ 選び, 選びを置く, 置き場 = '掲載' }) {
           />
         </View>
       ) : null}
-      {選び.載せ方 && '載せない' !== 選び.載せ方 ? (
+      {選び.載せ方 && 選び.載せ方 !== '載せない' ? (
         <View style={{ gap: 2 }}>
           <Text style={{ fontSize: 12, color: 色.文字_二 }}>どこに載せるか</Text>
           {[
@@ -257,7 +257,7 @@ function 掲載の設定() {
   const [知らせ, 知らせを置く] = React.useState('');
   const [送っている, 送っているを置く] = React.useState(false);
   React.useEffect(() => {
-    if ('group' === 役割 && 団体ID) useScoreStore.getState().掲載の許可を読む();
+    if (役割 === 'group' && 団体ID) useScoreStore.getState().掲載の許可を読む();
   }, [役割, 団体ID]);
   // 雲から読み直した答えを、選びに映す（答えた日時が変わったときだけ。打ちかけを消さない）
   const 答えた日時 = 許可 && 許可.答えた日時;
@@ -286,7 +286,10 @@ function 掲載の設定() {
           </Text>
           <掲載の選び
             選び={選び}
-            選びを置く={(次) => (知らせを置く(''), 選びを置く(次))}
+            選びを置く={(次) => {
+              知らせを置く('');
+              return 選びを置く(次);
+            }}
             置き場="設定-掲載"
           />
           <View

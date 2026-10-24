@@ -72,11 +72,11 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     // いるのに応答が来ない）と返らず、保存が終わらないまま記録表が残り、もう一度
     // 押せてしまった（2026-09-19）。新しい記録（id を今作った）は雲に無いので
     // 見る必要がなく、履歴から載せた記録なら手元の控えの 同期済み が雲にある印
-    if (activeGroupId && 'member' === activeRole && 状態().activeSessionID) {
+    if (activeGroupId && activeRole === 'member' && 状態().activeSessionID) {
       const 手元 = (Array.isArray(状態().sessions) ? 状態().sessions : []).find(
         (記録1件) => 記録1件 && 記録1件.id === 記録ID
       );
-      if (手元 && '同期済み' === 手元.syncStatus) {
+      if (手元 && 手元.syncStatus === '同期済み') {
         const 文 = 'この記録はすでにクラウドに存在するため、個人モードからは更新できません。';
         return void Alert.alert('保存制限', 文);
       }
@@ -294,7 +294,7 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
   },
   emptyTrash: async () => {
     const { trash, activeGroupId: 団体 } = 状態();
-    if (!trash || 0 === trash.length) return;
+    if (!trash || trash.length === 0) return;
     const 消すID = trash.map((記録) => 記録.id);
     // 通信できるかで送信を止めない。止めると手元からだけ消えて、クラウドの
     // ゴミ箱は残り、次の全件取得で消したはずのものが戻ってきてしまう。
@@ -324,7 +324,7 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
       }
   },
   deleteTrashItems: async (消すID) => {
-    if (消すID && 0 !== 消すID.length)
+    if (消すID && 消すID.length !== 0)
       try {
         const { trash: ごみ箱, activeGroupId: 団体 } = 状態();
         console.log('[Store] Deleting trash items:', 消すID);
@@ -333,14 +333,19 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
         // emptyTrash と同じく、完全に消したことを控えておく
         const 控え = Object.assign({}, 状態().permanentlyDeleted);
         消すID.forEach((id) => {
-          id && (控え[id] = Date.now());
+          if (id) {
+            控え[id] = Date.now();
+          }
         });
         // emptyTrash と同じ理由で、通信できるかでは止めない
         if ((書く({ trash: 残り, permanentlyDeleted: 控え }), 団体)) {
           const 一括 = Firestore.writeBatch(Firebaseの器.db);
           let 件数 = 0;
           消すID.forEach((id) => {
-            id && (一括.delete(Firestore.doc(Firebaseの器.db, `groups/${団体}/trash`, id)), 件数++);
+            if (id) {
+              一括.delete(Firestore.doc(Firebaseの器.db, `groups/${団体}/trash`, id));
+              件数++;
+            }
           });
           if (件数 > 0)
             一括.commit()
@@ -428,7 +433,7 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     }
   },
   restoreTrashItems: async (戻すID) => {
-    if (!戻すID || 0 === 戻すID.length) return;
+    if (!戻すID || 戻すID.length === 0) return;
     const ごみ箱 = 状態().trash || [];
     const 戻す記録 = ごみ箱.filter((記録) => 戻すID.includes(記録.id));
     const 残り = ごみ箱.filter((記録) => !戻すID.includes(記録.id));
@@ -475,9 +480,9 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
   updateSession: async (記録ID, 変更) => {
     const 今の記録 = 状態().sessions || [];
     const 位置 = 今の記録.findIndex((記録) => 記録 && 記録.id === 記録ID);
-    if (-1 === 位置) return;
+    if (位置 === -1) return;
     const 元の記録 = 今の記録[位置];
-    if ('member' === 状態().activeRole && 変更.archers && 変更.archers.length < 元の記録.archers.length)
+    if (状態().activeRole === 'member' && 変更.archers && 変更.archers.length < 元の記録.archers.length)
       return void console.warn('[updateSession] Prevented accidental data stripping in member mode');
     // 送信が済むまでは「未同期」にしておく。こうしないと、通信できない
     // ときに編集がクラウドへ届かないまま同期済み扱いになり、他の記録が
@@ -515,7 +520,8 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
       // 送信の完了を待って片付けると残り続けてしまう。
       書く((前) => {
         const 予約の表 = Object.assign({}, 前._pendingUpdateTimers);
-        return (delete 予約の表[記録ID], { _pendingUpdateTimers: 予約の表 });
+        delete 予約の表[記録ID];
+        return { _pendingUpdateTimers: 予約の表 };
       });
       const 記録 = 状態().sessions.find((記録1件) => 記録1件 && 記録1件.id === 記録ID);
       if (!記録) return;
@@ -565,28 +571,28 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     const 直した = 変える前.map((射手) => {
       if (射手 && 射手.id === 射手ID) {
         const 交代 = Object.assign({}, 射手.substitutions || {});
-        if ('' !== 名前) {
+        if (名前 !== '') {
           交代[番] = 名前;
           const 交代の部員 = Object.assign({}, 射手.substitutionIds || {});
-          return (
-            部員ID ? (交代の部員[番] = 部員ID) : delete 交代の部員[番],
-            Object.assign({}, 射手, {
-              substitutions: 交代,
-              substitutionIds: 交代の部員,
-              lastModified: Date.now(),
-            })
-          );
+          if (部員ID) {
+            交代の部員[番] = 部員ID;
+          } else {
+            delete 交代の部員[番];
+          }
+          return Object.assign({}, 射手, {
+            substitutions: 交代,
+            substitutionIds: 交代の部員,
+            lastModified: Date.now(),
+          });
         }
         if ((delete 交代[番], 射手.substitutionIds)) {
           const 交代の部員 = Object.assign({}, 射手.substitutionIds);
-          return (
-            delete 交代の部員[番],
-            Object.assign({}, 射手, {
-              substitutions: 交代,
-              substitutionIds: 交代の部員,
-              lastModified: Date.now(),
-            })
-          );
+          delete 交代の部員[番];
+          return Object.assign({}, 射手, {
+            substitutions: 交代,
+            substitutionIds: 交代の部員,
+            lastModified: Date.now(),
+          });
         }
         return Object.assign({}, 射手, { substitutions: 交代, lastModified: Date.now() });
       }
@@ -615,17 +621,19 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
       if (!射手 || 射手.isSeparator) return 射手;
       const 今の印 = Array.isArray(射手.marks) ? 射手.marks : [];
       const 新しい印 = [...今の印];
-      return (
-        本数 > 今の印.length ? 新しい印.push(...Array(本数 - 今の印.length).fill('')) : 新しい印.splice(本数),
-        Object.assign(
-          {},
-          射手,
-          { marks: 新しい印, lastModified: Date.now() },
-          // 減らしたときは、切り捨てた射の矢所も落とす（残すと分析に混ざる）
-          Array.isArray(射手.arrowLocations) && 射手.arrowLocations.length > 本数
-            ? { arrowLocations: 射手.arrowLocations.slice(0, 本数) }
-            : null
-        )
+      if (本数 > 今の印.length) {
+        新しい印.push(...Array(本数 - 今の印.length).fill(''));
+      } else {
+        新しい印.splice(本数);
+      }
+      return Object.assign(
+        {},
+        射手,
+        { marks: 新しい印, lastModified: Date.now() },
+        // 減らしたときは、切り捨てた射の矢所も落とす（残すと分析に混ざる）
+        Array.isArray(射手.arrowLocations) && 射手.arrowLocations.length > 本数
+          ? { arrowLocations: 射手.arrowLocations.slice(0, 本数) }
+          : null
       );
     });
     書く(
@@ -650,10 +658,10 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     try {
       await waitForDb();
       const 控えの様子 = require('./db').persistence || {};
-      if ('ok' === 控えの様子.state || 'pending' === 控えの様子.state)
+      if (控えの様子.state === 'ok' || 控えの様子.state === 'pending')
         return void (状態().offlineSaveWarning && 書く({ offlineSaveWarning: null }));
       const 文 =
-        'multipleTabs' === 控えの様子.state
+        控えの様子.state === 'multipleTabs'
           ? 'この記録画面が複数のタブで開かれているため、電波のない場所での保存が保護されません。他のタブを閉じて開き直してください。'
           : 'このブラウザでは電波のない場所での保存が保護されません。通信できる場所で保存してください。';
       console.warn('[Store] オフライン保存が無効です:', 控えの様子);

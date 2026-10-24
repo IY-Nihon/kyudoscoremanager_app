@@ -122,7 +122,9 @@ const アプリの窓 = () => {
         帯を置く(字);
         時計.current.掛ける(帯の長さ(字), () => 帯を置く(null));
         // 1つだけのボタンにも onPress があれば呼ぶ（従来と同じ動き）
-        要求.ボタン[0] && 要求.ボタン[0].onPress && 要求.ボタン[0].onPress();
+        if (要求.ボタン[0] && 要求.ボタン[0].onPress) {
+          要求.ボタン[0].onPress();
+        }
       }
     };
     const 残り = 待ち;
@@ -170,7 +172,9 @@ const アプリの窓 = () => {
                     ]}
                     onPress={() => {
                       置く(null);
-                      b.onPress && b.onPress();
+                      if (b.onPress) {
+                        b.onPress();
+                      }
                     }}
                   >
                     <Text

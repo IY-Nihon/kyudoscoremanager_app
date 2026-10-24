@@ -61,7 +61,7 @@ const 入り直しの窓 = () => {
   const 役割 = useScoreStore((状態) => 状態.activeRole);
   const 未送信 = useScoreStore((状態) =>
     ['sessions', 'members', 'alumni', 'trash'].reduce(
-      (和, 種) => 和 + (状態[種] || []).filter((一つ) => 一つ && '未同期' === 一つ.syncStatus).length,
+      (和, 種) => 和 + (状態[種] || []).filter((一つ) => 一つ && 一つ.syncStatus === '未同期').length,
       0
     )
   );
@@ -71,7 +71,7 @@ const 入り直しの窓 = () => {
   const 走っている = React.useRef(false);
   // 横向きのスマホなど高さが低い画面では、余白を詰めて 1 画面に収める
   const 低い = useWindowDimensions().height < 480;
-  const 部員 = 'member' === 役割;
+  const 部員 = 役割 === 'member';
   if (!要る || !団体の鍵) return null;
 
   const あとで = () => {
@@ -148,7 +148,9 @@ const 入り直しの窓 = () => {
               value={入力}
               onChangeText={(値) => {
                 入力を置く(値);
-                難点 && 難点を置く(null);
+                if (難点) {
+                  難点を置く(null);
+                }
               }}
               secureTextEntry={!部員}
               autoCapitalize="none"

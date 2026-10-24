@@ -131,12 +131,17 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       // 差分（か全件）で届いた記録と、id で取り直した記録。同じ id は差分の方を使う
       const 取り込む記録 = [];
       const 届いたid = new Set();
-      記録の返り.forEach((文書) => (取り込む記録.push(文書), 届いたid.add(文書.id)));
+      記録の返り.forEach((文書) => {
+        取り込む記録.push(文書);
+        return 届いたid.add(文書.id);
+      });
       for (const 文書 of 取り戻した記録) if (!届いたid.has(文書.id)) 取り込む記録.push(文書);
       取り込む記録.forEach((文書) => {
         const 中身 = 記録の日時を数に(文書.data());
         const 更新時刻 = ミリ秒にする(中身.lastModified);
-        更新時刻 > 最新の時刻 && (最新の時刻 = 更新時刻);
+        if (更新時刻 > 最新の時刻) {
+          最新の時刻 = 更新時刻;
+        }
         const cleanedTags =
           中身.tags && Array.isArray(中身.tags)
             ? Array.from(new Set(中身.tags.map(normalizeTag).filter(Boolean)))
@@ -167,7 +172,9 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       部員の返り.forEach((文書) => {
         const 中身 = 文書.data();
         const 更新時刻 = ミリ秒にする(中身.lastModified);
-        更新時刻 > 最新の時刻 && (最新の時刻 = 更新時刻);
+        if (更新時刻 > 最新の時刻) {
+          最新の時刻 = 更新時刻;
+        }
         雲の部員.push(
           Object.assign({}, 中身, { id: 文書.id, lastModified: 更新時刻, syncStatus: '同期済み' })
         );
@@ -176,7 +183,9 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       ごみ箱の返り.forEach((文書) => {
         const 中身 = 記録の日時を数に(文書.data());
         const 更新時刻 = ミリ秒にする(中身.lastModified);
-        更新時刻 > 最新の時刻 && (最新の時刻 = 更新時刻);
+        if (更新時刻 > 最新の時刻) {
+          最新の時刻 = 更新時刻;
+        }
         雲のごみ箱.push(
           Object.assign({}, 中身, { id: 文書.id, lastModified: 更新時刻, syncStatus: '同期済み' })
         );
@@ -185,7 +194,9 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       卒業生の返り.forEach((文書) => {
         const 中身 = 文書.data();
         const 更新時刻 = ミリ秒にする(中身.lastModified);
-        更新時刻 > 最新の時刻 && (最新の時刻 = 更新時刻);
+        if (更新時刻 > 最新の時刻) {
+          最新の時刻 = 更新時刻;
+        }
         雲の卒業生.push(
           Object.assign({}, 中身, { id: 文書.id, lastModified: 更新時刻, syncStatus: '同期済み' })
         );
@@ -211,14 +222,14 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       // 手元のゴミ箱に古い写しが残っていても、履歴に出す（syncRules の 雲で戻された記録）
       const 復元待ち = new Set([
         ...記録の合流
-          .filter((記録1件) => 記録1件 && '未同期' === 記録1件.syncStatus)
+          .filter((記録1件) => 記録1件 && 記録1件.syncStatus === '未同期')
           .map((記録1件) => 記録1件.id),
         ...同期規則.雲で戻された記録(雲の記録, ごみ箱の合流),
       ]);
       const ごみ箱 = ごみ箱の合流.filter((記録1件) => 記録1件 && !復元待ち.has(記録1件.id));
       const ごみ箱のID = new Set(ごみ箱.map((記録1件) => 記録1件.id));
       const 記録 = 記録の合流.filter((記録1件) => !ごみ箱のID.has(記録1件.id));
-      const 未送信の記録 = 記録.filter((記録1件) => '未同期' === 記録1件.syncStatus);
+      const 未送信の記録 = 記録.filter((記録1件) => 記録1件.syncStatus === '未同期');
       let 記録の一覧 = 記録;
       // 下のブロックでは e が一括送信の入れ物に隠れるので、状態の更新役を
       // ここで控えておく（ブロックの中から外の e は参照できない）。
@@ -270,7 +281,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       // クラウドの写しを読み込んだだけの項目まで送ると、ゴミ箱を空にした
       // 直後に読み込んだ分が戻ってきてしまう。
       const 未送信の削除 = ごみ箱.filter(
-        (記録1件) => 記録1件 && 記録1件.id && 記録1件.pendingDelete && '未同期' === 記録1件.syncStatus
+        (記録1件) => 記録1件 && 記録1件.id && 記録1件.pendingDelete && 記録1件.syncStatus === '未同期'
       );
       if (未送信の削除.length > 0) {
         console.log(`[syncSessions] Syncing ${未送信の削除.length} pending deletions...`);
@@ -321,8 +332,8 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       // そのままだと手元にしかない氏名や学年が永久に届かない。
       // 名簿を書けるのは団体アカウントだけなので、部員では試みない。
       const 未送信のメンバー =
-        'group' === 状態().activeRole
-          ? 部員.filter((部員1人) => 部員1人 && 部員1人.id && '未同期' === 部員1人.syncStatus)
+        状態().activeRole === 'group'
+          ? 部員.filter((部員1人) => 部員1人 && 部員1人.id && 部員1人.syncStatus === '未同期')
           : [];
       if (未送信のメンバー.length > 0) {
         console.log(`[syncSessions] Syncing ${未送信のメンバー.length} pending members...`);
@@ -361,8 +372,8 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       // 卒業生も同じ。個人IDの自動採番は卒業生にも振るので、送り直しが
       // 無いと手元にしかないIDが永久に届かず、端末ごとに食い違う。
       const 未送信の卒業生 =
-        'group' === 状態().activeRole
-          ? 卒業生.filter((卒業生1人) => 卒業生1人 && 卒業生1人.id && '未同期' === 卒業生1人.syncStatus)
+        状態().activeRole === 'group'
+          ? 卒業生.filter((卒業生1人) => 卒業生1人 && 卒業生1人.id && 卒業生1人.syncStatus === '未同期')
           : [];
       if (未送信の卒業生.length > 0) {
         console.log(`[syncSessions] Syncing ${未送信の卒業生.length} pending alumni...`);
@@ -446,7 +457,8 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       console.error('[syncSessions] Error:', 誤り);
       不具合を控える('記録の同期', 誤り);
       書く({ syncStatus: '同期エラー' });
-      if (入り直せば直るか(誤り)) 書く({ 再ログインの案内: 入り直しの案内, 入り直しが要る: !状態().入り直しをあとに });
+      if (入り直せば直るか(誤り))
+        書く({ 再ログインの案内: 入り直しの案内, 入り直しが要る: !状態().入り直しをあとに });
     } finally {
       場.進級の確認を済ませた = false;
     }
@@ -455,7 +467,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
     行動を控える('クラウドへ同期', (状態().sessions || []).length + '件');
     const { activeGroupId, activeRole, isNetworkOnline } = 状態();
     if (activeGroupId && isNetworkOnline)
-      if ('member' !== activeRole) {
+      if (activeRole !== 'member') {
         console.log('[Store] Loading:', 'クラウドへの同期を開始...');
         書く({ syncStatus: '同期中' });
         try {
@@ -539,11 +551,17 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
             const 切れ端 = 書き込み.slice(頭, 頭 + 一括の上限);
             const 一括 = Firestore.writeBatch(Firebaseの器.db);
             切れ端.forEach((書き込み1件) => {
-              'set' === 書き込み1件.type
-                ? 書き込み1件.重ねる
-                  ? 一括.set(書き込み1件.ref, 書き込み1件.data, { merge: true })
-                  : 一括.set(書き込み1件.ref, 書き込み1件.data)
-                : 'delete' === 書き込み1件.type && 一括.delete(書き込み1件.ref);
+              if (書き込み1件.type === 'set') {
+                if (書き込み1件.重ねる) {
+                  一括.set(書き込み1件.ref, 書き込み1件.data, { merge: true });
+                } else {
+                  一括.set(書き込み1件.ref, 書き込み1件.data);
+                }
+              } else {
+                if (書き込み1件.type === 'delete') {
+                  一括.delete(書き込み1件.ref);
+                }
+              }
             });
             await 一括.commit();
           }
@@ -577,7 +595,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
   /** まだ送れていないものの数を数える */
   countUnsynced: () => {
     const 数 = (一覧) =>
-      Array.isArray(一覧) ? 一覧.filter((一つ) => 一つ && '未同期' === 一つ.syncStatus).length : 0;
+      Array.isArray(一覧) ? 一覧.filter((一つ) => 一つ && 一つ.syncStatus === '未同期').length : 0;
     const { sessions, members, alumni, trash } = 状態();
     return 数(sessions) + 数(members) + 数(alumni) + 数(trash);
   },
@@ -590,7 +608,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
    * ので、印が「同期済み」に変わるのを少しの間だけ見張る（最大3秒）。
    */
   flushUnsyncedForLogout: async () => {
-    if (0 === 状態().countUnsynced()) return 0;
+    if (状態().countUnsynced() === 0) return 0;
     if (!状態().isNetworkOnline) return 状態().countUnsynced();
     try {
       await 状態().syncSessions();
@@ -598,7 +616,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       console.error('[Store] flushUnsyncedForLogout error:', 誤り);
     }
     for (let 回 = 0; 回 < 15; 回++) {
-      if (0 === 状態().countUnsynced()) return 0;
+      if (状態().countUnsynced() === 0) return 0;
       await new Promise((解く) => setTimeout(解く, 200));
     }
     return 状態().countUnsynced();
@@ -622,7 +640,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       記録の数: (様子.sessions || []).length,
       部員の数: (様子.members || []).length,
     });
-    if ('全部' === しかた) return 状態().fetchAndOverwriteFromCloud();
+    if (しかた === '全部') return 状態().fetchAndOverwriteFromCloud();
     // 控えに入りきらず外した記録は、差分に出てこないので id で取り直す（syncSessions が
     // 端末から外した記録 を見て取り直し、雲から取り直せたら空にする）
     const 取り戻す記録 = Array.isArray(様子.端末から外した記録) ? 様子.端末から外した記録 : [];
@@ -633,7 +651,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
     await 状態().syncSessions();
     // 差分で取れなかった（通信・権限など）ときは、全件で取り直す。
     // 同じ理由で失敗するなら、全件取得のほうが帯や便りを出す
-    if ('同期エラー' === 状態().syncStatus) return 状態().fetchAndOverwriteFromCloud();
+    if (状態().syncStatus === '同期エラー') return 状態().fetchAndOverwriteFromCloud();
   },
   fetchAndOverwriteFromCloud: async () => {
     console.log('[Store] Loading:', 'クラウドからの取得を開始...');
@@ -678,11 +696,18 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       let 学年まわり = {};
       if (設定の帳面.exists()) {
         const 設定 = 設定の帳面.data();
-        設定 &&
-          (undefined !== 設定.currentFreshmanTerm && (currentFreshmanTerm = 設定.currentFreshmanTerm),
-          undefined !== 設定.tagTemplates && (tagTemplates = 設定.tagTemplates),
-          undefined !== 設定.lastPromotionYear && (lastPromotionYear = 設定.lastPromotionYear),
-          (学年まわり = 学.設定から読む(設定)));
+        if (設定) {
+          if (設定.currentFreshmanTerm !== undefined) {
+            currentFreshmanTerm = 設定.currentFreshmanTerm;
+          }
+          if (設定.tagTemplates !== undefined) {
+            tagTemplates = 設定.tagTemplates;
+          }
+          if (設定.lastPromotionYear !== undefined) {
+            lastPromotionYear = 設定.lastPromotionYear;
+          }
+          学年まわり = 学.設定から読む(設定);
+        }
       }
       // 雲に無いものを手元から外す（purge）のは、雲から全件を読めたときだけ。
       // 電波が無いと Firestore は端末の控え（見張っていた直近の分だけ）から答えるので、
@@ -696,7 +721,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       // 写しがあってもゴミ箱に入れ直さない。
       const 復元待ち = new Set(
         記録の合流
-          .filter((記録1件) => 記録1件 && '未同期' === 記録1件.syncStatus)
+          .filter((記録1件) => 記録1件 && 記録1件.syncStatus === '未同期')
           .map((記録1件) => 記録1件.id)
       );
       const ごみ箱 = ごみ箱の合流.filter((記録1件) => 記録1件 && !復元待ち.has(記録1件.id));
@@ -809,7 +834,8 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       console.error('Fetch Overwrite Error:', 誤り);
       不具合を控える('クラウドから取得', 誤り);
       書く({ syncStatus: '同期エラー' });
-      if (入り直せば直るか(誤り)) 書く({ 再ログインの案内: 入り直しの案内, 入り直しが要る: !状態().入り直しをあとに });
+      if (入り直せば直るか(誤り))
+        書く({ 再ログインの案内: 入り直しの案内, 入り直しが要る: !状態().入り直しをあとに });
     }
   },
 
@@ -851,7 +877,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
           const isModified =
             cleanedTags.length !== originalTags.length ||
             cleanedTags.some((タグ, 番) => タグ !== originalTags[番]);
-          if (isModified && Firebaseの器.db && Firebaseの器.db._delegate && 'member' !== 役割) {
+          if (isModified && Firebaseの器.db && Firebaseの器.db._delegate && 役割 !== 'member') {
             const 場所 = Firestore.doc(
               Firebaseの器.db,
               `groups/${場.店.getState().activeGroupId}/sessions`,
@@ -878,7 +904,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
           const localSession = 手元の記録.find((記録1件) => 記録1件 && 記録1件.id === cloudSession.id);
           // 送信待ちの編集は、クラウドの古い写しで上書きしない。タイマーが動いて
           // いる 800ms の間だけでなく、送信が済むまで（「未同期」の間）守る。
-          if (localSession && (pendingTimer || '未同期' === localSession.syncStatus)) return localSession;
+          if (localSession && (pendingTimer || localSession.syncStatus === '未同期')) return localSession;
           return cloudSession;
         });
         // 見張りが受け取るのは直近30日・最大100件だけ。手元にあってその中に無い記録は、
@@ -897,7 +923,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         並べた記録.sort((甲, 乙) => (乙.date || 0) - (甲.date || 0));
         // 同じ中身なら書かない。書くと画面ぜんぶの描き直しと端末への控えの
         // 書き直し（大きい団体で 2MB）が走る。起動時は直前の全件取得と同じものが届く
-        if (同期規則.一覧が同じか(手元の記録, 並べた記録) && '同期済み' === 状態().syncStatus) {
+        if (同期規則.一覧が同じか(手元の記録, 並べた記録) && 状態().syncStatus === '同期済み') {
           console.log(`[Store] Real-time session update received: ${雲の記録.length} items (no change)`);
           return;
         }
@@ -910,17 +936,19 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         console.error('[Store] Real-time session listener error:', 誤り);
         不具合を控える('記録の受信', 誤り);
         書く({ syncStatus: '同期エラー' });
-        if (入り直せば直るか(誤り)) 書く({ 再ログインの案内: 入り直しの案内, 入り直しが要る: !状態().入り直しをあとに });
+        if (入り直せば直るか(誤り))
+          書く({ 再ログインの案内: 入り直しの案内, 入り直しが要る: !状態().入り直しをあとに });
       }
     );
     書く({ sessionUnsubscribe: 止める });
   },
   stopListeningToSessions: () => {
     const { sessionUnsubscribe } = 状態();
-    sessionUnsubscribe &&
-      (console.log('[Store] Stopping real-time session listener'),
-      sessionUnsubscribe(),
-      書く({ sessionUnsubscribe: null }));
+    if (sessionUnsubscribe) {
+      console.log('[Store] Stopping real-time session listener');
+      sessionUnsubscribe();
+      書く({ sessionUnsubscribe: null });
+    }
   },
   listenToTrash: async () => {
     const { activeGroupId: 団体 } = 状態();
@@ -958,7 +986,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         );
         const 写し = 雲のごみ箱.map((記録) => {
           const 手元の = 手元のゴミ箱.get(記録.id);
-          return 手元の && 手元の.pendingDelete && '未同期' === 記録.syncStatus
+          return 手元の && 手元の.pendingDelete && 記録.syncStatus === '未同期'
             ? Object.assign({}, 記録, { pendingDelete: true })
             : 記録;
         });
@@ -970,7 +998,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
             記録1件 &&
             記録1件.id &&
             記録1件.pendingDelete &&
-            '未同期' === 記録1件.syncStatus &&
+            記録1件.syncStatus === '未同期' &&
             !クラウドのid.has(記録1件.id)
         );
         const 新しいゴミ箱 = 未送信の削除.length > 0 ? [...写し, ...未送信の削除] : 写し;
@@ -982,7 +1010,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         const 出すゴミ箱 = 新しいゴミ箱.filter((記録1件) => 記録1件 && !完全削除ずみ.has(記録1件.id));
         const 捨てたid = new Set(出すゴミ箱.map((記録1件) => 記録1件.id));
         const 残す = 状態().sessions.filter(
-          (記録1件) => 記録1件 && (!捨てたid.has(記録1件.id) || '未同期' === 記録1件.syncStatus)
+          (記録1件) => 記録1件 && (!捨てたid.has(記録1件.id) || 記録1件.syncStatus === '未同期')
         );
         const 残す記録 = 残す.filter((記録1件) => 記録1件 && !完全削除ずみ.has(記録1件.id));
         if (
@@ -1005,10 +1033,11 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
   },
   stopListeningToTrash: () => {
     const { trashUnsubscribe } = 状態();
-    trashUnsubscribe &&
-      (console.log('[Store] Stopping real-time trash listener'),
-      trashUnsubscribe(),
-      書く({ trashUnsubscribe: null }));
+    if (trashUnsubscribe) {
+      console.log('[Store] Stopping real-time trash listener');
+      trashUnsubscribe();
+      書く({ trashUnsubscribe: null });
+    }
   },
   listenToMembers: async () => {
     const { activeGroupId: 団体 } = 状態();
@@ -1052,10 +1081,11 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
   },
   stopListeningToMembers: () => {
     const { memberUnsubscribe } = 状態();
-    memberUnsubscribe &&
-      (console.log('[Store] Stopping real-time member listener'),
-      memberUnsubscribe(),
-      書く({ memberUnsubscribe: null }));
+    if (memberUnsubscribe) {
+      console.log('[Store] Stopping real-time member listener');
+      memberUnsubscribe();
+      書く({ memberUnsubscribe: null });
+    }
   },
   listenToAlumni: async () => {
     const { activeGroupId: 団体 } = 状態();
@@ -1092,10 +1122,11 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
   },
   stopListeningToAlumni: () => {
     const { alumniUnsubscribe } = 状態();
-    alumniUnsubscribe &&
-      (console.log('[Store] Stopping real-time alumni listener'),
-      alumniUnsubscribe(),
-      書く({ alumniUnsubscribe: null }));
+    if (alumniUnsubscribe) {
+      console.log('[Store] Stopping real-time alumni listener');
+      alumniUnsubscribe();
+      書く({ alumniUnsubscribe: null });
+    }
   },
   startPeriodicSync: () => {
     状態().stopPeriodicSync();
@@ -1116,8 +1147,11 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
   },
   stopPeriodicSync: () => {
     const 時計 = 状態().syncIntervalId;
-    時計 &&
-      (console.log('[Store] Stopping periodic sync'), clearInterval(時計), 書く({ syncIntervalId: null }));
+    if (時計) {
+      console.log('[Store] Stopping periodic sync');
+      clearInterval(時計);
+      書く({ syncIntervalId: null });
+    }
     状態().stopListeningToSessions();
     状態().stopListeningToTrash();
     状態().stopListeningToMembers();
@@ -1127,19 +1161,20 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
     console.log('[Store] Setting up network listener');
     return netinfo.addEventListener((様子) => {
       const 前はつながっていた = 状態().isNetworkOnline;
-      const つながっている = !(!様子.isConnected || false === 様子.isInternetReachable);
-      つながっている !== 前はつながっていた &&
-        (console.log('[Store] Network state changed: ' + (つながっている ? 'Online' : 'Offline')),
-        書く({ isNetworkOnline: つながっている }),
-        つながっている &&
-          !前はつながっていた &&
-          (console.log('[Store] Connection restored. Triggering auto-sync...'),
+      const つながっている = !(!様子.isConnected || 様子.isInternetReachable === false);
+      if (つながっている !== 前はつながっていた) {
+        console.log('[Store] Network state changed: ' + (つながっている ? 'Online' : 'Offline'));
+        書く({ isNetworkOnline: つながっている });
+        if (つながっている && !前はつながっていた) {
+          console.log('[Store] Connection restored. Triggering auto-sync...');
           // 電波が切れている最中にこそ失敗するので、戻ったときに出し直す。
           // 便りの仕組みが転んでも、自動同期まで巻き添えにしない
-          溜まりを流し直す(),
+          溜まりを流し直す();
           状態()
             .syncSessions()
-            .catch((誤り) => console.error('[Store] Auto-sync failed:', 誤り))));
+            .catch((誤り) => console.error('[Store] Auto-sync failed:', 誤り));
+        }
+      }
     });
   },
 });

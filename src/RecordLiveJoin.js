@@ -90,7 +90,7 @@ const 参加のしかたの窓 = ({
   ライブを始める窓へ,
 }) => (
   <Modal
-    visible={null !== 参加のしかたを聞く}
+    visible={参加のしかたを聞く !== null}
     transparent
     animationType="fade"
     onRequestClose={() => 参加のしかたを聞くを置く(null)}

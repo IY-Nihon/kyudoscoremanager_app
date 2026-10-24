@@ -301,14 +301,13 @@ function 溜まりを流し直す() {
 function 入り直せば直るか(誤り) {
   if (!誤り) return false;
   const 符 = 誤り.code || 誤り.name || '';
-  if ('permission-denied' === 符 || 'unauthenticated' === 符) return true;
+  if (符 === 'permission-denied' || 符 === 'unauthenticated') return true;
   return /Missing or insufficient permissions|permission-denied|unauthenticated/i.test(
     String(誤り.message || '')
   );
 }
 /** 入り直しの案内。画面の帯に出す */
-const 入り直しの案内 =
-  'ログインし直してください（ここを押す）。送れていない記録は、そのあと送られます。';
+const 入り直しの案内 = 'ログインし直してください（ここを押す）。送れていない記録は、そのあと送られます。';
 function 不具合を控える(出どころ, 誤り) {
   // 通信が切れていただけ（unavailable）は不具合として送らない。Firestore はつながると自分で続きを取る。
   // 10/7 に記録の見張りが電波の弱い所で 4 回送っていた（差分の同期の問い合わせが unavailable）
@@ -438,7 +437,7 @@ const 外した記録のid = (記録たち, 残す記録, まだ戻していな�
   const 全部 = Array.isArray(記録たち) ? 記録たち : [];
   const 手元にある = new Set(全部.map((記録) => 記録 && 記録.id));
   const 出 = (Array.isArray(まだ戻していない) ? まだ戻していない : []).filter(
-    (id) => 'string' == typeof id && id && !手元にある.has(id)
+    (id) => typeof id === 'string' && id && !手元にある.has(id)
   );
   if (残す記録.length < 全部.length) {
     const 残す = new Set(残す記録.map((記録) => 記録 && 記録.id));
@@ -457,7 +456,7 @@ const 雲から読んだか = (返り) => !(返り && 返り.metadata && 返り.
  * 完全に消した）は返らない
  */
 const idで記録を取る = async (置き場, ids) => {
-  const 一意 = [...new Set((ids || []).filter((id) => 'string' == typeof id && id))];
+  const 一意 = [...new Set((ids || []).filter((id) => typeof id === 'string' && id))];
   if (!一意.length) return { 文書たち: [], 雲から: true };
   const 切れ端 = [];
   for (let 頭 = 0; 頭 < 一意.length; 頭 += 30) 切れ端.push(一意.slice(頭, 頭 + 30));
@@ -481,41 +480,39 @@ const 読んだままの中身 = (返り) => {
 const 印の列にそろえる = (値, 本数) => {
   if (!値) return 本数 ? Array(本数).fill('') : [];
   if (Array.isArray(値)) {
-    const 列 = 値.map((印) => (null == 印 ? '' : 印));
+    const 列 = 値.map((印) => (印 == null ? '' : 印));
     return 本数 && 列.length < 本数 ? [...列, ...Array(本数 - 列.length).fill('')] : 列;
   }
-  if ('object' == typeof 値) {
+  if (typeof 値 === 'object') {
     const 鍵たち = Object.keys(値);
     if (鍵たち.length > 0 && 鍵たち.every((鍵) => !isNaN(Number(鍵)))) {
       const 最大の添字 = Math.max(...鍵たち.map(Number));
       const 長さ = 本数 ? Math.max(本数, 最大の添字 + 1) : 最大の添字 + 1;
       const 列 = Array(長さ).fill('');
-      return (
-        鍵たち.forEach((鍵) => {
-          const 添字 = Number(鍵);
-          列[添字] = null === 値[鍵] || undefined === 値[鍵] ? '' : 値[鍵];
-        }),
-        列
-      );
+      鍵たち.forEach((鍵) => {
+        const 添字 = Number(鍵);
+        列[添字] = 値[鍵] === null || 値[鍵] === undefined ? '' : 値[鍵];
+      });
+      return 列;
     }
     return Object.values(値);
   }
   return [];
 };
 const 射手の形にそろえる = (射手, 本数) =>
-  射手 && 'object' == typeof 射手
+  射手 && typeof 射手 === 'object'
     ? {
         id: 射手.id || '',
         name: 射手.name || '',
         gender: 射手.gender || '未設定',
-        grade: 'number' == typeof 射手.grade ? 射手.grade : 1,
+        grade: typeof 射手.grade === 'number' ? 射手.grade : 1,
         marks: 印の列にそろえる(射手.marks, 射手.isSeparator ? 0 : 本数),
-        isSeparator: true === 射手.isSeparator,
-        isTotalCalculator: true === 射手.isTotalCalculator,
+        isSeparator: 射手.isSeparator === true,
+        isTotalCalculator: 射手.isTotalCalculator === true,
         // 手前の計もまとめて数える合計かどうか。写し忘れると、読み直した
         // ときにふつうの「計」に戻り、複数立ちの合計が消える
-        またぐ合計: true === 射手.またぐ合計,
-        isGuest: true === 射手.isGuest,
+        またぐ合計: 射手.またぐ合計 === true,
+        isGuest: 射手.isGuest === true,
         // 区切りに付けたチーム名（リーグの大学名）。ここに書かないと
         // 読み直しや同期のたびに落ちて、色分けが消える
         teamName: 射手.teamName || undefined,
@@ -575,7 +572,7 @@ const 載っている盤面を控える = (届いた状態) => {
   場.載っている射手たち = ライブへ送る形の射手(
     一覧の配列(届いた状態.archers).map((射手) => 射手の形にそろえる(射手, 0))
   );
-  if ('number' == typeof 届いた状態.shotsPerRound) 場.載っている射数 = 届いた状態.shotsPerRound;
+  if (typeof 届いた状態.shotsPerRound === 'number') 場.載っている射数 = 届いた状態.shotsPerRound;
 };
 /**
  * 自分の送信を組み立てているあいだは、届いた通知を見ない。
@@ -595,7 +592,9 @@ const ライブへ盤面を送る = (名前, 一覧, 本数) => {
   const 送る射手 = ライブへ送る形の射手(一覧);
   const 日時の表 = {};
   一覧.forEach((射手) => {
-    射手 && 射手.id && (日時の表[射手.id] = 射手.lastModified || 0);
+    if (射手 && 射手.id) {
+      日時の表[射手.id] = 射手.lastModified || 0;
+    }
   });
   // ○×は、雲に載っていると分かっている内容（載っている印）から変わったますだけ書く。
   // marks_by_id を丸ごと差し替えると、まだ受け取っていない相手の1射ぶんの送信を
@@ -613,7 +612,7 @@ const ライブへ盤面を送る = (名前, 一覧, 本数) => {
     const 前の並び = 場.載っている印[射手.id];
     if (前の並び === 並び) return;
     const 今の印 = (Array.isArray(射手.marks) ? 射手.marks : []).map((一つ) => (一つ == null ? '' : 一つ));
-    const 前の印 = 'string' == typeof 前の並び ? 前の並び.split('\u0001') : null;
+    const 前の印 = typeof 前の並び === 'string' ? 前の並び.split('\u0001') : null;
     if (!前の印 || !今の印.length) 変わった印[射手.id] = 今の印;
     else
       for (let 番 = 0; 番 < Math.max(今の印.length, 前の印.length); 番++) {
@@ -749,7 +748,7 @@ const ライブへ1射を送る = (名前, 射手ID, 添字, 印, 日時) => {
   写しへも流す(名前, 中身);
 };
 const ライブの盤面を読み取る = (盤面) => {
-  const 本数 = 'number' == typeof 盤面.shotsPerRound ? 盤面.shotsPerRound : 8;
+  const 本数 = typeof 盤面.shotsPerRound === 'number' ? 盤面.shotsPerRound : 8;
   const 射手の元 = 印の列にそろえる(盤面.archers);
   const 印の表 = 盤面.marks_by_id || {};
   const 日時の表 = 盤面.archer_timestamps || {};
@@ -847,7 +846,7 @@ function 在席を始める(名前, 書く) {
     const 打ち直し = setInterval(置き直す, 在.打ち直す間隔);
     // node（検査）では、走り続ける時計があるとまとめて終われない。
     // ブラウザや端末の setInterval に unref は無いので、あるときだけ呼ぶ
-    if (打ち直し && 'function' == typeof 打ち直し.unref) 打ち直し.unref();
+    if (打ち直し && typeof 打ち直し.unref === 'function') 打ち直し.unref();
     場.在席の片付け = () => {
       clearInterval(打ち直し);
       if (繋がりの見張り) 繋がりの見張り();
@@ -885,7 +884,7 @@ function 在席を始める(名前, 書く) {
 const 履歴用に整える = (一覧) =>
   (Array.isArray(一覧) ? ライブへ送る形の射手(一覧) : []).map((射手, 番) =>
     Object.assign({}, 射手, {
-      marks: ((一覧[番] && 一覧[番].marks) || []).map((印) => (null == 印 ? '' : 印)),
+      marks: ((一覧[番] && 一覧[番].marks) || []).map((印) => (印 == null ? '' : 印)),
     })
   );
 /** 共有履歴の置き場所。ライブの枝の外に置く（上の説明を参照） */
@@ -921,7 +920,7 @@ const 時差を見張る = () => {
         RTDB.ref(Firebaseの器.rtdb, '.info/serverTimeOffset'),
         (返り) => {
           const 差 = 返り.val();
-          if ('number' == typeof 差) {
+          if (typeof 差 === 'number') {
             場.サーバーとの時差 = 差;
             場.時差が取れた = true;
             console.log('[Store] サーバーとの時差:', 差, 'ミリ秒');
@@ -1006,7 +1005,7 @@ function 弾かれたか(誤り) {
  * 盤面が届くたびに合わせるので、配り直しで延びた／縮んだときも追いつく。
  */
 function 期限を控える(届いた状態, 書く, 状態) {
-  const 期限 = 届いた状態 && 'number' == typeof 届いた状態.期限 ? 届いた状態.期限 : 0;
+  const 期限 = 届いた状態 && typeof 届いた状態.期限 === 'number' ? 届いた状態.期限 : 0;
   if (状態().いまのライブの期限 !== (期限 || null)) 書く({ いまのライブの期限: 期限 || null });
   return 期限;
 }
@@ -1081,7 +1080,7 @@ const 共有履歴へ積む = (前の盤面, 後の盤面, 状態) => {
   const 後 = 履歴用に整える(後の盤面);
   RTDB.runTransaction(
     RTDB.ref(Firebaseの器.rtdb, `${状態の道}/history_len`),
-    (今の値) => ('number' == typeof 今の値 ? 今の値 : 0) + 1
+    (今の値) => (typeof 今の値 === 'number' ? 今の値 : 0) + 1
   )
     .then((結果) => {
       if (!結果 || !結果.committed) return;
@@ -1122,8 +1121,8 @@ const 共有履歴へ積む = (前の盤面, 後の盤面, 状態) => {
 const 共有履歴の目印を受け取る = (届いた状態, 書く, 状態) => {
   if (!届いた状態) return;
   const 変更 = {};
-  if ('number' == typeof 届いた状態.history_len) 変更.historySharedLen = 届いた状態.history_len;
-  if ('number' == typeof 届いた状態.history_max) 変更.historySharedMax = 届いた状態.history_max;
+  if (typeof 届いた状態.history_len === 'number') 変更.historySharedLen = 届いた状態.history_len;
+  if (typeof 届いた状態.history_max === 'number') 変更.historySharedMax = 届いた状態.history_max;
   // 参加して最初の1通は、その場で起きたことではなく「これまでの結果」。
   // 知らせを出すと、過去に一度でも取り消しがあったライブに入るたび
   // 「取り消しされました。」が出てしまうので、目印だけ引き取る
@@ -1180,13 +1179,22 @@ function 分けた一括(db, 上限 = 400) {
   const 束たち = [];
   let 数 = 上限;
   const 今の束 = () => {
-    if (数 >= 上限) (束たち.push(Firestore.writeBatch(db)), (数 = 0));
+    if (数 >= 上限) {
+      束たち.push(Firestore.writeBatch(db));
+      数 = 0;
+    }
     数 += 1;
     return 束たち[束たち.length - 1];
   };
   return {
-    set: (...引数) => (今の束().set(...引数), undefined),
-    delete: (...引数) => (今の束().delete(...引数), undefined),
+    set: (...引数) => {
+      今の束().set(...引数);
+      return undefined;
+    },
+    delete: (...引数) => {
+      今の束().delete(...引数);
+      return undefined;
+    },
     commit: () => Promise.all(束たち.map((束) => 束.commit())).then(() => undefined),
   };
 }

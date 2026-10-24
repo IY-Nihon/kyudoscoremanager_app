@@ -73,7 +73,7 @@ function 合言葉を作る(乱数源) {
 
 /** その値を枝の名前として使えるか（決まりが通す形か） */
 function 枝として使えるか(値) {
-  const s = null == 値 ? '' : String(値);
+  const s = 値 == null ? '' : String(値);
   // RTDB の道に使えない字が混じっていたら、道が壊れるので弾く
   if (/[.#$/[\]]/.test(s)) return false;
   return s.length >= 枝の最短;

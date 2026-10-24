@@ -156,7 +156,7 @@ const HistoryScreen = () => {
         ? trash.find((記録1件) => 記録1件 && 記録1件.id === selectedHistorySessionId)
         : null) ||
       null;
-    if (記録 && 'member' === activeRole && 部員ID) {
+    if (記録 && activeRole === 'member' && 部員ID) {
       // 判定は syncRules の 自分の射手か に出した。ここは交代の判定で
       // 射手ではなく記録のほう(o)を見ていて、交代で入った自分を拾えず、
       // すぐ下の mySessions とも食い違っていた
@@ -179,16 +179,18 @@ const HistoryScreen = () => {
   // 記録詳細から一覧へ戻る（画面の「戻る」と同じ）。ゴミ箱から来たなら、ゴミ箱へ戻す
   const 一覧へ戻る = () => {
     setHistoryViewMode('list');
-    if (ゴミ箱を見ている) (setゴミ箱の記録(null), ゴミ箱の窓を出す(true));
-    else if (!見ている記録) setゴミ箱の記録(null);
+    if (ゴミ箱を見ている) {
+      setゴミ箱の記録(null);
+      ゴミ箱の窓を出す(true);
+    } else if (!見ている記録) setゴミ箱の記録(null);
   };
   // 戻るボタンでも記録詳細を閉じる。閉じないと前のタブへ移り、履歴は詳細のまま残る（src/backToClose.js）
-  戻るで閉じる('detail' === historyViewMode, 一覧へ戻る);
+  戻るで閉じる(historyViewMode === 'detail', 一覧へ戻る);
   const mySessions = React.useMemo(() => {
     let 一覧 = sessions || [];
     const 部員ID = myMemberId;
     const 名前 = 自分の名前;
-    if ('member' === activeRole && 部員ID) {
+    if (activeRole === 'member' && 部員ID) {
       一覧 = 一覧.filter((記録) => 自分の記録か(記録, 部員ID, 名前));
     }
     return 一覧;
@@ -202,7 +204,12 @@ const HistoryScreen = () => {
   const 記録を押した = (記録) => {
     if (選択中) {
       const 次 = new Set(選んだ記録);
-      return (次.has(記録.id) ? 次.delete(記録.id) : 次.add(記録.id), void 選んだ記録を置く(次));
+      if (次.has(記録.id)) {
+        次.delete(記録.id);
+      } else {
+        次.add(記録.id);
+      }
+      return void 選んだ記録を置く(次);
     }
     setSelectedHistorySessionId(記録.id);
     setHistoryViewMode('detail');
@@ -214,7 +221,7 @@ const HistoryScreen = () => {
     const 今の年度 = 学.年度(今日);
     集めた.add(今の年度);
     mySessions.forEach((記録) => {
-      const 日時 = 'number' == typeof 記録.date ? 記録.date : Number(記録.date);
+      const 日時 = typeof 記録.date === 'number' ? 記録.date : Number(記録.date);
       if (isNaN(日時)) return;
       const 日付 = new Date(日時);
       const 年 = 日付.getFullYear();
@@ -225,40 +232,40 @@ const HistoryScreen = () => {
   }, [mySessions]);
   const タグの一覧 = React.useMemo(() => {
     const 集めた = new Set();
-    return (
-      mySessions.forEach((記録) => {
-        if (記録.tags && Array.isArray(記録.tags)) 記録.tags.forEach((タグ) => 集めた.add(タグ));
-      }),
-      Array.from(集めた).sort((甲, 乙) => {
-        const 甲は選択中 = historySelectedTags.includes(甲);
-        const 乙は選択中 = historySelectedTags.includes(乙);
-        return 甲は選択中 && !乙は選択中 ? -1 : !甲は選択中 && 乙は選択中 ? 1 : 甲.localeCompare(乙);
-      })
-    );
+    mySessions.forEach((記録) => {
+      if (記録.tags && Array.isArray(記録.tags)) 記録.tags.forEach((タグ) => 集めた.add(タグ));
+    });
+    return Array.from(集めた).sort((甲, 乙) => {
+      const 甲は選択中 = historySelectedTags.includes(甲);
+      const 乙は選択中 = historySelectedTags.includes(乙);
+      return 甲は選択中 && !乙は選択中 ? -1 : !甲は選択中 && 乙は選択中 ? 1 : 甲.localeCompare(乙);
+    });
   }, [mySessions, historySelectedTags]);
   const 月の一覧 = React.useMemo(() => {
     const 集めた = new Set();
-    return (
-      mySessions.forEach((記録) => {
-        const 日付 = new Date(記録.date);
-        const 年 = 日付.getFullYear();
-        const 月 = 日付.getMonth() + 1;
-        if (学.年度(new Date(年, 月 - 1, 1)) === 見ている年度)
-          集めた.add(`${年}/${String(月).padStart(2, '0')}`);
-      }),
-      Array.from(集めた).sort((甲, 乙) => 甲.localeCompare(乙))
-    );
+    mySessions.forEach((記録) => {
+      const 日付 = new Date(記録.date);
+      const 年 = 日付.getFullYear();
+      const 月 = 日付.getMonth() + 1;
+      if (学.年度(new Date(年, 月 - 1, 1)) === 見ている年度)
+        集めた.add(`${年}/${String(月).padStart(2, '0')}`);
+    });
+    return Array.from(集めた).sort((甲, 乙) => 甲.localeCompare(乙));
   }, [mySessions, 見ている年度]);
   React.useEffect(() => {
     if (!年度の一覧.includes(見ている年度)) 見ている年度を置く(年度の一覧[0]);
   }, [年度の一覧, 見ている年度]);
   React.useEffect(() => {
-    月の一覧.length > 0
-      ? 月の一覧.includes(見ている月) || 見ている月を置く(月の一覧[月の一覧.length - 1])
-      : 見ている月を置く('');
+    if (月の一覧.length > 0) {
+      if (!月の一覧.includes(見ている月)) {
+        見ている月を置く(月の一覧[月の一覧.length - 1]);
+      }
+    } else {
+      見ている月を置く('');
+    }
   }, [月の一覧, 見ている月]);
   React.useEffect(() => {
-    if ('detail' === historyViewMode && 見ている記録 && focusedMemberId) {
+    if (historyViewMode === 'detail' && 見ている記録 && focusedMemberId) {
       const archersList = 並びにする(見ている記録.archers);
       const cellW = UIConfig.cellWidth * viewScale;
       const archerIndex = archersList.findIndex((archer) => {
@@ -285,7 +292,7 @@ const HistoryScreen = () => {
     return 元
       .filter((記録) => {
         if (!記録) return false;
-        const 日時 = 'number' == typeof 記録.date ? 記録.date : Number(記録.date);
+        const 日時 = typeof 記録.date === 'number' ? 記録.date : Number(記録.date);
         if (isNaN(日時)) return false;
         const 日付 = new Date(日時);
         const 年 = 日付.getFullYear();
@@ -294,7 +301,7 @@ const HistoryScreen = () => {
         const 検索中 = 検索の文.trim().length > 0;
         if (historySelectedTags.length > 0) {
           const タグたち = 記録.tags || [];
-          if ('AND' === historyTagLogic) {
+          if (historyTagLogic === 'AND') {
             if (!historySelectedTags.every((タグ) => タグたち.includes(タグ))) return false;
           } else {
             if (!historySelectedTags.some((タグ) => タグたち.includes(タグ))) return false;
@@ -314,7 +321,7 @@ const HistoryScreen = () => {
             );
           const 射手たち = 記録.archers || [];
           const 名前に有る = (
-            Array.isArray(射手たち) ? 射手たち : 'object' == typeof 射手たち ? Object.values(射手たち) : []
+            Array.isArray(射手たち) ? 射手たち : typeof 射手たち === 'object' ? Object.values(射手たち) : []
           ).some((射手) => (射手?.name || '').toLowerCase().includes(言葉));
           if (!(題に有る || 日付に有る || 覚え書きに有る || 名前に有る)) return false;
         }
@@ -326,7 +333,7 @@ const HistoryScreen = () => {
     値
       ? Array.isArray(値)
         ? 値.filter(Boolean)
-        : 'object' == typeof 値
+        : typeof 値 === 'object'
           ? Object.values(値).filter(Boolean)
           : []
       : [];
@@ -367,10 +374,15 @@ const HistoryScreen = () => {
     const 見立て = 列の見立てを作る(射手たち, 本数);
     const 前後へ = (向き) => {
       const 位置 = 絞った記録.findIndex((記録1件) => 記録1件.id === 見ている記録.id);
-      -1 !== 位置 &&
-        ('prev' === 向き && 位置 < 絞った記録.length - 1
-          ? setSelectedHistorySessionId(絞った記録[位置 + 1].id)
-          : 'next' === 向き && 位置 > 0 && setSelectedHistorySessionId(絞った記録[位置 - 1].id));
+      if (位置 !== -1) {
+        if (向き === 'prev' && 位置 < 絞った記録.length - 1) {
+          setSelectedHistorySessionId(絞った記録[位置 + 1].id);
+        } else {
+          if (向き === 'next' && 位置 > 0) {
+            setSelectedHistorySessionId(絞った記録[位置 - 1].id);
+          }
+        }
+      }
     };
     return (
       <View style={styles.detailContainer}>
@@ -431,7 +443,7 @@ const HistoryScreen = () => {
           <View testID="ゴミ箱の帯" style={styles.trashBanner}>
             <Icons.Ionicons name="trash-outline" size={18} color={基本色.白} />
             <Text style={styles.trashBannerText}>ゴミ箱の中の記録です。見るだけで、直せません</Text>
-            {(isAdminMode || 'group' === activeRole) && (
+            {(isAdminMode || activeRole === 'group') && (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="この記録を復元する"
@@ -448,7 +460,7 @@ const HistoryScreen = () => {
             )}
             {/* 完全に削除もここから。一覧の「選んで削除」と同じ道（deleteTrashItems）を通し、 */
             /* 消したあとはゴミ箱の一覧へ戻る（使う人の要望 2026-09-17） */}
-            {(isAdminMode || 'group' === activeRole) && (
+            {(isAdminMode || activeRole === 'group') && (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="この記録を完全に削除する"
@@ -514,7 +526,7 @@ const HistoryScreen = () => {
                   {横に並べる ? '縦へ' : '横へ'}
                 </Text>
               </Pressable>
-              {(isAdminMode || 'group' === activeRole) && !ゴミ箱を見ている && (
+              {(isAdminMode || activeRole === 'group') && !ゴミ箱を見ている && (
                 <>
                   <Pressable // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                     accessible
@@ -858,7 +870,7 @@ const HistoryScreen = () => {
                                         (ゲスト)
                                       </Text>
                                     ) : null}
-                                    {射手.isTotalCalculator || '' === 射手.name ? null : (
+                                    {射手.isTotalCalculator || 射手.name === '' ? null : (
                                       <View
                                         style={{
                                           marginTop: 2 * viewScale,
@@ -871,7 +883,7 @@ const HistoryScreen = () => {
                                             射手.gender === '未設定' ||
                                             !['男子', '女子'].includes(射手.gender)
                                               ? 基本色.灰
-                                              : '男子' === 射手.gender
+                                              : 射手.gender === '男子'
                                                 ? 基本色.青
                                                 : 基本色.桃,
                                         }}
@@ -935,9 +947,9 @@ const HistoryScreen = () => {
               </Text>
             )}
             <Icons.Ionicons
-              name={'未同期' === item.syncStatus ? 'cloud-upload-outline' : 'cloud-done-outline'}
+              name={item.syncStatus === '未同期' ? 'cloud-upload-outline' : 'cloud-done-outline'}
               size={14}
-              color={'未同期' === item.syncStatus ? 基本色.橙 : 基本色.青}
+              color={item.syncStatus === '未同期' ? 基本色.橙 : 基本色.青}
               style={{ marginLeft: 6 }}
             />
             {!item.includeInStats && (
@@ -969,11 +981,11 @@ const HistoryScreen = () => {
             <View style={styles.itemTagsContainer}>
               {item.tags.map((タグ, 番) => (
                 <View
-                  key={typeof タグ == 'string' ? `tag-${タグ}-${番}` : `tag-obj-${番}`}
+                  key={typeof タグ === 'string' ? `tag-${タグ}-${番}` : `tag-obj-${番}`}
                   style={styles.itemTagChip}
                 >
                   <Text style={styles.itemTagText}>
-                    {typeof タグ == 'string' ? タグ.replace(/^#/, '') : String(タグ)}
+                    {typeof タグ === 'string' ? タグ.replace(/^#/, '') : String(タグ)}
                   </Text>
                 </View>
               ))}
@@ -993,12 +1005,16 @@ const HistoryScreen = () => {
     ゴミ箱の窓を出す(true);
   };
   const 選択を切り替える = () => {
-    選択中
-      ? (選択中を置く(false), 選んだ記録を置く(new Set()))
-      : (選択中を置く(true), 選んだ記録を置く(new Set()));
+    if (選択中) {
+      選択中を置く(false);
+      選んだ記録を置く(new Set());
+    } else {
+      選択中を置く(true);
+      選んだ記録を置く(new Set());
+    }
   };
   const 選んだ記録を消す = () => {
-    if (0 !== 選んだ記録.size) 削除の確認を出す(true);
+    if (選んだ記録.size !== 0) 削除の確認を出す(true);
   };
   const 印を切り替える = (射手ID, 番) => {
     if (!見ている記録 || !isAdminMode) return;
@@ -1006,10 +1022,8 @@ const HistoryScreen = () => {
       if (射手.id === 射手ID) {
         const 印 = [...射手.marks];
         const 前の印 = 印[番];
-        return (
-          (印[番] = '' === 前の印 ? '○' : '○' === 前の印 ? '\xd7' : ''),
-          Object.assign({}, 射手, { marks: 印 })
-        );
+        印[番] = 前の印 === '' ? '○' : 前の印 === '○' ? '\xd7' : '';
+        return Object.assign({}, 射手, { marks: 印 });
       }
       return 射手;
     });
@@ -1019,7 +1033,7 @@ const HistoryScreen = () => {
     if (!見ている記録 || !isAdminMode) return;
     const 元 = 見ている記録.archers || [];
     const 押した列 = 元.findIndex((射手) => 射手.id === 射手ID);
-    if (-1 === 押した列) return;
+    if (押した列 === -1) return;
     const その射手 = 元[押した列];
     const 掛ける = !その射手.lockedBlocks?.[塊];
     let 塊の頭 = 押した列;
@@ -1028,7 +1042,8 @@ const HistoryScreen = () => {
     const 直した = 元.map((射手, 番) => {
       if (番 >= 塊の頭 && 番 <= 押した列) {
         const 鍵の表 = Object.assign({}, 射手.lockedBlocks || {});
-        return ((鍵の表[塊] = 掛ける), Object.assign({}, 射手, { lockedBlocks: 鍵の表 }));
+        鍵の表[塊] = 掛ける;
+        return Object.assign({}, 射手, { lockedBlocks: 鍵の表 });
       }
       return 射手;
     });
@@ -1060,7 +1075,7 @@ const HistoryScreen = () => {
       if (!射手 || 射手.id !== 射手ID) return 射手;
       const 交代 = Object.assign({}, 射手.substitutions || {});
       const 交代の部員 = Object.assign({}, 射手.substitutionIds || {});
-      if ('' !== 名前) {
+      if (名前 !== '') {
         交代[番] = 名前;
         if (部員ID) 交代の部員[番] = 部員ID;
         else delete 交代の部員[番];
@@ -1108,14 +1123,16 @@ const HistoryScreen = () => {
     updateSession(見ている記録.id, { archers: 残り });
   };
   const 人を選ぶ = (射手ID, 順) => {
-    isAdminMode &&
-      !ゴミ箱を見ている &&
-      (選んだ射手IDを置く(射手ID), 選んだ射手の順を置く(順), 人の窓を出す(true));
+    if (isAdminMode && !ゴミ箱を見ている) {
+      選んだ射手IDを置く(射手ID);
+      選んだ射手の順を置く(順);
+      人の窓を出す(true);
+    }
   };
   const 外枠 = View;
   return (
     <外枠 style={styles.safeArea}>
-      {'detail' === historyViewMode ? (
+      {historyViewMode === 'detail' ? (
         詳細を描く()
       ) : (
         <View style={{ flex: 1 }}>
@@ -1137,7 +1154,7 @@ const HistoryScreen = () => {
                 <Text style={styles.listMainTitle}>過去の記録表</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                {(isAdminMode || 'group' === activeRole) && (
+                {(isAdminMode || activeRole === 'group') && (
                   <Pressable
                     onPress={選択を切り替える}
                     style={({ hovered }) => [
@@ -1150,7 +1167,7 @@ const HistoryScreen = () => {
                     </Text>
                   </Pressable>
                 )}
-                {(isAdminMode || 'group' === activeRole) && (
+                {(isAdminMode || activeRole === 'group') && (
                   <Pressable // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                     accessible
                     accessibilityRole="button"
@@ -1221,14 +1238,14 @@ const HistoryScreen = () => {
                           onPress={() => setHistoryTagLogic('AND')}
                           style={[
                             { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-                            'AND' === historyTagLogic && { backgroundColor: 基本色.白 },
+                            historyTagLogic === 'AND' && { backgroundColor: 基本色.白 },
                           ]}
                         >
                           <Text
                             style={{
                               fontSize: 11,
                               fontWeight: 'bold',
-                              color: 'AND' === historyTagLogic ? 基本色.青 : 基本色.灰,
+                              color: historyTagLogic === 'AND' ? 基本色.青 : 基本色.灰,
                             }}
                           >
                             すべて含む
@@ -1238,14 +1255,14 @@ const HistoryScreen = () => {
                           onPress={() => setHistoryTagLogic('OR')}
                           style={[
                             { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-                            'OR' === historyTagLogic && { backgroundColor: 基本色.白 },
+                            historyTagLogic === 'OR' && { backgroundColor: 基本色.白 },
                           ]}
                         >
                           <Text
                             style={{
                               fontSize: 11,
                               fontWeight: 'bold',
-                              color: 'OR' === historyTagLogic ? 基本色.青 : 基本色.灰,
+                              color: historyTagLogic === 'OR' ? 基本色.青 : 基本色.灰,
                             }}
                           >
                             いずれか含む
@@ -1262,17 +1279,17 @@ const HistoryScreen = () => {
                       <Pressable
                         style={({ hovered }) => [
                           styles.tagChip,
-                          0 === historySelectedTags.length && styles.tagChipActive,
-                          { backgroundColor: 0 === historySelectedTags.length ? 基本色.青 : 基本色.地_濃い },
+                          historySelectedTags.length === 0 && styles.tagChipActive,
+                          { backgroundColor: historySelectedTags.length === 0 ? 基本色.青 : 基本色.地_濃い },
                           hovered &&
-                            0 !== historySelectedTags.length && { backgroundColor: 基本色.灰_明るい },
+                            historySelectedTags.length !== 0 && { backgroundColor: 基本色.灰_明るい },
                         ]}
                         onPress={() => setHistorySelectedTags([])}
                       >
                         <Text
                           style={[
                             styles.tagChipText,
-                            0 === historySelectedTags.length && { color: 基本色.白 },
+                            historySelectedTags.length === 0 && { color: 基本色.白 },
                           ]}
                         >
                           すべて解除
@@ -1411,7 +1428,10 @@ const HistoryScreen = () => {
         visible={削除の確認}
         transparent
         animationType="fade"
-        onRequestClose={() => (削除の確認を出す(false), 消す記録IDを置く(null))}
+        onRequestClose={() => {
+          削除の確認を出す(false);
+          return 消す記録IDを置く(null);
+        }}
       >
         <View style={styles.confirmOverlay}>
           <View style={styles.confirmModal}>
@@ -1430,11 +1450,15 @@ const HistoryScreen = () => {
               <TouchableOpacity
                 style={[styles.modalBtn, { backgroundColor: 基本色.赤, flex: 1, marginLeft: 5 }]}
                 onPress={async () => {
-                  消す記録ID
-                    ? (deleteSession(消す記録ID), 消す記録IDを置く(null), setHistoryViewMode('list'))
-                    : (deleteMultipleSessions(Array.from(選んだ記録)),
-                      選んだ記録を置く(new Set()),
-                      選択中を置く(false));
+                  if (消す記録ID) {
+                    deleteSession(消す記録ID);
+                    消す記録IDを置く(null);
+                    setHistoryViewMode('list');
+                  } else {
+                    deleteMultipleSessions(Array.from(選んだ記録));
+                    選んだ記録を置く(new Set());
+                    選択中を置く(false);
+                  }
                   削除の確認を出す(false);
                 }}
               >

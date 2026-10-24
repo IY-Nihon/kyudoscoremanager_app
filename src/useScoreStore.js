@@ -134,13 +134,20 @@ const useScoreStore = zustand.create()(
   middleware.persist(
     (そのまま書く, 状態) => {
       const 書く = (変更) => {
-        let 中身 = 'function' == typeof 変更 ? 変更(状態()) : 変更;
+        let 中身 = typeof 変更 === 'function' ? 変更(状態()) : 変更;
         // 同期できたなら、入り直しの案内は下ろす。書き換えは幾つもあるので、
         // 1つずつ消して回らずにここで拾う
-        中身 && '同期済み' === 中身.syncStatus && (中身.再ログインの案内 = null);
-        中身 &&
-          (中身.sessions && (中身.sessions = cleanUpSessions(中身.sessions)),
-          中身.trash && (中身.trash = cleanUpSessions(中身.trash)));
+        if (中身 && 中身.syncStatus === '同期済み') {
+          中身.再ログインの案内 = null;
+        }
+        if (中身) {
+          if (中身.sessions) {
+            中身.sessions = cleanUpSessions(中身.sessions);
+          }
+          if (中身.trash) {
+            中身.trash = cleanUpSessions(中身.trash);
+          }
+        }
         if (
           中身 &&
           Array.isArray(中身.historyStack) &&
@@ -349,92 +356,98 @@ const useScoreStore = zustand.create()(
         setMemberAuthVersion: (版) => 書く({ memberAuthVersion: 版 }),
         setFocusedMemberId: (id) => 書く({ focusedMemberId: id }),
         setAuth: (団体ID, 役割, 部員ID, メール = null, 公開の団体ID = null, 団体名 = null, 部員名 = null) => {
-          null === 団体ID
-            ? // 出たら行動の控えも捨てる。次に入った人の不具合の便りに、
-              // 前の人が何をしていたかが付いていくのは筋が悪い
-              (書く({
-                // 送れていない記録は捨てずに、団体ごとの控えへ移す（次に同じ団体で入ったら戻して送る）
-                未送信の控え: 未送信.控えに入れる(
-                  状態().未送信の控え,
-                  未送信.控えの鍵(状態().publicGroupId, 状態().activeGroupId, 状態().activeRole),
-                  状態()
-                ),
-                入り直しが要る: false,
-                再ログインの案内: null,
-              }),
-              行動の控えを捨てる(),
-              (場.合言葉の取り寄せ = null),
+          if (団体ID === null) {
+            // 出たら行動の控えも捨てる。次に入った人の不具合の便りに、
+            // 前の人が何をしていたかが付いていくのは筋が悪い
+            書く({
+              // 送れていない記録は捨てずに、団体ごとの控えへ移す（次に同じ団体で入ったら戻して送る）
+              未送信の控え: 未送信.控えに入れる(
+                状態().未送信の控え,
+                未送信.控えの鍵(状態().publicGroupId, 状態().activeGroupId, 状態().activeRole),
+                状態()
+              ),
+              入り直しが要る: false,
+              再ログインの案内: null,
+            });
+            行動の控えを捨てる();
+            場.合言葉の取り寄せ = null;
+            書く({
+              // ライブの合言葉も捨てる。団体を見て弾いてはいるが、
+              // 出た人の端末に団体の秘密を残す理由が無い
+              ライブの合言葉: null,
+              activeGroupId: null,
+              activeGroupName: null,
+              publicGroupId: null,
+              activeRole: null,
+              myMemberId: null,
+              myMemberName: null,
+              activeUserEmail: null,
+              sessions: [],
+              members: [],
+              history: [],
+              alumni: [],
+              trash: [],
+              archers: [],
+              activeSessionID: null,
+              雲の境目: null,
+              全部そろえた時刻: 0,
+              端末から外した記録: [],
+              // 履歴の記録を直している途中の控えも、団体を離れるときに捨てる
+              履歴の編集: null,
+              analysisSelectedTags: [],
+              historySelectedTags: [],
+              historyTagLogic: 'AND',
+              // 初めの値と同じく # 付きで持つ（normalizeTag の形）
+              tagTemplates: ['#立', '#練習試合', '#大会', '#自主練習', '#合宿'],
+              initializationLogs: [],
+              isAdminMode: false,
+              isAdminModePending: false,
+              ...学年まわりの初めの値,
+            });
+            状態().stopPeriodicSync();
+            状態().stopListeningToSessions();
+            状態().stopListeningToMembers();
+            状態().stopListeningToAlumni();
+            状態().stopListeningToTrash();
+            if (状態().configUnsubscribe) {
+              状態().configUnsubscribe();
+              書く({ configUnsubscribe: null });
+            }
+          } else {
+            if (団体ID !== 状態().activeGroupId) {
+              // 別の団体へ入るときは、前の団体の控えと境目を持ち越さない
+              //（招待リンクで入り直すときなど、出ずに入ることがある）
               書く({
-                // ライブの合言葉も捨てる。団体を見て弾いてはいるが、
-                // 出た人の端末に団体の秘密を残す理由が無い
-                ライブの合言葉: null,
-                activeGroupId: null,
-                activeGroupName: null,
-                publicGroupId: null,
-                activeRole: null,
-                myMemberId: null,
-                myMemberName: null,
-                activeUserEmail: null,
                 sessions: [],
                 members: [],
-                history: [],
                 alumni: [],
                 trash: [],
-                archers: [],
-                activeSessionID: null,
                 雲の境目: null,
                 全部そろえた時刻: 0,
                 端末から外した記録: [],
-                // 履歴の記録を直している途中の控えも、団体を離れるときに捨てる
-                履歴の編集: null,
-                analysisSelectedTags: [],
-                historySelectedTags: [],
-                historyTagLogic: 'AND',
-                // 初めの値と同じく # 付きで持つ（normalizeTag の形）
-                tagTemplates: ['#立', '#練習試合', '#大会', '#自主練習', '#合宿'],
-                initializationLogs: [],
-                isAdminMode: false,
-                isAdminModePending: false,
                 ...学年まわりの初めの値,
-              }),
-              状態().stopPeriodicSync(),
-              状態().stopListeningToSessions(),
-              状態().stopListeningToMembers(),
-              状態().stopListeningToAlumni(),
-              状態().stopListeningToTrash(),
-              状態().configUnsubscribe && (状態().configUnsubscribe(), 書く({ configUnsubscribe: null })))
-            : (団体ID !== 状態().activeGroupId &&
-                // 別の団体へ入るときは、前の団体の控えと境目を持ち越さない
-                //（招待リンクで入り直すときなど、出ずに入ることがある）
-                書く({
-                  sessions: [],
-                  members: [],
-                  alumni: [],
-                  trash: [],
-                  雲の境目: null,
-                  全部そろえた時刻: 0,
-                  端末から外した記録: [],
-                  ...学年まわりの初めの値,
-                }),
-              書く({
-                activeGroupId: 団体ID,
-                activeGroupName: 団体名 || 状態().activeGroupName,
-                activeRole: 役割,
-                myMemberId: 部員ID,
-                myMemberName: 部員名 || 状態().myMemberName,
-                activeUserEmail: メール,
-                publicGroupId: 公開の団体ID || ('group' === 役割 ? 団体ID : 状態().publicGroupId),
-                isAdminMode: false,
-                isAdminModePending: false,
-                入り直しが要る: false,
-                再ログインの案内: null,
-              }),
-              状態().未送信の控えを戻す(),
-              状態().listenToConfig(),
-              状態().listenToSessions(),
-              状態().listenToMembers(),
-              状態().listenToAlumni(),
-              状態().listenToTrash());
+              });
+            }
+            書く({
+              activeGroupId: 団体ID,
+              activeGroupName: 団体名 || 状態().activeGroupName,
+              activeRole: 役割,
+              myMemberId: 部員ID,
+              myMemberName: 部員名 || 状態().myMemberName,
+              activeUserEmail: メール,
+              publicGroupId: 公開の団体ID || (役割 === 'group' ? 団体ID : 状態().publicGroupId),
+              isAdminMode: false,
+              isAdminModePending: false,
+              入り直しが要る: false,
+              再ログインの案内: null,
+            });
+            状態().未送信の控えを戻す();
+            状態().listenToConfig();
+            状態().listenToSessions();
+            状態().listenToMembers();
+            状態().listenToAlumni();
+            状態().listenToTrash();
+          }
         },
         /** 控えを捨てる（団体アカウントを消したとき。送り先がもう無い） */
         未送信の控えを捨てる: (鍵) => {
@@ -640,7 +653,7 @@ const useScoreStore = zustand.create()(
         },
         同意を確かめる: async () => {
           const { activeGroupId: 団体, activeRole: 役, publicGroupId: 公開ID } = 状態();
-          if ('group' !== 役) return;
+          if (役 !== 'group') return;
           const id = (公開ID || 団体 || '').toUpperCase();
           if (!id) return;
           try {
@@ -679,7 +692,7 @@ const useScoreStore = zustand.create()(
         同意を記録する: async () => {
           const { activeGroupId: 団体, activeRole: 役, publicGroupId: 公開ID } = 状態();
           書く({ 同意の確認が要る: false });
-          if ('group' !== 役) return;
+          if (役 !== 'group') return;
           const id = (公開ID || 団体 || '').toUpperCase();
           if (!id) return;
           try {
@@ -702,16 +715,23 @@ const useScoreStore = zustand.create()(
             try {
               const 帳面の場所 = Firestore.doc(Firebaseの器.db, 'group_accounts', 団体ID.toUpperCase());
               const 帳面 = await Firestore.getDoc(帳面の場所);
-              帳面.exists() && (宛先 = 帳面.data().email);
+              if (帳面.exists()) {
+                宛先 = 帳面.data().email;
+              }
             } catch (誤り) {
               console.error('[Store] Failed to fetch group email:', 誤り);
             }
           }
-          if (!宛先) return (console.warn('[Store] verifyGroupPassword: No email found to verify.'), false);
+          if (!宛先) {
+            console.warn('[Store] verifyGroupPassword: No email found to verify.');
+            return false;
+          }
           try {
-            return (await FirebaseAuth.signInWithEmailAndPassword(Firebaseの器.auth, 宛先, 合言葉), true);
+            await FirebaseAuth.signInWithEmailAndPassword(Firebaseの器.auth, 宛先, 合言葉);
+            return true;
           } catch (誤り) {
-            return (console.error('[Store] verifyGroupPassword error:', 誤り), false);
+            console.error('[Store] verifyGroupPassword error:', 誤り);
+            return false;
           }
         },
         setAdminMode: (値) => 書く({ isAdminMode: 値, isAdminModePending: false }),
@@ -729,7 +749,7 @@ const useScoreStore = zustand.create()(
             isLiveActive: ライブ中,
             activeUserEmail: 控えの宛先,
           } = 状態();
-          if ('group' !== 役 || !団体ID)
+          if (役 !== 'group' || !団体ID)
             return { ok: false, 訳: '団体アカウントで入っているときだけ消せます' };
           if (!管理者) return { ok: false, 訳: '管理者モードをオンにしてください' };
           if (ライブ中) return { ok: false, 訳: 'ライブ記録中は消せません。先にライブを止めてください' };
@@ -738,7 +758,9 @@ const useScoreStore = zustand.create()(
           if (!宛先) {
             try {
               const 帳面 = await Firestore.getDoc(Firestore.doc(Firebaseの器.db, 'group_accounts', 団体ID));
-              帳面.exists() && (宛先 = 帳面.data().email);
+              if (帳面.exists()) {
+                宛先 = 帳面.data().email;
+              }
             } catch (誤り) {
               console.error('[Store] deleteGroupAccount: email lookup failed', 誤り);
             }
@@ -867,7 +889,7 @@ const useScoreStore = zustand.create()(
         },
         setCustomGraduate: (卒業する) => 状態().学年の設定を書く({ customGraduate: !!卒業する }),
         setCustomWording: (呼び方) =>
-          状態().学年の設定を書く({ customWording: 'club' === 呼び方 ? 'club' : 'school' }),
+          状態().学年の設定を書く({ customWording: 呼び方 === 'club' ? 'club' : 'school' }),
         setYearStartMonth: (月) => 状態().学年の設定を書く({ yearStartMonth: Number(月) || 4 }),
         setUseTerm: (使う) => 状態().学年の設定を書く({ useTerm: !!使う }),
         /**
@@ -923,11 +945,15 @@ const useScoreStore = zustand.create()(
             if (設定の帳面.exists()) {
               設定 = 設定の帳面.data();
               const 取り込む = Object.assign({}, 学.設定から読む(設定));
-              'number' == typeof 設定.currentFreshmanTerm &&
-                (取り込む.currentFreshmanTerm = 設定.currentFreshmanTerm);
-              Array.isArray(設定.tagTemplates) && (取り込む.tagTemplates = 設定.tagTemplates);
-              'number' == typeof 設定.lastPromotionYear &&
-                (取り込む.lastPromotionYear = 設定.lastPromotionYear);
+              if (typeof 設定.currentFreshmanTerm === 'number') {
+                取り込む.currentFreshmanTerm = 設定.currentFreshmanTerm;
+              }
+              if (Array.isArray(設定.tagTemplates)) {
+                取り込む.tagTemplates = 設定.tagTemplates;
+              }
+              if (typeof 設定.lastPromotionYear === 'number') {
+                取り込む.lastPromotionYear = 設定.lastPromotionYear;
+              }
               書く(取り込む);
             }
           } catch (誤り) {
@@ -935,7 +961,7 @@ const useScoreStore = zustand.create()(
           }
           // 段 1 より前の団体には 進級の確認・期を使う を書き足し、古い版のアプリの自動進級を止める。
           // 部員の端末からは書かない（団体ログインのときだけ）。送信の完了は待たない（下の理由と同じ）
-          if ('group' === 状態().activeRole && 学.設定を書き足すか(設定)) {
+          if (状態().activeRole === 'group' && 学.設定を書き足すか(設定)) {
             const 読んだ = 学.設定から読む(設定);
             Firestore.setDoc(
               Firestore.doc(Firebaseの器.db, `groups/${団体}/config`, 'app_settings'),
@@ -943,7 +969,7 @@ const useScoreStore = zustand.create()(
               { merge: true }
             ).catch((誤り) => console.error('[進級] 設定を書き足せませんでした:', 誤り));
           }
-          if (!設定 || 'number' != typeof 設定.lastPromotionYear) {
+          if (!設定 || typeof 設定.lastPromotionYear !== 'number') {
             // 進級した年が無い団体（作ったばかり）は、今年の分を済んだことにして書き留めるだけ
             const 基準 = 学.年度(今日);
             console.log(`[進級] 進級した年が無いので ${基準} 年を書き留めます（進級はしない）`);
@@ -1123,18 +1149,14 @@ const useScoreStore = zustand.create()(
         recoverPassword: async (メール) => {
           if (!状態().isNetworkOnline) return { success: false, error: 'オフラインのため実行できません' };
           try {
-            return (
-              await FirebaseAuth.sendPasswordResetEmail(Firebaseの器.auth, メール),
-              // 住所そのものは出さない。部活の共用端末では、次に使う人が
-              // 開発者ツールで読める（復旧用の住所なので、知られたくない）
-              console.log('[Store] パスワード再設定のメールを送りました'),
-              { success: true }
-            );
+            await FirebaseAuth.sendPasswordResetEmail(Firebaseの器.auth, メール);
+            // 住所そのものは出さない。部活の共用端末では、次に使う人が
+            // 開発者ツールで読める（復旧用の住所なので、知られたくない）
+            console.log('[Store] パスワード再設定のメールを送りました');
+            return { success: true };
           } catch (誤り) {
-            return (
-              console.error('Password Recovery Error:', 誤り),
-              { success: false, error: 誤り.message || 'パスワードリセットメールの送信に失敗しました' }
-            );
+            console.error('Password Recovery Error:', 誤り);
+            return { success: false, error: 誤り.message || 'パスワードリセットメールの送信に失敗しました' };
           }
         },
         listenToConfig: async () => {
@@ -1322,17 +1344,17 @@ const useScoreStore = zustand.create()(
               updates.archers = [];
             }
             if (
-              'number' != typeof 戻した状態.viewScale ||
+              typeof 戻した状態.viewScale !== 'number' ||
               isNaN(戻した状態.viewScale) ||
               戻した状態.viewScale <= 0
             ) {
               console.warn('[Store] Invalid viewScale detected during hydration, resetting to 1.0');
               updates.viewScale = 1;
             }
-            if ('function' == typeof 戻した状態.updateState) {
+            if (typeof 戻した状態.updateState === 'function') {
               戻した状態.updateState(updates);
             }
-            if ('function' == typeof 戻した状態.ensurePersonalIds) {
+            if (typeof 戻した状態.ensurePersonalIds === 'function') {
               戻した状態.ensurePersonalIds();
             }
           } else {
@@ -1340,8 +1362,8 @@ const useScoreStore = zustand.create()(
             const いまの状態 = useScoreStore.getState();
             if (
               いまの状態 &&
-              false === いまの状態.isHydrated &&
-              'function' == typeof いまの状態.updateState
+              いまの状態.isHydrated === false &&
+              typeof いまの状態.updateState === 'function'
             ) {
               console.log('[Store] Forcing isHydrated: true even for empty state');
               いまの状態.updateState({ isHydrated: true });

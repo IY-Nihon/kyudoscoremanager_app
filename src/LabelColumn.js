@@ -6,7 +6,7 @@ const { UIConfig } = require('./uiConfig');
 const { useScoreStore } = require('./useScoreStore');
 const LabelColumn = ({ shots, showFooter = true, 横並び: 横 = false }) => {
   const viewScale = useScoreStore((状態) => 状態.viewScale);
-  const 倍率 = 'number' == typeof viewScale && !isNaN(viewScale) && viewScale > 0 ? viewScale : 1;
+  const 倍率 = typeof viewScale === 'number' && !isNaN(viewScale) && viewScale > 0 ? viewScale : 1;
   const 番号たち = [];
   // 縦の表は下から上へ数える（1射目が下）。横の表は左から右へ数える
   if (横) for (let 番 = 1; 番 <= shots; 番++) 番号たち.push(番);
@@ -49,7 +49,7 @@ const LabelColumn = ({ shots, showFooter = true, 横並び: 横 = false }) => {
         <View style={横 ? { flexDirection: 'row' } : undefined}>
           {番号たち.map((番号) => {
             // 立の切れ目。縦では下の線、横では右の線を太くする
-            const 縦の切れ目 = (番号 - 1) % 4 == 0 && 1 !== 番号;
+            const 縦の切れ目 = (番号 - 1) % 4 == 0 && 番号 !== 1;
             const 切れ目 = 横 ? 番号 % 4 == 0 && 番号 !== 番号たち.length : 縦の切れ目;
             return (
               <View

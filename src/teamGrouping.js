@@ -236,7 +236,7 @@ function 合計を数える(射手たち, 位置) {
   const 並び = Array.isArray(射手たち) ? 射手たち : [];
   if (!並び[位置] || !並び[位置].isTotalCalculator) return 0;
   return 合計が受け持つ射手(射手たち, 位置).reduce(
-    (数, 一人) => 数 + (一人.marks || []).filter((印) => '○' === 印).length,
+    (数, 一人) => 数 + (一人.marks || []).filter((印) => 印 === '○').length,
     0
   );
 }

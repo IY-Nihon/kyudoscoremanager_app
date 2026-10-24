@@ -30,8 +30,8 @@ function 店の形(団体ID, 中身) {
 function 雲の形(中身) {
   const 出 = {};
   for (const [鍵, 値] of Object.entries(中身 || {})) {
-    if ('団体ID' === 鍵) continue;
-    出[鍵] = /日時$/.test(鍵) && 'number' === typeof 値 ? Firestore.Timestamp.fromMillis(値) : 値;
+    if (鍵 === '団体ID') continue;
+    出[鍵] = /日時$/.test(鍵) && typeof 値 === 'number' ? Firestore.Timestamp.fromMillis(値) : 値;
   }
   return 出;
 }
@@ -50,7 +50,7 @@ const 掲載の操作 = (書く, 状態) => {
   /** 雲から読み直して店に置く。読めなければ null（店はそのまま） */
   const 雲から読む = async () => {
     const { activeGroupId, activeRole, isNetworkOnline } = 状態();
-    if (!activeGroupId || 'group' !== activeRole || !isNetworkOnline || !Firebaseの器.db) return null;
+    if (!activeGroupId || activeRole !== 'group' || !isNetworkOnline || !Firebaseの器.db) return null;
     const 帳面 = await 区切って待つ(Firestore.getDoc(文書(activeGroupId)));
     if (!帳面) return null;
     const 許可 = 店の形(activeGroupId, 帳面.exists() ? 帳面.data() : {});
@@ -136,7 +136,7 @@ const 掲載の操作 = (書く, 状態) => {
      * @returns {Promise<{誤り?: string}>} 誤りがあれば画面に出す文
      */
     掲載の許可を答える: async (選び) => {
-      if ('group' !== 状態().activeRole) return { 誤り: '団体ログインのときだけ選べます' };
+      if (状態().activeRole !== 'group') return { 誤り: '団体ログインのときだけ選べます' };
       const { 中身, 誤り } = 決まり.答えを整える(選び, Date.now());
       if (誤り) return { 誤り };
       if (!状態().isNetworkOnline) return { 誤り: '電波のあるところで、もう一度お試しください' };

@@ -124,9 +124,8 @@ test('射手を作り直す所が、teamName を落とさない', () => {
 
   // 作り直しの型は isSeparator を必ず持つ。その一帯に teamName があるか見る
   const place = [];
-  // 読める形に直したので true / false と 射手.isSeparator。前の !0 / !1 と e.isSeparator も受ける
-  const re =
-    /isSeparator:\s*(?:(?:!0|true) === [^\s.]+\.isSeparator|[^\s.]+\.isSeparator \|\| (?:!1|false))/g;
+  // 射手.isSeparator === true か 射手.isSeparator || false の形（2026-10-24 に逆さの比べを直した）
+  const re = /isSeparator:\s*[^\s.]+\.isSeparator (?:=== true|\|\| false)/g;
   let m;
   while ((m = re.exec(店)) !== null) place.push(m.index);
   assert.ok(place.length >= 2, '射手を作り直している所が見つかりません');

@@ -60,7 +60,12 @@ const 部員の詳細の窓 = ({
   const 学年を開け閉め = (印) => {
     閉じた学年を置く((前) => {
       const 次 = new Set(前);
-      return (次.has(印) ? 次.delete(印) : 次.add(印), 次);
+      if (次.has(印)) {
+        次.delete(印);
+      } else {
+        次.add(印);
+      }
+      return 次;
     });
   };
   // 個人の詳細を開いているときの、その人の成績
@@ -386,7 +391,7 @@ const 部員の詳細の窓 = ({
                 /* 持つのは部員IDだけ。氏名で持つと、改名や同姓同名で別人を呼ぶ */}
                 {(() => {
                   const この団体の = ひ.この団体のひな型(ひな型たち, いまの団体id);
-                  if (0 === この団体の.length && 0 === compareMembers.length) return null;
+                  if (この団体の.length === 0 && compareMembers.length === 0) return null;
                   const 選べる人 = [...members, ...alumni];
                   return (
                     <View style={{ marginBottom: 12 }}>
@@ -445,7 +450,9 @@ const 部員の詳細の窓 = ({
                                   }
                                   style={{ paddingVertical: 6, paddingRight: 8, paddingLeft: 2 }}
                                 >
-                                  <Text style={{ color: 基本色.灰, fontSize: 13, fontWeight: 'bold' }}>×</Text>
+                                  <Text style={{ color: 基本色.灰, fontSize: 13, fontWeight: 'bold' }}>
+                                    ×
+                                  </Text>
                                 </TouchableOpacity>
                               </View>
                             )),
@@ -595,9 +602,9 @@ const 部員の詳細の窓 = ({
                                             fontSize: 10,
                                             marginRight: 6,
                                             color:
-                                              '男子' === item.gender
+                                              item.gender === '男子'
                                                 ? 基本色.青
-                                                : '女子' === item.gender
+                                                : item.gender === '女子'
                                                   ? 基本色.桃
                                                   : 基本色.灰,
                                           }}
@@ -749,7 +756,9 @@ const 部員の詳細の窓 = ({
                     /* 見比べることになって読めなかった。 */
                     /* 1人1行の表にして、横に射目を並べる */}
                     <View style={{ marginBottom: 20 }}>
-                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: 基本色.文字_三, marginBottom: 12 }}>
+                      <Text
+                        style={{ fontSize: 14, fontWeight: 'bold', color: 基本色.文字_三, marginBottom: 12 }}
+                      >
                         {selectedModalTrendLabel
                           ? `立ち順別の的中率 (${selectedModalTrendLabel})`
                           : '立ち順別の的中率 (1-4射目)'}
@@ -894,7 +903,9 @@ const 部員の詳細の窓 = ({
                     /* マスの濃さでその人の中での多い少ないを見せる。 */
                     /* 回数そのものは書いてあるので、濃さは目安でよい */}
                     <View style={{ marginBottom: 20 }}>
-                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: 基本色.文字_三, marginBottom: 12 }}>
+                      <Text
+                        style={{ fontSize: 14, fontWeight: 'bold', color: 基本色.文字_三, marginBottom: 12 }}
+                      >
                         {selectedModalTrendLabel
                           ? `立ちの結果分布 (${selectedModalTrendLabel})`
                           : '立ちの結果分布 (4射単位)'}
@@ -1094,7 +1105,9 @@ const 部員の詳細の窓 = ({
                       />
                     </View>
                     <View style={{ marginBottom: 16 }}>
-                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: 基本色.文字_三, marginBottom: 8 }}>
+                      <Text
+                        style={{ fontSize: 14, fontWeight: 'bold', color: 基本色.文字_三, marginBottom: 8 }}
+                      >
                         {selectedModalTrendLabel
                           ? `立ち順別の的中率 (${selectedModalTrendLabel})`
                           : '立ち順別の的中率 (1-4射目)'}
@@ -1117,7 +1130,9 @@ const 部員の詳細の窓 = ({
                       </View>
                     </View>
                     <View style={{ marginBottom: 24 }}>
-                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: 基本色.文字_三, marginBottom: 12 }}>
+                      <Text
+                        style={{ fontSize: 14, fontWeight: 'bold', color: 基本色.文字_三, marginBottom: 12 }}
+                      >
                         {selectedModalTrendLabel
                           ? `立ちの結果分布 (${selectedModalTrendLabel})`
                           : '立ちの結果分布 (4射単位)'}

@@ -48,10 +48,10 @@ initTheme();
 export default function App() {
   // テーマが変わったらアプリ全体を再描画させる（色の変換は描画時に走る）
   const { theme } = useThemeMode();
-  const isHydrated = useScoreStore(e => e.isHydrated);
-  const activeGroupId = useScoreStore(e => e.activeGroupId);
+  const isHydrated = useScoreStore((e) => e.isHydrated);
+  const activeGroupId = useScoreStore((e) => e.activeGroupId);
   // 共有リンクだけで来ている人。団体に入っていなくても記録画面を出す
-  const 共有の来客 = useScoreStore(e => e.共有の来客);
+  const 共有の来客 = useScoreStore((e) => e.共有の来客);
   // URL に載っていた共有の荷。窓を出して、合言葉があれば聞く
   const [共有の荷, 共有の荷を置く] = useState(null);
   // 招待リンクで開かれたときの { 団体, 合言葉 }（src/memberInvite.js）
@@ -77,17 +77,18 @@ export default function App() {
     let 外す = () => {};
     if (typeof document !== 'undefined' && document.addEventListener) {
       const 変わった = () =>
-        'hidden' === document.visibilityState ? 見張り.裏に回った() : 見張り.表に戻った();
-      (document.addEventListener('visibilitychange', 変わった),
-        (外す = () => document.removeEventListener('visibilitychange', 変わった)));
+        document.visibilityState === 'hidden' ? 見張り.裏に回った() : 見張り.表に戻った();
+      document.addEventListener('visibilitychange', 変わった);
+      外す = () => document.removeEventListener('visibilitychange', 変わった);
     } else {
       const 手 = AppState.addEventListener('change', (状態) =>
-        'active' === 状態 ? 見張り.表に戻った() : 見張り.裏に回った()
+        状態 === 'active' ? 見張り.表に戻った() : 見張り.裏に回った()
       );
       外す = () => 手 && 手.remove && 手.remove();
     }
     return () => {
-      (外す(), 見張り.片付ける());
+      外す();
+      見張り.片付ける();
     };
   }, []);
 
@@ -174,14 +175,14 @@ export default function App() {
       console.warn('[App] 共有リンクを読めませんでした', e);
     }
   }, []);
-  const activeRole = useScoreStore(e => e.activeRole);
-  const memberAuthVersion = useScoreStore(e => e.memberAuthVersion);
-  const setAuth = useScoreStore(e => e.setAuth);
-  const 同意の確認が要る = useScoreStore(e => e.同意の確認が要る);
-  const startPeriodicSync = useScoreStore(e => e.startPeriodicSync);
+  const activeRole = useScoreStore((e) => e.activeRole);
+  const memberAuthVersion = useScoreStore((e) => e.memberAuthVersion);
+  const setAuth = useScoreStore((e) => e.setAuth);
+  const 同意の確認が要る = useScoreStore((e) => e.同意の確認が要る);
+  const startPeriodicSync = useScoreStore((e) => e.startPeriodicSync);
   // 起動のときの取り込み。前回から 7 日以内なら差分だけ、それ以外は全件（useScoreStore の 起動時に取り込む）
-  const 起動時に取り込む = useScoreStore(e => e.起動時に取り込む);
-  const setupNetworkListener = useScoreStore(e => e.setupNetworkListener);
+  const 起動時に取り込む = useScoreStore((e) => e.起動時に取り込む);
+  const setupNetworkListener = useScoreStore((e) => e.setupNetworkListener);
   const [hasMounted, setHasMounted] = useState(false);
   const [authReady, setAuthReady] = useState(false);
 
@@ -203,7 +204,10 @@ export default function App() {
   // セッション復元は非同期で、こちらの方が遅い。待たずにクラウドへ問い合わせると
   // 未認証のまま送られて拒否される。最初の認証状態が確定してから読み書きを始める。
   useEffect(() => {
-    if (!auth) { setAuthReady(true); return; }
+    if (!auth) {
+      setAuthReady(true);
+      return;
+    }
     const unsub = onAuthStateChanged(auth, (使う人) => {
       setAuthReady(true);
       // ログインする前に起きた不具合は、決まりの上で送れない（未ログインを弾く）。
@@ -246,8 +250,20 @@ export default function App() {
         '内容が変わりました。お手数ですが、ご確認のうえ同意をお願いします。',
         [
           // 読みに行くと窓は閉じるので、戻ってこられるようもう一度出す
-          { text: '利用規約を読む', onPress: () => { 法.開く(法.規約のURL); setTimeout(窓を出す, 500); } },
-          { text: 'プライバシーポリシーを読む', onPress: () => { 法.開く(法.プライバシーのURL); setTimeout(窓を出す, 500); } },
+          {
+            text: '利用規約を読む',
+            onPress: () => {
+              法.開く(法.規約のURL);
+              setTimeout(窓を出す, 500);
+            },
+          },
+          {
+            text: 'プライバシーポリシーを読む',
+            onPress: () => {
+              法.開く(法.プライバシーのURL);
+              setTimeout(窓を出す, 500);
+            },
+          },
           { text: '同意する', onPress: () => useScoreStore.getState().同意を記録する() },
           { text: 'あとで', style: 'cancel', onPress: () => useScoreStore.getState().同意をあとにする() },
         ]
@@ -297,14 +313,18 @@ export default function App() {
   return (
     <View style={styles.appContainer}>
       {IS_WEB && (
-        <style dangerouslySetInnerHTML={{ __html: `
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
           html, body { background: ${rootBg}; }
           ::-webkit-scrollbar { width: 8px; height: 8px; }
           ::-webkit-scrollbar-track { background: ${scrollTrack}; }
           ::-webkit-scrollbar-thumb { background: ${scrollThumb}; border-radius: 4px; }
           ::-webkit-scrollbar-thumb:hover { background: #8E8E93; }
           * { scrollbar-width: thin; scrollbar-color: ${scrollThumb} ${scrollTrack}; }
-        `}} />
+        `,
+          }}
+        />
       )}
       <View style={styles.responsiveWrapper}>
         <SafeAreaProvider style={{ flex: 1, width: '100%', height: '100%' }}>
@@ -333,9 +353,7 @@ export default function App() {
             {/* 招待リンクで来た人を迎える窓 */}
             {招待 ? <招待の窓 招待={招待} onClose={招待を閉じる} /> : null}
             {/* 共有リンクで来た人を迎える窓。団体に入る前に出す */}
-            {共有の荷 && !共有の来客 ? (
-              <来客の窓 荷={共有の荷} onClose={() => 共有の荷を置く(null)} />
-            ) : null}
+            {共有の荷 && !共有の来客 ? <来客の窓 荷={共有の荷} onClose={() => 共有の荷を置く(null)} /> : null}
             {/* 確認とお知らせの窓。ログインの前の画面でも使うので、
                 入った後・入る前のどちらにも入らない外側に1つだけ置く。
                 2つ置くと後に描かれた方が受け口を奪うので、必ず1つ。 */}
@@ -352,7 +370,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 色.地,
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
   },
   responsiveWrapper: {
     flex: 1,
@@ -364,7 +382,7 @@ const styles = StyleSheet.create({
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: IS_WEB ? 0.1 : 0,
       shadowRadius: 12,
-      elevation: 5
-    })
-  }
+      elevation: 5,
+    }),
+  },
 });
