@@ -21,7 +21,10 @@ const { useストアの一部 } = require('./storeSlice');
 const Icons = require('@expo/vector-icons');
 const { IS_IOS } = require('./IS_WEB');
 const { 立の数, 立の頭の射, 学年でまとめる } = require('./syncRules');
-// 本数・交代を書く … 履歴の詳細から開くときに渡す。渡さなければ記録画面の盤面に書く
+/**
+ * 途中交代の窓。何立目（何射目）から、誰（メンバーかゲスト）に代わるかを選ぶ。
+ * 本数・交代を書く … 履歴の詳細から開くときに渡す。渡さなければ記録画面の盤面に書く
+ */
 const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を書く }) => {
   const {
     members,
@@ -54,20 +57,21 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
   // 選べる番号。1立目、2立目…（射目のときは 1射目、2射目…）
   const 番号たち = Array.from({ length: 上限 }, (_, 番) => 番 + 1);
   const 選んだ = parseInt(番号の入力, 10);
-  // 入れた番号が何射目にあたるか。立なら、その立の1本目
-  const 何射目 = () => {
-    const 番号 = parseInt(番号の入力, 10);
-    if (isNaN(番号) || 番号 < 1 || 番号 > 上限) return null;
-    return 立か ? 立の頭の射(番号, shotsPerRound) : 番号 - 1;
-  };
+  // 選んだ番号が何射目にあたるか（0 から）。立なら、その立の1本目。選んでいなければ null
+  const 射番 =
+    isNaN(選んだ) || 選んだ < 1 || 選んだ > 上限
+      ? null
+      : 立か
+        ? 立の頭の射(選んだ, shotsPerRound)
+        : 選んだ - 1;
   const 交代を入れる = (名前, 部員ID) => {
-    const 射番 = 何射目();
     if (射番 !== null && archerId) {
       (交代を書く || setSubstitution)(archerId, 射番, 名前, 部員ID);
-      入力を空にする();
+      片付けて閉じる();
     }
   };
-  const 入力を空にする = () => {
+  // 次に開いたときに前の入力が残らないよう、空にしてから閉じる
+  const 片付けて閉じる = () => {
     番号の入力を置く('');
     検索の文を置く('');
     客名の入力を置く('');
@@ -77,12 +81,12 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
   return visible ? (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={IS_IOS ? 'padding' : undefined} style={styles.overlay}>
-        <TouchableWithoutFeedback onPress={入力を空にする}>
+        <TouchableWithoutFeedback onPress={片付けて閉じる}>
           <View style={StyleSheet.absoluteFill} />
         </TouchableWithoutFeedback>
         <View style={styles.container}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={入力を空にする} style={styles.headerBtn}>
+            <TouchableOpacity onPress={片付けて閉じる} style={styles.headerBtn}>
               <Text style={styles.headerBtnTxt}>閉じる</Text>
             </TouchableOpacity>
             <Text style={styles.headerTitle}>途中交代の設定</Text>
@@ -123,20 +127,19 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
                     style={[styles.番号の行, 番号 === 選んだ && styles.番号の行選択中]}
                     onPress={() => 番号の入力を置く(String(番号))}
                   >
-                    <Text style={[styles.番号の字, 番号 === 選んだ && styles.番号の字選択中]}>
-                      {番号}
-                      {単位}
-                    </Text>
+                    <Text
+                      style={[styles.番号の字, 番号 === 選んだ && styles.番号の字選択中]}
+                    >{`${番号}${単位}`}</Text>
                     {番号 === 選んだ ? <Icons.Ionicons name="checkmark" size={20} color={色.青} /> : null}
                   </TouchableOpacity>
                 ))}
               </View>
               <Text style={styles.案内}>
-                {何射目() === null
+                {射番 === null
                   ? '上から交代するところを選んでください'
                   : 立か
-                    ? `${選んだ}立目（${何射目() + 1}射目）から交代します`
-                    : `${何射目() + 1}射目から交代します`}
+                    ? `${選んだ}立目（${射番 + 1}射目）から交代します`
+                    : `${射番 + 1}射目から交代します`}
               </Text>
             </View>
             <Text style={styles.sectionTitle}>交代相手（メンバーまたはゲスト）</Text>
@@ -157,11 +160,12 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
                 onChangeText={客名の入力を置く}
               />
               <TouchableOpacity
-                style={[styles.confirmBtn, (!客名の入力 || 何射目() === null) && styles.confirmBtnDisabled]}
-                onPress={() => {
-                  if (客名の入力.trim() !== '') 交代を入れる(客名の入力.trim());
-                }}
-                disabled={!客名の入力 || 何射目() === null}
+                style={[
+                  styles.confirmBtn,
+                  (!客名の入力.trim() || 射番 === null) && styles.confirmBtnDisabled,
+                ]}
+                onPress={() => 交代を入れる(客名の入力.trim())}
+                disabled={!客名の入力.trim() || 射番 === null}
               >
                 <Text style={styles.confirmTxt}>確定</Text>
               </TouchableOpacity>
@@ -173,11 +177,7 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
                     style={styles.学年の見出し}
                     onPress={() => 学年を開け閉め(String(組.学年))}
                   >
-                    <Text style={styles.学年の字}>
-                      {組.題}
-                      {' ('}
-                      {組.人たち.length}人)
-                    </Text>
+                    <Text style={styles.学年の字}>{`${組.題} (${組.人たち.length}人)`}</Text>
                     <Icons.Ionicons
                       name={開いているか(組.学年) ? 'chevron-up' : 'chevron-down'}
                       size={16}
@@ -185,22 +185,16 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
                     />
                   </TouchableOpacity>
                   {(開いているか(組.学年) ? 組.人たち : []).map((部員, 順) => {
-                    if (!部員 || !部員.name || typeof 部員.name !== 'string') return null;
-                    const 名の片 = 部員.name.trim().split(/[\s\u3000]+/);
-                    const 姓 = 名の片 && 名の片.length > 0 ? 名の片[0] || '' : '不明';
-                    const 名前 = (名の片 && 名の片.length > 1 && 名の片[1]) || '';
+                    if (typeof 部員?.name !== 'string' || !部員.name) return null;
                     return (
                       <TouchableOpacity
                         key={typeof 部員.id === 'string' ? 部員.id : `subst-${組.学年}-${順}-${部員.name}`}
                         style={styles.memberItem}
-                        onPress={() => {
-                          交代を入れる(部員.name, 部員.id);
-                        }}
+                        onPress={() => 交代を入れる(部員.name, 部員.id)}
                       >
-                        <Text style={styles.memberName}>
-                          {姓} {名前}
-                        </Text>
-                        <Text style={styles.memberSub}>{部員.gender}</Text>
+                        <Text style={styles.memberName}>{部員.name}</Text>
+                        {/* 性別は団体の呼び方で（男子・女子／男性・女性） */}
+                        <Text style={styles.memberSub}>{学.性別の名前(部員.gender)}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -246,16 +240,11 @@ const styles = StyleSheet.create({
     color: 色.灰,
     marginBottom: 8,
     marginLeft: 4,
-    textTransform: 'uppercase',
   },
   単位の列: { flexDirection: 'row', gap: 8, marginBottom: 10 },
-  // 番号の一覧。人を選ぶ一覧（list / memberItem）と同じ見た目にそろえる
-  // flexGrow: 0 が無いと、行が少なくても maxHeight ぶんの白い箱が残る。
-  // flexShrink: 0 が無いと、細い画面（iPhone SE）で52pxまで潰れ、
-  // 5立ぶんの一覧が1行しか見えなくなる。縮むのは下の相手の一覧に任せる
-  // 窓ごと流すので、ここでは高さを縛らない
-  // 貼り付ける側が大きくなりすぎないよう高さを縛る。射目にすると
-  // 8〜20行に伸び、相手の一覧が画面の外へ押し出されていた
+  // 番号の一覧。人を選ぶ一覧（list / memberItem）と同じ見た目にそろえる。
+  // 上に貼り付けるので、大きくなりすぎないよう高さを縛り、中は自分で流す
+  //（射目にすると 8〜20 行に伸び、相手の一覧が画面の外へ押し出されていた）
   番号の一覧: {
     backgroundColor: 色.白,
     borderRadius: 10,
