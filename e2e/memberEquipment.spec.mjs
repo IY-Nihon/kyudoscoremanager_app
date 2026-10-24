@@ -31,7 +31,7 @@ const 団体 = '100002';
 test.use({ storageState: 'e2e/.auth/100002-個人.json' });
 
 /** 控えに入っている「自分」。誰の欄を開けばよいかは端末が覚えている */
-async function 自分を読む(page) {
+function 自分を読む(page) {
   return page.evaluate(() => {
     const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
     return { 役: s.activeRole || null, id: s.myMemberId || null, 名: s.myMemberName || null };

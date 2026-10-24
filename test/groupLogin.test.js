@@ -25,7 +25,7 @@ function 用意({ 帳面, 口座, 非公開 = null, 番号 = {}, 書けない = 
   const 認証 = { 今: null };
   const Firestore = {
     doc: (db, ...道) => ({ 道: 道.join('/') }),
-    getDoc: async (場所) => ({ exists: () => 表.has(場所.道), data: () => 表.get(場所.道) }),
+    getDoc: (場所) => ({ exists: () => 表.has(場所.道), data: () => 表.get(場所.道) }),
     setDoc: async (場所, 値, 選び) => {
       した.push(['setDoc', 値, 選び || null]);
       if (書けない) throw Object.assign(new Error('denied'), { code: 'permission-denied' });
@@ -40,13 +40,13 @@ function 用意({ 帳面, 口座, 非公開 = null, 番号 = {}, 書けない = 
     deleteField: () => '__消す',
   };
   const FirebaseAuth = {
-    signInWithEmailAndPassword: async (auth, メール, 合言葉) => {
+    signInWithEmailAndPassword: (auth, メール, 合言葉) => {
       した.push(['入る', メール]);
       if (口座[メール] !== 合言葉) throw Object.assign(new Error('no'), { code: 'auth/invalid-credential' });
       認証.今 = { email: メール, uid: 番号[メール] || 'uid-' + メール };
       return { user: 認証.今 };
     },
-    verifyBeforeUpdateEmail: async (user, 宛先) => {
+    verifyBeforeUpdateEmail: (user, 宛先) => {
       した.push(['確認を送る', user.email, 宛先]);
       if (送れない) throw Object.assign(new Error('x'), { code: 送れない });
     },

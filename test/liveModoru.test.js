@@ -141,7 +141,7 @@ test('戻る：確かめられなければ、記録表も控えもそのまま',
     名前: ライブ名, 枝: null, 閲覧枝: null, 主催: false, 見るだけ: false, よそ: false, 団体: 団体,
   });
   const 元の = ライブ.api.get;
-  ライブ.api.get = async () => {
+  ライブ.api.get = () => {
     throw new Error('偽の通信失敗');
   };
   assert.equal(await store.getState().ライブに戻る(), '確認できない');

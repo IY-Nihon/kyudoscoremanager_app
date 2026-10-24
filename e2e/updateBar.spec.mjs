@@ -23,7 +23,7 @@ import { 案内を止める, 画面が出るまで待つ, 入り口が決まる�
 test.use({ storageState: { cookies: [], origins: [] } });
 
 /** いま読み込んでいる束の名前 */
-async function いまの束(page) {
+function いまの束(page) {
   return page.evaluate(() => {
     const 札 = [...document.querySelectorAll('script[src]')]
       .map((x) => x.getAttribute('src'))
@@ -49,7 +49,7 @@ async function 返す中身を決める(page, 束) {
  * @param {boolean|'通信できない'} まだある
  */
 async function 束の有無を決める(page, 束, まだある) {
-  await page.route('**' + 束.split('?')[0], async (route) => {
+  await page.route('**' + 束.split('?')[0], (route) => {
     if (route.request().method() !== 'HEAD') return route.continue();
     if (まだある === '通信できない') return route.abort('internetdisconnected');
     return route.fulfill({

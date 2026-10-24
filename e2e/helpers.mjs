@@ -50,7 +50,7 @@ export async function 案内を止める(page) {
 export async function 自動ロックを入れる(page) {
   await page.addInitScript(() => {
     const 鍵 = 'archery-score-storage';
-    let 中 = {};
+    let 中;
     try {
       中 = JSON.parse(localStorage.getItem(鍵) || '{}') || {};
     } catch {
@@ -238,7 +238,7 @@ export async function 入り口が決まるまで待つ(page, 上限 = 60000) {
 }
 
 /** ますが指定の数だけ出るまで待つ。射手を立てたあとに使う */
-export async function ますが増えるまで待つ(page, 数 = 1, 上限 = 20000) {
+export function ますが増えるまで待つ(page, 数 = 1, 上限 = 20000) {
   return こうなるまで待つ(
     () => page.locator('[data-testid^="ます-"]').count(),
     (n) => n >= 数,

@@ -48,7 +48,7 @@ async function 管理者モードにする(page) {
 }
 
 /** 記録画面の名前の欄に並ぶ名前 */
-async function 記録画面の名前たち(page) {
+function 記録画面の名前たち(page) {
   return page.evaluate(() =>
     [...document.querySelectorAll('[data-testid^="名の欄-射手-"]')].map((e) =>
       (e.innerText || '').split('\n')[0].trim()

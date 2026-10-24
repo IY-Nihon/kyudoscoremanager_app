@@ -201,7 +201,7 @@ function 偽Firestore() {
     limit: (n) => ({ 上限: n }),
     serverTimestamp: () => ({ __サーバー日時: true }),
     Timestamp: 偽の日時,
-    getDoc: async (参照) => {
+    getDoc: (参照) => {
       const 値 = 取り出す(参照.道).get(参照.id);
       return { exists: () => 値 !== undefined, data: () => 値, id: 参照.id };
     },
@@ -210,7 +210,7 @@ function 偽Firestore() {
     runTransaction: async (db, 決める) => {
       const 操作 = [];
       const 取引 = {
-        get: async (参照) => api.getDoc(参照),
+        get: (参照) => api.getDoc(参照),
         update: (参照, 値) => 操作.push({ 種類: 'update', 道: 参照.道, id: 参照.id, 値 }),
         set: (参照, 値, 選び) => 操作.push({ 種類: 'set', 道: 参照.道, id: 参照.id, 値, 重ねる: !!(選び && 選び.merge) }),
         delete: (参照) => 操作.push({ 種類: 'delete', 道: 参照.道, id: 参照.id }),
@@ -497,7 +497,7 @@ function 偽RTDB() {
     getDatabase: () => ({ __偽: true }),
     ref: (db, 道) => ({ 道: 道 === undefined ? '' : String(道) }),
     serverTimestamp: () => ({ __サーバー日時: true }),
-    get: async (参照) => {
+    get: (参照) => {
       if (期限で止まるか(参照.道)) throw 弾く();
       const 値 = 読む(分解(参照.道));
       return { exists: () => 値 !== undefined, val: () => 写し(値) };
@@ -676,13 +676,13 @@ function ストアを用意する(既存の雲, 既存のライブ) {
     'firebase/auth',
     外部を差し替え('firebase/auth', {
       getAuth: () => ({ currentUser: { uid: 'test-uid' } }),
-      signInWithEmailAndPassword: async (auth, email, pw) => {
+      signInWithEmailAndPassword: (auth, email, pw) => {
         if (雲.状態.合言葉 != null && pw !== 雲.状態.合言葉) {
           throw Object.assign(new Error('wrong password'), { code: 'auth/invalid-credential' });
         }
         return { user: {} };
       },
-      sendPasswordResetEmail: async () => {},
+      sendPasswordResetEmail: () => {},
       // 口座を消す。消したことを 状態.消した口座 に残す（アカウントの削除の検査）
       deleteUser: async (user) => {
         雲.状態.消した口座 = user;
@@ -707,7 +707,7 @@ function ストアを用意する(既存の雲, 既存のライブ) {
       default: {
         getItem: async (k) => (保存領域.has(k) ? 保存領域.get(k) : null),
         setItem: async (k, v) => void 保存領域.set(k, v),
-        removeItem: async (k) => void 保存領域.delete(k),
+        removeItem: (k) => void 保存領域.delete(k),
       },
     })
   );

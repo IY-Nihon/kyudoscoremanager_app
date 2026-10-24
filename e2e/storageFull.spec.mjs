@@ -48,7 +48,7 @@ async function 書けなくする(page) {
 }
 
 /** 仕掛けが本当に効いているか。効いていない検査は、通っても意味が無い */
-async function 差し替わっているか(page) {
+function 差し替わっているか(page) {
   return page.evaluate(() => {
     try {
       window.localStorage.setItem('archery-score-storage', 'x');

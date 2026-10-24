@@ -63,7 +63,7 @@ async function 射手を立てる(page, 数) {
  * 帯はチームの色を上辺に引いたもの。座標で当てにいくと機種ごとにずれるので、
  * 目印（testID）で拾って、計算後の見た目から読む。
  */
-async function 名の欄を測る(page) {
+function 名の欄を測る(page) {
   return page.evaluate(() => {
     const 出 = { 区切り: null, 射手: [] };
     for (const el of document.querySelectorAll('[data-testid^="名の欄-"]')) {
@@ -266,7 +266,7 @@ test('立ち順：横に並べたときは「上へ／下へ」になる', async
   );
 
   /** 名前の欄を、画面の上から下の順で返す（横のときの並び） */
-  const 縦の並び = async () =>
+  const 縦の並び = () =>
     page.evaluate(() =>
       [...document.querySelectorAll('[data-testid^="名の欄-射手-"]')]
         .map((el) => ({ 名: el.getAttribute('data-testid'), y: el.getBoundingClientRect().y }))

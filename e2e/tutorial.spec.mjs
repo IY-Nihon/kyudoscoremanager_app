@@ -57,7 +57,7 @@ async function いまの手順(page, { 待つ = 4000 } = {}) {
 }
 
 /** いまの手順の見出し。失敗したときにどの手順か分かるように */
-async function 手順の題(page) {
+function 手順の題(page) {
   return page.evaluate(() => {
     const 札 = [...document.querySelectorAll('div')].find(
       (e) => e.children.length === 0 && /^\d+ \/ \d+$/.test((e.textContent || '').trim())
@@ -73,7 +73,7 @@ async function 手順の題(page) {
 }
 
 /** 吹き出しの箱。手順の番号札から親をたどって見つける */
-async function 吹き出しの枠(page) {
+function 吹き出しの枠(page) {
   return page.evaluate(() => {
     const 札 = [...document.querySelectorAll('div')].find(
       (e) => e.children.length === 0 && /^\d+ \/ \d+$/.test((e.textContent || '').trim())
@@ -104,7 +104,7 @@ async function 吹き出しの枠(page) {
 }
 
 /** 青い枠（指す先）の位置。無ければ null */
-async function 指す先の枠(page) {
+function 指す先の枠(page) {
   return page.evaluate(() => {
     const 枠 = [...document.querySelectorAll('div')].find((e) => {
       const s = getComputedStyle(e);
@@ -122,7 +122,7 @@ async function 指す先の枠(page) {
 }
 
 /** 失敗したときに、案内に見えている短い文字を並べる（原因を追うため） */
-async function 案内の文字(page) {
+function 案内の文字(page) {
   return page.evaluate(() =>
     [...document.querySelectorAll('div,span')]
       .filter((e) => e.children.length === 0)
@@ -133,7 +133,7 @@ async function 案内の文字(page) {
 }
 
 /** 案内の押せるところを測る */
-async function 押せるところ(page) {
+function 押せるところ(page) {
   return page.evaluate(() => {
     const 名 = ['スキップ', '次へ', 'とばす', '戻る', 'あとで', '続きを見る', '始める'];
     const 出 = [];

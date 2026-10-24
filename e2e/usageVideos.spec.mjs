@@ -29,7 +29,7 @@ test('使い方：項目を押すとその場で動画が流れ、「画面で�
   await page.getByTestId('使い方の項目-○×を入れる').click();
   await expect(page.getByTestId('使い方の中身')).toHaveCount(1);
   await page.getByTestId('使い方-やってみる').click();
-  await expect(page.locator('text=/^1 \/ 1$/')).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator('text=/^1 / 1$/')).toBeVisible({ timeout: 15_000 });
   await expect(page.getByText('○×は押して入れます')).toBeVisible();
 });
 
