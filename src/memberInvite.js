@@ -225,7 +225,11 @@ async function 何度か送る(関数, 注文 = {}) {
       return await Promise.race([
         関数(),
         new Promise((_, 断る) => {
-          時計 = setTimeout(() => 断る(Object.assign(new Error('時間内に返事がありませんでした'), { code: 'deadline-exceeded' })), 上限);
+          時計 = setTimeout(
+            () =>
+              断る(Object.assign(new Error('時間内に返事がありませんでした'), { code: 'deadline-exceeded' })),
+            上限
+          );
         }),
       ]);
     } catch (誤り) {

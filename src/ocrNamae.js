@@ -208,6 +208,11 @@ function matchArcherName(rawText, candidates) {
   return { status: 'guest', rawText: rawText.trim() };
 }
 
+/** 記号や空白を落として、字だけにする（名簿の「†山田 太郎†」と読めた「山田」を比べるため） */
+function 文字だけ(文) {
+  return String(文 || '').replace(/[^\p{L}\p{N}]/gu, '');
+}
+
 /**
  * Gemini の照合（roster）を主にした名寄せ。
  *
@@ -215,11 +220,6 @@ function matchArcherName(rawText, candidates) {
  * @param {string|null|undefined} roster Gemini が返した名簿の表記。undefined は「照合していない」（古い返事）
  * @param {object[]} candidates
  */
-/** 記号や空白を落として、字だけにする（名簿の「†山田 太郎†」と読めた「山田」を比べるため） */
-function 文字だけ(文) {
-  return String(文 || '').replace(/[^\p{L}\p{N}]/gu, '');
-}
-
 function 名簿で名寄せ(rawText, roster, candidates) {
   // 照合していない返事なら、これまでどおり文字比較だけ
   if (roster === undefined) return matchArcherName(rawText, candidates);

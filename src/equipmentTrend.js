@@ -73,17 +73,16 @@ function 率の差(前, 後) {
 }
 
 /**
- * その人の弓具の移り変わりを、新しい順に並べる。
- *
- * 弓具は { id, date, weight, note, kind } の形（kind が無いものは弓力の変更）
- */
-/**
  * @typedef {{的中:number, 射数:number, 的中率:number|null}} 成績の形
  * @typedef {{変更:any, 種類:string, 始め:number, 終わり:number,
  *   成績:成績の形, 前の成績:成績の形|null, 前の変更:any, 差:number|null}} 一件の形
  */
 
 /**
+ * その人の弓具の移り変わりを、新しい順に並べる。
+ *
+ * 弓具は { id, date, weight, note, kind } の形（kind が無いものは弓力の変更）
+ *
  * @param {{id:string|number, equipments?:Array}|null} 人
  * @param {Array} 記録たち
  * @returns {一件の形[]} 新しい順

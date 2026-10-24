@@ -21,7 +21,6 @@ const 控えキー = 'tutorialBoardSnapshot';
 // 目印の登録先。画面側が ref を置き、案内側が位置を測る
 // ─────────────────────────────────────────
 const 目印帳 = new Map();
-/** 画面側で使う。返ってきた ref を、指してほしい要素に付ける */
 /**
  * 触られると困るところに置く蓋（暗幕の帯・説明だけの手順で指した先）。指を受け止めるだけで、押せる部品ではない。
  * 前は空の onPress の TouchableOpacity で、Web ではキーボードの焦点が当たり、読み上げでは名前の無いボタンとして
@@ -31,6 +30,7 @@ function 蓋({ style }) {
   return <View style={style} onStartShouldSetResponder={() => true} aria-hidden={true} />;
 }
 
+/** 画面側で使う。返ってきた ref を、指してほしい要素に付ける */
 function useTutorialTarget(名前) {
   const ref = useRef(null);
   useEffect(() => {
