@@ -18,7 +18,7 @@ const Svg = require('react-native-svg').default ?? require('react-native-svg');
 const { ArrowLocationView } = require('./ArrowLocationView');
 // 見た目の決まりと部品は分析画面と同じ
 const { styles } = require('./analysisStyles');
-const { 型の節, 弓具の節, 比較の色たち, 立ちの結果の棒たち } = require('./analysisParts');
+const { 型の節, 弓具の節, 比較の色たち, 立ちの結果の棒たち, 的の選び } = require('./analysisParts');
 
 /**
  * 分析画面の「部員の詳細」の窓（2026-10-05 に AnalysisScreen.js から切り出した。動きは変えていない）。
@@ -664,11 +664,7 @@ const 部員の詳細の窓 = ({
                       </Text>
                       <View style={{ width: '100%', marginBottom: 12 }}>
                         <選択肢の帯
-                          options={[
-                            { label: '霞的(尺二寸)', value: 'kasumi36' },
-                            { label: '星的(尺二寸)', value: 'hoshi36' },
-                            { label: '星的(八寸)', value: 'hoshi24' },
-                          ]}
+                          options={的の選び}
                           selected={modalTargetType}
                           onSelect={setModalTargetType}
                           isWrap
@@ -1079,11 +1075,7 @@ const 部員の詳細の窓 = ({
                       </Text>
                       <View style={{ width: '100%', marginBottom: 12 }}>
                         <選択肢の帯
-                          options={[
-                            { label: '霞的(尺二寸)', value: 'kasumi36' },
-                            { label: '星的(尺二寸)', value: 'hoshi36' },
-                            { label: '星的(八寸)', value: 'hoshi24' },
-                          ]}
+                          options={的の選び}
                           selected={modalTargetType}
                           onSelect={setModalTargetType}
                           isWrap

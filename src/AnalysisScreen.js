@@ -22,7 +22,7 @@ const Svg = require('react-native-svg').default ?? require('react-native-svg');
 const { ArrowLocationView } = require('./ArrowLocationView');
 // 見た目の決まりと、一番外の部品（型の節・弓具の節・比較の色）は別のファイル（2026-10-05）
 const { styles } = require('./analysisStyles');
-const { 型の節, 立ちの結果の棒たち } = require('./analysisParts');
+const { 型の節, 立ちの結果の棒たち, 的の選び } = require('./analysisParts');
 // 部員の詳細の窓（成績・推移・比較・矢所・弓具）も別のファイル（2026-10-05）
 const { 部員の詳細の窓 } = require('./AnalysisMemberDetail');
 
@@ -935,16 +935,7 @@ const AnalysisScreen = ({ navigation }) => {
                 {selectedTrendLabel ? `矢所の傾向 (${selectedTrendLabel})` : '矢所の傾向 (集計)'}
               </Text>
               <View style={{ width: '100%', marginBottom: 12 }}>
-                <選択肢の帯
-                  options={[
-                    { label: '霞的(尺二寸)', value: 'kasumi36' },
-                    { label: '星的(尺二寸)', value: 'hoshi36' },
-                    { label: '星的(八寸)', value: 'hoshi24' },
-                  ]}
-                  selected={myTargetType}
-                  onSelect={setMyTargetType}
-                  isWrap
-                />
+                <選択肢の帯 options={的の選び} selected={myTargetType} onSelect={setMyTargetType} isWrap />
               </View>
               <ArrowLocationView
                 arrowLocations={gatherAllArrowLocations(myMemberId, 自分の名前, selectedTrendLabel)}
