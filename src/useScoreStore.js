@@ -35,11 +35,13 @@ const { 部員の操作 } = require('./storeMembers');
 const 学 = require('./gakunen');
 const 区 = require('./kubun');
 const 未送信 = require('./unsentStash');
+// 目印（タグ）の候補の初めの値。# 付きで持つ（normalizeTag の形）。出たときもここへ戻す
+const 既定のタグ = Object.freeze(['#立', '#練習試合', '#大会', '#自主練習', '#合宿']);
 // 学年まわりの団体の設定の初めの値。出たとき・別の団体へ入るときもここへ戻す
 const 学年まわりの初めの値 = Object.freeze({
   // 団体の種類（src/gakunen.js の 種類たち）。null は大学（4 年）
   groupType: null,
-  // 4 月 1 日に進級の窓を出すか（前の「4月1日の自動進級」に代わるもの）
+  // 年度の始まり（yearStartMonth の 1 日）に進級の窓を出すか（前の「4月1日の自動進級」に代わるもの）
   promotionCheck: true,
   // 期を使うか。使わない団体では期をどこにも出さない
   useTerm: false,
@@ -87,10 +89,8 @@ const useScoreStore = zustand.create()(
         let 中身 = typeof 変更 === 'function' ? 変更(状態()) : 変更;
         // 同期できたなら、入り直しの案内は下ろす。書き換えは幾つもあるので、
         // 1つずつ消して回らずにここで拾う
-        if (中身 && 中身.syncStatus === '同期済み') {
-          中身.再ログインの案内 = null;
-        }
         if (中身) {
+          if (中身.syncStatus === '同期済み') 中身.再ログインの案内 = null;
           if (中身.sessions) {
             中身.sessions = cleanUpSessions(中身.sessions);
           }
@@ -112,6 +112,28 @@ const useScoreStore = zustand.create()(
             状態
           );
         そのまま書く(中身);
+      };
+      // 目印（タグ）の選びを 1 つ入れる・外す
+      const 入れ替える = (今の = [], タグ) =>
+        今の.includes(タグ) ? 今の.filter((タグ1つ) => タグ1つ !== タグ) : [...今の, タグ];
+      // 目印の候補を置き、団体の設定（config/app_settings）へも送る。送れなくても手元は変える
+      const 目印の候補を置く = async (一覧, 出どころ) => {
+        書く({ tagTemplates: 一覧, lastLocalChange: Date.now() });
+        const { activeGroupId, isNetworkOnline } = 状態();
+        if (!isNetworkOnline || !activeGroupId) return;
+        try {
+          await Firestore.setDoc(
+            Firestore.doc(Firebaseの器.db, `groups/${activeGroupId}/config`, 'app_settings'),
+            {
+              tagTemplates: 一覧,
+              currentFreshmanTerm: 状態().currentFreshmanTerm,
+              lastModified: Firestore.serverTimestamp(),
+            },
+            { merge: true }
+          );
+        } catch (誤り) {
+          console.error(`[Store] ${出どころ} sync error:`, 誤り);
+        }
       };
       return {
         // 矢所の記録は既定でオフ。要る団体だけが設定で入れる
@@ -167,7 +189,6 @@ const useScoreStore = zustand.create()(
         archers: [],
         members: [],
         alumni: [],
-        history: [],
         sessions: [],
         trash: [],
         shotsPerRound: 8,
@@ -230,14 +251,12 @@ const useScoreStore = zustand.create()(
         // 画面へ知らせるための材料（誰かが取り消した／やり直した）
         historyNoticeAt: 0,
         historyNoticeKind: null,
-        showTrash: false,
         sessionUnsubscribe: null,
         trashUnsubscribe: null,
         memberUnsubscribe: null,
         alumniUnsubscribe: null,
         configUnsubscribe: null,
         showAlumniInAnalysis: false,
-        showAlumniInPicker: false,
         currentFreshmanTerm: 1,
         historyViewMode: 'list',
         selectedHistorySessionId: null,
@@ -257,8 +276,7 @@ const useScoreStore = zustand.create()(
         historySelectedTags: [],
         historyTagLogic: 'AND',
         currentSessionTags: [],
-        tagTemplates: ['#立', '#練習試合', '#大会', '#自主練習', '#合宿'],
-        initializationLogs: [],
+        tagTemplates: 既定のタグ,
         syncIntervalId: null,
         lastPromotionYear: null,
         // 比較のひな型。端末に持つだけで、クラウドへは送らない。
@@ -285,7 +303,6 @@ const useScoreStore = zustand.create()(
         // 共有のライブの道しるべ。{ ライブ名: { 共有の枝, 閲覧の枝 } }。
         // 参加一覧を読むたびに作り直すので、端末には残さない
         共有のライブたち: {},
-        _pendingMemberTimers: {},
         isHydrated: false,
         analysisRankingSettings: {
           '月ごと': { type: 'ratio', value: 0 },
@@ -297,11 +314,6 @@ const useScoreStore = zustand.create()(
         },
         focusedMemberId: null,
         currentRouteName: null,
-        updateLoadingLog: (文) => {
-          const 今まで = 状態().initializationLogs || [];
-          書く({ initializationLogs: [...今まで, 文] });
-          console.log('[Store] Loading:', 文);
-        },
         setCurrentRouteName: (名前) => 書く({ currentRouteName: 名前 }),
         setMemberAuthVersion: (版) => 書く({ memberAuthVersion: 版 }),
         setFocusedMemberId: (id) => 書く({ focusedMemberId: id }),
@@ -334,7 +346,6 @@ const useScoreStore = zustand.create()(
               activeUserEmail: null,
               sessions: [],
               members: [],
-              history: [],
               alumni: [],
               trash: [],
               archers: [],
@@ -347,9 +358,7 @@ const useScoreStore = zustand.create()(
               analysisSelectedTags: [],
               historySelectedTags: [],
               historyTagLogic: 'AND',
-              // 初めの値と同じく # 付きで持つ（normalizeTag の形）
-              tagTemplates: ['#立', '#練習試合', '#大会', '#自主練習', '#合宿'],
-              initializationLogs: [],
+              tagTemplates: 既定のタグ,
               isAdminMode: false,
               isAdminModePending: false,
               ...学年まわりの初めの値,
@@ -418,9 +427,7 @@ const useScoreStore = zustand.create()(
         },
         setAnalysisSelectedTags: (タグたち) => 書く({ analysisSelectedTags: タグたち }),
         toggleAnalysisTag: (タグ) => {
-          const 今の = 状態().analysisSelectedTags || [];
-          if (今の.includes(タグ)) 書く({ analysisSelectedTags: 今の.filter((タグ1つ) => タグ1つ !== タグ) });
-          else 書く({ analysisSelectedTags: [...今の, タグ] });
+          書く({ analysisSelectedTags: 入れ替える(状態().analysisSelectedTags, タグ) });
         },
         setAnalysisTagLogic: (論理) => 書く({ analysisTagLogic: 論理 }),
         比較のひな型を足す: (名前, 部員idたち) =>
@@ -451,95 +458,35 @@ const useScoreStore = zustand.create()(
         },
         setHistorySelectedTags: (タグたち) => 書く({ historySelectedTags: タグたち }),
         toggleHistoryTag: (タグ) => {
-          const 今の = 状態().historySelectedTags || [];
-          if (今の.includes(タグ)) 書く({ historySelectedTags: 今の.filter((タグ1つ) => タグ1つ !== タグ) });
-          else 書く({ historySelectedTags: [...今の, タグ] });
+          書く({ historySelectedTags: 入れ替える(状態().historySelectedTags, タグ) });
         },
         setHistoryTagLogic: (論理) => 書く({ historyTagLogic: 論理 }),
         setCurrentSessionTags: (タグたち) => 書く({ currentSessionTags: タグたち }),
         toggleCurrentSessionTag: (タグ) => {
-          const 今の = 状態().currentSessionTags || [];
-          if (今の.includes(タグ)) 書く({ currentSessionTags: 今の.filter((タグ1つ) => タグ1つ !== タグ) });
-          else 書く({ currentSessionTags: [...今の, タグ] });
+          書く({ currentSessionTags: 入れ替える(状態().currentSessionTags, タグ) });
         },
-        setTagTemplates: async (タグたち) => {
-          const 今 = Date.now();
-          const 整えた = Array.from(new Set((タグたち || []).map(normalizeTag).filter(Boolean)));
-          書く({ tagTemplates: 整えた, lastLocalChange: 今 });
-          const { activeGroupId, isNetworkOnline } = 状態();
-          if (isNetworkOnline && activeGroupId)
-            try {
-              await Firestore.setDoc(
-                Firestore.doc(Firebaseの器.db, `groups/${activeGroupId}/config`, 'app_settings'),
-                {
-                  tagTemplates: 整えた,
-                  currentFreshmanTerm: 状態().currentFreshmanTerm,
-                  lastModified: Firestore.serverTimestamp(),
-                },
-                { merge: true }
-              );
-            } catch (誤り) {
-              console.error('[Store] setTagTemplates sync error:', 誤り);
-            }
-        },
+        setTagTemplates: (タグたち) =>
+          目印の候補を置く(
+            Array.from(new Set((タグたち || []).map(normalizeTag).filter(Boolean))),
+            'setTagTemplates'
+          ),
         addTagTemplate: async (タグ) => {
           const 今の = 状態().tagTemplates || [];
           const 整えた = normalizeTag(タグ);
-          if (整えた && !今の.includes(整えた)) {
-            const 今 = Date.now();
-            const 新しい一覧 = [...今の, 整えた];
-            書く({ tagTemplates: 新しい一覧, lastLocalChange: 今 });
-            const { activeGroupId, isNetworkOnline } = 状態();
-            if (isNetworkOnline && activeGroupId)
-              try {
-                await Firestore.setDoc(
-                  Firestore.doc(Firebaseの器.db, `groups/${activeGroupId}/config`, 'app_settings'),
-                  {
-                    tagTemplates: 新しい一覧,
-                    currentFreshmanTerm: 状態().currentFreshmanTerm,
-                    lastModified: Firestore.serverTimestamp(),
-                  },
-                  { merge: true }
-                );
-              } catch (誤り) {
-                console.error('[Store] addTagTemplate sync error:', 誤り);
-              }
-          }
+          if (整えた && !今の.includes(整えた)) await 目印の候補を置く([...今の, 整えた], 'addTagTemplate');
         },
-        removeTagTemplate: async (タグ) => {
-          const 今 = Date.now();
-          const 新しい一覧 = (状態().tagTemplates || []).filter((タグ1つ) => タグ1つ !== タグ);
-          書く({ tagTemplates: 新しい一覧, lastLocalChange: 今 });
-          const { activeGroupId, isNetworkOnline } = 状態();
-          if (isNetworkOnline && activeGroupId)
-            try {
-              await Firestore.setDoc(
-                Firestore.doc(Firebaseの器.db, `groups/${activeGroupId}/config`, 'app_settings'),
-                {
-                  tagTemplates: 新しい一覧,
-                  currentFreshmanTerm: 状態().currentFreshmanTerm,
-                  lastModified: Firestore.serverTimestamp(),
-                },
-                { merge: true }
-              );
-            } catch (誤り) {
-              console.error('[Store] removeTagTemplate sync error:', 誤り);
-            }
-        },
+        removeTagTemplate: (タグ) =>
+          目印の候補を置く(
+            (状態().tagTemplates || []).filter((タグ1つ) => タグ1つ !== タグ),
+            'removeTagTemplate'
+          ),
         setShowAlumniInAnalysis: (値) => 書く({ showAlumniInAnalysis: 値 }),
-        setShowAlumniInPicker: (値) => 書く({ showAlumniInPicker: 値 }),
         setIncludeInStats: (値) => 書く({ includeInStats: 値 }),
         ...盤面の操作(書く, 状態, そのまま書く),
         ...ライブの操作(書く, 状態, そのまま書く),
         ...部員の操作(書く, 状態, そのまま書く),
         ...記録の操作(書く, 状態, そのまま書く),
         ...掲載の操作(書く, 状態, そのまま書く),
-        // 同意の記録を確かめる。起動のたびに1回だけ呼ぶ。
-        // ・記録が無い団体（同意の画面を入れる前から使っている）
-        //     運営者が口頭で同意を得ているので、記録だけを静かに補う
-        // ・記録はあるが版が古い（文書を改定した）
-        //     取り直しが要るので、画面に出すための印を立てる
-        // 部員の端末からは団体の帳面を書き換えられないので、何もしない
         /**
          * ライブを置く枝の合言葉を用意する。
          *
@@ -601,6 +548,12 @@ const useScoreStore = zustand.create()(
           });
           return 約束;
         },
+        // 同意の記録を確かめる。起動のたびに1回だけ呼ぶ。
+        // ・記録が無い団体（同意の画面を入れる前から使っている）
+        //     運営者が口頭で同意を得ているので、記録だけを静かに補う
+        // ・記録はあるが版が古い（文書を改定した）
+        //     取り直しが要るので、画面に出すための印を立てる
+        // 部員の端末からは団体の帳面を書き換えられないので、何もしない
         同意を確かめる: async () => {
           const { activeGroupId: 団体, activeRole: 役, publicGroupId: 公開ID } = 状態();
           if (役 !== 'group') return;
@@ -855,12 +808,12 @@ const useScoreStore = zustand.create()(
           return はみ出す人.length;
         },
         進級の窓を後にする: () => 書く({ 進級の窓を閉じた: true }),
-        setIsAdminModePending: (値) => 書く({ isAdminModePending: 値 }),
         setHistoryViewMode: (値) => 書く({ historyViewMode: 値 }),
         setSelectedHistorySessionId: (値) => 書く({ selectedHistorySessionId: 値 }),
         setViewScale: (値) => 書く({ viewScale: Math.max(0.25, Math.min(2, 値)) }),
         setIsLiveActive: (入れる) => {
-          if ((書く({ isLiveActive: 入れる }), 入れる)) {
+          書く({ isLiveActive: 入れる });
+          if (入れる) {
             const 記録ID = 状態().activeSessionID || 'live-current';
             const 名前 = 状態().liveSessionName || 記録ID;
             const 射手たち = 状態().archers || [];
@@ -1034,9 +987,8 @@ const useScoreStore = zustand.create()(
         },
         updateCurrentFreshmanTerm: async (期) => {
           const { activeGroupId, tagTemplates, lastPromotionYear, isNetworkOnline } = 状態();
-          if (
-            (書く({ currentFreshmanTerm: 期, lastLocalChange: Date.now() }), isNetworkOnline && activeGroupId)
-          )
+          書く({ currentFreshmanTerm: 期, lastLocalChange: Date.now() });
+          if (isNetworkOnline && activeGroupId)
             try {
               await Firestore.setDoc(
                 Firestore.doc(Firebaseの器.db, `groups/${activeGroupId}/config`, 'app_settings'),
@@ -1207,7 +1159,6 @@ const useScoreStore = zustand.create()(
           // 外した記録は差分の同期では戻ってこない（変わっていないので）。id だけ残し、
           // 次の起動で id で取り直す（起動時に取り込む）。数百件でも数 KB
           端末から外した記録: 外した記録のid(状態の中身.sessions, 残す記録, 状態の中身.端末から外した記録),
-          history: 状態の中身.history,
           alumni: 状態の中身.alumni,
           trash: 状態の中身.trash,
           permanentlyDeleted: 状態の中身.permanentlyDeleted,
@@ -1216,7 +1167,6 @@ const useScoreStore = zustand.create()(
           activeSessionID: 状態の中身.activeSessionID,
           viewScale: 状態の中身.viewScale,
           includeInStats: 状態の中身.includeInStats,
-          lastSessionTags: 状態の中身.tagTemplates,
           currentSessionTags: 状態の中身.currentSessionTags,
           activeGroupId: 状態の中身.activeGroupId,
           activeGroupName: 状態の中身.activeGroupName,

@@ -99,7 +99,11 @@ function 自分の学年たち(値) {
         .slice(0, 8),
     }))
     .filter((学年) => Number.isInteger(学年.value) && 学年.value >= 1 && 学年.name)
-    .filter((学年) => (見た.has(学年.value) ? false : (見た.add(学年.value), true)));
+    .filter((学年) => {
+      if (見た.has(学年.value)) return false;
+      見た.add(学年.value);
+      return true;
+    });
 }
 
 /**

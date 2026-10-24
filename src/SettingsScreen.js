@@ -142,16 +142,16 @@ const SettingsScreen = () => {
   const [ガイドの窓, ガイドの窓を出す] = React.useState(false);
   const [使い方の窓, 使い方の窓を出す] = React.useState(false);
   const [ログアウトの窓, ログアウトの窓を出す] = React.useState(false);
-  const // ログアウトの確認の段階。'確認' → '送信中' → '送信済み' / '失敗'
-    [ログアウトの段階, ログアウトの段階を設定] = React.useState('確認');
+  // ログアウトの確認の段階。'確認' → '送信中' → '送信済み' / '失敗'
+  const [ログアウトの段階, ログアウトの段階を設定] = React.useState('確認');
   const [残った未送信, 残った未送信を設定] = React.useState(0);
   const [タグの下書き, タグの下書きを置く] = React.useState('');
   const [管理者の合言葉の窓, 管理者の合言葉の窓を出す] = React.useState(false);
   const [管理者の合言葉, 管理者の合言葉を置く] = React.useState('');
   const [合言葉を確かめ中, 合言葉を確かめ中を置く] = React.useState(false);
   const [showPw, setShowPw] = React.useState(false);
-  const // アカウントの削除。窓の開閉・入れたパスワード・消している最中の段階
-    [削除の窓, 削除の窓を開く] = React.useState(false);
+  // アカウントの削除。窓の開閉・入れたパスワード・消している最中の段階
+  const [削除の窓, 削除の窓を開く] = React.useState(false);
   const [削除の合言葉, 削除の合言葉を設定] = React.useState('');
   const [削除の段階, 削除の段階を設定] = React.useState('');
   const [削除の失敗, 削除の失敗を設定] = React.useState('');

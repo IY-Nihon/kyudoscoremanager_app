@@ -195,7 +195,8 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
           const 始め = new Date(期間の始め);
           始め.setHours(0, 0, 0, 0);
           const 終わり = new Date(期間の終わり);
-          if ((終わり.setHours(23, 59, 59, 999), 日付 < 始め || 日付 > 終わり)) return false;
+          終わり.setHours(23, 59, 59, 999);
+          if (日付 < 始め || 日付 > 終わり) return false;
           if (選んだタグ.length > 0) {
             const タグたち = 記録.tags || [];
             if (タグの論理 === 'AND') {
@@ -270,8 +271,8 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
               : [{ 部員id: 射手.memberId, 名前: 射手.name || '', 的中: 0, 射数: 0 }];
             const tagsV = (記録.tags || []).join(' ');
             const noteV = 記録.note || '';
-            const // TRUE / FALSE では何の真偽か伝わらない。日本語で書く
-              statV = 集.集計に入れるか(記録) ? '対象' : '対象外';
+            // TRUE / FALSE では何の真偽か伝わらない。日本語で書く
+            const statV = 集.集計に入れるか(記録) ? '対象' : '対象外';
             書く区間.forEach((区間) => {
               // 絞り込みは列ではなく人ごとに見る。列で見ると、交代で入った人が
               // 自分の書き出しから丸ごと落ちる（列の持ち主は別人のため）
@@ -297,17 +298,17 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
               const hits = 区間.的中;
               const shots = 区間.射数;
               const rateNum = shots > 0 ? Number(((hits / shots) * 100).toFixed(1)) : 0;
-              const // 交代で入った人の学年や性別は、その人の名簿から引く
-                部員の情報 = findMemberInfo(
-                  { memberId: 区間.部員id, name: 区間.名前 },
-                  mList,
-                  aList,
-                  名を整える
-                );
-              const // 名簿に無いときは射手側の値を使うが、それが使えるのは
-                // 列の持ち主のときだけ。交代で入った人に列の持ち主の学年を
-                // 当てると別人の情報になる
-                列の持ち主か = 区間.名前 === (射手.name || '');
+              // 交代で入った人の学年や性別は、その人の名簿から引く
+              const 部員の情報 = findMemberInfo(
+                { memberId: 区間.部員id, name: 区間.名前 },
+                mList,
+                aList,
+                名を整える
+              );
+              // 名簿に無いときは射手側の値を使うが、それが使えるのは
+              // 列の持ち主のときだけ。交代で入った人に列の持ち主の学年を
+              // 当てると別人の情報になる
+              const 列の持ち主か = 区間.名前 === (射手.name || '');
               const gradeV =
                 部員の情報 && 部員の情報.grade != null
                   ? 部員の情報.grade

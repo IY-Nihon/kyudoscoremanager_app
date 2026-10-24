@@ -271,10 +271,8 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     );
     try {
       const 一括 = Firestore.writeBatch(Firebaseの器.db);
-      if (
-        (一括.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, 記録ID)),
-        消す記録)
-      ) {
+      一括.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, 記録ID));
+      if (消す記録) {
         const ごみ箱に置く形 = 雲へ書く記録(
           JSON.parse(JSON.stringify(Object.assign({}, 消す記録, { syncStatus: 'trashed' })))
         );
@@ -305,11 +303,9 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     消すID.forEach((id) => {
       控え[id] = Date.now();
     });
-    if (
-      (console.log('[Store] Emptying trash:', 消すID.length, 'items'),
-      書く({ trash: [], permanentlyDeleted: 控え }),
-      団体)
-    )
+    console.log('[Store] Emptying trash:', 消すID.length, 'items');
+    書く({ trash: [], permanentlyDeleted: 控え });
+    if (団体)
       try {
         const 一括 = 分けた一括(Firebaseの器.db);
         消すID.forEach((id) => {
@@ -338,7 +334,8 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
           }
         });
         // emptyTrash と同じ理由で、通信できるかでは止めない
-        if ((書く({ trash: 残り, permanentlyDeleted: 控え }), 団体)) {
+        書く({ trash: 残り, permanentlyDeleted: 控え });
+        if (団体) {
           const 一括 = Firestore.writeBatch(Firebaseの器.db);
           let 件数 = 0;
           消すID.forEach((id) => {
@@ -585,7 +582,8 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
             lastModified: Date.now(),
           });
         }
-        if ((delete 交代[番], 射手.substitutionIds)) {
+        delete 交代[番];
+        if (射手.substitutionIds) {
           const 交代の部員 = Object.assign({}, 射手.substitutionIds);
           delete 交代の部員[番];
           return Object.assign({}, 射手, {
@@ -674,7 +672,6 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     書く({
       sessions: [],
       members: [],
-      history: [],
       alumni: [],
       trash: [],
       archers: [],

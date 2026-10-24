@@ -14,15 +14,15 @@ const Icons = require('@expo/vector-icons');
  * バーを触った位置を倍率に直す（1% きざみ）か、一覧から選ぶ。幅は 拡大の下〜拡大の上（記録画面が決める）
  */
 const 拡大率の窓 = ({ setViewScale, 倍率, 拡大選択中, 拡大を選ぶ, 拡大の下, 拡大の上 }) => {
-  const // 拡大率のバーの幅。指の位置を倍率に直すのに使う
-    [溝の幅, 溝の幅を置く] = React.useState(0);
-  const // バーのどこを触ったかを倍率に直す。1%きざみで止める
-    触った所を倍率に = (横の位置) => {
-      if (!溝の幅) return 倍率;
-      const 割合 = Math.min(1, Math.max(0, 横の位置 / 溝の幅));
-      const 生 = 拡大の下 + 割合 * (拡大の上 - 拡大の下);
-      return Math.round(生 * 100) / 100;
-    };
+  // 拡大率のバーの幅。指の位置を倍率に直すのに使う
+  const [溝の幅, 溝の幅を置く] = React.useState(0);
+  // バーのどこを触ったかを倍率に直す。1%きざみで止める
+  const 触った所を倍率に = (横の位置) => {
+    if (!溝の幅) return 倍率;
+    const 割合 = Math.min(1, Math.max(0, 横の位置 / 溝の幅));
+    const 生 = 拡大の下 + 割合 * (拡大の上 - 拡大の下);
+    return Math.round(生 * 100) / 100;
+  };
   const 倍率を割合に = (倍) => Math.min(1, Math.max(0, (倍 - 拡大の下) / (拡大の上 - 拡大の下)));
   const バーを動かす = (出来事) => {
     const 倍 = 触った所を倍率に(出来事.nativeEvent.locationX);

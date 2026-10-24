@@ -49,8 +49,8 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
   const 出すタグ = tagTemplates.length > 0 ? tagTemplates : 既定のタグ;
   const [題, 題を置く] = React.useState('');
   const [覚え書き, 覚え書きを置く] = React.useState('');
-  const // 入力欄には # を付けずに出す（空白区切り。読むときに normalizeTag で # を付ける）
-    [タグの文, タグの文を置く] = React.useState(currentSessionTags.map(タグの見た目).join(' '));
+  // 入力欄には # を付けずに出す（空白区切り。読むときに normalizeTag で # を付ける）
+  const [タグの文, タグの文を置く] = React.useState(currentSessionTags.map(タグの見た目).join(' '));
   const [統計を聞いている, 統計を聞いているを置く] = React.useState(false);
   // 定型文の並びは横に流す。パソコンでは車を回しても動かなかったので、横に読み替える
   const 定型文の横流し = use横流し();

@@ -217,8 +217,8 @@ const RecordScreen = () => {
   const 扱ったリセット = React.useRef(0);
   const 共有履歴を出した = React.useRef(0);
   const 鍵の知らせを出した = React.useRef(0);
-  const // 使い方の案内が指す先
-    案内の人ボタン = 案内.useTutorialTarget('記録.人');
+  // 使い方の案内が指す先
+  const 案内の人ボタン = 案内.useTutorialTarget('記録.人');
   const 案内の記録表 = 案内.useTutorialTarget('記録.表');
   const 案内の射数 = 案内.useTutorialTarget('記録.射数');
   const 案内の拡大 = 案内.useTutorialTarget('記録.拡大');
@@ -229,18 +229,18 @@ const RecordScreen = () => {
   const 案内の取り消し = 案内.useTutorialTarget('記録.取り消し');
   const 案内のライブボタン = 案内.useTutorialTarget('記録.ライブ');
   const 案内の保存ボタン = 案内.useTutorialTarget('記録.保存');
-  const // ライブ中は全員で1本の共有履歴を使うので、押せるかどうかも
-    // 共有の目印で決める。手元の履歴だけで見ると、ライブ中に
-    // やり直しが永久に押せないままになる
-    ライブの知らせに任せる = !(!isLiveActive || !liveSessionName);
+  // ライブ中は全員で1本の共有履歴を使うので、押せるかどうかも
+  // 共有の目印で決める。手元の履歴だけで見ると、ライブ中に
+  // やり直しが永久に押せないままになる
+  const ライブの知らせに任せる = !(!isLiveActive || !liveSessionName);
   const 戻せる = ライブの知らせに任せる ? (共有履歴の位置 || 0) > 0 : historyStack.length > 0;
   const 進める = ライブの知らせに任せる
     ? (共有履歴の位置 || 0) < (共有履歴の上限 || 0)
     : redoStack.length > 0;
   const [リセットの窓, リセットの窓を出す] = React.useState(false);
-  const // 区切りにチーム名を付ける窓（リーグの大学名）。
-    // どの区切りを触っているかと、入力中の文字を持つ
-    [チーム名を付ける区切り, setチーム名を付ける区切り] = React.useState(null);
+  // 区切りにチーム名を付ける窓（リーグの大学名）。
+  // どの区切りを触っているかと、入力中の文字を持つ
+  const [チーム名を付ける区切り, setチーム名を付ける区切り] = React.useState(null);
   const [チーム名の下書き, setチーム名の下書き] = React.useState('');
   const [射数を減らす確認, 射数を減らす確認を出す] = React.useState(false);
   const [減らす先の射数, 減らす先の射数を置く] = React.useState(8);
@@ -253,13 +253,13 @@ const RecordScreen = () => {
   const [showAttendance, setShowAttendance] = React.useState(false);
   const [tempAttendance, setTempAttendance] = React.useState(null);
   const [showOCRModal, setShowOCRModal] = React.useState(false);
-  const // 上下の帯を畳んでいるか。記録表を広く使いたいときに畳む。
-    // 画面を移る帯（記録/履歴/…）はここでは隠さない（移動できなくなるため）
-    _畳みは使わない = null;
-  const // 参加のしかたを聞いている最中のライブ名。null なら聞いていない
-    [参加のしかたを聞く, 参加のしかたを聞くを置く] = React.useState(null);
-  const // アプリ内の確認。{ 文, 実行 } を入れると出る。ブラウザの確認窓は使わない
-    [確認, 確認を置く] = React.useState(null);
+  // 上下の帯を畳んでいるか。記録表を広く使いたいときに畳む。
+  // 画面を移る帯（記録/履歴/…）はここでは隠さない（移動できなくなるため）
+  const _畳みは使わない = null;
+  // 参加のしかたを聞いている最中のライブ名。null なら聞いていない
+  const [参加のしかたを聞く, 参加のしかたを聞くを置く] = React.useState(null);
+  // アプリ内の確認。{ 文, 実行 } を入れると出る。ブラウザの確認窓は使わない
+  const [確認, 確認を置く] = React.useState(null);
   const 閉じた知らせを出した = React.useRef(0);
   const 閲覧の知らせを出した = React.useRef(0);
   const 上の横流し = React.useRef(null);
@@ -427,9 +427,11 @@ const RecordScreen = () => {
     if (見るだけ中) return void 閲覧中に押された();
     // 共有リンクで来た人は団体の名簿を持っていない。開いても空の一覧が
     // 出るだけなので、開かずに理由を伝える
-    if (来客)
-      return void (知らせる('共有リンクでは名前を選べません'),
-      ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning));
+    if (来客) {
+      知らせる('共有リンクでは名前を選べません');
+      ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning);
+      return;
+    }
     ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Medium);
     if (archers.find((射手) => 射手.id === 射手ID)) {
       選んだ射手IDを置く(射手ID);
@@ -437,20 +439,20 @@ const RecordScreen = () => {
       人の窓を出す(true);
     }
   };
-  const // ── 立ち順を指で動かす（長押しで掴んで、滑らせて、離す）───────────
-    //
-    // 表は横に流れるので、掴む前は今までどおりスクロールできるようにする。
-    // 掴んでいる間だけスクロールを止め、そのあいだの横の動きを並べ替えに使う。
-    // 掴まないまま指を滑らせると、表が動くのか列が動くのか分からなくなる。
-    [掴んだ列, set掴んだ列] = React.useState(null);
+  // ── 立ち順を指で動かす（長押しで掴んで、滑らせて、離す）───────────
+  //
+  // 表は横に流れるので、掴む前は今までどおりスクロールできるようにする。
+  // 掴んでいる間だけスクロールを止め、そのあいだの横の動きを並べ替えに使う。
+  // 掴まないまま指を滑らせると、表が動くのか列が動くのか分からなくなる。
+  const [掴んだ列, set掴んだ列] = React.useState(null);
   const [落とす先, set落とす先] = React.useState(null);
-  const // 指の横の位置（名前の行の中での座標）。運ぶ札をここに置く
-    [指の横, set指の横] = React.useState(null);
+  // 指の横の位置（名前の行の中での座標）。運ぶ札をここに置く
+  const [指の横, set指の横] = React.useState(null);
   const [射数の窓, 射数の窓を出す] = React.useState(false);
-  const // 拡大率の選択が出ているか（Excel の倍率と同じ考え方）
-    [拡大選択中, 拡大を選ぶ] = React.useState(false);
-  const // 拡大率の下限・上限。バーも一覧もこの幅で動かす
-    拡大の下 = 0.25;
+  // 拡大率の選択が出ているか（Excel の倍率と同じ考え方）
+  const [拡大選択中, 拡大を選ぶ] = React.useState(false);
+  // 拡大率の下限・上限。バーも一覧もこの幅で動かす
+  const 拡大の下 = 0.25;
   const 拡大の上 = 2;
   const 射数の窓を閉じる = () => 射数の窓を出す(false);
   const 射数を変える = (本数) => {
@@ -533,8 +535,8 @@ const RecordScreen = () => {
         if (!取っ手を引いた.current) return;
         const 幅 = 取っ手の区画の幅.current || 0;
         const 左だった = 取っ手は左のref.current;
-        const // 取っ手の左端の座標（8 は余白、36 は取っ手の幅）
-          元の左端 = 左だった ? 8 : Math.max(8, 幅 - 8 - 36);
+        // 取っ手の左端の座標（8 は余白、36 は取っ手の幅）
+        const 元の左端 = 左だった ? 8 : Math.max(8, 幅 - 8 - 36);
         const いまの中心 = 元の左端 + 18 + 動き.dx;
         const 左へ = 幅 > 0 ? いまの中心 < 幅 / 2 : 左だった;
         if (左へ !== 左だった) {
@@ -758,14 +760,12 @@ const RecordScreen = () => {
   const 名前の幅 = 100 * 倍率;
   const 行の高さ = (射手) =>
     (射手 && 射手.isSeparator ? UIConfig.separatorWidth : UIConfig.cellHeight) * 倍率;
-  const // 案内が指す先。縦の足元と同じ決まりで、まだ名前の入っていない人を選ぶ
-    案内が指す順 = () => {
-      const 一覧 = (Array.isArray(archers) ? archers : []).filter((射手) => !!射手);
-      const 指す = 一覧.findIndex(
-        (射手) => 射手 && !射手.name && !射手.isSeparator && !射手.isTotalCalculator
-      );
-      return 指す < 0 ? 0 : 指す;
-    };
+  // 案内が指す先。縦の足元と同じ決まりで、まだ名前の入っていない人を選ぶ
+  const 案内が指す順 = () => {
+    const 一覧 = (Array.isArray(archers) ? archers : []).filter((射手) => !!射手);
+    const 指す = 一覧.findIndex((射手) => 射手 && !射手.name && !射手.isSeparator && !射手.isTotalCalculator);
+    return 指す < 0 ? 0 : 指す;
+  };
   const 横の名前セル = (射手, 順) => (
     <View
       key={typeof 射手.id === 'string' ? `名-${射手.id}` : `名-${順}`}
@@ -1806,9 +1806,11 @@ const RecordScreen = () => {
                 if (見るだけ中) return void 閲覧中に押された();
                 // よその団体のライブは、自分の記録として残さない。
                 // 押しても無反応だと壊れたのか決まりなのか分からないので、理由を言う
-                if (よその団体)
-                  return void (知らせる('共有されたライブは、主催者の側で保存されます'),
-                  ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning));
+                if (よその団体) {
+                  知らせる('共有されたライブは、主催者の側で保存されます');
+                  ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning);
+                  return;
+                }
                 if (archers.length === 0) return;
                 // 設定で出欠確認を切っていれば、窓を飛ばして保存へ進む。
                 // 出欠は空のまま保存する。記録に出ている人は出欠画面で

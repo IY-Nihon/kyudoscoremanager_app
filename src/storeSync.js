@@ -56,8 +56,8 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       書く({ syncStatus: '同期エラー' });
       return;
     }
-    if ((await 状態().checkAndAutoIncrementGrades(), 場.進級の確認を済ませた))
-      return void console.log('[syncSessions] Already syncing, skipping...');
+    await 状態().checkAndAutoIncrementGrades();
+    if (場.進級の確認を済ませた) return void console.log('[syncSessions] Already syncing, skipping...');
     場.進級の確認を済ませた = true;
     const 前回の同期時刻 = 状態().lastSyncTime || 0;
     // 差分で取れるのは、この団体で全件をそろえたあと（境目がある）ときだけ

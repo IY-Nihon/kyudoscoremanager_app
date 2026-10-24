@@ -924,7 +924,11 @@ function 射手の一覧を重ねる(基, 手元, いま, 形の印) {
   let 出 = 一覧の配列(いま).filter((形) => !(基の索引.has(形.id) && !手元の索引.has(形.id)));
   // 重なった id は 1 つにする（壊れた一覧を広げない）
   const 見た = new Set();
-  出 = 出.filter((形) => (見た.has(形.id) ? false : (見た.add(形.id), true)));
+  出 = 出.filter((形) => {
+    if (見た.has(形.id)) return false;
+    見た.add(形.id);
+    return true;
+  });
 
   // 中身を変えた射手は手元の形に
   出 = 出.map((形) => {

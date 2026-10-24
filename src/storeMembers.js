@@ -46,9 +46,8 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
     if (Array.isArray(足す.divisionIds) && 足す.divisionIds.length)
       新しい部員.divisionIds = 区.付けられる区分(足す.divisionIds, 状態().divisions);
     if (Number.isFinite(足す.joinedYear)) 新しい部員.joinedYear = 足す.joinedYear;
-    if (
-      (書く({ members: [...状態().members, 新しい部員], lastLocalChange: Date.now() }), 状態().activeGroupId)
-    ) {
+    書く({ members: [...状態().members, 新しい部員], lastLocalChange: Date.now() });
+    if (状態().activeGroupId) {
       const 送る中身 = Object.assign({}, 新しい部員, {
         lastModified: Firestore.serverTimestamp(),
         syncStatus: '同期済み',
@@ -100,31 +99,28 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
       const 射手たちを直す = (射手たち) => {
         let 触った = false;
         const 直した射手 = 射手たち
-          .map((射手) =>
-            射手 && 射手.memberId === 部員ID
-              ? ((触った = true),
-                Object.assign({}, 射手, {
-                  name: 変更.name !== undefined ? 変更.name : 射手.name,
-                  gender: 変更.gender !== undefined ? 変更.gender : 射手.gender,
-                  grade: 変更.grade !== undefined ? 変更.grade : 射手.grade,
-                  lastModified: Date.now(),
-                }))
-              : 射手
-          )
+          .map((射手) => {
+            if (!射手 || 射手.memberId !== 部員ID) return 射手;
+            触った = true;
+            return Object.assign({}, 射手, {
+              name: 変更.name !== undefined ? 変更.name : 射手.name,
+              gender: 変更.gender !== undefined ? 変更.gender : 射手.gender,
+              grade: 変更.grade !== undefined ? 変更.grade : 射手.grade,
+              lastModified: Date.now(),
+            });
+          })
           .map((射手) => {
             if (射手 && 射手.substitutionIds) {
               let 交代を直した = false;
               const 交代 = Object.assign({}, 射手.substitutions || {});
-              if (
-                (Object.entries(射手.substitutionIds).forEach(([番, id]) => {
-                  const 添字 = Number(番);
-                  if (id === 部員ID && 変更.name !== undefined) {
-                    交代[添字] = 変更.name;
-                    交代を直した = true;
-                  }
-                }),
-                交代を直した)
-              ) {
+              Object.entries(射手.substitutionIds).forEach(([番, id]) => {
+                const 添字 = Number(番);
+                if (id === 部員ID && 変更.name !== undefined) {
+                  交代[添字] = 変更.name;
+                  交代を直した = true;
+                }
+              });
+              if (交代を直した) {
                 触った = true;
                 return Object.assign({}, 射手, { substitutions: 交代, lastModified: Date.now() });
               }
@@ -181,10 +177,9 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
       const 元のごみ箱 = 状態().trash;
       const { newList, changed } = 記録に写す(元の記録);
       const { newList: ごみ箱の一覧, changed: ごみ箱が変わった } = 記録に写す(元のごみ箱);
-      if (
-        (changed || ごみ箱が変わった) &&
-        (書く({ sessions: newList, trash: ごみ箱の一覧, lastLocalChange: Date.now() }), 状態().activeGroupId)
-      ) {
+      const 変わった = changed || ごみ箱が変わった;
+      if (変わった) 書く({ sessions: newList, trash: ごみ箱の一覧, lastLocalChange: Date.now() });
+      if (変わった && 状態().activeGroupId) {
         // 書き込みは少しずつ（5 件ずつ、間を空けて）送る。
         // ・一括書き込みは 1 回 500 件までで、記録が 500 件を超えるメンバーを直すと、1 回で送って
         //   丸ごと失敗していた（手元は新しい名前になり、クラウドと他の端末は古い名前のまま）

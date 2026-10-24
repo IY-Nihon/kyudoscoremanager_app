@@ -313,7 +313,7 @@ const 来客の窓 = ({ 荷, onClose }) => {
       try {
         const 認 = require('./db');
         const 匿 = require('firebase/auth');
-        if (認.auth && !認.auth.currentUser) await (0, 匿.signInAnonymously)(認.auth);
+        if (認.auth && !認.auth.currentUser) await 匿.signInAnonymously(認.auth);
       } catch {
         return void 難点を置く('接続できませんでした。電波の良い場所でもう一度お試しください。');
       }
