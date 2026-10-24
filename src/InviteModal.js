@@ -19,10 +19,7 @@ const 写 = require('./clipboard_bridge');
 const { 部員のログインの版 } = require('./groupLogin');
 const { 配り元 } = require('./IS_WEB');
 
-const 道具を取る = () => {
-  const { auth, db } = require('./db');
-  return { Firestore: require('firebase/firestore'), FirebaseAuth: require('firebase/auth'), db, auth };
-};
+const 道具を取る = () => require('./db').雲の道具();
 
 /** 期限の見せ方（例: 9月30日 18:05） */
 const 期限の字 = (ミリ秒) => {

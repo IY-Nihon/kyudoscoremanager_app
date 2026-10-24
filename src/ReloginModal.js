@@ -32,10 +32,7 @@ const {
 const { useScoreStore } = require('./useScoreStore');
 const { 団体で入る, 部員として入る, 部員のログインの版 } = require('./groupLogin');
 
-const 道具を取る = () => {
-  const { auth, db } = require('./db');
-  return { Firestore: require('firebase/firestore'), FirebaseAuth: require('firebase/auth'), db, auth };
-};
+const 道具を取る = () => require('./db').雲の道具();
 
 const 整える = (値) =>
   String(値 || '')
