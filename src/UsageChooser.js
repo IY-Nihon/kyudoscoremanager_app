@@ -56,8 +56,8 @@ const 使い方の選び窓 = ({ 見える, 閉じる }) => {
           playsInline: true,
           preload: 'auto',
           onError: () => 読めないを置く((前) => ({ ...前, [名]: true })),
-          onLoadedMetadata: (e) => {
-            const { videoWidth: 幅, videoHeight: 高さ } = e.currentTarget;
+          onLoadedMetadata: (出来事) => {
+            const { videoWidth: 幅, videoHeight: 高さ } = 出来事.currentTarget;
             if (幅 && 高さ) 縦横を置く((前) => ({ ...前, [名]: 幅 / 高さ }));
           },
           'data-testid': '使い方の動画',
@@ -134,8 +134,8 @@ const 使い方の選び窓 = ({ 見える, 閉じる }) => {
                                 <View key={番} style={番 > 0 ? styles.部分の間 : null}>
                                   {!!部.見出し && <Text style={styles.小見出し}>{部.見出し}</Text>}
                                   {動画(部.動画)}
-                                  {部.文.map((行, i) => (
-                                    <Text key={i} style={styles.説明}>
+                                  {部.文.map((行, 行番) => (
+                                    <Text key={行番} style={styles.説明}>
                                       {行}
                                     </Text>
                                   ))}
