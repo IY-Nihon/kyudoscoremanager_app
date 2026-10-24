@@ -488,7 +488,10 @@ const TutorialOverlay = ({ navRef }) => {
         await new Promise((解く) => setTimeout(解く, 250));
         if (捨てた) return;
       }
-      if (!いまの手順.目印) return void 測り中を置く(false);
+      if (!いまの手順.目印) {
+        測り中を置く(false);
+        return;
+      }
       // 一覧の下のほうにある目印は、先に見えるところまで運んでおく
       if (見えるところへ(いまの手順.目印)) await new Promise((解く) => setTimeout(解く, 350));
       if (捨てた) return;

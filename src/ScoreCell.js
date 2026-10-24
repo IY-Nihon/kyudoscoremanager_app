@@ -92,7 +92,10 @@ const ScoreCell = React.memo(
       経ったを置く(false);
       if (!自動ロックする || !入れた) return;
       const 残り = 自動ロックまでの秒 * 1000 - (Date.now() - 入れた);
-      if (残り <= 0) return void 経ったを置く(true);
+      if (残り <= 0) {
+        経ったを置く(true);
+        return;
+      }
       const 札 = setTimeout(() => 経ったを置く(true), 残り);
       return () => clearTimeout(札);
     }, [自動ロックする, 自動ロックまでの秒, 入れた]);
@@ -228,7 +231,10 @@ const ScoreCell = React.memo(
       // 閉じているますは押しても変わらない。ただし黙って何も起きないと、
       // 開け方が分からないまま何度も押すことになる。押されたことを伝えて
       // 記録画面に「長押しで開きます」と出してもらう
-      if (閉じている) return void 閉じたますが押された();
+      if (閉じている) {
+        閉じたますが押された();
+        return;
+      }
       if (isLongPressedRef.current) {
         isLongPressedRef.current = false;
         return;

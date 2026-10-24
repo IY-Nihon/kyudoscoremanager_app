@@ -203,7 +203,8 @@ const HistoryScreen = () => {
       } else {
         次.add(記録.id);
       }
-      return void 選んだ記録を置く(次);
+      選んだ記録を置く(次);
+      return;
     }
     setSelectedHistorySessionId(記録.id);
     setHistoryViewMode('detail');

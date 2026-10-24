@@ -704,7 +704,10 @@ const MemberScreen = () => {
                   <TouchableOpacity
                     style={styles.saveBtn}
                     onPress={() => {
-                      if (!名前の下書き.trim()) return void Alert.alert('お知らせ', '名前を入力してください');
+                      if (!名前の下書き.trim()) {
+                        Alert.alert('お知らせ', '名前を入力してください');
+                        return;
+                      }
                       const 学年 = parseInt(学年の下書き) || 0;
                       // 期を使わない団体では期を送らない（店が学年に合わせて空にする）
                       const 期 =

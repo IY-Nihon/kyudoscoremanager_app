@@ -483,7 +483,10 @@ const 部員の詳細の窓 = ({
                           <TouchableOpacity
                             onPress={() => {
                               const 名 = (ひな型の名前 || '').trim();
-                              if (!名) return void 出す('ひな型', '名前を書いてください。');
+                              if (!名) {
+                                出す('ひな型', '名前を書いてください。');
+                                return;
+                              }
                               比較のひな型を足す(
                                 名,
                                 compareMembers.map((相手) => 相手.id)

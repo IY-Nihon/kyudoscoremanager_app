@@ -26,8 +26,10 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
    * 区分は今の一覧にある id だけを残す（src/kubun.js の 付けられる区分）
    */
   addMember: (名前, 性別, 学年, 期, 足すもの) => {
-    if (!状態().activeGroupId || 状態().activeRole !== 'group')
-      return void Alert.alert('権限エラー', 'メンバーの追加は団体ログイン、かつ管理者のみ可能です。');
+    if (!状態().activeGroupId || 状態().activeRole !== 'group') {
+      Alert.alert('権限エラー', 'メンバーの追加は団体ログイン、かつ管理者のみ可能です。');
+      return;
+    }
     const 整えた名前 = 名前 ? 名前.trim() : '';
     const 新しい部員 = {
       id: generateUUID(),
@@ -72,8 +74,10 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
     }
   },
   updateMember: (部員ID, 変更) => {
-    if (!状態().activeGroupId || 状態().activeRole !== 'group')
-      return void Alert.alert('権限エラー', 'メンバーの編集は団体ログイン時のみ可能です。');
+    if (!状態().activeGroupId || 状態().activeRole !== 'group') {
+      Alert.alert('権限エラー', 'メンバーの編集は団体ログイン時のみ可能です。');
+      return;
+    }
     let 直す中身 = Object.assign({}, 変更);
     // 卒業・退部にしたら、現役だった最後の年度を書き留める（出欠の画面が年度ごとの現役を決めるのに使う）。
     // 在籍に戻したら消す。前の形の卒業の印（graduationYear）も消す（src/gakunen.js の 在籍の状態）
@@ -254,8 +258,10 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
     }
   },
   deleteMember: (部員ID) => {
-    if (!状態().activeGroupId || 状態().activeRole !== 'group')
-      return void Alert.alert('権限エラー', 'メンバーの削除は団体ログイン時のみ可能です。');
+    if (!状態().activeGroupId || 状態().activeRole !== 'group') {
+      Alert.alert('権限エラー', 'メンバーの削除は団体ログイン時のみ可能です。');
+      return;
+    }
     // 消したことを控えに残す。送信が失われても、次の受け取りで
     // 復活させないため。クラウドから消えたのを確かめてから控えを外す
     const 控え = Object.assign({}, 状態().deletedMembers);

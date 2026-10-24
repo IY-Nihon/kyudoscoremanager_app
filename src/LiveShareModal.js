@@ -36,13 +36,19 @@ const LiveShareModal = ({ visible, onClose }) => {
     const 鍵 = 合言葉を使うか ? 合言葉 : '';
     if (合言葉を使うか) {
       const だめ = 共.合言葉の難点(鍵);
-      if (だめ) return void 難点を置く(だめ);
+      if (だめ) {
+        難点を置く(だめ);
+        return;
+      }
     }
     難点を置く(null);
     作業中を置く(true);
     try {
       const 荷 = await useScoreStore.getState().ライブを共有する(鍵, 持ち);
-      if (!荷) return void 難点を置く('共有できませんでした。通信を確かめてもう一度お試しください。');
+      if (!荷) {
+        難点を置く('共有できませんでした。通信を確かめてもう一度お試しください。');
+        return;
+      }
       出来上がりを置く({
         編集: 共.リンクを作る(配り元(), 荷.編集の荷),
         閲覧: 共.リンクを作る(配り元(), 荷.閲覧の荷),
@@ -315,10 +321,14 @@ const 来客の窓 = ({ 荷, onClose }) => {
         const 匿 = require('firebase/auth');
         if (認.auth && !認.auth.currentUser) await 匿.signInAnonymously(認.auth);
       } catch {
-        return void 難点を置く('接続できませんでした。電波の良い場所でもう一度お試しください。');
+        難点を置く('接続できませんでした。電波の良い場所でもう一度お試しください。');
+        return;
       }
       const 結果 = await useScoreStore.getState().共有リンクで入る(荷, 合言葉);
-      if (結果 === '入った') return void onClose();
+      if (結果 === '入った') {
+        onClose();
+        return;
+      }
       難点を置く(
         結果 === '期限切れ'
           ? 'このリンクは有効期限が切れています。配った人に、あらためて配り直してもらってください。'

@@ -344,7 +344,10 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => ({
   閉じたますが押された: () => {
     // 閲覧用は ますを開ける も止めてあるので「長押しで開きます」とは
     // 言えない。閲覧用だと伝える側へ回す
-    if (状態().書き換えを止めるか()) return void 書く({ 閲覧でますを押した時刻: Date.now() });
+    if (状態().書き換えを止めるか()) {
+      書く({ 閲覧でますを押した時刻: Date.now() });
+      return;
+    }
     書く({ 閉じたますを押した時刻: Date.now() });
   },
   ますを開ける: (射手, 番) =>
@@ -402,7 +405,10 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => ({
   },
   toggleMark: (射手ID, 番) => {
     // 閲覧用は黙って何も起きないと、壊れたと思わせる
-    if (状態().書き換えを止めるか()) return void 書く({ 閲覧でますを押した時刻: Date.now() });
+    if (状態().書き換えを止めるか()) {
+      書く({ 閲覧でますを押した時刻: Date.now() });
+      return;
+    }
     const { archers: 元, isLiveActive, liveSessionName } = 状態();
     const 今 = Date.now();
     let 新しい印 = '';
@@ -578,7 +584,10 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => ({
   // ライブ中は全員で1本の履歴を使う。誰が押しても「最後の1手」が戻る
   undo: () => {
     if (状態().書き換えを止めるか()) return;
-    if (状態().isLiveActive && 状態().liveSessionName) return void 状態().sharedUndo(-1);
+    if (状態().isLiveActive && 状態().liveSessionName) {
+      状態().sharedUndo(-1);
+      return;
+    }
     const { historyStack, archers: 今の射手 } = 状態();
     if (historyStack.length === 0) return;
     // 中身が変わった射手には新しい日時を打ち直す。打たないと、ライブ中の
@@ -599,7 +608,10 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => ({
   },
   redo: () => {
     if (状態().書き換えを止めるか()) return;
-    if (状態().isLiveActive && 状態().liveSessionName) return void 状態().sharedUndo(1);
+    if (状態().isLiveActive && 状態().liveSessionName) {
+      状態().sharedUndo(1);
+      return;
+    }
     const { redoStack, archers: 今の射手 } = 状態();
     if (redoStack.length === 0) return;
     // 取り消しと同じ理由で日時を打ち直す。射数を戻すのも同じ

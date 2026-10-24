@@ -351,7 +351,10 @@ const OCRRecordModal = ({
   // 戻るボタン（と web の Esc）で閉じるとき。読んでいる途中や読んだあとは、捨ててよいかを聞く。
   // ×と違って戻るはうっかり押しやすく、読み直しには時間がかかる（2026-09-26、戻るで窓を閉じるようにしたとき）
   const 戻るで閉じるとき = () => {
-    if (step === 'pick') return void handleClose();
+    if (step === 'pick') {
+      handleClose();
+      return;
+    }
     Alert.alert(
       '読み取った内容を捨てますか？',
       step === 'analyzing'
