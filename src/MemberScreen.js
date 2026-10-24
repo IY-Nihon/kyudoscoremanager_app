@@ -29,6 +29,8 @@ const 案内 = require('./TutorialGuide');
 const Icons = require('@expo/vector-icons');
 const { getShadowStyle } = require('./shadowStyle');
 const { CustomCalendarModal } = require('./CustomCalendarModal');
+// 端末の日付で「YYYY-MM-DD」。toISOString は世界標準時なので、日本では朝 9 時より前だと前の日になる
+const { 日付の文字 } = require('./attendanceRules');
 /**
  * メンバーの編集の本文の入れ物。窓のときだけ流す。
  *
@@ -97,20 +99,14 @@ const MemberScreen = () => {
   const [入会年の下書き, 入会年の下書きを置く] = React.useState('');
   // 一覧のまとめ方（学校の部で区分があるとき切り替える。学年の無い団体は区分ごと）
   const [まとめ方, まとめ方を置く] = React.useState('学年');
-  const 区分で並べる =
-    区分たち.length > 0 && activeRole !== 'member' && (決まり.学年なし || まとめ方 === '区分');
+  // 団体ログインの一覧だけで使う（個人ログインは自分の画面を出す）
+  const 区分で並べる = 区分たち.length > 0 && (決まり.学年なし || まとめ方 === '区分');
   // 学年の札（在籍の学年とその他）。5 つまでは 1 段、それより多い（高専・6 年制）と 2 段に均等に割る
   const 学年の札 = [...決まり.在籍の学年.map(String), '0'];
   const 札の列の数 = 学年の札.length <= 5 ? 学年の札.length : Math.ceil(学年の札.length / 2);
   const [弓具の窓, 弓具の窓を出す] = React.useState(false);
-  // 端末の日付で出す。toISOString は世界標準時なので、日本では
-  // 朝9時より前に開くと前の日が入ってしまう（弓具を変えた日がずれる）
-  const [弓具の日付, 弓具の日付を置く] = React.useState(
-    (() => {
-      const 今 = new Date();
-      return `${今.getFullYear()}-${String(今.getMonth() + 1).padStart(2, '0')}-${String(今.getDate()).padStart(2, '0')}`;
-    })()
-  );
+  // 弓具を変えた日。端末の日付で出す（世界標準時だと、朝 9 時より前は前の日になる）
+  const [弓具の日付, 弓具の日付を置く] = React.useState(() => 日付の文字(new Date()));
   const [弓具の覚え書き, 弓具の覚え書きを置く] = React.useState('');
   const [弓力の下書き, 弓力の下書きを置く] = React.useState('');
   const { addEquipment, deleteEquipment } = useストアの一部(['addEquipment', 'deleteEquipment']);
@@ -155,15 +151,13 @@ const MemberScreen = () => {
     return (
       <Pressable
         key={typeof 部員.id === 'string' ? 部員.id : `member-${部員.name}`}
-        style={({ hovered: e_h }) => [
+        style={({ hovered }) => [
           styles.memberCard,
-          e_h && { backgroundColor: 'rgba(0,122,255,0.05)' },
+          hovered && { backgroundColor: 'rgba(0,122,255,0.05)' },
           IS_WEB && { cursor: 'pointer' },
         ]}
-        onPress={() => {
-          if (activeRole !== 'member' || 部員.id === myMemberId) 編集を開く(部員);
-          else Alert.alert('制限', 'メンバーモードでは自分以外の情報は編集できません。');
-        }}
+        // 個人ログインの一覧は自分だけ（見せる名簿）なので、誰の行でも開いてよい
+        onPress={() => 編集を開く(部員)}
       >
         <View style={styles.memberInfoMain}>
           <View style={styles.nameRow}>
@@ -184,9 +178,7 @@ const MemberScreen = () => {
           <Text style={styles.memberSub}>{学.人の説明(部員, 決まり, { 期を使う, 区分たち })}</Text>
         </View>
         <View style={styles.memberEqInfo}>
-          {/* 弓力は弓具の中身。個人ログインでは自分のぶんだけ見せる。 */
-          /* 他人の行では「弓具未登録」も出さない（登録の有無も中身のうち） */}
-          {activeRole === 'member' && 部員.id !== myMemberId ? null : 最新の弓具?.weight ? (
+          {最新の弓具?.weight ? (
             <View style={styles.listWeightBadge}>
               <Text style={styles.listWeightText}>
                 {最新の弓具.weight}
@@ -378,7 +370,7 @@ const MemberScreen = () => {
     activeRole === 'member' ? (members || []).find((部員1人) => 部員1人 && 部員1人.id === myMemberId) : null;
   const 編集の中身 = (窓として出す) => (
     <View // 窓のときは窓の見た目、画面のときは画面いっぱいに広げる。
-      // 窓の枠のまま画面に置くと、右half が空いたままになる
+      // 窓の枠のまま画面に置くと、右半分が空いたままになる
       style={窓として出す ? styles.modalContent : { flex: 1, width: '100%', backgroundColor: 色.白 }}
     >
       {/* 見出しと×は窓のときだけ。画面のときは上に「自分の情報」が在る */}
@@ -396,41 +388,39 @@ const MemberScreen = () => {
         </View>
       ) : null}
       <本文の入れ物 流す={窓として出す}>
-        {[
-          // 個人ログインでは名前も変えられない。名簿は団体で管理する
-          // ものなので、本人が動かすと記録の名寄せまでずれる
-          ...(窓として出す
-            ? [
-                <Text style={styles.label}>名前</Text>,
-                <TextInput
-                  aria-label="名前"
-                  style={styles.input}
-                  value={名前の下書き}
-                  onChangeText={名前の下書きを置く}
-                  placeholder="例: 山田 太郎"
-                  placeholderTextColor={色.灰_薄い}
-                />,
-                <Text style={styles.inputHelperText}>姓名の間にスペースを入力してください</Text>,
-                編集中の部員 && 編集中の部員.personalId && (
-                  <>
-                    <Text style={styles.label}>個人ID (自動採番)</Text>
-                    <View style={[styles.input, { justifyContent: 'center', opacity: 0.6 }]}>
-                      <Text style={{ fontSize: 16 }}>
-                        {isAdminMode || 編集中の部員.id === myMemberId
-                          ? 編集中の部員.personalId
-                          : '******** (管理者のみ表示)'}
-                      </Text>
-                    </View>
-                  </>
-                ),
-                // 招待リンク（団体の持ち主が管理者モードのときだけ）。合言葉は逆引き表に置き、
-                // メンバーには一覧させない（src/memberInvite.js）
-                編集中の部員 && activeRole === 'group' && isAdminMode && (
-                  <招待リンクの欄 団体={activeGroupId} 部員={編集中の部員} />
-                ),
-              ]
-            : []),
-        ]}
+        {/* 個人ログインでは名前も変えられない。名簿は団体で管理する */
+        /* ものなので、本人が動かすと記録の名寄せまでずれる */}
+        {窓として出す ? (
+          <>
+            <Text style={styles.label}>名前</Text>
+            <TextInput
+              aria-label="名前"
+              style={styles.input}
+              value={名前の下書き}
+              onChangeText={名前の下書きを置く}
+              placeholder="例: 山田 太郎"
+              placeholderTextColor={色.灰_薄い}
+            />
+            <Text style={styles.inputHelperText}>姓名の間にスペースを入力してください</Text>
+            {編集中の部員 && 編集中の部員.personalId && (
+              <>
+                <Text style={styles.label}>個人ID (自動採番)</Text>
+                <View style={[styles.input, { justifyContent: 'center', opacity: 0.6 }]}>
+                  <Text style={{ fontSize: 16 }}>
+                    {isAdminMode || 編集中の部員.id === myMemberId
+                      ? 編集中の部員.personalId
+                      : '******** (管理者のみ表示)'}
+                  </Text>
+                </View>
+              </>
+            )}
+            {/* 招待リンク（団体の持ち主が管理者モードのときだけ）。合言葉は逆引き表に置き、 */
+            /* メンバーには一覧させない（src/memberInvite.js） */}
+            {編集中の部員 && activeRole === 'group' && isAdminMode && (
+              <招待リンクの欄 団体={activeGroupId} 部員={編集中の部員} />
+            )}
+          </>
+        ) : null}
         {/* 性別・学年・期は団体で管理する項目。個人ログインでは */
         /* 見るだけにする。本人が動かすと名簿と食い違い、進級や */
         /* 卒業の扱いまでずれる */}
@@ -756,16 +746,7 @@ const MemberScreen = () => {
           visible={calVis}
           onClose={() => setCalVis(false)}
           selectedDate={new Date(弓具の日付 + 'T12:00:00')}
-          onSelectDate={(date) => {
-            弓具の日付を置く(
-              date.getFullYear() +
-                '-' +
-                String(date.getMonth() + 1).padStart(2, '0') +
-                '-' +
-                String(date.getDate()).padStart(2, '0')
-            );
-            setCalVis(false);
-          }}
+          onSelectDate={(date) => 弓具の日付を置く(日付の文字(date))}
         />
       </SafeAreaView>
     );
@@ -785,35 +766,33 @@ const MemberScreen = () => {
           )}
         </View>
         <View style={{ flexDirection: 'row', gap: 16 }}>
-          {activeRole !== 'member' && (
-            <Pressable
-              ref={案内の部員追加}
-              style={({ hovered }) => [
-                styles.addBtn,
-                hovered && { backgroundColor: 'rgba(0,122,255,0.05)', borderRadius: 8, padding: 4 },
-              ]}
-              // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
-              accessible
-              accessibilityRole="button"
-              accessibilityLabel="部員を追加"
-              aria-label="部員を追加"
-              onPress={() => {
-                編集中の部員を置く(null);
-                名前の下書きを置く('');
-                性別の下書きを置く('未設定');
-                学年の下書きを置く('1');
-                在籍の下書きを置く('在籍');
-                区分の下書きを置く([]);
-                入会年の下書きを置く('');
-                // 学年の無い団体は学年を持たない（その他）
-                if (決まり.学年なし) 学年の下書きを置く('0');
-                期の下書きを置く(期を使う && 今の一年生の期 ? String(今の一年生の期) : '');
-                編集の窓を出す(true);
-              }}
-            >
-              <Icons.Ionicons name="person-add" size={24} color={色.青} />
-            </Pressable>
-          )}
+          <Pressable
+            ref={案内の部員追加}
+            style={({ hovered }) => [
+              styles.addBtn,
+              hovered && { backgroundColor: 'rgba(0,122,255,0.05)', borderRadius: 8, padding: 4 },
+            ]}
+            // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel="メンバーを追加"
+            aria-label="メンバーを追加"
+            onPress={() => {
+              編集中の部員を置く(null);
+              名前の下書きを置く('');
+              性別の下書きを置く('未設定');
+              学年の下書きを置く('1');
+              在籍の下書きを置く('在籍');
+              区分の下書きを置く([]);
+              入会年の下書きを置く('');
+              // 学年の無い団体は学年を持たない（その他）
+              if (決まり.学年なし) 学年の下書きを置く('0');
+              期の下書きを置く(期を使う && 今の一年生の期 ? String(今の一年生の期) : '');
+              編集の窓を出す(true);
+            }}
+          >
+            <Icons.Ionicons name="person-add" size={24} color={色.青} />
+          </Pressable>
         </View>
       </View>
       <View style={styles.searchBar}>
@@ -837,7 +816,7 @@ const MemberScreen = () => {
           </TouchableOpacity>
         )}
       </View>
-      {区分たち.length > 0 && !決まり.学年なし && activeRole !== 'member' ? (
+      {区分たち.length > 0 && !決まり.学年なし ? (
         <View style={styles.まとめ方の列} accessibilityRole="tablist" aria-label="一覧のまとめ方">
           {['学年', '区分'].map((方) => (
             <Pressable
@@ -958,15 +937,7 @@ const MemberScreen = () => {
         visible={calVis}
         onClose={() => setCalVis(false)}
         selectedDate={new Date(弓具の日付 + 'T12:00:00')}
-        onSelectDate={(date) => {
-          弓具の日付を置く(
-            date.getFullYear() +
-              '-' +
-              String(date.getMonth() + 1).padStart(2, '0') +
-              '-' +
-              String(date.getDate()).padStart(2, '0')
-          );
-        }}
+        onSelectDate={(date) => 弓具の日付を置く(日付の文字(date))}
       />
     </SafeAreaView>
   );

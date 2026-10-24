@@ -100,8 +100,10 @@ test('個人ログインでは、他人も出ず、部員も足せない', async
   await page.getByText('メンバー', { exact: true }).first().click();
   await 画面が変わるまで待つ(page, '自分の情報');
 
-  // 部員を追加するボタンは、団体ログインのときだけ
-  await expect(page.getByLabel('部員を追加'), '個人ログインなのに部員を追加できてしまう').toHaveCount(0);
+  // メンバーを追加するボタンは、団体ログインのときだけ
+  await expect(page.getByLabel('メンバーを追加'), '個人ログインなのにメンバーを追加できてしまう').toHaveCount(
+    0
+  );
 
   // 名簿そのものには自分以外も届いている（雲から遅れて来るので数で待つ）。
   // それでも画面に出るのは自分だけ、というのがここで見たいこと

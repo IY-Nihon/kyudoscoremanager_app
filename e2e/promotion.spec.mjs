@@ -102,10 +102,10 @@ test('設定：団体の種類・進級の確認・期を使うが出て、種�
 test('メンバー：学年は札で選び、いる人を直すときだけ在籍を選べる', async ({ page }) => {
   await 開く(page);
   await page.getByRole('tab', { name: 'メンバー' }).click();
-  await 画面が変わるまで待つ(page, '部員を追加');
+  await 画面が変わるまで待つ(page, 'メンバーを追加');
 
   // 足すとき：学年の札は 1年〜4年とその他。在籍は出さない
-  await page.getByRole('button', { name: '部員を追加' }).click();
+  await page.getByRole('button', { name: 'メンバーを追加' }).click();
   const 学年 = page.getByRole('radiogroup', { name: '学年' });
   await expect(学年).toBeVisible({ timeout: 10_000 });
   await expect(学年.getByRole('radio')).toHaveText(['1年', '2年', '3年', '4年', 'その他']);

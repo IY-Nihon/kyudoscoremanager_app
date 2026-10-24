@@ -121,9 +121,9 @@ test('区分：設定で足す・並べ替える・名前を直す・消す。�
 
   // メンバー：一覧の上に「学年ごと｜区分ごと」、足す窓に区分の札（押すと付く。保存はしない）
   await page.getByRole('tab', { name: 'メンバー' }).click();
-  await 画面が変わるまで待つ(page, '部員を追加');
+  await 画面が変わるまで待つ(page, 'メンバーを追加');
   await expect(page.getByRole('tab', { name: '区分ごと' })).toBeVisible({ timeout: 10_000 });
-  await page.getByRole('button', { name: '部員を追加' }).click();
+  await page.getByRole('button', { name: 'メンバーを追加' }).click();
   const 札 = page.getByRole('checkbox', { name: '検査乙' });
   await expect(札).toBeVisible({ timeout: 10_000 });
   await expect(札).toHaveAttribute('aria-checked', 'false');

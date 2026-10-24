@@ -136,7 +136,7 @@ for (const [向き, 幅, 高さ] of [
     await 調べる('ログアウト', async () => (await 押す('設定'), await 押す('ログアウト')));
     await 調べる('メンバーの新規登録', async () => {
       await 押す('メンバー');
-      await page.locator('[aria-label="部員を追加"]').first().click({ timeout: 10_000 });
+      await page.locator('[aria-label="メンバーを追加"]').first().click({ timeout: 10_000 });
     });
     // 2026-09-26 に届かなかった窓。管理者モードでは招待リンクの欄まで入って長くなる
     await 調べる('メンバーの編集', async () => {
