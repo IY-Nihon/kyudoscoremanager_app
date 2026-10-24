@@ -219,7 +219,7 @@ test('保存：部員は既にある記録を上書きできない', async () =>
   assert.equal(雲.値(記録の道, 'ses-1').title, 元, 'クラウドが変わらない');
   assert.equal(store.getState().sessions.length, 記録数, '手元にも増えない');
   assert.ok(
-    知らせ.some((m) => m.includes('個人モードからは更新できません')),
+    知らせ.some((m) => m.includes('個人ログインでは直せません')),
     '理由が画面に出る'
   );
 });
@@ -1016,7 +1016,7 @@ test('個人ログインの保存：雲にある記録（同期済み）を載�
   store.setState({ activeSessionID: 'ses-1' }); // 用意() の記録は 同期済み
   await store.getState().saveSession('上書き', '', true, [], null);
   assert.ok(
-    知らせ.some((文) => /個人モードからは更新できません/.test(文)),
+    知らせ.some((文) => /個人ログインでは直せません/.test(文)),
     '止めた理由を言っていない'
   );
   assert.equal(store.getState().archers.length, 2, '止めたのに記録表が片付いている');
