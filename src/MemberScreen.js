@@ -336,7 +336,7 @@ const MemberScreen = () => {
             <View style={styles.eqItem}>
               <View style={{ flex: 1, marginRight: 8 }}>
                 <View style={styles.eqItemHeader}>
-                  <Text style={styles.eqItemDate}>{new Date(item.date).toLocaleDateString()}</Text>
+                  <Text style={styles.eqItemDate}>{new Date(item.date).toLocaleDateString('ja-JP')}</Text>
                   {item.weight && (
                     <View style={styles.eqWeightBadge}>
                       <Text style={styles.eqWeightText}>

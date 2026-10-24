@@ -1106,11 +1106,10 @@ const 部員の詳細の窓 = ({
                 selectedModalTrendLabel,
                 compareMembers.length > 0 ? 詳細の部員.name : null
               )}
-              {compareMembers.map((相手) => (
-                <React.Fragment key={`型-${相手.id}`}>
-                  {型の節(比較の成績.get(相手.id), selectedModalTrendLabel, 相手.name)}
-                </React.Fragment>
-              ))}
+              {/* 型の節 が名前で key を付けて返す */}
+              {compareMembers.map((相手) =>
+                型の節(比較の成績.get(相手.id), selectedModalTrendLabel, 相手.name)
+              )}
               {/* 弓具を変えた前後。 */
               /* 比較の分岐（compareMembers.length > 0）の中に置いていたため、 */
               /* 比較相手を足したときしか出ていなかった。求められたのは */
