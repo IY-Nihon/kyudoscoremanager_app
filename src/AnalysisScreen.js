@@ -44,7 +44,6 @@ const AnalysisScreen = ({ navigation }) => {
     alumni = [],
     showAlumniInAnalysis,
     setShowAlumniInAnalysis: setAlumni,
-    isHydrated,
     arrowTargetType,
     setSelectedHistorySessionId,
     setHistoryViewMode,
@@ -59,7 +58,6 @@ const AnalysisScreen = ({ navigation }) => {
     useストアの一部([
       'analysisSelectedTags',
       'analysisTagLogic',
-      'tagTemplates',
       'setAnalysisSelectedTags',
       'toggleAnalysisTag',
       'setAnalysisTagLogic',
@@ -70,15 +68,12 @@ const AnalysisScreen = ({ navigation }) => {
       'sessions',
       'members',
       'alumni',
-      'shotsPerRound',
       'showAlumniInAnalysis',
       'setShowAlumniInAnalysis',
-      'isHydrated',
       'arrowTargetType',
       'setSelectedHistorySessionId',
       'setHistoryViewMode',
       'setFocusedMemberId',
-      'groupType',
       'divisions',
       'useTerm',
       '比較のひな型',
@@ -106,7 +101,6 @@ const AnalysisScreen = ({ navigation }) => {
       navigation.navigate('履歴');
     }
   };
-  if (!isHydrated) return null;
   /**
    * 推移のグラフで押した点（ラベル）の期間に入る記録かどうか。
    *
@@ -130,7 +124,8 @@ const AnalysisScreen = ({ navigation }) => {
   /** 点を押していればその期間だけ、押していなければ全部 */
   const 点の期間で絞る = (記録たち, ラベル) =>
     ラベル ? (記録たち || []).filter((記録1件) => 点の期間の記録か(記録1件, ラベル)) : 記録たち || [];
-  const gatherAllArrowLocations = (memberId, name, selectedLabel) => {
+  // その人の矢所（○×の付いた射だけ）。数えるのは ID だけ（名前で拾うと、1 つの射が 2 人に入る）
+  const gatherAllArrowLocations = (memberId, selectedLabel) => {
     const locations = [];
     絞った記録.forEach((session) => {
       if (!session || !session.archers) return;
@@ -142,7 +137,7 @@ const AnalysisScreen = ({ navigation }) => {
           if (集.その人の射か(archer, idx, memberId)) {
             const mark = archer.marks ? archer.marks[idx] : undefined;
             // 的中/外れのマークが登録されている射のみを対象とする
-            if (mark === '○' || mark === '○' || mark === '×' || mark === '\xd7') {
+            if (mark === '○' || mark === '×') {
               locations.push(Object.assign({}, loc, { mark, shotIndex: idx }));
             }
           }
@@ -250,8 +245,8 @@ const AnalysisScreen = ({ navigation }) => {
         return 甲は選択中 && !乙は選択中 ? -1 : !甲は選択中 && 乙は選択中 ? 1 : 甲.localeCompare(乙);
       });
   }, [sessions, analysisSelectedTags, activeRole, myMemberId]);
-  // 記録の絞り込み。描画のたびに数え直すと、部員の数だけ記録を舐める
-  // xe まで巻き添えで走る。本番でいちばん大きい団体（部員79人・記録108件）で
+  // 記録の絞り込み。描画のたびに数え直すと、部員の数だけ記録を舐める順位の計算
+  // まで巻き添えで走る。本番でいちばん大きい団体（部員79人・記録108件）で
   // 1周 35ms かかっていた。絞り込みが変わったときだけ作り直す。
   //
   // 直近30日の境目は Date.now() で決まるので、この控えが効いているあいだは
@@ -361,8 +356,8 @@ const AnalysisScreen = ({ navigation }) => {
     });
   })(順位に入る).filter(名前で残す);
   const 推移を数える = React.useCallback(
-    (部員id, 名前) => {
-      if (!部員id && !名前) return [];
+    (部員id) => {
+      if (!部員id) return [];
       const 期間ごと = {};
       絞った記録.forEach((記録) => {
         const 日付 = new Date(記録.date);
@@ -421,8 +416,6 @@ const AnalysisScreen = ({ navigation }) => {
     },
     [絞った記録, 推移の刻み]
   );
-  // 比較相手の成績。1〜4射目のマスごとに数え直すと、記録の数だけ何度も
-  // 走って重くなる。相手が変わったときだけ数える
   /**
    * 推移の点を押したときの、その期間の成績。
    *
@@ -438,8 +431,8 @@ const AnalysisScreen = ({ navigation }) => {
     [activeRole, myMemberId, 絞った記録, selectedTrendLabel]
   );
   const 自分の推移 = React.useMemo(
-    () => (activeRole === 'member' && myMemberId ? 推移を数える(myMemberId, 自分の名前) : []),
-    [activeRole, myMemberId, 自分の名前, 推移を数える]
+    () => (activeRole === 'member' && myMemberId ? 推移を数える(myMemberId) : []),
+    [activeRole, myMemberId, 推移を数える]
   );
   const 推移の図 = ({ data, selectedLabel, onSelectLabel, onJumpToRecord }) => {
     const 選んだ番 = selectedLabel ? data.findIndex((item) => item.label === selectedLabel) : null;
@@ -627,9 +620,8 @@ const AnalysisScreen = ({ navigation }) => {
       </View>
     </View>
   );
-  const 外枠 = View;
   return (
-    <外枠 style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <View style={styles.header}>
         <Text style={styles.title}>的中分析</Text>
       </View>
@@ -938,7 +930,7 @@ const AnalysisScreen = ({ navigation }) => {
                 <選択肢の帯 options={的の選び} selected={myTargetType} onSelect={setMyTargetType} isWrap />
               </View>
               <ArrowLocationView
-                arrowLocations={gatherAllArrowLocations(myMemberId, 自分の名前, selectedTrendLabel)}
+                arrowLocations={gatherAllArrowLocations(myMemberId, selectedTrendLabel)}
                 size={200}
                 targetType={myTargetType}
                 hideNumbers
@@ -1025,7 +1017,7 @@ const AnalysisScreen = ({ navigation }) => {
               >
                 <View style={styles.rowLeft}>
                   <View style={styles.rankBadge}>
-                    <Text style={styles.rankText}>{activeRole === 'member' ? '-' : 部員.displayRank}</Text>
+                    <Text style={styles.rankText}>{部員.displayRank}</Text>
                   </View>
                   <View style={styles.nameContainer}>
                     <Text
@@ -1141,7 +1133,7 @@ const AnalysisScreen = ({ navigation }) => {
         期間の成績={期間の成績}
         点の期間で絞る={点の期間で絞る}
       />
-    </外枠>
+    </View>
   );
 };
 Object.defineProperty(exports, '__esModule', { value: true });
