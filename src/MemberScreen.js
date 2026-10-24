@@ -126,30 +126,14 @@ const MemberScreen = () => {
   const filteredMembers = 見せる名簿.filter(
     (部員) => 部員 && 部員.name && 部員.name.toLowerCase().includes(検索の文.toLowerCase())
   );
-  const activeMembers = filteredMembers
-    .filter((部員) => 学.現役か(部員))
-    .sort((甲, 乙) => {
-      const 学年の差 = 学.学年の順(甲) - 学.学年の順(乙);
-      if (学年の差) return 学年の差;
-      const 性別の順 = (性別) => {
-        const 整えた = (性別 || '').trim();
-        return 整えた === '男子' ? 0 : 整えた === '女子' ? 1 : 2;
-      };
-      const 性別の差 = 性別の順(甲.gender) - 性別の順(乙.gender);
-      return 性別の差 !== 0 ? 性別の差 : (甲.name || '').localeCompare(乙.name || '', 'ja');
-    });
+  const activeMembers = filteredMembers.filter((部員) => 学.現役か(部員)).sort(学.名簿の順に比べる);
   const graduateMembers = filteredMembers
     .filter((部員) => 学.卒業生か(部員))
     .sort((甲, 乙) => {
       const kiA = 甲.termKi || 0;
       const kiB = 乙.termKi || 0;
       if (kiB !== kiA) return kiB - kiA;
-      const 性別の順 = (性別) => {
-        const 整えた = (性別 || '').trim();
-        return 整えた === '男子' ? 0 : 整えた === '女子' ? 1 : 2;
-      };
-      const 性別の差 = 性別の順(甲.gender) - 性別の順(乙.gender);
-      return 性別の差 !== 0 ? 性別の差 : (甲.name || '').localeCompare(乙.name || '', 'ja');
+      return 学.性別と名前で比べる(甲, 乙);
     });
   // 卒業生は期ごと（期を使わない団体は卒業した年度ごと）にまとめる
   const 卒業の組の名 = (部員) =>
