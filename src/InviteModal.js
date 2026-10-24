@@ -65,7 +65,12 @@ const 招待の窓 = ({ 招待, onClose }) => {
       // リンクの団体は人が打つ団体ID（6 桁）。団体の鍵（groups/{鍵}）は、個人ID や団体ID で
       // 入るときと同じく公開の帳面の id を正とする（src/groupLogin.js の 団体で入る）。
       // 帳面が無ければ、団体の鍵がそのまま載っているリンクとみなす
-      const 帳面 = await 道具.Firestore.getDoc(道具.Firestore.doc(道具.db, 'group_accounts', 招待.団体));
+      // 団体の帳面の読みは、雲の返事が戻らない回があるので上限つきで何度か送り直す（招.何度か送る）。
+      // 部員として入る（中でサインインする）は送り直さない。WebKit では 12 秒を超えることがあり、切って
+      // もう一度サインインさせると端末の利用者が入れ替わって、ログアウトされた（2026-10-24 の E2E で 4 回に 3 回）
+      const 帳面 = await 招.何度か送る(() =>
+        道具.Firestore.getDoc(道具.Firestore.doc(道具.db, 'group_accounts', 招待.団体))
+      );
       const 団体の鍵 = (帳面.exists() && 帳面.data().id) || 招待.団体;
       const { memberId, 名前 } = await require('./groupLogin').部員として入る(
         道具,
@@ -141,7 +146,7 @@ const 招待リンクの欄 = ({ 団体, 部員 }) => {
     招待を置く(undefined);
     知らせを置く(null);
     if (!団体 || !memberId) return undefined;
-    招.招待を探す(道具を取る(), 団体, memberId)
+    招.何度か送る(() => 招.招待を探す(道具を取る(), 団体, memberId))
       .then((x) => 生きている && 招待を置く(x))
       .catch(() => 生きている && 招待を置く(null));
     return () => {

@@ -203,7 +203,45 @@ async function 招待を取り消す(道具, 団体, memberId) {
   return 件数;
 }
 
+/**
+ * 雲への読み書きを、待つ上限つきで何度か送り直す（2026-10-24）。
+ * 検証環境の E2E で、招待を探す・招待で入る の返事が戻らないまま「確かめています…」で止まる回があった（50 回に 3 回）。
+ * 電波の弱い所でも同じことが起きうるので、上限を過ぎたら送り直し、それでもだめなら「つながらない」として投げる。
+ * 送り直すのは、上限を過ぎたときと通信の誤り（network・unavailable・deadline-exceeded）だけ。
+ * 決まりに断られた（期限切れ・作り直された）などは、送り直しても同じなのでそのまま投げる。
+ * @template T
+ * @param {() => Promise<T>} 関数
+ * @param {{回数?: number, 上限?: number, 間?: number}} [注文]
+ * @returns {Promise<T>}
+ */
+async function 何度か送る(関数, 注文 = {}) {
+  const 回数 = 注文.回数 || 3;
+  const 上限 = 注文.上限 || 12000;
+  const 間 = 注文.間 ?? 1500;
+  let 最後の誤り = null;
+  for (let 回 = 1; 回 <= 回数; 回++) {
+    let 時計 = null;
+    try {
+      return await Promise.race([
+        関数(),
+        new Promise((_, 断る) => {
+          時計 = setTimeout(() => 断る(Object.assign(new Error('時間内に返事がありませんでした'), { code: 'deadline-exceeded' })), 上限);
+        }),
+      ]);
+    } catch (誤り) {
+      const 符号 = String((誤り && 誤り.code) || '');
+      if (!/network|unavailable|deadline-exceeded/.test(符号)) throw 誤り;
+      最後の誤り = 誤り;
+      if (回 < 回数) await new Promise((r) => setTimeout(r, 間));
+    } finally {
+      if (時計) clearTimeout(時計);
+    }
+  }
+  throw Object.assign(new Error('接続できませんでした'), { code: 'unavailable', 元: 最後の誤り });
+}
+
 module.exports = {
+  何度か送る,
   合言葉を作る,
   招待リンクを作る,
   URLから招待を取る,
