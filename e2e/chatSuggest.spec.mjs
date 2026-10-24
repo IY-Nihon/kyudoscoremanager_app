@@ -66,7 +66,7 @@ async function 記録が届くまで待つ(page, 上限 = 60_000) {
                 (globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}'
               )?.state || {};
             return (s.sessions || []).length;
-          } catch (e) {
+          } catch {
             return 0;
           }
         }),
@@ -249,7 +249,7 @@ test('浮くボタン：横へ引くと左の角へ動き、置いた角が残�
   const 覚え = await page.evaluate(() => {
     try {
       return JSON.parse(localStorage.getItem('aiButtonPos_v1') || 'null');
-    } catch (e) {
+    } catch {
       return null;
     }
   });

@@ -178,7 +178,7 @@ export async function 団体で入る(page, 団体, 合言葉) {
  * 位置を測る検査は描き直しを待つ必要があるので、ますが在るときは位置も見る。
  * ますが1つも無い画面（射手を立てる前）では、合図だけで足りる。
  */
-export async function 横並びになるまで待つ(page, 上限 = 20000) {
+export function 横並びになるまで待つ(page, 上限 = 20000) {
   return こうなるまで待つ(
     async () => {
       const 印 = await page
@@ -226,7 +226,7 @@ export async function 横並びになるまで待つ(page, 上限 = 20000) {
  * 先へ進んで「ライブの合言葉が取れない」という別の顔で落ちた。
  * 上限を90秒まで伸ばしても直らず、時間の問題ではなかった。
  */
-export async function 入り口が決まるまで待つ(page, 上限 = 60000) {
+export function 入り口が決まるまで待つ(page, 上限 = 60000) {
   return こうなるまで待つ(
     async () => ({
       ログイン欄: await page
@@ -264,7 +264,7 @@ export function ますが増えるまで待つ(page, 数 = 1, 上限 = 20000) {
  * タブを押したあとに決まった秒数を置くと、遅い機種では前の画面のまま
  * 数えてしまう。目印が出れば、そこで進んでよい。
  */
-export async function 画面が変わるまで待つ(page, 目印, 上限 = 20000) {
+export function 画面が変わるまで待つ(page, 目印, 上限 = 20000) {
   return こうなるまで待つ(
     () =>
       page

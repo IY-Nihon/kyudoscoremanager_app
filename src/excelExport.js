@@ -247,7 +247,7 @@ function ブックを組む(シートたち) {
  * @param {Array<{name:string, headers:string[], rows:Array<Array<any>>, widths?:number[]}>} シートたち
  * @param {string} fileName 拡張子を含むファイル名
  */
-async function exportXlsxSheets(シートたち, fileName) {
+function exportXlsxSheets(シートたち, fileName) {
   const { zipSync, strToU8 } = require('fflate');
   const { saveAs } = require('file-saver');
   const 中身 = ブックを組む(シートたち);

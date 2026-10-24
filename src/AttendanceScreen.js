@@ -40,8 +40,10 @@ try {
 } catch {
   /* この部品が無い場（Web）でも、下の代わりの品で動く */
 }
-const docPicker = _docPickerModule || { getDocumentAsync: async () => ({ canceled: true, assets: [] }) };
-const fs = _fsModule || { readAsStringAsync: async () => '', EncodingType: { Base64: 'base64' } };
+const docPicker = _docPickerModule || {
+  getDocumentAsync: () => Promise.resolve({ canceled: true, assets: [] }),
+};
+const fs = _fsModule || { readAsStringAsync: () => Promise.resolve(''), EncodingType: { Base64: 'base64' } };
 const AttendanceScreen = () => {
   // 上から引っ張って更新（src/hikiOroshi.js）。雲から取り直す
   const 引く = use引いて更新(() => useScoreStore.getState().雲から取り直す());

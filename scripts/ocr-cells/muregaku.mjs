@@ -67,7 +67,7 @@ async function 見本をあつめる(枚数, 別のペン = 0.5, 種の頭 = 300
     let g;
     try {
       g = await 格子(await 画を読む(みち), { 人数, 行数, 回す });
-    } catch (e) {
+    } catch {
       g = null;
     }
     const 合う =

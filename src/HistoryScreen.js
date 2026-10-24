@@ -1444,7 +1444,7 @@ const HistoryScreen = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalBtn, { backgroundColor: 基本色.赤, flex: 1, marginLeft: 5 }]}
-                onPress={async () => {
+                onPress={() => {
                   if (消す記録ID) {
                     deleteSession(消す記録ID);
                     消す記録IDを置く(null);

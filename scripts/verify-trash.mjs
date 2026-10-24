@@ -24,7 +24,6 @@ import {
   getDocs,
   writeBatch,
   serverTimestamp,
-  deleteDoc,
   setDoc,
 } from 'firebase/firestore';
 import { configFor } from './fb-rest.mjs';

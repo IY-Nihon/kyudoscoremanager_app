@@ -100,7 +100,7 @@ async function 保存を偽にする(page) {
       });
     try {
       送った.push(route.request().postDataJSON());
-    } catch (誤り) {
+    } catch {
       /* 中身が読めなくても応答は返す（写真の PUT は JSON ではない） */
     }
     return route.fulfill({
@@ -301,7 +301,7 @@ test('個人ログイン：会話の控えは本人ごとの鍵に置き、団�
   await page.addInitScript((印) => {
     try {
       localStorage.setItem('aiChatMessages_v1', JSON.stringify([{ id: 'g1', role: 'model', text: 印 }]));
-    } catch (誤り) {
+    } catch {
       /* 入れられなければ、下の「見えていない」は空振りする（控えを読んで確かめる） */
     }
   }, 団体の印);

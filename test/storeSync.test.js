@@ -338,7 +338,7 @@ test('完全削除：送信が失われても、消したものが戻ってこ�
 });
 
 test('完全削除：消し終われば控えは片付く（増え続けない）', async () => {
-  const { store, 雲 } = 用意();
+  const { store } = 用意();
   await store.getState().deleteSession('ses-2');
   await 待つ(50);
   await store.getState().emptyTrash();
@@ -350,7 +350,7 @@ test('完全削除：消し終われば控えは片付く（増え続けない�
 });
 
 test('完全削除：ゴミ箱から戻したら控えから外れる', async () => {
-  const { store, 雲 } = 用意();
+  const { store } = 用意();
   await store.getState().deleteSession('ses-2');
   await 待つ(50);
   await store.getState().deleteTrashItems(['ses-2']);
@@ -999,7 +999,7 @@ test('個人ログインの保存：雲が応答しなくても、手元にす�
   const 既存 = store.getState().sessions.map((s) => s.id);
   射手を置く(store);
   let 終わった = false;
-  const 保存 = store
+  store
     .getState()
     .saveSession('弱い電波', '', true, [], null)
     .then(() => (終わった = true));

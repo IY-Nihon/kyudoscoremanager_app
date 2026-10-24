@@ -5,6 +5,7 @@ const path = require('path');
 const withSwift5 = (config) => {
   return withDangerousMod(config, [
     'ios',
+    // eslint-disable-next-line require-await -- Expo の mod の書き方（約束を返す関数）にそろえる
     async (config) => {
       const podfile = path.join(config.modRequest.platformProjectRoot, 'Podfile');
       if (fs.existsSync(podfile)) {

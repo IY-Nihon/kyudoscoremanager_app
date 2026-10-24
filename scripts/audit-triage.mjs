@@ -50,7 +50,7 @@ const d = path.join(根, 'dist', '_expo', 'static', 'js', 'web');
 try {
   const f = fs.readdirSync(d).find((x) => x.startsWith('AppEntry-'));
   if (f) 束 = fs.readFileSync(path.join(d, f), 'utf8');
-} catch (e) {
+} catch {
   /* 束が無ければ依存の区分だけで見る */
 }
 

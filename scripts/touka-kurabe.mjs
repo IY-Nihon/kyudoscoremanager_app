@@ -389,7 +389,7 @@ async function 正規形(source, 名札) {
         const 新 = `v${k}_${n}`;
         try {
           p.scope.rename(b.identifier.name, 新);
-        } catch (_) {
+        } catch {
           /* 付け替えられないものは残す */
         }
       }

@@ -14,7 +14,7 @@
 import fs from 'node:fs';
 import sharp from 'sharp';
 import { 格子, 箱の大きさ } from './kiridasu.mjs';
-import { 画を読む, 回す } from './gazou-node.mjs';
+import { 回す } from './gazou-node.mjs';
 import { 種類, 形にする, 前へ, 切り取る } from './manabu.mjs';
 import { 射手たち } from './kiroku.mjs';
 import { 縦横で合わせる } from './tsujitsuma2.mjs';
@@ -103,7 +103,7 @@ async function 読んでみる(崩し, 味付け, 名) {
         { 画素: 切.画, 幅: 切.幅, 高: 切.高 },
         { 人数: k.順.length, 行数: 10, 上を除く: 0, 回す }
       );
-    } catch (e) {
+    } catch {
       マス全 += 40;
       射全 += 80;
       continue;

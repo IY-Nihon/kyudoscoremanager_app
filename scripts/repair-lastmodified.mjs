@@ -12,7 +12,7 @@
  * lastModified だけを updateMask で更新する。他の項目には触れない。
  */
 import fs from 'node:fs';
-import { configFor, signIn } from './fb-rest.mjs';
+import { configFor } from './fb-rest.mjs';
 
 const [target, ...flags] = process.argv.slice(2);
 const COMMIT = flags.includes('--commit');

@@ -84,7 +84,7 @@ test('個人ログインでも、案内の履歴と分析の見本が出る', as
           Array.isArray(x.archers) &&
           x.archers.some((a) => a && (a.memberId === id || (名 && a.name === 名)))
       ).length;
-    } catch (e) {
+    } catch {
       return -1;
     }
   });

@@ -14,7 +14,6 @@ import { 画を読む, 回す } from './gazou-node.mjs';
 import { 種類, 形にする, 前へ, 切り取る } from './manabu.mjs';
 import { 重みを読む } from './chiisaku.mjs';
 import { 的中数に合わせる } from './tsujitsuma.mjs';
-const 逆 = String.fromCharCode(92);
 const 群れ = 重みを読む(process.env.OCR_OMOMI || 'scripts/ocr-cells/mure.json');
 const 見立てる = (形) => {
   const 合 = new Float32Array(種類.length);
