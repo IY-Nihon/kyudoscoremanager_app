@@ -1,6 +1,4 @@
 /**
- * Module ID: backgroundSaver
- *
  * 裏に回っているあいだ、Realtime Database との接続を休ませる。
  *
  * ■ なぜ off() ではなく goOffline() なのか

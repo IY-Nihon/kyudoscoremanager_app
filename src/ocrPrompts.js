@@ -1,6 +1,4 @@
 /**
- * Module ID: ocrPrompts
- *
  * 画像の読み取りを頼むときの指示文。画面から切り離してあるので、
  * そのまま検査から叩ける（scripts/try-ocr.mjs、test/ocrKatachiShijibun.test.js）。
  *

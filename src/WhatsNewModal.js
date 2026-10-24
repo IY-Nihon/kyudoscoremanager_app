@@ -2,7 +2,6 @@
 
 const { 色 } = require('./iro.js');
 /**
- * Module ID: WhatsNewModal (hand-written, not bundler-generated)
  * アプリ起動時に最近の変更点をお知らせするモーダル
  */
 

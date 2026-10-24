@@ -1,6 +1,4 @@
 /**
- * Module ID: errorReporter
- *
  * 不具合の便りを実際に送るところ。決まりは errorReport.js にあり、ここは
  * 「Firestore へ入れる」「端末に貯める」という手立てを差し込むだけにしてある。
  *

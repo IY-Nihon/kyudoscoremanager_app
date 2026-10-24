@@ -1,6 +1,4 @@
 /**
- * Module ID: accountDeletion
- *
  * 団体アカウントを消す。
  *
  * ■ 何をするか

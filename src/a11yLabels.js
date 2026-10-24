@@ -1,6 +1,4 @@
 /**
- * Module ID: a11yLabels
- *
  * 読み上げ（VoiceOver / TalkBack）が読む言葉を作る。
  *
  * ■ なぜ別に持つのか
