@@ -27,6 +27,67 @@ const 学 = require('./gakunen');
 const 区 = require('./kubun');
 const IS_WEB = Platform.OS === 'web';
 
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { useScoreStore } = require('./useScoreStore');
+const { useストアの一部 } = require('./storeSlice');
+const { useNavigation } = require('@react-navigation/native');
+const 案内 = require('./TutorialGuide');
+// 鍵はアプリに無い。中継（Cloudflare Workers）へログインの証を付けて呼ぶ
+const 中継 = require('./geminiChukei');
+// 初めの案内で AI に届かなかったとき、送った文から部員を読む控えの道（src/chatMemberParse.js）
+const { 入力から部員を読み取る } = require('./chatMemberParse');
+
+/**
+ * Gemini の SDK の誤りから、状態番号（400・503 など）を取り出す。無ければ 0。
+ * SDK の誤りは status を持つことがあり、無いときは文の「[503 Service Unavailable]」から読む
+ */
+const 誤りの状態番号 = (誤り) => {
+  if (誤り && Number.isInteger(誤り.status)) return 誤り.status;
+  const 合う = String((誤り && 誤り.message) || '').match(/\[(\d{3})[ \]]/);
+  return 合う ? Number(合う[1]) : 0;
+};
+/**
+ * 流し読みが途中で切れた誤りか。返事の途中で回線が切れる・中継や上流が流れを閉じると、
+ * SDK は「Failed to parse stream」を投げる（2026-09-24 に本番の便りで 2 通）。上限（429）・
+ * 混雑（503）・証（401）などの誤りはここに入れない（別に扱う）
+ */
+const 流れが切れたか = (誤り) =>
+  /Failed to parse stream|Error reading from the stream|network|Failed to fetch|Load failed|terminated|aborted/i.test(
+    String((誤り && 誤り.message) || 誤り || '')
+  ) && !/\b(4\d\d|5\d\d)\b/.test(String((誤り && 誤り.message) || ''));
+// 成績の集計・並べ替え・絞り込みは、模型ではなくここで済ませる。
+// 人数ぶんの表を渡して選ばせると取り違えるため（test/chatStats.test.js）
+const {
+  全員の成績,
+  出欠の集計,
+  記録をさがす,
+  タグで絞る,
+  参加回数を数える,
+  射位ごとの成績,
+  一人の成績,
+  矢所の成績,
+  期間にする,
+  日付の始まり,
+  題で絞る,
+  記録の要約,
+  端末の日付,
+} = require('./chatStats');
+const { 練習日を読む } = require('./practiceDays');
+// 「何でも聞いてください」だけでは何を聞けるか分からない。
+// その団体の中身に合わせた質問例を出す（test/chatSuggestions.test.js）
+const { 質問例のすべて, 打ちかけの候補, 分類ごと } = require('./chatSuggestions');
+// 個人ログイン（部員）は、AI に本人の分だけを渡す（chatScope）。指示文・道具・Q&A も個人用にする（chatPersonal）
+const { 自分だけに絞る, 他の人 } = require('./chatScope');
+const 個人用 = require('./chatPersonal');
+const { getShadowStyle } = require('./shadowStyle');
+
+// 指示文と Q&A（systemInstructionBase・qaData・selectQAs）は別のファイル（2026-10-05）
+const { systemInstructionBase, selectQAs } = require('./chatKnowledge');
+// 見た目の決まりは別のファイル（2026-10-05）
+const { styles } = require('./chatStyles');
+// 道具（Function Calling）の宣言は別のファイル（2026-10-24）
+const { 道具の宣言 } = require('./chatTools');
+
 /**
  * 横へ流せる1行。パソコンでは、上に乗せてホイールを回すと横へ動く。
  *
@@ -61,63 +122,6 @@ function 横に流せる行({ children, style }) {
     </ScrollView>
   );
 }
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { useScoreStore } = require('./useScoreStore');
-const { useストアの一部 } = require('./storeSlice');
-const { useNavigation } = require('@react-navigation/native');
-const 案内 = require('./TutorialGuide');
-// 鍵はアプリに無い。中継（Cloudflare Workers）へログインの証を付けて呼ぶ
-const 中継 = require('./geminiChukei');
-// 初めの案内で AI に届かなかったとき、送った文から部員を読む控えの道（src/chatMemberParse.js）
-const { 入力から部員を読み取る } = require('./chatMemberParse');
-
-/**
- * 流し読みが途中で切れた誤りか。返事の途中で回線が切れる・中継や上流が流れを閉じると、
- * SDK は「Failed to parse stream」を投げる（2026-09-24 に本番の便りで 2 通）。上限（429）・
- * 混雑（503）・証（401）などの誤りはここに入れない（別に扱う）
- */
-/**
- * Gemini の SDK の誤りから、状態番号（400・503 など）を取り出す。無ければ 0。
- * SDK の誤りは status を持つことがあり、無いときは文の「[503 Service Unavailable]」から読む
- */
-const 誤りの状態番号 = (誤り) => {
-  if (誤り && Number.isInteger(誤り.status)) return 誤り.status;
-  const 合う = String((誤り && 誤り.message) || '').match(/\[(\d{3})[ \]]/);
-  return 合う ? Number(合う[1]) : 0;
-};
-const 流れが切れたか = (誤り) =>
-  /Failed to parse stream|Error reading from the stream|network|Failed to fetch|Load failed|terminated|aborted/i.test(
-    String((誤り && 誤り.message) || 誤り || '')
-  ) && !/\b(4\d\d|5\d\d)\b/.test(String((誤り && 誤り.message) || ''));
-// 成績の集計・並べ替え・絞り込みは、模型ではなくここで済ませる。
-// 人数ぶんの表を渡して選ばせると取り違えるため（test/chatStats.test.js）
-const {
-  全員の成績,
-  出欠の集計,
-  記録をさがす,
-  タグで絞る,
-  参加回数を数える,
-  射位ごとの成績,
-  一人の成績,
-  矢所の成績,
-  期間にする,
-  日付の始まり,
-  題で絞る,
-  チームごとの的中,
-} = require('./chatStats');
-const { 練習日を読む } = require('./practiceDays');
-// 「何でも聞いてください」だけでは何を聞けるか分からない。
-// その団体の中身に合わせた質問例を出す（test/chatSuggestions.test.js）
-const { 質問例のすべて, 打ちかけの候補, 分類ごと } = require('./chatSuggestions');
-// 個人ログイン（部員）は、AI に本人の分だけを渡す（chatScope）。指示文・道具・Q&A も個人用にする（chatPersonal）
-const { 自分だけに絞る, 他の人 } = require('./chatScope');
-const 個人用 = require('./chatPersonal');
-const { getShadowStyle } = require('./shadowStyle');
-
-// 指示文と Q&A（systemInstructionBase・qaData・selectQAs）は別のファイル（2026-10-05）
-const { systemInstructionBase, selectQAs } = require('./chatKnowledge');
-// 見た目の決まりは別のファイル（2026-10-05）
-const { styles } = require('./chatStyles');
 
 const generateMsgId = () => Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
 const CHAT_HISTORY_KEY = 'aiChatMessages_v1';
@@ -158,6 +162,10 @@ const saveButtonPos = (pos) => {
  * 会話の控えの置き場。団体はこれまでどおり。個人は本人ごとに分ける（同じ端末で別の人が入っても見えない）。
  * 本人がまだ分からない個人（読み込み中）には、団体の会話を読ませない
  */
+/** 初めの案内（部員登録）で開いたときの挨拶 */
+const 部員登録の挨拶 =
+  'こんにちは！メンバー登録をお手伝いします。🎯\n例えば「1年の山田 太郎 男子 を追加して」のように入力して送信してみてください。';
+
 const 会話の鍵 = (個人, 部員id) => (個人 ? `${CHAT_HISTORY_KEY}_member_${部員id || '-'}` : CHAT_HISTORY_KEY);
 
 const loadChatHistory = (鍵 = CHAT_HISTORY_KEY) => {
@@ -241,10 +249,8 @@ const AIChatBot = () => {
     }
   }, [modalVisible]);
 
-  // 質問例は、分類ごとに全部出すようになった（下の 分類たち）。
-  // 「分類ごとに1件だけ」を選ぶ 質問例() は、打ちかけの続きにも使わないので
-  // ここでは呼ばない（chatSuggestions 側には残してある）。
-  // 打ちかけの続きは、画面に出していない例からも探す
+  // 質問例の元（その団体の中身に合わせたもの全部）。画面には分類ごとに全部出し（下の 分類たち）、
+  // 打ちかけの続きもここから探す
   const 候補の元 = React.useMemo(() => {
     const もと = 質問例のすべて({ 人たち: members, 記録たち: sessions, いま: new Date(), 個人 });
     if (チュートリアル部員登録中) {
@@ -266,15 +272,13 @@ const AIChatBot = () => {
     if (!打った.trim()) return '';
     const 当たり = 打ちかけの候補(打った, 候補の元, 8).find((候補) => 候補.文.startsWith(打った));
     return 当たり && 当たり.文 !== 打った ? 当たり.文 : '';
-    // もとは 例たち を見ていたが、中で使っているのは 候補の元。
-    // 食い違っていたので直した（どちらも同じときに変わるので害は無かった）
   }, [inputText, 候補の元]);
   const defaultMessages = [
     {
       id: 'default-msg',
       role: 'model',
       text: チュートリアル部員登録中
-        ? 'こんにちは！メンバー登録をお手伝いします。🎯\n例えば「1年の山田 太郎 男子 を追加して」のように入力して送信してみてください。'
+        ? 部員登録の挨拶
         : 個人
           ? 個人用.個人の挨拶
           : 'こんにちは！弓道部的中ノートのAIアシスタントです。選手選びの相談や、的中傾向の分析、アプリの使い方など、何でも聞いてください。',
@@ -285,15 +289,7 @@ const AIChatBot = () => {
   useEffect(() => {
     if (チュートリアル部員登録中 && modalVisible) {
       const 案内文あり = messages.some((m) => m.text && m.text.includes('メンバー登録をお手伝いします'));
-      if (!案内文あり) {
-        setMessages([
-          {
-            id: 'tutorial-welcome-msg',
-            role: 'model',
-            text: 'こんにちは！メンバー登録をお手伝いします。🎯\n例えば「1年の山田 太郎 男子 を追加して」のように入力して送信してみてください。',
-          },
-        ]);
-      }
+      if (!案内文あり) setMessages([{ id: 'tutorial-welcome-msg', role: 'model', text: 部員登録の挨拶 }]);
     }
   }, [チュートリアル部員登録中, modalVisible]);
   // いま持っている会話（messages）が、どの鍵のものか。入っている人が変わったとき（本人の id が
@@ -456,6 +452,12 @@ const AIChatBot = () => {
     return name;
   };
 
+  /** 初めの案内の部員登録が済んだら、少しして窓を閉じる（案内の次の段へ進む） */
+  const 少ししたら閉じる = () => {
+    if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
+    autoCloseTimerRef.current = setTimeout(() => setModalVisible(false), 1200);
+  };
+
   const handleActionResponse = (msgId, isApproved) => {
     const targetMsgIndex = messages.findIndex((文) => 文.id === msgId);
     if (targetMsgIndex === -1) return;
@@ -477,12 +479,7 @@ const AIChatBot = () => {
               : `${名}さんをメンバーに追加しました。`
             : 'メンバーの追加は団体ログインのときだけできます。追加していません。',
         });
-        if (名 && チュートリアル部員登録中) {
-          if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
-          autoCloseTimerRef.current = setTimeout(() => {
-            setModalVisible(false);
-          }, 1200);
-        }
+        if (名 && チュートリアル部員登録中) 少ししたら閉じる();
       }
     } else {
       updatedMessages.push({ id: generateMsgId(), role: 'model', text: `操作をキャンセルしました。` });
@@ -518,12 +515,7 @@ const AIChatBot = () => {
             ? `${追加した.length}人をメンバーに追加しました！登録が完了しました：${追加した.join('、')}`
             : `${追加した.length}人をメンバーに追加しました：${追加した.join('、')}`,
     });
-    if (isApproved && 追加した.length > 0 && チュートリアル部員登録中) {
-      if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
-      autoCloseTimerRef.current = setTimeout(() => {
-        setModalVisible(false);
-      }, 1200);
-    }
+    if (isApproved && 追加した.length > 0 && チュートリアル部員登録中) 少ししたら閉じる();
     setMessages(updatedMessages);
     setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
   };
@@ -569,6 +561,20 @@ const AIChatBot = () => {
       );
     };
 
+    // 秒数を画面に数えながら待つ（送り直す前）
+    const 数えながら待つ = async (秒) => {
+      let 残り = 秒;
+      setRetryCountdown(残り);
+      const 時計 = setInterval(() => {
+        残り--;
+        setRetryCountdown((前) => Math.max(0, 前 - 1));
+        if (残り <= 0) clearInterval(時計);
+      }, 1000);
+      await new Promise((解く) => setTimeout(解く, 秒 * 1000));
+      clearInterval(時計);
+      setRetryCountdown(0);
+    };
+
     while (attempt <= MAX_RETRY) {
       try {
         // 部員一覧のみ渡す（トークン節約）。詳細成績はgetDetailedMemberStatsで取得
@@ -595,33 +601,20 @@ const AIChatBot = () => {
           );
         };
 
+        // 日付の目安（年-月-日。端末の日付で切る）。日の 0 は前の月の末日
         const now = new Date();
         const y = now.getFullYear();
         const m = now.getMonth();
-        const todayStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        const yesterday = new Date(now);
-        yesterday.setDate(now.getDate() - 1);
-        const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
-
-        // 今月（1日〜末日）
-        const thisMonthStart = `${y}-${String(m + 1).padStart(2, '0')}-01`;
-        const lastDayOfThisMonth = new Date(y, m + 1, 0).getDate();
-        const thisMonthEnd = `${y}-${String(m + 1).padStart(2, '0')}-${String(lastDayOfThisMonth).padStart(2, '0')}`;
-
-        // 先月（先月1日〜先月末日）
-        const lastMonthDate = new Date(y, m - 1, 1);
-        const lmY = lastMonthDate.getFullYear();
-        const lmM = lastMonthDate.getMonth();
-        const lastMonthStart = `${lmY}-${String(lmM + 1).padStart(2, '0')}-01`;
-        const lastDayOfLastMonth = new Date(lmY, lmM + 1, 0).getDate();
-        const lastMonthEnd = `${lmY}-${String(lmM + 1).padStart(2, '0')}-${String(lastDayOfLastMonth).padStart(2, '0')}`;
-
+        const todayStr = 端末の日付(now);
+        const yesterdayStr = 端末の日付(new Date(y, m, now.getDate() - 1));
+        const thisMonthStart = 端末の日付(new Date(y, m, 1));
+        const thisMonthEnd = 端末の日付(new Date(y, m + 1, 0));
+        const lastMonthStart = 端末の日付(new Date(y, m - 1, 1));
+        const lastMonthEnd = 端末の日付(new Date(y, m, 0));
         // 今年度（団体の年度の始まりの月から。既定は 4月1日〜翌3月31日。src/gakunen.js）
         const 年度の範囲 = 学.年度の範囲(学.年度(now));
-        const 日付の字 = (日) =>
-          `${日.getFullYear()}-${String(日.getMonth() + 1).padStart(2, '0')}-${String(日.getDate()).padStart(2, '0')}`;
-        const fiscalYearStart = 日付の字(年度の範囲.始め);
-        const fiscalYearEnd = 日付の字(年度の範囲.終わり);
+        const fiscalYearStart = 端末の日付(年度の範囲.始め);
+        const fiscalYearEnd = 端末の日付(年度の範囲.終わり);
 
         // 履歴で開いている記録。「この記録」「この試合」と聞かれたときに、どれを指すか分かるように渡す
         //（AI のボタンは記録の画面では出さないので、開いている記録は履歴の詳細だけ）
@@ -688,307 +681,8 @@ const AIChatBot = () => {
           return { 記録たち: 絞り.記録たち, 表示, 添え書き };
         };
 
-        // Function Calling の宣言
-        const tools = [
-          {
-            functionDeclarations: [
-              {
-                name: 'getAllMembersStats',
-                description:
-                  '全部員の成績を集計し、順位を付けて返します。「全員の5月の的中率を教えて」「部員のランキングを見せて」「一番当てているのは誰」などに使います。順位付け・並べ替え・絞り込みはこのツールが行うので、返ってきた順番と数字をそのまま使ってください。自分で並べ替えたり足し算したりしないでください。',
-                parameters: {
-                  type: 'OBJECT',
-                  properties: {
-                    dateFrom: {
-                      type: 'STRING',
-                      description: "集計対象期間の開始日 (YYYY-MM-DD形式)。例: '2026-05-01'",
-                    },
-                    dateTo: {
-                      type: 'STRING',
-                      description: "集計対象期間の終了日 (YYYY-MM-DD形式)。例: '2026-05-31'",
-                    },
-                    sortBy: {
-                      type: 'STRING',
-                      description: "並び順。'的中率'（既定）, '的中数', '射数', '名前' のいずれか",
-                    },
-                    limit: {
-                      type: 'INTEGER',
-                      description: '上位何人を返すか。「トップ3」なら3。省略すると全員',
-                    },
-                    minShots: {
-                      type: 'INTEGER',
-                      description:
-                        'この射数に満たない人を順位から外す。既定は1。少ない射数の高い的中率を上位に出したくないときは10〜20を指定する',
-                    },
-                    keyword: {
-                      type: 'STRING',
-                      description:
-                        "記録の題・覚え書きに含まれる言葉で記録を絞り込む。例: 'リーグ戦'。「リーグ戦に出た選手の的中率」「〇〇大会の成績」のように、タグではなく大会名・練習名で分けて聞かれたときに渡す",
-                    },
-                    tags: {
-                      type: 'ARRAY',
-                      items: { type: 'STRING' },
-                      description:
-                        "タグで記録を絞り込む。例: ['自主稽古']。「自主練の的中率」「試合だけの成績」のように、タグで分けて聞かれたときに渡す。記録のタグの名前に含まれる言葉で当たる（# は付けても付けなくてもよい）。複数渡すと、すべてのタグが付いた記録だけ。タグの名前が分からないときは、先に何も渡さず呼ぶか、searchSessions で記録の目印を確かめる",
-                    },
-                  },
-                },
-              },
-              {
-                name: 'makeBalancedTeams',
-                description:
-                  '部員を、組ごとの的中率がそろうように何人ずつかの組に分けます。「3人立ちでチームの的中率が均等になるように分けて」「〇〇以外で5人ずつのチームを作って」などに使います。外す人以外の全員を入れます（射数の少ない人も外しません）。組分け・人数・組の的中率の見込みはこのツールが計算するので、自分で組み替えたり足し算したりせず、返ってきた組と数字をそのまま伝えてください。人数が割り切れないのに、余りの扱いを利用者が言っていないときは、先に「余った人をどこかの組に足す／余りとして別にする／1人少ない組を作る」のどれにするかを聞いてください。聞くときに、それぞれ何人の組がいくつになるかを自分で計算して書き添えないでください（数え違えます。決まったあとにこのツールが返します）。',
-                parameters: {
-                  type: 'OBJECT',
-                  properties: {
-                    teamSize: {
-                      type: 'INTEGER',
-                      description: '1 組の人数。「3人立ち」なら 3、「5人立ち」なら 5',
-                    },
-                    excludeNames: {
-                      type: 'ARRAY',
-                      items: { type: 'STRING' },
-                      description:
-                        '組に入れない人の名前（利用者が言った書き方のまま。コーチなども、外すと言われたらここに）',
-                    },
-                    remainder: {
-                      type: 'STRING',
-                      description:
-                        "人数が割り切れないときの扱い。'足す'（余った人をどこかの組に1人ずつ足す）、'別に'（組に入れず余りとして別に出す）、'少ない組'（組の数を1つ増やし、足りない分だけ1人少ない組にする。例：10人を3人ずつなら 3・3・2・2）のいずれか",
-                    },
-                    dateFrom: {
-                      type: 'STRING',
-                      description: '的中率を見る期間の開始日 (YYYY-MM-DD)。「直近2ヶ月」なら今日から2か月前',
-                    },
-                    dateTo: { type: 'STRING', description: '的中率を見る期間の終了日 (YYYY-MM-DD)' },
-                  },
-                  required: ['teamSize'],
-                },
-              },
-              {
-                name: 'getAttendanceStats',
-                description:
-                  '部員の出欠を集計し、順位を付けて返します。「今月いちばん練習に来ているのは誰」「◯◯さんの出席率は」「休みが多いのは誰」などに使います。「男子で休みが多いのは誰」のように性別・学年でも絞れます。期間に一度も来ていない人は順位に入れず「一度も来ていない人」として別に返すので、答えでも順位とは分けて伝えてください。出欠画面と同じ数え方（正規練習日ごとに、記録に出ていれば来た、無ければ欠席。出席率＝来た日数÷今日までの練習日数）です。遅刻・早退は「来た」に数えます。順位・並べ替えはこのツールが行うので、返った順番と数字をそのまま使ってください。',
-                parameters: {
-                  type: 'OBJECT',
-                  properties: {
-                    dateFrom: { type: 'STRING', description: '集計対象期間の開始日 (YYYY-MM-DD形式)' },
-                    dateTo: { type: 'STRING', description: '集計対象期間の終了日 (YYYY-MM-DD形式)' },
-                    sortBy: {
-                      type: 'STRING',
-                      description: "並び順。'出席率'（既定）, '来た回数', '欠席', '名前' のいずれか",
-                    },
-                    limit: { type: 'INTEGER', description: '上位何人を返すか。省略すると全員' },
-                    gender: { type: 'STRING', description: "性別で絞る。'男子' か '女子'。省略すると全員" },
-                    grade: { type: 'INTEGER', description: '学年で絞る（1〜4 など）。省略すると全員' },
-                  },
-                },
-              },
-              {
-                name: 'searchSessions',
-                description:
-                  '記録を言葉で探します。題・覚え書き・目印（タグ）・出ている人の名前を見ます。「雨で中断した練習はいつ」「審査のタグが付いた記録を見せて」「山田さんが出た記録」など、日付が分からないときに使います。日付が分かっているときは getSessionsByDate を使ってください。',
-                parameters: {
-                  type: 'OBJECT',
-                  properties: {
-                    keyword: { type: 'STRING', description: '探す言葉。空にすると期間内すべて' },
-                    dateFrom: { type: 'STRING', description: '期間の開始日 (YYYY-MM-DD形式)' },
-                    dateTo: { type: 'STRING', description: '期間の終了日 (YYYY-MM-DD形式)' },
-                    limit: { type: 'INTEGER', description: '何件まで返すか。既定は20' },
-                  },
-                },
-              },
-              {
-                name: 'countSessionParticipation',
-                description:
-                  '目印（タグ）や言葉で絞った記録に、部員が何回参加したかを人ごとに数えて、多い順に返します。「自主練が一番多いのは誰」「#審査の記録に出た回数」「合宿に何回参加したか」などに使います。出欠の集計（getAttendanceStats）とは別で、正規練習日ではなく、言葉で絞った記録を数えます。ゲストは数えません。',
-                parameters: {
-                  type: 'OBJECT',
-                  properties: {
-                    keyword: {
-                      type: 'STRING',
-                      description:
-                        "記録を絞る言葉。題・覚え書き・目印・出ている人の名前を見ます。例: '#自主稽古'、'合宿'",
-                    },
-                    dateFrom: { type: 'STRING', description: '期間の開始日 (YYYY-MM-DD形式)' },
-                    dateTo: { type: 'STRING', description: '期間の終了日 (YYYY-MM-DD形式)' },
-                    limit: { type: 'INTEGER', description: '上位何人を返すか。省略すると全員' },
-                  },
-                  required: ['keyword'],
-                },
-              },
-              {
-                name: 'getPositionStats',
-                description:
-                  '射位（大前・2番・落など）ごとの的中率を返します。立ち順を考えるときの材料です。「大前に向いているのは誰」「落で強いのは」「山田さんは大前と落でどちらが良い」などに使います。誰をどこに置くかはこのツールでは決めません。返した数字をもとに、根拠を添えて提案してください。射数が少ない射位は数字が揺れるので、射数も一緒に伝えてください。',
-                parameters: {
-                  type: 'OBJECT',
-                  properties: {
-                    dateFrom: { type: 'STRING', description: '期間の開始日 (YYYY-MM-DD形式)' },
-                    dateTo: { type: 'STRING', description: '期間の終了日 (YYYY-MM-DD形式)' },
-                    memberNames: {
-                      type: 'ARRAY',
-                      items: { type: 'STRING' },
-                      description: 'この人たちだけに絞る。省略すると全員',
-                    },
-                    minShots: { type: 'INTEGER', description: 'この射数に満たない人を外す。既定は1' },
-                    tags: {
-                      type: 'ARRAY',
-                      items: { type: 'STRING' },
-                      description:
-                        "タグで記録を絞り込む。例: ['自主稽古']。「自主練の的中率」「試合だけの成績」のように、タグで分けて聞かれたときに渡す。記録のタグの名前に含まれる言葉で当たる（# は付けても付けなくてもよい）。複数渡すと、すべてのタグが付いた記録だけ。タグの名前が分からないときは、先に何も渡さず呼ぶか、searchSessions で記録の目印を確かめる",
-                    },
-                  },
-                },
-              },
-              {
-                name: 'getSessionsByDate',
-                description:
-                  '日付・期間・題・id を指定して練習記録を取得します。「昨日の記録」「今週の練習」「5月の記録」「直近3回」「○○戦の結果」「この試合」などの質問に使います。dateとdateFrom/dateToとrecentCountはいずれか一つを指定してください（keyword・sessionId は単独でも、日付と一緒でも使えます）。',
-                parameters: {
-                  type: 'OBJECT',
-                  properties: {
-                    date: {
-                      type: 'STRING',
-                      description: "特定の1日を指定する場合のYYYY-MM-DD形式の日付。例: '2026-05-23'",
-                    },
-                    dateFrom: { type: 'STRING', description: '期間指定の開始日 (YYYY-MM-DD形式)' },
-                    dateTo: { type: 'STRING', description: '期間指定の終了日 (YYYY-MM-DD形式)' },
-                    recentCount: {
-                      type: 'INTEGER',
-                      description: '直近N件取得する場合の件数。例: 3 → 直近3回分',
-                    },
-                    keyword: {
-                      type: 'STRING',
-                      description:
-                        '記録の題・メモ・目印（タグ）で絞る言葉。「○○戦」「リーグ戦」など。日付と一緒に使うこともできます',
-                    },
-                    sessionId: {
-                      type: 'STRING',
-                      description:
-                        '記録の id。いま開いている記録（「この記録」「この試合」）や、searchSessions で見つけた記録を読むときに渡します',
-                    },
-                  },
-                },
-              },
-              {
-                name: 'getDetailedMemberStats',
-                description:
-                  '指定した選手の詳細な成績データを取得します。初矢から4本目（留矢）まで何本目の矢が当たりやすいか、また大前や落など立順ごとの成績などを分析する際に呼び出してください。一射（1本だけ引いた行）・一手（2本だけ）・三射の成績と、それがいつの記録かも返します（oneShot・oneHand・threeShots。分析の「的中の型」と同じ数え方）。「一手だけの記録はいつ」「一本のときの的中率」はこれで答えてください。「9月の」「今年度の」のように期間が付いていれば dateFrom / dateTo を渡してください（省くと全期間）。',
-                parameters: {
-                  type: 'OBJECT',
-                  properties: {
-                    memberName: { type: 'STRING', description: '選手の名前' },
-                    dateFrom: { type: 'STRING', description: '期間の開始日 (YYYY-MM-DD形式)。省くと全期間' },
-                    dateTo: { type: 'STRING', description: '期間の終了日 (YYYY-MM-DD形式)。省くと全期間' },
-                    tags: {
-                      type: 'ARRAY',
-                      items: { type: 'STRING' },
-                      description:
-                        "タグで記録を絞り込む。例: ['自主稽古']。「自主練の的中率」「試合だけの成績」のように、タグで分けて聞かれたときに渡す。記録のタグの名前に含まれる言葉で当たる（# は付けても付けなくてもよい）。複数渡すと、すべてのタグが付いた記録だけ。タグの名前が分からないときは、先に何も渡さず呼ぶか、searchSessions で記録の目印を確かめる",
-                    },
-                  },
-                  required: ['memberName'],
-                },
-              },
-              {
-                name: 'getArrowLocationStats',
-                description:
-                  '部員の矢所の着弾位置や傾向（全体の集まり・中心位置・まとまり具合・外れ矢の抜ける方向など）を集計して返します。「矢所の傾向を教えて」「矢所がどこに集まっているか」「外れ矢はどこに抜けているか」などに使います。返された中心位置や方位、散らばりをもとに自然言語で分かりやすく解説やアドバイスを行ってください。',
-                parameters: {
-                  type: 'OBJECT',
-                  properties: {
-                    memberName: { type: 'STRING', description: '選手の名前' },
-                    dateFrom: { type: 'STRING', description: '期間の開始日 (YYYY-MM-DD形式)。省くと全期間' },
-                    dateTo: { type: 'STRING', description: '期間の終了日 (YYYY-MM-DD形式)。省くと全期間' },
-                    targetType: {
-                      type: 'STRING',
-                      description:
-                        "的の種類（'kasumi36', 'hoshi36', 'hoshi24' のいずれか）。省略するとすべての的",
-                    },
-                    tags: {
-                      type: 'ARRAY',
-                      items: { type: 'STRING' },
-                      description:
-                        "タグで記録を絞り込む。例: ['自主稽古']。「自主練の矢所」「試合だけの矢所」のように、タグで分けて聞かれたときに渡す",
-                    },
-                  },
-                  required: ['memberName'],
-                },
-              },
-              {
-                name: 'navigateToScreen',
-                description: '指定した画面タブへ遷移します。',
-                parameters: {
-                  type: 'OBJECT',
-                  properties: {
-                    screenName: {
-                      type: 'STRING',
-                      description: '遷移先の画面名（記録, 履歴, 分析, メンバー, 出欠, 設定 のいずれか）',
-                    },
-                  },
-                  required: ['screenName'],
-                },
-              },
-              {
-                name: 'startTutorial',
-                description:
-                  '初めての人向けの使い方の案内（チュートリアル）を開始します。「チュートリアルを見せて」「使い方ツアーを始めて」「案内をもう一度見たい」などの依頼で呼び出してください。',
-                parameters: {
-                  type: 'OBJECT',
-                  properties: {},
-                },
-              },
-              {
-                name: 'addMember',
-                description:
-                  '新しい部員を1人追加します。追加する前にユーザーへの確認が行われます。2人以上は addMembers を使ってください。',
-                parameters: {
-                  type: 'OBJECT',
-                  properties: {
-                    name: { type: 'STRING', description: '追加する部員の名前' },
-                    grade: {
-                      type: 'INTEGER',
-                      description: `学年（1〜${学.今の決まりを見る().在籍の学年.length} の数。コーチ・ゲストなど学年の無い人は 0）`,
-                    },
-                    gender: { type: 'STRING', description: "性別（'male', 'female', '未設定' のいずれか）" },
-                  },
-                  required: ['name', 'grade', 'gender'],
-                },
-              },
-              {
-                name: 'addMembers',
-                description:
-                  '新しい部員を2人以上まとめて追加します。人ごとに確認のカードが出て、利用者がまとめて承認できます。「山田と佐藤を追加して」「1年生を3人登録して」のように複数人を頼まれたときは、addMember を何度も呼ばず、必ずこちらを1回だけ呼んでください。',
-                parameters: {
-                  type: 'OBJECT',
-                  properties: {
-                    members: {
-                      type: 'ARRAY',
-                      description: '追加する部員の一覧',
-                      items: {
-                        type: 'OBJECT',
-                        properties: {
-                          name: { type: 'STRING', description: '名前' },
-                          grade: {
-                            type: 'INTEGER',
-                            description: `学年（1〜${学.今の決まりを見る().在籍の学年.length} の数。コーチ・ゲストなど学年の無い人は 0）`,
-                          },
-                          gender: {
-                            type: 'STRING',
-                            description: "性別（'male', 'female', '未設定' のいずれか）",
-                          },
-                        },
-                        required: ['name', 'grade', 'gender'],
-                      },
-                    },
-                  },
-                  required: ['members'],
-                },
-              },
-            ],
-          },
-        ];
+        // 道具の宣言（src/chatTools.js）
+        const tools = 道具の宣言(学.今の決まりを見る().在籍の学年.length);
         // 個人ログインには、全員の成績・出欠・部員の追加の道具は出さない。本人の分だけの道具にする
         if (個人) tools[0].functionDeclarations = 個人用.個人向けの道具(tools[0].functionDeclarations);
 
@@ -1406,69 +1100,11 @@ const AIChatBot = () => {
               const 当たった件数 = filtered.length;
               filtered = filtered.slice(0, 上限);
 
-              const sessionData = filtered.map((記録) => {
-                const 日付 = new Date(記録.date || 0);
-                const dateStr = `${日付.getFullYear()}/${日付.getMonth() + 1}/${日付.getDate()}`;
-                const allMarks = 記録.archers.flatMap((射手) => 射手.marks || []);
-                const total = allMarks.filter((印) => 印 === '○' || 印 === '×').length;
-                const hits = allMarks.filter((印) => 印 === '○').length;
-                const hitRate = total > 0 ? ((hits / total) * 100).toFixed(1) + '%' : 'データなし';
-                const memberStatsMap = new Map(); // メンバーごとの集計マップ
-                記録.archers.forEach((射手) => {
-                  if (!射手 || !射手.marks || 射手.isSeparator || 射手.isTotalCalculator) return;
-                  const subs = 射手.substitutions || {};
-                  const subIndices = Object.keys(subs)
-                    .map(Number)
-                    .sort((甲, 乙) => 甲 - 乙);
-
-                  射手.marks.forEach((印, shotIdx) => {
-                    let currentName = 射手.name || 'ゲスト';
-                    for (const subIdx of subIndices) {
-                      if (subIdx <= shotIdx) {
-                        currentName = subs[subIdx] || '';
-                      } else {
-                        break;
-                      }
-                    }
-                    currentName = currentName.trim();
-                    if (!currentName) currentName = 'ゲスト';
-
-                    if (!memberStatsMap.has(currentName)) {
-                      memberStatsMap.set(currentName, { marks: [], hits: 0, total: 0 });
-                    }
-                    const stat = memberStatsMap.get(currentName);
-                    stat.marks.push(印);
-                    if (印 === '○') {
-                      stat.hits++;
-                      stat.total++;
-                    } else if (印 === '×') {
-                      stat.total++;
-                    }
-                  });
-                });
-
-                const archerList = Array.from(memberStatsMap.entries())
-                  // 個人ログインでは、交代の相手（他の人）の分は空にしてあるので、載せない
-                  .filter(([name]) => !(個人 && name === 他の人))
-                  .map(([name, stat]) => {
-                    return `${name}:${stat.marks.join('')}(${stat.hits}/${stat.total})`;
-                  })
-                  .join(', ');
-                // チーム（区切り）ごとの的中数。「何中対何中」に答えるため。個人ログインでは他の人の列が空なので載せない
-                const チームごと = 個人 ? null : チームごとの的中(記録);
-                return {
-                  id: 記録.id,
-                  date: dateStr,
-                  title: 記録.title || '無題',
-                  // メモとタグも返す。「この記録のメモは」「どのタグが付いている」に答えられるように
-                  ...(記録.note ? { memo: 記録.note } : {}),
-                  ...(Array.isArray(記録.tags) && 記録.tags.length ? { tags: 記録.tags } : {}),
-                  hitRate,
-                  totalArrows: total,
-                  archers: archerList,
-                  ...(チームごと ? { チームごと } : {}),
-                };
-              });
+              // 個人ログインでは、交代の相手（他の人）の分は空にしてあるので載せず、
+              // 他の人の列が空なのでチームごとの的中も載せない
+              const sessionData = filtered.map((記録) =>
+                記録の要約(記録, { 載せない名前: 個人 ? 他の人 : null, チームも: !個人 })
+              );
 
               functionResponses.push({
                 functionResponse: {
@@ -1491,9 +1127,8 @@ const AIChatBot = () => {
                 },
               });
             } else if (call.name === 'navigateToScreen') {
-              // 個人（部員）で入っているときは、メンバーと設定の画面が無い。
-              // 何を渡しても success を返していたため、移動していないのに
-              // 「移動しました」と答えていた
+              // 行けない画面を渡されたら success: false で返す。前は何を渡しても success を返していたため、
+              // 移動していないのに「移動しました」と答えていた。
               // 個人で開けるのは 記録・履歴・分析・メンバー・設定。出欠だけが団体の画面（MainNavigator と同じ）
               const 団体だけの画面 = ['出欠'];
               const 行ける画面 = 個人
@@ -1672,7 +1307,6 @@ const AIChatBot = () => {
               id: generateMsgId(),
               role: 'actionCard',
               actionType: 'addMember',
-              actionTitle: 'メンバーの追加',
               args: 抽出,
               status: 'pending',
             };
@@ -1695,35 +1329,15 @@ const AIChatBot = () => {
         if (一時の誤りか && attempt < MAX_RETRY) {
           // 混んでいる（503）などの一時の誤り。中継がすでに 503 は 2・4・8 秒待って送り直しているが、
           // 山が長いことがある。利用者に送り直させる前に、もう少し待ってこちらで 1 回だけ送り直す
-          const 待つ秒 = 10;
-          let 残り = 待つ秒;
-          setRetryCountdown(残り);
-          const 時計 = setInterval(() => {
-            残り--;
-            setRetryCountdown((前) => Math.max(0, 前 - 1));
-            if (残り <= 0) clearInterval(時計);
-          }, 1000);
-          await new Promise((解く) => setTimeout(解く, 待つ秒 * 1000));
-          clearInterval(時計);
-          setRetryCountdown(0);
+          await 数えながら待つ(10);
           attempt++;
           continue;
         }
 
         if (isPerMinute && attempt < MAX_RETRY) {
-          // 1分クォータ超過 → カウントダウン後に自動リトライ
+          // 1 分あたりの上限（429）。上流が言う待ち時間（なければ 35 秒）数えてから、こちらで 1 回だけ送り直す
           const match = error.message.match(/"retryDelay":"(\d+)s"/);
-          const waitSec = match ? parseInt(match[1]) + 2 : 35;
-          let remaining = waitSec;
-          setRetryCountdown(remaining);
-          const timer = setInterval(() => {
-            remaining--;
-            setRetryCountdown((prev) => Math.max(0, prev - 1));
-            if (remaining <= 0) clearInterval(timer);
-          }, 1000);
-          await new Promise((resolve) => setTimeout(resolve, waitSec * 1000));
-          clearInterval(timer);
-          setRetryCountdown(0);
+          await 数えながら待つ(match ? parseInt(match[1]) + 2 : 35);
           attempt++;
           continue;
         }

@@ -3,9 +3,8 @@
  *
  *   npm test
  *
- * AIChatBot.js は画面の部品で Node から読み込めないので、指示文・Q&A・道具の宣言は
- * ソースの文字として読み取って当てる。読み取れなくなったら（書き方を変えたら）
- * ここが落ちるので、そのとき読み取り方を直す。
+ * 指示文・Q&A（src/chatKnowledge.js）はソースの文字として読み取って当てる。読み取れなくなったら
+ * （書き方を変えたら）ここが落ちるので、そのとき読み取り方を直す。道具の宣言は src/chatTools.js から読む。
  */
 'use strict';
 
@@ -15,8 +14,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const 個人用 = require('../src/chatPersonal');
 
-// 指示文と Q&A は 2026-10-05 に src/chatKnowledge.js へ移した。道具の宣言は AIChatBot.js のまま。
-// チャットボットぜんぶの字として、まとめて読む
+// 指示文と Q&A は 2026-10-05 に src/chatKnowledge.js へ移した。チャットボットぜんぶの字として、まとめて読む
 const ソース = ['AIChatBot.js', 'chatKnowledge.js']
   .map((名) => fs.readFileSync(path.join(__dirname, '..', 'src', 名), 'utf8'))
   .join('\n')
@@ -39,15 +37,20 @@ function Q_Aを読む() {
   return [...塊.matchAll(/t:\s*'((?:Q\d+):[^']*)'/g)].map((m) => m[1]);
 }
 
-/** 道具の宣言の名前（handleSend の tools） */
+/** 道具の宣言の名前（src/chatTools.js） */
 function 道具の名前を読む() {
-  const 頭 = ソース.indexOf('const tools = [');
-  assert.ok(頭 >= 0, 'tools が見つからない');
-  const 塊 = ソース.slice(頭, ソース.indexOf('const model = genAI.getGenerativeModel(', 頭));
-  return [...塊.matchAll(/name: '(\w+)',\n\s+description:/g)].map((m) => m[1]);
+  return require('../src/chatTools')
+    .道具の宣言(4)[0]
+    .functionDeclarations.map((宣言) => 宣言.name);
 }
 
-const 団体だけの道具 = ['getAllMembersStats', 'getAttendanceStats', 'addMember', 'addMembers', 'makeBalancedTeams'];
+const 団体だけの道具 = [
+  'getAllMembersStats',
+  'getAttendanceStats',
+  'addMember',
+  'addMembers',
+  'makeBalancedTeams',
+];
 
 test('道具：宣言してある道具は、すべて「個人が使える」か「団体だけ」のどちらかに決めてある（新しい道具を足したら決める）', () => {
   const 名前たち = 道具の名前を読む();

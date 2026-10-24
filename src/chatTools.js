@@ -1,0 +1,311 @@
+'use strict';
+
+/**
+ * AI チャットの道具（Function Calling）の宣言。AIChatBot.js の handleSend が模型に渡す。
+ * 呼ばれたときに何を返すかは AIChatBot.js の handleSend（数えるのは src/chatStats.js）。
+ * 個人ログインに出す道具は src/chatPersonal.js の 個人向けの道具 で絞る。
+ * 画面の部品を持たないので、Node からそのまま読める（test/chatPersonal.test.js）。
+ * （2026-10-24 に AIChatBot.js から分けた）
+ */
+
+/** タグで記録を絞る引数（成績の 3 つの道具で同じ） */
+const タグで絞る引数 = {
+  type: 'ARRAY',
+  items: { type: 'STRING' },
+  description:
+    "タグで記録を絞り込む。例: ['自主稽古']。「自主練の的中率」「試合だけの成績」のように、タグで分けて聞かれたときに渡す。記録のタグの名前に含まれる言葉で当たる（# は付けても付けなくてもよい）。複数渡すと、すべてのタグが付いた記録だけ。タグの名前が分からないときは、先に何も渡さず呼ぶか、searchSessions で記録の目印を確かめる",
+};
+
+/**
+ * 道具の宣言（模型の tools にそのまま渡す形）。
+ * @param {number} 学年の数 在籍の学年の数（大学なら 4。団体の種類で変わる。src/gakunen.js）
+ */
+function 道具の宣言(学年の数) {
+  const 学年の説明 = `学年（1〜${学年の数} の数。コーチ・ゲストなど学年の無い人は 0）`;
+  return [
+    {
+      functionDeclarations: [
+        {
+          name: 'getAllMembersStats',
+          description:
+            '全部員の成績を集計し、順位を付けて返します。「全員の5月の的中率を教えて」「部員のランキングを見せて」「一番当てているのは誰」などに使います。順位付け・並べ替え・絞り込みはこのツールが行うので、返ってきた順番と数字をそのまま使ってください。自分で並べ替えたり足し算したりしないでください。',
+          parameters: {
+            type: 'OBJECT',
+            properties: {
+              dateFrom: {
+                type: 'STRING',
+                description: "集計対象期間の開始日 (YYYY-MM-DD形式)。例: '2026-05-01'",
+              },
+              dateTo: {
+                type: 'STRING',
+                description: "集計対象期間の終了日 (YYYY-MM-DD形式)。例: '2026-05-31'",
+              },
+              sortBy: {
+                type: 'STRING',
+                description: "並び順。'的中率'（既定）, '的中数', '射数', '名前' のいずれか",
+              },
+              limit: {
+                type: 'INTEGER',
+                description: '上位何人を返すか。「トップ3」なら3。省略すると全員',
+              },
+              minShots: {
+                type: 'INTEGER',
+                description:
+                  'この射数に満たない人を順位から外す。既定は1。少ない射数の高い的中率を上位に出したくないときは10〜20を指定する',
+              },
+              keyword: {
+                type: 'STRING',
+                description:
+                  "記録の題・覚え書きに含まれる言葉で記録を絞り込む。例: 'リーグ戦'。「リーグ戦に出た選手の的中率」「〇〇大会の成績」のように、タグではなく大会名・練習名で分けて聞かれたときに渡す",
+              },
+              tags: タグで絞る引数,
+            },
+          },
+        },
+        {
+          name: 'makeBalancedTeams',
+          description:
+            '部員を、組ごとの的中率がそろうように何人ずつかの組に分けます。「3人立ちでチームの的中率が均等になるように分けて」「〇〇以外で5人ずつのチームを作って」などに使います。外す人以外の全員を入れます（射数の少ない人も外しません）。組分け・人数・組の的中率の見込みはこのツールが計算するので、自分で組み替えたり足し算したりせず、返ってきた組と数字をそのまま伝えてください。人数が割り切れないのに、余りの扱いを利用者が言っていないときは、先に「余った人をどこかの組に足す／余りとして別にする／1人少ない組を作る」のどれにするかを聞いてください。聞くときに、それぞれ何人の組がいくつになるかを自分で計算して書き添えないでください（数え違えます。決まったあとにこのツールが返します）。',
+          parameters: {
+            type: 'OBJECT',
+            properties: {
+              teamSize: {
+                type: 'INTEGER',
+                description: '1 組の人数。「3人立ち」なら 3、「5人立ち」なら 5',
+              },
+              excludeNames: {
+                type: 'ARRAY',
+                items: { type: 'STRING' },
+                description:
+                  '組に入れない人の名前（利用者が言った書き方のまま。コーチなども、外すと言われたらここに）',
+              },
+              remainder: {
+                type: 'STRING',
+                description:
+                  "人数が割り切れないときの扱い。'足す'（余った人をどこかの組に1人ずつ足す）、'別に'（組に入れず余りとして別に出す）、'少ない組'（組の数を1つ増やし、足りない分だけ1人少ない組にする。例：10人を3人ずつなら 3・3・2・2）のいずれか",
+              },
+              dateFrom: {
+                type: 'STRING',
+                description: '的中率を見る期間の開始日 (YYYY-MM-DD)。「直近2ヶ月」なら今日から2か月前',
+              },
+              dateTo: { type: 'STRING', description: '的中率を見る期間の終了日 (YYYY-MM-DD)' },
+            },
+            required: ['teamSize'],
+          },
+        },
+        {
+          name: 'getAttendanceStats',
+          description:
+            '部員の出欠を集計し、順位を付けて返します。「今月いちばん練習に来ているのは誰」「◯◯さんの出席率は」「休みが多いのは誰」などに使います。「男子で休みが多いのは誰」のように性別・学年でも絞れます。期間に一度も来ていない人は順位に入れず「一度も来ていない人」として別に返すので、答えでも順位とは分けて伝えてください。出欠画面と同じ数え方（正規練習日ごとに、記録に出ていれば来た、無ければ欠席。出席率＝来た日数÷今日までの練習日数）です。遅刻・早退は「来た」に数えます。順位・並べ替えはこのツールが行うので、返った順番と数字をそのまま使ってください。',
+          parameters: {
+            type: 'OBJECT',
+            properties: {
+              dateFrom: { type: 'STRING', description: '集計対象期間の開始日 (YYYY-MM-DD形式)' },
+              dateTo: { type: 'STRING', description: '集計対象期間の終了日 (YYYY-MM-DD形式)' },
+              sortBy: {
+                type: 'STRING',
+                description: "並び順。'出席率'（既定）, '来た回数', '欠席', '名前' のいずれか",
+              },
+              limit: { type: 'INTEGER', description: '上位何人を返すか。省略すると全員' },
+              gender: { type: 'STRING', description: "性別で絞る。'男子' か '女子'。省略すると全員" },
+              grade: { type: 'INTEGER', description: '学年で絞る（1〜4 など）。省略すると全員' },
+            },
+          },
+        },
+        {
+          name: 'searchSessions',
+          description:
+            '記録を言葉で探します。題・覚え書き・目印（タグ）・出ている人の名前を見ます。「雨で中断した練習はいつ」「審査のタグが付いた記録を見せて」「山田さんが出た記録」など、日付が分からないときに使います。日付が分かっているときは getSessionsByDate を使ってください。',
+          parameters: {
+            type: 'OBJECT',
+            properties: {
+              keyword: { type: 'STRING', description: '探す言葉。空にすると期間内すべて' },
+              dateFrom: { type: 'STRING', description: '期間の開始日 (YYYY-MM-DD形式)' },
+              dateTo: { type: 'STRING', description: '期間の終了日 (YYYY-MM-DD形式)' },
+              limit: { type: 'INTEGER', description: '何件まで返すか。既定は20' },
+            },
+          },
+        },
+        {
+          name: 'countSessionParticipation',
+          description:
+            '目印（タグ）や言葉で絞った記録に、部員が何回参加したかを人ごとに数えて、多い順に返します。「自主練が一番多いのは誰」「#審査の記録に出た回数」「合宿に何回参加したか」などに使います。出欠の集計（getAttendanceStats）とは別で、正規練習日ではなく、言葉で絞った記録を数えます。ゲストは数えません。',
+          parameters: {
+            type: 'OBJECT',
+            properties: {
+              keyword: {
+                type: 'STRING',
+                description:
+                  "記録を絞る言葉。題・覚え書き・目印・出ている人の名前を見ます。例: '#自主稽古'、'合宿'",
+              },
+              dateFrom: { type: 'STRING', description: '期間の開始日 (YYYY-MM-DD形式)' },
+              dateTo: { type: 'STRING', description: '期間の終了日 (YYYY-MM-DD形式)' },
+              limit: { type: 'INTEGER', description: '上位何人を返すか。省略すると全員' },
+            },
+            required: ['keyword'],
+          },
+        },
+        {
+          name: 'getPositionStats',
+          description:
+            '射位（大前・2番・落など）ごとの的中率を返します。立ち順を考えるときの材料です。「大前に向いているのは誰」「落で強いのは」「山田さんは大前と落でどちらが良い」などに使います。誰をどこに置くかはこのツールでは決めません。返した数字をもとに、根拠を添えて提案してください。射数が少ない射位は数字が揺れるので、射数も一緒に伝えてください。',
+          parameters: {
+            type: 'OBJECT',
+            properties: {
+              dateFrom: { type: 'STRING', description: '期間の開始日 (YYYY-MM-DD形式)' },
+              dateTo: { type: 'STRING', description: '期間の終了日 (YYYY-MM-DD形式)' },
+              memberNames: {
+                type: 'ARRAY',
+                items: { type: 'STRING' },
+                description: 'この人たちだけに絞る。省略すると全員',
+              },
+              minShots: { type: 'INTEGER', description: 'この射数に満たない人を外す。既定は1' },
+              tags: タグで絞る引数,
+            },
+          },
+        },
+        {
+          name: 'getSessionsByDate',
+          description:
+            '日付・期間・題・id を指定して練習記録を取得します。「昨日の記録」「今週の練習」「5月の記録」「直近3回」「○○戦の結果」「この試合」などの質問に使います。dateとdateFrom/dateToとrecentCountはいずれか一つを指定してください（keyword・sessionId は単独でも、日付と一緒でも使えます）。',
+          parameters: {
+            type: 'OBJECT',
+            properties: {
+              date: {
+                type: 'STRING',
+                description: "特定の1日を指定する場合のYYYY-MM-DD形式の日付。例: '2026-05-23'",
+              },
+              dateFrom: { type: 'STRING', description: '期間指定の開始日 (YYYY-MM-DD形式)' },
+              dateTo: { type: 'STRING', description: '期間指定の終了日 (YYYY-MM-DD形式)' },
+              recentCount: {
+                type: 'INTEGER',
+                description: '直近N件取得する場合の件数。例: 3 → 直近3回分',
+              },
+              keyword: {
+                type: 'STRING',
+                description:
+                  '記録の題・メモ・目印（タグ）で絞る言葉。「○○戦」「リーグ戦」など。日付と一緒に使うこともできます',
+              },
+              sessionId: {
+                type: 'STRING',
+                description:
+                  '記録の id。いま開いている記録（「この記録」「この試合」）や、searchSessions で見つけた記録を読むときに渡します',
+              },
+            },
+          },
+        },
+        {
+          name: 'getDetailedMemberStats',
+          description:
+            '指定した選手の詳細な成績データを取得します。初矢から4本目（留矢）まで何本目の矢が当たりやすいか、また大前や落など立順ごとの成績などを分析する際に呼び出してください。一射（1本だけ引いた行）・一手（2本だけ）・三射の成績と、それがいつの記録かも返します（oneShot・oneHand・threeShots。分析の「的中の型」と同じ数え方）。「一手だけの記録はいつ」「一本のときの的中率」はこれで答えてください。「9月の」「今年度の」のように期間が付いていれば dateFrom / dateTo を渡してください（省くと全期間）。',
+          parameters: {
+            type: 'OBJECT',
+            properties: {
+              memberName: { type: 'STRING', description: '選手の名前' },
+              dateFrom: { type: 'STRING', description: '期間の開始日 (YYYY-MM-DD形式)。省くと全期間' },
+              dateTo: { type: 'STRING', description: '期間の終了日 (YYYY-MM-DD形式)。省くと全期間' },
+              tags: タグで絞る引数,
+            },
+            required: ['memberName'],
+          },
+        },
+        {
+          name: 'getArrowLocationStats',
+          description:
+            '部員の矢所の着弾位置や傾向（全体の集まり・中心位置・まとまり具合・外れ矢の抜ける方向など）を集計して返します。「矢所の傾向を教えて」「矢所がどこに集まっているか」「外れ矢はどこに抜けているか」などに使います。返された中心位置や方位、散らばりをもとに自然言語で分かりやすく解説やアドバイスを行ってください。',
+          parameters: {
+            type: 'OBJECT',
+            properties: {
+              memberName: { type: 'STRING', description: '選手の名前' },
+              dateFrom: { type: 'STRING', description: '期間の開始日 (YYYY-MM-DD形式)。省くと全期間' },
+              dateTo: { type: 'STRING', description: '期間の終了日 (YYYY-MM-DD形式)。省くと全期間' },
+              targetType: {
+                type: 'STRING',
+                description: "的の種類（'kasumi36', 'hoshi36', 'hoshi24' のいずれか）。省略するとすべての的",
+              },
+              tags: {
+                type: 'ARRAY',
+                items: { type: 'STRING' },
+                description:
+                  "タグで記録を絞り込む。例: ['自主稽古']。「自主練の矢所」「試合だけの矢所」のように、タグで分けて聞かれたときに渡す",
+              },
+            },
+            required: ['memberName'],
+          },
+        },
+        {
+          name: 'navigateToScreen',
+          description: '指定した画面タブへ遷移します。',
+          parameters: {
+            type: 'OBJECT',
+            properties: {
+              screenName: {
+                type: 'STRING',
+                description: '遷移先の画面名（記録, 履歴, 分析, メンバー, 出欠, 設定 のいずれか）',
+              },
+            },
+            required: ['screenName'],
+          },
+        },
+        {
+          name: 'startTutorial',
+          description:
+            '初めての人向けの使い方の案内（チュートリアル）を開始します。「チュートリアルを見せて」「使い方ツアーを始めて」「案内をもう一度見たい」などの依頼で呼び出してください。',
+          parameters: {
+            type: 'OBJECT',
+            properties: {},
+          },
+        },
+        {
+          name: 'addMember',
+          description:
+            '新しい部員を1人追加します。追加する前にユーザーへの確認が行われます。2人以上は addMembers を使ってください。',
+          parameters: {
+            type: 'OBJECT',
+            properties: {
+              name: { type: 'STRING', description: '追加する部員の名前' },
+              grade: {
+                type: 'INTEGER',
+                description: 学年の説明,
+              },
+              gender: { type: 'STRING', description: "性別（'male', 'female', '未設定' のいずれか）" },
+            },
+            required: ['name', 'grade', 'gender'],
+          },
+        },
+        {
+          name: 'addMembers',
+          description:
+            '新しい部員を2人以上まとめて追加します。人ごとに確認のカードが出て、利用者がまとめて承認できます。「山田と佐藤を追加して」「1年生を3人登録して」のように複数人を頼まれたときは、addMember を何度も呼ばず、必ずこちらを1回だけ呼んでください。',
+          parameters: {
+            type: 'OBJECT',
+            properties: {
+              members: {
+                type: 'ARRAY',
+                description: '追加する部員の一覧',
+                items: {
+                  type: 'OBJECT',
+                  properties: {
+                    name: { type: 'STRING', description: '名前' },
+                    grade: {
+                      type: 'INTEGER',
+                      description: 学年の説明,
+                    },
+                    gender: {
+                      type: 'STRING',
+                      description: "性別（'male', 'female', '未設定' のいずれか）",
+                    },
+                  },
+                  required: ['name', 'grade', 'gender'],
+                },
+              },
+            },
+            required: ['members'],
+          },
+        },
+      ],
+    },
+  ];
+}
+
+module.exports = { 道具の宣言 };
