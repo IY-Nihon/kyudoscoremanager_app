@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * 店（useScoreStore.js）の外側の部品（2026-10-05 に useScoreStore.js から移した。中身は変えていない）。
+ * 店（useScoreStore.js）の外側の部品（2026-10-05 に useScoreStore.js から移した）。
  * 書き換える値の入れ物（場）、ライブ・同期・不具合の便り・端末への控えの手助け、使う読み込み。
  * 店を幾つかのファイルに分けたので、分けた先（storeBoard.js など）からも読めるように、一番外の名前をすべて書き出す。
  * 店そのものは、できたあとに useScoreStore.js が 場.店 に入れる（ここから useScoreStore.js を読み込むと輪になるため）
@@ -29,9 +29,8 @@ const 消去 = require('./accountDeletion');
  * 端末に書けなくなったことを、利用者にも一度だけ伝える。
  *
  * 便りは運営者にしか届かない。書けないまま記録を続けると、次に開いたときに
- * その練習ぶんが消えている。とくに個人モードは雲へ上げないので、端末に
- * 書けなければどこにも残らない（localTrim は送れていない記録を落とさないので、
- * 間引きでも空きは作れない）。
+ * その練習ぶんが消えている。まだ雲へ送れていない記録は、端末に書けなければ
+ * どこにも残らない（localTrim は送れていない記録を落とさないので、間引きでも空きは作れない）。
  *
  * 保存は○×を入れるたびに走るので、出すのは起動につき1回だけ。
  * 毎回出すと記録の邪魔になり、かえって読まれなくなる。
@@ -287,8 +286,6 @@ function 溜まりを流し直す() {
     /* 便りを出せなくても、同期は続ける */
   }
 }
-// 不具合をこちらに控える。送れなければ端末に貯まり、つながったときに出し直す。
-// errorReporter → useScoreStore の向きに参照があるので、ここでは呼ぶときに読む
 /**
  * その失敗が「入り直せば直るもの」か。
  *
@@ -308,6 +305,8 @@ function 入り直せば直るか(誤り) {
 }
 /** 入り直しの案内。画面の帯に出す */
 const 入り直しの案内 = 'ログインし直してください（ここを押す）。送れていない記録は、そのあと送られます。';
+// 不具合をこちらに控える。送れなければ端末に貯まり、つながったときに出し直す。
+// errorReporter → useScoreStore の向きに参照があるので、ここでは呼ぶときに読む
 function 不具合を控える(出どころ, 誤り) {
   // 通信が切れていただけ（unavailable）は不具合として送らない。Firestore はつながると自分で続きを取る。
   // 10/7 に記録の見張りが電波の弱い所で 4 回送っていた（差分の同期の問い合わせが unavailable）
@@ -319,7 +318,8 @@ function 不具合を控える(出どころ, 誤り) {
   }
 }
 const zustand = require('zustand');
-const _t_orig = require('./db');
+// Firebase を用意する（読み込むだけで初期化される。中身は下の Firebaseの器 が読むたびに取る）
+require('./db');
 const FirebaseAuth = require('firebase/auth');
 const Firestore = require('firebase/firestore');
 const RTDB = require('firebase/database');
@@ -394,8 +394,7 @@ const waitForDb = async () => {
 // 記録の射手の名前を、メンバーのいまの名前に合わせている最中か。と、最後に合わせた時刻（名前のずれを直す）
 場.名前を合わせている = false;
 場.最後に名前を合わせた時刻 = 0;
-// 同期の判断に使う純粋な関数は syncRules.js へ移した。中身は変えていない。
-// 呼び出し側の書き換えを避けるため、従来の1文字の名前に割り当て直す。
+// 同期の判断に使う純粋な関数は syncRules.js にある。店の各ファイルが使うものを、ここから名前で配る
 const 同期規則 = require('./syncRules');
 const 名前の整合 = require('./memberNameSync');
 const generateUniquePersonalId = 同期規則.generateUniquePersonalId;
@@ -1229,7 +1228,6 @@ module.exports = {
   入り直しの案内,
   不具合を控える,
   zustand,
-  _t_orig,
   FirebaseAuth,
   Firestore,
   RTDB,

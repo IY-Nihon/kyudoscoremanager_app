@@ -8,7 +8,7 @@ const 控え = { 団体: null, 時刻: 0, 練習日: {} };
 const 控えの寿命 = 5 * 60 * 1000;
 
 /**
- * @param {string|null} 団体ID activeGroupId。無ければ空（個人モード）
+ * @param {string|null} 団体ID activeGroupId。無ければ空（入っていないとき）
  * @param {{読む?: (団体ID:string) => Promise<Object<string, any>>, 今?: number}} [道具] 検査で差し替える
  * @returns {Promise<Object<string, any>>} { 'YYYY-MM-DD': { date, created } }
  */
