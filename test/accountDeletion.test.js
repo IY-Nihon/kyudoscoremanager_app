@@ -64,8 +64,17 @@ test('消すと、団体の中身がぜんぶ deleted_accounts へ写ってか�
   assert.equal(雲.値(`deleted_accounts/${団体}/sessions`, 'ses-2').title, '練習2');
   assert.equal(雲.値(`deleted_accounts/${団体}/members`, 'm1').name, '部員1');
   assert.equal(雲.値(`deleted_accounts/${団体}/member_lookup`, '1234').memberId, 'm1');
-  assert.deepEqual(写し.件数, { sessions: 2, members: 1, alumni: 1, trash: 1, config: 1, officialPracticeDays: 0, member_lookup: 1 });
-  for (const 名 of 写す下位) assert.equal(数える(雲, `deleted_accounts/${団体}/${名}`), 写し.件数[名], `${名} の写しの数`);
+  assert.deepEqual(写し.件数, {
+    sessions: 2,
+    members: 1,
+    alumni: 1,
+    trash: 1,
+    config: 1,
+    officialPracticeDays: 0,
+    member_lookup: 1,
+  });
+  for (const 名 of 写す下位)
+    assert.equal(数える(雲, `deleted_accounts/${団体}/${名}`), 写し.件数[名], `${名} の写しの数`);
 
   // 元は消えている
   for (const 名 of 写す下位) assert.equal(数える(雲, `groups/${団体}/${名}`), 0, `${名} が残っている`);
@@ -82,13 +91,16 @@ test('group_accounts は、ほかの削除より後に消える', async () => {
   const { store, 雲 } = 用意();
   await store.getState().deleteGroupAccount('seikai');
   const 履歴 = 雲.記録.filter((h) => Array.isArray(h.操作));
-  const 順 = (道, id) => 履歴.findIndex((h) => h.操作.some((x) => x.種類 === 'delete' && x.道 === 道 && x.id === id));
+  const 順 = (道, id) =>
+    履歴.findIndex((h) => h.操作.some((x) => x.種類 === 'delete' && x.道 === 道 && x.id === id));
   const 口座 = 順('group_accounts', 団体);
   assert.ok(口座 >= 0, 'group_accounts を消していない');
   assert.ok(順(`groups/${団体}/sessions`, 'ses-1') < 口座, '記録より先に group_accounts を消している');
   assert.ok(順('groups', 団体) < 口座, '団体の文書より先に group_accounts を消している');
   // 写しは削除より先
-  const 写し = 履歴.findIndex((h) => h.操作.some((x) => x.種類 === 'set' && x.道 === 'deleted_accounts' && x.id === 団体));
+  const 写し = 履歴.findIndex((h) =>
+    h.操作.some((x) => x.種類 === 'set' && x.道 === 'deleted_accounts' && x.id === 団体)
+  );
   assert.ok(写し >= 0 && 写し < 順(`groups/${団体}/sessions`, 'ses-1'), '写す前に消している');
 });
 

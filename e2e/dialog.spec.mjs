@@ -20,7 +20,8 @@ import {
 } from './helpers.mjs';
 import fs from 'node:fs';
 
-const お知らせの版 = (fs.readFileSync('src/WhatsNewModal.js', 'utf8').match(/NOTICE_VERSION = '([^']+)'/) || [])[1];
+const お知らせの版 = (fs.readFileSync('src/WhatsNewModal.js', 'utf8').match(/NOTICE_VERSION = '([^']+)'/) ||
+  [])[1];
 
 // 鍵(100003)・ライブ(100006)・交代(100005)とは別の団体を使う
 const 団体 = '100001';
@@ -64,7 +65,9 @@ function 帯が出きるのを待つ(page) {
 
 /** いま焦点が当たっている欄の placeholder（欄でなければ空） */
 function 焦点の欄の印(page) {
-  return page.evaluate(() => (document.activeElement && document.activeElement.getAttribute('placeholder')) || '');
+  return page.evaluate(
+    () => (document.activeElement && document.activeElement.getAttribute('placeholder')) || ''
+  );
 }
 
 async function 入る(page) {
@@ -88,7 +91,10 @@ async function 入る(page) {
       .poll(
         () =>
           page.evaluate(() => {
-            const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+            const s =
+              JSON.parse(
+                (globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}'
+              )?.state || {};
             return s.activeGroupId || null;
           }),
         { timeout: 60_000, message: 'ログインが通らない（団体IDが入らない）' }
@@ -173,7 +179,12 @@ test.describe('確認とお知らせ', () => {
     // 一覧の先頭の部員を開く。1人もいない団体ではこの検査は流す
     const 削除ボタン = page.getByText('メンバーを削除', { exact: true }).first();
     const 一覧 = page.locator('[data-testid^="メンバー-"], text=/年生/');
-    await page.locator('div').filter({ hasText: /^\S+$/ }).first().waitFor().catch(() => {});
+    await page
+      .locator('div')
+      .filter({ hasText: /^\S+$/ })
+      .first()
+      .waitFor()
+      .catch(() => {});
     const 開けた = await (async () => {
       const 行 = page.getByText(/さん|年生|その他/).first();
       if (!(await 行.isVisible().catch(() => false))) return false;
@@ -184,7 +195,9 @@ test.describe('確認とお知らせ', () => {
     test.skip(!開けた, '部員が開けなかった（この団体に部員がいない）');
 
     const 人数の前 = await page.evaluate(() => {
-      const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+      const s =
+        JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+          ?.state || {};
       return (s.members || []).length;
     });
 
@@ -203,7 +216,9 @@ test.describe('確認とお知らせ', () => {
 
     // キャンセルなので1人も減っていないこと
     const 人数の後 = await page.evaluate(() => {
-      const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+      const s =
+        JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+          ?.state || {};
       return (s.members || []).length;
     });
     expect(人数の後).toBe(人数の前);
@@ -242,7 +257,9 @@ test.describe('帯は窓の上に出る', () => {
     await expect(page.getByTestId('アプリの窓')).toBeVisible({ timeout: 10_000 });
     await page.getByTestId('窓のボタン-キャンセル').click();
   });
-  test('部員の窓の中でも、帯が出ている間に名前欄へ字が打てる。帯は窓より手前の専用の箱に出る', async ({ page }) => {
+  test('部員の窓の中でも、帯が出ている間に名前欄へ字が打てる。帯は窓より手前の専用の箱に出る', async ({
+    page,
+  }) => {
     // 窓（Modal）の中の入力欄は、帯が Modal だったころは「いちばん手前の Modal」が帯に替わるため、
     // 帯の間は焦点を取れなかった。今は帯が Modal ではない箱に出るので、窓の中でそのまま打てる
     await 入る(page);
@@ -253,7 +270,9 @@ test.describe('帯は窓の上に出る', () => {
     const 追加 = page.getByLabel('部員を追加', { exact: true });
     await expect(追加, '部員を追加の釦が出ない').toBeVisible({ timeout: 20_000 });
     await 追加.click();
-    await expect(page.getByText('保存する', { exact: true }).first(), '新規登録の窓が開かない').toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('保存する', { exact: true }).first(), '新規登録の窓が開かない').toBeVisible({
+      timeout: 15_000,
+    });
     await page.getByText('保存する', { exact: true }).first().click();
 
     const 帯 = page.getByTestId('アプリの帯');
@@ -296,5 +315,4 @@ test.describe('帯は窓の上に出る', () => {
     // 窓を閉じる（保存はしない）
     await page.keyboard.press('Escape');
   });
-
 });

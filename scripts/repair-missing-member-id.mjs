@@ -161,7 +161,9 @@ for (const g of [...団体].sort()) {
           次 = Object.assign({}, 次, { memberId: 本人.id, isGuest: false });
           変えた = true;
           直す予定 += 引いた;
-          一覧.push(`団体${g} / 記録${s.id || d.name.split('/').pop()} / ${a.name} → ${本人.id}（${引いた}射）`);
+          一覧.push(
+            `団体${g} / 記録${s.id || d.name.split('/').pop()} / ${a.name} → ${本人.id}（${引いた}射）`
+          );
         }
       }
 

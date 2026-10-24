@@ -102,12 +102,15 @@ test('印が取れなかったら、1 起動に 1 回だけ不具合の便りで
       失敗 = 誤り;
     };
     const 送った = [];
-    setupAppCheck({}, {
-      環境: { EXPO_PUBLIC_RECAPTCHA_SITE_KEY: 'k' },
-      窓: 自.窓,
-      AppCheck: 自.AppCheck,
-      送る: (出どころ, 中身) => 送った.push([出どころ, 中身.code]),
-    });
+    setupAppCheck(
+      {},
+      {
+        環境: { EXPO_PUBLIC_RECAPTCHA_SITE_KEY: 'k' },
+        窓: 自.窓,
+        AppCheck: 自.AppCheck,
+        送る: (出どころ, 中身) => 送った.push([出どころ, 中身.code]),
+      }
+    );
     if (失敗) {
       失敗({ code: 'appCheck/recaptcha-error' });
       失敗({ code: 'appCheck/recaptcha-error' });

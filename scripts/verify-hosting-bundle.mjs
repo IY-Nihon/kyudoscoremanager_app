@@ -21,8 +21,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 /** 配り先。firebase が predeploy に渡してくれる */
-const 配り先 =
-  process.env.GCLOUD_PROJECT || process.env.FIREBASE_PROJECT || 既定のプロジェクト();
+const 配り先 = process.env.GCLOUD_PROJECT || process.env.FIREBASE_PROJECT || 既定のプロジェクト();
 
 function 既定のプロジェクト() {
   try {

@@ -58,7 +58,10 @@ export function 見分ける(明るさ, 幅, 高, 設定) {
 
   const 境 = 最小 + (最大 - 最小) * c.墨の境;
   const 墨 = new Uint8Array(幅 * 高);
-  let 左 = 幅, 右 = -1, 上 = 高, 下 = -1;
+  let 左 = 幅,
+    右 = -1,
+    上 = 高,
+    下 = -1;
   for (let y = 0; y < 高; y++) {
     for (let x = 0; x < 幅; x++) {
       const i = y * 幅 + x;

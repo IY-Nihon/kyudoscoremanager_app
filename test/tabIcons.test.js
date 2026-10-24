@@ -22,7 +22,8 @@ test('絵の図形：種類と属性がそろっていて、数が有限', () =>
     for (const [種類, 属性] of 図形たち) {
       assert.ok(必要[種類], `${名}: 知らない図形 ${種類}`);
       for (const 鍵 of 必要[種類]) assert.ok(鍵 in 属性, `${名}: ${種類} に ${鍵} が無い`);
-      if (種類 === 'path') assert.match(属性.d, /^[MmLlHhVvCcSsQqTtAaZz0-9eE.,\s-]+$/, `${名}: d に変な字がある`);
+      if (種類 === 'path')
+        assert.match(属性.d, /^[MmLlHhVvCcSsQqTtAaZz0-9eE.,\s-]+$/, `${名}: d に変な字がある`);
       else for (const v of Object.values(属性)) assert.ok(Number.isFinite(v), `${名}: 数でない値 ${v}`);
     }
   }
@@ -36,7 +37,10 @@ test('絵は 24×24 の中に収まる（円と四角は座標で確かめる）
         assert.ok(属性.cy - 属性.r >= 0 && 属性.cy + 属性.r <= 24, `${名}: 円が縦にはみ出す`);
       }
       if (種類 === 'rect') {
-        assert.ok(属性.x >= 0 && 属性.x + 属性.width <= 24 && 属性.y >= 0 && 属性.y + 属性.height <= 24, `${名}: 四角がはみ出す`);
+        assert.ok(
+          属性.x >= 0 && 属性.x + 属性.width <= 24 && 属性.y >= 0 && 属性.y + 属性.height <= 24,
+          `${名}: 四角がはみ出す`
+        );
       }
     }
   }

@@ -295,10 +295,9 @@ test('立ち順：横に並べたときは「上へ／下へ」になる', async
   await 欄.first().click();
   const 下へ = page.getByText('下へ動かす', { exact: true });
   await expect(下へ, '横なのに「下へ動かす」が出ない').toBeVisible({ timeout: 20000 });
-  await expect(
-    page.getByText('左へ動かす', { exact: true }),
-    '横なのに縦の言い方が残っている'
-  ).toHaveCount(0);
+  await expect(page.getByText('左へ動かす', { exact: true }), '横なのに縦の言い方が残っている').toHaveCount(
+    0
+  );
   await 下へ.click();
   await こうなるまで待つ(
     async () => (await 縦の並び())[0],

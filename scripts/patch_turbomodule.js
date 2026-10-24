@@ -1,5 +1,6 @@
 const fs = require('fs');
-const path = 'node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios/ReactCommon/RCTTurboModule.mm';
+const path =
+  'node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios/ReactCommon/RCTTurboModule.mm';
 
 if (!fs.existsSync(path)) {
   console.log(`[Patch] Skip: ${path} not found.`);
@@ -16,9 +17,13 @@ let modifiedContent = content.replace(regex1, (match, exceptionDecl, catchBody) 
   if (catchBody.includes('Crash detected')) {
     return match;
   }
-  
+
   // We extract the original code but comment it out so it doesn't throw and kill the app
-  const commentedOriginal = catchBody.trim().split('\\n').map(line => '    // ' + line).join('\\n');
+  const commentedOriginal = catchBody
+    .trim()
+    .split('\\n')
+    .map((line) => '    // ' + line)
+    .join('\\n');
 
   return `@catch (NSException *exception) {
     NSString *stackTrace = [[exception callStackSymbols] componentsJoinedByString:@"\\n"];

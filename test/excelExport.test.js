@@ -37,7 +37,11 @@ test('2枚のとき、シートの数だけ worksheet と Override と Relations
 
 test('styles の rId が、シートの rId と重ならない', () => {
   // ここが重なると Excel が「ファイルが壊れています」と言って開かない
-  const b = ブックを組む([一枚, { name: 'B', headers: ['x'], rows: [] }, { name: 'C', headers: ['x'], rows: [] }]);
+  const b = ブックを組む([
+    一枚,
+    { name: 'B', headers: ['x'], rows: [] },
+    { name: 'C', headers: ['x'], rows: [] },
+  ]);
   const rels = b['xl/_rels/workbook.xml.rels'];
   const 番号たち = [...rels.matchAll(/Id="(rId\d+)"/g)].map((m) => m[1]);
   assert.strictEqual(new Set(番号たち).size, 番号たち.length, 'rId が重なっている');
@@ -80,7 +84,9 @@ test('XML の特殊文字を escape する', () => {
 });
 
 test('空欄はセルの中身を書かない', () => {
-  const s = ブックを組む([{ name: 'x', headers: ['a', 'b'], rows: [['', null]] }])['xl/worksheets/sheet1.xml'];
+  const s = ブックを組む([{ name: 'x', headers: ['a', 'b'], rows: [['', null]] }])[
+    'xl/worksheets/sheet1.xml'
+  ];
   assert.match(s, /<c r="A2"\/>/);
   assert.match(s, /<c r="B2"\/>/);
 });
@@ -93,7 +99,9 @@ test('シートが1枚も無ければ、黙って壊れたファイルを作ら�
 test('styles.xml の要素は、Excel が定める並び順どおり', () => {
   // 順番が入れ替わると Excel は「開けません」としか言わずに撥ねる
   const x = ブックを組む([{ name: 'x', headers: ['a'], rows: [[1]], formats: ['率'] }])['xl/styles.xml'];
-  const 順 = ['numFmts', 'fonts', 'fills', 'borders', 'cellStyleXfs', 'cellXfs'].map((t) => x.indexOf('<' + t));
+  const 順 = ['numFmts', 'fonts', 'fills', 'borders', 'cellStyleXfs', 'cellXfs'].map((t) =>
+    x.indexOf('<' + t)
+  );
   for (const i of 順) assert.ok(i > 0, '要素が欠けている');
   for (let i = 1; i < 順.length; i++) {
     assert.ok(順[i] > 順[i - 1], '並び順が違う（numFmts は fonts より前）');
@@ -109,7 +117,9 @@ test('率を指定した列だけ、パーセントの見せ方になる', () =>
 });
 
 test('中身は素の数値のまま入れる（式や並べ替えを壊さない）', () => {
-  const s = ブックを組む([{ name: 'x', headers: ['率'], rows: [[38.9]], formats: ['率'] }])['xl/worksheets/sheet1.xml'];
+  const s = ブックを組む([{ name: 'x', headers: ['率'], rows: [[38.9]], formats: ['率'] }])[
+    'xl/worksheets/sheet1.xml'
+  ];
   assert.match(s, /<v>38\.9<\/v>/, '0.389 に変換してはいけない');
 });
 

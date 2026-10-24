@@ -48,7 +48,9 @@ if (!みち.length) {
 const env = fs.existsSync('.env') ? fs.readFileSync('.env', 'utf8') : '';
 // アプリは中継（Cloudflare Workers）経由で鍵を持たないが、手元の計測は Gemini を直接呼ぶ。
 // EXPO_PUBLIC_ を付けない名前にしておくと、Expo が束に焼き込まない
-const 鍵 = (env.match(/^GEMINI_API_KEY=(.+)$/m) || env.match(/EXPO_PUBLIC_GEMINI_API_KEY=(.+)/) || [])[1]?.trim();
+const 鍵 = (env.match(/^GEMINI_API_KEY=(.+)$/m) ||
+  env.match(/EXPO_PUBLIC_GEMINI_API_KEY=(.+)/) ||
+  [])[1]?.trim();
 if (!鍵) {
   console.error('.env に GEMINI_API_KEY がありません（手元の計測だけが使う。アプリは中継を呼ぶ）');
   process.exit(1);
@@ -115,7 +117,13 @@ if (団体) {
   const 候補 = 記録たち.filter((r) => (r.title || '').includes(題の一部 || ''));
   候補.sort((a, z) => (z.date || 0) - (a.date || 0));
   正解 = 候補[0];
-  if (候補.length > 1) console.log('── 題に当たる記録が' + 候補.length + '件。新しいものを使います: ' + 候補.map((x) => x.title).join(' / '));
+  if (候補.length > 1)
+    console.log(
+      '── 題に当たる記録が' +
+        候補.length +
+        '件。新しいものを使います: ' +
+        候補.map((x) => x.title).join(' / ')
+    );
 }
 
 // ── 指示文 ──
@@ -126,7 +134,18 @@ const 指示 = 記録の指示文({
   向き,
 });
 
-console.log('── 模型:', 模型名, '/ 起点:', 起点, '/ 向き:', 向き, '/ 射数:', 射数, '/ 画像:', みち.join(', '));
+console.log(
+  '── 模型:',
+  模型名,
+  '/ 起点:',
+  起点,
+  '/ 向き:',
+  向き,
+  '/ 射数:',
+  射数,
+  '/ 画像:',
+  みち.join(', ')
+);
 console.log('── 名簿の手がかり:', 名簿.length ? 名簿.length + '人' : 'なし');
 
 const genAI = new GoogleGenerativeAI(鍵);
@@ -157,7 +176,8 @@ try {
 fs.writeFileSync('ocr-out.json', JSON.stringify(読み, null, 1));
 /** cells を1射ずつに開く。marks で返ってきたときはそのまま使う */
 const 開く = (t, r) => {
-  if (Array.isArray(r.cells) && r.cells.length) return マスを開く(一射目からの順にする(r.cells, 起点), t.cellStyle || '2射');
+  if (Array.isArray(r.cells) && r.cells.length)
+    return マスを開く(一射目からの順にする(r.cells, 起点), t.cellStyle || '2射');
   return Array.isArray(r.marks) ? r.marks : [];
 };
 
@@ -168,7 +188,9 @@ for (const t of 読み.teams || []) {
     const 印 = 開く(t, r);
     const m = 印.map((x) => (x === '' ? '・' : x)).join('');
     const 中 = 印.filter((x) => x === '○').length;
-    console.log(`    ${String(r.name || '(名なし)').padEnd(10)} ${m}  (${中}中/${印.length}射)  マス${(r.cells || []).length}個`);
+    console.log(
+      `    ${String(r.name || '(名なし)').padEnd(10)} ${m}  (${中}中/${印.length}射)  マス${(r.cells || []).length}個`
+    );
   }
 }
 
@@ -176,7 +198,9 @@ for (const t of 読み.teams || []) {
 if (正解) {
   console.log('\n── 正解（' + 正解.title + '）と突き合わせ');
   const 正解の射手 = (正解.archers || []).filter((a) => a && !a.isSeparator && !a.isTotalCalculator);
-  const 読んだ射手 = (読み.teams || []).flatMap((t) => (t.rows || []).map((r) => ({ name: r.name, marks: 開く(t, r) })));
+  const 読んだ射手 = (読み.teams || []).flatMap((t) =>
+    (t.rows || []).map((r) => ({ name: r.name, marks: 開く(t, r) }))
+  );
   console.log(`  人数: 読み ${読んだ射手.length}人 / 正解 ${正解の射手.length}人`);
   const 名だけ = (s) => String(s || '').replace(new RegExp('[\\s\\u3000]', 'g'), '');
   let 合った射 = 0;

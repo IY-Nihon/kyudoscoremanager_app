@@ -29,12 +29,21 @@ export async function 回す(生, 度) {
     .toColourspace('b-w')
     .raw()
     .toBuffer({ resolveWithObject: true });
-  return { 画素: new Uint8Array(r.data.buffer, r.data.byteOffset, r.data.length), 幅: r.info.width, 高: r.info.height };
+  return {
+    画素: new Uint8Array(r.data.buffer, r.data.byteOffset, r.data.length),
+    幅: r.info.width,
+    高: r.info.height,
+  };
 }
 
 /** 明るさの画を四角に切って PNG に書く（確かめ用のマスを保存するとき） */
 export async function 四角を書く(生, 左, 上, 幅, 高, 先, 大きさ) {
-  let s = sharp(Buffer.from(生.画素), { raw: { width: 生.幅, height: 生.高, channels: 1 } }).extract({ left: 左, top: 上, width: 幅, height: 高 });
+  let s = sharp(Buffer.from(生.画素), { raw: { width: 生.幅, height: 生.高, channels: 1 } }).extract({
+    left: 左,
+    top: 上,
+    width: 幅,
+    height: 高,
+  });
   if (大きさ) s = s.resize(大きさ, 大きさ, { fit: 'fill' });
   await s.png().toFile(先);
 }

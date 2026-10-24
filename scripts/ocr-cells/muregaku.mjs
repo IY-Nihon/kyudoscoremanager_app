@@ -50,7 +50,15 @@ async function 見本をあつめる(枚数, 別のペン = 0.5, 種の頭 = 300
     // 4人立ちの板の実物がこの書き方で、それまでの網はまったく読めなかった
     const ぎっしり = i % 5 === 1 || i % 5 === 3;
     const b = ぎっしり
-      ? 板をえがく({ 種: 種の頭 + i * 6961, 人数, 行数, 立の人数, マス: 40 + (i % 4) * 10, 書き方: 'ぎっしり', 別のペン })
+      ? 板をえがく({
+          種: 種の頭 + i * 6961,
+          人数,
+          行数,
+          立の人数,
+          マス: 40 + (i % 4) * 10,
+          書き方: 'ぎっしり',
+          別のペン,
+        })
       : 板をえがく({ 種: 種の頭 + i * 6961, 人数, 行数, 立の人数, 幅: 2000, 別のペン });
     const みち = `${置き場}/b${i}.jpg`;
     await sharp(Buffer.from(b.色), { raw: { width: b.幅, height: b.高, channels: 3 } })
@@ -242,7 +250,10 @@ const 板たち = [
 // 板を指名されていれば（OCR_MAZERU、「,」区切りで何枚でも）、それを学習側に足す
 //（残りの板で測る）。本物は1枚 80 枚ほどしかなく、描いた板は4万枚を超えるので、
 // そのまま足しても埋もれる。何度も繰り返して重みを持たせる
-const 混ぜる = (process.env.OCR_MAZERU || '').split(',').map((x) => x.trim()).filter(Boolean);
+const 混ぜる = (process.env.OCR_MAZERU || '')
+  .split(',')
+  .map((x) => x.trim())
+  .filter(Boolean);
 const 繰り返し = Number(process.env.OCR_MAZERU_KAI) || 200;
 for (const b of 板たち) {
   if (混ぜる.some((m) => b.名.includes(m))) {
@@ -253,7 +264,10 @@ for (const b of 板たち) {
 const 確かめ = 板たち.flatMap((b) => (b.学習に使った ? [] : b.見本));
 // 細く薄い線の丸だけの見本（学習には使わない別の種）。この書き方を覚えたかを測る
 const 別のペンの見本 = (await 見本をあつめる(12, 1, 900000)).見本.filter((x) => 種類[x.札].startsWith('○'));
-console.log('本物: ' + 板たち.map((b) => `${b.名} ${b.見本.length}枚${b.学習に使った ? '（学習に混ぜた）' : ''}`).join(' / '));
+console.log(
+  '本物: ' +
+    板たち.map((b) => `${b.名} ${b.見本.length}枚${b.学習に使った ? '（学習に混ぜた）' : ''}`).join(' / ')
+);
 console.log(
   `板 ${板の枚数}枚 → マス ${見本.length}枚（外れた板 ${外れ}枚）  ${((Date.now() - t0) / 1000).toFixed(1)}秒`
 );
@@ -271,8 +285,10 @@ for (let i = 0; i < 網の数; i++) {
   }
   let 群 = 0;
   for (const x of 確かめ) if (群れで決める(群れ, x.形).番 === x.札) 群++;
-  console.log(`  ${i + 1}枚目  この網ひとつ=${単}/${確かめ.length}  群れ(${群れ.length}枚)=${群}/${確かめ.length}` +
-      ` (${((100 * 群) / Math.max(1, 確かめ.length)).toFixed(1)}%)`);
+  console.log(
+    `  ${i + 1}枚目  この網ひとつ=${単}/${確かめ.length}  群れ(${群れ.length}枚)=${群}/${確かめ.length}` +
+      ` (${((100 * 群) / Math.max(1, 確かめ.length)).toFixed(1)}%)`
+  );
 }
 
 {
@@ -283,8 +299,13 @@ for (let i = 0; i < 網の数; i++) {
     表[x.札][番]++;
     if (番 === x.札) 当++;
   }
-  console.log(`細く薄い線の丸（描いたもの）: ${当}/${別のペンの見本.length} (${((100 * 当) / Math.max(1, 別のペンの見本.length)).toFixed(1)}%)  取り違え: ` +
-      種類.filter((s) => s.startsWith('○')).map((s, i) => `${s}→` + 種類.map((t, k) => `${t}${表[種類.indexOf(s)][k]}`).join(' ')).join(' | '));
+  console.log(
+    `細く薄い線の丸（描いたもの）: ${当}/${別のペンの見本.length} (${((100 * 当) / Math.max(1, 別のペンの見本.length)).toFixed(1)}%)  取り違え: ` +
+      種類
+        .filter((s) => s.startsWith('○'))
+        .map((s, i) => `${s}→` + 種類.map((t, k) => `${t}${表[種類.indexOf(s)][k]}`).join(' '))
+        .join(' | ')
+  );
 }
 
 const 表 = 種類.map(() => 種類.map(() => 0));

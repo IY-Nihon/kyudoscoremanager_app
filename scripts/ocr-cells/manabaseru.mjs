@@ -18,7 +18,9 @@ console.log(`描く枚数: ${一種類あたり}/種類  巡回: ${巡回数}  �
 const t0 = Date.now();
 const 学び = await 描いた見本(一種類あたり);
 const 確かめ = await 本物の見本('docs/ocr-samples/cells');
-console.log(`見本を用意: 描いた ${学び.length}枚 / 本物 ${確かめ.length}枚  ${((Date.now() - t0) / 1000).toFixed(1)}秒`);
+console.log(
+  `見本を用意: 描いた ${学び.length}枚 / 本物 ${確かめ.length}枚  ${((Date.now() - t0) / 1000).toFixed(1)}秒`
+);
 
 const 網 = 網をつくる(隠れ, 20260909);
 const 学ぶ速さ = Number(process.env.OCR_LR) || 0.005;
@@ -91,12 +93,20 @@ for (let 巡 = 1; 巡 <= 巡回数; 巡++) {
       当たり: 本.当たり,
       巡,
       表: 本.表,
-      重み: { 隠れ, W1: Array.from(網.W1), b1: Array.from(網.b1), W2: Array.from(網.W2), b2: Array.from(網.b2) },
+      重み: {
+        隠れ,
+        W1: Array.from(網.W1),
+        b1: Array.from(網.b1),
+        W2: Array.from(網.W2),
+        b2: Array.from(網.b2),
+      },
     };
   }
 }
 
-console.log(`\nいちばん良かったのは巡 ${最良.巡}: 本物 ${最良.当たり}/${確かめ.length} (${((100 * 最良.当たり) / 確かめ.length).toFixed(1)}%)`);
+console.log(
+  `\nいちばん良かったのは巡 ${最良.巡}: 本物 ${最良.当たり}/${確かめ.length} (${((100 * 最良.当たり) / 確かめ.length).toFixed(1)}%)`
+);
 console.log('取り違え（縦が正、横が答え）:');
 console.log('        ' + 種類.map((s) => s.padEnd(4)).join(''));
 for (let i = 0; i < 種類.length; i++) {

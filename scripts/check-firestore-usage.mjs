@@ -141,9 +141,7 @@ for (const [名, 指標] of [
   }
   // 枠を超えて拒否された跡があれば知らせる
   if (名 === '要求の結果') {
-    const 枯れ = 並.filter(([, v]) =>
-      Object.keys(v).some((k) => /RESOURCE_EXHAUSTED|QUOTA/.test(k))
-    );
+    const 枯れ = 並.filter(([, v]) => Object.keys(v).some((k) => /RESOURCE_EXHAUSTED|QUOTA/.test(k)));
     console.log(
       枯れ.length
         ? `  ⚠   割り当て切れの跡があります（${枯れ.map(([d]) => d).join(', ')}）`

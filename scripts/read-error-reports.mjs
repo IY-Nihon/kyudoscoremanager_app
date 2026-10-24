@@ -126,7 +126,10 @@ console.log(`同じ不具合ごとに ${束.length} 種類\n`);
   console.log(`    ${日(x.古い)} 〜 ${日(x.新しい)}`);
   if (詳しく) {
     if (x.例.code) console.log(`    符号: ${x.例.code}`);
-    const 跡 = String(x.例.stack || '').split('\n').slice(0, 3).join(' / ');
+    const 跡 = String(x.例.stack || '')
+      .split('\n')
+      .slice(0, 3)
+      .join(' / ');
     if (跡) console.log(`    跡: ${短く(跡, 200)}`);
     const 行動 = (x.例.trail || []).map((a) => a.name + (a.detail ? `(${a.detail})` : '')).slice(-8);
     if (行動.length) console.log(`    直前の操作: ${行動.join(' → ')}`);

@@ -67,7 +67,13 @@ test('始めると控えが残り、終えると消える', async () => {
   const { store } = 端末(null, [射手()]);
   assert.equal(await store.getState().startLiveSync(ライブ名), '開始した');
   assert.deepEqual(store.getState().ライブの続き, {
-    名前: ライブ名, 枝: null, 閲覧枝: null, 主催: true, 見るだけ: false, よそ: false, 団体: 団体,
+    名前: ライブ名,
+    枝: null,
+    閲覧枝: null,
+    主催: true,
+    見るだけ: false,
+    よそ: false,
+    団体: 団体,
   });
   store.getState().stopLiveSync(true);
   assert.equal(store.getState().ライブの続き, null);
@@ -92,7 +98,13 @@ test('戻る：続いているライブへ、参加者として戻ると盤面�
   await 待つ(10);
   // 閉じて開き直した参加者の体：ライブの状態は無く、控えだけ在る。記録表は古い
   const 参 = 端末(主.ライブ, [射手({ marks: ['', '', '', ''] })], {
-    名前: ライブ名, 枝: null, 閲覧枝: null, 主催: false, 見るだけ: false, よそ: false, 団体: 団体,
+    名前: ライブ名,
+    枝: null,
+    閲覧枝: null,
+    主催: false,
+    見るだけ: false,
+    よそ: false,
+    団体: 団体,
   });
   assert.equal(await 参.store.getState().ライブに戻る(), '戻った');
   await 待つ(10);
@@ -107,7 +119,13 @@ test('戻る：主催者だったなら主催に戻る', async () => {
   await 主.store.getState().startLiveSync(ライブ名);
   await 待つ(10);
   const 開き直し = 端末(主.ライブ, [射手()], {
-    名前: ライブ名, 枝: null, 閲覧枝: null, 主催: true, 見るだけ: false, よそ: false, 団体: 団体,
+    名前: ライブ名,
+    枝: null,
+    閲覧枝: null,
+    主催: true,
+    見るだけ: false,
+    よそ: false,
+    団体: 団体,
   });
   assert.equal(await 開き直し.store.getState().ライブに戻る(), '戻った');
   await 待つ(10);
@@ -117,7 +135,13 @@ test('戻る：主催者だったなら主催に戻る', async () => {
 
 test('戻る：終わっていたら記録表を片付け、控えを捨てる', async () => {
   const { store } = 端末(null, [射手({ marks: ['○', '×', '', ''] })], {
-    名前: ライブ名, 枝: null, 閲覧枝: null, 主催: false, 見るだけ: false, よそ: false, 団体: 団体,
+    名前: ライブ名,
+    枝: null,
+    閲覧枝: null,
+    主催: false,
+    見るだけ: false,
+    よそ: false,
+    団体: 団体,
   });
   // 節点が無い（主催者が終えて消した）
   assert.equal(await store.getState().ライブに戻る(), '終わっていた');
@@ -128,7 +152,13 @@ test('戻る：終わっていたら記録表を片付け、控えを捨てる',
 
 test('戻る：finished の節点でも終わっていた扱い', async () => {
   const { store, ライブ } = 端末(null, [射手({ marks: ['○', '×', '', ''] })], {
-    名前: ライブ名, 枝: null, 閲覧枝: null, 主催: false, 見るだけ: false, よそ: false, 団体: 団体,
+    名前: ライブ名,
+    枝: null,
+    閲覧枝: null,
+    主催: false,
+    見るだけ: false,
+    よそ: false,
+    団体: 団体,
   });
   ライブ.置く(道, { status: 'finished', timestamp: 1, archers: [] });
   assert.equal(await store.getState().ライブに戻る(), '終わっていた');
@@ -138,7 +168,13 @@ test('戻る：finished の節点でも終わっていた扱い', async () => {
 
 test('戻る：確かめられなければ、記録表も控えもそのまま', async () => {
   const { store, ライブ } = 端末(null, [射手({ marks: ['○', '×', '', ''] })], {
-    名前: ライブ名, 枝: null, 閲覧枝: null, 主催: false, 見るだけ: false, よそ: false, 団体: 団体,
+    名前: ライブ名,
+    枝: null,
+    閲覧枝: null,
+    主催: false,
+    見るだけ: false,
+    よそ: false,
+    団体: 団体,
   });
   const 元の = ライブ.api.get;
   ライブ.api.get = () => {
@@ -152,7 +188,13 @@ test('戻る：確かめられなければ、記録表も控えもそのまま',
 
 test('戻る：控えの団体が違えば、控えを捨てるだけ', async () => {
   const { store } = 端末(null, [射手({ marks: ['○', '×', '', ''] })], {
-    名前: ライブ名, 枝: null, 閲覧枝: null, 主催: false, 見るだけ: false, よそ: false, 団体: '999999',
+    名前: ライブ名,
+    枝: null,
+    閲覧枝: null,
+    主催: false,
+    見るだけ: false,
+    よそ: false,
+    団体: '999999',
   });
   await store.getState().ライブに戻る();
   assert.equal(store.getState().ライブの続き, null);

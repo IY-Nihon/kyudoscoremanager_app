@@ -207,7 +207,10 @@ test('記録を雲の形に：日付と射手の更新日時を日時型にす�
 test('記録の保存：雲へは日付と射手の更新日時を日時型で書き、手元は数のまま', async () => {
   const { store, 雲 } = 用意();
   const 今 = Date.now();
-  store.setState({ sessions: [Object.assign(記録('s1', 今 - 日), { syncStatus: '未同期' })], lastSyncTime: 今 - 60000 });
+  store.setState({
+    sessions: [Object.assign(記録('s1', 今 - 日), { syncStatus: '未同期' })],
+    lastSyncTime: 今 - 60000,
+  });
   await store.getState().syncSessions();
   await 待つ(30);
   const 雲のs1 = 雲.値(記録の道, 's1');

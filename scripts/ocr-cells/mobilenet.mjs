@@ -26,7 +26,14 @@ function 半精度をほどく(箱, 位置, 数) {
     const 符 = h & 0x8000 ? -1 : 1;
     const 指 = (h >> 10) & 0x1f;
     const 仮 = h & 0x3ff;
-    出[i] = 指 === 0 ? 符 * 仮 * 2 ** -24 : 指 === 31 ? (仮 ? NaN : 符 * Infinity) : 符 * (1 + 仮 / 1024) * 2 ** (指 - 15);
+    出[i] =
+      指 === 0
+        ? 符 * 仮 * 2 ** -24
+        : 指 === 31
+          ? 仮
+            ? NaN
+            : 符 * Infinity
+          : 符 * (1 + 仮 / 1024) * 2 ** (指 - 15);
   }
   return 出;
 }
@@ -34,7 +41,8 @@ function 半精度をほどく(箱, 位置, 数) {
 function 層を組む(l, 取る) {
   if (l.種 === '塊') return { 種: '塊', 足す: l.足す, 層: l.層.map((m) => 層を組む(m, 取る)) };
   if (l.種 === 'SE') return { ...l, W1: 取る(l.W1), b1: 取る(l.b1), W2: 取る(l.W2), b2: 取る(l.b2) };
-  if (l.種 === '畳み' || l.種 === '全') return { ...l, W: 取る(l.W), b: 取る(l.b), 端: l.端 ? 取る(l.端) : null };
+  if (l.種 === '畳み' || l.種 === '全')
+    return { ...l, W: 取る(l.W), b: 取る(l.b), 端: l.端 ? 取る(l.端) : null };
   return l;
 }
 
@@ -57,7 +65,8 @@ export function 薄い網を組む(中身) {
   };
 }
 
-const 活かす = (v, 活) => (活 === 'relu' ? (v > 0 ? v : 0) : 活 === 'hs' ? (v <= -3 ? 0 : v >= 3 ? v : (v * (v + 3)) / 6) : v);
+const 活かす = (v, 活) =>
+  活 === 'relu' ? (v > 0 ? v : 0) : 活 === 'hs' ? (v <= -3 ? 0 : v >= 3 ? v : (v * (v + 3)) / 6) : v;
 
 /** 活性化をまとめてかける（ReLU・hard-swish） */
 function 面に活かす(a, 始, 終, 活) {
@@ -124,13 +133,19 @@ function 混ぜる(x, 辺, l) {
   const W = l.W;
   let o = 0;
   for (; o + 4 <= l.出; o += 4) {
-    const a0 = o * n, a1 = a0 + n, a2 = a1 + n, a3 = a2 + n;
+    const a0 = o * n,
+      a1 = a0 + n,
+      a2 = a1 + n,
+      a3 = a2 + n;
     出.fill(l.b[o], a0, a1);
     出.fill(l.b[o + 1], a1, a2);
     出.fill(l.b[o + 2], a2, a3);
     出.fill(l.b[o + 3], a3, a3 + n);
     for (let i = 0; i < 入; i++) {
-      const w0 = W[o * 入 + i], w1 = W[(o + 1) * 入 + i], w2 = W[(o + 2) * 入 + i], w3 = W[(o + 3) * 入 + i];
+      const w0 = W[o * 入 + i],
+        w1 = W[(o + 1) * 入 + i],
+        w2 = W[(o + 2) * 入 + i],
+        w3 = W[(o + 3) * 入 + i];
       const 入基 = i * n;
       for (let j = 0; j < n; j++) {
         const v = x[入基 + j];
@@ -231,7 +246,9 @@ function 広げる(画, 辺, 出辺) {
     const [y0, y1, ty] = 位(y);
     for (let x = 0; x < 出辺; x++) {
       const [x0, x1, tx] = 位(x);
-      出[y * 出辺 + x] = (画[y0 * 辺 + x0] * (1 - tx) + 画[y0 * 辺 + x1] * tx) * (1 - ty) + (画[y1 * 辺 + x0] * (1 - tx) + 画[y1 * 辺 + x1] * tx) * ty;
+      出[y * 出辺 + x] =
+        (画[y0 * 辺 + x0] * (1 - tx) + 画[y0 * 辺 + x1] * tx) * (1 - ty) +
+        (画[y1 * 辺 + x0] * (1 - tx) + 画[y1 * 辺 + x1] * tx) * ty;
     }
   }
   return 出;

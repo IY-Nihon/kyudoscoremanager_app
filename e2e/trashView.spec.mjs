@@ -39,7 +39,10 @@ test('ゴミ箱の記録は、押すと見るだけで開き、戻るとゴミ�
   const 帯 = page.getByTestId('ゴミ箱の帯');
   await expect(帯, 'ゴミ箱の中だと分かる帯が出ない').toBeVisible({ timeout: 15_000 });
   await expect(帯).toContainText('見るだけ');
-  await expect(page.getByText('ゴミ箱の記録', { exact: true }), '見出しがゴミ箱の記録になっていない').toBeVisible();
+  await expect(
+    page.getByText('ゴミ箱の記録', { exact: true }),
+    '見出しがゴミ箱の記録になっていない'
+  ).toBeVisible();
   await expect(page.getByText('記録詳細', { exact: true }), 'ふつうの詳細の見出しが出ている').toHaveCount(0);
   // 消す・直すの入口が無いこと
   await expect(page.getByRole('button', { name: 'この記録を消す' }), '消すボタンが出ている').toHaveCount(0);
@@ -48,6 +51,8 @@ test('ゴミ箱の記録は、押すと見るだけで開き、戻るとゴミ�
 
   // 戻ると、ゴミ箱の一覧へ戻る
   await page.getByText('戻る', { exact: true }).first().click();
-  await expect(page.getByText('ゴミ箱', { exact: true }), 'ゴミ箱の一覧に戻らない').toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText('ゴミ箱', { exact: true }), 'ゴミ箱の一覧に戻らない').toBeVisible({
+    timeout: 15_000,
+  });
   await expect(行).toBeVisible({ timeout: 15_000 });
 });

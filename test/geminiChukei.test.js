@@ -64,7 +64,12 @@ test('fetch は Authorization を足して、道をそのまま中継へ向け�
   const 元 = global.fetch;
   const 呼ばれた = [];
   global.fetch = (url, init) => {
-    呼ばれた.push({ url, method: init.method, auth: init.headers.get('Authorization'), type: init.headers.get('Content-Type') });
+    呼ばれた.push({
+      url,
+      method: init.method,
+      auth: init.headers.get('Authorization'),
+      type: init.headers.get('Content-Type'),
+    });
     return { ok: true, status: 200 };
   };
   try {
@@ -78,16 +83,27 @@ test('fetch は Authorization を足して、道をそのまま中継へ向け�
     global.fetch = 元;
   }
   assert.deepEqual(呼ばれた, [
-    { url: 中継 + '/v1beta/models/gemini-3.6-flash:generateContent', method: 'POST', auth: 'Bearer ID.TOKEN.x', type: 'application/json' },
+    {
+      url: 中継 + '/v1beta/models/gemini-3.6-flash:generateContent',
+      method: 'POST',
+      auth: 'Bearer ID.TOKEN.x',
+      type: 'application/json',
+    },
     { url: 中継 + '/v1beta/models', method: 'GET', auth: 'Bearer ID.TOKEN.x', type: null },
   ]);
 });
 
 test('鍵を束に焼き込む名前（EXPO_PUBLIC_GEMINI_API_KEY）を、アプリの元が読んでいない', () => {
   const 見る = (dir) =>
-    fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
-      e.isDirectory() ? 見る(path.join(dir, e.name)) : /\.jsx?$/.test(e.name) ? [path.join(dir, e.name)] : []
-    );
+    fs
+      .readdirSync(dir, { withFileTypes: true })
+      .flatMap((e) =>
+        e.isDirectory()
+          ? 見る(path.join(dir, e.name))
+          : /\.jsx?$/.test(e.name)
+            ? [path.join(dir, e.name)]
+            : []
+      );
   const 読んでいる = [...見る(SRC), path.resolve(__dirname, '../App.js')].filter((f) =>
     /GEMINI_API_KEY/.test(fs.readFileSync(f, 'utf8'))
   );
@@ -96,10 +112,18 @@ test('鍵を束に焼き込む名前（EXPO_PUBLIC_GEMINI_API_KEY）を、アプ
 
 test('Gemini を直接呼ぶ道（generativelanguage.googleapis.com）が、アプリの元に無い', () => {
   const 見る = (dir) =>
-    fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
-      e.isDirectory() ? 見る(path.join(dir, e.name)) : /\.jsx?$/.test(e.name) ? [path.join(dir, e.name)] : []
-    );
-  const 直接 = 見る(SRC).filter((f) => /generativelanguage\.googleapis\.com/.test(fs.readFileSync(f, 'utf8')));
+    fs
+      .readdirSync(dir, { withFileTypes: true })
+      .flatMap((e) =>
+        e.isDirectory()
+          ? 見る(path.join(dir, e.name))
+          : /\.jsx?$/.test(e.name)
+            ? [path.join(dir, e.name)]
+            : []
+      );
+  const 直接 = 見る(SRC).filter((f) =>
+    /generativelanguage\.googleapis\.com/.test(fs.readFileSync(f, 'utf8'))
+  );
   assert.deepEqual(直接, []);
 });
 

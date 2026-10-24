@@ -117,10 +117,12 @@ function 書き換えを集める(code, ast) {
       const e = p.node.expression;
       const 文の中 = ['BlockStatement', 'Program', 'SwitchCase'].includes(p.parent.type);
       const 包む = (s) => (文の中 ? s : '{\n' + s + '\n}');
-      if (e.type === 'SequenceExpression') 足す(p.node.start, p.node.end, 包む(文にする(code, e, comments)), 'カンマの文');
+      if (e.type === 'SequenceExpression')
+        足す(p.node.start, p.node.end, 包む(文にする(code, e, comments)), 'カンマの文');
       else if (e.type === 'LogicalExpression' && (e.operator === '&&' || e.operator === '||'))
         足す(p.node.start, p.node.end, 包む(文にする(code, e, comments)), '&&・|| の文');
-      else if (e.type === 'ConditionalExpression') 足す(p.node.start, p.node.end, 包む(文にする(code, e, comments)), '? : の文');
+      else if (e.type === 'ConditionalExpression')
+        足す(p.node.start, p.node.end, 包む(文にする(code, e, comments)), '? : の文');
     },
     VariableDeclaration(p) {
       // const // 説明 \n 名前 = … → // 説明 \n const 名前 = …（コメントを const の前へ）
@@ -175,12 +177,17 @@ function 書き換えを集める(code, ast) {
       const { left, right, operator } = p.node;
       if (!['===', '!==', '==', '!='].includes(operator)) return;
       const 逆さ = 決まった値か(left) && !決まった値か(right);
-      const typeofの緩い比べ = (operator === '==' || operator === '!=') && (typeofか(left) || typeofか(right));
+      const typeofの緩い比べ =
+        (operator === '==' || operator === '!=') && (typeofか(left) || typeofか(right));
       if (!逆さ && !typeofの緩い比べ) return;
       const 新しい比べ = typeofの緩い比べ ? (operator === '==' ? '===' : '!==') : operator;
       const [甲, 乙] = 逆さ ? [right, left] : [left, right];
-      足す(left.start - (left.extra && left.extra.parenthesized ? 1 : 0), right.end + (right.extra && right.extra.parenthesized ? 1 : 0),
-        字(code, 甲) + ' ' + 新しい比べ + ' ' + 字(code, 乙), '逆さの比べ');
+      足す(
+        left.start - (left.extra && left.extra.parenthesized ? 1 : 0),
+        right.end + (right.extra && right.extra.parenthesized ? 1 : 0),
+        字(code, 甲) + ' ' + 新しい比べ + ' ' + 字(code, 乙),
+        '逆さの比べ'
+      );
     },
   });
   // 外側（始めが早く、長い）から取り、重なるものは次の回へ回す
@@ -205,14 +212,17 @@ for (const ファイル of ファイルたち) {
     if (!採る.length) break;
     for (const w of 採る) 数え[w.種] = (数え[w.種] || 0) + 1;
     if (見るだけ) break;
-    for (const w of [...採る].sort((a, b) => b.start - a.start)) code = code.slice(0, w.start) + w.新 + code.slice(w.end);
+    for (const w of [...採る].sort((a, b) => b.start - a.start))
+      code = code.slice(0, w.start) + w.新 + code.slice(w.end);
   }
   if (見るだけ || code === 元) continue;
   const 設定 = await prettier.resolveConfig(ファイル);
   code = await prettier.format(code, { ...設定, filepath: ファイル });
   // コメントが 1 つも減っていないか（中身の字で数える）
   const コメントの字 = (c) =>
-    parse(c, { sourceType: 'unambiguous', plugins: ['jsx'] }).comments.map((x) => x.value.trim()).sort();
+    parse(c, { sourceType: 'unambiguous', plugins: ['jsx'] })
+      .comments.map((x) => x.value.trim())
+      .sort();
   const 前の = コメントの字(元);
   const 後の = new Map();
   for (const x of コメントの字(code)) 後の.set(x, (後の.get(x) || 0) + 1);

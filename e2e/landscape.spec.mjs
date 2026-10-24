@@ -18,7 +18,8 @@ import {
 } from './helpers.mjs';
 import fs from 'node:fs';
 
-const お知らせの版 = (fs.readFileSync('src/WhatsNewModal.js', 'utf8').match(/NOTICE_VERSION = '([^']+)'/) || [])[1];
+const お知らせの版 = (fs.readFileSync('src/WhatsNewModal.js', 'utf8').match(/NOTICE_VERSION = '([^']+)'/) ||
+  [])[1];
 
 // 鍵（100003）・ライブ（100006）・交代（100005）とは別の団体を使う
 const 団体 = '100001';
@@ -51,7 +52,10 @@ async function 入る(page) {
       .poll(
         () =>
           page.evaluate(() => {
-            const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+            const s =
+              JSON.parse(
+                (globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}'
+              )?.state || {};
             return s.activeGroupId || null;
           }),
         { timeout: 60_000, message: 'ログインが通らない（団体IDが入らない）' }
@@ -63,7 +67,12 @@ async function 入る(page) {
   // ここで書いて reload していたのをやめた（上の 案内を止める が代わり）
 
   // 射手を1人だけ立てる。ますは全部この人のものになる
-  if (await page.getByText('記録を始めましょう').isVisible().catch(() => false)) {
+  if (
+    await page
+      .getByText('記録を始めましょう')
+      .isVisible()
+      .catch(() => false)
+  ) {
     await page.getByText('人', { exact: true }).first().click();
     await こうなるまで待つ(
       () => page.locator('[data-testid^="ます-"]').count(),
@@ -124,12 +133,18 @@ test('並べ方：横のままでも○×を入れられ、同じ射目に入る
   const ます = page.getByTestId(`ます-${射手}-0`);
   expect((await ます.innerText()).trim(), '始めから何か入っている').toBe('');
   await ます.click({ force: true });
-  await こうなるまで待つ(async () => (await ます.innerText()).trim(), (x) => x === '○', 20000);
+  await こうなるまで待つ(
+    async () => (await ます.innerText()).trim(),
+    (x) => x === '○',
+    20000
+  );
   expect((await ます.innerText()).trim(), '横のままだと押しても入らない').toBe('○');
 
   // しまわれる場所は縦のときと同じ（1射目＝0番）
   const 印 = await page.evaluate(() => {
-    const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+    const s =
+      JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+        ?.state || {};
     const 射手 = (s.archers || []).find((a) => a && Array.isArray(a.marks));
     return 射手 ? 射手.marks.slice(0, 3) : null;
   });
@@ -263,7 +278,10 @@ test('並べ方：横のままでも案内は最後まで進み、名前の位�
     // 手順の切り替わりでは、指す先を測り終わるまで番号札を出さない。
     // その空白を「終わった」と取り違えないよう、しばらく待ってから無いと判断する
     const 札 = page.locator('text=/^\\d+ \\/ \\d+$/').first();
-    const 出ている = await 札.waitFor({ state: 'visible', timeout: 4000 }).then(() => true).catch(() => false);
+    const 出ている = await 札
+      .waitFor({ state: 'visible', timeout: 4000 })
+      .then(() => true)
+      .catch(() => false);
     if (!出ている) break;
     踏んだ++;
 
@@ -320,9 +338,16 @@ test('下の帯：狭い画面でも、どのボタンも隣に覆われない',
       const x = Math.round(r.x + r.width / 2);
       const y = Math.round(r.y + r.height / 2);
       const 上 = document.elementFromPoint(x, y);
-      出.push({ 名, 見つかった: true, 幅: Math.round(r.width), 押せる: !!(上 && (el === 上 || el.contains(上))) });
+      出.push({
+        名,
+        見つかった: true,
+        幅: Math.round(r.width),
+        押せる: !!(上 && (el === 上 || el.contains(上))),
+      });
     };
-    ['取り消し', 'やり直し', '並べ方'].forEach((名) => 見る(名, document.querySelector(`[data-testid="${名}"]`)));
+    ['取り消し', 'やり直し', '並べ方'].forEach((名) =>
+      見る(名, document.querySelector(`[data-testid="${名}"]`))
+    );
     ['人', '間隔', '計', '画像'].forEach((名) => {
       const 札 = [...document.querySelectorAll('div')].filter(
         (e) => (e.textContent || '').trim() === 名 && e.children.length === 0
@@ -341,7 +366,9 @@ test('下の帯：狭い画面でも、どのボタンも隣に覆われない',
   await page.getByTestId('並べ方').click();
   await 横並びになるまで待つ(page);
   const 横か = await page.evaluate(
-    () => JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state?.横に並べる
+    () =>
+      JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+        ?.state?.横に並べる
   );
   expect(横か, '狭い画面で並べ方を押しても切り替わらない').toBe(true);
 });
@@ -363,13 +390,21 @@ test('帯：上下の操作帯を畳めて、畳んでも画面は移れる', as
   expect(await 見える('終了・保存'), '前提：下の操作帯が出ていない').toBe(true);
 
   await page.getByTestId('帯の開け閉め').click();
-  await こうなるまで待つ(() => 見える('リセット'), (x) => x === false, 20000);
+  await こうなるまで待つ(
+    () => 見える('リセット'),
+    (x) => x === false,
+    20000
+  );
   expect(await 見える('リセット'), '押しても上の帯が畳まれない').toBe(false);
   expect(await 見える('終了・保存'), '押しても下の帯が畳まれない').toBe(false);
   expect(await 見える('履歴'), '畳むと画面を移れなくなっている').toBe(true);
 
   await page.getByTestId('帯の開け閉め').click();
-  await こうなるまで待つ(() => 見える('リセット'), (x) => x === true, 20000);
+  await こうなるまで待つ(
+    () => 見える('リセット'),
+    (x) => x === true,
+    20000
+  );
   expect(await 見える('リセット'), '戻せない').toBe(true);
   expect(await 見える('終了・保存'), '戻せない').toBe(true);
 });
@@ -404,7 +439,9 @@ test('帯：取っ手を横へ引くと左上へ動き、押すと畳めるま�
   const 後 = await 取っ手.boundingBox();
   expect(Math.abs(後.y - 前.y), '縦の位置が変わっている（上の角に留まっていない）').toBeLessThan(4);
   const 左か = await page.evaluate(
-    () => JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state?.帯の取っ手は左
+    () =>
+      JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+        ?.state?.帯の取っ手は左
   );
   expect(左か, '置いた側が端末に残っていない').toBe(true);
 
@@ -417,10 +454,18 @@ test('帯：取っ手を横へ引くと左上へ動き、押すと畳めるま�
       return !!e && e.getBoundingClientRect().height > 0;
     }, 文);
   await 取っ手.click();
-  await こうなるまで待つ(() => 見える('リセット'), (x) => x === false, 20000);
+  await こうなるまで待つ(
+    () => 見える('リセット'),
+    (x) => x === false,
+    20000
+  );
   expect(await 見える('リセット'), '左に置いた取っ手を押しても畳まれない').toBe(false);
   await 取っ手.click();
-  await こうなるまで待つ(() => 見える('リセット'), (x) => x === true, 20000);
+  await こうなるまで待つ(
+    () => 見える('リセット'),
+    (x) => x === true,
+    20000
+  );
 
   // 右へ戻す（次の検査のために元の側へ）
   const いま = await 取っ手.boundingBox();

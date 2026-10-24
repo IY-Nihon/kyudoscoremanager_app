@@ -9,7 +9,7 @@ const withSwift5 = (config) => {
       const podfile = path.join(config.modRequest.platformProjectRoot, 'Podfile');
       if (fs.existsSync(podfile)) {
         let contents = fs.readFileSync(podfile, 'utf8');
-        
+
         // Add post_install workaround for SWIFT_VERSION
         const workaround = `
   installer.pods_project.targets.each do |target|
@@ -28,8 +28,8 @@ const withSwift5 = (config) => {
     end
   end
 `;
-        
-        if (!contents.includes("FOLLY_CFG_NO_COROUTINES=1")) {
+
+        if (!contents.includes('FOLLY_CFG_NO_COROUTINES=1')) {
           if (contents.includes('post_install do |installer|')) {
             contents = contents.replace(
               'post_install do |installer|',

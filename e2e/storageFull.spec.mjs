@@ -83,8 +83,5 @@ test('書けているうちは、その知らせを出さない', async ({ page 
   // 出ないことを見るので、決まった時間を置くしかない。
   // 短くすると「出るのが遅いだけ」と見分けがつかない
   await page.waitForTimeout(4000);
-  await expect(
-    page.getByText('端末に保存できませんでした'),
-    '書けているのに知らせが出ている'
-  ).toHaveCount(0);
+  await expect(page.getByText('端末に保存できませんでした'), '書けているのに知らせが出ている').toHaveCount(0);
 });

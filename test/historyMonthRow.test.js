@@ -48,19 +48,11 @@ function 型を取る(名) {
 }
 
 test('月の札は、横に縮まない', () => {
-  assert.match(
-    型を取る('monthTab'),
-    /flexShrink:\s*0/,
-    '月の札が縮む。月が増えると字が折り返す'
-  );
+  assert.match(型を取る('monthTab'), /flexShrink:\s*0/, '月の札が縮む。月が増えると字が折り返す');
 });
 
 test('月の並びを載せる器は、縦に潰れない', () => {
   const 型 = 型を取る('monthTabsScroll');
   assert.match(型, /flexGrow:\s*0/, '器が縦に伸びる');
-  assert.match(
-    型,
-    /flexShrink:\s*0/,
-    '器が縦に潰れる。下の一覧が場所を欲しがると、月が切れて一覧と重なる'
-  );
+  assert.match(型, /flexShrink:\s*0/, '器が縦に潰れる。下の一覧が場所を欲しがると、月が切れて一覧と重なる');
 });

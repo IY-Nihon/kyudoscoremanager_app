@@ -85,10 +85,7 @@ test('決まり（database.rules.json）が、短い枝を拒んでいる', () =
     assert.ok(子, 枝 + ' に $ の子が無い');
     for (const 役 of ['.read', '.write']) {
       const 式 = 節[子][役] || '';
-      assert.ok(
-        式.includes('.length >='),
-        枝 + ' の ' + 役 + ' が枝の長さを見ていない: ' + 式
-      );
+      assert.ok(式.includes('.length >='), 枝 + ' の ' + 役 + ' が枝の長さを見ていない: ' + 式);
       assert.ok(
         式.includes(String(枝の最短)),
         枝 + ' の ' + 役 + ' の長さが ' + 枝の最短 + ' と揃っていない: ' + 式
@@ -104,11 +101,7 @@ test('本体：ライブの道に団体IDが残っていない', () => {
   const 本体 = require('./helpers/storeSource').店の字();
   const 道 = 本体.match(/`live_(?:sessions|history)\/\$\{[^`]*`/g) || [];
   assert.ok(道.length > 0, 'ライブの道が1つも見つからない（探し方が古い）');
-  for (const x of 道)
-    assert.ok(
-      !/activeGroupId|団体/.test(x),
-      '団体IDのまま組み立てている道がある: ' + x
-    );
+  for (const x of 道) assert.ok(!/activeGroupId|団体/.test(x), '団体IDのまま組み立てている道がある: ' + x);
 });
 
 test('本体：合言葉はどの団体のものかと一緒に持っている', () => {

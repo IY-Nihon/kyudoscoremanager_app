@@ -156,7 +156,13 @@ for (let 巡 = 1; 巡 <= 巡回数; 巡++) {
       当たり: 本.当たり,
       巡,
       表: 本.表,
-      重み: { 隠れ, W1: Array.from(網.W1), b1: Array.from(網.b1), W2: Array.from(網.W2), b2: Array.from(網.b2) },
+      重み: {
+        隠れ,
+        W1: Array.from(網.W1),
+        b1: Array.from(網.b1),
+        W2: Array.from(網.W2),
+        b2: Array.from(網.b2),
+      },
     };
   }
 }

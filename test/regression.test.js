@@ -246,7 +246,13 @@ test('知らせは一度だけ出る（返りが届いても二重にならな�
 // ──────────────────────────────────────────────────────────────
 test('メンバーの控えは、消していないメンバーに影響しない', async () => {
   const { store, 雲 } = await 用意();
-  const 部員 = (id, 名) => ({ id, name: 名, personalId: '10' + id.slice(-2), lastModified: 1000, syncStatus: '同期済み' });
+  const 部員 = (id, 名) => ({
+    id,
+    name: 名,
+    personalId: '10' + id.slice(-2),
+    lastModified: 1000,
+    syncStatus: '同期済み',
+  });
   雲.置く(名簿の道, 'mem-1', 部員('mem-1', '部員1'));
   雲.置く(名簿の道, 'mem-2', 部員('mem-2', '部員2'));
   store.setState({ members: [部員('mem-1', '部員1'), 部員('mem-2', '部員2')] });

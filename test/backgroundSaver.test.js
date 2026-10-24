@@ -34,8 +34,7 @@ function 作り物() {
     見張り,
     記録,
     進める(ms) {
-      for (const [id, x] of [...予約たち])
-        if (x.時 <= ms) ((予約たち.delete(id), x.f()));
+      for (const [id, x] of [...予約たち]) if (x.時 <= ms) (予約たち.delete(id), x.f());
     },
     予約の数: () => 予約たち.size,
   };

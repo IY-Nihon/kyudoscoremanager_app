@@ -72,8 +72,11 @@ test('控え：同じ端末で2つ開いても、どちらも控えを持てる'
         p.evaluate(
           () =>
             (
-              (JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}').state || {})
-                .members || []
+              (
+                JSON.parse(
+                  (globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}'
+                ).state || {}
+              ).members || []
             ).length
         ),
       (n) => n > 0,
@@ -82,8 +85,10 @@ test('控え：同じ端末で2つ開いても、どちらも控えを持てる'
     const 数 = await p.evaluate(
       () =>
         (
-          (JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}').state || {}).members ||
-          []
+          (
+            JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+              .state || {}
+          ).members || []
         ).length
     );
     expect(数, `${名}に名簿が届いていない`).toBeGreaterThan(0);

@@ -21,7 +21,11 @@ const path = require('node:path');
 // 分析画面は 2026-10-05 にいくつかのファイルに分けた（部員の詳細の窓・部品・見た目の決まり）。
 // 分析画面ぜんぶの字として、まとめて読む
 const 本体 = ['AnalysisScreen.js', 'AnalysisMemberDetail.js', 'analysisParts.js', 'analysisStyles.js']
-  .map((名) => require('./helpers/iroNoAtai.cjs').色の名を値に(fs.readFileSync(path.join(__dirname, '..', 'src', 名), 'utf8')))
+  .map((名) =>
+    require('./helpers/iroNoAtai.cjs').色の名を値に(
+      fs.readFileSync(path.join(__dirname, '..', 'src', 名), 'utf8')
+    )
+  )
   .join('\n');
 
 test('順位の行：名前が長くても的中率を押しのけない', () => {
@@ -33,10 +37,7 @@ test('順位の行：名前が長くても的中率を押しのけない', () =>
 
   const 右 = 本体.match(/rowRight:\s*\{[^}]*\}/);
   assert.ok(右, 'rowRight がありません');
-  assert.ok(
-    /flexShrink:\s*0/.test(右[0]),
-    'rowRight に flexShrink:0 がありません（的中率が縮んで隠れる）'
-  );
+  assert.ok(/flexShrink:\s*0/.test(右[0]), 'rowRight に flexShrink:0 がありません（的中率が縮んで隠れる）');
 
   const 名 = 本体.match(/nameContainer:\s*\{[^}]*\}/);
   assert.ok(名 && /minWidth:\s*0/.test(名[0]), 'nameContainer が縮めるようになっていません');
@@ -65,7 +66,10 @@ test('的中の型：比較している人ぶん並べる', () => {
   // compareMembers を回して 型の節 を呼んでいること
   // 比較相手ぶん 型の節 を呼んでいる所を探す
   // 読める形に直したので 相手.id。前の cm.id も受ける
-  const i = Math.max(本体.indexOf('型の節(比較の成績.get(相手.id)'), 本体.indexOf('型の節(比較の成績.get(cm.id)'));
+  const i = Math.max(
+    本体.indexOf('型の節(比較の成績.get(相手.id)'),
+    本体.indexOf('型の節(比較の成績.get(cm.id)')
+  );
   assert.ok(i > 0, '比較相手について 型の節 を呼んでいる所が見つかりません');
   const 前 = 本体.slice(Math.max(0, i - 300), i);
   assert.ok(/compareMembers/.test(前), '比較相手ぶん回していません');

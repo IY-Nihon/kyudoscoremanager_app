@@ -69,10 +69,16 @@ test('載せ替えると、記録中の盤面が控えに残り、記録の射�
   assert.equal(store.getState().履歴の記録を記録画面で開く('kiroku-1'), true);
   const s = store.getState();
   assert.equal(s.履歴の編集.id, 'kiroku-1');
-  assert.deepEqual(s.履歴の編集.控え.archers.map((a) => a.name), ['記録中の人']);
+  assert.deepEqual(
+    s.履歴の編集.控え.archers.map((a) => a.name),
+    ['記録中の人']
+  );
   assert.equal(s.履歴の編集.控え.shotsPerRound, 8);
   assert.equal(s.履歴の編集.控え.activeSessionID, 'ima');
-  assert.deepEqual(s.archers.map((a) => a.name), ['甲', '乙']);
+  assert.deepEqual(
+    s.archers.map((a) => a.name),
+    ['甲', '乙']
+  );
   assert.equal(s.shotsPerRound, 4);
   // 記録中の id は外す。付いたままだと「終了・保存」やライブがその記録に結びつく
   assert.equal(s.activeSessionID, null);
@@ -94,7 +100,10 @@ test('保存して終えると、記録に書き戻り、題やメモは残り�
   const s = store.getState();
   assert.equal(s.履歴の編集, null);
   const 直した = s.sessions.find((x) => x.id === 'kiroku-1');
-  assert.deepEqual(直した.archers.map((a) => a.name), ['甲', '乙', '丙']);
+  assert.deepEqual(
+    直した.archers.map((a) => a.name),
+    ['甲', '乙', '丙']
+  );
   assert.deepEqual(直した.archerNames, ['甲', '乙', '丙']);
   assert.equal(直した.shotCount, 8);
   assert.equal(直した.title, '春の大会');
@@ -103,7 +112,10 @@ test('保存して終えると、記録に書き戻り、題やメモは残り�
   assert.equal(直した.date, 1700000000000);
   assert.equal(直した.syncStatus, '未同期', '雲へ送り直す印が付く');
   // 盤面は直す前のものに戻る
-  assert.deepEqual(s.archers.map((a) => a.name), ['記録中の人']);
+  assert.deepEqual(
+    s.archers.map((a) => a.name),
+    ['記録中の人']
+  );
   assert.equal(s.shotsPerRound, 8);
   assert.equal(s.activeSessionID, 'ima');
   assert.deepEqual(s.historyStack, [{ 何か: 1 }]);
@@ -116,9 +128,15 @@ test('やめて終えると、記録は変わらず、盤面は控えに戻る',
   store.getState().履歴の編集を終える(false);
   const s = store.getState();
   assert.equal(s.履歴の編集, null);
-  assert.deepEqual(s.sessions[0].archers.map((a) => a.name), ['甲', '乙']);
+  assert.deepEqual(
+    s.sessions[0].archers.map((a) => a.name),
+    ['甲', '乙']
+  );
   assert.equal(s.sessions[0].syncStatus, '同期済み');
-  assert.deepEqual(s.archers.map((a) => a.name), ['記録中の人']);
+  assert.deepEqual(
+    s.archers.map((a) => a.name),
+    ['記録中の人']
+  );
 });
 
 test('ライブ中と、別の記録を直している途中は載せ替えない', () => {

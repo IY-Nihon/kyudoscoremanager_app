@@ -15,7 +15,13 @@ const 根 = path.join(__dirname, '..', '..', 'src');
 
 /** 店のファイルの名前（src からの相対） */
 function 店のファイル() {
-  return ['useScoreStore.js', ...fs.readdirSync(根).filter((名) => /^store.*\.js$/.test(名) && 名 !== 'storeSlice.js').sort()];
+  return [
+    'useScoreStore.js',
+    ...fs
+      .readdirSync(根)
+      .filter((名) => /^store.*\.js$/.test(名) && 名 !== 'storeSlice.js')
+      .sort(),
+  ];
 }
 
 /** 店ぜんぶの字（ファイルをつないだもの） */

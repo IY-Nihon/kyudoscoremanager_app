@@ -10,14 +10,11 @@
  * 番号は打ち込まずに一覧から選ぶ（記録表で人を選ぶのと同じ形）。
  */
 import { test, expect } from '@playwright/test';
-import {
-  案内を止める,
-  画面が出るまで待つ,
-  入り口が決まるまで待つ,
-} from './helpers.mjs';
+import { 案内を止める, 画面が出るまで待つ, 入り口が決まるまで待つ } from './helpers.mjs';
 import fs from 'node:fs';
 
-const お知らせの版 = (fs.readFileSync('src/WhatsNewModal.js', 'utf8').match(/NOTICE_VERSION = '([^']+)'/) || [])[1];
+const お知らせの版 = (fs.readFileSync('src/WhatsNewModal.js', 'utf8').match(/NOTICE_VERSION = '([^']+)'/) ||
+  [])[1];
 
 // 鍵の検査（e2e/lock.spec.mjs）と同じ団体を使う。どちらも「終了・保存」を
 // 押さないので、団体の中身には何も書かない（検査は workers:1 で1つずつ動く）。
@@ -55,7 +52,10 @@ async function 入る(page) {
       .poll(
         () =>
           page.evaluate(() => {
-            const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+            const s =
+              JSON.parse(
+                (globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}'
+              )?.state || {};
             return s.activeGroupId || null;
           }),
         { timeout: 60_000, message: 'ログインが通らない（団体IDが入らない）' }
@@ -121,9 +121,11 @@ test('途中交代：2立目を選ぶと、5射目からの交代として書か
 
   // しまわれた位置が 4（＝5射目、0始まり）であること
   const 位置 = await page.evaluate(() => {
-    const 生 = (globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage'));
+    const 生 = globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage');
     const 状態 = JSON.parse(生 || '{}')?.state || {};
-    const 射手 = (状態.archers || []).find((a) => a && a.substitutions && Object.keys(a.substitutions).length > 0);
+    const 射手 = (状態.archers || []).find(
+      (a) => a && a.substitutions && Object.keys(a.substitutions).length > 0
+    );
     return 射手 ? Object.keys(射手.substitutions).map(Number) : [];
   });
   expect(位置, '2立目が5射目（位置4）としてしまわれていない').toEqual([4]);
@@ -144,8 +146,12 @@ test('途中交代：射目で選んだときも、その射目にしまわれ�
   await page.waitForTimeout(1500);
 
   const 位置 = await page.evaluate(() => {
-    const 状態 = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
-    const 射手 = (状態.archers || []).find((a) => a && a.substitutions && Object.keys(a.substitutions).length > 0);
+    const 状態 =
+      JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+        ?.state || {};
+    const 射手 = (状態.archers || []).find(
+      (a) => a && a.substitutions && Object.keys(a.substitutions).length > 0
+    );
     return 射手 ? Object.keys(射手.substitutions).map(Number) : [];
   });
   expect(位置, '3射目が位置2としてしまわれていない').toEqual([2]);
@@ -180,8 +186,9 @@ test('途中交代：交代相手は学年でまとまり、開け閉めでき�
   const 見えている人数 = () =>
     page.evaluate(
       () =>
-        [...document.querySelectorAll('div')].filter((e) => /^(男子|女子|未設定)$/.test((e.textContent || '').trim()))
-          .length
+        [...document.querySelectorAll('div')].filter((e) =>
+          /^(男子|女子|未設定)$/.test((e.textContent || '').trim())
+        ).length
     );
 
   const 見出し = 窓.getByText(/^1年生 \(\d+人\)$/);
@@ -270,7 +277,9 @@ test('途中交代：入れたあと、人の選択から取り消せる', async
 
   const 交代の数 = () =>
     page.evaluate(() => {
-      const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+      const s =
+        JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+          ?.state || {};
       const 射手 = (s.archers || []).find((a) => a && a.substitutions);
       return 射手 ? Object.keys(射手.substitutions).length : 0;
     });

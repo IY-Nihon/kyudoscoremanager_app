@@ -22,9 +22,14 @@ import path from 'node:path';
 
 const TARGET = ['stg', 'prod'].includes(process.argv[2]) ? process.argv[2] : 'prod';
 const env = Object.fromEntries(
-  fs.readFileSync(TARGET === 'stg' ? '.env.development.local' : '.env', 'utf8')
-    .split(/\r?\n/).filter((l) => l.includes('='))
-    .map((l) => { const i = l.indexOf('='); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; })
+  fs
+    .readFileSync(TARGET === 'stg' ? '.env.development.local' : '.env', 'utf8')
+    .split(/\r?\n/)
+    .filter((l) => l.includes('='))
+    .map((l) => {
+      const i = l.indexOf('=');
+      return [l.slice(0, i).trim(), l.slice(i + 1).trim()];
+    })
 );
 const PID = env.EXPO_PUBLIC_FIREBASE_PROJECT_ID;
 const KEY = env.EXPO_PUBLIC_FIREBASE_API_KEY;
@@ -45,7 +50,9 @@ const CLI_SECRET = 'j9iVZfS8kkCEFUPaAeJV0sAi';
 
 async function 所有者トークン() {
   if (!fs.existsSync(CLI設定)) {
-    throw new Error(`Firebase CLI のログイン情報が見つかりません（${CLI設定}）。firebase login を実行してください。`);
+    throw new Error(
+      `Firebase CLI のログイン情報が見つかりません（${CLI設定}）。firebase login を実行してください。`
+    );
   }
   const 設定 = JSON.parse(fs.readFileSync(CLI設定, 'utf8'));
   const t = 設定.tokens || {};
@@ -63,7 +70,8 @@ async function 所有者トークン() {
     }),
   });
   const j = await r.json();
-  if (!r.ok || !j.access_token) throw new Error(`トークンを取り直せませんでした: ${JSON.stringify(j).slice(0, 200)}`);
+  if (!r.ok || !j.access_token)
+    throw new Error(`トークンを取り直せませんでした: ${JSON.stringify(j).slice(0, 200)}`);
   return j.access_token;
 }
 
@@ -91,7 +99,8 @@ const 失敗 = [];
 async function listCollectionIds(docPath) {
   const url = `${BASE}${docPath}:listCollectionIds`;
   const r = await fetch(url, {
-    method: 'POST', headers: { ...H, 'Content-Type': 'application/json' },
+    method: 'POST',
+    headers: { ...H, 'Content-Type': 'application/json' },
     body: JSON.stringify({ pageSize: 300 }),
   });
   if (!r.ok) return null;
@@ -100,10 +109,14 @@ async function listCollectionIds(docPath) {
 
 /** コレクションの全ドキュメントを取る（ページ送りあり） */
 async function listDocs(colPath) {
-  const out = []; let tok = '';
+  const out = [];
+  let tok = '';
   for (;;) {
     const r = await fetch(`${BASE}${colPath}?pageSize=300${tok ? `&pageToken=${tok}` : ''}`, { headers: H });
-    if (!r.ok) { 失敗.push({ パス: colPath, HTTP: r.status }); return out; }
+    if (!r.ok) {
+      失敗.push({ パス: colPath, HTTP: r.status });
+      return out;
+    }
     const j = await r.json();
     (j.documents || []).forEach((d) => out.push(d));
     if (!j.nextPageToken) break;
@@ -119,10 +132,12 @@ async function backupCollection(colPath, depth = 0) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const body = JSON.stringify({ path: colPath, count: docs.length, documents: docs }, null, 1);
   fs.writeFileSync(file, body);
-  統計.コレクション++; 統計.ドキュメント += docs.length; 統計.バイト += Buffer.byteLength(body);
+  統計.コレクション++;
+  統計.ドキュメント += docs.length;
+  統計.バイト += Buffer.byteLength(body);
   console.log(`${'  '.repeat(depth)}${colPath} … ${docs.length}件`);
 
-  if (depth >= 4) return;                       // 念のための歯止め
+  if (depth >= 4) return; // 念のための歯止め
   for (const d of docs) {
     const docPath = '/' + d.name.split('/documents/')[1];
     const subs = await listCollectionIds(docPath);
@@ -145,12 +160,20 @@ for (const c of roots) await backupCollection(`/${c}`);
 // groups の親ドキュメントが無い団体はサブコレクションを辿れないので、
 // group_accounts から団体IDを拾って個別に確認する
 const ga = JSON.parse(fs.readFileSync(path.join(OUT, 'firestore', 'group_accounts.json'), 'utf8'));
-const 既知のサブ = ['sessions', 'members', 'alumni', 'trash', 'config', 'officialPracticeDays', 'member_lookup'];
+const 既知のサブ = [
+  'sessions',
+  'members',
+  'alumni',
+  'trash',
+  'config',
+  'officialPracticeDays',
+  'member_lookup',
+];
 for (const d of ga.documents || []) {
   const gid = d.name.split('/').pop();
   for (const sub of 既知のサブ) {
     const f = path.join(OUT, 'firestore', `groups__${gid}__${sub}.json`);
-    if (fs.existsSync(f)) continue;                       // 上の再帰で控え済み
+    if (fs.existsSync(f)) continue; // 上の再帰で控え済み
     await backupCollection(`/groups/${gid}/${sub}`, 1);
   }
 }
@@ -184,9 +207,17 @@ fs.writeFileSync(path.join(OUT, 'rtdb.json'), JSON.stringify(rtdb, null, 1));
 // ── ルールと設定 ─────────────────────────────────────────────────
 console.log('\n■ ルールと設定');
 fs.mkdirSync(path.join(OUT, 'rules'), { recursive: true });
-for (const f of ['firestore.rules', 'database.rules.json', 'firestore.indexes.json',
-                 'firebase.json', '_archive/restore-open.rules']) {
-  if (!fs.existsSync(f)) { console.log(`  ${f} … なし`); continue; }
+for (const f of [
+  'firestore.rules',
+  'database.rules.json',
+  'firestore.indexes.json',
+  'firebase.json',
+  '_archive/restore-open.rules',
+]) {
+  if (!fs.existsSync(f)) {
+    console.log(`  ${f} … なし`);
+    continue;
+  }
   fs.copyFileSync(f, path.join(OUT, 'rules', path.basename(f)));
   console.log(`  ${f} … 控えました`);
 }
@@ -200,8 +231,10 @@ const projectFlag = TARGET === 'stg' ? 'kyudoscoremanager-stg' : PID;
 let 利用者数 = null;
 fs.mkdirSync(path.join(OUT, 'auth'), { recursive: true });
 try {
-  execSync(`npx firebase auth:export "${path.join(OUT, 'auth', 'users.json')}" --format=json --project ${projectFlag}`,
-    { stdio: 'pipe' });
+  execSync(
+    `npx firebase auth:export "${path.join(OUT, 'auth', 'users.json')}" --format=json --project ${projectFlag}`,
+    { stdio: 'pipe' }
+  );
   利用者数 = (JSON.parse(fs.readFileSync(path.join(OUT, 'auth', 'users.json'), 'utf8')).users || []).length;
   console.log(`  利用者 … ${利用者数}件（パスワードのハッシュを含むため取り扱い注意）`);
 } catch (e) {
@@ -209,10 +242,14 @@ try {
   console.log('  利用者 … 取得できませんでした（npx firebase login を確認してください）');
 }
 try {
-  const out = execSync(`npx firebase firestore:indexes --project ${projectFlag}`, { stdio: 'pipe' }).toString();
+  const out = execSync(`npx firebase firestore:indexes --project ${projectFlag}`, {
+    stdio: 'pipe',
+  }).toString();
   fs.writeFileSync(path.join(OUT, 'rules', 'firestore.indexes.ACTUAL.json'), out);
   const n = (JSON.parse(out).indexes || []).length;
-  console.log(`  インデックス … ${n}件（リポジトリの firestore.indexes.json は雛形のままなので、こちらが実体）`);
+  console.log(
+    `  インデックス … ${n}件（リポジトリの firestore.indexes.json は雛形のままなので、こちらが実体）`
+  );
 } catch {
   失敗.push({ パス: 'firestore:indexes', 理由: '取得できませんでした' });
   console.log('  インデックス … 取得できませんでした');
@@ -238,7 +275,10 @@ fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null,
 
 console.log('\n■ まとめ');
 console.table([{ ...統計, MB: (統計.バイト / 1048576).toFixed(2) }]);
-if (失敗.length) { console.error('取得できなかったもの:'); console.table(失敗); }
+if (失敗.length) {
+  console.error('取得できなかったもの:');
+  console.table(失敗);
+}
 
 // 中身の無い控えを「取れた」と思わせないための最後の関門。
 // 権限まわりが変わったときに、日付フォルダだけができて気づかない事故を防ぐ

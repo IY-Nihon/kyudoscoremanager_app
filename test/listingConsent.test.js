@@ -22,14 +22,20 @@ test('使い慣れた団体（記録10回・14日以上）の団体ログイン�
   assert.equal(決まり.札を出すか({ 役割: 'group', 記録たち: 記録を作る(9, 30), 許可: null, いま }), false);
   assert.equal(決まり.札を出すか({ 役割: 'group', 記録たち: 記録を作る(20, 13), 許可: null, いま }), false);
   assert.equal(決まり.札を出すか({ 役割: 'member', 記録たち: 記録を作る(20, 30), 許可: null, いま }), false);
-  assert.equal(決まり.札を出すか({ 役割: 'group', 記録たち: 記録を作る(20, 30), 許可: null, いま, 止める: true }), false);
+  assert.equal(
+    決まり.札を出すか({ 役割: 'group', 記録たち: 記録を作る(20, 30), 許可: null, いま, 止める: true }),
+    false
+  );
 });
 
 test('ゴミ箱の記録は数えない。日付は日時型でも文字でも読める', () => {
   const 記録 = 記録を作る(10, 30);
   記録[0] = Object.assign({}, 記録[0], { deletedAt: いま });
   assert.equal(決まり.札を出すか({ 役割: 'group', 記録たち: 記録, 許可: null, いま }), false);
-  const 型 = 記録を作る(10, 30).map((r) => ({ ...r, date: { seconds: Math.floor(r.date / 1000), nanoseconds: 0 } }));
+  const 型 = 記録を作る(10, 30).map((r) => ({
+    ...r,
+    date: { seconds: Math.floor(r.date / 1000), nanoseconds: 0 },
+  }));
   assert.equal(決まり.札を出すか({ 役割: 'group', 記録たち: 型, 許可: null, いま }), true);
   const 字 = 記録を作る(10, 30).map((r) => ({ ...r, date: new Date(r.date).toISOString() }));
   assert.equal(決まり.札を出すか({ 役割: 'group', 記録たち: 字, 許可: null, いま }), true);
@@ -45,12 +51,20 @@ test('「あとで」はその起動のあいだだけ出さない。次に開�
     false,
     '同じ起動のうちにまた出た'
   );
-  assert.equal(決まり.札を出すか({ 役割: 'group', 記録たち: 記録, 許可: 一回目, いま: いま + 1000 }), true, '次に開いたのに出ない');
+  assert.equal(
+    決まり.札を出すか({ 役割: 'group', 記録たち: 記録, 許可: 一回目, いま: いま + 1000 }),
+    true,
+    '次に開いたのに出ない'
+  );
   let 許可 = 一回目;
   for (let i = 0; i < 10; i++) 許可 = 決まり.聞いた記録(許可, いま + i);
   assert.equal(許可.聞いた回数, 11);
   assert.equal(許可.初めて聞いた日時, いま, '初めて聞いた日時は変えない');
-  assert.equal(決まり.札を出すか({ 役割: 'group', 記録たち: 記録, 許可, いま }), true, '何回聞いても上限で止めない');
+  assert.equal(
+    決まり.札を出すか({ 役割: 'group', 記録たち: 記録, 許可, いま }),
+    true,
+    '何回聞いても上限で止めない'
+  );
   const 答え = 決まり.答えを整える({ 載せ方: '載せない' }, いま).中身;
   assert.equal(決まり.札を出すか({ 役割: 'group', 記録たち: 記録, 許可: 答え, いま: いま + 60 * 日 }), false);
 });
@@ -88,10 +102,14 @@ test('答えを整える：足りないときは画面に出す文を返す。�
   assert.match(決まり.答えを整える({ 載せ方: '団体名', 載せる名前: ' ', ホームページ: true }).誤り, /名前/);
   assert.match(決まり.答えを整える({ 載せ方: '地域', 地域: '', ホームページ: true }).誤り, /地域/);
   assert.match(
-    決まり.答えを整える({ 載せ方: '団体名', 載せる名前: 'A大学', ホームページ: false, 他校への案内: false }).誤り,
+    決まり.答えを整える({ 載せ方: '団体名', 載せる名前: 'A大学', ホームページ: false, 他校への案内: false })
+      .誤り,
     /載せる先/
   );
-  const 載せない = 決まり.答えを整える({ 載せ方: '載せない', ホームページ: true, 他校への案内: true }, いま).中身;
+  const 載せない = 決まり.答えを整える(
+    { 載せ方: '載せない', ホームページ: true, 他校への案内: true },
+    いま
+  ).中身;
   assert.equal(載せない.ホームページ, false);
   assert.equal(載せない.他校への案内, false);
   assert.equal(載せない.聞いた文の版, 決まり.聞いた文の版);
@@ -107,7 +125,9 @@ test('答えを整える：足りないときは画面に出す文を返す。�
 test('一覧に出す形：載せる先ごとに、団体名か地域だけ', () => {
   const 整 = (選) => 決まり.答えを整える(選, いま).中身;
   assert.deepEqual(
-    決まり.載せる表示(整({ 載せ方: '団体名', 載せる名前: 'A大学弓道部', ホームページ: false, 他校への案内: true })),
+    決まり.載せる表示(
+      整({ 載せ方: '団体名', 載せる名前: 'A大学弓道部', ホームページ: false, 他校への案内: true })
+    ),
     { 表示: 'A大学弓道部', ホームページ: false, 他校への案内: true }
   );
   assert.deepEqual(
@@ -115,7 +135,11 @@ test('一覧に出す形：載せる先ごとに、団体名か地域だけ', ()
     { 表示: '関東の大学', ホームページ: true, 他校への案内: true }
   );
   assert.equal(決まり.載せる表示(整({ 載せ方: '載せない' })), null);
-  assert.equal(決まり.載せる表示(決まり.聞いた記録(null, いま)), null, '聞いただけ（答えていない）は載せない');
+  assert.equal(
+    決まり.載せる表示(決まり.聞いた記録(null, いま)),
+    null,
+    '聞いただけ（答えていない）は載せない'
+  );
   assert.equal(決まり.載せる表示(null), null);
 });
 
@@ -123,14 +147,24 @@ test('決まり：config/listing は団体の持ち主だけが書ける（部�
   const fs = require('node:fs');
   const path = require('node:path');
   const 決まりの字 = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8');
-  assert.match(決まりの字, /match \/config\/\{docId\} \{\s*allow read: if canAccess\(groupId\);\s*allow write: if canAccess\(groupId\) && docId != 'listing';/);
-  assert.match(決まりの字, /match \/config\/listing \{\s*allow read: if canAccess\(groupId\);\s*allow write: if isGroupOwner\(groupId\);/);
+  assert.match(
+    決まりの字,
+    /match \/config\/\{docId\} \{\s*allow read: if canAccess\(groupId\);\s*allow write: if canAccess\(groupId\) && docId != 'listing';/
+  );
+  assert.match(
+    決まりの字,
+    /match \/config\/listing \{\s*allow read: if canAccess\(groupId\);\s*allow write: if isGroupOwner\(groupId\);/
+  );
 });
 
 test('開いた時：一度聞いてまだ答えていない団体だけ（記録の数は見ない）。同じ起動で出したら出さない', () => {
   const 一回目 = 決まり.聞いた記録(null, いま);
   assert.equal(決まり.開いた時に出すか({ 役割: 'group', 許可: 一回目 }), true);
-  assert.equal(決まり.開いた時に出すか({ 役割: 'group', 許可: null }), false, '一度も聞いていない団体に開いた時に出した');
+  assert.equal(
+    決まり.開いた時に出すか({ 役割: 'group', 許可: null }),
+    false,
+    '一度も聞いていない団体に開いた時に出した'
+  );
   assert.equal(決まり.開いた時に出すか({ 役割: 'group', 許可: 一回目, この起動で聞いた: true }), false);
   assert.equal(決まり.開いた時に出すか({ 役割: 'member', 許可: 一回目 }), false);
   assert.equal(決まり.開いた時に出すか({ 役割: 'group', 許可: 一回目, 止める: true }), false);

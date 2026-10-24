@@ -43,7 +43,9 @@ test('団体アカウントを作って、設定から削除すると、その�
   await 印を押す('部員の氏名を登録する前に');
   await expect(page.getByText('✓', { exact: true })).toHaveCount(2, { timeout: 5_000 });
   await page.getByText('アカウント作成', { exact: true }).click();
-  await expect(page.getByText('団体アカウントを作成しました', { exact: false })).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText('団体アカウントを作成しました', { exact: false })).toBeVisible({
+    timeout: 60_000,
+  });
   const 文 = await page.getByText('団体ID:', { exact: false }).first().textContent();
   const 団体ID = (文.match(/団体ID:\s*(\d{6})/) || [])[1];
   expect(団体ID, '団体IDが読めない: ' + 文).toMatch(/^\d{6}$/);
@@ -51,16 +53,23 @@ test('団体アカウントを作って、設定から削除すると、その�
   // 作ったあとは入口に戻り、団体IDとパスワードが入った状態になる。ログインを押して入る
   await expect(page.getByPlaceholder('例: 123456')).toHaveValue(団体ID, { timeout: 30_000 });
   await page.getByText('ログイン', { exact: true }).click();
-  await expect(page.getByText('ログアウト', { exact: true }).or(page.getByText('記録', { exact: true }).first())).toBeVisible({ timeout: 60_000 });
+  await expect(
+    page.getByText('ログアウト', { exact: true }).or(page.getByText('記録', { exact: true }).first())
+  ).toBeVisible({ timeout: 60_000 });
 
   印('入った');
   // ── 設定 → 管理者モード ──
   await page.getByText('設定', { exact: true }).first().click();
   await expect(page.getByText('ログアウト', { exact: true })).toBeVisible({ timeout: 15_000 });
   await expect(page.getByText('アカウントを削除する', { exact: true })).toHaveCount(0);
-  await page.getByText('管理者モード', { exact: true }).scrollIntoViewIfNeeded().catch(() => {});
+  await page
+    .getByText('管理者モード', { exact: true })
+    .scrollIntoViewIfNeeded()
+    .catch(() => {});
   await page.evaluate(() => {
-    const 行 = [...document.querySelectorAll('div')].find((e) => (e.textContent || '').trim() === '管理者モード');
+    const 行 = [...document.querySelectorAll('div')].find(
+      (e) => (e.textContent || '').trim() === '管理者モード'
+    );
     let 親 = 行;
     for (let i = 0; i < 6 && 親; i++) {
       const 切替 = 親.querySelector('input[type="checkbox"], [role="switch"]');
@@ -78,11 +87,15 @@ test('団体アカウントを作って、設定から削除すると、その�
   const 削除の行 = page.getByText('アカウントを削除する', { exact: true });
   await 削除の行.scrollIntoViewIfNeeded().catch(() => {});
   await 削除の行.click();
-  await expect(page.getByText('続けるには団体パスワードを入力してください。')).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText('続けるには団体パスワードを入力してください。')).toBeVisible({
+    timeout: 10_000,
+  });
   await page.getByPlaceholder('団体パスワード').fill(合言葉);
   await page.getByText('削除する', { exact: true }).click();
   印('削除を押した');
-  await expect(page.getByText('団体アカウントを削除しました', { exact: false })).toBeVisible({ timeout: 180_000 });
+  await expect(page.getByText('団体アカウントを削除しました', { exact: false })).toBeVisible({
+    timeout: 180_000,
+  });
   印('削除できた');
   // ── 入口へ戻り、その団体IDでは入れない ──
   await expect(page.getByPlaceholder('例: 123456')).toBeVisible({ timeout: 30_000 });
@@ -109,5 +122,7 @@ test('団体アカウントを作って、設定から削除すると、その�
   if ((await ID欄.inputValue()) !== 団体ID) await 確かに打つ(ID欄, 団体ID);
   await page.getByText('ログイン', { exact: true }).click();
   // 団体IDから入れるか調べるのに雲へ聞く（getDoc）。iPhone では応答が遅れる回があるので長めに待つ
-  await expect(page.getByText('団体IDまたはパスワードが正しくありません', { exact: false })).toBeVisible({ timeout: 120_000 });
+  await expect(page.getByText('団体IDまたはパスワードが正しくありません', { exact: false })).toBeVisible({
+    timeout: 120_000,
+  });
 });

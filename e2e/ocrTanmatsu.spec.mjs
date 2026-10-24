@@ -76,10 +76,26 @@ test('男子の記録用紙（表が 2 つ並ぶ紙）を canvas で読むと、
   const H = b.高 + 余 * 2;
   const 画 = new Uint8Array(W * H).fill(235);
   for (let y = 0; y < b.高; y++) 画.set(b.白黒.subarray(y * b.幅, (y + 1) * b.幅), (y + 余) * W + 余);
-  const 歪み = ゆがませる({ 画, 幅: W, 高: H, 面: 1 }, { 明るさ: 1, 締まり: 1, ざらつき: 0, 崩し: 崩し方({ 幅: W, 高: H, 回す: 4, 台形: 0, 種: 12345 }), 種: 9004 });
-  const base64 = (await sharp(Buffer.from(歪み.画), { raw: { width: 歪み.幅, height: 歪み.高, channels: 1 } }).jpeg({ quality: 90 }).toBuffer()).toString('base64');
+  const 歪み = ゆがませる(
+    { 画, 幅: W, 高: H, 面: 1 },
+    {
+      明るさ: 1,
+      締まり: 1,
+      ざらつき: 0,
+      崩し: 崩し方({ 幅: W, 高: H, 回す: 4, 台形: 0, 種: 12345 }),
+      種: 9004,
+    }
+  );
+  const base64 = (
+    await sharp(Buffer.from(歪み.画), { raw: { width: 歪み.幅, height: 歪み.高, channels: 1 } })
+      .jpeg({ quality: 90 })
+      .toBuffer()
+  ).toString('base64');
 
-  const 表たち = await page.evaluate(([b64]) => window.端末の読み取り.紙の表たちの印を読む(b64, [4, 4], 5, 4), [base64]);
+  const 表たち = await page.evaluate(
+    ([b64]) => window.端末の読み取り.紙の表たちの印を読む(b64, [4, 4], 5, 4),
+    [base64]
+  );
   expect(表たち.length).toBe(2);
   let 合 = 0;
   表たち.forEach((表, k) =>
@@ -107,9 +123,13 @@ test.describe('確認画面', () => {
     // Gemini の返事（名前は本番の記録の番号。マスは全部空）
     const 返事 = {
       teams: [0, 1].map((i) => ({
-        name: '', cellStyle: '2射', tachiPeople: 4,
+        name: '',
+        cellStyle: '2射',
+        tachiPeople: 4,
         // roster は null（名簿に無い＝ゲスト）。無いと古い文字比較が「11」を部員1に寄せて要選択になり、反映できない
-        rows: 射手たち.slice(i * 8, i * 8 + 8).map((s) => ({ name: s.名, roster: null, cells: Array(10).fill('') })),
+        rows: 射手たち
+          .slice(i * 8, i * 8 + 8)
+          .map((s) => ({ name: s.名, roster: null, cells: Array(10).fill('') })),
       })),
     };
     if (行を直す) 行を直す(返事);
@@ -120,7 +140,11 @@ test.describe('確認画面', () => {
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ candidates: [{ content: { role: 'model', parts: [{ text: JSON.stringify(中身) }] }, finishReason: 'STOP' }] }),
+        body: JSON.stringify({
+          candidates: [
+            { content: { role: 'model', parts: [{ text: JSON.stringify(中身) }] }, finishReason: 'STOP' },
+          ],
+        }),
       });
     });
 
@@ -183,7 +207,10 @@ test.describe('確認画面', () => {
     await 確認画面まで(page);
     await expect(page.getByTestId('ocr-yomitori-tanmatsu')).toBeAttached({ timeout: 120_000 });
     await expect
-      .poll(() => 送った.filter((x) => x.方法 === 'PUT').length, { timeout: 60_000, message: '写真を送っていない' })
+      .poll(() => 送った.filter((x) => x.方法 === 'PUT').length, {
+        timeout: 60_000,
+        message: '写真を送っていない',
+      })
       .toBeGreaterThan(0);
     const 読み = 送った.find((x) => x.方法 === 'POST' && x.体 && x.体.中身 && x.体.中身.段階 === '読み取り');
     expect(読み, '読み取りの記録を送っていない').toBeTruthy();
@@ -196,7 +223,10 @@ test.describe('確認画面', () => {
     expect(写真.型).toBe('image/jpeg');
     const 作った写真 = (await page.evaluate(() => window.__送った写真))[0];
     expect(作った写真 && 作った写真.型).toBe('image/jpeg');
-    expect(作った写真.大きさ, `写真が小さすぎる（縮め方がおかしい）: ${作った写真.大きさ} バイト`).toBeGreaterThan(20_000);
+    expect(
+      作った写真.大きさ,
+      `写真が小さすぎる（縮め方がおかしい）: ${作った写真.大きさ} バイト`
+    ).toBeGreaterThan(20_000);
     expect(作った写真.大きさ, '写真を縮めていない').toBeLessThan(5 * 1024 * 1024);
 
     await page.getByText('記録表に反映する', { exact: true }).click();
@@ -219,7 +249,9 @@ test.describe('確認画面', () => {
     await expect(page.getByText('(要選択)', { exact: false }).first()).toBeVisible();
     // React Native の Alert はブラウザで何も出ず、押しても何も起きないように見えた（実際に踏んだ）
     await page.getByText('記録表に反映する', { exact: true }).click();
-    await expect(page.getByText('候補が複数ある名前が残っています', { exact: false })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('候補が複数ある名前が残っています', { exact: false })).toBeVisible({
+      timeout: 10_000,
+    });
   });
 
   test('端末で読んだ○×が確認画面に出て、迷ったマスに色が付く', async ({ page }) => {
@@ -255,8 +287,13 @@ test.describe('確認画面', () => {
     await page.getByText('記録表に反映する', { exact: true }).click();
     await expect(page.getByText('20射', { exact: true })).toBeVisible({ timeout: 15_000 });
     const 盤面 = await page.evaluate(() => {
-      const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}').state || {};
-      return { shotsPerRound: s.shotsPerRound, 人数: (s.archers || []).filter((a) => a && !a.isSeparator && !a.isTotalCalculator).length };
+      const s =
+        JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+          .state || {};
+      return {
+        shotsPerRound: s.shotsPerRound,
+        人数: (s.archers || []).filter((a) => a && !a.isSeparator && !a.isTotalCalculator).length,
+      };
     });
     expect(盤面.shotsPerRound).toBe(20);
     expect(盤面.人数, '16人が足されていない').toBe(16);
@@ -270,7 +307,10 @@ test.describe('確認画面', () => {
     await 確認画面まで(page, (返事) => {
       // 左の板の 4 人は名簿の部員に寄せる（部員でも区切りと計が入ること。前は名簿の人に板の番号を
       // 付けておらず、全員が部員だと区切りも計も入らなかった）
-      返事.teams[0].rows.slice(0, 4).forEach((r, i) => { r.name = `部員${i + 1}`; r.roster = `部員${i + 1}`; });
+      返事.teams[0].rows.slice(0, 4).forEach((r, i) => {
+        r.name = `部員${i + 1}`;
+        r.roster = `部員${i + 1}`;
+      });
       const 右 = 返事.teams[1].rows;
       返事.teams = [
         返事.teams[0],
@@ -294,7 +334,9 @@ test.describe('確認画面', () => {
   /** 記録表の並びを、人・計・総計・|名前 の字に直して返す */
   function 並びを読む(page) {
     return page.evaluate(() => {
-      const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}').state || {};
+      const s =
+        JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+          .state || {};
       return (s.archers || []).map((a) =>
         a.isSeparator ? '|' + (a.teamName || '') : a.isTotalCalculator ? (a.またぐ合計 ? '総計' : '計') : '人'
       );
@@ -319,11 +361,18 @@ test.describe('確認画面', () => {
     );
     // 総計は手前の計をまとめて数える（区切りで止まる）。B大学の 8 人ぶんが入っていること
     const 総計 = await page.evaluate(() => {
-      const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}').state || {};
+      const s =
+        JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+          .state || {};
       const 並び = s.archers || [];
       const i = 並び.findIndex((a) => a.isTotalCalculator && a.またぐ合計);
-      let 人 = 0, 的中 = 0;
-      for (let k = i - 1; k >= 0 && !並び[k].isSeparator; k--) if (!並び[k].isTotalCalculator) { 人++; 的中 += (並び[k].marks || []).filter((m) => m === '○').length; }
+      let 人 = 0,
+        的中 = 0;
+      for (let k = i - 1; k >= 0 && !並び[k].isSeparator; k--)
+        if (!並び[k].isTotalCalculator) {
+          人++;
+          的中 += (並び[k].marks || []).filter((m) => m === '○').length;
+        }
       return { 人, 的中 };
     });
     expect(総計.人).toBe(8);
@@ -341,7 +390,12 @@ test.describe('確認画面', () => {
         for (const t of 返事.teams) for (const r of t.rows) r.cells = Array(5).fill('');
       },
       // 9/6 の板の、かたまりの格子から作った箱（[上, 左, 下, 右]、0〜1000）
-      { boards: [{ box_2d: [335, 67, 621, 387], people: 8, bands: 5, marks_per_band: 2 }, { box_2d: [335, 648, 636, 964], people: 8, bands: 5, marks_per_band: 2 }] }
+      {
+        boards: [
+          { box_2d: [335, 67, 621, 387], people: 8, bands: 5, marks_per_band: 2 },
+          { box_2d: [335, 648, 636, 964], people: 8, bands: 5, marks_per_band: 2 },
+        ],
+      }
     );
     // 端末で読めた印（画面には出ない）
     await expect(page.getByTestId('ocr-yomitori-tanmatsu')).toBeAttached({ timeout: 120_000 });
@@ -353,8 +407,12 @@ test.describe('確認画面', () => {
     // Gemini の○×（丸に線の向きは 25%）より確かに良い）
     const { 射手たち } = await import('../scripts/ocr-cells/kiroku.mjs');
     const 読み = await page.evaluate(() => {
-      const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}').state || {};
-      return (s.archers || []).filter((a) => a && !a.isSeparator && !a.isTotalCalculator).map((a) => ({ name: a.name, marks: a.marks }));
+      const s =
+        JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+          .state || {};
+      return (s.archers || [])
+        .filter((a) => a && !a.isSeparator && !a.isTotalCalculator)
+        .map((a) => ({ name: a.name, marks: a.marks }));
     });
     expect(読み.length).toBe(16);
     // 記録表の板の順は写真と逆（右の板が先）なので、名前で突き合わせる

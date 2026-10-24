@@ -60,7 +60,10 @@ for (const f of lint) {
       if (!残す.length && 親.isVariableDeclarator()) {
         // 全部使っていない：宣言ごと。require なら副作用の無いものだけ
         const init = 親.node.init;
-        const 取り込み = init && init.type === 'CallExpression' && init.callee.name === 'require' ? init.arguments[0].value : null;
+        const 取り込み =
+          init && init.type === 'CallExpression' && init.callee.name === 'require'
+            ? init.arguments[0].value
+            : null;
         if (取り込み && !副作用の無い取り込み.test(取り込み)) return;
         const 宣言 = 親.parentPath;
         if (宣言.node.declarations.length !== 1) return;
@@ -68,7 +71,12 @@ for (const f of lint) {
         return;
       }
       if (!残す.length) return;
-      足す(p.node.start, p.node.end, '{ ' + 残す.map((x) => code.slice(x.start, x.end)).join(', ') + ' }', '分割');
+      足す(
+        p.node.start,
+        p.node.end,
+        '{ ' + 残す.map((x) => code.slice(x.start, x.end)).join(', ') + ' }',
+        '分割'
+      );
     },
     ImportDeclaration(p) {
       const 消す = p.node.specifiers.filter((s) => 指されたか(s.local));
@@ -77,7 +85,9 @@ for (const f of lint) {
       if (!残す.length) return 足す(p.node.start, p.node.end, '', '取り込み');
       const 既定 = 残す.find((s) => s.type === 'ImportDefaultSpecifier');
       const 名たち = 残す.filter((s) => s.type === 'ImportSpecifier').map((s) => code.slice(s.start, s.end));
-      const 中 = [既定 ? 既定.local.name : null, 名たち.length ? '{ ' + 名たち.join(', ') + ' }' : null].filter(Boolean).join(', ');
+      const 中 = [既定 ? 既定.local.name : null, 名たち.length ? '{ ' + 名たち.join(', ') + ' }' : null]
+        .filter(Boolean)
+        .join(', ');
       足す(p.node.start, p.node.end, `import ${中} from '${p.node.source.value}';`, '取り込み');
     },
     VariableDeclarator(p) {
@@ -91,7 +101,8 @@ for (const f of lint) {
     },
   });
   if (!書き換え.length) continue;
-  for (const w of 書き換え.sort((a, b) => b.start - a.start)) code = code.slice(0, w.start) + w.新 + code.slice(w.end);
+  for (const w of 書き換え.sort((a, b) => b.start - a.start))
+    code = code.slice(0, w.start) + w.新 + code.slice(w.end);
   const 設定 = await prettier.resolveConfig(f.filePath);
   code = await prettier.format(code, { ...設定, filepath: f.filePath });
   fs.writeFileSync(f.filePath, code);

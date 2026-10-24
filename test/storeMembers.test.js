@@ -28,7 +28,9 @@ const 店の中身 = 店の字();
 /** ストアに在る名前（関数も、状態の項目も） */
 function ストアに在る名前() {
   const 出 = new Set();
-  for (const m of 店の中身.matchAll(/^\s{6,10}([A-Za-z_$\u3040-\u30ff\u4e00-\u9fff][\w$\u3040-\u30ff\u4e00-\u9fff]*)\s*:/gm)) {
+  for (const m of 店の中身.matchAll(
+    /^\s{6,10}([A-Za-z_$\u3040-\u30ff\u4e00-\u9fff][\w$\u3040-\u30ff\u4e00-\u9fff]*)\s*:/gm
+  )) {
     出.add(m[1]);
   }
   for (const m of 店の中身.matchAll(/\b(set[A-Za-z0-9_$]+)\s*:/g)) 出.add(m[1]);

@@ -27,10 +27,13 @@ const 元 = 'docs/ocr-samples/PXL_20260906_081921509.jpg';
 const 置き = (process.env.TEMP || '.') + '/honmono-han';
 
 const 記号 = (a, b) =>
-  a === '\u25cb' && b === '\u25cb' ? 'maru2'
-  : a === '\u25cb' && b === '\u00d7' ? 'maru_gyaku'
-  : a === '\u00d7' && b === '\u25cb' ? 'maru_seki'
-  : 'batsu';
+  a === '\u25cb' && b === '\u25cb'
+    ? 'maru2'
+    : a === '\u25cb' && b === '\u00d7'
+      ? 'maru_gyaku'
+      : a === '\u00d7' && b === '\u25cb'
+        ? 'maru_seki'
+        : 'batsu';
 
 /** 記録の○×の並びを、板のマス（上から下）に畳む */
 function 板の並びにする(並び) {
@@ -52,19 +55,26 @@ const 区画 = [
 ];
 
 fs.mkdirSync(置き, { recursive: true });
-for (const 板 of ['cells', 'cells-migi']) fs.rmSync('docs/ocr-samples/' + 板, { recursive: true, force: true });
+for (const 板 of ['cells', 'cells-migi'])
+  fs.rmSync('docs/ocr-samples/' + 板, { recursive: true, force: true });
 
 const 数え = {};
 for (const k of 区画) {
   const みち = `${置き}/${k.名}.jpg`;
-  await sharp(元).extract({ left: k.left, top: k.top, width: k.width, height: k.height }).jpeg({ quality: 95 }).toFile(みち);
+  await sharp(元)
+    .extract({ left: k.left, top: k.top, width: k.width, height: k.height })
+    .jpeg({ quality: 95 })
+    .toFile(みち);
   const g = await 格子(await 画を読む(みち), { 人数: 4, 行数: 10, 上を除く: 0, 回す });
   const 出 = await マスを書き出す(
-    g, 'docs/ocr-samples/' + k.板,
+    g,
+    'docs/ocr-samples/' + k.板,
     (c, r) => (射手たち[k.順[c]] ? 板の並びにする(射手たち[k.順[c]].印)[r] : null),
     k.名 + '-'
   );
   数え[k.板] = (数え[k.板] || 0) + 出.length;
-  console.log(`${k.名}: 列=${g.列.length} 行=${g.行.位置.length} 印の幅=${g.印の幅.toFixed(0)} → ${出.length}枚`);
+  console.log(
+    `${k.名}: 列=${g.列.length} 行=${g.行.位置.length} 印の幅=${g.印の幅.toFixed(0)} → ${出.length}枚`
+  );
 }
 for (const [板, n] of Object.entries(数え)) console.log(`docs/ocr-samples/${板}: ${n}枚`);

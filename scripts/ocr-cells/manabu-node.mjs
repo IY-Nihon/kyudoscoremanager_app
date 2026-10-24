@@ -30,10 +30,12 @@ export async function 本物の見本(根) {
     const k = 種類.indexOf(記号[札]);
     if (k < 0) continue;
     for (const f of fs.readdirSync(path.join(根, 札))) {
-      const { data, info } = await sharp(path.join(根, 札, f)).greyscale().raw().toBuffer({ resolveWithObject: true });
+      const { data, info } = await sharp(path.join(根, 札, f))
+        .greyscale()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
       出.push({ 形: await 形にする(data, info.width, info.height), 札: k, 名: 札 + '/' + f });
     }
   }
   return 出;
 }
-

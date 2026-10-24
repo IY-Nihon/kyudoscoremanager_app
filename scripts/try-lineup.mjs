@@ -60,7 +60,11 @@ for (const みち of process.argv.slice(2)) {
     }
     try {
       const j = JSON.parse(返り.response.text());
-      分け方.push(札で立にまとめる(j.tachi || []).map((立) => (立.seats || []).length).join('+'));
+      分け方.push(
+        札で立にまとめる(j.tachi || [])
+          .map((立) => (立.seats || []).length)
+          .join('+')
+      );
     } catch (誤り) {
       分け方.push('読めない');
     }

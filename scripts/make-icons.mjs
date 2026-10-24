@@ -117,11 +117,7 @@ async function writeIcon(先, 大きさ, 比率) {
   fs.mkdirSync(path.dirname(道), { recursive: true });
 
   const targetDiameter = Math.round(大きさ * 比率);
-  const resizedSym = await symbolImg
-    .clone()
-    .resize(targetDiameter, targetDiameter)
-    .png()
-    .toBuffer();
+  const resizedSym = await symbolImg.clone().resize(targetDiameter, targetDiameter).png().toBuffer();
 
   const offset = Math.round((大きさ - targetDiameter) / 2);
 

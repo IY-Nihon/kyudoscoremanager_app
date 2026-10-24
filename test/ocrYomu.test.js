@@ -68,9 +68,19 @@ test('マスを端末で差し替える: 紙（1射）の teams を端末の読�
   const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-tatami.json', 'utf8'));
   const 紙の重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/kami-tatami.json', 'utf8'));
   // Gemini が返したつもりの teams。マスは全部空（読めなかった体）
-  const teams = [{ name: '', cellStyle: '1射', tachiPeople: 4, rows: 紙の射手たち.map((s) => ({ name: s.名, cells: Array(20).fill('') })) }];
+  const teams = [
+    {
+      name: '',
+      cellStyle: '1射',
+      tachiPeople: 4,
+      rows: 紙の射手たち.map((s) => ({ name: s.名, cells: Array(20).fill('') })),
+    },
+  ];
   const 出 = await マスを端末で差し替える(teams, [{ base64: 'docs/ocr-samples/1788683956272.jpg' }], {
-    向き: '右から', 道具: await 道具をつくる(), 重み, 紙の重み,
+    向き: '右から',
+    道具: await 道具をつくる(),
+    重み,
+    紙の重み,
   });
   assert.strictEqual(出.読み取り元, '端末', 出.訳);
   let 合 = 0;
@@ -102,14 +112,20 @@ test('マスを端末で差し替える: 写真2枚に板が1枚ずつでも、�
   const 左 = path.join(置き場, 'hidari.png');
   const 右 = path.join(置き場, 'migi.png');
   await sharp(みち).extract({ left: 0, top: 0, width: 境, height: 元.高 }).toFile(左);
-  await sharp(みち).extract({ left: 境, top: 0, width: 元.幅 - 境, height: 元.高 }).toFile(右);
+  await sharp(みち)
+    .extract({ left: 境, top: 0, width: 元.幅 - 境, height: 元.高 })
+    .toFile(右);
 
   const teams = [0, 1].map((i) => ({
-    name: '', cellStyle: '2射', tachiPeople: 4,
+    name: '',
+    cellStyle: '2射',
+    tachiPeople: 4,
     rows: 射手たち.slice(i * 8, i * 8 + 8).map((s) => ({ name: s.名, cells: Array(10).fill('') })),
   }));
   const 出 = await マスを端末で差し替える(teams, [{ base64: 左 }, { base64: 右 }], {
-    向き: '左右から', 道具: { 画を読む: (p) => 画を読む(p), 回す }, 重み,
+    向き: '左右から',
+    道具: { 画を読む: (p) => 画を読む(p), 回す },
+    重み,
   });
   assert.strictEqual(出.読み取り元, '端末', 出.訳);
   let 合 = 0;
@@ -130,12 +146,20 @@ test('マスを端末で差し替える: Gemini の行の数が板の列の数�
   const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-tatami.json', 'utf8'));
   // 左の板は8列なのに、Gemini が10人と言ってきた体（相手校の板で実際に 14〜17 に揺れた）
   const teams = [10, 8].map((n) => ({
-    name: '', cellStyle: '2射', tachiPeople: 4,
+    name: '',
+    cellStyle: '2射',
+    tachiPeople: 4,
     rows: Array.from({ length: n }, (_, i) => ({ name: String(i + 1), cells: Array(10).fill('') })),
   }));
-  const 出 = await マスを端末で差し替える(teams, [{ base64: 'docs/ocr-samples/PXL_20260906_081921509.jpg' }], {
-    向き: '左右から', 道具: { 画を読む: (p) => 画を読む(p), 回す }, 重み,
-  });
+  const 出 = await マスを端末で差し替える(
+    teams,
+    [{ base64: 'docs/ocr-samples/PXL_20260906_081921509.jpg' }],
+    {
+      向き: '左右から',
+      道具: { 画を読む: (p) => 画を読む(p), 回す },
+      重み,
+    }
+  );
   assert.strictEqual(出.読み取り元, 'AI');
   assert.match(出.訳 || '', /列の数が合わない/);
 });
@@ -149,20 +173,33 @@ test('マスを端末で差し替える: Gemini のマスの数（段数）が�
   // 10段の板なのに、28射の設定に引かれて 14 マスと答えてきた体（本番で実際に起きた）。
   // 端末の段の見当（列ごとの印の数）に近い 10 段で読む（2026-10-12 から。前は Gemini の○×のままにした）
   const teams = [8, 8].map((n) => ({
-    name: '', cellStyle: '2射', tachiPeople: 4,
-    rows: Array.from({ length: n }, (_, i) => ({ name: String(i + 1), roster: null, cells: Array(14).fill('') })),
+    name: '',
+    cellStyle: '2射',
+    tachiPeople: 4,
+    rows: Array.from({ length: n }, (_, i) => ({
+      name: String(i + 1),
+      roster: null,
+      cells: Array(14).fill(''),
+    })),
   }));
-  const 出 = await マスを端末で差し替える(teams, [{ base64: 'docs/ocr-samples/PXL_20260906_081921509.jpg' }], {
-    向き: '左右から', 道具: { 画を読む: (p) => 画を読む(p), 回す }, 重み,
-  });
+  const 出 = await マスを端末で差し替える(
+    teams,
+    [{ base64: 'docs/ocr-samples/PXL_20260906_081921509.jpg' }],
+    {
+      向き: '左右から',
+      道具: { 画を読む: (p) => 画を読む(p), 回す },
+      重み,
+    }
+  );
   assert.strictEqual(出.読み取り元, '端末', 出.訳);
   let 合 = 0;
   let k = 0;
-  for (const t of 出.teams) for (const r of t.rows) {
-    const 印 = マスを開く(一射目からの順にする(r.cells, '下から'), '2射');
-    const 真 = [...射手たち[k++].印];
-    for (let j = 0; j < 真.length; j++) if (印[j] === 真[j]) 合++;
-  }
+  for (const t of 出.teams)
+    for (const r of t.rows) {
+      const 印 = マスを開く(一射目からの順にする(r.cells, '下から'), '2射');
+      const 真 = [...射手たち[k++].印];
+      for (let j = 0; j < 真.length; j++) if (印[j] === 真[j]) 合++;
+    }
   assert.ok(合 >= 317, `合ったのは ${合}/320`);
 });
 
@@ -176,26 +213,45 @@ test('マスを端末で差し替える: Gemini が板を割りすぎても、�
   //（2026-09-13 の板で本番に出た。行そのものは板ごとに前から順で、総数は合っている）
   let 番 = 0;
   const 板 = (n, tachiPeople) => ({
-    name: '', cellStyle: '2射', tachiPeople,
+    name: '',
+    cellStyle: '2射',
+    tachiPeople,
     rows: Array.from({ length: n }, () => ({ name: String(++番), roster: null, cells: Array(10).fill('') })),
   });
   const teams = [板(8, 4), 板(5, 4), 板(2, 2), 板(1, 1)];
-  const 出 = await マスを端末で差し替える(teams, [{ base64: 'docs/ocr-samples/PXL_20260906_081921509.jpg' }], {
-    向き: '左右から', 道具: { 画を読む: (p) => 画を読む(p), 回す }, 重み,
-  });
+  const 出 = await マスを端末で差し替える(
+    teams,
+    [{ base64: 'docs/ocr-samples/PXL_20260906_081921509.jpg' }],
+    {
+      向き: '左右から',
+      道具: { 画を読む: (p) => 画を読む(p), 回す },
+      重み,
+    }
+  );
   assert.strictEqual(出.読み取り元, '端末', 出.訳);
   assert.deepStrictEqual(出.組み直した, [8, 8]);
-  assert.deepStrictEqual(出.teams.map((t) => t.rows.length), [8, 8]);
-  assert.deepStrictEqual(出.teams.map((t) => t.tachiPeople), [4, 4], '立の人数は大きい板のもの');
+  assert.deepStrictEqual(
+    出.teams.map((t) => t.rows.length),
+    [8, 8]
+  );
+  assert.deepStrictEqual(
+    出.teams.map((t) => t.tachiPeople),
+    [4, 4],
+    '立の人数は大きい板のもの'
+  );
   // 行の並びは崩れず、○×は端末のもの（317/320 以上）
-  assert.deepStrictEqual(出.teams.flatMap((t) => t.rows.map((r) => r.name)), Array.from({ length: 16 }, (_, i) => String(i + 1)));
+  assert.deepStrictEqual(
+    出.teams.flatMap((t) => t.rows.map((r) => r.name)),
+    Array.from({ length: 16 }, (_, i) => String(i + 1))
+  );
   let 合 = 0;
   let k = 0;
-  for (const t of 出.teams) for (const r of t.rows) {
-    const 印 = マスを開く(一射目からの順にする(r.cells, '下から'), '2射');
-    const 真 = [...射手たち[k++].印];
-    for (let j = 0; j < 真.length; j++) if (印[j] === 真[j]) 合++;
-  }
+  for (const t of 出.teams)
+    for (const r of t.rows) {
+      const 印 = マスを開く(一射目からの順にする(r.cells, '下から'), '2射');
+      const 真 = [...射手たち[k++].印];
+      for (let j = 0; j < 真.length; j++) if (印[j] === 真[j]) 合++;
+    }
   assert.ok(合 >= 317, `合ったのは ${合}/320`);
 
   // 総数が合わなければ組み直さない
@@ -216,10 +272,16 @@ test('箱で格子: 板ごとの○×の範囲（箱）を渡すと、その中�
   const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-tatami.json', 'utf8'));
   const 元 = await 画を読む('docs/ocr-samples/PXL_20260906_081921509.jpg');
   // [上, 左, 下, 右]（0〜1000）。かたまりの格子の外側の列・行から半マスずつ広げたもの
-  const 箱たち = [[335, 67, 621, 387], [335, 648, 636, 964]];
+  const 箱たち = [
+    [335, 67, 621, 387],
+    [335, 648, 636, 964],
+  ];
   const 板たち = await 板の印を読む(元, { 板の人数たち: [8, 8], 行数: 10, 回す, 重み, 箱たち });
   assert.strictEqual(板たち.length, 2);
-  assert.deepStrictEqual(板たち.map((b) => b.列たち.length), [8, 8]);
+  assert.deepStrictEqual(
+    板たち.map((b) => b.列たち.length),
+    [8, 8]
+  );
   assert.ok(板たち.every((b) => b.列たち.every((列) => 列.length === 10)));
   let 合 = 0;
   let 番 = 0;
@@ -239,19 +301,41 @@ test('マスを端末で差し替える: 箱たち を渡すと、写真1枚・�
   const { 画を読む, 回す } = await import('../scripts/ocr-cells/gazou-node.mjs');
   const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-tatami.json', 'utf8'));
   const teams = [8, 8].map((n) => ({
-    name: '', cellStyle: '2射', tachiPeople: 4,
-    rows: Array.from({ length: n }, (_, i) => ({ name: String(i + 1), roster: null, cells: Array(10).fill('') })),
+    name: '',
+    cellStyle: '2射',
+    tachiPeople: 4,
+    rows: Array.from({ length: n }, (_, i) => ({
+      name: String(i + 1),
+      roster: null,
+      cells: Array(10).fill(''),
+    })),
   }));
   const 設定 = { 向き: '左右から', 道具: { 画を読む: (p) => 画を読む(p), 回す }, 重み };
-  const 出 = await マスを端末で差し替える(teams, [{ base64: 'docs/ocr-samples/PXL_20260906_081921509.jpg' }], {
-    ...設定, 箱たち: [[335, 67, 621, 387], [335, 648, 636, 964]],
-  });
+  const 出 = await マスを端末で差し替える(
+    teams,
+    [{ base64: 'docs/ocr-samples/PXL_20260906_081921509.jpg' }],
+    {
+      ...設定,
+      箱たち: [
+        [335, 67, 621, 387],
+        [335, 648, 636, 964],
+      ],
+    }
+  );
   assert.strictEqual(出.読み取り元, '端末', 出.訳);
-  assert.ok(出.teams[0].rows[0].cells.some((c) => c === '◎' || c === '×' || c.startsWith('○')), '箱で読んだ印が入っていない');
+  assert.ok(
+    出.teams[0].rows[0].cells.some((c) => c === '◎' || c === '×' || c.startsWith('○')),
+    '箱で読んだ印が入っていない'
+  );
   // 箱の数が板と合わなければ、箱は使わない（ふつうの格子で読む。ここでは読めるので端末のまま）
-  const 出2 = await マスを端末で差し替える(teams, [{ base64: 'docs/ocr-samples/PXL_20260906_081921509.jpg' }], {
-    ...設定, 箱たち: [[335, 67, 621, 387]],
-  });
+  const 出2 = await マスを端末で差し替える(
+    teams,
+    [{ base64: 'docs/ocr-samples/PXL_20260906_081921509.jpg' }],
+    {
+      ...設定,
+      箱たち: [[335, 67, 621, 387]],
+    }
+  );
   assert.strictEqual(出2.読み取り元, '端末');
 });
 
@@ -259,8 +343,18 @@ test('板の並びを確かめる: Gemini が右の板を先に返しても、�
   const { 板の並びを確かめる } = await import('../src/ocr/sashikae.js');
   // 端末は左の板から読む。左の板は ◎ が多く、右の板は × が多い（列は左から、マスは上から）
   const 逆 = '○\\';
-  const 左の板 = { 列たち: [['◎', '◎', 逆, '◎'], ['◎', '○/', '◎', '◎']] };
-  const 右の板 = { 列たち: [['×', '×', '○/', '×'], ['×', 逆, '×', '×']] };
+  const 左の板 = {
+    列たち: [
+      ['◎', '◎', 逆, '◎'],
+      ['◎', '○/', '◎', '◎'],
+    ],
+  };
+  const 右の板 = {
+    列たち: [
+      ['×', '×', '○/', '×'],
+      ['×', 逆, '×', '×'],
+    ],
+  };
   const 読んだ = [左の板, 右の板];
   // Gemini は右の板（大前は右）を先に、左の板（大前は左）を後に返した。線の向きは逆に読むことがある
   const teams = [
@@ -276,7 +370,12 @@ test('板の並びを確かめる: Gemini が右の板を先に返しても、�
 
 test('板の並びを確かめる: はっきりしないとき・人数の並びが違うときは入れ替えない', async () => {
   const { 板の並びを確かめる } = await import('../src/ocr/sashikae.js');
-  const 同じ = { 列たち: [['◎', '×'], ['◎', '×']] };
+  const 同じ = {
+    列たち: [
+      ['◎', '×'],
+      ['◎', '×'],
+    ],
+  };
   const teams = [
     { omae: '左', rows: [{ cells: ['◎', '×'] }, { cells: ['◎', '×'] }] },
     { omae: '左', rows: [{ cells: ['◎', '×'] }, { cells: ['◎', '×'] }] },
@@ -294,12 +393,23 @@ test('マスを端末で差し替える: ◎や丸に線がある板を Gemini �
   const 重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/omomi-tatami.json', 'utf8'));
   const 紙の重み = JSON.parse(fs.readFileSync('scripts/ocr-cells/kami-tatami.json', 'utf8'));
   const teams = [0, 1].map((i) => ({
-    name: '', cellStyle: '1射', tachiPeople: 4,
-    rows: 射手たち.slice(i * 8, i * 8 + 8).map((s) => ({ name: s.名, cells: ['◎', '○/', '×', '◎', '◎', '×', '◎', '◎', '◎', '×'] })),
+    name: '',
+    cellStyle: '1射',
+    tachiPeople: 4,
+    rows: 射手たち
+      .slice(i * 8, i * 8 + 8)
+      .map((s) => ({ name: s.名, cells: ['◎', '○/', '×', '◎', '◎', '×', '◎', '◎', '◎', '×'] })),
   }));
-  const 出 = await マスを端末で差し替える(teams, [{ base64: 'docs/ocr-samples/PXL_20260906_081921509.jpg' }], {
-    向き: '左右から', 道具: await 道具をつくる(), 重み, 紙の重み,
-  });
+  const 出 = await マスを端末で差し替える(
+    teams,
+    [{ base64: 'docs/ocr-samples/PXL_20260906_081921509.jpg' }],
+    {
+      向き: '左右から',
+      道具: await 道具をつくる(),
+      重み,
+      紙の重み,
+    }
+  );
   assert.strictEqual(出.読み取り元, '端末', 出.訳);
   assert.strictEqual(出.teams[0].cellStyle, '2射');
 });

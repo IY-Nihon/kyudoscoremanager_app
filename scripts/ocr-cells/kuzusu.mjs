@@ -231,7 +231,11 @@ function 縮めて戻す(元, 倍) {
       const x1 = Math.min(小幅 - 1, x0 + 1);
       const tx = fx - x0;
       for (let c = 0; c < 面; c++) {
-        const v = 読む(x0, y0, c) * (1 - tx) * (1 - ty) + 読む(x1, y0, c) * tx * (1 - ty) + 読む(x0, y1, c) * (1 - tx) * ty + 読む(x1, y1, c) * tx * ty;
+        const v =
+          読む(x0, y0, c) * (1 - tx) * (1 - ty) +
+          読む(x1, y0, c) * tx * (1 - ty) +
+          読む(x0, y1, c) * (1 - tx) * ty +
+          読む(x1, y1, c) * tx * ty;
         出[(y * 幅 + x) * 面 + c] = Math.round(v);
       }
     }

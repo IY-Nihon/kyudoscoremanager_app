@@ -50,7 +50,9 @@ function 帯を読む(page) {
       タブ: [...帯.querySelectorAll('[role="tab"]')].map((タブ) => {
         const 名前 = タブ.getAttribute('aria-label');
         // 名前の字の要素。見えない名前は opacity 0 で置いてある
-        const 字 = [...タブ.querySelectorAll('div')].find((e) => e.children.length === 0 && e.textContent === 名前);
+        const 字 = [...タブ.querySelectorAll('div')].find(
+          (e) => e.children.length === 0 && e.textContent === 名前
+        );
         return {
           名前,
           選ばれている: タブ.getAttribute('aria-selected') === 'true',
@@ -87,12 +89,17 @@ test('狭い端末（300px）は絵だけ。今いるタブだけ名前が出て
   expect(帯.右).toBeLessThanOrEqual(帯.窓);
 });
 
-test('絵だけでも、名前でタブを押せて、今いるタブが移る（role と getByText のどちらでも）', async ({ page }) => {
+test('絵だけでも、名前でタブを押せて、今いるタブが移る（role と getByText のどちらでも）', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 300, height: 700 });
   await 入る(page);
   await page.getByRole('tab', { name: '履歴', exact: true }).click();
   await expect(page.getByRole('tab', { name: '履歴', exact: true })).toHaveAttribute('aria-selected', 'true');
-  await expect(page.getByRole('tab', { name: '記録', exact: true })).toHaveAttribute('aria-selected', 'false');
+  await expect(page.getByRole('tab', { name: '記録', exact: true })).toHaveAttribute(
+    'aria-selected',
+    'false'
+  );
   // これまでの検査は、名前の字でタブを押している。絵だけのタブでも押せること
   await page.getByText('分析', { exact: true }).first().click();
   await expect(page.getByRole('tab', { name: '分析', exact: true })).toHaveAttribute('aria-selected', 'true');
@@ -107,6 +114,8 @@ test('広がったら、絵＋名前に戻る（幅の変化に追いつく）',
   expect((await 帯を読む(page)).タブ.filter((t) => t.名前が見える).length).toBe(1);
   await page.setViewportSize({ width: 800, height: 700 });
   await expect
-    .poll(async () => (await 帯を読む(page)).タブ.filter((t) => t.名前が見える).length, { message: '広げても絵だけのまま' })
+    .poll(async () => (await 帯を読む(page)).タブ.filter((t) => t.名前が見える).length, {
+      message: '広げても絵だけのまま',
+    })
     .toBe(6);
 });

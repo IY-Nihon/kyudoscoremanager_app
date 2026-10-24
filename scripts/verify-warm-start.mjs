@@ -65,8 +65,7 @@ const 置く = async (id, 中身) => {
   置いた.push(id);
 };
 const 読んだまま = (返り) => 返り.docs.map((文書) => 文書.data());
-const 差分 = (境目) =>
-  getDocs(query(記録の置き場, where('lastModified', '>=', Timestamp.fromMillis(境目))));
+const 差分 = (境目) => getDocs(query(記録の置き場, where('lastModified', '>=', Timestamp.fromMillis(境目))));
 
 try {
   await setDoc(doc(db, 'group_accounts', 団体), { id: 団体, email: メール });
@@ -119,7 +118,11 @@ try {
 
   const idで = await getDocs(query(記録の置き場, where(documentId(), 'in', ['a', 'c', '無い記録'])));
   const idで取れた = idで.docs.map((文書) => 文書.id).sort();
-  見る('6. id で取り直せる。雲に無い id は返らない', idで取れた.join(',') === 'a,c', `返った ${idで取れた.join(',')}`);
+  見る(
+    '6. id で取り直せる。雲に無い id は返らない',
+    idで取れた.join(',') === 'a,c',
+    `返った ${idで取れた.join(',')}`
+  );
 } finally {
   for (const id of new Set(置いた)) await deleteDoc(doc(記録の置き場, id)).catch(() => {});
   await deleteDoc(doc(db, 'group_accounts', 団体)).catch(() => {});

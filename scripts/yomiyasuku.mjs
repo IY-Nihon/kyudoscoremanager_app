@@ -90,7 +90,9 @@ function 名前空間の橋の道(節) {
   const 中 = generate(節.callee.body).code.replace(/\s+/g, '');
   if (!中.includes('__esModule')) return null;
   const a = 節.arguments[0];
-  return t.isCallExpression(a) && t.isIdentifier(a.callee, { name: 'require' }) && t.isStringLiteral(a.arguments[0])
+  return t.isCallExpression(a) &&
+    t.isIdentifier(a.callee, { name: 'require' }) &&
+    t.isStringLiteral(a.arguments[0])
     ? a.arguments[0].value
     : null;
 }
@@ -110,7 +112,9 @@ function 既定の読み込み(道) {
 }
 
 function require道(節) {
-  return t.isCallExpression(節) && t.isIdentifier(節.callee, { name: 'require' }) && t.isStringLiteral(節.arguments[0])
+  return t.isCallExpression(節) &&
+    t.isIdentifier(節.callee, { name: 'require' }) &&
+    t.isStringLiteral(節.arguments[0])
     ? 節.arguments[0].value
     : null;
 }
@@ -134,14 +138,25 @@ export async function 読みやすく(元, 名札) {
         消す.add(節);
       }
     }
-    if (t.isExpressionStatement(節) && t.isStringLiteral(節.expression, { value: 'use strict' }) && 節 !== 本体[0]) 消す.add(節);
-    if (t.isExpressionStatement(節) && t.isStringLiteral(節.expression, { value: 'use strict' }) && 節.expression.extra?.parenthesized) 消す.add(節);
+    if (
+      t.isExpressionStatement(節) &&
+      t.isStringLiteral(節.expression, { value: 'use strict' }) &&
+      節 !== 本体[0]
+    )
+      消す.add(節);
+    if (
+      t.isExpressionStatement(節) &&
+      t.isStringLiteral(節.expression, { value: 'use strict' }) &&
+      節.expression.extra?.parenthesized
+    )
+      消す.add(節);
     if (既定の橋か(節)) {
       橋の名 = 節.id.name;
       消す.add(節);
     }
   }
-  const exportsか = (n) => t.isIdentifier(n, { name: 'exports' }) || (exportsの別名 && t.isIdentifier(n, { name: exportsの別名 }));
+  const exportsか = (n) =>
+    t.isIdentifier(n, { name: 'exports' }) || (exportsの別名 && t.isIdentifier(n, { name: exportsの別名 }));
   for (const 節 of 本体) {
     if (!t.isExpressionStatement(節)) continue;
     const 式たち = t.isSequenceExpression(節.expression) ? 節.expression.expressions : [節.expression];
@@ -160,8 +175,17 @@ export async function 読みやすく(元, 名札) {
         const 鍵 = 式.arguments[1].value;
         const 指定 = 式.arguments[2];
         if (鍵 === '__esModule') continue;
-        const get = t.isObjectExpression(指定) && 指定.properties.find((p) => t.isObjectProperty(p) && t.isIdentifier(p.key, { name: 'get' }));
-        if (get && t.isFunction(get.value) && t.isBlockStatement(get.value.body) && get.value.body.body.length === 1 && t.isReturnStatement(get.value.body.body[0]) && t.isIdentifier(get.value.body.body[0].argument)) {
+        const get =
+          t.isObjectExpression(指定) &&
+          指定.properties.find((p) => t.isObjectProperty(p) && t.isIdentifier(p.key, { name: 'get' }));
+        if (
+          get &&
+          t.isFunction(get.value) &&
+          t.isBlockStatement(get.value.body) &&
+          get.value.body.body.length === 1 &&
+          t.isReturnStatement(get.value.body.body[0]) &&
+          t.isIdentifier(get.value.body.body[0].argument)
+        ) {
           名たち.push({ 名: 鍵, 実体: get.value.body.body[0].argument.name });
           continue;
         }
@@ -181,11 +205,14 @@ export async function 読みやすく(元, 名札) {
   if (exportsの別名) {
     traverse(木, {
       Identifier(p) {
-        if (p.node.name === exportsの別名 && !p.scope.getBinding(exportsの別名) && p.isReferencedIdentifier()) p.node.name = 'exports';
+        if (p.node.name === exportsの別名 && !p.scope.getBinding(exportsの別名) && p.isReferencedIdentifier())
+          p.node.name = 'exports';
       },
     });
   }
-  if (木.program.directives) for (const d of 木.program.directives) if (d.leadingComments) d.leadingComments = d.leadingComments.filter((c) => !/Module ID:/.test(c.value));
+  if (木.program.directives)
+    for (const d of 木.program.directives)
+      if (d.leadingComments) d.leadingComments = d.leadingComments.filter((c) => !/Module ID:/.test(c.value));
 
   // ── 1. 読み込みの別名 ───────────────────────────────────
   // 別名 → { 道, 種: 'default' | 'namespace' }
@@ -205,7 +232,12 @@ export async function 読みやすく(元, 名札) {
         読み込み.set(d.id.name, { 道: 空, 種: 'namespace', 宣言: d, 文: 節 });
         continue;
       }
-      if (橋の名 && t.isCallExpression(d.init) && t.isIdentifier(d.init.callee, { name: 橋の名 }) && d.init.arguments.length === 1) {
+      if (
+        橋の名 &&
+        t.isCallExpression(d.init) &&
+        t.isIdentifier(d.init.callee, { name: 橋の名 }) &&
+        d.init.arguments.length === 1
+      ) {
         const a = d.init.arguments[0];
         const 道 = require道(a);
         if (道) {
@@ -220,7 +252,11 @@ export async function 読みやすく(元, 名札) {
       }
       // X = require('m').Y や X = 名前空間.Y のような取り出し
       if (t.isMemberExpression(d.init) && !d.init.computed && t.isIdentifier(d.init.property)) {
-        const 道 = require道(d.init.object) || (t.isIdentifier(d.init.object) && 読み込み.get(d.init.object.name)?.種 === 'namespace' ? 読み込み.get(d.init.object.name).道 : null);
+        const 道 =
+          require道(d.init.object) ||
+          (t.isIdentifier(d.init.object) && 読み込み.get(d.init.object.name)?.種 === 'namespace'
+            ? 読み込み.get(d.init.object.name).道
+            : null);
         if (道) 読み込み.set(d.id.name, { 道, 種: 'member', 員: d.init.property.name, 宣言: d, 文: 節 });
       }
     }
@@ -238,10 +274,12 @@ export async function 読みやすく(元, 名札) {
       if (!p.scope.getBinding(名) || p.scope.getBinding(名).path.node !== 情報.宣言) return;
       const u = 使い方.get(名) || { 員: new Set(), 素のまま: false };
       const 親 = p.parent;
-      if (t.isMemberExpression(親) && 親.object === p.node && !親.computed && t.isIdentifier(親.property)) u.員.add(親.property.name);
+      if (t.isMemberExpression(親) && 親.object === p.node && !親.computed && t.isIdentifier(親.property))
+        u.員.add(親.property.name);
       else {
         u.素のまま = true;
-        if (process.env.YOMI_DEBUG) console.error('素のまま', 名, 親.type, p.node.loc && p.node.loc.start.line);
+        if (process.env.YOMI_DEBUG)
+          console.error('素のまま', 名, 親.type, p.node.loc && p.node.loc.start.line);
       }
       使い方.set(名, u);
     },
@@ -280,11 +318,17 @@ export async function 読みやすく(元, 名札) {
     }
   }
   // default を先に決める（Svg のように、default と名前空間が別物の module で default に本名を渡す）
-  const 順 = [...読み込み].sort(([, a], [, b]) => (a.種 === 'default' ? 0 : 1) - (b.種 === 'default' ? 0 : 1));
+  const 順 = [...読み込み].sort(
+    ([, a], [, b]) => (a.種 === 'default' ? 0 : 1) - (b.種 === 'default' ? 0 : 1)
+  );
   for (const [別名, 情報] of 順) {
     if (付け替え.has(別名)) continue;
     if (相乗り.has(別名)) {
-      付け替え.set(別名, { 種: 情報.種 === 'default' ? 'default-alias' : 'namespace-alias', 新: 相乗り.get(別名), 道: 情報.道 });
+      付け替え.set(別名, {
+        種: 情報.種 === 'default' ? 'default-alias' : 'namespace-alias',
+        新: 相乗り.get(別名),
+        道: 情報.道,
+      });
       continue;
     }
     const u = 使い方.get(別名) || { 員: new Set(), 素のまま: false };
@@ -310,14 +354,22 @@ export async function 読みやすく(元, 名札) {
     }
     // すでに意味のある名（案内・組・同期規則 など、英字 1〜2 字でないもの）の名前空間はそのまま
     if (!/^[A-Za-z_$]{1,2}$/.test(別名)) continue;
-    if (process.env.YOMI_DEBUG) console.error('名前空間', 別名, 情報.道, '員', [...u.員].join(','), '素のまま', u.素のまま);
+    if (process.env.YOMI_DEBUG)
+      console.error('名前空間', 別名, 情報.道, '員', [...u.員].join(','), '素のまま', u.素のまま);
     // namespace：X.a X.b の形だけなら取り出しに。素のまま渡していれば名前だけ本名に。
     // npm の package は取り出さない（検査の道具が module の関数を差し替えるので、
     // 呼ぶたびに引く形 `RTDB.get(…)` のままにして、動きを変えない）
     // 員の名は日本語でもよい（ライブ名に使えない字 など）
-    if (情報.道.startsWith('.') && !u.素のまま && u.員.size > 0 && u.員.size <= 40 && [...u.員].every((m) => /^[\p{L}_$][\p{L}\p{N}_$]*$/u.test(m) && m !== 'default')) {
+    if (
+      情報.道.startsWith('.') &&
+      !u.素のまま &&
+      u.員.size > 0 &&
+      u.員.size <= 40 &&
+      [...u.員].every((m) => /^[\p{L}_$][\p{L}\p{N}_$]*$/u.test(m) && m !== 'default')
+    ) {
       const 衝突 = [...u.員].filter((m) => 使用中の名.has(m) && m !== 別名);
-      if (process.env.YOMI_DEBUG && 衝突.length) console.error('取り出せない', 別名, 情報.道, '衝突', 衝突.join(','));
+      if (process.env.YOMI_DEBUG && 衝突.length)
+        console.error('取り出せない', 別名, 情報.道, '衝突', 衝突.join(','));
       if (衝突.length === 0) {
         付け替え.set(別名, { 種: 'pick', 道: 情報.道, 員たち: u.員 });
         for (const m of u.員) 使用中の名.add(m);
@@ -338,7 +390,15 @@ export async function 読みやすく(元, 名札) {
     const 橋 = 本体 && 消す && [...消す].find((n) => 既定の橋か(n));
     if (橋) 木.program.body.unshift(橋);
   }
-  if (process.env.YOMI_DEBUG) console.error('読み込み', [...読み込み].map(([k, v]) => k + ':' + v.種 + ':' + v.道).join(' '), '/ 付け替え', [...付け替え].map(([k, v]) => k + '→' + v.種 + ':' + (v.新 || [...(v.員たち || [])].join('|'))).join(' '));
+  if (process.env.YOMI_DEBUG)
+    console.error(
+      '読み込み',
+      [...読み込み].map(([k, v]) => k + ':' + v.種 + ':' + v.道).join(' '),
+      '/ 付け替え',
+      [...付け替え]
+        .map(([k, v]) => k + '→' + v.種 + ':' + (v.新 || [...(v.員たち || [])].join('|')))
+        .join(' ')
+    );
 
   // ── 2. JSX へ ─────────────────────────────────────────
   const jsxの別名たち = new Set([...付け替え].filter(([, v]) => v.種 === 'jsx').map(([k]) => k));
@@ -346,13 +406,27 @@ export async function 読みやすく(元, 名札) {
   function jsx呼び出しか(node) {
     if (!t.isCallExpression(node)) return null;
     let callee = node.callee;
-    if (t.isSequenceExpression(callee) && callee.expressions.length === 2 && t.isNumericLiteral(callee.expressions[0], { value: 0 })) callee = callee.expressions[1];
-    if (!t.isMemberExpression(callee) || !t.isIdentifier(callee.object) || !jsxの別名たち.has(callee.object.name)) return null;
+    if (
+      t.isSequenceExpression(callee) &&
+      callee.expressions.length === 2 &&
+      t.isNumericLiteral(callee.expressions[0], { value: 0 })
+    )
+      callee = callee.expressions[1];
+    if (
+      !t.isMemberExpression(callee) ||
+      !t.isIdentifier(callee.object) ||
+      !jsxの別名たち.has(callee.object.name)
+    )
+      return null;
     if (!t.isIdentifier(callee.property)) return null;
     if (callee.property.name === 'jsx' || callee.property.name === 'jsxs') return callee.property.name;
     return null;
   }
-  const Fragmentか = (node) => t.isMemberExpression(node) && t.isIdentifier(node.object) && jsxの別名たち.has(node.object.name) && t.isIdentifier(node.property, { name: 'Fragment' });
+  const Fragmentか = (node) =>
+    t.isMemberExpression(node) &&
+    t.isIdentifier(node.object) &&
+    jsxの別名たち.has(node.object.name) &&
+    t.isIdentifier(node.property, { name: 'Fragment' });
 
   let Reactが要る = false;
   const 持ち上げ = []; // [{ 名, 道, 員 }] … require('./X').default のような型を、頭の読み込みに直す
@@ -360,7 +434,9 @@ export async function 読みやすく(元, 名札) {
   const 読み込みの束か = (束) => {
     if (!束.path.isVariableDeclarator()) return false;
     let 有 = false;
-    t.traverseFast(束.path.node, (n) => { if (t.isCallExpression(n) && t.isIdentifier(n.callee, { name: 'require' })) 有 = true; });
+    t.traverseFast(束.path.node, (n) => {
+      if (t.isCallExpression(n) && t.isIdentifier(n.callee, { name: 'require' })) 有 = true;
+    });
     return 有;
   };
   function 型名(node, 頭か = true) {
@@ -378,7 +454,12 @@ export async function 読みやすく(元, 名札) {
       }
       return t.jsxIdentifier(node.name);
     }
-    if (t.isMemberExpression(node) && !node.computed && t.isIdentifier(node.property) && require道(node.object)) {
+    if (
+      t.isMemberExpression(node) &&
+      !node.computed &&
+      t.isIdentifier(node.property) &&
+      require道(node.object)
+    ) {
       const 道 = require道(node.object);
       const 員 = node.property.name;
       const 名 = 員 === 'default' ? 名を決める(道) : 員;
@@ -406,7 +487,10 @@ export async function 読みやすく(元, 名札) {
   // JSX の子の間に置ける注釈は {/* … */} だけ。行の注釈も塊の注釈に直す
   const 注釈の子 = (comments) => {
     const 空 = t.jsxEmptyExpression();
-    空.innerComments = comments.map((c) => ({ type: 'CommentBlock', value: c.type === 'CommentLine' ? ' ' + c.value.trim() + ' ' : c.value.replace(/\*\//g, '* /') }));
+    空.innerComments = comments.map((c) => ({
+      type: 'CommentBlock',
+      value: c.type === 'CommentLine' ? ' ' + c.value.trim() + ' ' : c.value.replace(/\*\//g, '* /'),
+    }));
     return t.jsxExpressionContainer(空);
   };
   // 子を 1 つ以上の子（注釈の子を含む）にする
@@ -438,8 +522,12 @@ export async function 読みやすく(元, 名札) {
     let 値 = prop.value;
     if (t.isAssignmentPattern(値)) return null;
     let 属性;
-    if (t.isStringLiteral(値) && !/["\\\n\r]/.test(値.value)) 属性 = t.jsxAttribute(t.jsxIdentifier(名), t.stringLiteral(値.value));
-    else if (t.isBooleanLiteral(値, { value: true }) || (t.isUnaryExpression(値, { operator: '!' }) && t.isNumericLiteral(値.argument, { value: 0 })))
+    if (t.isStringLiteral(値) && !/["\\\n\r]/.test(値.value))
+      属性 = t.jsxAttribute(t.jsxIdentifier(名), t.stringLiteral(値.value));
+    else if (
+      t.isBooleanLiteral(値, { value: true }) ||
+      (t.isUnaryExpression(値, { operator: '!' }) && t.isNumericLiteral(値.argument, { value: 0 }))
+    )
       属性 = t.jsxAttribute(t.jsxIdentifier(名), null);
     else 属性 = t.jsxAttribute(t.jsxIdentifier(名), t.jsxExpressionContainer(値));
     if (prop.leadingComments) 属性.leadingComments = prop.leadingComments;
@@ -472,7 +560,12 @@ export async function 読みやすく(元, 名札) {
       for (const a of 属性の元.arguments) {
         if (t.isObjectExpression(a)) {
           if (a.properties.length) 塊たち.push(a);
-        } else if (t.isBooleanLiteral(a, { value: false }) || t.isNullLiteral(a) || t.isIdentifier(a, { name: 'undefined' })) continue;
+        } else if (
+          t.isBooleanLiteral(a, { value: false }) ||
+          t.isNullLiteral(a) ||
+          t.isIdentifier(a, { name: 'undefined' })
+        )
+          continue;
         else 塊たち.push(t.spreadElement(a));
       }
     } else if (属性の元 === undefined || t.isNullLiteral(属性の元)) {
@@ -487,7 +580,12 @@ export async function 読みやすく(元, 名札) {
         continue;
       }
       for (const prop of 塊.properties) {
-        if (t.isObjectProperty(prop) && !prop.computed && ((t.isIdentifier(prop.key) && prop.key.name === 'children') || t.isStringLiteral(prop.key, { value: 'children' }))) {
+        if (
+          t.isObjectProperty(prop) &&
+          !prop.computed &&
+          ((t.isIdentifier(prop.key) && prop.key.name === 'children') ||
+            t.isStringLiteral(prop.key, { value: 'children' }))
+        ) {
           const 値 = prop.value;
           const 元たち = t.isArrayExpression(値) ? 値.elements : [値];
           for (const 子 of 元たち) {
@@ -514,10 +612,20 @@ export async function 読みやすく(元, 名札) {
       // key 付きの断片は <React.Fragment key={…}> にする（React の読み込みはあとで足す）
       Reactが要る = true;
       const 名前 = t.jsxMemberExpression(t.jsxIdentifier('React'), t.jsxIdentifier('Fragment'));
-      return t.jsxElement(t.jsxOpeningElement(名前, 属性たち, false), t.jsxClosingElement(t.cloneNode(名前)), 子たち, false);
+      return t.jsxElement(
+        t.jsxOpeningElement(名前, 属性たち, false),
+        t.jsxClosingElement(t.cloneNode(名前)),
+        子たち,
+        false
+      );
     }
     const 閉じるか = 子たち.length === 0;
-    const 要素 = t.jsxElement(t.jsxOpeningElement(名, 属性たち, 閉じるか), 閉じるか ? null : t.jsxClosingElement(t.cloneNode(名)), 子たち, 閉じるか);
+    const 要素 = t.jsxElement(
+      t.jsxOpeningElement(名, 属性たち, 閉じるか),
+      閉じるか ? null : t.jsxClosingElement(t.cloneNode(名)),
+      子たち,
+      閉じるか
+    );
     if (node.leadingComments) 要素.leadingComments = node.leadingComments;
     if (node.trailingComments) 要素.trailingComments = node.trailingComments;
     return 要素;
@@ -540,18 +648,41 @@ export async function 読みやすく(元, 名札) {
       足す.push(
         員 === 'default'
           ? t.variableDeclaration('const', [t.variableDeclarator(t.identifier(名), 既定の読み込み(道))])
-          : t.variableDeclaration('const', [t.variableDeclarator(t.objectPattern([t.objectProperty(t.identifier(員), t.identifier(名), false, true)]), t.callExpression(t.identifier('require'), [t.stringLiteral(道)]))])
+          : t.variableDeclaration('const', [
+              t.variableDeclarator(
+                t.objectPattern([t.objectProperty(t.identifier(員), t.identifier(名), false, true)]),
+                t.callExpression(t.identifier('require'), [t.stringLiteral(道)])
+              ),
+            ])
       );
     }
     const Reactあり = [...読み込み.values()].some((v) => v.道 === 'react') || 使用中の名.has('React');
     if (Reactが要る && !Reactあり) {
-      足す.push(t.variableDeclaration('const', [t.variableDeclarator(t.identifier('React'), t.callExpression(t.identifier('require'), [t.stringLiteral('react')]))]));
+      足す.push(
+        t.variableDeclaration('const', [
+          t.variableDeclarator(
+            t.identifier('React'),
+            t.callExpression(t.identifier('require'), [t.stringLiteral('react')])
+          ),
+        ])
+      );
       使用中の名.add('React');
     }
     if (足す.length) {
       let 位置 = 0;
       木.program.body.forEach((n, i) => {
-        if (t.isVariableDeclaration(n) && n.declarations.some((d) => d.init && (require道(d.init) || 名前空間の橋の道(d.init) || (t.isCallExpression(d.init) && d.init.arguments[0] && require道(d.init.arguments[0])) || (t.isMemberExpression(d.init) && require道(d.init.object))))) 位置 = i + 1;
+        if (
+          t.isVariableDeclaration(n) &&
+          n.declarations.some(
+            (d) =>
+              d.init &&
+              (require道(d.init) ||
+                名前空間の橋の道(d.init) ||
+                (t.isCallExpression(d.init) && d.init.arguments[0] && require道(d.init.arguments[0])) ||
+                (t.isMemberExpression(d.init) && require道(d.init.object)))
+          )
+        )
+          位置 = i + 1;
       });
       木.program.body.splice(位置, 0, ...足す);
     }
@@ -580,15 +711,29 @@ export async function 読みやすく(元, 名札) {
         p.replaceWithMultiple(文たち);
         return;
       }
-      if (t.isLogicalExpression(e) && (e.operator === '&&' || e.operator === '||') && t.isCallExpression(e.right)) {
+      if (
+        t.isLogicalExpression(e) &&
+        (e.operator === '&&' || e.operator === '||') &&
+        t.isCallExpression(e.right)
+      ) {
         const 条件 = e.operator === '&&' ? e.left : t.unaryExpression('!', e.left);
         const 文 = t.ifStatement(条件, t.expressionStatement(e.right));
         if (p.node.leadingComments) 文.leadingComments = p.node.leadingComments;
         p.replaceWith(文);
         return;
       }
-      if (t.isConditionalExpression(e) && t.isCallExpression(e.consequent) && (t.isCallExpression(e.alternate) || t.isNullLiteral(e.alternate) || t.isIdentifier(e.alternate, { name: 'undefined' }))) {
-        const 文 = t.ifStatement(e.test, t.expressionStatement(e.consequent), t.isCallExpression(e.alternate) ? t.expressionStatement(e.alternate) : null);
+      if (
+        t.isConditionalExpression(e) &&
+        t.isCallExpression(e.consequent) &&
+        (t.isCallExpression(e.alternate) ||
+          t.isNullLiteral(e.alternate) ||
+          t.isIdentifier(e.alternate, { name: 'undefined' }))
+      ) {
+        const 文 = t.ifStatement(
+          e.test,
+          t.expressionStatement(e.consequent),
+          t.isCallExpression(e.alternate) ? t.expressionStatement(e.alternate) : null
+        );
         if (p.node.leadingComments) 文.leadingComments = p.node.leadingComments;
         p.replaceWith(文);
       }
@@ -616,7 +761,13 @@ export async function 読みやすく(元, 名札) {
         const scope = p.scope;
         const 束縛 = scope.getBinding(識別子.name);
         if (!束縛 || 束縛.identifier !== 識別子) continue;
-        if (scope.hasBinding(本名) || scope.hasGlobal(本名) || scope.hasReference(本名) || 使用中の名.has(本名)) continue;
+        if (
+          scope.hasBinding(本名) ||
+          scope.hasGlobal(本名) ||
+          scope.hasReference(本名) ||
+          使用中の名.has(本名)
+        )
+          continue;
         scope.rename(識別子.name, 本名);
         使用中の名.add(本名);
         prop.shorthand = true;
@@ -657,18 +808,38 @@ export async function 読みやすく(元, 名札) {
       const 親 = p.parentPath;
       if (親.isVariableDeclarator() && 親.node.id === p.node) return;
       if (情報.種 === 'default') {
-        if (親.isMemberExpression() && 親.node.object === p.node && !親.node.computed && t.isIdentifier(親.node.property, { name: 'default' })) 親.replaceWith(t.identifier(情報.新));
-        else if (親.isJSXMemberExpression() && 親.node.object === p.node && t.isJSXIdentifier(親.node.property, { name: 'default' })) 親.replaceWith(t.jsxIdentifier(情報.新));
+        if (
+          親.isMemberExpression() &&
+          親.node.object === p.node &&
+          !親.node.computed &&
+          t.isIdentifier(親.node.property, { name: 'default' })
+        )
+          親.replaceWith(t.identifier(情報.新));
+        else if (
+          親.isJSXMemberExpression() &&
+          親.node.object === p.node &&
+          t.isJSXIdentifier(親.node.property, { name: 'default' })
+        )
+          親.replaceWith(t.jsxIdentifier(情報.新));
         else if (p.isIdentifier()) {
           if (親.isObjectProperty() && 親.node.shorthand && 親.node.value === p.node) {
             親.node.shorthand = false;
             親.node.key = t.identifier(名);
           }
-          p.replaceWith(t.objectExpression([t.objectProperty(t.identifier('default'), t.identifier(情報.新))]));
+          p.replaceWith(
+            t.objectExpression([t.objectProperty(t.identifier('default'), t.identifier(情報.新))])
+          );
         }
       } else if (情報.種 === 'pick') {
-        if (親.isMemberExpression() && 親.node.object === p.node && !親.node.computed && t.isIdentifier(親.node.property)) 親.replaceWith(t.identifier(親.node.property.name));
-        else if (親.isJSXMemberExpression() && 親.node.object === p.node) 親.replaceWith(t.jsxIdentifier(親.node.property.name));
+        if (
+          親.isMemberExpression() &&
+          親.node.object === p.node &&
+          !親.node.computed &&
+          t.isIdentifier(親.node.property)
+        )
+          親.replaceWith(t.identifier(親.node.property.name));
+        else if (親.isJSXMemberExpression() && 親.node.object === p.node)
+          親.replaceWith(t.jsxIdentifier(親.node.property.name));
       } else if (情報.種 === 'namespace' || 情報.種 === 'namespace-alias' || 情報.種 === 'member') {
         if (情報.新 !== 名) {
           // { a } の省略形は鍵の名も変わってしまう（渡す先の決まり事）。{ a: 新 } に開いてから変える
@@ -679,9 +850,23 @@ export async function 読みやすく(元, 名札) {
           p.node.name = 情報.新;
         }
       } else if (情報.種 === 'default-alias') {
-        if (親.isMemberExpression() && 親.node.object === p.node && !親.node.computed && t.isIdentifier(親.node.property, { name: 'default' })) 親.replaceWith(t.identifier(情報.新));
-        else if (親.isJSXMemberExpression() && 親.node.object === p.node && t.isJSXIdentifier(親.node.property, { name: 'default' })) 親.replaceWith(t.jsxIdentifier(情報.新));
-        else if (p.isIdentifier()) p.replaceWith(t.objectExpression([t.objectProperty(t.identifier('default'), t.identifier(情報.新))]));
+        if (
+          親.isMemberExpression() &&
+          親.node.object === p.node &&
+          !親.node.computed &&
+          t.isIdentifier(親.node.property, { name: 'default' })
+        )
+          親.replaceWith(t.identifier(情報.新));
+        else if (
+          親.isJSXMemberExpression() &&
+          親.node.object === p.node &&
+          t.isJSXIdentifier(親.node.property, { name: 'default' })
+        )
+          親.replaceWith(t.jsxIdentifier(情報.新));
+        else if (p.isIdentifier())
+          p.replaceWith(
+            t.objectExpression([t.objectProperty(t.identifier('default'), t.identifier(情報.新))])
+          );
       }
     };
     traverse(木, { Identifier: 置き換え, JSXIdentifier: 置き換え });
@@ -694,7 +879,11 @@ export async function 読みやすく(元, 名札) {
             宣言.id = t.identifier(情報.新);
             宣言.init = 既定の読み込み(情報.道);
           } else if (情報.種 === 'pick') {
-            宣言.id = t.objectPattern([...情報.員たち].sort().map((m) => t.objectProperty(t.identifier(m), t.identifier(m), false, true)));
+            宣言.id = t.objectPattern(
+              [...情報.員たち]
+                .sort()
+                .map((m) => t.objectProperty(t.identifier(m), t.identifier(m), false, true))
+            );
             宣言.init = t.callExpression(t.identifier('require'), [t.stringLiteral(情報.道)]);
           } else if (情報.種 === 'namespace') {
             宣言.id = t.identifier(情報.新);
@@ -717,24 +906,49 @@ export async function 読みやすく(元, 名札) {
 
   // (0, f)(…) の呼び出しを f(…) に。読み込んだ物の関数は this を使わないので、
   // 別名を本名に直したあとの (0, useScoreStore)(…) の形も同じ
-  const 読み込みの名 = new Set([...付け替え.values()].flatMap((v) => (v.種 === 'pick' ? [...v.員たち] : v.新 ? [v.新] : [])));
+  const 読み込みの名 = new Set(
+    [...付け替え.values()].flatMap((v) => (v.種 === 'pick' ? [...v.員たち] : v.新 ? [v.新] : []))
+  );
   // そのまま残した名前空間（案内・組・航 など）の関数呼び出しも (0, 航.f)( → 航.f( に
-  for (const [別名, 情報] of 読み込み) if (情報.種 === 'namespace' && !付け替え.has(別名)) 読み込みの名.add(別名);
+  for (const [別名, 情報] of 読み込み)
+    if (情報.種 === 'namespace' && !付け替え.has(別名)) 読み込みの名.add(別名);
   // 読み込みの名（React など）に、素のまま付け替えたものも含める
   traverse(木, {
     CallExpression(p) {
       const c = p.node.callee;
-      if (!t.isSequenceExpression(c) || c.expressions.length !== 2 || !t.isNumericLiteral(c.expressions[0], { value: 0 })) return;
+      if (
+        !t.isSequenceExpression(c) ||
+        c.expressions.length !== 2 ||
+        !t.isNumericLiteral(c.expressions[0], { value: 0 })
+      )
+        return;
       const f = c.expressions[1];
       if (t.isIdentifier(f)) p.node.callee = f;
-      else if (t.isMemberExpression(f) && t.isIdentifier(f.object) && 読み込みの名.has(f.object.name)) p.node.callee = f;
+      else if (t.isMemberExpression(f) && t.isIdentifier(f.object) && 読み込みの名.has(f.object.name))
+        p.node.callee = f;
     },
   });
   // exports を足す
   if (出し方.length) {
-    木.program.body.push(t.expressionStatement(t.callExpression(t.memberExpression(t.identifier('Object'), t.identifier('defineProperty')), [t.identifier('exports'), t.stringLiteral('__esModule'), t.objectExpression([t.objectProperty(t.identifier('value'), t.booleanLiteral(true))])])));
+    木.program.body.push(
+      t.expressionStatement(
+        t.callExpression(t.memberExpression(t.identifier('Object'), t.identifier('defineProperty')), [
+          t.identifier('exports'),
+          t.stringLiteral('__esModule'),
+          t.objectExpression([t.objectProperty(t.identifier('value'), t.booleanLiteral(true))]),
+        ])
+      )
+    );
     for (const { 名, 実体 } of 出し方) {
-      木.program.body.push(t.expressionStatement(t.assignmentExpression('=', t.memberExpression(t.identifier('exports'), t.identifier(名)), t.identifier(実体))));
+      木.program.body.push(
+        t.expressionStatement(
+          t.assignmentExpression(
+            '=',
+            t.memberExpression(t.identifier('exports'), t.identifier(名)),
+            t.identifier(実体)
+          )
+        )
+      );
     }
   }
   // 1 つの const に幾つも並べた宣言をばらす（for の頭は除く）。読み込みの束も 1 行 1 つに
@@ -752,12 +966,21 @@ export async function 読みやすく(元, 名札) {
         return 文;
       });
       if (p.node.leadingComments) 文たち[0].leadingComments = p.node.leadingComments;
-      if (p.node.trailingComments) 文たち[文たち.length - 1].trailingComments = [...(文たち[文たち.length - 1].trailingComments || []), ...p.node.trailingComments];
+      if (p.node.trailingComments)
+        文たち[文たち.length - 1].trailingComments = [
+          ...(文たち[文たち.length - 1].trailingComments || []),
+          ...p.node.trailingComments,
+        ];
       p.replaceWithMultiple(文たち);
     },
   });
   // var → const（再代入していないもの）
-  traverse(木, { Program(p) { p.scope.crawl(); p.stop(); } });
+  traverse(木, {
+    Program(p) {
+      p.scope.crawl();
+      p.stop();
+    },
+  });
   traverse(木, {
     VariableDeclaration(p) {
       if (p.node.kind !== 'var') return;
@@ -773,7 +996,10 @@ export async function 読みやすく(元, 名札) {
   });
   // 「Module ID」の注釈は消す
   if (木.comments) 木.comments = 木.comments.filter((c) => !/Module ID:/.test(c.value));
-  if (木.program.body[0]?.leadingComments) 木.program.body[0].leadingComments = 木.program.body[0].leadingComments.filter((c) => !/Module ID:/.test(c.value));
+  if (木.program.body[0]?.leadingComments)
+    木.program.body[0].leadingComments = 木.program.body[0].leadingComments.filter(
+      (c) => !/Module ID:/.test(c.value)
+    );
 
   // 次の行の頭に書いた注釈が、前の文の「後ろの注釈」として同じ行に出てしまうのを直す。
   // 元の位置（行）で見て、前の文より下の行の注釈は次の文の頭へ移す
@@ -783,7 +1009,8 @@ export async function 読みやすく(元, 名札) {
       if (!節.trailingComments || !節.loc) continue;
       const 残す = [];
       const 移す = [];
-      for (const c of 節.trailingComments) (c.loc && c.loc.start.line > 節.loc.end.line ? 移す : 残す).push(c);
+      for (const c of 節.trailingComments)
+        (c.loc && c.loc.start.line > 節.loc.end.line ? 移す : 残す).push(c);
       if (!移す.length) continue;
       節.trailingComments = 残す;
       const 次 = 文たち[i + 1];
@@ -794,17 +1021,27 @@ export async function 読みやすく(元, 名札) {
     }
   };
   traverse(木, {
-    Program(p) { 注釈を直す(p.node.body); },
-    BlockStatement(p) { 注釈を直す(p.node.body); },
+    Program(p) {
+      注釈を直す(p.node.body);
+    },
+    BlockStatement(p) {
+      注釈を直す(p.node.body);
+    },
   });
   let 出 = generate(木, { retainLines: false, comments: true, jsescOption: { minimal: true } }, 元).code;
   const 設定 = await prettier.resolveConfig(path.resolve('.prettierrc.json'));
   // objectWrap: 'collapse' … 生成した木は { の後で改行するので、そのままだと物が縦に伸びる
-  出 = await prettier.format(出, Object.assign({}, 設定, { parser: 'babel', filepath: 名札 || 'x.js', objectWrap: 'collapse' }));
+  出 = await prettier.format(
+    出,
+    Object.assign({}, 設定, { parser: 'babel', filepath: 名札 || 'x.js', objectWrap: 'collapse' })
+  );
   return 出;
 }
 
-if (import.meta.url === new URL('file:///' + process.argv[1].replace(/\\/g, '/')).href || process.argv[1].endsWith('yomiyasuku.mjs')) {
+if (
+  import.meta.url === new URL('file:///' + process.argv[1].replace(/\\/g, '/')).href ||
+  process.argv[1].endsWith('yomiyasuku.mjs')
+) {
   for (const 道 of 道たち) {
     const 元 = fs.readFileSync(道, 'utf8');
     const 新 = await 読みやすく(元, 道);

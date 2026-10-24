@@ -29,7 +29,9 @@ const 根 = 'https://firestore.googleapis.com/v1/projects/kyudoscoremanager/data
 const 取る団体 = process.env.KIROKU_GROUP;
 if (!取る団体) throw new Error('KIROKU_GROUP に団体 ID を渡してください');
 const j = await (
-  await fetch(`${根}/groups/${取る団体}/sessions?pageSize=300`, { headers: { Authorization: `Bearer ${access_token}` } })
+  await fetch(`${根}/groups/${取る団体}/sessions?pageSize=300`, {
+    headers: { Authorization: `Bearer ${access_token}` },
+  })
 ).json();
 const 素 = (v) => {
   if (!v || 'object' !== typeof v) return v;

@@ -8,7 +8,8 @@ function 符号にする(粒) {
   const 箱 = new Uint8Array(粒.buffer, 粒.byteOffset, 粒.length);
   if (typeof Buffer !== 'undefined') return Buffer.from(箱).toString('base64');
   let s = '';
-  for (let i = 0; i < 箱.length; i += 0x8000) s += String.fromCharCode.apply(null, 箱.subarray(i, i + 0x8000));
+  for (let i = 0; i < 箱.length; i += 0x8000)
+    s += String.fromCharCode.apply(null, 箱.subarray(i, i + 0x8000));
   return btoa(s);
 }
 
@@ -86,4 +87,3 @@ export function 網をほどく(丸め) {
     b2: Float32Array.from(丸め.b2),
   };
 }
-

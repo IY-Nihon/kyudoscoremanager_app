@@ -286,7 +286,12 @@ test('normalizeArrowLocations: 無いときは undefined（「情報が無い」
 // ── ライブ：届いた射手に合わせる（○× 以外も届いた盤面を正にする。2026-09-26）──
 test('届いた射手に合わせる: 中身が違えば、日時が古くても届いたほうになる', () => {
   // 前は lastModified の新しいほうを選んでいたため、雲と違う内容を持ち続ける端末が出た
-  const r = 届いた射手に合わせる([射手({ name: '手元', lastModified: 9000 })], [射手({ name: '雲', lastModified: 1000 })], 4, 4);
+  const r = 届いた射手に合わせる(
+    [射手({ name: '手元', lastModified: 9000 })],
+    [射手({ name: '雲', lastModified: 1000 })],
+    4,
+    4
+  );
   assert.equal(r.archers[0].name, '雲');
   assert.equal(r.archers[0].lastModified, 9000, '日時は戻さない');
   assert.equal(r.changed, true);
@@ -328,7 +333,12 @@ test('届いた射手に合わせる: 送らない項目（手元にしかない
 });
 
 test('届いた射手に合わせる: 相手が外した部員は手元でも外れる（雲は null を落とす）', () => {
-  const r = 届いた射手に合わせる([射手({ memberId: 'm1', teamName: 'A大' })], [射手({ memberId: undefined, teamName: undefined })], 4, 4);
+  const r = 届いた射手に合わせる(
+    [射手({ memberId: 'm1', teamName: 'A大' })],
+    [射手({ memberId: undefined, teamName: undefined })],
+    4,
+    4
+  );
   assert.equal(r.archers[0].memberId, undefined);
   assert.equal(r.archers[0].teamName, undefined);
 });
@@ -337,10 +347,16 @@ test('届いた射手に合わせる: 並びと顔ぶれは届いたほう。射
   const 甲 = 射手({ id: 'a1' });
   const 乙 = 射手({ id: 'a2' });
   const 入れ替え = 届いた射手に合わせる([甲, 乙], [射手({ id: 'a2' }), 射手({ id: 'a1' })], 4, 4);
-  assert.deepEqual(入れ替え.archers.map((a) => a.id), ['a2', 'a1']);
+  assert.deepEqual(
+    入れ替え.archers.map((a) => a.id),
+    ['a2', 'a1']
+  );
   assert.equal(入れ替え.changed, true);
   const 顔ぶれ = 届いた射手に合わせる([甲], [射手({ id: 'a3' })], 4, 4);
-  assert.deepEqual(顔ぶれ.archers.map((a) => a.id), ['a3']);
+  assert.deepEqual(
+    顔ぶれ.archers.map((a) => a.id),
+    ['a3']
+  );
   assert.equal(届いた射手に合わせる([甲], [射手({ id: 'a1' })], 4, 8).changed, true);
 });
 
@@ -349,7 +365,10 @@ test('届いた射手に合わせる: 空でも落ちない', () => {
 });
 
 test('見比べる文字: 鍵の順・空の値・添字の配列とオブジェクトの違いを無くす', () => {
-  assert.equal(見比べる文字({ b: 1, a: { 1: true } }), 見比べる文字({ a: [null, true], b: 1, c: null, d: {} }));
+  assert.equal(
+    見比べる文字({ b: 1, a: { 1: true } }),
+    見比べる文字({ a: [null, true], b: 1, c: null, d: {} })
+  );
   assert.notEqual(見比べる文字({ a: 1 }), 見比べる文字({ a: 2 }));
 });
 

@@ -11,13 +11,28 @@ const test = require('node:test');
 const assert = require('node:assert');
 const 控 = require('../src/unsentStash');
 
-const 記録 = (id, 送った, 時刻 = 1) => ({ id, syncStatus: 送った ? '同期済み' : '未同期', lastModified: 時刻 });
+const 記録 = (id, 送った, 時刻 = 1) => ({
+  id,
+  syncStatus: 送った ? '同期済み' : '未同期',
+  lastModified: 時刻,
+});
 
 test('送れていないものだけを団体ごとに残し、送ったものは残さない', () => {
-  const 手元 = { sessions: [記録('a', false), 記録('b', true)], members: [記録('m', false)], alumni: [], trash: [] };
+  const 手元 = {
+    sessions: [記録('a', false), 記録('b', true)],
+    members: [記録('m', false)],
+    alumni: [],
+    trash: [],
+  };
   const 控え = 控.控えに入れる({}, 'G1', 手元);
-  assert.deepEqual(控え.G1.sessions.map((x) => x.id), ['a']);
-  assert.deepEqual(控え.G1.members.map((x) => x.id), ['m']);
+  assert.deepEqual(
+    控え.G1.sessions.map((x) => x.id),
+    ['a']
+  );
+  assert.deepEqual(
+    控え.G1.members.map((x) => x.id),
+    ['m']
+  );
   assert.equal(控.件数(控え.G1), 2);
 });
 

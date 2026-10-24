@@ -49,7 +49,11 @@ const 射手 = (id, 名, 印) => ({
   lockedBlocks: {},
 });
 
-const 並びの名 = (store) => store.getState().archers.map((x) => x.name).join(',');
+const 並びの名 = (store) =>
+  store
+    .getState()
+    .archers.map((x) => x.name)
+    .join(',');
 
 test('立ち順：後ろへ動かすと、並びで1つ落寄りへ行く', () => {
   const store = 端末();

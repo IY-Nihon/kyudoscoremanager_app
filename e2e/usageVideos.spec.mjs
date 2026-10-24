@@ -16,7 +16,9 @@ async function 一覧を開く(page) {
   await expect(page.getByTestId('使い方の選び窓')).toBeVisible();
 }
 
-test('使い方：項目を押すとその場で動画が流れ、「画面でやってみる」でその手順だけ案内が始まる', async ({ page }) => {
+test('使い方：項目を押すとその場で動画が流れ、「画面でやってみる」でその手順だけ案内が始まる', async ({
+  page,
+}) => {
   await 一覧を開く(page);
   await page.getByTestId('使い方の組-記録を取る').click();
   // 一覧では短い名で出す
@@ -41,7 +43,9 @@ test('使い方：動画の無い手順は、動画の枠を出さずに文だ�
   await expect(page.getByTestId('使い方の動画')).toHaveCount(0, { timeout: 15_000 });
 });
 
-test('使い方：一覧にだけある項目と困りごとは、文（と動画）だけで「画面でやってみる」は出さない', async ({ page }) => {
+test('使い方：一覧にだけある項目と困りごとは、文（と動画）だけで「画面でやってみる」は出さない', async ({
+  page,
+}) => {
   await 一覧を開く(page);
   await page.getByTestId('使い方の組-よくある困りごと').click();
   await page.getByTestId('使い方の項目-入れた○×が手や袖で消えてしまう').click();

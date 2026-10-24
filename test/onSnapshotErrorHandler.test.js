@@ -23,7 +23,10 @@ test('onSnapshot の呼び出しは、すべて誤りの受け口（3つ目の�
   const src = path.join(__dirname, '..', 'src');
   const 無い = [];
   for (const f of fs.readdirSync(src).filter((x) => x.endsWith('.js'))) {
-    const 木 = parse(fs.readFileSync(path.join(src, f), 'utf8'), { sourceType: 'unambiguous', plugins: ['jsx'] });
+    const 木 = parse(fs.readFileSync(path.join(src, f), 'utf8'), {
+      sourceType: 'unambiguous',
+      plugins: ['jsx'],
+    });
     traverse(木, {
       CallExpression(p) {
         const c = p.node.callee;
@@ -31,7 +34,9 @@ test('onSnapshot の呼び出しは、すべて誤りの受け口（3つ目の�
         if (名 !== 'onSnapshot') return;
         // onSnapshot(対象, 受け取る, 誤りの受け口) の形。第2引数が options のときは第4引数
         const 引 = p.node.arguments;
-        const 受け口 = 引.length >= 3 && ['ArrowFunctionExpression', 'FunctionExpression', 'Identifier'].includes(引[引.length - 1].type);
+        const 受け口 =
+          引.length >= 3 &&
+          ['ArrowFunctionExpression', 'FunctionExpression', 'Identifier'].includes(引[引.length - 1].type);
         if (!受け口) 無い.push(`${f}:${p.node.loc.start.line}`);
       },
     });

@@ -20,7 +20,12 @@ function 用意する(IS_WEB) {
   const isWeb = path.join(__dirname, '..', 'src', 'IS_WEB.js');
   const 本体 = path.join(__dirname, '..', 'src', 'yokoNagashi.js');
   delete require.cache[本体];
-  require.cache[react] = { id: react, filename: react, loaded: true, exports: { useRef: (v) => ({ current: v }), useCallback: (f) => f } };
+  require.cache[react] = {
+    id: react,
+    filename: react,
+    loaded: true,
+    exports: { useRef: (v) => ({ current: v }), useCallback: (f) => f },
+  };
   require.cache[isWeb] = { id: isWeb, filename: isWeb, loaded: true, exports: { IS_WEB } };
   const { use横流し } = require(本体);
   delete require.cache[react];

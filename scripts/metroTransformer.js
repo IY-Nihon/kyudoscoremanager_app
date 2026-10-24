@@ -26,8 +26,7 @@ function getUpstreamTransformer() {
     }
   }
   throw new Error(
-    '[metroTransformer] Could not find upstream babel transformer. ' +
-    'Tried: ' + candidates.join(', ')
+    '[metroTransformer] Could not find upstream babel transformer. ' + 'Tried: ' + candidates.join(', ')
   );
 }
 
@@ -45,7 +44,7 @@ module.exports.transform = async function transform(options) {
     parser.parse = function patchedParse(code, opts) {
       if (opts && Array.isArray(opts.plugins)) {
         opts = Object.assign({}, opts, {
-          plugins: opts.plugins.filter(function(p) {
+          plugins: opts.plugins.filter(function (p) {
             if (typeof p === 'string') {
               return p !== 'flow' && p !== 'flowComments';
             }

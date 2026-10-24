@@ -9,7 +9,14 @@
  * 種の記録には触らない。
  */
 import { test, expect } from '@playwright/test';
-import { 案内を止める, 画面が出るまで待つ, 入り口が決まるまで待つ, 団体で入る, こうなるまで待つ, 確かに打つ } from './helpers.mjs';
+import {
+  案内を止める,
+  画面が出るまで待つ,
+  入り口が決まるまで待つ,
+  団体で入る,
+  こうなるまで待つ,
+  確かに打つ,
+} from './helpers.mjs';
 
 // 記録を作って消すので、途中交代の検査（100007）と取り合わないよう専用の団体
 const 団体 = '100008';
@@ -21,7 +28,9 @@ let 題 = 'e2e ゴミ箱の巡り';
 
 function 手元の記録(page) {
   return page.evaluate((題) => {
-    const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}').state || {};
+    const s =
+      JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+        .state || {};
     const 探す = (xs) => (xs || []).find((x) => x && x.title === 題);
     return { 一覧: 探す(s.sessions), ゴミ箱: 探す(s.trash) };
   }, 題);
@@ -40,13 +49,23 @@ async function 一覧から消す(page) {
   await expect(page.getByText('記録詳細', { exact: true })).toBeVisible({ timeout: 15_000 });
   await page.getByRole('button', { name: 'この記録を消す' }).click();
   await page.getByText('移動する', { exact: true }).click();
-  await こうなるまで待つ(async () => (await 手元の記録(page)).ゴミ箱 ? 1 : 0, (n) => n === 1, 20_000);
+  await こうなるまで待つ(
+    async () => ((await 手元の記録(page)).ゴミ箱 ? 1 : 0),
+    (n) => n === 1,
+    20_000
+  );
 }
 
 /** 履歴の一覧（過去の記録表）に戻す。詳細やゴミ箱の一覧に居れば「戻る」を押す */
 async function 一覧へ戻す(page) {
   for (let i = 0; i < 3; i++) {
-    if (await page.getByText('過去の記録表', { exact: true }).isVisible().catch(() => false)) return;
+    if (
+      await page
+        .getByText('過去の記録表', { exact: true })
+        .isVisible()
+        .catch(() => false)
+    )
+      return;
     const 戻る = page.getByText('戻る', { exact: true }).first();
     if (await 戻る.isVisible().catch(() => false)) await 戻る.click();
     await page.waitForTimeout(800);
@@ -82,14 +101,22 @@ test('ゴミ箱の詳細から復元でき、完全に削除すると開き直�
   if (!前の.一覧 && !前の.ゴミ箱) {
     await page.getByText('記録', { exact: true }).first().click();
     await page.getByText('人', { exact: true }).first().click();
-    await こうなるまで待つ(() => page.locator('[data-testid^="名の欄-射手-"]').count(), (n) => n === 1, 20_000);
+    await こうなるまで待つ(
+      () => page.locator('[data-testid^="名の欄-射手-"]').count(),
+      (n) => n === 1,
+      20_000
+    );
     await page.getByLabel('終了して保存').click();
     const 次へ = page.getByText(/次へ|保存へ進む/).first();
     if (await 次へ.isVisible({ timeout: 3_000 }).catch(() => false)) await 次へ.click();
     await expect(page.getByText('練習記録の保存', { exact: true })).toBeVisible({ timeout: 15_000 });
     await 確かに打つ(page.getByPlaceholder('大会名・練習名（例: ○○大会）'), 題);
     await page.getByText('保存', { exact: true }).first().click();
-    await こうなるまで待つ(async () => (await 手元の記録(page)).一覧 ? 1 : 0, (n) => n === 1, 20_000);
+    await こうなるまで待つ(
+      async () => ((await 手元の記録(page)).一覧 ? 1 : 0),
+      (n) => n === 1,
+      20_000
+    );
   }
 
   // 消す → ゴミ箱の詳細 → 復元 → 一覧に戻っている
@@ -97,7 +124,14 @@ test('ゴミ箱の詳細から復元でき、完全に削除すると開き直�
   if (!前の.ゴミ箱) await 一覧から消す(page);
   await ゴミ箱の詳細へ(page);
   await page.getByRole('button', { name: 'この記録を復元する' }).click();
-  await こうなるまで待つ(async () => { const r = await 手元の記録(page); return r.一覧 && !r.ゴミ箱 ? 1 : 0; }, (n) => n === 1, 20_000);
+  await こうなるまで待つ(
+    async () => {
+      const r = await 手元の記録(page);
+      return r.一覧 && !r.ゴミ箱 ? 1 : 0;
+    },
+    (n) => n === 1,
+    20_000
+  );
 
   // もう一度消す → ゴミ箱の詳細 → 完全に削除 → 手元から消え、ゴミ箱の一覧へ戻る
   await page.getByText('履歴', { exact: true }).first().click();
@@ -107,9 +141,18 @@ test('ゴミ箱の詳細から復元でき、完全に削除すると開き直�
   await page.getByRole('button', { name: 'この記録を完全に削除する' }).click();
   await expect(page.getByText('完全に削除', { exact: true }).first()).toBeVisible({ timeout: 10_000 });
   await page.getByText('削除', { exact: true }).last().click();
-  await expect(page.getByText('ゴミ箱', { exact: true }), 'ゴミ箱の一覧へ戻らない').toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText('ゴミ箱', { exact: true }), 'ゴミ箱の一覧へ戻らない').toBeVisible({
+    timeout: 15_000,
+  });
   await expect(page.getByTestId(`ゴミ箱の記録-${id}`)).toHaveCount(0);
-  await こうなるまで待つ(async () => { const r = await 手元の記録(page); return !r.一覧 && !r.ゴミ箱 ? 1 : 0; }, (n) => n === 1, 20_000);
+  await こうなるまで待つ(
+    async () => {
+      const r = await 手元の記録(page);
+      return !r.一覧 && !r.ゴミ箱 ? 1 : 0;
+    },
+    (n) => n === 1,
+    20_000
+  );
 
   // 雲にも残っていない：開き直して、雲から取り直しても戻ってこない
   await page.waitForTimeout(3_000);

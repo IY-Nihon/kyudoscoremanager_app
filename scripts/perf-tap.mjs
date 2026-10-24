@@ -98,7 +98,10 @@ await p.waitForTimeout(500);
 // PERF_TABS=1 のときは先に履歴と分析のタブを、PERF_TABS=全部 のときは全部のタブを開いてから戻る。タブは一度開くと裏でも
 // 生きたままなので、それらの画面の描き直しも押した手応えに乗るかを見る
 if (process.env.PERF_TABS) {
-  const 開く = process.env.PERF_TABS === '全部' ? ['履歴', '分析', 'メンバー', '出欠', '設定', '記録'] : ['履歴', '分析', '記録'];
+  const 開く =
+    process.env.PERF_TABS === '全部'
+      ? ['履歴', '分析', 'メンバー', '出欠', '設定', '記録']
+      : ['履歴', '分析', '記録'];
   for (const 名 of 開く) {
     await p.getByText(名, { exact: true }).last().click();
     await p.waitForTimeout(2500);

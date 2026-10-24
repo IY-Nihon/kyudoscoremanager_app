@@ -54,7 +54,10 @@ let 全射 = 0;
 let 合った人 = 0;
 for (const k of 区画) {
   const みち = `${置き}/${k.名}.jpg`;
-  await sharp(元).extract({ left: k.left, top: k.top, width: k.width, height: k.height }).jpeg({ quality: 95 }).toFile(みち);
+  await sharp(元)
+    .extract({ left: k.left, top: k.top, width: k.width, height: k.height })
+    .jpeg({ quality: 95 })
+    .toFile(みち);
   const g = await 格子(await 画を読む(みち), { 人数: k.順.length, 行数: 10, 上を除く: 0, 回す });
   // 格子が起こしたあとの画から切る（角度が付くと元の写真とは座標が合わない）
   const 画 = g.生.画素;

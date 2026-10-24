@@ -15,7 +15,7 @@
  */
 (async () => {
   const PROJECT = 'kyudoscoremanager';
-  const DRY_RUN = true;                             // ← 実行するときは false にする
+  const DRY_RUN = true; // ← 実行するときは false にする
   // 団体は group_accounts から取る。書き並べると、あとから増えた団体を取りこぼす。
 
   const base = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents`;
@@ -23,29 +23,41 @@
   // ログイン済みセッションの ID トークンを取り出す
   const db = await new Promise((res, rej) => {
     const r = indexedDB.open('firebaseLocalStorageDb');
-    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
   });
   const rows = await new Promise((res, rej) => {
     const tx = db.transaction('firebaseLocalStorage', 'readonly');
     const q = tx.objectStore('firebaseLocalStorage').getAll();
-    q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
+    q.onsuccess = () => res(q.result);
+    q.onerror = () => rej(q.error);
   });
   const rec = rows.find((r) => r.value && r.value.stsTokenManager);
-  if (!rec) { console.error('ログインしていません。団体アカウントでログインしてから実行してください。'); return; }
+  if (!rec) {
+    console.error('ログインしていません。団体アカウントでログインしてから実行してください。');
+    return;
+  }
   const token = rec.value.stsTokenManager.accessToken;
   console.log(`ログイン中: ${rec.value.email || '(匿名)'}`);
-  if (rec.value.isAnonymous) { console.error('部員ログインでは実行できません。団体アカウントでログインしてください。'); return; }
+  if (rec.value.isAnonymous) {
+    console.error('部員ログインでは実行できません。団体アカウントでログインしてください。');
+    return;
+  }
 
   const call = async (path, opt = {}) => {
     const r = await fetch(base + path, {
       method: opt.method || 'GET',
-      headers: { Authorization: 'Bearer ' + token, ...(opt.body ? { 'Content-Type': 'application/json' } : {}) },
+      headers: {
+        Authorization: 'Bearer ' + token,
+        ...(opt.body ? { 'Content-Type': 'application/json' } : {}),
+      },
       body: opt.body ? JSON.stringify(opt.body) : undefined,
     });
     return { status: r.status, json: await r.json().catch(() => null) };
   };
   const listAll = async (path, mask) => {
-    const out = []; let pageToken = '';
+    const out = [];
+    let pageToken = '';
     do {
       const q = new URLSearchParams({ pageSize: '300' });
       if (pageToken) q.set('pageToken', pageToken);
@@ -71,21 +83,35 @@
     console.warn('group_accounts の一覧を取得できませんでした。groups から拾います。');
     GROUPS = (await listAll('/groups', [])).map((d) => d.id);
   }
-  if (!GROUPS.length) { console.error('団体が1件も見つかりません。中断します。'); return; }
+  if (!GROUPS.length) {
+    console.error('団体が1件も見つかりません。中断します。');
+    return;
+  }
   console.log(`対象の団体（${GROUPS.length}件）: ${GROUPS.join(', ')}`);
 
   for (const gid of GROUPS) {
     const members = await listAll(`/groups/${gid}/members`, ['personalId']);
-    const valid = [], invalid = [], dup = [];
+    const valid = [],
+      invalid = [],
+      dup = [];
     const seen = new Map();
     for (const m of members) {
       const pid = m.data.personalId?.stringValue;
-      if (!/^\d{4}$/.test(pid || '')) { invalid.push(m.id); continue; }
-      if (seen.has(pid)) { dup.push(pid); continue; }
+      if (!/^\d{4}$/.test(pid || '')) {
+        invalid.push(m.id);
+        continue;
+      }
+      if (seen.has(pid)) {
+        dup.push(pid);
+        continue;
+      }
       seen.set(pid, m.id);
       valid.push({ personalId: pid, memberId: m.id });
     }
-    if (dup.length) { console.error(`団体 ${gid}: 個人IDの重複 ${dup.join(', ')}`); blocked = true; }
+    if (dup.length) {
+      console.error(`団体 ${gid}: 個人IDの重複 ${dup.join(', ')}`);
+      blocked = true;
+    }
     if (invalid.length) console.warn(`団体 ${gid}: 4桁でない個人ID ${invalid.length} 件（スキップ）`);
 
     if (!DRY_RUN && !dup.length) {
@@ -95,10 +121,21 @@
       for (const v of valid) {
         const r = await call(`/groups/${gid}/member_lookup/${v.personalId}`, {
           method: 'PATCH',
-          body: { fields: { memberId: { stringValue: v.memberId }, updatedAt: { integerValue: String(Date.now()) } } },
+          body: {
+            fields: {
+              memberId: { stringValue: v.memberId },
+              updatedAt: { integerValue: String(Date.now()) },
+            },
+          },
         });
-        if (r.status !== 200) { console.error(`団体 ${gid} / 個人ID ${v.personalId} 失敗 (HTTP ${r.status})`); blocked = true; }
-        else { written++; n++; if (n % 25 === 0) console.log(`  ${n} / ${valid.length}`); }
+        if (r.status !== 200) {
+          console.error(`団体 ${gid} / 個人ID ${v.personalId} 失敗 (HTTP ${r.status})`);
+          blocked = true;
+        } else {
+          written++;
+          n++;
+          if (n % 25 === 0) console.log(`  ${n} / ${valid.length}`);
+        }
       }
     }
 
@@ -110,7 +147,14 @@
         blocked = true;
       }
     }
-    summary.push({ 団体: gid, メンバー: members.length, 有効な4桁ID: valid.length, 不正: invalid.length, 重複: dup.length, 逆引き表: lookupCount });
+    summary.push({
+      団体: gid,
+      メンバー: members.length,
+      有効な4桁ID: valid.length,
+      不正: invalid.length,
+      重複: dup.length,
+      逆引き表: lookupCount,
+    });
   }
 
   console.table(summary);

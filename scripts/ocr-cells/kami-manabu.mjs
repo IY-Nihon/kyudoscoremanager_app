@@ -40,7 +40,10 @@ async function 見本をあつめる(枚数) {
       const 下 = Math.round(b.答え.射のy[0] + b.答え.マス高 / 2) + 2;
       const 左 = Math.round(b.答え.列のx[0] - b.答え.マス幅 / 2) - 2;
       const 切 = 切り取る(b.白黒, b.幅, b.高, 左, 上, b.幅 - 左, 下 - 上);
-      const g = await 紙の格子({ 画素: 切.画, 幅: 切.幅, 高: 切.高 }, { 人数: b.答え.人数, 立数: b.答え.立数, 立のマス: b.答え.立のマス });
+      const g = await 紙の格子(
+        { 画素: 切.画, 幅: 切.幅, 高: 切.高 },
+        { 人数: b.答え.人数, 立数: b.答え.立数, 立のマス: b.答え.立のマス }
+      );
       const 合う =
         g.列.every((c, k) => Math.abs(c.中心 + 左 - b.答え.列のx[k]) <= b.答え.マス幅 * 0.3) &&
         g.マス[0].every((m, s) => Math.abs(m.y + 上 - b.答え.射のy[s]) <= b.答え.マス高 * 0.3);
@@ -52,7 +55,13 @@ async function 見本をあつめる(枚数) {
     const 箱 = 紙の箱({ 幅: b.答え.マス幅, 高: b.答え.マス高 });
     // 上下のずれは ±0.15 まで。±0.28 まで混ぜたら逆に落ちた（隣の弧まで印と
     // 覚えてしまう。80/80 → 78/80）
-    const ずらし = [[0, 0], [0, -0.15], [0, 0.15], [-0.12, 0.08], [0.12, -0.08]];
+    const ずらし = [
+      [0, 0],
+      [0, -0.15],
+      [0, 0.15],
+      [-0.12, 0.08],
+      [0.12, -0.08],
+    ];
     for (let c = 0; c < b.答え.人数; c++) {
       for (let s = 0; s < b.答え.マス[c].length; s++) {
         const k = 紙の種類.indexOf(b.答え.マス[c][s]);
@@ -86,9 +95,15 @@ async function 見本をあつめる(枚数) {
 
 async function 本物をよむ(根) {
   const 出 = [];
-  for (const [札, k] of [['batsu', 0], ['maru', 1]]) {
+  for (const [札, k] of [
+    ['batsu', 0],
+    ['maru', 1],
+  ]) {
     for (const 名 of fs.readdirSync(`${根}/${札}`)) {
-      const { data, info } = await sharp(`${根}/${札}/${名}`).greyscale().raw().toBuffer({ resolveWithObject: true });
+      const { data, info } = await sharp(`${根}/${札}/${名}`)
+        .greyscale()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
       出.push({ 形: await 形にする(data, info.width, info.height, 'そのまま'), 札: k, 名: `${札}/${名}` });
     }
   }
@@ -173,7 +188,9 @@ for (let i = 0; i < 網の数; i++) {
   群れ.push(学習(見本, 1000 + i * 7717, 巡回数));
   let 当 = 0;
   for (const x of 本物) if (決める(群れ, x.形) === x.札) 当++;
-  console.log(`  ${i + 1}枚目  群れ(${群れ.length}枚)=${当}/${本物.length} (${((100 * 当) / 本物.length).toFixed(1)}%)`);
+  console.log(
+    `  ${i + 1}枚目  群れ(${群れ.length}枚)=${当}/${本物.length} (${((100 * 当) / 本物.length).toFixed(1)}%)`
+  );
 }
 const 外れた = [];
 let 当 = 0;

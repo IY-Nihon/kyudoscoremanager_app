@@ -16,10 +16,16 @@ const 外れ = (問題) =>
 
 test('Q&A 探し：1 組目の質問は、正しい Q&A を全部渡す', () => {
   const 出 = 外れ(require('./helpers/qaKensakuMondai.cjs'));
-  assert.deepStrictEqual(出.map((x) => x.問), []);
+  assert.deepStrictEqual(
+    出.map((x) => x.問),
+    []
+  );
 });
 
 test('Q&A 探し：2 組目の質問も、正しい Q&A を全部渡す', () => {
   const 出 = 外れ(require('./helpers/qaKensakuMondai2.cjs'));
-  assert.deepStrictEqual(出.map((x) => x.問), []);
+  assert.deepStrictEqual(
+    出.map((x) => x.問),
+    []
+  );
 });
