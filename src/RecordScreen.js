@@ -587,25 +587,6 @@ const RecordScreen = () => {
     () => 列の見立てを作る(見えている並び, shotsPerRound),
     [見えている並び, shotsPerRound]
   );
-  // 列に渡す手は、描き直しても同じ関数のままにする（変わると列の memo が効かない）。
-  // 中身はそのときの最新の手を呼ぶ
-  const 最新の手 = React.useRef({});
-  最新の手.current = { 人を選ぶ, 閲覧中に押された, 見るだけ中, archers };
-  const 名前を押した = React.useCallback(
-    (射手ID, 名前, 順) => 最新の手.current.人を選ぶ(射手ID, 名前, 順),
-    []
-  );
-  const 列を消す = React.useCallback((射手ID) => useScoreStore.getState().deleteArcher(射手ID), []);
-  const 区切りを長押しした = React.useCallback((射手ID) => {
-    const 手 = 最新の手.current;
-    if (手.見るだけ中) {
-      手.閲覧中に押された();
-      return;
-    }
-    const 射手 = (Array.isArray(手.archers) ? 手.archers : []).find((列) => 列 && 列.id === 射手ID);
-    setチーム名の下書き((射手 && 射手.teamName) || '');
-    setチーム名を付ける区切り(射手ID);
-  }, []);
   // 指のいる場所（ページの座標）から、その下にある列の番号を出す。
   // 縦に並べているときは横の位置で、横に並べているときは縦の位置で決める
   //（縦の表は列が横に並び、横の表は上から下へ積まれるため）。
@@ -938,20 +919,15 @@ const RecordScreen = () => {
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator style={{ flexGrow: 0, flexShrink: 1 }}>
             <View style={{ flexDirection: 'column', width: UIConfig.cellWidth * (shotsPerRound + 1) * 倍率 }}>
-              <LabelColumn shots={shotsPerRound} showFooter={false} 横並び />
+              <LabelColumn shots={shotsPerRound} 横並び />
               {一覧.map((射手, 順) => (
                 <ArcherColumnView
                   key={typeof 射手.id === 'string' ? 射手.id : `行-${順}`}
                   archer={射手}
                   shots={shotsPerRound}
-                  indexInList={順}
                   {...列の見立て[順]}
-                  showFooter={false}
                   横並び
                   isReadOnly={見るだけ中}
-                  onPressName={名前を押した}
-                  onDelete={列を消す}
-                  onLongPressSeparator={区切りを長押しした}
                 />
               ))}
             </View>
@@ -1371,7 +1347,7 @@ const RecordScreen = () => {
               <ScrollView showsVerticalScrollIndicator={false} bounces={false} style={{ flexGrow: 0 }}>
                 <View style={{ flexDirection: 'row-reverse', minWidth: '100%' }}>
                   <View style={{ backgroundColor: 基本色.地, zIndex: 10 }}>
-                    <LabelColumn shots={shotsPerRound} showFooter={false} />
+                    <LabelColumn shots={shotsPerRound} />
                   </View>
                   <ScrollView
                     horizontal
@@ -1390,15 +1366,10 @@ const RecordScreen = () => {
                           key={typeof 射手.id === 'string' ? 射手.id : `archer-${順}`}
                           archer={射手}
                           shots={shotsPerRound}
-                          indexInList={順}
                           // ドラッグ中は「入れた結果」の並び（見えている並び）で
                           // 数えた見立てを渡す。計もチームもその並びで数え直るので、離す前に出来上がりが見える
                           {...列の見立て[順]}
-                          showFooter={false}
                           isReadOnly={見るだけ中}
-                          onPressName={名前を押した}
-                          onDelete={列を消す}
-                          onLongPressSeparator={区切りを長押しした}
                         />
                       ))}
                     </View>

@@ -680,20 +680,16 @@ const HistoryScreen = () => {
                         width: UIConfig.cellWidth * (本数 + 1) * viewScale,
                       }}
                     >
-                      <LabelColumn shots={本数} showFooter={false} 横並び />
+                      <LabelColumn shots={本数} 横並び />
                       {射手たち.map((射手, 順) => (
                         <ArcherColumnView
                           key={typeof 射手.id === 'string' ? `行-${射手.id}` : `行-${順}`}
                           archer={射手}
                           shots={本数}
-                          indexInList={順}
                           {...見立て[順]}
-                          showFooter={false}
                           横並び
                           isReadOnly={!isAdminMode}
                           isAdminMode={isAdminMode}
-                          onPressName={(射手ID, 名前, 位置) => 人を選ぶ(射手ID, 位置)}
-                          onDelete={射手を消す}
                           onToggleMark={印を切り替える}
                           onToggleLock={鍵を切り替える}
                         />
@@ -707,7 +703,7 @@ const HistoryScreen = () => {
                 <ScrollView showsVerticalScrollIndicator={false} bounces={false} style={{ flexGrow: 0 }}>
                   <View style={{ flexDirection: 'row-reverse', minWidth: '100%' }}>
                     <View style={{ backgroundColor: 基本色.地, zIndex: 10 }}>
-                      <LabelColumn shots={本数} showFooter={false} />
+                      <LabelColumn shots={本数} />
                     </View>
                     <ScrollView
                       horizontal
@@ -723,13 +719,9 @@ const HistoryScreen = () => {
                             key={typeof 射手.id === 'string' ? 射手.id : `archer-${順}`}
                             archer={射手}
                             shots={本数}
-                            indexInList={順}
                             {...見立て[順]}
-                            showFooter={false}
                             isReadOnly={!isAdminMode}
                             isAdminMode={isAdminMode}
-                            onPressName={(射手ID, 名前, 位置) => 人を選ぶ(射手ID, 位置)}
-                            onDelete={射手を消す}
                             onToggleMark={印を切り替える}
                             onToggleLock={鍵を切り替える}
                           />
@@ -1101,6 +1093,7 @@ const HistoryScreen = () => {
       人の窓を出す(true);
     }
   };
+  const 選んだ列 = 並びにする(見ている記録?.archers).find((射手) => 射手.id === 選んだ射手ID);
   return (
     <View style={styles.safeArea}>
       {historyViewMode === 'detail' ? (
@@ -1513,12 +1506,9 @@ const HistoryScreen = () => {
       <ArcherActionModal
         visible={人の窓}
         archerId={選んだ射手ID || ''}
-        archerName={見ている記録?.archers?.find((射手) => 射手.id === 選んだ射手ID)?.name || ''}
         archerOrigIdx={選んだ射手の順}
-        isSeparator={見ている記録?.archers?.find((射手) => 射手.id === 選んだ射手ID)?.isSeparator || false}
-        isTotalCalculator={
-          見ている記録?.archers?.find((射手) => 射手.id === 選んだ射手ID)?.isTotalCalculator || false
-        }
+        isSeparator={!!選んだ列?.isSeparator}
+        isTotalCalculator={!!選んだ列?.isTotalCalculator}
         onClose={() => 人の窓を出す(false)}
         onSubstitution={() => 交代の窓を出す(true)}
         onSetMember={(部員) => 部員を当てる(選んだ射手ID, 部員)}

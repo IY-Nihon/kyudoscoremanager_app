@@ -4,7 +4,8 @@ const { 色 } = require('./iro.js');
 const { View, Text, StyleSheet } = require('./rn');
 const { UIConfig } = require('./uiConfig');
 const { useScoreStore } = require('./useScoreStore');
-const LabelColumn = ({ shots, showFooter = true, 横並び: 横 = false }) => {
+/** 記録表の左（横の表は上）の、射番の見出しの列。名前の行の見出しは各画面が描く */
+const LabelColumn = ({ shots, 横並び: 横 = false }) => {
   const viewScale = useScoreStore((状態) => 状態.viewScale);
   const 倍率 = typeof viewScale === 'number' && !isNaN(viewScale) && viewScale > 0 ? viewScale : 1;
   const 番号たち = [];
@@ -76,11 +77,6 @@ const LabelColumn = ({ shots, showFooter = true, 横並び: 横 = false }) => {
           })}
         </View>
       </View>
-      {showFooter && (
-        <View style={[styles.footer, { height: UIConfig.footerHeight * 倍率 }]}>
-          <Text style={[styles.footerText, { fontSize: 10 * 倍率 }]}>名</Text>
-        </View>
-      )}
       {横 ? (
         <View
           style={{
@@ -123,17 +119,6 @@ const styles = StyleSheet.create({
     borderRightColor: 色.黒,
   },
   numText: { color: 色.文字_二, fontSize: 10 },
-  footer: {
-    height: UIConfig.footerHeight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: 色.黒,
-    borderRightWidth: 1.5,
-    borderRightColor: 色.黒,
-    backgroundColor: 色.地,
-  },
-  footerText: { color: 色.文字_二, fontSize: 10, fontWeight: 'bold' },
 });
 Object.defineProperty(exports, '__esModule', { value: true });
 exports.LabelColumn = LabelColumn;
