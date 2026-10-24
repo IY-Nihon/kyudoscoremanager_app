@@ -32,6 +32,16 @@ const {
 } = require('./storeShared');
 const 学 = require('./gakunen');
 
+/**
+ * 記録のタグを整える（# を付けてそろえ、重なりを外す）。変わったかも返す（変わっていれば雲も直す）
+ * @returns {{ タグ: string[], 変わった: boolean }}
+ */
+function タグを整える(中身) {
+  const 元 = Array.isArray(中身.tags) ? 中身.tags : [];
+  const タグ = Array.from(new Set(元.map(normalizeTag).filter(Boolean)));
+  return { タグ, 変わった: タグ.length !== 元.length || タグ.some((一つ, 番) => 一つ !== 元[番]) };
+}
+
 // 消したもの（記録・メンバー）の控えを持つ長さ。雲から消えたのを確かめられないまま、これを過ぎたら手放す
 const 消した控えを持つ長さ = 30 * 24 * 60 * 60 * 1000;
 
@@ -148,15 +158,8 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       取り込む記録.forEach((文書) => {
         const 中身 = 記録の日時を数に(文書.data());
         const 更新時刻 = ミリ秒にする(中身.lastModified);
-        const cleanedTags =
-          中身.tags && Array.isArray(中身.tags)
-            ? Array.from(new Set(中身.tags.map(normalizeTag).filter(Boolean)))
-            : [];
-        const originalTags = 中身.tags || [];
-        const isModified =
-          cleanedTags.length !== originalTags.length ||
-          cleanedTags.some((タグ, 番) => タグ !== originalTags[番]);
-        if (isModified && Firebaseの器.db && 団体ID) {
+        const { タグ: cleanedTags, 変わった } = タグを整える(中身);
+        if (変わった && Firebaseの器.db && 団体ID) {
           const 場所 = Firestore.doc(Firebaseの器.db, `groups/${団体ID}/sessions`, 文書.id);
           Firestore.updateDoc(場所, { tags: cleanedTags }).catch((誤り) =>
             console.error('[Store] syncSessions Auto cleanup failed:', 誤り)
@@ -777,7 +780,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
   },
 
   listenToSessions: async () => {
-    const { activeGroupId: 団体, activeRole: 役割 } = 状態();
+    const { activeGroupId: 団体 } = 状態();
     if (!団体) return;
     const _sessDb = await waitForDb();
     if (!_sessDb) {
@@ -787,15 +790,16 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
     状態().stopListeningToSessions();
     console.log('[Store] Starting real-time session listener');
     const 記録の置き場 = Firestore.collection(Firebaseの器.db, `groups/${団体}/sessions`);
-    const m_30 = Date.now() - 2592000000;
+    // 見張るのは直近 30 日の記録だけ（古い記録は 7 日ごとの全件のそろえ直しで届く）
+    const 見張る始まり = Date.now() - 30 * 24 * 60 * 60 * 1000;
     // 雲の date は数から日時型へ移している途中（2026-09-24〜）。範囲の問い合わせは
     // 同じ型の値にしか当たらないので、数と日時型の両方で絞る。数だけで絞ると、
     // 日時型になった記録が 1 件も届かず、画面から消える
     const 問い = Firestore.query(
       記録の置き場,
       Firestore.or(
-        Firestore.where('date', '>', m_30),
-        Firestore.where('date', '>', Firestore.Timestamp.fromMillis(m_30))
+        Firestore.where('date', '>', 見張る始まり),
+        Firestore.where('date', '>', Firestore.Timestamp.fromMillis(見張る始まり))
       ),
       Firestore.orderBy('date', 'desc'),
       Firestore.limit(100)
@@ -806,24 +810,8 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         const 雲の記録 = [];
         返り.forEach((文書) => {
           const 中身 = 記録の日時を数に(文書.data());
-          const cleanedTags =
-            中身.tags && Array.isArray(中身.tags)
-              ? Array.from(new Set(中身.tags.map(normalizeTag).filter(Boolean)))
-              : [];
-          const originalTags = 中身.tags || [];
-          const isModified =
-            cleanedTags.length !== originalTags.length ||
-            cleanedTags.some((タグ, 番) => タグ !== originalTags[番]);
-          if (isModified && Firebaseの器.db && Firebaseの器.db._delegate && 役割 !== 'member') {
-            const 場所 = Firestore.doc(
-              Firebaseの器.db,
-              `groups/${場.店.getState().activeGroupId}/sessions`,
-              文書.id
-            );
-            Firestore.updateDoc(場所, { tags: cleanedTags }).catch((誤り) =>
-              console.error('[Store] Auto cleanup sync failed:', 誤り)
-            );
-          }
+          // 雲のタグを直すのは syncSessions の側だけ（ここは手元で整えて受け取る）
+          const { タグ: cleanedTags } = タグを整える(中身);
           雲の記録.push(
             Object.assign({}, 中身, {
               id: 文書.id,
@@ -1043,7 +1031,9 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
           const 中身 = 文書.data();
           雲の卒業生.push(Object.assign({}, 中身, { id: 文書.id, syncStatus: '同期済み' }));
         });
-        const 合流した = mergeById(状態().alumni, 雲の卒業生, false, true);
+        // 端末の控え（fromCache）から来た一覧は途中までのことがある。名簿の見張りと同じく、そのときは消さない
+        const 控えからか = !!(返り.metadata && 返り.metadata.fromCache);
+        const 合流した = mergeById(状態().alumni, 雲の卒業生, false, !控えからか);
         if (同期規則.一覧が同じか(状態().alumni, 合流した)) {
           console.log(`[Store] Real-time alumni update received: ${雲の卒業生.length} items (no change)`);
           return;
