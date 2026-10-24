@@ -1,7 +1,6 @@
 'use strict';
 
 const { 色 } = require('./iro.js');
-exports.ArcherActionModal = undefined;
 const React = require('react');
 const {
   View,
@@ -22,11 +21,24 @@ const 学 = require('./gakunen');
 const { use団体の決まり } = require('./useGakunen');
 const { useストアの一部 } = require('./storeSlice');
 const { getShadowStyle } = require('./shadowStyle');
+/** Pressable の style。上に乗せると地が 乗せた地 の色になり（無ければ変えない）、押している間は薄くなる */
+const 押せる形 =
+  (形, 乗せた地) =>
+  ({ pressed, hovered }) => [
+    形,
+    hovered && 乗せた地 && { backgroundColor: 乗せた地 },
+    pressed && { opacity: 0.7 },
+  ];
+/**
+ * 記録表の列を押したときの窓。射手なら名前（メンバー・卒業生・ゲスト）と途中交代、
+ * 区切りならチーム名、計なら数える範囲。どの列でも、並びの入れ替え・左に足す・削除ができる。
+ * 記録画面は店の手をそのまま使い、履歴の詳細は on〜 を渡して見ている記録を書き換える
+ */
 const ArcherActionModal = ({
   visible,
   archerId,
-  archerOrigIdx: pVal,
-  isSeparator: jVal,
+  archerOrigIdx: 列の順,
+  isSeparator: 区切りか,
   isTotalCalculator,
   // 合計の列が、いま手前の計もまとめて数えているか／切り替える手立て
   またぐ合計,
@@ -77,7 +89,6 @@ const ArcherActionModal = ({
     'addSeparator',
     'addTotalCalculator',
     'deleteArcher',
-    'groupType',
     'divisions',
   ]);
   const 決まり = use団体の決まり();
@@ -87,6 +98,8 @@ const ArcherActionModal = ({
   // 開いた期（卒業生）と、閉じた組（学年・区分の鍵）。初めは期は閉じ、組はどれも開いている（高専・6 年制の 5・6 年や区分の組も）
   const [expandedTerms, toggleTerm] = use入れ替える組();
   const [閉じた組, toggleActiveGrade] = use入れ替える組();
+  // 「計」と「間隔」の列は射手ではないので、名前・交代・人を選ぶところは出さない
+  const 射手の列 = !区切りか && !isTotalCalculator;
   // いまこの射手に入っている途中交代。1つでもあれば取り消す道を出す。
   // これまで解除する口がどこにも無く、履歴にも積んでいないので取り消しでも
   // 戻らなかった（間違えるとリセットするしかなかった）
@@ -100,6 +113,7 @@ const ArcherActionModal = ({
       .map((位置) => ({ 位置, 名: 表[位置] }));
   }, [archers, archerId]);
   const 今の射手たち = existingArchers || archers;
+  const 選んである = (部員) => 今の射手たち.some((一人) => 一人.memberId === 部員.id);
   // 男女の絞り込み。'全員' | '男子' | '女子'
   const [男女の絞り, set男女の絞り] = React.useState('全員');
   const 現役の候補 = React.useMemo(() => {
@@ -109,15 +123,15 @@ const ArcherActionModal = ({
         .filter((部員) => 検索の文 === '' || (部員.name || '').includes(検索の文))
         // 男女で絞る。男女別の立ちを組むとき、毎回名前を探さずに済む
         .filter((部員) => 男女の絞り === '全員' || (部員.gender || '') === 男女の絞り)
+        // 選んである人は後ろへ。残りは名簿の並び（「その他」（学年0）は後ろへ）
         .sort((甲, 乙) => {
           const 甲は入っている = 今の射手たち.some((一人) => 一人.memberId === 甲.id);
           if (甲は入っている !== 今の射手たち.some((一人) => 一人.memberId === 乙.id))
             return 甲は入っている ? 1 : -1;
-          // 残りは名簿の並び（「その他」（学年0）は後ろへ）
           return 学.名簿の順に比べる(甲, 乙);
         })
     );
-  }, [members, archers, 検索の文, 今の射手たち, 男女の絞り]);
+  }, [members, 検索の文, 今の射手たち, 男女の絞り]);
   // 学年ごと（学年の無い団体は区分ごと）の組
   const activeGroups = React.useMemo(
     () =>
@@ -128,24 +142,22 @@ const ArcherActionModal = ({
       })),
     [現役の候補, 決まり, 区分たち]
   );
+  // 卒業生は期ごと（新しい期が上・期の無い人は「不明」で最後）
   const alumniByTerm = React.useMemo(() => {
     const 候補 = members
       .filter((部員) => 学.卒業生か(部員))
       .concat(alumniState || [])
       .filter((部員) => 検索の文 === '' || (部員.name || '').includes(検索の文));
-    const tVal = {};
+    const 期ごと = {};
     候補.forEach((部員) => {
       const 期 = 部員.termKi || 999;
-      if (!tVal[期]) {
-        tVal[期] = [];
-      }
-      tVal[期].push(部員);
+      (期ごと[期] = 期ごと[期] || []).push(部員);
     });
-    return Object.keys(tVal)
+    return Object.keys(期ごと)
       .sort((甲, 乙) => Number(乙) - Number(甲))
       .map((期) => ({
         term: 期,
-        members: tVal[期].sort((甲, 乙) => (甲.name || '').localeCompare(乙.name || '', 'ja')),
+        members: 期ごと[期].sort((甲, 乙) => (甲.name || '').localeCompare(乙.name || '', 'ja')),
       }));
   }, [members, alumniState, 検索の文]);
   const 部員を当てる = (部員) => {
@@ -166,6 +178,48 @@ const ArcherActionModal = ({
     客名の下書きを置く('');
     onClose();
   };
+  /** 人を選ぶ一覧の 1 行（メンバーも卒業生も同じ形）。選んである人は薄く「選択済」 */
+  const 人の行 = (部員, 添え書き) => {
+    const 選んだ = 選んである(部員);
+    return (
+      <Pressable
+        style={押せる形(
+          [styles.menuItem, { paddingLeft: 32 }, 選んだ && { backgroundColor: 色.地_F0F0F5, opacity: 0.8 }],
+          !選んだ && 色.地
+        )}
+        onPress={() => 部員を当てる(部員)}
+      >
+        <Text
+          style={[
+            styles.menuText,
+            部員.gender === '男子' && { color: 色.青 },
+            部員.gender === '女子' && { color: 色.桃 },
+            選んだ && { opacity: 0.5 },
+          ]}
+        >
+          {部員.name} <Text style={{ fontSize: 11, color: 色.灰 }}>{添え書き}</Text>
+        </Text>
+        {選んだ && (
+          <View style={styles.selectedBadge}>
+            <Text style={styles.selectedBadgeText}>選択済</Text>
+          </View>
+        )}
+      </Pressable>
+    );
+  };
+  /** 窓の下の、列を足す・消す行 */
+  const 下の行 = (字, 絵, 押した, 字の色 = 色.黒, 絵の色 = 色.灰, 乗せた地 = 色.地) => (
+    <Pressable
+      style={押せる形(styles.menuItem, 乗せた地)}
+      onPress={() => {
+        押した();
+        onClose();
+      }}
+    >
+      <Text style={[styles.menuText, 字の色 !== 色.黒 && { color: 字の色, fontWeight: 'bold' }]}>{字}</Text>
+      <Icons.Ionicons name={絵} size={20} color={絵の色} />
+    </Pressable>
+  );
   const 画面の高さ = Dimensions.get('window').height;
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -173,15 +227,11 @@ const ArcherActionModal = ({
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
         <View style={[styles.menuContainer, { maxHeight: 0.7 * 画面の高さ }]}>
           <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
-            {!jVal && !isTotalCalculator && (
+            {射手の列 && (
               <View style={styles.section}>
                 <View style={styles.actionRow}>
                   <Pressable
-                    style={({ pressed, hovered }) => [
-                      styles.actionBtn,
-                      hovered && { backgroundColor: 色.地_濃い },
-                      pressed && { opacity: 0.7 },
-                    ]}
+                    style={押せる形(styles.actionBtn, 色.地_濃い)}
                     onPress={() => {
                       if (onClearName) onClearName();
                       else useScoreStore.getState().setArcherMember(archerId, null);
@@ -192,11 +242,7 @@ const ArcherActionModal = ({
                     <Text style={[styles.actionBtnText, { color: 色.赤 }]}>名前クリア</Text>
                   </Pressable>
                   <Pressable
-                    style={({ pressed, hovered }) => [
-                      styles.actionBtn,
-                      hovered && { backgroundColor: 色.地_濃い },
-                      pressed && { opacity: 0.7 },
-                    ]}
+                    style={押せる形(styles.actionBtn, 色.地_濃い)}
                     onPress={() => {
                       onClose();
                       onSubstitution();
@@ -205,39 +251,29 @@ const ArcherActionModal = ({
                     <Icons.Ionicons name="repeat" size={18} color={色.青} />
                     <Text style={[styles.actionBtnText, { color: 色.青 }]}>途中交代</Text>
                   </Pressable>
-                  {[
-                    // 交代が入っているときだけ、取り消す道を出す。
-                    // 誰といつ代わっているかも一緒に見せる（間違いに気づけるように）
-                    // 入っている交代を1つずつ取り消せるようにする。
-                    // まとめて消すと、2か所以上あるときに1つだけ戻せない
-                    ...(交代を消せる
-                      ? いまの交代.map((交代) => (
-                          <Pressable
-                            key={`交代取消-${交代.位置}`}
-                            style={({ pressed, hovered }) => [
-                              styles.actionBtn,
-                              // 文が長いので1行いっぱいを使う。space-around の
-                              // 折り返しに任せると右へ寄って見える
-                              { flexBasis: '100%', justifyContent: 'center' },
-                              hovered && { backgroundColor: 色.赤の地 },
-                              pressed && { opacity: 0.7 },
-                            ]}
-                            onPress={() => {
-                              交代を書く(archerId, 交代.位置, '', null);
-                              onClose();
-                            }}
-                          >
-                            <Icons.Ionicons name="close-circle" size={18} color={色.赤} />
-                            <Text style={[styles.actionBtnText, { color: 色.赤 }]}>
-                              {交代.位置 + 1}
-                              {'射目〜 '}
-                              {交代.名}
-                              {' の交代を取り消す'}
-                            </Text>
-                          </Pressable>
-                        ))
-                      : []),
-                  ]}
+                  {/* 入っている交代を 1 つずつ取り消せるようにする（まとめて消すと、2 か所以上あるときに */
+                  /* 1 つだけ戻せない）。誰といつ代わっているかも一緒に見せる（間違いに気づけるように） */}
+                  {交代を消せる &&
+                    いまの交代.map((交代) => (
+                      <Pressable
+                        key={`交代取消-${交代.位置}`}
+                        style={押せる形(
+                          // 文が長いので1行いっぱいを使う。space-around の
+                          // 折り返しに任せると右へ寄って見える
+                          [styles.actionBtn, { flexBasis: '100%', justifyContent: 'center' }],
+                          色.赤の地
+                        )}
+                        onPress={() => {
+                          交代を書く(archerId, 交代.位置, '', null);
+                          onClose();
+                        }}
+                      >
+                        <Icons.Ionicons name="close-circle" size={18} color={色.赤} />
+                        <Text style={[styles.actionBtnText, { color: 色.赤 }]}>
+                          {`${交代.位置 + 1}射目〜 ${交代.名} の交代を取り消す`}
+                        </Text>
+                      </Pressable>
+                    ))}
                   {客名の入力中 ? (
                     <View style={styles.guestInputRow}>
                       <TextInput
@@ -263,14 +299,8 @@ const ArcherActionModal = ({
                     </View>
                   ) : (
                     <Pressable
-                      style={({ pressed, hovered }) => [
-                        styles.actionBtn,
-                        hovered && { backgroundColor: 色.地_濃い },
-                        pressed && { opacity: 0.7 },
-                      ]}
-                      onPress={() => {
-                        客名の入力中を置く(true);
-                      }}
+                      style={押せる形(styles.actionBtn, 色.地_濃い)}
+                      onPress={() => 客名の入力中を置く(true)}
                     >
                       <Icons.Ionicons name="person-outline" size={18} color={色.藍} />
                       <Text style={[styles.actionBtnText, { color: 色.藍 }]}>ゲスト登録</Text>
@@ -281,15 +311,8 @@ const ArcherActionModal = ({
             )}
             {/* 区切りのときだけ出す。チーム名を入れる道は長押ししか無く、 */
             /* 気づけなかった（押す＝消す だったので、なおさら触れない） */}
-            {jVal && onチーム名 && (
-              <Pressable
-                style={({ pressed, hovered }) => [
-                  styles.menuItem,
-                  hovered && { backgroundColor: 色.青の地_3 },
-                  pressed && { opacity: 0.7 },
-                ]}
-                onPress={onチーム名}
-              >
+            {区切りか && onチーム名 && (
+              <Pressable style={押せる形(styles.menuItem, 色.青の地_3)} onPress={onチーム名}>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={[styles.menuText, { color: 色.青, fontWeight: 'bold' }]}>
                     {いまのチーム名 ? 'チーム名を変える' : 'チーム名を付ける'}
@@ -304,26 +327,19 @@ const ArcherActionModal = ({
               </Pressable>
             )}
             {/* 立ち順の入れ替え。矢印のとおりに、画面で1つ動く。 */
-            /* 記録表は右から左へ並ぶので、右が大前寄り・左が落寄り。 */
+            /* 縦の表は右から左へ並ぶので、右が大前寄り・左が落寄り（横の表は上が大前寄り）。 */
             /* ○×も矢所も列に付いているので、列ごと動けば付いていく。 */
-            /* 端の列では、その向きを出さない（押せるのに動かないのを避ける） */
-            /* 脇の窓は狭いので、2つ並べずに他の項目と同じ全幅の行にする。 */
-            /* 横に並べたら「右へ動か／す」と折り返し、字を詰めたら消えた */}
+            /* 端の列では、その向きを出さない（押せるのに動かないのを避ける）。 */
+            /* 脇の窓は狭いので、2つ並べずに他の項目と同じ全幅の行にする（並べると字が折り返した） */}
             {on動かす && 手前へ動かせる && (
               <Pressable
-                style={({ pressed, hovered }) => [
-                  styles.menuItem,
-                  hovered && { backgroundColor: 色.青の地_3 },
-                  pressed && { opacity: 0.7 },
-                ]}
+                style={押せる形(styles.menuItem, 色.青の地_3)}
                 onPress={() => on動かす('前')}
                 accessibilityLabel="立ち順で1つ前へ動かす"
               >
                 <Text style={[styles.menuText, { color: 色.青 }]}>
                   {横に並べている ? '上へ動かす' : '右へ動かす'}
                 </Text>
-                {/* 矢印は動く向きに合わせる。縦の表は右から左へ並ぶので */
-                /* 「前へ」は右向き、横の表では上向きになる */}
                 <Icons.Ionicons
                   name={横に並べている ? 'arrow-up' : 'arrow-forward'}
                   size={20}
@@ -333,11 +349,7 @@ const ArcherActionModal = ({
             )}
             {on動かす && 奥へ動かせる && (
               <Pressable
-                style={({ pressed, hovered }) => [
-                  styles.menuItem,
-                  hovered && { backgroundColor: 色.青の地_3 },
-                  pressed && { opacity: 0.7 },
-                ]}
+                style={押せる形(styles.menuItem, 色.青の地_3)}
                 onPress={() => on動かす('後')}
                 accessibilityLabel="立ち順で1つ後ろへ動かす"
               >
@@ -348,7 +360,7 @@ const ArcherActionModal = ({
               </Pressable>
             )}
             <View style={styles.dividerFull} />
-            {!jVal && !isTotalCalculator && (
+            {射手の列 && (
               <>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionHeaderText}>メンバーを選択</Text>
@@ -407,171 +419,62 @@ const ArcherActionModal = ({
                           />
                         </TouchableOpacity>
                         {isOpen &&
-                          group.members.map((部員, idx) => {
-                            const sVal = 今の射手たち.some((一人) => 一人.memberId === 部員.id);
-                            return (
-                              <React.Fragment key={部員.id}>
-                                {idx > 0 && <View style={[styles.divider, { marginLeft: 32 }]} />}
-                                <Pressable
-                                  style={({ pressed, hovered }) => [
-                                    styles.menuItem,
-                                    { paddingLeft: 32 },
-                                    sVal && { backgroundColor: 色.地_F0F0F5, opacity: 0.8 },
-                                    !sVal && hovered && { backgroundColor: 色.地 },
-                                    pressed && { opacity: 0.7 },
-                                  ]}
-                                  onPress={() => 部員を当てる(部員)}
-                                >
-                                  <Text
-                                    style={[
-                                      styles.menuText,
-                                      部員.gender === '男子' && { color: 色.青 },
-                                      部員.gender === '女子' && { color: 色.桃 },
-                                      sVal && { opacity: 0.5 },
-                                    ]}
-                                  >
-                                    {部員.name}{' '}
-                                    <Text style={{ fontSize: 11, color: 色.灰 }}>
-                                      {部員.termKi ? `(${部員.termKi}期)` : ''}
-                                    </Text>
-                                  </Text>
-                                  {sVal && (
-                                    <View style={styles.selectedBadge}>
-                                      <Text style={styles.selectedBadgeText}>選択済</Text>
-                                    </View>
-                                  )}
-                                </Pressable>
-                              </React.Fragment>
-                            );
-                          })}
+                          group.members.map((部員, idx) => (
+                            <React.Fragment key={部員.id}>
+                              {idx > 0 && <View style={[styles.divider, { marginLeft: 32 }]} />}
+                              {人の行(部員, 部員.termKi ? `(${部員.termKi}期)` : '')}
+                            </React.Fragment>
+                          ))}
                       </React.Fragment>
                     );
                   })}
                 </View>
-              </>
-            )}
-            {/* 「計」と「間隔」の列は射手ではないので、人を選ぶところは出さない。 */
-            /* すぐ上の「メンバーを選択」には同じ条件が付いているのに、卒業生の */
-            /* ほうだけ付いておらず、合計の欄を押すと卒業生の一覧だけが出ていた */}
-            {!jVal && !isTotalCalculator && (
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionHeaderText}>卒業生を選択</Text>
-              </View>
-            )}
-            {!jVal && !isTotalCalculator && (
-              <View style={styles.section}>
-                {alumniByTerm.map((期の組) => (
-                  <React.Fragment key={期の組.term}>
-                    <TouchableOpacity style={styles.termHeader} onPress={() => toggleTerm(期の組.term)}>
-                      <Text style={styles.termTitle}>
-                        {Number(期の組.term) === 999 ? '不明' : 期の組.term}期
-                      </Text>
-                      <Icons.Ionicons
-                        name={expandedTerms.has(期の組.term) ? 'chevron-up' : 'chevron-down'}
-                        size={16}
-                        color={色.灰}
-                      />
-                    </TouchableOpacity>
-                    {expandedTerms.has(期の組.term) &&
-                      期の組.members.map((部員, 無し) => {
-                        const sVal = 今の射手たち.some((一人) => 一人.memberId === 部員.id);
-                        return (
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionHeaderText}>卒業生を選択</Text>
+                </View>
+                <View style={styles.section}>
+                  {alumniByTerm.map((期の組) => (
+                    <React.Fragment key={期の組.term}>
+                      <TouchableOpacity style={styles.termHeader} onPress={() => toggleTerm(期の組.term)}>
+                        <Text style={styles.termTitle}>
+                          {Number(期の組.term) === 999 ? '不明' : 期の組.term}期
+                        </Text>
+                        <Icons.Ionicons
+                          name={expandedTerms.has(期の組.term) ? 'chevron-up' : 'chevron-down'}
+                          size={16}
+                          color={色.灰}
+                        />
+                      </TouchableOpacity>
+                      {expandedTerms.has(期の組.term) &&
+                        期の組.members.map((部員) => (
                           <React.Fragment key={部員.id}>
                             <View style={[styles.divider, { marginLeft: 32 }]} />
-                            <Pressable
-                              style={({ pressed, hovered }) => [
-                                styles.menuItem,
-                                { paddingLeft: 32 },
-                                sVal && { backgroundColor: 色.地_F0F0F5, opacity: 0.8 },
-                                !sVal && hovered && { backgroundColor: 色.地 },
-                                pressed && { opacity: 0.7 },
-                              ]}
-                              onPress={() => 部員を当てる(部員)}
-                            >
-                              <Text
-                                style={[
-                                  styles.menuText,
-                                  部員.gender === '男子' && { color: 色.青 },
-                                  部員.gender === '女子' && { color: 色.桃 },
-                                  sVal && { opacity: 0.5 },
-                                ]}
-                              >
-                                {部員.name} <Text style={{ fontSize: 11, color: 色.灰 }}>(卒業生)</Text>
-                              </Text>
-                              {sVal && (
-                                <View style={styles.selectedBadge}>
-                                  <Text style={styles.selectedBadgeText}>選択済</Text>
-                                </View>
-                              )}
-                            </Pressable>
+                            {人の行(部員, '(卒業生)')}
                           </React.Fragment>
-                        );
-                      })}
-                  </React.Fragment>
-                ))}
-              </View>
+                        ))}
+                    </React.Fragment>
+                  ))}
+                </View>
+              </>
             )}
             <View style={styles.dividerFull} />
             <View style={styles.section}>
-              <Pressable
-                style={({ pressed, hovered }) => [
-                  styles.menuItem,
-                  hovered && { backgroundColor: 色.地 },
-                  pressed && { opacity: 0.7 },
-                ]}
-                onPress={() => {
-                  if (onAddArcher) onAddArcher(pVal + 1);
-                  else addArcher(pVal + 1, undefined);
-                  onClose();
-                }}
-              >
-                <Text style={styles.menuText}>左に射手を追加</Text>
-                <Icons.Ionicons name="person-add-outline" size={20} color={色.灰} />
-              </Pressable>
+              {下の行('左に射手を追加', 'person-add-outline', () =>
+                onAddArcher ? onAddArcher(列の順 + 1) : addArcher(列の順 + 1)
+              )}
               <View style={styles.divider} />
-              <Pressable
-                style={({ pressed, hovered }) => [
-                  styles.menuItem,
-                  hovered && { backgroundColor: 色.地 },
-                  pressed && { opacity: 0.7 },
-                ]}
-                onPress={() => {
-                  if (onAddSeparator) onAddSeparator(pVal + 1);
-                  else addSeparator(pVal + 1);
-                  onClose();
-                }}
-              >
-                <Text style={styles.menuText}>左に間隔を追加</Text>
-                <Icons.Ionicons name="reorder-four-outline" size={20} color={色.灰} />
-              </Pressable>
+              {下の行('左に間隔を追加', 'reorder-four-outline', () =>
+                onAddSeparator ? onAddSeparator(列の順 + 1) : addSeparator(列の順 + 1)
+              )}
               <View style={styles.divider} />
-              <Pressable
-                style={({ pressed, hovered }) => [
-                  styles.menuItem,
-                  hovered && { backgroundColor: 色.地 },
-                  pressed && { opacity: 0.7 },
-                ]}
-                onPress={() => {
-                  if (onAddTotal) onAddTotal(pVal + 1);
-                  else addTotalCalculator(pVal + 1);
-                  onClose();
-                }}
-              >
-                <Text style={styles.menuText}>左に計を追加</Text>
-                <Icons.Ionicons name="calculator-outline" size={20} color={色.灰} />
-              </Pressable>
+              {下の行('左に計を追加', 'calculator-outline', () =>
+                onAddTotal ? onAddTotal(列の順 + 1) : addTotalCalculator(列の順 + 1)
+              )}
               <View style={styles.divider} />
               {/* 合計の列だけに出す。数える範囲を切り替える。 */
               /* 「計」は区切りで止まる（1立ぶん）、「総計」は端まで数える */}
               {isTotalCalculator && on合計の範囲 && (
-                <Pressable
-                  style={({ pressed, hovered }) => [
-                    styles.menuItem,
-                    hovered && { backgroundColor: 色.青の地_3 },
-                    pressed && { opacity: 0.7 },
-                  ]}
-                  onPress={on合計の範囲}
-                >
+                <Pressable style={押せる形(styles.menuItem, 色.青の地_3)} onPress={on合計の範囲}>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={[styles.menuText, { color: 色.青, fontWeight: 'bold' }]}>
                       {またぐ合計 ? 'この立ちだけの合計にする' : '手前の計もまとめた総計にする'}
@@ -585,21 +488,14 @@ const ArcherActionModal = ({
                   <Icons.Ionicons name="swap-horizontal" size={20} color={色.青} />
                 </Pressable>
               )}
-              <Pressable
-                style={({ pressed, hovered }) => [
-                  styles.menuItem,
-                  hovered && { backgroundColor: 色.赤の地_2 },
-                  pressed && { opacity: 0.7 },
-                ]}
-                onPress={() => {
-                  if (onDeleteArcher) onDeleteArcher(archerId);
-                  else deleteArcher(archerId);
-                  onClose();
-                }}
-              >
-                <Text style={[styles.menuText, { color: 色.赤, fontWeight: 'bold' }]}>削除</Text>
-                <Icons.Ionicons name="trash-outline" size={20} color={色.赤} />
-              </Pressable>
+              {下の行(
+                '削除',
+                'trash-outline',
+                () => (onDeleteArcher ? onDeleteArcher(archerId) : deleteArcher(archerId)),
+                色.赤,
+                色.赤,
+                色.赤の地_2
+              )}
             </View>
           </ScrollView>
         </View>

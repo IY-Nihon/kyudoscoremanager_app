@@ -11,23 +11,20 @@ const { useShallow } = require('zustand/react/shallow');
 const 読み = require('./a11yLabels');
 const Icons = require('@expo/vector-icons');
 const { formatMemberName } = require('./formatMemberName');
-const 組 = require('./teamGrouping');
 /**
- * 記録表の 1 列（射手・区切り・計）。
+ * 記録表の 1 列（射手・区切り・計）の、上の数と ○× のマス。名前の行は各画面が別に描く。
  *
  * React.memo で包んであり、渡されたものが変わらなければ描き直さない。そのため
  * 立ち全体を見ないと決まらないもの（チームの色・鍵が効くか・射位・計の数）は
  * 一覧をまるごと受け取らず、親が retsuNoMitate で数字と文字にした見立てを受ける。
- * 押したときの手（onPressName など）も、親は同じ関数を渡し続けること
+ * 押したときの手（onToggleMark・onToggleLock）も、親は同じ関数を渡し続けること
  * （描き直すたびに作り直すと、memo が効かなくなる）。
  */
 const ArcherColumnView = React.memo(
   ({
     archer,
     shots,
-    indexInList,
     // 列の見立て（src/retsuNoMitate.js）。一覧から親が数えて、数字と文字で渡す
-    チームの色 = null,
     鍵が効く = false,
     射位の番 = -1,
     人数 = 0,
@@ -35,20 +32,14 @@ const ArcherColumnView = React.memo(
     立の的中 = '',
     立の射数 = '',
     埋まった立: 受け持ちの埋まった立 = '',
-    showFooter = true,
     // 横に並べる（名前が左、○×が右へ伸びる）。鍵も交代も規則は同じで、置き方だけ変える
     横並び: 横 = false,
     isReadOnly = false,
     isAdminMode = false,
-    onPressName,
-    onLongPressName,
-    onDelete,
+    // 履歴の詳細が渡す（見ている記録を書き換える）。記録画面は渡さず、店の手を使う
     onToggleMark,
     onToggleLock,
-    // 区切りを長押ししたとき（チーム名を付ける）。onPressName・onDelete と同じく、列の id を渡して呼ぶ
-    onLongPressSeparator: 区切りを長押し,
   }) => {
-    const 区切りの名 = 組.区切りのチーム名(archer);
     // 途中交代があると、計は「山田 3, 交代太郎 2」と内訳で出る。
     // 押すと合わせた数（5）に切り替わる。どちらで見たいかは場面による
     const [合算で見る, 合算を置く] = React.useState(false);
@@ -80,7 +71,7 @@ const ArcherColumnView = React.memo(
     }
     // 立の切れ目に引く太線。縦は「その立の1本目の下」、横は「その立の4本目の右」
     const 切れ目 = (位置) => (横 ? 位置 % 4 === 3 && 位置 !== shots - 1 : 位置 % 4 === 0 && 位置 !== 0);
-    // 1ますの外枠。横のとき、間隔は細い列ではなく細い行になる
+    // 1 マスの大きさ。横のとき、間隔は細い列ではなく細い行になる
     const ます幅 =
       (横 ? UIConfig.cellWidth : archer.isSeparator ? UIConfig.separatorWidth : UIConfig.cellWidth) * 倍率;
     const ます高 = (横 && archer.isSeparator ? UIConfig.separatorWidth : UIConfig.cellHeight) * 倍率;
@@ -161,16 +152,41 @@ const ArcherColumnView = React.memo(
       else 鍵を切り替える(射手ID, 立);
     };
     const 名前を整える = (名) => formatMemberName(名, 部員たち);
-    // 手前の計もまとめる合計は「総計」。ふつうの「計」と見分けるため
-    const 見出しの字 = () =>
-      archer.isTotalCalculator
-        ? archer.またぐ合計
-          ? '総計'
-          : '合計'
-        : archer.name
-          ? 名前を整える(archer.name)
-          : '選択';
     const 間隔か合計 = archer.isSeparator || archer.isTotalCalculator;
+    // 射手の列の見出しの数。途中交代があれば、交代のたびに区切った内訳（「山田 3, 交代太郎 2」）
+    const 見出しの数 = () => {
+      const 交代 = archer.substitutions || {};
+      const 印たち = Array.isArray(archer.marks) ? archer.marks : [];
+      const 中りの数 = (始め, 終わり) => 印たち.slice(始め, 終わり).filter((印) => 印 === '○').length;
+      const 交代の射番 = Object.keys(交代)
+        .map(Number)
+        .sort((甲, 乙) => 甲 - 乙)
+        .filter((射番) => 射番 < 印たち.length);
+      if (交代の射番.length === 0 || 合算で見る) {
+        return <Text style={[styles.hitCount, { fontSize: 22 * 倍率 }]}>{的中の数}</Text>;
+      }
+      const 内訳 = [
+        { name: archer.name ? 名前を整える(archer.name) : '選択', hits: 中りの数(0, 交代の射番[0]) },
+      ];
+      交代の射番.forEach((始め, 番) => {
+        内訳.push({
+          name: 名前を整える(交代[始め] || '?'),
+          hits: 中りの数(始め, 交代の射番[番 + 1] ?? 印たち.length),
+        });
+      });
+      return (
+        <Text style={[styles.hitCountSub, { fontSize: 8 * 倍率, paddingHorizontal: 2 * 倍率 }]}>
+          {内訳.map((一人, 番) => (
+            <React.Fragment key={番}>
+              <Text>
+                {一人.name} {一人.hits}
+              </Text>
+              {番 < 内訳.length - 1 ? <Text>{', '}</Text> : null}
+            </React.Fragment>
+          ))}
+        </Text>
+      );
+    };
     const 枠の太さ = 間隔か合計 ? 1.5 : 1;
     const 枠の左 = 間隔か合計 ? 1.5 : 0;
     // 1立が全部埋まって少し経ったら、鍵を自動でかける。
@@ -256,8 +272,7 @@ const ArcherColumnView = React.memo(
                     borderLeftColor: 色.黒,
                   },
             ]}
-            // 内訳が出ているときだけ押せる。押すと合算とを行き来する
-            // 計の列は押すと見せ方が次へ進む
+            // 押せるのは、計の列（見せ方が次へ進む）と、交代のある射手（内訳と合わせた数を行き来する）だけ
             disabled={
               !(
                 archer.isTotalCalculator ||
@@ -266,44 +281,7 @@ const ArcherColumnView = React.memo(
             }
             onPress={() => (archer.isTotalCalculator ? 計の見せ方を次へ() : 合算を置く((前) => !前))}
           >
-            {archer.isSeparator || archer.isTotalCalculator
-              ? null
-              : (() => {
-                  const 交代 = archer.substitutions || {};
-                  const 印たち = Array.isArray(archer.marks) ? archer.marks : [];
-                  const 交代の射番 = Object.keys(交代)
-                    .map(Number)
-                    .sort((甲, 乙) => 甲 - 乙)
-                    .filter((射番) => 射番 < 印たち.length);
-                  if (交代の射番.length > 0 && !合算で見る) {
-                    const 内訳 = [];
-                    const 最初の交代 = 交代の射番[0];
-                    const 最初の中り = 印たち.slice(0, 最初の交代).filter((印) => 印 === '○').length;
-                    内訳.push({ name: 見出しの字(), hits: 最初の中り });
-                    for (let 番 = 0; 番 < 交代の射番.length; 番++) {
-                      const 始め = 交代の射番[番];
-                      const 終わり = 番 + 1 < 交代の射番.length ? 交代の射番[番 + 1] : 印たち.length;
-                      const 交代の名 = 交代[始め] || '?';
-                      内訳.push({
-                        name: 名前を整える(交代の名),
-                        hits: 印たち.slice(始め, 終わり).filter((印) => 印 === '○').length,
-                      });
-                    }
-                    return (
-                      <Text style={[styles.hitCountSub, { fontSize: 8 * 倍率, paddingHorizontal: 2 * 倍率 }]}>
-                        {内訳.map((一人, 番) => (
-                          <React.Fragment key={番}>
-                            <Text>
-                              {一人.name} {一人.hits}
-                            </Text>
-                            {番 < 内訳.length - 1 ? <Text>{', '}</Text> : null}
-                          </React.Fragment>
-                        ))}
-                      </Text>
-                    );
-                  }
-                  return <Text style={[styles.hitCount, { fontSize: 22 * 倍率 }]}>{的中の数}</Text>;
-                })()}
+            {間隔か合計 ? null : 見出しの数()}
             {archer.isTotalCalculator ? (
               <View style={{ alignItems: 'center' }} testID="計の見せ方">
                 {!!見せ方の名 && (
@@ -490,13 +468,6 @@ const ArcherColumnView = React.memo(
             <View style={横 ? { flexDirection: 'row' } : undefined}>
               {射番の並び.map((射番) => {
                 const 交代の名 = archer.substitutions?.[射番];
-                let 交代の表示名 = '';
-                if (交代の名) {
-                  交代の表示名 = 名前を整える(交代の名);
-                }
-                const 立 = Math.floor(射番 / 4);
-                const 立の端 = 射番 === Math.min(shots - 1, 4 * 立 + 3);
-                const 鍵 = 立の鍵(立);
                 return (
                   <ScoreCell
                     key={射番}
@@ -504,13 +475,9 @@ const ArcherColumnView = React.memo(
                     index={射番}
                     横並び={横}
                     mark={archer.marks?.[射番] || ''}
-                    subName={交代の表示名}
-                    isLocked={鍵}
-                    isBlockBottom={切れ目(射番)}
-                    isBlockTop={立の端}
-                    isFirst={射番 === 0}
-                    isNormalArcher
-                    columnType="normal"
+                    subName={交代の名 ? 名前を整える(交代の名) : ''}
+                    isLocked={立の鍵(Math.floor(射番 / 4))}
+                    立の切れ目={切れ目(射番)}
                     読み={読み上げの言葉(射番)}
                     onToggle={onToggleMark}
                   />
@@ -519,145 +486,6 @@ const ArcherColumnView = React.memo(
             </View>
           )}
         </View>
-        {showFooter && (
-          <View
-            style={[
-              styles.footer,
-              {
-                width: 列の幅,
-                height: UIConfig.footerHeight * 倍率,
-                backgroundColor: archer.isTotalCalculator ? 'rgba(0,122,255,0.05)' : 色.地,
-                padding: 0,
-                borderRightWidth: 枠の太さ,
-                borderRightColor: 色.黒,
-                borderLeftWidth: 枠の左,
-                borderLeftColor: 色.黒,
-              },
-            ]}
-          >
-            {archer.isSeparator ? (
-              <TouchableOpacity
-                style={{ alignItems: 'center', width: '100%', height: '100%', justifyContent: 'center' }}
-                onPress={() => onDelete && onDelete(archer.id)}
-                // 長押しでチーム名を付ける（リーグの大学名）。
-                // 押す＝外す は今までどおりにして、覚え直さずに済むようにする
-                onLongPress={() => 区切りを長押し && 区切りを長押し(archer.id)}
-                delayLongPress={500}
-                disabled={触れない}
-                accessible
-                accessibilityRole="button"
-                accessibilityLabel={
-                  区切りの名
-                    ? `区切り ${区切りの名}。押すと外します。長押しでチーム名を変えられます`
-                    : '区切りを外す。長押しでチーム名を付けられます'
-                } // react-native-web の TouchableOpacity は accessibilityLabel を通さない。
-                // 端末側は accessibilityLabel が要るので、両方渡す
-                aria-label={
-                  区切りの名
-                    ? `区切り ${区切りの名}。押すと外します。長押しでチーム名を変えられます`
-                    : '区切りを外す。長押しでチーム名を付けられます'
-                }
-              >
-                {/* 名前が付いていれば、その名前を縦に出す。付いていなければ今までの×印 */}
-                {区切りの名 ? (
-                  <Text
-                    style={{
-                      fontSize: 組.区切りの名の字(倍率, UIConfig).fontSize,
-                      lineHeight: 組.区切りの名の字(倍率, UIConfig).lineHeight,
-                      fontWeight: '700',
-                      color: 組.チームの色(区切りの名) || 色.灰,
-                      textAlign: 'center',
-                    }}
-                    // 欄の高さに入るだけ行を使う（3 行では大学名が切れた）
-                    numberOfLines={組.区切りの名の字(倍率, UIConfig).numberOfLines}
-                  >
-                    {区切りの名}
-                  </Text>
-                ) : (
-                  <Icons.Ionicons name="close-circle" size={24 * 倍率} color={色.灰} />
-                )}
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={[
-                  {
-                    alignItems: 'center',
-                    width: '100%',
-                    height: '100%',
-                    justifyContent: 'center',
-                    // 余白も表示の大きさに合わせる（25% で中身が隣の行へはみ出した）
-                    padding: 4 * 倍率,
-                  },
-                  // チームの色を、名前の欄の上に細い帯で出す。
-                  // 名前の字を染めると読みにくくなるので、帯にする
-                  チームの色 && {
-                    borderTopWidth: 3 * 倍率,
-                    borderTopColor: チームの色,
-                    paddingTop: 4 * 倍率 - Math.min(3 * 倍率, 4 * 倍率),
-                  },
-                ]}
-                onPress={() => onPressName && onPressName(archer.id, archer.name, indexInList)}
-                onLongPress={() => onLongPressName && onLongPressName(archer.id, archer.name, indexInList)}
-                delayLongPress={500}
-                // 読み上げには射位と名前と成績をまとめて読ませる。
-                // 名前だけだと、その人が何番目に立っているのか分からない
-                accessible
-                accessibilityRole="button"
-                accessibilityLabel={
-                  archer.isTotalCalculator
-                    ? '合計の列'
-                    : 読み.射手の読み({
-                        射手名: archer.name,
-                        番: 射位の番,
-                        人数,
-                        marks: archer.marks,
-                      })
-                } // web の TouchableOpacity は accessibilityLabel を通さない
-                aria-label={
-                  archer.isTotalCalculator
-                    ? '合計の列'
-                    : 読み.射手の読み({
-                        射手名: archer.name,
-                        番: 射位の番,
-                        人数,
-                        marks: archer.marks,
-                      })
-                }
-                accessibilityHint={
-                  archer.isTotalCalculator ? undefined : '押すと名前を選べます。長押しで交代や削除ができます'
-                }
-              >
-                <Text style={[styles.footerName, { color: 色.黒, fontSize: 12 * 倍率 }]} numberOfLines={2}>
-                  {見出しの字()}
-                </Text>
-                {archer.isGuest ? (
-                  <Text style={[styles.guestLabel, { fontSize: 9 * 倍率 }]}>(ゲスト)</Text>
-                ) : null}
-                {archer.isTotalCalculator || archer.name === '' ? null : (
-                  <View
-                    style={{
-                      marginTop: 2 * 倍率,
-                      paddingHorizontal: 4 * 倍率,
-                      paddingVertical: 2 * 倍率,
-                      borderRadius: 10 * 倍率,
-                      backgroundColor:
-                        archer.isGuest ||
-                        !archer.gender ||
-                        archer.gender === '未設定' ||
-                        !['男子', '女子'].includes(archer.gender)
-                          ? 色.灰
-                          : archer.gender === '男子'
-                            ? 色.青
-                            : 色.桃,
-                    }}
-                  >
-                    <Icons.Ionicons name="person" size={10 * 倍率} color={色.白} />
-                  </View>
-                )}
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
       </View>
     );
   }
@@ -673,16 +501,6 @@ const styles = StyleSheet.create({
   hitCount: { fontSize: 22, fontWeight: 'bold' },
   hitCountSub: { fontSize: 8, fontWeight: 'bold', color: 色.黒, textAlign: 'center', paddingHorizontal: 2 },
   blockTotalText: { fontSize: 24, fontWeight: '900', color: 色.青 },
-  footer: {
-    height: UIConfig.footerHeight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: 色.黒,
-    padding: 4,
-  },
-  footerName: { fontSize: 14, fontWeight: 'bold', textAlign: 'center' },
-  guestLabel: { fontSize: 9, color: 色.灰 },
 });
 Object.defineProperty(exports, '__esModule', { value: true });
 exports.ArcherColumnView = ArcherColumnView;

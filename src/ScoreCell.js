@@ -6,8 +6,11 @@ const { UIConfig } = require('./uiConfig');
 const { useScoreStore } = require('./useScoreStore');
 const { useShallow } = require('zustand/react/shallow');
 const ExpoHaptics = require('expo-haptics');
-const Icons = require('@expo/vector-icons');
 const React = require('react');
+/**
+ * 記録表の ○× の 1 マス。射手の列（ArcherColumnView）だけが使う。
+ * 間隔と計の列は立ごとの箱で、このマスは使わない。
+ */
 const ScoreCell = React.memo(
   ({
     archerId,
@@ -15,12 +18,8 @@ const ScoreCell = React.memo(
     mark,
     subName,
     isLocked,
-    isBlockBottom,
-    isBlockTop,
-    isFirst,
-    hideMark = false,
-    isNormalArcher = false,
-    columnType = 'normal',
+    // このマスの後ろ（縦は下・横は右）に、立の切れ目の太線を引くか
+    立の切れ目 = false,
     横並び: 横 = false,
     // 読み上げが読む言葉（src/a11yLabels.js）。
     // 画面の字は「○」「×」だけなので、そのままだと
@@ -30,10 +29,14 @@ const ScoreCell = React.memo(
   }) => {
     // ますは 20 人 × 20 射で 400 個ある。1 つのますが店（zustand）を 10 か所で
     // 購読していると、○× を 1 つ入れるたびに 4000 の選び出しが走る。
-    // 変わり得る値だけを 1 つの購読にまとめ、店の手（toggleMark など）は
-    // 呼ぶときに getState() から取る（手は変わらないので購読しなくてよい）
+    // 変わり得る値だけを 1 つの購読にまとめ（入れた時刻はこのますの分だけ別に読む）、
+    // 店の手（toggleMark など）は呼ぶときに getState() から取る（手は変わらないので購読しなくてよい）
     const 店 = () => useScoreStore.getState();
     const 印を切り替える = (...引) => 店().toggleMark(...引);
+    const ますを開ける = (...引) => 店().ますを開ける(...引);
+    const 閉じたますが押された = (...引) => 店().閉じたますが押された(...引);
+    const setActiveArrowLocationEdit = (...引) => 店().setActiveArrowLocationEdit(...引);
+    const updateArrowLocation = (...引) => 店().updateArrowLocation(...引);
     const { viewScale, enableArrowLocation, 自動ロックする, 自動ロックまでの秒 } = useScoreStore(
       useShallow((状態) => ({
         viewScale: 状態.viewScale,
@@ -44,37 +47,21 @@ const ScoreCell = React.memo(
     );
     const 倍率 = typeof viewScale === 'number' && !isNaN(viewScale) && viewScale > 0 ? viewScale : 1;
     const 印 = mark ?? '';
-    const 背景の色 =
-      columnType === 'total'
-        ? 'rgba(0,122,255,0.08)'
-        : columnType === 'separator'
-          ? 'rgba(142,142,147,0.1)'
-          : isLocked // 立の鍵も、自動ロックと同じ濃さの灰色（#F2F2F7 では白と見分けられなかった）
-            ? 色.地_濃い
-            : 色.白;
-    const 下線の太さ = isFirst ? 1 : isBlockBottom ? 2 : 1;
-    const 間隔か合計 = columnType === 'separator' || columnType === 'total';
-    const 枠の太さ = 間隔か合計 ? 1 : 0;
-    const 細い = columnType === 'separator' ? UIConfig.separatorWidth : null;
-    const 幅 = (横 ? UIConfig.cellWidth : (細い ?? UIConfig.cellWidth)) * 倍率;
-    const 高さ = (横 ? (細い ?? UIConfig.cellHeight) : UIConfig.cellHeight) * 倍率;
+    const 幅 = UIConfig.cellWidth * 倍率;
+    const 高さ = UIConfig.cellHeight * 倍率;
     // 縦は「下に太線・右に細線」。横はそれを90度まわして「右に太線・下に細線」
     const 線 = 横
       ? {
-          borderRightWidth: 下線の太さ,
+          borderRightWidth: 立の切れ目 ? 2 : 1,
           borderRightColor: 色.黒,
           borderBottomWidth: 1,
           borderBottomColor: 色.黒,
-          borderTopWidth: 枠の太さ,
-          borderTopColor: 色.黒,
         }
       : {
-          borderBottomWidth: 下線の太さ,
+          borderBottomWidth: 立の切れ目 ? 2 : 1,
           borderBottomColor: 色.黒,
           borderRightWidth: 1,
           borderRightColor: 色.黒,
-          borderLeftWidth: 枠の太さ,
-          borderLeftColor: 色.黒,
         };
     const timerRef = React.useRef(null);
     const longPressTimerRef = React.useRef(null);
@@ -83,8 +70,6 @@ const ScoreCell = React.memo(
     // 誤タップ防止。入れてから少し経ったますは、押しても変わらないようにする。
     // 直したいときは長押しで、そのますだけ開く。
     // 記録そのものには持たせない（同期の形を変えないため）
-    const ますを開ける = (...引) => 店().ますを開ける(...引);
-    const 閉じたますが押された = (...引) => 店().閉じたますが押された(...引);
     const この鍵 = archerId + ':' + index;
     const 入れた = useScoreStore((状態) => 状態.入れた時刻[この鍵]);
     const [経った, 経ったを置く] = React.useState(false);
@@ -103,36 +88,14 @@ const ScoreCell = React.memo(
     // 履歴の編集画面は onToggle を渡してくる。あちらは直しに来ている画面なので、
     // 同じ射手・同じ射番の鍵（記録側で付いたもの）を持ち込まない
     const 鍵をかける板 = !onToggle;
-    // 「計」と「間隔」の列は、数字や区切りを出すだけで○×を入れる場所ではない。
-    // ここを普通のますとして扱うと、押しただけで見えない○が入り（hideMark が
-    // 立っているので画面には出ない）、3秒後に灰色になる
-    const 印を入れる列 = columnType !== 'total' && columnType !== 'separator';
     // 空のますは閉じない（これから入れるところなので）。
     // 手元に入れた覚えが無い○×は、読み込み直後かライブで届いたもの。
     // どちらも「もう入れ終わったます」なので、初めから閉じておく
-    const 自動で閉じている =
-      印を入れる列 && 鍵をかける板 && 自動ロックする && !!(mark ?? '') && (経った || !入れた);
+    const 自動で閉じている = 鍵をかける板 && 自動ロックする && !!印 && (経った || !入れた);
     const 閉じている = isLocked || 自動で閉じている;
-    const setActiveArrowLocationEdit = (...引) => 店().setActiveArrowLocationEdit(...引);
-    const updateArrowLocation = (...引) => 店().updateArrowLocation(...引);
-    // ここで (s) => s.archers.find(...) を購読していた。ますの数だけ
-    // 全射手の走査が走り、○×を1つ入れるたびに盤面全体が重くなっていた。
-    // この射手を使うのは長押しの中だけなので、そのとき取りに行けばよい
-    // 射手IDは控え（latestPropsRef）から読む。ここで e を閉じ込めると、
-    // ますが別の射手に使い回されたときに前の人を返してしまう
-    const 射手を取る = () => {
-      const id = latestPropsRef.current ? latestPropsRef.current.archerId : archerId;
-      return useScoreStore.getState().archers.find((射手) => 射手 && 射手.id === id);
-    };
-    const latestPropsRef = React.useRef({
-      mark,
-      archerId,
-      shotIndex: index,
-      isLocked,
-      enableArrowLocation,
-      自動で閉じている,
-      ますを開ける,
-    });
+    // 長押しの手は 1 度だけ付ける（下の useEffect）。中から今の props を読めるよう、描くたびに控えを差し替える。
+    // ここで props を閉じ込めると、ますが別の射手に使い回されたときに前の人を返してしまう
+    const latestPropsRef = React.useRef(null);
     latestPropsRef.current = {
       mark,
       archerId,
@@ -141,6 +104,24 @@ const ScoreCell = React.memo(
       enableArrowLocation,
       自動で閉じている,
       ますを開ける,
+    };
+    // 射手は購読しない（購読すると、ますの数だけ全射手の走査が走り、○×を 1 つ入れるたびに
+    // 盤面全体が重くなっていた）。使うのは矢所の窓を出すときだけなので、そのとき取りに行く
+    const 射手を取る = () => {
+      const id = latestPropsRef.current.archerId;
+      return useScoreStore.getState().archers.find((射手) => 射手 && 射手.id === id);
+    };
+    /** 矢所の窓を出す。射手が見つからなければ出さずに false */
+    const 矢所の窓を出す = (射手ID, 射番, 今の印) => {
+      const 射手 = 射手を取る();
+      if (!射手) return false;
+      setActiveArrowLocationEdit({
+        archerId: 射手ID,
+        shotIndex: 射番,
+        currentMark: 今の印,
+        arrowLocations: 射手.arrowLocations || [],
+      });
+      return true;
     };
     React.useEffect(() => {
       return () => {
@@ -151,7 +132,7 @@ const ScoreCell = React.memo(
     React.useEffect(() => {
       const 節点 = cellRef.current;
       if (!節点) return;
-      const startPress = (出来事) => {
+      const startPress = () => {
         const props = latestPropsRef.current;
         if (props.isLocked) return;
         // 自動で閉じたますは、長押しで1つだけ開ける
@@ -162,32 +143,18 @@ const ScoreCell = React.memo(
             props.ますを開ける(props.archerId, props.shotIndex);
             // 矢所を使っているなら、長押しは「このますを直す」合図。
             // 開けるだけで終わると、矢所を出すのに二度長押しさせることになる
-            const 印 = props.mark ?? '';
-            const 射手 = 射手を取る();
-            if (props.enableArrowLocation && 印 !== '' && 射手) {
-              setActiveArrowLocationEdit({
-                archerId: props.archerId,
-                shotIndex: props.shotIndex,
-                currentMark: 印,
-                arrowLocations: 射手.arrowLocations || [],
-              });
-            }
+            const 今の印 = props.mark ?? '';
+            if (props.enableArrowLocation && 今の印 !== '')
+              矢所の窓を出す(props.archerId, props.shotIndex, 今の印);
           }, 500);
           return;
         }
         if (!props.enableArrowLocation) return;
         isLongPressedRef.current = false;
         longPressTimerRef.current = setTimeout(() => {
-          const currentMark = props.mark ?? '';
-          const 射手2 = 射手を取る();
-          if (currentMark !== '' && 射手2) {
+          const 今の印 = props.mark ?? '';
+          if (今の印 !== '' && 矢所の窓を出す(props.archerId, props.shotIndex, 今の印)) {
             isLongPressedRef.current = true;
-            setActiveArrowLocationEdit({
-              archerId: props.archerId,
-              shotIndex: props.shotIndex,
-              currentMark,
-              arrowLocations: 射手2.arrowLocations || [],
-            });
           }
         }, 500);
       };
@@ -225,9 +192,6 @@ const ScoreCell = React.memo(
       };
     }, []);
     const handlePress = () => {
-      // 「計」と「間隔」の列には○×を入れない。押しても何もしない。
-      // 鍵の印はこの上に別に重ねてあるので、そちらは今までどおり押せる
-      if (!印を入れる列) return;
       // 閉じているますは押しても変わらない。ただし黙って何も起きないと、
       // 開け方が分からないまま何度も押すことになる。押されたことを伝えて
       // 記録画面に「長押しで開きます」と出してもらう
@@ -239,8 +203,7 @@ const ScoreCell = React.memo(
         isLongPressedRef.current = false;
         return;
       }
-      const currentMark = mark ?? '';
-      const nextMark = currentMark === '' ? '○' : currentMark === '○' ? '\xd7' : '';
+      const 次の印 = 印 === '' ? '○' : 印 === '○' ? '×' : '';
       if (onToggle) {
         onToggle(archerId, index);
       } else {
@@ -249,22 +212,10 @@ const ScoreCell = React.memo(
       ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
       if (enableArrowLocation) {
         if (timerRef.current) clearTimeout(timerRef.current);
-        if (nextMark === '') {
+        if (次の印 === '') {
           updateArrowLocation(archerId, index, null);
         } else {
-          timerRef.current = setTimeout(() => {
-            // 射手は購読せず、要るときに取りに行く（上の 射手を取る の説明）。
-            // ここだけ差し替え漏れがあり、矢所を出す設定のときに落ちていた
-            const 射手 = 射手を取る();
-            if (射手) {
-              setActiveArrowLocationEdit({
-                archerId,
-                shotIndex: index,
-                currentMark: nextMark,
-                arrowLocations: 射手.arrowLocations || [],
-              });
-            }
-          }, 500);
+          timerRef.current = setTimeout(() => 矢所の窓を出す(archerId, index, 次の印), 500);
         }
       }
     };
@@ -278,8 +229,8 @@ const ScoreCell = React.memo(
         }}
         style={[
           styles.cell,
-          // 鍵のかかったマスの地。色.地（#F2F2F7）では白とほとんど見分けがつかなかった（2026-10-19 本人）
-          { width: 幅, height: 高さ, backgroundColor: 自動で閉じている ? 色.地_濃い : 背景の色 },
+          // 閉じたマス（立の鍵・自動ロック）の地。色.地（#F2F2F7）では白とほとんど見分けがつかなかった（2026-10-19 本人）
+          { width: 幅, height: 高さ, backgroundColor: 閉じている ? 色.地_濃い : 色.白 },
           線,
         ]}
       >
@@ -302,53 +253,37 @@ const ScoreCell = React.memo(
             },
           ]}
         >
-          <React.Fragment>
-            {!hideMark && (
+          <Text
+            style={[
+              styles.markText,
+              {
+                color: 印 === '○' ? 色.赤 : 印 === '×' ? 色.黒 : 'transparent',
+                fontSize: 34 * 倍率,
+                lineHeight: 高さ,
+              },
+            ]}
+          >
+            {印}
+          </Text>
+          {subName ? (
+            <View style={[styles.subContainer, { bottom: 2 * 倍率 }]}>
               <Text
-                style={[
-                  styles.markText,
-                  {
-                    color: 印 === '○' ? 色.赤 : 印 === '\xd7' ? 色.黒 : 'transparent',
-                    fontSize: 34 * 倍率,
-                    lineHeight: 高さ,
-                  },
-                ]}
+                style={[styles.subText, { fontSize: 9 * 倍率, paddingHorizontal: 2 * 倍率 }]}
+                numberOfLines={1}
               >
-                {印}
+                {subName}
               </Text>
-            )}
-            {subName ? (
-              <View style={[styles.subContainer, { bottom: 2 * 倍率 }]}>
-                <Text
-                  style={[styles.subText, { fontSize: 9 * 倍率, paddingHorizontal: 2 * 倍率 }]}
-                  numberOfLines={1}
-                >
-                  {subName}
-                </Text>
-              </View>
-            ) : null}
-          </React.Fragment>
+            </View>
+          ) : null}
         </Pressable>
-        {isBlockTop && !isNormalArcher && (
-          <View style={[styles.lockIconOverlay, { top: 3 * 倍率 }]}>
-            <Icons.Ionicons
-              name={isLocked ? 'lock-closed' : 'lock-open'}
-              size={16 * 倍率}
-              color={isLocked ? 色.赤 : 色.灰}
-            />
-          </View>
-        )}
       </View>
     );
   }
 );
 const styles = StyleSheet.create({
   cell: {
-    width: '100%',
-    height: UIConfig.cellHeight,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRightColor: 色.黒,
     position: 'relative',
     // 閉じたますは長押しで開ける。押さえたままにすると、ブラウザ側が
     // 文字を選び始めたり長押しメニューを出したりして、こちらの長押しと
@@ -357,10 +292,9 @@ const styles = StyleSheet.create({
     WebkitUserSelect: 'none',
     WebkitTouchCallout: 'none',
   },
-  markText: Object.assign({ fontSize: 28, fontWeight: '900' }, {}),
-  lockIconOverlay: { position: 'absolute', top: 2, alignItems: 'center', width: '100%', zIndex: 1 },
-  subContainer: { position: 'absolute', bottom: 2, width: '100%', alignItems: 'center' },
-  subText: { fontSize: 9, color: 色.灰, textAlign: 'center', paddingHorizontal: 2 },
+  markText: { fontWeight: '900' },
+  subContainer: { position: 'absolute', width: '100%', alignItems: 'center' },
+  subText: { color: 色.灰, textAlign: 'center' },
 });
 Object.defineProperty(exports, '__esModule', { value: true });
 exports.ScoreCell = ScoreCell;
