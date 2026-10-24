@@ -171,7 +171,7 @@ test.describe('確認とお知らせ', () => {
     await 入る(page);
 
     await page.getByText('メンバー', { exact: true }).first().click();
-    await 画面が変わるまで待つ(page, '部員を追加');
+    await 画面が変わるまで待つ(page, 'メンバーを追加');
 
     // 一覧の先頭の部員を開く。1人もいない団体ではこの検査は流す
     const 削除ボタン = page.getByText('メンバーを削除', { exact: true }).first();
@@ -229,7 +229,7 @@ test.describe('帯は窓の上に出る', () => {
     await 入る(page);
 
     await page.getByText('メンバー', { exact: true }).first().click();
-    await 画面が変わるまで待つ(page, '部員を追加');
+    await 画面が変わるまで待つ(page, 'メンバーを追加');
 
     const 行 = page.getByText(/年生|その他/).first();
     test.skip(!(await 行.isVisible().catch(() => false)), 'この団体に部員がいない');
@@ -263,8 +263,8 @@ test.describe('帯は窓の上に出る', () => {
 
     // 新規登録の窓（名前が空）。保存を押すと「名前を入力してください」の帯が出て、保存は止まる
     // （団体には何も書き込まない）。追加の釦は絵だけなので、読み上げの名前で探す
-    const 追加 = page.getByLabel('部員を追加', { exact: true });
-    await expect(追加, '部員を追加の釦が出ない').toBeVisible({ timeout: 20_000 });
+    const 追加 = page.getByLabel('メンバーを追加', { exact: true });
+    await expect(追加, 'メンバーを追加の釦が出ない').toBeVisible({ timeout: 20_000 });
     await 追加.click();
     await expect(page.getByText('保存する', { exact: true }).first(), '新規登録の窓が開かない').toBeVisible({
       timeout: 15_000,
