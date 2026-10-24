@@ -1,5 +1,7 @@
 # E2E（playwright）を GitHub で 20 台に分けて流す（2026-10-21）。
-# 手元の PC（28 スレッド）では CPU が天井で、全件に 9〜14 分かかる。20 台に分けて 5〜7 分を狙う。
+# 手元の PC（28 スレッド）では CPU が天井で、全件に 9〜14 分かかる。20 台に分けて、全体で 8〜10 分（10/23・10/24 の実測）。
+# iPhone のライブ（e2e/live.spec.mjs）だけは 4 コアの台では詰まるので外し、手元で流す（下の PW_IPHONE_NO_LIVE）。
+# 一部だけ流すときは、Run workflow の grep の欄に検査名の一部を入れる。
 #
 # ■ 押したときだけ動く（Actions → E2E → Run workflow）
 # 検証環境の雲には 1 日の枠があり、全件を何度も流すと 429 で落ちる（10/21 に 5 回で使い切った）。
@@ -8,7 +10,7 @@
 # ■ 要る Secrets（Settings → Secrets and variables → Actions）
 #   STG_ENV                 … .env.development.local の EXPO_PUBLIC_ の行（検証環境の接続先）
 #   STG_SERVICE_ACCOUNT_KEY … 検証環境（kyudoscoremanager-stg）のサービスアカウントの鍵（JSON）。
-#                             ライブの後片付け（firebase CLI）と、招待リンクの雲の確かめに使う
+#                             ライブの後片付け（firebase CLI）と、招待リンクの雲の確かめのトークンに使う
 # Secrets は fork からの pull request には渡らない。ここは workflow_dispatch だけなので、書ける人しか流せない。
 #
 # ■ 公開リポジトリなので、ログは誰でも読める。失敗の写真や trace は上げない（落ちたら手元で単独で流し直す）
