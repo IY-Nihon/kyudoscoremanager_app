@@ -46,8 +46,16 @@ const 解析設定 = {
 };
 
 const 落とす = new Set([
-  'loc', 'start', 'end', 'range', 'extra', 'raw',
-  'leadingComments', 'trailingComments', 'innerComments', 'comments',
+  'loc',
+  'start',
+  'end',
+  'range',
+  'extra',
+  'raw',
+  'leadingComments',
+  'trailingComments',
+  'innerComments',
+  'comments',
 ]);
 
 function 骨格(node) {
@@ -70,7 +78,10 @@ let 失敗 = 0;
 for (const f of fs.readdirSync(SRC).sort()) {
   if (!f.endsWith('.js')) continue;
   if (絞り込み && !f.includes(絞り込み)) continue;
-  if (対象外.has(f)) { 結果.push({ ファイル: f, 判定: '対象外（JSX）' }); continue; }
+  if (対象外.has(f)) {
+    結果.push({ ファイル: f, 判定: '対象外（JSX）' });
+    continue;
+  }
   const p = path.join(SRC, f);
   const 元 = fs.readFileSync(p, 'utf8');
   const 元行数 = 元.split(/\r?\n/).length;

@@ -42,7 +42,12 @@ function 決まりが許す項目(決まり文) {
     const j = 節.indexOf('allow ', i + 6);
     const 範囲 = 節.slice(i, j > 0 ? j : undefined);
     const m = 範囲.match(/hasOnly\(\[([^\]]*)\]\)/);
-    出[種] = m ? m[1].split(',').map((s) => s.trim().replace(/^'|'$/g, '')).filter(Boolean) : null;
+    出[種] = m
+      ? m[1]
+          .split(',')
+          .map((s) => s.trim().replace(/^'|'$/g, ''))
+          .filter(Boolean)
+      : null;
   }
   return 出;
 }
@@ -75,13 +80,15 @@ function アプリが書く項目() {
     for (const 名 of 変数) {
       // setDoc(名, { … }) / setDoc(名, { … }, { merge: true })
       // 読める形に直したので setDoc(。前の (0, a.setDoc)( も受ける
-      const re = new RegExp(
-        `(?:setDoc\\)|\\bsetDoc)\\(\\s*${名}\\s*,\\s*\\{([^{}]*)\\}`,
-        'g'
-      );
+      const re = new RegExp(`(?:setDoc\\)|\\bsetDoc)\\(\\s*${名}\\s*,\\s*\\{([^{}]*)\\}`, 'g');
       for (const m of s.matchAll(re)) {
         const 鍵 = [...m[1].matchAll(/([A-Za-z_$][\w$]*)\s*:/g)].map((x) => x[1]);
-        if (鍵.length) 出.push({ ファイル: f, 鍵, merge: /\{\s*merge/.test(s.slice(m.index, m.index + m[0].length + 40)) });
+        if (鍵.length)
+          出.push({
+            ファイル: f,
+            鍵,
+            merge: /\{\s*merge/.test(s.slice(m.index, m.index + m[0].length + 40)),
+          });
       }
     }
   }
@@ -121,8 +128,7 @@ test('update で create より多く許すのは、メールアドレスの切�
   assert.deepStrictEqual(
     [...許す.update].sort(),
     [...許す.create, 'pendingEmail', 'previousEmail', 'ownerUid'].sort(),
-    'create と update で許す項目が違う。' +
-      'update が緩いと、作ったあとに書き足して同じ露出を作れる'
+    'create と update で許す項目が違う。' + 'update が緩いと、作ったあとに書き足して同じ露出を作れる'
   );
 });
 

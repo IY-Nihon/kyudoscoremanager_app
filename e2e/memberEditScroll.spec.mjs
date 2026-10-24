@@ -19,7 +19,9 @@ async function 管理者モードにする(page) {
   await page.getByText('設定', { exact: true }).first().click();
   await expect(page.getByText('ログアウト', { exact: true })).toBeVisible({ timeout: 15_000 });
   await page.evaluate(() => {
-    const 行 = [...document.querySelectorAll('div')].find((e) => (e.textContent || '').trim() === '管理者モード');
+    const 行 = [...document.querySelectorAll('div')].find(
+      (e) => (e.textContent || '').trim() === '管理者モード'
+    );
     let 親 = 行;
     for (let i = 0; i < 6 && 親; i++) {
       const 切替 = 親.querySelector('input[type="checkbox"], [role="switch"]');
@@ -33,7 +35,9 @@ async function 管理者モードにする(page) {
   await expect(page.getByText('管理者認証', { exact: true })).toHaveCount(0, { timeout: 30_000 });
 }
 
-test('メンバーの編集の窓は、小さい画面でも下の「保存する」「メンバーを削除」まで流せる', async ({ page }, 情報) => {
+test('メンバーの編集の窓は、小さい画面でも下の「保存する」「メンバーを削除」まで流せる', async ({
+  page,
+}, 情報) => {
   test.setTimeout(180_000);
   // iPhone SE と同じ大きさ。招待リンクの欄まで入ると、窓が画面より長くなる
   await page.setViewportSize({ width: 375, height: 667 });
@@ -45,7 +49,9 @@ test('メンバーの編集の窓は、小さい画面でも下の「保存す�
   await 管理者モードにする(page);
   await page.getByText('メンバー', { exact: true }).first().click();
   await page.getByText('部員1', { exact: true }).first().click();
-  await expect(page.getByTestId('招待リンクの欄'), 'メンバーの編集が開かない').toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId('招待リンクの欄'), 'メンバーの編集が開かない').toBeVisible({
+    timeout: 20_000,
+  });
   await page.waitForTimeout(1500);
 
   const 保存 = page.getByText('保存する', { exact: true });

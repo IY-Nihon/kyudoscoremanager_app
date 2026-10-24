@@ -212,7 +212,8 @@ function 偽Firestore() {
       const 取引 = {
         get: (参照) => api.getDoc(参照),
         update: (参照, 値) => 操作.push({ 種類: 'update', 道: 参照.道, id: 参照.id, 値 }),
-        set: (参照, 値, 選び) => 操作.push({ 種類: 'set', 道: 参照.道, id: 参照.id, 値, 重ねる: !!(選び && 選び.merge) }),
+        set: (参照, 値, 選び) =>
+          操作.push({ 種類: 'set', 道: 参照.道, id: 参照.id, 値, 重ねる: !!(選び && 選び.merge) }),
         delete: (参照) => 操作.push({ 種類: 'delete', 道: 参照.道, id: 参照.id }),
       };
       const 結果 = await 決める(取引);
@@ -342,7 +343,8 @@ function 偽RTDB() {
     if (!自分の.length) return 木;
     let 根 = JSON.parse(JSON.stringify(木));
     for (const 控え of 自分の)
-      for (const [部分, 値] of 控え.書き込み) 根 = 木に書く(根, 部分, 値 === undefined ? undefined : 写し(値));
+      for (const [部分, 値] of 控え.書き込み)
+        根 = 木に書く(根, 部分, 値 === undefined ? undefined : 写し(値));
     return 根;
   };
   const 読む = (部分, 端末) =>
@@ -461,7 +463,8 @@ function 偽RTDB() {
         { 種別: 'set', 道: 参照.道, 書き込み: [[分解(参照.道), 値 == null ? undefined : 雲の形へ(値)]] },
         端末
       ),
-    remove: (端末, 参照) => 送る({ 種別: 'remove', 道: 参照.道, 書き込み: [[分解(参照.道), undefined]] }, 端末),
+    remove: (端末, 参照) =>
+      送る({ 種別: 'remove', 道: 参照.道, 書き込み: [[分解(参照.道), undefined]] }, 端末),
     update: (端末, 参照, 値) =>
       送る(
         {

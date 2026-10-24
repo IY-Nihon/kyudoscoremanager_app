@@ -13,13 +13,19 @@ test('未送信の記録とごみ箱の未送信を数える。送信済みは�
 });
 
 test('記録中の盤面は、区切りと計の列を除いた射手が居るときだけ', () => {
-  assert.strictEqual(失われるもの({ archers: [{ isSeparator: true }, { isTotalCalculator: true }] }).記録中の盤面, false);
+  assert.strictEqual(
+    失われるもの({ archers: [{ isSeparator: true }, { isTotalCalculator: true }] }).記録中の盤面,
+    false
+  );
   assert.strictEqual(失われるもの({ archers: [{ name: 'a' }] }).記録中の盤面, true);
 });
 
 test('状態が空・壊れていても落ちない', () => {
   assert.deepStrictEqual(失われるもの(undefined), { 未送信の記録: 0, 記録中の盤面: false });
-  assert.deepStrictEqual(失われるもの({ sessions: 'x', archers: null }), { 未送信の記録: 0, 記録中の盤面: false });
+  assert.deepStrictEqual(失われるもの({ sessions: 'x', archers: null }), {
+    未送信の記録: 0,
+    記録中の盤面: false,
+  });
 });
 
 test('確認の文：失うものがあれば件数と「読み込み直す」を促し、無ければ軽い文', () => {

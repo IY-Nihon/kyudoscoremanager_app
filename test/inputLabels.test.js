@@ -28,7 +28,11 @@ function 入力欄を集める() {
     const 木 = parser.parse(中身, { sourceType: 'unambiguous', plugins: ['jsx'] });
     const 歩く = (節) => {
       if (!節 || typeof 節.type !== 'string') return;
-      if (節.type === 'JSXOpeningElement' && 節.name.type === 'JSXIdentifier' && 節.name.name === 'TextInput') {
+      if (
+        節.type === 'JSXOpeningElement' &&
+        節.name.type === 'JSXIdentifier' &&
+        節.name.name === 'TextInput'
+      ) {
         const 属性 = 節.attributes.filter((a) => a.type === 'JSXAttribute').map((a) => a.name.name);
         集め.push({
           場所: `${名}:${節.loc.start.line}`,
@@ -58,6 +62,9 @@ test('入力欄（TextInput）にはすべて読み上げ用の名前がある',
 
 test('チュートリアルの蓋は、何もしないボタンではない', () => {
   const 中身 = fs.readFileSync(path.join(根, 'TutorialGuide.js'), 'utf8');
-  assert.ok(!/onPress=\{\(\) => \{\}\}/.test(中身), '空の onPress の部品がある（焦点と読み上げに名前の無いボタンとして出る）');
+  assert.ok(
+    !/onPress=\{\(\) => \{\}\}/.test(中身),
+    '空の onPress の部品がある（焦点と読み上げに名前の無いボタンとして出る）'
+  );
   assert.ok(/function 蓋\(/.test(中身), '蓋の部品が見つからない');
 });

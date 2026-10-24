@@ -30,23 +30,39 @@ const check = (name, expect, actual) => {
 // ── REG-1 新規団体登録 ───────────────────────────────────
 // 一般ユーザーを作り、そのユーザー自身が group_accounts を書けること
 const newTok = await signIn(apiKey, NEWMAIL, PW, { create: true });
-const created = await setDoc(projectId, `/group_accounts/${NEWID}`,
-  { id: NEWID, name: '新規テスト団体', email: NEWMAIL, createdAt: stamp }, newTok);
+const created = await setDoc(
+  projectId,
+  `/group_accounts/${NEWID}`,
+  { id: NEWID, name: '新規テスト団体', email: NEWMAIL, createdAt: stamp },
+  newTok
+);
 check('REG-1 新規登録：自分のメールで自団体を作る', 200, created.status);
 
 // 他人のメールを名乗って作れないこと
-const spoof = await setDoc(projectId, `/group_accounts/${NEWID}9`,
-  { id: `${NEWID}9`, name: 'なりすまし', email: 'nihonu.kouka@gmail.com', createdAt: stamp }, newTok);
+const spoof = await setDoc(
+  projectId,
+  `/group_accounts/${NEWID}9`,
+  { id: `${NEWID}9`, name: 'なりすまし', email: 'nihonu.kouka@gmail.com', createdAt: stamp },
+  newTok
+);
 check('なりすまし：他人のメールで団体を作る', 403, spoof.status);
 
 // id とドキュメントIDの不一致を弾くこと
-const mismatch = await setDoc(projectId, `/group_accounts/${NEWID}8`,
-  { id: '999999', name: '不一致', email: NEWMAIL, createdAt: stamp }, newTok);
+const mismatch = await setDoc(
+  projectId,
+  `/group_accounts/${NEWID}8`,
+  { id: '999999', name: '不一致', email: NEWMAIL, createdAt: stamp },
+  newTok
+);
 check('id とドキュメントIDの不一致', 403, mismatch.status);
 
 // 余計なフィールドを弾くこと
-const extra = await setDoc(projectId, `/group_accounts/${NEWID}7`,
-  { id: `${NEWID}7`, name: 'x', email: NEWMAIL, createdAt: stamp, isAdmin: true }, newTok);
+const extra = await setDoc(
+  projectId,
+  `/group_accounts/${NEWID}7`,
+  { id: `${NEWID}7`, name: 'x', email: NEWMAIL, createdAt: stamp, isAdmin: true },
+  newTok
+);
 check('余計なフィールド（isAdmin）を含む', 403, extra.status);
 
 // ── REG-4 メールアドレス変更 ─────────────────────────────
@@ -57,21 +73,35 @@ check('REG-4 本人が自団体のメールを変更', 200, own.status);
 
 // 別団体でログイン中の者が、他団体のメールを自分のものへ書き換えられないこと（乗っ取り防止）
 const otherTok = await signIn(apiKey, 'stg-c@example.com', PW);
-const hijack = await setDoc(projectId, `/group_accounts/${NEWID}`,
-  { email: 'stg-c@example.com' }, otherTok);
+const hijack = await setDoc(projectId, `/group_accounts/${NEWID}`, { email: 'stg-c@example.com' }, otherTok);
 check('乗っ取り：他団体のメールを自分のものへ変更', 403, hijack.status);
 
 // ── REG-24 お問い合わせ ─────────────────────────────────
 const anon = await signInAnonymously(apiKey);
-const inq = await setDoc(projectId, `/inquiries/stg-${stamp}`, {
-  email: 'x@example.com', content: 'テスト送信', imagesBase64: [],
-  createdAt: stamp, groupId: '100001', groupName: 'A', role: 'member',
-  memberId: 'm1', memberName: '部員1',
-}, anon.idToken);
+const inq = await setDoc(
+  projectId,
+  `/inquiries/stg-${stamp}`,
+  {
+    email: 'x@example.com',
+    content: 'テスト送信',
+    imagesBase64: [],
+    createdAt: stamp,
+    groupId: '100001',
+    groupName: 'A',
+    role: 'member',
+    memberId: 'm1',
+    memberName: '部員1',
+  },
+  anon.idToken
+);
 check('REG-24 お問い合わせ送信（匿名でも可）', 200, inq.status);
 
-const inqBad = await setDoc(projectId, `/inquiries/stg-bad-${stamp}`,
-  { email: 'x@example.com', content: 'x', 余計: true }, anon.idToken);
+const inqBad = await setDoc(
+  projectId,
+  `/inquiries/stg-bad-${stamp}`,
+  { email: 'x@example.com', content: 'x', 余計: true },
+  anon.idToken
+);
 check('お問い合わせ：想定外フィールドを弾く', 403, inqBad.status);
 
 const inqRead = await req(projectId, `/inquiries/stg-${stamp}`, { token: anon.idToken });

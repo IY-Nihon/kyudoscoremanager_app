@@ -280,8 +280,19 @@ test('送る形：中の日本語の名前を、英字に直して出す', () =>
 test('送る形：中身が空でも、項目は欠けない（決まりが項目を数える）', () => {
   const 出 = 外向きの形(null);
   assert.deepStrictEqual(Object.keys(出).sort(), [
-    'at', 'code', 'count', 'device', 'groupId', 'id', 'message',
-    'online', 'role', 'stack', 'trail', 'version', 'where',
+    'at',
+    'code',
+    'count',
+    'device',
+    'groupId',
+    'id',
+    'message',
+    'online',
+    'role',
+    'stack',
+    'trail',
+    'version',
+    'where',
   ]);
 });
 
@@ -298,7 +309,9 @@ test('決まり（firestore.rules）が数える項目と、送る形が一致�
   const 塊 = 決まり.slice(i, 決まり.indexOf('}', 決まり.indexOf('allow read', i)));
   const 並び = 塊.slice(塊.indexOf('hasOnly(['), 塊.indexOf('])'));
   const 決まりの項目 = [...並び.matchAll(/'([a-zA-Z]+)'/g)].map((m) => m[1]).sort();
-  const 送る項目 = Object.keys(外向きの形(不具合の便を組む('x', {}))).concat(['createdAt', 'expireAt']).sort();
+  const 送る項目 = Object.keys(外向きの形(不具合の便を組む('x', {})))
+    .concat(['createdAt', 'expireAt'])
+    .sort();
   assert.deepStrictEqual(送る項目, 決まりの項目, '送る項目と決まりの項目が食い違っている');
 });
 
@@ -310,7 +323,10 @@ test('時間切れ：返ってこない送信は諦めて、貯めに回せる�
   // Firestore は電波が無いと「失敗」ではなく「返ってこない」になる。
   // 待ち続けると、アプリを閉じた時点で便りごと消える
   const 返らない = new Promise(() => {});
-  await assert.rejects(() => 間に合わなければ諦める(返らない, 5, (f) => setTimeout(f, 0)), /時間内に送れなかった/);
+  await assert.rejects(
+    () => 間に合わなければ諦める(返らない, 5, (f) => setTimeout(f, 0)),
+    /時間内に送れなかった/
+  );
 });
 
 test('時間切れ：間に合えば、そのまま通す', async () => {
@@ -378,8 +394,7 @@ test('歯止め：時間が空けば、同じ不具合でもまた送る', async
 
 test('歯止め：1回の起動で送る数に上限がある', async () => {
   const 台 = 台をつくる(() => false);
-  for (let i = 0; i < 一度に送る上限 + 5; i++)
-    await 台.係.出す(便({ id: 'id' + i, 出どころ: 'ところ' + i }));
+  for (let i = 0; i < 一度に送る上限 + 5; i++) await 台.係.出す(便({ id: 'id' + i, 出どころ: 'ところ' + i }));
   assert.strictEqual(台.送った.length, 一度に送る上限);
 });
 
@@ -388,7 +403,19 @@ test('歯止め：1回の起動で送る数に上限がある', async () => {
 const { 便りをまとめる } = require('../src/errorReport');
 
 const 受 = (o) =>
-  Object.assign({ id: 'x', at: 1000, where: '同期', message: 'だめ', count: 1, groupId: 'g1', version: 'v1', device: 'A' }, o);
+  Object.assign(
+    {
+      id: 'x',
+      at: 1000,
+      where: '同期',
+      message: 'だめ',
+      count: 1,
+      groupId: 'g1',
+      version: 'v1',
+      device: 'A',
+    },
+    o
+  );
 
 test('まとめ：出どころと起きたことが同じなら1つに束ねる', () => {
   const r = 便りをまとめる([受({ id: 'a' }), 受({ id: 'b', at: 2000 }), 受({ id: 'c', where: '保存' })]);
@@ -445,7 +472,10 @@ test('まとめ：中身が欠けていても落ちない', () => {
 test('送る形：時刻を Date にする（管理画面で日時として読める）。項目は外向きの形と同じ', () => {
   const { 送る形, 不具合の便を組む: 組む, 外向きの形: 外 } = require('../src/errorReport');
   const 便 = 組む(new Error('だめ'), { 時刻: 1790000000000 });
-  便.行動 = [{ 時刻: 1789999999000, 名: '押した', 中身: '' }, { 時刻: 0, 名: '?', 中身: '' }];
+  便.行動 = [
+    { 時刻: 1789999999000, 名: '押した', 中身: '' },
+    { 時刻: 0, 名: '?', 中身: '' },
+  ];
   const 出 = 送る形(便);
   assert.ok(出.at instanceof Date);
   assert.strictEqual(出.at.getTime(), 1790000000000);
@@ -456,10 +486,14 @@ test('送る形：時刻を Date にする（管理画面で日時として読�
   assert.strictEqual(typeof 外(便).at, 'number', '外向きの形は数のまま（読み返す側と共有）');
 });
 
-
 test('Firestore の部品の中の失敗（INTERNAL ASSERTION FAILED）を見分ける', () => {
   const { Firestoreが止まったか } = require('../src/errorReport');
-  assert.strictEqual(Firestoreが止まったか(new Error('FIRESTORE (12.18.0) INTERNAL ASSERTION FAILED: Unexpected state (ID: b815)')), true);
+  assert.strictEqual(
+    Firestoreが止まったか(
+      new Error('FIRESTORE (12.18.0) INTERNAL ASSERTION FAILED: Unexpected state (ID: b815)')
+    ),
+    true
+  );
   assert.strictEqual(Firestoreが止まったか('FIRESTORE (12.19.0) INTERNAL ASSERTION FAILED: x'), true);
   assert.strictEqual(Firestoreが止まったか(new Error('Missing or insufficient permissions.')), false);
   assert.strictEqual(Firestoreが止まったか(null), false);

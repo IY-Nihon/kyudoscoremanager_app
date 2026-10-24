@@ -16,7 +16,9 @@ import { 崩し方, ゆがませる } from './kuzusu.mjs';
 import { 畳みの網を組む, 畳みで見分ける } from './tatami.mjs';
 
 const 元 = 'docs/ocr-samples/1788683956272.jpg';
-const 人数 = 4, 立数 = 5, 立のマス = 4;
+const 人数 = 4,
+  立数 = 5,
+  立のマス = 4;
 // 既定はアプリと同じ畳み込みの網（kami-tatami.json）。OCR_KAMI_OMOMI で全結合の網（kami-omomi.json）なども測れる
 const 重みの道 = process.env.OCR_KAMI_OMOMI || 'scripts/ocr-cells/kami-tatami.json';
 const 中身 = JSON.parse(fs.readFileSync(重みの道, 'utf8'));
@@ -58,7 +60,14 @@ async function 読んでみる(崩し, 味) {
       if ((丸 > 0.5 ? '○' : '×') === 射手.印[s]) 当++;
     }
   }
-  return { 立った: true, 当, 全: 全数, 角度: g.角度, 列: g.列.map((c) => c.中心.toFixed(0)).join(','), かたまり: g.かたまり.位置.map((v) => v.toFixed(0)).join(',') };
+  return {
+    立った: true,
+    当,
+    全: 全数,
+    角度: g.角度,
+    列: g.列.map((c) => c.中心.toFixed(0)).join(','),
+    かたまり: g.かたまり.位置.map((v) => v.toFixed(0)).join(','),
+  };
 }
 
 const 素 = { 明るさ: 1, 締まり: 1, ざらつき: 0 };
@@ -84,7 +93,13 @@ const 献立 = [
 ];
 console.log('崩し方                  格子  射');
 for (const 品 of 献立) {
-  const 崩し = 品.回す || 品.台形 ? 崩し方({ 幅: 全.幅, 高: 全.高, 回す: 品.回す || 0, 台形: 品.台形 || 0, 種: 12345 }) : null;
+  const 崩し =
+    品.回す || 品.台形
+      ? 崩し方({ 幅: 全.幅, 高: 全.高, 回す: 品.回す || 0, 台形: 品.台形 || 0, 種: 12345 })
+      : null;
   const r = await 読んでみる(崩し, { ...素, ...(品.味 || {}) });
-  console.log(`${品.名.padEnd(20, ' ')} ${r.立った ? '立つ' : '×　'}  ${String(r.当).padStart(2)}/${r.全} (${((100 * r.当) / r.全).toFixed(1)}%)` + (process.env.OCR_KUWASHIKU && r.立った ? `  角度=${r.角度} 列=${r.列} かたまり=${r.かたまり}` : ''));
+  console.log(
+    `${品.名.padEnd(20, ' ')} ${r.立った ? '立つ' : '×　'}  ${String(r.当).padStart(2)}/${r.全} (${((100 * r.当) / r.全).toFixed(1)}%)` +
+      (process.env.OCR_KUWASHIKU && r.立った ? `  角度=${r.角度} 列=${r.列} かたまり=${r.かたまり}` : '')
+  );
 }

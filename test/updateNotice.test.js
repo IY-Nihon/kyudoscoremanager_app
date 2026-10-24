@@ -11,7 +11,16 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-const { 束の名前, 新しい版が出たか, 束がもう無いか, 束の形か, 名前だけにする, 見に行く間隔, 自動更新の最短の離席, 自動で更新してよいか } = require('../src/updateNotice');
+const {
+  束の名前,
+  新しい版が出たか,
+  束がもう無いか,
+  束の形か,
+  名前だけにする,
+  見に行く間隔,
+  自動更新の最短の離席,
+  自動で更新してよいか,
+} = require('../src/updateNotice');
 
 const HTML = (束) => `<!DOCTYPE html><html><head><title>弓道記録アプリ</title></head>
 <body><div id="root"></div><script src="${束}" defer></script></body></html>`;
@@ -39,12 +48,7 @@ test('束が変わったら「新しい版」', () => {
 test('住所の書き方が違うだけなら、新しい版ではない', () => {
   // 絶対・相対・問い合わせ付きで、同じ束を指すことがある。
   // 名前で比べないと、中身が同じでも言い続けることになる
-  const 同じ = [
-    'https://kyudoscoremanager.web.app' + 束A,
-    束A.replace(/^\//, ''),
-    束A + '?v=1',
-    束A + '#x',
-  ];
+  const 同じ = ['https://kyudoscoremanager.web.app' + 束A, 束A.replace(/^\//, ''), 束A + '?v=1', 束A + '#x'];
   for (const x of 同じ) assert.strictEqual(新しい版が出たか(束A, HTML(x)), !1, x);
 });
 
@@ -65,7 +69,8 @@ test('AppEntry の束が無い HTML（Wi-Fi のログイン画面など）では
 
 test('束の形：AppEntry-中身の印.js だけ', () => {
   assert.strictEqual(束の形か('AppEntry-0123456789abcdef.js'), !0);
-  for (const x of ['other.js', 'AppEntry.js', 'AppEntry-x.css', null, '']) assert.strictEqual(束の形か(x), !1, String(x));
+  for (const x of ['other.js', 'AppEntry.js', 'AppEntry-x.css', null, ''])
+    assert.strictEqual(束の形か(x), !1, String(x));
 });
 
 test('束がもう無いか：404・410、または 200 で HTML（index.html に回された）のとき', () => {
@@ -78,7 +83,15 @@ test('束がもう無いか：束がまだある（javascript が返る）・分
   assert.strictEqual(束がもう無いか({ 状態: 200, 種類: 'text/javascript; charset=utf-8' }), !1);
   assert.strictEqual(束がもう無いか({ 状態: 200, 種類: 'application/javascript' }), !1);
   // サーバーの不調・読めない答えでは、帯を出さない（当てずっぽうで「新しい版」と言わない）
-  for (const x of /** @type {any[]} */ ([null, undefined, {}, { 状態: NaN }, { 状態: 500, 種類: 'text/html' }, { 状態: 503 }, { 状態: 0 }])) {
+  for (const x of /** @type {any[]} */ ([
+    null,
+    undefined,
+    {},
+    { 状態: NaN },
+    { 状態: 500, 種類: 'text/html' },
+    { 状態: 503 },
+    { 状態: 0 },
+  ])) {
     assert.strictEqual(束がもう無いか(x), !1, JSON.stringify(x));
   }
 });
@@ -86,18 +99,30 @@ test('束がもう無いか：束がまだある（javascript が返る）・分
 test('自動で更新：3 分以上離れていて、ライブ中・案内中・入力中でなく、まだ試していない版なら、してよい', () => {
   const 良い = { 離れていた時間: 自動更新の最短の離席, 新しい束: 束B.split('/').pop() };
   assert.strictEqual(自動で更新してよいか(良い), !0);
-  assert.strictEqual(自動で更新してよいか({ ...良い, 離れていた時間: 自動更新の最短の離席 - 1 }), !1, '短い離席は帯のまま');
+  assert.strictEqual(
+    自動で更新してよいか({ ...良い, 離れていた時間: 自動更新の最短の離席 - 1 }),
+    !1,
+    '短い離席は帯のまま'
+  );
   assert.strictEqual(自動で更新してよいか({ ...良い, ライブ中: true }), !1);
   assert.strictEqual(自動で更新してよいか({ ...良い, 案内中: true }), !1);
   assert.strictEqual(自動で更新してよいか({ ...良い, 入力中: true }), !1, '字を打っている最中は更新しない');
-  assert.strictEqual(自動で更新してよいか({ ...良い, 窓が開いている: true }), !1, '窓が開いている間は更新しない（保存前の内容があるかもしれない）');
+  assert.strictEqual(
+    自動で更新してよいか({ ...良い, 窓が開いている: true }),
+    !1,
+    '窓が開いている間は更新しない（保存前の内容があるかもしれない）'
+  );
 });
 
 test('自動で更新：同じ版へは 1 回だけ（読み込み直しても版が変わらないとき、繰り返さない）', () => {
   const 新 = 束B.split('/').pop();
   const 状況 = { 離れていた時間: 自動更新の最短の離席, 新しい束: 新 };
   assert.strictEqual(自動で更新してよいか({ ...状況, 前に試した束: 新 }), !1);
-  assert.strictEqual(自動で更新してよいか({ ...状況, 前に試した束: '別の版.js' }), !0, '別の版なら、またしてよい');
+  assert.strictEqual(
+    自動で更新してよいか({ ...状況, 前に試した束: '別の版.js' }),
+    !0,
+    '別の版なら、またしてよい'
+  );
 });
 
 test('自動で更新：束の名前が読めない・AppEntry でないときはしない。状況が空でも落ちない', () => {
@@ -109,7 +134,10 @@ test('自動で更新：束の名前が読めない・AppEntry でないとき�
 });
 
 test('自動で更新：最短の離席は、検査のために差し替えられる', () => {
-  assert.strictEqual(自動で更新してよいか({ 離れていた時間: 0, 新しい束: 束B.split('/').pop(), 最短: 0 }), !0);
+  assert.strictEqual(
+    自動で更新してよいか({ 離れていた時間: 0, 新しい束: 束B.split('/').pop(), 最短: 0 }),
+    !0
+  );
 });
 
 test('名前だけにする：問い合わせも印も落とす', () => {

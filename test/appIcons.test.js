@@ -157,8 +157,17 @@ test('配信の台本が、アイコンと manifest を注入・配布する', (
     assert.ok(ps.includes(印), `deploy-web.ps1 が ${印} を扱っていません`);
   }
   // pwa/ の中身を dist へ配っているか
-  for (const 絵 of ['apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-192.png', 'icon-maskable-512.png']) {
-    assert.ok(ps.includes(`pwa/${絵}`) || ps.includes("pwa/*'"), `deploy-web.ps1 が pwa/${絵} を配っていません`);
+  for (const 絵 of [
+    'apple-touch-icon.png',
+    'icon-192.png',
+    'icon-512.png',
+    'icon-maskable-192.png',
+    'icon-maskable-512.png',
+  ]) {
+    assert.ok(
+      ps.includes(`pwa/${絵}`) || ps.includes("pwa/*'"),
+      `deploy-web.ps1 が pwa/${絵} を配っていません`
+    );
   }
 });
 

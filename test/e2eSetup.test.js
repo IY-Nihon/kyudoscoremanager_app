@@ -40,10 +40,7 @@ test('控えを使う検査は、下ごしらえが用意した団体を指し�
     const t = fs.readFileSync(path.join('e2e', f), 'utf8');
     const m = t.match(/storageState:\s*'e2e\/\.auth\/([^']+)\.json'/);
     if (!m) continue;
-    assert.ok(
-      用意した.has(m[1]),
-      f + ' が控え ' + m[1] + ' を使うのに、auth.setup.mjs が作っていない'
-    );
+    assert.ok(用意した.has(m[1]), f + ' が控え ' + m[1] + ' を使うのに、auth.setup.mjs が作っていない');
   }
 });
 
@@ -65,7 +62,10 @@ test('同じ団体を使う検査が重なっていない（並列で取り合�
   for (const [団体, 検査たち] of 束) {
     assert.ok(
       検査たち.length === 1,
-      '団体' + 団体 + ' を複数の検査が使っている: ' + 検査たち.join(', ') +
+      '団体' +
+        団体 +
+        ' を複数の検査が使っている: ' +
+        検査たち.join(', ') +
         '（並列に流すと取り合う。scripts/stg-fixtures.mjs に団体を足して分ける）'
     );
   }
@@ -77,17 +77,15 @@ test('決まりを配信する命令が、Firestore の決まりも出す', () =
   // errorReports を足しても、この命令では本番に出ない。
   // 出ていないことは、便りが1通も届かないという形でしか現れないので、
   // 気づくのに時間がかかる。
-  const 手 = JSON.parse(
-    fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')
-  ).scripts;
+  const 手 = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')).scripts;
   for (const 名 of ['deploy:rules', 'deploy:rules:stg']) {
     assert.ok(手[名], 'package.json に ' + 名 + ' が無い');
-    assert.ok(
-      /firestore:rules/.test(手[名]),
-      名 + ' が Firestore の決まりを出していない: ' + 手[名]
-    );
+    assert.ok(/firestore:rules/.test(手[名]), 名 + ' が Firestore の決まりを出していない: ' + 手[名]);
   }
   // 本番向けと検証環境向けが取り違えられていないか
   assert.ok(/--project kyudoscoremanager\b/.test(手['deploy:rules']), 'deploy:rules の宛先が本番でない');
-  assert.ok(/--project kyudoscoremanager-stg\b/.test(手['deploy:rules:stg']), 'deploy:rules:stg の宛先が検証環境でない');
+  assert.ok(
+    /--project kyudoscoremanager-stg\b/.test(手['deploy:rules:stg']),
+    'deploy:rules:stg の宛先が検証環境でない'
+  );
 });

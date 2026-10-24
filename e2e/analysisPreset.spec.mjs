@@ -11,14 +11,11 @@
  * わざと回線を切って、貯まることと、直前の操作が付いていることを見る。
  */
 import { test, expect } from '@playwright/test';
-import {
-  案内を止める,
-  画面が出るまで待つ,
-  入り口が決まるまで待つ,
-} from './helpers.mjs';
+import { 案内を止める, 画面が出るまで待つ, 入り口が決まるまで待つ } from './helpers.mjs';
 import fs from 'node:fs';
 
-const お知らせの版 = (fs.readFileSync('src/WhatsNewModal.js', 'utf8').match(/NOTICE_VERSION = '([^']+)'/) || [])[1];
+const お知らせの版 = (fs.readFileSync('src/WhatsNewModal.js', 'utf8').match(/NOTICE_VERSION = '([^']+)'/) ||
+  [])[1];
 
 // 部員6人と記録が入っている団体。読むだけで、書き込みはしない
 const 団体 = '100001';
@@ -39,7 +36,9 @@ async function 入る(page) {
     .poll(
       () =>
         page.evaluate(() => {
-          const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+          const s =
+            JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+              ?.state || {};
           return s.activeGroupId || null;
         }),
       { timeout: 60_000, message: 'ログインが通らない（団体IDが入らない）' }
@@ -63,13 +62,19 @@ async function 入る(page) {
       () =>
         page.evaluate((前) => {
           try {
-            const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+            const s =
+              JSON.parse(
+                (globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}'
+              )?.state || {};
             return (s.lastSyncTime || 0) >= 前 && (s.sessions || []).length > 0;
           } catch (e) {
             return false;
           }
         }, 開く前),
-      { timeout: 150_000, message: '記録が手元に届かない（雲からの取り込みが終わらない。分析が空のまま進む）' }
+      {
+        timeout: 150_000,
+        message: '記録が手元に届かない（雲からの取り込みが終わらない。分析が空のまま進む）',
+      }
     )
     .toBe(true);
   // ここで書いて reload していたのをやめた（上の 案内を止める が代わり）
@@ -144,7 +149,9 @@ test('ひな型：組み合わせを名前で残し、解除しても呼び出�
 
   // 端末に残っていること。ここが残らないと、開き直したときに消える
   const 残った = await page.evaluate(() => {
-    const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+    const s =
+      JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+        ?.state || {};
     return (s.比較のひな型 || []).map((x) => x.名前);
   });
   expect(残った).toContain('検査のひな型');
@@ -162,7 +169,9 @@ test('ひな型：組み合わせを名前で残し、解除しても呼び出�
 
   // 後片付け。次に流したときへ持ち越さない
   await page.evaluate(() => {
-    const 箱 = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}');
+    const 箱 = JSON.parse(
+      (globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}'
+    );
     if (箱.state) {
       箱.state.比較のひな型 = [];
       localStorage.setItem('archery-score-storage', JSON.stringify(箱));
@@ -240,14 +249,16 @@ test('個人の詳細に、弓具を変えた前後の節がある', async ({ pa
 
   // 見出しは、履歴の有る無しにかかわらず出る
   const 見出し = page.getByText('弓具を変えた前後', { exact: true });
-  await 見出し.first().scrollIntoViewIfNeeded().catch(() => {});
+  await 見出し
+    .first()
+    .scrollIntoViewIfNeeded()
+    .catch(() => {});
   await expect(見出し.first(), '個人の詳細に弓具の節が無い').toBeVisible({ timeout: 15_000 });
 
   // 検証環境の部員は弓具の履歴を持たないので、記録するところの案内が出る
-  await expect(
-    page.getByText(/弓具管理/),
-    '履歴が無いときに、どこで記録するかが出ていない'
-  ).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText(/弓具管理/), '履歴が無いときに、どこで記録するかが出ていない').toBeVisible({
+    timeout: 10_000,
+  });
 });
 
 // ── 的中の型（個人の詳細）────────────────────────
@@ -267,7 +278,10 @@ test('個人の詳細に、的中の型が出る', async ({ page }) => {
   await page.waitForTimeout(2000);
 
   const 見出し = page.getByTestId('的中の型の見出し');
-  await 見出し.first().scrollIntoViewIfNeeded().catch(() => {});
+  await 見出し
+    .first()
+    .scrollIntoViewIfNeeded()
+    .catch(() => {});
   await expect(見出し.first(), '個人の詳細に的中の型の節が無い').toBeVisible({ timeout: 15_000 });
 
   // 既定は畳んである（2026-09-14 に本人が決めた）。畳んでいる間は要点だけが出て、

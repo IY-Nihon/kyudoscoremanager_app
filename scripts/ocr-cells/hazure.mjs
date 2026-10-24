@@ -16,7 +16,9 @@ import { 形にする, 切り取る, 辺 } from './manabu.mjs';
 import { 射手たち } from './kiroku.mjs';
 
 const { マスを開く, 一射目からの順にする } = createRequire(import.meta.url)('../../src/ocrCells');
-const 重み = JSON.parse(fs.readFileSync(process.env.OCR_OMOMI || 'scripts/ocr-cells/omomi-chiisai.json', 'utf8'));
+const 重み = JSON.parse(
+  fs.readFileSync(process.env.OCR_OMOMI || 'scripts/ocr-cells/omomi-chiisai.json', 'utf8')
+);
 const 出 = process.env.DEKI;
 
 const 写真 = process.env.SHASHIN || 'docs/ocr-samples/PXL_20260906_081921509.jpg';
@@ -29,7 +31,12 @@ let 合 = 0;
 for (let i = 0; i < 板たち.length; i++) {
   const 板 = 板たち[i];
   // 写真の列の番号も要るので、並べ替えは番号で行う
-  const 順 = 大前から並べる(板.列たち.map((_, c) => c), '左右から', i, 板たち.length);
+  const 順 = 大前から並べる(
+    板.列たち.map((_, c) => c),
+    '左右から',
+    i,
+    板たち.length
+  );
   for (const c of 順) {
     const 列 = 板.列たち[c];
     const 印 = マスを開く(一射目からの順にする(列, '下から'), '2射');
@@ -41,7 +48,9 @@ for (let i = 0; i < 板たち.length; i++) {
         continue;
       }
       const r = 9 - Math.floor(k / 2);
-      console.log(`板${i + 1} 射手${射手.名} 射${k + 1}: 読${印[k]} 真${真[k]}  マス（上から${r + 1}段目、列${c + 1}）の見立て=${列[r]} 確からしさ=${板.確からしさ[c][r].toFixed(2)}`);
+      console.log(
+        `板${i + 1} 射手${射手.名} 射${k + 1}: 読${印[k]} 真${真[k]}  マス（上から${r + 1}段目、列${c + 1}）の見立て=${列[r]} 確からしさ=${板.確からしさ[c][r].toFixed(2)}`
+      );
       if (格子たち) {
         const g = 格子たち[i].格子;
         const { 半幅, 半高 } = 箱の大きさ(g);
@@ -53,7 +62,10 @@ for (let i = 0; i < 板たち.length; i++) {
         const 形 = await 形にする(切.画, 切.幅, 切.高);
         const px = Buffer.alloc(辺 * 辺);
         for (let j = 0; j < 辺 * 辺; j++) px[j] = Math.round(255 - Math.max(0, Math.min(1, 形[j])) * 255);
-        await sharp(px, { raw: { width: 辺, height: 辺, channels: 1 } }).resize(120, 120, { kernel: 'nearest' }).png().toFile(`${出}/${名}-net.png`);
+        await sharp(px, { raw: { width: 辺, height: 辺, channels: 1 } })
+          .resize(120, 120, { kernel: 'nearest' })
+          .png()
+          .toFile(`${出}/${名}-net.png`);
       }
     }
   }

@@ -158,7 +158,9 @@ export async function 団体で入る(page, 団体, 合言葉) {
     .poll(
       () =>
         page.evaluate(() => {
-          const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+          const s =
+            JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+              ?.state || {};
           return s.activeGroupId || null;
         }),
       { timeout: 60_000, message: 'ログインが通らない（団体IDが入らない）' }
@@ -180,7 +182,11 @@ export async function 横並びになるまで待つ(page, 上限 = 20000) {
   return こうなるまで待つ(
     async () => {
       const 印 = await page
-        .evaluate(() => JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state?.横に並べる)
+        .evaluate(
+          () =>
+            JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+              ?.state?.横に並べる
+        )
         .catch(() => null);
       const 名 = await page
         .locator('[data-testid^="ます-"]')
@@ -189,8 +195,14 @@ export async function 横並びになるまで待つ(page, 上限 = 20000) {
         .catch(() => null);
       if (!名) return { 印, ます無し: true };
       const 射手 = 名.slice('ます-'.length, 名.lastIndexOf('-'));
-      const 一 = await page.getByTestId(`ます-${射手}-0`).boundingBox().catch(() => null);
-      const 二 = await page.getByTestId(`ます-${射手}-1`).boundingBox().catch(() => null);
+      const 一 = await page
+        .getByTestId(`ます-${射手}-0`)
+        .boundingBox()
+        .catch(() => null);
+      const 二 = await page
+        .getByTestId(`ます-${射手}-1`)
+        .boundingBox()
+        .catch(() => null);
       return { 印, 一, 二 };
     },
     (v) => {

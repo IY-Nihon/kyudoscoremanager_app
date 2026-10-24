@@ -69,7 +69,10 @@ test('作り直すと、前の合言葉は消えて新しいものだけが残�
       getDocs: (...引数) => (問い合わせた++, 道具.Firestore.getDocs(...引数)),
     }),
   });
-  const 作り直しの約束 = 招.招待を作り直す(数える道具, 団体, 'm1', { 前の合言葉: 一つ目, 乱数源: 決まった乱数(9) });
+  const 作り直しの約束 = 招.招待を作り直す(数える道具, 団体, 'm1', {
+    前の合言葉: 一つ目,
+    乱数源: 決まった乱数(9),
+  });
   assert.strictEqual(問い合わせた, 0, '書く前に雲へ問い合わせた');
   const 二つ目 = (await 作り直しの約束).合言葉;
   assert.strictEqual(雲.値(逆引きの道, 一つ目), undefined, '前の合言葉が消えていない');
@@ -101,11 +104,23 @@ test('期限は作ってから 7 日。雲にも期限を置き、探すと期�
 
 test('前の合言葉を知らないまま作っても、ほかに残っていた招待はあとで片付く', async () => {
   const { 雲, 道具 } = 用意();
-  雲.置く(逆引きの道, 'a'.repeat(32), { memberId: 'm1', 招待: true, expiresAt: new Date(Date.now() + 86400000) });
-  雲.置く(逆引きの道, 'b'.repeat(32), { memberId: 'm2', 招待: true, expiresAt: new Date(Date.now() + 86400000) });
+  雲.置く(逆引きの道, 'a'.repeat(32), {
+    memberId: 'm1',
+    招待: true,
+    expiresAt: new Date(Date.now() + 86400000),
+  });
+  雲.置く(逆引きの道, 'b'.repeat(32), {
+    memberId: 'm2',
+    招待: true,
+    expiresAt: new Date(Date.now() + 86400000),
+  });
   const 作った = await 招.招待を作り直す(道具, 団体, 'm1', { 乱数源: 決まった乱数(5) });
   await 待つ(20);
-  assert.deepStrictEqual(雲.中身(逆引きの道), [作った.合言葉, 'b'.repeat(32)].sort(), 'm1 の古い招待だけ消える');
+  assert.deepStrictEqual(
+    雲.中身(逆引きの道),
+    [作った.合言葉, 'b'.repeat(32)].sort(),
+    'm1 の古い招待だけ消える'
+  );
 });
 
 test('返りの遅い片付けが、あとから作り直した新しい招待を消さない', async () => {
@@ -198,7 +213,13 @@ test('部員として入る：合言葉で逆引きして所属の証を書き�
     auth.currentUser = { uid: 'anon-2', isAnonymous: true };
   };
   await assert.rejects(
-    部員として入る({ Firestore: 雲.api, FirebaseAuth, db: {}, auth: 認証 }, 団体, 切れた, '使えません', '期限切れ'),
+    部員として入る(
+      { Firestore: 雲.api, FirebaseAuth, db: {}, auth: 認証 },
+      団体,
+      切れた,
+      '使えません',
+      '期限切れ'
+    ),
     /期限切れ/
   );
   assert.strictEqual(雲.値('member_claims', 'anon-2'), undefined, '期限切れなのに所属の証を書いた');
@@ -225,7 +246,9 @@ test('何度か送る：通信の誤りは送り直し、決まりに断られ�
   const 答え = await 何度か送る(
     () => {
       回++;
-      return 回 === 1 ? Promise.reject(Object.assign(new Error('x'), { code: 'unavailable' })) : Promise.resolve(1);
+      return 回 === 1
+        ? Promise.reject(Object.assign(new Error('x'), { code: 'unavailable' }))
+        : Promise.resolve(1);
     },
     { 上限: 1000, 間: 0 }
   );
@@ -237,7 +260,9 @@ test('何度か送る：通信の誤りは送り直し、決まりに断られ�
     何度か送る(
       () => {
         断られた回++;
-        return Promise.reject(Object.assign(new Error('この招待リンクは使えません'), { code: 'permission-denied' }));
+        return Promise.reject(
+          Object.assign(new Error('この招待リンクは使えません'), { code: 'permission-denied' })
+        );
       },
       { 上限: 1000, 間: 0 }
     ),

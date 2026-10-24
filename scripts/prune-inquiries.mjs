@@ -32,7 +32,9 @@ const 対象 = ['stg', 'prod'].includes(引数[0]) ? 引数.shift() : 'stg';
 const 消す = 引数[引数.length - 1] === '消す';
 if (消す) 引数.pop();
 const 使い方 = () => {
-  console.error('使い方: node scripts/prune-inquiries.mjs <stg|prod> [日数 N | 前 YYYY-MM-DD | id 文書ID…] [消す]');
+  console.error(
+    '使い方: node scripts/prune-inquiries.mjs <stg|prod> [日数 N | 前 YYYY-MM-DD | id 文書ID…] [消す]'
+  );
   process.exit(1);
 };
 
@@ -131,7 +133,9 @@ for (const d of 選んだ) {
   const f = d.fields || {};
   const 字数 = [...(f.content?.stringValue || '')].length;
   const 写真 = (f.imagesBase64?.arrayValue?.values || []).length;
-  console.log(`  ${日時(受け取り(d))}  団体 ${f.groupId?.stringValue || '-'}  ${字数} 字  写真 ${写真} 枚  ID ${ID(d)}`);
+  console.log(
+    `  ${日時(受け取り(d))}  団体 ${f.groupId?.stringValue || '-'}  ${字数} 字  写真 ${写真} 枚  ID ${ID(d)}`
+  );
 }
 
 if (!消す) {

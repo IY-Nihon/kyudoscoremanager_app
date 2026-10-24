@@ -152,7 +152,10 @@ test('案内：部員0人の団体は、案内の中で実際に部員を登録�
 
   const 登録の手順 = 基本.find((h) => h.操作 && h.操作.種類 === '部員を増やす');
   assert.equal(登録の手順.目印, 'AI.ボタン', '部員登録の手順の目印はAI.ボタンでなければならない');
-  assert.ok(登録の手順.文.some((v) => v.includes('AI')), '説明文にAIに関する案内が含まれていない');
+  assert.ok(
+    登録の手順.文.some((v) => v.includes('AI')),
+    '説明文にAIに関する案内が含まれていない'
+  );
 
   // 登録を飛ばした人のために、その場で使える逃げ道を書いておく
   const 選択の文 = 基本.find((h) => h.操作 && h.操作.種類 === '名前を決める').文.join('\n');
@@ -241,7 +244,8 @@ test('見本の中身：本物の画面が読める形になっている', () =>
   // 分析の順位に出る数字。実画面で見えていた値と合わせてある
   const 的中 = (memberId) =>
     見本.sessions.reduce(
-      (合計, s) => 合計 + s.archers.find((a) => a.memberId === memberId).marks.filter((x) => x === '○').length,
+      (合計, s) =>
+        合計 + s.archers.find((a) => a.memberId === memberId).marks.filter((x) => x === '○').length,
       0
     );
   assert.equal(的中('mihon-1'), 21, '山田 太郎 21/28 = 75.0%');
@@ -266,7 +270,10 @@ test('案内：すでに部員や記録があるときは「まだ無い」と�
   assert.ok(空.includes('まだ保存していないので、いまは空です。'));
 
   const 使用中 = 全文('group', { 部員数: 6, 記録数: 12 });
-  assert.ok(!使用中.includes('まだメンバーが1人も登録されていません。'), 'メンバーがいるのに「1人もいない」と出た');
+  assert.ok(
+    !使用中.includes('まだメンバーが1人も登録されていません。'),
+    'メンバーがいるのに「1人もいない」と出た'
+  );
   assert.ok(!使用中.includes('まだ保存していないので、いまは空です。'), '記録があるのに「空」と出た');
   assert.ok(使用中.includes('いま6人が登録されています。'));
   assert.ok(使用中.includes('いま12件たまっています。'));
@@ -287,11 +294,7 @@ test('見える記録数：個人ログインでは、自分が写っている�
     記録([{ id: 'a2', name: '別人', memberId: 'm-another' }]),
   ];
 
-  assert.equal(
-    見える記録数({ sessions: 一覧, activeRole: 'group' }),
-    2,
-    '団体では全部数える'
-  );
+  assert.equal(見える記録数({ sessions: 一覧, activeRole: 'group' }), 2, '団体では全部数える');
   assert.equal(
     見える記録数({ sessions: 一覧, activeRole: 'member', myMemberId: 'm-me', myMemberName: '自分' }),
     0,
@@ -326,10 +329,19 @@ test('案内：部員がいる場合といない場合のAI手順の整合性', 
 test('使い方を選んで見る：「ようこそ」「以上です」以外の手順は、どれかのまとまりに入る（新しい手順を足したら tutorialSteps.js の 題とまとまり に足す）', () => {
   const { 手順を作る: 作る, まとまりの一覧 } = require('../src/tutorialSteps');
   for (const 役割 of ['group', 'member'])
-    for (const 手持ち of [{ 部員数: 0, 記録数: 0 }, { 部員数: 5, 記録数: 3 }]) {
+    for (const 手持ち of [
+      { 部員数: 0, 記録数: 0 },
+      { 部員数: 5, 記録数: 3 },
+    ]) {
       const { 基本, 続き } = 作る(役割, 手持ち);
-      const 漏れ = [...基本, ...続き].filter((一つ) => !一つ.まとまり && !['ようこそ', '以上です'].includes(一つ.題));
-      assert.deepEqual(漏れ.map((一つ) => 一つ.題), [], `${役割} でまとまりの無い手順`);
+      const 漏れ = [...基本, ...続き].filter(
+        (一つ) => !一つ.まとまり && !['ようこそ', '以上です'].includes(一つ.題)
+      );
+      assert.deepEqual(
+        漏れ.map((一つ) => 一つ.題),
+        [],
+        `${役割} でまとまりの無い手順`
+      );
       const 一覧 = まとまりの一覧(基本, 続き);
       assert.ok(一覧.length >= 5);
       const 題たち = 一覧.flatMap((組) => 組.題たち);

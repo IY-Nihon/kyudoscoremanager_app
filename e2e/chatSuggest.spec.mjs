@@ -61,7 +61,10 @@ async function 記録が届くまで待つ(page, 上限 = 60_000) {
       () =>
         page.evaluate(() => {
           try {
-            const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+            const s =
+              JSON.parse(
+                (globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}'
+              )?.state || {};
             return (s.sessions || []).length;
           } catch (e) {
             return 0;
@@ -100,8 +103,7 @@ test('質問例：分類ごとに出て、2件目以降も画面に在る', asyn
     );
     if (!前置き) return 0;
     const 枠 = 前置き.parentElement;
-    return [...枠.querySelectorAll('div')].filter((e) => /[？?]$/.test((e.textContent || '').trim()))
-      .length;
+    return [...枠.querySelectorAll('div')].filter((e) => /[？?]$/.test((e.textContent || '').trim())).length;
   });
   expect(札の数, `質問例が5件以下しか出ていない（${札の数}件）`).toBeGreaterThan(5);
 });
@@ -179,7 +181,12 @@ test('改善のため、チャットの質問と答えを送る', async ({ page 
         },
       });
     送った.push(r.postDataJSON());
-    return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '{"ok":true}' });
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'access-control-allow-origin': '*' },
+      body: '{"ok":true}',
+    });
   });
   // Gemini の返事は差し替える（本物は呼ばない）
   await page.route(/workers\.dev\/v1beta\//, (route) =>
@@ -188,7 +195,14 @@ test('改善のため、チャットの質問と答えを送る', async ({ page 
       headers: { 'content-type': 'text/event-stream', 'access-control-allow-origin': '*' },
       body:
         'data: ' +
-        JSON.stringify({ candidates: [{ content: { role: 'model', parts: [{ text: '的中は矢が的に当たることです。' }] }, finishReason: 'STOP' }] }) +
+        JSON.stringify({
+          candidates: [
+            {
+              content: { role: 'model', parts: [{ text: '的中は矢が的に当たることです。' }] },
+              finishReason: 'STOP',
+            },
+          ],
+        }) +
         '\n\n',
     })
   );
@@ -197,7 +211,9 @@ test('改善のため、チャットの質問と答えを送る', async ({ page 
   await 欄.fill('的中とは？');
   await page.getByTestId('AIに送る').click();
   await expect(page.getByText('的中は矢が的に当たることです。')).toBeVisible({ timeout: 30_000 });
-  await expect.poll(() => 送った.length, { timeout: 15_000, message: 'チャットの記録を送っていない' }).toBeGreaterThan(0);
+  await expect
+    .poll(() => 送った.length, { timeout: 15_000, message: 'チャットの記録を送っていない' })
+    .toBeGreaterThan(0);
   expect(送った[0].種類).toBe('チャット');
   expect(送った[0].中身.質問).toBe('的中とは？');
   expect(送った[0].中身.答え).toBe('的中は矢が的に当たることです。');
@@ -269,7 +285,12 @@ test('団体：道具は全部・部員一覧が入り、会話は前の鍵に�
           'access-control-allow-headers': 'Authorization, Content-Type',
         },
       });
-    return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '{"ok":true}' });
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'access-control-allow-origin': '*' },
+      body: '{"ok":true}',
+    });
   });
   let 依頼 = null;
   await page.route(/workers\.dev\/v1beta\//, (route) => {
@@ -288,7 +309,11 @@ test('団体：道具は全部・部員一覧が入り、会話は前の鍵に�
       headers: { 'content-type': 'text/event-stream', 'access-control-allow-origin': '*' },
       body:
         'data: ' +
-        JSON.stringify({ candidates: [{ content: { role: 'model', parts: [{ text: '団体の答えです。' }] }, finishReason: 'STOP' }] }) +
+        JSON.stringify({
+          candidates: [
+            { content: { role: 'model', parts: [{ text: '団体の答えです。' }] }, finishReason: 'STOP' },
+          ],
+        }) +
         '\n\n',
     });
   });
@@ -297,7 +322,9 @@ test('団体：道具は全部・部員一覧が入り、会話は前の鍵に�
   await page.getByTestId('AIに送る').click();
   await expect(page.getByText('団体の答えです。')).toBeVisible({ timeout: 30_000 });
 
-  const 道具 = ((依頼 && 依頼.tools) || []).flatMap((t) => (t.functionDeclarations || []).map((d) => d.name)).sort();
+  const 道具 = ((依頼 && 依頼.tools) || [])
+    .flatMap((t) => (t.functionDeclarations || []).map((d) => d.name))
+    .sort();
   expect(道具, '団体の道具が減っている（個人用の絞りが効いている）').toEqual(
     [
       'addMember',
@@ -321,8 +348,13 @@ test('団体：道具は全部・部員一覧が入り、会話は前の鍵に�
 
   // 会話の控えは、団体はこれまでの鍵のまま（個人だけ本人ごとの鍵）
   await expect
-    .poll(() => page.evaluate(() => localStorage.getItem('aiChatMessages_v1') || ''), { timeout: 15_000, message: '団体の会話が、これまでの鍵に残っていない' })
+    .poll(() => page.evaluate(() => localStorage.getItem('aiChatMessages_v1') || ''), {
+      timeout: 15_000,
+      message: '団体の会話が、これまでの鍵に残っていない',
+    })
     .toContain('的中とは？');
-  const 本人の鍵 = await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('aiChatMessages_v1_member_')));
+  const 本人の鍵 = await page.evaluate(() =>
+    Object.keys(localStorage).filter((k) => k.startsWith('aiChatMessages_v1_member_'))
+  );
   expect(本人の鍵, '団体なのに、個人用の鍵に会話を置いている').toEqual([]);
 });

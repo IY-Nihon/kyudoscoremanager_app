@@ -19,11 +19,7 @@ const 情報 = await 元.metadata();
 console.log(`画像: ${情報.width}×${情報.height}`);
 
 // 白黒にして、暗いところを1とする
-const { data, info } = await sharp(みち)
-  .greyscale()
-  .normalise()
-  .raw()
-  .toBuffer({ resolveWithObject: true });
+const { data, info } = await sharp(みち).greyscale().normalise().raw().toBuffer({ resolveWithObject: true });
 const 幅 = info.width;
 const 高 = info.height;
 

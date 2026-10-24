@@ -14,8 +14,18 @@ import { createRequire } from 'node:module';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import {
-  getFirestore, collection, doc, query, limit, orderBy, onSnapshot,
-  getDocs, writeBatch, serverTimestamp, deleteDoc, setDoc,
+  getFirestore,
+  collection,
+  doc,
+  query,
+  limit,
+  orderBy,
+  onSnapshot,
+  getDocs,
+  writeBatch,
+  serverTimestamp,
+  deleteDoc,
+  setDoc,
 } from 'firebase/firestore';
 import { configFor } from './fb-rest.mjs';
 
@@ -64,20 +74,38 @@ const check = (id, name, expect, actual) => {
 };
 
 /** 修正後の listenToTrash と同じ読み方 */
-const listen = () => new Promise((res, rej) => {
-  const un = onSnapshot(query(trashCol, limit(200)), (s) => {
-    un();
-    const o = s.docs.map((d) => ({ id: d.id, ...d.data() }));
-    o.sort((a, b) => trashedAtMillis(b) - trashedAtMillis(a));
-    res(o);
-  }, (e) => { un(); rej(e); });
-});
+const listen = () =>
+  new Promise((res, rej) => {
+    const un = onSnapshot(
+      query(trashCol, limit(200)),
+      (s) => {
+        un();
+        const o = s.docs.map((d) => ({ id: d.id, ...d.data() }));
+        o.sort((a, b) => trashedAtMillis(b) - trashedAtMillis(a));
+        res(o);
+      },
+      (e) => {
+        un();
+        rej(e);
+      }
+    );
+  });
 
 /** 修正前の listenToTrash と同じ読み方 */
-const listenOld = () => new Promise((res) => {
-  const un = onSnapshot(query(trashCol, orderBy('deletedAt', 'desc'), limit(50)),
-    (s) => { un(); res(s.size); }, () => { un(); res('エラー'); });
-});
+const listenOld = () =>
+  new Promise((res) => {
+    const un = onSnapshot(
+      query(trashCol, orderBy('deletedAt', 'desc'), limit(50)),
+      (s) => {
+        un();
+        res(s.size);
+      },
+      () => {
+        un();
+        res('エラー');
+      }
+    );
+  });
 
 const wipe = async (col) => {
   const s = await getDocs(col);
@@ -89,30 +117,42 @@ const wipe = async (col) => {
 };
 
 const mkSession = (id, date) => ({
-  id, date, title: `検証${id}`, archers: [{ id: 'a1', name: '部員1', marks: ['○'] }],
-  archerNames: ['部員1'], tags: [], shotCount: 1, includeInStats: true, lastModified: Date.now(),
+  id,
+  date,
+  title: `検証${id}`,
+  archers: [{ id: 'a1', name: '部員1', marks: ['○'] }],
+  archerNames: ['部員1'],
+  tags: [],
+  shotCount: 1,
+  includeInStats: true,
+  lastModified: Date.now(),
 });
 
 // ── ストアと同じ操作 ────────────────────────────────────────
-const deleteSession = async (sess) => {                       // deleteSession :964
+const deleteSession = async (sess) => {
+  // deleteSession :964
   const b = writeBatch(db);
   b.delete(doc(sessCol, sess.id));
   const t = JSON.parse(JSON.stringify({ ...sess, syncStatus: 'trashed' }));
-  t.lastModified = serverTimestamp(); t.deletedAt = serverTimestamp();
+  t.lastModified = serverTimestamp();
+  t.deletedAt = serverTimestamp();
   b.set(doc(trashCol, sess.id), t);
   await b.commit();
 };
-const deleteMultipleSessions = async (list) => {              // deleteMultipleSessions :1035
+const deleteMultipleSessions = async (list) => {
+  // deleteMultipleSessions :1035
   const b = writeBatch(db);
   list.forEach((sess) => {
     b.delete(doc(sessCol, sess.id));
     const t = JSON.parse(JSON.stringify({ ...sess, syncStatus: 'trashed' }));
-    t.lastModified = serverTimestamp(); t.deletedAt = serverTimestamp();
+    t.lastModified = serverTimestamp();
+    t.deletedAt = serverTimestamp();
     b.set(doc(trashCol, sess.id), t);
   });
   await b.commit();
 };
-const restoreSession = async (item) => {                      // restoreSession :1061
+const restoreSession = async (item) => {
+  // restoreSession :1061
   const b = writeBatch(db);
   b.delete(doc(trashCol, item.id));
   const s = JSON.parse(JSON.stringify({ ...item, syncStatus: 'synced' }));
@@ -120,11 +160,17 @@ const restoreSession = async (item) => {                      // restoreSession 
   b.set(doc(sessCol, item.id), s);
   await b.commit();
 };
-const deleteTrashItems = async (ids) => {                     // deleteTrashItems :1010
-  const b = writeBatch(db); ids.forEach((id) => b.delete(doc(trashCol, id))); await b.commit();
+const deleteTrashItems = async (ids) => {
+  // deleteTrashItems :1010
+  const b = writeBatch(db);
+  ids.forEach((id) => b.delete(doc(trashCol, id)));
+  await b.commit();
 };
-const emptyTrash = async (items) => {                         // emptyTrash :992
-  const b = writeBatch(db); items.forEach((x) => b.delete(doc(trashCol, x.id))); await b.commit();
+const emptyTrash = async (items) => {
+  // emptyTrash :992
+  const b = writeBatch(db);
+  items.forEach((x) => b.delete(doc(trashCol, x.id)));
+  await b.commit();
 };
 
 console.log(`対象: ${projectId} / 団体 ${GID}\n`);
@@ -142,7 +188,8 @@ check('T-0c', 'deleteSession が deletedAt を書くようになっている', t
 // 本番に取り残されている36件と同じ形を作る
 for (let i = 1; i <= 3; i++) {
   await setDoc(doc(trashCol, `legacy-${i}`), {
-    ...mkSession(`legacy-${i}`, Date.now() - i * 864e5), syncStatus: 'trashed',
+    ...mkSession(`legacy-${i}`, Date.now() - i * 864e5),
+    syncStatus: 'trashed',
     lastModified: Date.now() - i * 864e5,
   });
 }
@@ -154,12 +201,25 @@ const s1 = mkSession('one-1', Date.now());
 await setDoc(doc(sessCol, s1.id), s1);
 await deleteSession(s1);
 const afterSingle = await listen();
-check('T-2', '単体削除した記録がゴミ箱に出る', true, afterSingle.some((x) => x.id === 'one-1'));
-check('T-2b', '単体削除で deletedAt が書かれる', true,
-  !!afterSingle.find((x) => x.id === 'one-1')?.deletedAt);
+check(
+  'T-2',
+  '単体削除した記録がゴミ箱に出る',
+  true,
+  afterSingle.some((x) => x.id === 'one-1')
+);
+check(
+  'T-2b',
+  '単体削除で deletedAt が書かれる',
+  true,
+  !!afterSingle.find((x) => x.id === 'one-1')?.deletedAt
+);
 check('T-3', '古い記録も残ったまま（合計）', 4, afterSingle.length);
-check('T-3b', '記録側からは消えている', false,
-  (await getDocs(sessCol)).docs.some((d) => d.id === 'one-1'));
+check(
+  'T-3b',
+  '記録側からは消えている',
+  false,
+  (await getDocs(sessCol)).docs.some((d) => d.id === 'one-1')
+);
 
 // ── T-4 複数選択削除で他の中身が消えないか ──────────────────
 const multi = [mkSession('multi-1', Date.now()), mkSession('multi-2', Date.now())];
@@ -167,33 +227,58 @@ for (const s of multi) await setDoc(doc(sessCol, s.id), s);
 await deleteMultipleSessions(multi);
 const afterMulti = await listen();
 check('T-4', '複数選択削除しても前の中身が残る', 6, afterMulti.length);
-check('T-4b', '複数選択で削除した2件も入っている', true,
-  ['multi-1', 'multi-2'].every((id) => afterMulti.some((x) => x.id === id)));
+check(
+  'T-4b',
+  '複数選択で削除した2件も入っている',
+  true,
+  ['multi-1', 'multi-2'].every((id) => afterMulti.some((x) => x.id === id))
+);
 
 // ── T-10 並び順（新しい削除が上） ───────────────────────────
-check('T-10', '新しく削除したものが先頭に来る', true,
-  ['multi-1', 'multi-2', 'one-1'].includes(afterMulti[0].id));
-check('T-10b', '古い形式の記録が末尾に並ぶ', true,
-  afterMulti.slice(-3).every((x) => x.id.startsWith('legacy-')));
+check(
+  'T-10',
+  '新しく削除したものが先頭に来る',
+  true,
+  ['multi-1', 'multi-2', 'one-1'].includes(afterMulti[0].id)
+);
+check(
+  'T-10b',
+  '古い形式の記録が末尾に並ぶ',
+  true,
+  afterMulti.slice(-3).every((x) => x.id.startsWith('legacy-'))
+);
 
 // ── T-5 復元 ───────────────────────────────────────────────
 const toRestore = afterMulti.find((x) => x.id === 'legacy-1');
 await restoreSession(toRestore);
 const afterRestore = await listen();
-check('T-5', '復元するとゴミ箱から消える', false, afterRestore.some((x) => x.id === 'legacy-1'));
-check('T-5b', '復元した記録が記録側に戻る', true,
-  (await getDocs(sessCol)).docs.some((d) => d.id === 'legacy-1'));
+check(
+  'T-5',
+  '復元するとゴミ箱から消える',
+  false,
+  afterRestore.some((x) => x.id === 'legacy-1')
+);
+check(
+  'T-5b',
+  '復元した記録が記録側に戻る',
+  true,
+  (await getDocs(sessCol)).docs.some((d) => d.id === 'legacy-1')
+);
 
 // ── T-6 個別に完全削除 ─────────────────────────────────────
 await deleteTrashItems(['multi-1', 'legacy-2']);
 const afterPurge = await listen();
 check('T-6', '選んだ2件だけが完全に消える', 3, afterPurge.length);
-check('T-6b', '消したものが残っていない', false,
-  afterPurge.some((x) => ['multi-1', 'legacy-2'].includes(x.id)));
+check(
+  'T-6b',
+  '消したものが残っていない',
+  false,
+  afterPurge.some((x) => ['multi-1', 'legacy-2'].includes(x.id))
+);
 
 // ── T-8 再起動（全件取得 → リスナー） ──────────────────────
-const 全件 = (await getDocs(trashCol)).size;                  // fetchAndOverwriteFromCloud :1780
-const 再起動後 = (await listen()).length;                      // listenToTrash
+const 全件 = (await getDocs(trashCol)).size; // fetchAndOverwriteFromCloud :1780
+const 再起動後 = (await listen()).length; // listenToTrash
 check('T-8', '再起動してもゴミ箱の中身が保たれる', 全件, 再起動後);
 
 // ── T-7 すべて削除 ─────────────────────────────────────────

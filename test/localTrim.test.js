@@ -38,10 +38,7 @@ test('送れていない記録は、予算を超えても落とさない', () =>
 
 test('送った時刻より後に触った記録も落とさない', () => {
   // syncStatus が付かない道（一括の同期）でも拾えること
-  const 一覧 = [
-    記録({ id: '送り済み', lastModified: 100 }),
-    記録({ id: 'あとで触った', lastModified: 900 }),
-  ];
+  const 一覧 = [記録({ id: '送り済み', lastModified: 100 }), 記録({ id: 'あとで触った', lastModified: 900 })];
   const 残り = 端末に残す記録(一覧, { 最後に送った時刻: 500, 予算: 0 });
   assert.deepStrictEqual(
     残り.map((x) => x.id),
@@ -66,13 +63,8 @@ test('予算に収まるぶんは、新しい順に残す', () => {
 
   // 残ったのは新しい側だけ。古いものが混じっていないこと
   const いちばん古い残り = Math.min(...残り.map((x) => x.lastModified));
-  const 落ちたなかで新しいの = Math.max(
-    ...一覧.filter((x) => !残り.includes(x)).map((x) => x.lastModified)
-  );
-  assert.ok(
-    いちばん古い残り > 落ちたなかで新しいの,
-    '古い記録を残して新しい記録を落としている'
-  );
+  const 落ちたなかで新しいの = Math.max(...一覧.filter((x) => !残り.includes(x)).map((x) => x.lastModified));
+  assert.ok(いちばん古い残り > 落ちたなかで新しいの, '古い記録を残して新しい記録を落としている');
 });
 
 test('並び順は元のまま返す', () => {
@@ -83,7 +75,10 @@ test('並び順は元のまま返す', () => {
     記録({ id: 'c', lastModified: 2 }),
   ];
   const 残り = 端末に残す記録(一覧, { 最後に送った時刻: 99999, 予算: 記録の予算 });
-  assert.deepStrictEqual(残り.map((x) => x.id), ['a', 'b', 'c']);
+  assert.deepStrictEqual(
+    残り.map((x) => x.id),
+    ['a', 'b', 'c']
+  );
 });
 
 test('予算に収まるなら、何も落とさない', () => {
@@ -117,8 +112,7 @@ test('新しさは日付の文字列からも読む', () => {
 test('本番並みの量でも、予算のうちに収まる', () => {
   // 本番の最大の団体は 110件で 2.2MB。予算に収めたあとの大きさを見る
   const 一覧 = [];
-  for (let i = 0; i < 110; i++)
-    一覧.push({ id: 'r' + i, lastModified: i, archers: 詰めた射手(32) });
+  for (let i = 0; i < 110; i++) 一覧.push({ id: 'r' + i, lastModified: i, archers: 詰めた射手(32) });
   const 元の大きさ = JSON.stringify(一覧).length;
   assert.ok(元の大きさ > 1800000, '前提：2MB近くある（' + 元の大きさ + '）');
 
@@ -206,7 +200,10 @@ test('覚えていても、答えは変わらない', () => {
   const 予算 = JSON.stringify(一覧[0]).length * 5;
   const 一回目 = 端末に残す記録(一覧, { 最後に送った時刻: 99999, 予算 });
   const 二回目 = 端末に残す記録(一覧, { 最後に送った時刻: 99999, 予算 });
-  assert.deepStrictEqual(二回目.map((x) => x.id), 一回目.map((x) => x.id));
+  assert.deepStrictEqual(
+    二回目.map((x) => x.id),
+    一回目.map((x) => x.id)
+  );
 });
 
 test('書き換えた記録は、測り直す', () => {

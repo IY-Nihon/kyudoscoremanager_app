@@ -69,7 +69,8 @@ test('書き出し：窓が開き、年度を動かせ、すべてのデータ�
   const 本 = strFromU8(中身['xl/workbook.xml']);
   expect(本, 'シートの名前').toContain('記録');
   const 表 = strFromU8(中身['xl/worksheets/sheet1.xml']);
-  for (const 見出し of ['日付', '射手名', '的中率']) expect(表, `見出し「${見出し}」が無い`).toContain(見出し);
+  for (const 見出し of ['日付', '射手名', '的中率'])
+    expect(表, `見出し「${見出し}」が無い`).toContain(見出し);
   const 行の数 = (表.match(/<row /g) || []).length;
   expect(行の数, '見出しのほかに記録の行が無い').toBeGreaterThan(1);
 });

@@ -165,7 +165,6 @@ test('辞書：src/messages にあるファイルは、全部まとめに登録�
     .filter((f) => f.endsWith('.js') && f !== 'index.js')
     .map((f) => f.replace(/\.js$/, ''));
   const 登録 = Object.keys(束);
-  for (const f of ファイルたち)
-    assert.ok(登録.includes(f), `src/messages/${f}.js が index.js の 束 に無い`);
+  for (const f of ファイルたち) assert.ok(登録.includes(f), `src/messages/${f}.js が index.js の 束 に無い`);
   assert.strictEqual(登録.length, ファイルたち.length, '束 に、実体の無い名前がある');
 });

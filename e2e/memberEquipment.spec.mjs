@@ -33,7 +33,9 @@ test.use({ storageState: 'e2e/.auth/100002-個人.json' });
 /** 控えに入っている「自分」。誰の欄を開けばよいかは端末が覚えている */
 function 自分を読む(page) {
   return page.evaluate(() => {
-    const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+    const s =
+      JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+        ?.state || {};
     return { 役: s.activeRole || null, id: s.myMemberId || null, 名: s.myMemberName || null };
   });
 }
@@ -65,10 +67,7 @@ test('個人ログインでは、自分の情報と弓具がそのまま出る',
   ).toHaveCount(0);
 
   // 名簿の項目はどれも見るだけ。名前も直せない（団体で管理するもの）
-  await expect(
-    page.locator(`input[value="${自分.名}"]`),
-    '名前が直せる欄のまま残っている'
-  ).toHaveCount(0);
+  await expect(page.locator(`input[value="${自分.名}"]`), '名前が直せる欄のまま残っている').toHaveCount(0);
   // 名前は雲から名簿が届いてから出る。3機種を同時に流すと WebKit では
   // 30秒を超えることがあった（実測。単独なら5秒ほど）。既定の5秒では足りない
   await expect(page.getByText(自分.名, { exact: true }).first(), '自分の名前が出ていない').toBeVisible({
@@ -82,10 +81,9 @@ test('個人ログインでは、自分の情報と弓具がそのまま出る',
 
   // 弓具は窓を開かずに出る。押して開かせる一手間を無くしたのが今回の狙い
   await expect(page.getByText('弓具管理', { exact: true }), '弓具管理が出ない').toBeVisible();
-  await expect(
-    page.getByPlaceholder('弓力'),
-    '弓力を入れる欄が、開かずに出ていない'
-  ).toBeVisible({ timeout: 20000 });
+  await expect(page.getByPlaceholder('弓力'), '弓力を入れる欄が、開かずに出ていない').toBeVisible({
+    timeout: 20000,
+  });
   await expect(
     page.getByText('弓具変更履歴を表示・編集', { exact: true }),
     '個人ログインなのに、窓を開くボタンが残っている'
@@ -103,24 +101,25 @@ test('個人ログインでは、他人も出ず、部員も足せない', async
   await 画面が変わるまで待つ(page, '自分の情報');
 
   // 部員を追加するボタンは、団体ログインのときだけ
-  await expect(
-    page.getByLabel('部員を追加'),
-    '個人ログインなのに部員を追加できてしまう'
-  ).toHaveCount(0);
+  await expect(page.getByLabel('部員を追加'), '個人ログインなのに部員を追加できてしまう').toHaveCount(0);
 
   // 名簿そのものには自分以外も届いている（雲から遅れて来るので数で待つ）。
   // それでも画面に出るのは自分だけ、というのがここで見たいこと
   await こうなるまで待つ(
     () =>
       page.evaluate(() => {
-        const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+        const s =
+          JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+            ?.state || {};
         return (s.members || []).length;
       }),
     (n) => n >= 2,
     60000
   );
   const 他人たち = await page.evaluate(() => {
-    const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+    const s =
+      JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+        ?.state || {};
     return (s.members || []).filter((m) => m && m.id !== s.myMemberId).map((m) => m.name);
   });
   expect(他人たち.length, `団体${団体}に自分以外の部員が届かない`).toBeGreaterThan(0);
@@ -159,7 +158,9 @@ test('個人ログインの画面は、履歴が増えても下まで流せる',
           x.clientHeight > 150 &&
           /auto|scroll/.test(getComputedStyle(x).overflowY)
       );
-      return el ? { 位置: Math.round(el.scrollTop), 幅: Math.round(el.scrollHeight - el.clientHeight) } : null;
+      return el
+        ? { 位置: Math.round(el.scrollTop), 幅: Math.round(el.scrollHeight - el.clientHeight) }
+        : null;
     });
 
   const 前 = await 流れ();
@@ -174,7 +175,11 @@ test('個人ログインの画面は、履歴が増えても下まで流せる',
           窓: innerHeight,
           字: document.body.innerText.replace(/\s+/g, ' ').slice(0, 300),
           字体: getComputedStyle(document.body).fontFamily,
-          高い: 高い && { 中: 高い.scrollHeight, 見える: 高い.clientHeight, 流れ: getComputedStyle(高い).overflowY },
+          高い: 高い && {
+            中: 高い.scrollHeight,
+            見える: 高い.clientHeight,
+            流れ: getComputedStyle(高い).overflowY,
+          },
         });
       });
   expect(前, '縦に流れる入れ物が無い（下の履歴に届かない）' + 様子).not.toBeNull();
@@ -209,9 +214,23 @@ test('個人ログインの画面は、履歴が増えても下まで流せる',
   );
   // 落ちたときに、手元の名簿に自分がいるかを書き出す（2026-10-24：自分の情報が「読み込んでいます」に戻る回の調べ）
   const 名簿の様子 = await page.evaluate(() => {
-    const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+    const s =
+      JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+        ?.state || {};
     const 部員 = s.members || [];
-    return JSON.stringify({ 数: 部員.length, 自分: s.myMemberId, いる: 部員.some((x) => x && x.id === s.myMemberId), 役: s.activeRole, 団体: s.activeGroupId, 空にした所: (globalThis.__名簿が空になった || []).map((x) => x.split(String.fromCharCode(10)).slice(1, 9).join(' | ')) });
+    return JSON.stringify({
+      数: 部員.length,
+      自分: s.myMemberId,
+      いる: 部員.some((x) => x && x.id === s.myMemberId),
+      役: s.activeRole,
+      団体: s.activeGroupId,
+      空にした所: (globalThis.__名簿が空になった || []).map((x) =>
+        x.split(String.fromCharCode(10)).slice(1, 9).join(' | ')
+      ),
+    });
   });
-  await expect(page.getByText('弓具管理', { exact: true }), '上に戻っても弓具管理が出ない ' + 名簿の様子).toBeVisible();
+  await expect(
+    page.getByText('弓具管理', { exact: true }),
+    '上に戻っても弓具管理が出ない ' + 名簿の様子
+  ).toBeVisible();
 });

@@ -63,17 +63,23 @@ console.log(`接続先: ${企画}（読むだけ）\n`);
 // ── 1・2 決まり ──────────────────────────────────
 const 手元の決まり = fs.readFileSync(path.join(根本, 'firestore.rules'), 'utf8');
 const 束ね = await (
-  await fetch(`https://firebaserules.googleapis.com/v1/projects/${企画}/releases/cloud.firestore`, { headers: 頭 })
+  await fetch(`https://firebaserules.googleapis.com/v1/projects/${企画}/releases/cloud.firestore`, {
+    headers: 頭,
+  })
 ).json();
 if (束ね.rulesetName) {
-  const s = await (await fetch(`https://firebaserules.googleapis.com/v1/${束ね.rulesetName}`, { headers: 頭 })).json();
+  const s = await (
+    await fetch(`https://firebaserules.googleapis.com/v1/${束ね.rulesetName}`, { headers: 頭 })
+  ).json();
   const 出ている = s.source?.files?.[0]?.content || '';
   const 同じ = 出ている.replace(/\r\n/g, '\n').trim() === 手元の決まり.replace(/\r\n/g, '\n').trim();
   console.log('■ 出ている決まり（firestore.rules）');
   console.log(`   作られた日時: ${日(s.createTime)}`);
   console.log(印(同じ) + (同じ ? '手元と同じ' : '手元と違う（配信すると変わる）'));
   if (!同じ) {
-    const 足りない = ['errorReports', 'expireAt'].filter((語) => 手元の決まり.includes(語) && !出ている.includes(語));
+    const 足りない = ['errorReports', 'expireAt'].filter(
+      (語) => 手元の決まり.includes(語) && !出ている.includes(語)
+    );
     if (足りない.length) console.log(`        まだ出ていない語: ${足りない.join(', ')}`);
   }
 } else {
@@ -183,9 +189,19 @@ try {
   const 版たち = [...new Set(中身.match(/2026-\d{2}-\d{2}-\d{2}/g) || [])].sort();
   const 出ている版 = 版たち[版たち.length - 1] || '不明';
   console.log(`   出ている: ${出ている版}`);
-  console.log(印(出ている版 === 配信済み) + (出ている版 === 配信済み ? '最後に配信した版と揃っている' : '最後に配信した版と食い違う（配信後の更新を忘れていないか）'));
   console.log(
-    印(手元の版 >= 出ている版) + (手元の版 > 出ている版 ? '手元のほうが新しい（未配信のお知らせがある）' : 手元の版 === 出ている版 ? '手元と同じ' : '手元のほうが古い')
+    印(出ている版 === 配信済み) +
+      (出ている版 === 配信済み
+        ? '最後に配信した版と揃っている'
+        : '最後に配信した版と食い違う（配信後の更新を忘れていないか）')
+  );
+  console.log(
+    印(手元の版 >= 出ている版) +
+      (手元の版 > 出ている版
+        ? '手元のほうが新しい（未配信のお知らせがある）'
+        : 手元の版 === 出ている版
+          ? '手元と同じ'
+          : '手元のほうが古い')
   );
 } catch (e) {
   console.log('  ⚠   出ているアプリを読めませんでした: ' + String(e).slice(0, 80));

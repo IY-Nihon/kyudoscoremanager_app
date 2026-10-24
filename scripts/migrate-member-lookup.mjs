@@ -27,12 +27,19 @@ const ADMIN_PW = process.env.MIGRATE_PW || (target === 'stg' ? 'StgTest!2026' : 
 // パスワードを扱わずに済むので、指定が無ければ匿名で入る。
 const 匿名で入る = !ADMIN_PW;
 
-console.log(`対象: ${projectId}（${COMMIT ? '書き込みあり' : '確認のみ'}／${匿名で入る ? '匿名' : ADMIN_EMAIL}）\n`);
+console.log(
+  `対象: ${projectId}（${COMMIT ? '書き込みあり' : '確認のみ'}／${匿名で入る ? '匿名' : ADMIN_EMAIL}）\n`
+);
 const token = 匿名で入る
-  ? (await (await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ returnSecureToken: true }),
-    })).json()).idToken
+  ? (
+      await (
+        await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ returnSecureToken: true }),
+        })
+      ).json()
+    ).idToken
   : await signIn(apiKey, ADMIN_EMAIL, ADMIN_PW);
 
 // 団体の一覧を集める。取りこぼすとその団体の部員がログインできなくなるので、
@@ -45,22 +52,33 @@ const 経路 = [];
 try {
   (await listAll(projectId, '/group_accounts', token, ['id'])).forEach((a) => ids.add(a.id));
   経路.push('group_accounts の一覧');
-} catch { /* 管理者でなければ取れない */ }
+} catch {
+  /* 管理者でなければ取れない */
+}
 try {
   (await listAll(projectId, '/groups', token, [])).forEach((g) => ids.add(g.id));
   経路.push('groups の一覧');
-} catch { /* 取れなくてもよい */ }
+} catch {
+  /* 取れなくてもよい */
+}
 try {
   const fsMod = await import('node:fs');
-  const dirs = fsMod.readdirSync('backup-output', { withFileTypes: true })
-    .filter((d) => d.isDirectory()).map((d) => d.name).sort();
+  const dirs = fsMod
+    .readdirSync('backup-output', { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => d.name)
+    .sort();
   const latest = dirs[dirs.length - 1];
   if (latest) {
-    const ga = JSON.parse(fsMod.readFileSync(`backup-output/${latest}/firestore/group_accounts.json`, 'utf8'));
+    const ga = JSON.parse(
+      fsMod.readFileSync(`backup-output/${latest}/firestore/group_accounts.json`, 'utf8')
+    );
     (ga.documents || []).forEach((d) => ids.add(d.name.split('/').pop()));
     経路.push(`控え(${latest})`);
   }
-} catch { /* 控えが無ければ飛ばす */ }
+} catch {
+  /* 控えが無ければ飛ばす */
+}
 
 // 実在するかを公開の get で確かめる（存在しないIDを掴んでいないか）
 const accounts = [];
@@ -69,7 +87,10 @@ for (const id of [...ids].sort()) {
   if (status === 200) accounts.push({ id, name: json?.fields?.name?.stringValue || '(名前なし)' });
   else console.warn(`△ 団体 ${id} は group_accounts に見当たりません (HTTP ${status})。対象から外します。`);
 }
-if (!accounts.length) { console.error('団体が1件も見つかりません。中断します。'); process.exit(1); }
+if (!accounts.length) {
+  console.error('団体が1件も見つかりません。中断します。');
+  process.exit(1);
+}
 console.log(`団体の取得元: ${経路.join(' + ')}`);
 console.log(`団体: ${accounts.length} 件 → ${accounts.map((a) => `${a.id}(${a.name})`).join(', ')}\n`);
 
@@ -87,8 +108,14 @@ for (const acc of accounts) {
   const dup = [];
   for (const m of members) {
     const pid = m.data.personalId;
-    if (!/^\d{4}$/.test(pid || '')) { invalid.push(m.id); continue; }
-    if (seen.has(pid)) { dup.push({ personalId: pid, ids: [seen.get(pid), m.id] }); continue; }
+    if (!/^\d{4}$/.test(pid || '')) {
+      invalid.push(m.id);
+      continue;
+    }
+    if (seen.has(pid)) {
+      dup.push({ personalId: pid, ids: [seen.get(pid), m.id] });
+      continue;
+    }
     seen.set(pid, m.id);
     valid.push({ personalId: pid, memberId: m.id });
   }
@@ -105,8 +132,12 @@ for (const acc of accounts) {
 
   if (COMMIT && !dup.length) {
     for (const v of valid) {
-      const r = await setDoc(projectId, `/groups/${gid}/member_lookup/${v.personalId}`,
-        { memberId: v.memberId, updatedAt: Date.now() }, token);
+      const r = await setDoc(
+        projectId,
+        `/groups/${gid}/member_lookup/${v.personalId}`,
+        { memberId: v.memberId, updatedAt: Date.now() },
+        token
+      );
       if (r.status !== 200) {
         console.error(`✗ 団体 ${gid} / 個人ID ${v.personalId} の書き込みに失敗 (HTTP ${r.status})`);
         blocked = true;
@@ -126,8 +157,11 @@ for (const acc of accounts) {
   }
 
   summary.push({
-    団体: gid, メンバー: members.length, 有効な4桁ID: valid.length,
-    不正: invalid.length, 重複: dup.length,
+    団体: gid,
+    メンバー: members.length,
+    有効な4桁ID: valid.length,
+    不正: invalid.length,
+    重複: dup.length,
     逆引き表: lookupCount === null ? '-' : lookupCount,
   });
 }

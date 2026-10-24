@@ -9,7 +9,6 @@ import {
   ますが増えるまで待つ,
 } from './helpers.mjs';
 
-
 // ライブの検査（100006）とは別の団体を使う。混ざる余地をなくすため。
 // メンバーのいる団体にする。0人の団体だと射手を足すたびにゲストが残る。
 //
@@ -95,7 +94,10 @@ async function 入る(page) {
       .poll(
         () =>
           page.evaluate(() => {
-            const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+            const s =
+              JSON.parse(
+                (globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}'
+              )?.state || {};
             return s.activeGroupId || null;
           }),
         { timeout: 60_000, message: 'ログインが通らない（団体IDが入らない）' }
@@ -109,7 +111,12 @@ async function 入る(page) {
 
   // 射手の列が無ければ1つ足す。名前は選ばない（メンバーを作らないため）。
   // 保存もしないので、団体の中身には触れない
-  if (await page.getByText('記録を始めましょう').isVisible().catch(() => false)) {
+  if (
+    await page
+      .getByText('記録を始めましょう')
+      .isVisible()
+      .catch(() => false)
+  ) {
     await page.getByText('人', { exact: true }).first().click();
     await ますが増えるまで待つ(page, 1);
   }
@@ -317,7 +324,9 @@ test('矢所：ますを押すと、500ミリ秒後に矢所の窓が出る（�
   await page.waitForTimeout(1200);
   expect(
     await page.evaluate(() => {
-      const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+      const s =
+        JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+          ?.state || {};
       return !!s.enableArrowLocation;
     }),
     '矢所の設定が入らない'

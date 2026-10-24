@@ -132,7 +132,9 @@ test('管理者モードの履歴から記録画面で直し、やめると元�
   await page.getByText('やめる', { exact: true }).last().click();
   await expect(page.getByText('記録詳細', { exact: true })).toBeVisible({ timeout: 20_000 });
   const 記録 = await page.evaluate(() => {
-    const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}').state || {};
+    const s =
+      JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+        .state || {};
     return {
       人数: ((s.sessions || []).find((x) => x && x.id === 'ses-100007-3') || {}).archers?.length,
       編集中: s.履歴の編集,

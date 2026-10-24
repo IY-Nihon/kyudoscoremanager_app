@@ -68,7 +68,9 @@ async function 設定へ(page) {
   await expect(page.getByText('ログアウト', { exact: true })).toBeVisible({ timeout: 15_000 });
 }
 
-test('札：何を載せるかは未選択、載せる先は最初どちらもチェック。足りないと決められない。あとで・✕で閉じる', async ({ page }) => {
+test('札：何を載せるかは未選択、載せる先は最初どちらもチェック。足りないと決められない。あとで・✕で閉じる', async ({
+  page,
+}) => {
   await 開く(page);
   await page.evaluate(() => globalThis.__掲載の札を開く());
   const 札 = page.getByTestId('掲載の札');
@@ -89,8 +91,10 @@ test('札：何を載せるかは未選択、載せる先は最初どちらも�
   // 名前の欄には団体名が入っている（100003 は親の文書が無く団体名が空なので、空のまま）
   const 団体名 = await page.evaluate(
     () =>
-      (JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}').state || {})
-        .activeGroupName || ''
+      (
+        JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+          .state || {}
+      ).activeGroupName || ''
   );
   await expect(page.getByTestId('掲載-名前')).toHaveValue(団体名);
   await page.getByTestId('掲載-名前').fill('テスト大学弓道部');
@@ -109,7 +113,9 @@ test('札：何を載せるかは未選択、載せる先は最初どちらも�
   await expect(札).toHaveCount(0);
 });
 
-test('雲：聞いていない団体には設定を出さない。札で決めると雲に残り、設定に同じ選びが出て、変えられる', async ({ page }, 情報) => {
+test('雲：聞いていない団体には設定を出さない。札で決めると雲に残り、設定に同じ選びが出て、変えられる', async ({
+  page,
+}, 情報) => {
   test.skip(情報.project.name !== 雲の機種, '雲の文書は 1 つなので 1 機種だけ');
   test.setTimeout(150_000);
   await 開く(page);
@@ -165,7 +171,9 @@ test('雲：聞いていない団体には設定を出さない。札で決め�
   expect(後.載せる名前).toBe('');
 });
 
-test('開いた時：一度聞いてまだ答えていない団体には、開いたときに札が出る。閉じても開き直すとまた出る', async ({ page }, 情報) => {
+test('開いた時：一度聞いてまだ答えていない団体には、開いたときに札が出る。閉じても開き直すとまた出る', async ({
+  page,
+}, 情報) => {
   test.skip(情報.project.name !== 雲の機種, '雲の文書は 1 つなので 1 機種だけ');
   test.setTimeout(150_000);
   await 雲の答えを消す();

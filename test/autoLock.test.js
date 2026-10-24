@@ -227,10 +227,7 @@ test('お知らせ：「見たところ」の印がまだ無い人は、今後�
   );
   const 始 = 本体.indexOf('const dismissedVersion');
   const 読む所 = 本体.slice(始, 本体.indexOf('shownThisSession = true', 始));
-  assert.ok(
-    /getItem\(LAST_SEEN_KEY\)\)? *\|\| *dismissedVersion/.test(読む所),
-    '印が無い人への代えが無い'
-  );
+  assert.ok(/getItem\(LAST_SEEN_KEY\)\)? *\|\| *dismissedVersion/.test(読む所), '印が無い人への代えが無い');
 
   // 前の版まで読んだ人には、そのあとに足したぶんだけが新しい
   const 版たち = [...本体.matchAll(/版: '([^']+)'/g)].map((m) => m[1]);
@@ -297,11 +294,7 @@ test('ライブ：見るだけで入っていると、○×も鍵も交代も変
   assert.deepStrictEqual(store.getState().archers[0].lockedBlocks, {}, '見るだけなのに鍵がかかった');
 
   store.getState().setSubstitution('a1', 2, '交代太郎', null);
-  assert.strictEqual(
-    store.getState().archers[0].substitutions,
-    undefined,
-    '見るだけなのに交代が入った'
-  );
+  assert.strictEqual(store.getState().archers[0].substitutions, undefined, '見るだけなのに交代が入った');
 
   // 盤面を変える操作は、どれも通らないこと。
   // ○×だけ止めても、人を増やす・射数を変えるなどが素通りだと
@@ -345,11 +338,7 @@ test('ライブ：見るだけなら、矢所も直接の書き換えも消去�
 
   // 矢所。画面側に守りが無く、ここが素通りだと全員の画面に流れていた
   store.getState().updateArrowLocation('a1', 0, { x: 0.5, y: 0.5 });
-  assert.strictEqual(
-    store.getState().archers[0].arrowLocations,
-    undefined,
-    '見るだけなのに矢所が入った'
-  );
+  assert.strictEqual(store.getState().archers[0].arrowLocations, undefined, '見るだけなのに矢所が入った');
 
   // ○×の直接の書き換え
   store.getState().updateMark('a1', 1, '×');
@@ -484,6 +473,10 @@ test('お知らせ：配信済みの版のまま項目を足していない', ()
 test('設定：入れたマスの自動ロックと矢所の記録は、既定でオフ', () => {
   const { ストアを用意する } = require('./helpers/storeHarness');
   const { store } = ストアを用意する();
-  assert.equal(store.getState().自動ロックする, false, '自動ロックは既定でオフ（2026-09-13 に使う人が決めた）');
+  assert.equal(
+    store.getState().自動ロックする,
+    false,
+    '自動ロックは既定でオフ（2026-09-13 に使う人が決めた）'
+  );
   assert.equal(store.getState().enableArrowLocation, false, '矢所の記録は既定でオフ');
 });

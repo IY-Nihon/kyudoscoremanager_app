@@ -47,7 +47,10 @@ test('roster が付いていても、読めた字が名簿の姓と違うなら�
   // 「田」だけ読めて Gemini が 田中 に寄せた／「砂原」を 笹原 に寄せた、は人に決めてもらう
   const r = 名簿で名寄せ('田', '田中', 名簿);
   assert.strictEqual(r.status, 'ambiguous');
-  assert.deepStrictEqual(r.options.map((o) => o.id), ['m6']);
+  assert.deepStrictEqual(
+    r.options.map((o) => o.id),
+    ['m6']
+  );
   assert.strictEqual(名簿で名寄せ('山由', '山田', 名簿).status, 'ambiguous');
   // 姓と同じなら決まり（氏名まで読めていても）
   assert.strictEqual(名簿で名寄せ('山田太郎', '山田', 名簿).status, 'matched');
@@ -73,7 +76,10 @@ test('同じ人に2行が寄ったら、読めた文字が名簿と同じ行を�
   assert.strictEqual(出[0].status, 'matched');
   assert.strictEqual(出[1].status, 'matched');
   assert.strictEqual(出[2].status, 'ambiguous');
-  assert.deepStrictEqual(出[2].options.map((o) => o.id), ['m1']);
+  assert.deepStrictEqual(
+    出[2].options.map((o) => o.id),
+    ['m1']
+  );
   assert.strictEqual(出[2].rawText, '山由');
 });
 

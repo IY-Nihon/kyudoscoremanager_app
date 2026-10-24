@@ -41,7 +41,8 @@ export async function 形にする(明るさ, 幅, 高, 選び方, 注文) {
   // マスの中に照り返しの斑や影の縁があるとき（9/13 の板で、左下だけ明るいマスの ＼ が
   // 真っ黒なかたまりになって ◎ と読まれた）は、背景のむらを平らにしてから見る。
   // 平らな写真ではほぼ何もしない
-  if (process.env.OCR_TAIRA !== '0') 明るさ = process.env.OCR_TAIRA === '区画' ? 傾きを平らに(明るさ, 幅, 高) : 閉じて平らに(明るさ, 幅, 高);
+  if (process.env.OCR_TAIRA !== '0')
+    明るさ = process.env.OCR_TAIRA === '区画' ? 傾きを平らに(明るさ, 幅, 高) : 閉じて平らに(明るさ, 幅, 高);
   let 最小 = 255;
   let 最大 = 0;
   for (let i = 0; i < 明るさ.length; i++) {
@@ -112,8 +113,13 @@ export async function 形にする(明るさ, 幅, 高, 選び方, 注文) {
         let 頭 = 尻;
         積[尻++] = 始点;
         見た[始点] = 1;
-        let a左 = x0, a右 = x0, a上 = y0, a下 = y0, 数 = 0;
-        let sx = 0, sy = 0;
+        let a左 = x0,
+          a右 = x0,
+          a上 = y0,
+          a下 = y0,
+          数 = 0;
+        let sx = 0,
+          sy = 0;
         while (頭 < 尻) {
           const p = 積[頭++];
           const x = p % 幅;
@@ -125,10 +131,22 @@ export async function 形にする(明るさ, 幅, 高, 選び方, 注文) {
           if (x > a右) a右 = x;
           if (y < a上) a上 = y;
           if (y > a下) a下 = y;
-          if (x > 0 && !見た[p - 1] && 明るさ[p - 1] < 境) { 見た[p - 1] = 1; 積[尻++] = p - 1; }
-          if (x + 1 < 幅 && !見た[p + 1] && 明るさ[p + 1] < 境) { 見た[p + 1] = 1; 積[尻++] = p + 1; }
-          if (y > 0 && !見た[p - 幅] && 明るさ[p - 幅] < 境) { 見た[p - 幅] = 1; 積[尻++] = p - 幅; }
-          if (y + 1 < 高 && !見た[p + 幅] && 明るさ[p + 幅] < 境) { 見た[p + 幅] = 1; 積[尻++] = p + 幅; }
+          if (x > 0 && !見た[p - 1] && 明るさ[p - 1] < 境) {
+            見た[p - 1] = 1;
+            積[尻++] = p - 1;
+          }
+          if (x + 1 < 幅 && !見た[p + 1] && 明るさ[p + 1] < 境) {
+            見た[p + 1] = 1;
+            積[尻++] = p + 1;
+          }
+          if (y > 0 && !見た[p - 幅] && 明るさ[p - 幅] < 境) {
+            見た[p - 幅] = 1;
+            積[尻++] = p - 幅;
+          }
+          if (y + 1 < 高 && !見た[p + 幅] && 明るさ[p + 幅] < 境) {
+            見た[p + 幅] = 1;
+            積[尻++] = p + 幅;
+          }
         }
         const w2 = a右 - a左 + 1;
         const h2 = a下 - a上 + 1;
@@ -136,7 +154,8 @@ export async function 形にする(明るさ, 幅, 高, 選び方, 注文) {
         if (数 < 幅 * 高 * 0.0015) continue;
         const 一つ = { 左: a左, 右: a右, 上: a上, 下: a下, 数, x: sx / 数, y: sy / 数, 始, 終: 尻 };
         控え.push(一つ);
-        if (process.env.OCR_KATAMARI) console.error('かたまり', JSON.stringify({ 左: a左, 右: a右, 上: a上, 下: a下, 数, w2, h2 }));
+        if (process.env.OCR_KATAMARI)
+          console.error('かたまり', JSON.stringify({ 左: a左, 右: a右, 上: a上, 下: a下, 数, w2, h2 }));
         // 罫線は細長い。印ではないので外す
         if ((w2 > 幅 * 0.8 && h2 < 高 * 0.12) || (h2 > 高 * 0.8 && w2 < 幅 * 0.12)) continue;
         // べったり塗られたものは印ではない。名札の色枠、影、合計欄の長い斜線が
@@ -172,7 +191,17 @@ export async function 形にする(明るさ, 幅, 高, 選び方, 注文) {
     const 締めた境 = 最小 + (最大 - 最小) * 墨の割;
     if (締めた境 < 境 - 2) {
       const 再 = 拾う(締めた境);
-      if (process.env.OCR_KATAMARI) console.error('  境を締めて拾い直し', 境, '→', 締めた境, '大きすぎ', 再.大きすぎを外した, 'かたまり', 再.かたまり.length);
+      if (process.env.OCR_KATAMARI)
+        console.error(
+          '  境を締めて拾い直し',
+          境,
+          '→',
+          締めた境,
+          '大きすぎ',
+          再.大きすぎを外した,
+          'かたまり',
+          再.かたまり.length
+        );
       if (!再.大きすぎを外した && 再.かたまり.length) 拾った = 再;
     }
   }
@@ -189,7 +218,10 @@ export async function 形にする(明るさ, 幅, 高, 選び方, 注文) {
       Math.hypot(a.x - 中x, a.y - 中y) / Math.sqrt(a.数) - Math.hypot(z.x - 中x, z.y - 中y) / Math.sqrt(z.数)
   );
   const 主 = かたまり[0];
-  let 左 = 主.左, 右 = 主.右, 上 = 主.上, 下 = 主.下;
+  let 左 = 主.左,
+    右 = 主.右,
+    上 = 主.上,
+    下 = 主.下;
   // 1つの印が、擦れて幾つかに割れていることがある（×の2本が別々になるなど）。
   // 主の近くに在るものはまとめる。隣のマスの印は行の間隔ぶん離れているので、
   // 近さで切れば入ってこない。◎ の内側の丸も、これでまとまる。
@@ -226,7 +258,10 @@ export async function 形にする(明るさ, 幅, 高, 選び方, 注文) {
     (k) => k !== 主 && (k.左 <= 0 || k.上 <= 0 || k.右 >= 幅 - 1 || k.下 >= 高 - 1)
   );
   if (縁のかたまりたち.length > 0) {
-    let e左 = 幅, e右 = -1, e上 = 高, e下 = -1;
+    let e左 = 幅,
+      e右 = -1,
+      e上 = 高,
+      e下 = -1;
     const 方角 = new Uint8Array(36);
     for (const k of 縁のかたまりたち) {
       if (k.左 < e左) e左 = k.左;
@@ -260,7 +295,7 @@ export async function 形にする(明るさ, 幅, 高, 選び方, 注文) {
       }
     }
   }
-  for (let 増えた = true; 増えた; ) {
+  for (let 増えた = true; 増えた;) {
     増えた = false;
     for (const k of かたまり) {
       if (まとめた.has(k)) continue;
@@ -275,7 +310,13 @@ export async function 形にする(明るさ, 幅, 高, 選び方, 注文) {
       const 縁に触れる = k.左 <= 0 || k.上 <= 0 || k.右 >= 幅 - 1 || k.下 >= 高 - 1;
       const 縁 = 縁に触れる && (!印が箱いっぱい || 縁に沿っているか(積, k.始, k.終, 幅, 高));
       const 触れかけ = !内側 && !近い && !縁 && 触れているか(積, k.始, k.終, 近く);
-      if (process.env.OCR_KATAMARI) console.error('  まとめ', JSON.stringify({ 左: k.左, 右: k.右, 上: k.上, 下: k.下 }), { 内側, 近い, 縁, 触れかけ });
+      if (process.env.OCR_KATAMARI)
+        console.error('  まとめ', JSON.stringify({ 左: k.左, 右: k.右, 上: k.上, 下: k.下 }), {
+          内側,
+          近い,
+          縁,
+          触れかけ,
+        });
       if (!内側 && !近い && !触れかけ) continue;
       まとめた.add(k);
       増えた = true;
@@ -287,14 +328,32 @@ export async function 形にする(明るさ, 幅, 高, 選び方, 注文) {
     }
   }
   if (右 < 0) return new Float32Array(入);
-  if (process.env.OCR_KATAMARI) console.error('  主', JSON.stringify({ 左: 主.左, 右: 主.右, 上: 主.上, 下: 主.下 }), '囲み', 左, 右, 上, 下);
+  if (process.env.OCR_KATAMARI)
+    console.error(
+      '  主',
+      JSON.stringify({ 左: 主.左, 右: 主.右, 上: 主.上, 下: 主.下 }),
+      '囲み',
+      左,
+      右,
+      上,
+      下
+    );
   // 囲みが印の見当よりずっと小さいときは、薄い輪を落として中の印だけを囲んだ疑いがある
   //（9/20 の SNS の板で、薄い灰色の ○ に黒い「e」の ◎。輪が境を越えず、e だけが箱いっぱいに
   // 引き伸ばされて ○／ と読まれた）。境をゆるめて輪を探し、あればそこまで囲みを広げる。
   // 学習の切り出しは 印の幅 を渡さないので、ここは本物の写真だけを助ける
   if (注文 && 注文.印の幅 > 0 && 右 - 左 + 1 < 注文.印の幅 * 0.6 && 下 - 上 + 1 < 注文.印の幅 * 0.6) {
-    const 輪 = 薄い輪を探す(明るさ, 幅, 高, 暗い端 + (最大 - 暗い端) * 0.8, (左 + 右) / 2, (上 + 下) / 2, !印が箱いっぱい);
-    if (process.env.OCR_KATAMARI) console.error('薄い輪', JSON.stringify(輪), '囲み', 左, 右, 上, 下, '印の幅', 注文.印の幅);
+    const 輪 = 薄い輪を探す(
+      明るさ,
+      幅,
+      高,
+      暗い端 + (最大 - 暗い端) * 0.8,
+      (左 + 右) / 2,
+      (上 + 下) / 2,
+      !印が箱いっぱい
+    );
+    if (process.env.OCR_KATAMARI)
+      console.error('薄い輪', JSON.stringify(輪), '囲み', 左, 右, 上, 下, '印の幅', 注文.印の幅);
     if (輪) {
       左 = Math.min(左, 輪.左);
       右 = Math.max(右, 輪.右);
@@ -342,7 +401,10 @@ function 薄い輪を探す(明るさ, 幅, 高, 境, px, py, 縁を外す) {
   const 積 = new Int32Array(幅 * 高);
   let 尻 = 0;
   const 選んだ = []; // [始, 終) の並び
-  let 左 = 幅, 右 = -1, 上 = 高, 下 = -1;
+  let 左 = 幅,
+    右 = -1,
+    上 = 高,
+    下 = -1;
   for (let y0 = 0; y0 < 高; y0++) {
     for (let x0 = 0; x0 < 幅; x0++) {
       const 始点 = y0 * 幅 + x0;
@@ -351,7 +413,11 @@ function 薄い輪を探す(明るさ, 幅, 高, 境, px, py, 縁を外す) {
       let 頭 = 尻;
       積[尻++] = 始点;
       見た[始点] = 1;
-      let a左 = x0, a右 = x0, a上 = y0, a下 = y0, 数 = 0;
+      let a左 = x0,
+        a右 = x0,
+        a上 = y0,
+        a下 = y0,
+        数 = 0;
       while (頭 < 尻) {
         const p = 積[頭++];
         const x = p % 幅;
@@ -361,12 +427,25 @@ function 薄い輪を探す(明るさ, 幅, 高, 境, px, py, 縁を外す) {
         if (x > a右) a右 = x;
         if (y < a上) a上 = y;
         if (y > a下) a下 = y;
-        if (x > 0 && !見た[p - 1] && 明るさ[p - 1] < 境) { 見た[p - 1] = 1; 積[尻++] = p - 1; }
-        if (x + 1 < 幅 && !見た[p + 1] && 明るさ[p + 1] < 境) { 見た[p + 1] = 1; 積[尻++] = p + 1; }
-        if (y > 0 && !見た[p - 幅] && 明るさ[p - 幅] < 境) { 見た[p - 幅] = 1; 積[尻++] = p - 幅; }
-        if (y + 1 < 高 && !見た[p + 幅] && 明るさ[p + 幅] < 境) { 見た[p + 幅] = 1; 積[尻++] = p + 幅; }
+        if (x > 0 && !見た[p - 1] && 明るさ[p - 1] < 境) {
+          見た[p - 1] = 1;
+          積[尻++] = p - 1;
+        }
+        if (x + 1 < 幅 && !見た[p + 1] && 明るさ[p + 1] < 境) {
+          見た[p + 1] = 1;
+          積[尻++] = p + 1;
+        }
+        if (y > 0 && !見た[p - 幅] && 明るさ[p - 幅] < 境) {
+          見た[p - 幅] = 1;
+          積[尻++] = p - 幅;
+        }
+        if (y + 1 < 高 && !見た[p + 幅] && 明るさ[p + 幅] < 境) {
+          見た[p + 幅] = 1;
+          積[尻++] = p + 幅;
+        }
       }
-      const w2 = a右 - a左 + 1, h2 = a下 - a上 + 1;
+      const w2 = a右 - a左 + 1,
+        h2 = a下 - a上 + 1;
       // ごみ・罫線のかけら（細い横一線）・べったりは合わせない。
       // 切り抜きの縁に触れているものは、罫線か隣の印なので合わせない（探している薄い輪は
       // マスの真ん中に在る）。9/13 の自校の板の小さな × で、WebKit の切り抜きだけ右と下の罫線が
@@ -388,9 +467,13 @@ function 薄い輪を探す(明るさ, 幅, 高, 境, px, py, 縁を外す) {
   // 合わせた墨を 1 つの並びに詰めて、四辺ぜんぶで輪らしさを見る
   const 全部 = new Int32Array(選んだ.reduce((n, [a, b]) => n + (b - a), 0));
   let n = 0;
-  for (const [a, b] of 選んだ) { 全部.set(積.subarray(a, b), n); n += b - a; }
+  for (const [a, b] of 選んだ) {
+    全部.set(積.subarray(a, b), n);
+    n += b - a;
+  }
   const k = { 左, 右, 上, 下, 数: n };
-  if (process.env.OCR_KATAMARI) console.error('  ゆるい境で合わせた', JSON.stringify(k), '輪らしい', 輪らしいか(全部, 0, n, 幅, k));
+  if (process.env.OCR_KATAMARI)
+    console.error('  ゆるい境で合わせた', JSON.stringify(k), '輪らしい', 輪らしいか(全部, 0, n, 幅, k));
   return 輪らしいか(全部, 0, n, 幅, k) ? k : null;
 }
 
@@ -400,10 +483,18 @@ function 薄い輪を探す(明るさ, 幅, 高, 境, px, py, 縁を外す) {
  * 4 辺とも要るとすると、箱の縁で一部が切れた輪（いちばん下の段で罫線に触れた ○）が外れる
  */
 function 輪らしいか(積, 始, 終, 幅, k, 要る辺 = 3) {
-  const w = k.右 - k.左 + 1, h = k.下 - k.上 + 1;
-  const 帯x = Math.max(2, w * 0.15), 帯y = Math.max(2, h * 0.15);
-  const x0 = k.左 + w / 3, x1 = k.左 + (2 * w) / 3, y0 = k.上 + h / 3, y1 = k.上 + (2 * h) / 3;
-  let 上 = 0, 下 = 0, 左 = 0, 右 = 0;
+  const w = k.右 - k.左 + 1,
+    h = k.下 - k.上 + 1;
+  const 帯x = Math.max(2, w * 0.15),
+    帯y = Math.max(2, h * 0.15);
+  const x0 = k.左 + w / 3,
+    x1 = k.左 + (2 * w) / 3,
+    y0 = k.上 + h / 3,
+    y1 = k.上 + (2 * h) / 3;
+  let 上 = 0,
+    下 = 0,
+    左 = 0,
+    右 = 0;
   for (let i = 始; i < 終; i++) {
     const p = 積[i];
     const x = p % 幅;
@@ -440,7 +531,10 @@ function 近くを塗る(積, 始, 終, 幅, 高, 隙間, 札 = new Uint8Array(�
   // 点ごとに (2隙間+1) 四方を塗る代わりに、横に広げてから縦に広げる（塗られる所は同じ。点が多いと速い。2026-10-23）
   if (終 <= 始) return 札;
   const 点 = new Uint8Array(幅 * 高);
-  let 左 = 幅, 右 = -1, 上 = 高, 下 = -1;
+  let 左 = 幅,
+    右 = -1,
+    上 = 高,
+    下 = -1;
   for (let i = 始; i < 終; i++) {
     const p = 積[i];
     const x = p % 幅;
@@ -451,8 +545,10 @@ function 近くを塗る(積, 始, 終, 幅, 高, 隙間, 札 = new Uint8Array(�
     if (y < 上) 上 = y;
     if (y > 下) 下 = y;
   }
-  const x0 = Math.max(0, 左 - 隙間), x1 = Math.min(幅 - 1, 右 + 隙間);
-  const y0 = Math.max(0, 上 - 隙間), y1 = Math.min(高 - 1, 下 + 隙間);
+  const x0 = Math.max(0, 左 - 隙間),
+    x1 = Math.min(幅 - 1, 右 + 隙間);
+  const y0 = Math.max(0, 上 - 隙間),
+    y1 = Math.min(高 - 1, 下 + 隙間);
   const 横 = new Uint8Array(幅 * 高);
   for (let y = 上; y <= 下; y++) {
     const 行 = y * 幅;

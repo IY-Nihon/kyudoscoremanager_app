@@ -46,7 +46,12 @@ r = await setDoc(projectId, `/group_accounts/${団体}/private/consent`, { 版: 
 見る('private/consent を作れる', r.status === 200, `HTTP ${r.status}`);
 r = await setDoc(projectId, `/groups/${団体}`, { groupName: '削除の検査' }, token);
 見る('groups を作れる', r.status === 200, `HTTP ${r.status}`);
-r = await setDoc(projectId, `/groups/${団体}/sessions/s1`, { id: 's1', title: '練習', date: Date.now() }, token);
+r = await setDoc(
+  projectId,
+  `/groups/${団体}/sessions/s1`,
+  { id: 's1', title: '練習', date: Date.now() },
+  token
+);
 見る('sessions を作れる', r.status === 200, `HTTP ${r.status}`);
 r = await setDoc(projectId, `/groups/${団体}/members/m1`, { id: 'm1', name: '部員1' }, token);
 見る('members を作れる', r.status === 200, `HTTP ${r.status}`);
@@ -54,7 +59,12 @@ r = await setDoc(projectId, `/groups/${団体}/members/m1`, { id: 'm1', name: '�
 // ── 1. 写す ──
 r = await setDoc(projectId, `/deleted_accounts/${団体}/sessions/s1`, { id: 's1', title: '練習' }, token);
 見る('1. 持ち主は deleted_accounts の下位に書ける', r.status === 200, `HTTP ${r.status}`);
-r = await setDoc(projectId, `/deleted_accounts/${団体}`, { id: 団体, email: 宛先, deletedAt: Date.now(), expireAt: Date.now() + 30 * 86400000 }, token);
+r = await setDoc(
+  projectId,
+  `/deleted_accounts/${団体}`,
+  { id: 団体, email: 宛先, deletedAt: Date.now(), expireAt: Date.now() + 30 * 86400000 },
+  token
+);
 見る('1. 持ち主は deleted_accounts の文書を書ける', r.status === 200, `HTTP ${r.status}`);
 
 // ── 2. 読めない ──

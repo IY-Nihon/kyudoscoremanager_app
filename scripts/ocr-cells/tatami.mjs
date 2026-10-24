@@ -29,7 +29,9 @@ export function 縮める(画, 幅, 高, 辺) {
       const x0 = Math.max(0, Math.min(幅 - 1, Math.floor(sx)));
       const x1 = Math.min(幅 - 1, x0 + 1);
       const tx = Math.min(1, Math.max(0, sx - x0));
-      const v = (画[y0 * 幅 + x0] * (1 - tx) + 画[y0 * 幅 + x1] * tx) * (1 - ty) + (画[y1 * 幅 + x0] * (1 - tx) + 画[y1 * 幅 + x1] * tx) * ty;
+      const v =
+        (画[y0 * 幅 + x0] * (1 - tx) + 画[y0 * 幅 + x1] * tx) * (1 - ty) +
+        (画[y1 * 幅 + x0] * (1 - tx) + 画[y1 * 幅 + x1] * tx) * ty;
       // 学習の画は 0〜255 の整数に丸めてから 255 で割っている
       出[y * 辺 + x] = Math.round(v) / 255;
     }

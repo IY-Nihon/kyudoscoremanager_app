@@ -327,19 +327,13 @@ test('編集リンクの人が入れた○×も、見ている人に届く', asy
   記.store.setState({ activeGroupId: null, ライブの合言葉: null });
   assert.equal(await 記.store.getState().共有リンクで入る(荷.編集の荷, 合言葉), '入った');
   await 待つ(10);
-  assert.ok(
-    記.store.getState().いまのライブの閲覧枝,
-    '記録係が写しの流し先を受け取っていない'
-  );
+  assert.ok(記.store.getState().いまのライブの閲覧枝, '記録係が写しの流し先を受け取っていない');
 
   記.store.getState().updateMark('a1', 1, '○');
   await 待つ(20);
 
   const 写し = 主.ライブ.値(`live_view/${閲覧の枝}/${ライブ名}/state`) || {};
-  assert.ok(
-    JSON.stringify(写し.marks_by_id || {}).includes('○'),
-    '編集リンクの人の○×が写しに来ていない'
-  );
+  assert.ok(JSON.stringify(写し.marks_by_id || {}).includes('○'), '編集リンクの人の○×が写しに来ていない');
 });
 
 test('編集リンクの人の○×が、次の受信で消えない', async () => {
@@ -498,7 +492,10 @@ test('期限：配ると、編集と閲覧の両方の枝に期限が置かれ�
   const 編 = 共.枝を導く(共.共有の荷を解く(荷.編集の荷).種, 合言葉);
   const 閲 = 共.枝を導く(共.共有の荷を解く(荷.閲覧の荷).種, 合言葉);
   // 片方だけだと、そちらは閉じても、もう片方から読み続けられる
-  for (const [枝, 名] of [[編, '編集'], [閲, '閲覧']]) {
+  for (const [枝, 名] of [
+    [編, '編集'],
+    [閲, '閲覧'],
+  ]) {
     const v = 主.ライブ.値(`live_limits/${枝}`);
     assert.equal(typeof v, 'number', `${名}の枝に期限が無い`);
     assert.ok(v > Date.now(), `${名}の期限が過去`);
@@ -602,7 +599,10 @@ test('期限：片付けると、期限の跡も残らない', async () => {
   const 閲 = 共.枝を導く(共.共有の荷を解く(荷.閲覧の荷).種, 合言葉);
   await 主.store.getState().saveSession('朝練の記録', '', true, []);
   await 待つ(2200);
-  for (const [枝, 名] of [[編, '編集'], [閲, '閲覧']])
+  for (const [枝, 名] of [
+    [編, '編集'],
+    [閲, '閲覧'],
+  ])
     assert.equal(主.ライブ.値(`live_limits/${枝}`), undefined, `${名}の期限が残っている`);
 });
 

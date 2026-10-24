@@ -71,7 +71,10 @@ async function 管理者モードにする(page) {
   await expect(page.getByText('管理者認証', { exact: true })).toHaveCount(0, { timeout: 30_000 });
 }
 
-test('持ち主が作った招待リンクを別の端末で開くと、そのメンバーとして入れる', async ({ page, browser }, 情報) => {
+test('持ち主が作った招待リンクを別の端末で開くと、そのメンバーとして入れる', async ({
+  page,
+  browser,
+}, 情報) => {
   test.setTimeout(240_000);
   const 招待する人 = 使うメンバー[情報.project.name] || '部員5';
   // ── 持ち主：リンクを作る ──
@@ -161,7 +164,9 @@ test('持ち主が作った招待リンクを別の端末で開くと、その�
     {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${鍵}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fields: { expiresAt: { timestampValue: new Date(Date.now() - 60_000).toISOString() } } }),
+      body: JSON.stringify({
+        fields: { expiresAt: { timestampValue: new Date(Date.now() - 60_000).toISOString() } },
+      }),
     }
   );
   expect(変える.status, '期限を過去にできない').toBe(200);

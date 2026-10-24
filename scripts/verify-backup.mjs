@@ -24,7 +24,9 @@ async function main() {
   const adminPassword = process.env.KSM_ADMIN_PASSWORD;
   if (!adminEmail || !adminPassword) {
     console.error('❌ 環境変数 KSM_ADMIN_EMAIL / KSM_ADMIN_PASSWORD を設定してください。');
-    console.error('   例: $env:KSM_ADMIN_EMAIL="..."; $env:KSM_ADMIN_PASSWORD="..."; node scripts/verify-backup.mjs');
+    console.error(
+      '   例: $env:KSM_ADMIN_EMAIL="..."; $env:KSM_ADMIN_PASSWORD="..."; node scripts/verify-backup.mjs'
+    );
     process.exit(1);
   }
   await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
@@ -43,7 +45,7 @@ async function main() {
     const gid = gaDoc.id;
     const name = gaDoc.data().name || '不明';
     console.log(`グループ ${gid} (${name})`);
-    for (const col of ['sessions','members','config','trash','officialPracticeDays']) {
+    for (const col of ['sessions', 'members', 'config', 'trash', 'officialPracticeDays']) {
       const snap = await getDocs(collection(db, 'groups', gid, col));
       console.log(`  ${col}: ${snap.size}件`);
     }
@@ -61,7 +63,7 @@ async function main() {
   await app.delete();
 }
 
-main().catch(async err => {
+main().catch(async (err) => {
   console.error('❌ エラー:', err.message);
   await app.delete().catch(() => {});
   process.exit(1);

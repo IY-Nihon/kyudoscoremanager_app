@@ -46,7 +46,9 @@ test('JSX の部品の名前が、画面の中の値（useState の値など）�
         const 宣言 = b.path;
         // 分割代入の一つ（const [窓, 窓を出す] = useState(...) など）
         if (宣言.isVariableDeclarator() && 宣言.node.id.type === 'ArrayPattern') {
-          まずい.push(`${名前}:${n.loc.start.line} <${n.name}> が分割代入の値（${宣言.node.loc.start.line} 行）を指している`);
+          まずい.push(
+            `${名前}:${n.loc.start.line} <${n.name}> が分割代入の値（${宣言.node.loc.start.line} 行）を指している`
+          );
           return;
         }
         // 数・文字・真偽の値

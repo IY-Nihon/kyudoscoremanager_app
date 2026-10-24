@@ -31,7 +31,8 @@ test('ノートの網：見本の 40 マス（斜線で塗った ○ を含む�
 
 test('写真を整える：幅 1600 に縮め、逆さなら 180 度回す', async () => {
   const { 写真を整える } = await import('../scripts/ocr-cells/noto.mjs');
-  const 幅 = 3200, 高 = 2400;
+  const 幅 = 3200,
+    高 = 2400;
   const 画素 = new Uint8Array(幅 * 高).fill(200);
   for (let x = 0; x < 100; x++) 画素[x] = 0; // 左上の角だけ暗い
   const 正 = 写真を整える({ 画素, 幅, 高 });
@@ -44,7 +45,9 @@ test('写真を整える：幅 1600 に縮め、逆さなら 180 度回す', asy
 
 test('AI の JSON の直し：閉じ括弧の不足・囲み・余計なカンマは直し、直せないものは元の誤りを投げる', () => {
   const { AIのJSONを読む } = require('../src/ocr/jsonNaoshi.js');
-  assert.deepStrictEqual(AIのJSONを読む('{"teams":[{"rows":[{"cells":["○","×"]}]'), { teams: [{ rows: [{ cells: ['○', '×'] }] }] });
+  assert.deepStrictEqual(AIのJSONを読む('{"teams":[{"rows":[{"cells":["○","×"]}]'), {
+    teams: [{ rows: [{ cells: ['○', '×'] }] }],
+  });
   assert.deepStrictEqual(AIのJSONを読む('```json\n{"a":1}\n```'), { a: 1 });
   assert.deepStrictEqual(AIのJSONを読む('{"a":[1,2,],}'), { a: [1, 2] });
   assert.deepStrictEqual(AIのJSONを読む('{"a":"x]}"'), { a: 'x]}' });

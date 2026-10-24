@@ -68,8 +68,7 @@ const base = (projectId) =>
 export function toValue(v) {
   if (v === null || v === undefined) return { nullValue: null };
   if (typeof v === 'boolean') return { booleanValue: v };
-  if (typeof v === 'number') return Number.isInteger(v)
-    ? { integerValue: String(v) } : { doubleValue: v };
+  if (typeof v === 'number') return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
   if (typeof v === 'string') return { stringValue: v };
   if (Array.isArray(v)) return { arrayValue: { values: v.map(toValue) } };
   // 日時は日時型で（そのままだと中身の無い入れ物になる）
@@ -77,8 +76,7 @@ export function toValue(v) {
   if (typeof v === 'object') return { mapValue: { fields: toFields(v) } };
   return { stringValue: String(v) };
 }
-export const toFields = (obj) =>
-  Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, toValue(v)]));
+export const toFields = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, toValue(v)]));
 
 /** Firestore REST の型付き値を JS の値へ */
 export function fromValue(v) {
@@ -93,8 +91,7 @@ export function fromValue(v) {
   if ('mapValue' in v) return fromFields(v.mapValue.fields || {});
   return undefined;
 }
-export const fromFields = (f) =>
-  Object.fromEntries(Object.entries(f).map(([k, v]) => [k, fromValue(v)]));
+export const fromFields = (f) => Object.fromEntries(Object.entries(f).map(([k, v]) => [k, fromValue(v)]));
 
 /** 生のリクエスト。ステータスだけ見たい検証用に body も返す */
 export async function req(projectId, path, { token, method = 'GET', body, query = '' } = {}) {
@@ -102,10 +99,16 @@ export async function req(projectId, path, { token, method = 'GET', body, query 
   if (token) headers.Authorization = `Bearer ${token}`;
   if (body) headers['Content-Type'] = 'application/json';
   const r = await fetch(`${base(projectId)}${path}${query}`, {
-    method, headers, body: body ? JSON.stringify(body) : undefined,
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
   });
   let json = null;
-  try { json = await r.json(); } catch { /* 本文なしは無視 */ }
+  try {
+    json = await r.json();
+  } catch {
+    /* 本文なしは無視 */
+  }
   return { status: r.status, json };
 }
 
@@ -124,7 +127,8 @@ export async function listAll(projectId, path, token, mask) {
     const { status, json } = await req(projectId, path, { token, query: '?' + q });
     if (status !== 200) throw new Error(`${path} の取得に失敗 (HTTP ${status}): ${JSON.stringify(json)}`);
     (json.documents || []).forEach((d) =>
-      docs.push({ id: d.name.split('/').pop(), data: fromFields(d.fields || {}) }));
+      docs.push({ id: d.name.split('/').pop(), data: fromFields(d.fields || {}) })
+    );
     pageToken = json.nextPageToken || '';
   } while (pageToken);
   return docs;

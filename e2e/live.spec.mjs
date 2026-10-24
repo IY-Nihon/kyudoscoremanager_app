@@ -165,7 +165,10 @@ async function 入る(page) {
       .poll(
         () =>
           page.evaluate(() => {
-            const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+            const s =
+              JSON.parse(
+                (globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}'
+              )?.state || {};
             return s.activeGroupId || null;
           }),
         { timeout: 60_000, message: 'ログインが通らない（団体IDが入らない）' }
@@ -186,7 +189,10 @@ async function 入る(page) {
       .poll(
         () =>
           page.evaluate(() => {
-            const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+            const s =
+              JSON.parse(
+                (globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}'
+              )?.state || {};
             return (s.ライブの合言葉 || {}).合言葉 || null;
           }),
         { timeout: 90_000, message: 'ライブの合言葉が取れない' }
@@ -194,7 +200,9 @@ async function 入る(page) {
       .not.toBeNull()
       .then(() =>
         page.evaluate(() => {
-          const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+          const s =
+            JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+              ?.state || {};
           return (s.ライブの合言葉 || {}).合言葉 || null;
         })
       );
@@ -259,7 +267,11 @@ async function 揃うまで待つ(読む, 上限 = 20000) {
 
 /** そのますが ○ になるまで待つ。入れた直後の確認に使う */
 function 印がつくまで待つ(page, 鍵, 印 = '○', 上限 = 20000) {
-  return こうなるまで待つ(() => 中身(page, 鍵), (x) => x === 印, 上限);
+  return こうなるまで待つ(
+    () => 中身(page, 鍵),
+    (x) => x === 印,
+    上限
+  );
 }
 
 /** 盤面（ます）が届くまで待つ。届いた一射目たちを返す */
@@ -392,17 +404,9 @@ test('ライブ：同時に入れた○×が両方に届き、取り消しは1�
     console.log('（3人目がいないので片方だけの確認は省略）');
   }
 
-  await Promise.all([
-    A.mouse.click(A表[A鍵].x, A表[A鍵].y),
-    B.mouse.click(B表[B鍵].x, B表[B鍵].y),
-  ]);
+  await Promise.all([A.mouse.click(A表[A鍵].x, A表[A鍵].y), B.mouse.click(B表[B鍵].x, B表[B鍵].y)]);
   const 入れた後 = await こうなるまで待つ(
-    async () => [
-      await 中身(A, A鍵),
-      await 中身(A, B鍵),
-      await 中身(B, A鍵),
-      await 中身(B, B鍵),
-    ],
+    async () => [await 中身(A, A鍵), await 中身(A, B鍵), await 中身(B, A鍵), await 中身(B, B鍵)],
     (x) => x.every((v) => v === '○')
   );
   console.log('入れた直後 [A:A手, A:B手, B:A手, B:B手] =', JSON.stringify(入れた後));
@@ -416,12 +420,7 @@ test('ライブ：同時に入れた○×が両方に届き、取り消しは1�
   // 2台の見え方が揃い、○が1つだけ残るまで待つ。
   // 揃わないまま上限に達したら、そのあとの assert が落ちる
   const 残り = await こうなるまで待つ(
-    async () => [
-      await 中身(A, A鍵),
-      await 中身(A, B鍵),
-      await 中身(B, A鍵),
-      await 中身(B, B鍵),
-    ],
+    async () => [await 中身(A, A鍵), await 中身(A, B鍵), await 中身(B, A鍵), await 中身(B, B鍵)],
     (x) => x[0] === x[2] && x[1] === x[3] && x.slice(0, 2).filter((v) => v === '○').length === 1
   );
   console.log('取り消し後 [A:A手, A:B手, B:A手, B:B手] =', JSON.stringify(残り));
@@ -513,7 +512,8 @@ test('ライブ：2 台が同じ射手のますを同時に連打しても、2 �
       for (const m of 同じ) for (let k = 0; k < 3; k++) await A.mouse.click(m.x, m.y);
     })(),
     (async () => {
-      for (const m of 同じ) if (B表[m.印]) for (let k = 0; k < 2; k++) await B.mouse.click(B表[m.印].x, B表[m.印].y);
+      for (const m of 同じ)
+        if (B表[m.印]) for (let k = 0; k < 2; k++) await B.mouse.click(B表[m.印].x, B表[m.印].y);
     })(),
   ]);
   const 違い2 = await そろうまで();
@@ -527,12 +527,20 @@ test('ライブ：2 台が同じ射手のますを同時に連打しても、2 �
 /** 端末のストアの盤面（射数・列の並び・名前・部員・区切りか計か・○×）。2 台を比べるのに使う */
 const ストアの盤 = (page) =>
   page.evaluate(() => {
-    const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+    const s =
+      JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+        ?.state || {};
     return {
       射数: s.shotsPerRound,
       列: (s.archers || []).map((a) =>
         a
-          ? [a.id, a.name || '', a.memberId || '', a.isSeparator ? '区' : a.isTotalCalculator ? '計' : '', (a.marks || []).map((x) => x || '・').join('')]
+          ? [
+              a.id,
+              a.name || '',
+              a.memberId || '',
+              a.isSeparator ? '区' : a.isTotalCalculator ? '計' : '',
+              (a.marks || []).map((x) => x || '・').join(''),
+            ]
           : null
       ),
     };
@@ -554,7 +562,10 @@ async function 操作を開く(page, id) {
   const 列 = 盤.列.find((x) => x && x[0] === id);
   const 名前 = 列 && 列[1] ? 列[1] : '選択';
   const 同じ名前の列 = 盤.列.filter((x) => x && !x[3] && (x[1] || '選択') === 名前).map((x) => x[0]);
-  await page.getByText(名前, { exact: true }).nth(Math.max(0, 同じ名前の列.indexOf(id))).click({ timeout: 10_000 });
+  await page
+    .getByText(名前, { exact: true })
+    .nth(Math.max(0, 同じ名前の列.indexOf(id)))
+    .click({ timeout: 10_000 });
   await page.waitForTimeout(600);
 }
 /** 開いた操作の一覧を閉じる（押したものが閉じなかったとき用） */
@@ -613,7 +624,9 @@ async function 二台でライブに入る(browser, 印, 人数 = 4) {
   return { A, B };
 }
 
-test('ライブ：人の選択・人の追加と削除・射数・取り消しと連打を 2 台で混ぜても、2 台の盤面がそろう', async ({ browser }) => {
+test('ライブ：人の選択・人の追加と削除・射数・取り消しと連打を 2 台で混ぜても、2 台の盤面がそろう', async ({
+  browser,
+}) => {
   test.setTimeout(600_000);
   const { A, B } = await 二台でライブに入る(browser, 'mix');
   let 列 = await 列のid(A);
@@ -623,7 +636,9 @@ test('ライブ：人の選択・人の追加と削除・射数・取り消し�
   await 段(A, B, 'B が人を選ぶ間に A が別の列を連打', () =>
     Promise.all([人を選ぶ(B, 列[2], '鈴木 花子'), 連打(A, 列[0], 0, 4)])
   );
-  await 段(A, B, 'A が左に射手を足す間に B が連打', () => Promise.all([左に人を足す(A, 列[1]), 連打(B, 列[3], 0, 4)]));
+  await 段(A, B, 'A が左に射手を足す間に B が連打', () =>
+    Promise.all([左に人を足す(A, 列[1]), 連打(B, 列[3], 0, 4)])
+  );
   列 = await 列のid(A);
   await 段(A, B, 'A が射数を増やす間に B が連打', () =>
     Promise.all([A.locator('[aria-label="射数を4本増やす"]').click(), 連打(B, 列[2], 4, 4)])
@@ -643,7 +658,9 @@ test('ライブ：人の選択・人の追加と削除・射数・取り消し�
     Promise.all([列を消す(A, 列[列.length - 1]), 連打(B, 列[0], 0, 3)])
   );
   列 = await 列のid(A);
-  await 段(A, B, '2 台が同じ列の別々のますを連打', () => Promise.all([連打(A, 列[1], 0, 4), 連打(B, 列[1], 4, 4)]));
+  await 段(A, B, '2 台が同じ列の別々のますを連打', () =>
+    Promise.all([連打(A, 列[1], 0, 4), 連打(B, 列[1], 4, 4)])
+  );
 });
 
 test('ライブ：2 台が同時に同じ操作をしても、2 台の盤面がそろう', async ({ browser }) => {
@@ -653,18 +670,28 @@ test('ライブ：2 台が同時に同じ操作をしても、2 台の盤面が�
   await 段(A, B, '同じ列に同時に人を選ぶ', () =>
     Promise.all([人を選ぶ(A, 列[0], '田中 一郎'), 人を選ぶ(B, 列[0], '鈴木 花子')])
   );
-  await 段(A, B, '同じますを同時に連打', () => Promise.all([連打(A, 列[1], 0, 1), 連打(B, 列[1], 0, 1)]).then(() =>
-    Promise.all([連打(A, 列[1], 0, 1), 連打(B, 列[1], 0, 1)])
-  ));
+  await 段(A, B, '同じますを同時に連打', () =>
+    Promise.all([連打(A, 列[1], 0, 1), 連打(B, 列[1], 0, 1)]).then(() =>
+      Promise.all([連打(A, 列[1], 0, 1), 連打(B, 列[1], 0, 1)])
+    )
+  );
   await 段(A, B, '同時に人を足す（「人」の釦）', () =>
-    Promise.all([A.locator('[aria-label="射手を追加"]').first().click(), B.locator('[aria-label="射手を追加"]').first().click()])
+    Promise.all([
+      A.locator('[aria-label="射手を追加"]').first().click(),
+      B.locator('[aria-label="射手を追加"]').first().click(),
+    ])
   );
   await 段(A, B, '同時に射数を増やす', () =>
-    Promise.all([A.locator('[aria-label="射数を4本増やす"]').click(), B.locator('[aria-label="射数を4本増やす"]').click()])
+    Promise.all([
+      A.locator('[aria-label="射数を4本増やす"]').click(),
+      B.locator('[aria-label="射数を4本増やす"]').click(),
+    ])
   );
   await 段(A, B, '同時に取り消す', () => Promise.all([取り消す(A), 取り消す(B)]));
   列 = await 列のid(A);
-  await 段(A, B, '同時に同じ列を消す', () => Promise.all([列を消す(A, 列[列.length - 1]), 列を消す(B, 列[列.length - 1])]));
+  await 段(A, B, '同時に同じ列を消す', () =>
+    Promise.all([列を消す(A, 列[列.length - 1]), 列を消す(B, 列[列.length - 1])])
+  );
 });
 
 test('ライブ：2 台が同時に高速でいろいろな操作を続けても、2 台の盤面がそろう', async ({ browser }) => {
@@ -708,11 +735,17 @@ test('ライブ：2 台が同時に高速でいろいろな操作を続けても
     }
     return 記録;
   };
-  const [記録A, 記録B] = await Promise.all([動かす(A, 乱数を作る(20260926), 25), 動かす(B, 乱数を作る(9262026), 25)]);
+  const [記録A, 記録B] = await Promise.all([
+    動かす(A, 乱数を作る(20260926), 25),
+    動かす(B, 乱数を作る(9262026), 25),
+  ]);
   console.log('A の手:', 記録A.join(' '));
   console.log('B の手:', 記録B.join(' '));
   const 違い = await そろうまで(A, B, 30);
-  expect(違い, `高速でいろいろな操作を続けたあと、2 台の盤面が食い違った: ${JSON.stringify(違い)}`).toBeNull();
+  expect(
+    違い,
+    `高速でいろいろな操作を続けたあと、2 台の盤面が食い違った: ${JSON.stringify(違い)}`
+  ).toBeNull();
 });
 
 test('ライブ：3台が同時に入れても届き、取り消しは1手だけ戻す', async ({ browser }) => {
@@ -737,7 +770,11 @@ test('ライブ：3台が同時に入れても届き、取り消しは1手だけ
 
   // ── 3台に共通の射手を3人ぶん見つける ──
   const 表にする = (一覧) => Object.fromEntries(一覧.map((x) => [x.印, x]));
-  const 表 = { A: 表にする(await 一射目たち(A)), B: 表にする(await 一射目たち(B)), C: 表にする(await 一射目たち(C)) };
+  const 表 = {
+    A: 表にする(await 一射目たち(A)),
+    B: 表にする(await 一射目たち(B)),
+    C: 表にする(await 一射目たち(C)),
+  };
   const 共通 = Object.keys(表.A)
     .filter((k) => 表.B[k] && 表.C[k])
     .sort();
@@ -753,10 +790,11 @@ test('ライブ：3台が同時に入れても届き、取り消しは1手だけ
   // 3台ぶんをまとめて読む。順に読むと1周が長くなり、見に行く間隔が空く
   const 全部見る = async () => {
     const 組 = await Promise.all(
-      [['A', A], ['B', B], ['C', C]].map(async ([名前, P]) => [
-        名前,
-        await Promise.all([中身(P, 鍵A), 中身(P, 鍵B), 中身(P, 鍵C)]),
-      ])
+      [
+        ['A', A],
+        ['B', B],
+        ['C', C],
+      ].map(async ([名前, P]) => [名前, await Promise.all([中身(P, 鍵A), 中身(P, 鍵B), 中身(P, 鍵C)])])
     );
     return Object.fromEntries(組);
   };
@@ -1037,10 +1075,7 @@ test('ライブ：URLで配ると、編集用は記録でき、閲覧用は見�
   );
   expect(URLたち.length, 'リンクが2本出ていない').toBe(2);
   // 選んだ期限が、できたリンクの説明にも出ること
-  await expect(
-    A.getByText(/有効期限：/),
-    'リンクを作ったあとに有効期限が出ていない'
-  ).toBeVisible();
+  await expect(A.getByText(/有効期限：/), 'リンクを作ったあとに有効期限が出ていない').toBeVisible();
   const [編集のURL, 閲覧のURL] = URLたち;
   // 共有の枝は名前では消せない。ここで割り出して控えておく
   for (const URL of URLたち) {
@@ -1176,12 +1211,21 @@ test('ライブ：立ち順を入れ替えると、相手の画面にも並び�
   /** 中り数の並びで、どの列がどこに居るかを見る */
   const 並び = (page) =>
     page.evaluate(() =>
-      ((JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}').state || {}).archers || [])
+      (
+        (
+          JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+            .state || {}
+        ).archers || []
+      )
         .map((a) => (a.marks || []).filter((m) => m === '○').length)
         .join(',')
     );
 
-  await こうなるまで待つ(() => 並び(B), (x) => x === '1,2,3', 40_000);
+  await こうなるまで待つ(
+    () => 並び(B),
+    (x) => x === '1,2,3',
+    40_000
+  );
 
   // 主催者が、いちばん右の列をいちばん左まで運ぶ
   const 位置 = await A.locator('[data-testid^="名の欄-射手-"]').evaluateAll((els) =>
@@ -1201,8 +1245,16 @@ test('ライブ：立ち順を入れ替えると、相手の画面にも並び�
   }
   await A.mouse.up();
 
-  await こうなるまで待つ(() => 並び(A), (x) => x === '2,3,1', 20_000);
-  const 届いた = await こうなるまで待つ(() => 並び(B), (x) => x === '2,3,1', 40_000).catch(() => null);
+  await こうなるまで待つ(
+    () => 並び(A),
+    (x) => x === '2,3,1',
+    20_000
+  );
+  const 届いた = await こうなるまで待つ(
+    () => 並び(B),
+    (x) => x === '2,3,1',
+    40_000
+  ).catch(() => null);
   expect(await 並び(B), '相手の画面に並びが届いていない').toBe('2,3,1');
   expect(届いた === null, '待っている間に落ちた').toBe(false);
 });
@@ -1293,7 +1345,9 @@ test('ライブ：閉じて開き直してもライブへ戻り、終わって�
     .toBe(0);
   await expect(B2.getByText(new RegExp('ライブ中')), '終わったのにライブ中のまま').toHaveCount(0);
   const 控え = await B2.evaluate(() => {
-    const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+    const s =
+      JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+        ?.state || {};
     return s.ライブの続き || null;
   });
   expect(控え, 'ライブの控えが捨てられていない').toBeNull();

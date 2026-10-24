@@ -135,7 +135,8 @@ for (const g of [...団体].sort()) {
     const 日 = f.date?.timestampValue
       ? Date.parse(f.date.timestampValue)
       : Number(f.date?.integerValue ?? f.date?.doubleValue ?? 0);
-    if (!日 || 日 < 946684800000 || 日 > Date.now() + 86400000 * 365) 記す(g, '日付が読めない', `${名} (${日})`);
+    if (!日 || 日 < 946684800000 || 日 > Date.now() + 86400000 * 365)
+      記す(g, '日付が読めない', `${名} (${日})`);
     if (f.tags && !f.tags.arrayValue) 記す(g, 'タグが配列でない', 名);
     (f.archers?.arrayValue?.values || []).forEach((a) => {
       const af = a.mapValue?.fields || {};
@@ -164,12 +165,15 @@ for (const g of [...団体].sort()) {
 }
 
 console.table(集計);
-const 合計 = 集計.reduce((a, x) => ({
-  部員: a.部員 + x.部員,
-  卒業生: a.卒業生 + x.卒業生,
-  記録: a.記録 + x.記録,
-  ごみ箱: a.ごみ箱 + x.ごみ箱,
-}), { 部員: 0, 卒業生: 0, 記録: 0, ごみ箱: 0 });
+const 合計 = 集計.reduce(
+  (a, x) => ({
+    部員: a.部員 + x.部員,
+    卒業生: a.卒業生 + x.卒業生,
+    記録: a.記録 + x.記録,
+    ごみ箱: a.ごみ箱 + x.ごみ箱,
+  }),
+  { 部員: 0, 卒業生: 0, 記録: 0, ごみ箱: 0 }
+);
 console.log(`合計: 部員 ${合計.部員} / 卒業生 ${合計.卒業生} / 記録 ${合計.記録} / ごみ箱 ${合計.ごみ箱}\n`);
 
 if (!見つけた.length) {

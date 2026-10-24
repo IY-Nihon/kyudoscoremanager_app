@@ -42,8 +42,7 @@ const 練習 = [
   { 月: 8, 日: 12, 題: '通常練習', 的中: [4, 4, 3] },
 ];
 
-const 印 = (当たり, 射数) =>
-  Array.from({ length: 射数 }, (_, i) => (i < 当たり ? '○' : '×'));
+const 印 = (当たり, 射数) => Array.from({ length: 射数 }, (_, i) => (i < 当たり ? '○' : '×'));
 
 const token = await signIn(apiKey, 団体.email, PW, { create: true });
 console.log(`■ 団体 ${団体.id}（${団体.email}）`);

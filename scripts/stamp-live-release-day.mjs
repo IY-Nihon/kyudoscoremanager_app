@@ -48,7 +48,8 @@ const CLI本体 = (() => {
   return 候補.find((p) => p && fs.existsSync(p)) || null;
 })();
 const cli = (...args) => {
-  if (!CLI本体) throw new Error('firebase-tools が見つかりません。npm i -g firebase-tools を確認してください');
+  if (!CLI本体)
+    throw new Error('firebase-tools が見つかりません。npm i -g firebase-tools を確認してください');
   return execFileSync(process.execPath, [CLI本体, ...args], {
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024,

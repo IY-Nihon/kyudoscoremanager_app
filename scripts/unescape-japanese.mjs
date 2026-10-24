@@ -88,8 +88,18 @@ const 解析設定 = {
  * 文字列の value と value.cooked（実際の中身）は残すので、
  * 中身が変わっていればここで差として出る。
  */
-const 落とす = new Set(['loc', 'start', 'end', 'range', 'extra', 'raw',
-  'leadingComments', 'trailingComments', 'innerComments', 'comments']);
+const 落とす = new Set([
+  'loc',
+  'start',
+  'end',
+  'range',
+  'extra',
+  'raw',
+  'leadingComments',
+  'trailingComments',
+  'innerComments',
+  'comments',
+]);
 
 function 骨格(node) {
   if (Array.isArray(node)) return node.map(骨格);

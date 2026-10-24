@@ -32,7 +32,11 @@ test.use({ storageState: 'e2e/.auth/100001.json' });
 
 /** 端末の控え（まとめ書きの途中なら、その中身） */
 const 控えを読む = (page) =>
-  page.evaluate(() => JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {});
+  page.evaluate(
+    () =>
+      JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+        ?.state || {}
+  );
 
 test('控えから外した記録は、開き直すと全件を読まずに id で戻る', async ({ page }) => {
   test.setTimeout(420_000);

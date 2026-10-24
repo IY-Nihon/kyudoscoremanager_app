@@ -230,7 +230,9 @@ test('自動で更新：しばらく離れて戻ると、帯を出さずに読�
     .toBe('消えた');
 });
 
-test('自動で更新：読み込み直しても版が変わらないときは、繰り返さず帯にする（読み込み直しの繰り返しを防ぐ）', async ({ page }) => {
+test('自動で更新：読み込み直しても版が変わらないときは、繰り返さず帯にする（読み込み直しの繰り返しを防ぐ）', async ({
+  page,
+}) => {
   await 離席を短くする(page);
   await page.goto('/');
   await page.waitForTimeout(3000);
@@ -243,7 +245,9 @@ test('自動で更新：読み込み直しても版が変わらないときは�
   await page.waitForTimeout(4000);
   await 離れる(page);
   await 戻る(page); // 2 回目：同じ版へは繰り返さない → 帯
-  await expect(page.getByText(/新しい版が出ています/), '自動更新を繰り返したか、帯が出ない').toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText(/新しい版が出ています/), '自動更新を繰り返したか、帯が出ない').toBeVisible({
+    timeout: 15_000,
+  });
 });
 
 test('自動で更新：短い離席（3 分に満たない）は、読み込み直さず帯のまま', async ({ page }) => {
@@ -258,7 +262,9 @@ test('自動で更新：短い離席（3 分に満たない）は、読み込み
   await 離れる(page);
   await 戻る(page);
   await expect(page.getByText(/新しい版が出ています/), '帯が出ない').toBeVisible({ timeout: 10_000 });
-  expect(await page.evaluate(() => typeof window.__押す前の印), '短い離席で勝手に読み込み直した').toBe('number');
+  expect(await page.evaluate(() => typeof window.__押す前の印), '短い離席で勝手に読み込み直した').toBe(
+    'number'
+  );
 });
 
 test('自動で更新：字を入力している最中は、読み込み直さず帯にする', async ({ page }) => {
@@ -278,7 +284,9 @@ test('自動で更新：字を入力している最中は、読み込み直さ�
   await 離れる(page);
   await 戻る(page);
   await expect(page.getByText(/新しい版が出ています/), '帯が出ない').toBeVisible({ timeout: 10_000 });
-  expect(await page.evaluate(() => typeof window.__押す前の印), '入力中に勝手に読み込み直した').toBe('number');
+  expect(await page.evaluate(() => typeof window.__押す前の印), '入力中に勝手に読み込み直した').toBe(
+    'number'
+  );
   expect(await 欄.inputValue(), '打っていた字が消えた').toBe('1234');
 });
 
@@ -287,7 +295,9 @@ test('自動で更新：字を入力している最中は、読み込み直さ�
 test.describe('自動で更新：窓が開いている間', () => {
   test.use({ storageState: 'e2e/.auth/100007.json' });
 
-  test('メンバーの窓を開いたまま離れて戻っても、読み込み直さず帯にする（窓の中に保存前の内容があるかもしれない）', async ({ page }) => {
+  test('メンバーの窓を開いたまま離れて戻っても、読み込み直さず帯にする（窓の中に保存前の内容があるかもしれない）', async ({
+    page,
+  }) => {
     await 案内を止める(page);
     await 離席を短くする(page);
     await page.goto('/');
@@ -295,7 +305,9 @@ test.describe('自動で更新：窓が開いている間', () => {
     await 入り口が決まるまで待つ(page);
     await page.getByRole('tab', { name: 'メンバー', exact: true }).click();
     await page.getByText('部員1', { exact: false }).first().click();
-    await expect(page.getByText('保存する', { exact: true }).first(), 'メンバーの窓が開かない').toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('保存する', { exact: true }).first(), 'メンバーの窓が開かない').toBeVisible({
+      timeout: 15_000,
+    });
     const 束 = await いまの束(page);
     await 返す中身を決める(page, '/_expo/static/js/web/AppEntry-8888888888888888888888888888ffff.js');
     await 束の有無を決める(page, 束, false);
@@ -305,6 +317,9 @@ test.describe('自動で更新：窓が開いている間', () => {
     await 離れる(page);
     await 戻る(page);
     await expect(page.getByText(/新しい版が出ています/), '帯が出ない').toBeVisible({ timeout: 10_000 });
-    expect(await page.evaluate(() => typeof window.__押す前の印), '窓が開いているのに勝手に読み込み直した').toBe('number');
+    expect(
+      await page.evaluate(() => typeof window.__押す前の印),
+      '窓が開いているのに勝手に読み込み直した'
+    ).toBe('number');
   });
 });

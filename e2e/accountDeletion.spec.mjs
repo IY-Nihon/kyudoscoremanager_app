@@ -19,7 +19,9 @@ const 団体 = '100007';
 const 合言葉 = 'StgTest!2026';
 test.use({ storageState: 'e2e/.auth/100007.json' });
 
-test('アカウントの削除：管理者モードのときだけ行が出て、警告の窓はパスワード無しでは進めない', async ({ page }) => {
+test('アカウントの削除：管理者モードのときだけ行が出て、警告の窓はパスワード無しでは進めない', async ({
+  page,
+}) => {
   test.setTimeout(180_000);
   await 案内を止める(page);
   await page.goto('/');
@@ -30,13 +32,18 @@ test('アカウントの削除：管理者モードのときだけ行が出て�
   await page.getByText('設定', { exact: true }).first().click();
   await page.waitForTimeout(1500);
   await expect(page.getByText('ログアウト', { exact: true })).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByText('アカウントを削除する', { exact: true }), '管理者モードでないのに行がある').toHaveCount(0);
+  await expect(
+    page.getByText('アカウントを削除する', { exact: true }),
+    '管理者モードでないのに行がある'
+  ).toHaveCount(0);
 
   // 管理者モードをオンにする（団体パスワードで認証）
   const 行 = page.getByText('管理者モード', { exact: true });
   await 行.scrollIntoViewIfNeeded().catch(() => {});
   await page.evaluate(() => {
-    const 行 = [...document.querySelectorAll('div')].find((e) => (e.textContent || '').trim() === '管理者モード');
+    const 行 = [...document.querySelectorAll('div')].find(
+      (e) => (e.textContent || '').trim() === '管理者モード'
+    );
     let 親 = 行;
     for (let i = 0; i < 6 && 親; i++) {
       const 切替 = 親.querySelector('input[type="checkbox"], [role="switch"]');
@@ -54,7 +61,9 @@ test('アカウントの削除：管理者モードのときだけ行が出て�
   await expect(削除の行, '管理者モードなのに行が無い').toBeVisible({ timeout: 15_000 });
   await 削除の行.click();
 
-  await expect(page.getByText('続けるには団体パスワードを入力してください。')).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText('続けるには団体パスワードを入力してください。')).toBeVisible({
+    timeout: 10_000,
+  });
   await expect(page.getByText('削除後30日間は復旧のために運営者が保管し')).toBeVisible();
   const 削除する = page.getByText('削除する', { exact: true });
   await expect(削除する).toBeVisible();
@@ -66,7 +75,9 @@ test('アカウントの削除：管理者モードのときだけ行が出て�
 
   if (process.env.PW_SHOT) await page.screenshot({ path: process.env.PW_SHOT });
   await page.getByText('キャンセル', { exact: true }).click();
-  await expect(page.getByText('続けるには団体パスワードを入力してください。')).toHaveCount(0, { timeout: 10_000 });
+  await expect(page.getByText('続けるには団体パスワードを入力してください。')).toHaveCount(0, {
+    timeout: 10_000,
+  });
   // 団体はそのまま
   await expect(page.getByText('ログアウト', { exact: true })).toBeVisible();
 });

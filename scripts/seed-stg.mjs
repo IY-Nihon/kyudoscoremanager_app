@@ -24,15 +24,27 @@ const PW = 'StgTest!2026';
 // 団体1は isAdmin() に載っているメール。ルールファイルは本番と共用するため
 // 一覧を変えられず、オーナー本人のアドレスを使う。
 const GROUPS = [
-  { id: '100001', name: 'テスト団体A（管理者メール）', email: 'nihonu.kouka@gmail.com', parentDoc: true,  members: 6 },
-  { id: '100002', name: 'テスト団体B',                 email: 'stg-b@example.com',      parentDoc: false, members: 5 },
-  { id: '100003', name: 'テスト団体C',                 email: 'stg-c@example.com',      parentDoc: false, members: 4 },
+  {
+    id: '100001',
+    name: 'テスト団体A（管理者メール）',
+    email: 'nihonu.kouka@gmail.com',
+    parentDoc: true,
+    members: 6,
+  },
+  { id: '100002', name: 'テスト団体B', email: 'stg-b@example.com', parentDoc: false, members: 5 },
+  { id: '100003', name: 'テスト団体C', email: 'stg-c@example.com', parentDoc: false, members: 4 },
   // 100003 と同じ中身。検査を並列に流したとき、鍵（lock）と途中交代
   // （substitution）が同じ団体を取り合わないよう、交代の側をこちらへ移した
-  { id: '100007', name: 'テスト団体F（途中交代用）',   email: 'stg-f@example.com',      parentDoc: false, members: 4 },
+  {
+    id: '100007',
+    name: 'テスト団体F（途中交代用）',
+    email: 'stg-f@example.com',
+    parentDoc: false,
+    members: 4,
+  },
   // ゴミ箱の巡り（作る→消す→復元→完全に削除）の検査用。記録を作って消すので、
   // 途中交代（100007）と取り合わないよう分けた（2026-09-17）
-  { id: '100008', name: 'テスト団体H（ゴミ箱用）',     email: 'stg-h@example.com',      parentDoc: false, members: 4 },
+  { id: '100008', name: 'テスト団体H（ゴミ箱用）', email: 'stg-h@example.com', parentDoc: false, members: 4 },
 ];
 
 const uuid = (g, i) => `mem-${g}-${String(i).padStart(3, '0')}`;
@@ -83,45 +95,101 @@ for (const g of 対象) {
   }
 
   for (let i = 1; i <= g.members; i++) {
-    await setDoc(projectId, `/groups/${g.id}/members/${uuid(g.id, i)}`, {
-      id: uuid(g.id, i), personalId: pid(g.id, i), name: `部員${i}`,
-      gender: i % 2 ? '男子' : '女子', grade: (i % 4) + 1, termKi: 53 - (i % 4),
-      lastModified: Date.now(),
-    }, token);
+    await setDoc(
+      projectId,
+      `/groups/${g.id}/members/${uuid(g.id, i)}`,
+      {
+        id: uuid(g.id, i),
+        personalId: pid(g.id, i),
+        name: `部員${i}`,
+        gender: i % 2 ? '男子' : '女子',
+        grade: (i % 4) + 1,
+        termKi: 53 - (i % 4),
+        lastModified: Date.now(),
+      },
+      token
+    );
   }
   console.log(`  members を ${g.members} 件作成（個人ID ${pid(g.id, 1)}〜${pid(g.id, g.members)}）`);
 
-  await setDoc(projectId, `/groups/${g.id}/alumni/alu-${g.id}-001`, {
-    id: `alu-${g.id}-001`, personalId: '9999', name: '卒業生1', grade: 5, lastModified: Date.now(),
-  }, token);
+  await setDoc(
+    projectId,
+    `/groups/${g.id}/alumni/alu-${g.id}-001`,
+    {
+      id: `alu-${g.id}-001`,
+      personalId: '9999',
+      name: '卒業生1',
+      grade: 5,
+      lastModified: Date.now(),
+    },
+    token
+  );
 
   for (let s = 1; s <= 3; s++) {
-    await setDoc(projectId, `/groups/${g.id}/sessions/ses-${g.id}-${s}`, {
-      id: `ses-${g.id}-${s}`, date: Date.now() - s * 86400000, title: `練習${s}`,
-      // タグは normalizeTag により # 付きで保存される。本番もこの形。
-      // # 無しだと毎回「要整理」と判定され、無関係な自動更新が走ってしまう。
-      note: '', shotCount: 8, includeInStats: true, tags: ['#正規練習'],
-      archerNames: ['部員1', '部員2'],
-      archers: [
-        { id: 'a1', name: '部員1', memberId: uuid(g.id, 1), marks: ['○', '×', '○', '○'] },
-        { id: 'a2', name: '部員2', memberId: uuid(g.id, 2), marks: ['×', '×', '○', '×'] },
-      ],
-      lastModified: Date.now(),
-    }, token);
+    await setDoc(
+      projectId,
+      `/groups/${g.id}/sessions/ses-${g.id}-${s}`,
+      {
+        id: `ses-${g.id}-${s}`,
+        date: Date.now() - s * 86400000,
+        title: `練習${s}`,
+        // タグは normalizeTag により # 付きで保存される。本番もこの形。
+        // # 無しだと毎回「要整理」と判定され、無関係な自動更新が走ってしまう。
+        note: '',
+        shotCount: 8,
+        includeInStats: true,
+        tags: ['#正規練習'],
+        archerNames: ['部員1', '部員2'],
+        archers: [
+          { id: 'a1', name: '部員1', memberId: uuid(g.id, 1), marks: ['○', '×', '○', '○'] },
+          { id: 'a2', name: '部員2', memberId: uuid(g.id, 2), marks: ['×', '×', '○', '×'] },
+        ],
+        lastModified: Date.now(),
+      },
+      token
+    );
   }
-  await setDoc(projectId, `/groups/${g.id}/trash/tra-${g.id}-1`, {
-    id: `tra-${g.id}-1`, date: Date.now(), title: '削除済み', archers: [], lastModified: Date.now(),
-  }, token);
-  await setDoc(projectId, `/groups/${g.id}/config/app_settings`, {
-    currentFreshmanTerm: 53, autoPromotionEnabled: true,
-    tagTemplates: ['#正規練習', '#自主稽古'], lastPromotionYear: 2026,
-  }, token);
-  await setDoc(projectId, `/groups/${g.id}/officialPracticeDays/2026-08-01`, {
-    date: '2026-08-01', created: Date.now(),
-  }, token);
+  await setDoc(
+    projectId,
+    `/groups/${g.id}/trash/tra-${g.id}-1`,
+    {
+      id: `tra-${g.id}-1`,
+      date: Date.now(),
+      title: '削除済み',
+      archers: [],
+      lastModified: Date.now(),
+    },
+    token
+  );
+  await setDoc(
+    projectId,
+    `/groups/${g.id}/config/app_settings`,
+    {
+      currentFreshmanTerm: 53,
+      autoPromotionEnabled: true,
+      tagTemplates: ['#正規練習', '#自主稽古'],
+      lastPromotionYear: 2026,
+    },
+    token
+  );
+  await setDoc(
+    projectId,
+    `/groups/${g.id}/officialPracticeDays/2026-08-01`,
+    {
+      date: '2026-08-01',
+      created: Date.now(),
+    },
+    token
+  );
   console.log('  alumni / sessions×3 / trash / config / officialPracticeDays を作成');
 
-  summary.push({ 団体: g.id, メール: g.email, members: g.members, 親doc: g.parentDoc, 個人ID例: pid(g.id, 1) });
+  summary.push({
+    団体: g.id,
+    メール: g.email,
+    members: g.members,
+    親doc: g.parentDoc,
+    個人ID例: pid(g.id, 1),
+  });
 }
 
 // 投入結果を確認する。

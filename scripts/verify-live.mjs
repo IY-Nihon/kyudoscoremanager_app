@@ -14,7 +14,9 @@ import { createRequire } from 'node:module';
 import { configFor, signIn, ライブの枝を引く } from './fb-rest.mjs';
 
 // 判断そのものは実装（src/syncRules.js）をそのまま使う。写すと食い違うため。
-const { 届いた射手に合わせる, normalizeArrowLocations } = createRequire(import.meta.url)('../src/syncRules.js');
+const { 届いた射手に合わせる, normalizeArrowLocations } = createRequire(import.meta.url)(
+  '../src/syncRules.js'
+);
 
 const target = process.argv[2] || 'stg';
 if (target !== 'stg') {
@@ -30,7 +32,14 @@ const 名 = `検証ライブ-${Date.now()}`;
 const rows = [];
 const check = (区分, 項目, 期待, 実際, 備考 = '') => {
   const ok = JSON.stringify(期待) === JSON.stringify(実際);
-  rows.push({ 区分, 項目, 期待: JSON.stringify(期待), 実際: JSON.stringify(実際), 判定: ok ? 'OK' : 'NG', 備考 });
+  rows.push({
+    区分,
+    項目,
+    期待: JSON.stringify(期待),
+    実際: JSON.stringify(実際),
+    判定: ok ? 'OK' : 'NG',
+    備考,
+  });
 };
 
 const tok = await signIn(apiKey, 'nihonu.kouka@gmail.com', PW);
@@ -196,14 +205,24 @@ try {
   // B が自分の送信の返りを受け取っても、自分の矢所を失わない
   const B返り = 受信の整形((await rt('GET', 道)).json);
   const B2 = 合わせる(B手元, B返り);
-  check('2台', 'B は自分の矢所を失わない', [{ x: 1, y: 2 }, { x: 12, y: 34 }, null, null], B2.archers[0].arrowLocations);
+  check(
+    '2台',
+    'B は自分の矢所を失わない',
+    [{ x: 1, y: 2 }, { x: 12, y: 34 }, null, null],
+    B2.archers[0].arrowLocations
+  );
   check('2台', 'B の○は残る', '○', B2.archers[0].marks[3]);
 
   // A が受け取る。A は自分の矢所を持ったまま B の○を受け取る
   const A受信 = 受信の整形((await rt('GET', 道)).json);
   const A2 = 合わせる([{ ...A射手, arrowLocations: [null, { x: 12, y: 34 }, null, null] }], A受信);
   check('2台', 'A は B の○を受け取る', '○', A2.archers[0].marks[3]);
-  check('2台', 'A は B の矢所も受け取る（雲と同じになる）', [{ x: 1, y: 2 }, { x: 12, y: 34 }, null, null], A2.archers[0].arrowLocations);
+  check(
+    '2台',
+    'A は B の矢所も受け取る（雲と同じになる）',
+    [{ x: 1, y: 2 }, { x: 12, y: 34 }, null, null],
+    A2.archers[0].arrowLocations
+  );
 
   // 古い版の端末が矢所なしで上書きしても、手元の矢所は残る
   const 古い版 = { ...射手, lastModified: Date.now() + 2 };
@@ -212,7 +231,12 @@ try {
   await rt('PATCH', 道, { 'archer_timestamps/a1': Date.now() + 2, timestamp: Date.now() + 2 });
   const 古い受信 = 受信の整形((await rt('GET', 道)).json);
   const A3 = 合わせる(A2.archers, 古い受信);
-  check('2台', '古い版の上書きでも矢所が残る', [{ x: 1, y: 2 }, { x: 12, y: 34 }, null, null], A3.archers[0].arrowLocations);
+  check(
+    '2台',
+    '古い版の上書きでも矢所が残る',
+    [{ x: 1, y: 2 }, { x: 12, y: 34 }, null, null],
+    A3.archers[0].arrowLocations
+  );
 
   // ── 6. 後始末 ──────────────────────────────────────────
   const 消し = await rt('DELETE', `/live_sessions/${枝}/${名}`);
@@ -220,7 +244,9 @@ try {
   const 残り = await rt('GET', `/live_sessions/${枝}/${名}`);
   check('後始末', '消えている', null, 残り.json);
 } finally {
-  await fetch(`${databaseURL}/live_sessions/${枝}/${名}.json?auth=${tok}`, { method: 'DELETE' }).catch(() => {});
+  await fetch(`${databaseURL}/live_sessions/${枝}/${名}.json?auth=${tok}`, { method: 'DELETE' }).catch(
+    () => {}
+  );
 }
 
 console.table(rows);

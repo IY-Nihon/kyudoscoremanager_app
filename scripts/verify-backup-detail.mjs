@@ -24,7 +24,9 @@ const rtdb = getDatabase(app);
 // バックアップファイルを読み込む
 function loadBackup() {
   const dir = './backup-output';
-  const files = readdirSync(dir).filter(f => f.endsWith('.json.gz')).sort();
+  const files = readdirSync(dir)
+    .filter((f) => f.endsWith('.json.gz'))
+    .sort();
   if (files.length === 0) throw new Error('backup-output/ にバックアップファイルがありません');
   const latest = files.at(-1);
   console.log(`📂 バックアップ: ${latest}\n`);
@@ -56,7 +58,11 @@ function compareValues(fbVal, bkVal, path) {
   // 配列
   if (Array.isArray(fbVal)) {
     if (!Array.isArray(bkVal) || fbVal.length !== bkVal.length) {
-      diffs.push({ path, fb: `Array(${fbVal.length})`, bk: Array.isArray(bkVal) ? `Array(${bkVal.length})` : bkVal });
+      diffs.push({
+        path,
+        fb: `Array(${fbVal.length})`,
+        bk: Array.isArray(bkVal) ? `Array(${bkVal.length})` : bkVal,
+      });
     } else {
       fbVal.forEach((v, i) => {
         diffs.push(...compareValues(v, bkVal[i], `${path}[${i}]`));
@@ -85,7 +91,7 @@ let totalDiffs = 0;
 async function checkCollection(gid, colName, bkDocs) {
   const snap = await getDocs(collection(db, 'groups', gid, colName));
   const bkMap = {};
-  for (const d of (bkDocs || [])) {
+  for (const d of bkDocs || []) {
     bkMap[d.id] = d._fields || {};
   }
 
@@ -113,7 +119,7 @@ async function checkCollection(gid, colName, bkDocs) {
   }
 
   // バックアップにあってFirebaseにないID
-  const fbIds = new Set(snap.docs.map(d => d.id));
+  const fbIds = new Set(snap.docs.map((d) => d.id));
   for (const id of Object.keys(bkMap)) {
     if (!fbIds.has(id)) extraInBk++;
   }
@@ -125,10 +131,22 @@ async function checkCollection(gid, colName, bkDocs) {
 
   let status = '✅';
   let note = '';
-  if (!countOk) { status = '⚠️'; note += ` 件数差(Firebase:${fbCount} BK:${bkCount})`; }
-  if (missingInBk) { status = '⚠️'; note += ` BK未収録:${missingInBk}件`; }
-  if (extraInBk) { status = '⚠️'; note += ` BK余分:${extraInBk}件`; }
-  if (colDiffs > 0) { status = '❌'; note += ` フィールド差分:${colDiffs}件`; }
+  if (!countOk) {
+    status = '⚠️';
+    note += ` 件数差(Firebase:${fbCount} BK:${bkCount})`;
+  }
+  if (missingInBk) {
+    status = '⚠️';
+    note += ` BK未収録:${missingInBk}件`;
+  }
+  if (extraInBk) {
+    status = '⚠️';
+    note += ` BK余分:${extraInBk}件`;
+  }
+  if (colDiffs > 0) {
+    status = '❌';
+    note += ` フィールド差分:${colDiffs}件`;
+  }
 
   console.log(`  ${status} ${colName}: Firebase=${fbCount} BK=${bkCount}${note}`);
   totalDiffs += colDiffs + missingInBk;
@@ -141,7 +159,9 @@ async function main() {
   const adminPassword = process.env.KSM_ADMIN_PASSWORD;
   if (!adminEmail || !adminPassword) {
     console.error('❌ 環境変数 KSM_ADMIN_EMAIL / KSM_ADMIN_PASSWORD を設定してください。');
-    console.error('   例: $env:KSM_ADMIN_EMAIL="..."; $env:KSM_ADMIN_PASSWORD="..."; node scripts/verify-backup-detail.mjs');
+    console.error(
+      '   例: $env:KSM_ADMIN_EMAIL="..."; $env:KSM_ADMIN_PASSWORD="..."; node scripts/verify-backup-detail.mjs'
+    );
     process.exit(1);
   }
   await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
@@ -155,13 +175,15 @@ async function main() {
   console.log('=== group_accounts ===');
   const gaSnap = await getDocs(collection(db, 'group_accounts'));
   const bkGa = bFirestore.group_accounts || [];
-  const bkGaMap = Object.fromEntries(bkGa.map(d => [d.id, d._fields || {}]));
+  const bkGaMap = Object.fromEntries(bkGa.map((d) => [d.id, d._fields || {}]));
   let gaDiffs = 0;
   for (const d of gaSnap.docs) {
     const diffs = compareValues(d.data(), bkGaMap[d.id] || {}, d.id);
     gaDiffs += diffs.length;
     for (const diff of diffs.slice(0, 3)) {
-      console.log(`  差分: ${diff.path} Firebase=${JSON.stringify(diff.fb)?.slice(0,60)} BK=${JSON.stringify(diff.bk)?.slice(0,60)}`);
+      console.log(
+        `  差分: ${diff.path} Firebase=${JSON.stringify(diff.fb)?.slice(0, 60)} BK=${JSON.stringify(diff.bk)?.slice(0, 60)}`
+      );
     }
   }
   console.log(`  ${gaDiffs === 0 ? '✅' : '❌'} ${gaSnap.size}件 フィールド差分: ${gaDiffs}件\n`);
@@ -172,11 +194,14 @@ async function main() {
     const name = gaDoc.data().name || '不明';
     console.log(`=== グループ ${gid} (${name}) ===`);
 
-    const bkGroup = bkGroups.find(g => g.id === gid);
-    if (!bkGroup) { console.log('  ❌ バックアップに存在しない\n'); continue; }
+    const bkGroup = bkGroups.find((g) => g.id === gid);
+    if (!bkGroup) {
+      console.log('  ❌ バックアップに存在しない\n');
+      continue;
+    }
 
     const bkCols = bkGroup._collections || {};
-    for (const col of ['sessions','members','config','trash','officialPracticeDays']) {
+    for (const col of ['sessions', 'members', 'config', 'trash', 'officialPracticeDays']) {
       await checkCollection(gid, col, bkCols[col] || []);
     }
     console.log();
@@ -189,7 +214,9 @@ async function main() {
   const bkRtdb = (backup.rtdb || {}).live_sessions || {};
   const fbGids = Object.keys(fbRtdb);
   const bkGids = Object.keys(bkRtdb);
-  console.log(`  Firebase: ${fbGids.length}グループ  BK: ${bkGids.length}グループ  ${fbGids.length === bkGids.length ? '✅' : '⚠️'}`);
+  console.log(
+    `  Firebase: ${fbGids.length}グループ  BK: ${bkGids.length}グループ  ${fbGids.length === bkGids.length ? '✅' : '⚠️'}`
+  );
   for (const gid of fbGids) {
     const fbSessions = Object.keys(fbRtdb[gid] || {});
     const bkSessions = Object.keys(bkRtdb[gid] || {});
@@ -207,7 +234,7 @@ async function main() {
   process.exit(0);
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.error('❌ エラー:', err.message);
   process.exit(1);
 });

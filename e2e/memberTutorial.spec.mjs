@@ -49,7 +49,10 @@ test('個人ログインでも、案内の履歴と分析の見本が出る', as
       .poll(
         () =>
           page.evaluate(() => {
-            const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')?.state || {};
+            const s =
+              JSON.parse(
+                (globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}'
+              )?.state || {};
             return s.activeGroupId || null;
           }),
         { timeout: 60_000, message: 'ログインが通らない（団体IDが入らない）' }
@@ -69,7 +72,9 @@ test('個人ログインでも、案内の履歴と分析の見本が出る', as
   // 前提：この人には自分の記録が1件も無い（あると見本の手順が出ない作り）
   const 自分の記録数 = await page.evaluate(() => {
     try {
-      const s = JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || 'null');
+      const s = JSON.parse(
+        (globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || 'null'
+      );
       const st = (s && s.state) || {};
       const id = st.myMemberId;
       const 名 = st.myMemberName;
@@ -100,7 +105,14 @@ test('個人ログインでも、案内の履歴と分析の見本が出る', as
       .catch(() => false);
     if (!出ている) break;
     踏んだ.push((await 札.textContent()).trim());
-    if (await page.locator('text=見本です').first().isVisible().catch(() => false)) 見本を見た++;
+    if (
+      await page
+        .locator('text=見本です')
+        .first()
+        .isVisible()
+        .catch(() => false)
+    )
+      見本を見た++;
 
     let 進めた = false;
     for (const 文字 of ['とばす', '次へ', '続きを見る', '始める']) {

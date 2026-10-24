@@ -93,7 +93,8 @@ for (;;) {
     console.error('団体を読めませんでした: ' + (j.error.message || ''));
     process.exit(1);
   }
-  for (const d of j.documents || []) 団体たち.push({ id: d.name.split('/').pop(), 名: 中身(d).groupName || '' });
+  for (const d of j.documents || [])
+    団体たち.push({ id: d.name.split('/').pop(), 名: 中身(d).groupName || '' });
   if (!j.nextPageToken) break;
   token = j.nextPageToken;
 }
@@ -108,7 +109,9 @@ async function 使っているか(団体ID) {
       body: JSON.stringify({
         structuredQuery: {
           from: [{ collectionId: 'sessions' }],
-          where: { fieldFilter: { field: { fieldPath: 'date' }, op: 'GREATER_THAN_OR_EQUAL', value: 比べる値 } },
+          where: {
+            fieldFilter: { field: { fieldPath: 'date' }, op: 'GREATER_THAN_OR_EQUAL', value: 比べる値 },
+          },
           select: { fields: [{ fieldPath: 'date' }] },
           limit: 1,
         },
@@ -146,10 +149,16 @@ for (const 団体 of 団体たち) {
 }
 
 console.log(`接続先: ${企画}`);
-console.log(`使っている団体（直近 ${日数} 日に記録がある）: ${使っている.length} 団体（団体は全部で ${団体たち.length}${除く.size ? `、除いた ${除く.size}` : ''}）`);
+console.log(
+  `使っている団体（直近 ${日数} 日に記録がある）: ${使っている.length} 団体（団体は全部で ${団体たち.length}${除く.size ? `、除いた ${除く.size}` : ''}）`
+);
 console.log('\nホームページに載せてよい:');
-console.log(載せる.ホームページ.length ? 載せる.ホームページ.map((x) => '  - ' + x).join('\n') : '  （まだ無し）');
+console.log(
+  載せる.ホームページ.length ? 載せる.ホームページ.map((x) => '  - ' + x).join('\n') : '  （まだ無し）'
+);
 console.log('\n他校へのご案内（DM）に載せてよい:');
-console.log(載せる.他校への案内.length ? 載せる.他校への案内.map((x) => '  - ' + x).join('\n') : '  （まだ無し）');
+console.log(
+  載せる.他校への案内.length ? 載せる.他校への案内.map((x) => '  - ' + x).join('\n') : '  （まだ無し）'
+);
 console.log(`\n載せないと答えた: ${載せない} 団体 札で聞いたがまだ答えていない: ${聞いただけ} 団体`);
 console.log('\n許可の無い団体は、数に入れるだけで名前は出さない。試し用の団体は「除く 団体ID」で外す。');

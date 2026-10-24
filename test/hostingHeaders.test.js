@@ -23,10 +23,13 @@ const 規則たち = 設定.hosting.headers;
  */
 function 当たるか(source, 道) {
   let 式 = '';
-  for (let i = 0; i < source.length; ) {
+  for (let i = 0; i < source.length;) {
     if (source.startsWith('@(', i)) {
       const 閉じ = source.indexOf(')', i);
-      const 候補 = source.slice(i + 2, 閉じ).split('|').map((x) => 当たる式(x));
+      const 候補 = source
+        .slice(i + 2, 閉じ)
+        .split('|')
+        .map((x) => 当たる式(x));
       式 += '(' + 候補.join('|') + ')';
       i = 閉じ + 1;
     } else if (source.startsWith('**/', i)) {
@@ -68,7 +71,10 @@ test('画面の道（MainNavigator の リンクの決まり）は、すべて�
   for (const 道 of 道たち) {
     const 値 = 控えの値(道);
     assert.ok(値.length > 0, 道 + ' に Cache-Control の指定が無い（既定の max-age=3600 になる）');
-    assert.ok(値.every((v) => /no-store/.test(v)), 道 + ' が no-store でない: ' + 値.join(' | '));
+    assert.ok(
+      値.every((v) => /no-store/.test(v)),
+      道 + ' が no-store でない: ' + 値.join(' | ')
+    );
   }
 });
 
@@ -81,7 +87,10 @@ test('入口の / と index.html も、控えさせない', () => {
 
 test('束（名前に中身の印が付く）は、長く控えさせる。画面の道の指定に巻き込まれない', () => {
   const 値 = 控えの値('/_expo/static/js/web/AppEntry-0123456789abcdef.js');
-  assert.ok(値.some((v) => /immutable/.test(v)), '束の指定が変わった: ' + 値.join(' | '));
+  assert.ok(
+    値.some((v) => /immutable/.test(v)),
+    '束の指定が変わった: ' + 値.join(' | ')
+  );
   assert.ok(!値.some((v) => /no-store/.test(v)), '束まで控えさせなくなっている');
 });
 

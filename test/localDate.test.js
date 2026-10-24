@@ -50,13 +50,16 @@ test('朝の練習でも、その日の日付でAIに渡る', () => {
 test('世界標準時で日付を切っている所は、もう無い', () => {
   // toISOString() をそのまま使うのは構わない（機械向けの時刻）。
   // 「年-月-日」だけを取り出す書き方だけを禁じる
-  const 禁じ手 = [/toISOString\(\)\s*\.\s*split\(\s*['"]T['"]\s*\)/, /toISOString\(\)\s*\.\s*slice\(\s*0\s*,\s*10\s*\)/];
+  const 禁じ手 = [
+    /toISOString\(\)\s*\.\s*split\(\s*['"]T['"]\s*\)/,
+    /toISOString\(\)\s*\.\s*slice\(\s*0\s*,\s*10\s*\)/,
+  ];
   const 根 = path.join(__dirname, '..', 'src');
   const 見つけた = [];
   for (const f of fs.readdirSync(根).filter((x) => x.endsWith('.js'))) {
     const 行たち = fs.readFileSync(path.join(根, f), 'utf8').split(/\r?\n/);
     行たち.forEach((行, i) => {
-      if (行.trim().startsWith('*') ||行.trim().startsWith('//')) return;
+      if (行.trim().startsWith('*') || 行.trim().startsWith('//')) return;
       if (禁じ手.some((re) => re.test(行))) 見つけた.push(`${f}:${i + 1}`);
     });
   }

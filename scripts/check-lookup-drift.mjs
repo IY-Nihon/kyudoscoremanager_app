@@ -33,7 +33,8 @@ async function 合鍵を取る() {
   const 設定 = path.join(os.homedir(), '.config', 'configstore', 'firebase-tools.json');
   const 旧設定 = path.join(os.homedir(), '.config', 'configstore', 'update-notifier-firebase-tools.json');
   const 道 = fs.existsSync(設定) ? 設定 : 旧設定;
-  if (!fs.existsSync(道)) throw new Error('Firebase CLI のログイン情報が見つかりません。firebase login を実行してください');
+  if (!fs.existsSync(道))
+    throw new Error('Firebase CLI のログイン情報が見つかりません。firebase login を実行してください');
   const t = (JSON.parse(fs.readFileSync(道, 'utf8')) || {}).tokens || {};
   if (t.access_token && t.expires_at && t.expires_at - Date.now() > 5 * 60 * 1000) return t.access_token;
   if (!t.refresh_token) throw new Error('ログイン情報が古いようです。firebase login をやり直してください');

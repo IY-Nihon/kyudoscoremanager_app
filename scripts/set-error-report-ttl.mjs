@@ -72,7 +72,9 @@ if (いま.error) {
   process.exit(1);
 }
 const 入っている = !!いま.ttlConfig;
-console.log('いまの自動削除: ' + (入っている ? `入っている（${いま.ttlConfig.state || '状態不明'}）` : '入っていない'));
+console.log(
+  'いまの自動削除: ' + (入っている ? `入っている（${いま.ttlConfig.state || '状態不明'}）` : '入っていない')
+);
 
 if (!変える) {
   console.log('');

@@ -53,9 +53,7 @@ const 公開してよい = ['id', 'email'];
 
 // ── 所有者の権限を借りる（firebase login 済みであること）──
 const 設定 = path.join(os.homedir(), '.config', 'configstore', 'firebase-tools.json');
-const refresh = fs.existsSync(設定)
-  ? JSON.parse(fs.readFileSync(設定, 'utf8')).tokens?.refresh_token
-  : null;
+const refresh = fs.existsSync(設定) ? JSON.parse(fs.readFileSync(設定, 'utf8')).tokens?.refresh_token : null;
 if (!refresh) {
   console.error('firebase login が済んでいません');
   process.exit(1);
@@ -83,8 +81,7 @@ const 根 = `https://firestore.googleapis.com/v1/projects/${企画}/databases/(d
 const 値へ = (v) => {
   if (v === null || v === undefined) return { nullValue: null };
   if (typeof v === 'boolean') return { booleanValue: v };
-  if (typeof v === 'number')
-    return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+  if (typeof v === 'number') return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
   return { stringValue: String(v) };
 };
 const 値から = (v) => {
@@ -97,8 +94,7 @@ const 値から = (v) => {
   if ('timestampValue' in v) return v.timestampValue;
   return undefined;
 };
-const 素へ = (fields) =>
-  Object.fromEntries(Object.entries(fields || {}).map(([k, v]) => [k, 値から(v)]));
+const 素へ = (fields) => Object.fromEntries(Object.entries(fields || {}).map(([k, v]) => [k, 値から(v)]));
 
 console.log(`${企画} の group_accounts を見ます（${命令 || '数えるだけ'}）\n`);
 
@@ -123,9 +119,7 @@ let 消した = 0;
 let 何もしない = 0;
 
 for (const { id, 中身 } of 一覧) {
-  const 移すもの = Object.fromEntries(
-    Object.entries(中身).filter(([k]) => !公開してよい.includes(k))
-  );
+  const 移すもの = Object.fromEntries(Object.entries(中身).filter(([k]) => !公開してよい.includes(k)));
   const 鍵たち = Object.keys(移すもの);
 
   if (!鍵たち.length) {
@@ -179,9 +173,7 @@ for (const { id, 中身 } of 一覧) {
     // 囲まずに送ると、その項目だけ黙って消えない（「消しました」と返るのに
     // 残る。実際、日本語の名前の項目だけが残って気づいた）
     const 道にする = (k) => (/^[A-Za-z_][A-Za-z0-9_]*$/.test(k) ? k : '`' + k.replace(/`/g, '\\`') + '`');
-    const 網 = 鍵たち
-      .map((k) => `updateMask.fieldPaths=${encodeURIComponent(道にする(k))}`)
-      .join('&');
+    const 網 = 鍵たち.map((k) => `updateMask.fieldPaths=${encodeURIComponent(道にする(k))}`).join('&');
     const w = await fetch(`${根}/group_accounts/${id}?${網}`, {
       method: 'PATCH',
       headers: 頭,

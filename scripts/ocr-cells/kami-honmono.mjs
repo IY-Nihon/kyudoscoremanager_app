@@ -17,15 +17,23 @@ import { 切り取る } from './manabu.mjs';
 const 元 = 'docs/ocr-samples/1788683956272.jpg';
 // 表の部分（見て決めた）。列の罫線からかたまりの罫線まで
 export const 紙の区画 = { left: 380, top: 528, width: 260, height: 640 };
-const 人数 = 4, 立数 = 5, 立のマス = 4;
+const 人数 = 4,
+  立数 = 5,
+  立のマス = 4;
 
 const 出し先 = 'docs/ocr-samples/cells-kami';
 fs.rmSync(出し先, { recursive: true, force: true });
 for (const d of ['maru', 'batsu']) fs.mkdirSync(`${出し先}/${d}`, { recursive: true });
 
-const { data, info } = await sharp(元).extract(紙の区画).greyscale().raw().toBuffer({ resolveWithObject: true });
+const { data, info } = await sharp(元)
+  .extract(紙の区画)
+  .greyscale()
+  .raw()
+  .toBuffer({ resolveWithObject: true });
 const g = await 紙の格子({ 画素: data, 幅: info.width, 高: info.height }, { 人数, 立数, 立のマス });
-console.log(`列: ${g.列.map((c) => c.中心.toFixed(0)).join(',')}  かたまり: ${g.かたまり.位置.map((v) => v.toFixed(0)).join(',')}`);
+console.log(
+  `列: ${g.列.map((c) => c.中心.toFixed(0)).join(',')}  かたまり: ${g.かたまり.位置.map((v) => v.toFixed(0)).join(',')}`
+);
 
 let 数 = 0;
 for (let c = 0; c < 人数; c++) {

@@ -59,7 +59,9 @@ async function 全部読む(道) {
   const 出 = [];
   let token = '';
   for (;;) {
-    const j = await (await fetch(`${根}/${道}?pageSize=300${token ? `&pageToken=${token}` : ''}`, { headers: 頭 })).json();
+    const j = await (
+      await fetch(`${根}/${道}?pageSize=300${token ? `&pageToken=${token}` : ''}`, { headers: 頭 })
+    ).json();
     if (j.error) throw new Error(`${道} を読めませんでした: ${j.error.message || ''}`);
     for (const d of j.documents || []) 出.push(d);
     if (!j.nextPageToken) break;
@@ -110,7 +112,10 @@ for (const d of 期限切れ) {
   for (const 名 of 下位) {
     const 一覧 = await 全部読む(`deleted_accounts/${id}/${名}`);
     for (const x of 一覧) {
-      const r = await fetch(`https://firestore.googleapis.com/v1/${x.name}`, { method: 'DELETE', headers: 頭 });
+      const r = await fetch(`https://firestore.googleapis.com/v1/${x.name}`, {
+        method: 'DELETE',
+        headers: 頭,
+      });
       if (r.ok) 下位の数++;
       else console.error(`  消せませんでした: ${x.name.split('/documents/').pop()}`);
     }

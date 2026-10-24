@@ -176,7 +176,7 @@ test('分析の比較で使う色が、暗いテーマで消えない', () => {
   const 分析 = ['AnalysisScreen.js', 'AnalysisMemberDetail.js', 'analysisParts.js', 'analysisStyles.js']
     .map((名) => 読む(名))
     .join('\n');
-  const 並び =(分析.match(/const 比較の色たち = \[([^\]]+)\]/) || [])[1];
+  const 並び = (分析.match(/const 比較の色たち = \[([^\]]+)\]/) || [])[1];
   assert.ok(並び, '比較の色たち が見つからない');
   const 色たち = [...並び.matchAll(/'(#[0-9a-fA-F]{6})'/g)].map((m) => m[1].toLowerCase());
   const 本人 = [...分析.matchAll(/色: '(#[0-9a-fA-F]{6})'/g)].map((m) => m[1].toLowerCase());
@@ -210,9 +210,7 @@ test('ログイン画面：使っている名前が、すべて読み込まれ�
     // \b は漢字のうしろでは語の切れ目と見なされない（\w に漢字が入らない）。
     // 「const 結果 = ...」を拾えず、定義済みなのに「読み込んでいない」と
     // 言ってしまっていた。切れ目は自分で書く
-    ...[...素.matchAll(/(?:const|let|var)\s+([\u4e00-\u9fff]{1,4})\s*(?==|,|;|\))/g)].map(
-      (m) => m[1]
-    ),
+    ...[...素.matchAll(/(?:const|let|var)\s+([\u4e00-\u9fff]{1,4})\s*(?==|,|;|\))/g)].map((m) => m[1]),
     // 関数の引数（(メール) => ...）
     ...[...素.matchAll(/\(\s*([\u4e00-\u9fff]{1,4})\s*\)\s*=>/g)].map((m) => m[1]),
     ...[...素.matchAll(/\[\s*([\u4e00-\u9fff]{1,4})\s*,/g)].map((m) => m[1]),

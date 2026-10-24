@@ -26,12 +26,24 @@ const 名簿 = await listAll(projectId, `/groups/${団体}/members`, 持ち主);
 const 部員 = 名簿.find((m) => /^\d{4}$/.test(m.data.personalId || ''));
 if (!部員) throw new Error('個人IDのある部員がいません');
 const しるし = `/member_claims/${匿名.uid}`;
-const 置いた = await setDoc(projectId, しるし, { groupId: 団体, memberId: 部員.id, personalId: 部員.data.personalId, claimedAt: new Date() }, 匿名.idToken);
+const 置いた = await setDoc(
+  projectId,
+  しるし,
+  { groupId: 団体, memberId: 部員.id, personalId: 部員.data.personalId, claimedAt: new Date() },
+  匿名.idToken
+);
 if (置いた.status !== 200) throw new Error('所属のしるしを置けませんでした ' + 置いた.status);
 
 const 許可 = `/groups/${団体}/config/listing`;
 const 仮の設定 = `/groups/${団体}/config/zz確かめ${Date.now().toString(36)}`;
-const 答え = { 載せ方: '地域', 名前: '', 地域: '関東', ホームページ: true, 他校への案内: true, 聞いた文の版: 'ルール確認' };
+const 答え = {
+  載せ方: '地域',
+  名前: '',
+  地域: '関東',
+  ホームページ: true,
+  他校への案内: true,
+  聞いた文の版: 'ルール確認',
+};
 const 結果 = [];
 const 確かめる = (題, 実際, 期待) => {
   const ok = 期待.includes(実際);
@@ -42,10 +54,26 @@ try {
   console.log(`接続先: ${projectId}・団体 ${団体}`);
   確かめる('持ち主が許可を書く', (await setDoc(projectId, 許可, 答え, 持ち主)).status, [200]);
   確かめる('部員が許可を読む', (await req(projectId, 許可, { token: 匿名.idToken })).status, [200]);
-  確かめる('部員が許可を書き換える', (await setDoc(projectId, 許可, { ...答え, 載せ方: '団体名' }, 匿名.idToken)).status, [403]);
-  確かめる('部員が許可を消す', (await req(projectId, 許可, { token: 匿名.idToken, method: 'DELETE' })).status, [403]);
-  確かめる('部員がほかの設定を書く（これまでどおり）', (await setDoc(projectId, 仮の設定, { 確かめ: true }, 匿名.idToken)).status, [200]);
-  確かめる('所属のない匿名が許可を読む', (await req(projectId, 許可, { token: (await signInAnonymously(apiKey)).idToken })).status, [403]);
+  確かめる(
+    '部員が許可を書き換える',
+    (await setDoc(projectId, 許可, { ...答え, 載せ方: '団体名' }, 匿名.idToken)).status,
+    [403]
+  );
+  確かめる(
+    '部員が許可を消す',
+    (await req(projectId, 許可, { token: 匿名.idToken, method: 'DELETE' })).status,
+    [403]
+  );
+  確かめる(
+    '部員がほかの設定を書く（これまでどおり）',
+    (await setDoc(projectId, 仮の設定, { 確かめ: true }, 匿名.idToken)).status,
+    [200]
+  );
+  確かめる(
+    '所属のない匿名が許可を読む',
+    (await req(projectId, 許可, { token: (await signInAnonymously(apiKey)).idToken })).status,
+    [403]
+  );
 } finally {
   await req(projectId, 仮の設定, { token: 持ち主, method: 'DELETE' });
   await req(projectId, 許可, { token: 持ち主, method: 'DELETE' });

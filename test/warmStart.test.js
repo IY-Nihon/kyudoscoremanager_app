@@ -339,7 +339,9 @@ test('クラウドへ同期は、更新日時をサーバーの時刻（日時�
     sessions: [{ id: 's1', title: 's1', date: 今 - 日, lastModified: 今 + 3600000, tags: [], archers: [] }],
     members: [{ id: 'm1', name: 'm1', personalId: '1001', lastModified: 今 }],
     alumni: [{ id: 'g1', name: 'g1', lastModified: 今 }],
-    trash: [{ id: 't1', title: 't1', date: 今 - 2 * 日, deletedAt: 今 - 日, lastModified: 今, pendingDelete: true }],
+    trash: [
+      { id: 't1', title: 't1', date: 今 - 2 * 日, deletedAt: 今 - 日, lastModified: 今, pendingDelete: true },
+    ],
   });
   await store.getState().syncAllToCloud();
   await 待つ(20);
@@ -376,7 +378,10 @@ test('控えに入りきらず古い記録を外したら id を残し、次の�
   assert.ok(控え.sessions.length < 40, '予算を超えても外していない（検査の前提が崩れた）');
   const 外した = 控え.端末から外した記録;
   assert.strictEqual(外した.length, 40 - 控え.sessions.length, '外した記録の id が残っていない');
-  assert.ok(!外した.some((id) => 控え.sessions.find((記録1件) => 記録1件.id === id)), '残した記録まで外した扱い');
+  assert.ok(
+    !外した.some((id) => 控え.sessions.find((記録1件) => 記録1件.id === id)),
+    '残した記録まで外した扱い'
+  );
   // 閉じて開き直した端末（控えから戻したもの）
   store.setState({ sessions: 控え.sessions, 端末から外した記録: 外した });
   const 数え = 読み取りを数える(雲);
@@ -396,11 +401,20 @@ test('id で取り直すのは 30 件ずつ。閉じている間にゴミ箱へ�
   }
   await store.getState().fetchAndOverwriteFromCloud();
   // 65 件を控えから外した端末（閉じている間に s69 がゴミ箱へ移った）
-  const 残す = store.getState().sessions.filter((記録1件) => ['s00', 's01', 's02', 's03', 's04'].includes(記録1件.id));
-  const 外した = store.getState().sessions.map((記録1件) => 記録1件.id).filter((id) => !残す.find((記録1件) => 記録1件.id === id));
+  const 残す = store
+    .getState()
+    .sessions.filter((記録1件) => ['s00', 's01', 's02', 's03', 's04'].includes(記録1件.id));
+  const 外した = store
+    .getState()
+    .sessions.map((記録1件) => 記録1件.id)
+    .filter((id) => !残す.find((記録1件) => 記録1件.id === id));
   const 元 = 雲.値(道.記録, 's69');
   雲.消す(道.記録, 's69');
-  雲.置く(道.ごみ箱, 's69', Object.assign({}, 元, { lastModified: new 偽の日時(今 - 10), deletedAt: new 偽の日時(今 - 10) }));
+  雲.置く(
+    道.ごみ箱,
+    's69',
+    Object.assign({}, 元, { lastModified: new 偽の日時(今 - 10), deletedAt: new 偽の日時(今 - 10) })
+  );
   store.setState({ sessions: 残す, 端末から外した記録: 外した });
   const 数え = 読み取りを数える(雲);
   await store.getState().起動時に取り込む();
@@ -429,20 +443,37 @@ test('取り直す前に控えが書かれても、外した記録の id は消�
   for (const id of ['s1', 's2', 's3']) 雲.置く(道.記録, id, 記録(id, 今 - 日, 今 - 5000));
   await store.getState().fetchAndOverwriteFromCloud();
   // s2・s3 を控えから外した端末を開いた直後（メモリにはまだ無い）
-  store.setState({ sessions: store.getState().sessions.filter((s) => s.id === 's1'), 端末から外した記録: ['s2', 's3'] });
+  store.setState({
+    sessions: store.getState().sessions.filter((s) => s.id === 's1'),
+    端末から外した記録: ['s2', 's3'],
+  });
   const 書く形 = () => store.persist.getOptions().partialize(store.getState());
-  assert.deepStrictEqual(書く形().端末から外した記録.sort(), ['s2', 's3'], '取り直す前に控えを書くと一覧が消える');
+  assert.deepStrictEqual(
+    書く形().端末から外した記録.sort(),
+    ['s2', 's3'],
+    '取り直す前に控えを書くと一覧が消える'
+  );
   // 電波が無い：端末の控えから答える
   雲.状態.控えから答える = true;
   await store.getState().syncSessions();
   await 待つ(20);
-  assert.deepStrictEqual(store.getState().端末から外した記録.sort(), ['s2', 's3'], '控えから答えたのに一覧を空にした');
+  assert.deepStrictEqual(
+    store.getState().端末から外した記録.sort(),
+    ['s2', 's3'],
+    '控えから答えたのに一覧を空にした'
+  );
   // 電波が戻った
   雲.状態.控えから答える = false;
   await store.getState().syncSessions();
   await 待つ(20);
   assert.deepStrictEqual(store.getState().端末から外した記録, [], '雲から取り直したのに一覧が残る');
-  assert.deepStrictEqual(store.getState().sessions.map((s) => s.id).sort(), ['s1', 's2', 's3']);
+  assert.deepStrictEqual(
+    store
+      .getState()
+      .sessions.map((s) => s.id)
+      .sort(),
+    ['s1', 's2', 's3']
+  );
   assert.deepStrictEqual(書く形().端末から外した記録, []);
 });
 

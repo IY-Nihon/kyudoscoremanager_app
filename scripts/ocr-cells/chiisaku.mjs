@@ -37,7 +37,10 @@ async function 本物をよむ(根) {
     const k = 種類.indexOf(札の名[札]);
     if (k < 0) continue;
     for (const 名 of fs.readdirSync(path.join(根, 札))) {
-      const { data, info } = await sharp(path.join(根, 札, 名)).greyscale().raw().toBuffer({ resolveWithObject: true });
+      const { data, info } = await sharp(path.join(根, 札, 名))
+        .greyscale()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
       出.push({ 形: await 形にする(data, info.width, info.height), 札: k });
     }
   }
@@ -92,7 +95,10 @@ if (/chiisaku\.mjs$/.test(process.argv[1] || '')) {
     W2: Float32Array.from(n.W2),
     b2: Float32Array.from(n.b2),
   }));
-  const 見本 = [...(await 本物をよむ('docs/ocr-samples/cells')), ...(await 本物をよむ('docs/ocr-samples/cells-migi'))];
+  const 見本 = [
+    ...(await 本物をよむ('docs/ocr-samples/cells')),
+    ...(await 本物をよむ('docs/ocr-samples/cells-migi')),
+  ];
   console.log(`本物 ${見本.length}枚で測ります（入=${入}）\n`);
   console.log('枚数  そのまま           int8に丸める');
   for (const 枚 of [1, 2, 3, 5, 7]) {
