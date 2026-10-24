@@ -297,7 +297,7 @@ test('間隔は数を出さない（鍵のための受け持ちだけ）', () =>
 test('縦の表の下の欄に出す区切りのチーム名は、欄の高さに入るだけ行を使う', () => {
   const { 区切りの名の字 } = require('../src/teamGrouping');
   const 寸法 = { footerHeight: 95 };
-  // 等倍：11px の字で 6 行（3 行に決め打ちしていたときは「日本大学工科」が「日本大.」に切れた）
+  // 等倍：11px の字で 6 行（3 行に決め打ちしていたときは「〇〇大学工科」が「〇〇大.」に切れた）
   const 等倍 = 区切りの名の字(1, 寸法);
   assert.strictEqual(等倍.fontSize, 11);
   assert.ok(等倍.numberOfLines >= 6, `等倍で ${等倍.numberOfLines} 行`);
