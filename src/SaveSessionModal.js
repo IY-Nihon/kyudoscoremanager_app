@@ -19,6 +19,7 @@ const { IS_IOS } = require('./IS_WEB');
 const { getShadowStyle } = require('./shadowStyle');
 const { normalizeTag, タグの見た目 } = require('./syncRules');
 const { use横流し } = require('./yokoNagashi');
+// タグの候補。団体で定型のタグ（設定のタグの定型）を決めていないときに出す
 const 既定のタグ = [
   '練習試合',
   '正規練習',
@@ -31,6 +32,10 @@ const 既定のタグ = [
   '雨天',
   '強風',
 ];
+/**
+ * 記録画面の「終了・保存」の窓。題・メモ・タグを入れて保存する。
+ * 「統計に含めないで保存」は、確かめの段を 1 つはさんでから保存する
+ */
 const SaveSessionModal = ({ visible, onClose, onSave }) => {
   const {
     setIncludeInStats,
@@ -39,7 +44,6 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
     setCurrentSessionTags,
     toggleCurrentSessionTag,
   } = useストアの一部([
-    'includeInStats',
     'setIncludeInStats',
     'tagTemplates',
     'currentSessionTags',
@@ -52,20 +56,17 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
   // 入力欄には # を付けずに出す（空白区切り。読むときに normalizeTag で # を付ける）
   const [タグの文, タグの文を置く] = React.useState(currentSessionTags.map(タグの見た目).join(' '));
   const [統計を聞いている, 統計を聞いているを置く] = React.useState(false);
-  // 定型文の並びは横に流す。パソコンでは車を回しても動かなかったので、横に読み替える
+  // タグの候補の並びは横に流す。パソコンでは車を回しても動かなかったので、横に読み替える
   const 定型文の横流し = use横流し();
   React.useEffect(() => {
     タグの文を置く(currentSessionTags.map(タグの見た目).join(' '));
   }, [currentSessionTags, visible]);
-  const 統計の答え = (入れる) => {
-    if (入れる) {
-      setIncludeInStats(true);
-      onSave(題.trim(), 覚え書き.trim(), true, currentSessionTags.join(' '));
-      題を置く('');
-      覚え書きを置く('');
-    } else {
-      統計を聞いているを置く(true);
-    }
+  const 保存する = (統計に入れる) => {
+    setIncludeInStats(統計に入れる);
+    onSave(題.trim(), 覚え書き.trim(), 統計に入れる, currentSessionTags.join(' '));
+    題を置く('');
+    覚え書きを置く('');
+    統計を聞いているを置く(false);
   };
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -82,13 +83,7 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
               <View style={styles.separator} />
               <TouchableOpacity
                 style={[styles.mainSaveBtn, { backgroundColor: 色.赤 }]}
-                onPress={() => {
-                  setIncludeInStats(false);
-                  onSave(題.trim(), 覚え書き.trim(), false, currentSessionTags.join(' '));
-                  題を置く('');
-                  覚え書きを置く('');
-                  統計を聞いているを置く(false);
-                }}
+                onPress={() => 保存する(false)}
               >
                 <Text style={styles.mainSaveTxt}>統計に含めず保存</Text>
               </TouchableOpacity>
@@ -153,9 +148,7 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
                       <TouchableOpacity
                         key={タグ}
                         style={[styles.presetTagBtn, 選択中 && styles.presetTagBtnActive]}
-                        onPress={() => {
-                          toggleCurrentSessionTag(整えた);
-                        }}
+                        onPress={() => toggleCurrentSessionTag(整えた)}
                       >
                         <Text style={[styles.presetTagTxt, 選択中 && styles.presetTagTxtActive]}>
                           {タグの見た目(整えた)}
@@ -166,10 +159,10 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
                 </ScrollView>
               </View>
               <View style={styles.separator} />
-              <TouchableOpacity style={styles.mainSaveBtn} onPress={() => 統計の答え(true)}>
+              <TouchableOpacity style={styles.mainSaveBtn} onPress={() => 保存する(true)}>
                 <Text style={styles.mainSaveTxt}>保存</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.secondaryBtn} onPress={() => 統計の答え(false)}>
+              <TouchableOpacity style={styles.secondaryBtn} onPress={() => 統計を聞いているを置く(true)}>
                 <Text style={styles.secondaryTxt}>統計に含めないで保存</Text>
               </TouchableOpacity>
               <TouchableOpacity
