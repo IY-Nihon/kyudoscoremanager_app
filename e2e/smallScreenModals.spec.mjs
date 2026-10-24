@@ -10,8 +10,9 @@
  */
 import { test, expect } from '@playwright/test';
 import { 案内を止める, 画面が出るまで待つ } from './helpers.mjs';
+import { 検証のパスワード } from '../scripts/fb-rest.mjs';
 
-const 合言葉 = 'StgTest!2026';
+const 合言葉 = 検証のパスワード();
 test.use({ storageState: 'e2e/.auth/100001.json' });
 
 /** 設定の画面で管理者モードを入れる（memberInvite.spec.mjs と同じ） */

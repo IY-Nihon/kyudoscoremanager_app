@@ -11,7 +11,7 @@
  * stg 専用（書いて消すため）。
  */
 import { createRequire } from 'node:module';
-import { configFor, signIn, ライブの枝を引く } from './fb-rest.mjs';
+import { configFor, signIn, ライブの枝を引く, 検証のパスワード } from './fb-rest.mjs';
 
 // 判断そのものは実装（src/syncRules.js）をそのまま使う。写すと食い違うため。
 const { 届いた射手に合わせる, normalizeArrowLocations } = createRequire(import.meta.url)(
@@ -25,7 +25,7 @@ if (target !== 'stg') {
 }
 
 const { apiKey, databaseURL } = configFor('stg');
-const PW = 'StgTest!2026';
+const PW = 検証のパスワード();
 const G1 = '100001';
 const 名 = `検証ライブ-${Date.now()}`;
 

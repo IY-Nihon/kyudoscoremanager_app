@@ -14,6 +14,7 @@ import { test, expect } from '@playwright/test';
 // 手順の中身は画面の部品を持たないので、検査からそのまま読める。
 // 「目印があると書いてあるのに、枠が出ない」を突き合わせるために使う
 import { 手順を作る } from '../src/tutorialSteps.js';
+import { 検証のパスワード } from '../scripts/fb-rest.mjs';
 
 /**
  * 押す。スマホの側では本物のタップ（touchstart/touchend）を送る。
@@ -34,7 +35,7 @@ const 団体 = '100005'; // 部員0人。作りたての団体と同じ道筋を
 // ログインは下ごしらえ（auth.setup.mjs）で1回だけ済ませ、その控えを使う。
 // 各検査でログインし直さないので速く、認証の投げすぎで断られることもない
 test.use({ storageState: 'e2e/.auth/100005.json' });
-const 合言葉 = 'StgTest!2026';
+const 合言葉 = 検証のパスワード();
 const 指の目安 = 44; // iOS の指針。Android は 48
 
 /**

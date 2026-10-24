@@ -22,10 +22,11 @@ import {
   画面が変わるまで待つ,
 } from './helpers.mjs';
 import { configFor, signIn, req, fromFields } from '../scripts/fb-rest.mjs';
+import { 検証のパスワード } from '../scripts/fb-rest.mjs';
 
 const 団体 = '100003';
 const 団体のメール = 'stg-c@example.com';
-const 合言葉 = 'StgTest!2026';
+const 合言葉 = 検証のパスワード();
 test.use({ storageState: 'e2e/.auth/100003.json' });
 
 const 設定 = configFor('stg');

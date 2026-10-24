@@ -9,10 +9,10 @@
  *  3. RTDB の live_sessions 以外のノード（appData / users）
  *  4. group_accounts が消えた団体はどうなるか
  */
-import { configFor, signIn, signInAnonymously, req, setDoc, listAll } from './fb-rest.mjs';
+import { configFor, signIn, signInAnonymously, req, setDoc, listAll, 検証のパスワード } from './fb-rest.mjs';
 
 const { apiKey, projectId, databaseURL } = configFor('stg');
-const PW = 'StgTest!2026';
+const PW = 検証のパスワード();
 const G1 = '100001',
   G2 = '100002';
 const stamp = Date.now();

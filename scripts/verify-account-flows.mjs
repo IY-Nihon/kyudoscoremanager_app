@@ -7,7 +7,7 @@
  *  - REG-1 新規団体登録：作成直後の「管理者一覧に載っていない」ユーザーが書く
  *  - REG-4 メール変更：本人だけが変更でき、他団体を乗っ取れないこと
  */
-import { configFor, signIn, signInAnonymously, req, setDoc } from './fb-rest.mjs';
+import { configFor, signIn, signInAnonymously, req, setDoc, 検証のパスワード } from './fb-rest.mjs';
 
 const target = process.argv[2] || 'stg';
 const { apiKey, projectId } = configFor(target);
@@ -19,7 +19,7 @@ if (target === 'prod') {
 const stamp = Date.now();
 const NEWID = String(200000 + (stamp % 90000));
 const NEWMAIL = `stg-new-${stamp}@example.com`;
-const PW = 'StgTest!2026';
+const PW = 検証のパスワード();
 const rows = [];
 const check = (name, expect, actual) => {
   const ok = (Array.isArray(expect) ? expect : [expect]).includes(actual);

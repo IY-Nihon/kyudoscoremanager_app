@@ -17,10 +17,11 @@ import {
   こうなるまで待つ,
   確かに打つ,
 } from './helpers.mjs';
+import { 検証のパスワード } from '../scripts/fb-rest.mjs';
 
 // 記録を作って消すので、途中交代の検査（100007）と取り合わないよう専用の団体
 const 団体 = '100008';
-const 合言葉 = 'StgTest!2026';
+const 合言葉 = 検証のパスワード();
 test.use({ storageState: 'e2e/.auth/100008.json' });
 
 // 3 機種が同じ団体で同時に走るので、題は機種ごとに変える（雲で互いの記録が見える）

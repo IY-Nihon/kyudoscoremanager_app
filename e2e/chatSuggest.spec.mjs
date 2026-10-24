@@ -16,10 +16,11 @@
  */
 import { test, expect } from '@playwright/test';
 import { 案内を止める, 画面が出るまで待つ, 入り口が決まるまで待つ } from './helpers.mjs';
+import { 検証のパスワード } from '../scripts/fb-rest.mjs';
 
 const 団体 = '100001';
 test.use({ storageState: 'e2e/.auth/100001.json' });
-const 合言葉 = 'StgTest!2026';
+const 合言葉 = 検証のパスワード();
 
 async function 入る(page) {
   await 案内を止める(page);

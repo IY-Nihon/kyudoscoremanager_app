@@ -8,6 +8,7 @@ import {
   入り口が決まるまで待つ,
   ますが増えるまで待つ,
 } from './helpers.mjs';
+import { 検証のパスワード } from '../scripts/fb-rest.mjs';
 
 // ライブの検査（100006）とは別の団体を使う。混ざる余地をなくすため。
 // メンバーのいる団体にする。0人の団体だと射手を足すたびにゲストが残る。
@@ -24,7 +25,7 @@ const 団体 = '100003';
 // ログインは下ごしらえ（auth.setup.mjs）で1回だけ済ませ、その控えを使う。
 // 各検査でログインし直さないので速く、認証の投げすぎで断られることもない
 test.use({ storageState: 'e2e/.auth/100003.json' });
-const 合言葉 = 'StgTest!2026';
+const 合言葉 = 検証のパスワード();
 
 /** 触れる画面かどうか。指の画面では click ではなく tap でないと届かない */
 const 触れる画面か = (page) => page.evaluate(() => 'ontouchstart' in window);

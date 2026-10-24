@@ -84,8 +84,7 @@ export const 団体たち = [
   },
 ];
 
-/** 検証専用の合言葉。台帳の団体はすべてこれ */
-export const 合言葉 = 'StgTest!2026';
+// 検証専用の合言葉（台帳の団体はすべてこれ）は倉庫に書かない。scripts/fb-rest.mjs の 検証のパスワード で読む
 
 const 台帳 = new Map(団体たち.map((g) => [g.id, g]));
 

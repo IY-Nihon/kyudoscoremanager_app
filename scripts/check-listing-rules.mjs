@@ -9,7 +9,7 @@
  * （member_claims/{匿名の uid}）だけで、終わったら全部消す。config/listing は e2e/listingConsent.spec.mjs も
  * 前後で消すので、同じ時間に流さない。ほかの文書には触らない（DELETE はこの 3 つだけ）。
  */
-import { configFor, signIn, signInAnonymously, req, setDoc, listAll } from './fb-rest.mjs';
+import { configFor, signIn, signInAnonymously, req, setDoc, listAll, 検証のパスワード } from './fb-rest.mjs';
 
 const { apiKey, projectId } = configFor('stg');
 if (projectId !== 'kyudoscoremanager-stg') {
@@ -17,7 +17,7 @@ if (projectId !== 'kyudoscoremanager-stg') {
   process.exit(1);
 }
 const 団体 = '100003';
-const 持ち主 = await signIn(apiKey, 'stg-c@example.com', 'StgTest!2026');
+const 持ち主 = await signIn(apiKey, 'stg-c@example.com', 検証のパスワード());
 if (!持ち主) throw new Error('検証環境の団体 100003 に入れませんでした');
 
 // 部員：匿名で入り、名簿の 1 人として所属のしるしを置く（アプリの個人ログインと同じ形）

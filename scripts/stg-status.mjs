@@ -9,8 +9,9 @@
  *
  * 読むだけ。何も書き換えない。
  */
-import { configFor, signIn, req } from './fb-rest.mjs';
-import { 団体たち, 合言葉 as PW } from './stg-fixtures.mjs';
+import { configFor, signIn, req, 検証のパスワード } from './fb-rest.mjs';
+import { 団体たち } from './stg-fixtures.mjs';
+const PW = 検証のパスワード();
 
 const { apiKey, projectId } = configFor('stg');
 if (!apiKey || projectId !== 'kyudoscoremanager-stg') {

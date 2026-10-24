@@ -17,8 +17,9 @@
 import { test as setup, expect } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
+import { 検証のパスワード } from '../scripts/fb-rest.mjs';
 
-const 合言葉 = 'StgTest!2026';
+const 合言葉 = 検証のパスワード();
 // 検査が使う団体。増やしたらここにも足す
 const 団体たち = ['100001', '100003', '100005', '100006', '100007', '100008']; // 100002 は個人で入るので下に別で用意
 

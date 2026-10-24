@@ -16,6 +16,7 @@ import { test } from '@playwright/test';
 import { 案内を止める, 自動ロックを入れる } from './helpers.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
+import { 検証のパスワード } from '../scripts/fb-rest.mjs';
 
 test.skip(!process.env.RECORD_USAGE, '動画を撮るときだけ流す');
 test.use({ storageState: 'e2e/.auth/100007.json' });
@@ -158,7 +159,7 @@ async function 下の箱(t, 頭) {
 
 /** 記録表に射手を並べる（撮る前の下ごしらえ） */
 // 検証環境の団体の合言葉（scripts/seed-stg.mjs・e2e/tutorial.spec.mjs と同じ。検証専用）
-const 合言葉 = 'StgTest!2026';
+const 合言葉 = 検証のパスワード();
 
 /** 設定で管理者モードを入れる。映す＝押すところを囲む */
 async function 管理者モードを入れる(t, { 映す = false } = {}) {

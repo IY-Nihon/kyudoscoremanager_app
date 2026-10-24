@@ -7,7 +7,7 @@
  * REG-1〜28 のうち、データ操作として再現できるものを全て通す。
  * stg 専用（データを作って消すため）。
  */
-import { configFor, signIn, signInAnonymously, req, setDoc, listAll } from './fb-rest.mjs';
+import { configFor, signIn, signInAnonymously, req, setDoc, listAll, 検証のパスワード } from './fb-rest.mjs';
 
 const target = process.argv[2] || 'stg';
 if (target !== 'stg') {
@@ -16,7 +16,7 @@ if (target !== 'stg') {
 }
 
 const { apiKey, projectId, databaseURL } = configFor('stg');
-const PW = 'StgTest!2026';
+const PW = 検証のパスワード();
 const G1 = '100001',
   G2 = '100002';
 // ライブは団体IDではなく、団体ごとの推測できない合言葉の枝に置く（src/liveSecret.js）。

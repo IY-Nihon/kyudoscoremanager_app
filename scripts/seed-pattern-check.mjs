@@ -14,7 +14,7 @@
  *   ・4射に満たない端数 → 断り書きが出るか
  *   ・立ちの途中で交代 → どちらの型にも数えないこと
  */
-import { configFor, signIn, setDoc } from './fb-rest.mjs';
+import { configFor, signIn, setDoc, 検証のパスワード } from './fb-rest.mjs';
 
 const { apiKey, projectId } = configFor('stg');
 if (!apiKey || projectId !== 'kyudoscoremanager-stg') {
@@ -23,7 +23,7 @@ if (!apiKey || projectId !== 'kyudoscoremanager-stg') {
 }
 
 const 団体 = '100001';
-const PW = 'StgTest!2026';
+const PW = 検証のパスワード();
 const 人 = (i) => `mem-${団体}-${String(i).padStart(3, '0')}`;
 
 /** 4文字の型を並べて marks にする */

@@ -6,7 +6,7 @@
  * 「正しく使えること」は verify-app-flows.mjs で見ている。
  * ここでは「正しくない使い方が弾かれること」だけを見る。
  */
-import { configFor, signIn, signInAnonymously, req, setDoc, listAll } from './fb-rest.mjs';
+import { configFor, signIn, signInAnonymously, req, setDoc, listAll, 検証のパスワード } from './fb-rest.mjs';
 
 const target = process.argv[2] || 'stg';
 if (target !== 'stg') {
@@ -15,7 +15,7 @@ if (target !== 'stg') {
 }
 
 const { apiKey, projectId } = configFor('stg');
-const PW = 'StgTest!2026';
+const PW = 検証のパスワード();
 const G1 = '100001',
   G2 = '100002';
 const stamp = Date.now();

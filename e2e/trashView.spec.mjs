@@ -13,9 +13,10 @@
  */
 import { test, expect } from '@playwright/test';
 import { 案内を止める, 画面が出るまで待つ, 入り口が決まるまで待つ, 団体で入る } from './helpers.mjs';
+import { 検証のパスワード } from '../scripts/fb-rest.mjs';
 
 const 団体 = '100007';
-const 合言葉 = 'StgTest!2026';
+const 合言葉 = 検証のパスワード();
 test.use({ storageState: 'e2e/.auth/100007.json' });
 
 test('ゴミ箱の記録は、押すと見るだけで開き、戻るとゴミ箱へ戻る', async ({ page }) => {

@@ -28,9 +28,10 @@ import {
   こうなるまで待つ,
   団体で入る,
 } from './helpers.mjs';
+import { 検証のパスワード } from '../scripts/fb-rest.mjs';
 
 const 団体 = '100001';
-const 合言葉 = 'StgTest!2026';
+const 合言葉 = 検証のパスワード();
 test.use({ storageState: 'e2e/.auth/100001.json' });
 
 /** 控えが持てなかったことを表す言い回し。版が変わっても拾えるよう緩く見る */

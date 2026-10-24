@@ -7,7 +7,16 @@
  * ルールはクライアント経由でしか効かないため、Admin SDK ではなく
  * Identity Toolkit で取得した実トークンで検証する。
  */
-import { configFor, signIn, signInAnonymously, req, setDoc, listAll, toFields } from './fb-rest.mjs';
+import {
+  configFor,
+  signIn,
+  signInAnonymously,
+  req,
+  setDoc,
+  listAll,
+  toFields,
+  検証のパスワード,
+} from './fb-rest.mjs';
 
 const [stage, target = 'stg'] = process.argv.slice(2);
 if (!['stage1', 'stage2'].includes(stage)) {
@@ -16,7 +25,7 @@ if (!['stage1', 'stage2'].includes(stage)) {
 }
 
 const { apiKey, projectId } = configFor(target);
-const PW = 'StgTest!2026';
+const PW = 検証のパスワード();
 const G1 = '100001',
   G2 = '100002';
 const EMAIL1 = 'nihonu.kouka@gmail.com';

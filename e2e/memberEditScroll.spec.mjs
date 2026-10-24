@@ -10,9 +10,10 @@
  */
 import { test, expect } from '@playwright/test';
 import { 案内を止める, 画面が出るまで待つ, 入り口が決まるまで待つ, 団体で入る } from './helpers.mjs';
+import { 検証のパスワード } from '../scripts/fb-rest.mjs';
 
 const 団体 = '100002';
-const 合言葉 = 'StgTest!2026';
+const 合言葉 = 検証のパスワード();
 
 /** 設定の画面で管理者モードを入れる（memberInvite.spec.mjs と同じ） */
 async function 管理者モードにする(page) {

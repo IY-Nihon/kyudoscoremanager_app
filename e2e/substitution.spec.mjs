@@ -11,6 +11,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { 案内を止める, 画面が出るまで待つ, 入り口が決まるまで待つ } from './helpers.mjs';
+import { 検証のパスワード } from '../scripts/fb-rest.mjs';
 
 // 鍵の検査（e2e/lock.spec.mjs）と同じ団体を使う。どちらも「終了・保存」を
 // 押さないので、団体の中身には何も書かない（検査は workers:1 で1つずつ動く）。
@@ -23,7 +24,7 @@ const 団体 = '100007';
 // ログインは下ごしらえ（auth.setup.mjs）で1回だけ済ませ、その控えを使う。
 // 各検査でログインし直さないので速く、認証の投げすぎで断られることもない
 test.use({ storageState: 'e2e/.auth/100007.json' });
-const 合言葉 = 'StgTest!2026';
+const 合言葉 = 検証のパスワード();
 
 async function 入る(page) {
   // 案内とお知らせは開く前に止める。開いてから止めて reload すると、

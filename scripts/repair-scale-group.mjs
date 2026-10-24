@@ -10,7 +10,7 @@
  *
  * 検証環境専用。
  */
-import { configFor, signIn, setDoc, req } from './fb-rest.mjs';
+import { configFor, signIn, setDoc, req, 検証のパスワード } from './fb-rest.mjs';
 
 const { apiKey, projectId } = configFor('stg');
 if (!apiKey || projectId !== 'kyudoscoremanager-stg') {
@@ -18,7 +18,7 @@ if (!apiKey || projectId !== 'kyudoscoremanager-stg') {
   process.exit(1);
 }
 
-const PW = 'StgTest!2026';
+const PW = 検証のパスワード();
 // verify-scale-state.mjs と同じ値
 const BIG = '100009';
 const BIG_MAIL = 'stg-big@example.com';

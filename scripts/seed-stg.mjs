@@ -11,7 +11,7 @@
  * bootstrap.rules は 2026-09-24 に倉庫から片付けた。要るときは git の履歴から出す
  *（git show 1f8e0d9:rules/bootstrap.rules）。終わったら必ず firestore.rules を配り直す。
  */
-import { configFor, signIn, setDoc, req } from './fb-rest.mjs';
+import { configFor, signIn, setDoc, req, 検証のパスワード } from './fb-rest.mjs';
 
 const { apiKey, projectId } = configFor('stg');
 if (!apiKey || projectId !== 'kyudoscoremanager-stg') {
@@ -19,7 +19,7 @@ if (!apiKey || projectId !== 'kyudoscoremanager-stg') {
   process.exit(1);
 }
 
-const PW = 'StgTest!2026';
+const PW = 検証のパスワード();
 
 // 団体1は isAdmin() に載っているメール。ルールファイルは本番と共用するため
 // 一覧を変えられず、オーナー本人のアドレスを使う。

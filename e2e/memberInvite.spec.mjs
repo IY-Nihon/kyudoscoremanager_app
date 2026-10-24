@@ -20,9 +20,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { 案内を止める, 画面が出るまで待つ, 入り口が決まるまで待つ, 団体で入る } from './helpers.mjs';
+import { 検証のパスワード } from '../scripts/fb-rest.mjs';
 
 const 団体 = '100002';
-const 合言葉 = 'StgTest!2026';
+const 合言葉 = 検証のパスワード();
 /** 端末の種類ごとのメンバー（団体 100002 の名簿は 部員1〜部員5） */
 const 使うメンバー = { パソコン: '部員5', スマホ: '部員4', iPhone: '部員3' };
 /** この検査が作った合言葉（後片付けで消す） */

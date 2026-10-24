@@ -27,6 +27,21 @@ export function configFor(target) {
   };
 }
 
+/**
+ * 検証環境の試しの口座のパスワード（scripts/stg-fixtures.mjs の台帳の団体と、e2e が入る口座はすべてこれ）。
+ * 公開の倉庫なので書かない。手元は .env.development.local の STG_TEST_PASSWORD の行、
+ * GitHub の E2E は Secrets の STG_ENV（.env.development.local の中身）に同じ行を入れる。
+ * 呼ばれたときに読む（読み込んだだけでは要らない。単体の検査は .env.development.local が無くても通る）
+ */
+export function 検証のパスワード() {
+  const 値 = process.env.STG_TEST_PASSWORD || readEnv('.env.development.local').STG_TEST_PASSWORD;
+  if (!値)
+    throw new Error(
+      '検証環境のパスワードがありません。.env.development.local に STG_TEST_PASSWORD=… の行を足してください（scripts/fb-rest.mjs）'
+    );
+  return 値;
+}
+
 const IDT = 'https://identitytoolkit.googleapis.com/v1/accounts';
 
 /** メール/パスワードでサインイン。無ければ作る */

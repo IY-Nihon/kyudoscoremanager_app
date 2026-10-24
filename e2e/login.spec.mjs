@@ -6,9 +6,10 @@
  * 控えを使わず、素の状態から団体IDと合言葉で入れることを見る。
  */
 import { test, expect } from '@playwright/test';
+import { 検証のパスワード } from '../scripts/fb-rest.mjs';
 
 const 団体 = '100001';
-const 合言葉 = 'StgTest!2026';
+const 合言葉 = 検証のパスワード();
 
 // 控えを使わない。まっさらな端末として始める
 test.use({ storageState: { cookies: [], origins: [] } });

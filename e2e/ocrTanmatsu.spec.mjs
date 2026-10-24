@@ -113,6 +113,7 @@ test('男子の記録用紙（表が 2 つ並ぶ紙）を canvas で読むと、
 // 迷ったマス（確からしさが低いマス）は色付きで出て、
 // タップすると色が消えることを見る
 import { 画面が出るまで待つ, 入り口が決まるまで待つ, 団体で入る } from './helpers.mjs';
+import { 検証のパスワード } from '../scripts/fb-rest.mjs';
 
 test.describe('確認画面', () => {
   test.use({ storageState: 'e2e/.auth/100007.json' });
@@ -152,7 +153,7 @@ test.describe('確認画面', () => {
     await page.goto('/');
     await 画面が出るまで待つ(page);
     await 入り口が決まるまで待つ(page);
-    await 団体で入る(page, '100007', 'StgTest!2026');
+    await 団体で入る(page, '100007', 検証のパスワード());
     await page.waitForFunction(() => window.端末の読み取り != null, null, { timeout: 60_000 });
 
     await page.getByText('画像', { exact: true }).first().click();

@@ -21,9 +21,10 @@ import {
   団体で入る,
   こうなるまで待つ,
 } from './helpers.mjs';
+import { 検証のパスワード } from '../scripts/fb-rest.mjs';
 
 const 団体 = '100007';
-const 合言葉 = 'StgTest!2026';
+const 合言葉 = 検証のパスワード();
 test.use({ storageState: 'e2e/.auth/100007.json' });
 
 /** 設定の画面で管理者モードを入れる（団体パスワードで認証） */

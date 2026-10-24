@@ -8,7 +8,8 @@
 # push のたびには流さない。配信の前に 1 回。
 #
 # ■ 要る Secrets（Settings → Secrets and variables → Actions）
-#   STG_ENV                 … .env.development.local の EXPO_PUBLIC_ の行（検証環境の接続先）
+#   STG_ENV                 … .env.development.local の EXPO_PUBLIC_ の行（検証環境の接続先）と、
+#                             STG_TEST_PASSWORD の行（検証環境の試しの口座のパスワード。倉庫には書かない。scripts/fb-rest.mjs）
 #   STG_SERVICE_ACCOUNT_KEY … 検証環境（kyudoscoremanager-stg）のサービスアカウントの鍵（JSON）。
 #                             ライブの後片付け（firebase CLI）と、招待リンクの雲の確かめのトークンに使う
 # Secrets は fork からの pull request には渡らない。ここは workflow_dispatch だけなので、書ける人しか流せない。

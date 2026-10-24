@@ -26,7 +26,7 @@ import {
   serverTimestamp,
   setDoc,
 } from 'firebase/firestore';
-import { configFor } from './fb-rest.mjs';
+import { configFor, 検証のパスワード } from './fb-rest.mjs';
 
 const target = process.argv[2] || 'stg';
 if (target !== 'stg') {
@@ -37,7 +37,7 @@ if (target !== 'stg') {
 const { apiKey, projectId } = configFor(target);
 const GID = '100001';
 const EMAIL = 'nihonu.kouka@gmail.com';
-const PW = 'StgTest!2026';
+const PW = 検証のパスワード();
 
 // ── 実装から並べ替え関数をそのまま持ってくる ────────────────
 // 以前はストアの本文から正規表現で切り出していたが、純粋な関数を
