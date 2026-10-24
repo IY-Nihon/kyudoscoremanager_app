@@ -15,8 +15,6 @@ const 設定 = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 const firebaseApp = app.getApps().length > 0 ? app.getApp() : app.initializeApp(設定);
-console.log('[db] Firebase config API Key:', 設定.apiKey ? 'FOUND' : 'MISSING');
-console.log('[db] Firebase App:', firebaseApp ? 'INITIALIZED' : 'NULL');
 setupAppCheck(firebaseApp);
 // オフラインの控えは、作るときに渡す。
 //
@@ -39,7 +37,6 @@ const firestore = (() => {
     return Firestore.getFirestore(firebaseApp);
   }
 })();
-console.log('[db] Firestore Instance:', firestore ? 'CREATED' : 'NULL');
 const auth = FirebaseAuth.getAuth(firebaseApp);
 // 認証から届くメール（パスワードの再設定・メールアドレスの確認）を日本語にする。
 // 指定しないと、Firebase の既定の雛形（英語）で届く（2026-09-24 に本番の設定で確かめた）
@@ -56,7 +53,8 @@ const rtdb = (() => {
 exports.db = firestore;
 exports.auth = auth;
 exports.rtdb = rtdb;
-console.log('[db] exports.db set:', exports.db ? 'OK' : 'FAILED');
+/** ログインの手（src/groupLogin.js）に渡す道具。手は道具を受け取るので、検査では偽物を渡せる */
+exports.雲の道具 = () => ({ Firestore, FirebaseAuth, db: firestore, auth });
 // オフライン保存が効いているか。効いていないと、電波の無い場所で保存した
 // 記録は、画面を閉じた時点で送信待ちごと失われる。画面に出すために持つ。
 // 'ok' / 'multipleTabs' / 'unsupported' / 'error' のいずれか。
