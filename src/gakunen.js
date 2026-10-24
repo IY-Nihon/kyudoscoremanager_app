@@ -86,6 +86,17 @@ const 始まりの月を整える = (月) => {
   return Number.isInteger(数) && 数 >= 1 && 数 <= 12 ? 数 : 4;
 };
 
+/** 自分で決める学年の名前の長さの上限（札に収まる長さ） */
+const 学年の名前の上限 = 8;
+
+/** 自分で決める学年の名前を整える（前後の空白を落とし、続く空白を 1 つに、長すぎる分を切る） */
+function 学年の名前を整える(名前) {
+  return String(名前 || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 学年の名前の上限);
+}
+
 /** 自分で決める学年（[{ value, name }]）を整える。値は 1 以上の整数で重ならない。名前は空でない */
 function 自分の学年たち(値) {
   if (!Array.isArray(値)) return [];
@@ -93,10 +104,7 @@ function 自分の学年たち(値) {
   return 値
     .map((学年) => ({
       value: Number(学年 && 学年.value),
-      name: String((学年 && 学年.name) || '')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .slice(0, 8),
+      name: 学年の名前を整える(学年 && 学年.name),
     }))
     .filter((学年) => Number.isInteger(学年.value) && 学年.value >= 1 && 学年.name)
     .filter((学年) => {
@@ -521,6 +529,8 @@ function 進級待ちの年(今日, 前に進級した年, 進級の確認, 始�
 }
 
 module.exports = {
+  学年の名前の上限,
+  学年の名前を整える,
   種類たち,
   既定の種類,
   在籍,
