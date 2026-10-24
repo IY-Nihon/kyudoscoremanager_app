@@ -1382,3 +1382,10 @@ if (typeof globalThis !== 'undefined') {
     useScoreStore.setState({ 進級待ちの年: 場.検査の進級待ちの年, 進級の窓を閉じた: false });
   };
 }
+
+// 【一時の調べ・2026-10-24】名簿が空になった瞬間の呼び出し元を残す（検査が __名簿の見張り を立てたときだけ）
+useScoreStore.subscribe((今, 前) => {
+  if (!globalThis.__名簿の見張り) return;
+  if ((前.members || []).length > 0 && (今.members || []).length === 0)
+    (globalThis.__名簿が空になった = globalThis.__名簿が空になった || []).push(new Error('名簿が空に').stack);
+});
