@@ -1,6 +1,6 @@
 # 弓道部的中ノート
 
-大学弓道部の**的中（○×）の記録・分析・出欠**を、部員みんなの端末で共有するアプリです。
+弓道部や弓道の団体（中学・高校・大学・一般の会）の**的中（○×）の記録・分析・出欠**を、部員みんなの端末で共有するアプリです。
 的場に置いた 1 台で記録しながら、ライブで全員のスマホに同じ盤面が映ります。紙の記録簿や
 ホワイトボードをそのまま写真に撮って、○×を読み取ることもできます。
 
@@ -20,15 +20,15 @@
 |---|---|
 | **記録** | 立ち順に並べた盤面で ○× を押すだけ。間隔・計・総計、途中交代、矢所（的のどこに当たったか）、鍵（押し間違い防止）、取り消し・やり直し |
 | **ライブ** | 1 台で記録すると、同じ団体の全員の端末に即時に映る。リンクや QR で部外の人にも見せられる（見るだけ） |
-| **写真から読む** | 板・紙・手書きのノートの記録を撮ると、名前と表の形を Gemini が、○× を端末の網（自前で学習）が読む。迷ったマスは黄色で知らせる。板の名前は名簿と照合して部員に寄せる |
+| **写真から読む** | 板・紙・手書きのノートの記録を撮ると、名前と表の形を Gemini が、○× を端末の網（自前で学習）が読む。迷ったマスは黄色で知らせる。板の名前は名簿と照合して部員に寄せる。ホワイトボードの立ち順表と、練習の予定表（写真・PDF）も読む |
 | **履歴・分析** | 日ごとの記録、タグで絞り込み、個人と団体の的中率の推移、順位、期間の比較 |
-| **出欠** | 記録から出欠を自動で付け、月ごとのカレンダーで見る |
+| **出欠** | 正規練習日を決めると、記録に出ていたかで出席率を数える。練習日は予定表の写真から入れられる（団体ログインだけ） |
 | **AI の相談役** | 記録を読んだうえで「今月の調子は？」に答えるチャット |
-| **団体と個人** | 団体の合言葉で入る記録係と、個人 ID で入る部員の 2 つの入り方。部員は自分の記録だけを見る |
+| **団体と個人** | 団体 ID とパスワードで入る記録係と、個人 ID（4 桁）か招待リンクで入る部員の 2 つの入り方。部員は自分の記録だけを見る |
 
 ## 作りの要点
 
-- **Expo / React Native Web** の 1 つのコードで Web（PWA）と iOS を配信。状態は zustand、同期は Firebase（Firestore・Realtime Database）
+- **Expo / React Native Web** の 1 つのコードで Web（PWA）として配信している（iOS アプリの組み立て〔EAS Build〕も用意してあるが、App Store には出していない）。状態は zustand、同期は Firebase（Firestore・Realtime Database）
 - **オフライン優先**：手元に確定してから雲へ送る。通信が切れても記録は止まらず、つながったときに突き合わせる
 - **○× の読み取りは端末の中で**：マスを畳み込みの網（`scripts/ocr-cells/omomi-tatami.json`、描いた見本と本物の写真で学習・int8）で読み、迷ったマスだけ写真で学習した MobileNet 2 枚（`omomi-mobilenet.bin`、読み取りのときだけ取る）と混ぜる（詳しくは `scripts/ocr-cells/cnn/README.md`）。Gemini には ○× を書かせず、名前・表の形・日付だけ答えさせる（`src/ocrPrompts.js` の 記録の形の指示文。端末が読めなかったときだけ ○× つきで読み直す）。鍵は Cloudflare Workers の中継が持ち、アプリには置かない
 - **検査**：単体 1180 件あまり（`node --test`。push のたびに GitHub Actions の「検査」で流れる）と、3 機種の Playwright e2e（検証用の Firebase 企画に対して本物の流れを通す。手元か、GitHub Actions の「E2E」で 20 台に分けて流す）
@@ -106,13 +106,13 @@ Gemini の鍵はアプリの束に入れると誰でも取り出せる。Cloudfl
 | Web対応 | react-native-web 0.21 (Metro bundler, `output: single`) |
 | 状態管理 | zustand 5 (`src/useScoreStore.js`) |
 | ナビゲーション | React Navigation 7 (bottom-tabs) |
-| バックエンド | Firebase 13 — Auth / Firestore / Realtime Database / Storage |
+| バックエンド | Firebase 13 — Auth / Firestore / Realtime Database / App Check（写真などのファイルは Firebase に置かない） |
 | AI | Google Gemini API (AIチャットボット・写真の読み取りの名前と表の形)。鍵はアプリに置かず、Cloudflare Workers の中継（別フォルダー `kyudo-chukei`、`src/geminiChukei.js` から呼ぶ）が付ける |
 
 ## 画面構成
 
 `src/MainNavigator.js` が定義する6タブ + オーバーレイのAIチャットボット。
-「出欠」タブは `activeRole === 'group'`（団体ログイン）のときのみ表示されます。個人ログインの「メンバー」は、一覧ではなく自分の情報（弓具・招待なし）の画面です。
+「出欠」タブは `activeRole === 'group'`（団体ログイン）のときのみ表示されます。個人ログインの「メンバー」は、一覧ではなく自分の情報と弓具の画面です（名前は変えられず、招待リンクも出さない）。
 ライブのリンクで来た人（来客）には「記録」だけを出します。
 
 | タブ | 実装ファイル |
@@ -260,6 +260,10 @@ npm install
 cp .env.example .env   # 各値を実際のFirebase設定に置き換える
 npm start
 ```
+
+開発（`npm start`・`npm run web`）と検証環境向けの束・E2E・検証の道具は、`.env.development.local`（倉庫に入れない）の
+検証環境（`kyudoscoremanager-stg`）の接続先を使う。E2E と道具が入る試しの口座のパスワードも、同じファイルの
+`STG_TEST_PASSWORD` の行に置く（公開の倉庫なので書かない。`scripts/fb-rest.mjs` の `検証のパスワード`）。
 
 ## デプロイ
 
@@ -413,6 +417,7 @@ node scripts/check-marks-length.mjs prod
 | `ops:reports` | 届いた不具合の便りを読む |
 | `ops:prune-live` / `:run` | 古い形のライブの枝を片付ける |
 | `ops:prune-reports` / `:run` | 期限の過ぎた不具合の便りを消す（月に一度） |
+| `ops:prune-inquiries` / `:run` | 受け取りから日が経ったお問い合わせを消す（既定は 180 日。プライバシーポリシー第18条第4項） |
 | `ops:expiry-rules` | 共有リンクの期限が決まりの側で効いているか（検証環境に当てる） |
 | `ops:scan-japanese` | 画面に直に書かれた日本語の数（多言語化の残り） |
 
@@ -454,7 +459,7 @@ patches/               patch-package 用の node_modules パッチ
 test/                  単体検査（node --test。npm test で走る）
 e2e/                   本物のブラウザでの検査（Playwright。npm run e2e）
 rules/                 決まりの控え（bootstrap / stage1 / stage2 / rollback）
-docs/                  法務文書（legal/）、配信の手順（deploy/）、画面写真（images/）、OCR の見本（ocr-samples/）。archive/plans/ は昔の計画書
+docs/                  法務文書（legal/）、配信の手順（deploy/）、画面写真（images/）、OCR の見本（ocr-samples/）、仕様書（plans/）。archive/plans/ は昔の計画書
 .github/workflows/     検査（push のたび）・E2E（押したときだけ、20 台に分ける）・EAS Build (iOS)
 *.rules, firebase.json Firebase の設定・セキュリティルール
 ```
@@ -596,7 +601,7 @@ npm run ops:expiry-rules
 書きかけの記録があるときは、参加する前に知らせます（ふつうの参加と同じ扱い）。
 
 配った先の人は、記録中の的中・氏名・立ち順を見られます。
-プライバシーポリシー第16条(4)に、そのことを書いてあります。
+プライバシーポリシー第16条第3号(6)に、そのことを書いてあります。
 
 ## 多言語化（準備まで）
 
@@ -617,7 +622,7 @@ npm run ops:scan-japanese
 
 ### 1画面ずつ移す
 
-2,389か所を一度に移すと、差分が大きすぎて見きれません。辞書は画面・部品
+2,400か所あまりを一度に移すと、差分が大きすぎて見きれません。辞書は画面・部品
 ごとに分けてあり（`src/messages/a11y.js`、`src/messages/live.js` …）、
 1画面ぶんの差分は次の3つだけになります。
 
@@ -755,15 +760,13 @@ e2e では `(globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-s
 
 どちらも1500〜3000ミリ秒の待ちが覆っていて、**検査は通っていました**。
 
-### 使う道具（`e2e/live.spec.mjs`）
+### 使う道具（`e2e/helpers.mjs`）
 
 | 道具 | いつ使うか |
 |---|---|
 | `こうなるまで待つ(読む, 良いか)` | 台をまたぐ同期。速いときは1秒足らずで届く |
-| `印がつくまで待つ(page, 鍵)` | ○を入れた直後の確かめ |
 | `確かに打つ(欄, 文字)` | 入力欄。打って、入ったか確かめ、違えば打ち直す |
 | `画面が出るまで待つ(page)` | `goto` / `reload` のあと |
-| `確かに打つ` | 入力欄。打って、入ったか確かめ、違えば打ち直す |
 | `案内を止める` / `案内をあえて出す` | 開く前に案内を止める／あえて出す |
 | `入り口が決まるまで待つ` | ログイン欄が出るか、もう入っているかが決まるまで |
 | `ますが増えるまで待つ` / `画面が変わるまで待つ` / `横並びになるまで待つ` | 画面の変化 |
