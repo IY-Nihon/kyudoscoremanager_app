@@ -6,6 +6,17 @@ const { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } = require(
 const { getShadowStyle } = require('./shadowStyle');
 const DateFns = require('date-fns');
 const 一段の高さ = 44;
+// 選んだ段（真ん中）の上下に空ける段の数。最初と最後の値も真ん中まで回せるように
+const 上下の段 = 2;
+/**
+ * 年と月を替える。日はその月の末日までに収める。date-fns の setYear は収めないので、
+ * 2/29 のまま年を替えると 3/1 になっていた（setMonth は収める）
+ */
+const 年月を替える = (日, 年, 月) => {
+  const 一日 = DateFns.setMonth(DateFns.setYear(DateFns.setDate(日, 1), 年), 月);
+  return DateFns.setDate(一日, Math.min(DateFns.getDate(日), DateFns.getDaysInMonth(一日)));
+};
+/** 回して選ぶ列（年・月・日）。止まった段の値を選ぶ。押しても選べる */
 const 回す選択 = ({ data, value, onValueChange, label, flex = 1 }) => {
   const 流しのref = React.useRef(null);
   const 止まりの札 = React.useRef(null);
@@ -48,7 +59,7 @@ const 回す選択 = ({ data, value, onValueChange, label, flex = 1 }) => {
           }}
           onScrollBeginDrag={() => 指で動かし中を置く(true)}
           onMomentumScrollBegin={() => 指で動かし中を置く(true)}
-          contentContainerStyle={{ paddingVertical: 一段の高さ * Math.floor(2.5) }}
+          contentContainerStyle={{ paddingVertical: 一段の高さ * 上下の段 }}
         >
           {data.map((項目, 番) => (
             <TouchableOpacity
@@ -70,6 +81,7 @@ const 回す選択 = ({ data, value, onValueChange, label, flex = 1 }) => {
     </View>
   );
 };
+/** 日付を選ぶ窓（下から出る）。年・月・日を回して選び、「完了」で渡す */
 const CustomCalendarModal = ({ visible, onClose, selectedDate, onSelectDate, title = '日付を選択' }) => {
   const [選んでいる日, 選んでいる日を置く] = React.useState(new Date(selectedDate));
   React.useEffect(() => {
@@ -116,43 +128,29 @@ const CustomCalendarModal = ({ visible, onClose, selectedDate, onSelectDate, tit
               label="年"
               data={年の一覧}
               value={DateFns.getYear(選んでいる日)}
-              onValueChange={(年) => {
-                const 直した日 = DateFns.setYear(選んでいる日, 年);
-                const 日数 = DateFns.getDaysInMonth(直した日);
-                if (DateFns.getDate(直した日) > 日数) 選んでいる日を置く(DateFns.setDate(直した日, 日数));
-                else 選んでいる日を置く(直した日);
-              }}
+              onValueChange={(年) =>
+                選んでいる日を置く(年月を替える(選んでいる日, 年, DateFns.getMonth(選んでいる日)))
+              }
               flex={1.5}
             />
             <回す選択
               label="月"
               data={月の一覧}
               value={DateFns.getMonth(選んでいる日) + 1}
-              onValueChange={(月) => {
-                const 直した日 = DateFns.setMonth(選んでいる日, 月 - 1);
-                const 日数 = DateFns.getDaysInMonth(直した日);
-                if (DateFns.getDate(直した日) > 日数) 選んでいる日を置く(DateFns.setDate(直した日, 日数));
-                else 選んでいる日を置く(直した日);
-              }}
+              onValueChange={(月) =>
+                選んでいる日を置く(年月を替える(選んでいる日, DateFns.getYear(選んでいる日), 月 - 1))
+              }
               flex={1}
             />
             <回す選択
               label="日"
               data={日の一覧}
               value={DateFns.getDate(選んでいる日)}
-              onValueChange={(日) => {
-                選んでいる日を置く(DateFns.setDate(選んでいる日, 日));
-              }}
+              onValueChange={(日) => 選んでいる日を置く(DateFns.setDate(選んでいる日, 日))}
               flex={1}
             />
           </View>
-          <TouchableOpacity
-            style={styles.todayBtn}
-            onPress={() => {
-              const 今日 = new Date();
-              選んでいる日を置く(今日);
-            }}
-          >
+          <TouchableOpacity style={styles.todayBtn} onPress={() => 選んでいる日を置く(new Date())}>
             <Text style={styles.todayBtnText}>今日に設定</Text>
           </TouchableOpacity>
         </View>
@@ -208,7 +206,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 4,
     right: 4,
-    top: 88,
+    top: 一段の高さ * 上下の段,
     height: 一段の高さ,
     backgroundColor: 色.地,
     borderRadius: 8,
