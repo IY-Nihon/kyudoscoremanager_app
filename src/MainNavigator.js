@@ -39,6 +39,17 @@ const リンクの決まり = {
   },
 };
 const Tab = BottomTabs.createBottomTabNavigator();
+/** タブに出す名前（tabBarLabel・title・画面の名前の順に） */
+const タブの名前 = (descriptors, 道) => {
+  const { options } = descriptors[道.key];
+  return String(
+    options.tabBarLabel !== undefined
+      ? options.tabBarLabel
+      : options.title !== undefined
+        ? options.title
+        : 道.name
+  );
+};
 /** 今いないタブの文字と絵の色 */
 const タブの字の色 = 基本色.文字_三;
 /** 今いるタブの文字と絵の色 */
@@ -65,7 +76,6 @@ const styles = StyleSheet.create({
     height: 54,
     backgroundColor: 基本色.白,
   },
-  leftActions: { display: 'none' },
   tabItems: { flexDirection: 'row', backgroundColor: 基本色.地_濃い, borderRadius: 24, padding: 3 },
   // 左右の余白は、帯の幅に合わせて並べ方（tabBarLayout）が決める
   tabButton: {
@@ -101,8 +111,6 @@ const styles = StyleSheet.create({
   },
   tabTextActive: { fontWeight: 'bold', color: 基本色.黒 },
   tabButtonHover: { backgroundColor: 'rgba(255, 255, 255, 0.5)' },
-  tabTextHoverable: {},
-  rightActions: { display: 'none' },
   // 絵が無いタブ（今は無い）の印。名前のとなりに小さく出す
   badgeDotBesideText: {
     width: 6,
@@ -132,53 +140,30 @@ const 下の帯 = React.memo(({ state, descriptors, navigation: nav }) => {
   // 帯そのものの幅。最初の 1 コマは窓の幅で見積もり、測れたら測った幅に直す
   // （web は画面の最大幅が 1000px で、窓より狭いことがある）
   const [測った幅, 測った幅を置く] = React.useState(null);
-  const 名前たち = state.routes.map((道) => {
-    const { options } = descriptors[道.key];
-    const 字 =
-      options.tabBarLabel !== undefined
-        ? options.tabBarLabel
-        : options.title !== undefined
-          ? options.title
-          : 道.name;
-    return String(字);
-  });
+  const 名前たち = state.routes.map((道) => タブの名前(descriptors, 道));
   const 並べ方 = 並べ方を決める({ 名前たち, 幅: 測った幅 ?? 窓.width, 拡大: 窓.fontScale || 1 });
   const 絵だけ = 並べ方.型 === '絵だけ';
   const 履歴のタグ = useScoreStore((状態) => 状態.historySelectedTags || []);
   const 分析のタグ = useScoreStore((状態) => 状態.analysisSelectedTags || []);
   const 記録のタグ = useScoreStore((状態) => 状態.currentSessionTags || []);
-  const X要素 = IS_WEB ? View : ReactNativeSafeAreaContext.SafeAreaView;
+  // タグで絞っているタブ（印を出す）
+  const 絞っているタグ = { 記録: 記録のタグ, 履歴: 履歴のタグ, 分析: 分析のタグ };
+  const 外の箱 = IS_WEB ? View : ReactNativeSafeAreaContext.SafeAreaView;
   return (
-    <X要素 style={[styles.tabBarWrapper, IS_WEB && { paddingTop: 0 }]} edges={['top', 'left', 'right']}>
+    <外の箱 style={[styles.tabBarWrapper, IS_WEB && { paddingTop: 0 }]} edges={['top', 'left', 'right']}>
       <View
         style={[styles.tabBarContainer, { height: 60 }]}
         onLayout={(出来事) => 測った幅を置く(Math.round(出来事.nativeEvent.layout.width))}
       >
-        <View style={styles.leftActions} />
         <View style={styles.tabItems} role="tablist">
           {state.routes.map((道, 番) => {
-            const { options } = descriptors[道.key];
-            const 字 =
-              options.tabBarLabel !== undefined
-                ? options.tabBarLabel
-                : options.title !== undefined
-                  ? options.title
-                  : 道.name;
+            const 字 = 名前たち[番];
             const 今ここ = state.index === 番;
             const 絵がある = 絵のある画面.includes(道.name);
             // 絵だけのときは、今いるタブだけ名前を出す。絵が無いタブは名前を出さないと分からない
             const 名前を出す = !絵だけ || 今ここ || !絵がある;
             const 色 = 今ここ ? 今のタブの字の色 : タブの字の色;
-            let 印を出す = false;
-            if (道.name === '記録' && 記録のタグ.length > 0) {
-              印を出す = true;
-            }
-            if (道.name === '履歴' && 履歴のタグ.length > 0) {
-              印を出す = true;
-            }
-            if (道.name === '分析' && 分析のタグ.length > 0) {
-              印を出す = true;
-            }
+            const 印を出す = (絞っているタグ[道.name] || []).length > 0;
             return (
               <Pressable
                 key={番}
@@ -221,7 +206,6 @@ const 下の帯 = React.memo(({ state, descriptors, navigation: nav }) => {
                         styles.tabText,
                         絵がある && styles.tabTextBesideIcon,
                         今ここ && styles.tabTextActive,
-                        !今ここ && styles.tabTextHoverable,
                       ]}
                     >
                       {字}
@@ -238,17 +222,10 @@ const 下の帯 = React.memo(({ state, descriptors, navigation: nav }) => {
             );
           })}
         </View>
-        <View style={styles.rightActions} />
       </View>
-    </X要素>
+    </外の箱>
   );
 });
-const RecordScreenComp = (props) => <RecordScreen {...props} />;
-const HistoryScreenComp = (props) => <HistoryScreen {...props} />;
-const AnalysisScreenComp = (props) => <AnalysisScreen {...props} />;
-const MemberScreenComp = (props) => <MemberScreen {...props} />;
-const AttendanceScreenComp = (props) => <AttendanceScreen {...props} />;
-const SettingsScreenComp = (props) => <SettingsScreen {...props} />;
 const MainNavigator = () => {
   const 役割 = useScoreStore((状態) => 状態.activeRole);
   // 共有リンクだけで来ている人。団体のデータを何も持っていないので、
@@ -273,16 +250,16 @@ const MainNavigator = () => {
       }}
     >
       <Tab.Navigator tabBar={帯を描く} screenOptions={{ headerShown: false }}>
-        <Tab.Screen name="記録" component={RecordScreenComp} />
-        {!来客 && <Tab.Screen name="履歴" component={HistoryScreenComp} />}
-        {!来客 && <Tab.Screen name="分析" component={AnalysisScreenComp} />}
+        <Tab.Screen name="記録" component={RecordScreen} />
+        {!来客 && <Tab.Screen name="履歴" component={HistoryScreen} />}
+        {!来客 && <Tab.Screen name="分析" component={AnalysisScreen} />}
         {/* 個人ログインでも出す。自分の弓具を登録・編集するための入口で、 */
         /* ここが無いと画面まで辿り着けない（権限だけ許しても届かなかった）。 */
         /* 一覧で他人を開こうとすると MemberScreen 側が断り、弓具の欄も */
         /* 自分のぶんしか出さない */}
-        {!来客 && <Tab.Screen name="メンバー" component={MemberScreenComp} />}
-        {!来客 && 役割 === 'group' && <Tab.Screen name="出欠" component={AttendanceScreenComp} />}
-        {!来客 && <Tab.Screen name="設定" component={SettingsScreenComp} />}
+        {!来客 && <Tab.Screen name="メンバー" component={MemberScreen} />}
+        {!来客 && 役割 === 'group' && <Tab.Screen name="出欠" component={AttendanceScreen} />}
+        {!来客 && <Tab.Screen name="設定" component={SettingsScreen} />}
       </Tab.Navigator>
       {/* 来客には出さない。相談役は団体の記録を見て答える作りで、 */
       /* 案内は団体の画面を順に指してまわる。どちらも来客には中身が無い */}
