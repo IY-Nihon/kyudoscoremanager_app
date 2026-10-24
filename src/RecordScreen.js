@@ -1997,9 +1997,6 @@ const RecordScreen = () => {
         shotIndex={activeArrowLocationEdit?.shotIndex}
         currentMark={activeArrowLocationEdit?.currentMark}
         arrowLocations={activeArrowLocationEdit?.arrowLocations}
-        // 矢所を押しただけでは閉じない。置いた場所を見て、ずれていれば
-        // 置き直せるようにするため。閉じるのは「完了」を押したとき
-        onSave={() => {}}
       />
       {/* 区切りにチーム名を付ける窓。リーグで大学名を出すため。 */
       /* 区切りより左（並びでは後ろ）がそのチームになるので、 */

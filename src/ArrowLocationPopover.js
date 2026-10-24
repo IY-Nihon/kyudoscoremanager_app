@@ -1,7 +1,9 @@
 import iroの組 from './iro.js';
 const { 色 } = iroの組;
 /**
- * 矢所記録入力用ポップアップモーダルコンポーネント
+ * 矢所を置く窓。的の上で指（マウス）を動かすと点が付いてきて、離したところに置く。
+ * ○ は的の内側、× は外側にだけ置ける。置いても閉じない（置いた場所を見て、ずれていれば置き直せるように）。
+ * 閉じるのは「完了」か外を押したとき。矢所はその人の列の arrowLocations に、的の中心を 0・半径を 1 とした座標で入る
  */
 import { useRef, useState } from 'react';
 import { View, Text, Modal, TouchableOpacity, Pressable, Alert, Dimensions, StyleSheet } from './rn';
@@ -11,29 +13,21 @@ import { useストアの一部 } from './storeSlice';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// 漢数字・丸数字の変換テーブル（1〜8射用）
-const CIRCLED_NUMBERS = [
-  '①',
-  '②',
-  '③',
-  '④',
-  '⑤',
-  '⑥',
-  '⑦',
-  '⑧',
-  '⑨',
-  '⑩',
-  '⑪',
-  '⑫',
-  '⑬',
-  '⑭',
-  '⑮',
-  '⑯',
-  '⑰',
-  '⑱',
-  '⑲',
-  '⑳',
+// 射の番号の丸数字（1〜20 射。それより多いときは数字のまま）
+const CIRCLED_NUMBERS = [...'①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳'];
+// 的の種類と、選ぶボタンの名前
+const 的の種類たち = [
+  ['kasumi36', '霞的(尺二寸)'],
+  ['hoshi36', '星的(尺二寸)'],
+  ['hoshi24', '星的(八寸)'],
 ];
+// 霞的の輪の直径（外の黒の内側に、白と黒を交互に重ねる）
+const 霞的の輪 = [200, 160, 120, 80, 40];
+/** いまの画面の巻いた量（ページの座標と、窓の中の座標を行き来するのに使う） */
+const 巻いた量 = () => ({
+  x: window.scrollX ?? window.pageXOffset ?? 0,
+  y: window.scrollY ?? window.pageYOffset ?? 0,
+});
 
 export const ArrowLocationPopover = ({
   visible,
@@ -41,8 +35,8 @@ export const ArrowLocationPopover = ({
   archerId,
   shotIndex,
   currentMark, // '○' または '×'
+  // 開いたときの矢所の写し。帳簿にその人が見つからないときだけ使う
   arrowLocations = [],
-  onSave,
 }) => {
   const {
     arrowTargetType,
@@ -87,10 +81,9 @@ export const ArrowLocationPopover = ({
       const clientX = ne.clientX ?? (touch ? touch.clientX : undefined);
       const clientY = ne.clientY ?? (touch ? touch.clientY : undefined);
       if (clientX !== undefined && clientY !== undefined) {
-        const scrollX = window.scrollX ?? window.pageXOffset ?? 0;
-        const scrollY = window.scrollY ?? window.pageYOffset ?? 0;
-        pageX = clientX + scrollX;
-        pageY = clientY + scrollY;
+        const 巻き = 巻いた量();
+        pageX = clientX + 巻き.x;
+        pageY = clientY + 巻き.y;
       }
     }
     return { pageX, pageY };
@@ -103,21 +96,9 @@ export const ArrowLocationPopover = ({
     if (pageX === undefined || pageY === undefined || isNaN(pageX) || isNaN(pageY)) return null;
 
     const rect = touchAreaNode.getBoundingClientRect();
-    const scrollX =
-      window.scrollX ??
-      window.pageXOffset ??
-      document.documentElement.scrollLeft ??
-      document.body.scrollLeft ??
-      0;
-    const scrollY =
-      window.scrollY ??
-      window.pageYOffset ??
-      document.documentElement.scrollTop ??
-      document.body.scrollTop ??
-      0;
-
-    const elemAbsoluteX = rect.left + scrollX;
-    const elemAbsoluteY = rect.top + scrollY;
+    const 巻き = 巻いた量();
+    const elemAbsoluteX = rect.left + 巻き.x;
+    const elemAbsoluteY = rect.top + 巻き.y;
 
     const posX = pageX - elemAbsoluteX;
     const posY = pageY - elemAbsoluteY;
@@ -146,12 +127,8 @@ export const ArrowLocationPopover = ({
       return;
     }
 
-    // 保存 (的の種類も一緒に記録することで、後から的ごとにフィルタリング可能にする)
-    const locationData = { x: normalizedX, y: normalizedY, targetType: arrowTargetType };
-    updateArrowLocation(archerId, shotIndex, locationData);
-    if (onSave) {
-      onSave(locationData);
-    }
+    // 的の種類も一緒に残す（あとで的ごとに分けて見られるように）
+    updateArrowLocation(archerId, shotIndex, { x: normalizedX, y: normalizedY, targetType: arrowTargetType });
   };
 
   // --- マウス操作: 動かすたびに追従プレビュー、マウスを離した位置で確定 ---
@@ -210,36 +187,21 @@ export const ArrowLocationPopover = ({
             { width: 240, height: 240, borderRadius: 120, backgroundColor: 色.黒, pointerEvents: 'none' },
           ]}
         >
-          <View
-            style={[
-              styles.targetLayer,
-              { width: 200, height: 200, borderRadius: 100, backgroundColor: 色.白, pointerEvents: 'none' },
-            ]}
-          />
-          <View
-            style={[
-              styles.targetLayer,
-              { width: 160, height: 160, borderRadius: 80, backgroundColor: 色.黒, pointerEvents: 'none' },
-            ]}
-          />
-          <View
-            style={[
-              styles.targetLayer,
-              { width: 120, height: 120, borderRadius: 60, backgroundColor: 色.白, pointerEvents: 'none' },
-            ]}
-          />
-          <View
-            style={[
-              styles.targetLayer,
-              { width: 80, height: 80, borderRadius: 40, backgroundColor: 色.黒, pointerEvents: 'none' },
-            ]}
-          />
-          <View
-            style={[
-              styles.targetLayer,
-              { width: 40, height: 40, borderRadius: 20, backgroundColor: 色.白, pointerEvents: 'none' },
-            ]}
-          />
+          {霞的の輪.map((直径, 番) => (
+            <View
+              key={直径}
+              style={[
+                styles.targetLayer,
+                {
+                  width: 直径,
+                  height: 直径,
+                  borderRadius: 直径 / 2,
+                  backgroundColor: 番 % 2 === 0 ? 色.白 : 色.黒,
+                  pointerEvents: 'none',
+                },
+              ]}
+            />
+          ))}
         </View>
       );
     } else if (arrowTargetType === 'hoshi36') {
@@ -282,7 +244,7 @@ export const ArrowLocationPopover = ({
   };
 
   return (
-    <Modal visible={visible} transparent={true} animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
         <Pressable style={styles.backdropTouch} onPress={onClose} />
 
@@ -308,30 +270,17 @@ export const ArrowLocationPopover = ({
 
           {/* 的種類のクイック切り替え */}
           <View style={styles.targetTypeSelector}>
-            <TouchableOpacity
-              onPress={() => setArrowTargetType('kasumi36')}
-              style={[styles.typeBtn, arrowTargetType === 'kasumi36' && styles.typeBtnActive]}
-            >
-              <Text style={[styles.typeBtnText, arrowTargetType === 'kasumi36' && styles.typeBtnTextActive]}>
-                霞的(尺二寸)
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setArrowTargetType('hoshi36')}
-              style={[styles.typeBtn, arrowTargetType === 'hoshi36' && styles.typeBtnActive]}
-            >
-              <Text style={[styles.typeBtnText, arrowTargetType === 'hoshi36' && styles.typeBtnTextActive]}>
-                星的(尺二寸)
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setArrowTargetType('hoshi24')}
-              style={[styles.typeBtn, arrowTargetType === 'hoshi24' && styles.typeBtnActive]}
-            >
-              <Text style={[styles.typeBtnText, arrowTargetType === 'hoshi24' && styles.typeBtnTextActive]}>
-                星的(八寸)
-              </Text>
-            </TouchableOpacity>
+            {的の種類たち.map(([種類, 名]) => (
+              <TouchableOpacity
+                key={種類}
+                onPress={() => setArrowTargetType(種類)}
+                style={[styles.typeBtn, arrowTargetType === 種類 && styles.typeBtnActive]}
+              >
+                <Text style={[styles.typeBtnText, arrowTargetType === 種類 && styles.typeBtnTextActive]}>
+                  {名}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
           {/* 的と入力エリア */}
@@ -359,8 +308,7 @@ export const ArrowLocationPopover = ({
                 const locTargetType = loc.targetType || 'kasumi36';
                 if (locTargetType !== arrowTargetType) return null;
 
-                const mark = archerMarks[idx];
-                const isHit = mark === '○' || mark === '○'; // 的中
+                const isHit = archerMarks[idx] === '○';
                 const isCurrent = idx === shotIndex;
 
                 // 正規化座標からピクセル座標へ逆変換
@@ -422,9 +370,8 @@ export const ArrowLocationPopover = ({
           <View style={styles.footer}>
             <TouchableOpacity
               onPress={() => {
-                // 削除
                 updateArrowLocation(archerId, shotIndex, null);
-                if (onClose) onClose();
+                onClose();
               }}
               style={styles.deleteBtn}
             >
