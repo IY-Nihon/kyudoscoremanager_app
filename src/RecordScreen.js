@@ -365,7 +365,6 @@ const RecordScreen = () => {
       if (止める) 止める();
     };
   }, [ライブ名の窓, ライブの種類]);
-  new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
   // 案内の最中は畳まない。案内が指す先は全部この帯の中にあり、
   // 畳んだままだと指せないうえ、押す操作そのものができない
   // フックは必ず呼ぶ。&& の右に置くと、畳む・戻すでフックの数が変わり、
@@ -424,7 +423,10 @@ const RecordScreen = () => {
   const 人を選ぶ = (射手ID, _, 順) => {
     // 閲覧用のときは人の選択も開かない。開いても名前も交代も削除も
     // 止めてあるので、開くだけ無駄に迷わせる
-    if (見るだけ中) return void 閲覧中に押された();
+    if (見るだけ中) {
+      閲覧中に押された();
+      return;
+    }
     // 共有リンクで来た人は団体の名簿を持っていない。開いても空の一覧が
     // 出るだけなので、開かずに理由を伝える
     if (来客) {
@@ -603,7 +605,10 @@ const RecordScreen = () => {
   const 列を消す = React.useCallback((射手ID) => useScoreStore.getState().deleteArcher(射手ID), []);
   const 区切りを長押しした = React.useCallback((射手ID) => {
     const 手 = 最新の手.current;
-    if (手.見るだけ中) return void 手.閲覧中に押された();
+    if (手.見るだけ中) {
+      手.閲覧中に押された();
+      return;
+    }
     const 射手 = (Array.isArray(手.archers) ? 手.archers : []).find((列) => 列 && 列.id === 射手ID);
     setチーム名の下書き((射手 && 射手.teamName) || '');
     setチーム名を付ける区切り(射手ID);
@@ -665,7 +670,10 @@ const RecordScreen = () => {
   };
   // 掴む／掴みを解く。縦でも横でも同じものを使う
   const 掴む = (id) => {
-    if (見るだけ中) return void 閲覧中に押された();
+    if (見るだけ中) {
+      閲覧中に押された();
+      return;
+    }
     掴んだ列のref.current = id;
     落とす先のref.current = null;
     動かし始めた.current = false;
@@ -1134,7 +1142,10 @@ const RecordScreen = () => {
             <Pressable
               ref={案内のリセット}
               onPress={() => {
-                if (見るだけ中) return void 閲覧中に押された();
+                if (見るだけ中) {
+                  閲覧中に押された();
+                  return;
+                }
                 リセットの窓を出す(true);
               }}
               hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} // 絵だけのボタンは読み上げに何も伝わらない。端末は accessibilityLabel、
@@ -1228,7 +1239,10 @@ const RecordScreen = () => {
             >
               <TouchableOpacity
                 onPress={() => {
-                  if (見るだけ中) return void 閲覧中に押された();
+                  if (見るだけ中) {
+                    閲覧中に押された();
+                    return;
+                  }
                   射数を変える(Math.max(4, shotsPerRound - 4));
                 }}
                 disabled={shotsPerRound <= 4}
@@ -1251,7 +1265,10 @@ const RecordScreen = () => {
                 onPress={() => {
                   // 手入力と同じ上限(500)で止める。ここだけ上限が無いと、
                   // 押し続けてアプリが認めていない射数まで行けてしまう
-                  if (見るだけ中) return void 閲覧中に押された();
+                  if (見るだけ中) {
+                    閲覧中に押された();
+                    return;
+                  }
                   射数を変える(Math.min(500, shotsPerRound + 4));
                 }}
                 disabled={shotsPerRound >= 500}
@@ -1720,7 +1737,10 @@ const RecordScreen = () => {
                 aria-label="射手を追加"
                 accessibilityHint="記録表にひとり足します"
                 onPress={() => {
-                  if (見るだけ中) return void 閲覧中に押された();
+                  if (見るだけ中) {
+                    閲覧中に押された();
+                    return;
+                  }
                   ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Medium);
                   addArcher();
                 }}
@@ -1736,7 +1756,10 @@ const RecordScreen = () => {
                   hovered && IS_WEB && { backgroundColor: 'rgba(255,149,0,0.2)' },
                 ]}
                 onPress={() => {
-                  if (見るだけ中) return void 閲覧中に押された();
+                  if (見るだけ中) {
+                    閲覧中に押された();
+                    return;
+                  }
                   ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
                   addSeparator();
                 }}
@@ -1752,7 +1775,10 @@ const RecordScreen = () => {
                   hovered && IS_WEB && { backgroundColor: 'rgba(52,199,89,0.2)' },
                 ]}
                 onPress={() => {
-                  if (見るだけ中) return void 閲覧中に押された();
+                  if (見るだけ中) {
+                    閲覧中に押された();
+                    return;
+                  }
                   ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
                   addTotalCalculator();
                 }} // 入れたあと、その列を押すと「この立ちだけ」と
@@ -1770,7 +1796,10 @@ const RecordScreen = () => {
                   hovered && IS_WEB && { backgroundColor: 'rgba(142,142,147,0.2)' },
                 ]}
                 onPress={() => {
-                  if (見るだけ中) return void 閲覧中に押された();
+                  if (見るだけ中) {
+                    閲覧中に押された();
+                    return;
+                  }
                   ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Medium);
                   setShowOCRModal(true);
                 }}
@@ -1803,7 +1832,10 @@ const RecordScreen = () => {
                   航路.navigate('履歴');
                   return;
                 }
-                if (見るだけ中) return void 閲覧中に押された();
+                if (見るだけ中) {
+                  閲覧中に押された();
+                  return;
+                }
                 // よその団体のライブは、自分の記録として残さない。
                 // 押しても無反応だと壊れたのか決まりなのか分からないので、理由を言う
                 if (よその団体) {
@@ -1845,7 +1877,10 @@ const RecordScreen = () => {
             ?.またぐ合計 || false
         }
         on合計の範囲={() => {
-          if (見るだけ中) return void 閲覧中に押された();
+          if (見るだけ中) {
+            閲覧中に押された();
+            return;
+          }
           const 列 = (Array.isArray(archers) ? archers : []).find((射手) => 射手 && 射手.id === 選んだ射手ID);
           合計の範囲を切り替える(選んだ射手ID);
           知らせる(列?.またぐ合計 ? 'この立ちだけの合計にしました' : '手前の計もまとめた総計にしました');
@@ -1857,7 +1892,10 @@ const RecordScreen = () => {
           ) || ''
         }
         onチーム名={() => {
-          if (見るだけ中) return void 閲覧中に押された();
+          if (見るだけ中) {
+            閲覧中に押された();
+            return;
+          }
           const 列 = (Array.isArray(archers) ? archers : []).find((射手) => 射手 && 射手.id === 選んだ射手ID);
           setチーム名の下書き((列 && 列.teamName) || '');
           setチーム名を付ける区切り(選んだ射手ID);
@@ -1876,7 +1914,10 @@ const RecordScreen = () => {
           return 順 >= 0 && 順 < 並び.length - 1;
         })()}
         on動かす={(向き) => {
-          if (見るだけ中) return void 閲覧中に押された();
+          if (見るだけ中) {
+            閲覧中に押された();
+            return;
+          }
           列を動かす(選んだ射手ID, 向き);
           知らせる(
             向き === '前'
@@ -2026,7 +2067,10 @@ const RecordScreen = () => {
         onApply={(newArchers, 読み取りの種類, 入れ方, 射数) => {
           // 画像は setState で直に盤面を差し替えるため、ストアの止めが効かない。
           // 閲覧用のときはここで返す
-          if (見るだけ中) return void 閲覧中に押された();
+          if (見るだけ中) {
+            閲覧中に押された();
+            return;
+          }
           // 射数を写真と記録表の多いほうに合わせる（設定より多ければ広げ、少なければ縮める。
           // 埋まった○×は縮めても消えない）。先に合わせないと、いまの並びと読み取った
           // 並びで○×の長さが食い違う

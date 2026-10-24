@@ -108,7 +108,10 @@ function 進級の窓({ 見える, 知らせる }) {
     誤りを置く('');
     const 結果 = await useScoreStore.getState().進級する(Object.fromEntries(選び));
     押したを置く(false);
-    if (結果.誤り) return void 誤りを置く(結果.誤り);
+    if (結果.誤り) {
+      誤りを置く(結果.誤り);
+      return;
+    }
     知らせる(結果.済んでいた ? 'ほかの端末で進級が済んでいました' : `${年}年度の進級を済ませました`);
   };
 

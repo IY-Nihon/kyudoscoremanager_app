@@ -285,12 +285,13 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
           }
           在席を終える(書く);
           写しを見るのをやめる();
-          return void 書く({
+          書く({
             isLiveActive: false,
             ライブの続き: null,
             isHost: false,
             liveSessionName: null,
           });
+          return;
         }
         // 期限は枝分かれの前に控える。下の「他人の書き込み」の枝だけに
         // 置くと、自分で配った主催者は自分の返りしか受けないので
@@ -308,12 +309,13 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
             }
             在席を終える(書く);
             写しを見るのをやめる();
-            return void 書く({
+            書く({
               isLiveActive: false,
               ライブの続き: null,
               isHost: false,
               liveSessionName: null,
             });
+            return;
           }
           // 誰かが配ったら、その枝へ付いていく
           // 期限より先に見る。切れているのに付いていくと、行った先でも切れている
@@ -331,7 +333,8 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
             }
             // 送信はしない。受け取ったリセットを送り返すと、相手の画面に
             // 「リセットしました」が二度出るうえ、無駄な書き込みが増える
-            return void 状態().resetCurrentSession(false);
+            状態().resetCurrentSession(false);
+            return;
           }
           if (届いた.archers || Array.isArray(届いた.archers)) {
             // 突き合わせは 届いた射手に合わせる（○× 以外）と 印は盤面を正に（○×）。
@@ -618,14 +621,16 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
       (返り) => {
         const 届いた = 返り.val();
         if (!届いた) return;
-        if (届いた.status === 'finished')
-          return void 書く({
+        if (届いた.status === 'finished') {
+          書く({
             isLiveActive: false,
             ライブの続き: null,
             isHost: false,
             liveSessionName: null,
             いまのライブの期限: null,
           });
+          return;
+        }
         if (期限で閉じるか(届いた, 書く, 状態)) return;
         if (!届いた.archers && !Array.isArray(届いた.archers)) return;
         // 部員が参加するときと同じ突き合わせを通す。
@@ -723,7 +728,8 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
           }
           在席を終える(書く);
           写しを見るのをやめる();
-          return void 書く({ isLiveActive: false, ライブの続き: null, isHost: false, liveSessionName: null });
+          書く({ isLiveActive: false, ライブの続き: null, isHost: false, liveSessionName: null });
+          return;
         }
         // 自分の送信の返りも、ほかの通知と同じに扱う（主催者側の説明を参照）。
         // 矢所は、届いた射手が持っていなければ手元を残す（届いた射手に合わせる）
@@ -737,7 +743,8 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
           // 送信しない。ここで送ると、主催者が2秒後に消す節点を書き戻してしまい、
           // 届くのが遅れた場合は「終わったはずのライブ」が一覧に残り続ける
           状態().resetCurrentSession(false);
-          return void 書く({ isLiveActive: false, ライブの続き: null, isHost: false, liveSessionName: null });
+          書く({ isLiveActive: false, ライブの続き: null, isHost: false, liveSessionName: null });
+          return;
         }
         // 誰かが配ったら、その枝へ付いていく
         // 期限より先に見る。切れているのに付いていくと、行った先でも切れている
@@ -793,7 +800,10 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
   ライブに戻る: async () => {
     const 続き = 状態().ライブの続き;
     if (!続き || !続き.名前 || 状態().isLiveActive) return '無い';
-    if (続き.団体 && 続き.団体 !== 状態().activeGroupId) return void 書く({ ライブの続き: null });
+    if (続き.団体 && 続き.団体 !== 状態().activeGroupId) {
+      書く({ ライブの続き: null });
+      return;
+    }
     if (!Firebaseの器.rtdb) return '確認できない';
     let 枝 = 秘.枝として使えるか(続き.枝) ? String(続き.枝) : 団体の枝();
     if (!枝) {

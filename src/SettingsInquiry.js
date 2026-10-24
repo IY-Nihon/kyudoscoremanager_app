@@ -50,12 +50,14 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
     try {
       if (inquiryImages.length >= 3) {
         const msg = '画像は最大3枚まで添付できます。';
-        return void Alert.alert('エラー', msg);
+        Alert.alert('エラー', msg);
+        return;
       }
       const perm = await ExpoImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
         const msg = '画像ライブラリへのアクセスが許可されていません。';
-        return void Alert.alert('エラー', msg);
+        Alert.alert('エラー', msg);
+        return;
       }
       const res = await ExpoImagePicker.launchImageLibraryAsync({
         mediaTypes: ExpoImagePicker.MediaTypeOptions ? ExpoImagePicker.MediaTypeOptions.Images : ['images'],
@@ -79,11 +81,13 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
       }
       if (!base64) {
         const msg = '画像の読み込みに失敗しました。';
-        return void Alert.alert('エラー', msg);
+        Alert.alert('エラー', msg);
+        return;
       }
       if (base64.length > 300000) {
         const msg = '画像サイズが大きすぎます。別の画像（より小さいサイズ・低解像度）を選んでください。';
-        return void Alert.alert('エラー', msg);
+        Alert.alert('エラー', msg);
+        return;
       }
       setInquiryImages((prev) => [...prev, `data:image/jpeg;base64,${base64}`]);
     } catch (誤り) {

@@ -86,7 +86,10 @@ const 入り直しの窓 = () => {
 
   const 入り直す = async () => {
     if (走っている.current) return;
-    if (!入力.trim()) return void 難点を置く(部員 ? '個人IDを入れてください' : 'パスワードを入れてください');
+    if (!入力.trim()) {
+      難点を置く(部員 ? '個人IDを入れてください' : 'パスワードを入れてください');
+      return;
+    }
     走っている.current = true;
     作業中を置く(true);
     難点を置く(null);

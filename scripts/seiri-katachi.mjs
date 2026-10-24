@@ -144,10 +144,12 @@ function 書き換えを集める(code, ast) {
     ReturnStatement(p) {
       const a = p.node.argument;
       // return void (a(), b()); → a(); b(); return;
-      if (a && a.type === 'UnaryExpression' && a.operator === 'void' && a.argument.type === 'SequenceExpression') {
+      // return void a(); → a(); return;
+      if (a && a.type === 'UnaryExpression' && a.operator === 'void') {
         const 文の中 = ['BlockStatement', 'Program', 'SwitchCase'].includes(p.parent.type);
-        const s = 文にする(code, a.argument, comments) + '\nreturn;';
-        足す(p.node.start, p.node.end, 文の中 ? s : '{\n' + s + '\n}', 'return void のカンマ');
+        const 値だけ = ['NumericLiteral', 'StringLiteral', 'Identifier'].includes(a.argument.type);
+        const s = (値だけ ? '' : 文にする(code, a.argument, comments) + '\n') + 'return;';
+        足す(p.node.start, p.node.end, 文の中 || 値だけ ? s : '{\n' + s + '\n}', 'return void');
         return;
       }
       if (!a || a.type !== 'SequenceExpression') return;

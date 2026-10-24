@@ -198,7 +198,10 @@ const ゴミ箱の中身の窓 = ({
                         }
                         aria-label={ゴミ箱を編集中 ? `${日付の文} を選ぶ` : `${日付の文} の記録を見る`}
                         onPress={() => {
-                          if (ゴミ箱を編集中) return void ゴミ箱の選択を切り替える(記録.id);
+                          if (ゴミ箱を編集中) {
+                            ゴミ箱の選択を切り替える(記録.id);
+                            return;
+                          }
                           setゴミ箱の記録(記録.id);
                           setSelectedHistorySessionId(記録.id);
                           setHistoryViewMode('detail');

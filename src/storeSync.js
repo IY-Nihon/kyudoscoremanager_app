@@ -3,7 +3,7 @@
 /**
  * 店の操作のうち、雲（Firestore）との同期と購読：差分の同期・まとめて送る・ログアウト前に送り切る・起動時の取り込み・
  * まとめて取り直す、記録・ゴミ箱・名簿・卒業生の購読、定期の同期、通信の見張り。
- * （2026-10-05 に useScoreStore.js から分けた。中身は変えていない。店の名指しは 場.店 にした）
+ * （2026-10-05 に useScoreStore.js から分けた。店の名指しは 場.店）
  * 店（useScoreStore.js）が ...同期の操作(書く, 状態, そのまま書く) で広げる。
  */
 const {
@@ -33,17 +33,17 @@ const {
 const 学 = require('./gakunen');
 
 const 同期の操作 = (書く, 状態, そのまま書く) => ({
+  // 上から引っ張って更新（src/hikiOroshi.js）。送っていない記録を送り、ほかの端末の変更（記録・名簿・ゴミ箱・卒業生）を取る
+  雲から取り直す: async () => {
+    行動を控える('引いて更新', '');
+    await 状態().syncSessions();
+  },
   /**
    * 雲と突き合わせて、まだ送れていないものを送り直す。
    * @param {{取りに行かない?: boolean}} [選び] 取りに行かない … 雲から取らず、送り直しだけ。
    *   起動時は直前に fetchAndOverwriteFromCloud が全部取っていて、見張りも
    *   これから届くので、ここでもう一度取るのは同じものを 3 回読むことになる
    */
-  // 上から引っ張って更新（src/hikiOroshi.js）。送っていない記録を送り、ほかの端末の変更（記録・名簿・ゴミ箱・卒業生）を取る
-  雲から取り直す: async () => {
-    行動を控える('引いて更新', '');
-    await 状態().syncSessions();
-  },
   syncSessions: async (選び) => {
     if (!状態().activeGroupId) return;
     const _syncDb = await waitForDb();
@@ -57,8 +57,11 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       return;
     }
     await 状態().checkAndAutoIncrementGrades();
-    if (場.進級の確認を済ませた) return void console.log('[syncSessions] Already syncing, skipping...');
-    場.進級の確認を済ませた = true;
+    if (場.同期している) {
+      console.log('[syncSessions] Already syncing, skipping...');
+      return;
+    }
+    場.同期している = true;
     const 前回の同期時刻 = 状態().lastSyncTime || 0;
     // 差分で取れるのは、この団体で全件をそろえたあと（境目がある）ときだけ
     const 始めの境目 = 状態().雲の境目;
@@ -70,9 +73,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
     );
     書く({ syncStatus: '同期中' });
     try {
-      // この関数の後ろで局所的な M を宣言しているため、下の forEach の中で
-      // M.getState() を呼ぶと「初期化前の参照」で例外になり、同期が丸ごと
-      // 止まる。団体IDはここで控えておく。
+      // 始めたときの団体。読んでいるあいだに団体を移っても、取り違えないよう控えておく
       const 団体ID = 状態().activeGroupId;
       const 記録の置き場 = Firestore.collection(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`);
       const 部員の置き場 = Firestore.collection(Firebaseの器.db, `groups/${状態().activeGroupId}/members`);
@@ -460,7 +461,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       if (入り直せば直るか(誤り))
         書く({ 再ログインの案内: 入り直しの案内, 入り直しが要る: !状態().入り直しをあとに });
     } finally {
-      場.進級の確認を済ませた = false;
+      場.同期している = false;
     }
   },
   syncAllToCloud: async () => {

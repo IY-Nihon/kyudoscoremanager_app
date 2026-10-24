@@ -223,8 +223,10 @@ const ライブ名を決める窓 = ({
                     return;
                   }
                   if (ライブの種類 === 'join') {
-                    if (!useScoreStore.getState().liveSessionsList.includes(名前))
-                      return void ライブ名の注意を置く(`'${名前}' というセッションは見つかりませんでした。`);
+                    if (!useScoreStore.getState().liveSessionsList.includes(名前)) {
+                      ライブ名の注意を置く(`'${名前}' というセッションは見つかりませんでした。`);
+                      return;
+                    }
                     // 参加のしかたを選ぶ。見るだけなら盤面を書き換えない
                     // 参加のしかたは画面の中のポップアップで選ぶ
                     const 聞く = () => 参加のしかたを聞くを置く(名前);

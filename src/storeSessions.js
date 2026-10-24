@@ -78,7 +78,8 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
       );
       if (手元 && 手元.syncStatus === '同期済み') {
         const 文 = 'この記録はすでにクラウドに存在するため、個人モードからは更新できません。';
-        return void Alert.alert('保存制限', 文);
+        Alert.alert('保存制限', 文);
+        return;
       }
     }
     // まず手元に確定する。クラウドの応答は待たない。
@@ -479,8 +480,10 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     const 位置 = 今の記録.findIndex((記録) => 記録 && 記録.id === 記録ID);
     if (位置 === -1) return;
     const 元の記録 = 今の記録[位置];
-    if (状態().activeRole === 'member' && 変更.archers && 変更.archers.length < 元の記録.archers.length)
-      return void console.warn('[updateSession] Prevented accidental data stripping in member mode');
+    if (状態().activeRole === 'member' && 変更.archers && 変更.archers.length < 元の記録.archers.length) {
+      console.warn('[updateSession] Prevented accidental data stripping in member mode');
+      return;
+    }
     // 送信が済むまでは「未同期」にしておく。こうしないと、通信できない
     // ときに編集がクラウドへ届かないまま同期済み扱いになり、他の記録が
     // 更新された拍子にクラウドの古い写しで上書きされて編集が消える。
@@ -656,8 +659,12 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     try {
       await waitForDb();
       const 控えの様子 = require('./db').persistence || {};
-      if (控えの様子.state === 'ok' || 控えの様子.state === 'pending')
-        return void (状態().offlineSaveWarning && 書く({ offlineSaveWarning: null }));
+      if (控えの様子.state === 'ok' || 控えの様子.state === 'pending') {
+        if (状態().offlineSaveWarning) {
+          書く({ offlineSaveWarning: null });
+        }
+        return;
+      }
       const 文 =
         控えの様子.state === 'multipleTabs'
           ? 'この記録画面が複数のタブで開かれているため、電波のない場所での保存が保護されません。他のタブを閉じて開き直してください。'

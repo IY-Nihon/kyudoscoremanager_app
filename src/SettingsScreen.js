@@ -163,7 +163,10 @@ const SettingsScreen = () => {
   const [月の窓, 月の窓を出す] = React.useState(false);
   // 種類を選んだとき。新しい種類に無い学年の人がいれば、「その他」になることを確かめてから変える
   const 種類を選んだ = (種類) => {
-    if (種類 === (groupType || 学.既定の種類)) return void 種類の窓を出す(false);
+    if (種類 === (groupType || 学.既定の種類)) {
+      種類の窓を出す(false);
+      return;
+    }
     // 「自分で決める」は、まだ学年を並べていなければ今の種類の学年・卒業・呼び方を写して始める（見た目が変わらない）
     if (種類 === 'custom' && !学.自分の学年たち(customGrades).length) {
       useScoreStore.getState().学年の設定を書く({
@@ -172,7 +175,8 @@ const SettingsScreen = () => {
         customWording: 今の決まり.呼び方.部員 === '会員' ? 'club' : 'school',
       });
       setGroupType(種類);
-      return void 種類の窓を出す(false);
+      種類の窓を出す(false);
+      return;
     }
     const 決まり = 学.決まりを作る(種類);
     const はみ出す人 = 学.学年がはみ出す人(members, 決まり);
@@ -181,8 +185,8 @@ const SettingsScreen = () => {
       種類の窓を出す(false);
     };
     // 学年の無い団体へ変えるときは学年を書き換えない（出さないだけ）。そのことを確かめてから変える
-    if (決まり.学年なし)
-      return void Alert.alert(
+    if (決まり.学年なし) {
+      Alert.alert(
         '団体の種類を変える',
         '学年と期を出さなくなり、代わりに入会した年を出します。呼び方は「会員」「男性・女性」「退会」になります。今の学年は消えないので、学校に戻すとまた出ます。',
         [
@@ -190,7 +194,12 @@ const SettingsScreen = () => {
           { text: '変える', onPress: 変える },
         ]
       );
-    if (!はみ出す人.length) return void 変える();
+      return;
+    }
+    if (!はみ出す人.length) {
+      変える();
+      return;
+    }
     const 学年たち = Array.from(new Set(はみ出す人.map((部員) => 学.学年の値(部員, 決まり))))
       .sort((甲, 乙) => 甲 - 乙)
       .map((学年) => 学.学年だけの名前(学年, 今の決まり))
