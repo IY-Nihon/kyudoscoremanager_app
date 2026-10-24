@@ -28,8 +28,15 @@ const {
   分けた一括,
 } = require('./storeShared');
 
-// 送った版のまま手元に残っている記録だけ、同期済みにする（送信中に直された記録は未同期のまま）
-const 届いた記録を同期済みに = (書く, 送った記録たち) => {
+// 中身だけを写す（undefined の項目は落ちる。Firestore は undefined を受け付けない）
+const 深く写す = (値) => JSON.parse(JSON.stringify(値));
+
+/**
+ * 送った版のまま手元に残っている記録だけ、同期済みにする。
+ * 送信中に直された記録は更新日時が変わるので未同期のまま（次の突き合わせで雲の古い写しに負けないため）。
+ * 「同じ物を指しているか」で見ては駄目。見張りが中身はそのままに記録を作り直すことがある
+ */
+const 届いた記録を同期済みに = (書く, 送った記録たち, 足す = {}) => {
   const 版 = new Map(送った記録たち.map((記録) => [記録.id, 記録.lastModified]));
   書く((前) => ({
     sessions: 前.sessions.map((記録) =>
@@ -37,8 +44,36 @@ const 届いた記録を同期済みに = (書く, 送った記録たち) => {
         ? Object.assign({}, 記録, { syncStatus: '同期済み' })
         : 記録
     ),
+    ...足す,
   }));
 };
+
+/**
+ * 記録を雲へ書く形にする。雲には「同期済み」として書く。未同期のまま書くと、ほかの端末が全件で
+ * 取り込んだ写しまで未同期になり、その端末が送り直して、捨てた記録が戻ってきた
+ */
+const 雲へ送る記録 = (記録) =>
+  Object.assign(雲へ書く記録(深く写す(記録)), {
+    syncStatus: '同期済み',
+    lastModified: Firestore.serverTimestamp(),
+  });
+
+/** 捨てた記録を雲のゴミ箱へ書く形にする */
+const ゴミ箱へ送る記録 = (記録) =>
+  Object.assign(雲へ書く記録(深く写す(Object.assign({}, 記録, { syncStatus: 'trashed' }))), {
+    lastModified: Firestore.serverTimestamp(),
+    deletedAt: Firestore.serverTimestamp(),
+  });
+
+/** 記録に載せる射手の名前の一覧（検索に使う）。空と重なりは除く */
+const 名前の一覧 = (射手たち) =>
+  Array.from(
+    new Set(
+      (Array.isArray(射手たち) ? 射手たち : [])
+        .map((射手) => (射手 && 射手.name ? String(射手.name).trim() : ''))
+        .filter(Boolean)
+    )
+  );
 
 const 記録の操作 = (書く, 状態, そのまま書く) => ({
   saveSession: async (題, 覚え書き, 統計に入れる, タグ, attendanceData) => {
@@ -56,10 +91,8 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
       date: Date.now(),
       title: 題,
       note: 覚え書き,
-      archers: JSON.parse(JSON.stringify(射手たち)),
-      archerNames: Array.from(
-        new Set(射手たち.map((射手) => (射手 && 射手.name ? 射手.name.trim() : '')).filter(Boolean))
-      ),
+      archers: 深く写す(射手たち),
+      archerNames: 名前の一覧(射手たち),
       shotCount: shotsPerRound || 8,
       includeInStats: 統計に入れる,
       tags: タグ,
@@ -104,12 +137,12 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
       redoStack: [],
       historySharedLen: 0,
       historySharedMax: 0,
-    })); // ライブ記録の後始末。届かなくても保存には影響させない
+    }));
+    // ライブ記録の後始末。届かなくても保存には影響させない。
     // 共有していたライブは、団体の枝の道しるべと閲覧用の写しも残る。
     // 消さないと、参加一覧に入れないライブが並び、写しも読めたままになる
     const 団 = 団体の枝();
     if (元のライブ名 && Firebaseの器.rtdb && 枝) {
-      const ライブの節点 = RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${元のライブ名}`);
       RTDB.update(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${元のライブ名}/state`), {
         status: 'finished',
         timestamp: RTDB.serverTimestamp(),
@@ -122,7 +155,7 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
       setTimeout(async () => {
         const 落とす = (道) => RTDB.remove(RTDB.ref(Firebaseの器.rtdb, 道)).catch(() => {});
         await Promise.all([
-          RTDB.remove(ライブの節点).catch(() => {}),
+          落とす(`live_sessions/${枝}/${元のライブ名}`),
           // 共有履歴と在席は別の枝にあるので、明示的に消す
           落とす(共有履歴の場所(枝, 元のライブ名)),
           落とす(在席の場所(枝, 元のライブ名)),
@@ -144,24 +177,12 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     // 再送で拾われ、通信が戻ったときに自動で送られる。
     if (activeGroupId) {
       // 日付と射手の更新日時は日時型で送る（雲へ書く記録）
-      const 送る形 = 雲へ書く記録(JSON.parse(JSON.stringify(記録)));
-      送る形.syncStatus = '同期済み';
-      送る形.lastModified = Firestore.serverTimestamp();
-      Firestore.setDoc(Firestore.doc(Firebaseの器.db, `groups/${activeGroupId}/sessions`, 記録ID), 送る形, {
-        merge: true,
-      })
-        .then(() => {
-          // 印を付けるのは送った版だけ。送信中に編集されると更新日時が
-          // 変わるので、一致する場合に限る（updateSession と同じ考え方）。
-          書く((前) => ({
-            sessions: 前.sessions.map((記録1件) =>
-              記録1件 && 記録1件.id === 記録ID && 記録1件.lastModified === 記録.lastModified
-                ? Object.assign({}, 記録1件, { syncStatus: '同期済み' })
-                : 記録1件
-            ),
-            syncStatus: '同期済み',
-          }));
-        })
+      Firestore.setDoc(
+        Firestore.doc(Firebaseの器.db, `groups/${activeGroupId}/sessions`, 記録ID),
+        雲へ送る記録(記録),
+        { merge: true }
+      )
+        .then(() => 届いた記録を同期済みに(書く, [記録], { syncStatus: '同期済み' }))
         .catch((誤り) => {
           console.error('Save Session Cloud Error:', 誤り);
           不具合を控える('記録の保存（クラウド）', 誤り);
@@ -231,13 +252,11 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     const 編集 = 店.履歴の編集;
     if (!編集) return;
     if (保存する) {
-      const 射手たち = JSON.parse(JSON.stringify(Array.isArray(店.archers) ? 店.archers : []));
+      const 射手たち = 深く写す(Array.isArray(店.archers) ? 店.archers : []);
       店.updateSession(編集.id, {
         archers: 射手たち,
         shotCount: 店.shotsPerRound,
-        archerNames: Array.from(
-          new Set(射手たち.map((射手) => (射手 && 射手.name ? 射手.name.trim() : '')).filter(Boolean))
-        ),
+        archerNames: 名前の一覧(射手たち),
       });
     }
     行動を控える('履歴の編集を終える', 保存する ? '保存' : '取りやめ');
@@ -269,17 +288,11 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     try {
       const 一括 = Firestore.writeBatch(Firebaseの器.db);
       一括.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, 記録ID));
-      if (消す記録) {
-        const ごみ箱に置く形 = 雲へ書く記録(
-          JSON.parse(JSON.stringify(Object.assign({}, 消す記録, { syncStatus: 'trashed' })))
-        );
-        ごみ箱に置く形.lastModified = Firestore.serverTimestamp();
-        ごみ箱に置く形.deletedAt = Firestore.serverTimestamp();
+      if (消す記録)
         一括.set(
           Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/trash`, 記録ID),
-          ごみ箱に置く形
+          ゴミ箱へ送る記録(消す記録)
         );
-      }
       // 完了は待たない。通信できないと終わらないため、呼び出し側が
       // 待つと画面が反応しなくなる。送信は待ち行列に任せる。
       一括.commit().catch((誤り) => console.error('Delete Session Error:', 誤り));
@@ -302,54 +315,50 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     });
     console.log('[Store] Emptying trash:', 消すID.length, 'items');
     書く({ trash: [], permanentlyDeleted: 控え });
-    if (団体)
-      try {
-        const 一括 = 分けた一括(Firebaseの器.db);
-        消すID.forEach((id) => {
-          一括.delete(Firestore.doc(Firebaseの器.db, `groups/${団体}/trash`, id));
-        });
-        // 完了は待たない（deleteSession と同じ理由）
-        一括.commit()
-          .then(() => console.log('[Store] Cloud trash emptied'))
-          .catch((誤り) => console.error('[Store] Error emptying cloud trash:', 誤り));
-      } catch (誤り) {
-        console.error('[Store] Error emptying cloud trash:', 誤り);
-      }
+    if (!団体) return;
+    try {
+      const 一括 = 分けた一括(Firebaseの器.db);
+      消すID.forEach((id) => {
+        一括.delete(Firestore.doc(Firebaseの器.db, `groups/${団体}/trash`, id));
+      });
+      // 完了は待たない（deleteSession と同じ理由）
+      一括.commit()
+        .then(() => console.log('[Store] Cloud trash emptied'))
+        .catch((誤り) => console.error('[Store] Error emptying cloud trash:', 誤り));
+    } catch (誤り) {
+      console.error('[Store] Error emptying cloud trash:', 誤り);
+    }
   },
   deleteTrashItems: async (消すID) => {
-    if (消すID && 消すID.length !== 0)
-      try {
-        const { trash: ごみ箱, activeGroupId: 団体 } = 状態();
-        console.log('[Store] Deleting trash items:', 消すID);
-        if (団体) console.log(`[Store] Target Firestore path: groups/${団体}/trash/`);
-        const 残り = (ごみ箱 || []).filter((記録) => 記録 && !消すID.includes(記録.id));
-        // emptyTrash と同じく、完全に消したことを控えておく
-        const 控え = Object.assign({}, 状態().permanentlyDeleted);
-        消すID.forEach((id) => {
-          if (id) {
-            控え[id] = Date.now();
-          }
-        });
-        // emptyTrash と同じ理由で、通信できるかでは止めない
-        書く({ trash: 残り, permanentlyDeleted: 控え });
-        if (団体) {
-          const 一括 = Firestore.writeBatch(Firebaseの器.db);
-          let 件数 = 0;
-          消すID.forEach((id) => {
-            if (id) {
-              一括.delete(Firestore.doc(Firebaseの器.db, `groups/${団体}/trash`, id));
-              件数++;
-            }
-          });
-          if (件数 > 0)
-            一括.commit()
-              .then(() => console.log('[Store] Successfully deleted trash items from cloud'))
-              .catch((誤り) => console.error('[Store] Delete trash items error:', 誤り));
-        } else console.warn('[Store] Skipping cloud deletion: activeGroupId が無い');
-      } catch (誤り) {
-        console.error('[Store] Delete trash items error:', 誤り);
+    if (!消すID || 消すID.length === 0) {
+      console.warn('[Store] deleteTrashItems called with no IDs');
+      return;
+    }
+    try {
+      const { trash: ごみ箱, activeGroupId: 団体 } = 状態();
+      console.log('[Store] Deleting trash items:', 消すID);
+      const 残り = (ごみ箱 || []).filter((記録) => 記録 && !消すID.includes(記録.id));
+      // emptyTrash と同じく、完全に消したことを控えておく
+      const 消すもの = 消すID.filter(Boolean);
+      const 控え = Object.assign({}, 状態().permanentlyDeleted);
+      消すもの.forEach((id) => {
+        控え[id] = Date.now();
+      });
+      // emptyTrash と同じ理由で、通信できるかでは止めない
+      書く({ trash: 残り, permanentlyDeleted: 控え });
+      if (!団体) {
+        console.warn('[Store] Skipping cloud deletion: activeGroupId が無い');
+        return;
       }
-    else console.warn('[Store] deleteTrashItems called with no IDs');
+      if (消すもの.length === 0) return;
+      const 一括 = Firestore.writeBatch(Firebaseの器.db);
+      消すもの.forEach((id) => 一括.delete(Firestore.doc(Firebaseの器.db, `groups/${団体}/trash`, id)));
+      一括.commit()
+        .then(() => console.log('[Store] Successfully deleted trash items from cloud'))
+        .catch((誤り) => console.error('[Store] Delete trash items error:', 誤り));
+    } catch (誤り) {
+      console.error('[Store] Delete trash items error:', 誤り);
+    }
   },
   deleteMultipleSessions: async (消すID) => {
     const 消す記録 = 状態().sessions.filter((記録) => 消すID.includes(記録.id));
@@ -367,14 +376,9 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
       // 消すだけ先にまとめると、あとの束が失敗したとき雲にゴミ箱の写しの無いまま記録が消える
       const 手元にある = new Set(消す記録.map((記録) => 記録.id));
       消す記録.forEach((記録) => {
-        const ごみ箱に置く形 = 雲へ書く記録(
-          JSON.parse(JSON.stringify(Object.assign({}, 記録, { syncStatus: 'trashed' })))
-        );
-        ごみ箱に置く形.lastModified = Firestore.serverTimestamp();
-        ごみ箱に置く形.deletedAt = Firestore.serverTimestamp();
         一括.set(
           Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/trash`, 記録.id),
-          ごみ箱に置く形
+          ゴミ箱へ送る記録(記録)
         );
         一括.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, 記録.id));
       });
@@ -413,12 +417,11 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     try {
       const 一括 = Firestore.writeBatch(Firebaseの器.db);
       一括.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/trash`, 記録ID));
-      const 送る形 = 雲へ書く記録(JSON.parse(JSON.stringify(戻した形)));
-      // 雲には同期済みとして書き、届いたら手元も同期済みにする（saveSession と同じ）。
-      // 未同期のまま雲に書くと、ほかの端末が取り込んだ写しまで未同期になり、捨てても戻ってきた
-      送る形.syncStatus = '同期済み';
-      送る形.lastModified = Firestore.serverTimestamp();
-      一括.set(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, 記録ID), 送る形);
+      // 雲には同期済みとして書き、届いたら手元も同期済みにする（雲へ送る記録）
+      一括.set(
+        Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, 記録ID),
+        雲へ送る記録(戻した形)
+      );
       一括.commit()
         .then(() => 届いた記録を同期済みに(書く, [戻した形]))
         .catch((誤り) => console.error('Restore Session Error:', 誤り));
@@ -456,10 +459,10 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
         一括.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/trash`, id))
       );
       戻した形.forEach((記録) => {
-        const 送る形 = 雲へ書く記録(JSON.parse(JSON.stringify(記録)));
-        送る形.syncStatus = '同期済み';
-        送る形.lastModified = Firestore.serverTimestamp();
-        一括.set(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, 記録.id), 送る形);
+        一括.set(
+          Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, 記録.id),
+          雲へ送る記録(記録)
+        );
       });
       一括.commit()
         .then(() => 届いた記録を同期済みに(書く, 戻した形))
@@ -485,21 +488,11 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     // 更新された拍子にクラウドの古い写しで上書きされて編集が消える。
     const 直した記録 = Object.assign(
       {},
-      今の記録[位置],
+      元の記録,
       変更,
       // 射手を直したら、名前の一覧も作り直す（保存と同じ作り方）。作り直さないと、
       // 履歴で人を差し替えたり消したりしても、前の人の名前で検索に引っかかり続けた
-      変更.archers && !変更.archerNames
-        ? {
-            archerNames: Array.from(
-              new Set(
-                変更.archers
-                  .map((射手) => (射手 && 射手.name ? String(射手.name).trim() : ''))
-                  .filter(Boolean)
-              )
-            ),
-          }
-        : null,
+      変更.archers && !変更.archerNames ? { archerNames: 名前の一覧(変更.archers) } : null,
       {
         lastModified: Date.now(),
         syncStatus: '未同期',
@@ -521,28 +514,15 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
       });
       const 記録 = 状態().sessions.find((記録1件) => 記録1件 && 記録1件.id === 記録ID);
       if (!記録) return;
-      // 送った版の更新日時を控える。送信中にもう一度編集されると
-      // 更新日時が変わるので、戻ってきたときに一致する場合だけ印を付ける。
-      // これをしないと、まだ届いていない新しい内容が「同期済み」に見え、
-      // 次の突き合わせでクラウドの古い写しに負けて編集が消える。
-      //
-      // 「同じ物を指しているか」では駄目。リスナーが中身はそのままに
-      // 記録を作り直すことがあり、変わっていなくても別物になる。
-      const 送った版 = 記録.lastModified;
-      const 送る形 = 雲へ書く記録(JSON.parse(JSON.stringify(記録)));
       // 送信の完了は待たない。通信できないときは Firestore の待ち行列に
-      // 入り、つながった時点で送られる。
-      送る形.lastModified = Firestore.serverTimestamp();
-      Firestore.updateDoc(Firestore.doc(Firebaseの器.db, `groups/${団体}/sessions`, 記録ID), 送る形)
+      // 入り、つながった時点で送られる。届いたら、送った版のままなら同期済みにする
+      Firestore.updateDoc(
+        Firestore.doc(Firebaseの器.db, `groups/${団体}/sessions`, 記録ID),
+        雲へ送る記録(記録)
+      )
         .then(() => {
           console.log(`[Store] Debounced sync finished for ${記録ID}`);
-          書く((前) => ({
-            sessions: 前.sessions.map((記録1件) =>
-              記録1件 && 記録1件.id === 記録ID && 記録1件.lastModified === 送った版
-                ? Object.assign({}, 記録1件, { syncStatus: '同期済み' })
-                : 記録1件
-            ),
-          }));
+          届いた記録を同期済みに(書く, [記録]);
         })
         .catch((誤り) => {
           console.error('Update Session Sync Error:', 誤り);
@@ -564,36 +544,23 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
       return JSON.stringify([射手.substitutions || {}, 射手.substitutionIds || {}]);
     };
     const 前の交代 = 交代の中身(変える前);
+    // 名前が空なら、その射の交代を外す
+    const 入れる = 名前 !== '';
     const 直した = 変える前.map((射手) => {
-      if (射手 && 射手.id === 射手ID) {
-        const 交代 = Object.assign({}, 射手.substitutions || {});
-        if (名前 !== '') {
-          交代[番] = 名前;
-          const 交代の部員 = Object.assign({}, 射手.substitutionIds || {});
-          if (部員ID) {
-            交代の部員[番] = 部員ID;
-          } else {
-            delete 交代の部員[番];
-          }
-          return Object.assign({}, 射手, {
-            substitutions: 交代,
-            substitutionIds: 交代の部員,
-            lastModified: Date.now(),
-          });
-        }
-        delete 交代[番];
-        if (射手.substitutionIds) {
-          const 交代の部員 = Object.assign({}, 射手.substitutionIds);
-          delete 交代の部員[番];
-          return Object.assign({}, 射手, {
-            substitutions: 交代,
-            substitutionIds: 交代の部員,
-            lastModified: Date.now(),
-          });
-        }
-        return Object.assign({}, 射手, { substitutions: 交代, lastModified: Date.now() });
-      }
-      return 射手;
+      if (!射手 || 射手.id !== 射手ID) return 射手;
+      const 交代 = Object.assign({}, 射手.substitutions || {});
+      const 交代の部員 = Object.assign({}, 射手.substitutionIds || {});
+      if (入れる) 交代[番] = 名前;
+      else delete 交代[番];
+      if (入れる && 部員ID) 交代の部員[番] = 部員ID;
+      else delete 交代の部員[番];
+      return Object.assign(
+        {},
+        射手,
+        { substitutions: 交代, lastModified: Date.now() },
+        // 外すときに部員の控えがもともと無ければ、空の控えを足さない
+        入れる || 射手.substitutionIds ? { substitutionIds: 交代の部員 } : null
+      );
     });
     // 同じ内容を選び直したときは積まない。押しても何も起きない
     // 一手が挟まり、取り消しが空振りして見える
@@ -614,7 +581,7 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     // 取り消し側はそれを見て射数ごと戻す
     const 変える前 = Array.isArray(状態().archers) ? 状態().archers : [];
     const 射数が変わる = 本数 !== 状態().shotsPerRound;
-    const 直した = (Array.isArray(状態().archers) ? 状態().archers : []).map((射手) => {
+    const 直した = 変える前.map((射手) => {
       if (!射手 || 射手.isSeparator) return 射手;
       const 今の印 = Array.isArray(射手.marks) ? 射手.marks : [];
       const 新しい印 = [...今の印];
