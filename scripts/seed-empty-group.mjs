@@ -12,8 +12,9 @@
  * （100001〜100003＝seed-stg、100009＝verify-scale-state の168人）。
  * 合言葉は seed-stg.mjs と同じものを使う（検証専用・リポジトリに平文）。
  */
-import { configFor, signIn, setDoc, req } from './fb-rest.mjs';
-import { 団体を借りる, 合言葉 as PW } from './stg-fixtures.mjs';
+import { configFor, signIn, setDoc, req, 検証のパスワード } from './fb-rest.mjs';
+import { 団体を借りる } from './stg-fixtures.mjs';
+const PW = 検証のパスワード();
 
 const { apiKey, projectId } = configFor('stg');
 if (!apiKey || projectId !== 'kyudoscoremanager-stg') {

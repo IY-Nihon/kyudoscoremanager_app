@@ -12,8 +12,9 @@
  *
  * 検証環境専用。本番を指していたら止まる。
  */
-import { configFor, signIn, setDoc } from './fb-rest.mjs';
-import { 団体を借りる, 合言葉 as PW } from './stg-fixtures.mjs';
+import { configFor, signIn, setDoc, 検証のパスワード } from './fb-rest.mjs';
+import { 団体を借りる } from './stg-fixtures.mjs';
+const PW = 検証のパスワード();
 
 const { apiKey, projectId } = configFor('stg');
 if (!apiKey || projectId !== 'kyudoscoremanager-stg') {
