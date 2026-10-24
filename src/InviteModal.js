@@ -17,6 +17,7 @@ const 招 = require('./memberInvite');
 const 写 = require('./clipboard_bridge');
 
 const { 部員のログインの版 } = require('./groupLogin');
+const { 配り元 } = require('./IS_WEB');
 
 const 道具を取る = () => {
   const { auth, db } = require('./db');
@@ -35,12 +36,6 @@ const 使えないとき =
   'この招待リンクは使えません。作り直されたか、メンバーから外れた可能性があります。団体の管理者に確かめてください。';
 const 期限切れのとき =
   'この招待リンクは期限が切れています。団体の管理者に新しいリンクを作ってもらってください。';
-
-/** リンクの配り元。web では開いているサイト、それ以外は本番 */
-const 配り元 = () =>
-  typeof window !== 'undefined' && window.location && /^https?:/.test(window.location.origin || '')
-    ? window.location.origin
-    : 'https://kyudoscoremanager.web.app';
 
 /**
  * 招待リンクを開いた人を迎える窓。

@@ -6,12 +6,7 @@ const { View, Text, StyleSheet, Modal, TextInput, TouchableOpacity, ScrollView }
 const { useScoreStore } = require('./useScoreStore');
 const 共 = require('./liveShare');
 const 写 = require('./clipboard_bridge');
-/** 配り元。web なら開いている場所、端末なら本番の住所 */
-function 配り元() {
-  if (typeof window !== 'undefined' && window.location && window.location.origin)
-    return window.location.origin;
-  return 'https://kyudoscoremanager.web.app';
-}
+const { 配り元 } = require('./IS_WEB');
 /**
  * ライブをリンクで配る窓（主催者が開く）。合言葉と有効期限を選び、編集用と閲覧用の 2 本のリンクを作る。
  * リンクで来た人を迎えるのは下の 来客の窓
