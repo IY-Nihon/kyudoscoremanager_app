@@ -146,6 +146,13 @@ const SettingsScreen = () => {
   const [ログアウトの段階, ログアウトの段階を設定] = React.useState('確認');
   const [残った未送信, 残った未送信を設定] = React.useState(0);
   const [タグの下書き, タグの下書きを置く] = React.useState('');
+  /** 下書きのタグを候補に足す（# が無ければ付ける） */
+  const 下書きのタグを足す = () => {
+    const 字 = タグの下書き.trim();
+    if (!字) return;
+    addTagTemplate(字.startsWith('#') ? 字 : `#${字}`);
+    タグの下書きを置く('');
+  };
   const [管理者の合言葉の窓, 管理者の合言葉の窓を出す] = React.useState(false);
   const [管理者の合言葉, 管理者の合言葉を置く] = React.useState('');
   const [合言葉を確かめ中, 合言葉を確かめ中を置く] = React.useState(false);
@@ -711,16 +718,7 @@ const SettingsScreen = () => {
                       placeholder="新しいタグを追加"
                       value={タグの下書き}
                       onChangeText={タグの下書きを置く}
-                      onSubmitEditing={() => {
-                        if (タグの下書き.trim()) {
-                          addTagTemplate(
-                            タグの下書き.trim().startsWith('#')
-                              ? タグの下書き.trim()
-                              : `#${タグの下書き.trim()}`
-                          );
-                          タグの下書きを置く('');
-                        }
-                      }}
+                      onSubmitEditing={下書きのタグを足す}
                     />
                     <Pressable
                       style={({ hovered }) => [
@@ -733,16 +731,7 @@ const SettingsScreen = () => {
                         hovered && { backgroundColor: 基本色.青_濃い },
                         IS_WEB && { cursor: 'pointer' },
                       ]}
-                      onPress={() => {
-                        if (タグの下書き.trim()) {
-                          addTagTemplate(
-                            タグの下書き.trim().startsWith('#')
-                              ? タグの下書き.trim()
-                              : `#${タグの下書き.trim()}`
-                          );
-                          タグの下書きを置く('');
-                        }
-                      }}
+                      onPress={下書きのタグを足す}
                     >
                       <Text style={{ color: 基本色.白, fontWeight: 'bold' }}>追加</Text>
                     </Pressable>

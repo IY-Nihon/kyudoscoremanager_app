@@ -245,4 +245,46 @@ function 弓具の節(人, 記録たち) {
 }
 const 比較の色たち = [色.桃, 色.緑_濃い, 色.橙_濃い, 色.紫, 色.青緑, 色.藍, 色.青_極];
 
-module.exports = { 弓具の案内, 型の節, 型の節の部品, 弓具の節, 比較の色たち };
+/** 立ち（4 射）の結果の区分。画面に出す順 */
+const 立ちの結果の区分 = [
+  { label: '皆中', key: 'kaichu', color: 色.橙 },
+  { label: '三中', key: 'sanchu', color: 色.緑 },
+  { label: '羽分', key: 'hake', color: 色.青 },
+  { label: '一中', key: 'icchu', color: 色.藍 },
+  { label: '残念', key: 'zannen', color: 色.赤 },
+];
+
+/**
+ * 立ちの結果分布の棒（皆中〜残念の回数と、全部の中の割合）。分析の画面と個人の詳細で使う。
+ * 回数が 1 回でもあれば、棒は細くても見えるようにする（3% は残す）
+ * @param {{patterns: {kaichu?: number, sanchu?: number, hake?: number, icchu?: number, zannen?: number}}} 引数
+ */
+function 立ちの結果の棒たち({ patterns }) {
+  const 全部 = Object.values(patterns).reduce((甲, 乙) => 甲 + 乙, 0);
+  return 立ちの結果の区分.map((区分) => {
+    const 回数 = patterns[区分.key] || 0;
+    const 占める割合 = 全部 > 0 ? (回数 / 全部) * 100 : 0;
+    return (
+      <View key={区分.key} style={styles.patternLine}>
+        <View style={{ width: 45 }}>
+          <Text style={styles.patternLabelText}>{区分.label}</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <View style={styles.barContainer}>
+            <View
+              style={[
+                styles.barFill,
+                { width: `${Math.max(占める割合, 回数 > 0 ? 3 : 0)}%`, backgroundColor: 区分.color },
+              ]}
+            />
+          </View>
+        </View>
+        <View style={{ width: 50, alignItems: 'flex-end' }}>
+          <Text style={styles.patternValueText}>{回数}回</Text>
+        </View>
+      </View>
+    );
+  });
+}
+
+module.exports = { 弓具の案内, 型の節, 型の節の部品, 弓具の節, 比較の色たち, 立ちの結果の棒たち };

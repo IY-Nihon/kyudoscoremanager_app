@@ -16,7 +16,7 @@ const Svg = require('react-native-svg').default ?? require('react-native-svg');
 const { ArrowLocationView } = require('./ArrowLocationView');
 // 見た目の決まりと部品は分析画面と同じ
 const { styles } = require('./analysisStyles');
-const { 型の節, 弓具の節, 比較の色たち } = require('./analysisParts');
+const { 型の節, 弓具の節, 比較の色たち, 立ちの結果の棒たち } = require('./analysisParts');
 
 /**
  * 分析画面の「部員の詳細」の窓（2026-10-05 に AnalysisScreen.js から切り出した。動きは変えていない）。
@@ -1143,41 +1143,7 @@ const 部員の詳細の窓 = ({
                           : '立ちの結果分布 (4射単位)'}
                       </Text>
                       <View style={styles.patternsCard}>
-                        {[
-                          { label: '皆中', key: 'kaichu', color: 基本色.橙 },
-                          { label: '三中', key: 'sanchu', color: 基本色.緑 },
-                          { label: '羽分', key: 'hake', color: 基本色.青 },
-                          { label: '一中', key: 'icchu', color: 基本色.藍 },
-                          { label: '残念', key: 'zannen', color: 基本色.赤 },
-                        ].map((区分) => {
-                          const 元 = 詳細の期間の成績 || 詳細の部員;
-                          const 回数 = 元.patterns[区分.key] || 0;
-                          const 全部 = Object.values(元.patterns).reduce((甲, 乙) => 甲 + 乙, 0);
-                          const 占める割合 = 全部 > 0 ? (回数 / 全部) * 100 : 0;
-                          return (
-                            <View key={区分.key} style={styles.patternLine}>
-                              <View style={{ width: 45 }}>
-                                <Text style={styles.patternLabelText}>{区分.label}</Text>
-                              </View>
-                              <View style={{ flex: 1 }}>
-                                <View style={styles.barContainer}>
-                                  <View
-                                    style={[
-                                      styles.barFill,
-                                      {
-                                        width: `${Math.max(占める割合, 回数 > 0 ? 3 : 0)}%`,
-                                        backgroundColor: 区分.color,
-                                      },
-                                    ]}
-                                  />
-                                </View>
-                              </View>
-                              <View style={{ width: 50, alignItems: 'flex-end' }}>
-                                <Text style={styles.patternValueText}>{回数}回</Text>
-                              </View>
-                            </View>
-                          );
-                        })}
+                        <立ちの結果の棒たち patterns={(詳細の期間の成績 || 詳細の部員).patterns} />
                       </View>
                       {/* 4射そろわない末尾は分布に入れられない。 */
                       /* 断らないと「的中率と数が合わない」と見える */}
