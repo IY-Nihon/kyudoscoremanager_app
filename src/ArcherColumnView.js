@@ -85,6 +85,37 @@ const ArcherColumnView = React.memo(
       (横 ? UIConfig.cellWidth : archer.isSeparator ? UIConfig.separatorWidth : UIConfig.cellWidth) * 倍率;
     const ます高 = (横 && archer.isSeparator ? UIConfig.separatorWidth : UIConfig.cellHeight) * 倍率;
     const 列の幅 = (archer.isSeparator ? UIConfig.separatorWidth : UIConfig.cellWidth) * 倍率;
+    // 見るだけで開いていて（管理者でもない）、表に触れないか
+    const 触れない = isReadOnly && !isAdminMode;
+    /** その立の鍵がかかっているか（触れないときは出さない） */
+    const 立の鍵 = (立) => !触れない && (archer.lockedBlocks?.[立] || false);
+    // 間隔と計の列は立ごとに 1 つの箱。縦の表は下から上へ並ぶので、立も逆に並べる
+    const 立の数 = Math.ceil(shots / 4);
+    const 立の並び = Array.from({ length: 立の数 }, (無し, 番) => (横 ? 番 : 立の数 - 1 - 番));
+    /** 立の箱の本数と枠の線。立の切れ目の太線は、縦は箱の下（1 立目の下は細い）、横は箱の右（最後の立の右は細い） */
+    const 立の箱 = (立) => {
+      const 頭 = 4 * 立;
+      const 本数 = Math.min(shots, 頭 + 4) - 頭;
+      const 太線 = 横 ? 頭 + 本数 < shots : 立 !== 0;
+      const 線 = 横
+        ? {
+            borderRightWidth: 太線 ? 2 : 1,
+            borderRightColor: 色.黒,
+            borderBottomWidth: 1,
+            borderBottomColor: 色.黒,
+            borderTopWidth: 1,
+            borderTopColor: 色.黒,
+          }
+        : {
+            borderBottomWidth: 太線 ? 2 : 1,
+            borderBottomColor: 色.黒,
+            borderRightWidth: 1,
+            borderRightColor: 色.黒,
+            borderLeftWidth: 1,
+            borderLeftColor: 色.黒,
+          };
+      return { 本数, 線 };
+    };
     const 背景の色 = archer.isSeparator
       ? 'rgba(142,142,147,0.15)'
       : archer.isTotalCalculator
@@ -150,8 +181,7 @@ const ArcherColumnView = React.memo(
     const 閉じた覚え = React.useRef({});
     // 埋まっている立の番号（「0,2」の形。親が受け持つ射手を見て数える）。
     // 中身が変わったときだけ数え直したいので文字のまま持つ
-    const 埋まった立 =
-      !間隔か合計 || !鍵が効く || onToggleLock || (isReadOnly && !isAdminMode) ? '' : 受け持ちの埋まった立;
+    const 埋まった立 = !間隔か合計 || !鍵が効く || onToggleLock || 触れない ? '' : 受け持ちの埋まった立;
     React.useEffect(() => {
       const 立たち = 埋まった立 ? 埋まった立.split(',').map(Number) : [];
       // 埋まらなくなった立は覚えを捨てる。入れ直せば、また閉じるように
@@ -308,35 +338,14 @@ const ArcherColumnView = React.memo(
             // 間隔の列も立ごとに 1 つの箱にして、中のマス目は引かない。
             // 鍵が効くときは箱の端に鍵のアイコンを出し、箱のどこを押しても鍵が切り替わる（今までは端のマスだけ）
             <View style={横 ? { flexDirection: 'row' } : undefined}>
-              {Array.from({ length: Math.ceil(shots / 4) }, (無し, 番) =>
-                横 ? 番 : Math.ceil(shots / 4) - 1 - 番
-              ).map((立) => {
-                const 頭 = 4 * 立;
-                const 本数 = Math.min(shots, 頭 + 4) - 頭;
-                const 鍵 = !(isReadOnly && !isAdminMode) && (archer.lockedBlocks?.[立] || false);
-                const 太線 = 横 ? 頭 + 本数 < shots : 立 !== 0;
-                const 線 = 横
-                  ? {
-                      borderRightWidth: 太線 ? 2 : 1,
-                      borderRightColor: 色.黒,
-                      borderBottomWidth: 1,
-                      borderBottomColor: 色.黒,
-                      borderTopWidth: 1,
-                      borderTopColor: 色.黒,
-                    }
-                  : {
-                      borderBottomWidth: 太線 ? 2 : 1,
-                      borderBottomColor: 色.黒,
-                      borderRightWidth: 1,
-                      borderRightColor: 色.黒,
-                      borderLeftWidth: 1,
-                      borderLeftColor: 色.黒,
-                    };
+              {立の並び.map((立) => {
+                const { 本数, 線 } = 立の箱(立);
+                const 鍵 = 立の鍵(立);
                 return (
                   <TouchableOpacity
                     key={立}
                     testID={'間隔の箱-' + archer.id + '-' + 立}
-                    disabled={!鍵が効く || (isReadOnly && !isAdminMode)}
+                    disabled={!鍵が効く || 触れない}
                     onPress={() => 鍵を押した(archer.id, 立)}
                     activeOpacity={0.7}
                     accessible={鍵が効く}
@@ -371,31 +380,9 @@ const ArcherColumnView = React.memo(
             // 計の列は立ごとに 1 つの箱。中のマス目は引かず、数を立の真ん中に置く。
             // 鍵は箱の端（縦は上・横は右）のアイコンを押したときだけ。ほかを押すと見せ方が次へ進む
             <View style={横 ? { flexDirection: 'row' } : undefined}>
-              {Array.from({ length: Math.ceil(shots / 4) }, (無し, 番) =>
-                横 ? 番 : Math.ceil(shots / 4) - 1 - 番
-              ).map((立) => {
-                const 頭 = 4 * 立;
-                const 本数 = Math.min(shots, 頭 + 4) - 頭;
-                const 鍵 = !(isReadOnly && !isAdminMode) && (archer.lockedBlocks?.[立] || false);
-                // 立の切れ目の太線。縦は箱の下（1 立目の下は細い）、横は箱の右（最後の立の右は細い）
-                const 太線 = 横 ? 頭 + 本数 < shots : 立 !== 0;
-                const 線 = 横
-                  ? {
-                      borderRightWidth: 太線 ? 2 : 1,
-                      borderRightColor: 色.黒,
-                      borderBottomWidth: 1,
-                      borderBottomColor: 色.黒,
-                      borderTopWidth: 1,
-                      borderTopColor: 色.黒,
-                    }
-                  : {
-                      borderBottomWidth: 太線 ? 2 : 1,
-                      borderBottomColor: 色.黒,
-                      borderRightWidth: 1,
-                      borderRightColor: 色.黒,
-                      borderLeftWidth: 1,
-                      borderLeftColor: 色.黒,
-                    };
+              {立の並び.map((立) => {
+                const { 本数, 線 } = 立の箱(立);
+                const 鍵 = 立の鍵(立);
                 const 字 = 立の計の字(立);
                 return (
                   <TouchableOpacity
@@ -471,7 +458,7 @@ const ArcherColumnView = React.memo(
                     {鍵が効く && (
                       <TouchableOpacity
                         testID={'計の鍵-' + archer.id + '-' + 立}
-                        disabled={isReadOnly && !isAdminMode}
+                        disabled={触れない}
                         onPress={() => 鍵を押した(archer.id, 立)}
                         accessible
                         accessibilityRole="button"
@@ -509,7 +496,7 @@ const ArcherColumnView = React.memo(
                 }
                 const 立 = Math.floor(射番 / 4);
                 const 立の端 = 射番 === Math.min(shots - 1, 4 * 立 + 3);
-                const 鍵 = !(isReadOnly && !isAdminMode) && (archer.lockedBlocks?.[立] || false);
+                const 鍵 = 立の鍵(立);
                 return (
                   <ScoreCell
                     key={射番}
@@ -556,7 +543,7 @@ const ArcherColumnView = React.memo(
                 // 押す＝外す は今までどおりにして、覚え直さずに済むようにする
                 onLongPress={() => 区切りを長押し && 区切りを長押し(archer.id)}
                 delayLongPress={500}
-                disabled={isReadOnly && !isAdminMode}
+                disabled={触れない}
                 accessible
                 accessibilityRole="button"
                 accessibilityLabel={
