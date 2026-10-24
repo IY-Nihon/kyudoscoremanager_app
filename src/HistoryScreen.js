@@ -107,6 +107,8 @@ const HistoryScreen = () => {
   const タグの横流し = use横流し();
   const 月の横流し = use横流し();
   const 自分の名前 = useScoreStore((状態) => 状態.myMemberName) || '';
+  // 年度の区切りは団体の「年度の始まり」の月で決まる（学.年度 が読む）。変えたら一覧も札も作り直す
+  const 年度の始まりの月 = useScoreStore((状態) => 状態.yearStartMonth);
   const [検索の文, 検索の文を置く] = React.useState('');
   const [見ている月, 見ている月を置く] = React.useState('');
   const [見ている年度, 見ている年度を置く] = React.useState(() => {
@@ -221,7 +223,7 @@ const HistoryScreen = () => {
       集めた.add(学.年度(new Date(日時)));
     });
     return Array.from(集めた).sort((甲, 乙) => 乙 - 甲);
-  }, [mySessions]);
+  }, [mySessions, 年度の始まりの月]);
   const タグの一覧 = React.useMemo(() => {
     const 集めた = new Set();
     mySessions.forEach((記録) => {
@@ -243,7 +245,13 @@ const HistoryScreen = () => {
         集めた.add(`${年}/${String(月).padStart(2, '0')}`);
     });
     return Array.from(集めた).sort((甲, 乙) => 甲.localeCompare(乙));
-  }, [mySessions, 見ている年度]);
+  }, [mySessions, 見ている年度, 年度の始まりの月]);
+  /** 「2026年度 (2026/04 - 2027/03)」。4 月始まりと決め打ちにすると、ほかの月の団体で区切りと札がずれる */
+  const 年度の札 = (年度) => {
+    const { 始め, 終わり } = 学.年度の範囲(年度);
+    const 年月 = (日) => `${日.getFullYear()}/${String(日.getMonth() + 1).padStart(2, '0')}`;
+    return `${年度}年度 (${年月(始め)} - ${年月(終わり)})`;
+  };
   React.useEffect(() => {
     if (!年度の一覧.includes(見ている年度)) 見ている年度を置く(年度の一覧[0]);
   }, [年度の一覧, 見ている年度]);
@@ -1325,9 +1333,7 @@ const HistoryScreen = () => {
                         onPress={() => 年度の窓を出す(true)}
                       >
                         <Text style={styles.yearButtonText}>
-                          {年度の一覧.length > 0
-                            ? `${見ている年度}年度 (${見ている年度}/04 - ${見ている年度 + 1}/03)`
-                            : '記録なし'}
+                          {年度の一覧.length > 0 ? 年度の札(見ている年度) : '記録なし'}
                         </Text>
                         <Icons.Ionicons name="chevron-expand" size={14} color={基本色.藍} />
                       </Pressable>
@@ -1395,9 +1401,7 @@ const HistoryScreen = () => {
                 }}
               >
                 <Text style={[styles.yearOptionText, 見ている年度 === 年度 && styles.yearOptionTextSelected]}>
-                  {年度}年度 ({年度}
-                  {'/04 - '}
-                  {年度 + 1}/03)
+                  {年度の札(年度)}
                 </Text>
               </TouchableOpacity>
             ))}
