@@ -1,5 +1,5 @@
 /**
- * 端末に書けなくなったときの知らせ（src/useScoreStore.js の 端末の置き場）。
+ * 端末に書けなくなったときの知らせ（src/storeShared.js の 端末の置き場）。
  *
  *   npx playwright test e2e/storageFull.spec.mjs
  *

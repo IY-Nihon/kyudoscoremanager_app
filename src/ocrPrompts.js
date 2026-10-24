@@ -2,7 +2,7 @@
  * Module ID: ocrPrompts
  *
  * 画像の読み取りを頼むときの指示文。画面から切り離してあるので、
- * そのまま検査から叩ける（scripts/try-ocr.mjs、test/ocrPrompts.test.js）。
+ * そのまま検査から叩ける（scripts/try-ocr.mjs、test/ocrKatachiShijibun.test.js）。
  *
  * 指示文が画面の中に埋まっていたころは、実物の写真で試すたびに画面を
  * 動かす必要があり、正解と突き合わせながら詰められなかった。
