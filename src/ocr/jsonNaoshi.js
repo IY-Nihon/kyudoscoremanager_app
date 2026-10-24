@@ -48,12 +48,12 @@ function AIのJSONを読む(文) {
     直し = 直し.replace(/([○◯〇])\\(?=")/g, '$1\\\\');
     try {
       return JSON.parse(直し);
-    } catch (e) {
+    } catch {
       // 次へ
     }
     try {
       return JSON.parse(閉じ括弧を足す(直し));
-    } catch (e) {
+    } catch {
       throw 元の誤り;
     }
   }

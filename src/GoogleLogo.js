@@ -3,7 +3,7 @@
 const { 色 } = require('./iro.js');
 // Google の「G」の印。Google の決まった4色で描く（字体の「G」では Google と分からなかった）。
 // 色はログイン画面の配色の検査（test/loginTheme.test.js）に掛からないよう、この別のファイルに置く
-const React = require('react');
+
 const Svg = require('react-native-svg').default;
 const { Path } = require('react-native-svg');
 

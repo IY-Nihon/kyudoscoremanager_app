@@ -7,6 +7,7 @@
  * 指示文が画面の中に埋まっていたころは、実物の写真で試すたびに画面を
  * 動かす必要があり、正解と突き合わせながら詰められなかった。
  */
+/* eslint-disable no-irregular-whitespace -- 指示文の字下げに全角空白を使う（Gemini に送る中身なので変えない） */
 'use strict';
 
 const 改 = String.fromCharCode(10);

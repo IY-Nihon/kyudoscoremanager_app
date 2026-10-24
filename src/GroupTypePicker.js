@@ -5,7 +5,7 @@
  * 団体を作る画面（暗い地）と設定の窓（明るい地）の両方で使う。種類は src/gakunen.js の 種類たち。
  * 丸の印は図形で描く（アイコンの字体が届かない端末でも出るように）。
  */
-const React = require('react');
+
 const { Text, View, Pressable, StyleSheet } = require('./rn');
 const { 色 } = require('./iro.js');
 const 学 = require('./gakunen');

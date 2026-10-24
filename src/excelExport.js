@@ -28,6 +28,8 @@ Object.defineProperty(exports, '__esModule', { value: true });
 // XML の特殊文字と、Excelが扱えない制御文字を除去・置換する
 function esc(値) {
   return String(値)
+    // Excel の XML に入れられない制御文字（改行・タブは残す）を落とす
+    // eslint-disable-next-line no-control-regex -- 制御文字をわざと探す
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

@@ -3,9 +3,9 @@ const { 色 } = iroの組;
 /**
  * 矢所を的の上にプロットして表示する読み取り専用コンポーネント
  */
-import React from 'react';
+
 import { View, Text, StyleSheet } from './rn';
-import { useScoreStore } from './useScoreStore';
+
 import { useストアの一部 } from './storeSlice';
 
 const CIRCLED_NUMBERS = [

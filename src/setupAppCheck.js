@@ -69,7 +69,7 @@ function 印の失敗を知らせる(AppCheck, 器, 窓, 送る) {
       知らせた = true;
       try {
         (送る || require('./errorReporter').不具合を送る)('App Check の印', 誤り);
-      } catch (e) {
+      } catch {
         /* 知らせられなくてもアプリは止めない */
       }
     }

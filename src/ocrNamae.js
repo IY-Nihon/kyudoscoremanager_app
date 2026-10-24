@@ -97,7 +97,7 @@ function matchArcherName(rawText, candidates) {
   if (!text) return { status: 'empty' };
 
   // 括弧付き識別子: "桐原(光)" 形式を分離
-  const parenMatch = rawText.match(/^([^\s\u3000(（]+)[\(（]([^)）]+)[\)）]$/);
+  const parenMatch = rawText.match(/^([^\s\u3000(（]+)[(（]([^)）]+)[)）]$/);
   const searchSei = parenMatch ? parenMatch[1] : null;
   const searchDisambig = parenMatch ? parenMatch[2] : null;
 

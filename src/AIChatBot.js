@@ -138,7 +138,7 @@ const loadButtonPos = () => {
         return parsed;
       }
     }
-  } catch (誤り) {
+  } catch {
     /* 読めなければ、右下から始める */
   }
   return null;
@@ -149,7 +149,7 @@ const saveButtonPos = (pos) => {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(BUTTON_POS_KEY, JSON.stringify(pos));
     }
-  } catch (誤り) {
+  } catch {
     /* 覚えられなくても、この場では動く。次回また右下に戻るだけ */
   }
 };
@@ -169,7 +169,7 @@ const loadChatHistory = (鍵 = CHAT_HISTORY_KEY) => {
         return parsed.map((msg) => (msg.id ? msg : { ...msg, id: generateMsgId() }));
       }
     }
-  } catch (誤り) {
+  } catch {
     /* 読めなければ、やり取りの控えは無いものとして始める */
   }
   return null;
@@ -181,7 +181,7 @@ const saveChatHistory = (messages, 鍵 = CHAT_HISTORY_KEY) => {
       const toSave = messages.slice(-MAX_SAVED_MESSAGES);
       localStorage.setItem(鍵, JSON.stringify(toSave));
     }
-  } catch (誤り) {
+  } catch {
     /* 控えられなくても、やり取りは続く。端末の空き不足は記録の保存側が知らせる */
   }
 };
@@ -374,7 +374,7 @@ const AIChatBot = () => {
           try {
             const 選択 = window.getSelection();
             if (選択 && !選択.isCollapsed) 選択.removeAllRanges();
-          } catch (誤り) {
+          } catch {
             /* 解けなくても引く動きは続く */
           }
         }
@@ -1097,8 +1097,8 @@ const AIChatBot = () => {
             let 文 = '';
             try {
               文 = かけら.text() || '';
-            } catch (誤り) {
-              文 = ''; // 道具の呼び出しだけのかけらは文字を持たない
+            } catch {
+              // 道具の呼び出しだけのかけらは文字を持たない（text() が投げる）
             }
             if (!文) continue;
             if (!最初の字の時刻) 最初の字の時刻 = Date.now();
@@ -1733,10 +1733,10 @@ const AIChatBot = () => {
         // 誤りの文言だけ）。送らないと、使う人に何が多く出ているのか運用側から見えない
         try {
           require('./errorReporter').不具合を送る('AIチャット', error);
-        } catch (便りの誤り) {
+        } catch {
           // 便りの仕組みが転んでも、チャットの知らせは出す
         }
-        let errorMsg = '通信エラーが発生しました。';
+        let errorMsg;
         if (error.message?.includes('503')) {
           errorMsg = 'ただいまAIが混み合っています。しばらく待ってからもう一度送信してください。';
         } else if (is429) {

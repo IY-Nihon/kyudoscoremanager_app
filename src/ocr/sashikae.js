@@ -151,7 +151,7 @@ export async function マスを端末で差し替える(teams, images, 設定) {
       let 二度目;
       try {
         二度目 = await 板を読む(組み直し, images, 設定);
-      } catch (e) {
+      } catch {
         二度目 = null;
       }
       if (Array.isArray(二度目)) {
@@ -198,7 +198,7 @@ export async function マスを端末で差し替える(teams, images, 設定) {
         let 二度目;
         try {
           二度目 = await 板を読む(組み直し, images, { ...設定, 行数: 試す段 });
-        } catch (e) {
+        } catch {
           二度目 = null;
         }
         if (Array.isArray(二度目)) {
@@ -222,8 +222,8 @@ export async function マスを端末で差し替える(teams, images, 設定) {
     let 先のノート = null;
     try {
       先のノート = await ノートで読む(一射の答え, images, 設定, true);
-    } catch (e) {
-      先のノート = null;
+    } catch {
+      // ノートとして読めなければ、下の板・紙の順に回す
     }
     if (先のノート && 先のノート.teams) return { teams: 先のノート.teams, 読み取り元: '端末', ノート: true };
     if (Array.isArray(先のノート))
@@ -252,7 +252,7 @@ export async function マスを端末で差し替える(teams, images, 設定) {
         let 板で;
         try {
           板で = await 板を読む(組, images, 設定);
-        } catch (e) {
+        } catch {
           板で = null;
         }
         const 答え = 答えの段の(組, true);
@@ -291,7 +291,7 @@ export async function マスを端末で差し替える(teams, images, 設定) {
         let 三度目;
         try {
           三度目 = await 板を読む(外した, images, 設定);
-        } catch (e) {
+        } catch {
           三度目 = null;
         }
         if (Array.isArray(三度目)) {
@@ -312,7 +312,7 @@ export async function マスを端末で差し替える(teams, images, 設定) {
           let 四度目;
           try {
             四度目 = await 板を読む(組, images, 設定);
-          } catch (e) {
+          } catch {
             四度目 = null;
           }
           if (Array.isArray(四度目)) {
@@ -659,7 +659,7 @@ async function 板を読む(teams, images, 設定) {
       });
       const 見当たち = 下見.map((b) => b.格子 && b.格子.段の見当).filter((v) => Number.isFinite(v));
       if (見当たち.length) 見当 = Math.max(...見当たち);
-    } catch (e) {
+    } catch {
       見当 = null;
     }
     if (見当 != null && 見当 >= 2) {
@@ -674,7 +674,7 @@ async function 板を読む(teams, images, 設定) {
         let そろった;
         try {
           そろった = await 板を読む(teams, images, { ...設定, 行数 });
-        } catch (e) {
+        } catch {
           そろった = null;
         }
         if (Array.isArray(そろった)) return そろった;
@@ -701,7 +701,7 @@ async function 板を読む(teams, images, 設定) {
         let r;
         try {
           r = await 板を読む(teams, images, { ...設定, 行数: n });
-        } catch (e) {
+        } catch {
           r = null;
         }
         if (Array.isArray(r)) 読めた.push({ n, r });

@@ -3,13 +3,13 @@ const { 色 } = iroの組;
 /**
  * 矢所記録入力用ポップアップモーダルコンポーネント
  */
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { View, Text, Modal, TouchableOpacity, Pressable, Alert, Dimensions, StyleSheet } from './rn';
 import { Ionicons } from '@expo/vector-icons';
-import { useScoreStore } from './useScoreStore';
+
 import { useストアの一部 } from './storeSlice';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // 漢数字・丸数字の変換テーブル（1〜8射用）
 const CIRCLED_NUMBERS = [
@@ -368,12 +368,13 @@ export const ArrowLocationPopover = ({
                 const posY = touchAreaRadius + loc.y * targetRadius;
 
                 // 的中は緑系、外れは赤・オレンジ系にする
-                let markerBgColor = 'rgba(0, 122, 255, 0.7)';
-                if (isHit) {
-                  markerBgColor = isCurrent ? 色.緑 : 'rgba(52, 199, 89, 0.75)';
-                } else {
-                  markerBgColor = isCurrent ? 色.赤 : 'rgba(255, 149, 0, 0.75)';
-                }
+                const markerBgColor = isHit
+                  ? isCurrent
+                    ? 色.緑
+                    : 'rgba(52, 199, 89, 0.75)'
+                  : isCurrent
+                    ? 色.赤
+                    : 'rgba(255, 149, 0, 0.75)';
 
                 return (
                   <View

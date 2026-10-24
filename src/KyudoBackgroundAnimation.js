@@ -1,6 +1,6 @@
 import iroの組 from './iro.js';
 const { 色 } = iroの組;
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { StyleSheet, View, Platform, Dimensions } from './rn';
 
 // Web版とNative版を条件分岐で実装

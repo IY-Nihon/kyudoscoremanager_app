@@ -391,7 +391,7 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
     const 今の枝 = ライブの枝();
     if (!今の枝) return null;
     const 状態の道 = `live_sessions/${今の枝}/${名前}/state`;
-    let 今の中身 = {};
+    let 今の中身;
     try {
       const 返り = await RTDB.get(RTDB.ref(Firebaseの器.rtdb, 状態の道));
       今の中身 = 返り.exists() ? 返り.val() || {} : {};
@@ -555,7 +555,7 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
           const 限 = await RTDB.get(RTDB.ref(Firebaseの器.rtdb, 期限の場所(枝)));
           const 期限の値 = 限.exists() ? 限.val() : null;
           if (typeof 期限の値 === 'number' && (await サーバー時刻()) >= 期限の値) return '期限切れ';
-        } catch (e2) {
+        } catch {
           /* 期限も読めない。理由が分からないので、下の「確認できない」に落とす */
         }
       console.error('[Store] 共有リンクの確認に失敗:', 誤り);
@@ -802,7 +802,7 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
     if (!枝) {
       try {
         枝 = 秘.ライブの枝(await 状態().ライブの合言葉を用意する());
-      } catch (誤り) {
+      } catch {
         枝 = null;
       }
     }
@@ -812,7 +812,7 @@ const ライブの操作 = (書く, 状態, そのまま書く) => ({
       届いた状態 = (
         await RTDB.get(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${続き.名前}/state`))
       ).val();
-    } catch (誤り) {
+    } catch {
       return '確認できない';
     }
     if (状態().isLiveActive) return '無い';

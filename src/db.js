@@ -103,7 +103,7 @@ exports.dbReady = Promise.resolve(firestore);
       try {
         求め.result.close();
         window.indexedDB.deleteDatabase(名);
-      } catch (e) {
+      } catch {
         /* 片付けられなくても実害は無い */
       }
       持てているとする();

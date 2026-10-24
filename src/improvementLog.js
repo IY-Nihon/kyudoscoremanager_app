@@ -36,7 +36,7 @@ function いまの様子() {
   try {
     const s = require('./useScoreStore').useScoreStore.getState();
     return { 団体: s.activeGroupId || '', 役割: s.activeRole || '' };
-  } catch (e) {
+  } catch {
     return {};
   }
 }
@@ -82,7 +82,7 @@ async function 改善のために取っておく(種類, 中身, 添付たち = 
 async function base64をBlobに(base64, 型) {
   try {
     return await (await fetch(`data:${型};base64,${base64}`)).blob();
-  } catch (e) {
+  } catch {
     return null;
   }
 }
@@ -107,7 +107,7 @@ async function 写真を縮める(base64, 型 = 'image/jpeg', 長い辺 = 1600) 
     紙.getContext('2d').drawImage(画, 0, 0, 幅, 高);
     if (typeof 画.close === 'function') 画.close();
     return await new Promise((解く) => 紙.toBlob((体) => 解く(体 || null), 'image/jpeg', 0.8));
-  } catch (e) {
+  } catch {
     return null;
   }
 }

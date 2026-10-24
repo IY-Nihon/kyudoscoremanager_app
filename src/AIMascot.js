@@ -1,6 +1,5 @@
 'use strict';
 
-const { 色: 基本色 } = require('./iro.js');
 /**
  * Module ID: AIMascot (hand-written)
  * AIアシスタントのキャラクター。ドット絵の小さな生き物で、弓道らしく鉢巻をして袴をはいている。

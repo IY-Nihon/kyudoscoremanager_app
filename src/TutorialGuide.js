@@ -72,7 +72,7 @@ function 見えるところへ(名前) {
   if (枠.top >= ゆとり && 枠.bottom <= 画面高 - ゆとり) return false;
   try {
     節.scrollIntoView({ block: 'center' });
-  } catch (誤り) {
+  } catch {
     return false;
   }
   return true;
@@ -111,7 +111,7 @@ function 節を測る(節) {
         if (typeof 左 !== 'number' || !幅 || !高さ) return 終わる(null);
         終わる({ x: 左, y: 上, 幅, 高さ });
       });
-    } catch (誤り) {
+    } catch {
       終わる(null);
     }
     setTimeout(() => 終わる(null), 400);
@@ -135,7 +135,7 @@ function 位置を測る(名前) {
         if (typeof 左 !== 'number' || !幅 || !高さ) return 終わる(null);
         終わる({ x: 左, y: 上, 幅, 高さ });
       });
-    } catch (誤り) {
+    } catch {
       終わる(null);
     }
     // measureInWindow は画面に無いと呼ばれ返らないことがある

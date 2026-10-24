@@ -51,8 +51,6 @@ const SettingsScreen = () => {
   const { mode: themeMode, setThemeMode: setThemeModeFn } = themeMod.useThemeMode();
   const {
     currentFreshmanTerm = 1,
-    trash = [],
-    shotsPerRound = 8,
     updateCurrentFreshmanTerm,
     syncStatus = 'IDLE',
     lastSyncTime,
@@ -1095,7 +1093,7 @@ const SettingsScreen = () => {
                     );
                     try {
                       await FirebaseAuth.signOut(auth);
-                    } catch (誤り) {
+                    } catch {
                       // 口座はもう無いので、ここで失敗しても構わない
                     }
                     setAuth(null, null, null, null);
@@ -1195,7 +1193,7 @@ const SettingsScreen = () => {
                       } else {
                         Alert.alert('エラー', 'パスワードが正しくありません。');
                       }
-                    } catch (誤り) {
+                    } catch {
                       Alert.alert('エラー', '認証に失敗しました。');
                     } finally {
                       合言葉を確かめ中を置く(false);
@@ -1258,7 +1256,7 @@ const SettingsScreen = () => {
                     let 残り = 残った未送信;
                     try {
                       残り = await useScoreStore.getState().flushUnsyncedForLogout();
-                    } catch (誤り) {
+                    } catch {
                       残り = useScoreStore.getState().countUnsynced();
                     }
                     残った未送信を設定(残り);

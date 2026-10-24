@@ -445,7 +445,7 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
       ].filter((個人ID) => !!個人ID);
     const 形が正しい = (id) => !!id && /^\d{4}$/.test(id);
     const 空いている番号を作る = (使われている) => {
-      let 候補 = '';
+      let 候補;
       let 回数 = 0;
       do {
         候補 = Math.floor(1e3 + 9e3 * Math.random()).toString();

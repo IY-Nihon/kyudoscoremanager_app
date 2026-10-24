@@ -49,8 +49,8 @@ const LabelColumn = ({ shots, showFooter = true, 横並び: 横 = false }) => {
         <View style={横 ? { flexDirection: 'row' } : undefined}>
           {番号たち.map((番号) => {
             // 立の切れ目。縦では下の線、横では右の線を太くする
-            const 縦の切れ目 = (番号 - 1) % 4 == 0 && 番号 !== 1;
-            const 切れ目 = 横 ? 番号 % 4 == 0 && 番号 !== 番号たち.length : 縦の切れ目;
+            const 縦の切れ目 = (番号 - 1) % 4 === 0 && 番号 !== 1;
+            const 切れ目 = 横 ? 番号 % 4 === 0 && 番号 !== 番号たち.length : 縦の切れ目;
             return (
               <View
                 key={番号}

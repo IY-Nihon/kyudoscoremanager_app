@@ -427,7 +427,7 @@ function initTheme() {
         }
       })
       .catch(() => {});
-  } catch (e) {
+  } catch {
     /* 保存値が読めなくても既定値で動作する */
   }
 }

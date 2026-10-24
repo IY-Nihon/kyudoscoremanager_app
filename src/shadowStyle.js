@@ -34,9 +34,9 @@ const hexToRgba = (color, opacity) => {
   if (color === 'black') return `rgba(0,0,0,${opacity})`;
   if (color === 'white') return `rgba(255,255,255,${opacity})`;
   const 十六進 = color.replace('#', '');
-  let 赤 = 0;
-  let 緑 = 0;
-  let 青 = 0;
+  let 赤;
+  let 緑;
+  let 青;
   if (十六進.length === 3) {
     赤 = parseInt(十六進[0] + 十六進[0], 16);
     緑 = parseInt(十六進[1] + 十六進[1], 16);

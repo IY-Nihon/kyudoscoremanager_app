@@ -13,7 +13,7 @@ const {
   Keyboard,
   ScrollView,
 } = require('./rn');
-const { useScoreStore } = require('./useScoreStore');
+
 const { useストアの一部 } = require('./storeSlice');
 const { IS_IOS } = require('./IS_WEB');
 const { getShadowStyle } = require('./shadowStyle');
@@ -33,7 +33,6 @@ const 既定のタグ = [
 ];
 const SaveSessionModal = ({ visible, onClose, onSave }) => {
   const {
-    includeInStats,
     setIncludeInStats,
     tagTemplates = [],
     currentSessionTags = [],

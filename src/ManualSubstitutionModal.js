@@ -13,7 +13,7 @@ const {
   TouchableWithoutFeedback,
   ScrollView,
 } = require('./rn');
-const { useScoreStore } = require('./useScoreStore');
+
 const 学 = require('./gakunen');
 const { useストアの一部 } = require('./storeSlice');
 const Icons = require('@expo/vector-icons');
