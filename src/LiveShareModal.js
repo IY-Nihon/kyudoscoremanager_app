@@ -90,7 +90,8 @@ const LiveShareModal = ({ visible, onClose }) => {
         </Text>
         <TouchableOpacity
           style={styles.選び}
-          onPress={() => 使うかを置く(!合言葉を使うか)} // ✓ は絵で描いてあるので、そのままでは入か切かが読み上げられない。
+          onPress={() => 使うかを置く(!合言葉を使うか)}
+          // ✓ は絵で描いてあるので、そのままでは入か切かが読み上げられない。
           // web には aria- を明示する（TouchableOpacity は渡さない）
           accessibilityRole="checkbox"
           accessibilityState={{ checked: 合言葉を使うか }}
@@ -134,7 +135,8 @@ const LiveShareModal = ({ visible, onClose }) => {
               key={String(選.値)}
               style={[styles.期限の札, 持ち === 選.値 && styles.期限の札が入り]}
               onPress={() => 持ちを置く(選.値)}
-              accessibilityRole="button" // accessibilityState も web の DOM には届かない
+              accessibilityRole="button"
+              // accessibilityState も web の DOM には届かない
               // （accessibilityLabel と同じで、TouchableOpacity は渡さない）。
               // 付けないと、読み上げが「どれを選んでいるか」を言えない
               accessibilityState={{ selected: 持ち === 選.値 }}

@@ -187,7 +187,8 @@ const 下の帯 = React.memo(({ state, descriptors, navigation: nav }) => {
             }
             return (
               <Pressable
-                key={番} // 使い方の案内が指す先。繰り返しの中なのでフックは使えない
+                key={番}
+                // 使い方の案内が指す先。繰り返しの中なのでフックは使えない
                 ref={(node) => 案内.setTutorialTargetNode(`タブ.${道.name}`, node)}
                 onPress={() => {
                   const 合図 = nav.emit({ type: 'tabPress', target: 道.key, canPreventDefault: true });

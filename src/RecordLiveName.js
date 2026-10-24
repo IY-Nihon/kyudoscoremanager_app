@@ -70,7 +70,8 @@ const ライブ名を決める窓 = ({
                     fontSize: 16,
                     marginBottom: 20,
                   }}
-                  value={ライブ名の下書き} // 名前を直したら注意書きも消す。残すと、直したのに
+                  value={ライブ名の下書き}
+                  // 名前を直したら注意書きも消す。残すと、直したのに
                   // 「使えません」が出たままで、何が悪いのか分からない
                   onChangeText={(文) => {
                     ライブ名の下書きを置く(文);
@@ -129,7 +130,8 @@ const ライブ名を決める窓 = ({
                         }}
                       >
                         <TouchableOpacity
-                          style={{ flex: 1, padding: 16 }} // 選び直したら注意書きも消す（入力欄と揃える）
+                          style={{ flex: 1, padding: 16 }}
+                          // 選び直したら注意書きも消す（入力欄と揃える）
                           onPress={() => {
                             ライブ名の下書きを置く(名前);
                             ライブ名の注意を置く(null);
@@ -148,7 +150,8 @@ const ライブ名を決める窓 = ({
                                 onPress: () => useScoreStore.getState().deleteLiveSession(名前),
                               },
                             ]);
-                          }} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+                          }}
+                          // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                           accessible
                           accessibilityRole="button"
                           accessibilityLabel="このライブを消す"

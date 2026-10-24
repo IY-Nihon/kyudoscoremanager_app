@@ -270,7 +270,8 @@ const ScoreCell = React.memo(
     };
     return (
       <View
-        ref={cellRef} // 自動での確かめ用。どのますかを外から指せるようにしておく
+        ref={cellRef}
+        // 自動での確かめ用。どのますかを外から指せるようにしておく
         testID={'ます-' + archerId + '-' + index}
         onTouchEnd={(出来事) => {
           出来事.stopPropagation();
@@ -284,7 +285,8 @@ const ScoreCell = React.memo(
       >
         <Pressable
           onPress={handlePress}
-          disabled={isLocked} // 読み上げにはここだけを読ませる。中の「○」だけを拾われると、
+          disabled={isLocked}
+          // 読み上げにはここだけを読ませる。中の「○」だけを拾われると、
           // どの射手のどの射なのかが分からない
           accessible
           accessibilityRole="button"

@@ -817,7 +817,8 @@ const MemberScreen = () => {
               style={({ hovered }) => [
                 styles.addBtn,
                 hovered && { backgroundColor: 'rgba(0,122,255,0.05)', borderRadius: 8, padding: 4 },
-              ]} // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
+              ]}
+              // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
               accessible
               accessibilityRole="button"
               accessibilityLabel="部員を追加"

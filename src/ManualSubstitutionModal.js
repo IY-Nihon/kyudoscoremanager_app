@@ -110,7 +110,8 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
           /* 下の相手の一覧が0pxまで潰れ、部員が1人も見えなくなる */}
           <ScrollView
             style={styles.content}
-            contentContainerStyle={styles.中身} // 上の「交代するタイミング」は貼り付けたまま、下だけ流す。
+            contentContainerStyle={styles.中身}
+            // 上の「交代するタイミング」は貼り付けたまま、下だけ流す。
             // 細い画面で相手の一覧が潰れるのを避けつつ、選んだ立目を見ながら探せる
             stickyHeaderIndices={[0]}
             keyboardShouldPersistTaps="handled"
