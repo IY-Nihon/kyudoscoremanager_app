@@ -319,7 +319,23 @@ for (const 図 of 図たち) {
     const 道具 = { ...図.道具, args: { ...図.道具.args } };
     if (道具.name === 'getArrowLocationStats') {
       const 人 = await 矢所のある人(page);
-      expect(人, '手元の控えに矢所のある人がいない（矢所を足す が効いていない）').toBeTruthy();
+      // 落ちたときに控えの様子を出す（GitHub の台でだけ見つからないことがあった）
+      const 様子 = 人
+        ? ''
+        : await page.evaluate(() => {
+            const 控え = globalThis.__弓道の控え?.();
+            const s = JSON.parse(控え ?? localStorage.getItem('archery-score-storage') ?? '{}')?.state || {};
+            const 射手 = (s.sessions || []).flatMap((r) => r.archers || []);
+            return JSON.stringify({
+              控えから: !!控え,
+              記録: (s.sessions || []).length,
+              射手: 射手.length,
+              印のある射手: 射手.filter((a) => (a.marks || []).some((m) => m === '○' || m === '×')).length,
+              矢所のある射手: 射手.filter((a) => (a.arrowLocations || []).some(Boolean)).length,
+              名簿: (s.members || []).length,
+            });
+          });
+      expect(人, `手元の控えに矢所のある人がいない（矢所を足す が効いていない）${様子}`).toBeTruthy();
       道具.args.memberName = 人;
     }
     await 偽の模型(page, 道具, 図.形);
