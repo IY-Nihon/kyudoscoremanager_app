@@ -237,6 +237,22 @@ const 崩れを探す = (page, 大きく, 形) =>
         if (svg && svg.getBoundingClientRect().bottom > 外.bottom + 1)
           崩れ.push('大きく出した図が窓の下へはみ出す');
       }
+      // 図の上でも指で上下に巻ける（touch-action: none の箱が無い。横に流す表は除く）。答えの下ではチャットを、
+      // 大きく出した窓では窓の中を巻く。前は表が横に流さない ScrollView に包まれ、どちらも指で巻けなかった（iPhone）
+      {
+        const 止める = [枠, ...枠.querySelectorAll('*')].find(
+          (e) => getComputedStyle(e).touchAction === 'none' && !(e.scrollWidth > e.clientWidth + 1)
+        );
+        if (止める) 崩れ.push('図の上で指の上下の動きを止める箱がある（touch-action: none）');
+      }
+      // 大きく出した窓は、中身が窓より高ければ巻ける（窓の外で切れたままにしない）
+      if (大きく) {
+        const 巻く = [...枠.querySelectorAll('*')].find((e) =>
+          /auto|scroll/.test(getComputedStyle(e).overflowY)
+        );
+        if (巻く && 巻く.getBoundingClientRect().bottom > 外.bottom + 1)
+          崩れ.push('大きく出した窓の巻く箱が窓より高く、下が切れて巻けない');
+      }
       return 崩れ;
     },
     [大きく, 形]

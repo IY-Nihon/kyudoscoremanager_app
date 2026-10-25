@@ -338,7 +338,8 @@ function 表({ 図, 大きく }) {
   const 流す = 幅 > 0 && 合計(幅たち) > 幅 + 1;
   return (
     <View style={styles.図の箱} onLayout={測る} testID="AIの表">
-      <ScrollView horizontal scrollEnabled={流す} showsHorizontalScrollIndicator={false}>
+      {/* 横に流さないときは ScrollView にしない（touch-action: none になり、表の上でチャットを上下に巻けなかった） */}
+      <横に流す箱 流す={流す}>
         <View>
           <View style={[styles.表の行, styles.表の頭]}>
             {図.列.map((名, 列) => (
@@ -371,8 +372,18 @@ function 表({ 図, 大きく }) {
             </View>
           ))}
         </View>
-      </ScrollView>
+      </横に流す箱>
     </View>
+  );
+}
+
+function 横に流す箱({ 流す, children }) {
+  return 流す ? (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+      {children}
+    </ScrollView>
+  ) : (
+    <View>{children}</View>
   );
 }
 
@@ -545,7 +556,8 @@ const styles = StyleSheet.create({
     padding: 16,
     maxHeight: '90%',
   },
-  窓の中: { flexGrow: 0 },
+  // 縮めないと中身の高さのまま窓の外で切れて、巻けなかった
+  窓の中: { flexGrow: 0, flexShrink: 1 },
   閉じる: { fontSize: 15, fontWeight: '600', color: 色.青, marginLeft: 12 },
 });
 
