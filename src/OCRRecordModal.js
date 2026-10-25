@@ -1532,7 +1532,7 @@ const OCRRecordModal = ({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={戻るで閉じるとき}>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={戻るで閉じるとき}>
       <View style={styles.overlay}>
         <View
           style={[styles.container, getShadowStyle({ shadowOpacity: 0.15, shadowRadius: 12, elevation: 12 })]}
