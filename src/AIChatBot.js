@@ -79,7 +79,7 @@ const {
 const { 練習日を読む } = require('./practiceDays');
 // 「何でも聞いてください」だけでは何を聞けるか分からない。
 // その団体の中身に合わせた質問例を出す（test/chatSuggestions.test.js）
-const { 質問例のすべて, 打ちかけの候補, 分類ごと } = require('./chatSuggestions');
+const { 質問例, 打ちかけの候補, 分類ごと } = require('./chatSuggestions');
 // 個人ログイン（部員）は、AI に本人の分だけを渡す（chatScope）。指示文・道具・Q&A も個人用にする（chatPersonal）
 const { 自分だけに絞る, 他の人 } = require('./chatScope');
 const 個人用 = require('./chatPersonal');
@@ -256,7 +256,7 @@ const AIChatBot = () => {
   // 質問例の元（その団体の中身に合わせたもの全部）。画面には分類ごとに全部出し（下の 分類たち）、
   // 打ちかけの続きもここから探す
   const 候補の元 = React.useMemo(() => {
-    const もと = 質問例のすべて({ 人たち: members, 記録たち: sessions, いま: new Date(), 個人 });
+    const もと = 質問例({ 人たち: members, 記録たち: sessions, いま: new Date(), 個人 });
     if (チュートリアル部員登録中) {
       return [{ 分類: '操作', 文: '1年の山田 太郎 男子 を追加して' }, ...もと];
     }
