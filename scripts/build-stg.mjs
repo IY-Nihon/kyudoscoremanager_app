@@ -21,13 +21,32 @@ if (!fs.existsSync(設定ファイル)) {
 }
 
 const 環境 = { ...process.env };
-for (const 行 of fs.readFileSync(設定ファイル, 'utf8').split(/\r?\n/)) {
-  const m = 行.match(/^([A-Z0-9_]+)=(.*)$/);
+// 頭の BOM と行の前後の空白は外して読む（GitHub では Secrets の STG_ENV をそのまま書き出したものを読む）
+for (const 行 of fs
+  .readFileSync(設定ファイル, 'utf8')
+  .replace(/^\uFEFF/, '')
+  .split(/\r?\n/)) {
+  const m = 行.trim().match(/^([A-Z0-9_]+)=(.*)$/);
   if (m) 環境[m[1]] = m[2].trim();
 }
 
 if (環境.EXPO_PUBLIC_FIREBASE_PROJECT_ID !== 'kyudoscoremanager-stg') {
   console.error('停止：.env.development.local が検証環境を指していません');
+  process.exit(1);
+}
+// 接続の値が 1 つでも欠けると、束は書き出せても雲につながらず、画面が出ない。
+// 10/25：GitHub の束で apiKey だけが空になり、E2E が 20 台ともログインの画面を待って落ちた
+const 接続の値 = [
+  'API_KEY',
+  'AUTH_DOMAIN',
+  'DATABASE_URL',
+  'STORAGE_BUCKET',
+  'MESSAGING_SENDER_ID',
+  'APP_ID',
+].map((名) => `EXPO_PUBLIC_FIREBASE_${名}`);
+const 欠けた値 = 接続の値.filter((名) => !環境[名]);
+if (欠けた値.length) {
+  console.error(`停止：.env.development.local に ${欠けた値.join('・')} がありません`);
   process.exit(1);
 }
 
