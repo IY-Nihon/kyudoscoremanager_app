@@ -92,6 +92,9 @@ const { systemInstructionBase, selectQAs } = require('./chatKnowledge');
 const { styles } = require('./chatStyles');
 // 道具（Function Calling）の宣言は別のファイル（2026-10-24）
 const { 道具の宣言 } = require('./chatTools');
+// 答えの下に出す図（2026-10-25）。図の形は chatFigures、描くのは ChatFigure
+const 図 = require('./chatFigures');
+const { ChatFigure } = require('./ChatFigure');
 
 /**
  * 横へ流せる1行。パソコンでは、上に乗せてホイールを回すと横へ動く。
@@ -195,7 +198,10 @@ const loadChatHistory = (鍵 = CHAT_HISTORY_KEY) => {
 const saveChatHistory = (messages, 鍵 = CHAT_HISTORY_KEY) => {
   try {
     if (typeof localStorage !== 'undefined') {
-      const toSave = messages.slice(-MAX_SAVED_MESSAGES);
+      const toSave = messages
+        .slice(-MAX_SAVED_MESSAGES)
+        // 図は新しい 10 件ぶんだけ残す（矢所の点が多いと、記録の控えと分け合う端末の場所を食う）
+        .map((msg, 番, 全部) => (msg.図たち && 番 < 全部.length - 10 ? { ...msg, 図たち: undefined } : msg));
       localStorage.setItem(鍵, JSON.stringify(toSave));
     }
   } catch {
@@ -536,6 +542,9 @@ const AIChatBot = () => {
     const MAX_RETRY = 1;
     // アプリの改善のための保存に添える、使った道具の名前（src/improvementLog.js）
     const 使った道具 = [];
+    // 図にできる道具の結果（番号 → 道具の名と結果）と、この答えに出す図（showFigure）
+    const 図の元 = new Map();
+    const この答えの図 = [];
     // かかった時間（ミリ秒）。遅いときに、最初の字が出るまでか・Gemini の何回目かを後から見る
     const 始めた時刻 = Date.now();
     let 最初の字の時刻 = 0;
@@ -1236,6 +1245,27 @@ const AIChatBot = () => {
                   response: 計算する(call.args.expression, call.args.digits),
                 },
               });
+            } else if (call.name === 'showFigure') {
+              const 元 = 図の元.get(String(call.args.source || ''));
+              const 作った = 元
+                ? 図.図を作る(元.名, 元.結果, call.args.kind, call.args.title)
+                : {
+                    error: `図の番号「${call.args.source}」が見つかりません。道具の返事の 図にするとき.source を渡してください`,
+                  };
+              if (!作った.error) この答えの図.push(作った);
+              functionResponses.push({
+                functionResponse: {
+                  name: call.name,
+                  response: 作った.error
+                    ? { success: false, ...作った }
+                    : {
+                        success: true,
+                        出した形: 作った.形,
+                        message:
+                          '答えの下に図を出しました。図にある顔ぶれや数字の一覧は文に書き直さず、要点（いちばん高い・低い・傾向）を 2〜3 文で書いてください。「下の図をご確認ください」「分析タブで見られます」とは書かなくてよい。',
+                      },
+                },
+              });
             } else if (call.name === 'getEquipmentTrend') {
               functionResponses.push({
                 functionResponse: {
@@ -1462,6 +1492,22 @@ const AIChatBot = () => {
             return;
           }
 
+          // 図にできる結果には番号（R1 など）と作れる形を添える。模型は showFigure でそれを選ぶ。
+          // 結果そのものは端末に控え、図は控えから作る（模型に数字を書き写させない）
+          for (const 返し of functionResponses) {
+            const 中 = 返し.functionResponse;
+            if (!中 || !中.response || typeof 中.response !== 'object') continue;
+            const 形 = 図.使える形(中.name, 中.response);
+            const 渡す = 図.図の分を外す(中.response);
+            if (形.length) {
+              const 番号 = `R${図の元.size + 1}`;
+              図の元.set(番号, { 名: 中.name, 結果: 中.response });
+              中.response = { ...渡す, 図にするとき: { source: 番号, 使える形: 形 } };
+            } else {
+              中.response = 渡す;
+            }
+          }
+
           if (functionResponses.length > 0) {
             // 関数実行結果をモデルに返す
             result = await 送る(functionResponses);
@@ -1531,8 +1577,20 @@ const AIChatBot = () => {
 
         // 途中に出していた札は捨て、確定した1件だけを残す。
         // 残したままだと、同じ答えが2つ並ぶ
-        setMessages([...newMessages, { id: generateMsgId(), role: 'model', text: responseText }]);
-        改善のために({ 答え: responseText, 結果: '答えた' });
+        setMessages([
+          ...newMessages,
+          {
+            id: generateMsgId(),
+            role: 'model',
+            text: responseText,
+            ...(この答えの図.length ? { 図たち: この答えの図 } : {}),
+          },
+        ]);
+        改善のために({
+          答え: responseText,
+          結果: '答えた',
+          ...(この答えの図.length ? { 図: この答えの図.map((一つ) => 一つ.形) } : {}),
+        });
         break; // 成功
       } catch (error) {
         // 初めの案内の部員登録で AI に届かなかったときだけ、送った文から読んで確認のカードを出す。
@@ -1771,25 +1829,35 @@ const AIChatBot = () => {
                     )}
                   </View>
                 ) : (
-                  <View key={msg.id || idx} style={msg.role === 'user' ? undefined : styles.答えの行}>
-                    {msg.role !== 'user' && (
-                      <View style={styles.答えの絵}>
-                        <AIMascot マス={2} {...明るい地のキャラ} />
-                      </View>
-                    )}
-                    <View
-                      style={[
-                        styles.messageBubble,
-                        msg.role === 'user' ? styles.userBubble : [styles.modelBubble, styles.答えの吹き出し],
-                      ]}
-                    >
-                      <Text
-                        style={[styles.messageText, msg.role === 'user' ? styles.userText : styles.modelText]}
+                  <React.Fragment key={msg.id || idx}>
+                    <View style={msg.role === 'user' ? undefined : styles.答えの行}>
+                      {msg.role !== 'user' && (
+                        <View style={styles.答えの絵}>
+                          <AIMascot マス={2} {...明るい地のキャラ} />
+                        </View>
+                      )}
+                      <View
+                        style={[
+                          styles.messageBubble,
+                          msg.role === 'user'
+                            ? styles.userBubble
+                            : [styles.modelBubble, styles.答えの吹き出し],
+                        ]}
                       >
-                        {msg.text}
-                      </Text>
+                        <Text
+                          style={[
+                            styles.messageText,
+                            msg.role === 'user' ? styles.userText : styles.modelText,
+                          ]}
+                        >
+                          {msg.text}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
+                    {msg.role !== 'user' &&
+                      Array.isArray(msg.図たち) &&
+                      msg.図たち.map((一つ, 番) => <ChatFigure key={`${msg.id}-図-${番}`} 図={一つ} />)}
+                  </React.Fragment>
                 )
               )}
               {/*

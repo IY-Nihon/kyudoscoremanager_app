@@ -138,6 +138,27 @@ function 傾向の印(番, 月, 日時, 何番目, 本数) {
   });
 }
 
+// 9〜10 月に矢所を付ける人（AI の「矢所の傾向」と図を確かめる）。外れは右下に抜けやすい
+const 矢所を付ける人 = '高橋蒼';
+
+/**
+ * 矢所。的の中心が 0、ふちが 1（src/ArrowLocationView.js と同じ）。中りは的の中、外れはすぐ外。
+ * 外れは右下へ寄せる。流すたびに同じ点にするため、乱数は使わない
+ */
+function 矢所(marks, 種) {
+  let s = 種 * 48271 + 11;
+  const 次 = () => {
+    s = (s * 1103515245 + 12345) % 2147483648;
+    return s / 2147483648;
+  };
+  return marks.map((印) => {
+    const 中り = 印 === '○';
+    const 角 = 中り ? 次() * Math.PI * 2 : Math.PI / 4 + (次() - 0.5) * Math.PI * 0.9;
+    const 遠さ = 中り ? 0.1 + 次() * 0.75 : 1.06 + 次() * 0.2;
+    return { x: Math.cos(角) * 遠さ, y: Math.sin(角) * 遠さ, targetType: 'kasumi36' };
+  });
+}
+
 /** 書く。断られたらその場で止める（fb-rest の setDoc は投げないので、ここで見る） */
 async function 書く(道, 中身, token) {
   const r = await setDoc(projectId, 道, 中身, token);
@@ -231,11 +252,15 @@ for (const { 月, 本数, 練習日 } of 月たち) {
         archerNames: 来た人.map((m) => m.name),
         archers: 来た人.map((m, i) => {
           const 番 = 部員.indexOf(m);
+          const marks = 月 === 8 ? 八月の印(何番目 * 31 + 番, 本数) : 傾向の印(番, 月, 日時, 何番目, 本数);
           return {
             id: `a${i + 1}`,
             name: m.name,
             memberId: m.id,
-            marks: 月 === 8 ? 八月の印(何番目 * 31 + 番, 本数) : 傾向の印(番, 月, 日時, 何番目, 本数),
+            marks,
+            ...(月 !== 8 && m.name === 矢所を付ける人
+              ? { arrowLocations: 矢所(marks, 番 * 101 + 何番目 * 7 + 月) }
+              : {}),
           };
         }),
         lastModified: new Date(),
