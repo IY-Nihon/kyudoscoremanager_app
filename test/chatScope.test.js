@@ -109,14 +109,15 @@ const 記録たち = [
 const 絞る = () =>
   自分だけに絞る({ members: 部員たち, sessions: 記録たち, myMemberId: 'id-yamada', myMemberName: '山田' });
 
-test('部員は自分ひとりだけ。個人ID・弓具など成績に要らない項目は入らない', () => {
+test('部員は自分ひとりだけ。個人ID など成績に要らない項目は入らない。本人の弓具の履歴は入る', () => {
   const { members } = 絞る();
   assert.strictEqual(members.length, 1);
   assert.strictEqual(members[0].name, '山田');
   assert.strictEqual(members[0].id, 'id-yamada');
   const 文 = JSON.stringify(members);
   assert.ok(!文.includes('1111'), '個人ID（ログインに使う 4 桁）が入っている');
-  assert.ok(!文.includes('equipments'), '弓具の履歴は渡さない');
+  // 弓具を変えた前後の道具（getEquipmentTrend）が使う。2026-10-25 までは成績に要らないので渡していなかった
+  assert.deepStrictEqual(members[0].equipments, [{ weight: 18 }]);
 });
 
 test('記録は自分が写っているものだけ（山田が写っていない記録は落ちる）', () => {

@@ -121,6 +121,8 @@ function 自分だけに絞る(材料) {
     grade: 本人 && typeof 本人.grade === 'number' ? 本人.grade : undefined,
     gender: 本人 ? 本人.gender : undefined,
     termKi: 本人 ? 本人.termKi : undefined,
+    // 本人の弓具の履歴（「弓を変えてから当たるようになった？」。無いと履歴が無いと答えていた。2026-10-25 の確かめ）
+    equipments: 本人 && Array.isArray(本人.equipments) ? 本人.equipments : undefined,
   };
 
   // 1 件ずつ絞る。想定外の形の記録で例外になっても、その記録を渡さずに捨てて先へ進む。
