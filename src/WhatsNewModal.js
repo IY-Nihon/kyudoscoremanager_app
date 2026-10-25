@@ -2,11 +2,13 @@
 
 const { 色 } = require('./iro.js');
 /**
- * アプリ起動時に最近の変更点をお知らせするモーダル
+ * 起動したときに出すお知らせの窓と、その中身（NOTICE_ITEMS。新しいものが上）。
+ * 使い方の案内をまだ終えていない人には出さない。「次のお知らせが来るまで表示しない」を押すまでは、
+ * 起動のたびに出す。前に開いたとき以降に足したぶんの下に「ここから下は前回まで」の線を引く。
+ * 載せるのは使う人が行動を変えられることだけ（notes の決まり）
  */
 
 Object.defineProperty(exports, '__esModule', { value: true });
-exports.WhatsNewModal = undefined;
 
 const React = require('react');
 const { useState, useEffect, useRef } = React;
@@ -17,9 +19,7 @@ const { Ionicons } = require('@expo/vector-icons');
 const { getShadowStyle } = require('./shadowStyle');
 
 // ─────────────────────────────────────────
-// お知らせバージョン
-// 新しいお知らせを追加・変更したら、このバージョン文字列を必ず更新してください。
-// 「次のお知らせが来るまで表示しない」を選んだ端末でも、この値が変わると再度表示されます。
+// お知らせの版
 // ─────────────────────────────────────────
 // いま本番に出ている版。配信したら NOTICE_VERSION に合わせて更新する。
 // これより新しい項目があるのに版を上げ忘れると、足したお知らせが
@@ -30,6 +30,7 @@ const { getShadowStyle } = require('./shadowStyle');
 // eslint-disable-next-line no-unused-vars -- 画面では使わない。検査（test/autoLock.test.js）が字で読む
 const 最後に配信した版 = '2026-10-23-03';
 // お知らせの版。新しい項目を足したら、必ずこれを最新の項目の 版 に合わせる。
+// 「次のお知らせが来るまで表示しない」を選んだ端末でも、この値が変わるとまた出る
 const NOTICE_VERSION = '2026-10-23-03';
 const STORAGE_KEY = 'whatsNewDismissedVersion';
 // 最後に開いたときの版。閉じるたびに書く。
@@ -1163,7 +1164,7 @@ const WhatsNewModal = () => {
   if (!checkedStorage || !visible) return null;
 
   return (
-    <Modal visible={true} animationType="fade" transparent={true} onRequestClose={handleClose}>
+    <Modal visible animationType="fade" transparent onRequestClose={handleClose}>
       <View style={styles.overlay}>
         {/*
           背景を押しても閉じられるようにする。読むだけの窓なので、
@@ -1185,7 +1186,14 @@ const WhatsNewModal = () => {
               <Ionicons name="megaphone-outline" size={20} color={色.青} />
               <Text style={styles.headerTitle}>お知らせ</Text>
             </View>
-            <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
+            <TouchableOpacity
+              onPress={handleClose}
+              style={styles.closeBtn}
+              // 絵だけのボタン。読み上げのために名を付ける
+              accessibilityRole="button"
+              accessibilityLabel="閉じる"
+              aria-label="閉じる"
+            >
               <Ionicons name="close" size={24} color={色.灰} />
             </TouchableOpacity>
           </View>
