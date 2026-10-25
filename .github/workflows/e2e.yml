@@ -9,7 +9,10 @@
 #
 # ■ 要る Secrets（Settings → Secrets and variables → Actions）
 #   STG_ENV                 … .env.development.local の EXPO_PUBLIC_ の行（検証環境の接続先）と、
-#                             STG_TEST_PASSWORD の行（検証環境の試しの口座のパスワード。倉庫には書かない。scripts/fb-rest.mjs）
+#                             STG_TEST_PASSWORD の行（検証環境の試しの口座のパスワード。倉庫には書かない。scripts/fb-rest.mjs）。
+#                             入れ直すときは（PowerShell。-Encoding UTF8 が要る。無いと日本語の説明の行が次の行を巻き込み、
+#                             10/24〜25 に API_KEY の行が 2 回抜けた）:
+#                             Get-Content -Encoding UTF8 .env.development.local | Where-Object { $_ -match '^(EXPO_PUBLIC_|STG_TEST_PASSWORD=)' } | gh secret set STG_ENV
 #   STG_SERVICE_ACCOUNT_KEY … 検証環境（kyudoscoremanager-stg）のサービスアカウントの鍵（JSON）。
 #                             ライブの後片付け（firebase CLI）と、招待リンクの雲の確かめのトークンに使う
 # Secrets は fork からの pull request には渡らない。ここは workflow_dispatch だけなので、書ける人しか流せない。
