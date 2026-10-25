@@ -108,23 +108,27 @@ const 矢所を足す = (page) =>
       const 中 = JSON.parse(localStorage.getItem(鍵) || '{}');
       const s = 中.state || {};
       const 名簿 = s.members || [];
-      for (const 記録 of s.sessions || []) {
-        if (記録.includeInStats === false) continue;
-        const 人 = (記録.archers || []).find(
-          (a) =>
-            !a.isTotalCalculator &&
-            !a.isSeparator &&
-            名簿.some((m) => m.id === a.memberId || m.name === a.name) &&
-            (a.marks || []).some((印) => 印 === '○' || 印 === '×')
-        );
-        if (!人) continue;
+      const 点を置く = (人) => {
         人.arrowLocations = (人.marks || []).map((印, i) => {
           if (印 !== '○' && 印 !== '×') return null;
           const 半径 = 印 === '○' ? 0.25 + (i % 3) * 0.2 : 1.08 + (i % 2) * 0.1;
           return { x: Math.cos(i * 1.7) * 半径, y: Math.sin(i * 1.7) * 半径, targetType: 'kasumi36' };
         });
         localStorage.setItem(鍵, JSON.stringify(中));
-        return;
+      };
+      const 射手たち = (s.sessions || [])
+        .filter((記録) => 記録.includeInStats !== false)
+        .flatMap((記録) => 記録.archers || [])
+        .filter(
+          (a) =>
+            !a.isTotalCalculator && !a.isSeparator && (a.marks || []).some((印) => 印 === '○' || 印 === '×')
+        );
+      const 名簿の射手 = 射手たち.find((a) => 名簿.some((m) => m.id === a.memberId || m.name === a.name));
+      if (名簿の射手) return 点を置く(名簿の射手);
+      // 名簿の人の○×が控えに無い台もある（GitHub の台は控えを取り直す）。射手 1 人を名簿の 1 人にする
+      if (射手たち.length && 名簿.length) {
+        Object.assign(射手たち[0], { name: 名簿[0].name, memberId: 名簿[0].id });
+        点を置く(射手たち[0]);
       }
     } catch {
       /* 控えが読めなければ、矢所の人が見つからずに落ちる */
