@@ -33,6 +33,8 @@ const 個人が使える道具 = [
   'compareMemberStats',
   'compareShotRanges',
   'getEquipmentTrend',
+  'aggregateStats',
+  'calculate',
   'startTutorial',
 ];
 
