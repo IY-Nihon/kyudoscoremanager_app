@@ -307,8 +307,36 @@ function 中身({ 図, 大きく }) {
   return null;
 }
 
+/**
+ * 図が描けなかったら、その図だけを出さない（チャットの窓ごと落とさない）。
+ * 会話の控えに残った古い形の図や、思わない形の結果で落ちても、答えの文は読める
+ */
+class 図の守り extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { 落ちた: false };
+  }
+  static getDerivedStateFromError() {
+    return { 落ちた: true };
+  }
+  componentDidCatch(誤り) {
+    console.warn('[ChatFigure] 図を描けませんでした', 誤り && 誤り.message);
+  }
+  render() {
+    return this.state.落ちた ? null : this.props.children;
+  }
+}
+
 /** 答えの下に出す図。押すと窓で大きく出す */
-function ChatFigure({ 図 }) {
+function ChatFigure(props) {
+  return (
+    <図の守り>
+      <図の本体 {...props} />
+    </図の守り>
+  );
+}
+
+function 図の本体({ 図 }) {
   const [大きく, 大きくを置く] = React.useState(false);
   if (!図 || !図.形) return null;
   return (
