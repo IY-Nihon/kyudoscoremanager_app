@@ -54,7 +54,7 @@ const AnalysisScreen = ({ navigation }) => {
     activeGroupId: いまの団体id,
     divisions: 区分たち = [],
     useTerm: 期を使う,
-  } = 案内.見本を重ねる(
+  } = 案内.use見本を重ねる(
     useストアの一部([
       'analysisSelectedTags',
       'analysisTagLogic',
