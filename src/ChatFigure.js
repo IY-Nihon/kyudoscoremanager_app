@@ -6,7 +6,7 @@
 'use strict';
 
 const React = require('react');
-const { View, Text, TouchableOpacity, ScrollView, Modal, StyleSheet } = require('./rn');
+const { View, Text, TouchableOpacity, ScrollView, Modal, StyleSheet, useWindowDimensions } = require('./rn');
 const Svgの部品 = require('react-native-svg');
 const Svg = Svgの部品.default ?? Svgの部品;
 const { ArrowLocationView } = require('./ArrowLocationView');
@@ -27,102 +27,154 @@ const 系列の色 = [色.青, 色.橙, 色.緑, 色.藍, 色.桃, 色.灰_濃�
 /** 数らしい字（右に寄せる） */
 const 数らしい = (字) => /^[+-]?[\d.,]+(%|射|中|回|人)?$|^—$/.test(String(字));
 
+/** 字の幅の見積もり（全角は字の大きさほど、半角はその 6 割） */
+const 字の幅 = (文, 大きさ) =>
+  [...String(文 ?? '')].reduce((和, 字) => 和 + (字.charCodeAt(0) < 0x100 ? 大きさ * 0.6 : 大きさ * 1.02), 0);
+
+const 合計 = (数たち) => 数たち.reduce((和, 数) => 和 + 数, 0);
+
+/**
+ * 図の幅を測る。SVG の座標も表の列も、実際の幅で決める。
+ * 前は 300 の幅で描いて画面へ伸ばしていて、狭い画面では字が 7px ほどに縮み、
+ * パソコンで大きく出すと字が大きくなりすぎた。表は固い幅で、カードの右が空いていた（2026-10-25）
+ */
+function use幅() {
+  const [幅, 幅を置く] = React.useState(0);
+  const 測る = React.useCallback((出来事) => {
+    const 測った = Math.floor(出来事.nativeEvent.layout.width);
+    if (測った > 0) 幅を置く((前) => (前 === 測った ? 前 : 測った));
+  }, []);
+  return [幅, 測る];
+}
+
+/** 大きく出す窓の中で、図に使える高さ（窓の余白・題の行・注のぶんを引く） */
+function use窓の高さ() {
+  const { height } = useWindowDimensions();
+  return Math.max(160, Math.floor(height * 0.9) - 32 - 44 - 24);
+}
+
+/** 折れ線・縦の棒の高さ。横向きのスマホで大きく出しても、窓に収まるようにする */
+function 図の高さ(幅, 大きく, 窓の高さ) {
+  if (!大きく) return Math.round(Math.min(200, Math.max(140, 幅 * 0.5)));
+  return Math.round(Math.min(380, 窓の高さ, Math.max(180, 幅 * 0.55)));
+}
+
 function 折れ線({ 図, 大きく }) {
-  const W = 300;
-  const H = 150;
-  const 左 = 34;
-  const 右 = 16;
-  const 上 = 20;
-  const 下 = 24;
+  const [W, 測る] = use幅();
+  const 窓の高さ = use窓の高さ();
   const 値たち = 図.系列.flatMap((系列) => 系列.点.map((点) => 点.y));
   if (!値たち.length) return null;
+  const H = 図の高さ(W, 大きく, 窓の高さ);
+  const 字 = 大きく ? 11 : 10;
+  const 値の字 = 大きく ? 11.5 : 10.5;
+  const 左 = Math.round(字 * 3.4) + 4;
+  const 右 = 14;
+  const 上 = 値の字 + 10;
+  const 下 = 字 + 12;
   const 低 = Math.max(0, Math.floor(Math.min(...値たち) / 5) * 5 - 5);
   const 高 = Math.min(100, Math.ceil(Math.max(...値たち) / 5) * 5 + 5);
   const 名たち = 図.系列[0].点.map((点) => 点.x);
+  const 短い名 = (名) => (String(名).length > 7 ? String(名).slice(-5) : String(名));
   const 数 = Math.max(1, 名たち.length - 1);
-  const x = (i) => 左 + 8 + ((W - 左 - 右 - 8) * i) / 数;
+  const 内の幅 = Math.max(1, W - 左 - 右 - 8);
+  const x = (i) => 左 + 8 + (内の幅 * i) / 数;
   const y = (v) => 上 + ((H - 上 - 下) * (高 - v)) / Math.max(1, 高 - 低);
   const 目盛り = [];
   const 刻み = 高 - 低 > 30 ? 10 : 5;
   for (let v = 低; v <= 高; v += 刻み) 目盛り.push(v);
-  // x の名は多いときに間引く（重ならないように）
-  const 間 = Math.ceil(名たち.length / 6);
+  // x の名は、重ならない数まで間引く
+  const 名の幅 = Math.max(...名たち.map((名) => 字の幅(短い名(名), 字))) + 8;
+  const 間 = Math.ceil(名たち.length / Math.max(1, Math.floor((内の幅 + 名の幅) / 名の幅)));
   const 一本 = 図.系列.length === 1;
+  // 点の上の値は、隣と重ならないときだけ全部出す（重なるときは最後の点だけ）
+  const 値を全部 = 内の幅 / 数 >= 値の字 * 2.8;
+  // 端の点の数は、目盛りの字や図の右の端にかからないように内側へ寄せる
+  // 両隣より低い点の数は点の下に書く（上に書くと、上る線にかかる）。下に入る隙間があるときだけ
+  const 下に書くか = (点たち, i) => {
+    const 隣 = [点たち[i - 1], 点たち[i + 1]].filter(Boolean);
+    return 隣.length > 0 && 隣.every((p) => p.y > 点たち[i].y) && y(低) - y(点たち[i].y) >= 値の字 + 8;
+  };
+  const 値の位置 = (点のx, 字) => {
+    const 半分 = 字の幅(字, 値の字) / 2 + 2;
+    return Math.min(W - 2 - 半分, Math.max(左 + 半分, 点のx));
+  };
   return (
     <View>
-      <View style={{ width: '100%', aspectRatio: W / H }}>
-        <Svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`}>
-          {目盛り.map((v) => (
-            <React.Fragment key={`目盛り-${v}`}>
-              <Svgの部品.Line x1={左} x2={W - 右} y1={y(v)} y2={y(v)} stroke={色.地_濃い} strokeWidth="1" />
-              <Svgの部品.Text
-                fontFamily={図の字体}
-                x={左 - 4}
-                y={y(v) + 3}
-                fontSize="8"
-                fill={色.灰}
-                textAnchor="end"
-              >
-                {`${v}${図.単位}`}
-              </Svgの部品.Text>
-            </React.Fragment>
-          ))}
-          {名たち.map((名, i) =>
-            i % 間 === 0 || i === 名たち.length - 1 ? (
-              <Svgの部品.Text
-                fontFamily={図の字体}
-                key={`名-${i}`}
-                x={x(i)}
-                y={H - 8}
-                fontSize="8"
-                fill={色.灰}
-                textAnchor="middle"
-              >
-                {String(名).length > 7 ? String(名).slice(-5) : String(名)}
-              </Svgの部品.Text>
-            ) : null
-          )}
-          {図.系列.map((系列, 番) => {
-            const 線の色 = 系列の色[番 % 系列の色.length];
-            const 位置 = (点) => 名たち.indexOf(点.x);
-            const 道 = 系列.点
-              .filter((点) => 位置(点) >= 0)
-              .map((点, i) => `${i ? 'L' : 'M'}${x(位置(点))},${y(点.y)}`)
-              .join(' ');
-            return (
-              <React.Fragment key={`系列-${番}`}>
-                <Svgの部品.Path d={道} fill="none" stroke={線の色} strokeWidth="2" />
-                {系列.点.map((点, i) =>
-                  位置(点) >= 0 ? (
-                    <React.Fragment key={`点-${番}-${i}`}>
-                      <Svgの部品.Circle
-                        cx={x(位置(点))}
-                        cy={y(点.y)}
-                        r="3.5"
-                        fill={線の色}
-                        stroke={色.白}
-                        strokeWidth="1.5"
-                      />
-                      {一本 && (名たち.length <= 8 || i === 系列.点.length - 1) ? (
-                        <Svgの部品.Text
-                          fontFamily={図の字体}
-                          x={x(位置(点))}
-                          y={y(点.y) - 7}
-                          fontSize="8.5"
-                          fontWeight="bold"
-                          fill={色.文字}
-                          textAnchor="middle"
-                        >
-                          {`${Number(点.y).toFixed(1)}`}
-                        </Svgの部品.Text>
-                      ) : null}
-                    </React.Fragment>
-                  ) : null
-                )}
+      <View style={{ width: '100%', height: H }} onLayout={測る}>
+        {W > 0 ? (
+          <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+            {目盛り.map((v) => (
+              <React.Fragment key={`目盛り-${v}`}>
+                <Svgの部品.Line x1={左} x2={W - 右} y1={y(v)} y2={y(v)} stroke={色.地_濃い} strokeWidth="1" />
+                <Svgの部品.Text
+                  fontFamily={図の字体}
+                  x={左 - 4}
+                  y={y(v) + 字 * 0.35}
+                  fontSize={字}
+                  fill={色.灰}
+                  textAnchor="end"
+                >
+                  {`${v}${図.単位}`}
+                </Svgの部品.Text>
               </React.Fragment>
-            );
-          })}
-        </Svg>
+            ))}
+            {名たち.map((名, i) =>
+              i % 間 === 0 || i === 名たち.length - 1 ? (
+                <Svgの部品.Text
+                  fontFamily={図の字体}
+                  key={`名-${i}`}
+                  x={x(i)}
+                  y={H - 6}
+                  fontSize={字}
+                  fill={色.灰}
+                  textAnchor={i === 名たち.length - 1 && 名たち.length > 1 ? 'end' : 'middle'}
+                >
+                  {短い名(名)}
+                </Svgの部品.Text>
+              ) : null
+            )}
+            {図.系列.map((系列, 番) => {
+              const 線の色 = 系列の色[番 % 系列の色.length];
+              const 位置 = (点) => 名たち.indexOf(点.x);
+              const 道 = 系列.点
+                .filter((点) => 位置(点) >= 0)
+                .map((点, i) => `${i ? 'L' : 'M'}${x(位置(点))},${y(点.y)}`)
+                .join(' ');
+              return (
+                <React.Fragment key={`系列-${番}`}>
+                  <Svgの部品.Path d={道} fill="none" stroke={線の色} strokeWidth="2" />
+                  {系列.点.map((点, i) =>
+                    位置(点) >= 0 ? (
+                      <React.Fragment key={`点-${番}-${i}`}>
+                        <Svgの部品.Circle
+                          cx={x(位置(点))}
+                          cy={y(点.y)}
+                          r="3.5"
+                          fill={線の色}
+                          stroke={色.白}
+                          strokeWidth="1.5"
+                        />
+                        {一本 && (値を全部 || i === 系列.点.length - 1) ? (
+                          <Svgの部品.Text
+                            fontFamily={図の字体}
+                            x={値の位置(x(位置(点)), Number(点.y).toFixed(1))}
+                            y={下に書くか(系列.点, i) ? y(点.y) + 値の字 + 5 : y(点.y) - 7}
+                            fontSize={値の字}
+                            fontWeight="bold"
+                            fill={色.文字}
+                            textAnchor="middle"
+                          >
+                            {`${Number(点.y).toFixed(1)}`}
+                          </Svgの部品.Text>
+                        ) : null}
+                      </React.Fragment>
+                    ) : null
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </Svg>
+        ) : null}
       </View>
       {!一本 && (
         <View style={styles.凡例}>
@@ -139,72 +191,88 @@ function 折れ線({ 図, 大きく }) {
 }
 
 function 縦の棒({ 図, 大きく }) {
-  const W = 300;
-  const H = 150;
-  const 上 = 16;
-  const 下 = 20;
+  const [W, 測る] = use幅();
+  const 窓の高さ = use窓の高さ();
+  const H = 図の高さ(W, 大きく, 窓の高さ);
+  const 字 = 大きく ? 11 : 10;
+  const 上 = 字 + 8;
+  const 下 = 字 + 10;
   const 単位が率 = 図.単位 === '%';
-  const 高 = 単位が率
-    ? Math.max(...図.並び.map((項) => 項.値), 1)
-    : Math.max(...図.並び.map((項) => 項.値), 1);
+  const 高 = Math.max(...図.並び.map((項) => 項.値), 1);
   const いちばん = Math.max(...図.並び.map((項) => 項.値));
-  const 幅 = (W - 8) / 図.並び.length;
+  const 幅 = (W - 8) / Math.max(1, 図.並び.length);
+  // 棒が細いときは、棒の上の数を小さくして隣と重ねない
+  const 値の字 = Math.max(8, Math.min(字, 幅 / 2.6));
+  const 入る字数 = Math.max(1, Math.floor((幅 - 2) / 字));
   return (
-    <View style={{ width: '100%', aspectRatio: W / H }}>
-      <Svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`}>
-        {図.並び.map((項, i) => {
-          // 棒は 0 から（差を大きく見せない）
-          const h = ((H - 上 - 下) * 項.値) / 高;
-          const 濃い = 項.値 === いちばん;
-          return (
-            <React.Fragment key={`棒-${i}`}>
-              <Svgの部品.Rect
-                x={4 + i * 幅 + 幅 * 0.15}
-                y={H - 下 - h}
-                width={幅 * 0.7}
-                height={Math.max(h, 1)}
-                rx="3"
-                fill={色.青}
-                fillOpacity={濃い ? 1 : 0.35}
-              />
-              <Svgの部品.Text
-                fontFamily={図の字体}
-                x={4 + i * 幅 + 幅 / 2}
-                y={H - 下 - h - 4}
-                fontSize="8"
-                fontWeight="bold"
-                fill={濃い ? 色.青 : 色.文字_二}
-                textAnchor="middle"
-              >
-                {単位が率 ? Number(項.値).toFixed(1) : `${項.値}`}
-              </Svgの部品.Text>
-              <Svgの部品.Text
-                fontFamily={図の字体}
-                x={4 + i * 幅 + 幅 / 2}
-                y={H - 6}
-                fontSize="8"
-                fill={色.灰}
-                textAnchor="middle"
-              >
-                {String(項.名).length > 5 ? String(項.名).slice(0, 5) : String(項.名)}
-              </Svgの部品.Text>
-            </React.Fragment>
-          );
-        })}
-      </Svg>
+    <View style={{ width: '100%', height: H }} onLayout={測る}>
+      {W > 0 ? (
+        <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+          {図.並び.map((項, i) => {
+            // 棒は 0 から（差を大きく見せない）
+            const h = ((H - 上 - 下) * 項.値) / 高;
+            const 濃い = 項.値 === いちばん;
+            const 名 = String(項.名);
+            return (
+              <React.Fragment key={`棒-${i}`}>
+                <Svgの部品.Rect
+                  x={4 + i * 幅 + 幅 * 0.15}
+                  y={H - 下 - h}
+                  width={幅 * 0.7}
+                  height={Math.max(h, 1)}
+                  rx="3"
+                  fill={色.青}
+                  fillOpacity={濃い ? 1 : 0.35}
+                />
+                <Svgの部品.Text
+                  fontFamily={図の字体}
+                  x={4 + i * 幅 + 幅 / 2}
+                  y={H - 下 - h - 4}
+                  fontSize={値の字}
+                  fontWeight="bold"
+                  fill={濃い ? 色.青 : 色.文字_二}
+                  textAnchor="middle"
+                >
+                  {単位が率 ? Number(項.値).toFixed(1) : `${項.値}`}
+                </Svgの部品.Text>
+                <Svgの部品.Text
+                  fontFamily={図の字体}
+                  x={4 + i * 幅 + 幅 / 2}
+                  y={H - 6}
+                  fontSize={字}
+                  fill={色.灰}
+                  textAnchor="middle"
+                >
+                  {名.length > 入る字数 ? 名.slice(0, 入る字数) : 名}
+                </Svgの部品.Text>
+              </React.Fragment>
+            );
+          })}
+        </Svg>
+      ) : null}
     </View>
   );
 }
 
 function 横の棒({ 図, 大きく }) {
-  const 高 = Math.max(...図.並び.map((項) => 項.値), 1);
-  const 上限 = 図.単位 === '%' ? Math.max(100, 高) : 高;
+  const [W, 測る] = use幅();
+  const 上限 =
+    図.単位 === '%'
+      ? Math.max(100, ...図.並び.map((項) => 項.値))
+      : Math.max(1, ...図.並び.map((項) => 項.値));
   const いちばん = Math.max(...図.並び.map((項) => 項.値));
+  // 名前の欄は、いちばん長い名前の幅まで。ただし図の幅の 4 割まで（棒の長さを残す）
+  const 字 = 大きく ? 14 : 12;
+  const 長い名 = Math.max(...図.並び.map((項) => 字の幅(項.名, 字))) + 6;
+  const 名の幅 = Math.round(Math.max(48, Math.min(長い名, (W || 300) * 0.4)));
   return (
-    <View>
+    <View onLayout={測る}>
       {図.並び.map((項, i) => (
         <View key={`横-${i}`} style={styles.横の行}>
-          <Text style={[styles.横の名, 大きく && styles.大きい字]} numberOfLines={1}>
+          <Text
+            style={[styles.横の名, 大きく && styles.大きい字, { width: 名の幅 }]}
+            numberOfLines={大きく ? 2 : 1}
+          >
             {項.名}
           </Text>
           <View style={styles.横の地}>
@@ -215,7 +283,7 @@ function 横の棒({ 図, 大きく }) {
               ]}
             />
           </View>
-          <Text style={[styles.横の値, 大きく && styles.大きい字]}>
+          <Text style={[styles.横の値, 大きく && styles.大きい字, 大きく && { width: 60 }]}>
             {図.単位 === '%' ? `${Number(項.値).toFixed(1)}%` : `${項.値}${図.単位}`}
           </Text>
         </View>
@@ -224,76 +292,111 @@ function 横の棒({ 図, 大きく }) {
   );
 }
 
+/**
+ * 表の列の幅。数の列は字の幅のまま、残りを字の列（名前・顔ぶれなど）で分ける。
+ * 収まるときは字の列を広げて図の幅いっぱいに、収まらないときは短い列から字の幅どおりに取り、
+ * 長い列で残りを等しく分ける（それでも最小の幅を割るときだけ横に流す）
+ */
+function 列の幅を決める(見積もり, 数の列, 使える, 大きく) {
+  if (!(使える > 0)) return 見積もり.map((w) => Math.min(w, 大きく ? 220 : 150));
+  const 字の列 = 見積もり.map((_, 列) => 列).filter((列) => !数の列[列]);
+  const 広げる列 = 字の列.length ? 字の列 : 見積もり.map((_, 列) => 列);
+  const 決めた = [...見積もり];
+  const 残り = 使える - 合計(見積もり.filter((_, 列) => !広げる列.includes(列)));
+  const 広げる列の和 = 合計(広げる列.map((列) => 見積もり[列]));
+  if (広げる列の和 <= 残り) {
+    for (const 列 of 広げる列)
+      決めた[列] = 見積もり[列] + ((残り - 広げる列の和) * 見積もり[列]) / 広げる列の和;
+  } else {
+    const 最小 = 大きく ? 96 : 72;
+    let 余り = 残り;
+    const 短い順 = [...広げる列].sort((甲, 乙) => 見積もり[甲] - 見積もり[乙]);
+    for (let i = 0; i < 短い順.length; i++) {
+      const 等分 = 余り / (短い順.length - i);
+      if (見積もり[短い順[i]] <= 等分) {
+        余り -= 見積もり[短い順[i]];
+        continue;
+      }
+      for (const 列 of 短い順.slice(i)) 決めた[列] = Math.max(Math.min(最小, 見積もり[列]), 等分);
+      break;
+    }
+  }
+  return 決めた.map((w) => Math.floor(w));
+}
+
 function 表({ 図, 大きく }) {
+  const [幅, 測る] = use幅();
   const 列の数 = 図.列.length;
   const 強める = 図.強める列 == null ? null : 図.強める列 < 0 ? 列の数 + 図.強める列 : 図.強める列;
-  // 列の幅は字の幅から決める（全角は 13px、半角は 7.5px ほど）。全部を全角で見積もると、
-  // 数の列が広がりすぎて、いちばん右の的中率がカードの外へ押し出された（2026-10-25 の確かめ）
-  const 字の幅 = (文) =>
-    [...String(文 ?? '')].reduce((和, 字) => 和 + (字.charCodeAt(0) < 0x100 ? 7.5 : 13), 0) *
-    (大きく ? 1.12 : 1);
-  const 幅たち = 図.列.map((名, 列) => {
-    const 長さ = Math.max(字の幅(名) * 0.9, ...図.行.map((行) => 字の幅(行[列])));
-    return Math.min(大きく ? 220 : 150, Math.max(26, 長さ + 10));
-  });
+  const 字 = 大きく ? 14 : 12.5;
+  const 数の列 = 図.列.map((_, 列) => 図.行.length > 0 && 図.行.every((行) => 数らしい(行[列])));
+  // 升の左右の余白（4 ずつ）と、見積もりのずれのぶんを足す
+  const 見積もり = 図.列.map((名, 列) =>
+    Math.ceil(Math.max(字の幅(名, 11), ...図.行.map((行) => 字の幅(行[列], 字))) + 12)
+  );
+  const 幅たち = 列の幅を決める(見積もり, 数の列, 幅, 大きく);
+  const 流す = 幅 > 0 && 合計(幅たち) > 幅 + 1;
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-      <View>
-        <View style={[styles.表の行, styles.表の頭]}>
-          {図.列.map((名, 列) => (
-            <Text
-              key={`頭-${列}`}
-              style={[
-                styles.表の頭の字,
-                { width: 幅たち[列] },
-                列 > 0 && 数らしい(図.行[0] && 図.行[0][列]) && styles.右,
-              ]}
-            >
-              {名}
-            </Text>
-          ))}
-        </View>
-        {図.行.map((行, 番) => (
-          <View key={`行-${番}`} style={styles.表の行}>
-            {行.map((値, 列) => (
+    <View onLayout={測る} testID="AIの表">
+      <ScrollView horizontal scrollEnabled={流す} showsHorizontalScrollIndicator={false}>
+        <View>
+          <View style={[styles.表の行, styles.表の頭]}>
+            {図.列.map((名, 列) => (
               <Text
-                key={`升-${番}-${列}`}
-                style={[
-                  styles.表の字,
-                  大きく && styles.大きい字,
-                  { width: 幅たち[列] },
-                  数らしい(値) && styles.右,
-                  列 === 強める && styles.強める,
-                ]}
-                numberOfLines={2}
+                key={`頭-${列}`}
+                style={[styles.表の頭の字, { width: 幅たち[列] }, 列 > 0 && 数の列[列] && styles.右]}
               >
-                {値}
+                {名}
               </Text>
             ))}
           </View>
-        ))}
-      </View>
-    </ScrollView>
+          {図.行.map((行, 番) => (
+            <View key={`行-${番}`} style={styles.表の行}>
+              {行.map((値, 列) => (
+                // 余白は字の外の箱に付ける。字に付けると、2 行で切った 3 行目の頭が下の余白に覗く（iPhone）
+                <View key={`升-${番}-${列}`} style={[styles.升, { width: 幅たち[列] }]}>
+                  <Text
+                    style={[
+                      styles.表の字,
+                      大きく && styles.大きい表の字,
+                      数の列[列] && styles.右,
+                      列 === 強める && styles.強める,
+                    ]}
+                    numberOfLines={大きく ? undefined : 2}
+                  >
+                    {値}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 function 矢所({ 図, 大きく }) {
+  const [幅, 測る] = use幅();
+  const 窓の高さ = use窓の高さ();
+  const 凡例 = (
+    <View style={[styles.矢所の凡例, 大きく && styles.矢所の凡例_下]}>
+      <Text style={[styles.凡例の字, 大きく && styles.大きい字]}>
+        <Text style={{ color: 色.緑 }}>●</Text> 中り {図.中り}
+      </Text>
+      <Text style={[styles.凡例の字, 大きく && styles.大きい字, 大きく && { marginLeft: 16 }]}>
+        <Text style={{ color: 色.赤 }}>●</Text> 外れ {図.外れ}
+      </Text>
+    </View>
+  );
+  // 答えの下では凡例を右に、大きく出すときは凡例を下に置き、的を窓の幅と高さに収める
+  const 大きさ = 大きく
+    ? Math.floor(Math.max(160, Math.min(360, 幅 || 280, 窓の高さ - 36)))
+    : Math.floor(Math.max(120, Math.min(160, (幅 || 260) - 84)));
   return (
-    <View style={styles.矢所の並び}>
-      <ArrowLocationView
-        arrowLocations={図.点たち}
-        size={大きく ? 280 : 160}
-        targetType={図.的}
-        hideNumbers
-      />
-      <View style={styles.矢所の凡例}>
-        <Text style={styles.凡例の字}>
-          <Text style={{ color: 色.緑 }}>●</Text> 中り {図.中り}
-        </Text>
-        <Text style={styles.凡例の字}>
-          <Text style={{ color: 色.赤 }}>●</Text> 外れ {図.外れ}
-        </Text>
-      </View>
+    <View style={大きく ? styles.矢所の縦 : styles.矢所の並び} onLayout={測る}>
+      <ArrowLocationView arrowLocations={図.点たち} size={大きさ} targetType={図.的} hideNumbers />
+      {凡例}
     </View>
   );
 }
@@ -359,7 +462,7 @@ function 図の本体({ 図 }) {
       </TouchableOpacity>
       <Modal visible={大きく} transparent animationType="fade" onRequestClose={() => 大きくを置く(false)}>
         <View style={styles.窓の地}>
-          <View style={styles.窓}>
+          <View style={styles.窓} testID="AIの図の窓">
             <View style={styles.題の行}>
               <Text style={[styles.題, styles.大きい題]} numberOfLines={2}>
                 {図.題}
@@ -419,14 +522,27 @@ const styles = StyleSheet.create({
   表の行: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: 色.地 },
   表の頭: { borderBottomColor: 色.地_濃い },
   表の頭の字: { fontSize: 11, fontWeight: '600', color: 色.灰, paddingVertical: 4, paddingHorizontal: 4 },
-  表の字: { fontSize: 12.5, color: 色.文字, paddingVertical: 6, paddingHorizontal: 4 },
+  升: { paddingVertical: 6, paddingHorizontal: 4 },
+  表の字: { fontSize: 12.5, lineHeight: 18, color: 色.文字 },
+  大きい表の字: { fontSize: 14, lineHeight: 20 },
   右: { textAlign: 'right' },
   強める: { color: 色.青, fontWeight: 'bold' },
   大きい字: { fontSize: 14 },
   矢所の並び: { flexDirection: 'row', alignItems: 'center' },
+  矢所の縦: { alignItems: 'center' },
   矢所の凡例: { marginLeft: 12 },
+  矢所の凡例_下: { flexDirection: 'row', marginLeft: 0, marginTop: 8 },
   窓の地: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 16 },
-  窓: { backgroundColor: 色.白, borderRadius: 16, padding: 16, maxHeight: '90%' },
+  // パソコンでも広がりすぎないように幅は 720 まで
+  窓: {
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
+    backgroundColor: 色.白,
+    borderRadius: 16,
+    padding: 16,
+    maxHeight: '90%',
+  },
   窓の中: { flexGrow: 0 },
   閉じる: { fontSize: 15, fontWeight: '600', color: 色.青, marginLeft: 12 },
 });
