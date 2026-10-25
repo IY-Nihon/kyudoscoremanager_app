@@ -284,6 +284,91 @@ function 道具の宣言(学年の数) {
           },
         },
         {
+          name: 'aggregateStats',
+          description:
+            "記録を好きな条件で絞り、好きな切り口（1つか2つ）でまとめて、的中・射数・的中率・皆中・記録の数を数える万能の集計です。ほかの道具にぴったり合うものが無い問いは、これで条件と切り口を組み合わせて答えてください。例：「月ごとの部全体の的中率の推移」→ groupBy ['月']／「曜日ごとの的中率」→ ['曜日']／「何射目が一番当たるか」→ ['射目']／「1年生の月ごとの的中率」→ ['月'] と grade 1／「山田さんの月ごとの推移」→ ['月'] と memberNames／「タグごとの的中率」→ ['タグ']／「男女別の的中率」→ ['性別']／「月ごとの落差が激しい人」→ ['人', '月'] と sortBy '振れ幅'／「土日だけの的中率」→ weekdays／「大前の月ごとの的中率」→ ['月'] と positions ['大前']／「皆中が多い人」→ ['人'] と sortBy '皆中'。部員でない人（ゲスト・相手校）の射は数えません。数字と並びは計算済みなので、そのまま使ってください。",
+          parameters: {
+            type: 'OBJECT',
+            properties: {
+              groupBy: {
+                type: 'ARRAY',
+                items: { type: 'STRING' },
+                description:
+                  '切り口（1つか2つ）。人・月・週・日・曜日・記録・射目（列の何本目）・立目・射位・タグ・学年・性別・区分 から選ぶ。2つ渡すと、1つ目ごとに2つ目の内訳と、内訳の的中率のいちばん高い所・低い所・振れ幅を返す',
+              },
+              dateFrom: { type: 'STRING', description: '期間の開始日 (YYYY-MM-DD)。省くと全期間' },
+              dateTo: { type: 'STRING', description: '期間の終了日 (YYYY-MM-DD)' },
+              memberNames: {
+                type: 'ARRAY',
+                items: { type: 'STRING' },
+                description: 'この人たちの射だけを数える。省略すると全員',
+              },
+              gender: 性別で絞る引数,
+              grade: 学年で絞る引数,
+              shotFrom: {
+                type: 'INTEGER',
+                description: '列の何射目から数えるか（1 始まり）。「後半の4射」なら 5',
+              },
+              shotTo: { type: 'INTEGER', description: '列の何射目まで数えるか。「最初の4射」なら 4' },
+              positions: {
+                type: 'ARRAY',
+                items: { type: 'STRING' },
+                description: "射位で絞る。'大前'・'2番'・'3番'・'落' など",
+              },
+              weekdays: {
+                type: 'ARRAY',
+                items: { type: 'STRING' },
+                description: "曜日で絞る。'日'・'月'・'火'・'水'・'木'・'金'・'土' から",
+              },
+              tags: タグで絞る引数,
+              keyword: {
+                type: 'STRING',
+                description: '記録の題・覚え書きに含まれる言葉で絞る（「リーグ戦」など）',
+              },
+              sortBy: {
+                type: 'STRING',
+                description:
+                  "並び順。'キー'（切り口の順。月・日・射目などの既定）, '的中率'（人・タグなどの既定）, '的中数', '射数', '皆中', '記録の数', '振れ幅'（切り口が2つのとき）",
+              },
+              order: {
+                type: 'STRING',
+                description: "'高い順' か '低い順'。省くと、キーは古い順・小さい順、それ以外は高い順",
+              },
+              minShots: { type: 'INTEGER', description: 'この射数に満たないまとまりは外す。既定は1' },
+              limit: { type: 'INTEGER', description: '何件返すか（最大100）' },
+            },
+            required: ['groupBy'],
+          },
+        },
+        {
+          name: 'listMembers',
+          description:
+            '部員の名簿を絞って、人数・学年ごと・性別ごとの人数と一覧を返します。「1年生は何人」「女子は誰」「部員は全部で何人」「期ごとの人数」「卒業生は何人」などに使います。人数と内訳はこのツールが数えるので、部員一覧を自分で数えないでください。',
+          parameters: {
+            type: 'OBJECT',
+            properties: {
+              grade: 学年で絞る引数,
+              gender: 性別で絞る引数,
+              division: { type: 'STRING', description: '区分の名前で絞る（区分を使っている団体だけ）' },
+              nameIncludes: { type: 'STRING', description: '名前にこの字が入る人だけ' },
+              includeAlumni: { type: 'BOOLEAN', description: '卒業生の人数と名前も返すか' },
+            },
+          },
+        },
+        {
+          name: 'calculate',
+          description:
+            '式を計算します。ツールが返した数字を足す・引く・割合にする・平均するなど、計算が要るときは暗算せず必ずこれを使ってください。例：「(15+12)/40*100」「95-87」「あと何中で5割か」は「40*0.5-17」。使えるのは数と + - * / と括弧だけです。',
+          parameters: {
+            type: 'OBJECT',
+            properties: {
+              expression: { type: 'STRING', description: '式。例: (15+12)/40*100' },
+              digits: { type: 'INTEGER', description: '小数の桁（既定 2）' },
+            },
+            required: ['expression'],
+          },
+        },
+        {
           name: 'getEquipmentTrend',
           description:
             '部員が弓具（弓力など）を変えた日ごとに、その弓具を使っていたあいだの的中率と、前の弓具のあいだの的中率を返します。「弓を変えてから当たるようになった？」「弓力を上げた影響は」などに使います。前後で率が動いても弓具だけが理由とは限らないこと（時期・体調など）と、射数を必ず添えてください。',

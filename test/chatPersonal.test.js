@@ -50,6 +50,7 @@ const 団体だけの道具 = [
   'addMember',
   'addMembers',
   'makeBalancedTeams',
+  'listMembers',
 ];
 
 test('道具：宣言してある道具は、すべて「個人が使える」か「団体だけ」のどちらかに決めてある（新しい道具を足したら決める）', () => {

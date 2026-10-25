@@ -53,6 +53,8 @@
     "src/comparePresets.js",
     "src/statsRules.js",
     "src/chatStats.js",
+    "src/chatAggregate.js",
+    "src/chatCalc.js",
     "test/sha256.test.js",
     "test/liveSecret.test.js",
     "test/liveShare.test.js",

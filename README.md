@@ -81,9 +81,12 @@ AI（Gemini）には名前・何人の何射か・板の左右の端・日付だ
 [src/chatTools.js](src/chatTools.js)）を呼んで、返った数字と順番をそのまま使って答える。
 
 - 道具は、全員の成績と順位・出欠・組分け・射位ごとの成績・記録の検索と取り出し・一人の詳しい成績（何本目の矢か・一射や一手）・矢所・
-  画面の移動・使い方の案内・部員の追加。部員の追加は、確かめのカードを押してから書く
+  2 つの期間の比べ・前の射と後の射の比べ・弓具を変えた前後・画面の移動・使い方の案内・部員の追加。部員の追加は、確かめのカードを押してから書く
+- 形の決まった道具に合わない問いは、万能の集計（`aggregateStats`。[src/chatAggregate.js](src/chatAggregate.js)）で答える。
+  絞り込み（期間・人・性別・学年・何射目・射位・曜日・タグ）と切り口（人・月・週・日・曜日・記録・射目・立目・射位・タグ・学年・性別・区分から
+  2 つまで）を模型が組み、数えて並べるのは端末。名簿の人数は `listMembers`、計算は `calculate`（[src/chatCalc.js](src/chatCalc.js)。eval は使わない）
 - 個人ログインでは、模型に渡す前に記録を本人の分へ絞り（ほかの人の列は空で残す。射位がずれないように）、全員の成績・出欠・
-  部員の追加の道具も出さない（[src/chatPersonal.js](src/chatPersonal.js)・[src/chatScope.js](src/chatScope.js)）
+  部員の追加・名簿の道具も出さない（[src/chatPersonal.js](src/chatPersonal.js)・[src/chatScope.js](src/chatScope.js)）
 - 会話の履歴と道具の結果は、SDK のチャットに任せず自前で積む。SDK の履歴では、道具の返事や模型の考えの印が落ちて会話が壊れた
 - 答えは流し読みで出す。途中で切れたら 1 回だけ流し読みで送り直す
 - 質問と答えは改善のため 1 年保存する（中継の `/hozon`。[src/improvementLog.js](src/improvementLog.js)、プライバシーポリシー第12条）

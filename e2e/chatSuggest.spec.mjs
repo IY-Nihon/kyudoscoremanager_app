@@ -330,6 +330,8 @@ test('団体：道具は全部・部員一覧が入り、会話は前の鍵に�
     [
       'addMember',
       'addMembers',
+      'aggregateStats',
+      'calculate',
       'compareMemberStats',
       'compareShotRanges',
       'countSessionParticipation',
@@ -340,6 +342,7 @@ test('団体：道具は全部・部員一覧が入り、会話は前の鍵に�
       'getEquipmentTrend',
       'getPositionStats',
       'getSessionsByDate',
+      'listMembers',
       'makeBalancedTeams',
       'navigateToScreen',
       'searchSessions',

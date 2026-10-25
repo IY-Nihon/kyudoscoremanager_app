@@ -1097,6 +1097,82 @@ const AIChatBot = () => {
                   ),
                 },
               });
+            } else if (call.name === 'aggregateStats') {
+              // 万能の集計（src/chatAggregate.js）。絞り込みと切り口を模型が組み、数えて並べるのは端末
+              const { 集計する } = require('./chatAggregate');
+              const 引数 = call.args;
+              const タグ絞り = タグで絞った記録(引数.tags);
+              const 題絞り = 題で絞る(タグ絞り.記録たち, 引数.keyword);
+              const 結果 = 集計する(members, 題絞り.記録たち, {
+                切り口: 引数.groupBy,
+                期間: 期間にする(引数.dateFrom, 引数.dateTo),
+                性別: 引数.gender,
+                学年: 引数.grade,
+                名前たち: 引数.memberNames,
+                射目: { から: 引数.shotFrom, まで: 引数.shotTo },
+                射位たち: 引数.positions,
+                曜日たち: 引数.weekdays,
+                並び: 引数.sortBy,
+                向き: 引数.order,
+                最小射数: 引数.minShots,
+                件数: 引数.limit,
+                区分たち: useScoreStore.getState().divisions || [],
+              });
+              functionResponses.push({
+                functionResponse: {
+                  name: call.name,
+                  response: Object.assign(
+                    {},
+                    結果,
+                    タグ絞り.表示 ? { タグでの絞り込み: タグ絞り.表示 } : {},
+                    題絞り.絞った
+                      ? { 題での絞り込み: { 言葉: 題絞り.言葉, 当たった記録の件数: 題絞り.当たった件数 } }
+                      : {},
+                    {
+                      message:
+                        タグ絞り.添え書き +
+                        (題絞り.絞った
+                          ? `題や覚え書きに「${題絞り.言葉}」を含む記録だけで数えました。`
+                          : '') +
+                        '数字と並びは集計済みです。そのまま使い、自分で足したり並べ替えたりしないでください（計算が要るときは calculate）。' +
+                        '条件 にある絞り込みと、部員でない人（ゲスト）の射は数えていないことを、必要に応じて答えに添えてください。' +
+                        (結果.返していない数
+                          ? `まとまりは ${結果.まとまりの数} 件で、${結果.一覧.length} 件だけ返しました。そのことを伝えてください。`
+                          : ''),
+                    }
+                  ),
+                },
+              });
+            } else if (call.name === 'listMembers') {
+              const { 名簿を数える } = require('./chatAggregate');
+              const 状態 = useScoreStore.getState();
+              const 結果 = 名簿を数える(members, {
+                性別: call.args.gender,
+                学年: call.args.grade,
+                区分: call.args.division,
+                名前に: call.args.nameIncludes,
+                期を出す: !!状態.useTerm,
+                区分たち: 状態.divisions || [],
+                卒業生: 状態.alumni || [],
+                卒業生も: !!call.args.includeAlumni,
+              });
+              functionResponses.push({
+                functionResponse: {
+                  name: call.name,
+                  response: Object.assign({}, 結果, {
+                    message: '人数と内訳は数え済みです。そのまま使ってください。',
+                  }),
+                },
+              });
+            } else if (call.name === 'calculate') {
+              // 計算（src/chatCalc.js）。eval は使わない
+              const { 計算する } = require('./chatCalc');
+              functionResponses.push({
+                functionResponse: {
+                  name: call.name,
+                  response: 計算する(call.args.expression, call.args.digits),
+                },
+              });
             } else if (call.name === 'getEquipmentTrend') {
               functionResponses.push({
                 functionResponse: {
