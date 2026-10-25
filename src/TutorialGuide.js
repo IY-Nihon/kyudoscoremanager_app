@@ -95,7 +95,7 @@ function 見本を送る() {
   }
   if (一番) 一番.scrollTop = 一番.scrollHeight;
 }
-/** 節をウィンドウ基準で測る。測れなければ null */
+/** 節をウィンドウ基準で測る。測れなければ null（measureInWindow は画面に無いと呼ばれ返らないことがあるので、400ms で見切る） */
 function 節を測る(節) {
   return new Promise((解決) => {
     if (!節 || typeof 節.measureInWindow !== 'function') return 解決(null);
@@ -119,28 +119,8 @@ function 節を測る(節) {
 }
 /** 目印の画面上の位置を測る。測れなければ null */
 function 位置を測る(名前) {
-  return new Promise((解決) => {
-    const ref = 目印帳.get(名前);
-    const 中身 = ref && ref.current;
-    if (!中身 || typeof 中身.measureInWindow !== 'function') return 解決(null);
-    let 済み = false;
-    const 終わる = (値) => {
-      if (!済み) {
-        済み = true;
-        解決(値);
-      }
-    };
-    try {
-      中身.measureInWindow((左, 上, 幅, 高さ) => {
-        if (typeof 左 !== 'number' || !幅 || !高さ) return 終わる(null);
-        終わる({ x: 左, y: 上, 幅, 高さ });
-      });
-    } catch {
-      終わる(null);
-    }
-    // measureInWindow は画面に無いと呼ばれ返らないことがある
-    setTimeout(() => 終わる(null), 400);
-  });
+  const ref = 目印帳.get(名前);
+  return 節を測る(ref && ref.current);
 }
 // ─────────────────────────────────────────
 // 案内の進み具合。設定画面からも始められるよう、外に出してある
@@ -214,17 +194,17 @@ function startTutorial(選んだ題) {
   return 'はじめた';
 }
 /**
- * 画面が読む値に、案内の見本を重ねる。
+ * 画面が読む値に、案内の見本を重ねる（フック。中で案内の店を購読する）。
  *
  * 履歴・分析の画面から、ストアを読んだ直後に一度だけ呼ぶ。
- *   const 値 = 案内.見本を重ねる((0, y.useScoreStore)());
+ *   const 値 = 案内.use見本を重ねる(useストアの一部([...]));
  *
  * 見本が出ていないときは、渡されたものをそのまま返す。出ているあいだだけ
  * 記録・部員・卒業生・ごみ箱を見本に差し替える。操作の関数は本物のまま
  * 残るので、画面の作りには手を入れずに済む。
  * 記録ストアには書かないため、見本が本物として保存される経路は無い。
  */
-function 見本を重ねる(値) {
+function use見本を重ねる(値) {
   const 見本 = use案内((状態) => 状態.見本データ);
   if (!見本) return 値;
   return Object.assign({}, 値, 見本);
@@ -698,8 +678,7 @@ const TutorialOverlay = ({ navRef }) => {
               </View>
             )}
 
-            {/* 誤ってスキップしても行き止まりにならないよう、常に出しておく。
-            アプリ全体で使える知らせの仕組みが無いため、ここに添える */}
+            {/* 案内で記録表を触っても、終わると（スキップでも）元に戻る（盤面を戻す）。そのことをどの手順にも書いておく */}
             <Text style={styles.補足} numberOfLines={1}>
               記録表に触ったぶんは、終わると元に戻ります
             </Text>
@@ -835,5 +814,5 @@ function useチュートリアル部員登録中() {
   }, [進行中, 番号, 役割, 部員数]);
 }
 exports.useチュートリアル部員登録中 = useチュートリアル部員登録中;
-exports.見本を重ねる = 見本を重ねる;
+exports.use見本を重ねる = use見本を重ねる;
 exports.TUTORIAL_VERSION = TUTORIAL_VERSION;

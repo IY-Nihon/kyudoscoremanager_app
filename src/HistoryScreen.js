@@ -77,7 +77,7 @@ const HistoryScreen = () => {
     横に並べる = false,
     set横に並べる,
     履歴の記録を記録画面で開く,
-  } = 案内.見本を重ねる(
+  } = 案内.use見本を重ねる(
     useストアの一部([
       'members',
       'activeRole',

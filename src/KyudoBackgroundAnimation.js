@@ -1,12 +1,20 @@
+/**
+ * ログイン画面の後ろで動く飾り（矢が 2 本と的の輪、金の星屑）。
+ *   web … three.js を cdnjs から読んで、立体の線で描く（読めなければ何も出さない）
+ *   端末 … SVG を Reanimated で回す
+ */
 import iroの組 from './iro.js';
 const { 色 } = iroの組;
 import { useEffect, useRef } from 'react';
-import { StyleSheet, View, Platform, Dimensions } from './rn';
+import { StyleSheet, View, Dimensions } from './rn';
+import { IS_WEB } from './IS_WEB';
 
-// Web版とNative版を条件分岐で実装
+/** '#E5C184' のような色を three.js の数（0xe5c184）にする */
+const 数の色 = (字) => parseInt(字.slice(1), 16);
+
 let KyudoBackgroundAnimation;
 
-if (Platform.OS === 'web') {
+if (IS_WEB) {
   KyudoBackgroundAnimation = () => {
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
@@ -50,7 +58,7 @@ if (Platform.OS === 'web') {
         }
         geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
         const mat = new THREE.PointsMaterial({
-          color: 0xe5c184,
+          color: 数の色(色.金_明るい),
           size: 0.07,
           transparent: true,
           opacity: 0.8,
@@ -59,14 +67,22 @@ if (Platform.OS === 'web') {
         const stars = new THREE.Points(geom, mat);
         scene.add(stars);
 
-        // 矢ペアグループ
+        // 2 本の矢と輪をまとめて回す
         const arrowPairGroup = new THREE.Group();
         scene.add(arrowPairGroup);
 
         const createKyudoVectorArrow = () => {
           const arrow = new THREE.Group();
-          const lineMat = new THREE.LineBasicMaterial({ color: 0xe5c184, transparent: true, opacity: 0.85 });
-          const subMat = new THREE.LineBasicMaterial({ color: 0xb8965a, transparent: true, opacity: 0.45 });
+          const lineMat = new THREE.LineBasicMaterial({
+            color: 数の色(色.金_明るい),
+            transparent: true,
+            opacity: 0.85,
+          });
+          const subMat = new THREE.LineBasicMaterial({
+            color: 数の色(色.金),
+            transparent: true,
+            opacity: 0.45,
+          });
 
           // シャフト
           const shaftPts = [new THREE.Vector3(0, -2.4, 0), new THREE.Vector3(0, 2.4, 0)];
@@ -159,7 +175,7 @@ if (Platform.OS === 'web') {
           }
           return new THREE.Line(
             new THREE.BufferGeometry().setFromPoints(pts),
-            new THREE.LineBasicMaterial({ color: 0xe5c184, transparent: true, opacity: 不透明度 })
+            new THREE.LineBasicMaterial({ color: 数の色(色.金_明るい), transparent: true, opacity: 不透明度 })
           );
         };
         ringsGroup.add(createRing(1.2, 0.4));
@@ -194,7 +210,7 @@ if (Platform.OS === 'web') {
         animate();
       };
 
-      // Three.js スクリプトをロード
+      // three.js を読む（一度読めば window.THREE に残る）
       if (!window.THREE) {
         const script = document.createElement('script');
         script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
@@ -232,7 +248,7 @@ if (Platform.OS === 'web') {
     );
   };
 } else {
-  // Native版 (iOS / Android) - SVG & Reanimated で再現
+  // 端末（iOS・Android）。SVG を Reanimated で回す
   const Svg = require('react-native-svg').default;
   const { Circle, G, Path, Line } = require('react-native-svg');
   const Animated = require('react-native-reanimated').default;
@@ -275,7 +291,7 @@ if (Platform.OS === 'web') {
       <View style={styles.nativeContainer}>
         <Animated.View style={[styles.animationWrapper, animatedStyle, { transform: [{ scale }] }]}>
           <Svg width="480" height="480" viewBox="0 0 480 480">
-            {/* Concentric Circles (Concentric Rings / Mato) */}
+            {/* 的の輪 */}
             <Circle cx="240" cy="240" r="239" stroke={色.金} strokeWidth="1" strokeOpacity="0.25" />
             <Circle cx="240" cy="240" r="186" stroke={色.紫_明るい} strokeWidth="1" strokeOpacity="0.3" />
             <Circle cx="240" cy="240" r="133" stroke={色.金} strokeWidth="1" strokeOpacity="0.4" />
@@ -283,7 +299,7 @@ if (Platform.OS === 'web') {
             <Circle cx="240" cy="240" r="42" stroke={色.金_明るい} strokeWidth="1.5" strokeOpacity="0.75" />
             <Circle cx="240" cy="240" r="10" fill={色.金_明るい} fillOpacity="0.8" />
 
-            {/* Grid Lines */}
+            {/* 縦横の線 */}
             <Line
               x1="240"
               y1="0"
@@ -303,7 +319,7 @@ if (Platform.OS === 'web') {
               strokeOpacity="0.15"
             />
 
-            {/* Vector Arrow 1 (手前の矢) */}
+            {/* 手前の矢 */}
             <G transform="translate(225, 240) rotate(-35)">
               {/* シャフト */}
               <Line
@@ -335,7 +351,7 @@ if (Platform.OS === 'web') {
               <Line x1="-1" y1="-100" x2="-1" y2="-119" stroke={色.金} strokeWidth="1" strokeOpacity="0.5" />
             </G>
 
-            {/* Vector Arrow 2 (奥の矢) */}
+            {/* 奥の矢 */}
             <G transform="translate(255, 220) rotate(-35)" opacity="0.6">
               {/* シャフト */}
               <Line x1="0" y1="-120" x2="0" y2="120" stroke={色.金} strokeWidth="1.5" strokeOpacity="0.75" />
