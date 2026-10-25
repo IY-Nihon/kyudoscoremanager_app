@@ -16,19 +16,30 @@ const タグで絞る引数 = {
     "タグで記録を絞り込む。例: ['自主稽古']。「自主練の的中率」「試合だけの成績」のように、タグで分けて聞かれたときに渡す。記録のタグの名前に含まれる言葉で当たる（# は付けても付けなくてもよい）。複数渡すと、すべてのタグが付いた記録だけ。タグの名前が分からないときは、先に何も渡さず呼ぶか、searchSessions で記録の目印を確かめる",
 };
 
+/** 性別で絞る引数（成績・比べる・射位の道具で同じ） */
+const 性別で絞る引数 = {
+  type: 'STRING',
+  description:
+    "性別で絞る。'男子' か '女子'。「男子の中で」「女子だけで」と聞かれたときに渡す。省略すると全員",
+};
+
 /**
  * 道具の宣言（模型の tools にそのまま渡す形）。
  * @param {number} 学年の数 在籍の学年の数（大学なら 4。団体の種類で変わる。src/gakunen.js）
  */
 function 道具の宣言(学年の数) {
   const 学年の説明 = `学年（1〜${学年の数} の数。コーチ・ゲストなど学年の無い人は 0）`;
+  const 学年で絞る引数 = {
+    type: 'INTEGER',
+    description: `学年で絞る（1〜${学年の数}）。「1年生の中で」と聞かれたときに渡す。省略すると全員`,
+  };
   return [
     {
       functionDeclarations: [
         {
           name: 'getAllMembersStats',
           description:
-            '全部員の成績を集計し、順位を付けて返します。「全員の5月の的中率を教えて」「部員のランキングを見せて」「一番当てているのは誰」などに使います。順位付け・並べ替え・絞り込みはこのツールが行うので、返ってきた順番と数字をそのまま使ってください。自分で並べ替えたり足し算したりしないでください。',
+            '全部員の成績を集計し、順位を付けて返します。「全員の5月の的中率を教えて」「部員のランキングを見せて」「一番当てているのは誰」「男子の上位10人」「的中率が安定している人」などに使います。性別・学年で絞ると、その人たちだけで順位を付けます（「男子の中で何位」もこれで答える）。順位付け・並べ替え・絞り込みはこのツールが行うので、返ってきた順番と数字をそのまま使ってください。自分で並べ替えたり足し算したりしないでください。',
           parameters: {
             type: 'OBJECT',
             properties: {
@@ -42,12 +53,15 @@ function 道具の宣言(学年の数) {
               },
               sortBy: {
                 type: 'STRING',
-                description: "並び順。'的中率'（既定）, '的中数', '射数', '名前' のいずれか",
+                description:
+                  "並び順。'的中率'（既定）, '的中数', '射数', '名前', '安定' のいずれか。'安定' は記録ごとの的中率の散らばり（標準偏差・ポイント）が小さい順で、4射以上の記録が3件以上ある人だけを並べる",
               },
               limit: {
                 type: 'INTEGER',
                 description: '上位何人を返すか。「トップ3」なら3。省略すると全員',
               },
+              gender: 性別で絞る引数,
+              grade: 学年で絞る引数,
               minShots: {
                 type: 'INTEGER',
                 description:
@@ -89,6 +103,15 @@ function 道具の宣言(学年の数) {
                 description: '的中率を見る期間の開始日 (YYYY-MM-DD)。「直近2ヶ月」なら今日から2か月前',
               },
               dateTo: { type: 'STRING', description: '的中率を見る期間の終了日 (YYYY-MM-DD)' },
+              gender: {
+                type: 'STRING',
+                description:
+                  "この性別の人だけで組を作る。'男子' か '女子'。「男子だけで組を分けて」のときに渡す。省略すると全員",
+              },
+              grade: {
+                type: 'INTEGER',
+                description: `この学年の人だけで組を作る（1〜${学年の数}）。省略すると全員`,
+              },
             },
             required: ['teamSize'],
           },
@@ -161,13 +184,15 @@ function 道具の宣言(学年の数) {
               },
               minShots: { type: 'INTEGER', description: 'この射数に満たない人を外す。既定は1' },
               tags: タグで絞る引数,
+              gender: 性別で絞る引数,
+              grade: 学年で絞る引数,
             },
           },
         },
         {
           name: 'getSessionsByDate',
           description:
-            '日付・期間・題・id を指定して練習記録を取得します。「昨日の記録」「今週の練習」「5月の記録」「直近3回」「○○戦の結果」「この試合」などの質問に使います。dateとdateFrom/dateToとrecentCountはいずれか一つを指定してください（keyword・sessionId は単独でも、日付と一緒でも使えます）。',
+            '日付・期間・題・id を指定して練習記録を取得します。「昨日の記録」「今週の練習」「5月の記録」「直近3回」「○○戦の結果」「この試合」「今月いちばん当たった日」などの質問に使います。dateとdateFrom/dateToとrecentCountはいずれか一つを指定してください（keyword・sessionId・sortBy は単独でも、日付と一緒でも使えます）。',
           parameters: {
             type: 'OBJECT',
             properties: {
@@ -191,7 +216,83 @@ function 道具の宣言(学年の数) {
                 description:
                   '記録の id。いま開いている記録（「この記録」「この試合」）や、searchSessions で見つけた記録を読むときに渡します',
               },
+              sortBy: {
+                type: 'STRING',
+                description:
+                  "並び順。'新しい順'（既定）, '的中率', '的中数' のいずれか。「いちばん当たった日」「的中率が高かった練習」は '的中率' か '的中数' を渡し、返ってきた順のまま答える",
+              },
             },
+          },
+        },
+        {
+          name: 'compareMemberStats',
+          description:
+            '2つの期間の的中率を部員ごとに比べ、下がった順・上がった順などに並べて返します。「最近的中率が落ちている人」「調子を上げているのは誰」「先月と比べて伸びた人」「一番波に乗っているのは」などに使います。期間を省くと、今日までの30日と、その前の30日を比べます。差（ポイント）・並べ替えはこのツールが計算するので、返ってきた順番と数字をそのまま使ってください。どちらかの期間で射数が足りない人は比べていません（人数だけ返ります）。',
+          parameters: {
+            type: 'OBJECT',
+            properties: {
+              dateFrom: { type: 'STRING', description: '今の期間の開始日 (YYYY-MM-DD)。省くと今日の29日前' },
+              dateTo: { type: 'STRING', description: '今の期間の終了日 (YYYY-MM-DD)。省くと今日' },
+              compareFrom: {
+                type: 'STRING',
+                description: '比べる前の期間の開始日 (YYYY-MM-DD)。省くと、今の期間のすぐ前の同じ日数',
+              },
+              compareTo: { type: 'STRING', description: '比べる前の期間の終了日 (YYYY-MM-DD)' },
+              sortBy: {
+                type: 'STRING',
+                description:
+                  "並び順。'下がった'（既定。下がり幅の大きい順）, '上がった', '差の大きさ'（上下を問わず動いた順）のいずれか",
+              },
+              minShots: {
+                type: 'INTEGER',
+                description: '両方の期間でこの射数以上引いた人だけを比べる。既定は8',
+              },
+              limit: { type: 'INTEGER', description: '何人返すか。省略すると全員' },
+              gender: 性別で絞る引数,
+              grade: 学年で絞る引数,
+              tags: タグで絞る引数,
+            },
+          },
+        },
+        {
+          name: 'compareShotRanges',
+          description:
+            '1回の記録の中で、前の射と後の射（既定は1〜4射目と5〜8射目）の的中率を部員ごとに比べて返します。「最初の4射と後半の4射で安定している人のランキング」「後半に強いのは誰」「後半で崩れる人」などに使います。差（後−前のポイント）・並べ替えはこのツールが計算するので、返ってきた順番と数字をそのまま使ってください。',
+          parameters: {
+            type: 'OBJECT',
+            properties: {
+              firstFrom: { type: 'INTEGER', description: '前の射の始め（何射目から。既定は1）' },
+              firstTo: { type: 'INTEGER', description: '前の射の終わり（何射目まで。既定は4）' },
+              secondFrom: { type: 'INTEGER', description: '後の射の始め（既定は5）' },
+              secondTo: { type: 'INTEGER', description: '後の射の終わり（既定は8）' },
+              sortBy: {
+                type: 'STRING',
+                description:
+                  "並び順。'差が小さい'（既定。前と後がそろっている＝安定している順）, '後が上がった', '後が下がった', '前の的中率', '後の的中率' のいずれか",
+              },
+              dateFrom: { type: 'STRING', description: '期間の開始日 (YYYY-MM-DD形式)。省くと全期間' },
+              dateTo: { type: 'STRING', description: '期間の終了日 (YYYY-MM-DD形式)' },
+              minShots: {
+                type: 'INTEGER',
+                description: '前・後それぞれでこの射数以上の人だけを比べる。既定は8',
+              },
+              limit: { type: 'INTEGER', description: '何人返すか。省略すると全員' },
+              gender: 性別で絞る引数,
+              grade: 学年で絞る引数,
+              tags: タグで絞る引数,
+            },
+          },
+        },
+        {
+          name: 'getEquipmentTrend',
+          description:
+            '部員が弓具（弓力など）を変えた日ごとに、その弓具を使っていたあいだの的中率と、前の弓具のあいだの的中率を返します。「弓を変えてから当たるようになった？」「弓力を上げた影響は」などに使います。前後で率が動いても弓具だけが理由とは限らないこと（時期・体調など）と、射数を必ず添えてください。',
+          parameters: {
+            type: 'OBJECT',
+            properties: {
+              memberName: { type: 'STRING', description: '部員の名前' },
+            },
+            required: ['memberName'],
           },
         },
         {

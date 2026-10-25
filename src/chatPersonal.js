@@ -20,6 +20,9 @@ const 個人が使える道具 = [
   'getSessionsByDate',
   'searchSessions',
   'countSessionParticipation',
+  'compareMemberStats',
+  'compareShotRanges',
+  'getEquipmentTrend',
   'navigateToScreen',
   'startTutorial',
 ];
@@ -139,6 +142,9 @@ function 個人用の指示文(基本, 本人) {
 ・日付が分からない記録を言葉で探す → searchSessions
 ・「自主練の的中率」「試合だけの成績」など、タグで分けた自分の成績 → getDetailedMemberStats・getPositionStats・getArrowLocationStats の tags にタグを渡す（返ってきた数字は「そのタグで絞った数字」と添える）
 ・「自主練に何回参加したか」など、タグや言葉で絞った記録に自分が何回参加したか → countSessionParticipation（返ってきた回数をそのまま使う）
+・「最近調子が落ちてる？」「先月より上がった？」など、2 つの期間の比べ → compareMemberStats（差はツールが出す）
+・「後半に崩れてる？」など、1 回の記録の中の前の射と後の射の比べ → compareShotRanges
+・「弓を変えてから当たるようになった？」 → getEquipmentTrend（memberName は ${名前の引数}）
 ・画面を開く → navigateToScreen（開けるのは ${個人が行ける画面.join('・')}）
 ・使い方の案内（チュートリアル）を開始 → startTutorial`,
 
@@ -189,6 +195,21 @@ function 個人向けの道具(宣言たち) {
     getSessionsByDate: {
       description:
         '本人が参加した練習記録を、日付や期間を指定して取得します。「昨日の記録」「今週の練習」「5月の記録」「直近3回」などの質問に使います。dateとdateFrom/dateToとrecentCountはいずれか一つを指定してください。',
+    },
+    // 比べる道具は、本人の分だけで比べる（ほかの人の列は空で渡るので、ほかの人は出てこない）
+    compareMemberStats: {
+      description:
+        '本人の的中率を 2 つの期間で比べます。「最近調子が落ちてる？」「先月より上がった？」などに使います。期間を省くと、今日までの30日と、その前の30日を比べます。差（ポイント）はこのツールが計算するので、そのまま使ってください。',
+      除く引数: ['gender', 'grade', 'limit', 'sortBy'],
+    },
+    compareShotRanges: {
+      description:
+        '本人の、1回の記録の中の前の射と後の射（既定は1〜4射目と5〜8射目）の的中率を比べます。「後半に崩れてる？」「最初の4射と後の4射でどっちが当たってる」などに使います。差はこのツールが計算するので、そのまま使ってください。',
+      除く引数: ['gender', 'grade', 'limit', 'sortBy'],
+    },
+    getEquipmentTrend: {
+      description:
+        '本人が弓具（弓力など）を変えた日ごとに、その弓具のあいだと前の弓具のあいだの的中率を返します。「弓を変えてから当たるようになった？」などに使います。memberName には本人の名前を渡してください。弓具だけが理由とは限らないことと、射数を添えてください。',
     },
     navigateToScreen: {
       description: '指定した画面タブへ遷移します。',

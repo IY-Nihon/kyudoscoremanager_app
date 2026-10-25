@@ -69,6 +69,12 @@ const {
   題で絞る,
   記録の要約,
   端末の日付,
+  二つの期間で比べる,
+  比べる期間を決める,
+  射の前後で比べる,
+  弓具の前後,
+  記録の的中,
+  人を絞る,
 } = require('./chatStats');
 const { 練習日を読む } = require('./practiceDays');
 // 「何でも聞いてください」だけでは何を聞けるか分からない。
@@ -836,7 +842,9 @@ const AIChatBot = () => {
             if (call.name === 'makeBalancedTeams') {
               // 組分けは src/chatTeams.js で済ませる（10/17 に AI が自分で組んで、人を外し・数え違え・ばらついた）
               const { 組を均等に分ける } = require('./chatTeams');
-              const 結果 = 組を均等に分ける(members, タグで絞った記録().記録たち, {
+              // 「男子だけで」は、絞った人だけで組む（前は絞れず、余りの聞き返しになっていた。10/20 の AI のログ）
+              const 絞り = { 性別: call.args.gender, 学年: call.args.grade };
+              const 結果 = 組を均等に分ける(人を絞る(members, 絞り), タグで絞った記録().記録たち, {
                 期間: 期間にする(call.args.dateFrom, call.args.dateTo),
                 一組の人数: call.args.teamSize,
                 外す: Array.isArray(call.args.excludeNames) ? call.args.excludeNames : [],
@@ -847,8 +855,12 @@ const AIChatBot = () => {
                   name: call.name,
                   response: {
                     ...結果,
+                    ...(絞り.性別 || 絞り.学年 ? { 絞り込み: 絞り } : {}),
                     message:
                       '組分けは計算済みです。組の順番・顔ぶれ・数字をそのまま伝え、自分で組み替えたり計算し直したりしないでください。' +
+                      (絞り.性別 || 絞り.学年
+                        ? '絞り込み の人だけで組んでいます。そのことを添えてください。'
+                        : '') +
                       '「見込みの的中率」は、次に組で立ったときの組の的中率の見込み（一人ひとりの期間の的中率を、射数が少ないほど部全体の的中率に寄せたものの平均）で、組どうしの差が 組の見込みの開き です。' +
                       (結果.見積もった人.length
                         ? '見積もった人 には、期間に記録が無いので期間の外の記録から見込んだことを必ず添えてください。'
@@ -869,7 +881,7 @@ const AIChatBot = () => {
             }
 
             if (call.name === 'getAllMembersStats') {
-              const { dateFrom, dateTo, sortBy, limit, minShots } = call.args;
+              const { dateFrom, dateTo, sortBy, limit, minShots, gender, grade } = call.args;
 
               // 数える・並べる・絞るは、すべてここで済ませる。
               // 人数ぶんの表を渡して模型に選ばせると取り違えるため。
@@ -888,6 +900,8 @@ const AIChatBot = () => {
                 並び: sortBy,
                 件数: limit,
                 最小射数,
+                性別: gender,
+                学年: grade,
               });
 
               functionResponses.push({
@@ -901,6 +915,10 @@ const AIChatBot = () => {
                     順位の基準の射数: 最小射数,
                     団体全体: 結果.全体,
                     順位: 結果.一覧,
+                    ...(結果.絞り込み ? { 絞り込み: 結果.絞り込み } : {}),
+                    ...(結果.並び === '安定'
+                      ? { 散らばりを出せず外した人数: 結果.散らばりを出せず外した人数 }
+                      : {}),
                     ...(タグ絞り.表示 ? { タグでの絞り込み: タグ絞り.表示 } : {}),
                     ...(題絞り.絞った
                       ? { 題での絞り込み: { 言葉: 題絞り.言葉, 当たった記録の件数: 題絞り.当たった件数 } }
@@ -917,6 +935,12 @@ const AIChatBot = () => {
                         : 最小射数 > 1
                           ? `分析画面のランキングと同じ基準で、${最小射数} 射に満たない人は順位から外しました（外した人数は 射数が足りず外した人数）。`
                           : '') +
+                      (結果.絞り込み
+                        ? '絞り込み の人だけで数えて順位を付けました（団体全体 もその人たちの合計です）。'
+                        : '') +
+                      (結果.並び === '安定'
+                        ? `記録ごとの散らばり は、4 射以上引いた記録ごとの的中率の標準偏差（ポイント）で、小さいほど安定しています。4 射以上の記録が 3 件に満たない人は並べていません（散らばりを出せず外した人数）。`
+                        : '') +
                       '順位・並べ替え・絞り込みは集計済みです。返した順番と数字をそのまま使い、' +
                       '自分で並べ替えたり計算したりしないでください。的中率は百分率です。',
                   },
@@ -989,11 +1013,15 @@ const AIChatBot = () => {
             } else if (call.name === 'getPositionStats') {
               const { dateFrom, dateTo, memberNames, minShots } = call.args;
               const タグ絞り = タグで絞った記録(call.args.tags);
-              const 結果 = 射位ごとの成績(members, タグ絞り.記録たち, {
-                期間: 期間にする(dateFrom, dateTo),
-                名前たち: memberNames,
-                最小射数: minShots,
-              });
+              const 結果 = 射位ごとの成績(
+                人を絞る(members, { 性別: call.args.gender, 学年: call.args.grade }),
+                タグ絞り.記録たち,
+                {
+                  期間: 期間にする(dateFrom, dateTo),
+                  名前たち: memberNames,
+                  最小射数: minShots,
+                }
+              );
               functionResponses.push({
                 functionResponse: {
                   name: call.name,
@@ -1009,6 +1037,70 @@ const AIChatBot = () => {
                         '誰をどこに置くかは決めていません。数字を根拠に提案してください。',
                     }
                   ),
+                },
+              });
+            } else if (call.name === 'compareMemberStats') {
+              // 2 つの期間の比べ（「最近的中率が落ちている人」）。差と並べ替えは chatStats の 二つの期間で比べる
+              const 期間 = 比べる期間を決める(call.args);
+              const タグ絞り = タグで絞った記録(call.args.tags);
+              const 結果 = 二つの期間で比べる(members, タグ絞り.記録たち, {
+                ...期間,
+                並び: call.args.sortBy,
+                最小射数: call.args.minShots,
+                件数: call.args.limit,
+                性別: call.args.gender,
+                学年: call.args.grade,
+              });
+              functionResponses.push({
+                functionResponse: {
+                  name: call.name,
+                  response: Object.assign(
+                    {},
+                    結果,
+                    タグ絞り.表示 ? { タグでの絞り込み: タグ絞り.表示 } : {},
+                    {
+                      message:
+                        タグ絞り.添え書き +
+                        `差は 今の期間 − 前の期間 の的中率（ポイント）です。両方の期間で ${結果.最小射数} 射以上の人だけを比べました（足りない人は 射数が足りず比べなかった人数）。` +
+                        'どの 2 つの期間を比べたかを日付で添えてください。差と順番は計算済みなので、そのまま使ってください。',
+                    }
+                  ),
+                },
+              });
+            } else if (call.name === 'compareShotRanges') {
+              // 1 本の列の前の射と後の射の比べ（「最初の 4 射と後半の 4 射」）
+              const タグ絞り = タグで絞った記録(call.args.tags);
+              const 結果 = 射の前後で比べる(members, タグ絞り.記録たち, {
+                期間: 期間にする(call.args.dateFrom, call.args.dateTo),
+                前: { から: call.args.firstFrom, まで: call.args.firstTo },
+                後: { から: call.args.secondFrom, まで: call.args.secondTo },
+                並び: call.args.sortBy,
+                最小射数: call.args.minShots,
+                件数: call.args.limit,
+                性別: call.args.gender,
+                学年: call.args.grade,
+              });
+              functionResponses.push({
+                functionResponse: {
+                  name: call.name,
+                  response: Object.assign(
+                    {},
+                    結果,
+                    タグ絞り.表示 ? { タグでの絞り込み: タグ絞り.表示 } : {},
+                    {
+                      message:
+                        タグ絞り.添え書き +
+                        `各記録の列の ${結果.前の射の範囲} と ${結果.後の射の範囲} を比べました。差は 後 − 前 の的中率（ポイント）で、'差が小さい' の順は前と後がそろっている（安定している）順です。` +
+                        `前・後それぞれ ${結果.最小射数} 射以上の人だけを比べました。差と順番はそのまま使ってください。`,
+                    }
+                  ),
+                },
+              });
+            } else if (call.name === 'getEquipmentTrend') {
+              functionResponses.push({
+                functionResponse: {
+                  name: call.name,
+                  response: 弓具の前後(members, sessions, String(call.args.memberName || '')),
                 },
               });
             } else if (call.name === 'getDetailedMemberStats') {
@@ -1053,7 +1145,7 @@ const AIChatBot = () => {
                 },
               });
             } else if (call.name === 'getSessionsByDate') {
-              const { date, dateFrom, dateTo, recentCount, keyword, sessionId } = call.args;
+              const { date, dateFrom, dateTo, recentCount, keyword, sessionId, sortBy } = call.args;
 
               // 記録が無い・壊れているものを先に外す。archers が無い記録が1件でも
               // 混ざると、この道具ごと落ちて「エラー」しか返せなくなる
@@ -1086,6 +1178,18 @@ const AIChatBot = () => {
                 filtered = filtered.filter((記録) => (記録.date || 0) >= 始め && (記録.date || 0) <= 終わり);
               }
 
+              // 的中で並べる（「今月いちばん当たった日」）。上限で切る前に並べないと、いちばんの記録が落ちる
+              if (sortBy === '的中率' || sortBy === '的中数') {
+                const 鍵 = sortBy === '的中率' ? '的中率' : '的中';
+                const 数 = new Map(filtered.map((記録) => [記録, 記録の的中(記録)]));
+                filtered = filtered
+                  .filter((記録) => 数.get(記録).射数 > 0)
+                  .sort(
+                    (甲, 乙) =>
+                      (数.get(乙)[鍵] || 0) - (数.get(甲)[鍵] || 0) || (乙.date || 0) - (甲.date || 0)
+                  );
+              }
+
               // 上限を置く。引数なしで呼ばれると全記録を人ごとの内訳付きで返し、
               // 返す量が膨れて遅くなるうえ、模型が読み切れず数字を取り違える
               const 上限 = 30;
@@ -1103,6 +1207,7 @@ const AIChatBot = () => {
                   name: call.name,
                   response: {
                     count: sessionData.length,
+                    並び: sortBy === '的中率' || sortBy === '的中数' ? sortBy + 'の高い順' : '新しい順',
                     当たった件数,
                     返していない件数: Math.max(0, 当たった件数 - sessionData.length),
                     sessions: sessionData,
