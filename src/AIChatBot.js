@@ -1415,7 +1415,7 @@ const AIChatBot = () => {
       <Modal
         visible={modalVisible}
         animationType="slide"
-        transparent={true}
+        transparent
         onRequestClose={() => setModalVisible(false)}
       >
         <KeyboardAvoidingView behavior="height" style={styles.modalOverlay}>
@@ -1658,7 +1658,7 @@ const AIChatBot = () => {
                   placeholder="メッセージを入力..."
                   value={inputText}
                   onChangeText={setInputText}
-                  multiline={true}
+                  multiline
                   maxLength={500}
                 />
               </View>

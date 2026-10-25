@@ -27,7 +27,7 @@ const 目印帳 = new Map();
  * 読まれていた（2026-10-05・U-3）。蓋の下の本物の部品には、前と同じく指が届かない
  */
 function 蓋({ style }) {
-  return <View style={style} onStartShouldSetResponder={() => true} aria-hidden={true} />;
+  return <View style={style} onStartShouldSetResponder={() => true} aria-hidden />;
 }
 
 /** 画面側で使う。返ってきた ref を、指してほしい要素に付ける */
