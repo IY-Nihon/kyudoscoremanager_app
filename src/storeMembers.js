@@ -91,6 +91,9 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
       if (!学.期を付ける学年か(変更.grade)) 直す中身.termKi = null;
       else if (状態().useTerm) 直す中身.termKi = 学.学年の期(状態().currentFreshmanTerm, 変更.grade);
     }
+    // 送らない項目（undefined）は前の値のまま。残すと雲へ送るときに断られる
+    //（期を使わない団体では画面が termKi: undefined を付けて送り、直した人が雲へ届いていなかった。10/25）
+    for (const 鍵 of Object.keys(直す中身)) if (直す中身[鍵] === undefined) delete 直す中身[鍵];
     const 直した部員 = 状態().members.map((部員) =>
       部員.id === 部員ID
         ? Object.assign({}, 部員, 直す中身, { lastModified: Date.now(), syncStatus: '未同期' })

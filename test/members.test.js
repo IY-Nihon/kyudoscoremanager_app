@@ -107,6 +107,20 @@ test('編集：名前を変えるとクラウドへ届く', async () => {
   assert.equal(雲.値(名簿の道, 'mem-1').name, '改名後');
 });
 
+test('編集：期を使わない団体で直しても、クラウドへ届く（期が undefined になって断られていた）', async () => {
+  const { store, 雲 } = await 用意();
+  雲.置く(名簿の道, 'mem-1', 部員({ termKi: 52 }));
+  store.setState({ members: [部員({ termKi: 52 })], useTerm: false });
+
+  // メンバーの画面は、期を使わない団体では termKi: undefined を付けて送る
+  store.getState().updateMember('mem-1', { name: '改名後', gender: '男性', grade: 2, termKi: undefined });
+  await 待つ(400);
+
+  assert.equal(雲.値(名簿の道, 'mem-1').name, '改名後', 'クラウドへ届く');
+  assert.equal(一人(store).syncStatus, '同期済み');
+  assert.equal(一人(store).termKi, 52, '期は前のまま');
+});
+
 test('編集：通信できないときは未同期のまま残り、送り直しで届く', async () => {
   const { store, 雲 } = await 用意();
   雲.置く(名簿の道, 'mem-1', 部員());
