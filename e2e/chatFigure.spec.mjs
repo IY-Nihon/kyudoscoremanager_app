@@ -235,6 +235,21 @@ const 崩れを探す = (page, 大きく, 形) =>
           break;
         }
       }
+      // SVG の字どうしが重ならない（棒の上の数・下の名・目盛り）
+      for (const svg of 形 === '矢所' ? [] : 枠.querySelectorAll('svg')) {
+        const 箱 = [...svg.querySelectorAll('text')]
+          .filter((t) => t.textContent)
+          .map((t) => t.getBoundingClientRect());
+        const 重なる = 箱.some((a, i) =>
+          箱
+            .slice(i + 1)
+            .some(
+              (b) =>
+                a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1
+            )
+        );
+        if (重なる) 崩れ.push('図の字どうしが重なる');
+      }
       // 大きく出したとき、折れ線・棒の SVG は窓の高さに収まる（巻かずに全部見える）
       if (大きく) {
         const svg = 枠.querySelector('svg');
@@ -304,6 +319,8 @@ const 図たち = [
   { 名: '成績の表（6 列）', 道具: { name: 'getAllMembersStats', args: {} }, 形: '表' },
   { 名: '成績の横の棒', 道具: { name: 'getAllMembersStats', args: {} }, 形: '棒' },
   { 名: '曜日の縦の棒', 道具: { name: 'aggregateStats', args: { groupBy: ['曜日'] } }, 形: '棒' },
+  // 本数の多い縦の棒（射目は 20 本を超える団体もある。数と名が重ならず、名が切れない）
+  { 名: '射目の縦の棒', 道具: { name: 'aggregateStats', args: { groupBy: ['射目'] } }, 形: '棒' },
   { 名: '月の折れ線', 道具: { name: 'aggregateStats', args: { groupBy: ['月'] } }, 形: '折れ線' },
   { 名: '矢所', 道具: { name: 'getArrowLocationStats', args: {} }, 形: '矢所' },
 ];

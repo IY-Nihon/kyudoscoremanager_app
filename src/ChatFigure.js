@@ -201,9 +201,15 @@ function 縦の棒({ 図, 大きく }) {
   const 高 = Math.max(...図.並び.map((項) => 項.値), 1);
   const いちばん = Math.max(...図.並び.map((項) => 項.値));
   const 幅 = (W - 8) / Math.max(1, 図.並び.length);
-  // 棒が細いときは、棒の上の数を小さくして隣と重ねない
-  const 値の字 = Math.max(8, Math.min(字, 幅 / 2.6));
-  const 入る字数 = Math.max(1, Math.floor((幅 - 2) / 字));
+  // 棒が細くて数が隣と重なるときは、いちばん高い・低い棒の数だけ出す。名は切らずに間引く
+  //（前は 30 本の数が重なり、名が 1 字に切れていた。10/26 本番）
+  const 値の字 = 字;
+  const 値を全部 = 幅 >= 値の字 * 2.4;
+  // 同じ値の棒が並ぶときも、数を付けるのは最初の 1 本だけ
+  const 高い番 = 図.並び.findIndex((項) => 項.値 === いちばん);
+  const 低い番 = 図.並び.findIndex((項) => 項.値 === Math.min(...図.並び.map((x) => x.値)));
+  const 名の幅 = Math.max(...図.並び.map((項) => 字の幅(項.名, 字))) + 4;
+  const 名の間 = Math.max(1, Math.ceil(名の幅 / Math.max(1, 幅)));
   return (
     <View style={[styles.図の箱, { height: H }]} onLayout={測る}>
       {W > 0 ? (
@@ -224,27 +230,31 @@ function 縦の棒({ 図, 大きく }) {
                   fill={色.青}
                   fillOpacity={濃い ? 1 : 0.35}
                 />
-                <Svgの部品.Text
-                  fontFamily={図の字体}
-                  x={4 + i * 幅 + 幅 / 2}
-                  y={H - 下 - h - 4}
-                  fontSize={値の字}
-                  fontWeight="bold"
-                  fill={濃い ? 色.青 : 色.文字_二}
-                  textAnchor="middle"
-                >
-                  {単位が率 ? Number(項.値).toFixed(1) : `${項.値}`}
-                </Svgの部品.Text>
-                <Svgの部品.Text
-                  fontFamily={図の字体}
-                  x={4 + i * 幅 + 幅 / 2}
-                  y={H - 6}
-                  fontSize={字}
-                  fill={色.灰}
-                  textAnchor="middle"
-                >
-                  {名.length > 入る字数 ? 名.slice(0, 入る字数) : 名}
-                </Svgの部品.Text>
+                {値を全部 || i === 高い番 || i === 低い番 ? (
+                  <Svgの部品.Text
+                    fontFamily={図の字体}
+                    x={Math.min(W - 16, Math.max(16, 4 + i * 幅 + 幅 / 2))}
+                    y={H - 下 - h - 4}
+                    fontSize={値の字}
+                    fontWeight="bold"
+                    fill={濃い ? 色.青 : 色.文字_二}
+                    textAnchor="middle"
+                  >
+                    {単位が率 ? Number(項.値).toFixed(1) : `${項.値}`}
+                  </Svgの部品.Text>
+                ) : null}
+                {i % 名の間 === 0 ? (
+                  <Svgの部品.Text
+                    fontFamily={図の字体}
+                    x={4 + i * 幅 + 幅 / 2}
+                    y={H - 6}
+                    fontSize={字}
+                    fill={色.灰}
+                    textAnchor="middle"
+                  >
+                    {名}
+                  </Svgの部品.Text>
+                ) : null}
               </React.Fragment>
             );
           })}
