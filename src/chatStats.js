@@ -1494,6 +1494,8 @@ function 矢所の成績(名簿, 記録たち, 名前, 条件 = {}) {
 
   return {
     name: 人.name,
+    // 図（src/chatFigures.js の 矢所）のための点。模型には渡さない（_ で始まる項目は 図の分を外す で外す）
+    _点たち: 点たち.map((点) => ({ x: 点.x, y: 点.y, 印: 点.印, targetType: 点.targetType })),
     arrowCount,
     hitCount,
     missCount,

@@ -25,6 +25,7 @@ const 個人が使える道具 = [
   'getEquipmentTrend',
   'aggregateStats',
   'calculate',
+  'showFigure',
   'navigateToScreen',
   'startTutorial',
 ];
