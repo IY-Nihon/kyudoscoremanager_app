@@ -116,7 +116,17 @@ function 偽Firestore() {
     return 保管庫.get(道);
   };
 
+  // 本物は undefined を書こうとすると、送る前にその場で投げる（ignoreUndefinedProperties を入れていない）。
+  // 偽物が黙って受け取っていたので、期（termKi）に undefined を入れて送れない穴が検査で見えなかった（10/25）
+  const undefinedを探す = (値, 名) => {
+    if (値 === undefined) throw new Error(`Unsupported field value: undefined (found in field ${名})`);
+    if (Array.isArray(値)) 値.forEach((中, 番) => undefinedを探す(中, `${名}.${番}`));
+    else if (値 && typeof 値 === 'object' && Object.getPrototypeOf(値) === Object.prototype)
+      for (const [鍵, 中] of Object.entries(値)) undefinedを探す(中, 名 ? `${名}.${鍵}` : 鍵);
+  };
   const 送る = (やること) => {
+    for (const 一つ of やること.操作 || [])
+      if (一つ.種類 === 'set' || 一つ.種類 === 'update') undefinedを探す(一つ.値, '');
     記録.push(やること);
     if (状態.オフライン) {
       // 手元には先に反映する（Firestore のオフライン永続化と同じ）
