@@ -28,7 +28,7 @@ const { getShadowStyle } = require('./shadowStyle');
 // 「NOTICE_VERSION が最新の項目と一致し、形がそろっている」ことは
 // test/updateNotice.test.js が見張っている。
 // eslint-disable-next-line no-unused-vars -- 画面では使わない。検査（test/autoLock.test.js）が字で読む
-const 最後に配信した版 = '2026-10-23-03';
+const 最後に配信した版 = '2026-10-25-01';
 // お知らせの版。新しい項目を足したら、必ずこれを最新の項目の 版 に合わせる。
 // 「次のお知らせが来るまで表示しない」を選んだ端末でも、この値が変わるとまた出る
 const NOTICE_VERSION = '2026-10-25-01';
