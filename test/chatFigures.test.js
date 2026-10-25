@@ -44,11 +44,11 @@ test('集計（月ごと）：折れ線・棒・表を作れる。折れ線は�
   assert.deepEqual(表.行[1], ['10月', '8', '5', '0', '62.5%']);
 });
 
-test('集計（射目ごと）：折れ線は作れない（時の流れが無い）。選べない形には使える形を返す', () => {
+test('集計（射目ごと）：射の順の棒と折れ線にできる。選べない形には使える形を返す', () => {
   const 結果 = 集計する([人('山田'), 人('佐藤')], 記録たち, { 切り口: ['射目'] });
-  assert.deepEqual(使える形('aggregateStats', 結果), ['棒', '表']);
-  const 誤り = 図を作る('aggregateStats', 結果, '折れ線');
-  assert.match(誤り.error, /棒・表/);
+  assert.deepEqual(使える形('aggregateStats', 結果), ['折れ線', '棒', '表']);
+  const 誤り = 図を作る('aggregateStats', 結果, '矢所');
+  assert.match(誤り.error, /折れ線・棒・表/);
   const 棒 = 図を作る('aggregateStats', 結果, '棒');
   assert.equal(棒.向き, '縦');
   assert.deepEqual(
@@ -156,5 +156,20 @@ test('射目ごとの棒は、率の順でなく射の順に並び、名は番�
   assert.deepEqual(
     曜日.並び.map((項) => 項.名),
     ['月', '水', '土']
+  );
+});
+
+test('射目が 13 本以上の棒は折れ線になる（細い棒が並んで読めない。本人 10/26）', () => {
+  const 一覧 = Array.from({ length: 20 }, (_, i) => ({
+    射目: `${20 - i}射目`,
+    射数: 10,
+    的中: 4,
+    的中率: 40 + i,
+  }));
+  const 図 = 図を作る('aggregateStats', { 切り口: ['射目'], 一覧 }, '棒');
+  assert.equal(図.形, '折れ線');
+  assert.deepEqual(
+    図.系列[0].点.slice(0, 3).map((点) => 点.x),
+    ['1', '2', '3']
   );
 });
