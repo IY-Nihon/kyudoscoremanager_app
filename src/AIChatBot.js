@@ -58,6 +58,7 @@ const 流れが切れたか = (誤り) =>
 const {
   全員の成績,
   出欠の集計,
+  出欠を月ごとに,
   記録をさがす,
   タグで絞る,
   参加回数を数える,
@@ -841,14 +842,29 @@ const AIChatBot = () => {
 
             if (call.name === 'makeBalancedTeams') {
               // 組分けは src/chatTeams.js で済ませる（10/17 に AI が自分で組んで、人を外し・数え違え・ばらついた）
-              const { 組を均等に分ける } = require('./chatTeams');
+              const { 組を作る } = require('./chatTeams');
               // 「男子だけで」は、絞った人だけで組む（前は絞れず、余りの聞き返しになっていた。10/20 の AI のログ）
               const 絞り = { 性別: call.args.gender, 学年: call.args.grade };
-              const 結果 = 組を均等に分ける(人を絞る(members, 絞り), タグで絞った記録().記録たち, {
+              const 並び = (値) => (Array.isArray(値) ? 値 : []);
+              // 「山田・佐藤」を 1 組ぶんの名前に分ける
+              const 名前の組 = (値) =>
+                並び(値).map((文) =>
+                  String(文)
+                    .split(/[・、,，\s]+/)
+                    .filter(Boolean)
+                );
+              const 結果 = 組を作る(人を絞る(members, 絞り), タグで絞った記録(call.args.tags).記録たち, {
                 期間: 期間にする(call.args.dateFrom, call.args.dateTo),
                 一組の人数: call.args.teamSize,
-                外す: Array.isArray(call.args.excludeNames) ? call.args.excludeNames : [],
+                外す: 並び(call.args.excludeNames),
                 余り: call.args.remainder,
+                目的: call.args.goal,
+                組の数: call.args.teamCount,
+                だけ: 並び(call.args.onlyNames),
+                必ず入れる: 並び(call.args.mustInclude),
+                同じ組: 名前の組(call.args.together),
+                別の組: 名前の組(call.args.apart),
+                散らす: 並び(call.args.spread),
               });
               functionResponses.push({
                 functionResponse: {
@@ -874,6 +890,15 @@ const AIChatBot = () => {
                         : '') +
                       (結果.余った人.length
                         ? '余った人 は組に入れていません。そのことを伝えてください。'
+                        : '') +
+                      (結果.目的 === '強い順'
+                        ? '強い順：1 組目がいちばん見込みの高い組です。組の見込みの開きは、そろえていないので気にしなくてよい。'
+                        : '') +
+                      (結果.選ばなかった人
+                        ? '組の数の指定で 選ばなかった人 がいます。そのことと、選び方を伝えてください。'
+                        : '') +
+                      (結果.守れなかった決まり.length
+                        ? `守れなかった決まり（${結果.守れなかった決まり.join('／')}）を必ず伝えてください。`
                         : ''),
                   },
                 },
@@ -948,13 +973,38 @@ const AIChatBot = () => {
                 },
               });
             } else if (call.name === 'getAttendanceStats') {
-              const { dateFrom, dateTo, sortBy, limit, gender, grade } = call.args;
+              const { dateFrom, dateTo, sortBy, limit, gender, grade, byMonth, maxRate, minRate } = call.args;
               // 出欠画面と同じ決まりで数えるため、正規練習日を読む（読めなければ記録の出欠の印で数える）
               let 練習日 = {};
               try {
                 練習日 = await 練習日を読む(useScoreStore.getState().activeGroupId);
               } catch (誤り) {
                 console.warn('[AIChatBot] 練習日を読めませんでした:', 誤り);
+              }
+              if (byMonth) {
+                // 月ごと（「各月でカウントして」「3分の1以下だった月の数」）。月を回すのも数えるのもここで
+                const 月ごと = 出欠を月ごとに(members, sessions, {
+                  期間: 期間にする(dateFrom, dateTo),
+                  練習日,
+                  性別: gender,
+                  学年: grade,
+                  出席率の上限: Number.isFinite(maxRate) ? maxRate : undefined,
+                  件数: limit,
+                });
+                functionResponses.push({
+                  functionResponse: {
+                    name: call.name,
+                    response: Object.assign({}, 月ごと, {
+                      message:
+                        '月ごとに、その月の正規練習日について数えました（出欠画面と同じ数え方）。' +
+                        (Number.isFinite(maxRate)
+                          ? `出席率が ${maxRate}% 以下だった月を人ごとに数え、多い順に並べました（当てはまった月の数）。`
+                          : '') +
+                        '数字と並びはそのまま使ってください。',
+                    }),
+                  },
+                });
+                continue;
               }
               const 結果 = 出欠の集計(members, sessions, {
                 期間: 期間にする(dateFrom, dateTo),
@@ -963,6 +1013,8 @@ const AIChatBot = () => {
                 件数: limit,
                 性別: gender,
                 学年: grade,
+                出席率の上限: Number.isFinite(maxRate) ? maxRate : undefined,
+                出席率の下限: Number.isFinite(minRate) ? minRate : undefined,
               });
               functionResponses.push({
                 functionResponse: {
@@ -1012,15 +1064,18 @@ const AIChatBot = () => {
                 },
               });
             } else if (call.name === 'getPositionStats') {
-              const { dateFrom, dateTo, memberNames, minShots } = call.args;
+              const { dateFrom, dateTo, memberNames, minShots, position, gender, grade } = call.args;
               const タグ絞り = タグで絞った記録(call.args.tags);
+              const 人で絞る = !!(gender || (grade != null && grade !== ''));
               const 結果 = 射位ごとの成績(
-                人を絞る(members, { 性別: call.args.gender, 学年: call.args.grade }),
+                人を絞る(members, { 性別: gender, 学年: grade }),
                 タグ絞り.記録たち,
                 {
                   期間: 期間にする(dateFrom, dateTo),
                   名前たち: memberNames,
                   最小射数: minShots,
+                  人で絞る,
+                  射位: position,
                 }
               );
               functionResponses.push({
@@ -1034,6 +1089,14 @@ const AIChatBot = () => {
                       message:
                         タグ絞り.添え書き +
                         '射位ごとの的中率です。射数の少ない射位は数字が揺れるので、率だけでなく射数も添えて伝えてください。' +
+                        (結果.その射位の順位
+                          ? 結果.その射位の順位.length
+                            ? `その射位の順位 は「${position}」に向いている順（見込みの的中率の高い順）に並べ済みです。この順番のまま使ってください。`
+                            : `「${position}」で引いた記録が（絞り込みの人の中に）ありません。そのことをそのまま伝え、ほかの道具で推し量らないでください。`
+                          : '') +
+                        (人で絞る
+                          ? '性別・学年で絞った部員の射だけを数えています（ゲストは入りません）。'
+                          : '') +
                         'ある射位に誰が向いているかを比べて並べるときは、的中率ではなく「見込みの的中率」の高い順にしてください（射数の少ない射位の率を、本人の全体の率へ寄せた数字です）。' +
                         '誰をどこに置くかは決めていません。数字を根拠に提案してください。',
                     }

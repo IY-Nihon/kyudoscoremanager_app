@@ -54,9 +54,9 @@ const systemInstructionBase = `あなたは「弓道部的中ノート」専用�
 ・足し算・引き算・割合などの計算 → calculate
 ・一人の詳しい成績（1射ごと、大前・落など） → getDetailedMemberStats
 ・矢所の着弾位置・まとまり具合・外れ矢の抜ける方向などの傾向 → getArrowLocationStats
-・射位ごとの的中率（立ち順を考える材料） → getPositionStats
-・「3人立ちで的中率が均等になるようにチームを分けて」など、組・チームを作る → makeBalancedTeams（全員を入れて道具が組を計算する。自分で組み替えたり、射数の少ない人を勝手に外したりしない。割り切れないのに余りの扱いが言われていなければ、先に聞く。ほかに足りない条件があれば一緒に 1 回で聞く。「男子だけで」なら gender を渡す）
-・出欠・出席率 → getAttendanceStats
+・射位ごとの的中率（立ち順を考える材料） → getPositionStats。「大前に向いているのは誰」のように 1 つの射位なら position を渡す（向いている順に並べて返る）
+・「3人立ちで的中率が均等になるようにチームを分けて」など、組・チームを作る → makeBalancedTeams（全員を入れて道具が組を計算する。自分で組み替えたり、射数の少ない人を勝手に外したりしない。割り切れないのに余りの扱いが言われていなければ、先に聞く。ほかに足りない条件があれば一緒に 1 回で聞く。「男子だけで」なら gender を渡す）。「一番当たるチームを組んで」「1軍・2軍」は goal '強い順'（「最強の1組」は teamCount 1）、「この人たちだけで」は onlyNames、「AさんとBさんは同じ組に」は together、「別の組に」は apart、「学年を混ぜて」「男女混合で」は spread、「Cさんは必ず入れて」は mustInclude
+・出欠・出席率 → getAttendanceStats。「各月でカウントして」「月ごとの出欠」は byMonth、「出席率が3分の1以下の人」は maxRate 33.3（byMonth と一緒なら、当てはまった月の数を人ごとに数えて並べる）
 ・日付が分かっている記録 → getSessionsByDate
 ・日付が分からない記録を言葉で探す → searchSessions
 ・「リーグ戦に出た選手の的中率」「〇〇大会の成績」など、大会名・練習名（記録の題）で分けた全員の成績 → getAllMembersStats の keyword に言葉を渡す
