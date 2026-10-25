@@ -30,6 +30,9 @@ const 個人が使える道具 = [
   'navigateToScreen',
   'searchSessions',
   'countSessionParticipation',
+  'compareMemberStats',
+  'compareShotRanges',
+  'getEquipmentTrend',
   'startTutorial',
 ];
 
