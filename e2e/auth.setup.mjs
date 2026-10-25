@@ -106,9 +106,12 @@ for (const 団体 of 団体たち) {
     // 人が見て切り分けることになっていた（実際、質問例の分類「成績」は
     // 記録があるときだけ出るので、iPhone で落ちた）。
     //
-    // ただし**必須にはしない**。100005 は部員0人がそのまま仕様で
-    // （e2e/tutorial.spec.mjs が「作りたての団体」を再現するのに使う）、
-    // 待ちきると下ごしらえごと落ちる。届いたぶんを控えに入れて先へ進む。
+    // 待つのは、起動の全件の読み込み（全部そろえた時刻）が終わるまで。名簿が届いただけで控えを取ると、
+    // 記録は 0 件・全件の読み込みは前のまま残り、検査は毎回、起動の全件の読み込みと競争になる。
+    // 直近 30 日の見張りが記録を先に届けているうちは目立たないが、団体の最後の記録が 30 日より前に
+    // なると遅い iPhone で落ちる（10/25：100001 の履歴が空のまま、戻るボタン・小さい画面の窓が落ちた）。
+    //
+    // ただし**必須にはしない**。待ちきったら、届いたぶんを控えに入れて先へ進む。
     // 中身を要る検査は、それぞれの入り口で自分の前提を確かめること。
     const 中身の数 = () =>
       page.evaluate(() => {
@@ -116,9 +119,13 @@ for (const 団体 of 団体たち) {
           const s =
             JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
               ?.state || {};
-          return { 名簿: (s.members || []).length, 記録: (s.sessions || []).length };
+          return {
+            名簿: (s.members || []).length,
+            記録: (s.sessions || []).length,
+            そろった: (s.全部そろえた時刻 || 0) > 0,
+          };
         } catch {
-          return { 名簿: 0, 記録: 0 };
+          return { 名簿: 0, 記録: 0, そろった: false };
         }
       });
 
@@ -130,17 +137,20 @@ for (const 団体 of 団体たち) {
               JSON.parse(
                 (globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}'
               )?.state || {};
-            return (s.members || []).length > 0 || (s.sessions || []).length > 0;
+            return (s.全部そろえた時刻 || 0) > 0;
           } catch {
             return false;
           }
         },
         undefined,
-        { timeout: 45_000 }
+        { timeout: 60_000 }
       )
       .catch(() => {});
     const 届いた = await 中身の数();
-    console.log(`  団体${団体}: 名簿${届いた.名簿}人 / 記録${届いた.記録}件を控えに入れます`);
+    console.log(
+      `  団体${団体}: 名簿${届いた.名簿}人 / 記録${届いた.記録}件を控えに入れます` +
+        (届いた.そろった ? '' : '（全件の読み込みが終わっていない）')
+    );
 
     await page.evaluate(() => globalThis.__弓道の控えを書く?.());
     fs.mkdirSync(path.dirname(控えの道(団体)), { recursive: true });
