@@ -100,7 +100,7 @@ function 折れ線({ 図, 大きく }) {
   };
   return (
     <View>
-      <View style={{ width: '100%', height: H }} onLayout={測る}>
+      <View style={[styles.図の箱, { height: H }]} onLayout={測る}>
         {W > 0 ? (
           <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
             {目盛り.map((v) => (
@@ -205,7 +205,7 @@ function 縦の棒({ 図, 大きく }) {
   const 値の字 = Math.max(8, Math.min(字, 幅 / 2.6));
   const 入る字数 = Math.max(1, Math.floor((幅 - 2) / 字));
   return (
-    <View style={{ width: '100%', height: H }} onLayout={測る}>
+    <View style={[styles.図の箱, { height: H }]} onLayout={測る}>
       {W > 0 ? (
         <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
           {図.並び.map((項, i) => {
@@ -337,7 +337,7 @@ function 表({ 図, 大きく }) {
   const 幅たち = 列の幅を決める(見積もり, 数の列, 幅, 大きく);
   const 流す = 幅 > 0 && 合計(幅たち) > 幅 + 1;
   return (
-    <View onLayout={測る} testID="AIの表">
+    <View style={styles.図の箱} onLayout={測る} testID="AIの表">
       <ScrollView horizontal scrollEnabled={流す} showsHorizontalScrollIndicator={false}>
         <View>
           <View style={[styles.表の行, styles.表の頭]}>
@@ -503,6 +503,8 @@ const styles = StyleSheet.create({
   大きい題: { fontSize: 16 },
   大きくの字: { fontSize: 11, fontWeight: '600', color: 色.青, marginLeft: 8 },
   注: { fontSize: 11, color: 色.灰, marginTop: 6 },
+  // 画面の幅が変わって測り直すまでの間も、前の幅の SVG でページを押し広げない
+  図の箱: { width: '100%', overflow: 'hidden' },
   凡例: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 },
   凡例の一つ: { flexDirection: 'row', alignItems: 'center', marginRight: 12, marginBottom: 4 },
   凡例の印: { width: 10, height: 3, borderRadius: 2, marginRight: 4 },

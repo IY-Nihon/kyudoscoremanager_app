@@ -255,14 +255,22 @@ async function 大きさを変えて測る(page, 機種, 形) {
         ];
   for (const 大きさ of 大きさたち) {
     await page.setViewportSize(大きさ);
-    await page.waitForTimeout(400);
-    const 下 = await 崩れを探す(page, false, 形);
-    expect(下, `答えの下の図（${大きさ.width}×${大きさ.height}）`).toEqual([]);
+    // 図は幅を測り直してから描き直す。遅い台（GitHub の WebKit）では 400ms 待っても前の幅のままだったので、
+    // 崩れが消えるまで待つ（消えなければ落ちる）
+    await expect
+      .poll(() => 崩れを探す(page, false, 形), {
+        timeout: 10_000,
+        message: `答えの下の図（${大きさ.width}×${大きさ.height}）`,
+      })
+      .toEqual([]);
     await page.getByTestId('AIの図').last().click();
     await expect(page.getByTestId('AIの図の窓')).toBeVisible();
-    await page.waitForTimeout(400);
-    const 大 = await 崩れを探す(page, true, 形);
-    expect(大, `大きく出した図（${大きさ.width}×${大きさ.height}）`).toEqual([]);
+    await expect
+      .poll(() => 崩れを探す(page, true, 形), {
+        timeout: 10_000,
+        message: `大きく出した図（${大きさ.width}×${大きさ.height}）`,
+      })
+      .toEqual([]);
     await page.getByTestId('AIの図を閉じる').click();
     await expect(page.getByTestId('AIの図の窓')).toHaveCount(0);
   }
