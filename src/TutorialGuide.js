@@ -100,12 +100,16 @@ function 節を測る(節) {
   return new Promise((解決) => {
     if (!節 || typeof 節.measureInWindow !== 'function') return 解決(null);
     let 済み = false;
+    let 時計 = null;
     const 終わる = (値) => {
       if (!済み) {
         済み = true;
+        // 測れたら見切りの時計は要らない（測るたびに 400ms の時計が残っていた）
+        if (時計) clearTimeout(時計);
         解決(値);
       }
     };
+    時計 = setTimeout(() => 終わる(null), 400);
     try {
       節.measureInWindow((左, 上, 幅, 高さ) => {
         if (typeof 左 !== 'number' || !幅 || !高さ) return 終わる(null);
@@ -114,7 +118,6 @@ function 節を測る(節) {
     } catch {
       終わる(null);
     }
-    setTimeout(() => 終わる(null), 400);
   });
 }
 /** 目印の画面上の位置を測る。測れなければ null */
@@ -180,8 +183,12 @@ const use案内 = create((set) => ({
  * 戻り値は 'はじめた' か 'ライブ中'。
  */
 function startTutorial(選んだ題) {
+  if (useScoreStore.getState().isLiveActive) return 'ライブ中';
+  // 案内の途中でもう一度始めたときは、先に最初の控えへ戻してから控え直す。戻さないと、案内で足した列や
+  // 変えた射数を「元の盤面」として控え、案内を閉じても本物の盤面に戻らない
+  const 前の案内 = use案内.getState();
+  if (前の案内.進行中 && 前の案内.控え) 盤面を戻す(前の案内.控え);
   const 店 = useScoreStore.getState();
-  if (店.isLiveActive) return 'ライブ中';
   const 控え = {
     archers: JSON.parse(JSON.stringify(店.archers || [])),
     shotsPerRound: 店.shotsPerRound,
@@ -505,14 +512,20 @@ const TutorialOverlay = ({ navRef }) => {
       }
       return;
     }
+    // 進む前に案内を閉じた・手順が替わったら、進める時計も止める（閉じた案内を勝手に次へ進めない）
+    let 進める札 = null;
     const 解除 = useScoreStore.subscribe((状態) => {
       if (達成した(操作.種類, 基準.current, いまの値(状態, 操作.種類))) {
         基準.current = null;
         // 押した手応えが見えるよう、少し置いてから進む
-        setTimeout(() => 進める(番号 + 1), 500);
+        if (進める札) clearTimeout(進める札);
+        進める札 = setTimeout(() => 進める(番号 + 1), 500);
       }
     });
-    return 解除;
+    return () => {
+      if (進める札) clearTimeout(進める札);
+      解除();
+    };
   }, [いまの手順, いまの画面, 番号, 進める, 見返し, 手が出せない]);
   const 閉じる = useCallback(async () => {
     // 案内で触ったぶんを戻してから閉じる。スキップでも必ず戻す

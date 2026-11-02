@@ -251,10 +251,22 @@ const RecordScreen = () => {
   const 閲覧の知らせを出した = React.useRef(0);
   const 上の横流し = React.useRef(null);
   const 下の横流し = React.useRef(null);
+  // 知らせを消す時計は 1 つだけ。続けて知らせたとき、前の知らせの時計が後の知らせを早く消さないように止めてから掛け直す
+  const 知らせの時計 = React.useRef(null);
   const 知らせる = (文) => {
+    if (知らせの時計.current) clearTimeout(知らせの時計.current);
     知らせを置く(文);
-    setTimeout(() => 知らせを置く(null), 1500);
+    知らせの時計.current = setTimeout(() => {
+      知らせの時計.current = null;
+      知らせを置く(null);
+    }, 1500);
   };
+  React.useEffect(
+    () => () => {
+      if (知らせの時計.current) clearTimeout(知らせの時計.current);
+    },
+    []
+  );
   // 計の列を押して見せ方が変わったら、何に変わったかを帯で知らせる（開いたときの値では出さない）
   const 計の見せ方 = useScoreStore((状態) => 状態.計の見せ方);
   const 前の計の見せ方 = React.useRef(計の見せ方);
