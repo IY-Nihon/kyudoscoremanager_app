@@ -336,7 +336,8 @@ const 来客の窓 = ({ 荷, onClose }) => {
       }
       const 結果 = await useScoreStore.getState().共有リンクで入る(荷, 合言葉);
       if (結果 === '入った') {
-        onClose();
+        // 入ったことを伝える（入らずに閉じたときだけ、呼んだ側がリンクの控えを消す）
+        onClose({ 入った: true });
         return;
       }
       難点を置く(
