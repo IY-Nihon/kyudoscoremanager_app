@@ -11,6 +11,7 @@ const { CustomCalendarModal } = require('./CustomCalendarModal');
 const 学 = require('./gakunen');
 const { useストアの一部 } = require('./storeSlice');
 const { normalizeTag, タグの見た目 } = require('./syncRules');
+const { 半角にする } = require('./totonoeru');
 /**
  * 記録に出ている部員の id。部員は memberId で引き、無ければ名前で引く。途中交代で入った人
  * （substitutionIds）も入れる。前は personalId 同士も比べていて、どちらも未設定（undefined）だと
@@ -250,7 +251,11 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                       aria-label="総矢数"
                       style={styles.input}
                       value={String(本数)}
-                      onChangeText={(文) => 本数を置く(parseInt(文) || 0)}
+                      // 全角の数字も読む（予測変換で全角になる）。上限は記録画面の射数と同じ 500。
+                      // 打ったときだけ止める（今ある 500 を超える記録は、打ち直さなければそのまま保存する）
+                      onChangeText={(文) =>
+                        本数を置く(Math.min(500, parseInt(半角にする(文).replace(/\D+/g, ''), 10) || 0))
+                      }
                       keyboardType="number-pad"
                     />
                   </View>

@@ -153,7 +153,8 @@ function ブックを組む(シートたち) {
       const lastRow = (シート.rows || []).length + 1;
       return (
         `<definedName name="_xlnm._FilterDatabase" localSheetId="${番}" hidden="1">` +
-        `'${esc(名前たち[番])}'!$A$1:$${lastCol}$${lastRow}</definedName>`
+        // 式の中のシート名は ' で囲む。名前の中の ' は '' と重ねる（重ねないと Excel が修復の窓を出す）
+        `'${esc(名前たち[番]).replace(/'/g, "''")}'!$A$1:$${lastCol}$${lastRow}</definedName>`
       );
     })
     .join('');

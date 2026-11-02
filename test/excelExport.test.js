@@ -71,6 +71,13 @@ test('シート名の使えない字を置き換え、31字までに収める', 
   assert.ok(!/[:\\/?*[\]]/.test(名), '使えない字が残っている: ' + 名);
 });
 
+test("シート名の ' は、絞り込みの範囲の式では '' と重ねる（シートの名前はそのまま・範囲は $ つきのまま）", () => {
+  const b = ブックを組む([{ name: "O'Neil", headers: ['x', 'y'], rows: [['a', 1]] }]);
+  const ブック = b['xl/workbook.xml'];
+  assert.match(ブック, /<sheet name="O'Neil"/);
+  assert.ok(ブック.includes("'O''Neil'!$A$1:$B$2"), '範囲の式: ' + ブック.match(/<definedName[^>]*>([^<]*)/)[1]);
+});
+
 test('数値は数値のまま、文字は inlineStr で書く', () => {
   const s = ブックを組む([一枚])['xl/worksheets/sheet1.xml'];
   assert.match(s, /<v>38\.9<\/v>/, '的中率が文字列になっている');
