@@ -71,6 +71,9 @@ const 部員の詳細の窓 = ({
     () => (詳細の部員 ? 期間の成績(詳細の部員.id, selectedModalTrendLabel) : null),
     [詳細の部員, 絞った記録, selectedModalTrendLabel]
   );
+  // 上の「○○の成績」と比べる表の本人の行。推移の点を押していればその期間（下の図と同じ）、
+  // 押していなければ順位と同じ数字
+  const 本人の成績 = 詳細の期間の成績 || 詳細の部員;
   // 比較相手の成績。1〜4射目のマスごとに数え直すと、記録の数だけ何度も
   // 走って重くなる。相手が変わったときだけ数える
   const 比較の成績 = React.useMemo(() => {
@@ -290,7 +293,7 @@ const 部員の詳細の窓 = ({
               {compareMembers.length > 0 ? (
                 <View>
                   <Text style={styles.modalDesc}>
-                    {期間の種類}
+                    {selectedModalTrendLabel || 期間の種類}
                     {' の的中成績比較'}
                   </Text>
                   {/* 全体の的中率を、比べている人ぶんまとめて出す。 */
@@ -301,9 +304,9 @@ const 部員の詳細の窓 = ({
                       {
                         // 本人もグラフで押した点の期間にそろえる（相手だけ期間の成績になっていた）
                         名: 詳細の部員.name,
-                        hits: (詳細の期間の成績 || 詳細の部員).hits,
-                        shots: (詳細の期間の成績 || 詳細の部員).shots,
-                        rate: (詳細の期間の成績 || 詳細の部員).rate,
+                        hits: 本人の成績.hits,
+                        shots: 本人の成績.shots,
+                        rate: 本人の成績.rate,
                       },
                       ...compareMembers.map((相手) => {
                         const { hits = 0, shots = 0, rate = 0 } = 比較の成績.get(相手.id) || {};
@@ -327,9 +330,9 @@ const 部員の詳細の窓 = ({
                 </View>
               ) : (
                 <Text style={styles.modalDesc}>
-                  {期間の種類}の成績 ({詳細の部員.hits}/{詳細の部員.shots}
+                  {selectedModalTrendLabel || 期間の種類}の成績 ({本人の成績.hits}/{本人の成績.shots}
                   {') '}
-                  {詳細の部員.rate.toFixed(1)}%
+                  {本人の成績.rate.toFixed(1)}%
                 </Text>
               )}
               <View style={{ marginVertical: 12 }}>
