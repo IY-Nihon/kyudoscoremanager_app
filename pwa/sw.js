@@ -45,6 +45,15 @@ function 古い束を捨てる(cache, pathname) {
   );
 }
 
+// 束・字体・画像の要求に返った応答が、本物のファイルか。Firebase Hosting は無いファイルにも 200 で index.html
+// （text/html）を返すので、配信の切り替わりの間に古い束の名前を取りに行くと HTML が返る。それを束として控えると、
+// 次からずっとその HTML を返し続けて画面が壊れる
+function 本物の静的応答か(response) {
+  if (!response || !response.ok) return false;
+  const 型 = (response.headers && response.headers.get('content-type')) || '';
+  return !/text\/html/i.test(型);
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
@@ -64,9 +73,10 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches.match(request).then(
         (cached) =>
-          cached ||
+          // 前に控えてしまった HTML（本物でない控え）は使わず、取り直す
+          (本物の静的応答か(cached) && cached) ||
           fetch(request).then((response) => {
-            if (response && response.ok) {
+            if (本物の静的応答か(response)) {
               const clone = response.clone();
               caches.open(CACHE_NAME).then((cache) => cache.put(request, clone).then(() => 古い束を捨てる(cache, url.pathname)));
             }
