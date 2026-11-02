@@ -19,8 +19,17 @@ const 年月を替える = (日, 年, 月) => {
 /** 回して選ぶ列（年・月・日）。止まった段の値を選ぶ。押しても選べる */
 const 回す選択 = ({ data, value, onValueChange, label, flex = 1 }) => {
   const 流しのref = React.useRef(null);
+  // 回し終わりを待つ時計と、決めたあと落ち着くのを待つ時計。窓を閉じたら止める（閉じた窓の値を書き換えない）
   const 止まりの札 = React.useRef(null);
+  const 落ち着く札 = React.useRef(null);
   const [指で動かし中, 指で動かし中を置く] = React.useState(false);
+  const 時計を止める = () => {
+    if (止まりの札.current) clearTimeout(止まりの札.current);
+    if (落ち着く札.current) clearTimeout(落ち着く札.current);
+    止まりの札.current = null;
+    落ち着く札.current = null;
+  };
+  React.useEffect(() => 時計を止める, []);
   const 選んだ番 = React.useMemo(() => {
     const 番 = data.indexOf(value);
     return 番 !== -1 ? 番 : 0;
@@ -36,7 +45,9 @@ const 回す選択 = ({ data, value, onValueChange, label, flex = 1 }) => {
     流しのref.current?.scrollTo({ y: 番 * 一段の高さ, animated: true });
     const 値 = data[番];
     if (値 !== value) onValueChange(値);
-    setTimeout(() => {
+    if (落ち着く札.current) clearTimeout(落ち着く札.current);
+    落ち着く札.current = setTimeout(() => {
+      落ち着く札.current = null;
       指で動かし中を置く(false);
     }, 150);
   };
@@ -54,6 +65,7 @@ const 回す選択 = ({ data, value, onValueChange, label, flex = 1 }) => {
             if (!指で動かし中) 指で動かし中を置く(true);
             if (止まりの札.current) clearTimeout(止まりの札.current);
             止まりの札.current = setTimeout(() => {
+              止まりの札.current = null;
               止まった所で決める(縦の位置);
             }, 100);
           }}
@@ -67,6 +79,8 @@ const 回す選択 = ({ data, value, onValueChange, label, flex = 1 }) => {
               style={styles.wheelItem}
               activeOpacity={0.7}
               onPress={() => {
+                // 押して選んだら、回していたときの止まりの時計を消す（あとから前の位置の値で選び直さない）
+                時計を止める();
                 onValueChange(項目);
                 流しのref.current?.scrollTo({ y: 番 * 一段の高さ, animated: true });
               }}
