@@ -65,6 +65,15 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
     alumni: alumniState = [],
   } = useストアの一部(['isAdminMode', 'tagTemplates', 'members', 'alumni']);
   const allMembers = React.useMemo(() => [...membersState, ...alumniState], [membersState, alumniState]);
+  // 出席管理に並べる人：現役と、その記録で引いた人（途中交代も）。卒業生・退部した人を全員並べると、その記録に
+  // 関係の無い人の行が続いて探しにくかった。すでに出席・遅刻などが付いている人は、隠すと直せないので並べる
+  const 並ぶ人 = React.useMemo(() => {
+    const 引いた人 = new Set(記録に出た部員のid(session, allMembers));
+    const 出欠 = (session && session.attendance) || {};
+    return allMembers
+      .filter((人) => 人 && (学.現役か(人) || 引いた人.has(人.id) || (出欠[人.id] && 出欠[人.id] !== 'absent')))
+      .sort(学.名簿の順に比べる);
+  }, [session, allMembers]);
   // 下書きを作り直すのは、窓を開いたときと、別の記録に替わったときだけ。
   // 同じ記録が雲から届き直すと（同期で記録の一覧が入れ替わると、中身が同じでも別のオブジェクトになる）、
   // 打っている途中の題・タグ・出欠が開いたときの内容に戻っていた（2026-09-26 に e2e で踏んだ）
@@ -269,7 +278,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                     />
                   </View>
                 </View>
-                {isAdminMode && allMembers.length > 0 && (
+                {isAdminMode && 並ぶ人.length > 0 && (
                   <>
                     <View
                       style={{
@@ -284,15 +293,16 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                         {まとめのボタン('記録にいる人を出席', 色.青_2196, 色.青の地_5, () =>
                           まとめて置く(記録に出た部員のid(session, allMembers), 'present')
                         )}
+                        {/* 全員は、並べている人の全員（卒業生や退部した人まで出席にしない） */}
                         {まとめのボタン('全員出席', 色.緑, 色.緑の地, () =>
                           まとめて置く(
-                            allMembers.map((部員) => 部員.id),
+                            並ぶ人.map((部員) => 部員.id),
                             'present'
                           )
                         )}
                         {まとめのボタン('全員欠席', 色.灰, 色.地, () =>
                           まとめて置く(
-                            allMembers.map((部員) => 部員.id),
+                            並ぶ人.map((部員) => 部員.id),
                             'absent'
                           )
                         )}
@@ -307,7 +317,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                         overflow: 'hidden',
                       }}
                     >
-                      {[...allMembers].sort(学.名簿の順に比べる).map((member, idx) => {
+                      {並ぶ人.map((member, idx) => {
                         const いまの状態 = attendanceEdit[member.id] || 'absent';
                         return (
                           <View
@@ -319,7 +329,7 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
                               paddingVertical: 10,
                               paddingHorizontal: 12,
                               backgroundColor: idx % 2 === 0 ? 色.地_FAFAFA : 色.白,
-                              borderBottomWidth: idx < allMembers.length - 1 ? 1 : 0,
+                              borderBottomWidth: idx < 並ぶ人.length - 1 ? 1 : 0,
                               borderBottomColor: 色.地_濃い,
                             }}
                           >
