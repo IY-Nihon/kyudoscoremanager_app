@@ -9,7 +9,7 @@ const { useストアの一部 } = require('./storeSlice');
 // 出欠の自動判定。交代で入った人も数えるため、決まりは切り出してある
 const { 出ていた部員たち } = require('./attendanceRules');
 const 学 = require('./gakunen');
-const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
+const AttendanceCheckModal = ({ visible, onClose, onConfirm, onDismiss }) => {
   const { members, archers } = useストアの一部(['members', 'archers']);
   const [attendance, setAttendance] = React.useState({});
   React.useEffect(() => {
@@ -117,7 +117,7 @@ const AttendanceCheckModal = ({ visible, onClose, onConfirm }) => {
     </View>
   );
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} onDismiss={onDismiss}>
       <View style={styles.overlay}>
         <View style={styles.container}>
           <View style={styles.header}>

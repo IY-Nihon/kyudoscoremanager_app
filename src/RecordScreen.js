@@ -203,6 +203,9 @@ const RecordScreen = () => {
   const [選んだ射手ID, 選んだ射手IDを置く] = React.useState(null);
   const [選んだ射手の順, 選んだ射手の順を置く] = React.useState(0);
   const [保存の窓, 保存の窓を出す] = React.useState(false);
+  // 出欠の窓が閉じきるのを待って保存の窓を出す予約（下の AttendanceCheckModal）
+  const 保存の窓の予約 = React.useRef(null);
+  React.useEffect(() => () => clearTimeout(保存の窓の予約.current), []);
   const [交代の窓, 交代の窓を出す] = React.useState(false);
   const [知らせ, 知らせを置く] = React.useState(null);
   const [警告を閉じた, 警告を閉じる] = React.useState(false);
@@ -1882,6 +1885,19 @@ const RecordScreen = () => {
         onConfirm={(attendance) => {
           setTempAttendance(attendance);
           setShowAttendance(false);
+          // web では、出欠の窓が閉じきってから保存の窓を出す。RN-web の窓は閉じる動きの終わりに、
+          // 開く前の焦点（「終了・保存」）を戻す。先に保存の窓を出すと、打ち始めた欄から焦点が外れた
+          if (!IS_WEB) return void 保存の窓を出す(true);
+          保存の窓の予約.current = setTimeout(() => {
+            // 閉じきった知らせ（onDismiss）が来ないときの控え
+            保存の窓の予約.current = null;
+            保存の窓を出す(true);
+          }, 1000);
+        }}
+        onDismiss={() => {
+          if (!保存の窓の予約.current) return;
+          clearTimeout(保存の窓の予約.current);
+          保存の窓の予約.current = null;
           保存の窓を出す(true);
         }}
         members={members}
