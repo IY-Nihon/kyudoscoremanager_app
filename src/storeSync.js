@@ -270,7 +270,10 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       const 未送信の削除 = ごみ箱.filter(
         (記録1件) => 記録1件 && 記録1件.id && 記録1件.pendingDelete && 記録1件.syncStatus === '未同期'
       );
-      if (未送信の削除.length > 0) {
+      // 送り直すのは団体ログインのときだけ。記録を消す・ゴミ箱に書くのは決まりで団体だけ（firestore.rules・
+      // 2026-11-02）。部員の端末から送ると断られ続ける（部員には消す操作を出していないので、残っているのは
+      // 同じ端末で前に団体で入っていたときのものだけ）
+      if (未送信の削除.length > 0 && 状態().activeRole === 'group') {
         console.log(`[syncSessions] Syncing ${未送信の削除.length} pending deletions...`);
         try {
           const 一括 = Firestore.writeBatch(Firebaseの器.db);
@@ -682,7 +685,8 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         完全削除ずみ = new Set(消し直す);
         if (消し直す.length !== 控えのid.length)
           console.log(`[Store] 完全削除の控えを整理: ${控えのid.length}件 → ${消し直す.length}件`);
-        if (消し直す.length > 0) {
+        // 消し直すのは団体ログインのときだけ（記録とゴミ箱を消すのは決まりで団体だけ）
+        if (消し直す.length > 0 && 状態().activeRole === 'group') {
           console.log(`[Store] クラウドに残っている ${消し直す.length}件 を消し直します`);
           try {
             const 一括 = Firestore.writeBatch(Firebaseの器.db);
@@ -719,7 +723,8 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
           残す[id] = メンバーの控え[id];
         });
         削除ずみのメンバー = new Set(消し直す);
-        if (消し直す.length > 0) {
+        // 名簿を消すのも決まりで団体だけ
+        if (消し直す.length > 0 && 状態().activeRole === 'group') {
           console.log(`[Store] クラウドに残っているメンバー ${消し直す.length}件 を消し直します`);
           try {
             const 一括 = Firestore.writeBatch(Firebaseの器.db);

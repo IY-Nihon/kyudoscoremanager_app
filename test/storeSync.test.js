@@ -268,6 +268,25 @@ test('削除：送信が失われても、次の同期で送り直される', as
   assert.deepEqual(雲.中身(ゴミ箱の道), ['ses-2'], 'ゴミ箱へ入れ直される');
 });
 
+test('削除の送り直し：部員の端末からは送らない（記録を消すのは決まりで団体だけ）', async () => {
+  // 同じ端末で団体ログインのときに消し、送れないまま個人ログインに替わった筋書き
+  const { store, 雲 } = 用意();
+  雲.状態.オフライン = true;
+  store.getState().deleteSession('ses-2');
+  await 待つ(50);
+  雲.状態.オフライン = false;
+  雲.置く(記録の道, 'ses-2', { id: 'ses-2', title: '練習2', lastModified: 1 });
+  雲.消す(ゴミ箱の道, 'ses-2');
+  store.setState({ activeRole: 'member', myMemberId: 'mem-1' });
+  const 前の数 = 雲.記録.length;
+  await store.getState().syncSessions();
+  await 待つ(50);
+  const 消した = 雲.記録.slice(前の数).filter((x) => JSON.stringify(x).includes('ses-2'));
+  assert.deepEqual(消した, [], '部員の端末が記録を消しにいった');
+  assert.ok(雲.中身(記録の道).includes('ses-2'), '雲の記録はそのまま');
+  store.setState({ activeRole: 'group' });
+});
+
 test('復元：ゴミ箱から戻り、クラウドにも反映される', async () => {
   const { store, 雲 } = 用意();
   await store.getState().deleteSession('ses-2');
