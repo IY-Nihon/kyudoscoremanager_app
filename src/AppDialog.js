@@ -24,7 +24,7 @@ const { Text, StyleSheet, View, Modal, Pressable, ScrollView, Animated } = requi
 const { IS_WEB } = require('./IS_WEB');
 // 帯か窓かの決まりは純粋な関数なので外に出してある。
 // アプリが実際に出す文から選んだもので、node --test から確かめている（test/dialogRules.test.js）
-const { 窓で止めるか, 帯の長さ, 帯の時計をつくる } = require('./dialogRules');
+const { 窓で止めるか, 帯の長さ, 帯の時計をつくる, 戻るで押すボタン } = require('./dialogRules');
 
 /**
  * 帯を出す層。web では body の直下に、画面いっぱいの固定の箱を作って、その中へ描く。
@@ -107,6 +107,15 @@ function 出す(題, 文, ボタン) {
 const アプリの窓 = () => {
   const [いま, 置く] = useState(null);
   const [帯, 帯を置く] = useState(null);
+  // 窓が開いている間に次の窓が来たら、順番に待たせる。前は後の窓で上書きして、前の確認（ボタンの答えを待つ側）が
+  // 消えていた。いま出している窓は、聞き手（一度だけ作る）からも見えるよう参照にも持つ
+  const 出している = useRef(null);
+  const 窓の待ち = useRef([]);
+  const 窓を置く = (窓) => {
+    出している.current = 窓;
+    置く(窓);
+  };
+  const 次の窓へ = () => 窓を置く(窓の待ち.current.shift() || null);
   // 帯を消す時計。掛け直すときに前のぶんを止める面倒は部品が持つ
   const 時計 = useRef(null);
   if (時計.current === null) 時計.current = 帯の時計をつくる(setTimeout, clearTimeout);
@@ -115,7 +124,9 @@ const アプリの窓 = () => {
     聞き手 = (要求) => {
       if (窓で止めるか(要求)) {
         // ボタンが無い長い知らせは、閉じる手が要る。OK を1つ足す
-        置く(要求.ボタン.length ? 要求 : { ...要求, ボタン: [{ text: 'OK' }] });
+        const 窓 = 要求.ボタン.length ? 要求 : { ...要求, ボタン: [{ text: 'OK' }] };
+        if (出している.current) 窓の待ち.current.push(窓);
+        else 窓を置く(窓);
       } else {
         const 字 = 要求.文 || 要求.題;
         帯を置く(字);
@@ -151,7 +162,17 @@ const アプリの窓 = () => {
         </帯の層>
       ) : null}
       {いま ? (
-        <Modal visible transparent animationType="fade" onRequestClose={() => 置く(null)}>
+        <Modal
+          visible
+          transparent
+          animationType="fade"
+          // 戻るボタンで閉じたら「やめる」を押したのと同じ（ボタンが 1 つならそのボタン）。次の窓があれば出す
+          onRequestClose={() => {
+            const ボタン = 戻るで押すボタン(出している.current && 出している.current.ボタン);
+            次の窓へ();
+            if (ボタン && ボタン.onPress) ボタン.onPress();
+          }}
+        >
           <View style={styles.背景}>
             <View style={styles.札} testID="アプリの窓">
               {いま.題 ? <Text style={styles.題}>{いま.題}</Text> : null}
@@ -169,7 +190,7 @@ const アプリの窓 = () => {
                     testID={`窓のボタン-${ボタン.text}`}
                     style={[styles.ボタン, 番 > 0 && (縦に積む ? styles.仕切り縦 : styles.仕切り)]}
                     onPress={() => {
-                      置く(null);
+                      次の窓へ();
                       if (ボタン.onPress) ボタン.onPress();
                     }}
                   >
