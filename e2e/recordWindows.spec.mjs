@@ -113,3 +113,41 @@ test('保存の窓：タグの打ちかけ（後ろの空白・「#」だけ）�
   // 保存はせずに閉じる
   await page.getByText('キャンセル', { exact: true }).last().click();
 });
+
+test('窓の中を押しても閉じない。外側（幕）を押すと閉じる（射数・ライブの選び・履歴の年度）', async ({ page }) => {
+  await 記録画面へ(page);
+  // 窓の外の左上の角（窓はどれも真ん中か下にある）
+  const 外を押す = () => page.mouse.click(8, 8);
+
+  // 射数：見出しを押しても閉じない
+  await page
+    .getByText(/^\d+射$/)
+    .first()
+    .click();
+  const 射数の見出し = page.getByText('射数の設定', { exact: true });
+  await expect(射数の見出し).toBeVisible({ timeout: 10_000 });
+  await 射数の見出し.click();
+  await page.waitForTimeout(400);
+  await expect(射数の見出し, '見出しを押したら閉じた').toBeVisible();
+  await 外を押す();
+  await expect(射数の見出し, '外を押しても閉じない').toHaveCount(0, { timeout: 10_000 });
+
+  // ライブの選び：外を押すと閉じる（中はボタンだけ）
+  await page.getByText('ライブ', { exact: true }).first().click();
+  const 開始 = page.getByText('ライブ記録を開始', { exact: true });
+  await expect(開始).toBeVisible({ timeout: 10_000 });
+  await 外を押す();
+  await expect(開始, '外を押しても閉じない').toHaveCount(0, { timeout: 10_000 });
+
+  // 履歴の年度：見出しを押しても閉じない
+  await page.getByText('履歴', { exact: true }).first().click();
+  await expect(page.getByText('過去の記録表', { exact: true })).toBeVisible({ timeout: 20_000 });
+  await page.getByText(/年度/).first().click();
+  const 年度の見出し = page.getByText('年度を選択', { exact: true });
+  await expect(年度の見出し).toBeVisible({ timeout: 10_000 });
+  await 年度の見出し.click();
+  await page.waitForTimeout(400);
+  await expect(年度の見出し, '見出しを押したら閉じた').toBeVisible();
+  await 外を押す();
+  await expect(年度の見出し, '外を押しても閉じない').toHaveCount(0, { timeout: 10_000 });
+});

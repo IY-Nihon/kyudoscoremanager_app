@@ -22,7 +22,7 @@ const 射数の一覧の窓 = ({
   射数を変える,
 }) => (
   <Modal visible={射数の窓} transparent animationType="fade" onRequestClose={射数の窓を閉じる}>
-    <Pressable
+    <View
       style={{
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.4)',
@@ -31,8 +31,9 @@ const 射数の一覧の窓 = ({
         paddingBottom: 40,
         paddingTop: 16,
       }}
-      onPress={射数の窓を閉じる}
     >
+      {/* 外側を押すと閉じる面は窓の後ろに分ける。窓を包むと、見出しなど窓の中を押しても閉じた */}
+      <Pressable accessible={false} style={StyleSheet.absoluteFill} onPress={射数の窓を閉じる} />
       {/* 横向きのスマホでは画面に収まらず、4射・8射に届かなかった（2026-09-26）。 */
       /* 窓は画面の高さまでに縮め、射数の並びだけを流す（見出しとキャンセルは残す） */}
       <View
@@ -110,7 +111,7 @@ const 射数の一覧の窓 = ({
       >
         <Text style={{ fontSize: 20, color: 色.青, fontWeight: 'bold' }}>キャンセル</Text>
       </Pressable>
-    </Pressable>
+    </View>
   </Modal>
 );
 

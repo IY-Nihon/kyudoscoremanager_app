@@ -66,7 +66,7 @@ const リセットの確認の窓 = ({ resetCurrentSession, リセットの窓, 
 /** アプリ内の確認（{ 文, 実行 }。ブラウザの確認窓は使わない） */
 const アプリ内の確認の窓 = ({ 確認, 確認を置く }) => (
   <Modal visible={確認 !== null} transparent animationType="fade" onRequestClose={() => 確認を置く(null)}>
-    <Pressable
+    <View
       style={{
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.4)',
@@ -74,8 +74,9 @@ const アプリ内の確認の窓 = ({ 確認, 確認を置く }) => (
         alignItems: 'center',
         paddingHorizontal: 24,
       }}
-      onPress={() => 確認を置く(null)}
     >
+      {/* 外側を押すと閉じる面は窓の後ろに分ける。窓を包むと、文など窓の中を押しても閉じた */}
+      <Pressable accessible={false} style={StyleSheet.absoluteFill} onPress={() => 確認を置く(null)} />
       <View
         style={{
           width: '100%',
@@ -125,7 +126,7 @@ const アプリ内の確認の窓 = ({ 確認, 確認を置く }) => (
           </Pressable>
         </View>
       </View>
-    </Pressable>
+    </View>
   </Modal>
 );
 

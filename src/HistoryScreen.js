@@ -1355,7 +1355,14 @@ const HistoryScreen = () => {
         </View>
       )}
       <Modal visible={年度の窓} transparent animationType="fade" onRequestClose={() => 年度の窓を出す(false)}>
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => 年度の窓を出す(false)}>
+        <View style={styles.modalOverlay}>
+          {/* 外側を押すと閉じる面は窓の後ろに分ける。窓を包むと、見出しなど窓の中を押しても閉じた */}
+          <TouchableOpacity
+            accessible={false}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+            activeOpacity={1}
+            onPress={() => 年度の窓を出す(false)}
+          />
           <View style={styles.yearModal}>
             <Text style={styles.yearModalTitle}>年度を選択</Text>
             {年度の一覧.map((年度) => (
@@ -1373,7 +1380,7 @@ const HistoryScreen = () => {
               </TouchableOpacity>
             ))}
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
       <ゴミ箱の中身の窓
         trash={trash}
@@ -1440,11 +1447,14 @@ const HistoryScreen = () => {
         animationType="fade"
         onRequestClose={() => 管理者の品書きを出す(false)}
       >
-        <TouchableOpacity
-          style={styles.confirmOverlay}
-          activeOpacity={1}
-          onPress={() => 管理者の品書きを出す(false)}
-        >
+        <View style={styles.confirmOverlay}>
+          {/* 外側を押すと閉じる面は窓の後ろに分ける。窓を包むと、項目の間など窓の中を押しても閉じた */}
+          <TouchableOpacity
+            accessible={false}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+            activeOpacity={1}
+            onPress={() => 管理者の品書きを出す(false)}
+          />
           <View style={styles.adminMenuContent}>
             {/* 記録表そのものの直しは、記録画面に載せ替えて行う（人・間隔・計を足す、 */
             /* 並べ替え・矢所・射数・交代・画像からの読み取り）。ここに在った「人追加・ */
@@ -1501,7 +1511,7 @@ const HistoryScreen = () => {
               </View>
             </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
       <EditSessionModal
         visible={記録の情報の窓}
