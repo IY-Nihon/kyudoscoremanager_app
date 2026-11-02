@@ -261,3 +261,24 @@ test('認証から届くメールは日本語にする（言語を指定しな�
   );
   assert.match(本体, /auth.languageCode = 'ja'/);
 });
+
+test('ID の形：英数字と _ - だけ。「/」などが混じれば雲へ問い合わせる前に断る（匿名の利用者も作らない）', async () => {
+  const { IDの形か, 部員として入る } = require('../src/groupLogin');
+  assert.equal(IDの形か('100001'), true);
+  assert.equal(IDの形か('0a1b2c3d4e5f60718293a4b5c6d7e8f9'), true);
+  for (const 悪い of ['', '../x', '100001/private', 'a b', 'あ', '1'.repeat(65), null, 123]) assert.equal(IDの形か(悪い), false, String(悪い));
+  let 匿名で入った = 0;
+  let 読んだ = 0;
+  const 道具 = {
+    FirebaseAuth: { signInAnonymously: async () => void 匿名で入った++ },
+    auth: {},
+    Firestore: { doc: () => ({}), getDoc: async () => void 読んだ++ },
+    db: {},
+  };
+  await assert.rejects(部員として入る(道具, '100001/x', '1234'), /正しくありません/);
+  await assert.rejects(部員として入る(道具, '100001', '../1234'), /正しくありません/);
+  assert.equal(匿名で入った, 0);
+  assert.equal(読んだ, 0);
+  await assert.rejects(団体で入る(道具, 'group_accounts/../x', 'pw'), /正しくありません/);
+  assert.equal(読んだ, 0);
+});
