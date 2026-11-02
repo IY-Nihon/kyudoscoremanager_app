@@ -180,6 +180,8 @@ const RecordScreen = () => {
     '履歴の編集を終える',
     'sessions',
   ]);
+  // 送れていないものが残っている間は、雲の印を青のままにする。真偽が変わったときだけ描き直す
+  const 送れていない = useScoreStore(require('./syncRules').送れていないものがあるか);
   const 航路 = 航.useNavigation();
   // ライブ中の帯。主催者は押して配る窓を開けるので、押せる部品にする
   const ライブの帯 = isHost ? TouchableOpacity : View;
@@ -1148,7 +1150,7 @@ const RecordScreen = () => {
             </Pressable>
             <View style={styles.syncContainer}>
               {isNetworkOnline && syncStatus !== '同期エラー' ? (
-                syncStatus === '同期中' ? (
+                syncStatus === '同期中' || 送れていない ? (
                   <Icons.Ionicons name="cloud-upload-outline" size={14} color={基本色.青} />
                 ) : syncStatus === '同期済み' ? (
                   <Icons.Ionicons name="cloud-done-outline" size={14} color={基本色.緑} />
