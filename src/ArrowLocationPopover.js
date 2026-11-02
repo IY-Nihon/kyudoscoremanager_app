@@ -10,7 +10,6 @@ import { View, Text, Modal, TouchableOpacity, Pressable, Alert, Dimensions, Styl
 import { Ionicons } from '@expo/vector-icons';
 
 import { useストアの一部 } from './storeSlice';
-import { CIRCLED_NUMBERS } from './ArrowLocationView';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -267,7 +266,7 @@ export const ArrowLocationPopover = ({
           {/* ヘッダー */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>
-              矢所の記録 ({CIRCLED_NUMBERS[題の射番] || `${題の射番 + 1}射目`})
+              矢所の記録 ({`${題の射番 + 1}射目`})
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <Ionicons name="close" size={24} color={色.灰} />
@@ -358,7 +357,8 @@ export const ArrowLocationPopover = ({
                       },
                     ]}
                   >
-                    <Text style={styles.markerText}>{CIRCLED_NUMBERS[idx] || idx + 1}</Text>
+                    {/* 射の番号はふつうの数字（見せる図と同じ） */}
+                    <Text style={styles.markerText}>{idx + 1}</Text>
                   </View>
                 );
               })}
