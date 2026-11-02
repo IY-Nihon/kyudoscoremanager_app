@@ -16,6 +16,9 @@ const {
   Modal,
 } = require('./rn');
 const 確 = require('./mailKakunin');
+const { 使い捨てか } = require('./suteMail');
+const 使い捨ての断り =
+  '使い捨てのメールアドレスでは団体を作れません。ふだん使っているメールアドレス（学校・部・個人のもの）でお試しください。';
 
 const { useストアの一部 } = require('./storeSlice');
 const 学 = require('./gakunen');
@@ -260,6 +263,11 @@ const LoginScreen = () => {
       const 結果 = await FirebaseAuth.signInWithPopup(auth, new FirebaseAuth.GoogleAuthProvider());
       const メール = 結果?.user?.email;
       if (!メール) throw new Error('Google からメールアドレスを受け取れませんでした');
+      if (使い捨てか(メール)) {
+        await FirebaseAuth.signOut(auth).catch(() => {});
+        Alert.alert('登録失敗', 使い捨ての断り);
+        return;
+      }
       // 同じメールでもう団体を持っていないか。持っていれば作らずに知らせる（1 つのメールで団体は 1 つ）。
       // 団体を作った口座には必ずパスワードがある（メールで作る・Google で作るときも持たせる）。
       // 団体の帳面を引く問い合わせは、決まりで一覧が管理者だけなので今は断られる（断られたら見ない）
@@ -362,6 +370,11 @@ const LoginScreen = () => {
       処理中を置く(true);
       try {
         const 宛先 = メールを整える(メールの入力);
+        // 使い捨てのアドレスでは作れない（決まりも止める。口座を作る前に断る）
+        if (使い捨てか(宛先)) {
+          Alert.alert('登録失敗', 使い捨ての断り);
+          return;
+        }
         try {
           await FirebaseAuth.createUserWithEmailAndPassword(auth, 宛先, 合言葉の入力);
         } catch (作れない) {

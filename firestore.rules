@@ -51,6 +51,12 @@ service cloud.firestore {
       return request.time < timestamp.date(2026, 11, 10);
     }
 
+    // 使い捨てメールアドレスか（2026-11-03 本人：使い捨てのアドレスでは団体を作れない）。
+    // 一覧は src/suteMail.js と同じ（test/suteMail.test.js が見張る。直すときは向こうを直して、ここへ写す）
+    function disposableEmail() {
+      return callerEmail().lower().matches('^.*@(.+[.])?(10minutemail[.]com|10minutemail[.]net|20minutemail[.]com|33mail[.]com|anonaddy[.]me|burnermail[.]io|byom[.]de|deadaddress[.]com|discard[.]email|disposablemail[.]com|dispostable[.]com|dropmail[.]me|emailondeck[.]com|fakeinbox[.]com|fakemail[.]net|getairmail[.]com|getnada[.]com|guerrillamail[.]biz|guerrillamail[.]com|guerrillamail[.]de|guerrillamail[.]info|guerrillamail[.]net|guerrillamail[.]org|guerrillamailblock[.]com|harakirimail[.]com|inboxbear[.]com|incognitomail[.]org|jetable[.]org|mail[-]temp[.]com|mail[.]tm|mailcatch[.]com|maildrop[.]cc|mailinator[.]com|mailinator[.]net|mailnesia[.]com|mailpoof[.]com|mailsac[.]com|mintemail[.]com|mohmal[.]com|moakt[.]com|mytemp[.]email|mytrashmail[.]com|nada[.]email|sharklasers[.]com|spam4[.]me|spamgourmet[.]com|tempail[.]com|tempinbox[.]com|tempm[.]com|tempmail[.]com|tempmail[.]dev|tempmail[.]net|tempmailo[.]com|tempmail[.]plus|temp[-]mail[.]io|temp[-]mail[.]org|temporary[-]mail[.]net|throwawaymail[.]com|trash[-]mail[.]com|trashmail[.]com|trashmail[.]de|trashmail[.]net|wegwerfmail[.]de|yopmail[.]com|yopmail[.]fr|yopmail[.]net|emltmp[.]com|mailto[.]plus|fexpost[.]com|fexbox[.]org|rover[.]info|inbox[.]lv|linshiyouxiang[.]net|tmpmail[.]org|tmpmail[.]net|tmail[.]ws|email[-]temp[.]com|1secmail[.]com|1secmail[.]org|1secmail[.]net|kzccv[.]com|qiott[.]com|wwjmp[.]com|esiix[.]com|xojxe[.]com|yoggm[.]com|bheps[.]com|dcctb[.]com|vjuum[.]com|laafd[.]com|txcct[.]com|eyepaste[.]com|mailforspam[.]com|spambox[.]us|spamfree24[.]org|mailnull[.]com|nowmymail[.]com|gishpuppy[.]com|mailexpire[.]com|tempr[.]email|discardmail[.]com|trbvm[.]com|xkx[.]me|sute[.]jp|meruado[.]uk)$');
+    }
+
     // 4 桁の個人ID を使える終わり（配信から 1 か月。2026-11-03 本人）。src/kojinId.js の 古い形を使える終わり と同じ日。
     // 新しい個人ID は、見間違えやすい字を除いた大文字と数字の 6 字（4 桁は団体ID を知れば数分で総当たりできた）
     function legacyIdUsable() {
@@ -116,6 +122,7 @@ service cloud.firestore {
 
       // 作れるのは、確認の済んだメールで入っている人だけ（偽のアドレスでは作れない）
       allow create: if verifiedEmail()
+        && !disposableEmail()
         && request.resource.data.email == callerEmail()
         && request.resource.data.id == groupId
         // ログインに要る2つと、確認済みの印だけ。同意の記録は private/consent へ書く
