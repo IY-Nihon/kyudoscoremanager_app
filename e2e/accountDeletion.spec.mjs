@@ -41,18 +41,27 @@ test('アカウントの削除：管理者モードのときだけ行が出て�
   // 管理者モードをオンにする（団体パスワードで認証）
   const 行 = page.getByText('管理者モード', { exact: true });
   await 行.scrollIntoViewIfNeeded().catch(() => {});
-  await page.evaluate(() => {
-    const 行 = [...document.querySelectorAll('div')].find(
-      (e) => (e.textContent || '').trim() === '管理者モード'
-    );
-    let 親 = 行;
-    for (let i = 0; i < 6 && 親; i++) {
-      const 切替 = 親.querySelector('input[type="checkbox"], [role="switch"]');
-      if (切替) return void 切替.click();
-      親 = 親.parentElement;
-    }
-  });
+  const 切り替える = () =>
+    page.evaluate(() => {
+      const 行 = [...document.querySelectorAll('div')].find(
+        (e) => (e.textContent || '').trim() === '管理者モード'
+      );
+      let 親 = 行;
+      for (let i = 0; i < 6 && 親; i++) {
+        const 切替 = 親.querySelector('input[type="checkbox"], [role="switch"]');
+        if (切替) return void 切替.click();
+        親 = 親.parentElement;
+      }
+    });
+  // 打ちかけてキャンセルしたら、次に開いたとき欄は空（前のパスワードを残さない）
+  await 切り替える();
   await expect(page.getByText('管理者認証', { exact: true })).toBeVisible({ timeout: 15_000 });
+  await page.getByPlaceholder('パスワード').fill('打ちかけ');
+  await page.getByText('キャンセル', { exact: true }).click();
+  await expect(page.getByText('管理者認証', { exact: true })).toHaveCount(0, { timeout: 10_000 });
+  await 切り替える();
+  await expect(page.getByText('管理者認証', { exact: true })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByPlaceholder('パスワード')).toHaveValue('');
   await page.getByPlaceholder('パスワード').fill(合言葉);
   await page.getByText('認証', { exact: true }).click();
   await expect(page.getByText('管理者認証', { exact: true })).toHaveCount(0, { timeout: 30_000 });
@@ -75,6 +84,14 @@ test('アカウントの削除：管理者モードのときだけ行が出て�
   await expect(page.getByText('削除中…', { exact: true })).toHaveCount(0);
 
   if (process.env.PW_SHOT) await page.screenshot({ path: process.env.PW_SHOT });
+  // 打ちかけて戻るボタンで閉じたら、次に開いたとき欄は空（押していないので消えない）
+  await page.getByLabel('団体パスワード', { exact: true }).fill('打ちかけ');
+  await page.goBack();
+  await expect(page.getByText('続けるには団体パスワードを入力してください。')).toHaveCount(0, {
+    timeout: 10_000,
+  });
+  await 削除の行.click();
+  await expect(page.getByLabel('団体パスワード', { exact: true })).toHaveValue('', { timeout: 10_000 });
   await page.getByText('キャンセル', { exact: true }).click();
   await expect(page.getByText('続けるには団体パスワードを入力してください。')).toHaveCount(0, {
     timeout: 10_000,

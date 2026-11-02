@@ -172,6 +172,17 @@ const SettingsScreen = () => {
   const [削除の合言葉, 削除の合言葉を設定] = React.useState('');
   const [削除の段階, 削除の段階を設定] = React.useState('');
   const [削除の失敗, 削除の失敗を設定] = React.useState('');
+  // 管理者の認証・削除の窓を閉じたら、入れたパスワードを捨て、伏せ字に戻す（どの閉じ方でも）。
+  // 残すと、次に開いたとき前のパスワードが入ったまま（見える形のこともあった）
+  React.useEffect(() => {
+    if (!管理者の合言葉の窓) 管理者の合言葉を置く('');
+  }, [管理者の合言葉の窓]);
+  React.useEffect(() => {
+    if (!削除の窓) 削除の合言葉を設定('');
+  }, [削除の窓]);
+  React.useEffect(() => {
+    if (!管理者の合言葉の窓 && !削除の窓) setShowPw(false);
+  }, [管理者の合言葉の窓, 削除の窓]);
   const [inquiryVisible, setInquiryVisible] = React.useState(false);
   const [種類の窓, 種類の窓を出す] = React.useState(false);
   // 学年の無い団体（社会人の会・道場）には、進級の確認・期を使う・現在の期を出さない
