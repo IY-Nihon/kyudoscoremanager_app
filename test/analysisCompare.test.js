@@ -101,3 +101,11 @@ test('比較の相手を選ぶ一覧：男女が色で分かる', () => {
   // メンバー画面と同じ色にそろえる
   assert.ok(/#007AFF/.test(節) && /#FF2D55/.test(節), '色がメンバー画面とそろっていません');
 });
+
+test('人の詳細：推移の点を押したら、上の「○○の成績」も比べる表の本人もその点の期間にそろえる', () => {
+  const 詳細 = fs.readFileSync(path.join(__dirname, '..', 'src', 'AnalysisMemberDetail.js'), 'utf8');
+  assert.ok(/const 本人の成績 = 詳細の期間の成績 \|\| 詳細の部員/.test(詳細), '本人の成績を点の期間から取っていません');
+  assert.ok(/\{selectedModalTrendLabel \|\| 期間の種類\}の成績 \(\{本人の成績\.hits\}\/\{本人の成績\.shots\}/.test(詳細), '上の成績が点の期間になっていません');
+  assert.ok(/\{selectedModalTrendLabel \|\| 期間の種類\}\s*\{' の的中成績比較'\}/.test(詳細), '比べるときの見出しが点の期間になっていません');
+  assert.ok(!/\{詳細の部員\.rate\.toFixed/.test(詳細), '上の成績に順位の数字が残っています');
+});
