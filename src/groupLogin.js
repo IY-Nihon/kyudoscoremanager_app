@@ -214,8 +214,29 @@ async function 部員として入る(
   見つからないとき = '団体IDまたは個人IDが正しくありません',
   期限切れのとき = 見つからないとき
 ) {
-  const { Firestore, FirebaseAuth, db, auth } = 道具;
+  const { FirebaseAuth, auth } = 道具;
   await FirebaseAuth.signInAnonymously(auth);
+  const 入った人 = auth.currentUser;
+  try {
+    return await 引いて証を書く(道具, 団体の鍵, 鍵, 見つからないとき, 期限切れのとき);
+  } catch (誤り) {
+    // 入れなかった匿名の利用者を残さない（個人IDを打ち間違えるたびに 1 人ずつ溜まっていた）。
+    // 消すのは今ここで作った匿名の人だけ。消せなければ出るだけにする
+    if (入った人 && 入った人.isAnonymous && auth.currentUser === 入った人) {
+      try {
+        await FirebaseAuth.deleteUser(入った人);
+      } catch {
+        await Promise.resolve()
+          .then(() => FirebaseAuth.signOut(auth))
+          .catch(() => {});
+      }
+    }
+    throw 誤り;
+  }
+}
+
+async function 引いて証を書く(道具, 団体の鍵, 鍵, 見つからないとき, 期限切れのとき) {
+  const { Firestore, db, auth } = 道具;
   // 1 件だけ直接引く。一覧（list）は使わないので、他団体の名簿は引けない。
   // 読みだけ送り直す（サインインは包まない。WebKit では 12 秒を超えることがあり、切ると入れなくなる）
   const 逆引き = await 何度か送る(() =>

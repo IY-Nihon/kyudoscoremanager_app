@@ -236,6 +236,51 @@ test('部員として入る：合言葉で逆引きして所属の証を書き�
   assert.strictEqual(雲.値('member_claims', 'anon-2'), undefined, '期限切れなのに所属の証を書いた');
 });
 
+test('部員として入る：途中で失敗したら、そのとき作った匿名の利用者を消す。入れたら消さない', async () => {
+  const { 雲 } = 用意();
+  const 合言葉 = 'f'.repeat(32);
+  雲.置く(逆引きの道, 合言葉, { memberId: 'm1', 招待: true, expiresAt: new Date(Date.now() + 86400000) });
+  雲.置く(`groups/${団体}/members`, 'm1', { id: 'm1', name: '山田 太郎' });
+  const 認証 = { currentUser: null };
+  const 消した = [];
+  let 出た = 0;
+  let 番 = 0;
+  const FirebaseAuth = {
+    signInAnonymously: (auth) => {
+      auth.currentUser = { uid: `anon-${++番}`, isAnonymous: true };
+    },
+    deleteUser: async (人) => {
+      消した.push(人.uid);
+      認証.currentUser = null;
+    },
+    signOut: async () => {
+      出た++;
+      認証.currentUser = null;
+    },
+  };
+  const { 部員として入る } = require('../src/groupLogin');
+  const 道具 = { Firestore: 雲.api, FirebaseAuth, db: {}, auth: 認証 };
+  await assert.rejects(部員として入る(道具, 団体, 'g'.repeat(32), '使えません'), /使えません/);
+  assert.deepStrictEqual(消した, ['anon-1']);
+  assert.strictEqual(認証.currentUser, null);
+  await 部員として入る(道具, 団体, 合言葉);
+  assert.deepStrictEqual(消した, ['anon-1'], '入れた人を消した');
+  assert.strictEqual(認証.currentUser.uid, 'anon-2');
+  // 消せないとき（入ってから時間が経ったなど）は出るだけ。元の知らせはそのまま返す
+  FirebaseAuth.deleteUser = async () => {
+    throw new Error('requires-recent-login');
+  };
+  await assert.rejects(部員として入る(道具, 団体, 'h'.repeat(32), '使えません'), /使えません/);
+  assert.strictEqual(出た, 1);
+  // メールで入っている人（匿名でない）に変わっていたら触らない
+  FirebaseAuth.signInAnonymously = (auth) => {
+    auth.currentUser = { uid: 'mail-1', isAnonymous: false };
+  };
+  FirebaseAuth.deleteUser = async (人) => 消した.push(人.uid);
+  await assert.rejects(部員として入る(道具, 団体, 'i'.repeat(32), '使えません'), /使えません/);
+  assert.deepStrictEqual(消した, ['anon-1']);
+});
+
 // ── 何度か送る（2026-10-24：雲の返事が戻らない回への予防）──
 const { 何度か送る } = require('../src/memberInvite');
 
