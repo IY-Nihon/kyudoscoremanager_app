@@ -1275,3 +1275,27 @@ test('射数：1〜500 の整数に丸め、減らしたら範囲の外の途中
   store.getState().setShotsPerRound(9999);
   assert.equal(store.getState().shotsPerRound, 500);
 });
+
+test('○× を空に戻したら、その射の矢所も同じ一手で消え、取り消し 1 回で ○× と矢所が戻る', () => {
+  const { store } = ストアを用意する();
+  const 矢 = { x: 0.1, y: 0.2, targetType: 'kasumi36' };
+  store.setState({
+    isHydrated: true,
+    shotsPerRound: 4,
+    archers: [{ id: 'a1', name: '一人目', marks: ['×', '○', '', ''], arrowLocations: [矢, 矢, null, null], lastModified: 1 }],
+    historyStack: [],
+    redoStack: [],
+  });
+  store.getState().toggleMark('a1', 0); // × → 空
+  const 後 = store.getState().archers[0];
+  assert.equal(後.marks[0], '');
+  assert.equal(後.arrowLocations[0], null, '空にしたのに矢所が残った');
+  assert.deepEqual(後.arrowLocations[1], 矢, 'ほかの射の矢所まで消した');
+  store.getState().undo();
+  const 戻 = store.getState().archers[0];
+  assert.equal(戻.marks[0], '×');
+  assert.deepEqual(戻.arrowLocations[0], 矢, '取り消し 1 回で矢所が戻らない');
+  // ○ → × のように空にならない切り替えでは矢所を触らない
+  store.getState().toggleMark('a1', 1);
+  assert.deepEqual(store.getState().archers[0].arrowLocations[1], 矢);
+});

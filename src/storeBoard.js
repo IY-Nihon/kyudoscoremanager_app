@@ -381,7 +381,12 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => {
         // 空 → ○ → × → 空 とめぐる
         新しい印 = 前の印 === '' ? '○' : 前の印 === '○' ? '×' : '';
         列[番] = 新しい印;
-        return Object.assign({}, 射手, { marks: 列, lastModified: 今 });
+        // 空に戻したら、その射の矢所も同じ一手の中で消す（矢所を使っていない設定でも残さない。取り消し 1 回で
+        // ○× と矢所が一緒に戻る）。前は記録表のマスが別の一手で消していて、取り消しが 2 回要った
+        const 矢所を消す =
+          新しい印 === '' && Array.isArray(射手.arrowLocations) && 射手.arrowLocations[番] != null;
+        const 矢所 = 矢所を消す ? Object.assign([...射手.arrowLocations], { [番]: null }) : null;
+        return Object.assign({}, 射手, { marks: 列, lastModified: 今 }, 矢所 ? { arrowLocations: 矢所 } : null);
       });
       書く({
         archers: 直した,
@@ -391,6 +396,8 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => {
         // 入れ直したますは、また少し経ってから閉じる
         入れた時刻: Object.assign({}, 状態().入れた時刻, { [射手ID + ':' + 番]: 今 }),
       });
+      // ライブは ○× の 1 ますだけ送る（盤面まるごとだと、相手が同じ時に入れた別のますを消しうる）。
+      // 消した矢所は、次に盤面を送るとき（矢所・鍵などの操作）に一緒に載る
       const { isLiveActive, liveSessionName } = 状態();
       if (isLiveActive && liveSessionName) ライブへ1射を送る(liveSessionName, 射手ID, 番, 新しい印, 今);
     },
