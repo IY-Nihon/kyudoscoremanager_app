@@ -190,6 +190,18 @@ test('切り替えを頼む：今のアドレスで入り、切り替え待ち�
   assert.strictEqual(認証.今, null);
 });
 
+test('切り替えを頼む：新しいアドレスは全角・見えない空白を直して小文字で書く（決まりは認証の小文字のメールと比べる）', async () => {
+  const { 道具, 表, した } = 用意({
+    帳面: { id: '100001', email: 'a@example.com' },
+    口座: { 'a@example.com': 'pw' },
+  });
+  assert.deepStrictEqual(await 切り替えを頼む(道具, '100001', 'pw', 'Ｂ@Example.COM\u200B'), {
+    宛先: 'b@example.com',
+  });
+  assert.strictEqual(帳面の中身(表).pendingEmail, 'b@example.com');
+  assert.deepStrictEqual(した[2], ['確認を送る', 'a@example.com', 'b@example.com']);
+});
+
 test('切り替えを頼む：送れなければ切り替え待ちを消して知らせる', async () => {
   const { 道具, 表, 認証 } = 用意({
     帳面: { id: '100001', email: 'a@example.com' },

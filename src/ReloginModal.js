@@ -34,10 +34,8 @@ const { 団体で入る, 部員として入る, 部員のログインの版 } = 
 
 const 道具を取る = () => require('./db').雲の道具();
 
-const 整える = (値) =>
-  String(値 || '')
-    .trim()
-    .toUpperCase();
+// 団体ID・個人ID は全角と見えない空白を直して大文字に（ログイン画面と同じ。src/totonoeru.js）
+const { IDを整える: 整える } = require('./totonoeru');
 
 /** 入れなかった訳（src/LoginScreen.js の 誤りの文 と同じ言い方） */
 const 訳 = (誤り) => {

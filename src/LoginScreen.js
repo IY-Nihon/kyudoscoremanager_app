@@ -33,19 +33,18 @@ const 法 = require('./legalDocs');
 // 下の断りを出す（Google の決まり。src/setupAppCheck.js）
 const { AppCheckを使うか } = require('./setupAppCheck');
 const KyudoBackgroundAnimation = require('./KyudoBackgroundAnimation').default;
-// 入れてもらったIDを整える。LINE やメモ帳から貼ると、前後に空白が
-// 混じることがある。そのまま照合すると「合っているのに入れない」になり、
+const { IDを整える, メールを整える } = require('./totonoeru');
+// 入れてもらったIDを整える。LINE やメモ帳から貼ると空白（見えないものも）が、予測変換では全角の
+// 数字が混じることがある。そのまま照合すると「合っているのに入れない」になり、
 // 見た目では気づけない。使うたびに整えるのではなく、ここを通す。
-// パスワードには使わないこと（空白も文字のうち）
-const 整えたID = (値) =>
-  String(値 || '')
-    .trim()
-    .toUpperCase();
+// パスワードには使わないこと（空白も文字のうち）。整え方は src/totonoeru.js
+const 整えたID = IDを整える;
 // 入力の誤りを、押す前に知らせるための判定。
 // 空のうちは何も言わない。打ち始める前から赤字を出しても急かすだけで、
 // 直しようがない。中身が入っていて、かつ形が違うときだけ言う。
+// 全角の＠や見えない空白は送る前に直すので、直したあとの形で見る
 const メールの形が変か = (値) => {
-  const 文 = String(値 || '').trim();
+  const 文 = メールを整える(値);
   return 文.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(文);
 };
 // Firebase の決まりで6文字未満は必ず弾かれる。押してから知るのは遅い
@@ -172,9 +171,12 @@ const LoginScreen = () => {
     const 帳面 = Firestore.doc(db, 'group_accounts', 団体ID);
     // 同じ番号が当たったら振り直す
     if ((await Firestore.getDoc(帳面)).exists()) return 団体を作る(メール);
+    // 帳面のメールは、決まり（callerEmail）が比べる認証のメールと同じ字にする。
+    // 認証はメールを小文字で持つので、打った字のまま書くと大文字が混じったときに断られる
+    const 帳面のメール = (auth && auth.currentUser && auth.currentUser.email) || メールを整える(メール);
     try {
       // 公開の帳面には、ログインに要る2つだけ置く
-      await Firestore.setDoc(帳面, { id: 団体ID, email: メール });
+      await Firestore.setDoc(帳面, { id: 団体ID, email: 帳面のメール });
       // 同意の記録は private（誰でも読める場所に置かない）
       await Firestore.setDoc(
         Firestore.doc(db, 'group_accounts', 団体ID, 'private', 'consent'),
@@ -320,10 +322,11 @@ const LoginScreen = () => {
       }
       処理中を置く(true);
       try {
-        await FirebaseAuth.createUserWithEmailAndPassword(auth, メールの入力, 合言葉の入力);
+        const 宛先 = メールを整える(メールの入力);
+        await FirebaseAuth.createUserWithEmailAndPassword(auth, 宛先, 合言葉の入力);
         // 団体の帳面を作るところは、Google で作る道と同じ処理を使う。
         // 別々に書くと、片方だけ直して食い違う（実際それで本番が止まった）
-        await 団体を作る(メールの入力);
+        await 団体を作る(宛先);
       } catch (誤り) {
         Alert.alert('登録失敗', 誤りの文(誤り));
       } finally {
