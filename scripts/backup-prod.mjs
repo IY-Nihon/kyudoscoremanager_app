@@ -151,7 +151,7 @@ console.log('■ Firestore');
 let roots = await listCollectionIds('');
 if (!roots) {
   console.warn('  コレクション名の一覧を取得できませんでした。既知の一覧で控えます。');
-  roots = ['group_accounts', 'groups', 'inquiries', 'member_claims'];
+  roots = ['group_accounts', 'groups', 'inquiries', 'member_claims', 'deleted_accounts', 'errorReports'];
 }
 console.log(`  対象: ${roots.join(', ')}\n`);
 for (const c of roots) await backupCollection(`/${c}`);
@@ -185,9 +185,12 @@ for (const d of ga.documents || []) {
 // そちらのほうが、どの団体のものかを知らなくても取りこぼさない
 console.log('\n■ RTDB');
 // live_presence は控えない。いま何台つないでいるかという、その場限りの状態で、
-// 書き戻すと居ない端末が「接続中」と出る。足すのは筋が悪い（src/livePresence.js）
-const rtdb = { live_sessions: {}, live_history: {} };
-for (const 枝 of ['live_sessions', 'live_history']) {
+// 書き戻すと居ない端末が「接続中」と出る。足すのは筋が悪い（src/livePresence.js）。
+// live_view（配った閲覧用の写し）と live_limits（配ったリンクの期限）は控える。毎日のバックアップ
+// （kyudo/backup）は RTDB を丸ごと控えているので、手で取る控えもそろえる
+const RTDBの枝たち = ['live_sessions', 'live_history', 'live_view', 'live_limits'];
+const rtdb = Object.fromEntries(RTDBの枝たち.map((枝) => [枝, {}]));
+for (const 枝 of RTDBの枝たち) {
   const r = await fetch(`${RTDB}/${枝}.json?${RTDB認証}`);
   if (!r.ok) {
     失敗.push({ パス: `rtdb:/${枝}`, HTTP: r.status });
@@ -200,7 +203,7 @@ for (const 枝 of ['live_sessions', 'live_history']) {
 }
 // appData はアプリが使っておらず、ルールからも外した（常に空だった）。
 // 控えを取ろうとすると拒否されて「失敗1件」と記録され、本物の失敗が
-// 埋もれるため、読み取りごと外した。RTDB で使っているのは live_sessions だけ。
+// 埋もれるため、読み取りごと外した。
 fs.writeFileSync(path.join(OUT, 'rtdb.json'), JSON.stringify(rtdb, null, 1));
 
 // ── ルールと設定 ─────────────────────────────────────────────────
