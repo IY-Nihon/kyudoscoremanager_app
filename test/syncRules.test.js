@@ -702,3 +702,18 @@ test('一覧が同じか: 数・並び・更新日時・同期の印・タグの
   assert.equal(一覧が同じか(旧, 変える(0, { tags: ['#的前', '#雨'] })), false, 'タグ');
   assert.equal(一覧が同じか(undefined, []), false);
 });
+
+test('学年でまとめる：退部した人は現役の学年に混ぜず、卒業生の後ろ（いちばん最後）にまとめる', () => {
+  const 組 = 学年でまとめる([
+    { name: '退', grade: 2, enrollment: '退部' },
+    { name: '卒', grade: 5 },
+    { name: '二', grade: 2 },
+    { name: '他', grade: 0 },
+  ]);
+  assert.deepStrictEqual(
+    組.map((x) => x.学年),
+    ['2', '0', '卒', '退']
+  );
+  assert.deepStrictEqual(組[0].人たち.map((p) => p.name), ['二'], '退部した人が現役の学年に混ざっている');
+  assert.match(組[3].題, /^退/);
+});

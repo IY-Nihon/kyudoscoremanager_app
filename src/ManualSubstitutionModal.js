@@ -28,9 +28,15 @@ const { 立の数, 立の頭の射, 学年でまとめる } = require('./syncRul
 const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を書く }) => {
   const {
     members,
+    alumni,
     shotsPerRound: 盤面の射数,
     setSubstitution,
-  } = useストアの一部(['members', 'shotsPerRound', 'setSubstitution']);
+  } = useストアの一部(['members', 'alumni', 'shotsPerRound', 'setSubstitution']);
+  // 交代相手は記録表の人の選択とそろえる：現役と卒業生（名簿の卒業生と、卒業生の名簿の人）。退部した人は出さない
+  const 選べる人 = React.useMemo(
+    () => [...(members || []), ...(alumni || [])].filter((人) => 人 && 人.id && !学.退部した人か(人)),
+    [members, alumni]
+  );
   const shotsPerRound = 本数 || 盤面の射数;
   const [番号の入力, 番号の入力を置く] = React.useState('');
   // 交代は立の切れ目ですることが多い。射目でも入れられるよう、単位を選べる
@@ -43,8 +49,8 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
   const [客名の入力, 客名の入力を置く] = React.useState('');
   const 候補 = (
     検索の文.trim() === ''
-      ? [...members]
-      : members.filter((部員) => (部員.name || '').toLowerCase().includes(検索の文.toLowerCase()))
+      ? [...選べる人]
+      : 選べる人.filter((部員) => (部員.name || '').toLowerCase().includes(検索の文.toLowerCase()))
   ).sort(学.名簿の順に比べる);
   const 立か = 単位 === '立目';
   const 上限 = 立か ? 立の数(shotsPerRound) : shotsPerRound;
