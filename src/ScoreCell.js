@@ -36,7 +36,6 @@ const ScoreCell = React.memo(
     const ますを開ける = (...引) => 店().ますを開ける(...引);
     const 閉じたますが押された = (...引) => 店().閉じたますが押された(...引);
     const setActiveArrowLocationEdit = (...引) => 店().setActiveArrowLocationEdit(...引);
-    const updateArrowLocation = (...引) => 店().updateArrowLocation(...引);
     const { viewScale, enableArrowLocation, 自動ロックする, 自動ロックまでの秒 } = useScoreStore(
       useShallow((状態) => ({
         viewScale: 状態.viewScale,
@@ -216,11 +215,8 @@ const ScoreCell = React.memo(
       // 矢所の窓を出す・空にしたら消すのは記録中の板のますだけ（どちらも今の記録表に書くので。上の長押しと同じ）
       if (enableArrowLocation && 鍵をかける板) {
         if (timerRef.current) clearTimeout(timerRef.current);
-        if (次の印 === '') {
-          updateArrowLocation(archerId, index, null);
-        } else {
-          timerRef.current = setTimeout(() => 矢所の窓を出す(archerId, index, 次の印), 500);
-        }
+        // 空に戻したときの矢所は、印を切り替える店の側が同じ一手の中で消す（src/storeBoard.js の toggleMark）
+        if (次の印 !== '') timerRef.current = setTimeout(() => 矢所の窓を出す(archerId, index, 次の印), 500);
       }
     };
     return (
