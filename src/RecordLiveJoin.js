@@ -17,7 +17,7 @@ const ライブを始めるか入るかの窓 = ({ ライブの選び窓, ライ
     animationType="fade"
     onRequestClose={() => ライブの選び窓を出す(false)}
   >
-    <TouchableOpacity
+    <View
       style={{
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.4)',
@@ -25,9 +25,9 @@ const ライブを始めるか入るかの窓 = ({ ライブの選び窓, ライ
         alignItems: 'center',
         paddingBottom: 40,
       }}
-      activeOpacity={1}
-      onPress={() => ライブの選び窓を出す(false)}
     >
+      {/* 外側を押すと閉じる面は窓の後ろに分ける。窓を包むと、ボタンの間など窓の中を押しても閉じた */}
+      <Pressable accessible={false} style={StyleSheet.absoluteFill} onPress={() => ライブの選び窓を出す(false)} />
       <View
         style={{
           width: '90%',
@@ -69,7 +69,7 @@ const ライブを始めるか入るかの窓 = ({ ライブの選び窓, ライ
       >
         <Text style={{ fontSize: 20, color: 色.青, fontWeight: 'bold' }}>キャンセル</Text>
       </TouchableOpacity>
-    </TouchableOpacity>
+    </View>
   </Modal>
 );
 
@@ -81,7 +81,7 @@ const 参加のしかたの窓 = ({ 参加のしかたを聞く, 参加のしか
     animationType="fade"
     onRequestClose={() => 参加のしかたを聞くを置く(null)}
   >
-    <Pressable
+    <View
       style={{
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.4)',
@@ -89,8 +89,9 @@ const 参加のしかたの窓 = ({ 参加のしかたを聞く, 参加のしか
         alignItems: 'center',
         paddingBottom: 40,
       }}
-      onPress={() => 参加のしかたを聞くを置く(null)}
     >
+      {/* 外側を押すと閉じる面は窓の後ろに分ける。窓を包むと、見出しなど窓の中を押しても閉じた */}
+      <Pressable accessible={false} style={StyleSheet.absoluteFill} onPress={() => 参加のしかたを聞くを置く(null)} />
       <View
         style={{
           width: '90%',
@@ -162,7 +163,7 @@ const 参加のしかたの窓 = ({ 参加のしかたを聞く, 参加のしか
       >
         <Text style={{ fontSize: 20, color: 色.青, fontWeight: 'bold' }}>キャンセル</Text>
       </Pressable>
-    </Pressable>
+    </View>
   </Modal>
 );
 
