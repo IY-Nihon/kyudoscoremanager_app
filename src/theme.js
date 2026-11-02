@@ -179,6 +179,8 @@ const STORAGE_KEY = '@kyudo/themeMode';
 // 記録表は白地に○×を並べる作りで、道場では明るいほうが読みやすい。
 // 暗くしたい人は、設定の「外観」で「ダーク」か「端末に合わせる」を選べる
 let mode = 'light'; // 'light' | 'dark' | 'system'
+// 使う人がこの起動で外観を選んだか。選んだあとに端末の控えの読みが遅れて届いても、前の値で上書きしない
+let 選んだ = false;
 let systemScheme = 'light';
 const listeners = new Set();
 
@@ -376,6 +378,7 @@ function mapProps(props) {
 
 function setThemeMode(next) {
   if (next !== 'light' && next !== 'dark' && next !== 'system') return;
+  選んだ = true;
   if (mode === next) return;
   mode = next;
   cache = new WeakMap(); // テーマが変わったら変換キャッシュを捨てる
@@ -420,7 +423,9 @@ function initTheme() {
     require('@react-native-async-storage/async-storage')
       .default.getItem(STORAGE_KEY)
       .then((saved) => {
-        if (saved && saved !== mode) {
+        // 読み終わる前に使う人が選んでいたら、そちらが新しい。控えの値は 3 つの外観のどれかのときだけ使う
+        if (選んだ || (saved !== 'light' && saved !== 'dark' && saved !== 'system')) return;
+        if (saved !== mode) {
           mode = saved;
           cache = new WeakMap();
           notify();
