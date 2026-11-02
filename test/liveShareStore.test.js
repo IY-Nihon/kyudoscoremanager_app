@@ -239,6 +239,45 @@ test('参加している人が配っても、ライブが分裂しない', async
   assert.ok(本物, '主催者が新しい枝へ付いていっていない');
 });
 
+test('配られたのに気づく前に押しても、道しるべを上書きせず、同じリンクを出す', async () => {
+  // 主催者が配ると、団体の枝は道しるべになる。部員の台がまだ移っていない（電波が弱いなど）ときに
+  // 「配る」を押すと、前は道しるべを盤面として新しい枝へ写し、道しるべを上書きしていた
+  const { 主, 荷 } = await 共有までやる(合言葉);
+  const 編集の枝 = 共.枝を導く(共.共有の荷を解く(荷.編集の荷).種, 合言葉);
+  // 団体の枝にある道しるべ（共有の枝を指す節点）
+  const 道しるべたち = () =>
+    Object.values(主.ライブ.値('live_sessions') || {})
+      .map((枝) => 枝 && 枝[ライブ名] && 枝[ライブ名].state)
+      .filter((状) => 状 && 状.共有の枝);
+  const 枝の数 = () => Object.keys(主.ライブ.値('live_sessions') || {}).length;
+  assert.equal(道しるべたち().length, 1, '前提：道しるべが 1 つ');
+  const 前の枝の数 = 枝の数();
+  const 部 = 端末(主.ライブ, []);
+  await 部.store.getState().fetchActiveLiveSessions();
+  await 待つ(10);
+  部.store.getState().joinLiveSync(ライブ名);
+  await 待つ(20);
+  // 移ったのに気づいていない台にする（団体の枝にいるつもり）
+  部.store.setState({ いまのライブの枝: null, いまのライブの閲覧枝: null });
+
+  const 部の荷 = await 部.store.getState().ライブを共有する('');
+  assert.ok(部の荷, '配れない');
+  assert.equal(部の荷.すでに配られていた, true, '新しく配り直している');
+  assert.equal(部の荷.編集の荷, 荷.編集の荷, '別のリンクが出ている');
+  assert.equal(部の荷.閲覧の荷, 荷.閲覧の荷, '別のリンクが出ている');
+  // 道しるべはそのまま、新しい枝も作っていない
+  assert.equal(道しるべたち().length, 1);
+  assert.equal(道しるべたち()[0].共有の枝, 編集の枝, '道しるべが上書きされた');
+  assert.equal(枝の数(), 前の枝の数, '新しい枝を作った');
+  // 部の台は先に配られた枝へ移っている
+  assert.equal(部.store.getState().いまのライブの枝, 編集の枝, '先に配られた枝へ移っていない');
+  // 主催者の○×が届く（分裂していない）
+  主.store.getState().updateMark('a1', 1, '×');
+  await 待つ(30);
+  const 届いた = (部.store.getState().archers || []).find((x) => x && x.id === 'a1');
+  assert.equal(届いた && 届いた.marks[1], '×', '分裂している');
+});
+
 test('見るだけの人は配れない', async () => {
   // 写しの枝しか知らないので、配っても記録できるリンクにはならない
   const { 主, 荷 } = await 共有までやる(合言葉);
