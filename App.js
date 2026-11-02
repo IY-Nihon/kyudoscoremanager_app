@@ -4,6 +4,7 @@ import { View, Platform, AppState, StyleSheet } from './src/rn';
 import { useScoreStore } from './src/useScoreStore';
 import { MainNavigator } from './src/MainNavigator';
 import { LoginScreen } from './src/LoginScreen';
+import { MailKakuninScreen, 確認の帯 } from './src/MailKakuninScreen';
 import { LoadingScreen } from './src/LoadingScreen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -50,6 +51,8 @@ export default function App() {
   const activeGroupId = useScoreStore((e) => e.activeGroupId);
   // 共有リンクだけで来ている人。団体に入っていなくても記録画面を出す
   const 共有の来客 = useScoreStore((e) => e.共有の来客);
+  // 登録メールアドレスの確認（src/mailKakunin.js）。済むまでアプリの画面を出さず、雲からも読まない
+  const メールの確認 = useScoreStore((e) => e.メールの確認);
   // URL に載っていた共有の荷。窓を出して、合言葉があれば聞く
   const [共有の荷, 共有の荷を置く] = useState(null);
   // 招待リンクで開かれたときの { 団体, 合言葉 }（src/memberInvite.js）
@@ -223,6 +226,37 @@ export default function App() {
     if (!auth.currentUser) useScoreStore.setState({ 入り直しが要る: true });
   }, [isHydrated, authReady, activeGroupId, 共有の来客]);
 
+  // 登録メールアドレスの確認（2026-11-03 本人：確認が済むまで団体は何もできない）。
+  // 持ち主はログインのメールが確認済みか、部員は団体の帳面の verified を見る。止めるのは決まりで、ここは画面を替えるだけ
+  useEffect(() => {
+    if (!isHydrated || !authReady || !activeGroupId || 共有の来客) return undefined;
+    let 外した = false;
+    const 置く = (様子) => !外した && useScoreStore.setState({ メールの確認: 様子 });
+    (async () => {
+      const 確 = require('./src/mailKakunin');
+      const 道具 = require('./src/db').雲の道具();
+      if (activeRole === 'group') {
+        // ログインが無いときは入り直しの窓が出る（下の効果）。入り直したらまた見る
+        if (!auth || !auth.currentUser) return;
+        // ほかの端末でリンクを押したかもしれないので、確認が済んでいなければ読み直してから見る（電波が無ければ前のまま）
+        const 済み = await 確.確認が済んだか(auth).catch(() => !!(auth.currentUser && auth.currentUser.emailVerified));
+        // 今ある団体は猶予のあいだ使える（帯で確認を頼む）。猶予が過ぎたら確認の画面だけ
+        if (!済み) return 置く(確.猶予中か() ? '猶予中' : '持ち主がまだ');
+        確.帳面に確認済みを書く(道具, activeGroupId).catch(() => {});
+        return 置く('済み');
+      }
+      if (activeRole === 'member') {
+        // 読めないとき（null）は止めない（雲の側で決まりが止める）
+        const 済み = await 確.団体の確認は済んだか(道具, activeGroupId);
+        return 置く(済み === false && !確.猶予中か() ? '団体がまだ' : '済み');
+      }
+      置く('済み');
+    })();
+    return () => {
+      外した = true;
+    };
+  }, [isHydrated, authReady, activeGroupId, activeRole, 共有の来客]);
+
   // 部員の認証方式を変更したため、古い方式でログイン中の端末は一度だけ入り直してもらう。
   // 端末に個人IDを保存していない＝所属を証明できないため、そのままでは全ての
   // 読み書きが拒否される。黙って失敗させず、明示的にログイン画面へ戻す。
@@ -271,7 +305,7 @@ export default function App() {
   }, [同意の確認が要る]);
 
   useEffect(() => {
-    if (isHydrated && activeGroupId && authReady) {
+    if (isHydrated && activeGroupId && authReady && (メールの確認 === '済み' || メールの確認 === '猶予中' || 共有の来客)) {
       console.log('[App] Initializing data for group:', activeGroupId);
       // ライブを置く枝の合言葉。団体IDそのままだと総当たりで覗かれるので、
       // 推測できない名前を使う。入った時点で取っておかないと、ライブを
@@ -294,7 +328,7 @@ export default function App() {
     } else {
       console.log('[App] Waiting for:', { isHydrated, activeGroupId });
     }
-  }, [isHydrated, activeGroupId, authReady]);
+  }, [isHydrated, activeGroupId, authReady, メールの確認, 共有の来客]);
 
   if (!hasMounted || !isHydrated) {
     return <LoadingScreen />;
@@ -333,13 +367,16 @@ export default function App() {
                 ままの端末が別の枝を見て「相手の○×が出ない」形になる。
                 ログインの前後どちらでも出す（気づけないのは同じく困る） */}
             <UpdateBar />
-            {activeGroupId || 共有の来客 ? (
+            {activeGroupId && !共有の来客 && (メールの確認 === '持ち主がまだ' || メールの確認 === '団体がまだ') ? (
+              <MailKakuninScreen 様子={メールの確認} />
+            ) : activeGroupId || 共有の来客 ? (
               // 色の変換は「描画時」に行うため、テーマを変えたら配下を再マウントして
               // 全画面を描画し直す。React Navigation の画面はメモ化されており、
               // key を変えないと再描画されず配色が古いままになる。
               // 記録データは zustand ストア側にあるため再マウントしても失われない。
               <React.Fragment key={theme}>
                 <MainNavigator />
+                {メールの確認 === '猶予中' ? <確認の帯 /> : null}
                 <OfflineIndicator />
                 <WhatsNewModal />
               </React.Fragment>
@@ -347,7 +384,9 @@ export default function App() {
               <LoginScreen />
             )}
             {/* ログインが外れたときの、ログインし直しの窓（ログアウトさせない） */}
-            {activeGroupId && !共有の来客 ? <入り直しの窓 /> : null}
+            {activeGroupId && !共有の来客 && メールの確認 !== '持ち主がまだ' && メールの確認 !== '団体がまだ' ? (
+              <入り直しの窓 />
+            ) : null}
             {/* 招待リンクで来た人を迎える窓 */}
             {招待 ? <招待の窓 招待={招待} onClose={招待を閉じる} /> : null}
             {/* 共有リンクで来た人を迎える窓。団体に入る前に出す */}

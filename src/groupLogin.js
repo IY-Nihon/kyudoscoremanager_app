@@ -122,6 +122,8 @@ async function 団体で入る(道具, 団体ID, 合言葉) {
         email: 中身.pendingEmail,
         previousEmail: 中身.email,
         ownerUid: 新しいので.user.uid,
+        // 新しいアドレスは確認のリンクを押して替わった（決まりも確認済みしか通さない）。部員が入れるよう印を残す
+        verified: true,
       });
       // 切り替えた日時は非公開の側に。前のアドレスを片付ける目安（書けなくても次のログインで補う）
       await Firestore.setDoc(非公開の場所, { emailSwitchedAt: new Date() }, { merge: true }).catch(() => {});
@@ -225,6 +227,11 @@ async function 部員として入る(
 ) {
   const { FirebaseAuth, auth } = 道具;
   if (!IDの形か(団体の鍵) || !IDの形か(鍵)) throw new Error(見つからないとき);
+  // 登録メールアドレスの確認が済んでいない団体には入れない（決まりも止める。2026-11-03）。
+  // 匿名の利用者を作る前に、理由を言って断る（帳面は誰でも読める。読めないときは進めて、決まりに任せる）
+  const 確 = require('./mailKakunin');
+  // 今ある団体は猶予のあいだ入れる（決まりも同じ）
+  if ((await 確.団体の確認は済んだか(道具, 団体の鍵)) === false && !確.猶予中か(道具.今)) throw new Error(確.団体がまだの文);
   await FirebaseAuth.signInAnonymously(auth);
   const 入った人 = auth.currentUser;
   try {

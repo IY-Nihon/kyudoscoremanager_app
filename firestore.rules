@@ -37,9 +37,29 @@ service cloud.firestore {
       ];
     }
 
-    // 団体アカウント本人か（SEC-3）
+    // 登録メールアドレスの確認（確認メールのリンクを押した）が済んでいるか。
+    // 確認が済むまで、団体は何もできない（今ある団体も。2026-11-03 本人）。偽のアドレスでは確認メールが届かない
+    function verifiedEmail() {
+      return callerEmail() != '' && request.auth.token.email_verified == true;
+    }
+
+    // 今ある団体の確認の猶予（配信から 1 週間。2026-11-03 本人）。この日までは、確認の済んでいない団体も今までどおり使える。
+    // 新しい団体は確認が済まないと作れない（create）ので、確認の済んでいない団体は配信の前からある団体だけ。
+    // 日付は src/mailKakunin.js の 猶予の終わり と同じにする（test/mailKakunin.test.js が見張る）。
+    // 配信の日に「配信日＋7 日」へ書き直す（npm run deploy:rules が、近すぎ・遠すぎの日付なら止める）
+    function inGracePeriod() {
+      return request.time < timestamp.date(2026, 11, 10);
+    }
+
+    // 団体の確認が済んでいるか（帳面の verified）。持ち主が確認を済ませると、アプリが帳面に書く。
+    // 部員はこれを見る（部員の口座は匿名でメールを持たない）
+    function groupVerified(groupId) {
+      return get(/databases/$(database)/documents/group_accounts/$(groupId)).data.get('verified', false) == true;
+    }
+
+    // 団体アカウント本人か（SEC-3）。確認の済んだメールで入っているときだけ
     function isGroupOwner(groupId) {
-      return callerEmail() != ''
+      return (verifiedEmail() || (callerEmail() != '' && inGracePeriod()))
         && get(/databases/$(database)/documents/group_accounts/$(groupId)).data.email == callerEmail();
     }
 
@@ -55,7 +75,8 @@ service cloud.firestore {
       return signedIn()
         && claim() != null
         && claim().data.groupId == groupId
-        && exists(/databases/$(database)/documents/groups/$(groupId)/members/$(claim().data.memberId));
+        && exists(/databases/$(database)/documents/groups/$(groupId)/members/$(claim().data.memberId))
+        && (groupVerified(groupId) || inGracePeriod());
     }
 
     function canAccess(groupId) {
@@ -87,13 +108,13 @@ service cloud.firestore {
       allow list: if isAdmin()
         || (callerEmail() != '' && resource.data.email == callerEmail());
 
-      allow create: if signedIn()
-        && callerEmail() != ''
+      // 作れるのは、確認の済んだメールで入っている人だけ（偽のアドレスでは作れない）
+      allow create: if verifiedEmail()
         && request.resource.data.email == callerEmail()
         && request.resource.data.id == groupId
-        // ログインに要る2つだけ。同意の記録は private/consent へ書く
+        // ログインに要る2つと、確認済みの印だけ。同意の記録は private/consent へ書く
         //（src/legalDocs.js の 同意の記録。ここに混ぜると誰でも読める）
-        && request.resource.data.keys().hasOnly(['id', 'email']);
+        && request.resource.data.keys().hasOnly(['id', 'email', 'verified']);
 
       // 更新にも hasOnly を掛ける。作るときだけ絞っても、あとから書き足せては
       // 意味がない。2026-09-03、検証環境で seed-stg.mjs が name と createdAt を
@@ -107,8 +128,11 @@ service cloud.firestore {
         // 前のアドレス（previousEmail）と口座の番号（ownerUid）は、消せるが書き換えられない
         || (callerEmail() != ''
             && resource.data.email == callerEmail()
-            && request.resource.data.keys().hasOnly(['id', 'email', 'pendingEmail', 'previousEmail', 'ownerUid'])
+            && request.resource.data.keys().hasOnly(['id', 'email', 'pendingEmail', 'previousEmail', 'ownerUid', 'verified'])
             && request.resource.data.email == resource.data.email
+            // 確認済みの印を付けられるのは、確認の済んだメールで入っている本人だけ（付いている印はそのまま残せる）
+            && (request.resource.data.get('verified', false) == resource.data.get('verified', false)
+                || (request.resource.data.get('verified', false) == true && request.auth.token.email_verified == true))
             && request.resource.data.get('id', '') == resource.data.get('id', '')
             && (!('previousEmail' in request.resource.data)
                 || request.resource.data.previousEmail == resource.data.get('previousEmail', ''))
@@ -122,7 +146,7 @@ service cloud.firestore {
         || (callerEmail() != ''
             && request.auth.token.email_verified == true
             && resource.data.get('pendingEmail', '') == callerEmail()
-            && request.resource.data.keys().hasOnly(['id', 'email', 'previousEmail', 'ownerUid'])
+            && request.resource.data.keys().hasOnly(['id', 'email', 'previousEmail', 'ownerUid', 'verified'])
             && request.resource.data.email == callerEmail()
             && request.resource.data.get('previousEmail', '') == resource.data.email
             && request.resource.data.get('ownerUid', '') == request.auth.uid
@@ -134,7 +158,8 @@ service cloud.firestore {
         || (callerEmail() != ''
             && resource.data.get('ownerUid', '') == request.auth.uid
             && resource.data.get('previousEmail', '') == callerEmail()
-            && request.resource.data.keys().hasOnly(['id', 'email'])
+            && request.resource.data.keys().hasOnly(['id', 'email', 'verified'])
+            && (request.resource.data.get('verified', false) == false || request.auth.token.email_verified == true)
             && request.resource.data.email == callerEmail()
             && request.resource.data.get('id', '') == resource.data.get('id', ''));
 
@@ -147,7 +172,7 @@ service cloud.firestore {
       // 本人だけ**が読み書きする。親の email と突き合わせて確かめる
       match /private/{doc} {
         allow read, write: if isAdmin()
-          || (callerEmail() != ''
+          || ((verifiedEmail() || (callerEmail() != '' && inGracePeriod()))
               && callerEmail() ==
                  get(/databases/$(database)/documents/group_accounts/$(groupId)).data.email);
       }
@@ -169,6 +194,9 @@ service cloud.firestore {
         && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['groupId', 'memberId', 'personalId', 'claimedAt'])
         && lookupEntry().memberId == request.resource.data.memberId
+        // 確認の済んでいない団体には入れない（2026-11-03）
+        && (get(/databases/$(database)/documents/group_accounts/$(request.resource.data.groupId)).data.get('verified', false) == true
+            || inGracePeriod())
         && (lookupEntry().get('招待', false) != true || lookupEntry().expiresAt > request.time);
     }
 

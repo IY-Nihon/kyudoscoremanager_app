@@ -232,6 +232,9 @@ const useScoreStore = zustand.create()(
         deletedMembers: {},
         // 出欠の画面が受け取った正規練習日（{ 団体, 練習日 }）。開いたときにすぐ出す。ログアウトで捨てる
         練習日の控え: null,
+        // 登録メールアドレスの確認（src/mailKakunin.js）。null＝まだ見ていない・'持ち主がまだ'・'団体がまだ'・'済み'。
+        // 済むまで App.js がアプリの画面の代わりに確認の画面を出し、雲から読まない。端末には残さない（毎回見る）
+        メールの確認: null,
         isNetworkOnline: true,
         isAdminMode: false,
         ...学年まわりの初めの値,
@@ -356,6 +359,7 @@ const useScoreStore = zustand.create()(
               全部そろえた時刻: 0,
               端末から外した記録: [],
               練習日の控え: null,
+              メールの確認: null,
               // 履歴の記録を直している途中の控えも、団体を離れるときに捨てる
               履歴の編集: null,
               analysisSelectedTags: [],
@@ -388,6 +392,7 @@ const useScoreStore = zustand.create()(
                 全部そろえた時刻: 0,
                 端末から外した記録: [],
                 練習日の控え: null,
+                メールの確認: null,
                 ...学年まわりの初めの値,
               });
             }

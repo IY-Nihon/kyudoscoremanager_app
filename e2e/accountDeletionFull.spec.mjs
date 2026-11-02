@@ -10,6 +10,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { 案内を止める, 画面が出るまで待つ, 入り口が決まるまで待つ } from './helpers.mjs';
+import { 検証環境でメールを確認済みにする } from '../scripts/fb-rest.mjs';
 
 test('団体アカウントを作って、設定から削除すると、その団体IDでは入れなくなる', async ({ page }) => {
   test.setTimeout(600_000);
@@ -42,7 +43,24 @@ test('団体アカウントを作って、設定から削除すると、その�
   await 印を押す('に同意します');
   await 印を押す('部員の氏名を登録する前に');
   await expect(page.getByText('✓', { exact: true })).toHaveCount(2, { timeout: 5_000 });
+  // 確認メールは本当には送らない（example.com へ送ると戻ってくるうえ、続けて流すと送る回数の上限に当たる）。
+  // 送れた形の返事だけ返す
+  await page.route('**/accounts:sendOobCode**', (経路) =>
+    経路.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ kind: 'identitytoolkit#GetOobConfirmationCodeResponse', email: 宛先 }),
+    })
+  );
   await page.getByText('アカウント作成', { exact: true }).click();
+  // 確認メールのリンクを押すまで団体はできない（2026-11-03）。検証環境では、リンクを押した代わりに
+  // Firebase CLI の権限で口座を確認済みにしてから「確認した」を押す
+  const 確認の窓 = page.getByTestId('作るときのメールの確認');
+  await expect(確認の窓, '確認メールの窓が出ない').toBeVisible({ timeout: 60_000 });
+  await page.getByText('確認した', { exact: true }).click();
+  await expect(page.getByText('まだ確認が済んでいません', { exact: false })).toBeVisible({ timeout: 30_000 });
+  expect(await 検証環境でメールを確認済みにする([宛先])).toBe(1);
+  await page.getByText('確認した', { exact: true }).click();
   await expect(page.getByText('団体アカウントを作成しました', { exact: false })).toBeVisible({
     timeout: 60_000,
   });

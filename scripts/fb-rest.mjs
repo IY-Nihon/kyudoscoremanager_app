@@ -164,3 +164,45 @@ export async function ライブの枝を引く(projectId, groupId, token) {
   const 値 = r.json?.fields?.liveSecret?.stringValue;
   return 値 && 値.length >= 20 ? 値 : null;
 }
+
+/**
+ * 検証環境の口座のメールを「確認済み」にする（確認メールのリンクを押した代わり。2026-11-03）。
+ * 検証の団体と、E2E が作る団体に使う。Firebase CLI の権限（firebase login）で、検証環境にしか書かない
+ * @param {string[]} メールたち
+ * @param {boolean} [済み] false なら確認の済んでいない形に戻す（決まりの確かめに使う）
+ * @returns {Promise<number>} 変えた口座の数
+ */
+export async function 検証環境でメールを確認済みにする(メールたち, 済み = true) {
+  const 企画 = 'kyudoscoremanager-stg';
+  const os = await import('node:os');
+  const path = await import('node:path');
+  const 設定 = path.join(os.homedir(), '.config', 'configstore', 'firebase-tools.json');
+  const refresh = JSON.parse(fs.readFileSync(設定, 'utf8')).tokens?.refresh_token;
+  if (!refresh) throw new Error('firebase login が済んでいません');
+  const { access_token } = await (
+    await fetch('https://www.googleapis.com/oauth2/v4/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: '563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com',
+        client_secret: 'j9iVZfS8kkCEFUPaAeJV0sAi',
+        refresh_token: refresh,
+        grant_type: 'refresh_token',
+      }),
+    })
+  ).json();
+  const 頭 = { Authorization: `Bearer ${access_token}`, 'Content-Type': 'application/json', 'x-goog-user-project': 企画 };
+  const 根 = `https://identitytoolkit.googleapis.com/v1/projects/${企画}`;
+  const j = await (await fetch(`${根}/accounts:lookup`, { method: 'POST', headers: 頭, body: JSON.stringify({ email: メールたち }) })).json();
+  let 数 = 0;
+  for (const u of j.users || []) {
+    if (!!u.emailVerified === 済み) continue;
+    const r = await fetch(`${根}/accounts:update`, {
+      method: 'POST',
+      headers: 頭,
+      body: JSON.stringify({ localId: u.localId, emailVerified: 済み }),
+    });
+    if (r.ok) 数++;
+  }
+  return 数;
+}
