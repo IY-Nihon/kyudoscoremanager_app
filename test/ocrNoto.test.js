@@ -56,3 +56,23 @@ test('AI の JSON の直し：閉じ括弧の不足・囲み・余計なカン�
   assert.deepStrictEqual(AIのJSONを読む('{"a":["○\\",\n"○\\""\n]}'), { a: ['○\\', '○\\'] });
   assert.throws(() => AIのJSONを読む('読めません'), SyntaxError);
 });
+
+test('AI の JSON の直し：文字列の中の生の改行・タブと、途中で切れた値', () => {
+  const { AIのJSONを読む } = require('../src/ocr/jsonNaoshi.js');
+  // 名前やメモに改行・タブを入れて返した（JSON では \n と書く決まり）。文字列の外の改行はそのまま
+  assert.deepStrictEqual(AIのJSONを読む('{"name":"山田\n太郎",\n"memo":"a\tb"}'), { name: '山田\n太郎', memo: 'a\tb' });
+  // 上限で切れた答え。そこまでを読む
+  assert.deepStrictEqual(AIのJSONを読む('{"rows":[{"cells":["○","×"]},{"cells":["◎","○\\'), {
+    rows: [{ cells: ['○', '×'] }, { cells: ['◎', '○\\'] }],
+  });
+  assert.deepStrictEqual(AIのJSONを読む('{"a":1,"ok":tr'), { a: 1, ok: true });
+  assert.deepStrictEqual(AIのJSONを読む('{"a":1,"ok":fal'), { a: 1, ok: false });
+  assert.deepStrictEqual(AIのJSONを読む('{"a":1,"x":nu'), { a: 1, x: null });
+  assert.deepStrictEqual(AIのJSONを読む('{"a":12.'), { a: 12 });
+  assert.deepStrictEqual(AIのJSONを読む('{"a":1,"b":-'), { a: 1, b: null });
+  assert.deepStrictEqual(AIのJSONを読む('{"a":1,"name":'), { a: 1, name: null });
+  assert.deepStrictEqual(AIのJSONを読む('{"a":1,"nam'), { a: 1 });
+  assert.deepStrictEqual(AIのJSONを読む('[{"a":1},{"b"'), [{ a: 1 }, { b: null }]);
+  // 文字列の中の値は触らない
+  assert.deepStrictEqual(AIのJSONを読む('{"a":"t","b":"-"'), { a: 't', b: '-' });
+});
