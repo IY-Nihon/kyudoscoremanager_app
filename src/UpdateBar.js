@@ -95,6 +95,12 @@ async function 読み込み直す() {
   } catch {
     /* 入れ替えられなくても、読み込み直せば新しい束にはなる */
   }
+  // 遅らせて書いている端末の控えを、読み込み直す前に書き切る（src/storeShared.js の 控えの書き出し）
+  try {
+    if (typeof globalThis.__弓道の控えを書く === 'function') globalThis.__弓道の控えを書く();
+  } catch {
+    /* 控えが書けなくても読み込み直す */
+  }
   if (typeof location !== 'undefined') location.reload();
 }
 
