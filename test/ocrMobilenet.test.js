@@ -67,6 +67,15 @@ test('重みの取り寄せ：取れたら中身、取れなければ null で�
   console.warn = () => {};
   try {
     assert.strictEqual(await 写真の網の重みを読む(だめ), null);
+    // 重みの代わりに index.html（200・text/html）が返ったら使わない
+    const 網の代わりのHTML = {
+      場所: () => '/assets/x.bin',
+      fetch: async () => (
+        呼んだ++,
+        { ok: true, headers: { get: () => 'text/html; charset=utf-8' }, arrayBuffer: () => new Uint8Array([60]).buffer }
+      ),
+    };
+    assert.strictEqual(await 写真の網の重みを読む(網の代わりのHTML), null);
     const 中身 = new Uint8Array([1, 2, 3]);
     const よい = {
       場所: () => '/assets/x.bin',
@@ -75,7 +84,7 @@ test('重みの取り寄せ：取れたら中身、取れなければ null で�
     assert.deepStrictEqual(Array.from(await 写真の網の重みを読む(よい)), [1, 2, 3]);
     // 取れたあとは取りに行かない
     await 写真の網の重みを読む(よい);
-    assert.strictEqual(呼んだ, 2);
+    assert.strictEqual(呼んだ, 3);
   } finally {
     console.warn = 元の警告;
     写真の網の控えを捨てる();
