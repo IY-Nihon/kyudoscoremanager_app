@@ -51,6 +51,7 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
   const [inquiryEmail, setInquiryEmail] = React.useState('');
   const [inquiryContent, setInquiryContent] = React.useState('');
   const [inquirySending, setInquirySending] = React.useState(false);
+  const 送っている = React.useRef(false);
   const [inquiryImages, setInquiryImages] = React.useState([]);
   // 付ける写真の並びは横に流す。パソコンの車の動きは横に読み替える（src/yokoNagashi.js）
   const 写真の横流し = use横流し();
@@ -109,6 +110,8 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
     }
   };
   const 送る = async () => {
+    // 続けて押されても 1 通だけ（inquirySending はボタンに効くまで 1 回描き直しが要る）
+    if (送っている.current) return;
     // 返事を届けるアドレス。全角の＠や見えない空白は直し、小文字にそろえる（src/totonoeru.js）
     const メール = メールを整える(inquiryEmail);
     // メールアドレスは任意。書いていないことより、
@@ -121,6 +124,7 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
       Alert.alert('エラー', 'お問い合わせ内容を入力してください');
       return;
     }
+    送っている.current = true;
     setInquirySending(true);
     try {
       await Firestore.addDoc(Firestore.collection(db, 'inquiries'), {
@@ -140,6 +144,7 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
       console.error('Inquiry send error:', err);
       Alert.alert('エラー', '送信に失敗しました。再度お試しください。');
     } finally {
+      送っている.current = false;
       setInquirySending(false);
     }
   };

@@ -143,6 +143,18 @@ const SettingsScreen = () => {
   // ログアウトの確認の段階。'確認' → '送信中' → '送信済み' / '失敗'
   const [ログアウトの段階, ログアウトの段階を設定] = React.useState('確認');
   const [残った未送信, 残った未送信を設定] = React.useState(0);
+  // 続けて押されても 1 回だけ（段階・確かめ中の状態はボタンに効くまで 1 回描き直しが要るので、その間の 2 回目を止める）。
+  // 管理者の認証・団体の削除・ログアウトに使う
+  const 走っている = React.useRef(new Set());
+  const 一度だけ = (名, 仕事) => async () => {
+    if (走っている.current.has(名)) return;
+    走っている.current.add(名);
+    try {
+      await 仕事();
+    } finally {
+      走っている.current.delete(名);
+    }
+  };
   const [タグの下書き, タグの下書きを置く] = React.useState('');
   /** 下書きのタグを候補に足す（# が無ければ付ける） */
   const 下書きのタグを足す = () => {
@@ -1054,7 +1066,7 @@ const SettingsScreen = () => {
                     (!!削除の段階 || !削除の合言葉) && { opacity: 0.5 },
                     IS_WEB && { cursor: 'pointer' },
                   ]}
-                  onPress={async () => {
+                  onPress={一度だけ('削除', async () => {
                     if (!削除の合言葉 || 削除の段階) return;
                     削除の失敗を設定('');
                     削除の段階を設定('本人確認');
@@ -1083,7 +1095,7 @@ const SettingsScreen = () => {
                       '削除しました',
                       '団体アカウントを削除しました。ご利用ありがとうございました。'
                     );
-                  }}
+                  })}
                   disabled={!!削除の段階 || !削除の合言葉}
                 >
                   <Text style={[styles.modalBtnText, { color: 基本色.白 }]}>
@@ -1162,7 +1174,7 @@ const SettingsScreen = () => {
                   hovered && { backgroundColor: 基本色.青_濃い },
                   IS_WEB && { cursor: 'pointer' },
                 ]}
-                onPress={async () => {
+                onPress={一度だけ('管理者', async () => {
                   if (管理者の合言葉) {
                     合言葉を確かめ中を置く(true);
                     try {
@@ -1179,7 +1191,7 @@ const SettingsScreen = () => {
                       合言葉を確かめ中を置く(false);
                     }
                   }
-                }}
+                })}
                 disabled={合言葉を確かめ中 || !管理者の合言葉}
               >
                 <Text style={[styles.modalBtnText, { color: 基本色.白 }]}>
@@ -1228,7 +1240,7 @@ const SettingsScreen = () => {
                   ログアウトのボタンを止める(ログアウトの段階) && { opacity: 0.4 },
                 ]}
                 disabled={ログアウトのボタンを止める(ログアウトの段階)}
-                onPress={async () => {
+                onPress={一度だけ('ログアウト', async () => {
                   // 未送信があるうちは、まず送信を試す。送れなかったぶんは捨てずに端末へ残す
                   //（setAuth(null) が団体ごとの控えへ移す。src/unsentStash.js）
                   if (先に送信すべきか(ログアウトの段階, 残った未送信)) {
@@ -1261,7 +1273,7 @@ const SettingsScreen = () => {
                   } catch (誤り) {
                     console.error('Logout error:', 誤り);
                   }
-                }}
+                })}
               >
                 <Text style={[styles.modalBtnText, { color: 基本色.白 }]}>
                   {ログアウトのボタン名(ログアウトの段階)}

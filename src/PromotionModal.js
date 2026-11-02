@@ -61,6 +61,7 @@ function 進級の窓({ 見える, 知らせる }) {
   // 開いている組（学年）。卒業する学年だけ初めから開く（卒業か残るかを確かめてほしいので）
   const [開いた組, 開いた組を置く] = React.useState(() => new Set());
   const [押した, 押したを置く] = React.useState(false);
+  const 走っている = React.useRef(false);
   const [誤り, 誤りを置く] = React.useState('');
   React.useEffect(() => {
     if (!見える) return;
@@ -104,11 +105,19 @@ function 進級の窓({ 見える, 知らせる }) {
   };
   const 後にする = () => useScoreStore.getState().進級の窓を後にする();
   const 進級する = async () => {
-    if (押した) return;
+    // 続けて押されても 1 回だけ。押した はボタンに効くまで 1 回描き直しが要り、その間の 2 回目は古い 押した を見る。
+    // 2 回が重なると、片方が書いたあとの名簿をもう片方が読んで、2 学年進みうる
+    if (押した || 走っている.current) return;
+    走っている.current = true;
     押したを置く(true);
     誤りを置く('');
-    const 結果 = await useScoreStore.getState().進級する(Object.fromEntries(選び));
-    押したを置く(false);
+    let 結果;
+    try {
+      結果 = await useScoreStore.getState().進級する(Object.fromEntries(選び));
+    } finally {
+      走っている.current = false;
+      押したを置く(false);
+    }
     if (結果.誤り) {
       誤りを置く(結果.誤り);
       return;

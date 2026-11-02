@@ -15,6 +15,8 @@ const LiveShareModal = ({ visible, onClose }) => {
   const [合言葉, 合言葉を置く] = React.useState('');
   const [合言葉を使うか, 使うかを置く] = React.useState(true);
   const [作業中, 作業中を置く] = React.useState(false);
+  // 続けて押されても 1 回だけ配る（作業中 はボタンに効くまで 1 回描き直しが要る）
+  const 走っている = React.useRef(false);
   const [出来上がり, 出来上がりを置く] = React.useState(null);
   const [知らせ, 知らせを置く] = React.useState(null);
   const [難点, 難点を置く] = React.useState(null);
@@ -32,6 +34,7 @@ const LiveShareModal = ({ visible, onClose }) => {
     }
   }, [visible]);
   const 作る = async () => {
+    if (走っている.current) return;
     const 鍵 = 合言葉を使うか ? 合言葉 : '';
     if (合言葉を使うか) {
       const だめ = 共.合言葉の難点(鍵);
@@ -41,6 +44,7 @@ const LiveShareModal = ({ visible, onClose }) => {
       }
     }
     難点を置く(null);
+    走っている.current = true;
     作業中を置く(true);
     try {
       const 荷 = await useScoreStore.getState().ライブを共有する(鍵, 持ち);
@@ -56,6 +60,7 @@ const LiveShareModal = ({ visible, onClose }) => {
         すでに配られていた: !!荷.すでに配られていた,
       });
     } finally {
+      走っている.current = false;
       作業中を置く(false);
     }
   };
@@ -299,6 +304,8 @@ const styles = StyleSheet.create({
 const 来客の窓 = ({ 荷, onClose }) => {
   const [合言葉, 合言葉を置く] = React.useState('');
   const [作業中, 作業中を置く] = React.useState(false);
+  // 続けて押されても 1 回だけ入る（作業中 はボタンに効くまで 1 回描き直しが要る）
+  const 走っている = React.useRef(false);
   const [難点, 難点を置く] = React.useState(null);
   const 中身 = 荷 ? 共.共有の荷を解く(荷) : null;
   // いま団体に入っていて、手元に書きかけの記録があるか。
@@ -313,6 +320,8 @@ const 来客の窓 = ({ 荷, onClose }) => {
     );
   if (!中身) return null;
   const 入る = async () => {
+    if (走っている.current) return;
+    走っている.current = true;
     難点を置く(null);
     作業中を置く(true);
     try {
@@ -340,6 +349,7 @@ const 来客の窓 = ({ 荷, onClose }) => {
             : 'リンクを読めませんでした。'
       );
     } finally {
+      走っている.current = false;
       作業中を置く(false);
     }
   };
