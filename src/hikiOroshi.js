@@ -24,6 +24,8 @@ const { IS_WEB } = require('./IS_WEB');
 /** 引いた長さ（指の動きの半分）がこれを越えて離したら更新する */
 const 更新の引き = 60;
 const 最大の引き = 90;
+/** 指がこれだけ動くまでは、縦か横かを決めない（横に流す一覧・札の並びを引くと間違えない） */
+const 向きを決める動き = 8;
 
 /** 一覧の部品（FlatList・ScrollView）から、流れる DOM の節を取る */
 function 流れる節(部品) {
@@ -37,7 +39,7 @@ function use引いて更新(更新する) {
   const ref = useRef(null);
   const [引き, set引き] = useState(0);
   const [更新中, set更新中] = useState(false);
-  const 場 = useRef({ 始め: null, 引き: 0, 更新中: false });
+  const 場 = useRef({ 始め: null, 始めX: null, 向き: null, 引き: 0, 更新中: false });
   const 更新する_ref = useRef(更新する);
   更新する_ref.current = 更新する;
 
@@ -73,10 +75,27 @@ function use引いて更新(更新する) {
           return;
         }
         場.current.始め = e.touches[0].clientY;
+        場.current.始めX = e.touches[0].clientX;
+        場.current.向き = null;
       };
       const 動いた = (e) => {
-        if (場.current.始め == null) return;
+        if (場.current.始め == null || !e.touches || !e.touches[0]) return;
         const 差 = e.touches[0].clientY - 場.current.始め;
+        const 横差 = Number.isFinite(e.touches[0].clientX) ? e.touches[0].clientX - 場.current.始めX : 0;
+        // 引き始める前に、縦か横かを決める。横へ 8px 以上・縦より大きく動いたら横に流す指なので、
+        // この指では更新しない（止めないので、横の並びはそのまま流れる）
+        if (!場.current.向き) {
+          if (Math.max(Math.abs(差), Math.abs(横差)) < 向きを決める動き) {
+            // 決まるまでは引かない。下へ向いているときだけページの引き下ろしを止めておく
+            if (差 > Math.abs(横差) && e.cancelable) e.preventDefault();
+            return;
+          }
+          場.current.向き = Math.abs(横差) > Math.abs(差) ? '横' : '縦';
+        }
+        if (場.current.向き === '横') {
+          場.current.始め = null;
+          return;
+        }
         if (差 <= 0 || 節.scrollTop > 0) {
           if (場.current.引き) {
             場.current.引き = 0;
