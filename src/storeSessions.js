@@ -559,8 +559,12 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     const { isLiveActive, liveSessionName, shotsPerRound } = 状態();
     if (isLiveActive && liveSessionName) ライブへ盤面を送る(liveSessionName, 直した, shotsPerRound);
   },
-  setShotsPerRound: (本数) => {
+  setShotsPerRound: (頼んだ本数) => {
     if (状態().書き換えを止めるか()) return;
+    // 射数は 1〜500 の整数（記録画面の手入力と同じ上限）。数でないもの・0 以下は受けない
+    const 数 = Number(頼んだ本数);
+    if (!Number.isFinite(数) || 数 < 1) return;
+    const 本数 = Math.min(500, Math.trunc(数));
     // 射数を減らすと○×を切り捨てる。取り消しで戻せるよう、変える前の
     // 盤面を一手として積む。控えの○×の長さがそのときの射数になるので、
     // 取り消し側はそれを見て射数ごと戻す
@@ -575,6 +579,20 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
       } else {
         新しい印.splice(本数);
       }
+      // 減らしたときは、切り捨てた射の途中交代（射番 → 氏名・id）も落とす。残すと、無い射の交代が
+      // 出欠や分析に数えられ、射数を戻したときに覚えのない交代が出てくる
+      const 範囲の交代 = (表) => {
+        if (!表 || typeof 表 !== 'object') return null;
+        const 残す = {};
+        let 落とした = false;
+        for (const 番 of Object.keys(表)) {
+          if (Number(番) < 本数) 残す[番] = 表[番];
+          else 落とした = true;
+        }
+        return 落とした ? 残す : null;
+      };
+      const 交代 = 範囲の交代(射手.substitutions);
+      const 交代のid = 範囲の交代(射手.substitutionIds);
       return Object.assign(
         {},
         射手,
@@ -582,7 +600,9 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
         // 減らしたときは、切り捨てた射の矢所も落とす（残すと分析に混ざる）
         Array.isArray(射手.arrowLocations) && 射手.arrowLocations.length > 本数
           ? { arrowLocations: 射手.arrowLocations.slice(0, 本数) }
-          : null
+          : null,
+        交代 ? { substitutions: 交代 } : null,
+        交代のid ? { substitutionIds: 交代のid } : null
       );
     });
     書く(

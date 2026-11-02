@@ -1243,3 +1243,35 @@ test('ライブ中：○×の取り消しが、間に入れた交代を巻き添
     '相手の画面でも交代が残る'
   );
 });
+
+test('射数：1〜500 の整数に丸め、減らしたら範囲の外の途中交代も落とす（取り消せば戻る）', () => {
+  const { store } = ストアを用意する();
+  store.setState({
+    isHydrated: true,
+    shotsPerRound: 8,
+    archers: [
+      {
+        id: 'a1',
+        name: '一人目',
+        marks: ['○', '×', '', '', '', '', '', ''],
+        substitutions: { 2: '交代A', 6: '交代B' },
+        substitutionIds: { 2: 'm2', 6: 'm6' },
+        lastModified: 1,
+      },
+    ],
+    historyStack: [],
+    redoStack: [],
+  });
+  store.getState().setShotsPerRound(0);
+  store.getState().setShotsPerRound(Number.NaN);
+  assert.equal(store.getState().shotsPerRound, 8, '0 や数でないものを受けた');
+  store.getState().setShotsPerRound(4.7);
+  assert.equal(store.getState().shotsPerRound, 4);
+  const 後 = store.getState().archers[0];
+  assert.deepEqual(後.substitutions, { 2: '交代A' });
+  assert.deepEqual(後.substitutionIds, { 2: 'm2' });
+  store.getState().undo();
+  assert.deepEqual(store.getState().archers[0].substitutions, { 2: '交代A', 6: '交代B' }, '取り消しで交代が戻らない');
+  store.getState().setShotsPerRound(9999);
+  assert.equal(store.getState().shotsPerRound, 500);
+});
