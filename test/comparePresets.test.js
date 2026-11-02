@@ -145,3 +145,11 @@ test('当てはめる：中身が欠けていても落ちない', () => {
   assert.deepStrictEqual(ひな型を当てはめる(null, null), { 人たち: [], 見つからない: 0 });
   assert.deepStrictEqual(ひな型を当てはめる({}, 名簿), { 人たち: [], 見つからない: 0 });
 });
+
+test('空の id（null・空の字）は持たず、当てはめても「見つからない」に数えない。一覧に null が混じっても足せる', () => {
+  const 足した = ひな型を足す([null], { 名前: 'A', 部員idたち: [null, '', '  ', '1', ' 1 '], 団体id: 'g' }, 1000);
+  assert.strictEqual(足した.length, 1);
+  assert.deepStrictEqual(足した[0].部員idたち, ['1']);
+  const r = ひな型を当てはめる({ 部員idたち: [null, '', '1'] }, [{ id: '1', name: '山田' }]);
+  assert.deepStrictEqual(r, { 人たち: [{ id: '1', name: '山田' }], 見つからない: 0 });
+});
