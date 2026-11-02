@@ -14,7 +14,7 @@
  * 検証環境は台帳の団体（scripts/stg-fixtures.mjs）を使う。部員の個人ID は持ち主で入って名簿から取る。
  */
 import fs from 'node:fs';
-import { configFor, signIn, signInAnonymously, 検証のパスワード } from './fb-rest.mjs';
+import { configFor, signIn, signInAnonymously, 検証のパスワード, 検証環境でメールを確認済みにする } from './fb-rest.mjs';
 import { 団体たち as 検証の団体たち } from './stg-fixtures.mjs';
 
 const 対象 = process.argv[2] || 'stg';
@@ -127,13 +127,16 @@ const 部員の書き込みを試す = async (g, mid, 別のmid, token) => {
     検査('部員', `団体${g}：自分の弓具を書く`, 200, await 項目を書く(g, mid, 'equipments', 自分.fields.equipments, token));
   else {
     // 弓具の無い人は、空の弓具を書いてから項目ごと外す（名簿は元のまま）
-    検査('部員', `団体${g}：自分の弓具を書く`, 200, await 項目を書く(g, mid, 'equipments', { arrayValue: {} }, token));
-    const 外す = await st(`/groups/${g}/members/${mid}?updateMask.fieldPaths=equipments`, {
-      token,
-      method: 'PATCH',
-      body: { fields: {} },
-    });
-    if (外す !== 200) console.warn(`！ 団体${g} の ${mid} に空の弓具が残りました`);
+    const 書けた = await 項目を書く(g, mid, 'equipments', { arrayValue: {} }, token);
+    検査('部員', `団体${g}：自分の弓具を書く`, 200, 書けた);
+    if (書けた === 200) {
+      const 外す = await st(`/groups/${g}/members/${mid}?updateMask.fieldPaths=equipments`, {
+        token,
+        method: 'PATCH',
+        body: { fields: {} },
+      });
+      if (外す !== 200) console.warn(`！ 団体${g} の ${mid} に空の弓具が残りました`);
+    }
   }
   const 名前 = (自分.fields && 自分.fields.name) || { stringValue: '' };
   const 名前を変える = await 項目を書く(g, mid, 'name', { stringValue: `${名前.stringValue || ''}（検査）` }, token);
@@ -281,6 +284,49 @@ try {
     検査('一覧', '持ち主：自分のメールの団体を引く', 200, await メールで引く(自分の台帳.email, 鍵));
     検査('一覧', '持ち主：ほかのメールの団体は引けない', 403, await メールで引く(別の台帳.email, 鍵));
     検査('一覧', '未認証：メールで団体を引けない', 403, await メールで引く(自分の台帳.email, null));
+  }
+
+  // ── 4c. メールの確認（2026-11-03）。検証環境だけ（口座を作って消す）。猶予のあいだと後で期待が変わる
+  if (書いてよい) {
+    const 決まり = fs.readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8');
+    const 日 = 決まり.match(/request\.time < timestamp\.date\((\d{4}), (\d{1,2}), (\d{1,2})\)/);
+    const 猶予中 = !!日 && Date.now() < Date.UTC(Number(日[1]), Number(日[2]) - 1, Number(日[3]));
+    const 宛先 = `kakunin-${Date.now()}@example.com`;
+    const 番 = String(800000 + Math.floor(Math.random() * 99999));
+    const 合 = 検証のパスワード();
+    let 鍵 = await signIn(KEY, 宛先, 合, { create: true });
+    作った口座.push(鍵);
+    const 帳面 = (中身, token) =>
+      st(`/group_accounts/${番}`, { token, method: 'PATCH', body: { fields: 中身 } });
+    const 字 = (v) => ({ stringValue: v });
+    検査('確認', '確認前のメールでは団体を作れない', 403, await 帳面({ id: 字(番), email: 字(宛先) }, 鍵));
+    await 検証環境でメールを確認済みにする([宛先], true);
+    鍵 = await signIn(KEY, 宛先, 合);
+    作った口座.push(鍵);
+    検査(
+      '確認',
+      '確認済みのメールなら団体を作れる',
+      200,
+      await 帳面({ id: 字(番), email: 字(宛先), verified: { booleanValue: true } }, 鍵)
+    );
+    検査('確認', '確認済みの持ち主は団体の中身を書ける', 200, await st(`/groups/${番}/members/m1`, { token: 鍵, method: 'PATCH', body: { fields: { name: 字('検査') } } }));
+    // 確認の済んでいない持ち主（配信の前からある団体）に戻す。帳面の印も外す
+    await 帳面({ id: 字(番), email: 字(宛先) }, 鍵);
+    await 検証環境でメールを確認済みにする([宛先], false);
+    鍵 = await signIn(KEY, 宛先, 合);
+    作った口座.push(鍵);
+    検査(
+      '確認',
+      `確認前の持ち主は${猶予中 ? '猶予のあいだは読める' : '猶予のあとは何もできない'}`,
+      猶予中 ? 200 : 403,
+      await st(`/groups/${番}/members`, { token: 鍵 })
+    );
+    // 片付け（確認済みに戻して消す）
+    await 検証環境でメールを確認済みにする([宛先], true);
+    鍵 = await signIn(KEY, 宛先, 合);
+    作った口座.push(鍵);
+    await st(`/groups/${番}/members/m1`, { token: 鍵, method: 'DELETE' });
+    await st(`/group_accounts/${番}`, { token: 鍵, method: 'DELETE' });
   }
 
   // ── 5. RTDB ──────────────────────────────────────────────────

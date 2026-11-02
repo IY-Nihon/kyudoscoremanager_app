@@ -50,8 +50,10 @@ service cloud.firestore {
       ];
     }
 
+    // 切り戻しでも、メールの確認は緩めない（確認の済んでいないアドレスの団体は何もできない。2026-11-03）
     function isGroupOwner(groupId) {
       return callerEmail() != ''
+        && request.auth.token.email_verified == true
         && get(/databases/$(database)/documents/group_accounts/$(groupId)).data.email == callerEmail();
     }
 
@@ -67,9 +69,10 @@ service cloud.firestore {
 
       allow create: if signedIn()
         && callerEmail() != ''
+        && request.auth.token.email_verified == true
         && request.resource.data.email == callerEmail()
         && request.resource.data.id == groupId
-        && request.resource.data.keys().hasOnly(['id', 'email']);
+        && request.resource.data.keys().hasOnly(['id', 'email', 'verified']);
 
       allow update: if isAdmin()
         // 持ち主が直せるのは、ログインに要る2つと、切り替え待ちのアドレス（pendingEmail）だけ。
@@ -78,7 +81,7 @@ service cloud.firestore {
         // 前のアドレス（previousEmail）と口座の番号（ownerUid）は、消せるが書き換えられない
         || (callerEmail() != ''
             && resource.data.email == callerEmail()
-            && request.resource.data.keys().hasOnly(['id', 'email', 'pendingEmail', 'previousEmail', 'ownerUid'])
+            && request.resource.data.keys().hasOnly(['id', 'email', 'pendingEmail', 'previousEmail', 'ownerUid', 'verified'])
             && request.resource.data.email == resource.data.email
             && request.resource.data.get('id', '') == resource.data.get('id', '')
             && (!('previousEmail' in request.resource.data)
@@ -93,7 +96,7 @@ service cloud.firestore {
         || (callerEmail() != ''
             && request.auth.token.email_verified == true
             && resource.data.get('pendingEmail', '') == callerEmail()
-            && request.resource.data.keys().hasOnly(['id', 'email', 'previousEmail', 'ownerUid'])
+            && request.resource.data.keys().hasOnly(['id', 'email', 'previousEmail', 'ownerUid', 'verified'])
             && request.resource.data.email == callerEmail()
             && request.resource.data.get('previousEmail', '') == resource.data.email
             && request.resource.data.get('ownerUid', '') == request.auth.uid
@@ -105,7 +108,7 @@ service cloud.firestore {
         || (callerEmail() != ''
             && resource.data.get('ownerUid', '') == request.auth.uid
             && resource.data.get('previousEmail', '') == callerEmail()
-            && request.resource.data.keys().hasOnly(['id', 'email'])
+            && request.resource.data.keys().hasOnly(['id', 'email', 'verified'])
             && request.resource.data.email == callerEmail()
             && request.resource.data.get('id', '') == resource.data.get('id', ''));
 
@@ -114,6 +117,7 @@ service cloud.firestore {
       match /private/{doc} {
         allow read, write: if isAdmin()
           || (callerEmail() != ''
+              && request.auth.token.email_verified == true
               && callerEmail() ==
                  get(/databases/$(database)/documents/group_accounts/$(groupId)).data.email);
       }

@@ -13,7 +13,9 @@ const {
   StyleSheet,
   TextInput,
   Image,
+  Modal,
 } = require('./rn');
+const 確 = require('./mailKakunin');
 
 const { useストアの一部 } = require('./storeSlice');
 const 学 = require('./gakunen');
@@ -174,6 +176,10 @@ const LoginScreen = () => {
   const [部員の同意を取る, 部員の同意を取るを置く] = React.useState(false);
   // Google で選んだアカウントのメール。あるあいだは、メール欄の無い専用の入力画面にする
   const [Googleのメール, Googleのメールを置く] = React.useState(null);
+  // メールで作るとき、確認メールのリンクを押してもらうのを待っている（宛先）。確認が済むまで団体は作れない
+  //（firestore.rules の verifiedEmail。偽のアドレスでは作れない。2026-11-03）
+  const [確認待ちの宛先, 確認待ちの宛先を置く] = React.useState(null);
+  const [確認待ちの知らせ, 確認待ちの知らせを置く] = React.useState('');
   /**
    * 認証が済んだあと、団体の帳面を作る。
    *
@@ -190,8 +196,8 @@ const LoginScreen = () => {
     // 認証はメールを小文字で持つので、打った字のまま書くと大文字が混じったときに断られる
     const 帳面のメール = (auth && auth.currentUser && auth.currentUser.email) || メールを整える(メール);
     try {
-      // 公開の帳面には、ログインに要る2つだけ置く
-      await Firestore.setDoc(帳面, { id: 団体ID, email: 帳面のメール });
+      // 公開の帳面には、ログインに要る2つと確認済みの印だけ置く（作れるのは確認が済んだ人だけ）
+      await Firestore.setDoc(帳面, { id: 団体ID, email: 帳面のメール, verified: true });
       // 同意の記録は private（誰でも読める場所に置かない）
       await Firestore.setDoc(
         Firestore.doc(db, 'group_accounts', 団体ID, 'private', 'consent'),
@@ -356,7 +362,31 @@ const LoginScreen = () => {
       処理中を置く(true);
       try {
         const 宛先 = メールを整える(メールの入力);
-        await FirebaseAuth.createUserWithEmailAndPassword(auth, 宛先, 合言葉の入力);
+        try {
+          await FirebaseAuth.createUserWithEmailAndPassword(auth, 宛先, 合言葉の入力);
+        } catch (作れない) {
+          // 前に作りかけて（確認の途中で閉じたなど）口座だけある。同じパスワードなら入って続ける
+          if (String((作れない && 作れない.code) || '') !== 'auth/email-already-in-use') throw 作れない;
+          await FirebaseAuth.signInWithEmailAndPassword(auth, 宛先, 合言葉の入力).catch(() => {
+            throw 作れない;
+          });
+          // 1 つのメールで団体は 1 つ。もう団体があれば作らない
+          const 既に = await Firestore.getDocs(
+            Firestore.query(Firestore.collection(db, 'group_accounts'), Firestore.where('email', '==', 宛先))
+          ).catch(() => null);
+          if (既に && !既に.empty) {
+            await FirebaseAuth.signOut(auth).catch(() => {});
+            Alert.alert('すでにあります', `このメールアドレス（${宛先}）では、もう団体が作られています。ログインからお入りください。`);
+            return;
+          }
+        }
+        // 確認が済むまで団体は作れない。確認メールを送って、リンクを押してもらう
+        if (!(auth.currentUser && auth.currentUser.emailVerified)) {
+          await 確.確認メールを送る(FirebaseAuth, auth);
+          確認待ちの知らせを置く('');
+          確認待ちの宛先を置く(宛先);
+          return;
+        }
         // 団体の帳面を作るところは、Google で作る道と同じ処理を使う。
         // 別々に書くと、片方だけ直して食い違う（実際それで本番が止まった）
         await 団体を作る(宛先);
@@ -369,9 +399,64 @@ const LoginScreen = () => {
       Alert.alert('エラー', 'すべての項目を入力してください');
     }
   });
+  // 確認メールのリンクを押したあと。確かめて、済んでいれば団体を作る
+  const 確認して作る = 一度だけ(async () => {
+    処理中を置く(true);
+    try {
+      if (!(await 確.確認が済んだか(auth))) {
+        確認待ちの知らせを置く('まだ確認が済んでいません。メールのリンクを押してから、もう一度押してください。');
+        return;
+      }
+      const 宛先 = 確認待ちの宛先;
+      確認待ちの宛先を置く(null);
+      await 団体を作る(宛先);
+    } catch (誤り) {
+      Alert.alert('登録失敗', 誤りの文(誤り));
+    } finally {
+      処理中を置く(false);
+    }
+  });
+  const 確認メールを送り直す = 一度だけ(async () => {
+    try {
+      await 確.確認メールを送る(FirebaseAuth, auth);
+      確認待ちの知らせを置く('送り直しました。');
+    } catch (誤り) {
+      確認待ちの知らせを置く(String((誤り && 誤り.message) || 誤り));
+    }
+  });
+  // やめる。団体の無い認証の利用者は残さない（同じアドレスで作り直せるように）
+  const 確認をやめる = async () => {
+    確認待ちの宛先を置く(null);
+    try {
+      if (auth && auth.currentUser) await FirebaseAuth.deleteUser(auth.currentUser);
+    } catch {
+      await FirebaseAuth.signOut(auth).catch(() => {});
+    }
+  };
   return (
     <View style={styles.container}>
       <KyudoBackgroundAnimation />
+      <Modal visible={!!確認待ちの宛先} transparent animationType="fade" onRequestClose={確認をやめる}>
+        <View style={styles.確認の外}>
+          <View style={styles.確認の箱} testID="作るときのメールの確認">
+            <Text style={styles.確認の見出し}>メールアドレスの確認</Text>
+            <Text style={styles.確認の文}>
+              {`${確認待ちの宛先 || ''} に確認メールを送りました。メールのリンクを押してから、「確認した」を押してください。確認が済むと団体ができます。`}
+            </Text>
+            {確認待ちの知らせ ? <Text style={styles.確認の知らせ}>{確認待ちの知らせ}</Text> : null}
+            <Pressable accessibilityRole="button" style={送るボタンの形(処理中)} onPress={確認して作る} disabled={処理中}>
+              {処理中 ? <ActivityIndicator color={色.白} /> : <Text style={styles.submitBtnText}>確認した</Text>}
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={確認メールを送り直す} disabled={処理中}>
+              <Text style={styles.確認の副}>確認メールを送り直す</Text>
+            </Pressable>
+            <Text style={styles.確認の注}>メールが届かないときは、迷惑メールのフォルダーも見てください。</Text>
+            <Pressable accessibilityRole="button" onPress={確認をやめる} disabled={処理中}>
+              <Text style={styles.確認の副}>やめる</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
       <KeyboardAvoidingView behavior={IS_IOS ? 'padding' : 'height'} style={styles.keyboardView}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
@@ -871,6 +956,22 @@ const LoginScreen = () => {
 };
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 色.夜 },
+  // メールの確認の窓も、この画面の配色（夜の地＋金）で描く（テーマ変換の表の色は暗い地に沈む）
+  確認の外: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  確認の箱: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: 色.夜,
+    borderWidth: 1.5,
+    borderColor: 色.金,
+    borderRadius: 20,
+    padding: 22,
+  },
+  確認の見出し: { fontSize: 18, fontWeight: 'bold', color: 色.金_明るい, marginBottom: 10, textAlign: 'center' },
+  確認の文: { fontSize: 14, color: 色.生成り, lineHeight: 21, marginBottom: 10 },
+  確認の知らせ: { fontSize: 13, color: 色.金_明るい, lineHeight: 19, marginBottom: 6 },
+  確認の副: { color: 色.金_明るい, fontSize: 15, textAlign: 'center', paddingVertical: 12 },
+  確認の注: { fontSize: 12, color: 色.金_灰, lineHeight: 18, textAlign: 'center' },
   keyboardView: { flex: 1 },
   scrollContent: { flexGrow: 1, padding: 24, paddingTop: SAFE_TOP_PADDING || 24, justifyContent: 'center' },
   header: { alignItems: 'center', marginBottom: 32 },

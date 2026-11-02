@@ -192,6 +192,8 @@ test('最後の 1 人を消すと、その人の招待の合言葉も消える',
 test('部員として入る：合言葉で逆引きして所属の証を書き、名前を返す。引けなければ知らせる', async () => {
   const { 雲 } = 用意();
   const 合言葉 = 'c'.repeat(32);
+  // 登録メールアドレスの確認が済んだ団体（済んでいない団体には入れない。2026-11-03）
+  雲.置く('group_accounts', 団体, { id: 団体, email: 'owner@example.com', verified: true });
   雲.置く(逆引きの道, 合言葉, { memberId: 'm1', 招待: true, expiresAt: new Date(Date.now() + 86400000) });
   雲.置く(`groups/${団体}/members`, 'm1', { id: 'm1', name: '山田 太郎' });
   const 認証 = { currentUser: null };
@@ -239,6 +241,8 @@ test('部員として入る：合言葉で逆引きして所属の証を書き�
 test('部員として入る：途中で失敗したら、そのとき作った匿名の利用者を消す。入れたら消さない', async () => {
   const { 雲 } = 用意();
   const 合言葉 = 'f'.repeat(32);
+  // 登録メールアドレスの確認が済んだ団体（済んでいない団体には入れない。2026-11-03）
+  雲.置く('group_accounts', 団体, { id: 団体, email: 'owner@example.com', verified: true });
   雲.置く(逆引きの道, 合言葉, { memberId: 'm1', 招待: true, expiresAt: new Date(Date.now() + 86400000) });
   雲.置く(`groups/${団体}/members`, 'm1', { id: 'm1', name: '山田 太郎' });
   const 認証 = { currentUser: null };
@@ -420,4 +424,23 @@ test('逆引き表：同時に 2 本走らせない。走っている間に変�
   await 待つ(10);
   assert.strictEqual(数.逆引き, 2, '同時に読んだか、見直していない');
   assert.deepStrictEqual(雲.中身(逆引きの道), ['1234', '2345']);
+});
+
+test('部員として入る：登録メールアドレスの確認が済んでいない団体には、猶予が過ぎたら匿名の利用者を作らずに断る', async () => {
+  const { 雲 } = 用意();
+  const 合言葉 = 'd'.repeat(32);
+  雲.置く('group_accounts', 団体, { id: 団体, email: 'owner@example.com' });
+  雲.置く(逆引きの道, 合言葉, { memberId: 'm1', 招待: true, expiresAt: new Date(Date.now() + 86400000) });
+  雲.置く(`groups/${団体}/members`, 'm1', { id: 'm1', name: '山田 太郎' });
+  const 認証 = { currentUser: null };
+  let 匿名 = 0;
+  const FirebaseAuth = { signInAnonymously: () => void 匿名++ };
+  const { 部員として入る } = require('../src/groupLogin');
+  // 猶予（今ある団体は配信から 1 週間）が過ぎたあと
+  const 猶予のあと = Date.parse(require('../src/mailKakunin').猶予の終わり + 'T00:00:00Z') + 1000;
+  await assert.rejects(
+    部員として入る({ Firestore: 雲.api, FirebaseAuth, db: {}, auth: 認証, 今: 猶予のあと }, 団体, 合言葉),
+    /確認が済んでいない/
+  );
+  assert.equal(匿名, 0, '匿名の利用者を作った');
 });

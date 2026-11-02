@@ -102,8 +102,14 @@ test('切り替えが済んでいれば、新しいアドレスで入り直し�
   assert.deepStrictEqual(await 団体で入る(道具, '100001', 'pw'), { id: '100001', メール: 'b@example.com' });
   assert.deepStrictEqual(
     帳面の中身(表),
-    { id: '100001', email: 'b@example.com', previousEmail: 'a@example.com', ownerUid: 'uid-b@example.com' },
-    '切り替え待ちが消え、「元に戻す」に備えて前のアドレスと口座の番号が残る'
+    {
+      id: '100001',
+      email: 'b@example.com',
+      previousEmail: 'a@example.com',
+      ownerUid: 'uid-b@example.com',
+      verified: true,
+    },
+    '切り替え待ちが消え、「元に戻す」に備えて前のアドレスと口座の番号が残る。確認済みの印も付く（新しいアドレスは確認して替わった）'
   );
   assert.ok(
     表.get('group_accounts/100001/private/consent').emailSwitchedAt instanceof Date,
