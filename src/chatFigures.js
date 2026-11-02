@@ -85,10 +85,17 @@ function 折れ線にする(題, 系列たち, 注文 = {}) {
     名: 系列.名,
     点: 系列.点.filter((点) => 点.y != null && Number.isFinite(点.y)).slice(-上限.折れ線の点),
   }));
+  // 横の名の並び。値の無い点を落とす前の並び（人×月なら月の順）から、どれかの系列に点がある名だけを取る。
+  // 1 本目の系列の名だけで並べると、1 本目に値の無い月の点がほかの系列から消えていた
+  const 元の並び = [];
+  for (const 系列 of 系列たち.slice(0, 上限.折れ線の系列))
+    for (const 点 of 系列.点) if (!元の並び.includes(点.x)) 元の並び.push(点.x);
+  const 点のある名 = new Set(使う.flatMap((系列) => 系列.点.map((点) => 点.x)));
   return {
     形: '折れ線',
     題,
     単位: 注文.単位 || '%',
+    名たち: 元の並び.filter((名) => 点のある名.has(名)),
     系列: 使う.filter((系列) => 系列.点.length),
     ...(系列たち.length > 使う.length ? { 注: `上から ${使う.length} 人（全 ${系列たち.length} 人）` } : {}),
   };
@@ -119,6 +126,10 @@ function 作り方(道具, 結果) {
         const 列の名 = [];
         for (const 行 of 一覧)
           for (const 内 of 行.内訳 || []) if (!列の名.includes(内[二])) 列の名.push(内[二]);
+        // 行の順に初めて出た順のままだと、1 行目の人に無い月が後ろに付いて「10月・9月」と崩れた（表の列も折れ線の横も）。
+        // 月は年月（YYYY-MM）の順、順のある切り口はその順に並べる。ほかの切り口は出てきた順のまま
+        if (二 === '月') 列の名.sort((甲, 乙) => (String(甲) < String(乙) ? -1 : String(甲) > String(乙) ? 1 : 0));
+        else if (順の切り口.has(二)) 列の名.sort((甲, 乙) => 順の値(二, 甲) - 順の値(二, 乙));
         const 二の名 = 短く(二, 列の名);
         const 値 = (行, 名) => {
           const 内 = (行.内訳 || []).find((x) => x[二] === 名);
@@ -346,15 +357,15 @@ function 作り方(道具, 結果) {
         作る: (形, 題) => {
           const 使う = 点.slice(-上限.矢所の点);
           const 的 = 使う[使う.length - 1].targetType || 'kasumi36';
+          // 描くのは同じ的の点だけ。凡例の 中り・外れ も同じ点で数える（違う的の点まで数えて、図の点の数とずれていた）
+          const 的の点 = 使う.filter((p) => (p.targetType || 'kasumi36') === 的);
           return {
             形: '矢所',
             題: 題 || '矢所',
             的,
-            点たち: 使う
-              .filter((p) => (p.targetType || 'kasumi36') === 的)
-              .map((p) => ({ x: p.x, y: p.y, mark: p.印, targetType: p.targetType })),
-            中り: 使う.filter((p) => p.印 === '○').length,
-            外れ: 使う.filter((p) => p.印 !== '○').length,
+            点たち: 的の点.map((p) => ({ x: p.x, y: p.y, mark: p.印, targetType: p.targetType })),
+            中り: 的の点.filter((p) => p.印 === '○').length,
+            外れ: 的の点.filter((p) => p.印 !== '○').length,
           };
         },
       };

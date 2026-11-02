@@ -119,6 +119,54 @@ test('矢所：道具の点から図を作る。点は模型に渡さない（_ 
   assert.equal(渡す.name, '山田');
 });
 
+test('矢所：凡例の中り・外れは、描く的の点だけで数える（違う的の点を数えない）', () => {
+  const 矢所の記録 = [
+    {
+      date: 1,
+      archers: [
+        {
+          id: 'a',
+          name: '山田',
+          memberId: '山田',
+          marks: ['○', '×', '○'],
+          arrowLocations: [
+            { x: 0.1, y: 0.2, targetType: 'hoshi36' },
+            { x: 1.3, y: 0.1, targetType: 'kasumi36' },
+            { x: 0.2, y: 0.1, targetType: 'kasumi36' },
+          ],
+        },
+      ],
+    },
+  ];
+  const 図 = 図を作る('getArrowLocationStats', 矢所の成績([人('山田')], 矢所の記録, '山田'), '矢所');
+  assert.equal(図.的, 'kasumi36');
+  assert.equal(図.点たち.length, 2);
+  assert.equal(図.中り + 図.外れ, 図.点たち.length, '凡例の数が図の点の数とずれている');
+  assert.equal(図.中り, 1);
+});
+
+test('折れ線（人 × 月）：1 本目の人に無い月も、横の名に月の順で入る', () => {
+  // 佐藤さんだけが 9 月にも引いた。山田さんの系列には 9 月の点が無い
+  const 記録 = (日, archers) => ({ id: 'r-' + 日, date: new Date(日 + 'T18:00:00').getTime(), title: '通常練習', archers });
+  const 結果 = 集計する(
+    [人('山田'), 人('佐藤')],
+    [
+      記録('2026-09-05', [列('佐藤', ['○', '×', '×', '×'])]),
+      記録('2026-10-03', [列('山田', ['○', '○', '○', '×']), 列('佐藤', ['○', '○', '×', '×'])]),
+    ],
+    { 切り口: ['人', '月'] }
+  );
+  // 表の列も月の順（前は 1 行目の山田さんに無い 9 月が後ろに付いた）
+  assert.deepEqual(図を作る('aggregateStats', 結果, '表').列.slice(0, 3), ['人', '9月', '10月']);
+  const 線 = 図を作る('aggregateStats', 結果, '折れ線');
+  assert.deepEqual(線.名たち, ['9月', '10月']);
+  const 佐藤 = 線.系列.find((系列) => 系列.名 === '佐藤');
+  assert.deepEqual(
+    佐藤.点.map((点) => 点.x),
+    ['9月', '10月']
+  );
+});
+
 test('表は 50 行まで（注に全部の件数）・題は 40 字まで', () => {
   const 多い = {
     順位: Array.from({ length: 60 }, (_, i) => ({
