@@ -1764,6 +1764,13 @@ const RecordScreen = () => {
                   閲覧中に押された();
                   return;
                 }
+                // 写真の読み取り（AI）は、団体か個人でログインした人だけ（中継が通すのは確認済みの持ち主と
+                // 所属の証のある部員だけ。2026-11-03 本人）。共有リンクで来た人には理由を言う
+                if (来客) {
+                  知らせる('写真の読み取りは、団体または個人でログインした人だけが使えます');
+                  ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning);
+                  return;
+                }
                 ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Medium);
                 setShowOCRModal(true);
               }}
