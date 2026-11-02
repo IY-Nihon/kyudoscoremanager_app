@@ -89,6 +89,20 @@ test('書き出し：期間を選ぶ暦の窓は 1 枚だけ出る', async ({ pa
   expect(await page.getByText('開始日を選択', { exact: true }).count(), '暦の窓が 2 枚出ている').toBe(1);
 });
 
+test('書き出し：絞り込みを開いたまま閉じても、次に開くと初めの選び（すべて・絞り込む）に戻る', async ({
+  page,
+}) => {
+  await 書き出しの窓を開く(page);
+  await page.getByText('詳細な条件で絞り込む...', { exact: true }).click();
+  await expect(page.getByText('出力形式', { exact: true })).toBeVisible({ timeout: 10_000 });
+  // 戻るボタンで閉じる（rn.js の Modal が戻るに結んでいる）
+  await page.goBack();
+  await expect(page.getByText('出力形式', { exact: true })).toHaveCount(0, { timeout: 10_000 });
+  await page.getByText('データをExcel形式で書き出し', { exact: true }).click();
+  await expect(page.getByText('すべてのデータ', { exact: true })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText('出力形式', { exact: true })).toHaveCount(0);
+});
+
 test('お問い合わせ：空のまま送ると止まり、キャンセルで閉じると下書きが消える（送信はしない）', async ({
   page,
 }) => {

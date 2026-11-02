@@ -106,6 +106,13 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
   const [絞り込みを開く, 絞り込みを開くを置く] = React.useState(false);
   const [selectedKeywords, setSelectedKeywords] = React.useState([]);
   const [selectedMembers, setSelectedMembers] = React.useState([]);
+  // 窓を閉じたら、絞り込みと暦も閉じる（どの閉じ方でも）。残すと、次に開いたとき絞り込みが開いたまま、
+  // 暦だけが窓の外に残ることがあった。選んだ条件はそのまま（もう一度書き出すとき使う）
+  React.useEffect(() => {
+    if (見える) return;
+    絞り込みを開くを置く(false);
+    暦を出すを置く(false);
+  }, [見える]);
   // 候補の並びは横に流す。パソコンの車の動きは横に読み替える（src/yokoNagashi.js）
   const titleRefCallback = use横流し();
   const memberRefCallback = use横流し();
