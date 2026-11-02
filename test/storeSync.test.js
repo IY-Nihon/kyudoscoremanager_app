@@ -1236,3 +1236,15 @@ test('進級の確かめ：設定で進級の確認・年度の始まりの月�
   store.setState({ yearStartMonth: 1 });
   assert.equal(store.getState().進級待ちの年, null);
 });
+
+test('記録中のタグ：保存の窓から置いても、候補を押しても、ほかと同じ決まり（# を付け、同じものは 1 つ）でそろえる', () => {
+  const { store } = 用意();
+  store.getState().setCurrentSessionTags(['雨天', '#雨天', '＃審査', '', null]);
+  assert.deepEqual(store.getState().currentSessionTags, ['#雨天', '#審査']);
+  // 候補の「審査」を押すと外れ、「合宿」を押すと足される（# の有無によらない）
+  store.getState().toggleCurrentSessionTag('審査');
+  assert.deepEqual(store.getState().currentSessionTags, ['#雨天']);
+  store.getState().toggleCurrentSessionTag('#合宿');
+  assert.deepEqual(store.getState().currentSessionTags, ['#雨天', '#合宿']);
+  store.getState().setCurrentSessionTags([]);
+});
