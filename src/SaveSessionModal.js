@@ -61,7 +61,15 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
   React.useEffect(() => {
     タグの文を置く(currentSessionTags.map(タグの見た目).join(' '));
   }, [currentSessionTags, visible]);
+  // 続けて押されても 1 回だけ保存する（窓が閉じる描き直しの前に 2 回目が届くと、保存が 2 回走る）。
+  // 開き直したら、また押せる
+  const 保存した = React.useRef(false);
+  React.useEffect(() => {
+    if (visible) 保存した.current = false;
+  }, [visible]);
   const 保存する = (統計に入れる) => {
+    if (保存した.current) return;
+    保存した.current = true;
     setIncludeInStats(統計に入れる);
     onSave(題.trim(), 覚え書き.trim(), 統計に入れる, currentSessionTags.join(' '));
     題を置く('');

@@ -25,6 +25,8 @@ const ライブ名を決める窓 = ({
 }) => {
   const ライブの一覧 = useScoreStore((状態) => 状態.liveSessionsList);
   const [ライブ名の注意, ライブ名の注意を置く] = React.useState(null);
+  // 続けて押されても 1 回だけ始める（窓が閉じる描き直しの前に 2 回目が届くと、startLiveSync が 2 本重なる）
+  const 始めている = React.useRef(false);
   return (
     <Modal
       visible={ライブ名の窓}
@@ -206,23 +208,29 @@ const ライブ名を決める窓 = ({
                 }
                 ライブ名の注意を置く(null);
                 if (ライブの種類 === 'host') {
-                  知らせる('ライブを開始しています...');
-                  const 結果 = await useScoreStore.getState().startLiveSync(名前);
-                  if (結果 === '開始した') {
-                    ライブ名の窓を出す(false);
-                    ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Success);
+                  if (始めている.current) return;
+                  始めている.current = true;
+                  try {
+                    知らせる('ライブを開始しています...');
+                    const 結果 = await useScoreStore.getState().startLiveSync(名前);
+                    if (結果 === '開始した') {
+                      ライブ名の窓を出す(false);
+                      ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Success);
+                      return;
+                    }
+                    // 「同名あり」と「確かめられなかった」を区別する。
+                    // 元はどちらも「既に使用されています」と出していて、
+                    // 通信が乱れただけのときに誤った案内になっていた
+                    ライブ名の注意を置く(
+                      結果 === '同名あり'
+                        ? `'${名前}' は既に使用されています。別の名前を入力してください。`
+                        : '通信が不安定なため開始できませんでした。電波の良い場所でもう一度お試しください。'
+                    );
+                    ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Heavy);
                     return;
+                  } finally {
+                    始めている.current = false;
                   }
-                  // 「同名あり」と「確かめられなかった」を区別する。
-                  // 元はどちらも「既に使用されています」と出していて、
-                  // 通信が乱れただけのときに誤った案内になっていた
-                  ライブ名の注意を置く(
-                    結果 === '同名あり'
-                      ? `'${名前}' は既に使用されています。別の名前を入力してください。`
-                      : '通信が不安定なため開始できませんでした。電波の良い場所でもう一度お試しください。'
-                  );
-                  ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Heavy);
-                  return;
                 }
                 if (ライブの種類 === 'join') {
                   if (!useScoreStore.getState().liveSessionsList.includes(名前)) {

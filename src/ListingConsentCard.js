@@ -143,6 +143,8 @@ function 掲載の札({ 見える, 閉じる, 知らせる }) {
   const [選び, 選びを置く] = React.useState(() => 決まり.最初の選び(null, 団体名));
   const [誤り, 誤りを置く] = React.useState('');
   const [送っている, 送っているを置く] = React.useState(false);
+  // 続けて押されても 1 回だけ（送っている はボタンに効くまで 1 回描き直しが要る）
+  const 走っている = React.useRef(false);
   React.useEffect(() => {
     if (見える) {
       選びを置く(決まり.最初の選び(useScoreStore.getState().いまの掲載の許可(), 団体名));
@@ -151,10 +153,16 @@ function 掲載の札({ 見える, 閉じる, 知らせる }) {
   }, [見える]);
   if (!見える) return null;
   const 決める = async () => {
-    if (送っている) return;
+    if (送っている || 走っている.current) return;
+    走っている.current = true;
     送っているを置く(true);
-    const 結果 = await useScoreStore.getState().掲載の許可を答える(選び);
-    送っているを置く(false);
+    let 結果;
+    try {
+      結果 = await useScoreStore.getState().掲載の許可を答える(選び);
+    } finally {
+      走っている.current = false;
+      送っているを置く(false);
+    }
     if (結果.誤り) {
       誤りを置く(結果.誤り);
       return;
@@ -252,6 +260,8 @@ function 掲載の設定() {
   const [選び, 選びを置く] = React.useState(() => 決まり.最初の選び(許可, 団体名));
   const [知らせ, 知らせを置く] = React.useState('');
   const [送っている, 送っているを置く] = React.useState(false);
+  // 続けて押されても 1 回だけ（送っている はボタンに効くまで 1 回描き直しが要る）
+  const 走っている = React.useRef(false);
   React.useEffect(() => {
     if (役割 === 'group' && 団体ID) useScoreStore.getState().掲載の許可を読む();
   }, [役割, 団体ID]);
@@ -262,10 +272,16 @@ function 掲載の設定() {
   }, [答えた日時, 団体ID]);
   if (!決まり.設定に出すか(役割, 許可)) return null;
   const 保存する = async () => {
-    if (送っている) return;
+    if (送っている || 走っている.current) return;
+    走っている.current = true;
     送っているを置く(true);
-    const 結果 = await useScoreStore.getState().掲載の許可を答える(選び);
-    送っているを置く(false);
+    let 結果;
+    try {
+      結果 = await useScoreStore.getState().掲載の許可を答える(選び);
+    } finally {
+      走っている.current = false;
+      送っているを置く(false);
+    }
     知らせを置く(結果.誤り || '保存しました');
   };
   const いつ =

@@ -142,6 +142,20 @@ const LoginScreen = () => {
   const { setAuth, setMemberAuthVersion } = useストアの一部(['setAuth', 'setMemberAuthVersion']);
   const [画面の種類, 画面の種類を置く] = React.useState('login_group');
   const [処理中, 処理中を置く] = React.useState(false);
+  // 続けて押されても 1 回だけ（処理中 はボタンに効くまで 1 回描き直しが要るので、その間の 2 回目を止める。
+  // 招待の窓・入り直しの窓と同じ）。Google の窓は押したその場で開く（待たずに中身を呼ぶ）
+  const 走っている = React.useRef(false);
+  const 一度だけ =
+    (仕事) =>
+    async (...引数) => {
+      if (走っている.current) return;
+      走っている.current = true;
+      try {
+        return await 仕事(...引数);
+      } finally {
+        走っている.current = false;
+      }
+    };
   const [団体IDの入力, 団体IDの入力を置く] = React.useState('');
   const [個人IDの入力, 個人IDの入力を置く] = React.useState('');
   const [メールの入力, メールの入力を置く] = React.useState('');
@@ -233,7 +247,7 @@ const LoginScreen = () => {
    */
   // 先に Google のアカウントを選んでもらい、そのあと専用の入力画面（メール欄なし）で団体名と
   // パスワードを入れてもらう。前は入力の前に押すと注意だけが出て、入力が要ることが伝わらなかった
-  const Googleを選ぶ = async () => {
+  const Googleを選ぶ = 一度だけ(async () => {
     処理中を置く(true);
     try {
       const 結果 = await FirebaseAuth.signInWithPopup(auth, new FirebaseAuth.GoogleAuthProvider());
@@ -260,7 +274,7 @@ const LoginScreen = () => {
     } finally {
       処理中を置く(false);
     }
-  };
+  });
   // Google を選んだあとにやめたら、団体の無い認証の利用者を残さない
   const Googleをやめる = async () => {
     try {
@@ -270,7 +284,7 @@ const LoginScreen = () => {
     }
     Googleのメールを置く(null);
   };
-  const Googleで作る = async () => {
+  const Googleで作る = 一度だけ(async () => {
     if (!規約に同意 || !部員の同意を取る) {
       Alert.alert(
         '確認',
@@ -310,8 +324,8 @@ const LoginScreen = () => {
     } finally {
       処理中を置く(false);
     }
-  };
-  const メールで作る = async () => {
+  });
+  const メールで作る = 一度だけ(async () => {
     if (メールの入力 && 合言葉の入力 && 団体名の入力) {
       if (!規約に同意 || !部員の同意を取る) {
         Alert.alert(
@@ -335,7 +349,7 @@ const LoginScreen = () => {
     } else {
       Alert.alert('エラー', 'すべての項目を入力してください');
     }
-  };
+  });
   return (
     <View style={styles.container}>
       <KyudoBackgroundAnimation />
@@ -423,7 +437,7 @@ const LoginScreen = () => {
                   />
                   <Pressable
                     style={送るボタンの形(処理中)}
-                    onPress={async () => {
+                    onPress={一度だけ(async () => {
                       if (団体IDの入力 && 合言葉の入力 && 新しいメールの入力) {
                         処理中を置く(true);
                         try {
@@ -448,7 +462,7 @@ const LoginScreen = () => {
                       } else {
                         Alert.alert('エラー', '団体ID、パスワード、新しいメールアドレスを入力してください');
                       }
-                    }}
+                    })}
                     disabled={処理中}
                   >
                     <Text style={styles.submitBtnText}>確認のメールを送る</Text>
@@ -468,7 +482,7 @@ const LoginScreen = () => {
                   />
                   <Pressable
                     style={送るボタンの形(処理中)}
-                    onPress={async () => {
+                    onPress={一度だけ(async () => {
                       if (団体IDの入力) {
                         処理中を置く(true);
                         try {
@@ -493,7 +507,7 @@ const LoginScreen = () => {
                       } else {
                         Alert.alert('エラー', '団体IDを入力してください');
                       }
-                    }}
+                    })}
                     disabled={処理中}
                   >
                     <Text style={styles.submitBtnText}>パスワード再設定メールを送信</Text>
@@ -633,7 +647,7 @@ const LoginScreen = () => {
                 style={送るボタンの形(処理中)}
                 onPress={
                   画面の種類 === 'login_group'
-                    ? async () => {
+                    ? 一度だけ(async () => {
                         if (団体IDの入力 && 合言葉の入力) {
                           処理中を置く(true);
                           try {
@@ -653,9 +667,9 @@ const LoginScreen = () => {
                         } else {
                           Alert.alert('エラー', '団体IDとパスワードを入力してください');
                         }
-                      }
+                      })
                     : 画面の種類 === 'login_member'
-                      ? async () => {
+                      ? 一度だけ(async () => {
                           if (団体IDの入力 && 個人IDの入力) {
                             処理中を置く(true);
                             try {
@@ -683,7 +697,7 @@ const LoginScreen = () => {
                           } else {
                             Alert.alert('エラー', '団体IDと個人IDを入力してください');
                           }
-                        }
+                        })
                       : Googleのメール
                         ? Googleで作る
                         : メールで作る
