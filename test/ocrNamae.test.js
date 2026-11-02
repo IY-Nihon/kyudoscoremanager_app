@@ -92,3 +92,22 @@ test('重なり: どちらも読めた文字が名簿と同じなら、先の行
   assert.strictEqual(出[0].status, 'matched');
   assert.strictEqual(出[1].status, 'ambiguous');
 });
+
+test('異体字：旧字・異体字は新字とみなして照らす。斎と斉・龍と竜・晄と晃は別の字（2026-11-02 に表を見て決めた）', () => {
+  const { normalize } = require('../src/ocrNamae');
+  assert.strictEqual(normalize('齋藤'), '斎藤', '齋 は 斎 の旧字（前は 斉 にしていた）');
+  assert.strictEqual(normalize('齊藤'), '斉藤');
+  assert.strictEqual(normalize('斎藤'), '斎藤');
+  assert.strictEqual(normalize('龍也'), '龍也');
+  assert.strictEqual(normalize('晄'), '晄');
+  assert.strictEqual(normalize('濵田 冨士夫'), '浜田富士夫');
+  assert.strictEqual(normalize('\uFA10本'), '塚本', '互換の字（見た目が同じ別の符号）');
+  assert.strictEqual(normalize('山\uFA11 𠮷男'), '山崎吉男', '4 バイトの字（𠮷）も 1 字として置く');
+  // 写真の「齋藤」が部員の「斎藤」に寄る。名簿に 斎藤 と 斉藤 の両方がいても取り違えない
+  const 二人 = [
+    { id: 's1', name: '斎藤 一郎', isAlumni: false },
+    { id: 's2', name: '斉藤 二郎', isAlumni: false },
+  ];
+  assert.strictEqual(名簿で名寄せ('齋藤', '斎藤 一郎', 二人).match.id, 's1');
+  assert.strictEqual(名簿で名寄せ('斉藤', '斉藤 二郎', 二人).match.id, 's2');
+});
