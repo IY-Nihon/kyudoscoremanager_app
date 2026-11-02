@@ -36,15 +36,20 @@ function 名前表を作る(...一覧たち) {
   return 表;
 }
 
-/** 記録の archerNames（射手の名前の重複なしの一覧） */
+/**
+ * 記録の archerNames（射手の名前の重複なしの一覧）。途中交代で入った人の名前も入れる。
+ * 区切り（チーム名）と計の列は射手ではないので入れない
+ */
 function 射手の名前たち(射手たち) {
-  return Array.from(
-    new Set(
-      (Array.isArray(射手たち) ? 射手たち : [])
-        .map((射手) => (射手 && typeof 射手.name === 'string' ? 射手.name.trim() : ''))
-        .filter(Boolean)
-    )
-  );
+  const 名前 = new Set();
+  for (const 射手 of Array.isArray(射手たち) ? 射手たち : []) {
+    if (!射手 || 射手.isSeparator || 射手.isTotalCalculator) continue;
+    if (typeof 射手.name === 'string' && 射手.name.trim()) 名前.add(射手.name.trim());
+    if (射手.substitutions && typeof 射手.substitutions === 'object')
+      for (const 交代の名 of Object.values(射手.substitutions))
+        if (typeof 交代の名 === 'string' && 交代の名.trim()) 名前.add(交代の名.trim());
+  }
+  return Array.from(名前);
 }
 
 /**

@@ -325,9 +325,15 @@ const HistoryScreen = () => {
               言葉
             );
           const 射手たち = 記録.archers || [];
+          // 列の名前（区切りのチーム名も）と、途中交代で入った人の名前を見る。交代の人を見ないと、その人の名前で
+          // 探しても記録が出なかった
           const 名前に有る = (
             Array.isArray(射手たち) ? 射手たち : typeof 射手たち === 'object' ? Object.values(射手たち) : []
-          ).some((射手) => (射手?.name || '').toLowerCase().includes(言葉));
+          ).some((射手) =>
+            [射手?.name, ...Object.values((射手 && 射手.substitutions) || {})].some(
+              (名) => typeof 名 === 'string' && 名.toLowerCase().includes(言葉)
+            )
+          );
           if (!(題に有る || 日付に有る || 覚え書きに有る || 名前に有る)) return false;
         }
         return true;

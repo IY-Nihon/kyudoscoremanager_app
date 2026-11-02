@@ -101,6 +101,18 @@ test('射手の名前たち：空と重複を除く', () => {
   assert.deepStrictEqual(射手の名前たち([{ name: ' 甲 ' }, { name: '甲' }, { name: '' }, null, {}]), ['甲']);
 });
 
+test('射手の名前たち：途中交代で入った人の名前も入れ、区切りと計の列は入れない', () => {
+  assert.deepStrictEqual(
+    射手の名前たち([
+      { name: 'A チーム', isSeparator: true },
+      { name: '甲', substitutions: { 3: '乙', 7: ' 丙 ', 9: '' } },
+      { name: '計', isTotalCalculator: true },
+      { name: '乙' },
+    ]),
+    ['甲', '乙', '丙']
+  );
+});
+
 test('名前表が空なら何もしない', () => {
   const 射手たち = [{ memberId: 'm1', name: '叡智な林 飛雄' }];
   assert.strictEqual(射手たちを合わせる(射手たち, new Map()).触った, false);
