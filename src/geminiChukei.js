@@ -16,7 +16,9 @@
  * ■ 証
  *   団体は email/password、部員は匿名の sign-in で、どちらも currentUser を持つ。
  *   ID トークンは1時間で切れるが getIdToken() が要るときだけ取り直す（毎回呼んで
- *   よい。手元に生きた証があればそれを返す）。
+ *   よい。手元に生きた証があればそれを返す）。それでも中継が 401（証が正しくない・切れている）を
+ *   返したら、中継へfetch は証を取り直して 1 回だけ送り直す（端末の時計のずれ・切れる間際に取った証）。
+ *   ほかの断り（502・通信の誤りなど）は送り直さない。中継が模型を替えながら待つので、重ねると枠を使い切る
  */
 'use strict';
 
@@ -27,8 +29,8 @@ const 中継のURL = String(process.env.EXPO_PUBLIC_GEMINI_CHUKEI_URL || '')
 /** 中継の宛先が設定されているか（無ければ AI 機能は使えない） */
 const 中継がある = () => !!中継のURL;
 
-/** いまログインしている人の証。ログインしていなければ null */
-async function ログインの証() {
+/** いまログインしている人の証。ログインしていなければ null。取り直す … 手元の証を使わず取り直す */
+async function ログインの証(取り直す = false) {
   let auth;
   try {
     auth = require('./db').auth;
@@ -48,7 +50,7 @@ async function ログインの証() {
   const 人 = auth && auth.currentUser;
   if (!人 || typeof 人.getIdToken !== 'function') return null;
   try {
-    return await 人.getIdToken();
+    return await 人.getIdToken(取り直す);
   } catch {
     return null;
   }
@@ -70,9 +72,18 @@ async function 中継へfetch(道, init) {
   if (!中継がある()) throw new Error('AI機能の設定（中継の宛先）が見つかりません。管理者にご確認ください。');
   const 証 = await ログインの証();
   if (!証) throw new Error('ログインしていないため、AI機能を使えません。');
-  const 頭 = new Headers((init && init.headers) || {});
-  頭.set('Authorization', 'Bearer ' + 証);
-  return fetch(中継のURL + (道.startsWith('/') ? 道 : '/' + 道), { ...(init || {}), headers: 頭 });
+  const 送る = (今の証) => {
+    const 頭 = new Headers((init && init.headers) || {});
+    頭.set('Authorization', 'Bearer ' + 今の証);
+    return fetch(中継のURL + (道.startsWith('/') ? 道 : '/' + 道), { ...(init || {}), headers: 頭 });
+  };
+  const 返り = await 送る(証);
+  // 証が切れていた。取り直して 1 回だけ送り直す（同じ証しか取れなければ、送り直しても同じなので返す）
+  if (返り && 返り.status === 401) {
+    const 新しい証 = await ログインの証(true);
+    if (新しい証 && 新しい証 !== 証) return 送る(新しい証);
+  }
+  return 返り;
 }
 
 module.exports = { 中継のURL, 中継がある, ログインの証, SDKの設定, 中継へfetch };

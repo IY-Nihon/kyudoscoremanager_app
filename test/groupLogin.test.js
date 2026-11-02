@@ -70,6 +70,29 @@ test('ふだんのログイン：帳面の email で入り、帳面は書かな�
   assert.ok(!した.some((x) => x[0] === 'setDoc'));
 });
 
+test('ふだんのログイン：雲の返事が乱れた（unavailable）ときは帳面を読み直して入る。決まりに断られたときは読み直さない', async () => {
+  const { 道具 } = 用意({
+    帳面: { id: '100001', email: 'a@example.com' },
+    口座: { 'a@example.com': 'pw' },
+  });
+  const 元の読み = 道具.Firestore.getDoc;
+  let 回 = 0;
+  道具.Firestore.getDoc = (場所) => {
+    回++;
+    if (回 === 1) throw Object.assign(new Error('offline'), { code: 'unavailable' });
+    return 元の読み(場所);
+  };
+  assert.deepStrictEqual(await 団体で入る(道具, '100001', 'pw'), { id: '100001', メール: 'a@example.com' });
+  assert.strictEqual(回, 2);
+  回 = 0;
+  道具.Firestore.getDoc = () => {
+    回++;
+    throw Object.assign(new Error('denied'), { code: 'permission-denied' });
+  };
+  await assert.rejects(団体で入る(道具, '100001', 'pw'), /denied/);
+  assert.strictEqual(回, 1, '断られたのに読み直している');
+});
+
 test('切り替えが済んでいれば、新しいアドレスで入り直し、帳面を追いつかせる', async () => {
   // 確認のリンクが開かれて、認証のアドレスは b に替わっている
   const { 道具, 表 } = 用意({

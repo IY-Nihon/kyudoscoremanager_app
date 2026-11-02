@@ -21,6 +21,7 @@ const { 団体の種類を選ぶ } = require('./GroupTypePicker');
 const { IS_IOS, IS_WEB, SAFE_TOP_PADDING } = require('./IS_WEB');
 const { auth, db } = require('./db');
 const { 団体で入る, 切り替えを頼む, 部員として入る, 部員のログインの版 } = require('./groupLogin');
+const { 何度か送る } = require('./memberInvite');
 const FirebaseAuth = require('firebase/auth');
 const Firestore = require('firebase/firestore');
 const Icons = require('@expo/vector-icons');
@@ -675,7 +676,8 @@ const LoginScreen = () => {
                             try {
                               const 団体ID = 整えたID(団体IDの入力);
                               const 帳面の場所 = Firestore.doc(db, 'group_accounts', 団体ID);
-                              const 帳面 = await Firestore.getDoc(帳面の場所);
+                              // 雲の返事が戻らない・通信の誤りのときだけ、上限つきで読み直す（招待の窓と同じ）
+                              const 帳面 = await 何度か送る(() => Firestore.getDoc(帳面の場所));
                               if (!帳面.exists()) {
                                 throw new Error('団体IDまたは個人IDが正しくありません');
                               }

@@ -93,6 +93,61 @@ test('fetch は Authorization を足して、道をそのまま中継へ向け�
   ]);
 });
 
+test('中継が 401 を返したら、証を取り直して 1 回だけ送り直す。ほかの断りは送り直さない', async () => {
+  const 取った = [];
+  const 人 = {
+    uid: 'u1',
+    getIdToken: (取り直す) => {
+      取った.push(!!取り直す);
+      return 取り直す ? 'ID.NEW' : 'ID.OLD';
+    },
+  };
+  const c = 読み込む({ 宛先: 中継, 人 });
+  const 元 = global.fetch;
+  const 送った = [];
+  let 返す = [];
+  global.fetch = (url, init) => {
+    送った.push(init.headers.get('Authorization'));
+    return { ok: false, status: 返す.shift() };
+  };
+  try {
+    返す = [401, 200];
+    assert.equal((await c.中継へfetch('/hozon', { method: 'POST', body: '{}' })).status, 200);
+    assert.deepEqual(送った, ['Bearer ID.OLD', 'Bearer ID.NEW']);
+    assert.deepEqual(取った, [false, true]);
+    // 取り直しても 401 なら、そのまま返す（何度も送らない）
+    送った.length = 0;
+    返す = [401, 401];
+    assert.equal((await c.中継へfetch('/hozon', { method: 'POST', body: '{}' })).status, 401);
+    assert.deepEqual(送った, ['Bearer ID.OLD', 'Bearer ID.NEW']);
+    // 502 や 429 は送り直さない
+    送った.length = 0;
+    返す = [502];
+    assert.equal((await c.中継へfetch('/hozon', { method: 'POST', body: '{}' })).status, 502);
+    返す = [429];
+    assert.equal((await c.中継へfetch('/hozon', { method: 'POST', body: '{}' })).status, 429);
+    assert.deepEqual(送った, ['Bearer ID.OLD', 'Bearer ID.OLD']);
+  } finally {
+    global.fetch = 元;
+  }
+});
+
+test('取り直しても同じ証しか取れなければ、401 のまま返す', async () => {
+  const c = 読み込む({ 宛先: 中継, 人: ログイン済み });
+  const 元 = global.fetch;
+  let 回 = 0;
+  global.fetch = () => {
+    回++;
+    return { ok: false, status: 401 };
+  };
+  try {
+    assert.equal((await c.中継へfetch('/hozon', { method: 'POST' })).status, 401);
+  } finally {
+    global.fetch = 元;
+  }
+  assert.equal(回, 1);
+});
+
 test('鍵を束に焼き込む名前（EXPO_PUBLIC_GEMINI_API_KEY）を、アプリの元が読んでいない', () => {
   const 見る = (dir) =>
     fs

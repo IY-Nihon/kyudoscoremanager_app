@@ -29,7 +29,8 @@
  * 画面から切り離して、偽の Firestore・認証で検査できるようにしてある（test/groupLogin.test.js）。
  */
 
-const { 招待の期限切れか } = require('./memberInvite');
+// 何度か送る … 雲の返事が戻らない・通信の誤りのときだけ、上限つきで 3 回まで読み直す（招待の窓と同じ）
+const { 招待の期限切れか, 何度か送る } = require('./memberInvite');
 const { メールを整える } = require('./totonoeru');
 
 /** パスワード違い・口座が無いときの符号。切り替え待ち・前のアドレスで入り直してよいもの */
@@ -77,7 +78,7 @@ const ミリ秒に = (値) =>
 async function 団体で入る(道具, 団体ID, 合言葉) {
   const { Firestore, FirebaseAuth, db, auth } = 道具;
   const 帳面の場所 = Firestore.doc(db, 'group_accounts', 団体ID);
-  const 帳面 = await Firestore.getDoc(帳面の場所);
+  const 帳面 = await 何度か送る(() => Firestore.getDoc(帳面の場所));
   if (!帳面.exists()) throw new Error('団体IDまたはパスワードが正しくありません');
   const 中身 = 帳面.data() || {};
   // 団体の中身の置き場（groups/{団体の鍵}）。公開の番号と同じはずだが、帳面の id を正とする
@@ -169,7 +170,7 @@ async function 切り替えを頼む(道具, 団体ID, 合言葉, 新しいメ�
   // 切り替え待ちは、確認が済んだときの認証のメール（小文字）と決まりで比べる。字をそろえて書く
   const 宛先 = メールを整える(新しいメール);
   const 帳面の場所 = Firestore.doc(db, 'group_accounts', 団体ID);
-  const 帳面 = await Firestore.getDoc(帳面の場所);
+  const 帳面 = await 何度か送る(() => Firestore.getDoc(帳面の場所));
   if (!帳面.exists()) throw new Error('入力内容を確認してください');
   const { email } = 帳面.data() || {};
   if (宛先.toLowerCase() === String(email || '').toLowerCase()) {
@@ -215,8 +216,11 @@ async function 部員として入る(
 ) {
   const { Firestore, FirebaseAuth, db, auth } = 道具;
   await FirebaseAuth.signInAnonymously(auth);
-  // 1 件だけ直接引く。一覧（list）は使わないので、他団体の名簿は引けない
-  const 逆引き = await Firestore.getDoc(Firestore.doc(db, `groups/${団体の鍵}/member_lookup`, 鍵));
+  // 1 件だけ直接引く。一覧（list）は使わないので、他団体の名簿は引けない。
+  // 読みだけ送り直す（サインインは包まない。WebKit では 12 秒を超えることがあり、切ると入れなくなる）
+  const 逆引き = await 何度か送る(() =>
+    Firestore.getDoc(Firestore.doc(db, `groups/${団体の鍵}/member_lookup`, 鍵))
+  );
   if (!逆引き.exists()) throw new Error(見つからないとき);
   // 招待リンクの期限（決まりでも止めるが、先に分かる理由で知らせる）
   if (招待の期限切れか(逆引き.data())) throw new Error(期限切れのとき);
@@ -228,7 +232,9 @@ async function 部員として入る(
     personalId: 鍵,
     claimedAt: new Date(),
   });
-  const 部員の帳面 = await Firestore.getDoc(Firestore.doc(db, `groups/${団体の鍵}/members`, memberId));
+  const 部員の帳面 = await 何度か送る(() =>
+    Firestore.getDoc(Firestore.doc(db, `groups/${団体の鍵}/members`, memberId))
+  );
   return { memberId, 名前: (部員の帳面.data() || {}).name || '' };
 }
 
