@@ -153,8 +153,10 @@ const ArcherActionModal = ({
       const 期 = 部員.termKi || 999;
       (期ごと[期] = 期ごと[期] || []).push(部員);
     });
+    // 新しい期が上。期の無い人（999）は「不明」で最後（数のまま並べると 999 がいちばん上に来ていた）
+    const 並びの期 = (期) => (Number(期) === 999 ? -Infinity : Number(期));
     return Object.keys(期ごと)
-      .sort((甲, 乙) => Number(乙) - Number(甲))
+      .sort((甲, 乙) => 並びの期(乙) - 並びの期(甲))
       .map((期) => ({
         term: 期,
         members: 期ごと[期].sort((甲, 乙) => (甲.name || '').localeCompare(乙.name || '', 'ja')),
@@ -403,7 +405,8 @@ const ArcherActionModal = ({
                 <View style={styles.section}>
                   {activeGroups.map((group) => {
                     const gStr = group.grade.toString();
-                    const isOpen = !閉じた組.has(gStr);
+                    // 名前で探している間は、閉じた組も開いて見せる（閉じたままだと、探した人が隠れて「居ない」と見える）
+                    const isOpen = 検索の文 !== '' || !閉じた組.has(gStr);
                     return (
                       <React.Fragment key={`group-${group.grade}`}>
                         <TouchableOpacity style={styles.termHeader} onPress={() => toggleActiveGrade(gStr)}>
@@ -440,12 +443,12 @@ const ArcherActionModal = ({
                           {Number(期の組.term) === 999 ? '不明' : 期の組.term}期
                         </Text>
                         <Icons.Ionicons
-                          name={expandedTerms.has(期の組.term) ? 'chevron-up' : 'chevron-down'}
+                          name={検索の文 !== '' || expandedTerms.has(期の組.term) ? 'chevron-up' : 'chevron-down'}
                           size={16}
                           color={色.灰}
                         />
                       </TouchableOpacity>
-                      {expandedTerms.has(期の組.term) &&
+                      {(検索の文 !== '' || expandedTerms.has(期の組.term)) &&
                         期の組.members.map((部員) => (
                           <React.Fragment key={部員.id}>
                             <View style={[styles.divider, { marginLeft: 32 }]} />
