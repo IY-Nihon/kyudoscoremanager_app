@@ -269,6 +269,24 @@ service cloud.firestore {
       }
     }
 
+    // 送った時刻の控え（1 人 1 文書。2026-11-03）。お問い合わせと不具合の便りを続けて送れないようにする。
+    // 書けるのは本人だけで、値は「今」（request.time）か、触らずに残すかだけ。昔の時刻にずらして回数を逃れられない
+    match /rate_limits/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['inquiryAt', 'reportAt'])
+        && (request.resource.data.get('inquiryAt', null) == request.time
+            || request.resource.data.get('inquiryAt', null) == (resource == null ? null : resource.data.get('inquiryAt', null)))
+        && (request.resource.data.get('reportAt', null) == request.time
+            || request.resource.data.get('reportAt', null) == (resource == null ? null : resource.data.get('reportAt', null)));
+    }
+    // 前に送った時刻（無ければ十分昔）から、間隔が空いているか。今送る分は、同じ一括で控えを「今」にしてあること
+    function enoughGap(field, secs) {
+      return getAfter(/databases/$(database)/documents/rate_limits/$(request.auth.uid)).data.get(field, null) == request.time
+        && (!exists(/databases/$(database)/documents/rate_limits/$(request.auth.uid))
+            || get(/databases/$(database)/documents/rate_limits/$(request.auth.uid)).data.get(field, timestamp.value(0)) < request.time - duration.value(secs, 's'));
+    }
+
     // 不具合の便り。書き込みだけ許し、読み出しは誰にも許さない。
     // 送り主が自分の送ったものを読めると、他人の端末の様子まで見えてしまう。
     // 中身は src/errorReport.js が組む。氏名・的中は入れない決まり。
@@ -283,7 +301,9 @@ service cloud.firestore {
         && request.resource.data.message.size() < 1000
         && request.resource.data.stack.size() < 4000
         && request.resource.data.trail.size() <= 30
-        && request.resource.data.device.size() < 400;
+        && request.resource.data.device.size() < 400
+        // 1 人 10 秒に 1 件まで（アプリは同じ不具合をまとめて送るので、ふつうは届かない。アプリを通さずに送る荒らしを止める）
+        && enoughGap('reportAt', 10);
       allow read, update, delete: if false;
     }
 
@@ -295,7 +315,10 @@ service cloud.firestore {
            ])
         && request.resource.data.content is string
         && request.resource.data.content.size() > 0
-        && request.resource.data.content.size() < 5000;
+        && request.resource.data.content.size() < 5000
+        // 送れるのは団体の持ち主と所属の証のある部員だけ（共有リンクの来客・匿名だけの人は送れない）・1 人 2 分に 1 件まで
+        && canAccess(request.resource.data.groupId)
+        && enoughGap('inquiryAt', 120);
       allow read, update, delete: if false;
     }
   }
