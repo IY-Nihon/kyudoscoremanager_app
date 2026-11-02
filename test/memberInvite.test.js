@@ -68,7 +68,7 @@ function 用意() {
 
 test('作り直すと、前の合言葉は消えて新しいものだけが残る（個人ID の文書には触らない）', async () => {
   const { store, 雲, 道具 } = 用意();
-  // 名簿にもいる人にする（名簿が空だと、名簿の整理が 1234 を正しく消してしまう）
+  // 名簿にもいる人にする（名簿が空に見えるときは、名簿の整理は行を消さない）
   store.setState({ members: [{ id: 'm1', name: 'いる人', personalId: '1234' }] });
   雲.置く(逆引きの道, '1234', { memberId: 'm1', updatedAt: 1 });
   const 一つ目 = (await 招.招待を作り直す(道具, 団体, 'm1', { 乱数源: 決まった乱数(1) })).合言葉;
@@ -340,4 +340,84 @@ test('何度か送る：何度送っても戻らなければ「つながらな�
     (誤り) => 誤り.code === 'unavailable'
   );
   assert.equal(回, 3);
+});
+
+// ── 逆引き表を読む回数（11/2：同期のたびに表を全部読んでいた）──
+/** 逆引き表を読んだ回数を数える */
+function 読みを数える(雲) {
+  const 元 = 雲.api.getDocs;
+  const 数 = { 逆引き: 0 };
+  雲.api.getDocs = async (集まり) => {
+    if (集まり && String(集まり.道).endsWith('/member_lookup')) 数.逆引き++;
+    return 元(集まり);
+  };
+  return 数;
+}
+
+test('逆引き表：名簿と削除の控えが前に合わせたときと同じなら読まない。変わったら読む', async () => {
+  const { store, 雲 } = 用意();
+  const 数 = 読みを数える(雲);
+  store.setState({ members: [{ id: 'm1', name: 'いる人', personalId: '1234' }] });
+  await store.getState().syncMemberLookup();
+  await store.getState().syncMemberLookup();
+  assert.strictEqual(数.逆引き, 1, '変わっていないのに読んだ');
+  // 名前だけ変えても読まない（表に関わらない）
+  store.setState({ members: [{ id: 'm1', name: '直した名前', personalId: '1234' }] });
+  await store.getState().syncMemberLookup();
+  assert.strictEqual(数.逆引き, 1);
+  // 個人ID が変わった・人が増えた・削除の控えが変わった → 読む
+  store.setState({ members: [{ id: 'm1', name: '直した名前', personalId: '5678' }] });
+  await store.getState().syncMemberLookup();
+  assert.strictEqual(数.逆引き, 2);
+  assert.deepStrictEqual(雲.中身(逆引きの道), ['5678']);
+  store.setState({ deletedMembers: { m9: Date.now() } });
+  await store.getState().syncMemberLookup();
+  assert.strictEqual(数.逆引き, 3);
+});
+
+test('逆引き表：起動したら（店を作り直したら）最初は必ず読む。控えから答えた表では済みにしない', async () => {
+  const 一台目 = 用意();
+  一台目.store.setState({ members: [{ id: 'm1', name: 'いる人', personalId: '1234' }] });
+  await 一台目.store.getState().syncMemberLookup();
+  // ほかの端末が表を壊した（行が消えた）
+  一台目.雲.消す(`${逆引きの道}/1234`);
+  // 同じ雲・同じ名簿で起動し直す
+  const { store } = ストアを用意する(一台目.雲);
+  const 雲 = 一台目.雲;
+  store.setState({ activeGroupId: 団体, activeRole: 'group', isHydrated: true, isNetworkOnline: true });
+  const 数 = 読みを数える(雲);
+  store.setState({ members: [{ id: 'm1', name: 'いる人', personalId: '1234' }] });
+  雲.状態.控えから答える = true;
+  await store.getState().syncMemberLookup();
+  雲.状態.控えから答える = false;
+  await store.getState().syncMemberLookup();
+  assert.strictEqual(数.逆引き, 2, '控えから答えた表で済みにした');
+  assert.deepStrictEqual(雲.中身(逆引きの道), ['1234'], '消えた行を作り直していない');
+});
+
+test('逆引き表：名簿が空に見えるときは、個人ID の行も消さない', async () => {
+  const { store, 雲 } = 用意();
+  雲.置く(逆引きの道, '1234', { memberId: 'm1' });
+  store.setState({ members: [] });
+  await store.getState().syncMemberLookup();
+  await 待つ(10);
+  assert.deepStrictEqual(雲.中身(逆引きの道), ['1234']);
+});
+
+test('逆引き表：同時に 2 本走らせない。走っている間に変わったら、終わってから 1 回だけ見直す', async () => {
+  const { store, 雲 } = 用意();
+  const 数 = 読みを数える(雲);
+  store.setState({ members: [{ id: 'm1', name: 'いる人', personalId: '1234' }] });
+  const 一本目 = store.getState().syncMemberLookup();
+  // 一本目が読んでいる間に、人が増えた
+  store.setState({
+    members: [
+      { id: 'm1', name: 'いる人', personalId: '1234' },
+      { id: 'm2', name: '増えた人', personalId: '2345' },
+    ],
+  });
+  await Promise.all([一本目, store.getState().syncMemberLookup(), store.getState().syncMemberLookup()]);
+  await 待つ(10);
+  assert.strictEqual(数.逆引き, 2, '同時に読んだか、見直していない');
+  assert.deepStrictEqual(雲.中身(逆引きの道), ['1234', '2345']);
 });
