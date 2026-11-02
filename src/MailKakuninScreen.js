@@ -15,6 +15,7 @@ const React = require('react');
 const { Modal, Pressable, ScrollView, Text, View, StyleSheet } = require('./rn');
 const { useScoreStore } = require('./useScoreStore');
 const 確 = require('./mailKakunin');
+const { useSafeAreaInsets } = require('react-native-safe-area-context');
 
 const 道具を取る = () => require('./db').雲の道具();
 
@@ -144,16 +145,18 @@ const MailKakuninScreen = ({ 様子, 閉じる }) => {
  */
 const 確認の帯 = () => {
   const [開く, 開くを置く] = React.useState(false);
+  // iPhone の下の帯（ホームの線）の分だけ空ける
+  const 余白 = useSafeAreaInsets();
   return (
     <>
       <Pressable
         accessibilityRole="button"
         testID="メールの確認の帯"
-        style={styles.帯}
+        style={[styles.帯, { paddingBottom: 10 + (余白.bottom || 0) }]}
         onPress={() => 開くを置く(true)}
       >
         <Text style={styles.帯の字}>
-          {`登録メールアドレスの確認をお願いします。${確.猶予の最後の日()}を過ぎると、確認が済むまで使えなくなります。`}
+          {`登録メールアドレスの確認をお願いします（${確.猶予の最後の日()}まで。過ぎると使えなくなります）`}
         </Text>
         <Text style={styles.帯の押す}>確認する</Text>
       </Pressable>
@@ -167,16 +170,11 @@ const 確認の帯 = () => {
 };
 
 const styles = StyleSheet.create({
+  // 画面のいちばん下に、ふつうの段として置く（画面がその分だけ縮み、記録画面の下のボタンに重ならない）
   帯: {
-    position: 'absolute',
-    left: 12,
-    // 右下の AI の丸いボタンに掛からないよう、右を空ける
-    right: 84,
-    bottom: 16,
-    maxWidth: 560,
     backgroundColor: 色.文字,
-    borderRadius: 12,
-    paddingVertical: 10,
+    paddingTop: 10,
+    paddingBottom: 10,
     paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
