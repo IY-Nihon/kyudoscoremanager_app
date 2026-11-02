@@ -9,8 +9,6 @@ import { View, Text, StyleSheet } from './rn';
 
 import { useストアの一部 } from './storeSlice';
 
-// 射の番号の丸数字（1〜20 射。それより多いときは数字のまま）。矢所を置く窓でも使う
-export const CIRCLED_NUMBERS = [...'①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳'];
 
 export const ArrowLocationView = ({ arrowLocations = [], size = 200, targetType, hideNumbers = false }) => {
   const { arrowTargetType: storeTargetType } = useストアの一部(['arrowTargetType']);
@@ -158,7 +156,8 @@ export const ArrowLocationView = ({ arrowLocations = [], size = 200, targetType,
                 },
               ]}
             >
-              <Text style={styles.markerText}>{CIRCLED_NUMBERS[shotIndex] || shotIndex + 1}</Text>
+              {/* 射の番号はふつうの数字（丸数字は 20 射までしか無く、21 射目から形が変わっていた） */}
+              <Text style={styles.markerText}>{shotIndex + 1}</Text>
             </View>
           );
         }
