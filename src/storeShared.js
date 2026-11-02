@@ -135,7 +135,8 @@ try {
 // まだ書いていない写しがあればそれを返す口と、待たずに書かせる口を置く。
 // 後者は auth.setup が storageState を取る前に呼ぶ（Playwright は本物の
 // localStorage を写すので、遅らせたぶんが入っていないと入り直しになる）。
-// 本番では誰も呼ばない
+// 本番では、読み込み直す前に書き切るのに後者を使う（止まりの知らせ・更新の帯・不具合の画面。
+// 店を読み込まずに呼べる。web の端末の置き場はその場で書くので、待たなくてよい）
 if (typeof globalThis !== 'undefined') {
   globalThis.__弓道の控え = () => (控えの書き出し.待ち ? JSON.stringify(控えの書き出し.待ち.値) : null);
   globalThis.__弓道の控えを書く = () => 控えの書き出し.今すぐ();
@@ -143,8 +144,27 @@ if (typeof globalThis !== 'undefined') {
 /** persist に渡す置き場。JSON にするのは書くときだけ（控えの書き出し） */
 const 控えの置き場 = {
   getItem: async (名) => {
-    const 文 = await 端末の置き場.getItem(名);
-    return 文 === null || 文 === undefined ? null : JSON.parse(文);
+    let 文;
+    try {
+      文 = await 端末の置き場.getItem(名);
+    } catch (誤り) {
+      // 端末の置き場そのものが読めない（使えない設定のブラウザなど）。控えなしで起動する
+      console.error('[Store] 端末の控えを読めませんでした', 誤り);
+      不具合を控える('端末の控えが読めない', String((誤り && 誤り.message) || 誤り));
+      return null;
+    }
+    if (文 === null || 文 === undefined) return null;
+    try {
+      return JSON.parse(文);
+    } catch (誤り) {
+      // 控えが壊れている（書いている途中で落ちた・上限で切れた）。投げ返すと起動が止まるので、控えなしで起動する。
+      // 壊れた中身は別の名前で残しておく（このあと新しい控えで上書きされる。送れていない記録を取り出せるように）
+      const 大きさ = Math.round(文.length / 1024);
+      console.error('[Store] 端末の控えが壊れていました（' + 大きさ + 'KB）。控えなしで起動します', 誤り);
+      不具合を控える('端末の控えが壊れていた', 大きさ + 'KB');
+      await 端末の置き場.setItem(名 + '.壊れた控え', 文);
+      return null;
+    }
   },
   setItem: (名, 値) => {
     控えの書き出し.予約(名, 値);

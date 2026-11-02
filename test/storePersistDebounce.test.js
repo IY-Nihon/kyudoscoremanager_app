@@ -74,3 +74,16 @@ test('e2e の読み口：まだ書いていない写しが読め、書かせる�
   assert.strictEqual(JSON.parse(保存領域.get('archery-score-storage')).state.shotsPerRound, 20);
   assert.strictEqual(globalThis.__弓道の控え(), null, '書いたあとも写しが残っている');
 });
+
+test('端末の控えが壊れていたら、控えなしで起動し、壊れた中身は別の名前で残す', async () => {
+  const { 保存領域 } = ストアを用意する();
+  const { 控えの置き場 } = require(path.join(__dirname, '..', 'src', 'storeShared.js'));
+  // 書いている途中で落ちた控え（JSON が途中で切れている）。投げ返すと起動が止まる
+  保存領域.set('壊れた', '{"state":{"archers":[{"name":');
+  assert.strictEqual(await 控えの置き場.getItem('壊れた'), null);
+  assert.strictEqual(保存領域.get('壊れた.壊れた控え'), '{"state":{"archers":[{"name":');
+  // ふつうの控えと、無い控えは今までどおり
+  保存領域.set('ふつう', '{"state":{"shotsPerRound":20}}');
+  assert.deepStrictEqual(await 控えの置き場.getItem('ふつう'), { state: { shotsPerRound: 20 } });
+  assert.strictEqual(await 控えの置き場.getItem('無い'), null);
+});

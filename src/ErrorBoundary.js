@@ -28,6 +28,12 @@ class ErrorBoundary extends React.Component {
   };
   // 消さずに直るなら、それがいちばん良い
   handleReload = () => {
+    // 遅らせて書いている端末の控えを、読み込み直す前に書き切る（src/storeShared.js の 控えの書き出し）
+    try {
+      if (typeof globalThis.__弓道の控えを書く === 'function') globalThis.__弓道の控えを書く();
+    } catch {
+      /* 控えが書けなくても読み込み直す */
+    }
     if (typeof location !== 'undefined' && location.reload) location.reload();
   };
   render() {
