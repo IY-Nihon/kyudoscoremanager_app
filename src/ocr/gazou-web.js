@@ -12,6 +12,11 @@ import { 息継ぎ } from '../../scripts/ocr-cells/ikitsugi.mjs';
 /** base64（JPEG/PNG）を HTMLImageElement に */
 function 画像にする(base64, mime) {
   return new Promise((resolve, reject) => {
+    // 空の写真は開く前に分かる言葉で断る（data: の URL が壊れて、何の誤りか分からない形で落ちていた）
+    if (!base64 || typeof base64 !== 'string') {
+      reject(new Error('写真の中身が空です'));
+      return;
+    }
     const img = new Image();
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error('画像を開けませんでした'));
@@ -57,8 +62,10 @@ const 画の控え = [];
 
 async function 写真を読む(base64, mime) {
   const img = await 画像にする(base64, mime);
-  const 元幅 = img.width;
-  const 元高 = img.height;
+  const 元幅 = img.naturalWidth || img.width;
+  const 元高 = img.naturalHeight || img.height;
+  // 大きさ 0 の画像（壊れた写真）は、0 で割って NaN の大きさの canvas を作る前に断る
+  if (!(元幅 > 0 && 元高 > 0)) throw new Error('写真の大きさを読めませんでした');
   const canvasの上限 = 16_000_000;
   const 描く倍 = Math.min(1, Math.sqrt(canvasの上限 / (元幅 * 元高)));
   const 描幅 = Math.max(1, Math.floor(元幅 * 描く倍));
@@ -67,6 +74,8 @@ async function 写真を読む(base64, mime) {
   canvas.width = 描幅;
   canvas.height = 描高;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  // 端末の画面の資源が足りないと canvas が取れない（null）。「null の drawImage」ではなく分かる言葉で断る
+  if (!ctx) throw new Error('写真を読む画面の準備ができませんでした（Canvas を取れません）');
   ctx.drawImage(img, 0, 0, 描幅, 描高);
   const { data } = ctx.getImageData(0, 0, 描幅, 描高);
   // 画素を取ったら canvas の裏の板（1600 万画素で 64MB）はすぐ手放す。放っておくと
