@@ -657,13 +657,13 @@ const AIChatBot = () => {
          * 分析画面のランキングの基準（射数の下限）。設定は期間の種類ごと（'すべて'・'期間指定' など）で、
          * 「最多比」なら期間でいちばん引いた人の射数 × 割合、「N 射以上」なら N
          */
-        const 分析の順位の基準 = (期間, 期間の種類) => {
+        const 分析の順位の基準 = (期間, 期間の種類, 対象の記録) => {
           const 設定 = (useScoreStore.getState().analysisRankingSettings || {})[期間の種類] || {
             type: 'ratio',
             value: 0,
           };
           if (設定.type === 'count') return Math.max(1, Number(設定.value) || 0);
-          const 下見 = 全員の成績(members, sessions, { 期間, 最小射数: 0 });
+          const 下見 = 全員の成績(members, 対象の記録, { 期間, 最小射数: 0 });
           const 最多 = Math.max(0, ...下見.一覧.map((人) => 人.射数));
           return Math.max(1, Math.floor(最多 * (Number(設定.value) || 0)));
         };
@@ -925,11 +925,17 @@ const AIChatBot = () => {
               // 最小射数を模型が渡さないときは、分析画面のランキングの基準（設定の「最多比」か「N 射以上」）
               // をそのまま使う。前は 1 射から順位に入れていて、画面のランキングに出ない人が
               // チャットでは首位になった
-              const 基準 = 分析の順位の基準(期間, dateFrom || dateTo ? '期間指定' : 'すべて');
-              const 最小射数 = Number.isFinite(minShots) ? minShots : 基準;
               const タグ絞り = タグで絞った記録(call.args.tags);
               // 題・覚え書きの言葉でも絞る（「リーグ戦に出た選手」など。タグに無く題にだけある）
               const 題絞り = 題で絞る(タグ絞り.記録たち, call.args.keyword);
+              // タグや題で絞ったときは、「最多比」の最多も絞った記録で数える。全部の記録の最多で比べると、
+              // 試合だけの順位なのに練習の射数が基準になり、誰も順位に入らなかった
+              const 基準 = 分析の順位の基準(
+                期間,
+                dateFrom || dateTo ? '期間指定' : 'すべて',
+                タグ絞り.表示 || 題絞り.絞った ? 題絞り.記録たち : sessions
+              );
+              const 最小射数 = Number.isFinite(minShots) ? minShots : 基準;
               const 結果 = 全員の成績(members, 題絞り.記録たち, {
                 期間,
                 並び: sortBy,

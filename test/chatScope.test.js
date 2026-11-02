@@ -347,3 +347,63 @@ test('想定外の形の記録が混ざっても落ちず、絞れなかった�
   for (const 他 of ['佐藤', '鈴木', '田中', 'id-sato', '2222'])
     assert.ok(!文.includes(他), `「${他}」が残っている`);
 });
+
+test('本人の矢所（的の種類つき）と弓力は渡す。交代の相手の射の矢所・相手の列の弓力は渡さない', () => {
+  const { 矢所の成績 } = require('../src/chatStats');
+  const 点 = (x, y, 的 = 'kasumi36') => ({ x, y, targetType: 的 });
+  const 矢所の記録 = [
+    {
+      id: 'y1',
+      date: new Date(2026, 8, 6, 10).getTime(),
+      title: '矢所の日',
+      archers: [
+        // 山田の列。3 射目から鈴木に代わってもらった
+        射手({
+          id: 'y-a',
+          name: '山田',
+          memberId: 'id-yamada',
+          bowWeight: '18',
+          marks: ['○', '×', '○', '×'],
+          arrowLocations: [点(0.1, 0.1), 点(0.5, -0.4, 'hoshi36'), 点(0.9, 0.9), 点(-0.9, -0.9)],
+          substitutions: { 2: '鈴木' },
+          substitutionIds: { 2: 'id-suzuki' },
+        }),
+        // 佐藤の列に 4 射目から山田が入った
+        射手({
+          id: 'y-b',
+          name: '佐藤',
+          memberId: 'id-sato',
+          bowWeight: '13',
+          marks: ['○', '○', '○', '○'],
+          arrowLocations: [点(0.3, 0.3), 点(0.3, 0.3), 点(0.3, 0.3), 点(-0.2, 0.1)],
+          substitutions: { 3: '山田' },
+          substitutionIds: { 3: 'id-yamada' },
+        }),
+        射手({ id: 'y-c', name: '田中', memberId: 'id-tanaka', bowWeight: '12', marks: ['○'], arrowLocations: [点(0, 0)] }),
+      ],
+    },
+  ];
+  const { members, sessions } = 自分だけに絞る({
+    members: 部員たち,
+    sessions: 矢所の記録,
+    myMemberId: 'id-yamada',
+    myMemberName: '山田',
+  });
+  const [自分の列, 交代で入った列, 他の列] = sessions[0].archers;
+  assert.deepStrictEqual(自分の列.arrowLocations, [点(0.1, 0.1), 点(0.5, -0.4, 'hoshi36'), null, null]);
+  assert.strictEqual(自分の列.bowWeight, '18');
+  assert.deepStrictEqual(交代で入った列.arrowLocations, [null, null, null, 点(-0.2, 0.1)]);
+  assert.strictEqual(交代で入った列.bowWeight, undefined, '相手の列の弓力を渡した');
+  assert.strictEqual(他の列.arrowLocations, undefined);
+  assert.strictEqual(他の列.bowWeight, undefined);
+  // 矢所の数え（道具 getArrowLocationStats の中身）は、絞る前と同じ
+  for (const 条件 of [{}, { targetType: 'hoshi36' }]) {
+    assert.deepStrictEqual(
+      矢所の成績(members, sessions, '山田', 条件),
+      矢所の成績(部員たち, 矢所の記録, '山田', 条件)
+    );
+  }
+  // 山田の射は 1・2 射目（自分の列）と 4 射目（交代で入った列）の 3 本。星的は 1 本
+  assert.strictEqual(矢所の成績(members, sessions, '山田', {}).arrowCount, 3);
+  assert.strictEqual(矢所の成績(members, sessions, '山田', { targetType: 'hoshi36' }).arrowCount, 1);
+});
