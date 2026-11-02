@@ -465,9 +465,12 @@ const useScoreStore = zustand.create()(
           書く({ historySelectedTags: 入れ替える(状態().historySelectedTags, タグ) });
         },
         setHistoryTagLogic: (論理) => 書く({ historyTagLogic: 論理 }),
-        setCurrentSessionTags: (タグたち) => 書く({ currentSessionTags: タグたち }),
+        // タグはほかと同じ決まり（# を付け、同じものは 1 つ。syncRules の cleanUpTagsArray）でそろえる
+        setCurrentSessionTags: (タグたち) => 書く({ currentSessionTags: cleanUpTagsArray(タグたち || []) }),
         toggleCurrentSessionTag: (タグ) => {
-          書く({ currentSessionTags: 入れ替える(状態().currentSessionTags, タグ) });
+          書く({
+            currentSessionTags: 入れ替える(cleanUpTagsArray(状態().currentSessionTags || []), normalizeTag(タグ)),
+          });
         },
         setTagTemplates: (タグたち) =>
           目印の候補を置く(

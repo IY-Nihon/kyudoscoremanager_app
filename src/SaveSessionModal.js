@@ -17,7 +17,11 @@ const {
 const { useストアの一部 } = require('./storeSlice');
 const { IS_IOS } = require('./IS_WEB');
 const { getShadowStyle } = require('./shadowStyle');
-const { normalizeTag, タグの見た目 } = require('./syncRules');
+const { normalizeTag, タグの見た目, cleanUpTagsArray } = require('./syncRules');
+
+/** タグの欄の字を、しまう形のタグの並びに（空白・読点で区切る。ほかと同じ決まりでそろえる） */
+const 欄のタグ = (文) => cleanUpTagsArray(String(文 || '').split(/[\s,、]+/));
+const 同じ並び = (甲, 乙) => 甲.length === 乙.length && 甲.every((タグ, 番) => タグ === 乙[番]);
 const { use横流し } = require('./yokoNagashi');
 // タグの候補。団体で定型のタグ（設定のタグの定型）を決めていないときに出す
 const 既定のタグ = [
@@ -60,7 +64,16 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
   const 定型文の横流し = use横流し();
   React.useEffect(() => {
     タグの文を置く(currentSessionTags.map(タグの見た目).join(' '));
-  }, [currentSessionTags, visible]);
+    // 開いたときだけ。タグが変わるたびに書き直すと、打ちかけ（「#」だけ・後ろの空白）が消えて次のタグを打てなかった
+  }, [visible]);
+  // 欄に打って置いたタグ。店から戻ってきたのがこれなら、欄は打ったままにする
+  const 欄から置いたタグ = React.useRef(null);
+  React.useEffect(() => {
+    // 候補を押したなど、欄の外でタグが変わったときだけ欄を書き直す（打っている途中の字はそのまま）。
+    // 欄の字と比べると、WebKit では店の変わりが欄の字より先に届き、打った字を消していた
+    if (欄から置いたタグ.current && 同じ並び(欄から置いたタグ.current, currentSessionTags)) return;
+    タグの文を置く(currentSessionTags.map(タグの見た目).join(' '));
+  }, [currentSessionTags]);
   // 続けて押されても 1 回だけ保存する（窓が閉じる描き直しの前に 2 回目が届くと、保存が 2 回走る）。
   // 開き直したら、また押せる
   const 保存した = React.useRef(false);
@@ -133,11 +146,9 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
                   placeholderTextColor={色.灰_薄い}
                   value={タグの文}
                   onChangeText={(文) => {
+                    const タグたち = 欄のタグ(文);
+                    欄から置いたタグ.current = タグたち;
                     タグの文を置く(文);
-                    const タグたち = 文
-                      .split(/[\s,\u3001]+/)
-                      .map(normalizeTag)
-                      .filter(Boolean);
                     setCurrentSessionTags(タグたち);
                   }}
                   returnKeyType="done"

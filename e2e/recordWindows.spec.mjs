@@ -76,3 +76,40 @@ test('射数の窓：一覧から 12射 を選べる。自由入力は 500 を�
   });
   expect((await 控え(page)).shotsPerRound, '500 を超えた射数が入った').toBe(12);
 });
+
+test('保存の窓：タグの打ちかけ（後ろの空白・「#」だけ）を消さず、同じタグは 1 つにする（保存はしない）', async ({
+  page,
+}) => {
+  await 記録画面へ(page);
+  // 人を 1 人立ててから「終了・保存」で窓を開く
+  await page.getByText('人', { exact: true }).first().click();
+  await expect(page.locator('[data-testid^="名の欄-射手-"]')).toHaveCount(1, { timeout: 20_000 });
+  await page.getByText('終了・保存', { exact: true }).first().click();
+  // 出欠の確かめが入っていれば先に出る
+  const 出欠 = page.getByText('出欠を確定して次へ', { exact: true });
+  if (await 出欠.waitFor({ state: 'visible', timeout: 5_000 }).then(() => true, () => false)) {
+    await 出欠.click();
+    // 出欠の窓は消える動きが終わると、開く前の焦点（「終了・保存」）を戻す（RN-web の Modal）。
+    // 終わる前に打ち始めると、途中で欄から焦点が外れる
+    await expect(page.getByText('出欠の最終確認', { exact: true })).toHaveCount(0, { timeout: 10_000 });
+    await page.waitForTimeout(800);
+  }
+  const 欄 = page.getByLabel('タグ', { exact: true });
+  await expect(欄, '保存の窓が出ない').toBeVisible({ timeout: 10_000 });
+
+  // 1 字ずつ打つ（打つたびにタグを整えても、欄の字は打ったまま）
+  await 欄.fill('');
+  await 欄.pressSequentially('雨天 #', { delay: 30 });
+  await expect(欄).toHaveValue('雨天 #');
+  await 欄.pressSequentially('審査 雨天', { delay: 30 });
+  await expect(欄).toHaveValue('雨天 #審査 雨天');
+  // しまう形はほかと同じ決まり（# を付け、同じものは 1 つ）
+  const 控えのタグ = async () => {
+    await page.evaluate(() => globalThis.__弓道の控えを書く?.());
+    return (await 控え(page)).currentSessionTags;
+  };
+  await expect.poll(控えのタグ, { timeout: 10_000 }).toEqual(['#雨天', '#審査']);
+
+  // 保存はせずに閉じる
+  await page.getByText('キャンセル', { exact: true }).last().click();
+});
