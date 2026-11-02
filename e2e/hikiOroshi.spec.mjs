@@ -65,7 +65,7 @@ for (const [タブ, 一覧] of [
 }
 
 /** 道（[横, 縦] の差の並び）のとおりに指を動かして離す。止められた touchmove の数を返す */
-async function 道で引く(page, 一覧, 道) {
+function 道で引く(page, 一覧, 道) {
   return page.evaluate(
     async ([一覧, 道]) => {
       const 節 = document.querySelector(`[data-testid="${一覧}"]`);
