@@ -112,9 +112,13 @@ test('区分：設定で足す・並べ替える・名前を直す・消す。�
     .poll(雲の区分, { timeout: 20_000, message: '雲に並びが残らない' })
     .toEqual(['検査乙', '検査甲']);
 
-  // 名前を直す
+  // 名前を直す。ほかと同じ名前は断り、打ち直したら断りの文は消える
   await 欄.getByRole('button', { name: '検査甲 の名前を直す' }).click();
+  await page.getByLabel('区分の名前', { exact: true }).fill('検査乙');
+  await 欄.getByRole('button', { name: '名前を決める' }).click();
+  await expect(欄.getByText('「検査乙」はもうあります', { exact: true })).toBeVisible();
   await page.getByLabel('区分の名前', { exact: true }).fill('検査丙');
+  await expect(欄.getByText('「検査乙」はもうあります', { exact: true })).toHaveCount(0);
   await 欄.getByRole('button', { name: '名前を決める' }).click();
   await expect.poll(() => 並び(欄)).toEqual(['検査乙', '検査丙']);
   await expect.poll(雲の区分, { timeout: 20_000 }).toEqual(['検査乙', '検査丙']);

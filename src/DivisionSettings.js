@@ -102,7 +102,11 @@ function 並べる一覧({
               aria-label={`${何}の名前`}
               style={[styles.入力, { flex: 1 }]}
               value={直す名前}
-              onChangeText={直す名前を置く}
+              // 打ち直したら前の誤りの文を消す（足す欄と同じ。直したのに誤りが残っていた）
+              onChangeText={(文) => {
+                直す名前を置く(文);
+                誤りを置く('');
+              }}
               onSubmitEditing={直し終える}
               maxLength={上限}
               autoFocus
