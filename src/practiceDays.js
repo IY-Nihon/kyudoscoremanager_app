@@ -35,6 +35,28 @@ async function Firestoreから読む(団体ID) {
   return 練習日;
 }
 
+/**
+ * 出欠の画面が見張りで受け取った練習日を、そのまま控えにする（AI に聞かれたときに読み直さない）
+ * @param {string|null} 団体ID
+ * @param {Object<string, any>} 練習日
+ * @param {number} [今]
+ */
+function 練習日を置く(団体ID, 練習日, 今 = Date.now()) {
+  if (!団体ID || !練習日) return;
+  控え.団体 = 団体ID;
+  控え.時刻 = 今;
+  控え.練習日 = 練習日;
+}
+
+/**
+ * 端末に覚える形。画面が見るのは「その日が練習日か」だけなので、日付だけにする
+ *（作った日時などは Firestore の日時型で、端末の控え（JSON）に入れると形が変わる）
+ * @param {Object<string, any>} 練習日
+ */
+function 覚える形(練習日) {
+  return Object.fromEntries(Object.keys(練習日 || {}).map((日) => [日, { date: 日 }]));
+}
+
 /** 検査用。控えを空にする */
 function 控えを捨てる() {
   控え.団体 = null;
@@ -42,4 +64,4 @@ function 控えを捨てる() {
   控え.練習日 = {};
 }
 
-module.exports = { 練習日を読む, 控えを捨てる };
+module.exports = { 練習日を読む, 練習日を置く, 覚える形, 控えを捨てる };
