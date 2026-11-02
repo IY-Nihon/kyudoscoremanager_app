@@ -57,3 +57,34 @@ test('ゴミ箱の記録は、押すと見るだけで開き、戻るとゴミ�
   });
   await expect(行).toBeVisible({ timeout: 15_000 });
 });
+
+test('ゴミ箱で選んだまま戻るボタンで閉じても、次に開くと選びは消えている', async ({ page }) => {
+  test.setTimeout(180_000);
+  await 案内を止める(page);
+  await page.goto('/');
+  await 画面が出るまで待つ(page);
+  await 入り口が決まるまで待つ(page);
+  await 団体で入る(page, 団体, 合言葉);
+
+  await page.getByText('履歴', { exact: true }).first().click();
+  await expect(page.getByText('過去の記録表', { exact: true })).toBeVisible({ timeout: 20_000 });
+  await page.getByRole('button', { name: 'ゴミ箱を開く' }).click();
+  const 行 = page.getByTestId(`ゴミ箱の記録-tra-${団体}-1`);
+  await 行.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
+  test.skip(!(await 行.isVisible().catch(() => false)), 'ゴミ箱に種の記録が無い');
+
+  // 編集にして 1 件選ぶ（選ぶ・外すだけ。削除・復元は押さない）
+  // 履歴の一覧にも「編集」があるので、上に開いている窓の側（後ろに描かれる）を押す
+  await page.getByText('編集', { exact: true }).last().click();
+  await 行.click();
+  await expect(page.getByText('完了', { exact: true })).toBeVisible();
+  // 戻るボタンで閉じる（rn.js の Modal が戻るに結んでいる）
+  await page.goBack();
+  await expect(page.getByText('完了', { exact: true })).toHaveCount(0, { timeout: 10_000 });
+
+  // 開き直すと、編集でなく、ふだんの一覧（押すと見る）に戻っている
+  await page.getByRole('button', { name: 'ゴミ箱を開く' }).click();
+  await expect(page.getByText('編集', { exact: true }).last()).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText('完了', { exact: true })).toHaveCount(0);
+  await expect(行).toHaveAttribute('aria-label', /の記録を見る$/);
+});

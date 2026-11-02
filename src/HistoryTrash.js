@@ -27,13 +27,14 @@ const ゴミ箱の中身の窓 = ({
   setゴミ箱の記録,
   ゴミ箱の選択を切り替える,
 }) => {
+  // 閉じたら、選んでいる最中（編集）と選んだものを戻す。残すと、次に開いたとき前の選びのまま「削除」が押せた
+  const 閉じる = () => {
+    ゴミ箱の窓を出す(false);
+    ゴミ箱を編集中を置く(false);
+    ゴミ箱で選んだを置く(new Set());
+  };
   return (
-    <Modal
-      visible={ゴミ箱の窓}
-      transparent
-      animationType="slide"
-      onRequestClose={() => ゴミ箱の窓を出す(false)}
-    >
+    <Modal visible={ゴミ箱の窓} transparent animationType="slide" onRequestClose={閉じる}>
       <View
         style={{
           flex: 1,
@@ -155,7 +156,7 @@ const ゴミ箱の中身の窓 = ({
                     すべて削除
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => ゴミ箱の窓を出す(false)}>
+                <TouchableOpacity onPress={閉じる}>
                   <Icons.Ionicons name="close" size={24} color={色.黒} />
                 </TouchableOpacity>
               </View>
