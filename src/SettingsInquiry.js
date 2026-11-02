@@ -23,6 +23,7 @@ const { useストアの一部 } = require('./storeSlice');
 const Icons = require('@expo/vector-icons');
 const { use横流し } = require('./yokoNagashi');
 const { db } = require('./db');
+const { メールを整える } = require('./totonoeru');
 const Firestore = require('firebase/firestore');
 const ExpoImagePicker = require('expo-image-picker');
 const _IM = require('expo-image-manipulator');
@@ -108,7 +109,8 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
     }
   };
   const 送る = async () => {
-    const メール = inquiryEmail.trim();
+    // 返事を届けるアドレス。全角の＠や見えない空白は直し、小文字にそろえる（src/totonoeru.js）
+    const メール = メールを整える(inquiryEmail);
     // メールアドレスは任意。書いていないことより、
     // 困っていることが伝わらないままになるほうが困る
     if (メール && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(メール)) {

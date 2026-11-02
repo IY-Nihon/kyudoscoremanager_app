@@ -25,6 +25,8 @@
  */
 'use strict';
 
+const { 字をそろえる } = require('./totonoeru');
+
 /** 合言葉の形。16 進 32 字（128 ビット） */
 const 合言葉の形 = /^[0-9a-f]{32}$/;
 /** 団体の鍵の形（groups/{団体} の id） */
@@ -68,9 +70,18 @@ function URLから招待を取る(URL文字列) {
       continue;
     }
     if (鍵 !== '招待') continue;
-    const 値 = 組.slice(等 + 1);
+    // LINE などから貼ると、末尾に見えない空白（幅の無い空白・改行）が付いたり、全角になったりする。
+    // ブラウザはそれを %E2%80%8B のような符号にするので、符号を戻してから字をそろえる
+    let 値 = 組.slice(等 + 1);
+    try {
+      値 = decodeURIComponent(値);
+    } catch {
+      // 戻せない符号はそのまま見る（形の検査で落ちる）
+    }
+    値 = 字をそろえる(値);
     const 点 = 値.lastIndexOf('.');
     if (点 < 0) return null;
+    // 団体は大文字にしない（帳面の番号のまま。古い団体の鍵には小文字が混じりうる）
     const 団体 = 値.slice(0, 点);
     const 合言葉 = 値.slice(点 + 1).toLowerCase();
     if (!団体の形.test(団体) || !合言葉の形.test(合言葉)) return null;

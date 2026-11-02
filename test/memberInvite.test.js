@@ -49,6 +49,17 @@ test('リンクを作って読み戻せる。形の違うものは読まない',
   assert.strictEqual(招.URLから招待を取る('https://x/'), null);
 });
 
+test('貼り付けで見えない空白や全角が混じったリンクも読む（団体は大文字にしない）', () => {
+  const 合言葉 = 'a'.repeat(32);
+  // LINE から貼ると末尾に幅の無い空白が付く。ブラウザはそれを %E2%80%8B にする
+  assert.deepStrictEqual(招.URLから招待を取る(`https://x/#招待=${団体}.${合言葉}%E2%80%8B`), { 団体, 合言葉 });
+  assert.deepStrictEqual(招.URLから招待を取る(`https://x/#招待=${団体}.${合言葉}\u200B`), { 団体, 合言葉 });
+  // 全角の番号と合言葉
+  assert.deepStrictEqual(招.URLから招待を取る(`https://x/#招待=１００００１.${'Ａ'.repeat(32)}`), { 団体, 合言葉 });
+  // 古い団体の鍵の小文字はそのまま
+  assert.deepStrictEqual(招.URLから招待を取る(`https://x/#招待=abC1.${合言葉}`), { 団体: 'abC1', 合言葉 });
+});
+
 function 用意() {
   const { store, 雲 } = ストアを用意する();
   store.setState({ activeGroupId: 団体, activeRole: 'group', isHydrated: true, isNetworkOnline: true });

@@ -30,6 +30,7 @@
  */
 
 const { 招待の期限切れか } = require('./memberInvite');
+const { メールを整える } = require('./totonoeru');
 
 /** パスワード違い・口座が無いときの符号。切り替え待ち・前のアドレスで入り直してよいもの */
 const 入り直してよい符号 = [
@@ -165,7 +166,8 @@ async function 前のアドレスを片付ける(道具, 帳面の場所, 非公
  */
 async function 切り替えを頼む(道具, 団体ID, 合言葉, 新しいメール) {
   const { Firestore, FirebaseAuth, db, auth } = 道具;
-  const 宛先 = String(新しいメール || '').trim();
+  // 切り替え待ちは、確認が済んだときの認証のメール（小文字）と決まりで比べる。字をそろえて書く
+  const 宛先 = メールを整える(新しいメール);
   const 帳面の場所 = Firestore.doc(db, 'group_accounts', 団体ID);
   const 帳面 = await Firestore.getDoc(帳面の場所);
   if (!帳面.exists()) throw new Error('入力内容を確認してください');
