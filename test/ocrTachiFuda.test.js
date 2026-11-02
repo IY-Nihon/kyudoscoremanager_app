@@ -18,6 +18,27 @@ test('札の字から番号を取る', () => {
   assert.strictEqual(札の番号('A立'), null);
 });
 
+test('札の番号：十一〜九十九の漢数字・丸数字・全角の数字も読む', () => {
+  // 前は最初の 1 字だけを見ていて、「二十」を 2、「十二」を 10 と読んでいた
+  assert.strictEqual(札の番号('十'), 10);
+  assert.strictEqual(札の番号('十一'), 11);
+  assert.strictEqual(札の番号('第十一立'), 11);
+  assert.strictEqual(札の番号('十二'), 12);
+  assert.strictEqual(札の番号('二十'), 20);
+  assert.strictEqual(札の番号('二十三'), 23);
+  assert.strictEqual(札の番号('九十九'), 99);
+  assert.strictEqual(札の番号('壱拾弐'), 12);
+  assert.strictEqual(札の番号('①'), 1);
+  assert.strictEqual(札の番号('⑳'), 20);
+  assert.strictEqual(札の番号('㉑'), 21);
+  assert.strictEqual(札の番号('㊿'), 50);
+  assert.strictEqual(札の番号('❸'), 3);
+  assert.strictEqual(札の番号('１２'), 12);
+  assert.strictEqual(札の番号('３立'), 3);
+  // 数でない字は数にしない（「質」を 7 と読む案があったが、札に書く字ではない）
+  assert.strictEqual(札の番号('質'), null);
+});
+
 test('札が無ければ組をそのまま立にする', () => {
   assert.strictEqual(人数(札で立にまとめる([{ seats: ['a', 'b'] }, { seats: ['c'] }])), '2+1');
 });
