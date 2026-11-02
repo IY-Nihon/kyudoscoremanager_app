@@ -1298,6 +1298,17 @@ useScoreStore.subscribe((今, 前) => {
   )
     学.決まりを置く(今.groupType, 決まりの元(今));
 });
+// 進級の確認・年度の始まりの月を変えたら、その場で進級の窓の出る・出ないを数え直す。
+// 前は次の同期の初め（checkAndAutoIncrementGrades）まで、切った窓が出続け、月を変えても窓が出なかった
+useScoreStore.subscribe((今, 前) => {
+  if (今.promotionCheck === 前.promotionCheck && 今.yearStartMonth === 前.yearStartMonth) return;
+  // 端末の控えから戻すときは数えない（控えの進級した年が古いと、雲を読む前に窓が出る。同期の初めに数える）
+  if (!useScoreStore.persist.hasHydrated() || typeof 今.lastPromotionYear !== 'number') return;
+  const 待ち =
+    場.検査の進級待ちの年 ||
+    学.進級待ちの年(new Date(), 今.lastPromotionYear, 今.promotionCheck, 今.yearStartMonth ?? undefined);
+  if (待ち !== 今.進級待ちの年) useScoreStore.setState({ 進級待ちの年: 待ち });
+});
 // 検査（e2e/promotion.spec.mjs）から進級の窓を出す口。4 月 1 日を待たずに窓と帯を確かめるため。
 // 「進級する」は検査では押さない（検証環境の名簿が上がってしまう。進級そのものは test/storeSync.test.js で見る）
 if (typeof globalThis !== 'undefined') {

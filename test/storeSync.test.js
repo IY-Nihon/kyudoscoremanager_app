@@ -1215,3 +1215,24 @@ test('部員の端末：弓具を足すときも、弓具だけを書く', async
     ['15']
   );
 });
+
+test('進級の確かめ：設定で進級の確認・年度の始まりの月を変えたら、その場で窓の出る・出ないを数え直す', async () => {
+  const { store } = 用意();
+  // 端末の控えから戻し終わるのを待つ（戻すあいだは数えない）
+  while (!store.persist.hasHydrated()) await 待つ(5);
+  const 学 = require('../src/gakunen');
+  const 今日 = new Date();
+  const 去年 = 今日.getFullYear() - 1;
+  store.setState({ lastPromotionYear: 去年, promotionCheck: true, yearStartMonth: 1 });
+  assert.equal(store.getState().進級待ちの年, 今日.getFullYear(), '1 月始まりなら今年の進級がまだ');
+  store.setState({ promotionCheck: false });
+  assert.equal(store.getState().進級待ちの年, null, '確認を切ったら窓を消す');
+  store.setState({ promotionCheck: true });
+  assert.equal(store.getState().進級待ちの年, 今日.getFullYear(), '入れ直したら出す');
+  store.setState({ yearStartMonth: 12 });
+  assert.equal(store.getState().進級待ちの年, 学.進級待ちの年(今日, 去年, true, 12), '月を変えたら数え直す');
+  // 進級した年が無い（作ったばかりの団体）は同期の初めに任せる
+  store.setState({ lastPromotionYear: null, 進級待ちの年: null });
+  store.setState({ yearStartMonth: 1 });
+  assert.equal(store.getState().進級待ちの年, null);
+});
