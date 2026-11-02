@@ -48,6 +48,13 @@ const 入り直してよい符号 = [
 const 前のアドレスを残す日数 = 30;
 
 /** 入ってみる。パスワード違い・口座が無いときは null（ほかの誤りはそのまま投げる） */
+/**
+ * 人が打った ID（団体ID・個人ID・招待の合言葉）が、Firestore の道に入れてよい形か。
+ * 英数字と _ - だけ（64 字まで）。「/」が混じると別の文書を指してしまう。決まりが守るので読めはしないが、
+ * 雲へ問い合わせる前に断る（匿名の利用者も作らない）
+ */
+const IDの形か = (値) => typeof 値 === 'string' && /^[0-9A-Za-z_-]{1,64}$/.test(値);
+
 async function 入ってみる(FirebaseAuth, auth, メール, 合言葉) {
   try {
     return await FirebaseAuth.signInWithEmailAndPassword(auth, メール, 合言葉);
@@ -77,6 +84,7 @@ const ミリ秒に = (値) =>
  */
 async function 団体で入る(道具, 団体ID, 合言葉) {
   const { Firestore, FirebaseAuth, db, auth } = 道具;
+  if (!IDの形か(団体ID)) throw new Error('団体IDまたはパスワードが正しくありません');
   const 帳面の場所 = Firestore.doc(db, 'group_accounts', 団体ID);
   const 帳面 = await 何度か送る(() => Firestore.getDoc(帳面の場所));
   if (!帳面.exists()) throw new Error('団体IDまたはパスワードが正しくありません');
@@ -169,6 +177,7 @@ async function 切り替えを頼む(道具, 団体ID, 合言葉, 新しいメ�
   const { Firestore, FirebaseAuth, db, auth } = 道具;
   // 切り替え待ちは、確認が済んだときの認証のメール（小文字）と決まりで比べる。字をそろえて書く
   const 宛先 = メールを整える(新しいメール);
+  if (!IDの形か(団体ID)) throw new Error('団体IDまたはパスワードが正しくありません');
   const 帳面の場所 = Firestore.doc(db, 'group_accounts', 団体ID);
   const 帳面 = await 何度か送る(() => Firestore.getDoc(帳面の場所));
   if (!帳面.exists()) throw new Error('入力内容を確認してください');
@@ -215,6 +224,7 @@ async function 部員として入る(
   期限切れのとき = 見つからないとき
 ) {
   const { FirebaseAuth, auth } = 道具;
+  if (!IDの形か(団体の鍵) || !IDの形か(鍵)) throw new Error(見つからないとき);
   await FirebaseAuth.signInAnonymously(auth);
   const 入った人 = auth.currentUser;
   try {
@@ -267,6 +277,7 @@ async function 引いて証を書く(道具, 団体の鍵, 鍵, 見つからな�
 const 部員のログインの版 = 2;
 
 module.exports = {
+  IDの形か,
   団体で入る,
   切り替えを頼む,
   部員として入る,
