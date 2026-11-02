@@ -76,7 +76,11 @@ const 匿名 = async () => {
 /** 断られるはずの書き込み。通ってしまったら（200）、その場で消す */
 const 断られるはずの書き込み = async (道, token) => {
   const 状態 = await st(道, { token, method: 'PATCH', body: { fields: { t: { stringValue: 'x' } } } });
-  if (状態 === 200) await st(道, { token, method: 'DELETE' });
+  if (状態 === 200) {
+    const 消した = await st(道, { token, method: 'DELETE' });
+    // 決まりを配った直後は、書けたのに消せないことがある（行き渡る途中）。残ったら持ち主で消す
+    if (消した !== 200) console.warn(`！ 試しに書いたものが残りました（持ち主で消してください）: ${道}`);
+  }
   return 状態;
 };
 const 片づける = async () => {
@@ -88,6 +92,78 @@ const 片づける = async () => {
     }).catch(() => {});
   }
 };
+
+/** 名簿の 1 人を読む（部員の証で） */
+const 名簿の人 = async (g, mid, token) =>
+  (await fetch(`${B}/groups/${g}/members/${mid}`, { headers: { Authorization: 'Bearer ' + token } })).json();
+/** 名簿の 1 つの項目だけを書く（updateMask で、ほかの項目に触らない） */
+const 項目を書く = (g, mid, 項目, 値, token) =>
+  st(`/groups/${g}/members/${mid}?updateMask.fieldPaths=${項目}`, {
+    token,
+    method: 'PATCH',
+    body: { fields: { [項目]: 値 } },
+  });
+/**
+ * 部員（個人ログイン）の書き込みは絞る（2026-11-02 決めた。firestore.rules）。
+ * 記録を消す・名簿を作る・ゴミ箱・卒業生・練習日は団体だけ。自分の名簿は弓具だけ直せる。
+ * 書く値は今の値と同じにする（通っても名簿は変わらない）。名前は変えてみて、通ったら元へ戻す
+ */
+const 部員の書き込みを試す = async (g, mid, 別のmid, token) => {
+  検査(
+    '部員',
+    `団体${g}：記録を消す`,
+    403,
+    await st(`/groups/${g}/sessions/zz-kensa`, { token, method: 'DELETE' })
+  );
+  for (const [名, 道] of [
+    ['名簿に人を足す', 'members/zz-kensa'],
+    ['ゴミ箱に書く', 'trash/zz-kensa'],
+    ['卒業生に書く', 'alumni/zz-kensa'],
+    ['練習日を書く', 'officialPracticeDays/2099-01-01'],
+  ])
+    検査('部員', `団体${g}：${名}`, 403, await 断られるはずの書き込み(`/groups/${g}/${道}`, token));
+  const 自分 = await 名簿の人(g, mid, token);
+  if (自分.fields && 自分.fields.equipments)
+    検査('部員', `団体${g}：自分の弓具を書く`, 200, await 項目を書く(g, mid, 'equipments', 自分.fields.equipments, token));
+  else {
+    // 弓具の無い人は、空の弓具を書いてから項目ごと外す（名簿は元のまま）
+    検査('部員', `団体${g}：自分の弓具を書く`, 200, await 項目を書く(g, mid, 'equipments', { arrayValue: {} }, token));
+    const 外す = await st(`/groups/${g}/members/${mid}?updateMask.fieldPaths=equipments`, {
+      token,
+      method: 'PATCH',
+      body: { fields: {} },
+    });
+    if (外す !== 200) console.warn(`！ 団体${g} の ${mid} に空の弓具が残りました`);
+  }
+  const 名前 = (自分.fields && 自分.fields.name) || { stringValue: '' };
+  const 名前を変える = await 項目を書く(g, mid, 'name', { stringValue: `${名前.stringValue || ''}（検査）` }, token);
+  if (名前を変える === 200) await 項目を書く(g, mid, 'name', 名前, token);
+  検査('部員', `団体${g}：自分の名前を変える`, 403, 名前を変える);
+  if (別のmid) {
+    const 別 = await 名簿の人(g, 別のmid, token);
+    検査(
+      '部員',
+      `団体${g}：ほかの人の弓具を書く`,
+      403,
+      await 項目を書く(g, 別のmid, 'equipments', (別.fields && 別.fields.equipments) || { arrayValue: {} }, token)
+    );
+  }
+};
+
+/** 団体の持ち主が、メールで団体の帳面を引く（1 つのメールで団体は 1 つ。Google で作るときに使う） */
+const メールで引く = async (メール, token) =>
+  (
+    await fetch(`${B}:runQuery`, {
+      method: 'POST',
+      headers: { ...(token ? { Authorization: 'Bearer ' + token } : {}), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: 'group_accounts' }],
+          where: { fieldFilter: { field: { fieldPath: 'email' }, op: 'EQUAL', value: { stringValue: メール } } },
+        },
+      }),
+    })
+  ).status;
 
 /** 検証環境の団体の、4 桁の個人ID を持つ部員（持ち主で入って名簿を読む） */
 const 個人IDのある部員たち = async (g) => {
@@ -143,7 +219,7 @@ try {
       [OTHER, 団体D],
       [団体D, MY],
     ]) {
-      const [{ pid, mid }] = await 個人IDのある部員たち(g);
+      const [{ pid, mid }, 別の人] = await 個人IDのある部員たち(g);
       const s = await 匿名();
       const 名乗る = (memberId) =>
         st(`/member_claims/${s.uid}`, {
@@ -174,6 +250,7 @@ try {
       if (なりすまし === 200) await st(`/member_claims/${s.uid}`, { token: s.token, method: 'DELETE' });
       検査('部員', `団体${g}：別人になりすます`, 403, なりすまし);
       検査('部員', `団体${g}：正しく所属を名乗る`, 200, await 名乗る(mid));
+      if (書いてよい) await 部員の書き込みを試す(g, mid, 別の人 && 別の人.mid, s.token);
       検査(
         '部員',
         `団体${g}：証明後に自団体を読む`,
@@ -193,6 +270,17 @@ try {
         await st(`/member_claims/${s.uid}`, { token: s.token, method: 'DELETE' })
       );
     }
+  }
+
+  // ── 4b. 1 つのメールで団体は 1 つ（持ち主は自分のメールの団体だけ引ける）。検証環境だけ（入るのにパスワードが要る）
+  if (書いてよい) {
+    // 100001 の持ち主は管理者（全部の一覧を引ける）なので、管理者でない団体の持ち主で試す
+    const 自分の台帳 = 検証の団体たち.find((x) => x.id === OTHER);
+    const 別の台帳 = 検証の団体たち.find((x) => x.id === 団体C);
+    const 鍵 = await signIn(KEY, 自分の台帳.email, 検証のパスワード());
+    検査('一覧', '持ち主：自分のメールの団体を引く', 200, await メールで引く(自分の台帳.email, 鍵));
+    検査('一覧', '持ち主：ほかのメールの団体は引けない', 403, await メールで引く(別の台帳.email, 鍵));
+    検査('一覧', '未認証：メールで団体を引けない', 403, await メールで引く(自分の台帳.email, null));
   }
 
   // ── 5. RTDB ──────────────────────────────────────────────────

@@ -80,7 +80,12 @@ service cloud.firestore {
     // 隠したいものは下の private へ分けてある。
     match /group_accounts/{groupId} {
       allow get: if true;                        // ログインは認証前に参照する
-      allow list: if isAdmin();
+      // 一覧は管理者と、自分のメールの団体を引く本人だけ。1 つのメールで団体は 1 つなので、
+      // Google で作るときに同じメールの団体がもう無いかを引く（src/LoginScreen.js の Googleを選ぶ。2026-11-02）。
+      // 問い合わせが email == 自分のメール で絞っていないと断られる（ほかの人の団体は引けない）。
+      // 引けるのは誰でも get できる 2 つ（id・email）だけなので、メールの確認済みは求めない（isGroupOwner と同じ）
+      allow list: if isAdmin()
+        || (callerEmail() != '' && resource.data.email == callerEmail());
 
       allow create: if signedIn()
         && callerEmail() != ''
@@ -180,10 +185,30 @@ service cloud.firestore {
         allow list, write: if isGroupOwner(groupId);
       }
 
-      match /sessions/{docId}             { allow read, write: if canAccess(groupId); }
-      match /members/{docId}              { allow read, write: if canAccess(groupId); }
-      match /alumni/{docId}               { allow read, write: if canAccess(groupId); }
-      match /trash/{docId}                { allow read, write: if canAccess(groupId); }
+      // 部員（個人ログイン）が書けるのは、記録を作る・直すと、自分の名簿の弓具だけ。記録を消す・名簿を作る・消す・
+      // ゴミ箱・卒業生・練習日は団体だけ（2026-11-02 決めた）。読むのは部員も今のまま。
+      // アプリも部員にはこれらの操作を出していない（履歴の削除は管理者モード・出欠のタブは団体だけ・
+      // 部員の端末は自分の弓具だけ送る src/storeMembers.js の 弓具だけ送る形）
+      match /sessions/{docId} {
+        allow read, create, update: if canAccess(groupId);
+        allow delete: if isGroupOwner(groupId);
+      }
+      match /members/{docId} {
+        allow read: if canAccess(groupId);
+        allow create, delete: if isGroupOwner(groupId);
+        allow update: if isGroupOwner(groupId)
+          || (isClaimedMember(groupId)
+              && docId == claim().data.memberId
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['equipments', 'lastModified']));
+      }
+      match /alumni/{docId} {
+        allow read: if canAccess(groupId);
+        allow write: if isGroupOwner(groupId);
+      }
+      match /trash/{docId} {
+        allow read: if canAccess(groupId);
+        allow write: if isGroupOwner(groupId);
+      }
       // config のうち listing（紹介に載せてよいかの許可・2026-10-09）は、団体の持ち主だけが書ける。
       // 部員の端末から団体の答えを変えられないように。読むのは部員も可（画面には出さない）。src/listingConsent.js
       match /config/{docId} {
@@ -194,7 +219,10 @@ service cloud.firestore {
         allow read: if canAccess(groupId);
         allow write: if isGroupOwner(groupId);
       }
-      match /officialPracticeDays/{docId} { allow read, write: if canAccess(groupId); }
+      match /officialPracticeDays/{docId} {
+        allow read: if canAccess(groupId);
+        allow write: if isGroupOwner(groupId);
+      }
     }
 
     // 消した団体アカウントの写し。設定の「アカウントを削除する」で、団体の持ち主が
