@@ -31,10 +31,15 @@ if (!['stg', 'prod'].includes(対象)) {
 }
 const 企画 = 対象 === 'stg' ? 'kyudoscoremanager-stg' : 'kyudoscoremanager';
 
-// 消すのは、末尾に 消す を付けたときだけ。アドレスを並べればその人だけ。
-// 何も書かずに 消す だけだと、一覧の全員が対象になる
+// 消すのは、末尾に 消す と、消したいアドレスを並べたときだけ。その人だけを消す。
+// アドレスを書かずに 消す だけでは消さない（前は一覧の全員が対象だった。本番で打ち間違えると戻せない）
 const 消す = process.argv[3] === '消す';
 const 名指し = 消す ? process.argv.slice(4).map((x) => x.toLowerCase()) : [];
+if (消す && !名指し.length) {
+  console.error('消すときは、消したいアドレスを並べてください（全員をまとめて消すことはしません）。');
+  console.error('  node scripts/find-orphan-accounts.mjs ' + 対象 + ' 消す a@example.com b@example.com');
+  process.exit(1);
+}
 
 // 団体を持たなくても不思議でない利用者（運営者の管理用）。
 //
@@ -149,22 +154,17 @@ console.log('  本人が使っている可能性もあるので、消すかど�
 if (!消す) {
   console.log('\n消すときは、末尾に 消す と、消したいアドレスを並べてください。');
   console.log('  node scripts/find-orphan-accounts.mjs ' + 対象 + ' 消す a@example.com b@example.com');
-  console.log('アドレスを書かずに 消す だけを付けると、上の全員が対象になります。');
   process.exit(0);
 }
 
 // 名指しされたものが一覧に無いときは、団体を持っている人かもしれない。
 // 取り違えて消すと戻せないので、その場合は何もしない
-const 消す対象 = 名指し.length
-  ? 取り残され.filter((u) => 名指し.includes(String(u.email).toLowerCase()))
-  : 取り残され;
-if (名指し.length) {
-  const 無い = 名指し.filter((m) => !取り残され.some((u) => String(u.email).toLowerCase() === m));
-  if (無い.length) {
-    console.error('\n一覧に無いアドレスが指定されています: ' + 無い.join(', '));
-    console.error('団体を持っている人かもしれません。念のため何も消しません。');
-    process.exit(1);
-  }
+const 消す対象 = 取り残され.filter((u) => 名指し.includes(String(u.email).toLowerCase()));
+const 無い = 名指し.filter((m) => !取り残され.some((u) => String(u.email).toLowerCase() === m));
+if (無い.length) {
+  console.error('\n一覧に無いアドレスが指定されています: ' + 無い.join(', '));
+  console.error('団体を持っている人かもしれません。念のため何も消しません。');
+  process.exit(1);
 }
 
 // 消す前に控えを残す。あとから「誰を消したか」を説明できないと、
