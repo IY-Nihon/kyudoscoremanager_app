@@ -18,9 +18,27 @@ const {
   雲へ書く記録,
   送った版に印を付ける,
   送った版の表,
+  雲から読んだか,
 } = require('./storeShared');
 const 学 = require('./gakunen');
 const 区 = require('./kubun');
+
+/**
+ * 逆引き表（member_lookup）を合わせた跡。店ごとに持つ（状態 を鍵にする）。端末には残さない：
+ * 起動して最初は必ず雲を読む（ほかの端末が表を変えていることがある）
+ *   済み … 最後に雲と合わせ終えたときの名簿と削除の控えの印。同じなら読まない
+ *   走っている・もう一度 … 同時に 2 本走らせない。走っている間に呼ばれたら、終わってから 1 回だけ見直す
+ */
+const 逆引きの跡 = new WeakMap();
+const 逆引きの印 = (団体, 部員たち, 削除の控え) =>
+  JSON.stringify([
+    団体,
+    (部員たち || [])
+      .filter((部員) => 部員 && 部員.id)
+      .map((部員) => [部員.id, 部員.personalId || ''])
+      .sort((甲, 乙) => (甲[0] < 乙[0] ? -1 : 甲[0] > 乙[0] ? 1 : 0)),
+    Object.keys(削除の控え || {}).sort(),
+  ]);
 
 /** メンバー（卒業生も）を雲へ書く形にする。雲には「同期済み」として書く（記録と同じ） */
 const 雲へ送る人 = (人) =>
@@ -255,6 +273,8 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
     // 復活させないため。クラウドから消えたのを確かめてから控えを外す
     const 控え = Object.assign({}, 状態().deletedMembers);
     控え[部員ID] = Date.now();
+    const 消す人 = 状態().members.find((部員) => 部員 && 部員.id === 部員ID);
+    const 消す個人ID = 消す人 && /^\d{4}$/.test(消す人.personalId || '') ? 消す人.personalId : null;
     書く({
       members: 状態().members.filter((部員) => 部員.id !== 部員ID),
       deletedMembers: 控え,
@@ -264,6 +284,13 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
       .then(() =>
         Promise.all([
           状態().syncMemberLookup(),
+          // その人の個人ID の行も名指しで消す。逆引き表の整理は、名簿が空に見えるときは行を消さないので、
+          // 最後の 1 人を消したときに残ってしまう
+          消す個人ID
+            ? Firestore.deleteDoc(
+                Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/member_lookup`, 消す個人ID)
+              )
+            : null,
           // その人の招待リンクを取り消す（名簿が空になっても残らないよう名指しで）
           状態().activeRole === 'group'
             ? require('./memberInvite').招待を取り消す(
@@ -279,6 +306,16 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
   syncMemberLookup: async () => {
     const { activeGroupId: 団体, activeRole, members } = 状態();
     if (!団体 || activeRole !== 'group' || !Firebaseの器.db) return;
+    if (!逆引きの跡.has(状態)) 逆引きの跡.set(状態, { 済み: null, 走っている: false, もう一度: false });
+    const 跡 = 逆引きの跡.get(状態);
+    if (跡.走っている) {
+      跡.もう一度 = true;
+      return;
+    }
+    // 名簿（id と個人ID）と削除の控えが、前に合わせ終えたときと同じなら読まない（同期のたびに表を全部読んでいた）
+    const 印 = 逆引きの印(団体, members, 状態().deletedMembers);
+    if (跡.済み === 印) return;
+    跡.走っている = true;
     try {
       const 返り = await Firestore.getDocs(
         Firestore.collection(Firebaseの器.db, `groups/${団体}/member_lookup`)
@@ -292,6 +329,12 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
       let 件数 = 0;
       const 今いる部員 = new Set((members || []).filter((部員) => 部員 && 部員.id).map((部員) => 部員.id));
       返り.forEach((文書) => {
+        // 名簿が空に見えるとき（まだ読めていない・控えが壊れた）は、どの行も消さない。
+        // 消すと、全員がログインできなくなる（足すだけにする）
+        if (!今いる部員.size) {
+          作る表.delete(文書.id);
+          return;
+        }
         // 招待リンクの合言葉（src/memberInvite.js）は個人ID ではないので、下の突き合わせに
         // かけない（かけると「知らない番号」として消してしまう）。メンバーから外れた人の
         // 合言葉だけ片付ける。名簿が空のとき（まだ読めていないことがある）は消さない。
@@ -325,8 +368,16 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
         await 一括.commit();
         console.log('[Store] member_lookup synced:', 件数);
       }
+      // 済みにするのは、雲から読めて、書き込みも届いてから（控えから答えた表で済みにしない）
+      if (雲から読んだか(返り)) 跡.済み = 印;
     } catch (誤り) {
       console.error('[Store] syncMemberLookup error:', 誤り);
+    } finally {
+      跡.走っている = false;
+    }
+    if (跡.もう一度) {
+      跡.もう一度 = false;
+      await 状態().syncMemberLookup();
     }
   },
   /**
