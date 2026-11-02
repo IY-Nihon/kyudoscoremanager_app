@@ -230,6 +230,8 @@ const useScoreStore = zustand.create()(
         // これが無いと、送信が失われたときに消したメンバーが復活する。
         // 記録側の permanentlyDeleted と同じ考え方。
         deletedMembers: {},
+        // 出欠の画面が受け取った正規練習日（{ 団体, 練習日 }）。開いたときにすぐ出す。ログアウトで捨てる
+        練習日の控え: null,
         isNetworkOnline: true,
         isAdminMode: false,
         ...学年まわりの初めの値,
@@ -353,6 +355,7 @@ const useScoreStore = zustand.create()(
               雲の境目: null,
               全部そろえた時刻: 0,
               端末から外した記録: [],
+              練習日の控え: null,
               // 履歴の記録を直している途中の控えも、団体を離れるときに捨てる
               履歴の編集: null,
               analysisSelectedTags: [],
@@ -384,6 +387,7 @@ const useScoreStore = zustand.create()(
                 雲の境目: null,
                 全部そろえた時刻: 0,
                 端末から外した記録: [],
+                練習日の控え: null,
                 ...学年まわりの初めの値,
               });
             }
@@ -1160,6 +1164,7 @@ const useScoreStore = zustand.create()(
           trash: 状態の中身.trash,
           permanentlyDeleted: 状態の中身.permanentlyDeleted,
           deletedMembers: 状態の中身.deletedMembers,
+          練習日の控え: 状態の中身.練習日の控え,
           shotsPerRound: 状態の中身.shotsPerRound,
           activeSessionID: 状態の中身.activeSessionID,
           viewScale: 状態の中身.viewScale,

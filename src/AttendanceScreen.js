@@ -61,7 +61,11 @@ const AttendanceScreen = () => {
   const 区分の絞り = 区分たち.some((区分) => 区分.id === 選んだ区分) ? 選んだ区分 : null;
   const [tab, setTab] = React.useState('stats');
   const [rangeType, setRangeType] = React.useState('month');
-  const [practiceDays, setPracticeDays] = React.useState({});
+  // 前に受け取った練習日を端末の控えから先に出す（見張りの最初の返事を待つあいだ、印が空にならない）
+  const [practiceDays, setPracticeDays] = React.useState(() => {
+    const 控え = useScoreStore.getState().練習日の控え;
+    return 控え && 控え.団体 === activeGroupId ? 控え.練習日 : {};
+  });
   const [loadingMsg, setLoadingMsg] = React.useState(null);
   const [selectedMember, setSelectedMember] = React.useState(null);
   const [aiPreviewItems, setAiPreviewItems] = React.useState(null);
@@ -98,6 +102,10 @@ const AttendanceScreen = () => {
           days[doc.id] = doc.data();
         });
         setPracticeDays(days);
+        // AI チャットの控えにも渡す（聞かれたときに読み直さない）。端末にも覚え、次に開いたときすぐ出す
+        const 練 = require('./practiceDays');
+        練.練習日を置く(activeGroupId, days);
+        useScoreStore.setState({ 練習日の控え: { 団体: activeGroupId, 練習日: 練.覚える形(days) } });
       },
       // 受け口が無いと、出たあとに断られたときの誤りが SDK の console に残るだけになる
       (誤り) => {
