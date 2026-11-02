@@ -22,7 +22,7 @@ const { styles } = require('./settingsStyles');
 const { useストアの一部 } = require('./storeSlice');
 const Icons = require('@expo/vector-icons');
 const { use横流し } = require('./yokoNagashi');
-const { db } = require('./db');
+const { db, auth } = require('./db');
 const { メールを整える } = require('./totonoeru');
 const Firestore = require('firebase/firestore');
 const ExpoImagePicker = require('expo-image-picker');
@@ -127,7 +127,11 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
     送っている.current = true;
     setInquirySending(true);
     try {
-      await Firestore.addDoc(Firestore.collection(db, 'inquiries'), {
+      // 送った時刻の控えを「今」にするのと一緒に送る（決まりが 1 人 2 分に 1 件までに絞る。2026-11-03）
+      const 一括 = Firestore.writeBatch(db);
+      if (auth && auth.currentUser)
+        一括.set(Firestore.doc(db, 'rate_limits', auth.currentUser.uid), { inquiryAt: Firestore.serverTimestamp() }, { merge: true });
+      一括.set(Firestore.doc(Firestore.collection(db, 'inquiries')), {
         email: メール,
         content: inquiryContent,
         imagesBase64: inquiryImages,
@@ -138,11 +142,19 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
         memberId: activeRole === 'member' ? myMemberId || '' : '',
         memberName: activeRole === 'member' ? myMemberName || '' : '',
       });
+      await 一括.commit();
       Alert.alert('完了', 'お問い合わせを送信しました');
       空にして閉じる();
     } catch (err) {
       console.error('Inquiry send error:', err);
-      Alert.alert('エラー', '送信に失敗しました。再度お試しください。');
+      // 続けて送ると決まりが断る（1 人 2 分に 1 件まで）
+      const 断られた = /permission/i.test(String((err && (err.code || err.message)) || ''));
+      Alert.alert(
+        'エラー',
+        断られた
+          ? '続けて送れません。2 分ほど待ってから、もう一度お試しください。'
+          : '送信に失敗しました。再度お試しください。'
+      );
     } finally {
       送っている.current = false;
       setInquirySending(false);

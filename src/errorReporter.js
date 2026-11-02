@@ -80,16 +80,20 @@ const 係 = 決まり.送り係をつくる({
     // createdAt は Firestore 側の時刻。端末の時計が狂っていても並べられる。
     // 電波が無いと Firestore は失敗せずに黙って待ち続けるので、時間で見切る。
     // 見切らないと、アプリを閉じた時点で便りごと消える
-    await 決まり.間に合わなければ諦める(
-      Firestore.addDoc(
-        Firestore.collection(器.db, 'errorReports'),
-        Object.assign(決まり.送る形(便), {
-          createdAt: new Date(),
-          expireAt: new Date(Date.now() + 便りを置く日数 * 86400000),
-        })
-      ),
-      送るのを待つ時間
+    // 送った時刻の控え（rate_limits/{本人}）を「今」にするのと一緒に送る。決まりが 1 人 10 秒に 1 件までに絞る
+    //（断られたら貯めに残り、あとで出し直す）
+    const 人 = 器.auth && 器.auth.currentUser;
+    if (!人) throw new Error('ログインしていない');
+    const 一括 = Firestore.writeBatch(器.db);
+    一括.set(
+      Firestore.doc(Firestore.collection(器.db, 'errorReports')),
+      Object.assign(決まり.送る形(便), {
+        createdAt: new Date(),
+        expireAt: new Date(Date.now() + 便りを置く日数 * 86400000),
+      })
     );
+    一括.set(Firestore.doc(器.db, 'rate_limits', 人.uid), { reportAt: Firestore.serverTimestamp() }, { merge: true });
+    await 決まり.間に合わなければ諦める(一括.commit(), 送るのを待つ時間);
   },
   読む: () => 貯めの控え,
   書く: 貯めを書く,
