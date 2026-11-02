@@ -111,7 +111,7 @@ for (const g of 団体たち) {
   const 例 = [];
   名簿.forEach((m) => {
     const pid = 素に(m.f.personalId);
-    if (!pid || !/^\d{4}$/.test(String(pid))) return;
+    if (!pid || !/^(\d{4}|[A-HJKMNP-Z2-9]{6})$/.test(String(pid))) return;
     const 指す先 = 逆引きの表.get(String(pid));
     if (指す先 === undefined) {
       無し++;

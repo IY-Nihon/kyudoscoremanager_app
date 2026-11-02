@@ -23,6 +23,7 @@ const { styles } = require('./settingsStyles');
 const { useストアの一部 } = require('./storeSlice');
 const 規則 = require('./syncRules');
 const 学 = require('./gakunen');
+const 個人ID = require('./kojinId');
 const { 団体の種類を選ぶ } = require('./GroupTypePicker');
 const { 区分の設定, 学年の並びの設定 } = require('./DivisionSettings');
 const 案内 = require('./TutorialGuide');
@@ -63,6 +64,7 @@ const SettingsScreen = () => {
     myMemberId,
     myMemberName,
     members = [],
+    alumni = [],
     setAuth,
     isAdminMode,
     自動ロックする,
@@ -106,6 +108,7 @@ const SettingsScreen = () => {
     'myMemberId',
     'myMemberName',
     'members',
+    'alumni',
     'setAuth',
     'isAdminMode',
     '自動ロックする',
@@ -326,6 +329,28 @@ const SettingsScreen = () => {
               null,
               true
             )}
+            {/* 個人ID を 6 字にする（2026-11-03）。まだ 4 桁の人がいるときだけ、管理者モードで出す。
+                替えた人の前の ID はその場で使えなくなる（入っている端末はそのまま）。4 桁は使える終わりを過ぎると
+                入れなくなり、持ち主の端末が残りを自動で替える（src/kojinId.js） */}
+            {activeRole === 'group' &&
+              isAdminMode &&
+              [...members, ...alumni].some((人) => 人 && 個人ID.古い形.test(人.personalId || '')) &&
+              行('key-outline', '全員の個人IDを新しくする', () =>
+                Alert.alert(
+                  '全員の個人IDを新しくする',
+                  `個人IDを、大文字と数字の 6 字（例 K7MP3X）に替えます。前の 4 桁の ID は、すぐに使えなくなります（いまログインしている人はそのまま使えます）。替えたあと、メンバーのタブで各自の新しい ID を伝えてください。何もしなくても、${個人ID.古い形を使える終わり.slice(5).replace('-', '月').replace(/^0/, '')}日からは 4 桁では入れなくなります。`,
+                  [
+                    { text: 'やめる', style: 'cancel' },
+                    {
+                      text: '新しくする',
+                      onPress: async () => {
+                        const 人数 = await useScoreStore.getState().ensurePersonalIds(true);
+                        Alert.alert('新しくしました', `${人数 || 0} 人の個人IDを新しくしました。メンバーのタブで、各自の新しい ID を伝えてください。`);
+                      },
+                    },
+                  ]
+                )
+              )}
             {/* 団体アカウントで、管理者モードのときだけ出す。押すと警告の窓へ */}
             {activeRole === 'group' &&
               isAdminMode &&

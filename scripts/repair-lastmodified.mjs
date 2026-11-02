@@ -53,7 +53,7 @@ for (const g of 団体) {
   const H = { 'Content-Type': 'application/json', Authorization: `Bearer ${s.idToken}` };
   const ms =
     JSON.parse(fs.readFileSync(`${BK}/firestore/groups__${g}__members.json`, 'utf8')).documents || [];
-  const m = ms.find((d) => /^\d{4}$/.test(d.fields?.personalId?.stringValue || ''));
+  const m = ms.find((d) => /^(\d{4}|[A-HJKMNP-Z2-9]{6})$/.test(d.fields?.personalId?.stringValue || ''));
   if (!m) {
     集計.push({ 団体: g, 対象: 0, 備考: '名簿が空' });
     continue;

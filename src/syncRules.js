@@ -351,17 +351,11 @@ function cleanUpSessions(sessions) {
 }
 
 /**
- * 名簿と卒業生のどちらとも重ならない4桁の個人IDを作る。
+ * 名簿と卒業生のどちらとも重ならない個人IDを作る（大文字と数字の 6 字。src/kojinId.js。2026-11-03）。
  */
-function generateUniquePersonalId(members, alumni) {
-  const 使用中 = new Set(
-    [...members.map((部員) => 部員.personalId), ...alumni.map((卒業生) => 卒業生.personalId)].filter(Boolean)
-  );
-  let id;
-  do {
-    id = Math.floor(1000 + 9000 * Math.random()).toString();
-  } while (使用中.has(id));
-  return id;
+function generateUniquePersonalId(members, alumni, 乱数源) {
+  const 使用中 = [...members.map((部員) => 部員.personalId), ...alumni.map((卒業生) => 卒業生.personalId)].filter(Boolean);
+  return require('./kojinId').個人IDを作る(使用中, 乱数源);
 }
 
 /**

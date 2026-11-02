@@ -27,9 +27,9 @@ const 台帳 = 団体を借りる('100006', 'seed-tutorial-shots.mjs');
 const 団体 = { id: 台帳.id, name: 台帳.名, email: 台帳.email };
 
 const 部員 = [
-  { id: 'mem-shot-1', personalId: '2001', name: '山田 太郎', gender: '男子', grade: 3, termKi: 51 },
-  { id: 'mem-shot-2', personalId: '2002', name: '鈴木 花子', gender: '女子', grade: 2, termKi: 52 },
-  { id: 'mem-shot-3', personalId: '2003', name: '田中 一郎', gender: '男子', grade: 1, termKi: 53 },
+  { id: 'mem-shot-1', personalId: 'SHT2AA', name: '山田 太郎', gender: '男子', grade: 3, termKi: 51 },
+  { id: 'mem-shot-2', personalId: 'SHT2AB', name: '鈴木 花子', gender: '女子', grade: 2, termKi: 52 },
+  { id: 'mem-shot-3', personalId: 'SHT2AC', name: '田中 一郎', gender: '男子', grade: 1, termKi: 53 },
 ];
 
 // 月をまたいで少しずつ上がっていく形にする。分析のグラフに動きが出る

@@ -646,13 +646,15 @@ const LoginScreen = () => {
                   )}
                   {画面の種類 === 'login_member' && (
                     <入力の段
-                      名="個人ID（4桁）"
+                      名="個人ID"
                       絵="person"
-                      placeholder="例: 1234"
+                      // 新しい個人ID は大文字と数字の 6 字（src/kojinId.js）。前の 4 桁も使える終わりまでは入れる
+                      placeholder="例: K7MP3X"
                       value={個人IDの入力}
                       onChangeText={個人IDの入力を置く}
-                      keyboardType="number-pad"
-                      maxLength={4}
+                      autoCapitalize="characters"
+                      autoCorrect={false}
+                      maxLength={6}
                     />
                   )}
                   {画面の種類 === 'register' && (

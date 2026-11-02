@@ -30,14 +30,14 @@ export const 控えの道 = (団体) => path.join('e2e', '.auth', `${団体}.jso
 setup('団体100002に個人で入っておく', async ({ page }) => {
   setup.setTimeout(120_000);
   const 団体 = '100002';
-  const 個人ID = '1023';
+  const 個人ID = 'KYD2E2';
   await page.goto('/');
   const 番号欄 = page.getByPlaceholder('例: 123456', { exact: true });
   await 番号欄.waitFor({ state: 'visible', timeout: 60_000 });
   await page.getByText('個人', { exact: true }).click();
   await 番号欄.click();
   await 番号欄.pressSequentially(団体, { delay: 20 });
-  const 個人欄 = page.getByPlaceholder('例: 1234', { exact: true });
+  const 個人欄 = page.getByPlaceholder('例: K7MP3X', { exact: true });
   await 個人欄.click();
   await 個人欄.pressSequentially(個人ID, { delay: 20 });
   await page.getByText('ログイン', { exact: true }).click();
