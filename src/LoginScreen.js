@@ -254,11 +254,14 @@ const LoginScreen = () => {
       const 結果 = await FirebaseAuth.signInWithPopup(auth, new FirebaseAuth.GoogleAuthProvider());
       const メール = 結果?.user?.email;
       if (!メール) throw new Error('Google からメールアドレスを受け取れませんでした');
-      // 同じメールでもう団体を持っていないか。持っていれば作らずに知らせる
+      // 同じメールでもう団体を持っていないか。持っていれば作らずに知らせる（1 つのメールで団体は 1 つ）。
+      // 団体を作った口座には必ずパスワードがある（メールで作る・Google で作るときも持たせる）。
+      // 団体の帳面を引く問い合わせは、決まりで一覧が管理者だけなので今は断られる（断られたら見ない）
+      const パスワードがある = (結果.user.providerData || []).some((p) => p && p.providerId === 'password');
       const 既に = await Firestore.getDocs(
         Firestore.query(Firestore.collection(db, 'group_accounts'), Firestore.where('email', '==', メール))
       ).catch(() => null);
-      if (既に && !既に.empty) {
+      if (パスワードがある || (既に && !既に.empty)) {
         await FirebaseAuth.signOut(auth).catch(() => {});
         Alert.alert(
           'すでにあります',
@@ -312,12 +315,27 @@ const LoginScreen = () => {
       Googleのメールを置く(null);
       return;
     }
+    // 6 文字未満は Firebase が必ず断る。押したところで止める（欄の下にも注意が出ている）
+    if (パスワードが短いか(合言葉の入力)) {
+      Alert.alert('エラー', 'パスワードは6文字以上で設定してください');
+      return;
+    }
     処理中を置く(true);
     try {
-      // Google で入った人にも、団体ログインのパスワードを持たせる
-      await FirebaseAuth.updatePassword(auth.currentUser, 合言葉の入力).catch(() => {
-        // 直後なので普通は通る。通らなくても団体は作れるので止めない
-      });
+      // Google で入った人にも、団体ログインのパスワードを持たせる。持てないまま団体を作ると、
+      // 団体IDとパスワードでは誰も入れない団体ができる。作らずにこの画面に残す
+      try {
+        await FirebaseAuth.updatePassword(auth.currentUser, 合言葉の入力);
+      } catch (誤り) {
+        const 電波 = String((誤り && 誤り.code) || '') === 'auth/network-request-failed';
+        Alert.alert(
+          '登録失敗',
+          電波
+            ? '電波の良い場所でもう一度『作成』を押してください。'
+            : 'パスワードを登録できませんでした。別のパスワードを入れて、もう一度『作成』を押してください。'
+        );
+        return;
+      }
       await 団体を作る(Googleのメール);
       Googleのメールを置く(null);
     } catch (誤り) {
