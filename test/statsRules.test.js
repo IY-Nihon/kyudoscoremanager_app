@@ -444,3 +444,12 @@ test('成績を数える：立ちの途中で交代したときは、それぞ�
   assert.strictEqual(集計(記録, 'm1').端数の射, 2);
   assert.strictEqual(集計(記録, 'm9').端数の射, 2);
 });
+
+test('記録の情報を変える窓：統計に含めるの入り切りは、統計の決まりと同じく未設定を「含める」で出す', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const 窓 = fs.readFileSync(path.join(__dirname, '..', 'src', 'EditSessionModal.js'), 'utf8');
+  // 未設定（古い記録）をそのまま置くと切りに見え、ほかを直して保存しただけで統計から外れる
+  assert.match(窓, /統計に入れるを置く\(session\.includeInStats !== false\)/);
+  assert.strictEqual(集計に入れるか({ id: '古い記録' }), true);
+});
