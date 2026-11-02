@@ -236,6 +236,9 @@ test('進級待ちの年：4 月 1 日を過ぎ、その年の進級がまだの
   assert.strictEqual(学.進級待ちの年(new Date(2027, 3, 1), 2026, false), null, '進級の確認が切');
   assert.strictEqual(学.進級待ちの年(new Date(2027, 3, 1), null, true), null, '前の年が無い団体');
   assert.strictEqual(学.進級待ちの年(new Date(2028, 6, 1), 2026, true), 2028, '1 年飛んでも今年の分だけ');
+  // 年度で数える：2026 年度の進級を済ませないまま年が明けた 1〜3 月も、2026 年度の窓を出す
+  assert.strictEqual(学.進級待ちの年(new Date(2027, 1, 1), 2025, true), 2026, '年度の終わりの 1〜3 月に窓が出ない');
+  assert.strictEqual(学.進級待ちの年(new Date(2027, 1, 1), 2026, true), null, '2026 年度は済んでいる');
 });
 
 test('期の計算と卒業の年度', () => {
