@@ -11,7 +11,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-const { 窓で止めるか, 帯の長さ, 帯の時計をつくる, 帯の下限, 帯の上限 } = require('../src/dialogRules');
+const { 窓で止めるか, 帯の長さ, 帯の時計をつくる, 帯の下限, 帯の上限, 戻るで押すボタン } = require('../src/dialogRules');
 
 // 帯のまま（短い一言。押させる必要がない）
 const 帯でよい文 = [
@@ -201,4 +201,21 @@ test('帯は Modal に入れない：焦点も指も取らない箱に描き、�
   const 窓の所 = 本体.slice(本体.indexOf('{いま ?'));
   assert.ok(/<Modal/.test(窓の所), '窓が Modal でなくなっている');
   assert.ok(!窓の所.includes('帯の層'), '窓まで帯の箱に入れると、焦点が囲われず背面が操作できてしまう');
+});
+
+test('戻るボタンで窓を閉じたら、やめる（cancel）を押したことにする。ボタンが 1 つならそのボタン、ほかは何も押さない', () => {
+  const やめる = { text: 'キャンセル', style: 'cancel' };
+  const 消す = { text: '消す', style: 'destructive' };
+  assert.strictEqual(戻るで押すボタン([消す, やめる]), やめる);
+  const ok = { text: 'OK' };
+  assert.strictEqual(戻るで押すボタン([ok]), ok);
+  assert.strictEqual(戻るで押すボタン([消す, { text: '残す' }]), null);
+  assert.strictEqual(戻るで押すボタン(null), null);
+});
+
+test('窓は重なったら順に出す（あとの窓で前の窓を上書きしない）', () => {
+  const 本体 = require('node:fs').readFileSync(require('node:path').join(__dirname, '../src/AppDialog.js'), 'utf8');
+  assert.ok(/窓の待ち\.current\.push/.test(本体), '開いている間に来た窓を待たせていない');
+  // 帯を置く(null) は帯の消し方なので見ない
+  assert.ok(!/[^を]置く\(null\)/.test(本体), 'ボタンや戻るで、待っている窓を飛ばして閉じている');
 });
