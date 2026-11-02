@@ -27,6 +27,7 @@ const { db } = require('./db');
 const firestore = require('firebase/firestore');
 // 出欠の自動判定。交代で入った人も数えるため、決まりは切り出してある
 const { 日付の文字, その日の出欠, 練習日で数える } = require('./attendanceRules');
+const 予 = require('./yoteihyou');
 // Web-safe lazy imports to prevent null.default crash on web
 var _docPickerModule = null;
 var _fsModule = null;
@@ -129,20 +130,16 @@ const AttendanceScreen = () => {
       else await firestore.setDoc(docRef, { date: dateStr, created: new Date() });
     } catch (誤り) {
       console.error(誤り);
-      // 何も出ないと、押しても反応しないように見える。ログインが切れていると保存が断られる
-      const 権限 = /permission|unauthenticated|auth/i.test(
-        String((誤り && (誤り.code || 誤り.message)) || '')
-      );
-      // ログアウトさせずに入り直す窓を出す（src/ReloginModal.js）。ログアウトすると送れていない記録が控えに回る
-      if (権限 && !useScoreStore.getState().入り直しをあとに)
-        useScoreStore.setState({ 入り直しが要る: true });
-      Alert.alert(
-        '保存できませんでした',
-        権限
-          ? 'ログインの有効期限が切れているか、この操作の権限がありません。ログインし直してから、もう一度お試しください。'
-          : '通信がつながっていないようです。電波の良い場所でもう一度お試しください。'
-      );
+      // 何も出ないと、押しても反応しないように見える
+      保存の誤りを伝える(誤り);
     }
+  };
+  // 練習日を書けなかったとき（付け外し・予定表の保存で同じ文）。ログインが切れていると保存が断られるので、
+  // ログアウトさせずに入り直す窓を出す（src/ReloginModal.js）。ログアウトすると送れていない記録が控えに回る
+  const 保存の誤りを伝える = (誤り) => {
+    const { 見出し, 文, 権限 } = 予.練習日の保存の誤り(誤り);
+    if (権限 && !useScoreStore.getState().入り直しをあとに) useScoreStore.setState({ 入り直しが要る: true });
+    Alert.alert(見出し, 文);
   };
   const todayStr = getLocalDateString(new Date());
   const getAttendanceStatus = (dateStr, memberId) => {
@@ -202,12 +199,6 @@ const AttendanceScreen = () => {
       // 出席率が同じ場合の基本の並び順（メンバー管理画面と一致）
       return 学.名簿の順に比べる(甲, 乙);
     });
-  const normalizeDate = (dStr) => {
-    if (!dStr) return null;
-    const parts = dStr.split('-');
-    if (parts.length !== 3) return null;
-    return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-  };
   const handlePickPDF = async () => {
     // アプリの改善のため、読ませたファイルと結果を、成功・失敗に関わらず取っておく（src/improvementLog.js）
     let 予定表の記録 = null;
@@ -292,23 +283,8 @@ const AttendanceScreen = () => {
         );
       }
       const data = await aiResponse.json();
-      let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      // JSON部分を抽出
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
-      if (jsonMatch) text = jsonMatch[0];
-      if (!text || text.trim() === '') {
-        throw new Error('AIからの応答内容が空、またはJSON形式ではありませんでした。');
-      }
-      let items;
-      try {
-        items = JSON.parse(text);
-      } catch {
-        // 壊れた JSON の英文（Unexpected token …）は見せない
-        throw new Error('AIの答えを読み取れませんでした。もう一度お試しください。');
-      }
-      const validatedItems = (Array.isArray(items) ? items : [])
-        .map((項目) => ({ date: normalizeDate(項目.date), reason: 項目.reason }))
-        .filter((項目) => !!項目.date);
+      // 形が少し違う答え（```json で囲む・{ days: [...] } で包む・日付だけの並び）も読む（src/yoteihyou.js）
+      const validatedItems = 予.予定表の答えを読む(data.candidates?.[0]?.content?.parts?.[0]?.text || '');
       if (予定表の記録) {
         予定表の記録.中身.結果 = validatedItems.length > 0 ? '読んだ' : '見つからなかった';
         予定表の記録.中身.読み取り = validatedItems;
@@ -361,7 +337,8 @@ const AttendanceScreen = () => {
       }
       setAiPreviewItems(null);
     } catch (誤り) {
-      Alert.alert('エラー', 誤り.message);
+      console.error(誤り);
+      保存の誤りを伝える(誤り);
     } finally {
       setLoadingMsg(null);
     }
