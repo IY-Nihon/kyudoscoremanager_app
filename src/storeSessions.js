@@ -616,9 +616,10 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     const { isLiveActive, liveSessionName } = 状態();
     if (isLiveActive && liveSessionName) ライブへ盤面を送る(liveSessionName, 直した, 本数);
   },
+  // 記録画面を開いたとき。雲との同期はしない（起動時の取り込み・見張り・5 分ごとの同期が受け持つ。
+  // 開くたびに同期すると、起動の直後に同じものを読み直していた）
   loadData: () => {
     状態().checkOfflineSave();
-    状態().syncSessions();
   },
   // オフライン保存が効いているかを確かめ、効いていなければ画面に出す文言を持たせる。
   // 効いていない状態で電波の無い場所で保存すると、画面を閉じた時点で

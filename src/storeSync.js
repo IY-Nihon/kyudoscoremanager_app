@@ -116,30 +116,30 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         //（見張りが代わりに届けていたので気づかなかった。2026-09-24 に本番で確かめて直した）。
         // 境目ちょうど（>=）から取る。同じ時刻の書き込みを取りこぼさないためで、読み直すのは
         // 境目と同じ時刻の文書だけ（前は 10 秒の余裕を取り、その間の文書を毎回読み直していた）
+        // 5 つの読みは互いに待たずに並べて投げる（順に待つと、電波の弱い所で往復の数だけ遅れる）
         const 基準 = (種) => Firestore.Timestamp.fromMillis(Math.max(0, 始めの境目[種] || 0));
-        記録の返り = await Firestore.getDocs(
-          Firestore.query(記録の置き場, Firestore.where('lastModified', '>=', 基準('記録')))
-        );
-        // 境目は差分の問い合わせの結果だけで決める（id で取った分は数えない）
-        const 取り直し = await idで記録を取る(記録の置き場, 取り戻す記録);
+        const 境目より後 = (置き場, 種) =>
+          Firestore.getDocs(Firestore.query(置き場, Firestore.where('lastModified', '>=', 基準(種))));
+        let 取り直し;
+        [記録の返り, 取り直し, 部員の返り, ごみ箱の返り, 卒業生の返り] = await Promise.all([
+          境目より後(記録の置き場, '記録'),
+          // 境目は差分の問い合わせの結果だけで決める（id で取った分は数えない）
+          idで記録を取る(記録の置き場, 取り戻す記録),
+          境目より後(部員の置き場, '部員'),
+          境目より後(ごみ箱の置き場, 'ごみ箱'),
+          境目より後(卒業生の置き場, '卒業生'),
+        ]);
         取り戻した記録 = 取り直し.文書たち;
         雲から取り戻せた = 取り直し.雲から;
-        部員の返り = await Firestore.getDocs(
-          Firestore.query(部員の置き場, Firestore.where('lastModified', '>=', 基準('部員')))
-        );
-        ごみ箱の返り = await Firestore.getDocs(
-          Firestore.query(ごみ箱の置き場, Firestore.where('lastModified', '>=', 基準('ごみ箱')))
-        );
-        卒業生の返り = await Firestore.getDocs(
-          Firestore.query(卒業生の置き場, Firestore.where('lastModified', '>=', 基準('卒業生')))
-        );
       } else {
-        記録の返り = await Firestore.getDocs(
-          Firestore.query(記録の置き場, Firestore.orderBy('date', 'desc'), Firestore.limit(100))
-        );
-        部員の返り = await Firestore.getDocs(部員の置き場);
-        ごみ箱の返り = await Firestore.getDocs(ごみ箱の置き場);
-        卒業生の返り = await Firestore.getDocs(卒業生の置き場);
+        [記録の返り, 部員の返り, ごみ箱の返り, 卒業生の返り] = await Promise.all([
+          Firestore.getDocs(
+            Firestore.query(記録の置き場, Firestore.orderBy('date', 'desc'), Firestore.limit(100))
+          ),
+          Firestore.getDocs(部員の置き場),
+          Firestore.getDocs(ごみ箱の置き場),
+          Firestore.getDocs(卒業生の置き場),
+        ]);
       }
       let 最新の時刻 = 前回の同期時刻;
       // 日時を数に直し、いちばん新しい変更の時刻も控える（終わりの記録に出すだけ）

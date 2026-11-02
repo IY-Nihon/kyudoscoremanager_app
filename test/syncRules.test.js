@@ -714,6 +714,39 @@ test('学年でまとめる：退部した人は現役の学年に混ぜず、�
     組.map((x) => x.学年),
     ['2', '0', '卒', '退']
   );
-  assert.deepStrictEqual(組[0].人たち.map((p) => p.name), ['二'], '退部した人が現役の学年に混ざっている');
+  assert.deepStrictEqual(
+    組[0].人たち.map((p) => p.name),
+    ['二'],
+    '退部した人が現役の学年に混ざっている'
+  );
   assert.match(組[3].題, /^退/);
+});
+
+test('送れていないものがあるか：記録・メンバー・卒業生・ゴミ箱のどれかに未同期があれば真。一覧が同じなら数え直さない', () => {
+  const { 送れていないものがあるか } = require('../src/syncRules');
+  const 届いた = [{ id: 's1', syncStatus: '同期済み' }];
+  const 状態 = { sessions: 届いた, members: [], alumni: [], trash: [] };
+  assert.strictEqual(送れていないものがあるか(状態), false);
+  assert.strictEqual(
+    送れていないものがあるか(Object.assign({}, 状態, { trash: [{ id: 't', syncStatus: '未同期' }] })),
+    true
+  );
+  assert.strictEqual(
+    送れていないものがあるか(Object.assign({}, 状態, { members: [{ id: 'm', syncStatus: '未同期' }] })),
+    true
+  );
+  assert.strictEqual(送れていないものがあるか(状態), false);
+  // 同じ一覧のまま中身だけ書き換えても数え直さない（店は一覧ごと入れ替えるので、入れ替わったときだけ見る）
+  let 読んだ = 0;
+  const 見張る = new Proxy(届いた, {
+    get: (元, 鍵) => {
+      if (鍵 === 'some') 読んだ++;
+      return Reflect.get(元, 鍵);
+    },
+  });
+  const 二回目 = { sessions: 見張る, members: 状態.members, alumni: 状態.alumni, trash: 状態.trash };
+  送れていないものがあるか(二回目);
+  送れていないものがあるか(二回目);
+  送れていないものがあるか(Object.assign({}, 二回目, { historyStack: [1] }));
+  assert.strictEqual(読んだ, 1);
 });
