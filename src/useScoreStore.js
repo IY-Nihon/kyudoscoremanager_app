@@ -904,9 +904,11 @@ const useScoreStore = zustand.create()(
           if (!団体) return { 誤り: '団体に入っていません。' };
           if (!isNetworkOnline) return { 誤り: '電波のある場所で、もう一度押してください。' };
           const 今 = Date.now();
-          const 今年 = new Date().getFullYear();
+          // 進級した年は年度で書く（進級待ちの年と同じ数え方）。暦の年で書くと、1〜3 月に前の年度の進級を
+          // 済ませたとき「次の年に済んだ」となり、その年度の始まりの進級の窓が出なかった
+          const 今年 = 学.年度();
           // 進級する前の年度（2027 年 4 月の進級なら 2026）。卒業した人の leftYear に書く
-          const 前の年度 = 学.年度() - 1;
+          const 前の年度 = 今年 - 1;
           const 設定の道 = Firestore.doc(Firebaseの器.db, `groups/${団体}/config`, 'app_settings');
           let 設定;
           let 雲の部員 = [];
