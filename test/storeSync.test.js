@@ -600,7 +600,7 @@ test('個人ID：送信が失われても、次の同期で送り直される', 
   store.getState().ensurePersonalIds(); // 通信できないと返らないので待たない
   await 待つ(80);
   const 振ったID = store.getState().members[0].personalId;
-  assert.match(振ったID, /^\d{4}$/, '手元にはIDが振られる');
+  assert.match(振ったID, /^[A-HJKMNP-Z2-9]{6}$/, '手元には 6 字の ID が振られる');
   assert.equal(store.getState().members[0].syncStatus, '未同期', '送信前は未同期');
 
   // 送信待ちが失われた＝クラウドは元のまま
@@ -623,7 +623,7 @@ test('個人ID：卒業生の分も送り直される', async () => {
   store.getState().ensurePersonalIds();
   await 待つ(80);
   const 振ったID = store.getState().alumni[0].personalId;
-  assert.match(振ったID, /^\d{4}$/);
+  assert.match(振ったID, /^[A-HJKMNP-Z2-9]{6}$/);
   assert.equal(store.getState().alumni[0].syncStatus, '未同期');
 
   雲.状態.オフライン = false;
@@ -634,7 +634,7 @@ test('個人ID：卒業生の分も送り直される', async () => {
   assert.equal(store.getState().alumni[0].syncStatus, '同期済み');
 });
 
-test('個人ID：持っていない人に4桁で重複しないIDを振る', async () => {
+test('個人ID：持っていない人に 6 字で重複しない ID を振る（4 桁は使える終わりまで替えない）', async () => {
   const { store, 雲 } = 用意();
   const 名簿 = [
     { id: 'mem-1', name: '部員1', personalId: '1234', lastModified: 1 },
@@ -647,7 +647,8 @@ test('個人ID：持っていない人に4桁で重複しないIDを振る', asy
   await 待つ(50);
   const 一覧 = store.getState().members.map((m) => m.personalId);
   assert.equal(一覧[0], '1234', '持っている人は変えない');
-  一覧.forEach((id) => assert.match(id, /^\d{4}$/, '全員4桁になる'));
+  一覧.forEach((id) => assert.ok(require('../src/kojinId').個人IDの形か(id), '全員が使える形になる（前の 4 桁は使える終わりまで残す）'));
+  assert.match(一覧[1], /^[A-HJKMNP-Z2-9]{6}$/, '持っていない人には 6 字');
   assert.equal(new Set(一覧).size, 3, '重複しない');
 });
 
@@ -1266,4 +1267,24 @@ test('記録中のタグ：保存の窓から置いても、候補を押して�
   store.getState().toggleCurrentSessionTag('#合宿');
   assert.deepEqual(store.getState().currentSessionTags, ['#雨天', '#合宿']);
   store.getState().setCurrentSessionTags([]);
+});
+
+test('個人ID：全員を新しくすると、4 桁の人は 6 字になり、前の 4 桁は逆引き表から消える（6 字の人はそのまま）', async () => {
+  const { store, 雲 } = 用意();
+  const 名簿 = [
+    { id: 'mem-1', name: '部員1', personalId: '1234', lastModified: 1 },
+    { id: 'mem-2', name: '部員2', personalId: 'K7MP3X', lastModified: 1 },
+  ];
+  名簿.forEach((m) => 雲.置く(メンバーの道, m.id, Object.assign({}, m)));
+  雲.置く(逆引きの道, '1234', { memberId: 'mem-1' });
+  雲.置く(逆引きの道, 'K7MP3X', { memberId: 'mem-2' });
+  store.setState({ members: 名簿.map((m) => Object.assign({}, m)), alumni: [] });
+  const 人数 = await store.getState().ensurePersonalIds(true);
+  await 待つ(80);
+  assert.equal(人数, 1);
+  const [一, 二] = store.getState().members.map((m) => m.personalId);
+  assert.match(一, /^[A-HJKMNP-Z2-9]{6}$/);
+  assert.equal(二, 'K7MP3X');
+  assert.ok(!雲.中身(逆引きの道).includes('1234'), '前の 4 桁が逆引き表に残っている');
+  assert.ok(雲.中身(逆引きの道).includes(一), '新しい ID が逆引き表に無い');
 });

@@ -7,7 +7,7 @@ const 確 = require('../src/mailKakunin');
 
 test('猶予の終わりは、決まり（inGracePeriod）とアプリで同じ日', () => {
   const 決まり = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8');
-  const 合う = 決まり.match(/request\.time < timestamp\.date\((\d{4}), (\d{1,2}), (\d{1,2})\)/);
+  const 合う = 決まり.match(/function inGracePeriod\(\) \{\s*return request\.time < timestamp\.date\((\d{4}), (\d{1,2}), (\d{1,2})\)/);
   assert.ok(合う, 'firestore.rules に inGracePeriod の日付が無い');
   const 決まりの日 = `${合う[1]}-${合う[2].padStart(2, '0')}-${合う[3].padStart(2, '0')}`;
   assert.equal(決まりの日, 確.猶予の終わり, '決まりとアプリで猶予の終わりが違う（片方だけ止まる）');

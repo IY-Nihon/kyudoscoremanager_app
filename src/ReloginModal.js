@@ -148,9 +148,9 @@ const 入り直しの窓 = () => {
                 }
               }}
               secureTextEntry={!部員}
-              autoCapitalize="none"
+              autoCapitalize={部員 ? 'characters' : 'none'}
               autoCorrect={false}
-              placeholder={部員 ? '例: 1234' : ''}
+              placeholder={部員 ? '例: K7MP3X' : ''}
               onSubmitEditing={入り直す}
             />
             {難点 ? <Text style={styles.難点}>{難点}</Text> : null}

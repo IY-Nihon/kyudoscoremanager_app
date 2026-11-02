@@ -51,6 +51,12 @@ service cloud.firestore {
       return request.time < timestamp.date(2026, 11, 10);
     }
 
+    // 4 桁の個人ID を使える終わり（配信から 1 か月。2026-11-03 本人）。src/kojinId.js の 古い形を使える終わり と同じ日。
+    // 新しい個人ID は、見間違えやすい字を除いた大文字と数字の 6 字（4 桁は団体ID を知れば数分で総当たりできた）
+    function legacyIdUsable() {
+      return request.time < timestamp.date(2026, 12, 3);
+    }
+
     // 団体の確認が済んでいるか（帳面の verified）。持ち主が確認を済ませると、アプリが帳面に書く。
     // 部員はこれを見る（部員の口座は匿名でメールを持たない）
     function groupVerified(groupId) {
@@ -194,6 +200,10 @@ service cloud.firestore {
         && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['groupId', 'memberId', 'personalId', 'claimedAt'])
         && lookupEntry().memberId == request.resource.data.memberId
+        // 個人ID は 6 字（I・L・O・0・1 を除く大文字と数字）。4 桁は使える終わりまで。招待リンクの合言葉はそのまま
+        && (request.resource.data.personalId.matches('^[A-HJKMNP-Z2-9]{6}$')
+            || lookupEntry().get('招待', false) == true
+            || (request.resource.data.personalId.matches('^[0-9]{4}$') && legacyIdUsable()))
         // 確認の済んでいない団体には入れない（2026-11-03）
         && (get(/databases/$(database)/documents/group_accounts/$(request.resource.data.groupId)).data.get('verified', false) == true
             || inGracePeriod())

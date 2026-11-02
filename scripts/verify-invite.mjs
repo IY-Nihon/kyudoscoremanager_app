@@ -85,7 +85,7 @@ try {
   await setDoc(
     projectId,
     `/groups/${団体}/members/${部員}`,
-    { id: 部員, name: '招待 太郎', personalId: '4321' },
+    { id: 部員, name: '招待 太郎', personalId: 'NVT432' },
     持ち主
   );
   await setDoc(projectId, `/groups/${団体}/sessions/ses-1`, { id: 'ses-1', title: '練習' }, 持ち主);
@@ -151,14 +151,14 @@ try {
     { memberId: 部員, 招待: true },
     持ち主
   );
-  await setDoc(projectId, `/groups/${団体}/member_lookup/4321`, { memberId: 部員 }, 持ち主);
+  await setDoc(projectId, `/groups/${団体}/member_lookup/NVT432`, { memberId: 部員 }, 持ち主);
   const 丁 = await signInAnonymously(apiKey);
   匿名たち.push(丁);
   const 切れたので = await 証を書く(丁, 切れた招待);
   見る('6. 期限を過ぎた合言葉では入れない', 切れたので.status === 403, `HTTP ${切れたので.status}`);
   const 期限無しで = await 証を書く(丁, 期限の無い招待);
   見る('   期限の無い招待の文書では入れない', 期限無しで.status === 403, `HTTP ${期限無しで.status}`);
-  const 個人IDで = await 証を書く(丁, '4321');
+  const 個人IDで = await 証を書く(丁, 'NVT432');
   見る(
     '   個人ID（期限を持たない）では今までどおり入れる',
     個人IDで.status === 200,
@@ -170,7 +170,7 @@ try {
     `/groups/${団体}/member_lookup/${新しい招待}`,
     `/groups/${団体}/member_lookup/${切れた招待}`,
     `/groups/${団体}/member_lookup/${期限の無い招待}`,
-    `/groups/${団体}/member_lookup/4321`,
+    `/groups/${団体}/member_lookup/NVT432`,
     `/groups/${団体}/members/${部員}`,
     `/groups/${団体}/sessions/ses-1`,
     `/groups/${団体}`,

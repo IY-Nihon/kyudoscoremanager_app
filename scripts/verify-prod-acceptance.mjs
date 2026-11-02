@@ -176,7 +176,7 @@ const 個人IDのある部員たち = async (g) => {
     await fetch(`${B}/groups/${g}/members?pageSize=300`, { headers: { Authorization: 'Bearer ' + 鍵 } })
   ).json();
   return (j.documents || [])
-    .filter((d) => /^\d{4}$/.test(d.fields?.personalId?.stringValue || ''))
+    .filter((d) => /^(\d{4}|[A-HJKMNP-Z2-9]{6})$/.test(d.fields?.personalId?.stringValue || ''))
     .map((d) => ({ pid: d.fields.personalId.stringValue, mid: d.name.split('/').pop() }));
 };
 
@@ -289,7 +289,7 @@ try {
   // ── 4c. メールの確認（2026-11-03）。検証環境だけ（口座を作って消す）。猶予のあいだと後で期待が変わる
   if (書いてよい) {
     const 決まり = fs.readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8');
-    const 日 = 決まり.match(/request\.time < timestamp\.date\((\d{4}), (\d{1,2}), (\d{1,2})\)/);
+    const 日 = 決まり.match(/function inGracePeriod\(\) \{\s*return request\.time < timestamp\.date\((\d{4}), (\d{1,2}), (\d{1,2})\)/);
     const 猶予中 = !!日 && Date.now() < Date.UTC(Number(日[1]), Number(日[2]) - 1, Number(日[3]));
     const 宛先 = `kakunin-${Date.now()}@example.com`;
     const 番 = String(800000 + Math.floor(Math.random() * 99999));

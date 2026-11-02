@@ -1,5 +1,7 @@
 'use strict';
 
+const 個人ID = require('./kojinId');
+
 /**
  * 店の操作のうち、部員（名簿）を扱うもの：足す・直す・消す、逆引き表、名前のずれを直す、個人IDをそろえる、弓具。
  * （2026-10-05 に useScoreStore.js から分けた。店の名指しは 場.店 にした）
@@ -274,7 +276,7 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
     const 控え = Object.assign({}, 状態().deletedMembers);
     控え[部員ID] = Date.now();
     const 消す人 = 状態().members.find((部員) => 部員 && 部員.id === 部員ID);
-    const 消す個人ID = 消す人 && /^\d{4}$/.test(消す人.personalId || '') ? 消す人.personalId : null;
+    const 消す個人ID = 消す人 && 個人ID.個人IDの形か(消す人.personalId || '') ? 消す人.personalId : null;
     書く({
       members: 状態().members.filter((部員) => 部員.id !== 部員ID),
       deletedMembers: 控え,
@@ -323,7 +325,7 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
       // 個人ID → メンバーの id。雲にまだ無い（か違う）ものが残り、最後に書く
       const 作る表 = new Map();
       (members || []).forEach((部員) => {
-        if (部員 && 部員.id && /^\d{4}$/.test(部員.personalId || '')) 作る表.set(部員.personalId, 部員.id);
+        if (部員 && 部員.id && 個人ID.個人IDの形か(部員.personalId || '')) 作る表.set(部員.personalId, 部員.id);
       });
       const 一括 = Firestore.writeBatch(Firebaseの器.db);
       let 件数 = 0;
@@ -467,7 +469,13 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
       場.名前を合わせている = false;
     }
   },
-  ensurePersonalIds: async () => {
+  /**
+   * 個人ID の形を確かめ、使えない ID を振り直す。
+   * 古い桁も替える が真なら、まだ 4 桁の人も全員 6 字に替える（設定の「全員の個人IDを新しくする」。2026-11-03）。
+   * 替えた人の前の ID は逆引き表から消えるので、その場で使えなくなる（入っている端末はそのまま）
+   * @returns {Promise<number>} 替えた人数
+   */
+  ensurePersonalIds: async (古い桁も替える = false) => {
     const 団体 = 状態().activeGroupId;
     // 名簿を書けるのは団体アカウントだけ。部員の端末で走ると、他人の
     // 個人IDを勝手に振ってしまう。しかも逆引き表（こちらは団体限定）は
@@ -486,16 +494,10 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
         ...部員の写し.map((部員) => 部員.personalId),
         ...卒業生の写し.map((卒業生) => 卒業生.personalId),
       ].filter((個人ID) => !!個人ID);
-    const 形が正しい = (id) => !!id && /^\d{4}$/.test(id);
-    const 空いている番号を作る = (使われている) => {
-      let 候補;
-      let 回数 = 0;
-      do {
-        候補 = Math.floor(1e3 + 9e3 * Math.random()).toString();
-        回数++;
-      } while (使われている.includes(候補) && 回数 < 5e3);
-      return 候補;
-    };
+    // 今使ってよい形か。4 桁は使える終わりまでは替えない（部員が覚えている。持ち主が設定から配り直す）。
+    // 終わりを過ぎた 4 桁と、形の崩れたものは新しい 6 字に替える（src/kojinId.js）
+    const 形が正しい = (id) => (古い桁も替える ? 個人ID.新しい形.test(id || '') : 個人ID.使える個人IDか(id));
+    const 空いている番号を作る = (使われている) => 個人ID.個人IDを作る(使われている);
     const 一括 = Firestore.writeBatch(Firebaseの器.db);
     let 件数 = 0;
     // 形の正しくない個人ID を振り直す。手元は送信が済むまで「未同期」にしておく。送信が失われた場合、
@@ -534,6 +536,7 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
       console.log(`Ensured personal IDs: Updated ${件数} non-compliant IDs.`);
     }
     await 状態().syncMemberLookup();
+    return 件数;
   },
   /** 弓具の履歴を足す。新しいものが上に来るように、日付の降順で並べておく（画面もそう見せている） */
   addEquipment: (memberId, 中身) => {

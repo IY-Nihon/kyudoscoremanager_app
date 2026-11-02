@@ -117,7 +117,7 @@ for (const g of 対象) {
     `/groups/${g.id}/alumni/alu-${g.id}-001`,
     {
       id: `alu-${g.id}-001`,
-      personalId: '9999',
+      personalId: 'SEED99',
       name: '卒業生1',
       grade: 5,
       lastModified: Date.now(),

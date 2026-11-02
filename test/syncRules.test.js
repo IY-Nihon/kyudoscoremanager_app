@@ -252,11 +252,13 @@ test('cleanUpSessions: 直すところの在る記録だけ入れ替える', () 
 });
 
 // ──────────────────────────────────────────────────────────────
-test('generateUniquePersonalId: 4桁で、使用中と重ならない', () => {
-  const 使用中 = Array.from({ length: 8999 }, (_, i) => ({ personalId: String(1000 + i) })); // 9999 だけ空き
-  const id = generateUniquePersonalId(使用中, []);
-  assert.match(id, /^\d{4}$/);
-  assert.equal(id, '9999');
+test('generateUniquePersonalId: 大文字と数字の 6 字（I・L・O・0・1 なし）で、使用中と重ならない', () => {
+  let 回 = 0;
+  // 1 回目は使用中と同じ字の並びを出し、2 回目に別の並びを出す乱数
+  const 乱数源 = { getRandomValues: (桶) => { 桶.fill(回++ === 0 ? 0 : 1); return 桶; } };
+  const id = generateUniquePersonalId([{ personalId: 'AAAAAA' }], [], 乱数源);
+  assert.match(id, /^[A-HJKMNP-Z2-9]{6}$/);
+  assert.equal(id, 'BBBBBB');
 });
 
 // ──────────────────────────────────────────────────────────────

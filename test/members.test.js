@@ -61,7 +61,7 @@ test('追加：メンバーを足すとクラウドへ届く', async () => {
   const 手元 = 名簿(store);
   assert.equal(手元.length, 1);
   assert.equal(手元[0].name, '新入部員');
-  assert.match(手元[0].personalId, /^\d{4}$/, '個人IDが4桁で振られる');
+  assert.match(手元[0].personalId, /^[A-HJKMNP-Z2-9]{6}$/, '個人ID が大文字と数字の 6 字で振られる');
   assert.equal(雲.中身(名簿の道).length, 1, 'クラウドにも1件');
 });
 

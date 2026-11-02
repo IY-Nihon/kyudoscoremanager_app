@@ -24,7 +24,7 @@ const 団体 = '100002';
 // ログインは下ごしらえ（auth.setup.mjs）で1回だけ済ませ、その控えを使う。
 // 各検査でログインし直さないので速く、認証の投げすぎで断られることもない
 test.use({ storageState: 'e2e/.auth/100002-個人.json' });
-const 個人ID = '1023';
+const 個人ID = 'KYD2E2';
 
 test('個人ログインでも、案内の履歴と分析の見本が出る', async ({ page }) => {
   test.setTimeout(180000);

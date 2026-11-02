@@ -23,7 +23,7 @@ if (!持ち主) throw new Error('検証環境の団体 100003 に入れません
 // 部員：匿名で入り、名簿の 1 人として所属のしるしを置く（アプリの個人ログインと同じ形）
 const 匿名 = await signInAnonymously(apiKey);
 const 名簿 = await listAll(projectId, `/groups/${団体}/members`, 持ち主);
-const 部員 = 名簿.find((m) => /^\d{4}$/.test(m.data.personalId || ''));
+const 部員 = 名簿.find((m) => /^(\d{4}|[A-HJKMNP-Z2-9]{6})$/.test(m.data.personalId || ''));
 if (!部員) throw new Error('個人IDのある部員がいません');
 const しるし = `/member_claims/${匿名.uid}`;
 const 置いた = await setDoc(

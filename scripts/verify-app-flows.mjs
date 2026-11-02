@@ -107,7 +107,7 @@ check('REG-18', '進級判定の設定読み取り', 200, cfgGet.status);
 const promote = await setDoc(
   projectId,
   `/groups/${G1}/alumni/promo-test-${stamp}`,
-  { id: `promo-test-${stamp}`, name: '進級テスト', grade: 5, personalId: '9998' },
+  { id: `promo-test-${stamp}`, name: '進級テスト', grade: 5, personalId: 'PRM9X8' },
   tokG1
 );
 check('REG-18', '卒業生への移動（alumni へ書く）', 200, promote.status);
