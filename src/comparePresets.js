@@ -34,14 +34,27 @@ function この団体のひな型(一覧, 団体id) {
  * @param {{名前:string, 部員idたち:Array, 団体id:string}} 新しいの
  * @returns {Array} 新しい一覧（元は書き換えない）
  */
+/**
+ * 部員の id の並びを、文字にそろえて重なりを除く。空の id（null・空の字）は落とす。
+ * 落とさないと「null」という id の人が 1 人いることになり、当てはめるたびに「見つからない」が 1 人増えた
+ */
+const idをそろえる = (並び) => [
+  ...new Set(
+    (Array.isArray(並び) ? 並び : [])
+      .filter((id) => id != null && String(id).trim() !== '')
+      .map((id) => String(id).trim())
+  ),
+];
+
 function ひな型を足す(一覧, 新しいの, いま) {
-  const 元 = (Array.isArray(一覧) ? 一覧 : []).slice();
+  // 壊れた控え（null の混じった一覧）でも足せるように、空のものは落とす
+  const 元 = (Array.isArray(一覧) ? 一覧 : []).filter(Boolean);
   const 新しい = 新しいの || /** @type {{名前?:string, 部員idたち?:Array, 団体id?:string}} */ ({});
   const 名前 = String(新しい.名前 || '')
     .trim()
     .slice(0, 名前の長さ);
   const 団体id = 新しい.団体id == null ? '' : String(新しい.団体id);
-  const 部員idたち = [...new Set((Array.isArray(新しい.部員idたち) ? 新しい.部員idたち : []).map(String))];
+  const 部員idたち = idをそろえる(新しい.部員idたち);
   if (!名前 || 部員idたち.length === 0) return 元;
 
   const 時 = いま || Date.now();
@@ -74,7 +87,7 @@ function ひな型を消す(一覧, id) {
  * @returns {{人たち:Array, 見つからない:number}}
  */
 function ひな型を当てはめる(ひな型, 選べる人たち, 本人id) {
-  const 欲しい = (ひな型 && Array.isArray(ひな型.部員idたち) ? ひな型.部員idたち : []).map(String);
+  const 欲しい = idをそろえる(ひな型 && ひな型.部員idたち);
   const 表 = new Map();
   for (const 一人 of Array.isArray(選べる人たち) ? 選べる人たち : [])
     if (一人 && 一人.id != null) 表.set(String(一人.id), 一人);
