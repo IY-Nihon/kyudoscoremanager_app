@@ -349,6 +349,23 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         }
       };
       人を送り直す(未送信のメンバー, 'members', 'members', 'メンバー', () => 状態().syncMemberLookup());
+      // 部員の端末は、自分の弓具だけを送り直す（部員が触れるのは自分の弓具だけ。丸ごと送ると、
+      // 団体が直した名前・学年を古い写しで戻してしまう）
+      const 送れていない自分 =
+        状態().activeRole === 'member' && 状態().myMemberId
+          ? 部員.find(
+              (一人) => 一人 && String(一人.id) === String(状態().myMemberId) && 一人.syncStatus === '未同期'
+            )
+          : null;
+      if (送れていない自分) {
+        const { 弓具だけ送る形, 届いた人を同期済みに } = require('./storeMembers');
+        Firestore.updateDoc(
+          Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/members`, 送れていない自分.id),
+          弓具だけ送る形(送れていない自分)
+        )
+          .then(() => 届いた人を同期済みに(書く, [送れていない自分]))
+          .catch((誤り) => console.error('[syncSessions] 弓具の送り直しに失敗:', 誤り));
+      }
       // 卒業生も同じ。個人IDの自動採番は卒業生にも振るので、送り直しが
       // 無いと手元にしかないIDが永久に届かず、端末ごとに食い違う。
       const 未送信の卒業生 =
