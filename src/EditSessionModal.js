@@ -88,7 +88,9 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
       題を置く(session.title || '');
       覚え書きを置く(session.note || '');
       本数を置く(session.shotCount || 8);
-      統計に入れるを置く(session.includeInStats);
+      // 古い記録は includeInStats を持たない（未設定＝含める。statsRules の 集計に入れるか と同じ）。
+      // そのまま置くと切りに見え、ほかを直して保存しただけで統計から外れた
+      統計に入れるを置く(session.includeInStats !== false);
       日付を置く(new Date(session.date));
       タグたちを置く(Array.from(new Set((session.tags || []).map(normalizeTag).filter(Boolean))));
       // 出欠がまだ無い記録は、記録に出ている人を出席にしておく
