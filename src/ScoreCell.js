@@ -102,6 +102,7 @@ const ScoreCell = React.memo(
       shotIndex: index,
       isLocked,
       enableArrowLocation,
+      鍵をかける板,
       自動で閉じている,
       ますを開ける,
     };
@@ -149,7 +150,9 @@ const ScoreCell = React.memo(
           }, 500);
           return;
         }
-        if (!props.enableArrowLocation) return;
+        // 矢所の窓は記録中の板のますだけで開く。窓は今の記録表の同じ射手・射番に書くので、履歴の編集のますで
+        // 開くと、直している記録ではなく今の記録表の矢所を書き換えてしまう
+        if (!props.enableArrowLocation || !props.鍵をかける板) return;
         isLongPressedRef.current = false;
         longPressTimerRef.current = setTimeout(() => {
           const 今の印 = props.mark ?? '';
@@ -210,7 +213,8 @@ const ScoreCell = React.memo(
         印を切り替える(archerId, index);
       }
       ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Light);
-      if (enableArrowLocation) {
+      // 矢所の窓を出す・空にしたら消すのは記録中の板のますだけ（どちらも今の記録表に書くので。上の長押しと同じ）
+      if (enableArrowLocation && 鍵をかける板) {
         if (timerRef.current) clearTimeout(timerRef.current);
         if (次の印 === '') {
           updateArrowLocation(archerId, index, null);

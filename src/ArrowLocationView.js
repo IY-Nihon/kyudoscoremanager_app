@@ -81,7 +81,8 @@ export const ArrowLocationView = ({ arrowLocations = [], size = 200, targetType,
   // 的の種類が一致する矢所のみをフィルタリング
   // loc.targetType がない古いデータはデフォルトの 'kasumi36' とみなす
   const filteredLocations = arrowLocations.map((loc) => {
-    if (!loc) return null;
+    // 座標が数でない矢所（壊れた控え・古い版の形）は描かない（「矢所がある」とも数えない）
+    if (!loc || !Number.isFinite(loc.x) || !Number.isFinite(loc.y)) return null;
     const locTargetType = loc.targetType || 'kasumi36';
     if (locTargetType !== arrowTargetType) return null;
     return loc;

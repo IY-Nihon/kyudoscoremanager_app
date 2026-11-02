@@ -5,7 +5,7 @@ const { 色 } = iroの組;
  * ○ は的の内側、× は外側にだけ置ける。置いても閉じない（置いた場所を見て、ずれていれば置き直せるように）。
  * 閉じるのは「完了」か外を押したとき。矢所はその人の列の arrowLocations に、的の中心を 0・半径を 1 とした座標で入る
  */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, Text, Modal, TouchableOpacity, Pressable, Alert, Dimensions, StyleSheet } from './rn';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -73,6 +73,11 @@ export const ArrowLocationPopover = ({
   const [previewPos, setPreviewPos] = useState(null);
   // タッチ操作中はマウスの合成イベント（ゴーストクリック等）を無視するためのフラグ
   const isTouchDraggingRef = useRef(false);
+  // 開き直したとき・別のますで開いたときは、前の仮の点（指でなぞっていた下絵）を残さない
+  useEffect(() => {
+    setPreviewPos(null);
+    isTouchDraggingRef.current = false;
+  }, [visible, archerId, shotIndex]);
 
   // イベントから pageX / pageY を取り出す（マウス・タッチ・touchend共通）
   const extractPageCoords = (event) => {
@@ -175,6 +180,13 @@ export const ArrowLocationPopover = ({
     if (result) {
       commitPosition(result.normalizedX, result.normalizedY, result.isInside);
     }
+    setPreviewPos(null);
+    isTouchDraggingRef.current = false;
+  };
+
+  // 指を離す前に取り消された（着信・画面の端からのなぞり・通知など）。置かずに仮の点だけ消す。
+  // 消さないと仮の点が残り、なぞり中の扱いのまま次の操作の合成イベントを捨ててしまう
+  const handleTouchCancel = () => {
     setPreviewPos(null);
     isTouchDraggingRef.current = false;
   };
@@ -298,13 +310,15 @@ export const ArrowLocationPopover = ({
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
+              onTouchCancel={handleTouchCancel}
             >
               {/* 的グラフィック */}
               {renderTargetVisual()}
 
               {/* 登録済みの矢所をプレビュー（現在の的種類と一致するものだけ表示） */}
               {表示する矢所.map((loc, idx) => {
-                if (!loc) return null;
+                // 座標が数でない矢所（壊れた控え・古い版の形）は描かない（NaN の位置に点を置こうとして崩れる）
+                if (!loc || !Number.isFinite(loc.x) || !Number.isFinite(loc.y)) return null;
 
                 // 的の種類が異なる矢所は表示しない
                 // loc.targetType がない古いデータはデフォルトの 'kasumi36' とみなす
