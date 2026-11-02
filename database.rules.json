@@ -3,31 +3,35 @@
     "live_sessions": {
       "$branch": {
         ".read": "auth != null && $branch.length >= 20 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now)",
-        ".write": "auth != null && $branch.length >= 20 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now || !newData.exists())"
+        ".write": "auth != null && $branch.length >= 20 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now || !newData.exists())",
+        ".validate": "newData.hasChildren()"
       }
     },
     "live_history": {
       "$branch": {
         ".read": "auth != null && $branch.length >= 20 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now)",
-        ".write": "auth != null && $branch.length >= 20 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now || !newData.exists())"
+        ".write": "auth != null && $branch.length >= 20 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now || !newData.exists())",
+        ".validate": "newData.hasChildren()"
       }
     },
     "live_presence": {
       "$branch": {
         ".read": "auth != null && $branch.length >= 20 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now)",
-        ".write": "auth != null && $branch.length >= 20 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now || !newData.exists())"
+        ".write": "auth != null && $branch.length >= 20 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now || !newData.exists())",
+        ".validate": "newData.hasChildren()"
       }
     },
     "live_view": {
       "$branch": {
         ".read": "auth != null && $branch.length >= 20 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now)",
-        ".write": "auth != null && $branch.length >= 20 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now || !newData.exists())"
+        ".write": "auth != null && $branch.length >= 20 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now || !newData.exists())",
+        ".validate": "newData.hasChildren()"
       }
     },
     "live_limits": {
       "$branch": {
         ".read": "auth != null && $branch.length >= 20",
-        ".write": "auth != null && $branch.length >= 20 && ((!data.exists() && newData.isNumber()) || (newData.isNumber() && data.isNumber() && newData.val() <= data.val()) || (!newData.exists() && !root.child('live_sessions').child($branch).exists() && !root.child('live_view').child($branch).exists() && !root.child('live_history').child($branch).exists() && !root.child('live_presence').child($branch).exists()))",
+        ".write": "auth != null && $branch.length >= 20 && ((!data.exists() && newData.isNumber() && newData.val() > now) || (newData.isNumber() && data.isNumber() && newData.val() <= data.val()) || (!newData.exists() && !root.child('live_sessions').child($branch).exists() && !root.child('live_view').child($branch).exists() && !root.child('live_history').child($branch).exists() && !root.child('live_presence').child($branch).exists()))",
         ".validate": "newData.isNumber() && newData.val() > 0"
       }
     }

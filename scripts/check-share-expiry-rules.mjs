@@ -65,6 +65,13 @@ console.log('■ 期限が無いあいだは、これまでどおり');
 );
 確かめる('読める', await 試す(() => get(ref(db, `live_sessions/${枝}/${名}/state`))), 'できた');
 
+console.log('\n■ 枝そのものに字や数を置けない（ライブの 4 つの置き場は、名前の下に中身を置く形だけ）');
+for (const 置き場 of ['live_sessions', 'live_view', 'live_history', 'live_presence'])
+  確かめる(置き場, await 試す(() => set(ref(db, `${置き場}/${枝}x`), 'がらくた')), '弾かれた');
+
+console.log('\n■ 期限を新しく置くときは、今より先だけ（過ぎた期限で枝を塞げない）');
+確かめる('過ぎた期限は置けない', await 試す(() => set(ref(db, `live_limits/${枝}y`), Date.now() - 60000)), '弾かれた');
+
 console.log('\n■ 先の期限を置いても、まだ通る');
 確かめる('期限を置ける', await 試す(() => set(ref(db, `live_limits/${枝}`), Date.now() + 3600000)), 'できた');
 確かめる('読める', await 試す(() => get(ref(db, `live_sessions/${枝}/${名}/state`))), 'できた');
@@ -116,6 +123,9 @@ console.log('\n■ 短い枝はこれまでどおり断る');
 
 await remove(ref(db, `live_sessions/${枝}`)).catch(() => {});
 await remove(ref(db, `live_limits/${枝}`)).catch(() => {});
+for (const 置き場 of ['live_sessions', 'live_view', 'live_history', 'live_presence'])
+  await remove(ref(db, `${置き場}/${枝}x`)).catch(() => {});
+await remove(ref(db, `live_limits/${枝}y`)).catch(() => {});
 const 落ち = 合否.filter((x) => !x).length;
 console.log(`\n${合否.length - 落ち}/${合否.length} 通過`);
 process.exit(落ち ? 1 : 0);
