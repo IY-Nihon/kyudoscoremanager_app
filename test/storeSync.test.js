@@ -1175,3 +1175,43 @@ test('進級：院生もいる部は、選んだ 4 年が M1 へ、ほかの 4 �
     store.setState({ groupType: null });
   }
 });
+
+test('部員の端末：届かなかった自分の弓具は、弓具だけ送り直す（団体が直した名前を戻さない）', async () => {
+  const { store, 雲 } = 用意();
+  const m = メンバーを置く(store, 雲);
+  store.setState({ activeRole: 'member', myMemberId: 'mem-1' });
+  雲.状態.オフライン = true;
+  store.getState().addEquipment('mem-1', { weight: '14', note: '新しい弓' });
+  await 待つ(50);
+  assert.equal(メンバーを見る(store, 'mem-1').syncStatus, '未同期');
+  // 届かないうちに、団体が名前を直した
+  雲.状態.オフライン = false;
+  雲.置く(メンバーの道, 'mem-1', Object.assign({}, m, { name: '団体が直した名前', lastModified: Date.now() }));
+  await store.getState().syncSessions();
+  await 待つ(50);
+  const 雲の人 = 雲.値(メンバーの道, 'mem-1');
+  assert.equal(雲の人.name, '団体が直した名前', '部員の端末が名前を古い写しで戻した');
+  assert.equal(雲の人.grade, 2);
+  assert.deepEqual(
+    雲の人.equipments.map((e) => e.weight),
+    ['14'],
+    '弓具が届いていない'
+  );
+  assert.equal(メンバーを見る(store, 'mem-1').syncStatus, '同期済み');
+});
+
+test('部員の端末：弓具を足すときも、弓具だけを書く', async () => {
+  const { store, 雲 } = 用意();
+  const m = メンバーを置く(store, 雲);
+  store.setState({ activeRole: 'member', myMemberId: 'mem-1' });
+  // 端末の名簿は古く、雲では名前が直っている
+  雲.置く(メンバーの道, 'mem-1', Object.assign({}, m, { name: '団体が直した名前' }));
+  store.getState().addEquipment('mem-1', { weight: '15' });
+  await 待つ(50);
+  const 雲の人 = 雲.値(メンバーの道, 'mem-1');
+  assert.equal(雲の人.name, '団体が直した名前');
+  assert.deepEqual(
+    雲の人.equipments.map((e) => e.weight),
+    ['15']
+  );
+});

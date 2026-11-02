@@ -26,6 +26,15 @@ const 区 = require('./kubun');
 const 雲へ送る人 = (人) =>
   Object.assign({}, 人, { lastModified: Firestore.serverTimestamp(), syncStatus: '同期済み' });
 
+/**
+ * 部員の端末（個人ログイン）から雲へ書く形。部員が触れるのは自分の弓具だけなので、弓具だけを送る。
+ * 名簿を丸ごと送ると、団体が直した名前・学年を部員の端末の古い写しで戻してしまう
+ */
+const 弓具だけ送る形 = (人) => ({
+  equipments: 人.equipments || [],
+  lastModified: Firestore.serverTimestamp(),
+});
+
 /** 雲へ届いたメンバーを、送った版のまま手元に残っていれば同期済みにする */
 const 届いた人を同期済みに = (書く, 送った人たち) => {
   const 版 = 送った版の表(送った人たち);
@@ -516,10 +525,10 @@ function 弓具を書き換える(書く, 状態, memberId, 名, 直し方) {
   if (!本人 || !状態().activeGroupId) return;
   Firestore.updateDoc(
     Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/members`, memberId),
-    雲へ送る人(本人)
+    状態().activeRole === 'group' ? 雲へ送る人(本人) : 弓具だけ送る形(本人)
   )
     .then(() => 届いた人を同期済みに(書く, [本人]))
     .catch((誤り) => console.error(`${名} Sync Error:`, 誤り));
 }
 
-module.exports = { 部員の操作 };
+module.exports = { 部員の操作, 弓具だけ送る形, 届いた人を同期済みに };
