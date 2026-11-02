@@ -59,6 +59,27 @@ function 図の高さ(幅, 大きく, 窓の高さ) {
   return Math.round(Math.min(380, 窓の高さ, Math.max(180, 幅 * 0.55)));
 }
 
+/**
+ * 系列ごとの横の名を、それぞれの並びを保って 1 つに混ぜる（前の形の図のため）。
+ * 前の系列に無い名は、その系列で直前に出てきた名のすぐ後ろに入れる
+ */
+function 系列の名を混ぜる(系列たち) {
+  const 名たち = [];
+  for (const 系列 of 系列たち) {
+    let 前 = -1;
+    for (const 点 of 系列.点) {
+      const 既に = 名たち.indexOf(点.x);
+      if (既に >= 0) {
+        前 = 既に;
+        continue;
+      }
+      名たち.splice(前 + 1, 0, 点.x);
+      前 += 1;
+    }
+  }
+  return 名たち;
+}
+
 function 折れ線({ 図, 大きく }) {
   const [W, 測る] = use幅();
   const 窓の高さ = use窓の高さ();
@@ -72,8 +93,12 @@ function 折れ線({ 図, 大きく }) {
   const 上 = 値の字 + 10;
   const 下 = 字 + 12;
   const 低 = Math.max(0, Math.floor(Math.min(...値たち) / 5) * 5 - 5);
-  const 高 = Math.min(100, Math.ceil(Math.max(...値たち) / 5) * 5 + 5);
-  const 名たち = 図.系列[0].点.map((点) => 点.x);
+  // 上を 100 で止めるのは % の図だけ（射数・本数などの図は 100 を超える。止めると線が図の上へはみ出した）
+  const 最大値 = Math.max(...値たち);
+  const 上の目安 = Math.ceil(最大値 / 5) * 5 + 5;
+  const 高 = 図.単位 === '%' && 最大値 <= 100 ? Math.min(100, 上の目安) : 上の目安;
+  // 横の名は、作るときに決めた並び（どの系列の点も入る）。控えに残った前の形の図は、系列の名を並びを保って混ぜる
+  const 名たち = Array.isArray(図.名たち) && 図.名たち.length ? 図.名たち : 系列の名を混ぜる(図.系列);
   const 短い名 = (名) => (String(名).length > 7 ? String(名).slice(-5) : String(名));
   const 数 = Math.max(1, 名たち.length - 1);
   const 内の幅 = Math.max(1, W - 左 - 右 - 8);
@@ -198,6 +223,8 @@ function 折れ線({ 図, 大きく }) {
 function 縦の棒({ 図, 大きく }) {
   const [W, 測る] = use幅();
   const 窓の高さ = use窓の高さ();
+  // 並びが空の図は描かない（いちばん高い棒が -Infinity になって崩れる）
+  if (!Array.isArray(図.並び) || !図.並び.length) return null;
   const H = 図の高さ(W, 大きく, 窓の高さ);
   const 字 = 大きく ? 11 : 10;
   const 上 = 字 + 8;
@@ -221,7 +248,8 @@ function 縦の棒({ 図, 大きく }) {
         <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
           {図.並び.map((項, i) => {
             // 棒は 0 から（差を大きく見せない）
-            const h = ((H - 上 - 下) * 項.値) / 高;
+            // 負の値（差の図など）は 0 の高さにする（負の高さの棒は下へ突き抜けて、名の字に重なる）
+            const h = ((H - 上 - 下) * Math.max(0, 項.値)) / 高;
             const 濃い = 項.値 === いちばん;
             const 名 = String(項.名);
             return (
@@ -271,6 +299,8 @@ function 縦の棒({ 図, 大きく }) {
 
 function 横の棒({ 図, 大きく }) {
   const [W, 測る] = use幅();
+  // 並びが空の図は描かない（縦の棒と同じ）
+  if (!Array.isArray(図.並び) || !図.並び.length) return null;
   const 上限 =
     図.単位 === '%'
       ? Math.max(100, ...図.並び.map((項) => 項.値))
@@ -294,7 +324,8 @@ function 横の棒({ 図, 大きく }) {
             <View
               style={[
                 styles.横の棒,
-                { width: `${Math.max(2, (項.値 / 上限) * 100)}%`, opacity: 項.値 === いちばん ? 1 : 0.4 },
+                // 負の値は最短の棒にする（負の幅は描けない）
+                { width: `${Math.max(2, (Math.max(0, 項.値) / 上限) * 100)}%`, opacity: 項.値 === いちばん ? 1 : 0.4 },
               ]}
             />
           </View>
@@ -319,7 +350,8 @@ function 列の幅を決める(見積もり, 数の列, 使える, 大きく) {
   const 決めた = [...見積もり];
   const 残り = 使える - 合計(見積もり.filter((_, 列) => !広げる列.includes(列)));
   const 広げる列の和 = 合計(広げる列.map((列) => 見積もり[列]));
-  if (広げる列の和 <= 残り) {
+  // 広げる列の見積もりが全部 0（空の列だけの表）なら、比で分けられない（0 で割ると幅が NaN になる）
+  if (広げる列の和 <= 残り && 広げる列の和 > 0) {
     for (const 列 of 広げる列)
       決めた[列] = 見積もり[列] + ((残り - 広げる列の和) * 見積もり[列]) / 広げる列の和;
   } else {
@@ -341,6 +373,8 @@ function 列の幅を決める(見積もり, 数の列, 使える, 大きく) {
 
 function 表({ 図, 大きく }) {
   const [幅, 測る] = use幅();
+  // 列の無い表・行の無い形の図は描かない（控えに残った前の形の図など）
+  if (!Array.isArray(図.列) || !図.列.length || !Array.isArray(図.行)) return null;
   const 列の数 = 図.列.length;
   const 強める = 図.強める列 == null ? null : 図.強める列 < 0 ? 列の数 + 図.強める列 : 図.強める列;
   const 字 = 大きく ? 14 : 12.5;
