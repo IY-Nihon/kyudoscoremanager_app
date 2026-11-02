@@ -103,3 +103,15 @@ test('当たるか：使っている書き方の確かめ', () => {
   assert.ok(当たるか('/_expo/static/**', '/_expo/static/js/web/a.js'));
   assert.ok(!当たるか('/_expo/static/**', '/record'));
 });
+
+test('守りの見出し：どの道にも、はめ込みを断る・型を推測させない・よそへ道を渡さない・マイクと位置を閉じる', () => {
+  const 全部 = 規則たち.find((規則) => 規則.source === '**');
+  assert.ok(全部, '全部の道に掛かる見出しが無い');
+  const 値 = Object.fromEntries(全部.headers.map((h) => [h.key, h.value]));
+  assert.equal(値['X-Frame-Options'], 'DENY');
+  assert.match(値['Content-Security-Policy'], /frame-ancestors 'none'/);
+  assert.equal(値['X-Content-Type-Options'], 'nosniff');
+  assert.equal(値['Referrer-Policy'], 'strict-origin-when-cross-origin');
+  assert.match(値['Permissions-Policy'], /camera=\(self\)/);
+  assert.match(値['Permissions-Policy'], /microphone=\(\)/);
+});
