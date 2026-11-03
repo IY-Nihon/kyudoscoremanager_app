@@ -11,8 +11,16 @@
 import { test, expect } from '@playwright/test';
 import { 案内を止める, 画面が出るまで待つ, 入り口が決まるまで待つ } from './helpers.mjs';
 import { 検証環境でメールを確認済みにする } from '../scripts/fb-rest.mjs';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
+// 作った団体のメールを確認済みにするのに、Firebase CLI の権限（firebase login）が要る。
+// GitHub Actions には無いので、そこでは流さない（手元で流す）
+const CLIの権限がある = fs.existsSync(path.join(os.homedir(), '.config', 'configstore', 'firebase-tools.json'));
 
 test('団体アカウントを作って、設定から削除すると、その団体IDでは入れなくなる', async ({ page }) => {
+  test.skip(!CLIの権限がある, 'Firebase CLI の権限が無い（GitHub Actions）。メールを確認済みにできない');
   test.setTimeout(600_000);
   const t0 = Date.now();
   const 印 = (何) => console.log(`STEP ${((Date.now() - t0) / 1000).toFixed(0)}s ${何}`);

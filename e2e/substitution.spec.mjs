@@ -192,6 +192,10 @@ test('途中交代：交代相手は学年でまとまり、開け閉めでき�
   await expect(見出し, '学年の見出しが出ていない').toBeVisible({ timeout: 20_000 });
 
   const 初め = await 見えている人数();
+  // 名前に「部員」が入る人の数（下で「部員」で絞る。名簿には「部員」の入らない名前の人もいるので、全体の数では比べない）
+  const 部員の名の数 = () =>
+    page.evaluate(() => [...document.querySelectorAll('div')].filter((e) => /^部員\d+$/.test((e.textContent || '').trim())).length);
+  const 開いて部員の名 = await 部員の名の数();
   expect(初め, '初めから誰も出ていない').toBeGreaterThan(0);
 
   await 見出し.click();
@@ -210,7 +214,7 @@ test('途中交代：交代相手は学年でまとまり、開け閉めでき�
   await 検索.click();
   await 検索.pressSequentially('部員', { delay: 30 });
   await page.waitForTimeout(800);
-  expect(await 見えている人数(), '閉じたままだと、絞り込んでも出てこない').toBeGreaterThan(閉じた);
+  expect(await 部員の名の数(), '閉じたままだと、絞り込んでも出てこない').toBe(開いて部員の名);
 });
 
 test('途中交代：細い画面でも、窓を流せば交代相手にたどり着ける', async ({ page }) => {
