@@ -119,3 +119,21 @@ module.exports = {
   団体がまだの文,
   送れない理由,
 };
+
+/**
+ * 団体の帳面（group_accounts）がまだ在るか（2026-11-03 本人：団体が消えていたらログイン画面に戻す）。
+ * 雲に問い合わせて「無い」と返ったときだけ false。電波が無い・断られたなど分からないときは null（何もしない）。
+ * 端末の控えから答えない（控えに無いだけで消えたと見なさない）
+ */
+async function 団体はまだ在るか(道具, 団体ID) {
+  const { Firestore, db } = 道具;
+  if (!団体ID || typeof Firestore.getDocFromServer !== 'function') return null;
+  try {
+    const 帳面 = await Firestore.getDocFromServer(Firestore.doc(db, 'group_accounts', 団体ID));
+    return 帳面.exists();
+  } catch {
+    return null;
+  }
+}
+
+module.exports.団体はまだ在るか = 団体はまだ在るか;
