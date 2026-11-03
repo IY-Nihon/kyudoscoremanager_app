@@ -226,6 +226,36 @@ export default function App() {
     if (!auth.currentUser) useScoreStore.setState({ 入り直しが要る: true });
   }, [isHydrated, authReady, activeGroupId, 共有の来客]);
 
+  // 入っている団体が消えていたら（持ち主が削除した・運営が消した）、ログイン画面に戻す（2026-11-03 本人）。
+  // 戻さないと、ログインし直しの窓（赤い帯とパスワード）が出続け、入り直す先も無い。
+  // 雲に問い合わせて「無い」と返ったときだけ。電波が無いときは何もしない。送れていない記録は setAuth(null) が控えへ移す
+  useEffect(() => {
+    if (!isHydrated || !authReady || !activeGroupId || 共有の来客) return undefined;
+    let 外した = false;
+    (async () => {
+      const 確 = require('./src/mailKakunin');
+      const 状 = useScoreStore.getState();
+      const 在る = await 確.団体はまだ在るか(require('./src/db').雲の道具(), 状.publicGroupId || activeGroupId);
+      if (外した || 在る !== false) return;
+      await require('firebase/auth').signOut(auth).catch(() => {});
+      useScoreStore.getState().setAuth(null, null, null, null);
+      // 少し待ってから出す（先に開いていた入り直しの窓が閉じるとき、戻るの履歴を 1 つ戻す。src/backToClose.js）。
+      // 2 行にして、自動で消える帯でなく、押して閉じる窓で出す（src/dialogRules.js の 窓で止めるか）
+      setTimeout(
+        () =>
+          出す(
+            '団体が見つかりません',
+            'この団体は削除されたため、ログイン画面に戻りました。\n新しく使うときは、団体アカウントを作り直してください。',
+            [{ text: 'OK' }]
+          ),
+        800
+      );
+    })();
+    return () => {
+      外した = true;
+    };
+  }, [isHydrated, authReady, activeGroupId, 共有の来客]);
+
   // 登録メールアドレスの確認（2026-11-03 本人：確認が済むまで団体は何もできない）。
   // 持ち主はログインのメールが確認済みか、部員は団体の帳面の verified を見る。止めるのは決まりで、ここは画面を替えるだけ
   useEffect(() => {

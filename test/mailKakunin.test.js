@@ -91,3 +91,20 @@ test('戻り先の頁が登録されていないときは、戻り先なしで�
   }
   assert.deepStrictEqual(送った, ['戻り先なし']);
 });
+
+test('団体はまだ在るか：雲が「無い」と返したときだけ false。読めないときは null', async () => {
+  const 道具 = (返事) => ({
+    db: {},
+    Firestore: {
+      doc: () => ({}),
+      getDocFromServer: async () => {
+        if (返事 === '誤り') throw new Error('offline');
+        return { exists: () => 返事 };
+      },
+    },
+  });
+  assert.equal(await 確.団体はまだ在るか(道具(true), '100001'), true);
+  assert.equal(await 確.団体はまだ在るか(道具(false), '100001'), false);
+  assert.equal(await 確.団体はまだ在るか(道具('誤り'), '100001'), null);
+  assert.equal(await 確.団体はまだ在るか(道具(false), ''), null);
+});
