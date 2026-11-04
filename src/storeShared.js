@@ -1076,6 +1076,16 @@ function 期限で閉じるか(届いた状態, 書く, 状態) {
  * 両方あって初めて「もう見えない」が成り立つ。
  */
 const 期限の場所 = (枝) => `live_limits/${枝}`;
+/**
+ * 名簿・卒業生を雲へ書く形。個人ID（personalId）は名簿の文書に置かない（逆引き表にだけ置く。src/storeMembers.js）。
+ * 決まりも名簿の文書に足す・変えるを断るので、手元の古い写しに残っていても持ち込まない（持ち込むと書き込みごと断られる）
+ */
+const 名簿へ書く形 = (人) => {
+  if (!人 || typeof 人 !== 'object' || !('personalId' in 人)) return 人;
+  const 写し = Object.assign({}, 人);
+  delete 写し.personalId;
+  return 写し;
+};
 /** 期限を置いた口座（database.rules.json：期限を縮める・外すのは、置いた口座だけ。B6・2026-11-04） */
 const 期限の持ち主の場所 = (枝) => `live_limit_owners/${枝}`;
 /**
@@ -1346,6 +1356,7 @@ module.exports = {
   期限で閉じるか,
   期限の場所,
   期限の持ち主の場所,
+  名簿へ書く形,
   団体の枝に印を置く,
   いまの見当,
   サーバー時刻,

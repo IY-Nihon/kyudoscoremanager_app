@@ -1054,6 +1054,12 @@ function 参加できるライブ(節点, いま = Date.now()) {
     const 中身 = 節点[名];
     // state が無いものは、そもそも一覧に出さない（従来どおり）
     if (!中身 || !中身.state) return;
+    // 保存されて終わった印（src/storeSessions.js の saveSession が残す）は出さない。古くなったら片付ける
+    if (中身.state.status === 'finished') {
+      const 終えた = ライブの最終更新(中身.state);
+      if (終えた !== null && いま - 終えた > LIVE_STALE_MS) 古い.push(名);
+      return;
+    }
     // 期限は道しるべに載っている。載っていないもの（期限なし、または
     // 期限を足す前に配ったもの）は、これまでどおり日時だけで見る
     const 期限 = 中身.state.期限;

@@ -133,7 +133,7 @@ test('戻る：主催者だったなら主催に戻る', async () => {
   assert.equal(開き直し.store.getState().isHost, true);
 });
 
-test('戻る：終わっていたら記録表を片付け、控えを捨てる', async () => {
+test('戻る：ライブが無い（片付けられた・期限切れ）なら、保存していない記録表は残してライブから抜ける', async () => {
   const { store } = 端末(null, [射手({ marks: ['○', '×', '', ''] })], {
     名前: ライブ名,
     枝: null,
@@ -143,10 +143,14 @@ test('戻る：終わっていたら記録表を片付け、控えを捨てる',
     よそ: false,
     団体: 団体,
   });
-  // 節点が無い（主催者が終えて消した）
-  assert.equal(await store.getState().ライブに戻る(), '終わっていた');
+  // 節点が無い（配ったリンクの期限が切れて片付けられた・手で消された・14 日の片付け）。保存されたとは限らない（A33）
+  assert.equal(await store.getState().ライブに戻る(), 'ライブが無い');
   assert.equal(store.getState().isLiveActive, false);
-  assert.deepEqual(store.getState().archers, [], '記録表が片付いている');
+  assert.deepEqual(
+    store.getState().archers.map((a) => a.marks),
+    [['○', '×', '', '']],
+    '保存していない記録表が消えた'
+  );
   assert.equal(store.getState().ライブの続き, null);
 });
 

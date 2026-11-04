@@ -303,3 +303,37 @@ test('ID の形：英数字と _ - だけ。「/」などが混じれば雲へ�
   await assert.rejects(団体で入る(道具, 'group_accounts/../x', 'pw'), /正しくありません/);
   assert.equal(読んだ, 0);
 });
+
+test('メールで団体に入る：団体ID の欄にメールアドレスが入っていたら、そのメールで入って自分の団体を引く（A32）', async () => {
+  const { メールで団体に入る } = require('../src/groupLogin');
+  const 認証 = { currentUser: null };
+  let 出た = 0;
+  const 道具 = (団体あり) => ({
+    Firestore: {
+      collection: (_db, 道) => ({ 道 }),
+      where: (欄, 比べ, 値) => ({ 欄, 値 }),
+      query: (集まり, 絞り) => ({ 集まり, 絞り }),
+      getDocs: async (問い) => {
+        assert.deepStrictEqual(問い.絞り, { 欄: 'email', 値: 'club@example.jp' }, '自分のメールで絞っていない');
+        return { docs: 団体あり ? [{ id: '123456', data: () => ({ id: '123456', email: 'club@example.jp' }) }] : [] };
+      },
+    },
+    FirebaseAuth: {
+      signInWithEmailAndPassword: async (auth, メール, 合言葉) => {
+        if (合言葉 !== 'pw') throw Object.assign(new Error('no'), { code: 'auth/invalid-credential' });
+        auth.currentUser = { email: メール };
+      },
+      signOut: async () => void 出た++,
+    },
+    db: {},
+    auth: 認証,
+  });
+  assert.deepStrictEqual(await メールで団体に入る(道具(true), ' Club@Example.jp ', 'pw'), {
+    id: '123456',
+    公開の団体ID: '123456',
+    メール: 'club@example.jp',
+  });
+  await assert.rejects(メールで団体に入る(道具(true), 'club@example.jp', 'x'), { code: 'auth/invalid-credential' });
+  await assert.rejects(メールで団体に入る(道具(false), 'club@example.jp', 'pw'), /団体が見つかりません/);
+  assert.strictEqual(出た, 1, '団体が無いのに入ったまま');
+});

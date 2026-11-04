@@ -157,7 +157,10 @@ const AttendanceScreen = () => {
   };
   const filteredPracticeDays = Object.keys(practiceDays)
     .filter((dStr) => {
-      const 日付 = new Date(dStr);
+      // 「年-月-日」は端末の暦の日として読む（new Date('2026-11-01') は世界標準時の 0 時になり、日本より西の国では
+      // 前の月に数えられた。A42）
+      const [年, 月, 日] = String(dStr).split('-').map(Number);
+      const 日付 = new Date(年, (月 || 1) - 1, 日 || 1);
       if (tab === 'days' || rangeType === 'month')
         return 日付.getFullYear() === selectedYear && 日付.getMonth() + 1 === selectedMonth;
       if (rangeType === 'year') {

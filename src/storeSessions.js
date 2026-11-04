@@ -141,7 +141,15 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
       setTimeout(async () => {
         const 落とす = (道) => RTDB.remove(RTDB.ref(Firebaseの器.rtdb, 道)).catch(() => {});
         await Promise.all([
-          落とす(`live_sessions/${枝}/${元のライブ名}`),
+          // 団体の枝のライブは、盤面を消して「保存されて終わった」印だけ残す（名前・○× は残さない）。
+          // 閉じていた端末が開き直したとき、保存されたのか（片付ける）、片付けられただけか（保存していない
+          // 記録表を残す）を見分けるため（ライブに戻る。A33）。印は参加一覧に出さず、同じ名前でまた始められ、
+          // 14 日で片付く（syncRules の 参加できるライブ）。配ったライブの枝は期限があるので今までどおり消す
+          枝 === 団
+            ? RTDB.set(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${元のライブ名}`), {
+                state: { status: 'finished', timestamp: RTDB.serverTimestamp(), updated_at: RTDB.serverTimestamp() },
+              }).catch(() => {})
+            : 落とす(`live_sessions/${枝}/${元のライブ名}`),
           // 共有履歴と在席は別の枝にあるので、明示的に消す
           落とす(共有履歴の場所(枝, 元のライブ名)),
           落とす(在席の場所(枝, 元のライブ名)),
@@ -269,7 +277,9 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
             sessions: 残り,
             trash: [
               ...状態().trash,
-              Object.assign({}, 消す記録, { syncStatus: '未同期', pendingDelete: true }),
+              // 捨てた時刻も手元に置く。無いと、ゴミ箱へ移したことが雲に届かないまま同期が走ったとき、雲に残る記録
+              // （サーバーの時刻で少し新しい）を「ほかの端末でゴミ箱から戻した」と取り違え、履歴に戻していた（A3）
+              Object.assign({}, 消す記録, { syncStatus: '未同期', pendingDelete: true, deletedAt: Date.now() }),
             ],
           }
         : { sessions: 残り }
@@ -356,7 +366,9 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
       sessions: 残り,
       trash: [
         ...状態().trash,
-        ...消す記録.map((記録) => Object.assign({}, 記録, { syncStatus: '未同期', pendingDelete: true })),
+        ...消す記録.map((記録) =>
+          Object.assign({}, 記録, { syncStatus: '未同期', pendingDelete: true, deletedAt: Date.now() })
+        ),
       ],
     });
     try {
