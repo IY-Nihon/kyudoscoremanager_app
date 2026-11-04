@@ -149,7 +149,7 @@ test('決まり：config/listing は団体の持ち主だけが書ける（部�
   const 決まりの字 = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8');
   assert.match(
     決まりの字,
-    /match \/config\/\{docId\} \{\s*allow read: if canAccess\(groupId\);\s*allow write: if canAccess\(groupId\) && docId != 'listing';/
+    /match \/config\/\{docId\} \{\s*allow read: if canAccess\(groupId\);\s*allow write: if docId != 'listing'/
   );
   assert.match(
     決まりの字,

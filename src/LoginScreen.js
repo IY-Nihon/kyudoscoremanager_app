@@ -16,7 +16,7 @@ const {
   Modal,
 } = require('./rn');
 const 確 = require('./mailKakunin');
-const { 使い捨てか } = require('./suteMail');
+const { 使い捨てか確かめる } = require('./suteMail');
 const 使い捨ての断り =
   '使い捨てのメールアドレスでは団体を作れません。ふだん使っているメールアドレス（学校・部・個人のもの）でお試しください。';
 
@@ -190,17 +190,25 @@ const LoginScreen = () => {
    * 団体IDの採番・公開の帳面・同意の記録・案内の出し方を1か所にまとめ、
    * 片方だけ直して食い違うことがないようにする。
    */
-  const 団体を作る = async (メール) => {
+  const 団体を作る = async (メール, 試した回 = 0) => {
     const 団体ID = Math.floor(1e5 + 9e5 * Math.random()).toString();
     const 帳面 = Firestore.doc(db, 'group_accounts', 団体ID);
     // 同じ番号が当たったら振り直す
-    if ((await Firestore.getDoc(帳面)).exists()) return 団体を作る(メール);
+    if ((await Firestore.getDoc(帳面)).exists()) return 団体を作る(メール, 試した回);
     // 帳面のメールは、決まり（callerEmail）が比べる認証のメールと同じ字にする。
     // 認証はメールを小文字で持つので、打った字のまま書くと大文字が混じったときに断られる
     const 帳面のメール = (auth && auth.currentUser && auth.currentUser.email) || メールを整える(メール);
     try {
-      // 公開の帳面には、ログインに要る2つと確認済みの印だけ置く（作れるのは確認が済んだ人だけ）
-      await Firestore.setDoc(帳面, { id: 団体ID, email: 帳面のメール, verified: true });
+      // 公開の帳面には、ログインに要る2つと確認済みの印だけ置く（作れるのは確認が済んだ人だけ）。
+      // 消した団体の控え（30 日）や中身が残る番号は、決まりが断る（firestore.rules の create）。
+      // 帳面からは見えないので、断られたら番号を振り直して 3 回まで試す
+      try {
+        await Firestore.setDoc(帳面, { id: 団体ID, email: 帳面のメール, verified: true });
+      } catch (断られた) {
+        if (String((断られた && 断られた.code) || '').includes('permission-denied') && 試した回 < 2)
+          return 団体を作る(メール, 試した回 + 1);
+        throw 断られた;
+      }
       // 同意の記録は private（誰でも読める場所に置かない）
       await Firestore.setDoc(
         Firestore.doc(db, 'group_accounts', 団体ID, 'private', 'consent'),
@@ -263,7 +271,7 @@ const LoginScreen = () => {
       const 結果 = await FirebaseAuth.signInWithPopup(auth, new FirebaseAuth.GoogleAuthProvider());
       const メール = 結果?.user?.email;
       if (!メール) throw new Error('Google からメールアドレスを受け取れませんでした');
-      if (使い捨てか(メール)) {
+      if (await 使い捨てか確かめる({ Firestore, db }, メール)) {
         await FirebaseAuth.signOut(auth).catch(() => {});
         Alert.alert('登録失敗', 使い捨ての断り);
         return;
@@ -370,8 +378,8 @@ const LoginScreen = () => {
       処理中を置く(true);
       try {
         const 宛先 = メールを整える(メールの入力);
-        // 使い捨てのアドレスでは作れない（決まりも止める。口座を作る前に断る）
-        if (使い捨てか(宛先)) {
+        // 使い捨てのアドレスでは作れない（決まりも止める。口座を作る前に断る。雲の一覧も見る）
+        if (await 使い捨てか確かめる({ Firestore, db }, 宛先)) {
           Alert.alert('登録失敗', 使い捨ての断り);
           return;
         }

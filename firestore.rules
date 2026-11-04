@@ -57,6 +57,19 @@ service cloud.firestore {
       return callerEmail().lower().matches('^.*@(.+[.])?(10minutemail[.]com|10minutemail[.]net|20minutemail[.]com|33mail[.]com|anonaddy[.]me|burnermail[.]io|byom[.]de|deadaddress[.]com|discard[.]email|disposablemail[.]com|dispostable[.]com|dropmail[.]me|emailondeck[.]com|fakeinbox[.]com|fakemail[.]net|getairmail[.]com|getnada[.]com|guerrillamail[.]biz|guerrillamail[.]com|guerrillamail[.]de|guerrillamail[.]info|guerrillamail[.]net|guerrillamail[.]org|guerrillamailblock[.]com|harakirimail[.]com|inboxbear[.]com|incognitomail[.]org|jetable[.]org|mail[-]temp[.]com|mail[.]tm|mailcatch[.]com|maildrop[.]cc|mailinator[.]com|mailinator[.]net|mailnesia[.]com|mailpoof[.]com|mailsac[.]com|mintemail[.]com|mohmal[.]com|moakt[.]com|mytemp[.]email|mytrashmail[.]com|nada[.]email|sharklasers[.]com|spam4[.]me|spamgourmet[.]com|tempail[.]com|tempinbox[.]com|tempm[.]com|tempmail[.]com|tempmail[.]dev|tempmail[.]net|tempmailo[.]com|tempmail[.]plus|temp[-]mail[.]io|temp[-]mail[.]org|temporary[-]mail[.]net|throwawaymail[.]com|trash[-]mail[.]com|trashmail[.]com|trashmail[.]de|trashmail[.]net|wegwerfmail[.]de|yopmail[.]com|yopmail[.]fr|yopmail[.]net|emltmp[.]com|mailto[.]plus|fexpost[.]com|fexbox[.]org|rover[.]info|inbox[.]lv|linshiyouxiang[.]net|tmpmail[.]org|tmpmail[.]net|tmail[.]ws|email[-]temp[.]com|1secmail[.]com|1secmail[.]org|1secmail[.]net|kzccv[.]com|qiott[.]com|wwjmp[.]com|esiix[.]com|xojxe[.]com|yoggm[.]com|bheps[.]com|dcctb[.]com|vjuum[.]com|laafd[.]com|txcct[.]com|eyepaste[.]com|mailforspam[.]com|spambox[.]us|spamfree24[.]org|mailnull[.]com|nowmymail[.]com|gishpuppy[.]com|mailexpire[.]com|tempr[.]email|discardmail[.]com|trbvm[.]com|xkx[.]me|sute[.]jp|meruado[.]uk)$');
     }
 
+    // 使い捨てメールのドメインの一覧（disposable_domains/{ドメイン}。公開の一覧 disposable-email-domains（CC0）と
+    // 日本の捨てアドを、運営の台本 scripts/sync-disposable-domains.mjs が入れる。2026-11-04）。
+    // アドレスのドメインと、その上の 2 段・3 段（a.b.example.com なら b.example.com・example.com）を見る。
+    // 上の正規表現（disposableEmail）は一覧を入れる前からの分で、残しておく
+    function listedDomain(parts, from) {
+      return parts.size() > from + 1
+        && exists(/databases/$(database)/documents/disposable_domains/$(parts[from:parts.size()].join('.')));
+    }
+    function disposableDomain() {
+      let parts = callerEmail().lower().split('@')[1].split('[.]');
+      return listedDomain(parts, 0) || listedDomain(parts, 1) || listedDomain(parts, 2);
+    }
+
     // 4 桁の個人ID を使える終わり（配信から 1 か月。2026-11-03 本人）。src/kojinId.js の 古い形を使える終わり と同じ日。
     // 新しい個人ID は、見間違えやすい字を除いた大文字と数字の 6 字（4 桁は団体ID を知れば数分で総当たりできた）
     function legacyIdUsable() {
@@ -69,10 +82,29 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/group_accounts/$(groupId)).data.get('verified', false) == true;
     }
 
-    // 団体アカウント本人か（SEC-3）。確認の済んだメールで入っているときだけ
+    // 帳面がメールアドレスの切り替えの途中か（切り替え待ち pendingEmail・前のアドレス previousEmail がある）。
+    // このあいだは、帳面の email の認証の口座が空いていることがある（確認のリンクを押すと、認証のアドレスは
+    // 新しいほうへ移る。「元に戻す」を押すと前のほうへ戻る）。空いたアドレスでは誰でも新しく口座を作れる
+    function switching(data) {
+      return data.get('pendingEmail', '') != '' || data.get('previousEmail', '') != '';
+    }
+
+    // 帳面の email の本人とみなしてよい口座か（確認が要るかは呼ぶ側で見る）。切り替えの途中は、確認の済んだ口座か、
+    // 切り替えを頼んだ口座（pendingUid。src/groupLogin.js の 切り替えを頼む が書く）だけ。
+    // 前は email が合えば通したので、空いたアドレスで作った口座が、切り替え待ちを自分のアドレスに書き換えて
+    // 団体を乗っ取れた（猶予のあいだは中身も読み書きできた。B1・2026-11-04）
+    function sameOwnerAccount(data) {
+      return callerEmail() != ''
+        && data.email == callerEmail()
+        && (!switching(data)
+            || request.auth.token.email_verified == true
+            || data.get('pendingUid', '') == request.auth.uid);
+    }
+
+    // 団体アカウント本人か（SEC-3）。確認の済んだメールで入っているときだけ（今ある団体は猶予のあいだも）
     function isGroupOwner(groupId) {
       return (verifiedEmail() || (callerEmail() != '' && inGracePeriod()))
-        && get(/databases/$(database)/documents/group_accounts/$(groupId)).data.email == callerEmail();
+        && sameOwnerAccount(get(/databases/$(database)/documents/group_accounts/$(groupId)).data);
     }
 
     // 所属クレーム。存在しない場合 get() は null を返す
@@ -88,6 +120,8 @@ service cloud.firestore {
         && claim() != null
         && claim().data.groupId == groupId
         && exists(/databases/$(database)/documents/groups/$(groupId)/members/$(claim().data.memberId))
+        // 4 桁の個人ID で入った証は、使える終わり（12/3）で止める。招待の証（32 字）・6 字の証は当たらない
+        && (!string(claim().data.get('personalId', '')).matches('^[0-9]{4}$') || legacyIdUsable())
         && (groupVerified(groupId) || inGracePeriod());
     }
 
@@ -123,6 +157,11 @@ service cloud.firestore {
       // 作れるのは、確認の済んだメールで入っている人だけ（偽のアドレスでは作れない）
       allow create: if verifiedEmail()
         && !disposableEmail()
+        && !disposableDomain()
+        // 消した団体の控え（30 日）や中身が残っている番号では作れない（B2）。作れると、控えを書き換えたり
+        // 消し残しを読めたりした。たまたま当たったら、アプリが番号を振り直す（src/LoginScreen.js の 団体を作る）
+        && !exists(/databases/$(database)/documents/deleted_accounts/$(groupId))
+        && !exists(/databases/$(database)/documents/groups/$(groupId))
         && request.resource.data.email == callerEmail()
         && request.resource.data.id == groupId
         // ログインに要る2つと、確認済みの印だけ。同意の記録は private/consent へ書く
@@ -139,9 +178,10 @@ service cloud.firestore {
         // email そのものは変えさせない。切り替えは新しいアドレスの確認を通す（下の句）。
         // 直接変えられると、確かめていないアドレスに団体を渡せてしまう。
         // 前のアドレス（previousEmail）と口座の番号（ownerUid）は、消せるが書き換えられない
-        || (callerEmail() != ''
-            && resource.data.email == callerEmail()
-            && request.resource.data.keys().hasOnly(['id', 'email', 'pendingEmail', 'previousEmail', 'ownerUid', 'verified'])
+        // 切り替えを頼んだ口座の番号（pendingUid）は、自分の番号だけ書ける（切り替えの途中の本人を見分ける。上の sameOwnerAccount）
+        || (sameOwnerAccount(resource.data)
+            && request.resource.data.keys().hasOnly(['id', 'email', 'pendingEmail', 'pendingUid', 'previousEmail', 'ownerUid', 'verified'])
+            && request.resource.data.get('pendingUid', request.auth.uid) == request.auth.uid
             && request.resource.data.email == resource.data.email
             // 確認済みの印を付けられるのは、確認の済んだメールで入っている本人だけ（付いている印はそのまま残せる）
             && (request.resource.data.get('verified', false) == resource.data.get('verified', false)
@@ -158,6 +198,8 @@ service cloud.firestore {
         // 前のアドレス（いまの email）と自分の口座の番号を残す。「元に戻す」に備える（下の句）
         || (callerEmail() != ''
             && request.auth.token.email_verified == true
+            && !disposableEmail()
+            && !disposableDomain()
             && resource.data.get('pendingEmail', '') == callerEmail()
             && request.resource.data.keys().hasOnly(['id', 'email', 'previousEmail', 'ownerUid', 'verified'])
             && request.resource.data.email == callerEmail()
@@ -178,77 +220,88 @@ service cloud.firestore {
 
       // 消すのは管理者か、団体の持ち主本人（設定の「アカウントを削除する」。
       // src/accountDeletion.js が、写しを deleted_accounts に書いてから最後に消す）
-      allow delete: if isAdmin()
-        || (callerEmail() != '' && resource.data.email == callerEmail());
+      allow delete: if isAdmin() || sameOwnerAccount(resource.data);
 
       // 団体名・登録日・同意の記録。**その団体のメールアドレスで入っている
       // 本人だけ**が読み書きする。親の email と突き合わせて確かめる
       match /private/{doc} {
         allow read, write: if isAdmin()
           || ((verifiedEmail() || (callerEmail() != '' && inGracePeriod()))
-              && callerEmail() ==
-                 get(/databases/$(database)/documents/group_accounts/$(groupId)).data.email);
+              && sameOwnerAccount(get(/databases/$(database)/documents/group_accounts/$(groupId)).data));
       }
     }
 
-    // 所属クレーム。逆引き表と memberId が一致する場合だけ作れる。
-    // つまり正しい個人IDを知っていることが条件になる。
+    // 所属クレーム。書くのは中継（kyudo-chukei の POST /kojin）だけ（H1・2026-11-04）。
+    // 中継が、匿名の口座の証・回数の上限（通信元ごと・団体ごと）・App Check の印を確かめてから、
+    // サービスアカウントで逆引き表を引き、ここの前の決まりと同じこと（6 字か 12/2 までの 4 桁か・招待の期限・
+    // 団体の確認済みか猶予中か）を確かめて書く。前は端末が書いていたので、匿名の口座をいくらでも作って
+    // 逆引き表を総当たりでき、回数の上限も掛けられなかった（決まりは失敗を数えられない）。
+    // 端末は自分の証を読む（自分の個人IDを出す）・消す（ログアウト）だけ
     match /member_claims/{uid} {
       allow get, delete: if signedIn() && request.auth.uid == uid;
-      // 逆引き表の文書。個人ID（4 桁）か、招待リンクの合言葉（招待: true。src/memberInvite.js）
-      function lookupEntry() {
-        return get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)/member_lookup/$(request.resource.data.personalId)).data;
-      }
-      // 招待リンクの合言葉は、期限（expiresAt。作ってから 7 日）を過ぎると使えない。
-      // 期限の無い招待の文書も使えない（expiresAt が無いと評価が誤りになり、断られる）。
-      // 個人ID の文書（招待を持たない）は今までどおり。すでに入っている端末は、証がもう
-      // あるので期限の影響を受けない（isClaimedMember は逆引き表を見ない）
-      allow create, update: if signedIn()
-        && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['groupId', 'memberId', 'personalId', 'claimedAt'])
-        && lookupEntry().memberId == request.resource.data.memberId
-        // 個人ID は 6 字（I・L・O・0・1 を除く大文字と数字）。4 桁は使える終わりまで。招待リンクの合言葉はそのまま
-        && (request.resource.data.personalId.matches('^[A-HJKMNP-Z2-9]{6}$')
-            || lookupEntry().get('招待', false) == true
-            || (request.resource.data.personalId.matches('^[0-9]{4}$') && legacyIdUsable()))
-        // 確認の済んでいない団体には入れない（2026-11-03）
-        && (get(/databases/$(database)/documents/group_accounts/$(request.resource.data.groupId)).data.get('verified', false) == true
-            || inGracePeriod())
-        && (lookupEntry().get('招待', false) != true || lookupEntry().expiresAt > request.time);
+      allow create, update: if false;
+    }
+
+    // ライブの合言葉（groups/{団体}.liveSecret）を部員が足してよいか。まだ無いとき（空・字でない）だけ。
+    // 足すだけで、書き換えはさせない（替わると、古い合言葉の端末と別の枝を見てライブが割れる）
+    function addsLiveSecretOnly(groupId) {
+      return isClaimedMember(groupId)
+        && request.resource.data.get('liveSecret', '') is string
+        && request.resource.data.get('liveSecret', '').size() >= 16
+        && (resource == null
+            ? request.resource.data.keys().hasOnly(['liveSecret'])
+            : (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['liveSecret'])
+               && !(resource.data.get('liveSecret', null) is string && resource.data.get('liveSecret', '').size() >= 16)));
+    }
+
+    // 名簿・卒業生の文書に個人ID（personalId）を足す・変えることは断る。個人ID は逆引き表（member_lookup）にだけ置く
+    // （C・2026-11-04。名簿は部員も読めるので、全員の個人ID が見えていた）。残っているものを消す・そのまま残すのは通す
+    function keepsPersonalIdOut() {
+      return !('personalId' in request.resource.data)
+        || (resource != null && request.resource.data.personalId == resource.data.get('personalId', null));
     }
 
     match /groups/{groupId} {
       allow get: if canAccess(groupId);
-      allow create, update: if canAccess(groupId);
+      // 団体名などは団体だけ。部員はライブの合言葉がまだ無いときに足すだけ（B5）
+      allow create, update: if isGroupOwner(groupId) || addsLiveSecretOnly(groupId);
       allow delete: if isGroupOwner(groupId);
       // list は書かない。団体の一覧化を防ぐ（SEC-5）
 
-      // 個人ID→memberId の逆引き。
-      // get だけ許して list は禁止する。名簿を引けないようにするため（SEC-6）。
+      // 個人ID→memberId の逆引き。読み書きは団体の持ち主だけ（H1・2026-11-04）。
+      // 部員が入るときに引くのは中継（サービスアカウント）。前は匿名の口座なら誰でも 1 件ずつ引けたので、
+      // 個人ID が合っているかを回数の上限なしに試せた（SEC-6 の list の禁止はそのまま）
       match /member_lookup/{personalId} {
-        allow get: if signedIn();
-        allow list, write: if isGroupOwner(groupId);
+        allow read, write: if isGroupOwner(groupId);
       }
 
       // 部員（個人ログイン）が書けるのは、記録を作る・直すと、自分の名簿の弓具だけ。記録を消す・名簿を作る・消す・
       // ゴミ箱・卒業生・練習日は団体だけ（2026-11-02 決めた）。読むのは部員も今のまま。
       // アプリも部員にはこれらの操作を出していない（履歴の削除は管理者モード・出欠のタブは団体だけ・
       // 部員の端末は自分の弓具だけ送る src/storeMembers.js の 弓具だけ送る形）
+      // 部員が記録を直すときは、射手を減らさない（アプリも部員の端末では減らさない。src/storeSessions.js の updateSession）。
+      // アプリを通さずに書かれても、射手を消して記録を潰せないように（B5）
       match /sessions/{docId} {
-        allow read, create, update: if canAccess(groupId);
+        allow read, create: if canAccess(groupId);
+        allow update: if isGroupOwner(groupId)
+          || (isClaimedMember(groupId)
+              && request.resource.data.get('archers', []) is list
+              && request.resource.data.get('archers', []).size() >= resource.data.get('archers', []).size());
         allow delete: if isGroupOwner(groupId);
       }
       match /members/{docId} {
         allow read: if canAccess(groupId);
-        allow create, delete: if isGroupOwner(groupId);
-        allow update: if isGroupOwner(groupId)
+        allow create: if isGroupOwner(groupId) && keepsPersonalIdOut();
+        allow delete: if isGroupOwner(groupId);
+        allow update: if (isGroupOwner(groupId) && keepsPersonalIdOut())
           || (isClaimedMember(groupId)
               && docId == claim().data.memberId
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['equipments', 'lastModified']));
       }
       match /alumni/{docId} {
         allow read: if canAccess(groupId);
-        allow write: if isGroupOwner(groupId);
+        allow create, update: if isGroupOwner(groupId) && keepsPersonalIdOut();
+        allow delete: if isGroupOwner(groupId);
       }
       match /trash/{docId} {
         allow read: if canAccess(groupId);
@@ -256,9 +309,15 @@ service cloud.firestore {
       }
       // config のうち listing（紹介に載せてよいかの許可・2026-10-09）は、団体の持ち主だけが書ける。
       // 部員の端末から団体の答えを変えられないように。読むのは部員も可（画面には出さない）。src/listingConsent.js
+      // 設定（団体の種類・進級の確認・1 年生の期・順位の基準など）を書けるのは団体だけ。部員が足せるのは
+      // 目印（タグ）の候補だけ（アプリも部員の端末ではタグの候補だけ送る。src/useScoreStore.js の 目印の候補を置く。B5）
       match /config/{docId} {
         allow read: if canAccess(groupId);
-        allow write: if canAccess(groupId) && docId != 'listing';
+        allow write: if docId != 'listing'
+          && (isGroupOwner(groupId)
+              || (isClaimedMember(groupId)
+                  && docId == 'app_settings'
+                  && request.resource.data.diff(resource == null ? {} : resource.data).affectedKeys().hasOnly(['tagTemplates', 'lastModified'])));
       }
       match /config/listing {
         allow read: if canAccess(groupId);
@@ -268,6 +327,13 @@ service cloud.firestore {
         allow read: if canAccess(groupId);
         allow write: if isGroupOwner(groupId);
       }
+    }
+
+    // 使い捨てメールのドメインの一覧（上の disposableDomain）。一覧は秘密でないので誰でも 1 件ずつ引ける
+    // （アプリが口座を作る前に引いて断る）。書くのは運営の台本だけ（所有者のトークンは決まりを通らない）
+    match /disposable_domains/{domain} {
+      allow get: if true;
+      allow list, write: if false;
     }
 
     // 消した団体アカウントの写し。設定の「アカウントを削除する」で、団体の持ち主が

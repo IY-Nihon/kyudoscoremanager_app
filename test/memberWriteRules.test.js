@@ -14,25 +14,32 @@ const 中身 = (印) => {
   return 決まり.slice(始め, 決まり.indexOf('\n      }', 始め));
 };
 
-test('記録：部員も作る・直すはできるが、消すのは団体だけ', () => {
+test('記録：部員も作る・直すはできるが（射手は減らさない）、消すのは団体だけ', () => {
   const 節 = 中身('match /sessions/{docId}');
-  assert.match(節, /allow read, create, update: if canAccess\(groupId\);/);
+  assert.match(節, /allow read, create: if canAccess\(groupId\);/);
+  assert.match(節, /allow update: if isGroupOwner\(groupId\)\s*\|\| \(isClaimedMember\(groupId\)/);
+  assert.match(節, /size\(\) >= resource\.data\.get\('archers', \[\]\)\.size\(\)/, '部員が射手を減らせる');
   assert.match(節, /allow delete: if isGroupOwner\(groupId\);/);
 });
 
-test('名簿：作る・消すは団体だけ。部員は自分の弓具だけ直せる', () => {
+test('名簿：作る・消すは団体だけ（個人ID は置かせない）。部員は自分の弓具だけ直せる', () => {
   const 節 = 中身('match /members/{docId}');
-  assert.match(節, /allow create, delete: if isGroupOwner\(groupId\);/);
+  assert.match(節, /allow create: if isGroupOwner\(groupId\) && keepsPersonalIdOut\(\);/);
+  assert.match(節, /allow delete: if isGroupOwner\(groupId\);/);
   assert.match(節, /docId == claim\(\)\.data\.memberId/);
   assert.match(節, /affectedKeys\(\)\.hasOnly\(\['equipments', 'lastModified'\]\)/);
 });
 
 test('卒業生・ゴミ箱・練習日は、書くのは団体だけ（読むのは部員も）', () => {
-  for (const 印 of ['match /alumni/{docId}', 'match /trash/{docId}', 'match /officialPracticeDays/{docId}']) {
+  for (const 印 of ['match /trash/{docId}', 'match /officialPracticeDays/{docId}']) {
     const 節 = 中身(印);
     assert.match(節, /allow read: if canAccess\(groupId\);/, 印);
     assert.match(節, /allow write: if isGroupOwner\(groupId\);/, 印);
   }
+  const 卒業生 = 中身('match /alumni/{docId}');
+  assert.match(卒業生, /allow read: if canAccess\(groupId\);/);
+  assert.match(卒業生, /allow create, update: if isGroupOwner\(groupId\) && keepsPersonalIdOut\(\);/);
+  assert.match(卒業生, /allow delete: if isGroupOwner\(groupId\);/);
 });
 
 test('団体の帳面の一覧：管理者か、自分のメールの団体だけ', () => {
