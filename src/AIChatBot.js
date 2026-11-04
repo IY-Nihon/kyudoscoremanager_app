@@ -132,8 +132,11 @@ function 横に流せる行({ children, style }) {
 }
 
 const generateMsgId = () => Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
-const CHAT_HISTORY_KEY = 'aiChatMessages_v1';
+// 会話の控えの鍵は団体ごと（個人は団体＋本人）。src/chatHistory.js
+const 会話の控え = require('./chatHistory');
 const MAX_SAVED_MESSAGES = 50;
+/** チャットで中継に頼む模型。中継は混み具合で別の模型に替えて答えることがある（kyudo-chukei の模型の並び） */
+const 頼む模型 = 'gemini-3.6-flash';
 const BUTTON_POS_KEY = 'aiButtonPos_v1';
 
 // キャラクターを明るい地（見出し・吹き出し）に置くときの色。体が白だと地に溶けるので青にし、
@@ -170,17 +173,17 @@ const saveButtonPos = (pos) => {
 const 部員登録の挨拶 =
   'こんにちは！メンバー登録をお手伝いします。🎯\n例えば「1年の山田 太郎 男子 を追加して」のように入力して送信してみてください。';
 
-/**
- * 会話の控えの置き場。団体はこれまでどおり。個人は本人ごとに分ける（同じ端末で別の人が入っても見えない）。
- * 本人がまだ分からない個人（読み込み中）には、団体の会話を読ませない
- */
 /** AI が返す性別（male・female・男子・女子）をアプリの値（男子・女子・未設定）にそろえる */
 const 性別にそろえる = (性別) =>
   性別 === 'male' || 性別 === '男子' ? '男子' : 性別 === 'female' || 性別 === '女子' ? '女子' : '未設定';
 
-const 会話の鍵 = (個人, 部員id) => (個人 ? `${CHAT_HISTORY_KEY}_member_${部員id || '-'}` : CHAT_HISTORY_KEY);
+/**
+ * 会話の控えの置き場。団体ごとに分け、個人は団体＋本人ごとに分ける（同じ端末で別の団体・別の人が入っても見えない）。
+ * 本人がまだ分からない個人（読み込み中）には、団体の会話を読ませない
+ */
+const 会話の鍵 = 会話の控え.会話の鍵;
 
-const loadChatHistory = (鍵 = CHAT_HISTORY_KEY) => {
+const loadChatHistory = (鍵) => {
   try {
     const saved = typeof localStorage !== 'undefined' && localStorage.getItem(鍵);
     if (saved) {
@@ -195,7 +198,7 @@ const loadChatHistory = (鍵 = CHAT_HISTORY_KEY) => {
   return null;
 };
 
-const saveChatHistory = (messages, 鍵 = CHAT_HISTORY_KEY) => {
+const saveChatHistory = (messages, 鍵) => {
   try {
     if (typeof localStorage !== 'undefined') {
       const toSave = messages
@@ -212,6 +215,7 @@ const saveChatHistory = (messages, 鍵 = CHAT_HISTORY_KEY) => {
 const AIChatBot = () => {
   const {
     activeRole,
+    activeGroupId,
     members: 全部の部員 = [],
     sessions: 全部の記録 = [],
     currentRouteName,
@@ -221,6 +225,7 @@ const AIChatBot = () => {
     selectedHistorySessionId,
   } = useストアの一部([
     'activeRole',
+    'activeGroupId',
     'members',
     'sessions',
     'currentRouteName',
@@ -241,7 +246,11 @@ const AIChatBot = () => {
   );
   const members = 見える.members;
   const sessions = 見える.sessions;
-  const 保存の鍵 = 会話の鍵(個人, myMemberId);
+  const 保存の鍵 = 会話の鍵(activeGroupId, 個人, myMemberId);
+  // 団体の入っていない前の会話は、どの団体のものか分からないので消す（一度だけ）
+  React.useEffect(() => {
+    会話の控え.前の会話を消す();
+  }, []);
   const addMember = useScoreStore((state) => state.addMember);
   const navigation = useNavigation();
   const チュートリアル部員登録中 = 案内.useチュートリアル部員登録中();
@@ -471,10 +480,12 @@ const AIChatBot = () => {
 
     const updatedMessages = [...messages];
     updatedMessages[targetMsgIndex] = { ...targetMsg, status: isApproved ? 'approved' : 'rejected' };
+    let 追加した名 = null;
 
     if (isApproved) {
       if (targetMsg.actionType === 'addMember') {
         const 名 = カードの人を追加する(targetMsg);
+        追加した名 = 名;
         updatedMessages.push({
           id: generateMsgId(),
           role: 'model',
@@ -492,6 +503,26 @@ const AIChatBot = () => {
 
     setMessages(updatedMessages);
     setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+    カードの答えを残す([targetMsg], isApproved, 追加した名 ? [追加した名] : [], isApproved && !追加した名);
+  };
+
+  /**
+   * 確かめのカードを押した結果を、改善のためのログに残す（元の質問のログの番号を添える）。
+   * 前は「追加する」「キャンセル」を押したかが残らず、AI の読み取った名前・学年・性別が合っていたかを見られなかった
+   */
+  const カードの答えを残す = (カードたち, 承認した, 追加した, 断られた) => {
+    if (!カードたち.length) return;
+    const 改善 = require('./improvementLog');
+    const 元の記録たち = [...new Set(カードたち.map((一つ) => 一つ.元の記録).filter(Boolean))];
+    改善.改善のために取っておく('チャット', {
+      段階: 'カードの答え',
+      ...(元の記録たち.length ? { 元の記録: 元の記録たち.length === 1 ? 元の記録たち[0] : 元の記録たち } : {}),
+      答え: 承認した ? '追加する' : 'キャンセル',
+      まとめて: カードたち.length > 1,
+      カード: カードたち.slice(0, 50).map((一つ) => 改善.小さくする(一つ.args, 1000)),
+      追加した,
+      ...(断られた ? { 断られた: '団体ログインでない' } : {}),
+    });
   };
 
   /** 待っているカードを全部まとめて承認する／キャンセルする（部員を何人も頼んだとき） */
@@ -523,6 +554,7 @@ const AIChatBot = () => {
     if (isApproved && 追加した.length > 0 && チュートリアル部員登録中) 少ししたら閉じる();
     setMessages(updatedMessages);
     setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+    カードの答えを残す(待ち, isApproved, 追加した, 断られた);
   };
   const 待っているカードの数 = messages.filter(
     (文) => 文.role === 'actionCard' && 文.status === 'pending'
@@ -540,24 +572,37 @@ const AIChatBot = () => {
 
     let attempt = 0;
     const MAX_RETRY = 1;
-    // アプリの改善のための保存に添える、使った道具の名前（src/improvementLog.js）
+    // アプリの改善のための保存（src/improvementLog.js）。番号を先に決めておき、あとから送るもの
+    // （確かめのカードを押した結果）から、この質問のログを指せるようにする
+    const 改善 = require('./improvementLog');
+    const 記録id = 改善.新しいid();
+    // 使った道具の名前・道具に渡した引数・道具の返事（答えの数字が合っていたかを後から確かめるため。上限つき）
     const 使った道具 = [];
+    const 道具の引数 = [];
+    const 道具の返事 = [];
     // 図にできる道具の結果（番号 → 道具の名と結果）と、この答えに出す図（showFigure）
     const 図の元 = new Map();
-    const この答えの図 = [];
+    let この答えの図 = [];
+    let 図の出どころ = [];
+    // 混んでいて断られた・流れが切れた・答えが空だったときに送り直した回数
+    const 送り直し = { 混雑: 0, 流れが切れた: 0, 空の答え: 0 };
     // かかった時間（ミリ秒）。遅いときに、最初の字が出るまでか・Gemini の何回目かを後から見る
     const 始めた時刻 = Date.now();
     let 最初の字の時刻 = 0;
     const Geminiの時間 = [];
     const 改善のために = (中身) => {
       const 秒 = (ms) => Math.round(ms / 100) / 10;
-      require('./improvementLog').改善のために取っておく(
+      改善.改善のために取っておく(
         'チャット',
         Object.assign(
           {
             質問: userMsg,
             道具: 使った道具,
-            模型: 'gemini-3.6-flash',
+            ...(道具の引数.length ? { 道具の引数 } : {}),
+            ...(道具の返事.length ? { 道具の返事 } : {}),
+            // 中継は混み具合で別の模型に替えて答えることがあるので、答えた模型ではなく頼んだ模型
+            頼んだ模型: 頼む模型,
+            ...(送り直し.混雑 || 送り直し.流れが切れた || 送り直し.空の答え ? { 送り直し } : {}),
             秒: {
               全部: 秒(Date.now() - 始めた時刻),
               最初の字まで: 最初の字の時刻 ? 秒(最初の字の時刻 - 始めた時刻) : null,
@@ -565,9 +610,18 @@ const AIChatBot = () => {
             },
           },
           中身
-        )
+        ),
+        [],
+        記録id
       );
     };
+    // 図の中身（題・形・棒の並び・表の列と行・折れ線の系列と点・矢所の点）。どれも上限つき
+    const 図のログ = () =>
+      この答えの図.slice(0, 5).map((一つ, 番) => ({
+        元の道具: 図の出どころ[番] || null,
+        形: 一つ && 一つ.形,
+        中身: 改善.小さくする(一つ, 16000),
+      }));
 
     // 秒数を画面に数えながら待つ（送り直す前）
     const 数えながら待つ = async (秒) => {
@@ -584,6 +638,9 @@ const AIChatBot = () => {
     };
 
     while (attempt <= MAX_RETRY) {
+      // 最初からやり直すときは、前の回で作った図を持ち越さない（同じ図が 2 つ並んだ）
+      この答えの図 = [];
+      図の出どころ = [];
       try {
         // 部員一覧のみ渡す（トークン節約）。詳細成績はgetDetailedMemberStatsで取得
         // 名前（学年・区分）。学年の無い団体では学年の代わりに「会員」と出る
@@ -701,7 +758,7 @@ const AIChatBot = () => {
             // 上限（429）に当たりやすくなるので、当たったときの待ちの作りはそのまま残す
             // 2026-09-13 に 3.6-flash へ。2.5-flash は新しい鍵では使えず、無料枠も模型ごとなので、
             // 写真の読み取りと同じ模型にそろえる（道具の呼び出しは検証環境で確かめた）
-            model: 'gemini-3.6-flash',
+            model: 頼む模型,
             systemInstruction: fullInstruction,
             tools,
           },
@@ -776,6 +833,7 @@ const AIChatBot = () => {
             );
             模型の部品.length = 0;
             途中の文 = '';
+            送り直し.流れが切れた++;
             返り = await model.generateContentStream({ contents: 会話 });
             返り.response.catch(() => {});
             await 流しながら出す(返り, 模型の部品);
@@ -833,6 +891,9 @@ const AIChatBot = () => {
             // どの引数が来たかだけにする（不具合を追うにはこれで足りる）
             console.log('[AIChatBot] Function Called:', call.name, Object.keys(call.args || {}));
             if (call.name && !使った道具.includes(call.name)) 使った道具.push(call.name);
+            // 改善のためのログには引数も残す（期間・名前・絞り込みで、答えが合っていたかを後から確かめる）
+            if (道具の引数.length < 12)
+              道具の引数.push({ 名: call.name || '', 引数: 改善.小さくする(call.args || {}, 2000) });
 
             // 個人ログインは、出していない道具を模型が呼んできても動かさない。
             // 「本人の分だけ」を、指示文の断りだけに頼らず、道具の側でも止める
@@ -1258,7 +1319,10 @@ const AIChatBot = () => {
                 : {
                     error: `図の番号「${call.args.source}」が見つかりません。道具の返事の 図にするとき.source を渡してください`,
                   };
-              if (!作った.error) この答えの図.push(作った);
+              if (!作った.error) {
+                この答えの図.push(作った);
+                図の出どころ.push(元.名);
+              }
               functionResponses.push({
                 functionResponse: {
                   name: call.name,
@@ -1482,6 +1546,8 @@ const AIChatBot = () => {
                   args: 人,
                   status: 'pending',
                   callName: call.name,
+                  // カードを押した結果のログから、この質問のログを指す
+                  元の記録: 記録id,
                 });
                 hasPendingAction = true;
               }
@@ -1495,6 +1561,13 @@ const AIChatBot = () => {
             setMessages((prev) => [...prev.filter((文) => 文.id !== 途中の札), ...pendingActionCards]);
             setIsLoading(false);
             setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+            // ここで抜けるので、答えのあとに送るログまで届かない。カードを出したことをここで残す
+            //（前は部員の追加を頼んだ質問が 1 件も残っていなかった）
+            改善のために({
+              結果: '確かめのカード',
+              カード: pendingActionCards.map((一つ) => 改善.小さくする(一つ.args, 1000)),
+              ...(この答えの図.length ? { 図: 図のログ() } : {}),
+            });
             return;
           }
 
@@ -1505,6 +1578,8 @@ const AIChatBot = () => {
             if (!中 || !中.response || typeof 中.response !== 'object') continue;
             const 形 = 図.使える形(中.name, 中.response);
             const 渡す = 図.図の分を外す(中.response);
+            // 模型に渡した返事（数字）も残す。1 つ 8,000 字まで
+            if (道具の返事.length < 12) 道具の返事.push({ 名: 中.name, 返事: 改善.小さくする(渡す, 8000) });
             if (形.length) {
               const 番号 = `R${図の元.size + 1}`;
               図の元.set(番号, { 名: 中.name, 結果: 中.response });
@@ -1564,6 +1639,7 @@ const AIChatBot = () => {
         ) {
           console.warn('[AIChatBot] 答えの文が空だったので、もう一度送ります');
           const 中身 = 最後に送った中身;
+          送り直し.空の答え++;
           会話.pop();
           result = await 送る(中身);
           response = await result.response;
@@ -1595,7 +1671,8 @@ const AIChatBot = () => {
         改善のために({
           答え: responseText,
           結果: '答えた',
-          ...(この答えの図.length ? { 図: この答えの図.map((一つ) => 一つ.形) } : {}),
+          // 図は形だけでなく中身も残す（題・棒の並び・表の列と行など。上限つき）
+          ...(この答えの図.length ? { 図: 図のログ() } : {}),
         });
         break; // 成功
       } catch (error) {
@@ -1610,10 +1687,16 @@ const AIChatBot = () => {
               actionType: 'addMember',
               args: 抽出,
               status: 'pending',
+              元の記録: 記録id,
             };
             setMessages([...newMessages, fallbackCard]);
             setIsLoading(false);
             setRetryCountdown(0);
+            改善のために({
+              結果: '確かめのカード（送った文から）',
+              カード: [改善.小さくする(抽出, 1000)],
+              誤り: String((error && error.message) || error).slice(0, 300),
+            });
             return;
           }
         }
@@ -1632,6 +1715,7 @@ const AIChatBot = () => {
           // 山が長いことがある。利用者に送り直させる前に、もう少し待ってこちらで 1 回だけ送り直す
           await 数えながら待つ(10);
           attempt++;
+          送り直し.混雑++;
           continue;
         }
 
@@ -1640,6 +1724,7 @@ const AIChatBot = () => {
           const match = error.message.match(/"retryDelay":"(\d+)s"/);
           await 数えながら待つ(match ? parseInt(match[1]) + 2 : 35);
           attempt++;
+          送り直し.混雑++;
           continue;
         }
 

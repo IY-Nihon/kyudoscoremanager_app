@@ -70,6 +70,15 @@ const AttendanceScreen = () => {
   const [loadingMsg, setLoadingMsg] = React.useState(null);
   const [selectedMember, setSelectedMember] = React.useState(null);
   const [aiPreviewItems, setAiPreviewItems] = React.useState(null);
+  // 予定表を読んだログの番号。保存した・やめたのログから指す（src/improvementLog.js）
+  const 予定表の記録id = React.useRef(null);
+  /** 読み取りのあと（保存した・やめた）を、改善のためのログに残す。待たない */
+  const 予定表のあとを残す = (中身) => {
+    const 元 = 予定表の記録id.current;
+    if (!元) return;
+    予定表の記録id.current = null;
+    require('./improvementLog').改善のために取っておく('予定表', Object.assign({ 元の読み取り: 元 }, 中身));
+  };
   const now = React.useMemo(() => new Date(), []);
   const [selectedYear, setSelectedYear] = React.useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = React.useState(now.getMonth() + 1);
@@ -312,15 +321,22 @@ const AttendanceScreen = () => {
       // 読めたファイルは、結果に関わらず取っておく。待たない
       if (予定表の記録) {
         const { 中身, ファイル, base64: 元, 型 } = 予定表の記録;
+        const 記録 = require('./improvementLog');
+        const id = 記録.新しいid();
+        予定表の記録id.current = 中身.結果 === '読んだ' ? id : null;
         (async () => {
-          const 記録 = require('./improvementLog');
+          // 写真は写真の読み取りと同じく長い辺 1600px に縮めてから送る（スマホの写真は 5MB を超えることがあり、
+          // 超えると黙って捨てていた）。PDF は縮められないのでそのまま（5MB まで）
+          const 縮めた = /^image\//.test(型) ? await 記録.写真を縮める(元, 型) : null;
           // 種類が空の Blob は、選んだファイルの種類を付け直す（空だと写真の札で送ってしまう）
-          const 体 = ファイル
-            ? ファイル.type
-              ? ファイル
-              : new Blob([ファイル], { type: 型 })
-            : await 記録.base64をBlobに(元, 型);
-          記録.改善のために取っておく('予定表', 中身, [体]);
+          const 体 =
+            縮めた ||
+            (ファイル
+              ? ファイル.type
+                ? ファイル
+                : new Blob([ファイル], { type: 型 })
+              : await 記録.base64をBlobに(元, 型));
+          記録.改善のために取っておく('予定表', { ...中身, ...(縮めた ? { 縮めた: true } : {}) }, [体], id);
         })().catch(() => {});
       }
     }
@@ -329,16 +345,20 @@ const AttendanceScreen = () => {
     if (!aiPreviewItems || !activeGroupId) return;
     setLoadingMsg('予定を保存中...');
     try {
+      const 保存した日 = [];
       for (const item of aiPreviewItems) {
         await firestore.setDoc(firestore.doc(db, `groups/${activeGroupId}/officialPracticeDays`, item.date), {
           date: item.date,
           created: new Date(),
         });
+        保存した日.push(item.date);
       }
       setAiPreviewItems(null);
+      予定表のあとを残す({ 段階: '保存', 保存した日 });
     } catch (誤り) {
       console.error(誤り);
       保存の誤りを伝える(誤り);
+      予定表のあとを残す({ 段階: '保存', 結果: '失敗', 誤り: String((誤り && 誤り.message) || 誤り).slice(0, 300) });
     } finally {
       setLoadingMsg(null);
     }
@@ -533,7 +553,10 @@ const AttendanceScreen = () => {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.aiActionBtn, { flex: 1, backgroundColor: 色.灰 }]}
-                  onPress={() => setAiPreviewItems(null)}
+                  onPress={() => {
+                    setAiPreviewItems(null);
+                    予定表のあとを残す({ 段階: 'やめた', 読んだ日の数: aiPreviewItems.length });
+                  }}
                 >
                   <Text style={styles.aiActionBtnText}>キャンセル</Text>
                 </TouchableOpacity>

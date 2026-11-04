@@ -323,6 +323,11 @@ const OCRRecordModal = ({
   // 反映したら直したあとを、それぞれ取っておく（src/improvementLog.js）
   const 最初の読み取り = React.useRef(null);
   const 読み取りの記録id = React.useRef(null);
+  // 読み取りの回。閉じる・読み直すたびに進め、前の回の結果は画面に出さない（ログは送る）。
+  // 前は閉じても読み取りが続き、あとで開いた窓に前の写真の結果が出た
+  const 読みの回 = React.useRef(0);
+  // 「撮り直す」を押したあと。次に足した写真で、前の写真を差し替える（前は足していた）
+  const 撮り直し中 = React.useRef(false);
   // かかった時間（ミリ秒）。遅いときに、Gemini を待ったのか端末で読むのに掛かったのかを後から分けて見る
   const かかった時間 = React.useRef({ 始め: 0, Gemini: 0, Geminiの回数: 0 });
   // Gemini の答え（生の文）。本番で読み違えた写真を、同じ答えで手元に再現して直すために保存に添える（10/13 のノートで要った）
@@ -382,11 +387,48 @@ const OCRRecordModal = ({
     setGuestNameInput('');
   };
 
-  const handleClose = () => {
+  // 読み終えたのに反映しなかった読み取りを、改善のためのログに残す（使われなかった読み取りほど改善に要る）。
+  // 元の読み取りの番号を添える。読み取りのログが無い（読む前・読んでいる途中）ときは送らない
+  const 使わなかった読み取りを残す = (段階) => {
+    const 元 = 読み取りの記録id.current;
+    if (!元) return;
+    読み取りの記録id.current = null;
+    require('./improvementLog').改善のために取っておく('写真読み取り', {
+      段階,
+      元の読み取り: 元,
+      モード: mode,
+      そのときの画面: step,
+    });
+  };
+
+  const 閉じる = (反映した) => {
+    // 読み取りの途中なら、その回の結果は捨てる（読み終えた分のログは送る。analyzeImages）
+    読みの回.current++;
+    撮り直し中.current = false;
+    if (!反映した) 使わなかった読み取りを残す('閉じた');
+    読み取りの記録id.current = null;
+    // 写真の画素の控え（1 枚で数十 MB）も手放す
+    if (typeof 画像の道具.控えを手放す === 'function') 画像の道具.控えを手放す();
     resetAll();
     if (onClose) {
       onClose();
     }
+  };
+  const handleClose = () => 閉じる(false);
+
+  // 確かめの画面の「撮り直す」。今の写真は残し（向きを替えて読み直せる）、次に足した写真で差し替える
+  const 撮り直す = () => {
+    使わなかった読み取りを残す('撮り直した');
+    撮り直し中.current = true;
+    setStep('pick');
+  };
+  const 写真を足す = (一枚) => {
+    if (撮り直し中.current) {
+      撮り直し中.current = false;
+      setImages([一枚]);
+      return;
+    }
+    setImages((prev) => [...prev, 一枚]);
   };
   // 戻るボタン（と web の Esc）で閉じるとき。読んでいる途中や読んだあとは、捨ててよいかを聞く。
   // ×と違って戻るはうっかり押しやすく、読み直しには時間がかかる（2026-09-26、戻るで窓を閉じるようにしたとき）
@@ -458,7 +500,7 @@ const OCRRecordModal = ({
       if (result.canceled || !result.assets || result.assets.length === 0) return;
       const asset = result.assets[0];
       const base64 = await uriToBase64(asset.uri);
-      setImages((prev) => [...prev, { uri: asset.uri, base64 }]);
+      写真を足す({ uri: asset.uri, base64 });
     } catch (誤り) {
       console.error('[OCRRecordModal] Image pick error:', 誤り);
       setErrorMsg('画像の選択に失敗しました。');
@@ -483,7 +525,7 @@ const OCRRecordModal = ({
       if (result.canceled || !result.assets || result.assets.length === 0) return;
       const asset = result.assets[0];
       const base64 = asset.base64 ? asset.base64 : await uriToBase64(asset.uri);
-      setImages((prev) => [...prev, { uri: asset.uri, base64 }]);
+      写真を足す({ uri: asset.uri, base64 });
     } catch (誤り) {
       console.error('[OCRRecordModal] Camera capture error:', 誤り);
       setErrorMsg('カメラの起動に失敗しました。');
@@ -495,7 +537,8 @@ const OCRRecordModal = ({
   const 読み取りを取っておく = (中身) => {
     const 記録 = require('./improvementLog');
     const id = 記録.新しいid();
-    読み取りの記録id.current = id;
+    // 読んでいる途中で閉じた回（閉じた の印がある）は、次に開いた窓の読み取りとして扱わない
+    if (!中身 || !中身.閉じた) 読み取りの記録id.current = id;
     const 写真たち = (images || []).map((一枚) => 一枚 && 一枚.base64).filter(Boolean);
     // 縮められなければ（読めない形式など）元の写真をそのまま送る（5MB まで）
     Promise.all(
@@ -530,6 +573,12 @@ const OCRRecordModal = ({
   // ─────────────────────────────────────────
   const analyzeImages = async () => {
     if (images.length === 0) return;
+    撮り直し中.current = false;
+    // この回の印。閉じたら（読みの回が進んだら）結果は画面に出さず、ログだけ送る
+    const この回 = ++読みの回.current;
+    const 捨てた = () => 読みの回.current !== この回;
+    // 読んでいる途中で閉じた回のログには、その印を付ける（読み終えた分は送る）
+    const 閉じた印 = () => (捨てた() ? { 閉じた: '読んでいる途中で閉じた' } : {});
     かかった時間.current = { 始め: Date.now(), Gemini: 0, Geminiの回数: 0 };
     Geminiの答えたち.current = [];
     setStep('analyzing');
@@ -910,7 +959,7 @@ const OCRRecordModal = ({
         if (差し替え.訳) console.log('[OCRRecordModal] 端末の読み取りを使わなかった:', 差し替え.訳);
         if (差し替え.組み直した)
           console.log('[OCRRecordModal] 板の数を端末に合わせて組み直した:', 差し替え.組み直した);
-        set読み取り元(差し替え.読み取り元);
+        if (!捨てた()) set読み取り元(差し替え.読み取り元);
         set端末の断り(差し替え.読み取り元 === '端末' ? '' : String(差し替え.訳 || '端末で読めませんでした'));
         if (Array.isArray(差し替え.列の見当たち)) 端末の見当 = 差し替え.列の見当たち;
         {
@@ -975,38 +1024,42 @@ const OCRRecordModal = ({
             (Array.isArray(行?.marks) && 行.marks.some((印) => normalizeMark(印) !== ''))
         );
         if (rows.length === 0) {
+          読み取りを取っておく({ 結果: '読めなかった', 知らせ: '記録表を検出できませんでした', ...閉じた印() });
+          if (捨てた()) return;
           setErrorMsg('記録表を検出できませんでした。表全体が入るように撮り直してください。');
-          読み取りを取っておく({ 結果: '読めなかった', 知らせ: '記録表を検出できませんでした' });
           setStep('pick');
           return;
         }
         // 日付の違う組が並んでいたら（ノートの見開き）、どの日を読むか選んでもらう
         const 日付たち = [...new Set(rows.map((行) => 行.日付).filter(Boolean))];
-        if (日付たち.length >= 2) {
+        if (日付たち.length >= 2 && !捨てた()) {
           // 日を選ぶあいだ待った時間は、読み取りの時間に入れない
           かかった時間.current.終わり = Date.now();
           set日付ごとの行({ 日付たち, rows });
           setStep('dates');
           return;
         }
-        applyRecordMatching(rows);
+        applyRecordMatching(rows, !捨てた());
         return;
       }
 
       // 空きごとの組を、立の番号の札で立にまとめる（src/ocrTachiFuda.js）
       const rawTachi = 札で立にまとめる(Array.isArray(parsed.tachi) ? parsed.tachi : []);
       if (rawTachi.length === 0) {
+        読み取りを取っておく({ 結果: '読めなかった', 知らせ: '立ち順表を検出できませんでした', ...閉じた印() });
+        if (捨てた()) return;
         setErrorMsg('立ち順表を検出できませんでした。写真を撮り直してください。');
-        読み取りを取っておく({ 結果: '読めなかった', 知らせ: '立ち順表を検出できませんでした' });
         setStep('pick');
         return;
       }
 
-      applyMatching(rawTachi);
+      applyMatching(rawTachi, !捨てた());
     } catch (誤り) {
       console.error('[OCRRecordModal] Gemini analyze error:', 誤り);
       const msg = String(誤り?.message || 誤り);
-      読み取りを取っておく({ 結果: '失敗', 誤り: msg.slice(0, 300) });
+      読み取りを取っておく({ 結果: '失敗', 誤り: msg.slice(0, 300), ...閉じた印() });
+      // 閉じたあとに届いた失敗は、次に開いた窓に出さない
+      if (捨てた()) return;
       if (msg.includes('429')) {
         setErrorMsg('AIの利用制限に達しました。しばらく待ってから再度お試しください。');
       } else if (msg.includes('503')) {
@@ -1062,7 +1115,8 @@ const OCRRecordModal = ({
   // ─────────────────────────────────────────
   // 認識結果へのメンバー名寄せ適用
   // ─────────────────────────────────────────
-  const applyMatching = (rawTachi) => {
+  // 画面に出す … 読んでいる途中で閉じた回は false（ログだけ送り、窓には出さない）
+  const applyMatching = (rawTachi, 画面に出す = true) => {
     const matched = rawTachi.map((立) => {
       const seats = (Array.isArray(立.seats) ? 立.seats : []).map((rawText) => {
         const 当たり = matchArcherName(rawText, allCandidates);
@@ -1073,7 +1127,12 @@ const OCRRecordModal = ({
     最初の読み取り.current = matched.map((立) =>
       立.seats.map((席) => ({ 読んだ字: 席.rawText, 名前: 席.name || '', 状態: 席.status || '' }))
     );
-    読み取りを取っておく({ 結果: '読んだ', 最初: 最初の読み取り.current });
+    読み取りを取っておく({
+      結果: '読んだ',
+      最初: 最初の読み取り.current,
+      ...(画面に出す ? {} : { 閉じた: '読んでいる途中で閉じた' }),
+    });
+    if (!画面に出す) return;
     setTachiList(matched);
     setStep('preview');
   };
@@ -1081,7 +1140,7 @@ const OCRRecordModal = ({
   // ─────────────────────────────────────────
   // 紙の記録：認識結果へのメンバー名寄せ適用
   // ─────────────────────────────────────────
-  const applyRecordMatching = (rawRows) => {
+  const applyRecordMatching = (rawRows, 画面に出す = true) => {
     // 名寄せは Gemini の照合（roster）を主にし、同じ人に寄った2行目からは「もしかして」に落とす
     const 名寄せ = 重なりを外す(
       rawRows.map((行) => ({
@@ -1122,7 +1181,12 @@ const OCRRecordModal = ({
       チーム番号: 行.チーム番号,
       チーム名: 行.チーム名,
     }));
-    読み取りを取っておく({ 結果: '読んだ', 最初: 最初の読み取り.current });
+    読み取りを取っておく({
+      結果: '読んだ',
+      最初: 最初の読み取り.current,
+      ...(画面に出す ? {} : { 閉じた: '読んでいる途中で閉じた' }),
+    });
+    if (!画面に出す) return;
     setRecordRows(rows);
     setStep('preview');
   };
@@ -1422,7 +1486,7 @@ const OCRRecordModal = ({
       // 射数は、写真で読めた数といまの記録表で埋まっている数の多いほうに合わせる
       if (onApply) onApply(archers, 'record', 反映のしかた, 合わせる射数);
       改善のために取っておく(archers);
-      handleClose();
+      閉じる(true);
       return;
     }
 
@@ -1434,7 +1498,7 @@ const OCRRecordModal = ({
     const archers = buildArchersArray();
     if (onApply) onApply(archers, 'tachi', 反映のしかた);
     改善のために取っておく(archers);
-    handleClose();
+    閉じる(true);
   };
 
   // ─────────────────────────────────────────
@@ -1791,7 +1855,7 @@ const OCRRecordModal = ({
                 })}
               </ScrollView>
 
-              <確かめの下の段 撮り直す={() => setStep('pick')} 反映する={handleApply} />
+              <確かめの下の段 撮り直す={撮り直す} 反映する={handleApply} />
             </>
           )}
 
@@ -1839,7 +1903,7 @@ const OCRRecordModal = ({
                 })}
               </ScrollView>
 
-              <確かめの下の段 撮り直す={() => setStep('pick')} 反映する={handleApply} />
+              <確かめの下の段 撮り直す={撮り直す} 反映する={handleApply} />
             </>
           )}
         </View>

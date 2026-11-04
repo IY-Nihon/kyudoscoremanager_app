@@ -108,3 +108,47 @@ test('団体はまだ在るか：雲が「無い」と返したときだけ fals
   assert.equal(await 確.団体はまだ在るか(道具('誤り'), '100001'), null);
   assert.equal(await 確.団体はまだ在るか(道具(false), ''), null);
 });
+
+test('持ち主の確認の様子：ログインが外れていたら（証が取り消された）確認の画面でなく入り直し', async () => {
+  const 終わり = Date.parse(確.猶予の終わり + 'T00:00:00Z');
+  // ログインが無い
+  assert.deepStrictEqual(await 確.持ち主の確認の様子({ currentUser: null }, 終わり + 1), { 様子: '入り直し', 確かめた: false });
+  // ほかの端末でパスワードを直した：読み直すと証が取り消されていて、Firebase は端末のログインも外す
+  const 認証 = { currentUser: null };
+  認証.currentUser = {
+    emailVerified: false,
+    reload: async () => {
+      認証.currentUser = null;
+      throw Object.assign(new Error('expired'), { code: 'auth/user-token-expired' });
+    },
+  };
+  assert.deepStrictEqual(await 確.持ち主の確認の様子(認証, 終わり + 1), { 様子: '入り直し', 確かめた: false });
+  // 電波が無い：前の値（確認がまだ）のまま。猶予の中か後かで分ける
+  const 電波なし = () => ({
+    currentUser: {
+      emailVerified: false,
+      reload: async () => {
+        throw Object.assign(new Error('net'), { code: 'auth/network-request-failed' });
+      },
+    },
+  });
+  assert.deepStrictEqual(await 確.持ち主の確認の様子(電波なし(), 終わり - 1), { 様子: '猶予中', 確かめた: false });
+  assert.deepStrictEqual(await 確.持ち主の確認の様子(電波なし(), 終わり + 1), { 様子: '持ち主がまだ', 確かめた: false });
+  // 確認が済んでいる
+  const 済み = { currentUser: { emailVerified: true, getIdToken: async () => 'x' } };
+  assert.deepStrictEqual(await 確.持ち主の確認の様子(済み, 終わり + 1), { 様子: '済み', 確かめた: true });
+  assert.equal(確.ログインが外れた誤りか({ code: 'auth/network-request-failed' }), false);
+  assert.equal(確.ログインが外れた誤りか({ code: 'auth/user-disabled' }), true);
+});
+
+test('App.js：入り直して口座が戻ったとき・猶予が終わったときに、メールの確認を見直す', () => {
+  const 中身 = fs.readFileSync(path.join(__dirname, '..', 'App.js'), 'utf8');
+  assert.match(中身, /口座を置く\(使う人 \? 使う人\.uid : null\)/, 'ログインの口座を見ていない');
+  assert.match(
+    中身,
+    /\[isHydrated, authReady, activeGroupId, activeRole, 共有の来客, 口座, 猶予の見直し\]/,
+    '確認の見直しが、口座と猶予の終わりで動かない'
+  );
+  assert.match(中身, /確\.持ち主の確認の様子\(auth\)/);
+  assert.match(中身, /様子 === '入り直し'/, 'ログインが外れたときに入り直しの窓を出していない');
+});

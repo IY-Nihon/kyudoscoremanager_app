@@ -80,6 +80,41 @@ async function 確認が済んだか(auth) {
   return true;
 }
 
+/**
+ * ログインそのものが外れた誤りか（ほかの端末でパスワードを直して証が取り消された・口座が止められた・消された）。
+ * このときは「確認がまだ」ではなく、入り直しの窓を出す（App.js）。電波が無いなどは当たらない
+ */
+const ログインが外れた符号 = [
+  'auth/user-token-expired',
+  'auth/user-disabled',
+  'auth/user-not-found',
+  'auth/invalid-user-token',
+];
+const ログインが外れた誤りか = (誤り) => ログインが外れた符号.includes(String((誤り && 誤り.code) || ''));
+
+/**
+ * 団体の持ち主の確認の様子（App.js が開いたとき・入り直したとき・猶予が終わったときに見る）。
+ *   '済み'・'猶予中'・'持ち主がまだ' … 画面をこれに替える
+ *   '入り直し' … ログインが外れている。確認の画面ではなく入り直しの窓を出す
+ *     （前は確かめの失敗を「確認がまだ」と取り違え、宛先の空いた確認の画面に閉じ込めていた）
+ * 確かめた（雲に問い合わせて読み直せた）ときは 確かめた: true。電波が無いときは端末が知っている前の値
+ */
+async function 持ち主の確認の様子(auth, 今 = Date.now()) {
+  if (!auth || !auth.currentUser) return { 様子: '入り直し', 確かめた: false };
+  let 済み;
+  let 確かめた = true;
+  try {
+    済み = await 確認が済んだか(auth);
+  } catch (誤り) {
+    // 証が取り消されると、Firebase は端末のログインも外す（currentUser が空になる）
+    if (ログインが外れた誤りか(誤り) || !auth.currentUser) return { 様子: '入り直し', 確かめた: false };
+    済み = !!(auth.currentUser && auth.currentUser.emailVerified);
+    確かめた = false;
+  }
+  if (済み) return { 様子: '済み', 確かめた };
+  return { 様子: 猶予中か(今) ? '猶予中' : '持ち主がまだ', 確かめた };
+}
+
 /** 団体の帳面に「確認済み」を書く（部員が入れるようになる）。もう書いてあれば何もしない */
 async function 帳面に確認済みを書く(道具, 団体ID) {
   const { Firestore, db } = 道具;
@@ -110,7 +145,10 @@ const 団体がまだの文 =
 
 module.exports = {
   猶予の終わり,
+  猶予の終わりの時刻,
   猶予中か,
+  ログインが外れた誤りか,
+  持ち主の確認の様子,
   猶予の最後の日,
   確認メールを送る,
   確認が済んだか,

@@ -285,6 +285,72 @@ test('部員として入る：途中で失敗したら、そのとき作った�
   assert.deepStrictEqual(消した, ['anon-1']);
 });
 
+test('部員として入る：前から使っていた匿名の口座（入り直しの窓）は、打ち間違えても消さない', async () => {
+  const { 雲 } = 用意();
+  雲.置く('group_accounts', 団体, { id: 団体, email: 'owner@example.com', verified: true });
+  const 前から = { uid: 'anon-old', isAnonymous: true };
+  const 認証 = { currentUser: 前から };
+  const 消した = [];
+  let 出た = 0;
+  const FirebaseAuth = {
+    // すでに匿名で入っている端末では、Firebase は今の口座をそのまま返す
+    signInAnonymously: async () => ({ user: 認証.currentUser }),
+    deleteUser: async (人) => void 消した.push(人.uid),
+    signOut: async () => void 出た++,
+  };
+  const { 部員として入る } = require('../src/groupLogin');
+  await assert.rejects(
+    部員として入る({ Firestore: 雲.api, FirebaseAuth, db: {}, auth: 認証 }, 団体, 'z'.repeat(32), '使えません'),
+    /使えません/
+  );
+  assert.deepStrictEqual(消した, [], 'まだ使えていた部員の口座を消した');
+  assert.strictEqual(出た, 0);
+  assert.strictEqual(認証.currentUser, 前から);
+});
+
+test('団体から出る：部員は証と匿名の口座を消して出る。電波が無くて返らなくても待ちきらずに出る', async () => {
+  const { 団体から出る } = require('../src/groupLogin');
+  const 起きた = [];
+  const 認証 = { currentUser: { uid: 'anon-9', isAnonymous: true } };
+  const 道具 = (返らない) => ({
+    Firestore: {
+      doc: (_db, 集まり, id) => `${集まり}/${id}`,
+      // 電波が無いと Firestore の書き込みは届くまで返らない
+      deleteDoc: (場所) => (起きた.push(`消す ${場所}`), 返らない ? new Promise(() => {}) : Promise.resolve()),
+    },
+    FirebaseAuth: {
+      deleteUser: async (人) => {
+        起きた.push(`口座 ${人.uid}`);
+        認証.currentUser = null;
+      },
+      signOut: async () => {
+        起きた.push('出る');
+        認証.currentUser = null;
+      },
+    },
+    db: {},
+    auth: 認証,
+  });
+  const 始め = Date.now();
+  await 団体から出る(道具(true), 'member', 30);
+  assert.ok(Date.now() - 始め < 1000, '証の削除を待ちきった');
+  assert.deepStrictEqual(起きた, ['消す member_claims/anon-9', '口座 anon-9']);
+  // 団体はログインから出るだけ（証も口座も消さない）
+  起きた.length = 0;
+  認証.currentUser = { uid: 'owner-1', isAnonymous: false };
+  await 団体から出る(道具(false), 'group', 30);
+  assert.deepStrictEqual(起きた, ['出る']);
+  // 口座を消せない（入ってから日が経った）ときは出るだけ
+  起きた.length = 0;
+  認証.currentUser = { uid: 'anon-10', isAnonymous: true };
+  const 消せない = 道具(false);
+  消せない.FirebaseAuth.deleteUser = async () => {
+    throw Object.assign(new Error('x'), { code: 'auth/requires-recent-login' });
+  };
+  await 団体から出る(消せない, 'member', 30);
+  assert.deepStrictEqual(起きた, ['消す member_claims/anon-10', '出る']);
+});
+
 // ── 何度か送る（2026-10-24：雲の返事が戻らない回への予防）──
 const { 何度か送る } = require('../src/memberInvite');
 
