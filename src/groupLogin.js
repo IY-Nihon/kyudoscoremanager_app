@@ -187,15 +187,32 @@ async function 切り替えを頼む(道具, 団体ID, 合言葉, 新しいメ�
   if (宛先.toLowerCase() === String(email || '').toLowerCase()) {
     throw new Error('今のメールアドレスと同じです');
   }
+  // 使い捨てのアドレスへは切り替えられない（決まりも仕上げを止める。確認のメールを送る前に断る）
+  if (await require('./suteMail').使い捨てか確かめる(道具, 宛先))
+    throw new Error('使い捨てのメールアドレスには切り替えられません。ふだん使うメールアドレスを入れてください');
   const 入った = await FirebaseAuth.signInWithEmailAndPassword(auth, email, 合言葉);
   try {
-    // 先に帳面へ書く。確認のリンクが開かれたあと、ログインがこのアドレスで入り直せるように
-    await Firestore.setDoc(帳面の場所, { pendingEmail: 宛先 }, { merge: true });
+    // 先に帳面へ書く。確認のリンクが開かれたあと、ログインがこのアドレスで入り直せるように。
+    // 頼んだ口座の番号（pendingUid）も添える。切り替えの途中は、決まりがこの口座か確認の済んだ口座しか
+    // 持ち主として通さない（空いたアドレスで後から作った口座に乗っ取られないように。firestore.rules の sameOwnerAccount）
+    try {
+      await Firestore.setDoc(帳面の場所, { pendingEmail: 宛先, pendingUid: 入った.user.uid }, { merge: true });
+    } catch (書けない) {
+      if (String((書けない && 書けない.code) || '').includes('permission-denied'))
+        throw new Error(
+          'メールアドレスの切り替えの途中です。前に頼んだ新しいアドレスに届いた確認のリンクを押してから、ログインしてください。届いていないときは、設定の「お問い合わせ」かホームページからお知らせください',
+          { cause: 書けない }
+        );
+      throw 書けない;
+    }
     try {
       await FirebaseAuth.verifyBeforeUpdateEmail(入った.user, 宛先);
     } catch (誤り) {
       // 送れなかったら、切り替え待ちを残さない
-      await Firestore.updateDoc(帳面の場所, { pendingEmail: Firestore.deleteField() }).catch(() => {});
+      await Firestore.updateDoc(帳面の場所, {
+        pendingEmail: Firestore.deleteField(),
+        pendingUid: Firestore.deleteField(),
+      }).catch(() => {});
       throw 誤り;
     }
   } finally {

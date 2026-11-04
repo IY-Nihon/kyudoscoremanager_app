@@ -127,7 +127,8 @@ test('update で create より多く許すのは、メールアドレスの切�
   const 許す = 決まりが許す項目(読む('firestore.rules'));
   assert.deepStrictEqual(
     [...許す.update].sort(),
-    [...許す.create, 'pendingEmail', 'previousEmail', 'ownerUid'].sort(),
+    // pendingUid は切り替えを頼んだ口座の番号（切り替えの途中の本人を見分ける。2026-11-04）
+    [...許す.create, 'pendingEmail', 'pendingUid', 'previousEmail', 'ownerUid'].sort(),
     'create と update で許す項目が違う。' + 'update が緩いと、作ったあとに書き足して同じ露出を作れる'
   );
 });

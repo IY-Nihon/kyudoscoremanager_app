@@ -4,7 +4,17 @@
       "$branch": {
         ".read": "auth != null && $branch.length >= 20 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now)",
         ".write": "auth != null && $branch.length >= 20 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now || !newData.exists())",
-        ".validate": "newData.hasChildren()"
+        ".validate": "newData.hasChildren()",
+        "$name": {
+          "state": {
+            "移った先": {
+              ".validate": "!root.child('live_limits').child($branch).exists()"
+            },
+            "移った先の閲覧枝": {
+              ".validate": "!root.child('live_limits').child($branch).exists()"
+            }
+          }
+        }
       }
     },
     "live_history": {
@@ -31,8 +41,20 @@
     "live_limits": {
       "$branch": {
         ".read": "auth != null && $branch.length >= 20",
-        ".write": "auth != null && $branch.length >= 20 && ((!data.exists() && newData.isNumber() && newData.val() > now) || (newData.isNumber() && data.isNumber() && newData.val() <= data.val()) || (!newData.exists() && !root.child('live_sessions').child($branch).exists() && !root.child('live_view').child($branch).exists() && !root.child('live_history').child($branch).exists() && !root.child('live_presence').child($branch).exists()))",
+        ".write": "auth != null && $branch.length >= 20 && ((!data.exists() && newData.isNumber() && newData.val() > now && !root.child('live_groups').child($branch).exists()) || (newData.isNumber() && data.isNumber() && newData.val() <= data.val() && (!root.child('live_limit_owners').child($branch).exists() || root.child('live_limit_owners').child($branch).val() === auth.uid)) || (!newData.exists() && root.child('live_groups').child($branch).exists()) || (!newData.exists() && !root.child('live_sessions').child($branch).exists() && !root.child('live_view').child($branch).exists() && !root.child('live_history').child($branch).exists() && !root.child('live_presence').child($branch).exists() && ((!root.child('live_limit_owners').child($branch).exists() || root.child('live_limit_owners').child($branch).val() === auth.uid) || data.val() <= now)))",
         ".validate": "newData.isNumber() && newData.val() > 0"
+      }
+    },
+    "live_groups": {
+      "$branch": {
+        ".read": "auth != null && $branch.length >= 20",
+        ".write": "auth != null && $branch.length >= 20 && !data.exists() && newData.val() === true && !root.child('live_limits').child($branch).exists()"
+      }
+    },
+    "live_limit_owners": {
+      "$branch": {
+        ".read": "auth != null && $branch.length >= 20",
+        ".write": "auth != null && $branch.length >= 20 && ((!data.exists() && newData.val() === auth.uid && !root.child('live_limits').child($branch).exists()) || (!newData.exists() && (data.val() === auth.uid || !root.child('live_limits').child($branch).exists())))"
       }
     }
   }

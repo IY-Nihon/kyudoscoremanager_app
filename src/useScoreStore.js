@@ -122,11 +122,14 @@ const useScoreStore = zustand.create()(
         const { activeGroupId, isNetworkOnline } = 状態();
         if (!isNetworkOnline || !activeGroupId) return;
         try {
+          // 部員の端末はタグの候補だけ送る（決まりも部員にはタグの候補しか書かせない）。前は端末に残っている
+          // 古い「1 年生の期」も一緒に送っていて、団体が直した期を古い値に戻しうった
+          const 部員 = 状態().activeRole === 'member';
           await Firestore.setDoc(
             Firestore.doc(Firebaseの器.db, `groups/${activeGroupId}/config`, 'app_settings'),
             {
               tagTemplates: 一覧,
-              currentFreshmanTerm: 状態().currentFreshmanTerm,
+              ...(部員 ? {} : { currentFreshmanTerm: 状態().currentFreshmanTerm }),
               lastModified: Firestore.serverTimestamp(),
             },
             { merge: true }
@@ -464,8 +467,9 @@ const useScoreStore = zustand.create()(
           const 今の設定 = 状態().analysisRankingSettings || {};
           const 新しい設定 = Object.assign({}, 今の設定, { [鍵]: 値 });
           書く({ analysisRankingSettings: 新しい設定, lastLocalChange: 今 });
-          const { activeGroupId, isNetworkOnline } = 状態();
-          if (isNetworkOnline && activeGroupId)
+          const { activeGroupId, isNetworkOnline, activeRole } = 状態();
+          // 順位の基準は団体の設定。部員の端末では手元だけ変える（決まりも部員には書かせない）
+          if (isNetworkOnline && activeGroupId && activeRole === 'group')
             try {
               await Firestore.setDoc(
                 Firestore.doc(Firebaseの器.db, `groups/${activeGroupId}/config`, 'app_settings'),
@@ -552,6 +556,8 @@ const useScoreStore = zustand.create()(
                   // 返すと、移った先の練習を前の団体の枝へ流してしまう
                   if (状態().activeGroupId !== 団体) return null;
                   書く({ ライブの合言葉: { 団体, 合言葉: 決 } });
+                  // 団体の枝に印を置く（期限を置かせない。src/storeShared.js の 団体の枝に印を置く）
+                  require('./storeShared').団体の枝に印を置く(決);
                   return 決;
                 }
               } catch (誤り) {
@@ -898,13 +904,16 @@ const useScoreStore = zustand.create()(
             // 送信の完了は待たない。この関数は syncSessions の先頭で待たれて
             // いるため、通信できないときにここで止まると同期そのものが動かなく
             // なる。手元の値は先に入れてあり、送信は待ち行列に任せる。
-            Firestore.setDoc(
-              Firestore.doc(Firebaseの器.db, `groups/${団体}/config`, 'app_settings'),
-              { lastPromotionYear: 基準, lastModified: Firestore.serverTimestamp() },
-              { merge: true }
-            ).catch((誤り) => {
-              console.error('[進級] 進級した年を書き留められませんでした:', 誤り);
-            });
+            // 部員の端末からは書かない（団体の設定。決まりも部員には書かせない）
+            if (状態().activeRole === 'group') {
+              Firestore.setDoc(
+                Firestore.doc(Firebaseの器.db, `groups/${団体}/config`, 'app_settings'),
+                { lastPromotionYear: 基準, lastModified: Firestore.serverTimestamp() },
+                { merge: true }
+              ).catch((誤り) => {
+                console.error('[進級] 進級した年を書き留められませんでした:', 誤り);
+              });
+            }
             return;
           }
           書く({

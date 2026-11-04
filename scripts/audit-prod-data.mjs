@@ -13,6 +13,7 @@
  *   5. 記録の形（射手が配列か、shotCount が数値か、日付が読めるか、タグが配列か）
  *   6. ○×の中身（○×空 以外の値が混ざっていないか）
  *   7. ゴミ箱の形（送信待ちの印）
+ *   8. 使い捨てメールのドメインの団体（手元の一覧と雲の一覧 disposable_domains。知らせるだけ。2026-11-04）
  *
  * 認証は Firebase CLI の権限を使う。事前に `firebase login` が済んでいること。
  */
@@ -91,6 +92,31 @@ const 本体id = new Set(本体.map((d) => d.name.split('/').pop()));
 
 console.log(`接続先: ${企画}（読むだけ）`);
 console.log(`団体 ${団体.size} 件（group_accounts ${口座.length} / groups ${本体id.size}）\n`);
+
+// 8. 使い捨てメールのドメインの団体（作れなくする前からある団体。知らせるだけで、止めない）
+{
+  const { createRequire } = await import('node:module');
+  const 捨て = createRequire(import.meta.url)('../src/suteMail.js');
+  const 雲で見た = new Map();
+  const 雲にあるか = async (ドメイン) => {
+    if (!雲で見た.has(ドメイン)) {
+      const j = await (
+        await fetch(`${根}/disposable_domains/${encodeURIComponent(ドメイン)}`, {
+          headers: { Authorization: `Bearer ${access_token}` },
+        })
+      ).json();
+      雲で見た.set(ドメイン, !j.error);
+    }
+    return 雲で見た.get(ドメイン);
+  };
+  for (const d of 口座) {
+    const メール = d.fields?.email?.stringValue || '';
+    if (!メール) continue;
+    let 当たり = 捨て.使い捨てか(メール);
+    for (const ドメイン of 当たり ? [] : 捨て.見るドメイン(メール)) if (await 雲にあるか(ドメイン)) 当たり = true;
+    if (当たり) 記す(d.name.split('/').pop(), '使い捨てのドメインの団体', メール.replace(/^[^@]*/, '…'));
+  }
+}
 
 const 集計 = [];
 for (const g of [...団体].sort()) {
