@@ -153,7 +153,10 @@ const AttendanceScreen = () => {
   const todayStr = getLocalDateString(new Date());
   const getAttendanceStatus = (dateStr, memberId) => {
     const member = members.find((部員) => String(部員.id) === String(memberId));
-    return その日の出欠(sessions, practiceDays, member || { id: memberId, grade: 99 }, dateStr, todayStr);
+    // 欠席かは、出席率と同じく「見ている年度に現役だったか」で見る（A11）
+    return その日の出欠(sessions, practiceDays, member || { id: memberId, grade: 99 }, dateStr, todayStr, (人) =>
+      member ? isActiveInYear(人) : 学.現役か(人 || {})
+    );
   };
   const filteredPracticeDays = Object.keys(practiceDays)
     .filter((dStr) => {

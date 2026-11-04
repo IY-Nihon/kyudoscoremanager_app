@@ -73,6 +73,14 @@ const 入り直しの窓 = () => {
   const 個 = require('./kojinId');
   const 四桁が終わった = 部員 && 個.古い形.test(String(自分の個人ID || '')) && !個.古い形を使えるか();
   if (!要る || !団体の鍵) return null;
+  // この端末の App Check の印が取れていない（強制していると、ログインし直しても断られ続ける。H3）
+  const 印が取れていない = (() => {
+    try {
+      return require('./setupAppCheck').印が取れていないか();
+    } catch {
+      return false;
+    }
+  })();
 
   const あとで = () => {
     難点を置く(null);
@@ -135,7 +143,28 @@ const 入り直しの窓 = () => {
           keyboardShouldPersistTaps="handled"
         >
           <View style={[styles.箱, 低い && styles.箱_低い]} testID="入り直しの窓">
-            <Text style={[styles.見出し, 低い && { marginBottom: 4 }]}>ログインし直してください</Text>
+            <Text style={[styles.見出し, 低い && { marginBottom: 4 }]}>
+              {印が取れていない ? 'この端末の確かめに失敗しました' : 'ログインし直してください'}
+            </Text>
+            {印が取れていない ? (
+              <Text style={[styles.説明, 低い && { marginBottom: 4 }]}>
+                ブラウザを新しくして、読み込み直してください。この端末の記録はそのまま残っています（読み込み直しても消えません）。
+              </Text>
+            ) : null}
+            {印が取れていない ? (
+              <Pressable
+                style={[styles.ボタン, 低い && styles.ボタン_低い]}
+                onPress={() => {
+                  try {
+                    window.location.reload();
+                  } catch {
+                    /* 読み込み直せない端末では、閉じて開き直してもらう */
+                  }
+                }}
+              >
+                <Text style={styles.ボタンの字}>読み込み直す</Text>
+              </Pressable>
+            ) : null}
             <Text style={[styles.説明, 低い && { marginBottom: 4 }]}>
               {四桁が終わった
                 ? '4桁の個人IDは使えなくなりました。団体の担当者から新しい個人ID（大文字と数字の6字）を受け取って入れてください。この端末の記録はそのまま残っています。'
