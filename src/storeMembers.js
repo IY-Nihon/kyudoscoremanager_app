@@ -20,6 +20,7 @@ const {
   送った版に印を付ける,
   送った版の表,
   雲から読んだか,
+  名簿へ書く形,
 } = require('./storeShared');
 const 学 = require('./gakunen');
 const 区 = require('./kubun');
@@ -75,7 +76,7 @@ const 個人IDを外す = (人) => {
 
 /** メンバー（卒業生も）を雲へ書く形にする。雲には「同期済み」として書く（記録と同じ） */
 const 雲へ送る人 = (人) =>
-  Object.assign({}, 人, { lastModified: Firestore.serverTimestamp(), syncStatus: '同期済み' });
+  Object.assign({}, 名簿へ書く形(人), { lastModified: Firestore.serverTimestamp(), syncStatus: '同期済み' });
 
 /**
  * 部員の端末（個人ログイン）から雲へ書く形。部員が触れるのは自分の弓具だけなので、弓具だけを送る。
@@ -253,7 +254,11 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
         const 集める = (一覧, 元の一覧, 置き場) => {
           一覧.forEach((記録, 番) => {
             if (記録.lastModified !== 元の一覧[番].lastModified) {
-              const 送る中身 = 雲へ書く記録(JSON.parse(JSON.stringify(記録)));
+              // 雲には同期済みの形で送る。端末の中だけの印（未同期・消して送る途中）を持ち込むと、ほかの端末が
+              // 「送れていない記録」と思って送り直し、消したはずの記録が戻ることがあった（A5）
+              const 雲の形 = Object.assign({}, 記録, { syncStatus: 置き場 === 'trash' ? 'trashed' : '同期済み' });
+              delete 雲の形.pendingDelete;
+              const 送る中身 = 雲へ書く記録(JSON.parse(JSON.stringify(雲の形)));
               送る中身.lastModified = Firestore.serverTimestamp();
               書き込み.push({ 置き場, id: 記録.id, 送る中身 });
             }
@@ -574,6 +579,8 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
       for (const [置き場, id] of 消す人.slice(0, 400))
         消す一括.update(Firestore.doc(Firebaseの器.db, `groups/${団体}/${置き場}`, id), {
           personalId: Firestore.deleteField(),
+          // 更新日時も進める（ほかの端末が、個人ID の残った手元の写しより雲の写しを新しいと見て取り込む）
+          lastModified: Firestore.serverTimestamp(),
         });
       try {
         await 消す一括.commit();

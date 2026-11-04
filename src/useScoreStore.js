@@ -417,6 +417,8 @@ const useScoreStore = zustand.create()(
               書く({ configUnsubscribe: null });
             }
           } else {
+            // 共有リンクの来客のまま団体に入った：来客のライブから抜け、よその盤面を片付ける（A37）
+            if (状態().共有の来客) 状態().共有の来客をやめる();
             if (団体ID !== 状態().activeGroupId) {
               // 別の団体へ入るときは、前の団体の控えと境目を持ち越さない
               //（招待リンクで入り直すときなど、出ずに入ることがある）
@@ -1128,6 +1130,8 @@ const useScoreStore = zustand.create()(
             const 設定の帳面 = await Firestore.getDoc(
               Firestore.doc(Firebaseの器.db, `groups/${団体}/config`, 'app_settings')
             );
+            // 読んでいるあいだに別の団体へ入り直していたら、前の団体の設定を書かない（A6）
+            if (状態().activeGroupId !== 団体) return;
             if (設定の帳面.exists()) {
               const 設定 = 設定の帳面.data();
               console.log('[Store] Config initial fetch from cloud:', 設定);
@@ -1146,6 +1150,9 @@ const useScoreStore = zustand.create()(
           } catch (誤り) {
             console.warn('[Store] Initial config fetch failed (offline?), falling back to local.', 誤り);
           }
+          // 入り直しの途中（読んでいるあいだに団体が替わった）なら、前の団体に見張りを付けない（A6）。
+          // 付けると、新しい団体の見張りを止めて前の団体の設定を受け取り続けた
+          if (状態().activeGroupId !== 団体) return;
           const _existing = 状態().configUnsubscribe;
           if (_existing) {
             _existing();

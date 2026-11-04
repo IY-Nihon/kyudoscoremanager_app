@@ -85,7 +85,8 @@ const ManualSubstitutionModal = ({ visible, archerId, onClose, 本数, 交代を
     onClose();
   };
   return visible ? (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    // 戻る（と web の Esc）で閉じたときも空にする（前は前の立目と検索が残った。A42）
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={片付けて閉じる}>
       <KeyboardAvoidingView behavior={IS_IOS ? 'padding' : undefined} style={styles.overlay}>
         <TouchableWithoutFeedback onPress={片付けて閉じる}>
           <View style={StyleSheet.absoluteFill} />

@@ -167,6 +167,29 @@ async function 前のアドレスを片付ける(道具, 帳面の場所, 非公
 }
 
 /**
+ * 団体ID の欄にメールアドレスが入っていたとき（ブラウザのパスワードの保存が、団体を作るときに控えたメールを
+ * 団体ID の欄に入れることがある。A32）。そのメールとパスワードで入り、自分のメールの団体を引いて入る
+ * （決まりは、自分のメールの団体だけ一覧で引ける）。
+ * @returns {Promise<{id: string, 公開の団体ID: string, メール: string}>}
+ */
+async function メールで団体に入る(道具, メール, 合言葉) {
+  const { Firestore, FirebaseAuth, db, auth } = 道具;
+  const 宛先 = メールを整える(メール);
+  await FirebaseAuth.signInWithEmailAndPassword(auth, 宛先, 合言葉);
+  const 認証のメール = (auth.currentUser && auth.currentUser.email) || 宛先;
+  const 返り = await Firestore.getDocs(
+    Firestore.query(Firestore.collection(db, 'group_accounts'), Firestore.where('email', '==', 認証のメール))
+  );
+  const 帳面 = 返り && 返り.docs && 返り.docs[0];
+  if (!帳面) {
+    await FirebaseAuth.signOut(auth).catch(() => {});
+    throw new Error('このメールアドレスの団体が見つかりません。団体ID（6 桁の数字）とパスワードでお入りください');
+  }
+  const 中身 = 帳面.data() || {};
+  return { id: 中身.id || 帳面.id, 公開の団体ID: 帳面.id, メール: 中身.email || 認証のメール };
+}
+
+/**
  * 登録メールアドレスの切り替えを頼む。新しいアドレスへ確認のメールが届く。
  * 終わったら出る（ログイン画面から呼ぶ。確認が済むまでは今のアドレスのまま）。
  *
@@ -385,6 +408,7 @@ const 部員のログインの版 = 2;
 module.exports = {
   IDの形か,
   団体で入る,
+  メールで団体に入る,
   切り替えを頼む,
   部員として入る,
   四桁は終わりの文,
