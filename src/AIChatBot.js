@@ -325,10 +325,11 @@ const AIChatBot = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [retryCountdown, setRetryCountdown] = useState(0);
 
+  // 流し読みのあいだは端末に書かない（1 かけらごとに 50 件の JSON を書いていた。D7）。答え終わったら 1 回書く
   useEffect(() => {
-    if (入れ替え中) return;
+    if (入れ替え中 || isLoading) return;
     saveChatHistory(messages, 保存の鍵);
-  }, [messages, 保存の鍵, 入れ替え中]);
+  }, [messages, 保存の鍵, 入れ替え中, isLoading]);
   const scrollViewRef = useRef(null);
   // 末尾の近くを見ているか。流し読みの間は文字が来るたびに中身の高さが変わるので、
   // そのたびに末尾へ送ると、上へ戻って読み返している人を毎回引き戻してしまう。
@@ -580,6 +581,8 @@ const AIChatBot = () => {
     const 使った道具 = [];
     const 道具の引数 = [];
     const 道具の返事 = [];
+    // 図を頼む質問か（グラフ・表・推移・順位など）。そうなら、図にできる道具の返事が来た時点で既定の形の図を出す（D4）
+    const 図を頼む質問 = /グラフ|図|表|チャート|推移|比べ|比較|順位|ランキング|一覧|矢所|分布|折れ線|棒/.test(userMsg);
     // 図にできる道具の結果（番号 → 道具の名と結果）と、この答えに出す図（showFigure）
     const 図の元 = new Map();
     let この答えの図 = [];
@@ -774,12 +777,17 @@ const AIChatBot = () => {
         //     role:'function' で送る。3.x の模型はどちらも受けず、道具を使う質問が
         //     「Role 'function' is not supported」「function response turn comes immediately
         //     after a function call turn」の 400 になった（2026-09-14、本番で）
-        const 会話 = newMessages.slice(1, -1).map((msg) => ({
-          role: msg.role === 'user' ? 'user' : 'model',
-          parts: [
-            { text: msg.role === 'actionCard' ? `[システムのデータ追加提案: ${msg.status}]` : msg.text },
-          ],
-        }));
+        // 送るのは新しい 20 件まで（前は端末に残した 50 件を毎回。D5）。先頭は使う人の発言から
+        const 会話 = newMessages
+          .slice(1, -1)
+          .slice(-20)
+          .map((msg) => ({
+            role: msg.role === 'user' ? 'user' : 'model',
+            parts: [
+              { text: msg.role === 'actionCard' ? `[システムのデータ追加提案: ${msg.status}]` : msg.text },
+            ],
+          }));
+        while (会話.length && 会話[0].role !== 'user') 会話.shift();
 
         // 流しながら出す。全文ができるまで待たせると、道具を使う質問では
         // 数秒から十数秒、砂時計だけを見せることになる。
@@ -814,8 +822,22 @@ const AIChatBot = () => {
           const 模型の部品 = [];
           let 返り;
           const 送った時刻 = Date.now();
+          // 混んでいて断られた（503 など）ときは、この往復だけ少し待って 1 回送り直す（D6。前は 10 秒待って、
+          // 道具の往復ごと最初からやり直していた）。中継はもう 2・4・8 秒待って模型を替えているので、待つのは短く
+          const 流しを始める = async () => {
+            try {
+              return await model.generateContentStream({ contents: 会話 });
+            } catch (誤り) {
+              const 番号 = 誤りの状態番号(誤り);
+              const 一時 = 番号 === 503 || [500, 502, 504].includes(番号) || /\b503\b/.test(String((誤り && 誤り.message) || ''));
+              if (!一時) throw 誤り;
+              送り直し.混雑++;
+              await 数えながら待つ(3);
+              return await model.generateContentStream({ contents: 会話 });
+            }
+          };
           try {
-            返り = await model.generateContentStream({ contents: 会話 });
+            返り = await 流しを始める();
             // 流れが途中で切れると、返事全体の約束（response）も失敗する。ここで受け止めないと
             // 誰も待っていない約束の失敗として便りに届く（本番で 2 通）。失敗そのものは
             // 下の for await が投げるので、そちらで扱う
@@ -885,6 +907,8 @@ const AIChatBot = () => {
           const functionResponses = [];
           let hasPendingAction = false;
           const pendingActionCards = [];
+          // 画面の移動・案内の開始（窓は 0.5 秒で閉じる）の答え。道具がこれだけなら、模型へ返す往復をしない（D4）
+          const 閉じる答え = [];
 
           for (const call of calls) {
             // 引数の中身には部員の氏名が入る。共用端末で読まれるので、
@@ -1313,15 +1337,24 @@ const AIChatBot = () => {
                 },
               });
             } else if (call.name === 'showFigure') {
-              const 元 = 図の元.get(String(call.args.source || ''));
+              const 番号 = String(call.args.source || '');
+              const 元 = 図の元.get(番号);
               const 作った = 元
                 ? 図.図を作る(元.名, 元.結果, call.args.kind, call.args.title)
                 : {
                     error: `図の番号「${call.args.source}」が見つかりません。道具の返事の 図にするとき.source を渡してください`,
                   };
               if (!作った.error) {
-                この答えの図.push(作った);
-                図の出どころ.push(元.名);
+                // 同じ元の図をもう出していれば（先に既定の形で出した図）、差し替える（D4）
+                const 前 = この答えの図.findIndex((一つ) => 一つ && 一つ.元の番号 === 番号);
+                const 置く図 = Object.assign({}, 作った, { 元の番号: 番号 });
+                if (前 >= 0) {
+                  この答えの図[前] = 置く図;
+                  図の出どころ[前] = 元.名;
+                } else {
+                  この答えの図.push(置く図);
+                  図の出どころ.push(元.名);
+                }
               }
               functionResponses.push({
                 functionResponse: {
@@ -1483,6 +1516,7 @@ const AIChatBot = () => {
                     console.warn('Navigation failed', 誤り);
                   }
                 }, 500);
+                閉じる答え.push(`${target}画面へ移動します。`);
               }
 
               functionResponses.push({
@@ -1512,6 +1546,7 @@ const AIChatBot = () => {
                 setTimeout(() => {
                   setModalVisible(false);
                 }, 500);
+                閉じる答え.push('使い方の案内を始めます。画面の案内をご覧ください。');
               }
               functionResponses.push({
                 functionResponse: {
@@ -1571,6 +1606,16 @@ const AIChatBot = () => {
             return;
           }
 
+          // 窓を閉じる道具だけだった：模型の答えは見えないので、返す往復をせずに終える（D4）
+          if (閉じる答え.length && 閉じる答え.length === functionResponses.length) {
+            const 文 = 閉じる答え.join('\n');
+            setMessages([...newMessages, { id: generateMsgId(), role: 'model', text: 文 }]);
+            改善のために({ 答え: 文, 結果: '答えた（窓を閉じた）' });
+            setIsLoading(false);
+            setRetryCountdown(0);
+            return;
+          }
+
           // 図にできる結果には番号（R1 など）と作れる形を添える。模型は showFigure でそれを選ぶ。
           // 結果そのものは端末に控え、図は控えから作る（模型に数字を書き写させない）
           for (const 返し of functionResponses) {
@@ -1583,7 +1628,31 @@ const AIChatBot = () => {
             if (形.length) {
               const 番号 = `R${図の元.size + 1}`;
               図の元.set(番号, { 名: 中.name, 結果: 中.response });
-              中.response = { ...渡す, 図にするとき: { source: 番号, 使える形: 形 } };
+              // 図を頼む質問（グラフ・表・推移・順位など）なら、既定の形（矢所→折れ線→棒→表の順で使えるもの）の図を
+              // ここで作って添える。前は模型が showFigure を呼ぶ往復を待っていた（グラフの質問は 3 往復 → 2 往復。D4）
+              let 出した形 = null;
+              if (図を頼む質問 && この答えの図.length < 5) {
+                const 既定 = ['矢所', '折れ線', '棒', '表'].find((一つ) => 形.includes(一つ));
+                const 作った = 既定 ? 図.図を作る(中.name, 中.response, 既定) : { error: '形が無い' };
+                if (!作った.error) {
+                  この答えの図.push(Object.assign({}, 作った, { 元の番号: 番号 }));
+                  図の出どころ.push(中.name);
+                  出した形 = 既定;
+                }
+              }
+              中.response = {
+                ...渡す,
+                図にするとき: {
+                  source: 番号,
+                  使える形: 形,
+                  ...(出した形
+                    ? {
+                        出した形,
+                        案内: `答えの下に${出した形}の図をもう出しました。ほかの形がよいときだけ showFigure を呼んでください（同じ source なら差し替わります）。図にある顔ぶれや数字の一覧は文に書き直さず、要点（いちばん高い・低い・傾向）を 2〜3 文で書いてください。`,
+                      }
+                    : {}),
+                },
+              };
             } else {
               中.response = 渡す;
             }

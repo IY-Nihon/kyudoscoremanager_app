@@ -256,3 +256,21 @@ test('分析画面が読む項目が、そのまま揃っている', () => {
     assert.ok(!言葉.includes('undefined'), '見立ての言葉に undefined が混じっている: ' + 言葉);
   }
 });
+
+test('弓具を変えた日は、その日の朝の練習から新しい弓具に数える（変えた日は昼 12 時として持っている。A9）', () => {
+  const { 弓具の移り変わり } = require('../src/equipmentTrend');
+  const 日 = (年, 月, 日, 時 = 0) => new Date(年, 月 - 1, 日, 時).getTime();
+  const 人 = {
+    id: 'm1',
+    name: '山田',
+    equipments: [
+      { id: 'e1', date: 日(2026, 10, 1, 12), weight: '12' },
+      { id: 'e2', date: 日(2026, 10, 10, 12), weight: '14' },
+    ],
+  };
+  const 期間 = 弓具の移り変わり(人, []);
+  const 新しい = 期間.find((x) => x.変更.id === 'e2');
+  const 前 = 期間.find((x) => x.変更.id === 'e1');
+  assert.equal(新しい.始め, 日(2026, 10, 10), '変えた日の 0 時から数えていない');
+  assert.equal(前.終わり, 日(2026, 10, 10) - 1, '前の弓具が変えた日の朝まで続いている');
+});

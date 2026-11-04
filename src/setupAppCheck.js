@@ -56,13 +56,23 @@ function 札を隠す(文書) {
  * 黙って失敗するので、どの端末で何が起きているか分からない。強制する前にそこを知る。
  * 手元（debug の印）は数えない。
  */
+/**
+ * 印が取れていないか（最後に取りに行って失敗したまま）。App Check を強制すると、印の無い呼び出しは決まりと同じ
+ * permission-denied で断られる。そのとき「ログインし直して」と出すと、入り直しても直らない（H3。src/ReloginModal.js）
+ */
+let 印の失敗の時刻 = 0;
+const 印が取れていないか = () => 印の失敗の時刻 > 0;
+
 function 印の失敗を知らせる(AppCheck, 器, 窓, 送る) {
   if (!器 || 手元か(窓 && 窓.location) || typeof AppCheck.onTokenChanged !== 'function') return;
   let 知らせた = false;
   AppCheck.onTokenChanged(
     器,
-    () => {},
+    () => {
+      印の失敗の時刻 = 0;
+    },
     (誤り) => {
+      印の失敗の時刻 = Date.now();
       if (知らせた) return;
       知らせた = true;
       try {
@@ -116,3 +126,4 @@ Object.defineProperty(exports, '__esModule', { value: true });
 exports.setupAppCheck = setupAppCheck;
 exports.AppCheckを使うか = AppCheckを使うか;
 exports.手元か = 手元か;
+exports.印が取れていないか = 印が取れていないか;

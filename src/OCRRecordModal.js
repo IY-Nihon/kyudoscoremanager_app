@@ -644,23 +644,34 @@ const OCRRecordModal = ({
         await 中継.SDKの設定()
       );
 
-      const 読ませる = async (指示文) => {
+      // 写真の本当の型（D3。前は PNG なども image/jpeg と名乗って送っていた）。中身は原寸のまま
+      const 写真の型 = (base64) => {
+        const 頭 = String(base64 || '').slice(0, 16);
+        if (頭.startsWith('iVBORw0KGgo')) return 'image/png';
+        if (頭.startsWith('UklGR')) return 'image/webp';
+        if (頭.startsWith('R0lGOD')) return 'image/gif';
+        return 'image/jpeg';
+      };
+      const 読ませる = async (指示文, 止める) => {
         const parts = [{ text: 指示文 }];
         読む写真.forEach((img) => {
-          parts.push({ inlineData: { mimeType: 'image/jpeg', data: img.base64 } });
+          parts.push({ inlineData: { mimeType: 写真の型(img.base64), data: img.base64 } });
         });
+        const 頼み方 = 止める ? { signal: 止める } : undefined;
         let result;
         const 送った時刻 = Date.now();
         try {
-          result = await model.generateContent(parts);
+          result = await model.generateContent(parts, 頼み方);
         } catch (誤り) {
-          // 503（模型が混んでいる）。中継が 2・4・8 秒待って 3 回送り直したうえでの 503 なので、
-          // 山が長い。もう少し待ってから、もう一度だけ読む（配信した日に 2 回続けて出た。2026-09-20）
+          // 503（模型が混んでいる）。中継が 2・4・8 秒待って模型を替えながら送り直したうえでの 503。
+          // 少しだけ待って、もう一度だけ読む（2026-09-20）。待ちは 3 秒（D2。前は 8 秒で、全体が iPhone の Safari が
+          // 切る長さ（約 70 秒の無言）に近づいた）
+          if (止める && 止める.aborted) throw 誤り;
           if (!/503/.test(String(誤り?.message || 誤り))) throw 誤り;
           set混み待ち(true);
           try {
-            await new Promise((r) => setTimeout(r, 8000));
-            result = await model.generateContent(parts);
+            await new Promise((r) => setTimeout(r, 3000));
+            result = await model.generateContent(parts, 頼み方);
           } finally {
             set混み待ち(false);
           }
@@ -673,7 +684,36 @@ const OCRRecordModal = ({
           Geminiの答えたち.current.push(String(答えの文 || '').slice(0, 15000));
         return AIのJSONを読む(答えの文);
       };
-      let parsed = await 読ませる(prompt);
+      // 逆さのノートと分かったら、最初の読み（20〜35 秒）を待たずにやめて、起こした写真ですぐ読み直す（D1）。
+      // 前は最初の読みが終わってから送り直していた
+      const 最初の止め = mode === 'record' && typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const 最初の読み = 読ませる(prompt, 最初の止め ? 最初の止め.signal : undefined);
+      最初の読み.catch(() => {});
+      let 起こして読んだ = false;
+      let parsed;
+      if (最初の止め) {
+        const 先 = await Promise.race([
+          逆さのノート.then((逆さ) => ({ 逆さ })),
+          最初の読み.then(
+            () => null,
+            () => null
+          ),
+        ]);
+        if (先 && 先.逆さ) {
+          try {
+            const 起こした = await 画像の道具.写真を逆さにする(images[0].base64);
+            最初の止め.abort();
+            読む写真 = [{ ...images[0], base64: 起こした }];
+            parsed = await 読ませる(prompt);
+            起こして読んだ = true;
+            console.log('[OCRRecordModal] 逆さのノートと分かったので、最初の読みを待たずに起こして読んだ');
+          } catch (誤り) {
+            // 起こせなかった（最初の読みはやめていない）か、起こした写真の読みが失敗した
+            if (!最初の止め.signal.aborted) parsed = await 最初の読み;
+            else throw 誤り;
+          }
+        } else parsed = await 最初の読み;
+      } else parsed = await 最初の読み;
 
       if (mode === 'record') {
         // 新しい形は teams（板ごと）。古い形（rows だけ）も受ける。
@@ -714,7 +754,7 @@ const OCRRecordModal = ({
         let 生のteams = 形で読んだ(parsed);
         // 端末が逆さのノートと見たら、起こして読み直す。逆さのままだと Gemini は名前を読み違え、
         // 列の位置（x）も組ごとに左右がばらばらになった（10/11）
-        if (await 逆さのノート) {
+        if (!起こして読んだ && (await 逆さのノート)) {
           try {
             const 起こした = await 画像の道具.写真を逆さにする(images[0].base64);
             読む写真 = [{ ...images[0], base64: 起こした }];
