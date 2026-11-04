@@ -672,10 +672,11 @@ const LoginScreen = () => {
                       // 新しい個人ID は大文字と数字の 6 字（src/kojinId.js）。前の 4 桁も使える終わりまでは入れる
                       placeholder="例: K7MP3X"
                       value={個人IDの入力}
-                      onChangeText={個人IDの入力を置く}
+                      // 整えてから 6 字で切る（全角・見えない空白・前後の空白を直す。前は欄の maxLength が先に切り、
+                      // 貼った「 K7MP3X」が「K7MP3」になった）。招待の合言葉は別の欄（招待リンク）なので 6 字でよい
+                      onChangeText={(字) => 個人IDの入力を置く(IDを整える(字).slice(0, 6))}
                       autoCapitalize="characters"
                       autoCorrect={false}
-                      maxLength={6}
                     />
                   )}
                   {画面の種類 === 'register' && (

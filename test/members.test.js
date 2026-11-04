@@ -61,8 +61,13 @@ test('追加：メンバーを足すとクラウドへ届く', async () => {
   const 手元 = 名簿(store);
   assert.equal(手元.length, 1);
   assert.equal(手元[0].name, '新入部員');
-  assert.match(手元[0].personalId, /^[A-HJKMNP-Z2-9]{6}$/, '個人ID が大文字と数字の 6 字で振られる');
   assert.equal(雲.中身(名簿の道).length, 1, 'クラウドにも1件');
+  // 個人ID は名簿の文書に置かず、逆引き表に振る（部員の端末からほかの人の ID が見えないように。2026-11-04）
+  assert.ok(!('personalId' in 手元[0]), '名簿に個人ID を置いた');
+  assert.ok(!('personalId' in 雲.値(名簿の道, 手元[0].id)), '雲の名簿に個人ID を置いた');
+  const 振った = store.getState().個人IDの表[手元[0].id];
+  assert.match(振った, /^[A-HJKMNP-Z2-9]{6}$/, '個人ID が大文字と数字の 6 字で振られる');
+  assert.equal(雲.値(名簿の道.replace(/members$/, 'member_lookup'), 振った).memberId, 手元[0].id, '逆引き表に載る');
 });
 
 test('追加：団体ログインでなければ足せない', async () => {

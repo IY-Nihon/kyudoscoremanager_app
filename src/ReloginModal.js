@@ -64,6 +64,14 @@ const 入り直しの窓 = () => {
   // 横向きのスマホなど高さが低い画面では、余白を詰めて 1 画面に収める
   const 低い = useWindowDimensions().height < 480;
   const 部員 = 役割 === 'member';
+  // 12/3 を過ぎて、4 桁の個人ID で入っていた部員（決まりが 4 桁の証を止めたので入り直しの窓が出る）。
+  // 「有効期限が切れました」ではなく、新しい ID が要ることを出す（ログインに使った ID は自分の所属の証から読む）
+  const 自分の個人ID = useScoreStore((状態) => 状態.自分の個人ID);
+  React.useEffect(() => {
+    if (要る && 部員 && !自分の個人ID) useScoreStore.getState().自分の個人IDを読む();
+  }, [要る, 部員, 自分の個人ID]);
+  const 個 = require('./kojinId');
+  const 四桁が終わった = 部員 && 個.古い形.test(String(自分の個人ID || '')) && !個.古い形を使えるか();
   if (!要る || !団体の鍵) return null;
 
   const あとで = () => {
@@ -89,6 +97,7 @@ const 入り直しの窓 = () => {
       const 道具 = 道具を取る();
       const 店 = useScoreStore.getState();
       if (部員) {
+        // 整えてから 6 字で見る（4 桁は使える終わりまで）。12/3 を過ぎた 4 桁は 部員として入る が分かる言葉で断る
         const { memberId, 名前 } = await 部員として入る(道具, 団体の鍵, 整える(入力));
         店.setAuth(団体の鍵, 'member', memberId, null, 見える団体ID, null, 名前);
         店.setMemberAuthVersion(部員のログインの版);
@@ -128,7 +137,9 @@ const 入り直しの窓 = () => {
           <View style={[styles.箱, 低い && styles.箱_低い]} testID="入り直しの窓">
             <Text style={[styles.見出し, 低い && { marginBottom: 4 }]}>ログインし直してください</Text>
             <Text style={[styles.説明, 低い && { marginBottom: 4 }]}>
-              ログインの有効期限が切れました。この端末の記録はそのまま残っています。
+              {四桁が終わった
+                ? '4桁の個人IDは使えなくなりました。団体の担当者から新しい個人ID（大文字と数字の6字）を受け取って入れてください。この端末の記録はそのまま残っています。'
+                : 'ログインの有効期限が切れました。この端末の記録はそのまま残っています。'}
               {未送信 > 0 ? `ログインし直すと、送れていない${未送信}件も送られます。` : ''}
             </Text>
             <Text style={styles.ラベル}>団体ID</Text>
