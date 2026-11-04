@@ -416,7 +416,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       });
       console.log(`[syncSessions] Finished. 最新の変更: ${最新の時刻}`);
       setTimeout(() => {
-        状態().ensurePersonalIds();
+        Promise.resolve(状態().ensurePersonalIds()).catch((誤り) => console.warn('[Store] 個人IDを確かめられませんでした', 誤り));
       }, 500);
       // メンバーも記録も雲から読めたときだけ、名前のずれを直す（古い名簿で前の名前に戻さない）
       if (雲から読んだか(記録の返り) && 雲から読んだか(部員の返り)) {

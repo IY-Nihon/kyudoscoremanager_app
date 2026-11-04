@@ -23,7 +23,6 @@ const { styles } = require('./settingsStyles');
 const { useストアの一部 } = require('./storeSlice');
 const 規則 = require('./syncRules');
 const 学 = require('./gakunen');
-const 個人ID = require('./kojinId');
 const { 団体の種類を選ぶ } = require('./GroupTypePicker');
 const { 区分の設定, 学年の並びの設定 } = require('./DivisionSettings');
 const 案内 = require('./TutorialGuide');
@@ -40,6 +39,7 @@ const { auth, db } = require('./db');
 const FirebaseAuth = require('firebase/auth');
 const Firestore = require('firebase/firestore');
 const { 団体から出る } = require('./groupLogin');
+const { 個人IDを新しくする窓 } = require('./KojinIdModal');
 // ログアウトの確認の文言は src/logoutPrompt.js にある（画面を動かさずに
 // 出し分けを検査できるようにするため）
 const {
@@ -65,7 +65,6 @@ const SettingsScreen = () => {
     myMemberId,
     myMemberName,
     members = [],
-    alumni = [],
     setAuth,
     isAdminMode,
     自動ロックする,
@@ -109,7 +108,6 @@ const SettingsScreen = () => {
     'myMemberId',
     'myMemberName',
     'members',
-    'alumni',
     'setAuth',
     'isAdminMode',
     '自動ロックする',
@@ -144,6 +142,13 @@ const SettingsScreen = () => {
   const [ガイドの窓, ガイドの窓を出す] = React.useState(false);
   const [使い方の窓, 使い方の窓を出す] = React.useState(false);
   const [ログアウトの窓, ログアウトの窓を出す] = React.useState(false);
+  // 「全員の個人IDを新しくする」の窓（src/KojinIdModal.js）
+  const [個人IDの窓, 個人IDの窓を出す] = React.useState(false);
+  // 部員の端末の、ログインに使った個人ID（自分の所属の証から読む。名簿の文書には個人ID を置かない）
+  const 自分の個人ID = useScoreStore((状態) => 状態.自分の個人ID);
+  React.useEffect(() => {
+    if (activeRole === 'member' && !自分の個人ID) useScoreStore.getState().自分の個人IDを読む();
+  }, [activeRole, 自分の個人ID]);
   // ログアウトの確認の段階。'確認' → '送信中' → '送信済み' / '失敗'
   const [ログアウトの段階, ログアウトの段階を設定] = React.useState('確認');
   const [残った未送信, 残った未送信を設定] = React.useState(0);
@@ -304,8 +309,8 @@ const SettingsScreen = () => {
                   ? '団体アカウント'
                   : `メンバー (${(() => {
                       const 自分 = members.find((部員) => 部員.id === myMemberId);
-                      return 自分?.personalId
-                        ? `ID: ${自分.personalId} / ${自分.name || myMemberName || ''}`
+                      return 自分の個人ID
+                        ? `ID: ${自分の個人ID} / ${(自分 && 自分.name) || myMemberName || ''}`
                         : myMemberName || myMemberId || '---';
                     })()})`}
               </Text>
@@ -330,28 +335,12 @@ const SettingsScreen = () => {
               null,
               true
             )}
-            {/* 個人ID を 6 字にする（2026-11-03）。まだ 4 桁の人がいるときだけ、管理者モードで出す。
-                替えた人の前の ID はその場で使えなくなる（入っている端末はそのまま）。4 桁は使える終わりを過ぎると
-                入れなくなり、持ち主の端末が残りを自動で替える（src/kojinId.js） */}
-            {activeRole === 'group' &&
-              isAdminMode &&
-              [...members, ...alumni].some((人) => 人 && 個人ID.古い形.test(人.personalId || '')) &&
-              行('key-outline', '全員の個人IDを新しくする', () =>
-                Alert.alert(
-                  '全員の個人IDを新しくする',
-                  `個人IDを、大文字と数字の 6 字（例 K7MP3X）に替えます。前の 4 桁の ID は、すぐに使えなくなります（いまログインしている人はそのまま使えます）。替えたあと、メンバーのタブで各自の新しい ID を伝えてください。何もしなくても、${Number(個人ID.古い形を使える終わり.slice(5, 7))}月${Number(個人ID.古い形を使える終わり.slice(8, 10))}日からは 4 桁では入れなくなります。`,
-                  [
-                    { text: 'やめる', style: 'cancel' },
-                    {
-                      text: '新しくする',
-                      onPress: async () => {
-                        const 人数 = await useScoreStore.getState().ensurePersonalIds(true);
-                        Alert.alert('新しくしました', `${人数 || 0} 人の個人IDを新しくしました。メンバーのタブで、各自の新しい ID を伝えてください。`);
-                      },
-                    },
-                  ]
-                )
-              )}
+            {/* 個人ID を新しくする（2026-11-04 本人：管理者モードにしなくても使える。押したときに団体のパスワードを聞き、
+                新しい ID の一覧をその場で出す。6 字の人も替えられる。src/KojinIdModal.js） */}
+            {activeRole === 'group' && 行('key-outline', '全員の個人IDを新しくする', () => 個人IDの窓を出す(true))}
+            {activeRole === 'group' ? (
+              <個人IDを新しくする窓 見える={個人IDの窓} 閉じる={() => 個人IDの窓を出す(false)} />
+            ) : null}
             {/* 団体アカウントで、管理者モードのときだけ出す。押すと警告の窓へ */}
             {activeRole === 'group' &&
               isAdminMode &&

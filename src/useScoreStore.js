@@ -233,6 +233,10 @@ const useScoreStore = zustand.create()(
         // これが無いと、送信が失われたときに消したメンバーが復活する。
         // 記録側の permanentlyDeleted と同じ考え方。
         deletedMembers: {},
+        // 個人ID（memberId → 個人ID）。逆引き表から読む（持ち主の端末だけ。名簿の文書には置かない。src/storeMembers.js）
+        個人IDの表: {},
+        // 部員の端末の、ログインに使った個人ID（自分の所属の証から読む。ほかの人の ID は届かない）
+        自分の個人ID: null,
         // 出欠の画面が受け取った正規練習日（{ 団体, 練習日 }）。開いたときにすぐ出す。ログアウトで捨てる
         練習日の控え: null,
         // 登録メールアドレスの確認（src/mailKakunin.js）。null＝まだ見ていない・'持ち主がまだ'・'団体がまだ'・'済み'。
@@ -325,6 +329,23 @@ const useScoreStore = zustand.create()(
         setCurrentRouteName: (名前) => 書く({ currentRouteName: 名前 }),
         setMemberAuthVersion: (版) => 書く({ memberAuthVersion: 版 }),
         setFocusedMemberId: (id) => 書く({ focusedMemberId: id }),
+        /** 部員の端末：ログインに使った個人ID を、自分の所属の証（member_claims/{uid}）から読む（1 回だけ） */
+        自分の個人IDを読む: async () => {
+          if (状態().activeRole !== 'member' || 状態().自分の個人ID) return 状態().自分の個人ID;
+          const 人 = Firebaseの器.auth && Firebaseの器.auth.currentUser;
+          if (!人 || !(await waitForDb())) return null;
+          try {
+            const 証 = await Firestore.getDoc(Firestore.doc(Firebaseの器.db, 'member_claims', 人.uid));
+            const 番号 = (証.exists() && (証.data() || {}).personalId) || '';
+            if (require('./kojinId').個人IDの形か(番号) && 状態().activeRole === 'member') {
+              書く({ 自分の個人ID: 番号 });
+              return 番号;
+            }
+          } catch {
+            /* 読めなければ出さないだけ */
+          }
+          return null;
+        },
         setAuth: (団体ID, 役割, 部員ID, メール = null, 公開の団体ID = null, 団体名 = null, 部員名 = null) => {
           if (団体ID === null) {
             // ライブから抜けてから出る（合言葉を捨てる前に。抜けないと、見張りと在席が残り、
@@ -374,6 +395,8 @@ const useScoreStore = zustand.create()(
               端末から外した記録: [],
               練習日の控え: null,
               メールの確認: null,
+              個人IDの表: {},
+              自分の個人ID: null,
               // 履歴の記録を直している途中の控えも、団体を離れるときに捨てる
               履歴の編集: null,
               analysisSelectedTags: [],
@@ -407,6 +430,7 @@ const useScoreStore = zustand.create()(
                 端末から外した記録: [],
                 練習日の控え: null,
                 メールの確認: null,
+                個人IDの表: {},
                 ...学年まわりの初めの値,
               });
             }
@@ -422,6 +446,8 @@ const useScoreStore = zustand.create()(
               isAdminModePending: false,
               入り直しが要る: false,
               再ログインの案内: null,
+              // 入り直すたびに、自分の所属の証から読み直す（ほかの ID で入り直したかもしれない）
+              自分の個人ID: null,
             });
             状態().未送信の控えを戻す();
             状態().listenToConfig();
@@ -1192,6 +1218,8 @@ const useScoreStore = zustand.create()(
           trash: 状態の中身.trash,
           permanentlyDeleted: 状態の中身.permanentlyDeleted,
           deletedMembers: 状態の中身.deletedMembers,
+          // 個人ID の表は持ち主の端末だけ残す（部員の端末には元から届かない）
+          個人IDの表: 状態の中身.activeRole === 'group' ? 状態の中身.個人IDの表 : {},
           練習日の控え: 状態の中身.練習日の控え,
           shotsPerRound: 状態の中身.shotsPerRound,
           activeSessionID: 状態の中身.activeSessionID,
@@ -1284,9 +1312,8 @@ const useScoreStore = zustand.create()(
             if (typeof 戻した状態.updateState === 'function') {
               戻した状態.updateState(updates);
             }
-            if (typeof 戻した状態.ensurePersonalIds === 'function') {
-              戻した状態.ensurePersonalIds();
-            }
+            // 個人ID を振るのは、逆引き表を雲から読めたときだけ（ensurePersonalIds が自分で読む）。
+            // 前はここ（雲を読む前）でも振っていて、12/3 からは端末の古い名簿で雲の名簿を上書きした（A1）
           } else {
             console.warn(`[Store] Hydration yielded empty state (after ${かかった時間}ms)`);
             const いまの状態 = useScoreStore.getState();

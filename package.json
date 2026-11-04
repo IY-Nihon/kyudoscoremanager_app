@@ -24,6 +24,8 @@
     "ops:accept": "node scripts/verify-prod-acceptance.mjs",
     "ops:orphans": "node scripts/find-orphan-accounts.mjs prod",
     "ops:reports": "node scripts/read-error-reports.mjs prod",
+    "ops:migrate-personal-ids": "node scripts/migrate-personal-ids.mjs prod",
+    "ops:migrate-personal-ids:run": "node scripts/migrate-personal-ids.mjs prod 移す",
     "ops:disposable": "node scripts/sync-disposable-domains.mjs prod",
     "ops:disposable:run": "node scripts/sync-disposable-domains.mjs prod 入れる",
     "ops:prune-live": "node scripts/prune-old-live-branches.mjs prod",

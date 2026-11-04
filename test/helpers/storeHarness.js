@@ -176,6 +176,11 @@ function 偽Firestore() {
         // 差を付けないと「消えないはずの中身が消える」検査が書けない
         表.set(o.id, 解決(o.重ねる ? Object.assign({}, 表.get(o.id) || {}, o.値) : Object.assign({}, o.値)));
       else if (o.種類 === 'update') 表.set(o.id, 解決(Object.assign({}, 表.get(o.id) || {}, o.値)));
+      // deleteField() の欄は消す（本物と同じ）
+      if (o.種類 !== 'delete' && 表.has(o.id)) {
+        const 中身 = 表.get(o.id);
+        for (const k of Object.keys(中身 || {})) if (中身[k] && 中身[k].__欄を消す) delete 中身[k];
+      }
     }
   };
 
@@ -210,6 +215,7 @@ function 偽Firestore() {
     orderBy: () => ({}),
     limit: (n) => ({ 上限: n }),
     serverTimestamp: () => ({ __サーバー日時: true }),
+    deleteField: () => ({ __欄を消す: true }),
     Timestamp: 偽の日時,
     getDoc: (参照) => {
       const 値 = 取り出す(参照.道).get(参照.id);

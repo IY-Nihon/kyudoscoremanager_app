@@ -15,7 +15,8 @@ const 設定 = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 const firebaseApp = app.getApps().length > 0 ? app.getApp() : app.initializeApp(設定);
-setupAppCheck(firebaseApp);
+// App Check の器。中継（Gemini）へ呼ぶときにも印を添える（src/geminiChukei.js。使わない束では null）
+const appCheck = setupAppCheck(firebaseApp);
 // オフラインの控えは、作るときに渡す。
 //
 // 以前は getFirestore のあとに enableIndexedDbPersistence を呼んでいた。
@@ -53,6 +54,7 @@ const rtdb = (() => {
 exports.db = firestore;
 exports.auth = auth;
 exports.rtdb = rtdb;
+exports.appCheck = appCheck;
 /** ログインの手（src/groupLogin.js）に渡す道具。手は道具を受け取るので、検査では偽物を渡せる */
 exports.雲の道具 = () => ({ Firestore, FirebaseAuth, db: firestore, auth });
 // オフライン保存が効いているか。効いていないと、電波の無い場所で保存した

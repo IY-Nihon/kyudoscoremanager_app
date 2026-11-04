@@ -221,12 +221,56 @@ async function 切り替えを頼む(道具, 団体ID, 合言葉, 新しいメ�
   return { 宛先 };
 }
 
+/** 12/3 を過ぎた 4 桁の個人ID で入ろうとしたときの知らせ（入る前に形で分かる。英語の権限の誤りを出さない） */
+const 四桁は終わりの文 =
+  '4桁の個人IDは使えなくなりました。団体の担当者から新しい個人ID（大文字と数字の6字。例 K7MP3X）を受け取って入れてください。';
+
+/**
+ * 中継（kyudo-chukei の POST /kojin）で鍵を確かめて、所属の証を書いてもらう（2026-11-04。ログインの総当たりを止める）。
+ * 中継が回数を絞ってから、サービスアカウントで逆引き表を引く（決まりは端末に逆引き表を読ませず、証も書かせない）。
+ * 中継が無い・古い（/kojin が無く 404）ときは null（前の道 引いて証を書く で入る。決まりを配るまでのつなぎ）
+ */
+async function 中継で確かめる(道具, 団体の鍵, 鍵, 見つからないとき, 期限切れのとき) {
+  const 中継 = 道具.中継 || require('./geminiChukei');
+  if (!中継 || !中継.中継がある()) return null;
+  let 返り;
+  try {
+    返り = await 中継.中継へfetch('/kojin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 団体: 団体の鍵, 鍵 }),
+    });
+  } catch (誤り) {
+    throw new Error('通信できませんでした。電波の良い場所でお試しください', { cause: 誤り });
+  }
+  if (!返り || 返り.status === 404) return null;
+  const 中身 = await Promise.resolve()
+    .then(() => 返り.json())
+    .catch(() => ({}));
+  if (返り.status === 429) throw new Error('試した回数が多すぎます。1 分ほど待ってからお試しください');
+  if (返り.status === 401 && 中身 && 中身.印 === 'appcheck')
+    throw new Error('この端末の確かめに失敗しました。ブラウザを新しくして読み込み直してください');
+  if (!返り.ok) throw new Error('いまは確かめられません。少し待ってからお試しください');
+  switch (中身 && 中身.結果) {
+    case '入れた':
+      return { memberId: 中身.memberId, 名前: 中身.名前 || '' };
+    case '期限切れ':
+      throw new Error(期限切れのとき);
+    case '団体がまだ':
+      throw new Error(require('./mailKakunin').団体がまだの文);
+    case '4桁は終わり':
+      throw new Error(四桁は終わりの文);
+    default:
+      throw new Error(見つからないとき);
+  }
+}
+
 /**
  * メンバーとして入る。個人ID でも招待リンクの合言葉でも同じ道を通る（鍵が違うだけ）。
  *
- * 匿名で入り、逆引き表（groups/{団体}/member_lookup/{鍵}）から memberId を引き、所属の証
- * （member_claims/{uid}）を書く。決まりは、証の memberId が逆引き表と一致するときだけ
- * 書かせるので、正しい鍵を知っている人しか入れない（src/memberInvite.js）。
+ * 匿名で入り、中継（POST /kojin）に鍵を確かめて所属の証（member_claims/{uid}）を書いてもらう（中継で確かめる）。
+ * 中継が古いときだけ、前の道：逆引き表（groups/{団体}/member_lookup/{鍵}）から memberId を引き、証を自分で書く
+ * （決まりが証の memberId と逆引き表を突き合わせる。新しい決まりを配ったあとは通らない）。
  *
  * @param {{Firestore: any, FirebaseAuth: any, db: any, auth: any}} 道具
  * @param {string} 団体の鍵 groups/{団体の鍵}
@@ -244,6 +288,9 @@ async function 部員として入る(
 ) {
   const { FirebaseAuth, auth } = 道具;
   if (!IDの形か(団体の鍵) || !IDの形か(鍵)) throw new Error(見つからないとき);
+  // 12/3 を過ぎた 4 桁は、雲に問い合わせる前に分かる言葉で断る（前は英語の「Missing or insufficient permissions.」）
+  const 個 = require('./kojinId');
+  if (個.古い形.test(鍵) && !個.古い形を使えるか(道具.今)) throw new Error(四桁は終わりの文);
   // 登録メールアドレスの確認が済んでいない団体には入れない（決まりも止める。2026-11-03）。
   // 匿名の利用者を作る前に、理由を言って断る（帳面は誰でも読める。読めないときは進めて、決まりに任せる）
   const 確 = require('./mailKakunin');
@@ -254,6 +301,8 @@ async function 部員として入る(
   await FirebaseAuth.signInAnonymously(auth);
   const 入った人 = auth.currentUser;
   try {
+    const 中継の答え = await 中継で確かめる(道具, 団体の鍵, 鍵, 見つからないとき, 期限切れのとき);
+    if (中継の答え) return 中継の答え;
     return await 引いて証を書く(道具, 団体の鍵, 鍵, 見つからないとき, 期限切れのとき);
   } catch (誤り) {
     // 入れなかった匿名の利用者を残さない（個人IDを打ち間違えるたびに 1 人ずつ溜まっていた）。
@@ -338,6 +387,7 @@ module.exports = {
   団体で入る,
   切り替えを頼む,
   部員として入る,
+  四桁は終わりの文,
   団体から出る,
   入り直してよい符号,
   前のアドレスを残す日数,
