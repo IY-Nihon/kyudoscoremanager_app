@@ -107,3 +107,28 @@ test('id は毎回ちがう UUID', () => {
   assert.notStrictEqual(一つ, 記録.新しいid());
   assert.match(一つ, /^[0-9a-f-]{36}$/);
 });
+
+test('小さくする：道具の返事や図は上限の字数で切り、切ったことと元の字数を残す', () => {
+  assert.deepStrictEqual(記録.小さくする({ a: 1 }, 100), { a: 1 });
+  const 大きい = { 一覧: Array.from({ length: 500 }, (_, 番) => ({ 名前: `部員${番}`, 率: 0.5 })) };
+  const 切った = 記録.小さくする(大きい, 1000);
+  assert.strictEqual(切った.切った, true);
+  assert.strictEqual(切った.先頭.length, 1000);
+  assert.strictEqual(切った.字数, JSON.stringify(大きい).length);
+  assert.strictEqual(記録.小さくする(undefined), null);
+});
+
+test('収める：中継の上限（256KB）を越える 1 件は、大きいもの（道具の返事・図）から省いて送る', async () => {
+  送った.length = 0;
+  失敗させる = null;
+  // 日本語は 1 字 3 バイト。8 万字 × 3 = 24 万バイトを越える
+  const 大きな返事 = 'あ'.repeat(90000);
+  await 記録.改善のために取っておく('チャット', { 質問: '順位は？', 答え: '一位は…', 道具の返事: [{ 返事: 大きな返事 }] });
+  const 依頼 = JSON.parse(送った[0].init.body);
+  assert.strictEqual(依頼.中身.質問, '順位は？');
+  assert.strictEqual(依頼.中身.答え, '一位は…');
+  assert.strictEqual(依頼.中身.道具の返事, '（大きすぎて省いた）');
+  assert.ok(Buffer.byteLength(送った[0].init.body) < 256 * 1024);
+  // 小さいものはそのまま
+  assert.deepStrictEqual(記録.収める({ 質問: 'a' }), { 質問: 'a' });
+});

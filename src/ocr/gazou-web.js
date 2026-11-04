@@ -194,3 +194,8 @@ export async function 写真を逆さにする(base64, mime) {
 }
 
 export const 道具 = { 画を読む, 回す };
+
+/** 写真の画素の控えを手放す（読み取りの窓を閉じたとき。1 枚で数十 MB ある） */
+export function 控えを手放す() {
+  画の控え.length = 0;
+}

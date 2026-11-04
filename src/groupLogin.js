@@ -232,14 +232,18 @@ async function 部員として入る(
   const 確 = require('./mailKakunin');
   // 今ある団体は猶予のあいだ入れる（決まりも同じ）
   if ((await 確.団体の確認は済んだか(道具, 団体の鍵)) === false && !確.猶予中か(道具.今)) throw new Error(確.団体がまだの文);
+  // すでに匿名で入っている端末（入り直しの窓）では、signInAnonymously は今の口座をそのまま返す
+  const 前の人 = auth.currentUser;
   await FirebaseAuth.signInAnonymously(auth);
   const 入った人 = auth.currentUser;
   try {
     return await 引いて証を書く(道具, 団体の鍵, 鍵, 見つからないとき, 期限切れのとき);
   } catch (誤り) {
     // 入れなかった匿名の利用者を残さない（個人IDを打ち間違えるたびに 1 人ずつ溜まっていた）。
-    // 消すのは今ここで作った匿名の人だけ。消せなければ出るだけにする
-    if (入った人 && 入った人.isAnonymous && auth.currentUser === 入った人) {
+    // 消すのは今ここで作った匿名の人だけ。前から使っていた口座は消さない（入り直しの窓で 1 回打ち間違えると、
+    // まだ使えていた部員の口座を消して、正しい ID で入り直すまで何も送れなくなっていた）。消せなければ出るだけにする
+    const 新しく作った = !前の人 || !入った人 || 前の人.uid !== 入った人.uid;
+    if (新しく作った && 入った人 && 入った人.isAnonymous && auth.currentUser === 入った人) {
       try {
         await FirebaseAuth.deleteUser(入った人);
       } catch {
@@ -277,6 +281,35 @@ async function 引いて証を書く(道具, 団体の鍵, 鍵, 見つからな�
 }
 
 /**
+ * 出る（設定のログアウト・確認の画面の「ログアウト」）。部員は所属の証と匿名の口座を消してから出る
+ * （口座を残すと、誰のものでもない口座が認証に溜まる。2026-09-24 に本番で 164 人）。
+ *
+ * 電波が無いと、証の削除（Firestore の書き込み）は届くまで返らない。前は待ちきってから出ていたので、
+ * 電波の無い所でログアウトを押しても何も起きなかった。待つのは 待つ時間 まで。消せなかった証は、
+ * 口座が消えれば使えない（決まりは口座の番号で見る）。口座も消せなければ（入ってから日が経つと
+ * requires-recent-login で断られる）出るだけにする。
+ *
+ * @param {{Firestore: any, FirebaseAuth: any, db: any, auth: any}} 道具
+ * @param {string|null} 役割 'group' | 'member'
+ */
+async function 団体から出る(道具, 役割, 待つ時間 = 3000) {
+  const { Firestore, FirebaseAuth, db, auth } = 道具;
+  const 待つ = (手) =>
+    Promise.race([
+      Promise.resolve()
+        .then(手)
+        .catch(() => {}),
+      new Promise((解く) => setTimeout(解く, 待つ時間)),
+    ]);
+  const 人 = auth && auth.currentUser;
+  if (役割 === 'member' && 人) {
+    await 待つ(() => Firestore.deleteDoc(Firestore.doc(db, 'member_claims', 人.uid)));
+    if (人.isAnonymous && auth.currentUser === 人) await 待つ(() => FirebaseAuth.deleteUser(人));
+  }
+  if (auth && auth.currentUser) await 待つ(() => FirebaseAuth.signOut(auth));
+}
+
+/**
  * 部員の認証方式の版。上げると、古い方式でログインしている部員は次に開いたときにログアウトされる（App.js）。
  * ログイン画面・招待のリンク・入り直しの窓で部員として入れたときに、この版を店に書く。ここ 1 か所だけで決める。
  * 2 … 所属のクレームを使う方式に切り替えたとき（古い端末はログアウトさせ、個人IDで入り直してもらう）
@@ -288,6 +321,7 @@ module.exports = {
   団体で入る,
   切り替えを頼む,
   部員として入る,
+  団体から出る,
   入り直してよい符号,
   前のアドレスを残す日数,
   部員のログインの版,

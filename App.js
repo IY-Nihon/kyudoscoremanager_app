@@ -186,6 +186,19 @@ export default function App() {
   const setupNetworkListener = useScoreStore((e) => e.setupNetworkListener);
   const [hasMounted, setHasMounted] = useState(false);
   const [authReady, setAuthReady] = useState(false);
+  // 端末のログインの口座（uid）。入り直して口座が戻った・替わったら、メールの確認を見直す（下の効果）
+  const [口座, 口座を置く] = useState(null);
+  // 猶予の終わり（11/10 9:00）をまたいで開いたままでも、終わった時刻に確認を見直す。
+  // 見直さないと、決まりに断られるたびに入り直しの窓が出て、入り直しても断られ続けた
+  const [猶予の見直し, 猶予の見直しを置く] = useState(0);
+  useEffect(() => {
+    const 確 = require('./src/mailKakunin');
+    const 残り = 確.猶予の終わりの時刻 - Date.now();
+    if (残り <= 0) return undefined;
+    // 時計の上限（約 24.8 日）を越えるとすぐ鳴るので、越えるときは途中で鳴らして掛け直す
+    const 時計 = setTimeout(() => 猶予の見直しを置く((回) => 回 + 1), Math.min(残り + 1000, 2000000000));
+    return () => clearTimeout(時計);
+  }, [猶予の見直し]);
 
   useEffect(() => {
     setHasMounted(true);
@@ -211,6 +224,7 @@ export default function App() {
     }
     const unsub = onAuthStateChanged(auth, (使う人) => {
       setAuthReady(true);
+      口座を置く(使う人 ? 使う人.uid : null);
       // ログインする前に起きた不具合は、決まりの上で送れない（未ログインを弾く）。
       // 入れたところで出し直さないと、ログイン画面での不具合が永久に届かない
       if (使う人) 溜まりを流す();
@@ -258,22 +272,42 @@ export default function App() {
 
   // 登録メールアドレスの確認（2026-11-03 本人：確認が済むまで団体は何もできない）。
   // 持ち主はログインのメールが確認済みか、部員は団体の帳面の verified を見る。止めるのは決まりで、ここは画面を替えるだけ
+  // 見直すのは、開いたとき・入り直して口座が戻ったとき（口座）・猶予が終わったとき（猶予の見直し）
   useEffect(() => {
     if (!isHydrated || !authReady || !activeGroupId || 共有の来客) return undefined;
     let 外した = false;
-    const 置く = (様子) => !外した && useScoreStore.setState({ メールの確認: 様子 });
+    const 置く = (様子, 入れた = false) => {
+      if (外した) return;
+      const 前 = useScoreStore.getState().メールの確認;
+      useScoreStore.setState({
+        メールの確認: 様子,
+        // 確認の画面のあいだに決まりに断られて立った「入り直しが要る」を、確認が済んだら下ろす。
+        // 残すと、確認を済ませた直後に「ログインの有効期限が切れました」が出た
+        ...(様子 === '済み' && (入れた || 前 === '持ち主がまだ' || 前 === '団体がまだ')
+          ? { 入り直しが要る: false, 入り直しをあとに: false, 再ログインの案内: null }
+          : {}),
+      });
+    };
     (async () => {
       const 確 = require('./src/mailKakunin');
       const 道具 = require('./src/db').雲の道具();
       if (activeRole === 'group') {
-        // ログインが無いときは入り直しの窓が出る（下の効果）。入り直したらまた見る
-        if (!auth || !auth.currentUser) return;
+        if (!auth) return;
         // ほかの端末でリンクを押したかもしれないので、確認が済んでいなければ読み直してから見る（電波が無ければ前のまま）
-        const 済み = await 確.確認が済んだか(auth).catch(() => !!(auth.currentUser && auth.currentUser.emailVerified));
+        const { 様子, 確かめた } = await 確.持ち主の確認の様子(auth);
+        if (外した) return;
+        if (様子 === '入り直し') {
+          // ログインが外れている（ほかの端末でパスワードを直したなど）。確認の画面ではなく入り直しの窓を出す。
+          // 様子は分からないに戻す（確認の画面のままだと入り直しの窓が出ない）。入り直したら口座が戻ってまた見る
+          useScoreStore.setState({
+            メールの確認: null,
+            入り直しが要る: !useScoreStore.getState().入り直しをあとに,
+          });
+          return;
+        }
         // 今ある団体は猶予のあいだ使える（帯で確認を頼む）。猶予が過ぎたら確認の画面だけ
-        if (!済み) return 置く(確.猶予中か() ? '猶予中' : '持ち主がまだ');
-        確.帳面に確認済みを書く(道具, activeGroupId).catch(() => {});
-        return 置く('済み');
+        if (様子 === '済み') 確.帳面に確認済みを書く(道具, activeGroupId).catch(() => {});
+        return 置く(様子, 確かめた);
       }
       if (activeRole === 'member') {
         // 読めないとき（null）は止めない（雲の側で決まりが止める）
@@ -285,7 +319,7 @@ export default function App() {
     return () => {
       外した = true;
     };
-  }, [isHydrated, authReady, activeGroupId, activeRole, 共有の来客]);
+  }, [isHydrated, authReady, activeGroupId, activeRole, 共有の来客, 口座, 猶予の見直し]);
 
   // 部員の認証方式を変更したため、古い方式でログイン中の端末は一度だけ入り直してもらう。
   // 端末に個人IDを保存していない＝所属を証明できないため、そのままでは全ての

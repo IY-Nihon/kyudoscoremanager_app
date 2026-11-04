@@ -39,6 +39,7 @@ const { 掲載の設定 } = require('./ListingConsentCard');
 const { auth, db } = require('./db');
 const FirebaseAuth = require('firebase/auth');
 const Firestore = require('firebase/firestore');
+const { 団体から出る } = require('./groupLogin');
 // ログアウトの確認の文言は src/logoutPrompt.js にある（画面を動かさずに
 // 出し分けを検査できるようにするため）
 const {
@@ -1293,22 +1294,13 @@ const SettingsScreen = () => {
                   }
                   ログアウトの窓を出す(false);
                   try {
-                    if (activeRole === 'member' && auth.currentUser) {
-                      await Firestore.deleteDoc(
-                        Firestore.doc(db, 'member_claims', auth.currentUser.uid)
-                      ).catch(() => {});
-                      // 匿名の口座も消す。証を消して出るだけだと、誰のものでもない口座が
-                      // 認証に溜まる（2026-09-24 に本番で 164 人。scripts/prune-anonymous-users.mjs）。
-                      // 入ってから日が経つと「入り直しが要る」で断られるので、そのときは出るだけ
-                      if (auth.currentUser && auth.currentUser.isAnonymous) {
-                        await FirebaseAuth.deleteUser(auth.currentUser).catch(() => {});
-                      }
-                    }
-                    await FirebaseAuth.signOut(auth);
-                    setAuth(null, null, null, null);
+                    // 部員は証と匿名の口座も消す（scripts/prune-anonymous-users.mjs）。電波が無くても
+                    // 待ちきらずに出る（前は証の削除が返らず、押しても何も起きなかった。src/groupLogin.js）
+                    await 団体から出る({ Firestore, FirebaseAuth, db, auth }, activeRole);
                   } catch (誤り) {
                     console.error('Logout error:', 誤り);
                   }
+                  setAuth(null, null, null, null);
                 })}
               >
                 <Text style={[styles.modalBtnText, { color: 基本色.白 }]}>

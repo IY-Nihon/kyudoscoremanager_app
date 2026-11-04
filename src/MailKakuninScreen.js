@@ -18,6 +18,7 @@ const 確 = require('./mailKakunin');
 const { useSafeAreaInsets } = require('react-native-safe-area-context');
 
 const 道具を取る = () => require('./db').雲の道具();
+const 入り直しを下ろす = { 入り直しが要る: false, 入り直しをあとに: false, 再ログインの案内: null };
 
 const MailKakuninScreen = ({ 様子, 閉じる }) => {
   // 猶予中（帯から開いた）も持ち主の確認の画面。閉じる があれば「あとで」で戻れる
@@ -57,7 +58,9 @@ const MailKakuninScreen = ({ 様子, 閉じる }) => {
           return;
         }
         await 確.帳面に確認済みを書く(道具, 状.activeGroupId).catch(() => {});
-        useScoreStore.setState({ メールの確認: '済み' });
+        // 確認の画面のあいだに決まりに断られて立った「入り直しが要る」も下ろす（ログインは今確かめた）。
+        // 残すと、確認を済ませた直後に「ログインの有効期限が切れました」が出た
+        useScoreStore.setState({ メールの確認: '済み', ...入り直しを下ろす });
         if (閉じる) 閉じる();
         return;
       }
@@ -66,19 +69,14 @@ const MailKakuninScreen = ({ 様子, 閉じる }) => {
         難点を置く('まだ確認が済んでいません。');
         return;
       }
-      useScoreStore.setState({ メールの確認: '済み' });
+      useScoreStore.setState({ メールの確認: '済み', ...入り直しを下ろす });
     });
 
+  // 電波が無くても出られるように、証の削除などは待ちきらない（src/groupLogin.js の 団体から出る）
   const 出る = () =>
     する(async () => {
-      const { FirebaseAuth, Firestore, db, auth } = 道具;
       const 状 = useScoreStore.getState();
-      if (状.activeRole === 'member' && auth.currentUser) {
-        await Firestore.deleteDoc(Firestore.doc(db, 'member_claims', auth.currentUser.uid)).catch(() => {});
-        if (auth.currentUser && auth.currentUser.isAnonymous)
-          await FirebaseAuth.deleteUser(auth.currentUser).catch(() => {});
-      }
-      await FirebaseAuth.signOut(auth).catch(() => {});
+      await require('./groupLogin').団体から出る(道具, 状.activeRole);
       状.setAuth(null, null, null, null);
     });
 

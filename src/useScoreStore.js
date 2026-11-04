@@ -324,6 +324,17 @@ const useScoreStore = zustand.create()(
         setFocusedMemberId: (id) => 書く({ focusedMemberId: id }),
         setAuth: (団体ID, 役割, 部員ID, メール = null, 公開の団体ID = null, 団体名 = null, 部員名 = null) => {
           if (団体ID === null) {
+            // ライブから抜けてから出る（合言葉を捨てる前に。抜けないと、見張りと在席が残り、
+            // 次に入った団体に前の団体のライブが続いて見えた）。盤面は下でまとめて片付ける
+            if (状態().isLiveActive || 状態().liveSessionName) {
+              try {
+                状態().stopLiveSync(true);
+              } catch (誤り) {
+                console.warn('[Store] ログアウトのときにライブから抜けられませんでした', 誤り);
+              }
+            }
+            // AI アシスタントの会話も端末から消す（共用の端末で、次に入った人に見せない。src/chatHistory.js）
+            require('./chatHistory').会話を全部消す();
             // 出たら行動の控えも捨てる。次に入った人の不具合の便りに、
             // 前の人が何をしていたかが付いていくのは筋が悪い
             書く({
