@@ -302,15 +302,17 @@ test('個人ログイン：会話の控えは本人ごとの鍵に置き、団�
   test.setTimeout(180_000);
   await 保存を偽にする(page);
   await 偽のGemini(page, () => ({ text: '控えの確認です。' }));
-  // 同じ端末で前に団体が使った会話が、控えに残っている状態にする（読み込みのたびに戻す）
+  // 同じ端末で前に団体が使った会話が、控えに残っている状態にする（読み込みのたびに戻す）。
+  // 鍵は団体ごと（src/chatHistory.js。団体の入っていない前の鍵は、開いたときに消す）
   const 団体の印 = '団体の管理者だけの会話の印';
-  await page.addInitScript((印) => {
+  const 団体の鍵 = 'aiChatMessages_v1_g_100002';
+  await page.addInitScript(([鍵, 印]) => {
     try {
-      localStorage.setItem('aiChatMessages_v1', JSON.stringify([{ id: 'g1', role: 'model', text: 印 }]));
+      localStorage.setItem(鍵, JSON.stringify([{ id: 'g1', role: 'model', text: 印 }]));
     } catch {
       /* 入れられなければ、下の「見えていない」は空振りする（控えを読んで確かめる） */
     }
-  }, 団体の印);
+  }, [団体の鍵, 団体の印]);
 
   const 自分 = await AIを開く(page);
   await expect(page.getByText(団体の印), '団体の会話が個人に見えている').toHaveCount(0);
@@ -319,16 +321,16 @@ test('個人ログイン：会話の控えは本人ごとの鍵に置き、団�
   await expect(page.getByText('控えの確認です。')).toBeVisible({ timeout: 30_000 });
   // 控えに書けるまでの短い間を待つ（会話の変化から少し遅れて書く）
   await こうなるまで待つ(
-    () => page.evaluate((id) => localStorage.getItem(`aiChatMessages_v1_member_${id}`) || '', 自分.id),
+    () => page.evaluate((id) => localStorage.getItem(`aiChatMessages_v1_g_100002_member_${id}`) || '', 自分.id),
     (文) => 文.includes('控えの確認です。'),
     15_000
   );
   const 控え = await page.evaluate(
-    (id) => ({
-      団体: localStorage.getItem('aiChatMessages_v1'),
-      本人: localStorage.getItem(`aiChatMessages_v1_member_${id}`),
+    ([id, 鍵]) => ({
+      団体: localStorage.getItem(鍵),
+      本人: localStorage.getItem(`${鍵}_member_${id}`),
     }),
-    自分.id
+    [自分.id, 団体の鍵]
   );
   expect(JSON.parse(控え.団体), '個人が団体の会話の控えを書き換えた').toEqual([
     { id: 'g1', role: 'model', text: 団体の印 },

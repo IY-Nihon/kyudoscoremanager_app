@@ -274,7 +274,7 @@ test('浮くボタン：横へ引くと左の角へ動き、置いた角が残�
 
 // 個人ログインには本人の分だけを渡し、道具も絞る（e2e/chatPersonal.spec.mjs）。
 // その絞りが団体に効いていないこと（道具は 9 つ全部・部員一覧が入る・団体の会話の控えの鍵は前のまま）
-test('団体：道具は全部・部員一覧が入り、会話は前の鍵に残る（個人用の絞りが効かない）', async ({ page }) => {
+test('団体：道具は全部・部員一覧が入り、会話は団体の鍵に残る（個人用の絞りが効かない）', async ({ page }) => {
   test.setTimeout(180_000);
   await page.route(/workers\.dev\/hozon/, (route) => {
     if (route.request().method() === 'OPTIONS')
@@ -354,15 +354,22 @@ test('団体：道具は全部・部員一覧が入り、会話は前の鍵に�
   expect(指示.includes('部員一覧（計'), '団体の指示文に部員一覧が入っていない').toBe(true);
   expect(指示.includes('本人の分だけを扱います'), '団体に個人用の指示文が入っている').toBe(false);
 
-  // 会話の控えは、団体はこれまでの鍵のまま（個人だけ本人ごとの鍵）
+  // 会話の控えは、団体は団体ごとの鍵（aiChatMessages_v1_g_{団体}。src/chatHistory.js）。個人だけ本人ごとの鍵
+  const 団体の会話 = () =>
+    page.evaluate(() =>
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith('aiChatMessages_v1_g_') && !k.includes('_member_'))
+        .map((k) => localStorage.getItem(k) || '')
+        .join('')
+    );
   await expect
-    .poll(() => page.evaluate(() => localStorage.getItem('aiChatMessages_v1') || ''), {
+    .poll(団体の会話, {
       timeout: 15_000,
-      message: '団体の会話が、これまでの鍵に残っていない',
+      message: '団体の会話が、団体の鍵に残っていない',
     })
     .toContain('的中とは？');
   const 本人の鍵 = await page.evaluate(() =>
-    Object.keys(localStorage).filter((k) => k.startsWith('aiChatMessages_v1_member_'))
+    Object.keys(localStorage).filter((k) => k.includes('_member_') && k.startsWith('aiChatMessages_v1'))
   );
   expect(本人の鍵, '団体なのに、個人用の鍵に会話を置いている').toEqual([]);
 });
