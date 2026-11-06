@@ -447,12 +447,26 @@ const ライブの操作 = (書く, 状態, そのまま書く) => {
         // 前は見るだけのリンクを持つ人が、期限を縮めて見ている人を締め出したり、写しを消して期限を外し、
         // 期限の無いリンクにしたりできた（database.rules.json の live_limit_owners。B6）
         if (期限) {
-          const 口座 = Firebaseの器.auth && Firebaseの器.auth.currentUser && Firebaseの器.auth.currentUser.uid;
-          await RTDB.update(RTDB.ref(Firebaseの器.rtdb), {
-            [期限の場所(編集の枝)]: 期限,
-            [期限の場所(閲覧の枝)]: 期限,
-            ...(口座 ? { [期限の持ち主の場所(編集の枝)]: 口座, [期限の持ち主の場所(閲覧の枝)]: 口座 } : {}),
-          });
+          const 口座 =
+            Firebaseの器.auth && Firebaseの器.auth.currentUser && Firebaseの器.auth.currentUser.uid;
+          const 期限だけ = { [期限の場所(編集の枝)]: 期限, [期限の場所(閲覧の枝)]: 期限 };
+          try {
+            await RTDB.update(
+              RTDB.ref(Firebaseの器.rtdb),
+              口座
+                ? { ...期限だけ, [期限の持ち主の場所(編集の枝)]: 口座, [期限の持ち主の場所(閲覧の枝)]: 口座 }
+                : 期限だけ
+            );
+          } catch (誤り) {
+            // 決まりがまだ古い（live_limit_owners を知らない）ときは、口座の印を書けずに一括ごと断られる。
+            // アプリを決まりより先に配っても配れるよう、そのときだけ期限だけを書く（新しい決まりでは通らない）
+            if (
+              !口座 ||
+              !/permission|PERMISSION_DENIED/i.test(String((誤り && (誤り.code || 誤り.message)) || 誤り))
+            )
+              throw 誤り;
+            await RTDB.update(RTDB.ref(Firebaseの器.rtdb), 期限だけ);
+          }
         }
         // 盤面をそのまま新しい枝へ写す。種もここに置く（編集の枝を知る人だけが読める）
         await RTDB.set(
@@ -515,7 +529,9 @@ const ライブの操作 = (書く, 状態, そのまま書く) => {
       書く((前) => ({
         isHost: 主催だった,
         よその団体のライブ: false,
-        ライブの続き: 前.ライブの続き ? Object.assign({}, 前.ライブの続き, { 主催: 主催だった }) : 前.ライブの続き,
+        ライブの続き: 前.ライブの続き
+          ? Object.assign({}, 前.ライブの続き, { 主催: 主催だった })
+          : 前.ライブの続き,
       }));
       return {
         編集の荷: 共.共有の荷を組む({ 種: 編集の種, 名前, 役: 共.編集, 鍵が要るか: !!鍵, 期限 }),

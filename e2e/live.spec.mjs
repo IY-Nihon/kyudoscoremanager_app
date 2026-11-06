@@ -73,7 +73,7 @@ let ライブの枝 = null;
  * 検査の後片付けと、「主催者がライブを終えて節点が消えた」を作るのに使う。
  * 消せなければ、その理由を返す（消せたら null）
  */
-async function 管理で消す(道) {
+async function 管理で消す(道, 値) {
   const { execFileSync } = await import('node:child_process');
   const fs = await import('node:fs');
   const path = await import('node:path');
@@ -92,7 +92,9 @@ async function 管理で消す(道) {
   try {
     execFileSync(
       process.execPath,
-      [CLI, 'database:remove', 道, '--project', 'kyudoscoremanager-stg', '--force'],
+      値 === undefined
+        ? [CLI, 'database:remove', 道, '--project', 'kyudoscoremanager-stg', '--force']
+        : [CLI, 'database:set', 道, '--data', JSON.stringify(値), '--project', 'kyudoscoremanager-stg', '--force'],
       { stdio: 'ignore' }
     );
     return null;
@@ -100,6 +102,9 @@ async function 管理で消す(道) {
     return 道 + '（' + String(e.message).slice(0, 60) + '）';
   }
 }
+
+/** 管理の権限で RTDB に置く（管理で消す と同じ CLI で database:set） */
+const 管理で置く = (道, 値) => 管理で消す(道, 値);
 
 // 検査ごとに片付ける。afterAll だと最後の検査より先に走ることがあり、
 // そのぶんが消し残る（実際、3件中1件が残った）
@@ -1320,11 +1325,17 @@ test('ライブ：閉じて開き直してもライブへ戻り、終わって�
   // 開き直す前の席は切れた合図で消える。少し遅れることがあるので待つ
   await expect(B.getByText('2台接続中'), '台数が2に戻っていない').toBeVisible({ timeout: 20_000 });
 
-  // ── 閉じている間にライブが終わる ──
+  // ── 閉じている間に、ほかの端末で保存されてライブが終わる ──
+  // 保存すると団体の枝には「終わった」印だけが残る（盤面は消す）。開き直した端末はそれを見て記録表を片付ける。
+  // 節点が丸ごと無い（期限切れの片付け・手で消した）ときは、保存していない盤面を残す決まり（A33）なので、
+  // ここでは保存したときと同じ形を置く
   await B.close();
   expect(ライブの枝, '枝の名前が取れていない').toBeTruthy();
+  expect(
+    await 管理で置く(`/live_sessions/${ライブの枝}/${ライブ名}`, { state: { status: 'finished', timestamp: Date.now() } }),
+    '終わった印を置けない'
+  ).toBeNull();
   for (const 道 of [
-    `/live_sessions/${ライブの枝}/${ライブ名}`,
     `/live_history/${ライブの枝}/${ライブ名}`,
     `/live_presence/${ライブの枝}/${ライブ名}`,
   ]) {
