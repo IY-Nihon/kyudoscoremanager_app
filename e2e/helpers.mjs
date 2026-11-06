@@ -169,6 +169,22 @@ export async function 団体で入る(page, 団体, 合言葉) {
   // 認証の保存（IndexedDB）が書き終わるまでの余裕。
   // ここは外から見える合図が無いので、決まった秒数のまま残してある
   await page.waitForTimeout(1500);
+  await 同意の窓なら同意する(page);
+}
+
+/**
+ * 規約の改定の窓が出ていれば「同意する」を押す。版を上げると、検証環境の団体にも出て画面をふさぐ
+ * （下ごしらえで入らない団体・検査の中で入り直す団体の分）。1 度同意すれば雲に記録が残り、次からは出ない
+ */
+export async function 同意の窓なら同意する(page, 待つ = 8_000) {
+  const 窓 = page.getByText('利用規約とプライバシーポリシーの改定', { exact: true });
+  const 出た = await 窓
+    .waitFor({ state: 'visible', timeout: 待つ })
+    .then(() => true)
+    .catch(() => false);
+  if (!出た) return;
+  await page.getByText('同意する', { exact: true }).click();
+  await expect(窓).toBeHidden({ timeout: 10_000 });
 }
 
 /**

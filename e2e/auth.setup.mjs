@@ -18,6 +18,7 @@ import { test as setup, expect } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 import { 検証のパスワード } from '../scripts/fb-rest.mjs';
+import { 同意の窓なら同意する } from './helpers.mjs';
 
 const 合言葉 = 検証のパスワード();
 // 検査が使う団体。増やしたらここにも足す
@@ -146,18 +147,8 @@ for (const 団体 of 団体たち) {
         { timeout: 60_000 }
       )
       .catch(() => {});
-    // 規約・プライバシーポリシーの版を上げると、検証環境の団体にも同意の窓が出て、どの検査でも画面の上をふさぐ
-    // （2026-11-04 に版を上げたとき、押せない・打てない検査が 3 つの端末で並んだ）。ここで 1 度同意しておけば
-    // 雲に記録が残り、ほかの検査では出ない
-    const 同意の窓 = page.getByText('利用規約とプライバシーポリシーの改定', { exact: true });
-    const 出た = await 同意の窓
-      .waitFor({ state: 'visible', timeout: 8_000 })
-      .then(() => true)
-      .catch(() => false);
-    if (出た) {
-      await page.getByText('同意する', { exact: true }).click();
-      await expect(同意の窓).toBeHidden({ timeout: 10_000 });
-    }
+    // 規約の改定の窓に 1 度同意しておく（ほかの検査で画面をふさがないように。helpers.mjs）
+    await 同意の窓なら同意する(page);
     const 届いた = await 中身の数();
     console.log(
       `  団体${団体}: 名簿${届いた.名簿}人 / 記録${届いた.記録}件を控えに入れます` +
