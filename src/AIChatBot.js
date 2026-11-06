@@ -76,6 +76,7 @@ const {
   弓具の前後,
   記録の的中,
   人を絞る,
+  顔ぶれ,
 } = require('./chatStats');
 const { 練習日を読む } = require('./practiceDays');
 // 「何でも聞いてください」だけでは何を聞けるか分からない。
@@ -517,7 +518,9 @@ const AIChatBot = () => {
     const 元の記録たち = [...new Set(カードたち.map((一つ) => 一つ.元の記録).filter(Boolean))];
     改善.改善のために取っておく('チャット', {
       段階: 'カードの答え',
-      ...(元の記録たち.length ? { 元の記録: 元の記録たち.length === 1 ? 元の記録たち[0] : 元の記録たち } : {}),
+      ...(元の記録たち.length
+        ? { 元の記録: 元の記録たち.length === 1 ? 元の記録たち[0] : 元の記録たち }
+        : {}),
       答え: 承認した ? '追加する' : 'キャンセル',
       まとめて: カードたち.length > 1,
       カード: カードたち.slice(0, 50).map((一つ) => 改善.小さくする(一つ.args, 1000)),
@@ -582,7 +585,9 @@ const AIChatBot = () => {
     const 道具の引数 = [];
     const 道具の返事 = [];
     // 図を頼む質問か（グラフ・表・推移・順位など）。そうなら、図にできる道具の返事が来た時点で既定の形の図を出す（D4）
-    const 図を頼む質問 = /グラフ|図|表|チャート|推移|比べ|比較|順位|ランキング|一覧|矢所|分布|折れ線|棒/.test(userMsg);
+    const 図を頼む質問 = /グラフ|図|表|チャート|推移|比べ|比較|順位|ランキング|一覧|矢所|分布|折れ線|棒/.test(
+      userMsg
+    );
     // 図にできる道具の結果（番号 → 道具の名と結果）と、この答えに出す図（showFigure）
     const 図の元 = new Map();
     let この答えの図 = [];
@@ -714,16 +719,33 @@ const AIChatBot = () => {
         const 中継の設定 = await 中継.SDKの設定();
 
         /**
-         * 分析画面のランキングの基準（射数の下限）。設定は期間の種類ごと（'すべて'・'期間指定' など）で、
-         * 「最多比」なら期間でいちばん引いた人の射数 × 割合、「N 射以上」なら N
+         * 順位や全体の数字を出す道具が数える人（分析画面の順位と同じ顔ぶれ。src/chatStats.js の 顔ぶれ）。
+         * ふだんは現役だけで、分析画面の「卒業生も表示」が ON なら卒業・退部した人と卒業生も入れる（A10。前は名簿の
+         * 全員で、卒業・退部した人も順位に入っていた）。個人ログインは本人だけなので、そのまま
          */
-        const 分析の順位の基準 = (期間, 期間の種類, 対象の記録) => {
+        const 数える顔ぶれ = () => {
+          if (個人) return members;
+          const 店 = useScoreStore.getState();
+          return 顔ぶれ(members, { 卒業生たち: 店.alumni, 卒業生も: !!店.showAlumniInAnalysis });
+        };
+
+        /**
+         * 分析画面のランキングの基準（射数の下限）。設定は期間の種類ごと（'すべて'・'期間指定' など）で、
+         * 「最多比」なら期間でいちばん引いた人の射数 × 割合、「N 射以上」なら N。
+         * 最多は、順位を付ける人（顔ぶれを性別・学年で絞った人）の中で見る（分析画面と同じ。A10）
+         */
+        const 分析の順位の基準 = (期間, 期間の種類, 対象の記録, 絞り) => {
           const 設定 = (useScoreStore.getState().analysisRankingSettings || {})[期間の種類] || {
             type: 'ratio',
             value: 0,
           };
           if (設定.type === 'count') return Math.max(1, Number(設定.value) || 0);
-          const 下見 = 全員の成績(members, 対象の記録, { 期間, 最小射数: 0 });
+          const 下見 = 全員の成績(数える顔ぶれ(), 対象の記録, {
+            期間,
+            最小射数: 0,
+            性別: 絞り && 絞り.性別,
+            学年: 絞り && 絞り.学年,
+          });
           const 最多 = Math.max(0, ...下見.一覧.map((人) => 人.射数));
           return Math.max(1, Math.floor(最多 * (Number(設定.value) || 0)));
         };
@@ -829,7 +851,10 @@ const AIChatBot = () => {
               return await model.generateContentStream({ contents: 会話 });
             } catch (誤り) {
               const 番号 = 誤りの状態番号(誤り);
-              const 一時 = 番号 === 503 || [500, 502, 504].includes(番号) || /\b503\b/.test(String((誤り && 誤り.message) || ''));
+              const 一時 =
+                番号 === 503 ||
+                [500, 502, 504].includes(番号) ||
+                /\b503\b/.test(String((誤り && 誤り.message) || ''));
               if (!一時) throw 誤り;
               送り直し.混雑++;
               await 数えながら待つ(3);
@@ -947,7 +972,9 @@ const AIChatBot = () => {
                     .split(/[・、,，\s]+/)
                     .filter(Boolean)
                 );
+              // 名前を挙げた人のほかは現役だけで組む（名簿には卒業・退部した人も残っている。A10）
               const 結果 = 組を作る(人を絞る(members, 絞り), タグで絞った記録(call.args.tags).記録たち, {
+                現役だけ: true,
                 期間: 期間にする(call.args.dateFrom, call.args.dateTo),
                 一組の人数: call.args.teamSize,
                 外す: 並び(call.args.excludeNames),
@@ -1018,10 +1045,11 @@ const AIChatBot = () => {
               const 基準 = 分析の順位の基準(
                 期間,
                 dateFrom || dateTo ? '期間指定' : 'すべて',
-                タグ絞り.表示 || 題絞り.絞った ? 題絞り.記録たち : sessions
+                タグ絞り.表示 || 題絞り.絞った ? 題絞り.記録たち : sessions,
+                { 性別: gender, 学年: grade }
               );
               const 最小射数 = Number.isFinite(minShots) ? minShots : 基準;
-              const 結果 = 全員の成績(members, 題絞り.記録たち, {
+              const 結果 = 全員の成績(数える顔ぶれ(), 題絞り.記録たち, {
                 期間,
                 並び: sortBy,
                 件数: limit,
@@ -1090,6 +1118,7 @@ const AIChatBot = () => {
                   学年: grade,
                   出席率の上限: Number.isFinite(maxRate) ? maxRate : undefined,
                   件数: limit,
+                  今の一年生の期: useScoreStore.getState().currentFreshmanTerm,
                 });
                 functionResponses.push({
                   functionResponse: {
@@ -1115,6 +1144,7 @@ const AIChatBot = () => {
                 学年: grade,
                 出席率の上限: Number.isFinite(maxRate) ? maxRate : undefined,
                 出席率の下限: Number.isFinite(minRate) ? minRate : undefined,
+                今の一年生の期: useScoreStore.getState().currentFreshmanTerm,
               });
               functionResponses.push({
                 functionResponse: {
@@ -1168,7 +1198,11 @@ const AIChatBot = () => {
               const タグ絞り = タグで絞った記録(call.args.tags);
               const 人で絞る = !!(gender || (grade != null && grade !== ''));
               const 結果 = 射位ごとの成績(
-                人を絞る(members, { 性別: gender, 学年: grade }),
+                // 名前を挙げたときは全員から、挙げないときは分析画面と同じ顔ぶれ
+                人を絞る(Array.isArray(memberNames) && memberNames.length ? members : 数える顔ぶれ(), {
+                  性別: gender,
+                  学年: grade,
+                }),
                 タグ絞り.記録たち,
                 {
                   期間: 期間にする(dateFrom, dateTo),
@@ -1207,7 +1241,7 @@ const AIChatBot = () => {
               // 2 つの期間の比べ（「最近的中率が落ちている人」）。差と並べ替えは chatStats の 二つの期間で比べる
               const 期間 = 比べる期間を決める(call.args);
               const タグ絞り = タグで絞った記録(call.args.tags);
-              const 結果 = 二つの期間で比べる(members, タグ絞り.記録たち, {
+              const 結果 = 二つの期間で比べる(数える顔ぶれ(), タグ絞り.記録たち, {
                 ...期間,
                 並び: call.args.sortBy,
                 最小射数: call.args.minShots,
@@ -1234,7 +1268,7 @@ const AIChatBot = () => {
             } else if (call.name === 'compareShotRanges') {
               // 1 本の列の前の射と後の射の比べ（「最初の 4 射と後半の 4 射」）
               const タグ絞り = タグで絞った記録(call.args.tags);
-              const 結果 = 射の前後で比べる(members, タグ絞り.記録たち, {
+              const 結果 = 射の前後で比べる(数える顔ぶれ(), タグ絞り.記録たち, {
                 期間: 期間にする(call.args.dateFrom, call.args.dateTo),
                 前: { から: call.args.firstFrom, まで: call.args.firstTo },
                 後: { から: call.args.secondFrom, まで: call.args.secondTo },
@@ -1266,21 +1300,25 @@ const AIChatBot = () => {
               const 引数 = call.args;
               const タグ絞り = タグで絞った記録(引数.tags);
               const 題絞り = 題で絞る(タグ絞り.記録たち, 引数.keyword);
-              const 結果 = 集計する(members, 題絞り.記録たち, {
-                切り口: 引数.groupBy,
-                期間: 期間にする(引数.dateFrom, 引数.dateTo),
-                性別: 引数.gender,
-                学年: 引数.grade,
-                名前たち: 引数.memberNames,
-                射目: { から: 引数.shotFrom, まで: 引数.shotTo },
-                射位たち: 引数.positions,
-                曜日たち: 引数.weekdays,
-                並び: 引数.sortBy,
-                向き: 引数.order,
-                最小射数: 引数.minShots,
-                件数: 引数.limit,
-                区分たち: useScoreStore.getState().divisions || [],
-              });
+              const 結果 = 集計する(
+                Array.isArray(引数.memberNames) && 引数.memberNames.length ? members : 数える顔ぶれ(),
+                題絞り.記録たち,
+                {
+                  切り口: 引数.groupBy,
+                  期間: 期間にする(引数.dateFrom, 引数.dateTo),
+                  性別: 引数.gender,
+                  学年: 引数.grade,
+                  名前たち: 引数.memberNames,
+                  射目: { から: 引数.shotFrom, まで: 引数.shotTo },
+                  射位たち: 引数.positions,
+                  曜日たち: 引数.weekdays,
+                  並び: 引数.sortBy,
+                  向き: 引数.order,
+                  最小射数: 引数.minShots,
+                  件数: 引数.limit,
+                  区分たち: useScoreStore.getState().divisions || [],
+                }
+              );
               functionResponses.push({
                 functionResponse: {
                   name: call.name,

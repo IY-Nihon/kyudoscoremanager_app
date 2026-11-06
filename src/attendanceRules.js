@@ -97,8 +97,10 @@ function 日付の文字(日付の元) {
  */
 /**
  * 現役か … 記録があるのに出欠の印が無い日を欠席にするかの見方。出席率の分母と同じ見方を渡す（A11。
- * 前は今の在籍で決めていて、前の年度を見ると卒業した人の欠席が少なく出た）。省くと今の在籍（src/gakunen.js の 現役か）
+ * 前は今の在籍で決めていて、前の年度を見ると卒業した人の欠席が少なく出た）。省くと今の在籍（src/gakunen.js の 現役か）。
+ * (部員, 日付) で呼ぶ。日付ごとに見たいとき（年度をまたぐ期間。AI の出欠の道具）は 2 つ目を使う
  */
+/** @param {(人: object, 日付?: string) => boolean} [現役か] */
 function その日の出欠(記録たち, 練習日, 部員, 日付, 今日, 現役か = (人) => 学.現役か(人 || {})) {
   const その日の記録 = (Array.isArray(記録たち) ? 記録たち : []).filter(
     (記録) => 日付の文字(記録 && 記録.date) === 日付
@@ -121,7 +123,7 @@ function その日の出欠(記録たち, 練習日, 部員, 日付, 今日, 現
   }
   if (状態 === 'none' && 練習日 && 練習日[日付]) {
     // 現役生のみ、記録がない場合に「欠席」とする（現役かは出席率の分母と同じ見方）
-    return 現役か(部員 || {}) ? 'absent' : 'none';
+    return 現役か(部員 || {}, 日付) ? 'absent' : 'none';
   }
   return 状態;
 }
@@ -135,9 +137,10 @@ function その日の出欠(記録たち, 練習日, 部員, 日付, 今日, 現
  * @param {Array<object>} 部員たち
  * @param {Array<object>} 記録たち
  * @param {Object<string, any>} 練習日
- * @param {{始め?: string, 終わり?: string, 今日?: string, 現役か?: (部員: object) => boolean}} [注文]
+ * @param {{始め?: string, 終わり?: string, 今日?: string, 現役か?: (部員: object, 日付?: string) => boolean}} [注文]
  *   始め・終わり … YYYY-MM-DD（含む）。省くと全部。今日 … 省くと端末の今日。
- *   現役か … 分母の決め方。省くと src/gakunen.js の 現役か
+ *   現役か … 分母の決め方。省くと src/gakunen.js の 現役か。分母を決めるときは日付なしで、欠席かを見るときは
+ *   その日の日付を添えて呼ぶ
  * @returns {Array<{部員: object, 出席: number, 遅刻: number, 早退: number, 欠席: number, 来た回数: number, 練習日数: number, 出席率: number}>}
  */
 function 練習日で数える(部員たち, 記録たち, 練習日, 注文) {
@@ -172,4 +175,31 @@ function 練習日で数える(部員たち, 記録たち, 練習日, 注文) {
   });
 }
 
-module.exports = { 射に出ているか, 出ていた部員たち, 日付の文字, その日の出欠, 練習日で数える };
+/**
+ * その年度に現役だったか（出欠の画面と AI の出欠の道具で同じ見方。A11）。
+ * 今も現役なら真。卒業・退部した人は、最後に現役だった年度（leftYear・前の形の graduationYear）までなら真。
+ * 年度の記録が無い卒業生は、期から卒業した年度を推し量る（今日の年度と今の 1 年生の期から。src/gakunen.js）
+ * @param {object} 部員
+ * @param {number} 年度の年 見ている年度（2026 年度なら 2026）
+ * @param {number|string} [今の一年生の期] 店の currentFreshmanTerm
+ * @param {Date} [今日]
+ */
+function その年度に現役だったか(部員, 年度の年, 今の一年生の期, 今日 = new Date()) {
+  if (!部員) return false;
+  if (学.現役か(部員)) return true;
+  const 最後の年度 = 部員.leftYear || 部員.graduationYear;
+  if (最後の年度) return 年度の年 <= 最後の年度;
+  if (学.卒業生か(部員) && 部員.termKi) {
+    return 年度の年 <= 学.卒業の年度(部員.termKi, 今の一年生の期, 学.年度(今日));
+  }
+  return false;
+}
+
+module.exports = {
+  射に出ているか,
+  出ていた部員たち,
+  日付の文字,
+  その日の出欠,
+  練習日で数える,
+  その年度に現役だったか,
+};
