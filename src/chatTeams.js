@@ -26,6 +26,7 @@
 'use strict';
 
 const { 全員の成績, 名前で選ぶ } = require('./chatStats');
+const 学 = require('./gakunen');
 
 const 寄せの射数 = 12;
 const 余りの種類 = ['足す', '別に', '少ない組'];
@@ -245,7 +246,9 @@ function 強い順に配る(人たち, 大きさ) {
  * @param {Array} 記録たち
  * @param {{期間?: {始め?: number, 終わり?: number}, 一組の人数: number, 外す?: string[], 余り?: string,
  *   目的?: string, 組の数?: number, だけ?: string[], 必ず入れる?: string[], 同じ組?: string[][],
- *   別の組?: string[][], 散らす?: string[]}} 注文
+ *   別の組?: string[][], 散らす?: string[], 現役だけ?: boolean}} 注文
+ *   現役だけ … 名前を挙げた人（だけ・必ず入れる・同じ組・別の組）のほかは現役だけで組む（A10。名簿には卒業・退部した人も
+ *   残っていて、組に入っていた）。名前は全員から引く
  */
 function 組を作る(部員たち, 記録たち, 注文) {
   const 設定 = 注文 || /** @type {any} */ ({});
@@ -255,21 +258,35 @@ function 組を作る(部員たち, 記録たち, 注文) {
   const 組の数の指定 = Math.floor(Number(設定.組の数) || 0) > 0 ? Math.floor(Number(設定.組の数)) : null;
   const 人たち = (Array.isArray(部員たち) ? 部員たち : []).filter((人) => 人 && 人.name);
 
-  // 名前で選ぶ（同じ名前が 2 人以上・見つからないは、そのまま伝える）
+  // 名前で選ぶ（同じ名前が 2 人以上・見つからないは、そのまま伝える）。同じ名前を何度引いても 1 回ぶんだけ伝える
   const 見つからない = [];
   const 迷った = [];
+  const 引いた名 = new Map();
   const 選ぶ = (名) => {
+    if (引いた名.has(名)) return 引いた名.get(名);
     const { 人, 候補 } = 名前で選ぶ(人たち, 名);
-    if (人) return 人;
-    if (候補.length > 1) 迷った.push({ 名前: 名, 候補: 候補.map((候) => 候.name) });
-    else 見つからない.push(名);
-    return null;
+    if (!人) {
+      if (候補.length > 1) 迷った.push({ 名前: 名, 候補: 候補.map((候) => 候.name) });
+      else 見つからない.push(名);
+    }
+    引いた名.set(名, 人 || null);
+    return 人 || null;
   };
   const 名前の並び = (値) => (Array.isArray(値) ? 値.map(String).filter(Boolean) : []);
   const 外す人 = new Set(名前の並び(設定.外す).map(選ぶ).filter(Boolean));
   const だけ = 名前の並び(設定.だけ);
   const だけの人 = だけ.length ? new Set(だけ.map(選ぶ).filter(Boolean)) : null;
-  const 入れる人 = 人たち.filter((人) => !外す人.has(人) && (!だけの人 || だけの人.has(人)));
+  const 組の名前 = (値) => (Array.isArray(値) ? 値 : []).flatMap((組) => 名前の並び(組));
+  const 名を挙げた人 = new Set(
+    [...名前の並び(設定.必ず入れる), ...組の名前(設定.同じ組), ...組の名前(設定.別の組)]
+      .map(選ぶ)
+      .filter(Boolean)
+  );
+  const 入れる人 = 人たち.filter(
+    (人) =>
+      !外す人.has(人) &&
+      (だけの人 ? だけの人.has(人) : !設定.現役だけ || 学.現役か(人) || 名を挙げた人.has(人))
+  );
 
   const 期間の成績 = 全員の成績(入れる人, 記録たち, { 期間: 設定.期間, 最小射数: 0 }).一覧;
   const 全期間の成績 = 全員の成績(入れる人, 記録たち, { 最小射数: 0 }).一覧;

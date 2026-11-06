@@ -26,7 +26,7 @@ const { getShadowStyle } = require('./shadowStyle');
 const { db } = require('./db');
 const firestore = require('firebase/firestore');
 // 出欠の自動判定。交代で入った人も数えるため、決まりは切り出してある
-const { 日付の文字, その日の出欠, 練習日で数える } = require('./attendanceRules');
+const { 日付の文字, その日の出欠, 練習日で数える, その年度に現役だったか } = require('./attendanceRules');
 const 予 = require('./yoteihyou');
 // Web-safe lazy imports to prevent null.default crash on web
 var _docPickerModule = null;
@@ -154,8 +154,13 @@ const AttendanceScreen = () => {
   const getAttendanceStatus = (dateStr, memberId) => {
     const member = members.find((部員) => String(部員.id) === String(memberId));
     // 欠席かは、出席率と同じく「見ている年度に現役だったか」で見る（A11）
-    return その日の出欠(sessions, practiceDays, member || { id: memberId, grade: 99 }, dateStr, todayStr, (人) =>
-      member ? isActiveInYear(人) : 学.現役か(人 || {})
+    return その日の出欠(
+      sessions,
+      practiceDays,
+      member || { id: memberId, grade: 99 },
+      dateStr,
+      todayStr,
+      (人) => (member ? isActiveInYear(人) : 学.現役か(人 || {}))
     );
   };
   const filteredPracticeDays = Object.keys(practiceDays)
@@ -174,21 +179,10 @@ const AttendanceScreen = () => {
     })
     .sort((甲, 乙) => 乙.localeCompare(甲));
   // その年度に現役だったか（留年等も考慮）。出席率の分母を「期間の練習日数」にするかどうか
-  const isActiveInYear = (部員) => {
-    if (学.現役か(部員)) return true; // 現在現役なら基本真
-    // 卒業・退部した年度（現役だった最後の年度）が記録されていれば、表示年度がそれ以前なら現役扱い。
-    // graduationYear は前の形の卒業年度
-    const 最後の年度 = 部員.leftYear || 部員.graduationYear;
-    if (最後の年度) return currentFiscalYear <= 最後の年度;
-    if (学.卒業生か(部員) && 部員.termKi) {
-      // 記録がない場合の救済：期から卒業した年度を推測する（今日の年度と今の 1 年生の期から。src/gakunen.js）
-      const 今日 = new Date();
-      const 今日の年度 = 学.年度(今日);
-      const 卒業年度 = 学.卒業の年度(部員.termKi, useScoreStore.getState().currentFreshmanTerm, 今日の年度);
-      return currentFiscalYear <= 卒業年度;
-    }
-    return false;
-  };
+  // 卒業・退部した人は、最後に現役だった年度（無ければ期から推し量る）までなら現役扱い。AI の出欠の道具と同じ見方
+  // （src/attendanceRules.js の その年度に現役だったか）
+  const isActiveInYear = (部員) =>
+    その年度に現役だったか(部員, currentFiscalYear, useScoreStore.getState().currentFreshmanTerm);
   // 表示している期間の練習日だけで数える（練習日で数える は日付の範囲で絞るので、絞った練習日をそのまま渡す）
   const 絞った練習日 = Object.fromEntries(filteredPracticeDays.map((日) => [日, practiceDays[日]]));
   // 区分で絞るのは人だけ（出席率の分母の練習日は同じ）
@@ -364,7 +358,11 @@ const AttendanceScreen = () => {
     } catch (誤り) {
       console.error(誤り);
       保存の誤りを伝える(誤り);
-      予定表のあとを残す({ 段階: '保存', 結果: '失敗', 誤り: String((誤り && 誤り.message) || 誤り).slice(0, 300) });
+      予定表のあとを残す({
+        段階: '保存',
+        結果: '失敗',
+        誤り: String((誤り && 誤り.message) || 誤り).slice(0, 300),
+      });
     } finally {
       setLoadingMsg(null);
     }
