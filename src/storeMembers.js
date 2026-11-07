@@ -51,8 +51,14 @@ const 逆引きの印 = (団体, 部員たち, 削除の控え) =>
 async function 逆引き表を読む(団体) {
   const 返り = await Firestore.getDocs(Firestore.collection(Firebaseの器.db, `groups/${団体}/member_lookup`));
   const 行たち = [];
-  返り.forEach((文書) => 行たち.push(Object.assign({}, 文書.data() || {}, { 個人ID: 文書.id, ref: 文書.ref })));
-  return { 行たち, 雲から: 雲から読んだか(返り) };
+  // 消した印の行（個人ID.消した行）は無いものとして扱う。番号は使用済みとして残す（同じ番号を配り直さない）
+  const 使った番号 = [];
+  返り.forEach((文書) => {
+    使った番号.push(文書.id);
+    if (個人ID.生きている行か(文書.data()))
+      行たち.push(Object.assign({}, 文書.data() || {}, { 個人ID: 文書.id, ref: 文書.ref }));
+  });
+  return { 行たち, 使った番号, 雲から: 雲から読んだか(返り) };
 }
 
 /** 逆引き表の行から 個人IDの表（memberId → 個人ID）を作る。招待の合言葉は入れない。同じ人に 2 つあれば 6 字を選ぶ */
@@ -66,13 +72,6 @@ function 個人IDの表を作る(行たち) {
   return 表;
 }
 
-/** 名簿・卒業生の手元の写しから personalId を外す（雲の文書から消したあと。前の版が置いたもの） */
-const 個人IDを外す = (人) => {
-  if (!人 || !('personalId' in 人)) return 人;
-  const 写し = Object.assign({}, 人);
-  delete 写し.personalId;
-  return 写し;
-};
 
 /** メンバー（卒業生も）を雲へ書く形にする。雲には「同期済み」として書く（記録と同じ） */
 const 雲へ送る人 = (人) =>
@@ -256,7 +255,9 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
             if (記録.lastModified !== 元の一覧[番].lastModified) {
               // 雲には同期済みの形で送る。端末の中だけの印（未同期・消して送る途中）を持ち込むと、ほかの端末が
               // 「送れていない記録」と思って送り直し、消したはずの記録が戻ることがあった（A5）
-              const 雲の形 = Object.assign({}, 記録, { syncStatus: 置き場 === 'trash' ? 'trashed' : '同期済み' });
+              const 雲の形 = Object.assign({}, 記録, {
+                syncStatus: 置き場 === 'trash' ? 'trashed' : '同期済み',
+              });
               delete 雲の形.pendingDelete;
               const 送る中身 = 雲へ書く記録(JSON.parse(JSON.stringify(雲の形)));
               送る中身.lastModified = Firestore.serverTimestamp();
@@ -334,8 +335,9 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
           // その人の個人ID の行も名指しで消す。逆引き表の整理は、名簿が空に見えるときは行を消さないので、
           // 最後の 1 人を消したときに残ってしまう
           消す個人ID
-            ? Firestore.deleteDoc(
-                Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/member_lookup`, 消す個人ID)
+            ? Firestore.setDoc(
+                Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/member_lookup`, 消す個人ID),
+                個人ID.消した行()
               )
             : null,
           // その人の招待リンクを取り消す（名簿が空になっても残らないよう名指しで）
@@ -383,9 +385,12 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
         const 消す =
           (外れた人.has(行.memberId) && !今いる部員.has(行.memberId)) ||
           // 同じ人のもう 1 つの個人ID（振り直す前の古い ID が残っていた）
-          (行.招待 !== true && 今いる部員.has(行.memberId) && 表[行.memberId] && 表[行.memberId] !== 行.個人ID);
+          (行.招待 !== true &&
+            今いる部員.has(行.memberId) &&
+            表[行.memberId] &&
+            表[行.memberId] !== 行.個人ID);
         if (消す) {
-          一括.delete(行.ref);
+          一括.set(行.ref, 個人ID.消した行());
           件数++;
         } else 残る行.push(行);
       }
@@ -499,30 +504,40 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
    *   全員を替える … 6 字の人も替える（漏れた ID を配り直すため。2026-11-04）
    * 逆引き表を雲から読めたときだけ振る（前は開いた直後・雲を読まずに済ませた同期でも、端末の古い名簿で
    * 名簿の文書を merge なしで書き、ほかの端末の直しを戻したり、配った ID を別の乱数に替えたりした。A1）。
-   * 前の版が名簿の文書に置いた personalId は、逆引き表に無ければ足してから、名簿の文書から消す（移し替え。C）。
+   * 前の版が名簿の文書に置いた personalId は、逆引き表に無ければ足す（名簿の文書から消すのは運営の台本。C）。
    * 替えた人の前の ID は逆引き表から消えるので、その場で使えなくなる（入っている端末はそのまま）
-   * @returns {Promise<Array<{id: string, 名前: string, 個人ID: string}>>} 振った・替えた人
+   * @returns {Promise<Array<{id: string, 名前: string, 個人ID: string}>>} 振った・替えた人。替える注文のときは失敗で投げる
    */
   ensurePersonalIds: async (古い桁も替える = false, 全員を替える = false) => {
     const 団体 = 状態().activeGroupId;
+    // 「全員の個人IDを新しくする」から呼ばれたとき（替える注文があるとき）は、失敗を空の一覧で返さず投げる
+    // （前は失敗しても「替える人はいません」と出て、済んだと思わせた。レビューの指摘 6）。裏で呼ぶときは黙って次に回す
+    const 頼まれた = 古い桁も替える || 全員を替える;
+    const 失敗 = (文) => {
+      if (頼まれた) throw new Error(文);
+      return [];
+    };
     // 逆引き表を読み書きできるのは団体アカウントだけ
-    if (!団体 || 状態().activeRole !== 'group') return [];
+    if (!団体 || 状態().activeRole !== 'group') return 失敗('団体でログインしているときだけ使えます');
     if (!(await waitForDb())) {
       console.warn('[Store] ensurePersonalIds: db still undefined after await, aborting');
-      return [];
+      return 失敗('準備ができていません。少し待ってからもう一度お試しください');
     }
     let 行たち;
+    let 読んだの番号;
     try {
       const 読んだ = await 逆引き表を読む(団体);
-      if (!読んだ.雲から) return [];
+      if (!読んだ.雲から)
+        return 失敗('いまの個人IDを読めませんでした。電波の良い場所でもう一度お試しください');
       行たち = 読んだ.行たち;
+      読んだの番号 = 読んだ.使った番号;
     } catch (誤り) {
       console.warn('[Store] ensurePersonalIds: 逆引き表を読めませんでした', 誤り && 誤り.message);
-      return [];
+      return 失敗('いまの個人IDを読めませんでした。電波の良い場所でもう一度お試しください');
     }
-    if (状態().activeGroupId !== 団体) return [];
+    if (状態().activeGroupId !== 団体) return 失敗('ログインしている団体が変わりました');
     const 表 = 個人IDの表を作る(行たち);
-    const 使っている = new Set(行たち.map((行) => 行.個人ID));
+    const 使っている = new Set([...行たち.map((行) => 行.個人ID), ...(読んだの番号 || [])]);
     const 部員たち = (状態().members || []).filter((部員) => 部員 && 部員.id);
     const 一括 = Firestore.writeBatch(Firebaseの器.db);
     let 件数 = 0;
@@ -530,6 +545,7 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
     const 置く = (memberId, 新しいID) => {
       一括.set(Firestore.doc(Firebaseの器.db, `groups/${団体}/member_lookup`, 新しいID), {
         memberId,
+        形: 個人ID.逆引きの形,
         // Date で置く（管理画面で日時として読める。読むのは人だけ）
         updatedAt: new Date(),
       });
@@ -552,7 +568,7 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
       if (!替える) continue;
       const 新しいID = 個人ID.個人IDを作る([...使っている]);
       if (今のID && 使っている.has(今のID)) {
-        一括.delete(Firestore.doc(Firebaseの器.db, `groups/${団体}/member_lookup`, 今のID));
+        一括.set(Firestore.doc(Firebaseの器.db, `groups/${団体}/member_lookup`, 今のID), 個人ID.消した行());
         件数++;
       }
       置く(部員.id, 新しいID);
@@ -563,36 +579,14 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
         await 一括.commit();
       } catch (誤り) {
         console.error('[Store] 個人IDを書けませんでした:', 誤り);
-        return [];
+        return 失敗('新しい個人IDを書き込めませんでした。何も替わっていません。もう一度お試しください');
       }
       console.log(`Ensured personal IDs: ${振った.length} assigned`);
     }
     if (状態().activeGroupId === 団体) 書く({ 個人IDの表: Object.assign({}, 表) });
-    // 移し替えの仕上げ：名簿・卒業生の文書から personalId を消す（逆引き表に載ったあと）。手元の写しからも外す。
-    // 消せなくても次にまた試す（決まりは消すのを通す。足す・変えるは断る）
-    const 消す人 = [
-      ...(状態().members || []).filter((人) => 人 && 人.id && 'personalId' in 人).map((人) => ['members', 人.id]),
-      ...(状態().alumni || []).filter((人) => 人 && 人.id && 'personalId' in 人).map((人) => ['alumni', 人.id]),
-    ];
-    if (消す人.length && typeof Firestore.deleteField === 'function') {
-      const 消す一括 = Firestore.writeBatch(Firebaseの器.db);
-      for (const [置き場, id] of 消す人.slice(0, 400))
-        消す一括.update(Firestore.doc(Firebaseの器.db, `groups/${団体}/${置き場}`, id), {
-          personalId: Firestore.deleteField(),
-          // 更新日時も進める（ほかの端末が、個人ID の残った手元の写しより雲の写しを新しいと見て取り込む）
-          lastModified: Firestore.serverTimestamp(),
-        });
-      try {
-        await 消す一括.commit();
-        const 外した = new Set(消す人.slice(0, 400).map(([, id]) => id));
-        書く((前) => ({
-          members: (前.members || []).map((人) => (人 && 外した.has(人.id) ? 個人IDを外す(人) : 人)),
-          alumni: (前.alumni || []).map((人) => (人 && 外した.has(人.id) ? 個人IDを外す(人) : 人)),
-        }));
-      } catch (誤り) {
-        console.warn('[Store] 名簿の文書から個人IDを消せませんでした（次にまた試す）:', 誤り && 誤り.message);
-      }
-    }
+    // 名簿・卒業生の文書に残っている personalId は、ここでは消さない（2026-11-07。レビューの指摘 1）。
+    // 前の版の端末（開いたままのタブ）は名簿に個人ID が無いのを見ると、逆引き表を作り直して全員の ID を消した。
+    // 消すのは、決まりを配って前の版が書けなくなってから、運営の台本（scripts/migrate-personal-ids.mjs）で
     await 状態().syncMemberLookup();
     return 振った;
   },

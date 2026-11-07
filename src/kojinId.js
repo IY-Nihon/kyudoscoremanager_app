@@ -38,7 +38,8 @@ const 個人IDの形か = (id) => typeof id === 'string' && (新しい形.test(i
  */
 function 個人IDを作る(使っている = [], 乱数源) {
   const 乱数 = 乱数源 || (typeof globalThis !== 'undefined' ? globalThis.crypto : undefined);
-  if (!乱数 || typeof 乱数.getRandomValues !== 'function') throw new Error('この端末では個人IDを作れません（乱数を用意できません）');
+  if (!乱数 || typeof 乱数.getRandomValues !== 'function')
+    throw new Error('この端末では個人IDを作れません（乱数を用意できません）');
   const 使用中 = new Set(使っている);
   for (let 回 = 0; 回 < 100; 回++) {
     const 桶 = new Uint8Array(長さ);
@@ -51,4 +52,29 @@ function 個人IDを作る(使っている = [], 乱数源) {
   throw new Error('個人IDを作れませんでした');
 }
 
-module.exports = { 使う字, 長さ, 新しい形, 古い形, 古い形を使える終わり, 古い形を使えるか, 使える個人IDか, 個人IDの形か, 個人IDを作る };
+/**
+ * 逆引き表（groups/{団体}/member_lookup/{鍵}）の行の形（2026-11-07。レビューの指摘 1）。
+ * 新しい版は行に 形: 2 を付け、行を消さずに「消した」印に書き換える。決まり（firestore.rules）は 形 の無い書き込みと
+ * 端末からの削除を断る。前の版の端末（開いたままのタブ）は、名簿に個人ID が無いのを見ると逆引き表の行を全部消して
+ * 作り直したので、その書き込みを一括ごと断って壊させない
+ */
+const 逆引きの形 = 2;
+/** 消した行（読む側は無いものとして扱う） */
+const 消した行 = () => ({ memberId: '', 消した: true, 形: 逆引きの形, updatedAt: new Date() });
+/** 使える行か（消した印・memberId の無い行は無いものとして扱う） */
+const 生きている行か = (中身) => !!(中身 && 中身.消した !== true && 中身.memberId);
+
+module.exports = {
+  逆引きの形,
+  消した行,
+  生きている行か,
+  使う字,
+  長さ,
+  新しい形,
+  古い形,
+  古い形を使える終わり,
+  古い形を使えるか,
+  使える個人IDか,
+  個人IDの形か,
+  個人IDを作る,
+};

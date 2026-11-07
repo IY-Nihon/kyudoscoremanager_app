@@ -104,7 +104,7 @@ for (const 団体 of 団体たち) {
       書き込み.push({
         update: {
           name: `${文書の根}/groups/${団体}/member_lookup/${id}`,
-          fields: { memberId: { stringValue: 番号(d) }, updatedAt: { timestampValue: new Date().toISOString() } },
+          fields: { memberId: { stringValue: 番号(d) }, 形: { integerValue: '2' }, updatedAt: { timestampValue: new Date().toISOString() } },
         },
         currentDocument: { exists: false },
       });
