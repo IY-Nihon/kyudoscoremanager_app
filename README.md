@@ -279,8 +279,8 @@ Identity Platform が要るので無料版では使えない）。
    アプリ → 「トークンの有効期間」を延ばして（例 1 日）判定の数を減らす
 3. Firebase コンソールの App Check → API で、Realtime Database を「適用」。数日見て困りごとが無ければ Firestore も
 4. 中継の `wrangler.toml` の `APPCHECK_MODE` を `enforce` にして配る
-5. 戻すときは、コンソールで「適用」を外す（すぐ効く）。印が取れない端末には、入り直しの窓の代わりに
-   「この端末の確かめに失敗しました」と出る（src/ReloginModal.js）
+5. 戻すときは、コンソールで「適用」を外す（すぐ効く）。印が取れない端末には、入り直しの窓の下に
+   「入り直しても直らないときは、ブラウザを新しくして読み込み直してください」と「読み込み直す」が出る（src/ReloginModal.js）
 
 単体は push のたびに GitHub Actions の「検査」でも流れる。画面と雲を通す E2E（Playwright。3 機種）は時間がかかるので、配信の前に流す。
 
