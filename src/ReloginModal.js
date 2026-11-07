@@ -143,28 +143,10 @@ const 入り直しの窓 = () => {
           keyboardShouldPersistTaps="handled"
         >
           <View style={[styles.箱, 低い && styles.箱_低い]} testID="入り直しの窓">
-            <Text style={[styles.見出し, 低い && { marginBottom: 4 }]}>
-              {印が取れていない ? 'この端末の確かめに失敗しました' : 'ログインし直してください'}
-            </Text>
-            {印が取れていない ? (
-              <Text style={[styles.説明, 低い && { marginBottom: 4 }]}>
-                ブラウザを新しくして、読み込み直してください。この端末の記録はそのまま残っています（読み込み直しても消えません）。
-              </Text>
-            ) : null}
-            {印が取れていない ? (
-              <Pressable
-                style={[styles.ボタン, 低い && styles.ボタン_低い]}
-                onPress={() => {
-                  try {
-                    window.location.reload();
-                  } catch {
-                    /* 読み込み直せない端末では、閉じて開き直してもらう */
-                  }
-                }}
-              >
-                <Text style={styles.ボタンの字}>読み込み直す</Text>
-              </Pressable>
-            ) : null}
+            {/* 見出しはいつも同じ。App Check の印が取れていないときも、まず入り直してもらう（強制していない今は、
+                印が無くても入り直せば使える。印を 1 回取り損ねただけで「確かめに失敗」と出すと、ふつうに
+                ログインが切れた人まで迷わせた。2026-11-07 本人） */}
+            <Text style={[styles.見出し, 低い && { marginBottom: 4 }]}>ログインし直してください</Text>
             <Text style={[styles.説明, 低い && { marginBottom: 4 }]}>
               {四桁が終わった
                 ? '4桁の個人IDは使えなくなりました。団体の担当者から新しい個人ID（大文字と数字の6字）を受け取って入れてください。この端末の記録はそのまま残っています。'
@@ -201,6 +183,28 @@ const 入り直しの窓 = () => {
             >
               <Text style={styles.ボタンの字}>{作業中 ? 'ログインしています…' : 'ログインし直す'}</Text>
             </Pressable>
+            {/* 印が取れていないときだけ添える（App Check を強制すると、印が無いと入り直しても断られる。H3）。
+                「ログインし直す」の下に置く。上に置くと窓を開いたときの焦点がこのボタンに当たり、Enter で読み込み直した */}
+            {印が取れていない ? (
+              <View style={[styles.添え書き, 低い && { marginTop: 8, paddingVertical: 6 }]} testID="読み込み直しの添え書き">
+                <Text style={styles.添え書きの字}>
+                  入り直しても直らないときは、ブラウザを新しくして読み込み直してください。
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  style={styles.添え書きのボタン}
+                  onPress={() => {
+                    try {
+                      window.location.reload();
+                    } catch {
+                      /* 読み込み直せない端末では、閉じて開き直してもらう */
+                    }
+                  }}
+                >
+                  <Text style={styles.添え書きのボタンの字}>読み込み直す</Text>
+                </Pressable>
+              </View>
+            ) : null}
             <Pressable style={[styles.あとで, 低い && { paddingVertical: 8, marginTop: 2 }]} onPress={あとで}>
               <Text style={styles.あとでの字}>あとで（記録は続けられます）</Text>
             </Pressable>
@@ -221,6 +225,24 @@ const styles = StyleSheet.create({
   ボタン_低い: { paddingVertical: 9, marginTop: 8 },
   見出し: { fontSize: 18, fontWeight: 'bold', color: 色.文字, marginBottom: 10, textAlign: 'center' },
   説明: { fontSize: 14, color: 色.文字_二, lineHeight: 20, marginBottom: 12 },
+  添え書き: {
+    backgroundColor: 色.地,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginTop: 14,
+  },
+  添え書きの字: { fontSize: 13, color: 色.文字_二, lineHeight: 19 },
+  添え書きのボタン: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 色.青,
+  },
+  添え書きのボタンの字: { fontSize: 13, color: 色.青, fontWeight: 'bold' },
   ラベル: { fontSize: 13, color: 色.文字_二, marginBottom: 4, marginTop: 6 },
   固定の欄: { backgroundColor: 色.地, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 12 },
   固定の字: { fontSize: 15, color: 色.文字_二 },
