@@ -30,6 +30,13 @@ const firestore = (() => {
   try {
     return Firestore.initializeFirestore(firebaseApp, {
       localCache: Firestore.persistentLocalCache({ tabManager: Firestore.persistentMultipleTabManager() }),
+      // 検証環境の束だけ、Firestore の通信を毎回つなぎ直す形（ロングポーリング）に固定する（2026-11-07）。
+      // E2E の iPhone（Playwright の WebKit）では、入り直し（管理者モードのパスワードの確かめ）のあとに張り直した
+      // 流しっぱなしの道へ返事が届かなくなり、招待リンクの欄などが「確かめています…」で止まった（5 回中 5 回。
+      // 固定すると 3 回とも通った）。本物の Safari で起きるかは確かめていないので、本番の束は既定のまま
+      ...(process.env.EXPO_PUBLIC_FIRESTORE_LONG_POLLING === '1' && 設定.projectId === 'kyudoscoremanager-stg'
+        ? { experimentalForceLongPolling: true }
+        : {}),
     });
   } catch (err) {
     // すでに作られている（読み込みが二重になった）ときや、
