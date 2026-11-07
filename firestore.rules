@@ -271,8 +271,14 @@ service cloud.firestore {
       // 個人ID→memberId の逆引き。読み書きは団体の持ち主だけ（H1・2026-11-04）。
       // 部員が入るときに引くのは中継（サービスアカウント）。前は匿名の口座なら誰でも 1 件ずつ引けたので、
       // 個人ID が合っているかを回数の上限なしに試せた（SEC-6 の list の禁止はそのまま）
+      // 書くのは新しい版の形（形 == 2）だけ。端末からは消させない（消すときは「消した」印に書き換える。src/kojinId.js）。
+      // 前の版の端末（開いたままのタブ）は、名簿に個人ID が無いのを見ると行を全部消して作り直し、全員が入れなくなった
+      // （2026-11-07 のレビュー）。消せるのは団体を消す途中だけ（写しの deleted_accounts/{団体} を先に書く。src/accountDeletion.js）
       match /member_lookup/{personalId} {
-        allow read, write: if isGroupOwner(groupId);
+        allow read: if isGroupOwner(groupId);
+        allow create, update: if isGroupOwner(groupId) && request.resource.data.get('形', 0) == 2;
+        allow delete: if isGroupOwner(groupId)
+          && exists(/databases/$(database)/documents/deleted_accounts/$(groupId));
       }
 
       // 部員（個人ログイン）が書けるのは、記録を作る・直すと、自分の名簿の弓具だけ。記録を消す・名簿を作る・消す・

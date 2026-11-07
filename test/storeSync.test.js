@@ -536,7 +536,7 @@ test('逆引き表：個人ID の無い人に 6 字の ID を逆引き表に振�
   assert.deepStrictEqual(store.getState().個人IDの表, { 'mem-1': 個人ID });
 });
 
-test('移し替え：名簿の文書に残っている個人ID は、逆引き表に載せて（無ければ足す）から名簿の文書から消す', async () => {
+test('移し替え：名簿の文書に残っている個人ID は逆引き表に載せる（無ければ足す）。名簿の文書からは消さない（運営の台本で消す）', async () => {
   const { store, 雲 } = 用意();
   const 名簿 = [
     { id: 'mem-1', name: '部員1', personalId: '1234', lastModified: 1 },
@@ -554,9 +554,11 @@ test('移し替え：名簿の文書に残っている個人ID は、逆引き�
   assert.deepStrictEqual(振った, [], '持っている人の ID を替えた');
   assert.deepStrictEqual(雲.中身(逆引きの道), ['1234', 'K7MP3X'], '残っていた ID を逆引き表に足していない');
   assert.equal(雲.値(逆引きの道, '1234').memberId, 'mem-1');
-  for (const id of ['mem-1', 'mem-2']) assert.ok(!('personalId' in 雲.値(メンバーの道, id)), `${id} の名簿の文書に個人ID が残った`);
-  assert.ok(!('personalId' in 雲.値(`groups/${団体}/alumni`, 'alu-1')), '卒業生の文書に個人ID が残った');
-  assert.ok(store.getState().members.every((m) => !('personalId' in m)), '手元の名簿に個人ID が残った');
+  // 名簿の文書の個人ID は、アプリでは消さない。消すと、前の版の端末（開いたままのタブ）が名簿に個人ID が無いのを見て
+  // 逆引き表を作り直し、全員の ID を消した（2026-11-07 のレビュー）。消すのは決まりを配ったあとの scripts/migrate-personal-ids.mjs
+  for (const id of ['mem-1', 'mem-2']) assert.ok('personalId' in 雲.値(メンバーの道, id), `${id} の名簿の文書から個人ID を消した`);
+  // 新しく書いた行には、新しい版の印が付く（決まりは印の無い書き込みを断る）
+  assert.equal(雲.値(逆引きの道, '1234').形, 2, '逆引き表の行に 形: 2 が無い');
   assert.deepStrictEqual(store.getState().個人IDの表, { 'mem-1': '1234', 'mem-2': 'K7MP3X' });
 });
 
@@ -1250,4 +1252,18 @@ test('個人ID：全員を新しくすると、4 桁の人は 6 字になり、�
   assert.notEqual(store.getState().個人IDの表['mem-2'], 'K7MP3X');
   assert.ok(!雲.中身(逆引きの道).includes('K7MP3X'), '前の 6 字が残っている');
   assert.equal(雲.中身(逆引きの道).length, 2);
+});
+
+test('個人ID：「全員を新しくする」で書き込めなかったら、空の一覧でなく失敗として伝える（済んだと思わせない）', async () => {
+  const { store, 雲 } = 用意();
+  雲.置く(メンバーの道, 'mem-1', { id: 'mem-1', name: '部員1', lastModified: 1 });
+  雲.置く(逆引きの道, '1234', { memberId: 'mem-1', 形: 2 });
+  store.setState({ members: [{ id: 'mem-1', name: '部員1', lastModified: 1 }] });
+  雲.状態.失敗させる = true;
+  await assert.rejects(store.getState().ensurePersonalIds(true, false), /読めませんでした|書き込めませんでした/);
+  雲.状態.失敗させる = false;
+  // 裏で呼ぶとき（替える注文なし）は投げずに次に回す
+  雲.状態.失敗させる = true;
+  assert.deepStrictEqual(await store.getState().ensurePersonalIds(), []);
+  雲.状態.失敗させる = false;
 });

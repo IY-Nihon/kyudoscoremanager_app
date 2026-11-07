@@ -183,7 +183,9 @@ async function メールで団体に入る(道具, メール, 合言葉) {
   const 帳面 = 返り && 返り.docs && 返り.docs[0];
   if (!帳面) {
     await FirebaseAuth.signOut(auth).catch(() => {});
-    throw new Error('このメールアドレスの団体が見つかりません。団体ID（6 桁の数字）とパスワードでお入りください');
+    throw new Error(
+      'このメールアドレスの団体が見つかりません。団体ID（6 桁の数字）とパスワードでお入りください'
+    );
   }
   const 中身 = 帳面.data() || {};
   return { id: 中身.id || 帳面.id, 公開の団体ID: 帳面.id, メール: 中身.email || 認証のメール };
@@ -212,14 +214,20 @@ async function 切り替えを頼む(道具, 団体ID, 合言葉, 新しいメ�
   }
   // 使い捨てのアドレスへは切り替えられない（決まりも仕上げを止める。確認のメールを送る前に断る）
   if (await require('./suteMail').使い捨てか確かめる(道具, 宛先))
-    throw new Error('使い捨てのメールアドレスには切り替えられません。ふだん使うメールアドレスを入れてください');
+    throw new Error(
+      '使い捨てのメールアドレスには切り替えられません。ふだん使うメールアドレスを入れてください'
+    );
   const 入った = await FirebaseAuth.signInWithEmailAndPassword(auth, email, 合言葉);
   try {
     // 先に帳面へ書く。確認のリンクが開かれたあと、ログインがこのアドレスで入り直せるように。
     // 頼んだ口座の番号（pendingUid）も添える。切り替えの途中は、決まりがこの口座か確認の済んだ口座しか
     // 持ち主として通さない（空いたアドレスで後から作った口座に乗っ取られないように。firestore.rules の sameOwnerAccount）
     try {
-      await Firestore.setDoc(帳面の場所, { pendingEmail: 宛先, pendingUid: 入った.user.uid }, { merge: true });
+      await Firestore.setDoc(
+        帳面の場所,
+        { pendingEmail: 宛先, pendingUid: 入った.user.uid },
+        { merge: true }
+      );
     } catch (書けない) {
       if (String((書けない && 書けない.code) || '').includes('permission-denied'))
         throw new Error(
@@ -324,7 +332,8 @@ async function 部員として入る(
   // 匿名の利用者を作る前に、理由を言って断る（帳面は誰でも読める。読めないときは進めて、決まりに任せる）
   const 確 = require('./mailKakunin');
   // 今ある団体は猶予のあいだ入れる（決まりも同じ）
-  if ((await 確.団体の確認は済んだか(道具, 団体の鍵)) === false && !確.猶予中か(道具.今)) throw new Error(確.団体がまだの文);
+  if ((await 確.団体の確認は済んだか(道具, 団体の鍵)) === false && !確.猶予中か(道具.今))
+    throw new Error(確.団体がまだの文);
   // すでに匿名で入っている端末（入り直しの窓）では、signInAnonymously は今の口座をそのまま返す
   const 前の人 = auth.currentUser;
   await FirebaseAuth.signInAnonymously(auth);
@@ -358,7 +367,9 @@ async function 引いて証を書く(道具, 団体の鍵, 鍵, 見つからな�
   const 逆引き = await 何度か送る(() =>
     Firestore.getDoc(Firestore.doc(db, `groups/${団体の鍵}/member_lookup`, 鍵))
   );
-  if (!逆引き.exists()) throw new Error(見つからないとき);
+  // 消した印の行（src/kojinId.js の 消した行）は無いものとして扱う
+  if (!逆引き.exists() || !require('./kojinId').生きている行か(逆引き.data()))
+    throw new Error(見つからないとき);
   // 招待リンクの期限（決まりでも止めるが、先に分かる理由で知らせる）
   if (招待の期限切れか(逆引き.data())) throw new Error(期限切れのとき);
   const { memberId } = 逆引き.data();

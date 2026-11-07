@@ -308,8 +308,18 @@ function 偽Firestore() {
     記録,
     通知,
     /** クラウドの中身を覗く */
-    中身: (道) => [...取り出す(道).keys()].sort(),
-    値: (道, id) => 取り出す(道).get(id),
+    // 逆引き表（member_lookup）は、アプリが行を消す代わりに「消した」印に書き換える（src/kojinId.js の 消した行）。
+    // 読む側と同じく、消した印の行は無いものとして見せる。印そのものを確かめるときは 生の値
+    中身: (道) =>
+      [...取り出す(道).entries()]
+        .filter(([, 値]) => !(/member_lookup$/.test(道) && 値 && 値.消した === true))
+        .map(([id]) => id)
+        .sort(),
+    値: (道, id) => {
+      const 値 = 取り出す(道).get(id);
+      return /member_lookup$/.test(道) && 値 && 値.消した === true ? undefined : 値;
+    },
+    生の値: (道, id) => 取り出す(道).get(id),
     置く: (道, id, 値) => 取り出す(道).set(id, 値),
     消す: (道, id) => 取り出す(道).delete(id),
   };

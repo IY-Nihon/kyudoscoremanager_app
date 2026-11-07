@@ -149,10 +149,11 @@ async function 招待を作り直す(道具, 団体, memberId, 選び = {}) {
   const 期限 = 今 + 招待の期限の日数 * 86400000;
   const 一括 = Firestore.writeBatch(db);
   if (前の合言葉 && 前の合言葉 !== 合言葉)
-    一括.delete(Firestore.doc(db, `groups/${団体}/member_lookup`, 前の合言葉));
+    一括.set(Firestore.doc(db, `groups/${団体}/member_lookup`, 前の合言葉), require('./kojinId').消した行());
   一括.set(Firestore.doc(db, `groups/${団体}/member_lookup`, 合言葉), {
     memberId,
     招待: true,
+    形: require('./kojinId').逆引きの形,
     // Date で置く（管理画面で日時として読める。決まりは expiresAt を request.time と比べる）
     updatedAt: new Date(今),
     expiresAt: new Date(期限),
@@ -182,7 +183,7 @@ async function 古い招待を片付ける(道具, 団体, memberId, 期限) {
   返り.forEach((文書) => {
     const 中身 = 文書.data();
     if (招待の文書か(中身) && 招待の期限(中身) < 期限) {
-      一括.delete(文書.ref);
+      一括.set(文書.ref, require('./kojinId').消した行());
       件数++;
     }
   });
@@ -206,7 +207,7 @@ async function 招待を取り消す(道具, 団体, memberId) {
   let 件数 = 0;
   返り.forEach((文書) => {
     if (招待の文書か(文書.data())) {
-      一括.delete(文書.ref);
+      一括.set(文書.ref, require('./kojinId').消した行());
       件数++;
     }
   });
