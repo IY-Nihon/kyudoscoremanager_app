@@ -186,7 +186,10 @@ const 入り直しの窓 = () => {
             {/* 印が取れていないときだけ添える（App Check を強制すると、印が無いと入り直しても断られる。H3）。
                 「ログインし直す」の下に置く。上に置くと窓を開いたときの焦点がこのボタンに当たり、Enter で読み込み直した */}
             {印が取れていない ? (
-              <View style={[styles.添え書き, 低い && { marginTop: 8, paddingVertical: 6 }]} testID="読み込み直しの添え書き">
+              <View
+                style={[styles.添え書き, 低い && { marginTop: 8, paddingVertical: 6 }]}
+                testID="読み込み直しの添え書き"
+              >
                 <Text style={styles.添え書きの字}>
                   入り直しても直らないときは、ブラウザを新しくして読み込み直してください。
                 </Text>
