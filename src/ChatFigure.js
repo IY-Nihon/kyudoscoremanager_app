@@ -610,4 +610,6 @@ const styles = StyleSheet.create({
   閉じる: { fontSize: 15, fontWeight: '600', color: 色.青, marginLeft: 12 },
 });
 
-module.exports = { ChatFigure };
+// 流し読みのあいだは、1 かけらごとに会話が描き直される。図は中身が同じなら描き直さない（D7）
+const 覚えた図 = React.memo(ChatFigure);
+module.exports = { ChatFigure: 覚えた図 };

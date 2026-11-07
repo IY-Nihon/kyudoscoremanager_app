@@ -167,6 +167,31 @@ async function 前のアドレスを片付ける(道具, 帳面の場所, 非公
 }
 
 /**
+ * 団体ID の欄にメールアドレスが入っていたとき（ブラウザのパスワードの保存が、団体を作るときに控えたメールを
+ * 団体ID の欄に入れることがある。A32）。そのメールとパスワードで入り、自分のメールの団体を引いて入る
+ * （決まりは、自分のメールの団体だけ一覧で引ける）。
+ * @returns {Promise<{id: string, 公開の団体ID: string, メール: string}>}
+ */
+async function メールで団体に入る(道具, メール, 合言葉) {
+  const { Firestore, FirebaseAuth, db, auth } = 道具;
+  const 宛先 = メールを整える(メール);
+  await FirebaseAuth.signInWithEmailAndPassword(auth, 宛先, 合言葉);
+  const 認証のメール = (auth.currentUser && auth.currentUser.email) || 宛先;
+  const 返り = await Firestore.getDocs(
+    Firestore.query(Firestore.collection(db, 'group_accounts'), Firestore.where('email', '==', 認証のメール))
+  );
+  const 帳面 = 返り && 返り.docs && 返り.docs[0];
+  if (!帳面) {
+    await FirebaseAuth.signOut(auth).catch(() => {});
+    throw new Error(
+      'このメールアドレスの団体が見つかりません。団体ID（6 桁の数字）とパスワードでお入りください'
+    );
+  }
+  const 中身 = 帳面.data() || {};
+  return { id: 中身.id || 帳面.id, 公開の団体ID: 帳面.id, メール: 中身.email || 認証のメール };
+}
+
+/**
  * 登録メールアドレスの切り替えを頼む。新しいアドレスへ確認のメールが届く。
  * 終わったら出る（ログイン画面から呼ぶ。確認が済むまでは今のアドレスのまま）。
  *
@@ -187,15 +212,38 @@ async function 切り替えを頼む(道具, 団体ID, 合言葉, 新しいメ�
   if (宛先.toLowerCase() === String(email || '').toLowerCase()) {
     throw new Error('今のメールアドレスと同じです');
   }
+  // 使い捨てのアドレスへは切り替えられない（決まりも仕上げを止める。確認のメールを送る前に断る）
+  if (await require('./suteMail').使い捨てか確かめる(道具, 宛先))
+    throw new Error(
+      '使い捨てのメールアドレスには切り替えられません。ふだん使うメールアドレスを入れてください'
+    );
   const 入った = await FirebaseAuth.signInWithEmailAndPassword(auth, email, 合言葉);
   try {
-    // 先に帳面へ書く。確認のリンクが開かれたあと、ログインがこのアドレスで入り直せるように
-    await Firestore.setDoc(帳面の場所, { pendingEmail: 宛先 }, { merge: true });
+    // 先に帳面へ書く。確認のリンクが開かれたあと、ログインがこのアドレスで入り直せるように。
+    // 頼んだ口座の番号（pendingUid）も添える。切り替えの途中は、決まりがこの口座か確認の済んだ口座しか
+    // 持ち主として通さない（空いたアドレスで後から作った口座に乗っ取られないように。firestore.rules の sameOwnerAccount）
+    try {
+      await Firestore.setDoc(
+        帳面の場所,
+        { pendingEmail: 宛先, pendingUid: 入った.user.uid },
+        { merge: true }
+      );
+    } catch (書けない) {
+      if (String((書けない && 書けない.code) || '').includes('permission-denied'))
+        throw new Error(
+          'メールアドレスの切り替えの途中です。前に頼んだ新しいアドレスに届いた確認のリンクを押してから、ログインしてください。届いていないときは、設定の「お問い合わせ」かホームページからお知らせください',
+          { cause: 書けない }
+        );
+      throw 書けない;
+    }
     try {
       await FirebaseAuth.verifyBeforeUpdateEmail(入った.user, 宛先);
     } catch (誤り) {
       // 送れなかったら、切り替え待ちを残さない
-      await Firestore.updateDoc(帳面の場所, { pendingEmail: Firestore.deleteField() }).catch(() => {});
+      await Firestore.updateDoc(帳面の場所, {
+        pendingEmail: Firestore.deleteField(),
+        pendingUid: Firestore.deleteField(),
+      }).catch(() => {});
       throw 誤り;
     }
   } finally {
@@ -204,12 +252,62 @@ async function 切り替えを頼む(道具, 団体ID, 合言葉, 新しいメ�
   return { 宛先 };
 }
 
+/** 12/3 を過ぎた 4 桁の個人ID で入ろうとしたときの知らせ（入る前に形で分かる。英語の権限の誤りを出さない） */
+const 四桁は終わりの文 =
+  '4桁の個人IDは使えなくなりました。団体の担当者から新しい個人ID（大文字と数字の6字。例 K7MP3X）を受け取って入れてください。';
+
+/**
+ * 中継（kyudo-chukei の POST /kojin）で鍵を確かめて、所属の証を書いてもらう（2026-11-04。ログインの総当たりを止める）。
+ * 中継が回数を絞ってから、サービスアカウントで逆引き表を引く（決まりは端末に逆引き表を読ませず、証も書かせない）。
+ * 中継が無い・古い（/kojin が無く 404）ときは null（前の道 引いて証を書く で入る。決まりを配るまでのつなぎ）
+ */
+/** 古い中継が、所属の証の無い口座を断るときの文（kyudo-chukei の src/index.mjs） */
+const 古い中継の断り = 'この機能は、団体または個人でログインした人だけが使えます';
+
+async function 中継で確かめる(道具, 団体の鍵, 鍵, 見つからないとき, 期限切れのとき) {
+  const 中継 = 道具.中継 || require('./geminiChukei');
+  if (!中継 || !中継.中継がある()) return null;
+  let 返り;
+  try {
+    返り = await 中継.中継へfetch('/kojin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 団体: 団体の鍵, 鍵 }),
+    });
+  } catch (誤り) {
+    throw new Error('通信できませんでした。電波の良い場所でお試しください', { cause: 誤り });
+  }
+  if (!返り || 返り.status === 404) return null;
+  const 中身 = await Promise.resolve()
+    .then(() => 返り.json())
+    .catch(() => ({}));
+  // 古い中継（/kojin が無い）は、道を見る前に「通してよい人か」で匿名の口座を断る（403 とこの文）。
+  // 新しい中継の /kojin はこの文を返さないので、これも古い中継として前の道で入る（検証環境の E2E で落ちた）
+  if (返り.status === 403 && 中身 && 中身.error === 古い中継の断り) return null;
+  if (返り.status === 429) throw new Error('試した回数が多すぎます。1 分ほど待ってからお試しください');
+  if (返り.status === 401 && 中身 && 中身.印 === 'appcheck')
+    throw new Error('この端末の確かめに失敗しました。ブラウザを新しくして読み込み直してください');
+  if (!返り.ok) throw new Error('いまは確かめられません。少し待ってからお試しください');
+  switch (中身 && 中身.結果) {
+    case '入れた':
+      return { memberId: 中身.memberId, 名前: 中身.名前 || '' };
+    case '期限切れ':
+      throw new Error(期限切れのとき);
+    case '団体がまだ':
+      throw new Error(require('./mailKakunin').団体がまだの文);
+    case '4桁は終わり':
+      throw new Error(四桁は終わりの文);
+    default:
+      throw new Error(見つからないとき);
+  }
+}
+
 /**
  * メンバーとして入る。個人ID でも招待リンクの合言葉でも同じ道を通る（鍵が違うだけ）。
  *
- * 匿名で入り、逆引き表（groups/{団体}/member_lookup/{鍵}）から memberId を引き、所属の証
- * （member_claims/{uid}）を書く。決まりは、証の memberId が逆引き表と一致するときだけ
- * 書かせるので、正しい鍵を知っている人しか入れない（src/memberInvite.js）。
+ * 匿名で入り、中継（POST /kojin）に鍵を確かめて所属の証（member_claims/{uid}）を書いてもらう（中継で確かめる）。
+ * 中継が古いときだけ、前の道：逆引き表（groups/{団体}/member_lookup/{鍵}）から memberId を引き、証を自分で書く
+ * （決まりが証の memberId と逆引き表を突き合わせる。新しい決まりを配ったあとは通らない）。
  *
  * @param {{Firestore: any, FirebaseAuth: any, db: any, auth: any}} 道具
  * @param {string} 団体の鍵 groups/{団体の鍵}
@@ -227,19 +325,29 @@ async function 部員として入る(
 ) {
   const { FirebaseAuth, auth } = 道具;
   if (!IDの形か(団体の鍵) || !IDの形か(鍵)) throw new Error(見つからないとき);
+  // 12/3 を過ぎた 4 桁は、雲に問い合わせる前に分かる言葉で断る（前は英語の「Missing or insufficient permissions.」）
+  const 個 = require('./kojinId');
+  if (個.古い形.test(鍵) && !個.古い形を使えるか(道具.今)) throw new Error(四桁は終わりの文);
   // 登録メールアドレスの確認が済んでいない団体には入れない（決まりも止める。2026-11-03）。
   // 匿名の利用者を作る前に、理由を言って断る（帳面は誰でも読める。読めないときは進めて、決まりに任せる）
   const 確 = require('./mailKakunin');
   // 今ある団体は猶予のあいだ入れる（決まりも同じ）
-  if ((await 確.団体の確認は済んだか(道具, 団体の鍵)) === false && !確.猶予中か(道具.今)) throw new Error(確.団体がまだの文);
+  if ((await 確.団体の確認は済んだか(道具, 団体の鍵)) === false && !確.猶予中か(道具.今))
+    throw new Error(確.団体がまだの文);
+  // すでに匿名で入っている端末（入り直しの窓）では、signInAnonymously は今の口座をそのまま返す
+  const 前の人 = auth.currentUser;
   await FirebaseAuth.signInAnonymously(auth);
   const 入った人 = auth.currentUser;
   try {
+    const 中継の答え = await 中継で確かめる(道具, 団体の鍵, 鍵, 見つからないとき, 期限切れのとき);
+    if (中継の答え) return 中継の答え;
     return await 引いて証を書く(道具, 団体の鍵, 鍵, 見つからないとき, 期限切れのとき);
   } catch (誤り) {
     // 入れなかった匿名の利用者を残さない（個人IDを打ち間違えるたびに 1 人ずつ溜まっていた）。
-    // 消すのは今ここで作った匿名の人だけ。消せなければ出るだけにする
-    if (入った人 && 入った人.isAnonymous && auth.currentUser === 入った人) {
+    // 消すのは今ここで作った匿名の人だけ。前から使っていた口座は消さない（入り直しの窓で 1 回打ち間違えると、
+    // まだ使えていた部員の口座を消して、正しい ID で入り直すまで何も送れなくなっていた）。消せなければ出るだけにする
+    const 新しく作った = !前の人 || !入った人 || 前の人.uid !== 入った人.uid;
+    if (新しく作った && 入った人 && 入った人.isAnonymous && auth.currentUser === 入った人) {
       try {
         await FirebaseAuth.deleteUser(入った人);
       } catch {
@@ -259,7 +367,9 @@ async function 引いて証を書く(道具, 団体の鍵, 鍵, 見つからな�
   const 逆引き = await 何度か送る(() =>
     Firestore.getDoc(Firestore.doc(db, `groups/${団体の鍵}/member_lookup`, 鍵))
   );
-  if (!逆引き.exists()) throw new Error(見つからないとき);
+  // 消した印の行（src/kojinId.js の 消した行）は無いものとして扱う
+  if (!逆引き.exists() || !require('./kojinId').生きている行か(逆引き.data()))
+    throw new Error(見つからないとき);
   // 招待リンクの期限（決まりでも止めるが、先に分かる理由で知らせる）
   if (招待の期限切れか(逆引き.data())) throw new Error(期限切れのとき);
   const { memberId } = 逆引き.data();
@@ -277,6 +387,35 @@ async function 引いて証を書く(道具, 団体の鍵, 鍵, 見つからな�
 }
 
 /**
+ * 出る（設定のログアウト・確認の画面の「ログアウト」）。部員は所属の証と匿名の口座を消してから出る
+ * （口座を残すと、誰のものでもない口座が認証に溜まる。2026-09-24 に本番で 164 人）。
+ *
+ * 電波が無いと、証の削除（Firestore の書き込み）は届くまで返らない。前は待ちきってから出ていたので、
+ * 電波の無い所でログアウトを押しても何も起きなかった。待つのは 待つ時間 まで。消せなかった証は、
+ * 口座が消えれば使えない（決まりは口座の番号で見る）。口座も消せなければ（入ってから日が経つと
+ * requires-recent-login で断られる）出るだけにする。
+ *
+ * @param {{Firestore: any, FirebaseAuth: any, db: any, auth: any}} 道具
+ * @param {string|null} 役割 'group' | 'member'
+ */
+async function 団体から出る(道具, 役割, 待つ時間 = 3000) {
+  const { Firestore, FirebaseAuth, db, auth } = 道具;
+  const 待つ = (手) =>
+    Promise.race([
+      Promise.resolve()
+        .then(手)
+        .catch(() => {}),
+      new Promise((解く) => setTimeout(解く, 待つ時間)),
+    ]);
+  const 人 = auth && auth.currentUser;
+  if (役割 === 'member' && 人) {
+    await 待つ(() => Firestore.deleteDoc(Firestore.doc(db, 'member_claims', 人.uid)));
+    if (人.isAnonymous && auth.currentUser === 人) await 待つ(() => FirebaseAuth.deleteUser(人));
+  }
+  if (auth && auth.currentUser) await 待つ(() => FirebaseAuth.signOut(auth));
+}
+
+/**
  * 部員の認証方式の版。上げると、古い方式でログインしている部員は次に開いたときにログアウトされる（App.js）。
  * ログイン画面・招待のリンク・入り直しの窓で部員として入れたときに、この版を店に書く。ここ 1 か所だけで決める。
  * 2 … 所属のクレームを使う方式に切り替えたとき（古い端末はログアウトさせ、個人IDで入り直してもらう）
@@ -286,8 +425,11 @@ const 部員のログインの版 = 2;
 module.exports = {
   IDの形か,
   団体で入る,
+  メールで団体に入る,
   切り替えを頼む,
   部員として入る,
+  四桁は終わりの文,
+  団体から出る,
   入り直してよい符号,
   前のアドレスを残す日数,
   部員のログインの版,

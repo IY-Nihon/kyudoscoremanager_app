@@ -13,6 +13,11 @@
  *     baseUrl を中継に向け、Authorization を足す。鍵の引数は飾り（中継が付け替える）
  *   ・fetch で直接 … 中継へfetch('/v1beta/models/gemini-3.6-flash:generateContent', { … })
  *
+ * ■ 添えるもの（2026-11-04）
+ *   ・X-Kyudo-Group … 入っている団体。中継はその人の証で groups/{団体} を 1 回読むだけで、通してよいかを決める
+ *     （前は米国の Firestore を 2 回続けて読んでいた）
+ *   ・X-Firebase-AppCheck … App Check の印。中継が数える（強制は中継の APPCHECK_MODE）。取れなければ付けない
+ *
  * ■ 証
  *   団体は email/password、部員は匿名の sign-in で、どちらも currentUser を持つ。
  *   ID トークンは1時間で切れるが getIdToken() が要るときだけ取り直す（毎回呼んで
@@ -56,12 +61,45 @@ async function ログインの証(取り直す = false) {
   }
 }
 
+/** 入っている団体（groups の鍵）。中継が通してよいかを 1 回で決めるのに使う */
+function 入っている団体() {
+  try {
+    const 団体 = require('./useScoreStore').useScoreStore.getState().activeGroupId;
+    return typeof 団体 === 'string' && /^[0-9A-Za-z_-]{1,64}$/.test(団体) ? 団体 : '';
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * App Check の印。取れなければ空（中継は数えるだけ。強制していれば中継が断る）。
+ * 印は SDK が控えていて、切れる前に取り直している（待つのは 3 秒まで）
+ */
+async function AppCheckの印() {
+  try {
+    const 器 = require('./db').appCheck;
+    if (!器) return '';
+    const { getToken } = require('firebase/app-check');
+    const 返り = await Promise.race([getToken(器, false), new Promise((解く) => setTimeout(() => 解く(null), 3000))]);
+    return (返り && 返り.token) || '';
+  } catch {
+    return '';
+  }
+}
+
+/** 中継へ添える見出し（証のほか） */
+async function 添える見出し() {
+  const 団体 = 入っている団体();
+  const 印 = await AppCheckの印();
+  return { ...(団体 ? { 'X-Kyudo-Group': 団体 } : {}), ...(印 ? { 'X-Firebase-AppCheck': 印 } : {}) };
+}
+
 /** SDK の getGenerativeModel / sendMessage に渡す requestOptions */
 async function SDKの設定() {
   if (!中継がある()) throw new Error('AI機能の設定（中継の宛先）が見つかりません。管理者にご確認ください。');
-  const 証 = await ログインの証();
+  const [証, 見出し] = await Promise.all([ログインの証(), 添える見出し()]);
   if (!証) throw new Error('ログインしていないため、AI機能を使えません。');
-  return { baseUrl: 中継のURL, customHeaders: { Authorization: 'Bearer ' + 証 } };
+  return { baseUrl: 中継のURL, customHeaders: { Authorization: 'Bearer ' + 証, ...見出し } };
 }
 
 /**
@@ -70,10 +108,11 @@ async function SDKの設定() {
  */
 async function 中継へfetch(道, init) {
   if (!中継がある()) throw new Error('AI機能の設定（中継の宛先）が見つかりません。管理者にご確認ください。');
-  const 証 = await ログインの証();
+  const [証, 見出し] = await Promise.all([ログインの証(), 添える見出し()]);
   if (!証) throw new Error('ログインしていないため、AI機能を使えません。');
   const 送る = (今の証) => {
     const 頭 = new Headers((init && init.headers) || {});
+    for (const [鍵, 値] of Object.entries(見出し)) if (!頭.has(鍵)) 頭.set(鍵, 値);
     頭.set('Authorization', 'Bearer ' + 今の証);
     return fetch(中継のURL + (道.startsWith('/') ? 道 : '/' + 道), { ...(init || {}), headers: 頭 });
   };
@@ -86,4 +125,4 @@ async function 中継へfetch(道, init) {
   return 返り;
 }
 
-module.exports = { 中継のURL, 中継がある, ログインの証, SDKの設定, 中継へfetch };
+module.exports = { 中継のURL, 中継がある, ログインの証, SDKの設定, 中継へfetch, 添える見出し };

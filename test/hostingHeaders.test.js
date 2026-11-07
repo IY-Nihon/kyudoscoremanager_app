@@ -26,6 +26,8 @@ function 当たるか(source, 道) {
   for (let i = 0; i < source.length;) {
     if (source.startsWith('@(', i)) {
       const 閉じ = source.indexOf(')', i);
+      // Firebase は @( ) の中の / を読めない（その指定はどの道にも当たらない。2026-11-04 に本番のアイコンで確かめた）
+      if (source.slice(i + 2, 閉じ).includes('/')) return false;
       const 候補 = source
         .slice(i + 2, 閉じ)
         .split('|')
@@ -95,8 +97,11 @@ test('束（名前に中身の印が付く）は、長く控えさせる。画�
 });
 
 test('当たるか：使っている書き方の確かめ', () => {
-  assert.ok(当たるか('@(/record|/history)', '/history'));
-  assert.ok(!当たるか('@(/record|/history)', '/historyx'));
+  assert.ok(当たるか('/@(record|history)', '/history'));
+  assert.ok(!当たるか('/@(record|history)', '/historyx'));
+  // @( ) の中に / があると、Firebase はどの道にも当てない（本物と同じに読む）
+  assert.ok(!当たるか('@(/record|/history)', '/history'));
+  assert.ok(当たるか('/*icon*.png', '/apple-touch-icon.png'));
   assert.ok(当たるか('**/*.html', '/a/b/index.html'));
   assert.ok(当たるか('**/*.html', '/index.html'));
   assert.ok(!当たるか('/', '/record'));
@@ -114,4 +119,18 @@ test('守りの見出し：どの道にも、はめ込みを断る・型を推�
   assert.equal(値['Referrer-Policy'], 'strict-origin-when-cross-origin');
   assert.match(値['Permissions-Policy'], /camera=\(self\)/);
   assert.match(値['Permissions-Policy'], /microphone=\(\)/);
+});
+
+test('アイコンは毎回確かめさせる（名前にハッシュが入らない）。@( ) の中に / を書かない（Firebase が読めない）', () => {
+  for (const 規則 of 規則たち) assert.ok(!/@\([^)]*\//.test(規則.source), `${規則.source} の @( ) の中に / がある`);
+  for (const 道 of ['/icon-192.png', '/icon-512.png', '/apple-touch-icon.png', '/favicon.ico'])
+    assert.deepStrictEqual(控えの値(道), ['public, no-cache'], 道);
+});
+
+test('守りの見出し：基準の住所・プラグイン・よその窓（Google のログインの窓は使える）', () => {
+  const 全部 = 規則たち.find((規則) => 規則.source === '**');
+  const 値 = Object.fromEntries(全部.headers.map((頭) => [頭.key, 頭.value]));
+  assert.match(値['Content-Security-Policy'], /base-uri 'self'/);
+  assert.match(値['Content-Security-Policy'], /object-src 'none'/);
+  assert.equal(値['Cross-Origin-Opener-Policy'], 'same-origin-allow-popups');
 });

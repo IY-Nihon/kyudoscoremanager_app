@@ -31,7 +31,7 @@
 - **Expo / React Native Web** の 1 つのコードで Web（PWA）として配信している（iOS アプリの組み立て〔EAS Build〕も用意してあるが、App Store には出していない）。状態は zustand、同期は Firebase（Firestore・Realtime Database）
 - **オフライン優先**：手元に確定してから雲へ送る。通信が切れても記録は止まらず、つながったときに突き合わせる
 - **○× の読み取りは端末の中で**：マスを畳み込みの網（`scripts/ocr-cells/omomi-tatami.json`、描いた見本と本物の写真で学習・int8）で読み、迷ったマスだけ写真で学習した MobileNet 2 枚（`omomi-mobilenet.bin`、読み取りのときだけ取る）と混ぜる（詳しくは `scripts/ocr-cells/cnn/README.md`）。Gemini には ○× を書かせず、名前・表の形・日付だけ答えさせる（`src/ocrPrompts.js` の 記録の形の指示文。端末が読めなかったときだけ ○× つきで読み直す）。鍵は Cloudflare Workers の中継が持ち、アプリには置かない
-- **検査**：単体 1190 件あまり（`node --test`。push のたびに GitHub Actions の「検査」で流れる）と、3 機種の Playwright e2e（検証用の Firebase 企画に対して本物の流れを通す。手元か、GitHub Actions の「E2E」で 20 台に分けて流す）
+- **検査**：単体 1300 件あまり（`node --test`。push のたびに GitHub Actions の「検査」で流れる）・決まりの模擬環境の検査（`npm run test:rules`）と、3 機種の Playwright e2e（検証用の Firebase 企画に対して本物の流れを通す。手元か、GitHub Actions の「E2E」で 20 台に分けて流す）
 - **お知らせ・法務文書・バックアップ**：更新はアプリ内のお知らせで届け、利用規約とプライバシーポリシーはアプリと紹介ページの両方に、データは毎日暗号化して控える（別リポジトリ `kyudoscoremanager_backup`）
 
 ---
@@ -100,9 +100,10 @@ Gemini の鍵はアプリの束に入れると誰でも取り出せる。Cloudfl
 ### 入り方は 2 つ、見える範囲は決まりで縛る（守り）
 
 - **団体ログイン**（団体 ID とパスワード。中ではその団体の登録メールアドレスで Firebase に入る）… 記録係。団体の記録・名簿を読み書きする
-- **個人ログイン**（団体 ID と 6 字の個人 ID、または招待リンク）… 部員。逆引き表で団体の名簿の自分に結び付き、自分の記録だけを見る
+- **個人ログイン**（団体 ID と 6 字の個人 ID、または招待リンク）… 部員。中継（kyudo-chukei の `POST /kojin`）が回数を絞ってから逆引き表を引き、
+  所属の証を書く（端末は逆引き表を読めず、証も書けない。個人ID の総当たりを止める。2026-11-04）。個人ID は逆引き表にだけ置き、名簿の文書には置かない
 - 団体の外からは読み書きできないよう、Firestore と Realtime Database の決まり（[firestore.rules](firestore.rules)・[database.rules.json](database.rules.json)）で
-  団体の本人か所属を証明した部員に限っている。App Check（[src/setupAppCheck.js](src/setupAppCheck.js)）も入れてある
+  団体の本人か所属を証明した部員に限っている。App Check（[src/setupAppCheck.js](src/setupAppCheck.js)）も入れてある（下の「App Check の強制」）
 - 団体の中の「部員は自分の記録だけ」は、決まりではなく端末で絞っている（記録 1 件に団体全員の射手が並ぶ形のため）。
   決まりで分けるなら、記録に出た部員の一覧を持たせて問い合わせで絞る形に変える必要がある
 
@@ -259,9 +260,27 @@ npm start
 ## 検査
 
 ```bash
-npm test        # 型（tsconfig.check.json）・未定義の名前・単体（node --test。1190 件あまり）
+npm test        # 型（tsconfig.check.json）・未定義の名前・単体（node --test。1300 件あまり）
 npm run lint    # src・App.js・e2e・scripts・test の全部
+npm run test:rules  # 決まり（firestore.rules・database.rules.json）を模擬環境で（firebase emulators:exec。Java が要る）
 ```
+
+決まりの模擬環境の検査（`test/emu`）は、断るべき手順（乗っ取り・番号の作り直し・使い捨てメール・4 桁の証・部員の書き換え・
+端末からの証の書き込み・ライブの期限の操作）が断られ、ふつうの手順が通ることを見る。GitHub Actions の「検査」の `rules` でも流れる。
+
+### App Check の強制（あとで。本人がコンソールで）
+
+印の無い・正しくない呼び出しが十分に減ってから強制する。順は Realtime Database → Firestore（Authentication の強制は
+Identity Platform が要るので無料版では使えない）。
+
+1. 中継の記録で印の様子を見る（kyudo-chukei の README の「App Check」）。`none`・`bad` が残っているうちは強制しない
+2. **無料枠の注意**：印は reCAPTCHA の判定で作られ、無料で使えるのは月 1 万件まで。越えると印が取れず、強制していると全員が
+   使えなくなる。強制の前に Google Cloud の reCAPTCHA の画面で月の件数を確かめ、Firebase コンソールの App Check →
+   アプリ → 「トークンの有効期間」を延ばして（例 1 日）判定の数を減らす
+3. Firebase コンソールの App Check → API で、Realtime Database を「適用」。数日見て困りごとが無ければ Firestore も
+4. 中継の `wrangler.toml` の `APPCHECK_MODE` を `enforce` にして配る
+5. 戻すときは、コンソールで「適用」を外す（すぐ効く）。印が取れない端末には、入り直しの窓の下に
+   「入り直しても直らないときは、ブラウザを新しくして読み込み直してください」と「読み込み直す」が出る（src/ReloginModal.js）
 
 単体は push のたびに GitHub Actions の「検査」でも流れる。画面と雲を通す E2E（Playwright。3 機種）は時間がかかるので、配信の前に流す。
 

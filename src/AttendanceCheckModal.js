@@ -12,8 +12,13 @@ const 学 = require('./gakunen');
 const AttendanceCheckModal = ({ visible, onClose, onConfirm, onDismiss }) => {
   const { members, archers } = useストアの一部(['members', 'archers']);
   const [attendance, setAttendance] = React.useState({});
+  // 組み直すのは開いたときだけ。前は名簿や盤面が動くたび（ライブで相手が ○× を入れるたび）に組み直し、
+  // 窓で直した出欠の印が戻った（A36）。開いたときの名簿と盤面は、ここで読む
+  const いまの名簿と盤面 = React.useRef({ members, archers });
+  いまの名簿と盤面.current = { members, archers };
   React.useEffect(() => {
     if (visible) {
+      const { members, archers } = いまの名簿と盤面.current;
       const initial = {};
       members.forEach((部員) => {
         initial[部員.id] = 'absent';
@@ -25,7 +30,7 @@ const AttendanceCheckModal = ({ visible, onClose, onConfirm, onDismiss }) => {
       }
       setAttendance(initial);
     }
-  }, [visible, members, archers]);
+  }, [visible]);
   const updateStatus = (memberId, status) => {
     setAttendance((prev) => {
       const next = { ...prev };

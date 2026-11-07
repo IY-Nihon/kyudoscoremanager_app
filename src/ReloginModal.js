@@ -64,7 +64,23 @@ const 入り直しの窓 = () => {
   // 横向きのスマホなど高さが低い画面では、余白を詰めて 1 画面に収める
   const 低い = useWindowDimensions().height < 480;
   const 部員 = 役割 === 'member';
+  // 12/3 を過ぎて、4 桁の個人ID で入っていた部員（決まりが 4 桁の証を止めたので入り直しの窓が出る）。
+  // 「有効期限が切れました」ではなく、新しい ID が要ることを出す（ログインに使った ID は自分の所属の証から読む）
+  const 自分の個人ID = useScoreStore((状態) => 状態.自分の個人ID);
+  React.useEffect(() => {
+    if (要る && 部員 && !自分の個人ID) useScoreStore.getState().自分の個人IDを読む();
+  }, [要る, 部員, 自分の個人ID]);
+  const 個 = require('./kojinId');
+  const 四桁が終わった = 部員 && 個.古い形.test(String(自分の個人ID || '')) && !個.古い形を使えるか();
   if (!要る || !団体の鍵) return null;
+  // この端末の App Check の印が取れていない（強制していると、ログインし直しても断られ続ける。H3）
+  const 印が取れていない = (() => {
+    try {
+      return require('./setupAppCheck').印が取れていないか();
+    } catch {
+      return false;
+    }
+  })();
 
   const あとで = () => {
     難点を置く(null);
@@ -89,6 +105,7 @@ const 入り直しの窓 = () => {
       const 道具 = 道具を取る();
       const 店 = useScoreStore.getState();
       if (部員) {
+        // 整えてから 6 字で見る（4 桁は使える終わりまで）。12/3 を過ぎた 4 桁は 部員として入る が分かる言葉で断る
         const { memberId, 名前 } = await 部員として入る(道具, 団体の鍵, 整える(入力));
         店.setAuth(団体の鍵, 'member', memberId, null, 見える団体ID, null, 名前);
         店.setMemberAuthVersion(部員のログインの版);
@@ -126,9 +143,14 @@ const 入り直しの窓 = () => {
           keyboardShouldPersistTaps="handled"
         >
           <View style={[styles.箱, 低い && styles.箱_低い]} testID="入り直しの窓">
+            {/* 見出しはいつも同じ。App Check の印が取れていないときも、まず入り直してもらう（強制していない今は、
+                印が無くても入り直せば使える。印を 1 回取り損ねただけで「確かめに失敗」と出すと、ふつうに
+                ログインが切れた人まで迷わせた。2026-11-07 本人） */}
             <Text style={[styles.見出し, 低い && { marginBottom: 4 }]}>ログインし直してください</Text>
             <Text style={[styles.説明, 低い && { marginBottom: 4 }]}>
-              ログインの有効期限が切れました。この端末の記録はそのまま残っています。
+              {四桁が終わった
+                ? '4桁の個人IDは使えなくなりました。団体の担当者から新しい個人ID（大文字と数字の6字）を受け取って入れてください。この端末の記録はそのまま残っています。'
+                : 'ログインの有効期限が切れました。この端末の記録はそのまま残っています。'}
               {未送信 > 0 ? `ログインし直すと、送れていない${未送信}件も送られます。` : ''}
             </Text>
             <Text style={styles.ラベル}>団体ID</Text>
@@ -161,6 +183,31 @@ const 入り直しの窓 = () => {
             >
               <Text style={styles.ボタンの字}>{作業中 ? 'ログインしています…' : 'ログインし直す'}</Text>
             </Pressable>
+            {/* 印が取れていないときだけ添える（App Check を強制すると、印が無いと入り直しても断られる。H3）。
+                「ログインし直す」の下に置く。上に置くと窓を開いたときの焦点がこのボタンに当たり、Enter で読み込み直した */}
+            {印が取れていない ? (
+              <View
+                style={[styles.添え書き, 低い && { marginTop: 8, paddingVertical: 6 }]}
+                testID="読み込み直しの添え書き"
+              >
+                <Text style={styles.添え書きの字}>
+                  入り直しても直らないときは、ブラウザを新しくして読み込み直してください。
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  style={styles.添え書きのボタン}
+                  onPress={() => {
+                    try {
+                      window.location.reload();
+                    } catch {
+                      /* 読み込み直せない端末では、閉じて開き直してもらう */
+                    }
+                  }}
+                >
+                  <Text style={styles.添え書きのボタンの字}>読み込み直す</Text>
+                </Pressable>
+              </View>
+            ) : null}
             <Pressable style={[styles.あとで, 低い && { paddingVertical: 8, marginTop: 2 }]} onPress={あとで}>
               <Text style={styles.あとでの字}>あとで（記録は続けられます）</Text>
             </Pressable>
@@ -181,6 +228,24 @@ const styles = StyleSheet.create({
   ボタン_低い: { paddingVertical: 9, marginTop: 8 },
   見出し: { fontSize: 18, fontWeight: 'bold', color: 色.文字, marginBottom: 10, textAlign: 'center' },
   説明: { fontSize: 14, color: 色.文字_二, lineHeight: 20, marginBottom: 12 },
+  添え書き: {
+    backgroundColor: 色.地,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginTop: 14,
+  },
+  添え書きの字: { fontSize: 13, color: 色.文字_二, lineHeight: 19 },
+  添え書きのボタン: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 色.青,
+  },
+  添え書きのボタンの字: { fontSize: 13, color: 色.青, fontWeight: 'bold' },
   ラベル: { fontSize: 13, color: 色.文字_二, marginBottom: 4, marginTop: 6 },
   固定の欄: { backgroundColor: 色.地, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 12 },
   固定の字: { fontSize: 15, color: 色.文字_二 },

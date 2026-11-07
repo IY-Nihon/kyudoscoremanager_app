@@ -136,10 +136,11 @@ function 集計する(人たち, 記録たち, 注文) {
     設定.学年 == null || 設定.学年 === '' ? null : Number(String(設定.学年).replace(/[^0-9]/g, ''));
   const 名前で =
     Array.isArray(設定.名前たち) && 設定.名前たち.length ? 名前で何人も選ぶ(部員, 設定.名前たち) : null;
+  // 学年で絞るときは現役だけ（卒業・退部した人の学年は、いた頃のまま残る。src/chatStats.js の 人を絞る と同じ。A10）
   const 数える人 = 部員.filter(
     (人) =>
       (!性別で || 性別の名(人.gender) === 性別で) &&
-      (学年で == null || !Number.isFinite(学年で) || Number(人.grade) === 学年で) &&
+      (学年で == null || !Number.isFinite(学年で) || (Number(人.grade) === 学年で && 学.現役か(人))) &&
       (!名前で || 名前で.選んだ.has(人))
   );
   const idから = new Map(数える人.map((人) => [String(人.id), 人]));
@@ -370,8 +371,10 @@ function 集計する(人たち, 記録たち, 注文) {
 
 /**
  * 名簿を数える・並べる。「1年生は何人？」「女子は誰？」「期ごとの人数」に答えるための道具。
- * 指示文の部員一覧（名前と学年）を模型が数えると数え違えるので、ここで数える
- * @param {Array<object>} 人たち 部員（在籍）
+ * 指示文の部員一覧（名前と学年）を模型が数えると数え違えるので、ここで数える。
+ * 数えるのは現役だけ（名簿には卒業・退部した人も残っていて、「部員は何人」に数えていた。A10）。
+ * 卒業生も なら、卒業生（卒業生の名簿と、名簿で卒業にした人）と退部した人を別に返す
+ * @param {Array<object>} 人たち 部員の名簿（卒業・退部した人も入っている）
  * @param {{性別?: string, 学年?: any, 区分?: string, 名前に?: string, 期を出す?: boolean,
  *   区分たち?: Array<object>, 卒業生?: Array<object>, 卒業生も?: boolean}} [注文]
  */
@@ -389,7 +392,8 @@ function 名簿を数える(人たち, 注文) {
     (学年で == null || !Number.isFinite(学年で) || Number(人.grade) === 学年で) &&
     (!区分で || 詰める(区.人の区分の名前(人, 区分の一覧)).includes(区分で)) &&
     (!名前で || 詰める(人.name).includes(名前で));
-  const 選んだ = (Array.isArray(人たち) ? 人たち : []).filter(選ぶ);
+  const 名簿 = (Array.isArray(人たち) ? 人たち : []).filter(Boolean);
+  const 選んだ = 名簿.filter((人) => 学.現役か(人)).filter(選ぶ);
   const 数える = (鍵) => {
     const 数 = {};
     for (const 人 of 選んだ) 数[鍵(人)] = (数[鍵(人)] || 0) + 1;
@@ -401,9 +405,14 @@ function 名簿を数える(人たち, 注文) {
       String(甲.name).localeCompare(String(乙.name), 'ja')
   );
   const 上限 = 200;
+  const 名簿のid = new Set(名簿.map((人) => String(人.id)));
   const 卒業生 = 設定.卒業生も
-    ? (Array.isArray(設定.卒業生) ? 設定.卒業生 : []).filter((人) => 人 && 人.name)
+    ? [
+        ...名簿.filter((人) => 学.卒業生か(人)),
+        ...(Array.isArray(設定.卒業生) ? 設定.卒業生 : []).filter((人) => 人 && !名簿のid.has(String(人.id))),
+      ].filter((人) => 人 && 人.name)
     : null;
+  const 退部した人 = 設定.卒業生も ? 名簿.filter((人) => 学.退部した人か(人) && 人.name) : null;
   return {
     人数: 選んだ.length,
     学年ごと: 数える((人) => 学.学年の名前(人)),
@@ -421,6 +430,9 @@ function 名簿を数える(人たち, 注文) {
     })),
     ...(並び.length > 上限 ? { 返していない数: 並び.length - 上限 } : {}),
     ...(卒業生 ? { 卒業生の人数: 卒業生.length, 卒業生: 卒業生.slice(0, 上限).map((人) => 人.name) } : {}),
+    ...(退部した人 && 退部した人.length
+      ? { 退部した人の人数: 退部した人.length, 退部した人: 退部した人.slice(0, 上限).map((人) => 人.name) }
+      : {}),
   };
 }
 

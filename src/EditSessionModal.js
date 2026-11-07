@@ -138,6 +138,20 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
         } else {
           印.splice(本数);
         }
+        // 減らしたときは、切り捨てた射の途中交代（射番 → 氏名・id）も落とす（記録画面の射数の変更と同じ。A40）。
+        // 残すと、無い射の交代が出欠や分析に数えられた
+        const 範囲の交代 = (表) => {
+          if (!表 || typeof 表 !== 'object') return null;
+          const 残す = {};
+          let 落とした = false;
+          for (const 番 of Object.keys(表)) {
+            if (Number(番) < 本数) 残す[番] = 表[番];
+            else 落とした = true;
+          }
+          return 落とした ? 残す : null;
+        };
+        const 交代 = 範囲の交代(射手.substitutions);
+        const 交代のid = 範囲の交代(射手.substitutionIds);
         return Object.assign(
           {},
           射手,
@@ -145,7 +159,9 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
           // 減らしたときは、切り捨てた射の矢所も落とす（記録画面の射数の変更と同じ）
           Array.isArray(射手.arrowLocations) && 射手.arrowLocations.length > 本数
             ? { arrowLocations: 射手.arrowLocations.slice(0, 本数) }
-            : null
+            : null,
+          交代 ? { substitutions: 交代 } : null,
+          交代のid ? { substitutionIds: 交代のid } : null
         );
       });
     }

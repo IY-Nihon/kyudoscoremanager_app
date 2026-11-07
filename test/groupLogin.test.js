@@ -214,9 +214,24 @@ test('切り替えを頼む：今のアドレスで入り、切り替え待ち�
     id: '100001',
     email: 'a@example.com',
     pendingEmail: 'b@example.com',
+    // 頼んだ口座の番号（切り替えの途中は、決まりがこの口座か確認の済んだ口座しか持ち主として通さない）
+    pendingUid: 'uid-a@example.com',
   });
   assert.deepStrictEqual(した[2], ['確認を送る', 'a@example.com', 'b@example.com']);
   assert.strictEqual(認証.今, null);
+});
+
+test('切り替えを頼む：切り替えの途中で決まりに断られたら、分かる言葉で知らせる。使い捨てのアドレスへは頼めない', async () => {
+  const { 道具, 認証 } = 用意({
+    帳面: { id: '100001', email: 'a@example.com', pendingEmail: 'c@example.com' },
+    口座: { 'a@example.com': 'pw' },
+    書けない: true,
+  });
+  await assert.rejects(切り替えを頼む(道具, '100001', 'pw', 'b@example.com'), /切り替えの途中です/);
+  assert.strictEqual(認証.今, null, '断られたあとも入ったまま');
+  const 二 = 用意({ 帳面: { id: '100001', email: 'a@example.com' }, 口座: { 'a@example.com': 'pw' } });
+  await assert.rejects(切り替えを頼む(二.道具, '100001', 'pw', 'x@mailinator.com'), /使い捨て/);
+  assert.ok(!二.した.some((x) => x[0] === '入る'), '使い捨てなのに入った');
 });
 
 test('切り替えを頼む：新しいアドレスは全角・見えない空白を直して小文字で書く（決まりは認証の小文字のメールと比べる）', async () => {
@@ -287,4 +302,38 @@ test('ID の形：英数字と _ - だけ。「/」などが混じれば雲へ�
   assert.equal(読んだ, 0);
   await assert.rejects(団体で入る(道具, 'group_accounts/../x', 'pw'), /正しくありません/);
   assert.equal(読んだ, 0);
+});
+
+test('メールで団体に入る：団体ID の欄にメールアドレスが入っていたら、そのメールで入って自分の団体を引く（A32）', async () => {
+  const { メールで団体に入る } = require('../src/groupLogin');
+  const 認証 = { currentUser: null };
+  let 出た = 0;
+  const 道具 = (団体あり) => ({
+    Firestore: {
+      collection: (_db, 道) => ({ 道 }),
+      where: (欄, 比べ, 値) => ({ 欄, 値 }),
+      query: (集まり, 絞り) => ({ 集まり, 絞り }),
+      getDocs: async (問い) => {
+        assert.deepStrictEqual(問い.絞り, { 欄: 'email', 値: 'club@example.jp' }, '自分のメールで絞っていない');
+        return { docs: 団体あり ? [{ id: '123456', data: () => ({ id: '123456', email: 'club@example.jp' }) }] : [] };
+      },
+    },
+    FirebaseAuth: {
+      signInWithEmailAndPassword: async (auth, メール, 合言葉) => {
+        if (合言葉 !== 'pw') throw Object.assign(new Error('no'), { code: 'auth/invalid-credential' });
+        auth.currentUser = { email: メール };
+      },
+      signOut: async () => void 出た++,
+    },
+    db: {},
+    auth: 認証,
+  });
+  assert.deepStrictEqual(await メールで団体に入る(道具(true), ' Club@Example.jp ', 'pw'), {
+    id: '123456',
+    公開の団体ID: '123456',
+    メール: 'club@example.jp',
+  });
+  await assert.rejects(メールで団体に入る(道具(true), 'club@example.jp', 'x'), { code: 'auth/invalid-credential' });
+  await assert.rejects(メールで団体に入る(道具(false), 'club@example.jp', 'pw'), /団体が見つかりません/);
+  assert.strictEqual(出た, 1, '団体が無いのに入ったまま');
 });

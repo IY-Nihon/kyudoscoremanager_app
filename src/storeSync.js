@@ -31,6 +31,7 @@ const {
   分けた一括,
   送った版に印を付ける,
   送った版の表,
+  名簿へ書く形,
 } = require('./storeShared');
 const 学 = require('./gakunen');
 
@@ -141,6 +142,12 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
           Firestore.getDocs(卒業生の置き場),
         ]);
       }
+      // 読んでいるあいだに別の団体へ入り直していたら（電波の弱い所で読みが遅れた）、この同期は捨てる。
+      // 進めると、前の団体の記録を新しい団体の履歴に混ぜ、送れていない記録を新しい団体の置き場へ書いた（A6）
+      if (状態().activeGroupId !== 団体ID) {
+        console.warn('[syncSessions] 同期の途中で団体が変わったので、この同期は捨てます');
+        return;
+      }
       let 最新の時刻 = 前回の同期時刻;
       // 日時を数に直し、いちばん新しい変更の時刻も控える（終わりの記録に出すだけ）
       const ミリ秒にする = (値) => {
@@ -201,7 +208,14 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         `[syncSessions] Fetched counts: S=${雲の記録.length}, M=${雲の部員.length}, T=${雲のごみ箱.length}, A=${雲の卒業生.length}`
       );
       const 記録の合流 = mergeById(状態().sessions, 雲の記録, false, false);
-      const 部員の合流 = mergeById(状態().members, 雲の部員, false, false);
+      // 消したのにまだ雲へ届いていないメンバーは、雲に残っていても戻さない（見張り・全件の取り直しと同じ。A4）
+      const 消したメンバー = new Set(Object.keys(状態().deletedMembers || {}));
+      const 部員の合流 = mergeById(
+        状態().members,
+        雲の部員.filter((部員1人) => !消したメンバー.has(部員1人.id)),
+        false,
+        false
+      );
       const ごみ箱の合流 = mergeById(状態().trash, 雲のごみ箱, false, false);
       const 卒業生の合流 = mergeById(状態().alumni, 雲の卒業生, false, false);
       const 卒業生のID = new Set(卒業生の合流.map((卒業生1人) => 卒業生1人.id));
@@ -243,7 +257,10 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
           );
           // 戻した記録なら、クラウドのゴミ箱からも取り下げる。存在しない場合は
           // 何も起きないので、新規の記録に対しても安全。
-          一括.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/trash`, 記録.id));
+          // ゴミ箱に書けるのは決まりで団体だけ。部員の端末で一括に入れると一括ごと断られ、
+          // 送れていない記録をいつまでも送り直せなかった（A2）
+          if (状態().activeRole === 'group')
+            一括.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/trash`, 記録.id));
         });
         // 送信の完了は待たない。通信できないと一括送信は終わらないため、
         // 待つとこの関数自体が返らず、同期中の目印が立ったままになって
@@ -332,7 +349,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
           const 一括 = Firestore.writeBatch(Firebaseの器.db);
           const 送った版 = 送った版の表(未送信);
           未送信.forEach((一人) => {
-            const 送る形 = dropUndefinedDeep(Object.assign({}, 一人, { syncStatus: '同期済み' }));
+            const 送る形 = dropUndefinedDeep(Object.assign({}, 名簿へ書く形(一人), { syncStatus: '同期済み' }));
             送る形.lastModified = Firestore.serverTimestamp();
             一括.set(
               Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/${置き場}`, 一人.id),
@@ -416,10 +433,13 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       });
       console.log(`[syncSessions] Finished. 最新の変更: ${最新の時刻}`);
       setTimeout(() => {
-        状態().ensurePersonalIds();
+        Promise.resolve(状態().ensurePersonalIds()).catch((誤り) =>
+          console.warn('[Store] 個人IDを確かめられませんでした', 誤り)
+        );
       }, 500);
-      // メンバーも記録も雲から読めたときだけ、名前のずれを直す（古い名簿で前の名前に戻さない）
-      if (雲から読んだか(記録の返り) && 雲から読んだか(部員の返り)) {
+      // メンバーも記録も雲から読めたときだけ、名前のずれを直す（古い名簿で前の名前に戻さない）。
+      // 雲を読まずに済ませた同期（取りに行かない）は読めたうちに入らない（前は空の返りを「雲から読んだ」と見ていた。A6）
+      if (!(選び && 選び.取りに行かない) && 雲から読んだか(記録の返り) && 雲から読んだか(部員の返り)) {
         setTimeout(() => {
           状態().名前のずれを直す();
         }, 2000);
@@ -462,7 +482,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         if (部員 && 部員.id) {
           書き込み.push({
             ref: Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/members`, 部員.id),
-            data: サーバーの時刻で(部員),
+            data: サーバーの時刻で(名簿へ書く形(部員)),
           });
         }
       });
@@ -470,7 +490,7 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         if (卒業生 && 卒業生.id) {
           書き込み.push({
             ref: Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/alumni`, 卒業生.id),
-            data: サーバーの時刻で(卒業生),
+            data: サーバーの時刻で(名簿へ書く形(卒業生)),
           });
         }
       });
@@ -608,10 +628,12 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       return;
     }
     try {
+      // 始めたときの団体。読み終えたときに団体が変わっていたら、書かずに捨てる（A6。syncSessions と同じ）
+      const 始めた団体 = 状態().activeGroupId;
       // 置き場を丸ごと読む。中身は文書の data のまま（記録とゴミ箱は日時を数に直す）
       const 全部読む = async (置き場, 整える = (中身) => 中身) => {
         const 返り = await Firestore.getDocs(
-          Firestore.collection(Firebaseの器.db, `groups/${状態().activeGroupId}/${置き場}`)
+          Firestore.collection(Firebaseの器.db, `groups/${始めた団体}/${置き場}`)
         );
         const 中身たち = [];
         返り.forEach((文書) => 中身たち.push(整える(文書.data())));
@@ -623,8 +645,12 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       const [ごみ箱の返り, 雲のごみ箱] = await 全部読む('trash', 記録の日時を数に);
       const [卒業生の返り, 卒業生] = await 全部読む('alumni');
       const 設定の帳面 = await Firestore.getDoc(
-        Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/config`, 'app_settings')
+        Firestore.doc(Firebaseの器.db, `groups/${始めた団体}/config`, 'app_settings')
       );
+      if (状態().activeGroupId !== 始めた団体) {
+        console.warn('[Store] 取り込みの途中で団体が変わったので、取り込んだものは捨てます');
+        return;
+      }
       let currentFreshmanTerm = 状態().currentFreshmanTerm;
       let tagTemplates = 状態().tagTemplates;
       let lastPromotionYear = 状態().lastPromotionYear;
@@ -884,7 +910,11 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
     状態().stopListeningToTrash();
     console.log('[Store] Starting real-time trash listener');
     const ごみ箱の置き場 = Firestore.collection(Firebaseの器.db, `groups/${団体}/trash`);
-    const 問い = Firestore.query(ごみ箱の置き場, Firestore.limit(200));
+    // 見張るのは 200 件まで（読みの無料枠を守る）。上限に届いたときは途中までの一覧なので、手元のゴミ箱を
+    // 一覧で置き換えない（前は置き換えていて、200 件を超える団体では、差分の同期で届いた新しく捨てた記録が
+    // 見張りのたびにゴミ箱から消えた。A6）。全部そろえるのは 7 日ごとの全件の取り直し
+    const 見張る上限 = 200;
+    const 問い = Firestore.query(ごみ箱の置き場, Firestore.limit(見張る上限));
     const 止める = Firestore.onSnapshot(
       問い,
       (返り) => {
@@ -924,7 +954,12 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
             記録1件.syncStatus === '未同期' &&
             !クラウドのid.has(記録1件.id)
         );
-        const 新しいゴミ箱 = 未送信の削除.length > 0 ? [...写し, ...未送信の削除] : 写し;
+        const 途中まで = 雲のごみ箱.length >= 見張る上限;
+        const 新しいゴミ箱 = 途中まで
+          ? [...写し, ...(状態().trash || []).filter((記録1件) => 記録1件 && 記録1件.id && !クラウドのid.has(記録1件.id))]
+          : 未送信の削除.length > 0
+            ? [...写し, ...未送信の削除]
+            : 写し;
         新しいゴミ箱.sort((甲, 乙) => trashedAtMillis(乙) - trashedAtMillis(甲));
         // 戻したばかりでまだ送れていない記録は、クラウドのゴミ箱に写しが
         // あっても履歴から外さない。外すと復元が取り消されて見える。

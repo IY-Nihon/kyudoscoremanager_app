@@ -156,10 +156,11 @@ test('返りの遅い片付けが、あとから作り直した新しい招待�
   assert.deepStrictEqual(雲.中身(逆引きの道), [二つ目.合言葉], '作り直した新しい招待が消えた');
 });
 
-test('名簿の整理（syncMemberLookup）は、招待の合言葉を消さない。メンバーから外れた人のものだけ消す', async () => {
+test('名簿の整理（syncMemberLookup）は、招待の合言葉を消さない。メンバーから外れた（消した）人のものだけ消す', async () => {
   const { store, 雲 } = 用意();
   store.setState({
-    members: [{ id: 'm1', name: 'いる人', personalId: '1234' }],
+    members: [{ id: 'm1', name: 'いる人' }],
+    deletedMembers: { 外れた人: Date.now() },
   });
   雲.置く(逆引きの道, '1234', { memberId: 'm1' });
   雲.置く(逆引きの道, 'a'.repeat(32), { memberId: 'm1', 招待: true });
@@ -285,6 +286,72 @@ test('部員として入る：途中で失敗したら、そのとき作った�
   assert.deepStrictEqual(消した, ['anon-1']);
 });
 
+test('部員として入る：前から使っていた匿名の口座（入り直しの窓）は、打ち間違えても消さない', async () => {
+  const { 雲 } = 用意();
+  雲.置く('group_accounts', 団体, { id: 団体, email: 'owner@example.com', verified: true });
+  const 前から = { uid: 'anon-old', isAnonymous: true };
+  const 認証 = { currentUser: 前から };
+  const 消した = [];
+  let 出た = 0;
+  const FirebaseAuth = {
+    // すでに匿名で入っている端末では、Firebase は今の口座をそのまま返す
+    signInAnonymously: async () => ({ user: 認証.currentUser }),
+    deleteUser: async (人) => void 消した.push(人.uid),
+    signOut: async () => void 出た++,
+  };
+  const { 部員として入る } = require('../src/groupLogin');
+  await assert.rejects(
+    部員として入る({ Firestore: 雲.api, FirebaseAuth, db: {}, auth: 認証 }, 団体, 'z'.repeat(32), '使えません'),
+    /使えません/
+  );
+  assert.deepStrictEqual(消した, [], 'まだ使えていた部員の口座を消した');
+  assert.strictEqual(出た, 0);
+  assert.strictEqual(認証.currentUser, 前から);
+});
+
+test('団体から出る：部員は証と匿名の口座を消して出る。電波が無くて返らなくても待ちきらずに出る', async () => {
+  const { 団体から出る } = require('../src/groupLogin');
+  const 起きた = [];
+  const 認証 = { currentUser: { uid: 'anon-9', isAnonymous: true } };
+  const 道具 = (返らない) => ({
+    Firestore: {
+      doc: (_db, 集まり, id) => `${集まり}/${id}`,
+      // 電波が無いと Firestore の書き込みは届くまで返らない
+      deleteDoc: (場所) => (起きた.push(`消す ${場所}`), 返らない ? new Promise(() => {}) : Promise.resolve()),
+    },
+    FirebaseAuth: {
+      deleteUser: async (人) => {
+        起きた.push(`口座 ${人.uid}`);
+        認証.currentUser = null;
+      },
+      signOut: async () => {
+        起きた.push('出る');
+        認証.currentUser = null;
+      },
+    },
+    db: {},
+    auth: 認証,
+  });
+  const 始め = Date.now();
+  await 団体から出る(道具(true), 'member', 30);
+  assert.ok(Date.now() - 始め < 1000, '証の削除を待ちきった');
+  assert.deepStrictEqual(起きた, ['消す member_claims/anon-9', '口座 anon-9']);
+  // 団体はログインから出るだけ（証も口座も消さない）
+  起きた.length = 0;
+  認証.currentUser = { uid: 'owner-1', isAnonymous: false };
+  await 団体から出る(道具(false), 'group', 30);
+  assert.deepStrictEqual(起きた, ['出る']);
+  // 口座を消せない（入ってから日が経った）ときは出るだけ
+  起きた.length = 0;
+  認証.currentUser = { uid: 'anon-10', isAnonymous: true };
+  const 消せない = 道具(false);
+  消せない.FirebaseAuth.deleteUser = async () => {
+    throw Object.assign(new Error('x'), { code: 'auth/requires-recent-login' });
+  };
+  await 団体から出る(消せない, 'member', 30);
+  assert.deepStrictEqual(起きた, ['消す member_claims/anon-10', '出る']);
+});
+
 // ── 何度か送る（2026-10-24：雲の返事が戻らない回への予防）──
 const { 何度か送る } = require('../src/memberInvite');
 
@@ -361,42 +428,48 @@ function 読みを数える(雲) {
 test('逆引き表：名簿と削除の控えが前に合わせたときと同じなら読まない。変わったら読む', async () => {
   const { store, 雲 } = 用意();
   const 数 = 読みを数える(雲);
-  store.setState({ members: [{ id: 'm1', name: 'いる人', personalId: '1234' }] });
+  雲.置く(逆引きの道, 'K7MP3X', { memberId: 'm1' });
+  store.setState({ members: [{ id: 'm1', name: 'いる人' }] });
   await store.getState().syncMemberLookup();
   await store.getState().syncMemberLookup();
   assert.strictEqual(数.逆引き, 1, '変わっていないのに読んだ');
+  assert.deepStrictEqual(store.getState().個人IDの表, { m1: 'K7MP3X' }, '読んだ表を店に持っていない');
   // 名前だけ変えても読まない（表に関わらない）
-  store.setState({ members: [{ id: 'm1', name: '直した名前', personalId: '1234' }] });
+  store.setState({ members: [{ id: 'm1', name: '直した名前' }] });
   await store.getState().syncMemberLookup();
   assert.strictEqual(数.逆引き, 1);
-  // 個人ID が変わった・人が増えた・削除の控えが変わった → 読む
-  store.setState({ members: [{ id: 'm1', name: '直した名前', personalId: '5678' }] });
+  // 人が増えた・削除の控えが変わった → 読む
+  store.setState({ members: [{ id: 'm1', name: '直した名前' }, { id: 'm2', name: '増えた人' }] });
   await store.getState().syncMemberLookup();
   assert.strictEqual(数.逆引き, 2);
-  assert.deepStrictEqual(雲.中身(逆引きの道), ['5678']);
   store.setState({ deletedMembers: { m9: Date.now() } });
   await store.getState().syncMemberLookup();
   assert.strictEqual(数.逆引き, 3);
 });
 
-test('逆引き表：起動したら（店を作り直したら）最初は必ず読む。控えから答えた表では済みにしない', async () => {
+test('逆引き表：起動したら（店を作り直したら）最初は必ず読む。控えから答えた表では済みにせず、個人ID も振らない', async () => {
   const 一台目 = 用意();
-  一台目.store.setState({ members: [{ id: 'm1', name: 'いる人', personalId: '1234' }] });
-  await 一台目.store.getState().syncMemberLookup();
+  一台目.store.setState({ members: [{ id: 'm1', name: 'いる人' }] });
+  await 一台目.store.getState().ensurePersonalIds();
+  const [振った] = 一台目.雲.中身(逆引きの道);
+  assert.match(振った, /^[A-HJKMNP-Z2-9]{6}$/);
   // ほかの端末が表を壊した（行が消えた）
-  一台目.雲.消す(`${逆引きの道}/1234`);
+  一台目.雲.消す(逆引きの道, 振った);
   // 同じ雲・同じ名簿で起動し直す
   const { store } = ストアを用意する(一台目.雲);
   const 雲 = 一台目.雲;
   store.setState({ activeGroupId: 団体, activeRole: 'group', isHydrated: true, isNetworkOnline: true });
   const 数 = 読みを数える(雲);
-  store.setState({ members: [{ id: 'm1', name: 'いる人', personalId: '1234' }] });
+  store.setState({ members: [{ id: 'm1', name: 'いる人' }] });
   雲.状態.控えから答える = true;
+  assert.deepStrictEqual(await store.getState().ensurePersonalIds(), [], '控えから答えた表で個人ID を振った（A1）');
   await store.getState().syncMemberLookup();
+  assert.deepStrictEqual(雲.中身(逆引きの道), [], '控えから答えた表で書いた');
   雲.状態.控えから答える = false;
-  await store.getState().syncMemberLookup();
-  assert.strictEqual(数.逆引き, 2, '控えから答えた表で済みにした');
-  assert.deepStrictEqual(雲.中身(逆引きの道), ['1234'], '消えた行を作り直していない');
+  const 振り直した = await store.getState().ensurePersonalIds();
+  assert.strictEqual(振り直した.length, 1, '雲から読めたのに振らない');
+  assert.ok(数.逆引き >= 3, '控えから答えた表で済みにした');
+  assert.deepStrictEqual(雲.中身(逆引きの道), [振り直した[0].個人ID]);
 });
 
 test('逆引き表：名簿が空に見えるときは、個人ID の行も消さない', async () => {
@@ -408,22 +481,35 @@ test('逆引き表：名簿が空に見えるときは、個人ID の行も消�
   assert.deepStrictEqual(雲.中身(逆引きの道), ['1234']);
 });
 
+test('逆引き表：手元の名簿に見えないだけの人（ほかの端末で足したばかり）の行は消さない。同じ人の古い ID は消す', async () => {
+  const { store, 雲 } = 用意();
+  雲.置く(逆引きの道, 'K7MP3X', { memberId: 'm1' });
+  雲.置く(逆引きの道, '1234', { memberId: 'm1' });
+  雲.置く(逆引きの道, 'AB2CDE', { memberId: 'ほかの端末で足した人' });
+  store.setState({ members: [{ id: 'm1', name: 'いる人' }] });
+  await store.getState().syncMemberLookup();
+  await 待つ(10);
+  assert.deepStrictEqual(雲.中身(逆引きの道), ['AB2CDE', 'K7MP3X'].sort());
+});
+
 test('逆引き表：同時に 2 本走らせない。走っている間に変わったら、終わってから 1 回だけ見直す', async () => {
   const { store, 雲 } = 用意();
   const 数 = 読みを数える(雲);
-  store.setState({ members: [{ id: 'm1', name: 'いる人', personalId: '1234' }] });
+  雲.置く(逆引きの道, 'K7MP3X', { memberId: 'm1' });
+  雲.置く(逆引きの道, 'AB2CDE', { memberId: 'm2' });
+  store.setState({ members: [{ id: 'm1', name: 'いる人' }] });
   const 一本目 = store.getState().syncMemberLookup();
   // 一本目が読んでいる間に、人が増えた
   store.setState({
     members: [
-      { id: 'm1', name: 'いる人', personalId: '1234' },
-      { id: 'm2', name: '増えた人', personalId: '2345' },
+      { id: 'm1', name: 'いる人' },
+      { id: 'm2', name: '増えた人' },
     ],
   });
   await Promise.all([一本目, store.getState().syncMemberLookup(), store.getState().syncMemberLookup()]);
   await 待つ(10);
   assert.strictEqual(数.逆引き, 2, '同時に読んだか、見直していない');
-  assert.deepStrictEqual(雲.中身(逆引きの道), ['1234', '2345']);
+  assert.deepStrictEqual(store.getState().個人IDの表, { m1: 'K7MP3X', m2: 'AB2CDE' });
 });
 
 test('部員として入る：登録メールアドレスの確認が済んでいない団体には、猶予が過ぎたら匿名の利用者を作らずに断る', async () => {
@@ -443,4 +529,70 @@ test('部員として入る：登録メールアドレスの確認が済んで�
     /確認が済んでいない/
   );
   assert.equal(匿名, 0, '匿名の利用者を作った');
+});
+
+test('部員として入る：中継（/kojin）が確かめて証を書く。端末は逆引き表を読まない。中継が古い（404）ときだけ前の道', async () => {
+  const { 雲 } = 用意();
+  雲.置く('group_accounts', 団体, { id: 団体, email: 'owner@example.com', verified: true });
+  雲.置く(逆引きの道, 'K7MP3X', { memberId: 'm1' });
+  雲.置く(`groups/${団体}/members`, 'm1', { id: 'm1', name: '山田 太郎' });
+  const 認証 = { currentUser: null };
+  let 番 = 0;
+  const 消した = [];
+  const FirebaseAuth = {
+    signInAnonymously: async (auth) => void (auth.currentUser = { uid: `anon-${++番}`, isAnonymous: true }),
+    deleteUser: async (人) => void (消した.push(人.uid), (認証.currentUser = null)),
+    signOut: async () => void (認証.currentUser = null),
+  };
+  const 頼んだ = [];
+  const 返事 = (状態, 中身) => ({ ok: 状態 >= 200 && 状態 < 300, status: 状態, json: async () => 中身 });
+  let 中継の答え = 返事(200, { 結果: '入れた', memberId: 'm1', 名前: '山田 太郎' });
+  const 中継 = {
+    中継がある: () => true,
+    中継へfetch: async (道, init) => (頼んだ.push([道, JSON.parse(init.body)]), 中継の答え),
+  };
+  const { 部員として入る } = require('../src/groupLogin');
+  const 道具 = { Firestore: 雲.api, FirebaseAuth, db: {}, auth: 認証, 中継 };
+  const 読んだ前 = 雲.読んだ ? 雲.読んだ.length : 0;
+  assert.deepStrictEqual(await 部員として入る(道具, 団体, 'K7MP3X'), { memberId: 'm1', 名前: '山田 太郎' });
+  assert.deepStrictEqual(頼んだ[0], ['/kojin', { 団体, 鍵: 'K7MP3X' }]);
+  if (雲.読んだ) assert.ok(!雲.読んだ.slice(読んだ前).some((道) => String(道).includes('member_lookup')), '端末が逆引き表を読んだ');
+  // 見つからない：知らせて、今作った匿名の口座を消す
+  認証.currentUser = null;
+  中継の答え = 返事(200, { 結果: '見つからない' });
+  await assert.rejects(部員として入る(道具, 団体, 'ZZZZZZ', '使えません'), /使えません/);
+  assert.deepStrictEqual(消した, ['anon-2']);
+  // 試しすぎ・届かない・App Check
+  中継の答え = 返事(429, { error: 'x' });
+  await assert.rejects(部員として入る(道具, 団体, 'K7MP3X'), /試した回数が多すぎます/);
+  中継の答え = 返事(401, { error: 'x', 印: 'appcheck' });
+  await assert.rejects(部員として入る(道具, 団体, 'K7MP3X'), /この端末の確かめに失敗しました/);
+  中継の答え = 返事(503, { error: 'x' });
+  await assert.rejects(部員として入る(道具, 団体, 'K7MP3X'), /いまは確かめられません/);
+  // 古い中継（/kojin が無い）：前の道で入る
+  認証.currentUser = null;
+  中継の答え = 返事(404, { error: 'この道は中継しません' });
+  assert.deepStrictEqual(await 部員として入る(道具, 団体, 'K7MP3X'), { memberId: 'm1', 名前: '山田 太郎' });
+  // 古い中継は道を見る前に「通してよい人か」で匿名の口座を断る（403）。これも前の道で入る（検証環境の E2E で落ちた）
+  認証.currentUser = null;
+  中継の答え = 返事(403, { error: 'この機能は、団体または個人でログインした人だけが使えます' });
+  assert.deepStrictEqual(await 部員として入る(道具, 団体, 'K7MP3X'), { memberId: 'm1', 名前: '山田 太郎' });
+  // ほかの 403（新しい中継の「匿名でない」など）は前の道にしない
+  認証.currentUser = null;
+  中継の答え = 返事(403, { error: '部員のログインは匿名の口座で呼んでください' });
+  await assert.rejects(部員として入る(道具, 団体, 'K7MP3X'), /いまは確かめられません/);
+});
+
+test('部員として入る：12/3 を過ぎた 4 桁は、匿名の口座を作る前に分かる言葉で断る', async () => {
+  let 作った = 0;
+  const { 部員として入る } = require('../src/groupLogin');
+  const 道具 = {
+    Firestore: {},
+    FirebaseAuth: { signInAnonymously: async () => void 作った++ },
+    db: {},
+    auth: { currentUser: null },
+    今: Date.parse('2026-12-03T00:00:00Z'),
+  };
+  await assert.rejects(部員として入る(道具, 団体, '1234'), /4桁の個人IDは使えなくなりました/);
+  assert.strictEqual(作った, 0);
 });

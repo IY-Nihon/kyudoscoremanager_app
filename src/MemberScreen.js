@@ -65,7 +65,11 @@ const MemberScreen = () => {
     isAdminMode,
     activeRole,
     myMemberId,
+    個人IDの表 = {},
+    自分の個人ID,
   } = useストアの一部([
+    '個人IDの表',
+    '自分の個人ID',
     'members',
     'addMember',
     'updateMember',
@@ -368,6 +372,19 @@ const MemberScreen = () => {
   // 読み込み直すまで古いまま出る
   const いまの自分 =
     activeRole === 'member' ? (members || []).find((部員1人) => 部員1人 && 部員1人.id === myMemberId) : null;
+  // 個人ID は逆引き表から読む（名簿の文書には置かない。src/storeMembers.js）。持ち主の端末は 個人IDの表、
+  // 部員の端末は自分の所属の証から読んだ 自分の個人ID（ほかの人の ID は届かない）
+  const 個人IDを引く = (部員1人) =>
+    !部員1人
+      ? ''
+      : activeRole === 'group'
+        ? 個人IDの表[部員1人.id] || 部員1人.personalId || ''
+        : 部員1人.id === myMemberId
+          ? 自分の個人ID || ''
+          : '';
+  React.useEffect(() => {
+    if (activeRole === 'member' && !自分の個人ID) useScoreStore.getState().自分の個人IDを読む();
+  }, [activeRole, 自分の個人ID]);
   const 編集の中身 = (窓として出す) => (
     <View // 窓のときは窓の見た目、画面のときは画面いっぱいに広げる。
       // 窓の枠のまま画面に置くと、右半分が空いたままになる
@@ -402,18 +419,18 @@ const MemberScreen = () => {
               placeholderTextColor={色.灰_薄い}
             />
             <Text style={styles.inputHelperText}>姓名の間にスペースを入力してください</Text>
-            {編集中の部員 && 編集中の部員.personalId && (
+            {編集中の部員 && 個人IDを引く(編集中の部員) ? (
               <>
                 <Text style={styles.label}>個人ID (自動採番)</Text>
                 <View style={[styles.input, { justifyContent: 'center', opacity: 0.6 }]}>
                   <Text style={{ fontSize: 16 }}>
                     {isAdminMode || 編集中の部員.id === myMemberId
-                      ? 編集中の部員.personalId
+                      ? 個人IDを引く(編集中の部員)
                       : '******** (管理者のみ表示)'}
                   </Text>
                 </View>
               </>
-            )}
+            ) : null}
             {/* 招待リンク（団体の持ち主が管理者モードのときだけ）。合言葉は逆引き表に置き、 */
             /* メンバーには一覧させない（src/memberInvite.js） */}
             {編集中の部員 && activeRole === 'group' && isAdminMode && (
@@ -580,10 +597,11 @@ const MemberScreen = () => {
               <Text style={styles.きまりの名}>名前</Text>
               <Text style={styles.きまりの値}>{(いまの自分 || {}).name || 名前の下書き || '未設定'}</Text>
             </View>
-            {編集中の部員 && 編集中の部員.personalId ? (
+            {編集中の部員 && 個人IDを引く(編集中の部員) ? (
               <View style={styles.きまりの行}>
-                <Text style={styles.きまりの名}>個人ID</Text>
-                <Text style={styles.きまりの値}>{編集中の部員.personalId}</Text>
+                {/* 部員の端末が知っているのは、ログインに使った ID（団体が配り直したら、新しい ID に替わっている） */}
+                <Text style={styles.きまりの名}>ログインに使った個人ID</Text>
+                <Text style={styles.きまりの値}>{個人IDを引く(編集中の部員)}</Text>
               </View>
             ) : null}
             <View style={styles.きまりの行}>

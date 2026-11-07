@@ -58,6 +58,9 @@ if (欠けた値.length) {
 if (!/^EXPO_PUBLIC_RECAPTCHA_SITE_KEY=/m.test(fs.readFileSync(設定ファイル, 'utf8')))
   環境.EXPO_PUBLIC_RECAPTCHA_SITE_KEY = '';
 
+// Firestore の通信を毎回つなぎ直す形に固定する（src/db.js。E2E の iPhone で流しっぱなしの道が止まるため。検証環境の束だけ）
+if (!環境.EXPO_PUBLIC_FIRESTORE_LONG_POLLING) 環境.EXPO_PUBLIC_FIRESTORE_LONG_POLLING = '1';
+
 const 書き出し先 = process.env.BUILD_OUT || 'dist';
 
 console.log(`検証環境向けに書き出します…（${書き出し先}/）`);
