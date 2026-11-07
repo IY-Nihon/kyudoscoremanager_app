@@ -41,6 +41,53 @@ function いまの様子() {
   }
 }
 
+/** 中継が受ける 1 件の文字の上限（256KB。kyudo-chukei の hozon.mjs）より少し小さく */
+const 文字の上限 = 240 * 1024;
+
+/** JSON にしたときの大きさ（バイト）。日本語は 1 字 3 バイトになる */
+function 大きさ(値) {
+  try {
+    const 字 = JSON.stringify(値) || '';
+    return typeof TextEncoder !== 'undefined' ? new TextEncoder().encode(字).length : 字.length * 3;
+  } catch {
+    return Infinity;
+  }
+}
+
+/**
+ * ログに入れる値を、JSON にして 上限 字までに切る（道具の引数・返事・図など、大きくなりうるもの）。
+ * 収まればそのまま返す。収まらなければ先頭だけの字にして、切ったことと元の字数を残す
+ */
+function 小さくする(値, 上限 = 8000) {
+  let 字;
+  try {
+    字 = JSON.stringify(値);
+  } catch {
+    return '（JSON にできない値）';
+  }
+  if (字 === undefined) return null;
+  if (字.length <= 上限) return 値;
+  return { 切った: true, 字数: 字.length, 先頭: 字.slice(0, 上限) };
+}
+
+/** 大きくなりやすい順。上限を越えたら、この順に省く（答えと質問は最後まで残す） */
+const 省く順 = ['道具の返事', '図', '道具の引数', '元の読み取り', '読み取り'];
+
+/** 1 件を中継が受ける大きさに収める（越えたら大きいものから省き、それでも越えたら文を切る） */
+function 収める(中身) {
+  if (大きさ(中身) <= 文字の上限) return 中身;
+  const 写し = Object.assign({}, 中身);
+  for (const 鍵 of 省く順) {
+    if (!(鍵 in 写し)) continue;
+    写し[鍵] = '（大きすぎて省いた）';
+    if (大きさ(写し) <= 文字の上限) return 写し;
+  }
+  for (const 鍵 of Object.keys(写し)) {
+    if (typeof 写し[鍵] === 'string' && 写し[鍵].length > 4000) 写し[鍵] = 写し[鍵].slice(0, 4000) + '…（切った）';
+  }
+  return 大きさ(写し) <= 文字の上限 ? 写し : { 省いた: true, 種類の印: Object.keys(中身).slice(0, 20) };
+}
+
 /**
  * 1 件送る。
  * @param {'チャット'|'写真読み取り'|'予定表'} 種類
@@ -55,7 +102,7 @@ async function 改善のために取っておく(種類, 中身, 添付たち = 
     const 返り = await 中継.中継へfetch('/hozon', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, 種類, 中身: Object.assign(いまの様子(), 中身) }),
+      body: JSON.stringify({ id, 種類, 中身: 収める(Object.assign(いまの様子(), 中身)) }),
     });
     if (!返り.ok) return null;
     const 付ける = (添付たち || [])
@@ -112,4 +159,13 @@ async function 写真を縮める(base64, 型 = 'image/jpeg', 長い辺 = 1600) 
   }
 }
 
-module.exports = { 改善のために取っておく, 写真を縮める, base64をBlobに, 新しいid, 添付の上限 };
+module.exports = {
+  改善のために取っておく,
+  写真を縮める,
+  base64をBlobに,
+  新しいid,
+  添付の上限,
+  小さくする,
+  収める,
+  文字の上限,
+};

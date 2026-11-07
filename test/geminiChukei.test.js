@@ -213,3 +213,47 @@ test('復元が終わってもログインしていなければ、待ったあ�
   const c = require('../src/geminiChukei');
   assert.equal(await c.ログインの証(), null);
 });
+
+test('入っている団体（X-Kyudo-Group）と App Check の印（X-Firebase-AppCheck）を添える。無ければ付けない', async () => {
+  const 店の道 = path.join(SRC, 'useScoreStore.js');
+  const 店 = new Module(店の道, null);
+  ((店.filename = 店の道), (店.loaded = true));
+  店.exports = { useScoreStore: { getState: () => ({ activeGroupId: '100001' }) } };
+  const 元の店 = require.cache[店の道];
+  require.cache[店の道] = 店;
+  const 印の道 = require.resolve('firebase/app-check');
+  const 元の印 = require.cache[印の道];
+  const 印 = new Module(印の道, null);
+  ((印.filename = 印の道), (印.loaded = true));
+  印.exports = { getToken: async () => ({ token: 'APPCHECK.TOKEN' }) };
+  require.cache[印の道] = 印;
+  try {
+    const c = 読み込む({ 宛先: 中継, 人: ログイン済み });
+    require.cache[path.join(SRC, 'db.js')].exports.appCheck = {};
+    const 設定 = await c.SDKの設定();
+    assert.deepEqual(設定.customHeaders, {
+      Authorization: 'Bearer ID.TOKEN.x',
+      'X-Kyudo-Group': '100001',
+      'X-Firebase-AppCheck': 'APPCHECK.TOKEN',
+    });
+    const 元のfetch = global.fetch;
+    let 頭;
+    global.fetch = async (_url, init) => ((頭 = init.headers), { ok: true, status: 200 });
+    try {
+      await c.中継へfetch('/hozon', { method: 'POST' });
+    } finally {
+      global.fetch = 元のfetch;
+    }
+    assert.equal(頭.get('X-Kyudo-Group'), '100001');
+    assert.equal(頭.get('X-Firebase-AppCheck'), 'APPCHECK.TOKEN');
+    // 団体に入っていない・印が取れない
+    店.exports = { useScoreStore: { getState: () => ({ activeGroupId: null }) } };
+    印.exports = { getToken: async () => { throw new Error('取れない'); } };
+    assert.deepEqual((await c.SDKの設定()).customHeaders, { Authorization: 'Bearer ID.TOKEN.x' });
+  } finally {
+    if (元の店) require.cache[店の道] = 元の店;
+    else delete require.cache[店の道];
+    if (元の印) require.cache[印の道] = 元の印;
+    else delete require.cache[印の道];
+  }
+});

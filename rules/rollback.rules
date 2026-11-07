@@ -57,6 +57,19 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/group_accounts/$(groupId)).data.email == callerEmail();
     }
 
+    // 切り替えの途中は、確認の済んだ口座か、切り替えを頼んだ口座（pendingUid）だけを帳面の本人とみなす。
+    // 切り戻しでも緩めない（緩めると、空いたアドレスで作った口座に団体を乗っ取られる。firestore.rules の B1）
+    function switching(data) {
+      return data.get('pendingEmail', '') != '' || data.get('previousEmail', '') != '';
+    }
+    function sameOwnerAccount(data) {
+      return callerEmail() != ''
+        && data.email == callerEmail()
+        && (!switching(data)
+            || request.auth.token.email_verified == true
+            || data.get('pendingUid', '') == request.auth.uid);
+    }
+
     // ここが通常のルールとの違い。所属の証明を求めず、認証済みなら通す
     function canAccess(groupId) {
       return signedIn();
@@ -79,9 +92,9 @@ service cloud.firestore {
         // email そのものは変えさせない。切り替えは新しいアドレスの確認を通す（下の句）。
         // 直接変えられると、確かめていないアドレスに団体を渡せてしまう。
         // 前のアドレス（previousEmail）と口座の番号（ownerUid）は、消せるが書き換えられない
-        || (callerEmail() != ''
-            && resource.data.email == callerEmail()
-            && request.resource.data.keys().hasOnly(['id', 'email', 'pendingEmail', 'previousEmail', 'ownerUid', 'verified'])
+        || (sameOwnerAccount(resource.data)
+            && request.resource.data.keys().hasOnly(['id', 'email', 'pendingEmail', 'pendingUid', 'previousEmail', 'ownerUid', 'verified'])
+            && request.resource.data.get('pendingUid', request.auth.uid) == request.auth.uid
             && request.resource.data.email == resource.data.email
             && request.resource.data.get('id', '') == resource.data.get('id', '')
             && (!('previousEmail' in request.resource.data)

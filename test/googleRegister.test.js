@@ -41,11 +41,14 @@ test('Google で作る：パスワードを登録できなければ団体を作�
   assert.match(持たせる, /電波の良い場所でもう一度『作成』を押してください。/);
 });
 
-test('Google を選ぶ：パスワードを持つ口座（もう団体を作った人）は作らせず、口座は消さない', () => {
+test('Google を選ぶ：このメールの団体がもうあれば、作らずにそのまま団体に入る（パスワードが無ければ決めてもらう）。口座は消さない', () => {
+  // 2026-11-04 本人：「Google で作る」で団体がもうあれば、そのまま入れる（A27）
   const 中 = 本体('Googleを選ぶ');
   assert.match(中, /providerId === 'password'/);
-  const 既に = 中.slice(中.indexOf('if (パスワードがある'), 中.indexOf('Googleのメールを置く(メール)'));
-  assert.match(既に, /signOut/);
+  const 既に = 中.slice(中.indexOf('if (既に && !既に.empty)'), 中.indexOf('Googleのメールを置く(メール)'));
+  assert.ok(既に.length > 0, '団体があるときの分かれ道が無い');
+  assert.match(既に, /setAuth\(入る\.id, 'group'/, 'そのまま団体に入っていない');
+  assert.match(既に, /パスワードを決め直すを置く\(入る\)/, 'パスワードが無いときに決めてもらっていない');
   assert.doesNotMatch(既に, /deleteUser/);
   assert.match(既に, /return;/);
 });

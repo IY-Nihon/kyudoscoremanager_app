@@ -241,6 +241,17 @@ const HistoryScreen = () => {
       return 甲は選択中 && !乙は選択中 ? -1 : !甲は選択中 && 乙は選択中 ? 1 : 甲.localeCompare(乙);
     });
   }, [mySessions, historySelectedTags]);
+  // どの記録にも無くなったタグは、絞り込みから外す（A38）。前は、選んだタグの付いた記録を全部消す・タグを外すと
+  // タグの帯（「すべて解除」のある帯）が出なくなるのに絞り込みは効いたままで、履歴がずっと「記録がありません」になった
+  React.useEffect(() => {
+    if (!historySelectedTags.length) return;
+    const 有るタグ = new Set();
+    mySessions.forEach((記録) => {
+      if (記録 && Array.isArray(記録.tags)) 記録.tags.forEach((タグ) => 有るタグ.add(タグ));
+    });
+    const 残す = historySelectedTags.filter((タグ) => 有るタグ.has(タグ));
+    if (残す.length !== historySelectedTags.length) useScoreStore.getState().setHistorySelectedTags(残す);
+  }, [mySessions, historySelectedTags]);
   const 月の一覧 = React.useMemo(() => {
     const 集めた = new Set();
     mySessions.forEach((記録) => {
@@ -1182,7 +1193,8 @@ const HistoryScreen = () => {
                     />
                   </View>
                 </View>
-                {タグの一覧.length > 0 && (
+                {/* 絞り込みが残っているあいだは、タグが 1 つも無くても帯を出す（解除できるように。A38） */}
+                {(タグの一覧.length > 0 || historySelectedTags.length > 0) && (
                   <View style={styles.tagFilterContainer}>
                     <View
                       style={{

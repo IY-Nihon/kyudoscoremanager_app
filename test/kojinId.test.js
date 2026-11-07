@@ -37,5 +37,12 @@ test('4 桁を使える終わりは、決まり（legacyIdUsable）とアプリ�
   const 合う = 決まり.match(/function legacyIdUsable\(\) {\s*return request\.time < timestamp\.date\((\d{4}), (\d{1,2}), (\d{1,2})\)/);
   assert.ok(合う, 'firestore.rules に legacyIdUsable の日付が無い');
   assert.equal(`${合う[1]}-${合う[2].padStart(2, '0')}-${合う[3].padStart(2, '0')}`, 個.古い形を使える終わり);
-  assert.ok(決まり.includes("matches('^[A-HJKMNP-Z2-9]{6}$')"), '決まりの 6 字の形が src/kojinId.js の 使う字 と合わない');
+  // 4 桁で入った証は、使える終わりで止める（isClaimedMember）。6 字の形は、証を書く中継が確かめる
+  //（kyudo-chukei の /kojin。決まりは端末に証を書かせない）
+  assert.match(
+    決まり,
+    /!string\(claim\(\)\.data\.get\('personalId', ''\)\)\.matches\('\^\[0-9\]\{4\}\$'\) \|\| legacyIdUsable\(\)/,
+    '4 桁の証を使える終わりで止めていない'
+  );
+  assert.match(決まり, /match \/member_claims\/\{uid\} \{[^}]*allow create, update: if false;/, '端末が証を書ける');
 });

@@ -16,7 +16,7 @@ const {
   Modal,
 } = require('./rn');
 const 確 = require('./mailKakunin');
-const { 使い捨てか } = require('./suteMail');
+const { 使い捨てか確かめる } = require('./suteMail');
 const 使い捨ての断り =
   '使い捨てのメールアドレスでは団体を作れません。ふだん使っているメールアドレス（学校・部・個人のもの）でお試しください。';
 
@@ -25,7 +25,7 @@ const 学 = require('./gakunen');
 const { 団体の種類を選ぶ } = require('./GroupTypePicker');
 const { IS_IOS, IS_WEB, SAFE_TOP_PADDING } = require('./IS_WEB');
 const { auth, db } = require('./db');
-const { 団体で入る, 切り替えを頼む, 部員として入る, 部員のログインの版 } = require('./groupLogin');
+const { 団体で入る, メールで団体に入る, 切り替えを頼む, 部員として入る, 部員のログインの版 } = require('./groupLogin');
 const { 何度か送る } = require('./memberInvite');
 const FirebaseAuth = require('firebase/auth');
 const Firestore = require('firebase/firestore');
@@ -91,6 +91,21 @@ const 誤りの文 = (誤り) => {
   }
   if (符号 === 'auth/user-not-found') {
     return '入力内容を確認してください';
+  }
+  // Google の窓（A28）。LINE などのアプリの中のブラウザは、ログインの窓を開けない・控えを持てないことがある
+  if (
+    符号 === 'auth/popup-blocked' ||
+    符号 === 'auth/operation-not-supported-in-this-environment' ||
+    符号 === 'auth/web-storage-unsupported' ||
+    符号 === 'auth/internal-error'
+  ) {
+    return 'Google のログインの窓を開けませんでした。LINE などのアプリの中のブラウザでは使えないことがあります。Safari・Chrome で開いてお試しください';
+  }
+  if (符号 === 'auth/unauthorized-domain') {
+    return 'この頁からは Google で登録できません。https://kyudoscoremanager.web.app から開いてお試しください';
+  }
+  if (符号 === 'auth/account-exists-with-different-credential') {
+    return 'このメールアドレスは、別の方法ですでに登録されています。団体IDとパスワードでお入りください';
   }
   return 誤り.message || '予期しないエラーが発生しました。時間を置いて再試行してください';
 };
@@ -179,6 +194,10 @@ const LoginScreen = () => {
   const [部員の同意を取る, 部員の同意を取るを置く] = React.useState(false);
   // Google で選んだアカウントのメール。あるあいだは、メール欄の無い専用の入力画面にする
   const [Googleのメール, Googleのメールを置く] = React.useState(null);
+  // Google で選んだメールの団体がもうあるのに、口座にパスワードの入り方が無いとき（A27）。{ id, 公開の団体ID, メール }
+  const [パスワードを決め直す, パスワードを決め直すを置く] = React.useState(null);
+  const [決め直すパスワード, 決め直すパスワードを置く] = React.useState('');
+  const [決め直しの難点, 決め直しの難点を置く] = React.useState('');
   // メールで作るとき、確認メールのリンクを押してもらうのを待っている（宛先）。確認が済むまで団体は作れない
   //（firestore.rules の verifiedEmail。偽のアドレスでは作れない。2026-11-03）
   const [確認待ちの宛先, 確認待ちの宛先を置く] = React.useState(null);
@@ -190,17 +209,25 @@ const LoginScreen = () => {
    * 団体IDの採番・公開の帳面・同意の記録・案内の出し方を1か所にまとめ、
    * 片方だけ直して食い違うことがないようにする。
    */
-  const 団体を作る = async (メール) => {
+  const 団体を作る = async (メール, 試した回 = 0) => {
     const 団体ID = Math.floor(1e5 + 9e5 * Math.random()).toString();
     const 帳面 = Firestore.doc(db, 'group_accounts', 団体ID);
     // 同じ番号が当たったら振り直す
-    if ((await Firestore.getDoc(帳面)).exists()) return 団体を作る(メール);
+    if ((await Firestore.getDoc(帳面)).exists()) return 団体を作る(メール, 試した回);
     // 帳面のメールは、決まり（callerEmail）が比べる認証のメールと同じ字にする。
     // 認証はメールを小文字で持つので、打った字のまま書くと大文字が混じったときに断られる
     const 帳面のメール = (auth && auth.currentUser && auth.currentUser.email) || メールを整える(メール);
     try {
-      // 公開の帳面には、ログインに要る2つと確認済みの印だけ置く（作れるのは確認が済んだ人だけ）
-      await Firestore.setDoc(帳面, { id: 団体ID, email: 帳面のメール, verified: true });
+      // 公開の帳面には、ログインに要る2つと確認済みの印だけ置く（作れるのは確認が済んだ人だけ）。
+      // 消した団体の控え（30 日）や中身が残る番号は、決まりが断る（firestore.rules の create）。
+      // 帳面からは見えないので、断られたら番号を振り直して 3 回まで試す
+      try {
+        await Firestore.setDoc(帳面, { id: 団体ID, email: 帳面のメール, verified: true });
+      } catch (断られた) {
+        if (String((断られた && 断られた.code) || '').includes('permission-denied') && 試した回 < 2)
+          return 団体を作る(メール, 試した回 + 1);
+        throw 断られた;
+      }
       // 同意の記録は private（誰でも読める場所に置かない）
       await Firestore.setDoc(
         Firestore.doc(db, 'group_accounts', 団体ID, 'private', 'consent'),
@@ -263,7 +290,7 @@ const LoginScreen = () => {
       const 結果 = await FirebaseAuth.signInWithPopup(auth, new FirebaseAuth.GoogleAuthProvider());
       const メール = 結果?.user?.email;
       if (!メール) throw new Error('Google からメールアドレスを受け取れませんでした');
-      if (使い捨てか(メール)) {
+      if (await 使い捨てか確かめる({ Firestore, db }, メール)) {
         await FirebaseAuth.signOut(auth).catch(() => {});
         Alert.alert('登録失敗', 使い捨ての断り);
         return;
@@ -275,12 +302,18 @@ const LoginScreen = () => {
       const 既に = await Firestore.getDocs(
         Firestore.query(Firestore.collection(db, 'group_accounts'), Firestore.where('email', '==', メール))
       ).catch(() => null);
-      if (パスワードがある || (既に && !既に.empty)) {
-        await FirebaseAuth.signOut(auth).catch(() => {});
-        Alert.alert(
-          'すでにあります',
-          `このメールアドレス（${メール}）では、もう団体が作られています。ログインからお入りください。`
-        );
+      if (既に && !既に.empty) {
+        // このメールの団体がもうある：Google で確かめた本人（帳面のメール）なので、そのまま団体に入れる（A27）。
+        // 前は「ログインからお入りください」で止まり、確認の済んでいない口座では Firebase がパスワードの入り方を外していて、
+        // 団体ID とパスワードでも入れなくなっていた。パスワードの入り方が無ければ、その場で決めてもらう
+        const 帳面 = 既に.docs[0];
+        const 中身 = (帳面 && 帳面.data()) || {};
+        const 入る = { id: 中身.id || 帳面.id, 公開の団体ID: 帳面.id, メール: 中身.email || メール };
+        if (パスワードがある) {
+          setAuth(入る.id, 'group', null, 入る.メール, 入る.公開の団体ID);
+          return;
+        }
+        パスワードを決め直すを置く(入る);
         return;
       }
       Googleのメールを置く(メール);
@@ -341,12 +374,24 @@ const LoginScreen = () => {
       try {
         await FirebaseAuth.updatePassword(auth.currentUser, 合言葉の入力);
       } catch (誤り) {
-        const 電波 = String((誤り && 誤り.code) || '') === 'auth/network-request-failed';
+        const 符号 = String((誤り && 誤り.code) || '');
+        // Google を選んでから時間が経つと（5 分ほど）、Firebase がパスワードを決めさせない。前は「別のパスワードを
+        // 入れて」と出て、何度入れても通らなかった（A26）。Google を選び直してもらう
+        if (符号 === 'auth/requires-recent-login') {
+          Alert.alert(
+            'もう一度お選びください',
+            'Google を選んでから時間が経ちました。もう一度「Google で作る」から Google のアカウントを選んでください。'
+          );
+          Googleのメールを置く(null);
+          return;
+        }
         Alert.alert(
           '登録失敗',
-          電波
+          符号 === 'auth/network-request-failed'
             ? '電波の良い場所でもう一度『作成』を押してください。'
-            : 'パスワードを登録できませんでした。別のパスワードを入れて、もう一度『作成』を押してください。'
+            : 符号 === 'auth/weak-password'
+              ? 'パスワードは6文字以上で設定してください'
+              : 'パスワードを登録できませんでした。別のパスワードを入れて、もう一度『作成』を押してください。'
         );
         return;
       }
@@ -370,8 +415,8 @@ const LoginScreen = () => {
       処理中を置く(true);
       try {
         const 宛先 = メールを整える(メールの入力);
-        // 使い捨てのアドレスでは作れない（決まりも止める。口座を作る前に断る）
-        if (使い捨てか(宛先)) {
+        // 使い捨てのアドレスでは作れない（決まりも止める。口座を作る前に断る。雲の一覧も見る）
+        if (await 使い捨てか確かめる({ Firestore, db }, 宛先)) {
           Alert.alert('登録失敗', 使い捨ての断り);
           return;
         }
@@ -465,6 +510,78 @@ const LoginScreen = () => {
             </Pressable>
             <Text style={styles.確認の注}>メールが届かないときは、迷惑メールのフォルダーも見てください。</Text>
             <Pressable accessibilityRole="button" onPress={確認をやめる} disabled={処理中}>
+              <Text style={styles.確認の副}>やめる</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+      {/* Google で選んだメールの団体がもうあるが、口座にパスワードが無い（Firebase が外した）。その場で決めて入る（A27） */}
+      <Modal
+        visible={!!パスワードを決め直す}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          パスワードを決め直すを置く(null);
+          FirebaseAuth.signOut(auth).catch(() => {});
+        }}
+      >
+        <View style={styles.確認の外}>
+          <View style={styles.確認の箱} testID="パスワードを決め直す窓">
+            <Text style={styles.確認の見出し}>パスワードを決めてください</Text>
+            <Text style={styles.確認の文}>
+              {`${(パスワードを決め直す && パスワードを決め直す.メール) || ''} の団体（団体ID ${(パスワードを決め直す && パスワードを決め直す.公開の団体ID) || ''}）に入ります。団体ログインに使うパスワードが無くなっていたので、新しく決めてください（団体IDとパスワードで入るときに使います）。`}
+            </Text>
+            <TextInput
+              accessibilityLabel="新しいパスワード"
+              style={styles.決め直しの欄}
+              value={決め直すパスワード}
+              onChangeText={(字) => {
+                決め直すパスワードを置く(字);
+                決め直しの難点を置く('');
+              }}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholder="6文字以上"
+            />
+            {決め直しの難点 ? <Text style={styles.確認の知らせ}>{決め直しの難点}</Text> : null}
+            <Pressable
+              accessibilityRole="button"
+              style={送るボタンの形(処理中)}
+              disabled={処理中}
+              onPress={一度だけ(async () => {
+                if (パスワードが短いか(決め直すパスワード)) {
+                  決め直しの難点を置く('パスワードは6文字以上で設定してください');
+                  return;
+                }
+                処理中を置く(true);
+                try {
+                  await FirebaseAuth.updatePassword(auth.currentUser, 決め直すパスワード);
+                  const 入る = パスワードを決め直す;
+                  パスワードを決め直すを置く(null);
+                  決め直すパスワードを置く('');
+                  setAuth(入る.id, 'group', null, 入る.メール, 入る.公開の団体ID);
+                } catch (誤り) {
+                  if (String((誤り && 誤り.code) || '') === 'auth/requires-recent-login') {
+                    パスワードを決め直すを置く(null);
+                    await FirebaseAuth.signOut(auth).catch(() => {});
+                    Alert.alert('もう一度お選びください', 'Google を選んでから時間が経ちました。もう一度 Google を選んでください。');
+                  } else 決め直しの難点を置く(誤りの文(誤り));
+                } finally {
+                  処理中を置く(false);
+                }
+              })}
+            >
+              {処理中 ? <ActivityIndicator color={色.白} /> : <Text style={styles.submitBtnText}>決めて入る</Text>}
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              disabled={処理中}
+              onPress={() => {
+                パスワードを決め直すを置く(null);
+                FirebaseAuth.signOut(auth).catch(() => {});
+              }}
+            >
               <Text style={styles.確認の副}>やめる</Text>
             </Pressable>
           </View>
@@ -609,11 +726,17 @@ const LoginScreen = () => {
                           if (!帳面.exists()) {
                             throw new Error('入力内容を確認してください');
                           }
-                          const { email: 登録のメール } = 帳面.data();
+                          const { email: 登録のメール, pendingEmail: 切り替え待ち } = 帳面.data();
                           await FirebaseAuth.sendPasswordResetEmail(auth, 登録のメール);
+                          // 切り替えの確認リンクを押したあと、次に入るまでは、認証のアドレスはもう新しいほう（A31。
+                          // 前は古いアドレスにだけ送って何も届かなかった）。新しいほうにも送る（口座が無ければ届かないだけ）
+                          if (切り替え待ち && 切り替え待ち !== 登録のメール)
+                            await FirebaseAuth.sendPasswordResetEmail(auth, 切り替え待ち).catch(() => {});
                           Alert.alert(
                             '完了',
-                            '登録メールアドレスにパスワード再設定用のリンクを送信しました。'
+                            切り替え待ち
+                              ? '登録メールアドレス（切り替えを頼んだ新しいアドレスにも）に、パスワード再設定用のリンクを送信しました。'
+                              : '登録メールアドレスにパスワード再設定用のリンクを送信しました。'
                           );
                           忘れた窓を置く('none');
                         } catch (誤り) {
@@ -664,10 +787,11 @@ const LoginScreen = () => {
                       // 新しい個人ID は大文字と数字の 6 字（src/kojinId.js）。前の 4 桁も使える終わりまでは入れる
                       placeholder="例: K7MP3X"
                       value={個人IDの入力}
-                      onChangeText={個人IDの入力を置く}
+                      // 整えてから 6 字で切る（全角・見えない空白・前後の空白を直す。前は欄の maxLength が先に切り、
+                      // 貼った「 K7MP3X」が「K7MP3」になった）。招待の合言葉は別の欄（招待リンク）なので 6 字でよい
+                      onChangeText={(字) => 個人IDの入力を置く(IDを整える(字).slice(0, 6))}
                       autoCapitalize="characters"
                       autoCorrect={false}
-                      maxLength={6}
                     />
                   )}
                   {画面の種類 === 'register' && (
@@ -770,13 +894,16 @@ const LoginScreen = () => {
                         if (団体IDの入力 && 合言葉の入力) {
                           処理中を置く(true);
                           try {
+                            const 道具 = { Firestore, FirebaseAuth, db, auth };
+                            if (String(団体IDの入力).includes('@')) {
+                              // ブラウザのパスワードの保存が、団体ID の欄にメールアドレスを入れた（A32）
+                              const 入る = await メールで団体に入る(道具, 団体IDの入力, 合言葉の入力);
+                              setAuth(入る.id, 'group', null, 入る.メール, 入る.公開の団体ID);
+                              return;
+                            }
                             // メールアドレスの切り替えが済んでいれば、新しいアドレスで入り直す
                             //（src/groupLogin.js の 団体で入る）
-                            const { id, メール } = await 団体で入る(
-                              { Firestore, FirebaseAuth, db, auth },
-                              整えたID(団体IDの入力),
-                              合言葉の入力
-                            );
+                            const { id, メール } = await 団体で入る(道具, 整えたID(団体IDの入力), 合言葉の入力);
                             setAuth(id, 'group', null, メール, 整えたID(団体IDの入力));
                           } catch (誤り) {
                             Alert.alert('ログイン失敗', 誤りの文(誤り));
@@ -1063,6 +1190,17 @@ const styles = StyleSheet.create({
   },
   inputIcon: { marginRight: 8 },
   input: { flex: 1, height: 48, fontSize: 16, color: 色.白 },
+  // 確認の箱（夜の地）の中の入力欄。この画面の配色から選ぶ（test/loginTheme.test.js）
+  決め直しの欄: {
+    height: 48,
+    fontSize: 16,
+    color: 色.生成り,
+    borderWidth: 1,
+    borderColor: 色.金_灰,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginVertical: 8,
+  },
   submitBtn: {
     backgroundColor: 色.金,
     height: 52,

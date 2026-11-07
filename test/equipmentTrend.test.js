@@ -15,7 +15,9 @@ const assert = require('node:assert');
 const { 期間の成績, 弓具の移り変わり, 見立ての言葉, 率を出す最小射数 } = require('../src/equipmentTrend');
 
 const 一日 = 86400000;
-const 基準 = Date.parse('2026-06-01T00:00:00Z');
+// 端末の暦の 0 時（弓具の期間は、変えた日の 0 時（端末の暦）で切る。UTC の 0 時にすると、日本では朝 9 時になり、
+// 日本時間で流したときだけ期間の始めが 9 時間ずれて落ちた。2026-11-07）
+const 基準 = new Date(2026, 5, 1).getTime();
 
 /** その日に、指定の的中数で 射数 本引いた記録を作る */
 const 記録 = (日, 射数, 的中, 他 = {}) =>
@@ -255,4 +257,22 @@ test('分析画面が読む項目が、そのまま揃っている', () => {
     assert.ok(言葉.length > 0, '見立ての言葉が空');
     assert.ok(!言葉.includes('undefined'), '見立ての言葉に undefined が混じっている: ' + 言葉);
   }
+});
+
+test('弓具を変えた日は、その日の朝の練習から新しい弓具に数える（変えた日は昼 12 時として持っている。A9）', () => {
+  const { 弓具の移り変わり } = require('../src/equipmentTrend');
+  const 日 = (年, 月, 日, 時 = 0) => new Date(年, 月 - 1, 日, 時).getTime();
+  const 人 = {
+    id: 'm1',
+    name: '山田',
+    equipments: [
+      { id: 'e1', date: 日(2026, 10, 1, 12), weight: '12' },
+      { id: 'e2', date: 日(2026, 10, 10, 12), weight: '14' },
+    ],
+  };
+  const 期間 = 弓具の移り変わり(人, []);
+  const 新しい = 期間.find((x) => x.変更.id === 'e2');
+  const 前 = 期間.find((x) => x.変更.id === 'e1');
+  assert.equal(新しい.始め, 日(2026, 10, 10), '変えた日の 0 時から数えていない');
+  assert.equal(前.終わり, 日(2026, 10, 10) - 1, '前の弓具が変えた日の朝まで続いている');
 });

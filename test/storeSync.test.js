@@ -522,134 +522,90 @@ test('メンバー：送信が失われても、次の同期で送り直され�
 // ──────────────────────────────────────────────────────────────
 const 逆引きの道 = `groups/${団体}/member_lookup`;
 
-test('逆引き表：名簿に足した人が載る', async () => {
+test('逆引き表：個人ID の無い人に 6 字の ID を逆引き表に振る。名簿の文書には置かない', async () => {
   const { store, 雲 } = 用意();
-  store.setState({
-    members: [{ id: 'mem-1', name: '部員1', personalId: '1234', lastModified: 1 }],
-  });
-  await store.getState().syncMemberLookup();
+  store.setState({ members: [{ id: 'mem-1', name: '部員1', lastModified: 1 }] });
+  雲.置く(メンバーの道, 'mem-1', { id: 'mem-1', name: '部員1', lastModified: 1 });
+  const 振った = await store.getState().ensurePersonalIds();
   await 待つ(50);
-  assert.deepEqual(雲.中身(逆引きの道), ['1234']);
-  assert.equal(雲.値(逆引きの道, '1234').memberId, 'mem-1');
+  assert.strictEqual(振った.length, 1);
+  const [個人ID] = 雲.中身(逆引きの道);
+  assert.match(個人ID, /^[A-HJKMNP-Z2-9]{6}$/);
+  assert.equal(雲.値(逆引きの道, 個人ID).memberId, 'mem-1');
+  assert.ok(!('personalId' in 雲.値(メンバーの道, 'mem-1')), '名簿の文書に個人ID を書いた');
+  assert.deepStrictEqual(store.getState().個人IDの表, { 'mem-1': 個人ID });
 });
 
-test('逆引き表：名簿から消えた人は表からも消える', async () => {
-  const { store, 雲 } = 用意();
-  雲.置く(逆引きの道, '9999', { memberId: 'mem-退部', updatedAt: 1 });
-  store.setState({
-    members: [{ id: 'mem-1', name: '部員1', personalId: '1234', lastModified: 1 }],
-  });
-  await store.getState().syncMemberLookup();
-  await 待つ(50);
-  assert.deepEqual(雲.中身(逆引きの道), ['1234'], '退部した人の分は残さない');
-});
-
-test('逆引き表：4桁でない個人IDは載せない', async () => {
-  const { store, 雲 } = 用意();
-  // 起動時に走る個人IDの自動採番を先に済ませてから確かめる
-  // （そうしないと、4桁でない人にIDが振られてしまい、この検査の対象が消える）
-  await 待つ(50);
-  store.setState({
-    members: [
-      { id: 'mem-1', name: '部員1', personalId: '12', lastModified: 1 },
-      { id: 'mem-2', name: '部員2', personalId: '', lastModified: 1 },
-      { id: 'mem-3', name: '部員3', personalId: '5678', lastModified: 1 },
-    ],
-  });
-  await store.getState().syncMemberLookup();
-  await 待つ(50);
-  assert.deepEqual(雲.中身(逆引きの道), ['5678']);
-});
-
-test('逆引き表：部員ロールでは書き込まない', async () => {
-  // 部員の端末は名簿を書けない。試みるとルールに拒否される
-  const { store, 雲 } = 用意();
-  store.setState({
-    activeRole: 'member',
-    members: [{ id: 'mem-1', name: '部員1', personalId: '1234', lastModified: 1 }],
-  });
-  await store.getState().syncMemberLookup();
-  await 待つ(50);
-  assert.deepEqual(雲.中身(逆引きの道), []);
-});
-
-test('個人ID：部員の端末では振らない', async () => {
-  // 部員が振ると、名簿だけ書き換わって逆引き表（団体限定）が置き去りになり、
-  // その人がログインできなくなる。名簿を触る他の処理と同じく団体限定にする。
-  const { store, 雲 } = 用意();
-  await 待つ(50); // 起動時の自動採番を先に済ませる
-  const 名簿 = [{ id: 'mem-1', name: '部員1', personalId: '', lastModified: 1 }];
-  雲.置く(メンバーの道, 'mem-1', Object.assign({}, 名簿[0]));
-  store.setState({ activeRole: 'member', members: 名簿.map((m) => Object.assign({}, m)), alumni: [] });
-  await store.getState().ensurePersonalIds();
-  await 待つ(50);
-  assert.equal(雲.値(メンバーの道, 'mem-1').personalId, '', 'クラウドの個人IDを書き換えない');
-  assert.equal(store.getState().members[0].personalId, '', '手元も変えない');
-});
-
-test('個人ID：送信が失われても、次の同期で送り直される', async () => {
-  // 「同期済み」の印を先に付けていたため、送信が失われるとクラウドにIDが
-  // 無いまま固定され、別の端末が別のIDを振って食い違っていた。
-  const { store, 雲 } = 用意();
-  await 待つ(50);
-  const 名簿 = [{ id: 'mem-1', name: '部員1', personalId: '', lastModified: 1000 }];
-  雲.置く(メンバーの道, 'mem-1', Object.assign({}, 名簿[0]));
-  store.setState({ members: 名簿.map((m) => Object.assign({}, m)), alumni: [] });
-
-  雲.状態.オフライン = true;
-  store.getState().ensurePersonalIds(); // 通信できないと返らないので待たない
-  await 待つ(80);
-  const 振ったID = store.getState().members[0].personalId;
-  assert.match(振ったID, /^[A-HJKMNP-Z2-9]{6}$/, '手元には 6 字の ID が振られる');
-  assert.equal(store.getState().members[0].syncStatus, '未同期', '送信前は未同期');
-
-  // 送信待ちが失われた＝クラウドは元のまま
-  雲.状態.オフライン = false;
-  雲.置く(メンバーの道, 'mem-1', Object.assign({}, 名簿[0]));
-  await store.getState().syncSessions();
-  await 待つ(80);
-  assert.equal(雲.値(メンバーの道, 'mem-1').personalId, 振ったID, 'クラウドへ届く');
-  assert.equal(store.getState().members[0].syncStatus, '同期済み');
-});
-
-test('個人ID：卒業生の分も送り直される', async () => {
-  const { store, 雲 } = 用意();
-  await 待つ(50);
-  const 卒 = { id: 'alu-1', name: '卒業生1', personalId: '', lastModified: 1000 };
-  雲.置く(`groups/${団体}/alumni`, 'alu-1', Object.assign({}, 卒));
-  store.setState({ members: [], alumni: [Object.assign({}, 卒)] });
-
-  雲.状態.オフライン = true;
-  store.getState().ensurePersonalIds();
-  await 待つ(80);
-  const 振ったID = store.getState().alumni[0].personalId;
-  assert.match(振ったID, /^[A-HJKMNP-Z2-9]{6}$/);
-  assert.equal(store.getState().alumni[0].syncStatus, '未同期');
-
-  雲.状態.オフライン = false;
-  雲.置く(`groups/${団体}/alumni`, 'alu-1', Object.assign({}, 卒));
-  await store.getState().syncSessions();
-  await 待つ(80);
-  assert.equal(雲.値(`groups/${団体}/alumni`, 'alu-1').personalId, 振ったID, 'クラウドへ届く');
-  assert.equal(store.getState().alumni[0].syncStatus, '同期済み');
-});
-
-test('個人ID：持っていない人に 6 字で重複しない ID を振る（4 桁は使える終わりまで替えない）', async () => {
+test('移し替え：名簿の文書に残っている個人ID は逆引き表に載せる（無ければ足す）。名簿の文書からは消さない（運営の台本で消す）', async () => {
   const { store, 雲 } = 用意();
   const 名簿 = [
     { id: 'mem-1', name: '部員1', personalId: '1234', lastModified: 1 },
-    { id: 'mem-2', name: '部員2', personalId: '', lastModified: 1 },
-    { id: 'mem-3', name: '部員3', personalId: 'あ', lastModified: 1 },
+    { id: 'mem-2', name: '部員2', personalId: 'K7MP3X', lastModified: 1 },
   ];
   名簿.forEach((m) => 雲.置く(メンバーの道, m.id, Object.assign({}, m)));
-  store.setState({ members: 名簿.map((m) => Object.assign({}, m)), alumni: [] });
-  await store.getState().ensurePersonalIds();
+  雲.置く(`groups/${団体}/alumni`, 'alu-1', { id: 'alu-1', name: '卒業生', personalId: '5555' });
+  雲.置く(逆引きの道, 'K7MP3X', { memberId: 'mem-2' });
+  store.setState({
+    members: 名簿.map((m) => Object.assign({}, m)),
+    alumni: [{ id: 'alu-1', name: '卒業生', personalId: '5555' }],
+  });
+  const 振った = await store.getState().ensurePersonalIds();
   await 待つ(50);
-  const 一覧 = store.getState().members.map((m) => m.personalId);
-  assert.equal(一覧[0], '1234', '持っている人は変えない');
-  一覧.forEach((id) => assert.ok(require('../src/kojinId').個人IDの形か(id), '全員が使える形になる（前の 4 桁は使える終わりまで残す）'));
-  assert.match(一覧[1], /^[A-HJKMNP-Z2-9]{6}$/, '持っていない人には 6 字');
-  assert.equal(new Set(一覧).size, 3, '重複しない');
+  assert.deepStrictEqual(振った, [], '持っている人の ID を替えた');
+  assert.deepStrictEqual(雲.中身(逆引きの道), ['1234', 'K7MP3X'], '残っていた ID を逆引き表に足していない');
+  assert.equal(雲.値(逆引きの道, '1234').memberId, 'mem-1');
+  // 名簿の文書の個人ID は、アプリでは消さない。消すと、前の版の端末（開いたままのタブ）が名簿に個人ID が無いのを見て
+  // 逆引き表を作り直し、全員の ID を消した（2026-11-07 のレビュー）。消すのは決まりを配ったあとの scripts/migrate-personal-ids.mjs
+  for (const id of ['mem-1', 'mem-2']) assert.ok('personalId' in 雲.値(メンバーの道, id), `${id} の名簿の文書から個人ID を消した`);
+  // 新しく書いた行には、新しい版の印が付く（決まりは印の無い書き込みを断る）
+  assert.equal(雲.値(逆引きの道, '1234').形, 2, '逆引き表の行に 形: 2 が無い');
+  assert.deepStrictEqual(store.getState().個人IDの表, { 'mem-1': '1234', 'mem-2': 'K7MP3X' });
+});
+
+test('逆引き表：消した人・卒業生に移った人の行は消える', async () => {
+  const { store, 雲 } = 用意();
+  雲.置く(逆引きの道, '9999', { memberId: 'mem-退部', updatedAt: 1 });
+  雲.置く(逆引きの道, 'AB2CDE', { memberId: 'alu-1', updatedAt: 1 });
+  雲.置く(逆引きの道, 'K7MP3X', { memberId: 'mem-1', updatedAt: 1 });
+  store.setState({
+    members: [{ id: 'mem-1', name: '部員1', lastModified: 1 }],
+    alumni: [{ id: 'alu-1', name: '卒業生1' }],
+    deletedMembers: { 'mem-退部': Date.now() },
+  });
+  await store.getState().syncMemberLookup();
+  await 待つ(50);
+  assert.deepStrictEqual(雲.中身(逆引きの道), ['K7MP3X'], '退部した人・卒業生の分は残さない');
+});
+
+test('逆引き表：部員ロールでは読まない・書かない（決まりで持ち主だけ）', async () => {
+  const { store, 雲 } = 用意();
+  store.setState({ activeRole: 'member', members: [{ id: 'mem-1', name: '部員1', lastModified: 1 }] });
+  await store.getState().syncMemberLookup();
+  assert.deepStrictEqual(await store.getState().ensurePersonalIds(), []);
+  await 待つ(50);
+  assert.deepStrictEqual(雲.中身(逆引きの道), []);
+});
+
+test('個人ID：4 桁は使える終わりまで替えない。使えない形の ID の人には 6 字で重複しない ID を振る', async () => {
+  const { store, 雲 } = 用意();
+  雲.置く(逆引きの道, '1234', { memberId: 'mem-1' });
+  雲.置く(逆引きの道, 'あ', { memberId: 'mem-3' });
+  store.setState({
+    members: [
+      { id: 'mem-1', name: '部員1', lastModified: 1 },
+      { id: 'mem-2', name: '部員2', lastModified: 1 },
+      { id: 'mem-3', name: '部員3', lastModified: 1 },
+    ],
+    alumni: [],
+  });
+  const 振った = await store.getState().ensurePersonalIds();
+  await 待つ(50);
+  const 表 = store.getState().個人IDの表;
+  assert.equal(表['mem-1'], '1234', '4 桁の人を替えた');
+  assert.match(表['mem-2'], /^[A-HJKMNP-Z2-9]{6}$/);
+  assert.match(表['mem-3'], /^[A-HJKMNP-Z2-9]{6}$/);
+  assert.equal(new Set(Object.values(表)).size, 3, '重複しない');
+  assert.deepStrictEqual(振った.map((x) => x.id).sort(), ['mem-2', 'mem-3']);
 });
 
 // ──────────────────────────────────────────────────────────────
@@ -1269,22 +1225,45 @@ test('記録中のタグ：保存の窓から置いても、候補を押して�
   store.getState().setCurrentSessionTags([]);
 });
 
-test('個人ID：全員を新しくすると、4 桁の人は 6 字になり、前の 4 桁は逆引き表から消える（6 字の人はそのまま）', async () => {
+test('個人ID：全員を新しくすると、4 桁の人は 6 字になり、前の 4 桁は逆引き表から消える（6 字の人はそのまま）。全員を替えるなら 6 字の人も', async () => {
   const { store, 雲 } = 用意();
-  const 名簿 = [
-    { id: 'mem-1', name: '部員1', personalId: '1234', lastModified: 1 },
-    { id: 'mem-2', name: '部員2', personalId: 'K7MP3X', lastModified: 1 },
-  ];
-  名簿.forEach((m) => 雲.置く(メンバーの道, m.id, Object.assign({}, m)));
   雲.置く(逆引きの道, '1234', { memberId: 'mem-1' });
   雲.置く(逆引きの道, 'K7MP3X', { memberId: 'mem-2' });
-  store.setState({ members: 名簿.map((m) => Object.assign({}, m)), alumni: [] });
-  const 人数 = await store.getState().ensurePersonalIds(true);
+  store.setState({
+    members: [
+      { id: 'mem-1', name: '部員1', lastModified: 1 },
+      { id: 'mem-2', name: '部員2', lastModified: 1 },
+    ],
+    alumni: [],
+  });
+  const 振った = await store.getState().ensurePersonalIds(true);
   await 待つ(80);
-  assert.equal(人数, 1);
-  const [一, 二] = store.getState().members.map((m) => m.personalId);
-  assert.match(一, /^[A-HJKMNP-Z2-9]{6}$/);
-  assert.equal(二, 'K7MP3X');
+  assert.equal(振った.length, 1);
+  assert.deepStrictEqual(振った[0].名前, '部員1', '一覧に名前が無い');
+  const 表 = store.getState().個人IDの表;
+  assert.match(表['mem-1'], /^[A-HJKMNP-Z2-9]{6}$/);
+  assert.equal(表['mem-2'], 'K7MP3X');
   assert.ok(!雲.中身(逆引きの道).includes('1234'), '前の 4 桁が逆引き表に残っている');
-  assert.ok(雲.中身(逆引きの道).includes(一), '新しい ID が逆引き表に無い');
+  assert.ok(雲.中身(逆引きの道).includes(表['mem-1']), '新しい ID が逆引き表に無い');
+  // 6 字の人も替える（漏れた ID を配り直す）
+  const 全員 = await store.getState().ensurePersonalIds(true, true);
+  await 待つ(80);
+  assert.equal(全員.length, 2);
+  assert.notEqual(store.getState().個人IDの表['mem-2'], 'K7MP3X');
+  assert.ok(!雲.中身(逆引きの道).includes('K7MP3X'), '前の 6 字が残っている');
+  assert.equal(雲.中身(逆引きの道).length, 2);
+});
+
+test('個人ID：「全員を新しくする」で書き込めなかったら、空の一覧でなく失敗として伝える（済んだと思わせない）', async () => {
+  const { store, 雲 } = 用意();
+  雲.置く(メンバーの道, 'mem-1', { id: 'mem-1', name: '部員1', lastModified: 1 });
+  雲.置く(逆引きの道, '1234', { memberId: 'mem-1', 形: 2 });
+  store.setState({ members: [{ id: 'mem-1', name: '部員1', lastModified: 1 }] });
+  雲.状態.失敗させる = true;
+  await assert.rejects(store.getState().ensurePersonalIds(true, false), /読めませんでした|書き込めませんでした/);
+  雲.状態.失敗させる = false;
+  // 裏で呼ぶとき（替える注文なし）は投げずに次に回す
+  雲.状態.失敗させる = true;
+  assert.deepStrictEqual(await store.getState().ensurePersonalIds(), []);
+  雲.状態.失敗させる = false;
 });

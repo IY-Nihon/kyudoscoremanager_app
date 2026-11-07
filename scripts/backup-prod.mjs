@@ -153,8 +153,13 @@ if (!roots) {
   console.warn('  コレクション名の一覧を取得できませんでした。既知の一覧で控えます。');
   roots = ['group_accounts', 'groups', 'inquiries', 'member_claims', 'deleted_accounts', 'errorReports'];
 }
-console.log(`  対象: ${roots.join(', ')}\n`);
-for (const c of roots) await backupCollection(`/${c}`);
+// disposable_domains（使い捨てメールのドメインの一覧。約 1 万件）は控えない。公開の一覧から入れ直せる
+// （npm run ops:disposable:run）うえ、読むと無料の読みの枠（1 日 5 万回）の半分ほどを使う
+const 控えない = new Set(['disposable_domains']);
+console.log(
+  `  対象: ${roots.filter((c) => !控えない.has(c)).join(', ')}（控えない: ${[...控えない].join(', ')}）\n`
+);
+for (const c of roots) if (!控えない.has(c)) await backupCollection(`/${c}`);
 
 // groups の親ドキュメントが無い団体はサブコレクションを辿れないので、
 // group_accounts から団体IDを拾って個別に確認する
@@ -188,7 +193,15 @@ console.log('\n■ RTDB');
 // 書き戻すと居ない端末が「接続中」と出る。足すのは筋が悪い（src/livePresence.js）。
 // live_view（配った閲覧用の写し）と live_limits（配ったリンクの期限）は控える。毎日のバックアップ
 // （kyudo/backup）は RTDB を丸ごと控えているので、手で取る控えもそろえる
-const RTDBの枝たち = ['live_sessions', 'live_history', 'live_view', 'live_limits'];
+// live_groups（団体の枝の印）と live_limit_owners（期限を置いた口座）も控える（決まりの B6 で足した）
+const RTDBの枝たち = [
+  'live_sessions',
+  'live_history',
+  'live_view',
+  'live_limits',
+  'live_groups',
+  'live_limit_owners',
+];
 const rtdb = Object.fromEntries(RTDBの枝たち.map((枝) => [枝, {}]));
 for (const 枝 of RTDBの枝たち) {
   const r = await fetch(`${RTDB}/${枝}.json?${RTDB認証}`);
