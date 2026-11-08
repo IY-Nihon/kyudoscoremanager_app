@@ -170,7 +170,7 @@ test('質問例：長い文が途中で切れていない', async ({ page }) => 
 test('改善のため、チャットの質問と答えを送る', async ({ page }) => {
   test.setTimeout(180_000);
   const 送った = [];
-  await page.route(/workers\.dev\/hozon/, (route) => {
+  await page.route(/(?:workers\.dev|127\.0\.0\.1:8788)\/hozon/, (route) => {
     const r = route.request();
     if (r.method() === 'OPTIONS')
       return route.fulfill({
@@ -190,7 +190,7 @@ test('改善のため、チャットの質問と答えを送る', async ({ page 
     });
   });
   // Gemini の返事は差し替える（本物は呼ばない）
-  await page.route(/workers\.dev\/v1beta\//, (route) =>
+  await page.route(/(?:workers\.dev|127\.0\.0\.1:8788)\/v1beta\//, (route) =>
     route.fulfill({
       status: 200,
       headers: { 'content-type': 'text/event-stream', 'access-control-allow-origin': '*' },
@@ -276,7 +276,7 @@ test('浮くボタン：横へ引くと左の角へ動き、置いた角が残�
 // その絞りが団体に効いていないこと（道具は 9 つ全部・部員一覧が入る・団体の会話の控えの鍵は前のまま）
 test('団体：道具は全部・部員一覧が入り、会話は団体の鍵に残る（個人用の絞りが効かない）', async ({ page }) => {
   test.setTimeout(180_000);
-  await page.route(/workers\.dev\/hozon/, (route) => {
+  await page.route(/(?:workers\.dev|127\.0\.0\.1:8788)\/hozon/, (route) => {
     if (route.request().method() === 'OPTIONS')
       return route.fulfill({
         status: 204,
@@ -294,7 +294,7 @@ test('団体：道具は全部・部員一覧が入り、会話は団体の鍵�
     });
   });
   let 依頼 = null;
-  await page.route(/workers\.dev\/v1beta\//, (route) => {
+  await page.route(/(?:workers\.dev|127\.0\.0\.1:8788)\/v1beta\//, (route) => {
     if (route.request().method() === 'OPTIONS')
       return route.fulfill({
         status: 204,

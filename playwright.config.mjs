@@ -15,6 +15,8 @@
  * 検査を流す前に、必ず検証環境向けに書き出し直すこと。
  */
 import { defineConfig, devices } from '@playwright/test';
+// 手元のエミュレーターで流すとき（npm run e2e:emu）は、検査の側の問い合わせも手元へ向ける（e2e/emu-fetch.mjs）
+if (process.env.FB_EMULATOR === '1') await import('./e2e/emu-fetch.mjs');
 
 // 港と配り元は環境変数で差し替えられる。検査を流している最中に、
 // 別の束を別の港で試したいときに使う（既定はこれまでと同じ）
