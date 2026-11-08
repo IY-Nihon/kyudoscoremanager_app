@@ -20,6 +20,7 @@ const {
   見に行く間隔,
   自動更新の最短の離席,
   自動で更新してよいか,
+  触れずに待つ長さ,
 } = require('../src/updateNotice');
 
 const HTML = (束) => `<!DOCTYPE html><html><head><title>弓道記録アプリ</title></head>
@@ -191,4 +192,24 @@ test('お知らせ：版の形が YYYY-MM-DD-NN でそろっている', () => {
   for (const v of 版たち) {
     assert.match(v, /^\d{4}-\d{2}-\d{2}-\d{2}$/, `版の形が違う: ${v}`);
   }
+});
+
+test('自動で更新：画面が裏にあれば、離れた長さに関係なくすぐしてよい（ライブ中・入力中・窓が開いているときは待つ）', () => {
+  const 良い = { 隠れている: true, 新しい束: 束B.split('/').pop() };
+  assert.strictEqual(自動で更新してよいか(良い), !0);
+  assert.strictEqual(自動で更新してよいか({ ...良い, ライブ中: true }), !1);
+  assert.strictEqual(自動で更新してよいか({ ...良い, 入力中: true }), !1);
+  assert.strictEqual(自動で更新してよいか({ ...良い, 窓が開いている: true }), !1);
+});
+
+test('自動で更新：画面を見ているときは、20 秒触れていなければしてよい。触れたばかりなら帯のまま', () => {
+  const 新 = 束B.split('/').pop();
+  assert.strictEqual(触れずに待つ長さ, 20 * 1000);
+  assert.strictEqual(自動で更新してよいか({ 触れていない時間: 触れずに待つ長さ, 新しい束: 新 }), !0);
+  assert.strictEqual(自動で更新してよいか({ 触れていない時間: 触れずに待つ長さ - 1, 新しい束: 新 }), !1);
+  assert.strictEqual(自動で更新してよいか({ 触れていない時間: 60 * 1000, 新しい束: 新, 案内中: true }), !1);
+});
+
+test('新しい版を見に行くのは 5 分おき', () => {
+  assert.strictEqual(見に行く間隔, 5 * 60 * 1000);
 });

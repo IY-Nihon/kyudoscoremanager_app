@@ -250,7 +250,9 @@ test('自動で更新：読み込み直しても版が変わらないときは�
   });
 });
 
-test('自動で更新：短い離席（3 分に満たない）は、読み込み直さず帯のまま', async ({ page }) => {
+test('自動で更新：画面が裏に回ったら、離れた長さに関係なくすぐ読み込み直す（2026-11-08 本人）', async ({
+  page,
+}) => {
   await page.goto('/');
   await page.waitForTimeout(3000);
   const 束 = await いまの束(page);
@@ -260,11 +262,44 @@ test('自動で更新：短い離席（3 分に満たない）は、読み込み
     window.__押す前の印 = 1;
   });
   await 離れる(page);
-  await 戻る(page);
-  await expect(page.getByText(/新しい版が出ています/), '帯が出ない').toBeVisible({ timeout: 10_000 });
-  expect(await page.evaluate(() => typeof window.__押す前の印), '短い離席で勝手に読み込み直した').toBe(
+  await expect
+    .poll(() => page.evaluate(() => (typeof window.__押す前の印 === 'undefined' ? '消えた' : '残っている')), {
+      timeout: 30_000,
+      message: '裏に回っても読み込み直していない',
+    })
+    .toBe('消えた');
+});
+
+test('自動で更新：画面を見ているときは、触れたばかりなら帯、しばらく触れずにいたら読み込み直す', async ({
+  page,
+}) => {
+  // 本番は 20 秒。検査では 6 秒にする
+  await page.addInitScript(() => {
+    globalThis.__自動更新の触れずに待つミリ秒 = 6000;
+  });
+  await page.goto('/');
+  await page.waitForTimeout(3000);
+  const 束 = await いまの束(page);
+  await 返す中身を決める(page, '/_expo/static/js/web/AppEntry-5555555555555555555555555555ffff.js');
+  await 束の有無を決める(page, 束, false);
+  await page.evaluate(() => {
+    window.__押す前の印 = 1;
+  });
+  // 触れたばかり（iPhone の WebKit は wheel を打てないので、合図を直に送る）
+  await page.evaluate(() => window.dispatchEvent(new Event('pointerdown')));
+  await 見に行かせる(page);
+  await expect(page.getByText(/新しい版が出ています/), '触れたばかりなのに帯が出ない').toBeVisible({
+    timeout: 10_000,
+  });
+  expect(await page.evaluate(() => typeof window.__押す前の印), '触れたばかりで読み込み直した').toBe(
     'number'
   );
+  await expect
+    .poll(() => page.evaluate(() => (typeof window.__押す前の印 === 'undefined' ? '消えた' : '残っている')), {
+      timeout: 30_000,
+      message: 'しばらく触れずにいても読み込み直していない',
+    })
+    .toBe('消えた');
 });
 
 test('自動で更新：字を入力している最中は、読み込み直さず帯にする', async ({ page }) => {

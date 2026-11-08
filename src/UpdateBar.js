@@ -8,11 +8,12 @@ const { 色 } = iroの組;
  * 何を見て気づくかは src/updateNotice.js にある（純粋な関数なので検査できる）。
  * ここは出し方と、押されたときの読み込み直しだけ。
  *
- * ■ 勝手に読み込み直さない（ただし、しばらく離れて戻ってきたときだけ自動で更新する）
- * 記録の途中で画面が入れ替わると、何が起きたのか分からない。
- * ふだんは、押されたときだけ読み込み直す。閉じることもできる。
- * 3 分以上画面を離れて戻ってきたときだけは、ライブ中・案内中・入力中・窓が開いている、のどれでもなければ、帯を出さずに
- * 自動で読み込み直す（2026-10-03。条件と理由は src/updateNotice.js の 自動で更新してよいか）。
+ * ■ 自動で最新版にする（2026-11-08 本人「配信が届いたら自動で最新版に」。前は 3 分離れて戻ったときだけ）
+ * 新しい版に気づいたら、次のどれかのときに帯を出さずに読み込み直す。ライブ中・案内中・入力中・窓が開いているときは待つ：
+ *   ・画面が裏にある（別のアプリ・画面を消している）… 見ていないので気づかれない
+ *   ・3 分以上離れて戻ってきた
+ *   ・画面を見ているが 20 秒触れていない … 押した瞬間に入れ替わって操作が消えるのを避ける
+ * 待っているあいだは帯を出し（押せばすぐ更新）、5 秒おきに見直す。条件は src/updateNotice.js の 自動で更新してよいか。
  *
  * ■ ライブ記録中と案内中は出さない
  * この帯は画面の流れの中に置いてあるので、出ると下が押し下がる。
@@ -41,6 +42,7 @@ import {
   見に行く間隔,
   自動更新の最短の離席,
   自動で更新してよいか,
+  触れずに待つ長さ,
 } from './updateNotice';
 import { useScoreStore } from './useScoreStore';
 import { use案内中 } from './TutorialGuide';
@@ -121,60 +123,93 @@ export function UpdateBar() {
     if (!束) return; // 何を比べればよいか分からない。黙る
     let 生きている = true;
 
-    // 離れていた時間（ミリ秒）。切り替えて戻っただけでなく、しばらく離れていたときだけ自動で更新する
+    // 最後に画面に触れた時刻。画面を見ているときは、20 秒触れていなければ自動で更新する（2026-11-08 本人）
+    let 触れた時刻 = Date.now();
+    const 触れた = () => {
+      触れた時刻 = Date.now();
+    };
+    const 触れる合図 = ['pointerdown', 'keydown', 'wheel', 'touchstart', 'scroll'];
+    if (typeof window !== 'undefined')
+      for (const 合図 of 触れる合図) window.addEventListener(合図, 触れた, { capture: true, passive: true });
+
+    // 見つけた新しい束（まだ切り替えていない）。見つけたあとは、切り替えてよくなるまで 5 秒おきに見直す
+    let 待っている束 = null;
+    let 見直し = null;
+
+    /** 今切り替えてよければ切り替える。よくなければ false（帯を出す） */
+    const 切り替えてみる = async (離れていた時間 = 0) => {
+      if (!待っている束 || !生きている) return false;
+      let 前に試した束 = null;
+      try {
+        前に試した束 = sessionStorage.getItem(自動更新の控え);
+      } catch {
+        /* 読めなければ、前に試していないとして扱う */
+      }
+      const 最短 = Number.isFinite(globalThis.__自動更新の離席ミリ秒)
+        ? globalThis.__自動更新の離席ミリ秒
+        : 自動更新の最短の離席;
+      const 待つ = Number.isFinite(globalThis.__自動更新の触れずに待つミリ秒)
+        ? globalThis.__自動更新の触れずに待つミリ秒
+        : 触れずに待つ長さ;
+      const 良い = 自動で更新してよいか({
+        離れていた時間,
+        隠れている: typeof document !== 'undefined' && !!document.hidden,
+        触れていない時間: Date.now() - 触れた時刻,
+        触れずに待つ: 待つ,
+        ライブ中: いまの状況.current.ライブ中,
+        案内中: いまの状況.current.案内中,
+        入力中: 入力中か(),
+        窓が開いている: 窓が開いているか(),
+        新しい束: 待っている束,
+        前に試した束,
+        最短,
+      });
+      if (!良い) return false;
+      try {
+        sessionStorage.setItem(自動更新の控え, 待っている束);
+      } catch {
+        /* 控えられなくても、読み込み直しは 1 回だけなので続ける */
+      }
+      if (見直し) clearInterval(見直し);
+      await 読み込み直す();
+      return true;
+    };
+
+    // 離れていた時間（ミリ秒）。しばらく離れて戻ってきたときは、触れていなくてもすぐ切り替える
     const 見に行く = async (離れていた時間 = 0) => {
       if (!生きている || typeof fetch !== 'function') return;
       try {
-        // 取り置きは使わない。使うと、まさに古いものを見て「変わっていない」と答える
-        const 返り = await fetch('/index.html', { cache: 'no-store' });
-        if (!返り || !返り.ok) return;
-        const 文 = await 返り.text();
-        if (!生きている || !新しい版が出たか(束, 文)) return;
-        // 取り直した index.html は、通信できないとき控えの古いものかもしれない。
-        // 今の束がサーバーにもう無いと確かめられたときだけ、新しい版が出たとする
-        if (!((await 束がサーバーにもう無いか(束)) && 生きている)) return;
-        // しばらく離れて戻ってきたときは、帯を出さずに自動で読み込み直す（updateNotice の説明）
-        const 新しい束 = 名前だけにする(束の名前(文));
-        let 前に試した束 = null;
-        try {
-          前に試した束 = sessionStorage.getItem(自動更新の控え);
-        } catch {
-          /* 読めなければ、前に試していないとして扱う */
+        if (!待っている束) {
+          // 取り置きは使わない。使うと、まさに古いものを見て「変わっていない」と答える
+          const 返り = await fetch('/index.html', { cache: 'no-store' });
+          if (!返り || !返り.ok) return;
+          const 文 = await 返り.text();
+          if (!生きている || !新しい版が出たか(束, 文)) return;
+          // 取り直した index.html は、通信できないとき控えの古いものかもしれない。
+          // 今の束がサーバーにもう無いと確かめられたときだけ、新しい版が出たとする
+          if (!((await 束がサーバーにもう無いか(束)) && 生きている)) return;
+          待っている束 = 名前だけにする(束の名前(文));
         }
-        const 最短 = Number.isFinite(globalThis.__自動更新の離席ミリ秒)
-          ? globalThis.__自動更新の離席ミリ秒
-          : 自動更新の最短の離席;
-        if (
-          自動で更新してよいか({
-            離れていた時間,
-            ライブ中: いまの状況.current.ライブ中,
-            案内中: いまの状況.current.案内中,
-            入力中: 入力中か(),
-            窓が開いている: 窓が開いているか(),
-            新しい束,
-            前に試した束,
-            最短,
-          })
-        ) {
-          try {
-            sessionStorage.setItem(自動更新の控え, 新しい束);
-          } catch {
-            /* 控えられなくても、読み込み直しは 1 回だけなので続ける */
-          }
-          await 読み込み直す();
-          return;
-        }
+        if (await 切り替えてみる(離れていた時間)) return;
+        // 今は切り替えられない（何かをしている途中）。帯を出し、切り替えてよくなるまで 5 秒おきに見直す
         出すかを置く(true);
+        if (!見直し) {
+          見直し = setInterval(() => {
+            切り替えてみる(0).catch(() => {});
+          }, 5000);
+          if (見直し && typeof 見直し.unref === 'function') 見直し.unref();
+        }
       } catch {
         /* 通信できないだけ。次の機会に見る */
       }
     };
 
-    // 画面が戻ってきたときに見る。裏に回っているあいだは見ない（離れた時刻だけ控える）
+    // 画面が裏に回ったとき・戻ってきたときに見る。裏に回ったときは、見ていないのでその場で切り替えてよい
     const 戻ってきたら = () => {
       if (typeof document === 'undefined') return;
       if (document.hidden) {
         離れた時刻.current = Date.now();
+        見に行く(0);
         return;
       }
       const 離れていた時間 = 離れた時刻.current ? Date.now() - 離れた時刻.current : 0;
@@ -189,7 +224,10 @@ export function UpdateBar() {
     return () => {
       生きている = false;
       clearInterval(時計);
+      if (見直し) clearInterval(見直し);
       if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', 戻ってきたら);
+      if (typeof window !== 'undefined')
+        for (const 合図 of 触れる合図) window.removeEventListener(合図, 触れた, { capture: true });
     };
   }, []);
 
