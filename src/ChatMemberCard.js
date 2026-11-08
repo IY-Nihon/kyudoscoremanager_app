@@ -14,8 +14,8 @@ const { View, Text, Pressable, StyleSheet } = require('./rn');
 const { 色 } = require('./iro.js');
 const 学 = require('./gakunen');
 
-/** 名前を比べる形（空白の有無を見ない。\s は全角の空白も含む） */
-const 比べる名前 = (名) => String(名 || '').replace(/\s+/g, '');
+/** 名前を比べる形（空白・全角半角・カタカナとひらがな・異体字をそろえる。src/chatMemberGuard.js と同じ） */
+const 比べる名前 = require('./chatMemberGuard').比べる形;
 
 const 性別たち = ['男子', '女子', '未設定'];
 
