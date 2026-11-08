@@ -409,6 +409,12 @@ const MemberScreen = () => {
         /* ものなので、本人が動かすと記録の名寄せまでずれる */}
         {窓として出す ? (
           <>
+            {/* 新しく足すときだけ。AI アシスタントの addMembers で何人でもまとめて足せる（2026-11-08 本人の文） */}
+            {!編集中の部員 && activeRole === 'group' ? (
+              <Text style={styles.まとめて登録の案内}>
+                複数人登録する際は、AIアシスタントに名前・学年・性別を送るだけで、まとめて登録できます
+              </Text>
+            ) : null}
             <Text style={styles.label}>名前</Text>
             <TextInput
               aria-label="名前"
@@ -1100,6 +1106,7 @@ const styles = StyleSheet.create({
     color: 色.黒,
   },
   inputHelperText: { fontSize: 11, color: 色.灰, marginTop: 4, marginLeft: 4 },
+  まとめて登録の案内: { fontSize: 13, lineHeight: 19, color: 色.灰, marginBottom: 4 },
   genderRow: { flexDirection: 'row', gap: 10 },
   // 一覧のまとめ方（学年ごと｜区分ごと）
   まとめ方の列: { flexDirection: 'row', gap: 8, marginHorizontal: 16, marginTop: 4, marginBottom: 4 },
