@@ -46,6 +46,8 @@ dist/
 dist2/
 dist3/
 e2e/.auth/
+# 手元のエミュレーターの中身の控え（検証環境の写し。npm run emu:seed）
+e2e/.emu-data/
 expo-env.d.ts
 instagram_assets/
 node_modules/

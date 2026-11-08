@@ -134,7 +134,7 @@ test.describe('確認画面', () => {
       })),
     };
     if (行を直す) 行を直す(返事);
-    await page.route(/generativelanguage\.googleapis\.com|workers\.dev\/v1beta\//, (route) => {
+    await page.route(/generativelanguage\.googleapis\.com|(?:workers\.dev|127\.0\.0\.1:8788)\/v1beta\//, (route) => {
       // 箱を聞く2度目の呼び出し（指示文に box_2d がある）には、箱の返事を返す
       const 箱を聞いている = 箱の返事 && /box_2d/.test(route.request().postData() || '');
       const 中身 = 箱を聞いている ? 箱の返事 : 返事;
@@ -170,7 +170,7 @@ test.describe('確認画面', () => {
     test.setTimeout(300_000);
     // 中継の /hozon を横取りして中身を見る（本物の置き場には送らない）
     const 送った = [];
-    await page.route(/workers\.dev\/hozon/, (route) => {
+    await page.route(/(?:workers\.dev|127\.0\.0\.1:8788)\/hozon/, (route) => {
       const r = route.request();
       if (r.method() === 'OPTIONS')
         return route.fulfill({

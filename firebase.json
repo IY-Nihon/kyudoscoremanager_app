@@ -8,6 +8,14 @@
   "database": {
     "rules": "database.rules.json"
   },
+  "emulators": {
+    "//": "手元の E2E（npm run e2e:emu）と決まりの検査で使う。港は src/db.js（EXPO_PUBLIC_EMULATOR_HOST）・scripts/emu-*.mjs と同じ",
+    "auth": { "port": 9099 },
+    "firestore": { "port": 8080 },
+    "database": { "port": 9000 },
+    "ui": { "enabled": false },
+    "singleProjectMode": true
+  },
   "hosting": {
     "public": "dist",
     "//": "配る直前に、dist の接続先と配り先が合っているかを確かめる。expo export は --clear を付けないとキャッシュから前回の設定を使い回すため、検証向けの束が本番へ出る事故が起きうる",

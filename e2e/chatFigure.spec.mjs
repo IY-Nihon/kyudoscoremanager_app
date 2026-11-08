@@ -16,7 +16,7 @@ import { 案内を止める, 画面が出るまで待つ, 入り口が決まる�
 test.use({ storageState: 'e2e/.auth/100001.json' });
 
 const 改善の保存を偽にする = (page) =>
-  page.route(/workers\.dev\/hozon/, (route) =>
+  page.route(/(?:workers\.dev|127\.0\.0\.1:8788)\/hozon/, (route) =>
     route.fulfill({
       status: route.request().method() === 'OPTIONS' ? 204 : 200,
       headers: {
@@ -34,7 +34,7 @@ const 改善の保存を偽にする = (page) =>
  */
 async function 偽の模型(page, 道具, 形) {
   let 回 = 0;
-  await page.route(/workers\.dev\/v1beta\//, (route) => {
+  await page.route(/(?:workers\.dev|127\.0\.0\.1:8788)\/v1beta\//, (route) => {
     const 依頼 = route.request();
     if (依頼.method() === 'OPTIONS')
       return route.fulfill({
@@ -116,8 +116,14 @@ const 矢所を足す = (page) =>
         });
         localStorage.setItem(鍵, JSON.stringify(中));
       };
+      // 起動のときの雲の読み直しは、境目ちょうど（>=）の記録＝いちばん新しい記録を毎回取り直して置き換える
+      //（src/storeSync.js）。そこに点を置くと、AI に聞くまでに消える（エミュレーターで毎回・GitHub でときどき落ちた）
+      const 時刻 = (v) =>
+        typeof v === 'number' ? v : v && v.seconds != null ? v.seconds * 1000 : Date.parse(v) || 0;
+      const いちばん新しい = Math.max(0, ...(s.sessions || []).map((記録) => 時刻(記録.lastModified)));
       const 射手たち = (s.sessions || [])
         .filter((記録) => 記録.includeInStats !== false)
+        .filter((記録) => 時刻(記録.lastModified) < いちばん新しい)
         .flatMap((記録) => 記録.archers || [])
         .filter(
           (a) =>
