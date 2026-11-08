@@ -59,6 +59,8 @@ function ChatMemberCard({ カードたち, 名簿, 学年の札, 性別にそろ
                 <Text style={styles.見る}>メンバーで見る ›</Text>
               </Pressable>
             </>
+          ) : カードたち.some((一つ) => 一つ.status === 'replaced') ? (
+            <Text style={styles.やめた}>下のカードに直しました</Text>
           ) : (
             <Text style={styles.やめた}>登録をやめました</Text>
           )}

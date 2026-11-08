@@ -1594,7 +1594,13 @@ const AIChatBot = () => {
               // 50 人を超える頼み・利用者が書いていない名前は登録しない（src/chatMemberGuard.js）
               const 見た = 部員の見張り.部員の頼みを確かめる(
                 人たち,
-                newMessages.filter((文) => 文.role === 'user').map((文) => 文.text)
+                newMessages.filter((文) => 文.role === 'user').map((文) => 文.text),
+                (() => {
+                  // いちばん最近のカードの束（同じ頼みから出た人）
+                  const カード = newMessages.filter((文) => 文.role === 'actionCard');
+                  const 最後 = カード.length ? カード[カード.length - 1].元の記録 : null;
+                  return カード.filter((文) => 文.元の記録 === 最後).map((文) => 文.args);
+                })()
               );
               const 断り = 部員の見張り.断りの文(見た);
               const 残り = 部員の見張り.残りの文(見た);
@@ -1624,7 +1630,12 @@ const AIChatBot = () => {
             // 流しながら出していた途中の札は捨てる。道具を呼ぶ前に少しだけ
             // 文字が来ることがあり、そのままだと言いかけの文が残る
             setMessages((prev) => [
-              ...prev.filter((文) => 文.id !== 途中の札),
+              // 前に出して待っているカードは、出し直したので閉じる（名前の書き方を直す頼みなど）
+              ...prev
+                .filter((文) => 文.id !== 途中の札)
+                .map((文) =>
+                  文.role === 'actionCard' && 文.status === 'pending' ? { ...文, status: 'replaced' } : 文
+                ),
               ...pendingActionCards,
               // 51 人目からは出さず、もう一度頼んでもらう（src/chatMemberGuard.js）
               ...残りの知らせ.map((文) => ({ id: generateMsgId(), role: 'model', text: 文 })),
