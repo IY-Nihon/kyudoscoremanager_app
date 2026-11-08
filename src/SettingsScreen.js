@@ -146,6 +146,12 @@ const SettingsScreen = () => {
   const [個人IDの窓, 個人IDの窓を出す] = React.useState(false);
   // 部員の端末の、ログインに使った個人ID（自分の所属の証から読む。名簿の文書には個人ID を置かない）
   const 自分の個人ID = useScoreStore((状態) => 状態.自分の個人ID);
+  // 今のメンバーに 4 桁の個人ID の人が残っているか（src/KojinIdModal.js の 四桁の帯 と同じ数え方）
+  const 四桁が残っている = useScoreStore((状態) => {
+    const 表 = 状態.個人IDの表;
+    if (!表 || Object.keys(表).length === 0) return true;
+    return (状態.members || []).some((人) => 人 && 人.id && /^\d{4}$/.test(String(表[人.id] || '')));
+  });
   React.useEffect(() => {
     if (activeRole === 'member' && !自分の個人ID) useScoreStore.getState().自分の個人IDを読む();
   }, [activeRole, 自分の個人ID]);
@@ -337,7 +343,10 @@ const SettingsScreen = () => {
             )}
             {/* 個人ID を新しくする（2026-11-04 本人：管理者モードにしなくても使える。押したときに団体のパスワードを聞き、
                 新しい ID の一覧をその場で出す。6 字の人も替えられる。src/KojinIdModal.js） */}
-            {activeRole === 'group' && 行('key-outline', '全員の個人IDを新しくする', () => 個人IDの窓を出す(true))}
+            {/* 全員が 6 字になったら出さない（2026-11-08 本人。表を読めていないうちは分からないので出す） */}
+            {activeRole === 'group' &&
+              四桁が残っている &&
+              行('key-outline', '全員の個人IDを新しくする', () => 個人IDの窓を出す(true))}
             {activeRole === 'group' ? (
               <個人IDを新しくする窓 見える={個人IDの窓} 閉じる={() => 個人IDの窓を出す(false)} />
             ) : null}
