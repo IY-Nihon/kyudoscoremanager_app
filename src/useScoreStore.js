@@ -687,6 +687,17 @@ const useScoreStore = zustand.create()(
             return false;
           }
           try {
+            // 同じ口座で入っているときは、入り直さずに確かめる（reauthenticate）。入り直すと Firestore が流しっぱなしの
+            // 道を張り直し、Playwright の WebKit ではそのあと返事が届かなくなった（「全員の個人IDを新しくする」が止まる。
+            // 2026-11-08）。違う口座・口座が無いときだけ、前のとおり入る
+            const 今の人 = Firebaseの器.auth.currentUser;
+            if (今の人 && String(今の人.email || '').toLowerCase() === String(宛先).toLowerCase()) {
+              await FirebaseAuth.reauthenticateWithCredential(
+                今の人,
+                FirebaseAuth.EmailAuthProvider.credential(宛先, 合言葉)
+              );
+              return true;
+            }
             await FirebaseAuth.signInWithEmailAndPassword(Firebaseの器.auth, 宛先, 合言葉);
             return true;
           } catch (誤り) {
