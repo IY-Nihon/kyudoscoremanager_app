@@ -183,6 +183,7 @@
 | Google LLC | Firebase App Check（reCAPTCHA） | 本サービスへのアクセスが正規のアプリケーションからのものであるかの判定 |
 | Google LLC | Gemini API | 生成AI機能における回答及び読取結果の生成 |
 | Cloudflare, Inc. | Cloudflare Workers | 生成AI機能における Gemini API への送信の中継 |
+| Cloudflare, Inc. | Cloudflare Workers | 部員としてのログインの際の、団体ID及び個人IDの照合 |
 | Cloudflare, Inc. | Cloudflare D1 及び Workers KV | 生成AI機能の利用に伴う情報の保存（第12条第8項） |
 | Apple Inc. | App Store | iOS 版アプリケーションの配信（※） |
 
@@ -299,3 +300,4 @@
 
 - 2026年9月26日　制定
 - 2026年10月10日　第4条及び第6条に、団体の同意を得て団体名又は地域を紹介に掲載する場合の取扱いを加えた
+- 2026年11月8日　第14条の委託先に、部員としてのログインの際の団体ID及び個人IDの照合を加えた
