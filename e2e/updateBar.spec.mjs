@@ -139,10 +139,17 @@ test('更新の帯：「更新」を押すと読み込み直す', async ({ page 
 
   // 読み込み直すと、窓に置いた印は消える
   await expect
-    .poll(() => page.evaluate(() => (typeof window.__押す前の印 === 'undefined' ? '消えた' : '残っている')), {
-      timeout: 30_000,
-      message: '「更新」を押しても読み込み直していない',
-    })
+    .poll(
+      () =>
+        page
+          .evaluate(() => (typeof window.__押す前の印 === 'undefined' ? '消えた' : '残っている'))
+          // 読み込み直しの最中に読むと「文脈が消えた」で落ちる。読み込み直している＝まだ見ない
+          .catch(() => '読み込み中'),
+      {
+        timeout: 30_000,
+        message: '「更新」を押しても読み込み直していない',
+      }
+    )
     .toBe('消えた');
 });
 
@@ -223,10 +230,17 @@ test('自動で更新：しばらく離れて戻ると、帯を出さずに読�
   await 離れる(page);
   await 戻る(page);
   await expect
-    .poll(() => page.evaluate(() => (typeof window.__押す前の印 === 'undefined' ? '消えた' : '残っている')), {
-      timeout: 30_000,
-      message: 'しばらく離れて戻っても、自動で読み込み直していない',
-    })
+    .poll(
+      () =>
+        page
+          .evaluate(() => (typeof window.__押す前の印 === 'undefined' ? '消えた' : '残っている'))
+          // 読み込み直しの最中に読むと「文脈が消えた」で落ちる。読み込み直している＝まだ見ない
+          .catch(() => '読み込み中'),
+      {
+        timeout: 30_000,
+        message: 'しばらく離れて戻っても、自動で読み込み直していない',
+      }
+    )
     .toBe('消えた');
 });
 
@@ -263,10 +277,17 @@ test('自動で更新：画面が裏に回ったら、離れた長さに関係�
   });
   await 離れる(page);
   await expect
-    .poll(() => page.evaluate(() => (typeof window.__押す前の印 === 'undefined' ? '消えた' : '残っている')), {
-      timeout: 30_000,
-      message: '裏に回っても読み込み直していない',
-    })
+    .poll(
+      () =>
+        page
+          .evaluate(() => (typeof window.__押す前の印 === 'undefined' ? '消えた' : '残っている'))
+          // 読み込み直しの最中に読むと「文脈が消えた」で落ちる。読み込み直している＝まだ見ない
+          .catch(() => '読み込み中'),
+      {
+        timeout: 30_000,
+        message: '裏に回っても読み込み直していない',
+      }
+    )
     .toBe('消えた');
 });
 
@@ -295,10 +316,17 @@ test('自動で更新：画面を見ているときは、触れたばかりな�
     'number'
   );
   await expect
-    .poll(() => page.evaluate(() => (typeof window.__押す前の印 === 'undefined' ? '消えた' : '残っている')), {
-      timeout: 30_000,
-      message: 'しばらく触れずにいても読み込み直していない',
-    })
+    .poll(
+      () =>
+        page
+          .evaluate(() => (typeof window.__押す前の印 === 'undefined' ? '消えた' : '残っている'))
+          // 読み込み直しの最中に読むと「文脈が消えた」で落ちる。読み込み直している＝まだ見ない
+          .catch(() => '読み込み中'),
+      {
+        timeout: 30_000,
+        message: 'しばらく触れずにいても読み込み直していない',
+      }
+    )
     .toBe('消えた');
 });
 
