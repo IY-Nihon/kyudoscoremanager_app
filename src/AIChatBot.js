@@ -916,6 +916,8 @@ const AIChatBot = () => {
           const 閉じる答え = [];
 
           const 残りの知らせ = [];
+          // 待っているカードを閉じるか（書き方の直し、または同じ人をまた頼んだとき）。別の人の頼みなら前のカードは残す
+          let 前のカードを閉じる = false;
           for (const call of calls) {
             // 引数の中身には部員の氏名が入る。共用端末で読まれるので、
             // どの引数が来たかだけにする（不具合を追うにはこれで足りる）
@@ -1595,13 +1597,10 @@ const AIChatBot = () => {
               const 見た = 部員の見張り.部員の頼みを確かめる(
                 人たち,
                 newMessages.filter((文) => 文.role === 'user').map((文) => 文.text),
-                (() => {
-                  // いちばん最近のカードの束（同じ頼みから出た人）
-                  const カード = newMessages.filter((文) => 文.role === 'actionCard');
-                  const 最後 = カード.length ? カード[カード.length - 1].元の記録 : null;
-                  return カード.filter((文) => 文.元の記録 === 最後).map((文) => 文.args);
-                })()
+                // まだ押していないカードの人だけ（登録が済んだカードは書き方の直しの元にしない）
+                newMessages.filter((文) => 文.role === 'actionCard' && 文.status === 'pending').map((文) => 文.args)
               );
+              if (見た.直し) 前のカードを閉じる = true;
               const 断り = 部員の見張り.断りの文(見た);
               const 残り = 部員の見張り.残りの文(見た);
               if (残り) 残りの知らせ.push(残り);
@@ -1633,9 +1632,14 @@ const AIChatBot = () => {
               // 前に出して待っているカードは、出し直したので閉じる（名前の書き方を直す頼みなど）
               ...prev
                 .filter((文) => 文.id !== 途中の札)
-                .map((文) =>
-                  文.role === 'actionCard' && 文.status === 'pending' ? { ...文, status: 'replaced' } : 文
-                ),
+                .map((文) => {
+                  if (文.role !== 'actionCard' || 文.status !== 'pending') return 文;
+                  // 同じ人をまた頼まれた（「あと佐藤も」で前の人ごと出し直された）なら、二重に登録しないよう前を閉じる
+                  const 同じ人 = pendingActionCards.some(
+                    (新) => 部員の見張り.比べる形(新.args.name) === 部員の見張り.比べる形(文.args.name)
+                  );
+                  return 前のカードを閉じる || 同じ人 ? { ...文, status: 'replaced' } : 文;
+                }),
               ...pendingActionCards,
               // 51 人目からは出さず、もう一度頼んでもらう（src/chatMemberGuard.js）
               ...残りの知らせ.map((文) => ({ id: generateMsgId(), role: 'model', text: 文 })),
