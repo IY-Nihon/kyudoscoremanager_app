@@ -17,6 +17,11 @@ const { 色 } = require('./iro.js');
 const { useScoreStore } = require('./useScoreStore');
 const 個人ID = require('./kojinId');
 
+/** 4 桁が使える最後の日（終わりの日の前の日。「12月2日」） */
+const 終わりの日の前の日 = () => {
+  const 日 = new Date(Date.parse(個人ID.古い形を使える終わり + 'T00:00:00Z') - 86400000);
+  return `${日.getUTCMonth() + 1}月${日.getUTCDate()}日`;
+};
 const 終わりの日 = () => `${Number(個人ID.古い形を使える終わり.slice(5, 7))}月${Number(個人ID.古い形を使える終わり.slice(8, 10))}日`;
 
 /** 一覧を写す（端末の写す機能。無ければ何もしない） */
@@ -43,6 +48,10 @@ const 一覧の字 = (振った) => 振った.map((人) => `${人.名前 || '（
 const 個人IDを新しくする窓 = ({ 見える, 閉じる }) => {
   const 個人IDの表 = useScoreStore((状態) => 状態.個人IDの表 || {});
   const 四桁の人がいる = Object.values(個人IDの表).some((id) => 個人ID.古い形.test(String(id || '')));
+  // 逆引き表をまだ読めていない（ログインしてすぐ・前の版から上げてすぐ）ときは、4 桁の人がいるかが分からない。
+  // そのときも「4 桁の人だけ替える」を選べるようにし、初めの選びもそちらにする（前は表が空だと「全員」が選ばれていた）
+  const 表を読めた = Object.keys(個人IDの表).length > 0;
+  const 四桁を選べる = 四桁の人がいる || !表を読めた;
   const [全員, 全員を置く] = React.useState(false);
   const [合言葉, 合言葉を置く] = React.useState('');
   const [作業中, 作業中を置く] = React.useState(false);
@@ -52,8 +61,8 @@ const 個人IDを新しくする窓 = ({ 見える, 閉じる }) => {
 
   React.useEffect(() => {
     if (!見える) return;
-    // 開くたびに初めから。4 桁の人がいなければ「6 字の人も替える」を選んでおく
-    全員を置く(!四桁の人がいる);
+    // 開くたびに初めから。4 桁の人がいないと分かっているときだけ「6 字の人も替える」を選んでおく
+    全員を置く(!四桁を選べる);
     合言葉を置く('');
     難点を置く('');
     振ったを置く(null);
@@ -96,12 +105,12 @@ const 個人IDを新しくする窓 = ({ 見える, 閉じる }) => {
                 <Pressable
                   accessibilityRole="radio"
                   accessibilityState={{ checked: !全員 }}
-                  style={[styles.選び, !全員 && styles.選んだ, !四桁の人がいる && styles.使えない]}
-                  disabled={!四桁の人がいる}
+                  style={[styles.選び, !全員 && styles.選んだ, !四桁を選べる && styles.使えない]}
+                  disabled={!四桁を選べる}
                   onPress={() => 全員を置く(false)}
                 >
                   <Text style={styles.選びの字}>
-                    {四桁の人がいる ? '4 桁の人だけ替える' : '4 桁の人だけ替える（4 桁の人はいません）'}
+                    {四桁を選べる ? '4 桁の人だけ替える' : '4 桁の人だけ替える（4 桁の人はいません）'}
                   </Text>
                 </Pressable>
                 <Pressable
@@ -184,7 +193,69 @@ const 個人IDを新しくする窓 = ({ 見える, 閉じる }) => {
   );
 };
 
+/**
+ * 4 桁の個人ID の部員が残っている団体の担当者に、画面の下に出す帯（2026-11-08 本人）。
+ * 押すと「全員の個人IDを新しくする」の窓が開く。「あとで」で閉じても、次にアプリを開いたときにまた出す
+ * （お知らせは「今後表示しない」で消せるので、見落とされる。帯は消しきらない）。
+ * 出すのは団体でログインしているときだけ（部員は自分では直せない）。人数は逆引き表（個人IDの表）の今の部員の分。
+ * メールの確認の帯が出ているあいだは出さない（App.js。2 本重なると画面が狭くなる）
+ */
+// 「あとで」はこのアプリを開いているあいだだけ覚える（読み込み直す・開き直すとまた出る）
+let あとでにした = false;
+const 四桁の帯 = () => {
+  const 役 = useScoreStore((状態) => 状態.activeRole);
+  const 個人IDの表 = useScoreStore((状態) => 状態.個人IDの表 || {});
+  const 部員たち = useScoreStore((状態) => 状態.members || []);
+  const [閉じた, 閉じたを置く] = React.useState(あとでにした);
+  const [開く, 開くを置く] = React.useState(false);
+  const 余白 = require('react-native-safe-area-context').useSafeAreaInsets();
+  const 人数 = 部員たち.filter(
+    (部員) => 部員 && 部員.id && 個人ID.古い形.test(String(個人IDの表[部員.id] || ''))
+  ).length;
+  if (役 !== 'group' || 人数 === 0) return null;
+  const 終わった = !個人ID.古い形を使えるか();
+  const 文 = 終わった
+    ? `4桁の個人IDの人が ${人数} 人います。4桁のIDではもう入れません。新しい個人IDを配ってください`
+    : `4桁の個人IDの人が ${人数} 人います。${終わりの日の前の日()}までに配り直してください（${終わりの日()}から入れなくなります）`;
+  return (
+    <>
+      {閉じた ? null : (
+        <View style={[styles.帯, { paddingBottom: 10 + (余白.bottom || 0) }]} testID="四桁の帯">
+          <Text style={styles.帯の字}>{文}</Text>
+          <Pressable accessibilityRole="button" onPress={() => 開くを置く(true)} hitSlop={8}>
+            <Text style={styles.帯の押す}>配り直す</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              あとでにした = true;
+              閉じたを置く(true);
+            }}
+            hitSlop={8}
+          >
+            <Text style={styles.帯のあとで}>あとで</Text>
+          </Pressable>
+        </View>
+      )}
+      <個人IDを新しくする窓 見える={開く} 閉じる={() => 開くを置く(false)} />
+    </>
+  );
+};
+
 const styles = StyleSheet.create({
+  // メールの確認の帯（src/MailKakuninScreen.js）と同じ形
+  帯: {
+    backgroundColor: 色.文字,
+    paddingTop: 10,
+    paddingBottom: 10,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  帯の字: { flex: 1, color: 色.白, fontSize: 13, lineHeight: 18, fontWeight: '600' },
+  帯の押す: { color: 色.橙, fontSize: 14, fontWeight: 'bold' },
+  帯のあとで: { color: 色.灰, fontSize: 13 },
   外: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
   流し: { flex: 1, width: '100%' },
   流しの中: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
@@ -224,4 +295,4 @@ const styles = StyleSheet.create({
   一覧のID: { fontSize: 16, color: 色.文字, fontWeight: 'bold', letterSpacing: 1 },
 });
 
-module.exports = { 個人IDを新しくする窓, 一覧の字 };
+module.exports = { 個人IDを新しくする窓, 一覧の字, 四桁の帯 };

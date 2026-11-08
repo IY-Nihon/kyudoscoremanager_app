@@ -596,3 +596,29 @@ test('部員として入る：12/3 を過ぎた 4 桁は、匿名の口座を作
   await assert.rejects(部員として入る(道具, 団体, '1234'), /4桁の個人IDは使えなくなりました/);
   assert.strictEqual(作った, 0);
 });
+
+test('部員として入る：中継が古い（404）ときの前の道が新しい決まりに断られたら、英語でなく分かる言葉で知らせる（2026-11-08）', async () => {
+  const { 雲 } = 用意();
+  雲.置く('group_accounts', 団体, { id: 団体, email: 'owner@example.com', verified: true });
+  const 認証 = { currentUser: null };
+  const FirebaseAuth = {
+    signInAnonymously: async (auth) => void (auth.currentUser = { uid: 'anon-x', isAnonymous: true }),
+    deleteUser: async () => void (認証.currentUser = null),
+  };
+  const 断る = Object.assign(new Error('Missing or insufficient permissions.'), { code: 'permission-denied' });
+  const api = Object.assign({}, 雲.api, {
+    getDoc: async (場所) => {
+      if (String((場所 && 場所.道) || '').includes('member_lookup')) throw 断る;
+      return 雲.api.getDoc(場所);
+    },
+  });
+  const 中継 = {
+    中継がある: () => true,
+    中継へfetch: async () => ({ ok: false, status: 404, json: async () => ({}) }),
+  };
+  const { 部員として入る } = require('../src/groupLogin');
+  await assert.rejects(
+    部員として入る({ Firestore: api, FirebaseAuth, db: {}, auth: 認証, 中継 }, 団体, 'K7MP3X'),
+    (誤り) => /いまは確かめられません/.test(誤り.message) && !/Missing/.test(誤り.message)
+  );
+});

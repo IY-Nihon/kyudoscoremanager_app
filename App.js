@@ -5,6 +5,7 @@ import { useScoreStore } from './src/useScoreStore';
 import { MainNavigator } from './src/MainNavigator';
 import { LoginScreen } from './src/LoginScreen';
 import { MailKakuninScreen, 確認の帯 } from './src/MailKakuninScreen';
+import { 四桁の帯 } from './src/KojinIdModal';
 import { LoadingScreen } from './src/LoadingScreen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -440,7 +441,8 @@ export default function App() {
               // 記録データは zustand ストア側にあるため再マウントしても失われない。
               <React.Fragment key={theme}>
                 <MainNavigator />
-                {メールの確認 === '猶予中' ? <確認の帯 /> : null}
+                {/* 下の帯は 1 本だけ。メールの確認を先に（4 桁の個人ID の帯は確認が済んでから。src/KojinIdModal.js） */}
+                {メールの確認 === '猶予中' ? <確認の帯 /> : 共有の来客 ? null : <四桁の帯 />}
                 <OfflineIndicator />
                 <WhatsNewModal />
               </React.Fragment>
