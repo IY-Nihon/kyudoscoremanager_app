@@ -9,12 +9,17 @@
 const 元 = globalThis.fetch;
 if (!globalThis.__エミュレーターへ向けた) {
   globalThis.__エミュレーターへ向けた = true;
-  globalThis.fetch = async (宛先, 頼み) => {
+  globalThis.fetch = (宛先, 頼み) => {
     let 道 = typeof 宛先 === 'string' ? 宛先 : 宛先 instanceof URL ? 宛先.href : 宛先.url;
     if (/^https:\/\/(oauth2\.googleapis\.com\/token|www\.googleapis\.com\/oauth2\/)/.test(道))
-      return new Response(JSON.stringify({ access_token: 'owner', expires_in: 3600 }), { status: 200 });
+      return Promise.resolve(
+        new Response(JSON.stringify({ access_token: 'owner', expires_in: 3600 }), { status: 200 })
+      );
     道 = 道
-      .replace('https://identitytoolkit.googleapis.com/', 'http://127.0.0.1:9099/identitytoolkit.googleapis.com/')
+      .replace(
+        'https://identitytoolkit.googleapis.com/',
+        'http://127.0.0.1:9099/identitytoolkit.googleapis.com/'
+      )
       .replace('https://securetoken.googleapis.com/', 'http://127.0.0.1:9099/securetoken.googleapis.com/')
       .replace('https://firestore.googleapis.com', 'http://127.0.0.1:8080');
     return 元(typeof 宛先 === 'string' || 宛先 instanceof URL ? 道 : new Request(道, 宛先), 頼み);

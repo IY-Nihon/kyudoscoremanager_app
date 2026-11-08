@@ -64,7 +64,9 @@ async function 集まりを読む(集まりの道) {
   const 出 = [];
   let 次 = '';
   do {
-    const r = await fetch(`${雲}/${集まりの道}?pageSize=300${次 ? '&pageToken=' + 次 : ''}`, { headers: 雲の頭 });
+    const r = await fetch(`${雲}/${集まりの道}?pageSize=300${次 ? '&pageToken=' + 次 : ''}`, {
+      headers: 雲の頭,
+    });
     const j = await r.json();
     if (!r.ok) throw new Error(`${集まりの道} を読めません（${r.status}）`);
     出.push(...(j.documents || []));
@@ -88,7 +90,9 @@ async function 書き出す() {
 }
 async function 置く(文書) {
   const 道 = 文書.name.split('/documents/')[1];
-  書く束.push({ update: { name: `projects/${企画}/databases/(default)/documents/${道}`, fields: 文書.fields || {} } });
+  書く束.push({
+    update: { name: `projects/${企画}/databases/(default)/documents/${道}`, fields: 文書.fields || {} },
+  });
   if (書く束.length >= 400) await 書き出す();
 }
 
@@ -102,7 +106,15 @@ async function たどる(集まりの道) {
 }
 
 // 記録（sessions）は数が多いので、団体の下の集まりは団体ごとに 1 回だけ名前を聞く（文書ごとには聞かない）
-const 葉の集まり = new Set(['sessions', 'trash', 'members', 'alumni', 'officialPracticeDays', 'member_lookup', 'config']);
+const 葉の集まり = new Set([
+  'sessions',
+  'trash',
+  'members',
+  'alumni',
+  'officialPracticeDays',
+  'member_lookup',
+  'config',
+]);
 async function 団体をたどる(集まりの道) {
   for (const 文書 of await 集まりを読む(集まりの道)) {
     await 置く(文書);
@@ -119,7 +131,8 @@ console.log('検証環境の根の集まり:', 根の集まり.join(', '));
 for (const 名 of 根の集まり) {
   if (名 === 'disposable_domains' || 名 === 'errorReports' || 名 === 'rate_limits') continue;
   if (名 === 'groups') await 団体をたどる(名);
-  else if (名 === 'group_accounts') await たどる(名); // 下に private がある
+  else if (名 === 'group_accounts')
+    await たどる(名); // 下に private がある
   else for (const 文書 of await 集まりを読む(名)) await 置く(文書); // 所属の証などは下の集まりが無い
   await 書き出す();
   console.log(`  ${名}: ここまでに ${写した} 件`);
@@ -141,7 +154,12 @@ do {
     const 作る = await fetch(`${認証の手元}/accounts`, {
       method: 'POST',
       headers: 手元の頭,
-      body: JSON.stringify({ localId: 人.localId, email: 人.email, password: 合言葉, emailVerified: !!人.emailVerified }),
+      body: JSON.stringify({
+        localId: 人.localId,
+        email: 人.email,
+        password: 合言葉,
+        emailVerified: !!人.emailVerified,
+      }),
     });
     if (!作る.ok) throw new Error(`口座を作れません（${作る.status}）: ${(await 作る.text()).slice(0, 200)}`);
     口座++;

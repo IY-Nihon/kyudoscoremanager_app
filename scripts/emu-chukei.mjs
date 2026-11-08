@@ -30,10 +30,12 @@ const 偽の鍵 = {
 };
 
 /** 本物の宛先をエミュレーターへ向け直す fetch */
-const 送る = async (宛先, 頼み = {}) => {
+const 送る = (宛先, 頼み = {}) => {
   const 道 = String(宛先);
   if (道.startsWith('https://oauth2.googleapis.com/') || 道.startsWith('https://www.googleapis.com/oauth2/'))
-    return new Response(JSON.stringify({ access_token: 'owner', expires_in: 3600 }), { status: 200 });
+    return Promise.resolve(
+      new Response(JSON.stringify({ access_token: 'owner', expires_in: 3600 }), { status: 200 })
+    );
   const 向け直し = 道.replace('https://firestore.googleapis.com', Firestoreの宛先);
   const 頭 = Object.assign({}, 頼み.headers || {}, { Authorization: 'Bearer owner' });
   return fetch(向け直し, Object.assign({}, 頼み, { headers: 頭 }));
@@ -45,7 +47,9 @@ function 証を読む(見出し) {
   const 部 = 証.split('.');
   if (部.length < 2) return null;
   try {
-    const 中身 = JSON.parse(Buffer.from(部[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));
+    const 中身 = JSON.parse(
+      Buffer.from(部[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8')
+    );
     return 中身 && 中身.aud && (中身.sub || 中身.user_id) ? Object.assign({ sub: 中身.user_id }, 中身) : null;
   } catch {
     return null;
@@ -68,18 +72,23 @@ http
     };
     if (受.method === 'OPTIONS') return 答える(204, {});
     const 道 = (受.url || '').split('?')[0];
-    if (道 !== '/kojin') return 答える(503, { error: 'エミュレーターでは AI を使えません（検証環境で試してください）' });
+    if (道 !== '/kojin')
+      return 答える(503, { error: 'エミュレーターでは AI を使えません（検証環境で試してください）' });
     const 本人 = 証を読む(受.headers.authorization);
     if (!本人) return 答える(401, { error: 'ログインの証がありません' });
     let 体 = '';
     for await (const かけら of 受) 体 += かけら;
-    const 頼み = new Request('http://emu/kojin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: 体 });
+    const 頼み = new Request('http://emu/kojin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: 体,
+    });
     try {
       const { 状態, 中身 } = await 部員を確かめる(
         頼み,
         { FIREBASE_SA_KEYS: JSON.stringify({ [本人.aud]: 偽の鍵 }) },
         本人,
-        { 送る, 回数に収まるか: async () => true }
+        { 送る, 回数に収まるか: () => Promise.resolve(true) }
       );
       答える(状態, 中身);
     } catch (誤り) {
@@ -87,4 +96,6 @@ http
       答える(503, { error: 'いまは確かめられません。少し待ってからお試しください' });
     }
   })
-  .listen(港, '127.0.0.1', () => console.log(`[emu-chukei] http://127.0.0.1:${港} で待っています（/kojin だけ）`));
+  .listen(港, '127.0.0.1', () =>
+    console.log(`[emu-chukei] http://127.0.0.1:${港} で待っています（/kojin だけ）`)
+  );
