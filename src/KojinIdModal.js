@@ -202,10 +202,13 @@ const 個人IDを新しくする窓 = ({ 見える, 閉じる }) => {
  */
 // 「あとで」はこのアプリを開いているあいだだけ覚える（読み込み直す・開き直すとまた出る）
 let あとでにした = false;
+// 店に無いときの空の表・一覧は毎回同じものを返す（選ぶ関数が毎回新しい {} を返すと、描き直しの判定が毎回「変わった」になる）
+const 空の表 = Object.freeze({});
+const 空の一覧 = Object.freeze([]);
 const 四桁の帯 = () => {
   const 役 = useScoreStore((状態) => 状態.activeRole);
-  const 個人IDの表 = useScoreStore((状態) => 状態.個人IDの表 || {});
-  const 部員たち = useScoreStore((状態) => 状態.members || []);
+  const 個人IDの表 = useScoreStore((状態) => 状態.個人IDの表 || 空の表);
+  const 部員たち = useScoreStore((状態) => 状態.members || 空の一覧);
   const [閉じた, 閉じたを置く] = React.useState(あとでにした);
   const [開く, 開くを置く] = React.useState(false);
   const 余白 = require('react-native-safe-area-context').useSafeAreaInsets();
