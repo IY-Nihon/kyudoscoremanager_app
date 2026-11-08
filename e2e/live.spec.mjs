@@ -103,6 +103,30 @@ async function 管理で消す(道, 値) {
   }
 }
 
+/** 管理の資格で RTDB を読む（管理で消す と同じ CLI で database:get）。読めなければ null */
+async function 管理で読む(道) {
+  const { execFileSync } = await import('node:child_process');
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const CLI = [
+    process.env.FIREBASE_CLI,
+    path.join(process.env.APPDATA || '', 'npm/node_modules/firebase-tools/lib/bin/firebase.js'),
+    '/usr/local/lib/node_modules/firebase-tools/lib/bin/firebase.js',
+    '/usr/lib/node_modules/firebase-tools/lib/bin/firebase.js',
+  ].find((p) => p && fs.existsSync(p));
+  if (!CLI) return null;
+  try {
+    return JSON.parse(
+      execFileSync(process.execPath, [CLI, 'database:get', 道, '--project', 'kyudoscoremanager-stg'], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      })
+    );
+  } catch {
+    return null;
+  }
+}
+
 /** 管理の権限で RTDB に置く（管理で消す と同じ CLI で database:set） */
 const 管理で置く = (道, 値) => 管理で消す(道, 値);
 
@@ -1282,12 +1306,6 @@ test('ライブ：立ち順を入れ替えると、相手の画面にも並び�
  * （終了・保存を押すと検証環境に記録が増えるので押さない）。
  */
 test('ライブ：閉じて開き直してもライブへ戻り、終わっていれば記録表が片付く', async ({ browser }) => {
-  // 手元のエミュレーターの iPhone（WebKit）では、開き直すと前の○が戻らない（11/8。単独でも毎回。検証環境では通る）。
-  // RTDB のエミュレーターと WebKit の組み合わせの違いで、ここでは確かめない（検証環境の E2E で確かめる）
-  test.skip(
-    process.env.FB_EMULATOR === '1' && browser.browserType().name() === 'webkit',
-    'エミュレーターの WebKit では開き直しの○が戻らない（検証環境で確かめる）'
-  );
   test.setTimeout(360_000);
   const ライブ名 = ライブ名を作る('back');
   const 主 = await browser.newContext();
@@ -1302,6 +1320,14 @@ test('ライブ：閉じて開き直してもライブへ戻り、終わって�
   expect(一人目.length, '射手が3人立っていない').toBe(3);
   await A.mouse.click(一人目[0].x, 一人目[0].y);
   expect(await 印がつくまで待つ(A, 一人目[0].印), '主催者の○が入らない').toBe('○');
+  // ○ は画面に出てから数十 ms あとに雲へ届く。届く前に開き直すと、送りかけの○は捨てられ、開き直した画面は
+  // 雲の盤面を正とするので○が無い（エミュレーターの iPhone で 3 回に 2 回落ちた。人が押してすぐ閉じる間合いではない）。
+  // この検査は「届いた○が開き直しても残るか」を見るので、雲に届いてから開き直す
+  await こうなるまで待つ(
+    () => 管理で読む(`live_sessions/${ライブの枝}/${ライブ名}/state/marks_by_id`),
+    (印の表) => !印の表 || JSON.stringify(印の表).includes('○'),
+    20_000
+  );
 
   // ── 主催者が開き直す ──
   await A.reload();
