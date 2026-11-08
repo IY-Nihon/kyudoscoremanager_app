@@ -915,6 +915,7 @@ const AIChatBot = () => {
           // 画面の移動・案内の開始（窓は 0.5 秒で閉じる）の答え。道具がこれだけなら、模型へ返す往復をしない（D4）
           const 閉じる答え = [];
 
+          const 残りの知らせ = [];
           for (const call of calls) {
             // 引数の中身には部員の氏名が入る。共用端末で読まれるので、
             // どの引数が来たかだけにする（不具合を追うにはこれで足りる）
@@ -1596,6 +1597,8 @@ const AIChatBot = () => {
                 newMessages.filter((文) => 文.role === 'user').map((文) => 文.text)
               );
               const 断り = 部員の見張り.断りの文(見た);
+              const 残り = 部員の見張り.残りの文(見た);
+              if (残り) 残りの知らせ.push(残り);
               if (断り) {
                 functionResponses.push({ functionResponse: { name: call.name, response: { error: 断り } } });
                 continue;
@@ -1620,7 +1623,12 @@ const AIChatBot = () => {
           if (hasPendingAction) {
             // 流しながら出していた途中の札は捨てる。道具を呼ぶ前に少しだけ
             // 文字が来ることがあり、そのままだと言いかけの文が残る
-            setMessages((prev) => [...prev.filter((文) => 文.id !== 途中の札), ...pendingActionCards]);
+            setMessages((prev) => [
+              ...prev.filter((文) => 文.id !== 途中の札),
+              ...pendingActionCards,
+              // 51 人目からは出さず、もう一度頼んでもらう（src/chatMemberGuard.js）
+              ...残りの知らせ.map((文) => ({ id: generateMsgId(), role: 'model', text: 文 })),
+            ]);
             setIsLoading(false);
             setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
             // ここで抜けるので、答えのあとに送るログまで届かない。カードを出したことをここで残す

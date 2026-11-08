@@ -4,7 +4,7 @@
  */
 const test = require('node:test');
 const assert = require('node:assert');
-const { 部員の頼みを確かめる, 断りの文 } = require('../src/chatMemberGuard');
+const { 部員の頼みを確かめる, 断りの文, 残りの文 } = require('../src/chatMemberGuard');
 
 const 人 = (name) => ({ name, grade: 1, gender: 'male' });
 
@@ -30,19 +30,21 @@ test('前の文で貼った名簿も、利用者が書いた名前として通�
   assert.strictEqual(結果.通す.length, 1);
 });
 
-test('50 人を超えたら、名前が書いてあっても誰も通さない', () => {
-  const 名前 = Array.from({ length: 51 }, (_, i) => `山田${i}郎`);
+test('50 人を超えたら、先の 50 人を通し、残りはもう一度頼んでもらう', () => {
+  const 名前 = Array.from({ length: 73 }, (_, i) => `山田${i}郎`);
   const 結果 = 部員の頼みを確かめる(名前.map(人), [名前.join('、')]);
-  assert.strictEqual(結果.多すぎ, true);
-  assert.strictEqual(結果.通す.length, 0);
-  assert.match(断りの文(結果), /50人まで/);
+  assert.strictEqual(結果.通す.length, 50);
+  assert.strictEqual(結果.残り.length, 23);
+  assert.strictEqual(結果.残り[0].name, '山田50郎');
+  assert.strictEqual(断りの文(結果), '');
+  assert.match(残りの文(結果), /残りの23人（山田50郎さんから）/);
 });
 
 test('ちょうど 50 人は通す', () => {
   const 名前 = Array.from({ length: 50 }, (_, i) => `山田${i}郎`);
   const 結果 = 部員の頼みを確かめる(名前.map(人), [名前.join('、')]);
-  assert.strictEqual(結果.多すぎ, false);
   assert.strictEqual(結果.通す.length, 50);
+  assert.strictEqual(残りの文(結果), '');
 });
 
 test('誰も名前が書かれていなければ、断りの文を AI に返す', () => {
