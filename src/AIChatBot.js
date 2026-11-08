@@ -23,6 +23,7 @@ const { Ionicons } = require('@expo/vector-icons');
 const { AIMascot } = require('./AIMascot');
 const 学 = require('./gakunen');
 const { ChatMemberCard } = require('./ChatMemberCard');
+const 部員の見張り = require('./chatMemberGuard');
 const { use団体の決まり } = require('./useGakunen');
 const 区 = require('./kubun');
 const { IS_WEB } = require('./IS_WEB');
@@ -1589,8 +1590,17 @@ const AIChatBot = () => {
                     ? call.args.members
                     : []
                   : [call.args];
-              for (const 人 of 人たち) {
-                if (!人 || !String(人.name || '').trim()) continue;
+              // 50 人を超える頼み・利用者が書いていない名前は登録しない（src/chatMemberGuard.js）
+              const 見た = 部員の見張り.部員の頼みを確かめる(
+                人たち,
+                newMessages.filter((文) => 文.role === 'user').map((文) => 文.text)
+              );
+              const 断り = 部員の見張り.断りの文(見た);
+              if (断り) {
+                functionResponses.push({ functionResponse: { name: call.name, response: { error: 断り } } });
+                continue;
+              }
+              for (const 人 of 見た.通す) {
                 pendingActionCards.push({
                   id: generateMsgId(),
                   role: 'actionCard',
