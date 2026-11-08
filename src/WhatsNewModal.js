@@ -28,10 +28,10 @@ const { getShadowStyle } = require('./shadowStyle');
 // 「NOTICE_VERSION が最新の項目と一致し、形がそろっている」ことは
 // test/updateNotice.test.js が見張っている。
 // eslint-disable-next-line no-unused-vars -- 画面では使わない。検査（test/autoLock.test.js）が字で読む
-const 最後に配信した版 = '2026-11-03-01';
+const 最後に配信した版 = '2026-11-08-02';
 // お知らせの版。新しい項目を足したら、必ずこれを最新の項目の 版 に合わせる。
 // 「次のお知らせが来るまで表示しない」を選んだ端末でも、この値が変わるとまた出る
-const NOTICE_VERSION = '2026-11-04-02';
+const NOTICE_VERSION = '2026-11-08-02';
 const STORAGE_KEY = 'whatsNewDismissedVersion';
 // 最後に開いたときの版。閉じるたびに書く。
 // どこから下が「前に読んだぶん」かの線を引くためだけに使う。
@@ -43,8 +43,8 @@ const LAST_SEEN_KEY = 'whatsNewLastSeenVersion';
 // そこで線を引くため、順番が崩れると線の位置が狂う（検査で見ている）
 const NOTICE_ITEMS = [
   {
-    date: '2026/11/04',
-    版: '2026-11-04-02',
+    date: '2026/11/08',
+    版: '2026-11-08-02',
     title: 'AIアシスタントとライブ記録の直し',
     points: [
       'AIアシスタントが、グラフや表を出す質問に早く答えるようになりました。',
@@ -53,8 +53,8 @@ const NOTICE_ITEMS = [
     ],
   },
   {
-    date: '2026/11/04',
-    版: '2026-11-04-01',
+    date: '2026/11/08',
+    版: '2026-11-08-01',
     title: '12月3日からの個人IDと、利用規約・プライバシーポリシーへの同意のお願い',
     points: [
       '4桁の個人IDは12月2日まで使えます。12月3日からは、4桁のIDでログインしたままの端末も、新しい6字の個人ID（例 K7MP3X）で入り直しが必要になります。招待リンクで入った人はそのまま使えます。',
