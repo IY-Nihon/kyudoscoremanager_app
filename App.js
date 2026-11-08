@@ -440,7 +440,11 @@ export default function App() {
               // key を変えないと再描画されず配色が古いままになる。
               // 記録データは zustand ストア側にあるため再マウントしても失われない。
               <React.Fragment key={theme}>
-                <MainNavigator />
+                {/* 画面（と AI のボタン・案内）は下の帯より上に収める。前は AI のボタンがアプリ全体の下に付き、
+                    下の帯（メールの確認・4 桁の個人ID）に隠れて押せなかった（2026-11-08） */}
+                <View style={styles.画面の場所}>
+                  <MainNavigator />
+                </View>
                 {/* 下の帯は 1 本だけ。メールの確認を先に（4 桁の個人ID の帯は確認が済んでから。src/KojinIdModal.js） */}
                 {メールの確認 === '猶予中' ? <確認の帯 /> : 共有の来客 ? null : <四桁の帯 />}
                 <OfflineIndicator />
@@ -484,6 +488,7 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
+  画面の場所: { flex: 1 },
   appContainer: {
     flex: 1,
     backgroundColor: 色.地,
