@@ -57,6 +57,19 @@ const rtdb = (() => {
     return null;
   }
 })();
+// 手元のエミュレーター（Firebase Emulator Suite）で E2E を流す束だけ、宛先を手元へ向ける（2026-11-08）。
+// 検証環境の 1 日の読みの枠（429）を使わずに何度でも流すため。束を作るときに EXPO_PUBLIC_EMULATOR_HOST を入れたときだけ
+//（scripts/build-emu.mjs。検証・本番の束には入らない）。宛先の港は firebase.json の emulators と同じ
+if (process.env.EXPO_PUBLIC_EMULATOR_HOST) {
+  const 宛 = process.env.EXPO_PUBLIC_EMULATOR_HOST;
+  try {
+    FirebaseAuth.connectAuthEmulator(auth, `http://${宛}:9099`, { disableWarnings: true });
+    Firestore.connectFirestoreEmulator(firestore, 宛, 8080);
+    if (rtdb) RTDB.connectDatabaseEmulator(rtdb, 宛, 9000);
+  } catch (誤り) {
+    console.warn('[Firebase] エミュレーターにつなげませんでした:', 誤り);
+  }
+}
 // db/auth/rtdb を先に exports に設定してから、永続化を非同期で行う
 exports.db = firestore;
 exports.auth = auth;

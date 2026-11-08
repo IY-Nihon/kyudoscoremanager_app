@@ -61,7 +61,18 @@ if (!/^EXPO_PUBLIC_RECAPTCHA_SITE_KEY=/m.test(fs.readFileSync(設定ファイル
 // Firestore の通信を毎回つなぎ直す形に固定する（src/db.js。E2E の iPhone で流しっぱなしの道が止まるため。検証環境の束だけ）
 if (!環境.EXPO_PUBLIC_FIRESTORE_LONG_POLLING) 環境.EXPO_PUBLIC_FIRESTORE_LONG_POLLING = '1';
 
-const 書き出し先 = process.env.BUILD_OUT || 'dist';
+// 手元のエミュレーター向けの束（npm run build:emu。--emu を付ける）。宛先を手元へ向け、中継も手元の代わり
+//（scripts/emu-chukei.mjs）にする。エミュレーターは流しっぱなしの道で止まらないので、ロングポーリングにしない
+const エミュレーター向け = process.argv.includes('--emu');
+if (エミュレーター向け) {
+  環境.EXPO_PUBLIC_EMULATOR_HOST = '127.0.0.1';
+  環境.EXPO_PUBLIC_FIREBASE_DATABASE_URL = 'http://127.0.0.1:9000/?ns=kyudoscoremanager-stg-default-rtdb';
+  環境.EXPO_PUBLIC_GEMINI_CHUKEI_URL = 'http://127.0.0.1:8788';
+  環境.EXPO_PUBLIC_FIRESTORE_LONG_POLLING = '0';
+  環境.EXPO_PUBLIC_RECAPTCHA_SITE_KEY = '';
+}
+
+const 書き出し先 = process.env.BUILD_OUT || (エミュレーター向け ? 'dist-emu' : 'dist');
 
 console.log(`検証環境向けに書き出します…（${書き出し先}/）`);
 const 結果 = spawnSync(
