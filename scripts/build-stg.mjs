@@ -62,13 +62,14 @@ if (!/^EXPO_PUBLIC_RECAPTCHA_SITE_KEY=/m.test(fs.readFileSync(設定ファイル
 if (!環境.EXPO_PUBLIC_FIRESTORE_LONG_POLLING) 環境.EXPO_PUBLIC_FIRESTORE_LONG_POLLING = '1';
 
 // 手元のエミュレーター向けの束（npm run build:emu。--emu を付ける）。宛先を手元へ向け、中継も手元の代わり
-//（scripts/emu-chukei.mjs）にする。エミュレーターは流しっぱなしの道で止まらないので、ロングポーリングにしない
+//（scripts/emu-chukei.mjs）にする。ロングポーリングは検証向けと同じく入れる（11/8：切ると iPhone の招待リンクの検査が
+// エミュレーターでも「確かめています…」で止まった。止まるのは Windows の WebKit の流しっぱなしの道で、雲の側ではない）
 const エミュレーター向け = process.argv.includes('--emu');
 if (エミュレーター向け) {
   環境.EXPO_PUBLIC_EMULATOR_HOST = '127.0.0.1';
   環境.EXPO_PUBLIC_FIREBASE_DATABASE_URL = 'http://127.0.0.1:9000/?ns=kyudoscoremanager-stg-default-rtdb';
   環境.EXPO_PUBLIC_GEMINI_CHUKEI_URL = 'http://127.0.0.1:8788';
-  環境.EXPO_PUBLIC_FIRESTORE_LONG_POLLING = '0';
+  環境.EXPO_PUBLIC_FIRESTORE_LONG_POLLING = '1';
   環境.EXPO_PUBLIC_RECAPTCHA_SITE_KEY = '';
 }
 
