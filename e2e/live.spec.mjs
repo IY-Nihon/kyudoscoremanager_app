@@ -245,7 +245,10 @@ async function 入る(page) {
  * testID は ます-<射手id>-<射番>。射手idにも「-」が入るので、
  * 後ろから読む（最後が射番、あいだが射手id）
  */
-function 一射目たち(page) {
+async function 一射目たち(page) {
+  // 4 桁の個人ID の帯が出ていたら閉じる（座標を読むだけでは 入る の addLocatorHandler が呼ばれない）
+  const 帯のあとで = page.getByTestId('四桁の帯').getByText('あとで', { exact: true });
+  if (await 帯のあとで.isVisible().catch(() => false)) await 帯のあとで.click().catch(() => {});
   return page.evaluate(() => {
     // その座標で本当に押せる ます だけを拾う。
     // iPhone のように縦が短い画面では、1射目の行が下端で切れていたり、
