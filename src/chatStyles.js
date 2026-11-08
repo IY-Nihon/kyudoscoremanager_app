@@ -134,17 +134,6 @@ const styles = StyleSheet.create({
   },
   actionBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 16 },
   // 部員を何人も頼んだとき、カードを1枚ずつ押さずに済むよう入力欄の上に出す
-  まとめて承認の段: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderTopWidth: 1,
-    borderTopColor: 色.地_濃い,
-    backgroundColor: 色.地_F9F9FB,
-  },
-  まとめて承認の文: { flex: 1, fontSize: 13, color: 色.文字_三 },
   actionBtnText: { color: 色.白, fontSize: 13, fontWeight: 'bold' },
 });
 

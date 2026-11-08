@@ -22,6 +22,8 @@ const {
 const { Ionicons } = require('@expo/vector-icons');
 const { AIMascot } = require('./AIMascot');
 const 学 = require('./gakunen');
+const { ChatMemberCard } = require('./ChatMemberCard');
+const { use団体の決まり } = require('./useGakunen');
 const 区 = require('./kubun');
 const { IS_WEB } = require('./IS_WEB');
 
@@ -254,6 +256,8 @@ const AIChatBot = () => {
   }, []);
   const addMember = useScoreStore((state) => state.addMember);
   const navigation = useNavigation();
+  const 団体の決まり = use団体の決まり();
+  const 学年の札 = [...団体の決まり.在籍の学年.map(String), '0'];
   const チュートリアル部員登録中 = 案内.useチュートリアル部員登録中();
   const 案内のAIボタン = 案内.useTutorialTarget('AI.ボタン');
   const [modalVisible, setModalVisible] = useState(false);
@@ -474,39 +478,6 @@ const AIChatBot = () => {
     autoCloseTimerRef.current = setTimeout(() => setModalVisible(false), 1200);
   };
 
-  const handleActionResponse = (msgId, isApproved) => {
-    const targetMsgIndex = messages.findIndex((文) => 文.id === msgId);
-    if (targetMsgIndex === -1) return;
-    const targetMsg = messages[targetMsgIndex];
-    if (!targetMsg || targetMsg.status !== 'pending') return;
-
-    const updatedMessages = [...messages];
-    updatedMessages[targetMsgIndex] = { ...targetMsg, status: isApproved ? 'approved' : 'rejected' };
-    let 追加した名 = null;
-
-    if (isApproved) {
-      if (targetMsg.actionType === 'addMember') {
-        const 名 = カードの人を追加する(targetMsg);
-        追加した名 = 名;
-        updatedMessages.push({
-          id: generateMsgId(),
-          role: 'model',
-          text: 名
-            ? チュートリアル部員登録中
-              ? `${名}さんをメンバーに追加しました！登録が完了しました。`
-              : `${名}さんをメンバーに追加しました。`
-            : 'メンバーの追加は団体ログインのときだけできます。追加していません。',
-        });
-        if (名 && チュートリアル部員登録中) 少ししたら閉じる();
-      }
-    } else {
-      updatedMessages.push({ id: generateMsgId(), role: 'model', text: `操作をキャンセルしました。` });
-    }
-
-    setMessages(updatedMessages);
-    setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
-    カードの答えを残す([targetMsg], isApproved, 追加した名 ? [追加した名] : [], isApproved && !追加した名);
-  };
 
   /**
    * 確かめのカードを押した結果を、改善のためのログに残す（元の質問のログの番号を添える）。
@@ -529,40 +500,48 @@ const AIChatBot = () => {
     });
   };
 
-  /** 待っているカードを全部まとめて承認する／キャンセルする（部員を何人も頼んだとき） */
-  const handleAllPending = (isApproved) => {
-    const 待ち = messages.filter((文) => 文.role === 'actionCard' && 文.status === 'pending');
-    if (!待ち.length) return;
+  /** 部員登録のカードで、学年・性別を直す／外す・戻す（src/ChatMemberCard.js） */
+  const カードを直す = (id, 変更) => {
+    setMessages((前) =>
+      前.map((文) => {
+        if (文.id !== id || 文.role !== 'actionCard' || 文.status !== 'pending') return 文;
+        const { 外す, ...値 } = 変更;
+        return {
+          ...文,
+          ...(typeof 外す === 'boolean' ? { 外す } : {}),
+          ...(Object.keys(値).length ? { args: { ...文.args, ...値 } } : {}),
+        };
+      })
+    );
+  };
+
+  /** 部員登録のカード 1 枚を決める。足す（カードの id）だけ足し、残りは足さない。足すが空ならやめる */
+  const カードの束を決める = (ids, 足すid) => {
+    const 登録 = 足すid.length > 0;
+    const 束 = messages.filter((文) => ids.includes(文.id) && 文.role === 'actionCard' && 文.status === 'pending');
+    if (!束.length) return;
     const 追加した = [];
     let 断られた = false;
-    const updatedMessages = messages.map((文) => {
-      if (文.role !== 'actionCard' || 文.status !== 'pending') return 文;
-      if (isApproved && 文.actionType === 'addMember') {
-        const 名 = カードの人を追加する(文);
-        if (名) 追加した.push(名);
-        else 断られた = true;
-      }
-      return { ...文, status: isApproved ? 'approved' : 'rejected' };
-    });
-    updatedMessages.push({
-      id: generateMsgId(),
-      role: 'model',
-      text: !isApproved
-        ? `${待ち.length}件の操作をキャンセルしました。`
-        : 断られた
-          ? 'メンバーの追加は団体ログインのときだけできます。追加していません。'
-          : チュートリアル部員登録中
-            ? `${追加した.length}人をメンバーに追加しました！登録が完了しました：${追加した.join('、')}`
-            : `${追加した.length}人をメンバーに追加しました：${追加した.join('、')}`,
-    });
-    if (isApproved && 追加した.length > 0 && チュートリアル部員登録中) 少ししたら閉じる();
-    setMessages(updatedMessages);
+    const 足す人 = 束.filter((文) => 足すid.includes(文.id));
+    for (const 文 of 足す人) {
+      const 名 = カードの人を追加する(文);
+      if (名) 追加した.push(名);
+      else 断られた = true;
+    }
+    const 決めた = new Set(足す人.filter((文) => 追加した.includes(文.args.name)).map((文) => 文.id));
+    const 次 = messages.map((文) =>
+      ids.includes(文.id) && 文.role === 'actionCard' && 文.status === 'pending'
+        ? { ...文, status: 決めた.has(文.id) ? 'approved' : 'rejected' }
+        : 文
+    );
+    if (断られた)
+      次.push({ id: generateMsgId(), role: 'model', text: 'メンバーの追加は団体ログインのときだけできます。追加していません。' });
+    setMessages(次);
     setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
-    カードの答えを残す(待ち, isApproved, 追加した, 断られた);
+    if (追加した.length && チュートリアル部員登録中) 少ししたら閉じる();
+    カードの答えを残す(束, 登録 && 追加した.length > 0, 追加した, 断られた);
   };
-  const 待っているカードの数 = messages.filter(
-    (文) => 文.role === 'actionCard' && 文.status === 'pending'
-  ).length;
+
 
   const handleSend = async () => {
     if (!inputText.trim() || isLoading) return;
@@ -1979,54 +1958,34 @@ const AIChatBot = () => {
             >
               {messages.map((msg, idx) =>
                 msg.role === 'actionCard' ? (
-                  <View
-                    key={msg.id || idx}
-                    style={[styles.messageBubble, styles.modelBubble, { minWidth: 200 }]}
-                  >
-                    <Text style={[styles.modelText, { fontWeight: 'bold', marginBottom: 8 }]}>
-                      データの追加提案
-                    </Text>
-                    <Text style={styles.modelText}>
-                      名前: {msg.args.name}
-                      {'\n'}
-                      学年: {学.学年の値の名前(msg.args.grade)}
-                      {'\n'}
-                      性別: {学.性別の名前(性別にそろえる(msg.args.gender))}
-                    </Text>
-                    {msg.status === 'pending' ? (
-                      <View
-                        style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12, gap: 8 }}
-                      >
-                        <TouchableOpacity
-                          style={[styles.actionBtn, { backgroundColor: 色.赤 }]}
-                          onPress={() => handleActionResponse(msg.id, false)}
-                        >
-                          <Text style={styles.actionBtnText}>キャンセル</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.actionBtn, { backgroundColor: 色.緑 }]}
-                          onPress={() => handleActionResponse(msg.id, true)}
-                        >
-                          <Text style={styles.actionBtnText}>承認</Text>
-                        </TouchableOpacity>
-                      </View>
-                    ) : (
-                      <View style={{ marginTop: 12 }}>
-                        <Text
-                          style={[
-                            styles.modelText,
-                            {
-                              color: msg.status === 'approved' ? 色.緑 : 色.赤,
-                              fontWeight: 'bold',
-                              textAlign: 'right',
-                            },
-                          ]}
-                        >
-                          {msg.status === 'approved' ? '✓ 承認済み' : 'キャンセル済み'}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
+                  // 同じ頼みから続けて出たカードは 1 枚にまとめる（先頭で出し、続きは出さない）
+                  idx > 0 &&
+                  messages[idx - 1].role === 'actionCard' &&
+                  messages[idx - 1].元の記録 === msg.元の記録 ? null : (
+                    (() => {
+                      const 束 = [];
+                      for (let i = idx; i < messages.length; i++) {
+                        const 文 = messages[i];
+                        if (文.role !== 'actionCard' || 文.元の記録 !== msg.元の記録) break;
+                        束.push(文);
+                      }
+                      return (
+                        <ChatMemberCard
+                          key={msg.id || idx}
+                          カードたち={束}
+                          名簿={members}
+                          学年の札={学年の札}
+                          性別にそろえる={性別にそろえる}
+                          直す={カードを直す}
+                          決める={(足す) => カードの束を決める(束.map((文) => 文.id), 足す)}
+                          メンバーを見る={() => {
+                            setModalVisible(false);
+                            navigation.navigate('メンバー');
+                          }}
+                        />
+                      );
+                    })()
+                  )
                 ) : (
                   <React.Fragment key={msg.id || idx}>
                     <View style={msg.role === 'user' ? undefined : styles.答えの行}>
@@ -2121,23 +2080,6 @@ const AIChatBot = () => {
               )}
             </ScrollView>
 
-            {待っているカードの数 >= 2 && (
-              <View style={styles.まとめて承認の段} testID="chat-bulk-approve">
-                <Text style={styles.まとめて承認の文}>{待っているカードの数}件の追加が待っています</Text>
-                <TouchableOpacity
-                  style={[styles.actionBtn, { backgroundColor: 色.赤 }]}
-                  onPress={() => handleAllPending(false)}
-                >
-                  <Text style={styles.actionBtnText}>すべてキャンセル</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionBtn, { backgroundColor: 色.緑 }]}
-                  onPress={() => handleAllPending(true)}
-                >
-                  <Text style={styles.actionBtnText}>すべて承認</Text>
-                </TouchableOpacity>
-              </View>
-            )}
 
             <View style={styles.inputArea}>
               {/*
