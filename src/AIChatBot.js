@@ -1455,8 +1455,8 @@ const AIChatBot = () => {
                 filtered = filtered.filter((記録) => 当たり.has(記録.id));
               }
 
-              if (recentCount) {
-                filtered = filtered.slice(0, recentCount);
+              if (Number.isFinite(Number(recentCount)) && Number(recentCount) > 0) {
+                filtered = filtered.slice(0, Math.floor(Number(recentCount)));
               } else if (date) {
                 const target = new Date(日付の始まり(date) || NaN);
                 filtered = filtered.filter((記録) => {

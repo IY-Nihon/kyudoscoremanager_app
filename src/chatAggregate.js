@@ -132,8 +132,9 @@ function 集計する(人たち, 記録たち, 注文) {
   // 人を絞る（性別・学年・名前）
   const 部員 = (Array.isArray(人たち) ? 人たち : []).filter((人) => 人 && 人.id);
   const 性別で = 設定.性別 ? 性別の名(設定.性別) : null;
-  const 学年で =
-    設定.学年 == null || 設定.学年 === '' ? null : Number(String(設定.学年).replace(/[^0-9]/g, ''));
+  // 数字の無い字（「全員」など）は絞らない（Number('') が 0 になる。src/chatStats.js の 学年が合う と同じ）
+  const 学年の数字 = 設定.学年 == null ? '' : String(設定.学年).replace(/[^0-9]/g, '');
+  const 学年で = 学年の数字 === '' ? null : Number(学年の数字);
   const 名前で =
     Array.isArray(設定.名前たち) && 設定.名前たち.length ? 名前で何人も選ぶ(部員, 設定.名前たち) : null;
   // 学年で絞るときは現役だけ（卒業・退部した人の学年は、いた頃のまま残る。src/chatStats.js の 人を絞る と同じ。A10）
@@ -382,8 +383,9 @@ function 名簿を数える(人たち, 注文) {
   const 設定 = 注文 || {};
   const 区分の一覧 = 区.区分たち(設定.区分たち);
   const 性別で = 設定.性別 ? 性別の名(設定.性別) : null;
-  const 学年で =
-    設定.学年 == null || 設定.学年 === '' ? null : Number(String(設定.学年).replace(/[^0-9]/g, ''));
+  // 数字の無い字（「全員」など）は絞らない（Number('') が 0 になる。src/chatStats.js の 学年が合う と同じ）
+  const 学年の数字 = 設定.学年 == null ? '' : String(設定.学年).replace(/[^0-9]/g, '');
+  const 学年で = 学年の数字 === '' ? null : Number(学年の数字);
   const 区分で = 設定.区分 ? 詰める(設定.区分) : null;
   const 名前で = 設定.名前に ? 詰める(設定.名前に) : null;
   const 選ぶ = (人) =>

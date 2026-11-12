@@ -1063,3 +1063,26 @@ test('記録の要約：載せない名前は人ごとの一覧から外し、�
   assert.strictEqual(要約.title, '無題');
   assert.strictEqual(要約.チームごと, undefined);
 });
+
+test('題で絞る：覚え書きは保存の項目（note）で当たる（前は memo を見ていて当たらなかった。2026-11-12）', () => {
+  const { 題で絞る } = require('../src/chatStats');
+  const 記録たち = [{ id: 'a', title: '練習', note: '審査の前の調整' }, { id: 'b', title: '練習', note: '' }];
+  const r = 題で絞る(記録たち, '審査');
+  assert.strictEqual(r.当たった件数, 1);
+  assert.strictEqual(r.記録たち[0].id, 'a');
+});
+
+test('学年：数字の無い字（全員）は絞らない（前は学年 0 の人だけになった。2026-11-12）', () => {
+  const { 人を絞る } = require('../src/chatStats');
+  const 部 = [{ id: '1', name: '甲', grade: 1 }, { id: '2', name: '乙', grade: 0 }, { id: '3', name: '丙', grade: 3 }];
+  assert.strictEqual(人を絞る(部, { 学年: '全員' }).length, 3);
+  assert.strictEqual(人を絞る(部, { 学年: '1年' }).length, 1);
+  assert.strictEqual(人を絞る(部, { 学年: 0 }).length, 1);
+});
+
+test('計算：全角のカンマは桁の区切り、数字の間の空白は詰めずに断る（2026-11-12）', () => {
+  const { 計算する } = require('../src/chatCalc');
+  assert.strictEqual(計算する('1，000+1').答え, 1001);
+  assert.ok(計算する('1 2 + 3').error);
+  assert.strictEqual(計算する('12 + 3').答え, 15);
+});
