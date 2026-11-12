@@ -594,9 +594,17 @@ const 射数に合わせる = (値, 長さ, 埋め) => {
 function 自分の射手か(射手, 自分id, 自分名) {
   if (!射手) return false;
   if (自分id && 射手.memberId === 自分id) return true;
-  if (自分名 && 射手.name === 自分名) return true;
-  if (自分id && 射手.substitutionIds && Object.values(射手.substitutionIds).includes(自分id)) return true;
-  if (自分名 && 射手.substitutions && Object.values(射手.substitutions).includes(自分名)) return true;
+  // 部員 ID の付いた列・交代は ID だけで決める。名前で拾うのは ID の無いもの（名前だけで入れた射手）だけ。
+  // 前は名前が同じなら ID が違っても自分に数え、同姓同名の別人の記録が自分の履歴と AI に出た
+  //（2026-11-12 本人「今いないなら ID でやってもいい」。本番に同姓同名・登録し直しの記録は 0 件だった）
+  if ((!自分id || !射手.memberId) && 自分名 && 射手.name === 自分名) return true;
+  const 交代のid = 射手.substitutionIds && typeof 射手.substitutionIds === 'object' ? 射手.substitutionIds : {};
+  if (自分id && Object.values(交代のid).includes(自分id)) return true;
+  if (自分名 && 射手.substitutions && typeof 射手.substitutions === 'object') {
+    for (const [位置, 相手] of Object.entries(射手.substitutions)) {
+      if ((!自分id || !交代のid[位置]) && 相手 === 自分名) return true;
+    }
+  }
   return false;
 }
 

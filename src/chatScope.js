@@ -46,14 +46,20 @@ const 同じ名前 = (甲, 乙) => !!甲 && !!乙 && 甲 === 乙;
  */
 function 射手を絞る(射手, 自分id, 自分名) {
   const 自分の名前か = (名前) => 同じ名前(名前, 自分名);
-  const 名前 = (自分id && 射手.memberId === 自分id) || 自分の名前か(射手.name) ? 射手.name : 他の人;
+  // 部員 ID の付いた列・交代は ID だけで決める（syncRules の 自分の射手か と同じ。同姓同名の別人を自分にしない）
+  const 自分の列 =
+    (自分id && 射手.memberId === 自分id) || ((!自分id || !射手.memberId) && 自分の名前か(射手.name));
+  const 名前 = 自分の列 ? 射手.name : 他の人;
 
+  const 元の交代id = 射手.substitutionIds && typeof 射手.substitutionIds === 'object' ? 射手.substitutionIds : {};
   const 交代 = {};
   for (const [位置, 相手] of Object.entries(射手.substitutions || {})) {
-    交代[位置] = 相手 === '' || 相手 == null ? '' : 自分の名前か(相手) ? 相手 : 他の人;
+    const 相手id = 元の交代id[位置];
+    const 自分の交代 = (自分id && 相手id === 自分id) || ((!自分id || !相手id) && 自分の名前か(相手));
+    交代[位置] = 相手 === '' || 相手 == null ? '' : 自分の交代 ? 相手 : 他の人;
   }
   const 交代のid = {};
-  for (const [位置, id] of Object.entries(射手.substitutionIds || {})) {
+  for (const [位置, id] of Object.entries(元の交代id)) {
     交代のid[位置] = 自分id && id === 自分id ? id : '';
   }
 
@@ -74,7 +80,6 @@ function 射手を絞る(射手, 自分id, 自分名) {
   const 矢所たち = Array.isArray(射手.arrowLocations) ? 射手.arrowLocations : [];
   const 絞った矢所 = 矢所たち.map((矢所, 射目) => (矢所 && 自分の射か(射目) ? 矢所 : null));
   // 弓力はその列の持ち主のもの。自分の列のときだけ渡す（交代で入った列の弓力は相手のもの）
-  const 自分の列 = (自分id && 射手.memberId === 自分id) || (!射手.memberId && 自分の名前か(射手.name));
   return {
     id: 射手.id,
     name: 渡す.name,
