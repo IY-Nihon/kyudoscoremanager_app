@@ -20,7 +20,7 @@ const 式の上限 = 300;
  */
 function 計算する(式, 桁) {
   const 元 = String(式 == null ? '' : 式);
-  const 文 = 元
+  let 文 = 元
     .replace(/[０-９]/g, (字) => String.fromCharCode(字.charCodeAt(0) - 0xfee0))
     .replace(/[＋]/g, '+')
     .replace(/[－−ー]/g, '-')
@@ -29,8 +29,11 @@ function 計算する(式, 桁) {
     .replace(/[（]/g, '(')
     .replace(/[）]/g, ')')
     .replace(/[．]/g, '.')
-    .replace(/(\d),(?=\d{3}\b)/g, '$1')
-    .replace(/\s+/g, '');
+    .replace(/[，]/g, ',')
+    .replace(/(\d),(?=\d{3}\b)/g, '$1');
+  // 数字の間の空白は詰めない（「1 2 + 3」が 12+3 になる）
+  if (/\d\s+\d/.test(文)) return { 式: 元, error: '数字の間に空白があります' };
+  文 = 文.replace(/\s+/g, '');
   if (!文) return { 式: 元, error: '式が空です' };
   if (文.length > 式の上限) return { 式: 元, error: `式が長すぎます（${式の上限} 字まで）` };
   if (!/^[0-9+\-*/().]+$/.test(文)) {

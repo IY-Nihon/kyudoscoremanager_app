@@ -120,8 +120,18 @@ export function 決まりの字(直し = []) {
   return 字;
 }
 
-/** 決まりを模擬環境へ置く */
-export async function 決まりを置く(字 = 決まりの字()) {
+/**
+ * 猶予（11/10）と 4 桁の終わり（12/3）の前の決まり。検査を流す日の時計に頼らないよう、日付を先へ送る
+ *（2026-11-12：猶予が終わった日から「頼んだ本人が締め出された」で落ちた。決まりではなく検査が時計を見ていた）
+ */
+export const 猶予のあいだの決まり = () =>
+  決まりの字([
+    ['timestamp.date(2026, 11, 10)', 'timestamp.date(2099, 1, 1)'],
+    ['timestamp.date(2026, 12, 3)', 'timestamp.date(2099, 1, 1)'],
+  ]);
+
+/** 決まりを模擬環境へ置く。何も渡さなければ猶予のあいだの決まり（猶予のあとは 猶予のあとの決まり を渡す） */
+export async function 決まりを置く(字 = 猶予のあいだの決まり()) {
   const 返り = await fetch(`http://${宛先}/emulator/v1/projects/${企画}:securityRules`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
