@@ -752,3 +752,15 @@ test('送れていないものがあるか：記録・メンバー・卒業生�
   送れていないものがあるか(Object.assign({}, 二回目, { historyStack: [1] }));
   assert.strictEqual(読んだ, 1);
 });
+
+test('自分の射手か：部員 ID の付いた列・交代は ID で決める。名前で拾うのは ID の無いものだけ（2026-11-12 本人）', () => {
+  const { 自分の射手か } = require('../src/syncRules');
+  assert.equal(自分の射手か({ memberId: 'm1', name: '山田' }, 'm1', '山田'), true);
+  assert.equal(自分の射手か({ memberId: 'm2', name: '山田' }, 'm1', '山田'), false, '同姓同名の別人を自分に数えた');
+  assert.equal(自分の射手か({ name: '山田' }, 'm1', '山田'), true, '名前だけで入れた射手を拾えない');
+  assert.equal(自分の射手か({ memberId: 'm2', name: '山田' }, undefined, '山田'), true, '自分の ID が分からないときは名前で見る');
+  const 交代 = { memberId: 'm9', name: '佐藤', substitutions: { 2: '山田' }, substitutionIds: { 2: 'm2' } };
+  assert.equal(自分の射手か(交代, 'm1', '山田'), false, '交代で入った同姓同名の別人を自分に数えた');
+  assert.equal(自分の射手か({ ...交代, substitutionIds: { 2: 'm1' } }, 'm1', '山田'), true);
+  assert.equal(自分の射手か({ ...交代, substitutionIds: {} }, 'm1', '山田'), true, 'ID の無い交代を名前で拾えない');
+});
