@@ -2,7 +2,14 @@
 
 const { 色 } = require('./iro.js');
 // 記録の選び方とシートの組み方は src/kakidashiNoHyou.js（数え方は分析画面と同じ statsRules）
-const { 書き出しのシートを作る, 自分の分がある記録か, csvDate } = require('./kakidashiNoHyou');
+const {
+  書き出しのシートを作る,
+  書き出す内容,
+  日付の文,
+  自分の分がある記録か,
+  csvDate,
+} = require('./kakidashiNoHyou');
+const { タグの見た目 } = require('./syncRules');
 const _xlsx = require('./excelExport');
 const React = require('react');
 const {
@@ -15,6 +22,7 @@ const {
   Modal,
   TextInput,
   Pressable,
+  Switch,
 } = require('./rn');
 const { IS_WEB } = require('./IS_WEB');
 const { useScoreStore } = require('./useScoreStore');
@@ -106,12 +114,20 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
   const [絞り込みを開く, 絞り込みを開くを置く] = React.useState(false);
   const [selectedKeywords, setSelectedKeywords] = React.useState([]);
   const [selectedMembers, setSelectedMembers] = React.useState([]);
+  // 書き出す前に中身を確かめる段（2026-11-13 本人）。null か、確かめている範囲（'fiscal' | 'all' | 'custom'）
+  const [確かめる範囲, 確かめる範囲を置く] = React.useState(null);
+  const [詳細を開く, 詳細を開くを置く] = React.useState(false);
+  // 卒業生・メンバー以外（ゲスト・相手校）は、入れると決めたときだけ書く（既定は含めない）
+  const [卒業生を含める, 卒業生を含めるを置く] = React.useState(false);
+  const [部員以外を含める, 部員以外を含めるを置く] = React.useState(false);
   // 窓を閉じたら、絞り込みと暦も閉じる（どの閉じ方でも）。残すと、次に開いたとき絞り込みが開いたまま、
   // 暦だけが窓の外に残ることがあった。選んだ条件はそのまま（もう一度書き出すとき使う）
   React.useEffect(() => {
     if (見える) return;
     絞り込みを開くを置く(false);
     暦を出すを置く(false);
+    確かめる範囲を置く(null);
+    詳細を開くを置く(false);
   }, [見える]);
   // 候補の並びは横に流す。パソコンの車の動きは横に読み替える（src/yokoNagashi.js）
   const titleRefCallback = use横流し();
@@ -145,6 +161,34 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
     });
     return Array.from(集めた).sort((甲, 乙) => 甲.localeCompare(乙));
   }, [見える記録]);
+  /** 書き出しの条件。確かめる段の中身と、実際の書き出しで同じものを使う */
+  const 条件を作る = (範囲) => ({
+    範囲,
+    年度: 書き出す年度,
+    始め: 期間の始め,
+    終わり: 期間の終わり,
+    選んだタグ,
+    タグの論理,
+    選んだ言葉: selectedKeywords,
+    言葉の絞り,
+    選んだ部員: selectedMembers,
+    部員名の絞り,
+    自分id: activeRole === 'member' ? myMemberId : null,
+    自分名: myMemberName,
+    形: 書き出しの形,
+    現役たち: members,
+    卒業生たち: alumni,
+    卒業生を含める,
+    部員以外を含める,
+  });
+  // 確かめる段に出す中身。描くたびに数え直す（窓が開いていて、確かめる段のときだけ）
+  const 中身 = 見える && 確かめる範囲 ? 書き出す内容(sList, 条件を作る(確かめる範囲)) : null;
+  const 範囲の説明 =
+    確かめる範囲 === 'fiscal'
+      ? `${書き出す年度}年度`
+      : 確かめる範囲 === 'all'
+        ? 'すべての期間'
+        : `${日付の文(期間の始め)}〜${日付の文(期間の終わり)}`;
   const 書き出す = async (範囲) => {
     if (!IS_WEB) {
       Alert.alert('未対応', '書き出しはWeb版のみ対応しています。');
@@ -152,25 +196,10 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
     }
     try {
       const { sessions, members: 部員たち } = useScoreStore.getState();
-      const { 記録の数, シートたち } = 書き出しのシートを作る(
-        sessions,
-        {
-          範囲,
-          年度: 書き出す年度,
-          始め: 期間の始め,
-          終わり: 期間の終わり,
-          選んだタグ,
-          タグの論理,
-          選んだ言葉: selectedKeywords,
-          言葉の絞り,
-          選んだ部員: selectedMembers,
-          部員名の絞り,
-          自分id: activeRole === 'member' ? myMemberId : null,
-          自分名: myMemberName,
-          形: 書き出しの形,
-        },
-        [...部員たち, ...alumni]
-      );
+      const { 記録の数, シートたち } = 書き出しのシートを作る(sessions, 条件を作る(範囲), [
+        ...部員たち,
+        ...alumni,
+      ]);
       if (記録の数 === 0) {
         Alert.alert('通知', '対象期間のデータがありません');
         return;
@@ -193,7 +222,107 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
           <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => 閉じる()} />
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Excel形式で書き出し</Text>
-            {絞り込みを開く ? (
+            {確かめる範囲 && 中身 ? (
+              <ScrollView style={{ width: '100%', maxHeight: 450 }} testID="書き出す内容">
+                {activeRole !== 'member' && (
+                  <>
+                    <View style={確かめの形.切り替え}>
+                      <Text style={確かめの形.切り替えの字}>卒業生を含める</Text>
+                      <Switch
+                        aria-label="卒業生を含める"
+                        value={卒業生を含める}
+                        onValueChange={卒業生を含めるを置く}
+                        trackColor={{ false: 色.灰_明るい, true: 色.緑 }}
+                      />
+                    </View>
+                    <View style={確かめの形.切り替え}>
+                      <Text style={確かめの形.切り替えの字}>メンバー以外（ゲスト・相手校）を含める</Text>
+                      <Switch
+                        aria-label="メンバー以外を含める"
+                        value={部員以外を含める}
+                        onValueChange={部員以外を含めるを置く}
+                        trackColor={{ false: 色.灰_明るい, true: 色.緑 }}
+                      />
+                    </View>
+                  </>
+                )}
+                <View style={確かめの形.箱}>
+                  <Text style={確かめの形.箱の題}>書き出す内容</Text>
+                  <Text style={確かめの形.箱の字}>
+                    {範囲の説明}
+                    {中身.記録.length > 0 && 確かめる範囲 !== 'custom'
+                      ? `（${日付の文(中身.始め)}〜${日付の文(中身.終わり)}）`
+                      : ''}
+                  </Text>
+                  <Text style={確かめの形.箱の字} testID="書き出す内容の数">
+                    {`記録 ${中身.記録.length} 件・${中身.人数} 人`}
+                  </Text>
+                  <Text style={確かめの形.箱の字}>
+                    {書き出しの形 === 'matrix' ? '印刷向けの形' : '標準の形'}
+                    {確かめる範囲 === 'custom' && 選んだタグ.length > 0
+                      ? `・タグ：${選んだタグ.map(タグの見た目).join(タグの論理 === 'AND' ? ' と ' : ' か ')}`
+                      : ''}
+                  </Text>
+                  {中身.記録.length === 0 && (
+                    <Text style={確かめの形.無い}>この条件に当たる記録がありません。</Text>
+                  )}
+                </View>
+                {中身.記録.length > 0 && (
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    onPress={() => 詳細を開くを置く((今) => !今)}
+                    style={{ alignSelf: 'flex-start', paddingVertical: 6 }}
+                  >
+                    <Text style={{ fontSize: 13, color: 色.青 }}>
+                      {詳細を開く ? '詳細を閉じる' : '詳細を見る'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                {詳細を開く &&
+                  中身.記録.map((一件) => (
+                    <View key={`naiyou-${一件.id}`} style={確かめの形.一件}>
+                      <Text style={確かめの形.一件の頭}>
+                        {`${一件.日付}  ${一件.題 || '（タイトルなし）'}`}
+                        <Text style={確かめの形.一件の数}>{`  ${一件.人数} 人`}</Text>
+                      </Text>
+                      {一件.メモ ? (
+                        <Text style={確かめの形.一件のメモ} numberOfLines={2}>
+                          {一件.メモ}
+                        </Text>
+                      ) : null}
+                      {一件.タグ.length > 0 && (
+                        <Text style={確かめの形.一件のタグ}>{一件.タグ.map(タグの見た目).join('・')}</Text>
+                      )}
+                    </View>
+                  ))}
+                <View style={[styles.modalButtons, { marginTop: 14 }]}>
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={中身.記録.length === 0}
+                    style={(様子) => [
+                      ...ボタンの形(色.青, 色.青_濃い)(様子),
+                      中身.記録.length === 0 && { opacity: 0.4 },
+                    ]}
+                    onPress={() => {
+                      const 範囲 = 確かめる範囲;
+                      閉じる();
+                      書き出す(範囲);
+                    }}
+                  >
+                    <Text style={[styles.modalBtnText, { color: 色.白 }]}>書き出す</Text>
+                  </Pressable>
+                  <Pressable
+                    style={ボタンの形(色.地, 色.地_濃い)}
+                    onPress={() => {
+                      確かめる範囲を置く(null);
+                      詳細を開くを置く(false);
+                    }}
+                  >
+                    <Text style={[styles.modalBtnText, { color: 色.青 }]}>戻る</Text>
+                  </Pressable>
+                </View>
+              </ScrollView>
+            ) : 絞り込みを開く ? (
               <ScrollView style={{ width: '100%', maxHeight: 450 }}>
                 <View style={styles.filterGroup}>
                   <Text style={styles.filterLabel}>出力形式</Text>
@@ -374,11 +503,7 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                 <View style={[styles.modalButtons, { marginTop: 20 }]}>
                   <Pressable
                     style={ボタンの形(色.青, 色.青_濃い)}
-                    onPress={() => {
-                      閉じる();
-                      絞り込みを開くを置く(false);
-                      書き出す('custom');
-                    }}
+                    onPress={() => 確かめる範囲を置く('custom')}
                   >
                     <Text style={[styles.modalBtnText, { color: 色.白 }]}>この条件で書き出す</Text>
                   </Pressable>
@@ -423,20 +548,11 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                   </View>
                   <Pressable
                     style={ボタンの形(色.青, 色.青_濃い, { marginTop: 8 })}
-                    onPress={() => {
-                      閉じる();
-                      書き出す('fiscal');
-                    }}
+                    onPress={() => 確かめる範囲を置く('fiscal')}
                   >
                     <Text style={[styles.modalBtnText, { color: 色.白 }]}>{書き出す年度}年度を書き出す</Text>
                   </Pressable>
-                  <Pressable
-                    style={ボタンの形(色.緑, 色.緑_28A7)}
-                    onPress={() => {
-                      閉じる();
-                      書き出す('all');
-                    }}
-                  >
+                  <Pressable style={ボタンの形(色.緑, 色.緑_28A7)} onPress={() => 確かめる範囲を置く('all')}>
                     <Text style={[styles.modalBtnText, { color: 色.白 }]}>すべてのデータ</Text>
                   </Pressable>
                   <Pressable style={ボタンの形(色.藍, 色.藍_濃い)} onPress={() => 絞り込みを開くを置く(true)}>
@@ -461,5 +577,26 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
     </>
   );
 };
+
+/** 書き出す前に中身を確かめる段の形 */
+const 確かめの形 = StyleSheet.create({
+  切り替え: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    paddingVertical: 6,
+  },
+  切り替えの字: { flex: 1, fontSize: 14, color: 色.文字 },
+  箱: { backgroundColor: 色.地, borderRadius: 10, padding: 12, marginTop: 8 },
+  箱の題: { fontSize: 13, fontWeight: 'bold', color: 色.文字, marginBottom: 4 },
+  箱の字: { fontSize: 14, color: 色.文字, lineHeight: 21 },
+  無い: { fontSize: 13, color: 色.赤, marginTop: 6 },
+  一件: { paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 色.区切り },
+  一件の頭: { fontSize: 13, color: 色.文字, fontWeight: '600' },
+  一件の数: { fontSize: 12, color: 色.灰, fontWeight: 'normal' },
+  一件のメモ: { fontSize: 12, color: 色.文字_二, marginTop: 2, lineHeight: 17 },
+  一件のタグ: { fontSize: 12, color: 色.青, marginTop: 2 },
+});
 
 module.exports = { データの書き出し窓 };

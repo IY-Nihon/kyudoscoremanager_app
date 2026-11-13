@@ -62,6 +62,22 @@ test('書き出し：窓が開き、年度を動かせ、すべてのデータ�
 
   const 落ちる = page.waitForEvent('download', { timeout: 30_000 });
   await page.getByText('すべてのデータ', { exact: true }).click();
+  // すぐには書き出さず、中身を確かめる段が出る（2026-11-13）。件数と人数、「詳細を見る」で記録の一覧
+  const 数の字 = page.getByTestId('書き出す内容の数');
+  await expect(数の字).toHaveText(/^記録 [1-9]\d* 件・[1-9]\d* 人$/, { timeout: 10_000 });
+  const 人数 = async () => Number(((await 数の字.textContent()) || '').match(/・(\d+) 人/)[1]);
+  const はじめの人数 = await 人数();
+  // メンバー以外・卒業生を入れると、人数は減らない
+  await page.locator('[aria-label="メンバー以外を含める"]').click();
+  await page.locator('[aria-label="卒業生を含める"]').click();
+  expect(await 人数(), 'スイッチを入れたら人数が減った').toBeGreaterThanOrEqual(はじめの人数);
+  await page.locator('[aria-label="メンバー以外を含める"]').click();
+  await page.locator('[aria-label="卒業生を含める"]').click();
+  expect(await 人数(), 'スイッチを戻しても人数が戻らない').toBe(はじめの人数);
+  await page.getByText('詳細を見る', { exact: true }).click();
+  await expect(page.getByText('詳細を閉じる', { exact: true })).toBeVisible();
+  await expect(page.getByText(/^\d{4}\/\d{2}\/\d{2}  /).first()).toBeVisible();
+  await page.getByText('書き出す', { exact: true }).click();
   const 落ちた = await 落ちる;
   expect(落ちた.suggestedFilename(), 'ファイル名の形').toMatch(/^kyudo_records_all_\d{4}-\d{2}-\d{2}\.xlsx$/);
   const 道 = await 落ちた.path();

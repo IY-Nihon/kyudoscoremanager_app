@@ -57,7 +57,6 @@ const SettingsScreen = () => {
     syncStatus = 'IDLE',
     lastSyncTime,
     isNetworkOnline = true,
-    syncAllToCloud,
     activeGroupId,
     activeGroupName,
     updateGroupName,
@@ -75,6 +74,8 @@ const SettingsScreen = () => {
     verifyGroupPassword,
     deleteGroupAccount: 団体を消す,
     tagTemplates = [],
+    いつも付けるタグ = [],
+    いつも付けるタグを入れ替える,
     addTagTemplate,
     removeTagTemplate,
     groupType,
@@ -100,7 +101,6 @@ const SettingsScreen = () => {
     'syncStatus',
     'lastSyncTime',
     'isNetworkOnline',
-    'syncAllToCloud',
     'activeGroupId',
     'activeGroupName',
     'updateGroupName',
@@ -118,6 +118,8 @@ const SettingsScreen = () => {
     'verifyGroupPassword',
     'deleteGroupAccount',
     'tagTemplates',
+    'いつも付けるタグ',
+    'いつも付けるタグを入れ替える',
     'addTagTemplate',
     'removeTagTemplate',
     'groupType',
@@ -705,12 +707,17 @@ const SettingsScreen = () => {
                     <Text style={styles.itemText}>タグの定型文</Text>
                   </View>
                 </View>
+                {tagTemplates.length > 0 && (
+                  <Text style={{ fontSize: 12, color: 基本色.灰, marginBottom: 8, lineHeight: 17 }}>
+                    タグを押すと「いつも付けるタグ」になり、保存のとき最初から入ります（この端末だけ。保存のときに外せます）。
+                  </Text>
+                )}
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
                   {tagTemplates.map((タグ) => (
                     <View
                       key={`template-${タグ}`}
                       style={{
-                        backgroundColor: 基本色.地_濃い,
+                        backgroundColor: いつも付けるタグ.includes(タグ) ? 基本色.青 : 基本色.地_濃い,
                         borderRadius: 16,
                         paddingLeft: 12,
                         paddingRight: 6,
@@ -720,10 +727,34 @@ const SettingsScreen = () => {
                         gap: 4,
                       }}
                     >
-                      <Text style={{ fontSize: 13, color: 基本色.黒 }}>
-                        {/* しまう形は「#合宿」だが、画面では # を付けない */}
-                        {規則.タグの見た目(タグ)}
-                      </Text>
+                      <Pressable
+                        accessibilityRole="button"
+                        aria-label={
+                          規則.タグの見た目(タグ) +
+                          (いつも付けるタグ.includes(タグ)
+                            ? ' をいつも付けるタグから外す'
+                            : ' をいつも付けるタグにする')
+                        }
+                        aria-pressed={いつも付けるタグ.includes(タグ)}
+                        onPress={() => いつも付けるタグを入れ替える(タグ)}
+                        style={[
+                          { flexDirection: 'row', alignItems: 'center', gap: 3 },
+                          IS_WEB && { cursor: 'pointer' },
+                        ]}
+                      >
+                        {いつも付けるタグ.includes(タグ) && (
+                          <Icons.Ionicons name="pin" size={13} color={基本色.白} />
+                        )}
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            color: いつも付けるタグ.includes(タグ) ? 基本色.白 : 基本色.黒,
+                          }}
+                        >
+                          {/* しまう形は「#合宿」だが、画面では # を付けない */}
+                          {規則.タグの見た目(タグ)}
+                        </Text>
+                      </Pressable>
                       <Pressable // 絵だけのボタン。どのタグを消すのかまで読ませる
                         accessible
                         accessibilityRole="button"
@@ -735,7 +766,11 @@ const SettingsScreen = () => {
                           IS_WEB && { cursor: 'pointer' },
                         ]}
                       >
-                        <Icons.Ionicons name="close-circle" size={18} color={基本色.灰} />
+                        <Icons.Ionicons
+                          name="close-circle"
+                          size={18}
+                          color={いつも付けるタグ.includes(タグ) ? 基本色.白 : 基本色.灰}
+                        />
                       </Pressable>
                     </View>
                   ))}
@@ -959,34 +994,6 @@ const SettingsScreen = () => {
               基本色.緑
             )}
             {行('mail-outline', 'お問い合わせ', () => setInquiryVisible(true), 基本色.橙)}
-            <Pressable
-              style={({ hovered }) => [
-                styles.item,
-                hovered && styles.hovered,
-                IS_WEB && { cursor: 'pointer' },
-              ]}
-              onPress={syncAllToCloud}
-            >
-              <View style={styles.itemLeft}>
-                <Icons.Ionicons
-                  name="cloud-upload-outline"
-                  size={22}
-                  color={基本色.藍}
-                  style={styles.itemIcon}
-                />
-                <Text style={styles.itemText}>クラウドへ同期</Text>
-              </View>
-              <View style={styles.itemRight}>
-                <Text style={styles.timestamp}>
-                  {lastSyncTime
-                    ? new Date(lastSyncTime).toLocaleTimeString('ja-JP')
-                    : syncStatus === '同期済み'
-                      ? ''
-                      : syncStatus}
-                </Text>
-                <Icons.Ionicons name="chevron-forward" size={18} color={基本色.区切り} />
-              </View>
-            </Pressable>
           </>
         )}
         <View style={styles.footer}>

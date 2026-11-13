@@ -291,6 +291,10 @@ const useScoreStore = zustand.create()(
         historySelectedTags: [],
         historyTagLogic: 'AND',
         currentSessionTags: [],
+        // 保存のとき最初から入れておくタグ（この端末だけ。2026-11-13 本人）。保存の窓を開いたときに 1 度だけ入れ、
+        // 外せば外れる（いつものタグを入れた が、その盤面でもう入れたかの印）
+        いつも付けるタグ: [],
+        いつものタグを入れた: false,
         tagTemplates: 既定のタグ,
         syncIntervalId: null,
         lastPromotionYear: null,
@@ -431,6 +435,8 @@ const useScoreStore = zustand.create()(
               historySelectedTags: [],
               historyTagLogic: 'AND',
               tagTemplates: 既定のタグ,
+              いつも付けるタグ: [],
+              いつものタグを入れた: false,
               isAdminMode: false,
               isAdminModePending: false,
               ...学年まわりの初めの値,
@@ -561,11 +567,33 @@ const useScoreStore = zustand.create()(
           const 整えた = normalizeTag(タグ);
           if (整えた && !今の.includes(整えた)) await 目印の候補を置く([...今の, 整えた], 'addTagTemplate');
         },
-        removeTagTemplate: (タグ) =>
-          目印の候補を置く(
+        removeTagTemplate: (タグ) => {
+          // 定型から消したタグは、いつも付けるタグからも外す
+          書く({ いつも付けるタグ: (状態().いつも付けるタグ || []).filter((タグ1つ) => タグ1つ !== タグ) });
+          return 目印の候補を置く(
             (状態().tagTemplates || []).filter((タグ1つ) => タグ1つ !== タグ),
             'removeTagTemplate'
-          ),
+          );
+        },
+        /** いつも付けるタグに入れる／外す（この端末だけ。雲へは送らない） */
+        いつも付けるタグを入れ替える: (タグ) =>
+          書く({
+            いつも付けるタグ: 入れ替える(cleanUpTagsArray(状態().いつも付けるタグ || []), normalizeTag(タグ)),
+          }),
+        /**
+         * 保存の窓を開いたときに呼ぶ。この盤面でまだなら、いつも付けるタグを記録のタグの頭に入れる。
+         * 1 度入れたら、外しても入れ直さない（盤面を片付ける・保存するまで）
+         */
+        いつものタグを入れる: () => {
+          if (状態().いつものタグを入れた) return;
+          const いつもの = cleanUpTagsArray(状態().いつも付けるタグ || []);
+          書く({
+            いつものタグを入れた: true,
+            ...(いつもの.length
+              ? { currentSessionTags: cleanUpTagsArray([...いつもの, ...(状態().currentSessionTags || [])]) }
+              : {}),
+          });
+        },
         setShowAlumniInAnalysis: (値) => 書く({ showAlumniInAnalysis: 値 }),
         setIncludeInStats: (値) => 書く({ includeInStats: 値 }),
         ...盤面の操作(書く, 状態, そのまま書く),
@@ -1121,6 +1149,7 @@ const useScoreStore = zustand.create()(
             redoStack: [],
             activeSessionID: null,
             currentSessionTags: [],
+            いつものタグを入れた: false,
             lastLocalChange: 今,
             lastResetHandled: 相手にも知らせる ? 今 : 状態().lastResetHandled,
             // 盤面を捨てたので、遡れる手も捨てる。ライブ中でないときに
@@ -1275,6 +1304,8 @@ const useScoreStore = zustand.create()(
           viewScale: 状態の中身.viewScale,
           includeInStats: 状態の中身.includeInStats,
           currentSessionTags: 状態の中身.currentSessionTags,
+          いつも付けるタグ: 状態の中身.いつも付けるタグ,
+          いつものタグを入れた: 状態の中身.いつものタグを入れた,
           activeGroupId: 状態の中身.activeGroupId,
           activeGroupName: 状態の中身.activeGroupName,
           publicGroupId: 状態の中身.publicGroupId,
