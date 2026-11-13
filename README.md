@@ -881,3 +881,7 @@ ReCAPTCHA キー未設定で無効だったため、いったん取り込みご�
 `themedJsx.js` 自体も呼ばれなくなり、削除済みです。いまダークモードのインライン色を
 変換しているのは `src/theme-runtime/jsx-runtime.js`（`babel.config.js` の
 `jsxImportSource` で全ファイルの JSX がここを通る）です。
+
+## ライセンス
+
+コードは公開していますが、利用の許諾はしていません（[LICENSE](LICENSE)）。使う・直す・配るには、著作権者の許しが要ります。
