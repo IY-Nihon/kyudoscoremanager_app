@@ -25,9 +25,14 @@ test('図の見本：どの図も描けて、図の箱からはみ出さない',
     会話.push({ id: `q${番}`, role: 'user', text: 組.map((一つ) => 一つ.問い).join(' ／ ') });
     会話.push({ id: `a${番}`, role: 'model', text: '見本です。', 図たち: 組.map((一つ) => 一つ.図) });
   }
-  await page.addInitScript((会話) => {
-    localStorage.setItem('aiChatMessages_v1_g_100007', JSON.stringify(会話));
-  }, 会話);
+  // ZU_TATE=寄せる で、的中率の縦軸を前の形（値のある所に寄せる）にして撮る（見比べ用）
+  await page.addInitScript(
+    ([会話, 縦軸]) => {
+      localStorage.setItem('aiChatMessages_v1_g_100007', JSON.stringify(会話));
+      if (縦軸) globalThis.__図の縦軸 = 縦軸;
+    },
+    [会話, process.env.ZU_TATE || '']
+  );
   await 案内を止める(page);
   await page.goto('/');
   await 画面が出るまで待つ(page);
