@@ -82,26 +82,6 @@ function 系列の名を混ぜる(系列たち) {
 }
 
 /**
- * 白い縁つきの字（線や点の上に重なっても読める）。縁の字を下に描いてから、字を上に描く
- */
-function 縁の字({ children, ...字の形 }) {
-  return (
-    <>
-      <Svgの部品.Text
-        {...字の形}
-        fill={色.白}
-        stroke={色.白}
-        strokeWidth={3.5}
-        strokeLinejoin="round"
-      >
-        {children}
-      </Svgの部品.Text>
-      <Svgの部品.Text {...字の形}>{children}</Svgの部品.Text>
-    </>
-  );
-}
-
-/**
  * 的中率の縦軸を 0% から始めるか（2026-11-13）。見比べのため、検査では globalThis.__図の縦軸 = '寄せる' で
  * 前の形（値のある所に寄せる）にもできる
  */
@@ -159,20 +139,87 @@ function 折れ線({ 図, 大きく }) {
   const 少ない点あり = 丸を描く && 図.系列.some((系列) => 系列.点.some(少ない));
   // 点の上の値は、隣と重ならないときだけ全部出す
   const 値を全部 = 内の幅 / 数 >= 値の字 * 2.8;
-  // 点が混むときは、いちばん高い・低い点（最初の 1 つ）にだけ数を付ける
-  const 一本目 = 図.系列[0].点.map((点) => 点.y);
-  const 高い点 = 一本目.indexOf(Math.max(...一本目));
-  const 低い点 = 一本目.indexOf(Math.min(...一本目));
-  // 両隣より低い点の数は点の下に書く（上に書くと、上る線にかかる）。下に入る隙間があるときだけ
-  const 下に書くか = (点たち, i) => {
-    const 隣 = [点たち[i - 1], 点たち[i + 1]].filter(Boolean);
-    return 隣.length > 0 && 隣.every((p) => p.y > 点たち[i].y) && y(低) - y(点たち[i].y) >= 値の字 + 8;
-  };
-  // 端の点の数は、目盛りの字や図の右の端にかからないように内側へ寄せる
-  const 値の位置 = (点のx, 字) => {
-    const 半分 = 字の幅(字, 値の字) / 2 + 2;
-    return Math.min(W - 2 - 半分, Math.max(左 + 半分, 点のx));
-  };
+  const 丸の半径 = 内の幅 / 数 < 12 ? 2.5 : 3.5;
+  // ── 数の置き場（2026-11-13 本人：字と線・点を重ねない）──
+  // 線・点・ほかの数・図の端にかからない所を、上 → 下 → 斜め → 横の順に探す。どこにも入らなければ出さない。
+  // 置く順は、いちばん高い点・低い点が先（大事な数から場所を取る）
+  const 位置の番 = (点) => 名たち.indexOf(点.x);
+  const 点の座標 = 図.系列.map((系列) =>
+    系列.点.map((点) => (位置の番(点) >= 0 ? { x: x(位置の番(点)), y: y(点.y) } : null))
+  );
+  const 線分たち = [];
+  点の座標.forEach((点たち) => {
+    const 有る = 点たち.filter(Boolean);
+    for (let i = 1; i < 有る.length; i++) 線分たち.push([有る[i - 1], 有る[i]]);
+  });
+  if (通算 != null)
+    線分たち.push([
+      { x: 左, y: y(通算) },
+      { x: W - 右, y: y(通算) },
+    ]);
+  const 丸たち = 点の座標.flat().filter(Boolean);
+  const 置いた箱 = [];
+  const 重なる箱 = (甲, 乙) => 甲.l < 乙.r && 乙.l < 甲.r && 甲.t < 乙.b && 乙.t < 甲.b;
+  const 線にかかる = (箱) =>
+    線分たち.some(([p, q]) => {
+      // 線分の上を細かくたどって、箱（少し広げる）に入る所があるか
+      const 長さ = Math.hypot(q.x - p.x, q.y - p.y);
+      const 刻み数 = Math.max(2, Math.ceil(長さ / 2));
+      for (let k = 0; k <= 刻み数; k++) {
+        const px = p.x + ((q.x - p.x) * k) / 刻み数;
+        const py = p.y + ((q.y - p.y) * k) / 刻み数;
+        if (px > 箱.l - 1.5 && px < 箱.r + 1.5 && py > 箱.t - 1.5 && py < 箱.b + 1.5) return true;
+      }
+      return false;
+    });
+  const 丸にかかる = (箱) =>
+    丸たち.some((c) => {
+      const 近x = Math.max(箱.l, Math.min(c.x, 箱.r));
+      const 近y = Math.max(箱.t, Math.min(c.y, 箱.b));
+      return Math.hypot(c.x - 近x, c.y - 近y) < 丸の半径 + 2;
+    });
+  const 数の置き場 = new Map();
+  if (一本 && W > 0) {
+    const 点たち = 図.系列[0].点;
+    const 値 = 点たち.map((点) => 点.y);
+    const 高い点 = 値.indexOf(Math.max(...値));
+    const 低い点 = 値.indexOf(Math.min(...値));
+    const 端 = [0, 点たち.length - 1];
+    const 候補の番 = 値を全部 ? 点たち.map((_, i) => i) : [高い点, 低い点];
+    const 順 = [...new Set([高い点, 低い点, ...端.filter((i) => 候補の番.includes(i)), ...候補の番])];
+    const 高さ = 値の字 * 0.95;
+    for (const i of 順) {
+      const c = 点の座標[0][i];
+      if (!c) continue;
+      const 字 = Number(点たち[i].y).toFixed(1);
+      const w = 字の幅(字, 値の字) + 2;
+      // 字の真ん中の座標の候補。近い所から試し、だめなら少し離す（3 段）
+      const 候補 = [];
+      for (const 足す of [0, 7, 14]) {
+        const 離れ = 丸の半径 + 3 + 足す;
+        候補.push(
+          [c.x, c.y - 離れ - 高さ / 2],
+          [c.x, c.y + 離れ + 高さ / 2],
+          [c.x + w / 2 + 2, c.y - 離れ - 高さ / 2 + 2],
+          [c.x - w / 2 - 2, c.y - 離れ - 高さ / 2 + 2],
+          [c.x + w / 2 + 2, c.y + 離れ + 高さ / 2 - 2],
+          [c.x - w / 2 - 2, c.y + 離れ + 高さ / 2 - 2],
+          [c.x + 離れ + w / 2 + 1, c.y],
+          [c.x - 離れ - w / 2 - 1, c.y]
+        );
+      }
+      for (const [cx, cy] of 候補) {
+        const 箱 = { l: cx - w / 2, r: cx + w / 2, t: cy - 高さ / 2, b: cy + 高さ / 2 };
+        // 下は横の名の字の上まで（0% の点の横にも置けるように）
+        if (箱.l < 左 || 箱.r > W - 2 || 箱.t < 1 || 箱.b > H - 6 - 字) continue;
+        if (線にかかる(箱) || 丸にかかる(箱) || 置いた箱.some((前) => 重なる箱(前, 箱))) continue;
+        置いた箱.push(箱);
+        // 字の下の線（baseline）は、真ん中から字の高さの 3 割ほど下
+        数の置き場.set(i, { x: cx, y: cy + 値の字 * 0.36, 字 });
+        break;
+      }
+    }
+  }
   const 通算の字 = 通算 == null ? '' : `通算 ${Number(通算).toFixed(1)}${図.単位}`;
   return (
     <View>
@@ -230,10 +277,18 @@ function 折れ線({ 図, 大きく }) {
                 .join(' ');
               return (
                 <React.Fragment key={`系列-${番}`}>
+                  {一本 && 名たち.length > 1 && 道 ? (
+                    // 線が 1 本のときは、線の下をうすく塗る（推移が目で追いやすい）
+                    <Svgの部品.Path
+                      d={`${道} L${x(位置(系列.点.filter((点) => 位置(点) >= 0).slice(-1)[0]))},${y(低)} L${x(位置(系列.点.find((点) => 位置(点) >= 0)))},${y(低)} Z`}
+                      fill={線の色}
+                      fillOpacity={0.07}
+                    />
+                  ) : null}
                   <Svgの部品.Path d={道} fill="none" stroke={線の色} strokeWidth="2" strokeLinejoin="round" />
                   {系列.点.map((点, i) => {
                     if (位置(点) < 0) return null;
-                    const 数を付ける = 一本 && (値を全部 || i === 高い点 || i === 低い点);
+                    const 数を付ける = 番 === 0 && 数の置き場.has(i);
                     const 白抜き = 少ない(点);
                     return (
                       <React.Fragment key={`点-${番}-${i}`}>
@@ -241,24 +296,11 @@ function 折れ線({ 図, 大きく }) {
                           <Svgの部品.Circle
                             cx={x(位置(点))}
                             cy={y(点.y)}
-                            r={内の幅 / 数 < 12 ? 2.5 : 3.5}
+                            r={丸の半径}
                             fill={白抜き ? 色.白 : 線の色}
                             stroke={白抜き ? 線の色 : 色.白}
                             strokeWidth="1.5"
                           />
-                        ) : null}
-                        {数を付ける ? (
-                          <縁の字
-                            fontFamily={図の字体}
-                            x={値の位置(x(位置(点)), Number(点.y).toFixed(1))}
-                            y={下に書くか(系列.点, i) ? y(点.y) + 値の字 + 5 : y(点.y) - 7}
-                            fontSize={値の字}
-                            fontWeight="bold"
-                            fill={白抜き ? 色.灰 : 色.文字}
-                            textAnchor="middle"
-                          >
-                            {`${Number(点.y).toFixed(1)}`}
-                          </縁の字>
                         ) : null}
                       </React.Fragment>
                     );
@@ -266,6 +308,20 @@ function 折れ線({ 図, 大きく }) {
                 </React.Fragment>
               );
             })}
+            {[...数の置き場].map(([i, 置き場]) => (
+              <Svgの部品.Text
+                key={`数-${i}`}
+                fontFamily={図の字体}
+                x={置き場.x}
+                y={置き場.y}
+                fontSize={値の字}
+                fontWeight="bold"
+                fill={少ない(図.系列[0].点[i]) ? 色.灰 : 色.文字}
+                textAnchor="middle"
+              >
+                {置き場.字}
+              </Svgの部品.Text>
+            ))}
           </Svg>
         ) : null}
       </View>
@@ -400,7 +456,10 @@ function 横の棒({ 図, 大きく }) {
               style={[
                 styles.横の棒,
                 // 負の値は最短の棒にする（負の幅は描けない）
-                { width: `${Math.max(2, (Math.max(0, 項.値) / 上限) * 100)}%`, opacity: 項.値 === いちばん ? 1 : 0.4 },
+                {
+                  width: `${Math.max(2, (Math.max(0, 項.値) / 上限) * 100)}%`,
+                  opacity: 項.値 === いちばん ? 1 : 0.4,
+                },
               ]}
             />
           </View>
@@ -644,7 +703,14 @@ const styles = StyleSheet.create({
   凡例: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 },
   凡例の一つ: { flexDirection: 'row', alignItems: 'center', marginRight: 12, marginBottom: 4 },
   凡例の印: { width: 10, height: 3, borderRadius: 2, marginRight: 4 },
-  通算の印: { width: 14, height: 0, borderTopWidth: 1.5, borderStyle: 'dashed', borderColor: 色.灰, marginRight: 4 },
+  通算の印: {
+    width: 14,
+    height: 0,
+    borderTopWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: 色.灰,
+    marginRight: 4,
+  },
   凡例の字: { fontSize: 12, color: 色.文字_二, marginBottom: 4 },
   横の行: { flexDirection: 'row', alignItems: 'center', marginVertical: 3 },
   横の名: { width: 82, fontSize: 12, color: 色.文字 },
