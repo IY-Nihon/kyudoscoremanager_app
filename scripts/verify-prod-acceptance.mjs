@@ -12,6 +12,14 @@
  *
  * 本番の団体 ID は倉庫に書かない。本番は PROD_GROUPS="A,B,C,D" の順で渡す（A は自分の団体）。
  * 検証環境は台帳の団体（scripts/stg-fixtures.mjs）を使う。部員の個人ID は持ち主で入って名簿から取る。
+ *
+ * ■ App Check（2026-11-13 に本番の Firestore と Realtime Database で強制した）
+ * 本番は、App Check の印（X-Firebase-AppCheck）の無い通信をすべて断る。この台本は Node から呼ぶので印を持たない。
+ *   ・印なしで流す（ふつう） … 「印が無ければ、ログインに要る 1 件も読めない」ことを見る（強制が効いている確かめ）。
+ *     決まり（rules）そのものの確かめにはならない（印で先に断られる）。決まりは検証環境で同じものに当てて見る
+ *   ・APPCHECK_TOKEN に印を渡して流す … 決まりまで届くので、未認証で読めない・ログインに要る 1 件が読めるを本番で見られる。
+ *     印は、本番のアプリを開いたブラウザーの IndexedDB（firebase-app-check-database）にある 1 時間だけ使える値
+ * 検証環境は強制していないので、今までどおり。
  */
 import fs from 'node:fs';
 import { configFor, signIn, signInAnonymously, 検証のパスワード, 検証環境でメールを確認済みにする } from './fb-rest.mjs';
@@ -40,11 +48,15 @@ if (団体の並び.length < 4) {
 }
 const [MY, OTHER, 団体C, 団体D] = 団体の並び;
 
-const st = async (p, { token, method = 'GET', body } = {}) =>
+const 印 = String(process.env.APPCHECK_TOKEN || '').trim();
+/** 本番で、印を持たずに流しているか（決まりより先に App Check で断られる） */
+const 印なしの本番 = 対象 === 'prod' && !印;
+const st = async (p, { token, method = 'GET', body, 印を付けない = false } = {}) =>
   (
     await fetch(B + p, {
       method,
       headers: {
+        ...(印 && !印を付けない ? { 'X-Firebase-AppCheck': 印 } : {}),
         ...(token ? { Authorization: 'Bearer ' + token } : {}),
         ...(body ? { 'Content-Type': 'application/json' } : {}),
       },
@@ -189,7 +201,11 @@ try {
   検査('遮断', '未認証：団体の一覧を取る', 403, await st('/group_accounts'));
 
   // ── 2. ログインに必要な経路は残っているか ────────────────────
-  検査('経路', '未認証：団体を1件取る（ログインに必要）', 200, await st(`/group_accounts/${MY}`));
+  if (印なしの本番) console.log('（印なしで流しています。ログインに要る 1 件が読めるかは、APPCHECK_TOKEN を渡したときだけ見ます）');
+  else 検査('経路', '未認証：団体を1件取る（ログインに必要）', 200, await st(`/group_accounts/${MY}`));
+  // App Check の強制（本番だけ）。印が無ければ、決まりで読める 1 件も断られる
+  if (対象 === 'prod')
+    検査('印', '印なし：団体を1件取る（App Check の強制）', 403, await st(`/group_accounts/${MY}`, { 印を付けない: true }));
 
   if (書いてよい) {
     const a = await 匿名();
