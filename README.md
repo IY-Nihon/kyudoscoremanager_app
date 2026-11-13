@@ -885,3 +885,4 @@ ReCAPTCHA キー未設定で無効だったため、いったん取り込みご�
 ## ライセンス
 
 コードは公開していますが、利用の許諾はしていません（[LICENSE](LICENSE)）。使う・直す・配るには、著作権者の許しが要ります。
+使っている部品のライセンスは、アプリと同じ置き場にあります： https://kyudoscoremanager.web.app/licenses.txt （配信のたびに `scripts/make-licenses.mjs` が作ります）
