@@ -606,7 +606,7 @@ const MemberScreen = () => {
             {編集中の部員 && 個人IDを引く(編集中の部員) ? (
               <View style={styles.きまりの行}>
                 {/* 部員の端末が知っているのは、ログインに使った ID（団体が配り直したら、新しい ID に替わっている） */}
-                <Text style={styles.きまりの名}>ログインに使った個人ID</Text>
+                <Text style={styles.きまりの名}>あなたの個人ID</Text>
                 <Text style={styles.きまりの値}>{個人IDを引く(編集中の部員)}</Text>
               </View>
             ) : null}
