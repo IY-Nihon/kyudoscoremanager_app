@@ -204,3 +204,26 @@ test('パスワード再設定：通信できれば送れる', async () => {
   const r = await store.getState().recoverPassword('a@example.com');
   assert.equal(r.success, true);
 });
+
+// ログアウトの支度（2026-11-13）。証を消したあと、見張りが雲に断られて「ログインし直してください」が一瞬出ていた
+test('ログアウトの支度：見張りを止め、入り直しを立てない。setAuth(null) で旗が下りる', async () => {
+  const { store, 雲 } = await 用意();
+  store.getState().setAuth(団体, 'group', null, 'a@example.com');
+  await 待つ(50);
+  store.setState({ 入り直しが要る: true, 再ログインの案内: 'x' });
+
+  store.getState().出る支度をする();
+  assert.equal(store.getState().出ている途中, true);
+  assert.equal(store.getState().入り直しが要る, false);
+  assert.equal(store.getState().再ログインの案内, null);
+  // 支度のあとに雲が変わっても拾わない（見張りは止まっている）
+  雲.置く(記録の道, 'ses-shitaku', 記録({ id: 'ses-shitaku' }));
+  await 待つ(50);
+  assert.ok(!store.getState().sessions.some((一つ) => 一つ.id === 'ses-shitaku'), '拾っていない');
+
+  store.getState().setAuth(null);
+  assert.equal(store.getState().出ている途中, false);
+  // 次に入ったときに、旗が残っていない
+  store.getState().setAuth(団体, 'group', null, 'a@example.com');
+  assert.equal(store.getState().出ている途中, false);
+});

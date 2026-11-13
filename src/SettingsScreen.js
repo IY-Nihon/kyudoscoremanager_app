@@ -1294,6 +1294,8 @@ const SettingsScreen = () => {
                   try {
                     // 部員は証と匿名の口座も消す（scripts/prune-anonymous-users.mjs）。電波が無くても
                     // 待ちきらずに出る（前は証の削除が返らず、押しても何も起きなかった。src/groupLogin.js）
+                    // 先に見張りを止める（証を消したあとに断られて「ログインし直してください」が一瞬出ていた）
+                    useScoreStore.getState().出る支度をする();
                     await 団体から出る({ Firestore, FirebaseAuth, db, auth }, activeRole);
                   } catch (誤り) {
                     console.error('Logout error:', 誤り);

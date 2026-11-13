@@ -45,7 +45,9 @@ const MailKakuninScreen = ({ 様子, 閉じる }) => {
   const 送る = () =>
     する(async () => {
       await 確.確認メールを送る(道具.FirebaseAuth, 道具.auth);
-      知らせを置く(`${メール} に確認メールを送りました。メールのリンクを押してから、「確認した」を押してください。`);
+      知らせを置く(
+        `${メール} に確認メールを送りました。メールのリンクを押してから、「確認した」を押してください。`
+      );
     });
 
   const 確かめる = () =>
@@ -76,6 +78,7 @@ const MailKakuninScreen = ({ 様子, 閉じる }) => {
   const 出る = () =>
     する(async () => {
       const 状 = useScoreStore.getState();
+      状.出る支度をする();
       await require('./groupLogin').団体から出る(道具, 状.activeRole);
       状.setAuth(null, null, null, null);
     });
@@ -92,7 +95,9 @@ const MailKakuninScreen = ({ 様子, 閉じる }) => {
                 : '団体のアカウントを使うには、登録メールアドレスの確認が要ります。確認が済むまで、記録やメンバーなどは使えません（部員も入れません）。'}
             </Text>
             <Text style={styles.宛先}>{メール}</Text>
-            <Text style={styles.説明}>「確認メールを送る」を押し、届いたメールのリンクを押してから、「確認した」を押してください。</Text>
+            <Text style={styles.説明}>
+              「確認メールを送る」を押し、届いたメールのリンクを押してから、「確認した」を押してください。
+            </Text>
           </>
         ) : (
           <Text style={styles.説明}>{確.団体がまだの文}</Text>
@@ -190,7 +195,13 @@ const styles = StyleSheet.create({
   知らせ: { fontSize: 13, color: 色.青, lineHeight: 19, marginBottom: 4 },
   難点: { fontSize: 13, color: 色.赤, lineHeight: 19, marginBottom: 4 },
   注: { fontSize: 12, color: 色.灰, lineHeight: 18, marginTop: 12 },
-  ボタン: { backgroundColor: 色.青, borderRadius: 10, paddingVertical: 13, alignItems: 'center', marginTop: 10 },
+  ボタン: {
+    backgroundColor: 色.青,
+    borderRadius: 10,
+    paddingVertical: 13,
+    alignItems: 'center',
+    marginTop: 10,
+  },
   二番目: { backgroundColor: 色.白, borderWidth: 1.5, borderColor: 色.青 },
   作業中: { opacity: 0.5 },
   ボタンの字: { color: 色.白, fontSize: 16, fontWeight: 'bold' },
