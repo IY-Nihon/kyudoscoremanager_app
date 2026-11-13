@@ -218,6 +218,9 @@ const useScoreStore = zustand.create()(
         再ログインの案内: null,
         // ログインし直しの窓を出すか（src/ReloginModal.js）。開いたときにログインが無い・雲に断られたときに立てる
         入り直しが要る: false,
+        // ログアウトの途中か。所属の証を消してから店を空にするまでのあいだ、見張りが雲に断られて
+        // 「ログインし直してください」が一瞬出ていた（2026-11-13 本人）。この間は入り直しを立てない
+        出ている途中: false,
         // 「あとで」を押したら、この起動のあいだは窓を自動では出さない（帯から開ける）。端末には残さない
         入り直しをあとに: false,
         // ログアウトしても残す、送れていない記録の控え（団体ごと。src/unsentStash.js）
@@ -336,7 +339,10 @@ const useScoreStore = zustand.create()(
           if (!人 || !(await waitForDb())) return null;
           try {
             const 証 = await Firestore.getDoc(Firestore.doc(Firebaseの器.db, 'member_claims', 人.uid));
-            const 番号 = (証.exists() && (証.data() || {}).personalId) || '';
+            // 招待リンクで入った人は、証の personalId が招待の鍵。中継が添えた本当の個人ID（kojinId）を先に見る
+            const 中身 = (証.exists() && 証.data()) || {};
+            const 個 = require('./kojinId');
+            const 番号 = 個.個人IDの形か(中身.kojinId) ? 中身.kojinId : 中身.personalId || '';
             if (require('./kojinId').個人IDの形か(番号) && 状態().activeRole === 'member') {
               書く({ 自分の個人ID: 番号 });
               return 番号;
@@ -346,7 +352,29 @@ const useScoreStore = zustand.create()(
           }
           return null;
         },
+        /**
+         * ログアウトの支度。証や口座を消す前に呼ぶ（src/groupLogin.js の 団体から出る の前）。
+         * 雲の見張りと定時の同期を止め、消したあとに断られても入り直しの窓を出さないようにする。
+         * 続けて setAuth(null) を呼ぶ（そこで旗は下りる）
+         */
+        出る支度をする: () => {
+          書く({ 出ている途中: true, 入り直しが要る: false, 再ログインの案内: null });
+          for (const 止める of [
+            'stopPeriodicSync',
+            'stopListeningToSessions',
+            'stopListeningToMembers',
+            'stopListeningToAlumni',
+            'stopListeningToTrash',
+          ]) {
+            try {
+              状態()[止める]();
+            } catch (誤り) {
+              console.warn('[Store] ログアウトの支度で止められませんでした', 止める, 誤り);
+            }
+          }
+        },
         setAuth: (団体ID, 役割, 部員ID, メール = null, 公開の団体ID = null, 団体名 = null, 部員名 = null) => {
+          if (状態().出ている途中) 書く({ 出ている途中: false });
           if (団体ID === null) {
             // ライブから抜けてから出る（合言葉を捨てる前に。抜けないと、見張りと在席が残り、
             // 次に入った団体に前の団体のライブが続いて見えた）。盤面は下でまとめて片付ける
@@ -517,7 +545,10 @@ const useScoreStore = zustand.create()(
         setCurrentSessionTags: (タグたち) => 書く({ currentSessionTags: cleanUpTagsArray(タグたち || []) }),
         toggleCurrentSessionTag: (タグ) => {
           書く({
-            currentSessionTags: 入れ替える(cleanUpTagsArray(状態().currentSessionTags || []), normalizeTag(タグ)),
+            currentSessionTags: 入れ替える(
+              cleanUpTagsArray(状態().currentSessionTags || []),
+              normalizeTag(タグ)
+            ),
           });
         },
         setTagTemplates: (タグたち) =>
