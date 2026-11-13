@@ -110,5 +110,8 @@ const 直し = spawnSync(process.execPath, ['scripts/patch-index-html.mjs'], {
   env: { ...process.env, BUILD_OUT: 書き出し先 },
 });
 if (直し.status !== 0) process.exit(直し.status ?? 1);
+// 部品のライセンスをまとめて、束と同じ置き場に置く（scripts/make-licenses.mjs）
+const 表示 = spawnSync(process.execPath, ['scripts/make-licenses.mjs', 書き出し先], { stdio: 'inherit' });
+if (表示.status !== 0) process.exit(表示.status ?? 1);
 
 console.log(`\n完了。接続先: ${m[1]}`);

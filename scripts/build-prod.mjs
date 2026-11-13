@@ -39,5 +39,8 @@ if (!m || m[1] !== 本番) {
 // expo が作る index.html の既定値を直す（lang="en" とタイトル）
 const 直し = spawnSync(process.execPath, ['scripts/patch-index-html.mjs'], { stdio: 'inherit' });
 if (直し.status !== 0) process.exit(直し.status ?? 1);
+// 部品のライセンスをまとめて、束と同じ置き場に置く（scripts/make-licenses.mjs）
+const 表示 = spawnSync(process.execPath, ['scripts/make-licenses.mjs', 'dist'], { stdio: 'inherit' });
+if (表示.status !== 0) process.exit(表示.status ?? 1);
 
 console.log(`\n完了。接続先: ${m[1]}`);
