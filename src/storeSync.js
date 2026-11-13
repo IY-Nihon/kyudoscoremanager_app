@@ -454,6 +454,8 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       場.同期している = false;
     }
   },
+  // 設定の「クラウドへ同期」の行は 2026-11-13 に消した（本人。全件を書き直すので全員の端末が読み直し、
+  // ほかの端末の新しい直しを古い中身で上書きしえた）。画面からは呼ばれない。ふだんの送りは syncSessions
   syncAllToCloud: async () => {
     行動を控える('クラウドへ同期', (状態().sessions || []).length + '件');
     const { activeGroupId, activeRole, isNetworkOnline } = 状態();

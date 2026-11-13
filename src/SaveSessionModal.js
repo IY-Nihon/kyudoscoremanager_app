@@ -15,6 +15,7 @@ const {
 } = require('./rn');
 
 const { useストアの一部 } = require('./storeSlice');
+const { useScoreStore } = require('./useScoreStore');
 const { IS_IOS } = require('./IS_WEB');
 const { getShadowStyle } = require('./shadowStyle');
 const { normalizeTag, タグの見た目, cleanUpTagsArray } = require('./syncRules');
@@ -63,7 +64,9 @@ const SaveSessionModal = ({ visible, onClose, onSave }) => {
   // タグの候補の並びは横に流す。パソコンでは車を回しても動かなかったので、横に読み替える
   const 定型文の横流し = use横流し();
   React.useEffect(() => {
-    タグの文を置く(currentSessionTags.map(タグの見た目).join(' '));
+    // 開いたとき、この盤面でまだなら「いつも付けるタグ」を入れる（設定で選んだもの。外せば外れる）
+    if (visible) useScoreStore.getState().いつものタグを入れる();
+    タグの文を置く((useScoreStore.getState().currentSessionTags || []).map(タグの見た目).join(' '));
     // 開いたときだけ。タグが変わるたびに書き直すと、打ちかけ（「#」だけ・後ろの空白）が消えて次のタグを打てなかった
   }, [visible]);
   // 欄に打って置いたタグ。店から戻ってきたのがこれなら、欄は打ったままにする

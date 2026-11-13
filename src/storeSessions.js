@@ -114,6 +114,8 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
       sessions: [記録, ...前.sessions.filter((記録1件) => 記録1件.id !== 記録ID)],
       activeSessionID: null,
       archers: [],
+      // 次の記録の保存の窓で、いつも付けるタグをまた入れる
+      いつものタグを入れた: false,
       lastLocalChange: Date.now(),
       syncStatus: '未同期',
       // 盤面を片付けたので、遡れる手も捨てる。リセットと同じ扱い。
@@ -147,7 +149,11 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
           // 14 日で片付く（syncRules の 参加できるライブ）。配ったライブの枝は期限があるので今までどおり消す
           枝 === 団
             ? RTDB.set(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${枝}/${元のライブ名}`), {
-                state: { status: 'finished', timestamp: RTDB.serverTimestamp(), updated_at: RTDB.serverTimestamp() },
+                state: {
+                  status: 'finished',
+                  timestamp: RTDB.serverTimestamp(),
+                  updated_at: RTDB.serverTimestamp(),
+                },
               }).catch(() => {})
             : 落とす(`live_sessions/${枝}/${元のライブ名}`),
           // 共有履歴と在席は別の枝にあるので、明示的に消す
@@ -279,7 +285,11 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
               ...状態().trash,
               // 捨てた時刻も手元に置く。無いと、ゴミ箱へ移したことが雲に届かないまま同期が走ったとき、雲に残る記録
               // （サーバーの時刻で少し新しい）を「ほかの端末でゴミ箱から戻した」と取り違え、履歴に戻していた（A3）
-              Object.assign({}, 消す記録, { syncStatus: '未同期', pendingDelete: true, deletedAt: Date.now() }),
+              Object.assign({}, 消す記録, {
+                syncStatus: '未同期',
+                pendingDelete: true,
+                deletedAt: Date.now(),
+              }),
             ],
           }
         : { sessions: 残り }

@@ -46,6 +46,9 @@ const 並びにする = (値) =>
         ? Object.values(値).filter(Boolean)
         : []
     : [];
+/** 月の札の「すべて」（年度を一続きで見る）のときの 見ている月 の値 */
+const 月すべて = 'すべて';
+
 const HistoryScreen = () => {
   // 上から引っ張って更新（src/hikiOroshi.js）。雲から取り直す
   const 引く = use引いて更新(() => useScoreStore.getState().雲から取り直す());
@@ -235,12 +238,8 @@ const HistoryScreen = () => {
     mySessions.forEach((記録) => {
       if (記録.tags && Array.isArray(記録.tags)) 記録.tags.forEach((タグ) => 集めた.add(タグ));
     });
-    return Array.from(集めた).sort((甲, 乙) => {
-      const 甲は選択中 = historySelectedTags.includes(甲);
-      const 乙は選択中 = historySelectedTags.includes(乙);
-      return 甲は選択中 && !乙は選択中 ? -1 : !甲は選択中 && 乙は選択中 ? 1 : 甲.localeCompare(乙);
-    });
-  }, [mySessions, historySelectedTags]);
+    return Array.from(集めた);
+  }, [mySessions]);
   // どの記録にも無くなったタグは、絞り込みから外す（A38）。前は、選んだタグの付いた記録を全部消す・タグを外すと
   // タグの帯（「すべて解除」のある帯）が出なくなるのに絞り込みは効いたままで、履歴がずっと「記録がありません」になった
   React.useEffect(() => {
@@ -273,7 +272,7 @@ const HistoryScreen = () => {
   }, [年度の一覧, 見ている年度]);
   React.useEffect(() => {
     if (月の一覧.length > 0) {
-      if (!月の一覧.includes(見ている月)) {
+      if (見ている月 !== 月すべて && !月の一覧.includes(見ている月)) {
         見ている月を置く(月の一覧[月の一覧.length - 1]);
       }
     } else {
@@ -303,7 +302,8 @@ const HistoryScreen = () => {
       }
     }
   }, [historyViewMode, 見ている記録, focusedMemberId]);
-  const 絞った記録 = React.useMemo(() => {
+  // 年度・月・検索で絞った記録（タグでは絞らない）。タグの札の並べ方（今見ている範囲に有るか）にも使う
+  const 範囲の記録 = React.useMemo(() => {
     let 元 = mySessions || [];
     return 元
       .filter((記録) => {
@@ -315,17 +315,10 @@ const HistoryScreen = () => {
         const 月 = 日付.getMonth() + 1;
         const 年度 = 学.年度(日付);
         const 検索中 = 検索の文.trim().length > 0;
-        if (historySelectedTags.length > 0) {
-          const タグたち = 記録.tags || [];
-          if (historyTagLogic === 'AND') {
-            if (!historySelectedTags.every((タグ) => タグたち.includes(タグ))) return false;
-          } else {
-            if (!historySelectedTags.some((タグ) => タグたち.includes(タグ))) return false;
-          }
-        }
         if (!検索中) {
           if (年度 !== 見ている年度) return false;
-          if (`${年}/${String(月).padStart(2, '0')}` !== 見ている月) return false;
+          // 「すべて」は年度を一続きで見る（2026-11-13 本人）
+          if (見ている月 !== 月すべて && `${年}/${String(月).padStart(2, '0')}` !== 見ている月) return false;
         }
         if (検索中) {
           const 言葉 = 検索の文.toLowerCase();
@@ -350,7 +343,48 @@ const HistoryScreen = () => {
         return true;
       })
       .sort((甲, 乙) => 乙.date - 甲.date);
-  }, [mySessions, 検索の文, 見ている月, 見ている年度, historySelectedTags, historyTagLogic]);
+  }, [mySessions, 検索の文, 見ている月, 見ている年度]);
+  const 絞った記録 = React.useMemo(() => {
+    if (historySelectedTags.length === 0) return 範囲の記録;
+    return 範囲の記録.filter((記録) => {
+      const タグたち = 記録.tags || [];
+      return historyTagLogic === 'AND'
+        ? historySelectedTags.every((タグ) => タグたち.includes(タグ))
+        : historySelectedTags.some((タグ) => タグたち.includes(タグ));
+    });
+  }, [範囲の記録, historySelectedTags, historyTagLogic]);
+  // 今見ている範囲の記録に付いているタグ。無いタグは後ろに灰色で出す（押せる。2026-11-13 本人：月を変えても
+  // 選んだタグは外さず、その月に無いだけと分かるように）
+  const 範囲のタグ = React.useMemo(() => {
+    const 集めた = new Set();
+    範囲の記録.forEach((記録) => {
+      if (Array.isArray(記録.tags)) 記録.tags.forEach((タグ) => 集めた.add(タグ));
+    });
+    return 集めた;
+  }, [範囲の記録]);
+  const 並べたタグ = React.useMemo(() => {
+    // 選択中 → 今の範囲に有る → 無い、の順。同じ組の中は名前順
+    const 組 = (タグ) => (historySelectedTags.includes(タグ) ? 0 : 範囲のタグ.has(タグ) ? 1 : 2);
+    return [...タグの一覧].sort((甲, 乙) => 組(甲) - 組(乙) || String(甲).localeCompare(String(乙)));
+  }, [タグの一覧, 範囲のタグ, historySelectedTags]);
+  // 「すべて」のとき、月の変わり目の記録の上に月の見出しを出す。記録の id → 見出しの字
+  const 月の見出し = React.useMemo(() => {
+    const 表 = new Map();
+    if (見ている月 !== 月すべて || 検索の文.trim()) return 表;
+    const 数 = new Map();
+    const 鍵 = (記録) => {
+      const 日付 = new Date(Number(記録.date));
+      return `${日付.getFullYear()}年${日付.getMonth() + 1}月`;
+    };
+    絞った記録.forEach((記録) => 数.set(鍵(記録), (数.get(鍵(記録)) || 0) + 1));
+    let 前 = '';
+    絞った記録.forEach((記録) => {
+      const 今 = 鍵(記録);
+      if (今 !== 前) 表.set(記録.id, `${今}  ${数.get(今)}件`);
+      前 = 今;
+    });
+    return 表;
+  }, [絞った記録, 見ている月, 検索の文]);
   const 詳細を描く = () => {
     if (!見ている記録)
       return (
@@ -1277,20 +1311,37 @@ const HistoryScreen = () => {
                           すべて解除
                         </Text>
                       </Pressable>
-                      {タグの一覧.map((タグ, idx) => {
+                      {並べたタグ.map((タグ, idx) => {
                         const 選ばれている = historySelectedTags.includes(タグ);
+                        // 今見ている範囲の記録に無いタグ。灰色の点線で出す（押せる）
+                        const ここに無い = !範囲のタグ.has(タグ);
                         return (
                           <Pressable
                             key={typeof タグ === 'string' ? タグ : `tag-${idx}`}
+                            testID={ここに無い ? 'ここに無いタグ' : 'ここに有るタグ'}
                             style={({ hovered }) => [
                               styles.tagChip,
                               選ばれている && styles.tagChipActive,
                               { backgroundColor: 選ばれている ? 基本色.青 : 基本色.地 },
+                              ここに無い &&
+                                !選ばれている && {
+                                  backgroundColor: 'transparent',
+                                  borderWidth: 1,
+                                  borderStyle: 'dashed',
+                                  borderColor: 基本色.灰_明るい,
+                                },
+                              ここに無い && 選ばれている && { opacity: 0.6 },
                               hovered && !選ばれている && { backgroundColor: 基本色.地_濃い },
                             ]}
                             onPress={() => toggleHistoryTag(タグ)}
                           >
-                            <Text style={[styles.tagChipText, 選ばれている && { color: 基本色.白 }]}>
+                            <Text
+                              style={[
+                                styles.tagChipText,
+                                ここに無い && { color: 基本色.灰 },
+                                選ばれている && { color: 基本色.白 },
+                              ]}
+                            >
                               {typeof タグ === 'string' && タグ.startsWith('#')
                                 ? タグ.substring(1)
                                 : String(タグ)}
@@ -1325,6 +1376,26 @@ const HistoryScreen = () => {
                       style={styles.monthTabsScroll}
                       contentContainerStyle={styles.monthTabsContent}
                     >
+                      {月の一覧.length > 1 && (
+                        <Pressable
+                          testID="月すべて"
+                          style={({ hovered }) => [
+                            styles.monthTab,
+                            見ている月 === 月すべて && styles.monthTabActive,
+                            hovered && 見ている月 !== 月すべて && { backgroundColor: 基本色.地_濃い },
+                          ]}
+                          onPress={() => 見ている月を置く(月すべて)}
+                        >
+                          <Text
+                            style={[
+                              styles.monthTabText,
+                              見ている月 === 月すべて && styles.monthTabTextActive,
+                            ]}
+                          >
+                            すべて
+                          </Text>
+                        </Pressable>
+                      )}
                       {月の一覧.map((月) => {
                         const 選ばれている = 見ている月 === 月;
                         return (
@@ -1358,7 +1429,28 @@ const HistoryScreen = () => {
               </>
             }
             data={絞った記録}
-            renderItem={記録の行}
+            renderItem={(引数) =>
+              月の見出し.has(引数.item.id) ? (
+                <>
+                  <Text
+                    testID="月の見出し"
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 'bold',
+                      color: 基本色.灰,
+                      paddingHorizontal: 16,
+                      paddingTop: 14,
+                      paddingBottom: 6,
+                    }}
+                  >
+                    {月の見出し.get(引数.item.id)}
+                  </Text>
+                  {記録の行(引数)}
+                </>
+              ) : (
+                記録の行(引数)
+              )
+            }
             keyExtractor={(記録, idx) => (typeof 記録.id === 'string' ? 記録.id : `history-item-${idx}`)}
             contentContainerStyle={styles.listContent}
             ItemSeparatorComponent={仕切り線}
