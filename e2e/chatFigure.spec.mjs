@@ -246,20 +246,21 @@ const 崩れを探す = (page, 大きく, 形) =>
         // 白い縁の字（src/ChatFigure.js の 縁の字）は、同じ字を同じ所に 2 回描く。それは 1 つと数える
         const 箱 = [...svg.querySelectorAll('text')]
           .filter((t) => t.textContent)
-          .map((t) => t.getBoundingClientRect())
+          .map((t) => Object.assign(t.getBoundingClientRect().toJSON(), { 字: t.textContent }))
           .filter(
             (r, i, 全部) =>
               !全部.slice(0, i).some((q) => Math.abs(q.left - r.left) < 0.5 && Math.abs(q.top - r.top) < 0.5)
           );
-        const 重なる = 箱.some((a, i) =>
+        const 重なり = [];
+        箱.forEach((a, i) =>
           箱
             .slice(i + 1)
-            .some(
-              (b) =>
-                a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1
-            )
+            .forEach((b) => {
+              if (a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1)
+                重なり.push(`「${a.字}」と「${b.字}」`);
+            })
         );
-        if (重なる) 崩れ.push('図の字どうしが重なる');
+        if (重なり.length) 崩れ.push(`図の字どうしが重なる：${重なり.slice(0, 3).join('・')}`);
       }
       // 大きく出したとき、折れ線・棒の SVG は窓の高さに収まる（巻かずに全部見える）
       if (大きく) {
