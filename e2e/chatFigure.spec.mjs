@@ -243,9 +243,14 @@ const 崩れを探す = (page, 大きく, 形) =>
       }
       // SVG の字どうしが重ならない（棒の上の数・下の名・目盛り）
       for (const svg of 形 === '矢所' ? [] : 枠.querySelectorAll('svg')) {
+        // 白い縁の字（src/ChatFigure.js の 縁の字）は、同じ字を同じ所に 2 回描く。それは 1 つと数える
         const 箱 = [...svg.querySelectorAll('text')]
           .filter((t) => t.textContent)
-          .map((t) => t.getBoundingClientRect());
+          .map((t) => t.getBoundingClientRect())
+          .filter(
+            (r, i, 全部) =>
+              !全部.slice(0, i).some((q) => Math.abs(q.left - r.left) < 0.5 && Math.abs(q.top - r.top) < 0.5)
+          );
         const 重なる = 箱.some((a, i) =>
           箱
             .slice(i + 1)
