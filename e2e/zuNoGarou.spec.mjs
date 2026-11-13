@@ -78,3 +78,30 @@ test('図の見本：どの図も描けて、図の箱からはみ出さない',
     }
   }
 });
+
+test('折れ線の「0%から」を押すと、縦軸が 0% から始まり、もう一度押すと戻る', async ({ page }) => {
+  const 見本 = 見本を作る().filter((一つ) => 一つ.図.形 === '折れ線' && 一つ.図.単位 === '%').slice(0, 1);
+  await page.addInitScript((会話) => {
+    localStorage.setItem('aiChatMessages_v1_g_100007', JSON.stringify(会話));
+  }, [
+    { id: 'q', role: 'user', text: 'グラフ' },
+    { id: 'a', role: 'model', text: '見本です。', 図たち: [見本[0].図] },
+  ]);
+  await 案内を止める(page);
+  await page.goto('/');
+  await 画面が出るまで待つ(page);
+  await 入り口が決まるまで待つ(page);
+  await page.getByText('履歴', { exact: true }).first().click();
+  await page.getByTestId('AIを開く').click();
+  const 図 = page.getByTestId('AIの図');
+  await expect(図).toHaveCount(1, { timeout: 30_000 });
+  const 目盛りに0 = () => 図.locator('svg text').filter({ hasText: /^0%$/ }).count();
+  expect(await 目盛りに0(), '既定は値のある所に寄せる').toBe(0);
+  const 札 = 図.getByTestId('縦軸を0から');
+  await 札.click();
+  await expect.poll(目盛りに0).toBe(1);
+  await expect(札).toHaveAttribute('aria-checked', 'true');
+  if (process.env.SHOT_DIR) await 図.screenshot({ path: path.join(process.env.SHOT_DIR, '0から-入.png') });
+  await 札.click();
+  await expect.poll(目盛りに0).toBe(0);
+});

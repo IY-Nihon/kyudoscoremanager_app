@@ -91,7 +91,7 @@ const 縦軸を零から = (図) =>
 /** 線の右端に書く名前（長い名前は 5 字と「…」） */
 const 端の名 = (名) => (String(名).length > 6 ? `${String(名).slice(0, 5)}…` : String(名));
 
-function 折れ線({ 図, 大きく }) {
+function 折れ線({ 図, 大きく, 零を選ぶ, 零を選ぶを置く }) {
   const [W, 測る] = use幅();
   const 窓の高さ = use窓の高さ();
   // 大きく出したとき、押した点（[系列の番, 点の番]）。その点の日付・率・射数を出す
@@ -113,7 +113,8 @@ function 折れ線({ 図, 大きく }) {
   const 最小値 = Math.min(...値たち, 通算 ?? Infinity);
   // 縦軸。的中率は値のある所に寄せる（頼まれたときだけ 0% から）。上は 10 刻みで、100% で止める
   //（射数・本数などの図は 100 を超えるので止めない）
-  const 零から = !率 || 縦軸を零から(図);
+  // 図の下の「0%から」で切り替えられる（2026-11-14 本人）。答えの下と大きく出した窓で同じ選び
+  const 零から = !率 || (零を選ぶ ?? 縦軸を零から(図));
   const 低 = 零から ? 0 : Math.max(0, Math.floor((最小値 - 3) / 10) * 10);
   const 上の目安 = Math.max(低 + 10, Math.ceil((最大値 + 3) / 10) * 10);
   const 高 = 率 && 最大値 <= 100 ? Math.min(100, 上の目安) : 上の目安;
@@ -441,13 +442,31 @@ function 折れ線({ 図, 大きく }) {
         ) : null}
       </View>
       {大きく ? <Text style={styles.注}>点を押すと、その点の的中率と射数が出ます</Text> : null}
-      {通算 != null ? (
-        // 通算の字は図の外に書く（図の中では点の数字に重なった）
-        <View style={styles.凡例の一つ}>
-          <View style={styles.通算の印} />
-          <Text style={styles.凡例の字}>{通算の字}</Text>
-        </View>
-      ) : null}
+      <View style={styles.図の下の行}>
+        {通算 != null ? (
+          // 通算の字は図の外に書く（図の中では点の数字に重なった）
+          <View style={styles.凡例の一つ}>
+            <View style={styles.通算の印} />
+            <Text style={styles.凡例の字}>{通算の字}</Text>
+          </View>
+        ) : (
+          <View />
+        )}
+        {率 && 零を選ぶを置く ? (
+          <TouchableOpacity
+            accessibilityRole="switch"
+            accessibilityState={{ checked: 零から }}
+            aria-checked={零から}
+            accessibilityLabel="縦軸を 0% から始める"
+            testID="縦軸を0から"
+            onPress={() => 零を選ぶを置く(!零から)}
+            style={[styles.縦軸の札, 零から && styles.縦軸の札_入]}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={[styles.縦軸の札の字, 零から && styles.縦軸の札の字_入]}>0%から</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -765,8 +784,9 @@ function 矢所({ 図, 大きく }) {
   );
 }
 
-function 中身({ 図, 大きく }) {
-  if (図.形 === '折れ線') return <折れ線 図={図} 大きく={大きく} />;
+function 中身({ 図, 大きく, 零を選ぶ, 零を選ぶを置く }) {
+  if (図.形 === '折れ線')
+    return <折れ線 図={図} 大きく={大きく} 零を選ぶ={零を選ぶ} 零を選ぶを置く={零を選ぶを置く} />;
   if (図.形 === '棒')
     return 図.向き === '横' ? <横の棒 図={図} 大きく={大きく} /> : <縦の棒と通算 図={図} 大きく={大きく} />;
   if (図.形 === '表') return <表 図={図} 大きく={大きく} />;
@@ -805,6 +825,8 @@ function ChatFigure(props) {
 
 function 図の本体({ 図 }) {
   const [大きく, 大きくを置く] = React.useState(false);
+  // 折れ線の縦軸を 0% からにするか（null は図の既定のまま）
+  const [零を選ぶ, 零を選ぶを置く] = React.useState(null);
   if (!図 || !図.形) return null;
   return (
     <View style={styles.枠}>
@@ -822,7 +844,7 @@ function 図の本体({ 図 }) {
           </Text>
           <Icons.Ionicons name="expand-outline" size={16} color={色.青} style={styles.大きくの絵} />
         </View>
-        <中身 図={図} 大きく={false} />
+        <中身 図={図} 大きく={false} 零を選ぶ={零を選ぶ} 零を選ぶを置く={零を選ぶを置く} />
         {図.注 ? <Text style={styles.注}>{図.注}</Text> : null}
       </TouchableOpacity>
       <Modal visible={大きく} transparent animationType="fade" onRequestClose={() => 大きくを置く(false)}>
@@ -843,7 +865,7 @@ function 図の本体({ 図 }) {
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.窓の中}>
-              <中身 図={図} 大きく />
+              <中身 図={図} 大きく 零を選ぶ={零を選ぶ} 零を選ぶを置く={零を選ぶを置く} />
               {図.注 ? <Text style={styles.注}>{図.注}</Text> : null}
             </ScrollView>
           </View>
@@ -882,6 +904,17 @@ const styles = StyleSheet.create({
   },
   点の中身の字: { fontSize: 12, color: 色.白, lineHeight: 17 },
   点の中身の数: { fontWeight: 'bold', fontSize: 13 },
+  図の下の行: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
+  縦軸の札: {
+    borderWidth: 1,
+    borderColor: 色.地_濃い,
+    borderRadius: 10,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+  },
+  縦軸の札_入: { backgroundColor: 色.青, borderColor: 色.青 },
+  縦軸の札の字: { fontSize: 11, color: 色.灰 },
+  縦軸の札の字_入: { color: 色.白, fontWeight: '600' },
   通算の印: {
     width: 14,
     height: 0,
