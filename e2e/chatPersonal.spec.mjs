@@ -22,6 +22,8 @@ import { 案内を止める, 画面が出るまで待つ, 入り口が決まる�
 
 test.use({ storageState: 'e2e/.auth/100002-個人.json' });
 
+/** 本人の写る記録が無い部員に渡す道具（src/chatGate.js の「いつも渡す」のうち、個人に出すもの） */
+const 記録が無くても渡す道具 = ['calculate', 'navigateToScreen', 'startTutorial'];
 const 個人が使える道具 = [
   'getDetailedMemberStats',
   'getArrowLocationStats',
@@ -233,7 +235,11 @@ test('個人ログイン：AIに送る中身に、ほかの人の名前・個人
 
   // 道具：本人の分だけの 5 つ。全員の成績・出欠・部員の追加は出さない
   const 道具 = (依頼.tools || []).flatMap((t) => (t.functionDeclarations || []).map((d) => d.name)).sort();
-  expect(道具, '個人に出す道具が、本人の分だけになっていない').toEqual([...個人が使える道具].sort());
+  // 本人の写る記録が 1 件も無い部員には、記録・分析の道具も渡さない（src/chatGate.js。2026-11-13）。
+  // 指示文の一言と、渡す道具がそろっていることを見る
+  const 記録なし = 指示.includes('本人が写っている記録がまだ 1 件もありません');
+  const 期待 = 記録なし ? 記録が無くても渡す道具 : 個人が使える道具;
+  expect(道具, '個人に出す道具が、本人の分だけになっていない').toEqual([...期待].sort());
 });
 
 test('個人ログイン：出していない道具を AI が呼んできても動かさず、他の人の成績は取れない', async ({
@@ -287,9 +293,10 @@ test('個人ログイン：出していない道具を AI が呼んできても�
   expect(画面.行ける画面).toEqual(['記録', '履歴', '分析', 'メンバー', '設定']);
   // ほかの人の名前で成績は取れない（成績が返らない）
   const 詳細 = 返りを取る('getDetailedMemberStats');
-  expect(詳細.error, 'ほかの人の成績が取れてしまった').toBeTruthy();
+  // 本人の写る記録が無い部員では、道具そのものを動かさない（success: false と言葉だけ。src/chatGate.js）
+  expect(詳細.error || 詳細.success === false, 'ほかの人の成績が取れてしまった').toBeTruthy();
   expect(
-    Object.keys(詳細).filter((k) => k !== 'error'),
+    Object.keys(詳細).filter((k) => !['error', 'success', 'message'].includes(k)),
     'エラーのほかに成績が付いている'
   ).toEqual([]);
   // ほかの道具の返りに、ほかの人の情報が無い。名前を渡した呼び出しの返しは、詳細だけが名前を
@@ -306,13 +313,16 @@ test('個人ログイン：会話の控えは本人ごとの鍵に置き、団�
   // 鍵は団体ごと（src/chatHistory.js。団体の入っていない前の鍵は、開いたときに消す）
   const 団体の印 = '団体の管理者だけの会話の印';
   const 団体の鍵 = 'aiChatMessages_v1_g_100002';
-  await page.addInitScript(([鍵, 印]) => {
-    try {
-      localStorage.setItem(鍵, JSON.stringify([{ id: 'g1', role: 'model', text: 印 }]));
-    } catch {
-      /* 入れられなければ、下の「見えていない」は空振りする（控えを読んで確かめる） */
-    }
-  }, [団体の鍵, 団体の印]);
+  await page.addInitScript(
+    ([鍵, 印]) => {
+      try {
+        localStorage.setItem(鍵, JSON.stringify([{ id: 'g1', role: 'model', text: 印 }]));
+      } catch {
+        /* 入れられなければ、下の「見えていない」は空振りする（控えを読んで確かめる） */
+      }
+    },
+    [団体の鍵, 団体の印]
+  );
 
   const 自分 = await AIを開く(page);
   await expect(page.getByText(団体の印), '団体の会話が個人に見えている').toHaveCount(0);
@@ -321,7 +331,8 @@ test('個人ログイン：会話の控えは本人ごとの鍵に置き、団�
   await expect(page.getByText('控えの確認です。')).toBeVisible({ timeout: 30_000 });
   // 控えに書けるまでの短い間を待つ（会話の変化から少し遅れて書く）
   await こうなるまで待つ(
-    () => page.evaluate((id) => localStorage.getItem(`aiChatMessages_v1_g_100002_member_${id}`) || '', 自分.id),
+    () =>
+      page.evaluate((id) => localStorage.getItem(`aiChatMessages_v1_g_100002_member_${id}`) || '', 自分.id),
     (文) => 文.includes('控えの確認です。'),
     15_000
   );
