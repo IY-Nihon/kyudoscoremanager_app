@@ -88,6 +88,8 @@ const { 質問例, 打ちかけの候補, 分類ごと } = require('./chatSugges
 // 個人ログイン（部員）は、AI に本人の分だけを渡す（chatScope）。指示文・道具・Q&A も個人用にする（chatPersonal）
 const { 自分だけに絞る, 他の人 } = require('./chatScope');
 const 個人用 = require('./chatPersonal');
+// 部員・記録の無い団体には、数える道具を渡さない（chatGate）
+const 門 = require('./chatGate');
 const { getShadowStyle } = require('./shadowStyle');
 
 // 指示文と Q&A（systemInstructionBase・qaData・selectQAs）は別のファイル（2026-10-05）
@@ -479,7 +481,6 @@ const AIChatBot = () => {
     autoCloseTimerRef.current = setTimeout(() => setModalVisible(false), 1200);
   };
 
-
   /**
    * 確かめのカードを押した結果を、改善のためのログに残す（元の質問のログの番号を添える）。
    * 前は「追加する」「キャンセル」を押したかが残らず、AI の読み取った名前・学年・性別が合っていたかを見られなかった
@@ -519,7 +520,9 @@ const AIChatBot = () => {
   /** 部員登録のカード 1 枚を決める。足す（カードの id）だけ足し、残りは足さない。足すが空ならやめる */
   const カードの束を決める = (ids, 足すid) => {
     const 登録 = 足すid.length > 0;
-    const 束 = messages.filter((文) => ids.includes(文.id) && 文.role === 'actionCard' && 文.status === 'pending');
+    const 束 = messages.filter(
+      (文) => ids.includes(文.id) && 文.role === 'actionCard' && 文.status === 'pending'
+    );
     if (!束.length) return;
     const 追加した = [];
     let 断られた = false;
@@ -536,13 +539,16 @@ const AIChatBot = () => {
         : 文
     );
     if (断られた)
-      次.push({ id: generateMsgId(), role: 'model', text: 'メンバーの追加は団体ログインのときだけできます。追加していません。' });
+      次.push({
+        id: generateMsgId(),
+        role: 'model',
+        text: 'メンバーの追加は団体ログインのときだけできます。追加していません。',
+      });
     setMessages(次);
     setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
     if (追加した.length && チュートリアル部員登録中) 少ししたら閉じる();
     カードの答えを残す(束, 登録 && 追加した.length > 0, 追加した, 断られた);
   };
-
 
   const handleSend = async () => {
     if (!inputText.trim() || isLoading) return;
@@ -684,12 +690,15 @@ const AIChatBot = () => {
         // 基本の指示（systemInstructionBase）に、その日・その団体でしか
         // 決まらないものだけを足す。決まりごとを二重に書くと、食い違ったときに
         // どちらが効いているか分からなくなる
+        // 部員・記録が無いときは数える道具を渡さない（下の tools）。そのことを指示文にも一言足す
+        const 団体の中身 = { 部員の数: members.length, 記録の数: sessions.length };
         const fullInstruction =
           (個人 ? 個人用.個人用の指示文(systemInstructionBase, members[0]) : systemInstructionBase) +
           qaSection +
           `\n\n[日付の目安 (YYYY-MM-DD)]\n- 今日: ${todayStr} / 昨日: ${yesterdayStr}\n- 今月: ${thisMonthStart} 〜 ${thisMonthEnd}\n- 先月: ${lastMonthStart} 〜 ${lastMonthEnd}\n- 今年度: ${fiscalYearStart} 〜 ${fiscalYearEnd}` +
           開いている記録の案内() +
           団体の案内() +
+          門.足りないときの案内(団体の中身, 個人) +
           (個人
             ? `\n[話し相手（本人）: ${memberList}]`
             : `\n[部員一覧（計${members.length}名）]\n${memberList}`);
@@ -755,6 +764,8 @@ const AIChatBot = () => {
         const tools = 道具の宣言(学.今の決まりを見る().在籍の学年.length);
         // 個人ログインには、全員の成績・出欠・部員の追加の道具は出さない。本人の分だけの道具にする
         if (個人) tools[0].functionDeclarations = 個人用.個人向けの道具(tools[0].functionDeclarations);
+        // 部員がいない団体に数える道具を、記録が無い団体に記録・分析の道具を渡さない（2026-11-13。src/chatGate.js）
+        tools[0].functionDeclarations = 門.渡す道具(tools[0].functionDeclarations, 団体の中身);
 
         const model = genAI.getGenerativeModel(
           {
@@ -937,6 +948,17 @@ const AIChatBot = () => {
                     success: false,
                     message: '個人で入っているときは使えない操作です。団体の担当者に頼むよう伝えてください。',
                   },
+                },
+              });
+              continue;
+            }
+
+            // 渡していない道具（部員・記録が無い）も、呼ばれても動かさない
+            if (!門.渡してよい道具か(call.name, 団体の中身)) {
+              functionResponses.push({
+                functionResponse: {
+                  name: call.name,
+                  response: { success: false, message: 門.渡していないときの返事 },
                 },
               });
               continue;
@@ -1598,7 +1620,9 @@ const AIChatBot = () => {
                 人たち,
                 newMessages.filter((文) => 文.role === 'user').map((文) => 文.text),
                 // まだ押していないカードの人だけ（登録が済んだカードは書き方の直しの元にしない）
-                newMessages.filter((文) => 文.role === 'actionCard' && 文.status === 'pending').map((文) => 文.args)
+                newMessages
+                  .filter((文) => 文.role === 'actionCard' && 文.status === 'pending')
+                  .map((文) => 文.args)
               );
               if (見た.直し) 前のカードを閉じる = true;
               const 断り = 部員の見張り.断りの文(見た);
@@ -2010,7 +2034,12 @@ const AIChatBot = () => {
                           学年の札={学年の札}
                           性別にそろえる={性別にそろえる}
                           直す={カードを直す}
-                          決める={(足す) => カードの束を決める(束.map((文) => 文.id), 足す)}
+                          決める={(足す) =>
+                            カードの束を決める(
+                              束.map((文) => 文.id),
+                              足す
+                            )
+                          }
                           メンバーを見る={() => {
                             setModalVisible(false);
                             navigation.navigate('メンバー');
@@ -2112,7 +2141,6 @@ const AIChatBot = () => {
                 </View>
               )}
             </ScrollView>
-
 
             <View style={styles.inputArea}>
               {/*
