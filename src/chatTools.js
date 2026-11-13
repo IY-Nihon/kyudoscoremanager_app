@@ -438,6 +438,10 @@ function 道具の宣言(学年の数) {
                 description: "図の形。'折れ線'・'棒'・'表'・'矢所' のうち、その結果の 使える形 にあるもの",
               },
               title: { type: 'STRING', description: '図の題（短く。例: 部全体の月ごとの的中率）' },
+              fromZero: {
+                type: 'BOOLEAN',
+                description: '折れ線の縦軸を 0% から始める。使う人が「0から」「0%から」と頼んだときだけ true',
+              },
             },
             required: ['source', 'kind'],
           },

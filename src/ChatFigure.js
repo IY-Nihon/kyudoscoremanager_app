@@ -82,30 +82,38 @@ function 系列の名を混ぜる(系列たち) {
 }
 
 /**
- * 的中率の縦軸を 0% から始めるか（2026-11-13）。見比べのため、検査では globalThis.__図の縦軸 = '寄せる' で
- * 前の形（値のある所に寄せる）にもできる
+ * 的中率の縦軸を 0% から始めるか。既定は値のある所に寄せ、使う人が「0% から」と頼んだ図（図.縦軸 = '零から'）
+ * だけ 0 から（2026-11-14 本人）。検査では globalThis.__図の縦軸 = '零から' で全部を 0 からにできる
  */
-const 縦軸を零から = () => !(typeof globalThis !== 'undefined' && globalThis.__図の縦軸 === '寄せる');
+const 縦軸を零から = (図) =>
+  図.縦軸 === '零から' || (typeof globalThis !== 'undefined' && globalThis.__図の縦軸 === '零から');
+
+/** 線の右端に書く名前（長い名前は 5 字と「…」） */
+const 端の名 = (名) => (String(名).length > 6 ? `${String(名).slice(0, 5)}…` : String(名));
 
 function 折れ線({ 図, 大きく }) {
   const [W, 測る] = use幅();
   const 窓の高さ = use窓の高さ();
+  // 大きく出したとき、押した点（[系列の番, 点の番]）。その点の日付・率・射数を出す
+  const [選んだ点, 選んだ点を置く] = React.useState(null);
   const 値たち = 図.系列.flatMap((系列) => 系列.点.map((点) => 点.y));
   if (!値たち.length) return null;
   const H = 図の高さ(W, 大きく, 窓の高さ);
   const 字 = 大きく ? 11 : 10;
   const 値の字 = 大きく ? 11.5 : 10.5;
   const 左 = Math.round(字 * 3.4) + 4;
-  const 右 = 14;
+  const 一本 = 図.系列.length === 1;
+  // 線が 2 本以上のときは、線の右端に名前を書く。そのぶん右を空ける
+  const 右 = 一本 ? 14 : Math.ceil(Math.max(...図.系列.map((系列) => 字の幅(端の名(系列.名), 字)))) + 12;
   const 上 = 値の字 + 10;
   const 下 = 字 + 12;
   const 率 = 図.単位 === '%';
   const 通算 = Number.isFinite(図.通算) ? 図.通算 : null;
   const 最大値 = Math.max(...値たち, 通算 ?? -Infinity);
   const 最小値 = Math.min(...値たち, 通算 ?? Infinity);
-  // 縦軸。的中率は 0% から（差を大きく見せない）。上は 10 刻みで、100% で止める
+  // 縦軸。的中率は値のある所に寄せる（頼まれたときだけ 0% から）。上は 10 刻みで、100% で止める
   //（射数・本数などの図は 100 を超えるので止めない）
-  const 零から = !率 || 縦軸を零から();
+  const 零から = !率 || 縦軸を零から(図);
   const 低 = 零から ? 0 : Math.max(0, Math.floor((最小値 - 3) / 10) * 10);
   const 上の目安 = Math.max(低 + 10, Math.ceil((最大値 + 3) / 10) * 10);
   const 高 = 率 && 最大値 <= 100 ? Math.min(100, 上の目安) : 上の目安;
@@ -129,14 +137,8 @@ function 折れ線({ 図, 大きく }) {
   // x の名は、重ならない数まで間引く
   const 名の幅 = Math.max(...名たち.map((名) => 字の幅(短い名(名), 字))) + 8;
   const 間 = Math.ceil(名たち.length / Math.max(1, Math.floor((内の幅 + 名の幅) / 名の幅)));
-  const 一本 = 図.系列.length === 1;
   // 点の丸は 30 個までのときだけ描く（多いと線が丸で埋まる）
   const 丸を描く = 名たち.length <= 30;
-  // 射数の少ない点（平均の 3 分の 1 未満）は白抜き。率が大きく振れやすい点だと分かるように
-  const 射数たち = 図.系列.flatMap((系列) => 系列.点.map((点) => 点.射数)).filter((n) => Number.isFinite(n));
-  const 平均の射数 = 射数たち.length ? 合計(射数たち) / 射数たち.length : 0;
-  const 少ない = (点) => Number.isFinite(点.射数) && 点.射数 < 平均の射数 / 3;
-  const 少ない点あり = 丸を描く && 図.系列.some((系列) => 系列.点.some(少ない));
   // 点の上の値は、隣と重ならないときだけ全部出す
   const 値を全部 = 内の幅 / 数 >= 値の字 * 2.8;
   const 丸の半径 = 内の幅 / 数 < 12 ? 2.5 : 3.5;
@@ -234,6 +236,42 @@ function 折れ線({ 図, 大きく }) {
     }
   }
   const 通算の字 = 通算 == null ? '' : `通算 ${Number(通算).toFixed(1)}${図.単位}`;
+  // 線の右端の名前の高さ。最後の点の高さに置き、近すぎる名前は上下に押し広げる
+  const 端の名の置き場 = 一本
+    ? []
+    : 図.系列
+        .map((系列, 番) => {
+          const 最後 = 点の座標[番].filter(Boolean).slice(-1)[0];
+          return 最後 ? { 番, y: 最後.y } : null;
+        })
+        .filter(Boolean)
+        .sort((甲, 乙) => 甲.y - 乙.y);
+  const 名の間 = 字 * 1.25;
+  for (let k = 1; k < 端の名の置き場.length; k++)
+    端の名の置き場[k].y = Math.max(端の名の置き場[k].y, 端の名の置き場[k - 1].y + 名の間);
+  // 下にはみ出したら、下から押し戻す
+  const 下の端 = H - 下 - 2;
+  for (let k = 端の名の置き場.length - 1; k >= 0; k--) {
+    const 上限 = k === 端の名の置き場.length - 1 ? 下の端 : 端の名の置き場[k + 1].y - 名の間;
+    端の名の置き場[k].y = Math.min(端の名の置き場[k].y, 上限);
+  }
+  // 押した点の中身（大きく出したとき）
+  const 選んだ中身 = (() => {
+    if (!選んだ点 || !大きく) return null;
+    const [番, i] = 選んだ点;
+    const 点 = 図.系列[番] && 図.系列[番].点[i];
+    const 座標 = 点の座標[番] && 点の座標[番][i];
+    if (!点 || !座標) return null;
+    const 行たち = [
+      `${一本 ? '' : `${図.系列[番].名}  `}${点.x}`,
+      `${Number(点.y).toFixed(1)}${図.単位}${Number.isFinite(点.射数) ? `（${点.射数}射）` : 点.補足 ? `（${点.補足}）` : ''}`,
+    ];
+    const 幅 = Math.max(...行たち.map((行) => 字の幅(行, 13.5))) + 22;
+    const 左の位置 = Math.min(Math.max(2, 座標.x - 幅 / 2), Math.max(2, W - 幅 - 2));
+    // 点の上に出す。上に入らなければ下に
+    const 上の位置 = 座標.y - 52 >= 0 ? 座標.y - 52 : 座標.y + 12;
+    return { 行たち, 幅, 左の位置, 上の位置 };
+  })();
   return (
     <View>
       <View style={[styles.図の箱, { height: H }]} onLayout={測る}>
@@ -302,7 +340,6 @@ function 折れ線({ 図, 大きく }) {
                   {系列.点.map((点, i) => {
                     if (位置(点) < 0) return null;
                     const 数を付ける = 番 === 0 && 数の置き場.has(i);
-                    const 白抜き = 少ない(点);
                     return (
                       <React.Fragment key={`点-${番}-${i}`}>
                         {丸を描く || 数を付ける ? (
@@ -310,8 +347,8 @@ function 折れ線({ 図, 大きく }) {
                             cx={x(位置(点))}
                             cy={y(点.y)}
                             r={丸の半径}
-                            fill={白抜き ? 色.白 : 線の色}
-                            stroke={白抜き ? 線の色 : 色.白}
+                            fill={線の色}
+                            stroke={色.白}
                             strokeWidth="1.5"
                           />
                         ) : null}
@@ -321,6 +358,30 @@ function 折れ線({ 図, 大きく }) {
                 </React.Fragment>
               );
             })}
+            {端の名の置き場.map((置き場) => (
+              <Svgの部品.Text
+                key={`端の名-${置き場.番}`}
+                fontFamily={図の字体}
+                x={W - 右 + 6}
+                y={置き場.y + 字 * 0.35}
+                fontSize={字}
+                fontWeight="bold"
+                fill={系列の色[置き場.番 % 系列の色.length]}
+                textAnchor="start"
+              >
+                {端の名(図.系列[置き場.番].名)}
+              </Svgの部品.Text>
+            ))}
+            {選んだ点 && 大きく ? (
+              <Svgの部品.Circle
+                cx={点の座標[選んだ点[0]][選んだ点[1]].x}
+                cy={点の座標[選んだ点[0]][選んだ点[1]].y}
+                r={丸の半径 + 3}
+                fill="none"
+                stroke={系列の色[選んだ点[0] % 系列の色.length]}
+                strokeWidth="2"
+              />
+            ) : null}
             {[...数の置き場].map(([i, 置き場]) => (
               <Svgの部品.Text
                 key={`数-${i}`}
@@ -329,7 +390,7 @@ function 折れ線({ 図, 大きく }) {
                 y={置き場.y}
                 fontSize={値の字}
                 fontWeight="bold"
-                fill={少ない(図.系列[0].点[i]) ? 色.灰 : 色.文字}
+                fill={色.文字}
                 textAnchor="middle"
               >
                 {置き場.字}
@@ -337,17 +398,49 @@ function 折れ線({ 図, 大きく }) {
             ))}
           </Svg>
         ) : null}
+        {/* 大きく出したときだけ、点を押せる（押すとその点の日付・率・射数） */}
+        {大きく && W > 0 ? (
+          // 押した位置にいちばん近い点を選ぶ（点ごとに押す所を置くと、点が多い図で隣の点と重なった）
+          <View
+            testID="図の押す面"
+            style={StyleSheet.absoluteFill}
+            onStartShouldSetResponder={() => true}
+            onResponderRelease={(出来事) => {
+              const { locationX: px, locationY: py } = 出来事.nativeEvent;
+              let 近い = null;
+              点の座標.forEach((点たち, 番) =>
+                点たち.forEach((座標, i) => {
+                  if (!座標) return;
+                  // 横の近さを重く見る（同じ日の 2 本の線は、縦の近さで分ける）
+                  const 距離 = Math.abs(座標.x - px) * 3 + Math.abs(座標.y - py);
+                  if (!近い || 距離 < 近い.距離) 近い = { 番, i, 距離 };
+                })
+              );
+              if (!近い) return;
+              選んだ点を置く((前) =>
+                前 && 前[0] === 近い.番 && 前[1] === 近い.i ? null : [近い.番, 近い.i]
+              );
+            }}
+          />
+        ) : null}
+        {選んだ中身 ? (
+          <View
+            pointerEvents="none"
+            testID="図の点の中身"
+            style={[
+              styles.点の中身,
+              { left: 選んだ中身.左の位置, top: 選んだ中身.上の位置, width: 選んだ中身.幅 },
+            ]}
+          >
+            {選んだ中身.行たち.map((行, k) => (
+              <Text key={`中身-${k}`} style={[styles.点の中身の字, k === 1 && styles.点の中身の数]}>
+                {行}
+              </Text>
+            ))}
+          </View>
+        ) : null}
       </View>
-      {!一本 && (
-        <View style={styles.凡例}>
-          {図.系列.map((系列, 番) => (
-            <View key={`凡例-${番}`} style={styles.凡例の一つ}>
-              <View style={[styles.凡例の印, { backgroundColor: 系列の色[番 % 系列の色.length] }]} />
-              <Text style={styles.凡例の字}>{系列.名}</Text>
-            </View>
-          ))}
-        </View>
-      )}
+      {大きく ? <Text style={styles.注}>点を押すと、その点の的中率と射数が出ます</Text> : null}
       {通算 != null ? (
         // 通算の字は図の外に書く（図の中では点の数字に重なった）
         <View style={styles.凡例の一つ}>
@@ -355,10 +448,23 @@ function 折れ線({ 図, 大きく }) {
           <Text style={styles.凡例の字}>{通算の字}</Text>
         </View>
       ) : null}
-      {少ない点あり ? (
-        <Text style={styles.注} testID="射数の少ない点">
-          ○ 白抜きの点は射数が少ない（{Math.ceil(平均の射数 / 3)} 射未満）
-        </Text>
+    </View>
+  );
+}
+
+/** 縦の棒と、その下の通算の字 */
+function 縦の棒と通算(props) {
+  const 通算 = Number.isFinite(props.図.通算) ? props.図.通算 : null;
+  return (
+    <View>
+      <縦の棒 {...props} />
+      {通算 != null ? (
+        <View style={styles.凡例の一つ}>
+          <View style={styles.通算の印} />
+          <Text style={styles.凡例の字}>
+            {`通算 ${Number(通算).toFixed(1)}${props.図.単位}（これより上の棒を濃く）`}
+          </Text>
+        </View>
       ) : null}
     </View>
   );
@@ -374,8 +480,12 @@ function 縦の棒({ 図, 大きく }) {
   const 上 = 字 + 8;
   const 下 = 字 + 10;
   const 単位が率 = 図.単位 === '%';
-  const 高 = Math.max(...図.並び.map((項) => 項.値), 1);
+  // 通算（分かるとき）。通算より上の棒を濃くし、点線を引く。分からないときは、いちばん高い棒だけ濃く
+  const 通算 = Number.isFinite(図.通算) ? 図.通算 : null;
+  const 高 = Math.max(...図.並び.map((項) => 項.値), 通算 ?? 0, 1);
   const いちばん = Math.max(...図.並び.map((項) => 項.値));
+  const 濃いか = (項) => (通算 != null ? 項.値 >= 通算 : 項.値 === いちばん);
+  const 通算のy = 通算 == null ? null : H - 下 - ((H - 上 - 下) * 通算) / 高;
   const 幅 = (W - 8) / Math.max(1, 図.並び.length);
   // 棒が細くて数が隣と重なるときは、いちばん高い・低い棒の数だけ出す。名は切らずに間引く
   //（前は 30 本の数が重なり、名が 1 字に切れていた。10/26 本番）
@@ -390,11 +500,23 @@ function 縦の棒({ 図, 大きく }) {
     <View style={[styles.図の箱, { height: H }]} onLayout={測る}>
       {W > 0 ? (
         <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+          {/* 通算の点線は棒の後ろに引き、数の字の下には白い札を敷く（点線が数を横切っていた） */}
+          {通算のy != null ? (
+            <Svgの部品.Line
+              x1={4}
+              x2={W - 4}
+              y1={通算のy}
+              y2={通算のy}
+              stroke={色.灰_濃い}
+              strokeWidth="1.2"
+              strokeDasharray="4 3"
+            />
+          ) : null}
           {図.並び.map((項, i) => {
             // 棒は 0 から（差を大きく見せない）
             // 負の値（差の図など）は 0 の高さにする（負の高さの棒は下へ突き抜けて、名の字に重なる）
             const h = ((H - 上 - 下) * Math.max(0, 項.値)) / 高;
-            const 濃い = 項.値 === いちばん;
+            const 濃い = 濃いか(項);
             const 名 = String(項.名);
             return (
               <React.Fragment key={`棒-${i}`}>
@@ -407,6 +529,19 @@ function 縦の棒({ 図, 大きく }) {
                   fill={色.青}
                   fillOpacity={濃い ? 1 : 0.35}
                 />
+                {(値を全部 || i === 高い番 || i === 低い番) && 通算のy != null ? (
+                  <Svgの部品.Rect
+                    x={
+                      Math.min(W - 16, Math.max(16, 4 + i * 幅 + 幅 / 2)) -
+                      字の幅(単位が率 ? Number(項.値).toFixed(1) : `${項.値}`, 値の字) / 2 -
+                      2
+                    }
+                    y={H - 下 - h - 4 - 値の字}
+                    width={字の幅(単位が率 ? Number(項.値).toFixed(1) : `${項.値}`, 値の字) + 4}
+                    height={値の字 + 3}
+                    fill={色.白}
+                  />
+                ) : null}
                 {値を全部 || i === 高い番 || i === 低い番 ? (
                   <Svgの部品.Text
                     fontFamily={図の字体}
@@ -454,16 +589,33 @@ function 横の棒({ 図, 大きく }) {
   const 字 = 大きく ? 14 : 12;
   const 長い名 = Math.max(...図.並び.map((項) => 字の幅(項.名, 字))) + 6;
   const 名の幅 = Math.round(Math.max(48, Math.min(長い名, (W || 300) * 0.4)));
+  // 順位があれば、名前の左に出す（2026-11-14）
+  const 順位あり = 図.並び.some((項) => 項.順位 != null);
+  // 射数の少ない人（平均の 3 分の 1 未満）は、名前を灰色にして射数を小さく添える（率が振れやすい）
+  const 射数たち = 図.並び.map((項) => 項.射数).filter((n) => Number.isFinite(n));
+  const 平均の射数 = 射数たち.length ? 合計(射数たち) / 射数たち.length : 0;
+  const 少ない = (項) => Number.isFinite(項.射数) && 項.射数 < 平均の射数 / 3;
   return (
     <View onLayout={測る}>
       {図.並び.map((項, i) => (
         <View key={`横-${i}`} style={styles.横の行}>
-          <Text
-            style={[styles.横の名, 大きく && styles.大きい字, { width: 名の幅 }]}
-            numberOfLines={大きく ? 2 : 1}
-          >
-            {項.名}
-          </Text>
+          {順位あり ? (
+            <Text style={[styles.横の順位, 大きく && styles.大きい字]}>{項.順位 != null ? 項.順位 : ''}</Text>
+          ) : null}
+          <View style={{ width: 名の幅 }}>
+            <Text
+              style={[
+                styles.横の名,
+                大きく && styles.大きい字,
+                { width: 名の幅 },
+                少ない(項) && styles.薄い名,
+              ]}
+              numberOfLines={大きく ? 2 : 1}
+            >
+              {項.名}
+            </Text>
+            {少ない(項) ? <Text style={styles.横の射数}>{`${項.射数}射`}</Text> : null}
+          </View>
           <View style={styles.横の地}>
             <View
               style={[
@@ -531,6 +683,10 @@ function 表({ 図, 大きく }) {
     Math.ceil(Math.max(字の幅(名, 11), ...図.行.map((行) => 字の幅(行[列], 字))) + 12)
   );
   const 幅たち = 列の幅を決める(見積もり, 数の列, 幅, 大きく);
+  // 「差」の列は、プラスを緑・マイナスを赤にする（2026-11-14。前はどちらも青）
+  const 差の列 = 図.列.findIndex((名) => /差$/.test(String(名)));
+  const 差の色 = (値) =>
+    /^\+/.test(String(値)) ? styles.差_上 : /^[-−]/.test(String(値)) ? styles.差_下 : null;
   const 流す = 幅 > 0 && 合計(幅たち) > 幅 + 1;
   return (
     <View style={styles.図の箱} onLayout={測る} testID="AIの表">
@@ -548,7 +704,7 @@ function 表({ 図, 大きく }) {
             ))}
           </View>
           {図.行.map((行, 番) => (
-            <View key={`行-${番}`} style={styles.表の行}>
+            <View key={`行-${番}`} style={[styles.表の行, 番 % 2 === 1 && styles.表の行_縞]}>
               {行.map((値, 列) => (
                 // 余白は字の外の箱に付ける。字に付けると、2 行で切った 3 行目の頭が下の余白に覗く（iPhone）
                 <View key={`升-${番}-${列}`} style={[styles.升, { width: 幅たち[列] }]}>
@@ -557,7 +713,8 @@ function 表({ 図, 大きく }) {
                       styles.表の字,
                       大きく && styles.大きい表の字,
                       数の列[列] && styles.右,
-                      列 === 強める && styles.強める,
+                      列 === 強める && 列 !== 差の列 && styles.強める,
+                      列 === 差の列 && 差の色(値),
                     ]}
                     numberOfLines={大きく ? undefined : 2}
                   >
@@ -611,7 +768,7 @@ function 矢所({ 図, 大きく }) {
 function 中身({ 図, 大きく }) {
   if (図.形 === '折れ線') return <折れ線 図={図} 大きく={大きく} />;
   if (図.形 === '棒')
-    return 図.向き === '横' ? <横の棒 図={図} 大きく={大きく} /> : <縦の棒 図={図} 大きく={大きく} />;
+    return 図.向き === '横' ? <横の棒 図={図} 大きく={大きく} /> : <縦の棒と通算 図={図} 大きく={大きく} />;
   if (図.形 === '表') return <表 図={図} 大きく={大きく} />;
   if (図.形 === '矢所') return <矢所 図={図} 大きく={大きく} />;
   return null;
@@ -716,6 +873,15 @@ const styles = StyleSheet.create({
   凡例: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 },
   凡例の一つ: { flexDirection: 'row', alignItems: 'center', marginRight: 12, marginBottom: 4 },
   凡例の印: { width: 10, height: 3, borderRadius: 2, marginRight: 4 },
+  点の中身: {
+    position: 'absolute',
+    backgroundColor: 色.文字,
+    borderRadius: 8,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+  },
+  点の中身の字: { fontSize: 12, color: 色.白, lineHeight: 17 },
+  点の中身の数: { fontWeight: 'bold', fontSize: 13 },
   通算の印: {
     width: 14,
     height: 0,
@@ -727,6 +893,13 @@ const styles = StyleSheet.create({
   凡例の字: { fontSize: 12, color: 色.文字_二, marginBottom: 4 },
   横の行: { flexDirection: 'row', alignItems: 'center', marginVertical: 3 },
   横の名: { width: 82, fontSize: 12, color: 色.文字 },
+  横の順位: { width: 20, fontSize: 11, fontWeight: '600', color: 色.灰, textAlign: 'right', marginRight: 6 },
+  薄い名: { color: 色.灰 },
+  横の射数: { fontSize: 10, color: 色.灰, lineHeight: 12 },
+  // 表の 1 行おきの色
+  表の行_縞: { backgroundColor: 色.地 },
+  差_上: { color: 色.緑, fontWeight: 'bold' },
+  差_下: { color: 色.赤, fontWeight: 'bold' },
   横の地: {
     flex: 1,
     height: 10,

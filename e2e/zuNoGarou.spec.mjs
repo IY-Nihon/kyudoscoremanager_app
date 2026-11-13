@@ -25,7 +25,7 @@ test('図の見本：どの図も描けて、図の箱からはみ出さない',
     会話.push({ id: `q${番}`, role: 'user', text: 組.map((一つ) => 一つ.問い).join(' ／ ') });
     会話.push({ id: `a${番}`, role: 'model', text: '見本です。', 図たち: 組.map((一つ) => 一つ.図) });
   }
-  // ZU_TATE=寄せる で、的中率の縦軸を前の形（値のある所に寄せる）にして撮る（見比べ用）
+  // ZU_TATE=零から で、的中率の縦軸を全部 0% からにして撮る（見比べ用）
   await page.addInitScript(
     ([会話, 縦軸]) => {
       localStorage.setItem('aiChatMessages_v1_g_100007', JSON.stringify(会話));
@@ -65,6 +65,12 @@ test('図の見本：どの図も描けて、図の箱からはみ出さない',
         const 窓 = page.getByTestId('AIの図の窓');
         await expect(窓).toBeVisible();
         await page.waitForTimeout(250);
+        // 折れ線は、真ん中あたりの点を押して中身を出したところを撮る
+        const 押す面 = 窓.getByTestId('図の押す面');
+        if (await 押す面.count()) {
+          await 押す面.click();
+          await expect(窓.getByTestId('図の点の中身')).toBeVisible();
+        }
         await 窓.screenshot({ path: path.join(撮る先, `${名}-大.png`) });
         await page.getByTestId('AIの図を閉じる').click();
         await expect(窓).toBeHidden();

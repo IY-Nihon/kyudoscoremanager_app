@@ -574,6 +574,8 @@ const AIChatBot = () => {
     const 図を頼む質問 = /グラフ|図|表|チャート|推移|比べ|比較|順位|ランキング|一覧|矢所|分布|折れ線|棒/.test(
       userMsg
     );
+    // 縦軸を 0% から始める頼みか（「0から」「0%から」「ゼロから」）。既定は値のある所に寄せる（2026-11-14 本人）
+    const 零からの質問 = /(?:^|[^\d.])0\s*[%％]?\s*から|ゼロから|０\s*[%％]?\s*から/.test(userMsg);
     // 図にできる道具の結果（番号 → 道具の名と結果）と、この答えに出す図（showFigure）
     const 図の元 = new Map();
     let この答えの図 = [];
@@ -1383,7 +1385,9 @@ const AIChatBot = () => {
               const 番号 = String(call.args.source || '');
               const 元 = 図の元.get(番号);
               const 作った = 元
-                ? 図.図を作る(元.名, 元.結果, call.args.kind, call.args.title)
+                ? 図.図を作る(元.名, 元.結果, call.args.kind, call.args.title, {
+                    零から: call.args.fromZero === true || 零からの質問,
+                  })
                 : {
                     error: `図の番号「${call.args.source}」が見つかりません。道具の返事の 図にするとき.source を渡してください`,
                   };
@@ -1707,7 +1711,9 @@ const AIChatBot = () => {
               let 出した形 = null;
               if (図を頼む質問 && この答えの図.length < 5) {
                 const 既定 = ['矢所', '折れ線', '棒', '表'].find((一つ) => 形.includes(一つ));
-                const 作った = 既定 ? 図.図を作る(中.name, 中.response, 既定) : { error: '形が無い' };
+                const 作った = 既定
+                  ? 図.図を作る(中.name, 中.response, 既定, undefined, { 零から: 零からの質問 })
+                  : { error: '形が無い' };
                 if (!作った.error) {
                   この答えの図.push(Object.assign({}, 作った, { 元の番号: 番号 }));
                   図の出どころ.push(中.name);

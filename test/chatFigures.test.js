@@ -238,3 +238,11 @@ test('射位の棒は名のまま（「大前」「落」が空にならない�
   const 結果 = { 切り口: ['射位'], 全体: {}, 一覧: [行('落'), 行('2番'), 行('大前')] };
   assert.deepEqual(図を作る('aggregateStats', 結果, '棒').並び.map((項) => 項.名), ['大前', '2番', '落']);
 });
+
+test('縦軸は既定で寄せる。「0% から」と頼まれた折れ線だけ 縦軸: 零から（11/14 本人）。縦の棒は通算を持つ', () => {
+  const 結果 = 集計する([人('山田'), 人('佐藤')], 記録たち, { 切り口: ['月'] });
+  assert.equal(図を作る('aggregateStats', 結果, '折れ線').縦軸, undefined);
+  assert.equal(図を作る('aggregateStats', 結果, '折れ線', '', { 零から: true }).縦軸, '零から');
+  assert.equal(図を作る('aggregateStats', 結果, '表', '', { 零から: true }).縦軸, undefined);
+  assert.equal(図を作る('aggregateStats', 結果, '棒').通算, 結果.全体.的中率);
+});
