@@ -223,78 +223,80 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Excel形式で書き出し</Text>
             {確かめる範囲 && 中身 ? (
-              <ScrollView style={{ width: '100%', maxHeight: 450 }} testID="書き出す内容">
-                {activeRole !== 'member' && (
-                  <>
-                    <View style={確かめの形.切り替え}>
-                      <Text style={確かめの形.切り替えの字}>卒業生を含める</Text>
-                      <Switch
-                        aria-label="卒業生を含める"
-                        value={卒業生を含める}
-                        onValueChange={卒業生を含めるを置く}
-                        trackColor={{ false: 色.灰_明るい, true: 色.緑 }}
-                      />
-                    </View>
-                    <View style={確かめの形.切り替え}>
-                      <Text style={確かめの形.切り替えの字}>メンバー以外（ゲスト・相手校）を含める</Text>
-                      <Switch
-                        aria-label="メンバー以外を含める"
-                        value={部員以外を含める}
-                        onValueChange={部員以外を含めるを置く}
-                        trackColor={{ false: 色.灰_明るい, true: 色.緑 }}
-                      />
-                    </View>
-                  </>
-                )}
-                <View style={確かめの形.箱}>
-                  <Text style={確かめの形.箱の題}>書き出す内容</Text>
-                  <Text style={確かめの形.箱の字}>
-                    {範囲の説明}
-                    {中身.記録.length > 0 && 確かめる範囲 !== 'custom'
-                      ? `（${日付の文(中身.始め)}〜${日付の文(中身.終わり)}）`
-                      : ''}
-                  </Text>
-                  <Text style={確かめの形.箱の字} testID="書き出す内容の数">
-                    {`記録 ${中身.記録.length} 件・${中身.人数} 人`}
-                  </Text>
-                  <Text style={確かめの形.箱の字}>
-                    {書き出しの形 === 'matrix' ? '印刷向けの形' : '標準の形'}
-                    {確かめる範囲 === 'custom' && 選んだタグ.length > 0
-                      ? `・タグ：${選んだタグ.map(タグの見た目).join(タグの論理 === 'AND' ? ' と ' : ' か ')}`
-                      : ''}
-                  </Text>
-                  {中身.記録.length === 0 && (
-                    <Text style={確かめの形.無い}>この条件に当たる記録がありません。</Text>
+              <>
+                <ScrollView style={{ width: '100%', maxHeight: 360 }} testID="書き出す内容">
+                  {activeRole !== 'member' && (
+                    <>
+                      <View style={確かめの形.切り替え}>
+                        <Text style={確かめの形.切り替えの字}>卒業生を含める</Text>
+                        <Switch
+                          aria-label="卒業生を含める"
+                          value={卒業生を含める}
+                          onValueChange={卒業生を含めるを置く}
+                          trackColor={{ false: 色.灰_明るい, true: 色.緑 }}
+                        />
+                      </View>
+                      <View style={確かめの形.切り替え}>
+                        <Text style={確かめの形.切り替えの字}>メンバー以外（ゲスト・相手校）を含める</Text>
+                        <Switch
+                          aria-label="メンバー以外を含める"
+                          value={部員以外を含める}
+                          onValueChange={部員以外を含めるを置く}
+                          trackColor={{ false: 色.灰_明るい, true: 色.緑 }}
+                        />
+                      </View>
+                    </>
                   )}
-                </View>
-                {中身.記録.length > 0 && (
-                  <TouchableOpacity
-                    accessibilityRole="button"
-                    onPress={() => 詳細を開くを置く((今) => !今)}
-                    style={{ alignSelf: 'flex-start', paddingVertical: 6 }}
-                  >
-                    <Text style={{ fontSize: 13, color: 色.青 }}>
-                      {詳細を開く ? '詳細を閉じる' : '詳細を見る'}
+                  <View style={確かめの形.箱}>
+                    <Text style={確かめの形.箱の題}>書き出す内容</Text>
+                    <Text style={確かめの形.箱の字}>
+                      {範囲の説明}
+                      {中身.記録.length > 0 && 確かめる範囲 !== 'custom'
+                        ? `（${日付の文(中身.始め)}〜${日付の文(中身.終わり)}）`
+                        : ''}
                     </Text>
-                  </TouchableOpacity>
-                )}
-                {詳細を開く &&
-                  中身.記録.map((一件) => (
-                    <View key={`naiyou-${一件.id}`} style={確かめの形.一件}>
-                      <Text style={確かめの形.一件の頭}>
-                        {`${一件.日付}  ${一件.題 || '（タイトルなし）'}`}
-                        <Text style={確かめの形.一件の数}>{`  ${一件.人数} 人`}</Text>
+                    <Text style={確かめの形.箱の字} testID="書き出す内容の数">
+                      {`記録 ${中身.記録.length} 件・${中身.人数} 人`}
+                    </Text>
+                    <Text style={確かめの形.箱の字}>
+                      {書き出しの形 === 'matrix' ? '印刷向けの形' : '標準の形'}
+                      {確かめる範囲 === 'custom' && 選んだタグ.length > 0
+                        ? `・タグ：${選んだタグ.map(タグの見た目).join(タグの論理 === 'AND' ? ' と ' : ' か ')}`
+                        : ''}
+                    </Text>
+                    {中身.記録.length === 0 && (
+                      <Text style={確かめの形.無い}>この条件に当たる記録がありません。</Text>
+                    )}
+                  </View>
+                  {中身.記録.length > 0 && (
+                    <TouchableOpacity
+                      accessibilityRole="button"
+                      onPress={() => 詳細を開くを置く((今) => !今)}
+                      style={{ alignSelf: 'flex-start', paddingVertical: 6 }}
+                    >
+                      <Text style={{ fontSize: 13, color: 色.青 }}>
+                        {詳細を開く ? '詳細を閉じる' : '詳細を見る'}
                       </Text>
-                      {一件.メモ ? (
-                        <Text style={確かめの形.一件のメモ} numberOfLines={2}>
-                          {一件.メモ}
+                    </TouchableOpacity>
+                  )}
+                  {詳細を開く &&
+                    中身.記録.map((一件) => (
+                      <View key={`naiyou-${一件.id}`} style={確かめの形.一件}>
+                        <Text style={確かめの形.一件の頭}>
+                          {`${一件.日付}  ${一件.題 || '（タイトルなし）'}`}
+                          <Text style={確かめの形.一件の数}>{`  ${一件.人数} 人`}</Text>
                         </Text>
-                      ) : null}
-                      {一件.タグ.length > 0 && (
-                        <Text style={確かめの形.一件のタグ}>{一件.タグ.map(タグの見た目).join('・')}</Text>
-                      )}
-                    </View>
-                  ))}
+                        {一件.メモ ? (
+                          <Text style={確かめの形.一件のメモ} numberOfLines={2}>
+                            {一件.メモ}
+                          </Text>
+                        ) : null}
+                        {一件.タグ.length > 0 && (
+                          <Text style={確かめの形.一件のタグ}>{一件.タグ.map(タグの見た目).join('・')}</Text>
+                        )}
+                      </View>
+                    ))}
+                </ScrollView>
                 <View style={[styles.modalButtons, { marginTop: 14 }]}>
                   <Pressable
                     accessibilityRole="button"
@@ -321,7 +323,7 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                     <Text style={[styles.modalBtnText, { color: 色.青 }]}>戻る</Text>
                   </Pressable>
                 </View>
-              </ScrollView>
+              </>
             ) : 絞り込みを開く ? (
               <ScrollView style={{ width: '100%', maxHeight: 450 }}>
                 <View style={styles.filterGroup}>
