@@ -159,6 +159,18 @@ function 折れ線({ 図, 大きく }) {
     ]);
   const 丸たち = 点の座標.flat().filter(Boolean);
   const 置いた箱 = [];
+  // 横の名の字も、数がかからないように先に置いておく
+  名たち.forEach((名, i) => {
+    if (!(i % 間 === 0 || (i === 名たち.length - 1 && ((i % 間) * 内の幅) / 数 >= 名の幅))) return;
+    const w = 字の幅(短い名(名), 字);
+    const 右寄せ = i === 名たち.length - 1 && 名たち.length > 1;
+    置いた箱.push({
+      l: 右寄せ ? x(i) - w : x(i) - w / 2,
+      r: 右寄せ ? x(i) : x(i) + w / 2,
+      t: H - 6 - 字 * 1.1,
+      b: H,
+    });
+  });
   const 重なる箱 = (甲, 乙) => 甲.l < 乙.r && 乙.l < 甲.r && 甲.t < 乙.b && 乙.t < 甲.b;
   const 線にかかる = (箱) =>
     線分たち.some(([p, q]) => {
@@ -187,7 +199,8 @@ function 折れ線({ 図, 大きく }) {
     const 端 = [0, 点たち.length - 1];
     const 候補の番 = 値を全部 ? 点たち.map((_, i) => i) : [高い点, 低い点];
     const 順 = [...new Set([高い点, 低い点, ...端.filter((i) => 候補の番.includes(i)), ...候補の番])];
-    const 高さ = 値の字 * 0.95;
+    // 字の箱の高さ（ブラウザの字の箱は字の大きさより 2 割ほど高い）
+    const 高さ = 値の字 * 1.2;
     for (const i of 順) {
       const c = 点の座標[0][i];
       if (!c) continue;
@@ -211,7 +224,7 @@ function 折れ線({ 図, 大きく }) {
       for (const [cx, cy] of 候補) {
         const 箱 = { l: cx - w / 2, r: cx + w / 2, t: cy - 高さ / 2, b: cy + 高さ / 2 };
         // 下は横の名の字の上まで（0% の点の横にも置けるように）
-        if (箱.l < 左 || 箱.r > W - 2 || 箱.t < 1 || 箱.b > H - 6 - 字) continue;
+        if (箱.l < 左 || 箱.r > W - 2 || 箱.t < 1 || 箱.b > H - 6 - 字 * 1.3) continue;
         if (線にかかる(箱) || 丸にかかる(箱) || 置いた箱.some((前) => 重なる箱(前, 箱))) continue;
         置いた箱.push(箱);
         // 字の下の線（baseline）は、真ん中から字の高さの 3 割ほど下
