@@ -20,6 +20,13 @@ const 港 = Number(process.env.EMU_CHUKEI_PORT || 8788);
 const Firestoreの宛先 = `http://127.0.0.1:${process.env.EMU_FIRESTORE_PORT || 8080}`;
 const 中継の場所 = path.resolve(process.env.CHUKEI_DIR || '../chukei');
 const { 部員を確かめる } = await import(pathToFileURL(path.join(中継の場所, 'src', 'kojin.mjs')).href);
+const { 管理者を確かめる } = await import(pathToFileURL(path.join(中継の場所, 'src', 'kanri.mjs')).href);
+/** 管理者の合言葉の置き場（本物は D1。ここは中継の代わりが生きている間だけ） */
+const 合言葉の表 = new Map();
+const 合言葉の置き場 = {
+  読む: (鍵) => Promise.resolve(合言葉の表.has(鍵) ? structuredClone(合言葉の表.get(鍵)) : null),
+  書く: (鍵, 値) => Promise.resolve(void 合言葉の表.set(鍵, 値)),
+};
 
 // サービスアカウントの代わり（署名ができればよい。鍵は毎回作り捨てる）
 const { privateKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
@@ -37,7 +44,11 @@ const 送る = (宛先, 頼み = {}) => {
       new Response(JSON.stringify({ access_token: 'owner', expires_in: 3600 }), { status: 200 })
     );
   const 向け直し = 道.replace('https://firestore.googleapis.com', Firestoreの宛先);
-  const 頭 = Object.assign({}, 頼み.headers || {}, { Authorization: 'Bearer owner' });
+  // 管理者の合言葉（/kanri）が持ち主かを確かめる読み（団体の private）は、呼んだ人の証のまま送る（決まりで確かめる）
+  const 本人の証のまま = 道.includes('/private/');
+  const 頭 = 本人の証のまま
+    ? Object.assign({}, 頼み.headers || {})
+    : Object.assign({}, 頼み.headers || {}, { Authorization: 'Bearer owner' });
   return fetch(向け直し, Object.assign({}, 頼み, { headers: 頭 }));
 };
 
@@ -72,18 +83,29 @@ http
     };
     if (受.method === 'OPTIONS') return 答える(204, {});
     const 道 = (受.url || '').split('?')[0];
-    if (道 !== '/kojin')
+    if (道 !== '/kojin' && 道 !== '/kanri')
       return 答える(503, { error: 'エミュレーターでは AI を使えません（検証環境で試してください）' });
     const 本人 = 証を読む(受.headers.authorization);
     if (!本人) return 答える(401, { error: 'ログインの証がありません' });
     let 体 = '';
     for await (const かけら of 受) 体 += かけら;
-    const 頼み = new Request('http://emu/kojin', {
+    const 頼み = new Request('http://emu' + 道, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: 体,
     });
     try {
+      if (道 === '/kanri') {
+        const 証 = String(受.headers.authorization || '').replace(/^Bearer\s+/i, '');
+        const { 状態, 中身 } = await 管理者を確かめる(
+          頼み,
+          { FIREBASE_SA_KEYS: JSON.stringify({ [本人.aud]: 偽の鍵 }) },
+          本人,
+          証,
+          { 送る, 置き場: 合言葉の置き場 }
+        );
+        return 答える(状態, 中身);
+      }
       const { 状態, 中身 } = await 部員を確かめる(
         頼み,
         { FIREBASE_SA_KEYS: JSON.stringify({ [本人.aud]: 偽の鍵 }) },
@@ -97,5 +119,5 @@ http
     }
   })
   .listen(港, '127.0.0.1', () =>
-    console.log(`[emu-chukei] http://127.0.0.1:${港} で待っています（/kojin だけ）`)
+    console.log(`[emu-chukei] http://127.0.0.1:${港} で待っています（/kojin・/kanri）`)
   );
