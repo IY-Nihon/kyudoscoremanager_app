@@ -3,6 +3,7 @@
 const { 色: 基本色 } = require('./iro.js');
 const themeMod = require('./theme');
 const React = require('react');
+const { KanriAikotobaModal } = require('./KanriAikotobaModal');
 const {
   View,
   Text,
@@ -182,26 +183,23 @@ const SettingsScreen = () => {
     addTagTemplate(字.startsWith('#') ? 字 : `#${字}`);
     タグの下書きを置く('');
   };
+  // 管理者の合言葉の窓。false（閉じる）・'入る'（管理者モードを入れる）・'変える'（合言葉を変える）
   const [管理者の合言葉の窓, 管理者の合言葉の窓を出す] = React.useState(false);
-  const [管理者の合言葉, 管理者の合言葉を置く] = React.useState('');
-  const [合言葉を確かめ中, 合言葉を確かめ中を置く] = React.useState(false);
   const [showPw, setShowPw] = React.useState(false);
   // アカウントの削除。窓の開閉・入れたパスワード・消している最中の段階
   const [削除の窓, 削除の窓を開く] = React.useState(false);
   const [削除の合言葉, 削除の合言葉を設定] = React.useState('');
   const [削除の段階, 削除の段階を設定] = React.useState('');
   const [削除の失敗, 削除の失敗を設定] = React.useState('');
-  // 管理者の認証・削除の窓を閉じたら、入れたパスワードを捨て、伏せ字に戻す（どの閉じ方でも）。
-  // 残すと、次に開いたとき前のパスワードが入ったまま（見える形のこともあった）
-  React.useEffect(() => {
-    if (!管理者の合言葉の窓) 管理者の合言葉を置く('');
-  }, [管理者の合言葉の窓]);
+  // 削除の窓を閉じたら、入れたパスワードを捨て、伏せ字に戻す（どの閉じ方でも）。
+  // 残すと、次に開いたとき前のパスワードが入ったまま（見える形のこともあった）。
+  // 管理者の合言葉の窓は、窓の中で閉じたときに捨てる（src/KanriAikotobaModal.js）
   React.useEffect(() => {
     if (!削除の窓) 削除の合言葉を設定('');
   }, [削除の窓]);
   React.useEffect(() => {
-    if (!管理者の合言葉の窓 && !削除の窓) setShowPw(false);
-  }, [管理者の合言葉の窓, 削除の窓]);
+    if (!削除の窓) setShowPw(false);
+  }, [削除の窓]);
   const [inquiryVisible, setInquiryVisible] = React.useState(false);
   const [種類の窓, 種類の窓を出す] = React.useState(false);
   // 学年の無い団体（社会人の会・道場）には、進級の確認・期を使う・現在の期を出さない
@@ -924,41 +922,60 @@ const SettingsScreen = () => {
         {activeRole !== 'member' &&
           節(
             '管理者設定',
-            <View
-              style={styles.item}
-              // 使い方の案内から指せるように登録する
-              ref={(node) => 案内.setTutorialTargetNode('設定.管理者モード', node)}
-            >
-              <View style={[styles.itemLeft, { flex: 1 }]}>
-                <Icons.Ionicons
-                  name="shield-checkmark-outline"
-                  size={22}
-                  color={基本色.赤}
-                  style={styles.itemIcon}
-                />
-                <View style={{ flex: 1, paddingRight: 8 }}>
-                  <Text style={styles.itemText}>管理者モード</Text>
-                  <Text
-                    style={{ fontSize: 11, color: 基本色.灰, marginTop: 2, flexShrink: 1 }}
-                    numberOfLines={0}
-                  >
-                    オンにすると、保存済みの記録をあとから直せます。各メンバーの個人ID（数字）も表示されます
-                  </Text>
+            <>
+              <View
+                style={styles.item}
+                // 使い方の案内から指せるように登録する
+                ref={(node) => 案内.setTutorialTargetNode('設定.管理者モード', node)}
+              >
+                <View style={[styles.itemLeft, { flex: 1 }]}>
+                  <Icons.Ionicons
+                    name="shield-checkmark-outline"
+                    size={22}
+                    color={基本色.赤}
+                    style={styles.itemIcon}
+                  />
+                  <View style={{ flex: 1, paddingRight: 8 }}>
+                    <Text style={styles.itemText}>管理者モード</Text>
+                    <Text
+                      style={{ fontSize: 11, color: 基本色.灰, marginTop: 2, flexShrink: 1 }}
+                      numberOfLines={0}
+                    >
+                      管理者の合言葉で入ります。記録を直す・消す、メンバーの管理、団体の設定ができます
+                    </Text>
+                  </View>
                 </View>
+                <Switch
+                  value={isAdminMode}
+                  onValueChange={(入れる) => {
+                    if (入れる) {
+                      管理者の合言葉の窓を出す('入る');
+                    } else {
+                      setAdminMode(false);
+                      // 中継の「管理者」の印も消す（届かなくても 12 時間で切れる）
+                      require('./kanriAikotoba')
+                        .管理者から出る(activeGroupId)
+                        .catch(() => {});
+                    }
+                  }}
+                  trackColor={{ false: 基本色.灰_明るい, true: 基本色.赤 }}
+                />
               </View>
-              <Switch
-                value={isAdminMode}
-                onValueChange={(入れる) => {
-                  if (入れる) {
-                    管理者の合言葉を置く('');
-                    管理者の合言葉の窓を出す(true);
-                  } else {
-                    setAdminMode(false);
-                  }
-                }}
-                trackColor={{ false: 基本色.灰_明るい, true: 基本色.赤 }}
-              />
-            </View>
+              {isAdminMode && (
+                <TouchableOpacity
+                  style={styles.item}
+                  accessibilityRole="button"
+                  testID="管理者の合言葉を変える"
+                  onPress={() => 管理者の合言葉の窓を出す('変える')}
+                >
+                  <View style={[styles.itemLeft, { flex: 1 }]}>
+                    <Icons.Ionicons name="key-outline" size={22} color={基本色.赤} style={styles.itemIcon} />
+                    <Text style={styles.itemText}>管理者の合言葉を変える</Text>
+                  </View>
+                  <Icons.Ionicons name="chevron-forward" size={18} color={基本色.灰} />
+                </TouchableOpacity>
+              )}
+            </>
           )}
         {節(
           'データ管理',
@@ -1151,101 +1168,18 @@ const SettingsScreen = () => {
           </View>
         </View>
       </Modal>
-      <Modal
-        visible={管理者の合言葉の窓}
-        transparent
-        animationType="fade"
-        onRequestClose={() => 管理者の合言葉の窓を出す(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <TouchableOpacity
-            style={StyleSheet.absoluteFill}
-            activeOpacity={1}
-            onPress={() => !合言葉を確かめ中 && 管理者の合言葉の窓を出す(false)}
-          />
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>管理者認証</Text>
-            <Text style={styles.modalMessage}>団体パスワードを入力してください</Text>
-            <View
-              style={[
-                styles.filterInput,
-                {
-                  width: '100%',
-                  marginBottom: 15,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingHorizontal: 12,
-                },
-              ]}
-            >
-              <TextInput
-                aria-label="管理者モードのパスワード"
-                style={{ flex: 1, height: 48, fontSize: 16 }}
-                placeholder="パスワード"
-                secureTextEntry={!showPw}
-                value={管理者の合言葉}
-                onChangeText={管理者の合言葉を置く}
-                autoFocus
-              />
-              <Pressable // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
-                accessible
-                accessibilityRole="button"
-                accessibilityLabel="パスワードの表示を切り替える"
-                aria-label="パスワードの表示を切り替える"
-                onPress={() => setShowPw(!showPw)}
-                style={{ padding: 4 }}
-              >
-                <Icons.Ionicons name={showPw ? 'eye-off' : 'eye'} size={20} color={基本色.灰} />
-              </Pressable>
-            </View>
-            <View style={styles.modalButtonsRow}>
-              <Pressable
-                style={({ hovered }) => [
-                  styles.modalBtn,
-                  { backgroundColor: 基本色.地, flex: 1, marginRight: 5 },
-                  hovered && { backgroundColor: 基本色.地_濃い },
-                  IS_WEB && { cursor: 'pointer' },
-                ]}
-                onPress={() => 管理者の合言葉の窓を出す(false)}
-                disabled={合言葉を確かめ中}
-              >
-                <Text style={[styles.modalBtnText, { color: 基本色.青 }]}>キャンセル</Text>
-              </Pressable>
-              <Pressable
-                style={({ hovered }) => [
-                  styles.modalBtn,
-                  { backgroundColor: 基本色.青, flex: 1, marginLeft: 5 },
-                  hovered && { backgroundColor: 基本色.青_濃い },
-                  IS_WEB && { cursor: 'pointer' },
-                ]}
-                onPress={一度だけ('管理者', async () => {
-                  if (管理者の合言葉) {
-                    合言葉を確かめ中を置く(true);
-                    try {
-                      if (await verifyGroupPassword(管理者の合言葉)) {
-                        setAdminMode(true);
-                        管理者の合言葉の窓を出す(false);
-                        管理者の合言葉を置く('');
-                      } else {
-                        Alert.alert('エラー', 'パスワードが正しくありません。');
-                      }
-                    } catch {
-                      Alert.alert('エラー', '認証に失敗しました。');
-                    } finally {
-                      合言葉を確かめ中を置く(false);
-                    }
-                  }
-                })}
-                disabled={合言葉を確かめ中 || !管理者の合言葉}
-              >
-                <Text style={[styles.modalBtnText, { color: 基本色.白 }]}>
-                  {合言葉を確かめ中 ? '認証中...' : '認証'}
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* 管理者の合言葉（2026-11-14。中継で照合し、合えば決まりの「管理者」の印。src/KanriAikotobaModal.js） */}
+      <KanriAikotobaModal
+        見える={管理者の合言葉の窓 !== false}
+        何={管理者の合言葉の窓 === '変える' ? '変える' : '入る'}
+        団体={activeGroupId}
+        閉じる={() => 管理者の合言葉の窓を出す(false)}
+        ログインのパスワードを確かめる={verifyGroupPassword}
+        入れた={() => {
+          setAdminMode(true);
+          管理者の合言葉の窓を出す(false);
+        }}
+      />
       <Modal
         visible={ログアウトの窓}
         transparent
