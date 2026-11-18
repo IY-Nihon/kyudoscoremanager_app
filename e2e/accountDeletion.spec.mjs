@@ -13,7 +13,7 @@
  * 団体には書き込まない（途中交代の検査と同じ 100007 を読むだけ）。
  */
 import { test, expect } from '@playwright/test';
-import { 案内を止める, 画面が出るまで待つ, 入り口が決まるまで待つ, 団体で入る } from './helpers.mjs';
+import { 案内を止める, 画面が出るまで待つ, 入り口が決まるまで待つ, 団体で入る, 管理者の窓で入る } from './helpers.mjs';
 import { 検証のパスワード } from '../scripts/fb-rest.mjs';
 
 const 団体 = '100007';
@@ -53,18 +53,19 @@ test('アカウントの削除：管理者モードのときだけ行が出て�
         親 = 親.parentElement;
       }
     });
-  // 打ちかけてキャンセルしたら、次に開いたとき欄は空（前のパスワードを残さない）
+  // 打ちかけてキャンセルしたら、次に開いたとき欄は空（前のパスワードを残さない）。
+  // 窓は前の「管理者認証」か、管理者の合言葉の窓（中継に /kanri があるとき）
+  const 窓 = page.getByTestId('管理者の合言葉の窓');
+  const 欄 = 窓.locator('input').first();
   await 切り替える();
-  await expect(page.getByText('管理者認証', { exact: true })).toBeVisible({ timeout: 15_000 });
-  await page.getByPlaceholder('パスワード').fill('打ちかけ');
-  await page.getByText('キャンセル', { exact: true }).click();
-  await expect(page.getByText('管理者認証', { exact: true })).toHaveCount(0, { timeout: 10_000 });
+  await expect(欄).toBeVisible({ timeout: 20_000 });
+  await 欄.fill('打ちかけ');
+  await 窓.getByText('キャンセル', { exact: true }).click();
+  await expect(窓).toHaveCount(0, { timeout: 10_000 });
   await 切り替える();
-  await expect(page.getByText('管理者認証', { exact: true })).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByPlaceholder('パスワード')).toHaveValue('');
-  await page.getByPlaceholder('パスワード').fill(合言葉);
-  await page.getByText('認証', { exact: true }).click();
-  await expect(page.getByText('管理者認証', { exact: true })).toHaveCount(0, { timeout: 30_000 });
+  await expect(欄).toBeVisible({ timeout: 20_000 });
+  await expect(欄).toHaveValue('');
+  await 管理者の窓で入る(page, 合言葉);
 
   const 削除の行 = page.getByText('アカウントを削除する', { exact: true });
   await 削除の行.scrollIntoViewIfNeeded().catch(() => {});

@@ -82,6 +82,9 @@ Object.defineProperty(exports, 'ライブ名に使えない字', {
     return 同期規則.ライブ名に使えない字;
   },
 });
+/** 管理者モードを印の期限で切る時計（setAdminMode） */
+let 管理者の時計 = null;
+
 const useScoreStore = zustand.create()(
   middleware.persist(
     (そのまま書く, 状態) => {
@@ -764,7 +767,21 @@ const useScoreStore = zustand.create()(
             return false;
           }
         },
-        setAdminMode: (値) => 書く({ isAdminMode: 値, isAdminModePending: false }),
+        /**
+         * 管理者モードを入れる・切る。期限（中継の「管理者」の印の終わり。src/kanriAikotoba.js）があれば、
+         * その時刻に画面の管理者モードも切る（印が切れたあとに消そうとして、決まりに断られないように）
+         */
+        setAdminMode: (値, 期限) => {
+          clearTimeout(管理者の時計);
+          管理者の時計 = null;
+          if (値 && Number.isFinite(期限)) {
+            管理者の時計 = setTimeout(
+              () => 書く({ isAdminMode: false, isAdminModePending: false }),
+              Math.max(0, 期限 - Date.now())
+            );
+          }
+          書く({ isAdminMode: 値, isAdminModePending: false });
+        },
         /**
          * 団体アカウントを消す（設定 → アカウント → アカウントを削除する）。
          * 団体アカウントで入っていて、管理者モードで、ライブ中でないときだけ。

@@ -76,7 +76,7 @@ test('書き出し：窓が開き、年度を動かせ、すべてのデータ�
   expect(await 人数(), 'スイッチを戻しても人数が戻らない').toBe(はじめの人数);
   await page.getByText('詳細を見る', { exact: true }).click();
   await expect(page.getByText('詳細を閉じる', { exact: true })).toBeVisible();
-  await expect(page.getByText(/^\d{4}\/\d{2}\/\d{2}  /).first()).toBeVisible();
+  await expect(page.getByText(/^\d{4}\/\d{2}\/\d{2} {2}/).first()).toBeVisible();
   await page.getByText('書き出す', { exact: true }).click();
   const 落ちた = await 落ちる;
   expect(落ちた.suggestedFilename(), 'ファイル名の形').toMatch(/^kyudo_records_all_\d{4}-\d{2}-\d{2}\.xlsx$/);
