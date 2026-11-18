@@ -81,8 +81,6 @@ function KanriAikotobaModal({
   const [待つ, 待つを置く] = React.useState(false);
   // 新しく の段で、作るか（初めて）作り直すか（忘れた）
   const [作り方, 作り方を置く] = React.useState('作る');
-  // 本人の確かめに使ったログインのパスワード（新しい合言葉と同じにさせない。窓を閉じたら捨てる）
-  const ログインの字 = React.useRef('');
 
   const 空にする = () => {
     字1を置く('');
@@ -97,7 +95,6 @@ function KanriAikotobaModal({
 
   React.useEffect(() => {
     if (!見える) {
-      ログインの字.current = '';
       空にする();
       段を置く('聞く');
       return;
@@ -121,7 +118,6 @@ function KanriAikotobaModal({
   }, [見える, 何, 団体]);
 
   const 済んだ = (答え) => {
-    ログインの字.current = '';
     入れた(答え && 答え.期限);
   };
   const 答えの文 = (答え) => {
@@ -154,7 +150,6 @@ function KanriAikotobaModal({
       if (!字1) return 誤りを置く('ログインのパスワードを入れてください');
       const 合った = await ログインのパスワードを確かめる(字1).catch(() => false);
       if (!合った) return 誤りを置く('ログインのパスワードが正しくありません');
-      ログインの字.current = 字1;
       作り方を置く(次の作り方);
       段へ('新しく');
     });
@@ -163,8 +158,6 @@ function KanriAikotobaModal({
       const 形の文 = 合.合言葉の形の文(字1);
       if (形の文) return 誤りを置く(形の文);
       if (字1 !== 字2) return 誤りを置く('2 回の合言葉が違います');
-      if (ログインの字.current && 字1 === ログインの字.current)
-        return 誤りを置く('ログインのパスワードとは違う合言葉にしてください');
       const 答え =
         作り方 === '作る'
           ? await 合.合言葉を作る(団体, 字1, 道具)
@@ -224,9 +217,7 @@ function KanriAikotobaModal({
       題 = '管理者の合言葉を作ります';
       中身 = (
         <>
-          <Text style={形.文}>
-            管理者モードに入るための合言葉です。ログインのパスワードとは別のものにします。
-          </Text>
+          <Text style={形.文}>管理者モードに入るための合言葉です。</Text>
           <View style={形.箱}>
             <Text style={形.箱の字}>
               ・合言葉を知っている人だけが、記録を消す・メンバーを管理する・団体の設定を変えることができます。
@@ -272,7 +263,7 @@ function KanriAikotobaModal({
       題 = 作り方 === '作る' ? '管理者の合言葉を作ります' : '新しい合言葉';
       中身 = (
         <>
-          <Text style={形.文}>6〜64 字で決めてください。ログインのパスワードとは違うものにします。</Text>
+          <Text style={形.文}>6〜64 字で決めてください。</Text>
           {入れ物({ ラベル: '新しい合言葉', 値: 字1, 置く: 字1を置く, 初めに: true })}
           {入れ物({ ラベル: 'もう一度', 値: 字2, 置く: 字2を置く, 決める: 新しくを押す })}
         </>
