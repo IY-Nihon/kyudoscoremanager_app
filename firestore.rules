@@ -125,6 +125,20 @@ service cloud.firestore {
         && (groupVerified(groupId) || inGracePeriod());
     }
 
+    // 管理者の印（2026-11-14・11/18 本人）。中継（kyudo-chukei の POST /kanri）が、管理者の合言葉が合ったときに
+    // admin_sessions/{団体}_{uid} へ 12 時間の期限を書く。端末からは書けない（下の match /admin_sessions）。
+    // 合言葉が要るのは、前から画面で管理者モード（団体のパスワード）が要った操作だけ（11/18 本人「団体のパスワードがいるものを
+    // 変えたくない」）。決まりで見分けられるのは今は招待リンクを作ることだけ。記録を消す・ゴミ箱・メンバー・練習日・設定は、
+    // 団体の口座なら管理者モードなしでもできる（HistoryScreen の isAdminMode || activeRole === 'group'）ので、持ち主なら通す。
+    // 保存した記録を直す（画面では管理者モードの中）は、送り直しと見分ける作りが要るので 4 段目で決める
+    function hasAdminSession(groupId) {
+      let p = /databases/$(database)/documents/admin_sessions/$(groupId + '_' + request.auth.uid);
+      return exists(p) && get(p).data.expiresAt > request.time;
+    }
+    function isGroupAdmin(groupId) {
+      return isGroupOwner(groupId) && hasAdminSession(groupId);
+    }
+
     function canAccess(groupId) {
       return isGroupOwner(groupId) || isClaimedMember(groupId);
     }
@@ -276,7 +290,9 @@ service cloud.firestore {
       // （2026-11-07 のレビュー）。消せるのは団体を消す途中だけ（写しの deleted_accounts/{団体} を先に書く。src/accountDeletion.js）
       match /member_lookup/{personalId} {
         allow read: if isGroupOwner(groupId);
-        allow create, update: if isGroupOwner(groupId) && request.resource.data.get('形', 0) == 2;
+        // 招待リンク（招待 == true の行）は管理者だけ（前から管理者モードの中にある）
+        allow create, update: if isGroupOwner(groupId) && request.resource.data.get('形', 0) == 2
+          && (request.resource.data.get('招待', false) != true || isGroupAdmin(groupId));
         allow delete: if isGroupOwner(groupId)
           && exists(/databases/$(database)/documents/deleted_accounts/$(groupId));
       }
@@ -333,6 +349,11 @@ service cloud.firestore {
         allow read: if canAccess(groupId);
         allow write: if isGroupOwner(groupId);
       }
+    }
+
+    match /admin_sessions/{id} {
+      // 管理者の印。書くのは中継（サービスアカウント）だけ。端末は読み書きできない（hasAdminSession が決まりの中で読む）
+      allow read, write: if false;
     }
 
     // 使い捨てメールのドメインの一覧（上の disposableDomain）。一覧は秘密でないので誰でも 1 件ずつ引ける

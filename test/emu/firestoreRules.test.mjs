@@ -422,3 +422,24 @@ test('消すときの順：持ち主は控えを書いてから中身・帳面�
   // 直す（updateDoc）の形も確かめる
   assert.equal((await 直す(部員, `groups/${団体}/config/app_settings`, { groupType: 'x' })).通った, false);
 });
+
+test('管理者の印（11/18）：招待リンクは印のある持ち主だけ。記録を消す・ゴミ箱・メンバー・設定は今までどおり。印は端末から書けない', async () => {
+  await 団体を用意する();
+  const 印の道 = `admin_sessions/${団体}_${持ち主.uid}`;
+  const 招待の道 = `groups/${団体}/member_lookup/INV${'x'.repeat(29)}`;
+  // 印が無い持ち主：招待は断る。記録を作る・消す・ゴミ箱・メンバー・設定・個人IDの行は通る（前から管理者モードなしでできる）
+  assert.equal((await 書く(持ち主, 招待の道, { memberId: 'm1', 形: 2, 招待: true })).通った, false, '印なしで招待の行を作れた');
+  assert.ok((await 書く(持ち主, `groups/${団体}/member_lookup/ABCDEF`, { memberId: 'm1', 形: 2 })).通った);
+  assert.ok((await 書く(持ち主, `groups/${団体}/members/m2`, { id: 'm2', name: '佐藤 花' })).通った);
+  assert.ok((await 書く(持ち主, `groups/${団体}/config/app_settings`, { groupType: 'koukou' }, { merge: true })).通った);
+  assert.ok((await 書く(持ち主, `groups/${団体}/trash/s1`, { id: 's1' })).通った);
+  assert.ok((await 消す(持ち主, `groups/${団体}/sessions/s1`)).通った);
+  // 端末は印を書けない・読めない
+  assert.equal((await 書く(持ち主, 印の道, { expiresAt: new Date(Date.now() + 3600000) })).通った, false, '端末が印を書けた');
+  assert.equal((await 読む(持ち主, 印の道)).通った, false);
+  // 期限の切れた印は効かない。期限内なら通る
+  await 書く('owner', 印の道, { groupId: 団体, uid: 持ち主.uid, expiresAt: new Date(Date.now() - 1000) });
+  assert.equal((await 書く(持ち主, 招待の道, { memberId: 'm1', 形: 2, 招待: true })).通った, false, '切れた印で招待を作れた');
+  await 書く('owner', 印の道, { groupId: 団体, uid: 持ち主.uid, expiresAt: new Date(Date.now() + 3600000) });
+  assert.ok((await 書く(持ち主, 招待の道, { memberId: 'm1', 形: 2, 招待: true })).通った, '印で招待を作れない');
+});

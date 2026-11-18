@@ -20,6 +20,7 @@ import {
   入り口が決まるまで待つ,
   団体で入る,
   こうなるまで待つ,
+  管理者の窓で入る,
 } from './helpers.mjs';
 import { 検証のパスワード } from '../scripts/fb-rest.mjs';
 
@@ -42,10 +43,7 @@ async function 管理者モードにする(page) {
       親 = 親.parentElement;
     }
   });
-  await expect(page.getByText('管理者認証', { exact: true })).toBeVisible({ timeout: 15_000 });
-  await page.getByPlaceholder('パスワード').fill(合言葉);
-  await page.getByText('認証', { exact: true }).click();
-  await expect(page.getByText('管理者認証', { exact: true })).toHaveCount(0, { timeout: 30_000 });
+  await 管理者の窓で入る(page, 合言葉);
 }
 
 /** 記録画面の名前の欄に並ぶ名前 */

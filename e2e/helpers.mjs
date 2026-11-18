@@ -292,3 +292,39 @@ export function 画面が変わるまで待つ(page, 目印, 上限 = 20000) {
     上限
   );
 }
+
+/**
+ * 管理者モードの窓が開いたあと、合言葉（またはパスワード）を入れて入る（2026-11-18）。
+ * 中継に /kanri が無いとき（配る前の検証環境）は前の「管理者認証」の窓、あるとき（手元のエミュレーター・配ったあと）は
+ * 管理者の合言葉の窓（初めてなら作る・あれば入る）。検査では合言葉をログインのパスワードと同じにする（同じでもよい：11/18 本人）
+ */
+export async function 管理者の窓で入る(page, 合言葉) {
+  const 窓 = page.getByTestId('管理者の合言葉の窓');
+  await expect(窓).toBeVisible({ timeout: 15_000 });
+  const 決める = 窓.getByTestId('管理者の合言葉を決める');
+  // 窓が中継に聞き終わるまで待つ（どの段か決まるまで）
+  await expect
+    .poll(
+      async () =>
+        (await 窓.getByText('管理者認証', { exact: true }).count()) +
+        (await 窓.getByLabel('ログインのパスワード').count()) +
+        (await 窓.getByLabel('管理者の合言葉').count()),
+      { timeout: 20_000 }
+    )
+    .toBeGreaterThan(0);
+  if (await 窓.getByText('管理者認証', { exact: true }).count()) {
+    await 窓.getByPlaceholder('パスワード').fill(合言葉);
+    await 決める.click();
+  } else if (await 窓.getByLabel('ログインのパスワード').count()) {
+    await 窓.getByLabel('ログインのパスワード').fill(合言葉);
+    await 決める.click();
+    await expect(窓.getByLabel('新しい合言葉')).toBeVisible({ timeout: 20_000 });
+    await 窓.getByLabel('新しい合言葉').fill(合言葉);
+    await 窓.getByLabel('もう一度').fill(合言葉);
+    await 決める.click();
+  } else {
+    await 窓.getByLabel('管理者の合言葉').fill(合言葉);
+    await 決める.click();
+  }
+  await expect(窓).toHaveCount(0, { timeout: 30_000 });
+}

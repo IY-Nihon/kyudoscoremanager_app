@@ -9,7 +9,7 @@
  * 開いて見るだけで保存はしない（団体には書き込まない扱い）。
  */
 import { test, expect } from '@playwright/test';
-import { 案内を止める, 画面が出るまで待つ } from './helpers.mjs';
+import { 案内を止める, 画面が出るまで待つ, 管理者の窓で入る } from './helpers.mjs';
 import { 検証のパスワード } from '../scripts/fb-rest.mjs';
 
 const 合言葉 = 検証のパスワード();
@@ -32,10 +32,7 @@ async function 管理者モードにする(page) {
       親 = 親.parentElement;
     }
   });
-  await expect(page.getByText('管理者認証', { exact: true })).toBeVisible({ timeout: 15_000 });
-  await page.getByPlaceholder('パスワード').fill(合言葉);
-  await page.getByText('認証', { exact: true }).click();
-  await expect(page.getByText('管理者認証', { exact: true })).toHaveCount(0, { timeout: 30_000 });
+  await 管理者の窓で入る(page, 合言葉);
 }
 
 /** いちばん上の窓の中で、届かないボタン・入力欄の名前を返す */

@@ -941,7 +941,7 @@ const SettingsScreen = () => {
                       style={{ fontSize: 11, color: 基本色.灰, marginTop: 2, flexShrink: 1 }}
                       numberOfLines={0}
                     >
-                      管理者の合言葉で入ります。記録を直す・消す、メンバーの管理、団体の設定ができます
+                      管理者の合言葉で入ります。保存済みの記録をあとから直せます。各メンバーの個人IDも表示されます
                     </Text>
                   </View>
                 </View>
@@ -1175,8 +1175,8 @@ const SettingsScreen = () => {
         団体={activeGroupId}
         閉じる={() => 管理者の合言葉の窓を出す(false)}
         ログインのパスワードを確かめる={verifyGroupPassword}
-        入れた={() => {
-          setAdminMode(true);
+        入れた={(期限) => {
+          setAdminMode(true, 期限);
           管理者の合言葉の窓を出す(false);
         }}
       />
