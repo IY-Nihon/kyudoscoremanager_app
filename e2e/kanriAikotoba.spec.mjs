@@ -5,7 +5,7 @@
  *   npm run e2e:emu -- e2e/kanriAikotoba.spec.mjs
  *   SHOT_DIR=撮る先 … 窓の写真を撮る
  *
- * 流れ：初めて（説明とログインのパスワード）→ 新しい合言葉（2 回違う・ログインのパスワードと同じは断る）→ 管理者モード →
+ * 流れ：初めて（説明とログインのパスワード）→ 新しい合言葉（2 回違うと断る。ログインのパスワードと同じでもよい：11/18 本人）→ 管理者モード →
  * 切る → 合言葉で入る（違うと残りの回数）→ 合言葉を変える。団体 100007（エミュレーターなので雲には書かない。記録には書き込まない）
  */
 import { test, expect } from '@playwright/test';
@@ -66,10 +66,6 @@ test('管理者の合言葉：初めて作り、入り、変える', async ({ pa
   await page.getByLabel('もう一度').fill('yumi-2027');
   await 決める.click();
   await expect(誤り).toHaveText('2 回の合言葉が違います');
-  await page.getByLabel('新しい合言葉').fill(ログインの字);
-  await page.getByLabel('もう一度').fill(ログインの字);
-  await 決める.click();
-  await expect(誤り).toHaveText('ログインのパスワードとは違う合言葉にしてください');
   await page.getByLabel('新しい合言葉').fill('yumi-2026');
   await page.getByLabel('もう一度').fill('yumi-2026');
   await 決める.click();
