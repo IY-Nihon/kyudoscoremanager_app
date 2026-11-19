@@ -1287,6 +1287,15 @@ const SettingsScreen = () => {
                     // 待ちきらずに出る（前は証の削除が返らず、押しても何も起きなかった。src/groupLogin.js）
                     // 先に見張りを止める（証を消したあとに断られて「ログインし直してください」が一瞬出ていた）
                     useScoreStore.getState().出る支度をする();
+                    // 管理者モードのまま出るときは、中継の「管理者」の印も消す（印は口座ごとなので、残すと同じ団体の
+                    // アカウントで入っているほかの端末にも 12 時間効いたままになる。11/19 の見直し）。届かなくても待ちきらない
+                    if (isAdminMode)
+                      await Promise.race([
+                        require('./kanriAikotoba')
+                          .管理者から出る(activeGroupId)
+                          .catch(() => {}),
+                        new Promise((解く) => setTimeout(解く, 3000)),
+                      ]);
                     await 団体から出る({ Firestore, FirebaseAuth, db, auth }, activeRole);
                   } catch (誤り) {
                     console.error('Logout error:', 誤り);
