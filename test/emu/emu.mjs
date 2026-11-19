@@ -18,7 +18,9 @@ const 倉庫 = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 
 const b64 = (値) => Buffer.from(JSON.stringify(値)).toString('base64url');
 
 /**
- * ログインの証。人: { uid, email?, verified? }（email が無ければ匿名）
+ * ログインの証。人: { uid, email?, verified?, auth_time? }（email が無ければ匿名）。
+ * auth_time（ログインした時刻・秒）を渡すと、その値で作る（管理者の印は端末ごとに auth_time で照らし合わせる。11/19）。
+ * 渡さなければ今の秒
  */
 export function 証(人) {
   if (!人) return null;
@@ -29,7 +31,7 @@ export function 証(人) {
     aud: 企画,
     iat: 今,
     exp: 今 + 3600,
-    auth_time: 今,
+    auth_time: 人.auth_time ?? 今,
     sub: 人.uid,
     user_id: 人.uid,
     ...(人.email ? { email: 人.email, email_verified: !!人.verified } : {}),
