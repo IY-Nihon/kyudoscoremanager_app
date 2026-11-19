@@ -322,6 +322,17 @@ export async function 管理者の窓で入る(page, 合言葉) {
     await 窓.getByLabel('新しい合言葉').fill(合言葉);
     await 窓.getByLabel('もう一度').fill(合言葉);
     await 決める.click();
+    // 並べて流すほかの検査（同じ団体）が先に合言葉を作っていると、窓は「入る」の形に替わる。そのときは入る
+    // （smallScreenModals の縦と横が同じ団体で同時に作りに行き、あとの方が閉じない窓を待ち続けた。11/19）
+    await expect
+      .poll(async () => (await 窓.count()) === 0 || (await 窓.getByLabel('管理者の合言葉').count()) > 0, {
+        timeout: 30_000,
+      })
+      .toBe(true);
+    if ((await 窓.count()) && (await 窓.getByLabel('管理者の合言葉').count())) {
+      await 窓.getByLabel('管理者の合言葉').fill(合言葉);
+      await 決める.click();
+    }
   } else {
     await 窓.getByLabel('管理者の合言葉').fill(合言葉);
     await 決める.click();
