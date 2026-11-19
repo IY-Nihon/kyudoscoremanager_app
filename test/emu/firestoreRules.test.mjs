@@ -16,9 +16,11 @@ import {
 } from './emu.mjs';
 
 const 団体 = '100001';
-const 持ち主 = { uid: 'owner-1', email: 'owner@example.jp', verified: true };
+// ログインした時刻（証の auth_time）。管理者の印はこの時刻で端末ごとに照らし合わせる（11/19）。印を置くときに同じ値を書く
+const ログインの時刻 = Math.floor(Date.now() / 1000) - 30;
+const 持ち主 = { uid: 'owner-1', email: 'owner@example.jp', verified: true, auth_time: ログインの時刻 };
 const 確認前の持ち主 = { uid: 'owner-1', email: 'owner@example.jp', verified: false };
-const 部員 = { uid: 'anon-1' };
+const 部員 = { uid: 'anon-1', auth_time: ログインの時刻 };
 const よその人 = { uid: 'anon-9' };
 
 /** 確認の済んだ団体と、部員 1 人（証つき）を用意する */
@@ -450,13 +452,23 @@ test('管理者の印（11/18）：招待リンクは印のある持ち主だけ
   );
   assert.equal((await 読む(持ち主, 印の道)).通った, false);
   // 期限の切れた印は効かない。期限内なら通る
-  await 書く('owner', 印の道, { groupId: 団体, uid: 持ち主.uid, expiresAt: new Date(Date.now() - 1000) });
+  await 書く('owner', 印の道, {
+    groupId: 団体,
+    uid: 持ち主.uid,
+    expiresAt: new Date(Date.now() - 1000),
+    authTime: ログインの時刻,
+  });
   assert.equal(
     (await 書く(持ち主, 招待の道, { memberId: 'm1', 形: 2, 招待: true })).通った,
     false,
     '切れた印で招待を作れた'
   );
-  await 書く('owner', 印の道, { groupId: 団体, uid: 持ち主.uid, expiresAt: new Date(Date.now() + 3600000) });
+  await 書く('owner', 印の道, {
+    groupId: 団体,
+    uid: 持ち主.uid,
+    expiresAt: new Date(Date.now() + 3600000),
+    authTime: ログインの時刻,
+  });
   assert.ok(
     (await 書く(持ち主, 招待の道, { memberId: 'm1', 形: 2, 招待: true })).通った,
     '印で招待を作れない'
@@ -493,7 +505,10 @@ test('部員の役（11/19）：役の無い部員は付けるだけ。見るだ
     false,
     '印なしで役を割り当てられた'
   );
-  await 書く('owner', `admin_sessions/${団体}_${持ち主.uid}`, { expiresAt: new Date(Date.now() + 3600000) });
+  await 書く('owner', `admin_sessions/${団体}_${持ち主.uid}`, {
+    expiresAt: new Date(Date.now() + 3600000),
+    authTime: ログインの時刻,
+  });
   assert.ok(
     (await 書く(持ち主, 役の道, { 割り当て: { m1: 'miru' } })).通った,
     '管理者が役を割り当てられない'
@@ -539,7 +554,7 @@ test('部員の役（11/19）：役の無い部員は付けるだけ。見るだ
     '印なしで個人IDを読めた'
   );
   assert.equal((await 書く(部員, 役の道, { 割り当て: { m1: 'unei' } })).通った, false, '運営が役を書けた');
-  await 書く('owner', 部員の印, { expiresAt: new Date(Date.now() + 3600000) });
+  await 書く('owner', 部員の印, { expiresAt: new Date(Date.now() + 3600000), authTime: ログインの時刻 });
   assert.ok(
     (await 書く(部員, `groups/${団体}/sessions/s1`, { archers: [] }, { merge: true })).通った,
     '運営＋印で直せない'
@@ -586,7 +601,10 @@ test('一括（11/19）：部員が送れていない記録を 20 件まとめ�
   assert.ok(部員の一括.通った, '部員の一括が断られた：' + JSON.stringify(部員の一括.中身).slice(0, 300));
   // 運営＋管理者の印：射手を減らす直し・ゴミ箱・消すをまとめた一括（印の文書も読む）
   await 書く('owner', `groups/${団体}/config/roles`, { 割り当て: { m1: 'unei' } });
-  await 書く('owner', `admin_sessions/${団体}_${部員.uid}`, { expiresAt: new Date(Date.now() + 3600000) });
+  await 書く('owner', `admin_sessions/${団体}_${部員.uid}`, {
+    expiresAt: new Date(Date.now() + 3600000),
+    authTime: ログインの時刻,
+  });
   const 運営の一括 = await 一括で書く(部員, [
     ...Array.from({ length: 10 }, (_, 番) => ({
       道: `groups/${団体}/sessions/b${番}`,
@@ -599,4 +617,37 @@ test('一括（11/19）：部員が送れていない記録を 20 件まとめ�
     ...Array.from({ length: 5 }, (_, 番) => ({ 道: `groups/${団体}/sessions/b${10 + 番}`, 消す: true })),
   ]);
   assert.ok(運営の一括.通った, '運営の一括が断られた：' + JSON.stringify(運営の一括.中身).slice(0, 300));
+});
+
+test('管理者の印は端末ごと（11/19 本人）：同じ団体のアカウントでも、ログインした時刻の違う端末には効かない', async () => {
+  await 団体を用意する();
+  const 招待の道 = `groups/${団体}/member_lookup/INV${'y'.repeat(29)}`;
+  await 書く('owner', `admin_sessions/${団体}_${持ち主.uid}`, {
+    expiresAt: new Date(Date.now() + 3600000),
+    authTime: ログインの時刻,
+  });
+  // 合言葉を入れた端末（ログインの時刻が印と同じ）は通る
+  assert.ok(
+    (await 書く(持ち主, 招待の道, { memberId: 'm1', 形: 2, 招待: true })).通った,
+    '入れた端末で招待を作れない'
+  );
+  // 同じアカウントで別に入った端末（ログインの時刻が違う）は断る。役を決めるのも同じ
+  const 別の端末 = { ...持ち主, auth_time: ログインの時刻 - 600 };
+  assert.equal(
+    (await 書く(別の端末, 招待の道, { memberId: 'm1', 形: 2, 招待: true })).通った,
+    false,
+    '別の端末で招待を作れた'
+  );
+  assert.equal(
+    (await 書く(別の端末, `groups/${団体}/config/roles`, { 割り当て: { m1: 'unei' } })).通った,
+    false,
+    '別の端末で役を決められた'
+  );
+  // ログインの時刻の無い（前の形の）印は効かない
+  await 書く('owner', `admin_sessions/${団体}_${持ち主.uid}`, { expiresAt: new Date(Date.now() + 3600000) });
+  assert.equal(
+    (await 書く(持ち主, `groups/${団体}/config/roles`, { 割り当て: { m1: 'unei' } })).通った,
+    false,
+    '時刻の無い印で役を決められた'
+  );
 });

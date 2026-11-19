@@ -763,15 +763,22 @@ const useScoreStore = zustand.create()(
             // 同じ口座で入っているときは、入り直さずに確かめる（reauthenticate）。入り直すと Firestore が流しっぱなしの
             // 道を張り直し、Playwright の WebKit ではそのあと返事が届かなくなった（「全員の個人IDを新しくする」が止まる。
             // 2026-11-08）。違う口座・口座が無いときだけ、前のとおり入る
+            // 入り直すとログインの時刻（auth_time）が変わり、中継の「管理者」の印（端末ごと。11/19 本人）は
+            // この端末でも効かなくなる。画面の管理者モードも切る（合言葉を入れ直してもらう）
+            const 管理者モードを切る = () => {
+              if (状態().isAdminMode) 状態().setAdminMode(false);
+            };
             const 今の人 = Firebaseの器.auth.currentUser;
             if (今の人 && String(今の人.email || '').toLowerCase() === String(宛先).toLowerCase()) {
               await FirebaseAuth.reauthenticateWithCredential(
                 今の人,
                 FirebaseAuth.EmailAuthProvider.credential(宛先, 合言葉)
               );
+              管理者モードを切る();
               return true;
             }
             await FirebaseAuth.signInWithEmailAndPassword(Firebaseの器.auth, 宛先, 合言葉);
+            管理者モードを切る();
             return true;
           } catch (誤り) {
             console.error('[Store] verifyGroupPassword error:', 誤り);
