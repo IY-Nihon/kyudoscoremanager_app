@@ -443,3 +443,55 @@ test('管理者の印（11/18）：招待リンクは印のある持ち主だけ
   await 書く('owner', 印の道, { groupId: 団体, uid: 持ち主.uid, expiresAt: new Date(Date.now() + 3600000) });
   assert.ok((await 書く(持ち主, 招待の道, { memberId: 'm1', 形: 2, 招待: true })).通った, '印で招待を作れない');
 });
+
+test('部員の役（11/19）：役の無い部員は付けるだけ。見るだけは作れない。運営は消す・名簿・練習日・設定。直す・個人IDは合言葉も要る', async () => {
+  await 団体を用意する();
+  const 役の道 = `groups/${団体}/config/roles`;
+  const 部員の印 = `admin_sessions/${団体}_${部員.uid}`;
+  // 役の無い部員（部員（自分））：作る・射手を減らさない送り直しは通る。消す・ゴミ箱・名簿・練習日・設定は断る
+  assert.ok((await 作る(部員, `groups/${団体}/sessions/s2`, { id: 's2', archers: [{ name: 'a' }] })).通った);
+  assert.equal((await 消す(部員, `groups/${団体}/sessions/s1`)).通った, false, '部員（自分）が記録を消せた');
+  assert.equal((await 書く(部員, `groups/${団体}/trash/s1`, { id: 's1' })).通った, false);
+  assert.equal((await 書く(部員, `groups/${団体}/members/m2`, { id: 'm2', name: '佐藤 花' })).通った, false);
+  assert.equal((await 書く(部員, `groups/${団体}/officialPracticeDays/2026-11-19`, { date: '2026-11-19' })).通った, false);
+  assert.equal(
+    (await 書く(部員, `groups/${団体}/config/app_settings`, { groupType: 'koukou' }, { merge: true })).通った,
+    false
+  );
+  // 部員は役の文書を読めるが書けない。持ち主も合言葉の印が無ければ書けない（読むのは文書があるときに確かめる。無いと 404）
+  await 書く('owner', 役の道, { 役: {}, 割り当て: {} });
+  assert.ok((await 読む(部員, 役の道)).通った, '部員が役を読めない');
+  assert.equal((await 書く(部員, 役の道, { 割り当て: { m1: 'unei' } })).通った, false, '部員が自分を運営にできた');
+  assert.equal((await 書く(持ち主, 役の道, { 割り当て: { m1: 'unei' } })).通った, false, '印なしで役を割り当てられた');
+  await 書く('owner', `admin_sessions/${団体}_${持ち主.uid}`, { expiresAt: new Date(Date.now() + 3600000) });
+  assert.ok((await 書く(持ち主, 役の道, { 割り当て: { m1: 'miru' } })).通った, '管理者が役を割り当てられない');
+
+  // 見るだけ：読めるが、記録を作れない
+  assert.ok((await 読む(部員, `groups/${団体}/sessions/s1`)).通った);
+  assert.equal((await 作る(部員, `groups/${団体}/sessions/s3`, { id: 's3', archers: [] })).通った, false, '見るだけが作れた');
+
+  // 運営：消す・ゴミ箱・名簿・練習日・設定・団体名は通る。射手を減らす直し・個人IDの表は合言葉の印が要る
+  await 書く('owner', 役の道, { 割り当て: { m1: 'unei' } });
+  assert.ok((await 書く(部員, `groups/${団体}/members/m2`, { id: 'm2', name: '佐藤 花' })).通った, '運営が名簿を足せない');
+  assert.ok((await 書く(部員, `groups/${団体}/officialPracticeDays/2026-11-19`, { date: '2026-11-19' })).通った);
+  assert.ok((await 書く(部員, `groups/${団体}/config/app_settings`, { groupType: 'koukou' }, { merge: true })).通った);
+  assert.ok((await 書く(部員, `groups/${団体}`, { groupName: '弓道部3' }, { merge: true })).通った, '運営が団体名を変えられない');
+  assert.equal((await 書く(部員, `groups/${団体}`, { liveSecret: 'b'.repeat(32) }, { merge: true })).通った, false);
+  assert.ok((await 書く(部員, `groups/${団体}/trash/s1`, { id: 's1' })).通った);
+  assert.equal((await 書く(部員, `groups/${団体}/sessions/s1`, { archers: [] }, { merge: true })).通った, false, '印なしで射手を消せた');
+  assert.equal((await 読む(部員, `groups/${団体}/member_lookup/K7MP3X`)).通った, false, '印なしで個人IDを読めた');
+  assert.equal((await 書く(部員, 役の道, { 割り当て: { m1: 'unei' } })).通った, false, '運営が役を書けた');
+  await 書く('owner', 部員の印, { expiresAt: new Date(Date.now() + 3600000) });
+  assert.ok((await 書く(部員, `groups/${団体}/sessions/s1`, { archers: [] }, { merge: true })).通った, '運営＋印で直せない');
+  assert.ok((await 読む(部員, `groups/${団体}/member_lookup/K7MP3X`)).通った, '運営＋印で個人IDを読めない');
+  assert.equal((await 書く(部員, 役の道, { 割り当て: { m1: 'unei' } })).通った, false, '運営＋印で役を書けた');
+  assert.ok((await 消す(部員, `groups/${団体}/sessions/s1`)).通った, '運営が記録を消せない');
+
+  // 作った役：部品を団体が決める。消した役の人は部員（自分）
+  await 書く('owner', 役の道, { 役: { r_kakari: { 名: '出欠の係', 部品: ['付ける', '出欠'] } }, 割り当て: { m1: 'r_kakari' } });
+  assert.ok((await 書く(部員, `groups/${団体}/officialPracticeDays/2026-11-20`, { date: '2026-11-20' })).通った);
+  assert.equal((await 書く(部員, `groups/${団体}/members/m3`, { id: 'm3', name: '鈴木 一' })).通った, false);
+  await 書く('owner', 役の道, { 役: {}, 割り当て: { m1: 'r_kakari' } });
+  assert.equal((await 書く(部員, `groups/${団体}/officialPracticeDays/2026-11-21`, { date: '2026-11-21' })).通った, false);
+  assert.ok((await 作る(部員, `groups/${団体}/sessions/s4`, { id: 's4', archers: [] })).通った, '消した役の人が付けられない');
+});
