@@ -153,6 +153,13 @@ const SettingsScreen = () => {
   const 自分の役の名 = useScoreStore(
     (状態) => 役の決まり.役の中身(状態.役の設定, 役の決まり.役を引く(状態.役の設定, 状態.myMemberId)).名
   );
+  // 記録を付けられない役（見るだけなど）に替わった端末に残った、まだ送れていない記録の数。決まりに断られるので
+  // 送らずに残し、役を戻してもらうと次の同期で送られる（storeSync の syncSessions。11/19 本人「知らせる」）
+  const 送れない記録の数 = useScoreStore((状態) =>
+    役の決まり.役で付けられないか(状態)
+      ? (状態.sessions || []).filter((記録) => 記録 && 記録.syncStatus === '未同期').length
+      : 0
+  );
   const [役の窓, 役の窓を出す] = React.useState(false);
   const [書き出しの窓, 書き出しの窓を出す] = React.useState(false);
   const [ガイドの窓, ガイドの窓を出す] = React.useState(false);
@@ -346,6 +353,21 @@ const SettingsScreen = () => {
                 <Text style={[styles.timestamp, { flexShrink: 1, textAlign: 'right', marginLeft: 12 }]}>
                   {自分の役の名}
                 </Text>
+              </View>
+            ) : null}
+            {送れない記録の数 > 0 ? (
+              <View style={styles.item} testID="送れない記録">
+                <View style={[styles.itemLeft, { flex: 1 }]}>
+                  <Icons.Ionicons
+                    name="cloud-offline-outline"
+                    size={22}
+                    color={基本色.赤}
+                    style={styles.itemIcon}
+                  />
+                  <Text style={{ flex: 1, fontSize: 13, color: 基本色.赤, lineHeight: 19 }}>
+                    {`いまの役では送れない記録が ${送れない記録の数} 件あります。団体の管理者に役を戻してもらうと送られます。`}
+                  </Text>
+                </View>
               </View>
             ) : null}
             {/* 初めての人向けの案内。初回は自動で出るが、ここからいつでも見返せる。 */

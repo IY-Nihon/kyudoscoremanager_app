@@ -43,7 +43,10 @@ test('A2 部員の端末の送り直しの一括に、ゴミ箱の削除（団�
   const 一括 = 雲.記録.filter((x) => x.種別 === 'batch');
   assert.ok(一括.length >= 1, '送り直していない');
   for (const x of 一括)
-    assert.ok(!x.操作.some((o) => o.道 === ゴミ箱の道), '部員の一括にゴミ箱の削除が入っている（決まりに一括ごと断られる）');
+    assert.ok(
+      !x.操作.some((o) => o.道 === ゴミ箱の道),
+      '部員の一括にゴミ箱の削除が入っている（決まりに一括ごと断られる）'
+    );
   assert.ok(雲.値(記録の道, 's1'), '記録が届いていない');
 });
 
@@ -75,7 +78,10 @@ test('A3 ゴミ箱へ移した時刻を手元にも置く。雲に届かない�
   await store.getState().syncSessions();
   await 待つ(50);
   assert.ok(!store.getState().sessions.some((x) => x.id === 's1'), '捨てた記録が履歴に戻った');
-  assert.ok(store.getState().trash.some((x) => x.id === 's1'), 'ゴミ箱から消えた');
+  assert.ok(
+    store.getState().trash.some((x) => x.id === 's1'),
+    'ゴミ箱から消えた'
+  );
 });
 
 test('A4 差分の同期でも、消したのにまだ雲へ届いていないメンバーは名簿に戻さない', async () => {
@@ -104,7 +110,12 @@ test('A5 名前を直したときに書き直す記録は、同期済みの形�
   雲.置く(名簿の道, 'm1', Object.assign({}, 人));
   store.setState({
     members: [Object.assign({}, 人)],
-    sessions: [記録('s1', { syncStatus: '未同期', archers: [{ id: 'x', memberId: 'm1', name: '旧姓 太郎', marks: [] }] })],
+    sessions: [
+      記録('s1', {
+        syncStatus: '未同期',
+        archers: [{ id: 'x', memberId: 'm1', name: '旧姓 太郎', marks: [] }],
+      }),
+    ],
     trash: [
       記録('t1', {
         syncStatus: '未同期',
@@ -148,4 +159,25 @@ test('A6 同期の途中で別の団体へ入り直したら、その同期は�
   雲.api.getDocs = 元;
   assert.deepStrictEqual(store.getState().sessions, [], '前の団体の記録が新しい団体の履歴に混ざった');
   assert.ok(!雲.値(`groups/200002/sessions`, 's1'), '前の団体の記録を新しい団体の置き場へ書いた');
+});
+
+test('見るだけの役に替わった端末は、送れていない記録を送らずに残す。役を戻すと送る（11/19 本人）', async () => {
+  const { store, 雲 } = 用意('member');
+  store.setState({
+    myMemberId: 'm1',
+    役の設定: { 割り当て: { m1: 'miru' } },
+    sessions: [記録('s1', { syncStatus: '未同期', lastModified: Date.now() })],
+  });
+  await store.getState().syncSessions();
+  await 待つ(50);
+  assert.ok(
+    !雲.記録.some((x) => x.種別 === 'batch' && x.操作.some((o) => o.道 === 記録の道)),
+    '見るだけの端末が記録を送ろうとした（決まりに断られ続ける）'
+  );
+  assert.equal(store.getState().sessions.find((x) => x.id === 's1').syncStatus, '未同期');
+  // 役を戻すと、次の同期で送る
+  store.setState({ 役の設定: { 割り当て: {} } });
+  await store.getState().syncSessions();
+  await 待つ(50);
+  assert.ok(雲.値(記録の道, 's1'), '役を戻しても送られない');
 });
