@@ -62,11 +62,16 @@ function YakuModal({ 見える, 閉じる }) {
       役 ? { id: 役.id, 名: 役.名, 部品: [...役.部品], 最初から: 役.最初から } : { 名: '', 部品: ['付ける'] }
     );
   };
+  // 直す・消す・メンバー・出欠を入れると「ほかの人の記録も見られる」も入る（src/yaku.js の 形の良い部品。11/19 本人）
   const 部品を切り替える = (鍵, 入れる) =>
     直す役を置く((前) => ({
       ...前,
-      部品: 役の決まり.部品の鍵.filter((一つ) => (一つ === 鍵 ? 入れる : 前.部品.includes(一つ))),
+      部品: 役の決まり.形の良い部品(
+        役の決まり.部品の鍵.filter((一つ) => (一つ === 鍵 ? 入れる : 前.部品.includes(一つ)))
+      ),
     }));
+  // 見るのが要る部品を持っている間は、「ほかの人の記録も見られる」を外せない
+  const 見るのを外せない = !!直す役 && 直す役.部品.some((鍵) => 役の決まり.見るのが要る部品.includes(鍵));
   const 保存する = () => {
     const 答え = useScoreStore.getState().役を置く({ id: 直す役.id, 名: 直す役.名, 部品: 直す役.部品 });
     if (答え.誤り) return 誤りを置く(答え.誤り);
@@ -129,18 +134,29 @@ function YakuModal({ 見える, 閉じる }) {
             onChangeText={(字) => 直す役を置く((前) => ({ ...前, 名: 字 }))}
             maxLength={役の決まり.役の名の長さ + 5}
           />
-          {役の決まり.部品の一覧.map((部品) => (
-            <View key={部品.鍵} style={形.問い}>
-              <Text style={形.問いの字}>{部品.名}</Text>
-              <Switch
-                testID={`役の部品-${部品.鍵}`}
-                accessibilityLabel={部品.名}
-                value={直す役.部品.includes(部品.鍵)}
-                onValueChange={(入れる) => 部品を切り替える(部品.鍵, 入れる)}
-                trackColor={{ false: 色.灰_明るい, true: 色.青 }}
-              />
-            </View>
-          ))}
+          {役の決まり.部品の一覧.map((部品) => {
+            const 外せない = 部品.鍵 === '全員を見る' && 見るのを外せない;
+            return (
+              <View key={部品.鍵} style={形.問い}>
+                <View style={{ flex: 1, paddingRight: 8 }}>
+                  <Text style={形.問いの字}>{部品.名}</Text>
+                  {外せない ? (
+                    <Text style={形.外せないわけ} testID="見るのを外せないわけ">
+                      記録を直す・消す、メンバーや出欠の管理には、ほかの人の記録も要ります
+                    </Text>
+                  ) : null}
+                </View>
+                <Switch
+                  testID={`役の部品-${部品.鍵}`}
+                  accessibilityLabel={部品.名}
+                  value={直す役.部品.includes(部品.鍵)}
+                  disabled={外せない}
+                  onValueChange={(入れる) => 部品を切り替える(部品.鍵, 入れる)}
+                  trackColor={{ false: 色.灰_明るい, true: 色.青 }}
+                />
+              </View>
+            );
+          })}
           {直す役.id && !直す役.最初から ? (
             <Pressable
               accessibilityRole="button"
@@ -274,7 +290,8 @@ const 形 = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 色.区切り,
   },
-  問いの字: { fontSize: 15, color: 色.文字, flex: 1, paddingRight: 8 },
+  問いの字: { fontSize: 15, color: 色.文字 },
+  外せないわけ: { fontSize: 12, color: 色.灰, marginTop: 2, lineHeight: 17 },
   箱: { backgroundColor: 色.地, borderRadius: 10, padding: 12, marginTop: 12, marginBottom: 4 },
   箱の字: { fontSize: 13, color: 色.文字, lineHeight: 20 },
   誤り: { fontSize: 13, color: 色.赤, marginTop: 8 },
