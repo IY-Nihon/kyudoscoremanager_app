@@ -145,6 +145,8 @@ const SettingsScreen = () => {
   ]);
   // できるかは操作の一覧（src/yaku.js・2026-11-19）。団体の口座は前のまま
   const 設定できる = useScoreStore((状態) => 役の決まり.できるか(状態, '団体の設定'));
+  // いつも付けるタグ（保存のしかた）は、記録を付けられる人みんな（11/19 本人：個人ログインの部員の端末にも出す）
+  const 付けられる = useScoreStore((状態) => 役の決まり.できるか(状態, '記録を付ける'));
   const 管理者モードに入れる = useScoreStore((状態) => 役の決まり.管理者モードに入れるか(状態));
   const 合言葉を変えられる = useScoreStore((状態) => 役の決まり.できるか(状態, '管理者の合言葉を変える'));
   const 役を決められる = useScoreStore((状態) => 役の決まり.できるか(状態, '役を決める'));
@@ -728,17 +730,13 @@ const SettingsScreen = () => {
                     <Text style={styles.itemText}>タグの定型文</Text>
                   </View>
                 </View>
-                {tagTemplates.length > 0 && (
-                  <Text style={{ fontSize: 12, color: 基本色.灰, marginBottom: 8, lineHeight: 17 }}>
-                    タグを押すと「いつも付けるタグ」になり、保存のとき最初から入ります（この端末だけ。保存のときに外せます）。
-                  </Text>
-                )}
+                {/* 足す・消すだけ。いつも付けるタグは「保存のしかた」で選ぶ（11/19 本人。部員の端末でも選べるように） */}
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
                   {tagTemplates.map((タグ) => (
                     <View
                       key={`template-${タグ}`}
                       style={{
-                        backgroundColor: いつも付けるタグ.includes(タグ) ? 基本色.青 : 基本色.地_濃い,
+                        backgroundColor: 基本色.地_濃い,
                         borderRadius: 16,
                         paddingLeft: 12,
                         paddingRight: 6,
@@ -748,34 +746,10 @@ const SettingsScreen = () => {
                         gap: 4,
                       }}
                     >
-                      <Pressable
-                        accessibilityRole="button"
-                        aria-label={
-                          規則.タグの見た目(タグ) +
-                          (いつも付けるタグ.includes(タグ)
-                            ? ' をいつも付けるタグから外す'
-                            : ' をいつも付けるタグにする')
-                        }
-                        aria-pressed={いつも付けるタグ.includes(タグ)}
-                        onPress={() => いつも付けるタグを入れ替える(タグ)}
-                        style={[
-                          { flexDirection: 'row', alignItems: 'center', gap: 3 },
-                          IS_WEB && { cursor: 'pointer' },
-                        ]}
-                      >
-                        {いつも付けるタグ.includes(タグ) && (
-                          <Icons.Ionicons name="pin" size={13} color={基本色.白} />
-                        )}
-                        <Text
-                          style={{
-                            fontSize: 13,
-                            color: いつも付けるタグ.includes(タグ) ? 基本色.白 : 基本色.黒,
-                          }}
-                        >
-                          {/* しまう形は「#合宿」だが、画面では # を付けない */}
-                          {規則.タグの見た目(タグ)}
-                        </Text>
-                      </Pressable>
+                      <Text style={{ fontSize: 13, color: 基本色.黒 }}>
+                        {/* しまう形は「#合宿」だが、画面では # を付けない */}
+                        {規則.タグの見た目(タグ)}
+                      </Text>
                       <Pressable // 絵だけのボタン。どのタグを消すのかまで読ませる
                         accessible
                         accessibilityRole="button"
@@ -787,11 +761,7 @@ const SettingsScreen = () => {
                           IS_WEB && { cursor: 'pointer' },
                         ]}
                       >
-                        <Icons.Ionicons
-                          name="close-circle"
-                          size={18}
-                          color={いつも付けるタグ.includes(タグ) ? 基本色.白 : 基本色.灰}
-                        />
+                        <Icons.Ionicons name="close-circle" size={18} color={基本色.灰} />
                       </Pressable>
                     </View>
                   ))}
@@ -866,7 +836,60 @@ const SettingsScreen = () => {
               onValueChange={set保存時に出欠を確認する}
               trackColor={{ false: 基本色.灰_明るい, true: 基本色.緑 }}
             />
-          </View>
+          </View>,
+          // いつも付けるタグ（端末ごと。11/13 本人）。タグの定型文から選ぶ。前は基本設定のタグの定型文を押して選んだ
+          付けられる && tagTemplates.length > 0 && (
+            <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
+              <View style={[styles.itemLeft, { marginBottom: 2 }]}>
+                <Icons.Ionicons
+                  name="pricetags-outline"
+                  size={22}
+                  color={基本色.緑}
+                  style={styles.itemIcon}
+                />
+                <Text style={styles.itemText}>いつも付けるタグ</Text>
+              </View>
+              <Text style={{ fontSize: 11, color: 基本色.灰, marginBottom: 8, marginLeft: 34 }}>
+                選んだタグは、保存のとき最初から入ります（この端末だけ。保存のときに外せます）
+              </Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginLeft: 34 }}>
+                {tagTemplates.map((タグ) => {
+                  // 定型文は # 付きでしまう。前の形（# 無し）が残っていても選べるように、そろえてから比べる
+                  const 選んだ = いつも付けるタグ.includes(規則.normalizeTag(タグ));
+                  return (
+                    <Pressable
+                      key={`itsumo-${タグ}`}
+                      accessibilityRole="button"
+                      aria-label={
+                        規則.タグの見た目(タグ) +
+                        (選んだ ? ' をいつも付けるタグから外す' : ' をいつも付けるタグにする')
+                      }
+                      aria-pressed={選んだ}
+                      onPress={() => いつも付けるタグを入れ替える(タグ)}
+                      style={({ hovered }) => [
+                        {
+                          backgroundColor: 選んだ ? 基本色.青 : 基本色.地_濃い,
+                          borderRadius: 16,
+                          paddingHorizontal: 12,
+                          paddingVertical: 6,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 3,
+                        },
+                        hovered && { opacity: 0.85 },
+                        IS_WEB && { cursor: 'pointer' },
+                      ]}
+                    >
+                      {選んだ && <Icons.Ionicons name="pin" size={13} color={基本色.白} />}
+                      <Text style={{ fontSize: 13, color: 選んだ ? 基本色.白 : 基本色.黒 }}>
+                        {規則.タグの見た目(タグ)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          )
         )}
         {節(
           '矢所の記録',

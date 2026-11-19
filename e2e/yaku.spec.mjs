@@ -8,7 +8,9 @@
  *   持ち主が管理者モード（合言葉）で「部員の役」を開く → 4 つの役 → 役を作る（質問に答え、文で確かめる）
  *   → メンバーの編集で、個人ログインの部員（控えの 100002-個人）に「見るだけ」を割り当てる
  *   → 部員の端末：設定に役・○×を押しても入らない（いまの役では…）・ライブは始められず閲覧用だけ・分析は自分だけでない
- *   → 持ち主が「運営」に替える → 部員の端末：メンバーの一覧が出る・管理者の合言葉で管理者モードに入れる（作る道は出ない）
+ *   → 持ち主が「運営」に替える → 部員の端末：いつも付けるタグを選べる・合言葉なしで足した人にもその場で個人ID が付く
+ *     （逆引き表をエミュレーターで読む。持ち主の端末は先に閉じる）
+ *   → 管理者の合言葉で管理者モードに入れる（作る道は出ない）→ メンバーの一覧・ほかの人の個人ID・招待リンク・足した人の個人ID
  */
 import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
@@ -58,6 +60,24 @@ const スイッチを押す = (page, 名) =>
       親 = 親.parentElement;
     }
   }, 名);
+
+/**
+ * 名簿でその名前の人を引き、逆引き表にその人の個人ID の行がいくつあるか（招待の行は数えない）。
+ * エミュレーターを管理の資格で読む（e2e/emu-fetch.mjs が手元へ向ける）。名簿にいなければ -1
+ */
+async function 個人IDの行の数(名前) {
+  const 根 = `https://firestore.googleapis.com/v1/projects/kyudoscoremanager-stg/databases/(default)/documents/groups/${団体}`;
+  const 読む = async (集まり) => {
+    const 返り = await fetch(`${根}/${集まり}?pageSize=300`, { headers: { Authorization: 'Bearer owner' } });
+    return (await 返り.json()).documents || [];
+  };
+  const 人 = (await 読む('members')).find((文書) => 文書.fields?.name?.stringValue === 名前);
+  if (!人) return -1;
+  const id = 人.name.split('/').pop();
+  return (await 読む('member_lookup')).filter(
+    (文書) => 文書.fields?.memberId?.stringValue === id && 文書.fields?.招待?.booleanValue !== true
+  ).length;
+}
 
 /** 上のタブ（role="tab"）。字で探すと、裏に残った画面の見出し（設定の「設定」など）を掴んで押せずに待ち続けた */
 const タブ = (page, 名) => page.getByRole('tab', { name: 名 }).first();
@@ -136,6 +156,8 @@ test('部員の役：持ち主が作って割り当て、個人ログインの�
   await expect(部員の頁.getByTestId('自分の役')).toContainText('見るだけ', { timeout: 30_000 });
   // 管理者設定は出ない（見るだけには合言葉の要る部品が無い）
   await expect(部員の頁.getByText('管理者モード', { exact: true })).toHaveCount(0);
+  // いつも付けるタグ（保存のしかた）は、記録を付けられない見るだけには出ない
+  await expect(部員の頁.locator('[aria-label$="をいつも付けるタグにする"]')).toHaveCount(0);
   await 撮る(部員の頁, 部員の頁.getByTestId('自分の役'), '4-個人の設定', 情報);
   // 記録：押しても入らず、そのわけを知らせる
   await タブ(部員の頁, '記録').click();
@@ -153,6 +175,33 @@ test('部員の役：持ち主が作って割り当て、個人ログインの�
   await expect(役の欄.getByTestId('役を選ぶ-unei')).toHaveAttribute('aria-pressed', 'true');
   await タブ(部員の頁, '設定').click();
   await expect(部員の頁.getByTestId('自分の役')).toContainText('運営', { timeout: 30_000 });
+  // ここから先は持ち主の端末を使わない。閉じておく（持ち主の端末の同期が個人IDを振ると、下で運営の一括が
+  // 付けたのか分からなくなる）
+  await 持ち主の場.close();
+  // 記録を付けられる役の個人ログインでも、いつも付けるタグを「保存のしかた」で選べる（11/19 本人：部員の端末にも出す）
+  const 選ぶ札 = 部員の頁.locator('[aria-label$="をいつも付けるタグにする"]').first();
+  await 選ぶ札.scrollIntoViewIfNeeded();
+  const 札の名 = (await 選ぶ札.getAttribute('aria-label')).replace(' をいつも付けるタグにする', '');
+  await 選ぶ札.click();
+  await expect(部員の頁.locator(`[aria-label="${札の名} をいつも付けるタグから外す"]`)).toHaveAttribute(
+    'aria-pressed',
+    'true'
+  );
+  // 合言葉を入れていない運営が足した人にも、その場で個人IDが付く（11/19 本人）。運営の画面には出ないので、
+  // エミュレーターを管理の資格で読んで確かめる
+  // 名前は回ごとに変える（同じエミュレーターでほかの機種が先に足した人を掴まない）
+  const 合言葉なしで足す人 = `検査 合言葉なし${Date.now().toString(36).slice(-4)}`;
+  await タブ(部員の頁, 'メンバー').click();
+  await 部員の頁.getByRole('button', { name: 'メンバーを追加' }).click();
+  await 部員の頁.getByLabel('名前', { exact: true }).fill(合言葉なしで足す人);
+  await 部員の頁.getByText('保存する', { exact: true }).click();
+  await expect
+    .poll(() => 個人IDの行の数(合言葉なしで足す人), {
+      timeout: 30_000,
+      message: '合言葉を入れていない運営が足した人に個人IDが付かない',
+    })
+    .toBe(1);
+  await タブ(部員の頁, '設定').click();
   await スイッチを押す(部員の頁, '管理者モード');
   const 合言葉の窓 = 部員の頁.getByTestId('管理者の合言葉の窓');
   await expect(合言葉の窓.getByLabel('管理者の合言葉')).toBeVisible({ timeout: 20_000 });
@@ -198,5 +247,4 @@ test('部員の役：持ち主が作って割り当て、個人ログインの�
   });
 
   await 部員の場.close();
-  await 持ち主の場.close();
 });
