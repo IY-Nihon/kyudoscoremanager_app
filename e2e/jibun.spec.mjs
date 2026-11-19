@@ -4,13 +4,14 @@
  *
  *   npm run e2e:emu -- e2e/jibun.spec.mjs --project=スマホ
  *
- * 流れ（団体 100002 の個人ログイン。エミュレーターなので雲には書かない）：
- *   部員（自分）の端末を開く → ほかの端末が保存した形（雲へ記録と「記録が変わった印」を直に書く）→ 開いたまま届く
+ * 流れ（団体 100002。エミュレーターなので雲には書かない）。この検査で作ったメンバーの記録だけ書く（ほかの検査の
+ * 個人ログインの人＝控えの 100002-個人 には、自分の記録が 1 件も無いことを前提にする検査がある。memberTutorial.spec）：
+ *   メンバーと個人ID を雲へ直に作り、その人で個人ログインする（部員（自分））
+ *   → ほかの端末が保存した形（雲へ記録と「記録が変わった印」を直に書く）→ 開いたまま届く
  *   → 届いた記録に、ほかの人の ○× と名前・出欠が無い。端末のどの記録にも無い。ゴミ箱を持たない。権限の誤りが出ない
  *   → 自分で記録を付けて保存すると、アプリが印を書く（ほかの部員の端末に届く合図）
  */
 import { test, expect } from '@playwright/test';
-import fs from 'node:fs';
 import { 案内を止める, 画面が出るまで待つ, 入り口が決まるまで待つ } from './helpers.mjs';
 
 const 団体 = '100002';
@@ -18,19 +19,17 @@ test.skip(
   process.env.FB_EMULATOR !== '1',
   '中継の /jibun と新しい決まりがあるのは手元のエミュレーターだけ（配るまで）'
 );
-test.use({ storageState: 'e2e/.auth/100002-個人.json' });
+// 控えは使わない（この検査で作ったメンバーで入り直す）
+test.use({ storageState: { cookies: [], origins: [] } });
 
-/** 控え（100002-個人）に入っている部員（検証の名前。出力には出さない） */
-const 部員 = (() => {
-  const 控え = JSON.parse(fs.readFileSync('e2e/.auth/100002-個人.json', 'utf8'));
-  for (const 元 of 控え.origins || [])
-    for (const 項 of 元.localStorage || [])
-      if (項.name === 'archery-score-storage') {
-        const s = JSON.parse(項.value).state || {};
-        return { id: s.myMemberId, 名: s.myMemberName };
-      }
-  return { id: null, 名: null };
-})();
+/** この検査で作るメンバー（回ごとに替える。個人ID は 6 字の形：I・L・O・0・1 を除く大文字と数字） */
+const 字たち = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const 乱 = () => 字たち[Math.floor(Math.random() * 字たち.length)];
+const 部員 = {
+  id: 'e2e-jibun-m-' + Date.now().toString(36),
+  名: '検査 自分' + Date.now().toString(36).slice(-3),
+  個人ID: 'JB' + 乱() + 乱() + 乱() + 乱(),
+};
 
 const 根 = `https://firestore.googleapis.com/v1/projects/kyudoscoremanager-stg/databases/(default)/documents/groups/${団体}`;
 /** エミュレーターへ管理の資格で直に書く（e2e/emu-fetch.mjs が手元へ向ける） */
@@ -76,7 +75,21 @@ test('部員（自分）：ほかの端末の保存が開いたまま自分の�
   page,
 }) => {
   test.setTimeout(180_000);
-  expect(部員.id, '控え（100002-個人）に部員が入っていない').toBeTruthy();
+  // メンバーと個人ID を作る（団体の端末で足した形）
+  expect(
+    (await 雲へ書く(`members/${部員.id}`, { id: { stringValue: 部員.id }, name: { stringValue: 部員.名 } }))
+      .ok,
+    'メンバーを作れない'
+  ).toBe(true);
+  expect(
+    (
+      await 雲へ書く(`member_lookup/${部員.個人ID}`, {
+        memberId: { stringValue: 部員.id },
+        形: { integerValue: '2' },
+      })
+    ).ok,
+    '個人ID を作れない'
+  ).toBe(true);
   // 記録を直接読もうとして決まりに断られたら、ここに出る
   const 誤り = [];
   page.on('console', (知らせ) => {
@@ -91,9 +104,20 @@ test('部員（自分）：ほかの端末の保存が開いたまま自分の�
   await 案内を止める(page);
   await 出欠の確認を切る(page);
   await page.goto('/');
+  // 個人で入る（下ごしらえの auth.setup と同じ手順）
+  const 番号欄 = page.getByPlaceholder('例: 123456', { exact: true });
+  await 番号欄.waitFor({ state: 'visible', timeout: 60_000 });
+  await page.getByText('個人', { exact: true }).click();
+  await 番号欄.click();
+  await 番号欄.pressSequentially(団体, { delay: 20 });
+  const 個人欄 = page.getByPlaceholder('例: K7MP3X', { exact: true });
+  await 個人欄.click();
+  await 個人欄.pressSequentially(部員.個人ID, { delay: 20 });
+  await page.getByText('ログイン', { exact: true }).click();
   await 画面が出るまで待つ(page);
   await 入り口が決まるまで待つ(page);
-  await expect(page.getByText('終了・保存', { exact: true })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText('終了・保存', { exact: true })).toBeVisible({ timeout: 60_000 });
+  await expect.poll(async () => (await 控え(page)).myMemberId, { timeout: 30_000 }).toBe(部員.id);
   // 起動の取り込みと見張りが付くのを待つ
   await page.waitForTimeout(3000);
 
