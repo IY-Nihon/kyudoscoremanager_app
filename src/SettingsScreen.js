@@ -4,6 +4,7 @@ const { 色: 基本色 } = require('./iro.js');
 const themeMod = require('./theme');
 const React = require('react');
 const { KanriAikotobaModal } = require('./KanriAikotobaModal');
+const { YakuModal } = require('./YakuModal');
 const {
   View,
   Text,
@@ -146,6 +147,11 @@ const SettingsScreen = () => {
   const 設定できる = useScoreStore((状態) => 役の決まり.できるか(状態, '団体の設定'));
   const 管理者モードに入れる = useScoreStore((状態) => 役の決まり.管理者モードに入れるか(状態));
   const 合言葉を変えられる = useScoreStore((状態) => 役の決まり.できるか(状態, '管理者の合言葉を変える'));
+  const 役を決められる = useScoreStore((状態) => 役の決まり.できるか(状態, '役を決める'));
+  const 自分の役の名 = useScoreStore(
+    (状態) => 役の決まり.役の中身(状態.役の設定, 役の決まり.役を引く(状態.役の設定, 状態.myMemberId)).名
+  );
+  const [役の窓, 役の窓を出す] = React.useState(false);
   const [書き出しの窓, 書き出しの窓を出す] = React.useState(false);
   const [ガイドの窓, ガイドの窓を出す] = React.useState(false);
   const [使い方の窓, 使い方の窓を出す] = React.useState(false);
@@ -328,6 +334,18 @@ const SettingsScreen = () => {
                     })()})`}
               </Text>
             </View>
+            {/* 個人ログインの人の役（2026-11-19。決めるのは団体の管理者。src/yaku.js） */}
+            {activeRole === 'member' ? (
+              <View style={styles.item} testID="自分の役">
+                <View style={styles.itemLeft}>
+                  <Icons.Ionicons name="ribbon-outline" size={22} color={基本色.藍} style={styles.itemIcon} />
+                  <Text style={styles.itemText}>役</Text>
+                </View>
+                <Text style={[styles.timestamp, { flexShrink: 1, textAlign: 'right', marginLeft: 12 }]}>
+                  {自分の役の名}
+                </Text>
+              </View>
+            ) : null}
             {/* 初めての人向けの案内。初回は自動で出るが、ここからいつでも見返せる。 */
             /* ライブ中は始めない（案内中の書き換えが全員の画面に流れてしまう） */}
             {/* 最初から全部か、知りたいところだけかを選ぶ窓を開く（src/UsageChooser.js） */}
@@ -946,7 +964,9 @@ const SettingsScreen = () => {
                       style={{ fontSize: 11, color: 基本色.灰, marginTop: 2, flexShrink: 1 }}
                       numberOfLines={0}
                     >
-                      管理者の合言葉で入ります。保存済みの記録をあとから直せます。各メンバーの個人IDも表示されます
+                      {activeRole === 'member'
+                        ? '管理者の合言葉で入ります。保存済みの記録をあとから直せます。各メンバーの個人IDも表示されます'
+                        : '管理者の合言葉で入ります。保存済みの記録をあとから直せます。各メンバーの個人IDも表示されます。部員の役を決められます'}
                     </Text>
                   </View>
                 </View>
@@ -976,6 +996,26 @@ const SettingsScreen = () => {
                   <View style={[styles.itemLeft, { flex: 1 }]}>
                     <Icons.Ionicons name="key-outline" size={22} color={基本色.赤} style={styles.itemIcon} />
                     <Text style={styles.itemText}>管理者の合言葉を変える</Text>
+                  </View>
+                  <Icons.Ionicons name="chevron-forward" size={18} color={基本色.灰} />
+                </TouchableOpacity>
+              )}
+              {/* 部員の役（2026-11-19）。決めるのは団体の口座で管理者モードのときだけ（src/YakuModal.js） */}
+              {役を決められる && (
+                <TouchableOpacity
+                  style={styles.item}
+                  accessibilityRole="button"
+                  testID="部員の役を開く"
+                  onPress={() => 役の窓を出す(true)}
+                >
+                  <View style={[styles.itemLeft, { flex: 1 }]}>
+                    <Icons.Ionicons
+                      name="people-outline"
+                      size={22}
+                      color={基本色.赤}
+                      style={styles.itemIcon}
+                    />
+                    <Text style={styles.itemText}>部員の役</Text>
                   </View>
                   <Icons.Ionicons name="chevron-forward" size={18} color={基本色.灰} />
                 </TouchableOpacity>
@@ -1173,6 +1213,7 @@ const SettingsScreen = () => {
           </View>
         </View>
       </Modal>
+      <YakuModal 見える={役の窓 && 役を決められる} 閉じる={() => 役の窓を出す(false)} />
       {/* 管理者の合言葉（2026-11-14。中継で照合し、合えば決まりの「管理者」の印。src/KanriAikotobaModal.js） */}
       <KanriAikotobaModal
         見える={管理者の合言葉の窓 !== false}
