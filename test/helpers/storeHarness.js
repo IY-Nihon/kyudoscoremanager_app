@@ -198,7 +198,8 @@ function 偽Firestore() {
       if (!続き.length) return { 道: 道, id: null };
       const 全部 = [道, ...続き.map(String)];
       const id = 全部.pop();
-      return { 道: 全部.join('/'), id };
+      // path は本物の参照と同じ「groups/…/sessions/id」（店の書き込みの包みが、記録の置き場かを見る。src/storeShared.js）
+      return { 道: 全部.join('/'), id, path: [...全部, id].join('/') };
     },
     // 絞り込みは where（>, >=, <, <=, ==）と limit だけ写す。記録の見張りが
     // 「直近30日・最大100件」なのを再現するため（無いと、窓の外の記録が

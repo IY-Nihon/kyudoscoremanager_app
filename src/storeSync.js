@@ -35,6 +35,23 @@ const {
 } = require('./storeShared');
 const 役の決まり = require('./yaku');
 const 学 = require('./gakunen');
+const 自分の記録 = require('./jibunKiroku');
+
+/** 記録が変わった印やアプリに戻ったことで中継から取り直すのは、続いても 10 秒に 1 回まで（3 段目） */
+const 取り直しの間 = 10 * 1000;
+/** 中継から取り直す（記録を直接読めない役の端末だけ）。続けて呼ばれたら 1 回にまとめ、間を空ける */
+function 中継から取り直す(状態) {
+  if (場.記録の取り直し待ち) return;
+  const 待つ = Math.max(1500, (場.最後に記録を取り直した || 0) + 取り直しの間 - Date.now());
+  場.記録の取り直し待ち = setTimeout(() => {
+    場.記録の取り直し待ち = null;
+    場.最後に記録を取り直した = Date.now();
+    if (!役の決まり.自分の分だけか(状態())) return;
+    Promise.resolve(状態().syncSessions()).catch((誤り) =>
+      console.warn('[Store] 記録の取り直しに失敗:', 誤り)
+    );
+  }, 待つ);
+}
 
 /**
  * 記録のタグを整える（# を付けてそろえ、重なりを外す）。変わったかも返す（変わっていれば雲も直す）
@@ -57,9 +74,14 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
   },
   /**
    * 雲と突き合わせて、まだ送れていないものを送り直す。
-   * @param {{取りに行かない?: boolean}} [選び] 取りに行かない … 雲から取らず、送り直しだけ。
+   * @param {{取りに行かない?: boolean, 記録は取らない?: boolean}} [選び] 取りに行かない … 雲から取らず、送り直しだけ。
    *   起動時は直前に fetchAndOverwriteFromCloud が全部取っていて、見張りも
-   *   これから届くので、ここでもう一度取るのは同じものを 3 回読むことになる
+   *   これから届くので、ここでもう一度取るのは同じものを 3 回読むことになる。
+   *   記録は取らない … 記録を直接読めない役で、記録を中継から取らない（5 分ごとの同期。3 段目の取り直しは
+   *   開いた・戻った・引いた・記録が変わった印のときだけ。11/19 本人）
+   *
+   * 記録を直接読めない役（部員（自分）。src/yaku.js の 自分の分だけか）は、記録を中継（/jibun）から自分の行だけ
+   * 受け取り、ゴミ箱は読まない（決まりの memberSeesAll。3 段目・11/19 本人）。中継が古いときは前の道（直接読む）
    */
   syncSessions: async (選び) => {
     if (!状態().activeGroupId) return;
@@ -108,8 +130,43 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       // 取り直しを頼んだ id（終わったら一覧から除く。数千件でも重くならないよう Set で持つ）
       const 取り直したid = new Set(取り戻す記録);
       const 空 = { forEach: () => {} };
+      // 3 段目：記録を直接読めない役は、記録を中継から自分の行だけ受け取る
+      let 中継の答え = null;
+      if (役の決まり.自分の分だけか(状態()) && !(選び && 選び.取りに行かない)) {
+        中継の答え =
+          選び && 選び.記録は取らない
+            ? { 記録たち: [], 外す: [], 消えた: [], 境目: { 記録: 0, ごみ箱: 0 }, idで取れた: false }
+            : await 自分の記録.中継から取る({
+                団体: 団体ID,
+                形: 差分で取れるか ? '差分' : '全部',
+                境目: 差分で取れるか ? { 記録: 始めの境目.記録, ごみ箱: 始めの境目.ごみ箱 } : {},
+                ids: 取り戻す記録,
+              });
+        // 中継が古い（/jibun が無い）ときは前の道（直接読む）。中継を配るまでのつなぎ
+        if (中継の答え.古い中継) 中継の答え = null;
+      }
       if (選び && 選び.取りに行かない) {
         記録の返り = 部員の返り = ごみ箱の返り = 卒業生の返り = 空;
+      } else if (中継の答え) {
+        記録の返り = 自分の記録.返りの形(中継の答え.記録たち);
+        ごみ箱の返り = 空;
+        雲から取り戻せた = 中継の答え.idで取れた;
+        const 境目より後 = (置き場, 種) =>
+          Firestore.getDocs(
+            Firestore.query(
+              置き場,
+              Firestore.where(
+                'lastModified',
+                '>=',
+                Firestore.Timestamp.fromMillis(Math.max(0, 始めの境目[種] || 0))
+              )
+            )
+          );
+        [部員の返り, 卒業生の返り] = await Promise.all(
+          差分で取れるか
+            ? [境目より後(部員の置き場, '部員'), 境目より後(卒業生の置き場, '卒業生')]
+            : [Firestore.getDocs(部員の置き場), Firestore.getDocs(卒業生の置き場)]
+        );
       } else if (差分で取れるか) {
         // 集まりごとの境目より後に変わった文書だけを取る（境目の決め方は syncRules の 境目を進める）。
         // 境目は日時型で渡す。Firestore の範囲の問い合わせは同じ型の値にしか当たらず、
@@ -169,7 +226,8 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         const 中身 = 記録の日時を数に(文書.data());
         const 更新時刻 = ミリ秒にする(中身.lastModified);
         const { タグ: cleanedTags, 変わった } = タグを整える(中身);
-        if (変わった && Firebaseの器.db && 団体ID) {
+        // 中継から受け取った（自分の行だけの）記録では雲へ書かない（直すのは団体の端末）
+        if (変わった && Firebaseの器.db && 団体ID && !中継の答え) {
           const 場所 = Firestore.doc(Firebaseの器.db, `groups/${団体ID}/sessions`, 文書.id);
           Firestore.updateDoc(場所, { tags: cleanedTags }).catch((誤り) =>
             console.error('[Store] syncSessions Auto cleanup failed:', 誤り)
@@ -208,7 +266,9 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       console.log(
         `[syncSessions] Fetched counts: S=${雲の記録.length}, M=${雲の部員.length}, T=${雲のごみ箱.length}, A=${雲の卒業生.length}`
       );
-      const 記録の合流 = mergeById(状態().sessions, 雲の記録, false, false);
+      let 記録の合流 = mergeById(状態().sessions, 雲の記録, false, false);
+      // 中継の答えで、写っていない記録とゴミ箱へ移った記録を手元から外す（送れていない記録は残す）
+      if (中継の答え) 記録の合流 = 自分の記録.外すものを外す(記録の合流, 中継の答え);
       // 消したのにまだ雲へ届いていないメンバーは、雲に残っていても戻さない（見張り・全件の取り直しと同じ。A4）
       const 消したメンバー = new Set(Object.keys(状態().deletedMembers || {}));
       const 部員の合流 = mergeById(
@@ -217,7 +277,8 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         false,
         false
       );
-      const ごみ箱の合流 = mergeById(状態().trash, 雲のごみ箱, false, false);
+      // 記録を直接読めない役は、ゴミ箱を持たない（ほかの人の記録が入っている）
+      const ごみ箱の合流 = 中継の答え ? [] : mergeById(状態().trash, 雲のごみ箱, false, false);
       const 卒業生の合流 = mergeById(状態().alumni, 雲の卒業生, false, false);
       const 卒業生のID = new Set(卒業生の合流.map((卒業生1人) => 卒業生1人.id));
       const 部員 = 部員の合流.filter((部員1人) => !卒業生のID.has(部員1人.id));
@@ -411,9 +472,16 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         差分で取れるか || 境目の元
           ? {
               団体: 団体ID,
-              記録: 差分で取れるか ? 進める('記録', 記録の返り) : (境目の元 || {}).記録 || 0,
+              // 中継から受け取ったときは、中継が読んだ文書の時刻で進める（返るのは自分の写った記録だけなので）
+              記録: 中継の答え
+                ? Math.max((境目の元 || {}).記録 || 0, 中継の答え.境目.記録)
+                : 差分で取れるか
+                  ? 進める('記録', 記録の返り)
+                  : (境目の元 || {}).記録 || 0,
               部員: 進める('部員', 部員の返り),
-              ごみ箱: 進める('ごみ箱', ごみ箱の返り),
+              ごみ箱: 中継の答え
+                ? Math.max((境目の元 || {}).ごみ箱 || 0, 中継の答え.境目.ごみ箱)
+                : 進める('ごみ箱', ごみ箱の返り),
               卒業生: 進める('卒業生', 卒業生の返り),
             }
           : 今の境目;
@@ -645,10 +713,21 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         返り.forEach((文書) => 中身たち.push(整える(文書.data())));
         return [返り, 中身たち];
       };
+      // 3 段目：記録を直接読めない役（部員（自分））は、記録を中継から自分の行だけ受け取り、ゴミ箱は読まない（11/19 本人）。
+      // 中継が古い（/jibun が無い）ときは前の道（直接読む）
+      let 中継の答え = null;
+      if (役の決まり.自分の分だけか(状態())) {
+        中継の答え = await 自分の記録.中継から取る({ 団体: 始めた団体, 形: '全部' });
+        if (中継の答え.古い中継) 中継の答え = null;
+      }
       const [部員の返り, 部員] = await 全部読む('members');
-      const [記録の返り, 記録] = await 全部読む('sessions', 記録の日時を数に);
+      const [記録の返り, 記録] = 中継の答え
+        ? [自分の記録.返りの形(中継の答え.記録たち), 中継の答え.記録たち.map(記録の日時を数に)]
+        : await 全部読む('sessions', 記録の日時を数に);
       console.log('[Store] Loading:', `セッション ${記録.length}件を取得しました`);
-      const [ごみ箱の返り, 雲のごみ箱] = await 全部読む('trash', 記録の日時を数に);
+      const [ごみ箱の返り, 雲のごみ箱] = 中継の答え
+        ? [自分の記録.返りの形([]), []]
+        : await 全部読む('trash', 記録の日時を数に);
       const [卒業生の返り, 卒業生] = await 全部読む('alumni');
       const 設定の帳面 = await Firestore.getDoc(
         Firestore.doc(Firebaseの器.db, `groups/${始めた団体}/config`, 'app_settings')
@@ -789,9 +868,13 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
           ? {
               雲の境目: {
                 団体: 状態().activeGroupId,
-                記録: 同期規則.境目を進める(0, 読んだままの中身(記録の返り)),
+                記録: 中継の答え
+                  ? 中継の答え.境目.記録
+                  : 同期規則.境目を進める(0, 読んだままの中身(記録の返り)),
                 部員: 同期規則.境目を進める(0, 読んだままの中身(部員の返り)),
-                ごみ箱: 同期規則.境目を進める(0, 読んだままの中身(ごみ箱の返り)),
+                ごみ箱: 中継の答え
+                  ? 中継の答え.境目.ごみ箱
+                  : 同期規則.境目を進める(0, 読んだままの中身(ごみ箱の返り)),
                 卒業生: 同期規則.境目を進める(0, 読んだままの中身(卒業生の返り)),
               },
               全部そろえた時刻: Date.now(),
@@ -818,6 +901,8 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       return;
     }
     状態().stopListeningToSessions();
+    // 記録を直接読めない役は、記録の代わりに「記録が変わった印」を見張る（3 段目）
+    if (役の決まり.自分の分だけか(状態())) return 状態().記録の印を見張る();
     console.log('[Store] Starting real-time session listener');
     const 記録の置き場 = Firestore.collection(Firebaseの器.db, `groups/${団体}/sessions`);
     // 見張るのは直近 30 日の記録だけ（古い記録は 7 日ごとの全件のそろえ直しで届く）
@@ -897,6 +982,73 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
     );
     書く({ sessionUnsubscribe: 止める });
   },
+  /**
+   * 記録が変わった印を見張る（3 段目・11/19 本人「すぐ届く」）。記録を直接読めない役の端末で、記録の見張りの代わりに使う。
+   * 印（groups/{団体}/changes/sessions の at。書くのは src/storeShared.js）が進んだら、ほかの端末が記録かゴミ箱を
+   * 書いたので中継から取り直す。アプリに戻ったときも取り直す（中継から取り直す が 10 秒に 1 回までにまとめる）。
+   * 止めるのは stopListeningToSessions（同じ止め口に置く）
+   */
+  記録の印を見張る: () => {
+    const 団体 = 状態().activeGroupId;
+    if (!団体 || !Firebaseの器.db) return;
+    console.log('[Store] 記録が変わった印を見張ります（記録は中継から取ります）');
+    let 前の時刻 = null;
+    const 印を止める = Firestore.onSnapshot(
+      Firestore.doc(Firebaseの器.db, `groups/${団体}/changes`, 'sessions'),
+      (返り) => {
+        if (状態().activeGroupId !== 団体) return;
+        const 中身 = 返り.exists() ? 返り.data() : null;
+        const 印 = 中身 && 中身.at;
+        // この端末が書いて届く前の印は時刻が無い（0）。届いたあとの印で取り直す
+        const 時刻 = 印 && typeof 印.toMillis === 'function' ? 印.toMillis() : 0;
+        if (前の時刻 !== null && 時刻 > 前の時刻) 中継から取り直す(状態);
+        前の時刻 = Math.max(前の時刻 || 0, 時刻);
+      },
+      // 印の決まりを配る前は読めない。開いた・戻った・引いたときには取るので、黙って続ける
+      (誤り) => console.warn('[Store] 記録が変わった印を見張れません:', 誤り && 誤り.message)
+    );
+    // アプリに戻ったら取り直す
+    const 戻ったら = () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      中継から取り直す(状態);
+    };
+    const 外すもの = [];
+    try {
+      if (typeof document !== 'undefined' && document.addEventListener) {
+        document.addEventListener('visibilitychange', 戻ったら);
+        外すもの.push(() => document.removeEventListener('visibilitychange', 戻ったら));
+      } else {
+        const AppState = require('react-native').AppState;
+        const 手 =
+          AppState && AppState.addEventListener
+            ? AppState.addEventListener('change', (様子) => 様子 === 'active' && 戻ったら())
+            : null;
+        if (手 && 手.remove) 外すもの.push(() => 手.remove());
+      }
+    } catch {
+      /* 戻ったことが分からない場でも、印と引いて更新では取れる */
+    }
+    書く({
+      sessionUnsubscribe: () => {
+        印を止める();
+        外すもの.forEach((外す) => 外す());
+        if (場.記録の取り直し待ち) clearTimeout(場.記録の取り直し待ち);
+        場.記録の取り直し待ち = null;
+      },
+    });
+  },
+  /**
+   * 役が替わって記録の取り方（直接読む／中継から自分の行だけ）が変わったら、見張りを付け直して全部取り直す（3 段目）。
+   * 全員を見る役になったら雲から全部、自分の分だけになったら中継の答えで置き換える（ほかの人の行を手元に残さない）
+   */
+  記録の取り方を役に合わせる: () => {
+    if (!状態().activeGroupId) return;
+    状態().stopListeningToSessions();
+    状態().stopListeningToTrash();
+    状態().listenToSessions();
+    状態().listenToTrash();
+    return 状態().fetchAndOverwriteFromCloud();
+  },
   stopListeningToSessions: () => {
     const { sessionUnsubscribe } = 状態();
     if (sessionUnsubscribe) {
@@ -914,6 +1066,8 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       return;
     }
     状態().stopListeningToTrash();
+    // 記録を直接読めない役は、ゴミ箱を読まない（3 段目。ほかの人の記録が入っている）
+    if (役の決まり.自分の分だけか(状態())) return;
     console.log('[Store] Starting real-time trash listener');
     const ごみ箱の置き場 = Firestore.collection(Firebaseの器.db, `groups/${団体}/trash`);
     // 見張るのは 200 件まで（読みの無料枠を守る）。上限に届いたときは途中までの一覧なので、手元のゴミ箱を
@@ -1111,8 +1265,10 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
     // ここでは送り直しだけ（取りに行かない）。5 分ごとのほうは取りに行く
     //（見張りが黙って切れたときの保険）
     状態().syncSessions({ 取りに行かない: true });
+    // 記録を直接読めない役は、5 分ごとには中継を呼ばない（取るのは開いた・戻った・引いた・記録が変わった印のとき。
+    // 11/19 本人）。名簿の差分と送り直しはする
     const 時計 = setInterval(() => {
-      状態().syncSessions();
+      状態().syncSessions(役の決まり.自分の分だけか(状態()) ? { 記録は取らない: true } : undefined);
     }, 3e5);
     書く({ syncIntervalId: 時計 });
   },

@@ -1303,7 +1303,14 @@ const useScoreStore = zustand.create()(
               if (状態().activeGroupId !== 団体) return;
               // 日時（lastModified）は控えに残さない。役の中身と割り当てだけ
               const 中身 = 返り.exists() ? 返り.data() : null;
+              const 前は自分の分だけ = 役の決まり.自分の分だけか(状態());
               書く({ 役の設定: 中身 ? { 役: 中身.役 || {}, 割り当て: 中身.割り当て || {} } : null });
+              // 記録の取り方（直接読む／中継から自分の行だけ）が変わったら、見張りを付け直して取り直す（3 段目）。
+              // 同期が動いているとき（見張りと 5 分ごとの同期を始めたあと）だけ
+              if (前は自分の分だけ !== 役の決まり.自分の分だけか(状態()) && 状態().syncIntervalId)
+                Promise.resolve(状態().記録の取り方を役に合わせる()).catch((誤り) =>
+                  console.warn('[Store] 役が替わったあとの取り直しに失敗:', 誤り)
+                );
             },
             (誤り) => {
               console.error('[Store] Roles listener error:', 誤り);
