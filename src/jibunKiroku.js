@@ -35,11 +35,17 @@ function 中継の誤り(状態, 中身) {
 }
 
 async function 呼ぶ(中継, 体) {
-  const 返り = await 中継.中継へfetch('/jibun', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(体),
-  });
+  let 返り;
+  try {
+    返り = await 中継.中継へfetch('/jibun', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(体),
+    });
+  } catch {
+    // 届かない（電波が無い・中継が落ちている）。通信が切れていただけの形にする（不具合の便りに送らない。storeShared の 不具合を控える）
+    throw 中継の誤り(0, { error: '通信できませんでした。電波の良い場所で引いて更新してください' });
+  }
   if (!返り || 返り.status === 404) return { 古い中継: true };
   const 中身 = await Promise.resolve()
     .then(() => 返り.json())
