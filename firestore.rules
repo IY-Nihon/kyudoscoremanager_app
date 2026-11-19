@@ -139,6 +139,30 @@ service cloud.firestore {
       return isGroupOwner(groupId) && hasAdminSession(groupId);
     }
 
+    // 部員の役（2026-11-19 本人）。config/roles に役の中身（役）と割り当て（割り当て：メンバーid → 役id）を
+    // まとめて置く（1 回の get で両方引ける）。割り当ての無い人・消した役の人は「部員（自分）」＝ 付ける だけ
+    // （今の個人ログインと同じ）。部品の名前と最初の 4 つは src/yaku.js と同じ（test/yaku.test.js・firestoreRules.test.mjs）
+    function presetParts(rid) {
+      return rid == 'zenin' ? ['全員を見る', '付ける']
+        : rid == 'miru' ? ['全員を見る']
+        : rid == 'unei' ? ['全員を見る', '付ける', '直す', '消す', 'メンバー', '出欠', '設定']
+        : ['付ける'];
+    }
+    function memberParts(groupId) {
+      let r = get(/databases/$(database)/documents/groups/$(groupId)/config/roles);
+      let rid = r == null ? 'jibun' : r.data.get('割り当て', {}).get(claim().data.memberId, 'jibun');
+      let defs = r == null ? {} : r.data.get('役', {});
+      return (rid in defs && defs[rid].get('部品', null) is list) ? defs[rid].get('部品', []) : presetParts(rid);
+    }
+    // 所属の証のある部員で、役にその部品があるか
+    function memberCan(groupId, part) {
+      return isClaimedMember(groupId) && part in memberParts(groupId);
+    }
+    // 役にその部品があり、管理者の合言葉も入れている（運営の人が直す・個人ID・招待：11/19 本人「求める」）
+    function memberAdmin(groupId, part) {
+      return memberCan(groupId, part) && hasAdminSession(groupId);
+    }
+
     function canAccess(groupId) {
       return isGroupOwner(groupId) || isClaimedMember(groupId);
     }
@@ -277,8 +301,12 @@ service cloud.firestore {
 
     match /groups/{groupId} {
       allow get: if canAccess(groupId);
-      // 団体名などは団体だけ。部員はライブの合言葉がまだ無いときに足すだけ（B5）
-      allow create, update: if isGroupOwner(groupId) || addsLiveSecretOnly(groupId);
+      // 団体名などは団体だけ。部員はライブの合言葉がまだ無いときに足すだけ（B5）。
+      // 役に「設定」のある部員（運営など）は団体名だけ変えられる（2026-11-19）
+      allow create: if isGroupOwner(groupId) || addsLiveSecretOnly(groupId);
+      allow update: if isGroupOwner(groupId) || addsLiveSecretOnly(groupId)
+        || (memberCan(groupId, '設定')
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['groupName']));
       allow delete: if isGroupOwner(groupId);
       // list は書かない。団体の一覧化を防ぐ（SEC-5）
 
@@ -289,54 +317,63 @@ service cloud.firestore {
       // 前の版の端末（開いたままのタブ）は、名簿に個人ID が無いのを見ると行を全部消して作り直し、全員が入れなくなった
       // （2026-11-07 のレビュー）。消せるのは団体を消す途中だけ（写しの deleted_accounts/{団体} を先に書く。src/accountDeletion.js）
       match /member_lookup/{personalId} {
-        allow read: if isGroupOwner(groupId);
+        // 役に「メンバー」のある部員（運営など）は、管理者の合言葉を入れているときだけ（個人IDを見る・招待リンク。11/19 本人）
+        allow read: if isGroupOwner(groupId) || memberAdmin(groupId, 'メンバー');
         // 招待リンク（招待 == true の行）は管理者だけ（前から管理者モードの中にある）
-        allow create, update: if isGroupOwner(groupId) && request.resource.data.get('形', 0) == 2
-          && (request.resource.data.get('招待', false) != true || isGroupAdmin(groupId));
+        allow create, update: if request.resource.data.get('形', 0) == 2
+          && ((isGroupOwner(groupId)
+               && (request.resource.data.get('招待', false) != true || isGroupAdmin(groupId)))
+              || memberAdmin(groupId, 'メンバー'));
         allow delete: if isGroupOwner(groupId)
           && exists(/databases/$(database)/documents/deleted_accounts/$(groupId));
       }
 
-      // 部員（個人ログイン）が書けるのは、記録を作る・直すと、自分の名簿の弓具だけ。記録を消す・名簿を作る・消す・
-      // ゴミ箱・卒業生・練習日は団体だけ（2026-11-02 決めた）。読むのは部員も今のまま。
-      // アプリも部員にはこれらの操作を出していない（履歴の削除は管理者モード・出欠のタブは団体だけ・
-      // 部員の端末は自分の弓具だけ送る src/storeMembers.js の 弓具だけ送る形）
+      // 部員（個人ログイン）が書けるのは、役の部品の分と、自分の名簿の弓具（2026-11-19。前は 2026-11-02 に
+      // 「記録を作る・直すと弓具だけ」と決めた）。役の無い部員（部員（自分））は前と同じで、記録を作る・直すと弓具だけ。
+      // 記録を消す・ゴミ箱は「消す」、名簿・卒業生は「メンバー」、練習日は「出欠」、設定は「設定」の部品が要る。
+      // 読むのは部員も今のまま（自分の行だけにするのは 3 段目）。アプリも同じ一覧（src/yaku.js）で画面を出し分ける
       // 部員が記録を直すときは、射手を減らさない（アプリも部員の端末では減らさない。src/storeSessions.js の updateSession）。
       // アプリを通さずに書かれても、射手を消して記録を潰せないように（B5）
+      // 役（2026-11-19）：付ける＝作る・送り直す（射手は減らさない）、直す＋管理者の合言葉＝何でも直す、消す＝消す
       match /sessions/{docId} {
-        allow read, create: if canAccess(groupId);
+        allow read: if canAccess(groupId);
+        allow create: if isGroupOwner(groupId) || memberCan(groupId, '付ける');
         allow update: if isGroupOwner(groupId)
-          || (isClaimedMember(groupId)
+          || (memberCan(groupId, '付ける')
               && request.resource.data.get('archers', []) is list
-              && request.resource.data.get('archers', []).size() >= resource.data.get('archers', []).size());
-        allow delete: if isGroupOwner(groupId);
+              && request.resource.data.get('archers', []).size() >= resource.data.get('archers', []).size())
+          || memberAdmin(groupId, '直す');
+        allow delete: if isGroupOwner(groupId) || memberCan(groupId, '消す');
       }
+      // 役に「メンバー」のある部員（運営など）は、団体と同じく作る・直す・消す（2026-11-19）
       match /members/{docId} {
         allow read: if canAccess(groupId);
-        allow create: if isGroupOwner(groupId) && keepsPersonalIdOut();
-        allow delete: if isGroupOwner(groupId);
-        allow update: if (isGroupOwner(groupId) && keepsPersonalIdOut())
+        allow create: if (isGroupOwner(groupId) || memberCan(groupId, 'メンバー')) && keepsPersonalIdOut();
+        allow delete: if isGroupOwner(groupId) || memberCan(groupId, 'メンバー');
+        allow update: if ((isGroupOwner(groupId) || memberCan(groupId, 'メンバー')) && keepsPersonalIdOut())
           || (isClaimedMember(groupId)
               && docId == claim().data.memberId
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['equipments', 'lastModified']));
       }
       match /alumni/{docId} {
         allow read: if canAccess(groupId);
-        allow create, update: if isGroupOwner(groupId) && keepsPersonalIdOut();
-        allow delete: if isGroupOwner(groupId);
+        allow create, update: if (isGroupOwner(groupId) || memberCan(groupId, 'メンバー')) && keepsPersonalIdOut();
+        allow delete: if isGroupOwner(groupId) || memberCan(groupId, 'メンバー');
       }
       match /trash/{docId} {
         allow read: if canAccess(groupId);
-        allow write: if isGroupOwner(groupId);
+        allow write: if isGroupOwner(groupId) || memberCan(groupId, '消す');
       }
       // config のうち listing（紹介に載せてよいかの許可・2026-10-09）は、団体の持ち主だけが書ける。
       // 部員の端末から団体の答えを変えられないように。読むのは部員も可（画面には出さない）。src/listingConsent.js
       // 設定（団体の種類・進級の確認・1 年生の期・順位の基準など）を書けるのは団体だけ。部員が足せるのは
       // 目印（タグ）の候補だけ（アプリも部員の端末ではタグの候補だけ送る。src/useScoreStore.js の 目印の候補を置く。B5）
+      // 役に「設定」のある部員（運営など）は団体と同じく書ける（2026-11-19）。listing と roles は下で別に決める
       match /config/{docId} {
         allow read: if canAccess(groupId);
-        allow write: if docId != 'listing'
+        allow write: if docId != 'listing' && docId != 'roles'
           && (isGroupOwner(groupId)
+              || memberCan(groupId, '設定')
               || (isClaimedMember(groupId)
                   && docId == 'app_settings'
                   && request.resource.data.diff(resource == null ? {} : resource.data).affectedKeys().hasOnly(['tagTemplates', 'lastModified'])));
@@ -345,9 +382,15 @@ service cloud.firestore {
         allow read: if canAccess(groupId);
         allow write: if isGroupOwner(groupId);
       }
+      // 部員の役（2026-11-19）。役を作る・割り当てるのは、団体の口座で管理者の合言葉を入れているときだけ
+      // （運営でもできない：11/13 本人「役の割り当ては団体の口座だけ」）
+      match /config/roles {
+        allow read: if canAccess(groupId);
+        allow write: if isGroupAdmin(groupId);
+      }
       match /officialPracticeDays/{docId} {
         allow read: if canAccess(groupId);
-        allow write: if isGroupOwner(groupId);
+        allow write: if isGroupOwner(groupId) || memberCan(groupId, '出欠');
       }
     }
 
