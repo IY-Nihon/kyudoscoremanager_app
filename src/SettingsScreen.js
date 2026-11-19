@@ -18,6 +18,7 @@ const {
 } = require('./rn');
 const { IS_WEB } = require('./IS_WEB');
 const { useScoreStore } = require('./useScoreStore');
+const 役の決まり = require('./yaku');
 // 見た目の決まりは、切り出した窓と分け合うので別のファイル（2026-10-05）
 const { styles } = require('./settingsStyles');
 // 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
@@ -141,6 +142,10 @@ const SettingsScreen = () => {
     'setEnableArrowLocation',
     'setArrowTargetType',
   ]);
+  // できるかは操作の一覧（src/yaku.js・2026-11-19）。団体の口座は前のまま
+  const 設定できる = useScoreStore((状態) => 役の決まり.できるか(状態, '団体の設定'));
+  const 管理者モードに入れる = useScoreStore((状態) => 役の決まり.管理者モードに入れるか(状態));
+  const 合言葉を変えられる = useScoreStore((状態) => 役の決まり.できるか(状態, '管理者の合言葉を変える'));
   const [書き出しの窓, 書き出しの窓を出す] = React.useState(false);
   const [ガイドの窓, ガイドの窓を出す] = React.useState(false);
   const [使い方の窓, 使い方の窓を出す] = React.useState(false);
@@ -416,7 +421,7 @@ const SettingsScreen = () => {
           </View>
         )}
         {/* 団体アカウントだけの節（個人ログインでは出さない） */}
-        {activeRole === 'group' &&
+        {設定できる &&
           節(
             '基本設定',
             <>
@@ -919,7 +924,7 @@ const SettingsScreen = () => {
             )}
           </>
         )}
-        {activeRole !== 'member' &&
+        {管理者モードに入れる &&
           節(
             '管理者設定',
             <>
@@ -961,7 +966,7 @@ const SettingsScreen = () => {
                   trackColor={{ false: 基本色.灰_明るい, true: 基本色.赤 }}
                 />
               </View>
-              {isAdminMode && (
+              {合言葉を変えられる && (
                 <TouchableOpacity
                   style={styles.item}
                   accessibilityRole="button"

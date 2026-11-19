@@ -1,5 +1,6 @@
 'use strict';
 
+const 役の決まり = require('./yaku');
 const 個人ID = require('./kojinId');
 
 /**
@@ -98,8 +99,8 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
    * 区分は今の一覧にある id だけを残す（src/kubun.js の 付けられる区分）
    */
   addMember: (名前, 性別, 学年, 期, 足すもの) => {
-    if (!状態().activeGroupId || 状態().activeRole !== 'group') {
-      Alert.alert('権限エラー', 'メンバーの追加は団体ログイン、かつ管理者のみ可能です。');
+    if (!状態().activeGroupId || !役の決まり.できるか(状態(), 'メンバーを管理する')) {
+      Alert.alert('権限エラー', 'メンバーの追加は、団体のアカウントか、メンバーを管理できる役の人だけができます。');
       return;
     }
     const 整えた名前 = 名前 ? 名前.trim() : '';
@@ -135,8 +136,8 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
     }
   },
   updateMember: (部員ID, 変更) => {
-    if (!状態().activeGroupId || 状態().activeRole !== 'group') {
-      Alert.alert('権限エラー', 'メンバーの編集は団体ログイン時のみ可能です。');
+    if (!状態().activeGroupId || !役の決まり.できるか(状態(), 'メンバーを管理する')) {
+      Alert.alert('権限エラー', 'メンバーの編集は、団体のアカウントか、メンバーを管理できる役の人だけができます。');
       return;
     }
     let 直す中身 = Object.assign({}, 変更);
@@ -305,8 +306,8 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
     }
   },
   deleteMember: (部員ID) => {
-    if (!状態().activeGroupId || 状態().activeRole !== 'group') {
-      Alert.alert('権限エラー', 'メンバーの削除は団体ログイン時のみ可能です。');
+    if (!状態().activeGroupId || !役の決まり.できるか(状態(), 'メンバーを管理する')) {
+      Alert.alert('権限エラー', 'メンバーの削除は、団体のアカウントか、メンバーを管理できる役の人だけができます。');
       return;
     }
     // 消したことを控えに残す。送信が失われても、次の受け取りで
@@ -631,7 +632,7 @@ function 弓具を書き換える(書く, 状態, memberId, 名, 直し方) {
   if (!本人 || !状態().activeGroupId) return;
   Firestore.updateDoc(
     Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/members`, memberId),
-    状態().activeRole === 'group' ? 雲へ送る人(本人) : 弓具だけ送る形(本人)
+    役の決まり.できるか(状態(), 'メンバーを管理する') ? 雲へ送る人(本人) : 弓具だけ送る形(本人)
   )
     .then(() => 届いた人を同期済みに(書く, [本人]))
     .catch((誤り) => console.error(`${名} Sync Error:`, 誤り));

@@ -70,7 +70,7 @@ test('追加：メンバーを足すとクラウドへ届く', async () => {
   assert.equal(雲.値(名簿の道.replace(/members$/, 'member_lookup'), 振った).memberId, 手元[0].id, '逆引き表に載る');
 });
 
-test('追加：団体ログインでなければ足せない', async () => {
+test('追加：団体ログインか、メンバーを管理できる役でなければ足せない', async () => {
   const { store, 知らせ, 雲 } = await 用意();
   store.setState({ activeRole: 'member' });
   store.getState().addMember('部員', '男性', 1);
@@ -79,7 +79,7 @@ test('追加：団体ログインでなければ足せない', async () => {
   assert.equal(名簿(store).length, 0, '手元に増えていない');
   assert.equal(雲.中身(名簿の道).length, 0, 'クラウドにも増えていない');
   assert.ok(
-    知らせ.some((x) => x.includes('団体ログイン')),
+    知らせ.some((x) => x.includes('メンバーを管理できる役')),
     '理由が案内される'
   );
 });

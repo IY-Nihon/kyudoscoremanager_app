@@ -29,6 +29,7 @@ const {
   載っている印を捨てる,
   共有履歴へ積む,
 } = require('./storeShared');
+const 役の決まり = require('./yaku');
 // 操作の固まりは別のファイル（2026-10-05 に分けた）
 const { 盤面の操作 } = require('./storeBoard');
 const { 部員の操作 } = require('./storeMembers');
@@ -250,6 +251,8 @@ const useScoreStore = zustand.create()(
         メールの確認: null,
         isNetworkOnline: true,
         isAdminMode: false,
+        // 部員の役（config/roles の中身。null＝まだ読んでいない・無い → 全員 部員（自分）。src/yaku.js）
+        役の設定: null,
         ...学年まわりの初めの値,
         _pendingUpdateTimers: {},
         includeInStats: true,
@@ -442,6 +445,7 @@ const useScoreStore = zustand.create()(
               いつものタグを入れた: false,
               isAdminMode: false,
               isAdminModePending: false,
+              役の設定: null,
               ...学年まわりの初めの値,
             });
             状態().stopPeriodicSync();
@@ -470,6 +474,7 @@ const useScoreStore = zustand.create()(
                 練習日の控え: null,
                 メールの確認: null,
                 個人IDの表: {},
+                役の設定: null,
                 ...学年まわりの初めの値,
               });
             }
@@ -532,9 +537,9 @@ const useScoreStore = zustand.create()(
           const 今の設定 = 状態().analysisRankingSettings || {};
           const 新しい設定 = Object.assign({}, 今の設定, { [鍵]: 値 });
           書く({ analysisRankingSettings: 新しい設定, lastLocalChange: 今 });
-          const { activeGroupId, isNetworkOnline, activeRole } = 状態();
-          // 順位の基準は団体の設定。部員の端末では手元だけ変える（決まりも部員には書かせない）
-          if (isNetworkOnline && activeGroupId && activeRole === 'group')
+          const { activeGroupId, isNetworkOnline } = 状態();
+          // 順位の基準は団体の設定。団体の設定を変えられない人の端末では手元だけ変える（決まりも書かせない）
+          if (isNetworkOnline && activeGroupId && 役の決まり.できるか(状態(), '団体の設定'))
             try {
               await Firestore.setDoc(
                 Firestore.doc(Firebaseの器.db, `groups/${activeGroupId}/config`, 'app_settings'),
@@ -1003,7 +1008,7 @@ const useScoreStore = zustand.create()(
           }
           // 段 1 より前の団体には 進級の確認・期を使う を書き足し、古い版のアプリの自動進級を止める。
           // 部員の端末からは書かない（団体ログインのときだけ）。送信の完了は待たない（下の理由と同じ）
-          if (状態().activeRole === 'group' && 学.設定を書き足すか(設定)) {
+          if (役の決まり.できるか(状態(), '団体の設定') && 学.設定を書き足すか(設定)) {
             const 読んだ = 学.設定から読む(設定);
             Firestore.setDoc(
               Firestore.doc(Firebaseの器.db, `groups/${団体}/config`, 'app_settings'),
@@ -1019,8 +1024,8 @@ const useScoreStore = zustand.create()(
             // 送信の完了は待たない。この関数は syncSessions の先頭で待たれて
             // いるため、通信できないときにここで止まると同期そのものが動かなく
             // なる。手元の値は先に入れてあり、送信は待ち行列に任せる。
-            // 部員の端末からは書かない（団体の設定。決まりも部員には書かせない）
-            if (状態().activeRole === 'group') {
+            // 団体の設定を変えられない人の端末からは書かない（決まりも書かせない）
+            if (役の決まり.できるか(状態(), '団体の設定')) {
               Firestore.setDoc(
                 Firestore.doc(Firebaseの器.db, `groups/${団体}/config`, 'app_settings'),
                 { lastPromotionYear: 基準, lastModified: Firestore.serverTimestamp() },
@@ -1269,6 +1274,20 @@ const useScoreStore = zustand.create()(
               不具合を控える('設定の受信', 誤り);
             }
           );
+          // 部員の役（2026-11-19）。無い団体は全員 部員（自分）。役が変わると、その場で画面の「できるか」も変わる
+          const 役を止める = Firestore.onSnapshot(
+            Firestore.doc(Firebaseの器.db, `groups/${団体}/config`, 'roles'),
+            (返り) => {
+              if (状態().activeGroupId !== 団体) return;
+              // 日時（lastModified）は控えに残さない。役の中身と割り当てだけ
+              const 中身 = 返り.exists() ? 返り.data() : null;
+              書く({ 役の設定: 中身 ? { 役: 中身.役 || {}, 割り当て: 中身.割り当て || {} } : null });
+            },
+            (誤り) => {
+              console.error('[Store] Roles listener error:', 誤り);
+              不具合を控える('役の受信', 誤り);
+            }
+          );
           const 団体名を止める = Firestore.onSnapshot(
             Firestore.doc(Firebaseの器.db, 'groups', 団体),
             (返り) => {
@@ -1285,6 +1304,7 @@ const useScoreStore = zustand.create()(
           書く({
             configUnsubscribe: () => {
               設定を止める();
+              役を止める();
               団体名を止める();
             },
           });
@@ -1343,6 +1363,7 @@ const useScoreStore = zustand.create()(
           雲の境目: 状態の中身.雲の境目,
           全部そろえた時刻: 状態の中身.全部そろえた時刻,
           isAdminMode: 状態の中身.isAdminMode,
+          役の設定: 状態の中身.役の設定,
           groupType: 状態の中身.groupType,
           promotionCheck: 状態の中身.promotionCheck,
           useTerm: 状態の中身.useTerm,
