@@ -167,6 +167,25 @@ test('部員の役：持ち主が作って割り当て、個人ログインの�
   // メンバーの一覧（管理できる）が出る
   await タブ(部員の頁, 'メンバー').click();
   await expect(部員の頁.getByText('自分の情報', { exact: true })).toHaveCount(0, { timeout: 20_000 });
+  // 管理者モードの運営は、ほかの人の個人IDが見え、招待リンクを作れる（決まりの memberAdmin）。役は選べない（団体の口座だけ）
+  // 一覧の中で探す（字だけで探すと、裏に残った分析の画面の順位の名前を掴む）
+  await 部員の頁.getByTestId('メンバーの一覧').getByText('部員1', { exact: true }).first().click();
+  const 招待の欄 = 部員の頁.getByTestId('招待リンクの欄');
+  await expect(招待の欄, '運営に招待リンクの欄が出ない').toBeVisible({ timeout: 20_000 });
+  await expect(部員の頁.getByText('******** (管理者のみ表示)', { exact: true })).toHaveCount(0);
+  await expect(部員の頁.getByText(/^[A-Z0-9]{6}$/).first(), '運営に個人IDが見えない').toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(部員の頁.getByTestId('役を選ぶ欄')).toHaveCount(0);
+  const 作る = 招待の欄.getByText('招待リンクを作る', { exact: true });
+  const 作り直す = 招待の欄.getByText('招待リンクを作り直す', { exact: true });
+  await expect(作る.or(作り直す)).toBeVisible({ timeout: 20_000 });
+  await 作る.or(作り直す).click();
+  if (await 部員の頁.getByTestId('窓のボタン-作り直す').count())
+    await 部員の頁.getByTestId('窓のボタン-作り直す').click();
+  await expect(部員の頁.getByTestId('招待リンク'), '運営が招待リンクを作れない').toBeVisible({
+    timeout: 20_000,
+  });
 
   await 部員の場.close();
   await 持ち主の場.close();
