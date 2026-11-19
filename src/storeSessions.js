@@ -31,6 +31,7 @@ const {
   送った版に印を付ける,
   送った版の表,
 } = require('./storeShared');
+const 役の決まり = require('./yaku');
 
 // 中身だけを写す（undefined の項目は落ちる。Firestore は undefined を受け付けない）
 const 深く写す = (値) => JSON.parse(JSON.stringify(値));
@@ -91,7 +92,13 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     // いるのに応答が来ない）と返らず、保存が終わらないまま記録表が残り、もう一度
     // 押せてしまった（2026-09-19）。新しい記録（id を今作った）は雲に無いので
     // 見る必要がなく、履歴から載せた記録なら手元の控えの 同期済み が雲にある印
-    if (activeGroupId && activeRole === 'member' && 状態().activeSessionID) {
+    // 運営の役で管理者の合言葉を入れているとき（記録を直すができる。src/yaku.js・2026-11-19）は止めない
+    if (
+      activeGroupId &&
+      activeRole === 'member' &&
+      状態().activeSessionID &&
+      !役の決まり.できるか(状態(), '記録を直す')
+    ) {
       const 手元 = (Array.isArray(状態().sessions) ? 状態().sessions : []).find(
         (記録1件) => 記録1件 && 記録1件.id === 記録ID
       );
@@ -490,7 +497,12 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     const 位置 = 今の記録.findIndex((記録) => 記録 && 記録.id === 記録ID);
     if (位置 === -1) return;
     const 元の記録 = 今の記録[位置];
-    if (状態().activeRole === 'member' && 変更.archers && 変更.archers.length < 元の記録.archers.length) {
+    if (
+      状態().activeRole === 'member' &&
+      !役の決まり.できるか(状態(), '記録を直す') &&
+      変更.archers &&
+      変更.archers.length < 元の記録.archers.length
+    ) {
       console.warn('[updateSession] Prevented accidental data stripping in member mode');
       return;
     }

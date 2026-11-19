@@ -11,7 +11,14 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-const { 窓で止めるか, 帯の長さ, 帯の時計をつくる, 帯の下限, 帯の上限, 戻るで押すボタン } = require('../src/dialogRules');
+const {
+  窓で止めるか,
+  帯の長さ,
+  帯の時計をつくる,
+  帯の下限,
+  帯の上限,
+  戻るで押すボタン,
+} = require('../src/dialogRules');
 
 // 帯のまま（短い一言。押させる必要がない）
 const 帯でよい文 = [
@@ -214,7 +221,10 @@ test('戻るボタンで窓を閉じたら、やめる（cancel）を押した�
 });
 
 test('窓は重なったら順に出す（あとの窓で前の窓を上書きしない）', () => {
-  const 本体 = require('node:fs').readFileSync(require('node:path').join(__dirname, '../src/AppDialog.js'), 'utf8');
+  const 本体 = require('node:fs').readFileSync(
+    require('node:path').join(__dirname, '../src/AppDialog.js'),
+    'utf8'
+  );
   assert.ok(/窓の待ち\.current\.push/.test(本体), '開いている間に来た窓を待たせていない');
   // 帯を置く(null) は帯の消し方なので見ない
   assert.ok(!/[^を]置く\(null\)/.test(本体), 'ボタンや戻るで、待っている窓を飛ばして閉じている');

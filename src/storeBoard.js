@@ -295,7 +295,10 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => {
       // メンバーを管理できる役（運営など。src/yaku.js・2026-11-19）は、団体の口座と同じく全員ぶん
       if (役の決まり.できるか(状態(), 'メンバーを管理する')) return true;
       if (!黙って)
-        Alert.alert('権限エラー', '弓具を扱えるのは、団体のアカウントか、本人か、メンバーを管理できる役の人だけです。');
+        Alert.alert(
+          '権限エラー',
+          '弓具を扱えるのは、団体のアカウントか、本人か、メンバーを管理できる役の人だけです。'
+        );
       return false;
     },
     // まとめて入った○×に「いま入れた」印を付ける。
@@ -392,7 +395,12 @@ const 盤面の操作 = (書く, 状態, そのまま書く) => {
         const 矢所を消す =
           新しい印 === '' && Array.isArray(射手.arrowLocations) && 射手.arrowLocations[番] != null;
         const 矢所 = 矢所を消す ? Object.assign([...射手.arrowLocations], { [番]: null }) : null;
-        return Object.assign({}, 射手, { marks: 列, lastModified: 今 }, 矢所 ? { arrowLocations: 矢所 } : null);
+        return Object.assign(
+          {},
+          射手,
+          { marks: 列, lastModified: 今 },
+          矢所 ? { arrowLocations: 矢所 } : null
+        );
       });
       書く({
         archers: 直した,

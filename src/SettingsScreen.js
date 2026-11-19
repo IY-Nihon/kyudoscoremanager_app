@@ -1180,6 +1180,8 @@ const SettingsScreen = () => {
         団体={activeGroupId}
         閉じる={() => 管理者の合言葉の窓を出す(false)}
         ログインのパスワードを確かめる={verifyGroupPassword}
+        // 運営の役の個人ログイン（2026-11-19）。合言葉で入るだけ（作る・忘れたときは団体のアカウント）
+        個人={activeRole === 'member'}
         入れた={(期限) => {
           setAdminMode(true, 期限);
           管理者の合言葉の窓を出す(false);

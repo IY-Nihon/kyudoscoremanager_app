@@ -780,12 +780,14 @@ const useScoreStore = zustand.create()(
           clearTimeout(管理者の時計);
           管理者の時計 = null;
           if (値 && Number.isFinite(期限)) {
-            管理者の時計 = setTimeout(
-              () => 書く({ isAdminMode: false, isAdminModePending: false }),
-              Math.max(0, 期限 - Date.now())
-            );
+            管理者の時計 = setTimeout(() => 状態().setAdminMode(false), Math.max(0, 期限 - Date.now()));
           }
           書く({ isAdminMode: 値, isAdminModePending: false });
+          // 運営の役の個人ログイン（2026-11-19）：管理者モードのあいだだけ個人IDの表を持つ（切ったら捨てる。控えにも残さない）
+          if (状態().activeRole === 'member') {
+            if (値) 状態().個人IDの表を読む();
+            else 書く({ 個人IDの表: {} });
+          }
         },
         /**
          * 団体アカウントを消す（設定 → アカウント → アカウントを削除する）。

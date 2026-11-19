@@ -27,7 +27,10 @@ test('記録：役に「付ける」があれば作る・送り直す（射手�
 
 test('名簿：作る・消すは団体と役に「メンバー」のある部員（個人ID は置かせない）。ほかの部員は自分の弓具だけ', () => {
   const 節 = 中身('match /members/{docId}');
-  assert.match(節, /allow create: if \(isGroupOwner\(groupId\) \|\| memberCan\(groupId, 'メンバー'\)\) && keepsPersonalIdOut\(\);/);
+  assert.match(
+    節,
+    /allow create: if \(isGroupOwner\(groupId\) \|\| memberCan\(groupId, 'メンバー'\)\) && keepsPersonalIdOut\(\);/
+  );
   assert.match(節, /allow delete: if isGroupOwner\(groupId\) \|\| memberCan\(groupId, 'メンバー'\);/);
   assert.match(節, /docId == claim\(\)\.data\.memberId/);
   assert.match(節, /affectedKeys\(\)\.hasOnly\(\['equipments', 'lastModified'\]\)/);
@@ -76,5 +79,8 @@ test('決まりの最初の 4 つの役（presetParts）が src/yaku.js と同�
 });
 
 test('団体の帳面の一覧：管理者か、自分のメールの団体だけ', () => {
-  assert.match(決まり, /allow list: if isAdmin\(\)\n\s+\|\| \(callerEmail\(\) != '' && resource\.data\.email == callerEmail\(\)\);/);
+  assert.match(
+    決まり,
+    /allow list: if isAdmin\(\)\n\s+\|\| \(callerEmail\(\) != '' && resource\.data\.email == callerEmail\(\)\);/
+  );
 });
