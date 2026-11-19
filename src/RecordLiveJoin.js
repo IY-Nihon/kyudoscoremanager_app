@@ -11,7 +11,12 @@ const { IS_WEB } = require('./IS_WEB');
  */
 /** ライブを始めるか、入るかを選ぶ */
 // 付けられる … 役で記録を付けられない人（見るだけの役。src/yaku.js・2026-11-19）には、始める・記録用を出さない
-const ライブを始めるか入るかの窓 = ({ ライブの選び窓, ライブの選び窓を出す, ライブを始める窓へ, 付けられる = true }) => (
+const ライブを始めるか入るかの窓 = ({
+  ライブの選び窓,
+  ライブの選び窓を出す,
+  ライブを始める窓へ,
+  付けられる = true,
+}) => (
   <Modal
     visible={ライブの選び窓}
     transparent
@@ -28,7 +33,11 @@ const ライブを始めるか入るかの窓 = ({ ライブの選び窓, ライ
       }}
     >
       {/* 外側を押すと閉じる面は窓の後ろに分ける。窓を包むと、ボタンの間など窓の中を押しても閉じた */}
-      <Pressable accessible={false} style={StyleSheet.absoluteFill} onPress={() => ライブの選び窓を出す(false)} />
+      <Pressable
+        accessible={false}
+        style={StyleSheet.absoluteFill}
+        onPress={() => ライブの選び窓を出す(false)}
+      />
       <View
         style={{
           width: '90%',
@@ -77,7 +86,12 @@ const ライブを始めるか入るかの窓 = ({ ライブの選び窓, ライ
 );
 
 /** 入るときに、記録する側か見るだけかを選ぶ */
-const 参加のしかたの窓 = ({ 参加のしかたを聞く, 参加のしかたを聞くを置く, ライブに入る, 付けられる = true }) => (
+const 参加のしかたの窓 = ({
+  参加のしかたを聞く,
+  参加のしかたを聞くを置く,
+  ライブに入る,
+  付けられる = true,
+}) => (
   <Modal
     visible={参加のしかたを聞く !== null}
     transparent
@@ -94,7 +108,11 @@ const 参加のしかたの窓 = ({ 参加のしかたを聞く, 参加のしか
       }}
     >
       {/* 外側を押すと閉じる面は窓の後ろに分ける。窓を包むと、見出しなど窓の中を押しても閉じた */}
-      <Pressable accessible={false} style={StyleSheet.absoluteFill} onPress={() => 参加のしかたを聞くを置く(null)} />
+      <Pressable
+        accessible={false}
+        style={StyleSheet.absoluteFill}
+        onPress={() => 参加のしかたを聞くを置く(null)}
+      />
       <View
         style={{
           width: '90%',

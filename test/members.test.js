@@ -67,7 +67,11 @@ test('追加：メンバーを足すとクラウドへ届く', async () => {
   assert.ok(!('personalId' in 雲.値(名簿の道, 手元[0].id)), '雲の名簿に個人ID を置いた');
   const 振った = store.getState().個人IDの表[手元[0].id];
   assert.match(振った, /^[A-HJKMNP-Z2-9]{6}$/, '個人ID が大文字と数字の 6 字で振られる');
-  assert.equal(雲.値(名簿の道.replace(/members$/, 'member_lookup'), 振った).memberId, 手元[0].id, '逆引き表に載る');
+  assert.equal(
+    雲.値(名簿の道.replace(/members$/, 'member_lookup'), 振った).memberId,
+    手元[0].id,
+    '逆引き表に載る'
+  );
 });
 
 test('追加：団体ログインか、メンバーを管理できる役でなければ足せない', async () => {

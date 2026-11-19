@@ -123,10 +123,9 @@ const MemberScreen = () => {
   // 個人ログインでは自分だけを出す。他人は開けない作りなので、並べても
   // 押せない行が続くだけだった。人数の多い団体ほど自分を探しにくい。
   // 弓具を登録しに来る人にとって、この画面に用があるのは自分の行だけ
-  const 見せる名簿 =
-    !管理できる
-      ? (members || []).filter((部員1人) => 部員1人 && 部員1人.id === myMemberId)
-      : members || [];
+  const 見せる名簿 = !管理できる
+    ? (members || []).filter((部員1人) => 部員1人 && 部員1人.id === myMemberId)
+    : members || [];
   const filteredMembers = 見せる名簿.filter(
     (部員) => 部員 && 部員.name && 部員.name.toLowerCase().includes(検索の文.toLowerCase())
   );
@@ -374,8 +373,9 @@ const MemberScreen = () => {
   // 見るだけの欄は、開いたときに写した値ではなく名簿から直に読む。
   // 写した値のままだと、団体側で名前や学年を直しても
   // 読み込み直すまで古いまま出る
-  const いまの自分 =
-    !管理できる ? (members || []).find((部員1人) => 部員1人 && 部員1人.id === myMemberId) : null;
+  const いまの自分 = !管理できる
+    ? (members || []).find((部員1人) => 部員1人 && 部員1人.id === myMemberId)
+    : null;
   // 個人ID は逆引き表から読む（名簿の文書には置かない。src/storeMembers.js）。持ち主の端末は 個人IDの表、
   // 部員の端末は自分の所属の証から読んだ 自分の個人ID（ほかの人の ID は届かない）
   const 個人IDを引く = (部員1人) =>
@@ -389,6 +389,10 @@ const MemberScreen = () => {
   React.useEffect(() => {
     if (activeRole === 'member' && !自分の個人ID) useScoreStore.getState().自分の個人IDを読む();
   }, [activeRole, 自分の個人ID]);
+  // 運営の役の個人ログインが管理者モードのとき、ほかの人の個人IDを読む（読み直しても書かない。src/storeMembers.js）
+  React.useEffect(() => {
+    if (activeRole === 'member' && 個人IDを見られる) useScoreStore.getState().個人IDの表を読む();
+  }, [activeRole, 個人IDを見られる]);
   const 編集の中身 = (窓として出す) => (
     <View // 窓のときは窓の見た目、画面のときは画面いっぱいに広げる。
       // 窓の枠のまま画面に置くと、右半分が空いたままになる
@@ -443,9 +447,7 @@ const MemberScreen = () => {
             ) : null}
             {/* 招待リンク（団体の持ち主が管理者モードのときだけ）。合言葉は逆引き表に置き、 */
             /* メンバーには一覧させない（src/memberInvite.js） */}
-            {編集中の部員 && 招待を作れる && (
-              <招待リンクの欄 団体={activeGroupId} 部員={編集中の部員} />
-            )}
+            {編集中の部員 && 招待を作れる && <招待リンクの欄 団体={activeGroupId} 部員={編集中の部員} />}
           </>
         ) : null}
         {/* 性別・学年・期は団体で管理する項目。個人ログインでは */

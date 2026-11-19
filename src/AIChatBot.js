@@ -461,7 +461,11 @@ const AIChatBot = () => {
     })
   ).current;
 
-  if ((activeRole !== 'group' && !(個人ログイン && myMemberId)) || currentRouteName === '記録' || 入れ替え中) {
+  if (
+    (activeRole !== 'group' && !(個人ログイン && myMemberId)) ||
+    currentRouteName === '記録' ||
+    入れ替え中
+  ) {
     return null;
   }
 

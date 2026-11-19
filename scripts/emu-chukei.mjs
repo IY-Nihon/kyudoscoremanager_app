@@ -44,8 +44,10 @@ const 送る = (宛先, 頼み = {}) => {
       new Response(JSON.stringify({ access_token: 'owner', expires_in: 3600 }), { status: 200 })
     );
   const 向け直し = 道.replace('https://firestore.googleapis.com', Firestoreの宛先);
-  // 管理者の合言葉（/kanri）が持ち主かを確かめる読み（団体の private）は、呼んだ人の証のまま送る（決まりで確かめる）
-  const 本人の証のまま = 道.includes('/private/');
+  // 管理者の合言葉（/kanri）が持ち主か・運営の役の人かを確かめる読み（団体の private・自分の所属の証・名簿・役）は、
+  // 呼んだ人の証のまま送る（決まりで確かめる）。サービスアカウントの証（偽の 'owner'）で送るものだけ持ち主にする
+  const 今の証 = (頼み.headers || {}).Authorization;
+  const 本人の証のまま = 道.includes('/private/') || (!!今の証 && 今の証 !== 'Bearer owner');
   const 頭 = 本人の証のまま
     ? Object.assign({}, 頼み.headers || {})
     : Object.assign({}, 頼み.headers || {}, { Authorization: 'Bearer owner' });
