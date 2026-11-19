@@ -850,10 +850,10 @@ const SettingsScreen = () => {
                   />
                   <Text style={styles.itemText}>いつも付けるタグ</Text>
                 </View>
-                <Text style={{ fontSize: 11, color: 基本色.灰, marginBottom: 8, marginLeft: 34 }}>
+                <Text style={{ fontSize: 11, color: 基本色.灰, marginBottom: 8, marginLeft: 36 }}>
                   選んだタグは、保存のとき最初から入ります（この端末だけ。保存のときに外せます）
                 </Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginLeft: 34 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginLeft: 36 }}>
                   {tagTemplates.map((タグ) => {
                     // 定型文は # 付きでしまう。前の形（# 無し）が残っていても選べるように、そろえてから比べる
                     const 選んだ = いつも付けるタグ.includes(規則.normalizeTag(タグ));
