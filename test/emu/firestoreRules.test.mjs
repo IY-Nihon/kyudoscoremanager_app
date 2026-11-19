@@ -309,14 +309,16 @@ test('B5 部員の書き込み：団体名・合言葉・設定は書けない�
     false
   );
   assert.equal((await 書く(部員, `groups/${団体}/config/listing`, { ok: true })).通った, false);
-  // 記録：射手を減らさない直しは通る。減らす・消すは断る
-  assert.ok(
+  // 記録：作った人の印の無い前の記録は、射手を減らさない直しでも断る（4 段目・11/20 本人）。減らす・消すも断る
+  assert.equal(
     (
       await 書く(部員, `groups/${団体}/sessions/s1`, {
         id: 's1',
         archers: [{ name: 'a' }, { name: 'b' }, { name: 'c' }],
       })
-    ).通った
+    ).通った,
+    false,
+    '作った人の印の無い前の記録を部員が書き換えた'
   );
   assert.equal(
     (await 書く(部員, `groups/${団体}/sessions/s1`, { id: 's1', archers: [] })).通った,
@@ -768,4 +770,58 @@ test('3 段目（11/19 本人）：全員を見るの無い役は記録とゴミ
   assert.equal((await 時刻を書く(部員, `groups/${団体}/changes/other`, 'at')).通った, false);
   assert.equal((await 時刻を書く(よその人, 印, 'at')).通った, false, 'よその人が印を書けた');
   assert.equal((await 読む(よその人, 印)).通った, false, 'よその人が印を読めた');
+});
+
+test('4 段目（11/20 本人）：「直す」の無い部員は、自分が作った記録の送り直しだけ書き換えられる。作った人は変えられない', async () => {
+  await 団体を用意する();
+  const 道 = (id) => `groups/${団体}/sessions/${id}`;
+  // 作る：作った人が自分か空（前の版で作ってまだ送れていない記録）は通る。ほかの人・団体は断る
+  assert.ok((await 作る(部員, 道('s10'), { id: 's10', createdBy: 'm1', archers: [{ name: 'a' }] })).通った);
+  assert.ok(
+    (await 作る(部員, 道('s11'), { id: 's11', archers: [{ name: 'a' }] })).通った,
+    '前の版の記録を作れない'
+  );
+  assert.equal(
+    (await 作る(部員, 道('s12'), { id: 's12', createdBy: 'm2', archers: [] })).通った,
+    false,
+    'ほかの人が作ったことにして作れた'
+  );
+  assert.equal((await 作る(部員, 道('s13'), { id: 's13', createdBy: 'group', archers: [] })).通った, false);
+  // 自分が作った記録の送り直し（丸ごと書く）は通る。射手を減らす・作った人を変えるは断る
+  assert.ok(
+    (await 書く(部員, 道('s10'), { id: 's10', createdBy: 'm1', archers: [{ name: 'a' }, { name: 'b' }] }))
+      .通った,
+    '自分が作った記録を送り直せない'
+  );
+  assert.equal(
+    (await 書く(部員, 道('s10'), { id: 's10', createdBy: 'm1', archers: [] })).通った,
+    false,
+    '自分の記録でも射手を減らせた'
+  );
+  assert.equal(
+    (await 書く(部員, 道('s10'), { id: 's10', createdBy: 'm2', archers: [{ name: 'a' }, { name: 'b' }] }))
+      .通った,
+    false,
+    '作った人を書き換えた'
+  );
+  // 作った人の印の無い記録（自分が作った前の版の記録でも）・団体やほかの人が作った記録は書き換えられない
+  await 書く('owner', 道('s14'), { id: 's14', createdBy: 'group', archers: [{ name: 'a' }] });
+  await 書く('owner', 道('s15'), { id: 's15', createdBy: 'm2', archers: [{ name: 'a' }] });
+  for (const id of ['s11', 's14', 's15'])
+    assert.equal(
+      (await 書く(部員, 道(id), { id, createdBy: 'm1', archers: [{ name: 'a' }, { name: 'b' }] })).通った,
+      false,
+      `${id} を部員が書き換えた`
+    );
+  // 直す＋管理者の合言葉の運営は、どの記録も直せる。持ち主もどれでも
+  await 書く('owner', `groups/${団体}/config/roles`, { 割り当て: { m1: 'unei' } });
+  await 書く('owner', `admin_sessions/${団体}_${部員.uid}`, {
+    expiresAt: new Date(Date.now() + 3600000),
+    authTime: ログインの時刻,
+  });
+  assert.ok(
+    (await 書く(部員, 道('s14'), { id: 's14', createdBy: 'group', archers: [] })).通った,
+    '運営＋印で直せない'
+  );
+  assert.ok((await 書く(持ち主, 道('s15'), { id: 's15', archers: [] })).通った);
 });

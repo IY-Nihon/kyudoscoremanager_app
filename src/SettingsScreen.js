@@ -160,6 +160,12 @@ const SettingsScreen = () => {
       ? (状態.sessions || []).filter((記録) => 記録 && 記録.syncStatus === '未同期').length
       : 0
   );
+  // 決まりに断られて送れない記録（作った人の印の無い前の記録への送り直しなど。4 段目・11/20 本人）
+  const 断られた記録の数 = useScoreStore((状態) =>
+    状態.activeRole === 'member' && !役の決まり.役で付けられないか(状態)
+      ? (状態.sessions || []).filter((記録) => 記録 && 記録.syncStatus === '未同期' && 記録.送れない).length
+      : 0
+  );
   const [役の窓, 役の窓を出す] = React.useState(false);
   const [書き出しの窓, 書き出しの窓を出す] = React.useState(false);
   const [ガイドの窓, ガイドの窓を出す] = React.useState(false);
@@ -353,6 +359,21 @@ const SettingsScreen = () => {
                 <Text style={[styles.timestamp, { flexShrink: 1, textAlign: 'right', marginLeft: 12 }]}>
                   {自分の役の名}
                 </Text>
+              </View>
+            ) : null}
+            {断られた記録の数 > 0 ? (
+              <View style={styles.item} testID="断られた記録">
+                <View style={[styles.itemLeft, { flex: 1 }]}>
+                  <Icons.Ionicons
+                    name="cloud-offline-outline"
+                    size={22}
+                    color={基本色.赤}
+                    style={styles.itemIcon}
+                  />
+                  <Text style={{ flex: 1, fontSize: 13, color: 基本色.赤, lineHeight: 19 }}>
+                    {`送れない記録が ${断られた記録の数} 件あります（団体にすでにある記録への送り直しが断られました）。団体の担当者に伝えてください。`}
+                  </Text>
+                </View>
               </View>
             ) : null}
             {送れない記録の数 > 0 ? (

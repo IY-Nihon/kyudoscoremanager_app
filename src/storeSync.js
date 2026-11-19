@@ -229,8 +229,10 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         const 中身 = 記録の日時を数に(文書.data());
         const 更新時刻 = ミリ秒にする(中身.lastModified);
         const { タグ: cleanedTags, 変わった } = タグを整える(中身);
-        // 中継から受け取った（自分の行だけの）記録では雲へ書かない（直すのは団体の端末）
-        if (変わった && Firebaseの器.db && 団体ID && !中継の答え) {
+        // 中継から受け取った（自分の行だけの）記録では雲へ書かない（直すのは団体の端末）。「直す」の無い部員は
+        // ほかの人の記録を書き換えられない（4 段目）ので、記録を直せる端末だけ
+        const 直せる端末 = 状態().activeRole === 'group' || 役の決まり.できるか(状態(), '記録を直す');
+        if (変わった && Firebaseの器.db && 団体ID && !中継の答え && 直せる端末) {
           const 場所 = Firestore.doc(Firebaseの器.db, `groups/${団体ID}/sessions`, 文書.id);
           Firestore.updateDoc(場所, { tags: cleanedTags }).catch((誤り) =>
             console.error('[Store] syncSessions Auto cleanup failed:', 誤り)
@@ -304,7 +306,9 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
       const ごみ箱 = ごみ箱の合流.filter((記録1件) => 記録1件 && !復元待ち.has(記録1件.id));
       const ごみ箱のID = new Set(ごみ箱.map((記録1件) => 記録1件.id));
       const 記録 = 記録の合流.filter((記録1件) => !ごみ箱のID.has(記録1件.id));
-      const 未送信の記録 = 記録.filter((記録1件) => 記録1件.syncStatus === '未同期');
+      // 送れない（決まりに断られた）印の付いた記録は、一括に入れない（一括ごと断られ、ほかの記録も送れなくなる。
+      // 起動のたびに印を外して 1 回だけ送り直す。4 段目・11/20 本人）
+      const 未送信の記録 = 記録.filter((記録1件) => 記録1件.syncStatus === '未同期' && !記録1件.送れない);
       let 記録の一覧 = 記録;
       // 記録を付けられない役（見るだけなど）に替わった端末は送らない。決まりに一括ごと断られ、送るたびに失敗が
       // 続くだけなので。記録は「未同期」のまま端末に残し、設定の役の下で件数を知らせる。役を戻してもらうと、
@@ -315,14 +319,24 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         const 一括 = 分けた一括(Firebaseの器.db);
         const 今 = Date.now();
         const 送った版 = 送った版の表(未送信の記録);
-        未送信の記録.forEach((記録) => {
+        const 送る団体 = 状態().activeGroupId;
+        // 「直す」の無い役の部員の端末にある送れていない記録は、その人が作ったもの（ほかの人の保存した記録は直せない）。
+        // 作った人の印が無ければ付けて送る（決まりは、自分が作った記録の送り直しだけ通す。4 段目・11/20 本人）
+        const 自分で作った =
+          状態().activeRole === 'member' &&
+          !役の決まり.部品で持つか(役の決まり.自分の部品(状態()), '記録を直す');
+        const 送るもの = 未送信の記録.map((記録) => {
           const 送る形 = JSON.parse(
             JSON.stringify(Object.assign({}, 記録, { syncStatus: '同期済み', lastModified: 今 }))
           );
-          一括.set(
-            Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/sessions`, 記録.id),
-            Object.assign(雲へ書く記録(送る形), { lastModified: Firestore.serverTimestamp() })
-          );
+          delete 送る形.送れない; // 端末の中だけの印
+          if (自分で作った && !送る形.createdBy && 状態().myMemberId)
+            送る形.createdBy = String(状態().myMemberId);
+          const 中身 = Object.assign(雲へ書く記録(送る形), { lastModified: Firestore.serverTimestamp() });
+          return { 記録, 中身 };
+        });
+        送るもの.forEach(({ 記録, 中身 }) => {
+          一括.set(Firestore.doc(Firebaseの器.db, `groups/${送る団体}/sessions`, 記録.id), 中身);
           // 戻した記録なら、クラウドのゴミ箱からも取り下げる。存在しない場合は
           // 何も起きないので、新規の記録に対しても安全。
           // ゴミ箱に書けるのは決まりで団体だけ。部員の端末で一括に入れると一括ごと断られ、
@@ -342,8 +356,35 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
               }),
             }));
           })
-          .catch((誤り) => {
+          .catch(async (誤り) => {
             console.error('[syncSessions] 記録の送信に失敗:', 誤り);
+            // 部員の端末で決まりに断られたら、1 件ずつ送り直し、断られた記録だけに「送れない」の印を付ける（作った人の印の
+            // 無い前の記録への送り直しなど。ほかの記録まで送れなくならないように。設定の役の下で件数を知らせる。4 段目）
+            if (!誤り || 誤り.code !== 'permission-denied' || 状態().activeRole !== 'member') return;
+            for (const { 記録, 中身 } of 送るもの) {
+              if (状態().activeGroupId !== 送る団体) return;
+              try {
+                await Firestore.setDoc(
+                  Firestore.doc(Firebaseの器.db, `groups/${送る団体}/sessions`, 記録.id),
+                  中身
+                );
+                書く((前) => ({
+                  sessions: 送った版に印を付ける(前.sessions, 送った版の表([記録]), {
+                    syncStatus: '同期済み',
+                    lastModified: 今,
+                  }),
+                }));
+              } catch (一件の誤り) {
+                if (一件の誤り && 一件の誤り.code === 'permission-denied')
+                  書く((前) => ({
+                    sessions: 前.sessions.map((一つ) =>
+                      一つ && 一つ.id === 記録.id && 一つ.syncStatus === '未同期'
+                        ? Object.assign({}, 一つ, { 送れない: true })
+                        : 一つ
+                    ),
+                  }));
+              }
+            }
           });
       }
       // 送信が済んでいない削除を送り直す。通信できないときに削除した場合、
@@ -692,6 +733,13 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
   },
   起動時に取り込む: async () => {
     await 状態().役を読み直す();
+    // 送れない（決まりに断られた）印は、起動のたびに外して 1 回だけ送り直す（役が替わって送れるようになっていることがある）
+    if ((状態().sessions || []).some((記録) => 記録 && 記録.送れない))
+      書く((前) => ({
+        sessions: 前.sessions.map((記録) =>
+          記録 && 記録.送れない ? Object.assign({}, 記録, { 送れない: false }) : 記録
+        ),
+      }));
     const 様子 = 状態();
     let しかた = 同期規則.起動のしかた({
       団体: 様子.activeGroupId,

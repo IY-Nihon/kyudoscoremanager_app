@@ -18,7 +18,21 @@ test('記録：役に「付ける」があれば作る・送り直す（射手�
   const 節 = 中身('match /sessions/{docId}');
   // 読めるのは持ち主と全員を見る役だけ（3 段目・11/19 本人。部員（自分）は中継の /jibun から自分の行だけ）
   assert.match(節, /allow read: if isGroupOwner\(groupId\) \|\| memberSeesAll\(groupId\);/);
-  assert.match(節, /allow create: if isGroupOwner\(groupId\) \|\| memberCan\(groupId, '付ける'\);/);
+  // 作るのは作った人が空か自分のときだけ。書き換えは、自分が作った記録で作った人を変えないときだけ（4 段目・11/20 本人）
+  assert.match(
+    節,
+    /allow create: if isGroupOwner\(groupId\)\s*\|\| \(memberCan\(groupId, '付ける'\)\s*&& request\.resource\.data\.get\('createdBy', ''\) in \['', claim\(\)\.data\.memberId\]\);/
+  );
+  assert.match(
+    節,
+    /resource\.data\.get\('createdBy', ''\) == claim\(\)\.data\.memberId/,
+    '部員がほかの人の記録を書き換えられる'
+  );
+  assert.match(
+    節,
+    /request\.resource\.data\.get\('createdBy', ''\) == claim\(\)\.data\.memberId/,
+    '作った人を書き換えられる'
+  );
   assert.match(節, /allow update: if isGroupOwner\(groupId\)\s*\|\| \(memberCan\(groupId, '付ける'\)/);
   assert.match(節, /size\(\) >= resource\.data\.get\('archers', \[\]\)\.size\(\)/, '部員が射手を減らせる');
   assert.match(節, /\|\| memberAdmin\(groupId, '直す'\);/);
