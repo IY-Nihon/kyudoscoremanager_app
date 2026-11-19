@@ -11,6 +11,7 @@ const { useScoreStore } = require('./useScoreStore');
 const { IS_WEB } = require('./IS_WEB');
 const { 手順を作る, 手が出せない: 手が出せないか, 見本の中身を作る } = require('./tutorialSteps');
 const { 見える記録数 } = require('./syncRules');
+const 役の決まり = require('./yaku');
 // 案内の版。手順を作り直したら上げる。上げると、一度見た人にもまた出る
 const TUTORIAL_VERSION = '2026-08-13-01';
 const 保存キー = 'tutorialDoneVersion';
@@ -330,6 +331,9 @@ const TutorialOverlay = ({ navRef }) => {
   const 控え = use案内((状態) => 状態.控え);
   const 最高到達 = use案内((状態) => 状態.最高到達);
   const 役割 = useScoreStore((状態) => 状態.activeRole);
+  // 個人ログインの人の役の部品（運営など役のある人には、その役に関係のある団体向けの手順も出す。11/19 本人）。
+  // 並びは読むたびに新しく作られるので、字にして見張る
+  const 部品の字 = useScoreStore((状態) => 役の決まり.自分の部品(状態).join(','));
   const いまの画面 = useScoreStore((状態) => 状態.currentRouteName);
   const [測った枠, 枠を置く] = useState(null);
   // 指す先を測っているあいだ。測り終わるまで案内は出さない
@@ -358,7 +362,10 @@ const TutorialOverlay = ({ navRef }) => {
   // 記録が入っているので、素の件数だと個人ログインのときに
   // 「記録はあるが自分のは1件も無い」場合でも見本を出さず、空の画面が残る
   const 記録数 = useScoreStore((状態) => 見える記録数(状態));
-  const { 基本, 続き } = React.useMemo(() => 手順を作る(役割, { 部員数, 記録数 }), [役割, 部員数, 記録数]);
+  const { 基本, 続き } = React.useMemo(
+    () => 手順を作る(役割, { 部員数, 記録数, 部品: 部品の字 ? 部品の字.split(',') : [] }),
+    [役割, 部員数, 記録数, 部品の字]
+  );
   // 基本の最後に「続きを見ますか」を挟む。見ると答えたら、そのまま続きへ
   const 分かれ道 = React.useMemo(
     () => ({

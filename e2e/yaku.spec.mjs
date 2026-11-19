@@ -187,6 +187,18 @@ test('部員の役：持ち主が作って割り当て、個人ログインの�
     'aria-pressed',
     'true'
   );
+  // 使い方の一覧：運営には役に関係のある団体向け（メンバーの登録・管理者モード）を出し、団体の口座だけのもの
+  // （登録メールアドレス）は出さない（11/19 本人）
+  await 部員の頁.getByText('使い方を見る', { exact: true }).click();
+  const 使い方 = 部員の頁.getByTestId('使い方の選び窓');
+  await 使い方.getByTestId('使い方の組-はじめに（ログイン・メンバー）').click();
+  await expect(使い方.getByTestId('使い方の項目-メンバーを登録する・直す')).toBeVisible();
+  await 使い方.getByTestId('使い方の組-設定・アカウント').click();
+  await expect(使い方.getByTestId('使い方の項目-管理者モード')).toBeVisible();
+  await expect(使い方.getByTestId('使い方の項目-登録メールアドレスを変える')).toHaveCount(0);
+  await 撮る(部員の頁, 使い方, '5-運営の使い方', 情報);
+  await 使い方.getByLabel('閉じる', { exact: true }).click();
+  await expect(使い方).toHaveCount(0);
   // 合言葉を入れていない運営が足した人にも、その場で個人IDが付く（11/19 本人）。運営の画面には出ないので、
   // エミュレーターを管理の資格で読んで確かめる
   // 名前は回ごとに変える（同じエミュレーターでほかの機種が先に足した人を掴まない）

@@ -14,20 +14,25 @@ const { useScoreStore } = require('./useScoreStore');
 const { 手順を作る } = require('./tutorialSteps');
 const { 見える記録数 } = require('./syncRules');
 const { 使い方の一覧 } = require('./usageList');
+const 役の決まり = require('./yaku');
 const 案内 = require('./TutorialGuide');
 const { 色 } = require('./iro.js');
 
 const 使い方の選び窓 = ({ 見える, 閉じる }) => {
   const 役割 = useScoreStore((状態) => 状態.activeRole);
+  // 個人ログインの人の役の部品。運営など役のある人には、その役に関係のある団体向けも出す（11/19 本人）。
+  // 並びは読むたびに新しく作られるので、字にして見張る
+  const 部品の字 = useScoreStore((状態) => 役の決まり.自分の部品(状態).join(','));
+  const 部品 = React.useMemo(() => (部品の字 ? 部品の字.split(',') : []), [部品の字]);
   const 部員数 = useScoreStore((状態) => (Array.isArray(状態.members) ? 状態.members.length : 0));
   const 記録数 = useScoreStore((状態) => 見える記録数(状態));
-  const 一覧 = React.useMemo(() => 使い方の一覧(役割), [役割]);
+  const 一覧 = React.useMemo(() => 使い方の一覧(役割, 部品), [役割, 部品]);
   // 「画面でやってみる」で始められる案内の題。指す先（目印）のある手順だけ（説明だけの手順で始めても、
   // 一覧と同じ文が吹き出しに出るだけ。2026-10-19 本人）。役割や中身で出ない手順もここで外れる
   const 案内できる題 = React.useMemo(() => {
-    const { 基本, 続き } = 手順を作る(役割, { 部員数, 記録数 });
+    const { 基本, 続き } = 手順を作る(役割, { 部員数, 記録数, 部品 });
     return new Set([...基本, ...続き].filter((一つ) => 一つ.目印).map((一つ) => 一つ.題));
-  }, [役割, 部員数, 記録数]);
+  }, [役割, 部員数, 記録数, 部品]);
   const [開いた組, 組を置く] = React.useState(null);
   const [開いた項目, 項目を置く] = React.useState(null);
   // 動画が無い（取りに行くと index.html が返る）ものは覚えて隠す
