@@ -134,6 +134,11 @@ function 偽Firestore() {
       通知();
       return 決着しない();
     }
+    // 決まりに断られた形（permission-denied）。断る(やること) が真の書き込みだけ（4 段目の送れない記録の検査）
+    if (状態.断る && 状態.断る(やること))
+      return Promise.reject(
+        Object.assign(new Error('Missing or insufficient permissions.'), { code: 'permission-denied' })
+      );
     if (状態.失敗させる) return Promise.reject(new Error('偽の失敗'));
     if (状態.遅延 > 0) {
       // 送信中の状態を作る。決着したときに初めてクラウドへ反映する

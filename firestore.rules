@@ -359,11 +359,18 @@ service cloud.firestore {
       // 部員が記録を直すときは、射手を減らさない（アプリも部員の端末では減らさない。src/storeSessions.js の updateSession）。
       // アプリを通さずに書かれても、射手を消して記録を潰せないように（B5）
       // 役（2026-11-19）：付ける＝作る・送り直す（射手は減らさない）、直す＋管理者の合言葉＝何でも直す、消す＝消す
+      // 4 段目（2026-11-20 本人）：記録に作った人（createdBy。部員の端末はメンバーの id、団体の端末は group）を残し、
+      // 「直す」の無い部員が書き換えられるのは、自分が作った記録の送り直しだけ（作った人は変えられない）。作った人の印の
+      // 無い前の記録も書き換えられない。作るときは、作った人が空（前の版で作ってまだ送れていない記録）か自分だけ
       match /sessions/{docId} {
         allow read: if isGroupOwner(groupId) || memberSeesAll(groupId);
-        allow create: if isGroupOwner(groupId) || memberCan(groupId, '付ける');
+        allow create: if isGroupOwner(groupId)
+          || (memberCan(groupId, '付ける')
+              && request.resource.data.get('createdBy', '') in ['', claim().data.memberId]);
         allow update: if isGroupOwner(groupId)
           || (memberCan(groupId, '付ける')
+              && resource.data.get('createdBy', '') == claim().data.memberId
+              && request.resource.data.get('createdBy', '') == claim().data.memberId
               && request.resource.data.get('archers', []) is list
               && request.resource.data.get('archers', []).size() >= resource.data.get('archers', []).size())
           || memberAdmin(groupId, '直す');

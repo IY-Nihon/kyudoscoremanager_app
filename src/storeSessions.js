@@ -73,6 +73,16 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
     const 記録ID = 状態().activeSessionID || generateUUID();
     const { archers, shotsPerRound, activeGroupId, activeRole } = 状態();
     const 射手たち = Array.isArray(archers) ? archers : [];
+    // 作った人（4 段目・11/20 本人）。部員の端末はメンバーの id、団体の端末は group。直して保存し直すときは元のまま
+    // （決まりは、「直す」の無い部員に自分が作った記録の送り直しだけを通す）。前の版の記録（印が無い）には付けない
+    const 前の記録 = (Array.isArray(状態().sessions) ? 状態().sessions : []).find(
+      (記録1件) => 記録1件 && 記録1件.id === 記録ID
+    );
+    const 作った人 = 前の記録
+      ? 前の記録.createdBy || ''
+      : activeRole === 'member'
+        ? String(状態().myMemberId || '')
+        : 'group';
     const 記録 = {
       id: 記録ID,
       date: Date.now(),
@@ -84,6 +94,7 @@ const 記録の操作 = (書く, 状態, そのまま書く) => ({
       includeInStats: 統計に入れる,
       tags: タグ,
       attendance: attendanceData,
+      ...(作った人 ? { createdBy: 作った人 } : {}),
       syncStatus: '未同期',
       lastModified: Date.now(),
     };
