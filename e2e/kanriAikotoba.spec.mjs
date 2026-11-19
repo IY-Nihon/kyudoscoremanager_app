@@ -37,7 +37,9 @@ test('管理者の合言葉：初めて作り、入り、変える', async ({ pa
   await expect(page.getByText('ログアウト', { exact: true })).toBeVisible({ timeout: 15_000 });
   const 切り替える = () =>
     page.evaluate(() => {
-      const 行 = [...document.querySelectorAll('div')].find((e) => (e.textContent || '').trim() === '管理者モード');
+      const 行 = [...document.querySelectorAll('div')].find(
+        (e) => (e.textContent || '').trim() === '管理者モード'
+      );
       let 親 = 行;
       for (let i = 0; i < 6 && 親; i++) {
         const 切替 = 親.querySelector('input[type="checkbox"], [role="switch"]');
@@ -94,4 +96,36 @@ test('管理者の合言葉：初めて作り、入り、変える', async ({ pa
   await page.getByLabel('新しい合言葉をもう一度').fill('yumi-2028');
   await 決める.click();
   await expect(窓).toHaveCount(0, { timeout: 20_000 });
+
+  // 開き直しても、印の期限までは管理者モードのまま。期限の過ぎた控えで開き直すと切れる（11/19 の見直し：前は時計が消え、
+  // 印が切れたあとも画面は管理者モードのままだった）
+  const 設定へ = () => page.getByRole('tab', { name: '設定' }).first().click();
+  await page.waitForTimeout(1500); // 控えのまとめ書きを待つ
+  await page.reload();
+  await 画面が出るまで待つ(page);
+  await 設定へ();
+  await expect(page.getByTestId('管理者の合言葉を変える'), '開き直したら期限の前に切れた').toBeVisible({
+    timeout: 20_000,
+  });
+  // 次に開くとき、控えの期限を過去にしてから読ませる（開いている画面が控えを書き戻さないよう、読み込みの最初に直す）
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('期限を過去に')) return;
+    sessionStorage.setItem('期限を過去に', '1');
+    const 鍵 = 'archery-score-storage';
+    const 控え = JSON.parse(localStorage.getItem(鍵) || '{}');
+    if (控え.state) {
+      控え.state.管理者の期限 = Date.now() - 60_000;
+      localStorage.setItem(鍵, JSON.stringify(控え));
+    }
+  });
+  await page.reload();
+  await 画面が出るまで待つ(page);
+  await 設定へ();
+  await expect(page.getByText('ログアウト', { exact: true })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId('管理者の合言葉を変える'), '期限が過ぎても管理者モードのまま').toHaveCount(
+    0,
+    {
+      timeout: 20_000,
+    }
+  );
 });
