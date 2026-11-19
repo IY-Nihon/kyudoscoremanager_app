@@ -40,7 +40,8 @@ export function 証(人) {
 function 値に(値) {
   if (値 === null || 値 === undefined) return { nullValue: null };
   if (typeof 値 === 'boolean') return { booleanValue: 値 };
-  if (typeof 値 === 'number') return Number.isInteger(値) ? { integerValue: String(値) } : { doubleValue: 値 };
+  if (typeof 値 === 'number')
+    return Number.isInteger(値) ? { integerValue: String(値) } : { doubleValue: 値 };
   if (typeof 値 === 'string') return { stringValue: 値 };
   if (値 instanceof Date) return { timestampValue: 値.toISOString() };
   if (Array.isArray(値)) return { arrayValue: { values: 値.map(値に) } };
@@ -60,7 +61,12 @@ async function 送る(人, 道, 頼み = {}) {
 
 /** 文書を置く（setDoc）。merge なら、渡した欄だけ書き換える（setDoc の merge と同じ） */
 export function 書く(人, 道, 中身, { merge = false } = {}) {
-  const 印 = merge ? '?' + Object.keys(中身).map((鍵) => `updateMask.fieldPaths=${encodeURIComponent('`' + 鍵 + '`')}`).join('&') : '';
+  const 印 = merge
+    ? '?' +
+      Object.keys(中身)
+        .map((鍵) => `updateMask.fieldPaths=${encodeURIComponent('`' + 鍵 + '`')}`)
+        .join('&')
+    : '';
   return 送る(人, `${根}/${道}${印}`, { method: 'PATCH', body: JSON.stringify({ fields: 欄に(中身) }) });
 }
 
@@ -74,7 +80,9 @@ export function 作る(人, 道, 中身) {
 
 /** 文書を直す（あるときだけ。updateDoc と同じ） */
 export function 直す(人, 道, 中身) {
-  const 印 = Object.keys(中身).map((鍵) => `updateMask.fieldPaths=${encodeURIComponent('`' + 鍵 + '`')}`).join('&');
+  const 印 = Object.keys(中身)
+    .map((鍵) => `updateMask.fieldPaths=${encodeURIComponent('`' + 鍵 + '`')}`)
+    .join('&');
   return 送る(人, `${根}/${道}?currentDocument.exists=true&${印}`, {
     method: 'PATCH',
     body: JSON.stringify({ fields: 欄に(中身) }),
@@ -84,10 +92,29 @@ export function 直す(人, 道, 中身) {
 /** 欄を消す（updateDoc の deleteField） */
 export function 欄を消す(人, 道, 鍵たち) {
   const 印 = 鍵たち.map((鍵) => `updateMask.fieldPaths=${encodeURIComponent('`' + 鍵 + '`')}`).join('&');
-  return 送る(人, `${根}/${道}?currentDocument.exists=true&${印}`, { method: 'PATCH', body: JSON.stringify({ fields: {} }) });
+  return 送る(人, `${根}/${道}?currentDocument.exists=true&${印}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ fields: {} }),
+  });
 }
 
 export const 読む = (人, 道) => 送る(人, `${根}/${道}`);
+
+/**
+ * 一括で書く（writeBatch と同じ。全部通るか全部断られる）。書き込み：[{ 道, 中身 }]（setDoc）か [{ 道, 消す: true }]。
+ * 決まりの中で読む回数（get・exists）の上限は、一括では全体で数える（2026-11-19：役の文書を読む分が増えたので確かめる）
+ */
+export function 一括で書く(人, 書き込み) {
+  const 名 = (道) => `projects/${企画}/databases/(default)/documents/${道}`;
+  return 送る(人, `${根}:commit`, {
+    method: 'POST',
+    body: JSON.stringify({
+      writes: 書き込み.map((一つ) =>
+        一つ.消す ? { delete: 名(一つ.道) } : { update: { name: 名(一つ.道), fields: 欄に(一つ.中身) } }
+      ),
+    }),
+  });
+}
 export const 消す = (人, 道) => 送る(人, `${根}/${道}`, { method: 'DELETE' });
 
 /** 集まりを、欄が値と同じもので絞って引く（where(欄, '==', 値)） */
@@ -101,13 +128,19 @@ export function 絞って引く(人, 親の道, 集まり, 欄, 値) {
         where: { fieldFilter: { field: { fieldPath: 欄 }, op: 'EQUAL', value: 値に(値) } },
       },
     }),
-  }).then((返り) => ({ ...返り, 通った: 返り.通った && !(Array.isArray(返り.中身) && 返り.中身.some((一つ) => 一つ.error)) }));
+  }).then((返り) => ({
+    ...返り,
+    通った: 返り.通った && !(Array.isArray(返り.中身) && 返り.中身.some((一つ) => 一つ.error)),
+  }));
 }
 
 /** 中身を全部消す（検査のたびに初めから） */
 export async function 片付ける() {
-  const 返り = await fetch(`http://${宛先}/emulator/v1/projects/${企画}/databases/(default)/documents`, { method: 'DELETE' });
-  if (!返り.ok) throw new Error(`模擬環境を片付けられません（${返り.status}）。模擬環境は立っていますか: ${宛先}`);
+  const 返り = await fetch(`http://${宛先}/emulator/v1/projects/${企画}/databases/(default)/documents`, {
+    method: 'DELETE',
+  });
+  if (!返り.ok)
+    throw new Error(`模擬環境を片付けられません（${返り.status}）。模擬環境は立っていますか: ${宛先}`);
 }
 
 /** 倉庫の決まりを読む。直し（[前, 後] の並び）を当てて、日付の違う形も試せる */
