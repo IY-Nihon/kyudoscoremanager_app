@@ -10,6 +10,7 @@ const 案内 = require('./TutorialGuide');
 // 「自分が写っているか」の判定。案内の見本を出すかどうかにも同じものを使う
 const { 自分の射手か, 自分の記録か } = require('./syncRules');
 const { useScoreStore } = require('./useScoreStore');
+const 役の決まり = require('./yaku');
 const { use引いて更新 } = require('./hikiOroshi');
 // 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
 const { useストアの一部 } = require('./storeSlice');
@@ -54,7 +55,6 @@ const HistoryScreen = () => {
   const 引く = use引いて更新(() => useScoreStore.getState().雲から取り直す());
   const {
     members,
-    activeRole,
     myMemberId,
     sessions,
     trash,
@@ -83,7 +83,6 @@ const HistoryScreen = () => {
   } = 案内.use見本を重ねる(
     useストアの一部([
       'members',
-      'activeRole',
       'myMemberId',
       'sessions',
       'trash',
@@ -161,7 +160,7 @@ const HistoryScreen = () => {
         ? trash.find((記録1件) => 記録1件 && 記録1件.id === selectedHistorySessionId)
         : null) ||
       null;
-    if (記録 && activeRole === 'member' && 部員ID) {
+    if (記録 && 自分の分だけ && 部員ID) {
       // 判定は syncRules の 自分の射手か に出した。ここは交代の判定で
       // 射手ではなく記録のほうを見ていて、交代で入った自分を拾えず、
       // すぐ下の mySessions とも食い違っていた
@@ -173,7 +172,12 @@ const HistoryScreen = () => {
       });
     }
     return 記録;
-  }, [sessions, trash, selectedHistorySessionId, ゴミ箱の記録, activeRole, myMemberId, 自分の名前]);
+  }, [sessions, trash, selectedHistorySessionId, ゴミ箱の記録, 自分の分だけ, myMemberId, 自分の名前]);
+  // できるかは操作の一覧（src/yaku.js）で決める。団体の口座は前のとおり（直すは管理者モード・消すはいつも）、
+  // 個人ログインは役の部品で（2026-11-19）
+  const 直せる = useScoreStore((状態) => 役の決まり.できるか(状態, '記録を直す'));
+  const 消せる = useScoreStore((状態) => 役の決まり.できるか(状態, '記録を消す'));
+  const 自分の分だけ = useScoreStore((状態) => 役の決まり.自分の分だけか(状態));
   // いま見ている記録がゴミ箱の中か。復元されて記録に戻ったら、ふつうの詳細になる
   const ゴミ箱を見ている =
     !!見ている記録 &&
@@ -195,11 +199,11 @@ const HistoryScreen = () => {
     let 一覧 = sessions || [];
     const 部員ID = myMemberId;
     const 名前 = 自分の名前;
-    if (activeRole === 'member' && 部員ID) {
+    if (自分の分だけ && 部員ID) {
       一覧 = 一覧.filter((記録) => 自分の記録か(記録, 部員ID, 名前));
     }
     return 一覧;
-  }, [sessions, activeRole, myMemberId, 自分の名前]);
+  }, [sessions, 自分の分だけ, myMemberId, 自分の名前]);
   const ゴミ箱の選択を切り替える = (id) => {
     const 次 = new Set(ゴミ箱で選んだ);
     if (次.has(id)) 次.delete(id);
@@ -487,7 +491,7 @@ const HistoryScreen = () => {
           <View testID="ゴミ箱の帯" style={styles.trashBanner}>
             <Icons.Ionicons name="trash-outline" size={18} color={基本色.白} />
             <Text style={styles.trashBannerText}>ゴミ箱の中の記録です。見るだけで、直せません</Text>
-            {(isAdminMode || activeRole === 'group') && (
+            {消せる && (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="この記録を復元する"
@@ -504,7 +508,7 @@ const HistoryScreen = () => {
             )}
             {/* 完全に削除もここから。一覧の「選んで削除」と同じ道（deleteTrashItems）を通し、 */
             /* 消したあとはゴミ箱の一覧へ戻る（使う人の要望 2026-09-17） */}
-            {(isAdminMode || activeRole === 'group') && (
+            {消せる && (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="この記録を完全に削除する"
@@ -570,7 +574,7 @@ const HistoryScreen = () => {
                   {横に並べる ? '縦へ' : '横へ'}
                 </Text>
               </Pressable>
-              {(isAdminMode || activeRole === 'group') && !ゴミ箱を見ている && (
+              {消せる && !ゴミ箱を見ている && (
                 <>
                   <Pressable // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                     accessible
@@ -588,7 +592,7 @@ const HistoryScreen = () => {
                   >
                     <Icons.Ionicons name="trash-outline" size={22} color={基本色.赤} />
                   </Pressable>
-                  {isAdminMode && (
+                  {直せる && (
                     <Pressable
                       onPress={() => 管理者の品書きを出す(true)}
                       // 絵だけのボタン。読み上げと検査のために名前を付ける
@@ -698,7 +702,7 @@ const HistoryScreen = () => {
                               justifyContent: 'center',
                             }}
                             onPress={() => 人を選ぶ(射手.id, 順)}
-                            disabled={!isAdminMode}
+                            disabled={!直せる}
                           >
                             <Text
                               style={{
@@ -739,8 +743,8 @@ const HistoryScreen = () => {
                           shots={本数}
                           {...見立て[順]}
                           横並び
-                          isReadOnly={!isAdminMode}
-                          isAdminMode={isAdminMode}
+                          isReadOnly={!直せる}
+                          isAdminMode={直せる}
                           onToggleMark={印を切り替える}
                           onToggleLock={鍵を切り替える}
                         />
@@ -771,8 +775,8 @@ const HistoryScreen = () => {
                             archer={射手}
                             shots={本数}
                             {...見立て[順]}
-                            isReadOnly={!isAdminMode}
-                            isAdminMode={isAdminMode}
+                            isReadOnly={!直せる}
+                            isAdminMode={直せる}
                             onToggleMark={印を切り替える}
                             onToggleLock={鍵を切り替える}
                           />
@@ -864,7 +868,7 @@ const HistoryScreen = () => {
                                   justifyContent: 'center',
                                 }}
                                 onPress={() => 人を選ぶ(射手.id, 順)}
-                                disabled={!isAdminMode}
+                                disabled={!直せる}
                               >
                                 <Text
                                   style={{
@@ -1032,7 +1036,7 @@ const HistoryScreen = () => {
     if (選んだ記録.size !== 0) 削除の確認を出す(true);
   };
   const 印を切り替える = (射手ID, 番) => {
-    if (!見ている記録 || !isAdminMode) return;
+    if (!見ている記録 || !直せる) return;
     const 直した = 見ている記録.archers.map((射手) => {
       if (射手.id === 射手ID) {
         const 印 = [...射手.marks];
@@ -1045,7 +1049,7 @@ const HistoryScreen = () => {
     updateSession(見ている記録.id, { archers: 直した });
   };
   const 鍵を切り替える = (射手ID, 塊) => {
-    if (!見ている記録 || !isAdminMode) return;
+    if (!見ている記録 || !直せる) return;
     const 元 = 見ている記録.archers || [];
     const 押した列 = 元.findIndex((射手) => 射手.id === 射手ID);
     if (押した列 === -1) return;
@@ -1085,7 +1089,7 @@ const HistoryScreen = () => {
   // 途中交代を、いま見ている記録に書く。記録画面の setSubstitution は盤面（記録画面）を
   // 書き換えるので、履歴から使うと見ている記録には残らず、記録画面のほうが変わっていた
   const 交代を書く = (射手ID, 番, 名前, 部員ID) => {
-    if (!見ている記録 || !isAdminMode) return;
+    if (!見ている記録 || !直せる) return;
     const 直した = 見ている記録.archers.map((射手) => {
       if (!射手 || 射手.id !== 射手ID) return 射手;
       const 交代 = Object.assign({}, 射手.substitutions || {});
@@ -1138,7 +1142,7 @@ const HistoryScreen = () => {
     updateSession(見ている記録.id, { archers: 残り });
   };
   const 人を選ぶ = (射手ID, 順) => {
-    if (isAdminMode && !ゴミ箱を見ている) {
+    if (直せる && !ゴミ箱を見ている) {
       選んだ射手IDを置く(射手ID);
       選んだ射手の順を置く(順);
       人の窓を出す(true);
@@ -1169,7 +1173,7 @@ const HistoryScreen = () => {
                 <Text style={styles.listMainTitle}>過去の記録表</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                {(isAdminMode || activeRole === 'group') && (
+                {消せる && (
                   <Pressable
                     onPress={選択を切り替える}
                     style={({ hovered }) => [
@@ -1182,7 +1186,7 @@ const HistoryScreen = () => {
                     </Text>
                   </Pressable>
                 )}
-                {(isAdminMode || activeRole === 'group') && (
+                {消せる && (
                   <Pressable // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                     accessible
                     accessibilityRole="button"

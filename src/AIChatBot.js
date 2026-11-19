@@ -1,5 +1,6 @@
 'use strict';
 
+const 役の決まり = require('./yaku');
 const { 色 } = require('./iro.js');
 Object.defineProperty(exports, '__esModule', { value: true });
 
@@ -241,8 +242,11 @@ const AIChatBot = () => {
     'selectedHistorySessionId',
   ]);
   // 個人ログインの端末には団体ぜんぶの部員・記録が入っている。AI に渡す前に、本人の分だけに絞る。
-  // 以降の members・sessions は、個人なら絞ったあとのもの（道具も質問例も、他の人には届かない）
-  const 個人 = activeRole === 'member';
+  // 以降の members・sessions は、個人なら絞ったあとのもの（道具も質問例も、他の人には届かない）。
+  // 絞るのは役に「全員を見る」の無い人（部員（自分）など。src/yaku.js・2026-11-19）。全員を見る役は団体と同じ
+  const 個人ログイン = activeRole === 'member';
+  const 個人 = useScoreStore((状態) => 役の決まり.自分の分だけか(状態));
+  const メンバーを足せる = useScoreStore((状態) => 役の決まり.できるか(状態, 'メンバーを管理する'));
   const 見える = React.useMemo(
     () =>
       個人
@@ -252,7 +256,7 @@ const AIChatBot = () => {
   );
   const members = 見える.members;
   const sessions = 見える.sessions;
-  const 保存の鍵 = 会話の鍵(activeGroupId, 個人, myMemberId);
+  const 保存の鍵 = 会話の鍵(activeGroupId, 個人ログイン, myMemberId);
   // 団体の入っていない前の会話は、どの団体のものか分からないので消す（一度だけ）
   React.useEffect(() => {
     会話の控え.前の会話を消す();
@@ -457,7 +461,7 @@ const AIChatBot = () => {
     })
   ).current;
 
-  if ((activeRole !== 'group' && !(個人 && myMemberId)) || currentRouteName === '記録' || 入れ替え中) {
+  if ((activeRole !== 'group' && !(個人ログイン && myMemberId)) || currentRouteName === '記録' || 入れ替え中) {
     return null;
   }
 
@@ -465,10 +469,10 @@ const AIChatBot = () => {
   const カードの人を追加する = (card) => {
     const { name, grade, gender } = card.args;
     const finalGender = 性別にそろえる(gender);
-    // 部員の追加は団体ログインのときだけ通る（ストア側で止めている）。
+    // 部員の追加は、メンバーを管理できる人だけ通る（ストア側で止めている。src/yaku.js）。
     // 確かめずに「追加しました」と出していたため、個人で入っている人には
     // 権限エラーの帯と「追加しました」が同時に出ていた
-    if (activeRole !== 'group') return null;
+    if (!メンバーを足せる) return null;
     // 学年 0 はその他（コーチ・ゲスト）。数でなければ 1 年として足す
     const 学年 = Number(grade);
     addMember(name, finalGender, Number.isFinite(学年) && grade !== null && grade !== '' ? 学年 : 1);
@@ -542,7 +546,7 @@ const AIChatBot = () => {
       次.push({
         id: generateMsgId(),
         role: 'model',
-        text: 'メンバーの追加は団体ログインのときだけできます。追加していません。',
+        text: 'メンバーの追加は、団体のアカウントか、メンバーを管理できる役の人だけができます。追加していません。',
       });
     setMessages(次);
     setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);

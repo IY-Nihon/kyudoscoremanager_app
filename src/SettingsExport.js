@@ -1,5 +1,6 @@
 'use strict';
 
+const 役の決まり = require('./yaku');
 const { 色 } = require('./iro.js');
 // 記録の選び方とシートの組み方は src/kakidashiNoHyou.js（数え方は分析画面と同じ statsRules）
 const {
@@ -93,13 +94,14 @@ const 候補の並び = ({ 候補, 選んだもの, 選んだものを置く, �
  */
 const データの書き出し窓 = ({ 見える, 閉じる }) => {
   const {
-    activeRole,
     myMemberId,
     myMemberName,
     alumni = [],
     members = [],
     sessions: sList = [],
-  } = useストアの一部(['activeRole', 'myMemberId', 'myMemberName', 'alumni', 'members', 'sessions']);
+  } = useストアの一部(['myMemberId', 'myMemberName', 'alumni', 'members', 'sessions']);
+  // 個人ログインで「全員を見る」の無い役は自分の分だけ（src/yaku.js・2026-11-19）
+  const 自分の分だけ = useScoreStore((状態) => 役の決まり.自分の分だけか(状態));
   const [期間の始め, 期間の始めを置く] = React.useState(
     new Date(new Date().getFullYear(), new Date().getMonth(), 1)
   );
@@ -137,23 +139,23 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
   // 候補（題・タグ）の元。個人ログインなら自分の分がある記録だけ
   const 見える記録 = React.useMemo(
     () =>
-      activeRole === 'member' && myMemberId
+      自分の分だけ && myMemberId
         ? sList.filter((記録) => 自分の分がある記録か(記録, myMemberId, myMemberName))
         : sList.filter(Boolean),
-    [sList, activeRole, myMemberId, myMemberName]
+    [sList, 自分の分だけ, myMemberId, myMemberName]
   );
   const titleSuggestions = React.useMemo(() => {
     const 題たち = 見える記録.map((記録) => 記録.title).filter((題) => 題 && 題.trim() !== '');
     return Array.from(new Set(題たち)).slice(0, 10);
   }, [見える記録]);
   const memberSuggestions = React.useMemo(() => {
-    if (activeRole === 'member') return myMemberName ? [myMemberName] : [];
+    if (自分の分だけ) return myMemberName ? [myMemberName] : [];
     const 名前たち = [...members, ...alumni]
       .sort(学.名簿の順に比べる)
       .map((部員) => 部員.name)
       .filter((名) => 名 && 名.trim() !== '');
     return Array.from(new Set(名前たち));
-  }, [members, alumni, activeRole, myMemberName]);
+  }, [members, alumni, 自分の分だけ, myMemberName]);
   const タグの一覧 = React.useMemo(() => {
     const 集めた = new Set();
     見える記録.forEach((記録) => {
@@ -173,7 +175,7 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
     言葉の絞り,
     選んだ部員: selectedMembers,
     部員名の絞り,
-    自分id: activeRole === 'member' ? myMemberId : null,
+    自分id: 自分の分だけ ? myMemberId : null,
     自分名: myMemberName,
     形: 書き出しの形,
     現役たち: members,
@@ -225,7 +227,7 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
             {確かめる範囲 && 中身 ? (
               <>
                 <ScrollView style={{ width: '100%', maxHeight: 360 }} testID="書き出す内容">
-                  {activeRole !== 'member' && (
+                  {!自分の分だけ && (
                     <>
                       <View style={確かめの形.切り替え}>
                         <Text style={確かめの形.切り替えの字}>卒業生を含める</Text>
@@ -401,7 +403,7 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                     鍵の頭="suggest-title"
                   />
                 </View>
-                {activeRole !== 'member' && (
+                {!自分の分だけ && (
                   <View style={styles.filterGroup}>
                     <Text style={styles.filterLabel}>メンバー名</Text>
                     <TextInput

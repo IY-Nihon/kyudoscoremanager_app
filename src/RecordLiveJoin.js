@@ -10,7 +10,8 @@ const { IS_WEB } = require('./IS_WEB');
  * 状態と処理は記録画面が持ち、ここは描くだけ
  */
 /** ライブを始めるか、入るかを選ぶ */
-const ライブを始めるか入るかの窓 = ({ ライブの選び窓, ライブの選び窓を出す, ライブを始める窓へ }) => (
+// 付けられる … 役で記録を付けられない人（見るだけの役。src/yaku.js・2026-11-19）には、始める・記録用を出さない
+const ライブを始めるか入るかの窓 = ({ ライブの選び窓, ライブの選び窓を出す, ライブを始める窓へ, 付けられる = true }) => (
   <Modal
     visible={ライブの選び窓}
     transparent
@@ -37,17 +38,19 @@ const ライブを始めるか入るかの窓 = ({ ライブの選び窓, ライ
           overflow: 'hidden',
         }}
       >
-        <TouchableOpacity
-          style={{
-            padding: 18,
-            alignItems: 'center',
-            borderBottomWidth: StyleSheet.hairlineWidth,
-            borderBottomColor: 色.区切り,
-          }}
-          onPress={() => ライブを始める窓へ('host')}
-        >
-          <Text style={{ fontSize: 20, color: 色.青 }}>ライブ記録を開始</Text>
-        </TouchableOpacity>
+        {付けられる ? (
+          <TouchableOpacity
+            style={{
+              padding: 18,
+              alignItems: 'center',
+              borderBottomWidth: StyleSheet.hairlineWidth,
+              borderBottomColor: 色.区切り,
+            }}
+            onPress={() => ライブを始める窓へ('host')}
+          >
+            <Text style={{ fontSize: 20, color: 色.青 }}>ライブ記録を開始</Text>
+          </TouchableOpacity>
+        ) : null}
         <TouchableOpacity
           style={{ padding: 18, alignItems: 'center' }}
           onPress={() => ライブを始める窓へ('join')}
@@ -74,7 +77,7 @@ const ライブを始めるか入るかの窓 = ({ ライブの選び窓, ライ
 );
 
 /** 入るときに、記録する側か見るだけかを選ぶ */
-const 参加のしかたの窓 = ({ 参加のしかたを聞く, 参加のしかたを聞くを置く, ライブに入る }) => (
+const 参加のしかたの窓 = ({ 参加のしかたを聞く, 参加のしかたを聞くを置く, ライブに入る, 付けられる = true }) => (
   <Modal
     visible={参加のしかたを聞く !== null}
     transparent
@@ -112,25 +115,27 @@ const 参加のしかたの窓 = ({ 参加のしかたを聞く, 参加のしか
           <Text style={{ fontSize: 13, color: 色.灰, fontWeight: '600' }}>参加のしかた</Text>
           <Text style={{ fontSize: 15, color: 色.文字_二, marginTop: 4 }}>{参加のしかたを聞く || ''}</Text>
         </View>
-        <Pressable
-          style={({ hovered }) => [
-            {
-              padding: 16,
-              alignItems: 'center',
-              borderBottomWidth: StyleSheet.hairlineWidth,
-              borderBottomColor: 色.区切り,
-            },
-            hovered && IS_WEB && { backgroundColor: 色.地 },
-          ]}
-          onPress={() => {
-            const 名 = 参加のしかたを聞く;
-            参加のしかたを聞くを置く(null);
-            if (名) ライブに入る(名, false);
-          }}
-        >
-          <Text style={{ fontSize: 20, color: 色.青, fontWeight: 'bold' }}>記録用</Text>
-          <Text style={{ fontSize: 13, color: 色.灰, marginTop: 2 }}>○×を入れられます</Text>
-        </Pressable>
+        {付けられる ? (
+          <Pressable
+            style={({ hovered }) => [
+              {
+                padding: 16,
+                alignItems: 'center',
+                borderBottomWidth: StyleSheet.hairlineWidth,
+                borderBottomColor: 色.区切り,
+              },
+              hovered && IS_WEB && { backgroundColor: 色.地 },
+            ]}
+            onPress={() => {
+              const 名 = 参加のしかたを聞く;
+              参加のしかたを聞くを置く(null);
+              if (名) ライブに入る(名, false);
+            }}
+          >
+            <Text style={{ fontSize: 20, color: 色.青, fontWeight: 'bold' }}>記録用</Text>
+            <Text style={{ fontSize: 13, color: 色.灰, marginTop: 2 }}>○×を入れられます</Text>
+          </Pressable>
+        ) : null}
         <Pressable
           style={({ hovered }) => [
             { padding: 16, alignItems: 'center' },

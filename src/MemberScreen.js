@@ -19,6 +19,7 @@ const {
 } = require('./rn');
 const { IS_WEB, SAFE_TOP_PADDING, WEB_TOP_PADDING } = require('./IS_WEB');
 const { useScoreStore } = require('./useScoreStore');
+const 役の決まり = require('./yaku');
 const 学 = require('./gakunen');
 const { use団体の決まり } = require('./useGakunen');
 const 区 = require('./kubun');
@@ -62,7 +63,6 @@ const MemberScreen = () => {
     deleteMember,
     activeGroupId,
     publicGroupId,
-    isAdminMode,
     activeRole,
     myMemberId,
     個人IDの表 = {},
@@ -76,10 +76,14 @@ const MemberScreen = () => {
     'deleteMember',
     'activeGroupId',
     'publicGroupId',
-    'isAdminMode',
     'activeRole',
     'myMemberId',
   ]);
+  // メンバーを管理できるか（団体の口座と、役に「メンバー」のある個人ログイン。src/yaku.js・2026-11-19）。
+  // 管理できない個人ログインは、前のとおり自分の情報と弓具だけ
+  const 管理できる = useScoreStore((状態) => 役の決まり.できるか(状態, 'メンバーを管理する'));
+  const 個人IDを見られる = useScoreStore((状態) => 役の決まり.できるか(状態, '個人IDを見る'));
+  const 招待を作れる = useScoreStore((状態) => 役の決まり.できるか(状態, '招待リンクを作る'));
   // 使い方の案内が指す先
   const 案内の部員追加 = 案内.useTutorialTarget('メンバー.追加');
   const [検索の文, 検索の文を置く] = React.useState('');
@@ -120,7 +124,7 @@ const MemberScreen = () => {
   // 押せない行が続くだけだった。人数の多い団体ほど自分を探しにくい。
   // 弓具を登録しに来る人にとって、この画面に用があるのは自分の行だけ
   const 見せる名簿 =
-    activeRole === 'member'
+    !管理できる
       ? (members || []).filter((部員1人) => 部員1人 && 部員1人.id === myMemberId)
       : members || [];
   const filteredMembers = 見せる名簿.filter(
@@ -202,12 +206,12 @@ const MemberScreen = () => {
   // 名簿は雲から遅れて届くので、届いたところで一度だけ開く
   const 自分を開いた = React.useRef(false);
   React.useEffect(() => {
-    if (activeRole !== 'member' || 自分を開いた.current) return;
+    if (管理できる || 自分を開いた.current) return;
     const 自分 = (members || []).find((部員1人) => 部員1人 && 部員1人.id === myMemberId);
     if (!自分) return;
     自分を開いた.current = true;
     編集を開く(自分);
-  }, [activeRole, members, myMemberId]);
+  }, [管理できる, members, myMemberId]);
   const 編集を開く = (部員) => {
     編集中の部員を置く(部員);
     名前の下書きを置く(部員.name);
@@ -371,16 +375,16 @@ const MemberScreen = () => {
   // 写した値のままだと、団体側で名前や学年を直しても
   // 読み込み直すまで古いまま出る
   const いまの自分 =
-    activeRole === 'member' ? (members || []).find((部員1人) => 部員1人 && 部員1人.id === myMemberId) : null;
+    !管理できる ? (members || []).find((部員1人) => 部員1人 && 部員1人.id === myMemberId) : null;
   // 個人ID は逆引き表から読む（名簿の文書には置かない。src/storeMembers.js）。持ち主の端末は 個人IDの表、
   // 部員の端末は自分の所属の証から読んだ 自分の個人ID（ほかの人の ID は届かない）
   const 個人IDを引く = (部員1人) =>
     !部員1人
       ? ''
-      : activeRole === 'group'
-        ? 個人IDの表[部員1人.id] || 部員1人.personalId || ''
-        : 部員1人.id === myMemberId
-          ? 自分の個人ID || ''
+      : activeRole === 'member' && 部員1人.id === myMemberId
+        ? 自分の個人ID || ''
+        : 管理できる
+          ? 個人IDの表[部員1人.id] || 部員1人.personalId || ''
           : '';
   React.useEffect(() => {
     if (activeRole === 'member' && !自分の個人ID) useScoreStore.getState().自分の個人IDを読む();
@@ -410,7 +414,7 @@ const MemberScreen = () => {
         {窓として出す ? (
           <>
             {/* 新しく足すときだけ。AI アシスタントの addMembers で何人でもまとめて足せる（2026-11-08 本人の文） */}
-            {!編集中の部員 && activeRole === 'group' ? (
+            {!編集中の部員 && 管理できる ? (
               <Text style={styles.まとめて登録の案内}>
                 複数人登録する際は、AIアシスタントに名前・学年・性別を送るだけで、まとめて登録できます
               </Text>
@@ -430,7 +434,7 @@ const MemberScreen = () => {
                 <Text style={styles.label}>個人ID (自動採番)</Text>
                 <View style={[styles.input, { justifyContent: 'center', opacity: 0.6 }]}>
                   <Text style={{ fontSize: 16 }}>
-                    {isAdminMode || 編集中の部員.id === myMemberId
+                    {個人IDを見られる || 編集中の部員.id === myMemberId
                       ? 個人IDを引く(編集中の部員)
                       : '******** (管理者のみ表示)'}
                   </Text>
@@ -439,7 +443,7 @@ const MemberScreen = () => {
             ) : null}
             {/* 招待リンク（団体の持ち主が管理者モードのときだけ）。合言葉は逆引き表に置き、 */
             /* メンバーには一覧させない（src/memberInvite.js） */}
-            {編集中の部員 && activeRole === 'group' && isAdminMode && (
+            {編集中の部員 && 招待を作れる && (
               <招待リンクの欄 団体={activeGroupId} 部員={編集中の部員} />
             )}
           </>
@@ -661,12 +665,12 @@ const MemberScreen = () => {
         )}
         {/* 弓具は、団体アカウントか本人だけ。個人ログインで他人の */
         /* 画面を開く道は塞いであるが、ここでも確かめる */}
-        {編集中の部員 && (activeRole !== 'member' || 編集中の部員.id === myMemberId) && (
+        {編集中の部員 && (管理できる || 編集中の部員.id === myMemberId) && (
           <>
             <Text style={styles.label}>弓具管理</Text>
             {/* 個人ログインでは、窓を挟まずにそのまま履歴を出す。 */
             /* 自分のぶんしか触れないので、隠す意味がない */}
-            {activeRole === 'member' ? (
+            {!管理できる ? (
               弓具履歴の中身(編集中の部員?.id, false)
             ) : (
               <Pressable
@@ -681,7 +685,7 @@ const MemberScreen = () => {
         )}
         {窓として出す ? (
           <View style={styles.modalFooter}>
-            {編集中の部員 && activeRole !== 'member' ? (
+            {編集中の部員 && 管理できる ? (
               <TouchableOpacity
                 style={styles.deleteBtn}
                 onPress={() => 削除を確かめる(編集中の部員.id, 編集中の部員.name)}
@@ -740,7 +744,7 @@ const MemberScreen = () => {
   // 情報と弓具だけを、そのまま並べた画面にする。
   // 中身（編集の欄・弓具の履歴）は団体ログインと同じものを呼んでいるので、
   // 直すところは1か所で済む。
-  if (activeRole === 'member') {
+  if (!管理できる) {
     const 自分 = (members || []).find((部員1人) => 部員1人 && 部員1人.id === myMemberId);
     return (
       <SafeAreaView style={styles.safeArea}>

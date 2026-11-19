@@ -1,5 +1,6 @@
 'use strict';
 
+const 役の決まり = require('./yaku');
 const { 色: 基本色 } = require('./iro.js');
 const themeMod = require('./theme');
 const React = require('react');
@@ -227,7 +228,8 @@ const 下の帯 = React.memo(({ state, descriptors, navigation: nav }) => {
   );
 });
 const MainNavigator = () => {
-  const 役割 = useScoreStore((状態) => 状態.activeRole);
+  // 出欠のタブは、団体の口座と、役に「出欠・練習日」のある個人ログイン（src/yaku.js・2026-11-19）
+  const 出欠を出す = useScoreStore((状態) => 役の決まり.できるか(状態, '出欠'));
   // 共有リンクだけで来ている人。団体のデータを何も持っていないので、
   // 履歴・分析・設定を出しても中身が無い。記録の画面だけにする
   const 来客 = useScoreStore((状態) => 状態.共有の来客);
@@ -258,7 +260,7 @@ const MainNavigator = () => {
         /* 一覧で他人を開こうとすると MemberScreen 側が断り、弓具の欄も */
         /* 自分のぶんしか出さない */}
         {!来客 && <Tab.Screen name="メンバー" component={MemberScreen} />}
-        {!来客 && 役割 === 'group' && <Tab.Screen name="出欠" component={AttendanceScreen} />}
+        {!来客 && 出欠を出す && <Tab.Screen name="出欠" component={AttendanceScreen} />}
         {!来客 && <Tab.Screen name="設定" component={SettingsScreen} />}
       </Tab.Navigator>
       {/* 来客には出さない。相談役は団体の記録を見て答える作りで、 */

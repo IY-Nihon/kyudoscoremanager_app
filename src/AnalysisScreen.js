@@ -9,6 +9,7 @@ const { 自分の記録か } = require('./syncRules');
 // 「その射は誰のものか」の決まりは1か所に寄せてある（src/statsRules.js）
 const 集 = require('./statsRules');
 const { useScoreStore } = require('./useScoreStore');
+const 役の決まり = require('./yaku');
 const 学 = require('./gakunen');
 const { use団体の決まり } = require('./useGakunen');
 const { use引いて更新 } = require('./hikiOroshi');
@@ -29,6 +30,9 @@ const { 部員の詳細の窓 } = require('./AnalysisMemberDetail');
 const AnalysisScreen = ({ navigation }) => {
   // 上から引っ張って更新（src/hikiOroshi.js）。雲から取り直す
   const 引く = use引いて更新(() => useScoreStore.getState().雲から取り直す());
+  // 個人ログインで「全員を見る」の無い役（部員（自分）など）は、自分の分だけ（src/yaku.js・2026-11-19）。
+  // 全員を見る役は団体と同じ順位・絞り込みを出す
+  const 自分の分だけ = useScoreStore((状態) => 役の決まり.自分の分だけか(状態));
   const {
     analysisSelectedTags = [],
     analysisTagLogic = 'AND',
@@ -37,7 +41,6 @@ const AnalysisScreen = ({ navigation }) => {
     setAnalysisTagLogic,
     analysisRankingSettings = {},
     setAnalysisRankingSetting,
-    activeRole,
     myMemberId,
     sessions = [],
     members = [],
@@ -63,7 +66,6 @@ const AnalysisScreen = ({ navigation }) => {
       'setAnalysisTagLogic',
       'analysisRankingSettings',
       'setAnalysisRankingSetting',
-      'activeRole',
       'myMemberId',
       'sessions',
       'members',
@@ -231,7 +233,7 @@ const AnalysisScreen = ({ navigation }) => {
     // おらず、メンバーを選ばずに氏名だけで入れた記録が落ちていた。
     // 履歴画面の絞り込み（あちらは氏名も見る）とも食い違っていた
     const src =
-      activeRole === 'member' && myMemberId
+      自分の分だけ && myMemberId
         ? sessions.filter((記録1件) => 自分の記録か(記録1件, myMemberId, 自分の名前))
         : sessions;
     src.forEach((記録) => {
@@ -244,7 +246,7 @@ const AnalysisScreen = ({ navigation }) => {
         const 乙は選択中 = analysisSelectedTags.includes(乙);
         return 甲は選択中 && !乙は選択中 ? -1 : !甲は選択中 && 乙は選択中 ? 1 : 甲.localeCompare(乙);
       });
-  }, [sessions, analysisSelectedTags, activeRole, myMemberId]);
+  }, [sessions, analysisSelectedTags, 自分の分だけ, myMemberId]);
   // 記録の絞り込み。描画のたびに数え直すと、部員の数だけ記録を舐める順位の計算
   // まで巻き添えで走る。本番でいちばん大きい団体（部員79人・記録108件）で
   // 1周 35ms かかっていた。絞り込みが変わったときだけ作り直す。
@@ -304,11 +306,11 @@ const AnalysisScreen = ({ navigation }) => {
         ...(((学年の絞り === '卒業生' || showAlumniInAnalysis) && alumni) || []),
       ]
         .filter((部員1人) => !!部員1人)
-        .filter((部員1人) => activeRole !== 'member' || !myMemberId || 部員1人.id === myMemberId)
+        .filter((部員1人) => !自分の分だけ || !myMemberId || 部員1人.id === myMemberId)
         .map((部員) => Object.assign({}, 部員, 集.成績を数える(絞った記録, 部員.id)))
         .filter((部員) => {
           if (部員.shots === 0) return false;
-          if (activeRole === 'group') {
+          if (!自分の分だけ) {
             if (性別の絞り !== '全員' && 部員.gender !== 性別の絞り) return false;
             if (区分の絞り !== '全区分' && !(部員.divisionIds || []).includes(区分の絞り)) return false;
             if (学年の絞り !== '全学年') {
@@ -327,7 +329,7 @@ const AnalysisScreen = ({ navigation }) => {
       showAlumniInAnalysis,
       学年の絞り,
       区分の絞り,
-      activeRole,
+      自分の分だけ,
       myMemberId,
       性別の絞り,
       絞った記録,
@@ -427,12 +429,12 @@ const AnalysisScreen = ({ navigation }) => {
     部員id ? 集.成績を数える(点の期間で絞る(絞った記録, ラベル), 部員id) : null;
   // 部員として入っているときの、自分の成績
   const 自分の期間の成績 = React.useMemo(
-    () => (activeRole === 'member' && myMemberId ? 期間の成績(myMemberId, selectedTrendLabel) : null),
-    [activeRole, myMemberId, 絞った記録, selectedTrendLabel]
+    () => (自分の分だけ && myMemberId ? 期間の成績(myMemberId, selectedTrendLabel) : null),
+    [自分の分だけ, myMemberId, 絞った記録, selectedTrendLabel]
   );
   const 自分の推移 = React.useMemo(
-    () => (activeRole === 'member' && myMemberId ? 推移を数える(myMemberId) : []),
-    [activeRole, myMemberId, 推移を数える]
+    () => (自分の分だけ && myMemberId ? 推移を数える(myMemberId) : []),
+    [自分の分だけ, myMemberId, 推移を数える]
   );
   const 推移の図 = ({ data, selectedLabel, onSelectLabel, onJumpToRecord }) => {
     const 選んだ番 = selectedLabel ? data.findIndex((item) => item.label === selectedLabel) : null;
@@ -765,7 +767,7 @@ const AnalysisScreen = ({ navigation }) => {
               </TouchableOpacity>
             </View>
           )}
-          {activeRole !== 'member' && (
+          {!自分の分だけ && (
             <View style={styles.rankingSettingsContainer}>
               <Text style={styles.rankingSettingsLabel}>ランキング対象の基準 (最多比)</Text>
               <View style={styles.ratioButtonRow}>
@@ -838,7 +840,7 @@ const AnalysisScreen = ({ navigation }) => {
               )}
             </View>
           )}
-          {activeRole !== 'member' && (
+          {!自分の分だけ && (
             <>
               <View style={styles.filterDivider} />
               <選択肢の帯
@@ -891,7 +893,7 @@ const AnalysisScreen = ({ navigation }) => {
             </>
           )}
         </View>
-        {activeRole === 'member' && 順位つき[0] && (
+        {自分の分だけ && 順位つき[0] && (
           <View style={styles.memberDashboard}>
             <View style={styles.dashboardHeader}>
               <Text style={styles.dashboardTitle}>マイ・パフォーマンス統計</Text>
@@ -987,7 +989,7 @@ const AnalysisScreen = ({ navigation }) => {
             {型の節(自分の期間の成績 || 順位つき[0], selectedTrendLabel)}
           </View>
         )}
-        {activeRole !== 'member' && (
+        {!自分の分だけ && (
           <View style={styles.searchBarContainer}>
             <View style={styles.searchBar}>
               <Icons.Ionicons name="search" size={18} color={色.青} style={styles.searchIcon} />
@@ -1007,7 +1009,7 @@ const AnalysisScreen = ({ navigation }) => {
             </View>
           </View>
         )}
-        {activeRole !== 'member' && (
+        {!自分の分だけ && (
           <View style={styles.listContainer}>
             {順位つき.map((部員) => (
               <TouchableOpacity
@@ -1030,7 +1032,7 @@ const AnalysisScreen = ({ navigation }) => {
                       {部員.name}
                     </Text>
                     <Text style={styles.memberSub} numberOfLines={1}>
-                      {activeRole === 'group' && 学.人の説明(部員, 決まり, { 期を使う, 区分たち })}
+                      {!自分の分だけ && 学.人の説明(部員, 決まり, { 期を使う, 区分たち })}
                     </Text>
                   </View>
                 </View>
@@ -1076,7 +1078,7 @@ const AnalysisScreen = ({ navigation }) => {
                       <View style={styles.nameContainer}>
                         <Text style={[styles.memberName, { color: 色.黒 }]}>{部員.name}</Text>
                         <Text style={styles.memberSub}>
-                          {activeRole === 'group' && 学.人の説明(部員, 決まり, { 期を使う, 区分たち })}
+                          {!自分の分だけ && 学.人の説明(部員, 決まり, { 期を使う, 区分たち })}
                         </Text>
                       </View>
                     </View>
