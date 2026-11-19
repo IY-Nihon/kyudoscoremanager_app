@@ -186,6 +186,16 @@ test('部員の役：持ち主が作って割り当て、個人ログインの�
   await expect(部員の頁.getByTestId('招待リンク'), '運営が招待リンクを作れない').toBeVisible({
     timeout: 20_000,
   });
+  // 管理者モードの運営が足した人には、その場で個人IDが付く（11/19 の見直し：前は団体の端末を開くまで付かなかった）
+  await 部員の頁.getByLabel('閉じる', { exact: true }).filter({ visible: true }).first().click();
+  await 部員の頁.getByRole('button', { name: 'メンバーを追加' }).click();
+  await 部員の頁.getByLabel('名前', { exact: true }).fill('検査 運営');
+  await 部員の頁.getByText('保存する', { exact: true }).click();
+  await 部員の頁.getByTestId('メンバーの一覧').getByText('検査 運営', { exact: true }).first().click();
+  await expect(部員の頁.getByTestId('招待リンクの欄')).toBeVisible({ timeout: 20_000 });
+  await expect(部員の頁.getByText(/^[A-Z0-9]{6}$/).first(), '運営が足した人に個人IDが付かない').toBeVisible({
+    timeout: 30_000,
+  });
 
   await 部員の場.close();
   await 持ち主の場.close();
