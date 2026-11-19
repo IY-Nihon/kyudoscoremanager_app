@@ -16,7 +16,8 @@ const 中身 = (印) => {
 
 test('記録：役に「付ける」があれば作る・送り直す（射手は減らさない）、「直す」＋合言葉で直す、「消す」で消す（2026-11-19）', () => {
   const 節 = 中身('match /sessions/{docId}');
-  assert.match(節, /allow read: if canAccess\(groupId\);/);
+  // 読めるのは持ち主と全員を見る役だけ（3 段目・11/19 本人。部員（自分）は中継の /jibun から自分の行だけ）
+  assert.match(節, /allow read: if isGroupOwner\(groupId\) \|\| memberSeesAll\(groupId\);/);
   assert.match(節, /allow create: if isGroupOwner\(groupId\) \|\| memberCan\(groupId, '付ける'\);/);
   assert.match(節, /allow update: if isGroupOwner\(groupId\)\s*\|\| \(memberCan\(groupId, '付ける'\)/);
   assert.match(節, /size\(\) >= resource\.data\.get\('archers', \[\]\)\.size\(\)/, '部員が射手を減らせる');
@@ -36,13 +37,13 @@ test('名簿：作る・消すは団体と役に「メンバー」のある部�
   assert.match(節, /affectedKeys\(\)\.hasOnly\(\['equipments', 'lastModified'\]\)/);
 });
 
-test('卒業生・ゴミ箱・練習日：書くのは団体と、役にその部品のある部員（読むのは部員も）', () => {
-  for (const [印, 部品] of [
-    ['match /trash/{docId}', '消す'],
-    ['match /officialPracticeDays/{docId}', '出欠'],
+test('卒業生・ゴミ箱・練習日：書くのは団体と、役にその部品のある部員（読むのは部員も。ゴミ箱は全員を見る役だけ）', () => {
+  for (const [印, 部品, 読み] of [
+    ['match /trash/{docId}', '消す', /allow read: if isGroupOwner\(groupId\) \|\| memberSeesAll\(groupId\);/],
+    ['match /officialPracticeDays/{docId}', '出欠', /allow read: if canAccess\(groupId\);/],
   ]) {
     const 節 = 中身(印);
-    assert.match(節, /allow read: if canAccess\(groupId\);/, 印);
+    assert.match(節, 読み, 印);
     assert.ok(節.includes(`allow write: if isGroupOwner(groupId) || memberCan(groupId, '${部品}');`), 印);
   }
   const 卒業生 = 中身('match /alumni/{docId}');
@@ -83,4 +84,13 @@ test('団体の帳面の一覧：管理者か、自分のメールの団体だ�
     決まり,
     /allow list: if isAdmin\(\)\n\s+\|\| \(callerEmail\(\) != '' && resource\.data\.email == callerEmail\(\)\);/
   );
+});
+
+test('全員の記録を読める役（memberSeesAll）は、全員を見るか、見るのが要る部品（src/yaku.js）を持つ役', () => {
+  const { 見るのが要る部品 } = require('../src/yaku');
+  const 始め = 決まり.indexOf('function memberSeesAll(groupId)');
+  assert.ok(始め >= 0, 'memberSeesAll が無い');
+  const 節 = 決まり.slice(始め, 決まり.indexOf('}', 始め));
+  for (const 部品 of ['全員を見る', ...見るのが要る部品])
+    assert.ok(節.includes(`'${部品}'`), `${部品} が無い`);
 });

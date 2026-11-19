@@ -341,7 +341,65 @@ const zustand = require('zustand');
 // Firebase を用意する（読み込むだけで初期化される。中身は下の Firebaseの器 が読むたびに取る）
 require('./db');
 const FirebaseAuth = require('firebase/auth');
-const Firestore = require('firebase/firestore');
+const 素のFirestore = require('firebase/firestore');
+/**
+ * 記録が変わった印（3 段目・2026-11-19 本人「すぐ届く」）。記録（sessions）かゴミ箱（trash）を書けたら、
+ * groups/{団体}/changes/sessions にサーバーの時刻（at）を置く。記録を直接読めない役の端末（部員（自分））は
+ * これを見張り、変わったら中継から自分の行を取り直す（storeSync の 記録の印を見張る）。
+ * 店（storeSessions・storeSync・storeMembers など）はみな下の Firestore を使うので、ここで書き込みを包めば、
+ * 記録を書く道を足しても印を書き忘れない。印は一括に混ぜず、書けたあとに別に書く（印の決まりを配る前の雲や、
+ * 書けなかったときに、記録の保存まで巻き添えで断られないように）。印が書けなくても黙って捨てる
+ */
+const 記録の置き場の団体 = (参照) => {
+  const 道 = 参照 && typeof 参照.path === 'string' ? 参照.path : '';
+  const 合う = /^groups\/([^/]+)\/(sessions|trash)\/[^/]+$/.exec(道);
+  return 合う ? 合う[1] : null;
+};
+function 記録が変わった印を書く(団体) {
+  const db = Firebaseの器.db;
+  if (!db || !団体) return;
+  try {
+    素のFirestore
+      .setDoc(素のFirestore.doc(db, `groups/${団体}/changes`, 'sessions'), {
+        at: 素のFirestore.serverTimestamp(),
+      })
+      .catch(() => {});
+  } catch {
+    /* 印は無くてもよい（開いた・戻った・引いたときには取る） */
+  }
+}
+const 書けたら印 = (団体たち) => (返り) => {
+  for (const 団体 of 団体たち) 記録が変わった印を書く(団体);
+  return 返り;
+};
+const 包んだ書き込み = {
+  writeBatch: (...引数) => {
+    const 束 = 素のFirestore.writeBatch(...引数);
+    const 団体たち = new Set();
+    for (const 名 of ['set', 'update', 'delete']) {
+      const 元 = 束[名].bind(束);
+      束[名] = (参照, ...残り) => {
+        const 団体 = 記録の置き場の団体(参照);
+        if (団体) 団体たち.add(団体);
+        元(参照, ...残り);
+        return 束;
+      };
+    }
+    const 元の送り = 束.commit.bind(束);
+    束.commit = () => 元の送り().then(書けたら印(団体たち));
+    return 束;
+  },
+  setDoc: (参照, ...残り) =>
+    素のFirestore.setDoc(参照, ...残り).then(書けたら印([記録の置き場の団体(参照)].filter(Boolean))),
+  updateDoc: (参照, ...残り) =>
+    素のFirestore.updateDoc(参照, ...残り).then(書けたら印([記録の置き場の団体(参照)].filter(Boolean))),
+  deleteDoc: (参照, ...残り) =>
+    素のFirestore.deleteDoc(参照, ...残り).then(書けたら印([記録の置き場の団体(参照)].filter(Boolean))),
+};
+// 包む 4 つのほかは、その都度もとの Firestore から引く（写し取ると、あとから差し替えた関数が店に効かない）
+const Firestore = new Proxy(素のFirestore, {
+  get: (元, 名) => (Object.prototype.hasOwnProperty.call(包んだ書き込み, 名) ? 包んだ書き込み[名] : 元[名]),
+});
 const RTDB = require('firebase/database');
 const Alert = require('./alertBridge').default;
 const { IS_WEB } = require('./IS_WEB');
