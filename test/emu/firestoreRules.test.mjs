@@ -651,3 +651,69 @@ test('管理者の印は端末ごと（11/19 本人）：同じ団体のアカ�
     '時刻の無い印で役を決められた'
   );
 });
+
+test('運営が足した人の個人ID（11/19 本人）：合言葉が無くても、同じ一括で名簿に今作る人の行だけ作れる', async () => {
+  await 団体を用意する();
+  await 書く('owner', `groups/${団体}/config/roles`, { 割り当て: { m1: 'unei' } });
+  const 名簿 = (id) => ({ 道: `groups/${団体}/members/${id}`, 中身: { id, name: '佐藤 花' } });
+  const 行 = (個人ID, memberId, 足す = {}) => ({
+    道: `groups/${団体}/member_lookup/${個人ID}`,
+    中身: { memberId, 形: 2, updatedAt: new Date(), ...足す },
+  });
+  // アプリと同じ形（名簿と個人ID の行を 1 つの一括で）は通る。行を読む（ほかの人の個人ID を見る）のは合言葉が要る
+  const 足した = await 一括で書く(部員, [名簿('m2'), 行('Q8RT2W', 'm2')]);
+  assert.ok(
+    足した.通った,
+    '運営が足した人に個人ID を付けられない：' + JSON.stringify(足した.中身).slice(0, 300)
+  );
+  assert.equal(
+    (await 読む(部員, `groups/${団体}/member_lookup/Q8RT2W`)).通った,
+    false,
+    '合言葉なしで行を読めた'
+  );
+  // 名簿に今いる人の行は作れない：行だけ・名簿を書き直しながら・行を足しただけの人（m2）にもう 1 つ
+  assert.equal(
+    (await 作る(部員, `groups/${団体}/member_lookup/Z3NB7K`, { memberId: 'm1', 形: 2 })).通った,
+    false,
+    '今いる人の個人ID を作れた'
+  );
+  assert.equal(
+    (await 一括で書く(部員, [名簿('m1'), 行('Z3NB7K', 'm1')])).通った,
+    false,
+    '名簿を書き直しながら今いる人の個人ID を作れた'
+  );
+  assert.equal((await 一括で書く(部員, [行('Z3NB7K', 'm2')])).通った, false, '足した人にもう 1 つ作れた');
+  // 名簿を作らずに、名簿に無い人の行だけ：断る
+  assert.equal((await 一括で書く(部員, [行('Z3NB7K', 'm9')])).通った, false, '名簿に無い人の行を作れた');
+  // 今ある行（m1 の K7MP3X）を、今作る人の行に書き換える：断る
+  assert.equal(
+    (await 一括で書く(部員, [名簿('m3'), 行('K7MP3X', 'm3')])).通った,
+    false,
+    '今ある個人ID の行を書き換えた'
+  );
+  // 招待の行・ほかの欄・前の形：断る
+  assert.equal(
+    (await 一括で書く(部員, [名簿('m3'), 行(`INV${'z'.repeat(29)}`, 'm3', { 招待: true })])).通った,
+    false,
+    '合言葉なしで招待の行を作れた'
+  );
+  assert.equal(
+    (
+      await 一括で書く(部員, [
+        名簿('m3'),
+        { 道: `groups/${団体}/member_lookup/Z3NB7K`, 中身: { memberId: 'm3' } },
+      ])
+    ).通った,
+    false,
+    '前の形の行を作れた'
+  );
+  // 役の無い部員（部員（自分））・見るだけは、名簿も行も作れない
+  for (const 役 of [null, 'miru']) {
+    await 書く('owner', `groups/${団体}/config/roles`, { 割り当て: 役 ? { m1: 役 } : {} });
+    assert.equal(
+      (await 一括で書く(部員, [名簿('m4'), 行('W5HC9P', 'm4')])).通った,
+      false,
+      `${役 || '部員（自分）'}が名簿と個人ID を作れた`
+    );
+  }
+});
