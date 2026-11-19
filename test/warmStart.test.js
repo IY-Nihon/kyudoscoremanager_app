@@ -135,7 +135,15 @@ test('全件取得は、サーバーの時刻で境目を決め、全件をそ�
   雲.置く(道.部員, 'm1', 部員('m1', 今 - 7000));
   await store.getState().fetchAndOverwriteFromCloud();
   const { 雲の境目, 全部そろえた時刻 } = store.getState();
-  assert.deepStrictEqual(雲の境目, { 団体, 記録: 今 - 5000, 部員: 今 - 7000, ごみ箱: 0, 卒業生: 0 });
+  // 取り方 … どの道でそろえたか（団体の端末は直接。3 段目の部員（自分）は中継。src/storeSync.js）
+  assert.deepStrictEqual(雲の境目, {
+    団体,
+    取り方: '直接',
+    記録: 今 - 5000,
+    部員: 今 - 7000,
+    ごみ箱: 0,
+    卒業生: 0,
+  });
   assert.ok(全部そろえた時刻 >= 今);
 });
 

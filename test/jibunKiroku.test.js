@@ -356,3 +356,79 @@ test('中継へ届かないときは、通信が切れていただけの形（un
     戻す();
   }
 });
+
+test('起動の取り込み：中継でそろえていない部員（自分）の端末は、全部を中継から取り直す。次の起動は差分（11/20 の見直し）', async () => {
+  const 中継 = 偽の中継(() => ({
+    // 端末に何も残らないと、次の起動も全件になる（前からの決まり）。自分の記録を 1 件返す
+    記録: [{ id: 'mine', date: 時(0), lastModified: 時(40), archers: [自分の列()] }],
+    外す: [],
+    続き: null,
+    境目: { 記録: 時(40), ごみ箱: 0 },
+  }));
+  const 戻す = 中継を差し替える(中継);
+  try {
+    // 3 段目より前の控え：境目に取り方が無い（直接読んでそろえた）。ほかの人の記録が残っている
+    const { store } = 部員の店({
+      雲の境目: { 団体, 記録: 時(10), 部員: 0, ごみ箱: 0, 卒業生: 0 },
+      全部そろえた時刻: Date.now(),
+      sessions: [
+        {
+          id: 'old',
+          date: 時(0),
+          lastModified: 時(5),
+          archers: [{ name: '佐藤 花子', memberId: 'm2', marks: ['○'] }],
+          syncStatus: '同期済み',
+        },
+      ],
+    });
+    await store.getState().起動時に取り込む();
+    assert.strictEqual(中継.呼んだ[0].体.形, '全部', '中継でそろえていないのに差分で済ませた');
+    assert.deepStrictEqual(
+      store.getState().sessions.map((r) => r.id),
+      ['mine'],
+      '前に届いていたほかの人の記録が残った'
+    );
+    assert.strictEqual(store.getState().雲の境目.取り方, '中継');
+    // 次の起動は差分（境目の取り方は差分の同期でも引き継ぐ）
+    await store.getState().起動時に取り込む();
+    assert.strictEqual(中継.呼んだ.at(-1).体.形, '差分');
+    assert.strictEqual(store.getState().雲の境目.取り方, '中継');
+  } finally {
+    戻す();
+  }
+});
+
+test('起動の取り込み：閉じている間に役が替わっていたら、雲の役で取り方を決める（控えの古い役で直接読まない）', async () => {
+  const 中継 = 偽の中継(() => ({ 記録: [], 外す: [], 続き: null, 境目: { 記録: 0, ごみ箱: 0 } }));
+  const 戻す = 中継を差し替える(中継);
+  try {
+    const { store, 雲, 読んだ道 } = 部員の店({ 役の設定: { 役: {}, 割り当て: { m1: 'zenin' } } });
+    // 雲では部員（自分）に替わっている
+    await 雲.api.setDoc(雲.api.doc(null, `groups/${団体}/config`, 'roles'), { 役: {}, 割り当て: {} });
+    await store.getState().起動時に取り込む();
+    assert.deepStrictEqual(store.getState().役の設定, { 役: {}, 割り当て: {} });
+    assert.ok(中継.呼んだ.length > 0, '雲の役（部員（自分））なのに中継を呼ばない');
+    assert.ok(!読んだ道.includes(記録の道), '控えの古い役で記録を直接読んだ');
+  } finally {
+    戻す();
+  }
+});
+
+test('見張りを付ける前に印が進んでいたら、付けたときに取り直す（最後の同期より新しい印）', async () => {
+  const 中継 = 偽の中継(() => ({ 記録: [], 外す: [], 続き: null, 境目: { 記録: 0, ごみ箱: 0 } }));
+  const 戻す = 中継を差し替える(中継);
+  try {
+    const { store, 雲 } = 部員の店({
+      雲の境目: { 団体, 取り方: '中継', 記録: 時(10), 部員: 0, ごみ箱: 0, 卒業生: 0 },
+      全部そろえた時刻: Date.now(),
+      lastSyncTime: Date.now() - 60000,
+    });
+    await 雲.api.setDoc(雲.api.doc(null, 印の道, 'sessions'), { at: 雲.api.serverTimestamp() });
+    await store.getState().listenToSessions();
+    await 待つ(1700);
+    assert.strictEqual(中継.呼んだ.length, 1, '最後の同期より新しい印なのに取り直さない');
+    store.getState().stopListeningToSessions();
+  } finally {
+    戻す();
+  }
+});
