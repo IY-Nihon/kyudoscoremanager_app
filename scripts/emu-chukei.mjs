@@ -4,6 +4,7 @@
  *   node scripts/emu-chukei.mjs        （npm run e2e:emu が立てる。港 8788）
  *
  * 部員のログイン（POST /kojin）は、中継の本物の手（../chukei/src/kojin.mjs の 部員を確かめる）をそのまま使う。
+ * 管理者の合言葉（/kanri）と部員（自分）の記録（/jibun。3 段目）も本物の手（kanri.mjs・jibun.mjs）を使う。
  * 違うのは宛先だけ：Firestore はエミュレーター（Bearer owner で決まりを通らずに読み書きする）、
  * サービスアカウントの証は取りに行かない（その場で作った鍵で署名し、取りに行く先を横取りして owner を返す）。
  * ログインの証（ID トークン）は、エミュレーターのものは署名が無いので中身だけ読む。
@@ -21,6 +22,7 @@ const Firestoreの宛先 = `http://127.0.0.1:${process.env.EMU_FIRESTORE_PORT ||
 const 中継の場所 = path.resolve(process.env.CHUKEI_DIR || '../chukei');
 const { 部員を確かめる } = await import(pathToFileURL(path.join(中継の場所, 'src', 'kojin.mjs')).href);
 const { 管理者を確かめる } = await import(pathToFileURL(path.join(中継の場所, 'src', 'kanri.mjs')).href);
+const { 自分の記録を返す } = await import(pathToFileURL(path.join(中継の場所, 'src', 'jibun.mjs')).href);
 /** 管理者の合言葉の置き場（本物は D1。ここは中継の代わりが生きている間だけ） */
 const 合言葉の表 = new Map();
 const 合言葉の置き場 = {
@@ -85,7 +87,7 @@ http
     };
     if (受.method === 'OPTIONS') return 答える(204, {});
     const 道 = (受.url || '').split('?')[0];
-    if (道 !== '/kojin' && 道 !== '/kanri')
+    if (道 !== '/kojin' && 道 !== '/kanri' && 道 !== '/jibun')
       return 答える(503, { error: 'エミュレーターでは AI を使えません（検証環境で試してください）' });
     const 本人 = 証を読む(受.headers.authorization);
     if (!本人) return 答える(401, { error: 'ログインの証がありません' });
@@ -97,6 +99,15 @@ http
       body: 体,
     });
     try {
+      if (道 === '/jibun') {
+        const { 状態, 中身 } = await 自分の記録を返す(
+          頼み,
+          { FIREBASE_SA_KEYS: JSON.stringify({ [本人.aud]: 偽の鍵 }) },
+          本人,
+          { 送る }
+        );
+        return 答える(状態, 中身);
+      }
       if (道 === '/kanri') {
         const 証 = String(受.headers.authorization || '').replace(/^Bearer\s+/i, '');
         const { 状態, 中身 } = await 管理者を確かめる(
@@ -121,5 +132,5 @@ http
     }
   })
   .listen(港, '127.0.0.1', () =>
-    console.log(`[emu-chukei] http://127.0.0.1:${港} で待っています（/kojin・/kanri）`)
+    console.log(`[emu-chukei] http://127.0.0.1:${港} で待っています（/kojin・/kanri・/jibun）`)
   );
