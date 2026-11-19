@@ -324,3 +324,31 @@ test('団体の端末が記録かゴミ箱を書いたら、書けたあとに�
   assert.ok(印 && 印.at, '記録を送ったのに印を置いていない');
   assert.deepStrictEqual(Object.keys(印), ['at'], '印に時刻のほかの欄を書いた');
 });
+
+test('中継へ届かないときは、通信が切れていただけの形（unavailable）。電波が無いと分かっていれば中継を呼ばない', async () => {
+  const 届かない = {
+    中継がある: () => true,
+    中継へfetch: async () => {
+      throw new TypeError('Failed to fetch');
+    },
+  };
+  await assert.rejects(
+    () => 自分の記録.中継から取る({ 団体, 形: '全部' }, { 中継: 届かない }),
+    (誤り) => 誤り.code === 'unavailable'
+  );
+  const 中継 = 偽の中継(() => ({ 記録: [], 外す: [], 続き: null, 境目: {} }));
+  const 戻す = 中継を差し替える(中継);
+  try {
+    const { store } = 部員の店({
+      isNetworkOnline: false,
+      雲の境目: { 団体, 記録: 1, 部員: 0, ごみ箱: 0, 卒業生: 0 },
+      全部そろえた時刻: Date.now(),
+    });
+    await store.getState().syncSessions();
+    await 待つ(20);
+    assert.strictEqual(中継.呼んだ.length, 0, '電波が無いのに中継を呼んだ');
+    assert.notStrictEqual(store.getState().syncStatus, '同期エラー');
+  } finally {
+    戻す();
+  }
+});
