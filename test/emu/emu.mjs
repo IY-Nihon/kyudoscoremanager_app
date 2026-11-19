@@ -119,6 +119,25 @@ export function 一括で書く(人, 書き込み) {
 }
 export const 消す = (人, 道) => 送る(人, `${根}/${道}`, { method: 'DELETE' });
 
+/**
+ * その欄にサーバーの時刻（serverTimestamp）を書く（commit の変換）。ほか の欄も一緒に書ける（断られるかを見る）。
+ * 記録が変わった印（groups/{団体}/changes/sessions の at。3 段目）を確かめるのに使う
+ */
+export function 時刻を書く(人, 道, 欄, ほか = {}) {
+  const 名 = `projects/${企画}/databases/(default)/documents/${道}`;
+  return 送る(人, `${根}:commit`, {
+    method: 'POST',
+    body: JSON.stringify({
+      writes: [
+        {
+          update: { name: 名, fields: 欄に(ほか) },
+          updateTransforms: [{ fieldPath: 欄, setToServerValue: 'REQUEST_TIME' }],
+        },
+      ],
+    }),
+  });
+}
+
 /** 集まりを、欄が値と同じもので絞って引く（where(欄, '==', 値)） */
 export function 絞って引く(人, 親の道, 集まり, 欄, 値) {
   const 親 = 親の道 ? `${根}/${親の道}` : 根;

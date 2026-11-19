@@ -11,6 +11,7 @@ import {
   絞って引く,
   片付ける,
   一括で書く,
+  時刻を書く,
   決まりを置く,
   猶予のあとの決まり,
 } from './emu.mjs';
@@ -716,4 +717,55 @@ test('運営が足した人の個人ID（11/19 本人）：合言葉が無くて
       `${役 || '部員（自分）'}が名簿と個人ID を作れた`
     );
   }
+});
+
+test('3 段目（11/19 本人）：全員を見るの無い役は記録とゴミ箱を直接読めない。見る役・直す等を持つ役・持ち主は読める。変わった印は時刻だけ', async () => {
+  await 団体を用意する();
+  await 書く('owner', `groups/${団体}/trash/t1`, { id: 't1', archers: [] });
+  // 役の無い部員（部員（自分））：記録 1 件も一覧もゴミ箱も読めない。付ける（作る）はできる
+  assert.equal((await 読む(部員, `groups/${団体}/sessions/s1`)).通った, false, '部員（自分）が記録を読めた');
+  assert.equal(
+    (await 絞って引く(部員, `groups/${団体}`, 'sessions', 'id', 's1')).通った,
+    false,
+    '部員（自分）が記録を引けた'
+  );
+  assert.equal((await 読む(部員, `groups/${団体}/trash/t1`)).通った, false, '部員（自分）がゴミ箱を読めた');
+  assert.ok((await 作る(部員, `groups/${団体}/sessions/s5`, { id: 's5', archers: [{ name: 'a' }] })).通った);
+  // 部員（全員）・見るだけ・出欠だけを持つ古い形の役（全員を見るが無くても、見るのが要る部品で読める）・運営は読める
+  for (const 役 of [
+    { 割り当て: { m1: 'zenin' } },
+    { 割り当て: { m1: 'miru' } },
+    { 割り当て: { m1: 'unei' } },
+    { 役: { r1: { 名: '出欠の係', 部品: ['付ける', '出欠'] } }, 割り当て: { m1: 'r1' } },
+  ]) {
+    await 書く('owner', `groups/${団体}/config/roles`, 役);
+    assert.ok((await 読む(部員, `groups/${団体}/sessions/s1`)).通った, '読めない：' + JSON.stringify(役));
+    assert.ok(
+      (await 読む(部員, `groups/${団体}/trash/t1`)).通った,
+      'ゴミ箱を読めない：' + JSON.stringify(役)
+    );
+  }
+  // 付けるだけ・設定だけを足した役（見るのが要る部品が無い）は読めない
+  await 書く('owner', `groups/${団体}/config/roles`, {
+    役: { r2: { 名: '設定の係', 部品: ['付ける', '設定'] } },
+    割り当て: { m1: 'r2' },
+  });
+  assert.equal((await 読む(部員, `groups/${団体}/sessions/s1`)).通った, false);
+  assert.ok((await 読む(持ち主, `groups/${団体}/sessions/s1`)).通った, '持ち主が読めない');
+  assert.ok((await 読む(持ち主, `groups/${団体}/trash/t1`)).通った);
+
+  // 変わった印：団体の中の人は、サーバーの時刻だけを書ける。ほかの欄・好きな時刻・ほかの名前の文書は断る
+  const 印 = `groups/${団体}/changes/sessions`;
+  assert.ok((await 時刻を書く(部員, 印, 'at')).通った, '部員が印を書けない');
+  assert.ok((await 時刻を書く(持ち主, 印, 'at')).通った, '持ち主が印を書けない');
+  assert.ok((await 読む(部員, 印)).通った, '部員が印を読めない');
+  assert.equal((await 時刻を書く(部員, 印, 'at', { x: 1 })).通った, false, 'ほかの欄を書けた');
+  assert.equal(
+    (await 書く(部員, 印, { at: new Date(Date.now() + 3600000) })).通った,
+    false,
+    '好きな時刻を書けた'
+  );
+  assert.equal((await 時刻を書く(部員, `groups/${団体}/changes/other`, 'at')).通った, false);
+  assert.equal((await 時刻を書く(よその人, 印, 'at')).通った, false, 'よその人が印を書けた');
+  assert.equal((await 読む(よその人, 印)).通った, false, 'よその人が印を読めた');
 });
