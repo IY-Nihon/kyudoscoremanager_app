@@ -277,7 +277,15 @@ function 偽Firestore() {
         commit: () => 送る({ 種別: 'batch', 操作 }),
       };
     },
-    onSnapshot: (対象, 受け取る) => {
+    onSnapshot: (対象, 受け取る, 誤りを受ける) => {
+      // 決まりに断られた見張り（見張りを断る(道) が真）。本物と同じく誤りを 1 回渡して止まる（何も届かない）
+      if (状態.見張りを断る && 状態.見張りを断る(対象 && 対象.道)) {
+        const 誤り = Object.assign(new Error('Missing or insufficient permissions.'), {
+          code: 'permission-denied',
+        });
+        Promise.resolve().then(() => 誤りを受ける && 誤りを受ける(誤り));
+        return () => {};
+      }
       const v = {
         発火: () => {
           const 表 = 取り出す(対象.道);

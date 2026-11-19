@@ -309,6 +309,91 @@ test('部員（自分）の見張り：記録ではなく「記録が変わっ�
   }
 });
 
+test('印の見張りが断られたら（決まりを配る前に開いた端末）、少しあとで張り直す（間を延ばしながら）。止めたら張り直さない（11/20 の更新の検査）', async () => {
+  const 中継 = 偽の中継(() => ({ 記録: [], 外す: [], 続き: null, 境目: { 記録: 0, ごみ箱: 0 } }));
+  const 戻す = 中継を差し替える(中継);
+  // 時計を差し替える（30 秒待たずに確かめる）
+  const 元の時計 = global.setTimeout;
+  const 待ちの長さ = [];
+  global.setTimeout = (手, 長さ, ...残り) => {
+    if (長さ >= 30 * 1000) {
+      待ちの長さ.push(長さ);
+      return 元の時計(手, 5, ...残り);
+    }
+    return 元の時計(手, 長さ, ...残り);
+  };
+  try {
+    const { store, 雲 } = 部員の店({
+      雲の境目: { 団体, 記録: 時(10), 部員: 0, ごみ箱: 0, 卒業生: 0 },
+      全部そろえた時刻: Date.now(),
+      lastSyncTime: Date.now(),
+    });
+    // 前の決まり：印を読めない
+    雲.状態.見張りを断る = (道) => 道 === 印の道;
+    await store.getState().listenToSessions();
+    await 待つ(30);
+    assert.ok(待ちの長さ.length >= 2, '断られた見張りを張り直していない');
+    assert.ok(待ちの長さ[1] > 待ちの長さ[0], '張り直しの間を延ばしていない');
+    // 決まりを配った：次の張り直しで見張れる → ほかの端末の保存で取り直す
+    雲.状態.見張りを断る = null;
+    await 待つ(30);
+    await 雲.api.setDoc(雲.api.doc(null, 印の道, 'sessions'), { at: 雲.api.serverTimestamp() });
+    await 待つ(1700);
+    assert.strictEqual(中継.呼んだ.length, 1, '張り直したあとの印で中継から取り直さない');
+    // 止めたら、もう張り直さない
+    雲.状態.見張りを断る = (道) => 道 === 印の道;
+    store.getState().stopListeningToSessions();
+    const 止めたときの数 = 待ちの長さ.length;
+    await 待つ(30);
+    assert.strictEqual(待ちの長さ.length, 止めたときの数, '止めたあとも張り直した');
+  } finally {
+    global.setTimeout = 元の時計;
+    戻す();
+  }
+});
+
+test('部員（自分）の送り直しが断られたら、中継に id で聞いて雲にもう届いていれば同期済み（自分の写っていない記録は 外す に入れば届いている）', async () => {
+  const 中継 = 偽の中継((体) =>
+    体.形 === 'id'
+      ? {
+          記録: 体.ids
+            .filter((id) => id === 'mine' || id === 'diff')
+            .map((id) => ({ id, title: id === 'diff' ? '別の練習' : '練習', archers: [自分の列()] })),
+          外す: 体.ids.filter((id) => id === 'blank'),
+        }
+      : { 記録: [], 外す: [], 続き: null, 境目: { 記録: 0, ごみ箱: 0 } }
+  );
+  const 戻す = 中継を差し替える(中継);
+  try {
+    const 未送 = (id) => ({
+      id,
+      title: '練習',
+      date: 時(0),
+      lastModified: 時(1),
+      archers: id === 'blank' ? [{ id: 'b1', name: '', marks: ['○'] }] : [自分の列()],
+      syncStatus: '未同期',
+    });
+    const { store, 雲 } = 部員の店({ sessions: ['mine', 'blank', 'diff'].map(未送) });
+    雲.状態.断る = (やること) => (やること.操作 || []).some((一つ) => 一つ.道 === 記録の道);
+    await store.getState().syncSessions({ 取りに行かない: true });
+    await 待つ(120);
+    const 手元 = (id) => store.getState().sessions.find((一つ) => 一つ.id === id);
+    assert.strictEqual(手元('mine').syncStatus, '同期済み', '雲にもう届いていたのに送れない');
+    assert.strictEqual(
+      手元('blank').syncStatus,
+      '同期済み',
+      '自分の写っていない記録（中継の 外す に入る）が届いた扱いにならない'
+    );
+    assert.strictEqual(手元('diff').送れない, true, '題の違う雲の写しを届いた扱いにした');
+    assert.deepStrictEqual(
+      中継.呼んだ.filter((一つ) => 一つ.体.形 === 'id').map((一つ) => 一つ.体.ids),
+      [['mine'], ['blank'], ['diff']]
+    );
+  } finally {
+    戻す();
+  }
+});
+
 test('団体の端末が記録かゴミ箱を書いたら、書けたあとに記録が変わった印を置く（ほかの置き場では置かない）', async () => {
   const { store, 雲 } = ストアを用意する();
   store.setState({

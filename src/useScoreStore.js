@@ -1457,19 +1457,19 @@ const useScoreStore = zustand.create()(
               console.warn('[Store] Invalid viewScale detected during hydration, resetting to 1.0');
               updates.viewScale = 1;
             }
-            // 管理者モード：印の期限が過ぎていれば切る。まだなら期限に切れる時計を付け直す（開き直すと時計が消えていて、
-            // 印が切れたあとも画面は管理者モードのままだった。11/19 の見直し）。期限の無い管理者モード（中継が古いときの
-            // 前の窓・前の版の控え）は前のとおり残す
+            // 管理者モード：印の期限がまだなら、期限に切れる時計を付け直す（開き直すと時計が消えていて、印が切れたあとも
+            // 画面は管理者モードのままだった。11/19 の見直し）。期限が過ぎた・期限の無い管理者モード（前の版の控え・
+            // 中継が古いときの前の窓）は切る（src/kanriAikotoba.js の 控えの管理者モード。11/20 の更新の検査）
             const 期限 = 戻した状態.管理者の期限;
-            const 期限つき = !!戻した状態.isAdminMode && Number.isFinite(期限);
-            if (期限つき && 期限 <= Date.now()) {
+            const 管理者モード = require('./kanriAikotoba').控えの管理者モード(戻した状態.isAdminMode, 期限);
+            if (管理者モード === '切る') {
               updates.isAdminMode = false;
               updates.管理者の期限 = null;
             }
             if (typeof 戻した状態.updateState === 'function') {
               戻した状態.updateState(updates);
             }
-            if (期限つき && 期限 > Date.now() && typeof 戻した状態.setAdminMode === 'function')
+            if (管理者モード === '戻す' && typeof 戻した状態.setAdminMode === 'function')
               戻した状態.setAdminMode(true, 期限);
             // 個人ID を振るのは、逆引き表を雲から読めたときだけ（ensurePersonalIds が自分で読む）。
             // 前はここ（雲を読む前）でも振っていて、12/3 からは端末の古い名簿で雲の名簿を上書きした（A1）

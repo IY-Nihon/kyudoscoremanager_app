@@ -134,6 +134,26 @@ async function 中継から取る(頼み, 道具 = {}) {
 }
 
 /**
+ * id を名指しして、中継から記録を取る（5 件まで。4 段目の送り直しが断られたときに、雲にもう届いているかを確かめる）。
+ * 中継の答えの 外す には、その人の写っていない記録と、雲に無い記録の両方が入る
+ * @param {{団体: string, ids: string[]}} 頼み
+ * @returns {Promise<{古い中継: true} | {記録たち: object[], 外す: string[]}>}
+ */
+async function idで取る(頼み, 道具 = {}) {
+  const 中継 = 道具.中継 || require('./geminiChukei');
+  if (!中継 || !中継.中継がある()) return { 古い中継: true };
+  const { 団体, ids = [] } = 頼み || {};
+  const 一意 = [...new Set((ids || []).filter((id) => typeof id === 'string' && id))].slice(0, idの数);
+  if (!一意.length) return { 記録たち: [], 外す: [] };
+  const 答え = await 待って呼ぶ(中継, { 団体, 形: 'id', ids: 一意 }, 道具);
+  if (答え.古い中継) return 答え;
+  return {
+    記録たち: Array.isArray(答え.記録) ? 答え.記録.filter((記録) => 記録 && 記録.id) : [],
+    外す: Array.isArray(答え.外す) ? 答え.外す.filter((id) => typeof id === 'string') : [],
+  };
+}
+
+/**
  * 中継から受け取った記録を、Firestore の問い合わせの返りと同じ形にする（同期の続きの手をそのまま使うため）。
  * 雲から直接読んだ答えとして扱う（控えからの答えではない）
  */
@@ -167,4 +187,4 @@ function 外すものを外す(記録たち, 答え) {
   });
 }
 
-module.exports = { 中継から取る, 返りの形, 外すものを外す, ページの上限, idの数 };
+module.exports = { 中継から取る, idで取る, 返りの形, 外すものを外す, ページの上限, idの数 };

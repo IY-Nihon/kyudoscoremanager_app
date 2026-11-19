@@ -113,6 +113,49 @@ test('送り直しが決まりに断られたら、1 件ずつに分けて送り
   assert.strictEqual(手元('old').syncStatus, '同期済み');
 });
 
+test('送り直しが断られても、雲にもう同じ記録（前の版の送り待ちが先に届いた）があれば同期済み。題が違う・「直す」のある役は送れない（11/20 の更新の検査）', async () => {
+  const 断る = (やること) =>
+    (やること.操作 || []).some((一つ) => 一つ.道 === 記録の道 && ['old', 'diff'].includes(一つ.id));
+  const 手元 = (store, id) => store.getState().sessions.find((一つ) => 一つ.id === id);
+  // 全員を見る役（直接読める）：雲の写しを読んで確かめる
+  {
+    const 保存 = Date.now() - 5000;
+    const { store, 雲 } = 店('member', {
+      役の設定: { 割り当て: { m1: 'zenin' } },
+      sessions: [
+        記録('old', { syncStatus: '未同期', lastModified: 保存 }),
+        記録('diff', { syncStatus: '未同期' }),
+      ],
+    });
+    // 前の版の送り待ち（作った人の印が無い）が先に届いていた形
+    雲.置く(記録の道, 'old', 記録('old', { syncStatus: '同期済み' }));
+    雲.置く(記録の道, 'diff', 記録('diff', { title: '別の練習', syncStatus: '同期済み' }));
+    雲.状態.断る = 断る;
+    await store.getState().syncSessions({ 取りに行かない: true });
+    await 待つ(80);
+    assert.strictEqual(手元(store, 'old').syncStatus, '同期済み', '雲にもう届いていたのに送れない');
+    assert.ok(!手元(store, 'old').送れない);
+    assert.strictEqual(
+      手元(store, 'old').lastModified,
+      保存,
+      '更新日時を進めた（次の取り直しで雲の形にならない）'
+    );
+    assert.strictEqual(手元(store, 'diff').送れない, true, '雲の写しの題が違うのに届いた扱い');
+  }
+  // 「直す」のある役（運営）は確かめない（合言葉の切れた直しなど。届いた扱いにすると直しが消える）
+  {
+    const { store, 雲 } = 店('member', {
+      役の設定: { 割り当て: { m1: 'unei' } },
+      sessions: [記録('old', { syncStatus: '未同期' })],
+    });
+    雲.置く(記録の道, 'old', 記録('old', { syncStatus: '同期済み' }));
+    雲.状態.断る = 断る;
+    await store.getState().syncSessions({ 取りに行かない: true });
+    await 待つ(80);
+    assert.strictEqual(手元(store, 'old').送れない, true, '運営の直しを届いた扱いにした');
+  }
+});
+
 test('タグの直し（雲へ書く）は、記録を直せる端末だけ（「直す」の無い部員はほかの人の記録を書き換えられない）', async () => {
   for (const [役, 書くか] of [
     ['member', false],
