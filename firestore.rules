@@ -168,6 +168,14 @@ service cloud.firestore {
     function memberAdmin(groupId, part) {
       return memberCan(groupId, part) && hasAdminSession(groupId);
     }
+    // 全員の記録（sessions・trash）を読める部員か（3 段目・2026-11-19 本人）。役に「全員を見る」が無い人（部員（自分）＝
+    // 役の無い個人ログインみな）は読めず、中継（kyudo-chukei の POST /jibun）がその人の行だけを渡す。練習 1 回の記録は
+    // 1 文書で、同じ練習の全員の ○× が入っているため。直す・消す・メンバー・出欠のどれかを持つ役は見るのも持つ
+    //（アプリの src/yaku.js の 形の良い部品 と同じ。自分の行だけの記録を書き戻してほかの人の行を消さないため）
+    function memberSeesAll(groupId) {
+      return isClaimedMember(groupId)
+        && memberParts(groupId).hasAny(['全員を見る', '直す', '消す', 'メンバー', '出欠']);
+    }
 
     function canAccess(groupId) {
       return isGroupOwner(groupId) || isClaimedMember(groupId);
@@ -347,12 +355,12 @@ service cloud.firestore {
       // 部員（個人ログイン）が書けるのは、役の部品の分と、自分の名簿の弓具（2026-11-19。前は 2026-11-02 に
       // 「記録を作る・直すと弓具だけ」と決めた）。役の無い部員（部員（自分））は前と同じで、記録を作る・直すと弓具だけ。
       // 記録を消す・ゴミ箱は「消す」、名簿・卒業生は「メンバー」、練習日は「出欠」、設定は「設定」の部品が要る。
-      // 読むのは部員も今のまま（自分の行だけにするのは 3 段目）。アプリも同じ一覧（src/yaku.js）で画面を出し分ける
+      // 読めるのは持ち主と、全員を見る役の部員だけ（3 段目・memberSeesAll）。アプリも同じ一覧（src/yaku.js）で画面を出し分ける
       // 部員が記録を直すときは、射手を減らさない（アプリも部員の端末では減らさない。src/storeSessions.js の updateSession）。
       // アプリを通さずに書かれても、射手を消して記録を潰せないように（B5）
       // 役（2026-11-19）：付ける＝作る・送り直す（射手は減らさない）、直す＋管理者の合言葉＝何でも直す、消す＝消す
       match /sessions/{docId} {
-        allow read: if canAccess(groupId);
+        allow read: if isGroupOwner(groupId) || memberSeesAll(groupId);
         allow create: if isGroupOwner(groupId) || memberCan(groupId, '付ける');
         allow update: if isGroupOwner(groupId)
           || (memberCan(groupId, '付ける')
@@ -377,8 +385,18 @@ service cloud.firestore {
         allow delete: if isGroupOwner(groupId) || memberCan(groupId, 'メンバー');
       }
       match /trash/{docId} {
-        allow read: if canAccess(groupId);
+        allow read: if isGroupOwner(groupId) || memberSeesAll(groupId);
         allow write: if isGroupOwner(groupId) || memberCan(groupId, '消す');
+      }
+      // 記録が変わった印（3 段目・2026-11-19 本人「すぐ届く」）。記録・ゴミ箱を書いた端末が、書けたあとにサーバーの時刻だけを
+      // 置く（アプリの src/storeShared.js が書き込みを包んで書く）。記録を直接読めない役の端末はこれを見張り、変わったら中継から
+      // 自分の行を取り直す。書けるのは団体の中の人だけで、中身は時刻だけ（ほかの欄・好きな時刻は書けない）
+      match /changes/{docId} {
+        allow read: if canAccess(groupId);
+        allow create, update: if docId == 'sessions'
+          && canAccess(groupId)
+          && request.resource.data.keys().hasOnly(['at'])
+          && request.resource.data.at == request.time;
       }
       // config のうち listing（紹介に載せてよいかの許可・2026-10-09）は、団体の持ち主だけが書ける。
       // 部員の端末から団体の答えを変えられないように。読むのは部員も可（画面には出さない）。src/listingConsent.js
