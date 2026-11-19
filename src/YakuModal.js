@@ -117,7 +117,7 @@ function YakuModal({ 見える, 閉じる }) {
     中身 = (
       <>
         <Text style={形.題}>{直す役.id ? '役を直す' : '役を作る'}</Text>
-        <ScrollView style={{ maxHeight: 460 }}>
+        <ScrollView style={{ maxHeight: 360 }}>
           <Text style={形.欄の名}>役の名前</Text>
           <TextInput
             aria-label="役の名前"
@@ -141,9 +141,6 @@ function YakuModal({ 見える, 閉じる }) {
               />
             </View>
           ))}
-          <View style={形.箱} testID="役の文">
-            <Text style={形.箱の字}>{役の決まり.役の文(直す役.部品)}</Text>
-          </View>
           {直す役.id && !直す役.最初から ? (
             <Pressable
               accessibilityRole="button"
@@ -157,6 +154,10 @@ function YakuModal({ 見える, 閉じる }) {
             </Pressable>
           ) : null}
         </ScrollView>
+        {/* 文で確かめる（11/13 本人）。問いを流しても、いつも見えるように流す範囲の外に置く */}
+        <View style={形.箱} testID="役の文">
+          <Text style={形.箱の字}>{役の決まり.役の文(直す役.部品)}</Text>
+        </View>
         {誤り ? (
           <Text style={形.誤り} testID="役の誤り">
             {誤り}
