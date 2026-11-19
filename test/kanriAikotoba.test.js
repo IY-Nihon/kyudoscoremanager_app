@@ -75,3 +75,15 @@ test('作る・忘れたときの変えるは、入り直した直後の証を�
   });
   assert.equal(入る.控え.取り直した, 0);
 });
+
+test('開き直したときの管理者モード：期限がまだなら戻す・過ぎた／期限の無い（前の版の控え）は切る（11/20 の更新の検査）', () => {
+  const 今 = 1_000_000;
+  assert.strictEqual(合.控えの管理者モード(true, 今 + 60_000, 今), '戻す');
+  assert.strictEqual(合.控えの管理者モード(true, 今 - 1, 今), '切る');
+  assert.strictEqual(合.控えの管理者モード(true, 今, 今), '切る');
+  // 前の版は管理者モードを期限なしで控えに残していた（新しい決まりは中継の印を求めるので、残すと断られる）
+  assert.strictEqual(合.控えの管理者モード(true, null, 今), '切る');
+  assert.strictEqual(合.控えの管理者モード(true, undefined, 今), '切る');
+  assert.strictEqual(合.控えの管理者モード(false, 今 + 60_000, 今), 'そのまま');
+  assert.strictEqual(合.控えの管理者モード(undefined, null, 今), 'そのまま');
+});
