@@ -151,9 +151,50 @@ test('部員の役：持ち主が作って割り当て、個人ログインの�
     storageState: 'e2e/.auth/100002-個人.json',
   });
   const 部員の頁 = await 部員の場.newPage();
+  // 見るだけに替わる前に付けて、まだ送れていない記録が 1 件ある端末にする（電波の無い所で付けたあと役が替わった形）。
+  // 控えの役も見るだけにしておく（開いた直後に部員（自分）のまま送ってしまわないように）。最初に開くときだけ
+  await 部員の頁.addInitScript(
+    ({ 部員id }) => {
+      if (sessionStorage.getItem('送れない記録を置いた')) return;
+      sessionStorage.setItem('送れない記録を置いた', '1');
+      const 鍵 = 'archery-score-storage';
+      const 控え = JSON.parse(localStorage.getItem(鍵) || '{}');
+      if (!控え.state) return;
+      const 今 = Date.now();
+      控え.state.sessions = [
+        ...(控え.state.sessions || []),
+        {
+          id: 'e2e-okurenai-1',
+          title: '送れない検査',
+          date: 今,
+          lastModified: 今,
+          archers: [],
+          syncStatus: '未同期',
+        },
+      ];
+      控え.state.役の設定 = { 役: {}, 割り当て: { [部員id]: 'miru' } };
+      localStorage.setItem(鍵, JSON.stringify(控え));
+    },
+    { 部員id: 部員.id }
+  );
   await 開く(部員の頁);
   await タブ(部員の頁, '設定').click();
   await expect(部員の頁.getByTestId('自分の役')).toContainText('見るだけ', { timeout: 30_000 });
+  // 送れない記録は送らずに残し、役の下で知らせる（11/19 本人「知らせる」）
+  await expect(部員の頁.getByTestId('送れない記録')).toContainText(
+    'いまの役では送れない記録が 1 件あります',
+    {
+      timeout: 20_000,
+    }
+  );
+  await 撮る(部員の頁, 部員の頁.getByTestId('送れない記録'), '4b-送れない記録', 情報);
+  // 使い方の一覧：見るだけには記録を付ける項目（記録を取る）を出さない（11/19 本人）
+  await 部員の頁.getByText('使い方を見る', { exact: true }).click();
+  const 見るだけの使い方 = 部員の頁.getByTestId('使い方の選び窓');
+  await expect(見るだけの使い方.getByTestId('使い方の組-履歴・分析')).toBeVisible();
+  await expect(見るだけの使い方.getByTestId('使い方の組-記録を取る')).toHaveCount(0);
+  await 見るだけの使い方.getByLabel('閉じる', { exact: true }).click();
+  await expect(見るだけの使い方).toHaveCount(0);
   // 管理者設定は出ない（見るだけには合言葉の要る部品が無い）
   await expect(部員の頁.getByText('管理者モード', { exact: true })).toHaveCount(0);
   // いつも付けるタグ（保存のしかた）は、記録を付けられない見るだけには出ない
@@ -175,6 +216,8 @@ test('部員の役：持ち主が作って割り当て、個人ログインの�
   await expect(役の欄.getByTestId('役を選ぶ-unei')).toHaveAttribute('aria-pressed', 'true');
   await タブ(部員の頁, '設定').click();
   await expect(部員の頁.getByTestId('自分の役')).toContainText('運営', { timeout: 30_000 });
+  // 記録を付けられる役に戻ったので、送れない記録の知らせは消える（記録は次の同期で送られる）
+  await expect(部員の頁.getByTestId('送れない記録')).toHaveCount(0);
   // ここから先は持ち主の端末を使わない。閉じておく（持ち主の端末の同期が個人IDを振ると、下で運営の一括が
   // 付けたのか分からなくなる）
   await 持ち主の場.close();
