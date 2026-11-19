@@ -252,6 +252,8 @@ test('取りこぼし：前の名前が残った記録を、雲の最新を読�
   assert.deepEqual(s1.archerNames, ['桐原 光', '山田 花子']);
   assert.equal(雲.値(記録の道, 's2').archers[0].name, '桐原 光');
   assert.equal(雲.値(ごみ箱の道, 't1').archers[0].name, '桐原 光', 'ゴミ箱の記録も');
+  // トランザクションで直したあとも、記録が変わった印を置く（部員（自分）の端末にすぐ届く。3 段目・11/20 の見直し）
+  assert.ok(雲.値(`groups/${団体}/changes`, 'sessions'), '名前を直したのに、記録が変わった印を置いていない');
   assert.equal(store.getState().sessions[0].archers[0].name, '桐原 光', '手元にも写る');
   assert.deepEqual(store.getState().sessions[0].archers[0].marks, ['○', '×', '○'], '手元の ○× は触らない');
 });

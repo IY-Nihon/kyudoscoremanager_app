@@ -395,6 +395,30 @@ const 包んだ書き込み = {
     素のFirestore.updateDoc(参照, ...残り).then(書けたら印([記録の置き場の団体(参照)].filter(Boolean))),
   deleteDoc: (参照, ...残り) =>
     素のFirestore.deleteDoc(参照, ...残り).then(書けたら印([記録の置き場の団体(参照)].filter(Boolean))),
+  // トランザクション（団体の端末の「名前のずれを直す」が記録の名前を直す）も、書けたら印を置く。やり直しで手が
+  // 何度呼ばれても、団体は 1 回だけ数える（11/20 の見直し）
+  runTransaction: (db, 手, ...残り) => {
+    const 団体たち = new Set();
+    return 素のFirestore
+      .runTransaction(
+        db,
+        (取引) => {
+          for (const 名 of ['set', 'update', 'delete']) {
+            if (typeof 取引[名] !== 'function') continue;
+            const 元 = 取引[名].bind(取引);
+            取引[名] = (参照, ...引数) => {
+              const 団体 = 記録の置き場の団体(参照);
+              if (団体) 団体たち.add(団体);
+              元(参照, ...引数);
+              return 取引;
+            };
+          }
+          return 手(取引);
+        },
+        ...残り
+      )
+      .then(書けたら印(団体たち));
+  },
 };
 // 包む 4 つのほかは、その都度もとの Firestore から引く（写し取ると、あとから差し替えた関数が店に効かない）
 const Firestore = new Proxy(素のFirestore, {
