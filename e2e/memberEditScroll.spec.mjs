@@ -9,7 +9,13 @@
  * 開いて見るだけで、名簿にも逆引き表にも書かない（団体には書き込まない扱い）。
  */
 import { test, expect } from '@playwright/test';
-import { 案内を止める, 画面が出るまで待つ, 入り口が決まるまで待つ, 団体で入る, 管理者の窓で入る } from './helpers.mjs';
+import {
+  案内を止める,
+  画面が出るまで待つ,
+  入り口が決まるまで待つ,
+  団体で入る,
+  管理者の窓で入る,
+} from './helpers.mjs';
 import { 検証のパスワード } from '../scripts/fb-rest.mjs';
 
 const 団体 = '100002';

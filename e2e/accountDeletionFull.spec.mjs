@@ -17,7 +17,9 @@ import path from 'node:path';
 
 // 作った団体のメールを確認済みにするのに、Firebase CLI の権限（firebase login）が要る。
 // GitHub Actions には無いので、そこでは流さない（手元で流す）
-const CLIの権限がある = fs.existsSync(path.join(os.homedir(), '.config', 'configstore', 'firebase-tools.json'));
+const CLIの権限がある = fs.existsSync(
+  path.join(os.homedir(), '.config', 'configstore', 'firebase-tools.json')
+);
 
 test('団体アカウントを作って、設定から削除すると、その団体IDでは入れなくなる', async ({ page }) => {
   test.skip(!CLIの権限がある, 'Firebase CLI の権限が無い（GitHub Actions）。メールを確認済みにできない');

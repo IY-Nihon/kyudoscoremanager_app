@@ -253,12 +253,10 @@ const 崩れを探す = (page, 大きく, 形) =>
           );
         const 重なり = [];
         箱.forEach((a, i) =>
-          箱
-            .slice(i + 1)
-            .forEach((b) => {
-              if (a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1)
-                重なり.push(`「${a.字}」と「${b.字}」`);
-            })
+          箱.slice(i + 1).forEach((b) => {
+            if (a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1)
+              重なり.push(`「${a.字}」と「${b.字}」`);
+          })
         );
         if (重なり.length) 崩れ.push(`図の字どうしが重なる：${重なり.slice(0, 3).join('・')}`);
       }

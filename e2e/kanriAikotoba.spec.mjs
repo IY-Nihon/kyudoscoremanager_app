@@ -128,4 +128,31 @@ test('管理者の合言葉：初めて作り、入り、変える', async ({ pa
       timeout: 20_000,
     }
   );
+
+  // 管理者モードでログアウトすると、中継の「管理者」の印も消える（11/19 の見直し：印は口座ごとで、残すと同じ団体の
+  // アカウントで入っているほかの端末にも 12 時間効いたままだった）。印はエミュレーターを管理の資格で読んで数える
+  const 印の数 = async () => {
+    const 返り = await fetch(
+      'https://firestore.googleapis.com/v1/projects/kyudoscoremanager-stg/databases/(default)/documents/admin_sessions?pageSize=300',
+      { headers: { Authorization: 'Bearer owner' } }
+    );
+    const 中身 = await 返り.json();
+    return (中身.documents || []).filter((文書) =>
+      文書.name
+        .split('/')
+        .pop()
+        .startsWith(団体 + '_')
+    ).length;
+  };
+  await 切り替える();
+  await expect(page.getByLabel('管理者の合言葉')).toBeVisible({ timeout: 20_000 });
+  await page.getByLabel('管理者の合言葉').fill('yumi-2028');
+  await 決める.click();
+  await expect(窓).toHaveCount(0, { timeout: 20_000 });
+  await expect.poll(印の数, { timeout: 20_000, message: '入ったのに印が無い' }).toBeGreaterThan(0);
+  await page.getByText('ログアウト', { exact: true }).first().click();
+  // 窓の題とボタンが同じ字なので、最後（窓のボタン）を押す
+  await page.getByText('ログアウト', { exact: true }).last().click();
+  await expect(page.getByPlaceholder('例: 123456')).toBeVisible({ timeout: 30_000 });
+  await expect.poll(印の数, { timeout: 20_000, message: 'ログアウトしても印が残る' }).toBe(0);
 });
