@@ -330,6 +330,16 @@ service cloud.firestore {
           && ((isGroupOwner(groupId)
                && (request.resource.data.get('招待', false) != true || isGroupAdmin(groupId)))
               || memberAdmin(groupId, 'メンバー'));
+        // 役に「メンバー」のある部員（運営など）は、合言葉が無くても、同じ一括で名簿に今作る人にだけ個人ID の行を作れる
+        // （11/19 本人「運営が足した人には、いつもその場で個人IDを付ける」）。今いる人の行は作れず、行の書き換え（update）も
+        // できない。ほかの人の個人ID を見る（read）のは今までどおり合言葉が要る（上の memberAdmin）
+        allow create: if memberCan(groupId, 'メンバー')
+          && request.resource.data.keys().hasOnly(['memberId', '形', 'updatedAt'])
+          && request.resource.data.get('形', 0) == 2
+          && request.resource.data.memberId is string
+          && request.resource.data.memberId.size() > 0
+          && !exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.resource.data.memberId))
+          && existsAfter(/databases/$(database)/documents/groups/$(groupId)/members/$(request.resource.data.memberId));
         allow delete: if isGroupOwner(groupId)
           && exists(/databases/$(database)/documents/deleted_accounts/$(groupId));
       }

@@ -125,14 +125,34 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
     if (Number.isFinite(足す.joinedYear)) 新しい部員.joinedYear = 足す.joinedYear;
     書く({ members: [...状態().members, 新しい部員], lastLocalChange: Date.now() });
     if (状態().activeGroupId) {
-      Firestore.setDoc(
-        Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/members`, 新しい部員.id),
-        雲へ送る人(新しい部員)
-      )
+      const 団体 = 状態().activeGroupId;
+      const 名簿の文書 = Firestore.doc(Firebaseの器.db, `groups/${団体}/members`, 新しい部員.id);
+      // 運営など役に「メンバー」のある個人ログインで、合言葉を入れていない（逆引き表を読めない）ときは、名簿の文書と
+      // その人の個人ID の行を 1 つの一括で書く（決まりは「同じ一括で今作る人の行を作る」だけ許す。11/19 本人
+      // 「運営が足した人には、いつもその場で個人IDを付ける」）。団体の口座・合言葉を入れた運営は、前のとおり ensurePersonalIds
+      let 行も書いた = false;
+      let 送る = null;
+      if (状態().activeRole === 'member' && !役の決まり.できるか(状態(), '個人IDを見る')) {
+        try {
+          const 新しいID = 個人ID.個人IDを作る(Object.values(状態().個人IDの表 || {}));
+          const 一括 = Firestore.writeBatch(Firebaseの器.db);
+          一括.set(名簿の文書, 雲へ送る人(新しい部員));
+          一括.set(Firestore.doc(Firebaseの器.db, `groups/${団体}/member_lookup`, 新しいID), {
+            memberId: 新しい部員.id,
+            形: 個人ID.逆引きの形,
+            updatedAt: new Date(),
+          });
+          送る = 一括.commit();
+          行も書いた = true;
+        } catch (誤り) {
+          console.warn('[Store] 個人ID を作れませんでした（名簿だけ送る）', 誤り && 誤り.message);
+        }
+      }
+      (送る || Firestore.setDoc(名簿の文書, 雲へ送る人(新しい部員)))
         .then(() => {
           届いた人を同期済みに(書く, [新しい部員]);
-          // 足した人に個人ID を振る（逆引き表に書く）
-          return 状態().ensurePersonalIds();
+          // 足した人に個人ID を振る（逆引き表に書く）。一括で書いたときは振ってある
+          if (!行も書いた) return 状態().ensurePersonalIds();
         })
         .catch((誤り) => console.error('Add Member Sync Error:', 誤り));
     }
