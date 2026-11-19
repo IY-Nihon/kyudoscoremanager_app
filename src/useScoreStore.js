@@ -252,6 +252,8 @@ const useScoreStore = zustand.create()(
         メールの確認: null,
         isNetworkOnline: true,
         isAdminMode: false,
+        // 管理者モードの終わり（中継の「管理者」の印の期限。ミリ秒）。控えに残し、開き直したときに過ぎていれば切る（11/19）
+        管理者の期限: null,
         // 部員の役（config/roles の中身。null＝まだ読んでいない・無い → 全員 部員（自分）。src/yaku.js）
         役の設定: null,
         ...学年まわりの初めの値,
@@ -446,6 +448,7 @@ const useScoreStore = zustand.create()(
               いつものタグを入れた: false,
               isAdminMode: false,
               isAdminModePending: false,
+              管理者の期限: null,
               役の設定: null,
               ...学年まわりの初めの値,
             });
@@ -489,6 +492,7 @@ const useScoreStore = zustand.create()(
               publicGroupId: 公開の団体ID || (役割 === 'group' ? 団体ID : 状態().publicGroupId),
               isAdminMode: false,
               isAdminModePending: false,
+              管理者の期限: null,
               入り直しが要る: false,
               再ログインの案内: null,
               // 入り直すたびに、自分の所属の証から読み直す（ほかの ID で入り直したかもしれない）
@@ -784,7 +788,11 @@ const useScoreStore = zustand.create()(
           if (値 && Number.isFinite(期限)) {
             管理者の時計 = setTimeout(() => 状態().setAdminMode(false), Math.max(0, 期限 - Date.now()));
           }
-          書く({ isAdminMode: 値, isAdminModePending: false });
+          書く({
+            isAdminMode: 値,
+            isAdminModePending: false,
+            管理者の期限: 値 && Number.isFinite(期限) ? 期限 : null,
+          });
           // 運営の役の個人ログイン（2026-11-19）：管理者モードのあいだだけ個人IDの表を持つ（切ったら捨てる。控えにも残さない）
           if (状態().activeRole === 'member') {
             if (値) 状態().個人IDの表を読む();
@@ -1367,6 +1375,7 @@ const useScoreStore = zustand.create()(
           雲の境目: 状態の中身.雲の境目,
           全部そろえた時刻: 状態の中身.全部そろえた時刻,
           isAdminMode: 状態の中身.isAdminMode,
+          管理者の期限: 状態の中身.管理者の期限,
           役の設定: 状態の中身.役の設定,
           groupType: 状態の中身.groupType,
           promotionCheck: 状態の中身.promotionCheck,
@@ -1431,9 +1440,20 @@ const useScoreStore = zustand.create()(
               console.warn('[Store] Invalid viewScale detected during hydration, resetting to 1.0');
               updates.viewScale = 1;
             }
+            // 管理者モード：印の期限が過ぎていれば切る。まだなら期限に切れる時計を付け直す（開き直すと時計が消えていて、
+            // 印が切れたあとも画面は管理者モードのままだった。11/19 の見直し）。期限の無い管理者モード（中継が古いときの
+            // 前の窓・前の版の控え）は前のとおり残す
+            const 期限 = 戻した状態.管理者の期限;
+            const 期限つき = !!戻した状態.isAdminMode && Number.isFinite(期限);
+            if (期限つき && 期限 <= Date.now()) {
+              updates.isAdminMode = false;
+              updates.管理者の期限 = null;
+            }
             if (typeof 戻した状態.updateState === 'function') {
               戻した状態.updateState(updates);
             }
+            if (期限つき && 期限 > Date.now() && typeof 戻した状態.setAdminMode === 'function')
+              戻した状態.setAdminMode(true, 期限);
             // 個人ID を振るのは、逆引き表を雲から読めたときだけ（ensurePersonalIds が自分で読む）。
             // 前はここ（雲を読む前）でも振っていて、12/3 からは端末の古い名簿で雲の名簿を上書きした（A1）
           } else {

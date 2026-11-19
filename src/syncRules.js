@@ -354,7 +354,10 @@ function cleanUpSessions(sessions) {
  * 名簿と卒業生のどちらとも重ならない個人IDを作る（大文字と数字の 6 字。src/kojinId.js。2026-11-03）。
  */
 function generateUniquePersonalId(members, alumni, 乱数源) {
-  const 使用中 = [...members.map((部員) => 部員.personalId), ...alumni.map((卒業生) => 卒業生.personalId)].filter(Boolean);
+  const 使用中 = [
+    ...members.map((部員) => 部員.personalId),
+    ...alumni.map((卒業生) => 卒業生.personalId),
+  ].filter(Boolean);
   return require('./kojinId').個人IDを作る(使用中, 乱数源);
 }
 
@@ -598,7 +601,8 @@ function 自分の射手か(射手, 自分id, 自分名) {
   // 前は名前が同じなら ID が違っても自分に数え、同姓同名の別人の記録が自分の履歴と AI に出た
   //（2026-11-12 本人「今いないなら ID でやってもいい」。本番に同姓同名・登録し直しの記録は 0 件だった）
   if ((!自分id || !射手.memberId) && 自分名 && 射手.name === 自分名) return true;
-  const 交代のid = 射手.substitutionIds && typeof 射手.substitutionIds === 'object' ? 射手.substitutionIds : {};
+  const 交代のid =
+    射手.substitutionIds && typeof 射手.substitutionIds === 'object' ? 射手.substitutionIds : {};
   if (自分id && Object.values(交代のid).includes(自分id)) return true;
   if (自分名 && 射手.substitutions && typeof 射手.substitutions === 'object') {
     for (const [位置, 相手] of Object.entries(射手.substitutions)) {
@@ -618,7 +622,8 @@ function 自分の記録か(記録, 自分id, 自分名) {
 }
 
 /**
- * その人に見える記録の数。団体なら全部、個人なら自分が写っているものだけ。
+ * その人に見える記録の数。団体と、役に「全員を見る」のある個人なら全部、ほかの個人なら自分が写っているものだけ
+ * （2026-11-19 の見直し：役で決める。src/yaku.js の 自分の分だけか）。
  *
  * 案内の見本を出すかどうかの判断に使う。端末には団体ぜんぶの記録が入って
  * いるので、素の件数で決めると、個人ログインでは「記録はあるのに自分のは
@@ -626,7 +631,7 @@ function 自分の記録か(記録, 自分id, 自分名) {
  */
 function 見える記録数(状態) {
   const 一覧 = Array.isArray(状態 && 状態.sessions) ? 状態.sessions : [];
-  if (!状態 || 状態.activeRole !== 'member' || !状態.myMemberId) return 一覧.length;
+  if (!状態 || !require('./yaku').自分の分だけか(状態) || !状態.myMemberId) return 一覧.length;
   return 一覧.filter((記録) => 自分の記録か(記録, 状態.myMemberId, 状態.myMemberName)).length;
 }
 
