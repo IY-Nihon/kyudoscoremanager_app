@@ -821,75 +821,77 @@ const SettingsScreen = () => {
         )}
         {節(
           '保存のしかた',
-          <View style={styles.item}>
-            <View style={[styles.itemLeft, { flex: 1 }]}>
-              <Icons.Ionicons name="checkbox-outline" size={22} color={基本色.緑} style={styles.itemIcon} />
-              <View style={{ flex: 1, paddingRight: 8 }}>
-                <Text style={styles.itemText}>保存のときに出欠を確認する</Text>
-                <Text style={{ fontSize: 11, color: 基本色.灰, marginTop: 2 }}>
-                  「終了・保存」を押したときに出欠の確認を出します。切ると、そのまま保存の画面へ進みます。記録に出ている人は出欠画面で出席として数えられますが、遅刻・早退の区別は付かなくなります
+          <>
+            <View style={styles.item}>
+              <View style={[styles.itemLeft, { flex: 1 }]}>
+                <Icons.Ionicons name="checkbox-outline" size={22} color={基本色.緑} style={styles.itemIcon} />
+                <View style={{ flex: 1, paddingRight: 8 }}>
+                  <Text style={styles.itemText}>保存のときに出欠を確認する</Text>
+                  <Text style={{ fontSize: 11, color: 基本色.灰, marginTop: 2 }}>
+                    「終了・保存」を押したときに出欠の確認を出します。切ると、そのまま保存の画面へ進みます。記録に出ている人は出欠画面で出席として数えられますが、遅刻・早退の区別は付かなくなります
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={保存時に出欠を確認する}
+                onValueChange={set保存時に出欠を確認する}
+                trackColor={{ false: 基本色.灰_明るい, true: 基本色.緑 }}
+              />
+            </View>
+            {/* いつも付けるタグ（端末ごと。11/13 本人）。タグの定型文から選ぶ。前は基本設定のタグの定型文を押して選んだ */}
+            {付けられる && tagTemplates.length > 0 && (
+              <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
+                <View style={[styles.itemLeft, { marginBottom: 2 }]}>
+                  <Icons.Ionicons
+                    name="pricetags-outline"
+                    size={22}
+                    color={基本色.緑}
+                    style={styles.itemIcon}
+                  />
+                  <Text style={styles.itemText}>いつも付けるタグ</Text>
+                </View>
+                <Text style={{ fontSize: 11, color: 基本色.灰, marginBottom: 8, marginLeft: 34 }}>
+                  選んだタグは、保存のとき最初から入ります（この端末だけ。保存のときに外せます）
                 </Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginLeft: 34 }}>
+                  {tagTemplates.map((タグ) => {
+                    // 定型文は # 付きでしまう。前の形（# 無し）が残っていても選べるように、そろえてから比べる
+                    const 選んだ = いつも付けるタグ.includes(規則.normalizeTag(タグ));
+                    return (
+                      <Pressable
+                        key={`itsumo-${タグ}`}
+                        accessibilityRole="button"
+                        aria-label={
+                          規則.タグの見た目(タグ) +
+                          (選んだ ? ' をいつも付けるタグから外す' : ' をいつも付けるタグにする')
+                        }
+                        aria-pressed={選んだ}
+                        onPress={() => いつも付けるタグを入れ替える(タグ)}
+                        style={({ hovered }) => [
+                          {
+                            backgroundColor: 選んだ ? 基本色.青 : 基本色.地_濃い,
+                            borderRadius: 16,
+                            paddingHorizontal: 12,
+                            paddingVertical: 6,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 3,
+                          },
+                          hovered && { opacity: 0.85 },
+                          IS_WEB && { cursor: 'pointer' },
+                        ]}
+                      >
+                        {選んだ && <Icons.Ionicons name="pin" size={13} color={基本色.白} />}
+                        <Text style={{ fontSize: 13, color: 選んだ ? 基本色.白 : 基本色.黒 }}>
+                          {規則.タグの見た目(タグ)}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
               </View>
-            </View>
-            <Switch
-              value={保存時に出欠を確認する}
-              onValueChange={set保存時に出欠を確認する}
-              trackColor={{ false: 基本色.灰_明るい, true: 基本色.緑 }}
-            />
-          </View>,
-          // いつも付けるタグ（端末ごと。11/13 本人）。タグの定型文から選ぶ。前は基本設定のタグの定型文を押して選んだ
-          付けられる && tagTemplates.length > 0 && (
-            <View style={[styles.item, { flexDirection: 'column', alignItems: 'stretch' }]}>
-              <View style={[styles.itemLeft, { marginBottom: 2 }]}>
-                <Icons.Ionicons
-                  name="pricetags-outline"
-                  size={22}
-                  color={基本色.緑}
-                  style={styles.itemIcon}
-                />
-                <Text style={styles.itemText}>いつも付けるタグ</Text>
-              </View>
-              <Text style={{ fontSize: 11, color: 基本色.灰, marginBottom: 8, marginLeft: 34 }}>
-                選んだタグは、保存のとき最初から入ります（この端末だけ。保存のときに外せます）
-              </Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginLeft: 34 }}>
-                {tagTemplates.map((タグ) => {
-                  // 定型文は # 付きでしまう。前の形（# 無し）が残っていても選べるように、そろえてから比べる
-                  const 選んだ = いつも付けるタグ.includes(規則.normalizeTag(タグ));
-                  return (
-                    <Pressable
-                      key={`itsumo-${タグ}`}
-                      accessibilityRole="button"
-                      aria-label={
-                        規則.タグの見た目(タグ) +
-                        (選んだ ? ' をいつも付けるタグから外す' : ' をいつも付けるタグにする')
-                      }
-                      aria-pressed={選んだ}
-                      onPress={() => いつも付けるタグを入れ替える(タグ)}
-                      style={({ hovered }) => [
-                        {
-                          backgroundColor: 選んだ ? 基本色.青 : 基本色.地_濃い,
-                          borderRadius: 16,
-                          paddingHorizontal: 12,
-                          paddingVertical: 6,
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: 3,
-                        },
-                        hovered && { opacity: 0.85 },
-                        IS_WEB && { cursor: 'pointer' },
-                      ]}
-                    >
-                      {選んだ && <Icons.Ionicons name="pin" size={13} color={基本色.白} />}
-                      <Text style={{ fontSize: 13, color: 選んだ ? 基本色.白 : 基本色.黒 }}>
-                        {規則.タグの見た目(タグ)}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-          )
+            )}
+          </>
         )}
         {節(
           '矢所の記録',
