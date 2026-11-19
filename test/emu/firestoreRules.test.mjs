@@ -10,6 +10,7 @@ import {
   消す,
   絞って引く,
   片付ける,
+  一括で書く,
   決まりを置く,
   猶予のあとの決まり,
 } from './emu.mjs';
@@ -569,4 +570,33 @@ test('部員の役（11/19）：役の無い部員は付けるだけ。見るだ
     (await 作る(部員, `groups/${団体}/sessions/s4`, { id: 's4', archers: [] })).通った,
     '消した役の人が付けられない'
   );
+});
+
+test('一括（11/19）：部員が送れていない記録を 20 件まとめて送っても、決まりの中で読む回数の上限に当たらない', async () => {
+  await 団体を用意する();
+  const 記録 = (番) => ({
+    道: `groups/${団体}/sessions/b${番}`,
+    中身: { id: `b${番}`, archers: [{ name: 'a' }] },
+  });
+  // 役の無い部員（部員（自分））：記録を作るだけの一括
+  const 部員の一括 = await 一括で書く(
+    部員,
+    Array.from({ length: 20 }, (_, 番) => 記録(番))
+  );
+  assert.ok(部員の一括.通った, '部員の一括が断られた：' + JSON.stringify(部員の一括.中身).slice(0, 300));
+  // 運営＋管理者の印：射手を減らす直し・ゴミ箱・消すをまとめた一括（印の文書も読む）
+  await 書く('owner', `groups/${団体}/config/roles`, { 割り当て: { m1: 'unei' } });
+  await 書く('owner', `admin_sessions/${団体}_${部員.uid}`, { expiresAt: new Date(Date.now() + 3600000) });
+  const 運営の一括 = await 一括で書く(部員, [
+    ...Array.from({ length: 10 }, (_, 番) => ({
+      道: `groups/${団体}/sessions/b${番}`,
+      中身: { id: `b${番}`, archers: [] },
+    })),
+    ...Array.from({ length: 5 }, (_, 番) => ({
+      道: `groups/${団体}/trash/b${10 + 番}`,
+      中身: { id: `b${10 + 番}` },
+    })),
+    ...Array.from({ length: 5 }, (_, 番) => ({ 道: `groups/${団体}/sessions/b${10 + 番}`, 消す: true })),
+  ]);
+  assert.ok(運営の一括.通った, '運営の一括が断られた：' + JSON.stringify(運営の一括.中身).slice(0, 300));
 });

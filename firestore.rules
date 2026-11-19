@@ -128,9 +128,10 @@ service cloud.firestore {
     // 管理者の印（2026-11-14・11/18 本人）。中継（kyudo-chukei の POST /kanri）が、管理者の合言葉が合ったときに
     // admin_sessions/{団体}_{uid} へ 12 時間の期限を書く。端末からは書けない（下の match /admin_sessions）。
     // 合言葉が要るのは、前から画面で管理者モード（団体のパスワード）が要った操作だけ（11/18 本人「団体のパスワードがいるものを
-    // 変えたくない」）。決まりで見分けられるのは今は招待リンクを作ることだけ。記録を消す・ゴミ箱・メンバー・練習日・設定は、
-    // 団体の口座なら管理者モードなしでもできる（HistoryScreen の isAdminMode || activeRole === 'group'）ので、持ち主なら通す。
-    // 保存した記録を直す（画面では管理者モードの中）は、送り直しと見分ける作りが要るので 4 段目で決める
+    // 変えたくない」）。決まりで見分けているのは、招待リンクを作る・役を決める（config/roles）と、運営の役の人の
+    // 個人IDを見る・保存した記録を直す（下の memberAdmin）。記録を消す・ゴミ箱・メンバー・練習日・設定は、
+    // 団体の口座なら管理者モードなしでもできる（画面も同じ。src/yaku.js の 操作）ので、持ち主なら通す。
+    // 団体の口座が保存した記録を直す（画面では管理者モードの中）は、送り直しと見分ける作りが要るので 4 段目で決める
     function hasAdminSession(groupId) {
       let p = /databases/$(database)/documents/admin_sessions/$(groupId + '_' + request.auth.uid);
       return exists(p) && get(p).data.expiresAt > request.time;
