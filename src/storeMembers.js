@@ -349,8 +349,8 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
                 個人ID.消した行()
               )
             : null,
-          // その人の招待リンクを取り消す（名簿が空になっても残らないよう名指しで）
-          状態().activeRole === 'group'
+          // その人の招待リンクを取り消す（名簿が空になっても残らないよう名指しで）。運営の役の人は管理者モードのときだけ
+          状態().activeRole === 'group' || 役の決まり.できるか(状態(), '招待リンクを作る')
             ? require('./memberInvite').招待を取り消す(
                 { Firestore, db: Firebaseの器.db },
                 状態().activeGroupId,
@@ -541,8 +541,10 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
       if (頼まれた) throw new Error(文);
       return [];
     };
-    // 逆引き表を読み書きできるのは団体アカウントだけ
-    if (!団体 || 状態().activeRole !== 'group') return 失敗('団体でログインしているときだけ使えます');
+    // 逆引き表を読み書きできるのは、団体アカウントと、管理者モード（合言葉）の運営の役の人（決まりの memberAdmin。
+    // 11/19 の見直し：運営が足した人に、団体の端末を開くまで個人ID が付かなかった）
+    if (!団体 || (状態().activeRole !== 'group' && !役の決まり.できるか(状態(), '個人IDを見る')))
+      return 失敗('団体でログインしているときだけ使えます');
     if (!(await waitForDb())) {
       console.warn('[Store] ensurePersonalIds: db still undefined after await, aborting');
       return 失敗('準備ができていません。少し待ってからもう一度お試しください');

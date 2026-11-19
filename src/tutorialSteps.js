@@ -539,12 +539,15 @@ function まとまりの一覧(基本, 続き) {
  * 灰色の「選択済」になり、押しても何も起きない。部員が1人の団体はもちろん、
  * 人数ぶん並べたあとに設定から見返したときも起きる。
  * そのときは操作を求めず、説明だけにして「次へ」で進めるようにする。
+ * 役で記録を付けられない人（見るだけの役。src/yaku.js・2026-11-19）も、記録表を触る手順は押しても入らないので同じ
+ *（タブを移る手順はそのまま）。
  *
  * @param 手順  手順を作る が返す手順の1つ
- * @param 状態  { archers, members, alumni }
+ * @param 状態  { archers, members, alumni, activeRole, myMemberId, 役の設定 }
  */
 function 手が出せない(手順, 状態) {
   const 種類 = 手順 && 手順.操作 && 手順.操作.種類;
+  if (種類 && 種類 !== 'タブへ移動' && require('./yaku').役で付けられないか(状態)) return true;
   if (種類 !== '名前を決める') return false;
   const 今の状態 = 状態 || {};
   const 使用中 = new Set((今の状態.archers || []).map((射手) => 射手 && 射手.memberId).filter(Boolean));
