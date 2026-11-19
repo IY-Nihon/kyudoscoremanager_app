@@ -20,6 +20,7 @@ const {
 const { IS_WEB, SAFE_TOP_PADDING, WEB_TOP_PADDING } = require('./IS_WEB');
 const { useScoreStore } = require('./useScoreStore');
 const 役の決まり = require('./yaku');
+const { 役を選ぶ欄 } = require('./YakuModal');
 const 学 = require('./gakunen');
 const { use団体の決まり } = require('./useGakunen');
 const 区 = require('./kubun');
@@ -84,6 +85,7 @@ const MemberScreen = () => {
   const 管理できる = useScoreStore((状態) => 役の決まり.できるか(状態, 'メンバーを管理する'));
   const 個人IDを見られる = useScoreStore((状態) => 役の決まり.できるか(状態, '個人IDを見る'));
   const 招待を作れる = useScoreStore((状態) => 役の決まり.できるか(状態, '招待リンクを作る'));
+  const 役を決められる = useScoreStore((状態) => 役の決まり.できるか(状態, '役を決める'));
   // 使い方の案内が指す先
   const 案内の部員追加 = 案内.useTutorialTarget('メンバー.追加');
   const [検索の文, 検索の文を置く] = React.useState('');
@@ -448,6 +450,8 @@ const MemberScreen = () => {
             {/* 招待リンク（団体の持ち主が管理者モードのときだけ）。合言葉は逆引き表に置き、 */
             /* メンバーには一覧させない（src/memberInvite.js） */}
             {編集中の部員 && 招待を作れる && <招待リンクの欄 団体={activeGroupId} 部員={編集中の部員} />}
+            {/* 役（2026-11-19）。団体の口座で管理者モードのときだけ（src/YakuModal.js） */}
+            {編集中の部員 && 役を決められる && <役を選ぶ欄 部員id={編集中の部員.id} />}
           </>
         ) : null}
         {/* 性別・学年・期は団体で管理する項目。個人ログインでは */

@@ -33,6 +33,7 @@ const 役の決まり = require('./yaku');
 // 操作の固まりは別のファイル（2026-10-05 に分けた）
 const { 盤面の操作 } = require('./storeBoard');
 const { 部員の操作 } = require('./storeMembers');
+const { 役の操作 } = require('./storeYaku');
 const 学 = require('./gakunen');
 const 区 = require('./kubun');
 const 未送信 = require('./unsentStash');
@@ -607,6 +608,7 @@ const useScoreStore = zustand.create()(
         ...盤面の操作(書く, 状態, そのまま書く),
         ...ライブの操作(書く, 状態, そのまま書く),
         ...部員の操作(書く, 状態, そのまま書く),
+        ...役の操作(書く, 状態),
         ...記録の操作(書く, 状態, そのまま書く),
         ...掲載の操作(書く, 状態, そのまま書く),
         /**
