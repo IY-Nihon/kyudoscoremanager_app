@@ -29,11 +29,31 @@ const idの数 = 5;
 const 送り直しの上限 = 6;
 const 送り直しの待ち = 15 * 1000;
 
+/**
+ * App Check の印が取れていないままか（src/setupAppCheck.js が印の取り直しの失敗を数えている）。
+ * 読めなければ（検査・web でない）取れていないとは言えないので偽
+ */
+function 印が取れていないか() {
+  try {
+    return !!require('./setupAppCheck').印が取れていないか();
+  } catch {
+    return false;
+  }
+}
+
 /** 中継の誤りを、同期の誤りの形（入り直しの案内を出すかの見分けに code を見る）にする */
-function 中継の誤り(状態, 中身) {
+function 中継の誤り(状態, 中身, 道具 = {}) {
   const 誤り = new Error((中身 && 中身.error) || `中継から記録を取れませんでした（${状態}）`);
-  誤り.code =
-    状態 === 401
+  // 中継が App Check の印で断った（401 と 印: 'appcheck'。中継へfetch が印を長めに待って送り直したあと）。ログインの証の
+  // 誤りではないので、入り直しの案内は出さない（開いてすぐ印が間に合わなかっただけなら、戻った・引いたときに取れる）。
+  // 印の取り直しが失敗し続けているときだけ、前のとおり入り直しの案内（印の断りの文を添える。src/ReloginModal.js）を出す
+  const 印の断り = 状態 === 401 && !!中身 && 中身.印 === 'appcheck';
+  const 取れていない = 道具.印が取れていないか || 印が取れていないか;
+  誤り.code = 印の断り
+    ? 取れていない()
+      ? 'permission-denied'
+      : 'unavailable'
+    : 状態 === 401
       ? 'unauthenticated'
       : 状態 === 403
         ? 'permission-denied'
@@ -43,7 +63,7 @@ function 中継の誤り(状態, 中身) {
   return 誤り;
 }
 
-async function 呼ぶ(中継, 体) {
+async function 呼ぶ(中継, 体, 道具 = {}) {
   let 返り;
   try {
     返り = await 中継.中継へfetch('/jibun', {
@@ -59,7 +79,7 @@ async function 呼ぶ(中継, 体) {
   const 中身 = await Promise.resolve()
     .then(() => 返り.json())
     .catch(() => ({}));
-  if (!返り.ok) throw 中継の誤り(返り.status, 中身);
+  if (!返り.ok) throw 中継の誤り(返り.status, 中身, 道具);
   return 中身 || {};
 }
 
@@ -68,7 +88,7 @@ async function 待って呼ぶ(中継, 体, 道具) {
   const 待つ = 道具.待つ || ((ミリ秒) => new Promise((済む) => setTimeout(済む, ミリ秒)));
   for (let 回 = 0; ; 回++) {
     try {
-      return await 呼ぶ(中継, 体);
+      return await 呼ぶ(中継, 体, 道具);
     } catch (誤り) {
       if (!誤り || 誤り.code !== 'resource-exhausted' || 回 >= 送り直しの上限) throw 誤り;
       await 待つ(送り直しの待ち);

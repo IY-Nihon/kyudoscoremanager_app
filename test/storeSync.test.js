@@ -536,7 +536,25 @@ test('逆引き表：個人ID の無い人に 6 字の ID を逆引き表に振�
   assert.deepStrictEqual(store.getState().個人IDの表, { 'mem-1': 個人ID });
 });
 
-test('移し替え：名簿の文書に残っている個人ID は逆引き表に載せる（無ければ足す）。名簿の文書からは消さない（運営の台本で消す）', async () => {
+/**
+ * Date.now だけを決めた時刻に寄せて手を流す（差を足すだけなので、店の中の時刻の前後は変わらない）。4 桁の個人ID は
+ * 2026-12-03 まで使える（src/kojinId.js の 古い形を使える終わり）。その前の動きを見る検査を今の時計で流すと、12/3 から落ちる
+ * （11/20 夜の見直しで、時計を 12/4 に進めて全部を流して見つけた）
+ */
+async function 時計を決めて(時刻, 手) {
+  const 元 = Date.now;
+  const 差 = Date.parse(時刻) - 元();
+  Date.now = () => 元() + 差;
+  try {
+    return await 手();
+  } finally {
+    Date.now = 元;
+  }
+}
+
+test('移し替え：名簿の文書に残っている個人ID は逆引き表に載せる（無ければ足す）。名簿の文書からは消さない（運営の台本で消す）', () =>
+  時計を決めて('2026-11-20T00:00:00Z', 移し替えの検査));
+async function 移し替えの検査() {
   const { store, 雲 } = 用意();
   const 名簿 = [
     { id: 'mem-1', name: '部員1', personalId: '1234', lastModified: 1 },
@@ -556,11 +574,12 @@ test('移し替え：名簿の文書に残っている個人ID は逆引き表�
   assert.equal(雲.値(逆引きの道, '1234').memberId, 'mem-1');
   // 名簿の文書の個人ID は、アプリでは消さない。消すと、前の版の端末（開いたままのタブ）が名簿に個人ID が無いのを見て
   // 逆引き表を作り直し、全員の ID を消した（2026-11-07 のレビュー）。消すのは決まりを配ったあとの scripts/migrate-personal-ids.mjs
-  for (const id of ['mem-1', 'mem-2']) assert.ok('personalId' in 雲.値(メンバーの道, id), `${id} の名簿の文書から個人ID を消した`);
+  for (const id of ['mem-1', 'mem-2'])
+    assert.ok('personalId' in 雲.値(メンバーの道, id), `${id} の名簿の文書から個人ID を消した`);
   // 新しく書いた行には、新しい版の印が付く（決まりは印の無い書き込みを断る）
   assert.equal(雲.値(逆引きの道, '1234').形, 2, '逆引き表の行に 形: 2 が無い');
   assert.deepStrictEqual(store.getState().個人IDの表, { 'mem-1': '1234', 'mem-2': 'K7MP3X' });
-});
+}
 
 test('逆引き表：消した人・卒業生に移った人の行は消える', async () => {
   const { store, 雲 } = 用意();
@@ -586,7 +605,8 @@ test('逆引き表：部員ロールでは読まない・書かない（決ま�
   assert.deepStrictEqual(雲.中身(逆引きの道), []);
 });
 
-test('個人ID：4 桁は使える終わりまで替えない。使えない形の ID の人には 6 字で重複しない ID を振る', async () => {
+/** 4 桁の人（mem-1）・個人ID の無い人（mem-2）・使えない形の人（mem-3）で ensurePersonalIds を流す */
+async function 個人IDを振ってみる() {
   const { store, 雲 } = 用意();
   雲.置く(逆引きの道, '1234', { memberId: 'mem-1' });
   雲.置く(逆引きの道, 'あ', { memberId: 'mem-3' });
@@ -600,12 +620,23 @@ test('個人ID：4 桁は使える終わりまで替えない。使えない形�
   });
   const 振った = await store.getState().ensurePersonalIds();
   await 待つ(50);
-  const 表 = store.getState().個人IDの表;
+  return { 表: store.getState().個人IDの表, 振った };
+}
+
+test('個人ID：4 桁は使える終わりまで替えない。使えない形の ID の人には 6 字で重複しない ID を振る', async () => {
+  const { 表, 振った } = await 時計を決めて('2026-11-20T00:00:00Z', 個人IDを振ってみる);
   assert.equal(表['mem-1'], '1234', '4 桁の人を替えた');
   assert.match(表['mem-2'], /^[A-HJKMNP-Z2-9]{6}$/);
   assert.match(表['mem-3'], /^[A-HJKMNP-Z2-9]{6}$/);
   assert.equal(new Set(Object.values(表)).size, 3, '重複しない');
   assert.deepStrictEqual(振った.map((x) => x.id).sort(), ['mem-2', 'mem-3']);
+});
+
+test('個人ID：使える終わり（2026-12-03）を過ぎたら、4 桁の人にも 6 字の ID を振る（持ち主の端末が残りを替える）', async () => {
+  const { 表, 振った } = await 時計を決めて('2026-12-04T00:00:00Z', 個人IDを振ってみる);
+  for (const id of ['mem-1', 'mem-2', 'mem-3']) assert.match(表[id], /^[A-HJKMNP-Z2-9]{6}$/, id);
+  assert.equal(new Set(Object.values(表)).size, 3, '重複しない');
+  assert.deepStrictEqual(振った.map((x) => x.id).sort(), ['mem-1', 'mem-2', 'mem-3']);
 });
 
 // ──────────────────────────────────────────────────────────────
@@ -1162,7 +1193,11 @@ test('部員の端末：届かなかった自分の弓具は、弓具だけ送�
   assert.equal(メンバーを見る(store, 'mem-1').syncStatus, '未同期');
   // 届かないうちに、団体が名前を直した
   雲.状態.オフライン = false;
-  雲.置く(メンバーの道, 'mem-1', Object.assign({}, m, { name: '団体が直した名前', lastModified: Date.now() }));
+  雲.置く(
+    メンバーの道,
+    'mem-1',
+    Object.assign({}, m, { name: '団体が直した名前', lastModified: Date.now() })
+  );
   await store.getState().syncSessions();
   await 待つ(50);
   const 雲の人 = 雲.値(メンバーの道, 'mem-1');
@@ -1260,7 +1295,10 @@ test('個人ID：「全員を新しくする」で書き込めなかったら、
   雲.置く(逆引きの道, '1234', { memberId: 'mem-1', 形: 2 });
   store.setState({ members: [{ id: 'mem-1', name: '部員1', lastModified: 1 }] });
   雲.状態.失敗させる = true;
-  await assert.rejects(store.getState().ensurePersonalIds(true, false), /読めませんでした|書き込めませんでした/);
+  await assert.rejects(
+    store.getState().ensurePersonalIds(true, false),
+    /読めませんでした|書き込めませんでした/
+  );
   雲.状態.失敗させる = false;
   // 裏で呼ぶとき（替える注文なし）は投げずに次に回す
   雲.状態.失敗させる = true;

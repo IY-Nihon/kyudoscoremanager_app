@@ -248,11 +248,113 @@ test('入っている団体（X-Kyudo-Group）と App Check の印（X-Firebase-
     assert.equal(頭.get('X-Firebase-AppCheck'), 'APPCHECK.TOKEN');
     // 団体に入っていない・印が取れない
     店.exports = { useScoreStore: { getState: () => ({ activeGroupId: null }) } };
-    印.exports = { getToken: async () => { throw new Error('取れない'); } };
+    印.exports = {
+      getToken: async () => {
+        throw new Error('取れない');
+      },
+    };
     assert.deepEqual((await c.SDKの設定()).customHeaders, { Authorization: 'Bearer ID.TOKEN.x' });
   } finally {
     if (元の店) require.cache[店の道] = 元の店;
     else delete require.cache[店の道];
+    if (元の印) require.cache[印の道] = 元の印;
+    else delete require.cache[印の道];
+  }
+});
+
+test('電波が無くて証を取り直せないときは、ログインしていない（null）ではなく通信の誤りを投げる（11/20 夜の見直し）', async () => {
+  const 電波なし = Object.assign(new Error('Firebase: Error (auth/network-request-failed).'), {
+    code: 'auth/network-request-failed',
+  });
+  const c = 読み込む({
+    宛先: 中継,
+    人: {
+      uid: 'u1',
+      getIdToken: async () => {
+        throw 電波なし;
+      },
+    },
+  });
+  await assert.rejects(c.ログインの証(), /network-request-failed/);
+  // 受ける側（AI チャット・写真・予定表）は network の字で「電波の良い場所で」と出す。「ログインしていない」にしない
+  await assert.rejects(
+    c.SDKの設定(),
+    (誤り) => /network/.test(誤り.message) && !/ログインしていない/.test(誤り.message)
+  );
+  await assert.rejects(c.中継へfetch('/hozon', { method: 'POST' }), /network/);
+  // ほかの誤り（証が取り消されたなど）は前のとおり null（ログインしていない扱い）
+  const d = 読み込む({
+    宛先: 中継,
+    人: {
+      uid: 'u1',
+      getIdToken: async () => {
+        throw Object.assign(new Error('取り消された'), { code: 'auth/user-token-expired' });
+      },
+    },
+  });
+  assert.equal(await d.ログインの証(), null);
+});
+
+test('中継が App Check の印で断ったら（401・印 appcheck）、印を長めに待って 1 回だけ送り直す。証は取り直さない（11/20 夜の見直し）', async () => {
+  const 印の道 = require.resolve('firebase/app-check');
+  const 元の印 = require.cache[印の道];
+  const 印 = new Module(印の道, null);
+  ((印.filename = 印の道), (印.loaded = true));
+  // 1 回目は取れない（開いてすぐ・3 秒で間に合わない形）、2 回目は取れる
+  const 印たち = [];
+  印.exports = {
+    getToken: async () => {
+      const 次 = 印たち.shift();
+      if (!次) throw new Error('取れない');
+      return { token: 次 };
+    },
+  };
+  require.cache[印の道] = 印;
+  const 元のfetch = global.fetch;
+  try {
+    const 取った証 = [];
+    const c = 読み込む({
+      宛先: 中継,
+      人: { uid: 'u1', getIdToken: async (取り直す) => (取った証.push(!!取り直す), 'ID.TOKEN.x') },
+    });
+    require.cache[path.join(SRC, 'db.js')].exports.appCheck = {};
+    const 送った印 = [];
+    let 返す = [];
+    global.fetch = async (_url, init) => {
+      送った印.push(init.headers.get('X-Firebase-AppCheck'));
+      const 状態 = 返す.shift();
+      return new Response(
+        JSON.stringify(状態 === 401 ? { error: '確かめに失敗', 印: 'appcheck' } : { ok: true }),
+        {
+          status: 状態,
+        }
+      );
+    };
+    印たち.push(null, 'APPCHECK.NEW');
+    返す = [401, 200];
+    const 返り = await c.中継へfetch('/jibun', { method: 'POST', body: '{}' });
+    assert.equal(返り.status, 200);
+    assert.deepEqual(送った印, [null, 'APPCHECK.NEW'], '印を待って付け直して送り直していない');
+    assert.deepEqual(取った証, [false], '印の断りなのに証を取り直した');
+    // 待っても印が取れない：送り直さずに 401 のまま返す（体はまだ読める）
+    送った印.length = 0;
+    印たち.length = 0;
+    返す = [401];
+    const 断り = await c.中継へfetch('/jibun', { method: 'POST', body: '{}' });
+    assert.equal(断り.status, 401);
+    assert.equal((await 断り.json()).印, 'appcheck');
+    assert.deepEqual(送った印, [null]);
+    // 印の断りでない 401 は、今までどおり証を取り直す
+    送った印.length = 0;
+    取った証.length = 0;
+    global.fetch = async (_url, init) => (
+      送った印.push(init.headers.get('Authorization')),
+      new Response('{"error":"証が正しくない"}', { status: 401 })
+    );
+    await c.中継へfetch('/jibun', { method: 'POST', body: '{}' });
+    assert.deepEqual(取った証, [false, true]);
+  } finally {
+    global.fetch = 元のfetch;
     if (元の印) require.cache[印の道] = 元の印;
     else delete require.cache[印の道];
   }
