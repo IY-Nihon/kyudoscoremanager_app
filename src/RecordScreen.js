@@ -48,7 +48,7 @@ const 窓 = require('./AppDialog');
 const 航 = require('@react-navigation/native');
 const { formatMemberName } = require('./formatMemberName');
 const { ArrowLocationPopover } = require('./ArrowLocationPopover');
-const { OCRRecordModal } = require('./OCRRecordModal');
+const { OCRRecordModal, 区切りを作る } = require('./OCRRecordModal');
 const { 読み取りの届いた帯 } = require('./OcrTodoitaObi');
 const { LiveShareModal } = require('./LiveShareModal');
 const 期限 = require('./liveShare');
@@ -2036,14 +2036,21 @@ const RecordScreen = () => {
           // 埋まった○×は縮めても消えない）。先に合わせないと、いまの並びと読み取った
           // 並びで○×の長さが食い違う
           if (Number.isInteger(射数) && 射数 >= 1 && 射数 !== shotsPerRound) setShotsPerRound(射数);
-          // 後ろに足すときは、いまの並びの後ろへ繋ぐ。区切りは入れない
-          //（区切るかどうかは、写真の中に板が2つ在るときだけ窓の側で決める）。
+          // 後ろに足すときは、いまの並びの後ろへ繋ぐ。立ち順の読み取りは、いまの並びが区切りで終わっていなければ区切りを
+          // 1 つ入れてから足す（前の立と、読んだ最初の立がつながらない。読んだ立は窓の側で立ごとに後ろへ区切りを置く。
+          // 2026-11-20 本人「②と③を入れる」。前は入れず、11/9 は 3 回読んだ 33 人が 1 つの立のようにつながり、手で区切っていた）。
+          // 紙の記録（○×）は前のとおり繋ぐ（区切るかどうかは、写真の中に板が2つ在るときだけ窓の側で決める）。
           // いまの並びは、射数を合わせたあとのものを店から取り直す（画面の archers は合わせる前の写し）
-          const いまの並び = useScoreStore.getState().archers;
+          const いまの並び = Array.isArray(useScoreStore.getState().archers)
+            ? useScoreStore.getState().archers
+            : [];
+          const 最後 = いまの並び[いまの並び.length - 1];
+          const 間の区切り =
+            読み取りの種類 === 'tachi' && いまの並び.length > 0 && !(最後 && 最後.isSeparator)
+              ? [区切りを作る()]
+              : [];
           const 入れる並び =
-            入れ方 === '後ろに足す'
-              ? [...(Array.isArray(いまの並び) ? いまの並び : []), ...newArchers]
-              : newArchers;
+            入れ方 === '後ろに足す' ? [...いまの並び, ...間の区切り, ...newArchers] : newArchers;
           // 読み取った○×は「いま入れたもの」として扱う。
           // 印を付けないと初めから閉じてしまい、直すのが全部長押しになる。
           // 盤面より先に印を付ける。逆にすると印の無い盤面が一度描かれ、
