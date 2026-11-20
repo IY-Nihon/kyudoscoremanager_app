@@ -94,4 +94,23 @@ if (焼き込み !== 配り先) {
   process.exit(1);
 }
 
+// App Check の試しの印（EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN）が束に焼き込まれていたら配らない。
+// アプリは手元（localhost）でしか使わないが、EXPO_PUBLIC_ の値は束にそのまま入るので、配った束から誰でも読める。
+// 読んだ印を Firebase に登録された試しの印として使われると、App Check を強いていても素通りされる（2026-11-20 の別の AI の点検の S11）。
+// 値の無いときは void 0 で入る
+const 試しの印 = 中身.match(/EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN:("[^"]*"|'[^']*'|`[^`]*`)/);
+if (試しの印 && 試しの印[1].length > 2) {
+  console.error('');
+  console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.error('  配るのをやめました');
+  console.error('');
+  console.error('  束に App Check の試しの印（EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN）が入っています。');
+  console.error('  .env から外して、書き出し直してください：');
+  console.error('');
+  console.error('    npx expo export --platform web --clear');
+  console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.error('');
+  process.exit(1);
+}
+
 console.log(`接続先を確かめました: ${焼き込み}`);
