@@ -56,7 +56,11 @@ async function ログインの証(取り直す = false) {
   if (!人 || typeof 人.getIdToken !== 'function') return null;
   try {
     return await 人.getIdToken(取り直す);
-  } catch {
+  } catch (誤り) {
+    // 電波が無いと、切れた証を取り直せない（auth/network-request-failed）。ログインしていないのではないので、通信の誤りの
+    // まま投げる（受ける側はみな network の字で「電波の良い場所で」と出す）。前は null を返し、AI チャットが電波の無い所で
+    // 「ログインし直してから」と出していた（本番の不具合の便りで 4 通。11/12〜17 のどれも電波が無かった）
+    if (/network-request-failed/.test(String((誤り && (誤り.code || 誤り.message)) || ''))) throw 誤り;
     return null;
   }
 }
@@ -73,25 +77,42 @@ function 入っている団体() {
 
 /**
  * App Check の印。取れなければ空（中継は数えるだけ。強制していれば中継が断る）。
- * 印は SDK が控えていて、切れる前に取り直している（待つのは 3 秒まで）
+ * 印は SDK が控えていて、切れる前に取り直している（待つのは ふつう 3 秒まで）
  */
-async function AppCheckの印() {
+async function AppCheckの印(待つ長さ = 3000) {
   try {
     const 器 = require('./db').appCheck;
     if (!器) return '';
     const { getToken } = require('firebase/app-check');
-    const 返り = await Promise.race([getToken(器, false), new Promise((解く) => setTimeout(() => 解く(null), 3000))]);
+    const 返り = await Promise.race([
+      getToken(器, false),
+      new Promise((解く) => setTimeout(() => 解く(null), 待つ長さ)),
+    ]);
     return (返り && 返り.token) || '';
   } catch {
     return '';
   }
 }
 
-/** 中継へ添える見出し（証のほか） */
-async function 添える見出し() {
+/** 中継へ添える見出し（証のほか）。印の待ち … App Check の印を待つ長さ（ミリ秒） */
+async function 添える見出し(印の待ち) {
   const 団体 = 入っている団体();
-  const 印 = await AppCheckの印();
+  const 印 = await AppCheckの印(印の待ち);
   return { ...(団体 ? { 'X-Kyudo-Group': 団体 } : {}), ...(印 ? { 'X-Firebase-AppCheck': 印 } : {}) };
+}
+
+/** 印で送り直すときに待つ長さ。開いてすぐは reCAPTCHA を読み込んで印を取るまで、電波が弱いと 3 秒を超える */
+const 印を待つ長さ = 15000;
+
+/** 中継が App Check の印で断ったか（401 と 印: 'appcheck'。体は写しで読む） */
+async function 印で断られたか(返り) {
+  if (!返り || 返り.status !== 401 || typeof 返り.clone !== 'function') return false;
+  try {
+    const 中身 = await 返り.clone().json();
+    return !!中身 && 中身.印 === 'appcheck';
+  } catch {
+    return false;
+  }
 }
 
 /** SDK の getGenerativeModel / sendMessage に渡す requestOptions */
@@ -110,13 +131,21 @@ async function 中継へfetch(道, init) {
   if (!中継がある()) throw new Error('AI機能の設定（中継の宛先）が見つかりません。管理者にご確認ください。');
   const [証, 見出し] = await Promise.all([ログインの証(), 添える見出し()]);
   if (!証) throw new Error('ログインしていないため、AI機能を使えません。');
-  const 送る = (今の証) => {
+  const 送る = (今の証, 今の見出し = 見出し) => {
     const 頭 = new Headers((init && init.headers) || {});
-    for (const [鍵, 値] of Object.entries(見出し)) if (!頭.has(鍵)) 頭.set(鍵, 値);
+    for (const [鍵, 値] of Object.entries(今の見出し)) if (!頭.has(鍵)) 頭.set(鍵, 値);
     頭.set('Authorization', 'Bearer ' + 今の証);
     return fetch(中継のURL + (道.startsWith('/') ? 道 : '/' + 道), { ...(init || {}), headers: 頭 });
   };
   const 返り = await 送る(証);
+  // App Check の印が間に合わなかった（3 秒で取れずに付けなかった・付けた印が切れていた）。中継は強いているので断る。
+  // 印を長めに待ち、前と違う印が取れたら 1 回だけ送り直す（11/20 の見直し：部員（自分）の端末は開いてすぐ /jibun を呼ぶ）
+  if (await 印で断られたか(返り)) {
+    const 新しい見出し = await 添える見出し(印を待つ長さ);
+    const 新しい印 = 新しい見出し['X-Firebase-AppCheck'];
+    if (新しい印 && 新しい印 !== 見出し['X-Firebase-AppCheck']) return 送る(証, 新しい見出し);
+    return 返り;
+  }
   // 証が切れていた。取り直して 1 回だけ送り直す（同じ証しか取れなければ、送り直しても同じなので返す）
   if (返り && 返り.status === 401) {
     const 新しい証 = await ログインの証(true);

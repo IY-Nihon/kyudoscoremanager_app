@@ -137,6 +137,31 @@ test('中継から取る：続きを読み、次のページは中継の 次の�
   );
 });
 
+test('中継が App Check の印で断った（401・印 appcheck）ときは、入り直しの案内にしない。印が取れないままのときだけ前のとおり（11/20 夜の見直し）', async () => {
+  const 印で断る = () =>
+    偽の中継(() => ({ __状態: 401, error: 'この端末の確かめに失敗しました', 印: 'appcheck' }));
+  // 開いてすぐ印が間に合わなかっただけ：通信が切れていただけの形（便りに送らず、戻った・引いたときに取り直す）
+  await assert.rejects(
+    () =>
+      自分の記録.中継から取る({ 団体, 形: '全部' }, { 中継: 印で断る(), 印が取れていないか: () => false }),
+    (誤り) => 誤り.code === 'unavailable'
+  );
+  // 印の取り直しが失敗し続けている：入り直しの案内（印の断りの文を添える。src/ReloginModal.js）
+  await assert.rejects(
+    () => 自分の記録.中継から取る({ 団体, 形: '全部' }, { 中継: 印で断る(), 印が取れていないか: () => true }),
+    (誤り) => 誤り.code === 'permission-denied'
+  );
+  // 証の誤り（印の断りでない 401）は今までどおり
+  await assert.rejects(
+    () =>
+      自分の記録.中継から取る(
+        { 団体, 形: '全部' },
+        { 中継: 偽の中継(() => ({ __状態: 401, error: '証が正しくない' })), 印が取れていないか: () => false }
+      ),
+    (誤り) => 誤り.code === 'unauthenticated'
+  );
+});
+
 test('外すものを外す：写っていない記録とゴミ箱へ移った記録を外す。送れていない記録と、移したあとに戻した記録は残す', () => {
   const 記録たち = [
     { id: 'a', lastModified: 1 },
@@ -353,12 +378,18 @@ test('印の見張りが断られたら（決まりを配る前に開いた端�
 });
 
 test('部員（自分）の送り直しが断られたら、中継に id で聞いて雲にもう届いていれば同期済み（自分の写っていない記録は 外す に入れば届いている）', async () => {
+  // 中継は日付をミリ秒で返す（jibun.mjs の 値に。日時型は Date.parse）。again は雲の版のあとで保存し直した手元の版
   const 中継 = 偽の中継((体) =>
     体.形 === 'id'
       ? {
           記録: 体.ids
-            .filter((id) => id === 'mine' || id === 'diff')
-            .map((id) => ({ id, title: id === 'diff' ? '別の練習' : '練習', archers: [自分の列()] })),
+            .filter((id) => ['mine', 'diff', 'again'].includes(id))
+            .map((id) => ({
+              id,
+              title: id === 'diff' ? '別の練習' : '練習',
+              date: 時(0),
+              archers: [自分の列()],
+            })),
           外す: 体.ids.filter((id) => id === 'blank'),
         }
       : { 記録: [], 外す: [], 続き: null, 境目: { 記録: 0, ごみ箱: 0 } }
@@ -368,15 +399,16 @@ test('部員（自分）の送り直しが断られたら、中継に id で聞�
     const 未送 = (id) => ({
       id,
       title: '練習',
-      date: 時(0),
+      // again は雲の版のあとで直して保存し直した版（保存のたびに日付を付け直す）
+      date: id === 'again' ? 時(30) : 時(0),
       lastModified: 時(1),
       archers: id === 'blank' ? [{ id: 'b1', name: '', marks: ['○'] }] : [自分の列()],
       syncStatus: '未同期',
     });
-    const { store, 雲 } = 部員の店({ sessions: ['mine', 'blank', 'diff'].map(未送) });
+    const { store, 雲 } = 部員の店({ sessions: ['mine', 'blank', 'diff', 'again'].map(未送) });
     雲.状態.断る = (やること) => (やること.操作 || []).some((一つ) => 一つ.道 === 記録の道);
     await store.getState().syncSessions({ 取りに行かない: true });
-    await 待つ(120);
+    await 待つ(150);
     const 手元 = (id) => store.getState().sessions.find((一つ) => 一つ.id === id);
     assert.strictEqual(手元('mine').syncStatus, '同期済み', '雲にもう届いていたのに送れない');
     assert.strictEqual(
@@ -385,9 +417,18 @@ test('部員（自分）の送り直しが断られたら、中継に id で聞�
       '自分の写っていない記録（中継の 外す に入る）が届いた扱いにならない'
     );
     assert.strictEqual(手元('diff').送れない, true, '題の違う雲の写しを届いた扱いにした');
+    assert.strictEqual(
+      手元('again').送れない,
+      true,
+      '日付の違う（あとで保存し直した）版を届いた扱いにした（直しが黙って消える）'
+    );
+    // 1 件ずつ聞く（送る順は記録の並び＝日付の新しい順なので、順は見ない）
     assert.deepStrictEqual(
-      中継.呼んだ.filter((一つ) => 一つ.体.形 === 'id').map((一つ) => 一つ.体.ids),
-      [['mine'], ['blank'], ['diff']]
+      中継.呼んだ
+        .filter((一つ) => 一つ.体.形 === 'id')
+        .map((一つ) => 一つ.体.ids)
+        .sort(),
+      [['again'], ['blank'], ['diff'], ['mine']]
     );
   } finally {
     戻す();
