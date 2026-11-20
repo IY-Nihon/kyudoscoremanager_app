@@ -133,7 +133,7 @@ function 名前だけにする(道) {
 
 /**
  * 帯を出さずに、自動で読み込み直してよいか（上の説明の 4 つ）。
- * @param {{離れていた時間?: number, 隠れている?: boolean, 触れていない時間?: number, 触れずに待つ?: number, ライブ中?: boolean, 案内中?: boolean, 入力中?: boolean, 窓が開いている?: boolean, 新しい束?: string|null, 前に試した束?: string|null, 最短?: number}} 状況
+ * @param {{離れていた時間?: number, 隠れている?: boolean, 触れていない時間?: number, 触れずに待つ?: number, ライブ中?: boolean, 案内中?: boolean, 入力中?: boolean, 窓が開いている?: boolean, 読み取りを預けている?: boolean, 新しい束?: string|null, 前に試した束?: string|null, 最短?: number}} 状況
  * @returns {boolean}
  */
 function 自動で更新してよいか(状況) {
