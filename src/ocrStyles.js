@@ -73,6 +73,9 @@ const styles = StyleSheet.create({
 
   centerBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   centerText: { marginTop: 14, fontSize: 14, color: 色.墨_66 },
+  // 読み取り中に待った秒と、閉じても読み続けることの説明（2026-11-20）
+  待った秒の字: { marginTop: 8, fontSize: 13, color: 色.墨_66, fontVariant: ['tabular-nums'] },
+  待つ間の説明: { marginTop: 10, fontSize: 13, color: 色.墨_66, textAlign: 'center', lineHeight: 20 },
   legendRow: { flexDirection: 'row', gap: 16, marginBottom: 14 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   legendDot: { width: 12, height: 12, borderRadius: 3 },
