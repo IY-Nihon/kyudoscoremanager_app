@@ -45,6 +45,23 @@ const {
 const { 札で立にまとめる } = require('./ocrTachiFuda');
 // 待つ間の説明・失敗の文・閉じたあとに届いた帯の決まり（閉じても読み続ける。2026-11-20）
 const 待ち = require('./ocrMatsu');
+
+/**
+ * 立の区切り（記録表の灰色の細い列・間隔）を 1 つ作る。記録画面の「間隔」と同じ形（storeBoard の addSeparator）。
+ * 立ち順の読み取りでは、立ごとに後ろへ置く（最後の立のあとにも）。記録画面で前の並びの後ろに足すときも使う
+ */
+const 区切りを作る = () => ({
+  id: 'sep-' + generateUUID(),
+  name: '---',
+  marks: [],
+  isSeparator: true,
+  gender: '未設定',
+  grade: 0,
+  isGuest: false,
+  isTotalCalculator: false,
+  lockedBlocks: {},
+  lastModified: Date.now(),
+});
 const { マスを開く, 一射目からの順にする, 迷いを開く } = require('./ocrCells');
 // 板と紙の○×は端末で読む（Gemini は線の向きを読めない）。名前と並びは Gemini のまま
 const { マスを端末で差し替える, ノートの先読みを作る } = require('./ocr/sashikae');
@@ -1579,26 +1596,10 @@ const OCRRecordModal = ({
     });
 
     const result = [];
-    // 有効なメンバーが入っている立ちのみを処理し、その間にセパレータを入れる
+    // 人の入っている立だけを、立ごとに区切りを後ろに置いて並べる。最後の立のあとにも置く（2026-11-20 本人「②と③を入れる」。
+    // 前は立の間だけで、最後の立のあとの区切りは毎回手で足していた。最後の立も区切りの鍵で閉じられ、次に読んだ立とつながらない）
     const nonTransientTachi = activeTachiLists.filter((list) => list.length > 0);
-
-    nonTransientTachi.forEach((list, idx) => {
-      result.push(...list);
-      if (idx < nonTransientTachi.length - 1) {
-        result.push({
-          id: 'sep-' + generateUUID(),
-          name: '---',
-          marks: [],
-          isSeparator: true,
-          gender: '未設定',
-          grade: 0,
-          isGuest: false,
-          isTotalCalculator: false,
-          lockedBlocks: {},
-          lastModified: Date.now(),
-        });
-      }
-    });
+    nonTransientTachi.forEach((list) => result.push(...list, 区切りを作る()));
 
     return result;
   };
@@ -2104,3 +2105,4 @@ const OCRRecordModal = ({
 };
 
 exports.OCRRecordModal = OCRRecordModal;
+exports.区切りを作る = 区切りを作る;
