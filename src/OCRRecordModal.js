@@ -436,8 +436,11 @@ const OCRRecordModal = ({
     // 読み取りの途中なら、閉じても読み続ける。その回を預け、届いたら記録画面に知らせ、次に開いたときに続きから見せる
     //（前は捨てていた。読み終えた分のログは前から送っている。analyzeImages）
     const 読み続ける = !反映した && step === 'analyzing';
-    if (読み続ける)
+    if (読み続ける) {
       裏の読み.current = { 回: 読みの回.current, モード: mode, 向き, 写真たち: images, 届いた: null };
+      // 預けている間は、自動更新で読み込み直さない（UpdateBar）
+      待ち.預けた読み取りを置く(true);
+    }
     読みの回.current++;
     撮り直し中.current = false;
     if (!反映した) 使わなかった読み取りを残す('閉じた');
@@ -485,6 +488,8 @@ const OCRRecordModal = ({
     const 裏 = 裏の読み.current;
     if (!裏) return;
     裏の読み.current = null;
+    // 窓に出したので預かりは終わり（読み取り中に戻したときは、窓が開いているので自動更新は待つ）
+    待ち.預けた読み取りを置く(false);
     setMode(裏.モード);
     set向き(裏.向き);
     setImages(裏.写真たち);
@@ -518,6 +523,7 @@ const OCRRecordModal = ({
   React.useEffect(() => {
     if (!裏の読みを捨てる合図 || visible || !裏の読み.current) return;
     裏の読み.current = null;
+    待ち.預けた読み取りを置く(false);
     if (typeof 画像の道具.控えを手放す === 'function') 画像の道具.控えを手放す();
   }, [裏の読みを捨てる合図]);
 
