@@ -12,6 +12,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# 倉庫は読むだけ。どの仕事も倉庫へ書かない（成果物を上げるのに倉庫の書き込みは要らない）
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
