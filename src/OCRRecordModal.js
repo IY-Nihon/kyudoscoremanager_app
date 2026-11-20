@@ -668,6 +668,8 @@ const OCRRecordModal = ({
           // 切る長さ（約 70 秒の無言）に近づいた）
           if (止める && 止める.aborted) throw 誤り;
           if (!/503/.test(String(誤り?.message || 誤り))) throw 誤り;
+          // 中継が締め切り（95 秒）まで待ちきった 503 は読み直さない（重ねると 3 分を超える。11/20 本人「95 秒で打ち切る」）
+          if (中継.待ちきったか(誤り, 送った時刻)) throw 誤り;
           set混み待ち(true);
           try {
             await new Promise((r) => setTimeout(r, 3000));
@@ -686,7 +688,8 @@ const OCRRecordModal = ({
       };
       // 逆さのノートと分かったら、最初の読み（20〜35 秒）を待たずにやめて、起こした写真ですぐ読み直す（D1）。
       // 前は最初の読みが終わってから送り直していた
-      const 最初の止め = mode === 'record' && typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const 最初の止め =
+        mode === 'record' && typeof AbortController !== 'undefined' ? new AbortController() : null;
       const 最初の読み = 読ませる(prompt, 最初の止め ? 最初の止め.signal : undefined);
       最初の読み.catch(() => {});
       let 起こして読んだ = false;
@@ -1064,7 +1067,11 @@ const OCRRecordModal = ({
             (Array.isArray(行?.marks) && 行.marks.some((印) => normalizeMark(印) !== ''))
         );
         if (rows.length === 0) {
-          読み取りを取っておく({ 結果: '読めなかった', 知らせ: '記録表を検出できませんでした', ...閉じた印() });
+          読み取りを取っておく({
+            結果: '読めなかった',
+            知らせ: '記録表を検出できませんでした',
+            ...閉じた印(),
+          });
           if (捨てた()) return;
           setErrorMsg('記録表を検出できませんでした。表全体が入るように撮り直してください。');
           setStep('pick');
@@ -1086,7 +1093,11 @@ const OCRRecordModal = ({
       // 空きごとの組を、立の番号の札で立にまとめる（src/ocrTachiFuda.js）
       const rawTachi = 札で立にまとめる(Array.isArray(parsed.tachi) ? parsed.tachi : []);
       if (rawTachi.length === 0) {
-        読み取りを取っておく({ 結果: '読めなかった', 知らせ: '立ち順表を検出できませんでした', ...閉じた印() });
+        読み取りを取っておく({
+          結果: '読めなかった',
+          知らせ: '立ち順表を検出できませんでした',
+          ...閉じた印(),
+        });
         if (捨てた()) return;
         setErrorMsg('立ち順表を検出できませんでした。写真を撮り直してください。');
         setStep('pick');

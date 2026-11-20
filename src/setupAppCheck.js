@@ -62,6 +62,37 @@ function 札を隠す(文書) {
  */
 let 印の失敗の時刻 = 0;
 const 印が取れていないか = () => 印の失敗の時刻 > 0;
+/** 最後に印の取り直しが失敗した時刻（取れても消さない。0 は失敗したことが無い） */
+let 最後に失敗した時刻 = 0;
+const 最後に印が取れなかった時刻 = () => 最後に失敗した時刻;
+/** 印が戻るのを待っている手（次に取れたら一度ずつ呼ぶ） */
+const 戻りを待つ手 = [];
+/**
+ * 印の取り直しが次に成功したら、一度だけ手を呼ぶ（印が取れていない間に断られた同期を、戻ったら黙って取り直す。
+ * src/storeShared.js の 入り直しを頼む。11/20 本人「黙って取り直す」）。待つのをやめる手を返す
+ */
+function 印が戻ったら(手) {
+  戻りを待つ手.push(手);
+  return () => {
+    const 位置 = 戻りを待つ手.indexOf(手);
+    if (位置 >= 0) 戻りを待つ手.splice(位置, 1);
+  };
+}
+/** 印が取れた／取れなかった（onTokenChanged の 2 つの手。検査からも呼ぶ） */
+function 印が取れた() {
+  印の失敗の時刻 = 0;
+  for (const 手 of 戻りを待つ手.splice(0)) {
+    try {
+      手();
+    } catch {
+      /* 待っていた手が転んでも、ほかの手は呼ぶ */
+    }
+  }
+}
+function 印が取れなかった() {
+  印の失敗の時刻 = Date.now();
+  最後に失敗した時刻 = 印の失敗の時刻;
+}
 
 function 印の失敗を知らせる(AppCheck, 器, 窓, 送る) {
   if (!器 || 手元か(窓 && 窓.location) || typeof AppCheck.onTokenChanged !== 'function') return;
@@ -69,10 +100,10 @@ function 印の失敗を知らせる(AppCheck, 器, 窓, 送る) {
   AppCheck.onTokenChanged(
     器,
     () => {
-      印の失敗の時刻 = 0;
+      印が取れた();
     },
     (誤り) => {
-      印の失敗の時刻 = Date.now();
+      印が取れなかった();
       if (知らせた) return;
       知らせた = true;
       try {
@@ -127,3 +158,7 @@ exports.setupAppCheck = setupAppCheck;
 exports.AppCheckを使うか = AppCheckを使うか;
 exports.手元か = 手元か;
 exports.印が取れていないか = 印が取れていないか;
+exports.最後に印が取れなかった時刻 = 最後に印が取れなかった時刻;
+exports.印が戻ったら = 印が戻ったら;
+exports.印が取れた = 印が取れた;
+exports.印が取れなかった = 印が取れなかった;

@@ -359,3 +359,15 @@ test('中継が App Check の印で断ったら（401・印 appcheck）、印を
     else delete require.cache[印の道];
   }
 });
+
+test('待ちきったか：中継の締め切りの 503（文に「締め切り」）か、1 回に 60 秒以上かかった呼び出しは送り直さない（11/20 本人「95 秒で打ち切る」）', () => {
+  const c = 読み込む({ 宛先: 中継, 人: ログイン済み });
+  const 締め切り = new Error(
+    '[GoogleGenerativeAI Error]: Error fetching from https://x/v1beta/models/gemini-3.6-flash:streamGenerateContent?alt=sse: [503 ] 中継の締め切りまで待ちましたが、AI の答えが始まりませんでした（混み合っています）'
+  );
+  const 混み = new Error('[503 ] This model is currently experiencing high demand.');
+  assert.equal(c.待ちきったか(締め切り, 1000, 2000), true, '締め切りの 503 を送り直す');
+  assert.equal(c.待ちきったか(混み, 1000, 1000 + 59_000), false, 'すぐ返った混雑の 503 は送り直してよい');
+  assert.equal(c.待ちきったか(混み, 1000, 1000 + 60_000), true, '60 秒かかった 503 を送り直す');
+  assert.equal(c.待ちきったか(混み), false, '始めた時刻が分からなければ文だけで決める');
+});
