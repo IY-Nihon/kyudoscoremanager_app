@@ -162,4 +162,22 @@ test.describe('閉じても読み続ける', () => {
     await expect(page.getByText('記録表に反映する', { exact: true })).toHaveCount(0);
     await expect(page.getByText('1枚目', { exact: true })).toHaveCount(0);
   });
+
+  test('待つ間にほかのタブへ移っても読み続け、記録のタブに戻ると帯が出る', async ({ page }) => {
+    test.setTimeout(180_000);
+    const 中継 = await 中継を止めておく(page);
+    await 読み始める(page);
+    await page.getByTestId('ocr-tojiru').click();
+    await page.getByText('履歴', { exact: true }).first().click();
+    中継.開ける();
+    // 届くのを待ってから戻る（記録画面はタブを移っても残る）
+    await expect.poll(() => 中継.呼ばれた()).toBe(1);
+    await page.waitForTimeout(1500);
+    await page.getByText('記録', { exact: true }).first().click();
+    await expect(page.getByTestId('読み取りの届いた帯')).toContainText('立ち順の読み取りが届きました', {
+      timeout: 30_000,
+    });
+    await page.getByTestId('読み取りの届いた帯-見る').click();
+    await expect(page.getByText('記録表に反映する', { exact: true })).toBeVisible();
+  });
 });
