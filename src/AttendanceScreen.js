@@ -147,7 +147,8 @@ const AttendanceScreen = () => {
   // ログアウトさせずに入り直す窓を出す（src/ReloginModal.js）。ログアウトすると送れていない記録が控えに回る
   const 保存の誤りを伝える = (誤り) => {
     const { 見出し, 文, 権限 } = 予.練習日の保存の誤り(誤り);
-    if (権限 && !useScoreStore.getState().入り直しをあとに) useScoreStore.setState({ 入り直しが要る: true });
+    // 断られた。App Check の印が取れていない間なら窓は出さず、印が戻ったら黙って取り直す（storeShared の 入り直しを頼む）
+    if (権限) require('./storeShared').入り直しを頼む(useScoreStore.setState, useScoreStore.getState);
     Alert.alert(見出し, 文);
   };
   const todayStr = getLocalDateString(new Date());

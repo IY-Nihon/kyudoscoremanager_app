@@ -848,6 +848,7 @@ const AIChatBot = () => {
           // 混んでいて断られた（503 など）ときは、この往復だけ少し待って 1 回送り直す（D6。前は 10 秒待って、
           // 道具の往復ごと最初からやり直していた）。中継はもう 2・4・8 秒待って模型を替えているので、待つのは短く
           const 流しを始める = async () => {
+            const 始めた = Date.now();
             try {
               return await model.generateContentStream({ contents: 会話 });
             } catch (誤り) {
@@ -857,6 +858,11 @@ const AIChatBot = () => {
                 [500, 502, 504].includes(番号) ||
                 /\b503\b/.test(String((誤り && 誤り.message) || ''));
               if (!一時) throw 誤り;
+              // 中継が締め切りまで待ちきった（または 1 回に 60 秒以上かかった）なら、ここでも外でも送り直さない（11/20 本人）
+              if (中継.待ちきったか(誤り, 始めた)) {
+                if (誤り && typeof 誤り === 'object') 誤り.待ちきった = true;
+                throw 誤り;
+              }
               送り直し.混雑++;
               await 数えながら待つ(3);
               return await model.generateContentStream({ contents: 会話 });
@@ -1867,7 +1873,7 @@ const AIChatBot = () => {
         const is503 = 状態番号 === 503 || error.message?.includes('503');
         const 一時の誤りか = is503 || [500, 502, 504].includes(状態番号);
 
-        if (一時の誤りか && attempt < MAX_RETRY) {
+        if (一時の誤りか && attempt < MAX_RETRY && !(error && error.待ちきった)) {
           // 混んでいる（503）などの一時の誤り。中継がすでに 503 は 2・4・8 秒待って送り直しているが、
           // 山が長いことがある。利用者に送り直させる前に、もう少し待ってこちらで 1 回だけ送り直す
           await 数えながら待つ(10);
