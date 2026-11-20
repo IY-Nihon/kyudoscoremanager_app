@@ -274,7 +274,38 @@ test('送る形：中の日本語の名前を、英字に直して出す', () =>
   assert.strictEqual(出.at, 5);
   assert.strictEqual(出.groupId, '000910');
   assert.strictEqual(出.online, true);
-  assert.deepStrictEqual(出.trail, [{ at: 出.trail[0].at, name: '保存', detail: '8人' }]);
+  assert.strictEqual(出.trail.length, 1);
+  assert.match(出.trail[0], /^\d\d:\d\d:\d\d 保存（8人）$/);
+});
+
+test('送る形：行動の控えは 1 件 1 行の文字列。いちばん長い便りでも決まり（firestore.rules の reportShapeOk）の長さに収まる', () => {
+  行動を捨てる();
+  // アプリが持つ上限の 30 件。名前 60 字・中身 120 字に切られる。日本語は 1 字 3 バイトで数えても収まること
+  for (let i = 0; i < 40; i++) 行動を残す('名'.repeat(80), '中'.repeat(200));
+  const 長い = (n) => 'あ'.repeat(n);
+  const 出 = 外向きの形(
+    不具合の便を組む(
+      { message: 長い(2000), code: 長い(200), stack: 長い(5000) },
+      { 出どころ: 長い(200), 団体id: 長い(100), 役割: 長い(100), 版: 長い(100), 端末: 'x'.repeat(500) }
+    )
+  );
+  const バイト = (字) => Buffer.byteLength(字, 'utf8');
+  assert.strictEqual(出.trail.length, 30);
+  assert.ok(出.trail.every((行) => typeof 行 === 'string'));
+  assert.ok(バイト(出.trail.join('')) <= 20000, `控え ${バイト(出.trail.join(''))} バイト`);
+  assert.ok(バイト(出.message) < 1000);
+  assert.ok(出.stack.length < 4000);
+  assert.ok(出.device.length < 400);
+  for (const [欄, 上限] of [
+    ['where', 400],
+    ['code', 400],
+    ['groupId', 200],
+    ['role', 200],
+    ['version', 200],
+    ['id', 200],
+  ])
+    assert.ok(バイト(出[欄]) <= 上限, `${欄} ${バイト(出[欄])} バイト`);
+  行動を捨てる();
 });
 
 test('送る形：中身が空でも、項目は欠けない（決まりが項目を数える）', () => {
@@ -479,9 +510,14 @@ test('送る形：時刻を Date にする（管理画面で日時として読�
   const 出 = 送る形(便);
   assert.ok(出.at instanceof Date);
   assert.strictEqual(出.at.getTime(), 1790000000000);
-  assert.ok(出.trail[0].at instanceof Date);
-  assert.strictEqual(出.trail[0].at.getTime(), 1789999999000);
-  assert.strictEqual(出.trail[1].at, null, '時刻の無いものは 1970 年にしない');
+  // 行動の控えの時刻は行の頭（端末の時計）。無いものは 1970 年にしない
+  const 押した時 = new Date(1789999999000);
+  const 二桁 = (数) => String(数).padStart(2, '0');
+  assert.strictEqual(
+    出.trail[0],
+    `${二桁(押した時.getHours())}:${二桁(押した時.getMinutes())}:${二桁(押した時.getSeconds())} 押した`
+  );
+  assert.strictEqual(出.trail[1], '--:--:-- ?');
   assert.deepStrictEqual(Object.keys(出).sort(), Object.keys(外(便)).sort());
   assert.strictEqual(typeof 外(便).at, 'number', '外向きの形は数のまま（読み返す側と共有）');
 });
