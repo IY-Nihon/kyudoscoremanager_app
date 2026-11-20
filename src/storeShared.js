@@ -378,7 +378,12 @@ function 入り直しを頼む(書く, 状態, 道具 = {}) {
       'listenToAlumni',
     ])
       if (typeof 状態()[名] === 'function') Promise.resolve(状態()[名]()).catch(() => {});
-    if (typeof 状態().syncSessions === 'function') Promise.resolve(状態().syncSessions()).catch(() => {});
+    // 同期は少しあとに回す。断られた同期の catch から呼ばれたとき（入れ違い）は、その同期がまだ終わっておらず
+    //（場.同期している）、すぐ呼ぶと飛ばされうる（11/20 の 2 回目の見直し）
+    setTimeout(() => {
+      if (状態().activeGroupId !== 団体 || typeof 状態().syncSessions !== 'function') return;
+      Promise.resolve(状態().syncSessions()).catch(() => {});
+    }, 道具.同期を待つ長さ ?? 1000);
   };
   if (印.印が取れていないか()) {
     // もう待っている（同じ断りが見張りと同期から続けて届く）
