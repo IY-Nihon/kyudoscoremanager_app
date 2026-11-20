@@ -666,6 +666,9 @@ const 学年 = (雲, id) => 雲.値(メンバーの道, id).grade;
 const 部員 = (雲, id) => 雲.値(メンバーの道, id);
 const 今年 = new Date().getFullYear();
 const 前の年度 = (new Date().getMonth() + 1 >= 4 ? 今年 : 今年 - 1) - 1;
+// 進級した年はアプリが年度で書く（useScoreStore の 進級する。年度は設定の「年度の始まり」の月から。既定は 4 月）。
+// 暦の年（今年）で比べると、1〜3 月に流したとき「今年度はもう進級した」となって落ちた（別の AI の点検の B4。2027-01-01 の時計で再現）
+const 今年度 = 前の年度 + 1;
 
 test('進級：1〜3年は1つ上がる', async () => {
   const { store, 雲 } = 用意();
@@ -735,11 +738,11 @@ test('進級：高専（5 年）は 4 年が 5 年へ上がり、5 年が卒業'
 test('進級：期を使う団体だけ現在の期が1つ進む。進級した年を書き、古い版の自動進級を切る', async () => {
   const { store, 雲 } = 用意();
   名簿を置く(store, 雲, [1]);
-  雲.置く(設定の道, 'app_settings', { useTerm: true, currentFreshmanTerm: 50, lastPromotionYear: 今年 - 1 });
+  雲.置く(設定の道, 'app_settings', { useTerm: true, currentFreshmanTerm: 50, lastPromotionYear: 前の年度 });
   await store.getState().進級する([]);
   const 設定 = 雲.値(設定の道, 'app_settings');
   assert.equal(設定.currentFreshmanTerm, 51);
-  assert.equal(設定.lastPromotionYear, 今年);
+  assert.equal(設定.lastPromotionYear, 今年度);
   assert.equal(設定.autoPromotionEnabled, false);
   assert.equal(store.getState().進級待ちの年, null, '窓を閉じる');
 
@@ -748,7 +751,7 @@ test('進級：期を使う団体だけ現在の期が1つ進む。進級した�
   次.雲.置く(設定の道, 'app_settings', {
     useTerm: false,
     currentFreshmanTerm: 1,
-    lastPromotionYear: 今年 - 1,
+    lastPromotionYear: 前の年度,
   });
   await 次.store.getState().進級する([]);
   assert.equal(次.雲.値(設定の道, 'app_settings').currentFreshmanTerm, 1, '期を使わない団体の期は動かさない');

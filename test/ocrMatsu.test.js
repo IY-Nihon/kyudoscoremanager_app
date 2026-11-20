@@ -50,3 +50,19 @@ test('待つ間の説明は 10 秒から・帯は 15 分で消す', () => {
   assert.match(待ち.待つ間の説明, /閉じても読み続け、届いたら\n記録画面でお知らせします。/);
   assert.strictEqual(待ち.帯を出しておく長さ, 15 * 60 * 1000);
 });
+
+test('預けた読み取りの印：立てると自動更新が待つ（UpdateBar が見る）。下ろすと戻る', () => {
+  assert.strictEqual(待ち.預けた読み取りがあるか(), false);
+  待ち.預けた読み取りを置く(true);
+  assert.strictEqual(待ち.預けた読み取りがあるか(), true);
+  待ち.預けた読み取りを置く(false);
+  assert.strictEqual(待ち.預けた読み取りがあるか(), false);
+});
+
+test('UpdateBar は、預けた読み取りの印を 自動で更新してよいか に渡している', () => {
+  const 字 = require('node:fs').readFileSync(
+    require('node:path').join(__dirname, '../src/UpdateBar.js'),
+    'utf8'
+  );
+  assert.match(字, /読み取りを預けている:\s*require\('\.\/ocrMatsu'\)\.預けた読み取りがあるか\(\)/);
+});
