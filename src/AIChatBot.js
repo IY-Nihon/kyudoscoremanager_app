@@ -980,6 +980,25 @@ const AIChatBot = () => {
               continue;
             }
 
+            if (
+              call.name === 'makeBalancedTeams' &&
+              !(call.args.teamSize > 0) &&
+              !(call.args.splitInto > 0)
+            ) {
+              // 1 組の人数も組の数も無い（teamSize は必須でなくなった。組の数で全員を分けるときに聞き返させないため）。
+              // 組まずに、どちらかを決めてもらう（そのまま組むと 1 人ずつの組になる）
+              functionResponses.push({
+                functionResponse: {
+                  name: call.name,
+                  response: {
+                    success: false,
+                    message:
+                      '組を作るには、1 組の人数（teamSize）か、全員を分ける組の数（splitInto）が要ります。利用者の言葉から分かるほうを渡して呼び直してください。どちらも分からないときだけ、1 組の人数か組の数を利用者に聞いてください。',
+                  },
+                },
+              });
+              continue;
+            }
             if (call.name === 'makeBalancedTeams') {
               // 組分けは src/chatTeams.js で済ませる（10/17 に AI が自分で組んで、人を外し・数え違え・ばらついた）
               const { 組を作る } = require('./chatTeams');
@@ -998,6 +1017,7 @@ const AIChatBot = () => {
                 現役だけ: true,
                 期間: 期間にする(call.args.dateFrom, call.args.dateTo),
                 一組の人数: call.args.teamSize,
+                全員を分ける組の数: call.args.splitInto,
                 外す: 並び(call.args.excludeNames),
                 余り: call.args.remainder,
                 目的: call.args.goal,
