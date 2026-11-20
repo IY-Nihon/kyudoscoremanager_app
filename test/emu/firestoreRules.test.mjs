@@ -1,6 +1,7 @@
 // firestore.rules を模擬環境で確かめる（npm run test:rules）。断るべき手順が断られ、ふだんの手順が通ること。
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
 import {
   書く,
   作る,
@@ -824,4 +825,61 @@ test('4 段目（11/20 本人）：「直す」の無い部員は、自分が作
     '運営＋印で直せない'
   );
   assert.ok((await 書く(持ち主, 道('s15'), { id: 's15', archers: [] })).通った);
+});
+
+test('不具合の便り（11/21・S9）：アプリのいちばん長い便りは通る。型・長さの外れ・前の形の控え・遠い先の消す日時・10 秒以内の 2 通目は断る', async () => {
+  await 片付ける();
+  // アプリと同じ組み方（src/errorReport.js・src/errorReporter.js）で、切られる長さいっぱいの便りを作る
+  const 便りの道具 = createRequire(import.meta.url)('../../src/errorReport.js');
+  便りの道具.行動を捨てる();
+  for (let i = 0; i < 40; i++) 便りの道具.行動を残す('名'.repeat(80), '中'.repeat(200));
+  const 長い = (n, 字 = 'あ') => 字.repeat(n);
+  const アプリの便り = Object.assign(
+    便りの道具.送る形(
+      便りの道具.不具合の便を組む(
+        { message: 長い(2000), code: 長い(200), stack: 長い(5000, 'a') },
+        {
+          出どころ: 長い(200),
+          団体id: 長い(100),
+          役割: 長い(100),
+          版: 長い(100),
+          端末: 長い(500, 'x'),
+          時刻: Date.now(),
+        }
+      )
+    ),
+    { createdAt: new Date(), expireAt: new Date(Date.now() + 90 * 86400000) }
+  );
+  便りの道具.行動を捨てる();
+  assert.equal(アプリの便り.trail.length, 30);
+
+  let 番 = 0;
+  const 送る = (中身, uid = `anon-r${++番}`) =>
+    一括で書く({ uid }, [
+      { 道: `errorReports/r${++番}`, 中身 },
+      { 道: `rate_limits/${uid}`, 中身: {}, 時刻の欄: 'reportAt' },
+    ]);
+  const 返り = await 送る(アプリの便り);
+  assert.ok(返り.通った, `アプリの便りが断られた：${JSON.stringify(返り.中身).slice(0, 300)}`);
+
+  const 今 = Date.now();
+  for (const [名, 上書き] of [
+    ['控えが前の形（地図）', { trail: [{ at: new Date(今), name: '保存', detail: '' }] }],
+    ['控えが 31 件', { trail: Array.from({ length: 31 }, () => '00:00:00 保存') }],
+    ['控えをつなぐと長すぎる', { trail: [長い(20001, 'a')] }],
+    ['where が長すぎる', { where: 長い(401, 'a') }],
+    ['code が文字列でない', { code: 403 }],
+    ['stack が並び', { stack: ['a'] }],
+    ['online が文字列', { online: 'yes' }],
+    ['count が文字列', { count: '1' }],
+    ['at が文字列', { at: '2026-11-21' }],
+    ['消す日時が無い', { expireAt: null }],
+    ['消す日時が 200 日先', { expireAt: new Date(今 + 200 * 86400000) }],
+  ]) {
+    assert.equal((await 送る({ ...アプリの便り, ...上書き })).通った, false, `${名} の便りが通った`);
+  }
+
+  // 同じ人が 10 秒以内に 2 通目
+  assert.ok((await 送る(アプリの便り, 'anon-twice')).通った);
+  assert.equal((await 送る(アプリの便り, 'anon-twice')).通った, false, '10 秒以内の 2 通目が通った');
 });

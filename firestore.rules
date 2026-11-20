@@ -481,6 +481,31 @@ service cloud.firestore {
             || get(/databases/$(database)/documents/rate_limits/$(request.auth.uid)).data.get(field, timestamp.value(0)) < request.time - duration.value(secs, 's'));
     }
 
+    // 不具合の便りの欄の型と長さ（2026-11-21・別の AI の点検の S9）。
+    // 匿名のログインでも送れるので、絞らないと 1 件を 1MiB 近くまで膨らませて置き場を食える。
+    // 長さは、アプリ（src/errorReport.js の 不具合の便を組む）が切る長さより広く取る（日本語を 1 字 3 バイトで数えても収まる。
+    // test/errorReport.test.js の「いちばん長い便り」で確かめている）
+    function reportStr(d, k, n) {
+      return d.get(k, '') is string && d.get(k, '').size() <= n;
+    }
+    function reportShapeOk(d) {
+      return d.message is string && d.message.size() < 1000
+        && d.stack is string && d.stack.size() < 4000
+        && d.device is string && d.device.size() < 400
+        // 行動の控えは 1 件 1 行の文字列で、つないだ長さで絞る。地図や並びが混じると join が誤りになって断られる。
+        // 1 件ずつ確かめると、30 件で 1 回に評価できる式の数（1,000）を超えて便りごと断られる（模擬環境で確かめた）
+        && d.trail is list && d.trail.size() <= 30 && d.trail.join('').size() <= 20000
+        && reportStr(d, 'id', 200) && reportStr(d, 'where', 400) && reportStr(d, 'code', 400)
+        && reportStr(d, 'groupId', 200) && reportStr(d, 'role', 200) && reportStr(d, 'version', 200)
+        && d.get('online', true) is bool
+        && d.get('count', 1) is number
+        && (d.get('at', null) == null || d.get('at', null) is timestamp)
+        && (d.get('createdAt', null) == null || d.get('createdAt', null) is timestamp)
+        // 自動で消す日時（アプリは 90 日先）。遠い先にされると消えずに残るので、120 日までにする
+        && d.expireAt is timestamp
+        && d.expireAt < request.time + duration.value(120, 'd');
+    }
+
     // 不具合の便り。書き込みだけ許し、読み出しは誰にも許さない。
     // 送り主が自分の送ったものを読めると、他人の端末の様子まで見えてしまう。
     // 中身は src/errorReport.js が組む。氏名・的中は入れない決まり。
@@ -491,11 +516,7 @@ service cloud.firestore {
              'groupId', 'role', 'version', 'device', 'online', 'count',
              'createdAt', 'expireAt'
            ])
-        && request.resource.data.message is string
-        && request.resource.data.message.size() < 1000
-        && request.resource.data.stack.size() < 4000
-        && request.resource.data.trail.size() <= 30
-        && request.resource.data.device.size() < 400
+        && reportShapeOk(request.resource.data)
         // 1 人 10 秒に 1 件まで（アプリは同じ不具合をまとめて送るので、ふつうは届かない。アプリを通さずに送る荒らしを止める）
         && enoughGap('reportAt', 10);
       allow read, update, delete: if false;

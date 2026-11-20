@@ -131,7 +131,10 @@ console.log(`同じ不具合ごとに ${束.length} 種類\n`);
       .slice(0, 3)
       .join(' / ');
     if (跡) console.log(`    跡: ${短く(跡, 200)}`);
-    const 行動 = (x.例.trail || []).map((a) => a.name + (a.detail ? `(${a.detail})` : '')).slice(-8);
+    // 2026-11-21 から 1 件 1 行の文字列（「21:05:09 保存（8人）」）。前は { at, name, detail }
+    const 行動 = (x.例.trail || [])
+      .map((a) => (typeof a === 'string' ? a : a.name + (a.detail ? `(${a.detail})` : '')))
+      .slice(-8);
     if (行動.length) console.log(`    直前の操作: ${行動.join(' → ')}`);
   }
   console.log('');

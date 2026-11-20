@@ -111,9 +111,16 @@ export function 一括で書く(人, 書き込み) {
   return 送る(人, `${根}:commit`, {
     method: 'POST',
     body: JSON.stringify({
-      writes: 書き込み.map((一つ) =>
-        一つ.消す ? { delete: 名(一つ.道) } : { update: { name: 名(一つ.道), fields: 欄に(一つ.中身) } }
-      ),
+      writes: 書き込み.map((一つ) => {
+        if (一つ.消す) return { delete: 名(一つ.道) };
+        const 書き = { update: { name: 名(一つ.道), fields: 欄に(一つ.中身 || {}) } };
+        // { 時刻の欄 } は setDoc(…, { 欄: serverTimestamp() }, { merge: true }) と同じ（不具合の便りの rate_limits）
+        if (一つ.時刻の欄) {
+          書き.updateMask = { fieldPaths: Object.keys(一つ.中身 || {}) };
+          書き.updateTransforms = [{ fieldPath: 一つ.時刻の欄, setToServerValue: 'REQUEST_TIME' }];
+        }
+        return 書き;
+      }),
     }),
   });
 }
