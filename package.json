@@ -96,5 +96,8 @@
     "sharp": "^0.35.5",
     "typescript": "~5.9.2"
   },
-  "private": true
+  "private": true,
+  "engines": {
+    "node": ">=24"
+  }
 }
