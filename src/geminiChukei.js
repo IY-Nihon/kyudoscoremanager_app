@@ -117,7 +117,10 @@ async function 印で断られたか(返り) {
 
 /** SDK の getGenerativeModel / sendMessage に渡す requestOptions */
 async function SDKの設定() {
-  if (!中継がある()) throw new Error('AI機能の設定（中継の宛先）が見つかりません。管理者にご確認ください。');
+  if (!中継がある())
+    throw new Error(
+      'AI機能の設定が見つかりません。運営者（kyudoteamscorenote.dev@gmail.com）にお知らせください。'
+    );
   const [証, 見出し] = await Promise.all([ログインの証(), 添える見出し()]);
   if (!証) throw new Error('ログインしていないため、AI機能を使えません。');
   return { baseUrl: 中継のURL, customHeaders: { Authorization: 'Bearer ' + 証, ...見出し } };
@@ -128,7 +131,10 @@ async function SDKの設定() {
  * 中継が受けるのは一覧と generateContent（と流し読み）だけ
  */
 async function 中継へfetch(道, init) {
-  if (!中継がある()) throw new Error('AI機能の設定（中継の宛先）が見つかりません。管理者にご確認ください。');
+  if (!中継がある())
+    throw new Error(
+      'AI機能の設定が見つかりません。運営者（kyudoteamscorenote.dev@gmail.com）にお知らせください。'
+    );
   const [証, 見出し] = await Promise.all([ログインの証(), 添える見出し()]);
   if (!証) throw new Error('ログインしていないため、AI機能を使えません。');
   const 送る = (今の証, 今の見出し = 見出し) => {

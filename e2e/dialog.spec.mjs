@@ -155,7 +155,7 @@ test.describe('確認とお知らせ', () => {
     await expect(札).toBeVisible({ timeout: 10_000 });
     // 見たいのは「長い知らせが帯ではなく窓で止まる」こと。
     // 文言そのものを丸ごと書くと、案内を直すたびにここが落ちる
-    await expect(札).toContainText('登録直後の画面にのみ表示されます');
+    await expect(札).toContainText('設定のいちばん上の「団体ID / 団体名」で見られます');
     await expect(page.getByTestId('窓のボタン-OK')).toBeVisible();
     expect(窓.件, `ブラウザの窓が出た: ${窓.中身.join(' / ')}`).toBe(0);
 

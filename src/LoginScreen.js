@@ -25,7 +25,13 @@ const 学 = require('./gakunen');
 const { 団体の種類を選ぶ } = require('./GroupTypePicker');
 const { IS_IOS, IS_WEB, SAFE_TOP_PADDING } = require('./IS_WEB');
 const { auth, db } = require('./db');
-const { 団体で入る, メールで団体に入る, 切り替えを頼む, 部員として入る, 部員のログインの版 } = require('./groupLogin');
+const {
+  団体で入る,
+  メールで団体に入る,
+  切り替えを頼む,
+  部員として入る,
+  部員のログインの版,
+} = require('./groupLogin');
 const { 何度か送る } = require('./memberInvite');
 const FirebaseAuth = require('firebase/auth');
 const Firestore = require('firebase/firestore');
@@ -434,7 +440,10 @@ const LoginScreen = () => {
           ).catch(() => null);
           if (既に && !既に.empty) {
             await FirebaseAuth.signOut(auth).catch(() => {});
-            Alert.alert('すでにあります', `このメールアドレス（${宛先}）では、もう団体が作られています。ログインからお入りください。`);
+            Alert.alert(
+              'すでにあります',
+              `このメールアドレス（${宛先}）では、もう団体が作られています。ログインからお入りください。`
+            );
             return;
           }
         }
@@ -462,7 +471,9 @@ const LoginScreen = () => {
     処理中を置く(true);
     try {
       if (!(await 確.確認が済んだか(auth))) {
-        確認待ちの知らせを置く('まだ確認が済んでいません。メールのリンクを押してから、もう一度押してください。');
+        確認待ちの知らせを置く(
+          'まだ確認が済んでいません。メールのリンクを押してから、もう一度押してください。'
+        );
         return;
       }
       const 宛先 = 確認待ちの宛先;
@@ -502,13 +513,24 @@ const LoginScreen = () => {
               {`${確認待ちの宛先 || ''} に確認メールを送りました。メールのリンクを押してから、「確認した」を押してください。確認が済むと団体ができます。`}
             </Text>
             {確認待ちの知らせ ? <Text style={styles.確認の知らせ}>{確認待ちの知らせ}</Text> : null}
-            <Pressable accessibilityRole="button" style={送るボタンの形(処理中)} onPress={確認して作る} disabled={処理中}>
-              {処理中 ? <ActivityIndicator color={色.白} /> : <Text style={styles.submitBtnText}>確認した</Text>}
+            <Pressable
+              accessibilityRole="button"
+              style={送るボタンの形(処理中)}
+              onPress={確認して作る}
+              disabled={処理中}
+            >
+              {処理中 ? (
+                <ActivityIndicator color={色.白} />
+              ) : (
+                <Text style={styles.submitBtnText}>確認した</Text>
+              )}
             </Pressable>
             <Pressable accessibilityRole="button" onPress={確認メールを送り直す} disabled={処理中}>
               <Text style={styles.確認の副}>確認メールを送り直す</Text>
             </Pressable>
-            <Text style={styles.確認の注}>メールが届かないときは、迷惑メールのフォルダーも見てください。</Text>
+            <Text style={styles.確認の注}>
+              メールが届かないときは、迷惑メールのフォルダーも見てください。
+            </Text>
             <Pressable accessibilityRole="button" onPress={確認をやめる} disabled={処理中}>
               <Text style={styles.確認の副}>やめる</Text>
             </Pressable>
@@ -565,14 +587,21 @@ const LoginScreen = () => {
                   if (String((誤り && 誤り.code) || '') === 'auth/requires-recent-login') {
                     パスワードを決め直すを置く(null);
                     await FirebaseAuth.signOut(auth).catch(() => {});
-                    Alert.alert('もう一度お選びください', 'Google を選んでから時間が経ちました。もう一度 Google を選んでください。');
+                    Alert.alert(
+                      'もう一度お選びください',
+                      'Google を選んでから時間が経ちました。もう一度 Google を選んでください。'
+                    );
                   } else 決め直しの難点を置く(誤りの文(誤り));
                 } finally {
                   処理中を置く(false);
                 }
               })}
             >
-              {処理中 ? <ActivityIndicator color={色.白} /> : <Text style={styles.submitBtnText}>決めて入る</Text>}
+              {処理中 ? (
+                <ActivityIndicator color={色.白} />
+              ) : (
+                <Text style={styles.submitBtnText}>決めて入る</Text>
+              )}
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -903,7 +932,11 @@ const LoginScreen = () => {
                             }
                             // メールアドレスの切り替えが済んでいれば、新しいアドレスで入り直す
                             //（src/groupLogin.js の 団体で入る）
-                            const { id, メール } = await 団体で入る(道具, 整えたID(団体IDの入力), 合言葉の入力);
+                            const { id, メール } = await 団体で入る(
+                              道具,
+                              整えたID(団体IDの入力),
+                              合言葉の入力
+                            );
                             setAuth(id, 'group', null, メール, 整えたID(団体IDの入力));
                           } catch (誤り) {
                             Alert.alert('ログイン失敗', 誤りの文(誤り));
@@ -1003,7 +1036,8 @@ const LoginScreen = () => {
                     onPress={() =>
                       Alert.alert(
                         '通知',
-                        '団体IDは、登録直後の画面にのみ表示されます。\n\n分からなくなった場合は、登録したメールアドレスを添えて運営者へご連絡ください。お調べしてお伝えします。\n\nkyudoteamscorenote.dev@gmail.com'
+                        // 設定のいちばん上でも見られる（前は「登録直後の画面にのみ」と書いていた。使い方の一覧と同じ説明に。11/20 の別の AI の点検）
+                        '団体IDは、入っている端末があれば、設定のいちばん上の「団体ID / 団体名」で見られます。\n\nどの端末も入れないときは、登録メールアドレスを添えて運営者へご連絡ください。お調べしてお伝えします。\n\nkyudoteamscorenote.dev@gmail.com'
                       )
                     }
                   >
@@ -1099,7 +1133,13 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 色.夜 },
   // メールの確認の窓も、この画面の配色（夜の地＋金）で描く（テーマ変換の表の色は暗い地に沈む）
-  確認の外: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  確認の外: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
   確認の箱: {
     width: '100%',
     maxWidth: 420,
@@ -1109,7 +1149,13 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 22,
   },
-  確認の見出し: { fontSize: 18, fontWeight: 'bold', color: 色.金_明るい, marginBottom: 10, textAlign: 'center' },
+  確認の見出し: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 色.金_明るい,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
   確認の文: { fontSize: 14, color: 色.生成り, lineHeight: 21, marginBottom: 10 },
   確認の知らせ: { fontSize: 13, color: 色.金_明るい, lineHeight: 19, marginBottom: 6 },
   確認の副: { color: 色.金_明るい, fontSize: 15, textAlign: 'center', paddingVertical: 12 },

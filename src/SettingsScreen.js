@@ -1130,7 +1130,7 @@ const SettingsScreen = () => {
           <Text style={styles.versionText}>Version 2.0.0 (Expo SQLite/Firebase)</Text>
           <Text style={styles.statusText}>
             {'● '}
-            {isNetworkOnline ? 'Firebase 接続済み' : '未接続'}
+            {isNetworkOnline ? '接続済み' : '未接続'}
             {' | '}
             {lastSyncTime ? `最終同期: ${new Date(lastSyncTime).toLocaleString('ja-JP')}` : syncStatus}
           </Text>

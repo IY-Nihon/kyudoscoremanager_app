@@ -22,7 +22,8 @@ const 終わりの日の前の日 = () => {
   const 日 = new Date(Date.parse(個人ID.古い形を使える終わり + 'T00:00:00Z') - 86400000);
   return `${日.getUTCMonth() + 1}月${日.getUTCDate()}日`;
 };
-const 終わりの日 = () => `${Number(個人ID.古い形を使える終わり.slice(5, 7))}月${Number(個人ID.古い形を使える終わり.slice(8, 10))}日`;
+const 終わりの日 = () =>
+  `${Number(個人ID.古い形を使える終わり.slice(5, 7))}月${Number(個人ID.古い形を使える終わり.slice(8, 10))}日`;
 
 /** 一覧を写す（端末の写す機能。無ければ何もしない） */
 async function 写す(字) {
@@ -88,7 +89,9 @@ const 個人IDを新しくする窓 = ({ 見える, 閉じる }) => {
       振ったを置く(Array.isArray(結果) ? 結果 : []);
       合言葉を置く('');
     } catch (誤り) {
-      難点を置く(String((誤り && 誤り.message) || '新しくできませんでした。時間を置いてもう一度お試しください'));
+      難点を置く(
+        String((誤り && 誤り.message) || '新しくできませんでした。時間を置いてもう一度お試しください')
+      );
     } finally {
       作業中を置く(false);
     }
@@ -97,7 +100,11 @@ const 個人IDを新しくする窓 = ({ 見える, 閉じる }) => {
   return (
     <Modal visible={!!見える} transparent animationType="fade" onRequestClose={閉じる}>
       <View style={styles.外}>
-        <ScrollView style={styles.流し} contentContainerStyle={styles.流しの中} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          style={styles.流し}
+          contentContainerStyle={styles.流しの中}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.箱} testID="個人IDを新しくする窓">
             <Text style={styles.見出し}>全員の個人IDを新しくする</Text>
             {振った === null ? (
@@ -123,7 +130,9 @@ const 個人IDを新しくする窓 = ({ 見える, 閉じる }) => {
                   onPress={() => 全員を置く(true)}
                 >
                   <Text style={styles.選びの字}>6 字の人も替える（全員）</Text>
-                  <Text style={styles.選びの注}>前の版では、部員の端末からほかの人の個人IDが見えました。念のため配り直すときはこちら</Text>
+                  <Text style={styles.選びの注}>
+                    前の版では、部員の端末からほかの人の個人IDが見えました。念のため配り直すときはこちら
+                  </Text>
                 </Pressable>
                 <Text style={styles.ラベル}>団体のパスワード</Text>
                 <TextInput
@@ -149,14 +158,20 @@ const 個人IDを新しくする窓 = ({ 見える, 閉じる }) => {
                 >
                   <Text style={styles.ボタンの字}>{作業中 ? '新しくしています…' : '新しくする'}</Text>
                 </Pressable>
-                <Pressable accessibilityRole="button" style={styles.やめる} onPress={閉じる} disabled={作業中}>
+                <Pressable
+                  accessibilityRole="button"
+                  style={styles.やめる}
+                  onPress={閉じる}
+                  disabled={作業中}
+                >
                   <Text style={styles.やめるの字}>やめる</Text>
                 </Pressable>
               </>
             ) : 振った.length === 0 ? (
               <>
                 <Text style={styles.説明}>
-                  替える人はいませんでした（全員がもう 6 字の ID です）。全員を替えるときは「6 字の人も替える」を選んでください。
+                  替える人はいませんでした（全員がもう 6 字の ID です）。全員を替えるときは「6
+                  字の人も替える」を選んでください。
                 </Text>
                 <Pressable accessibilityRole="button" style={styles.ボタン} onPress={閉じる}>
                   <Text style={styles.ボタンの字}>閉じる</Text>
@@ -182,7 +197,7 @@ const 個人IDを新しくする窓 = ({ 見える, 閉じる }) => {
                   style={styles.ボタン}
                   onPress={async () => 写したを置く(await 写す(一覧の字(振った)))}
                 >
-                  <Text style={styles.ボタンの字}>{写した ? '写しました' : '一覧を写す'}</Text>
+                  <Text style={styles.ボタンの字}>{写した ? 'コピーしました' : '一覧をコピー'}</Text>
                 </Pressable>
                 <Pressable accessibilityRole="button" style={styles.やめる} onPress={閉じる}>
                   <Text style={styles.やめるの字}>閉じる</Text>
@@ -281,12 +296,24 @@ const styles = StyleSheet.create({
     color: 色.文字,
   },
   難点: { fontSize: 13, color: 色.赤, marginTop: 8 },
-  ボタン: { backgroundColor: 色.青, borderRadius: 10, paddingVertical: 13, alignItems: 'center', marginTop: 14 },
+  ボタン: {
+    backgroundColor: 色.青,
+    borderRadius: 10,
+    paddingVertical: 13,
+    alignItems: 'center',
+    marginTop: 14,
+  },
   作業中: { backgroundColor: 色.灰 },
   ボタンの字: { color: 色.白, fontSize: 16, fontWeight: 'bold' },
   やめる: { paddingVertical: 13, alignItems: 'center', marginTop: 6 },
   やめるの字: { color: 色.文字_二, fontSize: 14 },
-  一覧: { borderWidth: 1, borderColor: 色.地_濃い, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 4 },
+  一覧: {
+    borderWidth: 1,
+    borderColor: 色.地_濃い,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
   一覧の行: {
     flexDirection: 'row',
     justifyContent: 'space-between',
