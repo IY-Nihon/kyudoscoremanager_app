@@ -86,8 +86,41 @@ const 人がいる = (x) => x.seats.some((席) => String(席 == null ? '' : 席)
  * @param {Array<{seats:string[], fuda?:string, row?:number}>} 組たち Gemini が返した tachi
  * @returns {Array<{seats:string[]}>}
  */
+// 札だけの項目（seats が空で、番号の読める札）か
+const 札だけか = (x) => 札の番号(x.fuda) != null && !人がいる(x);
+const 段の番号 = (x) => (x.row == null ? 0 : x.row);
+
+/**
+ * 札だけの項目を組の後ろに並べて答えた段（組で始まり、札だけの項目で終わる段）は、札をその前の組たちの前へ移す。
+ * 札は立の大前の側の端にあるので、読む順では組の前に来るはずだが、10/26 のノートの写真（名前の右に「壱之立」と書く）で、
+ * 模型が札を組の後ろに置いて答え、区切りがずれた（11/20 に中継で測った）。組で始まる段に限るので、札で始まる段（ふつうの板）や、
+ * 札の見えない組で始まり組で終わる段（11/7 の板）は変わらない
+ */
+function 札を前へ寄せる(組) {
+  const 出 = [];
+  for (let i = 0; i < 組.length;) {
+    let j = i;
+    while (j < 組.length && 段の番号(組[j]) === 段の番号(組[i])) j++;
+    const 段の項目 = 組.slice(i, j);
+    const 頭 = 段の項目[0];
+    const 尻 = 段の項目[段の項目.length - 1];
+    if (段の項目.length > 1 && 札の番号(頭.fuda) == null && 札だけか(尻)) {
+      let 溜め = [];
+      for (const x of 段の項目) {
+        if (札だけか(x)) {
+          出.push(x, ...溜め);
+          溜め = [];
+        } else 溜め.push(x);
+      }
+      出.push(...溜め);
+    } else 出.push(...段の項目);
+    i = j;
+  }
+  return 出;
+}
+
 function 札で立にまとめる(組たち) {
-  const 組 = (Array.isArray(組たち) ? 組たち : []).filter((x) => x && Array.isArray(x.seats));
+  const 組 = 札を前へ寄せる((Array.isArray(組たち) ? 組たち : []).filter((x) => x && Array.isArray(x.seats)));
   if (!組.some((x) => 札の番号(x.fuda) != null)) return 組.filter(人がいる).map((x) => ({ seats: x.seats }));
   const 立たち = [];
   let 前 = null;
