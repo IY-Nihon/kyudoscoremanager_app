@@ -56,7 +56,7 @@ test('ログインしていなければ、中継を呼ばずに断る', async ()
 test('宛先が無ければ AI 機能は使えない（鍵を探しに行かない）', async () => {
   const c = 読み込む({ 宛先: undefined, 人: ログイン済み });
   assert.equal(c.中継がある(), false);
-  await assert.rejects(c.SDKの設定(), /中継の宛先/);
+  await assert.rejects(c.SDKの設定(), /AI機能の設定が見つかりません/);
 });
 
 test('fetch は Authorization を足して、道をそのまま中継へ向ける', async () => {

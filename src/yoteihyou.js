@@ -43,7 +43,7 @@ function 予定表の答えを読む(答え) {
   const 字 = String(答え || '')
     .replace(/```(?:json)?/gi, '')
     .trim();
-  if (!字) throw new Error('AIからの応答内容が空、またはJSON形式ではありませんでした。');
+  if (!字) throw new Error('AIの答えが空でした。もう一度お試しください。');
   // まず全体を読み、だめなら前後の説明を外して [...] か {...} の部分を読む
   let 値 = 読んでみる(字);
   if (値 === undefined) {
