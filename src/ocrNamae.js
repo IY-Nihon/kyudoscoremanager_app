@@ -348,6 +348,14 @@ function 重なりを外す(rows) {
   return 出;
 }
 
+/**
+ * 名寄せの結果（{ status, match }）から、当たった人の名前を取る。当たっていなければ ''。
+ * 名前は match の側にある。改善のための記録（読み取りの 最初）は 11/20 まで 結果.name を見ていて、名前がいつも空だった
+ */
+function 当たった名前(結果) {
+  return (結果 && 結果.match && typeof 結果.match.name === 'string' && 結果.match.name) || '';
+}
+
 module.exports = {
   splitName,
   stripSpace,
@@ -356,5 +364,6 @@ module.exports = {
   matchArcherName,
   名簿で名寄せ,
   重なりを外す,
+  当たった名前,
   文字だけ,
 };

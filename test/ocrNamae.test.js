@@ -4,7 +4,7 @@
  */
 const test = require('node:test');
 const assert = require('node:assert');
-const { 名簿で名寄せ, 重なりを外す, matchArcherName } = require('../src/ocrNamae');
+const { 名簿で名寄せ, 重なりを外す, matchArcherName, 当たった名前 } = require('../src/ocrNamae');
 
 const 名簿 = [
   { id: 'm1', name: '山田 太郎', isAlumni: false },
@@ -110,4 +110,20 @@ test('異体字：旧字・異体字は新字とみなして照らす。斎と�
   ];
   assert.strictEqual(名簿で名寄せ('齋木', '斎木 一郎', 二人).match.id, 's1');
   assert.strictEqual(名簿で名寄せ('斉木', '斉木 二郎', 二人).match.id, 's2');
+});
+
+test('当たった名前：名寄せの結果の match から名前を取る（読み取りの改善の記録に残す名前。11/20 まで空だった）', () => {
+  assert.strictEqual(当たった名前(matchArcherName('山田', 名簿)), '山田 太郎');
+  assert.strictEqual(当たった名前(名簿で名寄せ('佐藤', '佐藤 次郎', 名簿)), '佐藤 次郎');
+  // 当たらなかった・迷った・空のマスは空
+  assert.strictEqual(当たった名前(名簿で名寄せ('田村', null, 名簿)), '');
+  assert.strictEqual(当たった名前(matchArcherName('渡', 名簿)), '');
+  assert.strictEqual(当たった名前(matchArcherName('', 名簿)), '');
+  assert.strictEqual(当たった名前(undefined), '');
+  // 同じ人に寄った 2 行目（もしかして）は空
+  const 重なり = 重なりを外す([
+    { rawText: '山田', ...matchArcherName('山田', 名簿) },
+    { rawText: '山田', ...matchArcherName('山田', 名簿) },
+  ]);
+  assert.deepStrictEqual(重なり.map(当たった名前), ['山田 太郎', '']);
 });

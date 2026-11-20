@@ -187,7 +187,7 @@ async function uriToBase64(uri) {
 }
 
 // 氏名の正規化と名寄せは ./ocrNamae に移した（Gemini の名簿照合と合わせて検査するため）
-const { normalize, matchArcherName, 名簿で名寄せ, 重なりを外す } = require('./ocrNamae');
+const { normalize, matchArcherName, 名簿で名寄せ, 重なりを外す, 当たった名前 } = require('./ocrNamae');
 
 const SHOT_LABELS = [
   '壱之立',
@@ -1176,7 +1176,7 @@ const OCRRecordModal = ({
       return { seats };
     });
     最初の読み取り.current = matched.map((立) =>
-      立.seats.map((席) => ({ 読んだ字: 席.rawText, 名前: 席.name || '', 状態: 席.status || '' }))
+      立.seats.map((席) => ({ 読んだ字: 席.rawText, 名前: 当たった名前(席), 状態: 席.status || '' }))
     );
     読み取りを取っておく({
       結果: '読んだ',
@@ -1225,7 +1225,7 @@ const OCRRecordModal = ({
     });
     最初の読み取り.current = rows.map((行) => ({
       読んだ字: 行.rawText,
-      名前: 行.name || '',
+      名前: 当たった名前(行),
       状態: 行.status || '',
       印: 行.marks,
       迷い: 行.迷い,
