@@ -43,6 +43,8 @@ const {
 } = require('./ocrPrompts');
 // 空きごとの組を、立の番号の札で立にまとめる
 const { 札で立にまとめる } = require('./ocrTachiFuda');
+// 待つ間の説明・失敗の文・閉じたあとに届いた帯の決まり（閉じても読み続ける。2026-11-20）
+const 待ち = require('./ocrMatsu');
 const { マスを開く, 一射目からの順にする, 迷いを開く } = require('./ocrCells');
 // 板と紙の○×は端末で読む（Gemini は線の向きを読めない）。名前と並びは Gemini のまま
 const { マスを端末で差し替える, ノートの先読みを作る } = require('./ocr/sashikae');
@@ -314,6 +316,10 @@ const OCRRecordModal = ({
   onApply,
   // いまの記録表で埋まっている射数（いちばん後ろの○×の位置）。射数を合わせるのに使う
   記入済みの射数 = 0,
+  // 読んでいる途中で閉じた読み取りが、閉じたあとに届いた（{ 成功, モード }）。記録画面が帯で知らせる
+  on裏で届いた,
+  // 増えたら、閉じたあとに届いた読み取り（まだ届いていなければ、届いたとき）を捨てる。記録画面の帯の ×
+  裏の読みを捨てる合図 = 0,
 }) => {
   const [step, setStep] = useState('pick'); // pick | analyzing | dates | preview
   // 写真に日付の違う組が並んでいたとき（ノートの見開き）、どの日を読むか選ぶまで行を取っておく
@@ -326,6 +332,14 @@ const OCRRecordModal = ({
   // 読み取りの回。閉じる・読み直すたびに進め、前の回の結果は画面に出さない（ログは送る）。
   // 前は閉じても読み取りが続き、あとで開いた窓に前の写真の結果が出た
   const 読みの回 = React.useRef(0);
+  // 読んでいる途中で閉じた読み取り（{ 回, モード, 向き, 写真たち, 届いた }）。閉じても読み続け、届いたら預かって
+  // 記録画面に知らせ、次に開いたときに続きから見せる（まだ読んでいれば読み取り中の画面に戻る）。
+  // 2026-11-20 本人「閉じても読み続ける」：答えが届く前に閉じた 2 回（51 秒・214 秒）は、どちらも答えが合っていた
+  const 裏の読み = React.useRef(null);
+  // 読み取り中に待った秒（待つ間の画面に出す）
+  const [待った秒, set待った秒] = useState(0);
+  // 写真を選ぶ画面の流し（読めなかったとき、下にある訳の文まで送る）
+  const 選ぶ画面の流し = React.useRef(null);
   // 「撮り直す」を押したあと。次に足した写真で、前の写真を差し替える（前は足していた）
   const 撮り直し中 = React.useRef(false);
   // かかった時間（ミリ秒）。遅いときに、Gemini を待ったのか端末で読むのに掛かったのかを後から分けて見る
@@ -402,13 +416,17 @@ const OCRRecordModal = ({
   };
 
   const 閉じる = (反映した) => {
-    // 読み取りの途中なら、その回の結果は捨てる（読み終えた分のログは送る。analyzeImages）
+    // 読み取りの途中なら、閉じても読み続ける。その回を預け、届いたら記録画面に知らせ、次に開いたときに続きから見せる
+    //（前は捨てていた。読み終えた分のログは前から送っている。analyzeImages）
+    const 読み続ける = !反映した && step === 'analyzing';
+    if (読み続ける)
+      裏の読み.current = { 回: 読みの回.current, モード: mode, 向き, 写真たち: images, 届いた: null };
     読みの回.current++;
     撮り直し中.current = false;
     if (!反映した) 使わなかった読み取りを残す('閉じた');
     読み取りの記録id.current = null;
-    // 写真の画素の控え（1 枚で数十 MB）も手放す
-    if (typeof 画像の道具.控えを手放す === 'function') 画像の道具.控えを手放す();
+    // 写真の画素の控え（1 枚で数十 MB）も手放す。読み続けるときは、端末の読み取りがまだ使うので残す
+    if (!読み続ける && typeof 画像の道具.控えを手放す === 'function') 画像の道具.控えを手放す();
     resetAll();
     if (onClose) {
       onClose();
@@ -430,24 +448,82 @@ const OCRRecordModal = ({
     }
     setImages((prev) => [...prev, 一枚]);
   };
-  // 戻るボタン（と web の Esc）で閉じるとき。読んでいる途中や読んだあとは、捨ててよいかを聞く。
-  // ×と違って戻るはうっかり押しやすく、読み直しには時間がかかる（2026-09-26、戻るで窓を閉じるようにしたとき）
+  // 戻るボタン（と web の Esc）で閉じるとき。読んだあとは、捨ててよいかを聞く。
+  // ×と違って戻るはうっかり押しやすく、読み直しには時間がかかる（2026-09-26、戻るで窓を閉じるようにしたとき）。
+  // 読んでいる途中は、閉じても読み続ける（捨てない）ので聞かない（2026-11-20）
   const 戻るで閉じるとき = () => {
-    if (step === 'pick') {
+    if (step === 'pick' || step === 'analyzing') {
       handleClose();
       return;
     }
-    Alert.alert(
-      '読み取った内容を捨てますか？',
-      step === 'analyzing'
-        ? '読み取りをやめて閉じます。'
-        : '閉じると、読み取った結果と直した内容は残りません。',
-      [
-        { text: '続ける', style: 'cancel' },
-        { text: '捨てて閉じる', style: 'destructive', onPress: handleClose },
-      ]
-    );
+    Alert.alert('読み取った内容を捨てますか？', '閉じると、読み取った結果と直した内容は残りません。', [
+      { text: '続ける', style: 'cancel' },
+      { text: '捨てて閉じる', style: 'destructive', onPress: handleClose },
+    ]);
   };
+
+  // 開いたとき、閉じたあとも読み続けた読み取りがあれば、続きから見せる（届いていれば結果、まだなら読み取り中の画面）
+  React.useEffect(() => {
+    if (!visible) return;
+    const 裏 = 裏の読み.current;
+    if (!裏) return;
+    裏の読み.current = null;
+    setMode(裏.モード);
+    set向き(裏.向き);
+    setImages(裏.写真たち);
+    const 届いた = 裏.届いた;
+    if (!届いた) {
+      // まだ読んでいる。その回を画面につなぎ直す（届いたら、いつもどおり確かめの画面に出る）
+      読みの回.current = 裏.回;
+      setStep('analyzing');
+      return;
+    }
+    if (届いた.記録id) 読み取りの記録id.current = 届いた.記録id;
+    if (届いた.読み取り元) set読み取り元(届いた.読み取り元);
+    set端末の断り(届いた.端末の断り || '');
+    set列の断り(届いた.列の断り || '');
+    if (届いた.種類 === 'preview') {
+      if (裏.モード === 'record') setRecordRows(届いた.recordRows || []);
+      else setTachiList(届いた.tachiList || []);
+      setStep('preview');
+    } else if (届いた.種類 === 'dates') {
+      set日付ごとの行(届いた.日付ごとの行);
+      setStep('dates');
+    } else {
+      // 読めなかった・失敗した。写真はそのまま残し、文を出す（同じ写真ですぐ読み直せる）
+      setErrorMsg(届いた.誤り文 || '');
+      setStep('pick');
+    }
+  }, [visible]);
+
+  // 記録画面の帯の ×（または帯を出しておく長さが過ぎた）：閉じたあとも読み続けた読み取りを捨てる
+  //（まだ届いていなければ、届いても知らせない。ログは前のとおり送る）
+  React.useEffect(() => {
+    if (!裏の読みを捨てる合図 || visible || !裏の読み.current) return;
+    裏の読み.current = null;
+    if (typeof 画像の道具.控えを手放す === 'function') 画像の道具.控えを手放す();
+  }, [裏の読みを捨てる合図]);
+
+  // 読めなかったときは、訳の文と「この画像で解析する」が見えるところまで送る。訳は写真の下にあり、
+  // 窓は上から出るので、スマホでは開いたままだと見えなかった（閉じたあとの帯の［見る］で開いたときも同じ）
+  React.useEffect(() => {
+    if (!visible || step !== 'pick' || !errorMsg) return undefined;
+    const 時計 = setTimeout(() => 選ぶ画面の流し.current?.scrollToEnd?.({ animated: false }), 50);
+    return () => clearTimeout(時計);
+  }, [visible, step, errorMsg]);
+
+  // 読み取り中に待った秒を数える（待つ間の画面に出す）
+  React.useEffect(() => {
+    if (!visible || step !== 'analyzing') {
+      set待った秒(0);
+      return undefined;
+    }
+    const 数える = () =>
+      set待った秒(Math.max(0, Math.floor((Date.now() - (かかった時間.current.始め || Date.now())) / 1000)));
+    数える();
+    const 時計 = setInterval(数える, 1000);
+    return () => clearInterval(時計);
+  }, [visible, step]);
 
   // Realtime同期の反映タイミング等で同一IDのメンバーが重複して配列に含まれるケースがあるため、
   // ID単位で重複除去してから名寄せ候補として使う（重複していると完全一致でも「要確認」に落ちてしまうため）
@@ -562,6 +638,8 @@ const OCRRecordModal = ({
         )
       )
       .catch(() => {});
+    // 閉じたあとに届いた読み取りは 読み取りの記録id に入れないので、預ける側がこの id を持つ（反映の記録が指す先）
+    return id;
   };
 
   const removeImage = (idx) => {
@@ -579,6 +657,14 @@ const OCRRecordModal = ({
     const 捨てた = () => 読みの回.current !== この回;
     // 読んでいる途中で閉じた回のログには、その印を付ける（読み終えた分は送る）
     const 閉じた印 = () => (捨てた() ? { 閉じた: '読んでいる途中で閉じた' } : {});
+    // 閉じたあとも読み続けている回か（閉じたときに預けた回）。届いた結果を預け、記録画面に知らせる
+    const 裏の回か = () => !!裏の読み.current && 裏の読み.current.回 === この回;
+    const 裏で受ける = (届いた) => {
+      const 裏 = 裏の読み.current;
+      if (!裏 || 裏.回 !== この回 || 裏.届いた) return;
+      裏.届いた = 届いた;
+      if (on裏で届いた) on裏で届いた({ 成功: 届いた.種類 !== 'pick', モード: 裏.モード });
+    };
     かかった時間.current = { 始め: Date.now(), Gemini: 0, Geminiの回数: 0 };
     Geminiの答えたち.current = [];
     setStep('analyzing');
@@ -1002,19 +1088,27 @@ const OCRRecordModal = ({
         if (差し替え.訳) console.log('[OCRRecordModal] 端末の読み取りを使わなかった:', 差し替え.訳);
         if (差し替え.組み直した)
           console.log('[OCRRecordModal] 板の数を端末に合わせて組み直した:', 差し替え.組み直した);
-        if (!捨てた()) set読み取り元(差し替え.読み取り元);
-        set端末の断り(差し替え.読み取り元 === '端末' ? '' : String(差し替え.訳 || '端末で読めませんでした'));
         if (Array.isArray(差し替え.列の見当たち)) 端末の見当 = 差し替え.列の見当たち;
+        // 確かめの画面に出す断り。閉じたあとも読み続けている回は、預けて次に開いたときに出す
+        const 記録の様子 = {
+          読み取り元: 差し替え.読み取り元,
+          端末の断り: 差し替え.読み取り元 === '端末' ? '' : String(差し替え.訳 || '端末で読めませんでした'),
+          列の断り: '',
+        };
         {
           const 人数 = 差し替え.teams.reduce((計, チーム) => 計 + ((チーム && チーム.rows) || []).length, 0);
           const 見当 = 端末の見当 ? 端末の見当.reduce((甲, 乙) => 甲 + 乙, 0) : 0;
           // 端末のほうが多い（AI が名札の無い列を落とした）ときだけ断る。少ないのは小計の列を
           // 数え落としただけのことが多い
-          set列の断り(
+          記録の様子.列の断り =
             見当 > 人数
               ? `写真には射手の列が${見当}本あるように見えますが、AI は${人数}人しか読めませんでした。名札の無い列や読めない列があれば、その人を記録表で足してください。`
-              : ''
-          );
+              : '';
+        }
+        if (!捨てた()) {
+          set読み取り元(記録の様子.読み取り元);
+          set端末の断り(記録の様子.端末の断り);
+          set列の断り(記録の様子.列の断り);
         }
         const teams = 差し替え.teams;
         const rawRows = [];
@@ -1072,21 +1166,28 @@ const OCRRecordModal = ({
             知らせ: '記録表を検出できませんでした',
             ...閉じた印(),
           });
-          if (捨てた()) return;
-          setErrorMsg('記録表を検出できませんでした。表全体が入るように撮り直してください。');
+          const 文 = '記録表を検出できませんでした。表全体が入るように撮り直してください。';
+          if (捨てた()) return 裏で受ける({ 種類: 'pick', 誤り文: 文 });
+          setErrorMsg(文);
           setStep('pick');
           return;
         }
         // 日付の違う組が並んでいたら（ノートの見開き）、どの日を読むか選んでもらう
         const 日付たち = [...new Set(rows.map((行) => 行.日付).filter(Boolean))];
-        if (日付たち.length >= 2 && !捨てた()) {
+        if (日付たち.length >= 2 && (!捨てた() || 裏の回か())) {
           // 日を選ぶあいだ待った時間は、読み取りの時間に入れない
           かかった時間.current.終わり = Date.now();
+          // 閉じたあとも読み続けている回は、日を選ぶ画面を預けて次に開いたときに出す（ログは日を選んだときに送る）
+          if (捨てた()) return 裏で受ける({ 種類: 'dates', 日付ごとの行: { 日付たち, rows }, ...記録の様子 });
           set日付ごとの行({ 日付たち, rows });
           setStep('dates');
           return;
         }
-        applyRecordMatching(rows, !捨てた());
+        applyRecordMatching(
+          rows,
+          !捨てた(),
+          裏の回か() ? (届いた) => 裏で受ける({ ...届いた, ...記録の様子 }) : null
+        );
         return;
       }
 
@@ -1098,31 +1199,23 @@ const OCRRecordModal = ({
           知らせ: '立ち順表を検出できませんでした',
           ...閉じた印(),
         });
-        if (捨てた()) return;
-        setErrorMsg('立ち順表を検出できませんでした。写真を撮り直してください。');
+        const 文 = '立ち順表を検出できませんでした。写真を撮り直してください。';
+        if (捨てた()) return 裏で受ける({ 種類: 'pick', 誤り文: 文 });
+        setErrorMsg(文);
         setStep('pick');
         return;
       }
 
-      applyMatching(rawTachi, !捨てた());
+      applyMatching(rawTachi, !捨てた(), 裏の回か() ? 裏で受ける : null);
     } catch (誤り) {
       console.error('[OCRRecordModal] Gemini analyze error:', 誤り);
       const msg = String(誤り?.message || 誤り);
       読み取りを取っておく({ 結果: '失敗', 誤り: msg.slice(0, 300), ...閉じた印() });
-      // 閉じたあとに届いた失敗は、次に開いた窓に出さない
-      if (捨てた()) return;
-      if (msg.includes('429')) {
-        setErrorMsg('AIの利用制限に達しました。しばらく待ってから再度お試しください。');
-      } else if (msg.includes('503')) {
-        // 模型が混んでいる（high demand）。中継とここで待って送り直したうえでの 503
-        setErrorMsg('ただいまAIが混み合っています。しばらく待ってからもう一度お試しください。');
-      } else if (msg.includes('401') || msg.includes('ログインしていない')) {
-        setErrorMsg('ログインの証が確かめられませんでした。ログインし直してから再度お試しください。');
-      } else if (/network|fetch|Failed to fetch/i.test(msg)) {
-        setErrorMsg('通信エラーが発生しました。電波の良い場所で再度お試しください。');
-      } else {
-        setErrorMsg('画像の解析に失敗しました。再度お試しいただくか、手動で入力してください。');
-      }
+      // 長く待ったあとの通信の切れは、電波ではなく AI の遅さの文にする（src/ocrMatsu.js）
+      const 文 = 待ち.読み取りの誤りの文(msg, Date.now() - (かかった時間.current.始め || Date.now()));
+      // 閉じたあとに届いた失敗は、閉じたあとも読み続けている回なら預けて知らせる（ほかは前のとおり出さない）
+      if (捨てた()) return 裏で受ける({ 種類: 'pick', 誤り文: 文 });
+      setErrorMsg(文);
       setStep('pick');
     }
   };
@@ -1166,8 +1259,9 @@ const OCRRecordModal = ({
   // ─────────────────────────────────────────
   // 認識結果へのメンバー名寄せ適用
   // ─────────────────────────────────────────
-  // 画面に出す … 読んでいる途中で閉じた回は false（ログだけ送り、窓には出さない）
-  const applyMatching = (rawTachi, 画面に出す = true) => {
+  // 画面に出す … 読んでいる途中で閉じた回は false（ログだけ送り、窓には出さない）。
+  // 裏へ … 閉じたあとも読み続けている回なら、結果を預ける先（次に開いたときに確かめの画面に出す）
+  const applyMatching = (rawTachi, 画面に出す = true, 裏へ = null) => {
     const matched = rawTachi.map((立) => {
       const seats = (Array.isArray(立.seats) ? 立.seats : []).map((rawText) => {
         const 当たり = matchArcherName(rawText, allCandidates);
@@ -1178,12 +1272,15 @@ const OCRRecordModal = ({
     最初の読み取り.current = matched.map((立) =>
       立.seats.map((席) => ({ 読んだ字: 席.rawText, 名前: 当たった名前(席), 状態: 席.status || '' }))
     );
-    読み取りを取っておく({
+    const 記録id = 読み取りを取っておく({
       結果: '読んだ',
       最初: 最初の読み取り.current,
       ...(画面に出す ? {} : { 閉じた: '読んでいる途中で閉じた' }),
     });
-    if (!画面に出す) return;
+    if (!画面に出す) {
+      if (裏へ) 裏へ({ 種類: 'preview', tachiList: matched, 記録id });
+      return;
+    }
     setTachiList(matched);
     setStep('preview');
   };
@@ -1191,7 +1288,8 @@ const OCRRecordModal = ({
   // ─────────────────────────────────────────
   // 紙の記録：認識結果へのメンバー名寄せ適用
   // ─────────────────────────────────────────
-  const applyRecordMatching = (rawRows, 画面に出す = true) => {
+  // 裏へ … 閉じたあとも読み続けている回なら、結果を預ける先（applyMatching と同じ）
+  const applyRecordMatching = (rawRows, 画面に出す = true, 裏へ = null) => {
     // 名寄せは Gemini の照合（roster）を主にし、同じ人に寄った2行目からは「もしかして」に落とす
     const 名寄せ = 重なりを外す(
       rawRows.map((行) => ({
@@ -1232,12 +1330,15 @@ const OCRRecordModal = ({
       チーム番号: 行.チーム番号,
       チーム名: 行.チーム名,
     }));
-    読み取りを取っておく({
+    const 記録id = 読み取りを取っておく({
       結果: '読んだ',
       最初: 最初の読み取り.current,
       ...(画面に出す ? {} : { 閉じた: '読んでいる途中で閉じた' }),
     });
-    if (!画面に出す) return;
+    if (!画面に出す) {
+      if (裏へ) 裏へ({ 種類: 'preview', recordRows: rows, 記録id });
+      return;
+    }
     setRecordRows(rows);
     setStep('preview');
   };
@@ -1659,13 +1760,19 @@ const OCRRecordModal = ({
                 {mode === 'record' ? '画像から記録を読み取る' : '画像から立ち順を登録'}
               </Text>
             </View>
-            <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
+            <TouchableOpacity
+              testID="ocr-tojiru"
+              onPress={handleClose}
+              style={styles.closeBtn}
+              accessibilityRole="button"
+              accessibilityLabel="閉じる"
+            >
               <Ionicons name="close" size={24} color={色.灰} />
             </TouchableOpacity>
           </View>
 
           {step === 'pick' && (
-            <ScrollView style={styles.body} contentContainerStyle={{ padding: 16 }}>
+            <ScrollView ref={選ぶ画面の流し} style={styles.body} contentContainerStyle={{ padding: 16 }}>
               <View style={styles.modeRow}>
                 <TouchableOpacity
                   style={[styles.modeBtn, mode === 'lineup' && styles.modeBtnActive]}
@@ -1783,6 +1890,17 @@ const OCRRecordModal = ({
                     ? 'AIが記録表を読み取っています...'
                     : 'AIが立ち順表を読み取っています...'}
               </Text>
+              {/* 待った秒と、閉じても読み続けること（2026-11-20 本人「閉じても読み続ける」。src/ocrMatsu.js） */}
+              {待った秒 > 0 ? (
+                <Text testID="ocr-matta-byou" style={styles.待った秒の字}>
+                  {待った秒} 秒
+                </Text>
+              ) : null}
+              {待った秒 >= 待ち.説明を出す秒 ? (
+                <Text testID="ocr-matsu-setsumei" style={styles.待つ間の説明}>
+                  {待ち.待つ間の説明}
+                </Text>
+              ) : null}
             </View>
           )}
 
