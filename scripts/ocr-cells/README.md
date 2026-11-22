@@ -1227,7 +1227,7 @@ e2e ocrTanmatsu 31 件通る。単体は `test/ocrKatachi.test.js` に 4 件足�
 - 合成の検査は `紙をえがく({ 並び: [4, 4] })`（`kami-ban.mjs`）。10/1 の写真は名前入りなので倉庫に入れない（正解は目で起こし、
   用紙の立ごとの小計と全部合わせた）
 - 学び直し（PyTorch）は `scripts/ocr-cells/cnn/` の kami-dump.mjs → kami_cnn.py（用紙ごとに外す）→ kami_prod.py。
-  10/1 の写真と正解は倉庫の外（`kyudo-ocr-ag/.hakari/kami-1001.jpg`・`kami-seikai-1001.mjs`）
+  10/1 の写真と正解は倉庫の外（`hakari/kami-1001.jpg`・`kami-seikai-1001.mjs`）
 
 ## 端末の時間の上限と速さ（2026-10-23）
 
@@ -1240,6 +1240,6 @@ AI のログ（中継の /hozon）で、記録画面を逆さに撮った写真�
 - 答えを変えずに速くした所：`yomu.js` の `直線を抜いた残り`（投票を数の配列に・同じマスは 1 回）、`koushi.mjs` の `明暗を伸ばす`（256 通りの表）、
   `manabu.mjs` の `近くを塗る`（縦横に分けて広げる）と `縮める`（数え上げ）。Gemini を待つあいだに 写真を読む・明暗を伸ばす・平らにする を済ませ、
   同じ写真・同じ形には控えを返す（`gazou-web.js`・`koushi.mjs`）
-- 確かめ：`kyudo-ocr-ag/.hakari/zenbu-1009.mjs`（3 通り・10522 マス）で違い 0。速さは `--no-minify` で書き出した束を CDP の Profiler で測る
+- 確かめ：`hakari/zenbu-1009.mjs`（3 通り・10522 マス）で違い 0。速さは `--no-minify` で書き出した束を CDP の Profiler で測る
   （Gemini の答えの時刻から後だけ集める。CPU を 6 倍に落とした計測はばらつきが大きく、比べには使えない）
 - 写真を縮めて読む案は不採用：`zenbu-chouhen.mjs`（CHOUHEN=長辺）で 3200 なら外れ 23 → 537、2400 なら 646

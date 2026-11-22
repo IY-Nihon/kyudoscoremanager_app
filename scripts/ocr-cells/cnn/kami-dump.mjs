@@ -1,10 +1,10 @@
 // 紙のマスを書き出す（32×32・アプリの 縮める と同じ）。描いた紙・9/6 の本物（cells-kami）・10/1 の本物（男子の用紙）
 //   node scripts/ocr-cells/cnn/kami-dump.mjs [描く枚数]
-// 10/1 の写真と正解は名前入りなので倉庫の外（KAMI_HAKARI、既定は kyudo-ocr-ag/.hakari）。書き出しは cnn/kdata（倉庫に入れない）
+// 10/1 の写真と正解は名前入りなので倉庫の外（KAMI_HAKARI、既定は hakari）。書き出しは cnn/kdata（倉庫に入れない）
 import fs from 'node:fs';
 const 本体 = 'C:/Users/yutoi/Documents/kyudo/app/';
 const ここ = new URL('.', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
-const 置き場 = (process.env.KAMI_HAKARI || 'C:/Users/yutoi/Documents/kyudo/kyudo-ocr-ag/.hakari')
+const 置き場 = (process.env.KAMI_HAKARI || 'C:/Users/yutoi/Documents/kyudo/hakari')
   .split(String.fromCharCode(92))
   .join('/');
 fs.mkdirSync(ここ + 'kdata', { recursive: true });

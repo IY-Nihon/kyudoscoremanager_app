@@ -53,7 +53,7 @@ MobileNet を素の JS で動かすと 1 マス 6ms（2 枚で 12ms）。onnxrun
 
 ## 学び直し方
 
-1. 正解を足す（名前入りなので倉庫に入れない。`kyudo-ocr-ag/.hakari/seikai-*.mjs`）
+1. 正解を足す（名前入りなので倉庫に入れない。`hakari/seikai-*.mjs`）
 2. `DUMP_HEN=32 node scripts/ocr-cells/cnn/dump.mjs 120` … アプリと同じ切り抜きでマスを書き出す（`data/`。倉庫に入れない）。
    板ごとの比べには 40px の書き出し（`DUMP_HEN` なし）も使う
 3. 比べる
@@ -63,7 +63,7 @@ MobileNet を素の JS で動かすと 1 マス 6ms（2 枚で 12ms）。onnxrun
    - 畳み込み：`python scripts/ocr-cells/cnn/prod.py scripts/ocr-cells/omomi-tatami.json 12 1 1`
    - MobileNet：`python scripts/ocr-cells/cnn/mb_prod.py ../omomi-mobilenet.bin 2`（`scripts/ocr-cells/cnn` で）。
      一緒にここへ書く `omomi-mobilenet.bin.mihon.json`（PyTorch の答え）を `test/ocrMobilenet.mihon.json` に写す
-5. `kyudo-ocr-ag/.hakari/zenbu-1009.mjs`（`OCR_OMOMI`・`OCR_USUI` で重みを指す）で、これまでの写真ぜんぶを
+5. `hakari/zenbu-1009.mjs`（`OCR_OMOMI`・`OCR_USUI` で重みを指す）で、これまでの写真ぜんぶを
    3 通り（Node・Chromium・WebKit の画素）で数え、落ちないことを見る
 
 PyTorch（GPU）を使う。畳み込みの網は BatchNorm を畳み、層ごとに int8（omomi.mjs と同じ形）。

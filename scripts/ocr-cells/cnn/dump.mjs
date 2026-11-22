@@ -13,8 +13,8 @@ process.chdir(本体);
 const require = createRequire(本体 + 'package.json');
 const sharp = require('sharp');
 const ここ = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
-// 正解（seikai-0927.mjs・seikai-1004.mjs）は名前入りなので倉庫の外（既定は kyudo-ocr-ag/.hakari）
-const 正解の置き場 = process.env.SEIKAI || 'C:/Users/yutoi/Documents/kyudo/kyudo-ocr-ag/.hakari';
+// 正解（seikai-0927.mjs・seikai-1004.mjs）は名前入りなので倉庫の外（既定は hakari）
+const 正解の置き場 = process.env.SEIKAI || 'C:/Users/yutoi/Documents/kyudo/hakari';
 const 出の置き場 = process.env.CNN_DATA || path.join(ここ, 'data');
 fs.mkdirSync(出の置き場, { recursive: true });
 const imp = (p) => import('file:///' + 本体 + p);
