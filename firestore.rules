@@ -31,8 +31,12 @@ service cloud.firestore {
     //     団体は持っておらず、弱いパスワードが作業用のファイルに残っていた
     //
     // 増やすときは、その口座が実在し、いま使っていることを確かめてから。
+    //
+    // メールの確認（届いたリンクを押す）が済んでいることも見る（2026-11-22・別の AI の点検の S10）。
+    // 口座が消えたあとに同じアドレスで作り直されても、確認メールを受け取れない人は管理者になれない。
+    // 11/22 に本番の口座が確認済みなのを読んで確かめてから足した
     function isAdmin() {
-      return callerEmail() in [
+      return verifiedEmail() && callerEmail() in [
         'kanri@example.com'
       ];
     }
@@ -143,6 +147,15 @@ service cloud.firestore {
     }
     function isGroupAdmin(groupId) {
       return isGroupOwner(groupId) && hasAdminSession(groupId);
+    }
+
+    // 入り直して 30 分以内か（2026-11-22・別の AI の点検の S6）。団体アカウントの削除に使う。
+    // 削除は src/accountDeletion.js が消す直前にパスワードで入り直してから行う（管理者の印は入り直すと
+    // ログインの時刻が変わって合わなくなるので、印ではなくこちらで見る）。写しを書くのに時間のかかる団体もあるので 30 分。
+    // auth_time（秒）は Google が署名した証の中の値で、端末は書き換えられない
+    function recentLogin() {
+      return request.auth != null
+        && request.time < timestamp.value(request.auth.token.auth_time * 1000) + duration.value(30, 'm');
     }
 
     // 部員の役（2026-11-19 本人）。config/roles に役の中身（役）と割り当て（割り当て：メンバーid → 役id）を
@@ -271,8 +284,9 @@ service cloud.firestore {
             && request.resource.data.get('id', '') == resource.data.get('id', ''));
 
       // 消すのは管理者か、団体の持ち主本人（設定の「アカウントを削除する」。
-      // src/accountDeletion.js が、写しを deleted_accounts に書いてから最後に消す）
-      allow delete: if isAdmin() || sameOwnerAccount(resource.data);
+      // src/accountDeletion.js が、写しを deleted_accounts に書いてから最後に消す）。
+      // 持ち主は、入り直して間もないときだけ（recentLogin。パスワードを知らずに開いたままの端末を触った人には消させない）
+      allow delete: if isAdmin() || (sameOwnerAccount(resource.data) && recentLogin());
 
       // 団体名・登録日・同意の記録。**その団体のメールアドレスで入っている
       // 本人だけ**が読み書きする。親の email と突き合わせて確かめる
@@ -321,7 +335,8 @@ service cloud.firestore {
       allow update: if isGroupOwner(groupId) || addsLiveSecretOnly(groupId)
         || (memberCan(groupId, '設定')
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['groupName']));
-      allow delete: if isGroupOwner(groupId);
+      // 団体の文書を消すのはアカウントの削除だけ。入り直して間もないときだけ（recentLogin）
+      allow delete: if isGroupOwner(groupId) && recentLogin();
       // list は書かない。団体の一覧化を防ぐ（SEC-5）
 
       // 個人ID→memberId の逆引き。読み書きは団体の持ち主だけ（H1・2026-11-04）。

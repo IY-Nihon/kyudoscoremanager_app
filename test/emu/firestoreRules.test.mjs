@@ -14,6 +14,7 @@ import {
   一括で書く,
   時刻を書く,
   決まりを置く,
+  決まりの字,
   猶予のあとの決まり,
 } from './emu.mjs';
 
@@ -413,6 +414,7 @@ test('消すときの順：持ち主は控えを書いてから中身・帳面�
   assert.ok((await 書く(持ち主, `deleted_accounts/${団体}/sessions/s1`, { id: 's1' })).通った);
   assert.equal((await 読む(持ち主, `deleted_accounts/${団体}`)).通った, false);
   assert.ok((await 消す(持ち主, `groups/${団体}/sessions/s1`)).通った);
+  assert.ok((await 消す(持ち主, `groups/${団体}`)).通った, '入り直して間もない持ち主が団体の文書を消せない');
   assert.ok((await 消す(持ち主, `group_accounts/${団体}/private/consent`)).通った);
   assert.ok((await 消す(持ち主, `group_accounts/${団体}`)).通った);
   // 消えた団体の番号では、控えが残るあいだ作れない（B2）
@@ -882,4 +884,43 @@ test('不具合の便り（11/21・S9）：アプリのいちばん長い便り�
   // 同じ人が 10 秒以内に 2 通目
   assert.ok((await 送る(アプリの便り, 'anon-twice')).通った);
   assert.equal((await 送る(アプリの便り, 'anon-twice')).通った, false, '10 秒以内の 2 通目が通った');
+});
+
+test('運営の管理者（11/22・S10）：メールの確認が済んでいないと、管理者として団体の一覧を引けない', async () => {
+  await 団体を用意する();
+  // 管理者のアドレスは決まりから読む（検査に写さない）
+  const 管理者のアドレス = (決まりの字().match(/function isAdmin\(\)[\s\S]*?'([^']+@[^']+)'/) || [])[1];
+  assert.ok(管理者のアドレス, '決まりから管理者のアドレスを読めない');
+  const 確認済み = { uid: 'admin-1', email: 管理者のアドレス, verified: true };
+  const 確認前 = { uid: 'admin-1', email: 管理者のアドレス, verified: false };
+  // よその団体のメールで絞って引くのは、管理者だけができる
+  assert.ok(
+    (await 絞って引く(確認済み, '', 'group_accounts', 'email', 持ち主.email)).通った,
+    '確認済みの管理者が引けない'
+  );
+  assert.equal(
+    (await 絞って引く(確認前, '', 'group_accounts', 'email', 持ち主.email)).通った,
+    false,
+    '確認前の管理者が引けた'
+  );
+  assert.equal((await 絞って引く(よその人, '', 'group_accounts', 'email', 持ち主.email)).通った, false);
+});
+
+test('アカウントの削除（11/22・S6）：入り直してから 30 分を過ぎた端末は、団体の文書と帳面を消せない。記録を消すのは今までどおり', async () => {
+  await 団体を用意する();
+  const 前に入った持ち主 = { ...持ち主, auth_time: Math.floor(Date.now() / 1000) - 2 * 60 * 60 };
+  assert.equal(
+    (await 消す(前に入った持ち主, `group_accounts/${団体}`)).通った,
+    false,
+    '2 時間前に入った端末が帳面を消せた'
+  );
+  assert.equal(
+    (await 消す(前に入った持ち主, `groups/${団体}`)).通った,
+    false,
+    '2 時間前に入った端末が団体の文書を消せた'
+  );
+  // 11/18 の決め：記録を消すのは合言葉なしで今までどおり
+  assert.ok((await 消す(前に入った持ち主, `groups/${団体}/sessions/s1`)).通った, '記録を消せない');
+  // 部員は入り直しても消せない
+  assert.equal((await 消す(部員, `groups/${団体}`)).通った, false);
 });
