@@ -161,6 +161,9 @@ export function UpdateBar() {
         入力中: 入力中か(),
         窓が開いている: 窓が開いているか(),
         読み取りを預けている: require('./ocrMatsu').預けた読み取りがあるか(),
+        // タブは住所に出る（src/MainNavigator.js の リンクの決まり：分析 → /analysis・履歴 → /history）
+        分析か履歴を見ている:
+          typeof location !== 'undefined' && /\/(analysis|history)\/?$/.test(String(location.pathname || '')),
         新しい束: 待っている束,
         前に試した束,
         最短,

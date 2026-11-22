@@ -388,6 +388,16 @@ const useScoreStore = zustand.create()(
         },
         setAuth: (団体ID, 役割, 部員ID, メール = null, 公開の団体ID = null, 団体名 = null, 部員名 = null) => {
           if (状態().出ている途中) 書く({ 出ている途中: false });
+          // 読み込み直しの控え（分析の絞り込み・履歴の検索の字と月・位置。src/yominaoshiHikae.js）は、出るとき・
+          // 別の人で入るときに捨てる（共用の端末で次の人に見せない）。入り直しの窓で同じ人に戻るときは残す
+          if (
+            団体ID === null ||
+            状態().activeGroupId !== 団体ID ||
+            状態().activeRole !== 役割 ||
+            (状態().myMemberId || null) !== (部員ID || null)
+          ) {
+            require('./yominaoshiHikae').控えを全部消す();
+          }
           if (団体ID === null) {
             // ライブから抜けてから出る（合言葉を捨てる前に。抜けないと、見張りと在席が残り、
             // 次に入った団体に前の団体のライブが続いて見えた）。盤面は下でまとめて片付ける

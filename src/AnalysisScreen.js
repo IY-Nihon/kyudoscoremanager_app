@@ -13,6 +13,7 @@ const 役の決まり = require('./yaku');
 const 学 = require('./gakunen');
 const { use団体の決まり } = require('./useGakunen');
 const { use引いて更新 } = require('./hikiOroshi');
+const { 控えを読む, 控えを書く, 控えの値, use位置の控え } = require('./yominaoshiHikae');
 // 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
 const { useストアの一部 } = require('./storeSlice');
 const Icons = require('@expo/vector-icons');
@@ -30,6 +31,7 @@ const { 部員の詳細の窓 } = require('./AnalysisMemberDetail');
 const AnalysisScreen = ({ navigation }) => {
   // 上から引っ張って更新（src/hikiOroshi.js）。雲から取り直す
   const 引く = use引いて更新(() => useScoreStore.getState().雲から取り直す());
+  const 位置の控え = use位置の控え('分析の位置', 引く.ref);
   // 個人ログインで「全員を見る」の無い役（部員（自分）など）は、自分の分だけ（src/yaku.js・2026-11-19）。
   // 全員を見る役は団体と同じ順位・絞り込みを出す
   const 自分の分だけ = useScoreStore((状態) => 役の決まり.自分の分だけか(状態));
@@ -148,24 +150,67 @@ const AnalysisScreen = ({ navigation }) => {
     });
     return locations;
   };
-  const [期間の種類, 期間の種類を置く] = React.useState('すべて');
-  const [性別の絞り, 性別の絞りを置く] = React.useState('全員');
-  const [学年の絞り, 学年の絞りを置く] = React.useState('全学年');
+  // 読み込み直したときは、選んでいた絞り込みと見ていた年月・位置を戻す（src/yominaoshiHikae.js。2026-11-22 本人）
+  const 控え = React.useMemo(() => 控えを読む('分析') || {}, []);
+  const 字か = (/** @type {any} */ 値) => typeof 値 === 'string';
+  const 数か = (/** @type {any} */ 値) => typeof 値 === 'number' && Number.isFinite(値);
+  const [期間の種類, 期間の種類を置く] = React.useState(() => 控えの値(控え, '期間の種類', 'すべて', 字か));
+  const [性別の絞り, 性別の絞りを置く] = React.useState(() => 控えの値(控え, '性別の絞り', '全員', 字か));
+  const [学年の絞り, 学年の絞りを置く] = React.useState(() => 控えの値(控え, '学年の絞り', '全学年', 字か));
   // 区分の絞り（区分の id。'全区分' は絞らない）。消された区分を選んだままなら絞らない
-  const [選んだ区分, 区分の絞りを置く] = React.useState('全区分');
+  const [選んだ区分, 区分の絞りを置く] = React.useState(() => 控えの値(控え, '選んだ区分', '全区分', 字か));
   const 区分の絞り = 区分たち.some((区分) => 区分.id === 選んだ区分) ? 選んだ区分 : '全区分';
   const 決まり = use団体の決まり();
   const 今日 = new Date();
   const 今の年度 = 学.年度(今日);
-  const [見ている年, 見ている年を置く] = React.useState(今日.getFullYear());
-  const [見ている月, 見ている月を置く] = React.useState(今日.getMonth() + 1);
-  const [見ている年度, 見ている年度を置く] = React.useState(今の年度);
-  const [推移の刻み, 推移の刻みを置く] = React.useState('month');
-  const [期間の始め, 期間の始めを置く] = React.useState(new Date(今日.getFullYear(), 今日.getMonth(), 1));
-  const [期間の終わり, 期間の終わりを置く] = React.useState(new Date());
+  const [見ている年, 見ている年を置く] = React.useState(() =>
+    控えの値(控え, '見ている年', 今日.getFullYear(), 数か)
+  );
+  const [見ている月, 見ている月を置く] = React.useState(() =>
+    控えの値(控え, '見ている月', 今日.getMonth() + 1, 数か)
+  );
+  const [見ている年度, 見ている年度を置く] = React.useState(() =>
+    控えの値(控え, '見ている年度', 今の年度, 数か)
+  );
+  const [推移の刻み, 推移の刻みを置く] = React.useState(() => 控えの値(控え, '推移の刻み', 'month', 字か));
+  const [期間の始め, 期間の始めを置く] = React.useState(() => {
+    const 控えた = 控えの値(控え, '期間の始め', 0, 数か);
+    return 控えた ? new Date(控えた) : new Date(今日.getFullYear(), 今日.getMonth(), 1);
+  });
+  const [期間の終わり, 期間の終わりを置く] = React.useState(() => {
+    const 控えた = 控えの値(控え, '期間の終わり', 0, 数か);
+    return 控えた ? new Date(控えた) : new Date();
+  });
   const [暦を出す, 暦を出すを置く] = React.useState(false);
   const [暦の対象, 暦の対象を置く] = React.useState('start');
-  const [名前の検索, 名前の検索を置く] = React.useState('');
+  const [名前の検索, 名前の検索を置く] = React.useState(() => 控えの値(控え, '名前の検索', '', 字か));
+  React.useEffect(() => {
+    控えを書く('分析', {
+      期間の種類,
+      性別の絞り,
+      学年の絞り,
+      選んだ区分,
+      見ている年,
+      見ている月,
+      見ている年度,
+      推移の刻み,
+      期間の始め: 期間の始め instanceof Date ? 期間の始め.getTime() : 0,
+      期間の終わり: 期間の終わり instanceof Date ? 期間の終わり.getTime() : 0,
+      名前の検索,
+    });
+  }, [
+    期間の種類,
+    性別の絞り,
+    学年の絞り,
+    選んだ区分,
+    見ている年,
+    見ている月,
+    見ている年度,
+    推移の刻み,
+    期間の始め,
+    期間の終わり,
+    名前の検索,
+  ]);
   const [詳細の部員, 詳細の部員を置く] = React.useState(null);
   const [customShotsInput, setCustomShotsInput] = React.useState('');
   // 的の種類切り替え用ステート
@@ -628,7 +673,7 @@ const AnalysisScreen = ({ navigation }) => {
         <Text style={styles.title}>的中分析</Text>
       </View>
       {引く.しるし}
-      <ScrollView ref={引く.ref} contentContainerStyle={styles.content}>
+      <ScrollView ref={引く.ref} contentContainerStyle={styles.content} {...位置の控え}>
         <View style={styles.filtersCard}>
           <View style={{ marginBottom: 16 }}>
             <View

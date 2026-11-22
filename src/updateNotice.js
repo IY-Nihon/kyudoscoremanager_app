@@ -133,7 +133,7 @@ function 名前だけにする(道) {
 
 /**
  * 帯を出さずに、自動で読み込み直してよいか（上の説明の 4 つ）。
- * @param {{離れていた時間?: number, 隠れている?: boolean, 触れていない時間?: number, 触れずに待つ?: number, ライブ中?: boolean, 案内中?: boolean, 入力中?: boolean, 窓が開いている?: boolean, 読み取りを預けている?: boolean, 新しい束?: string|null, 前に試した束?: string|null, 最短?: number}} 状況
+ * @param {{離れていた時間?: number, 隠れている?: boolean, 触れていない時間?: number, 触れずに待つ?: number, ライブ中?: boolean, 案内中?: boolean, 入力中?: boolean, 窓が開いている?: boolean, 読み取りを預けている?: boolean, 分析か履歴を見ている?: boolean, 新しい束?: string|null, 前に試した束?: string|null, 最短?: number}} 状況
  * @returns {boolean}
  */
 function 自動で更新してよいか(状況) {
@@ -147,6 +147,8 @@ function 自動で更新してよいか(状況) {
     窓が開いている = false,
     // 写真の読み取りを、窓を閉じたあとも続けている・届いて預けてある（src/ocrMatsu.js。読み込み直すと消える）
     読み取りを預けている = false,
+    // 分析か履歴のタブを見ている（2026-11-22 本人：映して説明しているときに画面が入れ替わらないよう、帯だけにする）
+    分析か履歴を見ている = false,
     新しい束 = null,
     前に試した束 = null,
   } = 状況 || {};
@@ -157,6 +159,9 @@ function 自動で更新してよいか(状況) {
   const 今なら = 隠れている || Number(離れていた時間) >= 最短 || Number(触れていない時間) >= 待つ;
   if (!今なら) return false;
   if (ライブ中 || 案内中 || 入力中 || 窓が開いている || 読み取りを預けている) return false;
+  // 分析・履歴を見ているあいだは帯だけ。裏にあるとき（見ていない）は今までどおり読み込み直す（戻ったときに選んでいた物と
+  // 位置は src/yominaoshiHikae.js が戻す）
+  if (分析か履歴を見ている && !隠れている) return false;
   if (!新しい束 || !束の形か(新しい束)) return false;
   if (前に試した束 && 前に試した束 === 新しい束) return false;
   return true;

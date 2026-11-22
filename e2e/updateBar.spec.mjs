@@ -386,3 +386,138 @@ test.describe('自動で更新：窓が開いている間', () => {
     ).toBe('number');
   });
 });
+
+// 分析・履歴のタブを見ている間は、自動で読み込み直さず帯にする（映して説明しているときに画面が入れ替わらない）。
+// 読み込み直したときは、選んでいた物とスクロールの位置を戻す（src/yominaoshiHikae.js。2026-11-22 本人）。
+// ログイン済みの団体で見る。団体には書き込まない
+test.describe('自動で更新：分析・履歴を見ている間', () => {
+  test.use({ storageState: 'e2e/.auth/100007.json' });
+
+  /** ログインして、タブを開く（住所も変わることを確かめる。UpdateBar は住所で見分ける） */
+  async function タブを開く(page, タブ) {
+    await 案内を止める(page);
+    await page.goto('/');
+    await 画面が出るまで待つ(page);
+    await 入り口が決まるまで待つ(page);
+    await page.getByRole('tab', { name: タブ, exact: true }).click();
+    await expect(page).toHaveURL(タブ === '分析' ? /\/analysis\/?$/ : /\/history\/?$/);
+  }
+
+  /** 中にある要素から外へたどって、中身が枠より高い流れる箱を探す */
+  async function 流れる箱(locator) {
+    const 手 = await locator.elementHandle();
+    return 手.evaluateHandle((要素) => {
+      for (let 今 = 要素; 今 && 今 !== document.body; 今 = 今.parentElement) {
+        const 形 = getComputedStyle(今);
+        if ((形.overflowY === 'auto' || 形.overflowY === 'scroll') && 今.scrollHeight > 今.clientHeight + 10)
+          return 今;
+      }
+      return null;
+    });
+  }
+
+  /** 流れる箱を y まで流す（流せる所まで）。置けた位置を返す */
+  function 流す(箱, y) {
+    return 箱.evaluate((節, 目当て) => {
+      節.scrollTop = Math.min(目当て, 節.scrollHeight - 節.clientHeight);
+      return 節.scrollTop;
+    }, y);
+  }
+
+  async function 新しい版が出たことにする(page) {
+    const 束 = await いまの束(page);
+    await 返す中身を決める(page, '/_expo/static/js/web/AppEntry-7777777777777777777777777777eeee.js');
+    await 束の有無を決める(page, 束, false);
+    await page.evaluate(() => {
+      window.__押す前の印 = 1;
+    });
+  }
+
+  for (const タブ of ['分析', '履歴']) {
+    test(`${タブ}を見ているあいだは、しばらく離れて戻っても読み込み直さず帯にする`, async ({ page }) => {
+      await 離席を短くする(page);
+      await タブを開く(page, タブ);
+      await 新しい版が出たことにする(page);
+      await 離れる(page);
+      // 裏にある間は読み込み直してよいので、裏の間に見に行かないよう、すぐ戻す
+      await 戻る(page);
+      await expect(page.getByText(/新しい版が出ています/), '帯が出ない').toBeVisible({ timeout: 10_000 });
+      expect(
+        await page.evaluate(() => typeof window.__押す前の印),
+        `${タブ}を見ているのに勝手に読み込み直した`
+      ).toBe('number');
+    });
+  }
+
+  test('裏に回って読み込み直したら、分析の期間の選び方とスクロールの位置が戻る', async ({ page }) => {
+    await タブを開く(page, '分析');
+    await page.getByText('期間指定', { exact: true }).first().click();
+    await expect(page.getByText(/^開始: /).first(), '期間指定の欄が出ない').toBeVisible();
+    const 箱 = await 流れる箱(page.getByText('期間指定', { exact: true }).first());
+    expect(await 箱.evaluate((節) => !!節), '分析の流れる箱が見つからない').toBe(true);
+    const 位置 = await 流す(箱, 400);
+    expect(位置, '分析の中身が短くて流せない').toBeGreaterThan(100);
+    await page.waitForTimeout(800); // 位置を控えるのは止まってから 300ms
+    await 新しい版が出たことにする(page);
+    await 離れる(page); // 裏に回ったら、分析を見ていてもすぐ読み込み直す
+    await expect
+      .poll(
+        () =>
+          page
+            .evaluate(() => (typeof window.__押す前の印 === 'undefined' ? '消えた' : '残っている'))
+            .catch(() => '読み込み中'),
+        { timeout: 30_000, message: '裏に回っても読み込み直していない' }
+      )
+      .toBe('消えた');
+    await 画面が出るまで待つ(page);
+    await expect(page).toHaveURL(/\/analysis\/?$/);
+    await expect(page.getByText(/^開始: /).first(), '期間指定が戻っていない').toBeVisible({
+      timeout: 15_000,
+    });
+    const 後の箱 = await 流れる箱(page.getByText('期間指定', { exact: true }).first());
+    await expect
+      .poll(() => 後の箱.evaluate((節) => Math.round(節.scrollTop)), {
+        timeout: 10_000,
+        message: 'スクロールの位置が戻っていない',
+      })
+      .toBeGreaterThanOrEqual(Math.round(位置) - 3);
+    expect(await 後の箱.evaluate((節) => Math.round(節.scrollTop))).toBeLessThanOrEqual(Math.round(位置) + 3);
+  });
+
+  // 100007 は記録が 1 か月に 3 件だけで、流せず月も選べない。記録の多い 100001 で、スマホの高さにして見る
+  test.describe('記録の多い団体', () => {
+    test.use({ storageState: 'e2e/.auth/100001.json', viewport: { width: 390, height: 640 } });
+
+    test('読み込み直したら、履歴の月の選び方とスクロールの位置が戻る', async ({ page }) => {
+      await タブを開く(page, '履歴');
+      // 既定はいちばん新しい月。「すべて」に変えると、月の見出しが出る
+      const すべて = page.getByTestId('月すべて');
+      await expect(すべて, '月が 2 つ以上ある年度でない（「すべて」の札が無い）').toBeVisible({
+        timeout: 15_000,
+      });
+      await すべて.click();
+      await expect(page.getByTestId('月の見出し').first()).toBeVisible();
+      const 箱 = await 流れる箱(page.getByTestId('履歴の一覧'));
+      expect(await 箱.evaluate((節) => !!節), '履歴の一覧が流せない（記録が少ない）').toBe(true);
+      const 位置 = await 流す(箱, 600);
+      expect(位置, '履歴の一覧が短くて流せない').toBeGreaterThan(200);
+      await page.waitForTimeout(800); // 位置を控えるのは止まってから 300ms
+      await page.reload();
+      await 画面が出るまで待つ(page);
+      await expect(page).toHaveURL(/\/history\/?$/);
+      await expect(page.getByTestId('月の見出し').first(), '「すべて」が戻っていない').toBeVisible({
+        timeout: 15_000,
+      });
+      const 後の箱 = await 流れる箱(page.getByTestId('履歴の一覧'));
+      await expect
+        .poll(() => 後の箱.evaluate((節) => (節 ? Math.round(節.scrollTop) : -1)), {
+          timeout: 10_000,
+          message: 'スクロールの位置が戻っていない',
+        })
+        .toBeGreaterThanOrEqual(Math.round(位置) - 3);
+      expect(await 後の箱.evaluate((節) => Math.round(節.scrollTop))).toBeLessThanOrEqual(
+        Math.round(位置) + 3
+      );
+    });
+  });
+});

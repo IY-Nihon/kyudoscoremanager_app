@@ -12,6 +12,7 @@ const { 自分の射手か, 自分の記録か } = require('./syncRules');
 const { useScoreStore } = require('./useScoreStore');
 const 役の決まり = require('./yaku');
 const { use引いて更新 } = require('./hikiOroshi');
+const { 控えを読む, 控えを書く, 控えの値, use位置の控え } = require('./yominaoshiHikae');
 // 画面が使う項目だけを購読する（ストア全体だと、ますを押すたびに裏のタブまで描き直す）
 const { useストアの一部 } = require('./storeSlice');
 const { newArcher, newSeparator, newTotalCalculator } = require('./archerFactory');
@@ -53,6 +54,7 @@ const 月すべて = 'すべて';
 const HistoryScreen = () => {
   // 上から引っ張って更新（src/hikiOroshi.js）。雲から取り直す
   const 引く = use引いて更新(() => useScoreStore.getState().雲から取り直す());
+  const 位置の控え = use位置の控え('履歴の位置', 引く.ref);
   const {
     members,
     myMemberId,
@@ -123,12 +125,26 @@ const HistoryScreen = () => {
   const 自分の名前 = useScoreStore((状態) => 状態.myMemberName) || '';
   // 年度の区切りは団体の「年度の始まり」の月で決まる（学.年度 が読む）。変えたら一覧も札も作り直す
   const 年度の始まりの月 = useScoreStore((状態) => 状態.yearStartMonth);
-  const [検索の文, 検索の文を置く] = React.useState('');
-  const [見ている月, 見ている月を置く] = React.useState('');
+  // 読み込み直したときは、検索の文と見ていた年度・月・位置を戻す（src/yominaoshiHikae.js。2026-11-22 本人）
+  const 控え = React.useMemo(() => 控えを読む('履歴') || {}, []);
+  const [検索の文, 検索の文を置く] = React.useState(() =>
+    控えの値(控え, '検索の文', '', (/** @type {any} */ 値) => typeof 値 === 'string')
+  );
+  const [見ている月, 見ている月を置く] = React.useState(() =>
+    控えの値(控え, '見ている月', '', (/** @type {any} */ 値) => typeof 値 === 'string')
+  );
   const [見ている年度, 見ている年度を置く] = React.useState(() => {
     const 今日 = new Date();
-    return 学.年度(今日);
+    return 控えの値(
+      控え,
+      '見ている年度',
+      学.年度(今日),
+      (/** @type {any} */ 値) => typeof 値 === 'number' && Number.isFinite(値)
+    );
   });
+  React.useEffect(() => {
+    控えを書く('履歴', { 検索の文, 見ている月, 見ている年度 });
+  }, [検索の文, 見ている月, 見ている年度]);
   const [年度の窓, 年度の窓を出す] = React.useState(false);
   const [選択中, 選択中を置く] = React.useState(false);
   const [選んだ記録, 選んだ記録を置く] = React.useState(new Set());
@@ -1220,6 +1236,7 @@ const HistoryScreen = () => {
           <FlatList
             ref={引く.ref}
             testID="履歴の一覧"
+            {...位置の控え}
             ListHeaderComponent={
               <>
                 <View style={styles.searchContainer}>

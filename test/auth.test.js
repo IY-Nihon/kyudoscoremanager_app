@@ -111,6 +111,40 @@ test('ログアウト：見張りを止める（別団体の更新を拾わな�
   assert.equal(store.getState().sessions.length, 0, '拾っていない');
 });
 
+test('読み込み直しの控え（分析の絞り込み・履歴の月・位置）：出るとき・別の人で入るときに捨て、入り直しで同じ人に戻るときは残す', async () => {
+  const { store } = await 用意();
+  const 控 = require('../src/yominaoshiHikae');
+  const 中 = new Map();
+  const 場 = {
+    get length() {
+      return 中.size;
+    },
+    key: (番) => [...中.keys()][番] ?? null,
+    getItem: (鍵) => (中.has(鍵) ? 中.get(鍵) : null),
+    setItem: (鍵, 値) => void 中.set(鍵, String(値)),
+    removeItem: (鍵) => void 中.delete(鍵),
+  };
+  const 前の置き場 = globalThis.window && globalThis.window.sessionStorage;
+  globalThis.window.sessionStorage = /** @type {any} */ (場);
+  try {
+    store.getState().setAuth(団体, 'member', 'mem-1', null, 団体, 'テスト団体', '部員1');
+    控.控えを書く('分析', { 名前の検索: '部員1' });
+    store.getState().setAuth(団体, 'member', 'mem-1', null, 団体, 'テスト団体', '部員1');
+    assert.deepStrictEqual(
+      控.控えを読む('分析'),
+      { 名前の検索: '部員1' },
+      '入り直しの窓で同じ人に戻ったときは残す'
+    );
+    store.getState().setAuth(団体, 'member', 'mem-2', null, 団体, 'テスト団体', '部員2');
+    assert.strictEqual(控.控えを読む('分析'), null, '別の人で入ったら、前の人の検索の字を見せない');
+    控.控えを書く('履歴', { 見ている月: '2026-11' });
+    store.getState().setAuth(null);
+    assert.strictEqual(控.控えを読む('履歴'), null, 'ログアウトで捨てる');
+  } finally {
+    globalThis.window.sessionStorage = 前の置き場;
+  }
+});
+
 // ──────────────────────────────────────────────────────────────
 // ログアウトは手元の記録を全部捨てるので、抜ける前に送り切れるかを見る。
 // ──────────────────────────────────────────────────────────────
