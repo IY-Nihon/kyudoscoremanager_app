@@ -270,9 +270,9 @@ npm run test:rules  # 決まり（firestore.rules・database.rules.json）を模
 決まりの模擬環境の検査（`test/emu`）は、断るべき手順（乗っ取り・番号の作り直し・使い捨てメール・4 桁の証・部員の書き換え・
 端末からの証の書き込み・ライブの期限の操作）が断られ、ふつうの手順が通ることを見る。GitHub Actions の「検査」の `rules` でも流れる。
 
-### App Check の強制（あとで。本人がコンソールで）
+### App Check の強制（2026-11-13 に本番の Firestore・Realtime Database・中継で強制した）
 
-印の無い・正しくない呼び出しが十分に減ってから強制する。順は Realtime Database → Firestore（Authentication の強制は
+強制は、印の無い・正しくない呼び出しが十分に減ってから入れた。下はそのときの手順（戻すときと、検証環境で試すときの控え）。順は Realtime Database → Firestore（Authentication の強制は
 Identity Platform が要るので無料版では使えない）。
 
 1. 中継の記録で印の様子を見る（kyudo-chukei の README の「App Check」）。`none`・`bad` が残っているうちは強制しない
@@ -858,8 +858,8 @@ zustand / react / react/jsx-runtime
 firebase/app-check は、取り戻した当初は取り込んでいた場所が結果を捨てるだけで、App Check 自体も
 ReCAPTCHA キー未設定で無効だったため、いったん取り込みごと外しました（配信物が26KB減）。
 2026-09-24 に `src/setupAppCheck.js` から `firebase/app-check` を直接読み込む形で入れ直し、本番へ配信済みです
-（reCAPTCHA Enterprise。検証環境の束では使わない。Firestore・Realtime Database への**強制はまだ**で、
-検証済みの割合を見てから決める）。
+（reCAPTCHA Enterprise。検証環境の束では使わない）。2026-11-13 に本番の Firestore・Realtime Database・中継で強制した
+（上の「App Check の強制」）。
 
 かつて package.json に無い「隠れ依存」だった netinfo と generative-ai は、
 正式な依存として追加済みです（`@react-native-community/netinfo@11.5.2` は

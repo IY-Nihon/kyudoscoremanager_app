@@ -627,13 +627,16 @@ const LoginScreen = () => {
             </View>
             <Text style={styles.title}>弓道部的中ノート</Text>
             <Text style={styles.subtitle}>
-              {忘れた窓 !== 'none'
-                ? 'アカウントの復旧'
-                : 画面の種類 === 'login_group'
-                  ? '団体ログイン'
-                  : 画面の種類 === 'login_member'
-                    ? '個人ログイン'
-                    : '団体アカウント作成'}
+              {/* 「メールアドレスを忘れた」で開くのは、登録メールアドレスを変える画面（2026-11-22 本人：ボタンの名前は残し、題で中身を示す） */}
+              {忘れた窓 === 'email'
+                ? '登録メールアドレスを変える'
+                : 忘れた窓 !== 'none'
+                  ? 'アカウントの復旧'
+                  : 画面の種類 === 'login_group'
+                    ? '団体ログイン'
+                    : 画面の種類 === 'login_member'
+                      ? '個人ログイン'
+                      : '団体アカウント作成'}
             </Text>
           </View>
           <View style={styles.card}>
