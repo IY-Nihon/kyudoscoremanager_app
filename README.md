@@ -258,6 +258,8 @@ npm start
 開発（`npm start`・`npm run web`）と検証環境向けの束・E2E・検証の道具は、`.env.development.local`（倉庫に入れない）の
 検証環境（`kyudoscoremanager-stg`）の接続先を使う。E2E と道具が入る試しの口座のパスワードも、同じファイルの
 `STG_TEST_PASSWORD` の行に置く（公開の倉庫なので書かない。`scripts/fb-rest.mjs` の `検証のパスワード`）。
+替えるときは `node scripts/stg-change-password.mjs 替える`（新しいパスワードを作り、検証環境の口座・このファイル・GitHub の Secrets の
+`STG_ENV`・エミュレーターの控えをまとめて替える。画面には出さない。何も付けずに流すと見るだけ）。
 
 ## 検査
 
