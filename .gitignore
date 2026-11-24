@@ -73,3 +73,7 @@ anonymous-deleted-*.json
 
 # 使い方の動画を撮った元の絵（scripts/usage-videos.mjs で public/usage へまとめる）
 e2e/.usage-raw/
+
+# 運営のアドレスを差し込んだ決まりの写し（scripts/kimari-sashikomi.mjs が配るときに作る。倉庫に入れない）
+.kimari/
+firebase.kimari.json

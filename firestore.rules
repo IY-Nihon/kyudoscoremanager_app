@@ -35,6 +35,10 @@ service cloud.firestore {
     // メールの確認（届いたリンクを押す）が済んでいることも見る（2026-11-22・別の AI の点検の S10）。
     // 口座が消えたあとに同じアドレスで作り直されても、確認メールを受け取れない人は管理者になれない。
     // 11/22 に本番の口座が確認済みなのを読んで確かめてから足した
+    //
+    // 公開の倉庫には例のアドレスだけを書く（2026-11-24 本人。運営の口座がどれか外から分からないように）。
+    // 配るときに npm run deploy:rules（:stg）が、手元の .env の ADMIN_EMAIL へ差し替えて配る
+    // （scripts/kimari-sashikomi.mjs）。素の firebase deploy では配らない（例のまま出て管理の操作が止まる）
     function isAdmin() {
       return verifiedEmail() && callerEmail() in [
         'kanri@example.com'

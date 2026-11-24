@@ -6,7 +6,7 @@
  * 「正しく使えること」は verify-app-flows.mjs で見ている。
  * ここでは「正しくない使い方が弾かれること」だけを見る。
  */
-import { configFor, signIn, signInAnonymously, req, setDoc, listAll, 検証のパスワード } from './fb-rest.mjs';
+import { configFor, signIn, signInAnonymously, req, setDoc, listAll, 検証のパスワード, 運営のアドレス } from './fb-rest.mjs';
 
 const target = process.argv[2] || 'stg';
 if (target !== 'stg') {
@@ -32,7 +32,7 @@ const check = (cat, name, expect, actual, note = '') => {
   });
 };
 
-const tokG1 = await signIn(apiKey, 'kanri@example.com', PW);
+const tokG1 = await signIn(apiKey, 運営のアドレス(), PW);
 const tokG2 = await signIn(apiKey, 'stg-b@example.com', PW);
 const anonA = await signInAnonymously(apiKey);
 const anonB = await signInAnonymously(apiKey);

@@ -19,6 +19,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { 差し込んだ決まり } from './kimari-sashikomi.mjs';
 
 const TARGET = ['stg', 'prod'].includes(process.argv[2]) ? process.argv[2] : 'prod';
 const env = Object.fromEntries(
@@ -231,6 +232,17 @@ for (const f of [
 ]) {
   if (!fs.existsSync(f)) {
     console.log(`  ${f} … なし`);
+    continue;
+  }
+  // 倉庫の決まりの管理者は例のアドレスなので、控えは運営のアドレスを差し込んだ形で取る（戻したときに管理者が止まらないように。2026-11-24）
+  if (f === 'firestore.rules') {
+    try {
+      fs.writeFileSync(path.join(OUT, 'rules', path.basename(f)), 差し込んだ決まり(f));
+      console.log(`  ${f} … 控えました（運営のアドレスを差し込んだ形）`);
+    } catch (e) {
+      fs.copyFileSync(f, path.join(OUT, 'rules', path.basename(f)));
+      console.log(`  ${f} … 控えました（例のアドレスのまま。${e.message}）`);
+    }
     continue;
   }
   fs.copyFileSync(f, path.join(OUT, 'rules', path.basename(f)));

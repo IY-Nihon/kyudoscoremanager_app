@@ -23,6 +23,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import url from 'node:url';
+import { 運営のアドレス } from './fb-rest.mjs';
+import { 差し込む } from './kimari-sashikomi.mjs';
 
 const 対象 = process.argv[2] || 'stg';
 if (!['stg', 'prod'].includes(対象)) {
@@ -47,9 +49,10 @@ if (消す && !名指し.length) {
 // 実際 2026-09-03 に isAdmin() を5件から1件へ減らしたとき、ここだけ5件の
 // まま残り、外したはずの口座が「消してはいけないもの」として保護され続けて
 // いた。二度と食い違わないよう、決まりのファイルから読む。
+// 倉庫の決まりには例のアドレスしか書かないので、手元の運営のアドレスを差し込んだ形から読む（2026-11-24）
 const 管理者 = (() => {
   const 決まりの道 = path.join(path.dirname(url.fileURLToPath(import.meta.url)), '..', 'firestore.rules');
-  const 決まり = fs.readFileSync(決まりの道, 'utf8');
+  const 決まり = 差し込む(fs.readFileSync(決まりの道, 'utf8'), 運営のアドレス());
   const i = 決まり.indexOf('function isAdmin()');
   if (i < 0) {
     console.error('firestore.rules に isAdmin() が見つかりません。中止します。');

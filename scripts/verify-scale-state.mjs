@@ -9,7 +9,7 @@
  *  3. 同じ端末（同じ匿名uid）で別団体へログインし直せるか
  *  4. ルール内の get() が応答時間にどれだけ影響するか
  */
-import { configFor, signIn, signInAnonymously, req, setDoc, listAll, 検証のパスワード } from './fb-rest.mjs';
+import { configFor, signIn, signInAnonymously, req, setDoc, listAll, 検証のパスワード, 運営のアドレス } from './fb-rest.mjs';
 
 const { apiKey, projectId } = configFor('stg');
 const PW = 検証のパスワード();
@@ -83,7 +83,7 @@ console.log('\n■ 2. 団体 → 部員 → 別団体 の切り替え');
 const lk1 = await listAll(
   projectId,
   `/groups/${G1}/member_lookup`,
-  await signIn(apiKey, 'kanri@example.com', PW),
+  await signIn(apiKey, 運営のアドレス(), PW),
   ['memberId']
 );
 const tokG2 = await signIn(apiKey, 'stg-b@example.com', PW);
@@ -157,7 +157,7 @@ const measure = async (label, fn, n = 10) => {
   ts.sort((a, b) => a - b);
   return { label, 中央値: ts[Math.floor(n / 2)] + 'ms', 最小: ts[0] + 'ms', 最大: ts[n - 1] + 'ms' };
 };
-const tokG1b = await signIn(apiKey, 'kanri@example.com', PW);
+const tokG1b = await signIn(apiKey, 運営のアドレス(), PW);
 const anon2 = await signInAnonymously(apiKey);
 await setDoc(
   projectId,

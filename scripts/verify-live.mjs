@@ -11,7 +11,7 @@
  * stg 専用（書いて消すため）。
  */
 import { createRequire } from 'node:module';
-import { configFor, signIn, ライブの枝を引く, 検証のパスワード } from './fb-rest.mjs';
+import { configFor, signIn, ライブの枝を引く, 検証のパスワード, 運営のアドレス } from './fb-rest.mjs';
 
 // 判断そのものは実装（src/syncRules.js）をそのまま使う。写すと食い違うため。
 const { 届いた射手に合わせる, normalizeArrowLocations } = createRequire(import.meta.url)(
@@ -42,7 +42,7 @@ const check = (区分, 項目, 期待, 実際, 備考 = '') => {
   });
 };
 
-const tok = await signIn(apiKey, 'kanri@example.com', PW);
+const tok = await signIn(apiKey, 運営のアドレス(), PW);
 // ライブは団体IDではなく、団体ごとの合言葉の枝に置く（src/liveSecret.js）。
 // 決まりが短い枝を拒むので、団体IDのままでは何も読み書きできない
 const 枝 = await ライブの枝を引く('kyudoscoremanager-stg', G1, tok);

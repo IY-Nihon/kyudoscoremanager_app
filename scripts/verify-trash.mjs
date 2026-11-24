@@ -26,7 +26,7 @@ import {
   serverTimestamp,
   setDoc,
 } from 'firebase/firestore';
-import { configFor, 検証のパスワード } from './fb-rest.mjs';
+import { configFor, 検証のパスワード, 運営のアドレス } from './fb-rest.mjs';
 
 const target = process.argv[2] || 'stg';
 if (target !== 'stg') {
@@ -36,7 +36,7 @@ if (target !== 'stg') {
 
 const { apiKey, projectId } = configFor(target);
 const GID = '100001';
-const EMAIL = 'kanri@example.com';
+const EMAIL = 運営のアドレス();
 const PW = 検証のパスワード();
 
 // ── 実装から並べ替え関数をそのまま持ってくる ────────────────

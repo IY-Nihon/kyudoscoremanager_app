@@ -20,6 +20,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import url from 'node:url';
+import { 例に戻す } from './kimari-sashikomi.mjs';
 
 const ここ = path.dirname(url.fileURLToPath(import.meta.url));
 const 根本 = path.join(ここ, '..');
@@ -71,7 +72,8 @@ if (束ね.rulesetName) {
   const s = await (
     await fetch(`https://firebaserules.googleapis.com/v1/${束ね.rulesetName}`, { headers: 頭 })
   ).json();
-  const 出ている = s.source?.files?.[0]?.content || '';
+  // 出ている決まりには運営のアドレスが差し込まれている。倉庫の決まりは例のアドレスなので、例に戻してから比べる（2026-11-24）
+  const 出ている = 例に戻す(s.source?.files?.[0]?.content || '');
   const 同じ = 出ている.replace(/\r\n/g, '\n').trim() === 手元の決まり.replace(/\r\n/g, '\n').trim();
   console.log('■ 出ている決まり（firestore.rules）');
   console.log(`   作られた日時: ${日(s.createTime)}`);

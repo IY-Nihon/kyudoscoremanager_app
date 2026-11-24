@@ -7,7 +7,7 @@
  * REG-1〜28 のうち、データ操作として再現できるものを全て通す。
  * stg 専用（データを作って消すため）。
  */
-import { configFor, signIn, signInAnonymously, req, setDoc, listAll, 検証のパスワード } from './fb-rest.mjs';
+import { configFor, signIn, signInAnonymously, req, setDoc, listAll, 検証のパスワード, 運営のアドレス } from './fb-rest.mjs';
 
 const target = process.argv[2] || 'stg';
 if (target !== 'stg') {
@@ -28,7 +28,7 @@ const check = (id, name, expect, actual) => {
   rows.push({ REG: id, 項目: name, 期待: String(expect), 実際: actual, 判定: ok ? 'OK' : 'NG' });
 };
 
-const tokG1 = await signIn(apiKey, 'kanri@example.com', PW);
+const tokG1 = await signIn(apiKey, 運営のアドレス(), PW);
 const stamp = Date.now();
 
 // ── REG-11 記録の編集 ────────────────────────────────────────

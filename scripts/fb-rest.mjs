@@ -42,6 +42,24 @@ export function 検証のパスワード() {
   return 値;
 }
 
+/**
+ * 運営のアドレス（決まりの管理者 isAdmin()・検証環境の 100001 の登録メール・検証の台本が入る口座）。
+ * 公開の倉庫には書かない（2026-11-24 本人「例だけにする」。全部を動かせる口座がどれか外から分かると、
+ * その口座を狙ったなりすましの的になる）。決まりには例のアドレスだけを書き、配るときに
+ * scripts/kimari-sashikomi.mjs が本物に差し替える。
+ * 手元は .env の ADMIN_EMAIL の行（.env.development.local か環境変数でもよい）。
+ * EXPO_PUBLIC_ を付けない（付けるとアプリの束に入って公開される）。呼ばれたときに読む
+ */
+export const 例の運営のアドレス = 'kanri@example.com';
+
+export function 運営のアドレス() {
+  const 値 =
+    process.env.ADMIN_EMAIL || readEnv('.env.development.local').ADMIN_EMAIL || readEnv('.env').ADMIN_EMAIL;
+  if (!値 || !/^[^@\s'"]+@[^@\s'"]+\.[A-Za-z]{2,}$/.test(値) || 値 === 例の運営のアドレス)
+    throw new Error('運営のアドレスがありません。.env に ADMIN_EMAIL=… の行を足してください（scripts/fb-rest.mjs）');
+  return 値;
+}
+
 const IDT = 'https://identitytoolkit.googleapis.com/v1/accounts';
 
 /** メール/パスワードでサインイン。無ければ作る */

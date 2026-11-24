@@ -14,7 +14,7 @@
  *   ・4射に満たない端数 → 断り書きが出るか
  *   ・立ちの途中で交代 → どちらの型にも数えないこと
  */
-import { configFor, signIn, setDoc, 検証のパスワード } from './fb-rest.mjs';
+import { configFor, signIn, setDoc, 検証のパスワード, 運営のアドレス } from './fb-rest.mjs';
 
 const { apiKey, projectId } = configFor('stg');
 if (!apiKey || projectId !== 'kyudoscoremanager-stg') {
@@ -81,7 +81,7 @@ const 記録 = {
   lastModified: いま,
 };
 
-const token = await signIn(apiKey, 'kanri@example.com', PW);
+const token = await signIn(apiKey, 運営のアドレス(), PW);
 await setDoc(projectId, `/groups/${団体}/sessions/${記録.id}`, 記録, token);
 
 console.log(`${projectId} / 団体${団体} に「${記録.title}」を入れました`);

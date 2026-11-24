@@ -446,6 +446,12 @@ npm run ops:prune-live:run
 
 `deploy:rules` は RTDB と Firestore のルールの両方を出します。
 
+Firestore のルールの管理者（`isAdmin()`）のアドレスは、公開の倉庫には例（`kanri@example.com`）だけを書いてあります。
+`deploy:rules`（`deploy:rules:stg` も）は、手元の `.env` の `ADMIN_EMAIL` を差し込んだ写し（`.kimari/firestore.rules` と
+`firebase.kimari.json`。倉庫に入れない）を作ってから配ります（`scripts/kimari-sashikomi.mjs`）。
+素の `firebase deploy` では配らないでください。例のアドレスのまま出て、管理の操作が止まります
+（例のアドレスはメールの確認ができないので、誰も管理者にはなりません）。
+
 ### npm run deploy:web の中身
 
 1. `scripts/build-prod.mjs` → `expo export --platform web --clear` で `dist/` を生成し、

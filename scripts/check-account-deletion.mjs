@@ -12,8 +12,8 @@
  *   4. 持ち主は**他の団体**の deleted_accounts には書けない
  *   5. 口座（Firebase Auth）を自分で消せる
  *
- * 決まりを検証環境に配ってから動かす：
- *   npx firebase deploy --only firestore:rules --project kyudoscoremanager-stg
+ * 決まりを検証環境に配ってから動かす（管理者のアドレスを差し込むので npm の手順で配る）：
+ *   npm run deploy:rules:stg
  */
 import { configFor, signIn, req, setDoc } from './fb-rest.mjs';
 

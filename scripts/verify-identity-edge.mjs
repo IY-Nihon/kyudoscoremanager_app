@@ -9,7 +9,7 @@
  *  3. RTDB の live_sessions 以外のノード（appData / users）
  *  4. group_accounts が消えた団体はどうなるか
  */
-import { configFor, signIn, signInAnonymously, req, setDoc, listAll, 検証のパスワード } from './fb-rest.mjs';
+import { configFor, signIn, signInAnonymously, req, setDoc, listAll, 検証のパスワード, 運営のアドレス } from './fb-rest.mjs';
 
 const { apiKey, projectId, databaseURL } = configFor('stg');
 const PW = 検証のパスワード();
@@ -30,7 +30,7 @@ const check = (cat, name, expect, actual, note = '') => {
   });
 };
 
-const tokG1 = await signIn(apiKey, 'kanri@example.com', PW);
+const tokG1 = await signIn(apiKey, 運営のアドレス(), PW);
 const tokG2 = await signIn(apiKey, 'stg-b@example.com', PW);
 const anon = await signInAnonymously(apiKey);
 const lk1 = await listAll(projectId, `/groups/${G1}/member_lookup`, tokG1, ['memberId']);
@@ -45,7 +45,7 @@ const pid1 = lk1[0].id,
 const 書き換え = await setDoc(
   projectId,
   `/group_accounts/${G2}`,
-  { id: G2, email: 'kanri@example.com' },
+  { id: G2, email: 運営のアドレス() },
   tokG2
 );
 check(

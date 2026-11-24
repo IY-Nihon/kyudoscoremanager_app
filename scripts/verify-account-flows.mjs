@@ -7,7 +7,7 @@
  *  - REG-1 新規団体登録：作成直後の「管理者一覧に載っていない」ユーザーが書く
  *  - REG-4 メール変更：本人だけが変更でき、他団体を乗っ取れないこと
  */
-import { configFor, signIn, signInAnonymously, req, setDoc, 検証のパスワード } from './fb-rest.mjs';
+import { configFor, signIn, signInAnonymously, req, setDoc, 検証のパスワード, 運営のアドレス } from './fb-rest.mjs';
 
 const target = process.argv[2] || 'stg';
 const { apiKey, projectId } = configFor(target);
@@ -42,7 +42,7 @@ check('REG-1 新規登録：自分のメールで自団体を作る', 200, creat
 const spoof = await setDoc(
   projectId,
   `/group_accounts/${NEWID}9`,
-  { id: `${NEWID}9`, name: 'なりすまし', email: 'kanri@example.com', createdAt: stamp },
+  { id: `${NEWID}9`, name: 'なりすまし', email: 運営のアドレス(), createdAt: stamp },
   newTok
 );
 check('なりすまし：他人のメールで団体を作る', 403, spoof.status);

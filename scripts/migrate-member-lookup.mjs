@@ -11,7 +11,7 @@
  * 前提: 第1段階のルール下では認証済みなら全団体に書けるため、
  * 管理者アカウント1つで全団体分を投入できる。
  */
-import { configFor, signIn, listAll, setDoc, req, 検証のパスワード } from './fb-rest.mjs';
+import { configFor, signIn, listAll, setDoc, req, 検証のパスワード, 運営のアドレス } from './fb-rest.mjs';
 
 const [target, ...flags] = process.argv.slice(2);
 const COMMIT = flags.includes('--commit');
@@ -21,7 +21,7 @@ if (!['stg', 'prod'].includes(target)) {
 }
 
 const { apiKey, projectId } = configFor(target);
-const ADMIN_EMAIL = process.env.MIGRATE_EMAIL || 'kanri@example.com';
+const ADMIN_EMAIL = process.env.MIGRATE_EMAIL || 運営のアドレス();
 const ADMIN_PW = process.env.MIGRATE_PW || (target === 'stg' ? 検証のパスワード() : '');
 // 第1段階のルールでは認証済みなら全団体に書けるため、匿名セッションで足りる。
 // パスワードを扱わずに済むので、指定が無ければ匿名で入る。

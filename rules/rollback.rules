@@ -1,11 +1,12 @@
 // 復旧用ルール（NFR-3）
 //
 // ■ 使い方
-//   本番で「部員が自分の団体を開けない」といった問題が起きたときに、
-//   この内容を firestore.rules へ上書きコピーして配る。
+//   本番で「部員が自分の団体を開けない」といった問題が起きたときに、この内容を配る。
+//   管理者のアドレスは例だけを書いてあるので、手元の .env の運営のアドレスを差し込んだ写しを作ってから配る
+//   （2026-11-24。firestore.rules へ上書きコピーはしない）。
 //
-//     cp rules/rollback.rules firestore.rules
-//     npx firebase deploy --only firestore:rules --project kyudoscoremanager
+//     node scripts/kimari-sashikomi.mjs rules/rollback.rules
+//     npx firebase deploy --config firebase.kimari.json --only firestore:rules --project kyudoscoremanager
 //
 // ■ 何を緩めるか
 //   所属の証明（member_claims / isClaimedMember）だけを外す。
@@ -43,7 +44,8 @@ service cloud.firestore {
         ? request.auth.token.email : '';
     }
 
-    // firestore.rules と同じ一覧にしておく（2026-09-03 に5件から1件へ減らした）
+    // firestore.rules と同じ一覧にしておく（2026-09-03 に5件から1件へ減らした）。
+    // 公開の倉庫には例のアドレスだけ（配るときに差し込む。上の使い方）
     function isAdmin() {
       return callerEmail() in [
         'kanri@example.com'

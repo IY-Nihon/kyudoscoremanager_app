@@ -16,6 +16,7 @@ import {
   listAll,
   toFields,
   検証のパスワード,
+  運営のアドレス,
 } from './fb-rest.mjs';
 
 const [stage, target = 'stg'] = process.argv.slice(2);
@@ -28,7 +29,7 @@ const { apiKey, projectId } = configFor(target);
 const PW = 検証のパスワード();
 const G1 = '100001',
   G2 = '100002';
-const EMAIL1 = 'kanri@example.com';
+const EMAIL1 = 運営のアドレス();
 
 console.log(`対象: ${projectId} / ${stage}\n`);
 

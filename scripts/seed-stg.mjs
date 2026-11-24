@@ -11,7 +11,7 @@
  * bootstrap.rules は 2026-09-24 に倉庫から片付けた。要るときは git の履歴から出す
  *（git show 1f8e0d9:rules/bootstrap.rules）。終わったら必ず firestore.rules を配り直す。
  */
-import { configFor, signIn, setDoc, req, 検証のパスワード } from './fb-rest.mjs';
+import { configFor, signIn, setDoc, req, 検証のパスワード, 運営のアドレス } from './fb-rest.mjs';
 
 const { apiKey, projectId } = configFor('stg');
 if (!apiKey || projectId !== 'kyudoscoremanager-stg') {
@@ -27,7 +27,7 @@ const GROUPS = [
   {
     id: '100001',
     name: 'テスト団体A（管理者メール）',
-    email: 'kanri@example.com',
+    email: 運営のアドレス(),
     parentDoc: true,
     members: 6,
   },
