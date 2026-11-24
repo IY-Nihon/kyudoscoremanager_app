@@ -9,7 +9,7 @@
  *
  * 事前に、投入のための緩い決まり（bootstrap.rules）を適用しておくこと（既定は全拒否のため）。
  * bootstrap.rules は 2026-09-24 に倉庫から片付けた。要るときは git の履歴から出す
- *（git show 1f8e0d9:rules/bootstrap.rules）。終わったら必ず firestore.rules を配り直す。
+ *（git show 87cf6cc:rules/bootstrap.rules）。終わったら必ず firestore.rules を配り直す。
  */
 import { configFor, signIn, setDoc, req, 検証のパスワード, 運営のアドレス } from './fb-rest.mjs';
 

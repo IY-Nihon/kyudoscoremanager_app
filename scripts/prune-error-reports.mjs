@@ -55,9 +55,9 @@ if (!['stg', 'prod'].includes(対象)) {
 const 直した = [
   {
     印: /ms timeout exceeded|A network error occurred\./,
-    訳: 'web のアイコンの字体が読めない（2026-09-20、1759c5f）',
+    訳: 'web のアイコンの字体が読めない（2026-09-20、dd85555）',
   },
-  { 印: /^Script error\.$/, 訳: '中身の無い便り。送らなくした（2026-09-20、1759c5f）' },
+  { 印: /^Script error\.$/, 訳: '中身の無い便り。送らなくした（2026-09-20、dd85555）' },
   { 印: /sw\.js load failed/, 訳: 'Service Worker の登録の失敗。登録は catch 済み' },
   {
     印: /INTERNAL ASSERTION FAILED|exclusive access to the persistence layer/,
