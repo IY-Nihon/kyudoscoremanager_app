@@ -76,6 +76,16 @@ const styles = StyleSheet.create({
   // 読み取り中に待った秒と、閉じても読み続けることの説明（2026-11-20）
   待った秒の字: { marginTop: 8, fontSize: 13, color: 色.墨_66, fontVariant: ['tabular-nums'] },
   待つ間の説明: { marginTop: 10, fontSize: 13, color: 色.墨_66, textAlign: 'center', lineHeight: 20 },
+  // 読み取り中の「やめる」（2026-11-25）。確かめの画面の「撮り直す」と同じ控えめな形
+  やめるボタン: {
+    marginTop: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 32,
+    borderRadius: 8,
+    backgroundColor: 色.地,
+    alignItems: 'center',
+  },
+  やめるボタンの字: { color: 色.青, fontSize: 15, fontWeight: '600' },
   legendRow: { flexDirection: 'row', gap: 16, marginBottom: 14 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   legendDot: { width: 12, height: 12, borderRadius: 3 },

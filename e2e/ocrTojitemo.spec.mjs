@@ -51,16 +51,18 @@ async function 中継を止めておく(page, 状態 = 200) {
       });
     }
   );
-  // 改善のための保存は本物へ送らない
-  await page.route(/(?:workers\.dev|127\.0\.0\.1:8788)\/hozon/, (route) =>
-    route.fulfill({
+  // 改善のための保存は本物へ送らない（送った文は取っておき、印を確かめる）
+  const 保存 = [];
+  await page.route(/(?:workers\.dev|127\.0\.0\.1:8788)\/hozon/, (route) => {
+    保存.push(route.request().postData() || '');
+    return route.fulfill({
       status: 200,
       contentType: 'application/json',
       headers: { 'access-control-allow-origin': '*' },
       body: '{"ok":true}',
-    })
-  );
-  return { 開ける: () => 開ける(), 呼ばれた: () => 呼ばれた };
+    });
+  });
+  return { 開ける: () => 開ける(), 呼ばれた: () => 呼ばれた, 保存: () => 保存 };
 }
 
 /** 記録画面で立ち順の写真を選んで読み始め、読み取り中の画面まで進める */
@@ -126,6 +128,36 @@ test.describe('閉じても読み続ける', () => {
     await expect(page.getByText('記録表に反映する', { exact: true })).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText('架空二(ゲスト)', { exact: true })).toBeVisible();
     expect(中継.呼ばれた()).toBe(1);
+  });
+
+  test('読み取り中の「やめる」は確かめてから写真を選ぶ画面に戻り、届いた答えは出さない（11/25 本人「足す」）', async ({
+    page,
+  }) => {
+    test.setTimeout(180_000);
+    const 中継 = await 中継を止めておく(page);
+    await 読み始める(page);
+    // 「続ける」なら読み取り中のまま
+    await page.getByTestId('ocr-yameru').click();
+    await expect(page.getByTestId('アプリの窓')).toContainText('読み取りをやめますか？');
+    await page.getByTestId('窓のボタン-続ける').click();
+    await expect(page.getByText('AIが立ち順表を読み取っています...', { exact: true })).toBeVisible();
+    // やめる。写真は残り、すぐ読み直せる
+    await page.getByTestId('ocr-yameru').click();
+    await page.getByTestId('窓のボタン-やめる').click();
+    await expect(page.getByText('この画像で解析する', { exact: true })).toBeVisible();
+    await expect(page.getByText('1枚目', { exact: true })).toBeVisible();
+    // 届いても確かめの画面にはならない。ログには、やめた印を付けて送る
+    中継.開ける();
+    await expect
+      .poll(() => 中継.保存().some((文) => 文.includes('読んでいる途中でやめた')), { timeout: 30_000 })
+      .toBe(true);
+    await expect(page.getByText('記録表に反映する', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('この画像で解析する', { exact: true })).toBeVisible();
+    // 閉じても帯は出ない（預けていない）
+    await page.getByTestId('ocr-tojiru').click();
+    await expect(page.getByText('画像から立ち順を登録', { exact: true })).toBeHidden();
+    await page.waitForTimeout(1500);
+    await expect(page.getByTestId('読み取りの届いた帯')).toHaveCount(0);
   });
 
   test('閉じたあとに読めなかったときも帯で知らせ、[見る] で同じ写真と訳の出た窓が開く', async ({ page }) => {
