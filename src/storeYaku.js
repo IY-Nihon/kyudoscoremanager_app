@@ -2,7 +2,8 @@
 
 /**
  * 店の操作のうち、部員の役（groups/{団体}/config/roles）を書くもの（2026-11-19 本人）。
- * 書けるのは管理者（団体の口座＋管理者の合言葉）だけ（決まりの match /config/roles。運営でもできない）。
+ * 書けるのは管理者（団体の口座＋管理者の合言葉）と、最初からある運営の役の人（＋管理者の合言葉）だけ
+ *（決まりの match /config/roles。運営は 11/25 本人「運営の役の人もできる」。作った役の人はできない）。
  * 手元の 役の設定 を先に変え、雲への送信は待たない（通信できないときに画面が止まらないように）。
  * 断られたら（管理者の印が切れたなど）知らせる。役の見張り（useScoreStore の listenToConfig）が雲の中身に戻す。
  * 中身の決まり（部品・最初の 4 つ・名前の形）は src/yaku.js。
@@ -11,7 +12,7 @@
 const 役の決まり = require('./yaku');
 const { Alert, Firebaseの器, Firestore } = require('./storeShared');
 
-const 断りの文 = '団体のアカウントで、管理者モードのときだけ役を決められます';
+const 断りの文 = '団体のアカウントか運営の役の人が、管理者モードのときだけ役を決められます';
 
 const 役の操作 = (書く, 状態) => {
   const 置き場 = () => Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/config`, 'roles');

@@ -137,7 +137,7 @@ service cloud.firestore {
     // admin_sessions/{団体}_{uid} へ 12 時間の期限を書く。端末からは書けない（下の match /admin_sessions）。
     // 合言葉が要るのは、前から画面で管理者モード（団体のパスワード）が要った操作だけ（11/18 本人「団体のパスワードがいるものを
     // 変えたくない」）。決まりで見分けているのは、招待リンクを作る・役を決める（config/roles）と、運営の役の人の
-    // 個人IDを見る・保存した記録を直す（下の memberAdmin）。記録を消す・ゴミ箱・メンバー・練習日・設定は、
+    // 個人IDを見る・保存した記録を直す（下の memberAdmin）・役を決める（11/25。match /config/roles）。記録を消す・ゴミ箱・メンバー・練習日・設定は、
     // 団体の口座なら管理者モードなしでもできる（画面も同じ。src/yaku.js の 操作）ので、持ち主なら通す。
     // 団体の口座が保存した記録を直す（画面では管理者モードの中）は、送り直しと見分ける作りが要るので 4 段目で決める
     // 印は端末ごと（11/19 本人）：印に書いたログインの時刻（authTime）が、今の証の auth_time と同じときだけ効く。
@@ -176,6 +176,12 @@ service cloud.firestore {
       let rid = r == null ? 'jibun' : r.data.get('割り当て', {}).get(claim().data.memberId, 'jibun');
       let defs = r == null ? {} : r.data.get('役', {});
       return (rid in defs && defs[rid].get('部品', null) is list) ? defs[rid].get('部品', []) : presetParts(rid);
+    }
+    // 所属の証のある部員の、今の役の id（割り当てが無ければ部員（自分））。書く前の割り当てで見るので、
+    // 同じ書き込みで自分に運営を割り当てても通らない
+    function memberRoleId(groupId) {
+      let r = get(/databases/$(database)/documents/groups/$(groupId)/config/roles);
+      return r == null ? 'jibun' : r.data.get('割り当て', {}).get(claim().data.memberId, 'jibun');
     }
     // 所属の証のある部員で、役にその部品があるか
     function memberCan(groupId, part) {
@@ -442,11 +448,14 @@ service cloud.firestore {
         allow read: if canAccess(groupId);
         allow write: if isGroupOwner(groupId);
       }
-      // 部員の役（2026-11-19）。役を作る・割り当てるのは、団体の口座で管理者の合言葉を入れているときだけ
-      // （運営でもできない：11/13 本人「役の割り当ては団体の口座だけ」）
+      // 部員の役（2026-11-19）。役を作る・変える・割り当てるのは、団体の口座で管理者の合言葉を入れているときと、
+      // 最初からある運営の役（id が unei。名前を変えても同じ役）の人が管理者の合言葉を入れているとき
+      // （11/25 本人「運営の役の人もできる」「運営の役の人だけ」。前は 11/13 の「役の割り当ては団体の口座だけ」）。
+      // 作った役の人は、部品を全部持っていてもできない（src/yaku.js の 持てる役）
       match /config/roles {
         allow read: if canAccess(groupId);
-        allow write: if isGroupAdmin(groupId);
+        allow write: if isGroupAdmin(groupId)
+          || (isClaimedMember(groupId) && memberRoleId(groupId) == 'unei' && hasAdminSession(groupId));
       }
       match /officialPracticeDays/{docId} {
         allow read: if canAccess(groupId);

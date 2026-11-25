@@ -1068,7 +1068,7 @@ const SettingsScreen = () => {
                   <Icons.Ionicons name="chevron-forward" size={18} color={基本色.灰} />
                 </TouchableOpacity>
               )}
-              {/* 部員の役（2026-11-19）。決めるのは団体の口座で管理者モードのときだけ（src/YakuModal.js） */}
+              {/* 部員の役（2026-11-19）。決めるのは団体の口座か運営の役の人で、管理者モードのときだけ（11/25 本人。src/YakuModal.js） */}
               {役を決められる && (
                 <TouchableOpacity
                   style={styles.item}

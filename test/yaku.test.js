@@ -77,13 +77,46 @@ test('運営でも合言葉の要る操作は管理者モードのときだけ�
   assert.strictEqual(役.できるか(個人(設定, { isAdminMode: true }), '記録を直す'), true);
   assert.strictEqual(役.できるか(個人(設定, { isAdminMode: true }), '招待リンクを作る'), true);
   for (const 名 of [
-    '役を決める',
     'アカウントを削除する',
     '管理者の合言葉を変える',
     '全員の個人IDを新しくする',
     '紹介の許可',
   ])
     assert.strictEqual(役.できるか(個人(設定, { isAdminMode: true }), 名), false, 名);
+});
+
+test('役を決めるのは、団体の口座と最初からある運営の役の人だけ。どちらも管理者モード（11/25 本人）', () => {
+  const 全部 = ['全員を見る', '付ける', '直す', '消す', 'メンバー', '出欠', '設定'];
+  const 設定 = {
+    // 運営の名前と部品を変えても、運営の役（id）のまま
+    役: {
+      unei: { 名: '主将', 部品: ['全員を見る', '付ける', 'メンバー'] },
+      r_zenbu: { 名: '全部', 部品: 全部 },
+    },
+    割り当て: { m1: 'unei', m2: 'r_zenbu', m3: 'zenin' },
+  };
+  const 管 = { isAdminMode: true };
+  assert.strictEqual(役.できるか(個人(設定, 管), '役を決める'), true, '運営＋管理者モード');
+  assert.strictEqual(役.できるか(個人(設定), '役を決める'), false, '運営で管理者モードでない');
+  assert.strictEqual(
+    役.できるか(個人(設定, { ...管, myMemberId: 'm2' }), '役を決める'),
+    false,
+    '作った役（部品は全部）'
+  );
+  assert.strictEqual(
+    役.できるか(個人(設定, { ...管, myMemberId: 'm3' }), '役を決める'),
+    false,
+    '部員（全員）'
+  );
+  assert.strictEqual(役.できるか({ activeRole: 'group', isAdminMode: true }, '役を決める'), true);
+  assert.strictEqual(役.できるか({ activeRole: 'group', isAdminMode: false }, '役を決める'), false);
+  assert.strictEqual(役.自分の役id(個人(設定)), 'unei');
+  assert.strictEqual(役.自分の役id({ activeRole: 'group' }), null);
+  // 使い方の一覧に使う：役の id で見る。部品だけでは持たない
+  assert.strictEqual(役.役で持つか('unei', [], '役を決める'), true);
+  assert.strictEqual(役.役で持つか('r_zenbu', 全部, '役を決める'), false);
+  assert.strictEqual(役.部品で持つか(全部, '役を決める'), false);
+  assert.strictEqual(役.役で持つか('unei', 全部, 'アカウントを削除する'), false);
 });
 
 test('作った役・名前を変えた最初の役・消した役', () => {

@@ -79,6 +79,21 @@ async function 個人IDの行の数(名前) {
   ).length;
 }
 
+/**
+ * 名簿でその名前の人を引き、役の文書（config/roles）の割り当てで、その人たちに付いた役の id の並び。
+ * 同じ名前の人が何人かいれば全員分（ほかの機種が足した人も含む）。エミュレーターを管理の資格で読む
+ */
+async function 割り当てた役(名前) {
+  const 根 = `https://firestore.googleapis.com/v1/projects/kyudoscoremanager-stg/databases/(default)/documents/groups/${団体}`;
+  const 頭 = { headers: { Authorization: 'Bearer owner' } };
+  const 人たち = ((await (await fetch(`${根}/members?pageSize=300`, 頭)).json()).documents || []).filter(
+    (文書) => 文書.fields?.name?.stringValue === 名前
+  );
+  const 役の文書 = await (await fetch(`${根}/config/roles`, 頭)).json();
+  const 割り当て = 役の文書.fields?.['割り当て']?.mapValue?.fields || {};
+  return 人たち.map((文書) => 割り当て[文書.name.split('/').pop()]?.stringValue).filter(Boolean);
+}
+
 /** 上のタブ（role="tab"）。字で探すと、裏に残った画面の見出し（設定の「設定」など）を掴んで押せずに待ち続けた */
 const タブ = (page, 名) => page.getByRole('tab', { name: 名 }).first();
 
@@ -265,13 +280,15 @@ test('部員の役：持ち主が作って割り当て、個人ログインの�
   await 合言葉の窓.getByLabel('管理者の合言葉').fill(合言葉);
   await 合言葉の窓.getByTestId('管理者の合言葉を決める').click();
   await expect(合言葉の窓).toHaveCount(0, { timeout: 30_000 });
-  // 合言葉を変える・部員の役は団体の口座だけ
+  // 合言葉を変えるは団体の口座だけ。部員の役は運営の役の人も決められる（11/25 本人）
   await expect(部員の頁.getByTestId('管理者の合言葉を変える')).toHaveCount(0);
-  await expect(部員の頁.getByTestId('部員の役を開く')).toHaveCount(0);
+  await expect(部員の頁.getByTestId('部員の役を開く'), '運営に部員の役が出ない').toBeVisible({
+    timeout: 20_000,
+  });
   // メンバーの一覧（管理できる）が出る
   await タブ(部員の頁, 'メンバー').click();
   await expect(部員の頁.getByText('自分の情報', { exact: true })).toHaveCount(0, { timeout: 20_000 });
-  // 管理者モードの運営は、ほかの人の個人IDが見え、招待リンクを作れる（決まりの memberAdmin）。役は選べない（団体の口座だけ）
+  // 管理者モードの運営は、ほかの人の個人IDが見え、招待リンクを作れる（決まりの memberAdmin）。役も選べる（11/25 本人）
   // 一覧の中で探す（字だけで探すと、裏に残った分析の画面の順位の名前を掴む）
   await 部員の頁.getByTestId('メンバーの一覧').getByText('部員1', { exact: true }).first().click();
   const 招待の欄 = 部員の頁.getByTestId('招待リンクの欄');
@@ -280,7 +297,7 @@ test('部員の役：持ち主が作って割り当て、個人ログインの�
   await expect(部員の頁.getByText(/^[A-Z0-9]{6}$/).first(), '運営に個人IDが見えない').toBeVisible({
     timeout: 20_000,
   });
-  await expect(部員の頁.getByTestId('役を選ぶ欄')).toHaveCount(0);
+  await expect(部員の頁.getByTestId('役を選ぶ欄'), '運営に役を選ぶ欄が出ない').toBeVisible();
   const 作る = 招待の欄.getByText('招待リンクを作る', { exact: true });
   const 作り直す = 招待の欄.getByText('招待リンクを作り直す', { exact: true });
   await expect(作る.or(作り直す)).toBeVisible({ timeout: 20_000 });
@@ -300,6 +317,15 @@ test('部員の役：持ち主が作って割り当て、個人ログインの�
   await expect(部員の頁.getByText(/^[A-Z0-9]{6}$/).first(), '運営が足した人に個人IDが付かない').toBeVisible({
     timeout: 30_000,
   });
+  // 管理者モードの運営が、足した人に役を割り当てる（11/25 本人「運営の役の人もできる」）。決まりが通したかは、
+  // エミュレーターの役の文書を管理の資格で読んで確かめる（断られると手元だけ変わり、窓で知らせて雲の中身に戻る）
+  const 運営の役の欄 = 部員の頁.getByTestId('役を選ぶ欄');
+  await 運営の役の欄.getByTestId('役を選ぶ-zenin').click();
+  await expect(運営の役の欄.getByTestId('役を選ぶ-zenin')).toHaveAttribute('aria-pressed', 'true');
+  await expect
+    .poll(() => 割り当てた役('検査 運営'), { timeout: 30_000, message: '運営の割り当てが雲に届かない' })
+    .toContain('zenin');
+  await expect(部員の頁.getByText('役を保存できませんでした', { exact: true })).toHaveCount(0);
 
   await 部員の場.close();
 });

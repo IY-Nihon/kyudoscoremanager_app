@@ -24,9 +24,11 @@ const 使い方の選び窓 = ({ 見える, 閉じる }) => {
   // 並びは読むたびに新しく作られるので、字にして見張る
   const 部品の字 = useScoreStore((状態) => 役の決まり.自分の部品(状態).join(','));
   const 部品 = React.useMemo(() => (部品の字 ? 部品の字.split(',') : []), [部品の字]);
+  // 役の id（役を決める は運営の役の人だけ。11/25 本人）
+  const 役id = useScoreStore((状態) => 役の決まり.自分の役id(状態));
   const 部員数 = useScoreStore((状態) => (Array.isArray(状態.members) ? 状態.members.length : 0));
   const 記録数 = useScoreStore((状態) => 見える記録数(状態));
-  const 一覧 = React.useMemo(() => 使い方の一覧(役割, 部品), [役割, 部品]);
+  const 一覧 = React.useMemo(() => 使い方の一覧(役割, 部品, 役id), [役割, 部品, 役id]);
   // 「画面でやってみる」で始められる案内の題。指す先（目印）のある手順だけ（説明だけの手順で始めても、
   // 一覧と同じ文が吹き出しに出るだけ。2026-10-19 本人）。役割や中身で出ない手順もここで外れる
   const 案内できる題 = React.useMemo(() => {

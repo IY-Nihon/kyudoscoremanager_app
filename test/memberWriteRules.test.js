@@ -69,8 +69,12 @@ test('卒業生・ゴミ箱・練習日：書くのは団体と、役にその�
   assert.match(卒業生, /allow delete: if isGroupOwner\(groupId\) \|\| memberCan\(groupId, 'メンバー'\);/);
 });
 
-test('役の文書（config/roles）は、団体の口座で管理者の合言葉を入れているときだけ書ける。ほかの config からは書かせない', () => {
-  assert.match(中身('match /config/roles {'), /allow write: if isGroupAdmin\(groupId\);/);
+test('役の文書（config/roles）は、管理者の合言葉を入れた団体の口座と運営の役の人だけが書ける。ほかの config からは書かせない', () => {
+  // 運営の役の人も書ける（11/25 本人）。役の id（unei）で見て、部品では見ない（作った役は部品を全部持っていても書けない）
+  assert.match(
+    中身('match /config/roles {'),
+    /allow write: if isGroupAdmin\(groupId\)\s*\|\| \(isClaimedMember\(groupId\) && memberRoleId\(groupId\) == 'unei' && hasAdminSession\(groupId\)\);/
+  );
   assert.match(中身('match /config/{docId}'), /docId != 'listing' && docId != 'roles'/);
 });
 
