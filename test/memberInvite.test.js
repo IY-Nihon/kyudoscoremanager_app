@@ -562,6 +562,22 @@ test('部員として入る：中継（/kojin）が確かめて証を書く。�
   中継の答え = 返事(200, { 結果: '見つからない' });
   await assert.rejects(部員として入る(道具, 団体, 'ZZZZZZ', '使えません'), /使えません/);
   assert.deepStrictEqual(消した, ['anon-2']);
+  // 卒業・退部にした人（11/26 本人）：「卒業した」「退部した」、学年の無い団体などは「退会した」と知らせて、匿名の口座を消す
+  const 断られる = async (中身, 文) => {
+    認証.currentUser = null;
+    中継の答え = 返事(200, { 結果: '在籍していない', ...中身 });
+    await assert.rejects(部員として入る(道具, 団体, 'K7MP3X'), (誤り) => {
+      assert.strictEqual(誤り.message, 文);
+      return true;
+    });
+  };
+  const 後ろ = 'したメンバーはログインできません。続けて使うときは、団体の管理者に「在籍」に戻してもらってください。';
+  await 断られる({ 在籍: '卒業', 種類: 'univ4', 呼び方: '' }, '卒業' + 後ろ);
+  await 断られる({ 在籍: '退部', 種類: 'school3', 呼び方: '' }, '退部' + 後ろ);
+  await 断られる({ 在籍: '退部', 種類: 'club', 呼び方: '' }, '退会' + 後ろ);
+  await 断られる({ 在籍: '退部', 種類: 'custom', 呼び方: 'club' }, '退会' + 後ろ);
+  await 断られる({ 在籍: '退部' }, '退部' + 後ろ);
+  assert.deepStrictEqual(消した, ['anon-2', 'anon-3', 'anon-4', 'anon-5', 'anon-6', 'anon-7']);
   // 試しすぎ・届かない・App Check
   中継の答え = 返事(429, { error: 'x' });
   await assert.rejects(部員として入る(道具, 団体, 'K7MP3X'), /試した回数が多すぎます/);

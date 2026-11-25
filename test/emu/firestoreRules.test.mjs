@@ -481,6 +481,78 @@ test('管理者の印（11/18）：招待リンクは印のある持ち主だけ
   );
 });
 
+test('卒業・退部にした部員は、団体も記録も読めない。在籍に戻すとまた読める（11/26 本人）', async () => {
+  await 団体を用意する();
+  const 名簿 = `groups/${団体}/members/m1`;
+  const 読めるか = async () => (await 読む(部員, `groups/${団体}`)).通った;
+  for (const [名, 中身] of [
+    ['退部', { id: 'm1', name: '山田 太郎', enrollment: '退部' }],
+    ['卒業', { id: 'm1', name: '山田 太郎', enrollment: '卒業' }],
+    ['前の形の卒業生の印', { id: 'm1', name: '山田 太郎', isAlumni: true }],
+    ['前の形の卒業年度', { id: 'm1', name: '山田 太郎', graduationYear: 2025 }],
+  ]) {
+    await 書く('owner', 名簿, 中身);
+    assert.equal(await 読めるか(), false, `${名}の部員が団体を読めた`);
+    assert.equal((await 読む(部員, `groups/${団体}/sessions/s1`)).通った, false, `${名}の部員が記録を読めた`);
+    assert.equal(
+      (await 作る(部員, `groups/${団体}/sessions/s9`, { id: 's9', archers: [{ name: 'a' }] })).通った,
+      false,
+      `${名}の部員が記録を作れた`
+    );
+  }
+  // 在籍の項目があればそれが正（前の形の印が残っていても在籍に戻した人は読める）
+  await 書く('owner', 名簿, { id: 'm1', name: '山田 太郎', enrollment: '在籍', graduationYear: 2025 });
+  assert.ok(await 読めるか(), '在籍に戻した部員が読めない');
+  // 項目の無い前の形の在籍・学年 0 の印・空の卒業年度は在籍
+  await 書く('owner', 名簿, { id: 'm1', name: '山田 太郎', grade: 2, graduationYear: '', isAlumni: false });
+  assert.ok(await 読めるか(), '前の形の在籍が読めない');
+  // 自分の証は、退部しても読める・消せる（ログアウトの片付け）
+  await 書く('owner', 名簿, { id: 'm1', name: '山田 太郎', enrollment: '退部' });
+  assert.ok((await 読む(部員, `member_claims/${部員.uid}`)).通った, '退部した人が自分の証を読めない');
+  assert.ok((await 消す(部員, `member_claims/${部員.uid}`)).通った, '退部した人が自分の証を消せない');
+});
+
+test('ライブの合言葉の作り直し（11/26 本人）：メンバーを管理できる部員と持ち主だけ。合言葉と待ちの印のほかは変えられない', async () => {
+  await 団体を用意する();
+  const 道 = `groups/${団体}`;
+  const 新しい = 'b'.repeat(32);
+  // 役の無い部員（部員（自分））は作り直せない
+  assert.equal(
+    (await 書く(部員, 道, { liveSecret: 新しい }, { merge: true })).通った,
+    false,
+    '部員（自分）が合言葉を作り直せた'
+  );
+  // 運営（メンバーを管理できる）は作り直せる・待ちの印を立てて消せる
+  await 書く('owner', `groups/${団体}/config/roles`, { 割り当て: { m1: 'unei' } });
+  assert.ok(
+    (await 書く(部員, 道, { liveSecretRenew: true }, { merge: true })).通った,
+    '運営が作り直し待ちの印を立てられない'
+  );
+  assert.ok(
+    (await 書く(部員, 道, { liveSecret: 新しい, liveSecretRenew: false }, { merge: true })).通った,
+    '運営が合言葉を作り直せない'
+  );
+  // 短い合言葉・ほかの項目を一緒に変えるのは断る
+  assert.equal((await 書く(部員, 道, { liveSecret: 'short' }, { merge: true })).通った, false);
+  assert.equal(
+    (await 書く(部員, 道, { liveSecret: 'c'.repeat(32), groupName: 'よそ' }, { merge: true })).通った,
+    false,
+    '合言葉と一緒に団体名を変えられた'
+  );
+  // 作った役でもメンバーを管理できれば作り直せる。メンバーを管理できない役は作り直せない
+  await 書く('owner', `groups/${団体}/config/roles`, {
+    役: { r_kakari: { 名: '出欠の係', 部品: ['付ける', '出欠'] } },
+    割り当て: { m1: 'r_kakari' },
+  });
+  assert.equal(
+    (await 書く(部員, 道, { liveSecret: 'd'.repeat(32) }, { merge: true })).通った,
+    false,
+    'メンバーを管理できない役が作り直せた'
+  );
+  // 持ち主はいつでも書ける
+  assert.ok((await 書く(持ち主, 道, { liveSecret: 'e'.repeat(32) }, { merge: true })).通った);
+});
+
 test('部員の役（11/19）：役の無い部員は付けるだけ。見るだけは作れない。運営は消す・名簿・練習日・設定。直す・個人IDは合言葉も要る', async () => {
   await 団体を用意する();
   const 役の道 = `groups/${団体}/config/roles`;
@@ -544,9 +616,10 @@ test('部員の役（11/19）：役の無い部員は付けるだけ。見るだ
     (await 書く(部員, `groups/${団体}`, { groupName: '弓道部3' }, { merge: true })).通った,
     '運営が団体名を変えられない'
   );
-  assert.equal(
+  // 運営（メンバーを管理できる）はライブの合言葉を作り直せる（11/26 本人。卒業・退部・削除にしたとき。前は書き換えを断っていた）
+  assert.ok(
     (await 書く(部員, `groups/${団体}`, { liveSecret: 'b'.repeat(32) }, { merge: true })).通った,
-    false
+    '運営が合言葉を作り直せない'
   );
   assert.ok((await 書く(部員, `groups/${団体}/trash/s1`, { id: 's1' })).通った);
   assert.equal(

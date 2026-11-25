@@ -313,6 +313,9 @@ const useScoreStore = zustand.create()(
         // ライブを置く枝の合言葉。{ 団体, 合言葉 } の形で持つ。
         // 団体まで一緒に持たないと、移った先で前の団体の枝を使ってしまう
         ライブの合言葉: null,
+        // ライブの合言葉の作り直し待ち（団体の文書の liveSecretRenew。卒業・退部・削除にしたときにライブの途中だった。
+        // 2026-11-26）。端末には残さない（団体の文書の見張りが入れる）
+        ライブの作り直し待ち: false,
         // ライブにつないでいる台数。端末には残さない（開き直せば数え直す）
         ライブの接続台数: 0,
         // 共有のライブに入っているときの、そのライブ専用の枝。
@@ -428,6 +431,7 @@ const useScoreStore = zustand.create()(
               // ライブの合言葉も捨てる。団体を見て弾いてはいるが、
               // 出た人の端末に団体の秘密を残す理由が無い
               ライブの合言葉: null,
+              ライブの作り直し待ち: false,
               activeGroupId: null,
               activeGroupName: null,
               publicGroupId: null,
@@ -1166,6 +1170,9 @@ const useScoreStore = zustand.create()(
             lastLocalChange: 今,
           });
           console.log(`[進級] ${今年} 年の進級を済ませました（${変更たち.length} 人）`);
+          // 卒業にした人がいれば、ライブの合言葉を作り直す（2026-11-26 本人。名簿は上で雲へ書き終えている）
+          if (変更たち.some(({ 変更 }) => 変更.enrollment === 学.在籍.卒業))
+            状態().ライブの合言葉を作り直す();
           return { 済んだ: true, 人数: 変更たち.length };
         },
         updateCurrentFreshmanTerm: async (期) => {
@@ -1248,6 +1255,23 @@ const useScoreStore = zustand.create()(
         listenToConfig: async () => {
           const { activeGroupId: 団体 } = 状態();
           if (!団体) return;
+          /**
+           * 団体の文書のライブの合言葉を受ける（2026-11-26。卒業・退部・削除にしたら作り直す）。
+           * 作り直されていたら、端末の控えを新しい合言葉に替える（このあと始めるライブは新しい枝。今入っているライブは
+           * いまのライブの枝 で続く）。作り直し待ち（ライブの途中だった）なら、メンバーを管理できる端末が作り直す
+           */
+          const ライブの合言葉の便りを受ける = (この団体, 団体の中身) => {
+            if (状態().activeGroupId !== この団体) return;
+            const 新しい = 秘.ライブの枝(団体の中身.liveSecret);
+            const 控え = 状態().ライブの合言葉;
+            if (新しい && 控え && 控え.団体 === この団体 && 控え.合言葉 !== 新しい) {
+              書く({ ライブの合言葉: { 団体: この団体, 合言葉: 新しい } });
+              require('./storeShared').団体の枝に印を置く(新しい);
+            }
+            const 待ち = 団体の中身.liveSecretRenew === true;
+            if (待ち !== !!状態().ライブの作り直し待ち) 書く({ ライブの作り直し待ち: 待ち });
+            if (待ち && 役の決まり.できるか(状態(), 'メンバーを管理する')) 状態().ライブの合言葉を作り直す();
+          };
           const _cfgDb = await waitForDb();
           if (!_cfgDb) {
             console.warn('[Store] listenToConfig: db still undefined after await, aborting');
@@ -1273,6 +1297,7 @@ const useScoreStore = zustand.create()(
             if (団体の帳面.exists()) {
               const 団体の中身 = 団体の帳面.data();
               if (団体の中身.groupName) 書く({ activeGroupName: 団体の中身.groupName });
+              ライブの合言葉の便りを受ける(団体, 団体の中身);
             }
           } catch (誤り) {
             console.warn('[Store] Initial config fetch failed (offline?), falling back to local.', 誤り);
@@ -1335,6 +1360,7 @@ const useScoreStore = zustand.create()(
               if (返り.exists()) {
                 const 団体の中身 = 返り.data();
                 if (団体の中身.groupName) 書く({ activeGroupName: 団体の中身.groupName });
+                ライブの合言葉の便りを受ける(団体, 団体の中身);
               }
             },
             (誤り) => {

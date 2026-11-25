@@ -120,14 +120,32 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/member_claims/$(request.auth.uid));
     }
 
+    // 在籍しているか（2026-11-26 本人：卒業・退部にしたメンバーはログインできなくし、団体の記録もライブも見せない）。
+    // 在籍の項目（enrollment）があればそれが正。無い・知らない値なら、前の形の卒業の印（isAlumni・graduationYear）が無ければ在籍
+    // （アプリの src/gakunen.js の 在籍の状態 と同じ。大学で学年 5 を卒業とした前の形は決まりでは見ない。11/26 に本番で 0 人）。
+    // 中継（kyudo-chukei の src/zaiseki.mjs）も同じ見方でログインと自分の記録を止める
+    function truthy(v) {
+      return v != null && v != false && v != 0 && v != '';
+    }
+    function enrolled(m) {
+      let e = m.data.get('enrollment', '');
+      return e == '在籍'
+        || (e != '卒業' && e != '退部'
+            && !truthy(m.data.get('isAlumni', false)) && !truthy(m.data.get('graduationYear', null)));
+    }
+    function memberEnrolled(groupId, memberId) {
+      let p = /databases/$(database)/documents/groups/$(groupId)/members/$(memberId);
+      return exists(p) && enrolled(get(p));
+    }
+
     // 所属を証明済みの部員か（SEC-4）。
-    // members に今も居ることを確認することで、退部・削除された部員のクレームを
-    // 失効させる（SEC-7）。
+    // members に今も居て、在籍している（卒業・退部でない）ことを確認することで、退部・卒業・削除された部員の
+    // クレームを失効させる（SEC-7。卒業・退部は 11/26 から。前は名簿に文書が在れば通していた）。
     function isClaimedMember(groupId) {
       return signedIn()
         && claim() != null
         && claim().data.groupId == groupId
-        && exists(/databases/$(database)/documents/groups/$(groupId)/members/$(claim().data.memberId))
+        && memberEnrolled(groupId, claim().data.memberId)
         // 4 桁の個人ID で入った証は、使える終わり（12/3）で止める。招待の証（32 字）・6 字の証は当たらない
         && (!string(claim().data.get('personalId', '')).matches('^[0-9]{4}$') || legacyIdUsable())
         && (groupVerified(groupId) || inGracePeriod());
@@ -330,6 +348,17 @@ service cloud.firestore {
                && !(resource.data.get('liveSecret', null) is string && resource.data.get('liveSecret', '').size() >= 16)));
     }
 
+    // ライブの合言葉を作り直す（2026-11-26 本人：メンバーを卒業・退部・削除にしたら作り直す。11/25 の S7）。
+    // 書くのは卒業・退部・削除にした端末（メンバーを管理できる部員。団体の口座は上の持ち主で通る）。ライブの途中なら
+    // 作り直し待ちの印（liveSecretRenew）だけを立て、ライブが終わってから作り直す（src/useScoreStore.js の ライブの合言葉を作り直す）。
+    // 変えてよいのはこの 2 つだけ。作り直した合言葉も推測できない長さにする
+    function renewsLiveSecret(groupId) {
+      return memberCan(groupId, 'メンバー')
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['liveSecret', 'liveSecretRenew'])
+        && request.resource.data.get('liveSecret', '') is string
+        && request.resource.data.get('liveSecret', '').size() >= 16;
+    }
+
     // 名簿・卒業生の文書に個人ID（personalId）を足す・変えることは断る。個人ID は逆引き表（member_lookup）にだけ置く
     // （C・2026-11-04。名簿は部員も読めるので、全員の個人ID が見えていた）。残っているものを消す・そのまま残すのは通す
     function keepsPersonalIdOut() {
@@ -344,7 +373,8 @@ service cloud.firestore {
       allow create: if isGroupOwner(groupId) || addsLiveSecretOnly(groupId);
       allow update: if isGroupOwner(groupId) || addsLiveSecretOnly(groupId)
         || (memberCan(groupId, '設定')
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['groupName']));
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['groupName']))
+        || renewsLiveSecret(groupId);
       // 団体の文書を消すのはアカウントの削除だけ。入り直して間もないときだけ（recentLogin）
       allow delete: if isGroupOwner(groupId) && recentLogin();
       // list は書かない。団体の一覧化を防ぐ（SEC-5）

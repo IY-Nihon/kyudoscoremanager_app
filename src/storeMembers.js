@@ -166,12 +166,15 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
       return;
     }
     let 直す中身 = Object.assign({}, 変更);
+    const 前の人 = 状態().members.find((部員) => 部員 && 部員.id === 部員ID);
+    let 在籍から抜けた = false;
     // 卒業・退部にしたら、現役だった最後の年度を書き留める（出欠の画面が年度ごとの現役を決めるのに使う）。
     // 在籍に戻したら消す。前の形の卒業の印（graduationYear）も消す（src/gakunen.js の 在籍の状態）
     if (変更.enrollment !== undefined) {
       const 抜けた = 学.在籍.卒業 === 変更.enrollment || 学.在籍.退部 === 変更.enrollment;
       if (変更.leftYear === undefined) 直す中身.leftYear = 抜けた ? 学.年度() : null;
       直す中身.graduationYear = null;
+      在籍から抜けた = 抜けた && !!前の人 && 学.現役か(前の人);
     }
     if (変更.grade !== undefined && 変更.termKi === undefined) {
       // 学年を変えたら期も合わせる（期を使う団体の在籍の学年だけ。その他にしたら期を空にする）
@@ -187,6 +190,25 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
         : 部員
     );
     書く({ members: 直した部員, lastLocalChange: Date.now() });
+    // 在籍から卒業・退部にしたら、ライブの合言葉を作り直す（2026-11-26 本人）。雲の名簿に在籍の印を先に届けてから作り直す
+    //（届く前に作り直すと、その人がまだ団体を読めて新しい合言葉を受け取れてしまう）。在籍の印はいつもの同期でも送るが、
+    // ここでは届くのを待つために名指しで書く（電波が無ければ、つながってから届き、そのあと作り直す）
+    if (在籍から抜けた && Firebaseの器.db) {
+      const 団体 = 状態().activeGroupId;
+      Firestore.setDoc(
+        Firestore.doc(Firebaseの器.db, `groups/${団体}/members`, 部員ID),
+        {
+          enrollment: 直す中身.enrollment,
+          leftYear: 直す中身.leftYear === undefined ? null : 直す中身.leftYear,
+          graduationYear: null,
+        },
+        { merge: true }
+      )
+        .then(() => 状態().activeGroupId === 団体 && 状態().ライブの合言葉を作り直す())
+        .catch((誤り) =>
+          console.warn('[Store] 在籍の印を送れず、ライブの合言葉を作り直せませんでした:', 誤り)
+        );
+    }
     if (変更.name !== undefined || 変更.gender !== undefined || 変更.grade !== undefined) {
       // 射手の並びに、直した名前・性別・学年を写す。部員に結び付いた射手（memberId）だけ。
       // 途中交代で入った人は、名前だけ（交代の欄は名前しか持たない）
@@ -369,6 +391,8 @@ const 部員の操作 = (書く, 状態, そのまま書く) => ({
                 個人ID.消した行()
               )
             : null,
+          // 在籍していた人を消したら、ライブの合言葉を作り直す（2026-11-26 本人。名簿から消えたので、もう団体を読めない）
+          消す人 && 学.現役か(消す人) ? 状態().ライブの合言葉を作り直す() : null,
           // その人の招待リンクを取り消す（名簿が空になっても残らないよう名指しで）。運営の役の人は管理者モードのときだけ
           状態().activeRole === 'group' || 役の決まり.できるか(状態(), '招待リンクを作る')
             ? require('./memberInvite').招待を取り消す(

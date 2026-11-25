@@ -9,6 +9,7 @@
 const {
   Alert,
   Firebaseの器,
+  Firestore,
   IS_WEB,
   RTDB,
   restampChangedArchers,
@@ -27,6 +28,7 @@ const {
   印は盤面を正に,
   参加できるライブ,
   団体の枝,
+  団体の枝に印を置く,
   在席の場所,
   在席を始める,
   場,
@@ -842,6 +844,66 @@ const ライブの操作 = (書く, 状態, そのまま書く) => {
           いまのライブの閲覧枝: null,
         },
       });
+      // ライブの合言葉の作り直し待ち（卒業・退部・削除にしたときにライブの途中だった）なら、抜けたあとに作り直す。
+      // ほかの端末のライブがまだ続いていれば、作り直さずに待ちのまま（2026-11-26）
+      if (状態().ライブの作り直し待ち && 役の決まり.できるか(状態(), 'メンバーを管理する'))
+        setTimeout(() => 状態().ライブの合言葉を作り直す(), 2000);
+    },
+    /**
+     * ライブの合言葉を作り直す（2026-11-26 本人：メンバーを卒業・退部・削除にしたら作り直す。11/25 の S7）。
+     *
+     * ライブは Realtime Database の、団体の合言葉を名前にした枝に置く（src/liveSecret.js）。ライブの側の決まりは
+     * 「合言葉を知っているか」しか見られないので、卒業・退部・削除にした人の端末に前の合言葉が残っていると、今の団体の
+     * ライブを見たり書いたりできる。作り直すと前の合言葉は使えなくなり、今いる人の端末は団体の文書の見張りで新しい
+     * 合言葉を受け取る（useScoreStore の listenToConfig）。卒業・退部・削除にした人は Firestore を読めない（決まりの
+     * isClaimedMember）ので、新しい合言葉は受け取れない。
+     * ライブの途中（参加できるライブがある）なら、作り直し待ちの印（団体の文書の liveSecretRenew）だけを立て、ライブが
+     * 終わってから作り直す（作り直すと、続けている端末と新しく入る端末で枝が割れる）。作り直したら、前の枝に残った
+     * 終わったライブ・共有の道しるべの先・履歴・在席も片付ける（前の合言葉を知る人に残さない）。
+     * 書けるのは団体の口座と、メンバーを管理できる役の人（決まりの renewsLiveSecret）。2 本は走らせない
+     * @returns {Promise<'作り直した'|'待つ'|'無い'|'できない'>}
+     */
+    ライブの合言葉を作り直す: async () => {
+      const { activeGroupId: 団体 } = 状態();
+      if (!Firebaseの器.db || !Firebaseの器.rtdb || !団体) return 'できない';
+      if (!役の決まり.できるか(状態(), 'メンバーを管理する')) return 'できない';
+      if (場.合言葉の作り直し && 場.合言葉の作り直し.団体 === 団体) return 場.合言葉の作り直し.約束;
+      const 約束 = (async () => {
+        const 場所 = Firestore.doc(Firebaseの器.db, `groups/${団体}`);
+        const 今の中身 = (await Firestore.getDoc(場所)).data() || {};
+        const 前 = 秘.ライブの枝(今の中身.liveSecret);
+        // まだ合言葉が無い団体は、次に用意するときに新しく作るので何もしない
+        if (!前) return '無い';
+        const 返り = await RTDB.get(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${前}`));
+        const 節点 = 返り.exists() ? 返り.val() : null;
+        if (参加できるライブ(節点, await サーバー時刻()).出す.length > 0) {
+          if (今の中身.liveSecretRenew !== true)
+            await Firestore.setDoc(場所, { liveSecretRenew: true }, { merge: true });
+          if (状態().activeGroupId === 団体) 書く({ ライブの作り直し待ち: true });
+          return '待つ';
+        }
+        const 新しい = 秘.合言葉を作る();
+        await Firestore.setDoc(場所, { liveSecret: 新しい, liveSecretRenew: false }, { merge: true });
+        if (状態().activeGroupId === 団体) {
+          書く({ ライブの合言葉: { 団体, 合言葉: 新しい }, ライブの作り直し待ち: false });
+          団体の枝に印を置く(新しい);
+        }
+        const 道しるべたち = 道しるべたちを拾う(節点);
+        await Promise.all(
+          Object.keys(節点 || {}).map((名) =>
+            Promise.resolve(ライブを枝ごと消す(前, 名, 道しるべたち[名])).catch(() => {})
+          )
+        );
+        return '作り直した';
+      })().catch((誤り) => {
+        console.warn('[Store] ライブの合言葉を作り直せませんでした', 誤り);
+        return 'できない';
+      });
+      場.合言葉の作り直し = { 団体, 約束 };
+      約束.finally(() => {
+        if (場.合言葉の作り直し && 場.合言葉の作り直し.約束 === 約束) 場.合言葉の作り直し = null;
+      });
+      return 約束;
     },
     // 参加一覧を取り直す。ここでだけ、古いライブの片付けもする。
     // 購読側（listenToLiveSessions）は変化のたびに呼ばれるので、
