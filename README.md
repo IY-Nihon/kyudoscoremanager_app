@@ -172,7 +172,6 @@ src/                   アプリ本体（失った元のソースを自分の配
 assets/                アプリ内で使うアイコン・画像
 pwa/                   PWA用の静的ファイル（デプロイ時にdist/へコピー）
 scripts/               デプロイ・検証・修復・復元のスクリプト（ocr-cells/ は○×を読む網の学習、archive/ は使い終わったもの）
-patches/               patch-package 用の node_modules パッチ
 test/                  単体検査（node --test。npm test で走る）
 e2e/                   本物のブラウザでの検査（Playwright。npm run e2e）
 rules/                 決まりの控え（rollback.rules：ライブの枝を移す前の決まり。戻すときだけ使う）
@@ -468,7 +467,7 @@ Firestore のルールの管理者（`isAdmin()`）のアドレスは、公開�
 キャッシュから使い回され、検証環境を向いた束が本番へ出ます（再現済み）。
 
 iOS は `.github/workflows/` の EAS Build ワークフローで生成します。
-ビルド前に `patch_node_modules.mjs` が CI から実行されます（`patches/` と併用）。
+ビルド前に `patch_node_modules.mjs` が CI から実行されます。
 
 ### 戻し方（配信で問題が出たとき）
 
