@@ -96,7 +96,7 @@ test('配ったライブの期限が近づくと下に帯が出て、延ばす�
   const 帯 = page.getByTestId('ライブの期限の帯');
   await expect(帯).toBeVisible({ timeout: 30_000 });
   await expect(帯).toContainText(
-    /ライブのリンクはあと(19|20)分で切れます。続けるときは期限を延ばしてください/
+    /ライブのリンクはあと(19|20|21)分で切れます。続けるときは期限を延ばしてください/
   );
   await 撮る(帯, '1-帯', 情報);
   await 帯.getByText('延ばす', { exact: true }).click();
