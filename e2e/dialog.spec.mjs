@@ -103,23 +103,27 @@ async function 入る(page) {
 }
 
 test.describe('確認とお知らせ', () => {
-  test('ログインの前でも、空のまま押すとアプリの中に帯が出る', async ({ page }) => {
+  // 入力漏れは欄の下に出す（帯にはしない。2026-11-26 U5）。帯そのものは検査の口（src/AppDialog.js の __帯を出す）で出す
+  test('ログインの前でも、知らせはアプリの中の帯に出る（入力漏れは欄の下）', async ({ page }) => {
     const 窓 = 窓を見張る(page);
     await page.goto('/');
     await 画面が出るまで待つ(page);
 
     await page.getByText('ログイン', { exact: true }).click();
+    await expect(page.getByTestId('入力の誤り-団体ID')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId('アプリの帯')).toHaveCount(0);
 
     // 帯はボタンが1つ以下のとき。押させずに自動で消える
+    await page.evaluate(() => globalThis.__帯を出す('帯の検査です。窓の中で字を打てるか見ます'));
     await expect(page.getByTestId('アプリの帯')).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByTestId('アプリの帯')).toContainText('入力してください');
+    await expect(page.getByTestId('アプリの帯')).toContainText('帯の検査です');
     expect(窓.件, `ブラウザの窓が出た: ${窓.中身.join(' / ')}`).toBe(0);
   });
 
   test('帯はしばらくすると自分で消える', async ({ page }) => {
     await page.goto('/');
     await 画面が出るまで待つ(page);
-    await page.getByText('ログイン', { exact: true }).click();
+    await page.evaluate(() => globalThis.__帯を出す('帯の検査です。窓の中で字を打てるか見ます'));
     const 帯 = page.getByTestId('アプリの帯');
     await expect(帯).toBeVisible({ timeout: 10_000 });
     await expect(帯).toBeHidden({ timeout: 10_000 });
@@ -130,7 +134,7 @@ test.describe('確認とお知らせ', () => {
     // 中へ戻すので、帯の 2.6〜6 秒のあいだ入力欄に打てなかった（ログイン失敗の帯の間は打ち直せない）
     await page.goto('/');
     await 画面が出るまで待つ(page);
-    await page.getByText('ログイン', { exact: true }).click();
+    await page.evaluate(() => globalThis.__帯を出す('帯の検査です。窓の中で字を打てるか見ます'));
     const 帯 = page.getByTestId('アプリの帯');
     await expect(帯).toBeVisible({ timeout: 10_000 });
     await 帯が出きるのを待つ(page);
@@ -223,7 +227,8 @@ test.describe('確認とお知らせ', () => {
 
 test.describe('帯は窓の上に出る', () => {
   // 帯も「出るときだけ置く」形にしていないと、部員の窓の下に隠れて読めない。
-  // 名前を空にして保存を押すと知らせが出るので、そこで見る（保存は止まるので中身は変わらない）
+  // 前は名前を空にして保存を押したときの帯で見ていた。入力漏れは欄の下に出すようになった（2026-11-26 U5）ので、
+  // 名前の欄の下の字を確かめてから、検査の口（src/AppDialog.js の __帯を出す）で帯を出して見る
   test('部員の窓を開いたままでも、知らせの帯が読める', async ({ page }) => {
     const 窓 = 窓を見張る(page);
     await 入る(page);
@@ -242,10 +247,16 @@ test.describe('帯は窓の上に出る', () => {
     await 名前欄.click();
     await 名前欄.fill('');
     await page.getByText('保存する', { exact: true }).first().click();
+    // 入力漏れは欄の下に（帯は出さない）
+    await expect(page.getByTestId('入力の誤り-名前')).toHaveText('名前を入力してください', {
+      timeout: 10_000,
+    });
+    await expect(page.getByTestId('アプリの帯')).toHaveCount(0);
 
+    await page.evaluate(() => globalThis.__帯を出す('帯の検査です。窓の中で字を打てるか見ます'));
     const 帯 = page.getByTestId('アプリの帯');
     await expect(帯).toBeVisible({ timeout: 10_000 });
-    await expect(帯).toContainText('名前を入力してください');
+    await expect(帯).toContainText('帯の検査です');
     expect(窓.件, `ブラウザの窓が出た: ${窓.中身.join(' / ')}`).toBe(0);
 
     // 帯は押す邪魔をしない。消えるのを待たずに、うしろの窓を閉じられること
@@ -261,7 +272,7 @@ test.describe('帯は窓の上に出る', () => {
     await 入る(page);
     await page.getByText('メンバー', { exact: true }).first().click();
 
-    // 新規登録の窓（名前が空）。保存を押すと「名前を入力してください」の帯が出て、保存は止まる
+    // 新規登録の窓（名前が空）。保存を押すと名前の欄の下に「名前を入力してください」が出て、保存は止まる
     // （団体には何も書き込まない）。追加の釦は絵だけなので、読み上げの名前で探す
     const 追加 = page.getByLabel('メンバーを追加', { exact: true });
     await expect(追加, 'メンバーを追加の釦が出ない').toBeVisible({ timeout: 20_000 });
@@ -270,16 +281,22 @@ test.describe('帯は窓の上に出る', () => {
       timeout: 15_000,
     });
     await page.getByText('保存する', { exact: true }).first().click();
+    const 名前の誤り = page.getByTestId('入力の誤り-名前');
+    await expect(名前の誤り).toHaveText('名前を入力してください', { timeout: 10_000 });
 
+    // 帯は検査の口で出す（入力漏れは帯にしなくなった。2026-11-26 U5）
+    await page.evaluate(() => globalThis.__帯を出す('帯の検査です。窓の中で字を打てるか見ます'));
     const 帯 = page.getByTestId('アプリの帯');
     await expect(帯).toBeVisible({ timeout: 10_000 });
-    await expect(帯).toContainText('名前を入力してください');
+    await expect(帯).toContainText('帯の検査です');
     await 帯が出きるのを待つ(page);
 
     // 窓の中の名前欄（うしろの検索欄ではなく）
     const 名前欄 = page.getByPlaceholder('例: 山田 太郎');
     expect(await 確かに打つ(名前欄, 'ab'), '帯が出ている間に、窓の中の名前欄へ字が打てない').toBe(true);
     await expect(帯, '打っている間に帯が消えた（検査が成り立たない）').toBeVisible();
+    // 字を入れ始めたら、欄の下の入力漏れは消える
+    await expect(名前の誤り).toHaveCount(0);
     expect(await 焦点の欄の印(page)).toBe('例: 山田 太郎');
 
     // 帯は Modal ではない専用の箱（body の直下）にあり、窓（react-native-web の Modal は 9999）より手前

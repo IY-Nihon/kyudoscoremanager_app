@@ -90,6 +90,11 @@ const MemberScreen = () => {
   const 案内の部員追加 = 案内.useTutorialTarget('メンバー.追加');
   const [検索の文, 検索の文を置く] = React.useState('');
   const [編集の窓, 編集の窓を出す] = React.useState(false);
+  // 名前が空のまま保存を押したら、欄の下に出す（2026-11-26 U5。前は「お知らせ」の帯）。窓を開き直したら消す
+  const [名前の誤り, 名前の誤りを置く] = React.useState(null);
+  React.useEffect(() => {
+    if (編集の窓) 名前の誤りを置く(null);
+  }, [編集の窓]);
   const [編集中の部員, 編集中の部員を置く] = React.useState(null);
   const [名前の下書き, 名前の下書きを置く] = React.useState('');
   const [性別の下書き, 性別の下書きを置く] = React.useState('未設定');
@@ -428,12 +433,20 @@ const MemberScreen = () => {
             <Text style={styles.label}>名前</Text>
             <TextInput
               aria-label="名前"
-              style={styles.input}
+              style={[styles.input, 名前の誤り ? styles.名前の誤りの枠 : null]}
               value={名前の下書き}
-              onChangeText={名前の下書きを置く}
+              onChangeText={(字) => {
+                名前の下書きを置く(字);
+                if (名前の誤り) 名前の誤りを置く(null);
+              }}
               placeholder="例: 山田 太郎"
               placeholderTextColor={色.灰_薄い}
             />
+            {名前の誤り ? (
+              <Text style={styles.名前の誤り} testID="入力の誤り-名前" accessibilityLiveRegion="polite">
+                {名前の誤り}
+              </Text>
+            ) : null}
             <Text style={styles.inputHelperText}>姓名の間にスペースを入力してください</Text>
             {編集中の部員 && 個人IDを引く(編集中の部員) ? (
               <>
@@ -707,7 +720,7 @@ const MemberScreen = () => {
               style={styles.saveBtn}
               onPress={() => {
                 if (!名前の下書き.trim()) {
-                  Alert.alert('お知らせ', '名前を入力してください');
+                  名前の誤りを置く('名前を入力してください');
                   return;
                 }
                 const 学年 = parseInt(学年の下書き) || 0;
@@ -1117,6 +1130,8 @@ const styles = StyleSheet.create({
     color: 色.黒,
   },
   inputHelperText: { fontSize: 11, color: 色.灰, marginTop: 4, marginLeft: 4 },
+  名前の誤り: { fontSize: 13, color: 色.赤, lineHeight: 19, marginTop: 4, marginLeft: 4 },
+  名前の誤りの枠: { borderColor: 色.赤 },
   まとめて登録の案内: { fontSize: 13, lineHeight: 19, color: 色.灰, marginBottom: 4 },
   genderRow: { flexDirection: 'row', gap: 10 },
   // 一覧のまとめ方（学年ごと｜区分ごと）

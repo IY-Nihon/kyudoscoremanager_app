@@ -51,6 +51,9 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
   const [inquiryEmail, setInquiryEmail] = React.useState('');
   const [inquiryContent, setInquiryContent] = React.useState('');
   const [inquirySending, setInquirySending] = React.useState(false);
+  // 入力漏れ・形の誤りは欄の下に出す（2026-11-26 U5。前は「エラー」の帯）。字を入れ始めたら消す
+  const [欄の誤り, 欄の誤りを置く] = React.useState({});
+  const 誤りを消す = (鍵) => 欄の誤りを置く((前) => (前[鍵] ? { ...前, [鍵]: null } : 前));
   const 送っている = React.useRef(false);
   const [inquiryImages, setInquiryImages] = React.useState([]);
   // 付ける写真の並びは横に流す。パソコンの車の動きは横に読み替える（src/yokoNagashi.js）
@@ -60,6 +63,7 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
     setInquiryEmail('');
     setInquiryContent('');
     setInquiryImages([]);
+    欄の誤りを置く({});
   };
   const pickInquiryImage = async () => {
     try {
@@ -116,21 +120,23 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
     const メール = メールを整える(inquiryEmail);
     // メールアドレスは任意。書いていないことより、
     // 困っていることが伝わらないままになるほうが困る
-    if (メール && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(メール)) {
-      Alert.alert('エラー', 'メールアドレスの形が正しくありません。空のままでも送れます');
-      return;
-    }
-    if (!inquiryContent.trim()) {
-      Alert.alert('エラー', 'お問い合わせ内容を入力してください');
-      return;
-    }
+    const 誤り = {};
+    if (メール && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(メール))
+      誤り.メール = 'メールアドレスの形が正しくありません。空のままでも送れます';
+    if (!inquiryContent.trim()) 誤り.内容 = 'お問い合わせ内容を入力してください';
+    欄の誤りを置く(誤り);
+    if (Object.keys(誤り).length) return;
     送っている.current = true;
     setInquirySending(true);
     try {
       // 送った時刻の控えを「今」にするのと一緒に送る（決まりが 1 人 2 分に 1 件までに絞る。2026-11-03）
       const 一括 = Firestore.writeBatch(db);
       if (auth && auth.currentUser)
-        一括.set(Firestore.doc(db, 'rate_limits', auth.currentUser.uid), { inquiryAt: Firestore.serverTimestamp() }, { merge: true });
+        一括.set(
+          Firestore.doc(db, 'rate_limits', auth.currentUser.uid),
+          { inquiryAt: Firestore.serverTimestamp() },
+          { merge: true }
+        );
       一括.set(Firestore.doc(Firestore.collection(db, 'inquiries')), {
         email: メール,
         content: inquiryContent,
@@ -194,26 +200,56 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
             <TextInput
               aria-label="メールアドレス（任意）"
               autoComplete="email"
-              style={[styles.filterInput, { width: '100%', marginBottom: 10 }]}
+              style={[
+                styles.filterInput,
+                { width: '100%', marginBottom: 欄の誤り.メール ? 4 : 10 },
+                欄の誤り.メール ? 誤りの枠 : null,
+              ]}
               placeholder="メールアドレス（任意）"
               value={inquiryEmail}
-              onChangeText={setInquiryEmail}
+              onChangeText={(字) => {
+                setInquiryEmail(字);
+                誤りを消す('メール');
+              }}
               keyboardType="email-address"
               autoCapitalize="none"
               editable={!inquirySending}
             />
+            {欄の誤り.メール ? (
+              <Text style={誤りの字} testID="入力の誤り-メールアドレス" accessibilityLiveRegion="polite">
+                {欄の誤り.メール}
+              </Text>
+            ) : null}
             <TextInput
               aria-label="お問い合わせ内容"
               style={[
                 styles.filterInput,
-                { width: '100%', marginBottom: 15, height: 120, textAlignVertical: 'top' },
+                {
+                  width: '100%',
+                  marginBottom: 欄の誤り.内容 ? 4 : 15,
+                  height: 120,
+                  textAlignVertical: 'top',
+                },
+                欄の誤り.内容 ? 誤りの枠 : null,
               ]}
               placeholder="お問い合わせ内容"
               value={inquiryContent}
-              onChangeText={setInquiryContent}
+              onChangeText={(字) => {
+                setInquiryContent(字);
+                誤りを消す('内容');
+              }}
               multiline
               editable={!inquirySending}
             />
+            {欄の誤り.内容 ? (
+              <Text
+                style={[誤りの字, { marginBottom: 12 }]}
+                testID="入力の誤り-お問い合わせ内容"
+                accessibilityLiveRegion="polite"
+              >
+                {欄の誤り.内容}
+              </Text>
+            ) : null}
             {inquiryImages.length > 0 ? (
               <ScrollView
                 ref={写真の横流し}
@@ -309,5 +345,9 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
     </Modal>
   );
 };
+
+/** 欄の誤り（入力漏れ・形の誤り）の字と枠。管理者の合言葉の窓の 誤り と同じ大きさ */
+const 誤りの字 = { fontSize: 13, color: 色.赤, lineHeight: 19, alignSelf: 'stretch', marginBottom: 10 };
+const 誤りの枠 = { borderColor: 色.赤 };
 
 module.exports = { 問い合わせの窓 };

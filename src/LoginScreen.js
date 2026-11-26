@@ -119,13 +119,15 @@ const 誤りの文 = (誤り) => {
  * 見出しの付いた入力欄の段。読み上げの名前（aria-label）は、渡さなければ見出しと同じ。
  * 絵 … 左に出す絵の名前（Ionicons）。見せる・見せるを置く を渡すとパスワードの欄にして、見せる／隠すボタンを付ける。
  * 注意 … 欄の下に出す注意（無ければ null）。ほかは TextInput にそのまま渡す
+ * 誤り … 押したときに見つけた入力漏れ（赤い枠と欄の下の字。注意より先に出す）。字を入れ始めたら 誤りを消す で消す
+ *（2026-11-26 U5 本人「見本のとおり」。前は「エラー」の帯で、どの欄か分からないまま数秒で消えた）
  */
-function 入力の段({ 名, 絵, 見せる, 見せるを置く, 注意, ...入力 }) {
+function 入力の段({ 名, 絵, 見せる, 見せるを置く, 注意, 誤り, 誤りを消す, onChangeText, ...入力 }) {
   const 合言葉 = typeof 見せるを置く === 'function';
   return (
     <View style={styles.inputGroup}>
       <Text style={styles.label}>{名}</Text>
-      <View style={styles.inputWrapper}>
+      <View style={[styles.inputWrapper, 誤り ? styles.入力の誤りの枠 : null]}>
         {絵 ? <Icons.Ionicons name={絵} size={20} color={色.灰} style={styles.inputIcon} /> : null}
         <TextInput
           aria-label={名}
@@ -133,6 +135,10 @@ function 入力の段({ 名, 絵, 見せる, 見せるを置く, 注意, ...入�
           placeholderTextColor={色.灰}
           {...(合言葉 ? { secureTextEntry: !見せる } : null)}
           {...入力}
+          onChangeText={(字) => {
+            if (誤り && 誤りを消す) 誤りを消す();
+            if (onChangeText) onChangeText(字);
+          }}
         />
         {合言葉 ? (
           <Pressable onPress={() => 見せるを置く(!見せる)} style={{ padding: 4 }}>
@@ -140,7 +146,13 @@ function 入力の段({ 名, 絵, 見せる, 見せるを置く, 注意, ...入�
           </Pressable>
         ) : null}
       </View>
-      {注意 ? <Text style={styles.入力の注意}>{注意}</Text> : null}
+      {誤り ? (
+        <Text style={styles.入力の注意} testID={`入力の誤り-${名}`} accessibilityLiveRegion="polite">
+          {誤り}
+        </Text>
+      ) : 注意 ? (
+        <Text style={styles.入力の注意}>{注意}</Text>
+      ) : null}
     </View>
   );
 }
@@ -191,6 +203,23 @@ const LoginScreen = () => {
   // 団体の種類（src/gakunen.js の 種類たち）。あとで設定から変えられる
   const [種類の入力, 種類の入力を置く] = React.useState(学.既定の種類);
   const [忘れた窓, 忘れた窓を置く] = React.useState('none');
+  // 入力漏れは欄の下に出す（入力の段 の 誤り。2026-11-26 U5）。窓や画面を替えたら消す
+  const [欄の誤り, 欄の誤りを置く] = React.useState({});
+  React.useEffect(() => 欄の誤りを置く({}), [画面の種類, 忘れた窓]);
+  const 誤りを消す = (鍵) => () =>
+    欄の誤りを置く((前) => {
+      if (!前[鍵]) return 前;
+      const 次 = { ...前 };
+      delete 次[鍵];
+      return 次;
+    });
+  /** [鍵, 値, 空のときの字] の並びから空の欄を欄の下に出す。どれか空なら true（押した処理を止める） */
+  const 空の欄を知らせる = (欄たち) => {
+    const 誤り = {};
+    for (const [鍵, 値, 字] of 欄たち) if (!値) 誤り[鍵] = 字;
+    欄の誤りを置く(誤り);
+    return Object.keys(誤り).length > 0;
+  };
   const [新しいメールの入力, 新しいメールの入力を置く] = React.useState('');
   const [合言葉を見せる, 合言葉を見せるを置く] = React.useState(false);
   // 規約とプライバシーポリシーへの同意。登録の前に取る。
@@ -342,21 +371,26 @@ const LoginScreen = () => {
     Googleのメールを置く(null);
   };
   const Googleで作る = 一度だけ(async () => {
+    if (
+      空の欄を知らせる([
+        ['団体名', 団体名の入力, '団体名を入力してください'],
+        [
+          'パスワード',
+          合言葉の入力,
+          'パスワードを入力してください。団体ログインに使うので、Google で作る場合も必要です',
+        ],
+      ])
+    )
+      return;
+    // 6 文字未満は Firebase が必ず断る。押したところで止める（欄の下にも注意が出ている）
+    if (パスワードが短いか(合言葉の入力)) {
+      欄の誤りを置く({ パスワード: 'パスワードは6文字以上にしてください' });
+      return;
+    }
     if (!規約に同意 || !部員の同意を取る) {
       Alert.alert(
         '確認',
         '利用規約とプライバシーポリシーの同意、および部員本人の同意についての確認にチェックを入れてください。'
-      );
-      return;
-    }
-    if (!団体名の入力) {
-      Alert.alert('エラー', '団体名を入れてください');
-      return;
-    }
-    if (!合言葉の入力) {
-      Alert.alert(
-        'エラー',
-        'パスワードを入れてください。団体ログインに使うので、Google で作る場合も必要です。'
       );
       return;
     }
@@ -366,11 +400,6 @@ const LoginScreen = () => {
         'Google のアカウントの選択が切れました。もう一度お選びください。'
       );
       Googleのメールを置く(null);
-      return;
-    }
-    // 6 文字未満は Firebase が必ず断る。押したところで止める（欄の下にも注意が出ている）
-    if (パスワードが短いか(合言葉の入力)) {
-      Alert.alert('エラー', 'パスワードは6文字以上で設定してください');
       return;
     }
     処理中を置く(true);
@@ -410,7 +439,13 @@ const LoginScreen = () => {
     }
   });
   const メールで作る = 一度だけ(async () => {
-    if (メールの入力 && 合言葉の入力 && 団体名の入力) {
+    if (
+      !空の欄を知らせる([
+        ['団体名', 団体名の入力, '団体名を入力してください'],
+        ['メールアドレス', メールの入力, 'メールアドレスを入力してください'],
+        ['パスワード', 合言葉の入力, 'パスワードを入力してください'],
+      ])
+    ) {
       if (!規約に同意 || !部員の同意を取る) {
         Alert.alert(
           '確認',
@@ -462,8 +497,6 @@ const LoginScreen = () => {
       } finally {
         処理中を置く(false);
       }
-    } else {
-      Alert.alert('エラー', 'すべての項目を入力してください');
     }
   });
   // 確認メールのリンクを押したあと。確かめて、済んでいれば団体を作る
@@ -677,6 +710,8 @@ const LoginScreen = () => {
                 <>
                   <入力の段
                     名="団体ID"
+                    誤り={欄の誤り.団体ID}
+                    誤りを消す={誤りを消す('団体ID')}
                     autoComplete="username"
                     placeholder="例: 123456"
                     value={団体IDの入力}
@@ -685,6 +720,8 @@ const LoginScreen = () => {
                   />
                   <入力の段
                     名="現在のパスワード"
+                    誤り={欄の誤り.パスワード}
+                    誤りを消す={誤りを消す('パスワード')}
                     見せる={合言葉を見せる}
                     見せるを置く={合言葉を見せるを置く}
                     autoComplete="current-password"
@@ -694,6 +731,8 @@ const LoginScreen = () => {
                   />
                   <入力の段
                     名="新しいメールアドレス"
+                    誤り={欄の誤り.新しいメールアドレス}
+                    誤りを消す={誤りを消す('新しいメールアドレス')}
                     autoComplete="email"
                     placeholder="new@example.com"
                     value={新しいメールの入力}
@@ -704,7 +743,17 @@ const LoginScreen = () => {
                   <Pressable
                     style={送るボタンの形(処理中)}
                     onPress={一度だけ(async () => {
-                      if (団体IDの入力 && 合言葉の入力 && 新しいメールの入力) {
+                      if (
+                        !空の欄を知らせる([
+                          ['団体ID', 団体IDの入力, '団体IDを入力してください'],
+                          ['パスワード', 合言葉の入力, 'パスワードを入力してください'],
+                          [
+                            '新しいメールアドレス',
+                            新しいメールの入力,
+                            '新しいメールアドレスを入力してください',
+                          ],
+                        ])
+                      ) {
                         処理中を置く(true);
                         try {
                           // 新しいアドレスへ確認のメールを送る。リンクを開くと切り替わる
@@ -725,8 +774,6 @@ const LoginScreen = () => {
                         } finally {
                           処理中を置く(false);
                         }
-                      } else {
-                        Alert.alert('エラー', '団体ID、パスワード、新しいメールアドレスを入力してください');
                       }
                     })}
                     disabled={処理中}
@@ -740,6 +787,8 @@ const LoginScreen = () => {
                 <>
                   <入力の段
                     名="団体ID"
+                    誤り={欄の誤り.団体ID}
+                    誤りを消す={誤りを消す('団体ID')}
                     autoComplete="username"
                     placeholder="例: 123456"
                     value={団体IDの入力}
@@ -749,7 +798,7 @@ const LoginScreen = () => {
                   <Pressable
                     style={送るボタンの形(処理中)}
                     onPress={一度だけ(async () => {
-                      if (団体IDの入力) {
+                      if (!空の欄を知らせる([['団体ID', 団体IDの入力, '団体IDを入力してください']])) {
                         処理中を置く(true);
                         try {
                           const 団体ID = 整えたID(団体IDの入力);
@@ -776,8 +825,6 @@ const LoginScreen = () => {
                         } finally {
                           処理中を置く(false);
                         }
-                      } else {
-                        Alert.alert('エラー', '団体IDを入力してください');
                       }
                     })}
                     disabled={処理中}
@@ -793,6 +840,8 @@ const LoginScreen = () => {
                     <入力の段
                       名="団体ID"
                       絵="business"
+                      誤り={欄の誤り.団体ID}
+                      誤りを消す={誤りを消す('団体ID')}
                       autoComplete="username"
                       placeholder="例: 123456"
                       value={団体IDの入力}
@@ -804,6 +853,8 @@ const LoginScreen = () => {
                     <入力の段
                       名="パスワード"
                       絵="lock-closed"
+                      誤り={欄の誤り.パスワード}
+                      誤りを消す={誤りを消す('パスワード')}
                       見せる={合言葉を見せる}
                       見せるを置く={合言葉を見せるを置く}
                       autoComplete="current-password"
@@ -816,6 +867,8 @@ const LoginScreen = () => {
                     <入力の段
                       名="個人ID"
                       絵="person"
+                      誤り={欄の誤り.個人ID}
+                      誤りを消す={誤りを消す('個人ID')}
                       // 新しい個人ID は大文字と数字の 6 字（src/kojinId.js）。前の 4 桁も使える終わりまでは入れる
                       placeholder="例: K7MP3X"
                       value={個人IDの入力}
@@ -831,6 +884,8 @@ const LoginScreen = () => {
                       <入力の段
                         名="団体名"
                         絵="ribbon"
+                        誤り={欄の誤り.団体名}
+                        誤りを消す={誤りを消す('団体名')}
                         autoComplete="organization"
                         placeholder="例: ○○弓道部"
                         value={団体名の入力}
@@ -857,6 +912,8 @@ const LoginScreen = () => {
                         <入力の段
                           名="メールアドレス"
                           絵="mail"
+                          誤り={欄の誤り.メールアドレス}
+                          誤りを消す={誤りを消す('メールアドレス')}
                           注意={
                             メールの形が変か(メールの入力)
                               ? '@ を含む形で入れてください（例: example@mail.com）'
@@ -874,6 +931,8 @@ const LoginScreen = () => {
                         名={Googleのメール ? 'パスワード（団体ログインに使う）' : 'パスワード'}
                         aria-label="パスワード"
                         絵="lock-closed"
+                        誤り={欄の誤り.パスワード}
+                        誤りを消す={誤りを消す('パスワード')}
                         見せる={合言葉を見せる}
                         見せるを置く={合言葉を見せるを置く}
                         注意={パスワードが短いか(合言葉の入力) ? '6文字以上にしてください' : null}
@@ -923,7 +982,12 @@ const LoginScreen = () => {
                 onPress={
                   画面の種類 === 'login_group'
                     ? 一度だけ(async () => {
-                        if (団体IDの入力 && 合言葉の入力) {
+                        if (
+                          !空の欄を知らせる([
+                            ['団体ID', 団体IDの入力, '団体IDを入力してください'],
+                            ['パスワード', 合言葉の入力, 'パスワードを入力してください'],
+                          ])
+                        ) {
                           処理中を置く(true);
                           try {
                             const 道具 = { Firestore, FirebaseAuth, db, auth };
@@ -946,13 +1010,16 @@ const LoginScreen = () => {
                           } finally {
                             処理中を置く(false);
                           }
-                        } else {
-                          Alert.alert('エラー', '団体IDとパスワードを入力してください');
                         }
                       })
                     : 画面の種類 === 'login_member'
                       ? 一度だけ(async () => {
-                          if (団体IDの入力 && 個人IDの入力) {
+                          if (
+                            !空の欄を知らせる([
+                              ['団体ID', 団体IDの入力, '団体IDを入力してください'],
+                              ['個人ID', 個人IDの入力, '個人IDを入力してください'],
+                            ])
+                          ) {
                             処理中を置く(true);
                             try {
                               const 団体ID = 整えたID(団体IDの入力);
@@ -977,8 +1044,6 @@ const LoginScreen = () => {
                             } finally {
                               処理中を置く(false);
                             }
-                          } else {
-                            Alert.alert('エラー', '団体IDと個人IDを入力してください');
                           }
                         })
                       : Googleのメール
@@ -1292,6 +1357,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
   入力の注意: { color: 色.赤_淡い, fontSize: 12, marginTop: 6, marginLeft: 2 },
+  入力の誤りの枠: { borderColor: 色.赤_淡い },
   footerLink: { color: 色.金_明るい, fontSize: 15, fontWeight: '600' },
   // 登録時の同意の欄
   同意の枠: { marginTop: 4, marginBottom: 12, gap: 10 },

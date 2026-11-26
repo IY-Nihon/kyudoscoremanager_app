@@ -56,3 +56,25 @@ test('合言葉が違うと入れない', async ({ page }) => {
   });
   await expect(番号欄).toBeVisible();
 });
+
+test('入力漏れは窓でなく欄の下に出て、字を入れ始めると消える（2026-11-26 U5）', async ({ page }) => {
+  await page.goto('/');
+  const 番号欄 = page.getByPlaceholder('例: 123456');
+  await 番号欄.waitFor({ state: 'visible', timeout: 60_000 });
+  // 団体ログイン：両方空
+  await page.getByText('ログイン', { exact: true }).click();
+  await expect(page.getByTestId('入力の誤り-団体ID')).toHaveText('団体IDを入力してください');
+  await expect(page.getByTestId('入力の誤り-パスワード')).toHaveText('パスワードを入力してください');
+  await expect(page.getByTestId('アプリの帯').or(page.getByTestId('アプリの窓'))).toHaveCount(0);
+  // 打ち始めた欄だけ消える
+  await 番号欄.click();
+  await 番号欄.pressSequentially('1', { delay: 20 });
+  await expect(page.getByTestId('入力の誤り-団体ID')).toHaveCount(0);
+  await expect(page.getByTestId('入力の誤り-パスワード')).toBeVisible();
+  // 個人ログインへ替えると消え、個人ID の漏れだけ出る
+  await page.getByText('個人', { exact: true }).click();
+  await expect(page.getByTestId('入力の誤り-パスワード')).toHaveCount(0);
+  await page.getByText('ログイン', { exact: true }).click();
+  await expect(page.getByTestId('入力の誤り-個人ID')).toHaveText('個人IDを入力してください');
+  await expect(page.getByTestId('入力の誤り-団体ID')).toHaveCount(0);
+});
