@@ -32,7 +32,7 @@ test('使い方：項目を押すとその場で動画が流れ、「画面で�
   await expect(page.getByTestId('使い方の中身')).toHaveCount(1);
   await page.getByTestId('使い方-やってみる').click();
   await expect(page.locator('text=/^1 / 1$/')).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByText('○×は押して入れます')).toBeVisible();
+  await expect(page.getByText('○×は押して入力します')).toBeVisible();
 });
 
 test('使い方：動画の無い手順は、動画の枠を出さずに文だけ見せる', async ({ page }) => {
