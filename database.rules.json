@@ -3,16 +3,172 @@
     "live_sessions": {
       "$branch": {
         ".read": "auth != null && $branch.length >= 20 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now)",
-        ".write": "auth != null && $branch.length >= 20 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now || !newData.exists())",
+        ".write": "auth != null && $branch.length >= 20 && $branch.length <= 64 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now || !newData.exists())",
         ".validate": "newData.hasChildren()",
         "$name": {
           "state": {
+            "archers": {
+              "$i": {
+                ".validate": "$i.length <= 3 && $i.matches(/^[0-9]+$/) && newData.hasChildren()",
+                "id": {
+                  ".validate": "newData.isString() && newData.val().length <= 64"
+                },
+                "name": {
+                  ".validate": "newData.isString() && newData.val().length <= 200"
+                },
+                "gender": {
+                  ".validate": "newData.isString() && newData.val().length <= 10"
+                },
+                "grade": {
+                  ".validate": "newData.isNumber() || (newData.isString() && newData.val().length <= 4)"
+                },
+                "isSeparator": {
+                  ".validate": "newData.isBoolean()"
+                },
+                "isTotalCalculator": {
+                  ".validate": "newData.isBoolean()"
+                },
+                "isGuest": {
+                  ".validate": "newData.isBoolean()"
+                },
+                "またぐ合計": {
+                  ".validate": "newData.isBoolean()"
+                },
+                "teamName": {
+                  ".validate": "newData.isString() && newData.val().length <= 100"
+                },
+                "memberId": {
+                  ".validate": "newData.isString() && newData.val().length <= 64"
+                },
+                "lastModified": {
+                  ".validate": "newData.isNumber()"
+                },
+                "bowWeight": {
+                  ".validate": "newData.isNumber() || (newData.isString() && newData.val().length <= 10)"
+                },
+                "hits": {
+                  ".validate": "newData.isNumber()"
+                },
+                "totalShots": {
+                  ".validate": "newData.isNumber()"
+                },
+                "marks": {
+                  "$j": {
+                    ".validate": "$j.length <= 4 && $j.matches(/^[0-9]+$/) && (newData.isString() && newData.val().length <= 2)"
+                  }
+                },
+                "arrowLocations": {
+                  "$j": {
+                    ".validate": "$j.length <= 4 && $j.matches(/^[0-9]+$/) && ((newData.isString() && newData.val().length <= 2) || newData.hasChildren())",
+                    "x": {
+                      ".validate": "newData.isNumber()"
+                    },
+                    "y": {
+                      ".validate": "newData.isNumber()"
+                    },
+                    "targetType": {
+                      ".validate": "newData.isString() && newData.val().length <= 20"
+                    },
+                    "$k": {
+                      ".validate": "newData.isBoolean() || newData.isNumber() || (newData.isString() && newData.val().length <= 200)"
+                    }
+                  }
+                },
+                "lockedBlocks": {
+                  "$j": {
+                    ".validate": "$j.length <= 6 && newData.isBoolean()"
+                  }
+                },
+                "substitutions": {
+                  "$j": {
+                    ".validate": "$j.length <= 20 && (newData.isString() && newData.val().length <= 200)"
+                  }
+                },
+                "substitutionIds": {
+                  "$j": {
+                    ".validate": "$j.length <= 20 && (newData.isString() && newData.val().length <= 64)"
+                  }
+                },
+                "$f": {
+                  ".validate": "newData.isBoolean() || newData.isNumber() || (newData.isString() && newData.val().length <= 200)"
+                }
+              }
+            },
+            "marks_by_id": {
+              "$id": {
+                ".validate": "$id.length <= 64 && newData.hasChildren()",
+                "$j": {
+                  ".validate": "$j.length <= 4 && $j.matches(/^[0-9]+$/) && (newData.isString() && newData.val().length <= 2)"
+                }
+              }
+            },
+            "archer_timestamps": {
+              "$id": {
+                ".validate": "$id.length <= 64 && newData.isNumber()"
+              }
+            },
+            "shotsPerRound": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000"
+            },
+            "timestamp": {
+              ".validate": "newData.isNumber()"
+            },
+            "updated_at": {
+              ".validate": "newData.isNumber()"
+            },
+            "reset_at": {
+              ".validate": "newData.isNumber()"
+            },
+            "history_at": {
+              ".validate": "newData.isNumber()"
+            },
+            "history_len": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            },
+            "history_max": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            },
+            "history_kind": {
+              ".validate": "newData.isString() && newData.val().length <= 10"
+            },
+            "status": {
+              ".validate": "newData.isString() && newData.val().length <= 20"
+            },
+            "期限": {
+              ".validate": "newData.isNumber()"
+            },
+            "共有の枝": {
+              ".validate": "newData.isString() && newData.val().length <= 64"
+            },
+            "閲覧の枝": {
+              ".validate": "newData.isString() && newData.val().length <= 64"
+            },
             "移った先": {
-              ".validate": "!root.child('live_limits').child($branch).exists()"
+              ".validate": "(newData.isString() && newData.val().length <= 64) && !root.child('live_limits').child($branch).exists()"
             },
             "移った先の閲覧枝": {
-              ".validate": "!root.child('live_limits').child($branch).exists()"
+              ".validate": "(newData.isString() && newData.val().length <= 64) && !root.child('live_limits').child($branch).exists()"
+            },
+            "種": {
+              "編集": {
+                ".validate": "newData.isString() && newData.val().length <= 64"
+              },
+              "閲覧": {
+                ".validate": "newData.isString() && newData.val().length <= 64"
+              },
+              "$f": {
+                ".validate": false
+              }
+            },
+            "鍵が要るか": {
+              ".validate": "newData.isBoolean()"
+            },
+            "$f": {
+              ".validate": "newData.isBoolean() || newData.isNumber() || (newData.isString() && newData.val().length <= 200)"
             }
+          },
+          "$f": {
+            ".validate": false
           }
         }
       }
@@ -20,41 +176,482 @@
     "live_history": {
       "$branch": {
         ".read": "auth != null && $branch.length >= 20 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now)",
-        ".write": "auth != null && $branch.length >= 20 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now || !newData.exists())",
-        ".validate": "newData.hasChildren()"
+        ".write": "auth != null && $branch.length >= 20 && $branch.length <= 64 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now || !newData.exists())",
+        ".validate": "newData.hasChildren()",
+        "$name": {
+          "$n": {
+            ".validate": "$n.length <= 7 && $n.matches(/^[0-9]+$/) && newData.hasChildren()",
+            "前": {
+              "$i": {
+                ".validate": "$i.length <= 3 && $i.matches(/^[0-9]+$/) && newData.hasChildren()",
+                "id": {
+                  ".validate": "newData.isString() && newData.val().length <= 64"
+                },
+                "name": {
+                  ".validate": "newData.isString() && newData.val().length <= 200"
+                },
+                "gender": {
+                  ".validate": "newData.isString() && newData.val().length <= 10"
+                },
+                "grade": {
+                  ".validate": "newData.isNumber() || (newData.isString() && newData.val().length <= 4)"
+                },
+                "isSeparator": {
+                  ".validate": "newData.isBoolean()"
+                },
+                "isTotalCalculator": {
+                  ".validate": "newData.isBoolean()"
+                },
+                "isGuest": {
+                  ".validate": "newData.isBoolean()"
+                },
+                "またぐ合計": {
+                  ".validate": "newData.isBoolean()"
+                },
+                "teamName": {
+                  ".validate": "newData.isString() && newData.val().length <= 100"
+                },
+                "memberId": {
+                  ".validate": "newData.isString() && newData.val().length <= 64"
+                },
+                "lastModified": {
+                  ".validate": "newData.isNumber()"
+                },
+                "bowWeight": {
+                  ".validate": "newData.isNumber() || (newData.isString() && newData.val().length <= 10)"
+                },
+                "hits": {
+                  ".validate": "newData.isNumber()"
+                },
+                "totalShots": {
+                  ".validate": "newData.isNumber()"
+                },
+                "marks": {
+                  "$j": {
+                    ".validate": "$j.length <= 4 && $j.matches(/^[0-9]+$/) && (newData.isString() && newData.val().length <= 2)"
+                  }
+                },
+                "arrowLocations": {
+                  "$j": {
+                    ".validate": "$j.length <= 4 && $j.matches(/^[0-9]+$/) && ((newData.isString() && newData.val().length <= 2) || newData.hasChildren())",
+                    "x": {
+                      ".validate": "newData.isNumber()"
+                    },
+                    "y": {
+                      ".validate": "newData.isNumber()"
+                    },
+                    "targetType": {
+                      ".validate": "newData.isString() && newData.val().length <= 20"
+                    },
+                    "$k": {
+                      ".validate": "newData.isBoolean() || newData.isNumber() || (newData.isString() && newData.val().length <= 200)"
+                    }
+                  }
+                },
+                "lockedBlocks": {
+                  "$j": {
+                    ".validate": "$j.length <= 6 && newData.isBoolean()"
+                  }
+                },
+                "substitutions": {
+                  "$j": {
+                    ".validate": "$j.length <= 20 && (newData.isString() && newData.val().length <= 200)"
+                  }
+                },
+                "substitutionIds": {
+                  "$j": {
+                    ".validate": "$j.length <= 20 && (newData.isString() && newData.val().length <= 64)"
+                  }
+                },
+                "$f": {
+                  ".validate": "newData.isBoolean() || newData.isNumber() || (newData.isString() && newData.val().length <= 200)"
+                }
+              }
+            },
+            "後": {
+              "$i": {
+                ".validate": "$i.length <= 3 && $i.matches(/^[0-9]+$/) && newData.hasChildren()",
+                "id": {
+                  ".validate": "newData.isString() && newData.val().length <= 64"
+                },
+                "name": {
+                  ".validate": "newData.isString() && newData.val().length <= 200"
+                },
+                "gender": {
+                  ".validate": "newData.isString() && newData.val().length <= 10"
+                },
+                "grade": {
+                  ".validate": "newData.isNumber() || (newData.isString() && newData.val().length <= 4)"
+                },
+                "isSeparator": {
+                  ".validate": "newData.isBoolean()"
+                },
+                "isTotalCalculator": {
+                  ".validate": "newData.isBoolean()"
+                },
+                "isGuest": {
+                  ".validate": "newData.isBoolean()"
+                },
+                "またぐ合計": {
+                  ".validate": "newData.isBoolean()"
+                },
+                "teamName": {
+                  ".validate": "newData.isString() && newData.val().length <= 100"
+                },
+                "memberId": {
+                  ".validate": "newData.isString() && newData.val().length <= 64"
+                },
+                "lastModified": {
+                  ".validate": "newData.isNumber()"
+                },
+                "bowWeight": {
+                  ".validate": "newData.isNumber() || (newData.isString() && newData.val().length <= 10)"
+                },
+                "hits": {
+                  ".validate": "newData.isNumber()"
+                },
+                "totalShots": {
+                  ".validate": "newData.isNumber()"
+                },
+                "marks": {
+                  "$j": {
+                    ".validate": "$j.length <= 4 && $j.matches(/^[0-9]+$/) && (newData.isString() && newData.val().length <= 2)"
+                  }
+                },
+                "arrowLocations": {
+                  "$j": {
+                    ".validate": "$j.length <= 4 && $j.matches(/^[0-9]+$/) && ((newData.isString() && newData.val().length <= 2) || newData.hasChildren())",
+                    "x": {
+                      ".validate": "newData.isNumber()"
+                    },
+                    "y": {
+                      ".validate": "newData.isNumber()"
+                    },
+                    "targetType": {
+                      ".validate": "newData.isString() && newData.val().length <= 20"
+                    },
+                    "$k": {
+                      ".validate": "newData.isBoolean() || newData.isNumber() || (newData.isString() && newData.val().length <= 200)"
+                    }
+                  }
+                },
+                "lockedBlocks": {
+                  "$j": {
+                    ".validate": "$j.length <= 6 && newData.isBoolean()"
+                  }
+                },
+                "substitutions": {
+                  "$j": {
+                    ".validate": "$j.length <= 20 && (newData.isString() && newData.val().length <= 200)"
+                  }
+                },
+                "substitutionIds": {
+                  "$j": {
+                    ".validate": "$j.length <= 20 && (newData.isString() && newData.val().length <= 64)"
+                  }
+                },
+                "$f": {
+                  ".validate": "newData.isBoolean() || newData.isNumber() || (newData.isString() && newData.val().length <= 200)"
+                }
+              }
+            },
+            "本数": {
+              ".validate": "newData.isNumber()"
+            },
+            "at": {
+              ".validate": "newData.isNumber()"
+            },
+            "差分": {
+              "$i": {
+                ".validate": "$i.length <= 4 && $i.matches(/^[0-9]+$/) && newData.hasChildren()",
+                "射手": {
+                  ".validate": "newData.isString() && newData.val().length <= 64"
+                },
+                "射番": {
+                  ".validate": "newData.isNumber()"
+                },
+                "前": {
+                  ".validate": "newData.isString() && newData.val().length <= 2"
+                },
+                "後": {
+                  ".validate": "newData.isString() && newData.val().length <= 2"
+                },
+                "$x": {
+                  ".validate": false
+                }
+              }
+            },
+            "項目": {
+              "$i": {
+                ".validate": "$i.length <= 3 && $i.matches(/^[0-9]+$/) && newData.hasChildren()",
+                "射手": {
+                  ".validate": "newData.isString() && newData.val().length <= 64"
+                },
+                "項目": {
+                  "$k": {
+                    ".validate": "$k.length <= 40 && newData.hasChildren()",
+                    "前": {
+                      ".validate": "newData.isBoolean() || newData.isNumber() || (newData.isString() && newData.val().length <= 200) || newData.hasChildren()",
+                      "$a": {
+                        ".validate": "$a.length <= 64 && (newData.isBoolean() || newData.isNumber() || (newData.isString() && newData.val().length <= 200) || newData.hasChildren())",
+                        "$b": {
+                          ".validate": "$b.length <= 64 && (newData.isBoolean() || newData.isNumber() || (newData.isString() && newData.val().length <= 200))"
+                        }
+                      }
+                    },
+                    "後": {
+                      ".validate": "newData.isBoolean() || newData.isNumber() || (newData.isString() && newData.val().length <= 200) || newData.hasChildren()",
+                      "$a": {
+                        ".validate": "$a.length <= 64 && (newData.isBoolean() || newData.isNumber() || (newData.isString() && newData.val().length <= 200) || newData.hasChildren())",
+                        "$b": {
+                          ".validate": "$b.length <= 64 && (newData.isBoolean() || newData.isNumber() || (newData.isString() && newData.val().length <= 200))"
+                        }
+                      }
+                    },
+                    "$y": {
+                      ".validate": false
+                    }
+                  }
+                },
+                "$x": {
+                  ".validate": false
+                }
+              }
+            },
+            "射数": {
+              "前": {
+                ".validate": "newData.isNumber()"
+              },
+              "後": {
+                ".validate": "newData.isNumber()"
+              },
+              "切った": {
+                "$id": {
+                  ".validate": "$id.length <= 64 && newData.hasChildren()",
+                  "$j": {
+                    ".validate": "$j.length <= 4 && $j.matches(/^[0-9]+$/) && (newData.isString() && newData.val().length <= 2)"
+                  }
+                }
+              },
+              "$x": {
+                ".validate": false
+              }
+            },
+            "$f": {
+              ".validate": "newData.isBoolean() || newData.isNumber() || (newData.isString() && newData.val().length <= 200)"
+            }
+          }
+        }
       }
     },
     "live_presence": {
       "$branch": {
         ".read": "auth != null && $branch.length >= 20 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now)",
-        ".write": "auth != null && $branch.length >= 20 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now || !newData.exists())",
-        ".validate": "newData.hasChildren()"
+        ".write": "auth != null && $branch.length >= 20 && $branch.length <= 64 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now || !newData.exists())",
+        ".validate": "newData.hasChildren()",
+        "$name": {
+          "$device": {
+            ".validate": "$device.length <= 64 && newData.hasChildren(['at'])",
+            "at": {
+              ".validate": "newData.isNumber()"
+            },
+            "$f": {
+              ".validate": false
+            }
+          }
+        }
       }
     },
     "live_view": {
       "$branch": {
         ".read": "auth != null && $branch.length >= 20 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now)",
-        ".write": "auth != null && $branch.length >= 20 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now || !newData.exists())",
-        ".validate": "newData.hasChildren()"
+        ".write": "auth != null && $branch.length >= 20 && $branch.length <= 64 && (!root.child('live_limits').child($branch).exists() || root.child('live_limits').child($branch).val() > now || !newData.exists())",
+        ".validate": "newData.hasChildren()",
+        "$name": {
+          "state": {
+            "archers": {
+              "$i": {
+                ".validate": "$i.length <= 3 && $i.matches(/^[0-9]+$/) && newData.hasChildren()",
+                "id": {
+                  ".validate": "newData.isString() && newData.val().length <= 64"
+                },
+                "name": {
+                  ".validate": "newData.isString() && newData.val().length <= 200"
+                },
+                "gender": {
+                  ".validate": "newData.isString() && newData.val().length <= 10"
+                },
+                "grade": {
+                  ".validate": "newData.isNumber() || (newData.isString() && newData.val().length <= 4)"
+                },
+                "isSeparator": {
+                  ".validate": "newData.isBoolean()"
+                },
+                "isTotalCalculator": {
+                  ".validate": "newData.isBoolean()"
+                },
+                "isGuest": {
+                  ".validate": "newData.isBoolean()"
+                },
+                "またぐ合計": {
+                  ".validate": "newData.isBoolean()"
+                },
+                "teamName": {
+                  ".validate": "newData.isString() && newData.val().length <= 100"
+                },
+                "memberId": {
+                  ".validate": "newData.isString() && newData.val().length <= 64"
+                },
+                "lastModified": {
+                  ".validate": "newData.isNumber()"
+                },
+                "bowWeight": {
+                  ".validate": "newData.isNumber() || (newData.isString() && newData.val().length <= 10)"
+                },
+                "hits": {
+                  ".validate": "newData.isNumber()"
+                },
+                "totalShots": {
+                  ".validate": "newData.isNumber()"
+                },
+                "marks": {
+                  "$j": {
+                    ".validate": "$j.length <= 4 && $j.matches(/^[0-9]+$/) && (newData.isString() && newData.val().length <= 2)"
+                  }
+                },
+                "arrowLocations": {
+                  "$j": {
+                    ".validate": "$j.length <= 4 && $j.matches(/^[0-9]+$/) && ((newData.isString() && newData.val().length <= 2) || newData.hasChildren())",
+                    "x": {
+                      ".validate": "newData.isNumber()"
+                    },
+                    "y": {
+                      ".validate": "newData.isNumber()"
+                    },
+                    "targetType": {
+                      ".validate": "newData.isString() && newData.val().length <= 20"
+                    },
+                    "$k": {
+                      ".validate": "newData.isBoolean() || newData.isNumber() || (newData.isString() && newData.val().length <= 200)"
+                    }
+                  }
+                },
+                "lockedBlocks": {
+                  "$j": {
+                    ".validate": "$j.length <= 6 && newData.isBoolean()"
+                  }
+                },
+                "substitutions": {
+                  "$j": {
+                    ".validate": "$j.length <= 20 && (newData.isString() && newData.val().length <= 200)"
+                  }
+                },
+                "substitutionIds": {
+                  "$j": {
+                    ".validate": "$j.length <= 20 && (newData.isString() && newData.val().length <= 64)"
+                  }
+                },
+                "$f": {
+                  ".validate": "newData.isBoolean() || newData.isNumber() || (newData.isString() && newData.val().length <= 200)"
+                }
+              }
+            },
+            "marks_by_id": {
+              "$id": {
+                ".validate": "$id.length <= 64 && newData.hasChildren()",
+                "$j": {
+                  ".validate": "$j.length <= 4 && $j.matches(/^[0-9]+$/) && (newData.isString() && newData.val().length <= 2)"
+                }
+              }
+            },
+            "archer_timestamps": {
+              "$id": {
+                ".validate": "$id.length <= 64 && newData.isNumber()"
+              }
+            },
+            "shotsPerRound": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000"
+            },
+            "timestamp": {
+              ".validate": "newData.isNumber()"
+            },
+            "updated_at": {
+              ".validate": "newData.isNumber()"
+            },
+            "reset_at": {
+              ".validate": "newData.isNumber()"
+            },
+            "history_at": {
+              ".validate": "newData.isNumber()"
+            },
+            "history_len": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            },
+            "history_max": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            },
+            "history_kind": {
+              ".validate": "newData.isString() && newData.val().length <= 10"
+            },
+            "status": {
+              ".validate": "newData.isString() && newData.val().length <= 20"
+            },
+            "期限": {
+              ".validate": "newData.isNumber()"
+            },
+            "共有の枝": {
+              ".validate": "newData.isString() && newData.val().length <= 64"
+            },
+            "閲覧の枝": {
+              ".validate": "newData.isString() && newData.val().length <= 64"
+            },
+            "移った先": {
+              ".validate": "(newData.isString() && newData.val().length <= 64) && !root.child('live_limits').child($branch).exists()"
+            },
+            "移った先の閲覧枝": {
+              ".validate": "(newData.isString() && newData.val().length <= 64) && !root.child('live_limits').child($branch).exists()"
+            },
+            "種": {
+              "編集": {
+                ".validate": "newData.isString() && newData.val().length <= 64"
+              },
+              "閲覧": {
+                ".validate": "newData.isString() && newData.val().length <= 64"
+              },
+              "$f": {
+                ".validate": false
+              }
+            },
+            "鍵が要るか": {
+              ".validate": "newData.isBoolean()"
+            },
+            "$f": {
+              ".validate": "newData.isBoolean() || newData.isNumber() || (newData.isString() && newData.val().length <= 200)"
+            }
+          },
+          "$f": {
+            ".validate": false
+          }
+        }
       }
     },
     "live_limits": {
       "$branch": {
         ".read": "auth != null && $branch.length >= 20",
-        ".write": "auth != null && $branch.length >= 20 && ((!data.exists() && newData.isNumber() && newData.val() > now && !root.child('live_groups').child($branch).exists()) || (newData.isNumber() && data.isNumber() && newData.val() <= data.val() && (!root.child('live_limit_owners').child($branch).exists() || root.child('live_limit_owners').child($branch).val() === auth.uid)) || (!newData.exists() && root.child('live_groups').child($branch).exists()) || (!newData.exists() && !root.child('live_sessions').child($branch).exists() && !root.child('live_view').child($branch).exists() && !root.child('live_history').child($branch).exists() && !root.child('live_presence').child($branch).exists() && ((!root.child('live_limit_owners').child($branch).exists() || root.child('live_limit_owners').child($branch).val() === auth.uid) || data.val() <= now)))",
+        ".write": "auth != null && $branch.length >= 20 && $branch.length <= 64 && ((!data.exists() && newData.isNumber() && newData.val() > now && !root.child('live_groups').child($branch).exists()) || (newData.isNumber() && data.isNumber() && newData.val() <= data.val() && (!root.child('live_limit_owners').child($branch).exists() || root.child('live_limit_owners').child($branch).val() === auth.uid)) || (!newData.exists() && root.child('live_groups').child($branch).exists()) || (!newData.exists() && !root.child('live_sessions').child($branch).exists() && !root.child('live_view').child($branch).exists() && !root.child('live_history').child($branch).exists() && !root.child('live_presence').child($branch).exists() && ((!root.child('live_limit_owners').child($branch).exists() || root.child('live_limit_owners').child($branch).val() === auth.uid) || data.val() <= now)))",
         ".validate": "newData.isNumber() && newData.val() > 0"
       }
     },
     "live_groups": {
       "$branch": {
         ".read": "auth != null && $branch.length >= 20",
-        ".write": "auth != null && $branch.length >= 20 && !data.exists() && newData.val() === true && !root.child('live_limits').child($branch).exists()"
+        ".write": "auth != null && $branch.length >= 20 && $branch.length <= 64 && !data.exists() && newData.val() === true && !root.child('live_limits').child($branch).exists()"
       }
     },
     "live_limit_owners": {
       "$branch": {
         ".read": "auth != null && $branch.length >= 20",
-        ".write": "auth != null && $branch.length >= 20 && ((!data.exists() && newData.val() === auth.uid && !root.child('live_limits').child($branch).exists()) || (!newData.exists() && (data.val() === auth.uid || !root.child('live_limits').child($branch).exists())))"
+        ".write": "auth != null && $branch.length >= 20 && $branch.length <= 64 && ((!data.exists() && newData.val() === auth.uid && !root.child('live_limits').child($branch).exists()) || (!newData.exists() && (data.val() === auth.uid || !root.child('live_limits').child($branch).exists())))"
       }
     }
   }
