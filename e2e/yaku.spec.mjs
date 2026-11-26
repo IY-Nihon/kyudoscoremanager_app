@@ -256,7 +256,7 @@ test('部員の役：持ち主が作って割り当て、個人ログインの�
   await 部員の頁.getByText('使い方を見る', { exact: true }).click();
   const 使い方 = 部員の頁.getByTestId('使い方の選び窓');
   await 使い方.getByTestId('使い方の組-はじめに（ログイン・メンバー）').click();
-  await expect(使い方.getByTestId('使い方の項目-メンバーを登録する・直す')).toBeVisible();
+  await expect(使い方.getByTestId('使い方の項目-メンバーを登録する・編集する')).toBeVisible();
   await 使い方.getByTestId('使い方の組-設定・アカウント').click();
   await expect(使い方.getByTestId('使い方の項目-管理者モード')).toBeVisible();
   await expect(使い方.getByTestId('使い方の項目-登録メールアドレスを変える')).toHaveCount(0);

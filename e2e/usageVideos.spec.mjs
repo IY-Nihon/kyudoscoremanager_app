@@ -28,7 +28,7 @@ test('使い方：項目を押すとその場で動画が流れ、「画面で�
   await expect(動画).toBeVisible();
   await expect.poll(() => 動画.evaluate((e) => e.currentTime), { timeout: 15_000 }).toBeGreaterThan(0.3);
   // 別の項目を開くと前のは閉じる
-  await page.getByTestId('使い方の項目-○×を入れる').click();
+  await page.getByTestId('使い方の項目-○×を入力する').click();
   await expect(page.getByTestId('使い方の中身')).toHaveCount(1);
   await page.getByTestId('使い方-やってみる').click();
   await expect(page.locator('text=/^1 / 1$/')).toBeVisible({ timeout: 15_000 });
@@ -38,7 +38,7 @@ test('使い方：項目を押すとその場で動画が流れ、「画面で�
 test('使い方：動画の無い手順は、動画の枠を出さずに文だけ見せる', async ({ page }) => {
   await 一覧を開く(page);
   await page.getByTestId('使い方の組-ライブ（複数の端末）').click();
-  await page.getByTestId('使い方の項目-ライブをリンクで配る').click();
+  await page.getByTestId('使い方の項目-ライブをリンクで共有').click();
   await expect(page.getByTestId('使い方の中身')).toBeVisible();
   await expect(page.getByTestId('使い方の動画')).toHaveCount(0, { timeout: 15_000 });
 });
@@ -48,7 +48,7 @@ test('使い方：一覧にだけある項目と困りごとは、文（と動�
 }) => {
   await 一覧を開く(page);
   await page.getByTestId('使い方の組-よくある困りごと').click();
-  await page.getByTestId('使い方の項目-入れた○×が手や袖で消えてしまう').click();
+  await page.getByTestId('使い方の項目-入力した○×が手や袖で消えてしまう').click();
   await expect(page.getByTestId('使い方の中身')).toContainText('長押し');
   await expect(page.getByTestId('使い方の動画')).toBeVisible();
   await expect(page.getByTestId('使い方-やってみる')).toHaveCount(0);
