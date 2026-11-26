@@ -43,6 +43,7 @@ const FirebaseAuth = require('firebase/auth');
 const Firestore = require('firebase/firestore');
 const { 団体から出る } = require('./groupLogin');
 const { 個人IDを新しくする窓 } = require('./KojinIdModal');
+const { 団体のパスワードを変える窓 } = require('./GroupPasswordModal');
 // ログアウトの確認の文言は src/logoutPrompt.js にある（画面を動かさずに
 // 出し分けを検査できるようにするため）
 const {
@@ -173,6 +174,7 @@ const SettingsScreen = () => {
   const [ログアウトの窓, ログアウトの窓を出す] = React.useState(false);
   // 「全員の個人IDを新しくする」の窓（src/KojinIdModal.js）
   const [個人IDの窓, 個人IDの窓を出す] = React.useState(false);
+  const [パスワードの窓, パスワードの窓を出す] = React.useState(false);
   // 部員の端末の、ログインに使った個人ID（自分の所属の証から読む。名簿の文書には個人ID を置かない）
   const 自分の個人ID = useScoreStore((状態) => 状態.自分の個人ID);
   // 今のメンバーに 4 桁の個人ID の人が残っているか（src/KojinIdModal.js の 四桁の帯 と同じ数え方）
@@ -396,6 +398,16 @@ const SettingsScreen = () => {
             {/* 最初から全部か、知りたいところだけかを選ぶ窓を開く（src/UsageChooser.js） */}
             {行('school-outline', '使い方を見る', () => 使い方の窓を出す(true))}
             {行('help-circle-outline', '運用ガイド・ヘルプ', () => ガイドの窓を出す(true))}
+            {/* 団体のパスワードを変える（2026-11-26 U1 本人「管理者モードでなくても出す」。今のパスワードで確かめる。
+                src/GroupPasswordModal.js） */}
+            {activeRole === 'group' &&
+              行('lock-closed-outline', '団体のパスワードを変える', () => パスワードの窓を出す(true))}
+            {activeRole === 'group' ? (
+              <団体のパスワードを変える窓
+                見える={パスワードの窓}
+                閉じる={() => パスワードの窓を出す(false)}
+              />
+            ) : null}
             {行(
               'log-out-outline',
               'ログアウト',

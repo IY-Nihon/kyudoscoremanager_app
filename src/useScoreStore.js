@@ -803,6 +803,24 @@ const useScoreStore = zustand.create()(
           }
         },
         /**
+         * 団体のパスワードを変える（設定。2026-11-26 U1。窓は src/GroupPasswordModal.js）。今のパスワードで確かめてから
+         * 変える。誤りは Firebase の code のまま投げる（窓が src/groupPassword.js の 誤りの訳 で欄に振り分ける）。
+         * 変えると Firebase がほかの端末のログインを切る。入り直すとログインの時刻が変わるので、管理者モードも切る
+         *（verifyGroupPassword と同じ。中継の「管理者」の印はこの端末でも効かなくなる）
+         */
+        changeGroupPassword: async (今の, 新しい) => {
+          const 今の人 = Firebaseの器.auth && Firebaseの器.auth.currentUser;
+          if (!今の人 || 今の人.isAnonymous || !今の人.email || 状態().activeRole !== 'group') {
+            throw new Error('団体アカウントでログインしてから変えてください');
+          }
+          await FirebaseAuth.reauthenticateWithCredential(
+            今の人,
+            FirebaseAuth.EmailAuthProvider.credential(今の人.email, 今の)
+          );
+          if (状態().isAdminMode) 状態().setAdminMode(false);
+          await FirebaseAuth.updatePassword(今の人, 新しい);
+        },
+        /**
          * 管理者モードを入れる・切る。期限（中継の「管理者」の印の終わり。src/kanriAikotoba.js）があれば、
          * その時刻に画面の管理者モードも切る（印が切れたあとに消そうとして、決まりに断られないように）
          */
