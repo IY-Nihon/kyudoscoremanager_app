@@ -241,7 +241,7 @@ const 四桁の帯 = () => {
         <View style={[styles.帯, { paddingBottom: 10 + (余白.bottom || 0) }]} testID="四桁の帯">
           <Text style={styles.帯の字}>{文}</Text>
           <Pressable accessibilityRole="button" onPress={() => 開くを置く(true)} hitSlop={8}>
-            <Text style={styles.帯の押す}>新しいIDを作る</Text>
+            <Text style={styles.帯の押す}>作り直す</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
