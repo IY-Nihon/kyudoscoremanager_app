@@ -208,7 +208,7 @@ function 区分の設定() {
           '区分を消す',
           `「${項目.名前}」を消しますか？付けていた人から外れます。記録は変わりません。`,
           [
-            { text: 'やめる', style: 'cancel' },
+            { text: 'キャンセル', style: 'cancel' },
             { text: '消す', style: 'destructive', onPress: () => 店().区分を消す(項目.鍵) },
           ]
         )
@@ -243,7 +243,7 @@ function 学年の並びの設定() {
           '学年を消す',
           `「${項目.名前}」を消しますか？` + (数 ? `この学年の${数}人は「その他」になります。` : ''),
           [
-            { text: 'やめる', style: 'cancel' },
+            { text: 'キャンセル', style: 'cancel' },
             { text: '消す', style: 'destructive', onPress: () => 店().学年を消す(項目.鍵) },
           ]
         );

@@ -68,7 +68,7 @@ test('配ったライブの期限が近づくと下に帯が出て、延ばす�
 
   // 配る（12 時間）
   await page.getByText(/ライブ中/).click();
-  await expect(page.getByText('ライブをリンクで配る')).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText('ライブをリンクで共有')).toBeVisible({ timeout: 10_000 });
   await page.getByText('12時間', { exact: true }).click();
   await 確かに打つ(page.getByPlaceholder(/文字以上/), '検査の合言葉1');
   await page.getByText('リンクを作る', { exact: true }).click();

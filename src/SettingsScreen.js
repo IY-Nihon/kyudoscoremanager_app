@@ -263,7 +263,7 @@ const SettingsScreen = () => {
         '団体の種類を変える',
         '学年と期を出さなくなり、代わりに入会した年を出します。呼び方は「会員」「男性・女性」「退会」になります。今の学年は消えないので、学校に戻すとまた出ます。',
         [
-          { text: 'やめる', style: 'cancel' },
+          { text: 'キャンセル', style: 'cancel' },
           { text: '変える', onPress: 変える },
         ]
       );
@@ -286,7 +286,7 @@ const SettingsScreen = () => {
         はみ出す人.length +
         '人の学年が「その他」になります。',
       [
-        { text: 'やめる', style: 'cancel' },
+        { text: 'キャンセル', style: 'cancel' },
         { text: '変える', onPress: 変える },
       ]
     );
@@ -564,7 +564,7 @@ const SettingsScreen = () => {
                     <View style={{ flex: 1, paddingRight: 8 }}>
                       <Text style={styles.itemText}>{`${yearStartMonth}月1日の進級の確認`}</Text>
                       <Text style={{ fontSize: 11, color: 基本色.灰, marginTop: 2 }}>
-                        {`${yearStartMonth}月1日に進級の窓を出します。卒業・留年する人を選んでから、全員の学年を上げます`}
+                        {`${yearStartMonth}月1日に進級の画面を出します。卒業・留年する人を選んでから、全員の学年を上げます`}
                       </Text>
                     </View>
                   </View>
@@ -808,8 +808,8 @@ const SettingsScreen = () => {
                       <Pressable // 絵だけのボタン。どのタグを消すのかまで読ませる
                         accessible
                         accessibilityRole="button"
-                        accessibilityLabel={規則.タグの見た目(タグ) + ' を消す'}
-                        aria-label={規則.タグの見た目(タグ) + ' を消す'}
+                        accessibilityLabel={規則.タグの見た目(タグ) + ' を削除'}
+                        aria-label={規則.タグの見た目(タグ) + ' を削除'}
                         onPress={() => removeTagTemplate(タグ)}
                         style={({ hovered }) => [
                           hovered && { opacity: 0.7 },
@@ -861,7 +861,7 @@ const SettingsScreen = () => {
                 style={styles.itemIcon}
               />
               <View style={{ flex: 1, paddingRight: 8 }}>
-                <Text style={styles.itemText}>入れたマスを自動でロック</Text>
+                <Text style={styles.itemText}>入力したマスを自動でロック</Text>
                 <Text style={{ fontSize: 11, color: 基本色.灰, marginTop: 2 }}>
                   入れて3秒たつと押しても変わらなくなります。直すときは長押しで、そのマスだけ開きます。1立が全部埋まったときは、間隔・計の鍵も自動でかかります
                 </Text>
@@ -1045,8 +1045,8 @@ const SettingsScreen = () => {
                       numberOfLines={0}
                     >
                       {activeRole === 'member'
-                        ? '管理者の合言葉で入ります。保存済みの記録をあとから直せます。各メンバーの個人IDも表示されます'
-                        : '管理者の合言葉で入ります。保存済みの記録をあとから直せます。各メンバーの個人IDも表示されます。部員の役を決められます'}
+                        ? '管理者の合言葉で入ります。保存済みの記録をあとから編集できます。各メンバーの個人IDも表示されます'
+                        : '管理者の合言葉で入ります。保存済みの記録をあとから編集できます。各メンバーの個人IDも表示されます。部員の役を決められます'}
                     </Text>
                   </View>
                 </View>

@@ -471,10 +471,10 @@ const OCRRecordModal = ({
   // 差し替えはしない（ボタンは「写真を追加する」なので、足したつもりが差し替わると戸惑う）。
   // 届いた答えは画面に出さず、ログだけ送る（やめた印。中継へ送った呼び出しは止められないので、枠は使ったまま）
   const 読み取りをやめる = () => {
-    Alert.alert('読み取りをやめますか？', 'この読み取りをやめて、写真を選び直します。', [
+    Alert.alert('読み取りをキャンセルしますか？', 'この読み取りをキャンセルして、写真を選び直します。', [
       { text: '続ける', style: 'cancel' },
       {
-        text: 'やめる',
+        text: 'キャンセル',
         style: 'destructive',
         onPress: () => {
           // 確かめているあいだに届いて確かめの画面になっていたら、何もしない（届いた結果を黙って捨てない）
@@ -1956,7 +1956,7 @@ const OCRRecordModal = ({
                 style={styles.やめるボタン}
                 onPress={読み取りをやめる}
               >
-                <Text style={styles.やめるボタンの字}>やめる</Text>
+                <Text style={styles.やめるボタンの字}>キャンセル</Text>
               </TouchableOpacity>
             </View>
           )}

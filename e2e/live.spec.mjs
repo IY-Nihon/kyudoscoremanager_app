@@ -1073,7 +1073,7 @@ test('ライブ：URLで配ると、編集用は記録でき、閲覧用は見�
 
   // 主催者は帯を押すと、配る窓が開く
   await A.getByText(new RegExp('ライブ中')).click();
-  await expect(A.getByText('ライブをリンクで配る')).toBeVisible({ timeout: 10_000 });
+  await expect(A.getByText('ライブをリンクで共有')).toBeVisible({ timeout: 10_000 });
 
   // 有効期限が選べること。既定は24時間（期限なしを既定にすると、
   // ほとんどのリンクが永久に生き続ける）
@@ -1122,7 +1122,7 @@ test('ライブ：URLで配ると、編集用は記録でき、閲覧用は見�
   }
   expect(編集のURL).not.toBe(閲覧のURL);
   await A.getByText('閉じる', { exact: true }).click();
-  await expect(A.getByText('ライブをリンクで配る'), '配る窓が閉じない').toHaveCount(0, {
+  await expect(A.getByText('ライブをリンクで共有'), '配る窓が閉じない').toHaveCount(0, {
     timeout: 10_000,
   });
 

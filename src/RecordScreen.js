@@ -326,7 +326,7 @@ const RecordScreen = () => {
   React.useEffect(() => {
     if (鍵を開けた時刻 > 0 && 鍵の知らせを出した.current < 鍵を開けた時刻) {
       鍵の知らせを出した.current = 鍵を開けた時刻;
-      知らせる('このマスの鍵を開けました');
+      知らせる('このマスのロックを解除しました');
       ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Success);
     }
   }, [鍵を開けた時刻]);
@@ -335,7 +335,7 @@ const RecordScreen = () => {
   React.useEffect(() => {
     if (閉じたますを押した時刻 > 0 && 閉じた知らせを出した.current < 閉じたますを押した時刻) {
       閉じた知らせを出した.current = 閉じたますを押した時刻;
-      知らせる('このマスは鍵がかかっています。長押しで開きます');
+      知らせる('このマスはロックされています。長押しで解除できます');
       ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning);
     }
   }, [閉じたますを押した時刻]);
@@ -1062,7 +1062,7 @@ const RecordScreen = () => {
               : '';
             const 戻る = (保存する) => {
               履歴の編集を終える(保存する);
-              知らせる(保存する ? '履歴の記録に保存しました' : '直す前の記録表に戻しました');
+              知らせる(保存する ? '履歴の記録に保存しました' : '編集する前の記録表に戻しました');
               航路.navigate('履歴');
             };
             return (
@@ -1098,9 +1098,9 @@ const RecordScreen = () => {
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() =>
-                    窓.出す('直すのをやめますか', '変えたところは履歴に残りません。', [
+                    窓.出す('編集をキャンセルしますか', '変えたところは履歴に残りません。', [
                       { text: '続ける', style: 'cancel' },
-                      { text: 'やめる', style: 'destructive', onPress: () => 戻る(false) },
+                      { text: 'キャンセル', style: 'destructive', onPress: () => 戻る(false) },
                     ])
                   }
                   style={{
@@ -1112,7 +1112,7 @@ const RecordScreen = () => {
                   }}
                   accessibilityRole="button"
                 >
-                  <Text style={{ color: 基本色.白, fontSize: 12, fontWeight: 'bold' }}>やめる</Text>
+                  <Text style={{ color: 基本色.白, fontSize: 12, fontWeight: 'bold' }}>キャンセル</Text>
                 </TouchableOpacity>
               </View>
             );
@@ -1202,12 +1202,12 @@ const RecordScreen = () => {
                 // web の TouchableOpacity は aria-label を見るので、両方渡す
                 accessible
                 accessibilityRole="button"
-                accessibilityLabel="ライブをリンクで配る"
-                aria-label="ライブをリンクで配る"
+                accessibilityLabel="ライブをリンクで共有"
+                aria-label="ライブをリンクで共有"
                 onPress={() => 共有の窓を出す(true)}
               >
                 <Icons.Ionicons name="share-outline" size={16} color={基本色.青} />
-                <Text style={styles.shareBtnText}>配る</Text>
+                <Text style={styles.shareBtnText}>共有</Text>
               </TouchableOpacity>
             ) : null}
             {/* 履歴の記録を直しているあいだはライブに入らない（盤面がライブと結びつく） */}
@@ -1367,9 +1367,9 @@ const RecordScreen = () => {
             testID="帯の開け閉め"
             accessible
             accessibilityRole="button"
-            accessibilityLabel={畳む覚え ? '操作の帯を開く' : '操作の帯を畳む'}
+            accessibilityLabel={畳む覚え ? '操作バーを開く' : '操作バーを閉じる'}
             accessibilityHint="横へ引くと左上・右上へ動かせます"
-            aria-label={畳む覚え ? '操作の帯を開く' : '操作の帯を畳む'}
+            aria-label={畳む覚え ? '操作バーを開く' : '操作バーを閉じる'}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={({ hovered }) => [styles.帯の取っ手, hovered && IS_WEB && { opacity: 0.85 }]}
           >
@@ -1767,7 +1767,7 @@ const RecordScreen = () => {
               }}
               // 入れたあと、その列を押すと「この立ちだけ」と
               // 「手前の計もまとめた総計」を切り替えられる
-              accessibilityHint="合計の列を足します。入れたあと列を押すと、数える範囲を変えられます"
+              accessibilityHint="合計の列を足します。追加したあと列を押すと、数える範囲を変えられます"
             >
               <Text style={{ fontSize: 22, fontWeight: 'bold', color: 基本色.緑 }}>Σ</Text>
               <Text style={[styles.addLabel, { color: 基本色.緑 }]}>計</Text>
@@ -1816,7 +1816,7 @@ const RecordScreen = () => {
             accessibilityLabel={履歴の編集 ? '履歴に保存して戻る' : '終了して保存'}
             aria-label={履歴の編集 ? '履歴に保存して戻る' : '終了して保存'}
             accessibilityHint={
-              履歴の編集 ? '直した内容を履歴の記録に書き戻します' : 'いまの記録表を履歴に残します'
+              履歴の編集 ? '編集した内容を履歴の記録に書き戻します' : 'いまの記録表を履歴に残します'
             }
             onPress={() => {
               // 履歴の記録を直しているあいだは、新しい記録にせず元の記録へ書き戻す

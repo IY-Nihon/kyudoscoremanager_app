@@ -46,10 +46,10 @@ class ErrorBoundary extends React.Component {
           <>
             <Text style={styles.message}>{確認の文(失われるもの(useScoreStore.getState()))}</Text>
             <TouchableOpacity style={[styles.button, styles.dangerButton]} onPress={this.handleConfirm}>
-              <Text style={styles.buttonText}>消して復旧する</Text>
+              <Text style={styles.buttonText}>削除して復旧する</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.subButton} onPress={this.handleCancel}>
-              <Text style={styles.subButtonText}>やめる</Text>
+              <Text style={styles.subButtonText}>キャンセル</Text>
             </TouchableOpacity>
           </>
         ) : (

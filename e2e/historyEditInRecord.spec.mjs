@@ -97,8 +97,8 @@ test('管理者モードの履歴から記録画面で直し、やめると元�
   await expect(page.getByRole('button', { name: '記録の情報を変える' })).toBeVisible({ timeout: 15_000 });
   // 人追加・間隔追加・計追加は記録画面で足せるので、この窓からは外した
   await expect(page.getByText('人追加', { exact: true })).toHaveCount(0);
-  const 直す = page.getByRole('button', { name: '記録画面で直す' });
-  await expect(直す, '窓に「記録画面で直す」が無い').toBeVisible({ timeout: 15_000 });
+  const 直す = page.getByRole('button', { name: '記録画面で編集' });
+  await expect(直す, '窓に「記録画面で編集」が無い').toBeVisible({ timeout: 15_000 });
   await 直す.click();
 
   // 記録画面に移り、帯が出て、記録の 2 人が並ぶ
@@ -126,9 +126,9 @@ test('管理者モードの履歴から記録画面で直し、やめると元�
   );
 
   // やめる → 確認 → 履歴の詳細へ戻り、記録は 2 人のまま
-  await page.getByText('やめる', { exact: true }).click();
+  await page.getByText('キャンセル', { exact: true }).click();
   await expect(page.getByText('直すのをやめますか', { exact: true })).toBeVisible({ timeout: 10_000 });
-  await page.getByText('やめる', { exact: true }).last().click();
+  await page.getByText('キャンセル', { exact: true }).last().click();
   await expect(page.getByText('記録詳細', { exact: true })).toBeVisible({ timeout: 20_000 });
   const 記録 = await page.evaluate(() => {
     const s =

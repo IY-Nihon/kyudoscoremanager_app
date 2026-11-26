@@ -154,7 +154,7 @@ function ChatMemberCard({ カードたち, 名簿, 学年の札, 性別にそろ
           </Text>
         </Pressable>
         <Pressable accessibilityRole="button" onPress={() => 決める([])} hitSlop={8}>
-          <Text style={styles.やめる}>やめる</Text>
+          <Text style={styles.やめる}>キャンセル</Text>
         </Pressable>
       </View>
     </View>

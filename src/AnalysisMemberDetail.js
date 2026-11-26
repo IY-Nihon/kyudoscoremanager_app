@@ -432,7 +432,7 @@ const 部員の詳細の窓 = ({
                             <TouchableOpacity
                               onPress={() =>
                                 出す('ひな型を消す', '「' + 型.名前 + '」を消しますか。', [
-                                  { text: 'やめる', style: 'cancel' },
+                                  { text: 'キャンセル', style: 'cancel' },
                                   {
                                     text: '消す',
                                     style: 'destructive',

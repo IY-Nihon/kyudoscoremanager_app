@@ -357,8 +357,8 @@ const MemberScreen = () => {
               <TouchableOpacity // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                 accessible
                 accessibilityRole="button"
-                accessibilityLabel="この弓具の記録を消す"
-                aria-label="この弓具の記録を消す"
+                accessibilityLabel="この弓具の記録を削除"
+                aria-label="この弓具の記録を削除"
                 onPress={() => deleteEquipment(部員.id, item.id)}
                 style={{ padding: 4 }}
               >
@@ -676,10 +676,10 @@ const MemberScreen = () => {
             ) : null}
             <Text style={styles.きまりの但し書き}>
               {決まり.学年なし
-                ? '名前・性別・区分・入会した年は団体の担当者が直します'
+                ? '名前・性別・区分・入会した年は団体の担当者が編集します'
                 : 期を使う
-                  ? '名前・性別・学年・期は団体の担当者が直します'
-                  : '名前・性別・学年は団体の担当者が直します'}
+                  ? '名前・性別・学年・期は団体の担当者が編集します'
+                  : '名前・性別・学年は団体の担当者が編集します'}
             </Text>
           </View>
         )}
@@ -856,8 +856,8 @@ const MemberScreen = () => {
           <TouchableOpacity // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
             accessible
             accessibilityRole="button"
-            accessibilityLabel="絞り込みを消す"
-            aria-label="絞り込みを消す"
+            accessibilityLabel="絞り込みを解除"
+            aria-label="絞り込みを解除"
             onPress={() => 検索の文を置く('')}
           >
             <Icons.Ionicons name="close-circle" size={18} color={色.灰} />

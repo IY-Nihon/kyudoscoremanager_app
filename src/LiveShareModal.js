@@ -53,7 +53,7 @@ const LiveShareModal = ({ visible, onClose }) => {
     try {
       const 荷 = await useScoreStore.getState().ライブを共有する(鍵, 持ち);
       if (!荷) {
-        難点を置く('共有できませんでした。通信を確かめてもう一度お試しください。');
+        難点を置く('共有できませんでした。通信を確認してもう一度お試しください。');
         return;
       }
       出来上がりを置く({
@@ -78,7 +78,7 @@ const LiveShareModal = ({ visible, onClose }) => {
     <Modal visible={!!visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.外}>
         <View style={styles.箱}>
-          <Text style={styles.見出し}>ライブをリンクで配る</Text>
+          <Text style={styles.見出し}>ライブをリンクで共有</Text>
           <ScrollView style={{ maxHeight: 420 }}>
             {出来上がり
               ? 出来たところ(出来上がり, 写して知らせる, 延ばせる, (新しい期限) =>
@@ -88,7 +88,7 @@ const LiveShareModal = ({ visible, onClose }) => {
           </ScrollView>
           {知らせ ? <Text style={styles.知らせ}>{知らせ}</Text> : null}
           <TouchableOpacity style={styles.閉じる} onPress={onClose}>
-            <Text style={styles.閉じるの字}>{出来上がり ? '閉じる' : 'やめる'}</Text>
+            <Text style={styles.閉じるの字}>{出来上がり ? '閉じる' : 'キャンセル'}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -98,7 +98,7 @@ const LiveShareModal = ({ visible, onClose }) => {
     return (
       <View>
         <Text style={styles.説明}>
-          このライブだけを配ります。団体の他のライブには入れません。配ったあとも、部員はこれまでどおり参加一覧から入れます。
+          このライブだけを共有します。団体の他のライブには入れません。共有したあとも、部員はこれまでどおり参加一覧から入れます。
         </Text>
         <TouchableOpacity
           style={styles.選び}
@@ -162,8 +162,8 @@ const LiveShareModal = ({ visible, onClose }) => {
         </View>
         <Text style={styles.注意}>
           {持ち > 0
-            ? '期限が過ぎると、このライブは配った方も含めて全員がつながらなくなります（お手元の記録は残ります）。あとから延ばすことはできません（配り直しても、同じリンク・同じ期限のままです）。'
-            : '期限を付けないリンクは、ずっと開いたままです。配る先が決まっているときだけにしてください。'}
+            ? '期限が過ぎると、このライブは共有した方も含めて全員がつながらなくなります（お手元の記録は残ります）。期限は、あとから延ばせます（リンクは変わりません）。'
+            : '期限を付けないリンクは、ずっと開いたままです。共有する相手が決まっているときだけにしてください。'}
         </Text>
         {難点 ? <Text style={styles.難点}>{難点}</Text> : null}
         <TouchableOpacity
@@ -192,7 +192,7 @@ function 出来たところ(出来上がり, 写して知らせる, 延ばせる
   );
   return (
     <View>
-      {一本('編集用', '記録できます。○×を入れると全員に届きます。', 出来上がり.編集, '編集用')}
+      {一本('編集用', '記録できます。○×を入力すると全員に届きます。', 出来上がり.編集, '編集用')}
       {一本('閲覧用', '見るだけです。この人が何をしても、記録には届きません。', 出来上がり.閲覧, '閲覧用')}
       <Text style={styles.注意}>
         {出来上がり.合言葉が要るか
@@ -209,8 +209,8 @@ function 出来たところ(出来上がり, 写して知らせる, 延ばせる
       {出来上がり.すでに配られていた ? (
         <Text style={styles.注意}>
           {延ばせる && 出来上がり.期限
-            ? 'このライブはすでに配られています。同じリンクをお渡しします。期限は下で延ばせます。'
-            : 'このライブはすでに配られています。同じリンクをお渡しします。期限は最初に配ったときのままです。'}
+            ? 'このライブはすでに共有されています。同じリンクをお渡しします。期限は下で延ばせます。'
+            : 'このライブはすでに共有されています。同じリンクをお渡しします。期限は最初に共有したときのままです。'}
         </Text>
       ) : null}
       {/* リンクは変えずに期限だけ延ばす（B3 2026-11-26 本人「見本のとおり」。src/LiveExtend.js） */}
@@ -361,7 +361,7 @@ const 来客の窓 = ({ 荷, onClose }) => {
       }
       難点を置く(
         結果 === '期限切れ'
-          ? 'このリンクは有効期限が切れています。続けるときは、配った人に新しいリンクをもらってください。'
+          ? 'このリンクは有効期限が切れています。続けるときは、共有した人に新しいリンクをもらってください。'
           : 結果 === '見つからない'
             ? 中身.鍵が要るか
               ? '合言葉が違うか、このライブは終わっています。'
@@ -414,7 +414,7 @@ const 来客の窓 = ({ 荷, onClose }) => {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.閉じる} onPress={onClose}>
-            <Text style={styles.閉じるの字}>やめる</Text>
+            <Text style={styles.閉じるの字}>キャンセル</Text>
           </TouchableOpacity>
         </View>
       </View>

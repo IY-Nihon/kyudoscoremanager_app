@@ -105,7 +105,7 @@ const 誤りの文 = (誤り) => {
     符号 === 'auth/web-storage-unsupported' ||
     符号 === 'auth/internal-error'
   ) {
-    return 'Google のログインの窓を開けませんでした。LINE などのアプリの中のブラウザでは使えないことがあります。Safari・Chrome で開いてお試しください';
+    return 'Google のログインの画面を開けませんでした。LINE などのアプリの中のブラウザでは使えないことがあります。Safari・Chrome で開いてお試しください';
   }
   if (符号 === 'auth/unauthorized-domain') {
     return 'この頁からは Google で登録できません。https://kyudoscoremanager.web.app から開いてお試しください';
@@ -426,7 +426,7 @@ const LoginScreen = () => {
             ? '電波の良い場所でもう一度『作成』を押してください。'
             : 符号 === 'auth/weak-password'
               ? 'パスワードは6文字以上で設定してください'
-              : 'パスワードを登録できませんでした。別のパスワードを入れて、もう一度『作成』を押してください。'
+              : 'パスワードを登録できませんでした。別のパスワードを入力して、もう一度『作成』を押してください。'
         );
         return;
       }
@@ -565,7 +565,7 @@ const LoginScreen = () => {
               メールが届かないときは、迷惑メールのフォルダーも見てください。
             </Text>
             <Pressable accessibilityRole="button" onPress={確認をやめる} disabled={処理中}>
-              <Text style={styles.確認の副}>やめる</Text>
+              <Text style={styles.確認の副}>キャンセル</Text>
             </Pressable>
           </View>
         </View>
@@ -644,7 +644,7 @@ const LoginScreen = () => {
                 FirebaseAuth.signOut(auth).catch(() => {});
               }}
             >
-              <Text style={styles.確認の副}>やめる</Text>
+              <Text style={styles.確認の副}>キャンセル</Text>
             </Pressable>
           </View>
         </View>
@@ -916,7 +916,7 @@ const LoginScreen = () => {
                           誤りを消す={誤りを消す('メールアドレス')}
                           注意={
                             メールの形が変か(メールの入力)
-                              ? '@ を含む形で入れてください（例: example@mail.com）'
+                              ? '@ を含む形で入力してください（例: example@mail.com）'
                               : null
                           }
                           autoComplete="email"

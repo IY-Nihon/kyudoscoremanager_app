@@ -30,7 +30,7 @@ const 期限の字 = (ミリ秒) => {
 
 /** 入れなかったときの知らせ */
 const 使えないとき =
-  'この招待リンクは使えません。作り直されたか、メンバーから外れた可能性があります。団体の管理者に確かめてください。';
+  'この招待リンクは使えません。作り直されたか、メンバーから外れた可能性があります。団体の管理者に確認してください。';
 const 期限切れのとき =
   'この招待リンクは期限が切れています。団体の管理者に新しいリンクを作ってもらってください。';
 
@@ -109,7 +109,7 @@ const 招待の窓 = ({ 招待, onClose }) => {
             </Pressable>
           )}
           <Pressable style={styles.閉じる} onPress={() => onClose(false)}>
-            <Text style={styles.閉じるの字}>{入っている ? '閉じる' : 'やめる'}</Text>
+            <Text style={styles.閉じるの字}>{入っている ? '閉じる' : 'キャンセル'}</Text>
           </Pressable>
         </View>
       </View>
@@ -172,7 +172,7 @@ const 招待リンクの欄 = ({ 団体, 部員 }) => {
       '作り直しますか？',
       '前の招待リンクは使えなくなります（すでに入っている端末はそのままです）。',
       [
-        { text: 'やめる', style: 'cancel' },
+        { text: 'キャンセル', style: 'cancel' },
         { text: '作り直す', style: 'destructive', onPress: 進める },
       ]
     );
@@ -204,7 +204,7 @@ const 招待リンクの欄 = ({ 団体, 部員 }) => {
         {招.招待の期限の日数}日間使えます。本人以外に送らないでください。
       </Text>
       {招待 === undefined ? (
-        <Text style={styles.欄の説明}>確かめています…</Text>
+        <Text style={styles.欄の説明}>確認しています…</Text>
       ) : リンク ? (
         <>
           <Text selectable style={styles.リンク} testID="招待リンク">

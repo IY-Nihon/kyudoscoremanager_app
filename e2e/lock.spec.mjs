@@ -166,7 +166,7 @@ test('長押しで開けると帯が出て、その帯は指を下のますへ�
   // 消えたあとに見てしまう。出るのを待つ側を先に構えてから長押しし、
   // 位置と当たり判定は1回のやり取りでまとめて測る（往復するあいだに消えるため）。
   // それでも取りこぼすことがあるので、何度か試す
-  const 文 = 'このマスの鍵を開けました';
+  const 文 = 'このマスのロックを解除しました';
   const 帯 = page.getByText(文, { exact: true });
   let 当たり = null;
   for (let 回 = 0; 回 < 3 && !当たり; 回++) {
@@ -268,7 +268,7 @@ test('鍵がかかったますを押すと、開け方を知らせる', async ({
   await 押す(page, 場所);
   await page.waitForTimeout(3500); // 閉じるのを待つ
 
-  const 帯 = page.getByText('このマスは鍵がかかっています。長押しで開きます', { exact: true });
+  const 帯 = page.getByText('このマスはロックされています。長押しで解除できます', { exact: true });
   // 帯は1.5秒で消えるので、待つ側を先に構えてから押す
   const 待つ = 帯.waitFor({ state: 'visible', timeout: 4000 });
   await 押す(page, 場所);

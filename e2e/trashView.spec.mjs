@@ -46,7 +46,7 @@ test('ゴミ箱の記録は、押すと見るだけで開き、戻るとゴミ�
   ).toBeVisible();
   await expect(page.getByText('記録詳細', { exact: true }), 'ふつうの詳細の見出しが出ている').toHaveCount(0);
   // 消す・直すの入口が無いこと
-  await expect(page.getByRole('button', { name: 'この記録を消す' }), '消すボタンが出ている').toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'この記録を削除' }), '消すボタンが出ている').toHaveCount(0);
   // 復元はここからもできる（押さない。押すと団体に書き込む）
   await expect(page.getByRole('button', { name: 'この記録を復元する' })).toBeVisible();
 

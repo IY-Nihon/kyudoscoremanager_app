@@ -48,7 +48,7 @@ async function 一覧から消す(page) {
   await expect(行).toBeVisible({ timeout: 20_000 });
   await 行.click();
   await expect(page.getByText('記録詳細', { exact: true })).toBeVisible({ timeout: 15_000 });
-  await page.getByRole('button', { name: 'この記録を消す' }).click();
+  await page.getByRole('button', { name: 'この記録を削除' }).click();
   await page.getByText('移動する', { exact: true }).click();
   await こうなるまで待つ(
     async () => ((await 手元の記録(page)).ゴミ箱 ? 1 : 0),

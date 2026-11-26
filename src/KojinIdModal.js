@@ -164,7 +164,7 @@ const 個人IDを新しくする窓 = ({ 見える, 閉じる }) => {
                   onPress={閉じる}
                   disabled={作業中}
                 >
-                  <Text style={styles.やめるの字}>やめる</Text>
+                  <Text style={styles.やめるの字}>キャンセル</Text>
                 </Pressable>
               </>
             ) : 振った.length === 0 ? (

@@ -510,7 +510,7 @@ const HistoryScreen = () => {
         {ゴミ箱を見ている && (
           <View testID="ゴミ箱の帯" style={styles.trashBanner}>
             <Icons.Ionicons name="trash-outline" size={18} color={基本色.白} />
-            <Text style={styles.trashBannerText}>ゴミ箱の中の記録です。見るだけで、直せません</Text>
+            <Text style={styles.trashBannerText}>ゴミ箱の中の記録です。見るだけで、編集できません</Text>
             {消せる && (
               <Pressable
                 accessibilityRole="button"
@@ -536,7 +536,7 @@ const HistoryScreen = () => {
                 onPress={() => {
                   if (!見ている記録) return;
                   const id = 見ている記録.id;
-                  窓.出す('完全に削除', 'この記録をゴミ箱からも消します。元に戻せません。よろしいですか？', [
+                  窓.出す('完全に削除', 'この記録をゴミ箱からも削除します。元に戻せません。よろしいですか？', [
                     { text: 'キャンセル', style: 'cancel' },
                     {
                       text: '削除',
@@ -599,8 +599,8 @@ const HistoryScreen = () => {
                   <Pressable // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                     accessible
                     accessibilityRole="button"
-                    accessibilityLabel="この記録を消す"
-                    aria-label="この記録を消す"
+                    accessibilityLabel="この記録を削除"
+                    aria-label="この記録を削除"
                     onPress={() => {
                       消す記録IDを置く(見ている記録.id);
                       削除の確認を出す(true);
@@ -1592,8 +1592,8 @@ const HistoryScreen = () => {
               <TouchableOpacity
                 style={styles.adminMenuItem}
                 accessibilityRole="button"
-                accessibilityLabel="記録画面で直す"
-                aria-label="記録画面で直す"
+                accessibilityLabel="記録画面で編集"
+                aria-label="記録画面で編集"
                 onPress={() => {
                   if (!見ている記録) return;
                   管理者の品書きを出す(false);
@@ -1602,8 +1602,8 @@ const HistoryScreen = () => {
                     !履歴の記録を記録画面で開く(見ている記録.id)
                   ) {
                     窓.出す(
-                      'いまは直せません',
-                      'ライブ中か、別の記録を直している途中です。先にそちらを終えてください。'
+                      'いまは編集できません',
+                      'ライブ中か、別の記録を編集している途中です。先にそちらを終えてください。'
                     );
                     return;
                   }
@@ -1612,7 +1612,7 @@ const HistoryScreen = () => {
               >
                 <Icons.Ionicons name="open-outline" size={20} color={基本色.橙} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.adminMenuText}>記録画面で直す</Text>
+                  <Text style={styles.adminMenuText}>記録画面で編集</Text>
                   <Text style={{ fontSize: 11, color: 基本色.灰, marginLeft: 12 }}>
                     並べ替え・矢所・射数など、記録表の道具をすべて使う
                   </Text>
