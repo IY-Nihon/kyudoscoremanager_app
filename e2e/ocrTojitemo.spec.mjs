@@ -138,12 +138,12 @@ test.describe('閉じても読み続ける', () => {
     await 読み始める(page);
     // 「続ける」なら読み取り中のまま
     await page.getByTestId('ocr-yameru').click();
-    await expect(page.getByTestId('アプリの窓')).toContainText('読み取りをやめますか？');
+    await expect(page.getByTestId('アプリの窓')).toContainText('読み取りをキャンセルしますか？');
     await page.getByTestId('窓のボタン-続ける').click();
     await expect(page.getByText('AIが立ち順表を読み取っています...', { exact: true })).toBeVisible();
     // やめる。写真は残り、すぐ読み直せる
     await page.getByTestId('ocr-yameru').click();
-    await page.getByTestId('窓のボタン-やめる').click();
+    await page.getByTestId('窓のボタン-キャンセル').click();
     await expect(page.getByText('この画像で解析する', { exact: true })).toBeVisible();
     await expect(page.getByText('1枚目', { exact: true })).toBeVisible();
     // 届いても確かめの画面にはならない。ログには、やめた印を付けて送る

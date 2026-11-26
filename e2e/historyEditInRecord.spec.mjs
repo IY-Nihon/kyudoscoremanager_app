@@ -127,7 +127,7 @@ test('管理者モードの履歴から記録画面で直し、やめると元�
 
   // やめる → 確認 → 履歴の詳細へ戻り、記録は 2 人のまま
   await page.getByText('キャンセル', { exact: true }).click();
-  await expect(page.getByText('直すのをやめますか', { exact: true })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText('編集をキャンセルしますか', { exact: true })).toBeVisible({ timeout: 10_000 });
   await page.getByText('キャンセル', { exact: true }).last().click();
   await expect(page.getByText('記録詳細', { exact: true })).toBeVisible({ timeout: 20_000 });
   const 記録 = await page.evaluate(() => {

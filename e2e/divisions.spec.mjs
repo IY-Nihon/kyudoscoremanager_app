@@ -140,7 +140,7 @@ test('区分：設定で足す・並べ替える・名前を直す・消す。�
   欄 = await 設定へ(page);
   for (const 名 of ['検査乙', '検査丙']) {
     await 欄.getByRole('button', { name: `${名} を削除` }).click();
-    await page.getByTestId('窓のボタン-消す').click();
+    await page.getByTestId('窓のボタン-削除').click();
   }
   await expect.poll(() => 並び(欄)).toEqual([]);
   await expect.poll(雲の区分, { timeout: 20_000, message: '消しても雲に残る' }).toEqual([]);
