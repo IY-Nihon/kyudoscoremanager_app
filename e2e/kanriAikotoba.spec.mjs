@@ -6,16 +6,16 @@
  *   SHOT_DIR=撮る先 … 窓の写真を撮る
  *
  * 流れ：初めて（説明とログインのパスワード）→ 新しい合言葉（2 回違うと断る。ログインのパスワードと同じでもよい：11/18 本人）→ 管理者モード →
- * 切る → 合言葉で入る（違うと残りの回数）→ 合言葉を変える。団体 100007（エミュレーターなので雲には書かない。記録には書き込まない）
+ * 切る → 合言葉で入る（違うと残りの回数）→ 合言葉を変える。団体はこの検査が回ごとに作る（e2e/emu-dantai.mjs の 検査の団体を作る。
+ * エミュレーターなので雲には書かない。記録には書き込まない）
  */
 import { test, expect } from '@playwright/test';
 import path from 'node:path';
 import { 案内を止める, 画面が出るまで待つ, 入り口が決まるまで待つ, 団体で入る } from './helpers.mjs';
 import { 検証のパスワード } from '../scripts/fb-rest.mjs';
+import { 検査の団体を作る } from './emu-dantai.mjs';
 
-const 団体 = '100007';
 const ログインの字 = 検証のパスワード();
-test.use({ storageState: 'e2e/.auth/100007.json' });
 test.skip(process.env.FB_EMULATOR !== '1', '中継の /kanri があるのは手元のエミュレーターだけ（配るまで）');
 
 const 撮る = async (page, 名, 情報) => {
@@ -28,6 +28,7 @@ const 撮る = async (page, 名, 情報) => {
 
 test('管理者の合言葉：初めて作り、入り、変える', async ({ page }, 情報) => {
   test.setTimeout(180_000);
+  const 団体 = await 検査の団体を作る('kanri');
   await 案内を止める(page);
   await page.goto('/');
   await 画面が出るまで待つ(page);

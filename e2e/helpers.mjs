@@ -173,6 +173,47 @@ export async function 団体で入る(page, 団体, 合言葉) {
 }
 
 /**
+ * ログインの画面から、団体ID と個人ID で個人ログインする（2026-11-26。退部と役の検査が、検査の中で足した人で入る）。
+ * 断られたら窓の文を、入れたら null を返す（入れたときは、控え（localStorage）に団体ID が書かれるまで待つ）
+ */
+export async function 個人で入る(page, 団体, 個人ID) {
+  const 番号欄 = page.getByPlaceholder('例: 123456', { exact: true });
+  await 番号欄.waitFor({ state: 'visible', timeout: 60_000 });
+  await page.getByText('個人', { exact: true }).click();
+  await 番号欄.click();
+  await 番号欄.pressSequentially(団体, { delay: 20 });
+  const 個人欄 = page.getByPlaceholder('例: K7MP3X', { exact: true });
+  await 個人欄.click();
+  await 個人欄.pressSequentially(個人ID, { delay: 20 });
+  await page.getByText('ログイン', { exact: true }).click();
+  const 窓 = page.getByTestId('アプリの窓');
+  const 入った = () =>
+    page.evaluate(() => {
+      const s =
+        JSON.parse((globalThis.__弓道の控え?.() ?? localStorage.getItem('archery-score-storage')) || '{}')
+          ?.state || {};
+      return !!s.activeGroupId;
+    });
+  await expect
+    .poll(async () => (await 窓.isVisible().catch(() => false)) || (await 入った()), { timeout: 60_000 })
+    .toBe(true);
+  if (await 窓.isVisible().catch(() => false)) return await 窓.innerText();
+  // 控えは少し待ってから書かれる（useScoreStore の 控えの書き出し）。開き直す検査が、書かれる前の控えを読まないように
+  // 先に書かせる（auth.setup.mjs と同じ）
+  await page.evaluate(() => globalThis.__弓道の控えを書く?.());
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () => !!JSON.parse(localStorage.getItem('archery-score-storage') || '{}')?.state?.activeGroupId
+        ),
+      { timeout: 15_000, message: '個人ログインの控えが書かれない' }
+    )
+    .toBe(true);
+  return null;
+}
+
+/**
  * 規約の改定の窓が出ていれば「同意する」を押す。版を上げると、検証環境の団体にも出て画面をふさぐ
  * （下ごしらえで入らない団体・検査の中で入り直す団体の分）。1 度同意すれば雲に記録が残り、次からは出ない
  */

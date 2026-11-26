@@ -4,44 +4,34 @@
  *   npm run e2e:emu -- e2e/yaku.spec.mjs --project=スマホ
  *   SHOT_DIR=撮る先 … 役の窓・役を選ぶ欄・個人の設定の写真を撮る
  *
- * 流れ（団体 100002。エミュレーターなので雲には書かない。記録には書き込まない）：
- *   持ち主が管理者モード（合言葉）で「部員の役」を開く → 4 つの役 → 役を作る（質問に答え、文で確かめる）
- *   → メンバーの編集で、個人ログインの部員（控えの 100002-個人）に「見るだけ」を割り当てる
- *   → 部員の端末：設定に役・○×を押しても入らない（いまの役では…）・ライブは始められず閲覧用だけ・分析は自分だけでない
+ * 流れ（団体はこの検査が回ごとに作る：e2e/emu-dantai.mjs。エミュレーターなので雲には書かない）：
+ *   持ち主が部員を足す（その場で個人ID が付く）→ 管理者モード（合言葉を初めて作る）で「部員の役」を開く → 4 つの役
+ *   → 役を作る（質問に答え、文で確かめる）→ メンバーの編集で、足した部員に「見るだけ」を割り当てる
+ *   → 部員の端末（個人ID で入る）：設定に役・○×を押しても入らない（いまの役では…）・ライブは始められず閲覧用だけ・分析は自分だけでない
  *   → 持ち主が「運営」に替える → 部員の端末：いつも付けるタグを選べる・合言葉なしで足した人にもその場で個人ID が付く
  *     （逆引き表をエミュレーターで読む。持ち主の端末は先に閉じる）
  *   → 管理者の合言葉で管理者モードに入れる（作る道は出ない）→ メンバーの一覧・ほかの人の個人ID・招待リンク・足した人の個人ID
+ * 前は 100002 と控えの個人ログイン（100002-個人）で流していたが、3 機種を一度に流すと、先に流れた機種が役を作り割り当てを
+ * 替えていて落ちた（2026-11-26）。控えの部員を運営のまま残すので、同じ部員を使うほかの検査とも取り合うおそれがあった
  */
 import { test, expect } from '@playwright/test';
-import fs from 'node:fs';
 import path from 'node:path';
 import {
   案内を止める,
   画面が出るまで待つ,
   入り口が決まるまで待つ,
   団体で入る,
+  個人で入る,
   管理者の窓で入る,
 } from './helpers.mjs';
 import { 検証のパスワード } from '../scripts/fb-rest.mjs';
+import { 文書の根, 管理, 検査の団体を作る, 名簿で引く } from './emu-dantai.mjs';
 
-const 団体 = '100002';
 const 合言葉 = 検証のパスワード();
 test.skip(
   process.env.FB_EMULATOR !== '1',
   '中継の /kanri と新しい決まりがあるのは手元のエミュレーターだけ（配るまで）'
 );
-
-/** 控え（100002-個人）に入っている部員。名前は画面の上で押すのに使う（検証の名前。出力には出さない） */
-const 部員 = (() => {
-  const 控え = JSON.parse(fs.readFileSync('e2e/.auth/100002-個人.json', 'utf8'));
-  for (const 元 of 控え.origins || [])
-    for (const 項 of 元.localStorage || [])
-      if (項.name === 'archery-score-storage') {
-        const s = JSON.parse(項.value).state || {};
-        return { id: s.myMemberId, 名: s.myMemberName };
-      }
-  return { id: null, 名: null };
-})();
 
 const 撮る = async (page, 的, 名, 情報) => {
   if (!process.env.SHOT_DIR) return;
@@ -65,10 +55,9 @@ const スイッチを押す = (page, 名) =>
  * 名簿でその名前の人を引き、逆引き表にその人の個人ID の行がいくつあるか（招待の行は数えない）。
  * エミュレーターを管理の資格で読む（e2e/emu-fetch.mjs が手元へ向ける）。名簿にいなければ -1
  */
-async function 個人IDの行の数(名前) {
-  const 根 = `https://firestore.googleapis.com/v1/projects/kyudoscoremanager-stg/databases/(default)/documents/groups/${団体}`;
+async function 個人IDの行の数(団体, 名前) {
   const 読む = async (集まり) => {
-    const 返り = await fetch(`${根}/${集まり}?pageSize=300`, { headers: { Authorization: 'Bearer owner' } });
+    const 返り = await fetch(`${文書の根}/groups/${団体}/${集まり}?pageSize=300`, { headers: 管理 });
     return (await 返り.json()).documents || [];
   };
   const 人 = (await 読む('members')).find((文書) => 文書.fields?.name?.stringValue === 名前);
@@ -81,11 +70,11 @@ async function 個人IDの行の数(名前) {
 
 /**
  * 名簿でその名前の人を引き、役の文書（config/roles）の割り当てで、その人たちに付いた役の id の並び。
- * 同じ名前の人が何人かいれば全員分（ほかの機種が足した人も含む）。エミュレーターを管理の資格で読む
+ * 同じ名前の人が何人かいれば全員分。エミュレーターを管理の資格で読む
  */
-async function 割り当てた役(名前) {
-  const 根 = `https://firestore.googleapis.com/v1/projects/kyudoscoremanager-stg/databases/(default)/documents/groups/${団体}`;
-  const 頭 = { headers: { Authorization: 'Bearer owner' } };
+async function 割り当てた役(団体, 名前) {
+  const 根 = `${文書の根}/groups/${団体}`;
+  const 頭 = { headers: 管理 };
   const 人たち = ((await (await fetch(`${根}/members?pageSize=300`, 頭)).json()).documents || []).filter(
     (文書) => 文書.fields?.name?.stringValue === 名前
   );
@@ -106,7 +95,7 @@ async function 開く(page) {
 
 test('部員の役：持ち主が作って割り当て、個人ログインの端末で効く', async ({ browser }, 情報) => {
   test.setTimeout(300_000);
-  expect(部員.id, '控え（100002-個人）に部員が入っていない').toBeTruthy();
+  const 団体 = await 検査の団体を作る('yaku');
 
   // ── 持ち主 ──
   const 持ち主の場 = await browser.newContext({
@@ -116,6 +105,19 @@ test('部員の役：持ち主が作って割り当て、個人ログインの�
   const 持ち主 = await 持ち主の場.newPage();
   await 開く(持ち主);
   await 団体で入る(持ち主, 団体, 合言葉);
+  // 個人ログインで使う部員を足す（その場で個人ID が付く）
+  const 部員の名 = '検査 部員';
+  await タブ(持ち主, 'メンバー').click();
+  await 持ち主.getByRole('button', { name: 'メンバーを追加' }).click();
+  await 持ち主.getByLabel('名前', { exact: true }).fill(部員の名);
+  await 持ち主.getByText('保存する', { exact: true }).click();
+  let 部員 = null;
+  await expect
+    .poll(async () => (部員 = await 名簿で引く(団体, 部員の名))?.個人ID ?? null, {
+      timeout: 60_000,
+      message: '足した部員に個人ID が付かない',
+    })
+    .toBeTruthy();
   await タブ(持ち主, '設定').click();
   await expect(持ち主.getByText('ログアウト', { exact: true })).toBeVisible({ timeout: 20_000 });
   // 管理者モードでなければ「部員の役」は出ない
@@ -152,7 +154,7 @@ test('部員の役：持ち主が作って割り当て、個人ログインの�
 
   // メンバーの編集で「見るだけ」を割り当てる
   await タブ(持ち主, 'メンバー').click();
-  await 持ち主.getByText(部員.名, { exact: true }).first().click();
+  await 持ち主.getByTestId('メンバーの一覧').getByText(部員の名, { exact: true }).first().click();
   const 役の欄 = 持ち主.getByTestId('役を選ぶ欄');
   await expect(役の欄).toBeVisible({ timeout: 20_000 });
   await expect(役の欄.getByTestId('役を選ぶ-jibun')).toHaveAttribute('aria-pressed', 'true');
@@ -163,18 +165,19 @@ test('部員の役：持ち主が作って割り当て、個人ログインの�
   // ── 部員の端末（見るだけ） ──
   const 部員の場 = await browser.newContext({
     ...情報.project.use,
-    storageState: 'e2e/.auth/100002-個人.json',
+    storageState: { cookies: [], origins: [] },
   });
   const 部員の頁 = await 部員の場.newPage();
   // 見るだけに替わる前に付けて、まだ送れていない記録が 1 件ある端末にする（電波の無い所で付けたあと役が替わった形）。
-  // 控えの役も見るだけにしておく（開いた直後に部員（自分）のまま送ってしまわないように）。最初に開くときだけ
+  // 控えの役も見るだけにしておく（開いた直後に部員（自分）のまま送ってしまわないように）。個人ID で入ったあと、
+  // 開き直したときに 1 回だけ置く
   await 部員の頁.addInitScript(
     ({ 部員id }) => {
       if (sessionStorage.getItem('送れない記録を置いた')) return;
-      sessionStorage.setItem('送れない記録を置いた', '1');
       const 鍵 = 'archery-score-storage';
       const 控え = JSON.parse(localStorage.getItem(鍵) || '{}');
-      if (!控え.state) return;
+      if (!控え.state?.activeGroupId) return;
+      sessionStorage.setItem('送れない記録を置いた', '1');
       const 今 = Date.now();
       控え.state.sessions = [
         ...(控え.state.sessions || []),
@@ -193,6 +196,9 @@ test('部員の役：持ち主が作って割り当て、個人ログインの�
     { 部員id: 部員.id }
   );
   await 開く(部員の頁);
+  expect(await 個人で入る(部員の頁, 団体, 部員.個人ID), '足した部員が個人ID で入れない').toBeNull();
+  await 部員の頁.reload();
+  await 画面が出るまで待つ(部員の頁);
   await タブ(部員の頁, '設定').click();
   await expect(部員の頁.getByTestId('自分の役')).toContainText('見るだけ', { timeout: 30_000 });
   // 送れない記録は送らずに残し、役の下で知らせる（11/19 本人「知らせる」）
@@ -259,14 +265,13 @@ test('部員の役：持ち主が作って割り当て、個人ログインの�
   await expect(使い方).toHaveCount(0);
   // 合言葉を入れていない運営が足した人にも、その場で個人IDが付く（11/19 本人）。運営の画面には出ないので、
   // エミュレーターを管理の資格で読んで確かめる
-  // 名前は回ごとに変える（同じエミュレーターでほかの機種が先に足した人を掴まない）
-  const 合言葉なしで足す人 = `検査 合言葉なし${Date.now().toString(36).slice(-4)}`;
+  const 合言葉なしで足す人 = '検査 合言葉なし';
   await タブ(部員の頁, 'メンバー').click();
   await 部員の頁.getByRole('button', { name: 'メンバーを追加' }).click();
   await 部員の頁.getByLabel('名前', { exact: true }).fill(合言葉なしで足す人);
   await 部員の頁.getByText('保存する', { exact: true }).click();
   await expect
-    .poll(() => 個人IDの行の数(合言葉なしで足す人), {
+    .poll(() => 個人IDの行の数(団体, 合言葉なしで足す人), {
       timeout: 30_000,
       message: '合言葉を入れていない運営が足した人に個人IDが付かない',
     })
@@ -290,7 +295,7 @@ test('部員の役：持ち主が作って割り当て、個人ログインの�
   await expect(部員の頁.getByText('自分の情報', { exact: true })).toHaveCount(0, { timeout: 20_000 });
   // 管理者モードの運営は、ほかの人の個人IDが見え、招待リンクを作れる（決まりの memberAdmin）。役も選べる（11/25 本人）
   // 一覧の中で探す（字だけで探すと、裏に残った分析の画面の順位の名前を掴む）
-  await 部員の頁.getByTestId('メンバーの一覧').getByText('部員1', { exact: true }).first().click();
+  await 部員の頁.getByTestId('メンバーの一覧').getByText(合言葉なしで足す人, { exact: true }).first().click();
   const 招待の欄 = 部員の頁.getByTestId('招待リンクの欄');
   await expect(招待の欄, '運営に招待リンクの欄が出ない').toBeVisible({ timeout: 20_000 });
   await expect(部員の頁.getByText('******** (管理者のみ表示)', { exact: true })).toHaveCount(0);
@@ -323,7 +328,7 @@ test('部員の役：持ち主が作って割り当て、個人ログインの�
   await 運営の役の欄.getByTestId('役を選ぶ-zenin').click();
   await expect(運営の役の欄.getByTestId('役を選ぶ-zenin')).toHaveAttribute('aria-pressed', 'true');
   await expect
-    .poll(() => 割り当てた役('検査 運営'), { timeout: 30_000, message: '運営の割り当てが雲に届かない' })
+    .poll(() => 割り当てた役(団体, '検査 運営'), { timeout: 30_000, message: '運営の割り当てが雲に届かない' })
     .toContain('zenin');
   await expect(部員の頁.getByText('役を保存できませんでした', { exact: true })).toHaveCount(0);
 

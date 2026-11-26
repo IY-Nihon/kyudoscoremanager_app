@@ -240,6 +240,27 @@ test('削除：ゴミ箱へ移り、クラウドにも反映される', async ()
   assert.deepEqual(雲.中身(ゴミ箱の道), ['ses-2']);
 });
 
+test('削除：戻したばかりで雲のゴミ箱の写しも手元に残っている記録を消しても、ゴミ箱には 1 つだけ（2026-11-26）', async () => {
+  // 戻したことが雲に届く前に雲のゴミ箱の便りが来ると、記録は履歴とゴミ箱の両方に居る。そのまま消すと
+  // 前はゴミ箱に同じ記録が 2 つ並んだ（E2E のゴミ箱の巡りが重いときに iPhone で落ちた）
+  const { store } = 用意();
+  const 記録 = store.getState().sessions.find((一つ) => 一つ.id === 'ses-2');
+  store.setState({ trash: [Object.assign({}, 記録, { syncStatus: '同期済み' })] });
+  await store.getState().deleteSession('ses-2');
+  await 待つ(50);
+  const 同じ記録 = store.getState().trash.filter((一つ) => 一つ && 一つ.id === 'ses-2');
+  assert.equal(同じ記録.length, 1, 'ゴミ箱に同じ記録が 2 つ並んだ');
+  assert.equal(記録を見る(store, 'ses-2'), undefined, '履歴から消えない');
+  // まとめて消すときも同じ
+  const { store: 店2 } = 用意();
+  const 記録2 = 店2.getState().sessions.find((一つ) => 一つ.id === 'ses-1');
+  店2.setState({ trash: [Object.assign({}, 記録2, { syncStatus: '同期済み' })] });
+  await 店2.getState().deleteMultipleSessions(['ses-1', 'ses-3']);
+  await 待つ(50);
+  assert.equal(店2.getState().trash.filter((一つ) => 一つ && 一つ.id === 'ses-1').length, 1);
+  assert.equal(店2.getState().trash.filter((一つ) => 一つ && 一つ.id === 'ses-3').length, 1);
+});
+
 test('削除：通信できないときは「未同期」と「手元で捨てた印」が残る', async () => {
   const { store, 雲 } = 用意();
   雲.状態.オフライン = true;
