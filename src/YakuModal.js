@@ -142,7 +142,7 @@ function YakuModal({ 見える, 閉じる }) {
                   <Text style={形.問いの字}>{部品.名}</Text>
                   {外せない ? (
                     <Text style={形.外せないわけ} testID="見るのを外せないわけ">
-                      記録を直す・消す、メンバーや出欠の管理には、ほかの人の記録も要ります
+                      記録を編集・削除、メンバーや出欠の管理には、ほかの人の記録も要ります
                     </Text>
                   ) : null}
                 </View>
@@ -165,7 +165,7 @@ function YakuModal({ 見える, 閉じる }) {
               style={[{ alignSelf: 'flex-start', paddingVertical: 8 }, IS_WEB && { cursor: 'pointer' }]}
             >
               <Text style={{ fontSize: 14, color: 色.赤 }}>
-                この役を消す（この役の人は「部員（自分）」に戻ります）
+                この役を削除（この役の人は「部員（自分）」に戻ります）
               </Text>
             </Pressable>
           ) : null}

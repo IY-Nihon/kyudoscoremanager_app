@@ -1085,7 +1085,7 @@ const LoginScreen = () => {
                     <Text style={styles.Googleの字}>Google で作る</Text>
                   </Pressable>
                   <Text style={styles.Googleの添え}>
-                    アカウントを選んだあと、団体名とパスワードを入れます。メールアドレスの入力は要りません。
+                    アカウントを選んだあと、団体名とパスワードを入力します。メールアドレスの入力は要りません。
                   </Text>
                 </View>
               )}

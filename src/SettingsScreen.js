@@ -756,7 +756,7 @@ const SettingsScreen = () => {
                   <View style={{ flex: 1, paddingRight: 8 }}>
                     <Text style={styles.itemText}>年度の始まり</Text>
                     <Text style={{ fontSize: 11, color: 基本色.灰, marginTop: 2 }}>
-                      進級の窓を出す日と、分析・出欠・書き出しの「年度」の区切り
+                      進級の画面を出す日と、分析・出欠・書き出しの「年度」の区切り
                     </Text>
                   </View>
                 </View>
@@ -863,7 +863,7 @@ const SettingsScreen = () => {
               <View style={{ flex: 1, paddingRight: 8 }}>
                 <Text style={styles.itemText}>入力したマスを自動でロック</Text>
                 <Text style={{ fontSize: 11, color: 基本色.灰, marginTop: 2 }}>
-                  入れて3秒たつと押しても変わらなくなります。直すときは長押しで、そのマスだけ開きます。1立が全部埋まったときは、間隔・計の鍵も自動でかかります
+                  入力して3秒たつと押しても変わらなくなります。編集するときは長押しで、そのマスだけロックが解除されます。1立が全部埋まったときは、間隔・計も自動でロックされます
                 </Text>
               </View>
             </View>
@@ -1483,7 +1483,7 @@ const SettingsScreen = () => {
           <View style={styles.modalContent} testID="月の窓">
             <Text style={styles.modalTitle}>年度の始まり</Text>
             <Text style={{ fontSize: 13, color: 基本色.灰, marginBottom: 12, alignSelf: 'stretch' }}>
-              選んだ月の 1 日に進級の窓が出て、そこから 1
+              選んだ月の 1 日に進級の画面が出て、そこから 1
               年を「年度」として数えます。過去の記録は消えず、区切り方だけが変わります
             </Text>
             <View
