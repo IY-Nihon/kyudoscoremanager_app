@@ -76,7 +76,7 @@ test('更新の帯：束が変わったら出る', async ({ page }) => {
   await 束の有無を決める(page, 束, false);
   await 見に行かせる(page);
 
-  await expect(page.getByText(/新しい版が出ています/), '帯が出ない').toBeVisible({
+  await expect(page.getByText(/新しいバージョンが出ています/), '帯が出ない').toBeVisible({
     timeout: 10_000,
   });
   await expect(page.getByText('更新', { exact: true })).toBeVisible();
@@ -92,7 +92,7 @@ test('更新の帯：束が同じなら出さない', async ({ page }) => {
   await 返す中身を決める(page, 束);
   await 見に行かせる(page);
 
-  await expect(page.getByText(/新しい版が出ています/), '同じ束なのに帯が出た').toHaveCount(0);
+  await expect(page.getByText(/新しいバージョンが出ています/), '同じ束なのに帯が出た').toHaveCount(0);
 });
 
 test('更新の帯：閉じられる', async ({ page }) => {
@@ -103,7 +103,7 @@ test('更新の帯：閉じられる', async ({ page }) => {
   await 束の有無を決める(page, 束, false);
   await 見に行かせる(page);
 
-  const 帯 = page.getByText(/新しい版が出ています/);
+  const 帯 = page.getByText(/新しいバージョンが出ています/);
   await expect(帯).toBeVisible({ timeout: 10_000 });
   await page.getByText('✕', { exact: true }).first().click();
   await page.waitForTimeout(600);
@@ -118,7 +118,7 @@ test('更新の帯：読めない中身が返っても、帯を出さない', as
     await route.fulfill({ status: 200, contentType: 'text/html', body: '<html>取れなかった</html>' });
   });
   await 見に行かせる(page);
-  await expect(page.getByText(/新しい版が出ています/), '読めないのに帯が出た').toHaveCount(0);
+  await expect(page.getByText(/新しいバージョンが出ています/), '読めないのに帯が出た').toHaveCount(0);
 });
 
 test('更新の帯：「更新」を押すと読み込み直す', async ({ page }) => {
@@ -130,7 +130,7 @@ test('更新の帯：「更新」を押すと読み込み直す', async ({ page 
   await 返す中身を決める(page, '/_expo/static/js/web/AppEntry-2222222222222222222222222222ffff.js');
   await 束の有無を決める(page, 束, false);
   await 見に行かせる(page);
-  await expect(page.getByText(/新しい版が出ています/), '帯が出ない').toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText(/新しいバージョンが出ています/), '帯が出ない').toBeVisible({ timeout: 10_000 });
 
   await page.evaluate(() => {
     window.__押す前の印 = 1;
@@ -165,7 +165,7 @@ test('更新の帯：古い控えが返っただけ（今の束はサーバー�
   await 束の有無を決める(page, 束, true);
   await 見に行かせる(page);
 
-  await expect(page.getByText(/新しい版が出ています/), '今の束がまだあるのに帯が出た').toHaveCount(0);
+  await expect(page.getByText(/新しいバージョンが出ています/), '今の束がまだあるのに帯が出た').toHaveCount(0);
 });
 
 test('更新の帯：今の束があるかを確かめられない（通信できない）なら出さない', async ({ page }) => {
@@ -178,7 +178,7 @@ test('更新の帯：今の束があるかを確かめられない（通信で�
   await 束の有無を決める(page, 束, '通信できない');
   await 見に行かせる(page);
 
-  await expect(page.getByText(/新しい版が出ています/), '確かめられないのに帯が出た').toHaveCount(0);
+  await expect(page.getByText(/新しいバージョンが出ています/), '確かめられないのに帯が出た').toHaveCount(0);
 });
 
 test('更新の帯：AppEntry の束が無い中身（Wi-Fi のログイン画面など）なら出さない', async ({ page }) => {
@@ -191,7 +191,7 @@ test('更新の帯：AppEntry の束が無い中身（Wi-Fi のログイン画�
   await 束の有無を決める(page, 束, false);
   await 見に行かせる(page);
 
-  await expect(page.getByText(/新しい版が出ています/), '別の .js があるだけで帯が出た').toHaveCount(0);
+  await expect(page.getByText(/新しいバージョンが出ています/), '別の .js があるだけで帯が出た').toHaveCount(0);
 });
 
 // ───── 自動で更新する（しばらく離れて戻ってきたとき） ─────
@@ -259,7 +259,7 @@ test('自動で更新：読み込み直しても版が変わらないときは�
   await page.waitForTimeout(4000);
   await 離れる(page);
   await 戻る(page); // 2 回目：同じ版へは繰り返さない → 帯
-  await expect(page.getByText(/新しい版が出ています/), '自動更新を繰り返したか、帯が出ない').toBeVisible({
+  await expect(page.getByText(/新しいバージョンが出ています/), '自動更新を繰り返したか、帯が出ない').toBeVisible({
     timeout: 15_000,
   });
 });
@@ -309,7 +309,7 @@ test('自動で更新：画面を見ているときは、触れたばかりな�
   // 触れたばかり（iPhone の WebKit は wheel を打てないので、合図を直に送る）
   await page.evaluate(() => window.dispatchEvent(new Event('pointerdown')));
   await 見に行かせる(page);
-  await expect(page.getByText(/新しい版が出ています/), '触れたばかりなのに帯が出ない').toBeVisible({
+  await expect(page.getByText(/新しいバージョンが出ています/), '触れたばかりなのに帯が出ない').toBeVisible({
     timeout: 10_000,
   });
   expect(await page.evaluate(() => typeof window.__押す前の印), '触れたばかりで読み込み直した').toBe(
@@ -346,7 +346,7 @@ test('自動で更新：字を入力している最中は、読み込み直さ�
   await 欄.pressSequentially('1234', { delay: 20 });
   await 離れる(page);
   await 戻る(page);
-  await expect(page.getByText(/新しい版が出ています/), '帯が出ない').toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText(/新しいバージョンが出ています/), '帯が出ない').toBeVisible({ timeout: 10_000 });
   expect(await page.evaluate(() => typeof window.__押す前の印), '入力中に勝手に読み込み直した').toBe(
     'number'
   );
@@ -379,7 +379,7 @@ test.describe('自動で更新：窓が開いている間', () => {
     });
     await 離れる(page);
     await 戻る(page);
-    await expect(page.getByText(/新しい版が出ています/), '帯が出ない').toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/新しいバージョンが出ています/), '帯が出ない').toBeVisible({ timeout: 10_000 });
     expect(
       await page.evaluate(() => typeof window.__押す前の印),
       '窓が開いているのに勝手に読み込み直した'
@@ -441,7 +441,7 @@ test.describe('自動で更新：分析・履歴を見ている間', () => {
       await 離れる(page);
       // 裏にある間は読み込み直してよいので、裏の間に見に行かないよう、すぐ戻す
       await 戻る(page);
-      await expect(page.getByText(/新しい版が出ています/), '帯が出ない').toBeVisible({ timeout: 10_000 });
+      await expect(page.getByText(/新しいバージョンが出ています/), '帯が出ない').toBeVisible({ timeout: 10_000 });
       expect(
         await page.evaluate(() => typeof window.__押す前の印),
         `${タブ}を見ているのに勝手に読み込み直した`

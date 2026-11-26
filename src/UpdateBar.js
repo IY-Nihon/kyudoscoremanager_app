@@ -240,7 +240,7 @@ export function UpdateBar() {
   return (
     <View style={S.帯} accessibilityRole="alert">
       <Text style={S.字} numberOfLines={2}>
-        新しい版が出ています。読み込み直すと最新になります（お手元の記録は残ります）。
+        新しいバージョンが出ています。読み込み直すと最新になります（お手元の記録は残ります）。
       </Text>
       <Text
         style={S.押す}
