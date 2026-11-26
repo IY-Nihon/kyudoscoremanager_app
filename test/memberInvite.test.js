@@ -582,9 +582,9 @@ test('部員として入る：中継（/kojin）が確かめて証を書く。�
   中継の答え = 返事(429, { error: 'x' });
   await assert.rejects(部員として入る(道具, 団体, 'K7MP3X'), /試した回数が多すぎます/);
   中継の答え = 返事(401, { error: 'x', 印: 'appcheck' });
-  await assert.rejects(部員として入る(道具, 団体, 'K7MP3X'), /この端末の確かめに失敗しました/);
+  await assert.rejects(部員として入る(道具, 団体, 'K7MP3X'), /この端末の確認に失敗しました/);
   中継の答え = 返事(503, { error: 'x' });
-  await assert.rejects(部員として入る(道具, 団体, 'K7MP3X'), /いまは確かめられません/);
+  await assert.rejects(部員として入る(道具, 団体, 'K7MP3X'), /いまは確認できません/);
   // 古い中継（/kojin が無い）：前の道で入る
   認証.currentUser = null;
   中継の答え = 返事(404, { error: 'この道は中継しません' });
@@ -596,7 +596,7 @@ test('部員として入る：中継（/kojin）が確かめて証を書く。�
   // ほかの 403（新しい中継の「匿名でない」など）は前の道にしない
   認証.currentUser = null;
   中継の答え = 返事(403, { error: '部員のログインは匿名の口座で呼んでください' });
-  await assert.rejects(部員として入る(道具, 団体, 'K7MP3X'), /いまは確かめられません/);
+  await assert.rejects(部員として入る(道具, 団体, 'K7MP3X'), /いまは確認できません/);
 });
 
 test('部員として入る：12/3 を過ぎた 4 桁は、匿名の口座を作る前に分かる言葉で断る', async () => {
@@ -635,6 +635,6 @@ test('部員として入る：中継が古い（404）ときの前の道が新�
   const { 部員として入る } = require('../src/groupLogin');
   await assert.rejects(
     部員として入る({ Firestore: api, FirebaseAuth, db: {}, auth: 認証, 中継 }, 団体, 'K7MP3X'),
-    (誤り) => /いまは確かめられません/.test(誤り.message) && !/Missing/.test(誤り.message)
+    (誤り) => /いまは確認できません/.test(誤り.message) && !/Missing/.test(誤り.message)
   );
 });

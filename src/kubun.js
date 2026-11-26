@@ -48,7 +48,7 @@ const 新しいid = () => 'k' + Date.now().toString(36) + Math.random().toString
 function 区分を足す(一覧, 名前, id) {
   const 名 = 名前を整える(名前);
   const 今 = 区分たち(一覧);
-  if (!名) return { 誤り: '区分の名前を入れてください' };
+  if (!名) return { 誤り: '区分の名前を入力してください' };
   if (今.some((区分) => 区分.name === 名)) return { 誤り: `「${名}」はもうあります` };
   return { 一覧: [...今, { id: id || 新しいid(), name: 名 }] };
 }
@@ -57,7 +57,7 @@ function 区分を足す(一覧, 名前, id) {
 function 区分の名前を直す(一覧, id, 名前) {
   const 名 = 名前を整える(名前);
   const 今 = 区分たち(一覧);
-  if (!名) return { 誤り: '区分の名前を入れてください' };
+  if (!名) return { 誤り: '区分の名前を入力してください' };
   if (今.some((区分) => 区分.id !== id && 区分.name === 名)) return { 誤り: `「${名}」はもうあります` };
   return { 一覧: 今.map((区分) => (区分.id === id ? { id, name: 名 } : 区分)) };
 }

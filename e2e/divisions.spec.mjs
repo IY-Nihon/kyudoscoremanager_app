@@ -78,9 +78,9 @@ async function 設定へ(page) {
 /** 欄に並んでいる区分の名前（上から） */
 async function 並び(欄) {
   const 名前たち = await 欄
-    .getByRole('button', { name: / の名前を直す$/ })
+    .getByRole('button', { name: / の名前を編集$/ })
     .evaluateAll((要素たち) =>
-      要素たち.map((要素) => (要素.getAttribute('aria-label') || '').replace(/ の名前を直す$/, ''))
+      要素たち.map((要素) => (要素.getAttribute('aria-label') || '').replace(/ の名前を編集$/, ''))
     );
   return 名前たち;
 }
@@ -113,7 +113,7 @@ test('区分：設定で足す・並べ替える・名前を直す・消す。�
     .toEqual(['検査乙', '検査甲']);
 
   // 名前を直す。ほかと同じ名前は断り、打ち直したら断りの文は消える
-  await 欄.getByRole('button', { name: '検査甲 の名前を直す' }).click();
+  await 欄.getByRole('button', { name: '検査甲 の名前を編集' }).click();
   await page.getByLabel('区分の名前', { exact: true }).fill('検査乙');
   await 欄.getByRole('button', { name: '名前を決める' }).click();
   await expect(欄.getByText('「検査乙」はもうあります', { exact: true })).toBeVisible();
@@ -139,7 +139,7 @@ test('区分：設定で足す・並べ替える・名前を直す・消す。�
   // 消す（確かめの窓で「消す」）
   欄 = await 設定へ(page);
   for (const 名 of ['検査乙', '検査丙']) {
-    await 欄.getByRole('button', { name: `${名} を消す` }).click();
+    await 欄.getByRole('button', { name: `${名} を削除` }).click();
     await page.getByTestId('窓のボタン-消す').click();
   }
   await expect.poll(() => 並び(欄)).toEqual([]);

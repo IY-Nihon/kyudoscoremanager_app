@@ -859,7 +859,7 @@ const useScoreStore = zustand.create()(
             return { ok: false, 訳: '団体アカウントで入っているときだけ消せます' };
           if (!管理者) return { ok: false, 訳: '管理者モードをオンにしてください' };
           if (ライブ中) return { ok: false, 訳: 'ライブ記録中は消せません。先にライブを止めてください' };
-          if (!合言葉) return { ok: false, 訳: 'パスワードを入れてください' };
+          if (!合言葉) return { ok: false, 訳: 'パスワードを入力してください' };
           let 宛先 = 控えの宛先 || Firebaseの器.auth.currentUser?.email;
           if (!宛先) {
             try {
@@ -956,7 +956,7 @@ const useScoreStore = zustand.create()(
         学年を足す: (名前) => {
           const 今 = 学.自分の学年たち(状態().customGrades);
           const 名 = 学.学年の名前を整える(名前);
-          if (!名) return '学年の名前を入れてください';
+          if (!名) return '学年の名前を入力してください';
           if (今.some((学年) => 学年.name === 名)) return `「${名}」はもうあります`;
           const 値 = Math.max(0, ...今.map((学年) => 学年.value)) + 1;
           状態().学年の設定を書く({ customGrades: [...今, { value: 値, name: 名 }] });
@@ -965,7 +965,7 @@ const useScoreStore = zustand.create()(
         学年の名前を直す: (値, 名前) => {
           const 今 = 学.自分の学年たち(状態().customGrades);
           const 名 = 学.学年の名前を整える(名前);
-          if (!名) return '学年の名前を入れてください';
+          if (!名) return '学年の名前を入力してください';
           if (今.some((学年) => 学年.value !== 値 && 学年.name === 名)) return `「${名}」はもうあります`;
           状態().学年の設定を書く({
             customGrades: 今.map((学年) => (学年.value === 値 ? { value: 値, name: 名 } : 学年)),

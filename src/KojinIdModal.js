@@ -76,7 +76,7 @@ const 個人IDを新しくする窓 = ({ 見える, 閉じる }) => {
   const 新しくする = async () => {
     if (作業中) return;
     if (!合言葉) {
-      難点を置く('団体のパスワードを入れてください');
+      難点を置く('団体のパスワードを入力してください');
       return;
     }
     作業中を置く(true);
@@ -233,15 +233,15 @@ const 四桁の帯 = () => {
   if (役 !== 'group' || 人数 === 0) return null;
   const 終わった = !個人ID.古い形を使えるか();
   const 文 = 終わった
-    ? `4桁の個人IDの人が ${人数} 人います。4桁のIDではもう入れません。新しい個人IDを配り、メンバーに入り直してもらってください`
-    : `4桁の個人IDの人が ${人数} 人います。${終わりの日の前の日()}までに新しい個人IDを配り、メンバーに入り直してもらってください（${終わりの日()}から4桁では入れなくなります）`;
+    ? `4桁の個人IDの人が ${人数} 人います。4桁のIDではもう入れません。新しい個人IDを伝え、メンバーに入り直してもらってください`
+    : `4桁の個人IDの人が ${人数} 人います。${終わりの日の前の日()}までに新しい個人IDを伝え、メンバーに入り直してもらってください（${終わりの日()}から4桁では入れなくなります）`;
   return (
     <>
       {閉じた ? null : (
         <View style={[styles.帯, { paddingBottom: 10 + (余白.bottom || 0) }]} testID="四桁の帯">
           <Text style={styles.帯の字}>{文}</Text>
           <Pressable accessibilityRole="button" onPress={() => 開くを置く(true)} hitSlop={8}>
-            <Text style={styles.帯の押す}>配り直す</Text>
+            <Text style={styles.帯の押す}>新しいIDを作る</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"

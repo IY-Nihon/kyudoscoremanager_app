@@ -27,7 +27,7 @@ test('区分たち：形の崩れたもの・同じ id の重なりを落とす'
 });
 
 test('足す：空・同じ名前は断る。名前は整えて足す', () => {
-  assert.deepStrictEqual(区.区分を足す(一覧, '  ', 'd'), { 誤り: '区分の名前を入れてください' });
+  assert.deepStrictEqual(区.区分を足す(一覧, '  ', 'd'), { 誤り: '区分の名前を入力してください' });
   assert.deepStrictEqual(区.区分を足す(一覧, '学生', 'd'), { 誤り: '「学生」はもうあります' });
   const { 一覧: 次 } = 区.区分を足す(一覧, ' Aチーム  ', 'd');
   assert.deepStrictEqual(次[3], { id: 'd', name: 'Aチーム' });
