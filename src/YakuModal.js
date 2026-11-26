@@ -98,7 +98,7 @@ function YakuModal({ 見える, 閉じる }) {
               key={役.id}
               testID={`役の札-${役.id}`}
               accessibilityRole="button"
-              accessibilityLabel={`${役.名}を直す`}
+              accessibilityLabel={`${役.名}を編集`}
               onPress={() => 開く(役)}
               style={({ hovered }) => [形.札, hovered && { backgroundColor: 色.地_F7F7FA }]}
             >
@@ -121,7 +121,7 @@ function YakuModal({ 見える, 閉じる }) {
   } else {
     中身 = (
       <>
-        <Text style={形.題}>{直す役.id ? '役を直す' : '役を作る'}</Text>
+        <Text style={形.題}>{直す役.id ? '役を編集' : '役を作る'}</Text>
         <ScrollView style={{ maxHeight: 360 }}>
           <Text style={形.欄の名}>役の名前</Text>
           <TextInput

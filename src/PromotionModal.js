@@ -257,7 +257,7 @@ function 進級待ちの帯({ 見える }) {
   return (
     <Pressable
       accessibilityRole="button"
-      aria-label={`${年}年度の進級がまだです。進級の窓を開く`}
+      aria-label={`${年}年度の進級がまだです。進級の画面を開く`}
       testID="進級の帯"
       onPress={() => useScoreStore.setState({ 進級の窓を閉じた: false })}
       style={({ hovered }) => [

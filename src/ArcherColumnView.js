@@ -328,8 +328,8 @@ const ArcherColumnView = React.memo(
                     activeOpacity={0.7}
                     accessible={鍵が効く}
                     accessibilityRole="button"
-                    accessibilityLabel={`${立 + 1}立目の鍵を${鍵 ? '開ける' : '掛ける'}`}
-                    aria-label={鍵が効く ? `${立 + 1}立目の鍵を${鍵 ? '開ける' : '掛ける'}` : undefined}
+                    accessibilityLabel={`${立 + 1}立目のロックを${鍵 ? '解除' : 'かける'}`}
+                    aria-label={鍵が効く ? `${立 + 1}立目のロックを${鍵 ? '解除' : 'かける'}` : undefined}
                     style={[
                       {
                         width: 横 ? ます幅 * 本数 : ます幅,
@@ -440,8 +440,8 @@ const ArcherColumnView = React.memo(
                         onPress={() => 鍵を押した(archer.id, 立)}
                         accessible
                         accessibilityRole="button"
-                        accessibilityLabel={`${立 + 1}立目の鍵を${鍵 ? '開ける' : '掛ける'}`}
-                        aria-label={`${立 + 1}立目の鍵を${鍵 ? '開ける' : '掛ける'}`}
+                        accessibilityLabel={`${立 + 1}立目のロックを${鍵 ? '解除' : 'かける'}`}
+                        aria-label={`${立 + 1}立目のロックを${鍵 ? '解除' : 'かける'}`}
                         style={{
                           position: 'absolute',
                           top: 0,

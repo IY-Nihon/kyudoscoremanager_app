@@ -856,9 +856,9 @@ const useScoreStore = zustand.create()(
             activeUserEmail: 控えの宛先,
           } = 状態();
           if (役 !== 'group' || !団体ID)
-            return { ok: false, 訳: '団体アカウントで入っているときだけ消せます' };
+            return { ok: false, 訳: '団体アカウントで入っているときだけ削除できます' };
           if (!管理者) return { ok: false, 訳: '管理者モードをオンにしてください' };
-          if (ライブ中) return { ok: false, 訳: 'ライブ記録中は消せません。先にライブを止めてください' };
+          if (ライブ中) return { ok: false, 訳: 'ライブ記録中は削除できません。先にライブを止めてください' };
           if (!合言葉) return { ok: false, 訳: 'パスワードを入力してください' };
           let 宛先 = 控えの宛先 || Firebaseの器.auth.currentUser?.email;
           if (!宛先) {
@@ -1135,7 +1135,7 @@ const useScoreStore = zustand.create()(
           } catch (誤り) {
             console.error('[進級] 雲から読めませんでした:', 誤り);
             不具合を控える('進級の読み込み', 誤り);
-            return { 誤り: '雲から名簿を読めませんでした。時間をおいて、もう一度押してください。' };
+            return { 誤り: 'クラウドから名簿を読めませんでした。時間をおいて、もう一度押してください。' };
           }
           const 選び = Array.isArray(残す人)
             ? new Map(残す人.map((id) => [id, '残す']))
@@ -1173,7 +1173,7 @@ const useScoreStore = zustand.create()(
           } catch (誤り) {
             console.error('[進級] 雲へ書けませんでした:', 誤り);
             不具合を控える('進級の書き込み', 誤り);
-            return { 誤り: '雲へ書けませんでした。時間をおいて、もう一度押してください。' };
+            return { 誤り: 'クラウドに保存できませんでした。時間をおいて、もう一度押してください。' };
           }
           const 変更の表 = new Map(変更たち.map(({ id, 変更 }) => [id, 変更]));
           書く({

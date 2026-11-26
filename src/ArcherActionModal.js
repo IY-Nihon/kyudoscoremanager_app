@@ -322,7 +322,7 @@ const ArcherActionModal = ({
                   <Text style={{ fontSize: 11, color: 色.灰, marginTop: 2 }}>
                     {いまのチーム名
                       ? `いまは「${いまのチーム名}」`
-                      : '大学名などを入れると、この区切りより左に色が付きます'}
+                      : '大学名などを入力すると、この区切りより左に色が付きます'}
                   </Text>
                 </View>
                 <Icons.Ionicons name="pricetag-outline" size={20} color={色.青} />

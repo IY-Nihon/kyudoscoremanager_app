@@ -142,8 +142,8 @@ const ライブ名を決める窓 = ({
                         // 絵だけのボタン。読み上げにはアイコンの字しか渡らないので名前を付ける
                         accessible
                         accessibilityRole="button"
-                        accessibilityLabel="このライブを消す"
-                        aria-label="このライブを消す"
+                        accessibilityLabel="このライブを削除"
+                        aria-label="このライブを削除"
                       >
                         <Icons.Ionicons name="trash-outline" size={20} color={色.赤} />
                       </TouchableOpacity>

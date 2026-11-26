@@ -32,5 +32,5 @@ test('確認の文：失うものがあれば件数と「読み込み直す」�
   const 重い = 確認の文({ 未送信の記録: 2, 記録中の盤面: true });
   assert.ok(重い.includes('2 件') && 重い.includes('保存前') && 重い.includes('読み込み直す'));
   const 軽い = 確認の文({ 未送信の記録: 0, 記録中の盤面: false });
-  assert.ok(!軽い.includes('読み込み直す') && 軽い.includes('取り直します'));
+  assert.ok(!軽い.includes('「読み込み直す」') && 軽い.includes('クラウドから読み込み直します'));
 });

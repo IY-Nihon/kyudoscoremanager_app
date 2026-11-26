@@ -151,7 +151,7 @@ const 参加のしかたの窓 = ({
             }}
           >
             <Text style={{ fontSize: 20, color: 色.青, fontWeight: 'bold' }}>記録用</Text>
-            <Text style={{ fontSize: 13, color: 色.灰, marginTop: 2 }}>○×を入れられます</Text>
+            <Text style={{ fontSize: 13, color: 色.灰, marginTop: 2 }}>○×を入力できます</Text>
           </Pressable>
         ) : null}
         <Pressable
@@ -166,7 +166,7 @@ const 参加のしかたの窓 = ({
           }}
         >
           <Text style={{ fontSize: 20, color: 色.青, fontWeight: 'bold' }}>閲覧用</Text>
-          <Text style={{ fontSize: 13, color: 色.灰, marginTop: 2 }}>画面を見るだけ。○×は入れません</Text>
+          <Text style={{ fontSize: 13, color: 色.灰, marginTop: 2 }}>画面を見るだけ。○×は入力できません</Text>
         </Pressable>
       </View>
       <Pressable

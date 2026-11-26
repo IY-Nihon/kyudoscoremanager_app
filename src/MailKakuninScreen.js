@@ -121,7 +121,7 @@ const MailKakuninScreen = ({ 様子, 閉じる }) => {
           disabled={作業中}
         >
           <Text style={[styles.ボタンの字, 持ち主 && styles.二番目の字]}>
-            {持ち主 ? '確認した' : 'もう一度確かめる'}
+            {持ち主 ? '確認した' : 'もう一度確認する'}
           </Text>
         </Pressable>
         {持ち主 ? (

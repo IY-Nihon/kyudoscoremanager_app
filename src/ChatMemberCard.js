@@ -62,7 +62,7 @@ function ChatMemberCard({ カードたち, 名簿, 学年の札, 性別にそろ
           ) : カードたち.some((一つ) => 一つ.status === 'replaced') ? (
             <Text style={styles.やめた}>下のカードに直しました</Text>
           ) : (
-            <Text style={styles.やめた}>登録をやめました</Text>
+            <Text style={styles.やめた}>登録をキャンセルしました</Text>
           )}
         </View>
       </View>
@@ -83,7 +83,7 @@ function ChatMemberCard({ カードたち, 名簿, 学年の札, 性別にそろ
         const 札 = (種, 字) => (
           <Pressable
             accessibilityRole="button"
-            aria-label={`${一つ.args.name}の${種}を直す（今は${字}）`}
+            aria-label={`${一つ.args.name}の${種}を編集（今は${字}）`}
             disabled={外した}
             onPress={() => 開いたを置く(開いている === 種 ? null : { id: 一つ.id, 種 })}
             style={[styles.札, 開いている === 種 && styles.札_開いた]}

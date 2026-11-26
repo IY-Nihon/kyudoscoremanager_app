@@ -504,7 +504,7 @@ const OCRRecordModal = ({
       handleClose();
       return;
     }
-    Alert.alert('読み取った内容を捨てますか？', '閉じると、読み取った結果と直した内容は残りません。', [
+    Alert.alert('読み取った内容を捨てますか？', '閉じると、読み取った結果と編集した内容は残りません。', [
       { text: '続ける', style: 'cancel' },
       { text: '捨てて閉じる', style: 'destructive', onPress: handleClose },
     ]);
@@ -1952,7 +1952,7 @@ const OCRRecordModal = ({
               <TouchableOpacity
                 testID="ocr-yameru"
                 accessibilityRole="button"
-                aria-label="読み取りをやめる"
+                aria-label="読み取りをキャンセル"
                 style={styles.やめるボタン}
                 onPress={読み取りをやめる}
               >
@@ -2089,7 +2089,7 @@ const OCRRecordModal = ({
           {step === 'preview' && mode !== 'record' && (
             <>
               <ScrollView style={styles.body} contentContainerStyle={{ padding: 16 }}>
-                <Text style={styles.hint}>内容を確認してください。色の付いた名前を押して直せます。</Text>
+                <Text style={styles.hint}>内容を確認してください。色の付いた名前を押して編集できます。</Text>
                 <名前の色の凡例 />
 
                 {tachiList.map((tachi, tIdx) => {

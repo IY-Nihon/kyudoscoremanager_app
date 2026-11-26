@@ -82,7 +82,7 @@ const AnalysisScreen = ({ navigation }) => {
       'useTerm',
       '比較のひな型',
       '比較のひな型を足す',
-      '比較のひな型を消す',
+      '比較のひな型を削除',
       'activeGroupId',
     ])
   );
