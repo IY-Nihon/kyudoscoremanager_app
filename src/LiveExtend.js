@@ -82,6 +82,7 @@ function 期限を延ばす欄({ 延ばした }) {
               key={選.値}
               accessibilityRole="radio"
               accessibilityState={{ checked: 入り, disabled: !使える }}
+              aria-checked={入り}
               aria-label={`延ばす長さ ${選.名}`}
               disabled={!使える || 作業中}
               onPress={() => 持ちを置く(選.値)}
