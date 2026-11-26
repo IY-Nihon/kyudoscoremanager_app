@@ -6,6 +6,7 @@ import { MainNavigator } from './src/MainNavigator';
 import { LoginScreen } from './src/LoginScreen';
 import { MailKakuninScreen, 確認の帯 } from './src/MailKakuninScreen';
 import { 四桁の帯 } from './src/KojinIdModal';
+import { ライブの期限の帯 } from './src/LiveExtend';
 import { LoadingScreen } from './src/LoadingScreen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -250,9 +251,14 @@ export default function App() {
     (async () => {
       const 確 = require('./src/mailKakunin');
       const 状 = useScoreStore.getState();
-      const 在る = await 確.団体はまだ在るか(require('./src/db').雲の道具(), 状.publicGroupId || activeGroupId);
+      const 在る = await 確.団体はまだ在るか(
+        require('./src/db').雲の道具(),
+        状.publicGroupId || activeGroupId
+      );
       if (外した || 在る !== false) return;
-      await require('firebase/auth').signOut(auth).catch(() => {});
+      await require('firebase/auth')
+        .signOut(auth)
+        .catch(() => {});
       useScoreStore.getState().setAuth(null, null, null, null);
       // 少し待ってから出す（先に開いていた入り直しの窓が閉じるとき、戻るの履歴を 1 つ戻す。src/backToClose.js）。
       // 2 行にして、自動で消える帯でなく、押して閉じる窓で出す（src/dialogRules.js の 窓で止めるか）
@@ -370,7 +376,12 @@ export default function App() {
   }, [同意の確認が要る]);
 
   useEffect(() => {
-    if (isHydrated && activeGroupId && authReady && (メールの確認 === '済み' || メールの確認 === '猶予中' || 共有の来客)) {
+    if (
+      isHydrated &&
+      activeGroupId &&
+      authReady &&
+      (メールの確認 === '済み' || メールの確認 === '猶予中' || 共有の来客)
+    ) {
       console.log('[App] Initializing data for group:', activeGroupId);
       // ライブを置く枝の合言葉。団体IDそのままだと総当たりで覗かれるので、
       // 推測できない名前を使う。入った時点で取っておかないと、ライブを
@@ -432,7 +443,9 @@ export default function App() {
                 ままの端末が別の枝を見て「相手の○×が出ない」形になる。
                 ログインの前後どちらでも出す（気づけないのは同じく困る） */}
             <UpdateBar />
-            {activeGroupId && !共有の来客 && (メールの確認 === '持ち主がまだ' || メールの確認 === '団体がまだ') ? (
+            {activeGroupId &&
+            !共有の来客 &&
+            (メールの確認 === '持ち主がまだ' || メールの確認 === '団体がまだ') ? (
               <MailKakuninScreen 様子={メールの確認} />
             ) : activeGroupId || 共有の来客 ? (
               // 色の変換は「描画時」に行うため、テーマを変えたら配下を再マウントして
@@ -445,8 +458,16 @@ export default function App() {
                 <View style={styles.画面の場所}>
                   <MainNavigator />
                 </View>
-                {/* 下の帯は 1 本だけ。メールの確認を先に（4 桁の個人ID の帯は確認が済んでから。src/KojinIdModal.js） */}
-                {メールの確認 === '猶予中' ? <確認の帯 /> : 共有の来客 ? null : <四桁の帯 />}
+                {/* 下の帯はふつう 1 本。メールの確認を先に（4 桁の個人ID の帯は確認が済んでから。src/KojinIdModal.js）。
+                    ライブのリンクの期限の帯（残り 30 分。src/LiveExtend.js）は、出ている間だけ 4 桁の帯と重なることがある */}
+                {メールの確認 === '猶予中' ? (
+                  <確認の帯 />
+                ) : 共有の来客 ? null : (
+                  <>
+                    <ライブの期限の帯 />
+                    <四桁の帯 />
+                  </>
+                )}
                 <OfflineIndicator />
                 <WhatsNewModal />
               </React.Fragment>
@@ -454,7 +475,10 @@ export default function App() {
               <LoginScreen />
             )}
             {/* ログインが外れたときの、ログインし直しの窓（ログアウトさせない） */}
-            {activeGroupId && !共有の来客 && メールの確認 !== '持ち主がまだ' && メールの確認 !== '団体がまだ' ? (
+            {activeGroupId &&
+            !共有の来客 &&
+            メールの確認 !== '持ち主がまだ' &&
+            メールの確認 !== '団体がまだ' ? (
               <入り直しの窓 />
             ) : null}
             {/* 招待リンクで来た人を迎える窓 */}

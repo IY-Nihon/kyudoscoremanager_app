@@ -7,6 +7,8 @@ const { useScoreStore } = require('./useScoreStore');
 const 共 = require('./liveShare');
 const 写 = require('./clipboard_bridge');
 const { 配り元 } = require('./IS_WEB');
+const 延 = require('./liveEnchou');
+const { 期限を延ばす欄 } = require('./LiveExtend');
 /**
  * ライブをリンクで配る窓（主催者が開く）。合言葉と有効期限を選び、編集用と閲覧用の 2 本のリンクを作る。
  * リンクで来た人を迎えるのは下の 来客の窓
@@ -22,6 +24,8 @@ const LiveShareModal = ({ visible, onClose }) => {
   const [難点, 難点を置く] = React.useState(null);
   // どれだけ持たせるか。既定は24時間（src/liveShare.js の 期限の選択肢）
   const [持ち, 持ちを置く] = React.useState(共.期限の既定);
+  // 配ったあとに期限を延ばせる人か（団体アカウントと個人ログイン。B3 2026-11-26。src/liveEnchou.js）
+  const 延ばせる = useScoreStore((状態) => 延.延ばせる人か(状態));
   // 窓を開け直したら最初から。前のライブのリンクが残っていると配り間違える
   React.useEffect(() => {
     if (visible) {
@@ -76,7 +80,11 @@ const LiveShareModal = ({ visible, onClose }) => {
         <View style={styles.箱}>
           <Text style={styles.見出し}>ライブをリンクで配る</Text>
           <ScrollView style={{ maxHeight: 420 }}>
-            {出来上がり ? 出来たところ(出来上がり, 写して知らせる) : 作るところ()}
+            {出来上がり
+              ? 出来たところ(出来上がり, 写して知らせる, 延ばせる, (新しい期限) =>
+                  出来上がりを置く((前) => (前 ? { ...前, 期限: 新しい期限 } : 前))
+                )
+              : 作るところ()}
           </ScrollView>
           {知らせ ? <Text style={styles.知らせ}>{知らせ}</Text> : null}
           <TouchableOpacity style={styles.閉じる} onPress={onClose}>
@@ -169,7 +177,7 @@ const LiveShareModal = ({ visible, onClose }) => {
     );
   }
 };
-function 出来たところ(出来上がり, 写して知らせる) {
+function 出来たところ(出来上がり, 写して知らせる, 延ばせる, 延ばした) {
   const 一本 = (題, 説明, URL, 何を) => (
     <View style={styles.一本}>
       <Text style={styles.一本の題}>{題}</Text>
@@ -200,8 +208,17 @@ function 出来たところ(出来上がり, 写して知らせる) {
       /* 黙っていると「7日にしたのに1日で切れた」と見える */}
       {出来上がり.すでに配られていた ? (
         <Text style={styles.注意}>
-          このライブはすでに配られています。同じリンクをお渡しします。期限は最初に配ったときのままです。
+          {延ばせる && 出来上がり.期限
+            ? 'このライブはすでに配られています。同じリンクをお渡しします。期限は下で延ばせます。'
+            : 'このライブはすでに配られています。同じリンクをお渡しします。期限は最初に配ったときのままです。'}
         </Text>
+      ) : null}
+      {/* リンクは変えずに期限だけ延ばす（B3 2026-11-26 本人「見本のとおり」。src/LiveExtend.js） */}
+      {延ばせる && 出来上がり.期限 ? (
+        <View style={styles.延ばす枠}>
+          <Text style={styles.延ばす題}>期限を延ばす</Text>
+          <期限を延ばす欄 延ばした={延ばした} />
+        </View>
       ) : null}
     </View>
   );
@@ -220,6 +237,8 @@ function 期限の日時(期限) {
   }
 }
 const styles = StyleSheet.create({
+  延ばす枠: { marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: 色.地_濃い },
+  延ばす題: { fontSize: 15, fontWeight: 'bold', color: 色.文字, marginBottom: 6 },
   外: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',

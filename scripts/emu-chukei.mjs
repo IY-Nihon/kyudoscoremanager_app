@@ -4,7 +4,8 @@
  *   node scripts/emu-chukei.mjs        （npm run e2e:emu が立てる。港 8788）
  *
  * 部員のログイン（POST /kojin）は、中継の本物の手（../chukei/src/kojin.mjs の 部員を確かめる）をそのまま使う。
- * 管理者の合言葉（/kanri）と部員（自分）の記録（/jibun。3 段目）も本物の手（kanri.mjs・jibun.mjs）を使う。
+ * 管理者の合言葉（/kanri）と部員（自分）の記録（/jibun。3 段目）・ライブの期限を延ばす（/enchou。B3）も本物の手
+ *（kanri.mjs・jibun.mjs・enchou.mjs）を使う。Realtime Database もエミュレーターへ向ける（Bearer owner で決まりを通らずに書く）。
  * 違うのは宛先だけ：Firestore はエミュレーター（Bearer owner で決まりを通らずに読み書きする）、
  * サービスアカウントの証は取りに行かない（その場で作った鍵で署名し、取りに行く先を横取りして owner を返す）。
  * ログインの証（ID トークン）は、エミュレーターのものは署名が無いので中身だけ読む。
@@ -19,10 +20,12 @@ import { pathToFileURL } from 'node:url';
 
 const 港 = Number(process.env.EMU_CHUKEI_PORT || 8788);
 const Firestoreの宛先 = `http://127.0.0.1:${process.env.EMU_FIRESTORE_PORT || 8080}`;
+const RTDBの宛先 = `http://127.0.0.1:${process.env.EMU_DATABASE_PORT || 9000}`;
 const 中継の場所 = path.resolve(process.env.CHUKEI_DIR || '../chukei');
 const { 部員を確かめる } = await import(pathToFileURL(path.join(中継の場所, 'src', 'kojin.mjs')).href);
 const { 管理者を確かめる } = await import(pathToFileURL(path.join(中継の場所, 'src', 'kanri.mjs')).href);
 const { 自分の記録を返す } = await import(pathToFileURL(path.join(中継の場所, 'src', 'jibun.mjs')).href);
+const { 期限を延ばす } = await import(pathToFileURL(path.join(中継の場所, 'src', 'enchou.mjs')).href);
 /** 管理者の合言葉の置き場（本物は D1。ここは中継の代わりが生きている間だけ） */
 const 合言葉の表 = new Map();
 const 合言葉の置き場 = {
@@ -45,6 +48,13 @@ const 送る = (宛先, 頼み = {}) => {
     return Promise.resolve(
       new Response(JSON.stringify({ access_token: 'owner', expires_in: 3600 }), { status: 200 })
     );
+  // Realtime Database（https://{企画}-default-rtdb.firebaseio.com）は、エミュレーターの ns に向け直して管理者で読み書きする
+  const RTDB = 道.match(/^https:\/\/([a-z0-9-]+)\.firebaseio\.com(\/[^?]*)(\?.*)?$/);
+  if (RTDB) {
+    const 頭 = Object.assign({}, 頼み.headers || {}, { Authorization: 'Bearer owner' });
+    const 問い = RTDB[3] ? RTDB[3] + '&' : '?';
+    return fetch(`${RTDBの宛先}${RTDB[2]}${問い}ns=${RTDB[1]}`, Object.assign({}, 頼み, { headers: 頭 }));
+  }
   const 向け直し = 道.replace('https://firestore.googleapis.com', Firestoreの宛先);
   // 管理者の合言葉（/kanri）が持ち主か・運営の役の人かを確かめる読み（団体の private・自分の所属の証・名簿・役）は、
   // 呼んだ人の証のまま送る（決まりで確かめる）。サービスアカウントの証（偽の 'owner'）で送るものだけ持ち主にする
@@ -87,7 +97,7 @@ http
     };
     if (受.method === 'OPTIONS') return 答える(204, {});
     const 道 = (受.url || '').split('?')[0];
-    if (道 !== '/kojin' && 道 !== '/kanri' && 道 !== '/jibun')
+    if (道 !== '/kojin' && 道 !== '/kanri' && 道 !== '/jibun' && 道 !== '/enchou')
       return 答える(503, { error: 'エミュレーターでは AI を使えません（検証環境で試してください）' });
     const 本人 = 証を読む(受.headers.authorization);
     if (!本人) return 答える(401, { error: 'ログインの証がありません' });
@@ -101,6 +111,15 @@ http
     try {
       if (道 === '/jibun') {
         const { 状態, 中身 } = await 自分の記録を返す(
+          頼み,
+          { FIREBASE_SA_KEYS: JSON.stringify({ [本人.aud]: 偽の鍵 }) },
+          本人,
+          { 送る }
+        );
+        return 答える(状態, 中身);
+      }
+      if (道 === '/enchou') {
+        const { 状態, 中身 } = await 期限を延ばす(
           頼み,
           { FIREBASE_SA_KEYS: JSON.stringify({ [本人.aud]: 偽の鍵 }) },
           本人,
@@ -132,5 +151,5 @@ http
     }
   })
   .listen(港, '127.0.0.1', () =>
-    console.log(`[emu-chukei] http://127.0.0.1:${港} で待っています（/kojin・/kanri・/jibun）`)
+    console.log(`[emu-chukei] http://127.0.0.1:${港} で待っています（/kojin・/kanri・/jibun・/enchou）`)
   );
