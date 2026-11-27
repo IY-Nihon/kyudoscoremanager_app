@@ -132,20 +132,18 @@ test('ログイン画面の文字は、地に対して十分な濃さがある',
   assert.deepStrictEqual(薄い, [], '地 ' + 地 + ' に対して 4.5 を下回る色がある');
 });
 
-test('設定の法的情報のリンクは、そばのバージョン表記と同じ濃さ', () => {
+test('設定の法的情報のリンクは、明るい地で探して見つかる濃さ', () => {
   // 目立たせない方針だが、探して見つからないほど薄くはしない。
   // #C7C7CC だと明るい地との比が 1.5 しかなく、事実上見えなかった
   // 設定画面の見た目の決まりは src/settingsStyles.js にある（2026-10-05 に SettingsScreen.js から移した）
+  // 前はそばのバージョン表記と同じ色かを見ていた。その行は 2026-11-28 に消した（中身と合わない古い文だった）
   const 本体 = 読む('settingsStyles.js');
-  const 拾う = (名) => {
-    const m = 本体.match(new RegExp(名 + ":\\s*\\{[^}]*color:\\s*'(#[0-9a-fA-F]{3,6})'"));
-    return m ? m[1].toLowerCase() : null;
-  };
-  const 法 = 拾う('legalText');
-  const 版 = 拾う('versionText');
-  assert.ok(法, '法的情報のリンクの色が見つからない');
-  assert.ok(版, 'バージョン表記の色が見つからない');
-  assert.strictEqual(法, 版, '法的情報のリンクだけが薄いと、探しても見つからない');
+  const m = 本体.match(/legalText:\s*\{[^}]*color:\s*'(#[0-9a-fA-F]{6})'/);
+  assert.ok(m, '法的情報のリンクの色が見つからない');
+  assert.ok(
+    比(m[1].toLowerCase(), '#ffffff') >= 3,
+    '法的情報のリンクが白い地に対して薄すぎる（比 ' + 比(m[1], '#ffffff').toFixed(2) + '）'
+  );
 });
 
 // 暗いテーマのカード面。この上で沈むかどうかを見る

@@ -146,6 +146,8 @@ const SettingsScreen = () => {
   ]);
   // できるかは操作の一覧（src/yaku.js・2026-11-19）。団体の口座は前のまま
   const 設定できる = useScoreStore((状態) => 役の決まり.できるか(状態, '団体の設定'));
+  // 履歴・分析に自分の記録だけが出る役（部員（全員）・運営には出さない囲みに使う）
+  const 自分の分だけ = useScoreStore((状態) => 役の決まり.自分の分だけか(状態));
   // いつも付けるタグ（保存のしかた）は、記録を付けられる人みんな（11/19 本人：個人ログインの部員の端末にも出す）
   const 付けられる = useScoreStore((状態) => 役の決まり.できるか(状態, '記録を付ける'));
   const 管理者モードに入れる = useScoreStore((状態) => 役の決まり.管理者モードに入れるか(状態));
@@ -1105,7 +1107,7 @@ const SettingsScreen = () => {
         {節(
           'データ管理',
           <>
-            {activeRole === 'member' && (
+            {自分の分だけ && (
               <View
                 style={{
                   paddingHorizontal: 16,
@@ -1119,11 +1121,11 @@ const SettingsScreen = () => {
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                   <Icons.Ionicons name="information-circle-outline" size={18} color={基本色.橙} />
                   <Text style={{ fontSize: 13, fontWeight: 'bold', color: 基本色.橙, marginLeft: 4 }}>
-                    個人用モードの同期について
+                    表示される記録について
                   </Text>
                 </View>
                 <Text style={{ fontSize: 12, color: 基本色.墨_66, lineHeight: 18 }}>
-                  同期時、クラウドには自分を含む全員の記録が送信されますが、完了後にこの端末からは自分以外の氏名や的中データが自動的に削除されます。これにより、履歴や分析には自分のデータのみが表示されるようになります。
+                  このログインでは、履歴と分析に自分の記録だけが表示されます。ライブ記録などで全員の分を付けて保存すると、全員の記録は団体に保存され、この端末には自分の分だけが残ります。
                 </Text>
               </View>
             )}
@@ -1139,7 +1141,6 @@ const SettingsScreen = () => {
           </>
         )}
         <View style={styles.footer}>
-          <Text style={styles.versionText}>Version 2.0.0 (Expo SQLite/Firebase)</Text>
           <Text style={styles.statusText}>
             {'● '}
             {isNetworkOnline ? '接続済み' : '未接続'}

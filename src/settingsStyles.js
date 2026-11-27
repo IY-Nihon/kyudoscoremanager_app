@@ -55,9 +55,8 @@ const styles = StyleSheet.create({
   itemStack: { flexDirection: 'column', alignItems: 'flex-start' },
   timestampStack: { marginTop: 4, marginLeft: 36 },
   footer: { marginTop: 30, marginBottom: 50, alignItems: 'center' },
-  versionText: { fontSize: 14, color: 色.灰, marginBottom: 4 },
   statusText: { fontSize: 12, color: 色.緑 },
-  // 目立たせないが、探して見つからないと困る。すぐ上の versionText と同じ濃さにする。
+  // 目立たせないが、探して見つからないと困る。灰色（前の版の行と同じ濃さ）にする。
   // #C7C7CC だと明るいテーマで地との比が 1.5 しかなく、ほぼ見えなかった
   legalText: { fontSize: 11, color: 色.灰, marginTop: 10, textDecorationLine: 'underline' },
   modalBackdrop: {
