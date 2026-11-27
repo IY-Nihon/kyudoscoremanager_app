@@ -1329,3 +1329,27 @@ test('個人ID：「全員を新しくする」で書き込めなかったら、
   assert.deepStrictEqual(await store.getState().ensurePersonalIds(), []);
   雲.状態.失敗させる = false;
 });
+
+test('見張り：この端末でゴミ箱へ移してまだ雲に届いていない記録は、雲の便りが来ても一覧に戻さない（11/28）', async () => {
+  const { store, 雲 } = 用意();
+  for (const s of store.getState().sessions) 雲.置く(記録の道, s.id, Object.assign({}, s));
+  await store.getState().listenToSessions();
+  await 待つ(50);
+  // ゴミ箱へ移したが、雲の削除はまだ（送り待ち）
+  const 消す = 記録を見る(store, 'ses-2');
+  store.setState({
+    sessions: store.getState().sessions.filter((s) => s.id !== 'ses-2'),
+    trash: [Object.assign({}, 消す, { pendingDelete: true, syncStatus: '未同期', deletedAt: Date.now() })],
+  });
+  // 雲にはまだ記録が残っていて、ほかの変化で便りが届く
+  雲.置く(記録の道, 'ses-9', {
+    id: 'ses-9',
+    title: '誰かの保存',
+    date: Date.now(),
+    lastModified: Date.now(),
+  });
+  雲.通知();
+  await 待つ(100);
+  assert.ok(!記録を見る(store, 'ses-2'), 'ゴミ箱へ移した記録が一覧に戻った');
+  assert.ok(記録を見る(store, 'ses-9'), 'ほかの記録は届く');
+});

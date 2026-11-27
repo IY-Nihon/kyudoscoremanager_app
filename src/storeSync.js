@@ -1061,14 +1061,24 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
         });
         const 手元の記録 = 状態().sessions;
         const 雲にあるID = new Set(雲の記録.map((記録1件) => 記録1件.id));
-        const merged = 雲の記録.map((cloudSession) => {
-          const pendingTimer = 状態()._pendingUpdateTimers[cloudSession.id];
-          const localSession = 手元の記録.find((記録1件) => 記録1件 && 記録1件.id === cloudSession.id);
-          // 送信待ちの編集は、クラウドの古い写しで上書きしない。タイマーが動いて
-          // いる 800ms の間だけでなく、送信が済むまで（「未同期」の間）守る。
-          if (localSession && (pendingTimer || localSession.syncStatus === '未同期')) return localSession;
-          return cloudSession;
-        });
+        // この端末でゴミ箱へ移して、まだ雲に届いていない記録は戻さない（2026-11-28。ゴミ箱へ移した直後に、雲の削除が
+        // 済む前の記録の便りが届くと、一覧にも戻り、ゴミ箱の行を押すと一覧の記録として開いた。ゴミ箱の便りが来るまで
+        // 一覧に 1 秒ほど出ていた。E2E のゴミ箱の巡りが iPhone でときどき落ちた原因）
+        const 捨てて送り待ち = new Set(
+          (状態().trash || [])
+            .filter((記録1件) => 記録1件 && 記録1件.pendingDelete && 記録1件.syncStatus === '未同期')
+            .map((記録1件) => 記録1件.id)
+        );
+        const merged = 雲の記録
+          .filter((記録1件) => !捨てて送り待ち.has(記録1件.id))
+          .map((cloudSession) => {
+            const pendingTimer = 状態()._pendingUpdateTimers[cloudSession.id];
+            const localSession = 手元の記録.find((記録1件) => 記録1件 && 記録1件.id === cloudSession.id);
+            // 送信待ちの編集は、クラウドの古い写しで上書きしない。タイマーが動いて
+            // いる 800ms の間だけでなく、送信が済むまで（「未同期」の間）守る。
+            if (localSession && (pendingTimer || localSession.syncStatus === '未同期')) return localSession;
+            return cloudSession;
+          });
         // 見張りが受け取るのは直近30日・最大100件だけ。手元にあってその中に無い記録は、
         // 見張りの窓の外なので届かないだけのことが多い。だから見張りでは落とさない
         // （一律に落としていたころは、30日を過ぎた記録が見張りが動くたびに履歴から消えた）。
