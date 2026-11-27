@@ -597,8 +597,14 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly([
              'email', 'content', 'imagesBase64', 'createdAt',
-             'groupId', 'groupName', 'role', 'memberId', 'memberName'
+             'groupId', 'groupName', 'role', 'memberId', 'memberName',
+             'appVersion', 'device'
            ])
+        // 使っている版と端末（2026-11-28。アプリは 40 字・300 字で切る。前の版のアプリは送らない）
+        && (!('appVersion' in request.resource.data)
+            || (request.resource.data.appVersion is string && request.resource.data.appVersion.size() <= 100))
+        && (!('device' in request.resource.data)
+            || (request.resource.data.device is string && request.resource.data.device.size() <= 600))
         && request.resource.data.content is string
         && request.resource.data.content.size() > 0
         && request.resource.data.content.size() < 5000

@@ -24,6 +24,7 @@ const Icons = require('@expo/vector-icons');
 const { use横流し } = require('./yokoNagashi');
 const { db, auth } = require('./db');
 const { メールを整える } = require('./totonoeru');
+const { 版と端末 } = require('./errorReporter');
 const Firestore = require('firebase/firestore');
 const ExpoImagePicker = require('expo-image-picker');
 const _IM = require('expo-image-manipulator');
@@ -137,6 +138,7 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
           { inquiryAt: Firestore.serverTimestamp() },
           { merge: true }
         );
+      const 使っている = 版と端末();
       一括.set(Firestore.doc(Firestore.collection(db, 'inquiries')), {
         email: メール,
         content: inquiryContent,
@@ -147,6 +149,9 @@ const 問い合わせの窓 = ({ 見える, 閉じる }) => {
         role: activeRole || '',
         memberId: activeRole === 'member' ? myMemberId || '' : '',
         memberName: activeRole === 'member' ? myMemberName || '' : '',
+        // 使っている版と端末（不具合を確かめるため。2026-11-28 本人。プライバシーポリシー第 4 条の 4 (5)）
+        appVersion: String(使っている.版 || '').slice(0, 40),
+        device: String(使っている.端末 || '').slice(0, 300),
       });
       await 一括.commit();
       Alert.alert('完了', 'お問い合わせを送信しました');

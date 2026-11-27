@@ -1010,6 +1010,50 @@ test('不具合の便り（11/21・S9）：アプリのいちばん長い便り�
   assert.equal((await 送る(アプリの便り, 'anon-twice')).通った, false, '10 秒以内の 2 通目が通った');
 });
 
+test('お問い合わせ（11/28 本人）：版と端末を付けても付けなくても送れる。長すぎる・文字でないものは断る', async () => {
+  await 団体を用意する();
+  let 番 = 0;
+  const 送る = (足す = {}, 人 = 持ち主) =>
+    一括で書く(人, [
+      {
+        道: `inquiries/q${++番}`,
+        中身: {
+          email: '',
+          content: '使い方を教えてください',
+          imagesBase64: [],
+          createdAt: new Date(),
+          groupId: 団体,
+          groupName: '',
+          role: 'owner',
+          memberId: '',
+          memberName: '',
+          ...足す,
+        },
+      },
+      { 道: `rate_limits/${人.uid}`, 中身: {}, 時刻の欄: 'inquiryAt' },
+    ]);
+  assert.ok((await 送る()).通った, '版と端末なし（前の版のアプリ）が断られた');
+  await 団体を用意する();
+  assert.ok(
+    (
+      await 送る({
+        appVersion: '2026-12-01-01',
+        device: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)',
+      })
+    ).通った,
+    '版と端末つきが断られた'
+  );
+  for (const [名, 足す] of [
+    ['版が長すぎる', { appVersion: 'a'.repeat(101) }],
+    ['端末が長すぎる', { device: 'x'.repeat(601) }],
+    ['版が数', { appVersion: 20261201 }],
+    ['知らない欄', { other: 'x' }],
+  ]) {
+    await 団体を用意する();
+    assert.equal((await 送る(足す)).通った, false, `${名} のお問い合わせが通った`);
+  }
+});
+
 test('運営の管理者（11/22・S10）：メールの確認が済んでいないと、管理者として団体の一覧を引けない', async () => {
   await 団体を用意する();
   // 管理者のアドレスは決まりから読む（検査に写さない）
