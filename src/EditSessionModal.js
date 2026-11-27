@@ -71,7 +71,9 @@ const EditSessionModal = ({ visible, session, onClose, onSave }) => {
     const 引いた人 = new Set(記録に出た部員のid(session, allMembers));
     const 出欠 = (session && session.attendance) || {};
     return allMembers
-      .filter((人) => 人 && (学.現役か(人) || 引いた人.has(人.id) || (出欠[人.id] && 出欠[人.id] !== 'absent')))
+      .filter(
+        (人) => 人 && (学.現役か(人) || 引いた人.has(人.id) || (出欠[人.id] && 出欠[人.id] !== 'absent'))
+      )
       .sort(学.名簿の順に比べる);
   }, [session, allMembers]);
   // 下書きを作り直すのは、窓を開いたときと、別の記録に替わったときだけ。

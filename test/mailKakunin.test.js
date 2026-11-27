@@ -7,7 +7,9 @@ const 確 = require('../src/mailKakunin');
 
 test('猶予の終わりは、決まり（inGracePeriod）とアプリで同じ日', () => {
   const 決まり = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8');
-  const 合う = 決まり.match(/function inGracePeriod\(\) \{\s*return request\.time < timestamp\.date\((\d{4}), (\d{1,2}), (\d{1,2})\)/);
+  const 合う = 決まり.match(
+    /function inGracePeriod\(\) \{\s*return request\.time < timestamp\.date\((\d{4}), (\d{1,2}), (\d{1,2})\)/
+  );
   assert.ok(合う, 'firestore.rules に inGracePeriod の日付が無い');
   const 決まりの日 = `${合う[1]}-${合う[2].padStart(2, '0')}-${合う[3].padStart(2, '0')}`;
   assert.equal(決まりの日, 確.猶予の終わり, '決まりとアプリで猶予の終わりが違う（片方だけ止まる）');
@@ -43,7 +45,10 @@ test('確認が済んだか：済んでいなければ読み直してから見�
 
 test('確認メールを送れないときは、見せてよい日本語にする', async () => {
   const 送る = (符号) =>
-    確.確認メールを送る({ sendEmailVerification: async () => Promise.reject(Object.assign(new Error('x'), { code: 符号 })) }, { currentUser: {} });
+    確.確認メールを送る(
+      { sendEmailVerification: async () => Promise.reject(Object.assign(new Error('x'), { code: 符号 })) },
+      { currentUser: {} }
+    );
   await assert.rejects(送る('auth/too-many-requests'), /続けて送りすぎました/);
   await assert.rejects(送る('auth/network-request-failed'), /電波の良い場所/);
   await assert.rejects(確.確認メールを送る({}, { currentUser: null }), /ログインし直して/);
@@ -67,8 +72,13 @@ test('団体の確認：帳面の verified を見る。読めないときは nul
 });
 
 test('決まり：持ち主は確認済みか猶予中、部員は団体が確認済みか猶予中、作るのは確認済みだけ', () => {
-  const 決まり = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8').replace(/\r\n/g, '\n');
-  assert.match(決まり, /function isGroupOwner\(groupId\) \{\n\s+return \(verifiedEmail\(\) \|\| \(callerEmail\(\) != '' && inGracePeriod\(\)\)\)/);
+  const 決まり = fs
+    .readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8')
+    .replace(/\r\n/g, '\n');
+  assert.match(
+    決まり,
+    /function isGroupOwner\(groupId\) \{\n\s+return \(verifiedEmail\(\) \|\| \(callerEmail\(\) != '' && inGracePeriod\(\)\)\)/
+  );
   assert.match(決まり, /&& \(groupVerified\(groupId\) \|\| inGracePeriod\(\)\);/);
   const 作る = 決まり.slice(決まり.indexOf('allow create: if verifiedEmail()'));
   assert.ok(決まり.includes('allow create: if verifiedEmail()'), '団体の帳面を確認済みでなくても作れる');
@@ -112,7 +122,10 @@ test('団体はまだ在るか：雲が「無い」と返したときだけ fals
 test('持ち主の確認の様子：ログインが外れていたら（証が取り消された）確認の画面でなく入り直し', async () => {
   const 終わり = Date.parse(確.猶予の終わり + 'T00:00:00Z');
   // ログインが無い
-  assert.deepStrictEqual(await 確.持ち主の確認の様子({ currentUser: null }, 終わり + 1), { 様子: '入り直し', 確かめた: false });
+  assert.deepStrictEqual(await 確.持ち主の確認の様子({ currentUser: null }, 終わり + 1), {
+    様子: '入り直し',
+    確かめた: false,
+  });
   // ほかの端末でパスワードを直した：読み直すと証が取り消されていて、Firebase は端末のログインも外す
   const 認証 = { currentUser: null };
   認証.currentUser = {
@@ -122,7 +135,10 @@ test('持ち主の確認の様子：ログインが外れていたら（証が�
       throw Object.assign(new Error('expired'), { code: 'auth/user-token-expired' });
     },
   };
-  assert.deepStrictEqual(await 確.持ち主の確認の様子(認証, 終わり + 1), { 様子: '入り直し', 確かめた: false });
+  assert.deepStrictEqual(await 確.持ち主の確認の様子(認証, 終わり + 1), {
+    様子: '入り直し',
+    確かめた: false,
+  });
   // 電波が無い：前の値（確認がまだ）のまま。猶予の中か後かで分ける
   const 電波なし = () => ({
     currentUser: {
@@ -132,8 +148,14 @@ test('持ち主の確認の様子：ログインが外れていたら（証が�
       },
     },
   });
-  assert.deepStrictEqual(await 確.持ち主の確認の様子(電波なし(), 終わり - 1), { 様子: '猶予中', 確かめた: false });
-  assert.deepStrictEqual(await 確.持ち主の確認の様子(電波なし(), 終わり + 1), { 様子: '持ち主がまだ', 確かめた: false });
+  assert.deepStrictEqual(await 確.持ち主の確認の様子(電波なし(), 終わり - 1), {
+    様子: '猶予中',
+    確かめた: false,
+  });
+  assert.deepStrictEqual(await 確.持ち主の確認の様子(電波なし(), 終わり + 1), {
+    様子: '持ち主がまだ',
+    確かめた: false,
+  });
   // 確認が済んでいる
   const 済み = { currentUser: { emailVerified: true, getIdToken: async () => 'x' } };
   assert.deepStrictEqual(await 確.持ち主の確認の様子(済み, 終わり + 1), { 様子: '済み', 確かめた: true });

@@ -9,7 +9,16 @@
  *  3. RTDB の live_sessions 以外のノード（appData / users）
  *  4. group_accounts が消えた団体はどうなるか
  */
-import { configFor, signIn, signInAnonymously, req, setDoc, listAll, 検証のパスワード, 運営のアドレス } from './fb-rest.mjs';
+import {
+  configFor,
+  signIn,
+  signInAnonymously,
+  req,
+  setDoc,
+  listAll,
+  検証のパスワード,
+  運営のアドレス,
+} from './fb-rest.mjs';
 
 const { apiKey, projectId, databaseURL } = configFor('stg');
 const PW = 検証のパスワード();
@@ -42,12 +51,7 @@ const pid1 = lk1[0].id,
 // 2026-09-24 から、持ち主は帳面の email を直接変えられない（登録メールアドレスの切り替えは
 // 確認リンクを通す。src/groupLogin.js）。前はここで 200 を期待し、団体1 の持ち主（管理者）が
 // 書き戻していた。管理者の書き戻しは帳面を { email } だけにして id を落とすので、もう行わない
-const 書き換え = await setDoc(
-  projectId,
-  `/group_accounts/${G2}`,
-  { id: G2, email: 運営のアドレス() },
-  tokG2
-);
+const 書き換え = await setDoc(projectId, `/group_accounts/${G2}`, { id: G2, email: 運営のアドレス() }, tokG2);
 check(
   '同一性',
   '自団体のメールを他団体のメールに変えられない',

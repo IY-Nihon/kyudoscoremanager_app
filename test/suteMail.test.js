@@ -16,7 +16,9 @@ test('使い捨てのドメインとそのサブドメインは断り、ふつ�
 
 test('決まりの一覧と、アプリの一覧が同じ', () => {
   const 決まり = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8');
-  const 合う = 決まり.match(/function disposableEmail\(\) \{\s*return callerEmail\(\)\.lower\(\)\.matches\('\^\.\*@\(\.\+\[\.\]\)\?\(([^)]*)\)\$'\);/);
+  const 合う = 決まり.match(
+    /function disposableEmail\(\) \{\s*return callerEmail\(\)\.lower\(\)\.matches\('\^\.\*@\(\.\+\[\.\]\)\?\(([^)]*)\)\$'\);/
+  );
   assert.ok(合う, 'firestore.rules に disposableEmail が無い');
   const 決まりの並び = 合う[1].split('|').map((x) => x.replace(/\[\.\]/g, '.').replace(/\[-\]/g, '-'));
   assert.deepStrictEqual(決まりの並び, 使い捨てのドメイン);

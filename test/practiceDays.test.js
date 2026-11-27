@@ -29,7 +29,9 @@ test('出欠の画面が置いた練習日は、AI に聞かれても読み直�
   let 読んだ = 0;
   const 読む = async () => (読んだ++, {});
   練習日を置く('g1', { '2026-11-03': { date: '2026-11-03' } }, 1000);
-  assert.deepStrictEqual(await 練習日を読む('g1', { 読む, 今: 2000 }), { '2026-11-03': { date: '2026-11-03' } });
+  assert.deepStrictEqual(await 練習日を読む('g1', { 読む, 今: 2000 }), {
+    '2026-11-03': { date: '2026-11-03' },
+  });
   assert.strictEqual(読んだ, 0);
   await 練習日を読む('g2', { 読む, 今: 2000 });
   assert.strictEqual(読んだ, 1);

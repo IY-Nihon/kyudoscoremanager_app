@@ -56,7 +56,8 @@ async function 確認メールを送る(FirebaseAuth, auth) {
       await FirebaseAuth.sendEmailVerification(人, 戻り先());
     } catch (戻り先の誤り) {
       // 戻り先の頁が Firebase に登録されていない（検証の手元の頁など）ときは、戻り先なしで送り直す
-      if (!/continue-uri|unauthorized-domain/.test(String((戻り先の誤り && 戻り先の誤り.code) || ''))) throw 戻り先の誤り;
+      if (!/continue-uri|unauthorized-domain/.test(String((戻り先の誤り && 戻り先の誤り.code) || '')))
+        throw 戻り先の誤り;
       await FirebaseAuth.sendEmailVerification(人);
     }
   } catch (誤り) {

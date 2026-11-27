@@ -70,7 +70,11 @@ for (const 置き場 of ['live_sessions', 'live_view', 'live_history', 'live_pre
   確かめる(置き場, await 試す(() => set(ref(db, `${置き場}/${枝}x`), 'がらくた')), '弾かれた');
 
 console.log('\n■ 期限を新しく置くときは、今より先だけ（過ぎた期限で枝を塞げない）');
-確かめる('過ぎた期限は置けない', await 試す(() => set(ref(db, `live_limits/${枝}y`), Date.now() - 60000)), '弾かれた');
+確かめる(
+  '過ぎた期限は置けない',
+  await 試す(() => set(ref(db, `live_limits/${枝}y`), Date.now() - 60000)),
+  '弾かれた'
+);
 
 console.log('\n■ 先の期限を置いても、まだ通る');
 確かめる('期限を置ける', await 試す(() => set(ref(db, `live_limits/${枝}`), Date.now() + 3600000)), 'できた');

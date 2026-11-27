@@ -75,7 +75,10 @@ test("シート名の ' は、絞り込みの範囲の式では '' と重ねる�
   const b = ブックを組む([{ name: "O'Neil", headers: ['x', 'y'], rows: [['a', 1]] }]);
   const ブック = b['xl/workbook.xml'];
   assert.match(ブック, /<sheet name="O'Neil"/);
-  assert.ok(ブック.includes("'O''Neil'!$A$1:$B$2"), '範囲の式: ' + ブック.match(/<definedName[^>]*>([^<]*)/)[1]);
+  assert.ok(
+    ブック.includes("'O''Neil'!$A$1:$B$2"),
+    '範囲の式: ' + ブック.match(/<definedName[^>]*>([^<]*)/)[1]
+  );
 });
 
 test('数値は数値のまま、文字は inlineStr で書く', () => {

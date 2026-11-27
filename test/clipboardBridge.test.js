@@ -54,7 +54,10 @@ function 置く(名, 値) {
 test('新しい写し方が通れば、昔の写し方は使わない', async () => {
   const { document, 記 } = 偽の頁();
   const 写し先 = [];
-  const 戻す = [置く('document', document), 置く('navigator', { clipboard: { writeText: async (s) => 写し先.push(s) } })];
+  const 戻す = [
+    置く('document', document),
+    置く('navigator', { clipboard: { writeText: async (s) => 写し先.push(s) } }),
+  ];
   try {
     assert.strictEqual(await 写す('https://example.com/a'), true);
     assert.deepStrictEqual(写し先, ['https://example.com/a']);

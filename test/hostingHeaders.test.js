@@ -122,7 +122,8 @@ test('守りの見出し：どの道にも、はめ込みを断る・型を推�
 });
 
 test('アイコンは毎回確かめさせる（名前にハッシュが入らない）。@( ) の中に / を書かない（Firebase が読めない）', () => {
-  for (const 規則 of 規則たち) assert.ok(!/@\([^)]*\//.test(規則.source), `${規則.source} の @( ) の中に / がある`);
+  for (const 規則 of 規則たち)
+    assert.ok(!/@\([^)]*\//.test(規則.source), `${規則.source} の @( ) の中に / がある`);
   for (const 道 of ['/icon-192.png', '/icon-512.png', '/apple-touch-icon.png', '/favicon.ico'])
     assert.deepStrictEqual(控えの値(道), ['public, no-cache'], 道);
 });

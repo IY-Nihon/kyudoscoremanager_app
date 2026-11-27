@@ -43,16 +43,22 @@ test('差し込めないときは止める（例が 1 か所でない・アド�
 
 test('台本と決まりに書いてある gmail のアドレスは、公開の問い合わせ先と検査の見本だけ', () => {
   const 許す = new Set(['kyudoteamscorenote.dev@gmail.com', 'a@gmail.com']);
-  const 出 = spawnSync('git', ['ls-files', 'scripts', 'rules', 'firestore.rules', 'database.rules.json', 'e2e', 'test'], {
-    cwd: 根,
-    encoding: 'utf8',
-  });
-  const 道たち = 出.status === 0 ? 出.stdout.split('\n').filter((f) => /\.(m?js|cjs|rules|json)$/.test(f)) : [];
+  const 出 = spawnSync(
+    'git',
+    ['ls-files', 'scripts', 'rules', 'firestore.rules', 'database.rules.json', 'e2e', 'test'],
+    {
+      cwd: 根,
+      encoding: 'utf8',
+    }
+  );
+  const 道たち =
+    出.status === 0 ? 出.stdout.split('\n').filter((f) => /\.(m?js|cjs|rules|json)$/.test(f)) : [];
   assert.ok(道たち.length > 50, 'git ls-files で道を読めなかった');
   const 外れ = [];
   for (const f of 道たち) {
     if (!fs.existsSync(path.join(根, f))) continue;
-    for (const m of 読む(f).matchAll(/[A-Za-z0-9._%+-]+@gmail\.com/g)) if (!許す.has(m[0])) 外れ.push(`${f}: ${m[0].replace(/^(.).*@/, '$1…@')}`);
+    for (const m of 読む(f).matchAll(/[A-Za-z0-9._%+-]+@gmail\.com/g))
+      if (!許す.has(m[0])) 外れ.push(`${f}: ${m[0].replace(/^(.).*@/, '$1…@')}`);
   }
   assert.deepStrictEqual(外れ, []);
 });

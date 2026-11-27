@@ -11,7 +11,10 @@ const 名たち = Object.keys(色).sort((a, b) => b.length - a.length);
 function 色の名を値に(本体) {
   let s = String(本体);
   for (const 名 of 名たち) {
-    const 印 = new RegExp('(?<![\\p{L}\\p{N}_$])(?:基本色|色)\\.' + 名.replace(/\$/g, '\\$') + '(?![\\p{L}\\p{N}_$])', 'gu');
+    const 印 = new RegExp(
+      '(?<![\\p{L}\\p{N}_$])(?:基本色|色)\\.' + 名.replace(/\$/g, '\\$') + '(?![\\p{L}\\p{N}_$])',
+      'gu'
+    );
     s = s.replace(印, "'" + 色[名] + "'");
   }
   return s;

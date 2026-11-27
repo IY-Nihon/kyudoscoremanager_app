@@ -94,7 +94,16 @@ async function 管理で消す(道, 値) {
       process.execPath,
       値 === undefined
         ? [CLI, 'database:remove', 道, '--project', 'kyudoscoremanager-stg', '--force']
-        : [CLI, 'database:set', 道, '--data', JSON.stringify(値), '--project', 'kyudoscoremanager-stg', '--force'],
+        : [
+            CLI,
+            'database:set',
+            道,
+            '--data',
+            JSON.stringify(値),
+            '--project',
+            'kyudoscoremanager-stg',
+            '--force',
+          ],
       { stdio: 'ignore' }
     );
     return null;
@@ -1372,13 +1381,12 @@ test('ライブ：閉じて開き直してもライブへ戻り、終わって�
   await B.close();
   expect(ライブの枝, '枝の名前が取れていない').toBeTruthy();
   expect(
-    await 管理で置く(`/live_sessions/${ライブの枝}/${ライブ名}`, { state: { status: 'finished', timestamp: Date.now() } }),
+    await 管理で置く(`/live_sessions/${ライブの枝}/${ライブ名}`, {
+      state: { status: 'finished', timestamp: Date.now() },
+    }),
     '終わった印を置けない'
   ).toBeNull();
-  for (const 道 of [
-    `/live_history/${ライブの枝}/${ライブ名}`,
-    `/live_presence/${ライブの枝}/${ライブ名}`,
-  ]) {
+  for (const 道 of [`/live_history/${ライブの枝}/${ライブ名}`, `/live_presence/${ライブの枝}/${ライブ名}`]) {
     const 訳 = await 管理で消す(道);
     expect(訳, 'ライブの節点を消せない').toBeNull();
   }

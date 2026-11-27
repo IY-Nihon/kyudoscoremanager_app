@@ -443,7 +443,9 @@ const ArcherActionModal = ({
                           {Number(期の組.term) === 999 ? '不明' : 期の組.term}期
                         </Text>
                         <Icons.Ionicons
-                          name={検索の文 !== '' || expandedTerms.has(期の組.term) ? 'chevron-up' : 'chevron-down'}
+                          name={
+                            検索の文 !== '' || expandedTerms.has(期の組.term) ? 'chevron-up' : 'chevron-down'
+                          }
                           size={16}
                           color={色.灰}
                         />

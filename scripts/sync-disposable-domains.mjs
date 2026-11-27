@@ -54,7 +54,9 @@ const 一覧 = [...new Set([...外の一覧, ...手元])].filter((d) => ドメ�
 const 落とした = 外の一覧.length + 手元.length - 一覧.length;
 const 版 = crypto.createHash('sha256').update(一覧.join('\n')).digest('hex').slice(0, 16);
 console.log(`接続先: ${企画}（${入れる ? '入れる' : '数えるだけ'}）`);
-console.log(`一覧: ${一覧.length} 件（外の一覧 ${外の一覧.length}・手元 ${手元.length}。重なり・形の合わないもの ${落とした} 件を除いた）版 ${版}`);
+console.log(
+  `一覧: ${一覧.length} 件（外の一覧 ${外の一覧.length}・手元 ${手元.length}。重なり・形の合わないもの ${落とした} 件を除いた）版 ${版}`
+);
 
 // ── 権限 ──
 const 設定 = path.join(os.homedir(), '.config', 'configstore', 'firebase-tools.json');
@@ -95,7 +97,9 @@ if (始め >= 一覧.length) {
   process.exit(0);
 }
 const 今回 = 一覧.slice(始め, 始め + 一回の上限);
-console.log(`今回入れる: ${始め + 1}〜${始め + 今回.length} 件目（${今回.length} 件）。残り ${一覧.length - 始め - 今回.length} 件`);
+console.log(
+  `今回入れる: ${始め + 1}〜${始め + 今回.length} 件目（${今回.length} 件）。残り ${一覧.length - 始め - 今回.length} 件`
+);
 if (!入れる) {
   console.log('数えるだけです。入れるときは「入れる」を付けてください（npm run ops:disposable:run）。');
   process.exit(0);
@@ -133,7 +137,11 @@ await fetch(`${進みの道}`, {
   method: 'PATCH',
   headers: 頭,
   body: JSON.stringify({
-    fields: { 版: { stringValue: 版 }, 済み: { integerValue: String(始め + 入れた) }, 入れた日: { timestampValue: 今 } },
+    fields: {
+      版: { stringValue: 版 },
+      済み: { integerValue: String(始め + 入れた) },
+      入れた日: { timestampValue: 今 },
+    },
   }),
 });
 console.log(

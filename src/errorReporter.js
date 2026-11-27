@@ -92,7 +92,11 @@ const 係 = 決まり.送り係をつくる({
         expireAt: new Date(Date.now() + 便りを置く日数 * 86400000),
       })
     );
-    一括.set(Firestore.doc(器.db, 'rate_limits', 人.uid), { reportAt: Firestore.serverTimestamp() }, { merge: true });
+    一括.set(
+      Firestore.doc(器.db, 'rate_limits', 人.uid),
+      { reportAt: Firestore.serverTimestamp() },
+      { merge: true }
+    );
     await 決まり.間に合わなければ諦める(一括.commit(), 送るのを待つ時間);
   },
   読む: () => 貯めの控え,

@@ -12,7 +12,9 @@
 
 /** 全角の英数字と記号（！〜～）を半角にする。漢字・かなは触らない */
 const 半角にする = (値) =>
-  String(値 == null ? '' : 値).replace(/[\uFF01-\uFF5E]/g, (字) => String.fromCharCode(字.charCodeAt(0) - 0xfee0));
+  String(値 == null ? '' : 値).replace(/[\uFF01-\uFF5E]/g, (字) =>
+    String.fromCharCode(字.charCodeAt(0) - 0xfee0)
+  );
 
 /** 見えない空白。\s（ふつうの空白・改行・全角の空白・BOM）に加えて、幅の無い空白・つなぎの字 */
 const 見えない空白 = /[\s\u200B-\u200D\u2060]+/g;

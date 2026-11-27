@@ -113,7 +113,8 @@ console.log(`団体 ${団体.size} 件（group_accounts ${口座.length} / group
     const メール = d.fields?.email?.stringValue || '';
     if (!メール) continue;
     let 当たり = 捨て.使い捨てか(メール);
-    for (const ドメイン of 当たり ? [] : 捨て.見るドメイン(メール)) if (await 雲にあるか(ドメイン)) 当たり = true;
+    for (const ドメイン of 当たり ? [] : 捨て.見るドメイン(メール))
+      if (await 雲にあるか(ドメイン)) 当たり = true;
     if (当たり) 記す(d.name.split('/').pop(), '使い捨てのドメインの団体', メール.replace(/^[^@]*/, '…'));
   }
 }

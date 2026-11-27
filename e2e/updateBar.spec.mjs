@@ -191,7 +191,9 @@ test('更新の帯：AppEntry の束が無い中身（Wi-Fi のログイン画�
   await 束の有無を決める(page, 束, false);
   await 見に行かせる(page);
 
-  await expect(page.getByText(/新しいバージョンが出ています/), '別の .js があるだけで帯が出た').toHaveCount(0);
+  await expect(page.getByText(/新しいバージョンが出ています/), '別の .js があるだけで帯が出た').toHaveCount(
+    0
+  );
 });
 
 // ───── 自動で更新する（しばらく離れて戻ってきたとき） ─────
@@ -259,7 +261,10 @@ test('自動で更新：読み込み直しても版が変わらないときは�
   await page.waitForTimeout(4000);
   await 離れる(page);
   await 戻る(page); // 2 回目：同じ版へは繰り返さない → 帯
-  await expect(page.getByText(/新しいバージョンが出ています/), '自動更新を繰り返したか、帯が出ない').toBeVisible({
+  await expect(
+    page.getByText(/新しいバージョンが出ています/),
+    '自動更新を繰り返したか、帯が出ない'
+  ).toBeVisible({
     timeout: 15_000,
   });
 });
@@ -379,7 +384,9 @@ test.describe('自動で更新：窓が開いている間', () => {
     });
     await 離れる(page);
     await 戻る(page);
-    await expect(page.getByText(/新しいバージョンが出ています/), '帯が出ない').toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/新しいバージョンが出ています/), '帯が出ない').toBeVisible({
+      timeout: 10_000,
+    });
     expect(
       await page.evaluate(() => typeof window.__押す前の印),
       '窓が開いているのに勝手に読み込み直した'
@@ -441,7 +448,9 @@ test.describe('自動で更新：分析・履歴を見ている間', () => {
       await 離れる(page);
       // 裏にある間は読み込み直してよいので、裏の間に見に行かないよう、すぐ戻す
       await 戻る(page);
-      await expect(page.getByText(/新しいバージョンが出ています/), '帯が出ない').toBeVisible({ timeout: 10_000 });
+      await expect(page.getByText(/新しいバージョンが出ています/), '帯が出ない').toBeVisible({
+        timeout: 10_000,
+      });
       expect(
         await page.evaluate(() => typeof window.__押す前の印),
         `${タブ}を見ているのに勝手に読み込み直した`

@@ -16,7 +16,12 @@ const vm = require('node:vm');
 
 function 読み込む() {
   const 場 = {
-    self: { addEventListener: () => {}, location: { origin: 'https://example.test' }, skipWaiting: () => {}, clients: {} },
+    self: {
+      addEventListener: () => {},
+      location: { origin: 'https://example.test' },
+      skipWaiting: () => {},
+      clients: {},
+    },
     caches: {},
     URL,
     console,
@@ -26,7 +31,10 @@ function 読み込む() {
   return 場;
 }
 
-const 応答 = (ok, 型) => ({ ok, headers: { get: (名) => (名.toLowerCase() === 'content-type' ? 型 : null) } });
+const 応答 = (ok, 型) => ({
+  ok,
+  headers: { get: (名) => (名.toLowerCase() === 'content-type' ? 型 : null) },
+});
 
 test('束・字体・画像の名前で HTML が返ったら、本物の応答とみなさない（控えない）', () => {
   const { 本物の静的応答か } = 読み込む();

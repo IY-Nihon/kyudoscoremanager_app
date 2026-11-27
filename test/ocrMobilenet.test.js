@@ -72,7 +72,11 @@ test('重みの取り寄せ：取れたら中身、取れなければ null で�
       場所: () => '/assets/x.bin',
       fetch: async () => (
         呼んだ++,
-        { ok: true, headers: { get: () => 'text/html; charset=utf-8' }, arrayBuffer: () => new Uint8Array([60]).buffer }
+        {
+          ok: true,
+          headers: { get: () => 'text/html; charset=utf-8' },
+          arrayBuffer: () => new Uint8Array([60]).buffer,
+        }
       ),
     };
     assert.strictEqual(await 写真の網の重みを読む(網の代わりのHTML), null);

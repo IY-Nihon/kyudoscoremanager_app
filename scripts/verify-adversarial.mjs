@@ -6,7 +6,16 @@
  * 「正しく使えること」は verify-app-flows.mjs で見ている。
  * ここでは「正しくない使い方が弾かれること」だけを見る。
  */
-import { configFor, signIn, signInAnonymously, req, setDoc, listAll, 検証のパスワード, 運営のアドレス } from './fb-rest.mjs';
+import {
+  configFor,
+  signIn,
+  signInAnonymously,
+  req,
+  setDoc,
+  listAll,
+  検証のパスワード,
+  運営のアドレス,
+} from './fb-rest.mjs';
 
 const target = process.argv[2] || 'stg';
 if (target !== 'stg') {

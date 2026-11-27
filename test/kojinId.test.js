@@ -34,7 +34,9 @@ test('4 桁は使える終わりまでだけ使える。逆引き表には載せ
 
 test('4 桁を使える終わりは、決まり（legacyIdUsable）とアプリで同じ日', () => {
   const 決まり = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8');
-  const 合う = 決まり.match(/function legacyIdUsable\(\) {\s*return request\.time < timestamp\.date\((\d{4}), (\d{1,2}), (\d{1,2})\)/);
+  const 合う = 決まり.match(
+    /function legacyIdUsable\(\) {\s*return request\.time < timestamp\.date\((\d{4}), (\d{1,2}), (\d{1,2})\)/
+  );
   assert.ok(合う, 'firestore.rules に legacyIdUsable の日付が無い');
   assert.equal(`${合う[1]}-${合う[2].padStart(2, '0')}-${合う[3].padStart(2, '0')}`, 個.古い形を使える終わり);
   // 4 桁で入った証は、使える終わりで止める（isClaimedMember）。6 字の形は、証を書く中継が確かめる
@@ -44,5 +46,9 @@ test('4 桁を使える終わりは、決まり（legacyIdUsable）とアプリ�
     /!string\(claim\(\)\.data\.get\('personalId', ''\)\)\.matches\('\^\[0-9\]\{4\}\$'\) \|\| legacyIdUsable\(\)/,
     '4 桁の証を使える終わりで止めていない'
   );
-  assert.match(決まり, /match \/member_claims\/\{uid\} \{[^}]*allow create, update: if false;/, '端末が証を書ける');
+  assert.match(
+    決まり,
+    /match \/member_claims\/\{uid\} \{[^}]*allow create, update: if false;/,
+    '端末が証を書ける'
+  );
 });

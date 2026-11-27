@@ -194,7 +194,11 @@ test('途中交代：交代相手は学年でまとまり、開け閉めでき�
   const 初め = await 見えている人数();
   // 名前に「部員」が入る人の数（下で「部員」で絞る。名簿には「部員」の入らない名前の人もいるので、全体の数では比べない）
   const 部員の名の数 = () =>
-    page.evaluate(() => [...document.querySelectorAll('div')].filter((e) => /^部員\d+$/.test((e.textContent || '').trim())).length);
+    page.evaluate(
+      () =>
+        [...document.querySelectorAll('div')].filter((e) => /^部員\d+$/.test((e.textContent || '').trim()))
+          .length
+    );
   const 開いて部員の名 = await 部員の名の数();
   expect(初め, '初めから誰も出ていない').toBeGreaterThan(0);
 

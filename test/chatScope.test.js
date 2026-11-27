@@ -379,7 +379,14 @@ test('本人の矢所（的の種類つき）と弓力は渡す。交代の相�
           substitutions: { 3: '山田' },
           substitutionIds: { 3: 'id-yamada' },
         }),
-        射手({ id: 'y-c', name: '田中', memberId: 'id-tanaka', bowWeight: '12', marks: ['○'], arrowLocations: [点(0, 0)] }),
+        射手({
+          id: 'y-c',
+          name: '田中',
+          memberId: 'id-tanaka',
+          bowWeight: '12',
+          marks: ['○'],
+          arrowLocations: [点(0, 0)],
+        }),
       ],
     },
   ];

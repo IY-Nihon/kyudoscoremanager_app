@@ -287,7 +287,8 @@ test('ID の形：英数字と _ - だけ。「/」などが混じれば雲へ�
   const { IDの形か, 部員として入る } = require('../src/groupLogin');
   assert.equal(IDの形か('100001'), true);
   assert.equal(IDの形か('0a1b2c3d4e5f60718293a4b5c6d7e8f9'), true);
-  for (const 悪い of ['', '../x', '100001/private', 'a b', 'あ', '1'.repeat(65), null, 123]) assert.equal(IDの形か(悪い), false, String(悪い));
+  for (const 悪い of ['', '../x', '100001/private', 'a b', 'あ', '1'.repeat(65), null, 123])
+    assert.equal(IDの形か(悪い), false, String(悪い));
   let 匿名で入った = 0;
   let 読んだ = 0;
   const 道具 = {
@@ -314,8 +315,14 @@ test('メールで団体に入る：団体ID の欄にメールアドレスが�
       where: (欄, 比べ, 値) => ({ 欄, 値 }),
       query: (集まり, 絞り) => ({ 集まり, 絞り }),
       getDocs: async (問い) => {
-        assert.deepStrictEqual(問い.絞り, { 欄: 'email', 値: 'club@example.jp' }, '自分のメールで絞っていない');
-        return { docs: 団体あり ? [{ id: '123456', data: () => ({ id: '123456', email: 'club@example.jp' }) }] : [] };
+        assert.deepStrictEqual(
+          問い.絞り,
+          { 欄: 'email', 値: 'club@example.jp' },
+          '自分のメールで絞っていない'
+        );
+        return {
+          docs: 団体あり ? [{ id: '123456', data: () => ({ id: '123456', email: 'club@example.jp' }) }] : [],
+        };
       },
     },
     FirebaseAuth: {
@@ -333,7 +340,9 @@ test('メールで団体に入る：団体ID の欄にメールアドレスが�
     公開の団体ID: '123456',
     メール: 'club@example.jp',
   });
-  await assert.rejects(メールで団体に入る(道具(true), 'club@example.jp', 'x'), { code: 'auth/invalid-credential' });
+  await assert.rejects(メールで団体に入る(道具(true), 'club@example.jp', 'x'), {
+    code: 'auth/invalid-credential',
+  });
   await assert.rejects(メールで団体に入る(道具(false), 'club@example.jp', 'pw'), /団体が見つかりません/);
   assert.strictEqual(出た, 1, '団体が無いのに入ったまま');
 });

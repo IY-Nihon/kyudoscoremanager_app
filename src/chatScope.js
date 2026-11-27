@@ -51,7 +51,8 @@ function 射手を絞る(射手, 自分id, 自分名) {
     (自分id && 射手.memberId === 自分id) || ((!自分id || !射手.memberId) && 自分の名前か(射手.name));
   const 名前 = 自分の列 ? 射手.name : 他の人;
 
-  const 元の交代id = 射手.substitutionIds && typeof 射手.substitutionIds === 'object' ? 射手.substitutionIds : {};
+  const 元の交代id =
+    射手.substitutionIds && typeof 射手.substitutionIds === 'object' ? 射手.substitutionIds : {};
   const 交代 = {};
   for (const [位置, 相手] of Object.entries(射手.substitutions || {})) {
     const 相手id = 元の交代id[位置];

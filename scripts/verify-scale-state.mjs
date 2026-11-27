@@ -9,7 +9,16 @@
  *  3. 同じ端末（同じ匿名uid）で別団体へログインし直せるか
  *  4. ルール内の get() が応答時間にどれだけ影響するか
  */
-import { configFor, signIn, signInAnonymously, req, setDoc, listAll, 検証のパスワード, 運営のアドレス } from './fb-rest.mjs';
+import {
+  configFor,
+  signIn,
+  signInAnonymously,
+  req,
+  setDoc,
+  listAll,
+  検証のパスワード,
+  運営のアドレス,
+} from './fb-rest.mjs';
 
 const { apiKey, projectId } = configFor('stg');
 const PW = 検証のパスワード();

@@ -1271,7 +1271,11 @@ test('射数：1〜500 の整数に丸め、減らしたら範囲の外の途中
   assert.deepEqual(後.substitutions, { 2: '交代A' });
   assert.deepEqual(後.substitutionIds, { 2: 'm2' });
   store.getState().undo();
-  assert.deepEqual(store.getState().archers[0].substitutions, { 2: '交代A', 6: '交代B' }, '取り消しで交代が戻らない');
+  assert.deepEqual(
+    store.getState().archers[0].substitutions,
+    { 2: '交代A', 6: '交代B' },
+    '取り消しで交代が戻らない'
+  );
   store.getState().setShotsPerRound(9999);
   assert.equal(store.getState().shotsPerRound, 500);
 });
@@ -1282,7 +1286,15 @@ test('○× を空に戻したら、その射の矢所も同じ一手で消え�
   store.setState({
     isHydrated: true,
     shotsPerRound: 4,
-    archers: [{ id: 'a1', name: '一人目', marks: ['×', '○', '', ''], arrowLocations: [矢, 矢, null, null], lastModified: 1 }],
+    archers: [
+      {
+        id: 'a1',
+        name: '一人目',
+        marks: ['×', '○', '', ''],
+        arrowLocations: [矢, 矢, null, null],
+        lastModified: 1,
+      },
+    ],
     historyStack: [],
     redoStack: [],
   });

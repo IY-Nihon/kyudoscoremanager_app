@@ -7,7 +7,16 @@
  * REG-1〜28 のうち、データ操作として再現できるものを全て通す。
  * stg 専用（データを作って消すため）。
  */
-import { configFor, signIn, signInAnonymously, req, setDoc, listAll, 検証のパスワード, 運営のアドレス } from './fb-rest.mjs';
+import {
+  configFor,
+  signIn,
+  signInAnonymously,
+  req,
+  setDoc,
+  listAll,
+  検証のパスワード,
+  運営のアドレス,
+} from './fb-rest.mjs';
 
 const target = process.argv[2] || 'stg';
 if (target !== 'stg') {

@@ -72,8 +72,15 @@ test('A41 ほかの端末で保存されたら、主催の端末も記録表を�
   主.ライブ.置く(道, Object.assign({}, 今の, { status: 'finished', timestamp: Date.now() }));
   await 待つ(20);
   assert.equal(主.store.getState().isLiveActive, false);
-  assert.deepEqual(主.store.getState().archers, [], '主催の端末に記録表が残った（もう一度保存すると二重になる）');
-  assert.ok(主.知らせ.some((文) => 文.includes('ほかの端末で保存されました')), '知らせていない');
+  assert.deepEqual(
+    主.store.getState().archers,
+    [],
+    '主催の端末に記録表が残った（もう一度保存すると二重になる）'
+  );
+  assert.ok(
+    主.知らせ.some((文) => 文.includes('ほかの端末で保存されました')),
+    '知らせていない'
+  );
 });
 
 test('保存すると、団体の枝には「終わった」印だけ残る（名前・○× は残さない）。開き直した端末は片付ける', async () => {
@@ -105,11 +112,23 @@ test('終わった印は参加一覧に出さず、古くなったら片付け�
   assert.deepEqual(出す, ['続いている']);
   assert.deepEqual(古い, ['昔に終えた']);
   const 主 = 端末(null);
-  主.ライブ.置く(`live_sessions/${検査の合言葉}/${ライブ名}`, { state: { status: 'finished', timestamp: いま } });
-  assert.equal(await 主.store.getState().startLiveSync(ライブ名), '開始した', '終わった印の名前で始められない');
+  主.ライブ.置く(`live_sessions/${検査の合言葉}/${ライブ名}`, {
+    state: { status: 'finished', timestamp: いま },
+  });
+  assert.equal(
+    await 主.store.getState().startLiveSync(ライブ名),
+    '開始した',
+    '終わった印の名前で始められない'
+  );
   const 別 = 端末(null);
-  別.ライブ.置く(`live_sessions/${検査の合言葉}/${ライブ名}`, { state: { status: 'active', timestamp: いま } });
-  assert.equal(await 別.store.getState().startLiveSync(ライブ名), '同名あり', '続いているライブを上書きできた');
+  別.ライブ.置く(`live_sessions/${検査の合言葉}/${ライブ名}`, {
+    state: { status: 'active', timestamp: いま },
+  });
+  assert.equal(
+    await 別.store.getState().startLiveSync(ライブ名),
+    '同名あり',
+    '続いているライブを上書きできた'
+  );
 });
 
 test('A39 見るだけで入った部員が配っても、見るだけのまま（○× を押せるようにならない）', async () => {
@@ -134,5 +153,9 @@ test('A34 主催が配ったら、開き直したときの控えにも主催が�
   await 主.store.getState().ライブを共有する('', 3600000);
   await 待つ(20);
   assert.equal(主.store.getState().isHost, true);
-  assert.equal((主.store.getState().ライブの続き || {}).主催, true, '控えに主催が残っていない（開き直すと参加者になる）');
+  assert.equal(
+    (主.store.getState().ライブの続き || {}).主催,
+    true,
+    '控えに主催が残っていない（開き直すと参加者になる）'
+  );
 });

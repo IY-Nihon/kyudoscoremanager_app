@@ -536,19 +536,23 @@ const HistoryScreen = () => {
                 onPress={() => {
                   if (!見ている記録) return;
                   const id = 見ている記録.id;
-                  窓.出す('完全に削除', 'この記録をゴミ箱からも削除します。元に戻せません。よろしいですか？', [
-                    { text: 'キャンセル', style: 'cancel' },
-                    {
-                      text: '削除',
-                      style: 'destructive',
-                      onPress: () => {
-                        useScoreStore.getState().deleteTrashItems([id]);
-                        setゴミ箱の記録(null);
-                        setHistoryViewMode('list');
-                        ゴミ箱の窓を出す(true);
+                  窓.出す(
+                    '完全に削除',
+                    'この記録をゴミ箱からも削除します。元に戻せません。よろしいですか？',
+                    [
+                      { text: 'キャンセル', style: 'cancel' },
+                      {
+                        text: '削除',
+                        style: 'destructive',
+                        onPress: () => {
+                          useScoreStore.getState().deleteTrashItems([id]);
+                          setゴミ箱の記録(null);
+                          setHistoryViewMode('list');
+                          ゴミ箱の窓を出す(true);
+                        },
                       },
-                    },
-                  ]);
+                    ]
+                  );
                 }}
                 style={({ hovered }) => [
                   styles.trashBannerBtn,

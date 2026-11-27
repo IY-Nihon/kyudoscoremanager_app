@@ -96,7 +96,12 @@ for (const g of 対象) {
 
   // 個人ID は名簿の文書に置かず、逆引き表（member_lookup）にだけ置く（2026-11-04。決まりも名簿に置かせない）
   for (let i = 1; i <= g.members; i++) {
-    await setDoc(projectId, `/groups/${g.id}/member_lookup/${pid(g.id, i)}`, { memberId: uuid(g.id, i), updatedAt: new Date() }, token);
+    await setDoc(
+      projectId,
+      `/groups/${g.id}/member_lookup/${pid(g.id, i)}`,
+      { memberId: uuid(g.id, i), updatedAt: new Date() },
+      token
+    );
     await setDoc(
       projectId,
       `/groups/${g.id}/members/${uuid(g.id, i)}`,

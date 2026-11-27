@@ -9,7 +9,6 @@ import { View, Text, StyleSheet } from './rn';
 
 import { useストアの一部 } from './storeSlice';
 
-
 export const ArrowLocationView = ({ arrowLocations = [], size = 200, targetType, hideNumbers = false }) => {
   const { arrowTargetType: storeTargetType } = useストアの一部(['arrowTargetType']);
   const arrowTargetType = targetType || storeTargetType;

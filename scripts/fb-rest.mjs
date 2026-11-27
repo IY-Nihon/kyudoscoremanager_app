@@ -56,7 +56,9 @@ export function 運営のアドレス() {
   const 値 =
     process.env.ADMIN_EMAIL || readEnv('.env.development.local').ADMIN_EMAIL || readEnv('.env').ADMIN_EMAIL;
   if (!値 || !/^[^@\s'"]+@[^@\s'"]+\.[A-Za-z]{2,}$/.test(値) || 値 === 例の運営のアドレス)
-    throw new Error('運営のアドレスがありません。.env に ADMIN_EMAIL=… の行を足してください（scripts/fb-rest.mjs）');
+    throw new Error(
+      '運営のアドレスがありません。.env に ADMIN_EMAIL=… の行を足してください（scripts/fb-rest.mjs）'
+    );
   return 値;
 }
 
@@ -209,9 +211,19 @@ export async function 検証環境でメールを確認済みにする(メール
       }),
     })
   ).json();
-  const 頭 = { Authorization: `Bearer ${access_token}`, 'Content-Type': 'application/json', 'x-goog-user-project': 企画 };
+  const 頭 = {
+    Authorization: `Bearer ${access_token}`,
+    'Content-Type': 'application/json',
+    'x-goog-user-project': 企画,
+  };
   const 根 = `https://identitytoolkit.googleapis.com/v1/projects/${企画}`;
-  const j = await (await fetch(`${根}/accounts:lookup`, { method: 'POST', headers: 頭, body: JSON.stringify({ email: メールたち }) })).json();
+  const j = await (
+    await fetch(`${根}/accounts:lookup`, {
+      method: 'POST',
+      headers: 頭,
+      body: JSON.stringify({ email: メールたち }),
+    })
+  ).json();
   let 数 = 0;
   for (const u of j.users || []) {
     if (!!u.emailVerified === 済み) continue;

@@ -134,20 +134,23 @@ test.describe('確認画面', () => {
       })),
     };
     if (行を直す) 行を直す(返事);
-    await page.route(/generativelanguage\.googleapis\.com|(?:workers\.dev|127\.0\.0\.1:8788)\/v1beta\//, (route) => {
-      // 箱を聞く2度目の呼び出し（指示文に box_2d がある）には、箱の返事を返す
-      const 箱を聞いている = 箱の返事 && /box_2d/.test(route.request().postData() || '');
-      const 中身 = 箱を聞いている ? 箱の返事 : 返事;
-      return route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          candidates: [
-            { content: { role: 'model', parts: [{ text: JSON.stringify(中身) }] }, finishReason: 'STOP' },
-          ],
-        }),
-      });
-    });
+    await page.route(
+      /generativelanguage\.googleapis\.com|(?:workers\.dev|127\.0\.0\.1:8788)\/v1beta\//,
+      (route) => {
+        // 箱を聞く2度目の呼び出し（指示文に box_2d がある）には、箱の返事を返す
+        const 箱を聞いている = 箱の返事 && /box_2d/.test(route.request().postData() || '');
+        const 中身 = 箱を聞いている ? 箱の返事 : 返事;
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            candidates: [
+              { content: { role: 'model', parts: [{ text: JSON.stringify(中身) }] }, finishReason: 'STOP' },
+            ],
+          }),
+        });
+      }
+    );
 
     await 案内を止める(page);
     await page.goto('/');

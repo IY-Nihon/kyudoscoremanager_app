@@ -879,9 +879,12 @@ const ライブの操作 = (書く, 状態, そのまま書く) => {
         const 前 = 秘.ライブの枝(今の中身.liveSecret);
         // まだ合言葉が無い団体は、次に用意するときに新しく作るので何もしない
         if (!前) return '無い';
-        const 抜けた = [...new Set([...見.抜けた人たち(状態().members, 状態().alumni), ...足す人.map(String)])].sort();
+        const 抜けた = [
+          ...new Set([...見.抜けた人たち(状態().members, 状態().alumni), ...足す人.map(String)]),
+        ].sort();
         // 見直しのときは、ほかの端末がもう作り直していないかを団体の文書で確かめ直す
-        if (見直し && 今の中身.liveSecretRenew !== true && !見.作り直しが要るか(今の中身, 抜けた)) return '要らない';
+        if (見直し && 今の中身.liveSecretRenew !== true && !見.作り直しが要るか(今の中身, 抜けた))
+          return '要らない';
         const 返り = await RTDB.get(RTDB.ref(Firebaseの器.rtdb, `live_sessions/${前}`));
         const 節点 = 返り.exists() ? 返り.val() : null;
         if (参加できるライブ(節点, await サーバー時刻()).出す.length > 0) {
@@ -930,8 +933,7 @@ const ライブの操作 = (書く, 状態, そのまま書く) => {
       if (!団体 || !役の決まり.できるか(状態(), 'メンバーを管理する')) return null;
       const 控え = 状態().ライブの合言葉の様子;
       if (!控え || 控え.団体 !== 団体) return null;
-      const 要る =
-        控え.待ち || 見.作り直しが要るか(控え, 見.抜けた人たち(状態().members, 状態().alumni));
+      const 要る = 控え.待ち || 見.作り直しが要るか(控え, 見.抜けた人たち(状態().members, 状態().alumni));
       if (!要る) return null;
       const 今 = Date.now();
       const 前 = 場.合言葉を見た;

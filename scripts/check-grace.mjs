@@ -12,7 +12,9 @@
 import fs from 'node:fs';
 
 const 決まり = fs.readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8');
-const 合う = 決まり.match(/function inGracePeriod\(\) \{\s*return request\.time < timestamp\.date\((\d{4}), (\d{1,2}), (\d{1,2})\)/);
+const 合う = 決まり.match(
+  /function inGracePeriod\(\) \{\s*return request\.time < timestamp\.date\((\d{4}), (\d{1,2}), (\d{1,2})\)/
+);
 if (!合う) {
   console.log('猶予の日付は決まりに無い（確かめることは無い）');
   process.exit(0);
@@ -22,7 +24,9 @@ const 日 = (ms) => new Date(ms).toISOString().slice(0, 10);
 const 残り日数 = (終わり - Date.now()) / 86400000;
 console.log(`メールの確認の猶予の終わり: ${日(終わり)}（あと ${残り日数.toFixed(1)} 日）`);
 if (残り日数 > 8) {
-  console.error('止めた：猶予の終わりが 8 日より先です。配信日＋7 日にしてください（firestore.rules と src/mailKakunin.js）');
+  console.error(
+    '止めた：猶予の終わりが 8 日より先です。配信日＋7 日にしてください（firestore.rules と src/mailKakunin.js）'
+  );
   process.exit(1);
 }
 if (残り日数 <= 0 && process.env.KAKUNIN_GRACE_OK !== '1') {
@@ -34,13 +38,21 @@ if (残り日数 <= 0 && process.env.KAKUNIN_GRACE_OK !== '1') {
 }
 
 // 4 桁の個人ID を使える終わり（配信日＋1 か月。src/kojinId.js と同じ日）。遠すぎる日付は打ち間違い
-const 個人IDの終わり = 決まり.match(/function legacyIdUsable\(\) \{\s*return request\.time < timestamp\.date\((\d{4}), (\d{1,2}), (\d{1,2})\)/);
+const 個人IDの終わり = 決まり.match(
+  /function legacyIdUsable\(\) \{\s*return request\.time < timestamp\.date\((\d{4}), (\d{1,2}), (\d{1,2})\)/
+);
 if (個人IDの終わり) {
-  const 終わり2 = Date.UTC(Number(個人IDの終わり[1]), Number(個人IDの終わり[2]) - 1, Number(個人IDの終わり[3]));
+  const 終わり2 = Date.UTC(
+    Number(個人IDの終わり[1]),
+    Number(個人IDの終わり[2]) - 1,
+    Number(個人IDの終わり[3])
+  );
   const 残り2 = (終わり2 - Date.now()) / 86400000;
   console.log(`4 桁の個人ID を使える終わり: ${日(終わり2)}（あと ${残り2.toFixed(1)} 日）`);
   if (残り2 > 35) {
-    console.error('止めた：4 桁の個人ID を使える終わりが 35 日より先です。配信日＋1 か月にしてください（firestore.rules と src/kojinId.js）');
+    console.error(
+      '止めた：4 桁の個人ID を使える終わりが 35 日より先です。配信日＋1 か月にしてください（firestore.rules と src/kojinId.js）'
+    );
     process.exit(1);
   }
 }

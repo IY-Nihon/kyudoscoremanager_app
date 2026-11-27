@@ -265,9 +265,7 @@ export const ArrowLocationPopover = ({
         <View style={styles.popoverContainer}>
           {/* ヘッダー */}
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>
-              矢所の記録 ({`${題の射番 + 1}射目`})
-            </Text>
+            <Text style={styles.headerTitle}>矢所の記録 ({`${題の射番 + 1}射目`})</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <Ionicons name="close" size={24} color={色.灰} />
             </TouchableOpacity>

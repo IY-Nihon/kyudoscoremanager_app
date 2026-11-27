@@ -27,7 +27,8 @@ function 写真の網の重みを読む(道具 = {}) {
       if (!返事.ok) throw new Error(`HTTP ${返事.status}`);
       // 配信の切り替わりの間などに、重みの代わりに index.html（200・text/html）が返ることがある。それを重みとして
       // 使うと網が壊れた数で読む。使わずに畳み込みの網だけで読む（次に読み取るときに取り直す）
-      const 型 = (返事.headers && typeof 返事.headers.get === 'function' && 返事.headers.get('content-type')) || '';
+      const 型 =
+        (返事.headers && typeof 返事.headers.get === 'function' && 返事.headers.get('content-type')) || '';
       if (/text\/html/i.test(型)) throw new Error('重みの代わりに HTML が返った');
       return new Uint8Array(await 返事.arrayBuffer());
     })().catch((誤り) => {

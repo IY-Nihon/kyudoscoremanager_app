@@ -255,7 +255,12 @@ test('cleanUpSessions: 直すところの在る記録だけ入れ替える', () 
 test('generateUniquePersonalId: 大文字と数字の 6 字（I・L・O・0・1 なし）で、使用中と重ならない', () => {
   let 回 = 0;
   // 1 回目は使用中と同じ字の並びを出し、2 回目に別の並びを出す乱数
-  const 乱数源 = { getRandomValues: (桶) => { 桶.fill(回++ === 0 ? 0 : 1); return 桶; } };
+  const 乱数源 = {
+    getRandomValues: (桶) => {
+      桶.fill(回++ === 0 ? 0 : 1);
+      return 桶;
+    },
+  };
   const id = generateUniquePersonalId([{ personalId: 'AAAAAA' }], [], 乱数源);
   assert.match(id, /^[A-HJKMNP-Z2-9]{6}$/);
   assert.equal(id, 'BBBBBB');
@@ -756,11 +761,23 @@ test('送れていないものがあるか：記録・メンバー・卒業生�
 test('自分の射手か：部員 ID の付いた列・交代は ID で決める。名前で拾うのは ID の無いものだけ（2026-11-12 本人）', () => {
   const { 自分の射手か } = require('../src/syncRules');
   assert.equal(自分の射手か({ memberId: 'm1', name: '山田' }, 'm1', '山田'), true);
-  assert.equal(自分の射手か({ memberId: 'm2', name: '山田' }, 'm1', '山田'), false, '同姓同名の別人を自分に数えた');
+  assert.equal(
+    自分の射手か({ memberId: 'm2', name: '山田' }, 'm1', '山田'),
+    false,
+    '同姓同名の別人を自分に数えた'
+  );
   assert.equal(自分の射手か({ name: '山田' }, 'm1', '山田'), true, '名前だけで入れた射手を拾えない');
-  assert.equal(自分の射手か({ memberId: 'm2', name: '山田' }, undefined, '山田'), true, '自分の ID が分からないときは名前で見る');
+  assert.equal(
+    自分の射手か({ memberId: 'm2', name: '山田' }, undefined, '山田'),
+    true,
+    '自分の ID が分からないときは名前で見る'
+  );
   const 交代 = { memberId: 'm9', name: '佐藤', substitutions: { 2: '山田' }, substitutionIds: { 2: 'm2' } };
   assert.equal(自分の射手か(交代, 'm1', '山田'), false, '交代で入った同姓同名の別人を自分に数えた');
   assert.equal(自分の射手か({ ...交代, substitutionIds: { 2: 'm1' } }, 'm1', '山田'), true);
-  assert.equal(自分の射手か({ ...交代, substitutionIds: {} }, 'm1', '山田'), true, 'ID の無い交代を名前で拾えない');
+  assert.equal(
+    自分の射手か({ ...交代, substitutionIds: {} }, 'm1', '山田'),
+    true,
+    'ID の無い交代を名前で拾えない'
+  );
 });

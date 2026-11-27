@@ -83,7 +83,8 @@ function 収める(中身) {
     if (大きさ(写し) <= 文字の上限) return 写し;
   }
   for (const 鍵 of Object.keys(写し)) {
-    if (typeof 写し[鍵] === 'string' && 写し[鍵].length > 4000) 写し[鍵] = 写し[鍵].slice(0, 4000) + '…（切った）';
+    if (typeof 写し[鍵] === 'string' && 写し[鍵].length > 4000)
+      写し[鍵] = 写し[鍵].slice(0, 4000) + '…（切った）';
   }
   return 大きさ(写し) <= 文字の上限 ? 写し : { 省いた: true, 種類の印: Object.keys(中身).slice(0, 20) };
 }

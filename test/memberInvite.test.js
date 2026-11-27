@@ -52,10 +52,16 @@ test('リンクを作って読み戻せる。形の違うものは読まない',
 test('貼り付けで見えない空白や全角が混じったリンクも読む（団体は大文字にしない）', () => {
   const 合言葉 = 'a'.repeat(32);
   // LINE から貼ると末尾に幅の無い空白が付く。ブラウザはそれを %E2%80%8B にする
-  assert.deepStrictEqual(招.URLから招待を取る(`https://x/#招待=${団体}.${合言葉}%E2%80%8B`), { 団体, 合言葉 });
+  assert.deepStrictEqual(招.URLから招待を取る(`https://x/#招待=${団体}.${合言葉}%E2%80%8B`), {
+    団体,
+    合言葉,
+  });
   assert.deepStrictEqual(招.URLから招待を取る(`https://x/#招待=${団体}.${合言葉}\u200B`), { 団体, 合言葉 });
   // 全角の番号と合言葉
-  assert.deepStrictEqual(招.URLから招待を取る(`https://x/#招待=１００００１.${'Ａ'.repeat(32)}`), { 団体, 合言葉 });
+  assert.deepStrictEqual(招.URLから招待を取る(`https://x/#招待=１００００１.${'Ａ'.repeat(32)}`), {
+    団体,
+    合言葉,
+  });
   // 古い団体の鍵の小文字はそのまま
   assert.deepStrictEqual(招.URLから招待を取る(`https://x/#招待=abC1.${合言葉}`), { 団体: 'abC1', 合言葉 });
 });
@@ -301,7 +307,12 @@ test('部員として入る：前から使っていた匿名の口座（入り�
   };
   const { 部員として入る } = require('../src/groupLogin');
   await assert.rejects(
-    部員として入る({ Firestore: 雲.api, FirebaseAuth, db: {}, auth: 認証 }, 団体, 'z'.repeat(32), '使えません'),
+    部員として入る(
+      { Firestore: 雲.api, FirebaseAuth, db: {}, auth: 認証 },
+      団体,
+      'z'.repeat(32),
+      '使えません'
+    ),
     /使えません/
   );
   assert.deepStrictEqual(消した, [], 'まだ使えていた部員の口座を消した');
@@ -317,7 +328,10 @@ test('団体から出る：部員は証と匿名の口座を消して出る。�
     Firestore: {
       doc: (_db, 集まり, id) => `${集まり}/${id}`,
       // 電波が無いと Firestore の書き込みは届くまで返らない
-      deleteDoc: (場所) => (起きた.push(`消す ${場所}`), 返らない ? new Promise(() => {}) : Promise.resolve()),
+      deleteDoc: (場所) => (
+        起きた.push(`消す ${場所}`),
+        返らない ? new Promise(() => {}) : Promise.resolve()
+      ),
     },
     FirebaseAuth: {
       deleteUser: async (人) => {
@@ -439,7 +453,12 @@ test('逆引き表：名簿と削除の控えが前に合わせたときと同�
   await store.getState().syncMemberLookup();
   assert.strictEqual(数.逆引き, 1);
   // 人が増えた・削除の控えが変わった → 読む
-  store.setState({ members: [{ id: 'm1', name: '直した名前' }, { id: 'm2', name: '増えた人' }] });
+  store.setState({
+    members: [
+      { id: 'm1', name: '直した名前' },
+      { id: 'm2', name: '増えた人' },
+    ],
+  });
   await store.getState().syncMemberLookup();
   assert.strictEqual(数.逆引き, 2);
   store.setState({ deletedMembers: { m9: Date.now() } });
@@ -462,7 +481,11 @@ test('逆引き表：起動したら（店を作り直したら）最初は必�
   const 数 = 読みを数える(雲);
   store.setState({ members: [{ id: 'm1', name: 'いる人' }] });
   雲.状態.控えから答える = true;
-  assert.deepStrictEqual(await store.getState().ensurePersonalIds(), [], '控えから答えた表で個人ID を振った（A1）');
+  assert.deepStrictEqual(
+    await store.getState().ensurePersonalIds(),
+    [],
+    '控えから答えた表で個人ID を振った（A1）'
+  );
   await store.getState().syncMemberLookup();
   assert.deepStrictEqual(雲.中身(逆引きの道), [], '控えから答えた表で書いた');
   雲.状態.控えから答える = false;
@@ -556,7 +579,11 @@ test('部員として入る：中継（/kojin）が確かめて証を書く。�
   const 読んだ前 = 雲.読んだ ? 雲.読んだ.length : 0;
   assert.deepStrictEqual(await 部員として入る(道具, 団体, 'K7MP3X'), { memberId: 'm1', 名前: '山田 太郎' });
   assert.deepStrictEqual(頼んだ[0], ['/kojin', { 団体, 鍵: 'K7MP3X' }]);
-  if (雲.読んだ) assert.ok(!雲.読んだ.slice(読んだ前).some((道) => String(道).includes('member_lookup')), '端末が逆引き表を読んだ');
+  if (雲.読んだ)
+    assert.ok(
+      !雲.読んだ.slice(読んだ前).some((道) => String(道).includes('member_lookup')),
+      '端末が逆引き表を読んだ'
+    );
   // 見つからない：知らせて、今作った匿名の口座を消す
   認証.currentUser = null;
   中継の答え = 返事(200, { 結果: '見つからない' });
@@ -571,7 +598,8 @@ test('部員として入る：中継（/kojin）が確かめて証を書く。�
       return true;
     });
   };
-  const 後ろ = 'したメンバーはログインできません。続けて使うときは、団体の管理者に「在籍」に戻してもらってください。';
+  const 後ろ =
+    'したメンバーはログインできません。続けて使うときは、団体の管理者に「在籍」に戻してもらってください。';
   await 断られる({ 在籍: '卒業', 種類: 'univ4', 呼び方: '' }, '卒業' + 後ろ);
   await 断られる({ 在籍: '退部', 種類: 'school3', 呼び方: '' }, '退部' + 後ろ);
   await 断られる({ 在籍: '退部', 種類: 'club', 呼び方: '' }, '退会' + 後ろ);
@@ -621,7 +649,9 @@ test('部員として入る：中継が古い（404）ときの前の道が新�
     signInAnonymously: async (auth) => void (auth.currentUser = { uid: 'anon-x', isAnonymous: true }),
     deleteUser: async () => void (認証.currentUser = null),
   };
-  const 断る = Object.assign(new Error('Missing or insufficient permissions.'), { code: 'permission-denied' });
+  const 断る = Object.assign(new Error('Missing or insufficient permissions.'), {
+    code: 'permission-denied',
+  });
   const api = Object.assign({}, 雲.api, {
     getDoc: async (場所) => {
       if (String((場所 && 場所.道) || '').includes('member_lookup')) throw 断る;

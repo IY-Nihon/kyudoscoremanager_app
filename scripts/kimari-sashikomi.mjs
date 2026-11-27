@@ -28,7 +28,8 @@ const アドレスの形 = /^[^@\s'"]+@[^@\s'"]+\.[A-Za-z]{2,}$/;
 export function 差し込む(決まり, 本物) {
   const 数 = 決まり.split(例).length - 1;
   if (数 !== 1) throw new Error(`決まりに例のアドレス ${例} が ${数} か所ある（1 か所のはず）`);
-  if (!アドレスの形.test(本物) || 本物 === 例の運営のアドレス) throw new Error('差し込むアドレスの形が正しくない');
+  if (!アドレスの形.test(本物) || 本物 === 例の運営のアドレス)
+    throw new Error('差し込むアドレスの形が正しくない');
   return 決まり.replace(例, `'${本物}'`);
 }
 
@@ -60,5 +61,7 @@ if (process.argv[1] && import.meta.url === url.pathToFileURL(path.resolve(proces
   const 設定 = JSON.parse(fs.readFileSync('firebase.json', 'utf8'));
   設定.firestore = { ...設定.firestore, rules: '.kimari/firestore.rules' };
   fs.writeFileSync('firebase.kimari.json', JSON.stringify(設定, null, 2) + '\n');
-  console.log(`決まりに運営のアドレスを差し込んだ写しを作った（元: ${元} → .kimari/firestore.rules・設定: firebase.kimari.json）`);
+  console.log(
+    `決まりに運営のアドレスを差し込んだ写しを作った（元: ${元} → .kimari/firestore.rules・設定: firebase.kimari.json）`
+  );
 }

@@ -60,7 +60,9 @@ async function 取る(道) {
   const 出 = [];
   let token = '';
   for (;;) {
-    const j = await (await fetch(`${根}/${道}?pageSize=300${token ? `&pageToken=${token}` : ''}`, { headers: 頭 })).json();
+    const j = await (
+      await fetch(`${根}/${道}?pageSize=300${token ? `&pageToken=${token}` : ''}`, { headers: 頭 })
+    ).json();
     if (j.error) throw new Error(`${道} を読めません: ${j.error.message || ''}`);
     (j.documents || []).forEach((d) => 出.push(d));
     if (!j.nextPageToken) break;
@@ -104,7 +106,11 @@ for (const 団体 of 団体たち) {
       書き込み.push({
         update: {
           name: `${文書の根}/groups/${団体}/member_lookup/${id}`,
-          fields: { memberId: { stringValue: 番号(d) }, 形: { integerValue: '2' }, updatedAt: { timestampValue: new Date().toISOString() } },
+          fields: {
+            memberId: { stringValue: 番号(d) },
+            形: { integerValue: '2' },
+            updatedAt: { timestampValue: new Date().toISOString() },
+          },
         },
         currentDocument: { exists: false },
       });
@@ -115,13 +121,19 @@ for (const 団体 of 団体たち) {
   );
   for (const [, d] of 消す人)
     // 欄を書かずに updateMask に名前だけ渡すと、その欄が消える（ほかの欄はそのまま）
-    書き込み.push({ update: { name: d.name, fields: {} }, updateMask: { fieldPaths: ['personalId'] }, currentDocument: { exists: true } });
+    書き込み.push({
+      update: { name: d.name, fields: {} },
+      updateMask: { fieldPaths: ['personalId'] },
+      currentDocument: { exists: true },
+    });
   if (!足す && !消す人.length && !重なり) continue;
   合計.団体++;
   合計.足す += 足す;
   合計.消す += 消す人.length;
   合計.重なり += 重なり;
-  console.log(`団体 ${合計.団体}: 逆引き表に足す ${足す}・名簿から消す ${消す人.length}${重なり ? `・同じ ID をほかの人が使っている ${重なり}（足さない）` : ''}`);
+  console.log(
+    `団体 ${合計.団体}: 逆引き表に足す ${足す}・名簿から消す ${消す人.length}${重なり ? `・同じ ID をほかの人が使っている ${重なり}（足さない）` : ''}`
+  );
   if (移す && 書き込み.length) await 書く(書き込み);
 }
 console.log(

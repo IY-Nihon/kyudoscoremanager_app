@@ -47,7 +47,9 @@ export function 新しいパスワードを作る(乱 = (n) => crypto.randomByte
 
 /** .env の中身から 名 の値を読む（頭の BOM・行末の空白は外す）。無ければ '' */
 export function envの値(中身, 名) {
-  for (const 行 of String(中身).replace(/^\uFEFF/, '').split(/\r?\n/)) {
+  for (const 行 of String(中身)
+    .replace(/^\uFEFF/, '')
+    .split(/\r?\n/)) {
     if (行.startsWith(名 + '=')) return 行.slice(名.length + 1).trim();
   }
   return '';
