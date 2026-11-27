@@ -113,4 +113,29 @@ if (試しの印 && 試しの印[1].length > 2) {
   process.exit(1);
 }
 
-console.log(`接続先を確かめました: ${焼き込み}`);
+// 中継（Gemini）の住所も配り先と合わせる（2026-11-28）。検証環境の .env.development.local は検証用の中継を向くので、
+// それが束に入ったまま本番へ配ると、本番の証を検証用の中継が断り、AI チャットと写真の読み取りがみな止まる（10/17 の止まり方に近い）
+const 中継の住所たち = [
+  ...new Set(中身.match(/kyudo-gemini-chukei[a-z0-9-]*\.kyudo-chukei\.workers\.dev/g) || []),
+];
+const 来るべき中継 =
+  配り先 === 'kyudoscoremanager-stg'
+    ? 'kyudo-gemini-chukei-stg.kyudo-chukei.workers.dev'
+    : 'kyudo-gemini-chukei.kyudo-chukei.workers.dev';
+if (中継の住所たち.length !== 1 || 中継の住所たち[0] !== 来るべき中継) {
+  console.error('');
+  console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.error('  配るのをやめました');
+  console.error('');
+  console.error(`  束の中継 : ${中継の住所たち.join('・') || '見つからない'}`);
+  console.error(`  来るべき : ${来るべき中継}（配り先 ${配り先}）`);
+  console.error('');
+  console.error('  .env の EXPO_PUBLIC_GEMINI_CHUKEI_URL を確かめて、書き出し直してください：');
+  console.error('');
+  console.error('    npx expo export --platform web --clear');
+  console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.error('');
+  process.exit(1);
+}
+
+console.log(`接続先を確かめました: ${焼き込み}（中継 ${中継の住所たち[0]}）`);
