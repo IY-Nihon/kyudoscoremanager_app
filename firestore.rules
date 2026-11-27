@@ -354,7 +354,8 @@ service cloud.firestore {
     // 変えてよいのはこの 2 つだけ。作り直した合言葉も推測できない長さにする
     function renewsLiveSecret(groupId) {
       return memberCan(groupId, 'メンバー')
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['liveSecret', 'liveSecretRenew'])
+        // liveSecretGen は作り直した世代の印（11/27：配る前に卒業・退部にした人の端末に残る合言葉を、一度だけ作り直す）
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['liveSecret', 'liveSecretRenew', 'liveSecretGen'])
         && request.resource.data.get('liveSecret', '') is string
         && request.resource.data.get('liveSecret', '').size() >= 16;
     }

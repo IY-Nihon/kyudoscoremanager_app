@@ -86,6 +86,9 @@ Object.defineProperty(exports, 'ライブ名に使えない字', {
 });
 /** 管理者モードを印の期限で切る時計（setAdminMode） */
 let 管理者の時計 = null;
+/** 団体の文書の便りで、ライブの合言葉を作り直せるか見た団体と時刻（ライブの枝を何度も読み直さないため。11/27） */
+let 合言葉を見た = { 団体: null, 時刻: 0 };
+const 合言葉を見る間 = 5 * 60 * 1000;
 
 const useScoreStore = zustand.create()(
   middleware.persist(
@@ -817,8 +820,10 @@ const useScoreStore = zustand.create()(
             今の人,
             FirebaseAuth.EmailAuthProvider.credential(今の人.email, 今の)
           );
-          if (状態().isAdminMode) 状態().setAdminMode(false);
           await FirebaseAuth.updatePassword(今の人, 新しい);
+          // 管理者モードは変えられたあとに切る（入り直しでログインの時刻が変わり、中継の「管理者」の印はもう効かない）。
+          // 先に切ると、電波が悪くて変えられなかったときも管理者モードだけ切れた（11/27 の点検）
+          if (状態().isAdminMode) 状態().setAdminMode(false);
         },
         /**
          * 管理者モードを入れる・切る。期限（中継の「管理者」の印の終わり。src/kanriAikotoba.js）があれば、
@@ -1288,7 +1293,22 @@ const useScoreStore = zustand.create()(
             }
             const 待ち = 団体の中身.liveSecretRenew === true;
             if (待ち !== !!状態().ライブの作り直し待ち) 書く({ ライブの作り直し待ち: 待ち });
-            if (待ち && 役の決まり.できるか(状態(), 'メンバーを管理する')) 状態().ライブの合言葉を作り直す();
+            if (!新しい || !役の決まり.できるか(状態(), 'メンバーを管理する')) return;
+            // 世代の印が無く、名簿に卒業・退部の人がいる団体は一度だけ作り直す（11/26 より前に卒業・退部にした人の端末に
+            // 今の合言葉が残っているため。11/27 の点検）。前の形の卒業生の一覧（alumni）に人がいる団体も同じ。
+            // 名簿がまだ届いていなければ、次の便りで見る
+            const 名簿 = Array.isArray(状態().members) ? 状態().members : [];
+            const 卒業生 = Array.isArray(状態().alumni) ? 状態().alumni : [];
+            const 前に抜けた人がいる =
+              団体の中身.liveSecretGen !== require('./storeLive').合言葉の世代 &&
+              (卒業生.length > 0 || 名簿.some((人) => 人 && !学.現役か(人)));
+            if (!待ち && !前に抜けた人がいる) return;
+            // 団体の文書の便りは設定が変わるたびに届く。ライブの途中で待ちのあいだ、そのたびにライブの枝を丸ごと読み直さない
+            //（ライブを離れたときは storeLive の ライブから離れる が待たずに作り直す。11/27 の点検）
+            const 今 = Date.now();
+            if (合言葉を見た.団体 === この団体 && 今 - 合言葉を見た.時刻 < 合言葉を見る間) return;
+            合言葉を見た = { 団体: この団体, 時刻: 今 };
+            状態().ライブの合言葉を作り直す();
           };
           const _cfgDb = await waitForDb();
           if (!_cfgDb) {

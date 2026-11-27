@@ -68,7 +68,15 @@ const 団体のパスワードを変える窓 = ({ 見える, 閉じる }) => {
   };
 
   return (
-    <Modal visible={!!見える} transparent animationType="fade" onRequestClose={閉じる}>
+    <Modal
+      visible={!!見える}
+      transparent
+      animationType="fade"
+      // 変えている途中は戻るボタン・Esc でも閉じない（閉じると、変わったかどうかが分からないまま。11/27 の点検）
+      onRequestClose={() => {
+        if (!作業中) 閉じる();
+      }}
+    >
       <View style={styles.外}>
         <ScrollView
           style={styles.流し}

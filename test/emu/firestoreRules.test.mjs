@@ -532,6 +532,12 @@ test('ライブの合言葉の作り直し（11/26 本人）：メンバーを�
     (await 書く(部員, 道, { liveSecret: 新しい, liveSecretRenew: false }, { merge: true })).通った,
     '運営が合言葉を作り直せない'
   );
+  // 世代の印（liveSecretGen。11/27）も一緒に書ける
+  assert.ok(
+    (await 書く(部員, 道, { liveSecret: 'f'.repeat(32), liveSecretRenew: false, liveSecretGen: 1 }, { merge: true }))
+      .通った,
+    '運営が世代の印と一緒に作り直せない'
+  );
   // 短い合言葉・ほかの項目を一緒に変えるのは断る
   assert.equal((await 書く(部員, 道, { liveSecret: 'short' }, { merge: true })).通った, false);
   assert.equal(

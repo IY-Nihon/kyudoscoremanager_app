@@ -77,6 +77,13 @@ async function 入る(page) {
       20000
     );
   }
+  // 4 桁の個人ID のバナー（12/3 まで）は「あとで」で閉じる。3〜4 行に折れて記録表を押し上げ、GitHub（Linux の字体）では
+  // 縦の名前の欄が隠れて、名前の位置の検査が落ちた（11/13〜。手元の字体では収まる。11/27）
+  const 四桁 = page.getByTestId('四桁の帯');
+  if (await 四桁.isVisible().catch(() => false)) {
+    await 四桁.getByText('あとで', { exact: true }).click();
+    await expect(四桁).toHaveCount(0);
+  }
 }
 
 /** 1射目と2射目のますの位置を返す */

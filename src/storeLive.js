@@ -51,6 +51,14 @@ const {
 } = require('./storeShared');
 const 役の決まり = require('./yaku');
 
+/**
+ * ライブの合言葉の世代（団体の文書の liveSecretGen）。この版が作り直した合言葉に付ける。
+ * 卒業・退部・削除で作り直すのは 11/26 からなので、それより前に卒業・退部にした人の端末には今の合言葉が残っている。
+ * 世代の印が無く、名簿に卒業・退部の人がいる団体は、メンバーを管理できる端末が一度だけ作り直す（useScoreStore の
+ * ライブの合言葉の便りを受ける。11/27 の点検）
+ */
+const 合言葉の世代 = 1;
+
 // ライブ 1 つを、団体の枝・共有の枝・閲覧の写し・期限まで消す。
 // 古いライブの片付けと、参加一覧から手で消すときの両方で使う
 async function ライブを枝ごと消す(枝, 名, 印) {
@@ -883,7 +891,12 @@ const ライブの操作 = (書く, 状態, そのまま書く) => {
           return '待つ';
         }
         const 新しい = 秘.合言葉を作る();
-        await Firestore.setDoc(場所, { liveSecret: 新しい, liveSecretRenew: false }, { merge: true });
+        // 世代の印も書く（この版で作り直した合言葉。前の版の端末が作った合言葉と見分け、一度だけの作り直しを済ませた印にする）
+        await Firestore.setDoc(
+          場所,
+          { liveSecret: 新しい, liveSecretRenew: false, liveSecretGen: 合言葉の世代 },
+          { merge: true }
+        );
         if (状態().activeGroupId === 団体) {
           書く({ ライブの合言葉: { 団体, 合言葉: 新しい }, ライブの作り直し待ち: false });
           団体の枝に印を置く(新しい);
@@ -992,4 +1005,4 @@ const ライブの操作 = (書く, 状態, そのまま書く) => {
   };
 };
 
-module.exports = { ライブの操作 };
+module.exports = { ライブの操作, 合言葉の世代 };

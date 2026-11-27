@@ -126,3 +126,47 @@ test('退部にした人はログインできず、ライブの合言葉が作�
   expect(await ライブの合言葉(団体)).toBe(作り直した);
   await 持ち主の場.close();
 });
+
+test('配る前に退部にした人がいる団体は、管理できる端末で一度だけ合言葉を作り直す（11/27 の点検）', async ({ browser }) => {
+  test.setTimeout(180_000);
+  const 団体 = await 検査の団体を作る('taibu-mae');
+  // 前の版のままの団体：合言葉はあるが世代の印は無く、名簿に前から退部の人がいる
+  const 前 = 'e2e' + Date.now().toString(36).padEnd(29, 'b');
+  await fetch(`${文書の根}/groups/${団体}?updateMask.fieldPaths=liveSecret`, {
+    method: 'PATCH',
+    headers: 管理,
+    body: JSON.stringify({ fields: { liveSecret: { stringValue: 前 } } }),
+  });
+  await fetch(`${文書の根}/groups/${団体}/members/mae-taibu`, {
+    method: 'PATCH',
+    headers: 管理,
+    body: JSON.stringify({
+      fields: {
+        id: { stringValue: 'mae-taibu' },
+        name: { stringValue: '検査 前から退部' },
+        enrollment: { stringValue: '退部' },
+      },
+    }),
+  });
+  const 世代 = async () => (await 読む(団体)).fields?.liveSecretGen?.integerValue ?? null;
+
+  const 場 = await browser.newContext();
+  const page = await 場.newPage();
+  await 案内を止める(page);
+  await page.goto('/');
+  await 画面が出るまで待つ(page);
+  await 入り口が決まるまで待つ(page);
+  await 団体で入る(page, 団体, 検証のパスワード());
+  await expect
+    .poll(() => ライブの合言葉(団体), { timeout: 60_000, message: '前から退部の人がいても作り直されない' })
+    .not.toBe(前);
+  expect(await 世代()).toBe('1');
+  const 作り直した = await ライブの合言葉(団体);
+
+  // 開き直しても、もう作り直さない（一度だけ）
+  await page.reload();
+  await 画面が出るまで待つ(page);
+  await page.waitForTimeout(8_000);
+  expect(await ライブの合言葉(団体), '開き直すたびに作り直した').toBe(作り直した);
+  await 場.close();
+});
