@@ -3,6 +3,7 @@
 const { 色 } = require('./iro.js');
 const React = require('react');
 const { View, Text, StyleSheet, Modal, TextInput, TouchableOpacity, ScrollView } = require('./rn');
+const { 伏せ字の欄 } = require('./FuseJiNoRan');
 const { useScoreStore } = require('./useScoreStore');
 const 共 = require('./liveShare');
 const 写 = require('./clipboard_bridge');
@@ -382,7 +383,7 @@ const 来客の窓 = ({ 荷, onClose }) => {
             style={styles.説明}
           >{`「${中身.名前}」に${中身.役 === 共.閲覧 ? '見るだけで' : '記録する側で'}入ります。`}</Text>
           {中身.鍵が要るか ? (
-            <TextInput
+            <伏せ字の欄
               aria-label="合言葉"
               style={styles.入力}
               value={合言葉}
@@ -394,7 +395,6 @@ const 来客の窓 = ({ 荷, onClose }) => {
               placeholderTextColor={色.灰}
               autoCapitalize="none"
               autoCorrect={false}
-              secureTextEntry
               onSubmitEditing={入る}
             />
           ) : null}

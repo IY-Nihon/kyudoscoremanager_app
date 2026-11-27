@@ -66,6 +66,14 @@ test('管理者の合言葉：初めて作り、入り、変える', async ({ pa
   await expect(page.getByLabel('新しい合言葉')).toBeVisible({ timeout: 20_000 });
   await 撮る(page, '2-新しく', 情報);
   await page.getByLabel('新しい合言葉').fill('yumi-2026');
+  // 目のマークで字を見せる・隠す（11/28 本人「合っているか確認しづらい」）。最初は伏せ字
+  const 新しい欄 = page.getByLabel('新しい合言葉');
+  await expect(新しい欄).toHaveAttribute('type', 'password');
+  await 窓.getByLabel('入力した字を表示').first().click();
+  await expect(新しい欄).not.toHaveAttribute('type', 'password');
+  await expect(新しい欄).toHaveValue('yumi-2026');
+  await 窓.getByLabel('入力した字を隠す').first().click();
+  await expect(新しい欄).toHaveAttribute('type', 'password');
   await page.getByLabel('もう一度').fill('yumi-2027');
   await 決める.click();
   await expect(誤り).toHaveText('2 回の合言葉が違います');

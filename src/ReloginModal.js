@@ -24,11 +24,11 @@ const {
   Pressable,
   ScrollView,
   Text,
-  TextInput,
   View,
   StyleSheet,
   useWindowDimensions,
 } = require('./rn');
+const { 伏せ字の欄 } = require('./FuseJiNoRan');
 const { useScoreStore } = require('./useScoreStore');
 const { 団体で入る, 部員として入る, 部員のログインの版 } = require('./groupLogin');
 
@@ -158,7 +158,7 @@ const 入り直しの窓 = () => {
               <Text style={styles.固定の字}>{見える団体ID}</Text>
             </View>
             <Text style={styles.ラベル}>{部員 ? '個人ID' : 'パスワード'}</Text>
-            <TextInput
+            <伏せ字の欄
               testID="入り直しの入力"
               accessibilityLabel={部員 ? '個人ID' : 'パスワード'}
               style={styles.欄}
@@ -169,7 +169,7 @@ const 入り直しの窓 = () => {
                   難点を置く(null);
                 }
               }}
-              secureTextEntry={!部員}
+              隠す={!部員}
               autoCapitalize={部員 ? 'characters' : 'none'}
               autoCorrect={false}
               placeholder={部員 ? '例: K7MP3X' : ''}

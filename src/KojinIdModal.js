@@ -12,7 +12,8 @@
  */
 
 const React = require('react');
-const { Modal, Pressable, ScrollView, Text, TextInput, View, StyleSheet } = require('./rn');
+const { Modal, Pressable, ScrollView, Text, View, StyleSheet } = require('./rn');
+const { 伏せ字の欄 } = require('./FuseJiNoRan');
 const { 色 } = require('./iro.js');
 const { useScoreStore } = require('./useScoreStore');
 const 個人ID = require('./kojinId');
@@ -135,7 +136,7 @@ const 個人IDを新しくする窓 = ({ 見える, 閉じる }) => {
                   </Text>
                 </Pressable>
                 <Text style={styles.ラベル}>団体のパスワード</Text>
-                <TextInput
+                <伏せ字の欄
                   testID="個人IDの窓のパスワード"
                   accessibilityLabel="団体のパスワード"
                   style={styles.欄}
@@ -144,7 +145,6 @@ const 個人IDを新しくする窓 = ({ 見える, 閉じる }) => {
                     合言葉を置く(値);
                     if (難点) 難点を置く('');
                   }}
-                  secureTextEntry
                   autoCapitalize="none"
                   autoCorrect={false}
                   onSubmitEditing={新しくする}

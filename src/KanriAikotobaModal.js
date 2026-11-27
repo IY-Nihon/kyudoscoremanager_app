@@ -15,20 +15,21 @@
  */
 
 const React = require('react');
-const { View, Text, TextInput, Pressable, Modal, StyleSheet, ActivityIndicator } = require('./rn');
+const { View, Text, Pressable, Modal, StyleSheet, ActivityIndicator } = require('./rn');
 const { 色 } = require('./iro');
 const { IS_WEB } = require('./IS_WEB');
 const 合 = require('./kanriAikotoba');
+const { 伏せ字の欄 } = require('./FuseJiNoRan');
 
 function 入れ物({ ラベル, 値, 置く, 隠す = true, 初めに = false, 決める, 置き字 }) {
   return (
-    <TextInput
+    <伏せ字の欄
       aria-label={ラベル}
       accessibilityLabel={ラベル}
       placeholder={置き字 || ラベル}
       placeholderTextColor={色.灰_薄い}
       style={形.入れ物}
-      secureTextEntry={隠す}
+      隠す={隠す}
       value={値}
       onChangeText={置く}
       autoFocus={初めに}

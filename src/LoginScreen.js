@@ -15,6 +15,7 @@ const {
   Image,
   Modal,
 } = require('./rn');
+const { 伏せ字の欄 } = require('./FuseJiNoRan');
 const 確 = require('./mailKakunin');
 const { 使い捨てか確かめる } = require('./suteMail');
 const 使い捨ての断り =
@@ -586,7 +587,7 @@ const LoginScreen = () => {
             <Text style={styles.確認の文}>
               {`${(パスワードを決め直す && パスワードを決め直す.メール) || ''} の団体（団体ID ${(パスワードを決め直す && パスワードを決め直す.公開の団体ID) || ''}）に入ります。団体ログインに使うパスワードが無くなっていたので、新しく決めてください（団体IDとパスワードで入るときに使います）。`}
             </Text>
-            <TextInput
+            <伏せ字の欄
               accessibilityLabel="新しいパスワード"
               style={styles.決め直しの欄}
               value={決め直すパスワード}
@@ -594,7 +595,6 @@ const LoginScreen = () => {
                 決め直すパスワードを置く(字);
                 決め直しの難点を置く('');
               }}
-              secureTextEntry
               autoCapitalize="none"
               autoCorrect={false}
               placeholder="6文字以上"

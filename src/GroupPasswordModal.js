@@ -10,7 +10,8 @@
  */
 
 const React = require('react');
-const { Modal, Pressable, ScrollView, Text, TextInput, View, StyleSheet } = require('./rn');
+const { Modal, Pressable, ScrollView, Text, View, StyleSheet } = require('./rn');
+const { 伏せ字の欄 } = require('./FuseJiNoRan');
 const { 色 } = require('./iro.js');
 const { useScoreStore } = require('./useScoreStore');
 const 確 = require('./groupPassword');
@@ -105,7 +106,7 @@ const 団体のパスワードを変える窓 = ({ 見える, 閉じる }) => {
                 {欄の並び.map((欄) => (
                   <View key={欄.鍵}>
                     <Text style={styles.ラベル}>{欄.名}</Text>
-                    <TextInput
+                    <伏せ字の欄
                       testID={`団体のパスワード-${欄.鍵}`}
                       accessibilityLabel={欄.名}
                       aria-label={欄.名}
@@ -116,7 +117,6 @@ const 団体のパスワードを変える窓 = ({ 見える, 閉じる }) => {
                         // 字を入れ始めたら、その欄の知らせは消す
                         if (誤り[欄.鍵]) 誤りを置く((前) => ({ ...前, [欄.鍵]: null }));
                       }}
-                      secureTextEntry
                       autoComplete={欄.自動}
                       autoCapitalize="none"
                       autoCorrect={false}
