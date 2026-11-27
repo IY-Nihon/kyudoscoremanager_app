@@ -19,6 +19,7 @@ const AttendanceScreen = require('./AttendanceScreen').AttendanceScreen;
 const { SettingsScreen } = require('./SettingsScreen');
 const { AIChatBot } = require('./AIChatBot');
 const 案内 = require('./TutorialGuide');
+const { 読み取りの届いた帯 } = require('./OcrTodoitaObi');
 const { タブの絵 } = require('./tabIcons');
 const { 絵のある画面 } = require('./tabIconShapes');
 const { 並べ方を決める, 絵の大きさ, 絵と字の間, 字の大きさ } = require('./tabBarLayout');
@@ -227,6 +228,32 @@ const 下の帯 = React.memo(({ state, descriptors, navigation: nav }) => {
     </外の箱>
   );
 });
+/**
+ * 写真の読み取りの窓を閉じたあとに届いた読み取りの帯を、どの画面にいても出す（2026-11-28 本人「どの画面にいても出して」）。
+ * 中身は店の 読み取りの帯（記録画面の窓が置く）。［見る］で記録画面へ移り、記録画面が合図を受けて窓を開く。
+ * × は帯を消し、預けた結果を捨てる合図を送る（記録画面の窓が受ける）
+ */
+const 読み取りの届いた帯の置き場 = ({ 航路のref }) => {
+  const 届いた = useScoreStore((状態) => 状態.読み取りの帯);
+  return (
+    <読み取りの届いた帯
+      届いた={届いた}
+      見る={() => {
+        if (航路のref.isReady()) 航路のref.navigate('記録');
+        useScoreStore.setState((前) => ({
+          読み取りの帯: null,
+          読み取りの窓を開く合図: 前.読み取りの窓を開く合図 + 1,
+        }));
+      }}
+      捨てる={() =>
+        useScoreStore.setState((前) => ({
+          読み取りの帯: null,
+          読み取りを捨てる合図: 前.読み取りを捨てる合図 + 1,
+        }))
+      }
+    />
+  );
+};
 const MainNavigator = () => {
   // 出欠のタブは、団体の口座と、役に「出欠・練習日」のある個人ログイン（src/yaku.js・2026-11-19）
   const 出欠を出す = useScoreStore((状態) => 役の決まり.できるか(状態, '出欠'));
@@ -263,6 +290,7 @@ const MainNavigator = () => {
         {!来客 && 出欠を出す && <Tab.Screen name="出欠" component={AttendanceScreen} />}
         {!来客 && <Tab.Screen name="設定" component={SettingsScreen} />}
       </Tab.Navigator>
+      <読み取りの届いた帯の置き場 航路のref={航路のref} />
       {/* 来客には出さない。相談役は団体の記録を見て答える作りで、 */
       /* 案内は団体の画面を順に指してまわる。どちらも来客には中身が無い */}
       {!来客 && <AIChatBot />}

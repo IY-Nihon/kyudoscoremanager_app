@@ -49,7 +49,6 @@ const 航 = require('@react-navigation/native');
 const { formatMemberName } = require('./formatMemberName');
 const { ArrowLocationPopover } = require('./ArrowLocationPopover');
 const { OCRRecordModal, 区切りを作る } = require('./OCRRecordModal');
-const { 読み取りの届いた帯 } = require('./OcrTodoitaObi');
 const { LiveShareModal } = require('./LiveShareModal');
 const 期限 = require('./liveShare');
 const { 列の見立てを作る } = require('./retsuNoMitate');
@@ -251,18 +250,32 @@ const RecordScreen = () => {
   const [tempAttendance, setTempAttendance] = React.useState(null);
   const [showOCRModal, setShowOCRModal] = React.useState(false);
   // 読んでいる途中で閉じた写真の読み取りが、閉じたあとに届いた（{ 成功, モード }）。帯で知らせ、[見る] で窓を開く。
-  // 帯の × か、出しておく長さが過ぎたら、預けた結果を捨てる合図を窓へ送る（2026-11-20 本人「閉じても読み続ける」）
-  const [読み取りの帯, 読み取りの帯を置く] = React.useState(null);
-  const [読み取りを捨てる合図, 読み取りを捨てる合図を置く] = React.useState(0);
-  const 読み取りの帯を捨てる = () => {
-    読み取りの帯を置く(null);
-    読み取りを捨てる合図を置く((前) => 前 + 1);
-  };
+  // 帯の × か、出しておく長さが過ぎたら、預けた結果を捨てる合図を窓へ送る（2026-11-20 本人「閉じても読み続ける」）。
+  // 帯はどの画面にいても出す（店に置き、src/MainNavigator.js が描く。11/28 本人）。［見る］は記録画面へ移って合図で窓を開く
+  const 読み取りの帯 = useScoreStore((状態) => 状態.読み取りの帯);
+  const 読み取りを捨てる合図 = useScoreStore((状態) => 状態.読み取りを捨てる合図);
+  const 読み取りの窓を開く合図 = useScoreStore((状態) => 状態.読み取りの窓を開く合図);
+  const 読み取りの帯を置く = (届いた) => useScoreStore.setState({ 読み取りの帯: 届いた });
   React.useEffect(() => {
     if (!読み取りの帯) return undefined;
-    const 時計 = setTimeout(読み取りの帯を捨てる, require('./ocrMatsu').帯を出しておく長さ);
+    const 時計 = setTimeout(
+      () =>
+        useScoreStore.setState((前) => ({
+          読み取りの帯: null,
+          読み取りを捨てる合図: 前.読み取りを捨てる合図 + 1,
+        })),
+      require('./ocrMatsu').帯を出しておく長さ
+    );
     return () => clearTimeout(時計);
   }, [読み取りの帯]);
+  // 帯の［見る］（ほかの画面から来たときも）：届いた結果の窓を開く
+  const 窓を開いた合図 = React.useRef(読み取りの窓を開く合図);
+  React.useEffect(() => {
+    if (読み取りの窓を開く合図 === 窓を開いた合図.current) return;
+    窓を開いた合図.current = 読み取りの窓を開く合図;
+    読み取りの帯を置く(null);
+    setShowOCRModal(true);
+  }, [読み取りの窓を開く合図]);
   // 参加のしかたを聞いている最中のライブ名。null なら聞いていない
   const [参加のしかたを聞く, 参加のしかたを聞くを置く] = React.useState(null);
   // アプリ内の確認。{ 文, 実行 } を入れると出る。ブラウザの確認窓は使わない
@@ -1984,14 +1997,6 @@ const RecordScreen = () => {
         付けられる={!役で付けられない}
       />
       <アプリ内の確認の窓 確認={確認} 確認を置く={確認を置く} />
-      <読み取りの届いた帯
-        届いた={showOCRModal ? null : 読み取りの帯}
-        見る={() => {
-          読み取りの帯を置く(null);
-          setShowOCRModal(true);
-        }}
-        捨てる={読み取りの帯を捨てる}
-      />
       {知らせ ? (
         <View style={styles.feedbackOverlay}>
           <Text style={styles.feedbackText}>{知らせ}</Text>

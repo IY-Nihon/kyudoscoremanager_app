@@ -113,6 +113,27 @@ test.describe('閉じても読み続ける', () => {
     await expect(page.getByText('架空三', { exact: true }).first()).toBeVisible();
   });
 
+  test('ほかの画面にいても帯が出て、[見る] で記録画面の確かめの画面が開く（11/28 本人）', async ({
+    page,
+  }) => {
+    test.setTimeout(180_000);
+    const 中継 = await 中継を止めておく(page);
+    await 読み始める(page);
+    await page.getByTestId('ocr-tojiru').click();
+    await expect(page.getByText('画像から立ち順を登録', { exact: true })).toBeHidden();
+    // 履歴の画面へ移ってから届く
+    await page.getByText('履歴', { exact: true }).first().click();
+    await expect(page).toHaveURL(/\/history/);
+    中継.開ける();
+    await expect(page.getByTestId('読み取りの届いた帯')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId('読み取りの届いた帯')).toContainText('立ち順の読み取りが届きました');
+    await page.getByTestId('読み取りの届いた帯-見る').click();
+    await expect(page).not.toHaveURL(/\/history/);
+    await expect(page.getByText('記録表に反映する', { exact: true })).toBeVisible();
+    await expect(page.getByTestId('読み取りの届いた帯')).toHaveCount(0);
+    expect(中継.呼ばれた(), '開き直したときに読み直した').toBe(1);
+  });
+
   test('まだ読んでいるうちに開き直すと、読み取り中の画面に戻り、届いたら確かめの画面になる', async ({
     page,
   }) => {

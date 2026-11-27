@@ -348,6 +348,12 @@ const useScoreStore = zustand.create()(
         focusedMemberId: null,
         currentRouteName: null,
         setCurrentRouteName: (名前) => 書く({ currentRouteName: 名前 }),
+        // 写真の読み取りの窓を閉じたあとに届いた読み取り（{ 成功, モード }）。どの画面にいても帯で知らせる
+        //（src/MainNavigator.js の 読み取りの届いた帯の置き場。2026-11-28 本人「どの画面にいても出して」）。控えには残さない
+        読み取りの帯: null,
+        // 帯の［見る］で記録画面の読み取りの窓を開く合図・× か時間切れで預けた結果を捨てる合図（数えるだけ）
+        読み取りの窓を開く合図: 0,
+        読み取りを捨てる合図: 0,
         setMemberAuthVersion: (版) => 書く({ memberAuthVersion: 版 }),
         setFocusedMemberId: (id) => 書く({ focusedMemberId: id }),
         /** 部員の端末：ログインに使った個人ID を、自分の所属の証（member_claims/{uid}）から読む（1 回だけ） */
