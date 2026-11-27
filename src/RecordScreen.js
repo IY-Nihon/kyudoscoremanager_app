@@ -268,14 +268,17 @@ const RecordScreen = () => {
     );
     return () => clearTimeout(時計);
   }, [読み取りの帯]);
-  // 帯の［見る］（ほかの画面から来たときも）：届いた結果の窓を開く
+  // 帯の［見る］（ほかの画面から来たときも）：届いた結果の窓を開く。ほかの画面から来たときは、記録画面に移り終えてから開く
+  //（移る途中で開くと、住所の書き替えが窓の「戻る」の履歴とぶつかり、開いた窓がすぐ閉じた。11/28 の E2E）
+  const 記録画面にいる = 航.useIsFocused();
   const 窓を開いた合図 = React.useRef(読み取りの窓を開く合図);
   React.useEffect(() => {
-    if (読み取りの窓を開く合図 === 窓を開いた合図.current) return;
+    if (読み取りの窓を開く合図 === 窓を開いた合図.current || !記録画面にいる) return undefined;
     窓を開いた合図.current = 読み取りの窓を開く合図;
     読み取りの帯を置く(null);
-    setShowOCRModal(true);
-  }, [読み取りの窓を開く合図]);
+    setTimeout(() => setShowOCRModal(true), 0);
+    return undefined;
+  }, [読み取りの窓を開く合図, 記録画面にいる]);
   // 参加のしかたを聞いている最中のライブ名。null なら聞いていない
   const [参加のしかたを聞く, 参加のしかたを聞くを置く] = React.useState(null);
   // アプリ内の確認。{ 文, 実行 } を入れると出る。ブラウザの確認窓は使わない
