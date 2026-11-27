@@ -958,9 +958,14 @@ const 同期の操作 = (書く, 状態, そのまま書く) => ({
             消し直す.forEach((id) => {
               一括.delete(Firestore.doc(Firebaseの器.db, `groups/${状態().activeGroupId}/members`, id));
             });
-            一括.commit().catch((誤り) => {
-              console.error('[Store] メンバーの削除の送り直しに失敗:', 誤り);
-            });
+            一括
+              .commit()
+              // 消した人はもう名簿に無く見直しでは拾えないので、届いたら名指しでライブの合言葉を作り直す
+              //（削除したときに雲へ届かなかった分。2026-11-28）
+              .then(() => 状態().ライブの合言葉を作り直す())
+              .catch((誤り) => {
+                console.error('[Store] メンバーの削除の送り直しに失敗:', 誤り);
+              });
           } catch (誤り) {
             console.error('[Store] メンバーの削除の送り直しの組み立てに失敗:', 誤り);
           }

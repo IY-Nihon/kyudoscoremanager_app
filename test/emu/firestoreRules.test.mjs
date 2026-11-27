@@ -279,7 +279,15 @@ test('B5 部員の書き込み：団体名・合言葉・設定は書けない�
   // 合言葉がまだ無い団体では足せる（アプリの ライブの合言葉を用意する）
   await 欄を消す('owner', `groups/${団体}`, ['liveSecret']);
   assert.ok(
-    (await 書く(部員, `groups/${団体}`, { liveSecret: 'c'.repeat(32) }, { merge: true })).通った,
+    (
+      await 書く(
+        部員,
+        `groups/${団体}`,
+        // 卒業・退部の人の一覧も一緒に書く（11/28。アプリの ライブの合言葉を用意する）
+        { liveSecret: 'c'.repeat(32), liveSecretOut: ['m7'] },
+        { merge: true }
+      )
+    ).通った,
     '合言葉を足せない'
   );
   // 設定：タグの候補だけ
@@ -532,11 +540,27 @@ test('ライブの合言葉の作り直し（11/26 本人）：メンバーを�
     (await 書く(部員, 道, { liveSecret: 新しい, liveSecretRenew: false }, { merge: true })).通った,
     '運営が合言葉を作り直せない'
   );
-  // 世代の印（liveSecretGen。11/27）も一緒に書ける
+  // 作り直したときの卒業・退部の人の一覧（liveSecretOut。11/28）も一緒に書ける。合言葉を変えずに一覧だけは書けない
   assert.ok(
-    (await 書く(部員, 道, { liveSecret: 'f'.repeat(32), liveSecretRenew: false, liveSecretGen: 1 }, { merge: true }))
-      .通った,
-    '運営が世代の印と一緒に作り直せない'
+    (
+      await 書く(
+        部員,
+        道,
+        { liveSecret: 'f'.repeat(32), liveSecretRenew: false, liveSecretOut: ['m9'] },
+        { merge: true }
+      )
+    ).通った,
+    '運営が一覧と一緒に作り直せない'
+  );
+  assert.equal(
+    (await 書く(部員, 道, { liveSecretOut: ['m9', 'm8'] }, { merge: true })).通った,
+    false,
+    '合言葉を変えずに一覧だけ書けた（作り直しを止められる）'
+  );
+  assert.equal(
+    (await 書く(部員, 道, { liveSecret: 'g'.repeat(32), liveSecretOut: 'm9' }, { merge: true })).通った,
+    false,
+    '一覧でないものを書けた'
   );
   // 短い合言葉・ほかの項目を一緒に変えるのは断る
   assert.equal((await 書く(部員, 道, { liveSecret: 'short' }, { merge: true })).通った, false);

@@ -86,9 +86,6 @@ Object.defineProperty(exports, 'ライブ名に使えない字', {
 });
 /** 管理者モードを印の期限で切る時計（setAdminMode） */
 let 管理者の時計 = null;
-/** 団体の文書の便りで、ライブの合言葉を作り直せるか見た団体と時刻（ライブの枝を何度も読み直さないため。11/27） */
-let 合言葉を見た = { 団体: null, 時刻: 0 };
-const 合言葉を見る間 = 5 * 60 * 1000;
 
 const useScoreStore = zustand.create()(
   middleware.persist(
@@ -319,6 +316,8 @@ const useScoreStore = zustand.create()(
         // ライブの合言葉の作り直し待ち（団体の文書の liveSecretRenew。卒業・退部・削除にしたときにライブの途中だった。
         // 2026-11-26）。端末には残さない（団体の文書の見張りが入れる）
         ライブの作り直し待ち: false,
+        // 作り直すかの見直しに使う団体の文書の様子（{団体, liveSecret, liveSecretOut, 待ち}。端末には残さない。2026-11-28）
+        ライブの合言葉の様子: null,
         // ライブにつないでいる台数。端末には残さない（開き直せば数え直す）
         ライブの接続台数: 0,
         // 共有のライブに入っているときの、そのライブ専用の枝。
@@ -435,6 +434,7 @@ const useScoreStore = zustand.create()(
               // 出た人の端末に団体の秘密を残す理由が無い
               ライブの合言葉: null,
               ライブの作り直し待ち: false,
+              ライブの合言葉の様子: null,
               activeGroupId: null,
               activeGroupName: null,
               publicGroupId: null,
@@ -658,7 +658,17 @@ const useScoreStore = zustand.create()(
             const 今 = await Firestore.getDoc(場所);
             const 有 = (今.data() || {}).liveSecret;
             if (秘.枝として使えるか(有)) return 有;
-            await Firestore.setDoc(場所, { liveSecret: 秘.合言葉を作る() }, { merge: true });
+            // 今の卒業・退部の人の一覧も一緒に書く（無いと、直後の見直しが作り直しが要ると見て、作ったばかりの合言葉を
+            // 作り直し、ちょうど始めたライブが割れることがあった。2026-11-28 src/aikotobaMinaoshi.js）
+            const 見 = require('./aikotobaMinaoshi');
+            await Firestore.setDoc(
+              場所,
+              {
+                liveSecret: 秘.合言葉を作る(),
+                liveSecretOut: 見.書く一覧(見.抜けた人たち(状態().members, 状態().alumni)),
+              },
+              { merge: true }
+            );
             // 読み直す。同時に作られていたら、相手のほうが載っている
             const 後 = await Firestore.getDoc(場所);
             const 決 = (後.data() || {}).liveSecret;
@@ -1293,22 +1303,16 @@ const useScoreStore = zustand.create()(
             }
             const 待ち = 団体の中身.liveSecretRenew === true;
             if (待ち !== !!状態().ライブの作り直し待ち) 書く({ ライブの作り直し待ち: 待ち });
-            if (!新しい || !役の決まり.できるか(状態(), 'メンバーを管理する')) return;
-            // 世代の印が無く、名簿に卒業・退部の人がいる団体は一度だけ作り直す（11/26 より前に卒業・退部にした人の端末に
-            // 今の合言葉が残っているため。11/27 の点検）。前の形の卒業生の一覧（alumni）に人がいる団体も同じ。
-            // 名簿がまだ届いていなければ、次の便りで見る
-            const 名簿 = Array.isArray(状態().members) ? 状態().members : [];
-            const 卒業生 = Array.isArray(状態().alumni) ? 状態().alumni : [];
-            const 前に抜けた人がいる =
-              団体の中身.liveSecretGen !== require('./storeLive').合言葉の世代 &&
-              (卒業生.length > 0 || 名簿.some((人) => 人 && !学.現役か(人)));
-            if (!待ち && !前に抜けた人がいる) return;
-            // 団体の文書の便りは設定が変わるたびに届く。ライブの途中で待ちのあいだ、そのたびにライブの枝を丸ごと読み直さない
-            //（ライブを離れたときは storeLive の ライブから離れる が待たずに作り直す。11/27 の点検）
-            const 今 = Date.now();
-            if (合言葉を見た.団体 === この団体 && 今 - 合言葉を見た.時刻 < 合言葉を見る間) return;
-            合言葉を見た = { 団体: この団体, 時刻: 今 };
-            状態().ライブの合言葉を作り直す();
+            // 作り直すかの見直しに使う様子を控える（名簿が届いたあとの見直しでも使う。src/aikotobaMinaoshi.js）
+            書く({
+              ライブの合言葉の様子: {
+                団体: この団体,
+                liveSecret: 新しい || null,
+                liveSecretOut: Array.isArray(団体の中身.liveSecretOut) ? 団体の中身.liveSecretOut : null,
+                待ち,
+              },
+            });
+            状態().ライブの合言葉を見直す();
           };
           const _cfgDb = await waitForDb();
           if (!_cfgDb) {
@@ -1598,6 +1602,14 @@ useScoreStore.subscribe((今, 前) => {
     場.検査の進級待ちの年 ||
     学.進級待ちの年(new Date(), 今.lastPromotionYear, 今.promotionCheck, 今.yearStartMonth ?? undefined);
   if (待ち !== 今.進級待ちの年) useScoreStore.setState({ 進級待ちの年: 待ち });
+});
+// 名簿・卒業生が変わったら、ライブの合言葉を作り直すかを見直す（2026-11-28。雲から届いた・送り直して同期済みになった・
+// 名簿がまだ届いていなかった端末に届いた、のどれでも拾う。手元で変えただけの未同期の人は数えない。src/aikotobaMinaoshi.js）。
+// 見直しは、団体の文書の様子（ライブの合言葉の様子）と手元の名簿だけで要るかを見て、要るときだけ雲に聞く
+useScoreStore.subscribe((今, 前) => {
+  if (今.members === 前.members && 今.alumni === 前.alumni) return;
+  if (!今.ライブの合言葉の様子 || typeof 今.ライブの合言葉を見直す !== 'function') return;
+  今.ライブの合言葉を見直す();
 });
 // 検査（e2e/promotion.spec.mjs）から進級の窓を出す口。4 月 1 日を待たずに窓と帯を確かめるため。
 // 「進級する」は検査では押さない（検証環境の名簿が上がってしまう。進級そのものは test/storeSync.test.js で見る）

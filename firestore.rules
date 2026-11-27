@@ -338,24 +338,36 @@ service cloud.firestore {
 
     // ライブの合言葉（groups/{団体}.liveSecret）を部員が足してよいか。まだ無いとき（空・字でない）だけ。
     // 足すだけで、書き換えはさせない（替わると、古い合言葉の端末と別の枝を見てライブが割れる）
+    // 作るときは、その時点の卒業・退部の人の一覧（liveSecretOut）も一緒に書ける（2026-11-28。src/aikotobaMinaoshi.js）
     function addsLiveSecretOnly(groupId) {
       return isClaimedMember(groupId)
         && request.resource.data.get('liveSecret', '') is string
         && request.resource.data.get('liveSecret', '').size() >= 16
+        && liveSecretOutOk()
         && (resource == null
-            ? request.resource.data.keys().hasOnly(['liveSecret'])
-            : (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['liveSecret'])
+            ? request.resource.data.keys().hasOnly(['liveSecret', 'liveSecretOut'])
+            : (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['liveSecret', 'liveSecretOut'])
                && !(resource.data.get('liveSecret', null) is string && resource.data.get('liveSecret', '').size() >= 16)));
+    }
+
+    // 合言葉を作った・作り直したときの卒業・退部の人の id の一覧（2026-11-28）。並びで 3000 件まで（アプリの 一覧の上限）
+    function liveSecretOutOk() {
+      return !('liveSecretOut' in request.resource.data)
+        || (request.resource.data.liveSecretOut is list && request.resource.data.liveSecretOut.size() <= 3000);
     }
 
     // ライブの合言葉を作り直す（2026-11-26 本人：メンバーを卒業・退部・削除にしたら作り直す。11/25 の S7）。
     // 書くのは卒業・退部・削除にした端末（メンバーを管理できる部員。団体の口座は上の持ち主で通る）。ライブの途中なら
     // 作り直し待ちの印（liveSecretRenew）だけを立て、ライブが終わってから作り直す（src/useScoreStore.js の ライブの合言葉を作り直す）。
-    // 変えてよいのはこの 2 つだけ。作り直した合言葉も推測できない長さにする
+    // 変えてよいのはこの 2 つと、作り直したときの卒業・退部の人の一覧（liveSecretOut。2026-11-28）だけ。
+    // 一覧は合言葉を作り直すときだけ書ける（合言葉を変えずに一覧だけ書いて、作り直しを止められないように）。
+    // 作り直した合言葉も推測できない長さにする
     function renewsLiveSecret(groupId) {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
       return memberCan(groupId, 'メンバー')
-        // liveSecretGen は作り直した世代の印（11/27：配る前に卒業・退部にした人の端末に残る合言葉を、一度だけ作り直す）
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['liveSecret', 'liveSecretRenew', 'liveSecretGen'])
+        && changed.hasOnly(['liveSecret', 'liveSecretRenew', 'liveSecretOut'])
+        && (!('liveSecretOut' in changed) || 'liveSecret' in changed)
+        && liveSecretOutOk()
         && request.resource.data.get('liveSecret', '') is string
         && request.resource.data.get('liveSecret', '').size() >= 16;
     }

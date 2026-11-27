@@ -130,7 +130,7 @@ test('退部にした人はログインできず、ライブの合言葉が作�
 test('配る前に退部にした人がいる団体は、管理できる端末で一度だけ合言葉を作り直す（11/27 の点検）', async ({ browser }) => {
   test.setTimeout(180_000);
   const 団体 = await 検査の団体を作る('taibu-mae');
-  // 前の版のままの団体：合言葉はあるが世代の印は無く、名簿に前から退部の人がいる
+  // 前の版のままの団体：合言葉はあるが卒業・退部の人の一覧（liveSecretOut）は無く、名簿に前から退部の人がいる
   const 前 = 'e2e' + Date.now().toString(36).padEnd(29, 'b');
   await fetch(`${文書の根}/groups/${団体}?updateMask.fieldPaths=liveSecret`, {
     method: 'PATCH',
@@ -148,7 +148,8 @@ test('配る前に退部にした人がいる団体は、管理できる端末�
       },
     }),
   });
-  const 世代 = async () => (await 読む(団体)).fields?.liveSecretGen?.integerValue ?? null;
+  const 外した人 = async () =>
+    ((await 読む(団体)).fields?.liveSecretOut?.arrayValue?.values || []).map((v) => v.stringValue);
 
   const 場 = await browser.newContext();
   const page = await 場.newPage();
@@ -160,7 +161,7 @@ test('配る前に退部にした人がいる団体は、管理できる端末�
   await expect
     .poll(() => ライブの合言葉(団体), { timeout: 60_000, message: '前から退部の人がいても作り直されない' })
     .not.toBe(前);
-  expect(await 世代()).toBe('1');
+  expect(await 外した人(), '作り直したときの卒業・退部の人の一覧に入っていない').toContain('mae-taibu');
   const 作り直した = await ライブの合言葉(団体);
 
   // 開き直しても、もう作り直さない（一度だけ）

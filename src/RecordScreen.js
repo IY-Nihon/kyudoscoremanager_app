@@ -1098,9 +1098,9 @@ const RecordScreen = () => {
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() =>
-                    窓.出す('編集をキャンセルしますか', '変えたところは履歴に残りません。', [
+                    窓.出す('変更を破棄しますか', '変えたところは履歴に残りません。', [
                       { text: '続ける', style: 'cancel' },
-                      { text: 'キャンセル', style: 'destructive', onPress: () => 戻る(false) },
+                      { text: '変更を破棄', style: 'destructive', onPress: () => 戻る(false) },
                     ])
                   }
                   style={{
