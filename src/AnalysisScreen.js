@@ -1,6 +1,7 @@
 'use strict';
 
 const { 色 } = require('./iro.js');
+const タグの並べ方 = require('./tagNarabi');
 const React = require('react');
 const { View, Text, ScrollView, TouchableOpacity, TextInput, useWindowDimensions } = require('./rn');
 const 案内 = require('./TutorialGuide');
@@ -284,14 +285,8 @@ const AnalysisScreen = ({ navigation }) => {
     src.forEach((記録) => {
       if (記録 && 記録.tags) 記録.tags.forEach((タグ) => 集めた.add(タグ));
     });
-    return Array.from(集めた)
-      .filter(Boolean)
-      .sort((甲, 乙) => {
-        const 甲は選択中 = analysisSelectedTags.includes(甲);
-        const 乙は選択中 = analysisSelectedTags.includes(乙);
-        return 甲は選択中 && !乙は選択中 ? -1 : !甲は選択中 && 乙は選択中 ? 1 : 甲.localeCompare(乙);
-      });
-  }, [sessions, analysisSelectedTags, 自分の分だけ, myMemberId]);
+    return Array.from(集めた).filter(Boolean);
+  }, [sessions, 自分の分だけ, myMemberId]);
   // 記録の絞り込み。描画のたびに数え直すと、部員の数だけ記録を舐める順位の計算
   // まで巻き添えで走る。本番でいちばん大きい団体（部員79人・記録108件）で
   // 1周 35ms かかっていた。絞り込みが変わったときだけ作り直す。
@@ -299,17 +294,12 @@ const AnalysisScreen = ({ navigation }) => {
   // 直近30日の境目は Date.now() で決まるので、この控えが効いているあいだは
   // 動かない。境目が動くのは日付が変わるときだけで、そのとき画面を開き直せば
   // 数え直される
-  const 絞った記録 = React.useMemo(
+  // 期間で絞った記録（タグでは絞らない）。タグの札の並べ方（今見ている期間に有るか）にも使う（履歴と同じ。11/28）
+  const 期間の記録 = React.useMemo(
     () =>
       sessions.filter((記録) => {
         if (!記録) return false;
         if (!集.集計に入れるか(記録)) return false; // 未設定の古い記録は含める（Excel の書き出しと揃える）
-        if (analysisSelectedTags.length > 0) {
-          const タグたち = 記録.tags || [];
-          if (analysisTagLogic === 'AND') {
-            if (!analysisSelectedTags.every((タグ) => タグたち.includes(タグ))) return false;
-          } else if (!analysisSelectedTags.some((タグ) => タグたち.includes(タグ))) return false;
-        }
         const 今 = Date.now();
         const 日付 = 記録.date;
         if (期間の種類 === '直近30日') return 今 - 日付 <= 2592e6;
@@ -331,17 +321,30 @@ const AnalysisScreen = ({ navigation }) => {
         }
         return true;
       }),
-    [
-      sessions,
-      analysisSelectedTags,
-      analysisTagLogic,
-      期間の種類,
-      見ている年,
-      見ている月,
-      見ている年度,
-      期間の始め,
-      期間の終わり,
-    ]
+    [sessions, 期間の種類, 見ている年, 見ている月, 見ている年度, 期間の始め, 期間の終わり]
+  );
+  const 絞った記録 = React.useMemo(() => {
+    if (analysisSelectedTags.length === 0) return 期間の記録;
+    return 期間の記録.filter((記録) => {
+      const タグたち = 記録.tags || [];
+      return analysisTagLogic === 'AND'
+        ? analysisSelectedTags.every((タグ) => タグたち.includes(タグ))
+        : analysisSelectedTags.some((タグ) => タグたち.includes(タグ));
+    });
+  }, [期間の記録, analysisSelectedTags, analysisTagLogic]);
+  // 今見ている期間の記録（個人ログインなら自分の分がある記録）に付いているタグ。無いタグは後ろに灰色の点線で出す
+  const 期間のタグ = React.useMemo(
+    () =>
+      タグの並べ方.範囲のタグを集める(
+        自分の分だけ && myMemberId
+          ? 期間の記録.filter((記録1件) => 自分の記録か(記録1件, myMemberId, 自分の名前))
+          : 期間の記録
+      ),
+    [期間の記録, 自分の分だけ, myMemberId, 自分の名前]
+  );
+  const 並べたタグ = React.useMemo(
+    () => タグの並べ方.タグを並べる(タグの一覧, analysisSelectedTags, 期間のタグ),
+    [タグの一覧, analysisSelectedTags, 期間のタグ]
   );
   // 順位。人ごとに記録を舐めるので、ここが再計算のいちばん重いところ
   const 順位の元 = React.useMemo(
@@ -743,19 +746,23 @@ const AnalysisScreen = ({ navigation }) => {
                   すべて解除
                 </Text>
               </TouchableOpacity>
-              {タグの一覧.map((タグ) => {
+              {並べたタグ.map((タグ) => {
                 const 選択中 = analysisSelectedTags.includes(タグ);
+                const ここに無い = !期間のタグ.has(タグ);
+                const 無い見た目 = タグの並べ方.無いタグの見た目(ここに無い, 選択中, 色);
                 return (
                   <TouchableOpacity
                     key={`tag-${タグ}`}
+                    testID={ここに無い ? 'ここに無いタグ' : 'ここに有るタグ'}
                     style={[
                       styles.tagChip,
                       選択中 && styles.tagChipActive,
                       { backgroundColor: 選択中 ? 色.青 : 色.地 },
+                      無い見た目.箱,
                     ]}
                     onPress={() => toggleAnalysisTag(タグ)}
                   >
-                    <Text style={[styles.tagChipText, 選択中 && { color: 色.白 }]}>
+                    <Text style={[styles.tagChipText, 無い見た目.字, 選択中 && { color: 色.白 }]}>
                       {タグ.replace(/^#/, '')}
                     </Text>
                   </TouchableOpacity>

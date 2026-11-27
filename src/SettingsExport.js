@@ -2,6 +2,7 @@
 
 const 役の決まり = require('./yaku');
 const { 色 } = require('./iro.js');
+const タグの並べ方 = require('./tagNarabi');
 // 記録の選び方とシートの組み方は src/kakidashiNoHyou.js（数え方は分析画面と同じ statsRules）
 const {
   書き出しのシートを作る,
@@ -161,8 +162,25 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
     見える記録.forEach((記録) => {
       if (Array.isArray(記録.tags)) 記録.tags.forEach((タグ) => 集めた.add(タグ));
     });
-    return Array.from(集めた).sort((甲, 乙) => 甲.localeCompare(乙));
+    return Array.from(集めた);
   }, [見える記録]);
+  // 詳しい条件の期間（始め〜終わり）に入る記録のタグ。無いタグは後ろに灰色の点線で出す（履歴・分析と同じ。11/28）
+  const 期間のタグ = React.useMemo(() => {
+    const 頭 = new Date(期間の始め);
+    頭.setHours(0, 0, 0, 0);
+    const 尾 = new Date(期間の終わり);
+    尾.setHours(23, 59, 59, 999);
+    return タグの並べ方.範囲のタグを集める(
+      見える記録.filter((記録) => {
+        const 日付 = new Date(記録.date);
+        return 日付 >= 頭 && 日付 <= 尾;
+      })
+    );
+  }, [見える記録, 期間の始め, 期間の終わり]);
+  const 並べたタグ = React.useMemo(
+    () => タグの並べ方.タグを並べる(タグの一覧, 選んだタグ, 期間のタグ),
+    [タグの一覧, 選んだタグ, 期間のタグ]
+  );
   /** 書き出しの条件。確かめる段の中身と、実際の書き出しで同じものを使う */
   const 条件を作る = (範囲) => ({
     範囲,
@@ -468,11 +486,14 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                   </View>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
                     {タグの一覧.length > 0 ? (
-                      タグの一覧.map((タグ) => {
+                      並べたタグ.map((タグ) => {
                         const 選択中 = 選んだタグ.includes(タグ);
+                        const ここに無い = !期間のタグ.has(タグ);
+                        const 無い見た目 = タグの並べ方.無いタグの見た目(ここに無い, 選択中, 色);
                         return (
                           <TouchableOpacity
                             key={`export-tag-${タグ}`}
+                            testID={ここに無い ? 'ここに無いタグ' : 'ここに有るタグ'}
                             onPress={() =>
                               選んだタグを置く((今の) =>
                                 今の.includes(タグ) ? 今の.filter((一つ) => 一つ !== タグ) : [...今の, タグ]
@@ -486,9 +507,10 @@ const データの書き出し窓 = ({ 見える, 閉じる }) => {
                                 paddingVertical: 6,
                                 marginVertical: 2,
                               },
+                              無い見た目.箱,
                             ]}
                           >
-                            <Text style={[styles.tagChipText, 選択中 && { color: 色.白 }]}>
+                            <Text style={[styles.tagChipText, 無い見た目.字, 選択中 && { color: 色.白 }]}>
                               {タグ.replace(/^#/, '')}
                             </Text>
                           </TouchableOpacity>

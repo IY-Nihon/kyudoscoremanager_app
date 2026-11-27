@@ -3,6 +3,7 @@
 const 学 = require('./gakunen');
 
 const { 色: 基本色 } = require('./iro.js');
+const タグの並べ方 = require('./tagNarabi');
 const React = require('react');
 const { View, Text, FlatList, TouchableOpacity, TextInput, Modal, ScrollView, Pressable } = require('./rn');
 const { IS_WEB } = require('./IS_WEB');
@@ -379,18 +380,12 @@ const HistoryScreen = () => {
   }, [範囲の記録, historySelectedTags, historyTagLogic]);
   // 今見ている範囲の記録に付いているタグ。無いタグは後ろに灰色で出す（押せる。2026-11-13 本人：月を変えても
   // 選んだタグは外さず、その月に無いだけと分かるように）
-  const 範囲のタグ = React.useMemo(() => {
-    const 集めた = new Set();
-    範囲の記録.forEach((記録) => {
-      if (Array.isArray(記録.tags)) 記録.tags.forEach((タグ) => 集めた.add(タグ));
-    });
-    return 集めた;
-  }, [範囲の記録]);
-  const 並べたタグ = React.useMemo(() => {
-    // 選択中 → 今の範囲に有る → 無い、の順。同じ組の中は名前順
-    const 組 = (タグ) => (historySelectedTags.includes(タグ) ? 0 : 範囲のタグ.has(タグ) ? 1 : 2);
-    return [...タグの一覧].sort((甲, 乙) => 組(甲) - 組(乙) || String(甲).localeCompare(String(乙)));
-  }, [タグの一覧, 範囲のタグ, historySelectedTags]);
+  // 並べ方と見た目は分析・書き出しと同じ（src/tagNarabi.js）
+  const 範囲のタグ = React.useMemo(() => タグの並べ方.範囲のタグを集める(範囲の記録), [範囲の記録]);
+  const 並べたタグ = React.useMemo(
+    () => タグの並べ方.タグを並べる(タグの一覧, historySelectedTags, 範囲のタグ),
+    [タグの一覧, 範囲のタグ, historySelectedTags]
+  );
   // 「すべて」のとき、月の変わり目の記録の上に月の見出しを出す。記録の id → 見出しの字
   const 月の見出し = React.useMemo(() => {
     const 表 = new Map();
@@ -1344,6 +1339,7 @@ const HistoryScreen = () => {
                         const 選ばれている = historySelectedTags.includes(タグ);
                         // 今見ている範囲の記録に無いタグ。灰色の点線で出す（押せる）
                         const ここに無い = !範囲のタグ.has(タグ);
+                        const 無い見た目 = タグの並べ方.無いタグの見た目(ここに無い, 選ばれている, 基本色);
                         return (
                           <Pressable
                             key={typeof タグ === 'string' ? タグ : `tag-${idx}`}
@@ -1352,14 +1348,7 @@ const HistoryScreen = () => {
                               styles.tagChip,
                               選ばれている && styles.tagChipActive,
                               { backgroundColor: 選ばれている ? 基本色.青 : 基本色.地 },
-                              ここに無い &&
-                                !選ばれている && {
-                                  backgroundColor: 'transparent',
-                                  borderWidth: 1,
-                                  borderStyle: 'dashed',
-                                  borderColor: 基本色.灰_明るい,
-                                },
-                              ここに無い && 選ばれている && { opacity: 0.6 },
+                              無い見た目.箱,
                               hovered && !選ばれている && { backgroundColor: 基本色.地_濃い },
                             ]}
                             onPress={() => toggleHistoryTag(タグ)}
@@ -1367,7 +1356,7 @@ const HistoryScreen = () => {
                             <Text
                               style={[
                                 styles.tagChipText,
-                                ここに無い && { color: 基本色.灰 },
+                                無い見た目.字,
                                 選ばれている && { color: 基本色.白 },
                               ]}
                             >
